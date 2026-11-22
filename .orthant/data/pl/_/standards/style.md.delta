@@ -1,0 +1,421 @@
+orthant 2 language
+
+@ 0 1 0 098808a389a42a8814133f871316a033
++ # Pisanie dokumentacji Soundness
+
+@ 0 4 0 1efeb7ce6cc01e4b0190590f69778b60
++ Dokumenty w `doc/modules/` są samouczkami, z których każdy wprowadza jedną funkcję
++ Soundness – możliwość, która może obejmować kilka wewnętrznych modułów – czytelnikowi,
++ który styka się z nią po raz pierwszy. Ten przewodnik określa, jak je pisać: do kogo się
++ zwracają, jakim głosem mówią i jakich konwencji przestrzegają.
+
+@ 0 1 0 155d0ba08f3554271c10aab11f4227ad
++ ## Odbiorcy i zakres
+
+@ 0 2 0 13c3571862ed43300024cfe4cc12cca4
++ Należy zakładać czytelnika z podstawową znajomością Scali i omawianego tematu, ale
++ dostosować tempo prozy do kogoś, kto po raz pierwszy styka się z tym, jak Soundness ten
++ temat ujmuje.
+
+@ 0 5 0 0e861c5752b85e8716c64da44b1de54c
++ Własne implementacje Soundness należy objaśniać dogłębnie. Pojęć, na których Soundness się
++ opiera – JSON, wyrażeń regularnych, stref czasowych – nie trzeba uczyć od podstaw, ale
++ każdego z nich trzeba podać tyle, by uzasadnić projekt, który następuje. Złożone lub
++ ezoteryczne tło należy podlinkować do zewnętrznego źródła, takiego jak Wikipedia, zamiast
++ objaśniać je w tekście.
+
+@ 0 1 0 01d73cb3cc5d6a4b02e44f0de75c6609
++ Terminy i wyrażenia należy ograniczać do takich, które znają zarówno czytelnicy brytyjscy,
++ jak i amerykańscy.
+
+@ 0 5 0 120e8ed86b7bc0c30279a38ef4f8daca
++ Przed pisaniem należy zdecydować, kto otwiera stronę i dlaczego. Czytelnik przychodzi do
++ samouczka, żeby coś zrobić – odczytać plik konfiguracyjny, wywołać usługę, zrozumieć błąd – i
++ czyta z pytaniami, na które strona powinna odpowiadać w kolejności, w jakiej się pojawiają:
++ co jest minimum, które działa, co się dzieje, gdy coś się nie uda, ile to kosztuje, jak to
++ współgra z tym, co jest już w użyciu. Najczęstsze zadanie należy umieścić na początku, a na
++ obawę odpowiedzieć, zanim czytelnik będzie musiał jej szukać.
+
+@ 0 2 0 190ac18e4e508a781a318804f63ed63d
++ Należy preferować krótkie zdania, z których każde wyraża jedną myśl. Zdanie, które potrzebuje
++ dwóch średników albo nawiasu wewnątrz myślnika, to dwa lub trzy zdania.
+
+@ 0 1 0 0b995a892b43e6dc00e4e7f9124c66b6
++ ## Głos: styl klasyczny
+
+@ 0 5 0 1c6f95e12feafe4709af1bcaef2a584d
++ Należy pisać stylem klasycznym, tak jak opisuje go Steven Pinker: piszący pokazuje
++ czytelnikowi coś prawdziwego lub interesującego w świecie i pomaga mu to wyraźnie zobaczyć,
++ jak w rozmowie równych sobie. Czytelnik jest inteligentny i kompetentny. Prawdę można
++ dostrzec i opisać prosto, a o sukcesie świadczy to, czy czytelnik bez wysiłku chwyta sedno.
+
+@ 0 21 0 003db5aa8e65cd0206f65aa414478280
++ - **Pokazuj, nie zapowiadaj.** Należy przedstawić samą myśl, a nie zamiar jej
++   przedstawienia. Należy unikać odchrząkiwania („W tej sekcji…”, „Warto zauważyć, że…”) i
++   drogowskazów („Po pierwsze…”, „Podsumowując…”).
++ - **Pozostań niewidoczny.** Należy unikać zaimków pierwszej osoby i metadyskusji o tekście,
++   dokumencie lub jego strukturze. Nie należy odwoływać się do dokumentu przez jego gatunek:
++   nigdy nie uzasadniać wyboru tym, że „pasuje do samouczka” albo jest dokonany „na potrzeby
++   tego przewodnika”. Zamiast tego należy podać wybór wprost – pisać „strategia
++   `throwUnsafely` przy niepowodzeniu zgłasza wyjątek”, a nie „zgłaszanie wyjątku pasuje do
++   samouczka”.
++ - **Pisz prosto i bezpośrednio.** Należy preferować proste sformułowania zamiast
++   ozdobnych, napuszonych lub niepotrzebnie technicznych. Należy wycinać zbędne słowa,
++   asekurację i niepotrzebne zastrzeżenia.
++ - **Okazuj pewność.** Należy stwierdzać rzeczy wprost, zamiast się asekurować lub
++   przepraszać; należy unikać akademickiego nadmiaru zastrzeżeń.
++ - **Osadzaj abstrakcję.** Należy sięgać po konkretne obrazy i przykłady, by zakotwiczyć
++   abstrakcyjne idee.
++ - **Prowadź wzrok czytelnika.** Każde zdanie należy budować tak, by uwaga naturalnie padała
++   na to, co najważniejsze.
++ - **Brzmij jak ktoś, kto zna temat.** Głos jest spokojny, kompetentny i niewymuszony; proza
++   sprawia wrażenie lekkiej, nawet gdy była wielokrotnie poprawiana.
++ - **Unikaj środków, które zależą od wspólnego kontekstu.** Należy wyrażać myśl wprost, a nie
++   przez pytania retoryczne lub aluzje. Należy unikać prozy urzędniczej, nadmiaru strony
++   biernej i pretensjonalnego słownictwa.
+
+@ 0 1 0 1dc4f0668f26612d05fca3c4b258429e
++ ## Akcenty
+
+@ 0 4 0 0b13d9f1e2e3618c16a3fa441542b499
++ Należy zwracać uwagę na bezpieczeństwo typów i sprawdzanie w czasie kompilacji, które
++ wykonuje Soundness, oraz objaśniać idee projektowe stojące za każdym API – zwłaszcza te,
++ które mogą być niekonwencjonalne. Od czasu do czasu należy łączyć je z ogólną filozofią
++ projektową Soundness, tak by czytelnik widział nie tylko, jak funkcja działa, ale też
++ dlaczego ma taki kształt.
+
+@ 0 1 0 1b73b691c1b10b8b1c0c9a350d9d581e
++ ## Język i pisownia
+
+@ 0 2 0 1caf2ac94c759b00118530fa0e72e53a
++ Należy używać pisowni amerykańskiej odmiany angielskiego. Zawsze należy pisać „runtime” i
++ „compiletime” jako jedno słowo, nigdy jako „run time”, „run-time”, „compile time” ani
++ „compile-time”.
+
+@ 0 1 0 160cce29ae547a03052fee8223f69a04
++ ## Struktura dokumentu
+
+@ 0 4 0 173232c52a4140e91f320983cc4402b1
++ Należy zacząć od `## Title`, a następnie do trzech akapitów wprowadzających, które dają
++ przegląd zakresu tematu. Wśród nich sekcja `### About` daje przegląd, a sekcja
++ `### On <topic>` uzasadnia projekt. Po wprowadzeniu poszczególne tematy omawia się w
++ osobnych sekcjach `###`.
+
+@ 0 2 0 1b096cedea8904770697d38df72fcf5f
++ Należy dawać pierwszeństwo podstawowym szczegółom i najczęściej używanym funkcjom, a
++ odsuwać na dalszy plan szczegóły implementacyjne i funkcje ezoteryczne.
+
+@ 0 6 0 0b162a62b6f897eb1c414741d7cb04a6
++ Czytelnik już wie, że tematem jest Soundness, więc nie należy odruchowo czynić „Soundness”
++ podmiotem każdego zdania, a już najmniej zdania otwierającego. Należy zaczynać od
++ możliwości lub samej rzeczy – „Wyrażenia regularne są sprawdzane w trakcie kompilacji kodu”,
++ a nie „Soundness sprawdza wyrażenia regularne w trakcie kompilacji kodu”. Projekt należy
++ nazywać tam, gdzie rzeczywiście zaznacza się kontrast – co robi Soundness w porównaniu z
++ innymi bibliotekami – a gdy już się go nazywa, należy go nazywać „Soundness”, nigdy nazwą
++ wewnętrznego modułu.
+
+@ 0 1 0 1815fd0fef95cebf0803711cf6c7e6da
++ ## Przykłady kodu
+
+@ 0 3 0 1142d4ad1ee6c8ee0c937a1ab9899b52
++ Kod należy pisać w idiomatycznej Scali Soundness, sformatowany zgodnie z `syntax.md`. Dla
++ kodu oraz konkretnych nazw termów i typów należy używać pojedynczych grawisów w tekście, a
++ dla przykładów blokowych – bloków z potrójnymi grawisami.
+
+@ 0 4 0 1cd72d7adf635f1d11983558820c6911
++ Przykłady powinny być kompletne – łącznie z importami tam, gdzie są potrzebne, choć importy z
++ symbolem wieloznacznym są w porządku – i powinny wynikać jeden z drugiego: term o danej
++ nazwie znaczy to samo w całym dokumencie, a pojedynczy identyfikator nigdy nie jest
++ przypisywany więcej niż raz.
+
+@ 0 2 0 1b8e5bc722d723520e8f57aec0449609
++ Każdy przykład jest sprawdzany mechanicznie, dwukrotnie, a oba narzędzia sprawdzające
++ przechodzą przez bloki kodu po kolei jako jedną sesję:
+
+% 2 1 0 0ff552bdb251b9a50bb62a937a35214e
+
+@ 0 5 0 0a0bca91bc8fe3bf030a854ced26ca94
++ column  Polecenie
++ column  Sprawdza
++ row  `make fuelcheck`  kompiluje każdy samouczek przez fuel względem własnego zestawu testowego `main` (`.pyrocosm/fuel/config.tel`)
++ row  `make doccheck`  oblicza każdy blok kodu przez REPL flame (`etc/doccheck.py`) względem najnowszego wydania i sprawdza użyte nazwy względem źródeł (`etc/doccheck-names.py`)
++ row  `make doccheck DOC=json`  to samo, dla jednego samouczka
+
+% 1 1 0 05a43a7c853d5117087237b44ced9239
+
+@ 0 1 0 0a285a0d3c46b6ec1cdecc219e258ec6
++ Umożliwia to kilka konwencji:
+
+@ 0 10 0 13a4d65622258b1e0d0aa7b1af0a82ae
++ - Przykład musi wprowadzać każdą nazwę, której używa, w bloku kodu tego samego samouczka,
++   tak by bloki tworzyły jedną ciągłą sesję. Gdy samouczek potrzebuje wartości, której nie
++   da się sensownie skonstruować w prozie – ścieżki, która musi istnieć, działającej usługi –
++   wiązanie należy umieścić w `doc/fixtures/<tutorial>.scala`, które oba narzędzia kompilują
++   przed pierwszym blokiem.
++ - Wiersz, który celowo się nie kompiluje, ma na końcu komentarz `// does not compile` (z
++   opcjonalnym wyjaśnieniem po dwukropku). Oba narzędzia kompilują go osobno i zgłaszają go,
++   jeśli jednak się skompiluje; fuel pokazuje jego błąd jako notatkę przy wierszu. Nowe
++   przykłady używają zamiast tego bloku `errors show`, z powodu podanego w części
++   „Pokazywanie zamiast opisywania”.
++ - Blok kodu, który mówi więcej niż jego kod, robi to w preambule TEL: otwiera się
++   przez ` ```scala fuel `, a preambuła kończy się na wierszu zawierającym `##`. Jej
++   dyrektywy opisano poniżej.
+
+@ 0 1 0 030fb08f3d7d7a3210258fccc30281a7
++ Dyrektywy preambuły:
+
+% 2 1 0 1c086764955fdac11a7d2dd22a257b6c
+
+@ 0 16 0 041da133697a2f270e148a16357b7787
++ column  Dyrektywa
++ column  Do czego służy
++ column  Znaczenie
++ row  `typecheck`  blok, którego nie da się uruchomić w sesji REPL: taki, który otwiera przeglądarkę, wiąże gniazdo, czyta z terminala, uruchamia JVM  fuel go kompiluje, a narzędzie sprawdzające przez REPL go pomija
++ row  `errors show`  blok, którego sednem jest jego błąd  błąd jest przedstawiany pod nim
++ row  `run`  blok, którego sednem jest to, co wypisuje, lub błąd, który rzuca  fuel go kompiluje i uruchamia, a pod nim pokazuje jego wyjście; narzędzie sprawdzające przez REPL go pomija
++ row  `highlight`  część bloku, o której mówi proza  zakres jest podkreślony, z podpisem obok
++ row  `error`, `caution`  część bloku, która jest celowo błędna lub ryzykowna  zakres jest oznaczony tak, jak oznaczyłby go kompilator, z podanym podpisem
++ row  `parse`  szkic, który w ogóle nie ma się kompilować  jest tylko parsowany
++ row  `feature experimental.captureChecking`  pierwszy blok, który potrzebuje funkcji języka  funkcja jest włączona od tego miejsca
++ row  `restart`  blok, który nie może następować po wcześniejszych  sesja zaczyna się od nowa
++ row  `frame`  animacja  każda `frame` ma swój `code` (i ewentualnie `label`); późniejsze bloki następują po ostatniej
++ row  `alternative`  wersje tego samego kodu, każda pod inną zakładką  każda ma swój `code` (lub swoje `frame`); późniejsze bloki następują po pierwszej
++ row  `substitute`  kod, który musi być obecny, by się skompilować, ale dla czytelnika jest szumem  zakres jest pokazywany jako `...` lub podany tekst
++ row  `focus`  jeden obszar długiego fragmentu lub jednej klatki, o którym mówi proza  wszystko inne w bloku blednie
++ row  `path`  blok zawierający zawartość pliku  nazwa pliku jest pokazywana nad nim, a blok `run` może go odczytać
+
+% 1 1 0 1eedfd435d6a3f5e059160f0c0243572
+
+@ 0 7 0 03e355b4655fe6880614304955c3459f
++ Animacji należy używać tylko tam, gdzie obserwowanie zmiany kodu z klatki na klatkę uczy
++ czegoś, czego nie nauczyłyby dwa bloki obok siebie: każda klatka buduje na poprzedniej. Gdy
++ wersje są natomiast wyborami dokonanymi w tym samym miejscu – ten sam program z innym
++ importem polityki, backendem lub kalendarzem albo to samo zapisane na dwa sposoby – należy
++ zrobić z nich alternatywy, z tytułem zakładki złożonym z jednego lub dwóch słów (`Julian`,
++ `RE2`, `Imported`). Do sesji dołącza tylko pierwsza alternatywa, więc na pierwszym miejscu
++ należy umieścić tę, której używa reszta samouczka, a w takim bloku nie umieszczać niczego po
++ `##`. `etc/doccheck.py` również uruchamia pierwszą alternatywę.
+
+@ 0 4 0 0711decf518873681033b2f4fe490372
++ `substitute` nazywa swój zakres tak jak oznaczenie – literałem lub `start..end`,
++ doprecyzowanym przez `line` i `occurrence` – i służy do `???`, które zastępuje coś
++ dostarczanego, długiego klucza lub literału, którego treść nie jest istotna, albo
++ przygotowania powtarzanego w każdej klatce. Nie należy zastępować kodu, który omawia proza.
+
+@ 0 1 0 14a3c09806bc78f2070fdbfa9d214d33
++ ### Pokazywanie zamiast opisywania
+
+@ 0 3 0 14e8490ee60975d10ef017063a22b586
++ Przykład pokazuje, co robi kod; nie opisuje tego. Komentarz w przykładzie to piszący mówiący
++ ponad kodem, więc przykład nie ma komentarzy. Każda rzecz,
++ którą wcześniej mówił komentarz, ma lepsze miejsce:
+
+% 2 1 0 0bccf011f82a8d6d097b0eb36aec221c
+
+@ 0 7 0 0af5f6c1db619a0f1d1eb5188bcf551e
++ column  Zamiast komentarza mówiącego
++ column  Należy napisać
++ row  do czego obliczane jest wyrażenie  blok `run`, który to wypisuje, tak by pod spodem pojawiło się rzeczywiste wyjście
++ row  do czego służy wiersz  `highlight` z podpisem lub zdanie przed blokiem
++ row  dlaczego kod się nie kompiluje  blok `errors show`, tak by pokazany został własny komunikat kompilatora
++ row  co rzuca program  blok `run` z `errors show`
++ row  że coś jest ryzykowne lub niezalecane  oznaczenie `caution` lub zdanie przed blokiem
+
+% 1 1 0 024d4baec5b55a421e5d6d885e050700
+
+@ 0 2 0 0a316a8ea8bd73bd0e6c3392fec16964
++ Blok, który coś wypisuje, potrzebuje `Stdio` w zasięgu, więc samouczek z blokami `run`
++ importuje go raz, wraz z pierwszymi importami, i w jednym zdaniu podrzędnym mówi, do czego
++ służy ten wiersz:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 4 0 17448826c862a78d16ad603e768997a7
++ Blok `run` wypisuje przez `Out.println`. Wartość należy wypisywać przez `show` tam, gdzie ma
++ instancję `Showable`, ponieważ w tej postaci wyświetliłby ją użytkownik, a w przeciwnym razie
++ przez `inspect` – `Boolean`, klasę case, zagnieżdżoną strukturę. Należy wypisywać wartości,
++ które czytelnik chciałby zobaczyć, i nic więcej: jeden blok z trzema wierszami wyjścia uczy
++ więcej niż trzy bloki z jednym.
+
+@ 0 4 0 187747f5f6d9de291544c15960a8dfff
++ Należy preferować słowa kompilatora zamiast ich parafrazy. Czytelnik, który napotka błąd we
++ własnym kodzie, szuka jego tekstu, więc przykład, który się nie udaje, pokazuje komunikat,
++ który czytelnik zobaczy. Komunikat jednowierszowy pojawia się jako notatka przy wierszu;
++ dłuższy pojawia się jako karta pod blokiem. Przykład, który się nie udaje, jest osobnym
++ blokiem, zawierającym tylko kod, który się nie udaje:
+
+% 2 1 0 1c8a925dc051ea1b094fb941d1b7be8d
+
+@ 0 4 0 1cc4217694b1ae4f07e53e5c1bd88289
++ column  Postać
++ column  Kiedy jej używać
++ row  `compile` i `errors show`  kod się nie kompiluje
++ row  `run` i `errors show`  kod się kompiluje, ale nie udaje się przy uruchomieniu
+
+% 1 1 0 187d6cce0b3c8cf80edaf1fa0a4b929b
+
+@ 0 5 0 01e960871bb679bd0a9a890b7c9d0ac1
++ Nieudane wyrażenie należy ograniczać do minimum: jedno wywołanie, które jest błędne, bez
++ wywołań, które by po nim następowały. W nowych przykładach należy unikać znacznika
++ `// does not compile`. Blok, który go zawiera, nigdy nie dołącza do sesji, a każdy wiersz ze
++ znacznikiem i każdy blok `run` po nim nie udaje się wtedy z braku tego bloku, co fuel liczy
++ jako błąd, którego miał się spodziewać – więc wiersz, który kompiluje się bez zarzutu, może
++ przejść jako taki, który się nie kompiluje.
+
+@ 0 3 0 0b9f63aba9aa57fb096525c47fa833ec
++ Należy sprawdzać, co przykład pokazuje, a nie tylko to, że przechodzi. Należy przeczytać
++ przechwycone wyjście i każdy komunikat błędu na przedstawionej stronie: przykład może się
++ skompilować, uruchomić i mimo to wypisać coś innego, niż mówi otaczająca go proza.
+
+@ 0 1 0 0e35e341796e5e3319a270ff601fe35d
++ Sesja ma kilka własnych reguł, których bloki samouczka muszą przestrzegać:
+
+@ 0 14 0 1984b4e698cd82200aaf0c5aef21a93e
++ - Definicja, której używają późniejsze bloki, trafia do zwykłego bloku, a blok `run` tylko
++   wypisuje. Narzędzie sprawdzające przez REPL pomija każdy blok, który nazywa tryb, więc
++   definicja wewnątrz takiego bloku jest dla niego stracona.
++ - Nazwa zdefiniowana w samouczku – przypadki wyliczenia, składowe obiektu towarzyszącego –
++   nie jest przenoszona do późniejszego bloku przez jej `import`. W późniejszych blokach należy
++   pisać `Color.Red` lub powtórzyć import w bloku, który go potrzebuje.
++ - Należy nazywać given, którego typ zaczyna się od typu zdefiniowanego w samouczku:
++   `given personParsable: (Person is Json.Parsable)`. Anonimowy `given Person is …` ukrywa
++   `Person` przed każdym późniejszym blokiem.
++ - Given, który musi zostać znaleziony podczas derywacji innego, deklaruje się w bloku, który
++   go używa, wewnątrz bloku `locally`, tak jak import innej polityki.
++ - Blok, którego kod zależy od rozwinięcia makra lub inline givena, potrzebuje `compile`,
++   ponieważ `typecheck`, wartość domyślna, zatrzymuje się przed rozwinięciem.
++ - Import, którego nie da się rozwiązać, psuje każdy blok po nim, ponieważ nieudany blok i tak
++   pozostawia po sobie swoje importy. Pierwszy błąd w samouczku należy naprawić przed
++   czytaniem pozostałych.
+
+@ 0 3 0 01c432df6112554f0f79c843aac5225d
++ `inspect` zapisuje obecną wartość opcjonalną między nawiasami narożnymi, a nieobecną jako
++ `○`, a liczba zmiennoprzecinkowa nie ma `show` bez `Decimalizer` w zasięgu, więc również jest
++ wypisywana przez `inspect`. Należy powiedzieć, co oznacza ta notacja, tam, gdzie samouczek
++ pokazuje ją po raz pierwszy.
+
+@ 0 8 0 1106b8fcb681b311104573bb7a5b0435
++ Blok `run`, który dotyka świata poza programem – dysku, podprocesu – sam tworzy to, czego
++ potrzebuje, i nie polega na tym, co pozostawił wcześniejszy blok `run`. Fuel uruchamia blok
++ ponownie tylko wtedy, gdy blok się zmienia, więc przy częściowej przebudowie efektów
++ wcześniejszego bloku może brakować albo mogą one należeć do innego katalogu plików
++ tymczasowych. Takiemu samouczkowi należy dać jedno ustalone miejsce robocze, zapisywać do
++ niego z flagami, które zastępują to, co tam jest, i wypisywać wyniki, nigdy ścieżki:
++ bezwzględna ścieżka w przechwyconym wyjściu lub w przechwyconym komunikacie błędu jest
++ ścieżką na tej maszynie, która akurat zbudowała dokumentację. Z tego samego powodu nie należy
++ uruchamiać przez `run` bloku, który wypisuje rzeczywiste środowisko, nazwę użytkownika lub
++ nazwę hosta; zamiast tego należy dać mu ustalone środowisko.
+
+@ 0 3 0 02590160a70fc54d0c164ce6b38377e9
++ Blok, którego nie da się uruchomić tam, gdzie budowana jest dokumentacja – taki, który
++ potrzebuje sieci, terminala, przeglądarki lub działającej usługi – pozostaje `typecheck`, a
++ proza mówi, co by zrobił. Nigdy nie należy pisać ręcznie wyjścia takiego bloku tak, jakby
++ zostało przechwycone.
+
+@ 0 1 0 069b26148e45eb300225ee54eb98923b
++ ## Odnośniki
+
+@ 0 2 0 0701af5105aaac470be3a385ab33c1a9
++ Samouczek rzadko czyta się w oderwaniu. Czytelnik przychodzi z czymś do zrobienia, a to,
++ czego potrzebuje dalej, często znajduje się na innej stronie, więc należy linkować do tego w
++ miejscu, w którym będzie tego chciał:
+
+@ 0 9 0 0e6c539b2394aa901e0a8b46e930709c
++ - pojęcie, którego uczy inny samouczek, przy jego pierwszym użyciu w każdej sekcji, z
++   kotwicą sekcji tam, gdzie celem jest jedna sekcja długiej strony:
++   `[strategy](errors.md#choosing-a-strategy)`;
++ - połączenie dwóch funkcji, z obu stron. Gdy instancja łączy typ jednego modułu z klasą
++   typów innego – data kodowana w JSON, wielkość pokazywana w tabeli, ścieżka będąca
++   parametrem wiersza poleceń – każdy samouczek poświęca temu połączeniu krótką sekcję lub
++   zdanie, z przykładem, i linkuje do drugiego;
++ - idea projektowa, do jej eseju w `doc/philosophy/`, raz, tam, gdzie objaśniany jest projekt;
++ - byt API, przez nazwanie go w kodzie w tekście wraz z jego sigilem (`` `#Json` `` dla typu,
++   `` `.fetch` `` dla termu), który fuel rozwiązuje i linkuje.
+
+@ 0 2 0 01123fdf70e4cec200e9e49041bf430b
++ Tekstem odnośnika jest nazwa rzeczy, do której prowadzi, nigdy „tutaj” ani „ta strona”.
++ `fuel compile` sprawdza, czy każdy odnośnik ma cel.
+
+@ 0 1 0 06f3d4564772e7ab18fb1b62403fb361
++ ## Glosariusz
+
+@ 0 4 0 1639d66f42495a041361dfcac1c10305
++ Słowo o precyzyjnym znaczeniu w Soundness – *taktyka*, *strategia*, *zdolność*, *pakiet
++ wyboru* – jest zdefiniowane w `doc/en/glossary.tel` i zapisywane w nawiasach tam, gdzie
++ czytelnik może go jeszcze nie znać: `[tactic]` lub `[strategies][strategy]` dla formy
++ odmienionej. Fuel pokazuje definicję po wskazaniu terminu i linkuje go do strony nazwanej w
++ jego wpisie.
+
+@ 0 10 0 0b1093167b75c14310ab49ce1a27c346
++ - Termin należy oznaczać przy pierwszym użyciu w sekcji, a nie przy każdym użyciu.
++ - Definicja to od jednego do trzech prostych zdań, które miałyby sens dla czytelnika, który
++   nie przeczytał niczego innego, i nazywa jako swój `link` stronę, która w pełni objaśnia
++   termin.
++ - Termin należy dodać, gdy samouczek opiera się na słowie, którego potoczne znaczenie
++   wprowadzałoby w błąd albo którego Soundness używa węziej niż Scala. Zwykłe słownictwo Scali,
++   którego znajomość u czytelnika się zakłada – *trait*, *klasa case* – nie jest definiowane.
++   Termin jest też definiowany, gdy jego tłumaczenie musi być wszędzie takie samo, tak by
++   każdy język oddawał go jednakowo, nawet jeśli jest to zwykłe słownictwo.
++ - Fuel nie zgłasza terminu w nawiasach bez definicji; jest on pokazywany jako zwykły tekst w
++   nawiasach, więc przed zatwierdzeniem zmian należy przeszukać samouczek pod kątem słów w
++   nawiasach.
+
+@ 0 1 0 1efcb8c25d685ce8066dccc4dd9aacb8
++ ## Tabele
+
+@ 0 6 0 16a091c615a961c41435c459a2c86ff4
++ Fuel nie obsługuje tabel Markdown z kreskami pionowymi. Tabela to blok oznaczony `tabular`,
++ zapisany w TEL: wiersz `column` dla każdej kolumny (z wciętymi `title` i `align` tam, gdzie
++ są potrzebne), wiersz `row` dla każdego wiersza i opcjonalny `caption`. Pola są rozdzielane
++ dwiema spacjami, więc komórka może zawierać pojedyncze spacje, ale nigdy dwie z rzędu.
++ Wiersz z pustą komórką przyjmuje długą postać: samo `row` z wciętym wierszem `cell` dla każdej
++ komórki i gołym `cell` dla pustej. Komórki są frazami Markdown, a kod zawierający grawis
++ wymaga spanu z podwójnymi grawisami.
+
+% 2 1 0 15f5bb940663c3351a7d002b6f3a8265
+
+@ 0 4 0 0d6ba04b8e1ef6cb1fc45b7861c0c224
++ column  Glif
++ column  Znaczenie
++ column  Przykład
++ row  `↗`  indeks górny  `x↗2` to *x²*
+
+% 0 1 0 1c1dc6ca4e4a1e000f1cbb8c8302a19d
+
+@ 0 1 0 020e6a911e2a3cb50b14125b92e34c57
++   cell  indeks dolny
+
+% 0 1 0 0ed568419db6988e15566084b5954923
+
+% 1 1 0 1a8eadecc0663acd1b08d1b94578a18d
+
+@ 0 4 0 1cbce7bce4fcfa5e111a6b1171c2f900
++ Tabeli należy używać, gdy elementy mają wspólne atrybuty: wyliczenie, odwzorowanie,
++ porównanie, przyczyny, które może nieść błąd, wybory dokonywane przez import. Objaśnienia –
++ dlaczego, kompromisy, zastrzeżenia – pozostają w prozie. Tabelę należy wprowadzać zdaniem,
++ tak jak wprowadza się przykład, a każdą komórkę ograniczać do frazy. `fuel compile` waliduje
++ każdą tabelę.
+
+@ 0 1 0 0edd1fa7bfe3f84a1d9d00601362ff74
++ Strony formatów mają trzy wspólne układy, tak by każdy format czytało się tak samo:
+
+% 2 1 0 1eee394f16579ec81c3363133d30a62f
+
+@ 0 5 0 125e51a5d91475ee13fbdf8589848630
++ column  Układ
++ column  Kolumny
++ row  Polityki pól opcjonalnych  *Klucz, który jest* · *Odczytuje się jako* · *Chyba że*
++ row  Tryby kodeków  *Import* · *Dla rekordu* · *Dla każdego innego typu*
++ row  Postaci wyjściowe  *Postać* · *Serializuje przy* · *Wydaje*
+
+% 1 1 0 069a2b2b8d994ffd0db39001fa88bd09

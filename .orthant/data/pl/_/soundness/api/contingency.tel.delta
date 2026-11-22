@@ -1,0 +1,1801 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0c29e8314bc38deb1a492ca41d270c11
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 06b9c1f3ce181208186553b55bf332a8
++ info   obsługa błędów jako wybór w miejscu wywołania: `raises` w typie, `Tactic` w zasięgu
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 16c172d9410cbe6b1d68ff527a9037de
++     _Contingency_ oddziela kod, który może zawieść, od decyzji, co ma oznaczać porażka. Metoda,
++     która może zawieść, mówi o tym w swoim typie zwracanym za pomocą `raises`; wewnątrz niej
++     `abort` zgłasza błąd i zatrzymuje się, a `raise` zgłasza błąd i kontynuuje. Wywołujący
++     decyduje, co stanie się z błędem, umieszczając w zasięgu **taktykę** – `Tactic[error]`:
++     rzucić go, sprawić, że wynik będzie nieobecny, zebrać go razem z innymi, zastąpić go
++     wartością, przetłumaczyć na inny błąd albo zakończyć proces. Zawodna metoda nigdy nie mówi,
++     którą z tych opcji wybrać, więc jedno ciało obsługuje każdą reakcję.
+
+% 2 1 0 14f206d76925f4081ab10c7f30b54896
+
+% 3 1 0 0fd79df4edd049db0bcde5796e6e3ec6
+
+% 5 1 0 0bcfe3614bd566ed0868208ed98a6e78
+
+% 6 1 0 1ebd995c1dc6248b09a42b663e360004
+
+% 0 1 0 12934c70173a0e3117b692f1f1e164d8
+
+% 0 1 0 04639a66b4d34a9918430297a177e249
+
+% 0 1 0 104fd80c26fe836e161769de130e12f3
+
+% 1 1 0 18b2f9915bed9d9c034319a361c7fcd6
+
+@ 0 6 0 1eb1f6a8a54102bd1687f0965711aeb5
++     `Connection raises PortError` to jedynie alias typu funkcji kontekstowej
++     `Tactic[PortError] ?=> Connection`, więc metoda `raises` jest metodą przyjmującą swoją
++     politykę obsługi błędów jako argument kontekstowy, a `abort` to wywołanie tej polityki.
++     Wymaganie się propaguje: wywołujący `connect` albo sam deklaruje `raises PortError`, albo
++     spełnia zobowiązanie jednym z poniższych handlerów. To samo zawodne wywołanie – dekodowanie
++     tekstu, który nie jest liczbą, zgłaszające `Number.Error` – pod każdym z nich:
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 12632cd97ed98e1008a3c75aac31b1e0
+
+% 1 1 0 1f68a5629f7b337b104f59d8d8831a00
+
+% 2 1 0 0175c93570be7a3b1f270e7abe3c2d37
+
+% 0 1 0 1b89f21b116972d006b18b4e80ff4ab5
+
+% 0 1 0 0798179fd46066390d73f0f2d8a2bf3e
+
+% 0 1 0 13662b8583c5baf10420d2a385c00dd0
+
+% 0 1 0 1e5d47c1f789a78810590652ba70c4ae
+
+% 1 1 0 1f2c837985d743ba0462261e10e3ef81
+
+% 2 1 0 1331ca7e407add340493f4eb8c1c94f1
+
+% 0 1 0 190e0e8c923ff5ed1323d3b6abe45991
+
+% 0 1 0 08660c7421a6e56212476952244e4d3f
+
+% 1 1 0 16a7f0d6272c7b3303967b823fe13fb6
+
+% 2 1 0 116a09f5b827304f03810e4bb5400b19
+
+% 0 1 0 0edf383ea8ab5e691afc545124cdce1d
+
+% 0 1 0 1c82ca4909d915c21c596f60b6fec3d1
+
+% 1 1 0 15ecff079ca4e74216d5833d33bd8124
+
+% 2 1 0 07d656a2f8d96d2a14a0b238b8dc610c
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 19fce888477ff0201ab388293ee62f7a
+
+% 0 1 0 107746abb83845c6114f395bea9ade81
+
+% 1 1 0 015cd61b47fbccb11d3f2c78ad1ed016
+
+% 2 1 0 0491ff23cfba137a149512c9242ffe58
+
+% 0 1 0 1fdbc2b20abf9d34035734c53179b9a4
+
+% 0 1 0 1670cc54faa9f1d6135a3f177b47c570
+
+% 0 1 0 088a3562ed9bfb9b1880b5856d9b4c74
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 1 0 0c8733bdd6031bf90219f5cf9c2a5d5c
++     Elementy, według pytania, na które każdy odpowiada:
+
+@ 0 19 0 06996f5f38a09c17163cfccdcde7ff80
++     - **Deklarowanie porażki**: `raises`, `raise`, `abort` oraz `Tactic`/`Emit`, zdolności,
++       które za nimi stoją. `Emit` może tylko zgłaszać; `Tactic` może też przerwać.
++     - **Wybór raz, szeroko**: pakiet `strategies`, którego giveny importuje się po nazwie –
++       `throwUnsafely` dla prototypów i punktów wejścia, `throwSafely` pod `CanThrow`,
++       `uncheckedErrors` i `fatalErrors` dla błędów sklasyfikowanych jako `Unchecked` lub
++       `Fatal` oraz `mitigation` dla błędów z tłumaczeniem `Mitigable`. `import soundness.*` nie
++       wprowadza żadnego z nich, ponieważ import z symbolem wieloznacznym nigdy nie importuje
++       givenów.
++     - **Wybór lokalny, dla bloku**: `safely` (nieobecność przy porażce), `unsafely` (rzucenie,
++       wyrażone wprost), `throwErrors`, `attempt` (`Attempt`), `capture` (błąd, na potrzeby
++       testów), `amalgamate` (unia) oraz budowniczowie handlerów `recover`, `mitigate`,
++       `accrue` i `handle`, z których każdy pisze się jako przypadki dopasowania i stosuje do
++       bloku za pomocą `protect`.
++     - **Zbieranie każdej porażki**: `raise` rejestruje i kontynuuje, więc taktyka
++       kumulująca – `accrue`, `track`, `validate` – zbiera każdy błąd przebiegu walidacji;
++       `Foci`, `focus` i `Pointer` mówią, *gdzie* każdy z nich wystąpił; `venture` i `guard`
++       nie pozwalają, by zarejestrowana porażka pociągnęła za sobą fałszywe; `Tactic#tolerate`
++       odrzuca porażkę bloku w obrębie otaczającej taktyki.
++     - **Klasyfikowanie błędów**: `Unchecked` (może zostać rzucony bez obsługi), `Fatal`
++       (kończy proces ze statusem `Exit`) i `Mitigable` (tłumaczy się na inny błąd).
++     - **Błędy jako wartości**: `Attempt`, `Venture`, `Errors`, `Validation`,
++       `Expectation.Error`.
+
+@ 0 8 0 1ffabd5b207058bf11cf7a1cab7fc25f
++     Taktyka jest zdolnością. `Emit`, a więc każda `Tactic`, rozszerza `caps.Control`:
++     przechwytuje punkt powrotu na stosie kodu, który ją zainstalował, więc ciało działające w
++     innym wątku (na przykład zadania) nie może jej zachować, a taktyka nigdy nie jest używana
++     po zamknięciu jej zasięgu. Wyjątkiem, celowo czystym, są strategie otaczające: rzucenie
++     bez zasięgu nie zachowuje żadnego punktu powrotu. Każdy błąd jest `Hazard` – czystym
++     `Exception` – więc żaden błąd nie może przemycić zdolności poza zasięg, który ją
++     ograniczał; given `Diagnostics` (z `errorDiagnostics`) decyduje, czy każdy błąd
++     przechwytuje ślad stosu, a taktyki, które odrzucają swoje błędy, same dostarczają
++     `Diagnostics.omit`.
+
+@ 0 5 0 057e7ea4fb4e2baa02b84f7de004f633
++     Biblioteka to jeden zbiór źródeł, `contingency.core`, zbudowany na `fulminate` (dla
++     `Error`, `Message` i `Diagnostics`) i `vacuous` (dla `Optional`), który kompiluje się
++     tak samo dla JVM, Scala.js i Scala Native. Wszystko poza `raising` i `FatalTactic` jest
++     eksportowane do modułu zbiorczego `soundness`, a `strategies` łączy się z pakietem modułu
++     zbiorczego o tej samej nazwie.
+
+% 0 1 0 0db7ca6617f1b5c50f03c89938e496e6
+
+% 0 1 0 0d0fb1f0acde56b91ea84e6ae51a5f09
+
+% 0 1 0 0cf6b86111cd3c8f1754ea96c2ed0521
+
+% 0 1 0 1b33897eb9cbb21d0998c47e67068454
+
+% 0 1 0 1edec44af7c5113d1231da2bf0256c07
+
+% 0 1 0 09c6ab96ab155d7205f2c796bb07569a
+
+% 0 1 0 0afc6443f648f4f31ac1dc48d6a16eab
+
+@ 0 1 0 17749d17f862a3dd09939d5db9a634b5
++ entry .Tactic   zdolność zgłoszenia błędu i przerwania z nim: to, czego wymaga `raises`
+
+% 1 1 0 018faaeb13a43d2b125235dd9786e829
+
+@ 0 6 0 0547deb5d718ab2b124a6d184c564854
++       `Tactic[error]` to `Emit[error]`, który może dodatkowo wykonać `abort`: nieprawidłowe
++       wyjście zastępujące wartość. `success raises error` to `Tactic[error]^ ?=> success`, więc
++       każda zawodna metoda przyjmuje taktykę jako parametr kontekstowy, `raise` wywołuje jej
++       `record`, a `abort` – jej `abort`. Co każda z nich robi, zależy od taktyki: `ThrowTactic`
++       rzuca, `OptionalTactic` wyskakuje z `safely` z `Unset`, a `AccrueTactic` włącza błąd do
++       akumulacji i działa dalej.
+
+@ 0 5 0 1fefa74e6867333a0a36a42d3bc28c0f
++       Typ jest kontrawariantny względem `error`, dzięki czemu otaczająca
++       `ThrowTactic[Hazard]` spełnia `Tactic[PortError]`. Taktykę rzadko buduje się ręcznie:
++       dostarczają ją handlery (`safely`, `attempt`, `recover`…) i giveny z `strategies`, a
++       `summon[Tactic[PortError]]` sięga po tę w zasięgu, tak jak robi to ciało metody
++       wywołujące `#tolerate`.
+
+% 2 1 0 1fbea3d31ca4c7aa06c070cc29212a9f
+
+% 3 1 0 0661b7aaba966b52105492ae7011e631
+
+% 0 1 0 1f84930ae4aea00c1f6a3b791b2c9833
+
+% 0 1 0 0c9dca013944409c16b20787dc35f6cd
+
+% 1 1 0 15362b11938f09b41d5e8d4e0c55cfb4
+
+@ 0 6 0 039403fecfcc111504d5fbe96962f722
++       Taktyka jest zdolnością `caps.Control`, współdzieloną, a nie na wyłączność: jedna
++       taktyka ma prawomocne aliasy we wszystkim, co zgłasza do jej zasięgu (kodek przywołany
++       dla `as` przechwytuje tę samą taktykę, którą `as` przyjmuje jako dowód), a zgłoszenie
++       błędu nie jest użyciem konsumującym. Taktyki oparte na `boundary` domykają się nad
++       etykietą stosu, więc taktyki nie może zachować ciało działające w innym wątku i nie wolno
++       jej używać po powrocie z bloku, który ją zainstalował.
+
+% 0 1 0 176b8e6712fe1a460e4c441ec26634a7
+
+% 0 1 0 13ca7be10bc5477902d50924d02379da
+
+% 1 1 0 01b891656f16d06515635eab31f7660b
+
+@ 0 29 0 0d6d113bdbe0010d0acedeb15640fd74
++   entry #abort   zgłasza błąd i nie wraca
++       Wyjście zastępujące wartość. Pod taktyką natychmiastowo przerywającą błąd ucieka od razu;
++       pod taktyką kumulującą zostaje włączony do akumulacji, a otaczający zasięg agregacji
++       zostaje porzucony; pod `VentureTactic` porzucane jest tylko przedsięwzięcie.
++   entry #certify   punkt opróżnienia zasięgu agregacji: porzuca go, jeśli cokolwiek zarejestrowano
++       Jeśli taktyka jest skażona (`#tainted`), `certify` nie wraca – zasięg ucieka ze swoimi
++       skumulowanymi błędami; w przeciwnym razie nic nie robi. W każdej taktyce natychmiastowo
++       przerywającej zawsze nic nie robi, ponieważ zarejestrowany błąd już by uciekł. `guard`
++       wywołuje ją, aby pominąć blok pod skażoną taktyką, a `certify[error]()` na poziomie
++       pakietu wywołuje ją na taktyce w zasięgu.
++   entry #tainted   czy w zasięgu agregacji tej taktyki zarejestrowano jakikolwiek błąd
++       Zgodnie z prawdą `false` w każdej taktyce natychmiastowo przerywającej, gdzie `record`
++       nigdy nie wraca, i przekazywane przez `#contramap`, więc skażenie przekracza granicę
++       biblioteki objętą `mitigate`: `guard` wewnątrz biblioteki jest pomijany, gdy zasięg
++       wywołującego jest już skażony.
++   entry #tolerate   uruchamia blok i odrzuca wszystko, co zgłasza: jego wartość lub `Unset`
++       Wynik bloku albo `Unset`, gdy tylko zarejestrowano błąd lub blok przerwał – w obrębie
++       otaczającej taktyki, a nie pod nową, jaką zainstalowałoby `safely`. Domyślna
++       implementacja przechwytuje ucieczkę, którą wykonuje taktyka natychmiastowo przerywająca;
++       taktyka kumulująca (`AccrueTactic`, `TrackTactic`, `VentureTactic`) dodatkowo cofa
++       akumulację do stanu sprzed bloku, więc tolerowany błąd nie zostawia śladu. To dźwignia
++       dla kodeka tolerancyjnie dekodującego pole opcjonalne: dekoder pola został związany z
++       otaczającą taktyką podczas rozstrzygania, więc taktyka jest jedynym miejscem, w którym
++       można przechwycić jego błąd.
++   entry #contramap   taktyka dla innego typu błędu, tłumacząca każdy błąd na ten typ
++       `tactic.contramap(lambda)` to `Tactic[error2]^{tactic}`, której `record`, `abort`,
++       `certify`, `tainted` i `tolerate` przekazują wszystko do `tactic`, najpierw przepuszczając
++       każdy błąd przez `lambda`. Lambda jest czystą funkcją `->`: współdzielona zdolność może
++       zachowywać tylko współdzielone zdolności i czyste wartości, a funkcja przekształcająca
++       błędy nie ma powodu przechwytywać czegokolwiek innego. Na niej zbudowane są
++       `strategies.mitigation` i `mitigate`.
+
+@ 0 1 0 1f125d97233fc82f1989254bbe253775
++ entry .Emit   zdolność zgłoszenia błędu jako efektu ubocznego, bez możliwości przerwania
+
+% 1 1 0 1196204b27b638fa1f68c548cc81acfa
+
+@ 0 6 0 089c975927c1af4308ff3ba0a677a405
++       `Emit[error]` może wykonać `record` błędu, ale sam z siebie nie może się zatrzymać: czy
++       sterowanie potem kontynuuje, zależy od implementacji. `raise` wymaga tylko `Emit`;
++       `abort` wymaga pełnej `Tactic`. Zobowiązanie `Emit[error] ?=>` jest więc słabsze niż
++       `raises error`, a `Tactic` w zasięgu spełnia każde z nich. `handle` to konstrukcja,
++       która dostarcza samych emiterów: każdy przypadek jej handlera staje się `Emit`, którego
++       `record` wykonuje ciało przypadku w miejscu, a chroniony blok działa dalej.
+
+@ 0 4 0 1343937308b5ebda1fbb48877ccd5d72
++       Emiter jest zdolnością `caps.Control` i jest `Findable`, więc brak emitera jest
++       zgłaszany wraz z pakietami wyboru, które by go dostarczyły. Może zachowywać tylko inne
++       zdolności `Control`: lambda handlera przekazana do `.apply` może zgłaszać błędy do
++       zewnętrznej taktyki, ale nie może przechwycić loggera ani strumienia.
+
+% 0 1 0 1472945676d8a6851330835323edb1b6
+
+% 1 1 0 0618164fef58622e07f05c996286215f
+
+@ 0 15 0 13318ea6e57ea11d030abf3ff3be0d25
++   entry .apply   emiter, który uruchamia handler w punkcie zgłoszenia
++       `Emit(handler)` (z `Diagnostics` w zasięgu) to `Emit[error]^`, którego `record`
++       wywołuje `handler` na błędzie i wraca. Handler to funkcja objęta `consume`, która może
++       przechwytywać tylko zdolności `caps.Control` – zewnętrzną taktykę, do której zgłasza –
++       ponieważ emiter, którym się staje, sam jest sklasyfikowaną zdolnością. To właśnie
++       instaluje `handle { … }.protect` dla każdego obsługiwanego typu błędu.
++   entry #diagnostics   `Diagnostics`, z którymi budowane są błędy zgłaszane przez ten emiter
++       Każde `record` i `abort` przyjmuje swój błąd jako odroczone wyrażenie
++       `Diagnostics ?=> error` i oblicza je z tą wartością, więc to taktyka – a nie kod
++       zgłaszający – decyduje, czy przechwytywany jest ślad stosu. `ThrowTactic` go
++       przechwytuje; `OptionalTactic` go pomija, ponieważ błąd jest odrzucany.
++   entry #record   zgłasza błąd; czy sterowanie kontynuuje, zależy od implementacji
++   entry #contramap   emiter dla innego typu błędu, tłumaczący każdy błąd na ten typ
++       `emit.contramap(lambda)` to `Emit[error2]^{emit}`, który przekazuje każde zgłoszenie
++       przez czystą `lambda`.
+
+@ 0 1 0 11b31f146c877c2a1fb6a08307a76fe0
++ entry .strategies   szerokie, importowalne taktyki: rzucanie, rzucanie pod `CanThrow`, błędy niekontrolowane, krytyczne, łagodzenie
+
+% 1 1 0 1fd15dc087ba59c80d8fe8a9b1bb00f8
+
+@ 0 4 0 015fb98790e5ad6e1121907c2d5a2a42
++       *Strategia* to taktyka importowana raz i stosowana szeroko, podczas gdy *taktyka*
++       instalowana przez `safely` lub `recover` jest lokalna dla bloku; obie są tym samym typem
++       `Tactic`. Wybór nigdy nie jest niejawny: `import soundness.*` nie wprowadza żadnego z
++       tych givenów, a każdy importuje się po nazwie.
+
+% 2 1 0 11f857dcf67b31d80aafde46cb6da17a
+
+% 3 1 0 0e50ee3938277fe61475e90b065dd7da
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 126fc90197f79c23172b7f966270cd2e
+
+% 1 1 0 165c95a0ca89e5980b082532e6addc8f
+
+@ 0 6 0 04129275819bd58b0ebc2e3fb1aef683
++       Strategie otaczające są przeznaczone dla punktów wejścia programu i do prototypowania –
++       zamierzona ścieżka to prototypowanie pod `throwUnsafely` i zamiana istotnych miejsc na
++       prawdziwą obsługę w miarę dojrzewania programu, bez żadnej zmiany w zawodnym kodzie.
++       Lokalne dla metody `import strategies.throwUnsafely` przesłania własną taktykę `raises`
++       metody dla każdego `abort` poniżej, co jest zamierzonym działaniem reguły zagnieżdżania,
++       ale łatwo zrobić to przypadkiem wewnątrz metody `raises`.
+
+@ 0 5 0 1c5d96c5da93dc4e0fa1b942ad278dac
++       `throwUnsafely`, `uncheckedErrors` i `fatalErrors` są czystymi wartościami, a nie
++       śledzonymi zdolnościami: rzucenie bez zasięgu (lub zakończenie w miejscu) nie zachowuje
++       żadnego punktu powrotu, a śledzona taktyka otaczająca albo nie przeszłaby sprawdzenia
++       poziomu w syntetyzowanym odroczonym wyrażeniu derywowanego kodeka, albo byłaby
++       przechwytywana przez każdą lambdę zgłaszającą przez nią błędy. `throwSafely` jest tą
++       ograniczoną zasięgiem, przechwytującą dowód `CanThrow`, pod którym rzuca.
+
+% 0 1 0 13866403ec2f0aaa0b64c5800734cdec
+
+% 1 1 0 195a1d6a59a5945c1276c661232a0d00
+
+% 1 1 0 0a4ec694e65fa82c0e6b58befef60794
+
+% 0 1 0 1f270d499f35decd1d28cde9c6caddf6
+
+@ 0 17 0 02bd2831b640d77703caafe02bbc9854
++   entry .throwUnsafely   rzuca każdy błąd jako zwykły wyjątek, bez wymaganej zdolności
++       Czysta `ThrowTactic[Hazard]^{}`, więc dzięki kontrawariancji spełnia naraz każdą
++       `Tactic[error]`. Błąd jest budowany z `Diagnostics.capture`, więc niesie ślad stosu.
++       Nadaje się do skryptów, prototypów i najbardziej zewnętrznej warstwy programu; biblioteka
++       powinna zamiast tego mówić, co robi, używając `unsafely` z uzasadnieniem obok tam, gdzie
++       zobowiązanie nie może zadziałać.
++   entry .throwSafely   rzuca, ale tylko tam, gdzie w zasięgu jest zdolność `CanThrow[error]`
++       `throwSafely[error]` to `ThrowTactic[error]^{canThrow}`: rzuca dokładnie tak jak
++       `throwUnsafely`, ale wymaga (wymazanego) givena `CanThrow[error]`, więc możliwość
++       rzucenia pozostaje widoczna w typach pod `saferExceptions`. Jej zbiór przechwytywania to
++       dowód `CanThrow`, zdolność `caps.Control`, która trzyma ją z dala od ciała działającego
++       w innym wątku.
++   entry .mitigation   taktyka dla każdego błędu, który jest `Mitigable to` błędem już obsługiwanym
++       Mając w zasięgu `Tactic[error]^` i `error2 is Mitigable to error`, dostarcza
++       `Tactic[error2]^`, która tłumaczy każdy `error2` za pomocą `mitigate` i zgłasza go do
++       zewnętrznej taktyki. Porażka niskiego poziomu dociera więc do granicy API już
++       przetłumaczona na słownictwo tej granicy, bez powtarzania tłumaczenia w każdym miejscu
++       wywołania.
+
+% 2 1 0 1f88572a25d8ea5e1a4195a94a762889
+
+% 3 1 0 11f04ac3a2e468cd118f4b98a2a495a9
+
+% 4 1 0 15f68c989931cde6149f091a14e8fa07
+
+% 0 1 0 0f102db49648e11a0e3f6a1ea4365fd8
+
+% 2 1 0 1f57ac2d5a4eb09e1341f601f2861020
+
+% 3 1 0 074ef10553e995d311c078e9cab0168e
+
+% 5 1 0 1e783ca33d42741a138bd06314f97d58
+
+% 0 1 0 0ad5745f7fae3db200a4ef72d2e0d5bd
+
+% 1 1 0 1ade3741001162830bd790a9c334525b
+
+@ 0 9 0 1a7036229d8aa8191d4eda3a1b3b3550
++   entry .fatalErrors   kończy proces ze statusem `Exit` błędu, dla błędów oznaczonych jako `Fatal`
++       Czysta `FatalTactic[exception]^{}` dla każdego typu błędu z givenem `is Fatal`, który
++       określa, z jakim statusem zakończyć. Nadaje się do porażek podczas inicjalizacji, gdy nie
++       ma sensownego sposobu, by kontynuować.
++   entry .uncheckedErrors   rzuca bez obsługi każdy błąd oznaczony jako `Unchecked`
++       Czysta `UncheckedTactic[error]^{}` dla każdego błędu z wymazanym givenem `error is
++       Unchecked`. Błąd jest rzucany ze śladem stosu (`Diagnostics.capture`). Pozwala zgłaszać
++       typ, którego błędów nie warto obsługiwać – porażkę w praktyce niemożliwą – bez handlera
++       w każdym miejscu, a jednocześnie wciąż go deklarować.
+
+% 2 1 0 15b74d1966a36bf31fb41496aa604c53
+
+% 3 1 0 0e626d9b29ad14c403c99257327e84cc
+
+% 0 1 0 1086b9000364cb00034dadd240294fa4
+
+% 0 1 0 0add340533d4735c0368964f7d9160dc
+
+% 0 1 0 1084480cb27fbc1a0970f0181a0902c7
+
+% 1 1 0 0afd7f79c0b6bf6b0720c722ca255a8f
+
+@ 0 8 0 17088a1609a1474c0697947a2d283738
++ entry .raises   `success raises error`: typ zwracany metody, która może zgłosić `error`
++     Infiksowy alias typu: `success raises error` to `Tactic[error]^ ?=> success`, funkcja
++     kontekstowa przyjmująca taktykę obsługi błędów. Metoda zadeklarowana z nim jest metodą
++     przyjmującą politykę jako argument kontekstowy; `abort` i `raise` wewnątrz niej wywołują
++     tę taktykę. Metoda, która może zawieść na więcej niż jeden sposób, wypisuje każdy: `Int
++     raises Io.Error raises Number.Error`. Wywołanie takiej metody wymaga w zasięgu `Tactic`
++     dla każdego błędu – givena z `strategies` albo otaczającego bloku `safely`, `recover`,
++     `attempt`… – lub otaczającej metody, która sama deklaruje dla niego `raises`.
+
+% 2 1 0 1c597e097741d31e0c1fe8d51af03d2a
+
+% 3 1 0 1747c7468ed1d9ab0fe9d9f24eb4b7ae
+
+% 0 1 0 01d04090df03cb5d0d199e92d9b07d2f
+
+% 0 1 0 1c93cb79119f1a3505a5301adc49b918
+
+% 0 1 0 1ea99e1c7c61d6a31f9d403bd58c2cb1
+
+% 1 1 0 066ff86b16673cf704c627635e342788
+
+@ 0 4 0 1b216ddc551a275d17eb004878b9037a
++     `val` zainicjalizowana wywołaniem `raises` otrzymuje typ wyniku, a nie typ funkcji
++     kontekstowej: taktyka jest rozstrzygana przy wywołaniu. Instancji klasy typów, której
++     wynik metody to `S raises E`, nie da się napisać pod sprawdzaniem przechwytywania (każde
++     `?=>` tworzy nowy korzeń); taka instancja przyjmuje zamiast tego swoją `Tactic[E]` jako
++     parametr `using`.
+
+@ 0 6 0 18df243bedb238eb0f3a514dd891c298
++ entry .raising   `success raising (E1, E2)`: `raises` dla każdego błędu z krotki, jako typ dopasowania
++     `result raising (Io.Error, Number.Error)` redukuje się do `Tactic[Io.Error] ?=>
++     Tactic[Number.Error] ?=> result`, a `raising E` bez krotki do `Tactic[E] ?=> result`. Nie
++     jest eksportowany do modułu zbiorczego `soundness` i nie może jeszcze zastąpić `raises`:
++     typ dopasowania redukujący się do funkcji kontekstowej w typie zwracanym metody powoduje
++     awarię kompilatora w miejscu użycia w innym module, więc należy pisać `raises`
++     powtórzone raz dla każdego błędu.
+
+@ 0 4 0 1cd5c2fc5beec5440095867bd8c682e5
++ entry .mitigates   `error mitigates error2`: dowód, że `error2` można przetłumaczyć na `error`
++     Infiksowy alias dla `error2 is Mitigable to error`, dzięki któremu ograniczenie
++     kontekstowe lub klauzulę `using` można zapisać w kierunku, w którym czyta się
++     tłumaczenie. Zobacz `Mitigable` i `strategies.mitigation`.
+
+@ 0 6 0 0ef89767da05facb0d894738ec02fcd8
++ entry .tracks   `result tracks focus`: wynik obliczony z `Foci[focus]` w zasięgu
++     Infiksowy alias dla `Foci[focus] ?=> result`, pisany po `raises`: `Unit raises
++     Json.Error tracks JsonPointer` to walidacja, która rejestruje każdy błąd wraz z pozycją,
++     na której wystąpił. Given `Foci` zawsze daje się rozstrzygnąć (`Foci.default` odrzuca
++     wszystko), więc metodę `tracks` można wywołać wszędzie, a dopiero otaczające `track` lub
++     `validate` czyni pozycje obserwowalnymi.
+
+@ 0 7 0 05f0370e77e25eb81110b7709b5907a2
++ entry .raise   zgłasza błąd i kontynuuje: zgłoszenie zachowujące wartość
++     `raise(error)` wywołuje `record` na `Emit[error]^` w zasięgu i zwraca `Unit`. Pod
++     taktyką natychmiastowo przerywającą (`throwUnsafely`, `safely`, `attempt`…) sterowanie
++     nigdy nie wraca; pod taktyką kumulującą (`accrue`, `track`, `validate`, `handle`) wraca,
++     więc kod działa dalej, a wynik otaczającego zasięgu zostaje ostatecznie odrzucony na
++     rzecz skumulowanych błędów. Błąd jest odroczonym wyrażeniem `Diagnostics ?=> error`,
++     budowanym z własnymi `Diagnostics` taktyki, więc metoda zgłaszająca nie potrzebuje
++     własnych `Diagnostics`.
+
+@ 0 4 0 1258ccd483edf271194c0654275f96c5
++     Ponieważ `raise` zwraca `Unit`, metoda, która musi kontynuować z wartością, zapisuje po
++     nim wartość *zastępczą*: `raise(error) yet 0`. Wartość zastępcza powinna być bez
++     znaczenia – nic dalej nie powinno od niej zależeć i nie powinna wywoływać kolejnych
++     błędów – a `venture` i `guard` czynią to cechą strukturalną, a nie nadzieją.
+
+% 2 1 0 0ab8bdc3121f5def12b4027bf79f192e
+
+% 3 1 0 18dcbb24788dbfd6095ba2a5f5d0e95b
+
+% 0 1 0 15a62a735783d8cb16d15f125bd17f9f
+
+% 0 1 0 01db3dbed26af0ba099f0eb81fed62ea
+
+% 0 1 0 06ad3e35c48d3688160c077587e797cc
+
+% 1 1 0 1a0d087130305f2c07635742740fb981
+
+@ 0 1 0 12179839f6cd1cff0cea80634d3ba67f
++     `raise` wymaga tylko `Emit`, słabszej zdolności; `abort` wymaga `Tactic`.
+
+@ 0 6 0 02dbc5489818eaeb069330eb93e696d0
++ entry .abort   zgłasza błąd i nie wraca: wyjście zastępujące wartość
++     `abort(error)` wywołuje `abort` na `Tactic[error]^` w zasięgu i ma typ `Nothing`, więc
++     może stać wszędzie tam, gdzie potrzebna jest wartość. Pod taktyką natychmiastowo
++     przerywającą błąd ucieka z zasięgu taktyki; pod kumulującą błąd zostaje włączony do
++     akumulacji, a zasięg porzucony; wewnątrz `venture` porzucane jest tylko przedsięwzięcie.
++     Odroczone wyrażenie błędu jest budowane z `Diagnostics` taktyki.
+
+% 2 1 0 0f138f8d355f8ab605c1a17d7540fdba
+
+% 3 1 0 18dd21fdee69d3760c28b288ad6800ad
+
+% 5 1 0 0f3ac47fd07dd0a61ce50e9d8f7f2c78
+
+% 6 1 0 014c91d83ee059d40140f54e9183b26c
+
+% 0 1 0 0557f5aaad87cb1e1e5baf689ac0c33a
+
+% 0 1 0 08ae0284b44ba73e1111006aeccda1d3
+
+% 1 1 0 0045803d24a9ae921c39a1064756c1a0
+
+@ 0 5 0 1a396eac69262110160a9da666f26a9b
++ entry .certify   porzuca otaczający zasięg agregacji, jeśli zarejestrowano jakikolwiek błąd
++     `certify[error]()` wywołuje `Tactic#certify` na taktyce w zasięgu: pod taktyką
++     natychmiastowo przerywającą nic nie robi, a pod kumulującą jest punktem, w którym skażony
++     zasięg ucieka ze swoimi skumulowanymi błędami, zamiast kontynuować. Zwykle to samo wyraża
++     się wokół bloku za pomocą `guard`.
+
+@ 0 6 0 1b6c820d0b74698f170343dc47b76768
++ entry .safely   uruchamia blok i czyni jego porażkę nieobecnością: wartość lub `Unset`
++     `safely(block)` oblicza blok z `OptionalTactic` w zasięgu i zwraca `Optional[success]`:
++     wartość bloku albo `Unset` przy pierwszym zarejestrowanym błędzie lub przerwaniu. Sam błąd
++     jest odrzucany, więc budowany jest z `Diagnostics.omit` – bez przechwytywania śladu
++     stosu – i `safely` nie potrzebuje własnych `Diagnostics`. Wyjątek rzucony przez blok
++     (blok otrzymuje też `CanThrow[Exception]`) również jest przechwytywany i staje się
+
+% 0 1 0 0fc55628811d799f06b286e383b43306
+
+% 2 1 0 1bcb3991a37e5d4a020abc99027fed7c
+
+% 3 1 0 1afc6a6927e90e5506bd8408f4dcfdc7
+
+% 0 1 0 08c2df03910729681f2c08256fc67838
+
+% 0 1 0 1450564fecd135fc1f2aa5ac14ac242e
+
+% 0 1 0 0c536abca33700700e27d763e8da7e8d
+
+% 1 1 0 119a7a75607a0525083a80391b6881e1
+
+@ 0 5 0 1d6c1bb6ca30cd1d19038f332e393890
++     Typ błędu jest wnioskowany z wymagania bloku; `safely[Number.Error](…)` podaje go
++     jawnie, gdy wnioskowanie potrzebuje pomocy albo gdy jedynym zobowiązaniem bloku jest to,
++     które jest spełniane. `safely` instaluje *nową* taktykę: wewnątrz zasięgu kumulującego
++     błąd zarejestrowany w bloku nie jest włączany do zewnętrznej akumulacji. Alternatywą,
++     która pozostaje w obrębie otaczającej taktyki, jest `Tactic#tolerate`.
+
+@ 0 8 0 19281a7f419543df1082e3284bc9a450
++ entry .unsafely   uruchamia blok, którego błąd z założenia nie wystąpi: wartość lub rzucenie
++     `unsafely(block)` oblicza blok pod `ThrowTactic`, więc błąd, który jednak wystąpi, jest
++     rzucany jako zwykły, niekontrolowany wyjątek, ze śladem stosu. Spełnia zobowiązanie bez
++     jego obsługi – co jest uprawnione na granicy programu, w teście, który już ustalił, że
++     wartość jest poprawna, albo obok sprawdzenia, które właśnie dowiodło, że błąd jest
++     niemożliwy – i jest wyszukiwalnym znacznikiem miejsc, w których kończy się gwarancja. Blok
++     otrzymuje też żeton `Unsafe`, więc można w nim wywołać metodę zabezpieczoną przez
++     `(using Unsafe)`.
+
+% 2 1 0 1ffa3427c52badc71e70d4a3da890f80
+
+% 3 1 0 194e89d9a0167f27129a84a911682d53
+
+% 0 1 0 1d48df9f7832d35701998cc79143a6ca
+
+% 0 1 0 0365352462c38c66031bc388ff428f26
+
+% 1 1 0 1db8526fbbde3f5019025089af917360
+
+@ 0 4 0 0923b326b122d7371657135514e11b32
++     Należy preferować totalne API niosące swój dowód w typie, potem `mitigate` do nazwanego
++     błędu, a dopiero potem `unsafely` z uzasadnieniem w komentarzu. Typ `success`, który jest
++     doprecyzowanym typem ścieżkowym, zostaje poszerzony przez zmienną typową `unsafely`;
++     ograniczone zasięgiem sprawdzenie należy umieścić wewnątrz API, a nie wokół wywołania.
+
+@ 0 4 0 01f94948ae2fc4c805c5427173dfc957
++ entry .throwErrors   uruchamia blok pod `ThrowTactic`, gdy dany jest `CanThrow[error]`
++     `throwErrors[error](block)` dostarcza blokowi `ThrowTactic[error]`, więc błąd zostaje
++     rzucony; w odróżnieniu od `unsafely` wymaga w zasięgu zdolności `CanThrow[error]`, więc
++     rzucenie pozostaje kontrolowane pod `saferExceptions`. To blokowa postać
+
+% 0 1 0 1059a8b3e5106fba0ed6fcbec6875040
+
+@ 0 7 0 09c20991a047edad10ddc2dc70d42ba1
++ entry .capture   uruchamia blok, który ma zawieść, i zwraca zgłoszony przez niego błąd
++     `capture[error](block)` oblicza blok z `EitherTactic` i zwraca `error`, który blok
++     zarejestrował lub z którym przerwał. Blok, który się powiedzie, sam jest porażką – test
++     sprawdzał niewłaściwą rzecz – i przerywa z `Expectation.Error` niosącym wytworzoną
++     wartość, więc `capture` wymaga w zasięgu `Tactic[Expectation.Error[success]]^`
++     (wystarczy otaczająca `strategies.throwUnsafely`) oraz `Diagnostics`. Wyjątek
++     przechwytywanego typu, który został rzucony zamiast zgłoszony, również jest
++     przechwytywany; każdy inny wyjątek się propaguje.
+
+% 2 1 0 1ddba8e2bb4705a7015f65b888256460
+
+% 3 1 0 1ad4a4f3c2a9efa8065a026ae73b9e96
+
+% 4 1 0 0b0e9a5fb03f9e730680e807eb705076
+
+% 5 1 0 11c28ef1b708d5d50119cfbca4486f73
+
+% 0 1 0 1db1ff8e0b2e1750193c4e09105dc141
+
+% 1 1 0 0c887c0d5125c798033b7b7b8cdca937
+
+@ 0 3 0 04faf68ff82304081d2a32d2cbb5579f
++     Typ błędu trzeba podać jawnie (do przechwycenia go potrzebny jest `ClassTag`), dzięki
++     czemu `capture` w teście czyta się jako jego asercję: blok musi zawieść dokładnie z tym
++     błędem.
+
+@ 0 5 0 15298a5d46493293121b2ad2d30e6cdd
++ entry .attempt   uruchamia blok i zwraca `Attempt`: jego wartość lub błąd, z którym zawiódł
++     `attempt[error](block)` oblicza blok z `AttemptTactic` i zwraca `Attempt.Success(value)`
++     albo `Attempt.Failure(error)` przy pierwszym zarejestrowanym błędzie lub przerwaniu, dla
++     kodu, który musi rozgałęzić się według obu wyników. Wymaga `Diagnostics` w zasięgu,
++     ponieważ błąd jest zachowywany.
+
+% 2 1 0 1198d50e0a8c33f81a8862e67bcbd5fb
+
+% 3 1 0 05341eacf27b1dea06c49185e9e3386f
+
+% 4 1 0 03196f37417193d1016eb68eeae29292
+
+% 0 1 0 19f203982ed9a2e20251205d541eece4
+
+% 0 1 0 10fa0b47952df627188d48b0de90c6d4
+
+% 0 1 0 0ce5be532fa5d3941e8750a6a8e51c73
+
+% 0 1 0 0e9fb34d52dabeab0e93b99d47eb5346
+
+% 1 1 0 0930d031784036991999cf0bd6b2b645
+
+@ 0 4 0 02d69efca4db787a09b5bb3654a9d0ef
++ entry .amalgamate   uruchamia blok i zwraca jego wartość lub jego błąd jako unię
++     `amalgamate[error](block)` oblicza blok z `AmalgamateTactic` i zwraca `success | error`:
++     wartość albo pierwszy błąd zarejestrowany lub zgłoszony przy przerwaniu. Dopasowanie
++     wyniku je rozdziela, bez żadnego opakowania. Wymaga `Diagnostics`.
+
+% 2 1 0 02fe06beda9f28560f346188c23481bf
+
+% 3 1 0 0983109c0a41c3e614cc00def39b3158
+
+% 4 1 0 10f3a176bb373dc51c3d358ed194c3b3
+
+% 0 1 0 0dbb4366ee70488f02730181de8f2e2a
+
+% 0 1 0 1d2a2d7837cb9ff513cfe6a39a82e7a6
+
+% 0 1 0 0e0edaef925a67e3042025ba3f0b46ac
+
+% 1 1 0 02e66939e970e2de1c52868584700f0c
+
+@ 0 6 0 19f643c35de4248e027bbe3a91c14270
++ entry .abortive   uruchamia blok makra pod `HaltTactic`: błąd staje się błędem kompilacji
++     Dla implementacji makr, z `Quotes` w zasięgu. `abortive[error](block)` dostarcza
++     `HaltTactic[error, success]` i `Diagnostics.omit`, więc błąd zarejestrowany lub
++     zgłoszony przy przerwaniu w bloku zatrzymuje kompilację z komunikatem `labelled` błędu
++     (jego kodem bolt i tekstem) jako diagnostyką. Makro, które parsuje literał w czasie
++     rozwinięcia, opakowuje parsowanie w `abortive`, aby zgłosić niepoprawny literał w miejscu,
++     w którym został napisany.
+
+@ 0 1 0 1fd2fb8d51fb0795055423dfb2e09c61
++ entry .Attempt   wynik `attempt`: sukces niosący wartość lub porażka niosąca błąd
+
+% 1 1 0 1320a17fc27bfe6a1632392c69099c6b
+
+@ 0 3 0 0cc668f5efe33c2d051e90698d7df86e
++       Enum z dwoma przypadkami, `Success(value: result)` i `Failure(value: error)`, gdzie
++       `error <: Hazard`. Tworzy się go za pomocą `attempt[error](block)`, a jego metody
++       pozwalają zbadać wynik, przekształcić go lub z powrotem zamienić w zgłoszenie błędu.
+
+% 2 1 0 01b4ac3d860ae96f07c7a967433d2ae7
+
+% 3 1 0 11f46bdc988eed560a80dcd328b95851
+
+% 4 1 0 0bf5338dc541561f05681bcfb2e945e3
+
+% 0 1 0 1de41422aa53ce3210b2b05184efdd75
+
+% 0 1 0 08143e761400665e0dd8e3ff8fd75e5e
+
+% 0 1 0 08e5da795198d82d12270e04be2c13b6
+
+% 0 1 0 1aae8e580a74c7871ce77690f3a833b4
+
+% 1 1 0 03d57b89b209893f17977c5c4e99db51
+
+% 1 1 0 14cfb33fc51b9f2f0d6547b674285fb0
+
+@ 0 17 0 13b6a6418c6b7bdf0e40b21ac19031b1
++   entry #failure   czy to jest `Failure`
++   entry #success   czy to jest `Success`
++   entry #map   przekształca wartość `Success`; `Failure` przechodzi bez zmian
++   entry #handle   zastępuje błąd `Failure` innym, za pomocą funkcji częściowej
++       `attempt.handle { case Number.Error(text, _, _) => InputError(text) }` stosuje przypadki
++       do błędu `Failure`, pozostawiając bez zmian błąd, którego przypadki nie obejmują, i
++       poszerza typ błędu do `Hazard`. `Success` pozostaje bez zmian.
++   entry #acknowledge   wykonuje efekt uboczny na błędzie `Failure` i zwraca tę próbę
++       Do logowania porażki bez jej konsumowania: funkcja częściowa jest stosowana, jeśli jest
++       określona dla błędu, a próba jest w każdym przypadku zwracana bez zmian.
++   entry #apply   wartość `Success` lub przerwanie z błędem `Failure`
++       `attempt()` to `result raises error`: zamienia `Attempt` z powrotem w zgłoszenie błędu
++       względem taktyki w zasięgu, więc wartość przechwyconą do zbadania można ponownie włączyć
++       do zwykłego przepływu.
++   entry #recover   wartość `Success` lub zamiennik obliczony z błędu `Failure`
++       `attempt.recover { case error => fallback }` to wartość, jeśli istnieje, a w przeciwnym
++       razie wynik funkcji częściowej zastosowanej do błędu; musi ona obejmować każdy błąd, jaki
++       może napotkać.
+
+@ 0 7 0 0483d68840adaebc04b8bd3020552a53
++ entry .recover   obsługuje wybrane błędy, dostarczając wartość zastępczą, z `protect`
++     `recover { cases }.protect(block)` uruchamia blok z taktyką dla każdego typu błędu
++     objętego przypadkami; przy pierwszym objętym błędzie blok jest porzucany, a w jego
++     miejsce zwracana jest wartość ciała pasującego przypadku. Handler pisze się jako
++     przypadki dopasowania i musi być zapisany w miejscu – makro odczytuje przypadki w czasie
++     kompilacji, aby ustalić, jakie typy błędów obejmują, i stąd `protect` wie, które taktyki
++     wstrzyknąć. Błąd, którego przypadki nie obejmują, nie jest obsługiwany: jego
++     zobowiązanie `raises` propaguje się na zewnątrz jak zwykle.
+
+% 2 1 0 0052e4c5fc2bbe361ec7c6275421efdf
+
+% 3 1 0 01c2ecd62cbe44770037712a7d87b8be
+
+% 2 1 0 11af4061ad0970140a37e4be221a68f7
+
+% 0 1 0 1220731fcd70d6e41cd52ca75f1fbe53
+
+% 0 1 0 1f6182a93c56764310c68e45473a3b4c
+
+% 1 1 0 0ae166d117f374da0a24939c4c050132
+
+@ 0 7 0 1ad00071db62e57b1f6f283e43c5b3a1
++     Przypadek dopasowujący unię typów błędów (`case error: (Io.Error | Number.Error)`) lub
++     alias unii rejestruje handler dla każdego jej składnika. Wzorzec musi być wyczerpujący
++     dla swojego typu błędu (wzorzec klasy case, w którym każde pole jest symbolem
++     wieloznacznym lub wiązaniem; pole varargs jako `arguments*`), w przeciwnym razie jest to
++     błąd kompilacji: `recover` nie może obsłużyć typu połowicznie. `recover` zapisany
++     bezpośrednio wewnątrz `inline def` nie rozstrzyga swoich taktyk; ciało należy przekazać
++     do pomocniczej metody, która nie jest inline. Ciało przypadku może zgłaszać błędy do
++     zewnętrznej taktyki, ale nie może przechwycić zdolności innej niż `Control`, takiej jak
++     logger.
+
+@ 0 1 0 0493fa687c3fc76a143217a00ab64587
++ entry .Recovery   handler `recover` czekający na blok, który chroni
+
+% 1 1 0 1ac142b73fe529b10a0f662da622ac1e
+
+@ 0 4 0 0364bf7d7844c70d1f73040ceb1db1eb
++       `recover { cases }` to `Recovery[lambda]`, którego parametr typu zapisuje, jako lambdę
++       typową `[result] =>> (Tactic[E1], …, Tactic[En]) ?=> result`, typy błędów objęte
++       przypadkami; `.protect(block)` wstrzykuje następnie do bloku po jednej taktyce na każdy
++       objęty typ. Wartości używa się wyłącznie jako `recover { … }.protect { … }`.
+
+% 0 1 0 010135e281dc4ccf19f1bca6cb6a1041
+
+@ 0 6 0 12660bd87dadd90d0418b60e4fa17370
++   entry .protect   uruchamia blok pod taktykami odzyskiwania, zastępując objęty błąd wartością jego przypadku
++       Uruchamia blok wewnątrz `boundary`: każda wstrzyknięta taktyka przy `record` lub `abort`
++       stosuje handler do błędu i wyskakuje z wartością ciała przypadku jako wynikiem bloku.
++       Wartość zastępcza podróżuje jako `Recovery.Escape`, więc ciało przypadku o złym typie
++       jest błędem kompilacji przy `protect`.
++   entry .Escape   nośnik odzyskanej wartości wynoszący ją z chronionego bloku
+
+% 1 1 0 15de3033e24687cc020b9b6ddaf170be
+
+@ 0 10 0 11c87fcfe4bb8c211593ebe4e8145d16
++         Wyjątek bez śladu stosu, czysty z założenia, niosący wartość ciała przypadku jako
++         nietypowaną referencję między dwiema ramkami jednego wywołania `protect`. Nie jest
++         zgłaszany przez kod użytkownika.
++     entry .apply   opakowuje wartość do ucieczki
++     entry #value   odzyskana wartość, w swoim pierwotnym typie
++     entry #fillInStackTrace   zwraca siebie: ucieczka nigdy nie zapisuje śladu stosu
++   entry .EscapeTactic   taktyka stojąca za `protect`, wyskakująca z `boundary` z wartością ucieczki
++       `Tactic[Recovery.Escape[result]]` nad `boundary.Label[result]`, z `Diagnostics.omit`:
++       jej `record` i `abort` rozpakowują wartość ucieczki i wyskakują. `protect` stosuje do
++       niej `contramap` raz dla każdego objętego typu błędu.
++   entry #handler   przypadki dopasowania, jako funkcja częściowa z `Exception`
+
+@ 0 7 0 12aca1d466bfd0d806d87ec99e4e491c
++ entry .mitigate   tłumaczy wybrane błędy na inny błąd, który następnie się propaguje, z `protect`
++     `mitigate { cases }.protect(block)` uruchamia blok z taktyką dla każdego typu błędu
++     objętego przypadkami; objęty błąd przechodzi przez swój przypadek, a błąd zwrócony przez
++     przypadek jest zgłaszany względem taktyki *w zasięgu dla tego typu* – więc niskopoziomowa
++     porażka bloku staje się błędem, który deklaruje otaczająca metoda. Typ błędu każdego ciała
++     przypadku musi mieć `Tactic` w zasięgu przy `mitigate`, w przeciwnym razie makro
++     zatrzymuje się z _There is no available handler for E_. Przypadki trzeba zapisać w
++     miejscu, tak jak dla `recover`.
+
+% 2 1 0 0727175a0e04558316a5366ef9c3c80d
+
+% 3 1 0 131b9085ce3cbe331f011dfb1bb49e9b
+
+% 4 1 0 1fec22d11c78f71b0eefe45cad497a37
+
+% 0 1 0 0efb95b87190163f153f78929b38df77
+
+% 0 1 0 01dea307f8a723230d1eef47b5db4d2c
+
+% 0 1 0 17d2e9898e703a9d0b273ae553954af5
+
+% 0 1 0 08d2b72f78a0df861c2dac25b92d6998
+
+% 0 1 0 134c730e4949c1811e786f11e1a53293
+
+% 0 1 0 1fb44a2e09851d7e0a777a2fe84a9834
+
+% 0 1 0 0d9df0dbb90e72f30df8633733050711
+
+% 1 1 0 0410066fdddb04e306d01a0f39dcf1c1
+
+@ 0 8 0 1c31c31273383cb602bcc73085d48cf9
++     Łagodzenia łączą się w łańcuch: `mitigate` wewnątrz innego zamienia A w B, a potem B w C.
++     Skażenie przekracza łagodzenie – `tainted` wewnętrznej taktyki przekazuje do
++     zewnętrznej – więc `guard` wewnątrz chronionego bloku widzi akumulację wywołującego.
++     Ciało przypadku buduje swój błąd poza jakimikolwiek `Diagnostics` bloku, więc należy
++     albo zaimportować je (`errorDiagnostics`), albo użyć ponownie tych z oryginału:
++     `InputError(text)(using error.diagnostics)`. Podobnie jak `recover`, `mitigate`
++     bezpośrednio wewnątrz `inline def` nie znajduje taktyki; należy przekazać pracę do
++     metody, która nie jest inline. `strategies.mitigation` stosuje to samo tłumaczenie
++     niejawnie, na podstawie instancji `Mitigable`, wszędzie tam, gdzie istnieje zewnętrzna
++     taktyka.
+
+@ 0 1 0 0aa3ebbd2bf5697b1c84cf51ebeada23
++ entry .Mitigation   handler `mitigate` czekający na blok, który chroni
+
+% 1 1 0 1193c176fdfc6b2d1e235108fafd9149
+
+@ 0 4 0 097ff684afc2545a18d7b6803acea8dc
++       `mitigate { cases }` to `Mitigation[lambda]` zapisujący objęte typy błędów w swojej
++       lambdzie typowej; `.protect(block)` wstrzykuje dla każdego z nich taktykę w zasięgu dla
++       *wynikowego* typu błędu przypadku, przekształconą przez przypadek za pomocą
++       `contramap`. Używany wyłącznie jako `mitigate { … }.protect { … }`.
+
+% 1 1 0 1588bdb92872c0d20c15bd0ab1118ec9
+
+@ 0 2 0 06d7988e10f14d2519246d44c9acbd6a
++   entry .protect   uruchamia blok, zgłaszając każdy objęty błąd jako tłumaczenie z jego przypadku
++   entry #handler   przypadki dopasowania, jako funkcja częściowa z `Exception`
+
+@ 0 9 0 08000030291ecfa7068e14c7658ae2e5
++ entry .accrue   zbiera każdy wybrany błąd w jeden skumulowany błąd, z `protect`
++     `accrue(initial)(combine) { cases }.protect(block)` uruchamia blok z `AccrueTactic` dla
++     każdego typu błędu objętego przypadkami. Każdy objęty błąd zgłoszony przez blok jest
++     włączany do akumulacji za pomocą `combine`, a blok działa dalej; gdy się zakończy (lub
++     przerwie), a cokolwiek się skumulowało, skumulowany błąd jest zgłaszany względem
++     otaczającej `Tactic[accrual]`, a własny wynik bloku zostaje odrzucony. Jeśli nic się nie
++     skumulowało, zwracana jest wartość bloku. Przypadki (`cases`) jedynie *nazywają* objęte
++     typy (ich ciała nie są wykonywane); włączaniem zajmuje się `combine`, czysta funkcja
++     `->`, ponieważ przy rywalizacji może zostać wykonana ponownie.
+
+% 2 1 0 1794952e16c1efa101664331802ea178
+
+% 3 1 0 0544a13dc40ca09314711fa0a63a0f8d
+
+% 4 1 0 08df1bd162afd96c0d05b78fef92c5a2
+
+% 5 1 0 056d07afdaaa679d0f7097c2b8721d94
+
+% 1 1 0 0b70e9416e8ea449082f240177fed96d
+
+% 3 1 0 0c5575e974ae0f8d1402c757d2b03f3f
+
+% 4 1 0 1dc9061b24480b131df0f5c2dd782fc3
+
+% 0 1 0 1094b69efea0a3190d69581d19e0ab3d
+
+% 0 1 0 1eca3b7eb688d11a10dd31bd83c6617c
+
+% 0 1 0 176f1182edf3d71f1acc8e1c2edc757e
+
+% 0 1 0 1afc100813f5fc1103f7f1575cd51b40
+
+% 0 1 0 162d4a480547324b189e61e83f0e1ee0
+
+% 1 1 0 06051c1d3b2c0b791cbb63f6e83c99f8
+
+% 2 1 0 0b01e0b30826d03207abd7ad4e2d0c38
+
+% 3 1 0 0e4d5bdfbf9cfc8f0cf690d4d85d01a0
+
+% 0 1 0 1c461c024c9d61d21c4fd3eba854c2ce
+
+% 1 1 0 1879c21317c3e4091697bfe3decfea19
+
+@ 0 2 0 1c2b095557436b6a12702398298ab657
++     Typ akumulacji musi być `Hazard`, ponieważ jest zgłaszany; `validate` to bliźniak, którego
++     akumulacja jest zamiast tego zwracana jako zwykła wartość. `track` dodaje do każdego
++     błędu fokus.
+
+@ 0 1 0 167e52e627fc09751c3dd0d4df273ec9
++ entry .Accrual   handler `accrue` i taktyka, którą instaluje
+
+% 1 1 0 18c0a90e6d4b16911ed1dea144f02d8d
+
+@ 0 4 0 13ba3088649f4d820074e1e447419fdc
++       `accrue(initial)(combine) { cases }` to `Accrual[accrual, lambda]` przechowujący
++       początkową akumulację, funkcję łączącą i przypadki; `.protect(block)` uruchamia blok pod
++       jedną `AccrueTactic` współdzieloną przez wszystkie objęte typy błędów i wymaga w
++       zasięgu `Tactic[accrual]^` oraz `Diagnostics`.
+
+% 0 1 0 1081758709fc4e320a1f8250a610716a
+
+@ 0 5 0 14e2065e52b5c97b0bfed4ccad2c1931
++   entry .protect   uruchamia blok, włączając każdy objęty błąd do akumulacji; zgłasza akumulację, jeśli jest
++       Zwraca wartość bloku, jeśli nic się nie skumulowało. W przeciwnym razie – niezależnie od
++       tego, czy blok się zakończył, przerwał czy rzucił wyjątek – rejestruje skumulowany błąd
++       względem otaczającej `Tactic[accrual]` i go rzuca, więc wynik bloku nigdy nie trafia do
++       wywołującego.
++   entry .AccrueTactic   taktyka wstrzykiwana przez `accrue`: włącza każdy błąd do akumulacji i kontynuuje
+
+% 1 1 0 0a0c00939e895df919c170f3d2bc1138
+
+@ 0 18 0 016d50ca5188a90303a543b59857b75d
++         `Tactic[error]` nad początkową akumulacją `accrual` i czystym `combine: (accrual,
++         Exception) -> accrual`, z `Diagnostics`, z którymi buduje błędy. `record` włącza błąd i
++         wraca; `abort` włącza go i rzuca akumulację; `certify` rzuca akumulację, jeśli
++         cokolwiek się skumulowało; `tolerate` cofa akumulację do migawki wykonanej przed jej
++         blokiem. Akumulacja jest przechowywana w komórce atomowej, więc taktykę można
++         bezpiecznie współdzielić między wątkami jednego zasięgu, ale `combine` może zostać
++         wykonana ponownie przy rywalizacji i musi być czysta.
++     entry #diagnostics   `Diagnostics`, z którymi budowane są błędy
++     entry #record   włącza błąd do akumulacji i wraca
++     entry #abort   włącza błąd i rzuca skumulowany błąd
++     entry #certify   rzuca skumulowany błąd, jeśli cokolwiek się skumulowało
++     entry #tainted   czy akumulacja różni się od wartości początkowej
++     entry #tolerate   wartość bloku lub `Unset` z akumulacją przywróconą do poprzedniego stanu
++     entry #accumulated   dotychczasowa akumulacja
++     entry #changed   czy akumulacja różni się od wartości początkowej
++   entry #handler   przypadki dopasowania nazywające objęte typy błędów
++   entry #initial   akumulacja przed jakimkolwiek błędem
++   entry #combine   czysta funkcja włączająca każdy błąd do akumulacji
+
+@ 0 7 0 0b45531c1504d83102cb367d48d813d5
++ entry .handle   wykonuje ciała przypadków wybranych błędów jako efekty uboczne i kontynuuje, z `protect`
++     `handle { cases }.protect(block)` uruchamia blok z `Emit` – a nie pełną `Tactic` – dla
++     każdego typu błędu objętego przypadkami: `raise` objętego błędu wykonuje w miejscu ciało
++     jego przypadku, a sterowanie wraca do bloku, który działa dalej. Ciała przypadków
++     zwracają `Unit`. Błąd nieobjęty lub taki, który ciało przypadku zgłasza ponownie,
++     pozostaje zobowiązaniem otaczającego zasięgu. Ponieważ wstrzykiwany jest tylko `Emit`,
++     `abort` objętego błędu wewnątrz bloku nie jest spełniany przez `handle`.
+
+% 2 1 0 14a9ee48ea08bc2701b12cd43e0ff194
+
+% 3 1 0 14a7070720b92edc18d87156bad16991
+
+% 4 1 0 0ac22534315d337414dcb599204e78fe
+
+% 0 1 0 1a10bbbbb0c378c708a8f9ed53344840
+
+% 0 1 0 1475543ed29cc69d177baf4f125e48ac
+
+% 0 1 0 1d86ec182a4e987719f840d04deee388
+
+% 1 1 0 139c16bb929c40c21d98c1e6b00f0aef
+
+% 0 1 0 053b6813612393880b5d24e307d50129
+
+% 0 1 0 1f2f63100e76d0010528be30f255d546
+
+% 0 1 0 0e19ced31594dd7a18d7f78e13f39298
+
+% 1 1 0 049b0409301f120c03ce1e8ad5d6709a
+
+@ 0 3 0 0fa8830674d9ae951dbe0ce4a73b0277
++     Ciało przypadku staje się handlerem zdolności `caps.Control`, więc może zgłaszać błędy do
++     zewnętrznej taktyki, ale nie może przechwycić zdolności niekontrolnej, takiej jak logger:
++     taką pracę należy przenieść poza ciało przypadku.
+
+@ 0 1 0 1ae36b139b4a06341b032961d0c4052d
++ entry .Handler   handler `handle` czekający na blok, który chroni
+
+% 1 1 0 0f215c80b24ccc7d15f2d837c3213308
+
+@ 0 3 0 05ce6f7ab6c7e7fc008c6dc1c3a33b79
++       `handle { cases }` to `Handler[lambda]` zapisujący objęte typy błędów jako lambdę
++       typową nad `Emit`; `.protect(block)` wstrzykuje po jednym `Emit` na typ, każdy oparty
++       na ciele przypadku, i wymaga `Diagnostics` w zasięgu. Używany wyłącznie jako `handle {
++       … }.protect { … }`.
+
+% 1 1 0 1ae193ba5116a1d80b3b47064f9d4051
+
+@ 0 2 0 0a6e73ca500ef9180be4eb454306d259
++   entry .protect   uruchamia blok z `Emit` dla każdego objętego błędu, wykonującym w miejscu ciało jego przypadku
++   entry #handler   przypadki dopasowania, jako funkcja częściowa z `Exception` w `Unit`
+
+@ 0 9 0 10285df535afa8230f9bbf805c429a79
++ entry .track   zbiera wybrane błędy, każdy z fokusem, przy którym został zgłoszony, w jeden skumulowany błąd
++     `track[focus](initial) { cases }.protect(block)` to `accrue` z pozycjami. Blok działa z
++     `Foci[focus]` i `TrackTactic` dla każdego typu błędu objętego przypadkami; każdy objęty
++     błąd jest rejestrowany w foci wraz z fokusem bieżącym w danej chwili (ustawianym przez
++     `focus`), a blok działa dalej. Gdy się zakończy, a cokolwiek zarejestrowano, błędy są
++     łączone – każdy przypadek otrzymuje błąd, z `prior` (`Optional[focus]`, przy którym
++     został zgłoszony) i `accrual` (dotychczasową akumulacją) jako nazwanymi wartościami
++     kontekstowymi – a wynik jest zgłaszany przez przerwanie względem otaczającej
++     `Tactic[accrual]`. Każdy przypadek zwraca nową akumulację.
+
+% 2 1 0 03e8e660869d67471505abc15b88fcd0
+
+% 3 1 0 173bf48240a237d51897bc19898c41a4
+
+% 4 1 0 08cad3b1bce0b45e050170295dcd36f6
+
+% 1 1 0 03bb676a38e31d831d25edc7c123b1bb
+
+% 3 1 0 1662e4a3e12ddfb8182d75026847d17e
+
+% 4 1 0 195929079fcc03311d2050f7215987d6
+
+% 2 1 0 0f44c8476857a9f714c8d38fa460dfd8
+
+% 0 1 0 071df93aba1d508512f432aba636d2b1
+
+% 1 1 0 18bbbbe1f88540251683a9f53dc190ab
+
+% 0 1 0 1ad868188db630cd184317ae1fdb347f
+
+% 0 1 0 0c973042a085269f0390582134d235a1
+
+% 0 1 0 03b5db5ea2411d961fc9dbad3cee8b8a
+
+% 0 1 0 03bf304d0769445d0d36431a9c8e7269
+
+% 0 1 0 10668dddf3dbacb90364827279b84605
+
+% 0 1 0 0e78fb385056647705c265f104586db8
+
+% 0 1 0 08acebd71a0e221f1f2b06060f49c91a
+
+% 0 1 0 0f6836672be19d4e10d7e01edae836a4
+
+% 0 1 0 03cef629b9b235381a4f4a3f2268f40b
+
+% 1 1 0 06e4162aff93df6300b8d4f52693dfe4
+
+@ 0 4 0 1d01fa6472871c5f1330db458fe8d5ec
++     Typ fokusu wybiera przechodzona struktura – `JsonPointer` dla JSON, ścieżka dla XML,
++     odwołanie do komórki dla arkusza kalkulacyjnego – więc pozycja jest zgłaszana we własnym
++     słownictwie danych. `validate` to ta sama konstrukcja, zwracająca akumulację jako zwykłą
++     wartość zamiast ją zgłaszać.
+
+@ 0 1 0 0f69a919b7c893960bdedfcb7e03ee0b
++ entry .Tracking   handler `track` czekający na blok, który chroni
+
+% 1 1 0 052a948f7594c45c17c582aed45ad4e3
+
+@ 0 6 0 1554bea2037082090b3bd6e6f316a846
++       `track[focus](initial) { cases }` to `Tracking[accrual, lambda, focus]` przechowujący
++       początkową akumulację i funkcję łączącą; `.protect(block)` uruchamia blok z nowym
++       `TrackFoci` i `TrackTactic` dla każdego objętego typu błędu i wymaga w zasięgu
++       `Tactic[accrual]^` oraz `Diagnostics`. Używany wyłącznie jako
++       `track[…](…) { … }.protect { … }`. *Wartości* funkcyjnej o typie `… raises E tracks F`
++       nie da się napisać pod sprawdzaniem przechwytywania, więc funkcja pomocnicza opakowująca
++       `track` powinna być `inline def`, której ciało jest wklejane do `protect`.
+
+% 1 1 0 10e9a9e6ca579a010040b3208a57372f
+
+@ 0 3 0 14aafd5abfc598521f3315a35b9fb85c
++   entry .protect   uruchamia blok, rejestrując objęte błędy z ich fokusami; jeśli jakieś są, przerywa z wynikiem łączenia
++   entry #initial   akumulacja przed jakimkolwiek błędem
++   entry #lambda   funkcja łącząca: każdy błąd, z fokusem `prior` i dotychczasowym `accrual`, w nową akumulację
+
+@ 0 7 0 0afaeac2d62722c016228e753577b6ec
++ entry .validate   zbiera wybrane błędy z ich fokusami w wartość, która jest zwracana, a nie zgłaszana
++     `validate[focus](initial) { cases }.protect(block)` to `track`, którego wynikiem jest sama
++     akumulacja: blok działa z `Foci[focus]` i `TrackTactic` dla każdego objętego typu błędu,
++     a cokolwiek blok zwróci, zostaje odrzucone; wartością całego wyrażenia jest wynik łączenia
++     zarejestrowanych błędów (każdy przypadek z `prior` i `accrual` w zasięgu). Akumulacja nie
++     musi być błędem – `validate` zbierające `Count` albo listę komunikatów jest zawsze tylko
++     zwracane. Wymaga `Diagnostics`.
+
+% 2 1 0 03e095e7e5114a771c554de11e045927
+
+% 3 1 0 0e0d54dbac44a07b0a7e4dc51025356f
+
+% 4 1 0 0744d373bdb384dd0cf5b51091b4ea36
+
+% 0 1 0 19bc8b99bfbe058d1cdab5d83679fca0
+
+% 0 1 0 15ce250728f2d9ff0641b8117455df5e
+
+% 0 1 0 15ecb22d868b096d0de6be9482c00368
+
+% 0 1 0 1fcc4495a781724a1aa200ff21a56a66
+
+% 1 1 0 11365a6a5cb31e0615d342d6de6634f0
+
+% 2 1 0 189567a584d0229d0779fc1d4a7556e9
+
+% 3 1 0 058faa81b3c3f34817f7451536f22a5d
+
+% 0 1 0 0a5a74c84cd16db71eedaf89e7a816fd
+
+% 1 1 0 0d504d0479efb0e6151e5782ec77c3d3
+
+@ 0 2 0 0c10b4db69323c76161a5d4002a4b519
++     Zagnieżdżone walidacje są w pełni odgraniczone: wewnętrzne `validate` zachowuje własne
++     błędy, a zewnętrzne nie widzi żadnego z nich.
+
+@ 0 1 0 0b05aececb48c6f81a6b7423de317a69
++ entry .Validate   handler `validate` czekający na blok, który chroni
+
+% 1 1 0 14c6052e0adccab21de91ec015cfc0fd
+
+@ 0 5 0 1185edfedbe1163814bf95f2943525d0
++       `validate[focus](initial) { cases }` to `Validate[accrual, lambda, focus]`; `.protect
++       (block)` uruchamia blok z nowym `TrackFoci` i `TrackTactic` dla każdego objętego typu,
++       a następnie zwraca wynik łączenia. Można go skonstruować bezpośrednio –
++       `Validate[Tally, [r] =>> r raises CErrorA, Pointer](initial, cases)` – tam, gdzie
++       funkcja pomocnicza musi sama nazwać objęte typy.
+
+% 0 1 0 19fa298c162814b01dcd081853c2ddd0
+
+@ 0 3 0 096906e8ae6292541a8727835ce74cd9
++   entry .protect   uruchamia blok, rejestrując objęte błędy z ich fokusami; zwraca wynik łączenia
++   entry #initial   akumulacja przed jakimkolwiek błędem
++   entry #lambda   funkcja łącząca: każdy błąd, z fokusem `prior` i dotychczasowym `accrual`, w nową akumulację
+
+@ 0 4 0 09ee6ba362e61ab31b00dc956ab7b2fc
++ entry .accrual   dotychczasowa akumulacja, wewnątrz przypadku `track`, `validate` lub `accrue`
++     Odczytuje kontekstową wartość `accrual aka "accrual"`, którą fold `track` lub `validate` przekazuje
++     każdemu przypadkowi: `case error: Number.Error => Invalid(accrual.problems :+ error.text)`. Poza
++     takim przypadkiem żadnej takiej wartości nie ma w zasięgu.
+
+@ 0 7 0 1f0823580413ae8a0d0794b332cbef44
++ entry .focus   uruchamia blok i oznacza każdy zarejestrowany w nim błąd fokusem
++     `focus(transform)(block)` wartościuje blok, a następnie – niezależnie od tego, jak się zakończył – uzupełnia
++     każdy błąd, który `Foci[focus]` w zasięgu zarejestrował w jego trakcie, fokusem wytworzonym przez
++     `transform`. Transformacja otrzymuje `prior`, `Optional[focus]` już dołączony (przez
++     wewnętrzne `focus`), więc przejście schodzące w głąb struktury składa pozycje od środka
++     na zewnątrz: `focus(prior.or(Pointer.Self)(t"name"))`. Bezczynny `Foci.default` niczego nie rejestruje,
++     a `Foci#active` pozwala gorącej pętli całkowicie pominąć opakowywanie.
+
+% 2 1 0 04bdf8cb15bc0a0114d7bd764a3f2d58
+
+% 3 1 0 044b48f685c14d3010a21ca14d90c2d7
+
+% 4 1 0 0c4ecfd994876c1c0b53acfd4914fc83
+
+% 0 1 0 0d3f23b4b92f99fc1810338171151b25
+
+% 0 1 0 010df9107a2e60f21669ae47de9d3a56
+
+% 0 1 0 13b182bdcaacd02112059e595cb30b48
+
+% 0 1 0 0667df2eae4fd8a6122e99cdc96bea89
+
+% 0 1 0 025fc88130415d8a15bfee9ff5115ccc
+
+% 1 1 0 1daa46b1e710889210db396d7f211083
+
+@ 0 1 0 07852b64dec7718e1adcdf3a6c7a3919
++ entry .Foci   rejestr miejsc, w których zarejestrowano błędy: pozycje zbierane przez `track` lub `validate`
+
+% 1 1 0 1081c30c432a58b708f975950b7133e4
+
+@ 0 6 0 125f60dddf8ce8a20eadb57339ac9b42
++       `Foci[focus]` to mutowalny rejestr, do którego raportuje `TrackTactic`: każdy błąd z
++       `Optional[focus]` mówiącym, w którym miejscu struktury powstał, a który `focus` wypełnia, gdy
++       przejście się zwija. `TrackFoci` to implementacja rejestrująca, którą instalują `track` i
++       `validate`; `Foci.default` to bezczynna implementacja w zasięgu niejawnym wszędzie indziej,
++       więc metodę zadeklarowaną jako `tracks focus` zawsze można wywołać, a pozycje obserwuje tylko
++       otaczające `track` lub `validate`.
+
+% 1 1 0 1b598b6ab14147a30c161661f76e7ebc
+
+% 0 1 0 0d071da936b5907607d1443f539a38e9
+
+% 0 1 0 028448c59979e4301d70d866b98a4b48
+
+@ 0 19 0 0042bcb6f87958881e718af0c374cbde
++   entry .default   bezczynny `Foci` w zasięgu niejawnym: niczego nie rejestruje, nie raportuje sukcesu
++       Jego `active` to `false`, `length` wynosi 0, `register` i `supplement` odrzucają
++       wszystko, `fold` zwraca wartość początkową, a `success` to `false` (żaden błąd nie został
++       zarejestrowany, ale też niczego nie śledzono).
++   entry #active   czy zarejestrowane błędy są zachowywane; `false` tylko dla `Foci.default`
++       Gorąca pętla dekodowania sprawdza tę wartość, aby pominąć opakowywanie każdego pola w `focus`
++       i domknięcie alokowane przy każdym opakowaniu, gdy żaden fokus nigdy nie zostałby zaobserwowany.
++   entry #length   ile błędów zarejestrowano
++   entry #success   czy śledzenie się odbyło i nie zarejestrowano żadnego błędu
++   entry #register   rejestruje błąd, jeszcze bez fokusu
++   entry #fold   składa zarejestrowane błędy, każdy z jego fokusem, w akumulację
++       `fold(initial)((focus, accumulation) => { case error => … })`: lambda otrzymuje
++       fokus i akumulację i zwraca funkcję częściową na błędzie.
++   entry #supplement   stosuje transformację do fokusu ostatnich `count` zarejestrowanych błędów
++       Sposób, w jaki `focus` dołącza pozycję: transformacja przyjmuje już obecny `Optional[focus]`
++       i zwraca nowy.
++   entry #truncate   odrzuca każdy błąd zarejestrowany po pierwszych `length`
++       Sposób, w jaki `TrackTactic#tolerate` wycofuje to, co zarejestrował jego blok.
++   entry #tainted   czy zarejestrowano jakikolwiek błąd
+
+@ 0 4 0 1a3fe2995c529af60b0affe4a6945e66
++ entry .TrackFoci   rejestrujący `Foci`: zachowuje każdy zarejestrowany błąd z jego fokusem
++     Implementacja instalowana przez `track` i `validate`, z `ArrayBuffer` błędów i
++     drugim z ich `Optional[focus]`. Można ją związać jako lokalny given, aby obserwować fokusy
++     bez `track` (`given Foci[Pointer] = TrackFoci()`).
+
+@ 0 1 0 001f1fe1d0eb0a9c1a1886e2dd428518
++ entry .Pointer   ścieżka z kropkami wewnątrz struktury, jako fokus błędu
+
+% 1 1 0 0c8aeb47054bce6e18b03075a43e0ac5
+
+@ 0 5 0 17fb0a832b37312a1196878034424cb9
++       Najprostszy typ fokusu: `Pointer.Self` to korzeń, a `Pointer.Child(parent, label)`
++       jeden krok w dół. `Pointer(t"a")(t"b")(t"c")` buduje ścieżkę przedstawianą jako `a.b.c` i
++       jest typem fokusu używanym w przykładach `validate` tam, gdzie struktura nie ma własnego typu
++       wskaźnika. Jest `Encodable in Text` i `Communicable`, więc interpoluje się do
++       komunikatu jako swój tekst z kropkami.
+
+% 2 1 0 004e77c2488e8cb804f7107a253e10a0
+
+% 3 1 0 0c118fce6c81634a17d97508cbc5408d
+
+% 0 1 0 1ddb70beb21e17280994b28f4eab5804
+
+% 0 1 0 071faee78810dbfd08d0e0858b3fd1b0
+
+% 1 1 0 1c1b73a26bdaef3904ed1860d9d1e4fc
+
+@ 0 5 0 0003a391e6c2100800d4be3e9f35102e
++   entry .apply   `Pointer()` to korzeń; `Pointer(label)` to dziecko korzenia
++   entry .encodable   przedstawia wskaźnik jako jego tekst z kropkami
++   entry .communicable   przedstawia wskaźnik jako komunikat z jego tekstem z kropkami
++   entry #text   etykiety połączone znakiem `.`; pusty dla korzenia
++   entry #apply   `pointer(label)`: dziecko tego wskaźnika o tej etykiecie
+
+@ 0 1 0 0297260ad8a7fd900e7a6948d0d7e75f
++ entry .TrackTactic   taktyka wstrzykiwana przez `track` i `validate`: rejestruje każdy błąd w fokusach i kontynuuje
+
+% 1 1 0 0418339ffce41d6f04a864618da06638
+
+@ 0 12 0 152453220fcb07091a0211a72ef09914
++       `Tactic[error]` nad etykietą `boundary`, początkową akumulacją i `Foci`, do którego
++       rejestruje, z `Diagnostics`, za pomocą których buduje błędy. `record` rejestruje
++       błąd i powraca; `abort` rejestruje go i wyskakuje z bloku; `certify` wyskakuje,
++       jeśli fokusy są skażone; `tolerate` przycina fokusy do stanu sprzed
++       swojego bloku.
++   entry #diagnostics   `Diagnostics`, za pomocą których budowane są błędy
++   entry #record   rejestruje błąd w fokusach i powraca
++   entry #finish   operacja pusta, zachowana ze względu na kształt taktyki
++   entry #certify   wyskakuje ze śledzonego bloku, jeśli zarejestrowano jakikolwiek błąd
++   entry #tainted   czy fokusy zawierają jakikolwiek błąd
++   entry #tolerate   wartość bloku albo `Unset`, z zarejestrowanymi w nim błędami usuniętymi z fokusów
++   entry #abort   rejestruje błąd i wyskakuje ze śledzonego bloku
+
+@ 0 1 0 1403e24f00fde1d10434f28251f986f6
++ entry .Errors   kilka błędów raportowanych razem, każdy z kluczem w postaci tekstu swojego fokusu
+
+% 1 1 0 07172af0bc9c678f0e4233ab892a241e
+
+@ 0 3 0 0abb2576660014be112cd55e98a6f78f
++       Błąd `↯/s.24.5`: _`n` accrued errors: `message` at `focus`; …_. `Error` przechowujący
++       pary `(Text, Error)`, przeznaczony dla walidacji, która zbiera każdy problem przed porażką.
++       Buduje się go pustego i rozszerza przez `+`, a błąd fokusu wyszukuje się przez `apply`.
+
+% 2 1 0 1318c38d8bf7030316eb8c95216bd92e
+
+% 3 1 0 0ebd76fa7937c8d817e388181172d6ee
+
+% 4 1 0 0094536c09938dc0046b8fce0e3b8cb4
+
+% 0 1 0 112dcc59abf1dff808be4eafcba8d5b5
+
+% 0 1 0 02c5f684ea9474a5159e7a9474de69ac
+
+% 0 1 0 04a6b62292d1fa0a18bee4add70b59ff
+
+% 1 1 0 12f63cb0f171b6bf1d70046f50e1fa53
+
+@ 0 3 0 1e60f99b3f5247f914c0b494f094d092
++   entry #errors   pary `(focus, error)`, od najnowszej
++   entry #+   `errors + (focus, error)`: nowe `Errors` z jedną parą więcej
++   entry #apply   błąd zarejestrowany przy fokusie albo `Unset`
+
+@ 0 1 0 04804f7fecb7097d0c949c6dce609a26
++ entry .Validation   kilka komunikatów raportowanych razem, każdy przy `Pointer`
+
+% 1 1 0 0695496ee5cdded51c46e257366526f7
+
+@ 0 5 0 09c791c77cc66f370e809447446bf6f8
++       Błąd `↯/s.24.3`: _`n` messages: `message` at `pointer`; …_ (z `no messages`, `one
++       message`, `two messages`… dla małych liczb, a komunikat przy `Pointer.Self` pokazywany
++       jest bez pozycji). `Error` przechowujący pary `(Pointer, Message)` dla potoku, który
++       przechodzi strukturę i akumuluje to, co uzna za błędne, zamiast przerywać przy
++       pierwszym problemie. Buduje się go pustego i rozszerza przez `+`.
+
+% 2 1 0 0b91c606086db7c404a29a1e8f209c2f
+
+% 3 1 0 0c710824fbaf812e10d57fb0e8f7acef
+
+% 4 1 0 1084b1da26a6b67613d9d85a5818e553
+
+% 0 1 0 164828b5d89fe61a03450473813a5a6b
+
+% 0 1 0 007807ee9a12192a0382842ac9ffedba
+
+% 0 1 0 1f181463aa6d04431b1e07faa5899d09
+
+% 1 1 0 097d62a68bd2cea319d876054703a747
+
+@ 0 5 0 05ba72496a457d5e06be06330502ed31
++   entry .text   komunikat dla listy par `(Pointer, Message)`: liczba, a potem każdy komunikat przy swoim wskaźniku
++   entry #messages   pary, od najnowszej
++   entry #+   `validation + (pointer, message)`: nowa `Validation` z jedną parą więcej
++   entry #apply   komunikat zarejestrowany przy wskaźniku albo `Unset`
++   entry #text   komunikat walidacji, tak jak przedstawia go `Validation.text`
+
+@ 0 1 0 0cf39984f802143e1f480c0d90f13b27
++ entry .Expectation   miejsce `Expectation.Error`, zgłaszanego, gdy blok `capture` kończy się sukcesem
+
+% 1 1 0 0d88eb28408e550d1980844cf0cd1796
+
+@ 0 2 0 016e3783c532f26217acf973ee51bfd7
++       `capture` oczekuje, że jego blok zawiedzie, i zwraca zgłoszony przez niego błąd; `Expectation`
++       nazywa to oczekiwanie, aby jego zawód miał gdzie mieszkać.
+
+% 1 1 0 1ec3e7bcd294bc7f0e2fcceec0dd752b
+
+@ 0 1 0 19121da42bbf532c0c83e38560775bf8
++   entry .Error   zgłaszany przez `capture`, gdy oczekiwano, że blok zawiedzie, a zakończył się sukcesem
+
+% 1 1 0 02637c5c0a822f010b50d7005df8d92d
+
+@ 0 5 0 172d6d3dd945d652094483ad929ab419
++         Błąd `↯/s.24.16`: _the expression was expected to fail, but succeeded_. Niesie wartość, którą
++         blok zamiast tego wytworzył, aby test mógł zobaczyć, co zostało zwrócone. `capture` wymaga do tego
++         `Tactic[Expectation.Error[success]]` w zasięgu, którą dostarcza
++         `strategies.throwUnsafely`.
++     entry #result   wartość, którą blok wytworzył, zamiast zawieść
+
+@ 0 8 0 0758a206c60c3829035441f389dca658
++ entry .venture   wartościuje blok gorliwie, pamiętając, czy zarejestrował jakiś błąd
++     `venture(block)` uruchamia blok natychmiast, pod `VentureTactic` wstawioną przed
++     otaczającą `Tactic[error]`: każdy zgłoszony przez niego błąd jest rejestrowany w otaczającym zasięgu dokładnie
++     tak, jak byłby na zewnątrz, ale wynikiem jest `Venture[value]` – wartość, jeśli blok
++     niczego nie zarejestrował, albo znacznik `Failed`, jeśli zarejestrował. `abort` wewnątrz przedsięwzięcia jest
++     *odgraniczone*: rejestruje swój błąd i porzuca tylko to przedsięwzięcie, więc sąsiednie przedsięwzięcia
++     wnoszą każde pełny zestaw swoich błędów, a kod, który później wymusza nieudane przedsięwzięcie przez
++     `venture()`, jest pomijany, zamiast otrzymywać wartość zastępczą.
+
+% 2 1 0 04b17ddd5365e6e5071a3d47ce331050
+
+% 3 1 0 15b809c8a90c118605215829918d3d1e
+
+% 4 1 0 1bd818e6b36f51210ddc591991ccba95
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 0dd75933a3ab40501c06206ce974a13d
+
+% 0 1 0 153d3dd38d0e7ff310648120a97af1c3
+
+% 0 1 0 0d94c8e28ede36be0c5dc1e9d4d80acb
+
+% 0 1 0 16605f6aeffbcd2916a201d42851079a
+
+% 0 1 0 1fb470897531c5850cbf2bb5ec5f6315
+
+% 0 1 0 1f90964b5c93bc8417ea37ef0df9d6a2
+
+% 0 1 0 0b13bdbf1f9daae516930ba13fa49335
+
+% 0 1 0 1430ee9e126bdf36159e6ca1a99a1a97
+
+% 0 1 0 0388ca821a3c1e240dd7f6cd4bbe31b8
+
+% 0 1 0 0b87a8cb49d49f511baf90d2fa1c635e
+
+% 1 1 0 05360d887eb84a250d6f5a78dd2a1057
+
+@ 0 4 0 0395aa58e21200ac13fce251f285b52d
++     Pod natychmiastowo przerywającą otaczającą taktyką (`safely`, `throwUnsafely`, `attempt`…) przekazane
++     `record` ucieka natychmiast, a `venture` jest przezroczystym gorliwym wartościowaniem: ta sama
++     treść służy każdej strategii. Blok otrzymuje jedną zdolność, która jest zarazem jego taktyką
++     i jego `Guard` (`Venturer[error]`), więc przedsięwzięcie można wymusić wewnątrz innego.
+
+@ 0 6 0 1a0254352afe74140d305312a1f33f1c
++ entry .guard   uruchamia blok tylko wtedy, gdy dotąd niczego nie zarejestrowano; w przeciwnym razie oddaje zasięg
++     `guard(block)` sprawdza `tainted` otaczającej `Tactic[error]`: jeśli jest czysta, blok działa
++     ze zdolnością `Guard` w zasięgu (więc można w nim wymuszać przedsięwzięcia); jeśli jest skażona,
++     blok jest pomijany przez certyfikację taktyki, co oddaje cały zasięg agregacji
++     jego zakumulowanym błędom. Wymuszenie nieudanego `Venture` wewnątrz bloku ucieka w ten sam sposób.
++     Pod natychmiastowo przerywającą taktyką `tainted` jest zawsze `false`, więc `guard` jest tożsamością.
+
+% 2 1 0 048ff01d3b513a3f05ed2beedad1191b
+
+% 3 1 0 1dcb5b2c952e3e7815d18956ecb0a567
+
+% 4 1 0 1fe5229f95311b3916fbf759a25072d4
+
+% 0 1 0 10c8c77b85aa22b70e8fcbe0c80f9d58
+
+% 0 1 0 110cedfe59a75ec417c5cb58d99d918a
+
+% 0 1 0 18aa210f957d21911055c882a36dfcd0
+
+% 0 1 0 01062207b138b883070996e232918224
+
+% 1 1 0 147d6e8b13b7389413be03468b9e83d0
+
+@ 0 1 0 1a93b413d69367ff0003d1848054ff27
++ entry .Guard   świadek otaczającego zasięgu pomijania, do którego może uciec nieudane `Venture`
+
+% 1 1 0 1635a265e3d93e4004ddb175fe695f1f
+
+@ 0 5 0 1dbffadebde8dbd904f9f99a703ffda1
++       Zdolność dostarczana do bloku `venture` lub `guard`: wymuszenie `Venture` przez
++       `venture()` jej wymaga, tak aby wymuszenie było możliwe tylko tam, gdzie istnieje leksykalny region
++       do porzucenia. `escape()` wykonuje porzucenie – dla `venture` sprawia, że samo przedsięwzięcie
++       zawodzi; dla `guard` certyfikuje otaczającą taktykę. Bez zasięgu pomijania w kontekście
++       wymuszenie się nie kompiluje: nie byłoby żadnego dobrze określonego miejsca, do którego można by przeskoczyć.
+
+% 1 1 0 07a131e6e088d3320f4bdb2cc0fc558f
+
+% 2 1 0 08ef44d50ee123ef1896dac7d0805b91
+
+@ 0 1 0 1676f04c40ec3fc81d65a28d17daae2a
++   entry #escape   porzuca otaczający zasięg pomijania; nie powraca
+
+@ 0 5 0 077c2b8b1623e1b315464cfe973ce952
++ entry .Venturer   jedyna zdolność, którą otrzymuje blok `venture`: jego taktyka, będąca zarazem jego `Guard`
++     `Venturer[error]` to `Tactic[error] & Guard`: odgraniczająca taktyka przedsięwzięcia i jego własny
++     świadek zasięgu pomijania są tym samym obiektem, przekazywanym raz, ponieważ tej samej zdolności nie można
++     przekazać dwukrotnie przy sprawdzaniu separacji. Nazwany alias, ponieważ ujętego w nawiasy przechwytującego
++     przecięcia nie da się sparsować w pozycji funkcji kontekstowej.
+
+@ 0 1 0 004feb882c50b643132309cba34c6386
++ entry .Venture   wynik `venture`: wartość albo znacznik, że zarejestrowano błędy
+
+% 1 1 0 1213c244c42c9f8b0717c94a344475c2
+
+@ 0 5 0 13f28ae44ad842261f7a6701b2bba135
++       `Venture[value]` to nieprzezroczysta unia `value` i `Venture.Failed`, więc udane
++       przedsięwzięcie niczego nie alokuje – nieprzezroczysta, w odróżnieniu od `Optional`, tak aby `apply()` rozwiązywało się tylko
++       na przedsięwzięciach. Same błędy nie są tu przechowywane: zostały zarejestrowane w
++       otaczającej taktyce przy deklaracji przedsięwzięcia, a `Failed` jedynie oznacza wartość jako bezużyteczną,
++       dlatego wymuszenie nieudanego przedsięwzięcia niczego więcej nie raportuje.
+
+% 2 1 0 0d2979053a7d563501e008e4a76369d8
+
+% 3 1 0 136216fd9169f6840054c89e0ca4b3a6
+
+% 4 1 0 060c9956a7c91d2d16d495d7d89090e8
+
+% 0 1 0 12eb39130fc15e48164fae5ba3544192
+
+% 0 1 0 0e876a2cebad134307fe00d7cdec3a21
+
+% 0 1 0 133dbeae5dcad3e00c844657ff2d4e41
+
+% 0 1 0 080f94265a3f68c30c60d891b8e80311
+
+% 0 1 0 1c62f93bac52529a12b987a5eee6b251
+
+% 1 1 0 0cea95f61aaef48e0a95b616bd5dfcd3
+
+% 1 1 0 10c7e75784aedf7f1234dbaafc5f364e
+
+% 2 1 0 1ff83f384db8d1b905f31bf65dd5591d
+
+% 0 1 0 1cdbb09a682f0548044b9f5bed4aa04b
+
+@ 0 13 0 0552254078b9c37518e1049fd6c722e6
++   entry .Failed   znacznik przedsięwzięcia, które zarejestrowało błędy
++   entry .Type   typ nieprzezroczysty `Failed.type | value`, którego aliasem jest `Venture[value]`
++   entry .apply   `Venture(value)` to gotowe przedsięwzięcie; `venture()` je wymusza, uciekając, jeśli się nie powiodło
++       `Venture.apply(value)` opakowuje wartość jako gotowe przedsięwzięcie. Rozszerzenie `venture()` na
++       instancji to wartość albo ucieczka do otaczającego zasięgu pomijania, jeśli przedsięwzięcie się nie powiodło:
++       wymaga `Guard^` w zasięgu – otaczającego bloku `venture` lub `guard` – i bez niego się nie
++       kompiluje.
++   entry .failed   nieudane przedsięwzięcie, dowolnego typu wartości
++   entry .ready   czy przedsięwzięcie przechowuje wartość, a nie `Failed`
++   entry .vouch   wartość, z paniką, jeśli przedsięwzięcie się nie powiodło
++       Wymuszenie bez ucieczki dla przedsięwzięcia, które wywołujący już sprawdził przez `ready` – na przykład
++       dekoder, który sprawdza całą partię przed użyciem którejkolwiek wartości. Natrafienie tu na nieudane przedsięwzięcie to
++       błąd logiczny, więc wywołuje panikę, zamiast pomijać.
+
+@ 0 1 0 0e3a9e7401c645d202a9dbe04248784f
++ entry .VentureTactic   taktyka wstawiana przez `venture`: rejestruje w otaczającym zasięgu, przerywa tylko przedsięwzięcie
+
+% 1 1 0 0d7a5f8726941eef0d97e406f892db00
+
+@ 0 16 0 1b81f00904d8d5951ad958e8a549dbd8
++       `Tactic[error]` i `Guard` nad otaczającą taktyką i etykietą `boundary`
++       przedsięwzięcia. `record` zlicza błąd i przekazuje go otaczającej taktyce; `abort` robi to
++       samo i wyskakuje z przedsięwzięcia z `Venture.failed`; `certify` sprawia, że przedsięwzięcie zawodzi, jeśli
++       cokolwiek zarejestrowało; `tolerate` deleguje do `tolerate` otaczającej taktyki i
++       przywraca własny licznik przedsięwzięcia; `escape` sprawia, że przedsięwzięcie zawodzi. Pod natychmiastowo przerywającą otaczającą
++       taktyką przekazane `record` nigdy nie powraca.
++   entry #diagnostics   `Diagnostics` otaczającej taktyki
++   entry #failed   czy podczas wartościowania tego przedsięwzięcia zarejestrowano błąd
++       Różne od `tainted`, które odzwierciedla także otaczający zasięg: niepowodzenie wcześniejszego
++       przedsięwzięcia nie może powodować niepowodzenia tego.
++   entry #tainted   czy to przedsięwzięcie lub otaczający zasięg zarejestrowały błąd
++   entry #record   zlicza błąd i przekazuje go otaczającej taktyce
++   entry #abort   zlicza i przekazuje błąd, a następnie porzuca przedsięwzięcie
++   entry #certify   porzuca przedsięwzięcie, jeśli cokolwiek zarejestrowało
++   entry #tolerate   `tolerate` otaczającej taktyki, z późniejszym przywróceniem licznika tego przedsięwzięcia
++   entry #escape   porzuca przedsięwzięcie, nie rejestrując niczego więcej
+
+@ 0 1 0 03ef2525794e2b0a11570efe976ceb1d
++ entry .ThrowTactic   taktyka, która rzuca wyjątki: za `throwUnsafely`, `throwSafely`, `unsafely` i `throwErrors`
+
+% 1 1 0 1a2a13b39ca272951e1ac51f1f9bce8b
+
+@ 0 7 0 0c6e92377458843e054e41721e870220
++       `Tactic[error]`, którego `record` i `abort` rzucają błąd jako niesprawdzany
++       wyjątek, budowany z `Diagnostics.capture`, więc niesie ślad stosu. Rzucająca
++       taktyka niczego nie przechwytuje (`CanThrow` jest wymazywany), co czyni ją naturalną otaczającą
++       strategią: `.ambient` to czysta instancja dostarczana przez `strategies.throwUnsafely`, a
++       formy z zasięgiem tworzą własne. Kontrawariantna względem `error`, więc jedna `ThrowTactic[Hazard]`
++       spełnia każdą `Tactic[error]`. Lokalny `given tactic: Tactic[Json.Error] = ThrowTactic()`
++       to sposób na dostarczenie rzucającej taktyki jednej metodzie bez importowania strategii.
+
+% 1 1 0 1b78daeed640ac0a0c39b55f12fe883f
+
+@ 0 8 0 07c4c97098af8c3e1ca9baf60a564311
++   entry .ambient   czysta `ThrowTactic[Hazard]^{}` za `strategies.throwUnsafely`
++       Czysta wartość, tak jak `unsafeExceptions.canThrowAny`: rzucanie bez zasięgu nie zachowuje punktu
++       powrotu, a śledzona otaczająca taktyka nie mogłaby spełnić ani syntetyzowanego thunka derywacji,
++       ani lambdy, która zgłasza przez nią błędy.
++   entry #diagnostics   `Diagnostics.capture`: rzucony błąd niesie swój ślad stosu
++   entry #record   rzuca błąd
++   entry #abort   rzuca błąd
++   entry #certify   operacja pusta: rzucony błąd już uciekł
+
+@ 0 1 0 1a505b000b1e99b009a5735f9679e41c
++ entry .OptionalTactic   taktyka instalowana przez `safely` i `dare`: wyskakuje z `Unset`
+
+% 1 1 0 0d1b38c0c49aca2b01cc3f103f3e6281
+
+@ 0 3 0 0816807c297f6a1d0d31a8b8a272290a
++       `Tactic[error]` nad `boundary.Label[Optional[success]]`: `record` i `abort`
++       wyskakują z bloku z `Unset`, a błąd nigdy nie jest materializowany, więc buduje się go
++       z `Diagnostics.omit`.
+
+% 0 1 0 01ee536f18b2a2de0dc57f38520f9f24
+
+% 0 1 0 04b145155b876e350c22b5e01b7e74d9
+
+% 0 1 0 0c3a38db5cb432ac18e4bb8d72683bed
+
+@ 0 4 0 0b6d099234ce6ac80d8c3c41e18c3d24
++   entry #diagnostics   `Diagnostics.omit`: błąd jest odrzucany, więc żaden ślad nie jest przechwytywany
++   entry #record   wyskakuje z bloku z `Unset`
++   entry #abort   wyskakuje z bloku z `Unset`
++   entry #certify   operacja pusta
+
+@ 0 1 0 03beb920f013e30e0f9b97d5a6c51115
++ entry .AttemptTactic   taktyka instalowana przez `attempt`: wyskakuje z `Attempt.Failure(error)`
+
+% 1 1 0 0bfb161a00d5283011b7fcf556283041
+
+@ 0 3 0 1e78f7033c3a096301f633ae56897197
++       `Tactic[error]` nad `boundary.Label[Attempt[success, error]]`, z
++       `Diagnostics` w zasięgu w miejscu `attempt`: `record` i `abort` wyskakują z błędem
++       opakowanym jako `Failure`.
+
+% 1 1 0 1fce61e7932562ea055018b14be5db77
+
+% 0 1 0 083cdc4cb5b22a3f0669f28fa4cb1d3b
+
+% 0 1 0 1d783ff26a5462e90ec68793411c2117
+
+@ 0 4 0 1be5bdd2bb9c8aef09d056be076e819b
++   entry #diagnostics   `Diagnostics` dany w miejscu `attempt`
++   entry #record   wyskakuje z `Attempt.Failure(error)`
++   entry #abort   wyskakuje z `Attempt.Failure(error)`
++   entry #certify   operacja pusta
+
+@ 0 1 0 002f86db8240b6ab04500ac3623d109c
++ entry .EitherTactic   taktyka instalowana przez `capture`: wyskakuje z `Left(error)`
+
+% 1 1 0 039d7173b743c464122f9d3a0484b2d7
+
+@ 0 3 0 0f7a4dd01b5d34bd0939a1798d70db22
++       `Tactic[error]` nad `boundary.Label[Either[error, success]]`, z
++       `Diagnostics` w zasięgu: `record` i `abort` wyskakują z `Left(error)`. `capture`
++       rozpakowuje `Either`, aby zwrócić błąd, albo przerywa z `Expectation.Error` przy
+
+% 0 1 0 119cef5407e9b9c7015df83bcfdbbf60
+
+% 1 1 0 193d66f43ae5d4dd1f66cce12647dec7
+
+@ 0 4 0 19973ccdee6576da1c5473b746f3126d
++   entry #diagnostics   `Diagnostics` dany w miejscu `capture`
++   entry #record   wyskakuje z `Left(error)`
++   entry #abort   wyskakuje z `Left(error)`
++   entry #certify   operacja pusta
+
+@ 0 1 0 19046a34c83843260a73790bd00773de
++ entry .AmalgamateTactic   taktyka instalowana przez `amalgamate`: wyskakuje z samym błędem
+
+% 1 1 0 01d1aed10fe3278a097b793c04961f34
+
+@ 0 3 0 10e7f153c09518d411a08a6c8430a770
++       `Tactic[error]` nad `boundary.Label[success | error]`, z `Diagnostics` w
++       zasięgu: `record` i `abort` wyskakują z gołym błędem, który wywołujący
++       odróżnia od wartości przez dopasowanie typu.
+
+% 0 1 0 01f988450a0c98030f1879cc034fc227
+
+% 0 1 0 157eea3f09856afe1d7ad296c26cfd67
+
+% 0 1 0 124863d3e889b56616a33460321b9997
+
+@ 0 4 0 158ca08079d565900986ffdfc7f891de
++   entry #diagnostics   `Diagnostics` dany w miejscu `amalgamate`
++   entry #record   wyskakuje z błędem
++   entry #abort   wyskakuje z błędem
++   entry #certify   operacja pusta
+
+@ 0 1 0 1e0da7b742c05c6d1f05f8bef5e77551
++ entry .HaltTactic   taktyka dla makr: błąd zatrzymuje kompilację ze swoim komunikatem z etykietą
+
+% 1 1 0 03800769e56d574a07996d936f8cdf9f
+
+@ 0 5 0 0953f1e6c2314d450a0c150ef0cc8299
++       `open class` przyjmująca `Quotes`, dla `error <: Error`: `record` i `abort` wywołują
++       `halt` z komunikatem `labelled` błędu (jego kodem bolt i tekstem), więc parsowanie, które
++       zawodzi w czasie rozwijania makra, jest raportowane jako błąd kompilacji. `abortive` instaluje jedną; makro,
++       które chce umiejscowić błąd przy konkretnym drzewie, tworzy jej podklasę i nadpisuje
++       `record`/`abort`, aby przekazać pozycję.
+
+% 0 1 0 015d429060a19c101559184ee34a9e17
+
+@ 0 4 0 0eb7b3a51df7a95317f1b9a606496e91
++   entry #diagnostics   `Diagnostics.omit` jako given: błąd czasu kompilacji nie potrzebuje śladu stosu
++   entry #record   zatrzymuje kompilację z komunikatem błędu
++   entry #abort   zatrzymuje kompilację z komunikatem błędu
++   entry #certify   operacja pusta
+
+@ 0 1 0 01e31ff3885c46791ce713af2b41b931
++ entry .UncheckedTactic   taktyka, która rzuca błąd sklasyfikowany jako `Unchecked`
+
+% 1 1 0 1250bd486f997ae20863dd6c866c7f33
+
+@ 0 4 0 14f2c0a242e63d21083fb82982ad1072
++       `Tactic[error]`, którego `record` i `abort` rzucają wyjątek, budowany z
++       `errorDiagnostics.stackTracesDiagnostics`. Dowód `error is Unchecked` jest sprawdzany
++       w miejscu przywołania przez `strategies.uncheckedErrors`, które dostarcza czystą
++       instancję `.ambient`, a nie przechowywany przez taktykę.
+
+% 1 1 0 1bddd79a86316b431f29ad00ca27c633
+
+@ 0 5 0 0f8cfa2978ae35ae084c152475159830
++   entry .ambient   czysta `UncheckedTactic[Hazard]^{}` za `strategies.uncheckedErrors`
++   entry #diagnostics   ślady stosu są przechwytywane, jako given
++   entry #record   rzuca błąd
++   entry #abort   rzuca błąd
++   entry #certify   operacja pusta
+
+@ 0 1 0 1e004ddf2f2388d912693caf3d2a4f40
++ entry .FatalTactic   taktyka, która kończy proces ze statusem `Exit` błędu
+
+% 1 1 0 18ca371321e2070c1386975179728962
+
+@ 0 4 0 093bddad5ea737540405c00435612fa5
++       `Tactic[exception]` dla typu błędu z givenem `is Fatal`: `record` i `abort`
++       pytają instancję `Fatal` o status `Exit` błędu i kończą proces przez `terminate()`
++       z tym statusem. `strategies.fatalErrors` dostarcza czystą instancję. Nieeksportowana do
++       modułu zbiorczego `soundness`: sięga się do niej przez strategię, nie przez bezpośrednie nazwanie.
+
+% 1 1 0 02f559a56a5e6c410a73aa2b64917e2f
+
+@ 0 4 0 019b6744de4bcb1a1ff5bcc763d03265
++   entry #diagnostics   ślady stosu są przechwytywane, jako given
++   entry #record   kończy proces ze statusem błędu
++   entry #abort   kończy proces ze statusem błędu
++   entry #certify   operacja pusta
+
+@ 0 6 0 0281222e217d154d14d53853bdd1c15a
++ entry .Unchecked   klasa typów-znacznik dla błędu, który można rzucić bez obsłużenia
++     `error is Unchecked` nie ma składowych, więc given może być `erased`: `erased given
++     AsciiError is Unchecked`. Po zaimportowaniu `strategies.uncheckedErrors` metodę zgłaszającą
++     niesprawdzany błąd można wywołać bez taktyki dla niego w zasięgu, a błąd zostaje rzucony.
++     Klasyfikacja jest zapewnieniem autora, że niepowodzenia nie warto obsługiwać w
++     każdym miejscu, choć nadal jest ono zadeklarowane w typie.
+
+@ 0 1 0 1db3c0811a3d270405bdec0f2d03bf4f
++ entry .Fatal   klasa typów dla błędu, który kończy proces, określająca, z jakim statusem
+
+% 1 1 0 043a39dc5f7cad771e2a33abad57045a
+
+@ 0 3 0 1f25719c9f3a1c3716339fda30fb1556
++       `error is Fatal` odwzorowuje błąd na status `Exit`, z którym proces powinien się zakończyć; pod
++       `strategies.fatalErrors` zgłoszenie takiego błędu kończy proces. Nadaje się do
++       niepowodzeń podczas inicjalizacji, gdy nie ma sensownego sposobu kontynuowania.
+
+% 2 1 0 09db1b3e91b75ea0025d053842b7816c
+
+% 3 1 0 133d1e5108fdecb808026eb1ad4ac27b
+
+% 0 1 0 0f3a03762ed0691a149daadc0a86b100
+
+% 0 1 0 19494235ba1228ac16d6233bcd7c2ef9
+
+% 0 1 0 1324ab2d48fa7a0c10f26468e9168201
+
+% 1 1 0 154f5da8ad60fa4a0493358428b0dc14
+
+% 1 1 0 0864f0065fc6589e04591b3d141fb297
+
+@ 0 2 0 1034e00395999bba1c43f4cd3a4a95de
++   entry #status   status `Exit` dla błędu
++   entry #contramap   `Fatal` dla innego typu, przez odwzorowanie go na ten
+
+@ 0 1 0 062447cfa098c75606aa5b4a72384d4d
++ entry .Mitigable   klasa typów określająca, jak jeden typ błędu staje się innym
+
+% 1 1 0 11fed3166d220645013916399324264e
+
+@ 0 6 0 078ce4be2951e4941fc3330e5cf9d4d0
++       `error2 is Mitigable to error` (`error mitigates error2` w zapisie infiksowym) ma jedną
++       metodę, `mitigate`, tłumaczącą `error2` na `error`. Po
++       zaimportowaniu `strategies.mitigation` każda `Tactic[error]` w zasięgu automatycznie daje
++       `Tactic[error2]`, więc niskopoziomowe niepowodzenie jest tłumaczone na granicy API, które
++       deklaruje zewnętrzny błąd, bez powtarzania tego w każdym miejscu wywołania. `mitigate { cases }`
++       to jawna forma o zasięgu bloku.
+
+% 2 1 0 1f18df56e9dc578f18eca388124e93e4
+
+% 3 1 0 03a3f4af94681ac1026985ff1db86d86
+
+% 4 1 0 00e136eb1202fcef11279fcfe9fef55f
+
+% 2 1 0 1f0f3ef077a7802210c06c1387727a85
+
+% 3 1 0 053b4892d0d4fe6314aa22e9dff78289
+
+% 5 1 0 059ae6fc9a2f78fe18cde3240927c7e9
+
+% 1 1 0 0fcc91263f39f7be19c943df617d14bb
+
+@ 0 2 0 123ada056101091f16daee000a7bdb81
++       Tłumaczenie odbywa się poza wszelkimi `Diagnostics` miejsca zgłoszenia; należy zaimportować jedną albo
++       zbudować nowy błąd `(using error.diagnostics)`.
+
+% 1 1 0 09f2e9c7f78846900906766b3d254b9e
+
+% 1 1 0 083e30f76a92e066000fc951afeeb300
+
+@ 0 3 0 13260272fd9e25f91855effcf477f564
++   entry #Self   typ błędu, z którego się tłumaczy
++   entry #Result   typ błędu, na który się tłumaczy
++   entry #mitigate   tłumaczenie jednego błędu na drugi
+
+@ 0 4 0 162ad7a0603722350295414124697117
++ entry .lest   `optional.lest(error)`: wartość albo przerwanie z błędem, jeśli `Unset`
++     Rozszerzenie dla `Optional[value]`: `optional.lest(error)` to wartość, gdy jest obecna, a
++     `abort(error)` względem `Tactic[error]^` w zasięgu, gdy jej brak. Zamienia brak w
++     zadeklarowane niepowodzenie w miejscu, w którym wartość jest wymagana.
+
+% 2 1 0 1f686aaa8196dff1027c987f7ba21276
+
+% 3 1 0 0b4782240df2c4ea1dc106894b94cfcc
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 0 1 0 1165e13a85f42038031c5dc4e707eb86
+
+% 0 1 0 0413ba56bdea1a9703853980da370a5e
+
+% 1 1 0 0beb95f43acf40a1043dec33981662f7
+
+@ 0 4 0 10fa68800cc1bb77032de959cea697b8
++ entry .dare   `optional.dare(block)`: stosuje zawodny blok do obecnej wartości, brak wartości przy niepowodzeniu
++     Rozszerzenie dla `Optional[value]`: `optional.dare[error](value => …)` to `Unset`, jeśli
++     wartość opcjonalna jest nieobecna, w przeciwnym razie wynik bloku albo `Unset`, jeśli blok zgłosi błąd – `let`
++     złożone z `safely`, z tą samą `OptionalTactic` i bez przechwytywania śladu stosu.
+
+% 2 1 0 05162b58f9a73bbd09c508f197f2c874
+
+% 3 1 0 1507999d6428ef750efb48010267f00c
+
+% 0 1 0 03beb396cf5ab3071a0339d72084f0b6
+
+% 0 1 0 0a9a6e8bae2f83be02d76d59b7122465
+
+% 1 1 0 10a2b2f24a7393100b6047264fe99e26
+
+@ 0 4 0 0dcccdfde8930ead185413241073d9ec
++ entry .survive   wyniki zawodnej lambdy na kolekcji, z odrzuconymi niepowodzeniami
++     Rozszerzenie dla dowolnego odbiorcy, który jest `Traversable by element`:
++     `collection.survive[error](element => …)` stosuje lambdę do każdego elementu pod
++     `safely`, zachowuje tylko wyniki, które nie zgłosiły błędu, i zwraca je jako
+
+% 0 1 0 1058f14c77ad6d2a1f918cd08bf029db
+
+% 2 1 0 117759f4a479861202fae0fe19f26ccf
+
+% 3 1 0 01b138781118f827148067384d4279ec
+
+% 0 1 0 0083370ada7bf76c0acb13da1681912e
+
+% 1 1 0 148851b4842984dd1aa5cdd5caece142
+
+@ 0 1 0 15d1b54b5e9d54ad198851d8a14a0973
++ entry .internal   implementacje makr za `recover`, `mitigate`, `accrue`, `handle`, `track` i `validate`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 20 0 0fd4d37f4a6a8fe51dd069211b533899
++       Nie do bezpośredniego użytku. Obiekt odczytuje przypadki dopasowania handlera w czasie kompilacji, aby ustalić,
++       które typy błędów pokrywają, buduje lambdę typową `[result] =>> (Tactic[E1], …,
++       Tactic[En]) ?=> result`, którą niosą wartości handlerów, i wplata taktyki w
++       blok objęty `protect`. Akceptowane wzorce: wzorzec typowany (unia pokrywa każdą
++       składową), wiązanie, alternatywy lub wyczerpujący ekstraktor klasy case; symbol wieloznaczny lub
++       niewyczerpujący wzorzec to błąd kompilacji.
++   entry .unwrap   usuwa z termu `Inlined` i bloki z pojedynczą definicją
++   entry .unpack   składowe typu unii, po rozwinięciu aliasów, jako lista
++   entry .track   buduje `Tracking` z handlera `track`
++   entry .validate   buduje `Validate` z handlera `validate`
++   entry .trackWithin   treść `Tracking.protect`
++   entry .validateWithin   treść `Validate.protect`
++   entry .recoverBuild   buduje `Recovery` z handlera `recover`
++   entry .mitigateBuild   buduje `Mitigation` z handlera `mitigate`
++   entry .accrueBuild   buduje `Accrual` z handlera `accrue`
++   entry .handleBuild   buduje `Handler` z handlera `handle`
++   entry .protectBody   treść `Handler.protect`
++   entry .mitigateBody   treść `Mitigation.protect`
++   entry .recoverBody   treść `Recovery.protect`
++   entry .accrueBody   treść `Accrual.protect`

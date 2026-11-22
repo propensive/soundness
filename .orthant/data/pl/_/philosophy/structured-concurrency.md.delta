@@ -1,0 +1,152 @@
+orthant 2 language
+
+@ 0 1 0 0bb7406c65f4195e0bb145cab3f9b16f
++ # Współbieżność strukturalna
+
+@ 0 6 0 13f37f2935a89dc50a1d863ca56b1266
++ Współbieżność w Soundness jest strukturalna: zadania uruchamia się w zasięgu, który jest ich
++ właścicielem, a ten zasięg nie kończy się, dopóki nie zakończą się jego zadania. Niepowodzenie
++ jednego zadania propaguje się do jego rodzeństwa i rodzica, zamiast zniknąć niezauważone,
++ a anulowanie zasięgu anuluje wszystko, co się pod nim znajduje. Współbieżne czasy życia
++ zagnieżdżają się jak bloki zwykłego kodu, więc praca równoległa ma tak samo wyraźny początek i
++ koniec jak praca sekwencyjna, i żadne zadanie nie przeżywa zasięgu, który je uruchomił.
+
+@ 0 1 0 197386b47088f7c602111ce79f77f5c5
++ ## Zasięg jest właścicielem zadania
+
+@ 0 2 0 122364f1850af72c1a094f00bc0b954f
++ `supervise` otwiera zasięg; `async` uruchamia w nim zadanie. Zasięg nie wraca, dopóki jego
++ dzieci się nie rozstrzygną, niezależnie od tego, czy cokolwiek na nie czekało:
+
+% 2 1 0 131b45c65c2cbdbc1cd3332e5f3860b1
+
+% 3 1 0 13522da2bda70d891cb11e255874a32f
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 19151d611c6de0cf17c9d86d2b0e35ea
+
+% 0 1 0 198b0d13abd9393819d2f453eab75e2d
+
+% 0 1 0 01ec73c9ff3d190c083dae6e683c7f49
+
+% 1 1 0 02960e878ef535d4013a8c00daa8e194
+
+@ 0 2 0 18ed9a83de3ba1121fcfec723995cd6b
++ Niestrukturalny odpowiednik – uruchomienie dwóch wątków i liczenie na szczęście – różni się
++ tym, co się dzieje, gdy coś pójdzie nie tak, a to jedyny przypadek, pod który warto
++ projektować.
+
+@ 0 1 0 0119fd13b3a0abf61f86d235074b75d3
++ ## Co daje struktura
+
+@ 0 5 0 1001e3ca96a6033218604767be661356
++ **Niepowodzenie ma dokąd trafić.** Wątek, który rzuca wyjątek, nie ma komu go zgłosić, więc
++ jego wyjątek zostaje wypisany, połknięty albo dostarczony do handlera, który nie ma pojęcia,
++ czego próbowano. Niepowodzenie zadania propaguje się do zasięgu, który jest jego
++ właścicielem, a ten anuluje pozostałe dzieci zasięgu – bo praca podjęta na rzecz obliczenia,
++ które już zawiodło, to praca, której ukończenia nikt nie chce.
+
+@ 0 3 0 168f36c529a1ddb11c91d4ac1889696f
++ **Anulowanie dociera do całego poddrzewa.** Anulowanie zasięgu anuluje jego dzieci, które
++ anulują swoje. Nie ma zbioru referencji do wątków do utrzymywania ani możliwości pominięcia
++ któregoś, bo drzewo własności już istnieje.
+
+@ 0 3 0 1734226298b0771d09a734b7d9dce9da
++ **Nic nie przeżywa powodu swojego istnienia.** Zadanie nie może przeżyć zasięgu, który je
++ uruchomił, więc pytanie „czy ta praca w tle wciąż działa?” ma odpowiedź strukturalną, a nie
++ empiryczną.
+
+@ 0 1 0 15c104ca12628b581368636687d93c9f
++ ## Co się dzieje na granicy
+
+@ 0 2 0 1215a63081f0fec919832f41c30b1a60
++ Zasięg musi zdecydować, co zrobić z dzieckiem, które wciąż działa, gdy ciało rodzica się
++ kończy, a ta decyzja jest jawna, a nie domniemana. Nazywa ją *postępowanie spadkowe*:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 5 0 02f9eabe5d2a5bd5031f992d73fe91f9
++ column  Dziecko wciąż działające, gdy ciało się kończy
++ row  `probates.awaitProbate`  jest oczekiwane
++ row  `probates.cancelProbate`  jest anulowane
++ row  `probates.panicProbate`  jest paniką
++ row  `probates.failProbate`  zgłasza `Async.Error`
+
+% 1 1 0 02b162bee2ac8c73182faf5b2d29cbe2
+
+@ 0 2 0 0106bf45d998429e1f90765a44b49f8b
++ Każde z nich da się gdzieś uzasadnić i żadnego nie można bezpiecznie zgadywać, dlatego nie
++ ma wartości domyślnej.
+
+@ 0 3 0 0f9a271a621e231714e13ca6cbea23f6
++ `daemon` to celowy wyjątek: praca typu fire-and-forget, na którą zasięg nie czeka i którą
++ anuluje, gdy się kończy. Nadal nie może przeżyć swojego zasięgu – jest niestrukturalna tylko
++ w tym sensie, że nic nie czeka na jej wynik.
+
+@ 0 1 0 093a2db087bdf0970effe2c86d222749
++ ## Zawieszenie jest widoczne
+
+@ 0 3 0 0c9ada3a2b11f8c91865b55221b3ef06
++ Czekanie jest efektem i pojawia się w typach jak każdy inny. Oczekiwanie na zadanie lub
++ obietnicę, usypianie i ustępowanie wymagają zdolności `Monitor`, więc metoda, która może
++ blokować, mówi o tym w swojej sygnaturze:
+
+% 2 1 0 0a81a6945bdf8f41163183cbc92610d8
+
+% 3 1 0 1119f40b1c8cc0c3084094d7507216fd
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 1 1 0 05fa8d9217c170b60ac90a2b81c4d78c
+
+% 0 1 0 103ac5c66c4d87620b1e7fa5e43ade81
+
+% 1 1 0 084ebc2b90c46ba60dd5d98eeb6ba0fd
+
+@ 0 3 0 142a85026146b6e618e1104948290a66
++ To ta sama dyscyplina, którą [uczciwe sygnatury](honest-signatures.md) stosują do
++ niepowodzeń. Wywołujący widzi z samego typu, czy metoda może zaparkować wątek, w którym
++ jest wywoływana.
+
+@ 0 5 0 0592092f3d4016011f6d454c644a7c85
++ Pod spodem jednostką wykonania jest `Strand`, a nie wątek, z czterema operacjami
++ potrzebnymi do zawieszenia: przerwaniem, oczekiwaniem na zakończenie, zaparkowaniem
++ i odparkowaniem. Ponieważ pasma dostarcza nadzorca, a nadzorca jest wartością, planista
++ niezbudowany na wątkach – pętla zdarzeń nad zbiorami oczekiwalnymi WebAssembly – podłącza
++ się bez zmiany kodu, który uruchamia zadania lub na nie czeka.
+
+@ 0 1 0 1963ce40bed34c001fc6cbad16727a56
++ ## Błędy demona nie wędrują wstecz
+
+@ 0 5 0 0ebb9e2b9c61c748166f7639ca2a8937
++ Z poważnego traktowania własności wynika pewna subtelność. Ciało demona nie może przechwycić
++ handlera błędów z kodu, który go uruchomił, bo zanim demon zawiedzie, ten kod pójdzie już
++ dalej – dostarczenie tam błędu oznaczałoby wznowienie obliczenia, które już się zakończyło.
++ Zawodzący demon eskaluje zatem jako `Fault`, który program przechwytuje tam, gdzie obsługuje
++ to, co nieoczekiwane.
+
+@ 0 3 0 1453cbc75f08509a147270d4cbcb5392
++ To przypadek tego rodzaju, który współbieżność niestrukturalna pozostawia nieokreślonym,
++ a struktura wyciąga na wierzch: pytanie „dokąd trafia ten błąd?” zawsze ma odpowiedź, nawet
++ jeśli brzmi ona „nie tam, gdzie można by zakładać”.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ile to kosztuje
+
+@ 0 6 0 01da9b750294f7371580b6c3a28977e0
++ Struktura ogranicza to, co można wyrazić. Pracy, która naprawdę musi przeżyć zasięg, który ją
++ zainicjował – na przykład usługi w tle uruchomionej podczas żądania – nie można po prostu
++ uruchomić i zapomnieć; jej właścicielem musi być zasięg żyjący wystarczająco długo, co
++ oznacza, że trzeba go zorganizować. To więcej pracy niż uruchomienie wątku, i jest to więcej
++ pracy nie bez powodu: wątek bez właściciela to dokładnie to, o czyim czasie życia nikt potem
++ nie potrafi rozumować.
+
+@ 0 3 0 10fa488026cf4af813c5297b417ddcb8
++ Zobacz [zasięgi ograniczone](delimited-scopes.md), aby poznać ogólny kształt, którego jest
++ to instancją, oraz [sprawdzanie przechwytywania](capture-checking.md), aby dowiedzieć się,
++ jak ucieczka staje się niemożliwa, a nie tylko odradzana.

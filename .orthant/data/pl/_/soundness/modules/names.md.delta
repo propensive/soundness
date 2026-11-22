@@ -1,0 +1,269 @@
+orthant 2 language
+
+@ 0 1 0 13f63b56ad605d9d0429a1811b26d58b
++ ## Nazwy
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 3 0 1f8647345b89bb1505848f7e4a06d020
++ Nazwa pliku, identyfikator DOM, klasa CSS, gałąź Git: każda z nich jest tekstem, ale nie
++ dowolnym tekstem. Każda żyje w przestrzeni nazw z własnymi regułami tego, jak wygląda poprawna
++ nazwa. Taką nazwę reprezentuje się jako `Name`, którego reguły są częścią jego typu.
+
+@ 0 5 0 0f1eccd7f06021950ad577b3e51de7ab
++ O `Name[DomId]` wiadomo, że spełnia reguły dla identyfikatorów DOM. Literał, który je łamie,
++ się nie kompiluje. Tekst, który nadchodzi w [czasie wykonania][czas wykonania], staje się
++ `Name` tylko po przejściu tej samej walidacji, a porażka jest typowanym błędem, który nazywa
++ dokładnie tę regułę, którą złamano. Posiadanie `Name` jest więc dowodem, że nazwa jest
++ poprawna, co stanowi
++ [bezpieczeństwo przez konstrukcję](../../philosophy/safety-by-construction.md).
+
+@ 0 3 0 1ef27a98fb78dd36186aa07b96fa6d9e
++ Same reguły są typami, takimi jak `MustNotContain["/"]`, `MustNotEqual[".."]` i
++ `MustMatch[…]`, łączonymi przez przecięcie. Ograniczenia przestrzeni nazw zapisuje się raz,
++ można je odczytać wprost z kodu i są egzekwowane wszędzie tam, gdzie wymagana jest nazwa z tej
++ przestrzeni nazw.
+
+@ 0 1 0 1366133bda056ad80b774809b90de853
++ ### O nazwach
+
+@ 0 5 0 1cb7f21a2ee17bf20ee213866020e40d
++ Przestrzenie nazw różnią się co do poprawności. Nazwa pliku POSIX nie może zawierać ukośnika.
++ Identyfikator DOM nie może zawierać białych znaków. Etykieta DNS ma ograniczoną długość i
++ ograniczony alfabet. Kod, który przenosi je wszystkie jako zwykłe napisy, nie egzekwuje
++ niczego z tego. Nazwa niepoprawna w swojej przestrzeni nazw wędruje, dopóki nie odrzuci jej coś
++ zewnętrznego, na przykład system plików, przeglądarka lub serwer, z dala od pomyłki.
+
+@ 0 5 0 052140d690cba8d5021db6240219e0d8
++ Tutaj przestrzeń nazw jest dołączona do nazwy. Każda przestrzeń nazw, zwana *płaszczyzną*,
++ deklaruje swoje reguły jako typ. `Name` dla tej płaszczyzny istnieje tylko wtedy, gdy jego
++ tekst je spełnia, co dla literału sprawdza się w [czasie kompilacji][czas kompilacji], a w czasie
++ wykonania przez walidację. Ten mechanizm leży u podstaw nazw elementów
++ [ścieżek](paths.md) i jest otwarty dla każdej przestrzeni nazw, którą zdefiniuje program.
+
+@ 0 2 0 0c17d3ff00e9ad521a168794996ea02d
++ Wszystko pochodzi z pakietu `soundness`. Przykłady rzucają każdy błąd jako wyjątek, a ostatni
++ import pozwala im wypisywać wyniki:
+
+% 2 1 0 0a014aa077766c0e19cc2515b4eb1aa8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 03e4a4be35a484b91c080541b92b1ed4
++ ### Definiowanie płaszczyzny
+
+@ 0 1 0 0710963b89169c0a1521812c9f8e2bd2
++ Płaszczyzna jest typem znacznikowym z givenem `Nominative`, który określa jej reguły jako
++ przecięcie:
+
+% 2 1 0 1111d3c27f0b356b0844f2ee761b5620
+
+% 0 1 0 1aab3335eeb8e5ab129d1f5815b0ef88
+
+% 0 1 0 102c2e32ac46b16b1c424572620f4194
+
+% 0 1 0 00a41b2e13d2b2801fc8e1610b85a96e
+
+% 1 1 0 07a74e026b0b80b20ff0e50ff490f62e
+
+@ 0 2 0 11da42b27a9ad1f91c0cee24ee1390ca
++ `Name[Tag]` oznacza teraz tekst, który nie zaczyna się od `0`, nie zawiera `.` i nie jest
++ pusty. Te fakty niesie typ i żaden konsument nie musi ich ponownie sprawdzać.
+
+@ 0 1 0 0cf7c6c1e696f2211e360d059894f2e7
++ ### Zapisywanie nazwy
+
+@ 0 3 0 1fcee695ef60a43e00fcde108dd9dea8
++ [Interpolator][interpolator] `n"…"` zapisuje nazwę i sprawdza ją w czasie kompilacji względem
++ płaszczyzn w zasięgu. Nazwa przyjmuje typ każdej płaszczyzny, której reguły spełnia, więc jeden
++ literał nadaje się wszędzie tam, gdzie wymagana jest którakolwiek z nich:
+
+% 2 1 0 05c6c154585e9d310ed9b5817430c338
+
+% 0 1 0 1a0019435148066f0b3f371c10fa9215
+
+% 1 1 0 1a9c023464e88d990fd1c4685f91b3cc
+
+@ 0 1 0 1838a2e0916b69420ef648d452fa9e08
++ Literał, który łamie regułę płaszczyzny, dla której jest potrzebny, się nie kompiluje:
+
+% 2 1 0 077ad9899564c5ce12eeb2c6bc25256d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 1e1a946d5e92e19d1eb4419b698d0cdb
+
+% 1 1 0 0df809a9a3c0552319c2368accec7e94
+
+@ 0 1 0 0e0a958c2e56d84102206982bcf886d7
++ ### Walidacja w czasie wykonania
+
+@ 0 2 0 024e20dfc18f6b3c0e68e1ce7326592d
++ Tekst z zewnątrz staje się nazwą według tych samych reguł. Porażka zgłasza `Name.Error`, który
++ nazywa naruszoną regułę:
+
+% 2 1 0 1d38c88fd423670204f204284a9970f1
+
+% 3 1 0 157af9422dbce21f0a37218f608c07b9
+
+% 4 1 0 165233cb070f7197107b6a32be1d5ade
+
+% 0 1 0 08cb510588404d7416941860bd5f751d
+
+% 1 1 0 0f575cb5b5f19a5011134abe025be892
+
+% 3 1 0 0ec4ac5cd5bec2541208b2cc373599a4
+
+% 4 1 0 1dff919b24b7c6ef1913a74013640cfa
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 149257c0596e27c20f0af5420a41fd08
+
+% 1 1 0 08f12dd0a3ae244c0eeda6ac38326cf3
+
+@ 0 4 0 0f9729af290ffc690d332751f34bc48c
++ Precyzja błędu ma znaczenie. Użytkownik, któremu powiedziano, *którą* regułę złamały jego dane
++ wejściowe, może je poprawić, podczas gdy „niepoprawna nazwa” skłania do zgadywania. Błąd
++ obsługuje się jak każdy inny, więc [`safely`](errors.md#choosing-a-strategy) zamienia
++ niepoprawną nazwę w `Unset`, a `capture` daje sam błąd:
+
+% 2 1 0 149ce49b15e4f04b1f02b7aa398ddb1f
+
+% 3 1 0 00ecfc6fe73c05031e808b93b0e3ad3b
+
+% 4 1 0 1b9cf2b073a8b6bc0a179bc6f5859a9a
+
+% 0 1 0 08960fa7ee4060011b2f5cc1e6f20e84
+
+% 1 1 0 06c24a69334ed694137aefe26bba2279
+
+@ 0 1 0 0635f8371358481c17242c89efa2da4e
++ ### Wbudowane płaszczyzny
+
+@ 0 1 0 02ba9f995c8a9b4513867c66277e6d58
++ Niektóre przestrzenie nazw są już zdefiniowane:
+
+% 2 1 0 01780133011308ea05ae04804cb9904f
+
+@ 0 5 0 02d4b3e550ddf22c1fba4bf465e39cc9
++ column  Płaszczyzna
++ column  Nazwa musi być
++ row  `DomId`  poprawnym identyfikatorem [HTML](html.md)
++ row  `CssClass`  poprawnym identyfikatorem [CSS](css.md)
++ row  `Required`  niepusta, w typowym przypadku, gdy to cała reguła
+
+% 1 1 0 1df8ea8bab839d340bf0019a67a63286
+
+% 3 1 0 1fa9583e42957e8a0e9b41303bef5519
+
+% 4 1 0 1dda9eb6f37ca17113e5e11237bc2830
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 1fb68ef40df20f0e14f4fcd9c91dcbf8
+
+% 0 1 0 183ea03728bd1b5e1fad14a890e3d8e6
+
+% 1 1 0 168245c12051075207403c510a7b4c60
+
+@ 0 2 0 0c27c112163d82c21eb13300d7b71028
++ [Ścieżki](paths.md) systemu plików każdej platformy definiują reguły dla swoich elementów w ten
++ sam sposób, dzięki czemu element ścieżki zawierający ukośnik zawodzi tam, gdzie został zapisany.
+
+@ 0 1 0 0bdfd48c06fea0b617ed2a4cc9d85ca0
++ ### Reguły
+
+@ 0 2 0 14f383440fd7089e1512b408091dc779
++ Te reguły obejmują większość przestrzeni nazw. Każda potrafi opisać samą siebie i stąd
++ komunikaty błędów oraz błędy kompilacji biorą swoje słowa:
+
+% 2 1 0 03a772420658c545096f6c613213044e
+
+@ 0 13 0 0346ce8e9d9c0c60113a0140ee3f20a3
++ column  Reguła
++ column  Parametr
++ column  Opis
++ row  `MustContain`  tekst  must contain it
++ row  `MustNotContain`  tekst  must not contain it
++ row  `MustStart`  tekst  must start with it
++ row  `MustNotStart`  tekst  must not start with it
++ row  `MustEnd`  tekst  must end with it
++ row  `MustNotEnd`  tekst  must not end with it
++ row  `MustNotEqual`  tekst  must not equal it; `MustNotEqual[""]` brzmi „must not be empty”
++ row  `MustMatch`  wyrażenie regularne  must match it
++ row  `MustNotMatch`  wyrażenie regularne  must not match it
++ row  `JavaIdentifier`  opis  must be *opis*; sprawdza identyfikator Javy
+
+% 1 1 0 0f896f2c1f89ce4010e148854829f281
+
+@ 0 2 0 0c6717861135bc11027a017b9d8c5867
++ Reguła to dwie rzeczy: sprawdzenie i fraza opisująca, czego wymaga. Zapisanie reguły oznacza
++ dostarczenie obu:
+
+% 2 1 0 156589b5f1d9bad710f13a73bf2c1f1d
+
+% 0 1 0 0d37aa75683bd3d105125345c5b6888f
+
+% 1 1 0 0e79d8fba8a3a5160fa4fa0da7a44654
+
+@ 0 3 0 060ad20ab4a4c28b1f53f2be0ab8a2ae
++ Opis jest częścią reguły i nie zapisuje się go przy każdym użyciu. Błąd kompilacji dla złego
++ literału i błąd czasu wykonania dla złych danych wejściowych mówią więc to samo, tymi samymi
++ słowami.
+
+@ 0 4 0 07cf68c35d13a9990002b0e5abe2db19
++ `JavaIdentifier` pokazuje inny kształt, jaki może przybrać reguła. Nie przyjmuje tekstu do
++ porównania. Jej parametrem jest *opis*, a sprawdza według własnego predykatu. Przestrzeń nazw z
++ regułą, której nie da się wyrazić żadną z pozostałych, definiuje ją w ten sposób, tak jak robi
++ to `DomId`.
+
+@ 0 1 0 0fb8eb58380a0ff607d3236ac1f99beb
++ ### Łączenie reguł
+
+@ 0 4 0 087c31b0d4c677f704a10e364e0cea1a
++ Wszystkie reguły płaszczyzny są wymagane: nazwa musi spełniać każdą z nich. Zgłaszana jest
++ pierwsza naruszona reguła, więc błąd nazywa jedną konkretną usterkę, a nie listę wszystkiego,
++ co jest nie tak. Zapisanie płaszczyzny oznacza więc podanie jej reguł w kolejności, w jakiej
++ powinny być zgłaszane.
+
+@ 0 3 0 12fcb418ac26b41c1ca2bf256cc5c344
++ Płaszczyzna jest typem, więc nazwy jednej płaszczyzny nie są nazwami innej. `Name[Tag]` nie
++ można przekazać tam, gdzie oczekiwany jest `Name[Branch]`, nawet jeśli obie mają akurat
++ identyczne reguły. W tym rzecz: reguły mogą się później rozejść, a te dwie przestrzenie nazw
++ nigdy nie były tym samym.
+
+@ 0 1 0 167bcebef2063d9f1fe590499ee5ff3b
++ ### Limity długości
+
+@ 0 4 0 0275ee3e02672a42183b4ef20f291ac7
++ `Nominative` niesie obok swojego `Self` również `Limit` i w ten sposób płaszczyzna określa
++ maksymalną długość: system plików, którego nazwy nie mogą przekraczać 255 bajtów, pole protokołu
++ o stałej szerokości, kolumnę bazy danych. Limit jest częścią typu płaszczyzny, więc sprawdza się
++ go tam, gdzie nazwa jest konstruowana, a nie tam, gdzie zostaje ostatecznie zapisana.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 6 0 133657859f37e712083e0704c3c1d6c7
++ - [Ścieżki](paths.md) budują ścieżki systemu plików z nazw poprawnych na konkretnej platformie.
++ - [HTML](html.md) i [CSS](css.md) używają `Name[DomId]` i `Name[CssClass]` dla identyfikatorów
++   i klas.
++ - [Interpolacja](interpolation.md#returning-a-precise-type) wyjaśnia, jak `n"…"` nadaje
++   literałowi typ płaszczyzn, które spełnia.
++ - [Formularze](forms.md) nazywają swoje pola, a [współbieżność](concurrency.md) swoje zadania, zwalidowanymi nazwami.

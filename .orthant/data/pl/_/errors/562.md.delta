@@ -1,0 +1,28 @@
+orthant 2 language
+
+@ 0 1 0 0b98bc416933750306dc5714b9265015
++ # `SN-562` – `XPathError` (wycofany)
+
+@ 0 6 0 0ffc8a3ca64e935d0755c2cfaef31ad1
++ **Ten kod nie jest już zgłaszany.** Niepoprawne *wyrażenie* XPath jest teraz `Parse.Error`
++ (`↯/s.60.2`) nad formatem `XPath`, jak każde inne niepowodzenie parsowania w kodzie:
++ `XPath` implementuje `zephyrine.Format`, tak jak już wcześniej robił to `Xml`, a jego
++ dawne przypadki `Reason` są teraz wartościami `XPath.Issue`. `Position` nadal niesie
++ przesunięcie znaku, więc interpolator `xp"…"` nadal umieszcza swoją karetkę dokładnie.
+
+@ 0 2 0 024ac7ee7d30b6e61498b9eaa5d86d87
++ Nazwa `XPath.Error` należy teraz do odrębnego niepowodzenia *ewaluacji* wyrażenia, które
++ zostało sparsowane – zobacz `↯/s.128.2`.
+
+@ 0 4 0 02898dd2a11114941cb4fdb9554a06a5
++ Dwie z dawnych przyczyn zniknęły, zamiast zostać przetłumaczone: `ExpectedSlash` i `BadStep`
++ były zgłaszane tylko przez pozycyjny parser sprzed AST i zachowano je wyłącznie po to, by
++ numeracja pozostała stabilna. Wartości `Issue` nie są numerowane, więc nic nie musiało
++ trzymać ich miejsca.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 2 0 0c03179f2199054914477c1304fe2fc3
++ - Zastąpiony przez: `↯/s.60.2` (`Parse.Error`, format `XPath`)
++ - Powiązane: `↯/s.128.2` (`XPath.Error`, ewaluacja)

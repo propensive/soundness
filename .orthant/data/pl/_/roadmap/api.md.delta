@@ -1,0 +1,178 @@
+orthant 2 language
+
+@ 0 1 0 0fd2e87e833f49fa0c72249cef7f4c36
++ # Spójność API
+
+@ 0 6 0 099dac62941f927810f4a15670a335c4
++ Przewidywalność jest właściwością bezpieczeństwa. Programista – lub agent – który poznał jeden
++ zakątek Soundness, powinien umieć trafnie odgadnąć następny: podobne operacje dzielą jedno API,
++ zmienność wyraża się w parametrach, a nie w nazwach, a nazwy są uczciwe. Jeśli dwie deklaracje
++ mają tę samą nazwę, są tym samym; jeśli różnią się nazwą, różnią się znaczeniem. Eksportowana
++ powierzchnia, która łamie te reguły, obciąża każdego użytkownika przy każdym wyszukiwaniu, a
++ najbardziej obciąża agentów, bo agenci agresywnie uogólniają na podstawie wzorców.
+
+@ 0 2 0 0da1f93dda59ac28064fe3498af8606d
++ Powierzchnię już zmierzono: `doc/api-reduction-candidates.md` inwentaryzuje każdy identyfikator
++ eksportowany przez pakiet `soundness` i klasyfikuje kandydatów do redukcji:
+
+% 2 1 0 1c43fe86fe8c8afd16e6cf1a9502033f
+
+@ 0 7 0 1ae256e673c1720216c5e272e9330776
++ column  Kategoria
++ column  Kandydaci
++ column  Pozycja
++ row  C1  wielowyrazowe nazwy, które powinny być zagnieżdżone w typach, którymi się zaczynają  api-1
++ row  C2  nieustalone skróty  api-3
++ row  C3  byty wspierające klasy typów, których w ogóle nie trzeba eksportować  api-3
++ row  C4  tabele homonimów i synonimów, gdzie jedna nazwa znaczy dwie rzeczy albo dwie nazwy jedną  api-2
+
+% 1 1 0 1acf6d947b1518e016a6995f0bb172ca
+
+@ 0 2 0 12a95f5dcc0b7186041afe001e87d055
++ Ten spis to rusztowanie, a nie dokumentacja: ten nurt stosuje go kategoria po kategorii i kończy
++ się jego usunięciem. Brak tego pliku jest sygnałem ukończenia.
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ Pozycje nurtu, z ich horyzontami i twardymi zależnościami; [`status.tel`](status.tel) zapisuje, na jakim etapie jest każda z nich:
+
+% 2 1 0 1a49486c3b4d2d2d15f5c2c51b85eebd
+
+@ 0 11 0 0ebcb606c7d36f381ec85065c6f7f44f
++ column  Pozycja
++ column  Tytuł
++ column  Horyzont
++ column  Wymaga
++ row  api-1  nazwy wielowyrazowe są zagnieżdżone  bliski
++ row  api-2  homonimy i synonimy są rozwiązane  bliski
++ row  api-3  byty wspierające są zdegradowane  średni
++ row  api-4  zgodność nazewnictwa jest sprawdzana  średni
++ row  api-5  spis jest usunięty  daleki  api-1, api-2, api-3, api-7
++ row  api-6  zmiany powierzchni przechodzą przez konwencję migracji  daleki  dist-2
++ row  api-7  zbyt ogólne nazwy najwyższego poziomu są zagnieżdżone  średni
+
+% 1 1 0 1be70d71efb92c520dd7ea88d4ac2330
+
+@ 0 1 0 16705ba005bdd02a1dbe8da07758db24
++ ## api-1: nazwy wielowyrazowe są zagnieżdżone
+
+@ 0 2 0 1e3ce0f292c487fa0b43e79acf7acf3a
++ Horyzont: bliski
++ Stan wyjściowy: 4 przemianowane nazwy wciąż zdefiniowane na najwyższym poziomie (`BlockCipherMode`, `BlockCipherPadding`, `SyntaxMatcher`, `TlsAcceptance`); 61 rodzin prefiksów z 210 nazwami oraz 216 pojedynczych nazw wciąż na liście (pomiar 2026-09-25)
+
+@ 0 3 0 13b2efb3db234f731a2ff1292f43463a
++ Kandydaci C1 – wielowyrazowe nazwy, których prefiks już nazywa typ z tego samego modułu –
++ przenoszą się do wnętrza tego typu: `Play.Scene`, a nie `PlayScene`. Każde przeniesienie
++ dostarcza się z instrukcjami migracji, gdy tylko `dist-2` ustanowi konwencję.
+
+@ 0 3 0 1ee3a054b22d2a5818dd6f479f11a981
++ Ukończone, gdy: tabela zmian nazw w `doc/api-nesting-proposal.md` (która zastąpiła sekcję C1)
++ jest w pełni zastosowana, a sekcja spisu „Remaining names by prefix family” nie wymienia żadnej
++ nazwy poza „Reviewed items which should not be moved”.
+
+@ 0 1 0 0c4a457a2e1c99811a66b6b4abe04d4c
++ ## api-2: homonimy i synonimy są rozwiązane
+
+@ 0 2 0 1e39a898703f15640dc52e5ea04baea9
++ Horyzont: bliski
++ Stan wyjściowy: na liście 12 par homonimów i 1 rodzina synonimów (`*Parser`); `etc/check-given-uniqueness.py` sprawdza tylko nazwy givenów, a nie zasadę „ta sama nazwa, ta sama rzecz” (pomiar 2026-09-25)
+
+@ 0 3 0 03c414d0ee1101070f87e3d81c2bd1e9
++ Każda para homonimów C4 albo łączy się w jedną deklarację, albo jedna strona zmienia nazwę;
++ każda rodzina synonimów C4 sprowadza się do jednego terminu dla danej roli. Ta sama nazwa, ta
++ sama rzecz; inna nazwa, inna rzecz.
+
+@ 0 2 0 01fd18934e953e080bdb10ae7bfb4d20
++ Ukończone, gdy: sekcje spisu C4-homonym i C4-synonym są puste, a kontrola zasady „ta sama
++ nazwa, ta sama rzecz” działa w zwykłej kompilacji (rozszerzając `make check-givens`).
+
+@ 0 1 0 124e6f76556600961fb1aadca7950f4f
++ ## api-3: byty wspierające są zdegradowane
+
+@ 0 2 0 085981a7c3fd0a361607edba0351dc10
++ Horyzont: średni
++ Stan wyjściowy: na liście 3 skróty C2 (`AddOp`, `CellRef`, `Err`) (pomiar 2026-09-25)
+
+@ 0 3 0 1789d8a3aba749290072629ea78dc782
++ Kandydaci C3 – byty wspierające klasy typów i zagnieżdżone obiekty derywacji, które istnieją po
++ to, by je przywoływać, a nie nazywać – są degradowane, rozwijane w miejscu użycia lub wyłączane z
++ eksportu, a skróty C2 są rozpisywane lub ustalane.
+
+@ 0 2 0 0a736dcfc07d1a32179a5d0ace832da9
++ Ukończone, gdy: sekcja spisu C2 jest pusta. (C3 i C3b zostały zastąpione przez
++ `doc/api-nesting-proposal.md` i zamknięte wraz z nim).
+
+@ 0 1 0 08605781f446842b1821d3d2bd46738e
++ ## api-4: zgodność nazewnictwa jest sprawdzana
+
+@ 2 1 0 1fc03684022ff90113c0d28ffceafa6c
++ Horyzont: średni
+
+@ 0 4 0 001b1ad304ac4b1c09953853f44561b4
++ Standardy nazewnictwa w `doc/standards/naming.md` i `doc/standards/given-naming.md` zyskują
++ przegląd zgodności, aby powrót do niespójności był wychwytywany mechanicznie, a nie podczas
++ recenzji. `etc/check-given-uniqueness.py`, uruchamiany przez `make build`, obejmuje połowę
++ dotyczącą nazewnictwa givenów; nic nie sprawdza `naming.md`, choć reguła `S1.1` narzędzia flare
++ egzekwuje jego jedną klauzulę o `unsafe…`.
+
+@ 0 2 0 08fefa61d89716dd1a3e679a809c10f3
++ Ukończone, gdy: zapisany w repozytorium skrypt przeglądu zgłasza zero odstępstw od standardów
++ nazewnictwa i działa w zwykłej kompilacji.
+
+@ 0 1 0 0002d08fb2e79861194126e271ac7e70
++ ## api-5: spis jest usunięty
+
+@ 0 2 0 0e65ef756e1be75f1716a1ce6d613a19
++ Horyzont: daleki
++ Wymaga: api-1, api-2, api-3, api-7
+
+@ 0 1 0 02d622796123c9fb11e262352782c6d7
++ Gdy każda kategoria zostanie opróżniona, rusztowanie zostaje rozebrane.
+
+@ 0 1 0 157f55259fa9405e02329e0c993f9b8e
++ Ukończone, gdy:
+
+% 0 1 0 00e326d1bb046aa11262e578534b4047
+
+@ 0 1 0 022a30e7eca7ed2e174de75b9d7a2026
++ ## api-6: zmiany powierzchni przechodzą przez konwencję migracji
+
+@ 0 2 0 0a49a8e096d3c6010e19d4e574863b08
++ Horyzont: daleki
++ Wymaga: dist-2
+
+@ 0 3 0 1f5a0a1a9c59ae121baa8280a27a7539
++ Od tej pory spójność jest utrzymywana, a nie przywracana: każda zmiana eksportowanej
++ powierzchni jest dostarczana z instrukcjami migracji wykonywalnymi przez agenta, zgodnie z
++ konwencją, którą definiuje `dist-2`. Nie ma obawy przed ulepszaniem API, bo migracja jest tania.
+
+@ 0 2 0 02041d5135bab70106e709bcb181cf23
++ Ukończone, gdy: kontrola CI z `dist-2` jest egzekwowana na każdym pull requeście zmieniającym
++ powierzchnię przez dziesięć kolejnych wydań.
+
+@ 0 1 0 1f2d90e4993dc19601ed5bc42de19ac7
++ ## api-7: zbyt ogólne nazwy najwyższego poziomu są zagnieżdżone
+
+@ 0 2 0 14613aca5da6a5410ac59bcf83c82c1c
++ Horyzont: średni
++ Stan wyjściowy: 6 nazw eksportowanych do modułu zbiorczego przez dwie biblioteki każda (`Namespace`, `Commandline`, `Pane`, `Arithmetic`, `Native`, `Bytes`); 2 homonimy ukryte przez `@unexported` (`Tag`, `Renderable`); około 110 jednowyrazowych kandydatów w tabelach reguły R8 (pomiar 2026-11-12)
+
+@ 0 5 0 0cc1c293cc0a01f90ace0a9653e096d7
++ api-1 zagnieżdża nazwę, której prefiks powtarza jej kontekst. Ta pozycja obejmuje przypadek, w
++ którym nie ma prefiksu do usunięcia: pojedyncze słowo, którego goła pisownia rości sobie prawo
++ do ogólnego pojęcia, choć nazywa pojęcie jednej biblioteki. Drzewo układu ultimatum nie jest
++ *tym* `Frame`. Każdego kandydata ocenia się indywidualnie względem reguły R8 w
++ `doc/api-nesting-proposal.md`. Wygoda pozostawia nazwę na najwyższym poziomie tylko wtedy, gdy
++ jest ona głównym typem biblioteki albo pojęciem naprawdę ogólnym.
+
+@ 0 4 0 025914740a57bb9a0951ab7ea7e04906
++ Postęp (2026-11-12): żadna nazwa nie jest eksportowana przez więcej niż jedną bibliotekę; z
++ tabeli R8 o wysokiej pewności dziewiętnaście wierszy jest zrobionych, trzy odroczono do
++ rozstrzygnięcia (wskaźniki ultimatum, wyliczenia wartości atrybutów honeycomb, taksonomia
++ `Figure` w savagery), a `Tag`/`Renderable` z xylophone są zablokowane przez
++ `object Xml extends Tag.Container`.
+
+@ 0 4 0 140bb92b0da5ef7304217ced05ff37fc
++ Ukończone, gdy: żadna nazwa nie jest eksportowana do `package soundness` przez więcej niż jedną
++ bibliotekę, żadne `@unexported` nie istnieje tylko po to, by uniknąć kolizji, a każdy wiersz
++ tabel R8 w `doc/api-nesting-proposal.md` został albo zastosowany, albo przeniesiony na listę
++ „Reviewed and kept top-level”.

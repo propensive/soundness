@@ -1,0 +1,2025 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1cc485e507124c110a4455aa1f02fea6
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1296f4fcd17bf52b1dca0f95bfa29e33
++ info   wielkości fizyczne z jednostkami w typach i analizą wymiarową wykonywaną podczas kompilacji
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 1f3a7f43684724f515c66d52e5f2c490
++     _Quantitative_ reprezentuje wielkość fizyczną – odległość, masę, prędkość, energię – jako
++     `Quantity`, której **jednostki są częścią typu**. `Quantity[Metres[1]]` to długość,
++     `Quantity[Metres[1] & Seconds[-1]]` to prędkość, a analizę wymiarową wykonuje kompilator:
++     dodanie długości do czasu jest błędem kompilacji, którego komunikat opisuje niezgodność
++     słowami, pomnożenie siły przez długość daje energię, której typ zostaje wyznaczony
++     automatycznie, a wielkości w różnych jednostkach tego samego wymiaru – stopach i metrach –
++     są przeliczane automatycznie, gdy się spotkają. Nic z tego nie przetrwa do czasu
++     wykonania: `Quantity` to nieprzezroczysty `Double`, każda operacja jest `inline`, a zestaw
++     testów sprawdza kod bajtowy arytmetyki, by potwierdzić, że to te same `dadd`/`dmul`, które
++     dałby goły `Double`.
+
+% 2 1 0 0f516e5cb4312658190eafbe00fea3c0
+
+% 3 1 0 13932128d54e7b2911a5ffe8716038ba
+
+% 0 1 0 009e5eda30a6d17907732460496aec47
+
+% 0 1 0 0929ab2216f9973a1961a91963ac253b
+
+% 0 1 0 1c226453141f7f4d0b17b2d04c39b94c
+
+% 0 1 0 0f12705a5eee4a461baf1c41d938f331
+
+% 0 1 0 012f7fcf96e419470bccbe06783e9444
+
+% 0 1 0 1479dcd464130dac089c405314a040f1
+
+% 0 1 0 0aa12006f7d0391b1f3974fb3e764fe5
+
+% 0 1 0 0a68f8906ea79d3f099f8aa9223706b1
+
+% 0 1 0 022a211175b01ccb0433178b83894303
+
+% 1 1 0 198d8fdd88fc86c90042dd57b28030bf
+
+@ 0 11 0 0d8f4e527d4f622d10072cec9ad34626
++     Słownictwo ma cztery warstwy. `Dimension` to to, co się mierzy (`Distance`, `Mass`,
++     `Time`, `Heat`, `Current`, `Luminosity`, `AmountOfSubstance`); typ `Units[power,
++     dimension]` to jedna jednostka tego wymiaru podniesiona do potęgi (`Metres[1]`,
++     `Seconds[-2]`), a ich przecięcie to `Measure`, argument typu
++     `Quantity`; *wartość* jednostki, taka jak `Metre`, `Newton` czy `Foot`, to wielkość równa
++     dokładnie jeden; a `MetricUnit` to wartość jednostki, do której stosują się przedrostki
++     metryczne (`Kilo`, `Milli`, `Kibi`, …). Przeliczenie między dwiema jednostkami jednego
++     wymiaru wymaga wymazanego givena `Ratio`, znajdowanego w zasięgu niejawnym, a jednostka
++     `Principal` każdego wymiaru decyduje, w jakiej jednostce jest wynik mieszający jednostki.
++     `Amount` nadaje kombinacji wymiarów jej nazwę fizyczną (`velocity`, `chemical potential`),
++     której używają `dimension` i błędy kompilacji; `Designation` nadaje jednostce symbol dla
++     `show`; `Redesignation` nadaje mierze pochodnej pojedynczy symbol (`J`, `N`).
+
+@ 0 3 0 1d2816812e1baff00308442a29dbee8e
++     Temperatura to jedyna wielkość mierzona od umownego zera, ma więc własny typ
++     nieprzezroczysty, `Temperature`, tworzony na skali (`Celsius(30)`, `Fahrenheit(86)`,
++     `Kelvin(303.15)`) i wyświetlany na tej skali, której given `TemperatureScale` zaimportowano
++     z `temperatureScales`.
+
+@ 0 1 0 1a27b2eabeb00d7d136b91b85df2e1f0
++     Biblioteka składa się z dwóch zbiorów źródeł:
+
+@ 0 10 0 04e2e1269595c17f038a46833dd7062f
++     - `quantitative.core` – `Quantity`, `MetricUnit`, `Temperature` i ich arytmetyka, siedem
++       wymiarów i ich typy `Units` układu SI, `Amount`, `Ratio`, `Principal`, `Designation`,
++       `Normalizable`, przedrostki metryczne, `Prefixes` do wyświetlania ze skalowaniem
++       przedrostkiem, cztery skale temperatury i pakiet wyboru `temperatureScales`. Kompiluje
++       się dla JVM, Scala.js i Scala Native.
++     - `quantitative.units` – *wartości* jednostek: jednostki podstawowe i pochodne SI
++       (`Metre`, `Newton`, `Volt`, …), jednostki CGS (`Dyne`, `Erg`, `Gauss`, …), jednostki
++       imperialne wraz z ich typami `Units` (`Foot`/`Feet`, `Pound`/`Pounds`, …), jednostki
++       czasu (`Hours`, `Minutes`, `Days`), jednostki typograficzne (`Points`, `Picas`, `Ems`)
++       oraz pakiet stałych fizycznych `constants`.
+
+@ 0 7 0 0cddc96b48ea91490bd386f7e07aa3bb
++     Wszystko jest eksportowane do modułu zbiorczego `soundness`, a pakiety `temperatureScales`
++     i `constants` łączą się z jego własnymi. Skala temperatury jest wyborem: `import
++     soundness.*` nie importuje givenów, więc jedną skalę importuje się po nazwie (`import
++     temperatureScales.celsiusScale`). Jedna składowa celowo *nie* trafia do modułu
++     zbiorczego: konstruktor `Kelvin(value)` bezwzględnej `Temperature` to rozszerzenie `apply`
++     najwyższego poziomu, które kolidowałoby tam z własnym `apply` biblioteki rudiments, więc
++     wymaga `import quantitative.*`.
+
+@ 0 4 0 0095fed3be24520f05ccc047bd3a1f54
++     Dwa powiązane elementy znajdują się gdzie indziej: agregaty uwzględniające jednostki na
++     kolekcji wielkości (`total`, `mean`, `variance`, `std`) należą do rudiments i wymagają
++     tylko `import soundness.*`; a `Quanta`, kaskada o mieszanej podstawie, taka jak
++     kamienie-funty-uncje czy stopy i cale, nad tymi samymi typami `Units`, należy do abacist.
+
+% 0 1 0 135fe02d2f713c49121ed53df4075407
+
+% 0 1 0 170ec71b88802afb0a86da7e0eef3dbc
+
+% 0 1 0 0c9389366bc654471514a01f73ef21a3
+
+% 0 1 0 13d669f241af19600dcd3892db722d3a
+
+% 0 1 0 0e0335e82d6e84f41bc1e9bda0a27352
+
+@ 0 1 0 063a9e7010c2fe081d9afed266bd6ccb
++ entry .Quantity   liczba z jednostkami w typie: nieprzezroczysty `Double` ze sprawdzaną arytmetyką
+
+% 1 1 0 002d5ccbb90b387b0422c3fe06a5ca7a
+
+@ 0 5 0 1faf667955a7bae612db03433485da90
++       `Quantity[units]` to typ nieprzezroczysty `quantitative.internal.Quantity`, eksportowany
++       tutaj: `Double`, którego argument typu, `Measure`, zapisuje jednostki, w jakich jest
++       mierzony. Tworzy się go, mnożąc liczbę przez wartość jednostki (`5*Metre`,
++       `9.8*Metre/(Second*Second)`), lub bezpośrednio z `Double` przez `Quantity[Metres[1]](5.0)`
++       – nigdy przez przypisanie, ponieważ goły `Double` nie jest `Quantity`.
+
+% 2 1 0 0c5956e3af44bd2f116da9f0c922e85f
+
+% 3 1 0 094e8466b8a59229175f1b253e4923c7
+
+% 4 1 0 1f1395f6a2efbed2081a57b59e520d2d
+
+% 6 1 0 1104fe418e1bf8990ac309bd9a55db7b
+
+% 0 1 0 0dd3a54df75c797c0613b0de8e749d92
+
+% 0 1 0 0cda863756803d360c19398b20d9e507
+
+% 0 1 0 0afa930f10774e5b1c193c2265f677ea
+
+% 0 1 0 15ca5ecd3f9ab5ea002b99f8d45f7fb2
+
+% 0 1 0 040bd7d0129887fe0b99c945ee5b56e4
+
+% 0 1 0 09f0dc7cfa685a260549c5bcc694487d
+
+% 1 1 0 15efce6890915ef119f2c8675bc796db
+
+@ 0 2 0 13c85da835c605631310a6090261485e
++       Jednostki wielkości zmieniają się przy mnożeniu i dzieleniu, a kompilator je śledzi:
+
+% 2 1 0 025f23f2ca1d07fc02945f77bd00ee87
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0f0a4f300a3f8f02092c6e9f40f7d90d
++         label Odległość
+
+% 1 1 0 1908096136e653cc07514838cb339d3e
+
+% 0 1 0 1fb10b0ce5a4df0d168b192baf34adbc
+
+% 0 1 0 0355140fba15aec614f02b63b3843689
+
+% 1 1 0 18b097a31cad7d5d14e924febb4e79ba
+
+@ 0 1 0 0b33d17cec69a9090fc512b23a3b7fbd
++         label Podzielona przez czas: prędkość
+
+% 1 1 0 0fb7e79d1e77c447160e18686586c655
+
+% 2 1 0 1a3974ba3da239bc1a6ad3bf4bc8cd80
+
+% 0 1 0 0cf5ee651c29551814aea37172413a22
+
+% 0 1 0 0eb647c2b0f065161697c0d1218ba272
+
+% 1 1 0 036d57b8c0b4f7bd137c9446bc403a95
+
+@ 0 1 0 1b60dd3a6dcbaffe199acbb59e925944
++         label Ponownie podzielona przez czas: przyspieszenie
+
+% 1 1 0 0d2e9566a788409817c90933fa17b599
+
+% 2 1 0 0af35644fedf1f1f0e6832f450c08222
+
+% 3 1 0 106a0abcd98efe29180ff83f28663d5b
+
+% 0 1 0 034d260c9309d1e20b31dd0f073a2525
+
+% 0 1 0 0d96e693929810ec1460ee18da9adbbb
+
+% 1 1 0 1871c1c4dad376e61f3cd5b2142a2e1d
+
+@ 0 1 0 03c4ee1d0b36a3e51e35738241cb4e32
++         label Pomnożona przez masę: siła
+
+% 1 1 0 076135aa7f298e32111cad5c01efb563
+
+% 2 1 0 1a82f2d2e32c769a0d7bb44154cbdf00
+
+% 3 1 0 06738b5ce1c78e741855d22f2902b323
+
+% 4 1 0 19b5c2451c46e6761825cd3f4fb216c6
+
+% 0 1 0 1a17698b3def115811c43a27309e4780
+
+% 0 1 0 0e80a8fcd679b4320bac99f6d59a2867
+
+% 0 1 0 15c0ef6aff9ea26613dffdeb91e9e41a
+
+% 1 1 0 15908e8047c05ca30624ada9561c3a5c
+
+@ 0 1 0 03cbcb64fa65560c030854e6147be0d4
++         label A suma dwóch wymiarów się nie kompiluje
+
+% 1 1 0 0cd7dc3eef1fccf319e4787edbaca4d5
+
+% 2 1 0 12d4a442c08f9ea51230f8812e0c7ffd
+
+% 3 1 0 16123ac5054c9add101ef0d4b0ad6d65
+
+% 4 1 0 11a18834af945613083b066bf6b336a2
+
+% 0 1 0 11e5444ff7060c16028d36b1a5c46ed1
+
+% 0 1 0 0240eb3c1dc24638056ce6e7979f3546
+
+% 1 1 0 0d7cdd39f51526591734edf577296d3d
+
+% 2 1 0 0f35be6ceddeab150758eef9c2c8849f
+
+@ 0 2 0 0a9dca74c15d6ab418fc8af6bad5a3ef
++       Arytmetyka rozwiązuje się przez klasy typów biblioteki symbolism, z których każda jest
++       makrem odczytującym jednostki obu operandów:
+
+@ 0 15 0 159442006f2ac9a919f33b69bd40bbff
++       - `+` i `-` (`.addable`, `.subtractable`) wymagają operandów jednego wymiaru; różne
++         jednostki tego wymiaru są przeliczane na jednostkę głównego operandu (SI), a różne
++         wymiary są błędem kompilacji, _quantitative: the left operand represents distance, but
++         the right operand represents time; these are incompatible physical quantities_. Różne
++         potęgi jednego wymiaru liczą się jako różne: długość nie dodaje się do pola
++         powierzchni.
++       - `*` i `/` (`.multiplicable`, `.divisible`) łączą jednostki, dodając lub odejmując
++         potęgi, po przeliczeniu każdego wymiaru, który obie strony mierzą w różnych
++         jednostkach; wynik, w którym wszystkie jednostki się skracają, to zwykły `Double`.
++         `Quantity` mnoży się i dzieli także przez `Double` lub `Int` po dowolnej stronie.
++       - `<`, `>`, `<=`, `>=` (`.commensurable`) i `===` (`.checkable`) porównują wielkości w
++         różnych jednostkach jednego wymiaru, przeliczając je tak jak arytmetyka; `==` jest
++         zdefiniowane tylko między wielkościami tego samego typu jednostek i jest dokładne co
++         do ostatniego bitu.
++       - jednoargumentowy `-` (`.negatable`), `sqrt` i `cbrt` (`.squareRoot`, `.cubeRoot`, które
++         dzielą każdą potęgę przez dwa lub trzy i są błędami kompilacji, gdy potęga nie jest
++         podzielna).
+
+@ 0 7 0 12a5bfbb4394073915756e90e9688d46
++       Wielkość przedstawia się przez `show`, które wymaga `Decimalizer` w zasięgu i zapisuje
++       wartość, symbole jednostek połączone znakiem `·` oraz potęgi w indeksie górnym
++       (`8.54 m·s¯¹`); given `Prefixes` dla jednostek skaluje zamiast tego liczbę do przedrostka
++       metrycznego (`5.00 kB`). `toString` pochodzi od `Double` i gubi jednostki, więc `show`
++       jest jedynym poprawnym przedstawieniem. Arytmetyka między zwykłą liczbą a wielkością
++       opiera się na konwersjach `into` kompilatora, więc obok `import soundness.*` potrzebny
++       jest `import scala.language.experimental.into`.
+
+@ 0 6 0 02f8650ed0bbf50f12bbf612a02e2baf
++       Konstruktor oraz `units`, `unitsMap` i `dimension` obiektu towarzyszącego przyjmują
++       miarę jako argument typu; te same nazwy na instancji – `convert`, `normalize`, `invert`,
++       `express`, `units`, `dimension`, `sqrt`, `cbrt` – to metody rozszerzające dziedziczone
++       przez obiekt towarzyszący z `internal2.Protoquantity`, a `value`, `underlying` i
++       `amount` to rozszerzenia zadeklarowane w `quantitative.internal`. Wszystkie są dostępne
++       na dowolnej wielkości po `import soundness.*`.
+
+@ 0 2 0 124a32f21ed2d3300aa214b3035bc71c
++       Składowe obiektu towarzyszącego są zadeklarowane w `internal.Quantity`, z którego typ jest
++       eksportowany, i tam udokumentowane.
+
+% 0 1 0 1dc9910be7671bbb0eb39537f9f8588c
+
+% 0 1 0 0eb5facdf5dd8fd81cd4829a4f33c5dd
+
+% 1 1 0 03199a31a60a9774117bea81fb5676c3
+
+% 0 1 0 1517453625ead1000d7ab831ed2cbf24
+
+% 1 1 0 1c31829c807df50e024a9d04554637fa
+
+@ 0 6 0 06f190ae59123a50063a82f9e94a76ab
++ entry .MetricUnit   wartość jednostki, do której stosują się przedrostki metryczne: `Kilo(Metre)`, `Milli(Litre)`
++     `MetricUnit[units]` to typ nieprzezroczysty `quantitative.internal.MetricUnit`,
++     eksportowany tutaj: `Quantity[units]` (jest jej podtypem), która jest dodatkowo
++     *jednostką*, tak by można było zastosować do niej `MetricPrefix`. `Metre`, `Gram`,
++     `Second`, `Newton`, `Litre` i pozostałe jednostki SI i CGS to `MetricUnit`; `Foot` i
++     `Pound` to zwykłe `Quantity`, ponieważ `Kilo(Foot)` nie jest jednostką, której ktokolwiek
++     używa.
+
+% 2 1 0 1e6dab3a0e0da8e411a88712c5cb7b49
+
+% 3 1 0 17b5ecb8e411918008e828c9671aff80
+
+% 0 1 0 1f50ba27b7c36f051c6bf7f55929f193
+
+% 0 1 0 0f88f88be7da14230369fa0e00157fba
+
+% 0 1 0 0d422c24ddf9fa7e068f4a220a34c75f
+
+% 0 1 0 14c49a0f8bbc3d36130128135ed7216b
+
+% 0 1 0 066654f2ba0ff5ac185ffbbcfc5a6c05
+
+% 1 1 0 0de06af9cc498fdd10c2a11574a4e163
+
+@ 0 3 0 119ac51e2260e81618e321271c5346f7
++     `MetricUnit(value)` tworzy ją z `Double`, a `MetricUnit(quantity)` z wielkości (więc
++     `MetricUnit(Joule/Second)` to wat). Given `underlying` obiektu towarzyszącego oznacza, że
++     pod spodem jest to `Double`.
+
+@ 0 1 0 1e615da7ff1397511608d6886eac6e4b
++ entry .Temperature   temperatura bezwzględna, mierzona od zera bezwzględnego, wyświetlana na skali w zasięgu
+
+% 1 1 0 16037c5309f1ae371722fc7f1ded077b
+
+@ 0 7 0 0b92689b11bd7db51664d7d9fe9926cb
++       Temperaturę mierzy się od umownego zera, więc trzydzieści stopni plus trzydzieści stopni
++       to nie sześćdziesiąt stopni czegokolwiek: jest to wielkość *przesunięta*, a
++       `Temperature` – typ nieprzezroczysty `quantitative.internal.Temperature`, `Double` w
++       kelwinach – oddziela ją od `Quantity[Kelvins[1]]`, która mierzy *różnicę* temperatur.
++       Temperaturę tworzy się na skali, `Celsius(30)`, `Fahrenheit(86)`, `Kelvin(303.15)`
++       (ostatnie wymaga `import quantitative.*`, ponieważ jego `apply` nie trafia do modułu
++       zbiorczego) lub `Temperature(303.15)`, i wyświetla na tej skali `TemperatureScale`,
++       którą zaimportowano z `temperatureScales`:
+
+% 2 1 0 07b48ac97ddd11250b772f3389ca6c34
+
+% 3 1 0 0fd26862406a13831f949e7dacdb767e
+
+% 4 1 0 0438fe0ea38b9fce0daac638a4fc96f9
+
+% 6 1 0 1299deb4e75092d919f09f41e15aaa06
+
+% 2 1 0 19f80701369869da06ada5cf3d21c37d
+
+% 0 1 0 09ed63cbc5be232f1079719db4acab44
+
+% 0 1 0 068204b8b48959d91112f731a121fc8f
+
+% 2 1 0 03ee0751a8c9d5c3075924c60984a172
+
+% 0 1 0 027880adc4e083960418e2302c7c120c
+
+% 0 1 0 0afc5dd19e197b450cdd380c4bdf3c01
+
+% 0 1 0 1d8bbedbb88b60e5000de37d80ee448a
+
+% 1 1 0 13b8413b05928f5d1c897105ed35e137
+
+@ 0 7 0 135df43e017229d4170120d385db65b2
++       `Temperature` dodaje i odejmuje `Quantity[Kelvins[1]]` lub `Quantity[Rankines[1]]`,
++       dając inną temperaturę, a różnica dwóch temperatur to `Quantity[Kelvins[1]]`, która
++       przelicza się jak każda inna wielkość. Dwie temperatury porównuje się za pomocą `<`,
++       `>`, `<=` i `>=`, przez given `orderable`, który obiekt towarzyszący dziedziczy z
++       `protointernal#Temperature2`. Mnożenie dwóch temperatur lub ich dodawanie nie ma sensu i
++       się nie kompiluje. Odczyty na każdej skali to rozszerzenia `kelvin`, `celsius`,
++       `fahrenheit` i `rankine`, zadeklarowane w `quantitative.internal`.
+
+@ 0 2 0 056274593526deee0164575ea7a2637d
++       Składowe obiektu towarzyszącego są zadeklarowane w `internal.Temperature`, z którego typ
++       jest eksportowany, i tam udokumentowane.
+
+% 0 1 0 0b8baf7983c8fb47046e586fe47ec312
+
+% 1 1 0 1721bbc72f645df510a0b4b381789d88
+
+% 0 1 0 0f33935f75ce2c731c3bbca094cc1d4c
+
+@ 0 5 0 1ce5eecf7a83727c1873d18bd1b1ecf2
++ entry .Measure   typ jednostek wielkości: jeden typ `Units` lub przecięcie kilku
++     Górne ograniczenie argumentu typu `Quantity`. Pojedyncza jednostka podniesiona do potęgi
++     to `Units[power, dimension]`, który jest `Measure`; miara złożona to przecięcie,
++     `Metres[1] & Seconds[-2]`, w dowolnej kolejności; a samo `Quantity[Measure]` to wielkość
++     bezwymiarowa. `Measure` jest czysta (rozszerza `caps.Pure`), więc nigdy nie niesie
++     zbioru przechwytywań.
+
+@ 0 1 0 073211fa52fb9128051aa9f201bc3723
++ entry .Units   jedna jednostka podniesiona do potęgi, `Units[power, dimension]`: `Metres[1]`, `Seconds[-2]`
+
+% 1 1 0 05c4a47db59426a21898d02473c0f791
+
+@ 0 6 0 16765ab62817828608db9f1bc6e3e4f1
++       Każda jednostka to konstruktor typu nad swoją potęgą, `Nat` (`Int & Singleton`):
++       `Metres` to jednostka SI wymiaru `Distance`, `Metres[2]` to metry kwadratowe, a
++       `Metres[-1]` – na metr. `Measure` to jeden z nich lub przecięcie kilku. Jednostki
++       podstawowe SI są tu zapieczętowanymi traitami – `Metres`, `Kilograms`, `Seconds`,
++       `Amperes`, `Kelvins`, `Candelas`, `Moles` – a `quantitative.units` dodaje jednostki
++       imperialne, czasu i typograficzne (`Feet`, `Pounds`, `Hours`, `Points`, …).
+
+@ 0 3 0 1588ee01c32b5d651741e068768bc381
++       Własna jednostka to trait rozszerzający `Units[power, dimension]`, z wartością jednostki
++       i `Designation` dla jej symbolu; może być zapieczętowany, ponieważ nic go nie
++       implementuje w czasie wykonania:
+
+% 2 1 0 0e90a7768bca537e1a072224a3149a4b
+
+% 3 1 0 04e23ffca88d0d3106caa0a2722f99b8
+
+% 0 1 0 08d94172953bbaa50b79da4011ebb8f6
+
+% 0 1 0 001706ce27637dcb1b2563163a88a59e
+
+% 0 1 0 14762287f2abb0290b5dbcb5fd9541b4
+
+% 1 1 0 140cd52892c71ef81cb6a072185983d5
+
+% 0 1 0 04d1fd72274adc5416fcc2e9020ae989
+
+% 1 1 0 0e28af4d08dfee351c3a7b17491f8732
+
+% 0 1 0 07372f7c9f00eb9707803afbe3710566
+
+% 0 1 0 0362765636d0b10d08847c201ae29c7c
+
+% 0 1 0 1a6c0836b5e5edc2094124f203eb7244
+
+% 0 1 0 103975a65e05b5b31359a4eb4284b994
+
+@ 0 10 0 02df1b42b01d088b01370411df23fc11
++ entry .Metres   metr, jednostka SI i główna wymiaru `Distance`: `Metres[power]`
++     Symbol `m` (`Designation.metres`); jednostka, na którą przeliczane są odległości w
++     mieszanych jednostkach.
++ entry .Kilograms   kilogram, jednostka SI i główna wymiaru `Mass`: `Kilograms[power]`
++     Symbol `kg`: jego `Designation` to `g` z przedrostkiem `Kilo`, dlatego *wartością*
++     jednostki jest `Gram` (tysięczna część kilograma), a jeden kilogram zapisuje się jako
++     `Kilo(Gram)`. Masy zawsze normalizują się do kilogramów i w nich się wyświetlają.
++ entry .Seconds   sekunda, jednostka SI i główna wymiaru `Time`: `Seconds[power]`
++     Symbol `s`. `Seconds[1]` jest też `Radix.Regular`, więc sekunda SI może być szczeblem
++     okresu lub znacznika czasu biblioteki aviation, pozostając zwykłą jednostką.
++ entry .Amperes   amper, jednostka SI i główna wymiaru `Current`: `Amperes[power]`
+
+% 0 1 0 0657045372fe73f71d6e52ae29e5786c
+
+@ 0 4 0 1f4aebda47affd4f1f9422dad8d23d05
++ entry .Kelvins   kelwin, jednostka SI i główna wymiaru `Heat`: `Kelvins[power]`
++     Symbol `K`. `Quantity[Kelvins[1]]` to *różnica* temperatur; temperatura bezwzględna to
++     `Temperature`.
++ entry .Candelas   kandela, jednostka SI i główna wymiaru `Luminosity`: `Candelas[power]`
+
+% 0 1 0 0c36fa7e7cc76f0804b74d6a88775c99
+
+@ 0 1 0 059207dd6e0ebb05182e529e1816d14a
++ entry .Moles   mol, jednostka SI i główna wymiaru `AmountOfSubstance`: `Moles[power]`
+
+% 0 1 0 1bf08f75d2c0ef320268417bf3888246
+
+@ 0 5 0 0ef3a14fd0d98ec705c85980672ac759
++ entry .Bytes   bajt, jednostka główna wymiaru `Information`: `Bytes[power]`
++     Symbol `B`. Liczba bajtów to `Quantity[Bytes[1]]`, tworzona jako `512.0*Byte` lub
++     `14.2*Mebi(Byte)`, a szybkość to `Quantity[Bytes[1] & Seconds[-1]]`. `Memory` z rudiments
++     to dokładna całkowita liczba bajtów; to jest wielkość mierzona.
++ entry .Rankines   stopień Rankine'a, jednostka wymiaru `Heat`: `Rankines[power]`
+
+% 1 1 0 14b01cb00935d52d0e75f4abb60f9cbb
+
+@ 0 6 0 0a8825e743f6ae17100074dd3e4bb829
++       Symbol `°R`; jeden kelwin to 1,8 stopnia Rankine'a (`.ratio`). Tak jak kelwin jest
++       mierzony od zera bezwzględnego, więc `Quantity[Rankines[1]]` jest zarówno różnicą
++       temperatur, jak i wielkością, którą `Temperature` dodaje i odejmuje; `Rankine` to
++       odpowiadająca mu `TemperatureScale`.
++   entry .designation   symbol `°R`
++   entry .ratio   `Ratio[Rankines[1] & Kelvins[-1], 1.8]`: kelwin to 1,8 stopnia Rankine'a
+
+@ 0 16 0 0a1d2594c42dafdc0bf49a961821a860
++ entry .Dimension   to, co mierzy jednostka: `Distance`, `Mass`, `Time`, `Heat`, `Current`, `Luminosity`, `AmountOfSubstance`, `Information`
++     Trait, który rozszerza każdy wymiar, każdy będący zapieczętowanym traitem bez składowych:
++     typ `Units[power, dimension]` wskazuje jeden z nich, a analiza wymiarowa porównuje
++     wielkości według ich wymiarów i potęg, a nie jednostek. Siedem wymiarów podstawowych SI
++     jest zadeklarowanych tutaj, każdy z jednostką `Principal`, podobnie jak `Information`,
++     mierzona w `Bytes`; `Typometry` (typograficzne em) to ósmy, w `quantitative.units`.
++     Własny wymiar to trait rozszerzający `Dimension`, z typem `Units` i – jeśli jego
++     wielkości mają mieć nazwę – givenem `Amount`. `Dimension` jest czysty, więc nigdy nie
++     niesie zbioru przechwytywań.
++ entry .Distance   wymiar długości; jednostka główna `Metres`
++ entry .Mass   wymiar masy; jednostka główna `Kilograms`
++ entry .Time   wymiar czasu; jednostka główna `Seconds`
++ entry .Heat   wymiar temperatury; jednostka główna `Kelvins`
++ entry .Current   wymiar natężenia prądu elektrycznego; jednostka główna `Amperes`
++ entry .Luminosity   wymiar światłości; jednostka główna `Candelas`
++ entry .AmountOfSubstance   wymiar liczności materii; jednostka główna `Moles`
++ entry .Information   wymiar informacji; jednostka główna `Bytes`, nie jest to wymiar podstawowy SI
+
+@ 0 1 0 12ae8aded7009de70643393a2504fd1c
++ entry .Principal   jednostka, którą przyjmują wyniki wymiaru w mieszanych jednostkach: jednostka SI każdego wymiaru podstawowego
+
+% 1 1 0 10bcc13e1a46cce91bd6505a503501bc
+
+@ 0 17 0 09abd66216f9f5f61d5e4f9f939f29af
++       `Principal[dimension, unit]` wskazuje jednostkę, do której normalizuje się wielkość w
++       danym wymiarze, gdy spotykają się dwie jednostki: `2*Metre + 2*Foot` i `2*Foot + 2*Metre`
++       są oba w metrach, a `(2*Metre)*(3*Foot)` w metrach kwadratowych, ponieważ
++       `Principal.distance` wskazuje `Metres`. Pośredniczy też w przeliczaniu: `Ratio` między
++       dwiema jednostkami, z których żadna nie jest główna, nie musi istnieć, ponieważ każdą
++       można przeliczyć przez jednostkę główną. Siedem givenów to jednostki podstawowe SI;
++       własny wymiar z więcej niż jedną jednostką wymaga w zasięgu givena
++       `Principal[MyDimension, MyUnits]()`, w przeciwnym razie arytmetyka między jego
++       jednostkami kończy się błędem _the operands both represent the physical quantity …, but
++       there is no principal unit specified for this dimension_.
++   entry .distance   `Metres` jest jednostką główną dla `Distance`
++   entry .mass   `Kilograms` jest jednostką główną dla `Mass`
++   entry .time   `Seconds` jest jednostką główną dla `Time`
++   entry .current   `Amperes` jest jednostką główną dla `Current`
++   entry .luminosity   `Candelas` jest jednostką główną dla `Luminosity`
++   entry .heat   `Kelvins` jest jednostką główną dla `Heat`
++   entry .amountOfSubstance   `Moles` jest jednostką główną dla `AmountOfSubstance`
++   entry .information   `Bytes` jest jednostką główną dla `Information`
+
+@ 0 11 0 16fe3f21111d342a0e3db916b6b73c30
++ entry .Ratio   współczynnik przeliczenia między dwiema jednostkami jednego wymiaru, jako typ singletonowy `Double`
++     `Ratio[From[1] & To[-1], rate]` mówi, że jedno `To` to `rate` jednostek `From`:
++     `Ratio[Metres[1] & Feet[-1], 0.3048]` (lub równoważnie `Ratio[Feet[-1] & Metres[1],
++     0.3048]`, ponieważ kolejność w przecięciu nie ma znaczenia) mówi, że stopa to 0,3048
++     metra. Współczynnik jest *typem*, literałem `Double & Singleton`, więc given jest
++     wymazywany, a przeliczenie sprowadza się do jednego mnożenia, które oznacza; każdy given
++     `ratio` w `quantitative.units` jest zadeklarowany jako `erased`. Makra arytmetyczne
++     znajdują współczynnik w zasięgu niejawnym, próbując pary w obu kolejnościach, a w
++     przeciwnym razie przechodząc przez jednostkę `Principal` wymiaru, i zgłaszają błąd
++     kompilacji, gdy żaden nie istnieje: _both operands represent the physical quantity
++     distance, but the conversion ratio between them is not known. To provide the conversion
++     ratio, please provide a contextual instance in scope, with the type `Ratio[Feet[1] &
+
+% 0 1 0 0b47ba96e613d650115ff8113dc7cf78
+
+% 2 1 0 0a6a865e09e3e0dc1ae6458c565ad5b3
+
+% 3 1 0 1dac1c8441975731066ec78a3ec33c4e
+
+% 0 1 0 02528148d262279f0947dd12167de51b
+
+% 0 1 0 0b25fc307d4b8756028a7c00eadde329
+
+% 0 1 0 021852b80ec6fa3c12eb741c29160c24
+
+% 0 1 0 00b513986f433d9c1c2be0371738f7fc
+
+% 0 1 0 12f287501a6753ec0e9a3b2746216b26
+
+% 1 1 0 0be7b2e129c960b117d1429123005da9
+
+@ 0 1 0 0a680c449b55dffc1151052193012cc3
++ entry .Designation   symbol, z jakim przedstawia się jednostka: `m`, `kg`, `ft`
+
+% 1 1 0 035a23aa432f799011411ee69d7d8a00
+
+@ 0 5 0 0ec79118d2926af10905ca2d7618d022
++       `Designation[Units[1]]` to klasa typów, którą `show` sprawdza dla każdej jednostki miary
++       wielkości; `name()` to symbol, a `siPrefix` – przedrostek, z jakim się go zapisuje,
++       `NoPrefix` dla każdej jednostki poza kilogramem. `text` to oba razem. Są tu giveny
++       siedmiu jednostek podstawowych SI, a każda jednostka w `quantitative.units` ma własny w
++       swoim obiekcie towarzyszącym. Jednostka bez `Designation` przedstawia się nazwą swojego
++       typu.
+
+% 2 1 0 0a26ce1d68bc861707cdd73c6132e276
+
+% 3 1 0 055c4c063f085d9c0a8d2a0929abb67a
+
+% 1 1 0 01d4baa87096dff81add10cffab8a7b5
+
+% 1 1 0 0e5b6c4d3a9bdd7a02f64a294ad5443e
+
+% 0 1 0 05e47e6960c6e48502cef4971f6508eb
+
+@ 0 1 0 130581e79d37b6181f621701e847e907
++   entry .kilograms   `kg`: symbol `g` z przedrostkiem `Kilo`
+
+% 0 1 0 1a2e1b9d4e101ae11680d9ea80eee460
+
+% 0 1 0 07d5dc9f4ff9a1cd015e1faa385c0a5b
+
+% 0 1 0 0f313a36deb29b15174ded84b9f989a9
+
+% 0 1 0 153190d1823d9b0501c002a0a21f76bd
+
+% 0 1 0 046d81b31ccaffd513d300218374b45b
+
+% 0 1 0 05a447bad61c109b10359cca835dbe8d
+
+@ 0 3 0 111f1990d297c8dd03effcf0dc622c42
++   entry #name   symbol jednostki, bez przedrostka
++   entry #siPrefix   przedrostek metryczny, z jakim zwyczajowo zapisuje się jednostkę; domyślnie `NoPrefix`
++   entry #text   symbol przedrostka i symbol jednostki razem
+
+@ 0 1 0 1e21645bd151d8ae05b672ef8e354058
++ entry .Redesignation   pojedynczy symbol dla całej miary pochodnej: `J` dla kg·m²·s⁻²
+
+% 1 1 0 047adb90691619c60a0bc8e1a4dd671e
+
+@ 0 8 0 0ae17de1618c00590f184c72d70bbb0b
++       Podczas gdy `Designation` nazywa jedną jednostkę, `Redesignation[measure]` nazywa
++       kombinację: z `Redesignation.joules` w zasięgu `(45*Joule).show` to `45.0 J`, a nie
++       `45.0 kg·m²·s¯²`. Wyszukiwanie odbywa się według dokładnej miary, więc siła w niutonach
++       wyświetla się jako `N`, a energia jako `J`, ale ciśnienie (`Pascal`) nadal wyświetla się
++       w jednostkach podstawowych. Własna jednostka pochodna otrzymuje go jako `given
++       Redesignation[Metres[2] & Seconds[-1]](t"St")`.
++   entry .joules   `J` dla `Kilograms[1] & Metres[2] & Seconds[-2]`
++   entry .newtons   `N` dla `Kilograms[1] & Metres[1] & Seconds[-2]`
++   entry #name   symbol
+
+@ 0 1 0 077f5c070a5384b00b169ef72349337e
++ entry .Amount   fizyczna nazwa kombinacji wymiarów: `velocity`, `energy`, `chemical potential`
+
+% 1 1 0 1dc60b218ab7120c0653c5fa2d5ca9fa
+
+@ 0 8 0 1a7c1dd961cdcb0e1b70e05e8662314a
++       `Amount[measure, label]` łączy miarę złożoną z potęg jednostek podstawowych z nazwą
++       wielkości fizycznej, którą reprezentuje. Giveny to wymazane dowody odczytywane
++       wyłącznie przez makra: `dimension` podaje przez nie nazwę wielkości, a błąd kompilacji
++       dla niezgodnej sumy nazywa przez nie obie strony (_the left operand represents distance,
++       but the right operand represents energy_). `Amount[units]` to nazwa miary jako makro,
++       błąd kompilacji, gdy żadna nie jest znana. Obiekt towarzyszący zawiera też alias typu
++       dla każdej nazwanej miary pochodnej – `Amount.Velocity`, `Amount.Force`,
++       `Amount.Energy` – wyrażony przez `Units[power, Dimension]`, którego można użyć jako typu
++       wielkości.
+
+% 2 1 0 0300a2a2eefce3b607a98b716e730c93
+
+% 3 1 0 182c9a964a65abeb17ee375ff599fe5a
+
+% 0 1 0 13416e8129bf778d0b7efd7a58c1e271
+
+% 0 1 0 169263ce95eb8488066f02318a0ad5d1
+
+% 0 1 0 08cc207053c728dd09b53ed1e21eacff
+
+% 1 1 0 09a6d9b00bd5a4d9092d71b4092be5db
+
+@ 0 1 0 1a006b286e4d26121c66cc409c3ecce7
++       Wielkość własnego wymiaru nazywa się, deklarując jeden:
+
+% 2 1 0 0d3867f00b2f86470593b6dde82860bb
+
+% 3 1 0 055584a6b8bfa2611651f97f21d8cf87
+
+% 2 1 0 12d0812a5802d3100d9f16f476295bd6
+
+% 0 1 0 1a22e1103f8b6b580741fb539eb86a08
+
+% 1 1 0 1e366885a7aefaa41f4add65ecb24e97
+
+@ 0 4 0 00095f2a589fd1df00436b2e8059a2bd
++       Siedem wymiarów podstawowych to `distance`, `mass`, `time`, `current`, `temperature`,
++       `luminosity` i `amount of substance`; nazwy pochodne odpowiadają liście wielkości
++       fizycznych, a `Typometry.quantity` dodaje `em` w `quantitative.units`.
++   entry .apply   `Amount[units]`: nazwa miary jako tekst; błąd kompilacji, gdy jej nie ma
+
+% 0 1 0 163271a5d4a627811c895e074c68c95e
+
+% 0 1 0 13b4414cbaa567261b3ab0dcfe88d725
+
+% 0 1 0 0fcaa8198690564b037a67435b1e341f
+
+% 0 1 0 19c927df80b1279f09ee4531ad533a34
+
+% 0 1 0 0de0ea685a9770e00238872eada36729
+
+% 0 1 0 088eb6a46221471f0c1f61e71150eee6
+
+% 0 1 0 1f036254b4736904194dba516c71e255
+
+% 0 1 0 08202f3c42e2d99509bcf2bee2cf7697
+
+@ 0 1 0 0672aca384f6b7ee0237e04a6cf2ca94
++   entry .Absement   masa·czas
+
+% 0 1 0 0107614623d1dd4f190f6bac489015f6
+
+@ 0 1 0 12e1ce87a41d08ca03ea11828ce43bd8
++   entry .AbsorbedDoseRate   odległość²·czas⁻³
+
+% 0 1 0 12ce7e71b6a26fa604d8bb42548f254e
+
+@ 0 1 0 0a7b5035bd6459501a61eda70d30e388
++   entry .Acceleration   odległość·czas⁻²
+
+% 0 1 0 0235a039c958ecab0a779e40e58f741e
+
+@ 0 1 0 001b98c10dfb624d07f2b7fffae60d2c
++   entry .Area   odległość²
+
+% 0 1 0 04ab5cada1c9866b1a2a6c3e50302d5f
+
+@ 0 1 0 11311c8a8a9f56270556a97405a0c6f5
++   entry .AreaDensity   odległość⁻²·masa
+
+% 0 1 0 00dcab4572f58a4317936947c43e05f3
+
+@ 0 1 0 18047af951787f741102a1e4359f1a45
++   entry .Capacitance   odległość⁻²·masa⁻¹·czas⁴·prąd
+
+% 0 1 0 01f6232bcb440d731d4f99c53fe12f7e
+
+@ 0 1 0 0682b181469a41b911274ea945a12a83
++   entry .ChemicalPotential   odległość²·masa·czas⁻²·substancja⁻¹
+
+% 0 1 0 0dfce9d67824b7c20204fa8790ceac26
+
+@ 0 1 0 0b88bff97fe2e18c17529272895afee0
++   entry .Crackle   odległość·czas⁻⁵
+
+% 0 1 0 04a685fff8562822121a33e9641561cd
+
+@ 0 1 0 06c3b6abd5d9920417765e962c37e4e1
++   entry .CurrentDensity   odległość⁻²·prąd
+
+% 0 1 0 051ced746983553d1bb6489ab95c180b
+
+@ 0 1 0 06bb861d823864cc01b32e27d8d3bd71
++   entry .DynamicViscosity   odległość⁻¹·masa·czas⁻¹
+
+% 0 1 0 1f72f6f6312ab0831226c567f4be1a3a
+
+@ 0 1 0 010cc4ead000e140124337bbd0b42a98
++   entry .ElectricCharge   czas·prąd
+
+% 0 1 0 02763e6c06d1c69510d4ecdf1a6eef51
+
+@ 0 1 0 0b4d68922ee56c2e028032cd27c267ce
++   entry .ElectricChargeDensity   odległość⁻³·czas·prąd
+
+% 0 1 0 1aa93e51f33e0b7811aead69ce85403c
+
+@ 0 1 0 1b474178b4fc0f0a1b45da5bf652c495
++   entry .ElectricDipoleMoment   odległość·czas·prąd
+
+% 0 1 0 073ff37a45512b7f1c225c227977fad6
+
+@ 0 1 0 15347fa01464362b1aa4953aae06821b
++   entry .ElectricDisplacementField   odległość⁻²·czas·prąd
+
+% 0 1 0 07477aba8823f18c0c93115dbbb0cd33
+
+@ 0 1 0 05c2f1fd7765b46c008cb9a890cbebaa
++   entry .ElectricFieldStrength   odległość·masa·czas⁻³·prąd⁻¹
+
+% 0 1 0 1db39651daffc8b00e24bbbe8c798998
+
+@ 0 1 0 0fddadb52f1d1e6b1999c84a91ba498f
++   entry .ElectricalConductance   odległość⁻²·masa⁻¹·czas³·prąd²
+
+% 0 1 0 1ab26a60a0827efe18e46d9c122eb9b2
+
+@ 0 1 0 062345d2d8faf5c61bbae669a8174f5e
++   entry .ElectricalConductivity   odległość⁻³·masa⁻¹·czas³·prąd²
+
+% 0 1 0 1a917e5c395206ae1c93177e3de64c0c
+
+@ 0 1 0 07ad78ee55b49c4a1df0ca092f5a95a6
++   entry .ElectricalPotential   odległość²·masa·czas⁻³·prąd⁻¹
+
+% 0 1 0 0043b7ff3b691b2905502903a02c28cf
+
+@ 0 1 0 0aa25885a43ba9a90e922d2f3b8f6aa8
++   entry .ElectricalResistivity   odległość³·masa·czas⁻³·prąd⁻²
+
+% 0 1 0 015fed6ae1c550c91bb4822676975490
+
+@ 0 1 0 08322d97f82f27711e36dc40bdd686df
++   entry .Energy   odległość²·masa·czas⁻²
+
+% 0 1 0 07cc82b24dc0902006b178d61fd92814
+
+@ 0 1 0 1898cac3f2bf0a710e2d1f82b00a6a39
++   entry .Entropy   odległość²·masa·czas⁻²·temperatura⁻¹
+
+% 0 1 0 089635f7a7dcf4441c23e39b596ab4a8
+
+@ 0 1 0 12f577dd5aa8904307bd3f1642c00350
++   entry .Force   odległość·masa·czas⁻²
+
+% 0 1 0 11dd6483094bdbcc002b2306218f29c1
+
+@ 0 1 0 04e8e417dc90c95207433c520440d880
++   entry .Frequency   czas⁻¹
+
+% 0 1 0 13eff4609d1b43240900ff4459b1e4a8
+
+@ 0 1 0 155a86dada5e58f90f8bf64e40dcdf84
++   entry .Illuminance   odległość⁻²·światłość
+
+% 0 1 0 14a7b7b3932cb4910e778a1c6c2e94cf
+
+@ 0 1 0 05744ff83bd22bc10192fedd3aa3c1f3
++   entry .Impedance   odległość²·masa·czas⁻³·prąd⁻²
+
+% 0 1 0 0a8516ceee25252119f08fbf3dfbab41
+
+@ 0 1 0 08f41af7fe4eb5801b445b29c9e6043f
++   entry .Inductance   odległość²·masa·czas⁻²·prąd⁻²
+
+% 0 1 0 1ac0117c3b24fe1f0ef672b55cb04ef7
+
+@ 0 1 0 0bab04b3eab1c02a122e32fd49df64c3
++   entry .Jerk   odległość·czas⁻³
+
+% 0 1 0 1ba564b2a9162b44111c459def1ccf2f
+
+@ 0 1 0 0ffcd483279ba6b30fd0766868c6a245
++   entry .Jounce   odległość·czas⁻⁴
+
+% 0 1 0 06792712d9a404a31bfe0ca33f9e0282
+
+@ 0 1 0 19a46b514264157e1f239af2c5352f03
++   entry .LinearDensity   odległość⁻¹·masa
+
+% 0 1 0 0ce868a08ba9e85005c3c567d6dc5d93
+
+@ 0 1 0 0bf1cd0c2c1f411801f52d6a34d906b8
++   entry .MagneticFlux   odległość²·masa·czas⁻²·prąd⁻¹
+
+% 0 1 0 0c4d1a65d099e87116de1c665a1aec96
+
+@ 0 1 0 19abed7dfa8fc93e08fc3d4af23ba367
++   entry .MagneticFluxDensity   masa·czas⁻²·prąd⁻¹
+
+% 0 1 0 09af43706046d58710a0a29122aeaf08
+
+@ 0 1 0 16f47993d671190f0f7e87db5202588d
++   entry .MagneticMoment   odległość²·prąd
+
+% 0 1 0 1c35e4d15b23de400fa7ea059dc98f9c
+
+@ 0 1 0 0a44d759ae4a228c014f8ffdc8836331
++   entry .Magnetization   odległość⁻¹·prąd
+
+% 0 1 0 142c3c6b95e8db8c0f552b1b4786f50e
+
+@ 0 1 0 1e226d3976d1cd0e09c1ce49a956553c
++   entry .MassDensity   odległość⁻³·masa
+
+% 0 1 0 0de874a977ef583709585dcdc5eb47ac
+
+@ 0 1 0 1e6a2de50d8e3cc80289c6f8b0c7f724
++   entry .MolarConcentration   odległość⁻³·substancja
+
+% 0 1 0 11dfd8b6a046d4b113e3d698ffeea0a9
+
+@ 0 1 0 051233f85b84e7311ce4ba7139efd0b4
++   entry .MolarEntropy   odległość²·masa·czas⁻²·temperatura⁻¹·substancja⁻¹
+
+% 0 1 0 0dab202387bbf76b18388cbb45dd0731
+
+@ 0 1 0 0e95e91ecc23a19111e82cc3ed0adf21
++   entry .MomentOfInertia   odległość²·masa
+
+% 0 1 0 1219c2c17482b43e129034aef873bac3
+
+@ 0 1 0 1e6a9d60df0551ea1d705e998740efc4
++   entry .Momentum   odległość·masa·czas⁻¹
+
+% 0 1 0 1a06eacadc284a5a19383ec068d57ddf
+
+@ 0 1 0 0dbc934a9607999b14dd2c49cd00cecc
++   entry .OpticalPower   odległość⁻¹
+
+% 0 1 0 1a9b1d3f295dcccd13106b40aaa4e2a0
+
+@ 0 1 0 18f6d8df0c266d121445eb713e39731d
++   entry .Permeability   odległość·masa·czas⁻²·prąd⁻²
+
+% 0 1 0 149c554d8bad60861c36c7b00e41ed00
+
+@ 0 1 0 0b777f9ddfe6837b15b5056492d1df0b
++   entry .Permittivity   odległość⁻³·masa⁻¹·czas⁴·prąd²
+
+% 0 1 0 1d610b3d756bdd1c18173c4c63983f09
+
+@ 0 1 0 068181bfb95c4bfd0a0eeca2f7eb606c
++   entry .Pop   odległość·czas⁻⁶
+
+% 0 1 0 025f3fc83cfce7170fe14f359ebe4c7d
+
+@ 0 1 0 0bb35618f720598d0c2ecb5bb91567e3
++   entry .Power   odległość²·masa·czas⁻³
+
+% 0 1 0 009ebd8e94ae5e690627d20f7985ea17
+
+@ 0 1 0 1d389dae16ae9b8e1158975b6d785b72
++   entry .Pressure   odległość⁻¹·masa·czas⁻²
+
+% 0 1 0 0cec68be08dfeadd05485e179cb3e923
+
+@ 0 1 0 0d2d20a7abcaf57e123126c4cfc76fc4
++   entry .Radiance   masa·czas⁻³
+
+% 0 1 0 05932d698d84f2801e42513971196ab3
+
+@ 0 1 0 14714d26a31503d0182294304319c457
++   entry .ReactionRate   odległość⁻³·czas⁻¹·substancja
+
+% 0 1 0 03ff53446bdf023001dae02c1c3bf735
+
+@ 0 1 0 1f0f7795003a9ee7079d7062b722a087
++   entry .Reluctance   odległość⁻²·masa⁻¹·czas²·prąd²
+
+% 0 1 0 06b4b74e5f353c40053e176015eca063
+
+@ 0 1 0 1b287a7286edf6a00fde783d64db0a89
++   entry .SpecificEnergy   odległość²·czas⁻²
+
+% 0 1 0 0aa01bb503e86c7c00e0364ea3ffba16
+
+@ 0 1 0 029947ddfa9bf83105e297e3f26995f6
++   entry .SpecificHeatCapacity   odległość²·czas⁻²·temperatura⁻¹
+
+% 0 1 0 14b75007ad466b1a1ac1e0fed1d3a85c
+
+@ 0 1 0 0075a8f7b64bdf0b0421f9aa85d11dbe
++   entry .SpecificVolume   odległość³·masa⁻¹
+
+% 0 1 0 1ae4e4c1fe12ccac1131dde8050c7bf6
+
+@ 0 1 0 1d1740b2b26b00981081edeecfa07a3e
++   entry .Spin   odległość²·masa·czas⁻¹
+
+% 0 1 0 019f6bbcb956c4a512cec8855b80a74e
+
+@ 0 1 0 0df22bc4ad90f1ae0faa708639af103d
++   entry .SurfaceTension   masa·czas⁻²
+
+% 0 1 0 0db5752c5e5f36c51ae3dd13880ee5d4
+
+@ 0 2 0 0e32f60b52f4527e0c879182a74372d4
++   entry .TempratureGradient   odległość⁻¹·temperatura; alias typu bez givena `Amount`, więc nie ma nazwy
++   entry .ThermalConductance   odległość²·masa·czas⁻³·temperatura⁻¹
+
+% 0 1 0 01bab099156acc751551fad8820d8987
+
+@ 0 1 0 03112c6244ebc1b51e417f1b28224660
++   entry .ThermalConductivity   odległość·masa·czas⁻³·temperatura⁻¹
+
+% 0 1 0 0b0dab92a927a8d90b2ee70e90677baa
+
+@ 0 1 0 08ec26cb55d1a6471eea0df6134bcaa4
++   entry .ThermalResistance   odległość⁻²·masa⁻¹·czas³·temperatura
+
+% 0 1 0 01a9c0bd5f2d99a61e8d66787db502e9
+
+@ 0 1 0 0ef9908c88f13cd416824f9614080c62
++   entry .ThermalResistivity   odległość⁻¹·masa⁻¹·czas³·temperatura
+
+% 0 1 0 0542093d13ac835317ac5ed74f6f3c10
+
+@ 0 1 0 13d5f8071ec3a76e18a7b63dfb1da257
++   entry .Velocity   odległość·czas⁻¹
+
+% 0 1 0 0890a32fb3de780f1ad249ef5925b3f9
+
+@ 0 1 0 099a28a5d14d343b1f6f02bf4c088095
++   entry .Volume   odległość³
+
+% 0 1 0 05bd54ea8786ad5f1e7c69f41215b27f
+
+@ 0 1 0 046afa740a83e5da12163d441ee89101
++   entry .VolumetricFlowRate   odległość³·czas⁻¹
+
+% 0 1 0 18d6b2759cda815500f4db5de64ca5fc
+
+@ 0 1 0 1e62524bddb5d1181a41b2722e681dcc
++ entry .Normalizable   klasa typów stojąca za `normalize`: współczynnik od jednej miary do innej o tych samych wymiarach
+
+% 1 1 0 083b3460b3778dac076752d33ffd5830
+
+@ 0 4 0 0c8fccc9e4d8ee281c5b7aa4e5b9db3c
++       `source is Normalizable to result` niesie `ratio()`, przez który dzieli się wielkość w
++       jednostkach `source`, by wyrazić ją w jednostkach `result`, a `normalize` go stosuje.
++       Instancja jest derywowana przez makro (`.derived`) z givenów `Ratio` w zasięgu, więc
++       nigdy nie pisze się jej ręcznie; `result` o innej wymiarowości to błąd kompilacji, _the
+
+% 0 1 0 0690eb265bbad0561bef3ac9ec06c836
+
+@ 0 5 0 17893704b498859c1a723df11665b132
++       physical quantities_. Każda miara, która jest `Normalizable to Seconds[1]`, jest
++       akceptowana jako czas trwania przez `Quantity.genericDuration`.
++   entry .derived   instancja derywowana przez makro dla dowolnych dwóch miar o jednej wymiarowości
++   entry #ratio   współczynnik między dwiema miarami, jako `Double`
++   entry #normalize   wielkość w jednostkach źródłowych jako wielkość w jednostkach wynikowych
+
+@ 0 5 0 170c8d3ee42d8f4103fb4bcfca99615d
++ entry .Quantifiable   czyni własny typ wielkością: `value.quantify`
++     `Quantifiable[quantity, units]` to klasa typów z jedną metodą, której rozszerzenie
++     `quantify` zamienia wartość w `Quantity[units]`, po czym bierze ona udział w arytmetyce
++     wymiarowej i porównaniach. Punkt typograficzny, jedna siedemdziesiąta druga cala, staje
++     się prawdziwą długością:
+
+% 2 1 0 1e9703bf561ac2db1f88c2ac3bc34b9b
+
+% 3 1 0 0bb0e6e1b5a2eaed1f6b63d150e1576f
+
+% 0 1 0 08daae9d986d49b01aad4e3c78b9867b
+
+% 0 1 0 17fabad3fe6d494901d7967d0aefe2a1
+
+% 0 1 0 08a5afba4796cd4f0eb2f06d7bec8299
+
+% 1 1 0 056dbb3e6146a67b1aac0d3464468f38
+
+@ 0 1 0 1e92137c81a717ab00424cfbb035b1d6
++ entry .Distributive   rozdziela wielkość na część liczbową i jednostki, z którymi zostaje z powrotem umieszczona
+
+% 1 1 0 0f267fdda58ccc771042c021c4d4d651
+
+@ 0 10 0 18b6adfba34feb64090371cf9983d381
++       Klasa typów dla mechanizmów przedstawiania, które układają liczby w kolumnach: `parts`
++       podaje części liczbowe wartości (dla wielkości jedną: jej `Double`), a `place` umieszcza
++       sformatowane części z powrotem w otaczającym tekście, którym dla wielkości jest liczba,
++       a po niej symbole jej jednostek. `Distributive[measure](units)` buduje instancję dla
++       danego tekstu jednostek, a given inline `.distributive` derywuje ją dla dowolnej
++       `Quantity[measure]` z `Quantity.units`.
++   entry .apply   `Distributive[measure](units)`: instancja, która umieszcza liczbę przed danym tekstem jednostek
++   entry .distributive   instancja dla dowolnej `Quantity[measure]`, z własnymi symbolami jednostek miary
++   entry #parts   części liczbowe wartości
++   entry #place   sformatowane części umieszczone z powrotem w tekście
+
+@ 0 1 0 151798eeaf0127d0168ee86f5b5dafdc
++ entry .MetricPrefix   przedrostek metryczny, stosowany do `MetricUnit`, by ją przeskalować: `Kilo(Metre)`, `Mebi(Byte)`
+
+% 1 1 0 12f4915c08a58736187654c79a5007ed
+
+@ 0 8 0 02b6dc2226f3186d0874337f76f4e90c
++       `MetricPrefix` to nazwa, symbol, wykładnik i podstawa, `10` dla przedrostków SI i `2`
++       dla przedrostków binarnych, a `apply` skaluje `MetricUnit` przez `base` do potęgi
++       `exponent`: `15*Kilo(Metre)` to 15000 m, `1.5*Milli(Metre)` to 0,0015 m, a
++       `10*Kibi(Metre)` to 10240 m. Każdy przedrostek SI od `Quecto` (10⁻³⁰) do `Quetta` (10³⁰)
++       jest tu obiektem, wraz z ośmioma przedrostkami binarnymi od `Kibi` do `Yobi` i
++       `NoPrefix` oznaczającym brak przedrostka. Przedrostek stosuje się tylko do
++       `MetricUnit`, nie do dowolnej `Quantity`: `Kilo(Metre)` to jednostka, ale
++       `Kilo(5*Metre)` się nie kompiluje. Lista `Prefixes` przedrostków pozwala `show` wybrać
++       jeden do wyświetlenia.
+
+@ 0 1 0 19d7d29bb02335b112aa44d929e0ec84
++       Przedrostki wraz z symbolami i mnożnikami, które oznaczają:
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 1 0 085559fd686537f8108c6b467984dce6
++       column  Przedrostek
+
+% 0 1 0 1c4fe6ed2cd1cd1f17d8a88a2d3745df
+
+@ 0 1 0 042982fbfada78d81bf4b0b94d2788ba
++       column  Mnożnik
+
+% 0 1 0 0ebf4edbc4b9b7291730288a7d1d2bfe
+
+% 0 1 0 142f89c28ccdb103027b5f80c8273ec3
+
+% 0 1 0 05a6342204272f760aac864a36f7b8df
+
+% 0 1 0 1d2da5114528bee316a85636eb4240b1
+
+% 0 1 0 163b9f96a4f0fcbc1524a5a4c3a9f5b3
+
+% 0 1 0 1e0ae06b98d7129907b2462384516802
+
+% 0 1 0 0da0b52ae098d06d08a31e0b041c86a1
+
+% 0 1 0 071e37b1df8b451212dfec07042ab389
+
+% 0 1 0 0fa66b0b1b0767371256bda15312bdea
+
+% 0 1 0 04a57f95a80e9940156ae19196c03764
+
+% 0 1 0 006cd38e7c84a09217a1e058ba2c2659
+
+% 0 1 0 12ba036be9ce0b4c14784ed49730f292
+
+% 0 1 0 174fe78ff80876e811727a8e21770137
+
+% 0 1 0 1746ef1608796f2b0ed6b7a15de8c5c0
+
+% 0 1 0 08cbb4786a06072b0a445bb868b13559
+
+% 0 1 0 18c975c4b4ef56cc0ff6167b7aa360f2
+
+% 0 1 0 13dd3d2a6f78ced0092a7c3b0f079706
+
+% 0 1 0 1dd27973fb5b0f771f6f926b47c2111f
+
+% 0 1 0 05b20430a7b63fd21a2aa07cff44a36a
+
+% 0 1 0 0c818035487171d1111a6f0506249b0b
+
+% 0 1 0 08d82969dff8b9e612639084d869c6bf
+
+% 0 1 0 07eafad7f26704d71cccac812e0d5819
+
+% 0 1 0 082e4667325eb6b218840c8ca7276e87
+
+% 0 1 0 145dd96d69dc785505a7b225ed53612f
+
+% 0 1 0 01430b07caad02960e1f9f0e90bb5693
+
+% 0 1 0 19af669f453d019305d2f7c5d84d86e3
+
+% 0 1 0 0ffa49b46438840602f302c3ecb8b0d1
+
+% 0 1 0 0fe7cdec9951d2ef023c666e5cbd38e0
+
+% 0 1 0 15be00096d29da621df45e570e44e984
+
+% 0 1 0 19f95de6dadc909e1dfe22161a215124
+
+% 0 1 0 1dd83d859ba1813a11307a4736194dd9
+
+% 0 1 0 0c5d515a2566a7930b78044f5443a70a
+
+% 1 1 0 1586e7859e2f40551fbd67715db88e3e
+
+% 2 1 0 0673280dafa8be1405a02105a60e7489
+
+% 3 1 0 1b4080545ef535db03e59e50845d3623
+
+% 0 1 0 1bf0dcaa3bc2ce3a18a69f30816ad0a6
+
+% 0 1 0 079cc3a949f4454e1d1d035613570189
+
+% 0 1 0 15b5a14ad7ae9f4604cd97f0eba93afe
+
+% 1 1 0 15d7f793da1bb37a068f16bb969d2bf1
+
+% 1 1 0 13eafcc6f2b22b271ac8495e3c5f352a
+
+% 1 1 0 1c1b610e01fa7ae1193b07aa289411e2
+
+@ 0 6 0 0364e05eb7cec2db1c0e0aa4bc9244d5
++   entry #apply   `prefix(unit)`: jednostka przeskalowana przez `base` do potęgi `exponent`, jako `Quantity`
++   entry #name   nazwa przedrostka: `kilo`
++   entry #symbol   symbol przedrostka, zapisywany przed symbolem jednostki: `k`
++   entry #exponent   potęga `base`, którą oznacza przedrostek: `3` dla `Kilo`, `10` dla `Kibi`
++   entry #base   `10` dla przedrostka SI, `2` dla binarnego
++ entry .NoPrefix   brak przedrostka: wykładnik 0, pusty symbol
+
+% 0 1 0 0faf5006fb17c9050c81bf777d9cb3f6
+
+% 0 1 0 1ad2d7853dae5f9a06bd3f021f0c669a
+
+% 0 1 0 0bbd9f7574b4c3a11b02a9134c903f9c
+
+% 0 1 0 12fc115841ff3ff713c63b1dcaf7b0cc
+
+% 0 1 0 0a73ddff06831dd2144f69837c0fa66b
+
+% 0 1 0 1de5b9e77d797b15107a50646cead2db
+
+% 0 1 0 10316060cc3893b60a531369ca21c27f
+
+% 0 1 0 11ef05991765b70c1b3df74e6730d302
+
+% 0 1 0 03e5c3c0a2f630591b07042cf65a0a19
+
+% 0 1 0 1c8f7c34abb780d1105a5935c3d9179e
+
+% 0 1 0 0b18d1d5345e025f0829326c55089d82
+
+% 0 1 0 17cd3ea5279719e2119f87574903c340
+
+% 0 1 0 097667852b69f805141347d467475bb4
+
+% 0 1 0 0e303728b009c08714848a8ceaca247f
+
+% 0 1 0 1fb4fc8b119658860ff22ea3f5929418
+
+% 0 1 0 0ec1ad5f2d9d3fa11142c457e266b7e0
+
+% 0 1 0 1df8b41f1e24fa3b14a5c7ca95be7956
+
+% 0 1 0 1cd5aa32714650a408065bdda3716ee0
+
+% 0 1 0 09b3638d5fcfa95718c1709fd9983669
+
+% 0 1 0 1e19a184d4a46bd81dae366752099412
+
+% 0 1 0 0064dca65870727200fe0a4d11d26b85
+
+% 0 1 0 0bec5a34aa806e5c1b637ca40860eb18
+
+% 0 1 0 0c2fa5c3ea782037171adcaf817b0186
+
+% 0 1 0 0c0913506b1879f11fa2ef55b44d4ff8
+
+% 0 1 0 198f55b0a617c5611833204646047354
+
+% 0 1 0 11fbb14820a7c45f0fe678fd8d96a3a4
+
+% 0 1 0 0846945d3fa346d20d0683fba201cd92
+
+% 0 1 0 012f0466bf8a90dd0675bf23d50bd3e2
+
+% 0 1 0 0705368393629850022db70c86938487
+
+% 0 1 0 0b40946101154e8c02377acb926fec27
+
+% 0 1 0 0f1f73ffc1da3f281569d2fcae67e8db
+
+% 0 1 0 1da487d44b9f65800fb15d04cc92420c
+
+@ 0 1 0 138d8b97e01e212c11e8de32d70e3e04
++ entry .Prefixes   przedrostki metryczne, do których `show` może przeskalować wielkość, jako given dla jej jednostek
+
+% 1 1 0 069ecd2f41c18d900c86e78638e5938f
+
+@ 0 4 0 047205669bc8d1d0167a8daab31ecdb3
++       Bez niego duża lub mała wielkość wyświetla się w notacji naukowej (`5.00×10³ B`). Given
++       `Prefixes on units` w zasięgu wymienia przedrostki do wyboru, a `show` wybiera
++       największy, którego przeskalowana wartość wynosi co najmniej `minimum` (domyślnie 1.0),
++       i zapisuje jego symbol przed jednostkami:
+
+% 2 1 0 0e8b7ddf559c12890ed25189815f1ae6
+
+% 3 1 0 0a2a95668bc5d58d1bfe06da16c02a79
+
+% 2 1 0 0acefe767f2f532619454ca8fda451ce
+
+% 2 1 0 160a7cf533050eda196abbb3f1ba7f9a
+
+% 0 1 0 0b6e9d6787f44ea11fba2cae3526726c
+
+% 0 1 0 0437c7d5976522b7044b8598717da156
+
+% 0 1 0 09873c18e073fc471056cf6283b7e935
+
+% 2 1 0 17aa201f056e65bd1933fae72cfd88b4
+
+% 0 1 0 04c705682915138911daf99deb52ed6f
+
+% 0 1 0 0a0c79746a2e9cde19afb20af73a847e
+
+% 0 1 0 0ccb3525df6876fb09cdc1f87ebbdb52
+
+% 0 1 0 183c3652ff6fa6ed13533ff642276ebf
+
+% 2 1 0 1c5808a833d75f5110afe66c5fb74537
+
+% 0 1 0 0d1eb32699a7726713f5ea04100a247e
+
+% 0 1 0 1fe8414673f8a0b302ed22e3c8d060fa
+
+% 2 1 0 1363e2979f9c61160728770bf652e792
+
+% 0 1 0 120f827bac20367816445148517168d0
+
+% 0 1 0 0b4cb5be17cbf0410deb7fbd3d0c80ea
+
+% 1 1 0 057ab4ca7c85701d18997e93627f231a
+
+@ 0 9 0 11898a1a144ddf4417450963e7dc5792
++       Przedrostek wybiera się według wielkości wartości, więc wartość ujemna skaluje się tak
++       jak jej wartość bezwzględna; zero nie otrzymuje przedrostka; a wartość poniżej progu, dla
++       której nie ma mniejszego przedrostka, trafia do najmniejszego wymienionego wykładnika.
++       Płaszczyzną givena jest *cała* miara, więc `Prefixes on Bytes[1] & Seconds[-1]` skaluje
++       szybkość jako całość (`1.50 GB·s¯¹`); zwykły given `Prefixes` bez płaszczyzny stosuje
++       się do każdej wielkości.
++   entry .apply   `Prefixes(prefixes, minimum = 1.0)`: lista przedrostków dla typu jednostek, z progiem skalowania
++   entry #prefixes   przedrostki do wyboru
++   entry #minimum   najmniejsza przeskalowana wartość, jaką może dać przedrostek, domyślnie 1.0
++   entry #select   przedrostek dla wartości: największy, którego przeskalowana wartość osiąga `minimum`, lub `NoPrefix` dla zera
+
+@ 0 1 0 06af6e8c1da1b824070d5270e1e7647c
++ entry .Radix   znacznik, który jednostka niesie, by być jednym szczeblem systemu o mieszanej podstawie, takiego jak zegar czy kalendarz
+
+% 1 1 0 03bd0f93d56b653a0243fa9d80eac452
+
+@ 0 8 0 104aa6bf2fa596b41d40a3e17c283888
++       `Radix` to jednostka, która może wystąpić w typie fantomowym okresu lub znacznika czasu
++       biblioteki aviation. Podstawy `Regular` mają stały stosunek do szczebla poniżej (sekundy,
++       minuty, godziny, dni); podstawy `Irregular` mają długość zależną od położenia (miesiące,
++       lata), więc nie można ich dodać do gołej chwili. `Seconds[1]` jest tu zadeklarowane jako
++       `Radix.Regular`, aby sekunda SI mogła być szczeblem, pozostając zwykłą jednostką;
++       pozostałe podstawy należą do aviation.
++   entry .Regular   podstawa o stałym stosunku do podstawy poniżej
++   entry .Irregular   podstawa, której długość zależy od położenia, taka jak miesiąc
+
+@ 0 1 0 1e245efcb44da6420c310e395f81f5dc
++ entry .TemperatureScale   skala, na której odczytuje się `Temperature`: jej sufiks i odczyt
+
+% 1 1 0 0bc4a5e43e597ea406cb5c928390b246
+
+@ 0 6 0 0a5508af40e63208010e5f3ffe10e0d2
++       Trait, który implementują cztery skale – `Celsius`, `Fahrenheit`, `Rankine` i skala
++       Kelvina dana w `temperatureScales` – oraz given, którego `Temperature.showable`
++       potrzebuje w zasięgu: `suffix` zapisuje się po odczycie (`°C`), `kelvin(temperature)` to
++       odczyt temperatury *na tej skali* (wbrew nazwie: `Celsius.kelvin(Celsius(30))` to 30.0),
++       a `unapply` pozwala użyć skali jako ekstraktora, `case Celsius(reading) =>`. Każdy obiekt
++       skali ma też `apply`, tworzące `Temperature` z odczytu na tej skali.
+
+% 1 1 0 035578d52e056add039a1fe4c3493cec
+
+@ 0 3 0 1b20937ff5b889ee195f2bbb3d1f987a
++   entry #suffix   tekst zapisywany po odczycie: `K`, `°C`, `°F`, `°R`
++   entry #kelvin   odczyt temperatury na tej skali, jako `Double`
++   entry #unapply   wyodrębnia odczyt na tej skali: `case Celsius(degrees) =>`
+
+@ 0 13 0 16ae8c1e500831e10c1eea4f59ba3939
++ entry .Celsius   skala Celsjusza: `Celsius(30)` to `Temperature`, wyświetlana jako `30.0 °C` przy `celsiusScale`
++     Zero w punkcie zamarzania wody, 273,15 K. `Celsius(value)` tworzy bezwzględną
++     `Temperature` z odczytu w stopniach Celsjusza, więc `Celsius(30)` przechowuje 303,15
++     kelwina; odczyt `Temperature` w stopniach Celsjusza to `celsius` z
++     `quantitative.internal` lub ekstraktor `case Celsius(degrees)`.
++ entry .Fahrenheit   skala Fahrenheita: `Fahrenheit(86)` to `Temperature`, wyświetlana jako `86.0 °F` przy `fahrenheitScale`
++     `Fahrenheit(value)` tworzy bezwzględną `Temperature` z odczytu w stopniach Fahrenheita
++     (`Fahrenheit(32)` przechowuje 273,15 kelwina); odczyt w stopniach Fahrenheita to
++     `fahrenheit` lub ekstraktor `case Fahrenheit(degrees)`.
++ entry .Rankine   skala Rankine'a: bezwzględna, w stopniach wielkości stopni Fahrenheita, wyświetlana jako `°R` przy `rankineScale`
++     `Rankine(value)` tworzy `Temperature` z odczytu w stopniach Rankine'a (pięć dziewiątych
++     tej wartości w kelwinach); odczyt w stopniach Rankine'a to `rankine` lub ekstraktor
++     `case Rankine(degrees)`. Ponieważ skala jest bezwzględna, `Rankines` jest też jednostką
++     różnicy temperatur.
+
+@ 0 1 0 0f8db4e6454bd8561b62f9695dde7265
++ entry .temperatureScales   skala, na której wyświetla się `Temperature`, każda jako given do zaimportowania po nazwie
+
+% 1 1 0 0ca9e9bf21fef94c03dfc07194a56290
+
+@ 0 4 0 0b511d83f79039f41a5f90b49def3952
++       `Temperature.showable` przedstawia temperaturę na `TemperatureScale` w zasięgu, a wybór
++       nigdy nie jest niejawny: `import soundness.*` nie wprowadza żadnej z nich, a jedną
++       importuje się po nazwie. Ta sama temperatura odczytuje się inaczej na każdej z nich, bez
++       ręcznie pisanego przeliczenia:
+
+% 2 1 0 1155318f29e4ccbb12ce45e63809aa1c
+
+% 0 1 0 09da120fc7570ebb0d81136f85d05104
+
+% 1 1 0 064b4fac1fee9c3d123dd6b82d27ed3b
+
+% 2 1 0 1e3691ccc94e424d04ef1f73b0e41d37
+
+% 0 1 0 051254ebfbee65b71c4a15a6ca75f620
+
+% 0 1 0 19c541d25bb6df89165c915066ad45ab
+
+% 0 1 0 05cb600c63caf8bb058a10aa2ec25ed2
+
+% 1 1 0 0b4dd5d53a1724de0faea507aa137cdc
+
+% 2 1 0 1e394de9143224460d1f3c289cd3023b
+
+% 0 1 0 13184d86327b045b075fb5036812d402
+
+% 0 1 0 149b30f45d311a7014c08385e27cc2f1
+
+% 0 1 0 17d4c6ff067b7bea11debee89cee0b64
+
+% 1 1 0 1f78502631fe514c0cf05fdacc97db73
+
+% 2 1 0 1af943105906514019a9dc9bb33cfc44
+
+% 0 1 0 065672443d67e5f615b699e26b190dcb
+
+% 0 1 0 0bcb2051dfcd3573148f0f1887b92303
+
+% 0 1 0 02e746cf37c83dd114f04bf5c4d3a2a8
+
+% 1 1 0 04427d9e5fc5446508ab55069ddefa52
+
+% 2 1 0 14f7b11b2f3ea92d01c7747d467e700b
+
+% 0 1 0 0c5b6ff0e91b3f151bfbf2940a53ee86
+
+% 0 1 0 1a6ac554173d7fdd01da9c9580440a60
+
+% 1 1 0 12e8488ed934a65617c1777215781129
+
+% 2 1 0 0d0d42dce3805f9c01c98d58865d7b0b
+
+@ 0 4 0 0719901824e0a34f11f74201b72e1eb4
++   entry .kelvinScale   odczyty w kelwinach, sufiks `K`
++   entry .celsiusScale   odczyty w stopniach Celsjusza, sufiks `°C`; obiekt `Celsius`
++   entry .fahrenheitScale   odczyty w stopniach Fahrenheita, sufiks `°F`; obiekt `Fahrenheit`
++   entry .rankineScale   odczyty w stopniach Rankine'a, sufiks `°R`; obiekt `Rankine`
+
+@ 0 6 0 18521211a59d31150e4402fbf696ec4d
++ entry .apply   `Kelvin(value)`: bezwzględna `Temperature` z odczytu w kelwinach
++     Rozszerzenie dla wartości jednostki `Kelvin`, w `quantitative.units`, dzięki któremu kelwin
++     zapisuje się tak jak pozostałe skale: `Kelvin(303.15)` to ta sama `Temperature` co
++     `Celsius(30)`. Celowo nie jest eksportowane do modułu zbiorczego `soundness`, gdzie `apply`
++     najwyższego poziomu kolidowałoby z własnym `apply` biblioteki rudiments, więc wymaga
++     `import quantitative.*`; `Temperature(303.15)` to ta sama wartość bez importu.
+
+@ 0 22 0 148063d7caf79c8514e720b041ed343f
++ entry .Metre   metr, jedno `Metres[1]`: jednostka SI odległości, `MetricUnit`
++     `5*Metre` to pięć metrów; `Kilo(Metre)` – kilometr; `Metre*Metre` – metr kwadratowy.
++     Symbol `m`.
++ entry .Gram   gram, tysięczna część `Kilograms[1]`: wartość jednostki masy, `MetricUnit`
++     Jednostką podstawową SI masy jest kilogram, sam będący jednostką z przedrostkiem, więc
++     wartością jest gram, dla spójności z każdą inną jednostką, a jeden kilogram to
++     `Kilo(Gram)`. Masy zawsze wyświetlają się w `kg`: `(10.4*Kilo(Gram)/Second).show` to
++     `10.4 kg·s¯¹`.
++ entry .Second   sekunda, jedno `Seconds[1]`: jednostka SI czasu, `MetricUnit`
++     `2*Second`; `Metre/Second` – prędkość; `Milli(Second)` – milisekunda. Symbol `s`. Godzina
++     i minuta jako wielkości to `Quantity[Hours[1]](1.0)` i `Quantity[Minutes[1]](1.0)`,
++     ponieważ nazwy `Hour` i `Minute` należą do podstaw biblioteki aviation.
++ entry .Byte   bajt, jedno `Bytes[1]`: jednostka informacji, `MetricUnit`
++     `512.0*Byte`; `4.0*Mebi(Byte)` z przedrostkiem binarnym. Symbol `B`.
++ entry .Ampere   amper, jedno `Amperes[1]`: jednostka SI natężenia prądu, `MetricUnit`
++ entry .Kelvin   kelwin, jedno `Kelvins[1]`: jednostka SI różnicy temperatur, `MetricUnit`
++     `300*Kelvin` to `Quantity[Kelvins[1]]`, *różnica*, którą `Temperature` dodaje i odejmuje;
++     `Kelvin(303.15)` (z `import quantitative.*`) to bezwzględna `Temperature`.
++ entry .Candela   kandela, jedno `Candelas[1]`: jednostka SI światłości, `MetricUnit`
++ entry .Mole   mol, jedno `Moles[1]`: jednostka SI liczności materii, `MetricUnit`
++ entry .Em   typograficzne em, jedno `Ems[1]`: długość względna bez współczynnika względem jakiejkolwiek jednostki fizycznej
++     `Quantity[Ems[1]]` w wymiarze `Typometry`, wspólna dla CSS i metryk fontów; z założenia
++     nie można jej przeliczyć na metr ani punkt.
+
+@ 0 21 0 04bfe75fc13f633f0efb594a2692fb19
++ entry .Hertz   herc, jeden na sekundę: jednostka SI częstotliwości, `MetricUnit`
++ entry .Newton   niuton, kg·m·s⁻²: jednostka SI siły, `MetricUnit`; wyświetla się jako `N`
++ entry .Pascal   paskal, jeden niuton na metr kwadratowy: jednostka SI ciśnienia, `MetricUnit`
++ entry .Joule   dżul, jeden niutonometr: jednostka SI energii, `MetricUnit`; wyświetla się jako `J`
++ entry .Calorie   kaloria, 4,184 dżula, `MetricUnit`
++ entry .Watt   wat, jeden dżul na sekundę: jednostka SI mocy, `MetricUnit`
++ entry .Coulomb   kulomb, jedna amperosekunda: jednostka SI ładunku elektrycznego, `MetricUnit`
++ entry .Volt   wolt, jeden wat na amper: jednostka SI potencjału elektrycznego, `MetricUnit`
++ entry .Farad   farad, jeden kulomb na wolt: jednostka SI pojemności elektrycznej, `MetricUnit`
++ entry .Ohm   om, jeden wolt na amper: jednostka SI rezystancji, `MetricUnit`
++ entry .Siemens   simens, jeden amper na wolt: jednostka SI konduktancji, `MetricUnit`
++ entry .Weber   weber, jedna woltosekunda: jednostka SI strumienia magnetycznego, `MetricUnit`
++ entry .Tesla   tesla, jeden weber na metr kwadratowy: jednostka SI indukcji magnetycznej, `MetricUnit`
++ entry .Henry   henr, jeden weber na amper: jednostka SI indukcyjności, `MetricUnit`
++ entry .Lux   luks, jedna kandela na metr kwadratowy: jednostka SI natężenia oświetlenia, `MetricUnit`
++ entry .Becquerel   bekerel, jeden na sekundę: jednostka SI aktywności promieniotwórczej, `MetricUnit`
++     Wymiarowo jest to częstotliwość, więc ma ten sam typ co `Hertz`.
++ entry .Gray   grej, jeden dżul na kilogram: jednostka SI dawki pochłoniętej, `MetricUnit`
++ entry .Sievert   siwert, jeden dżul na kilogram: jednostka SI dawki równoważnej, `MetricUnit`
++     Ten sam typ co `Gray`; rozróżnienie nie jest wymiarowe.
++ entry .Katal   katal, jeden mol na sekundę: jednostka SI aktywności katalitycznej, `MetricUnit`
+
+@ 0 20 0 0d37303ee05e53ea0bb63b0c6d7f7fbe
++ entry .Dyne   dyna, jednostka CGS siły, `MetricUnit`
++ entry .Erg   erg, jednostka CGS energii, `MetricUnit`
++ entry .Barye   barye, jedna dziesiąta paskala: jednostka CGS ciśnienia, `MetricUnit`
++ entry .Poise   puaz, jedna dziesiąta paskalosekundy: jednostka CGS lepkości dynamicznej, `MetricUnit`
++     Zdefiniowany jako jedna dziesiąta `Pascal`, więc wymiarowo jest ciśnieniem, a nie lepkością.
++ entry .Galileo   gal, centymetr na sekundę do kwadratu: jednostka CGS przyspieszenia, `MetricUnit`
++ entry .Stokes   stokes, jednostka CGS lepkości kinematycznej, `MetricUnit`
++ entry .Gauss   gaus, jednostka CGS indukcji magnetycznej, `MetricUnit`
++ entry .Maxwell   makswel, jednostka CGS strumienia magnetycznego, `MetricUnit`
++ entry .Oersted   ersted, 79,577 ampera na metr: jednostka CGS natężenia pola magnetycznego, `MetricUnit`
++ entry .Gilbert   gilbert, 0,796 ampera: jednostka CGS siły magnetomotorycznej, `MetricUnit`
++ entry .Biot   biot, dziesięć amperów: jednostka CGS natężenia prądu, `MetricUnit`
++ entry .Emu   jednostka elektromagnetyczna magnetyzacji, ampery na metr kwadratowy, `MetricUnit`
++ entry .Franklin   franklin, 3,34×10⁻¹⁰ kulomba: jednostka CGS ładunku, `MetricUnit`
++ entry .Debye   debaj, 3,335×10⁻³⁰ kulombometra: jednostka elektrycznego momentu dipolowego, `MetricUnit`
++ entry .Lambert   lambert, jednostka CGS luminancji, `MetricUnit`
++ entry .Phot   fot, jednostka CGS natężenia oświetlenia, `MetricUnit`
++ entry .Langley   langley, 41840 dżuli na metr kwadratowy, `MetricUnit`
++ entry .Kayser   kayser, liczba falowa jednego na sekundę w przyjętej tu definicji, `MetricUnit`
++ entry .Darcy   darcy, 0,987×10⁻¹² metra kwadratowego: jednostka przepuszczalności, `MetricUnit`
+
+@ 0 24 0 05abc001041a75181d3bc92354b846df
++ entry .Inch   cal, jedno `Inches[1]`
++ entry .Foot   stopa, jedno `Feet[1]`
++     `3*Foot` przelicza się na metry, gdy spotyka metr: `2*Metre + 2*Foot` to 2,61 m.
++ entry .Yard   jard, jedno `Yards[1]`
++ entry .Mile   mila, jedno `Miles[1]`
++     `Mile === 1760*Yard` jest prawdą.
++ entry .Furlong   furlong, jedno `Furlongs[1]`
++ entry .NauticalMile   mila morska, jedno `NauticalMiles[1]`
++ entry .Lightyear   rok świetlny, jedno `Lightyears[1]`
++ entry .Grain   gran, jedno `Grains[1]`
++ entry .Ounce   uncja, jedno `Ounces[1]`
++ entry .Pound   funt, jedno `Pounds[1]`
++ entry .Stone   kamień, jedno `Stones[1]`
++ entry .Hundredweight   cetnar, jedno `Hundredweights[1]`
++ entry .Ton   tona długa, jedno `Tons[1]`
++ entry .SolarDay   doba słoneczna, jedno `Days[1]`
++ entry .Are   ar, sto metrów kwadratowych, `MetricUnit[Metres[2]]`
++ entry .Acre   akr, jedna dziesiąta furlonga kwadratowego, `Quantity[Furlongs[2]]`
++ entry .Litre   litr, jedna tysięczna metra sześciennego, `MetricUnit[Metres[3]]`
++     `Milli(Litre)` to mililitr, z którego definiuje się objętości imperialne.
++ entry .FluidOunce   imperialna uncja objętości, 28,41 mililitra, `Quantity[Metres[3]]`
++ entry .Pint   imperialna pinta, 568,26 mililitra, `Quantity[Metres[3]]`
++ entry .Quart   imperialna kwarta, 1136,52 mililitra, `Quantity[Metres[3]]`
++ entry .Gallon   imperialny galon, 4546,09 mililitra, `Quantity[Metres[3]]`
+
+@ 0 1 0 1c8e57c81e5d40151b971358c4543260
++ entry .Inches   cal, imperialna jednostka wymiaru `Distance`: `Inches[power]`
+
+% 1 1 0 18c179efe4e8d9461ea4d3a61e7bfdb9
+
+@ 0 4 0 1006221974ee76111588e3dcbbb26de8
++       Symbol `in`; cal to 0,0254 metra. Jego wartością jednostki jest `Inch`.
++   entry .designation   symbol `in`
++   entry .ratio   `Ratio[Inches[-1] & Metres[1], 0.0254]`: cal to 0,0254 metra
++ entry .Feet   stopa, imperialna jednostka wymiaru `Distance`: `Feet[power]`
+
+% 1 1 0 07028fe49036f8c20226e94e1331576f
+
+@ 0 5 0 1038246be1a18d3b0c20c2daa857a701
++       Symbol `ft`; stopa to 0,3048 metra. Jej wartością jednostki jest `Foot`, a
++       `(3*Metre).convert[Feet]` to 9,84 ft.
++   entry .designation   symbol `ft`
++   entry .ratio   `Ratio[Feet[-1] & Metres[1], 0.3048]`: stopa to 0,3048 metra
++ entry .Yards   jard, imperialna jednostka wymiaru `Distance`: `Yards[power]`
+
+% 1 1 0 01e708f3f06e38f912d4d54d86df1cbf
+
+@ 0 4 0 05810d374dd32a2919d6e91604990478
++       Symbol `yd`; jard to 0,9144 metra. Jego wartością jednostki jest `Yard`.
++   entry .designation   symbol `yd`
++   entry .ratio   `Ratio[Yards[-1] & Metres[1], 0.9144]`: jard to 0,9144 metra
++ entry .Miles   mila, imperialna jednostka wymiaru `Distance`: `Miles[power]`
+
+% 1 1 0 19d665cdaeb546b7161a42fd07a6e68a
+
+@ 0 4 0 04139a2bc91c1ef50a8d4ded89269418
++       Symbol `mi`; mila to 1609,344 metra. Jej wartością jednostki jest `Mile`.
++   entry .designation   symbol `mi`
++   entry .ratio   `Ratio[Miles[-1] & Metres[1], 1609.344]`: mila to 1609,344 metra
++ entry .Furlongs   furlong, imperialna jednostka wymiaru `Distance`: `Furlongs[power]`
+
+% 1 1 0 0564dd24b648b68502d6c19658729f59
+
+@ 0 4 0 18b51d1838c58ac41449d73d79da51d6
++       Symbol `fur`; furlong to 201,168 metra. Jego wartością jednostki jest `Furlong`.
++   entry .designation   symbol `fur`
++   entry .ratio   `Ratio[Metres[1] & Furlongs[-1], 201.168]`: furlong to 201,168 metra
++ entry .NauticalMiles   mila morska, jednostka wymiaru `Distance`: `NauticalMiles[power]`
+
+% 1 1 0 034c9813e3edfbe902535ce3be6a65e3
+
+@ 0 4 0 0685b738064d10bc0f74bb911b71f246
++       Symbol `NM`; mila morska to 1852 metry. Jej wartością jednostki jest `NauticalMile`.
++   entry .designation   symbol `NM`
++   entry .ratio   `Ratio[NauticalMiles[1] & Metres[-1], 5.399568034557236E-4]`: metr to tyle mil morskich
++ entry .Lightyears   rok świetlny, jednostka wymiaru `Distance`: `Lightyears[power]`
+
+% 1 1 0 085129b27c8ecb390d6dc97a111d8a7d
+
+@ 0 4 0 0b908c395689694f1df2ed9fba6a912b
++       Symbol `ly`. Jego wartością jednostki jest `Lightyear`.
++   entry .designation   symbol `ly`
++   entry .ratio   `Ratio[Lightyears[1] & Metres[-1], 1.057E-16]`: metr to 1,057×10⁻¹⁶ roku świetlnego
++ entry .Points   punkt typograficzny, jednostka wymiaru `Distance`: `Points[power]`
+
+% 1 1 0 1685beca247f182614cbdd0a211526fe
+
+@ 0 5 0 1b23cd8c69831f5c19935f000201786f
++       Symbol `pt`; punkt to jedna siedemdziesiąta druga cala, 0,3528 milimetra. Rzeczywista
++       długość, przeliczalna na cale i metry, w odróżnieniu od względnej jednostki `Ems`.
++   entry .designation   symbol `pt`
++   entry .ratio   `Ratio[Points[-1] & Metres[1], 3.5277777777777776E-4]`: punkt to tyle metrów
++ entry .Picas   pica typograficzna, jednostka wymiaru `Distance`: `Picas[power]`
+
+% 1 1 0 03c44cc805423717088e0775cadf5fa7
+
+@ 0 3 0 1bd25f3d6fedce9512688126411e91d5
++       Symbol `pc`; pica to dwanaście punktów, jedna szósta cala.
++   entry .designation   symbol `pc`
++   entry .ratio   `Ratio[Picas[-1] & Metres[1], 0.004233333333333333]`: pica to tyle metrów
+
+@ 0 1 0 0ce73ad1f7acccc41fff345ba3421349
++ entry .Grains   gran, imperialna jednostka wymiaru `Mass`: `Grains[power]`
+
+% 1 1 0 0adf1ba3047f315d1a8e80d7d6939015
+
+@ 0 4 0 055096567ce91b9116b477f9e121b1c4
++       Symbol `gr`; gran to 64,8 miligrama. Jego wartością jednostki jest `Grain`.
++   entry .designation   symbol `gr`
++   entry .ratio   `Ratio[Kilograms[1] & Grains[-1], 0.0000647989]`: gran to tyle kilogramów
++ entry .Drams   drachma, imperialna jednostka wymiaru `Mass`: `Drams[power]`
+
+% 1 1 0 1a6be01d433a1b7f1ba48b1048ddf43c
+
+@ 0 1 0 18a6b8c3f67655cf04f71c80f482df5e
++       Symbol `dr`; drachma to 1,772 grama. Nie ma wartości jednostki; jedna drachma to
+
+% 0 1 0 1145a4c547060c01102cadf2037d509e
+
+@ 0 3 0 07b5d7677d79f41504a33f8f87c2a1cb
++   entry .designation   symbol `dr`
++   entry .ratio   `Ratio[Kilograms[1] & Drams[-1], 0.00177184375]`: drachma to tyle kilogramów
++ entry .Ounces   uncja, imperialna jednostka wymiaru `Mass`: `Ounces[power]`
+
+% 1 1 0 0747dd9e8a2a4c2900d437566f18d9e8
+
+@ 0 4 0 095cb2d495e70d9406cbc09a790601b3
++       Symbol `oz`; uncja to 28,35 grama. Jej wartością jednostki jest `Ounce`.
++   entry .designation   symbol `oz`
++   entry .ratio   `Ratio[Kilograms[1] & Ounces[-1], 0.0283495]`: uncja to tyle kilogramów
++ entry .Pounds   funt, imperialna jednostka wymiaru `Mass`: `Pounds[power]`
+
+% 1 1 0 11a0f0cd6ec7bf1109891e5b23b2e9cd
+
+@ 0 4 0 196c1fb9982b268f1e35ec7aaa954d57
++       Symbol `lb`; funt to 0,4536 kilograma. Jego wartością jednostki jest `Pound`.
++   entry .designation   symbol `lb`
++   entry .ratio   `Ratio[Kilograms[1] & Pounds[-1], 0.453592]`: funt to 0,453592 kilograma
++ entry .Stones   kamień, imperialna jednostka wymiaru `Mass`: `Stones[power]`
+
+% 1 1 0 014653ab02c1ee0e02fe77e0fba5845d
+
+@ 0 4 0 13475d0ca60fbcf61a349a13598cca0e
++       Symbol `st`; kamień to czternaście funtów, 6,35 kilograma. Jego wartością jednostki jest
++       `Stone`.
++   entry .designation   symbol `st`
++   entry .ratio   `Ratio[Kilograms[1] & Stones[-1], 6.35029318]`: kamień to 6,35 kilograma
++ entry .Quarters   ćwierć, imperialna jednostka wymiaru `Mass`: `Quarters[power]`
+
+% 1 1 0 1c66d549650be7950f0b570c7f00677a
+
+@ 0 4 0 1e3b7436c62ef0e80b8cff25f86a5c6e
++       Symbol `qr`; ćwierć to dwa kamienie, 12,7 kilograma. Nie ma wartości jednostki.
++   entry .designation   symbol `qr`
++   entry .ratio   `Ratio[Kilograms[1] & Quarters[-1], 12.700586360000001]`: ćwierć to 12,7 kilograma
++ entry .Hundredweights   cetnar, imperialna jednostka wymiaru `Mass`: `Hundredweights[power]`
+
+% 1 1 0 04dda0faa297959e08cf7732016a88fa
+
+@ 0 1 0 151ce6f6168ed1fe065c0695f76aed4e
++       Symbol `cwt`; cetnar to osiem kamieni, 50,8 kilograma. Jego wartością jednostki jest
+
+% 0 1 0 1a92d20c5379f659158deec0138debb3
+
+@ 0 3 0 140462561662ccff0fb2e7760a4097b4
++   entry .designation   symbol `cwt`
++   entry .ratio   `Ratio[Kilograms[1] & Hundredweights[-1], 50.80234544]`: cetnar to 50,8 kilograma
++ entry .Tons   tona długa, imperialna jednostka wymiaru `Mass`: `Tons[power]`
+
+% 1 1 0 11c8afebcd3a3b02096887fd185fdf4c
+
+@ 0 3 0 1d349e53272174141ab585c07876ba62
++       Dwadzieścia cetnarów, 1016 kilogramów. Jej wartością jednostki jest `Ton`. Nie ma
++       `Designation`, więc jest przedstawiana nazwą swojego typu.
++   entry .ratio   `Ratio[Kilograms[1] & Tons[-1], 1016.0469088]`: tona to 1016 kilogramów
+
+@ 0 1 0 0a815b4119023a9a0da9101b1b573c7e
++ entry .Minutes   minuta, jednostka wymiaru `Time`: `Minutes[power]`
+
+% 1 1 0 1b4317941eaaef0b0bd7be6296e44e45
+
+@ 0 6 0 0e790cdda03c1fd508212eb225336260
++       Symbol `min`; sześćdziesiąt sekund. Nie ma tu wartości `Minute` (ta nazwa to podstawa z
++       aviation), więc jedna minuta to `Quantity[Minutes[1]](1.0)`, a
++       `(60*Second).normalize[Minutes[1]]` to jedna minuta.
++   entry .designation   symbol `min`
++   entry .ratio   `Ratio[Seconds[1] & Minutes[-1], 60.0]`: minuta to sześćdziesiąt sekund
++ entry .Hours   godzina, jednostka wymiaru `Time`: `Hours[power]`
+
+% 1 1 0 032ab2767a51d6db0d810db34bbaff3c
+
+@ 0 5 0 098b577b18c7b2591aebf8174d969424
++       Symbol `h`; 3600 sekund. Jedna godzina to `Quantity[Hours[1]](1.0)`, a
++       `10*Kilo(Metre)/Quantity[Hours[1]](1.0)` to `Quantity[Metres[1] & Hours[-1]]`.
++   entry .designation   symbol `h`
++   entry .ratio   `Ratio[Seconds[1] & Hours[-1], 3600.0]`: godzina to 3600 sekund
++ entry .Days   doba słoneczna, jednostka wymiaru `Time`: `Days[power]`
+
+% 1 1 0 0acd23af9bc6105d1189eab27138a2a0
+
+@ 0 5 0 0a696bec5b79e02e1c2f00610e7ba238
++       86400 sekund. Jej wartością jednostki jest `SolarDay`. Jej given `designation` jest
++       zadeklarowany dla `Hours[1]`, a nie `Days[1]`, więc doba jest obecnie przedstawiana nazwą
++       swojego typu.
++   entry .designation   symbol `d`, zadeklarowany (w obecnym kodzie źródłowym) dla `Hours[1]`
++   entry .ratio   `Ratio[Seconds[1] & Days[-1], 86400.0]`: doba to 86400 sekund
++ entry .SiderealDays   doba gwiazdowa, jednostka wymiaru `Time`: `SiderealDays[power]`
+
+% 1 1 0 0ed420caafb28b9b0b41a15454b3dc26
+
+@ 0 1 0 135d13a769126d8c03d5245880ffa317
++       86164,0905 sekundy, obrót Ziemi względem gwiazd. Bez wartości jednostki i bez
+
+% 0 1 0 1400167cce4e97791390f9b148301d3a
+
+@ 0 1 0 0a1f1fcadcb800d014de4d80ff6e4340
++   entry .ratio   `Ratio[Seconds[1] & SiderealDays[-1], 86164.0905]`: doba gwiazdowa to 86164,0905 sekundy
+
+@ 0 1 0 08911d437a1065d31ce0f25fca238633
++ entry .Typometry   wymiar typograficznego emu, bez żadnego przelicznika na długość fizyczną
+
+% 1 1 0 135159aa0864dff919f73a9f627140a3
+
+@ 0 5 0 17e0160ac8f7a7d31643b1e187d4e3fe
++       Osobny zapieczętowany `Dimension`, aby długość w emach – jednostka względna, wspólna dla
++       CSS i metryk fontów – była `Quantity[Ems[1]]`, której nie można dodać do długości
++       fizycznej ani na nią przeliczyć. `quantity` nazywa jej ilość `em`.
++   entry .quantity   `Amount[Units[1, Typometry], "em"]`: nazwa wielkości w emach
++ entry .Ems   em, jednostka wymiaru `Typometry`: `Ems[power]`
+
+% 1 1 0 115a4b86151d837e0b11a458a407132f
+
+@ 0 3 0 09a6079d3236568311732943b530813c
++       Symbol `em`. Jego wartością jednostki jest `Em`. Celowo nie ma `Ratio` z niego do żadnej
++       innej jednostki.
++   entry .designation   symbol `em`
+
+@ 0 1 0 058f567c701f8260070011b3678fbc47
++ entry .constants   stałe fizyczne jako wielkości z jednostkami
+
+% 1 1 0 05718a1b0ed4664a1d7f4ab7b8d1ee23
+
+@ 0 4 0 06162eeaa76521a01bfbe36ee1db1ef4
++       Każda jest wartością `val` odpowiedniego typu `Quantity`, więc
++       `constants.SpeedOfLightInVacuum` to `Quantity[Metres[1] & Seconds[-1]]`, wyświetlana jako
++       `3.00×10⁸ m·s¯¹`, a `PlanckConstant` jako `6.63×10¯³⁴ m²·kg·s¯¹`. Pakiet łączy się z
++       pakietem modułu zbiorczego o tej samej nazwie, więc `constants.PlanckConstant` działa pod
++       `import soundness.*`.
+
+% 2 1 0 0f52fa6f4f76eadc1629710d5d431d3e
+
+% 3 1 0 1ceea0d70e37e2ce1b2899aaca5801d3
+
+% 4 1 0 096f3f54de6fc8c30ee9438e181c9c1e
+
+% 6 1 0 0401f1071b0857e711974410794d139d
+
+% 0 1 0 1d74693bdfacde4d05c87a04cf98cbbc
+
+% 0 1 0 0281cb772c876a54020d401523391fdb
+
+% 1 1 0 053427dfd5a3c56110c283986c1e1242
+
+% 0 1 0 1a925f3a99974f3f0fd3193af164dbc3
+
+@ 0 8 0 032f2758f2a87ce61cb6fe03b1455a03
++   entry .MagneticConstant   μ₀, przenikalność magnetyczna próżni, w N·A⁻²
++   entry .ElectricConstant   ε₀, przenikalność elektryczna próżni, 8,854×10⁻¹² F·m⁻¹
++   entry .CharacteristicImpedanceOfVacuum   Z₀, 376,73 Ω
++   entry .PlanckConstant   h, 6,626×10⁻³⁴ m²·kg·s⁻¹
++   entry .GravitationalConstant   G, 6,674×10⁻¹¹, w niutonach na kilogram do kwadratu, tak jak to tu zdefiniowano
++   entry .ElementaryCharge   e, 1,602×10⁻¹⁹ C
++   entry .AvogadroConstant   N_A, 6,022×10²³ mol⁻¹
++   entry .BoltzmannConstant   k, stała Boltzmanna, w J·K⁻¹
+
+@ 0 1 0 15ab536cb45274b21a022276899ef973
++ entry .internal   miejsce typów nieprzezroczystych `Quantity`, `MetricUnit` i `Temperature` oraz makr jednostek
+
+% 1 1 0 1d21640c9f83714209a295abb026b054
+
+% 2 1 0 1d4bcec9d92ab1c715ae09269dffafe7
+
+@ 0 8 0 1c27bcdc9bdb901715736dabc08ef67d
++       Nie do bezpośredniego użytku: obiekt istnieje po to, aby trzy typy nieprzezroczyste
++       miały zasięg, w którym widać ich reprezentację jako `Double`, oraz aby makra
++       arytmetyczne (dziedziczone z `protointernal`) miały stałe miejsce. `Quantity`,
++       `MetricUnit` i `Temperature` są stąd eksportowane do pakietu `quantitative`, a ich strony
++       tam zawierają pełny opis. Zadeklarowane tu metody rozszerzające – `kelvin`, `celsius`,
++       `fahrenheit` i `rankine` dla `Temperature`; `underlying`, `value` i `amount` dla
++       `Quantity` – są dostępne przez `import soundness.*`.
++   entry .Quantity   nieprzezroczysty `Quantity[units] = Double`; zobacz `quantitative.Quantity`
+
+% 1 1 0 13be8f144eeee4f5139787d001466e4d
+
+@ 0 11 0 011b411260fd77f3030fbac9d3ba7982
++         Obiekt towarzyszący typu nieprzezroczystego `Quantity`, eksportowany razem z nim do
++         pakietu `quantitative`.
++     entry .apply   `Quantity[units](value)`: wielkość w danych jednostkach z `Double`
++         Jedyny sposób utworzenia wielkości z gołej liczby, ponieważ `Double` nie konwertuje się
++         niejawnie: `Quantity[Metres[1]](5.0)` to pięć metrów, a
++         `Quantity(1)/(2*Metre/Second)` dzieli wielkość bezwymiarową przez prędkość. Inline, więc
++         nic nie kosztuje.
++     entry .units   symbole jednostek miary jako tekst: `Quantity.units[units]`
++         `Quantity.units[Metres[1] & Seconds[-2]]` to tekst `m·s¯²`, a symbole są znajdowane
++         przez given `Designation` każdej jednostki (albo `Redesignation` dla całej miary, więc
++         `Kilograms[1] & Metres[2] & Seconds[-2]` to `J`). Makro, rozwiązywane podczas kompilacji
++         kodu. `quantity.units` na instancji, odwzorowanie symboli na potęgi, to rozszerzenie
+
+% 0 1 0 099f21b076ae25fe050e3df6633aa858
+
+@ 0 58 0 0444e1c3391bc5470e6fbdb324004f18
++     entry .unitsMap   odwzorowanie symboli na potęgi dla miary, `Quantity.unitsMap[units]`
++         `Map[Text, Int]` symboli jednostek miary i ich potęg, obliczana w czasie kompilacji z
++         givenów `Designation`; `expressUnits` przedstawia ją jako tekst.
++     entry .expressUnits   przedstawia odwzorowanie symboli na potęgi jako `m·s¯²`
++         Łączy symbole znakiem `·`, zapisując potęgę inną niż `1` cyframi w indeksie górnym, z
++         `¯` jako znakiem minusa.
++     entry .dimension   fizyczna nazwa miary: `velocity`, `area`, `chemical potential`
++         `Quantity.dimension[units]` to `Optional[Text]`, `Unset`, gdy żaden given `Amount` nie
++         nazywa danej kombinacji wymiarów. Makro, które wyszukuje wymiarowość miary wśród givenów
++         `Amount`, więc własny wymiar nazywa się, deklarując taki given.
++         `quantity.dimension` na instancji to rozszerzenie `internal2.Protoquantity#dimension`.
++     entry .zeroic   `zero[Quantity[units]]`: zerowa wielkość w dowolnych jednostkach
++     entry .underlying   given `Underlying`, który pozwala wielkości zastępować `Double`
++         Oznacza `Quantity[units]` jako `Double` od spodu, na potrzeby API, które przyjmują
++         wszystko o takiej reprezentacji.
++     entry .canEqual   pozwala na `==` między dwiema wielkościami tego samego typu jednostek przy ścisłej równości
++         Za pomocą `==` można porównywać tylko wielkości, których typy jednostek się zgadzają;
++         dwie wielkości w różnych jednostkach jednego wymiaru nie mają `==` (pod
++         `import language.strictEquality` to się nie kompiluje) i tę lukę wypełnia `===`.
++     entry .numeric   `Numeric[Quantity[units]]` z biblioteki standardowej, dla kodu napisanego pod nią
++     entry .addable   `+` między wielkościami jednego wymiaru, z przeliczeniem na jednostkę główną
++         Given transparent inline, rozwijany przez makro, które sprawdza wymiary i oblicza typ
++         wyniku: `2*Metre + 2*Foot` i `2*Foot + 2*Metre` to oba 2,61 m, a stopa jest przeliczana
++         na jednostkę SI. Dwa różne wymiary to błąd kompilacji, który nazywa oba słowami.
++         `quantityAddOp` to ta sama operacja jako `AddOp`, postać, którą `+` z symbolism rozwija
++         do jednej instrukcji `dadd`.
++     entry .subtractable   `-` między wielkościami jednego wymiaru, z przeliczeniem na jednostkę główną
++         Jak `.addable`, dla odejmowania: `2*Metre - 2*Foot` to 1,39 m. `quantitySubOp` to jego
++         postać `SubOp`.
++     entry .multiplicable   `*` między dwiema wielkościami: jednostki się mnożą albo skracają do `Double`
++         Given transparent inline: `2*Second*3*Metre` to `Quantity[Metres[1] & Seconds[1]]`, a
++         każdy wymiar, który obie strony mierzą w różnych jednostkach, jest najpierw przeliczany
++         na jednostkę główną, więc `2*Metre*3*Foot` to 1,83 m². Gdy wszystkie potęgi się skracają,
++         wynikiem jest zwykły `Double`. Od `multiplicable2` do `multiplicable5` to
++         `quantity*Double`, `Double*quantity`, `Int*quantity` i `quantity*Int`, każdy jako
++         `Quantity` w tych samych jednostkach, a `quantityMulOp` to postać `MulOp`.
++     entry .multiplicable2   `quantity*Double`, wielkość w tych samych jednostkach
++     entry .multiplicable3   `Double*quantity`, wielkość w tych samych jednostkach
++     entry .multiplicable4   `Int*quantity`, wielkość w tych samych jednostkach
++     entry .multiplicable5   `quantity*Int`, wielkość w tych samych jednostkach
++     entry .divisible   `/` między dwiema wielkościami: jednostki się dzielą albo skracają do `Double`
++         Jak `.multiplicable`, z odejmowaniem potęg: `(2*Metre*Metre)/(3*Foot)` to 2,19 m, a
++         `(20*Metre*Second)/(Metre*Second)` to `Double` 20.0. `divisible2` i `divisible3` dzielą
++         `Double` lub `Int` przez wielkość, odwracając jej jednostki; `divisibleDouble` i
++         `divisibleInt` dzielą wielkość przez zwykłą liczbę; `quantityDivOp` to postać `DivOp`.
++     entry .divisible2   `Double/quantity`, z odwróconymi jednostkami wielkości
++     entry .divisible3   `Int/quantity`, z odwróconymi jednostkami wielkości
++     entry .divisibleDouble   `quantity/Double`, wielkość w tych samych jednostkach
++     entry .divisibleInt   `quantity/Int`, wielkość w tych samych jednostkach
++     entry .negatable   jednoargumentowy `-` dla wielkości, wielkość w tych samych jednostkach
++         Rozwija się do pojedynczej instrukcji `dneg`.
++     entry .squareRoot   `Rootable[2]`: pierwiastek kwadratowy z wielkości, połowiący każdą potęgę
++         Given transparent inline stojący za `sqrt`; błąd kompilacji, _only quantities with units
++         in even powers can have square roots calculated_, gdy któraś potęga jest nieparzysta.
++     entry .cubeRoot   `Rootable[3]`: pierwiastek sześcienny z wielkości, dzielący każdą potęgę przez trzy
++     entry .commensurable   `<`, `>`, `<=`, `>=` między wielkościami jednego wymiaru, z przeliczaniem jak w arytmetyce
++         `6*Foot < 2*Metre` i `9*Foot*Foot < Metre*Metre` są oba prawdziwe. Porównanie dwóch
++         różnych wymiarów albo dwóch potęg jednego wymiaru to błąd kompilacji, który nazywa oba:
+
+% 0 1 0 1ffac17d259cf009047284a607efbc27
+
+% 0 1 0 11449fab93b4685e06ca8de0bab5f0c3
+
+@ 0 34 0 14ea1d07cc147e0a17adeef00694a7aa
++     entry .checkable   `===` między wielkościami jednego wymiaru: czy mierzą tę samą ilość?
++         `Mile === 1760*Yard` jest prawdą, a `Mile === Inch` fałszem; `Mile === Joule` się nie
++         kompiluje. Porównanie przelicza i jest dokładne, więc przeliczenie, które wprowadza
++         różnicę zaokrąglenia, sprawia, że dwie wielkości równe na papierze są nierówne.
++     entry .quantityAddOp   postać `AddOp` dla `.addable`, którą `+` z symbolism rozwija do `dadd`
++         Given transparent inline, którego rozwinięciem jest instancja `QuantityAddOp`;
++         niezgodne wymiary sprawiają, że wyszukiwanie przechodzi do `.addable`, które zgłasza
++         błąd jeden raz.
++     entry .quantitySubOp   postać `SubOp` dla `.subtractable`
++     entry .quantityMulOp   postać `MulOp` dla `.multiplicable`, `QuantityMulOp` albo, jeśli jednostki się skracają, `QuantityMulOpDouble`
++     entry .quantityDivOp   postać `DivOp` dla `.divisible`, `QuantityDivOp` albo, jeśli jednostki się skracają, `QuantityDivOpDouble`
++     entry .QuantityAddOp   klasa `AddOp` stojąca za `+`, z `op` inline, które jest jedną instrukcją `dadd`
++         Klasa, do której rozwija się transparentny given `quantityAddOp`, nazwana po to, aby
++         statyczny typ w miejscu wywołania niósł `op` inline; nie tworzy się jej ręcznie.
++     entry .QuantitySubOp   klasa `SubOp` stojąca za `-`
++     entry .QuantityMulOp   klasa `MulOp` stojąca za `*`, gdy iloczyn ma jednostki
++     entry .QuantityMulOpDouble   klasa `MulOp` stojąca za `*`, gdy jednostki skracają się do `Double`
++     entry .QuantityDivOp   klasa `DivOp` stojąca za `/`, gdy iloraz ma jednostki
++     entry .QuantityDivOpDouble   klasa `DivOp` stojąca za `/`, gdy jednostki skracają się do `Double`
++     entry .showable   przedstawia wielkość jako `value units`, wymaga `Decimalizer`
++         `(7.567*Metre).show` to `7.57 m` z `Decimalizer(3)`, `(1.4*Metre*Metre).show` to
++         `1.40 m²`, `(45*Joule).show` to `45.0 J`. Skaluje do przedrostka, gdy w zasięgu jest
++         given `Prefixes`; zobacz `express`.
++     entry .inspectable   przedstawienie diagnostyczne wielkości, takie samo jak `show`
++     entry .ShowableQuantity   klasa `Showable`, którą instancjonuje given `showable`
++     entry .InspectableQuantity   klasa `Inspectable`, którą instancjonuje given `inspectable`
++     entry .genericDuration   wielkość czasu jako czas trwania, w nanosekundach, dla API, które go przyjmują
++         Każda `Quantity`, której jednostki są `Normalizable to Seconds[1]` – sekundy, minuty,
++         godziny, milisekundy – jest `Abstractable across Durations to Long`, więc można ją
++         przekazać wszędzie tam, gdzie przyjmowany jest generyczny czas trwania, na przykład do
++         uśpienia lub limitu czasu.
++     entry .specificDuration   wielkość czasu utworzona z czasu trwania w nanosekundach
++         Odwrotność `.genericDuration`: `Instantiable across Durations from Long`, dająca
++         `Quantity` w żądanych jednostkach czasu.
++   entry .MetricUnit   nieprzezroczysty `MetricUnit[units] <: Quantity[units]`; zobacz `quantitative.MetricUnit`
++   entry .Temperature   nieprzezroczysty `Temperature = Double` w kelwinach; zobacz `quantitative.Temperature`
+
+% 1 1 0 04dbbc348de56f400a8900e96b4a057b
+
+@ 0 26 0 0da72fa37e70edca07229964ae861721
++         Obiekt towarzyszący typu nieprzezroczystego `Temperature`, eksportowany razem z nim do
++         pakietu `quantitative`.
++     entry .apply   `Temperature(kelvins)`: temperatura z jej odczytu w kelwinach
++     entry .showable   przedstawia temperaturę w `TemperatureScale` będącej w zasięgu: `30.0 °C`
++         Wymaga givena `TemperatureScale` – jednej z `temperatureScales` – oraz `Decimalizer`;
++         zapisuje odczyt w tej skali, a po nim jej przyrostek.
++     entry .zeroic   `zero[Temperature]`: zero bezwzględne
++     entry .addable   `temperature + kelvins`: podnosi temperaturę o `Quantity[Kelvins[1]]`
++     entry .addable2   `temperature + rankines`: podnosi temperaturę o `Quantity[Rankines[1]]`
++     entry .subtractable   `temperature - kelvins`: obniża temperaturę o `Quantity[Kelvins[1]]`
++     entry .subtractable2   `temperature - rankines`: obniża temperaturę o `Quantity[Rankines[1]]`
++     entry .subtractable3   `temperature - temperature`: różnica, `Quantity[Kelvins[1]]`
++   entry .kelvin   odczyt temperatury w kelwinach
++       `Celsius(30).kelvin` to 303,15: przechowywana wartość.
++   entry .celsius   odczyt temperatury w stopniach Celsjusza: kelwiny minus 273,15
++   entry .fahrenheit   odczyt temperatury w stopniach Fahrenheita
++   entry .rankine   odczyt temperatury w stopniach Rankine'a: kelwiny razy dziewięć piątych
++   entry .underlying   `Double` opakowywany przez wielkość, jako metoda
++       `quantity.underlying` to goła liczba z zapomnianymi jednostkami, której makra używają do
++       budowania arytmetyki; `value` to postać inline.
++   entry .value   `Double` opakowywany przez wielkość, inline
++       `(5*Metre).value` to 5.0, bez jednostki; jedyny sposób wydobycia liczby. Inline, więc nic
++       nie kosztuje.
++   entry .amount   `quantity.amount[name]`: fizyczna nazwa miary wielkości, jako makro
++       Jak `Amount[units]`: nazwa z givenów `Amount` albo błąd kompilacji, _the name of this
++       amount is not known_.
+
+@ 0 1 0 1b59400357b9c5f71ea605d9f820ea4d
++ entry .internal2   trait metod rozszerzających, który dziedziczy obiekt towarzyszący `Quantity`
+
+% 1 1 0 1419c0857ddfa3b416285c57477cd7d7
+
+% 2 1 0 1b9f079bdc4aa0a9035c7f513634b5db
+
+@ 0 22 0 0fe4886a10f637c81d9368aec7c98a6d
++       Nie do bezpośredniego użytku: `Protoquantity` zawiera operacje na wielkości po stronie
++       instancji – `convert`, `invert`, `normalize`, `sqrt`, `cbrt`, `units`, `express`,
++       `dimension` – jako metody rozszerzające, które rozszerza `quantitative.internal.Quantity`,
++       aby były rozwiązywane z obiektu towarzyszącego.
++   entry .Protoquantity   metody rozszerzające `convert`, `invert`, `normalize`, `sqrt`, `cbrt`, `units`, `express` i `dimension`
++     entry #convert   `quantity.convert[Feet]`: ta sama wielkość w innej jednostce jednego z jej wymiarów
++         Przyjmuje konstruktor typu jednostki – `Feet`, `Metres`, `Rankines` – i przeskalowuje
++         do niej każdą składową wielkości mierzoną w wymiarze tej jednostki, pozostawiając
++         składowe innych wymiarów bez zmian: `(3*Foot).convert[Metres]` to 0,914 m, a
++         `(π*Metre*Metre).convert[Feet]` jest w stopach kwadratowych. Podanie jednostki wymiaru,
++         którego wielkość nie ma, nie jest błędem; nic nie robi. Przelicznik pochodzi z givena
++         `Ratio`, bezpośrednio lub przez jednostkę główną wymiaru, a jego brak to błąd
++         kompilacji, _both operands represent the physical quantity distance, but the
++         conversion ratio between them is not known_. Transparent inline: typ wyniku jest
++         obliczany podczas kompilacji kodu.
++     entry #normalize   `quantity.normalize[Seconds[1]]`: przelicza jeden wymiar na jednostkę zapisaną z potęgą
++         Jak `convert`, ale celem jest pełny typ `Units` z potęgą, rozwiązywany przez given
++         `Normalizable`: `(2*Hour).normalize[Seconds[1]]` to 7200 s, a
++         `(1*Inch).normalize[Metres[1]]` to 0,0254 m. Składowe innych wymiarów pozostają
++         nietknięte.
++     entry #invert   odwrotność, z każdą potęgą zanegowaną
++         `(2*Metre/Second).invert` to pół sekundy na metr, `Quantity[Seconds[1] &
+
+% 0 1 0 05a72b4f84ae88a40fdd1fa3becec4ce
+
+@ 0 8 0 0eab9f76e1eefd2c04ecf47949bcf4f4
++     entry #express   wielkość jako tekst, przeskalowana do przedrostka metrycznego, jeśli w zasięgu jest `Prefixes`
++         To, co wywołuje `show`. Gdy w zasięgu jest given `Prefixes on units` (lub dowolne
++         `Prefixes`), wartość jest dzielona przez mnożnik wybranego przedrostka, a symbol
++         przedrostka jest zapisywany przed jednostkami (`5.00 kB`); w przeciwnym razie wartość
++         jest zapisywana tak, jak formatuje ją `Decimalizer`, z przejściem na notację naukową dla
++         bardzo dużych lub małych liczb (`3.00×10⁸ m·s¯¹`).
++     entry #sqrt   pierwiastek kwadratowy, połowiący każdą potęgę; błąd kompilacji, gdy potęga jest nieparzysta
++         `(4*Metre*Metre).sqrt` to 2 m. Rozwiązywany przez `Quantity.squareRoot`, który odrzuca
++         miarę z nieparzystą potęgą: _only quantities with units in even powers can have square
+
+% 0 1 0 17d49c740d6017d81520fb839722bbe4
+
+@ 0 2 0 01b73df0798abc2b18f333b7fe166952
++     entry #cbrt   pierwiastek sześcienny, dzielący każdą potęgę przez trzy; błąd kompilacji, gdy któraś się nie dzieli
++         Rozwiązywany przez `Quantity.cubeRoot`: _only quantities with units whose powers are
+
+% 0 1 0 110f27d107af8bd4169ec5c6e160662d
+
+@ 0 9 0 01095fb832b8bc9119fbf39a40849331
++     entry #units   odwzorowanie symboli na potęgi stojące za wielkością, jako `Map[Text, Int]`
++         `quantity.units` na instancji to stojąca za nią `Map[Text, Int]` z symbolu na potęgę,
++         `Map(t"m" -> 1, t"s" -> -2)`. Makro, rozwiązywane podczas kompilacji kodu; tekstową
++         postacią jednostek miary jest `Quantity.units[units]`.
++     entry #dimension   fizyczna nazwa miary wielkości: `velocity`, `area`, `chemical potential`
++         `quantity.dimension` na instancji to `Text` albo błąd kompilacji – _quantitative:
++         there is no descriptive name for this physical quantity_ – gdy nazwy nie ma. Makro,
++         które wyszukuje wymiarowość miary wśród givenów `Amount`, tak jak robi to
++         `Quantity.dimension[units]`.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 01680d288b2b7162170b9000c10f3939
+
+% 0 1 0 07b7c109756847051ae2b9ba6c7608ac
+
+% 0 1 0 08e530289c4c29bf06a384c4f7146444
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 1 0 19934eb0c60ad0491f7df9f2407a8081
++ entry .protointernal   algebra jednostek w czasie kompilacji stojąca za każdą operacją na wielkościach
+
+% 1 1 0 0a256c7ab1418a41163c0e8f9ea27206
+
+% 2 1 0 1ead5370ef4dddd71df4573489f0e0b3
+
+@ 0 49 0 1fc91a6db8f138da18e61ca058f48e76
++       Nie do bezpośredniego użytku: trait, który rozszerza `quantitative.internal`, zawierający
++       implementacje makr. Miara jest wczytywana do `UnitsMap` z wymiaru na `UnitPower`;
++       `normalize` przelicza wymiary wspólne dla dwóch odwzorowań na jedną jednostkę przez
++       giveny `Ratio` i `Principal`; `multiply`, `divide`, `add`, `sub`, `check` i
++       `greaterThan` budują z tego arytmetykę; składowe `…Typeclass` i `make…Op` rozwijają
++       giveny transparent inline obiektu towarzyszącego `Quantity`; `collectUnits`, `describe`,
++       `describeOptional` i `amount` stoją za `units`, `dimension` i `Amount[units]`; `norm`
++       stoi za `convert`; `normalizable` derywuje `Normalizable`. `Temperature2` to trait,
++       który daje `Temperature` jego given `orderable`.
++   entry #UnitPower   odwołanie do jednostki i potęga, do której jest podniesiona
++   entry #UnitsMap   miara jako odwzorowanie z wymiaru na `UnitPower`, z `*` i `/`
++   entry #Dimensionality   odwzorowanie z wymiaru na potęgę, które `quantityName` wyszukuje wśród givenów `Amount`
++   entry #UnitRef   odwołanie do typu jednostki, z jej `designation` i `dimensionRef`
++   entry #DimensionRef   odwołanie do typu wymiaru, z jego jednostką główną `principal`
++   entry #Temperature2   trait zawierający given `orderable` typu `Temperature`
++     entry #orderable   `<`, `>`, `<=`, `>=` między dwiema temperaturami
++   entry #readUnitPower   wczytuje typ `Units[power, dimension]` do `UnitPower`
++   entry #normalizable   derywuje `source is Normalizable to result` albo zgłasza niezgodne wymiary
++   entry #ratio   przelicznik między dwiema jednostkami, przez given `Ratio` lub jednostkę główną
++   entry #collectUnits   odwzorowanie symboli na potęgi dla miary, przez `Designation` i `Redesignation`
++   entry #multiply   iloczyn dwóch wielkości, z połączonymi jednostkami
++   entry #divide   iloraz dwóch wielkości, z połączonymi jednostkami
++   entry #add   suma dwóch wielkości albo błąd kompilacji dla różnych wymiarów
++   entry #sub   różnica dwóch wielkości albo błąd kompilacji dla różnych wymiarów
++   entry #check   `===` między dwiema wielkościami, z przeliczeniem, albo błąd kompilacji
++   entry #greaterThan   `<`, `>`, `<=`, `>=` między dwiema wielkościami, z przeliczeniem, albo błąd kompilacji
++   entry #amount   fizyczna nazwa miary albo błąd kompilacji
++   entry #describe   fizyczna nazwa miary jako tekst albo błąd kompilacji
++   entry #describeOptional   fizyczna nazwa miary albo `Unset`
++   entry #norm   rozwinięcie `convert`: jeden wymiar przeskalowany do nazwanej jednostki
++   entry #addTypeclass   rozwinięcie `Quantity.addable`
++   entry #subTypeclass   rozwinięcie `Quantity.subtractable`
++   entry #mulTypeclass   rozwinięcie `Quantity.multiplicable`
++   entry #divTypeclass   rozwinięcie `Quantity.divisible`
++   entry #divTypeclass2   rozwinięcie `Quantity.divisible2`, `Double/quantity`
++   entry #divTypeclass3   rozwinięcie `Quantity.divisible3`, `Int/quantity`
++   entry #checkable   rozwinięcie `Quantity.checkable`
++   entry #sqrtTypeclass   rozwinięcie `Quantity.squareRoot`
++   entry #cbrtTypeclass   rozwinięcie `Quantity.cubeRoot`
++   entry #makeAddOp   rozwinięcie `Quantity.quantityAddOp`
++   entry #makeSubOp   rozwinięcie `Quantity.quantitySubOp`
++   entry #makeMulOp   rozwinięcie `Quantity.quantityMulOp`
++   entry #makeDivOp   rozwinięcie `Quantity.quantityDivOp`
++   entry #addQuantity   ciało `QuantityAddOp#op`
++   entry #subQuantity   ciało `QuantitySubOp#op`
++   entry #mulQuantity   ciało `QuantityMulOp#op`
++   entry #mulQuantityDouble   ciało `QuantityMulOpDouble#op`
++   entry #divQuantity   ciało `QuantityDivOp#op`
++   entry #divQuantityDouble   ciało `QuantityDivOpDouble#op`

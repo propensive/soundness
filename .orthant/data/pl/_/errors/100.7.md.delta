@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 0208ccc222751e2400ea430024918355
++ # `↯/s.100.7` – `MacAddress.Error`
+
+@ 0 1 0 04893579923c8bd9017cc2b1c33c6060
++ Zgłaszany, gdy wartości nie można sparsować jako poprawnego adresu MAC.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 3 0 0d63c2e4d08425ee13a2ddc6ea8ab692
++ Urticose oczekuje adresów MAC w postaci sześciu rozdzielonych dwukropkami grup szesnastkowych
++ po dwie cyfry, np. `01:23:45:67:89:ab`. Komunikat to
++ `the MAC address is not valid because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 1 0 01743cf3aff225890d38f1579592d3e2
++ ### `↯/s.100.7.1` – `WrongGroupCount`
+
+@ 0 1 0 1ad10da60bc99ba204ea613f515847cd
++ Adres nie ma sześciu grup rozdzielonych dwukropkami.
+
+@ 0 1 0 1dfa66de393809dc14ff83d28c0b42df
++ **Przykład.** `[↯/s.100.7.1] the MAC address is not valid because there should be six colon-separated groups, but there were 5`
+
+@ 0 1 0 1fb55b502d0a64f019129685f9e20fd9
++ **Rozwiązanie.** Użyć dokładnie sześciu grup połączonych znakiem `:`.
+
+@ 0 1 0 118f2556d2e4a0cb13872bc1e5cab8ad
++ ### `↯/s.100.7.2` – `WrongGroupLength`
+
+@ 0 1 0 1b0f0d73fa6af8af11490c85f9b3aeaf
++ Grupa nie ma długości dokładnie dwóch cyfr szesnastkowych.
+
+@ 0 1 0 141ea87763183504089310af0b8ead12
++ **Przykład.** `[↯/s.100.7.2] the MAC address is not valid because group 3 should be two hex digits, but its length is 3`
+
+@ 0 2 0 0b69c54e2e3ed5a4103511bf42f1e648
++ **Rozwiązanie.** Uzupełnić grupy jednocyfrowe wiodącym zerem albo usunąć nadmiarowe cyfry.
+
+@ 0 1 0 1d2ec7318321bb920552c21ef5534c25
++ ### `↯/s.100.7.3` – `NotHex`
+
+@ 0 1 0 1478101cc368bb2b099c5e394e3676e8
++ Grupa zawiera znaki, które nie są cyframi szesnastkowymi.
+
+@ 0 1 0 08185ce599338680183efb2a26126cf2
++ **Przykład.** `[↯/s.100.7.3] the MAC address is not valid because group 4 should be a two-digit hex number, but it is xy`
+
+@ 0 1 0 0bbeb8f66808e15e1da05a5b692f7a8d
++ **Rozwiązanie.** Używać tylko `0`-`9` oraz `a`-`f`/`A`-`F`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 12ca3c998dde439e07bfac83b65fead3
++ - Źródło: `lib/urticose/src/core/urticose.internal.scala`

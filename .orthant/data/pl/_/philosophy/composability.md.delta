@@ -1,0 +1,167 @@
+orthant 2 language
+
+@ 0 1 0 1de27bad34d972de17dc2bcdab4816dd
++ # Składalność
+
+@ 0 6 0 0116ef1a43b7e51b06166f6f4e8b3b7f
++ Soundness jest zbudowane tak, by się składać: małe elementy łączą się w większe bez
++ przypadków szczególnych, a połączenie zachowuje się tak, jak każą oczekiwać jego części. API
++ są projektowane tak, by wynik jednej operacji był wejściem następnej, typy łączą się w
++ bogatsze typy, a zdolności zagnieżdżają się w zdolnościach. Składalność pozwala małemu,
++ spójnemu zestawowi części objąć ogromny zakres zastosowań i jest traktowana jako świadome
++ ograniczenie projektowe, a nie własność, na którą liczy się po fakcie.
+
+@ 0 1 0 18cebf8a9e35614406a25d325571a6d0
++ ## Wartości się składają
+
+@ 0 3 0 13a4af7241051ec719a8700c906c7907
++ Najwyraźniejszym przypadkiem jest potok [strumieni](../en/modules/streams.md). Każdy etap
++ przyjmuje strumień i zwraca strumień, więc etapy łączą się w łańcuch bez adapterów i w
++ dowolnej sensownej kolejności:
+
+% 2 1 0 1611a49bc250748e04e1e70396e66cfb
+
+% 3 1 0 0e0a1a44677596cf013ccfa1cab9b4bc
+
+% 4 1 0 16dd2002c90898621dc5b16a9e18da8c
+
+% 0 1 0 0a58e03c0d3e074e1d36fca856358544
+
+% 1 1 0 1424e83528131ff910d7b60056eb7e6f
+
+@ 0 4 0 1514909cebb9bc761ac0e370c2b1947f
++ Nic w tym wierszu nie jest przypadkiem szczególnym dla swoich sąsiadów. Dekompresja nie wie,
++ że czyta z pliku; dekoder nie wie, że jego wejście było skompresowane. Ponieważ każdy etap
++ jest wartością, łańcuch można złożyć w czasie wykonania, przechować w zmiennej albo zbudować
++ funkcją, która decyduje, jakich etapów potrzebuje konkretne zadanie.
+
+@ 0 1 0 10cf03ab70ba272c0de3cf43634f63a6
++ ## Typy się składają
+
+@ 0 2 0 0cbb72e2c69cbe510876d3ed39eac3c5
++ [Typ infiksowy](infix-types.md) dodaje jedną klauzulę bez zagnieżdżania nawiasu, więc
++ precyzyjny typ buduje się tak, jak angielski opis:
+
+% 2 1 0 11db83543d66241c0bc20617cf575713
+
+% 3 1 0 00b9b163d0eae97c1233d1829e8dd03b
+
+% 4 1 0 0bed26b97b5c7c92127ba1e0a449519b
+
+% 0 1 0 108ef8f08033a2c207c2d54517555e93
+
+% 0 1 0 021d8035f62dd30a0018939b0d7afd8f
+
+% 0 1 0 0fb6a82d35c6d65e08ba5ec18939021e
+
+% 0 1 0 0a2a2f80e83aef561494cc52ab2ef156
+
+% 1 1 0 11d2afd3e28e6048128c0d794dce417b
+
+@ 0 3 0 0abd92290243cba30b4efe943dfc3748
++ Każdy przyimek znaczy to samo, gdziekolwiek się pojawi, więc czytelnik, który zrozumiał jeden
++ taki typ, czyta następny przez analogię. Alternatywa – `Element["ul", "li", Whatwg]` – niesie
++ te same informacje i nic nie mówi czytelnikowi o tym, który parametr jest którym.
+
+@ 0 1 0 0798ad02949405f80320bf7a813e61f7
++ ## Zdolności się składają
+
+@ 0 3 0 0d82d6bb25fda5f712e3f1d8f930e2b1
++ Dwie zdolności w zasięgu to dwie zdolności; nie ma typu łączonego do skonstruowania ani
++ kolejności do wyboru. Kod zawodny, asynchroniczny i logujący składa się przez to, że jest
++ napisany obok siebie:
+
+% 2 1 0 10ebe8f493a2f7fd00f6103de8a72d54
+
+% 3 1 0 071d65707a90e86319d47bce20506d23
+
+% 4 1 0 182a81d7ee98442e1a5aa7fc3136be92
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 13d5befb2d1178cb1ef63455361dd122
+
+% 0 1 0 048b8df7a8940f68003ffcbe2eec68df
+
+% 0 1 0 04b68f13292630100c24d6460f2a1679
+
+% 0 1 0 0211f41b10ea266300ebe5131a2a8e16
+
+% 1 1 0 04c70ecc44c049e41e7cbbdfc95bb262
+
+@ 0 4 0 024cb75c444e978b0c79de3e0fa31fa7
++ To własność, dla której zachowania istnieje [styl bezpośredni](direct-style.md). W kodowaniu
++ monadycznym to samo połączenie wymaga stosu transformatorów, a kolejność, w jakiej efekty są
++ ułożone, staje się decyzją z konsekwencjami. Tutaj w ogóle nie jest decyzją.
+
+@ 0 1 0 1cbb2aa8f0fd5619131f3aea11f28ea7
++ ## Zasięgi się składają
+
+@ 0 1 0 1c862c93455cc58f142d23073e368aa4
++ Ponieważ zdolność wprowadza blok, a bloki się zagnieżdżają, zagnieżdżają się też czasy życia
++ zasobów:
+
+% 2 1 0 1d27a5510ab52ce003f29162a8686a31
+
+% 3 1 0 08b6ae170b5f6f5e1c0f223856e34316
+
+% 4 1 0 1c3de31e5c288daa1ef8c9792d952ee0
+
+% 0 1 0 04dde33d8f9c709c10a2a6b498ca3c6a
+
+% 0 1 0 0abd480ba69540d51c51797f268e484c
+
+% 0 1 0 066a960f97d387a31fe0c6d71d1b355d
+
+% 1 1 0 0856de1f119eda410c225195ec6f2815
+
+@ 0 4 0 199d9445f2a0233505fef2a05d32743b
++ Zasięg wewnętrzny widzi obie zdolności; każda jest wycofywana na własnej granicy, we
++ właściwej kolejności, niezależnie od tego, czy blok się zakończy, czy zawiedzie. Dodanie
++ trzeciego zasobu dodaje wiersz, zamiast przebudowywać pozostałe dwa – a
++ [sprawdzanie przechwytywania](capture-checking.md) dowodzi, że nic nie ucieka na zewnątrz.
+
+@ 0 1 0 1db1141b7511f2cb0193dfe73eebab7a
++ ## Ograniczenie, jakie to nakłada na projekt
+
+@ 0 4 0 0f2d7e342e0b31cd1f5fdec8f3bd0dfc
++ Składalność łatwo opisać, a trudno utrzymać, bo presja przeciwko niej jest zawsze lokalna.
++ Każdy przypadek szczególny, każde „wygodne” przeciążenie, które przyjmuje parę zamiast
++ części, każda operacja działająca tylko wtedy, gdy wywoła się ją jako pierwszą – każda z
++ nich to drobna wygoda, która usuwa połączenie, którego potrzebował ktoś inny.
+
+@ 0 2 0 111d8b0f4825949f0c83b2258ab9898d
++ Wynikają z tego trzy reguły i to przez nie niektóre API Soundness wyglądają surowiej, niż
++ mogłyby:
+
+@ 0 2 0 0ecf189696ccdf4101dd7b1a0c1bbbe1
++ **Zwracaj typ, który przyjmujesz.** Operacja przyjmująca strumień zwraca strumień, więc może
++ stać w środku łańcucha, a nie tylko na jego końcu.
+
+@ 0 3 0 1ac8f0df3bf6b24916a30be974124898
++ **Nie scalaj tego, co wywołujący może połączyć.** Nie ma `readAndDecompress`, bo
++ `stream.decompress[Gzip].read[Text]` już istnieje, a wersję scaloną trzeba by powtarzać dla
++ każdej pary.
+
+@ 0 3 0 094be0a39832e9a3014e763c01f97248
++ **Niech przypadek ogólny będzie jedynym przypadkiem.** Jeśli operacja działa dla `List`, ale
++ nie dla strumienia, abstrakcja jest błędna – dlatego operacje są definiowane nad klasami
++ typów, a nie nad typami konkretnymi.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ile to kosztuje
+
+@ 0 3 0 1d3ff4e10d2198c012b445aca35d9d95
++ Składalne API jest mniej bezpośrednio wygodne niż scalone. `dir.archive[Tar]().gzip` to
++ dwa wywołania tam, gdzie `tarGzip(dir)` byłoby jednym, a czytelnik, który chciał dokładnie
++ operacji scalonej, płaci niewielki podatek za ogólność, której nie potrzebował.
+
+@ 0 3 0 1b32dba5e99140281b7a410573b80a37
++ Ten podatek jest akceptowany, bo jest ograniczony, a alternatywa nie: operacje scalone mnożą
++ się kombinatorycznie, a każda dodana to miejsce, w którym ścieżka ogólna i skrót mogą się
++ rozjechać.
+
+@ 0 2 0 0393bebcbd23aef718458531895bac8f
++ Zobacz [małe API](small-apis.md), aby poznać słownictwo, które dzięki temu pozostaje małe,
++ oraz [rozprzęganie](decoupling.md), aby dowiedzieć się, jak niezależne moduły w ogóle
++ potrafią się składać.

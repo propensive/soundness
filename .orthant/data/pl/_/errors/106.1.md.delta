@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 0702c275c81c2631169346d84dd87197
++ # `↯/s.106.1` – `Json.Error`
+
+@ 0 2 0 1b7c2e545b0c877604a36200f767531b
++ Zgłaszany, gdy dostęp do wartości JSON się nie powiedzie, ponieważ wartości brakuje lub ma ona
++ niewłaściwy typ.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 3 0 1df166fb830ee0d2106760f01083d512
++ API `Json` z Jacinty pozwala na bezpośredni dostęp do pól, indeksów i typów sparsowanej wartości.
++ Gdy żądanego dostępu nie da się zrealizować, rzucany jest ten błąd. Komunikat to `could not access the value because
+
+% 0 1 0 04ca5a28474c5b9905df7261499fb1eb
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 1 0 07e3079a420cceed1dd991c63c789795
++ ### `↯/s.106.1.1` – `OutOfRange`
+
+@ 0 1 0 1aa88ae5f4e9802f0471249b6a9be1c1
++ Dostęp przez indeks odwołał się do pozycji za końcem tablicy JSON.
+
+@ 0 1 0 12a1633ec386435004541d5e5696ba15
++ **Przykład.** `[↯/s.106.1.1] could not access the value because the array index is out of range`
+
+@ 0 2 0 098838871a3fe9d610266c0f34b2287d
++ **Rozwiązanie.** Sprawdzić długość tablicy przed indeksowaniem albo użyć opcjonalnego akcesora.
+
+@ 0 1 0 058acc05cd936a811b90bc7c8246330c
++ ### `↯/s.106.1.2` – `NotType`
+
+@ 0 2 0 0b6b35f812399e1e0847339d6c160e5c
++ Użyto typowanego akcesora, ale faktyczny typ prosty wartości jest inny.
+
+@ 0 1 0 153c56563ef6e717077713d7fa9b60bc
++ **Przykład.** `[↯/s.106.1.2] could not access the value because the JSON value had type string instead of number`
+
+@ 0 2 0 1428b3d4318a6b1f0f97093965115414
++ **Rozwiązanie.** Użyć akcesora odpowiadającego faktycznemu typowi wartości JSON albo przekształcić
++ lub skonwertować wartość przed jej odczytem.
+
+@ 0 1 0 0d1b9340430241f40f7e9365f68981be
++ ### `↯/s.106.1.3` – `Absent`
+
+@ 0 1 0 18066b39775845d318f999b6580c1cc2
++ Nazwane pole nie istnieje w obiekcie JSON.
+
+@ 0 1 0 17d82c0547703f25019b87f570d931f5
++ **Przykład.** `[↯/s.106.1.3] could not access the value because the JSON value was not present`
+
+@ 0 2 0 1912f54d3fe52b5207d6fc517fef6620
++ **Rozwiązanie.** Sprawdzić nazwę pola i wielkość liter; użyć opcjonalnego akcesora, jeśli pole
++ może zasadnie nie występować.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 2 0 16770e1089f703f405f7d25cd43467c5
++ - Źródło: `lib/jacinta/src/core/jacinta.Json.scala`
++ - `↯/s.106.2` – błąd rozwiązywania wskaźnika JSON

@@ -1,0 +1,81 @@
+orthant 2 language
+
+@ 0 1 0 1a819e12af1e10420b359c15aeb280f7
++ # `↯/s.127.1` – `WebDriver.Error`
+
+@ 0 1 0 0c25ae29595f689518db5f24a068e197
++ Zgłaszany, gdy akcja WebDrivera w Tarantuli kończy się niepowodzeniem w przeglądarce.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 8 0 0b8bdd24dd42c46a079203894535a2f4
++ Zdalny WebDriver zwrócił odpowiedź z błędem: status 4xx lub 5xx, którego treść niesie obiekt
++ błędu W3C, `{"value":{"error":…,"message":…,"stacktrace":…}}`. Konstruktor przyjmuje
++ `reason: Reason` (zdekodowany z pola `error`, jeden z kodów błędów W3C WebDriver), dostarczony
++ przez przeglądarkę `message` jako `detail`, `stacktrace` podzielony na wiersze jako
++ `browserStacktrace` oraz opcjonalny obiekt `data` ze specyfikacji, który przy
++ `unexpected alert open` niesie tekst okna dialogowego. Przedstawiony komunikat to `the WebDriver action
+
+% 0 1 0 15e6179172b271ae19d91031f2164c0b
+
+@ 0 2 0 179cdf7f9c3633380ad07e33244dea7c
++ Dekodowanie jest totalne: kod dodany do specyfikacji później albo kod specyficzny dla
++ sterownika staje się `Other(code)`, zamiast przepaść.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 4 0 1ee1cc5e9a7963ba187c75ec16dcd4ee
++ Poniższe podkody są zamrożone. `↯/s.127.1.1` do `↯/s.127.1.8` zachowują znaczenia, z którymi
++ zostały pierwotnie opublikowane – w tym `Other` pod numerem 8, dlatego lista nie jest
++ w porządku alfabetycznym – a kody dodane później dopisuje się od 9.
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 34 0 1caee15ccd2fa75f13deeac82d403af0
++ column  Kod
++ column  Wariant
++ column  Kod przesyłowy
++ column  Znaczenie
++ column  Rozwiązanie
++ row  `↯/s.127.1.1`  `NoSuchElement`  `no such element`  Element, do którego odnosiła się akcja, nie był obecny w DOM.  Sprawdzić strategię lokalizowania i cel; poczekać, aż element się pojawi, zanim wykona się na nim akcję.
++ row  `↯/s.127.1.2`  `StaleElement`  `stale element reference`  Element został wcześniej zlokalizowany, ale od tego czasu usunięto go z DOM lub w nim zastąpiono.  Ponownie zlokalizować element po nawigacji lub zmianie DOM, zanim ponowi się akcję.
++ row  `↯/s.127.1.3`  `NoSuchWindow`  `no such window`  Uchwyt okna lub karty, do którego odnosi się akcja, nie istnieje.  Potwierdzić, że uchwyt okna jest aktualny; przełączyć się na prawidłowe okno przed wykonaniem akcji.
++ row  `↯/s.127.1.4`  `JavascriptError`  `javascript error`  Skrypt wykonany przez WebDrivera rzucił wyjątek.  Przejrzeć skrypt i dostarczone `detail` w poszukiwaniu źródłowego wyjątku JavaScriptu.
++ row  `↯/s.127.1.5`  `ScriptTimeout`  `script timeout`  Skrypt asynchroniczny nie zakończył się w skonfigurowanym limicie czasu.  Zwiększyć limit czasu skryptu albo poprawić skrypt tak, by szybko się rozstrzygał.
++ row  `↯/s.127.1.6`  `Timeout`  `timeout`  Operacja WebDrivera przekroczyła limit czasu przed zakończeniem.  Zwiększyć odpowiedni limit czasu albo poprawić stronę tak, by oczekiwany warunek mógł zostać spełniony.
++ row  `↯/s.127.1.7`  `UnknownCommand`  `unknown command`  WebDriver nie rozpoznaje wydanego polecenia.  Potwierdzić, że wersja WebDrivera obsługuje akcję; w razie potrzeby zaktualizować sterownik.
++ row  `↯/s.127.1.8`  `Other`  *(dowolny nierozpoznany kod)*  WebDriver zgłosił kod błędu, który nie odpowiada żadnemu z pozostałych przypadków. Oryginalny kod jest przechwycony w parametrze `Other(code)`.  Sprawdzić zgłoszony kod w specyfikacji W3C WebDriver lub w dokumentacji samego sterownika.
++ row  `↯/s.127.1.9`  `ElementClickIntercepted`  `element click intercepted`  Kliknięcie otrzymałby inny element – zwykle nakładka, okno modalne lub przyklejony nagłówek.  Przewinąć cel do widoku, zamknąć zasłaniający element albo kliknąć przez API akcji.
++ row  `↯/s.127.1.10`  `ElementNotInteractable`  `element not interactable`  Element jest w DOM, ale nie może przyjąć interakcji.  Poczekać, aż element będzie wyświetlony i aktywny; sprawdzić, czy nie ma zerowego rozmiaru ani `pointer-events: none`.
++ row  `↯/s.127.1.11`  `InsecureCertificate`  `insecure certificate`  Nawigację zablokowano, ponieważ strona została zaserwowana z niezaufanym certyfikatem.  Zażądać możliwości `acceptInsecureCerts` przy tworzeniu sesji.
++ row  `↯/s.127.1.12`  `InvalidArgument`  `invalid argument`  Argument polecenia nie był typu ani z zakresu wymaganego przez specyfikację.  Sprawdzić argument względem specyfikacji danego polecenia.
++ row  `↯/s.127.1.13`  `InvalidCookieDomain`  `invalid cookie domain`  Ciasteczko ustawiono dla domeny innej niż domena bieżącego dokumentu.  Przejść do domeny ciasteczka przed jego ustawieniem.
++ row  `↯/s.127.1.14`  `InvalidElementState`  `invalid element state`  Stan elementu nie pozwala na polecenie – na przykład czyszczenie elementu nieedytowalnego.  Sprawdzić, czy element jest edytowalny, albo zamiast tego użyć wykonania skryptu.
++ row  `↯/s.127.1.15`  `InvalidSelector`  `invalid selector`  Lokalizator nie był poprawny dla swojej strategii.  Sprawdzić selektor CSS lub wyrażenie XPath.
++ row  `↯/s.127.1.16`  `InvalidSessionId`  `invalid session id`  Sesja nie jest już aktywna: została usunięta albo przeglądarka zakończyła działanie.  Otworzyć nową sesję; nie zachowywać uchwytu sesji poza jego blokiem.
++ row  `↯/s.127.1.17`  `MoveTargetOutOfBounds`  `move target out of bounds`  Akcja wskaźnika odnosiła się do współrzędnych poza viewportem.  Przewinąć cel do widoku albo użyć punktów początkowych wskaźnika względnych wobec elementu.
++ row  `↯/s.127.1.18`  `NoSuchAlert`  `no such alert`  Polecenie dotyczące alertu wydano, gdy nie było otwartego okna dialogowego.  Sprawdzić, czy okno dialogowe jest otwarte, zanim się je zaakceptuje, odrzuci lub odczyta.
++ row  `↯/s.127.1.19`  `NoSuchCookie`  `no such cookie`  Z bieżącym dokumentem nie jest powiązane ciasteczko o tej nazwie.  Sprawdzić nazwę, domenę dokumentu i ścieżkę ciasteczka.
++ row  `↯/s.127.1.20`  `NoSuchFrame`  `no such frame`  Uchwyt lub indeks ramki, do którego odnosi się akcja, nie istnieje.  Sprawdzić indeks lub element ramki; najpierw przełączyć się z powrotem do kontekstu najwyższego poziomu.
++ row  `↯/s.127.1.21`  `NoSuchShadowRoot`  `no such shadow root`  Element nie jest hostem korzenia shadow.  Sprawdzić, czy element jest hostem otwartego korzenia shadow; zamknięte korzenie są nieosiągalne.
++ row  `↯/s.127.1.22`  `DetachedShadowRoot`  `detached shadow root`  Korzeń shadow został zlokalizowany, ale jego host od tego czasu opuścił DOM.  Ponownie zlokalizować element hosta i jego korzeń shadow po zmianie DOM.
++ row  `↯/s.127.1.23`  `SessionNotCreated`  `session not created`  Sterownik nie mógł uruchomić sesji, zwykle z powodu niezgodności wersji przeglądarki i sterownika albo braku pliku binarnego przeglądarki.  Sprawdzić, czy sterownik pasuje do zainstalowanej przeglądarki; sprawdzić żądane możliwości.
++ row  `↯/s.127.1.24`  `UnableToSetCookie`  `unable to set cookie`  Sterownik nie mógł ustawić ciasteczka.  Sprawdzić atrybuty ciasteczka – domenę, ścieżkę, `secure` i `sameSite` – względem bieżącego dokumentu.
++ row  `↯/s.127.1.25`  `UnableToCaptureScreen`  `unable to capture screen`  Nie udało się wykonać zrzutu ekranu.  Sprawdzić, czy element ma niepusty wyrenderowany obszar i czy okno nie jest zminimalizowane.
++ row  `↯/s.127.1.26`  `UnexpectedAlertOpen`  `unexpected alert open`  Okno dialogowe było otwarte, gdy wydano polecenie, które go nie wymaga.  Zaakceptować lub odrzucić okno dialogowe albo ustawić możliwość `unhandledPromptBehavior`.
++ row  `↯/s.127.1.27`  `UnknownError`  `unknown error`  Sterownik zgłosił porażkę, której nie umiał sklasyfikować. Ten błąd jest zgłaszany także wtedy, gdy sterownik odpowiada treścią, która w ogóle nie jest obiektem błędu W3C – sterownik uległ awarii albo pośredniczy proxy – i wtedy `detail` jest surową treścią.  Przejrzeć `detail` i `browserStacktrace`; sprawdzić własny log sterownika.
++ row  `↯/s.127.1.28`  `UnknownMethod`  `unknown method`  Polecenie istnieje, ale nie obsługuje użytej metody HTTP.  Sprawdzić metodę polecenia względem specyfikacji.
++ row  `↯/s.127.1.29`  `UnsupportedOperation`  `unsupported operation`  Sterownik nie implementuje polecenia.  Sprawdzić zgodność sterownika; niektóre polecenia, takie jak drukowanie do PDF, nie są uniwersalne.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 049e889922499161174f4ee0d4df31fc
++ **Przykład.** `[↯/s.127.1.1] the WebDriver action failed because the requested element was not found: no such element: Unable to locate element: {"method":"css selector","selector":"#absent"}`
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 10d9373243515ac1068526c2569edd29
++ - Źródło: `lib/tarantula/src/core/tarantula.WebDriver.scala`

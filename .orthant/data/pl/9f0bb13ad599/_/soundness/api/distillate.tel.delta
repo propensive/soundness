@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 11 0 1b6e63d97d32b2f7020ca28995e895d0
++   entry .int   dekoduje `Int` z tekstu dziesiętnego, odróżniając tekst nieparsowalny od wartości spoza zakresu
++       Wymaga `Tactic[Number.Error]`. Parsuje za pomocą `Integer.parseInt`, więc tekst musi być
++       dziesiętną liczbą całkowitą, opcjonalnie ze znakiem, bez otaczających spacji. Tekst,
++       który nie jest liczbą całkowitą, zgłasza `Number.Error` z `Reason.Unparseable`; liczba
++       całkowita spoza zakresu `Int` zgłasza go z `Reason.OutOfRange`.
++   entry .byte   dekoduje `Byte` z tekstu dziesiętnego, odróżniając tekst nieparsowalny od wartości spoza zakresu
++       Wymaga `Tactic[Number.Error]`. Tekst, który nie jest liczbą całkowitą, zgłasza
++       `Number.Error` z `Reason.Unparseable`; liczba całkowita spoza przedziału od −128 do 127
++       zgłasza go z `Reason.OutOfRange`.
++   entry .short   dekoduje `Short` z tekstu dziesiętnego, odróżniając tekst nieparsowalny od wartości spoza zakresu
++       Wymaga `Tactic[Number.Error]`. Tekst, który nie jest liczbą całkowitą, zgłasza
++       `Number.Error` z `Reason.Unparseable`; liczba całkowita spoza zakresu `Short` zgłasza go z
+
+@ 0 18 0 1c31e178d1ae60de1158a91a8681842f
++   entry .long   dekoduje `Long` z tekstu dziesiętnego, odróżniając tekst nieparsowalny od wartości spoza zakresu
++       Wymaga `Tactic[Number.Error]`; parsuje za pomocą `java.lang.Long.parseLong`. Tekst,
++       który nie jest liczbą całkowitą, zgłasza `Number.Error` z `Reason.Unparseable`; liczba
++       całkowita spoza zakresu `Long` zgłasza go z `Reason.OutOfRange`.
++   entry .double   dekoduje `Double` z tekstu, zgłaszając `Number.Error`, jeśli nie da się go sparsować
++       Wymaga `Tactic[Number.Error]`; parsuje za pomocą `java.lang.Double.parseDouble`, więc
++       wykładniki, `NaN` i `Infinity` są akceptowane tak, jak akceptuje je Java.
++   entry .float   dekoduje `Float` z tekstu, zgłaszając `Number.Error`, jeśli nie da się go sparsować
++       Wymaga `Tactic[Number.Error]`; parsuje za pomocą `java.lang.Float.parseFloat`.
++   entry .char   dekoduje `Char` jako pierwszy znak tekstu
++       Nie wymaga taktyki. Tekst poza pierwszym znakiem jest ignorowany, a pusty tekst nie jest
++       sprawdzany: lepiej użyć `As[Char]`, które pasuje tylko do tekstu o dokładnie jednym
++       znaku.
++   entry .boolean   dekoduje `Boolean` z dowolnej pisowni `Truth` w zasięgu, bez względu na wielkość liter, zgłaszając `Truth.Error`
++       Wymaga `Tactic[Truth.Error]` i zbiera każdą `Truth` w zasięgu (`Every[Truth]`). Tekst
++       jest przycinany i zamieniany na małe litery, a następnie oferowany kolejno każdej
++       pisowni; tekst, którego żadna nie rozpoznaje, zgłasza `Truth.Error`. `Truth.trueFalse`, w
++       obiekcie towarzyszącym `Truth`, jest zawsze w zasięgu, a każdy zaimportowany given
++       `truths` dodaje pisownię obok niej, zamiast ją zastępować.
+
+@ 0 18 0 16885b2e9230ab0910a207397079e908
++   entry .stringText   konwertuje `String` na `Text`
++   entry .irrefutable   `String` konwertuje się za pomocą `Irrefutable` dla `Text`, po konwersji na `Text`
++   entry .textString   konwertuje `Text` na `String`
++   entry .ident   konwertuje każdą wartość na nią samą
++   entry .byteShort   poszerza `Byte` do `Short`
++   entry .byteInt   poszerza `Byte` do `Int`
++   entry .byteLong   poszerza `Byte` do `Long`
++   entry .byteFloat   poszerza `Byte` do `Float`
++   entry .byteDouble   poszerza `Byte` do `Double`
++   entry .shortInt   poszerza `Short` do `Int`
++   entry .shortLong   poszerza `Short` do `Long`
++   entry .shortFloat   poszerza `Short` do `Float`
++   entry .shortDouble   poszerza `Short` do `Double`
++   entry .intLong   poszerza `Int` do `Long`
++   entry .intDouble   poszerza `Int` do `Double`
++   entry .floatDouble   poszerza `Float` do `Double`
++   entry #unapply   konwertuje wartość; nie może zawieść
++   entry #contramap   nieodparta konwersja z nowego typu, najpierw stosująca czystą funkcję

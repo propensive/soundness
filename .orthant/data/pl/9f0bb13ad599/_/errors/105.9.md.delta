@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 0a773a1f504e12ed11f4cccd7277b164
++ # `↯/s.105.9` – `Certificate.Path.Error`
+
+@ 0 1 0 18b81db333a7538004e66bbaf00a1de3
++ Zgłaszany, gdy łańcuch certyfikatów nie prowadzi do zaufanego certyfikatu.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 4 0 073fac0ba00e72c20a916b2a65f7cd1f
++ `Certificate.validate` przyjmuje łańcuch – certyfikat, na którym się polega, a po nim
++ certyfikat każdego urzędu, który wystawił poprzedni – oraz zbiór zaufanych kotwic. Każdy
++ certyfikat musi być w swoim okresie ważności, wskazywać następny jako swojego wystawcę i być
++ przez niego podpisany; każdy wystawca musi być urzędem certyfikacji; a ostatni musi być kotwicą
++ albo być przez kotwicę wystawiony.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Kod
++ column  Przyczyna
++ column  Komunikat
+
+% 0 1 0 0b745c851d8d43b703f6a219ce20dcd4
+
+% 0 1 0 1a3396ebf4e2d7dd08d08bc5edd6c61b
+
+% 0 1 0 09b46eda137db3e418be747201f64dbc
+
+% 0 1 0 0c6abdd5572afa3a01fe682ca8cff1b7
+
+% 0 1 0 093a5795e552d0601156fd6c9c1ce475
+
+% 0 1 0 0339a7738bff62920a27bae9485085c9
+
+% 0 1 0 149c852b8d0d71f318679572a72ff562
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 4 0 0e2cd7e8ae8997db192f6bad13394d85
++ `Untrusted` oznacza, że łańcuch jest poprawny, na ile sięga, ale kończy się w miejscu, którego
++ nie ma wśród kotwic: w łańcuchu brakuje certyfikatu pośredniego albo wśród kotwic brakuje
++ właściwego certyfikatu głównego. `Unlinked` zwykle oznacza, że łańcuch jest w złej kolejności;
++ biegnie on od liścia w stronę korzenia. `Expired` jest oceniane według `Clock` w zasięgu.
+
+@ 0 2 0 03a306b8964b988712845afa9c97db74
++ Unieważnienie, ograniczenia nazw, polityki i limity długości ścieżki nie są badane, więc ta
++ walidacja nadaje się do zamkniętego zbioru kotwic wybranych w jednym celu, a nie do kotwic
++ publicznej sieci.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 2 0 18ffec7b063e692e1b483a9c082d9888
++ - Źródło: `lib/enigmatic/src/x509/enigmatic.Certificate.scala`
++ - `↯/s.105.5` – `Certificate.Error`, zgłaszany, gdy nie da się zbudować certyfikatu

@@ -1,0 +1,49 @@
+orthant 2 language
+
+@ 0 1 0 14cb6a45ee8648001b04716499f5557e
++ # `↯/s.100.2` – `IpAddress.Error`
+
+@ 0 1 0 140d6b3701fcaf4018050c381b0f65fd
++ Zgłaszany, gdy wartości nie można sparsować jako poprawnego adresu IPv4 lub IPv6.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 3 0 07a1720c277f23a608f2a5c144b44c00
++ Urticose waliduje zarówno adresy IPv4 (cztery bajty 0–255), jak i IPv6 (osiem grup
++ szesnastkowych, opcjonalnie skompresowanych za pomocą `::`). Komunikat to
++ `the IP address is not valid because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 19 0 037701a3b4176b3817dfc26a8c46a3d6
++ column  Kod
++ column  Przyczyna
++ column  Znaczenie
++ column  Komunikat
++ column  Rozwiązanie
++ row  `↯/s.100.2.1`  `Ipv4ByteOutOfRange`  Bajt IPv4 był liczbą, ale spoza zakresu 0–255.  `[↯/s.100.2.1] the IP address is not valid because the number 300 is not in the range 0-255`  Dla każdego bajtu IPv4 należy używać tylko wartości 0–255.
++ row  `↯/s.100.2.2`  `Ipv4ByteNotNumeric`  Składnik IPv4 nie był liczbą.  `[↯/s.100.2.2] the IP address is not valid because the part abc is not a number`  Należy użyć czterech liczb dziesiętnych rozdzielonych `.`.
++ row  `↯/s.100.2.3`  `Ipv4WrongNumberOfGroups`  Adres nie miał dokładnie czterech grup rozdzielonych `.`.  `[↯/s.100.2.3] the IP address is not valid because the address contains 3 period-separated groups instead of 4`  Należy podać dokładnie cztery grupy liczbowe.
++ row  `↯/s.100.2.4`  `Ipv6GroupWrongLength`  Grupa IPv6 ma więcej niż cztery znaki szesnastkowe.  `[↯/s.100.2.4] the IP address is not valid because the group is more than 4 hexadecimal characters long`  Każda grupa IPv6 musi mieć 1–4 znaki szesnastkowe; w razie potrzeby należy usunąć wiodące zera.
++ row  `↯/s.100.2.5`  `Ipv6GroupNotHex`  Grupa IPv6 zawiera znak, który nie jest szesnastkowy.  `[↯/s.100.2.5] the IP address is not valid because the group 'xyz1' is not a hexadecimal number`  W grupach IPv6 należy używać tylko `0`-`9` oraz `a`-`f`/`A`-`F`.
++ row  `↯/s.100.2.6`  `Ipv6TooManyNonzeroGroups`  Adres ma więcej niż 8 niezerowych grup – co wskazuje na niepoprawne dane wejściowe.  `[↯/s.100.2.6] the IP address is not valid because the address has 9 non-zero groups, which is more than is permitted`  IPv6 ma najwyżej 8 grup; należy sprawdzić dane wejściowe.
++ row  `↯/s.100.2.7`  `Ipv6WrongNumberOfGroups`  Po rozwinięciu `::` adres nie ma dokładnie 8 grup.  `[↯/s.100.2.7] the IP address is not valid because the address has 7 groups, but should have 8`  Należy dodać brakującą grupę lub użyć `::`, aby skompresować kolejne grupy zerowe.
++ row  `↯/s.100.2.8`  `Ipv6MultipleDoubleColons`  Adres zawiera `::` więcej niż raz, co byłoby niejednoznaczne.  `[↯/s.100.2.8] the IP address is not valid because :: appears more than once`  Należy użyć `::` najwyżej raz w adresie; pozostałe należy rozwinąć do jawnych grup `0`.
++ row  `↯/s.100.2.9`  `Ipv4SubnetPrefixOutOfRange`  Długość prefiksu podsieci IPv4 wykracza poza zakres, na jaki pozwala adres 32-bitowy.  `[↯/s.100.2.9] the prefix length 40 is not in the range 0-32`  Należy użyć długości prefiksu od 0 do 32.
++ row  `↯/s.100.2.10`  `Ipv6SubnetPrefixOutOfRange`  Długość prefiksu podsieci IPv6 wykracza poza zakres, na jaki pozwala adres 128-bitowy.  `[↯/s.100.2.10] the prefix length 200 is not in the range 0-128`  Należy użyć długości prefiksu od 0 do 128.
++ row  `↯/s.100.2.11`  `SubnetPrefixNotNumeric`  Tekst po `/` w podsieci nie jest liczbą.  `[↯/s.100.2.11] the prefix length ab is not a number`  Długość prefiksu należy zapisać dziesiętnie, jak w `192.168.0.0/24`.
++ row  `↯/s.100.2.12`  `SubnetWrongFormat`  Podsieć nie jest pojedynczym adresem i prefiksem rozdzielonymi jednym `/`.  `[↯/s.100.2.12] the subnet contains 3 slash-separated parts instead of 2`  Podsieć należy zapisać jako `address/prefix`, z dokładnie jednym ukośnikiem.
++ row  `↯/s.100.2.13`  `Ipv4WrongNumberOfBytes`  Dane dekodowane jako `Ipv4` (`data.as[Ipv4]`) nie mają dokładnie czterech bajtów.  `[↯/s.100.2.13] the address is 16 bytes long instead of 4`  Dane szesnastobajtowe należy dekodować jako `Ipv6`; przed wyborem należy sprawdzić długość, bo `java.net.InetAddress#getAddress` daje jedno lub drugie.
++ row  `↯/s.100.2.14`  `Ipv6WrongNumberOfBytes`  Dane dekodowane jako `Ipv6` (`data.as[Ipv6]`) nie mają dokładnie szesnastu bajtów.  `[↯/s.100.2.14] the address is 4 bytes long instead of 16`  Dane czterobajtowe należy dekodować jako `Ipv4`.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 0ea13a93068f52df01e479247ff5d10a
++ - Źródło: `lib/urticose/src/core/urticose.IpAddress.scala`

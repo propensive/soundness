@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 0c1b4acd11d5322e190c9d2d86d33efb
++ # `↯/s.27.8` – Wartość `U8` poniżej 0
+
+@ 0 2 0 117884b5e05910f205ce533218ea7b59
++ Zgłaszany w czasie kompilacji przez makro `u8` z Hypotenuse, gdy wartość jest mniejsza niż 0.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 1 0 13c10668cb4ceb251399a2a32eb83e13
++ `U8` (8-bitowa liczba bez znaku) nie może być ujemna.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Przykładowy komunikat
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0d787d5c7bc22abb11daf5e6e14e861b
+
+% 1 1 0 1c45fbf19b7a1e40006cb044780dd8c3
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 1 0 1f755d044d53f4b105c78a1481867869
++ Podać wartość z przedziału 0-255.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 2 0 1670b5a1d401440e1b2b356791d92b91
++ - Pozostałe błędy literałów całkowitych: [Rodziny](README.md#families)
++ - Źródło: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

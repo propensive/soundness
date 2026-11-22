@@ -1,0 +1,173 @@
+orthant 2 language
+
+@ 0 1 0 106a4523943e569304e25e3ed1a03c55
++ # Typy infiksowe
+
+@ 0 12 0 1b187bd43a1fdc9307a82dd2c06605f0
++ Soundness wszędzie używa typów infiksowych, tak aby typ czytał się jak fraza, a nie jak
++ gąszcz nawiasów. Zapisywane jako przyimki i czasowniki – `Path on Linux`, `Html of
++ "br"`, `Text is Decodable in Json`, `Quantity is Multiplicable by Duration`, metoda,
++ która `raises HttpError` lub `logs ExecEvent` – pozwalają sygnaturze powiedzieć prostymi
++ słowami, czym jest wartość i czego potrzebuje operacja, co jest częścią tego, by kod
++ czytał się jak [elegancka proza](elegant-prose.md). Ich prawdziwa siła polega na tym, że
++ się [składają](composability.md): każdy dodaje do typu jeszcze jedną klauzulę bez
++ zagnieżdżania, więc `Html.Element of "ul" over "li" in Whatwg` buduje się dokładnie tak
++ jak opis po angielsku, a te same `of`, `in`, `by` czy `over` niosą to samo znaczenie,
++ gdziekolwiek się pojawią. Czytelnik, który zrozumiał jeden taki typ, odczyta następny
++ przez analogię, a piszący może opisać precyzyjny typ, nazywając po kolei jego części,
++ zamiast składać głęboko sparametryzowany typ.
+
+@ 0 1 0 1c7bd5f570572279183fcbc50c97ddec
++ ## Jak działają
+
+@ 0 2 0 1e1bf1adafa25b550e5e5d27378ffac2
++ Każdy przyimek to alias typu, który rafinuje jedną składową typu. `in` ustawia `Form`,
++ `on` ustawia `Plane`, `by` ustawia `Operand`, `to` ustawia `Result`:
+
+% 2 1 0 0a3df684de560fff0d4b8eb2b00c0562
+
+% 3 1 0 0f3a125fff11041918dd93bbf3878ae9
+
+% 4 1 0 030c16e6e39be4991a9fdaab5e4afb5d
+
+% 0 1 0 1d5d9e707fe0ada50cf575c783e452c4
+
+% 0 1 0 05efabe8b7e73b2503618d9a2ca651aa
+
+% 0 1 0 080bd845c627aa000c78c57eceee71a0
+
+% 0 1 0 14a7a79b32edc6600882c9bb36df5e8a
+
+% 1 1 0 0d83cb08ce19efe112195f97b969972f
+
+@ 0 2 0 1e0987335cab534b05380b1fbf31d327
++ To cały mechanizm. Ponieważ każdy rafinuje *inną* składową, można je stosować kolejno
++ bez zagnieżdżania, a kolejność nie ma znaczenia:
+
+% 2 1 0 030a110766d416d610571db6d2994c25
+
+% 3 1 0 0ff3ee90f6f72488084d6dccd7b000de
+
+% 4 1 0 0af939135b405f2801f67018b84da68c
+
+% 0 1 0 0fb6a82d35c6d65e08ba5ec18939021e
+
+% 0 1 0 15554d82c81fd691118c9a77e608b965
+
+% 0 1 0 0a2a2f80e83aef561494cc52ab2ef156
+
+% 1 1 0 11d2afd3e28e6048128c0d794dce417b
+
+@ 0 2 0 012a8ed522fb026a13adfb3e4c9eb2f1
++ Zbiór jest mały i stały, a każdy przyimek wszędzie zachowuje swoje znaczenie: `over` to
++ zawsze transport, `by` to zawsze operand, `on` to zawsze płaszczyzna.
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 7 0 1717a7dd3072b0b11af2aa26b9ca08d9
++ column  Przyimek
++ column  Rafinuje
++ column  Nazywa
++ column  Przykład
++ row  `in`  `Form`  postać lub format  `Text is Decodable in Json`
++ row  `on`  `Plane`  płaszczyznę  `Path on Linux`
++ row  `of`  `Topic`  temat  `Html of "br"`
+
+% 0 1 0 101e0af2790905031095b73c0b0660d9
+
+@ 0 2 0 0a3b1b45568bd19a1e262c951b18b54f
++ row  `to`  `Result`  wynik  `Text is Extractable to Int`
++ row  `from`  `Origin`  źródło  `Ordinal is Optical from Yaml`
+
+% 0 1 0 1db90ca477d521151fa7a397dc5d85f9
+
+@ 0 3 0 1d2783b3f9ed515c0b9340deb47bd789
++ row  `across`  `Domain`  domenę  `Xml is Instantiable across HttpRequests`
++ row  `onto`  `Target`  cel  `Http.Client onto Origin["http"]`
++ row  `against`  `Contrast`  kontrast  `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`
+
+% 0 1 0 0b9966740c02f36a03814dc2060fcc6b
+
+@ 0 1 0 039239658379b5961739930b2a189159
++ row  `at`  `Locus`  lokalizację  `value is Decodable in Json at Json.Focus`
+
+% 1 1 0 13386474ce3c48a51bf7497908e7fef5
+
+@ 0 1 0 0167c0eab2af1f2f086d3e4a8aa69241
++ ## Ile kosztuje alternatywa
+
+@ 0 1 0 1130aa6323a3cd741e708c998c351e09
++ Te same typy, zapisane konwencjonalnie:
+
+% 2 1 0 12447cf3f3ecad87049cea40e2a465e8
+
+% 3 1 0 18f7e451aba2759d009736ff874b1898
+
+% 4 1 0 0737e30e6ccac50a145dd3d85123f82c
+
+% 0 1 0 0898652a95445ba01ad78444cd9d30c6
+
+% 0 1 0 1a47321b8fd4c1a012a8a33f07bd7861
+
+% 0 1 0 10432b0bcb872a860db1c35c8ee27e5e
+
+% 1 1 0 1a76458bf0c8c55f1e3402c338afbf2b
+
+@ 0 1 0 0b18e533ee96d8ee0a3bb95bcf8ee0ec
++ Trzy problemy, z których każdego postać infiksowa unika.
+
+@ 0 3 0 003e2395844199371045b7eb102bed34
++ **Znaczenie niesie pozycja.** W `Element["ul", "li", Whatwg]` czytelnik musi wiedzieć, że
++ pierwszy parametr to tag, drugi to dozwolone dzieci, a trzeci to specyfikacja. W
++ `Html.Element of "ul" over "li" in Whatwg` mówią to przyimki.
+
+@ 0 4 0 086393719a25e98504d3774758b0d3bd
++ **Każdy parametr trzeba podać.** Konwencjonalny konstruktor typu przyjmuje wszystkie
++ argumenty albo żaden, więc częściowo określony typ potrzebuje symbolu wieloznacznego dla
++ każdej niewymienionej pozycji. Postać infiksowa wymienia tylko to, co ogranicza:
++ `Text is Decodable` jest całkowicie poprawnym typem, a `in Json` go zawęża.
+
+@ 0 3 0 18d9ba4ea4717eeb181835e936c861cf
++ **Rozszerzenie jest zmianą niekompatybilną.** Dodanie czwartego parametru typu do
++ `Element[…]` unieważnia każde użycie. Dodanie czwartej rafinacji dodaje przyimek, którego
++ istniejący kod nie musi wymieniać.
+
+@ 0 1 0 0adc6f59495157dc008d9185c67e66b0
++ ## Gdzie czytają się źle
+
+@ 0 1 0 0e8c224a0b726c420d0a3f7e71ac6c1c
++ Konwencja nie jest wolna od słabych punktów, a dwa z nich warto znać.
+
+@ 0 4 0 17b184d0f01ac7da02100a58fd1cc6a9
++ Typ z wieloma klauzulami może się wydłużyć, a długi typ infiksowy niezgrabnie zawija się
++ między wierszami – `(value is Streamable by Data over Credit) { type Transport = Credit }`
++ nie jest prozą według niczyich standardów. Gdy tak się dzieje, odpowiedzią jest zwykle
++ nazwany alias, a nie dłuższa fraza.
+
+@ 0 5 0 101a2de97981623e0ecbaae479028550
++ Ponadto przyimek jest tylko tak dobry jak analogia, którą przywołuje. `over` w znaczeniu
++ „transport” czyta się naturalnie w `Stream[Data] over Credit`, a mniej naturalnie w
++ `Instant over Unix`, gdzie oś czasu niczego nie transportuje. Słownictwo jest na tyle
++ małe, że takie naciągnięcia są widoczne, i akceptuje się je zamiast ukrywać –
++ alternatywą jest większe słownictwo, w którym każde słowo jest używane rzadziej i gorzej
++ zapamiętywane.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ile to kosztuje
+
+@ 0 3 0 11d65db4c15472f90399495df585913a
++ Typy infiksowe są nieznajome. Czytelnik przychodzący ze zwykłej Scali spotkał w pozycji
++ infiksowej `A => B` i `A & B`, a niewiele poza tym, więc `Text is Decodable in Json`
++ wygląda na kilka rzeczy, zanim zacznie wyglądać jak typ. Ten koszt ponosi się z góry i
++ jednorazowo.
+
+@ 0 4 0 12066019a77a9fcb1a29e4ccc64d4ddf
++ Bardziej trwałym kosztem są komunikaty o błędach: kompilator zgłasza rafinację *po
++ usunięciu lukru składniowego*, więc niezgodność jest opisana w kategoriach
++ `{ type Form = Json }`, a nie `in Json`, i czytelnik musi wykonać tłumaczenie, którego
++ składnia miała mu oszczędzić.
+
+@ 0 2 0 1156763ef15ece801ae39e250cccb9e9
++ Zobacz [składalność](composability.md), aby poznać własność, której to służy, oraz
++ [elegancką prozę](elegant-prose.md), aby poznać doświadczenie lektury, do którego to
++ zmierza.

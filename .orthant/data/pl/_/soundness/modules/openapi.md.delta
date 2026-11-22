@@ -1,0 +1,515 @@
+orthant 2 language
+
+% 0 1 0 0644568f5405b1e00e9500a4928391bb
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 6 0 0a23682563811afb07731f3dad54f4aa
++ Dokument [OpenAPI](https://www.openapis.org/) opisuje REST API: jego ścieżki, parametry oraz
++ schematy żądań i odpowiedzi. Tutaj ten opis staje się *typowanym klientem* już podczas
++ kompilacji kodu. Wskazanie `Api` specyfikacji daje wartość, której nawigacja odzwierciedla
++ ścieżki API. Każdy segment, każdy parametr ścieżki, każdy parametr zapytania lub nagłówka
++ i każdy typ odpowiedzi jest sprawdzany względem specyfikacji. Wywołanie, którego API nie
++ oferuje, lub parametr niewłaściwego typu nie kompiluje się.
+
+@ 0 1 0 1df74c705133fb781e9128941b78cf0f
++ ### O specyfikacjach API
+
+@ 0 4 0 08c7043d2f0510ee199443ed842c3fd1
++ Dokument OpenAPI to kontrakt czytelny dla maszyn. Zwykle przestrzega się go przez
++ generowanie kodu: krok budowania emituje klienta, którego się kompiluje, wersjonuje
++ i utrzymuje w zgodności za pomocą narzędzi. Kontrakt jest egzekwowany kosztem
++ wygenerowanych źródeł i potoku budowania. Gdy generator się pomija, wywołania kieruje się
++ pod zapamiętane adresy URL i liczy na spodziewane schematy.
+
+@ 0 4 0 0422141fedde81c40a716618351dc306
++ Tutaj specyfikację odczytuje się zamiast tego podczas kompilacji. Nie ma wygenerowanego kodu
++ do utrzymywania. Klient *jest* specyfikacją, interpretowaną przez kompilator, a rozbieżność
++ między kodem a kontraktem jest błędem kompilacji w kodzie. To
++ [poprawność](../../philosophy/correctness.md) wynikająca z konstrukcji, a nie z przeglądu.
+
+@ 0 1 0 1481fbf4af732f4e15ee7bb06e2a39ac
++ Wszystko pochodzi z pakietu `soundness`, a kilka świadomych wyborów importuje się po nazwie:
+
+% 2 1 0 07516880e8d1f7b80c40b81f87a4c6f5
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 0f8f39f974ac0234141ba83612357fac
+
+% 0 1 0 04c370b82515acc8175229615827ab1a
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 1 1 0 0ae73885e623b9501acf5cf6512aaf4e
+
+@ 0 1 0 06a553890939a7f01eb452c4239bf098
++ Przykłady na tej stronie wywołują API przez sieć, więc są kompilowane, ale nie uruchamiane.
+
+@ 0 1 0 1c6fde30451710861521811ced5b13e9
++ ### Typowany klient
+
+@ 0 3 0 1c1b0b3fefc7ae540669e398d4a15511
++ `Api` odczytuje specyfikację ze [ścieżki klas](classpath.md) podczas kompilacji kodu.
++ Specyfikacja może być w JSON-ie lub YAML-u, w wersji OpenAPI 3.0 lub 3.1. Wynikowa wartość
++ nawiguje po ścieżkach:
+
+% 2 1 0 1cab025b1d0d88b115e399a5c3591c80
+
+% 3 1 0 1bba0033e30343c1144bf6c14908124d
+
+% 4 1 0 10340d4b806ec10c0c40919a06e797a9
+
+% 0 1 0 13b5ee570e3b2db41cda5add7a406e3a
+
+% 0 1 0 174d7eaa319f322e0b38247dab7d0b07
+
+% 0 1 0 0940d1dffaa66c4a1d08976b7c652b41
+
+% 1 1 0 065d00d74c6894b703c52ee19cf7f9c7
+
+@ 0 2 0 0c76a2a7641cff5c06cb0452f5f04572
++ `api.pets` to ścieżka `/pets`, a `api.pets(42)` to `/pets/{petId}`, z parametrem typowanym
++ według specyfikacji. Ścieżka, której specyfikacja nie zawiera, nie kompiluje się:
+
+% 2 1 0 1fc81c7bda6582ad164c3d42930822ca
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 18ea679918f5c0fe11c19c4c51f33e26
+
+% 1 1 0 0701f3ae4a4c886f1f4a3cd77e01c45a
+
+@ 0 5 0 13e55d41662c65b11be18a03e54237f7
++ Parametr ścieżki niewłaściwego typu, na przykład tekst tam, gdzie specyfikacja mówi
++ o liczbie całkowitej, jest również błędem kompilacji, wychwytywanym tam, gdzie zapisano
++ wywołanie. Parametr z `type: integer` i `format: int64` to `Long`, przy czym przyjmowany jest
++ także `Int`. Segment, który specyfikacja zapisuje znakami niedozwolonymi przez Scalę
++ w identyfikatorze, zapisuje się w odwrotnych apostrofach, jak w `` api.`museum-hours` `` lub
++ `` api.users.`@me` ``.
+
+@ 0 4 0 0d90e6ec3fab90a61d5e68dd946a563d
++ Bazowy URL pochodzi z pierwszego serwera specyfikacji, z jego `{variables}` ustawionymi na
++ wartości domyślne, i jest sprawdzany jako URL podczas kompilacji kodu. Specyfikacja, której
++ serwer jest względny, na przykład `/api/v3`, lub która nie deklaruje żadnego, musi otrzymać
++ bazę od wywołującego. Względny URL serwera rozszerza wtedy tę bazę:
+
+% 2 1 0 1ed1fade12ad4b351da8e719f802ad84
+
+% 3 1 0 1c505354bfab7ca100848bb9d4105f5b
+
+% 4 1 0 0fbc63455de848e204e9b0d41fb2d79d
+
+% 0 1 0 172d73a2e5505804039a62d23ca9b71f
+
+% 1 1 0 1aa94a5183e1618d00d51ce643dfd073
+
+@ 0 2 0 095bc71d8254a88e010ab32b8bcd4a92
++ To, co ma zostać wysłane, też jest wartością. `request` na dowolnym `Api` lub `Api.Response`
++ po nawigacji to `Api.Request`, którego pola to:
+
+% 2 1 0 1dac6cef8913b50104868f85df0cde62
+
+@ 0 10 0 15fdc30c1856712a0cc2e2c89ffd5100
++ column  Pole
++ column  Zawiera
++ row  `method`  `Http.Method`
++ row  `base`  bazowy `HttpUrl`
++ row  `path`  szablon ścieżki
++ row  `substitutions`  wartości zmiennych szablonu
++ row  `query`  `Query`
++ row  `headers`  wartości `Http.Header`
++ row  `body`  treść wraz z jej `MediaType`
++ row  `accept`  żądany typ mediów
+
+% 1 1 0 0ae6695ef28e25670a653878281b46c0
+
+@ 0 1 0 059fa4f2aa430c9f1899c71925f85586
++ ### Wywoływanie
+
+@ 0 3 0 0383effd24f3df7d0d2d9e235002e54b
++ Endpoint wywołuje się jego metodą, z parametrami zapytania i nagłówka jako argumentami
++ nazwanymi oraz z treścią żądania jako wartością. `call` wykonuje żądanie i odczytuje
++ odpowiedź jako żądany typ, który musi być zgodny ze schematem odpowiedzi zadeklarowanym
++ w specyfikacji:
+
+% 2 1 0 1ceb05d89234e95e00bfe58c62f46ecf
+
+% 0 1 0 0907612f06fa588f11e2be0c177dab1d
+
+% 0 1 0 140a1e52810a2ac91f8b8821f2018d0a
+
+% 1 1 0 1ef2d508d77e26920c83bf5a3aebf40c
+
+% 3 1 0 1b065437443ffbd5148d6a1eba967e96
+
+% 4 1 0 148d2f2b445d1c2a17bfb1bdde19fddb
+
+% 5 1 0 06137503110dff361186aaba9e88c881
+
+% 0 1 0 08f0f7200d7efd931582dadd26704fd1
+
+% 0 1 0 0fa9be43f0b030f702b13e7516db7548
+
+% 0 1 0 1c1ca6edae5048bd1e087dcebeced9b1
+
+% 0 1 0 1d810ed057c034660c4382c192dcdc73
+
+% 1 1 0 1b280af1de865ed31354c72432f8f4ad
+
+@ 0 2 0 10be5dce6c6b9e0904e6e840ef595fba
++ Pierwsze to `GET /pets/42`, zdekodowane zgodnie ze schematem. Trzecie wysyła typowaną treść
++ żądania. Ostatnie odpowiada `204` bez treści, więc jego wynikiem jest `Unit`.
+
+@ 0 5 0 172b525010ce2d7e021b5618ace9d610
++ Parametr zadeklarowany na elemencie ścieżki dotyczy każdej operacji na nim. Parametr zapisany
++ jako `$ref` do komponentów dokumentu jest rozwijany, podobnie jak odpowiedzi i treści żądań
++ zapisane jako `$ref`. Gdy operacja deklaruje kilka odpowiedzi oznaczających sukces,
++ preferowana jest `200`, potem `201`, a potem najniższa. Zażądanie typu, którego schemat
++ odpowiedzi nie obsługuje, jest błędem kompilacji.
+
+@ 0 1 0 1b7f86e886b9e6721eac333f0c5015c3
++ ### Bezpieczeństwo
+
+@ 0 6 0 1263aea226c8426b14bfcbe15540f9b7
++ Specyfikacja API nazywa swoje schematy bezpieczeństwa, którymi mogą być klucz API
++ w nagłówku, parametrze zapytania lub ciasteczku, uwierzytelnianie HTTP, OAuth 2 lub OpenID
++ Connect, i określa, których z nich wymaga każda operacja. Dane uwierzytelniające pochodzą
++ z [OAuth](oauth.md). `Credential` to [wartość kontekstowa] nazwana od schematu, która
++ przechowuje wartość wymaganą przez dany rodzaj schematu. Operacja wymagająca danych
++ uwierzytelniających, których nikt nie dostarczył, nie kompiluje się, a błąd wymienia
++ giveny, które spełniłyby każdą z alternatyw:
+
+% 2 1 0 120e0ab2d0d2dd750143b3fead5f98eb
+
+% 0 1 0 1e980b6a0a3dbd71080a01901e24976e
+
+% 0 1 0 11f132c0a80de09f006d96282b02317a
+
+% 0 1 0 0720aaeac5a9afb61537b9a4ee4360f9
+
+% 0 1 0 1fd06584c21e6e4a0fe252f58555f157
+
+% 1 1 0 00ca532c0bd8bc8d0eb3b174e70711ec
+
+% 3 1 0 0a84df6952e5e1ff1a05c7076c58aaff
+
+% 4 1 0 16395928d6c887f40e0dc6cb72a67374
+
+% 5 1 0 0b18c27a78a11e850686ef4c985d1c72
+
+% 0 1 0 194e7ef66c0ffd8c0b48856fc6b0c109
+
+% 0 1 0 0f489ec4d893cce600d1aeb79d94a360
+
+% 1 1 0 1183cf485c773c831dd9162b4a113bca
+
+@ 0 3 0 136a60ac200e3a2e083830fffcd394ec
++ Pierwsze wywołanie wysyła `api_key` tak, jak nakazuje specyfikacja. W drugim `api_key` jest
++ parametrem nagłówka i jest wysyłany jako nagłówek. Każdy rodzaj schematu przyjmuje własne
++ dane uwierzytelniające i wysyła je na swój sposób:
+
+% 2 1 0 0e7006fa5d4a851a18238d530b6471f2
+
+@ 0 7 0 06864b78321b171b0ed4c1dd4ff1503e
++ column  Schemat
++ column  Dane uwierzytelniające
++ column  Wysyłane
++ row  klucz API  `Credential to Text`  w nagłówku, parametrze zapytania lub ciasteczku wskazanym przez schemat
++ row  uwierzytelnianie HTTP  `Credential to Auth`  w nagłówku `Authorization`
++ row  OAuth 2, OpenID Connect  `Credential to Authorization` albo `Credential to Auth` dla tokenu uzyskanego gdzie indziej  jako autoryzacja `Bearer`
++ row  wzajemny TLS  nieobsługiwany
+
+% 1 1 0 0284adf5e07bbf3e1735efbff2f4312d
+
+@ 0 4 0 0c71800e5a7a17cc1d7a5de0e871d5de
++ Token OAuth 2 lub OpenID Connect jest sprawdzany przed wysłaniem żądania względem zakresów
++ uprawnień wymienionych w wymaganiu. Token, któremu któregoś brakuje, zgłasza `OAuth.Error`.
++ Gdy operacja oferuje alternatywne wymagania, używane jest pierwsze, dla którego każdy
++ schemat ma dane uwierzytelniające w zasięgu. Operacja o pustym `security` nie potrzebuje
++ żadnych.
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### Błędy
+
+@ 0 2 0 0945625acabbde4b1258c20f3da6fbb4
++ Każda odpowiedź, którą operacja deklaruje poza zakresem sukcesu, ma własny typ błędu,
++ nazwany od swojego statusu:
+
+% 2 1 0 1800d77836f4e58419b38e7cabc4f3cc
+
+@ 0 5 0 0e7fdcfd5dd08abe0a3823420bd022e7
++ column  Zadeklarowana odpowiedź
++ column  Typ błędu
++ row  status nazwany przez telekinesis, na przykład `404`, `400` lub `429`  typ nazwany od niego: `Api.NotFound`, `Api.BadRequest`, `Api.TooManyRequests`
++ row  zakres `4XX`  `Api.ClientError`
++ row  zakres `5XX`  `Api.ServerError`
+
+% 0 1 0 0824bba54ec3aa6b068fcaf32657fce8
+
+% 1 1 0 0fd047243061e39d120affd8b1964f1b
+
+@ 0 2 0 1d147d3f1bfdadd203eeba9caf16fb69
++ Każdy niesie treść błędu, interpretowaną jako typ, który deklaruje dla niej specyfikacja,
++ według pierwszej z poniższych reguł, która ma zastosowanie:
+
+% 2 1 0 03c7258ebf73b6c513806cc93da12bc5
+
+@ 0 6 0 146bde0590f146b905c959dc3f7b7631
++ column  Treść błędu jest
++ column  Interpretowana jako
++ row  obiektem JSON  rekord typowany schematem błędu
++ row  typu mediów z nośnikiem  nośnik tego typu mediów
++ row  czymkolwiek innym  `Text`
++ row  niezadeklarowana  `Unit`
+
+% 1 1 0 1b5eb0a69de13a27125fbde20826821d
+
+@ 0 3 0 0f1cb4a5d5c578201f4d5b5c0fa60003
++ `Api.Response` operacji rejestruje ich sumę jako swój `Failure`. Tak więc `attempt` daje
++ `Attempt` nad dokładnie zadeklarowanymi błędami, a kompilator sprawdza wyczerpującość `match`
++ na nim:
+
+% 2 1 0 0752ad4507ec75e11805c8bcb793c553
+
+% 3 1 0 030f081d54fbad8500c14f7b600184ab
+
+% 4 1 0 17f52dac9b41791a040cddf682cda8aa
+
+% 0 1 0 1e22c35285e34f1e178a602dec629435
+
+% 0 1 0 18463426bc787b3e1c1537a5ae9763fe
+
+% 0 1 0 0fe56e0114e93240132ffd5b663bae27
+
+% 0 1 0 142a7b7e333251cb0cda5403842e9c83
+
+% 0 1 0 03d0ea359f9335161989e23711282840
+
+% 0 1 0 127c6939262fabdc1ce07085da150749
+
+% 0 1 0 00179837798ebc3a03ee03e89fbb381b
+
+% 0 1 0 0f743abe0d62b05b04144348430dad66
+
+% 0 1 0 09e619aa0d53bf6e1136fff451d4446f
+
+% 1 1 0 047221f06ec1d2b70ef46cd157f54ac8
+
+@ 0 4 0 0185fda21525408f0631483934e0cf99
++ Przypadek dla statusu, którego specyfikacja nie deklaruje, na przykład `Api.Conflict` dla
++ tych operacji, nie kompiluje się. Samo `call()` zgłasza zadeklarowane błędy przez
++ [contingency](errors.md), z jedną [taktyką][taktyka] dla każdego zadeklarowanego typu, którą
++ `recover` lub `mitigate` dostarcza przypadek po przypadku. Handler, który któryś pomija, jest
++ błędem kompilacji, który go wymienia.
+
+@ 0 4 0 10372d0225a706ce0ba89376daaf1cb3
++ Serwery nie zawsze trzymają się swoich specyfikacji. Odpowiedź z niezadeklarowanym statusem
++ zgłasza `Api.Violation`, który niesie status i bajty treści. Może go napotkać każde
++ wywołanie, a obsługuje się go osobno od zadeklarowanych błędów. Jest naruszeniem kontraktu,
++ a nie jednym z jego przypadków.
+
+@ 0 1 0 03b2b0f7daf019ba05264bc8050f6a19
++ ### Typy mediów i ich nośniki
+
+@ 0 5 0 073d63dd5c6144e307c51bb4d4ecd22a
++ Specyfikacja nazywa typ mediów każdej treści, a `Construable` nazywa typ, który jest nośnikiem
++ tego typu mediów: `("application/json" is Construable to Json)` albo
++ `("image/png" is Construable to (Raster in Png))`. [Klasa typów][klasa typów] nie ma
++ operacji. Pracę wykonują czytnik i zapisujący nośnika. Każde odwzorowanie jest wartością
++ kontekstową w rodzinie `construables`, importowaną po nazwie, więc nic nie jest
++ interpretowane bez świadomego wyboru:
+
+% 2 1 0 0229610353aae7f7155c83fd92a86447
+
+% 3 1 0 199a5b81442b1905098713f4f2aedda2
+
+% 4 1 0 0ea7667a1f27aad80b77267fc0edbc7a
+
+% 0 1 0 11fa83b9ad8352e10f08dbb27105ef09
+
+% 0 1 0 0fdedd74c4b44edb1270fedb5da98917
+
+% 0 1 0 00d857b4e6d1aedf0b9ee7722370611c
+
+% 0 1 0 0f615e10857173b01f2d7da845a3f97b
+
+% 0 1 0 027f52309808a22702f31bbe9ffe4992
+
+% 0 1 0 15fe1026a959dc3811e3b0f2fb441343
+
+% 1 1 0 1636a10c59c9594c0c7746f81d1d7498
+
+@ 0 1 0 1a05da482a183afd176b303cc48b3ef7
++ Dostępne są następujące instancje `Construable`:
+
+% 2 1 0 094354f1f0a1a8320b2f33c7f0f83e72
+
+@ 0 2 0 0863c33d0ae2f44b128cc9131ef40d49
++ column  Typ mediów
++ column  Nośnik
+
+% 0 1 0 1ca77613e7a1c24100f8bf0c68a101b5
+
+% 0 1 0 12f608666249c5701bcb9c145ace9d00
+
+% 0 1 0 12185ceb671289d11edce3c892266a89
+
+% 0 1 0 161e36a0c39e0d59075bcc56c2a5b94d
+
+% 0 1 0 040c80190262677c024db0d6ed4025f5
+
+% 0 1 0 1ad4b7632ab2fb12042a443430fede5f
+
+% 0 1 0 0b824b85770b62381e82dea125676cc0
+
+% 0 1 0 1ef625bd694e345e0f41a0f9314ec02f
+
+% 0 1 0 1192d6b9bfb71fb803392fe8e59dbe51
+
+% 0 1 0 16bce76044fcb64e0787051b734de19c
+
+% 0 1 0 0aa00e289fbf1a7c115563158fde6333
+
+% 0 1 0 158fdca274341df91ab4826383af791f
+
+% 0 1 0 02597b2d32cd04d502555fa722562562
+
+% 0 1 0 03699934f42523ce185c71a8340a5b55
+
+% 0 1 0 0072a5710472e2cd0ad4b52577216674
+
+% 0 1 0 11e285cf51cda5c71280c18254fa054a
+
+% 0 1 0 139880ac6f4ffd070b9e83740b423484
+
+% 0 1 0 1797ecc2c1ba2f651c2cff53a80d2c03
+
+% 0 1 0 094e0b8c8470fa781d4ad4e50442b20f
+
+% 0 1 0 08d06da0a0a23535151a3dfeb1335f27
+
+% 0 1 0 11028f4c1625e7de1f40f737ed615fed
+
+% 0 1 0 1b197bc924daed720b57faa12b17d0ea
+
+% 1 1 0 02626f74693f8fc019351e3174547c6f
+
+@ 0 3 0 1ed65689e0c8c2500b117600eea7c147
++ Przyrostek składni strukturalnej odsyła do typu, który nazywa, więc
++ `application/problem+json` jest interpretowany przez odwzorowanie JSON. Gdy operacja oferuje
++ kilka typów mediów, wybierany jest pierwszy z odwzorowaniem w zasięgu, przy czym
++ `application/json` ma pierwszeństwo.
+
+@ 0 4 0 0cf3d5b020c6132e0feb6b729a5ed95a
++ Treść żądania jest kodowana do nośnika typu mediów i zapisywana przez `Postable` tego
++ nośnika, który również importuje się po nazwie, jako `postables.jsonPostable` lub
++ `postables.xmlPostable`. Wartość, która już *jest* nośnikiem, na przykład `Query` dla
++ `application/x-www-form-urlencoded` lub `Data` dla `application/octet-stream`, wysyła się bez
++ zmian.
+
+@ 0 1 0 101c62e946dfcef219672f0b763e58f0
++ ### Rekordy z odpowiedzi
+
+@ 0 1 0 06cc9264d1ea0d340b538351543c0d14
++ Odpowiedź odczytuje się na jeden z czterech sposobów:
+
+% 2 1 0 13b32556be23a19606ecc2fd62a66878
+
+@ 0 6 0 1002d04234df22f803957e6498747ada
++ column  Metoda
++ column  Odczytuje odpowiedź jako
++ row  `call[T]()`  `T`, zgłaszając zadeklarowane błędy
++ row  `attempt[T]()`  `Attempt` nad `T` i zadeklarowanymi błędami
++ row  `record()`  rekord typowany schematem odpowiedzi
++ row  `tuple()`  nazwaną krotkę typowaną schematem odpowiedzi, odczytaną zachłannie
+
+% 1 1 0 0269751da2298bc61e243e90894667e4
+
+@ 0 4 0 15c69d98d45751d3008c19cbdf9706f2
++ Odpowiedź JSON można odczytać w ogóle bez klasy lustrzanej. `record()` daje
++ [rekord](records.md) typowany schematem odpowiedzi, z jedną składową dla każdej właściwości,
++ o typie zadeklarowanym w schemacie. Zagnieżdżone obiekty i odwołania do schematów
++ komponentów są zagnieżdżonymi rekordami, a tablica obiektów to ich `List`:
+
+% 2 1 0 01f475359b5980690eee6c33305bd1ca
+
+% 3 1 0 00b26259fff5614713aa6a068c077724
+
+% 4 1 0 0206576a57e08cb10de1da03727915ac
+
+% 0 1 0 08e78fb869afc2c7065fcf4a92d1c46f
+
+% 0 1 0 02f6354c8330c000116816375a683e78
+
+% 0 1 0 1507280dd54b63ef107e87532d7ce072
+
+% 0 1 0 10b60cd9b6e7d67f15bf7ef071d92ff8
+
+% 1 1 0 06e29fe3260a24e71c9f74b03a091165
+
+@ 0 3 0 0f2d19d800492b4c09aabc55ab3ad4b9
++ `tuple()` odczytuje ten sam schemat jako nazwaną krotkę, zachłannie. Obie metody wymagają
++ odpowiedzi JSON, której schemat opisuje obiekt lub tablicę obiektów. Cokolwiek innego jest
++ błędem kompilacji, który sugeruje `call[T]()`.
+
+@ 0 1 0 1babaab688d4db2c0b366b251df96662
++ ### Model dokumentu
+
+@ 0 5 0 11f5b7f82efc16880886ef4e6c6943b2
++ Sama specyfikacja też jest wartością. `OpenApi` dekoduje dokument OpenAPI 3.x z JSON-a lub
++ YAML-a do typowanych części: informacji, serwerów z ich zmiennymi, ścieżek, operacji,
++ parametrów, treści żądań, odpowiedzi oraz schematów, parametrów, odpowiedzi i treści żądań
++ w komponentach. Służy to narzędziom, które badają API, zamiast je wywoływać. Dokument YAML
++ jest tłumaczony na JSON i odczytywany przez ten sam dekoder, więc obie postaci nie mogą się
++ rozejść.
+
+@ 0 4 0 1fbe6da9377234cb0d25e6b22cac3af5
++ Parametr, odpowiedź lub treść żądania zapisane jako `$ref` są przechowywane jako
++ `OpenApi.Ref` i rozwiązywane na żądanie przez `apply()`, z podanym dokumentem. Odwołanie do
++ schematu rozwiązuje się tak samo, po jednym kroku, więc schematy cykliczne pozostają
++ skończone. Dokument w nieobsługiwanej wersji lub taki, którego nie da się sparsować, zgłasza
++ `OpenApi.Error`, który nazywa usterkę.
+
+@ 0 3 0 0dd467b580ca8da7139f35b3fb59097b
++ Model i klient są sprawdzane na korpusie rzeczywistych opisów: przykładach OpenAPI
++ Initiative, Petstore ze Swaggera, Museum z Redocly, Twilio, Kubernetes, Discord, Box
++ i Stripe. Są one zapisane w repozytorium w `lib/apoplexy/res/test/openapi` wraz z informacją
++ o pochodzeniu.
+
+@ 0 1 0 11417ab92365bfc40a2218f6b1c1075c
++ ### Ograniczenia
+
+@ 0 3 0 00740b72e6630fa6068947feafd418a7
++ Parametry ciasteczek, `callbacks`, `links`, wymagania `security`, `webhooks` i odwołania do
++ innych dokumentów są wczytywane do modelu tam, gdzie model ma na nie miejsce, ale klient na
++ nie nie reaguje. Treść `multipart/form-data` nie jest jeszcze interpretowana.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 7 0 06c1313ae2246e99184f8d5438eeebac
++ - [Klient HTTP](http-client.md) przenosi żądania i opisuje backendy.
++ - [OAuth](oauth.md) opisuje wartości `Credential` i przepływy tokenów.
++ - [Rekordy](records.md) opisują typowane rekordy, które daje `record()`.
++ - [JSON](json.md), [XML](xml.md) i [YAML](yaml.md) opisują nośniki popularnych typów
++   mediów.
++ - [Błędy](errors.md) opisują `attempt`, `recover` i `mitigate`.
++ - [Typy mediów](media-types.md) opisują wartości `MediaType`, które nazywają każdą treść.

@@ -1,0 +1,80 @@
+orthant 2 language
+
+@ 0 1 0 07d17661ab6f927810e909c47890bda0
++ # `↯/s.70.1` – `Path.Error`
+
+@ 0 2 0 0c1f6fd9310e6ee11b1a5aca51348139
++ Zgłaszany, gdy operacja na ścieżce nie może być kontynuowana, ponieważ ścieżka jest w jakiś
++ sposób niepoprawna.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 5 0 09ab203f412b9c9b04622755ac757fe9
++ Serpentine zgłasza `Path.Error` w przypadku problemów strukturalnych ze ścieżkami – operacji na
++ korzeniu, niezgodnych korzeni dwóch ścieżek, niepoprawnych korzeni lub niepoprawnych składników
++ nazw. Komunikat to `the path $path was invalid because $reason` (przedrostek `path` jest
++ pomijany, gdy nie jest znany).
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 1 0 06669ac8cc4566a91cfcf1093c8ed096
++ ### `↯/s.70.1.1` – `RootParent`
+
+@ 0 1 0 1a867460c8b14ef90dacd466a8d072b7
++ Wywołano `parent` na ścieżce korzenia, która nie ma rodzica.
+
+@ 0 1 0 1e1eee2fb2b89e96193a1ab1b4b59dd1
++ **Przykład.** `[↯/s.70.1.1] the path /  was invalid because the root has no parent`
+
+@ 0 2 0 1b8bac8a6ce1ec820dc23017f3eb772b
++ **Rozwiązanie.** Przed zażądaniem rodzica należy sprawdzić, czy ścieżka jest korzeniem, lub
++ użyć akcesora zwracającego `Optional`.
+
+@ 0 1 0 0c7452db5b66215e1866b41c13edb468
++ ### `↯/s.70.1.2` – `InvalidRoot`
+
+@ 0 2 0 0dea288e2726c4c91ae7097c193c7d4b
++ Sam składnik korzenia jest niepoprawny (na przykład ścieżka Windows, która nie zaczyna się od
++ litery dysku ani korzenia UNC).
+
+@ 0 1 0 0c139622aed11a4a1f2c22acef1fb0d9
++ **Przykład.** `[↯/s.70.1.2] the path was invalid because the root is not valid`
+
+@ 0 2 0 0b72f78959dd27ef06a1ea5c8538e113
++ **Rozwiązanie.** Należy konstruować ścieżki przez typowane API `Path` zamiast parsować dowolny
++ tekst albo przekazać składniowo poprawny korzeń.
+
+@ 0 1 0 12373971629e29f010b493539dde83da
++ ### `↯/s.70.1.3` – `DifferentRoots`
+
+@ 0 2 0 1ff6ae6204dddb8d0beb6eedfb50eca2
++ Podjęto próbę relatywizacji lub złączenia dwóch ścieżek o niezgodnych korzeniach.
+
+@ 0 1 0 027cd48cb009de2506d078f9eaf18895
++ **Przykład.** `[↯/s.70.1.3] the path was invalid because it does not have the same root as the source`
+
+@ 0 2 0 1487aa37b7e7aa98048a0930dacac1c9
++ **Rozwiązanie.** Przed relatywizacją należy upewnić się, że obie ścieżki mają ten sam korzeń; w
++ przeciwnym razie należy konsekwentnie pracować na ścieżkach bezwzględnych.
+
+@ 0 1 0 1dfe4030ebaaa88f0e0de7cdc844abfd
++ ### `↯/s.70.1.4` – `InvalidName`
+
+@ 0 2 0 18d93388d9f6a19c140f0bc9557af98f
++ Składnik ścieżki (nazwa) jest niepoprawny dla docelowego systemu plików – na przykład zawiera
++ niedozwolone znaki lub jest zarezerwowany.
+
+@ 0 1 0 1e945241a69c08bb0140b59f29da68af
++ **Przykład.** `[↯/s.70.1.4] the path was invalid because the name is not valid`
+
+@ 0 2 0 06bafd02dbe1ce7f10c349ed2a8f72ca
++ **Rozwiązanie.** Przed złożeniem nazw składników w ścieżkę należy je zsanityzować zgodnie z
++ regułami platformy docelowej.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 0c655e0e19e1deec1f14b42b088269eb
++ - Źródło: `lib/serpentine/src/core/serpentine.Path.scala`

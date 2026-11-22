@@ -1,0 +1,42 @@
+orthant 2 language
+
+% 10 1 0 0910609b9679525c13cff87a432f4ae2
+
+% 10 1 0 1cb9e1b064257f0f16b50789eafee86e
+
+% 10 1 0 109f42a57f87821b140bc3d53c7858ea
+
+@ 0 32 0 0b5c195f738b6d571cb44228d729119f
++         Klasa, którą zwraca każda fabryka w `Web`, tak aby udostępnienie miało stały typ:
++         `Web.Provision[family](sources, coverage)` to `(Typeface of family) is Typesettable
++         in Web`, którego `#sources` to `Typesettable.Source`, z których przeglądarka
++         uzyskuje krój pisma, a `#coverage` to `Font.Coverage`, z którym zostało zadeklarowane.
++         `FontFace.rules` przedstawia po jednym źródle naraz.
++     entry #sources   skąd przeglądarka bierze krój pisma: z łącza, importu, lokalnie lub generycznie
++     entry #coverage   grubości, nachylenia, szerokości i osie, które udostępnienie zadeklarowało jako oferowane
++     entry #Self   udostępniony krój pisma, `Typeface of family`
++     entry #Form   medium, `Web`
++   entry .sansSerif   generyczna rodzina `sans-serif`, udostępniona w sieci bez deklaracji
++       Przeglądarka składa każdą rodzinę generyczną z tego, co ma, więc udostępnienie ma
++       jedno źródło `Generic` i `Font.Coverage.Unknown`, które dopuszcza każdą odmianę pisma; nie
++       przedstawia żadnej at-reguły, a `font-family: sans-serif` bez cudzysłowu.
++   entry .serif   generyczna rodzina `serif`, udostępniona bez deklaracji
++   entry .monospace   generyczna rodzina `monospace`, udostępniona bez deklaracji
++   entry .cursive   generyczna rodzina `cursive`, udostępniona bez deklaracji
++   entry .fantasy   generyczna rodzina `fantasy`, udostępniona bez deklaracji
++   entry .systemUi   generyczna rodzina `system-ui`, udostępniona bez deklaracji
++   entry .linked   udostępnienie z pliku fontu, który przeglądarka pobiera spod adresu URL
++       `Web.linked[family](url, coverage, format)` przyjmuje dowolny typ URL
++       `Abstractable across Urls to Text` (`HttpUrl` z `url"…"` lub tekst), `Font.Coverage`, które
++       plik ma według deklaracji – ponieważ pliku nie ma pod ręką, by go odczytać,
++       dopuszczane jest tylko to, co zadeklarowano, więc font zadeklarowany w jednej
++       grubości odrzuca żądanie innej, zamiast pozwolić przeglądarce ją syntetyzować – oraz
++       opcjonalny `Typesettable.Source.Format` (`Ttf`, `Otf`, `Woff` lub `Woff2`) dla
++       wskazówki `format()`. Argument typu `family` jest zwykle wnioskowany z zadeklarowanego
++       typu givena. Przedstawia się jako `@font-face`, którego `src` to
++       `url("…") format("woff2")`.
++   entry .local   udostępnienie z fontu, który według oczekiwań czytelnik ma zainstalowany
++       `Web.local[family](coverage)` nazywa krój pisma w `src: local("Name")`, a nazwą rodziny
++       kroju pisma jest literał `family`. Nic nie gwarantuje, że czytelnik go ma, więc to
++       najsłabsze udostępnienie, a jego pokrycie – `Font.Coverage.Unknown`, o ile nie podano
++       innego, co dopuszcza każdą odmianę pisma – mówi tylko to, co zadeklarowano.

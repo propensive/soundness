@@ -1,0 +1,251 @@
+orthant 2 language
+
+@ 0 1 0 177c95bfd7e6d4861aa4f0bdb5c162f2
++ ## WebAuthn: logowanie bez hasła
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 5 0 16497eabd68821dc088cee4eebc1f6d7
++ [Web Authentication](https://www.w3.org/TR/webauthn-2/) pozwala użytkownikowi zalogować się do
++ witryny kluczem zamiast hasłem. *Uwierzytelniacz*, którym może być klucz bezpieczeństwa,
++ telefon lub bezpieczny sprzęt laptopa, tworzy parę kluczy dla witryny, przechowuje klucz
++ prywatny i podpisuje nim wyzwanie za każdym razem, gdy użytkownik się loguje. Poświadczenie
++ tego rodzaju synchronizowane między urządzeniami użytkownika to *klucz dostępu*.
+
+@ 0 3 0 080563935e290a310adef989c4330f3a
++ Tutaj dostarczana jest strona serwera, którą standard nazywa *stroną ufającą*. Tworzy ona
++ opcje, które strona internetowa przekazuje przeglądarce, i sprawdza to, co przeglądarka
++ odsyła. Klucze i certyfikaty pochodzą z [kryptografii](cryptography.md).
+
+@ 0 1 0 1a9481beff4842a0096f2aa877fa3ccf
++ ### O ceremoniach
+
+@ 0 5 0 06b40272bbd5108d122ca4de66072902
++ Serwer nie musi pamiętać niczego poza kluczem publicznym, a użytkownika nie da się nakłonić
++ podstępem do wpisania czegokolwiek. Staranności wymaga sprawdzanie. Odpowiedź musi dotyczyć
++ wyzwania, które zostało wysłane, a nie starego. Musi pochodzić z własnego źródła witryny, a
++ nie ze strony, która ją przypomina. Musi być utworzona dla tej strony ufającej, przy obecności
++ użytkownika. Podpis musi należeć do poświadczenia.
+
+@ 0 2 0 196140154b8c13e6057ad4b55a607909
++ Każda z dwóch *ceremonii* to jedno wywołanie tworzące opcje i jedno sprawdzające odpowiedź, a
++ drugie wykonuje każde sprawdzenie, którego wymaga standard.
+
+@ 0 2 0 0df9b9b4721d03bc1624ffeba6255d27
++ Wszystko pochodzi z pakietu `soundness`. W zasięgu jest dostawca algorytmów, jak w przypadku
++ każdej kryptografii:
+
+% 2 1 0 16ec50c4e77ef0f311ee9dfe7efb3eef
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 1 0 142682d0543febc315ab710fcbc1688b
++ Strona ufająca jest identyfikowana przez domenę i wymienia źródła, z których serwowane są jej
++ strony:
+
+% 2 1 0 15cbd76ddf715fb51acb4caa5f3633e3
+
+% 0 1 0 17047b08f1770eb202b6e53654d42744
+
+% 1 1 0 0b50bd1717cc85ff0802259052a235a5
+
+@ 0 1 0 19ac6b8d9e0b0273169ace3b7edd4b79
++ ### Rejestracja
+
+@ 0 3 0 1f5f4acfc3f7af4014196bb95a3745b9
++ Poświadczenie rejestruje się dla konta, którym jest `WebAuthn.User`. Jego `id` to uchwyt o
++ długości do 64 bajtów identyfikujący konto. Przechowuje go uwierzytelniacz, więc nie powinien
++ on mówić nic o osobie:
+
+% 2 1 0 0e8336fae96af3480289c23e78c16314
+
+% 0 1 0 090dc34ab0567ede0ed4540516fd6e90
+
+% 1 1 0 1c1706c689a3f374176294703eab3f81
+
+@ 0 3 0 1cfd3a375adb2ca714f7391d7eb67075
++ Ceremonia zaczyna się od świeżego `WebAuthn.Challenge`, który serwer przechowuje do nadejścia
++ odpowiedzi. `WebAuthn.registration` tworzy opcje jako JSON, który strona przekazuje do
++ `PublicKeyCredential.parseCreationOptionsFromJSON`, a następnie do
++ `navigator.credentials.create`:
+
+% 2 1 0 0587bf1ab0d79cad0a5574e7e8fe88dc
+
+% 0 1 0 1421e354c1065a440fb0efc24a00738f
+
+% 0 1 0 0b03d98d6fb2e7b61510adab047014ee
+
+% 1 1 0 03730af1c49d5e2c13fb6a85aad26ed6
+
+@ 0 2 0 0a6798bf00e0d5e600c3c8c2e7dfb277
++ Strona odsyła `toJSON()` poświadczenia, a `WebAuthn.register` je sprawdza. Zwraca
++ `WebAuthn.Credential` do zapisania dla konta:
+
+% 2 1 0 05c0e31b6f83b2ff131cdc1d2e670169
+
+% 3 1 0 10fa60d358b7ed4d0202089d74356423
+
+% 4 1 0 1f8b36abbcb2b9271fb62fec347ae964
+
+% 0 1 0 0e7d332eecc8758806a1e84cd17f379a
+
+% 0 1 0 11d21d831e19a5cb0795e20cb0280c68
+
+% 1 1 0 1b64a46e9c5b01ad10cf28e201976437
+
+@ 0 3 0 07e59cd0b4b1d63017a2acebf79b36dd
++ Poświadczenie ma `id`, po którym odnajduje się je ponownie, publiczny `key` i licznik podpisów
++ `counter`. Dwie rzeczy pozostawia się wywołującemu, ponieważ tylko on ma potrzebne dane:
++ sprawdzenie, że `id` nie jest już zarejestrowane dla innego konta, oraz zapisanie
++ poświadczenia.
+
+@ 0 1 0 0319a41720bd566f18d984c2a645a56b
++ `registration` przyjmuje dalsze parametry, każdy z wartością domyślną:
+
+% 2 1 0 0f82d2805a0d12141ac77818347a02e4
+
+@ 0 7 0 0d26b4d111bbdef903f5106fdf487b42
++ column  Parametr
++ column  Wartość domyślna
++ column  Znaczenie
++ row  `existing`  brak  identyfikatory poświadczeń, które konto już ma, aby jeden uwierzytelniacz nie został zarejestrowany dwukrotnie
++ row  `algorithms`  `WebAuthn.Algorithms`  akceptowane algorytmy COSE, w kolejności preferencji: ES256, EdDSA i RS256
++ row  `verification`  `false`  czy użytkownik musi zostać zweryfikowany, kodem PIN lub odciskiem palca, a nie tylko być obecny
++ row  `attestation`  `none`  sposób przekazania atestacji żądany od uwierzytelniacza
+
+% 1 1 0 1e846ab014e6f6fc1c80d064a937e453
+
+@ 0 2 0 0c45aaf217b4331e1931d37e7a76a62e
++ To, czego żąda się w `verification` i `algorithms`, trzeba przekazać także do `register`,
++ ponieważ to ono tego pilnuje.
+
+@ 0 1 0 1b6911e091cca09119565edb21d17b50
++ ### Uwierzytelnianie
+
+@ 0 4 0 0b8ddb5c8a8f7f0908a6f6a4edc57890
++ `WebAuthn.authentication` tworzy opcje logowania dla `navigator.credentials.get`.
++ Identyfikatory poświadczeń konta przekazuje się tam, gdzie konto jest już znane, a pomija tam,
++ gdzie uwierzytelniacz ma zaoferować dowolne poświadczenia, które przechowuje dla witryny:
+
+% 2 1 0 1fb9cd8a4d694a670b16cc7b3a164824
+
+% 0 1 0 04a704116af2181d06204a357bda7b90
+
+% 0 1 0 18f5fff085e2dd3d180a15f2c3c4c0d9
+
+% 1 1 0 1739161aecaac13814d7215659924ef3
+
+@ 0 2 0 04db3a8d1e67a93a0238ee3a2cd138de
++ Odpowiedź wskazuje poświadczenie, z którego pochodzi. `WebAuthn.identifier` odczytuje tę
++ nazwę, aby można było odnaleźć zapisane poświadczenie, a `WebAuthn.authenticate` sprawdza
++ względem niego odpowiedź:
+
+% 2 1 0 16c1e252639b91de052f307aa74909df
+
+% 3 1 0 1ac51757ed0b88071d7036bb24980257
+
+% 4 1 0 1001cc32401e95e5123093b6ecd08546
+
+% 0 1 0 18dfc4e7b0e7959a1f07f4d64e620344
+
+% 0 1 0 11c407f619b587b210c111bd3dcdbba5
+
+% 0 1 0 035427129f8e5f4c00ea1df534fa5dd4
+
+% 1 1 0 0687e97ebb693a58038abf70a1bc085a
+
+@ 0 4 0 0ec6a7456f1f8c2b0bc6470df2f7cef5
++ Zwrócone poświadczenie ma przesunięty licznik i zapisuje się je w miejsce starego. Licznik,
++ który *nie* został przesunięty, oznacza, że klucz prywatny znajduje się w dwóch miejscach, więc
++ odpowiedź jest odrzucana. Uwierzytelniacz, który nie liczy, za każdym razem zgłasza zero, co
++ jest akceptowane tak długo, jak zapisany licznik również wynosi zero.
+
+@ 0 2 0 181253d3892d7e1b1d14652e1d31cecd
++ Każda odmowa to `WebAuthn.Error`, którego przyczyna mówi, które sprawdzenie się nie
++ powiodło. Wyzwanie służy jednej ceremonii i jest odrzucane niezależnie od tego, czy odpowiedź
++ zostanie przyjęta.
+
+@ 0 1 0 0ad5b8c446edfdd208ed4de3044b0525
++ ### W aplikacji internetowej
+
+@ 0 4 0 1e87c40cb666c0c019b4a904611edb32
++ Wyzwanie trzeba przechować od żądania, które tworzy opcje ceremonii, do żądania, które
++ przynosi odpowiedź. Służy do tego magazyn `Ceremonies`, kluczowany przez `Session`
++ użytkownika. `begin` tworzy wyzwanie sesji i je zapamiętuje. `conclude` oddaje je, jeden raz,
++ i o nim zapomina:
+
+% 2 1 0 12d6570e591c37591719bfd5e21f2da6
+
+% 0 1 0 148726101117471e1bf41081fdc1a445
+
+% 1 1 0 10d01995ccb52d4906822eea92f074f6
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 1ba4ca4d3f4f3c581e95b14aed4cf220
+
+% 4 1 0 1ef3f9c56b399d0f1fcb7e5a6eea1603
+
+% 0 1 0 0bed94833f58d8e30ba6b69924b42908
+
+% 0 1 0 061ba6891ffc027f0c75b409b982583a
+
+% 0 1 0 165eb20f5e5d6b1b1f7bb926ec88698c
+
+% 0 1 0 05bdd3da375a0ccd06ae897a87313c42
+
+% 0 1 0 0603d59a86ad5c171d91364dbf91e789
+
+% 1 1 0 08fdf4c95ac1142c16486a8d097e1dd3
+
+@ 0 2 0 1c1afee269f245c41d7bea86b288becb
++ Ponieważ `conclude` oddaje wyzwanie tylko raz, odpowiedź oferowana po raz drugi nie zastaje
++ żadnej trwającej ceremonii i jest odrzucana.
+
+@ 0 1 0 0555ef1dabc1114f19c56c16706fcd0a
++ ### Atestacja
+
+@ 0 2 0 140743384e5ac2e710db46302483ee3a
++ Uwierzytelniacz może *atestować* tworzone przez siebie poświadczenie, czyli złożyć oświadczenie
++ o samym uwierzytelniaczu. `attestation` poświadczenia mówi, co ustalono:
+
+% 2 1 0 085168d5d41ede3b01c0bd32b6e22415
+
+@ 0 5 0 13ae08faa07741000043df5a6a3f40ff
++ column  Atestacja
++ column  Znaczenie
++ row  `Unattested`  uwierzytelniacz nie złożył żadnego oświadczenia
++ row  `Self`  oświadczenie podpisano własnym kluczem poświadczenia i nie dowodzi ono niczego o uwierzytelniaczu
++ row  `Certified`  oświadczenie podpisano kluczem poświadczonym przez łańcuch certyfikatów
+
+% 1 1 0 1b6d58ac2f1a572213196774a725ec8d
+
+@ 0 5 0 08a94a8a0f2301aa105675b787a5bac7
++ Większość stron ufających akceptuje dowolny uwierzytelniacz i nie prosi o atestację. Strona,
++ która ogranicza akceptowane modele, prosi o przekazanie `direct` i podaje `register` zaufane
++ korzenie jako `anchors`. Atestacja `Certified` jest wtedy akceptowana tylko wtedy, gdy jej
++ łańcuch prowadzi do jednego z nich, a jej składowa `trusted` ma wartość `true`. Bez kotwic
++ łańcuch jest raportowany, ale nie jest walidowany.
+
+@ 0 1 0 00bfe45a2f825b971221280ff698ba8c
++ Rozumiane są formaty `none` i `packed`. Każdy inny format zgłasza `WebAuthn.Error`.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 4 0 1061b3ab31d011111395e43d7ebf38de
++ - [Kryptografia](cryptography.md) dostarcza klucze i certyfikaty.
++ - [JOSE](jose.md) dostarcza tokeny dla sesji następującej po zalogowaniu.
++ - [OAuth 2](oauth.md) deleguje logowanie do innej strony.
++ - [Serwer HTTP](http-server.md) serwuje strony i odbiera odpowiedzi.

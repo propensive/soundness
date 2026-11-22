@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 3 0 1331d587038b96e510e95b4bf50eca28
++ Moduł [metaprogramowania](/doc/soundness/modules/metaprogramming.md) istnieje po części po to, by to
++ umożliwić: jeśli warto wysunąć twierdzenie o tym, co wygenerował kompilator, to warto je
++ sprawdzać przy każdej kompilacji.

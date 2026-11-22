@@ -1,0 +1,437 @@
+orthant 2 language
+
+@ 0 1 0 1fc139ef1e00e4f2025e814e7ac80b00
++ ## Matematyka
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 1 0 184f6ee6393b58e806283beda800f513
++ Poza zwykłymi [liczbami](numbers.md) istnieją ustrukturyzowane wartości matematyki:
+
+@ 0 7 0 035cd9ccf6f3bad80dc487b3297ba128
++ - [liczby zespolone](https://en.wikipedia.org/wiki/Complex_number), których część rzeczywista i
++   urojona mogą być dowolnego odpowiednio liczbowego typu;
++ - [wektory](https://en.wikipedia.org/wiki/Euclidean_vector) i
++   [macierze](https://en.wikipedia.org/wiki/Matrix_(mathematics)), których wymiary są częścią ich
++   typów, więc niezgodność wymiarów się nie kompiluje;
++ - [permutacje](https://en.wikipedia.org/wiki/Permutation), czyli odwracalne przestawienia
++   przechowywane w zwartej postaci kanonicznej.
+
+@ 0 4 0 18613918cbdf41901d0d175239c13e47
++ Wszystkie trzy składają się z resztą arytmetyki. Iloczyn skalarny wektora długości z wektorem
++ długości daje pole powierzchni, a liczba zespolona z [wielkości](quantities.md) zachowuje swoje
++ jednostki, ponieważ operacje są wszędzie zdefiniowane przez te same
++ [arytmetyczne klasy typów](numbers.md#overloading-the-operators).
+
+@ 0 1 0 11e7574b99b80729102239269082bdf4
++ ### O strukturze matematycznej
+
+@ 0 5 0 1c2bdd5302fb97de006b76d7056a6ceb
++ Wektor nie jest listą. Lista trzech liczb i lista czterech bez problemu się łączą. Wektorów o
++ różnych wymiarach nie da się nawet dodać, a iloczyn macierzy jest zdefiniowany tylko wtedy, gdy
++ wymiary wewnętrzne się zgadzają. Biblioteka, która modeluje je jako tablice, odkłada każdą taką
++ regułę do [czasu wykonania][czas wykonania], gdzie niezgodność kształtów staje się wyjątkiem lub,
++ co gorsza, cichym nonsensem, długo po popełnieniu błędu.
+
+@ 0 5 0 0c0123fdb69b2aa716e0aca64c15939c
++ Tutaj wymiary są w typach. `Vector[Int, 3]` i `Vector[Int, 2]` to różne typy.
++ `Matrix[…, 2, 3]` mnoży się przez `Matrix[…, 3, 2]` i przez nic innego. Niedopasowane mnożenie
++ jest [stanem niemożliwym](../../philosophy/impossible-states.md) algebry liniowej. Typ elementu
++ jest generyczny względem wszystkiego, co ma odpowiednią arytmetykę, i w ten sposób jednostki
++ przepływają przez obliczenia.
+
+@ 0 3 0 021f7700233a60a31d03230281205ef7
++ Wszystko pochodzi z pakietu `soundness`. Arytmetyka między zwykłymi liczbami a tymi typami
++ opiera się na konwersjach *into* kompilatora, więc ta funkcja języka również jest włączona, a
++ ostatni import pozwala przykładom wypisywać wyniki:
+
+% 2 1 0 0900e6fa73f434a20f66ec0bd0fee7c1
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1983cda2abcdd53d0362a0ccc635b790
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 19e82c234b72b0fa1cc4188c98686b2c
++ ### Liczby zespolone
+
+@ 0 1 0 0583d9a81f389436033de978310d9a73
++ `Complex` łączy składową rzeczywistą z urojoną i obsługuje zwykłą arytmetykę:
+
+% 2 1 0 0ca9392288af71dc0ff07efb156de1c6
+
+% 3 1 0 14f77f546bc1baf61cd631c433fae894
+
+% 4 1 0 19fe2ba8d02f315e1afc7d4d3e8224cf
+
+% 0 1 0 0725a067800c176506803e014e04d5de
+
+% 0 1 0 0b660e45b0cf1f051704d0aabc4aa1c8
+
+% 0 1 0 05cefe75419a1fa3158a354eebb97f13
+
+% 1 1 0 16c8f721907961f2076a89538b0ee85d
+
+@ 0 2 0 03532d9beee11fa813c3f2338bf61e1b
++ Liczbę zespoloną można też zapisać, dodając wielokrotność `i`, jednostki urojonej, lub podać w
++ postaci biegunowej, jako moduł i `Angle`:
+
+% 2 1 0 1ddec130d06511711fc48db2ea28fdd8
+
+% 0 1 0 098d4d8381dca7d412ded296ad9b71d8
+
+% 0 1 0 13fe7bcb0876ba6d19d13a9a7065a735
+
+% 1 1 0 0f88d46e1408033e0f966d438681e1f4
+
+@ 0 2 0 066fd9423960ee5c03fcf32d32d8f676
++ `modulus` i `argument` zwracają postać biegunową, z argumentem jako typowanym kątem. Przedrostkowy
++ operator `~` daje sprzężenie zespolone.
+
+@ 0 3 0 1388ed35ab666e071db18db96c72a389
++ Składowe mogą być dowolnego typu, który ma arytmetykę potrzebną operacji. Obejmuje to wielkości,
++ więc zespolona impedancja zachowuje swoje jednostki. Wielkość wypisuje się przez `Decimalizer`,
++ który określa, ile cyfr znaczących pokazać:
+
+% 2 1 0 0a89ce033a4e9d5f0265afcc26234ce3
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 0 1 0 1ccb8557815f9dce1000586c07812fb3
+
+% 0 1 0 10a6461369886fb312874b1bf1670a12
+
+% 1 1 0 0b208fc1230124351f95d089a7a3d4b8
+
+% 3 1 0 085eb41a8c44c95b108285df0427ec9b
+
+% 4 1 0 0177e00c325ca87b06e011b38e040b23
+
+% 5 1 0 058329e9acf0b5f60fec8e1e94584e89
+
+% 0 1 0 0d665cfdc97f3fa31258b8e23b30e841
+
+% 1 1 0 1bd15d365d49525216a5b417ff44bf66
+
+@ 0 1 0 05dd1d21ea10d18a0e8b9a336ab6466d
++ ### Wektory
+
+@ 0 4 0 0455bf3f9235b3a01b6de6a5207cc685
++ `Vector` to ustalona liczba składowych, z wymiarem w typie. W praktyce jest hybrydą `Tuple`,
++ której rozmiar jest znany statycznie, i kolekcji, której elementy mają wspólny typ. Taki właśnie
++ jest wektor euklidesowy i dlatego żaden z dwóch zwykłych wyborów nie pasuje do niego w pełni.
+
+@ 0 1 0 1a96d326138bd7600949631607dd0cc2
++ Konstruowanie wektora wyznacza zarówno typ elementu, jak i rozmiar:
+
+% 2 1 0 144de43859c874471f8cdc972681e937
+
+% 0 1 0 114dd86d45cdc5f41390e8b06869a4b7
+
+% 1 1 0 08d36502b409fe6803a351dd6325c583
+
+@ 0 1 0 0f71eb79ee12cc51012bf2d48a9405d6
++ Wartość o złym rozmiarze się nie kompiluje:
+
+% 2 1 0 12bead1532887901022801e2075d8c07
+
+% 3 1 0 11e6132500bf25500dd81a96cf2753db
+
+% 4 1 0 04b71d9c581d4d9811ba6d0de1ed610e
+
+% 5 1 0 00633061e37df6ba13a540686bebf998
+
+% 0 1 0 0a4c1d3e3e5b315715a4e1c77cf3d8d9
+
+% 1 1 0 1c0f03613d4d84b310fd397eb801fa47
+
+@ 0 3 0 000ccd794efd6b5c0a3bf2f209b742d8
++ Wektory jednego wymiaru można dodawać i odejmować. Wektor można zanegować, a także mnożyć i
++ dzielić składowa po składowej, przez skalar lub przez inny wektor tego samego wymiaru, o ile
++ pozwalają na to jego składowe:
+
+% 2 1 0 138008e01faf735d08c4dc4afc21e040
+
+% 3 1 0 05ed9a080d0bded01e58dd2d8c26459f
+
+% 4 1 0 03eb2d65d304e89304945fe906c7c24b
+
+% 0 1 0 00a811c2e9727e7d0fcb12cb98c08eb0
+
+% 0 1 0 0c274425069723c80b914f8e303776db
+
+% 0 1 0 19fd194ec3ebaf601276bbcc387c6472
+
+% 0 1 0 1eb45ac8bf89b14413547e8019bc3820
+
+% 1 1 0 164ff34b56ddd11f150ce0f9fd1890ed
+
+@ 0 1 0 083fe0e6680ddba800422bda7f2968fb
++ Dodawanie wektorów o różnych wymiarach się nie kompiluje:
+
+% 2 1 0 1972b1302b277c9f0b8e387db79a0e65
+
+% 3 1 0 1ed3eedfb49aaec119050ae0e895c7dc
+
+% 4 1 0 109fae262709e5f7021358d0c967239a
+
+% 5 1 0 1e56ef4abb0cac5202e7e71f878752c7
+
+% 0 1 0 049c73241745abd201da6e32c9e9912a
+
+% 1 1 0 1acfa7978ab209150de97b5bd8a98ad8
+
+@ 0 2 0 1edbb07d4897017f1033148c7c927ca0
++ `dot` oblicza iloczyn skalarny, a w trzech wymiarach `cross` oblicza iloczyn wektorowy:
+
+% 2 1 0 1c8b8445bc1466630ef94c9170e52992
+
+% 3 1 0 1af43e768058b75700c21bf6b1197555
+
+% 4 1 0 0ad303d97162d17b0cdc368e14d05387
+
+% 0 1 0 0d3d7f4780a5ffda174c01cf5b46bb48
+
+% 0 1 0 1f206b543b7652481d6dd956964371c5
+
+% 1 1 0 0c9ad8d59e7912ec1be81ad9e631bcb2
+
+@ 0 1 0 0e3b4f00a59b70a71b51113cc77bd854
++ ### Macierze
+
+@ 0 2 0 0ec461be4ecc9a451a997f3f0e027d4e
++ `Matrix` ma liczby wierszy i kolumn w swoim typie. Zapisuje się je jako argumenty typu, a
++ macierz wypełnia się wiersz po wierszu:
+
+% 2 1 0 063f7871353426e11484c47b4dcf81f9
+
+% 0 1 0 138327158f5dbf391f84c33200e6aa44
+
+% 0 1 0 1db77eab95c1e1ed0291b63d005bd32f
+
+% 1 1 0 18da1d60533a2d430d16378554293e9d
+
+@ 0 1 0 10f3667ea151329b00c09f8edf436725
++ Macierz można mnożyć przez inną macierz, wektor lub skalar, a także zanegować:
+
+% 2 1 0 1e1e4008978917b513b387a77d48fce2
+
+% 3 1 0 1ba75f0e09cc1e221eb3ec3589f402ba
+
+% 4 1 0 11c6010fe4fa152801d5b8bfdb69e396
+
+% 0 1 0 1a3b498dad53d81702f5e7dc8b0c1d2f
+
+% 0 1 0 00fd9363d76ec79a135245870758b4e8
+
+% 0 1 0 0b4281100487c83619f02921b49f03c5
+
+% 0 1 0 156a4b0282d21d5a0da84018a198dd6c
+
+% 1 1 0 1c224fb8c8570b5411e79c07deb693ba
+
+@ 0 1 0 13f2b17e43e501350c86f9295d9aee20
++ Iloczyn, którego wymiary się nie zgadzają, jest błędem kompilacji, a nie sprawdzeniem kształtów w
++ czasie wykonania:
+
+% 2 1 0 0cf311e7c015e6f8199c63241c19eb10
+
+% 3 1 0 110060be1e99267107acbf5642cee69b
+
+% 4 1 0 001153385953d28218b5d131aabb74bc
+
+% 5 1 0 0ffcde83d236545b1312cd9a7b2c709c
+
+% 0 1 0 07a9ba2fce0563ab1f2e426b7d1fbf3e
+
+% 1 1 0 116f416599fa7d4e0c0d6d65653cef4e
+
+@ 0 2 0 0023b43e9d9538b10c2e94b2d2aeab2d
++ Poza arytmetyką macierz ma następujące operacje. Operacje macierzy kwadratowej istnieją tylko dla
++ macierzy kwadratowej:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 13 0 0120b136ebcbf9710db1fee23a5247bf
++ column  Metoda
++ column  Dla
++ column  Daje
++ row  `transpose`  dowolnej macierzy  macierz transponowaną
++ row  `rank`  dowolnej macierzy  rząd
++ row  `frobeniusNorm`  dowolnej macierzy  pierwiastek kwadratowy z sumy kwadratów jej elementów
++ row  `determinant`  macierzy kwadratowej  wyznacznik
++ row  `trace`  macierzy kwadratowej  sumę przekątnej
++ row  `inverse`  macierzy kwadratowej  macierz odwrotną lub `Unset` dla macierzy osobliwej
++ row  `solve`  macierzy kwadratowej  rozwiązanie układu liniowego jako wektor `Optional`
++ row  `adjugate`  macierzy kwadratowej  transpozycję macierzy dopełnień algebraicznych
++ row  `eigenvalues`  macierzy kwadratowej z `Double`  wartości własne jako wektor `Optional`
++ row  `eigenvectors`  macierzy kwadratowej z `Double`  wektory własne jako macierz `Optional`
+
+% 1 1 0 005df6cb1614dd1a1ae0eb553a92472a
+
+% 3 1 0 06dd9f1d25fecc341576eb8d42ecd012
+
+% 4 1 0 0d92ddd325ed5fa30934444ff9a0462e
+
+% 5 1 0 14cfd441d65b61ca1e30b5b6fd8164da
+
+% 0 1 0 12f69ab435181bd51cf8875c268b729b
+
+% 0 1 0 10abcccc119d6b151a03fd11abc17933
+
+% 0 1 0 1747e795e6298a4a1edd4361edbded9f
+
+% 1 1 0 0bbaa6489a0ddfa2049498aaa5dfdf36
+
+@ 0 1 0 0953f9d2e5398e420b22b4a30451452e
++ `inverse` zwraca macierz [opcjonalną](optional-values.md), ponieważ macierz osobliwa nie ma
++ odwrotności.
+
+@ 0 2 0 1508fba36052762505bdf089b5bde6f0
++ `adjugate` jest dostępna samodzielnie. Jest zdefiniowana nad dowolnym pierścieniem, a nie tylko
++ tam, gdzie możliwe jest dzielenie, więc macierz liczb całkowitych ma macierz dołączoną nawet
++ tam, gdzie nie ma odwrotności:
+
+% 2 1 0 06002b6e0023cd821625abdcda47a2b1
+
+% 3 1 0 047d118fe1d4e15617fd9fa1e4521790
+
+% 4 1 0 1695d04d5796f0c0053ca508425c9b5c
+
+% 0 1 0 1b9724b141b32627054144ce99095765
+
+% 1 1 0 1e249e4c63d3865b02d27bb304429ed9
+
+@ 0 2 0 1054e17641c1996d1afd2a20a85709d8
++ `frobeniusNorm` zwraca wielkość macierzy. `eigenvalues` zwraca wartości, dla których ma ona
++ wektor własny, jako `Optional`, ponieważ nie każda macierz ma rzeczywiste wartości własne:
+
+% 2 1 0 06e5c9e31733769f0c226aa3261199f1
+
+% 3 1 0 0101d2bc4a30358c115471cc863cac07
+
+% 4 1 0 06ba4c1e0c90325b0790fa560ab0ffdb
+
+% 0 1 0 121f78e56f743f1512a60d37170db9cf
+
+% 0 1 0 0fcef5c38c7de51d0b3a119c57adfc7a
+
+% 1 1 0 18b6abd2283f32510c143eab49c2c4da
+
+@ 0 1 0 15b1d3eed73417481d4eabfea283ea86
++ ### Elementy, które nie są liczbami
+
+@ 0 4 0 0d1ca8ee9316f6921c21c81a8213a716
++ Nic z powyższego nie wymaga, by elementy były typu `Double`. Wektory i macierze są generyczne
++ względem typu elementu, a ich operacje są odnajdywane przez arytmetyczne klasy typów, więc działa
++ wszystko, co ma odpowiednią strukturę. Obejmuje to typowane [wielkości](quantities.md), których
++ wymiary składają się tak, jak arytmetyka:
+
+% 2 1 0 140e42e15d249de11fe0970c95eef437
+
+% 0 1 0 02a6d8af547843630172756efd386946
+
+% 0 1 0 0e7a3e349956ae6e0ee28422007ee850
+
+% 1 1 0 1e8759abeda89fab01a272f76c719f04
+
+% 3 1 0 0dcf4e1c52705b4f1a51bd58a58dccd8
+
+% 4 1 0 1640ceb9acbe333000f6146c60084472
+
+% 5 1 0 13150bee8d75b1d319eddca8db2dee87
+
+% 0 1 0 137c58e8ee2982af038a31ded317e4c9
+
+% 1 1 0 0c4920b685c24bd202929eb1ddcc048f
+
+@ 0 2 0 07173873ab7d34dd05c75c33a25f513d
++ Iloczyn skalarny długości jest polem powierzchni i typ to wyraża. To samo dotyczy elementów
++ zespolonych, dokładnych liczb wymiernych i każdego innego typu elementu z operacjami, których
++ wymagają obliczenia.
+
+@ 0 1 0 0f0972a9a8731f270e68c26b9ef8062d
++ ### Permutacje
+
+@ 0 2 0 08daa237734d23050635285317aff072
++ `Permutation` to odwracalne przestawienie. Buduje się ją z przestawionych indeksów i stosuje do
++ dowolnej listy co najmniej takiej długości:
+
+% 2 1 0 11de304f622b7bdd02b15946b7fc50ab
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 1fe8b6e6d2df44cd0b916bbec8004f01
+
+% 0 1 0 17e71bda713b2f29081b6fd1d9d4d063
+
+% 1 1 0 134231f9a08b649209c8ced443db3ddb
+
+% 3 1 0 0cf10f0902f5f0c91e68a26b296165b2
+
+% 4 1 0 0680670508a67683082515f80f530c6b
+
+% 5 1 0 06ef001b84e3f9811929298e65739396
+
+% 0 1 0 1c4bfa37b543bdd51b3ba36b433748a3
+
+% 0 1 0 1c48388deba08c5b0334667e35be7397
+
+% 1 1 0 07e3d6557ead925c0da5a584f6d6658c
+
+@ 0 2 0 0c246cdf87817e13018554c8ea5778eb
++ Ciąg indeksów, który nie jest permutacją, bo ma duplikat lub lukę, jest typowanym błędem:
+
+% 2 1 0 1e09ba5ab88f952d030387e5247d1927
+
+% 3 1 0 15355a8bedff20d41c38b7073edf8cf0
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 0a7eac9bbf358e3e0edded4192c5878d
+
+% 1 1 0 18c2a4af203f78780863a4a6514c98c5
+
+@ 0 6 0 09f09950f4dff4cb13decd2038c807e5
++ Wewnętrznie permutacja jest przechowywana jako jej
++ [kod Lehmera](https://en.wikipedia.org/wiki/Lehmer_code) w postaci o podstawie silniowej, czyli
++ pojedyncza liczba całkowita, która jednoznacznie ją identyfikuje. Dzięki temu permutacje są
++ zwarte w przechowywaniu i wyliczaniu: `Permutation.bySize(n)` zwraca wszystkie `n!` z nich jako
++ leniwy [łańcuch](collections.md#lazy-chains). Permutacja *n* elementów zajmuje
++ O(*n* log *n*) pamięci, co jest najmniejszą możliwą wartością, ponieważ trzeba odróżnić *n*!
++ permutacji.
+
+@ 0 2 0 0b27d2f1f3a3a4ae0bd843da09588b19
++ Liczba *jest* permutacją, więc można ją podać bezpośrednio, a obie reprezentacje można odczytać
++ z powrotem:
+
+% 2 1 0 146c5327825e4c8b0695f9873b3beca8
+
+% 3 1 0 06bc9ec542e8edba1fd42afa51f66ae6
+
+% 4 1 0 1c1f6170c51203fc12440630eeca6341
+
+% 0 1 0 1f25e0cd4ac755c617e7d0060589ae78
+
+% 0 1 0 17c1c67d47d3d79d0ea8c8d6685c837c
+
+% 0 1 0 13e601655bca8146135589fdc1b53d06
+
+% 1 1 0 04a7e21e006e342c198f917192e4eba9
+
+@ 0 3 0 16b145f038c8973712c7b318b859b796
++ Permutacja pozostawia w spokoju każdą pozycję poza swoim zakresem. Zastosowanie jej do dłuższego
++ ciągu nie jest więc błędem: przestawia pozycje, które obejmuje, a resztę zostawia tam, gdzie
++ były.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 1 0 1619b3be7088fb1f0aab10eb709a6e41
++ - [Notacja matematyczna](mathematical-markup.md) składa to, co jest tu obliczane, a [losowość](randomness.md) próbkuje jego rozkłady.

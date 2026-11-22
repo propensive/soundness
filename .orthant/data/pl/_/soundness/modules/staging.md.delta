@@ -1,0 +1,314 @@
+orthant 2 language
+
+@ 0 1 0 1edcb2d5c07e1ae6037ab4f8a299dfa9
++ ## Etapowanie
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 3 0 1f8a7808387c6ad10b2f9ac6a6cb4771
++ Kod w cytacie w Scali, `'{…}`, zwykle wykonuje się w następnym etapie *tego samego* programu.
++ Tutaj idea zostaje uogólniona tak, by kod w cytacie wykonywał się w innym *środowisku*: w nowej
++ JVM, w odizolowanym classloaderze albo, co do zasady, na dowolnej maszynie, która może przyjąć
++ skompilowany kod.
+
+@ 0 4 0 1e7295b5bfe74b2410dc4a47051ff54c
++ Blok `dispatch` cytuje zwykły kod Scali, wstawia do niego wartości z otaczającego zasięgu i
++ zwraca wynik. Kod zostaje skompilowany, przesłany i wykonany gdzie indziej, a jego odpowiedź
++ wraca. Wartości przekraczają granicę jako [dane neutralne względem classloadera](generic-data.md)
++ albo jako [JSON](json.md).
+
+@ 0 1 0 15ec42317f52d46d10b7510789f8a364
++ ### O programach wieloetapowych
+
+@ 0 5 0 133ca4adf6cb4efe19a4590b535784b5
++ Kod kompilowany razem zwykle jest też razem wykonywany, w jednym środowisku: w jednej JVM albo
++ w przeglądarce pod Scala.js. Aplikacja rozproszona z natury łamie to założenie. Kod dla każdego
++ środowiska kompiluje się osobno i pozostaje osobny na całej drodze od źródła do wykonania, w
++ różnych JVM, w przeglądarce albo na różnych maszynach. Między każdymi dwoma takimi środowiskami
++ istnieje kontrakt.
+
+@ 0 3 0 0bb3a5bd3158b3ec1dd309a8034c34a2
++ Kompilator nie egzekwuje tego kontraktu. Inne narzędzia mogą go sprawdzać, ale sprawdzają go z
++ zewnątrz i rzadko z gwarancjami, jakie Scala daje w obrębie jednej kompilacji. Kontrakt można
++ więc złamać, a złamanie ujawnia się w [czasie wykonania][czas wykonania].
+
+@ 0 9 0 0b4f3f51e3dde9580aba3a00956fbbb7
++ Wykonanie kodu gdzie indziej zwykle oznacza zbudowanie artefaktu, zorganizowanie jego wykonania
++ i wymyślenie granicy serializacji: infrastrukturę na cały projekt dla czegoś, co koncepcyjnie
++ jest jednym wyrażeniem. Mechanizm etapowania Scali już potrafi skompilować wyrażenie w cytacie w
++ czasie wykonania i wstawić do niego wartości. Ustala on natomiast, *gdzie* wynik się wykonuje.
++ Kompilowanie obu stron *razem* i rozgraniczenie ich cytatami i wstawkami oddaje kontrakt z
++ powrotem pod kontrolę kompilatora. Kod zdalny pisze się obok wywołującego go kodu lokalnego,
++ sprawdza razem z nim, serializuje dla niego i utrzymuje w zgodzie z nim. To
++ [bezpieczeństwo przez konstrukcję](../../philosophy/safety-by-construction.md), rozciągnięte
++ poza granicę procesu.
+
+@ 0 1 0 04ec28bd31c53c7d1d7ee85757fef6b7
++ ### Cytaty, wstawki i fazy
+
+@ 0 1 0 0d12a98f5ffe9a2a1a02f5c87ca92691
++ Składnia jest składnią samej Scali i warto przypomnieć, co oznacza. W makrze:
+
+% 2 1 0 0ac0018ad133dfa00dfbafff5f516fdf
+
+% 3 1 0 0c5cca4b37c27bef1b9cddbc6d7d8ed7
+
+% 4 1 0 03946c7073eaa232122b3943195908cb
+
+% 1 1 0 0772349862ed8139164b2b8fd1c6e1ac
+
+% 0 1 0 0f17e5e9fe72c960196cf0d7d9d154d1
+
+% 0 1 0 1ebebd54a285ba6912d9e202e7018d50
+
+% 0 1 0 18572c2f7276dbba03372aa0b0387049
+
+% 1 1 0 1041d490406608a31679808b48a9b53a
+
+@ 0 5 0 0e83d639abff968e07873da2cfd95454
++ `'{…}` i `${…}` oznaczają *przesunięcia faz*. Kod wewnątrz cytatu wykonuje się o jedną fazę
++ później niż otaczający go kod, a kod wewnątrz wstawki – o jedną fazę wcześniej. Powyżej
++ definicja i użycie `name` znajdują się w tej samej fazie, czego wymaga *zasada spójności faz*.
++ `Out.println` i literał napisowy należą do następnej fazy. `Expr[String]` to abstrakcyjne
++ pojęcie wyrażenia, które w tej następnej fazie będzie typu `String`.
+
+@ 0 5 0 08c5a91a5665b7351c82dd91671b3abf
++ Dla makra „następna faza” to późniejsza kompilacja. Nic w cytatach nie wymaga takiego
++ odczytania. Następną fazą może być dowolne miejsce, w którym kod wykonuje się *gdzie indziej*:
++ inna JVM, maszyna w chmurze, przeglądarka. Cytaty i wstawki zagnieżdżają się i przeplatają z
++ dokładnością do wyrażenia, a kompilator sprawdza spójność *między* fazami. Umieszczenie kodu
++ zdalnego w innym pliku nie daje żadnej z tych rzeczy.
+
+@ 0 3 0 0bc4e2ac03bdac56138a59d74fc06d9b
++ Tutaj „gdzie” jest wartością. `Rig` określa, jak kod jest wdrażany i wywoływany, a `dispatch`
++ robi resztę: kompilację, buforowanie dla każdego miejsca wywołania oraz serializację
++ przechwyconych wartości na wejściu i wyników na wyjściu. Wszystko pochodzi z pakietu
++ `soundness`:
+
+% 2 1 0 1ff422443eeea8a8028b5d03eb4e03d2
+
+% 1 1 0 0ecfd64ab286274f1bb736cc7209c2b7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 1b084ed53cb66d2b0640671c5773c02d
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 03c9874b4d17338b1cba21d2250ea99e
+
+% 1 1 0 012f68f2e0aabca9159afbbdcd5eb282
+
+@ 0 2 0 1f91087725dabbff123c4be5fed03a5e
++ Przykłady na tej stronie kompilują i wykonują kod w innych procesach, dlatego są kompilowane,
++ ale nie uruchamiane.
+
+@ 0 1 0 03ce9ea26997f2b70448fab292f58d00
++ ### Wysyłanie kodu
+
+@ 0 2 0 11e9c6037ca8b6d4088bc5928f40274e
++ `dispatch` wywołane na środowisku przyjmuje blok w cytacie. Wartości z otaczającego zasięgu
++ wstawia się przez `${…}` i są one automatycznie przenoszone przez granicę:
+
+% 2 1 0 093bc78e13f401be1b020ff1775c3b7a
+
+% 0 1 0 0c11aab6ad1eeeae1a3ed658d1057ea9
+
+% 0 1 0 102f6aaafc625364055ecca7d3b89ed7
+
+% 0 1 0 13085cec4432a5720715e8ee43890b08
+
+% 0 1 0 02399dc61fbc21f3109458acb81aaf33
+
+% 0 1 0 11cc7ecb80e5caac07c8d76bba729c2b
+
+% 0 1 0 154c73309cbd67ae016321ac2b75e42a
+
+% 1 1 0 1acf0bc33592c4670cf29777a0ad1637
+
+@ 0 3 0 0fd6a46c737bcac91a266796255a0337
++ Blok kompiluje się raz dla każdego miejsca wywołania i trafia do pamięci podręcznej. Każde
++ wywołanie serializuje swoje wstawione wartości na wejściu i wynik na wyjściu. Dla wywołującego
++ `runElsewhere` jest zwykłą funkcją. Jej ciało akurat wykonuje się w innej JVM.
+
+@ 0 6 0 0689170c3f357ab114d880a3fdc4e604
++ Nazwy użyte wewnątrz cytatu rozwiązuje się względem importów na zewnątrz, ale tylko *statyczne
++ prefiksy*: nazwy, które kompilator potrafi rozwiązać bez wartości. To ograniczenie nie jest
++ niedogodnością do obejścia. Jest właściwością bezpieczeństwa. Odwołanie do obiektu na stercie
++ lokalnej JVM nie ma znaczenia na zdalnej, a spójność faz to właśnie to, co w ogóle uniemożliwia
++ zapisanie takiego odwołania. Wszystko, co przechodzi przez granicę, przechodzi przez wstawkę,
++ celowo i widocznie.
+
+@ 0 6 0 1a41cc4a7425de560743cd04d0a4b808
++ Z tego mechanizmu korzystają trzy role i zwykle są to trzy różne osoby. Ten, kto implementuje
++ `Rig`, wie, jak spakować, wdrożyć i uruchomić kod w jakimś środowisku, takim jak przeglądarka,
++ kontener czy maszyna wirtualna w chmurze, i nic nie wie o tym, co będzie uruchamiane. Ten, kto
++ pisze blok `dispatch`, wie, co ma się wykonać zdalnie, zapisuje to cytatami i wstawkami i
++ udostępnia to własnym wywołującym jako zwykłą metodę. Ci wywołujący nigdy nie wiedzą, że cokolwiek
++ z tego jest w to zaangażowane. Cytat widzą wyłącznie dwie pierwsze role.
+
+@ 0 1 0 0dd6384493c95ad71996d3698f78c5e7
++ ### Środowiska
+
+@ 0 3 0 035932f1d22b9c8b1282294c0f9dcd58
++ Dostępne są dwa środowiska. `Jvm` kompiluje blok i wykonuje go w nowym podprocesie JVM, z pełną
++ izolacją, kosztem uruchomienia procesu. `Isolation` wykonuje go w tym samym procesie pod
++ odizolowanym classloaderem, co jest tanie i ograniczone:
+
+% 2 1 0 15b5121c703bcf820c8b21eda127146d
+
+% 3 1 0 0c6b41a18ef44ec1106c7c87f5478224
+
+% 4 1 0 12e3cef723a5946103f1bf8acb348afd
+
+% 0 1 0 109e7c5866754dc31d80db234ba076b9
+
+% 0 1 0 156b40a5f53e5ca71279e54d23698718
+
+% 1 1 0 17b3f400516532a60d31486b1f5d987a
+
+@ 0 3 0 0983e813722ced1003ef1178c787d158
++ Nowe środowisko podłącza się przez zaimplementowanie `Rig`, który określa, jak skompilowany kod
++ jest *etapowany* do miejsca docelowego i jak jest tam *wywoływany*. Narzędzia tych bibliotek
++ dostarczają więcej przykładów:
+
+% 2 1 0 1caa0c0a715f616e00abc07c86e85da3
+
+% 0 1 0 092815eba281283e0e28228bbef6bdfb
+
+@ 0 6 0 0260283263c1d1b61457a73dff79ed8f
++ column  Wykonuje blok
++ column  Wysłanie zwraca
++ row  `Jvm`  w nowym podprocesie JVM  wyjście
++ row  `Isolation`  w tym samym procesie, pod odizolowanym classloaderem  wyjście
++ row  `Enclave`  spakowany jako samodzielny plik wykonywalny, do testów  `Enclave.Launcher`
++ row  `Bench`, `Stress`, `Profile`  w kontrolowanej JVM, mierzony jako [benchmark](../../standards/benchmarking.md)  wyjście
+
+% 1 1 0 0d4402299cc7e2e50ad20c40f032859f
+
+@ 0 1 0 07254426e278795417e3b50bfabd4279
++ ### Pisanie środowiska
+
+@ 0 4 0 04a49b896fb4822516ecb4a892592c90
++ `dispatch` wykonuje trudne części, zanim środowisko cokolwiek zobaczy. Wyodrębnia ścieżkę klas z
++ działającego classloadera, kompiluje kod w cytacie, jeśli nie jest jeszcze skompilowany,
++ przechwytuje wstawione dane wejściowe i koduje je w jedną wartość nadającą się do przesłania. Dla
++ środowiska pozostaje jedno wąskie zadanie: wykonać gdzieś kod, mając tę wartość, i przynieść
++ wartość, którą wytworzył.
+
+@ 0 1 0 0cbb6b17a2c7ae9f0b94eec3f4e1d16c
++ Środowisko deklaruje więc kilka składowych:
+
+% 2 1 0 010f3b67d25ab7510e15a6e018aa88aa
+
+@ 0 10 0 0f7aec8c89db32181c33f4f7435c93d4
++ column  Składowa
++ column  Deklaruje
++ column  W `Jvm`
++ row  `Result[output]`  co zwraca wysłanie: samo wyjście, `Optional`, `Task`…  `output`
++ row  `Form`  zakodowaną postać wejścia i wyjścia  `Text`
++ row  `Target`  co wytwarza etapowanie  `LocalClasspath`
++ row  `Transport`  postać, w której podróżują wstawione wartości  `Json`
++ row  `scalac`  kompilator używany do etapowania  `Scalac[3.6]`
++ row  `stage`  jak skompilowane wyjście jest *etapowane* do miejsca docelowego  ścieżka klas wyjścia
++ row  `invoke`  jak jest tam *wywoływane*  podproces `java`
+
+% 1 1 0 01ccee9aa0474c8203830f3c145a54c4
+
+@ 0 1 0 1e54096a8f062286082541c755843a0b
++ Środowisko `Jvm` to całość:
+
+% 2 1 0 10fbe94192b393dd15873842c2455c83
+
+% 0 1 0 0cf73b34cada60b00abad23d96a1d321
+
+% 0 1 0 19ec4aac20ba8be31941eb1142c4e0a9
+
+% 0 1 0 0226bdbf213578a91ecae3291c0b7faf
+
+% 0 1 0 140f91b18572ace403fa102734ad3a6e
+
+% 0 1 0 048e99dc47fdf7b915bd72b8dc7a3f0a
+
+% 0 1 0 13afa3fc7054ff171b336e7a10d1d16b
+
+% 0 1 0 01fed1543f5d90f00b0829b119e5607f
+
+% 0 1 0 0be53963959ef25515a0211055ac4b77
+
+% 0 1 0 17613176063bc1650642144257889bf1
+
+% 0 1 0 1f87f60295f9961a0acd097649e05466
+
+% 0 1 0 1c92b56aa2b919bb1ce7466b6cd3aa69
+
+% 1 1 0 15515b6b834e2e680a55f8c227ece3de
+
+@ 0 5 0 0add9716b8eeafe718a3b49a15953be2
++ `stage.remote` jest sednem. Otrzymuje funkcję z zakodowanego wejścia w zakodowane wyjście i
++ zajmuje się wszystkim po obu jej stronach. Tutaj ta funkcja uruchamia przez
++ [proces](processes.md) JVM i przechwytuje jej standardowe wyjście. Środowisko dla przeglądarki
++ lub kontenera różni się tylko tą funkcją oraz `stage`, które dla naprawdę zdalnego środowiska
++ musi *udostępnić* tam skompilowane klasy, a nie jedynie wskazać ich lokalne ścieżki.
+
+@ 0 1 0 00f746f0ca5df2040bf06c8f26293b88
++ ### Granica
+
+@ 0 4 0 1bc514ffe7c2b4c9139fd292feca319d
++ To, co przekracza granicę, musi dać się serializować, a transportem jest `Stageable`. Dostarczone
++ instancje przenoszą wartości jako drzewa [Pojo](generic-data.md) albo jako JSON. Przechwycona
++ wartość bez postaci nadającej się do przesłania zostaje odrzucona podczas kompilacji bloku.
++ Granica jest w typach i nie odkrywa się jej na odległość.
+
+@ 0 1 0 0852ae2a80b5b5710fd6590b3a4fa0f3
++ ### Co jest buforowane, a kiedy nie
+
+@ 0 2 0 1b35112ecc0b95f105a39520eef6e474
++ Kompilacja bloku jest kosztowna, więc wynik trafia do pamięci podręcznej. Liczy się klucz tej
++ pamięci. Jest nim *odcisk etapowanego drzewa* razem z miejscem wywołania, a nie samo miejsce
++ wywołania.
+
+@ 0 5 0 0cd5be61b7b2d6bb089564fb9f830383
++ To rozróżnienie ma znaczenie. Jedno miejsce wywołania wewnątrz metody inline może przy każdym
++ użyciu rozwinąć się w inne drzewo. Kluczowanie samym miejscem wywołania po cichu wykonywałoby
++ ponownie pierwsze rozwinięcie dla każdego kolejnego. Kluczowanie drzewem sprawia, że kilka
++ różnych rozwinięć z jednego miejsca kompiluje się każde raz, a wywołania różniące się tylko
++ przenoszonymi danymi współdzielą jedną kompilację. Dzięki temu wysyłanie z kontekstu generycznego
++ lub inline jest bezpieczne.
+
+@ 0 2 0 00bb67f349bca02a156e5cb9e572a97a
++ Wstawiona wartość jest obliczana raz na każde wysłanie, a nie raz na każde wystąpienie.
++ `${job.name}` użyte w bloku dwukrotnie odnosi się do tej samej zserializowanej wartości, a
++ `job.name` nie jest obliczane dwa razy.
+
+@ 0 1 0 0859c72de186e15b0673d53af260b405
++ ### Błędy po drugiej stronie granicy
+
+@ 0 5 0 0e31ec5086c776e11e2e6adab70c3c3b
++ Kod wykonywany gdzie indziej może zawieść, a niepowodzenie musi wrócić. Błąd zgłoszony w
++ etapowanym bloku zostaje przeniesiony i zgłoszony ponownie w miejscu wywołania. `dispatch`
++ zgłasza więc niepowodzenie zdalnego obliczenia, a nie to, że nie dało się do niego dotrzeć.
++ Niepowodzenie samego środowiska, takie jak podproces, który nie chciał się uruchomić, czy
++ classloader, którego nie dało się zbudować, jest czymś odrębnym, ponieważ oba przypadki wymagają
++ innych reakcji.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 6 0 05cb058f449e73bc0302f943e3f1dcbf
++ - [Metaprogramowanie](metaprogramming.md) opisuje narzędzia czasu kompilacji, na których opierają
++   się cytaty.
++ - [Kompilator](compiler.md) opisuje `Scalac`, którym środowisko etapuje kod.
++ - [Procesy](processes.md) opisuje polecenie `sh"…"`, które uruchamia środowisko `Jvm`.
++ - [Dane generyczne](generic-data.md) i [JSON](json.md) opisują postaci, w których wartości
++   przekraczają granicę.
++ - [Testowanie](testing.md) używa środowiska `Enclave` do spakowania testowanego programu.

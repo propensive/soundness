@@ -1,0 +1,155 @@
+orthant 2 language
+
+@ 0 1 0 0575231b23f581a10d3c47168127ac1b
++ # Nazewnictwo
+
+@ 0 6 0 056ef03eb7f5c363009a14789757f68c
++ Nazwy w Soundness są dobierane starannie, ponieważ rzecz dobrze nazwana czyta się poprawnie, a
++ źle nazwana zaciemnia każdy wiersz, który jej używa. Metody, typy i wartości kontekstowe nazywa
++ się tak, by tworzone z nich wyrażenia czytały się jak język naturalny, a spójne konwencje
++ sprawiają, że nazwa niesie to samo znaczenie, gdziekolwiek się pojawi. Dobre nazewnictwo jest
++ nieodłączne od tego, by kod czytał się jak [elegancka proza](elegant-prose.md): właściwa nazwa we
++ właściwym miejscu usuwa potrzebę komentarza, który by ją wyjaśniał.
+
+@ 0 8 0 068bd5e305a04c491d482beb384a7c95
++ Nazwy są też unikatowe w całym Soundness. Każdy publiczny typ ma jedno znaczenie w przestrzeni
++ nazw `soundness`: jest jeden `Path`, jeden `Message`, jeden `Error`, a moduł potrzebujący
++ odrębnego pojęcia ukuwa odrębną nazwę – `Teletype`, a nie kolejny `String`; `GitHash`, a nie
++ kolejny `Hash`. Unikatowość umożliwia import zbiorczy: `import soundness.*` nigdy nie zmusza do
++ wyboru między dwiema rzeczami o tej samej nazwie, sama nazwa w dokumentacji czy w komunikacie o
++ błędzie jest jednoznaczna, a przenoszenie kodu między modułami nigdy po cichu nie zmienia tego,
++ o który `Path` chodzi. Tam, gdzie to samo słowo naprawdę pasuje do dwóch rzeczy, jedną z nich
++ się przemianowuje, zamiast w nieskończoność ją kwalifikować.
+
+@ 0 6 0 015238232e8fe32d191a5a38643e7595
++ Opisowość obejmuje też najmniejsze nazwy. Parametry typów to słowa, nie litery: metoda jest
++ generyczna względem `element`, `format`, `duration` czy `plane` – nigdy `A`, `B`, `T` – więc
++ sygnatura czyta się jak zdanie o rodzajach rzeczy, których dotyczy, a jej klauzule ograniczeń
++ (`element: Encodable in Json`) czytają się jak stwierdzenia o nich. Ta konwencja kosztuje kilka
++ znaków na deklarację i zwraca je przy każdym czytaniu, a taki właśnie interes nazewnictwo
++ powinno zawsze robić.
+
+@ 0 1 0 0a9d5175e6d934e0064320f6517e29d9
++ ## Nazwy, które tworzą frazy
+
+@ 0 2 0 0c407d77cba1a7100e6ee6d67e44d438
++ Nazwę wybiera się ze względu na to, jak czyta się ją *na swoim miejscu*, a nie w oderwaniu.
++ Sprawdzianem jest to, czy powstałe wyrażenie da się przeczytać na głos:
+
+% 2 1 0 08fa801eaa7725681a846bddfc9f1c55
+
+% 3 1 0 14936856d082ae280e2db10b2efaca9e
+
+% 4 1 0 066d0a9bebbd6423183e3f43d65b94d2
+
+% 0 1 0 0567dd676232b453187980514e92885f
+
+% 0 1 0 1d596561c674e412192499b15ff264de
+
+% 0 1 0 11502d4557f8f4841271a24c6191f9fa
+
+% 0 1 0 185dd576a6ad593b1b46441ff1c96764
+
+% 1 1 0 0ee2e190e8b752840eeba1cc1d9f73fe
+
+@ 0 4 0 09543f048e9d26d10a7a76fb86683b0a
++ `on` łączy godzinę z datą, ponieważ to jest angielski przyimek; `uncloak` mówi, co dzieje się z
++ sekretem; `Read & Exclusive` czyta się jak tryb, który nazywa. Żadnej z tych nazw nie poprawiłaby
++ nazwa bardziej dosłowna, a kilka by pogorszyła: `combineTimeAndDate` mówi mniej niż `on` i czyta
++ się znacznie gorzej.
+
+@ 0 2 0 139d04ef1292389e0819f60b232d9d8b
++ To samo dotyczy wartości kontekstowych, które nazywa się według tego, co *wybierają*, a nie
++ według ich typu, ponieważ czytelnik widzi import:
+
+% 2 1 0 0782382dc6d447c1175616e44d115acf
+
+% 3 1 0 16d4f3cfde38d38a1a92b172316619d0
+
+% 4 1 0 0ddb778c4f2b622a1549e128438a4c07
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 1ffc216c123501de05bfcc61dc208228
+
+% 0 1 0 161e68b1f117a22a0b4b7f185305da70
+
+% 1 1 0 16777d0ab7cb49ef143a34772210f5fd
+
+@ 0 2 0 1fd0974086ea16e90a1ab3261ea6dcfd
++ Ktoś, kto natrafi na `import strategies.throwUnsafely` w nieznanym kodzie, dowiaduje się czegoś o
++ tym kodzie z samego wiersza importu.
+
+@ 0 1 0 14eda103e0aa19ba0d05a5dd9b52d821
++ ## Parametry typów jako słowa
+
+@ 0 2 0 07fb8bfdcd0c2ba909dd51a4d37e40f7
++ Konwencję najłatwiej ocenić przez porównanie, na jednej sygnaturze zapisanej w stylu
++ konwencjonalnym i w stylu Soundness:
+
+% 2 1 0 0100ece2d15533d615bfe0bf298dc949
+
+% 3 1 0 022d836750d589161d92cae49545b6e3
+
+% 0 1 0 02af42bc22d19c85061eb632ff60d765
+
+% 1 1 0 0d9fb4b7ef8f89640a7713d604c03685
+
+% 0 1 0 0cb757b386720acc006f3b9950bed93b
+
+% 0 1 0 11e138a2f5f39f8a09af3ab634fd2516
+
+% 1 1 0 14bb6164555d661617801dcbdc27aa0f
+
+% 0 1 0 1b498e6a2c25c8a7038ebcf159e3336f
+
+% 1 1 0 1c2db90d72017cb915130c6185ba05c2
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 4 0 1b4206db1c51015b06419a645b2e0299
++ Wersja Soundness mówi, czym *są* poszczególne części: `result` to to, co jest wytwarzane, `value`
++ to to, z czego się odczytuje, a klauzula ograniczenia czyta się jak twierdzenie o nich. Do
++ odszyfrowania liter nie trzeba klucza i nie ma miejsca na umysłowe potknięcie, w którym `T` w
++ jednej sygnaturze oznacza coś innego niż `T` w następnej.
+
+@ 0 1 0 0d4f7130a755dbda1798cf7e9b715427
++ ## Unikatowość jest egzekwowana, a nie tylko pożądana
+
+@ 0 3 0 155ab54fdefdb0d90c0d853ab7379216
++ Unikatowość nazw nie jest jedynie konwencją, której pilnują recenzenci. Ponieważ każdy moduł
++ reeksportuje do jednej przestrzeni nazw `soundness`, kolizja jest błędem kompilacji w module
++ zbiorczym – więc kolizję wykrywa się w chwili jej wprowadzenia, a nie wtedy, gdy natrafi na nią
++ użytkownik.
+
+@ 0 6 0 0fe66a5efc816347017a684ea372e144
++ Konsekwencje widać w historii repozytorium jako celowe zmiany nazw: oś czasu `Posix` z aviation
++ stała się `Unix`, aby zwolnić `soundness.Posix` dla płaszczyzny systemu plików; `Transmitter`,
++ `Trust` i `enumerate` przemianowano, gdy wchodziły w kolizje; typy elementów MathML zagnieżdżono
++ wewnątrz `Mathml`, zamiast przesłaniać nazwy ogólne. Każda z tych zmian była zamieszaniem,
++ przyjętym, ponieważ alternatywa – dwa znaczenia jednego słowa, kwalifikowane w nieskończoność –
++ to stały podatek nakładany na każdego czytelnika.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ile to kosztuje
+
+@ 0 3 0 117613d0876ac770117d749213a6dabc
++ **Zmiana nazwy jest uciążliwa.** Kolizja wykryta późno oznacza zmianę opublikowanej nazwy i
++ zepsucie zależnego kodu. Polityka to akceptuje, ponieważ koszty alternatywy się kumulują.
+
+@ 0 3 0 0ca6acca86c6111f116a333491d54033
++ **Dobre nazwy trudno znaleźć.** `Teletype` dla stylizowanego tekstu terminala wymagało namysłu,
++ którego nie wymagałoby `AnsiString`, a poszukiwania nie zawsze kończą się sukcesem za pierwszym
++ razem.
+
+@ 0 4 0 04effdc2e3a0d75a0d331afaa528cab5
++ **Przestrzeń nazw złożona z unikatowych nazw zawiera wiele nazw.** `import soundness.*` wnosi
++ bardzo dużo, a nazwa, która wygląda na wolną, może taka nie być – to bezpośrednia cena importu
++ zbiorczego i powód, dla którego nazwy nowego modułu sprawdza się względem całości, zanim zostanie
++ dodany.
+
+@ 0 2 0 162253b43a3ee4a20198fbd8c90e8cd1
++ Zobacz [elegancką prozę](elegant-prose.md), aby dowiedzieć się, czemu służy nazewnictwo, oraz
++ [małe API](small-apis.md), aby zrozumieć, dlaczego nazw do wybrania jest mniej, niż mogłoby być.

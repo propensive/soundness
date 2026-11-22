@@ -1,0 +1,38 @@
+orthant 2 language
+
+@ 0 1 0 147b1f6e08a14cdb1f2c01a272be6df2
++ # `↯/s.73.2` – literał czasu: wartość minut powyżej 59
+
+@ 0 2 0 067839bc34cb23190bec384c31f06947
++ Zgłaszany przez makro `validTime` z Aviation, gdy składnik minut
++ literału czasu wynosi 60 lub więcej.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 3 0 181f0330f6da46dd001bcf82005b8aec
++ Makro dekoduje literały `Double` do `Clockface`. Część
++ ułamkowa jest interpretowana jako dwie cyfry minut; wartość 60
++ lub większa jest niepoprawna.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Przykładowy komunikat
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 12ddda0e799f205815344af3d5ffa97c
+
+% 1 1 0 1dda9e2352416fd800a58183c2a4f8b4
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 1 0 159ebf847881ec5f0c7ee94e4b94bb4f
++ W literale należy użyć wartości minut z zakresu 0–59.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 2 0 134e7c69bc3b1f9c187f8ba40d928c64
++ - Pozostałe błędy literałów czasu: [Rodziny](README.md#families)
++ - Źródło: `lib/aviation/src/core/aviation.internal.scala`

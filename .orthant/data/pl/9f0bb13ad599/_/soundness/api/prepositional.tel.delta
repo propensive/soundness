@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 6 0 1889c953ce024d7f0440aab3316da853
++       *Płaszczyzna* to przestrzeń, w której żyje wartość: system plików dla ścieżki (`Path on
++       Linux`, `Path on Classpath`), przestrzeń wyszukiwania classloadera lub węzły, nad którymi
++       rysowany jest graf. Klasa typów lub typ wartości rozszerza `Planar`, by `on` mogło
++       nazwać płaszczyznę, a polityki systemu plików z galilei (`CreateParents`,
++       `DeleteRecursively`) są `Planar`, by dla każdego systemu plików wybierać jedną politykę.
++   entry #Plane   przestrzeń, taka jak system plików lub ścieżka klas, w której znajduje się wartość

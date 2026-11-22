@@ -1,0 +1,902 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 05d9ebbe7b16e06314c693f4ff3c954b
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09bbff7899a68e751ea73e3155021b38
++ info   generyczna derywacja instancji klas typów dla produktów i sum, z dwóch reguł zapisanych raz
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 04c88950aca70f1503c6922ecced67b5
++     _Wisteria_ to silnik derywacji stojący za każdym derywowanym kodekiem w Soundness – koderami
++     JSON budowanymi z klas case, wierszami CSV budowanymi z pól, skrótami budowanymi ze
++     struktur. Autor klasy typów pisze dwie reguły, `conjunction` (jak instancje pól
++     **produktu** łączą się w instancję dla produktu) i `disjunction` (jak instancja dla
++     **sumy** wybiera spośród jej wariantów), rozszerzając `Derivation`, a wtedy każda klasa
++     case, krotka, wyliczenie i zapieczętowany trait ma instancję, rozstrzyganą przez
++     odziedziczony given `derived` albo żądaną klauzulą `derives`. Nie trzeba pisać żadnego makra:
++     obie reguły są zwykłymi metodami inline, a pracę pole po polu lub wariant po wariancie
++     wykonują odziedziczone kombinatory `fields`, `contexts`, `build`, `construct`,
++     `variant`, `delegate`, `choices` i `singleton`.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1a79673f0c5fcfdd17ceee814d61943b
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 13147acc52e6cb8103f5ad4510211791
+
+% 0 1 0 13aa9dc6133e6a780636a2b34b76d33f
+
+% 0 1 0 144e1ca9fdf4f4931696760eeab20fb1
+
+% 0 1 0 1d2d3a970d4e705602448891021206a2
+
+% 0 1 0 17c6fd8df148d1511889a248e3654655
+
+% 0 1 0 1b7598531004cacc053a379c93161428
+
+% 1 1 0 06bff56d802acef7080a8e6e573d8128
+
+% 0 1 0 12966690a03c891315a16f87fc9a135f
+
+% 0 1 0 091e5b55970372c10eda8a5a65ed55a9
+
+% 0 1 0 10884fb74a62cc2d069c4fae82279dd8
+
+% 0 1 0 06e8b40b575b59f6094574421acdaee2
+
+% 1 1 0 0e2897de01d03d7003c2b645b75cd43e
+
+% 0 1 0 010530e45e4d14360587e77e503a8f89
+
+% 0 1 0 1a02c00a5ffb01fb0af00159237bb8e0
+
+% 0 1 0 0e85b81ce7d354c317f0db2a797b1549
+
+% 0 1 0 0a754f90293d122716f0a2fa6ccb01e6
+
+% 0 1 0 1c5e4b96e0f6458f01ac4f235999cd22
+
+% 0 1 0 15bcfcc2e868b68507a69dad802884b0
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 7 0 11804960e7a7af23155e8abe3c957920
++     Wewnątrz polimorficznej lambdy, którą przyjmuje każdy kombinator, pole lub wariant jest
++     opisane kilkoma wartościami kontekstowymi, odczytywanymi przez akcesory pakietu:
++     `contextual` to instancja klasy typów dla własnego typu pola, `label` – jego nazwa w
++     zapisanej postaci, `index` – jego pozycja, `default` (z vacuous) – zadeklarowana wartość
++     domyślna pola albo `Unset`, a `dereference` – funkcja z produktu na pole. Składnia
++     `[field] => field => …` to lambda polimorficzna: każde pole ma inny typ, a ciało wie
++     tylko, że `contextual` jest instancją dla dokładnie tego typu, co jest wszystkim, czego
++     potrzebuje.
+
+@ 0 7 0 06408db19ed902a0115359ef8f63b748
++     **Produkt** to klasa case, krotka, przypadek wyliczenia albo singleton (obiekt case lub
++     bezparametrowy przypadek wyliczenia, czyli produkt bez pól); jego wartościami są
++     **pola**, o ustalonych typach, kanonicznej kolejności i etykietach. **Suma** to
++     wyliczenie albo zapieczętowany trait; jej alternatywami są **warianty**. Silnik rozpoznaje
++     każde z nich przez `scala.deriving.Mirror`, którego aliasami są tutaj `Reflection`,
++     `ProductReflection` i `SumReflection`, więc typ bez mirrora – zwykły trait, klasa, która
++     nie jest klasą case – zawodzi w miejscu derywacji.
+
+@ 0 7 0 0330e015d757e2a516941fd7d11afd60
++     `Derivation` derywuje zarówno dla produktów, jak i dla sum; `ProductDerivation` – tylko
++     dla produktów, tak że zastosowanie klasy typów do sumy jest błędem kompilacji, a
++     `SumDerivation` – tylko dla sum. Dla klasy typów zapisanej w stylu `Self` (`value is
++     Display`) kształt dostosowują aliasy `Derivable` i `ProductDerivable`. Instancja
++     derywowana ma niższy priorytet niż każdy given zapisany we własnym ciele obiektu
++     towarzyszącego, więc ręcznie napisana instancja dla danego typu zawsze wygrywa. Derywacja
++     jest niewidoczna dla użytkownika klasy typów, któremu wystarcza zdefiniowanie klasy case.
+
+@ 0 7 0 1979e7b4646fa66a159a1fbe4ed690e1
++     Silnik derywuje od razu cały **graf**: `derived[T]` odwiedza każdy typ osiągalny z pól i
++     wariantów `T`, emituje jedną instancję na każdy odrębny typ i rozstrzyga każde pole
++     prawdziwym wyszukiwaniem niejawnym, ignorując przy tym własne givens derywacji klasy
++     typów, więc instancją pola jest instancja napisana ręcznie, kodek dla kolekcji albo
++     rodzeństwo z tego samego grafu – a typ rekurencyjny rozstrzyga się do samego siebie,
++     zamiast ponownie wchodzić w derywację. Typowi rekurencyjnemu nadal najlepiej dać
++     instancję w jego obiekcie towarzyszącym klauzulą `derives`.
+
+@ 0 5 0 036443b40882673715d41ff0ebe382be
++     Poza kodekami obiekt `arithmetic` derywuje `Addable`, `Subtractable`, `Multiplicable` i
++     `Divisible` pole po polu dla dowolnego produktu, każdy jako given importowany po nazwie:
++     `import arithmetic.addable`. Nadpisania dla poszczególnych pól pochodzą z vicarious:
++     `derivation is Specific over typeclass` w zasięgu, zbudowany przez `specifically`,
++     dostarcza inną instancję pod nazwaną ścieżką pola, a każdy kombinator się do niego odwołuje.
+
+@ 0 4 0 17f3716236e5909a13ae598a2020a7ba
++     Biblioteka to jeden zbiór źródeł, `wisteria.core`, kompilowany dla JVM, Scala.js i
++     Scala Native. Wszystko jest eksportowane do modułu zbiorczego `soundness`, z jednym
++     zastrzeżeniem: akcesor `label` dzieli nazwę z `Element#label()` z tarantula, więc plik,
++     który importuje oba i widzi, że `label` jest zgłaszany jako niejednoznaczny, powinien
++     pisać `wisteria.label`.
+
+% 0 1 0 1b16f507f74ef78910d9ae05b9b17bcb
+
+% 0 1 0 1469cdb0563490d407c8700030dd2d3a
+
+% 0 1 0 02520eac0fbae18b1ef1a6378a43a69d
+
+% 0 1 0 16a304ec1cd7ff4000fa6e8070f71c3e
+
+% 0 1 0 1ed6710e6599bce30402f78dacf05b60
+
+@ 0 1 0 0aa0cca7d2547f671c239b055ca2ac7b
++ entry .Derivation   baza obiektu towarzyszącego klasy typów, który derywuje zarówno dla produktów, jak i dla sum
+
+% 1 1 0 17321e16e514a18500e9ce0185ede43c
+
+@ 0 5 0 06cf81340d3c3da100c6eaeaa0f5cdee
++       `object Typeclass extends Derivation[Typeclass]` daje klasie typów derywację: obiekt
++       implementuje `conjunction` (regułę produktu, z `ProductDerivation.Methods`) i
++       `disjunction` (regułę sumy, z `SumDerivation.Methods`) oraz dziedziczy `derived`, given,
++       przez który dowolny typ produktu lub sumy rozstrzyga instancję. Parametrem typu jest
++       konstruktor typu klasy typów; klasa typów w stylu `Self` używa zamiast tego `Derivable`.
+
+% 2 1 0 0d0337fa0da76bb5080994e64e520e32
+
+% 3 1 0 138106c240cf290f05f72c91cfdfb2ac
+
+% 4 1 0 1c77c82091b6efab11f641938afedb77
+
+% 0 1 0 067ff7c5e830be870106b98cc0352688
+
+% 0 1 0 0454a91fd21e0b71158bca0b3c6fe5d1
+
+% 0 1 0 05f33a590db72e541882d93454661130
+
+% 0 1 0 07a949f21a3498a30a9a2d75c851539a
+
+% 0 1 0 021eace761ebc7aa06ae5f95006f9c32
+
+% 0 1 0 0625be81730b847003845275b84fe0e3
+
+% 1 1 0 17c3e3b458cf6fce127bbeb3e765beee
+
+% 0 1 0 07bac2604ad319bf05da505554c55a13
+
+% 0 1 0 0f1da7bceb1a62161cfa67fb08e8ee7d
+
+% 0 1 0 1d4e753f9fc49f901cda04ec12c9277f
+
+% 0 1 0 01b5c590dfa035dc143e85c627233416
+
+% 0 1 0 1ca937a34616c150014bc9fc24d86738
+
+% 0 1 0 15350d969a6406161d89fbf9cb3ca286
+
+% 1 1 0 02a196d01ec141f20654fa187771175a
+
+% 0 1 0 032eabbbec06e4df1f7bed37c94f0df3
+
+% 0 1 0 0f4aef81f061039f0c872cef162c552b
+
+% 0 1 0 03526477d1343a2d0b94ac6508df9251
+
+% 2 1 0 02ef9817fd85db8310ce071fe6f0fc39
+
+% 0 1 0 05657e63441db3c016c9822ac7beb72c
+
+% 1 1 0 0b0d1c220e07e5d20e98be66de00532f
+
+@ 0 8 0 1dee106818cc4ef80d42c1440cbbb863
++       Obie reguły są `inline`: rozwijają się w miejscu użycia, raz na każdy typ w
++       derywowanym grafie, co pozwala, by `contextual` w lambdzie był instancją dla właściwego
++       typu pola, i pozwala `inline if choice[derivation]` odrzucić kształt w czasie
++       kompilacji przez `scala.compiletime.error` (zapisany z pełną kwalifikacją). Dwa błędy są
++       na tyle częste, że warto je nazwać: długi błąd kończący się _given instance derived in
++       trait Derivation does not match type…_ niemal zawsze oznacza, że zmiennej typu lambdy
++       polimorficznej brakuje górnego ograniczenia (`[variant <: derivation]`, a nie
++       `[variant]`), a niezgodność z `Product` oznacza, że parametrowi typu `conjunction`
++       brakuje `<: Product`.
+
+@ 0 4 0 09f69c8bc4a697e10e7a26a7cebb2097
++       Obiekt nie musi być obiektem towarzyszącym klasy typów. Zdefiniowane w zwykłym obiekcie
++       reguły dają derywację bez wystawiania jej na wyszukiwanie niejawne, a `Rules.derived[T]`
++       wywołuje się wszędzie tam, gdzie potrzebna jest instancja – w ten sposób można oferować
++       dwie derywacje jednej klasy typów, na przykład parser ścisły i tolerancyjny.
+
+@ 0 8 0 1f7d4339d29dc5701838eed5a9b5bc6c
++       Przy sprawdzaniu przechwytywania typem wyniku reguły jest `typeclass[derivation]^`:
++       instancja derywowana może uczciwie przechwytywać zdolności, których potrzebowało jej
++       rozstrzyganie, takie jak taktyka dekodera, a przechwycenie jest wymazywane raz, w
++       `derivedOne`. Derywacja rozwija się w module, który jej używa, więc błąd przechwytywania
++       w derywacji jest zgłaszany w tym module, a nie w module klasy typów. Reguła sumy, która
++       wywołuje `delegate` lub `singleton`, potrzebuje `Tactic[Variant.Error]` tam, gdzie się
++       rozwija; zwykły kształt zamyka ją wewnątrz instancji przez
++       `provide[Tactic[Variant.Error]]`, tak aby sama instancja derywowana nie była zdolnością.
+
+% 0 1 0 0ee2070c762f0c5a02120dbde3000d4f
+
+% 1 1 0 0dc8e3c3d962d2520a2d79b2f9e5d2c2
+
+% 0 1 0 0790dba7c556641e1a5f3a1b3e9c5d3a
+
+@ 0 16 0 19c013751dd1808916865c7a51841b2a
++   entry #derivedOne   instancja dla jednego typu, produktu lub sumy, na jeden poziom w głąb
++       Wybiera `disjunction` dla sumy i `conjunction` dla produktu, badając symbol typu, i
++       zawęża świeży wynik do `typeclass[derivation]`. Jego pola i warianty rozstrzygają się do
++       instancji rodzeństwa; `derived` wywołuje ją raz dla każdego odrębnego typu w grafie, a
++       derywacja sięga po nią bezpośrednio, gdy chce dokładnie jednego poziomu.
++   entry #derived   given, który derywuje instancję dla dowolnego typu z `Reflection`
++       `derived[derivation]`, przyjmujący `Reflection[derivation]` (`scala.deriving.Mirror`),
++       to given, który wyszukiwanie niejawne znajduje dla każdego typu produktu i sumy, oraz
++       metoda, którą wskazuje klauzula `derives Typeclass`. Buduje cały graf typów osiągalnych
++       z `derivation` – rekurencyjnie każdy typ pola i typ wariantu – emituje jedną leniwie
++       wiązaną instancję na każdy odrębny typ i zwraca instancję korzenia. Pole, którego typ ma
++       ręcznie napisany given albo kodek, taki jak ten dla `List[T]`, używa go; pole, którego
++       typ jest innym produktem lub sumą w grafie, używa swojego rodzeństwa; typ, który osiąga
++       sam siebie, rozstrzyga się do własnego wiązania. Typ pola bez żadnej instancji to błąd
++       kompilacji w miejscu derywacji, a skompilowanie jawnego `Typeclass.derived[T]` w
++       miejscu wywołania to najszybszy sposób, by dowiedzieć się, któremu polu jej brakuje.
+
+@ 0 1 0 1c94e7b403abe6171266e748d590d08b
++ entry .ProductDerivation   baza obiektu towarzyszącego klasy typów, który derywuje tylko dla produktów
+
+% 1 1 0 11b4e51329b4b4be142407fd2c4126db
+
+@ 0 6 0 1649c6a806af93361a64a79d63a26747
++       `object Typeclass extends ProductDerivation[Typeclass]` daje klasie typów derywację dla
++       klas case, krotek i singletonów, a żadnej dla sum: zastosowanie jej do wyliczenia albo
++       zapieczętowanego traitu to błąd kompilacji wskazujący niezgodność, a nie niespodzianka w
++       czasie wykonania. Obiekt implementuje tylko `conjunction` i dziedziczy `derived`.
++       Kombinatory, którymi zapisuje się regułę produktu – `fields`, `contexts`, `build`,
++       `construct`, `complement`, `typeName`, `tuple` i `singleton` – są składowymi
+
+% 0 1 0 06807462b7800c060358d45325089c99
+
+% 2 1 0 0e27187a328433e113a9c8d9b8fa964d
+
+% 3 1 0 1eeb3d1cfef69c4407e9d40206f7d3f9
+
+% 4 1 0 06ba31ef59d885911d9eb992209ac110
+
+% 0 1 0 19a21b97cca651720e895f942ed49233
+
+% 0 1 0 1cb5510700c904bd14478ee8cea3586f
+
+% 0 1 0 10ea6dd3436fda07173d66c8f47f6e7a
+
+% 0 1 0 18a0839b0cc040a71ec9779fa29526e6
+
+% 0 1 0 0d9121c2bb83e4e6036725c5cf74c42e
+
+% 0 1 0 03fad97a20a5fa100ef15bb83295af60
+
+% 0 1 0 095f662d33f43b9e093a571bf641a967
+
+% 0 1 0 136e1115c40308080525bf8d83358e7d
+
+% 0 1 0 1f1363ce5a99e3a2156eb29b107000b8
+
+% 0 1 0 1cc4f93273b759961610bef56f39dc95
+
+% 2 1 0 04533cfb6eee4ddb07d0cbe4d6428d26
+
+% 0 1 0 15f1a6562d1bc5f2006ae18c0508a3bd
+
+% 1 1 0 1b541ae3d6caf959179232a2d821b7cb
+
+% 2 1 0 14b1bea166369d871612d279ec9cf5dc
+
+% 2 1 0 1671d92c922f15ad00af0b0c49093d4a
+
+@ 0 1 0 1d94bd7648cef7f616afab6a61cf3442
++   entry .Methods   kombinatory produktu: słownictwo, w którym zapisuje się `conjunction`
+
+% 1 1 0 130fd033f84a2d0f1f5d61c6820d1ed4
+
+@ 0 9 0 07a27ae720f5800b04aee4458bc51f88
++         Trait, który domieszkuje każda `Derivation` i `ProductDerivation`. Deklaruje
++         abstrakcyjną regułę produktu, `conjunction`, i dostarcza kombinatory inline, którymi
++         reguła jest zapisywana. Każdy przyjmuje lambdę polimorficzną, `[field] => … => result`,
++         i rozwija ją raz na każde pole, z wartościami kontekstowymi pola w zasięgu:
++         `contextual`, instancja `typeclass[field]`; `label`, nazwa pola jako `Text`; `index`,
++         jego pozycja jako `Int & FieldIndex[field]`; `default`, `Default[Optional[field]]`
++         przechowujący zadeklarowaną wartość domyślną albo `Unset`; oraz, w `contexts`,
++         `dereference`, funkcja `derivation -> field`. Kombinatory są `protected`, więc sięga się
++         po nie z wnętrza obiektu derywującego:
+
+@ 0 18 0 0b5bcd2ad2db588d107f3f544ec81531
++         - `fields(value)(lambda)` składa pola wartości, przekazując lambdzie wartość każdego
++           pola, i zwraca wyniki jako zamrożoną `Array[result]`. To kombinator **konsumenta**:
++           renderera, kodera, funkcji haszującej. Parametrem lambdy jest wartość pola.
++         - `contexts[derivation]()(lambda)` to to samo składanie bez wartości: parametrem lambdy
++           jest instancja pola, a `dereference` jest dostępny do sięgania do wnętrza wartości –
++           albo dwóch wartości, w ten sposób relacja równoważności porównuje odpowiadające sobie
++           pola, nie oddzielając ich od lambdy, która nadała im typ. Dla schematu albo listy
++           etykiet produktu wartość w ogóle nie jest potrzebna.
++         - `build[derivation](lambda)` konstruuje nową wartość produktu: parametrem lambdy jest
++           instancja pola, a lambda zwraca wartość pola. To kombinator **producenta**: parsera,
++           dekodera, generatora. Konstrukcja przechodzi przez `fromProduct` mirrora, dzięki
++           czemu działa dla klas case zagnieżdżonych w obiektach i zadeklarowanych wewnątrz
++           metod.
++         - `construct[constructor, derivation](bind, pure, lambda)` to `build` dla lambdy,
++           której wynik jest opakowany w konstruktor typu – `Optional`, `Attempt`, `List` –
++           przeprowadzający pola przez podane mu polimorficzne `bind` i `pure`, tak że
++           niepowodzenie pola jest niepowodzeniem produktu:
+
+% 0 1 0 13315afc77200bb10a6eae432453b8b3
+
+@ 0 3 0 1351cfc65fe897131e62d302f583a76c
++         - `complement(product)` odczytuje bieżące pole z innej wartości tego samego produktu,
++           z typem pola, wewnątrz dowolnej z lambd; `dereference` to ten sam dostęp w postaci
++           funkcji.
+
+@ 0 7 0 19a2cd4f57ef5fed170aa8f30de6b0f0
++         Składanie przywołuje klasę typów dla **każdego** pola, więc nawet klasa typów, której
++         instancje liści są trywialne (na przykład etykiety `Text`), musi je dostarczyć. `index`
++         to `Int` z marką, więc natywną `List` indeksuje się przez `Ordinal.zerary(index)`, co
++         daje `Optional`; bramka złożoności dla indeksowania (`dysasymptotics.linearAccess`)
++         musi być zaimportowana tam, gdzie rozwija się derywacja. Przy sprawdzaniu
++         przechwytywania wartość, którą lambda odczytuje z pola typu tablicowego, zachowuje
++         adnotację przechwytywania pola, więc produkt z zamrożonym polem `Array[Long]^{}`
++         derywuje się bez problemów.
+
+@ 0 30 0 167c430cc6e1b76f0f45586460d46274
++         Ponieważ reguła jest `inline`, bramkowana operacja na kolekcji wewnątrz niej – `.all`,
++         `.to[List]`, indeksowanie `List` liczbą porządkową – jest rozstrzygana tam, gdzie
++         rozwija się derywacja, względem wszystkiego, co tam zaimportowano. Jeśli taka operacja
++         nie rozstrzyga się w rozwinięciu, choć ten sam wiersz kompiluje się w zwykłym `def`,
++         należy przenieść ją do zwykłej metody pomocniczej, którą wywołuje reguła.
++     entry #conjunction   reguła produktu: instancja dla produktu z instancji jego pól
++         Abstrakcyjna, implementowana przez obiekt derywujący. `conjunction[derivation <: Product:
++         ProductReflection]: typeclass[derivation]^` jest wywoływana raz na każdy typ produktu w
++         derywowanym grafie, z mirrorem w zasięgu, i zwraca instancję, zwykle jako lambdę nad
++         `fields`, `contexts`, `build` lub `construct`. Wymagane jest zarówno ograniczenie
++         `<: Product`, jak i ograniczenie kontekstowe. Przy sprawdzaniu przechwytywania wynik
++         jest świeży (`^`), więc instancja może przechwytywać to, czego potrzebowała jej
++         konstrukcja; `Derivation#derivedOne` wymazuje przechwycenie.
++     entry #typeName   nazwa typu, dla którego trwa derywacja, jako `Text`
++         `typeName[derivation]` to etykieta mirrora: `Person` dla `case class Person`, `Tuple2`
++         dla pary. Dostępna w obu regułach i w lambdach, dla przedstawienia, które nazywa typ
++         lub wariant.
++     entry #tuple   czy produkt jest krotką, rozstrzygane podczas kompilacji kodu
++         `inline if tuple[derivation] then … else …` pozwala przedstawieniu pominąć nazwę typu dla
++         krotki, której pola mają etykiety `_1`, `_2`, ….
++     entry #singleton   czy produkt jest singletonem – obiektem case albo bezparametrowym przypadkiem
++         `inline if singleton[derivation] then typeName[derivation] else …`: singleton nie ma
++         pól, więc przedstawienie pokazuje tylko jego nazwę, a parser nie ma czego parsować.
++   entry #derivedOne   instancja dla jednego typu produktu, na jeden poziom w głąb
++       `conjunction` zastosowana do typu, z przywołanym mirrorem, i świeży wynik zawężony do
++       `typeclass[derivation]`. Typ sumy jest tu błędem kompilacji.
++   entry #derived   given, który derywuje instancję dla dowolnego typu produktu
++       Jak `Derivation#derived`: buduje graf osiągalnych typów i zwraca instancję korzenia,
++       każdy typ derywowany przez `derivedOne`. Suma wśród osiągalnych typów to błąd
++       kompilacji, ponieważ ta derywacja nie ma `disjunction`.
+
+@ 0 1 0 1caf6de83cb84814068e68711a617ad0
++ entry .SumDerivation   baza obiektu towarzyszącego klasy typów, który derywuje tylko dla sum
+
+% 1 1 0 01810cd410a6d24301056f654514e1da
+
+@ 0 6 0 07ba64f508aec8951ab9c469aaaf400e
++       `object Typeclass extends SumDerivation[Typeclass]` daje klasie typów derywację dla
++       wyliczeń i zapieczętowanych traitów, a żadnej dla produktów: instancje wariantów muszą
++       pochodzić skądinąd, z reguły z ręcznie napisanych givenów. Obiekt implementuje tylko
++       `disjunction` i dziedziczy `derived`. Kombinatory, którymi zapisuje się regułę sumy –
++       `variant`, `delegate`, `choices`, `singleton`, `complement`, `variantLabels` i `choice` –
++       są składowymi `SumDerivation.Methods`.
+
+% 2 1 0 0a8e8b92642f3698188154e76a6ba0b4
+
+% 3 1 0 1144e867abc178e6111f9629a60cf035
+
+% 0 1 0 0117438b690aaebc0e0c6bc11cb64147
+
+% 0 1 0 10437ce778870f5203bf37312a79f45b
+
+% 0 1 0 04d009cc9431decb0f72b165fa824997
+
+% 0 1 0 0252d8b3f04aa0b31833ba1dd7c78649
+
+% 0 1 0 0f57a7e08ba1bd1e02215ec4d5951d24
+
+% 0 1 0 04c04b7a2bb4cf7f16ded1b9b6371169
+
+% 0 1 0 114f7a268b59e0e90f18e752b62315c5
+
+% 0 1 0 18bc41b444129aa905caf1ca99a5a2f5
+
+% 0 1 0 1ce79f2a3076093a0842088338f34c87
+
+% 0 1 0 1900295e8914dde01e8ba505a8fd5a7b
+
+% 0 1 0 08e309bef604dd2b1245d60636a495fb
+
+% 0 1 0 125c3c341cb854791f5a9e509cf821bb
+
+% 1 1 0 0918ff7e3958ef0c1c426ff50661fec2
+
+% 2 1 0 1bb121329c0a9bf018fbf20516bc439b
+
+% 0 1 0 1d9b5d79310caccc132d3e13708e853f
+
+@ 0 1 0 1f5868421afbf1af0e73ce49cf4a5dda
++   entry .Methods   kombinatory sumy: słownictwo, w którym zapisuje się `disjunction`
+
+% 1 1 0 1b4ff102e436da670dff47d5cea82c90
+
+@ 0 7 0 1aa6cc5971f5fbce0f89608a961cb93c
++         Trait, który domieszkuje każda `Derivation` i `SumDerivation`. Deklaruje abstrakcyjną
++         regułę sumy, `disjunction`, i dostarcza kombinatory inline, którymi reguła jest
++         zapisywana. Każdy przyjmuje lambdę polimorficzną nad wariantem, `[variant <: derivation]
++         => … => result` – górne ograniczenie jest wymagane – i rozwija ją z wartościami
++         kontekstowymi wariantu w zasięgu: `contextual`, instancja `typeclass[variant]`;
++         `label`, nazwa wariantu jako `Text`; oraz `index`, jego pozycja jako
++         `Int & Variant.Index[variant]`. Kombinatory są `protected`, więc sięga się po nie z
++         wnętrza obiektu derywującego:
+
+@ 0 16 0 1785478c839190020bd2a5991924f353
++         - `variant(sum)(lambda)` rozdziela według faktycznego przypadku wartości: parametrem
++           lambdy jest wartość zawężona do jej wariantu, więc ciało jest typowane na poziomie
++           przypadku, a nie sumy. To kombinator **konsumenta**.
++         - `delegate(label)(lambda)` otrzymuje informację, który wariant ma wytworzyć, przez
++           jego etykietę, i przekazuje lambdzie instancję tego wariantu; to kombinator
++           **producenta**, dla dekodera, którego dane wejściowe niosą dyskryminator. Etykieta,
++           która nie wskazuje żadnego wariantu, zgłasza `Variant.Error`, więc
++           `Tactic[Variant.Error]` musi być w zasięgu tam, gdzie rozwija się reguła – z reguły
++           zamknięta wewnątrz instancji przez `provide[Tactic[Variant.Error]]`.
++         - `singleton(label)` zamienia etykietę z powrotem na wartość, którą wskazuje, dla
++           sumy, której wszystkie warianty są singletonami; nieznana etykieta również zgłasza
++           `Variant.Error`.
++         - `choices(lambda)` składa wszystkie warianty bez wartości, według której można by
++           rozdzielać, przekazując lambdzie instancję, etykietę i indeks każdego wariantu, i
++           zwraca zamrożoną `Array[result]`: to, czego potrzebuje derywacja wytwarzająca schemat
++           zamiast instancji.
++         - `complement(sum)` odczytuje drugą wartość dwuwartościowej klasy typów zawężoną do
++           bieżącego wariantu, jako `Optional`, ponieważ obie nie muszą być tym samym wariantem.
++         - `variantLabels` wylicza etykiety wariantów w kolejności deklaracji.
+
+@ 0 22 0 081c891849bff7021938dae6208313b0
++         `choice[derivation]` informuje, podczas kompilacji kodu, czy każdy wariant jest
++         singletonem – wyliczeniem nazw, bez danych – i zapisuje się go jako `inline if
++         choice[derivation] then … else scala.compiletime.error("…")`, tak aby derywacja, która ma
++         sens tylko dla takich wyliczeń, odrzucała pozostałe własnym komunikatem.
++     entry #disjunction   reguła sumy: instancja dla sumy z instancji jej wariantów
++         Abstrakcyjna, implementowana przez obiekt derywujący. `disjunction[derivation:
++         SumReflection]: typeclass[derivation]^` jest wywoływana raz na każdy typ sumy w
++         derywowanym grafie, z mirrorem w zasięgu, i zwraca instancję, zwykle jako lambdę nad
++         `variant` lub `delegate`. Świeża (`^`) przy sprawdzaniu przechwytywania, jak `conjunction`.
++     entry #choice   czy każdy wariant sumy jest singletonem, rozstrzygane podczas kompilacji kodu
++         `transparent inline`, więc `inline if choice[derivation]` jest rozstrzygane w czasie
++         kompilacji, a niewybrana gałąź jest eliminowana – łącznie z `scala.compiletime.error`,
++         który w przeciwnym razie przerwałby kompilację. Prawda dla wyliczenia samych nazw i
++         zapieczętowanego traitu obiektów case; fałsz, gdy tylko jeden wariant niesie dane.
++         Rozstrzygane przez zbadanie symbolu typu, więc jest wiarygodne głęboko wewnątrz
++         wstawiania grafu.
++   entry #derivedOne   instancja dla jednego typu sumy, na jeden poziom w głąb
++       `disjunction` zastosowana do typu, z przywołanym mirrorem, i świeży wynik zawężony do
++       `typeclass[derivation]`. Typ produktu jest tu błędem kompilacji.
++   entry #derived   given, który derywuje instancję dla dowolnego typu sumy
++       Jak `Derivation#derived`: buduje graf osiągalnych typów i zwraca instancję korzenia.
++       Produkt wśród osiągalnych typów – na przykład wariant z polami – musi mieć własną
++       instancję, ponieważ ta derywacja nie ma `conjunction`.
+
+@ 0 1 0 08d5a3959a151b7a1795105256801bc3
++ entry .Derivable   `Derivation` dla klasy typów zapisanej w stylu `Self`: `value is Display`
+
+% 1 1 0 041b253fc40796fb19d661276b1f7fcb
+
+@ 0 5 0 09e18473a445b54e1dfeeb7c31312ffb
++       `Derivation` przyjmuje konstruktor typu, `Typeclass[_]`. Klasa typów, której podmiotem
++       jest składowa typu `Self` – `trait Display { type Self; def display(value: Self): Text }`,
++       używana jako `Text is Display` – nie ma konstruktora typu, który można by jej przekazać,
++       więc `Derivable[Display]` go wypisuje: jest to
++       `Derivation[[self] =>> Display { type Self = self }]`. Reguły zapisuje się wtedy ze
++       składnią `is` w typach wyników i stosują się te same kombinatory.
+
+@ 0 2 0 127bdc10747350561c556081bba6ed11
++       Obserwowana w miarę rozrastania się klasa typów: `Display` napisana najpierw tylko dla
++       produktów, z `ProductDerivable`, a potem wyposażona także w regułę sumy, z `Derivable`.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 176406b3a306ff89139e3c602bb149fb
++         label Sama reguła produktu: klasy case się wyświetlają, sumy nie
+
+% 1 1 0 1928423003c643bc1e03823b75be9fce
+
+% 2 1 0 1dc5692799ac665707efb4c8bcc16100
+
+% 3 1 0 02f87f04dcf5dc0810e62f70cc7f6e20
+
+% 5 1 0 020c357d9b691a0c04bddf468f31a480
+
+% 6 1 0 10597ec20a8e7ead165ca1b77557308f
+
+% 7 1 0 19524aaf3101d02d0c00210e18e318d7
+
+% 0 1 0 01ba80d649231d3b12707e7f3cad11ea
+
+% 1 1 0 19e9566c61abe304139af4ae5adcc057
+
+% 2 1 0 029e18582c092a57057ac0f85d7e249d
+
+% 4 1 0 040b5fcdc834adb30018094a94d3d64e
+
+% 5 1 0 0376d0b2af7744e30298eb75269c7a2c
+
+% 6 1 0 10c9957a2e6097be1da0cf78fcffcc2b
+
+% 7 1 0 1919183200d8c524110b0aac51e64373
+
+% 8 1 0 1de78eec1e9fdd030e1f4f5ae5bd1ec7
+
+% 2 1 0 062feab503460d6d11c9ff71037b3ac5
+
+% 3 1 0 1414dc5277109a3e0afa848a73962d32
+
+% 5 1 0 1cbb61f6f41191b30f79fb2bc679f6f4
+
+% 7 1 0 156d6135e47c89e9095d40979984f584
+
+% 8 1 0 08a01df668387d2c0eccac9fc0323525
+
+% 9 1 0 196b87afe98757bf149c40f2ea1f83fd
+
+% 11 1 0 1a6ebcca001d84ec1d080203a7bcb37e
+
+% 0 1 0 150b77db62817c2c10352cece49c5793
+
+% 1 1 0 058405961cbbfb0b0fb9bc687a8969b8
+
+@ 0 1 0 1e334de49ecf1c540915f636ae5e4ba7
++         label Także reguła sumy: wariant wyświetla jego własna instancja
+
+% 1 1 0 04d1022e6fe227f211e1319f3f3ff076
+
+% 2 1 0 12ec126390744ce8065cd53293a049e9
+
+% 3 1 0 0e41d0503a68a7811a92f25aacdcc299
+
+% 5 1 0 05bfc6513f2f9e0105f9082296d8f52e
+
+% 6 1 0 0ef4d221ae5236141e115242f073fd03
+
+% 7 1 0 0aab4d02da9919781dbeabfd7a9d605d
+
+% 0 1 0 18d1f373c69f5df81461fd9a12fad695
+
+% 1 1 0 1908f87934e8cada16a94720d02bdb2c
+
+% 2 1 0 0d59793153e14f0e182bd626ad9eb67f
+
+% 4 1 0 091ba7af6b85222503b42921a22a1335
+
+% 5 1 0 118d9f7ead7afb1c0f825367af4eda4b
+
+% 6 1 0 176a97e133407c5c1cf47fec8162f884
+
+% 7 1 0 0d479cb383223a771886256eb307d2bf
+
+% 8 1 0 1f36d77071f722e40a7e3a0b530ecf72
+
+% 0 1 0 07921cac7d4701461947e15dc6ddc700
+
+% 1 1 0 0fbd694947311d6215b7bd7c1b26b199
+
+% 0 1 0 1697a6a840d45e9901f972943113dc82
+
+% 0 1 0 13372a1edcd9fcb00b1ced6ad3d9d915
+
+% 2 1 0 1eec1aff6acaf3240b04a56d945f9f49
+
+% 3 1 0 1f791b949d2bafac11abe73c3d129514
+
+% 5 1 0 1466a2563bf4329c1daa3e9bed8794b0
+
+% 7 1 0 1ea2c49e5b4340431d511a9525d5c6d8
+
+% 8 1 0 058ab5bee55ec4ce0379214457972deb
+
+% 9 1 0 0bb479d85adae46e0b66e0eeddaf140e
+
+% 11 1 0 03ddb52fb78a24aa139ef608696874bc
+
+% 0 1 0 0b10a05a0a4bb9cd19aba4b695fc882b
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 042fc9db001732800d7057fe4a99f87e
++       Nadpisania dla jednej ścieżki pola przychodzą przez vicarious: z `Duel is Specific over
++       Display` w zasięgu, zbudowanym jako `specifically { case root.opponent.name() => shout }`,
++       derywowana instancja używa `shout` dokładnie pod tą ścieżką, a wartości domyślnych gdzie
++       indziej.
+
+% 1 1 0 17907ba806159e28012ce28565b6810f
+
+% 2 1 0 050a021a2512e9dd0d224f25a89efaae
+
+@ 0 5 0 07d2c9ce493e4a9e1cc6c6381b71c382
++ entry .ProductDerivable   `ProductDerivation` dla klasy typów zapisanej w stylu `Self`
++     `ProductDerivable[Typeclass]` to `ProductDerivation[[self] =>> Typeclass { type Self = self }]`:
++     derywacja tylko dla produktów, dla klasy typów, której podmiotem jest jej składowa typu
++     `Self`, z `conjunction` zwracającą `derivation is Typeclass`. Postać z dwiema regułami
++     opisuje `Derivable`.
+
+@ 0 8 0 184690156361813f1a83743d8a630d89
++ entry .Reflection   dowód, że typ jest produktem lub sumą: `scala.deriving.Mirror.Of`
++     `Reflection[derivation]` to kompilatorowy `Mirror.Of[derivation]`, dowód, który przyjmuje
++     każdy given `derived`: istnieje dla każdej klasy case, krotki, wyliczenia,
++     zapieczętowanego traitu i singletonu, i dla niczego innego, dlatego nie można derywować
++     dla zwykłego traitu ani dla klasy, która nie jest klasą case. `ProductReflection` spełnia
++     wymaganie `Reflection`, ponieważ `Mirror.ProductOf` jest `Mirror.Of`. Mirror rozstrzyga
++     się wewnątrz zagnieżdżonego wyszukiwania ograniczenia kontekstowego, dzięki czemu
++     instancję derywowaną można przywołać z wnętrza derywacji innej klasy typów, takiej jak
++     `read[T]` formatu.
+
+@ 0 4 0 1989230590b0c72a0158d9ea753a4761
++ entry .ProductReflection   dowód, że typ jest produktem: `scala.deriving.Mirror.ProductOf`
++     `ProductReflection[derivation <: Product]` to ograniczenie kontekstowe, którego wymaga
++     `conjunction`. Niesie etykiety i typy pól produktu, a jego `fromProduct` to sposób, w jaki
++     `build` konstruuje wartość.
+
+@ 0 4 0 0043c123258aaeb01b42f9c76146c021
++ entry .SumReflection   dowód, że typ jest sumą: `scala.deriving.Mirror.SumOf`
++     `SumReflection[derivation]` to ograniczenie kontekstowe, którego wymaga `disjunction`.
++     Niesie etykiety i typy wariantów, a jego `ordinal` to sposób, w jaki `variant` znajduje
++     faktyczny przypadek wartości.
+
+@ 0 8 0 0312b9f4fb5acd5715f0142872537256
++ entry .contextual   instancja klasy typów dla bieżącego pola lub wariantu, wewnątrz lambdy kombinatora
++     Wewnątrz lambdy polimorficznej przekazanej do `fields`, `contexts`, `build`, `construct`,
++     `variant`, `delegate` lub `choices` `contextual` jest instancją `typeclass[field]` (lub
++     `typeclass[variant]`) dla typu bieżącego elementu – ręcznie napisanym givenem, kodekiem
++     albo instancją rodzeństwa z tego samego derywowanego grafu – i jedynym środkiem, jakim
++     dysponuje ciało, by zrobić cokolwiek z wartością, której typu nie widzi. Większość
++     kombinatorów przekazuje też tę samą instancję jako parametr lambdy, więc
++     `[field] => parsing => parsing.parse(…)` i `contextual.parse(…)` to ta sama instancja.
+
+@ 0 5 0 09edbf3f7673419f1e22c78956f645dc
++ entry .label   nazwa bieżącego pola lub wariantu, jako `Text`, wewnątrz lambdy kombinatora
++     Dla pola – nazwa w postaci zapisanej w klasie case (`_1`, `_2`, … dla krotki); dla
++     wariantu – nazwa przypadku. Renderer używa jej jako klucza, parser dopasowuje ją do
++     dyskryminatora. W module zbiorczym `soundness` nazwę dzieli `Element#label()` z
++     tarantula: plik, który importuje oba i stwierdza, że `label` jest niejednoznaczny, pisze
+
+% 0 1 0 1f56a20641f051df07d3fa5991d9eea7
+
+@ 0 6 0 04de4627850c1f131d4a538ba3b3d66e
++ entry .index   pozycja bieżącego pola lub wariantu, wewnątrz lambdy kombinatora
++     Dla pola – `Int & FieldIndex[field]`; dla wariantu – `Int & Variant.Index[variant]`.
++     Marka wiąże liczbę z typem elementu, więc `complement(product)` może odczytać to samo
++     pole z innej wartości i poprawnie nadać mu typ. Porównuje się i liczy jak `Int`, ale
++     indeksowanie nim natywnej `List` zapisuje się jako `columns(Ordinal.zerary(index))`, co
++     daje `Optional`, przy zaimportowanej bramce złożoności, takiej jak
+
+% 0 1 0 02338894d0a09475096f019696bddf2d
+
+@ 0 6 0 196e69726addc3f613220fa57e2d9b6f
++ entry .dereference   funkcja z produktu na bieżące pole, wewnątrz lambdy `contexts`
++     `dereference` to `derivation -> field`: bez wartości do składania `contexts` daje każdemu
++     polu sposób odczytania go z dowolnej wartości produktu, z typem pola. Należy związać go
++     raz – `val extract: derivation => field = dereference` – i zastosować do każdej z
++     wartości porównywanych przez dwuwartościową klasę typów, tak aby oba pola trafiły do
++     jednej instancji `contextual`, nigdy nie tracąc swojego typu.
+
+@ 0 6 0 1ae4f4db720d6e2a145e52db83d6adf2
++ entry .variant   `wisteria.variant` odczytuje z kontekstu wartość otagowaną `"variant"`; kombinatorem jest `SumDerivation.Methods#variant`
++     Akcesor na poziomie pakietu `variant[value]` odczytuje wartość kontekstową otagowaną
++     `"variant"`, w stylu `index` i `label`. Kombinator, który `disjunction` wywołuje jako
++     `variant(value) { [variant <: derivation] => variant => … }`, to odziedziczona metoda
++     `SumDerivation.Methods`, rozdzielająca według faktycznego przypadku wartości sumy;
++     wewnątrz obiektu derywującego metoda przesłania ten akcesor.
+
+@ 0 1 0 08d4e6986e675e4e07abefb6e59368cf
++ entry .arithmetic   `+`, `-`, `*` i `/` pole po polu dla dowolnego produktu, jako givens importowane po nazwie
+
+% 1 1 0 0d17564d6325a77901a5907d9757b6f7
+
+@ 0 5 0 035807e28a7cb21515182f906eeb5e74
++       Cztery derywacje klas typów arytmetyki z symbolism, z których każda dodaje, odejmuje,
++       mnoży lub dzieli dwie wartości produktu pole po polu za pomocą instancji samych pól,
++       więc `Text` jest konkatenowany, a `Int` sumowany, bez pisania instancji dla produktu.
++       Każda jest givenem do importu po nazwie – `import soundness.*` ich nie wprowadza – ponieważ
++       arytmetyka dla każdej klasy case jest wyborem, a nie wartością domyślną.
+
+% 2 1 0 14fbe5ab3bac2e62054a38324aac920b
+
+% 3 1 0 1c857d45de85dfa7130746e3dade75df
+
+% 0 1 0 107ee72a262313ce044d407112366029
+
+% 0 1 0 1fdd89478da912871630955ea3d1933c
+
+% 0 1 0 0e59580ad2d89ed70c06a7c8b7ff1e62
+
+% 1 1 0 1bf4ece2f3c845b50bc69524ae6cf69c
+
+@ 0 21 0 00f06bd2925337930328a3d2772a1101
++       Obiekty derywacji (`AddableDerivation` i jego rodzeństwo) są `ProductDerivation`
++       odpowiednich klas typów, dostępnymi dla jawnego `derived[T]`, a każdy given to
++       `Derivation.derived[value]` dla dowolnego `value <: Product` z `ProductReflection`.
++   entry .AddableDerivation   `ProductDerivation` dla `value is Addable by value to value`
++       Jego `conjunction` buduje sumę dwóch produktów przez `build`, dodając każdą parę
++       odpowiadających sobie pól (odczytanych przez `complement`) za pomocą `Addable` pola.
++   entry .addable   given: dowolny produkt jest `Addable by` sobą `to` sobą, pole po polu
++       `AddableDerivation.derived[value]` dla każdego `value <: Product` z
++       `ProductReflection`; każdy typ pola potrzebuje własnego `Addable`. Importowany po nazwie.
++   entry .SubtractableDerivation   `ProductDerivation` dla `value is Subtractable by value to value`
++       Jak `AddableDerivation`, z odejmowaniem każdej pary pól.
++   entry .subtractable   given: dowolny produkt jest `Subtractable by` sobą `to` sobą, pole po polu
++       `SubtractableDerivation.derived[value]`; importowany po nazwie.
++   entry .MultiplicableDerivation   `ProductDerivation` dla `value is Multiplicable by value to value`
++       Jak `AddableDerivation`, z mnożeniem każdej pary pól.
++   entry .multiplicable   given: dowolny produkt jest `Multiplicable by` sobą `to` sobą, pole po polu
++       `MultiplicableDerivation.derived[value]`; importowany po nazwie.
++   entry .DivisibleDerivation   `ProductDerivation` dla `value is Divisible by value to value`
++       Jak `AddableDerivation`, z dzieleniem każdej pary pól.
++   entry .divisible   given: dowolny produkt jest `Divisible by` sobą `to` sobą, pole po polu
++       `DivisibleDerivation.derived[value]`; importowany po nazwie.
+
+@ 0 1 0 1245df162608a47810e235b1c72574a5
++ entry .Discriminable   jak rozróżnia się wariant sumy w postaci przesyłanej, dla dekodera formatu
+
+% 1 1 0 1c5e86f9242e3f0d10af530a28465afb
+
+@ 0 12 0 0f4f32516f1f27aa0f781b214fb1d2c2
++       Format, który koduje sumę, musi powiedzieć, jakim wariantem jest wartość, a `value is
++       Discriminable in Form` mówi jak: `discriminate` odczytuje etykietę wariantu z wartości w
++       `Form` formatu (na przykład z węzła JSON), `variant` usuwa dyskryminator, pozostawiając
++       własny ładunek wariantu, a `rewrite` dodaje etykietę do ładunku przy kodowaniu. Klasa
++       typów jest zdefiniowana tutaj, obok derywacji, która się do niej odwołuje, a
++       implementuje ją każdy format: pakiet `discriminables` z jacinta oferuje pole `type`,
++       pole `kind`, obiekt opakowujący kluczowany nazwą wariantu oraz kopertę `type`/`value`,
++       każde jako given importowany po nazwie. Derywowany dekoder formatu wywołuje
++       `discriminate`, a następnie wykonuje `delegate` do wariantu, który wskazuje etykieta,
++       zgłaszając `Variant.Error` dla nieznanej etykiety.
++   entry #rewrite   ładunek w danej postaci, z wpisaną do niego etykietą wariantu `kind`
++   entry #discriminate   etykieta wariantu, którą niesie wartość w danej postaci, albo `Unset`, jeśli jej nie ma
++   entry #variant   własny ładunek wariantu, z usuniętym dyskryminatorem
+
+@ 0 5 0 1b47a4c69a5d2c461afcc0933496e710
++ entry .FieldIndex   marka na `index` pola: `Int & FieldIndex[field]`
++     Zapieczętowany, niezamieszkany trait, przecinany z `Int`, aby powiązać pozycję pola z
++     jego typem, tak że `complement(product)`, mając indeks, może odczytać pole z innej
++     wartości i zwrócić je jako `field`. Akcesor `index` daje go wewnątrz lambdy kombinatora
++     produktu; nigdy nie konstruuje się go ręcznie.
+
+@ 0 1 0 03e9c3d25db31db71ba9d372b0f078cb
++ entry .Variant   słownictwo derywacji sum: `Index` wariantu i `Error` dla nieznanej etykiety
+
+% 1 1 0 12b282b7bcaabecc188bd2f53b3d7d98
+
+@ 0 3 0 1c52cf9705051b2f0cd66a17f58bac10
++       Nie ma typu `Variant`: wariant to przypadek derywowanej sumy, identyfikowany przez swoją
++       pozycję (`Variant.Index`) i swoją etykietę. Obiekt zawiera błąd, który zgłasza producent,
++       gdy etykieta nie wskazuje żadnego wariantu, oraz markę na indeksie wariantu.
+
+% 1 1 0 0edd82c51b4122a91b750e8c360bcc4b
+
+@ 0 1 0 06d9387b528b1ffd1a291452557159e2
++   entry .Error   zgłaszany, gdy etykieta nie wskazuje żadnego wariantu sumy: _the specified variant (`x`) is not one of the valid variants (…) of sum type `S`_
+
+% 1 1 0 020fc51fad49788e038621bd2ab7da82
+
+@ 0 6 0 190c84ac47523651070ecc45e70f69e9
++         Zgłaszany, za pośrednictwem `Tactic[Variant.Error]`, przez `delegate` i `singleton`,
++         gdy podana im etykieta – zwykle dyskryminator odczytany z danych wejściowych dekodera
++         – nie pasuje do żadnego z wariantów sumy. Komunikat wylicza poprawne warianty, więc
++         błąd mówi, co powinny były nieść dane wejściowe. Derywacja, która wywołuje któryś z
++         tych kombinatorów, potrzebuje taktyki w zasięgu tam, gdzie się rozwija:
++         `provide[Tactic[Variant.Error]]` wewnątrz instancji chroni derywowaną instancję przed
++         przechwyceniem taktyki wywołującego.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1d9f1403dc0472d316185a8cb732004c
+
+% 0 1 0 1f2f831994c36226146c3d36df042379
+
+% 0 1 0 169cd914d43f876e1b467e4a3f411100
+
+% 0 1 0 18ebecd33d57323007adf0f25aabbb17
+
+% 0 1 0 15819c18359b2fb117eb0b8c1d354798
+
+% 0 1 0 02516cfa6f3e56370c61b0067030d02a
+
+% 0 1 0 178b6816c7da10101e2d8c01d218c5ae
+
+% 0 1 0 0c9899ac40be17131e72818c61cb1c87
+
+% 0 1 0 079a0377cbb8fa3f13587c7c34aca18b
+
+% 0 1 0 13234ab85d3cdd4518a01d48f85af207
+
+% 0 1 0 0f88dba06ef7f4da1fdb97a8db1bef46
+
+% 0 1 0 0730cfa4cee3dffd05312a6dd97fc05b
+
+% 0 1 0 04a484f83a3985e00f98eedc6e1f4eeb
+
+% 0 1 0 0624ee964a601b940e0291d147eba6eb
+
+% 0 1 0 145d42098345cf7b1b88e3ec996acd95
+
+% 0 1 0 101137a01f722ec51d804325068f3083
+
+% 0 1 0 164e8be16805f5260d1cf9706c442156
+
+% 0 1 0 0cb4ad237d49f54a1573995dbc80ac2a
+
+% 0 1 0 1568f18160d953a40febdfdf123cc735
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 9 0 06de42572afbd5520ed0e7ac9fa42d57
++         `Variant.Error[derivation](label)` buduje błąd dla typu sumy, wypełniając nazwę sumy i
++         etykiety jej wariantów w czasie kompilacji.
++     entry .apply   buduje błąd dla typu sumy: `Variant.Error[Sum](label)`
++         Metoda inline, która wypełnia `sum` i `validVariants` na podstawie symbolu typu, więc
++         wywołujący dostarcza tylko błędną etykietę.
++     entry #inputLabel   etykieta, która nie wskazała żadnego wariantu
++     entry #sum   nazwa typu sumy
++     entry #validVariants   etykiety wariantów sumy, w kolejności deklaracji
++   entry .Index   marka na `index` wariantu: `Int & Variant.Index[variant]`
+
+% 1 1 0 07f4a4fb1d2aa2890eabf37b178db54c
+
+@ 0 4 0 01ce2f27954a57ea0890162951be5778
++         Zapieczętowany, niezamieszkany trait, przecinany z `Int`, aby powiązać pozycję
++         wariantu z jego typem. Akcesor `index` daje go wewnątrz lambdy kombinatora sumy, a
++         `complement(sum)` używa go do zawężenia innej wartości do tego samego wariantu.
++     entry .apply   nadaje `Int` markę indeksu wariantu: `Variant.Index[variant](int)`
+
+@ 0 1 0 0e60cfadf3b8945d1c62ad07e0d2a86e
++ entry .internal   makra stojące za silnikiem derywacji i kombinatorami
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 31 0 1e9a7b2fc5ca4086014b94c0e8804702
++       Nie do bezpośredniego użycia: obiekt mieści implementacje makr, które wklejają
++       kombinatory inline, oraz akcesory używane przez testy i narzędzia. `derived` to
++       `deriveGraph`; `fields`, `contexts`, `build` i `construct` to `fieldsProduct`,
++       `contextsProduct`, `buildProduct` i `constructMonadic`; `choice` to `isChoice`.
++       `fieldInstance` to wyszukiwanie niejawne, które rozstrzyga instancję pola, ignorując
++       własne givens derywacji klasy typów, więc pole trafia na ręcznie napisany given, kodek
++       albo rodzeństwo z grafu i nigdy nie wchodzi ponownie w derywację.
++   entry .default   zadeklarowana wartość domyślna pola, według jego indeksu, albo `Unset`
++   entry .sumName   nazwa typu, jako `Text`, na podstawie jego symbolu
++   entry .variantLabelList   etykiety wariantów sumy, w kolejności deklaracji
++   entry .fieldLabelList   etykiety pól produktu, w kolejności deklaracji
++   entry .field   instancja klasy typów dla elementu, rozstrzygana bez ponownego wchodzenia w derywację
++   entry .overridePaths   kropkowane ścieżki pól, które nadpisuje `Specific over typeclass` w zasięgu, albo `Nil`
++   entry .overridePathsMacro   makro stojące za `overridePaths`
++   entry .Reentrant   znacznik-given podczas sondy ponownego wejścia, aby typ, który osiąga sam siebie, rozstrzygał się do swojego rodzeństwa
++   entry .reentrySentinel   to, co zwraca sonda ponownego wejścia; nigdy nie jest ewaluowane
++   entry .isSum   czy typ jest sumą, rozstrzygane podczas kompilacji kodu
++   entry .isSumMacro   makro stojące za `isSum`
++   entry .fieldLabels   makro stojące za `fieldLabelList`
++   entry .isSumType   czy reprezentacja typu jest zapieczętowanym traitem lub wyliczeniem z dziećmi
++   entry .isProductType   czy reprezentacja typu jest produktem, który silnik potrafi zbudować
++   entry .isChoice   makro stojące za `choice`: czy każdy wariant jest singletonem
++   entry .fieldInstance   makro stojące za `field`
++   entry .deriveGraph   makro stojące za `derived`: jedna leniwie wiązana instancja na każdy osiągalny typ
++   entry .buildProduct   makro stojące za `build`
++   entry .contextsProduct   makro stojące za `contexts`
++   entry .fieldsProduct   makro stojące za `fields`
++   entry .constructMonadic   makro stojące za `construct`
++   entry .typeName   makro stojące za `sumName`
++   entry .variantLabels   makro stojące za `variantLabelList`
++   entry .getDefault   makro stojące za `default`: odczytuje syntetyczną metodę argumentu domyślnego

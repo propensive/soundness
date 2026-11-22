@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 4 0 037cfceaa03558c210fcc809b1438d8d
++ Liczby stanowią tożsamość błędu. Typ błędu ma kod bolt – numer swojego modułu i własny numer w
++ obrębie modułu – a każda przyczyna numer w jego obrębie, i każdy kod ma w `doc/work/errors` stronę
++ wyjaśniającą przyczynę i zwykłe środki zaradcze – dzięki czemu `↯/s.100.2` w zgłoszeniu
++ użytkownika można sprawdzić, zamiast zgadywać.

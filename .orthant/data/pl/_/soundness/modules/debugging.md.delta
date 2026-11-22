@@ -1,0 +1,333 @@
+orthant 2 language
+
+@ 0 1 0 157898be62f31c91079f6ba6eafb1764
++ ## Debugowanie
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 1 0 06807f751098395a14c3df995c28bc52
++ JVM można debugować z innej JVM za pomocą
+
+% 0 1 0 02b7b4a79604c0b4187897107d76c70a
+
+@ 0 4 0 07a5e316fc58127a0394607de6427a55
++ a opisane tu typy posługują się nim bezpośrednio przez gniazdo. Program debugowany uruchamia się
++ pod agentem debugowania albo dołącza się do niego tam, gdzie już działa. Powstała w ten sposób
++ [sesja] ustawia punkty przerwania, wykonuje wątki krokowo, odczytuje ramki i zmienne, oblicza
++ wyrażenia w zatrzymanym programie i odbiera zdarzenia maszyny wirtualnej jako wartości typowane.
++ Nic nie zależy od `com.sun.jdi`.
+
+@ 0 1 0 0ed301e3b475215c07aa31a659b07b8f
++ Ta sama sesja obsługuje edytor przez
+
+% 0 1 0 07cbdfc863907ff1179d58bb1d0ce5ba
+
+@ 0 1 0 0be81a2dcfc17b521c3befeef36fb533
++ ### O debugowaniu z zewnątrz
+
+@ 0 4 0 03f3c9161f41075307949907bee59b86
++ Własny interfejs debugowania JVM to API Javy opakowujące protokół przesyłowy, i to widać. Typy
++ są mutowalne, błędy są niekontrolowane, a poprawne ułożenie przebiegu sesji – połączenie,
++ wstrzymanie, żądanie, wznowienie i rozłączenie – pozostawiono wywołującemu. Wszystko, co na nim
++ zbudowano, dziedziczy to wszystko i dlatego debugery są programami dużymi, a nie małymi.
+
+@ 0 5 0 078789de6ecfabd503ab0e766240ce78
++ Protokół pod spodem jest prosty: pakiety z prefiksem długości, w kolejności big-endian, z
++ szerokościami identyfikatorów uzgadnianymi raz, na początku połączenia. Bezpośrednie modelowanie
++ go daje typowane identyfikatory, których nie można ze sobą pomylić, sesję ograniczoną do zasięgu
++ dzięki [sprawdzaniu przechwytywania](../../philosophy/capture-checking.md) oraz zdarzenia jako
++ strumień do konsumowania, a nie wywołania zwrotne do rejestrowania.
+
+@ 0 2 0 1129589e8aff8e110c1cc9a7785eeb2c
++ Wszystko pochodzi z pakietu `soundness`. Sesja uruchamia swój czytnik jako zadanie, więc
++ potrzebuje [modelu wątków](concurrency.md) w zasięgu i żyje wewnątrz `supervise`:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 10b23da8489c5a5010fd6d3e77471a89
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 1 1 0 0e23e86ae81b750f047cfaa2192660e5
+
+@ 0 2 0 0e11f8939b4ddea40467964571f70f12
++ Przykłady na tej stronie uruchamiają inne procesy i łączą się z nimi, więc są kompilowane, ale
++ nie uruchamiane.
+
+@ 0 1 0 0ec2b64902f37b46093ea8a8967a89df
++ ### Otwieranie sesji
+
+@ 0 4 0 0f4b0d5b15869b6301fdaeabf4048ece
++ `Debuggee` opisuje program do uruchomienia pod agentem debugowania: polecenie, port, na którym
++ ma nasłuchiwać, oraz to, czy maszyna wirtualna ma się wstrzymać przed uruchomieniem `main`,
++ czego wymaga punkt przerwania w inicjalizacji. Jego metoda `session` pożycza blokowi
++ [zdolność] `Debug`, dostępną przez `debug`:
+
+% 2 1 0 05968f4f57f77a28096e1a3f8d88824e
+
+% 0 1 0 0571ca7ed22c077715312c7cc14010ef
+
+% 0 1 0 1004fc1cd39c91140f40e1d56b094b7a
+
+% 0 1 0 023064638668549b0f52e2c30b2bf873
+
+% 0 1 0 033e9bf3177d35620cb69ca34440fced
+
+% 1 1 0 0b561bc885c3f31b13590e17bd75f8e3
+
+@ 0 3 0 09d51ffc1ef28ddb10e194769327df5d
++ Polecenie jest uruchamiane z wstawioną opcją agenta, a połączenie czeka, aż maszyna wirtualna
++ zacznie nasłuchiwać. Gdy blok się kończy, czy to zwracając wartość, czy z błędem, wszystko jest
++ likwidowane: gniazdo zostaje zamknięte, a proces zatrzymany.
+
+@ 0 2 0 0d35f4426372f87f0992043325ff2128
++ `Debugger` otwiera ten sam rodzaj sesji względem endpointu, na którym nasłuchuje już wstrzymana
++ maszyna wirtualna, aby dołączyć do czegoś, co już działa.
+
+@ 0 2 0 068a610c5e307a2b1182f27d85647151
++ Uchwyt sesji jest zdolnością ograniczoną do swojego bloku. Nie może z niego uciec, więc nie
++ można go użyć po zniknięciu programu debugowanego.
+
+@ 0 1 0 151ebb23ca2ac6e21112920895a07b75
++ ### Wątki i ramki
+
+@ 0 2 0 0b373768e5a6c5ff0390837050d95f93
++ Wątki maszyny wirtualnej można wyliczać, nazywać, wstrzymywać i wznawiać, pojedynczo lub
++ wszystkie razem. Stos wywołań wstrzymanego wątku odczytuje się jako ramki w parach z ich
++ lokalizacjami:
+
+% 2 1 0 08cb2a599c4a6f671a559d16ea3dacf6
+
+% 0 1 0 0ea206d6336af5fe19d06697f3c0beb3
+
+% 0 1 0 1ecdf15dcd7e09c00dde3e4058338491
+
+% 0 1 0 107d49d5f9493f16085b943fa2eca6e4
+
+% 0 1 0 03e6c4723f839690169b8371caaa6f6c
+
+% 0 1 0 021634f44197c43a1bba713dfdd71ccd
+
+% 0 1 0 1f13839c3911715800e43868f813023d
+
+% 1 1 0 1b0cb5a1690e16a404b88d121cef6bc3
+
+@ 0 1 0 0e673cd6c58747591ea6586558568d90
++ ### Punkty przerwania
+
+@ 0 2 0 012c2c7e8a59f98302907ca80e8a1393
++ Punkt przerwania ustawia się na pliku źródłowym i wierszu albo na klasie i metodzie. Przyjmuje
++ on *handler*, który jest uruchamiany za każdym razem, gdy wątek się w nim zatrzyma.
+
+@ 0 5 0 05aafb4da850b02e1ca3c46c2ed899d0
++ Handler otrzymuje w pożyczce `Halt`: widok zatrzymanego wątku z jego `frames()`, jego
++ `variables()` i wyjątkiem w locie, jeśli to on był przyczyną zatrzymania. `Halt` nie może
++ przeżyć zatrzymania, ponieważ po wznowieniu wątku każdy wydany przez niego identyfikator może
++ być nieaktualny. Handler, który chce pozostawić wątek wstrzymany, mówi to przez `remain()`. W
++ przeciwnym razie wątek wznawia się, gdy handler zwraca sterowanie:
+
+% 2 1 0 1a773831fe68e7e00d6327b4891f6418
+
+% 0 1 0 07abe88d4c16eef50438e6286123bb8c
+
+% 0 1 0 0bf43b3a6244d02909d2de72eead928a
+
+% 0 1 0 0882d847e1d432c90c8cd855b2a843ce
+
+% 0 1 0 14ad7420f730eb430d871cc1471bd5eb
+
+% 0 1 0 080de214a79dfd2a16c04fee038c1672
+
+% 0 1 0 19e6da23edf27b5e12c034090def4d77
+
+% 1 1 0 0637f1dd4090d7b015c802dcd572acfd
+
+@ 0 2 0 027dce16e3742f550fddbfdc28a031a1
++ Punkty przerwania w kodzie rozwiniętym w miejscu wywołania działają według pozycji. Plik i
++ wiersz to miejsce, w którym kod napisano, a nie to, w którym umieścił go kompilator; odtwarza
++ się je z map źródeł zapisywanych przez kompilator.
+
+@ 0 1 0 172d13da1eddb0fe109e2fa1904c36ba
++ Każdy rodzaj żądania uruchamia swój handler przy innym zdarzeniu:
+
+% 2 1 0 0f5a9f0396b818fd00dd8d22848fc956
+
+@ 0 8 0 18a407217dd93ca00af4ef3125ae75f0
++ column  Żądanie
++ column  Uruchamiany, gdy
++ column  Rodzaj zdarzenia
++ row  `breakpoint`  wątek dociera do wiersza źródła, wejścia do metody lub lokalizacji  `Breakpoint`
++ row  `logpoint`  wątek dociera do lokalizacji, wypisując komunikat i natychmiast wznawiając  `Breakpoint`
++ row  `watch`  pole jest zapisywane albo, z `access = true`, odczytywane  `FieldModified`, `FieldAccess`
++ row  `exceptions`  rzucany jest wyjątek  `Exception`
++ row  `step`  wykonywany krokowo wątek się zatrzymuje  `SingleStep`
+
+% 1 1 0 0ae723cadf4c6d1a0a5f6d54fe3d4f9e
+
+@ 0 2 0 035998538a1e5ae604c2a7ebeefa0f10
++ Punkt przerwania zwraca identyfikator swojego żądania, którym później się go usuwa. *Polityka
++ wstrzymania* decyduje, jaka część maszyny wirtualnej zatrzymuje się po trafieniu w punkt
++ przerwania:
+
+% 2 1 0 1557cb833cebc1e916df55e9a0ff0bdd
+
+@ 0 5 0 125644865294ba0804f27229a4db88f2
++ column  Polityka wstrzymania
++ column  Zatrzymuje
++ row  `Jdwp.SuspendPolicy.All`  całą maszynę wirtualną
++ row  `Jdwp.SuspendPolicy.EventThread`  tylko wątek, który w niego trafił
++ row  `Jdwp.SuspendPolicy.None`  nic
+
+% 1 1 0 0bca717f90bf6b52072a4e88012aede2
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 058f0264436dda6615a615512e130515
+
+% 0 1 0 1279df74f6343b901709ac7a185279c5
+
+% 0 1 0 0e3536dedcc2bf791d318ca4915e3164
+
+% 1 1 0 0405206bdf576e390e0cc1068e52a5e6
+
+@ 0 1 0 0f8e7da9303a8abc04196170e78218c5
++ ### Wykonywanie krokowe
+
+@ 0 4 0 0f5ec12b0180d33512fd531d5918ea98
++ Krok to żądanie wobec wstrzymanego wątku z handlerem dla miejsca, w którym się zatrzyma.
++ *Głębokość* określa, czy wejść do wywołania (`Jdwp.StepDepth.Into`), przejść nad nim (`Over`),
++ czy wyjść z bieżącej ramki (`Out`). Wywołanie rozwinięte w miejscu wywołania jest wykonywane
++ krokowo tak, jak czyta się źródło – wiersz po wierszu w głąb rozwiniętego ciała – a nie tak, jak
++ ułożono bajtkod:
+
+% 2 1 0 07929dae8f49899f137ba49cb3129f60
+
+% 0 1 0 0e029580e49fa8bf0d1f1b49d8872eb5
+
+% 0 1 0 1bb8c8695f27c85715340e1249ac7f83
+
+% 0 1 0 159daf4d5ecf3f310d66036d45cff1ce
+
+% 0 1 0 0243c90657fc59a305aa80357ff801fc
+
+% 1 1 0 1c6f3c8c48f6387a05faba2bac946c51
+
+@ 0 1 0 04e58de82e57b5dd1c1a8a40b6794a92
++ ### Obliczanie wyrażeń
+
+@ 0 4 0 1511d3352c2db6c81462dd0e7788c384
++ Gdy `Evaluator` jest w zasięgu, wyrażenie kompiluje się względem zmiennych lokalnych
++ zatrzymanej ramki i wstrzykuje do działającego programu debugowanego. Tak więc `total + 1` w
++ handlerze znaczy to, co znaczyłoby w tym wierszu źródła. Korzystają z tego konsola debugera i
++ podgląd po najechaniu, i w ten sam sposób edytor pokazuje typ, który kompilator wywnioskował dla
++ nazwy.
+
+@ 0 1 0 1371d9ff712f24e21f0779e0ef739e63
++ ### Zdarzenia
+
+@ 0 2 0 00ecdcfba0f6a3da023b865fc9cf9e2f
++ Pod handlerami maszyna wirtualna zgłasza to, co się wydarzyło, jako zdarzenia złożone. `events`
++ to ich [strumień](streams.md), więc główna pętla debugera może być zwykłym przejściem:
+
+% 2 1 0 1e0dc951c01aefda0760f3734e66b785
+
+% 0 1 0 18d66383bca38c610338862626568739
+
+% 0 1 0 1371a3a84c53c0cb0d355f3edef04382
+
+% 0 1 0 170ed5d0c1722d0f1e750a0934613841
+
+% 0 1 0 05f711d5bd8a6f600834f6818aac67a0
+
+% 0 1 0 0fdccbba6e5fb05f1d990b0444c01f5c
+
+% 0 1 0 169c4e6d4d895c3805f71503caf3dead
+
+% 1 1 0 11434a3f463114100ca9e51dac34f717
+
+@ 0 2 0 1a80b2aa5b7e56d10ae5c2b585b2c7bf
++ Żądania i odpowiedzi są dopasowywane do siebie asynchronicznie. Wiele poleceń może być w toku
++ jednocześnie, a zdarzenie, które nadejdzie w trakcie jednego z nich, nie zakłóca go.
+
+@ 0 1 0 004bdc9321e719691f249ea08c309678
++ ### Obsługa edytora
+
+@ 0 4 0 03ab9e0bcef7742105740692ea7b460f
++ `Dap.listen` udostępnia sesję przez Debug Adapter Protocol na porcie TCP. Każdy edytor, który go
++ obsługuje – VS Code i większość pozostałych – może przez tę implementację uruchamiać,
++ zatrzymywać, wykonywać krokowo, przeglądać zmienne i obliczać wyrażenia. Uzupełnienia, typy w
++ podglądzie po najechaniu i wykonywanie krokowe świadome rozwijania w miejscu wywołania trafiają
++ do edytora.
+
+@ 0 1 0 145138a4d134b4b10538ce09f6babc7e
++ ### Słownictwo protokołu
+
+@ 0 3 0 07ad9f76f655921b00071515e9ef8938
++ `Jdwp` zawiera model samego protokołu, do pracy poniżej poziomu udostępnianego przez sesję. Typy
++ identyfikatorów są tagowanymi widokami jednego [typu nieprzezroczystego][typ nieprzezroczysty].
++ Nic nie kosztują w [czasie wykonania][czas wykonania] i nie można ich zamieniać ze sobą w
++ [czasie kompilacji][czas kompilacji]:
+
+% 2 1 0 18f8a8107b348df802a9277c7b7bafec
+
+@ 0 11 0 14d1edce076f5a5f0a1f82000a803301
++ column  Typ
++ column  Identyfikuje
++ row  `ObjectId`  obiekt
++ row  `ThreadId`  wątek
++ row  `ThreadGroupId`  grupę wątków
++ row  `StringId`  obiekt napisu
++ row  `ClassLoaderId`  classloader
++ row  `ReferenceTypeId`  klasę, interfejs lub typ tablicowy
++ row  `MethodId`  metodę
++ row  `FieldId`  pole
++ row  `FrameId`  ramkę stosu
+
+% 1 1 0 1e2a05dab28216de1871ff59f463b23c
+
+@ 0 2 0 1d35b4954b53123415ebbbffc074a7b7
++ Obok nich znajdują się `Jdwp.Location`, tagowane `Jdwp.Value`, `Jdwp.Modifier` ograniczające
++ żądanie zdarzenia oraz `Jdwp.Event` odsyłane przez wstrzymaną maszynę wirtualną.
+
+@ 0 3 0 1e9cd40b8a5a012e1ba7c5476f6466a9
++ `Jdwp.Reader` i `Jdwp.Writer` to pisane ręcznie kodeki big-endian. Znają rozmiary
++ identyfikatorów uzgodnione z maszyną wirtualną przy otwarciu sesji, dlatego konstruuje się je z
++ tymi rozmiarami, zamiast je zakładać.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 9 0 07aab45479f415f518aa01f0366a5a30
++ - [Procesy](processes.md) opisuje polecenia `sh"…"`, którymi uruchamia się program debugowany.
++ - [Współbieżność](concurrency.md) opisuje `supervise` i modele wątków, w których działa sesja.
++ - [Gniazda](sockets.md) opisuje połączenia TCP, którymi przesyłane są protokoły.
++ - [LSP](lsp.md) obsługuje edytor przez pokrewny Language Server Protocol.
++ - [Ślady stosu](stack-traces.md) opisuje ramki zatrzymanego programu jako wartości.
++ - [Sprawdzanie przechwytywania](../../philosophy/capture-checking.md) wyjaśnia, jak uchwyt sesji
++   jest ograniczony do swojego bloku.
++ - [System plików](filesystem.md) opisuje uchwyty, których kształt współdzieli sesja debugowania.

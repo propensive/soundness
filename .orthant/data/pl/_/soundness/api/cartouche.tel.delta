@@ -1,0 +1,584 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 06b23605c41af6441e37b1b6371b75e9
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1e801473b9d9e33416d5d017c95661fc
++ info   rozmieszczanie etykiet: znajduje pozycję dla każdego fragmentu tekstu na obrazie, z dala od reszty
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1f9a0f08a918a10d0b82fedd5f53b0ed
++     _Cartouche_ decyduje, gdzie trafia każda etykieta na obrazie. Tekst umieszcza się obok
++     rzeczy, którą nazywa – notatkę przy punkcie, nazwę przy mieście, procent w wycinku – a gdy
++     dwie rzeczy leżą blisko siebie, ich etykiety się zderzają. Cartouche bierze każdą etykietę
++     (`Caption`: jej zmierzony rozmiar, punkt, który opisuje, i strony, po których może leżeć)
++     wraz ze wszystkim na stronie, czego tekst nie może zasłonić (każde jako `Obstacle`), i
++     znajduje dla każdej `Caption.Position`. Wykresy używają go do swoich etykiet; mapa
++     używałaby go do nazw miejscowości. Silnik widzi tylko geometrię, w układzie z osią y
++     skierowaną w dół, jak w SVG: tekst mierzy ten, kto go rysuje.
+
+@ 0 5 0 0fa1352abb9f107f012317f530969cbe
++     Kod budujący obraz wie, co mówi każda etykieta, ale nie wie, gdzie trafią pozostałe, więc
++     `arrange` uruchamia ten kod dwukrotnie. Pierwszy przebieg zapisuje każde wywołanie
++     `position`, `avoid` i `canvas` i odpowiada na każde `position` tymczasowo; następnie
++     `Arranger` w zasięgu rozwiązuje całe rozmieszczenie; a drugi przebieg odpowiada na każde
++     `position` jego rozwiązanym miejscem. Wartością `arrange` jest wartość drugiego przebiegu.
+
+% 2 1 0 02d2230cc0d0412d0c890f1ddc859355
+
+% 3 1 0 190299e209cc4a061b9cbaf577a652e8
+
+% 0 1 0 0f930d453d5b8fc61a2568d8b2394d74
+
+% 0 1 0 14f7862be4a7ce250e219f0b0ec52154
+
+% 0 1 0 1765cc09e6a1193e1031704c60cb278e
+
+% 0 1 0 0ce2f2da9a3490db14c275a3ad7bee9e
+
+% 1 1 0 1b8b83463b55c0f700785170329c0881
+
+@ 0 3 0 115066fca4d3f3c41017e166ba178f8d
++     Ciało musi więc być **powtarzalne**: za każdym razem te same wywołania `position` w tej
++     samej kolejności i nic, co nie powinno zdarzyć się dwa razy. Licznik numerujący etykiety
++     należy umieścić wewnątrz ciała, gdzie przy drugim przebiegu zaczyna od nowa.
+
+@ 0 4 0 1f8ce5ecd81357ff1917d90ab203d6ea
++     O tym, jaki algorytm rozmieszcza, decyduje `Arranger` w zasięgu: domyślny zachłanny, z
++     obiektu towarzyszącego `Arranger`, albo zaimportowany po nazwie z pakietu `arrangers`
++     (`import soundness.*` nie importuje givenów), albo skonfigurowany `Arranger.Greedy` lub
++     `Arranger.Annealing` związany jako lokalny given.
+
+@ 0 3 0 12433aabb0e07aff1190255056f25d9a
++     Biblioteka ma jeden zbiór źródeł, `cartouche.core`, który kompiluje się na każdą platformę.
++     Wszystko jest eksportowane do modułu zbiorczego `soundness`, a pakiet wyboru `arrangers`
++     łączy się z własnym pakietem modułu zbiorczego.
+
+% 0 1 0 0f49140743c8c46516706c51e3c4ebca
+
+% 0 1 0 011a27b591ad86660c6bd6fa70c7949d
+
+% 0 1 0 0e155f583a8e620408bc2f8c594677bd
+
+% 0 1 0 11c814630297185a10fc20263a04b722
+
+% 0 1 0 1ba23050185bff670a018354e444bdd2
+
+@ 0 1 0 088c9db08975d1e71060a165abb7d414
++ entry .arrange   uruchamia dwukrotnie ciało budujące obraz, odpowiadając na jego wywołania `position` rozmieszczeniem
+
+% 1 1 0 064289f02572fb3f0e395be9ac9d889a
+
+@ 0 7 0 156389407f21c90100b827399daacc13
++       `arrange(body)` uruchamia `body` raz z zapisującym `Arranger.Pass`, w którym każde
++       `position` odpowiada wartością `Caption.provisional` – etykietą tam, gdzie o nią
++       poproszono, po stronie pierwszego wyboru – a każde `avoid` i `canvas` zostaje odnotowane;
++       wynik tego przebiegu jest odrzucany. Następnie `Arranger` w zasięgu umieszcza wszystkie
++       zapisane etykiety względem zapisanych przeszkód i płótna, a ciało uruchamia się ponownie
++       i każde wywołanie `position` dostaje rozwiązaną `Caption.Position`, dopasowaną do wywołań
++       pierwszego przebiegu według ich kolejności. Wynik drugiego przebiegu jest wynikiem
++       `arrange`.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 04c916801aa89a3b15ec6c26b8e2c93a
++         label Nic nie przeszkadza: etykieta leży na wschód
+
+% 1 1 0 15a92bc3bb87672e103b7f3cea7c086c
+
+% 2 1 0 1c5e477129e24c991631139742747a93
+
+% 4 1 0 0bfdd7cdbc3a50841d23838d72c21a25
+
+% 0 1 0 024ae26309597dc1132fa0e6025ea990
+
+% 1 1 0 19501732bd82408f01afd6a17c6edda0
+
+@ 0 1 0 1e4aeb3c6124c33f1ad8d363f6e9159d
++         label Prostokąt na wschodzie: etykieta przesuwa się na zachód
+
+% 1 1 0 1ae99e4baeea973d0585a67e739dcb58
+
+% 2 1 0 11f2a46fbf625f350be3a827cbfa04b5
+
+% 4 1 0 09c235a31aa8bf0408f2c78a77a9b5c8
+
+% 0 1 0 0a52c19896ca806e1b70520252c07d20
+
+% 0 1 0 17e6db6dec2e9b0c12f3a3c3b135eb37
+
+% 1 1 0 03df8e6176ebd856196354f0944d1ee5
+
+@ 0 1 0 06c991ef2dd2335a0dad8b2ca75d3c57
++         label Dozwolone tylko południe, i to zablokowane: etykieta jest przesunięta, z linią odniesienia
+
+% 1 1 0 05190a3be9a6716c0d8bfd76705d0e97
+
+% 2 1 0 1953ca498cc6f67e0922f6de3461a5c4
+
+% 4 1 0 037ca9d0a379d737057a30acbae642a2
+
+% 0 1 0 14bc0f114e3faa420883ec1a20784750
+
+% 0 1 0 1a35a1ca383882571429f831f7521c99
+
+% 0 1 0 1a2bcef174fddc5915b2815e805aa5b0
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 00f01867f14a56680b334509962f0ec9
++       Ciało musi wykonać te same wywołania w tej samej kolejności w obu przebiegach i nie mieć
++       żadnych innych efektów. Wywołanie w drugim przebiegu, którego nie wykonał pierwszy, albo
++       wywołanie z inną etykietą dostaje odpowiedź tymczasową i jest odnotowywane jako
++       `Arranger.Pass#diverged`.
+
+% 1 1 0 1ad9dc1e6300643205bf0417a6d8a61e
+
+% 1 1 0 01cefda173e9a12a1885a3a58888071b
+
+% 2 1 0 0b8171df598b7133022fff274f08136c
+
+% 0 1 0 025cfa407742f0280e2e3e0ecf4dd8a2
+
+@ 0 7 0 027ace35ce26078405f5247a563d155d
++ entry .position   prosi o miejsce dla etykiety, wewnątrz ciała `arrange`
++     Wymaga `Arranger.Pass`, który dostarcza `arrange`. Przyjmuje `Caption` albo bezpośrednio
++     jego części: `width` i `height` (zmierzoną etykietę), `x` i `y` (punkt docelowy), a
++     opcjonalnie `attachments` (strony, po których może leżeć, od najlepszej; domyślnie
++     `Caption.Attachment.compass`), `standoff`, `reach`, `padding`, `priority` i `fallback`,
++     każde tak, jak opisuje to `Caption`. W pierwszym przebiegu ciała odpowiedź jest tymczasowa;
++     w drugim jest to rozwiązana `Caption.Position`.
+
+% 2 1 0 16868ee13f6968e11cf54c6b08310250
+
+% 3 1 0 0e55ebf15d4060ef06a39ec8e1ded4c7
+
+% 0 1 0 1c2ed1219e8a168714ed9825fcb15453
+
+% 0 1 0 1f17fcdbb3aa2b3618e2a5e774147ce4
+
+% 1 1 0 0831c7ff13fc88b200f0d3573b1b94b4
+
+@ 0 5 0 1c8bc2c01d655466003dad376aced00e
++ entry .avoid   deklaruje przeszkody, nad którymi nie wolno umieścić żadnej etykiety, wewnątrz ciała `arrange`
++     Przyjmuje dowolną liczbę wartości `Obstacle` – `Obstacle.Box` dla słupka lub legendy,
++     `Obstacle.Line` dla każdego odcinka rysowanej linii, `Obstacle.Disc` dla znacznika – i
++     dodaje je do rozmieszczenia. Wymaga `Arranger.Pass`, który dostarcza `arrange`; liczą się
++     tylko wywołania z pierwszego przebiegu.
+
+% 2 1 0 0b130e656e607d3313434de6863a692f
+
+% 3 1 0 0a37784d9a6887e10075b3ba4fc9d8ca
+
+% 5 1 0 0de1e4035e71e3a10acb53e05456d759
+
+% 0 1 0 0be6ce594f44b4811a115ea865eb0770
+
+% 0 1 0 18b009d6512271f9080e9f25ccebe0e1
+
+% 1 1 0 029893d87378fcd10a35def2574c7038
+
+@ 0 3 0 162cc59949a9ecfc06d384032808ab4a
++ entry .canvas   deklaruje obszar, w którym etykiety muszą pozostać, wewnątrz ciała `arrange`
++     Przyjmuje `Obstacle.Box`; część etykiety poza nim liczy się jako kolizja. Bez płótna strona
++     jest nieograniczona, a jeśli ciało deklaruje więcej niż jedno, wygrywa ostatnie.
+
+% 2 1 0 035598e209e56d3e0109c53ef10893cf
+
+% 3 1 0 0caa193bf7aafbc71d8be4a0052be7f3
+
+% 5 1 0 1d6ed4f7ec4362990ba974ef41c71159
+
+% 0 1 0 0f2e27567938ffac008351017fc1b295
+
+% 0 1 0 1c91111d9ec6993911393bdae4cc85ed
+
+% 1 1 0 06ac1c627bbe9cff166053df7e78313d
+
+@ 0 1 0 0c7c9923b6caadf91c20761053360ac0
++ entry .Caption   prośba o umieszczenie etykiety: jej rozmiar, opisywany punkt i sposób, w jaki może zostać umieszczona
+
+% 1 1 0 01b5ee5f13e661aa0e3f2fd0f93ca0c0
+
+@ 0 9 0 1b761a4ed72361b60a17a057fce485f9
++       Klasa case z geometrią jednej etykiety. `width` i `height` to jej zmierzony rozmiar; `x` i
++       `y` – opisywany przez nią cel. `attachments` wymienia strony celu, po których może leżeć,
++       od najlepszej (domyślnie `Caption.Attachment.compass`); etykieta bez żadnej jest
++       traktowana jak taka, która może leżeć na wschód. `standoff` to odstęp między celem a
++       bliższą krawędzią etykiety, dla etykiety obok znacznika, a nie na jego środku. `reach`
++       mówi, jak daleko punkt zaczepienia etykiety może zostać przesunięty od celu, gdy każda
++       strona jest zablokowana; wartość domyślna, zero, przypina go. `padding` to wymagany wolny
++       margines wokół etykiety. Etykiety o wyższym `priority` umieszcza się najpierw, więc
++       zachowują swoje cele. `fallback` mówi, co dzieje się z etykietą, która koliduje,
++       gdziekolwiek zostanie umieszczona.
+
+% 2 1 0 0b42f840c2e96de20fac7258fcd5889e
+
+% 3 1 0 04a7881e544ac62e085886e369552e43
+
+% 0 1 0 1cc0d887a5117c5e05ea42fcf912440a
+
+% 0 1 0 0389a70a6e5ad4521b6bac84226b1054
+
+% 1 1 0 01f1689a4f0ca41905d4f4e96a80e7c4
+
+@ 0 3 0 17d93527bb64988711a431f93a7bff76
++       Etykieta z jedną stroną i bez przesunięcia jest umieszczana dokładnie tam, gdzie prosi,
++       cokolwiek tam jest, a wszystko po niej ją omija: tak etykiety znaczników osi
++       i legenda wykresu stoją w miejscu, podczas gdy etykiety jego punktów się przesuwają.
+
+% 0 1 0 157a37a9e0382c7d1d52bc28a16ad187
+
+% 0 1 0 0899ba996f1a94010ce54b2bca43a7dc
+
+% 1 1 0 1491c192403d00b30fbf08d81707d09a
+
+@ 0 20 0 04b69f0ebfc760e21e8a8f310cba94bb
++   entry #width   zmierzona szerokość etykiety
++   entry #height   zmierzona wysokość etykiety
++   entry #x   współrzędna pozioma celu, który opisuje etykieta
++   entry #y   współrzędna pionowa celu, rosnąca w dół
++   entry #attachments   strony celu, po których może leżeć etykieta, od najlepszej
++   entry #standoff   odstęp między celem a bliższą krawędzią etykiety
++   entry #reach   jak daleko etykieta może zostać przesunięta od celu, gdy każda strona jest zablokowana
++   entry #padding   wolny margines wymagany wokół prostokąta etykiety
++   entry #priority   kolejność umieszczania: wyższy priorytet jest umieszczany wcześniej i zachowuje swój cel
++   entry #fallback   czy etykieta, która wszędzie koliduje, jest mimo to rysowana, czy ukrywana
++   entry #sides   strony do wypróbowania: `#attachments` albo samo `East`, jeśli lista jest pusta
++   entry #anchor   punkt zaczepienia etykiety po jednej stronie celu, przesunięty o wektor
++       `caption.anchor(attachment, dx, dy)` to cel przesunięty o (`dx`, `dy`), a następnie o
++       `#standoff` w kierunku strony.
++   entry #footprint   prostokąt zajmowany przez etykietę zaczepioną w punkcie po jednej stronie
++       `Obstacle.Box.around` z rozmiarem etykiety.
++   entry .provisional   odpowiedź przed rozmieszczeniem: etykieta przy swoim celu, po swojej pierwszej stronie
++       To, co otrzymuje każde wywołanie `position` w pierwszym przebiegu ciała `arrange`, oraz
++       to, co w drugim otrzymuje wywołanie odbiegające od pierwszego przebiegu.
++   entry .Attachment   po której stronie celu leży etykieta: osiem punktów kompasu albo `Center`
+
+% 1 1 0 058a65202c21bd8d1f2125732a0c9422
+
+@ 0 6 0 05f64defba7d532f1ee37d0e6ba4c40f
++         Wyliczenie w układzie z osią y skierowaną w dół, więc `North` jest nad celem. Jego
++         przypadki to `North`, `Northeast`, `East`, `Southeast`, `South`, `Southwest`, `West`,
++         `Northwest` i `Center`. Punktem zaczepienia etykiety jest jej krawędź najbliższa celu:
++         dla `East` środek lewej krawędzi, dla `North` środek dolnej krawędzi, dla `Center` jej
++         środek, więc renderer wyprowadza własne wyrównanie ze strony (`text-anchor` i
++         `dominant-baseline` elementu SVG `text`).
+
+% 2 1 0 1ca7bfd0f1c81358134daa2546da1e35
+
+% 3 1 0 1aa13a6f2566c2d61caefe3fcc9e844c
+
+% 0 1 0 13913f8510433f170f081eb52aa4a262
+
+% 0 1 0 1f06db615423af62034f35e6d690bb84
+
+% 1 1 0 1105b6cb7ffe45b70ae1a1a7726588e9
+
+@ 0 8 0 0a7bd5cd2e1e46bc0ca318aac1ac811c
++     entry .compass   preferencja kartograficzna: wschód, zachód, cztery przekątne, potem północ i południe
++     entry .cardinal   wschód, zachód, północ i południe, w tej kolejności
++     entry #dx   poziome jednostkowe przesunięcie od celu do bliższej krawędzi etykiety: -1, 0 lub 1
++     entry #dy   pionowe jednostkowe przesunięcie od celu do bliższej krawędzi etykiety: -1, 0 lub 1
++   entry .Fallback   co dzieje się z etykietą, która na coś nachodzi, gdziekolwiek zostanie umieszczona
++       Wyliczenie o dwóch przypadkach. `Overlap`, domyślny, rysuje etykietę w pozycji, w której
++       nachodzi najmniej. `Hide` jej nie rysuje: jej `Caption.Position#visible` ma wartość
++       `false`, ciało nic dla niej nie rysuje, a ona nie blokuje niczego etykietom umieszczanym
++       po niej.
+
+% 2 1 0 03f85aae2c6fa9611442bfc243757931
+
+% 3 1 0 0b1cbd820d120e7d1c1c092640c857a1
+
+% 0 1 0 128ea21b9794b7e60caaf5345577b222
+
+% 0 1 0 0b23cf323a84886d192342cd62167be5
+
+% 0 1 0 1e30ae471fc597f405a06e2c92952e73
+
+% 0 1 0 0e0cc0589c0cbf6b17bd5eb9c3dbbbdd
+
+% 1 1 0 0770ead20c15800d1dfdaab1267fb5de
+
+@ 0 1 0 1c74bdf436404c930a5420ecb7693688
++   entry .Leader   linia od krawędzi przesuniętej etykiety z powrotem do opisywanego przez nią celu
+
+% 1 1 0 035632d8f693394907a7fe3bcc7a6daf
+
+@ 0 9 0 1ea0d0521e995e4b040da8a8cb77b6b9
++         Rysowana dla etykiety przesuniętej od celu dalej niż próg linii odniesienia
++         rozmieszczacza. Biegnie od najbliższego punktu prostokąta etykiety do celu. Późniejsze
++         etykiety omijają linię odniesienia tak, jak omijają etykietę, do której należy; linia
++         odniesienia może przeciąć stałą przeszkodę, bo właśnie do tego służy – by wskazać cel
++         ponad znacznikiem – ale nie inną etykietę.
++     entry #x1   współrzędna pozioma końca na krawędzi etykiety
++     entry #y1   współrzędna pionowa końca na krawędzi etykiety
++     entry #x2   współrzędna pozioma końca przy celu
++     entry #y2   współrzędna pionowa końca przy celu
++   entry .Position   rozmieszczone miejsce etykiety: punkt zaczepienia, strona, obrys, linia odniesienia i widoczność
+
+% 1 1 0 1343b2d4d47668f70e0c6694864a8f39
+
+@ 0 4 0 076aba6b2dbe64f309c6e54fe751f3e2
++         To, czym odpowiada `position`. Tekst umieszcza się w (`#x`, `#y`) z wyrównaniem
++         wynikającym z jego `#attachment`, zajmując `#box`; `#leader` to linia, którą należy
++         narysować z powrotem do celu, jeśli etykieta została przesunięta dość daleko, by jej
++         potrzebować; a `#visible` ma wartość `false` dla etykiety `Caption.Fallback.Hide`, której
++         nie dało się umieścić bez kolizji.
+
+% 2 1 0 0ca1e88253fc6bd41922d08979447fd2
+
+% 3 1 0 0f3826d8103703df1f255e6f7aab7aec
+
+% 0 1 0 0f39e7722fc9b2ab041cd59644012251
+
+% 0 1 0 0ff0de59855274411f5b7436d1f4d934
+
+% 1 1 0 1af780c8ad57dc81151359b5c509f3df
+
+@ 0 6 0 078cd5131a370551095e903c6482ea9d
++     entry #x   współrzędna pozioma punktu zaczepienia etykiety
++     entry #y   współrzędna pionowa punktu zaczepienia etykiety
++     entry #attachment   strona celu, po której leży etykieta i z której wynika jej wyrównanie
++     entry #box   prostokąt zajmowany przez etykietę
++     entry #leader   linia odniesienia do narysowania z powrotem do celu albo `Unset`, jeśli nie jest potrzebna
++     entry #visible   czy etykieta ma w ogóle zostać narysowana
+
+@ 0 1 0 18c6fa005845f6260aadefcadb06941c
++ entry .Obstacle   coś, nad czym nie wolno umieścić etykiety: prostokąt, linia z obrysem albo koło
+
+% 1 1 0 02df2b3c0496ecbd0760cde5d0146b96
+
+@ 0 5 0 07d4aa8a832c50511d888dee9a7b6bd7
++       Zapieczętowany trait o trzech kształtach, z których każdy odpowiada na `#overlap` – jak
++       dużą część prostokąta zakrywa, w jednostkach powierzchni. Odpowiedź wynosi dokładnie zero,
++       gdy oba są rozłączne, a jej wielkość służy jedynie do porównywania pozycji kandydujących,
++       więc dla koła jest to oszacowanie. Przeszkody deklaruje się w ciele `arrange` przez
++       `avoid`, a płótno przez `canvas`; obrys i linia odniesienia każdej umieszczonej etykiety
++       stają się przeszkodami dla etykiet po niej.
+
+% 1 1 0 1f23fc055b6a8c211cdd6e82a64c75c7
+
+% 2 1 0 1a490104b459cbb40a4b00f8eb80f336
+
+@ 0 2 0 0e370975db9e53a1102789034ad5343a
++   entry #overlap   jak dużą część prostokąta zakrywa ta przeszkoda: zero dokładnie wtedy, gdy są rozłączne
++   entry .Box   prostokąt o bokach równoległych do osi w układzie z osią y w dół: słupek, legenda, obrys etykiety
+
+% 1 1 0 1d639e5f9966cb1d1579a6ab1b52d2a7
+
+@ 0 2 0 149c4750d09c18e0069edd0ff80db524
++         Określony przez krawędzie `#left` i `#top` oraz `#width` i `#height`. Jako przeszkoda
++         nachodzi na inny prostokąt o pole ich części wspólnej.
+
+% 2 1 0 13a0ddbc5b4d61570e0f162e858367ca
+
+% 3 1 0 02782a06d6b951231e28b77f30ab2eae
+
+% 0 1 0 136c6df93614da980284b54106ea80f1
+
+% 0 1 0 15ccc1392729e2de0b2b48c6930574e4
+
+% 1 1 0 04eedf50127884ae0d1d84f979e538c3
+
+@ 0 17 0 121b44afa6f5b18d1ae2297eba056a3e
++     entry .around   obrys etykiety zaczepionej w punkcie po jednej stronie celu
++         `Obstacle.Box.around(x, y, width, height, attachment)`: dla `East` punktem zaczepienia
++         jest środek lewej krawędzi prostokąta, dla `North` środek dolnej krawędzi, dla `Center`
++         jego środek.
++     entry #left   lewa krawędź prostokąta
++     entry #top   górna krawędź prostokąta
++     entry #width   szerokość prostokąta
++     entry #height   wysokość prostokąta
++     entry #right   prawa krawędź prostokąta
++     entry #bottom   dolna krawędź prostokąta
++     entry #area   pole prostokąta
++     entry #centerX   współrzędna pozioma środka prostokąta
++     entry #centerY   współrzędna pionowa środka prostokąta
++     entry #pad   prostokąt powiększony o daną wartość z każdej strony
++     entry #excess   jaka część pola tego prostokąta leży poza innym prostokątem, na przykład płótnem
++     entry #contains   czy punkt leży w prostokącie, łącznie z krawędziami
++     entry #nearest   punkt na obwodzie prostokąta najbliższy danemu punktowi, w którym styka się z nim linia odniesienia
++   entry .Line   odcinek z obrysem: jedna krawędź rysowanej łamanej albo linia odniesienia
+
+% 1 1 0 1f1d0f11642749c4044bf3111d587221
+
+@ 0 11 0 038115e0f767ab5b0f98b981e4289f12
++         Od (`#x1`, `#y1`) do (`#x2`, `#y2`), z grubością obrysu `#width` domyślnie równą 1. Jego
++         nachodzenie na prostokąt to długość części odcinka wewnątrz prostokąta, wyznaczona
++         przycinaniem Lianga–Barsky’ego, pomnożona przez jego grubość, więc etykieta nie może go
++         dotykać. Łamaną omija się jako zbiór jej odcinków.
++     entry #x1   współrzędna pozioma początku odcinka
++     entry #y1   współrzędna pionowa początku odcinka
++     entry #x2   współrzędna pozioma końca odcinka
++     entry #y2   współrzędna pionowa końca odcinka
++     entry #width   grubość obrysu, przez którą mnożona jest przycięta długość
++     entry #length   długość odcinka
++   entry .Disc   wypełnione koło, na przykład znacznik wykresu punktowego
+
+% 1 1 0 0d0db0eb1aa12962172c8dc9d423ed54
+
+@ 0 6 0 068f4d383f594da019542adfc65b2a01
++         O środku w (`#x`, `#y`). Prostokąt jest z nim rozłączny dokładnie wtedy, gdy jego
++         najbliższy punkt leży co najmniej `#radius` od środka; w przeciwnym razie nachodzenie
++         szacuje się jako nachodzenie prostokąta na kwadrat opisany na kole, przeskalowane przez
++         π/4.
++     entry #x   współrzędna pozioma środka
++     entry #y   współrzędna pionowa środka
++     entry #radius   promień koła
+
+@ 0 1 0 13760589db0496f701311aadc5403328
++ entry .Arranger   algorytm, który znajduje pozycję dla każdej etykiety, znając wszystko inne na stronie
+
+% 1 1 0 1dd3063f2d57ec6f13fdfc6cc6734b28
+
+@ 0 4 0 1dc6a90f6d09b2a80397edadd25e4219
++       Trait z jedną metodą: `#arrange` przyjmuje etykiety, przeszkody i opcjonalne płótno i
++       odpowiada wartością `Caption.Position` dla każdej etykiety, w kolejności etykiet.
++       `arrange` używa tego w zasięgu: `.greedy` z obiektu towarzyszącego, chyba że inny
++       zaimportowano z pakietu `arrangers` albo związano jako lokalny given.
+
+% 2 1 0 13f2daf1e43e3d2f1605a10c419eb759
+
+% 3 1 0 01b7c58fb39353f11a1e8cd7bfece576
+
+% 0 1 0 17c3c969b6faf1dc039d64e6e6e04cbc
+
+% 2 1 0 16209625213cd0b9144a0297bbb90010
+
+% 3 1 0 1e7ac317d65570ef139b21dcd6eefe9a
+
+% 1 1 0 082b20d2ddb0adc60711243386e1b1e2
+
+@ 0 6 0 1d901379b58d3d581b5efe014deb4509
++       Oba wbudowane rozmieszczacze próbują skończonej listy kandydatów dla każdej etykiety,
++       zaczynając od najmniej przesuniętych: każda strona przy celu, potem każda strona w każdym
++       z ośmiu kierunków o jeden `step` dalej, potem o dwa kroki i tak dalej, aż do `reach`
++       etykiety albo `rings` kroków. Kolizja kandydata to pole jego obrysu z marginesem pod każdą
++       stałą przeszkodą, każdą umieszczoną etykietą i każdą umieszczoną linią odniesienia,
++       powiększone o jego pole poza płótnem i o długość jego własnej linii odniesienia biegnącej
++       przez umieszczone etykiety.
+
+% 0 1 0 14fdc156f5593bb30758bdc18ab590f4
+
+% 0 1 0 104aba3926f1e9ae13424a5c7c5ae017
+
+@ 0 5 0 19c51f01dc600ed00506f4d81fad62d0
++   entry #arrange   pozycje dla etykiet, w ich kolejności, przy danych przeszkodach i płótnie
++   entry .greedy   domyślny rozmieszczacz: `Arranger.Greedy()` z domyślnymi parametrami
++       W zasięgu niejawnym, więc `arrange` nie potrzebuje importu; given zaimportowany z
++       `arrangers` albo zadeklarowany lokalnie ma pierwszeństwo.
++   entry .Pass   jeden przebieg ciała `arrange`: w pierwszym zapisuje żądania, w drugim odpowiada
+
+% 1 1 0 1e5a47432d3d6c8f0d0eb4345873ad91
+
+@ 0 9 0 09ae2163a3e35560134337a50a0d9a03
++         Wartość kontekstowa, którą `arrange` dostarcza swojemu ciału i
++         której potrzebują `position`, `avoid` i `canvas`. Jest mutowalna, tworzona przez
++         `arrange` na jeden przebieg, nigdy niewspółdzielona, i nie da się jej skonstruować
++         nigdzie indziej.
++     entry #solved   czy to drugi przebieg, którego odpowiedzi są rozwiązanymi pozycjami
++     entry #diverged   czy drugi przebieg poprosił o coś, o co nie prosił pierwszy
++         Wywołanie ponad te zapisane albo takie, którego etykieta różni się od etykiety pierwszego
++         przebiegu na tej samej pozycji w kolejności, dostaje odpowiedź tymczasową i ustawia tę
++         flagę: ciało nie było powtarzalne.
++   entry .Greedy   umieszcza każdą etykietę w kolejności priorytetów w najlepszym miejscu, przy już umieszczonych
+
+% 1 1 0 0c921040432db6da1289f34dd52f0f11
+
+@ 0 6 0 10f69d08da54140e149469ce3f5153ca
++         Każda etykieta, od najwyższego `priority`, a poza tym w kolejności, zajmuje najmniej
++         przesuniętego kandydata wolnego od wszystkiego, co umieszczono przed nią, albo
++         najmniej kolidującego, jeśli żaden nie jest wolny. Deterministyczny i ograniczony
++         liczbą kandydatów: najwyżej 1 + 8 × `rings` na stronę. Etykieta umieszczona wcześnie
++         nigdy nie jest przesuwana, by zrobić miejsce dla umieszczonej później, co na gęstym
++         obrazie może zostawić kolizje, których inna kolejność by uniknęła; tym zajmuje się
++         `Arranger.Annealing`.
+
+@ 0 10 0 030792a73a231d881958801b1ed786de
++         Parametry: `step` (domyślnie 4) to odległość między pierścieniami kandydatów, `rings`
++         (domyślnie 8) – ile pierścieni przeszukać, `leaderThreshold` (domyślnie 6) – przesunięcie,
++         powyżej którego rysowana jest linia odniesienia, a `leaderWidth` (domyślnie 1) – grubość
++         obrysu, jaką linia odniesienia ma jako przeszkoda.
++     entry #step   odległość między kolejnymi pierścieniami pozycji kandydujących
++     entry #rings   ile pierścieni kandydatów przeszukać, w granicach przesunięcia etykiety
++     entry #leaderThreshold   przesunięcie, powyżej którego etykieta dostaje linię odniesienia
++     entry #leaderWidth   grubość obrysu linii odniesienia jako przeszkody dla innych etykiet
++     entry #arrange   umieszcza etykiety zachłannie, ukrywając te, które kolidują i proszą o ukrycie
++   entry .Annealing   ulepsza rozmieszczenie zachłanne symulowanym wyżarzaniem, ze stałego ziarna
+
+% 1 1 0 02bd1e25185bfd0e0b053f32088b414b
+
+@ 0 7 0 06417e7a803e1bdd1eed1726d8ccb413
++         Zaczyna od rozmieszczenia zachłannego, a potem wielokrotnie przenosi losową etykietę do
++         losowego spośród jej kandydatów, akceptując ruch, który obniża łączną kolizję i ważone
++         przesunięcie, oraz ruch, który ją podnosi, z prawdopodobieństwem malejącym w miarę
++         stygnięcia temperatury. W przeciwieństwie do przebiegu zachłannego etykieta umieszczona
++         wcześnie może zostać przesunięta, by zrobić miejsce dla umieszczonej później. Losowe ruchy
++         są wybierane z `seed` przez capricious, więc te same dane wejściowe są za każdym razem
++         rozmieszczane tak samo, a `iterations` dokładnie ogranicza pracę. Etykiety, które nadal
++         kolidują i proszą o ukrycie, są ukrywane, od najmniej ważnych.
+
+% 2 1 0 11534037e3ba0333139ad269514189c9
+
+% 3 1 0 1e1c36901849cd9c126ae4f35626f097
+
+% 0 1 0 071561058896c7330f34479307214b6a
+
+% 1 1 0 0d9c89185fc59c3e1be3936932313d20
+
+@ 0 14 0 128a545ce22c2dfc1034505cbc2605a2
++         Parametry z wartościami domyślnymi: `seed` (`Seed(0L)`), `iterations` (4000),
++         `temperature` (1.0), `cooling` (0.995, współczynnik stosowany przy każdym ruchu),
++         `displacementWeight` (0.05, jak bardzo przesunięcie liczy się w stosunku do kolizji) oraz
++         `step`, `rings`, `leaderThreshold` i `leaderWidth` jak w `Arranger.Greedy`.
++     entry #seed   ziarno, z którego wybierane są losowe ruchy
++     entry #iterations   dokładna liczba ruchów do wypróbowania
++     entry #temperature   temperatura początkowa, skalująca to, jak chętnie akceptowany jest gorszy ruch
++     entry #cooling   współczynnik, przez który mnoży się temperaturę po każdym ruchu
++     entry #step   odległość między kolejnymi pierścieniami pozycji kandydujących
++     entry #rings   ile pierścieni kandydatów przeszukać, w granicach przesunięcia etykiety
++     entry #leaderThreshold   przesunięcie, powyżej którego etykieta dostaje linię odniesienia
++     entry #leaderWidth   grubość obrysu linii odniesienia jako przeszkody dla innych etykiet
++     entry #displacementWeight   jak bardzo odległość etykiety od celu liczy się na jej niekorzyść
++     entry #arrange   wyżarza rozmieszczenie, zaczynając od zachłannego, a potem ukrywa to, co musi być ukryte
+
+@ 0 1 0 12ca3e491d5610661d943d241a8211d5
++ entry .arrangers   wbudowane rozmieszczacze, każdy jako given do zaimportowania po nazwie
+
+% 1 1 0 13bab8bc64ba3d201325ab36ca865455
+
+@ 0 4 0 1c7a808d87f374fb15a9c7e30bf0bbfd
++       `Arranger` w zasięgu decyduje, jak `arrange` umieszcza etykiety. Obiekt towarzyszący
++       `Arranger` domyślnie dostarcza zachłanny; zaimportowanie po nazwie jednego z tych albo
++       związanie skonfigurowanego `Arranger.Greedy` lub `Arranger.Annealing` jako lokalnego
++       givena go zastępuje. `import soundness.*` nie importuje givenów, więc każdy importuje się
++       po nazwie.
+
+% 2 1 0 12c6069bc5ff53cf022ad836493dc4c3
+
+% 3 1 0 1063f763926a5e0308a5631e6772b492
+
+% 0 1 0 075d39f9c7df0f841fd3f22930e552d6
+
+% 2 1 0 09016133b09127f61d92bf50526f314e
+
+% 3 1 0 0ec34f66b294d11a1a1b7a64939169d4
+
+% 0 1 0 09beca149977b55211cd35e8a8791f0f
+
+% 0 1 0 0295d51219211984050cfc53bbc4e962
+
+% 1 1 0 05de78e533337026038fd62566beb1c2
+
+@ 0 2 0 1ae875e88eb4cb3c0b18c7dddee5382f
++   entry .greedyArranger   `Arranger.Greedy()`: deterministyczny, według priorytetów, nigdy nie wraca do etykiety
++   entry .annealingArranger   `Arranger.Annealing()`: symulowane wyżarzanie od startu zachłannego, ziarno 0

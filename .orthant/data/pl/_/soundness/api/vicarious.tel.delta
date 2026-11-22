@@ -1,0 +1,420 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 14c573472161d1591a0ab821784a0dbd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1c512d48a8f747e81db84ebb3f7b85c8
++ info   wartości indeksowane ścieżkami pól typu, adresowane przez proxy sprawdzane w czasie kompilacji
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 155d14c6d575c2930cb9a653992f2865
++     _Vicarious_ traktuje strukturę klasy case – każde pole osiągalne z niej na dowolnej
++     głębokości oraz całą wartość – jako stały zbiór **ścieżek**, `opponent.name`, a nie `name`,
++     i pozwala kodowi nazywać te ścieżki przez **proxy**: wartość zastępczą danego typu, bez
++     własnych pól, na której każda selekcja jest podczas kompilacji kodu rozwiązywana do indeksu
++     nazywanej ścieżki. Ścieżka, której typ nie ma, to błąd kompilacji, więc żadnej ścieżki nigdy
++     nie zapisuje się jako tekstu.
+
+@ 0 6 0 0d0f3feabc53640b06c3f7f07eb53459
++     Na proxy zbudowane są dwie struktury. `Catalog[Key, Value]` przechowuje po jednej wartości
++     `Value` dla każdej ścieżki `Key`, obliczonej jedną funkcją z wartości `Key`, odczytywanej
++     według ścieżki, przekształcanej przez `map` i łączonej wpis po wpisie przez `braid`.
++     `Specific` odwzorowuje niektóre ścieżki typu na instancje klas typów, których derywacja
++     (z `wisteria`, a więc także z `jacinta`, `stratiform` i pozostałych kodeków) ma użyć
++     dokładnie w tych ścieżkach zamiast instancji dla typu pola.
+
+% 2 1 0 1630ecd701d1902615b8979173abf571
+
+% 3 1 0 0c533d0ca0adb7e81427ebb98cb3c6db
+
+% 5 1 0 047ba6561d06fc3210c636a9856fb595
+
+% 6 1 0 0a449e935ff23efa0cb0634c4c83f0c4
+
+% 8 1 0 10b102ee5e4686091d0fa183f8334a41
+
+% 9 1 0 02ec097a1894293103015980210e56e7
+
+% 0 1 0 1f98fc376d93d26407b211694cd470ef
+
+% 0 1 0 1cde67ede7001b021ed1a5446cab1794
+
+% 1 1 0 1a308ac5173f5d601eb177d3087611bf
+
+@ 0 4 0 1f597724a09d4f661173e2eee129a9cb
++     Ścieżki są spłaszczane w głąb, z korzeniem na początku: dla `Duel` są to cały `Duel`,
++     `challenger`, `challenger.name`, `challenger.age`, `opponent`, `opponent.name` i
++     `opponent.age`, więc katalog nad `Duel` ma siedem wpisów, a dwa katalogi nad tym samym
++     kluczem są wyrównane pozycja po pozycji.
+
+@ 0 3 0 0a68eb7b1e05921207e39ce3a09baf88
++     Biblioteka ma jeden zbiór źródeł, `vicarious.core`. `Catalog`, `catalog`, `Proxy`,
++     `Specific`, `root` i `specifically` są eksportowane do modułu zbiorczego `soundness`; given
++     `Proxy` znajduje się w jego obiekcie towarzyszącym, w zasięgu niejawnym, więc niczego nie
++     importuje się po nazwie.
+
+% 0 1 0 16736c53b26096c207f0082614094673
+
+% 0 1 0 15cd18d3b7919aa80115166de491bebc
+
+% 0 1 0 16ef5f905f86975c0f40c8ed9c1f6402
+
+% 0 1 0 1ed6710e6599bce30402f78dacf05b60
+
+% 0 1 0 0f8b59d3fb7a104900a03684ad28f8bf
+
+@ 0 7 0 155cd0e998cd35dd142a8e70fd93f635
++ entry .catalog   buduje `Catalog`, stosując jedną funkcję polimorficzną do wartości i każdego pola w niej
++     `catalog(value)(lambda)` to makro, które podczas kompilacji kodu przechodzi strukturę klas
++     case typu `value` i stosuje `lambda` – czystą funkcję polimorficzną
++     `[field] => (field: field) -> result` – do całej wartości, a następnie do każdego pola, w
++     głąb, w kolejności deklaracji. Funkcja musi przyjmować pole dowolnego typu, więc może z nim
++     zrobić tylko to, na co pozwala każda wartość. Potrzebny jest `ClassTag` dla typu wyniku,
++     ponieważ wpisy są przechowywane w tablicy.
+
+% 2 1 0 1d6f55d230d8ef4d0009f57724ac1919
+
+% 3 1 0 00bf0f847813c1a10603df9f8863a003
+
+% 5 1 0 1b28e8913075260f04967776bf2ec2ac
+
+% 6 1 0 16f08b8f114259901d79c58d31358e24
+
+% 8 1 0 11459718a47ea6f618f5b7020f8ca339
+
+% 9 1 0 0e911233e342b37205980a5266957913
+
+% 0 1 0 045154aee157ecd10e8e88020155681d
+
+% 0 1 0 0bda1787e6dfd4d40d817764375dee42
+
+% 1 1 0 08859f5cc6e75c9f1aa6e1c0a30529b7
+
+@ 0 1 0 01331c7d4920278d0e058a0e42ff0e24
++ entry .Catalog   jedna wartość dla każdej ścieżki pól typu klucza, odczytywana według ścieżki sprawdzanej podczas kompilacji kodu
+
+% 1 1 0 08f07553092055fd1bb89d74ced64c91
+
+@ 0 6 0 0c24dfecd599c58f18625d55183256df
++       `Catalog[Key, Value]` przechowuje w `#values` wartość `Value` na każdej pozycji
++       spłaszczonej struktury `Key` – najpierw całą wartość, potem każde pole w głąb. Buduje się
++       go przez `catalog`, odczytuje przez `#apply` i ścieżkę zapisaną przez proxy, przekształca
++       przez `#map`, nadpisuje w nazwanych ścieżkach przez `.brush` i łączy z innym katalogiem
++       nad tym samym kluczem przez `#braid`. To typ klucza sprawia, że dwa katalogi da się
++       połączyć, i to on sprawdza każdą ścieżkę użytą do odczytu z katalogu.
+
+% 2 1 0 02514956fb2369b305f17caf77c73c29
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 01f65e0e42f642a612e72164231a5895
++         label Katalog etykiet wszystkich pól
+
+% 1 1 0 19749c2033ff89da1a0e3513dfc0fade
+
+% 2 1 0 0af6169059bf084006f7be94d1b94a84
+
+% 4 1 0 1d9c2f63627e4ed6023b2aa8c8463ba4
+
+% 5 1 0 149a8328f5268ee102d4a7f0c2c1f621
+
+% 7 1 0 19364089144447960bf7a51143444db7
+
+% 8 1 0 13d82c5ae2ef7a8f0d9fe21623024396
+
+% 0 1 0 16087901fc7780a11caff7f97772c4dc
+
+% 1 1 0 05d27781c35ce76e04a550841a2a475d
+
+@ 0 1 0 1d2255833216fb750fb13b636f50456c
++         label Odwzorowany na katalog szerokości, adresowany tymi samymi ścieżkami
+
+% 1 1 0 0cf1f647db68b9df1a5727278b75182d
+
+% 2 1 0 18944a177445cae10c3f27f59a925efe
+
+% 4 1 0 1dde0ab126d2c8db0e4d5c942a74a121
+
+% 5 1 0 1af3a7fc27c031c41c0ff56878f590a6
+
+% 7 1 0 14eb899416168e8e1e399b40eedb113f
+
+% 8 1 0 06e08923ff95329f1f103645e783a646
+
+% 9 1 0 13ae7673a36f262017eff493aafa53ab
+
+% 0 1 0 042c74f71a7d57df151dadb04e7d860d
+
+% 1 1 0 101f2f084c6fbf2517e300659acc48ba
+
+@ 0 1 0 1b080daada2ad15d1f06a552a3772b6a
++         label Spleciony z etykietami, wpis po wpisie
+
+% 1 1 0 18b50400be569d0d1df5fa33c0257fa5
+
+% 2 1 0 0240e032b4884c3111d79186ebde3f29
+
+% 4 1 0 12b37d55f6738bbd070ee18cbda3c900
+
+% 5 1 0 1b74d67c513c71801c4c7ec166a46725
+
+% 7 1 0 1b50283bd7682527055d079cae4a5092
+
+% 8 1 0 191d93e739f1476f1b9dcd00bb0459fd
+
+% 9 1 0 0a55b7e6a509d2ab091f478dae893b65
+
+% 0 1 0 1edf6d73f92a6077057be7b0d93a3c6f
+
+% 0 1 0 1a4eeee82407baca06928eeea9720351
+
+% 1 1 0 0750e4fddf46d29d1e7ac716d5ec8b60
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 09b6a9da700cbea610e83d01e07a0ea2
++       Tak składa się tabelę ustawień dla poszczególnych pól: katalogi etykiet, szerokości i
++       czegokolwiek innego, co ma znaczenie, budowane osobno i splatane razem, każdy adresowany
++       tymi samymi ścieżkami. `Catalog` jest `Findable`.
+
+% 0 1 0 16cebf059ababff11de6f4787d27b308
+
+% 0 1 0 02dcdff5f415749b17058cab8bd8264f
+
+@ 0 5 0 059a52a2593b13420fff1cdd3e18a343
++   entry .brush   kopia katalogu z wpisami w niektórych ścieżkach zastąpionymi przez funkcję częściową ścieżek
++       Rozszerzenie dla dowolnego `Catalog`, wymagające derywowanego `Proxy` dla typu klucza.
++       Argument jest funkcją kontekstową z proxy do funkcji częściowej nad proxy: każdy `case`
++       nazywa ścieżkę, jako wzorzec na proxy, i podaje jej nową wartość; każda niedopasowana
++       ścieżka zachowuje swój wpis.
+
+% 2 1 0 1816e5301ac89296087e83d67698707c
+
+% 3 1 0 16889a812e3598660ad60b7a765bb229
+
+% 5 1 0 0198c7b370a12e201da6faa80e5c7f45
+
+% 6 1 0 0886091d12e30edc09bdb937e0f6a3f1
+
+% 8 1 0 1cc36380dc457f95125461057d939016
+
+% 9 1 0 1d65bcffa7b00c400a72088e4b7f3c22
+
+% 0 1 0 194a622562029f0c1f041e159addef5f
+
+% 1 1 0 1506c446973f9402169a4369348fcadf
+
+@ 0 17 0 12561df964cea0530ea160f92272e480
++   entry #values   wpisy, po jednym na ścieżkę, najpierw cała wartość, a potem każde pole w głąb
++   entry #size   liczba wpisów: jeden dla całej wartości i po jednym dla każdego pola na dowolnej głębokości
++   entry #apply   wpis w danej ścieżce, zapisanej jako selekcje na proxy typu klucza
++       `catalog(proxy ?=> proxy.opponent.name)` rozwiązuje ścieżkę podczas kompilacji kodu do
++       indeksu jej wpisu; `proxy ?=> proxy` to wpis dla całej wartości, a pole, którego typ nie
++       ma, to błąd kompilacji. `challenger.name` i `opponent.name` to różne wpisy, ponieważ
++       ścieżka jest pozycją, a nie nazwą.
++   entry #map   katalog nad tym samym kluczem z funkcją zastosowaną do każdego wpisu
++       Ścieżki się nie zmieniają, więc każda ścieżka poprawna dla tego katalogu jest poprawna dla
++       wyniku. Potrzebny jest `ClassTag` dla nowego typu wartości.
++   entry #braid   łączy dwa katalogi nad tym samym kluczem, wpis po wpisie, funkcją obu wartości
++       `left.braid(right)(lambda)` nie wymaga dopasowywania nazw: katalogi nad tym samym kluczem
++       są wyrównane pozycja po pozycji. Potrzebny jest `ClassTag` dla typu wyniku.
++   entry #tie   oblicza blok z tym katalogiem i proxy jego klucza w kontekście, tak aby ścieżka odczytywała swój wpis
++       Wewnątrz bloku katalog jest wartością kontekstową, więc `proxy.opponent.name()` – ścieżka
++       zakończona `()`, czyli `Proxy#apply` – odczytuje wpis tej ścieżki bezpośrednio; w jednym
++       wyrażeniu można odczytać kilka ścieżek.
+
+% 2 1 0 1f8a808e7079e1371b9a995e6d45c567
+
+% 3 1 0 13ddc6a91efaeb301fbcdd56c863a75e
+
+% 5 1 0 13b0a936b9b1eadb1ee3282321dec80a
+
+% 6 1 0 13b29fdec15dcd3613c07b9c407db629
+
+% 8 1 0 0cf513a96ce8d84f018942a901d89466
+
+% 9 1 0 067ec14707ea069d0bf6f24860b9c952
+
+% 0 1 0 1f78210f9cdbb88b01dd795ff6dadf70
+
+% 1 1 0 034bb435c26063d3111d607891a707a6
+
+@ 0 1 0 1b3dcb699e0f413815fca62bb9aa6c8b
++ entry .Proxy   wartość zastępcza dla wartości typu klucza, której selekcje pól są rozwiązywane do indeksów ścieżek podczas kompilacji kodu
+
+% 1 1 0 0727847a5ff05fdc19af564fb8046362
+
+@ 0 5 0 02a3fbfaf35c7e571598a607e928bf5c
++       `Proxy[Key, Value, Ordinal]` stoi w jednej ścieżce `Key`: `Ordinal` to indeks tej ścieżki
++       jako typ literałowy (`0` dla korzenia), a `#id` – ten sam indeks w czasie wykonania.
++       Selekcja pola na proxy (`proxy.opponent.name`) to makro `selectDynamic`, które wyszukuje
++       rozszerzoną ścieżkę w spłaszczonej strukturze `Key` i daje dla niej proxy, więc pole,
++       którego typ nie ma, to błąd kompilacji,
++       _vicarious: `opponent.title` is not a valid field path_.
+
+@ 0 5 0 084a9c54e63322d30d71a65562252595
++       Proxy korzenia dla typu klucza to `.derived`, w zasięgu niejawnym; dostarczają go
++       `Catalog#apply` i `Catalog#tie`, a `specifically` dostarcza je jako `root`. Proxy używa się
++       na trzy sposoby: jako adresu (`Catalog#apply`), do odczytu wpisu z katalogu w kontekście
++       (`#apply`) oraz jako ekstraktora we wzorcu (`#unapply`), w ten sposób `specifically` i
++       `.brush` nazywają ścieżki w swoich `case`. `Proxy` jest `Findable`.
+
+% 0 1 0 177512859589bc0b04c1e630ac9f3ac0
+
+% 1 1 0 172eeb380c8468d01a3e69e3884cb7d5
+
+@ 0 13 0 1bdffb2b6ba9c1ed15403900ced1efac
++   entry .derived   proxy korzenia dla typu klucza, rafinowane proxy jego pól, tak aby selekcje przechodziły sprawdzanie typów
++       Makro `transparent inline given`, w zasięgu niejawnym: jego typ to `Proxy[Key, Value, 0]`
++       rafinowany składową dla każdego pola, rekurencyjnie, z których każda jest proxy o
++       `Ordinal` równym indeksowi ścieżki tego pola.
++   entry #selectDynamic   proxy dla pola ścieżki tego proxy albo błąd kompilacji, jeśli takiego nie ma
++       Wywoływane przez selekcję taką jak `proxy.opponent`; nie zapisuje się go bezpośrednio.
++   entry #id   indeks ścieżki tego proxy w spłaszczonej strukturze jego typu klucza, przy czym korzeń ma `0`
++   entry #apply   wpis w ścieżce tego proxy w `Catalog` dostępnym w kontekście
++       `proxy.opponent.name()` wymaga `Catalog[Key, Value]` jako wartości kontekstowej, jaką
++       dostarcza `Catalog#tie`.
++   entry #unapply   dopasowuje proxy tej samej ścieżki, tak aby ścieżka mogła być wzorcem `case`
++       `case root.opponent.name() =>` dopasowuje dokładnie to proxy, którego `#id` jest
++       identyfikatorem ścieżki `opponent.name`.
+
+@ 0 1 0 175d0a7a3cc3ba8e0f595aababa4588e
++ entry .Specific   instancje klas typów dla nazwanych ścieżek pól typu, do użycia w tych miejscach przez derywację
+
+% 1 1 0 1a66212c5b3e7312163686c65125a813
+
+@ 0 6 0 047f1e13fb4c1a1f0fb5aa212d71697a
++       `Key is Specific over Typeclass` zapisuje wyjątki od generycznej derywacji: dla niektórych
++       ścieżek pól `Key` instancję, której należy użyć dokładnie w tej ścieżce zamiast tej, do
++       której rozwiązałby się typ pola. Given w zasięgu zmienia naraz każde pole danego typu;
++       `Specific` zmienia jedną ścieżkę i nic poza nią. Buduje się go przez `specifically`, które
++       podczas kompilacji kodu sprawdza każdą ścieżkę i typ każdej instancji, a korzystają z niego
++       derywacje `wisteria`, a więc także derywowane przez nie kodeki.
+
+% 2 1 0 16dcfe704a624d5d1539c37572924830
+
+% 3 1 0 18ed564fa589e9ea0b349e7d4aed2b1b
+
+% 0 1 0 1ae279738df7173f06e307f4ba453ed1
+
+% 2 1 0 1b57ab72b70c598c0e3d02af8b5ce210
+
+% 3 1 0 1911432e92d095001c2d66a70d44489c
+
+% 0 1 0 0fe48aac32b3e04c02475eea17911527
+
+% 0 1 0 1043da8253ec428f0d7a20fdf4e6c4ad
+
+% 0 1 0 180753d80529814408db5e20955928be
+
+% 0 1 0 094437e7d319e44611be777f4c838517
+
+% 0 1 0 0e9de0781ffa769b0ba933873ba65e95
+
+% 0 1 0 17cff6e98f731a190567f40115fa37b6
+
+% 1 1 0 0f48e23c19780e950c09f1c4395a96a7
+
+@ 0 1 0 167532bb7f68b6950969d96373770082
++       `Specific`, którego `#Transport` dotyczy innej klasy typów, jest przez derywację
++       ignorowany.
+
+% 1 1 0 1e89910a68f3cbdd1cca2de0b92519ac
+
+% 0 1 0 1bdfa24802e8a5be0630be87c36ed944
+
+@ 0 7 0 122be1d5a0ac3ff402b643bce7cebcf4
++   entry .Cases   funkcja częściowa przypadków ścieżek pól odczytywana przez `specifically`: wzorce proxy na instancje
++       `Specific.Cases[Key]` to `PartialFunction[Proxy[Key, Any, Nat], Any]`. `specifically`
++       odczytuje jej `case` z drzewa podczas kompilacji kodu; sama funkcja nigdy nie jest
++       wykonywana.
++   entry #Self   typ klucza, którego ścieżki pól są nadpisywane
++   entry #Transport   klasa typów, której dotyczą nadpisujące instancje, taka jak `Json.Encodable`
++   entry #instances   każda nadpisana ścieżka z kropkami (`"opponent.name"`) wraz ze swoją instancją, z wymazanym typem
++       Derywacja odczytuje instancję z tej mapy i nadaje jej ponownie typ w odwiedzanym polu.
+
+% 2 1 0 001562dbab8c3b4a05f31745c3ba28c1
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 0 1 0 0d3e1e96a9a341711c002cb5d6088f65
+
+% 1 1 0 0fd96e306876e4020cea7891021a7aba
+
+@ 0 6 0 15d733745934215c1ae396fd8826623d
++ entry .specifically   buduje `Specific` ze wzorców `case` nazywających ścieżki pól przez `root`
++     `specifically { case root.opponent.name() => instance; … }` to makro, którego `Key` i
++     `Typeclass` pochodzą z oczekiwanego typu (`Duel is Specific over Json.Encodable`). Dla
++     każdego `case` wzorzec proxy podaje ścieżkę, a instancja musi być `Typeclass` dla typu w tej
++     ścieżce, w przeciwnym razie definicja się nie kompiluje,
++     _vicarious: the instance for this path is not a …_; nieznana ścieżka również jest błędem
++     kompilacji.
+
+% 2 1 0 189fd1d56a5e0e070306a294b77561b5
+
+% 3 1 0 0612b0405f94b9170c4cded9eb39c851
+
+% 4 1 0 07789afcd770f35a076f31477f8e0362
+
+% 0 1 0 04f32810549cd2d3141ed7609699624c
+
+% 1 1 0 120ab930fd90d071122b8e8a23a38e0d
+
+% 0 1 0 1ef1291d32a376d00522b4014c5dbb9b
+
+% 0 1 0 13e889e5f84f0847194bec61163fc3d4
+
+% 1 1 0 11734e336822b41409c5941a4864298c
+
+@ 0 2 0 1a1c2044b410b8350e56c81d5cef7488
++     Ścieżka kończąca się na kolekcji przyjmuje instancję dla kolekcji, więc ponowna derywacja
++     w tym miejscu pod lokalnym givenem koduje na nowo jej elementy tylko w tym jednym miejscu:
+
+% 2 1 0 0ed6d9df7cec1804016fef740e2e904f
+
+% 3 1 0 0c4326b9bd003c8713ce6bed06a6532e
+
+% 4 1 0 079d2279ce330baf1211d8a891d35512
+
+% 0 1 0 010b4076bdea45d907086e626f0712a1
+
+% 1 1 0 00ed6eda6f6c4d7a063819533c09ab94
+
+% 0 1 0 1e170b060d00f03d18ba58a1bc7f05f4
+
+% 0 1 0 0f93724d09df2c631d72c766449826e4
+
+% 0 1 0 0e6ce2e262378341143b95407ab52c0b
+
+% 1 1 0 099fea93b547e29212041b9bc67e602f
+
+@ 0 4 0 0ee7642deadbc6cd01a26b21b6a99f1c
++ entry .root   proxy korzenia wewnątrz przypadków `specifically`, z którego wybiera się każdą ścieżkę
++     Rozwiązuje się do proxy, które `specifically` dostarcza jako wartość kontekstową otagowaną
++     `"root"`, więc `case root.opponent.name() =>` nie wymaga wiązania. Poza blokiem
++     `specifically` takiej wartości nie ma i `root` się nie kompiluje.
+
+@ 0 1 0 1b76f4823a87212019fe7505839e6ab9
++ entry .internal   makra stojące za `catalog`, `Proxy` i `specifically`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 10 0 1056004685957b511296ec90e8619e33
++       Nie do bezpośredniego użytku: wstawiają je `catalog`, `Proxy.derived`,
++       `Proxy#selectDynamic` i `specifically`. Funkcje pomocnicze ścieżek spłaszczają pola klasy
++       case w głąb, z korzeniem, `""`, pod indeksem 0.
++   entry .catalog   buduje `Catalog` z wartości i funkcji polimorficznej
++   entry .fieldNames   ścieżki z kropkami pól produktu, w głąb, pod prefiksem
++   entry .paths   każda spłaszczona ścieżka produktu, ze ścieżką korzenia `""` na początku
++   entry .fieldReprs   typ w każdej spłaszczonej ścieżce produktu, wyrównany z `.paths`
++   entry .dereference   rozwiązuje selekcję pola na proxy do proxy rozszerzonej ścieżki
++   entry .specific   buduje `Specific` z przypadków `case` funkcji częściowej ścieżek
++   entry .proxy   buduje rafinowane proxy korzenia dla typu klucza

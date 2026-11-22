@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 6 0 13f0b291bf0a35e4032ec23791b92307
++ entry .tastySymbolTeletypeable   przedstawia `Tasty.Symbol` jako dwukolumnową tabelę jego właściwości
++     Given `Teletypeable` dla `Tasty.Symbol`, wymagający `TastyPalette`. Tabela ma wiersz z
++     nazwą (prefiks przyciemniony, nazwa pogrubiona), wiersz flag z ustawionymi wyróżnionymi na
++     kolorze `flagOn` palety, wiersz właściwości z ustawionymi na `propertyOn` oraz po jednym
++     wierszu na każdy szczegół. Jest givenem najwyższego poziomu, więc rozwiązuje się bez
++     importu wewnątrz `hyperbole`, a gdzie indziej z nazwy:

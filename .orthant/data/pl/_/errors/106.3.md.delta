@@ -1,0 +1,46 @@
+orthant 2 language
+
+@ 0 1 0 0c21520be20ec02f153aaebf19bbf61b
++ # `↯/s.106.3` – `Json.Provider.Error`
+
+@ 0 2 0 01de378e79b9e6e20786ca882372489d
++ Zgłaszany, gdy wartość JSON nie spełnia schematu, względem którego jest walidowana.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 3 0 1310eee41604e97910f45e846dc7ff45
++ `Json.Provider` z Jacinty waliduje wartości JSON względem schematu w trakcie odczytu pól
++ rekordu i zgłasza każdą niezgodność tym błędem, przez `Tactic` kodu odczytującego pole, tak aby
++ walidujący czytnik mógł zebrać je wszystkie. Komunikat to `the
+
+% 0 1 0 1c0c44395d7e070f0a78ce626bf7a325
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 14 0 08d296b9302f8492128252de64ce0b1e
++ column  Kod
++ column  Przyczyna
++ column  Znaczenie
++ column  Komunikat
++ column  Rozwiązanie
++ row  `↯/s.106.3.1`  `JsonType`  Typ wartości nie odpowiada temu, czego wymaga schemat.  `[↯/s.106.3.1] the JSON was not valid according to the schema because expected JSON type number, but found string`  Podać wartość typu wymaganego przez schemat albo złagodzić schemat, jeśli typ rzeczywiście jest elastyczny.
++ row  `↯/s.106.3.2`  `MissingValue`  W JSON brakuje wymaganej wartości. Przyczyna wskazuje brakujące pole, jeśli jest ono znane.  `[↯/s.106.3.2] the JSON was not valid according to the schema because the value of locality was missing`  Dodać brakujące pole albo oznaczyć je w schemacie jako opcjonalne.
++ row  `↯/s.106.3.3`  `IntOutOfRange`  Wartość całkowita wykracza poza `minimum`/`maximum` dozwolone przez schemat. Zgłaszany przez typ dostawcy `"integer!"`; brakująca granica to `Unset`, a nie wartownik.  `[↯/s.106.3.3] the JSON was not valid according to the schema because the value was not between 1 and 99`  Ograniczyć wartość do zakresu dozwolonego przez schemat.
++ row  `↯/s.106.3.4`  `PatternMismatch`  Wartość napisowa nie pasuje do wyrażenia regularnego w `pattern` schematu.  `[↯/s.106.3.4] the JSON was not valid according to the schema because the value did not conform to the regular expression [a-z]+`  Dostosować wartość do wzorca schematu albo poluzować wzorzec.
++ row  `↯/s.106.3.5`  `NumberOutOfRange`  Liczba wykracza poza `minimum`/`maximum` (lub granice wyłączne) deklarowane przez schemat. Zgłaszany przez typ dostawcy `"number!"`.  `[↯/s.106.3.5] the JSON was not valid according to the schema because the number was not between -90.0 and 90.0`  Ograniczyć wartość do zakresu dozwolonego przez schemat.
++ row  `↯/s.106.3.6`  `LengthOutOfRange`  Długość napisu wykracza poza `minLength`/`maxLength` schematu. Zgłaszany przez typ dostawcy `"string!"`.  `[↯/s.106.3.6] the JSON was not valid according to the schema because the string's length was not between 1 and 214`  Skrócić lub wydłużyć wartość, by pasowała do schematu.
++ row  `↯/s.106.3.7`  `NotPermitted`  Napis nie jest żadną z wartości `enum` schematu (ani jego `const`). Zgłaszany przez typ dostawcy `"enum"`.  `[↯/s.106.3.7] the JSON was not valid according to the schema because the value Polygon was not one of Point`  Użyć jednej z wymienionych wartości albo rozszerzyć `enum` schematu.
++ row  `↯/s.106.3.8`  `UnexpectedKind`  Wartość jest rodzaju JSON, którego nie przyjmuje żadna z alternatyw jej unii (`anyOf`, `oneOf` lub `type` wskazujący kilka rodzajów).  `[↯/s.106.3.8] the JSON was not valid according to the schema because the value was a JSON boolean, which is not one of string, number`  Podać wartość jednego z rodzajów wymienionych w schemacie.
++ row  `↯/s.106.3.9`  `Unparsable`  Tekst napisu nie jest poprawny dla jego `format`: `json-pointer` lub `regex`, którego nie da się sparsować.  `[↯/s.106.3.9] the JSON was not valid according to the schema because the value a[ is not a valid regex`  Poprawić wartość tak, by parsowała się w swoim formacie.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 1eacee630aefe77708d9951599b52b0f
++ - Źródło: `lib/jacinta/src/core/jacinta.Json4.scala`

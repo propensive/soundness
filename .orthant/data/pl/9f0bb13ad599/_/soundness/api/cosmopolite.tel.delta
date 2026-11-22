@@ -1,0 +1,12 @@
+orthant 2 language
+
+@ 0 8 0 107b358d0629d709038c662ccb2b3bd8
++   entry .encodable   zapisuje ustawienia regionalne jako kod ich języka, taki jak `t"fr"`
++   entry .inspectable   debugowa postać ustawień regionalnych, jako `Locale(fr)`
++       Postać konstruktora, aby nie mylić jej z samym kodem zapisywanym przez `.encodable`.
++   entry .decodable   odczytuje ustawienia regionalne z kodu języka, z angielskim jako wartością rezerwową
++       Dekoduje do `Locale[en & pl & fr & de & es]`: `t"pl"`, `t"fr"`, `t"de"` i `t"es"` to
++       ich języki, bez względu na wielkość liter i z pominięciem podtagu regionu, więc `t"FR"`,
++       `t"fr-CA"` i `t"fr_CA"` oznaczają francuski. Każdy inny tekst po cichu staje się
++       `en`.
++   entry #language   język tych ustawień regionalnych

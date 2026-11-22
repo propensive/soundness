@@ -1,0 +1,1450 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 008e1f784f0ea89e0b486934b5cd6e3e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1383faeae4adb4080e61292bc56ab0aa
++ info   grafy skierowane jako wartości: acykliczne z konstrukcji, porządkowane, przeszukiwane, edytowane i rysowane
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 1d09c200a0743abc1d5a382f99d1081d
++     _Acyclicity_ reprezentuje graf skierowany – kształt systemu budowania, harmonogramu zadań,
++     hierarchii typów lub zależności pakietu – jako niemutowalną wartość z operacjami, których
++     takie grafy potrzebują: porządkiem topologicznym, osiągalnością, domknięciem i redukcją
++     przechodnią, wycinaniem wokół węzła oraz edycją, która zachowuje acykliczność grafu. Jej
++     centralnym typem jest `Dag`, graf, który **nie może zawierać cyklu**: każdy sposób jego
++     utworzenia albo sprawdza to raz (i zgłasza `Dag.Error`), albo zachowuje acykliczność
++     z konstrukcji, więc `linearized`, `reduction` i `traversal` nie mają trybu porażki. Obok
++     niego znajdują się `Digraph`, ogólny graf skierowany, który może zawierać cykl i jest
++     przekształcany w `Dag` jedynym sprawdzającym krokiem, `acyclic`; oraz `Topology`, graf
++     edytowany w miejscu, który utrzymuje aktualny porządek topologiczny w miarę napływu
++     krawędzi, a po zamrożeniu jest postacią rozłożoną z myślą o szybkich zapytaniach.
+
+@ 0 4 0 0e4f4b05976bf1c71e58f3a8e0b7b471
++     Każda krawędź jest odczytywana jako **zależność**: `a -> b` oznacza, że `a` zależy od `b`,
++     więc `successors` węzła to jego zależności, jego `predecessors` to węzły od niego zależne,
++     `sources` to węzły niezależące od niczego (od których zaczyna się budowanie), a `sinks` to
++     węzły, od których nic nie zależy. Porządek topologiczny wymienia każdy węzeł *po* jego
++     zależnościach.
+
+% 2 1 0 1274911920eac4e90516e5c24d99db2f
+
+% 3 1 0 1d0bbfbb915120701de533c396886dae
+
+% 4 1 0 0fa0866463feaebf1387532d08ee92d3
+
+% 0 1 0 00dc49615b68038b076b440b44ff49e9
+
+% 0 1 0 1efc6000b7ab7f1f17c768ad6344a4e5
+
+% 0 1 0 1054864bcc5cae0e1f4fc16dded9fe31
+
+% 0 1 0 1b0e4a7ab1e5a70a1654e93f014475cf
+
+% 0 1 0 1811c80c432602cd0b19cef7402e54fe
+
+% 0 1 0 17b92fc472a2e25e027d257be1098433
+
+% 1 1 0 1fa13d8ca714123e033408a2752fd1d0
+
+@ 0 8 0 0e1408e577dba0871ff050811c6d722f
++     Wszystkie one, a także wszystko inne o kształcie grafu – diagram `Hasse`,
++     `Map[node, Set[node]]`, `Ledger` – dzielą jedno słownictwo przez klasę typów `Nodal` (zbiór
++     węzłów i następniki każdego węzła), z `Bidirectional` dla reprezentacji, która przechowuje
++     też poprzedniki, `Topological` dla takiej, której wartości nie mogą zawierać cyklu,
++     oraz `Reachable` i `Invertible` dla tych z natywnym przeszukiwaniem lub odwracaniem.
++     Rozszerzenia na poziomie pakietu (`nodes`, `edges`, `sources`, `sinks`, `cycle`, `acyclic`,
++     `reachable`, `closure`, `invert`, a dla grafów `Topological` także `linearized`,
++     `reduction`, `traversal` i `layered`) są napisane raz względem tych klas typów, więc
++     `Hasse` lub `Map` odpowiada na nie dokładnie tak jak `Dag`.
+
+@ 0 6 0 1d2a54b62fcfe3210fdd95c21566fadb
++     `Dag` lub `Digraph` przechowuje tylko kierunek w przód, więc znalezienie poprzedników węzła
++     wymaga przejrzenia każdej krawędzi. Operacje, które tego potrzebują – `predecessors`,
++     `ancestors`, `lineage`, `bypass`, `bypassAll` i `-` – są bramkowane przez
++     `Dysasymptotic.LinearScan`, potwierdzane przez `import dysasymptotics.linearScan`;
++     `subgraph`, który odbudowuje całą mapę dla ograniczonego wyboru węzłów, jest bramkowany
++     przez `Dysasymptotic.LinearSize` (`import dysasymptotics.linearSize`). Zamrożona `Topology`
++     przechowuje oba kierunki i nie potrzebuje żadnej z bramek.
+
+@ 0 3 0 068a6215d0ecd87d104b3042c676e91d
++     `Dag` rysuje się jako dokument GraphViz DOT przez `Dot`, za pomocą `dag.dot` na
++     `Dag[Text]`; biblioteka `dendrology` rysuje dowolny graf `Topological` w terminalu,
++     a `Dag#layered` układa go dla niej w warstwy o zminimalizowanej liczbie przecięć.
+
+@ 0 4 0 1297e7fbab5fc9121e7b684c36985cb7
++     Biblioteka jest jednym zbiorem źródeł, `acyclicity.core`, kompilowanym dla każdej
++     platformy i eksportowanym do modułu zbiorczego `soundness`, gdzie pakiet wyboru
++     `rankings` łączy się z własnym pakietem modułu zbiorczego. Jedynym givenem, który
++     użytkownik importuje po nazwie, jest `rankings.balancedRanking`; wszystko inne rozwiązuje
++     się z obiektów towarzyszących.
+
+% 0 1 0 01c5bf2c3b34e767126003078b82ca17
+
+% 0 1 0 09822351b46e7fcb013aa62611cea364
+
+% 0 1 0 1241e73184f3274a06697282313e5756
+
+% 0 1 0 0077bba20955ca741d3560bf3052e456
+
+% 0 1 0 177a99173680c2511d605cdb4703ecfd
+
+% 0 1 0 1d3d92a38a1f62ff1dc5918bbba917e4
+
+@ 0 1 0 0453b8d2265aaeea124f09a2ee3c2532
++ entry .Dag   skierowany graf acykliczny jako trwała wartość, z porządkiem topologicznym, który nie może zawieść
+
+% 1 1 0 078bcc33f02b9c74006f218f688b0339
+
+@ 0 9 0 1d184d73491bbfdf1d526c836787a52c
++       `Dag[node]` jest skończonym grafem skierowanym bez cyklu, jako niemutowalna wartość:
++       mapa uporządkowana według wstawiania, odwzorowująca każdy węzeł na zbiór węzłów, na które
++       wskazuje – w odczycie zależnościowym na jego zależności. Każdy cel krawędzi sam jest
++       węzłem, więc wisząca krawędź jest niereprezentowalna. Brak cyklu ustala się raz, przy
++       tworzeniu wartości: fabryki `Dag(…)` to sprawdzają (zgłaszając `Dag.Error`
++       z `Reason.Cyclic`), `acyclic` przekształca `Digraph` z tym samym sprawdzeniem, a
++       `Dag(topology)` konsumuje `Topology`, która jest acykliczna z niezmiennika. Każda edycja
++       następnie albo nie może utworzyć cyklu (`-`, `remove`, `bypass`, `subgraph`,
++       `descendants`), albo sprawdza jedyną ścieżkę, która mogłaby go utworzyć (`add`), albo
++       odpowiada wartością `Digraph` tam, gdzie cykl jest możliwy (`+`, `++`, `map`, `flatMap`).
+
+% 2 1 0 0510829b9cd2acfe0f08a039dde547a7
+
+% 3 1 0 0c7372920e835d311b635c66432cb7cf
+
+% 4 1 0 0c8b4ec5b809754c1c959b71d069dcb3
+
+% 2 1 0 12f2d463060d4a720018608e88e5d22d
+
+% 0 1 0 09f1c02660438a961eae4d85d147187d
+
+% 0 1 0 0e7169ab3172885f0bf266c5fb86f1bf
+
+% 0 1 0 0bb74aec98086c951c68682cc636f720
+
+% 0 1 0 19187da2abe90c360b8563ab92bb763b
+
+% 0 1 0 1c221c224d0126e51960efb6ecbf7549
+
+% 1 1 0 03224e52d9ba28780aa25013916809e1
+
+@ 0 5 0 12cf7da2fcb498c416da6c21005dd6cd
++       Acykliczność daje `linearized`, `reduction` i `traversal` bez trybu porażki, oraz
++       instancję `Topological`, dzięki której mają je także ogólne rozszerzenia. Jako kolekcja
++       `Dag` jest swoimi węzłami w porządku topologicznym (`traversable`), więc stosują się
++       `dag.has(n)`, `dag.size`, `dag.each(…)` i `dag.map(…)`; `map` odpowiada wartością
++       `Digraph`, ponieważ dwa węzły mogą zostać przemianowane na jeden i zamknąć cykl.
+
+@ 0 1 0 1c0b1ad24977e5d4165c840e6c0ef76a
++       `Dag` można budować po jednej krawędzi:
+
+% 2 1 0 1632a10a225eb6481d979c4f9e877cea
+
+% 3 1 0 003418e81c4da5da0b01ce908aa448e0
+
+@ 0 1 0 175295e7ea332ca8163b1948421b555f
++         label Pierwsza krawędź: oba końce stają się węzłami
+
+% 1 1 0 151578f181255acd1f41b34167396589
+
+% 0 1 0 12444ca0bfa953041d33ffc1015ae68a
+
+% 0 1 0 1681235dcc22a7e30a27bb096fdb53bc
+
+% 1 1 0 1273b84443a8dba10903d539a7a59b75
+
+@ 0 1 0 1618f06a594638c30c5436fbed626b38
++         label Druga zależność, sprawdzana przy dodawaniu
+
+% 1 1 0 0c57f87ccfd3733409debd4b44eb5489
+
+% 2 1 0 0c9df9f4686045ed1104d512b4631e8b
+
+% 0 1 0 19bf79bf9341852c0ce45a3c7b258cee
+
+% 1 1 0 11bc5226287162190ab063b5d3d6de04
+
+@ 0 1 0 11cdf5496fe1fdd01b55bbf9f1a77f9e
++         label Krawędź wbrew porządkowi, odrzucona
+
+% 1 1 0 0b3e0618ec0606cd0439306534d1e2e1
+
+% 2 1 0 07dc0a08eefea9ed194fc975720f8243
+
+% 0 1 0 175581fcb7dad0e00ac4ed2b823e9468
+
+% 1 1 0 19fe7d1105bdc63514c5b4833ee82ad2
+
+@ 0 1 0 05347775224b114c01dd575cea874ebf
++         label Krawędź, która może zamknąć cykl, daje zamiast tego Digraph
+
+% 1 1 0 1225af99f70f56b11c82f8682a86599f
+
+% 2 1 0 0e0b3d4f66e39333100c743b25b65dfb
+
+% 0 1 0 055b137a563a483f0789b7b1e174a520
+
+% 1 1 0 1926ba355f229c540a14df1bfee3929c
+
+% 2 1 0 0b8c9b72709e82920485e0d90038209a
+
+@ 0 6 0 021bf427447e71591ac728de9791a566
++       Każde sprawdzane `add` kosztuje tyle, ile zasięg osiągalności celu nowej krawędzi, więc
++       graf o wielu krawędziach buduje się jednym wywołaniem `Dag(edges*)` (jedno sprawdzenie
++       O(n + e)), a nie przez złożenie wielu `add`, a graf edytowany wiele razy lepiej rozmrozić
++       do `Topology`, edytować w miejscu i ponownie zamrozić. Zapytania o cały graf zależne od
++       osiągalności – `closure`, `reduction` – przechodzą przez macierz bitową postaci
++       zamrożonej, więc graf odpytywany w ten sposób więcej niż raz najlepiej zamrozić raz przez
++       `#freeze` i zachować.
+
+@ 0 2 0 1a7d86c1cce9e8be172316aa194a6ca2
++       Dwa `Dag` są równe, gdy równe są ich sąsiedztwa, niezależnie od kolejności, w jakiej
++       podano ich węzły; `Dag` nie jest `case class`, więc nie ma `unapply` ani `copy`.
+
+% 0 1 0 103ced421355708b056760dffcd7be34
+
+% 0 1 0 146458c90f0a62db0e2954fd0c82fb90
+
+% 1 1 0 138628e246dd70420ef319e68dc693e2
+
+% 1 1 0 17560cfc915bce6610e3ce52e17ac0e2
+
+@ 0 3 0 052bf73956276a2f04b4e6c7f6107a38
++   entry .apply   `Dag` z krawędzi, z węzłów z ich następnikami, ze zbioru węzłów i funkcji, z `Map` lub z `Topology`
++       Pięć konstruktorów, z których cztery sprawdzają istnienie cyklu i zgłaszają `Dag.Error`
++       (`Reason.Cyclic`), jeśli go znajdą:
+
+@ 0 10 0 08febf81e8eb56da074c2658f9f1acc2
++       - `Dag(a -> b, a -> c, …)` z samych krawędzi: oba końce każdej krawędzi stają się
++         węzłami, w kolejności pierwszego wystąpienia.
++       - `Dag(a -> Set(b, c), b -> Set(), …)` z każdego węzła wraz z jego zbiorem zależności;
++         następnik bez własnego wpisu staje się węzłem bez zależności.
++       - `Dag(nodes)(node => dependencies)` ze zbioru węzłów i funkcji; następnik spoza zbioru
++         staje się węzłem. Ten przyjmuje swój `Tactic[Dag.Error]` jako zwykły parametr
++         kontekstowy, a nie przez klauzulę `raises`.
++       - `Dag(adjacency)` z `Map[node, Set[node]]`, domykając zbiór węzłów względem każdego celu.
++       - `Dag(topology)` z `Topology[node]^`, która jest **konsumowana**: topologia jest
++         acykliczna z niezmiennika, więc nie ma sprawdzenia ani `Dag.Error`, a uchwytu nie można
++         użyć ponownie.
+
+% 2 1 0 01fab4b7e55be2f0168049757bc2f790
+
+% 3 1 0 18a71727b22985331ab568c260d8ebc1
+
+% 4 1 0 0f95a60d0d3ec0801a698f03d05343f2
+
+% 0 1 0 0224a9f865586c4601ebf71bf6ffd3ff
+
+% 0 1 0 162ddb4c66cc982c03f426d071787f28
+
+% 0 1 0 05fc5cf6bc7b32bf1ca2519a43261a19
+
+% 0 1 0 0a5a12615d506bc814f0a1b657dfc835
+
+% 1 1 0 08d9f46d8158503e0da5dfad7eebdf78
+
+@ 0 7 0 01361f89b63144d80e8a712addbeedb2
++       `Dag(1 -> 2, 2 -> 3, 3 -> 1)` zgłasza `Dag.Error`; `Digraph(…)` z tymi samymi argumentami
++       tworzy graf cykliczny, a `cycle` na nim jest świadkiem.
++   entry .dot   `Dag[Text]` jako digraf GraphViz DOT, z tekstem każdego węzła jako jego identyfikatorem
++       Rozszerzenie dla `Dag[Text]`: jeden `Dot.Digraph` z instrukcją krawędzi `"a" -> "b"` dla
++       każdej krawędzi. Tekst węzła nazywa jego węzeł DOT, więc musi być poprawnym
++       identyfikatorem DOT – niepustym, bez cudzysłowu i bez znaku nowego wiersza – a węzeł,
++       który nim nie jest, zgłasza `Name.Error`; w zasięgu musi być `Tactic[Name.Error]`.
+
+% 2 1 0 142175d0a418955c10b3b838ef593741
+
+% 3 1 0 1c31ccc38036d0a014cce1eb63bb9761
+
+% 4 1 0 1e5c5ad2648f78c618abe33958e3f965
+
+% 0 1 0 079e9eb45aca5b6103eecb5ad85a41f7
+
+% 1 1 0 082fe2d3fe2d5db213edee3f388becdc
+
+@ 0 3 0 068afed3c42ca5ef157f4f3e4a52d0ac
++       Graf o innych węzłach przedstawia się przez `map(_.show).acyclic.dot` (`map` odpowiada
++       wartością `Digraph`, ponieważ dwa węzły mogłyby wyświetlać się jako jeden).
++   entry .Error   zgłaszany, gdy operacja na grafie znajdzie cykl lub zostanie zapytana o węzeł, którego graf nie ma
+
+% 1 1 0 1f5dad71370b9c4f1369dd0711865c2e
+
+@ 0 8 0 175206fc8bd72de019afb1a7b13ab524
++         Błąd `↯/s.72.1`, _the DAG operation failed because `reason`_, z przyczyną numerowaną
++         w jego obrębie. `Reason.Cyclic` (191.2, _the graph contains a cycle_) jest zgłaszany
++         przez sprawdzające fabryki `Dag(…)`, przez `acyclic` na dowolnym grafie, przez
++         `Dag#add` dla krawędzi, której cel już osiąga jej źródło, i podobnie przez
++         `Topology#add`; edytowany graf pozostaje niezmieniony. `Reason.NodeMissing(node)`
++         (191.1, _the node `node` is not present in the graph_) jest zgłaszany przez
++         `reachable`, `descendants`, `ancestors` i `lineage` dla węzła, którego graf nie ma – na
++         `Dag`, na `Digraph` i przez ogólne rozszerzenie – z węzłem przedstawionym przez jego
++         `toString`.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 1c4d260429f2a0a0171138b586d3341f
+
+% 0 1 0 1b9eabd3ccfd9e7305eb11e32f4ce846
+
+% 0 1 0 07163e601f85e5cb1bbef385cdfb273e
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 28 0 1f44c93f2e7a8a7d081e5024c56ef80f
++     entry .Reason   dlaczego operacja się nie powiodła: `Cyclic` lub `NodeMissing(node)`
++         Wyliczenie z `number` (1 dla `NodeMissing`, 2 dla `Cyclic`), w którym każdy przypadek
++         jest `Clarification` cytowanym przez komunikat błędu.
++     entry .communicable   przedstawia przyczynę jako jej komunikat
++     entry #reason   `Dag.Error.Reason`: `Cyclic` lub `NodeMissing(node)`
++   entry .nodal   instancja `Nodal`: węzły `Dag` i następniki każdego węzła
++       W zasięgu niejawnym przez obiekt towarzyszący. `nodes` to węzły w kolejności, w jakiej je
++       podano, `successors(n)` to węzły, na które wskazuje `n` (puste dla węzła, którego graf
++       nie ma), a `has` jest wyszukiwaniem w mapie, nigdy przeglądaniem.
++   entry .bidirectional   instancja `Bidirectional`, bramkowana przez `Dysasymptotic.LinearScan`
++       `Dag` przechowuje tylko kierunek w przód, więc jego poprzedniki pochodzą z transpozycji
++       obliczanej raz na wartość przez przejrzenie każdej krawędzi. Instancja przyjmuje zatem
++       `Dysasymptotic.LinearScan`, potwierdzane przez `import dysasymptotics.linearScan`, czego
++       ogólne rozszerzenie `predecessors` potrzebuje na `Dag`. Zamrożona `Topology` odpowiada na
++       to samo pytanie bez bramki.
++   entry .topological   znacznik poświadczający, że `Dag` nie zawiera cyklu
++       Instancja `Topological`, w zasięgu niejawnym. To ona dopuszcza `Dag` do `linearized`,
++       `reduction`, `traversal` i `layered` przez ogólne rozszerzenia oraz do diagramów
++       `dendrology`.
++   entry .traversable   `Dag` jako kolekcja jego węzłów, w porządku topologicznym
++       Instancja `Traversable`, więc `dag.each`, `dag.fold`, `dag.to[List]` i reszta słownictwa
++       kolekcji widzą węzły z każdym węzłem po jego zależnościach.
++   entry .inclusive   `dag.has(node)`: czy węzeł jest w grafie
++   entry .countable   `dag.size` i `dag.nil`: ile jest węzłów i czy nie ma żadnego
++   entry .mappable   `dag.map(lambda)`: przemianowuje węzły, odpowiadając wartością `Digraph`
++       Instancja `Mappable` z `Result[node2] = Digraph[node2]`: dwa węzły mogą zostać
++       odwzorowane na jeden, co łączy ich krawędzie i może zamknąć cykl, więc wynik nie jest
++       `Dag`, dopóki nie sprawdzi go `acyclic`.
+
+% 2 1 0 1b4c63c32161e80b0d77be0a36a2c5e5
+
+% 3 1 0 192ccc2eb982bb000940ec2edf93574a
+
+% 4 1 0 194dc891aec9795110420587eb6166a7
+
+% 0 1 0 1c1a8f1546929eb51d0e8a3e0b688aae
+
+% 0 1 0 190b3c3d887531d910697bed222292b2
+
+% 1 1 0 072032395a9c145f173cd462bee92bf6
+
+@ 0 12 0 0c7d45739ba5b13f176108ef89f3a446
++   entry #nodes   każdy węzeł, jako zbiór
++   entry #successors   węzły, na które wskazuje węzeł: jego zależności lub zbiór pusty dla nieobecnego węzła
++   entry #edges   każda krawędź jako para `(from, to)`: `from` zależy od `to`
++   entry #sources   węzły bez następników: te, które od niczego nie zależą
++       Miejsca, od których zaczyna się budowanie lub instalacja. Pytanie dotyczy całego grafu,
++       więc żadne potwierdzenie nie jest potrzebne.
++   entry #sinks   węzły bez poprzedników: te, od których nic nie zależy
++       Jedno przejście po krawędziach, bez potrzeby `Dysasymptotic.LinearScan`: pytanie dotyczy
++       całego grafu, a nie jednego węzła.
++   entry #linearized   węzły w porządku topologicznym: każdy węzeł po wszystkim, od czego zależy
++       Obliczane raz na wartość i zachowywane. Między węzłami, między którymi nie ma ścieżki,
++       kolejność jest kolejnością podania węzłów, więc jest stabilna. Nie może zawieść: `Dag` nie
++       ma cyklu.
+
+% 2 1 0 17c9df318ffa30980f1906328f37cb01
+
+% 3 1 0 1daa7491bd5985820be104882202e146
+
+% 4 1 0 03b4ab1ff12a59b00193acec7d0c1311
+
+% 0 1 0 1a6db0c1b43dbb61073f75e7b36d28d1
+
+% 1 1 0 0d333251944c5e28079bca9e2acaaaaa
+
+@ 0 9 0 108ec1f9752a08de1241acf22c58624e
++   entry #invert   ten sam graf z każdą krawędzią odwróconą, nadal `Dag`
++       Odwrócenie każdej krawędzi zachowuje acykliczność, więc wynik jest `Dag`, którego źródła
++       są ujściami tego grafu; `invert.invert` jest równe oryginałowi.
++   entry #digraph   ten sam graf jako `Digraph`, dla operacji, które mogą utworzyć cykl
++   entry #freeze   zamrożona `Topology[node]^{}` tego grafu, rozłożona z myślą o zapytaniach
++       Buduje `Topology` z węzłami już w porządku topologicznym i ją zamraża. Postać zamrożona
++       przechowuje oba kierunki sąsiedztwa, więc `predecessors` nie wymaga potwierdzenia,
++       i odpowiada na `reaches` w O(1), gdy zbudowana zostanie jej macierz osiągalności;
++       `closure` i `reduction` na `Dag` przechodzą przez nią. Graf odpytywany w ten sposób
++       wielokrotnie należy zamrozić raz.
+
+% 2 1 0 009a95dccfff6a501d873aff8777f4b8
+
+% 3 1 0 05b093c15a5d24af17d8c03e8ef592e9
+
+% 4 1 0 023a10251e6fee9502492cc39e9e6314
+
+% 0 1 0 02dda2b4568fb31c177351a82b15ca76
+
+% 0 1 0 18743ec22773412e1ba91d89c7fa7210
+
+% 0 1 0 0bce0e93c533b9fd1ba9b2ca407e68bf
+
+% 0 1 0 0bb43092b913781104c8350dc97a0238
+
+% 1 1 0 17886b6487361a890c2cf3d76db75776
+
+@ 0 11 0 00737322962a30f3177da851661d436e
++   entry #thaw   edytowalna `Topology[node]^` zawierająca węzły i krawędzie tego grafu
++       To samo co `Topology(dag)`: nowa topologia posiadana na wyłączność, edytowana w miejscu
++       przez `add`, `remove` i `bypass` i oddawana jako `Dag` przez `Dag(topology)` lub
++       `Topology.freeze`. Właściwa postać dla wielu edycji, z których każda kosztuje tam około
++       mikrosekundy, wobec sprawdzenia o rozmiarze osiągalności w `Dag#add`.
++   entry #including   graf z dodanym węzłem, bez krawędzi, jeśli go nie było
++   entry #add   graf z dodaną krawędzią `from -> to`; zgłasza `Dag.Error`, jeśli zamknęłaby ona cykl
++       `from` zależy od `to`. Jedynym sposobem, w jaki krawędź może zamknąć cykl, jest to, że
++       `to` już osiąga `from` (lub `from == to`), co sprawdza się przeszukaniem osiągalności `to`
++       – więc kosztem jest rozmiar tej osiągalności, a nie grafu. Nowy cel staje się węzłem.
++       Wynikiem jest `Dag`; `+` jest postacią niesprawdzaną, odpowiadającą wartością `Digraph`.
+
+% 2 1 0 07cb1bc2157857a7163705c3d420fb3f
+
+% 3 1 0 0b3675013278b7120d112d6e4fc4c030
+
+% 4 1 0 0d3e5c9946ef1c821b11fdacaa83f696
+
+% 0 1 0 0de0abe1cb6d3a5e14369f9b44de45bf
+
+% 0 1 0 08560fb08c72c5c30b2d6e6170f7afb4
+
+% 0 1 0 1754467b2e184e551048625ad2a22cdb
+
+% 1 1 0 1748dc2b47f1bf4a0682efe64092a415
+
+@ 0 16 0 127f59dd203b173904c654f7aa7e600d
++   entry #+   `dag + (from -> to)`: krawędź dodana bez sprawdzenia, jako `Digraph`
++       Wynik może zawierać cykl, więc jest `Digraph`; `acyclic` sprawdza go z powrotem do `Dag`,
++       a `cycle` pokazuje świadka, jeśli taki istnieje. `add` jest postacią sprawdzaną.
++   entry #++   `dag ++ other`: suma węzłów i krawędzi dwóch grafów, jako `Digraph`
++       Dwa grafy acykliczne mogą połączyć się w cykliczny, więc wynik jest `Digraph`.
++   entry #remove   graf z usuniętą krawędzią `from -> to`, z zachowaniem obu węzłów
++       Bez zmian, jeśli krawędzi nie było. Usunięcie krawędzi nie może utworzyć cyklu, więc
++       wynik jest `Dag`.
++   entry #-   `dag - node`: węzeł i każda krawędź przy którymkolwiek jego końcu zostają usunięte
++       Wymaga `Dysasymptotic.LinearScan` (`import dysasymptotics.linearScan`), ponieważ
++       krawędzie wskazujące na węzeł znajduje się przez transpozycję. Węzły zależne od węzła
++       tracą tę zależność i nie zyskują żadnej innej; `bypass` jest postacią, która je
++       przekierowuje.
++   entry #bypass   węzeł usunięty, z każdym węzłem od niego zależnym przekierowanym do każdej z jego zależności
++       Każda ścieżka przez węzeł przetrwa: każdy poprzednik zyskuje każdy następnik jako
++       bezpośrednią zależność. Nie może to utworzyć cyklu, ponieważ każdy poprzednik już osiągał
++       każdy następnik przez ten węzeł. Wymaga `Dysasymptotic.LinearScan`.
+
+% 2 1 0 1bb5605e17c2b32801a05bd8e7984de3
+
+% 3 1 0 19e3c991cf90d5ed0ae0668bff72ec1d
+
+% 4 1 0 1dbe153da1025115126649f70469aa31
+
+% 0 1 0 19877de71de69ee10465826305d991a2
+
+% 2 1 0 004c0adadec701491334a77b825aff89
+
+% 0 1 0 0c2d64177b1feaef050d95aed39e9521
+
+% 0 1 0 1404e7af9c3f6acb0ef1a2c74f407ba1
+
+% 1 1 0 020245654d723338085c91dddf538f55
+
+@ 0 33 0 1179639e3e2b49da04a3e23761100d2c
++   entry #bypassAll   kilka węzłów pomijanych jeden po drugim, tak że ścieżka przez ich ciąg przetrwa
++       Przyjmuje `Set` węzłów, a nie predykat – argumentu lambdy nie dałoby się odróżnić od
++       węzła – i pomija je po kolei, tak że `Dag(1 -> 2, 2 -> 3, 3 -> 4).bypassAll(Set(2, 3))`
++       zachowuje krawędź `1 -> 4`. Wymaga `Dysasymptotic.LinearScan`.
++   entry #subgraph   podgraf indukowany przez zbiór węzłów: te węzły i krawędzie między nimi
++       Wymaga `Dysasymptotic.LinearSize` (`import dysasymptotics.linearSize`): ograniczony wybór
++       węzłów odbudowuje całą mapę. Krawędź do węzła spoza zbioru jest usuwana, a nie
++       przekierowywana.
++   entry #flatMap   podstawia graf za każdy węzeł, jako `Digraph`
++       Dla każdej krawędzi `a -> b` każdy węzeł `lambda(a)` wskazuje na każdy węzeł `lambda(b)`,
++       a węzły `lambda(a)` zachowują własne krawędzie w jego obrębie. Wynik może zawierać cykl,
++       więc jest `Digraph`.
++   entry #reachable   wszystko, co osiąga węzeł, łącznie z nim samym; zgłasza `Dag.Error` dla nieobecnego węzła
++       Przechodnie zależności węzła, jako zbiór, wyznaczane iteracyjnym przeszukiwaniem ze
++       zbiorem odwiedzonych, więc łańcuch stu tysięcy węzłów ani nie przepełnia stosu, ani nie
++       zajmuje więcej niż jego osiągalność. `Dag.Error(NodeMissing)` jest zgłaszany tylko dla
++       węzła, którego graf nie ma.
++   entry #descendants   podgraf osiągany przez węzeł, łącznie z nim samym; zgłasza `Dag.Error` dla nieobecnego węzła
++       `subgraph(reachable(node))`, bez potrzeby potwierdzenia: podgraf indukowany przez
++       wszystko poniżej węzła.
++   entry #ancestors   podgraf, który osiąga węzeł, łącznie z nim samym; zgłasza `Dag.Error` dla nieobecnego węzła
++       Wszystko, co przechodnio zależy od węzła, wraz z krawędziami między nimi. Wymaga
++       `Dysasymptotic.LinearScan`, ponieważ przechodzi transpozycję.
++   entry #lineage   podgraf wszystkiego, co osiąga węzeł, i wszystkiego, co go osiąga
++       `ancestors` i `descendants` razem, jako podgraf indukowany. Wymaga
++       `Dysasymptotic.LinearScan` i zgłasza `Dag.Error` dla nieobecnego węzła.
++   entry #closure   każda implikowana krawędź uczyniona jawną: krawędź wszędzie tam, gdzie istnieje ścieżka
++       Domknięcie przechodnie, przez macierz osiągalności postaci zamrożonej, w O(e·n/64)
++       zamiast sumy wszystkich osiągalności, jaką kosztowałyby sumy zbiorów.
++       `closure.reduction` jest `reduction`, a `reduction.closure` jest `closure`.
++   entry #reduction   minimalny graf o tej samej osiągalności: usunięta każda krawędź implikowana przez dłuższą ścieżkę
++       Redukcja przechodnia, postać, w jakiej zwykle rysuje się graf zależności. Usuwana jest
++       każda krawędź implikowana przez ścieżkę dowolnej długości, nie tylko te implikowane przez
++       ścieżkę dwóch krawędzi, a zachowywane są tylko krawędzie grafu. Obliczana na postaci
++       zamrożonej metodą Aho, Gareya i Ullmana na jej macierzy bitowej.
+
+% 2 1 0 117f1e8eaa1fc4fc0c9fd6f60c67f587
+
+% 3 1 0 0e3e7177482074851da3f00554f14150
+
+% 4 1 0 0902979b0a104f0806ff61ad4bac3fc7
+
+% 0 1 0 08e2d4cd82c99d7a1f659e8e30940e0c
+
+% 1 1 0 1c6484897c9f35fe05027cd95d123fbf
+
+@ 0 14 0 1e297f24c5d79af41b96826d6db106d0
++   entry #layered   graf ułożony w warstwy do rysowania, jako `Layering`
++       Każdy węzeł zostaje przypisany do warstwy, zależności nad węzłami zależnymi, a każda
++       warstwa zostaje uporządkowana tak, by zmniejszyć liczbę przecięć między połączeniami
++       łączącymi ją z sąsiednimi – warstwowe podejście Sugiyamy, w taki sposób, w jaki rysuje
++       `dot` z GraphViz. O warstwie decyduje `Ranking` w zasięgu: domyślny z obiektu
++       towarzyszącego, `Ranking.LongestPath`, umieszcza każdy węzeł jedną warstwę poniżej jego
++       najgłębszej zależności; `import rankings.balancedRanking` ściąga każdy węzeł mający węzły
++       zależne w dół, do warstwy nad jego najpłytszym węzłem zależnym. `LayeredDagDiagram`
++       z `dendrology` renderuje wynik.
++   entry #traversal   wartość dla każdego węzła, obliczona z wartości jego zależności
++       `dag.traversal[result]((dependencyValues, node) => …)` odwiedza węzły w porządku
++       topologicznym, więc każde wywołanie lambdy widzi już obliczone wartości następników węzła
++       jako `Set`, i odpowiada wartością `Map` z każdego węzła na jego wartość. Taki kształt ma
++       większość pracy nad grafem zależności – koszty budowania, propagowane ograniczenie,
++       akumulowany zbiór przechodni – bez ręcznie pisanej rekursji i bez prowadzenia zbioru
++       odwiedzonych.
+
+% 2 1 0 180a71981f83f3ec0f5a0fadf648c3d2
+
+% 3 1 0 09d9b647c4c3e9e507faab8bbac80069
+
+% 4 1 0 1ffebb7e50dd9621166f31eee98c6f92
+
+% 0 1 0 1104c0ff55edb29a11b3de599a67a60c
+
+% 0 1 0 15bc83114de814cd1ebf55f8b011b9f3
+
+% 1 1 0 12f00919e72f9c491d366648077cb10e
+
+@ 0 1 0 146fe0a8e11f923d0e4e4374c3fb1a4b
++ entry .Digraph   graf skierowany, który może zawierać cykl, jako trwała wartość
+
+% 1 1 0 10274f4b5f87a9b20d98a1ff7a4e2ef0
+
+@ 0 6 0 0aead5b77e0f9b440545fe2d9120a06f
++       `Digraph[node]` jest skończonym grafem skierowanym, jako mapa uporządkowana według
++       wstawiania, odwzorowująca każdy węzeł na zbiór węzłów, na które wskazuje – w odczycie
++       zależnościowym na jego zależności. Każdy cel krawędzi jest węzłem, więc konstruktory
++       domykają zbiór węzłów, a wisząca krawędź jest niereprezentowalna. Nic w `Digraph` nie
++       zakłada acykliczności: to nim odpowiadają niesprawdzane edycje `Dag` (`+`, `++`, `map`,
++       `flatMap`), to materializuje `explore` z funkcji następników i tym jest graf, zanim
++       sprawdzi go `acyclic`.
+
+% 2 1 0 0e03941634b58d0e0c2950f554a4dce5
+
+% 3 1 0 0498016ac7a09e2300eef044d9826e38
+
+% 4 1 0 0373615bac3d0eed16335e0b09a63484
+
+% 0 1 0 017a0466c4d7f3270e665a03509a7ac2
+
+% 0 1 0 0634abf204e97ac80dfab06b24b7b604
+
+% 0 1 0 19a800a899bf5668127a6d32ed06d3ad
+
+% 0 1 0 1114713fa73ded8403c6035315692123
+
+% 1 1 0 18b8208684773f9d1046f85de18b798f
+
+@ 0 7 0 0d157504e2493ce6027a74e8cfe4ca38
++       Ponieważ cykl jest możliwy, `Digraph` nie ma `linearized`, `reduction`, `traversal` ani
++       `layered`: `acyclic` sprawdza graf raz, w O(n + e), i odpowiada wartością `Dag`, która je
++       ma, a w przeciwnym razie zgłasza `Dag.Error` (`Reason.Cyclic`). Wszystko inne, co oferuje
++       `Dag` – zapytania o węzły i krawędzie, metody edycji, osiągalność i wycinanie, `closure`
++       i `invert` – oferuje też `Digraph`, przy czym `reachable`, `closure` i wycinki są
++       całkowite na grafie cyklicznym (zbiór odwiedzonych, nie rekursja). Jako kolekcja jest
++       swoimi węzłami w kolejności, w jakiej je podano.
+
+@ 0 4 0 03104183eb413b5f076d9a916c109485
++       Przechowywany jest tylko kierunek w przód, więc `-`, `bypass`, `bypassAll`, `ancestors`,
++       `lineage` i instancja `Bidirectional` przyjmują `Dysasymptotic.LinearScan`
++       (`import dysasymptotics.linearScan`), a `subgraph` – `Dysasymptotic.LinearSize`. Dwa
++       `Digraph` są równe, gdy równe są ich sąsiedztwa.
+
+% 1 1 0 019760dfa385a31c14e93d6eb3701d6d
+
+% 0 1 0 1ca38419924f4189004ae5bc9198f51c
+
+@ 0 52 0 067cfa077dc6fac701fd1e35064f136f
++   entry .apply   `Digraph` z krawędzi, z węzłów z ich następnikami, ze zbioru węzłów i funkcji lub z `Map`
++       Te same cztery kształty co `Dag.apply`, bez sprawdzania cyklu i bez błędu:
++       `Digraph(a -> b, …)` z krawędzi (oba końce stają się węzłami, w kolejności pierwszego
++       wystąpienia), `Digraph(a -> Set(b, c), …)` z każdego węzła z jego następnikami (następnik
++       bez wpisu staje się węzłem), `Digraph(nodes)(node => successors)` ze zbioru węzłów
++       i funkcji oraz `Digraph(adjacency)` z `Map[node, Set[node]]`, domknięty względem każdego
++       celu.
++   entry .nodal   instancja `Nodal`: węzły `Digraph` i następniki każdego węzła
++       W zasięgu niejawnym przez obiekt towarzyszący; `has` jest wyszukiwaniem w mapie.
++   entry .bidirectional   instancja `Bidirectional`, bramkowana przez `Dysasymptotic.LinearScan`
++       Poprzedniki pochodzą z transpozycji obliczanej raz na wartość przez przejrzenie każdej
++       krawędzi, więc instancja do rozwiązania potrzebuje `import dysasymptotics.linearScan`.
++   entry .traversable   `Digraph` jako kolekcja jego węzłów, w kolejności, w jakiej je podano
++   entry .inclusive   `graph.has(node)`: czy węzeł jest w grafie
++   entry .countable   `graph.size` i `graph.nil`
++   entry .mappable   `graph.map(lambda)`: przemianowuje węzły, łącząc krawędzie każdych dwóch, które się scalają
++   entry #nodes   każdy węzeł, jako zbiór
++   entry #successors   węzły, na które wskazuje węzeł, lub zbiór pusty dla nieobecnego węzła
++   entry #edges   każda krawędź jako para `(from, to)`
++   entry #sources   węzły bez następników: te, które od niczego nie zależą
++   entry #sinks   węzły bez poprzedników: te, od których nic nie zależy
++       Jedno przejście po krawędziach; żadne potwierdzenie nie jest potrzebne, ponieważ pytanie
++       dotyczy całego grafu.
++   entry #invert   ten sam graf z każdą krawędzią odwróconą
++   entry #digraph   ten graf we własnej osobie
++       Aby kod napisany względem interfejsu `Dag`/`Digraph` mógł poprosić którykolwiek z nich
++       o jego `Digraph`.
++   entry #including   graf z dodanym węzłem, bez krawędzi, jeśli go nie było
++   entry #add   graf z dodaną krawędzią `from -> to`, bez sprawdzenia
++       Nowy cel staje się węzłem. `+` przyjmuje krawędź jako parę.
++   entry #+   `graph + (from -> to)`: krawędź dodana
++   entry #++   `graph ++ other`: suma węzłów i krawędzi dwóch grafów
++   entry #remove   graf z usuniętą krawędzią `from -> to`, z zachowaniem obu węzłów
++   entry #-   `graph - node`: węzeł i każda krawędź przy którymkolwiek jego końcu zostają usunięte
++       Wymaga `Dysasymptotic.LinearScan`.
++   entry #bypass   węzeł usunięty, z każdym jego poprzednikiem przekierowanym do każdego z jego następników
++       Każda ścieżka przez węzeł przetrwa. Wymaga `Dysasymptotic.LinearScan`.
++   entry #bypassAll   kilka węzłów pomijanych jeden po drugim
++       `Set` węzłów, a nie predykat; spójność przez ciąg usuniętych węzłów zostaje zachowana.
++       Wymaga `Dysasymptotic.LinearScan`.
++   entry #subgraph   podgraf indukowany przez zbiór węzłów: te węzły i krawędzie między nimi
++       Wymaga `Dysasymptotic.LinearSize`.
++   entry #reachable   wszystko, co osiąga węzeł, łącznie z nim samym; zgłasza `Dag.Error` dla nieobecnego węzła
++       Całkowita na grafie cyklicznym: `Digraph(1 -> 2, 2 -> 1).reachable(1)` to `Set(1, 2)`.
++   entry #descendants   podgraf osiągany przez węzeł, łącznie z nim samym; zgłasza `Dag.Error` dla nieobecnego węzła
++   entry #ancestors   podgraf, który osiąga węzeł, łącznie z nim samym; zgłasza `Dag.Error` dla nieobecnego węzła
++       Wymaga `Dysasymptotic.LinearScan`.
++   entry #lineage   podgraf wszystkiego, co osiąga węzeł, i wszystkiego, co go osiąga
++       Wymaga `Dysasymptotic.LinearScan`; zgłasza `Dag.Error` dla nieobecnego węzła.
++   entry #cycle   cykl, jeśli graf go ma: węzły, z których każdy wskazuje na następny, kończące się tam, gdzie się zaczęły
++       `Unset` dla grafu acyklicznego; w przeciwnym razie `List`, której pierwszy i ostatni węzeł
++       są tym samym węzłem, a każda kolejna para jest krawędzią. Znajdowany przez przeszukiwanie
++       w głąb, które wychwytuje też cykl zamknięty przez węzeł, który wcześniejsza gałąź już
++       zakończyła.
++   entry #acyclic   graf jako `Dag`, po jednym sprawdzeniu; zgłasza `Dag.Error`, jeśli istnieje cykl
++       O(n + e), raz: `Dag`, którym odpowiada, nigdy nie sprawdza ponownie.
+
+@ 0 1 0 1399406f0ec3bfa40aed37ffd7de496e
++ entry .Topology   graf edytowany w miejscu, który utrzymuje aktualny porządek topologiczny, a po zamrożeniu jest postacią do zapytań
+
+% 1 1 0 14c0311bcb8109a700e29d7194e8b285
+
+@ 0 6 0 01d8a1c12aee506509063ab8f31ea4ce
++       `Topology[node]` jest skierowanym grafem acyklicznym edytowanym w miejscu przez uchwyt
++       posiadany na wyłączność. Jego nazwa pochodzi od tego, co jako jedyny utrzymuje: porządku
++       topologicznego węzłów, zachowywanego jako poprawny przy każdym `add` przez algorytm
++       Pearce'a i Kelly'ego, który dotyka tylko węzłów między dwoma końcami nowej krawędzi
++       i **odrzuca** krawędź, która zamknęłaby cykl, pozostawiając graf bez zmian. Jest więc
++       acykliczny z niezmiennika, a `linearized` jest odczytem porządku.
+
+@ 0 8 0 19f43beedd69053f1d30319fb6d52fad
++       Mutowalność jest zbiorem przechwytywania, jak w przypadku `Array`: `Topology[node]^` jest
++       edytowalna, a `Topology.freeze` konsumuje ją, dając `Topology[node]^{}`, na której `add`,
++       `remove` i `bypass` nie są wywoływalne i nic nigdy nie może się zmienić. Postać zamrożona
++       służy do zapytań – niesie instancje `Nodal`, `Bidirectional`, `Topological`, `Reachable`
++       i `Invertible` – i przechowuje oba kierunki sąsiedztwa w gęstych tablicach,
++       z utrzymywanymi źródłami i ujściami, więc `predecessors` nie wymaga potwierdzenia
++       `LinearScan`. Jej macierz osiągalności, budowana przy pierwszym użyciu w O(e·n/64),
++       odpowiada na `reaches` w O(1) i obsługuje `closure` oraz `reduction`.
+
+% 2 1 0 1270d04cd845d3e01c9117ee234fa8ab
+
+% 3 1 0 046121344f8bc6f2016025d6d157147f
+
+@ 0 1 0 00e0ed58b2d20f961a16c69c7a3a5618
++         label Pusta topologia, posiadana na wyłączność
+
+% 1 1 0 0ceeaf35cf5c928113ae584a29ac1aa0
+
+% 2 1 0 0997af9905a5a45c1b2521f163d60dc5
+
+% 0 1 0 02ce6eba7307d25d02a353deb222e43a
+
+% 1 1 0 117c5c6faa118efa1407762530016796
+
+@ 0 1 0 074b50152e68ada80f05fc30107d4779
++         label Krawędź: oba węzły dołączają do porządku, zależność najpierw
+
+% 1 1 0 1726f1c777cd02e30fdb60c6a3b37fbc
+
+% 2 1 0 1cbd9e1b30f7b1ed1c6e35094c63c5a9
+
+% 3 1 0 1b11212fd314cc201a5d06a25cbcd0d6
+
+% 0 1 0 09dd85113ce4971905bdb4f787322a10
+
+% 1 1 0 0d1c079a4dcfd275009a7ee8e99783ec
+
+@ 0 1 0 0223cc3da4cd8a26140430f12b2592dc
++         label Zależność dodana poniżej istniejącego węzła: porządek jest naprawiany, a nie odbudowywany
+
+% 1 1 0 104fad5f6afaa416042caaa1187a379e
+
+% 2 1 0 105126f2875fea74087cb84a03396e67
+
+% 3 1 0 1819ca3508dc5a400675545dd7f7b359
+
+% 4 1 0 1c6f09908ec7165902f6e399faf51627
+
+% 1 1 0 14c1f193f3fc4d1d063b73eeae2c5114
+
+% 2 1 0 0c76782d85cfd564092bac86eb01316f
+
+@ 0 1 0 08ce3a4d07f5e84b1e45d5882b604f39
++         label Krawędź, która zamknęłaby cykl, jest odrzucana z Dag.Error i nic się nie zmienia
+
+% 1 1 0 1062eb4d5adb8a5c0f1dcc20523c0499
+
+% 2 1 0 1fb757549f7b350818d0bf799c15b604
+
+% 3 1 0 0a42b5e0021c13a012fdb822dc62c66d
+
+% 4 1 0 018b00e544cc53050926cf22e0918ba7
+
+% 0 1 0 0afcc391fc4391a016accdd21a4cd153
+
+% 1 1 0 1afa32a78154f8480695e36d6b53b636
+
+% 2 1 0 07ec0a2e5e3c5a5e13f3233718d1fe3a
+
+@ 0 1 0 0de69960b282db7c02e16f0e52ad0638
++         label Zamrożenie konsumuje uchwyt: wynik można odpytywać, ale nigdy edytować
+
+% 1 1 0 1f32f79a161e1b6a11549c858014edf4
+
+% 2 1 0 0ab096fccbdb550d00c14471530d22af
+
+% 3 1 0 1fd005add02b3b59068d8b8e0e2cac25
+
+% 4 1 0 1262436c5e1714c508f73f3e3a291487
+
+% 0 1 0 0704f0c450d954bf153d3f2453bb6ff6
+
+% 0 1 0 04aa7e576e3fb64d1b132b1c1b78a1eb
+
+% 0 1 0 128ecf57f2c5baba13b43d2ec13771b6
+
+% 1 1 0 0668bab4398b048514ff321ffc49c0b8
+
+% 2 1 0 170e121bee6bde2c1948b839bb2ccf0e
+
+@ 0 7 0 11bcdf04f8f3c2e418150881a738547b
++       Edytowalna `Topology` jest przeznaczona dla grafu, który rośnie lub zmienia się
++       przyrostowo – systemu budowania odkrywającego zadania, harmonogramu przyjmującego prace:
++       krawędź kosztuje znacznie poniżej mikrosekundy, podczas gdy sprawdzane `Dag#add`
++       kosztuje tyle, ile osiągalność jego celu. Gdy edycja się kończy, uchwyt jest oddawany –
++       do `Topology.freeze` lub do `Dag(topology)` – tak by wyniku nigdy nie można było
++       edytować za jego plecami; `snapshot` bierze `Dag` bez oddawania uchwytu, a
++       `Topology(frozen)` lub `dag.thaw` tworzy nową edytowalną kopię. Samo `Topology[node]`
++       w sygnaturze oznacza edytowalną postać `^`.
+
+@ 0 5 0 1f3e1062accaafc01547673061cfee32
++       Macierz jest zapisywana w pamięci podręcznej względem rewizji edycji: zamrożony uchwyt,
++       którego nie można edytować, zachowuje ją, a edytowalny, który od tego czasu edytowano,
++       oblicza ją od nowa przy każdym wywołaniu – dlatego `closure`, `reduction` i `reaches`
++       są przeznaczone dla postaci zamrożonej. Klucze węzłów są poddawane boxingowi
++       i haszowane w tablicy z adresowaniem otwartym, więc klucze ogólne kosztują tyle, ile
++       kosztowałby ich `HashMap`.
+
+% 1 1 0 1d103d9f483f2981023b8887603ff5e1
+
+% 1 1 0 0f07103bff2312fb144991f50d51e602
+
+% 2 1 0 0d884a4116c59d0f012c1d936eed5831
+
+@ 0 18 0 0df249dd7190c21f09e181937dc9244d
++   entry .apply   nowa pusta topologia, edytowalna kopia zamrożonej lub edytowalna kopia `Dag`
++       `Topology[node]()` jest pustą, edytowalną `Topology[node]^`. `Topology(frozen)` kopiuje
++       `Topology[node]^{}` do nowej edytowalnej – sposób na edycję zamrożonego grafu, który sam
++       nie może się zmienić – a `Topology(dag)` rozmraża `Dag`, tak samo jak `dag.thaw`. Obie
++       kopie dodają węzły w porządku topologicznym, więc żadna krawędź nie wymaga zmiany
++       kolejności.
++   entry .freeze   konsumuje edytowalną topologię i odpowiada nią zamrożoną, jako `Topology[node]^{}`
++       `Topology.freeze(topology)` jest jedynym producentem zamrożonej topologii z edytowalnej
++       (`Dag#freeze` buduje własną). Uchwyt jest **konsumowany**: każdy zapisujący zostaje
++       statycznie wycofany, więc ocalałe odwołanie traci wyłączność bez kopiowania, a metody
++       edycji przestają być na nim wywoływalne.
++   entry .nodal   instancja `Nodal` zamrożonej `Topology[node]^{}`
++       Jej węzły w porządku topologicznym, następniki każdego węzła z jego listy wyjściowej,
++       a `has` przez sondowanie haszu. Instancje są tylko dla postaci zamrożonej: edytowalny
++       uchwyt nie jest `Nodal`.
++   entry .bidirectional   instancja `Bidirectional` zamrożonej topologii, bez potwierdzenia
++       Poprzedniki są odczytywane z list wejściowych, które utrzymuje topologia, więc
++       w przeciwieństwie do `Dag` nie jest potrzebne `Dysasymptotic.LinearScan`.
++   entry .topological   znacznik poświadczający, że zamrożona topologia nie zawiera cyklu
++   entry .traversable   zamrożona topologia jako kolekcja jej węzłów, w porządku topologicznym
+
+% 0 1 0 1d76b4c42331b0e90b046320a2d201c5
+
+@ 0 49 0 1eda70ef0cb16e8f0a1f0bf13debe14f
++   entry .countable   `frozen.size` i `frozen.nil`
++   entry .grown   tablica `Int` skopiowana do większej; pomocnik implementacji
++       Nie do bezpośredniego użytku. Pomocniki wzrostu znajdują się w obiekcie towarzyszącym,
++       a nie w klasie, aby sprawdzanie separacji widziało tylko ich argumenty.
++   entry .grownLongs   tablica `Long` skopiowana do większej; pomocnik implementacji
++   entry .grownRefs   tablica `AnyRef` skopiowana do większej; pomocnik implementacji
++   entry .grownFlags   tablica `Boolean` skopiowana do większej; pomocnik implementacji
++   entry .hash   hasz klucza z wysokimi bitami złożonymi na niskie; pomocnik implementacji
++   entry #size   ile węzłów ma obecnie topologia
++   entry #edgeCount   ile krawędzi ma obecnie topologia
++   entry #has   czy węzeł jest w topologii, przez sondowanie haszu
++   entry #add   dodaje węzeł lub krawędź `from -> to`, zgłaszając `Dag.Error`, jeśli zamknęłaby ona cykl
++       Tylko na edytowalnym uchwycie. `add(node)` dodaje węzeł na końcu porządku, jeśli go nie
++       ma, i odpowiada jego wewnętrznym identyfikatorem; `add(from, to)` dodaje krawędź (`from`
++       zależy od `to`), dodając którykolwiek z węzłów, jeśli go nie ma. Jeśli `to` jest już
++       niżej w porządku niż `from`, nic się nie przesuwa; w przeciwnym razie węzły zależne od
++       `from` i zależności `to` leżące między nimi są przestawiane – a jeśli to przeszukiwanie
++       napotka `to` wśród węzłów zależnych od `from`, krawędź zamknęłaby cykl: `Dag.Error`
++       (`Reason.Cyclic`) jest zgłaszany przez `Tactic[Dag.Error]` w zasięgu, a graf pozostaje
++       dokładnie taki, jaki był. Powtórzona krawędź jest ignorowana.
++   entry #remove   usuwa węzeł i każdą krawędź przy którymkolwiek jego końcu
++       Tylko na edytowalnym uchwycie. Nieznane węzły są ignorowane.
++   entry #bypass   usuwa węzeł, przekierowując każdy węzeł od niego zależny do każdej z jego zależności
++       Tylko na edytowalnym uchwycie. Żadna zmiana kolejności nie może być potrzebna, ponieważ
++       każdy węzeł zależny jest już wyżej w porządku niż każda zależność.
++   entry #reachable   wszystko, co osiąga węzeł, łącznie z nim samym; zbiór pusty dla nieobecnego węzła
++       Przejście w głąb po listach wyjściowych; w przeciwieństwie do `Dag#reachable` nieobecny
++       węzeł daje zbiór pusty, zamiast zgłaszać błąd.
++   entry #reaches   czy jeden węzeł osiąga drugi, w O(1), gdy macierz osiągalności istnieje
++       `frozen.reaches(from, to)`: pojedynczy bit macierzy, która jest budowana przy pierwszym
++       użyciu i zachowywana na zamrożonym uchwycie. `false`, jeśli któregokolwiek z węzłów nie
++       ma.
++   entry #edges   każda krawędź jako para `(from, to)`
++   entry #successors   węzły, na które wskazuje węzeł, lub zbiór pusty dla nieobecnego węzła
++   entry #predecessors   węzły wskazujące na węzeł, z utrzymywanych dla niego list wejściowych
++       Żadne potwierdzenie nie jest potrzebne: topologia przechowuje oba kierunki.
++   entry #sources   węzły bez następników, utrzymywane w miarę zmian grafu
++   entry #sinks   węzły bez poprzedników, utrzymywane w miarę zmian grafu
++   entry #linearized   utrzymywany porządek topologiczny, zależności najpierw: odczyt w O(n)
++   entry #nodes   każdy węzeł, jako zbiór
++   entry #closure   każda implikowana krawędź uczyniona jawną, jako `Dag`, z macierzy osiągalności
++       Dla zamrożonego uchwytu. Wiersz macierzy każdego węzła staje się jego zbiorem następników.
++   entry #reduction   minimalny graf o tej samej osiągalności, jako `Dag`, z macierzy osiągalności
++       Dla zamrożonego uchwytu. Metoda Aho, Gareya i Ullmana: odwiedzanie następników węzła
++       według malejącej pozycji w porządku z bieżącą sumą ich wierszy rozstrzyga każdą krawędź
++       w O(degree·n/64), więc redukcja grafu o tysiącu węzłów zajmuje ułamek milisekundy.
++   entry #invert   każda krawędź odwrócona, jako kolejna zamrożona topologia
++       Odwrócony porządek jest poprawnym porządkiem dla odwróconych krawędzi, więc kopia nie
++       wymaga zmiany kolejności; `frozen.invert.linearized` to `frozen.linearized.reverse`.
++   entry #snapshot   trwały `Dag` bieżącego grafu, bez oddawania uchwytu
+
+@ 0 1 0 1debea7c1393f1fe01e972a2eb8647bb
++ entry .Nodal   klasa typów skończonego grafu skierowanego: zbiór węzłów i następniki każdego węzła
+
+% 1 1 0 1b73dd8c614f48911c07a8fcf5832fa6
+
+@ 0 6 0 044ff32276691d5d1dd04519228baa52
++       `graph is Nodal by node` mówi, że wartość typu `graph` jest skończonym grafem skierowanym
++       nad `node`: potrafi wyliczyć swoje `nodes`, podać `successors` dowolnego węzła – węzły,
++       na które wskazuje, czyli w odczycie zależnościowym stosowanym w całym Soundness (`a -> b`
++       oznacza, że `a` wymaga `b`) jego zależności – i powiedzieć, czy `has` dany węzeł, jako
++       operacja pierwotna, a nie przeglądanie, więc sprawdzenie brakującego węzła nigdy nie jest
++       O(n). Kierunek krawędzi jest ustalony kontraktem, a nie instancją: porządek topologiczny
++       wymienia węzeł po jego następnikach.
+
+@ 0 5 0 0615de7f80d8d8270aabeb336e3f09de
++       Instancje są zapewnione dla `Dag`, `Digraph`, zamrożonej `Topology[node]^{}` i `Hasse`
++       (każda w swoim obiekcie towarzyszącym), a tutaj dla dowolnej `Map[node, Set[node]]`
++       i `Ledger[node, Set[node]]`, więc zwykła mapa zależności odpowiada na rozszerzenia na
++       poziomie pakietu – `nodes`, `edges`, `sources`, `sinks`, `cycle`, `acyclic`,
++       `reachable`, `closure` i `invert` – bez żadnej konwersji:
+
+% 2 1 0 0b556780c1fea89a1e68e361a0dd57f2
+
+% 3 1 0 09ab602f365045a11cb1b7a45cfe9abc
+
+% 4 1 0 06188bfff561dd9e05e1ae1ce4138503
+
+% 0 1 0 0ca8fc206c4856b810751b5374ee66e0
+
+% 0 1 0 06cbcf7e46e6e18b1e4ee04665ac613a
+
+% 0 1 0 04e12c93b13f22a10231ac035188d7b1
+
+% 0 1 0 17976642edc6f77e0a44da81b93f5f3c
+
+% 1 1 0 0257d77bbd1d6a330e2fc1cee0963020
+
+@ 0 7 0 0c33c6f898e28765078a7ca5cad95150
++       Metody zwracają `murmuration.Iterator`, najtańszą rzecz, jaką może wytworzyć każda
++       reprezentacja; rozszerzenia zamieniają je w `Set` i `List`. Własna instancja, która ma
++       iterator ze standardowej biblioteki, opakowuje go przez `Iterator.from(…)`. *Funkcja*
++       następników, `node => Iterable[node]`, celowo nie jest `Nodal` – nie ma skończonego zbioru
++       węzłów ani rozstrzygalnego `has` – a `explore` materializuje ją do `Digraph`.
++       Reprezentacja, która przechowuje też poprzedniki, mówi o tym przez `Bidirectional`,
++       a taka, której wartości nie mogą zawierać cyklu – przez `Topological`.
+
+% 0 1 0 1656e9850ca5c5721b1613290655bbab
+
+% 1 1 0 1435e72a355ae7050dcfe00527b97061
+
+% 2 1 0 062ad445da57118e123f2eb789678c5b
+
+% 0 1 0 01b525e1083a34bf00b0675a26b195fa
+
+@ 0 11 0 1f81bdffa7890b3b036327d72005e674
++   entry .map   instancja `Nodal` dowolnej `Map[node, Set[node]]`
++       W zasięgu niejawnym przez obiekt towarzyszący klasy typów, ponieważ `Map` należy do
++       proscenium. Cel nieobecny w zbiorze kluczy **nie** jest węzłem: instancja przedstawia
++       mapę taką, jaka jest, a `Digraph(adjacency)` jest konstruktorem, który domyka zbiór węzłów
++       względem celów. Instancja jest parametryczna względem podtypów, więc pasuje też
++       doprecyzowany typ mapy.
++   entry .ledger   instancja `Nodal` dowolnego `Ledger[node, Set[node]]`
++       Jak `.map`, dla `Ledger`: jego klucze są węzłami, w swojej kolejności, a brakujący klucz
++       nie ma następników.
++   entry #nodes   każdy węzeł, jako iterator
++   entry #successors   węzły, na które wskazuje węzeł, jako iterator; pusty dla nieobecnego węzła
++   entry #has   czy graf ma węzeł, bez przeglądania jego węzłów
+
+@ 0 1 0 09b9af0e0eb3cda217bde524a10bc9ba
++ entry .Bidirectional   klasa typów grafu, który potrafi bezpośrednio podać poprzedniki węzła
+
+% 1 1 0 05a58afc43e63ba2038369e1353f3428
+
+@ 0 7 0 1078316c8a5be73b139fca8c41f5e902
++       `graph is Bidirectional by node` mówi, że graf potrafi odpowiedzieć, które węzły wskazują
++       *na* węzeł – w odczycie zależnościowym, węzły od niego zależne – bez przeglądania każdej
++       krawędzi. Zamrożona `Topology` i `Hasse` przechowują oba kierunki i mają instancje bez
++       bramek. `Dag` lub `Digraph` przechowuje tylko kierunek w przód, a jego instancja jest
++       bramkowana przez `Dysasymptotic.LinearScan`: znalezienie tam poprzedników jednego węzła
++       to transpozycja każdej krawędzi, koszt wykraczający poza zakres pytania, który
++       `import dysasymptotics.linearScan` każe programowi potwierdzić. Rozszerzenie
++       `predecessors` na poziomie pakietu potrzebuje tej instancji.
+
+% 1 1 0 1426f86b62a80ffb1eb9b25b8da2df7b
+
+@ 0 1 0 0db7e4ba7759a94b13f1cc0a66c885ca
++   entry #predecessors   węzły wskazujące na węzeł, jako iterator
+
+@ 0 9 0 068840296a747b220a1a1a0e64dfc9d7
++ entry .Topological   znacznikowa klasa typów typu grafu, którego wartości nie mogą zawierać cyklu
++     `graph is Topological` poświadcza, że wartość tego typu dopuszcza porządek topologiczny – że
++     nie zawiera skierowanego cyklu – **z konstrukcji**: `Dag`, zamrożona `Topology[node]^{}`
++     i `Hasse` mają każde instancję, ponieważ każde z nich można zbudować tylko przez
++     sprawdzenie lub niezmiennik. Instancja jest znacznikiem, nigdy wynikiem sprawdzenia
++     w czasie wykonania na typie ogólnym: `Digraph` staje się `Topological` tylko przez
++     `acyclic`, który odpowiada wartością `Dag`. Rozszerzenia `linearized`, `reduction`,
++     `traversal` i `layered` go wymagają, podobnie jak diagramy `dendrology`, więc graf
++     cykliczny nie ma takich operacji, zamiast mieć operacje zgłaszające błąd.
+
+@ 0 1 0 0d71086775dcea4c03d1c1497c76e6e2
++ entry .Reachable   klasa typów grafu z własnym przeszukiwaniem osiągalności
+
+% 1 1 0 0ef1e4541d6b01b402af770132fc2581
+
+@ 0 7 0 19d9aaaff0350ffd17b315ad4d0cdeb3
++       `graph is Reachable by node` podaje jako zbiór wszystko, co jest osiągalne z węzła, łącznie
++       z samym węzłem – całkowicie dla danych cyklicznych, za pomocą zbioru odwiedzonych, a nie
++       rekurencji, więc nigdy nie zgłasza błędu z własnej przyczyny; wywołujące ją rozszerzenie
++       `reachable` zgłasza `Dag.Error` tylko dla węzła, którego graf nie ma. Natywną instancją
++       jest instancja zamrożonej `Topology`, która przechodzi jej listy krawędzi; każdy inny
++       graf `Nodal` jest przeszukiwany generycznie przez `.generic`, które rozszerzenia
++       przyjmują jako wartość domyślną swojego parametru kontekstowego, więc `Map` lub `Hasse` nie
++       potrzebuje własnej instancji.
+
+% 1 1 0 001bef3025c9b4ab0e3c076507f6c117
+
+@ 0 7 0 0d6941d6984bc89c0ed414b4c3fcddb6
++   entry .topology   instancja `Reachable` zamrożonej `Topology[node]^{}`
++   entry .generic   `Reachable` dla dowolnego grafu `Nodal`, przez przeszukiwanie w głąb po jego następnikach
++       Metoda, a nie given: rozszerzenia `reachable` i `closure` przyjmują ją jako wartość
++       domyślną swojego parametru `using`, aby była osiągana bez zagnieżdżonego wyszukiwania
++       givena – które dla nieprzezroczystego odbiorcy, takiego jak `Map`, zobaczyłoby alias po
++       rozwinięciu i niczego nie dopasowało. Kod przywołujący `Reachable` dla własnego typu
++       grafu może wywołać ją bezpośrednio.
++   entry #reachable   wszystko, do czego dociera węzeł, łącznie z nim samym
+
+@ 0 1 0 1088e3fcb002086a067e60742d6e3d7b
++ entry .Invertible   klasa typów grafu, który potrafi odwrócić każdą krawędź, oraz typ, w który się odwraca
+
+% 1 1 0 0a515c266fda9f4a13f6806c8b4d779a
+
+@ 0 6 0 1fa5c41987cc5b521d50b8482e18f279
++       `graph is Invertible by node to result` podaje graf z każdą krawędzią odwróconą, jako
++       wartość typu najlepiej nadającego się do jej przechowania: `Dag` odwraca się w `Dag`,
++       ponieważ odwrócenie każdej krawędzi zachowuje acykliczność; `Hasse` w `Hasse` w O(1),
++       przez zamianę dwóch przechowywanych kierunków; zamrożona `Topology` w inną zamrożoną
++       `Topology`; a cokolwiek innego `Nodal` w `Digraph`, przez zwinięcie jego krawędzi za
++       pomocą `.generic`, które rozszerzenie `invert` przyjmuje jako wartość domyślną swojego
++       parametru kontekstowego.
+
+% 1 1 0 02da5cb91b3dfc160610a9ebadeea64a
+
+@ 0 8 0 134bf918e22bd9211b0abe0d88000d84
++   entry .digraph   `Digraph` odwraca się w `Digraph`
++   entry .dag   `Dag` odwraca się w `Dag`: odwrócenie każdej krawędzi zachowuje acykliczność
++   entry .topology   zamrożona `Topology[node]^{}` odwraca się w inną
++   entry .hasse   `Hasse` odwraca się w `Hasse`, w O(1), przez zamianę dwóch przechowywanych kierunków
++   entry .generic   `Invertible` dla dowolnego grafu `Nodal`, dające `Digraph`
++       Metoda, a nie given, z tego samego powodu co `Reachable.generic`: rozszerzenie przyjmuje
++       ją jako wartość domyślną, unikając zagnieżdżonego wyszukiwania givena, które
++       udaremniłby nieprzezroczysty odbiorca.
++   entry #invert   graf z każdą krawędzią odwróconą, jako `Result` instancji
+
+@ 0 1 0 0a994124a910710d10d9be509c962c3b
++ entry .Hasse   diagram Hassego porządku częściowego: bezpośrednie pokrycia każdego elementu, bez porównań wynikających z innych
+
+% 1 1 0 0ff1957d24e40d9a021ab675f35232f9
+
+@ 0 4 0 1951c5ac087eecd61a67c29df0c1ec50
++       `Hasse(elements)(lessOrEqual)` przyjmuje zbiór i relację porządku (`lessOrEqual(a, b)`
++       oznacza `a ≤ b`) i oblicza relację pokrycia: dla każdego elementu elementy bezpośrednio
++       nad nim (`parents`) i bezpośrednio pod nim (`children`), z pominięciem każdego
++       porównania, które wynika już ze ścieżki. Dzielniki 12, uporządkowane według
++       podzielności:
+
+% 2 1 0 14f34b7f1b0d2bae0a691627461fcb82
+
+% 3 1 0 17593b537489f40b0ddbcfc62b871837
+
+% 0 1 0 168e731b9af96dd606cf98d674faa2a5
+
+% 0 1 0 013cdb2ca6d8ea6b06079f6dcf173faa
+
+% 0 1 0 11b9093ef1a93ae312af4364dcdda11d
+
+% 0 1 0 14500b39e072ded30c5dd54b3a112c14
+
+% 0 1 0 19e6ce6c04dfcc6e0e39e61ad6447660
+
+% 0 1 0 0600e8a0ef8b13bf0582055e83e88962
+
+% 1 1 0 12fc5b47f34389931350f9c880c75d47
+
+@ 0 6 0 10c68232887118211233b265fe8add1c
++       Elementy są wstawiane po jednym; każde wstawienie znajduje bezpośrednich rodziców przez
++       schodzenie od bieżących elementów maksymalnych, a bezpośrednie dzieci przez wznoszenie
++       od bieżących elementów minimalnych, odcinając całe poddrzewa, gdy tylko porównanie je
++       wyklucza, a każde porównanie jest zapamiętywane, więc porównuje się znacznie mniej niż
++       wszystkie uporządkowane pary. Dwa elementy równoważne w tej relacji (każdy ≤ drugiego)
++       są scalane: późniejszy staje się aliasem pierwszego, a zapytania o którykolwiek z nich
++       odpowiadają za oba.
+
+@ 0 6 0 19c1e417acb221591fbfa48f21072edb
++       `Hasse` sam jest grafem, w którym każdy element wskazuje na elementy, które pokrywa, więc
++       jest `Nodal`, `Bidirectional` (oba kierunki są przechowywane) i `Topological` (porządek
++       częściowy nie ma cyklu): `divisors.linearized` biegnie od dołu do góry, jego `sources` to
++       elementy minimalne, a `sinks` – maksymalne, a diagramy `dendrology` rysują go
++       bezpośrednio. `dag` to ta sama relacja jako `Dag`, a `Poset#dag` buduje taki przez
++       instancję `PartiallyOrdered`.
+
+% 1 1 0 098d97fcc07568990ac6993cdf9a90f8
+
+% 1 1 0 02ad02c8ae13287719703d57e76f83c1
+
+@ 0 24 0 124a42d23fe2ce341b91e988cb44834b
++   entry .apply   diagram Hassego zbioru z relacją `lessOrEqual`
++       `Hasse(elements)((a, b) => a ≤ b)`. Aby wynik był relacją pokrycia, relacja musi być
++       porządkiem częściowym (zwrotna, antysymetryczna z dokładnością do scalania elementów
++       równoważnych, przechodnia); jest wywoływana co najwyżej raz dla każdej uporządkowanej
++       pary.
++   entry .nodal   instancja `Nodal`: elementy `Hasse`, z których każdy wskazuje na elementy, które pokrywa
++   entry .bidirectional   instancja `Bidirectional`: poprzedniki elementu to jego pokrycia, odczytywane bezpośrednio
++       Oba kierunki są przechowywane, więc `Dysasymptotic.LinearScan` nie jest potrzebne.
++   entry .topological   znacznik, który poświadcza, że `Hasse` nie zawiera cyklu: porządek częściowy nie może go mieć
++   entry #parents   elementy bezpośrednio nad elementem: jego pokrycia
++   entry #children   elementy bezpośrednio pod elementem: te, które pokrywa
++   entry #elements   każdy element, jako zbiór
++   entry #maxima   elementy, nad którymi nic nie ma
++   entry #minima   elementy, pod którymi nic nie ma
++   entry #dag   relacja pokrycia jako `Dag`, w którym każdy element wskazuje na te, które pokrywa
++       Sprawdzenie nie jest potrzebne: relacja pokrycia porządku częściowego jest acykliczna.
++       `hasse.dag.edges` to `hasse.edges`.
++   entry #invert   ta sama relacja odczytywana w górę: każdy element wskazuje na te, które go pokrywają
++       O(1): dwa przechowywane kierunki są zamieniane. `invert.children(x)` to `parents(x)`.
++   entry #bottom   nowy element dołączony pod każdym bieżącym elementem minimalnym, w jednym przebiegu bez porównań
++       Dla wartości, o której z konstrukcji wiadomo, że jest mniejsza od wszystkiego – `Nothing`
++       wśród typów – aby nie trzeba jej było porównywać z każdym elementem. Staje się jedynym
++       elementem minimalnym, a każdy dotychczasowy element minimalny teraz ją pokrywa.
++   entry #top   nowy element dołączony nad każdym bieżącym elementem maksymalnym, w jednym przebiegu bez porównań
++       Odpowiednik `#bottom`: `Any` wśród typów. Staje się jedynym elementem maksymalnym.
+
+@ 0 1 0 1e340dcf1732dd781255bbcb6faed80e
++ entry .PartiallyOrdered   klasa typów typu z porządkiem częściowym: `compare(left, right)` oznacza `left ≤ right`
+
+% 1 1 0 0ee8378262e87a7f19297ead0bdc7297
+
+@ 0 3 0 1d9152626944c2980bc55e6a12c70140
++       `element is PartiallyOrdered` dostarcza dla `Poset` `compare(left, right): Boolean`,
++       odczytywane jako `left ≤ right`. Relacja powinna być zwrotna, antysymetryczna i
++       przechodnia; nie musi wiązać każdej pary. Given zapisuje się jako lambdę:
+
+% 2 1 0 04b278f0197365e00812914d35f8c6cf
+
+% 3 1 0 04510a37fce13ec909a92bde067c9e91
+
+% 0 1 0 061a99e7c0f79b661bbd3fa21095342a
+
+% 0 1 0 0cdf762b9299282b1dfd9277410c8d1e
+
+% 1 1 0 031f8ed40c28be5703ef64769ebc3d8c
+
+% 1 1 0 14345edbec4460f01cb02cca09384ff9
+
+@ 0 1 0 0f7067c654a86b11078ad4e4f3ce016a
++ entry .Poset   zbiór elementów z instancją `PartiallyOrdered` oraz `Dag` jego relacji pokrycia
+
+% 1 1 0 13ab337c5520ecf9116781670655d34b
+
+@ 0 4 0 1c69a211605357aa016081dc2d1f4f97
++       `Poset(elements*)` przechowuje zbiór elementów, których typ jest `PartiallyOrdered`, a
++       `dag` to diagram Hassego porządku jako `Dag`, w którym każdy element wskazuje na elementy
++       bezpośrednio **nad** nim (jego pokrycia), zbudowany przez `Hasse` za pomocą `compare`
++       porządku, który odcina porównania i nie wymaga potem redukcji.
+
+% 2 1 0 134d23e26ea27bdd0fab566c74481052
+
+% 3 1 0 11a8924604c5ea2706e2d7f5fa1b5525
+
+% 0 1 0 117d4d711593115e0bb3c98a751e02a3
+
+% 0 1 0 0c18a5313278106408138a9156a70973
+
+% 1 1 0 1afe11ce23b95e4a1d0951afac7ae5d7
+
+@ 0 3 0 1216e07a119eae68032f52d656568609
++       Uwaga na kierunek: `Poset#dag` wskazuje w górę (na pokrycia), podczas gdy `Hasse#dag`
++       wskazuje w dół (na pokryte); `Hasse` z tą samą relacją jest bogatszą wartością, z oboma
++       kierunkami, elementami maksymalnymi i minimalnymi.
+
+% 0 1 0 1e72f1a44ab56fdd0f932c6e469b55ff
+
+% 0 1 0 0e8c0d381270e4000e008af3312bc62f
+
+@ 0 3 0 18f48b0e6c35ce281ea93d8aab30a9c8
++   entry .apply   `Poset` podanych elementów
++   entry #elements   elementy, jako zbiór
++   entry #dag   relacja pokrycia jako `Dag`, w którym każdy element wskazuje na te bezpośrednio nad nim
+
+@ 0 1 0 1422d1b2040d815e03f7b106cf902542
++ entry .Layering   graf ułożony w warstwy do rysowania, zależności nad węzłami zależnymi, ze zmniejszoną liczbą przecięć
+
+% 1 1 0 18faf5cadc99b2a01f9bb633de3ecc4f
+
+@ 0 10 0 1ff7f4e6144eddbd1a55224d3f3e5861
++       Wynik `Dag#layered` (i rozszerzenia `layered` dla dowolnego grafu `Topological`). Każdy
++       węzeł jest przypisywany do warstwy – przez `Ranking.LongestPath` jedną warstwę poniżej
++       swojej najgłębszej zależności, więc źródła dzielą warstwę 0; albo, z `import
++       rankings.balancedRanking`, ściągany w dół do warstwy nad swoim najpłytszym węzłem
++       zależnym – a krawędź rozpięta na więcej niż jedną warstwę przechodzi przez
++       `Layering.Vertex.Virtual` w każdej warstwie pośredniej, więc każde połączenie w wyniku
++       łączy sąsiednie warstwy. Wierzchołki każdej warstwy są następnie porządkowane tak, by
++       zmniejszyć liczbę przecięć między połączeniami łączącymi ją z sąsiadami, przez
++       naprzemienne przebiegi ważonej mediany i transpozycje sąsiednich elementów, do
++       dwudziestu czterech przebiegów albo do uzyskania rysunku planarnego – metoda Sugiyamy,
++       tak jak rysuje `dot` z GraphViz.
+
+% 2 1 0 011fc43eb3bfbcfe11e0d9b1a0fcfc4f
+
+% 3 1 0 1ddd18da55df890917197ec6fc3be282
+
+% 4 1 0 1627a028719e2afa1f66925f4d6eb71f
+
+% 0 1 0 1765edbf8c9a2fb70eaffba3ba435450
+
+% 0 1 0 0e948f0aec81affc1603fb8deff3e36a
+
+% 0 1 0 02c6ec41e9f1471f0a656aa23d1dd259
+
+% 0 1 0 1d16642fd557254813cb289af7cedbb2
+
+% 0 1 0 034cc5718e0b7596040571422d3c4cc0
+
+% 0 1 0 03e7b7e82d629d4b156dfc855cd17eb4
+
+% 0 1 0 135fa14995a0f6a90598eb3e00ef12cc
+
+% 1 1 0 011859498c315a1d190b5bd2635ff884
+
+@ 0 2 0 04293f7e3a01e6301d9ee152031e8c5b
++       `LayeredDagDiagram` z `dendrology` przypisuje warstwom kolumny i je rysuje; inny rysunek
++       bierze bezpośrednio `layers` i `links`.
+
+% 0 1 0 0c339bb1bbac2c4e0e068edb2a68bf97
+
+% 1 1 0 0a259ebc7c9ce0b40699c7f6df823bc2
+
+@ 0 10 0 1ceb9f67a85c604b0c693d1925daedaa
++   entry .Vertex   miejsce w warstwie: węzeł grafu albo punkt, przez który przechodzi dłuższa krawędź
++       Wyliczenie: `Real(value)` to węzeł grafu, a `Virtual(source, target)` to miejsce, w
++       którym krawędź od `source` do `target`, rozpięta na kilka warstw, przechodzi przez tę.
++       Rysunek nadaje wierzchołkowi wirtualnemu kolumnę i prowadzi przez nią krawędź.
++   entry #layers   warstwy, od góry, każda jako lista `Layering.Vertex` w kolejności rysowania
++   entry #links   `links(i)` łączy warstwę `i` z warstwą `i + 1`, jako pary pozycji w każdej z nich
++       Każde połączenie łączy sąsiednie warstwy: krawędź rozpięta na więcej warstw jest
++       rozbijana na swoich wierzchołkach wirtualnych.
++   entry #rank   warstwa każdego węzła, jako `Map`
++   entry #position   pozycja każdego węzła w jego warstwie, jako `Map`
++   entry #crossings   ile par połączeń się przecina, w całym ułożeniu warstw
+
+@ 0 1 0 1094fd9276da52ee198bac275abd244b
++ entry .Ranking   jak `layered` przypisuje każdy węzeł do warstwy: `LongestPath` albo `Balanced`
+
+% 1 1 0 0d974163f6826cc712df9bfbaf6bbc6a
+
+@ 0 7 0 03ecf45d4f2796bb121e510f0c201cc3
++       Wyliczenie przyjmowane jako wartość kontekstowa przez `Dag#layered`, rozszerzenie
++       `layered` i `LayeredDagDiagram` z `dendrology`. `LongestPath` umieszcza każdy węzeł
++       jedną warstwę poniżej jego najgłębszej zależności, więc każdy węzeł, który nie zależy od
++       niczego, należy do warstwy 0. `Balanced` zaczyna od tego, a następnie ściąga każdy węzeł
++       mający węzły zależne w dół, do warstwy nad jego najpłytszym węzłem zależnym, co skraca
++       długą krawędź od źródła, które zasila tylko coś głęboko położonego. Wartością `default`
++       obiektu towarzyszącego jest `LongestPath`; `import rankings.balancedRanking` ma przed nią
++       pierwszeństwo.
+
+% 1 1 0 090bb18592fc745818aab1e6b7c707ae
+
+% 1 1 0 03967fc2ccb77ba60dc6f0dbc5fbf4f1
+
+@ 0 1 0 07c6aea46f275721107d26393b1ddf24
++   entry .default   `Ranking.LongestPath`, given, który obowiązuje, gdy żaden nie jest zaimportowany
+
+@ 0 1 0 1b6e7a777c3080c013f02823bccb2552
++ entry .rankings   dwie polityki przypisywania warstw dla `layered`, jako giveny do importu z nazwy
+
+% 1 1 0 1486050ed3913d9813638e506553b2ba
+
+@ 0 3 0 13e91e8e3a6d497b05aa734d9d7ea985
++       `import soundness.*` rozwiązuje `Ranking.LongestPath` z obiektu towarzyszącego
++       `Ranking`; zaimportowanie jednego z nich z nazwy wybiera politykę jawnie, a
++       `balancedRanking` to jedyny sposób wybrania `Balanced`.
+
+% 2 1 0 01fec0fcd095bf8f01b47613a40856a2
+
+% 3 1 0 0e4e35438cbc81f809b6c526a9d0fb70
+
+% 4 1 0 11df5012ae5c0f6f06a4d360ec311e99
+
+% 0 1 0 107cd6b5f8c4da6e0877fca1d99c87f5
+
+% 0 1 0 0d856b813ae39cf819b0f022a1b1c8cd
+
+% 0 1 0 089291606c717a3d016864dc0e369b01
+
+% 1 1 0 1457b6966938a98b02b875ad3f7d84b1
+
+@ 0 3 0 143a315c5ed3157a0804ee78c1e6a333
++       Bez importu `deep.layered.rank(5)` wynosi 0.
++   entry .longestPathRanking   `Ranking.LongestPath`: każdy węzeł jedną warstwę poniżej jego najgłębszej zależności
++   entry .balancedRanking   `Ranking.Balanced`: każdy węzeł mający węzły zależne ściągnięty w dół do warstwy nad jego najpłytszym węzłem zależnym
+
+@ 0 1 0 1dec89a7021ce0bd1135703cec9f475e
++ entry .Dot   dokument GraphViz DOT jako wartość, budowany z identyfikatorów, krawędzi i atrybutów i serializowany do tekstu
+
+% 1 1 0 196b0ed07efe1530144f255c143c453e
+
+@ 0 6 0 18925c26ceb8cc921117a36549d0d547
++       `Dot` to wyliczenie dwóch przypadków, `Graph` (nieskierowany) i `Digraph` (skierowany),
++       z których każdy przechowuje opcjonalną nazwę, informację, czy jest `strict` (bez
++       powtórzonych krawędzi), oraz swoje `Dot.Statement`. Buduje je `digraph`,
++       `strictDigraph`, `graph`, `strictGraph` i `subgraph` obiektu towarzyszącego, a instrukcje
++       buduje się z identyfikatorów `Name[Dot.Id]` za pomocą operatorów rozszerzających `-->`
++       (krawędź skierowana), `--` (krawędź nieskierowana), `:=` (przypisanie) i
++       `id(key -> value, …)` (węzeł z atrybutami). `serialize` zapisuje tekst DOT.
+
+% 2 1 0 08489056c59de60802c6c65a030fe7f4
+
+% 3 1 0 0ea00241ea4572f808d7dca5c41f9c83
+
+% 4 1 0 057be87d840da39e0b6bb5d9af9f5352
+
+% 0 1 0 13af4cc3af32ed68076e71060a727f50
+
+% 0 1 0 1d8e7470bfcb6fef0581a3656e24283e
+
+% 0 1 0 1c53e12de0a0215c1b99361dffa7f7d1
+
+% 0 1 0 0dcfaffb02554c951144eed8bca4d4a0
+
+% 0 1 0 0e07471248a4d8f31bd87be8e56380ca
+
+% 0 1 0 1d26812238659b7007bc5323e4299c05
+
+% 1 1 0 07895e7a272113e708e54581b1e69977
+
+@ 0 5 0 1cefd2c58c11c9d313a79f6bc7b26a1c
++       Każdy identyfikator jest emitowany w podwójnym cudzysłowie, więc reguła `Dot.Identifier`
++       jest pobłażliwa: dowolny niepusty tekst bez podwójnego cudzysłowu i bez znaku nowego
++       wiersza. `Name[Dot.Id](text)` zgłasza `Name.Error` dla czegokolwiek innego (co wymaga
++       `Tactic[Name.Error]`), a literał `n"…"` jest sprawdzany podczas kompilacji kodu.
++       `Dag[Text]` przedstawia się przez `dag.dot`, co tworzy `Dot.Digraph` z krawędzią dla
++       każdej zależności.
+
+% 1 1 0 15e53a43261ab90116835f476b6ee3d3
+
+@ 0 15 0 072abebb333756d918a4817841488d7d
++   entry .digraph   graf skierowany, nazwany lub anonimowy, z podanych instrukcji
++       `Dot.digraph(id, statements*)` albo `Dot.digraph(statements*)`; nie `strict`.
++   entry .strictDigraph   nazwany graf skierowany oznaczony jako `strict`: powtórzone krawędzie są scalane
++   entry .graph   nazwany graf nieskierowany z podanych instrukcji
++   entry .strictGraph   nazwany graf nieskierowany oznaczony jako `strict`
++   entry .subgraph   instrukcja `subgraph { … }`, nazwana lub anonimowa, zagnieżdżona w grafie albo jako cel krawędzi
++       `Dot.subgraph(id, statements*)` albo `Dot.subgraph(statements*)`. Krawędź może kończyć się
++       na podgrafie: `a --> Dot.subgraph(b, c)`.
++   entry .--   `a -- b`: instrukcja krawędzi nieskierowanej, od identyfikatora do identyfikatora lub podgrafu
++   entry .-->   `a --> b`: instrukcja krawędzi skierowanej, od identyfikatora do identyfikatora lub podgrafu
++   entry .:=   `a := b`: instrukcja przypisania, emitowana jako `"a" = "b"`
++   entry .apply   `id(key -> value, …)`: instrukcja węzła deklarująca identyfikator z atrybutami
++       Rozszerzenie dla `Name[Dot.Id]`: `a(t"color" -> t"red")` jest emitowane jako
++       `"a" [ color="red" ]`. Bez atrybutów deklaruje sam węzeł.
++   entry .Target   prawa strona krawędzi: czy jest skierowana, jej cel i opcjonalny cel dołączony w łańcuchu
+
+% 1 1 0 1e380526f22192980cc4ec506685eaed
+
+@ 0 17 0 0b70ed4bad8e84040cb379dd031c1268
++         Klasa case z `directed`, `dest` (identyfikator lub `Statement.Subgraph`) i `link`,
++         kolejnym `Target` dla łańcucha takiego jak `a -> b -> c`. Budują go operatory `-->` i
++         `--`; rzadko pisze się go ręcznie.
++     entry #directed   czy krawędź jest rysowana z `->`, a nie z `--`
++     entry #dest   cel: `Name[Dot.Id]` lub `Statement.Subgraph`
++     entry #link   kolejny cel dołączony w łańcuchu po tym, jeśli jest
++   entry .Property   jeden atrybut `key="value"` węzła
++     entry #key   nazwa atrybutu
++     entry #value   wartość atrybutu, emitowana w podwójnym cudzysłowie
++   entry .Statement   jedna instrukcja grafu: węzeł, krawędź, przypisanie lub podgraf
++       Wyliczenie: `Node(id, attrs*)`, `Edge(id, rhs: Target, attrs*)`, `Assignment(id, id2)` i
++       `Subgraph(id: Option[Name[Dot.Id]], statements*)`. Tworzą je konstruktory obiektu
++       towarzyszącego i operatory dla `Name[Dot.Id]`; `Subgraph` może też stać jako cel
++       krawędzi.
++   entry .serialize   `Dot.serialize(tokens)`: układa listę tokenów w tekst DOT z wcięciami
++       Niskopoziomowy zapis, którego używa metoda instancji: nawiasy klamrowe otwierają i
++       zamykają bloki z wcięciem, `;` kończy wiersz, `[` i `]` obejmują atrybuty, a pozostałe
++       tokeny są rozdzielane spacjami.
++   entry .Id   płaszczyzna nazewnictwa identyfikatorów DOT: `Name[Dot.Id]`
+
+% 1 1 0 1beeecc130464784191606e3cf685254
+
+@ 0 11 0 0a18ef402a74527d0131840e607cc835
++         Zapieczętowany typ znacznikowy. `Name[Dot.Id]` nazywa tak samo węzeł, koniec krawędzi,
++         stronę przypisania czy (pod)graf i podlega regule `Dot.Identifier` przez given
++         `nominative` w tym obiekcie: `Name[Dot.Id](text)` sprawdza w czasie wykonania
++         (zgłaszając `Name.Error`), a `n"…"` podczas kompilacji kodu.
++     entry .nominative   given, który poddaje `Name[Dot.Id]` regule `Dot.Identifier`
++   entry .Identifier   reguła, którą musi spełniać identyfikator DOT: niepusty, bez podwójnego cudzysłowu i bez znaku nowego wiersza
++       Reguła `nomenclature`. Identyfikatory są zawsze emitowane w podwójnym cudzysłowie, więc
++       nic innego nie wymaga escapowania; jej komunikat o błędzie brzmi _must be a valid DOT
++       identifier_.
++   entry #serialize   graf jako tekst DOT, z wcięciami, zaczynający się od znaku nowego wiersza
++       `Dag(t"a" -> t"b").dot.serialize` to `"\ndigraph {\n  \"a\" -> \"b\"\n}"`.
++   entry #add   graf z dołączonymi kolejnymi instrukcjami
+
+@ 0 5 0 0aacba1d0623776b02b020e9fd1ba652
++ entry .explore   `start.explore(dependencies)`: materializuje funkcję następników w `Digraph`, eksplorując od węzła
++     Rozszerzenie dla dowolnej wartości. Funkcja `node => Iterable[node]` nie ma własnego
++     skończonego zbioru węzłów, więc nie jest `Nodal`; `explore` przechodzi na zewnątrz od
++     `start`, wywołując funkcję raz dla każdego osiągniętego węzła, i podaje graf wszystkiego,
++     co znaleziono. Funkcja może prowadzić z powrotem do siebie, więc wynikiem jest `Digraph`,
++     a `acyclic` go sprawdza.
+
+% 2 1 0 0b31083e3950a22f09123f352b79f6cd
+
+% 3 1 0 1e6749b3bcb1bf840e201c40effa932b
+
+% 4 1 0 0cffe0d99a0ff75e169902db1d27e718
+
+% 0 1 0 034fcaa2bf30d57303a3fa1642797d5f
+
+% 1 1 0 1d28b99d798fdbbf158e2a4b66d3f2a7
+
+@ 0 4 0 0bffc6af09ac25261fca97930ae0dc45
++ entry .nodes   każdy węzeł dowolnego grafu `Nodal`, jako zbiór
++     Rozszerzenie generyczne, dla dowolnego `graph is Nodal by node`: `Map[node, Set[node]]`,
++     `Ledger`, `Hasse`, zamrożonej `Topology` lub obu typów grafów (które oferują te same nazwy
++     jako metody, mające pierwszeństwo).
+
+@ 0 1 0 1f6c1e97141ab1a40354f6029a5f6abe
++ entry .successors   węzły, na które wskazuje węzeł dowolnego grafu `Nodal`: jego zależności, jako zbiór
+
+@ 0 1 0 1172705babe7f3881c40dd7932ba797d
++ entry .edges   każda krawędź dowolnego grafu `Nodal`, jako pary `(from, to)`
+
+@ 0 2 0 01d576d8ef439190163d9dfa199ff9fa
++ entry .sources   węzły dowolnego grafu `Nodal` bez następników: te, które nie zależą od niczego
++     Dotyczy całego grafu, więc w reprezentacji przechowującej tylko kierunek w przód
++     potwierdzenie nie jest potrzebne.
+
+@ 0 3 0 11e8390d710aa35b0ae5dfba00bafe37
++ entry .sinks   węzły dowolnego grafu `Nodal` bez poprzedników: te, od których nic nie zależy
++     Jeden przebieg po każdej krawędzi, więc nie są potrzebne ani instancja `Bidirectional`,
++     ani potwierdzenie: pytanie dotyczy całego grafu, a nie jednego węzła.
+
+@ 0 4 0 046c856d195232c5103d9d33737c0977
++ entry .predecessors   węzły wskazujące na węzeł, dla dowolnego grafu `Bidirectional`
++     Wymaga `graph is Bidirectional by node`: bez bramki dla zamrożonej `Topology` lub `Hasse`,
++     a z bramką `Dysasymptotic.LinearScan` (`import dysasymptotics.linearScan`) dla `Dag` lub
++     `Digraph`, które muszą transponować każdą krawędź, aby odpowiedzieć.
+
+@ 0 2 0 0c14be402bf0d6ff0e983e9244df94f3
++ entry .cycle   cykl w dowolnym grafie `Nodal`, jeśli go ma: węzły, z których każdy wskazuje na następny, kończące się tam, gdzie się zaczęły
++     `Unset` dla grafu acyklicznego. Całkowite dla dowolnego grafu, przez przeszukiwanie w głąb.
+
+@ 0 2 0 1409cb2dbbec2e0209f7e90ddb0049f0
++ entry .acyclic   dowolny graf `Nodal` jako `Dag`, po jednym sprawdzeniu; zgłasza `Dag.Error`, jeśli jest cykl
++     O(n + e), jeden raz; zbiór węzłów jest domykany względem każdego celu krawędzi.
+
+% 2 1 0 146511835c1956541dc59e8655ee983a
+
+% 3 1 0 137df9e45d805ca215f857751c8b9a21
+
+% 4 1 0 099a6de0e1aa82100e63ec4ffe5b7d43
+
+% 0 1 0 022f36ed379b9ab6199e3705b1230f7e
+
+% 1 1 0 1a80505f8d1c34da01b7aef3b97f1148
+
+@ 0 1 0 0301a029fe7ff8e203638e2a12141f1b
++ entry .digraph   dowolny graf `Nodal` skopiowany do `Digraph`, z jego zbiorem węzłów domkniętym względem każdego celu krawędzi
+
+@ 0 4 0 154232ce2cd115f6130f53f105ac2340
++ entry .reachable   wszystko, do czego dociera węzeł dowolnego grafu `Nodal`, łącznie z nim samym
++     Zgłasza `Dag.Error` (`Reason.NodeMissing`) tylko dla węzła, którego graf nie ma, według
++     `has` instancji; samo przeszukiwanie jest całkowite na grafie cyklicznym. Graf z własną
++     instancją `Reachable` (zamrożona `Topology`) jest przeszukiwany natywnie, każdy inny przez
+
+% 0 1 0 1721bf3fc28568d3130ac4a2f5693159
+
+@ 0 4 0 1acd6f5f7035d25c0da41d19a847e97e
++ entry .closure   każda wynikająca krawędź dowolnego grafu `Nodal` uczyniona jawną, jako `Digraph`
++     Jedno przeszukiwanie osiągalności na węzeł, przez instancję `Reachable` grafu lub
++     przeszukiwanie generyczne; w wyniku węzeł nie wskazuje na siebie. `Dag#closure` i
++     domknięcie zamrożonej `Topology` to szybsze postacie, przez macierz bitową.
+
+@ 0 3 0 0e9d407af17c304103c93d35de58eec6
++ entry .invert   dowolny graf `Nodal` z każdą krawędzią odwróconą, jako typ wskazany przez jego instancję `Invertible`
++     `Dag` w `Dag`, `Hasse` w `Hasse`, zamrożona `Topology` w inną, a cokolwiek innego – `Map`,
++     `Ledger` – w `Digraph` przez `Invertible.generic`.
+
+@ 0 4 0 185eb3adc419b8d117daa2c533937309
++ entry .linearized   węzły dowolnego grafu `Topological` w porządku topologicznym: każdy węzeł po swoich następnikach
++     Dla `Dag`, zamrożonej `Topology` lub `Hasse`; `Digraph` nie ma takiej operacji, dopóki
++     `acyclic` go nie przekształci. Między niepowiązanymi węzłami kolejność wynika z `nodes`
++     instancji, więc reprezentacja zachowująca kolejność wstawiania daje kolejność stabilną.
+
+@ 0 2 0 1bb7dd2a5df7e2d30cf75c64298f044b
++ entry .reduction   minimalny graf o tej samej osiągalności co dowolny graf `Topological`, jako `Dag`
++     Przez macierz bitową zamrożonej `Topology`, budowaną raz dla wywołania.
+
+@ 0 4 0 0d304768da4d16b01c5df45345da0a26
++ entry .traversal   wartość dla każdego węzła dowolnego grafu `Topological`, z wartości jego następników
++     `graph.traversal[result]((successorValues, node) => …)`: węzły są odwiedzane w porządku
++     topologicznym, więc każde wywołanie widzi wartości już obliczone dla następników węzła,
++     a wynikiem jest `Map` z każdego węzła na jego wartość.
+
+@ 0 4 0 056c02855927aa2b00998fafccc2e3ef
++ entry .layered   dowolny graf `Topological` ułożony w warstwy o zminimalizowanej liczbie przecięć, jako `Layering`
++     Przyjmuje `Ranking` w zasięgu (domyślnie `Ranking.LongestPath`; `import
++     rankings.balancedRanking`, aby to zmienić). Graf inny niż `Dag` jest przekształcany raz,
++     bez sprawdzania, ponieważ `Topological` poświadcza, że nie ma cyklu.

@@ -1,0 +1,162 @@
+orthant 2 language
+
+@ 0 1 0 168196334f18aeaf07cb0c1a1f564eb7
++ ## Formularze
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 5 0 08588ae0d9ef15990daa04173dee371d
++ Formularz HTML to interfejs użytkownika do typu danych, a tutaj generuje się go z samego typu.
++ Klasa case wytwarza formularz z opisanym etykietą polem wejściowym dla każdego pola i widżetem
++ dobranym według typu pola. Przesłanie jest dekodowane z powrotem do klasy case, a wszelkie
++ niepowodzenia walidacji są przypisywane polom, które je spowodowały. Zagnieżdżone klasy case
++ stają się zagnieżdżonymi grupami pól, więc formularz odzwierciedla strukturę danych.
+
+@ 0 1 0 15f16e187bbdbbea0f18b2a2bd3d617f
++ ### O formularzach
+
+@ 0 4 0 082e8dfc91e0c5ff13f596c998cd5fcd
++ W większości aplikacji WWW formularze pisze się dwukrotnie: raz jako pola wejściowe HTML i drugi
++ raz jako parsowanie i walidację tego, co wraca. Obie połowy utrzymuje się w zgodzie ręcznie. Każdą
++ zmianę danych, taką jak nowe pole, pole o zmienionej nazwie czy surowszy typ, trzeba wprowadzić w
++ obu, inaczej formularz rozjeżdża się z danymi, które rzekomo zbiera.
+
+@ 0 5 0 0db0c9b7b69fe4100dfd3821c7be49b0
++ [Derywacja][derywacja] obu połówek z jednego typu usuwa to powielenie. Typ mówi, jakie pola
++ istnieją i co każde przyjmuje. Widżety wynikają z typów pól. Dekodowanie przesłania stosuje te
++ same walidowane typy, które rządzą resztą programu, więc niepoprawny adres e-mail zawodzi już na
++ formularzu, z komunikatem wskazującym pole e-mail. To
++ [poprawność](../../philosophy/correctness.md) dzięki jednemu źródłu prawdy.
+
+@ 0 2 0 08f142c6dc6fdbb31f394564d8004d95
++ Wszystko pochodzi z pakietu `soundness`. Ostatni import pozwala przykładom wypisywać wyniki:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1e6efd6ba2ee26271b8f1afe03e46881
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 11705d700f7701241eee627da978f20c
++ ### Renderowanie formularza
+
+@ 0 2 0 0e4939c0d018e7e81b9d6e44ecfff070
++ `elicit` renderuje formularz dla typu jako [HTML](html.md), gotowy do serwowania. `edit`
++ renderuje go wypełnionego na podstawie istniejącej wartości:
+
+% 2 1 0 06d9a77898a98e6a0a35b6a4b819f492
+
+% 0 1 0 12c5781411ce8df600e42adec8d9409a
+
+% 0 1 0 031ae47311cf570d05242c937cd26044
+
+% 0 1 0 056f45d0b43bf51c18c4106f79ba8dce
+
+% 1 1 0 13394f7d3bb5ce75081757cd69aedbb6
+
+% 3 1 0 196e46597aed5264050269039a58f407
+
+% 4 1 0 0a3fff44615041250391fc1c43867b53
+
+% 5 1 0 06557776e30687911c0bd6de7d03a269
+
+% 0 1 0 0f763904aac3ceb60224537300dba089
+
+% 1 1 0 128014851ed987600c44f207ebd5a698
+
+@ 0 3 0 172b600f6b9547b70c1dfd1f238f3525
++ Każde pole pojawia się z etykietą wyprowadzoną z jego nazwy, więc `leader` staje się „Leader”.
++ Zagnieżdżona klasa case staje się elementem `<fieldset>` z legendą, więc struktura formularza
++ sama się objaśnia.
+
+@ 0 1 0 10e8abd500d5355b0925b24afd5fd462
++ Widżet dla każdego pola wybiera się według jego typu:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 8 0 1defa8d3e435786b08920c5593302973
++ column  Typ pola
++ column  Widżet
++ column  Renderowany jako
++ row  `Boolean`  `Checkbox`  pole wyboru
++ row  wyliczenie  `Combobox`  pole tekstowe z `<datalist>` przypadków
++ row  `Reference[entity]`  `Dropdown`  `<select>` wymienionych encji
++ row  dowolny inny typ kodowalny jako `Text`  `Field`  pole tekstowe
++ row  klasa case  brak  `<fieldset>` jej pól
+
+% 1 1 0 17ea37663dc0fb811160659a806c506f
+
+@ 0 1 0 0c0fdb72612479f50276d42f14943021
++ ### Przesłania
+
+@ 0 2 0 093fc17af4a0d9df0ee2617e63fb5666
++ Przesłanie przychodzi jako `Query`: pary kluczy i wartości z wysłania formularza, w których pola
++ zagnieżdżone zapisuje się z kropkami, jak w `leader.name`. `as` dekoduje je do typu:
+
+% 2 1 0 1e70a100b748aa0b17f03d2c62926625
+
+% 0 1 0 05b3aa41a0ab130d187cb0a15f3e4431
+
+% 1 1 0 00d57f922281f0f0184c31a573d1c23b
+
+% 3 1 0 0ddf4497666b8bd61acc490efcc640d0
+
+% 4 1 0 08c642ac7577858b00e6c5feecc7908b
+
+% 5 1 0 12c5b75ff2dca513076da2ab2543b5b5
+
+% 0 1 0 0389b82f3f45bad10a681078ab116323
+
+% 1 1 0 0742dd1918a8d4be16a5ea6fc9d7d0cb
+
+@ 0 5 0 01d7a5377e924a8617f2480d829c29b2
++ Pola są dekodowane przez te same typy, których używa się wszędzie.
++ [`EmailAddress`](network-addresses.md#email-addresses) musi się sparsować, a
++ [`Name`](names.md) musi spełniać swoje reguły. Walidacja formularza nie jest więc odrębnym
++ zbiorem reguł. To system typów wykonujący swoją zwykłą pracę na granicy, a niepowodzenie niesie
++ wskaźnik do winnego pola:
+
+% 2 1 0 0e48b76268981a0b1241289de9854127
+
+% 3 1 0 19cca74033a2c71419bec283d8e506dd
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 013f911a420f94a7158aa0945de503f7
+
+% 1 1 0 1da2f77fbd8f251c13e3d03b864f6422
+
+@ 0 2 0 12d7d5af045f553e0a7032812eedc801
++ [Dekodowanie](decoding.md#requiring-a-value) wyjaśnia, jak typ pola decyduje o tym, czy pole jest
++ wymagane.
+
+@ 0 1 0 06721b11e346cde9170c88e0b8a8fb07
++ ### Cykl formularza
+
+@ 0 3 0 14628e26c9c075c11e295da695ca7bb7
++ Formularz to pętla: renderowanie, przesłanie i ponowne renderowanie z błędami, dopóki wartość
++ nie będzie kompletna. `elicit` przyjmuje przesłane `Query` i stan walidacji, więc ponownie
++ renderowany formularz pokazuje to, co wprowadzono, z usterkami przypisanymi do ich pól.
+
+@ 0 3 0 167ec85cb404b0960fafe02742978202
++ Pętlę wykonuje handler [serwera](http-server.md#responses), dekodując w razie powodzenia i
++ ponownie renderując w razie niepowodzenia. Operuje więc na wartościach, a nie na żądaniach.
++ [Klient HTTP](http-client.md#posting-a-body) wysyła `Query` jako przesłanie formularza.
+
+@ 0 1 0 10469fddfe7d0c78174a62c9cf8fb5f3
++ ### Dostosowywanie wyglądu
+
+@ 0 4 0 1b560c673a3b18ad1deeafbfb47931d7
++ To, jak renderowany jest formularz i jego wiersze, określa `Formulation`: ramka wokół widżetów
++ oraz rozmieszczenie etykiet i komunikatów o błędach. `postFormulation` daje proste renderowanie
++ bez stylów. Aplikacja dostarcza własne, dopasowane do swojego projektu, nie zmieniając sposobu
++ wyprowadzania pól. Wynik stylizuje [CSS](css.md).

@@ -1,0 +1,337 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1acedd231e89c7d705a5c65e1625afb7
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 12cf4099ba8dd085122513165ab3907a
++ info   dzielenie wyrazów algorytmem Lianga na podstawie plików wzorców TeX-a: miejsca podziału, miękkie dywizy i sylaby
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1da156422b65704216f4e9ab4379ae9d
++     _Polysyllabic_ znajduje miejsca, w których wyraz można przenieść na końcu wiersza, za pomocą
++     algorytmu i plików wzorców, których używa TeX. Miejsca podziału wyrazu nie da się odczytać z
++     jego pisowni, więc algorytm Lianga punktuje każdą lukę między literami według słownika
++     tysięcy małych wzorców wyprowadzonych z prawdziwych słowników dzielenia wyrazów i dopuszcza
++     podział wszędzie tam, gdzie najwyższy wynik jest nieparzysty. Język jest kontekstową
++     `Hyphenation`, a korzystają z niej trzy rozszerzenia dla `Text`: `hyphenate` wstawia dywiz w
++     każdym dopuszczalnym miejscu podziału, `syllables` dzieli tekst na części, a `breakPoints`
++     podaje surowe pozycje.
+
+% 2 1 0 03723a808ebc72fc07ac196dbdb78556
+
+% 3 1 0 1d19a29c8c119fc01093e47c03ff0179
+
+% 4 1 0 059ecc8b12296a7a144c203de7d5647a
+
+% 0 1 0 13992425f04cc99d0fab42777b11e2eb
+
+% 0 1 0 0e28d4c979ae163c1962e1d5498c80d3
+
+% 0 1 0 19340d047010097a19c2cd4ca90e2b1a
+
+% 1 1 0 1b5c3da20bf8f8541d7e6a841860408e
+
+@ 0 7 0 0f53087ed56686db0586e044844dd34e
++     Amerykański angielski jest dostępny jako `hyphenations.englishHyphenation`, parsowany z
++     pliku wzorców CTAN hyph-utf8 dołączonego do ścieżki klas. Jest givenem w pakiecie wyboru,
++     więc importuje się go z nazwy: `import hyphenations.*` nie importuje givenów. Każdy inny
++     język wczytuje się z jego pliku wzorców TeX-a przez `Hyphenation.fromTex`, a każdy zestaw
++     można poprawić dodatkowymi wzorcami lub wyjątkami przez `Hyphenation#extending`. Gdy nie
++     zaimportowano żadnego języka, `Hyphenation.fallback` z obiektu towarzyszącego nie dzieli
++     niczego, więc tekst przechodzi bez zmian, zamiast być dzielony według reguł, których
++     program nie ma.
+
+@ 0 4 0 1c67b1b397824a5d160118c8d038beb7
++     Każdy ciąg liter jest dzielony niezależnie; spacje, znaki interpunkcyjne i cyfry
++     przechodzą nietknięte. Biblioteka ma jeden zbiór źródeł, `polysyllabic.core`, dla każdej
++     platformy, a wszystko jest eksportowane do modułu zbiorczego `soundness`, gdzie pakiet
++     `hyphenations` łączy się z własnym pakietem modułu zbiorczego.
+
+% 0 1 0 137993f06410fb67033c0e5c5eeb0c17
+
+% 0 1 0 1d2517adc1a8137f127a5234448b34c0
+
+% 0 1 0 07972c3deecfa7ac1d4c1405c0309cb9
+
+@ 0 1 0 0a856f6f88e58a5b1ad2fe0202456ce3
++ entry .Hyphenation   wzorce i wyjątki dzielenia wyrazów danego języka wraz z minimalnymi długościami fragmentów
+
+% 1 1 0 069f9a029e36920d1716965eb42fc51f
+
+@ 0 5 0 0f832fdd444630bb10d62907cf1f38ac
++       `Hyphenation` to wartość kontekstowa, którą odczytuje każda operacja biblioteki:
++       punktujące wzorce języka `#patterns`, lista wyjątków `#exceptions`, czyli wyrazów, których
++       miejsca podziału są podane wprost, oraz liczby znaków `#leftMin` i `#rightMin`, które
++       podział musi pozostawić przed sobą i za sobą. Wybiera się ją jako given – zwykle
++       `hyphenations.englishHyphenation`, importowany z nazwy – i jest niemutowalna:
++       `#extending` tworzy nową.
+
+% 2 1 0 16997e4b8fe3e59a070ed76f7a126cfe
+
+% 3 1 0 00802a4835e7ce95112db416ada78fa5
+
+% 4 1 0 1642c7534ec96c6b060dbafae507123a
+
+% 0 1 0 07c696d2e895de0a14efca041998754e
+
+% 0 1 0 037638fb1d31757c075f669236486d27
+
+% 1 1 0 08ce28f651919cc0013a40ff83d49667
+
+@ 0 6 0 006fcca133232503033cd5637adda8e1
++       Nowy język buduje się z surowych wzorców przez `Hyphenation(patterns, exceptions)` albo
++       wczytuje z całego pliku wzorców TeX-a przez `.fromTex`. Wzorce zapisuje się w notacji
++       TeX-a: litery fragmentu z cyfrą w dowolnej luce, więc `hy3ph` daje wynik 3 w luce między
++       `y` a `p`, a `.` oznacza granicę wyrazu (`.ach4`, `ion5.`). Wyjątki to wyrazy z dywizami
++       w miejscach podziału, takie jak `as-so-ciate`. W drzewie trie wzorców biorą udział tylko
++       litery ASCII od `a` do `z`; wyraz przed wyszukaniem jest zamieniany na małe litery.
+
+% 0 1 0 12d3e61bc99acf39146fdadb0e4a0f82
+
+% 0 1 0 1e6d556594631c45039e927e078c3948
+
+@ 0 15 0 171f6744d15bba500c94b410a20f7e71
++   entry .fallback   dzielenie wyrazów w zasięgu niejawnym, gdy żadne nie jest zaimportowane: nie dopuszcza żadnych podziałów
++       Given z obiektu towarzyszącego, znajdowany, gdy w zasięgu leksykalnym nie ma innej
++       `Hyphenation`. Jego słowniki są puste, a minimalne długości fragmentów tak duże, jak tylko
++       może być `Int`, więc `hyphenate` zwraca tekst bez zmian, `syllables` dzieli tylko w
++       miejscach znaków niebędących literami, a `breakPoints` jest puste. Algorytm zawijania
++       wierszy degraduje się więc do łamania na spacjach. Zaimportowany given, taki jak
++       `hyphenations.englishHyphenation`, ma przed nim pierwszeństwo.
++   entry .alphabet   alfabet drzewa trie wzorców: małe litery ASCII, a po nich granica `.`
++       `Dictionary.Alphabet` z gossamer o zawartości `abcdefghijklmnopqrstuvwxyz.`, w tej
++       kolejności. Wewnętrzna pętla algorytmu oblicza sloty bezpośrednio dla tego alfabetu,
++       więc każda `Hyphenation` jest na nim budowana; znak spoza niego resetuje przechodzenie
++       drzewa trie.
++   entry .apply   buduje dzielenie wyrazów ze wzorców i wyjątków w formacie TeX-a
++       Przyjmuje wzorce `patterns` (takie jak `t"hy3ph"`), opcjonalne wyjątki `exceptions`
++       (takie jak `t"as-so-ciate"`) oraz minimalne długości fragmentów `leftMin`, domyślnie 2, i
++       `rightMin`, domyślnie 3. Wzorce są kompilowane do drzewa trie Aho–Corasick, więc każdy
++       wyraz jest punktowany w jednym przebiegu do przodu.
+
+% 2 1 0 0634226245bcbc6e1d99f04cbdc3331d
+
+% 3 1 0 05f60505f421d61f07b2b8ace8b5fc9a
+
+% 0 1 0 1a4eeb69da675b8a0e320c9fcbb32ac7
+
+% 0 1 0 097e12bad3508c2f0efc4807cba6415e
+
+% 0 1 0 0d85d2dd4191752a0aac57514f537e00
+
+% 1 1 0 08484f9e81af2d5c1d238a367b9cf041
+
+@ 0 6 0 1221e49371f9071114e3563227134ae7
++   entry .fromTex   wczytuje dzielenie wyrazów z tekstu całego pliku wzorców dzielenia TeX-a
++       Wczytuje plik w formacie publikowanym przez CTAN hyph-utf8: usuwa komentarze `%`, bierze
++       wzorce z bloku `\patterns{…}`, wyjątki z bloku `\hyphenation{…}`, a minimalne długości
++       fragmentów z `\lefthyphenmin` i `\righthyphenmin`, które domyślnie wynoszą 2 i 3, gdy
++       plik ich nie ustawia. W ten sposób dostępne są wszystkie języki publikowane dla TeX-a.
+
+% 2 1 0 1260cd9c9de744c30e03082a49ec9d3a
+
+% 3 1 0 0c61ac2aa2f3d1c108298dfbb082e6d8
+
+% 0 1 0 1b2fc40646840a3f068e0180d211f5ea
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 19a0ea94c9f2227808a72baf39f905b0
+
+% 1 1 0 01afd9d2e58dad1a1ccb1553305edf58
+
+@ 0 15 0 07323e3ebb9f3ec51d7ad3d143080b52
++   entry .breakPoints   pozycje, w których można podzielić jeden wyraz, przy jawnie podanych minimalnych długościach fragmentów
++       Sam algorytm jako funkcja. `Hyphenation.breakPoints(word, hyphenation, leftMin,
++       rightMin)` zwraca niemutowalną `Array[Int]` przesunięć w wyrazie, w porządku rosnącym:
++       przesunięcie `p` oznacza, że dywiz można wstawić przed literą `p`. Dokładne dopasowanie
++       na liście wyjątków skraca przechodzenie wzorców. Przeciążenie przyjmuje `String` z
++       przesunięciem i długością, aby działać na wycinku bez alokowania podnapisu. Większość
++       kodu potrzebuje rozszerzenia `breakPoints` dla `Text`, które odczytuje minimalne
++       długości z givena `Hyphenation`.
++   entry .breakPointsInto   zapisuje pozycje podziału jednego wyrazu do buforów dostarczonych przez wywołującego, niczego nie alokując
++       Bezalokacyjna postać `.breakPoints` dla kodu dzielącego wiele wyrazów, tak jak robi to
++       rozszerzenie `hyphenate`: przyjmuje wycinek `String` i trzy mutowalne tablice
++       tymczasowe, `padded` (co najmniej długość wyrazu plus 2), `scores` (długość plus 3) i
++       `breaks` (długość), zapisuje przesunięcia do `breaks` i zwraca, ile ich zapisało. Bufory
++       można ponownie wykorzystywać dla każdego wyrazu tekstu.
++   entry .Error   zgłaszany, gdy zasobu dzielenia wyrazów nie można wczytać ze ścieżki klas
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 17 0 0e78f82f6a8f56a41e67aadddd90ad19
++         _the hyphenation resource `resource` could not be loaded from the classpath_.
++         Dołączony `hyphenations.englishHyphenation` go nie zgłasza: brak dołączonego pliku
++         wzorców jest błędem pakowania i zamiast tego powoduje panikę.
++     entry #resource   ścieżka w ścieżce klas zasobu, którego nie udało się wczytać
++   entry #patterns   punktujące wzorce, skompilowane do drzewa trie Aho–Corasick kluczowanego literami
++       `Dictionary` z gossamer odwzorowujący litery każdego wzorca (z `.` jako granicą wyrazu)
++       na jego wyniki, po jednym na lukę, łącznie z lukami przed pierwszą i za ostatnią literą.
++   entry #exceptions   wyrazy, których miejsca podziału podano wprost, każdy odwzorowany na swoje przesunięcia podziału
++       Wyjątek ma pierwszeństwo przed wzorcami, więc wyraz, który wzorce dzielą źle, zostaje
++       poprawiony bez naruszania żadnego innego.
++   entry #leftMin   najmniejsza liczba znaków, jaką podział może pozostawić przed sobą
++   entry #rightMin   najmniejsza liczba znaków, jaką podział może pozostawić za sobą
++   entry #extending   nowe dzielenie wyrazów z dodatkowymi wzorcami i wyjątkami oraz opcjonalnie nowymi minimalnymi długościami
++       Nakłada `patterns` i `exceptions` na wzorce i wyjątki tego dzielenia wyrazów oraz
++       zastępuje `leftMin` lub `rightMin`, jeśli podano którąś z nich. Wzorce są łączone przez
++       wybór wyższego wyniku w każdej luce, więc dodany wzorzec o nieparzystym wyniku przywraca
++       podział, którego zabraniał standardowy wzorzec o wyniku parzystym; wyjątek podaje miejsca
++       podziału wyrazu wprost.
+
+% 2 1 0 1b62f3cc50e975a11b1d7407338f0d06
+
+% 3 1 0 14a747097c96406d0920d902b0ac7368
+
+% 4 1 0 121d0a1aa2c11ad011c01d80e81b77da
+
+% 0 1 0 1dc528685ea6d0e012c0583ef67392d7
+
+% 0 1 0 1c5c3737470eb7e11b853a4918356142
+
+% 1 1 0 16028378309946cd1ddd538784b3622a
+
+@ 0 1 0 0ef8312be51a95301209d979c50d911e
++ entry .hyphenate   wstawia dywiz w każdym dopuszczalnym miejscu podziału w każdym ciągu liter tekstu
+
+% 1 1 0 092a7cf722ee573a00a85bf7d1b13a8c
+
+@ 0 6 0 1ff7829fb65520290f9bbdb458a15739
++       Rozszerzenie dla `Text`, korzystające z givena `Hyphenation` w zasięgu. Dywizem jest
++       domyślnie miękki dywiz Unicode, U+00AD, niewidoczny, o ile wiersz rzeczywiście się w tym
++       miejscu nie łamie; przekazanie widocznego znaku pokazuje miejsca podziału. `leftMin` i
++       `rightMin` nadpisują własne minimalne długości fragmentów dzielenia wyrazów, tak aby
++       podział nigdy nie pozostawił samotnej jednej lub dwóch liter. Każdy ciąg liter jest
++       dzielony niezależnie, a wszystko inne przechodzi bez zmian.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 16268dd5aae49ea10b54baea04a7d9b5
++         label Każde dopuszczalne miejsce podziału
+
+% 1 1 0 12654915d74f3d250a2138aa57a11c74
+
+% 2 1 0 1be31981a91dd64517c51681418cac6a
+
+% 3 1 0 14d229424a202cfa138d67c2a003a593
+
+% 0 1 0 1665b2d7fc541cb519a91faa32293826
+
+% 1 1 0 05b8871d91d04a411623c30da2ee88fb
+
+@ 0 1 0 0ee6e8b8f169dc771ecd2f303b60c6d8
++         label Co najmniej cztery znaki przed pierwszym podziałem
+
+% 1 1 0 005dc1122d0ea00c1d21e5c2f43e9780
+
+% 2 1 0 091753953f3b2d8f02b7d85921c72220
+
+% 3 1 0 15ccecea0d958a6e16b5d5d67cd4648b
+
+% 0 1 0 125191af62511d8f0a499fff507a4889
+
+% 1 1 0 1512c9ea528ca721140c486586c88148
+
+@ 0 1 0 134a10410b89e5421a991f8f4b89ba1d
++         label Co najmniej sześć znaków za ostatnim podziałem
+
+% 1 1 0 1b148371d7a2069219bef38018138c7e
+
+% 2 1 0 009b96492a27859213b107e9c8ab086f
+
+% 3 1 0 0a13c100f583390c08d15e555c4238af
+
+% 0 1 0 0e972117d9d7ce5e0687dc5a1a4f8b41
+
+% 1 1 0 14707f1653bd26081e6c52ff2e7c0921
+
+@ 0 1 0 052be5c84b4c55c303ee9e5b62078681
++         label W tekście ciągłym, wyraz po wyrazie
+
+% 1 1 0 1bd7f4e57f8a0a22195fd76e926b99b8
+
+% 2 1 0 1298f8ae7a7e5aa51dec3cf65aa3e6d7
+
+% 3 1 0 14a8356633ff6bdb0b8b66bef5c11610
+
+% 0 1 0 1a4908707c1b3c030b4682e50652e465
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 2 0 112d688775560a7100804852ae7ef208
++       Bufory tymczasowe są współdzielone przez wszystkie wyrazy jednego wywołania i
++       powiększane tylko wtedy, gdy nadejdzie dłuższy wyraz, więc dzielenie długiego tekstu
++       alokuje niewiele ponad wynik.
+
+% 0 1 0 14a0a67bfad34f91157d7a7e3c8decdd
+
+% 0 1 0 00ae6f27e3fa253a0450dac366a481fc
+
+@ 0 4 0 199a034e7002f5070443794491a41726
++ entry .syllables   dzieli tekst na sylaby, przy czym każdy ciąg znaków niebędących literami jest osobnym segmentem
++     Rozszerzenie dla `Text`, korzystające z givena `Hyphenation` w zasięgu i zwracające
++     `Sequence[Text]`. Każdy ciąg liter jest dzielony w swoich miejscach podziału, a każdy ciąg
++     znaków niebędących literami jest jednym segmentem, więc złączenie segmentów odtwarza
++     dokładnie pierwotny tekst.
+
+% 2 1 0 04884696ce53db8c1568e6d7f6e6f25f
+
+% 3 1 0 0782ea631fbc620e1c20ad1aa72be3c7
+
+% 4 1 0 0515ff661c3c5b0a1aa833922448138e
+
+% 0 1 0 13d262b70fa3f1811d96c9b3865a44f1
+
+% 1 1 0 0fe07311044af0d107cd6365aecb3d20
+
+@ 0 6 0 098d181082bc4e840bb60b3bc960474f
++ entry .breakPoints   przesunięcia, w których można podzielić jeden wyraz, przy dzieleniu wyrazów z zasięgu
++     Rozszerzenie dla `Text`, dla kodu takiego jak algorytm zawijania wierszy, który sam
++     umieszcza podziały, zamiast wstawiać znaki. Zwraca niemutowalną `Array[Int]` przesunięć w
++     porządku rosnącym: przesunięcie `p` oznacza, że dywiz może się znaleźć między literami
++     `p - 1` i `p`. Traktuje cały tekst jako jeden wyraz, z własnymi `leftMin` i `rightMin`
++     givena `Hyphenation`; dla tekstu ciągłego należy użyć `syllables` lub `hyphenate`.
+
+% 2 1 0 032b05fb124b3d310e67d3ce01eea9e0
+
+% 3 1 0 0761755d7bade41f02d42462ebe5fce0
+
+% 4 1 0 0dd5653c3d509c900d6d109ad6ae1f47
+
+% 0 1 0 189ca7324de5f65d1b1feb2adba09e4e
+
+% 1 1 0 03035af83cee2edb1066057674f7051d
+
+@ 0 1 0 1444a2e1ffe13bc500f57881fa33c0ce
++ entry .hyphenations   dołączone języki dzielenia wyrazów, każdy jako given do importu z nazwy
+
+% 1 1 0 1629fae86b6f60190fd75896fb785205
+
+@ 0 3 0 0d534221c1d237750dbafe6d6493f19f
++       Pakiet wyboru: to, które reguły języka obowiązują, rozstrzyga given `Hyphenation` w
++       zasięgu, a importuje się go z nazwy, ponieważ `import hyphenations.*` nie importuje
++       givenów. Łączy się z pakietem `hyphenations` modułu zbiorczego `soundness`.
+
+% 2 1 0 0f040206f73090f00257a612fca9a2ab
+
+% 3 1 0 09ed33ebc8ddc78c149a8c596300265b
+
+% 4 1 0 1dd50837050f28301f65fc87498adc20
+
+% 1 1 0 0d6ff2d3864c33ef17b1d3fe0f640cf6
+
+@ 0 6 0 18d7f3badfdfd25f06ab3365761d8f15
++   entry .englishHyphenation   amerykański angielski, ze wzorców CTAN hyph-utf8 i listy wyjątków TeX-a
++       Parsowany z `polysyllabic/hyph-en-us.tex`, dołączonego do ścieżki klas i
++       redystrybuowanego dosłownie na licencji FSF all-permissive podanej w jego nagłówku, przy
++       pierwszym użyciu givena. Zawiera wyjątki dostarczane z TeX-em, więc `associate` dzieli
++       się jako `as-so-ciate`, a `table` jako `ta-ble`, czego same wzorce by nie zapewniły.
++       Jeśli w ścieżce klas brakuje dołączonego pliku, given wpada w panikę.

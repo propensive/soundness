@@ -1,0 +1,1351 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1d2664b1fd6b52671d24729266aa2d10
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 158a5447100585aa08c8ff8f0afbb26f
++ info   prelude, względem którego kompiluje się każdy moduł Soundness: jego kolekcje, znaczniki i nazwy uprzywilejowane
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 050f76f2a07941861955473af4949891
++     _Proscenium_ to domyślna przestrzeń nazw Soundness. Każdy moduł w kompilacji jest
++     kompilowany z `-Yno-predef -Yimports:java.lang,proscenium`, więc ani `scala.Predef`, ani
++     pakiet `scala` nie są importowane niejawnie; plik źródłowy bez importu widzi
++     `java.lang`, ten pakiet i nic więcej. Kod spoza kompilacji sięga do tych samych nazw przez
++     `import soundness.*`, ponieważ wszystko, co się tu znajduje, jest reeksportowane do
++     modułu zbiorczego (obiekty towarzyszące kolekcji jako stabilne `val`, by ich składowe
++     rozwiązywały się przez metody przekazujące).
+
+@ 0 1 0 043c4facf2edffec1aef4502abbe8d12
++     Pakiet ma trzy rodzaje zawartości.
+
+@ 0 12 0 0c5bdc9c25cb13c31ff6ec9dfa5f3c0f
++     **Kolekcje.** `List`, `Sequence`, `Set`, `Map`, `Ledger`, `Chain` i `Array` są
++     *nieprzezroczystymi* aliasami struktur biblioteki standardowej – listy jednokierunkowej,
++     `Vector`, zbioru haszującego, mapy haszującej, `VectorMap` uporządkowanej według
++     kolejności wstawiania, `LazyList` i tablicy JVM – których opakowanie nic nie kosztuje i
++     które nie ujawniają żadnej ze składowych stdlib. Ich obiekty towarzyszące zawierają
++     konstrukcję (`apply`, `empty`, `from`, `fill`, `tabulate`, `range`), obsługę wzorców,
++     podnoszenie w makrach i dający się wyszukać grepem most `stdlib`; każda inna operacja –
++     `map`, `filter`, `fold`, `head`, `at`, `size`, `sort` – jest sterowanym klasami typów
++     rozszerzeniem zdefiniowanym w bibliotekach wyżej (`murmuration`, `denominative`,
++     `concordance`, `rudiments`), dostępnym przez `import soundness.*`. Słownictwo całkowite
++     zastępuje częściowe: `head` zwraca `Optional`, chyba że udowodniono, że odbiorca jest
++     `Populated`, a operacje, których koszt przeczy ich nazwie (`size` dla `List` czy
++     `Chain`), są bramkowane nazwanym importem z `dysasymptotics`.
+
+% 2 1 0 0b3f6b2e51469730013433e6846415ea
+
+% 3 1 0 0f4a7a02b0127c7f021f88484540c3c1
+
+% 0 1 0 11d4115c6364271214c20c20c69458c5
+
+% 0 1 0 087b59081ca597d01298802de44e5b1d
+
+% 0 1 0 10a4230b3215b7730d524ee0dbcdb5e8
+
+% 0 1 0 14c34801777ec6ee065b7f506ef2c71b
+
+% 0 1 0 0802df5c05f9f51b19c9f8c33028e8de
+
+% 0 1 0 05cb92f327a83f2a12f868881e412b47
+
+% 1 1 0 107a238dd673960c07a1c7e33a762083
+
+@ 0 9 0 1863d11ff87dcaab0685dd461e73160f
++     Celowo nie ma niejawnej konwersji między nieprzezroczystą kolekcją a jej postacią ze
++     stdlib w żadnym kierunku: konwersja stosuje się też przy wyborze składowej i po cichu
++     przywróciłaby całe częściowe API. Przejście do API stdlib lub Javy zapisuje się jako
++     `xs.stdlib` – widok bez kopiowania i dający się wyszukać grepem znacznik każdej spoiny –
++     a z powrotem przez `from` obiektu towarzyszącego lub `.to(List)`. Rozwinięcie varargs,
++     `f(xs*)`, działa bezpośrednio na nieprzezroczystej kolekcji, dzięki givens `Spreadable`
++     obok każdej kolekcji. Nie należy używać `stdlib` do omijania bramki kosztu:
++     `xs.stdlib.length` ukrywa dokładnie ten koszt, którego uznaniu służy
++     `dysasymptotics.linearSize`; należy otworzyć bramkę z komentarzem wyjaśniającym,
++     dlaczego koszt jest akceptowalny, albo zmienić strukturę kodu.
+
+@ 0 6 0 1ddfdfb05da873ea13332287794fe24a
++     **Znaczniki.** `Populated` to strukturalne doprecyzowanie zapisujące dowód niepustości
++     (`List[Int] & Populated`), wytwarzane przez konstruktory literałów o stałej liczbie
++     argumentów i przez `occupied` z rudiments; `Sized[n]` zapisuje dowód długości,
++     wytwarzany przez `fill` i `tabulate` z literałową liczbą elementów; a `Comparison`
++     (`Less`, `Same`, `More`) jest wynikiem każdego porównania trójwartościowego w Soundness,
++     walutą `Comparable` z symbolism.
+
+@ 0 12 0 14a007c3151a08aa0d34665ac292a121
++     **Nazwy uprzywilejowane.** `proscenium.prelude.scala` reeksportuje ze `scala` tylko to,
++     czego kod Soundness potrzebuje bez importu: typy podstawowe i prymitywne, infiksowe
++     `&`/`|`/`<:<`/`=:=`, `Option`/`Either` i typy krotek, `CanEqual`, `Conversion`,
++     `PartialFunction`, `StringContext`, abstrakcje liczbowe, adnotacje, `Iterable` oraz (na
++     razie) `StringBuilder`. `proscenium_core.scala` dodaje składowe Predef warte zachowania
++     (`nn`, `summon`, `identity`, `locally`, `valueOf`, `is`, `ArrowAssoc`, opakowania
++     prymitywów i operacje na tablicach, `assert`, `???`), `ClassTag`, `Typeable`, `TreeMap`,
++     `TreeSet`, `TrieMap`, `NonFatal`, `boundary`/`break`, konwertery
++     `…HasAsScala`/`…HasAsJava`, `tailrec`/`targetName`/`switch`/`missingContext`, adnotacje
++     `unchecked…` oraz kilka własnych: `classOf` (wersję inline, która działa poprawnie przez
++     eksport), `absolve` (`runtimeChecked` z Predef), `Void`, `Nat`, `Label`, `Zero`,
++     `Mono`, `~>`, `prohibits`, `infer`, `provide`, `->` i adnotację `unexported`.
+
+@ 0 10 0 0aa34812ddb87a3f0cc3d47a1a35cd77
++     To, co *nie* jest uprzywilejowane, jest równie celowe. Konkretnych kolekcji stdlib
++     (`Seq`, `Vector`, `IndexedSeq`, `Range`, `LazyList`) brak, więc kolekcja stdlib na
++     spoinie interoperacyjności musi zapowiedzieć się przez `import scala.collection…`;
++     `Ordering` i `Ordered` są nieobecne, ponieważ porównaniem jest `Comparable`, a nieliczne
++     API, które wciąż przyjmują `Ordering`, importują `scala.math.Ordering` jawnie; `Iterator`
++     jest nieobecny, więc samo `Iterator` przy `import soundness.*` to iterator z murmuration
++     sprawdzany separacją, a iterator stdlib zapisuje się jako `scala.collection.Iterator`;
++     `Precise` jest nieobecne, ponieważ jego eksportowany alias po cichu nie tłumi
++     poszerzania unii – należy pisać `scala.Precise`. Pakietów (`scala.caps`, `scala.math`,
++     `scala.compiletime`, `scala.annotation`, `scala.util`) nie można eksportować i importuje
++     się je w każdym pliku osobno.
+
+@ 0 4 0 1ae1cf1fd4e4e1af18075628ee5e1bc8
++     Dwie pułapki dla autorów makr. `Unit` jest tu aliasem typu, a nie eksportem (jego obiektu
++     towarzyszącego nie można eksportować), więc jest *odrębnym symbolem* od `scala.Unit`: w
++     makrze typy porównuje się przez `=:=` lub po `.dealias`, nigdy przez `typeSymbol ==`. A
++     `Array` jest aliasem nieprzezroczystym, więc `TypeRepr.of[Array[Byte]]` również nie jest
++     symbolem `scala.Array`.
+
+@ 0 3 0 154da37d6f18db25010236500d9b0223
++     Biblioteka to pojedynczy zbiór źródeł, `proscenium.core`, bez zależności, kompilowany
++     dla JVM, Scala.js i Scala Native. Na każdej platformie pod spodem kolekcje są tymi samymi
++     strukturami stdlib; `Array` jest natywną tablicą platformy.
+
+% 0 1 0 1b9990bfac03a71e17729fedbf261a96
+
+% 0 1 0 05e05b00e848d8ed0ccfeae4ed82015b
+
+% 0 1 0 0404a025b3f9fb5d0176f57c421d11a9
+
+% 0 1 0 0914e3c694ed28791d9f2729b13dc012
+
+% 0 1 0 0781d542afba5dde153443ba2e41cf49
+
+@ 0 1 0 141424f4b52455ca17e0182aca5c3402
++ entry .Array   tablica o stałym rozmiarze, której prawo zapisu jest śledzone przez sprawdzanie separacji
+
+% 1 1 0 0e1101995bd1b5ca05d033ccb54cff01
+
+@ 0 8 0 0b321c7c97d26682116653dea3edddfa
++       `Array[element]` to nieprzezroczysty alias natywnej tablicy platformy, więc jej użycie
++       nic nie kosztuje, ale jej prawa dostępu są w jej zbiorze przechwyceń: każda referencja
++       może *czytać*, tylko referencja na wyłączność – `Array[element]^` – może *zapisywać*,
++       zapisujący przez aliasy są odrzucani, a `freeze` konsumuje tablicę na wyłączność i daje
++       postać **zamrożoną**, `Array[element]^{}`, bez kopiowania. Postać zamrożona nie jest
++       równoległym typem niemutowalnym: tablica, przez którą nie może zapisywać żaden zbiór
++       przechwyceń, *jest* niemutowalna, więc `^{}` mówi wszystko, a `Data`, typ bajtów z
++       anticipation, to dokładnie `Array[Byte]^{}`.
+
+% 2 1 0 0e2bcade98c0467404d18e0f454687cd
+
+% 3 1 0 14d2bbb799d87370092e40d85e86be72
+
+% 0 1 0 1108c4c42b9df7d1190f0faa6e2be41a
+
+% 0 1 0 08dc9a082cd385830126607e81a64050
+
+% 0 1 0 1caa110e883faae11c0c49a4d0d84327
+
+% 0 1 0 1dd32d8b8034c9eb0165df44f25c8ed2
+
+% 0 1 0 114e2de9f77c2d4a005452edfda64d9f
+
+% 0 1 0 0def5f711f656fb610b0013482fd94c7
+
+% 0 1 0 1566f05c30275033167092d9003993c1
+
+% 1 1 0 1c0239970c87cc2f1a3c60529014b88a
+
+@ 0 7 0 1658e61f1c23a1d011aba4faaf5da1df
++       Odczyt jest tu indeksowany przez `Int`, ponieważ `Ordinal` z `denominative` znajduje
++       się powyżej tego modułu: tablica na wyłączność czyta przez `apply(index)` i zapisuje
++       przez `update(index, value)`, oba wstawiane jako własny dostęp JVM do tablicy;
++       referencja współdzielona lub zamrożona czyta przez `readUnchecked(index)`, które jest
++       częściowe względem granic i na którym zbudowane są całkowite, zwracające `Optional`
++       `at` z concordance oraz indeksowane liczbami porządkowymi `apply` z rudiments. W
++       zwykłym miejscu wywołania należy używać tamtych lub ograniczonej liczby porządkowej;
++       samo `readUnchecked` opatruje się komentarzem wskazującym jego dowód.
+
+@ 0 6 0 0382e2f7c25f15d8012c102120536429
++       Edycja zamrożonej tablicy to kopiowanie i zamrażanie: `thaw` dla kopii na wyłączność,
++       by zapisać kilka pozycji, `concat` segmentów (`Array.concat(xs.before(i), replacement,
++       xs.after(i))`) dla wstawki oraz `define` z rudiments dla jednej pozycji. Dwa
++       dopuszczone zastosowania surowego `scala.Array` to `raw` i `unsafeJvm`, dla
++       powierzchni tablic bajtów JDK (`OutputStream.write`, `MessageDigest.update`), oraz pole,
++       którego typ ustala zewnętrzna definicja. Poza tym nowy kod pozostaje przy `Array`.
+
+@ 0 7 0 05d37c449edafaff1022bd399764c307
++       Równość tablic to tożsamość referencji – alias nieprzezroczysty nie może przesłonić
++       `==` – więc równość zawartości to `Array.same`, a test porównuje przez `to[List]`.
++       `val` nie może przechowywać bufora na wyłączność, który jest następnie konsumowany i
++       zastępowany (`grow`), więc akumulujący builder przekazuje swój bufor przez parametry
++       `consume` rekurencyjnie. Jedna pułapka: `import rudiments.*` wprowadza `Applicable`
++       `apply`, które przesłania inline `apply` tablicy na wyłączność; plik, który importuje
++       rudiments w całości, czyta bufor przez liczby porządkowe lub `readUnchecked`.
+
+@ 0 5 0 1dbdc9b6676887d31b6e75172080688a
++       Dopasowanie do wzorca czyta, ale nigdy nie zapisuje, więc `case Array(a, b, c)` działa
++       na każdej referencji. Zamrożona tablica przez `map` daje zamrożoną tablicę (`map`
++       potrzebuje `ClassTag` dla elementu wyniku, dlatego jest rozszerzeniem w obiekcie
++       towarzyszącym, a nie instancją `Mappable`), a ogólne słownictwo kolekcji – `to[List]`,
++       `each`, `fold`, `extent`, `at` – pochodzi z bibliotek wyżej.
+
+% 0 1 0 1b2c47f0df2a1c2b12564a7edcafe2d6
+
+% 1 1 0 06f29e29e3bb2cf10d71dddeace197dc
+
+@ 0 50 0 0f1684d7498c4bfd024fb89847a1ce5e
++   entry .allocate   nowa tablica na wyłączność o podanym rozmiarze: `Array.allocate[Int](3)`
++       Nazwana `allocate`, a nie `apply`, by `Array(3)` jednoznacznie oznaczało literał
++       jednoelementowy. Elementami jest zero typu (`0`, `false`, `null`), a wynikiem
++       `Array[element]^`, zapisywalna przez `update`. Wymaga `ClassTag`.
++   entry .apply   `Array(a, b, c)`, zamrożony literał; oraz `buffer(index)`, odczyt na wyłączność
++       Dwie składowe mają tę samą nazwę. W obiekcie towarzyszącym `Array(elements*)` buduje
++       świeżą tablicę, której żaden zapisujący nie może aliasować, więc jest zamrożona
++       (`Array[element]^{}`) z konstrukcji; wymaga `ClassTag`. Jako rozszerzenie dla
++       `Array[element]^` na wyłączność, `buffer(index)` czyta jedną pozycję, wstawianą jako
++       własny dostęp JVM do tablicy (bez boxingu): wyłączna własność oznacza, że nikt inny
++       nie mógł zmienić zawartości. Na referencji współdzielonej lub zamrożonej nie ma
++       `apply`; czyta się przez `readUnchecked` lub przez całkowite `at` z concordance.
++   entry .update   `buffer(index) = value`: zapisuje jedną pozycję tablicy na wyłączność
++       Rozszerzenie inline wyłącznie dla `Array[element]^` – referencja zamrożona lub
++       współdzielona nie ma `update` – kompilowane do własnego zapisu JVM do tablicy. Odbiorca
++       jest inline, więc jest obliczany po indeksie i wartości, tam gdzie jest użyty.
++   entry .empty   zamrożona pusta tablica: `Array.empty[Int]`
++   entry .from   zamrożona tablica skopiowana z dowolnego `IterableOnce`
++       `Array.from(elements)` kopiuje elementy iterowalnej kolekcji lub iteratora stdlib do
++       świeżej tablicy, która jest zamrożona, ponieważ nic innego nie może do niej sięgnąć.
++       Wymaga `ClassTag`.
++   entry .fill   `Array.fill(n)(element)`: zamrożona tablica `n` kopii; oraz `buffer.fill(value)`
++       W obiekcie towarzyszącym `Array.fill(count)(element)` oblicza `element` raz dla każdej
++       pozycji i zamraża wynik; gdy `count` jest literałem, wynik jest dodatkowo opatrzony
++       marką `Sized[count]`, więc `Array.fill(512)(0.toByte)` to `Array[Byte]^{} & Sized[512]`,
++       a literałowa liczba porządkowa poniżej 512 czyta ją całkowicie. Liczba podana jako `val`
++       daje zwykłą tablicę. Jako rozszerzenie dla `Array[element]^` na wyłączność,
++       `buffer.fill(value)` nadpisuje w miejscu każdą pozycję.
++   entry .tabulate   `Array.tabulate(n)(index => …)`: zamrożona tablica obliczana według indeksu
++       Jak `.fill`, z indeksem pozycji przekazywanym do lambdy, i opatrzona marką `Sized[n]`,
++       gdy `n` jest literałem.
++   entry .range   `Array.range(start, end)`: liczby całkowite od `start` do `end`, bez `end`
++       Zamrożona; pusty zakres (`end <= start`) to pusta tablica.
++   entry .concat   zamrożona tablica z dwóch lub trzech czytelnych tablic po kolei
++       `Array.concat(left, right)` kopiuje obie do świeżej tablicy i ją zamraża; przy dwóch
++       argumentach `Sized` wynik to `Sized[left + right]`, rozstrzygane na poziomie typów.
++       Postać trzyargumentowa, `Array.concat(left, middle, right)`, to wstawka:
++       `Array.concat (xs.before(i), replacement, xs.after(i))` odbudowuje tablicę z zastąpionym
++       segmentem w jednym przebiegu. Liczba argumentów jest stała, a nie zmienna, ponieważ
++       zamrożona tablica jako element varargowego `Seq` jest w sprawdzaniu przechwytywania
++       ponownie odświeżana, a typy elementów segmentów nie dają się wtedy ujednolicić. Wymaga
++       `ClassTag`.
++   entry .same   równość element po elemencie dwóch czytelnych tablic
++       `Array.same(left, right)` mówi, czy obie mają tę samą długość i równe elementy pod
++       każdym indeksem. `==` na tablicach to tożsamość referencji, której alias
++       nieprzezroczysty nie może przesłonić, więc równość zawartości jest nazwaną operacją.
++   entry .freeze   konsumuje tablicę na wyłączność i daje ją zamrożoną, bez kopiowania
++       `Array.freeze(buffer)` przyjmuje `buffer` jako parametr `consume`: sprawdzanie separacji
++       statycznie wycofuje każdego zapisującego, więc pozostała referencja może porzucić swoją
++       zdolność zapisu i stać się `Array[element]^{}` bez kopiowania. To jedyny poprawny sposób
++       wytworzenia zamrożonej tablicy z mutowalnej; po wywołaniu `buffer` nie może być ponownie
++       użyty.
+
+% 2 1 0 10b37f2136a5da92119fcc92d4acdf12
+
+% 3 1 0 1b83b57fd7c4352c09decebcb7b777b8
+
+% 0 1 0 1ce0fe57f6dafb4c02e147e030e70cd8
+
+% 0 1 0 08fa8e115065f4601308bfaa89927272
+
+% 0 1 0 1117fea6796ba4ea15b411b5514c9cc0
+
+% 0 1 0 08cccf4cdc2579491ce374c7bf90d09f
+
+% 1 1 0 1a6754d416be699302f1da71c4884505
+
+@ 0 66 0 0827e94e556f8ee31c8824c1df7761e2
++   entry .thaw   kopia na wyłączność dowolnej czytelnej tablicy, odwrotność `freeze`
++       `Array.thaw(array)` alokuje świeżą tablicę na wyłączność i kopiuje do niej źródło,
++       więc wywołujący może zapisać kilka pozycji (`copy(i) = value`) i ponownie wykonać
++       `freeze`. Zawsze kopia, nigdy samo źródło: źródło może być zamrożone lub współdzielone,
++       więc inni czytelnicy nadal widzą je niezmienione. Do edycji jednej pozycji służy
++       `define` z rudiments; do wstawki – `.concat`. Wymaga `ClassTag`.
++   entry .grow   większa tablica na wyłączność z zawartością bufora na wyłączność, konsumująca go
++       `Array.grow(buffer, size)` to krok liniowego akumulującego buildera: konsumuje
++       `buffer`, kopiuje tyle, ile się zmieści, do świeżej tablicy o rozmiarze `size`
++       (mniejszy rozmiar obcina) i zwraca ją na wyłączność. Ponieważ stary bufor jest
++       konsumowany, idiomem jest rekurencja przekazująca bufor przez parametry `consume` –
++       `var` nie może przechowywać bufora na wyłączność.
++   entry .place   kopiuje czytelną tablicę do tablicy na wyłączność, z przesunięciem
++       Rozszerzenia dla `Array[element]^`: `buffer.place(source)` kopiuje `source` na
++       początek, `buffer.place(source, at)` pod przesunięcie `at`, a
++       `buffer.place(source, sourceStart, targetStart, count)` kopiuje okno. Źródłem może
++       być zarówno tablica zamrożona, jak i współdzielona. Pod spodem to `System.arraycopy` i
++       właśnie tego używa każdy konstruktor zamrożonych tablic, by wypełnić swój wynik.
++   entry .length   liczba pozycji, na dowolnej referencji
++   entry .readUnchecked   czyta pozycję współdzielonej lub zamrożonej tablicy, bez sprawdzania granic
++       Odczyt częściowy względem granic, wstawiany inline: `array.readUnchecked(index)` na
++       dowolnej czytelnej referencji. Odczyt przez współdzieloną referencję jest poprawny,
++       ponieważ separacja wyklucza aktywnego zapisującego wszędzie tam, gdzie czytelnicy
++       tworzą aliasy. To prymityw pod całkowitym `at` z concordance; w zwykłym miejscu
++       wywołania należy wybrać tamto lub ograniczoną liczbę porządkową, a samo wywołanie
++       opatruje się komentarzem wskazującym dowód, że indeks mieści się w zakresie.
++   entry .raw   bazowa tablica JVM referencji na wyłączność, do interoperacyjności
++       `buffer.raw` to `scala.Array[element]^` stojąca za tablicą na wyłączność, dla API
++       Javy, które ją wypełnia (`random.nextBytes`, `stream.read`). Wynik aliasuje tablicę i
++       dzieli jej wyłączność, zamiast z niej uciekać.
++   entry .stdlib   widok `ArraySeq` bez kopiowania i tylko do odczytu dowolnej czytelnej tablicy
++       Dający się wyszukać grepem most do API stdlib i Javy, które oczekują `Seq`, tak jak
++       `List.stdlib` dla list. Nie służy do dostępu do elementów: jego ogólne `apply` stosuje
++       boxing i jest odczytem częściowym, którego słownictwo kolekcji nie oferuje.
++   entry .map   zamrożona tablica wyników funkcji, z dowolnej czytelnej tablicy
++       `array.map(lambda)` na dowolnej czytelnej referencji daje nową zamrożoną tablicę;
++       potrzebuje `ClassTag` dla elementu wyniku, dlatego jest rozszerzeniem w obiekcie
++       towarzyszącym, a nie instancją `Mappable` (żadne miejsce w klasie typów nie może nieść
++       tego zobowiązania). Typ wyniku lambdy jest jawnym parametrem typu, by przechwycenie
++       zagnieżdżonej zamrożonej tablicy nie było wytwarzane na nowo przy wywołaniu.
++   entry .scratch   goła tablica JVM, na wewnętrzne dane tymczasowe poniżej dyscypliny wyłączności
++       `Array.scratch[element](size)` to `new scala.Array[element](size)`, przez obiekt
++       towarzyszący, by pola maszyn stanów `caps.Mutable` i inny kod poza zasięgiem `Array`
++       dzieliły to słownictwo bez pisania `new`. Nie jest to `Array`; widok
++       interoperacyjności na wyłączność opisuje `.raw`.
++   entry .unsafeFrozen   zapewnia, że tablica JVM nie ma zapisującego, i zwraca ją zamrożoną
++       Zaufane rzutowanie graniczne dla krawędzi interoperacyjności, które nie mogą
++       przekazać `consume`: wywołujący zapewnia, że nie zachowuje zapisującego do
++       przekazywanej `scala.Array`. Nazwane `unsafe…`, ponieważ zapewnienie nie jest
++       sprawdzane.
++   entry .unsafeJvm   tablica JVM stojąca za czytelną referencją, dla API Javy, które tylko czytają
++       `Array.unsafeJvm(array)` przekazuje `scala.Array[element]` do powierzchni tablic
++       bajtów JDK – `OutputStream.write`, `MessageDigest.update`, `SecretKeySpec` – która
++       czyta swój argument, ale nigdy go nie zapisuje. Po tej stronie niczego się nie
++       zapewnia; całe twierdzenie dotyczy wywoływanego, czego sygnatura Javy nie potrafi
++       wyrazić, więc jest to jedno dające się wyszukać grepem wywołanie, które można sprawdzić
++       względem jednej dokumentacji Javadoc, a nie otaczające `Unsafe`.
++   entry .unapplySeq   `case Array(a, b, c)`: obsługa wzorców dla dowolnej czytelnej tablicy
++       Wzorzec czyta, ale nigdy nie zapisuje, więc dopasowują się odbiorcy zamrożeni,
++       współdzieleni i na wyłączność; wzorzec o złej liczbie elementów się nie dopasowuje.
++   entry .quoted   podnosi listę lub zamrożoną tablicę `Expr` do jednego `Expr` zamrożonej tablicy
++       Natywny odpowiednik `Expr.ofList` dla kodu makr przechowującego `List[Expr[element]]`
++       lub `Array[Expr[element]]^{}`: `Array.quoted(elements)` wstawia jedno
++       `Expr[Array[element]^{}]`, rozwiązując `ClassTag` elementu w miejscu rozwinięcia, gdzie
++       typ jest konkretny, a jeśli go nie ma, rozwinięcie kończy się błędem _no ClassTag is
++       available for the elements of the array_.
++   entry .arrayIsSpreadable   pozwala rozwinąć zamrożoną tablicę w varargs: `f(array*)`
++       Given `Spreadable` (`scala.Spreadable`, z kompilatora proscala), dzięki któremu
++       `f(array*)` działa na `Array[element]^{}` bez przechodzenia przez `stdlib`.
+
+@ 0 1 0 09d18963e11a4ecf1e478817d822bb13
++ entry .List   niemutowalna lista jednokierunkowa, jako nieprzezroczysty alias `List` ze stdlib
+
+% 1 1 0 0048787b3fd8fbf715c8616485f40f2e
+
+@ 0 7 0 001e8a112f193f0c0163a66aa0b74af9
++       `List[element]` to podstawowa kolekcja robocza: tania przy dodawaniu na początek i
++       przechodzeniu, liniowa przy indeksowaniu i liczeniu. Jest nieprzezroczystym aliasem
++       `scala.collection.immutable.List`, więc nic nie kosztuje, ale żadna ze składowych
++       stdlib nie jest na niej widoczna; jej API to sterowane klasami typów słownictwo
++       bibliotek wyżej (`map`, `filter`, `bind`, `fold`, `each`, `head`, `at`, `sort`, …),
++       które jest całkowite. Obiekt towarzyszący zawiera konstrukcję, obsługę wzorców, most
++       `stdlib` i podnoszenie w makrach.
+
+% 2 1 0 1d89eb89ae08b3d51641625c2ea1b878
+
+% 3 1 0 101dc7b1edd215ca1901ed039868f313
+
+% 0 1 0 0c4cd95b906c1565144e759f31dc3772
+
+% 0 1 0 0a9d16e35b4f35e607d9c976b82e8787
+
+% 0 1 0 136a7b9393855710075bcdd333032b5c
+
+% 0 1 0 0d1f9ab9c50772b5079dd9851656c6b7
+
+% 1 1 0 0cc1c01f8c744cf0141b1ccc69310546
+
+% 0 1 0 1f0acf1b6b20ed510b9fadaa3c73e397
+
+% 0 1 0 0424258c50af2c0316386b2d7896b668
+
+% 1 1 0 0d48fcb6fb70a057113c9d6d1ca9d5d8
+
+@ 0 6 0 159bcfd196fb89b21615d681feec3a9a
++       Literał od jednego do dwunastu elementów jest opatrzony marką `& Populated` – liczba
++       argumentów wywołania *jest* dowodem niepustości – więc `head`, `last`, `tail` i
++       `reduce` są na nim całkowite. Literał trzynastoelementowy, `List(elements*)` z `Seq`
++       oraz wynik dowolnej transformacji to zwykła `List[element]`, na której `head` jest
++       `Optional`; `occupied` z rudiments odzyskuje dowód jednym sprawdzeniem. Lista z marką
++       porównuje się ze zwykłą (`.populatedEquality`).
+
+@ 0 6 0 082db4d835e1ce051a9d422bbcba84e0
++       `Nil` to pusta lista, dopasowywana przez równość (`case Nil =>`); `head :: tail`
++       konstruuje i dekonstruuje (przez `consConstructor` i ekstraktor `::`); a
++       `case List(a, b)` dopasowuje przez `.unapplySeq`. Liczenie listy (`size`) i jej
++       indeksowanie (`at`, `sec`, `ter`) to przejścia od jej początku, więc są dostępne
++       tylko odpowiednio przy `import dysasymptotics.linearSize` i `linearAccess` – które
++       mówią coś prawdziwego i nie należy ich omijać przez `stdlib`.
+
+@ 0 6 0 0917a7d4a6810f9304c6707071764fea
++       Przejście do stdlib to `list.stdlib`, rzutowanie bez kopiowania, a z powrotem –
++       `List.from` lub `.to(List)` na dowolnej kolekcji stdlib (przez `.factory`); nie ma
++       niejawnej konwersji w żadnym kierunku. Rozwinięcie varargs `f(list*)` działa
++       bezpośrednio. Prymitywne operacje obiektu towarzyszącego (`.size`, `.head`, `.at`,
++       `.map`, …) są zwykłymi metodami, które wywołują instancje klas typów wyżej; w zwykłym
++       miejscu wywołania należy używać słownictwa rozszerzeń.
+
+% 0 1 0 17c38c312565a7bb07eda4d2e165e7f5
+
+% 1 1 0 07277e6266d82d141d79c20bad99dc10
+
+% 0 1 0 08ce98464f08b75c0a79b18555c870f6
+
+% 0 1 0 0e7a2dcfc3ef0b6a0767134d2dd9384b
+
+@ 0 27 0 0043d546375c112a1bfcef38cca08fc3
++   entry .apply   `List(a, b, c)`: lista argumentów, opatrzona marką `Populated` do dwunastu
++       Po jednym przeciążeniu o stałej liczbie argumentów dla każdej liczby od jednego do
++       dwunastu zwraca `List[element] & Populated`; postać varargs, do której trafia
++       rozwinięcie `Seq` lub więcej niż dwanaście elementów, zwraca zwykłą `List[element]`.
++       Stałe liczby argumentów istnieją, ponieważ przeciążenie `(head, tail*)` jest
++       niejednoznaczne z `(elements*)`, a makro byłoby wyszukiwaniem niejawnym przy żywych
++       zmiennych typu.
++   entry .empty   pusta lista, z typem: `List.empty[Int]`
++   entry .from   lista skopiowana z dowolnego `IterableOnce`
++       `List.from(elements)` to droga powrotna ze stdlib: kopiuje kolekcję lub iterator stdlib
++       do `List`. `scala.collection.immutable.List` jest opakowywana bez kopiowania.
++   entry .fill   `List.fill(n)(element)`: `n` obliczeń `element`
++   entry .tabulate   `List.tabulate(n)(index => …)`: `n` elementów obliczanych według indeksu
++   entry .range   `List.range(start, end)`: liczby całkowite od `start` do `end`, bez `end`
++   entry .unapplySeq   `case List(a, b)`: obsługa wzorców
++   entry .stdlib   bazowa `scala.collection.immutable.List`, bez kopiowania
++       Dający się wyszukać grepem most do API stdlib lub Javy, jako rzutowanie inline. To
++       jedyny sposób sięgnięcia do częściowej powierzchni stdlib, a każde użycie jest widoczną
++       spoiną; nie należy go używać do omijania bramki kosztu (`xs.stdlib.length` zamiast
++       bramkowanego `size`).
++   entry .factory   `.to(List)` na kolekcji stdlib buduje `List`
++       `Conversion` z typu obiektu towarzyszącego `List.type` na `Factory` ze stdlib, by
++       działało `scalaSeq.to(List)`. Jest zdefiniowana tylko na typie obiektu
++       towarzyszącego, więc nie może ujawnić składowych wartości `List`.
++   entry .populatedEquality   `CanEqual[List[a] & Populated, List[b]]`: lista z marką porównuje się ze zwykłą
++       `CanEqual` jest szukane w obiektach towarzyszących porównywanych typów, a marka
++       `Populated` nie wnosi żadnego, więc równość mieszka tutaj;
++       `.populatedEqualityReversed` to odwrotna kolejność.
+
+% 0 1 0 0994fb1c2b0f221100c7eaeacb6f56a3
+
+@ 0 30 0 0b602a323ada873c0556280fef8a49aa
++   entry .toExpr   podnosi `List` podnoszalnych elementów do `Expr` w makrze
++       `Expr(list)` działa dla `List[element]`, której element ma `ToExpr`; podniesione
++       drzewo to `List.from(…)`.
++   entry .fromExpr   opuszcza `Expr[List[element]]`, które powstało przez podniesienie
++       Rozpoznaje `List.from(…)` ze stałej listy stdlib, `List.empty` i `Nil`; każde inne
++       drzewo dające listę nie daje się zwinąć do stałej i daje `None`.
++   entry .quoted   podnosi `List[Expr[element]]` do jednego `Expr[List[element]]`
++       Natywny odpowiednik `Expr.ofList`, dla kodu makr przechowującego natywną listę
++       podniesionych elementów; `Expr.ofList(xs.stdlib)` opakowane w `List.from` to
++       `List.quoted(xs)`.
++   entry .size   długość, przez przejście: prymityw dla `Countable`
++       Prymitywne operacje obiektu towarzyszącego są zwykłymi metodami, a nie rozszerzeniami,
++       dla instancji klas typów w bibliotekach wyżej; kod w miejscu wywołania używa zamiast
++       tego bramkowanego rozszerzenia `size`.
++   entry .nil   czy lista jest pusta: prymityw dla instancji klas typów
++   entry .head   pierwszy element, częściowo: prymityw dla bramkowanego przez `Populated` `head`
++   entry .tail   wszystko po pierwszym elemencie, częściowo: prymityw
++   entry .last   ostatni element, częściowo: prymityw
++   entry .lead   wszystko przed ostatnim elementem, częściowo: prymityw
++   entry .at   element pod indeksem `Int`, częściowo: prymityw dla `Indexable`
++   entry .define   lista z zastąpionym elementem pod indeksem: prymityw dla `Definable`
++   entry .has   czy element jest obecny: prymityw dla `Inclusive`
++   entry .drop   lista bez pierwszych `n` elementów: prymityw
++   entry .append   lista z elementem dodanym na końcu, opatrzona marką `Populated`
++       Dołączenie czyni listę niepustą, więc konstrukcja jest dowodem.
++   entry .prepend   lista z elementem dodanym na początku, opatrzona marką `Populated`
++   entry .concat   dwie połączone listy: prymityw dla `concat`
++   entry .invert   lista odwrócona: prymityw dla `Reversible`
++   entry .map   lista z funkcją zastosowaną do każdego elementu: prymityw dla `Mappable`
++   entry .slice   elementy między dwoma indeksami `Int`: prymityw dla `excerpt`
++   entry .iterator   iterator stdlib po liście: prymityw dla `Traversable`
+
+@ 0 4 0 0be255a117eac55b01fe9793b7d21bca
++ entry .Nil   pusta lista, `List[Nothing]`
++     Wartość, a nie obiekt ekstraktora, więc `case Nil =>` dopasowuje przez równość, a
++     istniejąca składnia kompiluje się bez zmian. Jest zgodna z każdą `List[element]` dzięki
++     kowariancji, a `Default[List[element]]` to `Nil`.
+
+@ 0 7 0 1681b889e9192e7b1148fdd2182937a0
++ entry .listIsSpreadable   pozwala rozwinąć listę w varargs: `f(list*)`
++     Given `Spreadable` (`scala.Spreadable`, z kompilatora proscala), dzięki któremu
++     `f(list*)` działa na nieprzezroczystej `List` bez przechodzenia przez `stdlib`. Jest
++     parametryczny względem podtypów, więc lista z marką `List[a] & Populated` też się
++     rozwija. W odróżnieniu od givens `Spreadable` innych kolekcji znajduje się na najwyższym
++     poziomie pakietu, a nie w obiekcie towarzyszącym, co jest równoważne dla rozwiązywania:
++     zasięg niejawny typu nieprzezroczystego najwyższego poziomu obejmuje definicje obok
++     niego.
+
+@ 0 12 0 1e24a8734612143315d82c891937ded2
++ entry .listGatherable   czyni powtarzany parametr `List` w ciele jego metody
++     Given `Gatherable` (`scala.Gatherable`, z kompilatora proscala), przez który moduł
++     kompilowany z `-Zgatherable-varargs` otrzymuje swoje powtarzane parametry: ciało
++     `def join(parts: Text*)` widzi `parts` jako `List[Text]`, skonwertowane raz na wejściu,
++     tam gdzie język przekazałby `Seq` ze stdlib. Każdy moduł Soundness jest kompilowany w ten
++     sposób, więc metodę varargs pisze się bezpośrednio względem API `List`, bez
++     `parts.to(List)` w pierwszym wierszu. Wywołujący nie są dotknięci: sygnatura to nadal
++     `Text*`, a `join(texts*)` rozwija się jak dotąd. Znajduje się na najwyższym poziomie
++     pakietu, ponieważ `Gatherable[element]` nie ma podmiotu, którego obiekt towarzyszący
++     mógłby go przechowywać; `-Yimports` wprowadza go do zasięgu. Projekt używający
++     `soundness.*` bez tego importu bazowego lub bez tej flagi zachowuje `Seq` ze stdlib.
++     Parametry klas (`case class Path(segments: Text*)`), parametry `inline` i makra nie
++     podlegają tej fladze i pozostają `Seq`.
+
+@ 0 8 0 1e4da9a9a5dcec5101ee021ba465618a
++ entry .consConstructor   given, który dostarcza `head :: tail` dla nieprzezroczystej `List`
++     `::` jest prawostronnie łączny, więc odbiorcą rozszerzenia jest głowa – lewy operand w
++     miejscu wywołania – a argumentem ogon. Rozszerzenie opiera się na givenie, a nie na
++     poziomie najwyższym, ponieważ nazwa należy do obiektu ekstraktora `::`; given jest
++     widoczny wszędzie dzięki `-Yimports`, więc `1 :: List(2, 3)` po prostu działa. Wynikiem
++     jest zwykła `List[element]`, a nie `& Populated`: w łańcuchu `a :: b :: c` prawy operand
++     jest typowany jako pierwszy i nie da się tam wywnioskować typu elementu z wyniku z
++     marką.
+
+@ 0 1 0 1680da40fbb0fb281fdae4e9e53fb93e
++ entry .::   ekstraktor dla `case head :: tail =>` na nieprzezroczystej `List`
+
+% 1 1 0 123b10e3b753f11a0272736398cae6b2
+
+@ 0 3 0 1a81cf562ada10a8198748dfe7c2ca6c
++       Ekstraktor oparty na nazwach, który nie alokuje `Option`: `::.unapply(list)` daje
++       `ConsView`, którego `isEmpty` odpowiada liście, a `_1` i `_2` to głowa i ogon.
++       Konstruktor `head :: tail` jest rozszerzeniem w `consConstructor`.
+
+% 2 1 0 0aac297cd2c9614704bbe21acf0589ae
+
+% 3 1 0 1adb2827409b9716073173d9a526c091
+
+% 0 1 0 1fe3258f9447f5500b9c6006f4985192
+
+% 1 1 0 1b26a2593c4f00e61169d4db97270499
+
+% 0 1 0 04338267c7f6e0ba06ed6020a1d696a1
+
+% 1 1 0 1a72faadab7cb41b12c152918bf26d38
+
+@ 0 6 0 05bbb55af5c8b6a00ba7f8af972e11a5
++   entry .ConsView   widok, który odczytuje wzorzec `::`: `isEmpty`, `_1` (głowa), `_2` (ogon)
++     entry #isEmpty   czy lista jest pusta; w takim przypadku wzorzec się nie dopasowuje
++     entry #get   sam widok
++     entry #_1   głowa
++     entry #_2   ogon, jako `List`
++   entry .unapply   `case head :: tail`: widok listy
+
+@ 0 1 0 1329cf30a8d6d0051a73e11955cdfdfe
++ entry .Sequence   niemutowalna sekwencja indeksowana, jako nieprzezroczysty alias `Vector` ze stdlib
+
+% 1 1 0 0aeb52fc32ef28b517a781a48dbf9644
+
+@ 0 6 0 0b245731226eaf110e476ba98c75d249
++       `Sequence[element]` jest tania w odczycie pod dowolną pozycją i przy dołączaniu, więc
++       indeksowanie (`at`, `sec`, `ter`) i `size` nie wymagają uznania kosztu, w odróżnieniu od
++       `List`. Jest nieprzezroczystym aliasem `scala.collection.immutable.Vector` o tej samej
++       konstrukcji co `List`: składowe niewidoczne, słownictwo z rozszerzeń klas typów wyżej,
++       konstrukcja i most `stdlib` w obiekcie towarzyszącym, bez niejawnej konwersji do
++       `Vector` ani z niego.
+
+% 2 1 0 10b13facfc4bf6a40ab128a2eb2d7c59
+
+% 3 1 0 1fd7a65f39db11ef17962adb3fca1ce6
+
+% 0 1 0 1f8b8b9e42e73a361c93cb374d59a53a
+
+% 0 1 0 0a23c1ea5659a8f119da65dacc817163
+
+% 0 1 0 145fa846e6fa7e2416bd5e06c445fa1e
+
+% 0 1 0 1870f28a2e8f6a90099b9fba67f64d8c
+
+% 0 1 0 10f7416a50c3ced31f0663f88dce35f2
+
+% 0 1 0 0fe3f39e14ed92181e463fa8280dd6fb
+
+% 1 1 0 07df35eb84f1d25d066e8ac95b55c98b
+
+@ 0 3 0 1198839c92b859ee030cd382f111331d
++       Literał od jednego do dwunastu elementów jest opatrzony marką `& Populated`, tak jak
++       literał `List`. `Sequence` nie ma konwersji `factory`, więc kolekcję stdlib konwertuje
++       się przez `Sequence.from(elements)`, a nie `.to(Sequence)`.
+
+% 1 1 0 093b747c72e7e97c0c4180ba281125dc
+
+@ 0 8 0 15f7395535fea6961b2a7241342d5195
++   entry .apply   `Sequence(a, b, c)`: sekwencja argumentów, opatrzona marką `Populated` do dwunastu
++   entry .empty   pusta sekwencja, z typem: `Sequence.empty[Int]`
++   entry .from   sekwencja skopiowana z dowolnego `IterableOnce`
++       Droga powrotna ze stdlib, i to jedyna: `Sequence` nie ma konwersji `factory` dla
++       `.to(Sequence)`.
++   entry .unapplySeq   `case Sequence(a, b)`: obsługa wzorców
++   entry .stdlib   bazowy `scala.collection.immutable.Vector`, bez kopiowania
++       Dający się wyszukać grepem most do API stdlib lub Javy.
+
+% 0 1 0 112ebee3be4211771c78891c066cb277
+
+% 0 1 0 1ce11bbd8282b8771faebabf7674c360
+
+@ 0 23 0 0c9a576f725aa7b404631650b461264b
++   entry .toExpr   podnosi `Sequence` podnoszalnych elementów do `Expr` w makrze
++   entry .fromExpr   opuszcza `Expr[Sequence[element]]` utworzone przez `Sequence.from` ze stałej listy
++   entry .sequenceIsSpreadable   pozwala rozwinąć sekwencję w varargs: `f(sequence*)`
++       Parametryczny względem podtypów, więc sekwencja z marką `Sequence[a] & Populated` też się
++       rozwija.
++   entry .size   długość, w czasie stałym: prymityw dla `Countable`
++       Prymitywne operacje obiektu towarzyszącego są zwykłymi metodami dla instancji klas
++       typów wyżej; kod w miejscu wywołania używa słownictwa rozszerzeń.
++   entry .nil   czy sekwencja jest pusta: prymityw
++   entry .head   pierwszy element, częściowo: prymityw dla bramkowanego przez `Populated` `head`
++   entry .tail   wszystko po pierwszym elemencie, częściowo: prymityw
++   entry .last   ostatni element, częściowo: prymityw
++   entry .lead   wszystko przed ostatnim elementem, częściowo: prymityw
++   entry .at   element pod indeksem `Int`, częściowo: prymityw dla `Indexable`
++   entry .define   sekwencja z zastąpionym elementem pod indeksem: prymityw
++   entry .has   czy element jest obecny: prymityw
++   entry .drop   sekwencja bez pierwszych `n` elementów: prymityw
++   entry .append   sekwencja z elementem na końcu: prymityw
++   entry .prepend   sekwencja z elementem na początku: prymityw
++   entry .concat   dwie połączone sekwencje: prymityw
++   entry .invert   sekwencja odwrócona: prymityw dla `Reversible`
++   entry .map   sekwencja z funkcją zastosowaną do każdego elementu: prymityw
++   entry .slice   elementy między dwoma indeksami `Int`: prymityw
++   entry .iterator   iterator stdlib po sekwencji: prymityw dla `Traversable`
+
+@ 0 1 0 1f719da4edcb03db1104fca05b008bd9
++ entry .Set   niemutowalny zbiór, jako nieprzezroczysty alias `Set` ze stdlib
+
+% 1 1 0 1ce17897ce11145f0656e8e6ac6ca746
+
+@ 0 7 0 0175c36f37da7437192213aaca11b00f
++       `Set[element]` przechowuje każdy element raz, bez kolejności, więc nie można go
++       sortować, wycinać z niego fragmentów ani indeksować: tych operacji brak, zamiast
++       działać arbitralnie. Obsługuje przynależność (`has`), wstawianie (`:+`), sumę
++       (`concat`), `intersect` i `except` przez rozszerzenia klas typów wyżej i jest
++       niezmienniczy względem elementu, jak zbiór ze stdlib. Nieprzezroczysty alias
++       `scala.collection.immutable.Set` o tej samej konstrukcji co `List`: składowe
++       niewidoczne, konstrukcja i most `stdlib` w obiekcie towarzyszącym, bez niejawnej
++       konwersji.
+
+% 2 1 0 1490f2d922d2a9b1179a4a0b3f2c7132
+
+% 3 1 0 067ce1ca1f263b331a7237f38b51e6f1
+
+% 0 1 0 0edade6d66df18b11d9120d6f4b4e61b
+
+% 0 1 0 1f47c47269e358b208d6d7b86acdb3d5
+
+% 0 1 0 0926549a6584eb711bfdb594c81ddb62
+
+% 0 1 0 1f3b7a9ef4e42cec1e338067c2e10035
+
+% 0 1 0 13bf17425eb854221f26e6733ae7f083
+
+% 1 1 0 10d061b792b0d1fa115db3a96d8a2fc5
+
+@ 0 2 0 1adcc6c46ab527b21edf9ff04a88c90b
++       W odróżnieniu od `List` i `Sequence` literał `Set` nie jest opatrzony marką
++       `Populated`; tam, gdzie to potrzebne, dowodzi tego `occupied`.
+
+% 1 1 0 1fbc6005cf5f00381eb38323a7be2124
+
+@ 0 6 0 00c85acd98a9b8a012ddc7e8a58cd316
++   entry .apply   `Set(a, b, c)`: zbiór argumentów, z odrzuconymi duplikatami
++   entry .empty   pusty zbiór, z typem: `Set.empty[Int]`
++   entry .from   zbiór zbudowany z dowolnego `IterableOnce`, z odrzuconymi duplikatami
++   entry .stdlib   bazowy `scala.collection.immutable.Set`, bez kopiowania
++   entry .factory   `.to(Set)` na kolekcji stdlib buduje `Set`
++   entry .populatedEquality   `CanEqual[Set[a] & Populated, Set[b]]`: zbiór o udowodnionej niepustości porównuje się ze zwykłym
+
+% 0 1 0 19098121b80c0de11e6c60f07741b58e
+
+@ 0 13 0 149ad74612c5ae5d1b7ba59803b62023
++   entry .toExpr   podnosi `Set` podnoszalnych elementów do `Expr` w makrze
++   entry .fromExpr   opuszcza `Expr[Set[element]]` utworzone przez `Set.from` ze stałej listy
++   entry .size   liczba elementów, w czasie stałym: prymityw dla `Countable`
++       Prymitywne operacje obiektu towarzyszącego są zwykłymi metodami dla instancji klas
++       typów wyżej; kod w miejscu wywołania używa słownictwa rozszerzeń.
++   entry .nil   czy zbiór jest pusty: prymityw
++   entry .has   czy element jest obecny: prymityw dla `Inclusive`
++   entry .insert   zbiór z dodanym elementem: prymityw dla `:+`
++   entry .concat   suma dwóch zbiorów: prymityw
++   entry .intersect   elementy obecne w obu zbiorach: prymityw
++   entry .except   elementy lewego zbioru nieobecne w prawym: prymityw
++   entry .map   zbiór wyników funkcji dla elementów: prymityw dla `Mappable`
++   entry .iterator   iterator stdlib po elementach: prymityw dla `Traversable`
+
+@ 0 1 0 1e7296a6d184f96d1d801c6bcf6bffce
++ entry .Map   niemutowalna mapa z kluczy na wartości, jako nieprzezroczysty alias `Map` ze stdlib
+
+% 1 1 0 0966c2963d5702d915367fae9e786db6
+
+@ 0 8 0 0901467aa7547fae0e098831a22c4853
++       `Map[key, value]` łączy klucze z wartościami bez obiecanej kolejności iteracji
++       (kolejność wstawiania obiecuje `Ledger`). Przez rozszerzenia klas typów wyżej odczytuje
++       wartość według klucza przez `at`, jako `Optional`, ponieważ klucza może nie być;
++       sprawdza klucz przez `defines`; dodaje lub zastępuje przez `define`; usuwa przez `omit`;
++       udostępnia `keys` (`Set`) i `values`; a przez `map` przekształca swoje wartości,
++       zachowując klucze, podczas gdy `remap` przekształca wpisy jako pary. Nieprzezroczysty
++       alias `scala.collection.immutable.Map`, kowariantny względem wartości, z konstrukcją i
++       mostem `stdlib` w obiekcie towarzyszącym i bez niejawnej konwersji.
+
+% 2 1 0 16584f550f5e81a60b1f3d987cb80a9b
+
+% 3 1 0 18acc47cbbae030d017e21125e42e8cf
+
+% 0 1 0 0e8a216ad2d662781cbead46d96c033b
+
+% 0 1 0 1730e35ec28e6736174220ef1b404cc3
+
+% 0 1 0 070a781b0790bd18088d59e43de92663
+
+% 0 1 0 1b0dc95d9a09b7241e7d361e5541ab3e
+
+% 0 1 0 1c0da5016afa0d731212aac1ddeb0880
+
+% 1 1 0 068dccee447577bc19f8815bca2765c0
+
+% 0 1 0 1e5ea8bd22f4d3ba1394ab7bace24f85
+
+% 0 1 0 185033876a0149bc189459227beb1747
+
+@ 0 23 0 1470dd7239e483d80bdf1e235a8cf242
++   entry .apply   `Map(k1 -> v1, k2 -> v2)`: mapa par argumentów; późniejsza para dla klucza wygrywa
++   entry .empty   pusta mapa, z typem: `Map.empty[Text, Int]`
++   entry .from   mapa zbudowana z dowolnego `IterableOnce` par
++   entry .stdlib   bazowa `scala.collection.immutable.Map`, bez kopiowania
++   entry .factory   `.to(Map)` na kolekcji par stdlib buduje `Map`
++   entry .toExpr   podnosi `Map` podnoszalnych kluczy i wartości do `Expr` w makrze
++   entry .fromExpr   opuszcza `Expr[Map[key, value]]` utworzone przez `Map.from` ze stałej listy
++   entry .size   liczba wpisów, w czasie stałym: prymityw dla `Countable`
++       Prymitywne operacje obiektu towarzyszącego są zwykłymi metodami dla instancji klas
++       typów wyżej; kod w miejscu wywołania używa słownictwa rozszerzeń. `.read` odzwierciedla
++       zwracające `Option` `get` ze stdlib; zwracające `Optional` `at` jest nałożone wyżej, w
++       bibliotekach, które znają `vacuous`.
++   entry .nil   czy mapa jest pusta: prymityw
++   entry .defines   czy klucz jest obecny: prymityw dla `Applicable`
++   entry .at   wartość dla klucza, częściowo: prymityw
++   entry .read   wartość dla klucza jako `Option`: prymityw, odzwierciedlający `get` ze stdlib
++   entry .define   mapa z kluczem ustawionym na wartość: prymityw dla `Definable`
++   entry .omit   mapa bez klucza: prymityw dla `Omissible`
++   entry .keys   klucze, jako `Set`: prymityw
++   entry .values   wartości, jako `List`: prymityw
++   entry .concat   dwie scalone mapy, wygrywają wpisy prawej: prymityw
++   entry .map   mapa z funkcją zastosowaną do każdej wartości, klucze bez zmian: prymityw dla `Mappable`
++   entry .iterator   iterator stdlib po wpisach jako parach: prymityw dla `Traversable`
+
+@ 0 1 0 012a3b3941659182155893ea234beaa5
++ entry .Ledger   niemutowalna mapa uporządkowana według kolejności wstawiania, jako nieprzezroczysty alias `VectorMap`
+
+% 1 1 0 161f4579a72de036091d433b41fd57ef
+
+@ 0 8 0 0714139e45648e4416f0c68d1d722ef7
++       `Ledger[key, value]` to dokładnie `Map`, która obiecuje iterować wpisy w kolejności ich
++       pierwszego dodania, czego `Map` celowo nie robi. Jest oparta na
++       `scala.collection.immutable.VectorMap` – uporządkowanej według kolejności wstawiania
++       jak `ListMap`, ale z praktycznie stałym czasem wyszukiwania i dołączania, ponieważ
++       rejestry przechowywane w ledgerach (tablice składowych dialektów, listy atrybutów,
++       raporty testów) rozrastają się do setek. Słownictwo jest takie jak dla `Map`: `at`,
++       `defines`, `define`, `omit`, `keys`, `values`, `map` na wartościach z zachowaniem
++       kolejności. `Ledger` nie jest `Map` i nie konwertuje się do niej.
+
+% 2 1 0 03643c76e04d4372036cf6b7db82e01c
+
+% 3 1 0 051a4f1fc9183f5200462dce079951fe
+
+% 0 1 0 1703707ffb6dc7a51ad67a299d2289e8
+
+% 0 1 0 049e771ee6dec63c0916a95744bc07d6
+
+% 0 1 0 083f51415925aea31a76b70b2c6789f9
+
+% 0 1 0 0662807ca44269260ed90ea767b1f0fc
+
+% 1 1 0 097294b4c7dd28450fd424c714d8e83a
+
+% 1 1 0 1938ee5bfae9e6940b984abdcc05c449
+
+@ 0 21 0 1d492f4cff90c41a06cc9af69a41dfd9
++   entry .apply   `Ledger(k1 -> v1, k2 -> v2)`: ledger par argumentów, w kolejności
++   entry .empty   pusty ledger, z typem: `Ledger.empty[Text, Int]`
++   entry .from   ledger zbudowany z dowolnego `IterableOnce` par, w ich kolejności
++   entry .stdlib   bazowa `scala.collection.immutable.VectorMap`, bez kopiowania
++   entry .factory   `.to(Ledger)` na kolekcji par stdlib buduje `Ledger`
++   entry .toExpr   podnosi `Ledger` podnoszalnych kluczy i wartości do `Expr` w makrze
++   entry .fromExpr   opuszcza `Expr[Ledger[key, value]]` utworzone przez `Ledger.from` ze stałej listy
++   entry .size   liczba wpisów: prymityw dla `Countable`
++       Prymitywne operacje obiektu towarzyszącego są zwykłymi metodami dla instancji klas
++       typów wyżej; kod w miejscu wywołania używa słownictwa rozszerzeń.
++   entry .nil   czy ledger jest pusty: prymityw
++   entry .defines   czy klucz jest obecny: prymityw
++   entry .at   wartość dla klucza, częściowo: prymityw
++   entry .read   wartość dla klucza jako `Option`: prymityw, odzwierciedlający `get` ze stdlib
++   entry .define   ledger z kluczem ustawionym na wartość, z zachowaniem jego pozycji, jeśli istnieje: prymityw
++   entry .omit   ledger bez klucza: prymityw
++   entry .keys   klucze jako `List`, w kolejności wstawiania: prymityw
++   entry .values   wartości jako `List`, w kolejności wstawiania: prymityw
++   entry .concat   dwa scalone ledgery, wpisy prawego dołączone lub nadpisujące: prymityw
++   entry .map   ledger z funkcją zastosowaną do każdej wartości, z zachowaniem kolejności: prymityw
++   entry .iterator   iterator stdlib po wpisach, w kolejności wstawiania: prymityw
+
+@ 0 1 0 0f384386c617344e0f2c54a36e46fa3e
++ entry .Chain   leniwa, potencjalnie nieskończona sekwencja, jako nieprzezroczysty alias `LazyList` ze stdlib
+
+% 1 1 0 09a8c4fdd67b1917008869fa488b6017
+
+@ 0 8 0 1b05607ae323d0b601d160d4fffd44ed
++       `Chain[element]` oblicza swoje elementy, gdy są potrzebne, i je zapamiętuje, więc może
++       opisywać każdą liczbę naturalną albo każdy wiersz, który proces wypisze, o ile
++       wymuszany jest zawsze tylko skończony prefiks. `head #:: rest` dodaje na początek bez
++       wymuszania `rest`; `Chain.iterate`, `Chain.unfold` i `Chain.continually` generują z
++       ziarna lub wartości; `keep` i `skip` leniwie biorą i pomijają prefiks;
++       `prefix #::: suffix` łączy bez wymuszania sufiksu; a `case head #:: tail =>`
++       dopasowuje, wymuszając tylko głowę. `size`, `last` i `lead` wymuszają cały łańcuch i
++       mogą nigdy nie zwrócić wyniku, więc są bramkowane przez
++       `import dysasymptotics.unboundedSize`.
+
+% 2 1 0 1f3172bd37f96c27197a6c5fd7e04a5c
+
+% 3 1 0 10988ed01a1b25851f4f590a8874dff0
+
+% 0 1 0 0c22caba38d2f40308eb4f75d3fac780
+
+% 0 1 0 0c2788fceb2c93be1cdb1c85a01ae81f
+
+% 0 1 0 18010585782e457c1d2969dadbe0181d
+
+% 0 1 0 1ecc262fe4a6d38401ca52ca425e9a69
+
+% 0 1 0 122c7f21f9bf98691cc8a76573e5606c
+
+% 0 1 0 18a00fa20046663f0c55867153bb4be9
+
+% 0 1 0 0e45c6ff18db7fa215da31d4199922f5
+
+% 1 1 0 16e891bdeef6bd6f02819062b12d0b6e
+
+@ 0 9 0 05d7511c201db4d608310acf0a114544
++       Nieprzezroczysty alias `scala.collection.immutable.LazyList` o tej samej konstrukcji co
++       `List` – składowe niewidoczne, most `stdlib` w obiekcie towarzyszącym, bez niejawnej
++       konwersji – z jedną różnicą: literał `Chain` nigdy nie jest opatrzony marką
++       `Populated`, ponieważ kształt strumieniowy nie może wpuścić transparentnego rozwinięcia
++       do miejsca wywołania sprawdzanego pod kątem przechwytywania; niepustości dowodzi się
++       przez `occupied` lub dopasowanie `#::`. Jest `ToExpr`, ale nie ma `FromExpr`, ponieważ
++       gorliwe opuszczenie przekłamałoby leniwy kształt. `Chain` celowo nie ma instancji
++       `Segmentable`: ma leniwe `keep`/`skip` w `chainSegments`, a ścisła instancja
++       wymusiłaby nieograniczony łańcuch.
+
+% 0 1 0 1d2e075886fab2c016b8c32f88d1ac86
+
+% 0 1 0 1ffc516ebe5403d203a73365b8a64683
+
+% 1 1 0 16cc4b7d6e2193aa14a75042ec9fc264
+
+@ 0 18 0 1fda87fdfd39ef991d696fc0116f36df
++   entry .apply   `Chain(a, b, c)`: skończony łańcuch argumentów, bez marki
++   entry .empty   pusty łańcuch, z typem: `Chain.empty[Int]`
++   entry .from   łańcuch nad dowolnym `IterableOnce`, obliczany leniwie tam, gdzie źródło na to pozwala
++   entry .continually   nieskończony łańcuch powtarzający wartość przekazywaną przez nazwę: `Chain.continually(7)`
++   entry .iterate   nieskończony łańcuch z ziarna i kroku: `Chain.iterate(0)(_ + 1)`
++       Ziarno jest przekazywane przez nazwę; nic nie jest obliczane przed wymuszeniem.
++   entry .unfold   łańcuch generowany ze stanu przez funkcję zwracającą `Option[(element, state)]`
++       `Chain.unfold(init)(state => …)` trwa, dopóki funkcja zwraca `Some` z następnym
++       elementem i stanem, i kończy się na `None`.
++   entry .range   `Chain.range(start, end)`: wartości całkowite od `start` do `end`
++   entry .cons   prymitywny leniwy cons: `Chain.cons(head, tail)`, z `tail` przekazywanym przez nazwę
++       Metodowa postać `#::`.
++   entry .defer   łańcuch, którego obliczenie jest odroczone do wymuszenia
++       `Chain.defer(chain)` pozostawia przekazywany przez nazwę `chain` nieobliczony, dopóki
++       wynik nie jest potrzebny, dla definicji rekurencyjnej, której ciało nie może być
++       wykonane gorliwie.
++   entry .unapplySeq   `case Chain(a, b)`: obsługa wzorców, wymuszająca cały łańcuch
++   entry .stdlib   bazowa `scala.collection.immutable.LazyList`, bez kopiowania
++   entry .factory   `.to(Chain)` na kolekcji stdlib buduje `Chain`
+
+% 0 1 0 0de985d32f9291470f2b4af7ca755374
+
+% 0 1 0 1950c01ed13c29c60055d1ac5ae64b83
+
+@ 0 18 0 112ec622ccebc0dd037c62e566a49063
++   entry .toExpr   podnosi skończony `Chain` do `Expr` w makrze, wymuszając go w całości
++       Stałe drzewo nie może być leniwe, więc podniesienie wymusza cały łańcuch; służy tylko
++       skończonemu łańcuchowi, który makro już zmaterializowało. Celowo nie ma `FromExpr`.
++   entry .chainIsSpreadable   pozwala rozwinąć łańcuch w varargs: `f(chain*)`, wymuszając go
++   entry .size   długość, z wymuszeniem całego łańcucha: prymityw dla bramkowanego przez `unboundedSize` `size`
++       Prymitywne operacje obiektu towarzyszącego są zwykłymi metodami dla instancji klas
++       typów wyżej; `size`, `last` i `lead` wymuszają cały łańcuch i nie kończą się na
++       nieskończonym, dlatego ich rozszerzenia są bramkowane.
++   entry .nil   czy łańcuch jest pusty, z wymuszeniem tylko pierwszego węzła: prymityw
++   entry .head   pierwszy element, częściowo: prymityw dla bramkowanego przez `Populated` `head`
++   entry .tail   łańcuch po pierwszym elemencie, bez wymuszania zawartości ogona: prymityw
++   entry .last   ostatni element, z wymuszeniem całego łańcucha: prymityw
++   entry .lead   wszystko przed ostatnim elementem, z wymuszeniem całego łańcucha: prymityw
++   entry .append   łańcuch z leniwie dołączonym elementem na końcu: prymityw
++   entry .prepend   łańcuch z elementem dodanym na początek, leniwie: prymityw
++   entry .concat   dwa łańcuchy połączone leniwie: prymityw
++   entry .map   łańcuch z funkcją stosowaną leniwie do każdego elementu: prymityw
++   entry .iterator   iterator stdlib po łańcuchu: prymityw dla `Traversable`
+
+@ 0 6 0 09b20207d110c4831b73c34668282d79
++ entry .lazyCons   given, który dostarcza `head #:: tail` dla nieprzezroczystego `Chain`
++     Leniwy konstruktor cons: `head #:: tail` dołącza `head` na początku `tail` bez
++     obliczania `tail`, które jest przekazywane przez nazwę, więc `head #:: recur()` nie
++     wywołuje `recur()`. Podobnie jak przy `::`, odbiorcą rozszerzenia jest głowa (łączność
++     prawostronna zamienia operandy), a rozszerzenie opiera się na givenie, ponieważ nazwa
++     należy do obiektu ekstraktora `#::`; given jest widoczny wszędzie dzięki `-Yimports`.
+
+% 2 1 0 01a9b538e6a06ea3071c959ce336165e
+
+% 3 1 0 07361b1c626a79d0112b90e673d9f1f6
+
+% 0 1 0 1d3d0f03b870115a17b2a45b52643fd9
+
+% 0 1 0 0db8f7f5c299279b1b02764894cfa962
+
+% 1 1 0 10f1127cf1463ee61f696072f301d6ef
+
+@ 0 1 0 18f611d6de25050101c7f38b41810beb
++ entry .#::   niewymuszający ekstraktor dla `case head #:: tail =>` na `Chain`
+
+% 1 1 0 1af949b5e9bf714b0f9cd469dc98cac6
+
+@ 0 4 0 0ab3fd8dbb6220b51a92161c2d75e834
++       Ekstraktor oparty na nazwach, którego `isEmpty` i `_1` wymuszają tylko pierwszy węzeł,
++       a którego `_2` to ogon przez `LazyList#tail`, co nie wymusza elementów ogona – więc
++       dopasowanie łańcucha w celu odczytania jego głowy oblicza dokładnie jeden element.
++       Konstruktor `head #:: tail` to rozszerzenie w `lazyCons`.
+
+% 2 1 0 0cd28a1f3cf3dd7b10e2caf3cfff3b40
+
+% 3 1 0 0d52ca440cd465041845ac2a3a0a4eb9
+
+% 0 1 0 170d981b680f2e791c5ae037bf674ad6
+
+% 0 1 0 01e995f04e2242e80697f0caf1318503
+
+% 1 1 0 11f976b314ee01f71f6bfd94d49cf46f
+
+@ 0 6 0 11d513dc096ce68e04925cc90e7c8f97
++   entry .ConsView   widok odczytywany przez wzorzec `#::`: `isEmpty`, `_1` (głowa), `_2` (leniwy ogon)
++     entry #isEmpty   czy łańcuch jest pusty, wymuszając tylko pierwszy węzeł
++     entry #get   sam widok
++     entry #_1   głowa
++     entry #_2   ogon, jako `Chain`, niewymuszony
++   entry .unapply   `case head #:: tail`: widok na łańcuch
+
+@ 0 4 0 0fcaddbf3c302b64093e6a724f83f35c
++ entry .#:::   `prefix #::: suffix`: leniwa konkatenacja dwóch łańcuchów
++     Rozszerzenie dla `Chain[element]`: sufiks jest przekazywany przez nazwę i nie jest
++     wymuszany, dopóki prefiks się nie wyczerpie, więc łańcuch można zdefiniować jako skończony
++     prefiks, po którym następuje rekurencyjny albo nieskończony sufiks. Typ elementów sufiksu
++     może poszerzać typ elementów prefiksu.
+
+@ 0 9 0 08fe99d67132198b1c9645bd124bb046
++ entry .chainSegments   given, który dostarcza leniwe `keep` i `skip` dla `Chain`
++     `chain.keep(n)` i `chain.skip(n)` biorą i odrzucają prefiks według liczby,
++     a `chain.keep(p)` i `chain.skip(p)` według predykatu; wszystkie cztery są niewymuszające –
++     obliczają elementy dopiero wtedy, gdy wynik ich zażąda – więc wszystkie są bezpieczne na
++     nieograniczonym łańcuchu, gdzie `keep`/`skip` oparte na `Segmentable` dla kolekcji ścisłych
++     liczyłyby i przebudowywały. Postacie z liczbą są totalne: liczba spoza zakresu jest
++     przycinana. Nie ma postaci od prawej do lewej, ponieważ nie miałaby niewymuszającego
++     znaczenia. Opierają się na givenie, aby brano je pod uwagę dopiero wtedy, gdy kandydaci
++     generyczni zawiodą dla odbiorcy `Chain`, co zawsze się dzieje.
+
+% 2 1 0 13fec9d63b671ba206fdb2150cc18876
+
+% 3 1 0 01161dcd817ef6b8040efc6b78d89b62
+
+% 0 1 0 1a31ead7a959358c0e81e612a0ff3f72
+
+% 1 1 0 0d9102faf7d302e00d0b404914800304
+
+@ 0 1 0 0e23d3460027522b189e2519c88509cd
++ entry .Comparison   wynik porównania trójwartościowego: `Less`, `Same` albo `More`
+
+% 1 1 0 04f140f27407d3a607cad13ae38e9ec7
+
+@ 0 6 0 1400bcf3d639d65a0ca4a50c478dc026
++       Waluta `Comparable` z symbolism, którego `compare(left, right)` zwraca jedną z tych
++       wartości. Wyliczenie, a nie znak `Int`: trzy przypadki są singletonami, więc niczego nie
++       alokuje, a jednocześnie pozostaje dopasowywalne do wzorca i niesie swoje zapytania jako
++       składowe, czego rozszerzenie o nazwie `also` albo `more` nie mogłoby zrobić bez
++       rywalizacji z uniwersalnymi rozszerzeniami w module zbiorczym. `Less` oznacza, że lewy
++       operand jest mniejszy, `More` – że jest większy, a `Same` – że żadne z tych.
+
+% 2 1 0 1fb7b92459b9c36018218973e124cfc9
+
+% 3 1 0 1353418de04264ac07e1d2377bc287ed
+
+% 0 1 0 1ef3b271c9eae6ec16bcb7cbb5f29426
+
+% 0 1 0 0952fefe69e4f09d1d4e409c8d6bb810
+
+% 0 1 0 06fed8c792a64f4a1fa93ce991e39deb
+
+% 0 1 0 18173e74aafb40720bebcfb0afe4a2d4
+
+% 0 1 0 0c68d4ed4afea3fc005fd9c8d8c3b700
+
+% 1 1 0 1d939bce6fd548ef1607b8ea60cd4f2e
+
+@ 0 15 0 0ce05807859d42bb1050c62e2008397a
++       `also` składa porównania leksykograficznie – to porównanie, chyba że jest `Same`,
++       a wtedy następne, które jest przekazywane przez nazwę i dlatego nie jest obliczane, gdy
++       pierwsze rozstrzyga – a `sign` i `.apply` przekształcają do i z konwencji znaku
++       `java.util.Comparator` i `scala.math.Ordering` na spoinach.
++   entry .apply   `Comparison` ze znaku w stylu `compareTo`: ujemnego, zera albo dodatniego
++       Wielkości bezwzględne są sprowadzane do trzech przypadków, więc każde `Comparison` jest
++       kanoniczne.
++   entry #less   czy to jest `Less`
++   entry #same   czy to jest `Same`
++   entry #more   czy to jest `More`
++   entry #flip   porównanie tych samych dwóch wartości w odwrotnej kolejności
++       `Less` i `More` zamieniają się; `Same` pozostaje bez zmian.
++   entry #sign   `-1`, `0` albo `1`: konwencja `Comparator`/`Ordering`, dla spoin ze stdlib i JDK
++   entry #also   złożenie leksykograficzne: to porównanie, chyba że jest `Same`, w przeciwnym razie następne
++       Drugie porównanie jest przekazywane przez nazwę, więc łańcuch wywołań `also` zatrzymuje
++       się na pierwszym rozstrzygającym wyniku i niczego po nim nie oblicza.
+
+@ 0 8 0 1e8deb8aa36d571506e41972298b69dc
++ entry .Populated   dowód niepustości w typie wartości: `List[Int] & Populated`
++     Fantomowa rafinacja strukturalna, `Any { type Occupied = true }`, przecinana z typem
++     kolekcji, aby zapisać, że ma ona co najmniej jeden element. Dowód powstaje na dwa sposoby:
++     konstruktory literałowe o stałej arności (`List(1, 2, 3)`, `Sequence(t"a")`) oznaczają
++     swój wynik marką z racji konstrukcji, a `occupied` z rudiments sprawdza wartość raz
++     i daje `Optional[self & Populated]`. Operacje, które są totalne tylko dla niepustego
++     odbiorcy – `head`, `last`, `tail`, `reduce` – wymagają wtedy odbiorcy `Populated` albo
++     degradują się do wyniku `Optional`, więc częściowość jest rozładowywana tam, gdzie kod się
++     kompiluje.
+
+% 2 1 0 004e9ee0f2534a2003791531ffb4eadb
+
+% 3 1 0 0029bef0567745cf168a5ed61e29453d
+
+% 0 1 0 1179e202b554c63412c981a6ee87197f
+
+% 0 1 0 13f828ecf056ba6f09271638657f46c1
+
+% 0 1 0 176406681aaff0b31ebd5324919bcd4f
+
+% 0 1 0 054f7349de7ce0b01f4096c62d332b93
+
+% 1 1 0 13edbb0411ae22f11f3ad40a11053f4e
+
+@ 0 5 0 03138b6c7bcbd9c2078c28b00d167267
++     Rafinacja, a nie trait, aby ulegała wymazaniu: `Text & Populated` w czasie wykonania jest
++     nadal `String`, podczas gdy znacznik nominalny wstawiałby rzutowania, które zawodzą. Marka
++     ginie przy każdej transformacji i przy przypisaniu typu do zwykłego typu. Mieszka tutaj,
++     poniżej każdej kolekcji, aby obiekty towarzyszące mogły oznaczać marką swoje literały;
++     `rudiments.Populated` jest jej aliasem.
+
+@ 0 12 0 13bac30ce0c5fc2d0bfa042d6a7ad98c
++ entry .Sized   dowód długości w typie wartości: `Array[Byte]^{} & Sized[512]`
++     Odpowiednik `Populated` dla danych o stałym układzie – nagłówka tar o 512 bajtach, róży
++     wiatrów o ośmiu kierunkach. `Sized[length]` to rafinacja
++     `Any { type Length = length }`, tworzona na trzy sposoby: `Array.fill` i `Array.tabulate`
++     (oraz `Data.fill`) z _literałową_ liczbą oznaczają swój wynik marką z racji konstrukcji;
++     producent, który ustala układ, deklaruje markę na swoim wyniku; a `sized[n]`
++     z concordance sprawdza długość wartości raz i ją zapisuje, tak jak `occupied` zapisuje
++     niepustość. Literałowa liczba porządkowa poniżej długości jest wtedy ograniczona z racji
++     konstrukcji: `apply` na odbiorcy `Sized[n]` z literałową liczbą porządkową rozstrzyga
++     ograniczenie w czasie kompilacji, więc odczyt jest totalny, a literał spoza zakresu jest
++     błędem kompilacji. Długość jest `Int` na poziomie typów, więc `scala.compiletime.ops.int`
++     łączy dowody: `Array.concat` dwóch tablic o znanym rozmiarze to `Sized[left + right]`.
+
+@ 0 5 0 12837202508de26d0a9eaf4751580f67
++ entry .Unit   typ `Unit`, jako alias `scala.Unit`
++     `Unit` nie może zostać wyeksportowany przez `export` (jego obiekt towarzyszący jest
++     zakazany w kodzie źródłowym), więc prolog deklaruje `type Unit = scala.Unit`, który jest
++     _odrębnym symbolem_. Nie wpływa to na kod, ale makro, które porównuje
++     `TypeRepr.of[Unit].typeSymbol` z symbolem typu zwracanego metody, uzna je za różne; należy
++     porównywać przez `=:=` albo po `.dealias`.
+
+@ 0 5 0 0a36b7f44546fb94131013d229bfb609
++ entry .classOf   klasa typu, poprawna także przez eksport: `classOf[Text]`
++     `classOf` z Predef jest wbudowaną funkcją kompilatora tylko wtedy, gdy jego wywołanie
++     niesie konkretny typ klasy, więc przez eksportowaną metodę przekazującą każde wywołanie
++     dawało `Class[Object]`. Ta wersja inline przywołuje `ClassTag` w każdym miejscu
++     wywołania, gdzie argument typu jest konkretny, i bierze z niego `runtimeClass`.
+
+@ 0 3 0 14ea10a65c0984390376c70d70f63377
++ entry .absolve   `Predef.runtimeChecked` pod inną nazwą: oznacza dopasowanie jako celowo niewyczerpujące
++     `value.absolve match …` mówi kompilatorowi, że dopasowanie nie musi być wyczerpujące,
++     zamiast adnotacji `@unchecked`. Używane w makrach, które dopasowują kształt, który znają.
+
+@ 0 3 0 1db4078fe6fd46ff000e5d20797dc649
++ entry .Nat   `Int & Singleton`: typ literałowej liczby naturalnej
++     Ograniczenie dla parametru całkowitoliczbowego na poziomie typów, takiego jak potęga
++     jednostki w quantitative (`Units[power <: Nat, …]`).
+
+@ 0 4 0 11b46f800f05a8e910a8d556bf880960
++ entry .Label   `String & Singleton`: typ literału napisowego
++     Ograniczenie dla parametru typu, który musi być literałem napisowym, takim jak nazwa pola,
++     nazwa tagu albo nazwa właściwości (`Typeface of "sans-serif"`,
++     `AnnotatedField[…, target <: Label]`).
+
+@ 0 2 0 089fa7c2fa4006f8085fc0168b419b0d
++ entry .Zero   `EmptyTuple` pod inną nazwą: koniec krotki
++     `Zero` to `scala.EmptyTuple`; krotka jednoelementowa to `Mono[value]`, `value *: Zero`.
+
+@ 0 3 0 0e7e0c7176f2d0f512e07c1c7bb82e3f
++ entry .Mono   krotka jednoelementowa: `Mono[value]` to `value *: Zero`, a `Mono(x)` ją tworzy
++     Nazwa zdegenerowanej krotki, którą wytwarza generyczny kod krotek, z konstruktorem
++     `Mono(value)`.
+
+@ 0 2 0 084f6554c9bd71c406b6c95e7deb4eed
++ entry .~>   `domain ~> range`: infiksowy alias `PartialFunction[domain, range]`
++     Pozwala czytać parametr funkcji częściowej jako strzałkę: `lambda: (Optional[focus],
+
+% 0 1 0 1bb5197d12be0f7a07fa487d9fd85c41
+
+@ 0 6 0 0395f9eefbfdb66f1de23784176eb1da
++ entry .prohibits   `result prohibits prohibited`: given wybierany tylko wtedy, gdy nie istnieje given `prohibited`
++     `prohibits[result, prohibited]` to `NotGiven[prohibited] ?-> result`, czysta funkcja
++     kontekstowa: given tego typu jest wybierany dla `result` i przy wyborze rozwiązuje swoje
++     `NotGiven[prohibited]` w miejscu użycia, więc `given choice: Choice prohibits Policy =
++     …` czyta się jak strażnika, którym jest. Strzałka jest czysta, aby zwykły obiekt mógł
++     przechowywać given jako pole.
+
+@ 0 5 0 19988f00d1382ab40f68877cff2a1be8
++ entry .unexported   oznacza definicję najwyższego poziomu celowo nieobecną w module zbiorczym `soundness`
++     Adnotacja dla modułu, metody rozszerzającej albo funkcji pomocniczej, której prosta nazwa
++     kolidowałaby w pakiecie zbiorczym z nazwą z innej biblioteki, albo która jest pomocniczą
++     funkcją czasu kompilacji lub wewnętrzną, osiąganą przez import własnej biblioteki.
++     Narzędzia generujące eksporty odczytują ją i pomijają oznaczoną definicję.
+
+@ 0 4 0 15ce4112cade28ee1bd686aaf2b2b325
++ entry .infer   `infer[context]`: przywołuje given, rozwinięty inline
++     `transparent inline def infer[context] = summonInline[context]`: domowa pisownia
++     `summonInline`, używana tam, gdzie instancję przywołuje się wewnątrz metody inline, aby
++     wyszukiwanie odbywało się w miejscu rozwinięcia. `summon` to postać bez inline.
+
+@ 0 6 0 0ab1896d9afbeba81f87fad2b851fb27
++ entry .provide   wykonuje blok z givenem nazwanego typu dostarczonym z miejsca wywołania
++     `provide[Context](block)` przywołuje `Context` tam, gdzie jest rozwijane, i przekazuje go
++     do funkcji kontekstowej `block`, aby metodę wymagającą `Tactic[Error]` można było wywołać
++     z kodu inline, który go ma: `provide[Tactic[Pojo.Error]]: …`. Parametr `Void` jest
++     wypełniaczem, który pozwala wywnioskować parametr typu wyniku po podaniu parametru
++     kontekstu.
+
+@ 0 3 0 028399e97fb800ba120f87888749626f
++ entry .->   `left -> right`: para `(left, right)`
++     Strzałka krotki, dostarczana tutaj, ponieważ `scala.Predef` uczyniło ją metodą inline,
++     którą `-Yno-predef` w przeciwnym razie by utraciło. Zależy od niej `Map(t"a" -> 1)`.
+
+@ 0 4 0 10b73227975b56d70016bddd8b6657b4
++ entry .Void   `scala.DummyImplicit` pod inną nazwą: parametr using będący wypełniaczem
++     Parametr `(using erased void: Void)` pozwala metodzie oddzielić parametr typu podawany
++     przez wywołującego od tego, który wnioskuje kompilator: `safely[error](using erased void:
++     Void)[success](…)`. Eksportowany także pod oryginalną nazwą, `DummyImplicit`.
+
+@ 0 4 0 07a17781527f55d415e50f0fa60dccca
++ entry .is   `subject is Typeclass`: rafinuje `Self` klasy typów do jej podmiotu
++     Infiksowe `is` z Predef, reeksportowane: `Text is Showable` to
++     `Showable { type Self = Text }`, fraza, przez którą przywołuje się i deklaruje każdą klasę
++     typów Soundness, i korzeń, który rozszerzają przyimki (`in`, `by`, `to`, …).
+
+@ 0 4 0 1bbcb2ae5539855b182ed3eeba37ed47
++ entry .nn   zapewnia, że wartość dopuszczająca null nie jest `null`: `javaResult.nn`
++     `nn` z Predef, dla `T | Null` z API Javy, którego dokumentacja obiecuje wartość; rzuca
++     `NullPointerException`, jeśli obietnica zostanie złamana. Tam, gdzie `null` jest
++     prawomocnym wynikiem, należy zamiast tego użyć `Optional(value)`.
+
+@ 0 2 0 02cdf7682ca0fd710b4f063bb266abe3
++ entry .summon   `summon[T]`: given danego typu, z Predef
++     Przywołanie bez inline; `infer[T]` to postać inline do użycia wewnątrz metod inline.
+
+@ 0 1 0 1cab9aff39b82d2e03144630d7e68ef4
++ entry .identity   `identity(x)` to `x`, z Predef
+
+@ 0 3 0 02ac6a3e8816d5621d60acc31432c317
++ entry .locally   `locally { … }`: blok jako wyrażenie, z Predef
++     Głównie dla bloku, który zaczyna się od importu `given`, którego zasięg powinien się z nim
++     kończyć, na przykład przy wyborze między givenami `alphabets` albo `dysasymptotics`.
+
+@ 0 1 0 00e7bbb37a1d706b15bcb53f18fe60a4
++ entry .valueOf   `valueOf[literal]`: wartość typu singletonowego, z Predef
+
+@ 0 1 0 096bee411e2a9468082f41b8a3b42663
++ entry .assert   `assert(condition)` i `assert(condition, message)` z Predef
+
+@ 0 1 0 1f5bc36bc4b406cf1e089c5f3f750cad
++ entry .???   `???` z Predef: wypełniacz, który rzuca `NotImplementedError`
+
+@ 0 3 0 0868c8a240d8ec131103fed9ca182fc2
++ entry .ArrowAssoc   `ArrowAssoc` z Predef: klasa stojąca za `->`
++     Zachowana, aby kod stdlib i tutejsze rozszerzenie `->` były zgodne; samą strzałką pary
++     jest rozszerzenie `->`.
+
+@ 0 1 0 1b3730ffd68f6bb21686e1e9f5eb324f
++ entry .$conforms   `$conforms` z Predef: given stojący za każdym dowodem `A <:< A`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 2 0 0ab07d3a929fcab00a1b71be8748751d
++       Reeksportowany z Predef, aby dowód podtypowania (`<:<`) nadal się rozwiązywał przy
++       `-Yno-predef`; nie do bezpośredniego użycia.
+
+@ 0 1 0 0ab9049af9c4913004774bcc9b74dbbb
++ entry .augmentString   konwersja `String` na `StringOps` z Predef, dla nielicznych spoin `String`
+
+@ 0 7 0 18c3af71c0020bef1c8654c8b45a8be1
++ entry .intWrapper   `Int` na `RichInt` z Predef, dla `until`, `to`, `max`, `min` na `Int`
++ entry .longWrapper   `Long` na `RichLong` z Predef
++ entry .shortWrapper   `Short` na `RichShort` z Predef
++ entry .byteWrapper   `Byte` na `RichByte` z Predef
++ entry .charWrapper   `Char` na `RichChar` z Predef, dla `isDigit`, `toUpper` i podobnych
++ entry .doubleWrapper   `Double` na `RichDouble` z Predef
++ entry .floatWrapper   `Float` na `RichFloat` z Predef
+
+@ 0 13 0 0f29cde99bd451d30b189f84062377b8
++ entry .refArrayOps   konwersja `ArrayOps` z Predef dla `scala.Array` referencji
++     Konwersje operacji na tablicach stosują się do surowej `scala.Array` na spoinie z JDK, a nie
++     do nieprzezroczystej `Array`, której słownictwem jest słownictwo klas typów.
++ entry .genericArrayOps   konwersja `ArrayOps` z Predef dla `scala.Array` dowolnych elementów
++ entry .byteArrayOps   konwersja `ArrayOps` z Predef dla `scala.Array[Byte]`
++ entry .shortArrayOps   konwersja `ArrayOps` z Predef dla `scala.Array[Short]`
++ entry .intArrayOps   konwersja `ArrayOps` z Predef dla `scala.Array[Int]`
++ entry .longArrayOps   konwersja `ArrayOps` z Predef dla `scala.Array[Long]`
++ entry .floatArrayOps   konwersja `ArrayOps` z Predef dla `scala.Array[Float]`
++ entry .doubleArrayOps   konwersja `ArrayOps` z Predef dla `scala.Array[Double]`
++ entry .charArrayOps   konwersja `ArrayOps` z Predef dla `scala.Array[Char]`
++ entry .booleanArrayOps   konwersja `ArrayOps` z Predef dla `scala.Array[Boolean]`
++ entry .unitArrayOps   konwersja `ArrayOps` z Predef dla `scala.Array[Unit]`
+
+@ 0 3 0 0ad6f539404f7a2e1c839661ed814534
++ entry .ClassTag   `scala.reflect.ClassTag`, reeksportowany: token klasy czasu wykonania, którego potrzebuje element tablicy
++     Każdy konstruktor `Array` przyjmuje ograniczenie kontekstu `ClassTag[element]`, więc
++     generyczna metoda, która buduje tablice, niesie `[element: ClassTag]`.
+
+@ 0 1 0 0fab35fa4b7f7e770aa8790a9bb4f00b
++ entry .Typeable   `scala.reflect.Typeable`, reeksportowany: test typu w czasie wykonania dla wzorca typu
+
+@ 0 3 0 0877992a88bd660510c42efd8a99a4bb
++ entry .TreeMap   `scala.collection.immutable.TreeMap`, reeksportowana: posortowana mapa ze stdlib
++     Struktura ze stdlib zachowana dla nielicznych miejsc, które potrzebują porządku kluczy,
++     kosztem jawnego `import scala.math.Ordering` dla jej kluczy. Nie jest nieprzezroczystą
++     kolekcją Soundness.
+
+@ 0 1 0 1c23aa27cb84ab9a18d01a94ef268d4c
++ entry .TreeSet   `scala.collection.immutable.TreeSet`, reeksportowany: posortowany zbiór ze stdlib
+
+@ 0 1 0 1e9914fdc77530761a24adc5846c561c
++ entry .TrieMap   `scala.collection.concurrent.TrieMap`, reeksportowana: współbieżna mapa ze stdlib
+
+@ 0 1 0 0b85d701ae361a641c26b16153a1aa01
++ entry .NonFatal   `scala.util.control.NonFatal`, reeksportowany: ekstraktor dla obiektów rzucanych, po których można się podnieść
+
+@ 0 2 0 04f217bfeb17743a045c876a39c27dad
++ entry .boundary   `scala.util.boundary`, reeksportowany: blok z etykietą, z którego można wyjść przez `break`
++ entry .break   `scala.util.boundary.break`, reeksportowany: opuszcza otaczający `boundary` z wartością
+
+@ 0 8 0 0a508d055a9319671bc8e9546d21fe86
++ entry .IteratorHasAsScala   `.asScala` na `java.util.Iterator`, z `CollectionConverters`
++     Konwertery do współpracy z Javą są reeksportowane, aby spoina z JDK nie wymagała
++     dodatkowego importu; wynikiem jest kolekcja ze stdlib, z powrotem przekształcana przez
++     `from` obiektu towarzyszącego.
++ entry .ListHasAsScala   `.asScala` na `java.util.List`, z `CollectionConverters`
++ entry .MapHasAsScala   `.asScala` na `java.util.Map`, z `CollectionConverters`
++ entry .EnumerationHasAsScala   `.asScala` na `java.util.Enumeration`, z `CollectionConverters`
++ entry .SeqHasAsJava   `.asJava` na `Seq` ze stdlib, z `CollectionConverters`
++ entry .MapHasAsJava   `.asJava` na `Map` ze stdlib, z `CollectionConverters`
+
+@ 0 10 0 15e1d1a2925ecdd11d5efba91ba4f8db
++ entry .tailrec   `scala.annotation.tailrec`, reeksportowana
++ entry .targetName   `scala.annotation.targetName`, reeksportowana
++ entry .switch   `scala.annotation.switch`, reeksportowana
++ entry .StaticAnnotation   `scala.annotation.StaticAnnotation`, reeksportowana: podstawa adnotacji użytkownika
++ entry .missingContext   `scala.annotation.implicitNotFound` pod inną nazwą: komunikat dla brakującego givena
++     `@missingContext("…")` na klasie typów albo typie givena ustala błąd zgłaszany, gdy nie
++     znaleziono instancji.
++ entry .uncheckedVariance   `scala.annotation.unchecked.uncheckedVariance`, reeksportowana
++ entry .uncheckedCaptures   `scala.annotation.unchecked.uncheckedCaptures`, reeksportowana
++ entry .uncheckedStable   `scala.annotation.unchecked.uncheckedStable`, reeksportowana
+
+@ 0 1 0 1f9e9713eaa114e817330d3e79608d4f
++ entry .into   `Conversion.into`, reeksportowane: oznacza parametr jako przyjmujący konwersje niejawne
+
+@ 0 76 0 08c2d9f6cc5918a203ef02072e11255f
++ entry .Any   `scala.Any`, reeksportowany
++ entry .AnyKind   `scala.AnyKind`, reeksportowany: ograniczenie dopuszczające typ dowolnego rodzaju
++ entry .AnyRef   `scala.AnyRef`, reeksportowany
++ entry .AnyVal   `scala.AnyVal`, reeksportowany
++ entry .Matchable   `scala.Matchable`, reeksportowany
++ entry .Nothing   `scala.Nothing`, reeksportowany
++     Typ wyrażenia, które nigdy nie daje wartości – zwracają go `panic`, `abort` i `raise`
++     taktyki – więc jest zgodny z każdym typem.
++ entry .Null   `scala.Null`, reeksportowany
++     Typ `null` przy jawnych nullach; dopuszczające null `T | Null` z API Javy zamienia się
++     w `Optional` przez `Optional(value)` albo zapewnia przez `nn`.
++ entry .Singleton   `scala.Singleton`, reeksportowany: ograniczenie dla parametru typu literałowego
++ entry .&   infiksowy typ przecięcia, `A & B`, reeksportowany
++ entry .|   infiksowy typ unii, `A | B`, reeksportowany
++ entry .<:<   dowód podtypowania `A <:< B`, reeksportowany
++ entry .=:=   dowód równości typów `A =:= B`, reeksportowany
++ entry .Boolean   `scala.Boolean`, reeksportowany
++ entry .Byte   `scala.Byte`, reeksportowany
++ entry .Char   `scala.Char`, reeksportowany
++ entry .Double   `scala.Double`, reeksportowany
++ entry .Float   `scala.Float`, reeksportowany
++ entry .Int   `scala.Int`, reeksportowany
++ entry .Long   `scala.Long`, reeksportowany
++ entry .Short   `scala.Short`, reeksportowany
++ entry .Either   `scala.Either`, reeksportowany
++ entry .Left   `scala.Left`, reeksportowany
++ entry .Right   `scala.Right`, reeksportowany
++ entry .Option   `scala.Option`, reeksportowany, dla granicy z kodem, który go używa
++     Kod Soundness reprezentuje brak jako `Optional`; `Option` jest zachowany dla API stdlib
++     i zewnętrznych, przekształcany na spoinie przez `optional` i `option`.
++ entry .Some   `scala.Some`, reeksportowany
++ entry .None   `scala.None`, reeksportowany
++ entry .Tuple   `scala.Tuple`, reeksportowany
++ entry .EmptyTuple   `scala.EmptyTuple`, reeksportowany; dostępny także jako `Zero`
++ entry .NonEmptyTuple   `scala.NonEmptyTuple`, reeksportowany
++ entry .Tuple1   `scala.Tuple1`, reeksportowany
++ entry .Tuple2   `scala.Tuple2`, reeksportowany
++ entry .*:   typ cons krotki i ekstraktor `head *: tail`, reeksportowane
++ entry .CanEqual   `scala.CanEqual`, reeksportowany: dowód ścisłej równości
++ entry .Conversion   `scala.Conversion`, reeksportowana: klasa konwersji niejawnej
++ entry .Dynamic   `scala.Dynamic`, reeksportowany: znacznik składowych `selectDynamic`
++ entry .Function   `scala.Function`, reeksportowany
++ entry .PartialFunction   `scala.PartialFunction`, reeksportowana; zapisywana także infiksowo jako `~>`
++ entry .Product   `scala.Product`, reeksportowany
++ entry .Selectable   `scala.Selectable`, reeksportowany: wybór strukturalny
++ entry .StringContext   `scala.StringContext`, reeksportowany: to, co rozszerza interpolator
++ entry .BigDecimal   `scala.BigDecimal`, reeksportowany
++ entry .BigInt   `scala.BigInt`, reeksportowany
++ entry .Fractional   `scala.Fractional`, reeksportowany
++ entry .Integral   `scala.Integral`, reeksportowany
++ entry .Numeric   `scala.Numeric`, reeksportowany
++     Abstrakcje liczbowe są zachowane dla spoin ze stdlib, które je przyjmują; `Ordering`
++     i `Ordered` celowo nie, ponieważ porównanie w Soundness to `Comparable`.
++ entry .deprecated   `scala.deprecated`, reeksportowana
++ entry .unchecked   `scala.unchecked`, reeksportowana
++ entry .volatile   `scala.volatile`, reeksportowana
++ entry .transient   `scala.transient`, reeksportowana
++ entry .native   `scala.native`, reeksportowana
++ entry .main   `scala.main`, reeksportowana: adnotacja metody wejściowej programu
++ entry .unsafeExceptions   `scala.unsafeExceptions`, reeksportowany: `import unsafeExceptions.canThrowAny`
++     Obiekt, którego given `canThrowAny` pozwala rzucić dowolny wyjątek bez `CanThrow`, dla
++     kodu, który zdecydował się ich nie śledzić.
++ entry .CanThrow   `scala.CanThrow`, reeksportowany: zdolność do rzucania wyjątku danego typu
++ entry .DummyImplicit   `scala.DummyImplicit`, reeksportowany; dostępny także jako `Void`
++ entry .MatchError   `scala.MatchError`, reeksportowany
++ entry .NamedTuple   `scala.NamedTuple`, reeksportowany
++ entry .Specializable   `scala.Specializable`, reeksportowany
++ entry .ValueOf   `scala.ValueOf`, reeksportowany: wartość typu singletonowego, jako dowód
++ entry .NoSuchElementException   `scala.NoSuchElementException`, reeksportowany
++ entry .Iterable   `scala.Iterable`, reeksportowany: jedyny zachowany interfejs kolekcji ze stdlib
++     Abstrakcyjny interfejs jest wewnętrzną walutą klas typów kolekcji (przyjmują go `compact`,
++     `entire` i odbiorcy `Iterable` w rudiments); konkretne kolekcje ze stdlib nie są
++     reeksportowane. `Iterator` _nie_ jest tutaj: przy `import soundness.*` jest to iterator
++     z murmuration.
++ entry .StringBuilder   `scala.StringBuilder`, reeksportowany, na razie, jako mutowalny akumulator tekstu
++     Oznaczony w prologu jako tymczasowy, do czasu przeglądu mutowalnej akumulacji tekstu.

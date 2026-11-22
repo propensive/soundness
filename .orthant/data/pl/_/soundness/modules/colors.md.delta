@@ -1,0 +1,627 @@
+orthant 2 language
+
+@ 0 1 0 16be628295e32a3e18de1b4b551d7db6
++ ## Kolory
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 5 0 10c9a68a901fdd4d1c7d5d21fb453b28
++ [Kolory](https://en.wikipedia.org/wiki/Color_model) są reprezentowane w modelach, którymi się
++ je opisuje, i przeliczane między tymi modelami. Kolor zapisany w jednym modelu przechodzi do
++ dowolnego innego jedną metodą: sRGB dla ekranu, CIELAB dla odległości percepcyjnej, HSL dla
++ intuicyjnej korekty lub CMYK dla druku. Każdy model jest odrębnym typem, więc kompilator wie,
++ w którym modelu jest wartość.
+
+@ 0 4 0 1fe8734543ac7343076993c349ea8bcc
++ Wbudowanych jest około 140 nazwanych kolorów sieciowych. Kolor można zmieszać z innym,
++ rozjaśnić lub przyciemnić, nasycić albo obrócić po kole barw. Tam, gdzie przeliczenie zależy
++ od warunków obserwacji, ponieważ te same współrzędne wyglądają inaczej w świetle dziennym i
++ pod żarówką wolframową, warunki dostarcza się jako profil koloru w zasięgu.
+
+@ 0 1 0 02ae22e47205e6ac040cfe832d00b5ee
++ ### O kolorze
+
+@ 0 5 0 0d7742087b8217ec17dc368f7a49f441
++ Kolor nie ma jednej prawdziwej reprezentacji. Monitor miesza czerwień, zieleń i błękit.
++ Drukarka nakłada cyjan, magentę, żółty i czerń. Projektant myśli odcieniem, nasyceniem i
++ jasnością. A zmierzenie, jak bardzo *różnie* wyglądają dwa kolory, wymaga modelu CIELAB,
++ zbudowanego tak, by równe odległości odpowiadały równym postrzeganym różnicom. Każdy model
++ pasuje do innego zadania, a przechodzenie między nimi to arytmetyka, w której łatwo popełnić
++ subtelny błąd.
+
+@ 0 6 0 091e72014ba822fb02304346d630dd6a
++ Większość bibliotek zatrzymuje się na jednym modelu, zwykle RGB, a resztę zostawia
++ programiście. Tutaj każdy model ma własny typ, a jedna operacja przelicza między nimi. Model
++ wartości jest więc zawsze znany, a przeliczenia wymagającego profilu nie da się zapisać bez
++ niego. Przestrzeń koloru zapisana w jego typie to mały przykład
++ [stanów niemożliwych](../../philosophy/impossible-states.md): mieszania dwóch przestrzeni bez
++ przeliczenia nie da się zapisać.
+
+@ 0 6 0 0a098cbaea9de1011cb8706607162401
++ Profile istnieją, ponieważ niektóre modele są zakotwiczone w ludzkiej percepcji, a nie w
++ urządzeniu, a percepcja zależy od światła. CIELAB i XYZ opisują kolor względem *bieli
++ odniesienia*, czyli koloru oświetlenia, do którego przystosowało się oko. To odniesienie
++ różni się dla światła dziennego, żarówki wolframowej i świetlówki. Ta sama powierzchnia odbija
++ w każdym z nich światło według tej samej fizyki, a jednak wygląda inaczej, więc przeliczeniu
++ do tych modeli lub z nich trzeba powiedzieć, jakie warunki zakłada.
+
+@ 0 2 0 177b70cea9a8eae605bc715fbdaaa8cc
++ Wszystko pochodzi z pakietu `soundness`. Profil koloru wybiera się w zasięgu, a pozostałe
++ importy pozwalają przykładom wypisać wyniki:
+
+% 2 1 0 0fb3a238728790541c7d52774a51af1d
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 06d6d3a7fec399c9124100808e28e43d
+
+% 0 1 0 196e6a2259b968070a0e72d57c7d317f
+
+% 1 1 0 0f46a568fbe53bcc15805b31d59aa560
+
+@ 0 1 0 14f9ace5c2124d8c0f7aa754297f0ca6
++ ### Przestrzenie barw
+
+@ 0 3 0 01e255a652db79811307d23f7a8eb543
++ Każdy model jest typem, którego pola są jego współrzędnymi. Podaje się je jako ułamki od 0
++ do 1, z wyjątkiem odcienia, który jest punktem na okręgu i podaje się go jako `Angle`. Kolor
++ konstruuje się bezpośrednio w tym modelu, który jest wygodny:
+
+% 2 1 0 1981326960bbd49512da84669920912f
+
+% 0 1 0 19af60222095d9eb0ff5d763d4dfcb66
+
+% 0 1 0 00750814cef920a418c4fb7146d1ed85
+
+% 1 1 0 0877e8a3e65194871393ae675b92146e
+
+@ 0 1 0 091b33724c9a730508be5054964fed57
++ Dostępnych jest siedem modeli, a wartość w każdym z nich jest `Color`:
+
+% 2 1 0 1f640f9ffeec57200a736a1dd36f083d
+
+% 0 1 0 1e85717c441e925b00892c1d7f670e4f
+
+@ 0 9 0 1a327152e9317f4414b7e8979b908eee
++ column  Współrzędne
++ column  Pasuje do
++ row  `Srgb`  `red`, `green`, `blue`  ekranu
++ row  `Hsl`  `hue`, `saturation`, `lightness`  intuicyjnej korekty
++ row  `Hsv`  `hue`, `saturation`, `value`  intuicyjnej korekty oraz rozjaśnień i przyciemnień
++ row  `Cielab`  `lightness`, `blueYellow`, `greenRed`  odległości percepcyjnej i mieszania
++ row  `Xyz`  `x`, `y`, `z`  odniesienia niezależnego od urządzenia
++ row  `Cmy`  `cyan`, `magenta`, `yellow`  druku
++ row  `Cmyk`  `cyan`, `magenta`, `yellow`, `key`  druku z czarnym tuszem
+
+% 1 1 0 00b11d411844f96e08fffe13ddfbeaea
+
+@ 0 1 0 07fabd74251426871a91eaaa6ec295d8
++ ### Przeliczanie między przestrzeniami
+
+@ 0 1 0 1c644dfc7afd9ed90536be484f35f3e9
++ Metoda `to` przelicza kolor na inny model:
+
+% 2 1 0 08f05a4295496bbc08bfaaa7f2413ad6
+
+% 0 1 0 0bd924dab8b10e670a169b458c425cf9
+
+% 0 1 0 1277db57a25d3c391abc1817945d1ba8
+
+% 1 1 0 07667993c0d51be2038c579c9bbf64cf
+
+% 3 1 0 0ec0e0fd3336ba3a1a02c57970c8835a
+
+% 4 1 0 16ce0c0a0b531f0c17d86f22d32143f4
+
+% 5 1 0 00d11b2dadc1280e0c9a567a74deef1c
+
+% 0 1 0 0a778496cc0f9d5504a571ba1a7bae97
+
+% 0 1 0 09cbee7f1608b1f903ad437a974f0c5f
+
+% 0 1 0 0155a6afa711f79211c32a1114bdf508
+
+% 1 1 0 14e78bcfd3614d1a090607967909be33
+
+@ 0 1 0 050df6e8e7f39b0109097dd80bdb8b35
++ Przeliczenie na CIELAB i z powrotem daje pierwotną czerwień, z dokładnością do zaokrągleń.
+
+@ 0 3 0 121b756dfb4db3711241dfc8e737f10f
++ Przeliczenia się składają. Kolor dociera do dowolnego modelu z dowolnego innego, przechodząc
++ przez przestrzenie pośrednie, bez udziału wywołującego. Przeliczenie z sRGB na CIELAB lub XYZ
++ korzysta z `Colorimetry` w zasięgu, ponieważ te modele są zdefiniowane względem bieli
++ odniesienia.
+
+@ 0 1 0 0ea958a1cf9224ff1a37071922a90051
++ ### Kolory nazwane
+
+@ 0 1 0 0640fd364d8cea071d80f27ce548a9d0
++ Nazwane kolory sieciowe znajdują się w `WebColors`, a każdy jest `Color in Srgb`:
+
+% 2 1 0 085ad0102b3f2cd3132f6ab5452764f6
+
+% 3 1 0 15e76acd0819f07c0f65b74cb643a0d7
+
+% 4 1 0 03337d4a97ffa4c10d8c4292ac16c696
+
+% 0 1 0 01c8b297bf28374a18ab1426af6e56c0
+
+% 0 1 0 010800702d765e7712f5bb7a49d9867c
+
+% 0 1 0 0c00e0abc72d7da61dac062c464687b0
+
+% 1 1 0 1be4ed278507d39b0cfd20a07d44ee84
+
+@ 0 1 0 08a0707b9864acc90d01b65eab0ed61a
++ `WebColors.colors` to cała lista, przydatna do iterowania po palecie.
+
+@ 0 1 0 0d810e0330605a2204054b64909e2d7f
++ ### Mieszanie
+
+@ 0 2 0 102e71daecb1e07507a4cb4ed16f5e04
++ Dwa kolory mieszają się w jeden. Domyślnie wynik leży w połowie drogi między nimi, ale można
++ podać dowolną inną proporcję:
+
+% 2 1 0 06f089f66425aa3013412c5465988faa
+
+% 3 1 0 035e1532b58f9daa1a3b5a56ee10594d
+
+% 4 1 0 1bf489327dc6758b18e09fc79f970e83
+
+% 0 1 0 0e01653348f3aeab026e8662e81fb1d0
+
+% 0 1 0 1445974dd3d05a88015275ad39e70bc0
+
+% 1 1 0 184a02710a87453a0de16eaee55fc290
+
+@ 0 2 0 182e35d1ebba187e10368d5f5c348717
++ Mieszanie w sRGB łączy wartości na ekranie. Mieszanie w CIELAB łączy to, co postrzega oko, co
++ daje bardziej naturalny punkt pośredni między dwoma kolorami.
+
+@ 0 1 0 002ec2ee5b0b40ef0a4e63251dbe27ec
++ ### Mieszanie według części
+
+@ 0 3 0 05e30ceb51ccb3231d3464663230fb38
++ `mix` przyjmuje dwa kolory naraz. Aby połączyć kilka, mnoży się każdy przez liczbę jego części
++ wchodzących do mieszaniny i dodaje je, tak jak malarz odmierza farbę na palecie. Tryb
++ mieszania wybiera się, importując go:
+
+% 2 1 0 0383d232ff0e5ddb13ab65acf7642847
+
+% 3 1 0 15198c8d121576051ae69e7883a67f21
+
+% 4 1 0 1a98e3f1188cc5170bc389d287e608a1
+
+% 5 1 0 18b4fad17640128e04d87f475db7ccd5
+
+% 0 1 0 1038a119d07814441f5eb600d2531cdb
+
+% 0 1 0 0c29b4a0402186bc0ba43459adca7bac
+
+% 0 1 0 13ffa8cc5a339edc05fc296b9a688c71
+
+% 0 1 0 021ae26b6cf4743e1a687898464d08fa
+
+% 0 1 0 101909eb1f2b48ce12533848e56d06a0
+
+% 1 1 0 0beccb1358f605710e15e259025d69f8
+
+@ 0 3 0 14964941204ffebd054aa1d37a9c306c
++ `5*Red` to `Daub`: ilość koloru, która nadal jest tym kolorem. Jedna część czerwieni i pięć
++ części czerwieni to w obu przypadkach czerwień. `Daub` jest `Color`, więc mieszaninę
++ przelicza się, wyświetla i mierzy jak każdy inny kolor, a części mają znaczenie dopiero przy
++ dodawaniu kolejnej farby.
+
+@ 0 3 0 1b889dd2a2a6ca7308749609354ed34e
++ Części są proporcjami. `5*Red + 3*Yellow` i `50*Red + 30*Yellow` to ten sam kolor, a trzecia
++ plama farby jest ważona względem dotychczasowej sumy, a nie względem sąsiada, więc ostatni
++ wiersz to po równo jedna trzecia każdego koloru.
+
+@ 0 1 0 007995c41a8a10fd0ca98e37bb7c69fb
++ ### Tryby mieszania
+
+@ 0 3 0 1b8942a3ac8e67eb0374cc1e031e2e84
++ `proportionalMixing` uśrednia kolory, co robi też `mix`. Pozostałe tryby to tryby mieszania
++ z Photoshopa i GIMP-a, tak jak definiuje je specyfikacja kompozycji W3C. Każdy oblicza kanał z
++ tła, *b*, i warstwy, *l*:
+
+% 2 1 0 171119d675b4e057105a94355f3c7b2c
+
+@ 0 3 0 05c8568a3c7e2387078431fa266d18be
++ column  Tryb
++ column  Każdy kanał przyjmuje wartość
++ row  `proportionalMixing`  *l*, więc wynik jest średnią ważoną
+
+% 0 1 0 02df5c0d2d2088030cd6e48432fd3e9c
+
+% 0 1 0 179f2744d57d9f0f1a7beea988189272
+
+@ 0 8 0 110153241cac7f661e8f0e69569756bf
++ row  `overlayMixing`  2·*b*·*l* gdy *b* ≤ ½, w przeciwnym razie 1 − 2·(1 − *b*)·(1 − *l*)
++ row  `hardLightMixing`  jak nakładka, ale rozstrzyga *l*, a nie *b*
++ row  `softLightMixing`  łagodniejsze ostre światło, przyciemniające gdy *l* ≤ ½ i rozjaśniające powyżej
++ row  `darkenMixing`  mniejsza z *b* i *l*
++ row  `lightenMixing`  większa z *b* i *l*
++ row  `colorDodgeMixing`  *b*/(1 − *l*), najwyżej 1
++ row  `colorBurnMixing`  1 − (1 − *b*)/*l*, co najmniej 0
++ row  `differenceMixing`  wartość bezwzględna różnicy *b* i *l*
+
+% 0 1 0 1c398d3fb8de587f136cc4d1a9439cfc
+
+@ 0 2 0 09dc08a8121dbee60755d457da820629
++ row  `linearDodgeMixing`  *b* + *l*, najwyżej 1
++ row  `linearBurnMixing`  *b* + *l* − 1, co najmniej 0
+
+% 1 1 0 1cacc79f273a4dbd0db1a4dd983aa87c
+
+@ 0 2 0 1725d4e5a691003403b8fa084359c19c
++ Każdy importuje się w ten sam sposób, z pakietu `mixing`. Pomnożenie żółtego przez cyjan daje
++ zieleń, tak jak przy mieszaniu farb:
+
+% 2 1 0 08d24fd528b319e80aea87463d91b35e
+
+% 3 1 0 0d731286f1f847d310059b75dd4f16fb
+
+% 4 1 0 1253de2921d5425806b5609efd8d2cea
+
+% 5 1 0 0e143a32d8344cf6062481ce4a8ebc0f
+
+% 0 1 0 0a9452d6716c61de0cb61302fdda6082
+
+% 0 1 0 12d5c95437c34fa21680545c189d40ca
+
+% 1 1 0 109db7a8d32acf5a15290609b95a2c98
+
+@ 0 4 0 150366c9c4bf9a7f041d84a15dfcdc47
++ Udział plamy farby w łącznej liczbie części działa jak jej krycie. Tryb jest stosowany z pełną
++ mocą, a wynik jest wmieszany z powrotem w tej proporcji, dokładnie tak, jak działa suwak krycia
++ warstwy. Przemienne jest więc tylko mieszanie proporcjonalne. W każdym innym trybie
++ `5*Red + 3*Yellow` różni się od `3*Yellow + 5*Red`, tak jak przy zamianie kolejności dwóch
++ warstw.
+
+@ 0 3 0 0515bc5803ea41f3193f7521d98fdc74
++ Każdy tryb poza proporcjonalnym odczytuje współrzędne jako ułamki pełnej intensywności, więc
++ te tryby są dostępne tylko dla sRGB, CMY i CMYK. Żądanie `multiplyMixing` w CIELAB, gdzie
++ jasność sięga 100, się nie kompiluje, zamiast po cichu oznaczać coś innego.
+
+@ 0 1 0 074566660883bce01438db162ca8bafb
++ ### Korygowanie
+
+@ 0 2 0 09db620064f7553407cb95325a8335f5
++ Odcień, nasycenie i jasność to to, po co sięga człowiek, by skorygować kolor, więc te
++ operacje znajdują się w `Hsl` i `Hsv`. Przelicza się kolor na jeden z nich, koryguje i
++ przelicza z powrotem:
+
+% 2 1 0 17b7aeb86145b26a1df58098f3e8420e
+
+% 0 1 0 08cc0c97ff311e8a1d1c43e396d30008
+
+% 1 1 0 1459ea1d2d62cfca06cc281464d5107e
+
+% 3 1 0 0be426d133fc125006bf0858dd01cd23
+
+% 4 1 0 0c848aaa7cddf05005e925a866cecacf
+
+% 5 1 0 0778f8256b4472ac14e11eb14e3003b2
+
+% 0 1 0 11288e3de15642bb00b7c5bcb8039fbd
+
+% 0 1 0 04c4263fa855da880f5b4e4b943dd478
+
+% 0 1 0 0a10502624aba8ad132473a8f7189bae
+
+% 1 1 0 15ead0871130e74a10d46e3b129c0b6b
+
+@ 0 2 0 0801d1e14a62620e0d4032ea221f8cc0
++ Te trzy to kolor dopełniający, kolor przesunięty o jedną piątą drogi ku bieli oraz szarość o
++ tej samej jasności.
+
+@ 0 2 0 09e227444d8b57fb0f3224c68a675e69
++ `rotate` obraca odcień o `Angle`, więc jednostkę się zapisuje, a nie zakłada: `180.deg` i
++ `π.rad` to ten sam półobrót. Dostępne korekty to:
+
+% 2 1 0 10c621f8b46bba5803999c668ac41f2b
+
+@ 0 14 0 05e0140339ce2e391a37bce709c282c7
++ column  Operacja
++ column  Na
++ column  Daje
++ row  `rotate(angle)`  `Hsl`, `Hsv`  odcień obrócony o kąt
++ row  `complement`  `Hsl`, `Hsv`  odcień obrócony o pół obrotu
++ row  `saturate`, `desaturate`  `Hsl`, `Hsv`  pełne nasycenie albo żadne
++ row  `pure`  `Hsl`, `Hsv`  odcień przy pełnym nasyceniu i średniej jasności albo pełnej wartości
++ row  `lighten(amount)`  `Hsl`  jasność przesuniętą o ten ułamek drogi ku bieli
++ row  `darken(amount)`  `Hsl`  jasność przesuniętą o ten ułamek drogi ku czerni
++ row  `tint(white)`  `Hsv`  nasycenie zmniejszone o ułamek, ku bieli
++ row  `shade(black)`  `Hsv`  wartość zmniejszoną o ułamek, ku czerni
++ row  `tone(black, white)`  `Hsv`  jedno i drugie
++ row  `mix(other, ratio)`  `Srgb`, `Cielab`  mieszankę dwóch kolorów, domyślnie pół na pół
++ row  `delta(other)`  `Cielab`  odległość percepcyjną między dwoma kolorami
+
+% 1 1 0 05e2e948931231aa0efb5c2662206c14
+
+@ 0 3 0 1ca94b3a3d23564b09beacd7b9c57f27
++ Odcień jest punktem na okręgu, a nie wielkością, więc obrót zawsze trafia z powrotem w zakres,
++ który oko odczytuje jako kolor. Obrót poza pełny okrąg albo wstecz poza zero zawija się, a
++ odcień nigdy nie jest ujemny:
+
+% 2 1 0 03c387e2ec9518ca18e1dd70a2a04c2a
+
+% 3 1 0 132b176213e984cb11ed21ac3e18abf1
+
+% 4 1 0 1a2078a15dded50205dfd2a467edb2a4
+
+% 0 1 0 0394fa9053920421176e804a0a642849
+
+% 0 1 0 18f2169c1e58498f11d18700ca7dfb1b
+
+% 1 1 0 0a8cad95a58d4f1f0be120411de08712
+
+@ 0 1 0 0c011cb024f98541169a6b3e1ade6d9c
++ ### Odległość percepcyjna
+
+@ 0 2 0 033c05a7366da5420929bf773c1ac787
++ CIELAB istnieje po to, by odległość między dwoma kolorami odpowiadała temu, jak różnie
++ wyglądają. `delta` podaje tę odległość:
+
+% 2 1 0 009e0031a740e374098d786539f19f50
+
+% 3 1 0 1139dec75eea8fa9158c31c53336fa09
+
+% 4 1 0 154ce9d557a9c5cd05db79eba69cf4d3
+
+% 0 1 0 1f01f8616189f1f91919c1a0013b2a84
+
+% 0 1 0 06474875644d225800e942874c41a137
+
+% 1 1 0 0b1d76718726aecb166435f154e6db05
+
+@ 0 3 0 0763e2aa9594c6511fbf91d675aca95e
++ Mała delta oznacza, że dwa kolory trudno odróżnić, a duża, że kontrastują. To właściwa miara
++ przy wyborze czytelnego koloru pierwszego planu na danym tle, gdzie porównywanie surowych
++ wartości RGB wprowadzałoby w błąd.
+
+@ 0 1 0 1e47bd318d819a8e111fb1d48eae76da
++ ### Zapis szesnastkowy i terminal
+
+@ 0 3 0 0682633758e709b1020281b9681f02b6
++ [Interpolator][interpolator] `rgb"…"` odczytuje kolor w zapisie
++ [szesnastkowym](https://en.wikipedia.org/wiki/Web_colors), z początkowym krzyżykiem lub bez
++ niego, i sprawdza go w [czasie kompilacji][czas kompilacji]:
+
+% 2 1 0 0d3f85522fc4add61dfca62a3296d2c9
+
+% 3 1 0 00d34dd98fd4c9e716e95bfe76159025
+
+% 4 1 0 0451494888ecd76b01c090c3451938d4
+
+% 0 1 0 0ec5fe89b8090d7d194abd147eb635b3
+
+% 0 1 0 1a38ff5df5c81bef0a31df92ed4c1bbf
+
+% 0 1 0 09bc9cc55c900faa106d6971205dc9a9
+
+% 1 1 0 19224e024f1d73b817fb6d521f3cd025
+
+% 3 1 0 169b93b159a9411e0c7082aaa6732c5f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 1f83478fcdfa041b1679e7881059a387
+
+% 1 1 0 0d678596e994724f11d20915549f1528
+
+@ 0 3 0 1e0fad74ca7066b41c81f62fed4fbb5b
++ Wynikiem jest `Chroma`: kolor, którego kanały są liczbami całkowitymi od 0 do 255. To postać,
++ której oczekuje terminal, więc kolor wyświetla się jako
++ [stylizowane wyjście terminala](terminal.md#styled-text):
+
+% 2 1 0 16907befe805222b113dee1c1ac64d70
+
+% 3 1 0 1e737a282d5e936a15aaf31e11f223ed
+
+% 4 1 0 10b8391e43de6ec313543cf3c2d956e3
+
+% 0 1 0 13858b3d5bf1ba28142c649da9b9181f
+
+% 1 1 0 16656d92b7919e700457b8faf9a28b71
+
+@ 0 3 0 0d4db65b751b28981b0078fd291ebad7
++ `color` przelicza w drugą stronę, na `Color in Srgb`, który przyjmuje każde przeliczenie
++ percepcyjne, każda rola `Palette` i każdy `Daub`. Literał szesnastkowy jest więc zarówno
++ punktem wyjścia dla wszystkiego, co opisano powyżej, jak i punktem docelowym.
+
+@ 0 1 0 03ac6d3c6924d6651f65f59c4ef12289
++ ### Profile koloru
+
+@ 0 4 0 18e465072782927d06a4af551862a5cc
++ `Colorimetry` opisuje iluminant i obserwatora, których zakłada przeliczenie zależne od
++ profilu. `colorimetry.daylightColorimetry` nadaje się do większości pracy dla ekranu. Inne
++ modelują światło żarowe i fluorescencyjne oraz iluminanty standardowe. Profil jest
++ [givenem][given], więc każde przeliczenie w jego zasięgu go używa i żadne nie musi go nazywać:
+
+% 2 1 0 0e442c76be892f7d0b664f2e4c7bbfcc
+
+% 3 1 0 00a0dfdc40ed679b180c40b881eeaddc
+
+% 4 1 0 1565548ada7b914708a1f7c44e0cb358
+
+% 0 1 0 1b2ed2862d0f79560e38b8453bf895c4
+
+% 1 1 0 123e132970abea3302dded92da3277af
+
+% 0 1 0 0759dc065b6545021158cd60d2890cf5
+
+% 0 1 0 057f9bdfe9e7160f138e61ceadd75610
+
+% 1 1 0 087f7a6bbd03e0c21eebc0aec9d19969
+
+@ 0 1 0 16210fcddc69acfc0a60d04b8f9b2501
++ Ten sam kolor ma inne współrzędne CIELAB w świetle dziennym i w świetle wolframowym.
+
+@ 0 2 0 0b430c30ec0e25b30384c8eee3b3933c
++ Pakiet `colorimetry` nazywa każdy profil od jego standardowego iluminantu CIE albo od lampy,
++ która go przybliża:
+
+% 2 1 0 01dd996aa7420ba31f510bb28ddec8c0
+
+% 0 1 0 1ca77613e7a1c24100f8bf0c68a101b5
+
+@ 0 2 0 1e035b4374ccc7d601cf704c1d280c39
++ column  Iluminant
++ column  Inne nazwy
+
+% 0 1 0 04073027094f4c431362c404a2560168
+
+% 0 1 0 1232b6edebfad8cf02b02d1360b0f8f2
+
+% 0 1 0 091c7ed9e5f3f6631af24492737b2971
+
+% 0 1 0 1761b29b1632c0c30ab75833b8ade109
+
+% 0 1 0 0df525235761ba0c0a4886fab4028609
+
+% 0 1 0 1da3505c8c38d6930ce803304178f9d5
+
+% 0 1 0 083670a315d9632b0e2c2dd1d5117ba0
+
+% 0 1 0 15ed9ff67cf3d503097c7b1cb31d10da
+
+% 0 1 0 0ed26b4f8b831cd41442ae34240c1c2c
+
+% 0 1 0 0c009d3dec262d541eb0a28ee2610b3a
+
+% 0 1 0 15b3834f41592d0d029dea386685cdd3
+
+% 0 1 0 05d0e7db6a7f89dd186602acc7eae72f
+
+% 0 1 0 0d4d1e9f6bbd49081872856ef1a5d4e2
+
+% 0 1 0 01438d30e49e9fb417324d18246e3908
+
+% 0 1 0 07b5f9e63d582e1d1317c4af2d1ba4fc
+
+% 0 1 0 0512d22a6deb72bf15e566f838adf411
+
+% 0 1 0 0d4c009821fdf54c1bc3f1e120e66cf8
+
+% 0 1 0 1a1d92a8d6147d2e05054d1eea5ff9f3
+
+% 0 1 0 0c88b5d6716f82ce1c2ac7b5fda33099
+
+% 0 1 0 1ef3d9040cca886d1350424d10e66740
+
+% 1 1 0 1d6ac8830338cc5e108179f7742f33af
+
+@ 0 1 0 18467693ada546fe09b8431e6704b247
++ ### Motywy i palety
+
+@ 0 4 0 0c7b8d63b7968f1d065249ffa5ac36f4
++ `Theme` nazywa skoordynowany zestaw kolorów: tło, pierwszy plan, listę akcentów oraz to, czy
++ motyw jest jasny, czy ciemny. `Palette` wybiera z niego według roli i oferuje `subdue` oraz
++ `accent`, by przesunąć kolor w stronę tła lub od niego. Motyw Solarized jest wbudowany i
++ wybiera się go importem:
+
+% 2 1 0 0beb4a37b00c302406ce66a1b384fce2
+
+% 0 1 0 0d21a42adc9a00ff04a36c19c91362fe
+
+% 0 1 0 196613b04a4172070b17667a05bd2926
+
+% 1 1 0 08e308a97825b6d002d6d4fbeea7379f
+
+% 3 1 0 1e44fd8b46a8faa106a31bc3c00b0958
+
+% 4 1 0 0dcee318c25d58130eccaf48f4f61fb3
+
+% 5 1 0 100f98eb15e228691a2c124e1e82c075
+
+% 0 1 0 18ac7155928cfbc50e0988cc8d437502
+
+% 0 1 0 18758d8e8852d4bd183ade4c21f9a82c
+
+% 1 1 0 00f182d4d1f5f23f13d267437321d9dd
+
+@ 0 3 0 07aa5651b36f03e7115b86b0c1ef22b2
++ `luminosity.darkBrightness` i `luminosity.lightBrightness` wybierają wersję motywu, który
++ oferuje obie, tak aby wyjście terminala stylizowane przez paletę dostosowywało się do tła
++ terminala.
+
+@ 0 2 0 02670e093413d04e116799f238264bad
++ Role palety mają typ `Color in Srgb`, więc paleta zapisana z literałów szesnastkowych nadaje
++ każdej roli `rgb"…".color`.
+
+@ 0 1 0 0dc71becd23618b9068d43ebcd09bb1e
++ ### Układy pikseli
+
+@ 0 5 0 08c0cf37bfae06280fbe8327e99e28f3
++ Kolor na ekranie zwykle nie jest trójką liczb typu double, lecz spakowaną liczbą całkowitą, a
++ sposób pakowania bywa różny: osiem bitów na kanał, z kanałem alfa lub bez, pięć-sześć-pięć dla
++ wyświetlacza 16-bitowego, dziesięć bitów na kanał dla wysokiego zakresu dynamiki albo jeden
++ kanał dla skali szarości. *Układ* opisuje to pakowanie jako krotkę typów kanałów, od
++ najbardziej znaczącego, a resztę wylicza kompilator:
+
+% 2 1 0 1145c676181d929d0dcccd9b796ba55c
+
+% 0 1 0 1064f49b7cfc35b40d8c9c6ba51380a3
+
+% 0 1 0 0035f47ad14595aa0b4bcfd4a1b35e5f
+
+% 0 1 0 16b92fadb6ea0c5d00bd3261914eb25a
+
+% 0 1 0 04423d074d2693b412dd421e6c1f265c
+
+% 0 1 0 07d427384d1a4c0c0e8ccd38f621cc8e
+
+% 1 1 0 0a722e8fdf111e3a18b4672bdb9b5479
+
+@ 0 2 0 15ae028fbeb682030fd2839296df31f3
++ `Rgb` zajmuje 24 bity, a najwęższe typy mieszczące `Rgb565` i ośmiobitową szarość to `Short` i
++ `Byte`. Trzy układy są predefiniowane:
+
+% 2 1 0 08749336a401f912041442979e26bd34
+
+@ 0 3 0 129769a4559f88461fb662e162c79ed9
++ column  Układ
++ column  Kanały
++ column  Bity
+
+% 0 1 0 066eed023c363f9e04bd86ad52946c22
+
+% 0 1 0 06b3741a2195775b16b569806e2f00c4
+
+% 0 1 0 0fa66ffa6eea3430068b0fbf9aaf9271
+
+% 1 1 0 1fdcffd029897ea604baa07ab9276c96
+
+@ 0 2 0 16f4a6c24d03ac921fd95ec6a3d4131e
++ `Channel` jest tu osiągany przez pakiet swojej biblioteki, ponieważ `import soundness.*`
++ dostarcza już własny `Channel`, kanał WebSocket.
+
+@ 0 5 0 1c9f9670db0046830be8a641c28ac40c
++ Przesunięcie i maska każdego kanału wynikają z jego pozycji w krotce i są obliczane podczas
++ kompilacji kodu. Odczyt kanału ze spakowanego piksela to więc pojedyncza instrukcja
++ przesunięcia i maskowania, bez rozgałęziania w czasie wykonania. `Pixel[layout]` to liczba
++ całkowita bez boxingu, przechowująca spakowaną wartość. Przelicza się na `Chroma`, `Srgb` i
++ `Cmyk` oraz z nich dokładnie tam, gdzie pozwala na to jej układ: układ bez kanału alfa nie ma
++ alfy do odczytania.
+
+@ 0 3 0 1bcf81e9b015532d125af7aa02ad0647
++ [Obrazy](images.md) używają tego, by dać rastrowi typowany dostęp do jego pikseli, i tu
++ właśnie trafia kolor obliczony w jednej z powyższych przestrzeni percepcyjnych, gdy dociera
++ do ekranu. [Liczby](numbers.md#bit-manipulation) opisują leżące pod spodem wzorce bitowe.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 5 0 04493be73c3acb5a0b36f514dec50bb8
++ - [Terminal](terminal.md#styled-text) stylizuje tekst tymi kolorami.
++ - [CSS](css.md) i [SVG](svg.md) zapisują je w arkuszach stylów i rysunkach.
++ - [Wykresy](charts.md) wybierają kolory serii z palety.
++ - [Obrazy](images.md) odczytują i zapisują rastry pikseli.
++ - [Wskaźniki](gauges.md) i [podświetlanie składni](syntax-highlighting.md) kolorują swoje wyjście, a [geografia](geography.md) obraca odcienie o swoje kąty.

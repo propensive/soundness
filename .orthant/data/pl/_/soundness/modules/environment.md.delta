@@ -1,0 +1,366 @@
+orthant 2 language
+
+@ 0 1 0 02ecc937dbb159b71208afd09a136979
++ ## Środowisko
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 5 0 1f4a0217595030e30da9f9c695495c16
++ Otoczenie programu jest dostępne jako typowane [wartości kontekstowe][wartość kontekstowa]:
++ jego zmienne środowiskowe, właściwości systemowe JVM oraz katalog roboczy, w którym go
++ uruchomiono. Odczyt zmiennej daje wartość typu, który powinna mieć. Jest to `Int` tam, gdzie
++ oczekuje się liczby całkowitej, i ścieżka tam, gdzie oczekuje się ścieżki. Zmienna, która nie
++ jest ustawiona, zgłasza typowany błąd. Nigdy nie daje `null` ani pustego napisu.
+
+@ 0 3 0 015f26dff1bbb7000c829477fb8cc651
++ Każde źródło danych z otoczenia jest [zdolnością][zdolność] dostarczaną jako [given]. Zależność
++ programu od środowiska jest więc widoczna w jego sygnaturach, a test może przekazać mu ustalone
++ środowisko zamiast prawdziwego.
+
+@ 0 1 0 0cd6373e452f926a1c374fa2b2758408
++ ### O środowisku
+
+@ 0 5 0 03075a674c05ac7b1d5716868a67c5b5
++ Wartości, które program dziedziczy przy starcie, są w surowej postaci workiem nietypowanych
++ napisów, osiąganych przez globalne wywołania statyczne. `System.getenv` zwraca `String` albo
++ `null`. Właściwość, która powinna być liczbą, przychodzi jako tekst. Nic nie odnotowuje, że
++ fragment kodu zależy od ustawienia konkretnej zmiennej. Zależność jest niewidoczna, a poprawne
++ parsowanie pozostawia się każdemu wywołującemu.
+
+@ 0 6 0 03b320b4b5d134b2107de4928afb4bf1
++ Tutaj każde źródło jest zdolnością. `Environment`, `System` i `WorkingDirectory` są wartościami
++ kontekstowymi, których metoda wymaga, gdy z nich czyta, więc zależność jest w typie, tak jak
++ wymagają tego [uczciwe sygnatury](../../philosophy/honest-signatures.md). Każdy odczyt jest
++ dekodowany do oczekiwanego typu i głośno zawodzi, gdy brakuje wymaganej wartości. A ponieważ
++ zdolność jest givenem, podstawienie kontrolowanego środowiska, na potrzeby testu lub
++ odizolowania komponentu, sprowadza się do innego importu.
+
+@ 0 2 0 11a1ece0411a31510d2d668c2872ebdb
++ Wszystko pochodzi z pakietu `soundness`. Prawdziwe środowisko i właściwości systemowe
++ dostarczają importy, a ostatni import pozwala przykładom wypisywać wyniki:
+
+% 2 1 0 14a3807827e8d0921cc320532bb7433e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 059ff7877f398f380499306372d8cd5d
++ ### Zmienne środowiskowe
+
+@ 0 3 0 0af32cce4486a0a405e09a36f59aafb2
++ Zmienną odczytuje się jako składową `Environment`. Jej nazwę zapisuje się w camel case i
++ tłumaczy na konwencjonalną postać wielkimi literami z podkreśleniami, więc `Environment.editor`
++ odczytuje `EDITOR`. Wynik ma typ, który zmienna, jak wiadomo, przechowuje, zdekodowany z jej
++ tekstu:
+
+% 2 1 0 1622687a52eca0db15555bd26a895da6
+
+% 3 1 0 09dd93c4b093930502c88e3a5e2426fe
+
+% 4 1 0 09db27c50f51f26b13639ad956ca1963
+
+% 0 1 0 01fb7de4eedb635b1e2169faee540e72
+
+% 0 1 0 05875ba84d77f669016a0911ae2b2153
+
+% 1 1 0 1565295db44408190e6645dd8b567bc7
+
+@ 0 2 0 1a4c3cb60f40553603cec9d2753ddaef
++ Zmienna, która nie jest ustawiona, zgłasza `Environment.Error`. [Strategia][strategia] w
++ zasięgu zamienia go w wyjątek, brak wartości lub obsłużoną porażkę, zależnie od wyboru
++ wywołującego:
+
+% 2 1 0 005526aacc341e93070f69f1d603de05
+
+% 3 1 0 1dd9aac1ce5b73e712aaf85c09a7e7b7
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 1dd6fbdc73f73ea20de1428bafef190e
+
+% 1 1 0 14159f5d34f7cdc30e5283652bee8098
+
+@ 0 1 0 02498f0f4c0d2bc70bd3a361d1aa1ec7
++ ### Nadpisywanie dla bloku
+
+@ 0 4 0 09d4af88062f38c30497c62be36a06aa
++ Środowisko jest zdolnością, więc blok można uruchomić względem innego środowiska.
++ `Environment` to pojedyncza funkcja z nazwy zmiennej w jej
++ [opcjonalną](optional-values.md) wartość. Takie środowisko zbudowane na potrzeby testu albo
++ nakładające nadpisania na prawdziwe środowisko to kilka wierszy, a given w węższym zasięgu ma
++ pierwszeństwo:
+
+% 2 1 0 138ea1627817115f0332fa7b7787290a
+
+% 3 1 0 147f3b0df5e7948b0ca2474de7eec801
+
+% 4 1 0 1d5f65d053b3ce62149218c65a6fdde0
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 033031f22ce2c04c131b7483cf8efa39
+
+% 0 1 0 0087b51859712c2608cc53ba6fb67a42
+
+% 1 1 0 072cb5b236d114051fc277f608e8ff1f
+
+@ 0 5 0 13ff13aa9c7d67f01032cff008ed98e2
++ Podstawienie zupełnie innego środowiska zastępuje każde wyszukiwanie w jego zasięgu.
++ `environments.emptyEnvironment` jest jednym z nich i dzięki niemu kod czytający środowisko
++ można sprawdzić bez zależności od maszyny, na której działa. `systems.emptySystem` robi to samo
++ dla właściwości systemowych, więc test nie musi też zależeć od JVM, która akurat go uruchamia.
++ [Testowanie](testing.md) omawia resztę tego, czego test potrzebuje.
+
+@ 0 5 0 1a79c57c68d77d881b37af5256ef852d
++ Testy nie są jedynym przypadkiem. Rezydentny [demon](daemons.md) obsługuje przez cały swój czas
++ życia wywołania z wielu różnych powłok, każde z własnym środowiskiem, a globalne środowisko JVM
++ należy do tej powłoki, która akurat uruchomiła demona. Przyjmowanie środowiska jako zdolności
++ pozwala obsłużyć każde wywołanie względem środowiska, z którego rzeczywiście pochodzi.
+
+@ 0 4 0 129db9435ba56ff2015a28d047e34c3c
++ `variables` ustawia jedną zmienną dla jednego bloku. Zmienną nazywa się w camel case, a ustawia
++ w konwencjonalnej postaci wielkimi literami, więc `gitIndexFile` to `GIT_INDEX_FILE`. Jest
++ ustawiana na wierzchu `Environment` w zasięgu, więc [podproces](processes.md) uruchomiony w
++ bloku ją dziedziczy:
+
+% 2 1 0 14e8550b371122631713b6c24a85df20
+
+% 3 1 0 0f67e7573e9ffbc01982fa8b21844203
+
+% 4 1 0 14d9066ba7ff653f1bbaaab438a59449
+
+% 0 1 0 12c41bd8f0a8a87c083c5d2f3853f2d0
+
+% 0 1 0 0197cf45f52c25220823cc6a42dee232
+
+% 1 1 0 0fd3e3b2e98054ab0b2ace85ab89e483
+
+@ 0 1 0 0ed839fb011403a807775b4744f0fa8a
++ ### Właściwości systemowe
+
+@ 0 2 0 09eb88b654cc44b0094ebc3776c88bf8
++ Oba źródła są podobne w tym, że przenoszą do JVM tekstowe pary kluczy i wartości. Różnią się
++ tym, skąd pochodzą, i tym, jak są nazywane:
+
+% 2 1 0 13f8425e361347c91bed84ca7f8e5658
+
+@ 0 7 0 166f134acec770990b725c61ca0f3bf2
++ column  Źródło
++ column  Pochodzi z
++ column  Nazywane
++ column  Na przykład
++ column  Gdy brakuje
++ row  zmienne środowiskowe  powłoka, która uruchomiła proces  wielkimi literami  `PATH`, `XDG_CONFIG_HOME`  `Environment.Error`
++ row  właściwości systemowe  argumenty `-D` samego `java`  małymi literami z kropkami lub w camel case  `default.log.directory`  `Property.Error`
+
+% 1 1 0 1d4dcaac7ef68757140a4e8055501f85
+
+@ 0 3 0 1b040e52040c7ea30837920da41841d3
++ Oba przychodzą jako tekst, w formacie, który zna tylko czytający program. To argument za
++ [dekodowaniem](decoding.md) ich do typów strukturalnych tam, gdzie są czytane, zamiast
++ przekazywania napisów w głąb programu.
+
+@ 0 2 0 052c4c47566bf506132320769f497613
++ Właściwość systemową odczytuje się przez `System.properties`. Jej nazwę z kropkami zapisuje się
++ jako ścieżkę składowych zakończoną wywołaniem. Każda właściwość jest dekodowana do swojego
++ naturalnego typu:
+
+% 2 1 0 0747710122f72776171fe5727905c923
+
+% 3 1 0 060e573a5d07f6dd1a1dffcb54569acc
+
+% 4 1 0 0501bfd203b798c1112f9bae18bec90d
+
+% 0 1 0 12a1e1bc491721630f04516594eeda1f
+
+% 0 1 0 137db50d2b6d4a601342a6b8ec774e03
+
+% 0 1 0 0064dafdba23f7b00b67264a4a43b6f7
+
+% 1 1 0 092aec3eb777c1fb1d15f73594568c0a
+
+@ 0 2 0 0793ace4eafa190e17b4699158e9f8cb
++ Właściwość, która nie jest zdefiniowana, zgłasza `Property.Error`, obsługiwany jak każdy inny
++ błąd.
+
+@ 0 1 0 182fee2537af9aac12dad11599dbe861
++ ### Katalog roboczy
+
+@ 0 4 0 0740a89be5aa137f1f20295a7dc38666
++ Katalog, w którym uruchomiono program, jest zdolnością `WorkingDirectory`. Żąda się jej tam,
++ gdzie jest potrzebna, i nie odczytuje z globalnej zmiennej. Gdy w zasięgu jest
++ `workingDirectories.javaBaseWorkingDirectory`, metoda, która rozwiązuje względną
++ [ścieżkę](paths.md) względem katalogu roboczego, deklaruje tę potrzebę w swojej sygnaturze.
+
+@ 0 2 0 12752bb2d3e98e77070575a1ebd23cd8
++ `workingDirectory` daje sam katalog, a `temporaryDirectory` – katalog plików tymczasowych.
++ Każdy jest rozwiązywany do żądanego typu ścieżki.
+
+@ 0 1 0 0c79b0e645bd89551392f4a70e1320bf
++ ### Katalogi standardowe
+
+@ 0 5 0 14151918d5c4235110523d5b3dcb48bd
++ [Specyfikacja katalogów bazowych XDG](https://specifications.freedesktop.org/basedir-spec/latest/)
++ określa, gdzie należą dane, konfiguracja, pamięć podręczna i stan programu. Respektuje
++ środowisko użytkownika tam, gdzie jest ono ustawione, a tam, gdzie nie jest, wraca do wartości
++ domyślnych specyfikacji. `Xdg` podaje każdy z tych katalogów oraz ścieżki wyszukiwania dla
++ danych i konfiguracji:
+
+% 2 1 0 098de8c5715a23291d6659f73d12e37f
+
+% 3 1 0 057fd012f73d8b7c05d28005b9ab4e17
+
+% 4 1 0 11b54c9161f7ec600dc0d9e5ee21f89d
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 040e2398c7e282e71d27fecdf295b29f
+
+% 0 1 0 158bf2ea191b01f40ad32bdc36d074df
+
+% 0 1 0 1cc5de73f635c2421a290e57eec26083
+
+% 1 1 0 0918ab30f32f7a531043523f2bfd8870
+
+@ 0 3 0 16c7fadb436e4b5a11ae698a0fd51099
++ `configHome` to `~/.config`, chyba że `XDG_CONFIG_HOME` stanowi inaczej. Używanie ich zamiast
++ zakodowanego na sztywno `~/.myapp` sprawia, że pliki programu trafiają tam, gdzie oczekują ich
++ narzędzia użytkownika do kopii zapasowych, synchronizacji i sprzątania.
+
+@ 0 4 0 1ae741f8dc6565dd0e9082fd49c48b6e
++ Konwencjonalny układ systemu uniksowego również jest typowany. `Home` i `Base` są każdy
++ `BaseLayout`: drzewem zagnieżdżonych obiektów, które nazywają katalogi w katalogu domowym
++ użytkownika oraz pod korzeniem systemu plików. Zastosowanie jednego z nich, z typem ścieżki jako
++ argumentem typu, rozwiązuje go względem `Environment` i `System` w zasięgu:
+
+% 2 1 0 16c95cdda096b18f07ac59441a0c185c
+
+% 3 1 0 020f462c8f4d4c4e05dc6d9030fbef08
+
+% 4 1 0 02589c1a23f07d9f11d18552d5b6d7c8
+
+% 0 1 0 1b177e988e78ec5c01f37e110f6724ff
+
+% 0 1 0 18aa5d66544cfcc415815032b469bda7
+
+% 0 1 0 02711bf9ed7c1b7116c2f89e8d76e8f6
+
+% 1 1 0 0bff173fda8d7e340d87154680adaa5d
+
+@ 0 3 0 1537129b03aa494d1ae381b091fc2cea
++ Są to `~/.config`, `~/.local/share` i `/var/log`. Każdy układ wie też, czy przeznaczony jest do
++ zapisu. `readOnly` ma wartość `true` między innymi dla `/usr` i wszystkiego pod nim, więc
++ program może to sprawdzić, zanim spróbuje:
+
+% 2 1 0 0b84e0f9201153020ad97e450efd5ab4
+
+% 3 1 0 1587fb5048df5d1c1c93530af99e12ea
+
+% 4 1 0 13c6442abd98870b1e9bcf81e27223b5
+
+% 0 1 0 01e27cf7aa410f7e1a1b5dc22f7bb01e
+
+% 0 1 0 1a5bc83eb82777e80a3ca2ac669c43a9
+
+% 1 1 0 0f03157811fde5630b7e36e4aea0bafc
+
+@ 0 2 0 1959a177ca929bde1a2651b424e44be2
++ Układy wymieniono w całości, wraz z ich wartościami `readOnly`, w części
++ [katalogi standardowe](filesystem.md#standard-directories).
+
+@ 0 1 0 13486d6f9a5b7b740dde3aa3ee6c18d1
++ ### Maszyna
+
+@ 0 5 0 1cfcc022a80c8dbf1364fe0f6fa71664
++ `Architecture` nazywa procesor, na którym działa program. Jest parsowana z raportu samej
++ platformy do typowanej wartości, takiej jak `X86(64)`, `Arm(64)` czy
++ `Ppc(64, littleEndian = true)`. Kod, który musi wybrać bibliotekę natywną lub ścieżkę w kodzie
++ według architektury, dopasowuje więc wartość, a nie napis, którego pisownia różni się między
++ platformami.
+
+@ 0 2 0 17eb266b7d8e03df0326ab3a4b615ca0
++ `Os` robi to samo dla systemu operacyjnego. Jest dekodowany z wielu pisowni, jakie przyjmuje
++ właściwość `os.name`, przez dopasowanie jej początku bez względu na wielkość liter:
+
+% 2 1 0 1cd02157f38cd6cb1e84b3829323f10c
+
+@ 0 3 0 001d28c96f21a41d11fedc514bba972d
++ column  Przypadek
++ column  Gdy `os.name` zaczyna się od
++ column  Na przykład
+
+% 0 1 0 024196069791c3ff17cd76cd7e5aacb5
+
+@ 0 1 0 0d06f25253aecfc41d8bdbfe7f7efb5e
++ row  `Os.MacOs`  `mac` lub `darwin`  `Mac OS X`
+
+% 0 1 0 0fcdc034bcb2abf104e692e41060fcaa
+
+% 0 1 0 1022241faf4c037f155d24ddc90b373c
+
+% 0 1 0 140ef6718ad3c2f9083e41f3bc5d8927
+
+% 0 1 0 0fe65a713aa341341f76818171a8a466
+
+@ 0 1 0 1e44bd1021c2ff85100b5961ec34dbed
++ row  `Os.Solaris`  `sunos` lub `solaris`  `SunOS`
+
+% 0 1 0 053188984e93bd3d1018cd907db7e46c
+
+@ 0 1 0 04aa89d2b7f5c79014d8911a5748ef7f
++ row  `Os.Other(name)`  cokolwiek innego, zachowane jako `name`
+
+% 1 1 0 15f08a2f64092c5a1a6546301aaf8ca6
+
+@ 0 3 0 1d44edf3ba7b445b097c335495c5ca69
++ Oba są odczytywane z `System` w zasięgu, więc test może uruchomić ten sam kod tak, jakby
++ działał na innej platformie, przekazując mu ustalony `System`. Program, który na przykład
++ wskazuje wydanie do pobrania, dopasowuje parę, a nie surowy tekst właściwości:
+
+% 2 1 0 17052f3236c1cfcd06bec1fb1882caa4
+
+% 0 1 0 01aee804b461ce5e145cbaa09d16540e
+
+% 0 1 0 06064934c25a5a2b0968cff6ffacb827
+
+% 0 1 0 160922db636a257d18651f073eb95a22
+
+% 0 1 0 14f497c0d0407be51ca8861e7a488e45
+
+% 0 1 0 1674bbfce8add2730c02ae647ff8ca43
+
+% 0 1 0 1c28eeef0e96b6710c212bf3fa90d339
+
+% 1 1 0 16f735493bdba72402ae30a43ed9824e
+
+@ 0 3 0 1e7ae87f5522e3121732680ee020df69
++ Trzecim aspektem platformy jest sama maszyna wirtualna. Nazywa ją `Vm` i to w niej
++ przechwytuje się zdarzenia zgłaszane przez VM: jej wyłączenie, nieprzechwycony wyjątek,
++ odśmiecanie. [Współbieżność](concurrency.md) opisuje `Vm.intercept`.
+
+@ 0 3 0 1088402f2d869fb401cbaf32c021fbc2
++ `termcaps.environmentTermcap` informuje, co potrafi [terminal](terminal.md). Ustala głębię
++ kolorów na podstawie `COLORTERM`, jeśli jest ustawiona, a w przeciwnym razie na podstawie
++ `tput`. Dzięki temu stylizowane wyjście poprawnie degraduje się na terminalu, który nie potrafi
++ go wyświetlić.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 4 0 0b77120f3bb4482b0cac5a6b24ab3926
++ - [Interfejsy wiersza poleceń](cli.md) odczytują argumenty programu w ten sam typowany sposób.
++ - [Procesy](processes.md) uruchamiają inne programy, które dziedziczą środowisko w zasięgu.
++ - [System plików](filesystem.md) odczytuje i zapisuje pliki, które przechowują te katalogi.
++ - [Ścieżka klas](classpath.md) odczytuje ścieżkę klas z właściwości systemowej, a [internacjonalizacja](internationalization.md) – ustawienia regionalne ze środowiska.

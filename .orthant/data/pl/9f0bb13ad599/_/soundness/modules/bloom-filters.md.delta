@@ -1,0 +1,8 @@
+orthant 2 language
+
+@ 0 4 0 0d12584f3176092d189938948043cdd6
++ Dodać można dowolną wartość [skracalną](hashing.md#hashing-your-own-types), a algorytm skrótu
++ wybiera się jako typ. Filtr można wypełniać na miejscu, póki jest nowy, a potem zostaje
++ zamrożony. Zamrożony filtr jest [niemutowalny]: `+` i `++` dają nowy filtr, a stary
++ pozostawiają bez zmian, więc zamrożone filtry współdzieli się i gromadzi równie bezpiecznie
++ jak każdą inną wartość.

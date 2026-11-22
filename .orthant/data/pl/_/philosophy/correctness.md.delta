@@ -1,0 +1,131 @@
+orthant 2 language
+
+@ 0 1 0 14283ee1d8cf6c9f0a4520bf5e7cfb14
++ # Poprawność
+
+@ 0 7 0 0c5ec7bd955b5ff00f3ff6c626261577
++ Poprawność jest celem, któremu służą pozostałe zasady Soundness: program powinien być
++ ograniczony tak, by zachowywał się poprawnie, a język powinien pomagać to zapewnić. Tam,
++ gdzie większość bibliotek jedynie umożliwia poprawność, Soundness stara się uczynić
++ niepoprawność niemożliwą – przenosząc kontrole do czasu kompilacji, wykluczając niepoprawne
++ stany i czyniąc porażki widocznymi w typach – tak aby o programie, który się kompiluje,
++ wiadomo było już, że jest poprawny pod bardzo wieloma względami. To właśnie oznacza
++ „poprawny domyślnie”: bezpieczeństwo jest punktem wyjścia, a nie dodatkiem doczepianym
++ później.
+
+@ 0 1 0 05b69dece367ec5008326498a5fd66f6
++ ## Co oznacza „bardzo wiele”
+
+@ 0 3 0 1048e5bd278380e011062c350d898e18
++ Warto to twierdzenie skonkretyzować. W programie zbudowanym na Soundness – przy każdym
++ poniższym wierszu z nazwami odpowiedniego modułu w zasięgu – następujące rzeczy są błędami
++ kompilacji, a nie możliwościami:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 1c1ac2fe50f70bed0195f80fd5715f3e
+
+% 0 1 0 04ddada148f7825306a00e220fb30ab0
+
+% 0 1 0 13379b40670a9e4a0cc8954e52c26716
+
+% 0 1 0 09183272e3c853e009185c563172228d
+
+% 0 1 0 0cefb7b60337643418b46bfd243def63
+
+% 0 1 0 15844555d046587e02525e422bca14ed
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 05c79083f48833f50898f18e8d989ee6
++ A następujące rzeczy są *widoczne w sygnaturze*, więc wywołujący nie może o nich nie wiedzieć:
++ że operacja może się nie powieść i w jaki sposób; że może blokować; że potrzebuje sieci,
++ systemu plików lub źródła losowości; że loguje, i co.
+
+@ 0 2 0 0aba391197bd369517d17de8b38c7e0c
++ Nic z tego nie jest egzotyczne. Każda z tych rzeczy to zwykły błąd, który popełniają zwykłe
++ programy, wyłapany z konstrukcji, a nie podczas przeglądu kodu.
+
+@ 0 1 0 1bbdb574387374ca0c8279e482824b13
++ ## Gdzie odbywa się sprawdzanie
+
+@ 0 2 0 09766765c0d3d95118b266162813ed2d
++ Większość ciężaru niosą trzy mechanizmy, opisane osobno gdzie indziej.
+
+@ 0 2 0 0d13a777184eeb041cba8588c7d40383
++ Wartości są sprawdzane **w chwili konstrukcji**, więc posiadanie wartości dowodzi, że jest
++ poprawnie zbudowana – to temat [bezpieczeństwa z konstrukcji](safety-by-construction.md).
+
+@ 0 3 0 0d4600042babf2d403e30e677f216ece
++ Typy są kształtowane tak, by **niepoprawne stany nie miały reprezentacji**, a każde przejście
++ między stanami jest **totalne** – to dwie złote zasady, opisane w
++ [stanach niemożliwych](impossible-states.md) i [totalnych przejściach](total-transitions.md).
+
+@ 0 2 0 0355becbf8d65c180f978799d5e9a20d
++ Wymagania są wyrażane **uczciwie w sygnaturach**, więc nic, czego operacja potrzebuje, nie
++ jest ukryte, a nic, co deklaruje, nie jest nieużywane – [uczciwe
++ sygnatury](honest-signatures.md).
+
+@ 0 1 0 1f9f6722a070f80d0c2a2601d465fdc7
++ ## Przekonanie u podstaw
+
+@ 0 2 0 1e5e04936ba198cd0f53adcd189b677b
++ Każdą analizę statyczną, którą może przeprowadzić programista, kompilator może przeprowadzić
++ lepiej; a każdą analizę, którą kompilator może przeprowadzić, powinien przeprowadzić.
+
+@ 0 5 0 187668fe8bfac9b0093edbf3a06ba28f
++ Programista sprawdzający na oko, czy każde `match` obejmuje każdy przypadek, wykonuje pracę
++ kompilatora, mniej niezawodnie, i wykonuje ją ponownie po każdej zmianie. Kompilator robi to
++ przy każdej kompilacji, wyczerpująco, i zgłasza każde miejsce, którego dotyczy dodanie
++ przypadku do wyliczenia. Pytanie nigdy więc nie brzmi, *czy* przeprowadzać analizę, lecz *kto*
++ ma ją przeprowadzić – a odpowiedź za każdym razem jest ta sama.
+
+@ 0 4 0 1a5688aa6892d7c303c82ea5fc0d85f9
++ Dlatego ostrzeżenia o niewyczerpującym dopasowaniu traktuje się jako błędy, a nie szum, dlatego
++ `-Wunused` jest włączone i dlatego celowo częściowe dopasowanie musi to zaznaczyć przez
++ `.absolve`, zamiast być po cichu dopuszczane. Ta dyscyplina nie kosztuje niczego poza
++ przypadkową częściowością, czyli tą, która staje się błędem.
+
+@ 0 1 0 18261a5df1330e7217e28b9aa96cce01
++ ## Czym poprawność nie jest
+
+@ 0 4 0 091d3e724139e37d08f7a741cbad5d66
++ **Nie jest weryfikacją.** Soundness nie dowodzi, że program oblicza właściwą odpowiedź.
++ Wyklucza duże, dobrze poznane klasy błędności – niepoprawne wartości, stany niemożliwe,
++ nieobsłużone porażki, zasoby, które wymknęły się poza swój zasięg – a logikę dziedzinową
++ zostawia programiście i testom.
+
+@ 0 4 0 0855caa53baee4431c105249cd26f675
++ **Nie jest gwarancją co do świata zewnętrznego.** `Hostname` jest składniowo poprawny; to, czy
++ da się go rozwiązać, nie jest pytaniem statycznym. Dyscyplina polega na zakodowaniu tego, co
++ naprawdę wynika z wartości, i zgłaszaniu reszty jako typowanych porażek, a nie na wymyślaniu
++ typu, który obiecuje więcej, niż może dać.
+
+@ 0 4 0 0c7d70df3d7592d51c3afefc3cc0e6b2
++ **Nie jest wolna od osądu.** Każda kontrola przeniesiona do czasu kompilacji ogranicza to, co
++ da się napisać, a ograniczenie, które wyklucza więcej pomyłek niż prawidłowych programów, jest
++ dobre. Ten kompromis rozstrzyga się w każdym przypadku osobno i można się w nim pomylić w obu
++ kierunkach.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ile to kosztuje
+
+@ 0 3 0 04c789ca2bedfa3b0cf927bf4c159014
++ Głównie czas kompilacji. Obliczenia na poziomie typów, rozwijanie w miejscu wywołania
++ i rozwijanie makr to praca, którą kompilator wykonuje przy każdej kompilacji, aby maszyna nie
++ musiała jej wykonywać przy każdym uruchomieniu, a projekt Soundness kompiluje się wolniej niż
++ równoważny projekt napisany luźno.
+
+@ 0 5 0 14c623f97401975e149d63da59736eb9
++ Drugim kosztem jest trudniejszy początek. Z biblioteką, która wszędzie przyjmuje `String`,
++ łatwiej zacząć niż z taką, która chce `Path on Linux`, `Port` i `MediaType`; zapłata wraca
++ w chwili, w której luźna wersja debugowałaby incydent produkcyjny. To prawdziwy kompromis i warto
++ go zawierać świadomie, a nie na mocy założenia.
+
+@ 0 1 0 0701c4247139d34c1dbf2c33b4c54ea1
++ [Zerowy koszt](zero-cost.md) wyjaśnia, dlaczego przynajmniej rachunek w czasie wykonania jest
++ bliski zeru.

@@ -1,0 +1,78 @@
+orthant 2 language
+
+@ 0 1 0 080b4fc45ae284021f7ec018323e5702
++ # `↯/s.112.5` – `Sse.Error`
+
+@ 0 1 0 0fe43f337cde852a0182f4aabd4804b4
++ Zgłaszany, gdy Obligatory nie może sparsować zdarzenia wysyłanego przez serwer.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 6 0 135b2b67ef7e73ae11522dfc9186944b
++ Komunikaty SSE są ujęte w ramki jako wiersze `field: value`, przy czym `field` jest
++ ograniczone do `event`, `data`, `id` lub `retry`. Klasa `SseSource` egzekwuje też pojemność
++ bufora odtwarzania. Gdy którekolwiek z tych oczekiwań zostanie naruszone, zgłaszany jest ten
++ błąd. Konstruktor przyjmuje `reason: Reason`; przedstawiony komunikat to
++ `the server-sent event was not valid because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 1 0 1b494aa4128a8a550ae2f3d0a98128e6
++ ### `↯/s.112.5.1` – `MalformedField`
+
+@ 0 2 0 1e23d74af4daa8811b395debb5232aa2
++ Wiersz w strumieniu SSE nie zawierał wymaganego separatora `:` między nazwą pola a wartością.
+
+@ 0 1 0 07685edf8206835805cfa90d33d7d5ed
++ **Przykład.** `[↯/s.112.5.1] the server-sent event was not valid because a line did not contain the expected field: value separator`
+
+@ 0 2 0 1cab30f0ac2a77910faa6a857aa898d8
++ **Rozwiązanie.** Należy sprawdzić, czy producent emituje poprawne ramki SSE; każdy niepusty
++ wiersz musi zawierać dwukropek.
+
+@ 0 1 0 13b9fceb1eec12fc0917f8a8a4226409
++ ### `↯/s.112.5.2` – `UnknownField`
+
+@ 0 2 0 08dc52f33b9a9bea1585599c5794bf9c
++ Napotkano nazwę pola inną niż `event`, `data`, `id` lub `retry`.
+
+@ 0 1 0 0c0983c09f798b3308738abe1b19b6d8
++ **Przykład.** `[↯/s.112.5.2] the server-sent event was not valid because the field name was not one of event, data, id, or retry`
+
+@ 0 2 0 0c64cb42d17b5f161443c6f672898874
++ **Rozwiązanie.** Należy usunąć niestandardowe pola przed parsowaniem albo rozszerzyć parser
++ tak, by akceptował to pole.
+
+@ 0 1 0 1e02ebf47236f5fe1b71d327deac89a8
++ ### `↯/s.112.5.3` – `BadRetryValue`
+
+@ 0 1 0 1967777770a882e11c0674bab229f1ed
++ Wartość pola `retry` nie była liczbą całkowitą dającą się sparsować.
+
+@ 0 1 0 0d40865121f7c2201ad2af4048c7182b
++ **Przykład.** `[↯/s.112.5.3] the server-sent event was not valid because the retry field value could not be parsed as an integer`
+
+@ 0 2 0 11429d2b592c210108201a65fd6f0349
++ **Rozwiązanie.** Wartość `retry` musi być zwykłą dziesiętną liczbą całkowitą (w
++ milisekundach).
+
+@ 0 1 0 004de77ada8d47e719ae368885460348
++ ### `↯/s.112.5.4` – `CapacityExceeded`
+
+@ 0 3 0 1b97b45025e432f00a5cdefb322a7354
++ Zakres odtwarzania żądany od `SseSource.stream(start)` był większy niż pojemność bufora
++ cyklicznego źródła, więc starsze zdarzenia zostały nadpisane.
+
+@ 0 1 0 062325f57fe7bc790a87fcf04948d78e
++ **Przykład.** `[↯/s.112.5.4] the server-sent event was not valid because the requested replay range exceeded the source buffer capacity`
+
+@ 0 2 0 1e8de2cd70d74c3300c299e3be8af29c
++ **Rozwiązanie.** Należy zwiększyć `capacity` źródła albo zażądać nowszego indeksu `start`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 04a190c5fac0e16513671c57fd2d7080
++ - Źródło: `lib/obligatory/src/json/obligatory.Sse.scala`

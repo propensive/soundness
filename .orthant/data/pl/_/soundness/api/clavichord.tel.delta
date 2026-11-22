@@ -1,0 +1,142 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0e19b7240e172a6e1463acb32379e7ac
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 063a3596783b20131d69b01224a6e921
++ info   naciśnięcie klawisza jako wartość: znak, nazwany klawisz lub którykolwiek z nich przytrzymany z modyfikatorami
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0efe6de3f1f70f371af3ddfbeb67db53
++     _Clavichord_ to słownictwo klawiszy wspólne dla wszystkiego w Soundness, co odczytuje lub
++     wytwarza naciśnięcie klawisza. Terminale i przeglądarki zgadzają się co do tego, *czym* jest
++     naciśnięcie klawisza, a różnią się tylko sposobem jego kodowania, więc model znajduje się tu,
++     z dala od obu: profanity dekoduje sekwencje sterujące terminala na wartości `Keypress`, a
++     tarantula przedstawia je jako akcje klawiszy zdefiniowane przez protokół WebDriver, przy czym
++     żadna z bibliotek nie wie o drugiej.
+
+@ 0 4 0 0ea79d899386dc941817dbf5c87a79db
++     `Keypress` to zwykły znak, klawisz funkcyjny, jeden z nazwanych klawiszy edycyjnych,
++     nienazwana w inny sposób sekwencja sterująca lub któryś z nich opakowany w przytrzymane z nim
++     modyfikatory. Modyfikator przyjmuje tylko to, co sensownie można zmodyfikować, więc typ
++     wyklucza naciśnięcia klawiszy, których żadna klawiatura nie może wytworzyć.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 15d368505870e3a012812d963994c34f
+
+% 0 1 0 169a12b3996d22b0179b7a905e7e6d82
+
+% 0 1 0 19bf92dcb243647102e720d640f1e9a4
+
+% 0 1 0 0b529f0937e59b90116797642b8bff06
+
+% 0 1 0 1fbd72a8ddff10a310486df01b93ba27
+
+% 0 1 0 031a60e29e1b9e9d11d4498a3d7ad264
+
+% 0 1 0 00a9c40e90ef63420dc566ed2819459e
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 2 0 0988c78676b29c9616fc770106d48833
++     Biblioteka ma jeden zbiór źródeł, `clavichord.core`, dla każdej platformy, a wszystko jest
++     eksportowane do modułu zbiorczego `soundness`.
+
+% 0 1 0 1797ecdbacccb8871a70287d860932f0
+
+@ 0 1 0 01ef4a600c61beaf0db47951246721ff
++ entry .Keypress   klawisz w chwili naciśnięcia: znak, klawisz nazwany lub funkcyjny albo klawisz przytrzymany z modyfikatorami
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 1 0 1a3edbe14cc6ae741f850ab21f80c425
++       Wyliczenie, którego przypadki to:
+
+@ 0 2 0 164ff5b4798d5ad01ed5a77a37e7f4f0
++       - nazwane klawisze edycyjne, `Tab`, `Enter`, `Backspace`, `Delete`, `Escape`, `Insert`,
++         `Home`, `End`, `PageUp`, `PageDown`, `Left`, `Right`, `Up` i `Down`, każdy będący też
+
+% 0 1 0 0c023f29c103ce7915204d8d2c7a5a22
+
+@ 0 9 0 048c1278fbb3e30907f1874e107d9609
++       - `CharKey(char)`, zwykły znak, z już uwzględnionym ewentualnym Shiftem (`a` z Shiftem
++         to `CharKey('A')`);
++       - `FunctionKey(number)`, od `F1` do `F12` i dalej;
++       - `EscapeSeq(id, content*)`, sekwencja sterująca bez innej nazwy, opisana końcowym
++         znakiem identyfikującym i parametrami;
++       - oraz modyfikatory, zagnieżdżane na zewnątrz w ustalonej kolejności: `Shift` klawisza
++         edycyjnego lub funkcyjnego; `Alt` tychże lub `Shift`; `Ctrl` tychże, `Alt` lub jednego
++         ze znaków, które może nieść kod sterujący (od `'A'` do `'Z'`, `'['`, `'\\'`, `']'`, `'^'`,
++         `'_'` i `'@'`); oraz `Meta` dowolnego z pozostałych modyfikatorów lub klawiszy.
+
+@ 0 3 0 0657a17d75c0e35919d9a6890a72b74b
++       Typy parametrów modyfikatorów odpowiadają tej kolejności, więc `Shift(CharKey('a'))` i
++       `Alt(Ctrl('C'))` się nie kompilują: `Ctrl(Alt(Left))` to jedyny sposób zapisania tej
++       kombinacji, a dopasowanie musi uwzględnić tylko jeden.
+
+% 2 1 0 0d8b1e8e210b2d1508ab325110f737a3
+
+% 3 1 0 041f8e6f552a761003d54f0f1074e4bb
+
+% 0 1 0 1f7168d7f274c1161a30132b4f38702f
+
+% 0 1 0 0a196065917af3f7001103e8390ad348
+
+% 0 1 0 1ddd345b3dbcedbb039244e6b992d4c0
+
+% 0 1 0 068952870237f92419293fde76cf245e
+
+% 1 1 0 0ebd7dddb460b16415faa26ac9806383
+
+@ 0 2 0 1195a3af426db294001d85d0d1be812f
++       Naciśnięcie klawisza jest pokazywane (`.showable`) z symbolem Unicode w nawiasach
++       kwadratowych dla każdego klawisza i modyfikatora, połączonym z tym, co modyfikuje, za
++       pomocą `+`.
+
+% 0 1 0 1c9d1c65cabd3eb50d6a5eb7ea530f12
+
+@ 0 8 0 005e5d1952dd0f2b1dc16179f7d64ebf
++   entry .Editing   trait znacznikowy czternastu nazwanych klawiszy edycyjnych
++       Rozszerzają go `Tab`, `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Delete`, `Enter`,
++       `Backspace`, `Escape`, `Left`, `Right`, `Up` i `Down`. Jest nominalnym znacznikiem, a nie
++       unią typów singletonowych przypadków, aby nadal je dopuszczał, gdy są osiągane przez metody
++       przekazujące eksportu modułu zbiorczego, jako `soundness.Keypress.Enter`.
++   entry .EditKey   dowolny z nazwanych klawiszy edycyjnych: `Keypress & Keypress.Editing`
++       Typ klawisza, który oprócz klawiszy funkcyjnych mogą opakowywać `Shift`, `Alt`, `Ctrl` i
++       `Meta`, oraz typ do użycia w metodzie obsługującej wyłącznie klawisze edycyjne.
+
+% 2 1 0 16e50cf5e9d5283e1c6596040a22ec65
+
+% 3 1 0 18d471cf1506c5160340b77345b659db
+
+% 0 1 0 01c15004a9254e4705dd1d962ebd8f4e
+
+% 1 1 0 144cc6a51f545b640b7e21ec44708d2d
+
+@ 0 6 0 06a94eb15b160eb41e5cd8dc29505f20
++   entry .showable   pokazuje naciśnięcie klawisza z symbolem Unicode w nawiasach dla każdego klawisza i modyfikatora
++       Shift to `[⇧]`, Alt `[⌥]`, Ctrl `[⌃]`, a Meta `[⌘]`, każdy połączony z tym, co
++       modyfikuje, za pomocą `+`. Klawisze edycyjne to `[⇥]`, `[↵]`, `[⌫]`, `[⌦]`, `[⎋]`, `[⎀]`,
++       strzałki `[↑]` `[↓]` `[←]` `[→]`, `[↖]` dla Home, `[↘]` dla End oraz `[⇞]` `[⇟]` dla
++       klawiszy stron. Znak jest ujmowany w nawiasy jako on sam, z wyjątkiem spacji, `[␣]`;
++       klawisz funkcyjny to `[F5]`; a sekwencja sterująca to `[⎋R]`, pokazująca swój
++       identyfikator, ale nie zawartość.
+
+% 2 1 0 12a877f071a1d453010a6a5da1882093
+
+% 3 1 0 0f7718bab312c784163a8750f172c866
+
+% 0 1 0 17193a38b9c9f04b0d3beb8a79d0b32b
+
+% 0 1 0 13f3e03f02164f42177e61987e191e1d
+
+% 0 1 0 1f35362f0be6a3900e1e704277629d69
+
+% 1 1 0 1f47777353954f371d878b4fa9e4d53d

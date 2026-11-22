@@ -1,0 +1,317 @@
+orthant 2 language
+
+@ 0 1 0 00760b9ac28ed0bc18ff7eed1db7c234
++ # Parytet platform
+
+@ 0 5 0 02e0e1edbcf8665814961578b89e88fc
++ Platforma z „bateriami w zestawie” zasługuje na tę nazwę tylko wtedy, gdy baterie działają tam,
++ gdzie aplikacje faktycznie się uruchamia: na JVM, w przeglądarkach, jako natywne pliki binarne,
++ w środowiskach uruchomieniowych WASM i na urządzeniach z Androidem. Obietnica nie polega na tym,
++ że każdy moduł działa wszędzie – przeglądarka nie ma systemu plików – lecz na tym, że każde
++ wykluczenie jest nieodłączne, udokumentowane i sprawdzane, a kompilacja na dowolną platformę
++ nie jest trudniejsza niż na JVM.
+
+@ 0 1 0 01b7abbd40ce8f4c05a1e98866bb5983
++ Gdzie dziś znajduje się każda platforma:
+
+% 2 1 0 0883e0b79cb06b510b571ab7dbc9b5d5
+
+@ 0 8 0 15bbb0b62a406b101425e4d89c67392c
++ column  Platforma
++ column  Obecnie
++ column  Zamyka
++ row  JVM  całość
++ row  JavaScript  większość modułów  plat-3
++ row  Native  większość modułów  plat-3
++ row  WASI  wąski, ale rzeczywisty wycinek, zbudowany na modelu komponentów WASM  plat-4
++ row  Android  od początku do końca – dexowanie D8 i podpisywanie APK bez Android SDK – ale poza zwykłą kompilacją  plat-2
+
+% 1 1 0 0a3afe9e3c46ec421ee33a70c32b2104
+
+@ 0 3 0 12c576a84f39ace80384922fd3d5edd8
++ Parytet oznacza usunięcie każdego z tych zastrzeżeń, a narzędziem do tego jest manifest:
++ macierz platform jako zatwierdzone w repozytorium dane, w których każde „nie” ma przyczynę, a
++ CI zawodzi, gdy rzeczywistość cofa się względem manifestu. Gdy jedynymi pozostałymi przyczynami
++ są przyczyny nieodłączne, deklaracja parytetu jest prawdziwa.
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ Pozycje tego nurtu wraz z horyzontami i twardymi zależnościami; [`status.tel`](status.tel) rejestruje, na jakim etapie jest każda z nich:
+
+% 2 1 0 1a49486c3b4d2d2d15f5c2c51b85eebd
+
+@ 0 11 0 19d6a961d72c3c7e035166ea0bf4ff9d
++ column  Pozycja
++ column  Tytuł
++ column  Horyzont
++ column  Wymaga
++ row  plat-1  manifest platform jest egzekwowany  bliski
++ row  plat-2  Android w zwykłej kompilacji  bliski → średni
++ row  plat-3  JavaScript i Native z pełnym pokryciem poza wykluczeniami  średni  plat-1
++ row  plat-4  WASI poza pierwszymi siedmioma backendami  średni → daleki
++ row  plat-5  deklaracja parytetu jest prawdziwa  daleki  plat-4
++ row  plat-6  przeglądarka jest pełnoprawną platformą docelową aplikacji  średni
++ row  plat-7  degustation atomizuje TASTy bez kompilatora  średni  plat-3
+
+% 1 1 0 170d3f3709b3deef1cd2ff673b424c42
+
+@ 0 1 0 046e448e2e19632a01bcd6f0bb7f0299
++ ## plat-1: manifest platform jest egzekwowany
+
+@ 0 2 0 101f07bd9906972015586fe41eb3f43b
++ Horyzont: bliski
++ Stan wyjściowy: 104 ze 145 wierszy kompiluje się dla JavaScriptu, 108 dla Native; 34
++ wykluczenia JavaScriptu, każde z przyczyną (pomiar 2026-10-21; 101 ze 144 w dniu 2026-09-25;
++ 94 ze 132 w dniu 2026-08-01)
+
+@ 0 6 0 0955585b3bd56b54186f37d0a4c93f52
++ `doc/compatibility.tsv` zapisuje macierz, a `etc/check-compatibility.py` (uruchamiany przez
++ `make build`) generuje na nowo jej kolumny platform z `build.mill` – z flag `scalaJs`/
++ `scalaNative` każdego komponentu i zbiorów źródeł `sources`/`jsSources`/`nativeSources` – i
++ zawodzi przy każdej rozbieżności z zatwierdzoną kopią lub przy wykluczeniu bez przyczyny w
++ `notes`. Macierz jest więc kontraktem: moduł dodany bez wiersza albo flaga przestawiona bez
++ zmiany pliku powodują niepowodzenie kompilacji, a jedyną treścią pisaną ręcznie jest przyczyna
++ każdej komórki `no` lub `core`.
+
+@ 0 2 0 155a8ca79eb6b193158be804bdda4d43
++ Ukończone, gdy: zwykła kompilacja generuje manifest na nowo, zawodzi przy rozbieżności z
++ zatwierdzoną kopią, a żaden wiersz wykluczenia nie ma pustej przyczyny – spełnione przez
++ `etc/check-compatibility.py`. Wskaźnik pośredni:
+
+% 0 1 0 131c76c742857dfc08f4e5d29215867d
+
+@ 0 1 0 193f187e802cd4da03fde08c28230438
++ ## plat-2: Android w zwykłej kompilacji
+
+@ 0 1 0 1ab880ee5d02c1ea1d60c0cf49f6c644
++ Horyzont: bliski → średni
+
+@ 0 3 0 0d9b885c84dd405e1e692c1bbe35853c
++ Ścieżka dexowania i podpisywania APK działa, ale zależy od `ANDROID_HOME` i jest wyłączona z
++ CI. Aplikacja na Androida powinna być kompilowana i podpisywana przy każdym poświadczanym
++ przebiegu, aby regresje ujawniały się natychmiast, a nie przy następnej ręcznej próbie.
+
+@ 0 2 0 1e32707143aaedca1cb799318a771c46
++ Ukończone, gdy: `make attest` obejmuje etap Androida, a CI zapisuje podpisany APK dla każdego
++ wydania.
+
+@ 0 1 0 134e5670da1189d31ee1387d2bff0082
++ ## plat-3: JavaScript i Native z pełnym pokryciem poza wykluczeniami
+
+@ 0 2 0 1a40572e16b707af0053a8ba6efb463d
++ Horyzont: średni
++ Wymaga: plat-1
+
+@ 0 2 0 02e1d0dd4b7a16dc110414ffd42a8393
++ Każdy moduł kompiluje się dla JavaScriptu i Native, chyba że przyczyna jego wykluczenia jest
++ nieodłączna, a pokrycie Native jest wszędzie weryfikowane rzeczywistym sprawdzeniem konsolidacji
++ pliku binarnego, a nie samą kompilacją.
+
+@ 0 2 0 041a025fe2e13f960ed32836dac38a64
++ Ukończone, gdy: manifest nie wykazuje żadnego wykluczenia JavaScriptu ani Native, którego
++ przyczyna nie jest nieodłączna, a sprawdzenie konsolidacji Native obejmuje każdy moduł zdolny
++ do działania na Native.
+
+@ 0 8 0 1de2b5b5d0d17643106252bfe802ccde
++ Nie pozostaje żadna znana luka Native, która nie byłaby nieodłączna. Zamknięte 2026-10-22:
++ pseudoterminal guillotine, przepisany na interoperacyjność z C w Scala Native (`posix_openpt`,
++ `posix_spawn`, `poll`; wersja JVM używa Panamy), dzięki czemu `Command#pty` uruchamia
++ prawdziwe terminale na Native. Zamknięte 2026-10-21: natywny backend coaxial dołącza do grup
++ multicastowych (co przenosi syndesis na Native); klient `soundnessHttp` z telekinesis
++ przeniesiono do kompilowanego na wiele platform `telekinesis.sockets`, co daje Native
++ `Http.Backend` (HTTP/1.1, przez połączenie OpenSSL z coaxial dla `https`); a konstrukcję
++ classloadera w hellenism przeniesiono do zbioru źródeł `core-jvm`, więc zasoby `cp"…"`, arkusze
++ stylów HTML z cataclysm i siedem backendów WASI także kompilują się dla Native.
+
+@ 0 8 0 084e5ab8dc7699011608878f3e56df6d
++ Kryptografia nie jest już wykluczeniem JavaScriptu: czysto scalowy `SoundnessCrypto` z
++ enigmatic (AES w każdym trybie, HMAC, AES-GCM, ChaCha20-Poly1305, X25519, Ed25519) obsługuje
++ kompilacje Scala.js i Scala Native, a `import providers.soundnessProvider` wybiera go
++ wszędzie. To, czego nie obejmuje – RSA, DSA, ECDSA, ML-DSA – pozostaje przy JDK i OpenSSL.
++ Dostawca oparty na Web Crypto API przeglądarki zależy od JSPI: `crypto.subtle` działa wyłącznie
++ na obietnicach (Promise), a kontrakt `Crypto` jest synchroniczny, więc wymaga najpierw
++ sprawdzenia `js.async`/`js.await` z forka pod backendem Wasm (plat-6); gdy to nastąpi, Web
++ Crypto wejdzie jako alternatywny dostawca dla prymitywów, które ma, bez zmiany API.
+
+@ 0 9 0 12a5fc1273536a500f0c21bcafa80635
++ Sprawdzenie konsolidacji znów konsoliduje (2026-10-22): Proscala 1.0.4 publikuje swoją
++ bibliotekę uzupełniającą jako `proscala-library_native0.5_3`, więc `scala.caps.SharedUnscoped`
++ (do którego każda konsolidacja Native docierała wtedy przez `contingency.ThrowTactic`; od #2328
++ osiągany jest tylko `scala.Spreadable`) ma NIR z samego toolchainu, przez
++ `nativeToolchain.runtimeDeps`; jednotraitowy `nativelink.shim`, który wypełniał tę lukę,
++ zniknął. To samo wydanie zawiera `tasty-core` dla Scala.js i Scala Native, co pozwala
++ `hyperbole.tasty` czytać TASTy na obu bez kompilatora. `nativelink.binary` działa przy każdym
++ poświadczeniu, sprawdzając FFI, system plików, gniazda, nadzorców, pseudoterminal i OpenSSL;
++ pozostaje rozszerzyć go na każdy moduł zdolny do działania na Native (i przywrócić
++ `nativelink.testSuites`).
+
+@ 0 1 0 0fa7e2f0fee933fe1a48b937c471cbaf
++ ## plat-4: WASI poza pierwszymi siedmioma backendami
+
+@ 0 2 0 17c1d8017e0250cd1c575622676e221f
++ Horyzont: średni → daleki
++ Stan wyjściowy: 7 backendów WASI; HTTP wysyła dowolną metodę z treścią, gniazda obsługują tylko
++ TCP (pomiar 2026-09-25; w dniu 2026-08-01 HTTP obsługiwało tylko GET)
+
+@ 0 6 0 1416fb93ea44981a19f11aea36bd6765
++ Wycinek WASI – środowisko, zegar, losowość, gniazda, system plików, HTTP, stdio – dowodzi
++ słuszności podejścia opartego na modelu komponentów WIT; parytet wymaga pełnego zestawu metod
++ HTTP, UDP oraz backendów dla każdego modułu, którego dziedzinę WASI potrafi wyrazić. Strona
++ kompilatora jest w zasięgu ręki: Soundness kompiluje się kompilatorem Proscala, więc backend
++ Wasm i generowanie wiązań (dziś fork `wit-bindgen` poza drzewem, do włączenia do repozytorium)
++ możemy naprawiać sami. Prawdziwie zewnętrzną bramką jest samo WASI: jego interfejsy muszą
++ dojrzeć na tyle, by wyrazić to, czego potrzebują backendy.
+
+@ 0 2 0 1f97f24449afbeb7112fabfd020f055c
++ Ukończone, gdy: kolumna WASI manifestu odpowiada kolumnie JavaScriptu, z wyjątkiem miejsc, w
++ których przyczyna wykluczenia wskazuje brakującą możliwość WASI. Wskaźnik pośredni:
+
+% 0 1 0 0f3c66635b03a3d8184117850749fa05
+
+@ 0 6 0 0b24b16a2cc6cc9b0b2aca4f3c467fc2
++ Komponent można teraz nie tylko uruchomić, ale i wdrożyć: `Image.wasm` (embarcadero) pakuje go
++ jako Wasm OCI Artifact, format `OciImage` z anthology osiąga to z kompilacji jedną ścieżką, a
++ `make wasm-e2e` serwuje spakowany komponent HTTP pod `wasmtime serve`. Między tym miejscem a
++ obciążeniem Wasm działającym w klastrze brakuje jeszcze dystrybucji – nic w drzewie nie mówi
++ protokołem rejestru OCI, więc artefakt trafia do rejestru tylko przez `skopeo` lub `ctr` – a
++ klient containerd nie potrafi jeszcze wskazać środowiska uruchomieniowego Wasm przy tworzeniu
++ kontenera.
+
+@ 0 1 0 02f1e2e8561cbdb510ef20b1aac51275
++ ## plat-5: deklaracja parytetu jest prawdziwa
+
+@ 0 2 0 0466901bc3fdba5500ca8101a96a2228
++ Horyzont: daleki
++ Wymaga: plat-4
+
+@ 0 3 0 1fea897334dc6c930413010bdeb03d43
++ Stan końcowy, wyrażony jako fakt dotyczący manifestu: żadna przyczyna wykluczenia nigdzie w nim
++ nie oznacza „jeszcze nie”. Każda przyczyna jest nieodłączna – platforma nie może obsługiwać danej
++ możliwości – a same przyczyny w manifeście są sygnałem ukończenia.
+
+@ 0 2 0 19c6e43d758f5543098910d9595bfb3a
++ Ukończone, gdy: każda przyczyna wykluczenia w `doc/compatibility.tsv` opisuje nieodłączne
++ ograniczenie platformy, a sprawdzenie słownictwa przyczyn w CI egzekwuje to rozróżnienie.
+
+@ 0 1 0 0da7504b41531da817583bd42934a04f
++ ## plat-7: degustation atomizuje TASTy bez kompilatora
+
+@ 0 3 0 1c6f1f2429f9712b011b3967768bf151
++ Horyzont: średni
++ Wymaga: plat-3
++ Stan wyjściowy: `degustation.core` (1179 wierszy) steruje `scala3-tasty-inspector` przez
++ refleksję kompilatora; tylko JVM, z `scala3-compiler_3` na ścieżce klas (pomiar 2026-10-23)
+
+@ 0 7 0 131a8d07937bbf450ba91a9290b2fef2
++ degustation – atomizator `tasty/1` stojący za dyscypliną Scali w LIRA – to ostatni moduł
++ trzymany z dala od JavaScriptu i Native przez kompilator z przyczyny, która nie jest
++ nieodłączna: dyscyplina jest *zdefiniowana* nad modelem semantycznym kompilatora (`tasty.md`
++ §4), więc atomizator dopasowuje do wzorca typy `quotes.reflect` i pyta symbole o ich
++ `fullName`, `signature`, `children` i flagi. Proscala 1.0.4 publikuje `tasty-core` dla
++ wszystkich trzech platform, a `hyperbole.tasty` już czyta przez niego TASTy, więc pytanie
++ brzmi, czego degustation potrzebuje poza bajtami. Zakres ustalony 2026-10-23:
+
+@ 0 19 0 007cbbfcfdf377a80c6a638053cf64d5
++ - **Strukturalne i dostępne wprost z surowego TASTy**: modyfikatory (cały zestaw flag
++   `tasty/1`, `PRIVATEqualified` dla reguły widoczności, `ARTIFACT`/`SYNTHETIC`), adnotacje (w
++   tym adnotacje `@Child`, które stanowią listę potomków typu zapieczętowanego lub wyliczenia,
++   w kolejności deklaracji), rodzice szablonu, typ self, parametry typu i deklaracje,
++   zadeklarowany typ każdej składowej (`tpt` parametrów i wyniku, ograniczenia, aliasy), ciała
++   inline i makr jako drzewa z lokalnymi symbolami adresowalnymi dla normalizacji alfa,
++   odwołania kwalifikowane pakietem (`TERMREFpkg`/`TYPEREFpkg`) oraz – po stronie
++   *odwołującej się* – sama wymazana sygnatura, którą każdy `TERMREF` do przeciążonej
++   składowej niesie w swojej nazwie `SIGNED`. Zastępniki `LazyRef` kompilatora, które §7 musi
++   obsługiwać jako przypadek szczególny, nie istnieją w pliku.
++ - **Semantyczne i wymagające modelu ścieżki klas zależności**: tylko dwie rzeczy. (1)
++   Rozróżniacz wymazanej sygnatury w kluczu *deklaracji* (§6): wymazanie zadeklarowanego typu
++   parametru oznacza rozwinięcie jego aliasów, wymazanie typu nieprzezroczystego i klasy
++   wartości do ich typów bazowych, odwołania do parametru typu do jego ograniczenia, a
++   przecięcia według rozróżnienia klasa/trait jego części – a każde z nich pyta, czym *jest*
++   typ, do którego się odwołano, w TASTy zależności lub w pliku klasy Javy. (2) Właściciel
++   deklarujący wybranej składowej (§6 „kluczowanie odbywa się według deklaracji”,
++   `TastyDiscipline`): `play.title` serializuje się jako podpisana nazwa `title` względem typu
++   `play`, a ustalenie, że `title` jest zadeklarowane w `Base`, to wyszukanie składowej wzdłuż
++   rodziców `Play`. Żadna z nich nie potrzebuje podtypowania, inferencji typów, podstawienia
++   as-seen-from ani kolejności uzupełniania; obie potrzebują leniwie ładowanej ścieżki klas, do
++   czego służy właśnie `tasty-query`.
+
+@ 0 1 0 1d98056fdb067ade032b7191b71ee9ae
++ Trzy sposoby zamknięcia tej sprawy:
+
+@ 0 10 0 080cce816217458b162958cf03a981f9
++ 1. **Własna warstwa semantyczna nad `tasty-core`** (zalecane): pięć komponentów, wymienionych
++    poniżej, liczących łącznie około 6000 wierszy wobec 19 000 w `tasty-query`, ponieważ
++    degustation nie potrzebuje jego podtypowania, odwzorowań typów ani czytnika pickli Scali 2.
++ 2. **Zależność od `tasty-query`**: zmiana ok. 1000 wierszy, ale za cenę 19-tysięcznowierszowej
++    zależności publikowanej tylko dla JVM i Scala.js – Native wymagałby publikowanej przez nas
++    kompilacji międzyplatformowej, tak jak Proscala robi teraz dla `tasty-core` – której
++    wymazywanie i rozwiązywanie składowych to jej własna reimplementacja tych z kompilatora, z
++    tym samym sprzężeniem z każdym wydaniem Scali.
++ 3. **Pozostawienie tego kompilatorowi** i zaklasyfikowanie wykluczenia jako nieodłącznego:
++    atomizacja odbywa się w czasie składania i publikacji, gdy JVM jest pod ręką. Uczciwe na
++    dziś, ale wyklucza atomizację z narzędzia kompilacji Native lub Wasm, a to właśnie jest
++    powód, by jej chcieć.
+
+@ 0 1 0 15db87563e3ccecc1d0a15650e714cc2
++ Komponenty pierwszej opcji i ich szacowane rozmiary:
+
+% 2 1 0 154dee85a73f7db51eeda1313f888bdd
+
+@ 0 8 0 1553f8c8c8c7cc080c8cf62d5f0bca91
++ column  Komponent
++ column  Wiersze
++ column  Uwagi
++ row  deserializator drzew do zwykłych danych  ~2000  `hyperbole.tasty` wnosi nagłówek i tablicę nazw
++ row  leniwy loader ścieżki klas nad katalogami i plikami jar, z czytnikiem plików klas Javy dla rodzaju klasy, parametrów typu i deskryptorów składowych  ~1200
++ row  wymazywanie Scali 3 i zapis sygnatur  ~900  wzorowane na `TypeErasure` i `Signature` z dotc
++ row  wyszukiwanie składowych wzdłuż rodziców  ~300
++ row  atomizator wyrażony na nowo nad modelem danych  ~1200  reguły kodowania bez zmian
+
+% 1 1 0 157de62fd75c206a1cc90286752da647
+
+@ 0 9 0 093346393e7d9e5c1c86492523a436df
++ Każda z dwóch pierwszych opcji to nowa dyscyplina, `tasty/2` (`tasty.md` §1: każda zmiana
++ kanonizacji to nowa dyscyplina): ekstrakcja z §4 nad surowym TASTy zamiast nad modelem
++ kompilatora; §6, §11 i §12 zapisujące wymazywanie tak, jak definiuje je dyscyplina, a nie „tak,
++ jak oblicza je kompilator”; §7 tracący klauzulę `LazyRef`; obietnica z §14 staje się faktycznie
++ sprawdzalna, ponieważ dwa toolchainy nie mogą się już różnić co do modelu, który buduje tylko
++ jeden z nich. Weryfikacja jest różnicowa: uruchomić nowy atomizator i ten sterowany przez
++ kompilator na każdym `*.tasty` publikowanym przez Soundness i wymagać identycznych list
++ (klucz, klasa, wartość) – istniejące testy „TASTy rzeczywistego modułu się atomizuje” są
++ zalążkiem tego korpusu – zanim atomizator sterowany przez kompilator zostanie wycofany.
+
+@ 0 8 0 1020e0c3605055370442f216b8d5df23
++ Postęp (2026-10-23, gałąź `degustation-tasty`): opcja 1 zbudowana. `degustation.tasty` zawiera
++ model danych, czytnik, `Universe` ścieżki klas, `Erasure` i `Degustation.atomize` oraz
++ przechodzi na wszystkie trzy platformy; `degustation.core` zachowuje `Inspection.atomize` jako
++ swoją fasadę systemu plików (katalogi i pliki jar przez `java.util.zip`, klasy JDK przez
++ classloader platformy) i z tego powodu działa tylko na JVM, bez zależności od kompilatora. W 147
++ modułach kompilacji atomy są identyczne bajt w bajt z atomami atomizatora sterowanego przez
++ kompilator, z wyjątkiem miejsc, w których wynik kompilatora był artefaktem przebiegu
++ (`tasty.md` §16); atomizator sterowany przez kompilator jest wyrocznią zestawu testów.
++ `tasty.md` opisuje `tasty/2`.
+
+@ 0 4 0 131c830233371c8f0a3f343802904c3b
++ Ukończone, gdy: `degustation.core` zależy od `tasty-core`, a nie od kompilatora, kompiluje się
++ dla JavaScriptu i Native (albo wykazano, że jego fasada systemu plików jest jedyną pozostałością
++ JVM, a narzędzie kompilacji Native może dostarczyć klasy JDK jako plik jar) i atomizuje korpus
++ Soundness identycznie jak zastępowany atomizator sterowany przez kompilator; `tasty.md` opisuje
++ `tasty/2`.
+
+@ 0 1 0 1fb046d6f3ec99ee170722975e2b27ce
++ ## plat-6: przeglądarka jest pełnoprawną platformą docelową aplikacji
+
+@ 2 1 0 13ea3a3481ee418b0a4388cf054a0697
++ Horyzont: średni
+
+@ 0 6 0 09494f8572db532814bc66c3047a566c
++ Kompilacja do JavaScriptu jest konieczna, ale niewystarczająca: strona internetowa zbudowana z
++ Soundness powinna być napisana w Soundness od początku do końca, z frontendem w Scala.js i
++ każdym webowym API – DOM, fetch, pamięć, media – osiąganym przez typowane fasady generowane z
++ WebIDL przez xenophile, nad typowanym DOM z querencia. Bez ręcznie pisanego JavaScriptu, bez
++ nietypowanych spoin `js.Dynamic`. Dowodem jest korzystanie z własnego produktu:
++ frontend samej strony soundness.dev, serwowany przez stronę w drzewie, zbudowany w ten sposób.
+
+@ 0 2 0 135645698bafe5f61df9262090290d39
++ Ukończone, gdy: frontend soundness.dev jest dostarczany jako Scala.js skompilowany przez
++ Soundness, z całym dostępem do webowych API przez generowane typowane fasady, i kompiluje się w
++ zwykłej kompilacji.

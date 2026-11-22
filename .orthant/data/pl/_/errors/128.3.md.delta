@@ -1,0 +1,41 @@
+orthant 2 language
+
+@ 0 1 0 002ede7bd5f8998210efef2f7636d1b6
++ # `↯/s.128.3` – `Xsd.Error`
+
+@ 0 1 0 08b102ae8e91858712849761ea07e83f
++ Zgłaszany, gdy dokumentu XML nie da się odczytać jako XML Schema.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 2 0 100005ac3ad5e5cb03e4621e7795b9e6
++ `Xsd.parse` wczytuje dokument schematu do modelu `Xsd` i zgłasza pierwszą konstrukcję, której nie
++ może przyjąć. Komunikat to `the XML Schema could not be read because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 12 0 0a02af38c5b2849215bf4cb1adb66dd8
++ column  Kod
++ column  Przyczyna
++ column  Znaczenie
++ column  Komunikat
++ column  Rozwiązanie
++ row  `↯/s.128.3.1`  `NotSchema`  Elementem dokumentu nie jest `schema` w przestrzeni nazw XML Schema.  `[↯/s.128.3.1] the XML Schema could not be read because the document element is root, not an XML Schema`  Przekazać sam dokument schematu, z prefiksem `xs:`, `xsd:` lub domyślnym powiązanym z `http://www.w3.org/2001/XMLSchema`.
++ row  `↯/s.128.3.2`  `Unexpected`  Element pojawia się tam, gdzie gramatyka schematu na to nie pozwala.  `[↯/s.128.3.2] the XML Schema could not be read because {http://www.w3.org/2001/XMLSchema}oops may not appear in schema`  Poprawić schemat albo zgłosić konstrukcję, jeśli model jeszcze jej nie odczytuje.
++ row  `↯/s.128.3.3`  `MissingAttribute`  Deklaracji brakuje wymaganego atrybutu, takiego jak `name` elementu globalnego.  `[↯/s.128.3.3] the XML Schema could not be read because the element has no name attribute`  Dodać atrybut.
++ row  `↯/s.128.3.4`  `BadOccurs`  `minOccurs` lub `maxOccurs` nie jest ani liczbą, ani `unbounded`.  `[↯/s.128.3.4] the XML Schema could not be read because lots is not a valid number of occurrences`  Użyć nieujemnej liczby całkowitej albo `unbounded` dla `maxOccurs`.
++ row  `↯/s.128.3.5`  `UnknownPrefix`  `type`, `ref`, `base`, `itemType`, `memberTypes` lub `substitutionGroup` używa prefiksu, którego dokument nie wiąże.  `[↯/s.128.3.5] the XML Schema could not be read because the prefix zz is not bound to a namespace`  Zadeklarować prefiks przez `xmlns:zz="…"` na elemencie schematu lub jego przodku.
++ row  `↯/s.128.3.6`  `BadFacet`  Wartość aspektu nie jest tego rodzaju, jaki aspekt przyjmuje, na przykład nienumeryczne `length`.  `[↯/s.128.3.6] the XML Schema could not be read because many is not a valid value for the maxLength facet`  Nadać aspektowi wartość właściwego rodzaju.
++ row  `↯/s.128.3.7`  `Duplicate`  Globalny element, typ, atrybut lub grupa jest zadeklarowany dwukrotnie pod jedną nazwą.  `[↯/s.128.3.7] the XML Schema could not be read because the element a is declared more than once`  Usunąć jedną z deklaracji lub zmienić jej nazwę.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 179ff6b5b3b621a911c0d3101a18c746
++ - [`↯/s.128.4` – `Xml.Provider.Error`](128.4.md)

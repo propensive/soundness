@@ -1,0 +1,2872 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 122cc318b6f0fa4110febb0a286dd3a2
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1cb1c72d271e663116482ada82e487d8
++ info   aplikacje wiersza poleceń: argumenty, flagi, podpolecenia, uzupełnianie tabulatorem, pomoc i strony man z jednego kodu
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 14e7a7820e9a843b1390b0b06e2c2bc9
++     _Exoskeleton_ to rama wokół programu wiersza poleceń. Punkt wejścia – `application` albo
++     obiekt rozszerzający `Application` – przekazuje ciału `Cli`: argumenty jako listę
++     `Argument`, środowisko, katalog roboczy, standardowe strumienie i login. Ciało odtwarza
++     strukturę tych argumentów za pomocą typowanych deklaracji: `Subcommand` to ekstraktor
++     dopasowywany do argumentu, `Flag[Int](t"jobs")` odczytuje operand zdekodowany do swojego
++     typu, `Switch` odczytuje tylko obecność, a `Setting` odczytuje wartość z wiersza poleceń,
++     zmiennej środowiskowej albo kaskady `Configurator`, w tej kolejności.
+
+@ 0 10 0 00bf789101abfaa402a2bb1c3ad3916d
++     Nietypowe jest to, że wszystko inne, co oferuje narzędzie wiersza poleceń – uzupełnianie
++     tabulatorem dla bash, zsh, fish i PowerShell, wyjście `--help`, strona man i tabela
++     statusów wyjścia – jest odczytywane z tego samego kodu, a nie pisane obok niego. Przy
++     `executives.completionsExecutive` ciało dzieli się na czysty prolog, który deklaruje flagi
++     i dopasowuje podpolecenia, oraz blok `execute`, który wykonuje pracę. Żądanie uzupełnienia
++     uruchamia sam prolog, w trybie, który zapisuje, o co prosił kod, zamiast na to działać,
++     więc flaga, którą program sprawdza, jest flagą, którą oferuje, dokładnie pod warunkiem, pod
++     którym kod ją sprawdza. Drzewo `Help` buduje się tak samo, uruchamiając ponownie prolog
++     przy każdym prefiksie podpoleceń, a `roff` przedstawia to drzewo jako stronę man dla
++     `Manpages.install`.
+
+% 2 1 0 0e8fe3692e5776d60c3df8fb09031ca3
+
+% 3 1 0 041176f88f179a850b0ef8766fd15752
+
+% 4 1 0 12644ff60fba69061be8ebc0b8e8773a
+
+% 5 1 0 06e071d345d51b911fb084b06bfb92ad
+
+% 6 1 0 1b6dcd789ee7442f0f1a592967766059
+
+% 7 1 0 07b8ae33a1d4bf060af2edb1c6d1ebea
+
+% 0 1 0 1321d62978713c880d4a931791c4ae29
+
+% 0 1 0 0bf9e712abe8b3fa0535aae73c0ab308
+
+% 0 1 0 03ef00c426b52bd710c374a3d6449522
+
+% 0 1 0 0ca48a169334e0f216d07557af84c9be
+
+% 0 1 0 10d0d2ddd9a71910015401a973eb6ac4
+
+% 0 1 0 0463bdf59a03f0211ddb6214dbb99400
+
+% 1 1 0 13b4fdb09e1f55771bac788ec609b48f
+
+% 0 1 0 108d5e4d9e7cd92d1bf5b45d711dbc60
+
+% 0 1 0 1415323e361133120a373b2916ee3d9f
+
+% 1 1 0 0cf627098dfc57aa1fa7693e067ebf33
+
+@ 0 2 0 18c3f7ebe312248f130796a53b7d9a2d
++     Punkt wejścia kształtują trzy wybory kontekstowe, każdy będący givenem importowanym po
++     nazwie, ponieważ `import soundness.*` nie importuje givenów:
+
+@ 0 9 0 0de681efc5845ff90eaecb5aa2bd133d
++     - **wykonawca** z `executives`: `directExecutive` uruchamia ciało raz i oczekuje `Exit`;
++       `completionsExecutive` oczekuje `Execution` i odpowiada też na żądania uzupełnienia,
++       pomocy i `{admin}`;
++     - **interpreter** z `interpreters`: `posixInterpreter` odczytuje flagi `--long` i `-s`,
++       `posixClusteringInterpreter` dodatkowo odczytuje `-abc` jako `-a -b -c`, a
++       `simpleInterpreter` traktuje każdy argument jako operand;
++     - **backstop** z `backstops`, który zamienia wyjątek uciekający z ciała w status wyjścia:
++       `genericErrorMessageBackstop`, `exceptionMessageBackstop`, `stackTraceBackstop` lub
++       `silentBackstop`.
+
+@ 0 1 0 032fe8b7bc5036a10963423f753366e5
++     Biblioteka składa się z pięciu zbiorów źródeł:
+
+@ 0 1 0 11799310832483290ee33fc58b694f80
++     - `exoskeleton.args` – model argumentów i jego klasy typów: `Cli`, `Argument`,
+
+% 0 1 0 1ada15f1f1aa57821d45fb0085feec57
+
+@ 0 12 0 04f7c50a56f216240d79434d5897ad2e
++       `Interpretable`, `Discoverable`, `Suggestible`, `Suggestion`, pakiet `interpreters` oraz
++       znaczniki `Effectful`/`Speculative`. Niezależny od platformy.
++     - `exoskeleton.core` – punkty wejścia i model wykonawcy: `application`, `Application`,
++       `Executive`, `Invocation`, `Entrypoint`, `Backstop` oraz pakiety `backstops` i
++       `executives` (`directExecutive`), `Help` i `Install`.
++     - `exoskeleton.completions` – tylko JVM i Native: `Completion`, `Completions` (skrypty
++       powłoki i ich instalacja), `execute`, `Execution`, `explain`, `helpTree`, `Pathname`,
++       `pathnameDiscoverable`, `CliEvent` i `executives.completionsExecutive`.
++     - `exoskeleton.manpage` – `Manual`, rozszerzenie `roff` dla `Help` oraz `Manpages`.
++     - `exoskeleton.rig` – zestaw testowy, niebędący częścią zwykłej powierzchni modułu
++       zbiorczego: `Enclave` pakuje aplikację jako plik wykonywalny oparty na demonie, a
++       `Pane` steruje prawdziwą powłoką w pseudoterminalu lub sesji tmux, aby sprawdzać, co
++       pokazuje uzupełnianie tabulatorem.
+
+@ 0 4 0 088917dd0d47a53f1994e7dfeb9fd398
++     Wszystko jest eksportowane do modułu zbiorczego `soundness`, a pakiety wyboru `backstops`,
++     `executives` i `interpreters` łączą się z własnymi pakietami modułu zbiorczego. `Cli` w
++     zasięgu dostarcza też `Environment`, `WorkingDirectory` i `Stdio`, więc ciało aplikacji
++     nie potrzebuje dalszych importów, by odczytać zmienną, rozwiązać ścieżkę lub coś wypisać.
+
+% 0 1 0 045312f92904f021122b8b8eaf264228
+
+% 0 1 0 0bf2622b27aea5ae0058b788425717d8
+
+% 0 1 0 0b33ce92147f58c80dcdd2357277af79
+
+% 0 1 0 1280c3a820736ae60dc47884934d4966
+
+% 0 1 0 089f68418acdcb3a190a79bb13f386c9
+
+% 0 1 0 15080cb110e509ac1e7b1e50b1e4292c
+
+% 0 1 0 1e22b5a0ae8476581273f2369ed0779a
+
+% 0 1 0 01fe38b039db363f15580bc00331c75b
+
+% 0 1 0 152568d419c464e712269d96e3f14923
+
+@ 0 1 0 1f794a9726d9a647044ad7162bcdbae0
++ entry .application   opakowuje punkt wejścia programu, dając jego ciału `Cli` i kończąc ze zwróconym statusem
+
+% 1 1 0 1e134c98863b39861d06d56d284d51db
+
+@ 0 7 0 0ca29175f354832208beccde4a5cfcdf
++       `application(arguments)(block)` to punkt wejścia programu wiersza poleceń. Buduje
++       `Entrypoint` z działającego procesu (jego pliku wykonywalnego, znalezionego przez
++       `ProcessHandle`, i nazwy skryptu), prosi wykonawcę `Executive` w zasięgu o `Cli` nad
++       argumentami, środowiskiem i katalogiem roboczym JVM, `Stdio` deskryptorów plików i
++       `Login` procesu, instaluje dla każdego z `signals` handler, który przekazuje do
++       handlerów `Cli#trap`, uruchamia blok przez wykonawcę, a następnie wywołuje
++       `System.exit` z kodem wynikowego `Exit`. Nigdy nie wraca.
+
+@ 0 7 0 17bf7023f1dbf51f11ec5a1d398c1e14
++       Potrzebuje w zasięgu `Executive`, `Interpreter` i `System`, każdego importowanego po
++       nazwie. Typ bloku to `(erased permit: executive.Permit) ?=> Cli ?=> executive.Return`:
++       przy `executives.directExecutive` zezwoleniem jest `Effectful`, a wynikiem `Exit`, więc
++       flaga odczytana gdziekolwiek w bloku jest swoją wartością `Optional`; przy
++       `executives.completionsExecutive` zezwoleniem jest obojętny `Speculative`, a wynikiem
++       `Execution`, więc flaga odczytana w prologu jest uchwytem `Prospective`, a efekty
++       czekają na `execute`.
+
+% 2 1 0 0aaf4d4e6a0183d61c3faa4beaf66376
+
+% 0 1 0 182d798de2dcf8af067bb374d7fd4148
+
+% 1 1 0 18f313f9a055a8dd0cfd9917d24360cc
+
+% 0 1 0 16cd8375b554b41412ba2f79c8a481c8
+
+% 0 1 0 1190e056a655f1590ba14ecb4bdec7db
+
+% 1 1 0 0620ad3f241e54ac0f260b0a18bf8a0a
+
+% 0 1 0 0f9693bf17b31d2e0afe492d7824647a
+
+% 1 1 0 02302e8cd3f81f0113ad7afbfc01fd92
+
+% 0 1 0 000aa7e8ca3cf5e31274be92cb8adabb
+
+% 0 1 0 0d2c8a6db36a955719c9d26424f15c48
+
+% 0 1 0 02efc6ff9d734d051c1132f80c61665f
+
+% 0 1 0 14648cf2c1d7887a04b1732bc65385cc
+
+% 1 1 0 1d0872aa195bc1e90f7bf2c14e2bf418
+
+% 2 1 0 0c1d8d958391db3e0e44b0b3a74ee775
+
+@ 0 4 0 08445d43d5df0bb91448623ef5a7f18b
++       Spakowany jako wykonywalny JAR, którego `Main-Class` to `mytool` lub `MyTool`, każdy z
++       nich uruchamia się z powłoki. Status musi być zwrócony, a nie pozostawiony domyślnym:
++       `Exit.Ok` zgłasza sukces, a `Exit.Fail(1)` porażkę. Wyjątek uciekający z bloku trafia do
++       `Backstop`, z którym zbudowano wykonawcę.
+
+% 0 1 0 0ed58f4e653f52560b730bfe145009d3
+
+% 0 1 0 07e35020bf3fa4191c9dc031b7200719
+
+% 1 1 0 01599b1800d1ffa20ecccfdefe56e7ca
+
+% 0 1 0 0298981e9773eff708f8179cf6ceda72
+
+@ 0 1 0 18452760a612592d15fa940f997457e7
++ entry .Application   klasa abstrakcyjna, której `main` konwertuje argumenty JVM i wywołuje `invoke` pod bezpośrednim wykonawcą
+
+% 1 1 0 1d56d5600b940a0c00ef2b38e88948d6
+
+@ 0 2 0 03322020c728d8e006382100458bc05c
++       Najkrótszy kompletny program: obiekt rozszerzający `Application` dostarcza `main`, które
++       konwertuje `Array[Text]` JVM na listę i wywołuje `application` z już wybranymi
+
+% 0 1 0 06fb28feee814835168b6f7d5aa1cd2c
+
+@ 0 4 0 1945cba59ccd519c17c53fb967725ed2
++       `interpreters.posixInterpreter` i `systems.javaBaseSystem`, więc trzeba napisać tylko
++       `invoke`. Program, który chce innego wykonawcy, interpretera lub backstopu – w
++       szczególności uzupełniania tabulatorem – sam wywołuje `application` z własnymi
++       importami.
+
+% 2 1 0 18eb39f72a5509ee1d6858cc37768586
+
+% 3 1 0 0d5d9f081bcef1f8140b9a8251813699
+
+% 0 1 0 1bba4eb39d03daf01befac22af62d39e
+
+% 0 1 0 183a8b791ed2da9e146ddf6def4b4ea6
+
+% 0 1 0 0a764f1f217cf51e0790cb37c8a99324
+
+% 1 1 0 18e47bf276d0f396119b2e685afc8e8a
+
+% 2 1 0 069383c5bd6e172b0e92408f543c31d0
+
+% 1 1 0 015c3a09e1d3b0121925d0610f50dd11
+
+@ 0 5 0 0298761674194a1e1402d9a7b4feca21
++   entry #invoke   ciało programu: działa z `Cli` w zasięgu i zwraca status wyjścia
++       Abstrakcyjne. Pod bezpośrednim wykonawcą przez cały czas w zasięgu jest `Effectful`, więc
++       `Flag[T](…)()` jest wartością `Optional` flagi, `Switch(…)()` jej obecnością, a
++       `Out.println` wypisuje od razu.
++   entry #main   punkt wejścia JVM: konwertuje tablicę argumentów i wywołuje `application`
+
+@ 0 1 0 1be32269328f7d2f15862b5a748c9c48
++ entry .Cli   kontekst jednego wywołania z wiersza poleceń: jego argumenty, środowisko, strumienie, login i stan uzupełniania
+
+% 1 1 0 0894be1fd438ec8b1bbf65a93af9a275
+
+@ 0 8 0 05d6a2851e27be301a03a7e20c07e1fb
++       `Cli` to *zdolność* – na wyłączność, o czasie życia zasięgu `Executive#process`, który ją
++       wprowadza – niosąca wszystko, o co ciało aplikacji może zapytać w sprawie obsługiwanego
++       wywołania. Jest `Console`, więc `Out`, `Err` i `In` działają przez nią; dostarcza
++       `WorkingDirectory`, `Environment` i `Stdio`, więc `Environment[Text](t"HOME")`,
++       rozwiązywanie ścieżek i wypisywanie nie potrzebują dalszych givenów; i zapisuje, o co
++       prosi kod – zarejestrowane flagi, zażądane wymagania, dopuszczalne statusy, oferowane
++       sugestie – dzięki czemu `Invocation` raportuje brakujące flagi razem, a `Completion`
++       zamienia ten sam kod w sugestie.
+
+@ 0 6 0 113a13a08350e8f900e992fe6a3835d0
++       Dwie implementacje to `Invocation`, dla prawdziwego uruchomienia, i `Completion`, dla
++       żądania uzupełnienia tabulatorem; `helpTree` steruje `Completion` przy każdym prefiksie.
++       Większość metod zapisujących (`#register`, `#record`, `#present`, `#demand`, `#fault`,
++       `#explain`, `#matched`, `#suggest`) w traicie nic nie robi i jest nadpisywana przez
++       jedną lub obie implementacje; kod aplikacji dociera do nich przez `Flag`, `Subcommand`,
++       `Argument#suggest` i `explain`, a nie bezpośrednio.
+
+% 2 1 0 10eb7aac1d48bfc7115ebae645e4cb7a
+
+% 3 1 0 01051afe92c4f7b10e14e3efb14905ec
+
+% 4 1 0 0735ba3feb1c50600c00ad0cea911977
+
+% 0 1 0 019f7b42246dbfbd160c1ad2004d7ade
+
+% 0 1 0 08c31228bc798234084f281bc85813bb
+
+% 0 1 0 011c2a4a0a2e8044077141e643180403
+
+% 0 1 0 06a3b03993f4e7350f52044217f59c72
+
+% 1 1 0 0d203ce2c991531604bee6a5f69c1a20
+
+@ 0 3 0 0dfb1803e93561f71dcacc9817aac2cc
++       Obiekt towarzyszący przechowuje `Cli.arguments`, które zamienia tekst w pozycjonowane
++       `Argument`, oraz skrzynkę `{admin} await` (`prepare`, `log`, `done`, `await`) używaną
++       przez podpolecenie administracyjne wykonawcy uzupełnień.
+
+% 1 1 0 12fefa64c094aaf7135f451ab4ead589
+
+% 1 1 0 11225d6aaa95679615841d95867201ab
+
+% 1 1 0 1f1b436a3fe8d86f1a6c5a11a641a582
+
+% 0 1 0 088eab1841834a321eb863001aaf0144
+
+@ 0 7 0 0a16f35d0f0ce5971fac4943095b6d3e
++   entry .arguments   zamienia listę tekstów w `Argument`, oznaczając kursorem ten w fokusie
++       `Cli.arguments(textArguments, focus, position, tab)` numeruje teksty od `0` i opakowuje
++       każdy jako `Argument` w `Format.Full`. Gdy `focus` wskazuje indeks, lista jest
++       dopełniana pustymi tekstami, by go osiągnąć, a ten argument niesie kursor na pozycji
++       `position` albo na końcu swojego tekstu, gdy powłoka nie podała pozycji (bash nie podaje
++       żadnej) – tam i tak zakłada go dopasowywanie prefiksów całych słów; `tab` to liczba
++       naciśnięć tabulatora, którą zapisują argumenty. Bez fokusu – przy zwykłym wywołaniu –
++       żaden argument nie ma kursora.
+
+% 2 1 0 0f365c021140aed214be42d31bb291cb
+
+% 3 1 0 01d6e67ed2262fa01a131337133fd6b4
+
+% 0 1 0 0a2b153f8067f8ba15272c2b25942e92
+
+% 0 1 0 1d592d5118ab9b6e159effa7ea6695ba
+
+% 1 1 0 07f2b2d29f6566f208177abff163712d
+
+@ 0 69 0 121a3a9f8bc236121e9027eb3e982d8c
++   entry .prepare   resetuje skrzynkę `{admin} await`: czyści zapisane komunikaty i uzbraja świeży wyzwalacz
++       Wywoływane przez wykonawcę uzupełnień, zanim zacznie czekać; skrzynka jest globalna dla
++       procesu, więc obsługiwane jest jedno `await` naraz.
++   entry .log   dopisuje komunikat do skrzynki `{admin} await`
++       Aplikacja działająca jako demon może zapisywać tu wiersze diagnostyczne; następne
++       wywołanie `{admin} await` wypisuje je, gdy zadziała `done`.
++   entry .done   zwalnia oczekujące `{admin} await`
++   entry .await   czeka do dziesięciu sekund na `done`, a następnie zwraca zapisane komunikaty po kolei
++       Wymaga `Monitor` w zasięgu. Przekroczenie czasu nie jest błędem: zwracane jest to, co
++       zapisano.
++   entry #arguments   argumenty tego wywołania, każdy jako `Argument` ze swoją pozycją
++       Dla `Completion` są to argumenty po nazwie polecenia, w postaci tokenizowanej przez
++       powłokę; `Completion#fullArguments` zachowuje surowe żądanie `{completions}`.
++   entry #environment   zmienne środowiskowe wywołania
++       Pod demonem jest to środowisko *klienta*, a nie rezydentnej JVM, dlatego
++       `Completions.install` i `Manpages.install` pobierają swoje `Environment` z `Cli`, a nie z
++       `environments.javaBaseEnvironment`.
++   entry #workingDirectory   katalog, z którego uruchomiono polecenie
++   entry #proceed   czy własne ciało aplikacji w ogóle powinno się wykonać
++       `false`, gdy wykonawca sam już obsłużył wywołanie – podpolecenia `{admin}` wykonawcy
++       uzupełnień – i `true` dla zwykłego uruchomienia.
++   entry #login   użytkownik, który uruchomił polecenie: `Login` z nazwą użytkownika i, jeśli znany, `UserId`
++   entry #register   zapisuje, że kod sprawdził flagę, wraz z `Discoverable` jej operandu i symbolem zastępczym
++       Każdy odczyt `Flag` lub `Setting` wywołuje tę metodę, więc flaga, którą program
++       sprawdza, jest flagą, którą oferuje `Completion`. Flaga zadeklarowana z `secret = true`
++       jest sprawdzana, ale nigdy nie zapisywana. Na `Invocation` nic nie robi.
++   entry #record   zapisuje statusy wyjścia, które może zwrócić blok `execute`
++       Wywoływane przez `execute` z listą `Status.Admissible` urzeczywistnioną z typu wyniku
++       bloku, więc sondy `Completion` i `Help` poznają statusy bez uruchamiania bloku.
++   entry #present   zapisuje, że flagę podano w wierszu poleceń
++       `Completion` używa tego, by przestać oferować niepowtarzalną flagę, która już jest.
++   entry #demand   zapisuje, że flaga jest wymagana i czy ją podano
++       Wymagania się kumuluje, nigdy nie zawodzą natychmiast: `Invocation` zbiera brakujące
++       flagi, by `execute` zgłosiło je razem, a `Completion` odnotowuje wymagalność na potrzeby
++       pomocy, nadal oferując sugestie, ponieważ uzupełnianie polecenia, którego wymagane flagi
++       nie są jeszcze wszystkie obecne, to typowy przypadek.
++   entry #fault   zapisuje, że flagę podano, ale jej operandu nie dało się zdekodować, wraz z przyczyną
++       Podobnie jak przy `#demand`, usterki się kumuluje, by `execute` zgłosiło je razem, i
++       nigdy nie wykluczają uzupełnień. Wywołuje to `Flag#validate`.
++   entry #locate   surowe argumenty operandu flagi albo `Unset`, jeśli flagi w ogóle nie podano
++       Odróżnia flagę obecną z niepoprawnym operandem od brakującej, czego potrzebuje
++       `Flag#validate`; w traicie domyślnie `Unset`, a obie implementacje delegują do
++       `Interpreter`.
++   entry #explain   dołącza akapit pomocy do sekcji bieżącego podpolecenia
++       Funkcja `update` otrzymuje poprzednie objaśnienie jako nazwaną wartość kontekstową
++       (`prior`) i zwraca nowe; zwykle wywołuje się ją przez `explain` najwyższego poziomu.
++       Zapisywane tylko przez `Completion`, dla nagłówka uzupełnień zsh i dla pomocy.
++   entry #matched   zapisuje, że `Subcommand` dopasowało argument podczas rozdzielania
++   entry #matches   dotychczas dopasowane nazwy podpoleceń, jako ciągły przebieg od pierwszego argumentu
++       W `Invocation` zapisane dopasowania są deduplikowane i ucinane na pierwszej luce, więc
++       dopasowanie samego późniejszego argumentu nie może sfabrykować fałszywego prefiksu;
++       wynik to ścieżka, którą `Help#local` wybiera, by znaleźć sekcję bieżącego podpolecenia.
++   entry #trap   instaluje handler sygnału na resztę wywołania
++       Przyjmuje `PartialFunction[Signal, SignalResponse]`; `#dispatchSignal` konsultuje
++       handlery od najnowszego, a taki, który odpowiada `SignalResponse.Defer`, przekazuje
++       sygnał dalej. Handler dopasowuje `Signal`, więc przypadek ma postać
++       `case Signal(Interrupt.Int, _, _, _) => …`. `trap` najwyższego poziomu to to samo
++       wywołanie na `Cli` w zasięgu.
++   entry #dispatchSignal   kieruje sygnał przez zainstalowane handlery, od najnowszego
++       Zwraca pierwszą rozstrzygniętą `SignalResponse` albo `SignalResponse.Reject`, gdy żaden
++       handler nie przyjmie sygnału. `application` podłącza do tego każdy żądany `UnixSignal`.
++   entry #parameter   odczytuje operand flagi przez `Interpreter`, jako `Optional` typu operandu
++       Abstrakcyjne: `Invocation` i `Completion` rozwiązują je przez `read` interpretera, które
++       po drodze rejestruje flagę. `Flag#apply` i pokrewne to typowany front tej metody.
++   entry #suggest   oferuje sugestie dla argumentu pod kursorem
++       Nic nie robi, z wyjątkiem `Completion`, gdzie zapisuje kandydatów, jeśli argument jest
++       tym uzupełnianym. `Argument#suggest` oblicza prefiks i sufiks dla formatu argumentu i
++       wywołuje tę metodę.
+
+@ 0 1 0 167f952164eabc1212918b70356761ff
++ entry .Invocation   `Cli` prawdziwego uruchomienia: klasa case nad argumentami, środowiskiem, strumieniami i loginem
+
+% 1 1 0 014c1c33f175e9490ce40b78fb9391a4
+
+@ 0 6 0 0325964d237c3e8e0b9994914293abe0
++       `Invocation` jest tym, co wykonawcy budują dla zwykłego uruchomienia (w odróżnieniu od
++       `Completion` dla żądania uzupełnienia tabulatorem). Sama jest `Stdio`, eksportując
++       `out`, `err`, `in` i `termcap` swojego `#stdio`, i kumuluje to, o co prosi prolog, aby
++       `execute` mogło to sprawdzić przed uruchomieniem bloku: flagi zażądane, lecz brakujące
++       (`#missingRequisites`), i flagi, których operandów nie udało się zdekodować (`#faults`).
+
+@ 0 1 0 0c2d9e51d645d8621ede7e519dcc87b3
++       Testy budują ją bezpośrednio, by uruchomić ciało aplikacji bez procesu:
+
+% 2 1 0 09caa27b05bca0920932a864050a46d4
+
+% 3 1 0 147e16c4b8c62ba91002f176d00f90c9
+
+% 4 1 0 038ee72f1d05ffc91757f1c46d5ac6ad
+
+% 1 1 0 036f65fe293af5610f9612e15ea1eb97
+
+% 2 1 0 1ffffb99e00d2d950a41bf2eff26f41b
+
+% 0 1 0 0aa0aaf4665eea3d1a8a699867463eda
+
+% 0 1 0 16b96af9a6c995780a737fcfe03b55b2
+
+% 0 1 0 190dd21be9647527191f67482320f9e3
+
+% 0 1 0 0439ea68ca08c8cd095b772be5099170
+
+% 0 1 0 0893ba5999ec82f817a5634f9edb0902
+
+% 0 1 0 1c329e91d6da962219862fc6245776da
+
+% 0 1 0 015c1c83937d26970eb8480f2cda0126
+
+% 0 1 0 0131335eb1a929150c042e92861410fd
+
+% 0 1 0 146f62658be4db5404d4e97831c2ad3e
+
+% 0 1 0 1fee03e6ccf9f73112d2cbc1d4d71392
+
+% 1 1 0 1b786e71a1674efb00b845a28046239c
+
+@ 0 1 0 065a0c0b12b1a0701c5883c11f9bc2e8
++       Przy konstrukcji wymaga `Interpreter` w zasięgu, który zachowuje.
+
+% 1 1 0 18e52a68911c9c411443d2aeee12e06d
+
+% 1 1 0 19a34f7248fba5490ed53b8cfce251c4
+
+% 1 1 0 051a7ddbc8df51b81fa55eca27b30843
+
+@ 0 13 0 0adec2462d9c63af0d533c8a75bc1c7a
++   entry #arguments   argumenty, każdy jako `Argument`
++   entry #environment   środowisko wywołania
++   entry #workingDirectory   katalog roboczy wywołania
++   entry #stdio   standardowe strumienie
++   entry #proceed   czy ciało aplikacji powinno się wykonać; `false` dla wywołania `{admin}`
++   entry #login   użytkownik, który uruchomił polecenie
++   entry #missingRequisites   wymagane flagi, których nie podano, w kolejności, w jakiej ich zażądano
++       Wypełniane przez `Flag#require` i `Flag#validate` w prologu; `execute` wypisuje je razem
++       i kończy ze statusem 2 zamiast uruchamiać swój blok.
++   entry #faults   walidowane flagi, których operandów nie udało się zdekodować, wraz z przyczynami, po kolei
++       Wypełniane przez `Flag#validate` w prologu; `execute` zgłasza je obok brakujących flag.
++   entry #parameter   odczytuje operand flagi przez interpreter
+
+@ 0 1 0 1040ec35e665ffef0d3d446686e05e72
++ entry .Executive   polityka, która decyduje, co zwraca ciało punktu wejścia i jak jest uruchamiane
+
+% 1 1 0 0db9acbc04823be30ca59ae422a8df53
+
+@ 0 8 0 07fa2ca257ceac8f0f74c6b81d2c2e6a
++       `Executive` wybiera się, importując po nazwie jeden z givenów `executives`. Buduje `Cli`
++       dla wywołania (`#invocation`), uruchamia ciało i zamienia jego wynik w `Exit`
++       (`#process`) oraz może umieć zbudować z ciała drzewo `Help` (`#help`). Jego trzy składowe
++       typu ustalają kontrakt ciała: `#Return` to to, co ciało zwraca (`Exit` lub `Execution`),
++       `#Interface` to otrzymywane `Cli`, a `#Permit` to wymazana zdolność, którą otrzymuje
++       ciało – `Effectful` od wykonawcy, który uruchamia ciało tylko naprawdę, `Speculative` od
++       takiego, który może je też uruchomić, by odkryć uzupełnienia.
+
+@ 0 5 0 06ee8fd4299209511d33a6ff78b8e95e
++       Dostarczone są dwa: `executives.directExecutive` i `executives.completionsExecutive`.
++       Wykonawca zdefiniowany przez użytkownika musi zadeklarować wszystkie trzy składowe typu;
++       jego `process` widzi ciało jako `Cli ?=> Return`, a nie `Interface ?=> Return`, ponieważ
++       dostosowanie funkcji kontekstowej `Cli ?=>` do abstrakcyjnego typu interfejsu psuje
++       unifikację korzeni przechwytywania.
+
+% 0 1 0 034676680c963f05067c4c09c632cbe3
+
+% 1 1 0 1718777f71008f7a19473d8e336fd137
+
+@ 0 5 0 1c2114fce9bb37c803ea985c10f5fa5a
++   entry #Return   typ zwracany przez ciało punktu wejścia: `Exit` lub `Execution`
++   entry #Interface   rodzaj `Cli`, który ten wykonawca przekazuje ciału
++   entry #Permit   wymazana zdolność, którą otrzymuje ciało: `Effectful` lub `Speculative`
++       Z `Effectful` `Flag#apply` rozwiązuje się do wartości, a metody wymagające `Effectful`
++       można wywoływać w dowolnym miejscu ciała; ze `Speculative` są one dostępne tylko wewnątrz
+
+% 0 1 0 1ed678faac0fc5bd17a3f9a1af0d1b5d
+
+@ 0 8 0 1c7c14dcf3fcd38607a656f2613a5732
++   entry #invocation   buduje `Cli` dla uruchomienia z argumentów, środowiska, katalogu, strumieni, punktu wejścia i loginu
++       Wymaga `Interpreter`. Wykonawca uzupełnień sprawdza tu argumenty, by rozpoznać żądanie
++       `{completions}` lub `{admin}`.
++   entry #process   uruchamia ciało na `Cli` i zamienia jego wynik w `Exit`
++       Tu wyjątki uciekające z ciała spotykają `Backstop`.
++   entry #help   buduje drzewo `Help` z ciała, uruchamiając ponownie jego prolog, albo `Unset`, jeśli ten wykonawca nie potrafi
++       Potrafi to tylko wykonawca uzupełnień, ponieważ jego `Interface` to `Cli`, a
++       `Completion` jest poprawnym interfejsem; domyślnie zwracane jest `Unset`.
+
+@ 0 1 0 15209f4d7bbdf12414a6d2fc50e7d7c0
++ entry .Entrypoint   plik wykonywalny stojący za wywołaniem: jego ścieżka, nazwa skryptu i sposób wycofania
+
+% 1 1 0 193f899f7cc7c5cc12fc0421c58222fd
+
+@ 0 10 0 163f2385191661ce1d99d9574dbbb218
++       `application` buduje go z `ProcessHandle.current`; demon dostarcza własny.
++       `Completions.install` używa `#script` jako nazwy polecenia, które uzupełniają skrypty
++       uzupełnień, a `#executable`, by sprawdzić, czy polecenie w `PATH` to ten program. Jest
++       `Findable` i przekazuje się go jako śledzoną zdolność (`Entrypoint^`).
++   entry #script   nazwa, pod którą wywołuje się polecenie, uzupełniana przez skrypty uzupełnień
++   entry #executable   ścieżka działającego pliku wykonywalnego
++   entry #retire   prosi proces obsługujący to wywołanie, by zakończył się po wykonaniu pracy
++       Demon przestaje przyjmować wywołania, pozwala dokończyć te w toku i kończy działanie;
++       domyślnie nic się nie dzieje, dla procesu, który i tak kończy się wraz z wywołaniem.
++       Wywołuje to `{admin} shutdown` wykonawcy uzupełnień.
+
+@ 0 1 0 099d2c52a2aefd4f13eb64c59744e9b9
++ entry .Backstop   co zrobić z wyjątkiem, który ucieka z ciała aplikacji
+
+% 1 1 0 1d9c2b18b021204b01be1694ccf11120
+
+@ 0 5 0 1b6c969cfe799d5d1c51f4f51dfc5bb5
++       `Backstop` zamienia `Throwable` w `Exit`, mając `Stdio`, na którym może raportować.
++       Wykonawcy przyjmują go jako parametr kontekstowy, więc wybiera się go, importując po
++       nazwie jeden z givenów `backstops`. `Backstop(report)` buduje taki, który wywołuje
++       `report` z błędem, a następnie kończy ze statusem 1 dla `Exception` lub 2 dla czegoś
++       poważniejszego.
+
+% 2 1 0 16c4850fd5703a2b13dbf32917f62c15
+
+% 3 1 0 0f0d47443cd700661bfde64385da4d25
+
+% 0 1 0 09082bf769605c7e0fbb95eee42e5878
+
+% 0 1 0 17ad8662d3113ceb14e0fc6f9b05eb82
+
+% 1 1 0 17e53566a9eb2fb416d65abe77cc12aa
+
+% 0 1 0 138546d192534ffe01db1bc67dce4ec8
+
+@ 0 2 0 1c60f1cd193527de01b5bdc2f276b91f
++   entry .apply   backstop, który raportuje podaną funkcją, a następnie kończy z 1 dla wyjątku lub 2 w pozostałych przypadkach
++   entry #handle   zamienia błąd, który uciekł, w status wyjścia, raportując na `Stdio` w zasięgu
+
+@ 0 1 0 0e4963d6795507980c0fffe300b0e178
++ entry .backstops   standardowe backstopy, każdy jako given do importu po nazwie
+
+% 1 1 0 0de1a05769772e690146665c18c30d58
+
+@ 0 3 0 15b46d55b4215ba017be23cf14256616
++       Wykonawca potrzebuje `Backstop`, by obsłużyć wyjątek uciekający z ciała aplikacji;
++       `import soundness.*` nie wprowadza żadnego, więc importuje się go po nazwie.
++       `Application` samo wybiera `genericErrorMessageBackstop`.
+
+% 2 1 0 0dfd1f1a729d4e3f0c9e95bbb648e64b
+
+% 3 1 0 0243e59e93a8131d1a2e963002a25fb2
+
+% 0 1 0 0887023c99dd3402143f4d4482d68355
+
+% 1 1 0 057153c6da6dbca608db361e8b9b06a2
+
+@ 0 6 0 0cee0a492acb1fad0713a9cb44989528
++       Wszystkie cztery kończą ze statusem 1 dla `Exception` i 2 dla każdego innego
++       `Throwable`; różnią się tylko tym, co najpierw wypisują na standardowe wyjście.
++   entry .silentBackstop   nic nie wypisuje
++   entry .exceptionMessageBackstop   wypisuje własne `toString` wyjątku
++   entry .stackTraceBackstop   wypisuje pełny ślad stosu, przedstawiany przez `StackTrace` biblioteki digression
++   entry .genericErrorMessageBackstop   wypisuje `An unexpected error occurred.`
+
+@ 0 1 0 1a5c4b4c8e69503e193593f75e995565
++ entry .executives   wykonawcy: jak uruchamiane jest ciało punktu wejścia, każdy jako given do importu po nazwie
+
+% 1 1 0 0b346f06f5a54db50ccf1d48967c08fb
+
+@ 0 4 0 1afdd685b127644d162e66e3fed2d876
++       Wykonawca określa typ zwracany przez ciało punktu wejścia i zdolności dostępne
++       wewnątrz niego, więc wybiera się go celowo, po nazwie, tam, gdzie definiuje się punkt
++       wejścia. `directExecutive` znajduje się w `exoskeleton.core`, `completionsExecutive` w
++       `exoskeleton.completions`, a oba wymagają givena `Backstop`.
+
+% 2 1 0 1adf5bd6652c19721515f76a9a00b059
+
+% 3 1 0 001edf949ad867450d9e5fc3269035cb
+
+% 4 1 0 19f816d69dcaab971bbaeaa819788416
+
+% 5 1 0 0460d6d6f9535d47164f8f5258e4fcf1
+
+% 6 1 0 145c03829ea9bc1a1f1d2964fee20209
+
+% 7 1 0 191904ca7f4b7344114c51b253bbd164
+
+% 2 1 0 0f27355aa25355f31e45bbe1621f22a9
+
+% 0 1 0 0acdc9680488fec4178165d7b3f826b5
+
+% 1 1 0 05e857d2f7851b571d8bedc40b62cec4
+
+% 0 1 0 0f50f363425af8930da59458a8f1dc18
+
+% 1 1 0 1586be1e11e330d30deb618ed5136a3f
+
+% 2 1 0 1e88a61f73532dfb0b0df9d633795a44
+
+@ 0 14 0 00304ff8e26d0a12052b01bbcbb9b5a6
++   entry .directExecutive   uruchamia ciało raz, naprawdę, oczekując `Exit`
++       `Return = Exit`, `Interface = Invocation`, `Permit = Effectful`: ciało nigdy nie działa
++       spekulatywnie, więc flaga odczytana gdziekolwiek w nim jest swoją wartością `Optional`,
++       `Switch` swoją obecnością, a metody wymagające `Effectful` można wywoływać wszędzie.
++       Budowane przez niego `Cli` to `Invocation` z `proceed` równym false, gdy pierwszym
++       argumentem jest `{admin}`. Wyjątki uciekające z ciała trafiają do `Backstop`.
++   entry .completionsExecutive   uruchamia prolog dla uzupełnień, pomocy i administracji, a całe ciało dla prawdziwego uruchomienia
++       `Return = Execution`, `Interface = Cli`, `Permit = Speculative`. Najpierw sprawdzane są
++       argumenty: żądanie `{completions} <shell> <focus> <position> <tty> -- <words…>` (tak jak
++       wysyłają je skrypty zapisane przez `Completions.script`) buduje `Completion` i wypisuje
++       jego sugestie w formacie powłoki; na `{admin} pid`, `kill`, `shutdown`, `await` i
++       `install` odpowiada się bez uruchamiania ciała; wszystko inne to `Invocation`, którego
++       status wyjścia `Execution` staje się statusem procesu. Przy nim wyjście i efekty należą
++       do wnętrza `execute`: prolog działa przy każdym naciśnięciu tabulatora.
+
+@ 0 4 0 0abd408cfe4b1563114a1f004a8aa680
++       Given jest instancją `CompletionsExecutive`, typowaną jako
++       `CompletionsExecutive^{parasite.threads}`, ponieważ `{admin} await` nadzoruje pod
++       globalnymi wątkami; importuje się go tak samo jak każdy inny given.
++   entry .CompletionsExecutive   klasa stojąca za `completionsExecutive`, dla wykonawcy budowanego ręcznie
+
+% 1 1 0 06ab7e56c06649ca1b1aa770710e541d
+
+@ 0 3 0 1126e30487af5a5e16e1e666d152233a
++         `CompletionsExecutive()(using Backstop)` to wykonawca, którego zwraca
++         `completionsExecutive`, jako nazwana klasa, aby mogła zadeklarować
++         `uses parasite.threads`. Jej `help` deleguje do `helpTree`.
+
+% 0 1 0 1d62a3fad1b0ab9605f3508c3c166f95
+
+% 0 1 0 114f60daa9d4849908bd2eeadbcf4fcc
+
+% 0 1 0 0285f482f743cc7509e638c2898170f9
+
+@ 0 3 0 1f9cab62ea48ee8413bd96a088ee918d
++     entry #invocation   rozpoznaje żądania `{completions}` i `{admin}`, a w przeciwnym razie buduje `Invocation`
++     entry #process   wypisuje sugestie `Completion` albo uruchamia `Invocation` i przejmuje jego status wyjścia
++     entry #help   drzewo `Help` ciała, zbudowane przez `helpTree`
+
+@ 0 4 0 03e24fa861d1094f13eb4dbc622f8f88
++ entry .trap   instaluje handler sygnału na `Cli` w zasięgu
++     `trap { case Signal(Interrupt.Int, _, _, _) => SignalResponse.Reject }` to
++     `summon[Cli].trap(handler)`: zob. `Cli#trap`. Dostarczane są tylko sygnały wymienione na
++     liście `signals` w `application`.
+
+@ 0 1 0 17c6cd10fc051d2a18f2cd1bb07e5268
++ entry .Install   błąd zgłaszany, gdy zapisanie czegoś na hoście się nie powiedzie: skryptów uzupełnień, stron man, demona
+
+% 1 1 0 0a9fe82d96e082dc0f42255127abba19
+
+@ 0 5 0 061e284f51d2d80211350fcd381bc997
++       Instalacja skryptu uzupełnień (`Completions.install`), strony man (`Manpages.install`)
++       lub demona zawodzi na te same dwa sposoby, więc błąd należy do czynności, a nie do
++       któregoś z instalatorów. `Install.Error` to błąd `↯/s.109.3`, _the installation failed
++       because `reason`_, z numerem przyczyny jako kodem podrzędnym.
++   entry .Error   błąd `↯/s.109.3`: instalacja się nie powiodła z powodu środowiska lub awarii wejścia-wyjścia
+
+% 1 1 0 162ab5c75f7eafe20cc7e6b545f53cba
+
+@ 0 6 0 173b7d4079cd31010b67837f032d5cb7
++         Zgłaszany za pośrednictwem `Tactic[Install.Error]` przez `Completions.install` i
++         `Manpages.install`. `Reason.Environment` (1) oznacza _it was not possible to get
++         enough information about the install environment_ – zapytanie o ścieżkę, nazwę lub
++         powłokę się nie powiodło; `Reason.Io` (2) oznacza _an I/O error occurred when trying to
++         write an installation file_.
++     entry .Reason   dlaczego instalacja się nie powiodła: `Environment` lub `Io`
+
+% 1 1 0 0aefce0415264d1f1ae40bd1f270f018
+
+@ 0 5 0 012689fa8b91feba1cb8f8eb1d7575e8
++           Wyliczenie z `number` (1 dla `Environment`, 2 dla `Io`) i givenem `Communicable`,
++           który przedstawia każdą przyczynę jako jej komunikat.
++       entry .communicable   przedstawia przyczynę jako jej komunikat
++       entry #number   kod podrzędny: 1 dla `Environment`, 2 dla `Io`
++     entry #reason   przyczyna
+
+@ 0 4 0 0948658221395b280e6ceac77ecde356
++ entry .arguments   argumenty `Cli` w zasięgu, jako lista `Argument`
++     `arguments` to `summon[Cli].arguments`: słowa przekazane przez powłokę po nazwie
++     polecenia, każde jako `Argument`, który stosuje się do swojego tekstu i pamięta swoją
++     pozycję. Zwykle jest wartością dopasowywaną przy dopasowaniu podpoleceń:
+
+% 2 1 0 10c170958a1a4bc81cd36fa132890dab
+
+% 3 1 0 04d6e642baf520c61698550d03388aac
+
+% 4 1 0 025f9b22cda9ce4a1bcab3b0c4881730
+
+% 5 1 0 0cf784719a0132ba1ce1f6d6466a7a48
+
+% 6 1 0 0cb042434eb1d54c0cc85289fab126c8
+
+% 7 1 0 1aebabdec10192950571797edbf1afba
+
+% 0 1 0 096e8d0000ed218e04d7e9d401a15457
+
+% 0 1 0 0c414f9f8a1622a202a766e7a5d7b2fb
+
+% 0 1 0 162783823ba044e012092cdc5b7668d5
+
+% 0 1 0 0fef0f55ca5524ac022cf1a0b88bce8d
+
+% 1 1 0 0d73158db53dfbf10a5d203cf7233186
+
+@ 0 1 0 0b374c78571d20eb06fc837030f0ab0e
++ entry .Argument   jedno słowo wiersza poleceń, z pozycją, kursorem i odczytywanym fragmentem
+
+% 1 1 0 0b68ca45a79503c8073bb8bb705e45c7
+
+@ 0 7 0 1d8b3d1bdf3ca7301721f036f269797c
++       `Argument` to więcej niż jego tekst. Zna swoją `#position` (od `0` dla pierwszego słowa
++       po poleceniu), wie, czy jest w nim kursor i gdzie (`#cursor`, ustawiane tylko dla słowa,
++       które uzupełnia żądanie uzupełnienia), ile razy naciśnięto tam tabulator (`#tab`), oraz
++       swój `#format`: który fragment słowa odczytuje interpreter, ponieważ `--jobs=4` to dwa
++       fragmenty, a `-abc` to trzy przy interpreterze grupującym. Zastosowanie argumentu,
++       `argument()`, daje fragment wybrany przez format; `#value` to całe słowo.
+
+@ 0 3 0 0cd470f084b83a971f06bfe9bc494309
++       `Argument.unapply` wydobywa zastosowany tekst, więc `case Argument(t"--") => …`
++       dopasowuje się do niego; `Subcommand` i `Pathname` to ekstraktory, którymi aplikacje
++       zwykle dopasowują argumenty.
+
+% 2 1 0 0d46a59971773429022c93931db53dc6
+
+% 3 1 0 00cf600f3c2d62ba186bea8e3ff5040d
+
+% 0 1 0 1f9108ec7fc2a5f01709df2e69f5eff6
+
+% 0 1 0 0de5bda83fa668da17b345b9ac32153e
+
+% 0 1 0 028edfc289405e040df64f0d592a4207
+
+% 1 1 0 146fcb6f2f221c430da5fa514033fe47
+
+% 1 1 0 114748e5244c494f1172864ff0621ab4
+
+% 0 1 0 09e7a5f95d88d4000a2eba04d6f48b51
+
+% 1 1 0 0e78178972908c2a1eb3e62c60a290be
+
+@ 0 31 0 097a8a5d194129090494368ea83eaa8f
++   entry .Format   który fragment słowa reprezentuje argument
++       `Full` to całe słowo; `EqualityPrefix` i `EqualitySuffix` to dwie strony słowa
++       `--flag=value`; `CharFlag(index)` to jedna litera zgrupowanej krótkiej flagi, takiej jak
++       `-abc`; a `FlagSuffix` to operand dołączony do krótkiej flagi, `bc` z `-abc` przy
++       interpreterze niegrupującym. Przypadki wyliczenia nie są wpisami: `CharFlag` niesie
++       `Ordinal` litery w obrębie grupy.
++   entry .unapply   wydobywa zastosowany tekst argumentu, więc `Argument` można dopasować jako `Argument(text)`
++   entry .inspectable   przedstawia argument jako `position: value / format => applied text`
++   entry #position   indeks słowa w wierszu poleceń, od `0` dla pierwszego słowa po poleceniu
++   entry #value   całe słowo, niezależnie od formatu
++   entry #cursor   przesunięcie kursora w słowie albo `Unset`, jeśli słowo nie jest uzupełniane
++   entry #tab   liczba naciśnięć tabulatora na tej pozycji, jeśli jest to uzupełnianie
++   entry #format   fragment słowa, który odczytuje ten argument: zob. `Argument.Format`
++   entry #apply   tekst fragmentu wybranego przez format
++       `--jobs` dla `EqualityPrefix` z `--jobs=4`, `4` dla jego `EqualitySuffix`, `-b` dla
++       drugiej `CharFlag` z `-abc`, całe słowo dla `Full`.
++   entry #prefix   tekst przed kursorem albo `Unset`, jeśli słowo nie ma kursora
++   entry #suffix   tekst po kursorze albo `Unset`, jeśli słowo nie ma kursora
++   entry #contains   czy przesunięcie w słowie wypada wewnątrz fragmentu wybranego przez ten format
++   entry #wrap   przekształca sugestię tak, by rozszerzała fragment tego słowa, zamiast zastępować słowo
++       Dla `EqualitySuffix` sugestia zyskuje prefiks `--flag=`; dla `CharFlag` sugestia flagi
++       zachowuje już wpisane litery jako ukryty prefiks i wstawia tylko nową literę, więc wybór
++       `-c` przy `-ab` daje `-abc`, przy czym `display` nadal nazywa flagę `-c`, a `incomplete`
++       jest ustawione, by powłoka nie zakończyła słowa. Sugestia, która nie jest flagą,
++       pozostaje bez zmian. `Completion#serialize` stosuje to do kandydatów słowa w fokusie.
++   entry #suggest   oferuje sugestie dla tego argumentu, jeśli to on jest uzupełniany
++       `argument.suggest(update)` przekazuje poprzednie sugestie do `update` jako nazwaną
++       wartość kontekstową `prior` i zapisuje wynik na `Cli`, z prefiksem i sufiksem, których
++       wymaga format tego argumentu. Wywołują to `Subcommand#unapply` i `Pathname.unapply`;
++       aplikacja oferująca własnych kandydatów dla argumentu pozycyjnego robi to samo:
+
+% 2 1 0 1c1dd697d90eb008063a27a3da470fca
+
+% 3 1 0 0a8ee2d00ea797b304850bc0d633c1d7
+
+% 4 1 0 1eba134655fec2930f3eee22a4235715
+
+% 0 1 0 0409e4597256e5030a0648faa1263e71
+
+% 0 1 0 117200c2aac680131376a61d784b607c
+
+% 1 1 0 066a6bd5519e363e1d81e40d26cd2b77
+
+@ 0 4 0 1b1b8c032ae19cfb0973f594ec14eb6d
++   entry #select   oferuje listę opcji jako kandydatów tego argumentu i odczytuje tę, którą on nazywa
++       `argument.select(options)` wymaga, by typ opcji był `Suggestible`; oferuje sugestię
++       każdej opcji, oznaczoną jako wartość operandu, aby drzewo pomocy do nich nie schodziło,
++       i zwraca opcję, której tekst równa się tekstowi tego argumentu, albo `Unset`.
+
+@ 0 1 0 19c107e451be37e301b69ddd0eb0299e
++ entry .Commandline   zinterpretowana struktura argumentów: pozycyjne, flagi z operandami oraz fokus
+
+% 1 1 0 025de84fded4a9e9096471e6248c03e7
+
+@ 0 6 0 1c9e0ed64a457b65056afc41591a4822
++       `Topic` obu interpreterów POSIX. `#positional` przechowuje słowa przed pierwszą flagą,
++       `#parameters` odwzorowuje każde słowo flagi na słowa operandów, które po nim nastąpiły,
++       `#postpositional` przechowuje wszystko po gołym `--`, a `#focus` to flaga, do której
++       należy kursor w żądaniu uzupełnienia – własne słowo kursora, gdy jest flagą, a w
++       przeciwnym razie poprzedzająca je flaga, więc operand flagi uzupełnia się niezależnie od
++       tego, gdzie stoi flaga, a nie tylko wtedy, gdy jest ostatnia.
+
+% 2 1 0 1c2c1d0ffcb8bb4a152e6abb536b84b5
+
+% 3 1 0 1059415b05c557ec0c3f4dda627ee012
+
+% 0 1 0 14e935c967264b8911279eb5f217fd7b
+
+% 0 1 0 02c79688e708d2d4193315ea7d3a80f1
+
+% 0 1 0 06e436f4533253860a6ae0c2948a59d8
+
+% 0 1 0 1e402810b35388691c28507e8d7a97c7
+
+% 1 1 0 0d77919475b5a3511b4e42e8254d020a
+
+% 0 1 0 13ee814eb3f0504013184b3efaaef7b4
+
+% 1 1 0 05c51193d924aefa157383fd18062b38
+
+@ 0 13 0 18bac4cdd7d4de9d0d78a44bc92a3130
++   entry #positional   słowa przed pierwszą flagą
++   entry #parameters   każde słowo flagi, w swoim formacie, odwzorowane na słowa operandów, które po nim nastąpiły
++   entry #postpositional   słowa po gołym `--`, nigdy nieodczytywane jako flagi
++   entry #focus   flaga, do której należy kursor, jeśli jest to żądanie uzupełnienia
++   entry #at   argumenty operandu flagi albo `Nil`, jeśli flagi nie ma lub nie ma ona operandów
++   entry #locate   argumenty operandu flagi albo `Unset`, jeśli flagi nie podano
++       Operandy pierwszego wystąpienia flagi albo, dla flagi zadeklarowanej jako `repeatable`,
++       wszystkich wystąpień w kolejności z wiersza poleceń. W przeciwieństwie do `#at`
++       nieobecna flaga (`Unset`) jest odróżniana od obecnej bez operandów (`Nil`), czego
++       potrzebuje `Flag#validate`, by odróżnić brakującą flagę od niepoprawnej.
++   entry #read   odczytuje operandy flagi jako typ, rejestrując przy tym flagę na `Cli`
++       Wymaga `Interpretable` dla typu operandu i `Discoverable` dla jego uzupełnień;
++       interpretacja odbywa się pod `safely`, więc niepoprawny operand odczytuje się jako
++       `Unset`.
+
+@ 0 1 0 0f5cce921f42f42701fec35481467c68
++ entry .CommandGroup   nagłówek, pod którym w pomocy wymienia się razem powiązane podpolecenia
+
+% 1 1 0 1fb7dce833342ebd0e4f4082094dc282
+
+@ 0 5 0 12dcdbb20189e72e1d95b2f1807521c5
++       `CommandGroup(name, description)` nazywa grupę; `Subcommand` zadeklarowane z
++       `group = admin` jest wymieniane pod nagłówkiem `Admin commands:` w `Help#teletype` i we
++       własnej podsekcji COMMANDS strony man, z opisem (`Text` lub stylizowanym `Teletype`) jako
++       akapitem pod spodem. Flaga, którą identycznie mają wszyscy członkowie grupy, jest
++       wyodrębniana i wymieniana raz jako wspólna opcja.
+
+% 2 1 0 0cb9e4c7805b4f881566e3fc6b7264b5
+
+% 3 1 0 0e15f85ad4df2a360c7ec1a4396e8b83
+
+% 0 1 0 1052020a384608da0e4440ec5d7d9449
+
+% 0 1 0 0a6f9d6bcad5d0c21d6cf0fdad346e02
+
+% 1 1 0 0f971facfa45af911d329a2ce4005b40
+
+@ 0 2 0 1de4589210aeb9ab1fbf185ff69203ab
++   entry #name   nagłówek
++   entry #description   opcjonalny akapit pokazywany pod nagłówkiem
+
+@ 0 1 0 1249237f03456d861664eeb3e58225b5
++ entry .Discoverable   jak typ operandu flagi sam sugeruje swoje wartości do uzupełniania
+
+% 1 1 0 1f3a80d3ba198d241a8f74464b179b15
+
+@ 0 6 0 02980f775623342a1307f8371115a9b1
++       Klasa typów z jedną metodą, `#discover`, z częściowo wpisanego operandu i liczby
++       naciśnięć tabulatora na listę `Suggestion`. `Flag[Mode]`, dla którego `Mode is
++       Discoverable`, oferuje te wartości po `--mode `; given jest pobierany z miejsca odczytu
++       flagi, a `Discoverable.noSuggestions` jest domyślny, gdy żadnego nie ma w zasięgu.
++       Obiekt towarzyszący derywuje go dla każdego wyliczenia, które jest `Enumerable` i
++       `Identifiable`, nazywając przypadki w stylu wybranym przez zaimportowany given
++       `enumIdentification`.
+
+% 2 1 0 1e23dfb71047b07411cb014da1210860
+
+% 3 1 0 0327b7f295d1622b11fff55a7b224f20
+
+% 5 1 0 186cd139f6209cb111186df8cdb8116b
+
+% 0 1 0 1cc8908026e2acb90c2eec16c5686aaf
+
+% 0 1 0 1e89eefa630d35710d7e9b0f075a8ad1
+
+% 1 1 0 0a98d44d1935a55d1aacd1b88004d600
+
+@ 0 3 0 10996b3ef488d3ba067674ae738ef876
++       `pathnameDiscoverable` w `exoskeleton.completions` to instancja dla `Path on Local`,
++       uzupełniająca ścieżki systemu plików po jednym segmencie; jest givenem najwyższego
++       poziomu i trzeba ją importować po nazwie.
+
+% 1 1 0 06d2106837d5af3600a0bcc6b9b2c517
+
+% 1 1 0 18a03d80fd7c2d7c15bc46f753d77e00
+
+% 1 1 0 07dd2a189aa14ea31f95e43fa1f55d92
+
+@ 0 4 0 0b83940c074f66830657a77e6af3f648
++   entry .noSuggestions   instancja, która niczego nie sugeruje, domyślna dla flagi odczytywanej, gdy żadnej nie ma w zasięgu
++   entry .enumerable   sugeruje każdy przypadek wyliczenia pod nazwą nadaną przez jego `Identifiable`
++       W zasięgu niejawnym dla każdego `value: {Enumerable, Identifiable}`; to, które
++       `Identifiable` obowiązuje, wybiera się, importując given `enumIdentification`, taki jak
+
+% 0 1 0 05d1f46beb259e53189aea51d802df5d
+
+@ 0 5 0 02e5e09be561e40b0e456c69b1896e0f
++   entry #discover   sugestie dla operandu pod kursorem
++       `operand` to dotychczas wpisany tekst (pusty, gdy słowa jeszcze nie zaczęto), więc
++       instancja może go rozwiązać – schodząc do wpisywanego katalogu, jak robi to `Pathname` –
++       a `tab` to liczba naciśnięć tabulatora na tej pozycji, więc ponowne naciśnięcie może
++       ujawnić więcej.
+
+@ 0 8 0 063838bb6926d9f30d534d2498f1491d
++ entry .Effectful   wymazana zdolność oznaczająca kod działający naprawdę, a nie spekulatywnie na potrzeby uzupełnień
++     `Effectful` nigdy nie jest instancjonowane: blok `execute` wyczarowuje je dla swojego
++     ciała, a `executives.directExecutive` nadaje je całemu ciału jako swoje `Permit`.
++     `Flag#apply`, `Flag#require` i `Flag#validate` rozdzielają według jego obecności za
++     pomocą `summonFrom`, rozwiązując się bez niego do odroczonego uchwytu (`Prospective`,
++     `Requisite`), a z nim do wartości, natomiast `Prospective#apply`, `Requisite#apply` i
++     `Flag#value` wprost go wymagają. Metoda zdefiniowana przez użytkownika również może go
++     wymagać, aby nieodwracalnej operacji nie dało się wywołać z prologu, który uruchamia
++     uzupełnianie tabulatorem:
+
+% 2 1 0 082e50f9f71626131bcc4e2bb31985fc
+
+% 3 1 0 00d600b11f08fb6415f375c6005a0a71
+
+% 0 1 0 1aa6b56656bfe52103da406ba8ac5ed5
+
+% 1 1 0 0df5afc01a5e9b5b1226dbc9864a141b
+
+@ 0 2 0 1ee4f37aec84f9b5083f48bc926834a3
++     `Completions.install` i `Manpages.install` wymagają go właśnie z tego powodu; furtka
++     `effectful` wyczarowuje je poza `execute`.
+
+@ 0 4 0 064add575e6388df0f2f667acc024790
++ entry .Speculative   obojętny odpowiednik `Effectful`: zezwolenie ciała, które może działać tylko po to, by odkryć uzupełnienia
++     `executives.completionsExecutive` nadaje `Speculative` jako swoje `Permit`. Nie
++     przepuszcza żadnej operacji z efektami: flaga odczytana pod nim jest `Prospective`, a nic,
++     co wymaga `Effectful`, nie kompiluje się poza `execute`.
+
+@ 0 6 0 185762a5eaac490b161aecd9611afaa4
++ entry .effectful   furtka: uruchamia blok z wyczarowanym `Effectful`, poza jakimkolwiek `execute`
++     `effectful(block)` wylicza blok tak, jakby był wewnątrz `execute`. Kod, który tego używa,
++     rezygnuje z gwarancji, jakie daje `execute`: w szczególności `Requisite` zastosowane pod
++     wyczarowanym `Effectful` może spanikować, ponieważ strażnik brakujących flag nie zadziałał.
++     Uczciwym zastosowaniem jest test lub ścieżka administracyjna, która instaluje coś bez
++     bloku `execute`, jak robi to `Completions.ensure`.
+
+@ 0 1 0 00faef793b2912a9097ffedccbb36d09
++ entry .Flag   nazwana opcja, `--name` lub `-n`, której operand odczytuje się jako typ
+
+% 1 1 0 0b7f20753220eabf1a3e23e2b511b5c4
+
+@ 0 7 0 093bed5a1ece6e860adc80c708e510b9
++       `Flag[Int](t"jobs", aliases = List('j'))` deklaruje flagę; jej zastosowanie odczytuje
++       flagę z `Cli` w zasięgu. Deklaracja niesie wszystko, czego potrzebują pomoc i
++       uzupełnienia: `#name` (`Text` dla `--long`, `Char` dla `-s`), `#aliases` w dowolnej
++       postaci, czy jest `#repeatable`, `#description` oraz czy jest `#secret` (odczytywana,
++       ale nigdy niewymieniana). Parametr typu to typ operandu, którym może być cokolwiek
++       `Interpretable` – każdy typ `Decodable in Text` nim jest, przez
++       `Interpretable.decoder` – i domyślnie jest to `Text`.
+
+@ 0 10 0 0877e95f2a052bb81ab2daf043a3951a
++       Sposób rozwiązania odczytu zależy od zdolności `Effectful`. Gdy jest w zasięgu (wszędzie
++       pod `executives.directExecutive`; wewnątrz `execute` pod wykonawcą uzupełnień),
++       `flag()` to wartość `Optional`, `flag.require()` to wartość albo rzucony `Flag.Error`, a
++       `flag.validate()` to wartość albo rzucony `Flag.Error`, którego przyczyną jest `Missing`
++       lub `Invalid`. Bez niej – w prologu pod wykonawcą uzupełnień – te same wywołania zwracają
++       uchwyty, `Prospective` lub `Requisite`, rozwiązywane zachłannie z argumentów, których
++       `present` i `absent` można sprawdzić od razu, ale których wartość jest dostępna tylko
++       wewnątrz `execute`. Tak czy inaczej odczyt rejestruje flagę, więc flaga, którą program
++       sprawdza, jest flagą, którą oferuje uzupełnianie, dokładnie pod warunkiem, pod którym kod
++       ją sprawdza.
+
+% 2 1 0 1468b6324649c8ed1be951f436150983
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 160ada309c109c5d1ed0fde7ba167229
++         label Jedna flaga
+
+% 1 1 0 0e8de5a12a27f4ae14d2d0101f0a9537
+
+% 2 1 0 096324914f13e7c80ab8421219fd87aa
+
+% 3 1 0 10d9a3f83229bc190c556ad6ea6050a3
+
+% 4 1 0 09f829ba8945a9900c26f46b5fd1aef5
+
+% 5 1 0 04597c6b718d1c82110ff8bbddf32ea7
+
+% 1 1 0 026c5d0273c13b6b1762edb172dc3bdd
+
+% 0 1 0 01181c4bacddffcd048c8962e1a01d55
+
+% 1 1 0 1fe0be08141cf46a00f52499dae419ae
+
+% 2 1 0 0fef1db4e7d8daf40fcca926b973c249
+
+@ 0 1 0 066310367ffebb06105df9bdb35c81c8
++         label Druga flaga, odczytywana tylko wtedy, gdy obecna jest pierwsza
+
+% 1 1 0 0a072d64a182ee14003cf95b4eea19ae
+
+% 2 1 0 0fd5db5cf589317c092fe61a3fa85a68
+
+% 3 1 0 1507ac46ff9c36750dbeed37b5317fb2
+
+% 4 1 0 188a44504f9348f0064c3d20fc351e3b
+
+% 5 1 0 1f50fa87385f7d1f1ffaf8442b81c18f
+
+% 6 1 0 1b8ecc57e30437c00b95352786f7bca2
+
+% 1 1 0 08b7238a036fb98002224d8c3542b9f4
+
+% 0 1 0 0356cf93d0c0b16b0e1dab29fae8d607
+
+% 1 1 0 0c7d72b9cf7d2cf119d2c6eb53664237
+
+% 2 1 0 04afc75fde99b27c0ea55fddd1b002f7
+
+@ 0 1 0 0785bb239dd2cee11779185fa9fa0043
++         label Wymagana flaga, sprawdzana przed uruchomieniem bloku
+
+% 1 1 0 155022da757e824d125173fb031ed3a6
+
+% 2 1 0 107e533c071b38d21cc4ae07cf4e3874
+
+% 3 1 0 0b5219b2aca3afc408025182fcf13444
+
+% 4 1 0 04a0580f70c8517e08af7a44f1e8e3ae
+
+% 5 1 0 1074f2173a5043ab112e4de244d82b26
+
+% 6 1 0 14607ba6fe782f3619795e13d7ce2056
+
+% 0 1 0 1ae0fc2b8756630d1b46f7efd236781d
+
+% 1 1 0 1b5e0b89e497a5611c46c10313955b94
+
+% 0 1 0 03d2e96b470b3c38097741d8585a2833
+
+% 1 1 0 1a91062b200ab53f17da3e189f87bb55
+
+% 1 1 0 14dd1fe754980fb107ff05b5de6876aa
+
+% 2 1 0 0f9dca495dcf9b2113a69e715e45d9a1
+
+@ 0 5 0 0cdd7a265d8bc1fe1874fc44a818f130
++       Po pierwszej ramce `tool -<TAB>` oferuje `--verbose`; po drugiej `--level` jest
++       oferowane dopiero wtedy, gdy w wierszu jest `-v`, a `-v` już nie; po trzeciej `--home`
++       jest oferowane zawsze, jest oznaczone w pomocy jako wymagane, a uruchomienie bez niego
++       wypisuje _The following required options were not specified_ i kończy ze statusem 2,
++       zanim blok się wykona.
+
+@ 0 7 0 00b96f89950a673901c6c8673282491e
++       Dwie pułapki. `Flag#apply`, `require`, `validate` i `select` są `transparent inline`,
++       więc wewnątrz innego `inline def` nie są rozwijane, gdy typuje się to ciało, a ich wynik
++       zachowuje zadeklarowany typ unii: `present` na nim rozwiązuje się wtedy względem
++       rozszerzenia `Optional` z vacuous i odpowiada `true` dla każdej flagi. Kod inline
++       powinien zamiast tego odczytywać flagę przez `#present` (wszędzie) lub `#value` (z
++       `Effectful`). Ponadto flaga odczytana po raz pierwszy wewnątrz `execute` nigdy nie jest
++       widziana przez uzupełnienie, ponieważ blok tam się nie wykonuje: flagi należy deklarować
++       w prologu.
+
+% 0 1 0 1d6155f2eef499a50d998ff1a1643d55
+
+% 0 1 0 05c2115dfb5840b51cac5782213d6f11
+
+% 1 1 0 17ac4b810f1ef12009f046c78c547a54
+
+% 1 1 0 11c299ef5d81c1ba0cbe237d2bb968fc
+
+% 1 1 0 0287a177bb351aa61925a9fd19934cc1
+
+% 1 1 0 01f01458d51e42ec014a54b19f444ea6
+
+% 1 1 0 1fa5ba1ec18bec5813f49208f4625c83
+
+@ 0 6 0 0be8cea682f1d0970ccd6512c29f99d0
++   entry .apply   deklaruje flagę: `Flag[Int](t"jobs", repeatable, aliases, description, secret)`
++       Parametr typu to typ operandu, domyślnie `Text` (dowód `Defaulting` jest wymazywany).
++       `name` to `Text` dla długiej flagi lub `Char` dla krótkiej; `aliases` mogą mieszać obie;
++       `repeatable = true` pozwala fladze wystąpić więcej niż raz, a jej operandy odczytuje się
++       wtedy razem przez temat `List`; `secret = true` odczytuje flagę, nigdy jej nie wymieniając
++       ani nie uzupełniając.
+
+% 2 1 0 0f68fc04f51331b60b1d8d05ce11c118
+
+% 3 1 0 0c83520733357b1100563c0ddc4684bb
+
+% 0 1 0 021490ce49b17c0a182863cf8fc55c8d
+
+% 0 1 0 0493cdf194da08a314813c59d2c26a7d
+
+% 0 1 0 153382ef38cc87380e89ea584ef6651c
+
+% 1 1 0 1d1d344e0f70b1e60ef9dfa8dd77461e
+
+@ 0 50 0 103ab7e2451df59103288bb9a03be452
++       Temat `List[Text]` odczytuje `--tag a --tag b` jako `List(t"a", t"b")`; temat
++       `Optional[Int]` odczytuje niepoprawny operand jako `Unset` zamiast zgłaszać błąd, co
++       musi robić odczyt w czystym prologu (`Interpretable.optionalInt`); zwykłą `Flag[Int]`
++       odczytuje się przez `validate()`.
++   entry .serialize   nazwa flagi w postaci zapisu: `--name` dla `Text`, `-n` dla `Char`
++   entry .showable   pokazuje flagę w jej postaci kanonicznej, `--name` lub `-n`, jak tego wymaga komunikat o użyciu
++   entry .inspectable   przedstawienie diagnostyczne z aliasami, powtarzalnością, tajnością i opisem
++   entry #name   nazwa kanoniczna: `Text` dla `--long`, `Char` dla `-s`
++   entry #repeatable   czy flaga może wystąpić więcej niż raz, a jej operandy są odczytywane razem
++   entry #aliases   inne nazwy, na które flaga odpowiada, długie lub krótkie
++   entry #description   tekst pomocy, pokazywany w pomocy, stronach man i powłokach, które pokazują opisy
++   entry #secret   czy flaga jest odczytywana, ale nigdy niewymieniana, nieuzupełniana ani nieudokumentowana
++   entry #apply   odczytuje flagę: jej wartość `Optional` z `Effectful` w zasięgu, uchwyt `Prospective` bez niego
++       Rejestruje flagę na `Cli`, z `Discoverable` w zasięgu dla jej typu operandu (domyślnie
++       `Discoverable.noSuggestions`) i nazwą operandu podaną przez jej `Interpretable`.
++       Wymaga `Cli`, `Interpreter` i `Interpretable` tematu; interpretacja odbywa się pod
++       `safely`, więc niepoprawny operand jest tu `Unset` (aby go zgłosić, należy użyć
++       `#validate`). Metoda `transparent inline`: zob. pułapkę w opisie `Flag`.
++   entry #require   odczytuje flagę jako wymaganą: wartość z `Effectful`, uchwyt `Requisite` bez niego
++       W prologu brakująca flaga nigdy nie zawodzi natychmiast: jest zapisywana przez
++       `Cli#demand`, a `execute` zgłasza razem wszystkie brakujące wymagania, kończy ze statusem
++       2 i nigdy nie uruchamia swojego bloku, dlatego `Requisite#apply` wewnątrz bloku jest
++       bezwarunkowe. Z `Effectful` w zasięgu brakująca flaga od razu rzuca `Flag.Error`
++       `Missing`, który zgłosi backstop.
++   entry #validate   odczytuje flagę jako wymaganą i sprawdza, czy jej operand się dekoduje, kumulując lub zgłaszając awarie
++       Jak `#require`, a dodatkowo interpretuje operand za pomocą `Interpretable` tematu,
++       przywoływanego w miejscu wywołania nad dowolną `Tactic`, przez którą może zgłaszać błędy
++       jego dekodowanie, więc w miejscu wywołania nie jest potrzebna żadna taktyka. W prologu
++       flaga obecna, lecz niepoprawna, jest zapisywana przez `Cli#fault` z własnym komunikatem
++       dekodera albo z _a value is required but none was given_ / _the value is not valid_, gdy
++       dekoder go nie podaje; `execute` wypisuje je pod _The following options were given
++       invalid values_. Z `Effectful` brakująca flaga rzuca `Flag.Error` `Missing`, a
++       niepoprawna `Flag.Error` `Invalid`. W przeciwieństwie do `#apply` w ten sposób odczytuje
++       się `Flag[Int]`, którego dekoder zgłasza błędy.
++   entry #select   ogranicza flagę do listy opcji, oferując je jako uzupełnienia i odczytując wybraną
++       `flag.select(options)` wymaga, by temat był `Suggestible`; sugestia każdej opcji jest
++       oferowana jako wartość operandu, a operand odczytuje się, dopasowując jego tekst do nich.
++       Rozwiązuje się tak jak `#apply`.
++   entry #present   czy flagę podano, odczytane bezpośrednio, bez rozdzielania inline
++       Rejestruje flagę tak jak `#apply`. Tego odczytu należy używać wewnątrz `inline def`,
++       gdzie `flag().present` jest zawodne.
++   entry #value   wartość `Optional` flagi, odczytana bezpośrednio; wymaga `Effectful`
++       Rejestruje flagę tak jak `#apply`. Tego odczytu należy używać wewnątrz `inline def`
++       działającego pod `Effectful`.
++   entry #suggest   rejestruje flagę na `Cli` z `Discoverable` w zasięgu, bez jej odczytywania
++   entry #matches   czy zastosowany tekst argumentu nazywa tę flagę, jej nazwą lub aliasem
++       `--name` pasuje do nazwy `Text`, `-n` do nazwy `Char`; format argumentu decyduje, który
++       fragment słowa jest porównywany.
++   entry .Error   zgłaszany przez `#require` lub `#validate` wewnątrz `execute`, gdzie awarii flagi nie można już kumulować
+
+% 1 1 0 1a658105e4a048ee15e3a0824727f2ca
+
+@ 0 10 0 0d409e509ca6d51e06516ce8fbd0636d
++         Rzucany przez `Flag#require` i `Flag#validate` tylko wtedy, gdy w zasięgu jest
++         `Effectful` – wewnątrz bloku `execute` albo gdziekolwiek pod
++         `executives.directExecutive` – gdzie strażnik wymagań już zadziałał; propaguje się do
++         `Backstop` wykonawcy. W prologu żadne z wywołań nie zawodzi: każde zapisuje usterkę na
++         `Cli`, a `execute` zgłasza razem wszystkie brakujące lub niepoprawne flagi ze statusem
++         wyjścia 2.
++     entry #flag   flaga, której brakowało lub która była niepoprawna
++     entry #reason   `Missing` albo `Invalid(detail)` z tym, co zgłosił dekoder
++     entry .Reason   dlaczego flaga zawiodła
++       entry .Missing   flaga była wymagana, ale jej nie było: _the required flag `--name` was not specified_
++       entry .Invalid   operandu flagi nie udało się zdekodować: _the value of `--name` is not valid: `detail`_
+
+@ 0 1 0 068001a6204cc98f1f0f7057940aa5f2
++ entry .Switch   flaga bez operandu: deklarowana jak `Flag`, odczytywana jako jej obecność
+
+% 1 1 0 00365a3221a64a4d14b9f5e85c764221
+
+@ 0 4 0 14c0956428e76b2e09d7322799758d84
++       `Switch(name, repeatable, aliases, description, secret)` to `Flag[Unit](…)`, której
++       `Interpretable.unit` odczytuje tylko obecność, więc pomoc i uzupełnianie pokazują ją bez
++       operandu. Zastosowanie jej, `Switch(…)()`, daje `Optional[Unit]` przy `Effectful` albo
++       `Prospective[Unit]` bez niego; jedno i drugie odpowiada na `present`.
+
+% 2 1 0 07253557f706a4161e226b4a9cb0f962
+
+% 3 1 0 09f852b8dcabfb4300d2c5e49c6387f5
+
+% 0 1 0 1df4f95ebdab6524028867d104020c9d
+
+% 1 1 0 120fcd3a76c0d5ba1f63475fffddf582
+
+@ 0 1 0 0dcd8b033a820ee816e6b8e946f2cf0f
++   entry .apply   deklaruje przełącznik, jak `Flag.apply`, ale z ustalonym tematem `Unit`
+
+@ 0 1 0 003b1c584f91282b13427e4fa896f678
++ entry .Setting   konfigurowalna opcja odczytywana z wiersza poleceń, zmiennej środowiskowej albo kaskady `Configurator`
+
+% 1 1 0 150dba50e3959643017ad15b309a9608
+
+@ 0 8 0 0e8ecfc63084bf09141b66766a310b31
++       Wiele opcji powinno dać się ustawić nie tylko w wierszu poleceń, ale też zmienną
++       środowiskową, właściwością systemową albo plikiem konfiguracyjnym, przy ustalonej
++       kolejności pierwszeństwa. `Setting` deklaruje taką opcję raz, przez kanoniczną nazwę
++       camelCase `#name`, a jej odczyt sprawdza kolejno: jej flagę wiersza poleceń `#flag`,
++       wyprowadzoną jako `--kebab-case` (więc `logLevel` to `--log-level`); jawnie nazwaną
++       zmienną środowiskową `#variable`, jeśli jest; następnie `Configurator` w zasięgu, którego
++       standardową kaskadę – właściwość systemową `myapp.log.level`, potem zmienną środowiskową
++       `MYAPP_LOG_LEVEL` – włącza się, deklarując given `Configurator.Prefix`.
+
+% 2 1 0 1210dddb4750fb1c0af04445d3ae6871
+
+% 3 1 0 0b9c9f3034e9d1c9127a21dcc97f0ed2
+
+% 4 1 0 15327355dc0874b21c17afd0a9591630
+
+% 5 1 0 182b68827fb3066210a5a351d112b968
+
+% 0 1 0 0e1f114160fc5f7808497dce6a1a0aed
+
+% 0 1 0 0c71eb75cf29bf8402e3e626b03a0f10
+
+% 0 1 0 1df20689c68e92000e1e0fe2525d0d10
+
+% 0 1 0 14f9dfb25c73f17e17c895b3535dba79
+
+% 1 1 0 13dd09f7aa6c7afd176351f26bb7355d
+
+@ 0 5 0 0ce565f422315385100243ada5982a48
++       Ustawienie ma jedną wartość, więc jego operand odczytuje się jako `Text` i dekoduje tym
++       samym `Decodable in Text` co każde inne źródło. Odczyt ustawienia rejestruje jego flagę do
++       uzupełniania dokładnie tak, jak zrobiłby to bezpośredni odczyt flagi, więc ustawienie
++       trzeba odczytać w prologu, aby było wykrywalne. Zdefiniowany przez użytkownika given
++       `Configurator` zastępuje standardową kaskadę; flaga wiersza poleceń zawsze jest pierwsza.
+
+% 1 1 0 0a9b3684e744d17808fd627615d714c6
+
+@ 0 11 0 1712ab99cefb2f2809ecf0cf20f8e69e
++   entry .apply   deklaruje ustawienie: `Setting[Int](t"port", description, aliases, variable, secret)`
++       Parametr typu to typ wartości, domyślnie `Text`. `aliases` to dodatkowe nazwy flagi;
++       `variable` nazywa zmienną środowiskową sprawdzaną dosłownie między flagą a kaskadą
++       konfiguratora; `secret` ukrywa flagę w pomocy i uzupełnianiu.
++   entry #name   kanoniczna nazwa camelCase, z której każde źródło wyprowadza własną
++   entry #flag   wyprowadzona flaga wiersza poleceń, `--kebab-case`
++   entry #variable   zmienna środowiskowa sprawdzana między flagą a kaskadą, jeśli została nazwana
++   entry #apply   odczytuje ustawienie przez kaskadę, jako `Optional` jego typu
++       Wymaga `Cli`, `Interpreter`, `Configurator` i `Decodable in Text` dla typu, a także
++       opcjonalnego `Discoverable` do uzupełniania flagi. Dekodowanie odbywa się w ramach
++       taktyki konfiguratora; wartość nieobecna we wszystkich źródłach to `Unset`.
+
+@ 0 1 0 039fda03c6b1ace713231ef64948d42b
++ entry .Subcommand   nazwany tryb programu: ekstraktor dopasowywany do argumentu i kandydat do uzupełnienia
+
+% 1 1 0 0d2d2cda26aa88420d9e6f47b2b868c1
+
+@ 0 8 0 03b74aced46e5e22024d7e39e8608a70
++       `Subcommand(name, description, hidden, group)` deklaruje podpolecenie. Jest
++       ekstraktorem, więc pierwszy argument dopasowuje się do niego w zwykłym wzorcu, a
++       dopasowanie ma dwa skutki poza samym testem: oferuje podpolecenie jako podpowiedź dla tego
++       argumentu (obok tego, co zaoferowały inne ekstraktory na tej samej pozycji), a przy
++       dopasowaniu zapisuje nazwę przez `Cli#matched`. Opis zapisany przez `e"…"` niesie
++       stylizację dla powłok, które ją pokazują; `hidden = true` usuwa podpolecenie z pomocy i z
++       listy każdej powłoki (zsh nadal je uzupełnia po wpisaniu); `group` umieszcza je pod
++       nagłówkiem `CommandGroup`.
+
+% 2 1 0 078cf1991bcc7f110bdad3885a55a244
+
+% 3 1 0 1db15966e058f80d1cc06cfaf91bbaf2
+
+% 4 1 0 1688e1e3194a674f1b622f8875d5e1a8
+
+% 0 1 0 144d15c341af0f271cad346c267c9078
+
+% 1 1 0 16aabbc4f9ac330e1439f7052c886447
+
+% 2 1 0 1b55075536bef1a9006f534caaa59f91
+
+% 4 1 0 109ee83007287590170efe217648257b
+
+% 0 1 0 14a35671c370890f0af80324a12dd66e
+
+% 2 1 0 1f869121708281b90d39f4a9f2fddc8f
+
+% 1 1 0 16c1a5d315efb7e2049f830a4f7d0e3d
+
+% 0 1 0 0d2526008c2346af0009a93adad48eeb
+
+% 0 1 0 10ca5f34b078de520444d8e2e20cc287
+
+% 0 1 0 0be06c7f74ef30981206243cc7e462b2
+
+% 1 1 0 1160e7e17d0ea93410c4b5a30a453c7c
+
+@ 0 3 0 1ef324c3f04c444e18a44cdbb71d3623
++       Podpolecenia zagnieżdża się, dopasowując ponownie pozostałe argumenty, a drzewo pomocy
++       odzwierciedla to samo zagnieżdżenie. Nazwa może zawierać spację (`red hat`), którą powłoki
++       ujmują w cudzysłów.
+
+% 0 1 0 10dd62cedaf8dde8061756ef2e3028dd
+
+% 1 1 0 1961c0f1ad6aba090d65be1b7a738c01
+
+% 1 1 0 1fdf7ff16f66d7c00eccc1733ba3ef13
+
+@ 0 7 0 0dfe59809cb711e8110df154df3b29fc
++   entry #name   słowo, które wybiera podpolecenie
++   entry #description   tekst pomocy, `Text` albo stylizowany `Teletype`
++   entry #hidden   czy podpolecenie jest wyłączone z pomocy i list
++   entry #group   `CommandGroup`, pod którą jest wymienione, jeśli jest
++   entry #unapply   dopasowuje argument po nazwie, oferując podpolecenie jako podpowiedź i zapisując dopasowanie
++       Wymaga `Cli`. Podpowiedź jest oferowana niezależnie od tego, czy argument pasuje, i to
++       sprawia, że każde ramię `match` jest kandydatem do uzupełnienia.
+
+@ 0 1 0 1bc4bc5d9e5c9bc00f55cff5264724b4
++ entry .Status   znaczący status wyjścia: kod z opisem, deklarowany jako obiekt i zwracany z `execute`
+
+% 1 1 0 096f5d6369fa3f3e1a17275217a2f0e6
+
+@ 0 2 0 03697957d9ea579b00fbb04e89debfc4
++       Sam kod wyjścia mówi niewiele, więc porażkę, którą program przewiduje, deklaruje się jako
++       `Status`, który jest `Termination` i może być zwrócony wszędzie tam, gdzie `Exit`:
+
+% 2 1 0 198a98c79d171cbc07b4be42136ad6b2
+
+% 3 1 0 090e9309741300e7031a4601d8996dc0
+
+% 0 1 0 0771787cf8722e630460e83a44edea36
+
+% 0 1 0 0dedbf84d3df47001897d813d131f7d6
+
+% 1 1 0 0056c9a8ae805fa60c90cdfe59b6df6a
+
+@ 0 5 0 030f164c59e63cd00c3d62aec5e2acf1
++       Zwrócenie go z bloku `execute` zarówno ustawia kod wyjścia procesu, jak i czyni status
++       wykrywalnym: typ wyniku bloku – utrzymywany jako precyzyjny przez ograniczenie `Precise`
++       metody `execute` – jest unią typów singletonowych każdego statusu, który
++       blok może zwrócić, a `Status.Admissible` reifikuje ją jako listę ich wartości, więc pomoc i
++       strona man wymieniają je pod nagłówkiem _Exit statuses_, a aplikacja nie musi ich nazywać
++       po raz drugi.
+
+@ 0 4 0 12dc4845479e3b6111e95b7e546298ba
++       Status musi być obiektem `object` najwyższego poziomu, a nie `val` ani obiektem lokalnym:
++       sprawdzanie przechwytywania odrzuca typ singletonowy
++       wartości `val` w unii, a makro `Admissible` zgłasza składnik niebędący singletonem jako
++       błąd, zamiast pozwolić statusom po cichu zniknąć z dokumentacji.
+
+% 1 1 0 03bee081cd22acb40a58e7bbd3fffc9a
+
+% 1 1 0 146fbf156ee71f6e0da11f05ada8cf3a
+
+@ 0 1 0 1e7622345275d02f10402d03618ea787
++   entry .Admissible   klasa typów, która reifikuje statusy w typie wyniku bloku `execute`
+
+% 1 1 0 15a05ecfa3381b8019c033d79e6545bf
+
+@ 0 11 0 1b9207941f35236e1182a9bc030276e4
++         `result is Status.Admissible` jest derywowane przez makro dla dowolnego `result`: typ
++         jest rozwijany z aliasów, jego unia rozkładana, a do każdego składnika będącego
++         singletonowym `Status` odwołuje się ponownie jako do wartości; `Nothing` i każde inne
++         `Termination` (`Exit` i jego przypadki) nie wnoszą niczego. Składnik `Status`, który nie
++         jest singletonem, to błąd kompilacji, który go nazywa, a składnik, który w ogóle nie
++         jest `Termination`, to kolejny.
++     entry .derived   `transparent inline given`, który derywuje instancję dla dowolnego typu wyniku
++     entry #Self   typ wyniku
++     entry #statuses   statusy, które typ dopuszcza, jako wartości
++   entry #code   kod wyjścia
++   entry #description   co oznacza status, pokazywane w pomocy i stronach man
++   entry #exit   status jako `Exit`: `Exit(code)`
+
+@ 0 1 0 0df022ae076e888a049d06f9d4d231f1
++ entry .Prospective   uchwyt dla flagi odczytanej w prologu: jej obecność można sprawdzić od razu, jej wartość tylko wewnątrz `execute`
+
+% 1 1 0 01961773a53f528510746f69d1834694
+
+@ 0 5 0 11b419b5274c88591a39b46bf659c1e3
++       `Flag#apply` zwraca `Prospective[Topic]`, gdy w zasięgu nie ma `Effectful`. Rozstrzyganie
++       jest zachłanne – `#value` odczytano z argumentów w chwili tworzenia uchwytu, więc nie
++       przechwytuje on żadnego `Cli` – a `#present` i `#absent` można swobodnie sprawdzać w
++       prologu, by zdecydować, co jeszcze zaoferować. Zastosowanie uchwytu, `handle()`, wymaga
++       `Effectful`, który zapewnia tylko blok `execute`.
+
+% 2 1 0 10b8751caa45fac8162074604389765b
+
+% 3 1 0 1b88dfe568831977134a4c9eb62d9d08
+
+% 4 1 0 0425a3ff08ea240b12a456ddb15889d8
+
+% 5 1 0 0c859e9a98cc03111c63c240dd5c2683
+
+% 6 1 0 12f048e44d18432f1b567d9d1d66442d
+
+% 7 1 0 1b3dc97f5261a9bf095c8124ba135a57
+
+% 9 1 0 09e836fb6a3929560f4d66666c525a71
+
+% 0 1 0 074341edcaab98e1173683b985cd4a6c
+
+% 1 1 0 0a1ef35b59a7fa5c048f6031d3f237d7
+
+% 0 1 0 033f6be5f5d14d780eba49f1efb698aa
+
+% 1 1 0 1b15ca219b46893a1807768b138448b5
+
+% 2 1 0 1e1d15519558aaa81367e17cb9e260c3
+
+% 3 1 0 0f95bb76a8b27df415f53de36d65b709
+
+% 1 1 0 08fcb310d3306205030afa361e019439
+
+@ 0 5 0 1398992f942de66516c94d11a868efed
++   entry #flag   flaga, z której odczytano ten uchwyt
++   entry #value   wartość w postaci odczytanej, `Optional`; można ją sprawdzać w prologu
++   entry #present   czy flagę podano
++   entry #absent   czy flagi nie podano
++   entry #apply   wartość `Optional`; wymaga `Effectful`
+
+@ 0 1 0 11f318bb9e3f6edf01968dfbc16a5f52
++ entry .Requisite   uchwyt dla wymaganej flagi odczytanej w prologu: wewnątrz `execute` bezwarunkowo wartość
+
+% 1 1 0 1c4e72e9347d3ab404f87bce6939ccc4
+
+@ 0 5 0 06ab11803e728144143b16e46e03a27e
++       `Flag#require` i `Flag#validate` zwracają `Requisite[Topic]`, gdy w zasięgu nie ma
++       `Effectful`. Utworzenie go zapisuje wymaganie w `Cli`; jeśli flagi brakuje albo jest
++       niepoprawna, `execute` zgłasza wszystkie takie flagi w jednym komunikacie i nigdy nie
++       uruchamia swojego bloku, więc zastosowanie uchwytu wewnątrz bloku daje samą wartość. Tak
++       jak przy `Prospective`, `#value`, `#present` i `#absent` można sprawdzać w prologu.
+
+% 2 1 0 120fcf1190310c4406e007e558193e65
+
+% 3 1 0 053a0a512376d4731a2b3e80acdd4b0b
+
+% 4 1 0 0c628e1ab360f6430fded0490f2c9193
+
+% 5 1 0 031530761292836a0573d7c33dbd0ff0
+
+% 6 1 0 1eb3f83dd5afb0370dcf195abd851576
+
+% 7 1 0 1902908dcd965deb1b54e3345d6d935f
+
+% 9 1 0 05afdacdaf7b17c2116e8144b15a4b71
+
+% 0 1 0 16712aa4ca656de81beae7a7eab7ee65
+
+% 0 1 0 0954a72e01e8499e13501597278b0f83
+
+% 1 1 0 1ffe1f620a82685b16b24fe2e9ebb86d
+
+% 0 1 0 11d112bc7429f81e05381274a47dfd34
+
+% 1 1 0 12987469fcdf4d861559c09bf182f09f
+
+% 2 1 0 0c49f55dc09605d01405e3529cc7a538
+
+% 3 1 0 01a91d01983f35fe01ca41eec83cb5b1
+
+% 1 1 0 02247b8243b407a51e352e73d5c08ad8
+
+@ 0 8 0 025ed4ec970ec3ba19938b3b10e6c56b
++   entry #flag   flaga, z której odczytano ten uchwyt
++   entry #value   wartość w postaci odczytanej, `Optional`; można ją sprawdzać w prologu
++   entry #present   czy flagę podano
++   entry #absent   czy flagi nie podano
++   entry #apply   sama wartość; wymaga `Effectful`
++       Nie może zawieść tylko dlatego, że strażnik `execute` przerwał już działanie, gdy flagi
++       brakuje; przy wyczarowanym `Effectful` (furtka `effectful`) ta gwarancja traci ważność, a
++       brakująca flaga wywołuje panikę.
+
+@ 0 1 0 1b7b2929c09d46b11358ea7b020f1a44
++ entry .Interpretable   jak argumenty operandu flagi odczytuje się jako typ
+
+% 1 1 0 152b9bc171771dd10fc536fda6108171
+
+@ 0 7 0 017e94495274d6f70698187bd657e549
++       Klasa typów nad typem operandu: `#interpret` przyjmuje argumenty operandu
++       flagi (wszystkich wystąpień, dla flagi powtarzalnej) i daje wartość albo `Unset`. Mówi też,
++       czy typ w ogóle przyjmuje operand (`#operand`, fałsz tylko dla `Unit`), i jak nazwać go w
++       pomocy (`#placeholder`, czyli `file` w `--log <file>`). Każdy typ `Decodable in Text` jest
++       interpretowalny przez `.decoder`, który dekoduje pierwszy operand; typ z własnym pojęciem
++       operandu pisze instancję ręcznie, a wystarcza lambda z argumentów:
+
+% 2 1 0 1504b51b6980f8260c6268679689fe44
+
+% 3 1 0 0bb0d52a5c77fcfa08b32edfe2e0fa23
+
+% 5 1 0 037975e5cf1778fc1f67a3ba123267aa
+
+% 0 1 0 107ad961bc73f4480d1fca2bcf8910e2
+
+% 0 1 0 0097b540110c6d63138f91eba0c9d15d
+
+% 0 1 0 101d2eb0f6782f8017b0e672578a77e7
+
+% 1 1 0 110dfa6b1745a0af041f78ec005d224e
+
+@ 0 5 0 095c2c289ab3e0d8000d4ec343c29e64
++       W prologu liczy się czystość: `Flag#apply` uruchamia instancję w `safely`, więc instancja,
++       która może zgłosić błąd (na przykład `Decodable`, którego dekodowanie zgłasza
++       `Number.Error`), odczytuje tam niepoprawny operand jako `Unset`, a właściwie zgłasza go
++       tylko `Flag#validate`, który przywołuje instancję w ramach swojej
++       taktyki. Instancje `Optional[…]` (`.optionalInt` i `.optional`) to czysty odczyt
++       dla takiego typu.
+
+% 1 1 0 0c7f8e78de84f8f91ab61e621b6a5bd7
+
+% 1 1 0 05234949465422e9013928ae26969146
+
+@ 0 25 0 0247a90ab28993d1052c3cfb319abc90
++   entry .unit   instancja dla `Unit`: bez operandu, sama obecność
++       To przez nią odczytuje `Switch`; `operand` jest fałszem, więc pomoc nie pokazuje miejsca
++       na operand.
++   entry .decoder   instancja dla dowolnego typu `Decodable in Text`: pierwszy operand, zdekodowany
++       W zasięgu niejawnym. Powtarzalna `Flag[Text]` nadal odczytuje przez nią swój pierwszy
++       operand; temat `List` odczytuje je wszystkie.
++   entry .optionalInt   czysta instancja dla `Optional[Int]`: niepoprawny operand to `Unset`, nic nie zgłasza błędu
++       `inline given`; dekoder jest przywoływany w miejscu rozwinięcia w ramach taktyki, przez
++       którą może zgłaszać błędy, i uruchamiany w `safely`. `Optional[…]` to unia, przez którą
++       nie da się wywnioskować żadnego parametru typu, więc każdą taką instancję tworzy się
++       osobno.
++   entry .optionalLong   czysta instancja dla `Optional[Long]`
++   entry .optionalDouble   czysta instancja dla `Optional[Double]`
++   entry .optional   tworzy czystą instancję `Optional[operand]` dla dowolnego `operand: Decodable in Text`
++       `given Optional[Port] is Interpretable = Interpretable.optional[Port]` deklaruje ją dla
++       innego typu.
++   entry .list   instancja dla `List[element]`: każdy operand interpretowany jako element
++       `Flag[List[Text]](t"tag", repeatable = true)()` odczytuje `--tag a --tag b` jako
++       `List(t"a", t"b")`; jeden niepoprawny operand czyni całość `Unset`. Jest tak czysta jak
++       instancja elementu i ma jego miejsce na operand.
++   entry #operand   czy typ przyjmuje operand; domyślnie `true`
++   entry #placeholder   nazwa pokazywana w pomocy w miejscu operandu albo `Unset` dla ogólnego `value`
++   entry #operandName   nazwa miejsca na operand, `value` albo `Unset`, gdy typ nie przyjmuje operandu
++   entry #interpret   wartość odczytana z argumentów operandu albo `Unset`
++   entry #map   instancja dla innego typu, przez odwzorowanie zinterpretowanej wartości
++       `Interpretable[Text].map(Mode(_))` zachowuje flagę operandu i miejsce na operand
++       oryginału.
+
+@ 0 1 0 06196d5f1eeafb9115fcb8c784667f03
++ entry .Interpreter   polityka, która zamienia płaską listę argumentów na flagi, operandy i argumenty pozycyjne
+
+% 1 1 0 0921e7ae25db76830734578d136165de
+
+@ 0 6 0 158ff65c4b81df2c08efb6ece93a54da
++       Interpreter w zasięgu zamienia *argumenty* (teksty przekazane przez powłokę) na
++       *parametry* (to, co znaczą). Wybiera się go, importując po nazwie jeden z givenów
++       `interpreters`, ponieważ `-rA4` to w jednej konwencji trzy flagi i operand, a w innej
++       jedna flaga z operandem `rA4`. `Interpreter` interpretuje argumenty raz do swojego
++       `#Topic` (`Commandline` dla interpreterów POSIX), a następnie odpowiada na tej podstawie
++       na zapytania o flagi.
+
+% 1 1 0 1652240c387f5e340b9ddc40cd7bdff8
+
+% 0 1 0 1a59e0cc902a1e350c4f129a8248351f
+
+@ 0 9 0 1719b1b0b1b727c216e98f96998865d5
++   entry #Topic   zinterpretowana postać argumentów
++   entry #interpret   interpretuje argumenty do tematu
++   entry #focus   flaga, do której należy kursor w żądaniu uzupełnienia, jeśli jest
++   entry #find   argumenty operandu flagi albo `Nil`
++   entry #locate   argumenty operandu flagi albo `Unset`, jeśli flagi nie podano
++       Domyślnie `Unset` dla interpreterów, które nie potrafią dokonać tego rozróżnienia;
++       interpretery POSIX to nadpisują i dzięki temu `Flag#validate` odróżnia brakującą flagę od
++       niepoprawnej.
++   entry #read   odczytuje operandy flagi jako typ, rejestrując flagę w `Cli`
+
+@ 0 1 0 04ce931abfd2ac070c42e9c81cfdd396
++ entry .interpreters   standardowe interpretery, każdy jako given do zaimportowania po nazwie
+
+% 1 1 0 1e330a286bdfbef414a9db96584219a9
+
+% 1 1 0 129f526836097231016708ddcda3f573
+
+% 2 1 0 0bc97b6e16268c230d2159d6da92bed9
+
+% 3 1 0 0b52f4b203d0ad77169cccc6052461c3
+
+% 1 1 0 0e138597ebad2db90fc1cc2d37297ed6
+
+@ 0 4 0 0f2d239a5cfb01f21dc84953e2756bf9
++       Oba interpretery POSIX odczytują `--long`, `-s`, `--long=value` i `--long value`,
++       traktują wszystko po samotnym `--` jako argumenty końcowe i uznają za operandy flagi słowa
++       aż do następnej flagi; różnią się tylko tym, jak odczytują krótką flagę dłuższą niż jedna
++       litera.
+
+% 2 1 0 0ee20a387d92d62107922b717f3f2232
+
+% 3 1 0 1e122abe8330a5f31f4342b32cf9b579
+
+% 0 1 0 0fd0081ac8fe40ad039b777631615126
+
+% 0 1 0 13f4f6aaa504cae41ee2f941fa56ce2d
+
+% 0 1 0 1862d2cdebc9dee914af926d83e5175f
+
+% 1 1 0 1247aa494a30e12608b7a87975f38e2e
+
+@ 0 9 0 09afdccfac9ca2b410912189357d3ec5
++   entry .posixInterpreter   flagi `--long` i `-s`; `-abc` to flaga `-a` z operandem `bc`
++       Interpreter, który wybiera `Application`. Krótka flaga z dołączonym tekstem, jak w `-j4`,
++       odczytuje ten tekst jako swój operand.
++   entry .posixClusteringInterpreter   jak `posixInterpreter`, ale `-abc` to `-a -b -c`, a operand przyjmuje ostatnia litera
++       Dwuznakowa krótka flaga pozostaje bez zmian; długa flaga nigdy nie jest traktowana jako
++       grupa. Uzupełnianie wewnątrz grupy ją rozszerza, więc wybór `-c` przy `-ab` daje `-abc`.
++   entry .simpleInterpreter   każdy argument jest operandem: nie odczytuje się żadnych flag, a każda flaga daje `Unset`
++       Dla programu, który sam obsługuje swoje słowa; `focus` i `locate` nic nie dają, więc
++       żadna flaga się nie uzupełnia.
+
+@ 0 1 0 1382b3e6ba2a83631c73562c468a480d
++ entry .Login   użytkownik, który uruchomił polecenie: nazwa użytkownika i, jeśli jest znany, identyfikator użytkownika platformy
+
+% 1 1 0 0f7ac3a0c62c781407c77f058c8da510
+
+@ 0 5 0 069494d2b0b0889e04298e81f4d3a28e
++       `application` wypełnia go z `ProcessHandle.current().info().user()`, bez identyfikatora;
++       launcher demona może podać identyfikator. Testy tworzą go bezpośrednio,
++       `Login(t"tester", Unset)`.
++   entry #username   nazwa użytkownika
++   entry #id   `UserId` albo `Unset`, gdy launcher go nie zgłosił
+
+@ 0 1 0 061095bf14a53e4309d2f8c45fda22b0
++ entry .UserId   identyfikator użytkownika na platformie: liczbowy uid w Uniksie, SID w Windows, przenoszony jako tekst
+
+% 1 1 0 04363530396f719509ae90058e250507
+
+@ 0 2 0 01658d6afde8ba1503cb9d61fe48f764
++       Te dwie postacie nie mają wspólnej reprezentacji liczbowej, więc `UserId` to
++       nieprzezroczysty `Text`, a `#unix` i `#sid` odczytują tę, która ma zastosowanie.
+
+% 2 1 0 1b2124b2e16f57591c76b4d55a34d84f
+
+% 3 1 0 1d7c45ed551518f31e1865f6fb9bf7d7
+
+% 0 1 0 02c72c9e3d5a18521fa8047598f56f5c
+
+% 0 1 0 04d4e72c53e91a9b131cb6bdf4a166c2
+
+% 1 1 0 122d72d9be896108059ac41226b4f00e
+
+@ 0 7 0 0a2d4184c327295405e4d33d8afd1649
++   entry .apply   opakowuje tekst identyfikatora użytkownika
++   entry .showable   pokazuje identyfikator jako jego tekst
++   entry .encodable   koduje identyfikator jako jego tekst
++   entry .decodable   dekoduje dowolny tekst jako identyfikator
++   entry .text   identyfikator jako tekst
++   entry .unix   liczbowy uid albo `Unset`, jeśli tekst nie jest liczbą
++   entry .sid   identyfikator zabezpieczeń Windows albo `Unset`, jeśli tekst nie zaczyna się od `S-`
+
+@ 0 1 0 119dfaa23c1d148616406d5faea7f7cb
++ entry .Shell   powłoki, dla których generuje się uzupełnianie: `Zsh`, `Bash`, `Fish` i `Powershell`
+
+% 1 1 0 0c687a97940ec7b903c5c166580f1bee
+
+@ 0 7 0 1380615c9c1110e81e39da58f30358fa
++       Typ enum, którego przypadki są celami uzupełniania: `Completions.script(shell, command)`
++       zapisuje skrypt dla każdej z nich, `Completion#serialize` formatuje podpowiedzi tak, jak
++       każda z nich oczekuje, a w stanowisku testowym `shell.pane()` uruchamia jedną z nich.
++       Dekoduje się z nazwy pisanej małymi literami i koduje do niej.
++   entry .decoder   odczytuje powłokę z jej nazwy, bez rozróżniania wielkości liter
++   entry .encodable   koduje powłokę jako jej nazwę pisaną małymi literami
++   entry .showable   pokazuje powłokę jako jej nazwę pisaną małymi literami
+
+@ 0 1 0 0080a15744851d6a0a0c5f69cfe865d8
++ entry .Suggestible   jak wartość oferuje się jako kandydat do uzupełnienia
+
+% 1 1 0 0cdfeb2c3e28338710b531c44e5c69ae
+
+@ 0 4 0 1754a6c23631c424179be85418110498
++       Klasa typów z jedną metodą, `#suggest`, z wartości do `Suggestion`.
++       `Argument#select` i `Flag#select` przyjmują listę opcji `Suggestible`, oferują podpowiedź
++       każdej z nich i odczytują wybraną z powrotem po jej tekście.
++   entry #suggest   podpowiedź dla wartości
+
+@ 0 1 0 0b47d3e5649527031aff3f75d4c8a0ba
++ entry .Suggestion   jeden kandydat do uzupełnienia: tekst do wstawienia, z opisem i sposobem, w jaki powłoka ma go traktować
+
+% 1 1 0 18c66ddaea2b94fb18f1a0eb53bd32b3
+
+@ 0 9 0 1dd191fce68c291f1ffda02616eb5a29
++       `Suggestion` to to, co wytwarza każde źródło uzupełnień – `Subcommand`, `Discoverable`,
++       `Pathname`, lista `Flag` – i co `Completion#serialize` przedstawia dla powłoki. `#core` to
++       wstawiany tekst, między `#prefix` a `#suffix` (więc `#text` to całe słowo);
++       `#description` pokazują zsh, fish i PowerShell; kandydaci `#hidden` są dopasowywani, ale
++       nie wymieniani (i dopasowuje ich tylko zsh); `#incomplete` mówi powłoce, by nie kończyła
++       słowa, dla ścieżki uzupełnianej po jednym segmencie; `#aliases` wymieniają inne nazwy
++       pokazywane obok; `#operand` oznacza wartość oferowaną dla operandu, a nie podpolecenie,
++       więc drzewo pomocy do niej nie schodzi; a `#display` to to, co pokazuje menu, gdy różni się
++       od tego, co jest wstawiane.
+
+% 2 1 0 08fc5d1467c38b9807209a3db3128d0e
+
+% 3 1 0 0b048fc971d6194b0a86a45e6e9d097f
+
+% 0 1 0 0b0017fbc7f766041eeac7b5070c1f15
+
+% 0 1 0 1a95be4f7f16209b16b378652b3317fb
+
+% 1 1 0 16d52ce6c43b730d00f7ba6b7a5485b7
+
+% 1 1 0 091cdf2ca2c9baff000eb9552146514d
+
+% 1 1 0 1e4ab1c62133c83112775bc5f479ac00
+
+@ 0 19 0 149c78832381d0dc16ba9819236be80a
++   entry .apply   tworzy podpowiedź, z domyślnymi wartościami wszystkich pól oprócz `core`
++   entry #core   wstawiany tekst
++   entry #description   opis pokazywany obok, `Text` albo stylizowany `Teletype`, jeśli jest
++   entry #hidden   czy kandydat jest dopasowywany, ale nie wymieniany
++   entry #incomplete   czy powłoka ma zostawić słowo otwarte po jego wstawieniu
++   entry #aliases   inne nazwy wymieniane obok kandydata, tak jak aliasy flag
++   entry #prefix   tekst przed rdzeniem, wstawiany, ale niepokazywany jako część kandydata
++   entry #suffix   tekst po rdzeniu
++   entry #expanded   czy prefiks i sufiks zostały już włączone do rdzenia
++   entry #group   `CommandGroup`, do której należy kandydat będący podpoleceniem
++   entry #operand   czy jest to wartość dla operandu, a nie podpolecenie
++       Oba są oferowane przy kursorze identycznie, ale tylko podpolecenie jest częścią
++       interfejsu polecenia: bez tego rozróżnienia `--help` wyliczałoby katalog roboczy tak,
++       jakby był składnią.
++   entry #display   to, co pokazuje menu, gdy różni się od tego, co jest wstawiane
++       Potrzebuje tego uzupełnianie wewnątrz zgrupowanej krótkiej flagi: wybór `-c` przy `-ab`
++       wstawia tylko `c`, ale menu nadal nazywa `-c`. Tylko zsh potrafi pokazać jedno, a wstawić
++       drugie.
++   entry #text   całe słowo: prefiks, rdzeń i sufiks
+
+@ 0 1 0 015b1420b1f31d321c3a7adf72855d63
++ entry .internal   implementacja makra stojącego za `Status.Admissible`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 2 0 11dfc9fd70b71eda0b65c6b30c9fc997
++       Nie do bezpośredniego użytku: obiekt istnieje po to, by makro miało stałe miejsce.
++   entry .admissible   makro stojące za `Status.Admissible.derived`: z unii singletonów statusów do ich wartości
+
+@ 0 1 0 0a3649eafde8a1bb018bd47bd9f83d7b
++ entry .Help   interfejs polecenia jako drzewo: jego flagi, podpolecenia, statusy i zmienne, przedstawiane jako tekst pomocy
+
+% 1 1 0 026a0aa3380579fa1d2eb8f8452c2e1f
+
+@ 0 9 0 1c68c5e3858b871b04ad63e3fc4f897e
++       Węzeł `Help` to jedno polecenie: jego nazwa `#command`, `#description`, `#parameters`
++       (każdy to `Help.Param`), `#subcommands` (każde to `Help`), jego `#group`, statusy wyjścia
++       `#statuses`, które może zwrócić jego blok `execute`, oraz zmienne środowiskowe
++       `#variables`, które odczytuje jego prolog. `helpTree` buduje całe drzewo z aplikacji,
++       uruchamiając ponownie jej prolog w trybie uzupełniania przy każdym prefiksie podpoleceń,
++       więc nic w nim nie jest pisane ręcznie; `Executive#help` to dostęp wykonawcy do tego
++       samego. `#teletype` przedstawia węzeł w wyrównanym układzie w stylu strony man, a
++       `.printable` pozwala przekazać `Help` wprost do `Out.println`; rozszerzenie `roff` w
++       `exoskeleton.manpage` przedstawia to samo drzewo jako stronę man.
+
+% 2 1 0 1057281abb1682120136c5aac742e064
+
+% 3 1 0 0c12a8e547b737cd1a92ed49ee967aeb
+
+% 0 1 0 0fd28ea130965d641cc15be34c68d960
+
+% 0 1 0 091038492b1412a11f28e20201ddc148
+
+% 0 1 0 136c0fce63645b3919f3eb1b1ec51c57
+
+% 0 1 0 060e47bd778567441a3f564526e9da69
+
+% 0 1 0 14c762da1d71977b01a62164e807658b
+
+% 0 1 0 030421ca172bef611ff95886b6be4ec0
+
+% 0 1 0 0bd24601edbade6b1b30e819d53902f4
+
+% 0 1 0 0f6677f8b193694e0a88a4ec873db120
+
+% 1 1 0 128e838f4924c983104ff85a1a1464cf
+
+@ 0 7 0 0f2b3d9313a0e78e13f5d4424b99ebb5
++       Przedstawianie zawiera wiersz użycia (opcje globalne przed `<command>`, lokalne po nim,
++       pojedyncza możliwa flaga nazwana wprost), opis zawinięty do szerokości, następnie sekcje
++       _Global options_, _Options_ i _Commands_ – polecenie-liść pokazuje zwykłe _Options_,
++       chyba że jest widokiem lokalnym niosącym flagi przodków – sekcję dla każdej
++       `CommandGroup` z wyodrębnionymi wspólnymi flagami grupy, oraz _Exit statuses_ zebrane z
++       całego drzewa i pozbawione duplikatów według kodu. Flaga wymagana jest oznaczona
++       `(required)`; powtarzalna – `...`; operand – `<name>`.
+
+% 1 1 0 1140eb120f26e59d0008f41c63c38626
+
+% 1 1 0 0d035cc8521ad9ab0b21bed85e1217a0
+
+% 1 1 0 0f08ae55877ccdf514c7e8d341e2d80f
+
+% 1 1 0 0887ba8d36ee004815429683f8342297
+
+@ 0 1 0 0ad3707fa465795a0dbc4bc8efd89f36
++   entry .Param   jedna flaga polecenia, tak jak pokazuje ją pomoc
+
+% 1 1 0 19328deecc11a6c40e1edaca0ec079a0
+
+% 0 1 0 0d9c0c0e6a64b7e400323f9b58e9163a
+
+@ 0 32 0 0de01e97acec75a0181f2e771153df05
++         nazwa w zapisanej postaci (`--jobs`), tak samo jej aliasy, opis, czy się powtarza, czy
++         jest globalna (sprawdzana przed wyborem podpolecenia, więc poprzedza podpolecenie w
++         wierszu poleceń), nazwa miejsca na operand (`Unset` dla przełącznika) i czy jest
++         wymagana.
++     entry #name   flaga w zapisanej postaci, `--name` albo `-n`
++     entry #aliases   inne nazwy, w zapisanej postaci
++     entry #description   tekst pomocy
++     entry #repeatable   czy flagę można podać więcej niż raz
++     entry #global   czy flaga należy przed podpoleceniem
++     entry #operand   nazwa miejsca na operand albo `Unset` dla przełącznika
++     entry #required   czy flagę trzeba podać
++   entry .printable   pozwala wypisać `Help` przez `Out.println`, zawinięte do szerokości terminala
++       Przedstawia przez `#teletype` przy szerokości z termcap i pożycza z escapade `Teletype is
++       Printable`. Wymaga `Hyphenation`, które bez importu zapewnia `Hyphenation.fallback`,
++       zawijając tylko na spacjach; dla zawijania z dzieleniem wyrazów należy zaimportować
++       wzorce języka (`hyphenations.english`).
++   entry #command   nazwa polecenia; dla widoku `#local` pełna ścieżka połączona spacjami
++   entry #description   opis polecenia, jeśli jest
++   entry #parameters   flagi polecenia
++   entry #subcommands   zagnieżdżone polecenia
++   entry #group   `CommandGroup`, pod którą wymienione jest to polecenie, jeśli jest
++   entry #statuses   statusy wyjścia, które może zwrócić blok `execute` polecenia; puste dla węzła zbudowanego ręcznie
++   entry #variables   zmienne środowiskowe odczytywane przez prolog polecenia; puste dla węzła zbudowanego ręcznie
++   entry #local   widok drzewa z wnętrza ścieżki podpoleceń albo `Unset`, jeśli ścieżka nie istnieje
++       `help.local(List(t"distribution", t"ubuntu"))` wybiera ten węzeł, nazywa go pełną
++       ścieżką, więc wiersz użycia brzmi `mytool distribution ubuntu`, i przenosi flagi każdego
++       przodka jako opcje globalne, a własne flagi węzła jako lokalne; przy kolizji nazw wygrywa
++       najbliższy korzeń. `Cli#matches` to ścieżka do przekazania dla dotąd dopasowanego
++       podpolecenia.
++   entry #teletype   przedstawia węzeł jako stylizowany tekst zawinięty do szerokości
++       Wymaga `Hyphenation` do zawijania. Poniżej dwudziestu kolumn tekst wychodzi poza
++       szerokość zamiast się zawijać.
+
+@ 0 1 0 10e599289d89b9b9019577b1abb1cf82
++ entry .Completion   `Cli` żądania uzupełniania tabulatorem: zapisuje, o co prosi prolog, i przedstawia to dla powłoki
+
+% 1 1 0 1646c0d4402d867c1efcbf844827088b
+
+@ 0 10 0 1c1371c490a065c613106048a037603e
++       `executives.completionsExecutive` buduje `Completion` dla żądania `{completions}`, a
++       `helpTree` buduje jedno na każdą sondę. Rozszerza `Cli` o szczegóły żądania – `#shell`,
++       który argument jest uzupełniany (`#currentArgument`), gdzie w nim jest kursor
++       (`#focusPosition`), `#tty` i licznik `#tab` – i nadpisuje metody zapisujące, tak aby
++       uruchomienie prologu aplikacji wypełniało jego tabele: sprawdzone flagi `#flags`, ich
++       `#operandNames`, `#globalFlags` sprawdzone, zanim zaoferowano jakiekolwiek podpolecenie,
++       `#seenFlags` już obecne w wierszu, `#requiredFlags`, `#statuses` dopuszczane przez blok
++       `execute`, `#explanation` oraz `#cursorSuggestions` oferowane dla aktywnego argumentu.
++       `#serialize` przedstawia następnie wynik jako wiersze, które odczytuje skrypt powłoki.
+
+@ 0 2 0 1427e28419575af91d577c7e2b87becd
++       `proceed` jest zawsze prawdą: prolog się wykonuje, a `execute` wraca bez uruchamiania
++       swojego bloku.
+
+% 1 1 0 141737638be8620b0fa341b40395eb1e
+
+% 0 1 0 14d167d33da7711900f2a19511e15aae
+
+% 1 1 0 139926e861697bfe06162b64e072df16
+
+@ 0 32 0 1582fe2695d946861de45bfbd32281a8
++   entry #fullArguments   surowe żądanie `{completions}`, łącznie ze słowami powłoki, kursora i tty
++   entry #arguments   słowa uzupełnianego wiersza poleceń, po nazwie polecenia
++   entry #environment   środowisko pytającej powłoki
++   entry #workingDirectory   katalog pytającej powłoki
++   entry #shell   która powłoka pyta, a więc jak `#serialize` formatuje odpowiedź
++   entry #currentArgument   pozycja uzupełnianego argumentu
++   entry #focusPosition   przesunięcie kursora w tym argumencie albo `Unset`, gdy powłoka go nie podała
++   entry #stdio   standardowe strumienie żądania
++   entry #tty   terminal, w którym działa powłoka, będący kluczem licznika naciśnięć tabulatora
++   entry #tab   ile razy naciśnięto tabulator na tej pozycji
++   entry #login   użytkownik, który uruchomił powłokę
++   entry #flags   każda flaga sprawdzona przez prolog, z `Discoverable` dla jej operandu
++   entry #operandNames   nazwa miejsca na operand każdej flagi, która go przyjmuje
++   entry #globalFlags   flagi sprawdzone, zanim zaoferowano jakiekolwiek podpolecenie, które obowiązują niezależnie od podpolecenia
++   entry #seenFlags   niepowtarzalne flagi już obecne w wierszu poleceń, których nie oferuje się ponownie
++   entry #requiredFlags   flagi wymagane przez `require()` albo `validate()`
++   entry #statuses   statusy wyjścia zapisane przez bloki `execute`, po kolei
++   entry #explanation   akapit ustawiony przez `explain`, pokazywany jako nagłówek uzupełniania zsh
++   entry #cursorSuggestions   kandydaci oferowani dla aktywnego argumentu
++   entry #proceed   zawsze `true`
++   entry #parameter   odczytuje operand flagi przez interpreter
++   entry #focused   czy argument jest tym uzupełnianym, z uwzględnieniem jego formatu
++   entry #flagSuggestions   flagi jeszcze nieobecne w wierszu, jako podpowiedzi; tylko długie nazwy, gdy słowo zaczyna się od `--`
++   entry #focusText   cały tekst uzupełnianego argumentu albo pusty tekst
++   entry #serialize   podpowiedzi jako wiersze, które odczytuje skrypt uzupełniania powłoki
++       Słowo wpisane jako flaga może zostać rozszerzone tylko przez flagę, więc innych
++       kandydatów się tam pomija; gdy wszyscy kandydaci są ukryci, oferuje się też flagi, inaczej
++       żadna powłoka niczego by nie wymieniła. Kandydaci są opakowywani formatem aktywnego słowa,
++       gdy aktywne jest właśnie to słowo. zsh otrzymuje listy argumentów `compadd` oddzielone
++       znakiem NUL, z wyrównanymi opisami i oznaczonymi ukrytymi kandydatami; bash otrzymuje gołe
++       słowa przefiltrowane wpisanym prefiksem; fish i PowerShell otrzymują wiersze ze słowem i
++       opisem oddzielonymi tabulatorem, a jedyny niekompletny kandydat dostaje dla fish bliźniaka
++       zakończonego spacją.
+
+@ 0 1 0 0518f8f6d4b4ef620d179c6d02c3f350
++ entry .Completions   skrypty uzupełniania powłok, ich instalacja i licznik naciśnięć tabulatora
+
+% 1 1 0 0a335e8ac5502ef5002c8dbdb9eee214
+
+@ 0 5 0 118f230319961a0708718d1285ecc5b2
++       Skrypt dla każdej powłoki jedynie przekazuje aplikacji bieżący wiersz poleceń, kursor i
++       nazwę powłoki jako żądanie `{completions}`, więc nowe podpolecenie czy nowa flaga nigdy
++       nie wymagają zmiany skryptu. `.script` to tekst jednego z nich; `.install` znajduje, skąd
++       każda powłoka ładuje uzupełnienia, i tam go zapisuje, co uruchamia wbudowane podpolecenie
++       `{admin} install`:
+
+% 0 1 0 0ea4573b9a94b84305f895477a981119
+
+% 0 1 0 1e6e569fb5e7151210a236c425a2833e
+
+% 1 1 0 10777a0234ce3e91073e96c88b433091
+
+@ 0 5 0 106b45f1ea2b8f1407f7e84a130cf63e
++       `.ensure` to postać fire-and-forget do wywołania przy starcie przez narzędzie oparte na
++       demonie. Obie wymagają `Entrypoint^`, `Environment` i `System` – tych z
++       *wywołania*, ponieważ pod demonem środowiskiem rezydentnej JVM jest środowisko launchera
++       tego klienta, który ją uruchomił – a także `WorkingDirectory`, `Diagnostics` i `CliEvent
++       is Loggable`; `Cli` w zasięgu dostarcza środowisko i katalog, a `systems.javaBaseSystem`
++       system.
+
+% 0 1 0 0d6ee5dd566f6e7d1cb26516619ebcda
+
+% 1 1 0 1cce9ff572cedf30028b815fc5b10edc
+
+% 0 1 0 1a3af81e8aad98690fbaebdd7d8f552e
+
+@ 0 1 0 05c99837ea4a348d111d498fa6e96e4e
++   entry .script   skrypt uzupełniania dla powłoki, przekazujący wiersz poleceń do `command '{completions}' …`
+
+% 1 1 0 0869cec4344d526905cdd8f6e75e0521
+
+% 2 1 0 19b652eed32535010f7c10def9eba2d3
+
+% 0 1 0 16170e95ccf7d0200697080740f410ae
+
+% 1 1 0 03e1a5656c5746e71346348b2491f843
+
+@ 0 4 0 0624584a3fc9bd381c4bb7689aaf5281
++       Skrypt zsh to funkcja compdef odczytująca argumenty `compadd`; skrypt bash używa
++       `_init_completion` i `COMPREPLY`; skrypt fish rejestruje `complete -f -c`; skrypt
++       PowerShell rejestruje natywny mechanizm uzupełniania argumentów i jest dopisywany do
++       profilu.
++   entry .install   zapisuje skrypty na miejsce dla każdej znalezionej powłoki albo jeden skrypt do pierwszego katalogu z prawem zapisu
+
+% 1 1 0 1f3361573bac448f126328237ad30089
+
+@ 0 15 0 0594c9bf5f84fe831404d726dcf33593
++         `install(force)` wymaga `Effectful`, więc nie może działać z prologu, który uruchamia
++         uzupełnianie. Sprawdza, czy polecenie nazwane przez skrypt punktu wejścia jest
++         uruchomionym plikiem wykonywalnym (w przeciwnym razie `Installation.CommandNotOnPath`,
++         chyba że podano `force`), a następnie pyta każdą zainstalowaną powłokę, wszystkie
++         naraz i z łącznym limitem pięciu sekund, skąd ładuje uzupełnienia – przy zamkniętym
++         standardowym wejściu i odrzucanym standardowym wyjściu błędów, więc plik startowy,
++         który o coś pyta albo się skarży, ani jej nie wstrzymuje, ani nie psuje odpowiedzi, a
++         także z przekazanymi `HOME`, `ZDOTDIR`, `XDG_CONFIG_HOME`, `XDG_DATA_HOME`,
++         `XDG_DATA_DIRS` i `BASH_COMPLETION_USER_DIR` z wywołania. zsh: pierwszy istniejący
++         katalog `$fpath` z prawem zapisu w katalogu domowym, w przeciwnym razie pierwszy z
++         prawem zapisu, w przeciwnym razie `$XDG_DATA_HOME/zsh/site-functions`, utworzony, z
++         wynikiem `Unconfirmed`. bash:
++         `${BASH_COMPLETION_USER_DIR:-$XDG_DATA_HOME/bash-completion}/completions`, z wynikiem
++         `Unconfirmed`, chyba że interaktywny bash definiuje loader bash-completion. fish:
++         katalog `completions` jego katalogu konfiguracyjnego. PowerShell: dopisany do profilu,
++         jednokrotnie. Zgłasza `Install.Error` przy niepowodzeniu odpytania środowiska albo
++         zapisu.
+
+@ 0 15 0 18921628b2c9f8831b721d874500450f
++         `install(shell, command, scriptName, dirs)` zapisuje skrypt jednej powłoki do
++         pierwszego z `dirs`, który istnieje i ma prawo zapisu, jako `Installed`,
++         `AlreadyInstalled` albo `NoWritableLocation`.
++   entry .ensure   instaluje skrypty raz na JVM, po cichu, albo z `force` instaluje je ponownie i zwraca ścieżki
++       Bez `force` instalacja odbywa się najwyżej raz w czasie życia JVM (zapytania do powłok
++       kosztują kilkaset milisekund, co przy powtarzaniu zdominowałoby start narzędzia opartego na
++       demonie) i nic nie jest zwracane; z `force` skrypty są instalowane ponownie, a zapisane
++       ścieżki zwracane, i to właśnie wypisuje `{admin} install`. Błędy są połykane.
++   entry .tab   liczba naciśnięć tabulatora na jednej pozycji, liczona dla każdego terminala osobno
++       `Completions.tab(tty, Tab(arguments, focus, cursor))` zwraca `Prim` przy pierwszym
++       naciśnięciu i zwiększa wartość, dopóki ten sam wiersz jest uzupełniany w tym samym miejscu
++       na tym samym tty; inne żądanie ją zeruje. Licznik trafia do `Discoverable#discover` jako
++       `tab`, więc drugie naciśnięcie może odsłonić ukryte pliki.
++   entry .Tab   klucz licznika naciśnięć tabulatora: argumenty, aktywne słowo, kursor i dotychczasowy licznik
+
+% 1 1 0 03dbd68c0ec6937b05f76e9aeb92eb75
+
+@ 0 8 0 182142913486d1211815f881c8d58ca0
++         Dwa naciśnięcia są tym samym żądaniem, gdy ich `Tab` są zgodne po wyzerowaniu licznika.
++     entry #arguments   argumenty żądania
++     entry #focus   pozycja aktywnego argumentu
++     entry #cursor   przesunięcie kursora
++     entry #count   ile dotąd było naciśnięć
++     entry #next   ten sam klucz ze zwiększonym licznikiem
++     entry #zero   ten sam klucz z wyzerowanym licznikiem, do porównań
++   entry .Installation   wynik instalacji skryptów: brak na ścieżce albo po jednym wyniku na powłokę
+
+% 1 1 0 010a1aa96c0ac7291567d2b39a9662ac
+
+@ 0 6 0 1f449cb03a2b4ec3037795f960b6255e
++         Typ enum: `CommandNotOnPath(script)`, gdy polecenie, które skrypty miałyby uzupełniać,
++         nie jest uruchomionym plikiem wykonywalnym, oraz `Shells(zsh, bash, fish, powershell)`
++         z `InstallResult` dla każdej powłoki. Jego `Communicable` przedstawia każdy z nich jako
++         komunikat; `#paths` wymienia zapisane pliki.
++     entry .communicable   przedstawia wynik jako komunikat, po jednym akapicie na powłokę
++     entry .InstallResult   co się stało w przypadku jednej powłoki
+
+% 1 1 0 00f56cf9298c3f0414b147ea3a0abfbd
+
+% 0 1 0 02673667afa299a815ea19a4fcb9f081
+
+@ 0 7 0 013af5fe1502c560025c4cd61753aea6
++           `NoWritableLocation(shell)`, `ShellNotInstalled(shell)` albo `Unconfirmed(shell,
++           path)`: skrypt został zapisany, ale nie udało się wykazać, że powłoka go stamtąd
++           ładuje – katalog nie należy do przeszukiwanych przez nią, brakuje jej bash-completion
++           albo nie odpowiedziała na czas. Wyczerpujące dopasowanie musi obsłużyć wszystkie pięć.
++       entry .communicable   przedstawia wynik jako zdanie nazywające powłokę i ścieżkę
++       entry #pathname   zapisana ścieżka, dla `Installed`, `AlreadyInstalled` i `Unconfirmed`; w pozostałych przypadkach `Unset`
++     entry #paths   każda zapisana ścieżka, we wszystkich powłokach
+
+@ 0 1 0 14d3f7579b5e24ce1180bd27b2292689
++ entry .CliEvent   co loguje instalacja uzupełniania: zdarzenia podprocesów i zapisane lokalizacje
+
+% 1 1 0 13afb02cb873c2fd1e4b65628be6d77a
+
+@ 0 5 0 17996d55dc1653d810e6b83b278c0eb5
++       Typ enum: `Exec(event)` opakowuje `Exec.Event` z guillotine pochodzące z odpytywanych
++       powłok, a `Installing(location)` nazywa zapisany plik. `Completions.install` i `ensure`
++       wymagają w zasięgu `CliEvent is Loggable`; `logging.silentLogging` je odrzuca.
++   entry .execEvent   przepisuje `Exec.Event` z guillotine jako `CliEvent.Exec`
++   entry .communicable   przedstawia każde zdarzenie jako komunikat
+
+@ 0 1 0 10639a5d2977558e1d9afcf4607beb3c
++ entry .execute   blok aplikacji, który wykonuje pracę, uruchamiany tylko przy rzeczywistym wywołaniu
+
+% 1 1 0 1300a5d431f41e6614d13ac17e04451d
+
+@ 0 6 0 0dbcb76a155e4b5a02ebe3541572a383
++       Przy `executives.completionsExecutive` ciało musi zwrócić `Execution`, a jedynym
++       sposobem utworzenia go jest blok `execute`. Kod przed nim – prolog – wykonuje się zarówno
++       przy wywołaniu polecenia, jak i przy żądaniu uzupełnień lub pomocy; blok wykonuje się tylko
++       przy rzeczywistym wywołaniu, z `Effectful` i `Invocation` w zasięgu, więc to w nim stosuje
++       się uchwyty `Prospective` i `Requisite` i w nim zapisuje się wyjście.
+
+% 2 1 0 0318916e41fe9aeb0d4e1a24a7adca77
+
+% 3 1 0 0c1550dde5c6e5ad154a9c2cebb8345c
+
+% 4 1 0 09e6b05f61fe104110bbe22c438aaae8
+
+% 5 1 0 01ca9b3fa5398a5a18e98df5ca95ca13
+
+% 6 1 0 0933e0ec09c39e1a13a25563b0d24961
+
+% 7 1 0 13f68b0823ef3d2009fac5d43e57c4cd
+
+% 4 1 0 00644311813b3a5303c327b71fe1c909
+
+% 2 1 0 0b97426184623c340601a00e89bdc8a9
+
+% 1 1 0 1751e7d49e8cb1b60da9928150fca2d7
+
+% 2 1 0 083237d8aefbad0d06b9572130ff7e51
+
+% 0 1 0 13670c781a260ac3031c72d774f4efeb
+
+% 0 1 0 0deb762eb28b035101e67765529e6b7f
+
+% 0 1 0 01326c338581b58f033669e06e6cf7af
+
+% 1 1 0 15a58f6788e7010206bc6868764e93d4
+
+% 2 1 0 1205cd508cd6802414776cca6f0b5985
+
+% 3 1 0 12f1d7741135e3a81c4cec0ea8a51faa
+
+% 1 1 0 10743d8e0e5f8d621688c1d6c6fe68a6
+
+@ 0 6 0 1026efbe1799af6f102208eac6f349fd
++       Przed uruchomieniem bloku `execute` sprawdza, co prolog skumulował w `Invocation`: jeśli
++       brakuje którejś flagi oznaczonej `require()` albo któryś operand oznaczony `validate()`
++       jest niepoprawny, wypisuje je wszystkie na standardowe wyjście błędów – _The following
++       required options were not specified_, _The following options were given invalid values_
++       – i zwraca `Exit.Fail(2)` bez uruchamiania bloku; dlatego `Requisite` rozpakowuje się w
++       nim bezwarunkowo.
+
+@ 0 5 0 0dbbc1b691542cfb0de7da82294b6535
++       Blok zwraca dowolne `Termination` – `Exit`, obiekt `Status` albo ich unię – a jego typ
++       wyniku jest utrzymywany jako precyzyjny, więc `Status.Admissible` może reifikować statusy,
++       które blok może zwrócić; są one zapisywane w `Cli` nawet w trybie uzupełniania, w którym
++       blok nie jest uruchamiany, i w ten sposób dokumentuje je pomoc. Wynikiem jest `Execution
++       to result`.
+
+% 0 1 0 0a27666517ca665c16eaf8ef9f0ce042
+
+% 1 1 0 14debcb23c25efc61f8b945ab73ccfdf
+
+% 0 1 0 1d588c7f0a3ed3c0165861d38c75f5bc
+
+% 1 1 0 10bf7572937696951457f06a461c19bc
+
+@ 0 1 0 067ee33f9dc7a75b0dd6a67ab9b64578
++ entry .Execution   wynik ciała aplikacji przy wykonawcy uzupełniania: status wyjścia i dopuszczalne statusy
+
+% 1 1 0 02eb95bab4180c7d1af88c8eb566ef1b
+
+@ 0 8 0 16ec862db52edc5712103d2a2f8df905
++       Tworzy go tylko `execute`. `#exitStatus` to status, z jakim kończy się proces, a
++       `#statuses` to wartości `Status`, które blok mógł zwrócić; `#Result` zawęża typ do unii
++       zakończeń zwracanych przez blok, więc `Execution to Nothing` to blok, który nigdy nie
++       wraca normalnie.
++   entry .of   tworzy `Execution to result` ze statusu wyjścia i statusów
++   entry #exitStatus   status wyjścia
++   entry #statuses   statusy, które blok mógł zwrócić
++   entry #Result   unia zakończeń zwracanych przez blok
+
+@ 0 6 0 114baaffdf23d8be1ad6b9e2c1edac10
++ entry .explain   dołącza akapit pomocy do sekcji bieżącego podpolecenia
++     `explain(t"…")` zapisuje objaśnienie w `Cli` w zasięgu, pokazywane jako nagłówek listy
++     uzupełnień zsh; funkcja otrzymuje poprzednie objaśnienie jako
++     wartość kontekstową `prior`, więc może je rozszerzyć zamiast zastąpić. Zapisane
++     w prologu głęboko zagnieżdżonego podpolecenia dokumentuje to podpolecenie tam, gdzie jest
++     zdefiniowane. Poza `Completion` nic nie robi.
+
+@ 0 1 0 077e17d7bf5889541eb49656b245c6c7
++ entry .helpTree   buduje drzewo `Help` dla aplikacji, uruchamiając ponownie jej prolog przy każdym prefiksie podpoleceń
+
+% 1 1 0 0fc2281b6b30ea2a1316e90fc5d39ee2
+
+@ 0 9 0 05efaada6d17425a0b7e26270ddff0fa
++       `helpTree(command, environment, workingDirectory, stdio, login)(block)` uruchamia ciało
++       aplikacji jako `Completion` dla zsh z kursorem na końcu pustego ostatniego słowa,
++       najpierw przy pustym prefiksie, a potem przy każdym zaproponowanym podpoleceniu, schodząc
++       do każdego kandydata, który nie jest ukryty, niekompletny ani nie jest wartością operandu.
++       Każde uruchomienie daje `Probe` – podpowiedzi, flagi, flagi globalne, flagi wymagane,
++       nazwy operandów, statusy i zmienne, które zaobserwowano – a drzewo składa się z nich:
++       flaga przypisana już przodkowi jest pomijana w głębszych węzłach, podpowiedzi są
++       pozbawiane duplikatów według rdzenia, a dzieci są uporządkowane według nazwy. Środowisko
++       jest opakowane w widok zapisujący, więc każda zmienna odczytana przez prolog jest
++       wymieniona w `variables` węzła.
+
+% 2 1 0 0787904431a523ee0b3b84ab552a7312
+
+% 3 1 0 0f0dd72f74f66eb1013f0092536a690c
+
+% 4 1 0 1e4956a462f84f4e03ba9436f347c3d1
+
+% 1 1 0 0717f8feb2e224d014aeb6a8b4bb5736
+
+% 1 1 0 0e1a21cfce9773051206fe47663aac6c
+
+% 0 1 0 115c7874856d2f0d1888cbff4ac2b3b3
+
+% 2 1 0 1acbcb75fbc96d7d0bdbe1c65a4e8dc6
+
+% 0 1 0 00fd4e887726c32f1de07e982b022594
+
+% 0 1 0 14bb7e5d4f35a80e118b91b7d5dea994
+
+% 1 1 0 1e059e226e2f2a1907c30e7eed745491
+
+% 2 1 0 16ed413cc30d9c381aba9408948ab2f0
+
+% 0 1 0 0d62f3217bfe4ff71b7dfbda54467b3d
+
+% 0 1 0 07310c69e5abba8103b3401453d54b16
+
+% 2 1 0 1823517e9de073ba1694aa5417072416
+
+% 3 1 0 0437d8cf3eccd9140aa0851e972cb261
+
+% 0 1 0 0fb3270bf215687a0a6d696acb8ab8a5
+
+% 0 1 0 030d895b2b5fe7a01124d6dbe430eae1
+
+% 0 1 0 11078cecd8466d260502224831b37ef2
+
+% 0 1 0 0ce50520310e098600a74f2e3762bc80
+
+% 1 1 0 045534273d7da45710c647dc7b3e4c4e
+
+@ 0 2 0 10f561c6d39a46461f1e20c7ad66f401
++       Wymaga `Interpreter`. `execute` w trybie uzupełniania nic nie robi, więc blok wykonuje się
++       nieszkodliwie; ale prolog z własnymi efektami wykonuje je raz na każdą sondę.
+
+% 1 1 0 00743e0d4ce203ac07b5af7000e54c67
+
+% 0 1 0 1dd8e4fb2190c5970b4e82b43f57db41
+
+% 1 1 0 0ea949d7a6f65c331cceab4725f388c9
+
+@ 0 1 0 09534c82aa71ca261c02266255741e97
++ entry .Probe   co jedno uruchomienie prologu aplikacji przy jednym prefiksie argumentów ujawnia o jej interfejsie
+
+% 1 1 0 010673b2681668b8044d0b17336f1225
+
+@ 0 11 0 1f52fbd2ec62e762174465b4f036bc51
++       Rekord, który `helpTree` pobiera z każdego sterowanego przez siebie `Completion`:
++       podpowiedzi `#suggestions` przy kursorze (podpolecenia, do których należy zejść),
++       sprawdzone flagi `#flags`, które z nich są `#globals` i `#required`, nazwy miejsc na ich
++       operandy `#operands`, zapisane `#statuses` i odczytane zmienne środowiskowe `#variables`.
++   entry #suggestions   kandydaci oferowani dla ostatniego, pustego słowa
++   entry #flags   każda sprawdzona flaga
++   entry #globals   flagi sprawdzone, zanim zaoferowano jakiekolwiek podpolecenie
++   entry #required   wymagane flagi
++   entry #operands   nazwa miejsca na operand każdej flagi
++   entry #statuses   statusy zapisane przez osiągnięte bloki `execute`
++   entry #variables   odczytane zmienne środowiskowe
+
+@ 0 1 0 0d07a6c1d1ff42791a80cabb6fbc9600
++ entry .Pathname   argument pozycyjny uzupełniany jako ścieżka systemu plików i ekstraktor, który go rozwiązuje
+
+% 1 1 0 0de3d63e7eb1c7d316e849b6bda43b95
+
+@ 0 8 0 01fb6c4253bafe4c07242971ea50df0e
++       `case Pathname(path) :: _ =>` pasuje do dowolnego argumentu, oferując jako podpowiedzi
++       ścieżki, od których może zaczynać się jego tekst, i wiąże argument rozwiązany względem
++       katalogu roboczego jako `Path on Local`. Uzupełnianie schodzi po jednym katalogu
++       (kandydat będący katalogiem jest `incomplete`, więc powłoka zostawia słowo otwarte),
++       ukrywa pliki z kropką, dopóki tabulator nie zostanie naciśnięty drugi raz albo wpisana
++       nazwa nie zaczyna się od `.`, rozwija początkowe `~` tak, jak zrobiłaby to powłoka –
++       argument w cudzysłowie i każde niepełne słowo docierają do programu z nienaruszoną tyldą –
++       i skraca wyniki z powrotem do postaci z nią. Każdy kandydat jest wartością operandu, więc
++       drzewo pomocy nigdy nie wylicza katalogu roboczego.
+
+% 2 1 0 0bf7a33c8d9af47b1c184d0865f75cd4
+
+% 3 1 0 12831b0e9592ea5a0ee3b619915d2137
+
+% 4 1 0 10928e259771e63c0cf3f5fc002d32ac
+
+% 5 1 0 0188306f53aeb9b8058c514801176f13
+
+% 2 1 0 0ff480de43b9a6c916d4e56772cebcaa
+
+% 0 1 0 184dc9fdda8611e70e927e40dc8f07e0
+
+% 0 1 0 029dbc7819dec47d12f33bcfcafd7208
+
+% 0 1 0 046d030074e2bc0d1324484424b32ec8
+
+% 1 1 0 0e8d661af2a383f40f39da07dc6c878e
+
+@ 0 2 0 11694489f8fad497025a6120450aa0bb
++       Wymaga `WorkingDirectory`, `Cli` i `System` (dla katalogu domowego). Dla operandu flagi to
++       samo robi `pathnameDiscoverable`.
+
+% 1 1 0 1e6f428f2bd8fe1219af04e381ef47a5
+
+% 1 1 0 0504cffc992eb438167ad30be508b58d
+
+@ 0 8 0 121e82368793415116dc3f2e365a1973
++   entry .complete   kandydaci na ścieżki dla częściowo wpisanego operandu
++       `Pathname.complete(operand, tab)` to uzupełnianie wspólne dla ekstraktora i
++       `pathnameDiscoverable`: z rozwiniętym `~`, rozwiązane względem katalogu roboczego,
++       schodzące do katalogu w miarę jego wpisywania, z ukrytymi wpisami pokazywanymi przy
++       powtórnym naciśnięciu tabulatora. Puste, gdy operandu nie da się rozwiązać.
++   entry .unapply   oferuje uzupełnienia ścieżek dla argumentu i rozwiązuje go, jako `Option` Scali
++       Dodaje swoich kandydatów do tego, co zaoferował już inny ekstraktor wyznaczony dla tego
++       samego argumentu – zwykle `Subcommand`.
+
+@ 0 6 0 115c19dd0227f4700d4d0de04657417e
++ entry .pathnameDiscoverable   uzupełnia operand `Flag[Path on Local]` jako ścieżkę systemu plików
++     `Discoverable` dla `Path on Local`, dzięki któremu `--file <TAB>` uzupełnia ścieżkę
++     dokładnie tak, jak pozycyjny argument `Pathname`. Podmiot należy do serpentine, a obiekt
++     towarzyszący `Discoverable` nie widzi galilei, więc tego givena strukturalnie nie da się
++     zakotwiczyć: znajduje się na najwyższym poziomie i trzeba go importować po nazwie. Wymaga
++     `WorkingDirectory` i `System`.
+
+% 2 1 0 06850d395642e82b14a92fbc379ce0e3
+
+% 3 1 0 13fac17b4a9b6b3307f4e902e2f4730f
+
+% 0 1 0 0c8684ed4c99575a0fd4c0c102eb1f62
+
+% 1 1 0 16303b114a05791b0e2464ccc2032c3d
+
+% 2 1 0 031f83c4acf779e10cea466066a7ccb5
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 0 1 0 1c5a66d65e35ef3f0dd3456bfd789fd5
+
+% 1 1 0 1ddbb1d308f0b31f0c1a4c35464120b9
+
+@ 0 1 0 1a36a1737df5e0a30a0ba716c5037100
++ entry .Manual   statyczne metadane, których strona man potrzebuje poza tym, co wykrywa drzewo `Help`
+
+% 1 1 0 0d6db34662ac95f21d5aa1ddcb27bb07
+
+@ 0 6 0 1cfd54c2d78438e917760b6191c2970c
++       Deklaruje się je raz, jako `given Manual`, albo przekazuje do `roff`; każde pole jest
++       opcjonalne, więc aplikacja bez nich nadal przedstawia kompletną, choć skromną stronę. Opisy
++       poszczególnych poleceń i flag tu nie należą – pozostają w deklaracjach `Subcommand`,
++       `Flag` i `CommandGroup`, które drzewo już niesie. `Manual` dodaje to, czego wykrywanie
++       nie może dostarczyć: co znaczy zmienna środowiskowa, przykładowe wywołanie, autorów,
++       pliki, błędy oraz sekcję, wersję i datę strony.
+
+% 2 1 0 10c23e5590e9149e0effbac18f1b5b74
+
+% 3 1 0 0a1f1b1b364f690400cd53cc520a7a10
+
+% 0 1 0 12f4d44d0749d2230c222b8076ac421f
+
+% 0 1 0 1737e8d30e18726815bcac71e3e5bf36
+
+% 0 1 0 0e33da60317f0e251749ee278518b855
+
+% 0 1 0 17512b159824cc651bcccfc2e607dfe1
+
+% 0 1 0 0964e8ee08f43840188468131099c80e
+
+% 1 1 0 0e29862e65d96a740e27eaa2bc0898cb
+
+@ 0 3 0 050fa9f460d876f50ce0c1c438b3dc03
++       Status zadeklarowany w `exitStatuses` i status wykryty z bloku `execute` mogą mieć ten sam
++       kod; wygrywa opis napisany ręcznie. Zmienna opisana tutaj i zmienna wykryta są scalane
++       według nazwy.
+
+% 1 1 0 118beb37f9f587b816a7391ce4184e86
+
+% 1 1 0 12a63b777b01de8106ea0ba6d2a7aaf9
+
+@ 0 1 0 0bbcb3b81cef88b812cff9748ffdfde1
++   entry .Section   sekcja podręcznika, do której należy strona: polecenia użytkownika, wywołania systemowe, …
+
+% 1 1 0 0015fb2fe82def68058204d9914d28e4
+
+@ 0 32 0 114bf3712bb6b8760695d84d6cf1b92a
++         Typ enum ośmiu standardowych sekcji, od `UserCommands` do `SystemAdministration`,
++         z których każda zna swój `#number` (od 1 do 8) i `#title`.
++     entry #number   numer sekcji, od 1 dla `UserCommands`
++     entry #title   nagłówek sekcji, taki jak `User Commands`
++   entry .Reference   wpis `SEE ALSO`: nazwa strony i jej sekcja, domyślnie 1
++     entry #name   strona, do której się odwołuje
++     entry #section   numer jej sekcji
++   entry .ExitStatus   ręcznie napisany status wyjścia: kod i jego opis
++     entry #code   kod wyjścia
++     entry #description   co oznacza
++   entry .EnvironmentVariable   opisana zmienna środowiskowa, dla sekcji `ENVIRONMENT`
++     entry #name   nazwa zmiennej
++     entry #description   czym steruje
++   entry .ManFile   plik używany przez program, dla sekcji `FILES`
++     entry #path   ścieżka pliku, pokazywana kursywą
++     entry #description   co zawiera
++   entry .Example   przykładowe wywołanie z opcjonalnym podpisem
++     entry #caption   zdanie wprowadzające przykład, jeśli jest
++     entry #command   pokazywany wiersz poleceń
++   entry #synopsisName   jednowierszowe podsumowanie po nazwie; domyślnie opis drzewa
++   entry #section   sekcja podręcznika; domyślnie `UserCommands`
++   entry #version   wersja programu, pokazywana w stopce strony jako `command version`
++   entry #date   data strony, pokazywana w formacie ISO-8601
++   entry #prose   akapit dla sekcji `DESCRIPTION`, po opisie drzewa
++   entry #authors   po jednym akapicie w `AUTHORS`
++   entry #examples   sekcja `EXAMPLES`
++   entry #exitStatuses   ręcznie napisane statusy, scalane z wykrytymi według kodu
++   entry #environment   opisane zmienne, scalane z wykrytymi według nazwy
++   entry #files   sekcja `FILES`
++   entry #seeAlso   odwołania `SEE ALSO`
++   entry #bugs   sekcja `BUGS`
++   entry #homepage   URL, pokazywany jako `Homepage: …` po odwołaniach
+
+@ 0 1 0 1560310a1964a6f608e26e85e15d1314
++ entry .roff   przedstawia drzewo `Help` jako stronę podręcznika man, z metadanymi `Manual`
+
+% 1 1 0 0584c522201f7b4e093742667a1b94c6
+
+@ 0 8 0 102d98dc7c4430401d6cad010dd67ff1
++       Rozszerzenie dla `Help`: `help.roff` (lub `help.roff(using manual)`, domyślnie z pustym
++       `Manual`) to strona `Roff` z virility, której `serialize` jest tekstem troff. Struktura
++       – NAME, SYNOPSIS, DESCRIPTION, OPTIONS (GLOBAL OPTIONS i OPTIONS dla
++       narzędzia z podpoleceniami), COMMANDS z podsekcją dla każdej `CommandGroup`, EXAMPLES, EXIT
++       STATUS, ENVIRONMENT, FILES, AUTHORS, BUGS, SEE ALSO – pochodzi z drzewa i
++       podręcznika, a każda sekcja jest obecna tylko wtedy, gdy ma treść, więc `--help` i `man` nie mogą
++       się różnić. Statusy i zmienne są zbierane ze wszystkich poleceń w drzewie. Formatowanie
++       w opisach jest usuwane.
+
+% 2 1 0 021efb2d79faca4c01fd4325cd7268c6
+
+% 3 1 0 1169075c715f955110231fe7bcaf8259
+
+% 0 1 0 0dc905959e1902f609cecf20e2a8a257
+
+% 0 1 0 01b11df638a160d60bdb5d7b6ad63c9a
+
+% 1 1 0 1c21087a967e26d81bd591bed396174d
+
+@ 0 1 0 06fce3899f8a36c91c6e846ab0603c72
++       `Manpages.install` zapisuje stronę w hierarchii man XDG.
+
+% 1 1 0 11d4d08a527395c0048d89d2dc405342
+
+% 0 1 0 10af4878b5b38820116f528ce4afa76c
+
+@ 0 1 0 0412197b2b2e603a14694cac52ae4e30
++ entry .Manpages   instaluje przedstawioną stronę podręcznika man w hierarchii man XDG
+
+% 1 1 0 0c295c228508f0921838da52e6edac64
+
+@ 0 6 0 1e0e81a63fec1519114fa584d6f7e6dc
++       `Manpages.install(page)` zapisuje stronę `Roff` do
++       `$XDG_DATA_HOME/man/man<section>/<title>.<section>`, tworząc katalogi; ten
++       katalog znajduje się w domyślnej ścieżce manpath współczesnego man-db, więc zmiana `MANPATH` nie jest
++       potrzebna. Środowisko i system należą do *wywołania* (`Cli` w zasięgu dostarcza
++       `Environment`; `systems.javaBaseSystem` – `System`), ponieważ pod demonem
++       własne środowisko JVM pochodzi od tego klienta, którego launcher go uruchomił.
+
+% 2 1 0 120ac73283f5a132042c809334dc9a3a
+
+% 3 1 0 0f4054be2c22b4a60bf503db4112d94a
+
+% 4 1 0 18c141a9142fa27c19f05cb4ba0b5b4d
+
+% 5 1 0 1e1136473abe1b3c05b6f4f15dd826ad
+
+% 1 1 0 1265e9d5bd0ed31c02fbea89eae8a75b
+
+% 1 1 0 1ce514bfe7d2cd5a14c57bb3099771c5
+
+% 1 1 0 041863eca0f6d4e71b29eb621b1a83f0
+
+% 1 1 0 0a6d2e424164a829128c83a5c7a18d7c
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 0 1 0 003bd173824c4137035914da32fab2e0
+
+% 0 1 0 19eec22edef6e49c16ca52af02cbd2a1
+
+% 1 1 0 15abd03ead4ec7f10958f62d67050fbe
+
+% 1 1 0 11fea5ab2881fa7317a777185ff690ba
+
+% 1 1 0 1be063df3d262d3416b16cbb8048ca80
+
+@ 0 5 0 07a77c4a69f6ad591490d14663ffe526
++   entry .install   zapisuje stronę albo zgłasza, że już istnieje; `force` ją nadpisuje
++       Wymaga `Effectful`, `Environment`, `System`, `Diagnostics` i `Io.Event is
++       Loggable`; zgłasza `Install.Error` z `Reason.Io` w razie niepowodzenia zapisu i zwraca
++       `NoWritableLocation`, gdy nie da się ustalić katalogu XDG.
++   entry .InstallResult   `Installed(path)`, `AlreadyInstalled(path)` lub `NoWritableLocation`
+
+% 1 1 0 0c56987188478193046e14d1bde80b7e
+
+@ 0 3 0 0d18e3e9b8e3fa241141bd37ad541b79
++         Typ enum z `Communicable` przedstawiającym każdy przypadek jako zdanie.
++     entry .communicable   przedstawia wynik jako zdanie
++     entry #pathname   ścieżka strony dla `Installed` i `AlreadyInstalled`; w przeciwnym razie `Unset`
+
+@ 0 1 0 036bcc38ddceeaac15bf719b218b2f73
++ entry .Enclave   środowisko testowe: pakuje aplikację jako plik wykonywalny oparty na demonie i uruchamia ją w piaskownicy
+
+% 1 1 0 1336e6e8e3b7217e07e0b1ab5f2cc86c
+
+@ 0 11 0 146beb15b914fb871c02ae98b259936f
++       `Enclave` to `Rig` z superlunary dla aplikacji wiersza poleceń. `Enclave(name)
++       .dispatch { '{ … } }` kompiluje treść aplikacji w cytacie względem classloadera w
++       zasięgu, umieszcza ją w pliku JAR, pakuje JAR za pomocą budowniczego `xek` – znajdowanego w `$XEK`,
++       a w przeciwnym razie w `dist/xek` w katalogu roboczym – w plik wykonywalny launchera o nazwie
++       `name` i zwraca `Enclave.Launcher`. `Launcher#sandbox` uruchamia następnie demona narzędzia
++       w tymczasowym katalogu domowym i przekazuje blokowi `Tool`, w którym `shell.pane()`
++       otwiera prawdziwą powłokę z załadowanym skryptem uzupełniania narzędzia, więc test może nacisnąć tabulator
++       i odczytać, co się pojawi. Treść w cytacie jest treścią demona ethereal, więc
++       opakowuje aplikację w `cli:`, a zbudowane narzędzie odpowiada na każde wywołanie i
++       żądanie uzupełniania z jednego rezydentnego procesu. Demon jest zabijany, a tymczasowy katalog domowy usuwany przy każdym wyjściu
++       z bloku.
+
+% 2 1 0 04d1343d79687ec70d1d70ab75b45f20
+
+% 3 1 0 1cc1e27c3ca220f2075d486742fc29de
+
+% 4 1 0 08d38cac116f22c70ab77abd599c1e1e
+
+% 5 1 0 11d455b551f5fda31c88f1340c815c1a
+
+% 6 1 0 0473c370f476e085113e4c7de6887ee3
+
+% 7 1 0 0fde5b15959499fe03619cccd1cee53b
+
+% 8 1 0 0c4f56ea395be3b3160725b376d6e265
+
+% 9 1 0 06c658ab12db53821e2b177f26267184
+
+% 10 1 0 0f536459c4b2687e072ca731bd4748a2
+
+% 11 1 0 15e5ff57bd0ab8141b5017a0029b6135
+
+% 0 1 0 19c7afc726390f2d0595684f413a44d5
+
+% 2 1 0 12bd936e577353e3076854156cf8588f
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 1e88a1614314a79213cdeac14967404b
+
+% 0 1 0 14ee6900f64162471ba1c71df9774fd0
+
+% 1 1 0 0ffb8464667d3f3801fc240a51088828
+
+% 0 1 0 0d4f8ed41d2e6dc80d5699379e8f9d2e
+
+% 0 1 0 0f21308931c1ae670c2aecf2706babc4
+
+% 0 1 0 19e0be82757337f80fc34855942e500b
+
+% 0 1 0 08502e3022ba8c2f1c4b37446e73ab08
+
+% 0 1 0 1f3e54515549af6f01735d98aebad9f9
+
+% 0 1 0 050c47311edb16b90e7d262b8e343207
+
+% 0 1 0 15f9908ba9d6814e1fc2f8134113ee83
+
+% 0 1 0 0d7d3e7417caeeb602896f416668d870
+
+% 0 1 0 073cc3ae0c4bda3918a311d8c9950129
+
+% 1 1 0 0ec2768a557ad9f714c6422a9c25d338
+
+@ 0 5 0 0db01df0f85b4d381396b2003f40d84b
++       Opcjonalne `buildId`, `releaseKey`, `recoveryKey` i `appId` są wpisywane do
++       rekordu pliku wykonywalnego, aby jego launcher akceptował podpisaną aktualizację; bez klucza
++       wydania i identyfikatora aplikacji odrzuca każdą. `Enclave.keygen` tworzy parę kluczy, a
++       `Launcher#sign` podpisuje nią kompilację (Java 24 lub nowsza). Przy konstrukcji wymaga `Classloader` i
++       `Environment`, a `Enclave` ma typ `Enclave^{parasite.threads}`.
+
+@ 0 2 0 16f0cfddb34711f51c48f05d323a0179
++       To jest `exoskeleton.rig`, zależność testowa: wymaga na hoście budowniczego `xek`, testowanych
++       powłok i opcjonalnie tmux.
+
+% 1 1 0 02cb0053c29774f10f84749c436522af
+
+% 1 1 0 0c8312b831366e751ebaf5922972350e
+
+@ 0 1 0 168f8ef8aedeffb80a9210cbef1f679c
++   entry .Error   błąd `↯/s.109.2`: demon narzędzia w piaskownicy nie zgłosił identyfikatora procesu
+
+% 1 1 0 000cc11183ba8f151920f9b886916bef
+
+@ 0 6 0 19eeb5db8407ed9b0ca75efa38ff1954
++         Zgłaszany przez `Launcher#sandbox`, gdy `tool '{admin}' pid` niczego nie wypisuje. W przeważającej większości
++         przypadków przyczyną jest niezgodność protokołu: launcher, z którym spakowano narzędzie, i
++         uruchamiany przez niego demon mają różne sygnatury schematu launchera, więc demon odrzuca
++         pierwszy dokument i zamyka połączenie – w praktyce nieaktualny budowniczy `xek`.
++     entry #tool   ścieżka narzędzia, które nie odpowiedziało
++   entry .Tool   zbudowane, działające narzędzie: jego ścieżka, pid jego demona i tymczasowy katalog domowy, w którym działa
+
+% 1 1 0 18d96f280c2c95ca18149ec3bbf3b871
+
+@ 0 10 0 093f772f35beecc5115a19ac1aa86eb6
++         Współdzielona zdolność, ponieważ każdy panel zestawu testów steruje jednym narzędziem; jej czas życia
++         to blok `sandbox`.
++     entry #path   ścieżka pliku wykonywalnego
++     entry #pid   identyfikator procesu demona
++     entry #home   tymczasowy katalog domowy, w którym działają jego demon i powłoki jego paneli
++     entry #command   nazwa narzędzia, tak jak wpisuje się ją przy znaku zachęty
++     entry #completions   uruchamia blok, podczas gdy nasłuchuje `{admin} await`, i zwraca to, co narzędzie zalogowało
++         Wymaga `Monitor` i `Environment`. Komunikaty `Cli.log` utworzone w trakcie bloku są
++         zwracane połączone albo zwracane jest `failed`.
++   entry .Launcher   spakowany plik wykonywalny, do podpisania lub uruchomienia w piaskownicy
+
+% 1 1 0 0f441c90b2b339ca1c9f7c13e8a3ff5e
+
+@ 0 28 0 1ed6816db9e72b4e16cb18fee1b62916
++         To, co zwraca `Enclave#dispatch`.
++     entry #path   ścieżka pliku wykonywalnego
++     entry #sign   podpisuje plik wykonywalny ziarnem klucza, zapisując podpisaną kopię do `out`
++         Uruchamia `xek sign`; `foreign = true` dopuszcza klucz, którego rekord pliku wykonywalnego nie
++         zawiera, a który launcher następnie odrzuci. Zgłasza `Exec.Error`.
++     entry #sandbox   uruchamia demona narzędzia w tymczasowym katalogu domowym, wykonuje blok z `Tool`, a potem go zabija
++         Wymaga `Environment` i taktyk dla `Enclave.Error`, `Exec.Error`,
++         `Number.Error` i `Path.Error`. Tymczasowy katalog domowy zastępuje `HOME` i katalogi
++         XDG (`Enclave.scratch`), więc nic z konfiguracji prawdziwego użytkownika nie jest
++         odczytywane ani zapisywane; narzędzie nie jest instalowane – każdy panel sam zapisuje potrzebny mu skrypt
++         uzupełniania w tymczasowym katalogu domowym. Demon jest zabijany, a katalog domowy usuwany w
++         `finally`, ponieważ porzucony demon zajmuje JVM do końca sesji.
++   entry .scratch   zmienne, które kierują konfigurację użytkownika do tymczasowego katalogu domowego
++       `HOME`, `XDG_CONFIG_HOME`, `XDG_DATA_HOME` i `BASH_COMPLETION_USER_DIR`, wszystkie w
++       podanym katalogu domowym.
++   entry .environment   środowisko ze zmiennymi tymczasowymi nałożonymi na bazowe albo środowisko JVM z `XEK` wskazującym budowniczego
++       `Enclave.environment(base, home)` nakłada `scratch(home)` na `base`.
++       `Enclave.environment(builder)` to środowisko JVM z ustawionym `XEK`, dla zestawu testów,
++       który wie, gdzie jest jego budowniczy, ale działa wewnątrz demona, którego środowisko jest
++       oczyszczone, a katalogiem roboczym jest `/`.
++   entry .keygen   generuje parę kluczy ML-DSA-44 za pomocą `xek keygen`, jako `<prefix>.seed` i `<prefix>.pub`
++       Zwraca ścieżkę ziarna, do podpisywania, oraz ścieżkę klucza publicznego, do zbudowania `Enclave`
++       z nim jako `releaseKey`. Zgłasza `Exec.Error` i `Path.Error`; wymaga Javy 24 lub nowszej.
++   entry #name   nazwa pliku wykonywalnego
++   entry #buildId   identyfikator kompilacji dla rekordu, jeśli jest
++   entry #releaseKey   klucz publiczny, który musi nieść podpisana aktualizacja, jeśli jest
++   entry #recoveryKey   klucz odzyskiwania, jeśli jest
++   entry #appId   identyfikator aplikacji dla rekordu, jeśli jest
+
+% 0 1 0 1dce398f464a15df08df99114842da9f
+
+% 0 1 0 116a7522c9d690800c5852bab7179e49
+
+% 0 1 0 072759ec210f64790648285ab7474195
+
+% 0 1 0 03abea79260745d101b6a1333f110184
+
+@ 0 3 0 1210cdf0df7abecf0780cf3357156dce
++   entry #stage   umieszcza JAR w `out/name` i pakuje go za pomocą `xek build`
++       Zgłasza `Rig.Error` z `Reason.Staging` w razie niepowodzenia nazywania, konsolidacji, operacji asynchronicznej lub
++       wykonania; niepowodzenie pakowania wywołuje panikę ze statusem wyjścia xek.
+
+@ 0 1 0 0d7f875cb540a4d61b77df66b331a260
++ entry .Pane   panel terminala z powłoką dla testu: wpisuje się do niego klawisze i odczytuje jego ekran
+
+% 1 1 0 15681eea756a357b1b4d57ccf30b58c9
+
+@ 0 8 0 03c14c4b6ff29ab10542e92d13f37f78
++       `Pane` to zdolność – na wyłączność, ponieważ jednocześnie steruje nim jeden test – której
++       czas życia to blok, który ją tworzy: `shell.pane()` uruchamia powłokę na
++       pseudoterminalu renderowanym przez yossarian, a `shell.tmux()` uruchamia ją w sesji tmux,
++       niezależnym emulatorze, z którym porównuje się renderowanie yossariana.
++       Obiekt towarzyszący zawiera słownictwo testów: `Pane.enter` wpisuje klawisze, `Pane.attend` wpisuje
++       je i czeka, aż ekran się ustabilizuje, `Pane.screenshot` odczytuje ekran, a
++       `Pane.completions` i `Pane.progress` proszą powłokę o uzupełnienie wiersza dla
++       testowanego narzędzia.
+
+% 2 1 0 098ab70241cfce751623cb8d94ede762
+
+% 3 1 0 0eb202934262f3c9172e0f728e147457
+
+% 4 1 0 05ce7b71253067ee0105d518a06b3938
+
+% 5 1 0 12c47e0841e26b561f4d24c10e1bc8c0
+
+% 6 1 0 100b4c2aef01a78f1cc1f3fe70cfd2fc
+
+% 7 1 0 1b94c897329f9a3d0a0e8854136b1453
+
+% 8 1 0 045a6a10ec41de87025ea7bf2a2aaabb
+
+% 9 1 0 17fd0a124c937129028e730b5cd5fc59
+
+% 10 1 0 150ee44df4e48f340b1f07b8a72e4c9d
+
+% 11 1 0 0a5db5467188dd320ca4c50c2a5c1be2
+
+% 0 1 0 01cf9e5b2515caff1d727e6dca9f7d04
+
+% 0 1 0 197b6b4607eaa90d1f1df3049cccef1d
+
+% 1 1 0 0e875eadd78f2cff10aef6af484ac722
+
+% 1 1 0 1a331274a049f3c30a40d1b06ca1ccb9
+
+% 1 1 0 083aadb6ef974a8e131ff7cb6f2eb823
+
+% 0 1 0 0961be78eee868f907992174d7e94790
+
+% 0 1 0 13c167f2c233391713e997f16783dd5f
+
+@ 0 27 0 1128bfb84a4e01b20d9f755ee6081f01
++   entry .keys   nazwy klawiszy, które może wpisać test, w postaci nazw tmux, i bajty wysyłane przez każdy z nich
++       `Left`, `Right`, `Up`, `Down`, `BSpace`, `Enter`, `Tab`, `Escape`, `C-m`, `C-l` i
++       `C-c`; każdy inny tekst jest wpisywany dosłownie.
++   entry .enter   wpisuje naciśnięcia klawiszy do panelu w zasięgu: nazwę klawisza z `.keys`, znak lub dosłowny tekst
++   entry .resize   zmienia rozmiar panelu w zasięgu
++   entry .screenshot   ekran panelu w zasięgu
++   entry .waitFor   czy któryś wiersz ekranu spełnia predykat w określonym czasie, domyślnie dwudziestu sekund
++       Odpytuje co dziesięć milisekund. Wymaga `Monitor`.
++   entry .attend   wpisuje naciśnięcia klawiszy, a następnie czeka, aż ekran się zmieni, a potem ustabilizuje
++       Powłoka uzupełniająca wiersz pyta narzędzie przez jego demona i może rysować to, co usłyszy,
++       w kilku krokach, więc ekran jest odczytywany, gdy trzy razy z rzędu, w odstępach dwudziestu milisekund,
++       wyglądał tak samo; jeśli nie zmieni się wcale w ciągu pięciu sekund,
++       uznaje się, że klawisze niczego nie zmieniły.
++   entry .settle   czeka, aż ekran trzy razy z rzędu wygląda tak samo albo minie pięć sekund
++   entry .completions   wpisuje nazwę narzędzia i wiersz, naciska tabulator i zwraca to, co wypisała powłoka
++       `Pane.completions(t"distribution ")` z panelem bash i narzędziem testu zwraca
++       kandydatów wypisanych przez bash, na przykład `gentoo   red hat  ubuntu`; zsh i fish
++       dołączają opisy tak, jak je pokazują. W PowerShell zamiast tego wywoływana jest funkcja
++       `_completions` środowiska testowego, ponieważ menu PowerShell nie da się odczytać z ekranu.
++       Wiersz zachęty jest pomijany.
++   entry .progress   wpisuje nazwę narzędzia i wiersz, naciska tabulator i zwraca wiersz poleceń w postaci, w jakiej zostawiła go powłoka
++       Pozycja kursora jest oznaczana, domyślnie przez `^`, więc `distribution ubuntu --^` pokazuje,
++       że tabulator wstawił wspólny przedrostek `--` flag i zostawił kursor za nim.
++   entry .boundary   długość najdłuższego przedrostka bajtów, który kończy się na granicy znaku UTF-8
++       Używane przez `Display#render`, aby przytrzymać znak podzielony między porcjami wyjścia, aż
++       nadejdzie reszta.
++   entry .Display   to, co pokazuje pseudoterminal, renderowane przez yossarian w miarę napływania wyjścia
+
+% 1 1 0 13cab28bbbee8d51036906f3e729688a
+
+@ 0 13 0 064c41ed4dbf631f0a2d66e5362e98c3
++         Trwały, bezpieczny wątkowo wyświetlacz: zachowują go zadania, które czytają wyjście powłoki i zapisują
++         odpowiedzi yossariana na jej zapytania (pozycja kursora, atrybuty). Sekwencja,
++         której yossarian nie potrafi wyrenderować, jest zachowywana i zgłaszana przez następny `#screenshot`,
++         a nie gubiona.
++     entry #width   kolumny
++     entry #height   wiersze
++     entry #send   zapisuje bajty do terminala, jeden piszący naraz
++     entry #resize   resetuje wyświetlacz do nowego rozmiaru
++     entry #screenshot   ekran, z usuniętymi spacjami końcowymi, i kursor; zgłasza `Pane.Error` dla niewyrenderowanej sekwencji
++     entry #render   renderuje porcję wyjścia terminala, przytrzymując niekompletny znak końcowy
++     entry #answer   odpisuje powłoce odpowiedzi yossariana na jej zapytania, aż do `#finish`
++     entry #finish   zatrzymuje odpowiedzi
++   entry .Emulated   panel na pseudoterminalu, pokazujący to, co renderuje z niego `Display`
+
+% 1 1 0 002ebefe8e826dc203805d04e1d5ee57
+
+@ 0 9 0 0e61ecea219ca37814d82a7d9c3a2f66
++         To, co `shell.pane()` przekazuje swojemu blokowi: klawisze trafiają do zadania pseudoterminala, a
++         ekran pochodzi z wyświetlacza.
++     entry #shell   powłoka działająca w panelu
++     entry #width   kolumny
++     entry #height   wiersze
++     entry #screenshot   ekran wyświetlacza
++     entry #press   wpisuje nazwę klawisza lub dosłowny tekst
++     entry #resize   zmienia rozmiar wyświetlacza i pseudoterminala
++   entry .Error   błąd `↯/s.109.1`: nie udało się sterować terminalem
+
+% 1 1 0 15212bdc78496b73165acabb8c42be05
+
+@ 0 1 0 19ef714ab40241b11fbf76718c81f6ed
++         _can't drive the terminal: `reason`_. Przyczyny:
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 4 0 0f05ca2e342788f71a13a5a1ab147c4e
++         column  Przypadek
++         column  Kod
++         column  Komunikat
++         column  Uwaga
+
+% 0 1 0 09a1c90a94e42b9308c73487e823aa6c
+
+% 0 1 0 0118487ccec64908199082591221d498
+
+% 0 1 0 198cbfd7adc5c5010a584bffd8103a68
+
+@ 0 3 0 0aa80854c3ac3c001854f42f24dc03fc
++         row  `Unrendered(problem)`  4  _the terminal could not render its output: `problem`_  yossarian nie potrafił wyrenderować sekwencji
++         row  `NotReady(shell)`  5  _the shell `shell` did not become ready_  powłoka nie pokazała na czas znaku zachęty ani nie odesłała echem znacznika środowiska testowego
++         row  `Unconfigured(problem)`  6  _the shell could not be configured: `problem`_  nie udało się zapisać pliku konfiguracyjnego w tymczasowym katalogu domowym
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 1 0 0d87843d46d7a465102ae034b3700d37
++     entry .Reason   dlaczego nie udało się sterować terminalem
+
+% 1 1 0 01ba80257be859f91053c67d70dde6a1
+
+@ 0 10 0 1ba7f03474c8936c159f3c6e32c264c8
++           Typ enum z `number` (od 1 do 6) i givenem `Communicable`.
++       entry #number   kod podrzędny
++     entry .communicable   przedstawia przyczynę jako jej komunikat
++     entry #reason   przyczyna
++   entry #shell   powłoka działająca w panelu
++   entry #width   kolumny
++   entry #height   wiersze
++   entry #press   wpisuje nazwę klawisza z `Pane.keys` lub dosłowny tekst
++   entry #screenshot   bieżący ekran
++   entry #resize   zmienia rozmiar panelu, dostarczając powłoce `SIGWINCH`
+
+@ 0 1 0 06ab8ce2c41165d60d0bb2ac0eca2bbe
++ entry .Screenshot   ekran panelu: jego wiersze, rozmiar i kursor
+
+% 1 1 0 06f3125562152fdd040855dad5169447
+
+@ 0 9 0 1ead8eb14f4b953713bd76befdb3ff0f
++       `#screen` to jeden `Text` na wiersz z usuniętymi spacjami końcowymi, `#size` to `(columns,
++       rows)`, a `#cursor` to `(column, row)` jako liczby porządkowe. `apply()` łączy wiersze
++       znakami nowego wiersza.
++   entry #screen   wiersze
++   entry #size   kolumny i wiersze
++   entry #cursor   kolumna i wiersz kursora
++   entry #apply   ekran jako jeden tekst, z wierszami połączonymi znakami nowego wiersza
++   entry #currentLine   wiersz, w którym jest kursor, przycięty, z oznaczonym znakiem pod kursorem
++       `screenshot.currentLine(_ => t"^")` to to, co odczytuje `Pane.progress`.
+
+@ 0 1 0 0ff4c9d20b2acf850623b7ef5c2c6a16
++ entry .Tmux   panel w sesji tmux, niezależnym emulatorze terminala
+
+% 1 1 0 16efc1cfcf5d3c7e0f3682efdc15e45e
+
+@ 0 4 0 1a4703847168e9ab09fb73dfc5f0e8a6
++       To, co `shell.tmux()` przekazuje swojemu blokowi. Klawisze są wysyłane przez `tmux send-keys`, które
++       interpretuje własne nazwy klawiszy tmux, a ekran jest odczytywany przez `tmux capture-pane`;
++       każde z nich to podproces, więc ten backend jest wolny i istnieje po to, by sprawdzać
++       renderowanie yossariana względem innego emulatora. Jest też `Findable`.
+
+% 1 1 0 011374015ef7a4d60e13bb04237368b8
+
+@ 0 9 0 0262af157e285866156b2815ab52c2ec
++   entry #id   nazwa sesji, UUID
++   entry #workingDirectory   katalog, z którego uruchamiany jest tmux
++   entry #environment   środowisko, w którym działają polecenia tmux
++   entry #width   kolumny
++   entry #height   wiersze
++   entry #shell   powłoka działająca w sesji
++   entry #press   wysyła klawisze przez `tmux send-keys`
++   entry #resize   zmienia rozmiar okna przez `tmux resize-window`, dostarczając `SIGWINCH`
++   entry #screenshot   przechwytuje panel i odczytuje kursor przez `tmux display-message`
+
+@ 0 1 0 019573276ca51b1316e4a23ca8908fa5
++ entry .pane   uruchamia powłokę na pseudoterminalu ze skonfigurowanym testowanym narzędziem i przekazuje panel blokowi
+
+% 1 1 0 1379d9e632ed2fe21364e1aa9bdbce40
+
+@ 0 8 0 172f3729e52a30740c358a0b89ca40de
++       Rozszerzenie dla `Shell`: `Shell.Zsh.pane(width = 80, height = 24)(action)` uruchamia
++       powłokę tak, jak konfiguruje ją `rig.launch` – w tymczasowym katalogu domowym narzędzia, z
++       katalogiem narzędzia na początku `PATH`, znakiem zachęty `> ` i skryptem uzupełniania
++       narzędzia załadowanym w miejsce jakiejkolwiek konfiguracji użytkownika – na pseudoterminalu,
++       którego wyjście yossarian renderuje w `Pane.Display`, czeka na znak zachęty, czyści
++       ekran i uruchamia blok z `Pane.Emulated`. Wymaga `WorkingDirectory`,
++       `Environment`, `Enclave.Tool`, `Monitor`, `Tactic[Pane.Error]` oraz
++       `Exec.Event is Loggable` z guillotine.
+
+% 2 1 0 0ab1b2e5704de3db04c51537817100ab
+
+% 3 1 0 034994d07cb493c4119635ffdbe2e791
+
+% 4 1 0 0a8a20e791a903aa07e6fca8a15c471c
+
+% 5 1 0 061de998156888dc10a5de44710c590d
+
+% 6 1 0 0be0d7bd7988294116961e417c0bf9db
+
+% 7 1 0 09f87852628b726c096124bd728543fc
+
+% 8 1 0 11f6f0c945a0e0e00da0ed11c5647dd5
+
+% 9 1 0 11bdc6e8324a694c0892d42af6d38138
+
+% 10 1 0 1d7724f2cfc82c4511eb906f8fca7e21
+
+% 11 1 0 0823390c56a653ca0c7f621dfbf73065
+
+% 0 1 0 095a4b90bdace4e10dee4aef597f8e76
+
+% 0 1 0 13cded583e94b36e1745e0becfefaa11
+
+% 1 1 0 0613ff99f8cf58b9093f161bf0851848
+
+% 1 1 0 1c5fa972d8a13ea502eb45868b881442
+
+% 1 1 0 12789381b93369321a441a6bde52f0bc
+
+% 0 1 0 15aa73963dce26b2008baeb1527a5c2d
+
+@ 0 1 0 08c35ff1d6ea884a04e1ce671ba40398
++ entry .tmux   uruchamia powłokę w sesji tmux, skonfigurowaną dokładnie tak jak przez `pane`, i przekazuje panel blokowi
+
+% 1 1 0 10cd74ba6821648b115f6bf5aea016a7
+
+@ 0 3 0 1a99c4c224461f1514288a56a8dc649e
++       Rozszerzenie dla `Shell` z tymi samymi parametrami i potrzebami kontekstowymi co `pane`.
++       Sesja jest tworzona jako odłączona, w podanym rozmiarze, nazwana przez UUID i zabijana, gdy
++       blok się kończy. Wymaga tmux na hoście; brakujący plik binarny objawia się jako `Pane.Error` z
+
+% 0 1 0 0b26cc300d83ebcb0b82f220f8a1cb61
+
+% 1 1 0 1f4f80d092b4d57317e86528e690651a
+
+% 0 1 0 082f304ee560261a02947a03b2372702
+
+@ 0 1 0 0d75a784e2176d0417f78f0418deff99
++ entry .rig   jak środowisko testowe uruchamia i przygotowuje powłokę do testu
+
+% 1 1 0 039996e27172bf8508bb52910fd6b951
+
+@ 0 21 0 110778faafbf46e61ff8d755b1b8ada7
++       Elementy wspólne dla `pane` i `tmux`: `#launch` buduje polecenie, które uruchamia
++       powłokę w tymczasowym katalogu domowym narzędzia z własną konfiguracją środowiska testowego, `#ready` na nią czeka,
++       a `#powershell` to profil PowerShell. Udostępnione dla zestawu testów, który steruje
++       powłoką w inny sposób.
++   entry .launch   polecenie, które uruchamia powłokę dla testu, skonfigurowaną dla testowanego narzędzia
++       Zapisuje własną konfigurację środowiska testowego w tymczasowym katalogu domowym – plik rcfile basha,
++       plik startowy zsh z funkcją uzupełniania w `fpath`, `config.fish` fisha lub
++       profil PowerShell – z których każda daje znak zachęty `> ` i ładuje skrypt uzupełniania narzędzia
++       w postaci zapisywanej przez `Completions.script`; ustawia `PATH` tak, by narzędzie było pierwsze,
++       wyłącza `POWERSHELL_UPDATECHECK` i ustawia `TERM` na `xterm-256color`, gdy `terminal` ma wartość
++       true (tmux ustawia własny). Zgłasza `Pane.Error` z `Unconfigured`, jeśli nie da się
++       zapisać pliku.
++   entry .directory   część katalogowa tekstu ścieżki
++   entry .ready   czeka, aż powłoka się uruchomi i załaduje konfigurację, a następnie czyści ekran
++       Czeka na znak zachęty `>`, potem (z wyjątkiem PowerShell) prosi powłokę o odesłanie echem krótkiego
++       losowego znacznika i czeka na niego, aby mieć pewność, że wykonał się każdy wiersz konfiguracji,
++       i naciska `C-l`. Zgłasza `Pane.Error` z `NotReady` po dwudziestu sekundach.
++   entry .powershell   profil PowerShell używany przez środowisko testowe: znak zachęty `> `, uzupełnianie tabulatorem przez narzędzie i `_completions`
++       `_completions "line"` wypisuje każde uzupełnienie wiersza jako `name@@description`, i
++       w ten sposób `Pane.completions` odczytuje kandydatów PowerShell, ponieważ jego menu nie jest
++       zapisywane na ekranie.

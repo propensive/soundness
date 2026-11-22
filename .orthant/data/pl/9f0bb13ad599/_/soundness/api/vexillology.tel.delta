@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 12 0 01becbfee9c75a7014a280a00d20f9d7
++         Typ nieprzezroczysty nad `Long`. Jego strona w pakiecie `vexillology` zawiera pełny
++         opis.
++     entry .apply   pusty zbiór flag nad wyliczeniem, bez ustawionego bitu, `Flags[Color]()`
++   entry .apply   czy przypadek jest ustawiony w danych flagach, `flags(case)`
++       Wymaga, by wyliczenie było `Enumerable`, aby znaleźć liczbę porządkową przypadku.
++   entry .update   kopia danych flag z przypadkiem ustawionym lub wyczyszczonym, `flags(case) = enabled`
++       Zwraca nowe `Flags` zamiast zmieniać odbiorcę, więc zmiennej przechowującej flagi
++       przypisuje się nową wartość: `flags = flags(Orange) = true`.
++   entry .bits   flagi jako ich bity bazowe, `B64`: przypadek o indeksie `n` jest właścicielem bitu `n`
++       Nie wymaga `Enumerable`. `B64` konwertuje się na `Long` za pomocą `.long`.
++   entry .set   przypadki ustawione w danych flagach, jako `Set` wyliczenia
++       Odwiedza tylko ustawione bity, od najniższego.

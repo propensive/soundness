@@ -1,0 +1,792 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 132bb41f85bb6a6e045576da68ac2626
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0c923f48569655030680da73dcdc8fb3
++ info   WebSockety: zaktualizowane połączenie HTTP jako typowana pętla komunikatów, po stronie serwera i klienta
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 11 0 1a8ce956a70ba2e41f099b37468ca50a
++     _Perihelion_ obsługuje protokół WebSocket (RFC 6455) po obu stronach połączenia. Na
++     **serwerze** handler scintillate zwraca `webSocket(initial)(handle)`: żądanie
++     zostaje zaktualizowane przez uzgadnianie `101 Switching Protocols`, a połączenie staje się
++     maszyną stanów – każdy przychodzący komunikat jest dekodowany do typu komunikatu handlera i
++     przekazywany do `handle` wraz z bieżącym stanem, a ten odpowiada wartością `Control`: `Reply`, aby
++     wysłać komunikat i kontynuować, `Continue`, aby czekać w milczeniu, `Conclude`, aby wysłać ostatni
++     komunikat i zamknąć połączenie, albo `Terminate`, aby zamknąć je natychmiast. Po stronie **klienta**
++     `Websocket.Url` (`ws://` lub `wss://`) jest transportem coaxial, więc `url.react(initial)
++     { message => … }` łączy się, przeprowadza uzgadnianie i uruchamia tę samą pętlę w przeciwnym
++     kierunku, `url.exchange` pozwala klientowi odezwać się pierwszemu, a `url.session` pożycza
++     aktywne `Websocket.Connection` do swobodnego użycia.
+
+% 2 1 0 14a9db8bd66c8acc14b9bea12c4246ff
+
+% 3 1 0 1556b562dbe9b8e615d9c7a041ddafeb
+
+% 4 1 0 01805e9c4062e8f60bf416663d1141de
+
+% 5 1 0 099cd5ae59da604103ddab577af02d53
+
+% 1 1 0 0f10f48845cf5f3a0ff95c84f7617e49
+
+% 2 1 0 18da14192dee5d581d1a292548e03f9e
+
+% 3 1 0 187529a5da0ee20a19c92d590f917b26
+
+% 4 1 0 19476aed4f06d1ce0fe98b227333ed8c
+
+% 0 1 0 1d5e1a4fa6f0818802d7be243df390a3
+
+% 1 1 0 1bfa93eae20509af1227c391aea01fc4
+
+% 2 1 0 015a8ad26de56fb30c59f0a5e6f28aad
+
+% 3 1 0 07ebe7c5883ba8531ba5e9c0406acb5d
+
+% 4 1 0 178f86d904add64615fe46ffd0c812a6
+
+% 6 1 0 1a06e3e5afd1d52b1d6c68a5eba8a53a
+
+% 8 1 0 04a66ec93f178d9216bf9ef8e3c318ec
+
+% 0 1 0 0720d9ea1d5184400000e4513ad2860f
+
+% 0 1 0 104956e7a842c818046ba912fe996ab6
+
+% 0 1 0 00ede44a02af135806b8dbe602e703a7
+
+% 1 1 0 1e471ca9d9776c9a15940a2b48e06712
+
+@ 0 10 0 1499af827f0f55ad054138bbcf4d694d
++     Komunikaty są typowane. Surowy `Message` (ramka `Text` lub `Binary`) to postać
++     nietypowana; każdy typ coaxial `Ingressive`/`Transmissible`, taki jak `Text`, jest przenoszony
++     bezpośrednio; a `value over Json` (lub `over Tel`, lub dowolny format `Encodable in Text`) przenosi
++     rekord jako tekst formatu w ramce tekstowej, poprzez `overIngressive` i
++     `overTransmissible`. Ostre krawędzie protokołu – maskowanie (klienci maskują, serwery nie,
++     a każda strona odrzuca błąd drugiej), fragmentacja i ponowne składanie,
++     `Ping`/`Pong`, przyrostowa walidacja UTF-8 tekstu, kody zamknięcia – obsługują
++     współdzielone `Reader` i `Channel`; nigdy nie pojawiają się w handlerze i są zgodne z zestawem testów
++     Autobahn. Naruszenie to `Websocket.Error`, którego przyczyna niesie kod zamknięcia wysyłany
++     drugiej stronie.
+
+@ 0 8 0 13923c98d586f3f911b1fcd453997ecd
++     Biblioteka to jeden komponent, `perihelion.core` (JVM), oparty na serwerze scintillate i
++     gniazdach coaxial. `Websocket.Masking`, `over`, `overIngressive`, `overTransmissible`,
++     `Websocket`, `webSocket` i `WsSessional` są eksportowane do modułu zbiorczego `soundness`.
++     Trzy nazwy nie są: `Message`, ponieważ `Message` z fulminate zajmuje już tę nazwę
++     w module zbiorczym (`import perihelion.Websocket.Message`), oraz giveny klienta `wsClient` i
++     `wsSessional`, których typy rafinowane z adnotacjami przechwytywania utraciłaby syntetyzowana
++     metoda przekazująca eksportu (`import perihelion.wsClient`, `import perihelion.wsSessional`). `Channel`
++     i `Reader` są publiczne w pakiecie, ale nieeksportowane.
+
+% 0 1 0 0a9d023e7b04b8921b8c9dd6156648e3
+
+% 0 1 0 11ac59b705b277d400a35d384aab4b45
+
+% 0 1 0 012bed43bcaeca060cac55a54eb47237
+
+% 0 1 0 1896cd76afb12fde0fa44395e16fc8ae
+
+% 0 1 0 092b60bd3c85e512057f2b0dd81136f9
+
+@ 0 12 0 1e3785b3a10f25320d9e28d4802444e3
++ entry .webSocket   aktualizuje obsługiwane żądanie do WebSocketu, obsługiwanego jako stanowa pętla komunikatów
++     `webSocket(initial)(handle)` wywołuje się wewnątrz handlera scintillate, gdzie w kontekście
++     jest `Http.Request` (połączenie), i zwraca `Websocket[message,
++     state]`, który jest `Servable`: zwrócenie go z handlera wysyła uzgadnianie `101`,
++     a połączenie staje się pętlą. `initial` to stan początkowy (domyślnie `()`),
++     a `handle` to funkcja kontekstowa `(state: state) ?=> message => Control[state]`:
++     każdy zdekodowany komunikat jest przekazywany ze stanem w kontekście, a zwrócone `Control`
++     mówi, co wysłać i jaki jest następny stan (`Unset` zachowuje bieżący). Typ
++     komunikatu jest wnioskowany z parametru handlera, więc tam się go adnotuje;
++     handler, który odczytuje swój stan, nazywa go jawnym parametrem kontekstowym,
++     `(count: Int) ?=> (message: Message) => …`, ponieważ parametr kontekstowy wstawiony przez
++     konwersję nie ma nazwy.
+
+% 2 1 0 1e96894f68dde62d050ba9ce5bdab416
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 1704f4b53f1ef8e215573007c25d1f9f
++       label Echo surowych komunikatów
+
+% 1 1 0 0ff14f74d9442e12082f5d2b9e5ddad1
+
+% 2 1 0 192c4d6cff6a52870e60fdafb3ba8a5d
+
+% 3 1 0 1dd347e0b4a567010b82b758dc3151ce
+
+% 4 1 0 0074e3342253e71f003ceabfd2029844
+
+% 5 1 0 11c9f64289e5e22f1810b1dd676f3a31
+
+% 6 1 0 05e73fa26af4ce1102dc44090edcf5f5
+
+% 7 1 0 029904f52db9ba7a1b5196d29bd75972
+
+% 8 1 0 1f1f8b24cc5ae4cf1622345cbac27f0a
+
+% 10 1 0 1626643816d7ac751a536657b8dad6cb
+
+% 11 1 0 128b346aa780857a0d6c1d34bdbec689
+
+% 0 1 0 09ae018fe6f9bc1c00262ab0c28f3168
+
+% 0 1 0 17e82f5d9d17008c1c006a7a0591a6a3
+
+% 1 1 0 07db47cabc29fe76196b335aa29e39a8
+
+@ 0 1 0 003f130bfd2e04411af128d0c8a822f6
++       label Licznik komunikatów przekazywany jako stan
+
+% 1 1 0 133d0349330c24e00c750a646956a62b
+
+% 2 1 0 079319c79e70996b14bc2c562e462354
+
+% 3 1 0 185a8210923e06ac05f51adb0f25b0ec
+
+% 4 1 0 1834574b1aa764890e081eb389b458c6
+
+% 5 1 0 1cd8e77d128a556f07c074b73f99d56b
+
+% 6 1 0 1f270432dd55949204e961f236af99b9
+
+% 7 1 0 110fbe0a78f9e9f411723551ee9ef333
+
+% 8 1 0 1450046b2c9cfdcb146165c655440b22
+
+% 10 1 0 1c8fce0eba51ea3718b8e1c3a53a15d5
+
+% 11 1 0 1a510ece387f1eb31a16baee69053b03
+
+% 0 1 0 190f1b65d369248d11ab4d445577bbb1
+
+% 0 1 0 0285570f5b648e23116ad9b5e88c2e19
+
+% 1 1 0 0be67d2de57757f90154d75aa90aa76d
+
+@ 0 1 0 1d26139a8867557e09c5ac6fc25c883d
++       label Typowane komunikaty w JSON i zamknięcie po dziesiątym
+
+% 1 1 0 0d09bc33998df24e00ba523b9f21423a
+
+% 2 1 0 0391d0cbe956bfe71dacfd6718a4bb07
+
+% 1 1 0 02f9133e32e33ef50a86ff900d15e009
+
+% 2 1 0 1a61e3b90ac8534d1ff6138089a0b7de
+
+% 3 1 0 06ff3cd12fd31a3e0640e265eccb0618
+
+% 4 1 0 0308d532679d6b951c207f2426e56a10
+
+% 5 1 0 0a1d6895194489581d1557eb782ff217
+
+% 0 1 0 16d36e63e38a71cf1a67a289145a770d
+
+% 0 1 0 03214a9eeeaf913115b5b1a17c3cf419
+
+% 0 1 0 10129a26846d36790c11befb6781a581
+
+% 0 1 0 05d56be7634328310857c5007450e233
+
+% 0 1 0 0cdffacd1abfd7bc098823410d964616
+
+% 2 1 0 1bc8aea50a9581d01a6af71b7b896d81
+
+% 3 1 0 16267895b137474b19caaf14dde0beca
+
+% 0 1 0 16821d6a062e7a111aba588c9a19227a
+
+% 0 1 0 177f7198d5a2efc01f10ff1353f86903
+
+% 0 1 0 0ad3a464d1f7d7441c9d22dd0dc686c8
+
+% 1 1 0 0fe134fdaab1b269070280cbafb47c62
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 10 0 0ab2a1366996c5bc01cd501f078b52fb
++     Typ komunikatu musi być `Ingressive`: surowy `Message` (dekodowany przez tożsamość, więc
++     handler widzi, czy ramka była tekstowa, czy binarna), `Text` lub `Data` przez własne
++     instancje coaxial, albo `value over format` przez `overIngressive`, które wymaga
++     `Decodable in Text` formatu (dla `Json` potrzebne są giveny `formatting` i `textSanitizers`),
++     `Decodable in format` wartości, `Charset` oraz `Tactic[Hazard]` (takiej
++     jak `strategies.throwUnsafely`). `Reply` lub `Conclude` przyjmuje dowolną wartość `Transmissible`,
++     serializowaną do jednej kompletnej ramki. Handler działa we własnym zadaniu pod
++     `Monitor` i `Probate` w zasięgu; `Websocket.Error` w pętli zamyka połączenie
++     z kodem zamknięcia przyczyny, a `Close` drugiej strony kończy je, dając typ stanu
++     początkowego jako wynik zadania.
+
+@ 0 1 0 1257611121a1d72a041b3ce60ced9cf2
++ entry .Websocket   WebSocket po stronie serwera: odpowiedź uzgadniania, jej kanał i zadanie handlera
+
+% 1 1 0 0f5adb41861b83b41444a3071a40a041
+
+@ 0 8 0 08fc6848eab0a94114c7a0b952bcd31a
++       `Websocket[message, state]` to wartość zwracana przez `webSocket`: wartość `Servable`, której
++       odpowiedzią jest uzgadnianie `101 Switching Protocols` – `Sec-WebSocket-Accept` obliczony
++       z `Sec-WebSocket-Key` żądania i `.magic`, `Connection: Upgrade`,
++       `Upgrade: websocket` – a treścią strumień wychodzących ramek, który scintillate
++       przepompowuje do gniazda, dopóki trwa połączenie. Przy konstrukcji uruchamia
++       `#task`, które czyta ramki klienta, składa je w komunikaty, dekoduje każdy
++       do `message` i uruchamia pętlę handlera. Handler może zachować tę wartość przed jej
++       zwróceniem, aby wypchnąć komunikat przez `#channel`, zanim klient cokolwiek wyśle:
+
+% 2 1 0 1b95623c2c6dcd8f00ef08895ca8adc7
+
+% 3 1 0 1ca957080fcca3d411e10f8ddc96a80b
+
+% 4 1 0 0410b19376de0a0b1057cede599336d0
+
+% 5 1 0 0ea53b8ab6af1c091b1a80278830078c
+
+% 2 1 0 1f3740e9f8bf446a06d8a014827e08f1
+
+% 1 1 0 147c451fbb64a563180fed72b9c8b8dd
+
+% 2 1 0 0b2de5fe18b3637e169700403c80b6a2
+
+% 3 1 0 0c8600c4e787e5de156d692a197920ea
+
+% 4 1 0 1091d5c91f7a4d2f18637a8b86f3716e
+
+% 0 1 0 07aee3a963c81e41082d67adafd250ef
+
+% 2 1 0 1e8b62b807c19b281d160a97b2e9d558
+
+% 0 1 0 0e423d575fca47920401920097bdb49e
+
+% 0 1 0 1a72c4f461f9b50106aee49671d91870
+
+% 0 1 0 1c73668f2fd536661d12be36746a7943
+
+% 0 1 0 0a165248ebd96d43177b061fe011df16
+
+% 1 1 0 007e39fc3ac946321af1717ef647a365
+
+@ 0 6 0 0dc89300c132b98a160a6a622cc2e1b5
++       Konstruktor przyjmuje żądanie, stan początkowy, dekoder z `Message` do
++       typu handlera oraz sam handler; `webSocket` buduje dekoder i jest
++       zamierzonym sposobem tworzenia tej wartości. Żądanie bez nagłówka `Sec-WebSocket-Key` to panika:
++       handler powinien aktualizować tylko żądanie, które o to prosiło. Obiekt towarzyszący zawiera
++       pozostałe elementy protokołu: klienckie `.Url` i `.Connection`, `.Frame` na poziomie
++       łącza oraz typy `.Error` i `.Event`.
+
+% 0 1 0 16c195590f87e3e306ba97313850a060
+
+% 1 1 0 0fcb3266317b8b9c0787a3c906648a50
+
+% 0 1 0 1331208fd70561a6086c895868d59c76
+
+% 0 1 0 1518e122d114c2500d43eecbc7c9f946
+
+@ 0 17 0 0b4c8b7b2a5eac8e1aaf2c29666c19e3
++   entry .magic   GUID, który RFC 6455 dołącza do klucza, `258EAFA5-E914-47DA-95CA-C5AB0DC85B11`
++       `Sec-WebSocket-Accept` to Base64 skrótu SHA-1 z `Sec-WebSocket-Key` klienta,
++       po którym następuje ten tekst; serwer oblicza go w `.servable`, a klient sprawdza go
++       w `wsClient`.
++   entry .servable   obsługuje `Websocket` jako uzgadnianie `101`, którego treścią jest strumień wychodzących ramek
++       Given, który pozwala handlerowi zwrócić `Websocket`. Treść jest `Flowing`, a jej
++       źródłem jest jedyny endpoint czytający kanału, materializowany dokładnie raz przez
++       mechanizm zapisu odpowiedzi serwera.
++   entry .Url   URL `ws://` lub `wss://`: `urticose.Url["ws" | "wss"]`
++       Dekodowany z tekstu jak każdy `Url` (`t"ws://localhost:8080/".as[Websocket.Url]`),
++       bez specjalnej maszynerii dla schematu; port domyślnie wynosi `80` dla `ws` i `443` dla
++       `wss`, gdy część autorytetu go pomija. Połączenie `wss://` otwiera się przez TLS za pomocą
++       `SecureEndpoint` z coaxial, konfigurowanego przez given `Tls` w zasięgu – domyślnie systemowy
++       magazyn zaufania z weryfikacją nazwy hosta, albo `Tls(context, verify = false)` dla
++       serwera testowego z certyfikatem samopodpisanym. Gdy w zasięgu jest `wsClient`, URL jest transportem `Duplexable`,
++       więc stosują się do niego `url.react`, `url.exchange` i (z `wsSessional`) `url.session`.
++   entry .Connection   aktywne połączenie klienta: złożone komunikaty przychodzące, `send` i `close`
+
+% 1 1 0 1b9490961431a6440770d10b8d0282f1
+
+@ 0 5 0 1669897b3aff7ae3124e10a10f6d669e
++         To, z czym `wsClient` łączy `Websocket.Url`, i to, co pożycza `url.session`:
++         uzgadnianie jest zakończone, demon w tle przepompowuje każdą zbuforowaną ramkę do gniazda,
++         a strumień przychodzący został przesunięty za `101`. `react` i
++         `exchange` z coaxial sterują nim jako maszyną stanów; zasięg sesji używa `#messages`, `#send`
++         i `#close` bezpośrednio.
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 1e82e1081086f5830ac1bff309a1334e
+
+% 0 1 0 00920982337d627e01fe9c94d2198ebe
+
+% 0 1 0 0a2e252fedb67daa153c82ae9a1e2c86
+
+% 0 1 0 1cc3b0e519c77d4c1c98c05c46dfe672
+
+% 1 1 0 0ef91427fd5ba7ce1185a09ea5211102
+
+% 0 1 0 1483d7674d516abb1cf447f9b7b6208e
+
+% 0 1 0 031cb3caf20d802a1bfde3d303278fab
+
+% 0 1 0 00ed41fc23e6d82a10dec47c6ff8e153
+
+% 0 1 0 05a4be4afdfc5fd616c1ab116ec4c482
+
+% 0 1 0 14e2104f99484339197a71b252edb935
+
+% 0 1 0 1bdac8d8b52a79ac1a92ae12a7008c08
+
+% 1 1 0 0cb47c875281e80107dfbeea5c9f1a91
+
+@ 0 21 0 048d280938aa804814eb2369a0fe0852
++     entry #messages   komunikaty przychodzące, jeden kompletny komunikat na element strumienia, jako bajty
++         Uruchamia współdzielony `Reader` na połączeniu: na `Ping` udziela się odpowiedzi, `Pong` są odrzucane,
++         fragmenty składane, tekst walidowany jako UTF-8, a `Close` drugiej strony kończy
++         strumień. Każdy element to ładunek komunikatu – bajty UTF-8 komunikatu tekstowego albo
++         dosłowne bajty komunikatu binarnego – a granice porcji wyznaczają komunikaty. Wymaga
++         `Tactic[Websocket.Error]` na wypadek naruszenia protokołu.
++     entry #send   wysyła jeden komunikat jako jedną kompletną ramkę, maskowaną w kanale
++         Strumień jest konsumowany i zapamiętywany jako bajty ramki; `serialize` wartości `Transmissible`
++         tworzy dokładnie taki strumień.
++     entry #close   wysyła ramkę zamknięcia `1000`, zatrzymuje pompę i zamyka gniazdo
++         Czeka, aż pompa skończy zapisywać to, co zbuforowano. Wymaga `Monitor`.
++   entry #key   `Sec-WebSocket-Key` klienta, z którego oblicza się klucz akceptacji uzgadniania
++   entry #channel   strona wychodząca: `send` wypycha komunikat do klienta, `close` kończy połączenie
++       `Channel`, przez który odpowiada pętla handlera. Handler może zachować `Websocket`
++       i wywołać `channel.send(Message.Text(…))` przed jego zwróceniem, aby przywitać klienta, który
++       jeszcze się nie odezwał; ramka jest buforowana i zapisywana po wysłaniu `101`.
++   entry #task   pętla handlera, działająca od konstrukcji; jej wynikiem jest stan końcowy
++       Kończy się stanem, który handler zwrócił jako ostatni, gdy klient zamyka połączenie albo
++       handler je kończy lub przerywa, albo stanem początkowym, gdy `Websocket.Error`
++       zamknął połączenie z kodem zamknięcia przyczyny.
++   entry .Error   zgłaszany, gdy druga strona narusza protokół, z kodem zamknięcia do wysłania
+
+% 1 1 0 1adec524b6ddd56b0b01a406d58f733a
+
+@ 0 5 0 0af2a446e14636a30007d91712d2da51
++         Błąd `↯/s.115.1`, z numerem przyczyny jako szczegółem: _the WebSocket protocol was
++         violated because `reason`_. Zgłaszany przez `Websocket.Frame.parse` i `Reader`, gdy
++         ramka lub komunikat łamie RFC 6455, przez `wsClient`, gdy uzgadnianie się nie powiedzie, oraz gdy
++         połączenie zostanie przedwcześnie przerwane. Pętla po stronie serwera przechwytuje go, zamyka połączenie
++         z `reason.closeCode` i zwraca stan początkowy; klient widzi go przez swoją
+
+% 0 1 0 155e99dfbda56260131ff3270ef61417
+
+@ 0 1 0 1db267d6a41b8c5b0a9aac1af61b99a6
++     entry .Reason   dlaczego naruszono protokół, każda przyczyna z kodem zamknięcia RFC 6455
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 1 0 10b3946ab7b638521079ee1765d1560d
++           Każdy przypadek niesie kod zamknięcia RFC 6455 do wysłania:
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 15 0 1e43649ecc0765bb196981f4c47549be
++           column  Przypadek
++           column  Kod
++           column  Komunikat
++           column  Uwaga
++           row  `Unmasked`  1  _the client sent an unmasked frame_  kod zamknięcia 1002
++           row  `BadOpcode(code)`  2  _the frame used the reserved opcode `code`_  kod zamknięcia 1002
++           row  `BadControl`  3  _a control frame was fragmented or exceeded 125 bytes_  kod zamknięcia 1002
++           row  `BadFragmentation`  4  _the message fragmentation was invalid_  kod zamknięcia 1002: ramka danych nadeszła, gdy otwarty był pofragmentowany komunikat, albo kontynuacja nie miała czego kontynuować
++           row  `TooLarge(size)`  5  _the frame payload of `size` bytes exceeded the limit_  kod zamknięcia 1009: ładunek powyżej 16 MiB
++           row  `InvalidText`  6  _a text frame contained invalid UTF-8_  kod zamknięcia 1007: również niepoprawna przyczyna zamknięcia
++           row  `ReservedBits`  7  _a reserved header bit (RSV1/2/3) was set_  kod zamknięcia 1002: nie wynegocjowano żadnego rozszerzenia
++           row  `BadClose`  8  _the close frame had a malformed payload or invalid code_  kod zamknięcia 1002: jednobajtowy ładunek zamknięcia albo niepoprawny kod zamknięcia
++           row  `Masked`  9  _the server sent a masked frame_  kod zamknięcia 1002
++           row  `Handshake(detail)`  10  _the WebSocket handshake failed because `detail`_  kod zamknięcia 1002: URL nie miał hosta, serwer nie odpowiedział `101` albo jego `Sec-WebSocket-Accept` był błędny
++           row  `Truncated`  11  _the connection closed before the frame was complete_  kod zamknięcia 1006: bajty połączenia skończyły się w środku ramki
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 5 0 0cf314acb91d2b84115f28f042a165c7
++       entry #number   numer przyczyny, będący numerem szczegółu błędu
++       entry #closeCode   kod zamknięcia RFC 6455 wysyłany drugiej stronie przed zamknięciem
++     entry .communicable   przedstawia każdą przyczynę jako komunikat
++     entry #reason   dlaczego naruszono protokół
++   entry .Event   co loguje połączenie: wysłane i odebrane komunikaty oraz zamknięcie
+
+% 1 1 0 0abe8dbe6573fea417b25062eaf355f3
+
+@ 0 13 0 120a8bde4ceb98c11cd04801e063b0e6
++         Każde `Event` jest oznaczone tagami `Log.Network` i `Log.Protocol`. `Sent` jest logowane na poziomie `fine`
++         przez `Channel#send` z liczbą bajtów komunikatu, `Received` na poziomie `fine` przez
++         pętlę serwera dla każdego obsłużonego komunikatu, a `Closed` na poziomie `info` przez `Channel#close`
++         z kodem zamknięcia. `Websocket.Event is Loggable` musi być w zasięgu wszędzie tam, gdzie
++         wywołuje się `Channel#send` lub `Channel#close`; `logging.silentLogging` je odrzuca.
++     entry .communicable   przedstawia każde zdarzenie jako komunikat
++     entry .Sent   wysłano komunikat: _sent a `bytes`-byte websocket message_
++       entry #bytes   długość komunikatu
++     entry .Received   odebrano komunikat: _received a `bytes`-byte websocket message_
++       entry #bytes   długość komunikatu
++     entry .Closed   zamknięto połączenie: _closed the websocket connection with code `code`_
++       entry #code   wysłany kod zamknięcia
++   entry .Frame   jedna ramka WebSocket: format łącza, parsowany z kursora i kodowany do bajtów
+
+% 1 1 0 1acabb006f8c3dc41472e07ed71717d3
+
+@ 0 8 0 007635fc33a18362080a6a22f966a5da
++         Wyliczenie typów ramek, każdy z `#opcode` i `#payload`: `Continuation(last,
++         data)`, `Text(last, data)` i `Binary(last, data)` to ramki danych, których
++         `last` jest bitem FIN; `Close(code, reason)` niesie dwubajtowy kod i przyczynę;
++         `Ping(data)` i `Pong(data)` to ramki sterujące. `.parse` odczytuje jedną ramkę z
++         `Cursor`, egzekwując kierunek maskowania i każdą regułę strukturalną, a `#encode`
++         zapisuje ją niezamaskowaną; `Masking.Client#outbound` maskuje zakodowaną ramkę do wysłania
++         przez klienta. Program używający `webSocket` lub `wsClient` nigdy nie obsługuje ramek; służą
++         one testom protokołu lub rozszerzeniom.
+
+% 2 1 0 13d1f5533cd871ac153ba64abf1f7fb3
+
+% 3 1 0 07c2852813f3a1d0093e9b1e99c560a6
+
+% 1 1 0 10c75085845bdbdf08b47c1db265ea53
+
+% 0 1 0 166802820f76e93a021fc47a77b6b80b
+
+% 0 1 0 0cfbc081861c42dd15b78560b7806927
+
+% 0 1 0 04c1465e2f2bf4cb0a7383320bb745b8
+
+% 0 1 0 17d6e84b7b70b2831f7a0f16aa045214
+
+% 0 1 0 026ba5e60dcac5301c27b352aea226bb
+
+% 0 1 0 122254d81847ff98003573a2d956c3ed
+
+% 1 1 0 1669f5b39b4b715619d9eeff85ec5495
+
+@ 0 22 0 0272f708fcc301891120e781c58fc001
++     entry .maxPayload   największy akceptowany ładunek ramki, 16 MiB; większy powoduje zamknięcie z `1009`
++     entry .maxControlPayload   największy ładunek ramki sterującej, 125 bajtów
++     entry .closeData   ładunek ramki zamknięcia: dwubajtowy kod, po którym następuje przyczyna
++     entry .validCloseCode   czy kod zamknięcia może pojawić się w postaci przesyłanej
++         `1000`–`1003`, `1007`–`1011` oraz zakres aplikacyjny `3000`–`4999`. Kody
++         `1004`, `1005` i `1006` nigdy nie są przesyłane, a `1012`–`2999` są nieprzypisane, więc ramka
++         zamknięcia niosąca jeden z nich to `BadClose`.
++     entry .parse   dekoduje jedną ramkę z kursora albo zwraca `Unset` przy czystym końcu strumienia
++         Konsumuje dokładnie bajty ramki i zdejmuje maskę z ładunku. Given `Masking`
++         ustala kierunek: `Masking.Server` wymaga, by ramka była zamaskowana (ramka klienta),
++         `Masking.Client` wymaga, by była niezamaskowana (ramka serwera), a niewłaściwa zgłasza
++         `Websocket.Error` z `Unmasked` lub `Masked`. Zgłaszane są też: `ReservedBits`,
++         `TooLarge`, `BadControl`, `BadOpcode` i `BadClose`. Pusty ładunek zamknięcia
++         dekoduje się z kodem wartownika `1005`. Parser blokuje się tylko na początku
++         ramki, nigdy po jej ostatnim bajcie, więc pusty `Ping` lub `Pong` jest zwracany
++         bez czekania na następną ramkę drugiej strony.
++     entry .unmask   wykonuje XOR ładunku z czterobajtowym kluczem maski albo zwraca go bez zmian dla pustego klucza
++         Jest swoją własną odwrotnością: maskowanie i zdejmowanie maski to ta sama operacja.
++     entry #opcode   kod operacji ramki: `0x0` kontynuacja, `0x1` tekst, `0x2` binarna, `0x8` zamknięcie, `0x9` ping, `0xa` pong
++     entry #payload   ładunek ramki; dla `Close` kod i przyczyna w układzie z `closeData`
++     entry #fin   czy ta ramka kończy swój komunikat; zawsze `true` dla ramki sterującej
++     entry #encode   ramka jako niezamaskowane bajty: nagłówek, długość w postaci krótkiej, 16- lub 64-bitowej, ładunek
+
+@ 0 1 0 1664029380975c240a2c32bc8e4055e9
++   entry .Masking   którą stroną połączenia jest dany kod, a więc czy ramki są maskowane
+
+% 1 1 0 1e04818e5fdd793610f220fe5f353cdb
+
+@ 0 6 0 1226e513c849b97d0a93c48a63eaffcc
++         RFC 6455 każe klientowi maskować każdą wysyłaną ramkę świeżym 32-bitowym kluczem, a serwerowi
++         wysyłać je niezamaskowane; każda strona odrzuca ramkę zamaskowaną w niewłaściwy sposób. `Masking` ustala
++         stronę: `#outbound(frame)` maskuje (lub przepuszcza) kompletną zakodowaną ramkę w drodze
++         na zewnątrz, a `#inbound` mówi, czy ramki odczytywane od drugiej strony muszą być zamaskowane.
++         `Websocket` instaluje `.Server`, a `wsClient` – `.Client()`; bezpośrednie użycie
++         `Websocket.Frame.parse`, `Reader` lub `Channel` wymaga jednego z nich jako givena.
+
+% 2 1 0 163c02fc5cfa532d1a5fc947327e8fa7
+
+% 3 1 0 1c667ec88b13317b00ccf464896706e4
+
+% 0 1 0 1a18fe401d7a0ab706b53933593da461
+
+% 0 1 0 11458e6d13f0e7e909ca530481920352
+
+% 0 1 0 0b9055256702baa609b836a1653beaec
+
+% 1 1 0 17da91d3f8f473410202609cfd54b54e
+
+@ 0 6 0 06ff395dd61479ec090a2d6c82afe4f2
++     entry .Server   strona serwera: wysyła bez maski, wymaga, by ramki przychodzące były zamaskowane
++     entry .Client   strona klienta: maskuje każdą wychodzącą ramkę świeżym kluczem, odrzuca zamaskowaną ramkę przychodzącą
++         `Masking.Client()` utrzymuje jeden `SecureRandom` na połączenie dla kluczy, więc dwa
++         maskowania tej samej ramki się różnią.
++     entry #outbound   maskuje kompletną, niezamaskowaną ramkę do wysłania albo zwraca ją bez zmian na serwerze
++     entry #inbound   czy ramki odczytywane od drugiej strony muszą być zamaskowane
+
+@ 0 1 0 1c48bd527b671d7501df88c70b3d0f68
++ entry .Message   kompletny komunikat WebSocket: `Text` złożony i zdekodowany z UTF-8 albo `Binary` jako bajty
+
+% 1 1 0 138d732300dafb6210e7e12a96bc7e3f
+
+@ 0 7 0 04340edec7fcbbc21a3d451e89168812
++       Wyliczenie dwóch rodzajów komunikatów, które widzi handler, gdy jego typem komunikatu jest
++       sam `Message`: `Message.Text(text)` dla komunikatu tekstowego, ze złożonymi i zdekodowanymi fragmentami,
++       oraz `Message.Binary(data)` dla binarnego. Ramki sterujące i fragmentacja nigdy
++       się tu nie pojawiają. `Message` jest zarówno `Ingressive`, jak i `Transmissible`, więc może być
++       typem parametru handlera i argumentem `Reply`, a `Channel#send` przyjmuje
++       go. Nie jest eksportowany do `soundness` – `Message` z fulminate zajmuje tę nazwę w
++       module zbiorczym – więc importuje się go po nazwie: `import perihelion.Websocket.Message`.
+
+% 2 1 0 01867b6e6cafe21c05d10a3910b063f9
+
+% 3 1 0 03c2d799168037a40e91ee7e3659f2bc
+
+% 2 1 0 1f757edcbe626ea5054dea547a99db2f
+
+% 0 1 0 108515f6d52a4e801a3a2904e69a8f54
+
+% 0 1 0 021573f72ab8f23a15be1aba38458561
+
+% 0 1 0 18be03259578b3981e0939a5e735c2ad
+
+% 1 1 0 1f302432427523c404929644515a00f2
+
+@ 0 7 0 0c0f832805b7be4f1a0e27fc2c132d5e
++   entry .ingressive   formalne `Message is Ingressive`, dzięki któremu `Message` spełnia ograniczenie komunikatu w `webSocket`
++       Czytnik już produkuje `Message`, więc kanał `Message` jest dekodowany przez
++       tożsamość, a ta instancja nigdy nie jest stosowana; istnieje po to, by surowy typ spełniał
++       wymaganie `Ingressive`, i znajduje się w obiekcie towarzyszącym, więc nie wymaga importu.
++   entry .transmissible   serializuje komunikat do jednej kompletnej, niezamaskowanej ramki
++       `Text` staje się ramką tekstową ze swoich bajtów UTF-8, a `Binary` ramką binarną, więc
++       `Message` może być argumentem `Reply` lub `Conclude` i jest zapisywany dosłownie.
+
+@ 0 1 0 08e6f3d136b305e802acfa93658241ee
++ entry .Channel   wychodząca strona połączenia: bezpieczna wątkowo kolejka ramek przepompowywanych do gniazda
+
+% 1 1 0 11c4b0e9d9c2fe6b0b0caee48f124aba
+
+@ 0 9 0 16658b2ce007faf21064650052dc6dbb
++       `Channel` to ograniczony przewód zakodowanych ramek. Czytnik (odpowiadający na `Ping`
++       i `Close`), pętla handlera (`Reply` i `Conclude`) oraz własne `#send` programu
++       dodają tu ramki do kolejki pod blokadą, a jedna pompa – mechanizm zapisu odpowiedzi serwera albo
++       demon klienta – opróżnia ją do gniazda, więc pełna kolejka wywiera przeciwciśnienie na każdego
++       producenta. Każda ramka jest maskowana raz na tej granicy przez `Websocket.Masking` w zasięgu:
++       przepuszczana przez `Websocket.Masking.Server`, maskowana świeżym kluczem przez `Websocket.Masking.Client`.
++       Konstruuje się go z `Websocket.Masking` i `Buffering`; `Websocket#channel` i połączenie
++       klienta przechowują kanał swojego połączenia, a program sięga do niego przez nie.
++       Publiczny w pakiecie, nieeksportowany do `soundness`.
+
+% 0 1 0 1dd0ecd19a35a3250bd156936d95a2c1
+
+% 0 1 0 165089220e647c38108ff8dae5aa494f
+
+@ 0 3 0 058218201862cde11303816654c9bd9d
++   entry #send   dodaje do kolejki jeden komunikat jako jedną kompletną ramkę, logując `Websocket.Event.Sent`
++       Przyjmuje `Message`; ramka jest opróżniana natychmiast, ponieważ interaktywny protokół musi
++       dostarczać każdą ramkę bez zwłoki, zamiast wypełniać blok. Wymaga `Websocket.Event is
+
+% 0 1 0 00f9ad8546111c7d06faba929a71faa6
+
+@ 0 2 0 0c0c740dbed11da50ef0907d771b07dd
++   entry #stop   kończy strumień wychodzący, więc pompa kończy pracę, a treść połączenia się kończy
++   entry #close   dodaje do kolejki ramkę zamknięcia z kodem (domyślnie `1000`), loguje `Websocket.Event.Closed` i zatrzymuje kanał
+
+@ 0 1 0 1d6d4af5003279c50eefa90779fea3d5
++ entry .Reader   odczytuje ramki drugiej strony jako komunikaty: składanie, `Ping`/`Pong`, `Close`, walidacja UTF-8
+
+% 1 1 0 1dba574e4eef7b0e1ab04e721d8008c3
+
+@ 0 12 0 161f822db50791b00228b640c9d3231c
++       `Reader(body, channel)` to przychodząca połowa współdzielona przez serwer i klienta. Jego
++       `#messages` to leniwy `Chain[Message]` nad ramkami sparsowanymi z `body` (typu
++       `Spring[Data]`, pożyczanego ponownie przy każdym wymuszeniu łańcucha): ramki danych są akumulowane
++       aż do tej z FIN, komunikat tekstowy jest walidowany jako UTF-8 przyrostowo, więc błędne
++       bajty natychmiast przerywają połączenie, na `Ping` odpowiada się `Pong` przez
++       kanał, `Pong` jest odrzucany, a `Close` jest odsyłany echem (z `1000` przy braku
++       kodu), kanał zatrzymywany, a łańcuch kończony. Naruszenie zgłasza
++       `Websocket.Error`, z `Truncated` dla przedwcześnie urwanej treści. Wymaga
++       `Tactic[Websocket.Error]` i `Websocket.Masking` swojej strony. Kursor nad treścią jest
++       tworzony dopiero przy wymuszeniu pierwszego komunikatu, więc serwer może wysłać swoje `101`, a
++       klient swoją pierwszą ramkę, zanim jakikolwiek odczyt się zablokuje. Publiczny w pakiecie, nieeksportowany
++       do `soundness`.
+
+% 2 1 0 1bb6c6f9d4898ad616f536bc719db004
+
+% 3 1 0 0a55f19edbefb6741a9b91fddc0790a2
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 10663412eea971e402de49e0f8b1b802
+
+% 0 1 0 146b15c27016c22f08affd79657a602d
+
+% 0 1 0 01695849077b5cc30440a2ef48c02fbe
+
+% 0 1 0 137bd5e60597627010bd732b6d1a7dce
+
+% 0 1 0 04e623de3e2e52a7121d792fc67f98be
+
+% 1 1 0 07b4a65c9de603c80ef61ed1e1e9388d
+
+% 1 1 0 1d84b1e9f313e24d0164eaeb86837970
+
+% 0 1 0 12d52007b7e3bf07141814c22454a5f7
+
+@ 0 1 0 0934f57c8206c92d0f67ca00a355341a
++   entry #messages   złożone komunikaty, leniwie, aż druga strona zamknie połączenie lub treść się skończy
+
+@ 0 4 0 1bdea7082c12861b07f5493e205d3a35
++ entry .over   oznacza wartość formatem, w którym jest przenoszona, `value.over[Json]`, by odpowiedź serializowała się przez niego
++     `over` to fantomowy typ składowy, więc `value.over[Json]` jest pustym rzutowaniem na `value over
++     Json`, które wybiera `overTransmissible` dla `Reply` lub `Conclude` i pasuje do
++     parametru handlera o typie `(ping: Ping over Json)`. Eksportowany do `soundness`.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 2 1 0 056eff890dc280701473075183f5b4b3
+
+% 0 1 0 1ab72a907c4906e20db82abd0401602b
+
+% 1 1 0 165600c6d046526a0b8082e6fce6081d
+
+@ 0 6 0 01b236f5eaee99d019a965f9de52c8c2
++ entry .overTransmissible   serializuje `value over format` jako jedną ramkę tekstową z tekstem formatu
++     Given, który czyni każde `value over transport` `Transmissible`, gdy `transport is
++     Encodable in Text` (jak `Json` i `Tel`) i `value is Encodable in transport`, z
++     `Codepage` dla bajtów. Wartość jest kodowana do formatu, format do tekstu, a
++     tekst opakowywany w pojedynczą niezamaskowaną ramkę tekstową, więc `Reply(Ping(1).over[Json], …)`
++     to jedna kompletna ramka. Eksportowany do `soundness`.
+
+@ 0 6 0 022a0a86ca6a5379033c4c2cd37ac4f5
++ entry .overIngressive   dekoduje bajty ramki tekstowej jako `value over format`
++     Given, który czyni każde `value over transport` `Ingressive`, gdy `transport is
++     Decodable in Text` i `value is Decodable in transport`. Wymaga `Charset` do
++     dekodowania bajtów oraz, ponieważ dekodery formatów są warunkowe względem taktyki,
++     bezpośrednio `Tactic[Hazard]` – spełnia ją `strategies.throwUnsafely` – więc niepoprawny
++     ładunek rzuca wyjątek, zamiast być zgłaszanym przez węższą taktykę. Eksportowany do
+
+% 0 1 0 01b875b4c221dc6d1fa7211eb7c146cd
+
+@ 0 10 0 178ad2e60c411b951f23a17f2ad55e56
++ entry .wsClient   czyni `Websocket.Url` transportem coaxial `Duplexable`: `url.react`, `url.exchange`
++     Given, który łączy klienta. `connect` otwiera TCP (`ws`) lub TLS (`wss`, przez
++     `SecureEndpoint` i `Tls` w zasięgu) do hosta i portu z URL-a, wysyła
++     uzgadnianie ze świeżym 16-bajtowym `Sec-WebSocket-Key`, odczytuje dokładnie blok nagłówków
++     odpowiedzi (nigdy dalej, w ramkę, której serwer nie wysłał), sprawdza `101`
++     i poprawność `Sec-WebSocket-Accept`, po czym uruchamia demona przepompowującego wychodzące
++     ramki; `receive` to `messages` połączenia; `transmit` maskuje i buforuje jeden
++     komunikat jako jedną ramkę; `close` wysyła `1000`. Jest `Duplexable`, a nie jedynie
++     `Serviceable`, ponieważ przez jego kanał można bezpiecznie wysyłać współbieżnie, co
++     pozwala `exchange` wysyłać z wyprzedzeniem.
+
+% 2 1 0 1e7b32327b74cc15032403cf0f913db4
+
+% 3 1 0 0d207794cac8f0040f4634635c88515f
+
+% 4 1 0 04978ef7445ce29a1d089f50631ff9c4
+
+% 5 1 0 05d6de6699f9b4aa1c10e4c985e4f1cd
+
+% 0 1 0 15afa59c6f4168b61350c610bbcf3dec
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 1 1 0 0429402ebfafdf9c0640a2a85f24ef9d
+
+% 2 1 0 1ef571dc91da5cfe109a49a0476cefb5
+
+% 3 1 0 0ddf0c39c863f9541fa065d430a5fc11
+
+% 4 1 0 0b63f2adc53930f901b81cd9051e8946
+
+% 1 1 0 0c8301042015c0570ab1b7128fa8a91a
+
+% 2 1 0 0ad4d9087b657cbd105b1e9366b88d57
+
+% 3 1 0 0c67a1059e0483d1178cee0471a33f2c
+
+% 4 1 0 01857a8b155e53e00556043080a6f7a6
+
+% 6 1 0 029903b13b46e60700f3db5e021070ca
+
+% 8 1 0 03c3eef1b5ecba9a0af81904d4945a21
+
+% 0 1 0 0e2346fe6b5fc62210a69b05dfe6b60e
+
+% 0 1 0 03bd8ba15f2f8b330bc26dbb1eaa9eb8
+
+% 0 1 0 0918d98002d2adb7196e46fbd7a6083c
+
+% 0 1 0 072f708db04047851ada2a3c93e27455
+
+% 1 1 0 0f48db55935af8520a3a2890578bc0df
+
+@ 0 8 0 1c43530c01db25ea1f95fb504175ca77
++     `url.react(initial)(handle)` czeka, aż serwer odezwie się pierwszy; `url.exchange
++     (initial)(handle)(interact)` przekazuje `interact` obiekt `Transmitter` przed rozpoczęciem pętli.
++     Obie zwracają stan końcowy, gdy handler zakończy pracę lub serwer zamknie połączenie. Given
++     wymaga `Online` (`internetAccess.online`), `Monitor` i `Probate`,
++     `Every[Socket.Option.Tcp]`, `Tls` oraz taktyk dla `Websocket.Error`,
++     `Http.Response.Error` i `Port.Error`, i zachowuje je, więc jest zdolnością.
++     Nie jest eksportowany do `soundness`, ponieważ syntetyzowana metoda przekazująca utraciłaby jego
++     rafinację: `import perihelion.wsClient`.
+
+@ 0 1 0 187d986df208594f0dc95abecbea210e
++ entry .WsSessional   pożycza połączone `Websocket.Connection` zasięgowi: `url.session { connection ?=> … }`
+
+% 1 1 0 012f626fd7ed91931d988d818aafbe3e
+
+@ 0 7 0 00d2caedbe8208f712284f732f837c06
++       Instancja `Sessional` dla `Websocket.Url`, kryjąca się za givenem `wsSessional`. `#session`
++       łączy się przez `wsClient`, pożycza `Websocket.Connection` – po uzgadnianiu, z działającą
++       pompą – lambdzie i zamyka je ramką zamknięcia `1000`, gdy lambda się kończy,
++       niezależnie od tego, czy zwraca wartość, czy rzuca wyjątek. Połączenie jest świeżą zdolnością, więc ani ono, ani
++       strumień od niego pożyczony nie może opuścić bloku. Do konsumpcji w postaci maszyny stanów
++       naturalnymi formami są `url.react` i `url.exchange`; sesja służy interakcji,
++       która nie pasuje do handlera wywoływanego dla każdego komunikatu.
+
+% 2 1 0 0e777d5abc69a1de0d31430e5d5a2d54
+
+% 3 1 0 1f9df24ce557fa9e1998503e54024d50
+
+% 4 1 0 1f721d0962aa3bf8083e25d54744a9eb
+
+% 5 1 0 0932cfa5072a739104f7a0351f072e17
+
+% 0 1 0 1641402876a5c5c51ca8f30b603ace71
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 1 1 0 0081119c3d60eabd1aceb39da2249178
+
+% 2 1 0 14afc0a3a011f4bd062e52375aaa32b0
+
+% 3 1 0 131d9a10dfbd85bb0f2f07f6d2ffde30
+
+% 4 1 0 16b71aa4b037dbd31b3a8c9c221f00af
+
+% 2 1 0 190e8e62bd75063d1ce7b2c2bfcd363d
+
+% 0 1 0 14fa2f0eff98171b0d0c8d9bb68a9b02
+
+% 0 1 0 0599d39cba00a48a08a1319c09b4e569
+
+% 1 1 0 0864af7521e0e6c41d049ebb3ebd542c
+
+@ 0 2 0 0ae0423617a84ece1f0740cfc32e16b9
++       Wymaga givena `wsClient` (jako parametru przechwytującego), `Monitor` oraz
++       `Tactic[Socket.Error]` na wypadek awarii połączenia.
+
+% 0 1 0 02051f0ca203583c09af34c9b86346c4
+
+% 0 1 0 1ab93f0e39c86b6f17642610bcb46ce8
+
+@ 0 3 0 1ba0be66dcad83181ffa775e30a543b1
++   entry #session   łączy się z URL-em, pożycza połączenie lambdzie i zamyka je potem
++   entry #Result   pożyczony uchwyt: świeże `Websocket.Connection^`
++   entry #Self   podmiot: `Websocket.Url`
+
+@ 0 4 0 0e3e7b8960d42c11114c51f3b1bdb030
++ entry .wsSessional   given `WsSessional`: importowany po nazwie, `import perihelion.wsSessional`
++     Budowany z givena `wsClient`, `Monitor` i `Tactic[Socket.Error]`, które
++     zachowuje. Nieeksportowany do `soundness`, ponieważ syntetyzowana metoda przekazująca utraciłaby jego
++     typ z adnotacjami przechwytywania.

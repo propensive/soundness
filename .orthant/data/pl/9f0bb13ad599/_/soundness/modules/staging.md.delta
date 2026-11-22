@@ -1,0 +1,12 @@
+orthant 2 language
+
+% 0 1 0 064ababe6a63dda410fe6ab94b2902cf
+
+@ 0 6 0 0151eecb9f22598d1b6186f02898689d
++ Kod wykonywany gdzie indziej może zawieść, ale błąd zgłoszony w etapowanym bloku nie wraca
++ przez granicę jako on sam. `dispatch` zgłasza tylko `Compiler.Error`, jeśli etapowany kod się
++ nie kompiluje, albo `Rig.Error` w razie niepowodzenia środowiska. Przy środowisku `Jvm`
++ etapowany kod, który rzuca wyjątek, sprawia, że jego podproces kończy się niepowodzeniem,
++ zgłaszanym jako `Rig.Error` z przyczyną `Invocation`: tym samym błędem co dla podprocesu,
++ który nie chciał się uruchomić. Etapowany kod, który może zawieść, powinien więc zwracać swoje
++ niepowodzenie jako wartość.

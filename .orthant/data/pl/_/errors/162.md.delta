@@ -1,0 +1,31 @@
+orthant 2 language
+
+@ 0 1 0 164866d47a5593a40353d46909ae21c2
++ # `SN-162` – użycie komentarzy blokowych (wycofany)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Ten błąd już nie istnieje. Strona jest zachowana, aby kod nie został użyty ponownie i aby
++ odwołanie do niego ze starszego wydania nadal dało się rozwiązać.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Co się z tym stało
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ Wtyczka kompilatora Decorum, która zgłaszała ten błąd, została wydzielona z Soundness i
++ jest teraz [Consequent](https://github.com/propensive/consequent), samodzielnym narzędziem
++ sprawdzającym Consequent Style. Reguła przetrwała tam pod nowym identyfikatorem, w którym litera
++ nazywa zasadę, z której się wywodzi:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  Było
++ column  Jest
+
+% 0 1 0 155fc86f5e274aed0bd0497b7f1ee16f
+
+% 0 1 0 0921e4dd835f2af90cd3f01c4ee0ca57
+
+% 0 1 0 1040dff3dc97644e08d04cb8b728c092
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

@@ -1,0 +1,30 @@
+orthant 2 language
+
+@ 0 11 0 0d8437f96b7f51390097d96c0bd1f4ef
++ Wtyczka flare (przypięta w `etc/tools`, skonfigurowana przez `.pyrocosm/flare/config.tel`,
++ włączona w każdym sprawdzanym komponencie opcjami `-P:flare:` w `flareToolchain`) dostarcza
++ spisu: każda reguła konfiguracji policzona w źródłach – zadeklarowane furtki (`unsafely`,
++ rodzina `caps.unsafe`, każda nazwa z prefiksem `unsafe`, każda metoda bramkowana tokenem),
++ obejścia zaufania do kompilatora (`asInstanceOf`, `.nn`, `@unchecked`, `???`, klauzule
++ przechwytujące wszystko), odczyty częściowe i konstrukcje imperatywne, które ma ograniczać
++ jądro strumieniowania. `make unsafety` uruchamia `flare metrics --dry-run` i go wypisuje;
++ `flare metrics` zapisuje go w notatkach git, commit po commicie, więc trend żyje w git, a nie
++ w akapicie mapy drogowej. Jedna reguła już blokuje: `S1.1`, metoda przyjmująca
++ `(using Unsafe)` musi nazywać się `unsafe…`, inaczej kompilacja się nie powiedzie; jej
++ odwrotność `S1.2` jest doradcza, a osiem definicji, które ją łamią, wymieniono w
++ `doc/work/standards/naming.md`.
+
+@ 0 7 0 0d173ddf177ff3580a0262c16790a340
++ Przepisy, które czynią sprawdzanie przechwytywania i separacji wykonalnym – kiedy typ jest
++ Exclusive, Shared, Unscoped, Mutable lub Pure i jakie pułapki kraty kryją się między nimi;
++ podręcznik uczciwych givenów (`(tactic: Tactic[E]) => ((X is TC)^{tactic})`, jawne
++ przechwytujące dowody zamiast ograniczeń kontekstowych); gdzie świeży wynik może, a gdzie nie
++ może zostać wybity; spoiny `consume` i pożyczek; co test może, a czego nie może robić –
++ istnieją tylko jako wpisy w `rep/DECISIONS.md`, dzienniku liczącym 2400 wierszy. Ich miejsce
++ jest w `doc/work/standards/capabilities.md`, wraz ze słownikiem tagów, na którym polega
++ `safety-2`, i jedną dozwoloną postacią furtki dla każdego tagu, oraz z odsyłaczem z
++ `doc/work/philosophy/capture-checking.md`.
+
+@ 0 2 0 184abde0f441241915e910e4b48261e0
++ Ukończone, gdy: `doc/work/standards/capabilities.md` istnieje, definiuje każdy tag, który rozpoznaje
++ spis, a sekcje przepisów w `rep/DECISIONS.md` odsyłają do niego, zamiast powtarzać jego treść.

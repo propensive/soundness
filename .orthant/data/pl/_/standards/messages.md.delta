@@ -1,0 +1,167 @@
+orthant 2 language
+
+@ 0 1 0 040d3839eadabb860ed437b47e76c5de
++ # Standardy komunikatów Soundness
+
+@ 0 7 0 1157aed8e8bbd5f11ba5f6a4f1937a96
++ Ten dokument definiuje styl domowy dla czytelnych dla człowieka komunikatów pisanych
++ interpolatorem `m"…"`: treści błędów `fulminate`, `Message` niesionego przez zdarzenie logu
++ `eucalyptus` oraz diagnostyk zgłaszanych przez makro. Wszystkie trzy dzielą jeden styl,
++ ponieważ czytelnik spotyka je w tych samych miejscach – w terminalu, w logu, w błędzie
++ kompilatora – i nie powinien móc poznać po prozie, który moduł ją napisał. Dokument uzupełnia
++ `logging.md` (kiedy i co logować) oraz `naming.md` (jak nazywa się typy błędów). Przykłady
++ pochodzą z `lib/*/src/core/*.scala`.
+
+@ 0 1 0 1a916e1fddcfa8c50e66201e1e56795e
++ ## 1. Rejestr
+
+@ 0 2 0 0a441a9021ca74b90efb97dd772c5173
++ Komunikat stwierdza fakt o świecie w chwili, w której został zapisany, tak jak powiedziałby to
++ na głos kompetentny kolega: spokojnie, konkretnie i krótko.
+
+@ 0 17 0 010c4815c5ee02ca1e636691bdf0d6f7
++ - **Mała litera.** Komunikat zaczyna się małą literą, chyba że jego pierwsze słowo jest nazwą
++   własną lub identyfikatorem (`Burdock can only repackage a JAR file, not a directory`).
++ - **Bez kropki na końcu.** Komunikat jest fragmentem, który interpunkcją opatruje otaczające
++   go przedstawienie; jest osadzony w śladzie stosu, poprzedzony kodem albo wymieniony jako
++   punkt listy, a kropka na końcu byłaby błędna w każdym z tych przypadków.
++ - **Czas teraźniejszy, tryb oznajmujący.** Należy stwierdzać, co *jest*, a nie co *się
++   stało* ani co *powinno* być: `the JAR has no manifest`, a nie `the JAR did not have a
++   manifest` ani `the JAR should have a manifest`. Wyjątkiem jest operacja, która zawiodła jako
++   całość – stosuje się wtedy czas przeszły, ponieważ faktem jest niepowodzenie: `could not
++   list the releases of $repository (HTTP $status)`.
++ - **Zwięzłość.** Należy powiedzieć jedną rzecz, której czytelnik potrzebuje, by działać. Bez
++   przeprosin (`sorry`), bez alarmu (`fatal`, `!`), bez porad, chyba że środek zaradczy jest
++   zarówno pewny, jak i krótki, i bez powtarzania tego, co mówi już nazwa typu błędu.
++ - **Bez żargonu implementacji.** Komunikat nazywa rzeczy w kategoriach czytelnika – port,
++   ścieżka, nagłówek, pole – nigdy klasą, metodą ani zmienną biblioteki, która go zgłosiła.
++   `unknown variables reference` jest skierowane do klienta DAP; `null frameRef in scopes()`
++   by nie było.
+
+@ 0 1 0 0061313c865e5a150c82da9f02a2b1b8
++ ## 2. Struktura
+
+@ 0 2 0 04afbb509a01dc520079381480bbc896
++ Komunikat ma podmiot, czyli konkretną rzecz, której dotyczy błąd, oraz orzeczenie, czyli to,
++ co jest z nią nie tak. Należy zaczynać od podmiotu, gdy jest tym, czego czytelnik będzie
++ szukał:
+
+% 0 1 0 1d7c7855fd07bfa012c75794e827bf90
+
+% 0 1 0 09b5fa9fdb683198093442a904f2e1fa
+
+% 0 1 0 0f22a4e1f16aab361d157fcc315c0608
+
+@ 0 5 0 067fd17856774e3f06ef5b7ebcc3dc87
++ Kontekst się interpoluje, a nie opisuje. Komunikat, który mówi `the file could not be read`,
++ zmusza czytelnika do szukania pliku; `${path} could not be read` – nie. Należy nazwać
++ konkretny zasób, którego dotyczy błąd – ścieżkę, port, URL, identyfikator, nazwę nagłówka,
++ wiersz i kolumnę – i podawać liczby zawsze, gdy liczba jest już pod ręką: `${items.size} CBOR
++ issues`, a nie `some CBOR issues`.
+
+@ 0 2 0 11a4fb64ca443bec16c53b658fb3f9e1
++ Tam, gdzie przyczyna jest znana i różni się od objawu, dołącza się ją w nawiasie albo po
++ dwukropku, w tej kolejności preferencji:
+
+% 0 1 0 165c774a6a8e0b341b80d7bc5dbcd66d
+
+% 0 1 0 11318639235892601a6666bc7cbf0da0
+
+@ 0 2 0 190ce2e9f97341cd02befd39671c66b0
++ Komunikat, który agreguje inne, mówi, ile ich jest, i pozwala instancji `Communicable` dla
++ `List[Message]` przedstawić je pod sobą jako punkty listy:
+
+% 0 1 0 1f95f053fe4aeabe10e7c0f5ad8e99dc
+
+@ 0 1 0 04697c2f9668183b11ddfb09fd94b4d1
++ ## 3. Słownictwo
+
+@ 0 1 0 060086407914c9690ec020fde74a7b18
++ Każda powtarzająca się sytuacja ma jedno sformułowanie:
+
+% 2 1 0 102bb8a92c02849f1046d94665e0b49b
+
+@ 0 10 0 073bb44515ed9bcd0d12d4e59adc43e5
++ column  Sformułowanie
++ column  Dla
++ column  Przykład
++ row  *is not a valid X*  wartość, której nie da się sparsować jako X  `the value $value is not a valid ISO 8601 repeating interval`
++ row  *is not a known X*  wartość, która się parsuje, ale nie należy do zbioru
++ row  *could not* + czasownik  operacja, która zawiodła w środowisku (sieć, system plików, proces)  `could not list the releases of $repository`
++ row  *cannot* + czasownik  żądanie, którego biblioteka odmawia z założenia  `a command cannot end with an escape character`
++ row  *has no X*  brakująca część  `the JAR has no manifest`
++ row  *already has X*  część powodująca konflikt
++ row  *must*  tylko reguła, którą czytelnik może spełnić, zmieniając swoje dane wejściowe  `a port number must be specified after a colon`
+
+% 1 1 0 00c76919e9eefe48191d87bac4d9a8b0
+
+@ 0 5 0 1ed03f945cc5a5cb05569802eabdaea5
++ - Należy preferować konkretny rzeczownik w liczbie pojedynczej (`the manifest`, `this JAR`,
++   `the document`) zamiast kategorii (`input`, `data`, `object`) oraz rodzajnik określony, gdy
++   w kontekście jest jedna taka rzecz.
++ - Nigdy *invalid*, *illegal*, *bad* ani *error* jako całe orzeczenie: nazywają one fakt
++   istnienia komunikatu, a nie jego treść.
+
+@ 0 1 0 15aefff1dd791f3906d891ee81e2f0b9
++ ## 4. Czego komunikat nie może zawierać
+
+% 2 1 0 1886ff37e4f5826f11f7cee32eba1491
+
+@ 0 6 0 1c7b9222dbe5d0f30faea783c7c494f3
++ column  Nigdy
++ column  Zamiast tego
++ row  sekret: token, hasło, materiał klucza, ciasteczko ani wartość `Authorization`, nawet częściowo  *źródło* danych uwierzytelniających, jeśli pomaga (`the GITHUB_TOKEN environment variable`)
++ row  ładunek: treść żądania lub odpowiedzi, zawartość pliku, zserializowany dokument  błędny *fragment* (wiersz, token, pole) i jego pozycja
++ row  ślad stosu lub tekst wyjątku  przyczyna wyrażona ponownie w kategoriach §3, z oryginałem dołączonym jako przyczyna błędu
++ row  formatowanie: sekwencje sterujące ANSI, Markdown, spacje wyrównujące  nic; `Message` jest ustrukturyzowany, a o jego wyglądzie decyduje renderer
+
+% 1 1 0 064c95d6aab1dbf20ad37031b4943f55
+
+@ 0 1 0 0cd39488b492804a1e929b54f96bad9f
++ ## 5. Składanie przez `Communicable`
+
+@ 0 3 0 17218340da6f11590577468a6a8db6a7
++ `Message` nie jest napisem. Interpolator `m"…"` zachowuje każdą interpolowaną wartość jako
++ część `Message`, przekształconą przez instancję `Communicable` tej wartości, więc formatowanie
++ żyje w jednym miejscu dla każdego typu, a nie w każdym komunikacie. Konsekwencje:
+
+@ 0 13 0 01f2eb64620692c5048fbfc08f651825
++ - Należy interpolować typowaną wartość, a nie jej przedstawienie: `m"…$path…"`, a nie
++   `m"…${path.show}…"`. Instancja dla `Path` decyduje, jak ścieżka brzmi w prozie, i każdy
++   komunikat o ścieżkach jest z tym zgodny.
++ - Typowi, który pojawia się w komunikatach, należy dać instancję `Communicable` w jego
++   obiekcie towarzyszącym, zwykle derywowaną z jego instancji `Textualizable` lub
++   `Showable`; nie należy przedstawiać go ręcznie w miejscu wywołania.
++ - Tekst, który może być pusty lub dopełniony, jest ujmowany w cudzysłów przez instancję dla
++   `Text` (`“ ”`), tak by wartość nieobecna lub złożona z białych znaków była widoczna; nigdy
++   nie należy dodawać własnych cudzysłowów wokół interpolowanego `Text`.
++ - Lista komunikatów jest listą, a nie złączonym napisem: `List[Message]` jest przedstawiana
++   jako punkty listy, po jednym w wierszu. Nie należy łączyć komunikatów przecinkami za pomocą
++   `join`.
++ - Diagnostyki czasu kompilacji zgłaszane przez makro niosą swój kod bolt w standardowym
++   przedrostku (`m"${bolt.label} $message"`); treść komunikatu podlega temu standardowi bez
++   zmian.
+
+@ 0 1 0 1f19b20982c8aa011c3cc1048e9e114f
++ ## 6. Zdarzenia logu
+
+@ 0 5 0 124b19d4644c3db50691b1e5d6f7d157
++ Zdarzenie logu jest wartością typu `Event` modułu, a komunikat przedstawia jego instancja
++ `Communicable`. Obowiązuje ten sam rejestr, z jednym dodatkiem: zdarzenie nazywa operację i
++ jej podmiot (`resolved $hash to $url`, `listening on $port`), w czasie przeszłym, gdy operacja
++ się zakończyła, i w imiesłowie czynnym, gdy się zaczyna. Poziomy wybiera się według
++ `logging.md`; komunikat nie powtarza poziomu (`warning:` nie jest częścią komunikatu).
+
+@ 0 1 0 1e7de92576a275d310f2a572e2294fa0
++ ## 7. Lista kontrolna
+
+@ 0 2 0 02bbabe8605fc958162d9fab8269d7a5
++ Przed dodaniem komunikatu należy przeczytać go tak, jak się pojawi – po `[↯/s.…]`, na liście
++ dwunastu albo na końcu śladu stosu – i sprawdzić:
+
+@ 0 5 0 0d19267b8db329d30ee8839805621a76
++ 1. mała pierwsza litera, brak kropki na końcu, czas teraźniejszy;
++ 2. konkretny zasób, którego dotyczy błąd, jest interpolowany jako typowana wartość;
++ 3. liczba jest podana, gdy jest znana;
++ 4. nic tajnego, żadnego ładunku, żadnych nazw z implementacji;
++ 5. nazwa typu błędu i komunikat nie mówią tego samego.

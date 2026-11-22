@@ -1,0 +1,1833 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0b040cf822ce15ef18fff5ee534dad92
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1db4ef96f90d0e33015c642b578fe240
++ info   natywny klient SSH-2: klucze hostów, konfiguracja klienta, transport, uwierzytelnianie i zdalne polecenia
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 136498f704958ab7076e70c21aab0f06
++     _Susurration_ to klient SSH-2 napisany w całości w Scali: nie uruchamia się żadnego
++     pliku binarnego `ssh` i nic nie jest osiągane przez JNI. Odczytuje dwa pliki, które
++     odczytuje każdy klient – `known_hosts` jako `KnownHosts` i `~/.ssh/config` jako
++     `SshConfig` – realizuje warstwę transportową z RFC 4253 nad współosiowym `Duplex`
++     (`Transport`: wymiana identyfikacji, wymiana kluczy i szyfrowany protokół pakietów),
++     uwierzytelnia kluczami publicznymi zgodnie z RFC 4252 (`Signer`, z załadowanego
++     `PrivateKey` lub z `ssh-agent`) i uruchamia polecenia przez protokół połączenia z RFC
++     4254 (`Session` i `Channel`). Każdy komunikat jest kodowany typami przesyłowymi z RFC
++     4251, odczytywanymi i zapisywanymi przez `Wire.Reader` i `Wire.Writer`.
+
+@ 0 3 0 0d4e4e224c7d37ee0770b0d105df2ad7
++     Elementy składa `Ssh.Endpoint`: host, port, użytkownik i podpisujący, którzy
++     potwierdzają tożsamość użytkownika. Jego `session` łączy się, sprawdza klucz hosta
++     serwera względem polityki `Ssh.HostKeys` w zasięgu, uwierzytelnia i pożycza `Session`,
++     która uruchamia polecenia:
+
+% 2 1 0 15bea52a78219d94091838f8b3fdbf51
+
+% 3 1 0 11917a34ab01378106646bc5835ee0a9
+
+% 1 1 0 0c5ceab6fcbd3b691fba3cf9ed81c8a0
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 09583daf6313cc2613f1f3df627c02f3
+
+% 0 1 0 1166258a5e9c00d8005e2019d58fd80e
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 0 1 0 14a68bffa6b708411ac2ce37360b6c83
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 0 1 0 19d9cd25dbdd427008960b33feb31ce2
+
+% 0 1 0 1ef4e1c4939a2d8918a69110e3dc72dd
+
+% 0 1 0 0c93b0cece99d3950e84029f9398b35b
+
+% 0 1 0 1078672f4bcce65b0d8aded88e475a63
+
+% 0 1 0 120d472e0d84702d04f5ad59f0d79da4
+
+% 0 1 0 12cb7b4c07cf84a714feac848280a015
+
+% 0 1 0 1bff5a5414aaca200fc8eb1fde9fb9f8
+
+% 0 1 0 04589a5261f958cb12c6e099e08f8670
+
+% 1 1 0 1cd065fdad2dbb08092e76ebfeca6b60
+
+@ 0 4 0 00c98debb6341b831a1b71aeaca2be50
++     Pod endpointem każdej warstwy można używać samodzielnie, a program, który potrzebuje
++     czegoś innego niż polecenie – powiedzmy protokołu pakietów gita – buduje na warstwie,
++     której potrzebuje. Obserwowanie, jak warstwy nakładają się na siebie, najjaśniej
++     pokazuje, jak biblioteka jest złożona:
+
+% 2 1 0 0350ffb5c76b81cc04d7272bf1b3ef29
+
+% 3 1 0 1d6a559b4594bb9a032f19caa3655251
+
+% 1 1 0 0ba4bcdec8ddbebd0e9feee2186cf033
+
+@ 0 1 0 0c5fbddd72f64a440c4c6513134609b3
++       label Transport: identyfikacja i wymiana kluczy nad połączonym dupleksem
+
+% 1 1 0 09fba7d48915001e07fd6fed7cb8b4f0
+
+% 2 1 0 0f8b576b991fb54e169a6944db6b92ec
+
+% 3 1 0 16a5a46b29277e7e1134cc69947373c9
+
+% 4 1 0 0ecbd6c12a3577690f4fdee3458c518a
+
+% 0 1 0 0aacc9eea8da631419e969eb77e10325
+
+% 1 1 0 06c4d37e33adf13e1f1ad05e3056a117
+
+@ 0 1 0 17f8941edb987d1b0ab8a5871a1bdf65
++       label Uwierzytelnianie: wygrywa pierwszy podpisujący zaakceptowany przez serwer
+
+% 1 1 0 0b3d738ce307ca5c0bff8c1e66218c64
+
+% 2 1 0 1db9e90484c12a6c1e3984d2f94af710
+
+% 3 1 0 06f970f6c2925fc312ab1f1e194b4a8a
+
+% 4 1 0 023b20d022113d8d06eb74162e21f568
+
+% 5 1 0 049efc7135f7161101394e5cbe12d8ec
+
+% 1 1 0 1711b987648f8f8c12bb6b1153037c4e
+
+@ 0 1 0 017765fb06e9437306b4184356be5fc2
++       label Sesja nad uwierzytelnionym transportem uruchamia polecenie
+
+% 1 1 0 0580e7c64758df1700bda42d7a697122
+
+% 2 1 0 13a50ecd2706f66f0cb99227acae19f4
+
+% 3 1 0 1a98bfa29bc27496136dbb3bdb4e58aa
+
+% 4 1 0 1b14064adf1cb1ae0066e38bfa6cd1d2
+
+% 5 1 0 018017b864817b42169a95ca64cc00b9
+
+% 0 1 0 19cc7a660a3d35b80f6b4ee26821fc42
+
+% 0 1 0 05fbcc2dcaeb6832144e599491184d96
+
+% 0 1 0 02828580cd693b0c12fb1607231ccf2e
+
+% 0 1 0 15f10310e91ad69e0d76c40deecdfd0e
+
+% 1 1 0 10ce56935fa9767e095a4629c28839cc
+
+@ 0 1 0 0f32909e02fbdc36096ee09ad3a4e56b
++       label Sesja endpointu robi to wszystko, a potem zamyka połączenie
+
+% 1 1 0 0ecf946b527f2d23097b6f733d30c6c7
+
+% 0 1 0 1c886aeb788d3857187383c24f777db3
+
+% 0 1 0 029259315e8534c11e7b4dadcee1444c
+
+% 1 1 0 1c916a3859781e1611bcafe8152131af
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 7 0 1f806fdddab164b01cc9ebaa879b30aa
++     Klient jest celowo jednowątkowy: transport jest sterowany przez jeden wątek, który
++     wysyła komunikat i odczytuje odpowiedź, a taki jest kształt każdej wymiany, jaką
++     wykonuje polecenie lub klient gita. Oferowane szyfry to szyfry AEAD, które ma każdy
++     współczesny serwer (`chacha20-poly1305@openssh.com`, `aes256-gcm@openssh.com`,
++     `aes128-gcm@openssh.com`), wymiany kluczy to `curve25519-sha256`
++     i `ecdh-sha2-nistp256`, a klucze hostów mogą być Ed25519, ECDSA P-256 lub RSA (z SHA-2).
++     Ponowna wymiana kluczy po przekroczeniu limitów z RFC 4253 nie jest jeszcze
++     wykonywana.
+
+@ 0 7 0 0d62e5073ec80fb90f64da6595346064
++     Wartości kontekstowe potrzebne warstwom: `Ssh.Provider` (`Crypto` z X25519, ECDH,
++     Ed25519, ECDSA, AES-GCM i ChaCha20, czym jest `providers.javaBaseProvider`),
++     `Ssh.Algorithms` (`Ssh.Algorithms.default` jest w zasięgu niejawnym), polityka
++     `Ssh.HostKeys` (given zbudowany z `KnownHosts` w zasięgu lub
++     `Ssh.HostKeys.trustOnFirstUse`), `Hash in Sha2[256]`, `Socket.Backend`
++     (`socketBackends.javaBaseSockets`), `Online` (`internetAccess.online`) dla sesji
++     endpointu, `Diagnostics` oraz `Tactic[Ssh.Error]`. Załadowanie klucza z PEM wymaga
++     `Cloak` (`cloaks.heapCloak`).
+
+@ 0 7 0 091abf9f0017d5c719c18aedeea04fb7
++     Biblioteka to jeden zbiór źródeł, `susurration.core`, dla JVM. Moduł zbiorczy
++     eksportuje `Ssh`, `Wire`, `KnownHosts` i `SshConfig`; pozostałe klasy – `Transport`,
++     `Channel`, `Session`, `Signer`, `Identity`, `Agent` i `Invocable` – kolidują z nazwami
++     eksportowanymi przez inne biblioteki, więc z `soundness` dociera się do nich jako
++     `Ssh.Transport`, `Ssh.Session` i tak dalej, podczas gdy wewnątrz `package susurration`
++     gołe nazwy pozostają bez zmian. Wewnątrz bloku `session` uchwyt musi być nazwany
++     (`endpoint.session: ssh ?=> …`): gołe `session.exec` rozwiązuje się zamiast tego do
++     rozszerzenia `session` z aperture.
+
+% 0 1 0 1674a7560e30fa4812aced92cd51b00b
+
+% 0 1 0 0f721dd6d25763c90bfbfd858ac3a490
+
+% 0 1 0 0a0a6152ffe7d9f309855a93db04fd48
+
+% 0 1 0 01fd39836a5af29e0ef1f8e15cf33348
+
+% 0 1 0 00283ac8d5d483b51024f5d281be438b
+
+@ 0 1 0 012b3db6192a379303fd88c21d847677
++ entry .Ssh   stałe protokołu, decyzje klienta i wejście z modułu zbiorczego do pozostałych klas
+
+% 1 1 0 198e98cd8bd0c18a0093a19bf476f13d
+
+@ 0 7 0 068b03a1e95d81f31a8bb3e32369b149
++       `Ssh` zawiera to, co ustala protokół SSH-2 – `.Version`, ciąg identyfikacyjny klienta,
++       oraz `.Message`, numery komunikatów z RFC 4250 – i decyzje, które podejmuje klient:
++       `.Algorithms`, jakie algorytmy oferować i w jakiej kolejności; `.HostKeys`, czy ufać
++       kluczowi hosta; `.Credentials`, skąd pochodzą tożsamości, gdy znany jest tylko URL;
++       oraz `.Endpoint`, cel, którego `session` łączy się, uwierzytelnia i uruchamia
++       polecenia. `.Error` to jedyny błąd zgłaszany przez każdą warstwę, z `Reason` dla
++       każdego sposobu, w jaki połączenie może się nie powieść, a `.Provider` to
++       uszczegółowienie `Crypto`, którego potrzebuje transport.
+
+% 2 1 0 1aed98e4134797d30c34516f34819e2f
+
+% 3 1 0 0687b8d2dd4dcf5206dff72c6b003672
+
+% 4 1 0 1aa60d8fbfc2131903800f8ce21cd936
+
+% 5 1 0 04947e895880196e075678d3e425d1e7
+
+% 6 1 0 1205000f98ea21f90e0d07c9e2aff0ba
+
+% 7 1 0 01e4f116741c14f61f2e764bf0fa29ff
+
+% 8 1 0 0e173935dce3077a19a420747cc6223f
+
+% 9 1 0 1305ef45900d5cfa03d27abd3151445d
+
+% 10 1 0 1ad6d40bef79dd351394767149c9eb04
+
+% 11 1 0 09d3e0d3a161f2f017421dea6d17453e
+
+% 0 1 0 1cf68bd0bb102d450636cc1f59fee82d
+
+% 0 1 0 0dda17c4b634ac0617bd822238043838
+
+% 2 1 0 066fe3a6c16640e00d63a2e1f081b36f
+
+% 3 1 0 148da0912fb7256414f3102734ae6d74
+
+% 4 1 0 0fbfcbef98535be1060e4af35f785dbe
+
+% 1 1 0 02c713548b0fbc2b07f4a2725d8b47c8
+
+% 0 1 0 06bec98cf28a048400e96f960f29dbca
+
+% 1 1 0 19ecfd801ceb8d3c168a7f191af2bd09
+
+@ 0 1 0 1fede02ebea3daf31385ac4cfceb9b11
++       Z modułu zbiorczego `soundness` klasy biblioteki są składowymi `Ssh` –
+
+% 0 1 0 1dde164e00ae53741b7054edee257c60
+
+@ 0 4 0 18e81c17110533b8157840c8978cfa4a
++       `Ssh.Agent` i `Ssh.Invocable` – ponieważ inne biblioteki eksportują własne
++       `Transport`, `Channel`, `Session`, `Agent` i `Identity`. Każda z nich jest aliasem typu
++       i wartością towarzyszącą, więc `Ssh.Signer(key)` i `Ssh.Transport.Negotiated` działają
++       tak jak gołe nazwy wewnątrz `package susurration`.
+
+% 1 1 0 0f5762804699c310116d13e2a88b0a0e
+
+% 1 1 0 0b8c5438e058322106bf47283623c81e
+
+% 2 1 0 0f938b517d07e38500a70eb211243fc2
+
+% 0 1 0 0345773b3d15fb640016392b1ff437d0
+
+@ 0 24 0 041642b5242c0e3812f8974079bbabb1
++   entry .Transport   `susurration.Transport`, warstwa transportowa, dostępna z modułu zbiorczego jako `Ssh.Transport`
++       Alias typu i wartość towarzysząca, tak że `Ssh.Transport(duplex, host, port)`
++       i `Ssh.Transport.Negotiated` to klasa i jej obiekt towarzyszący. Pełny opis znajduje
++       się przy `susurration.Transport`.
++   entry .Channel   `susurration.Channel`, kanał sesji, dostępny z modułu zbiorczego jako `Ssh.Channel`
++       Alias typu i wartość towarzysząca; `Ssh.Channel.Event` to typ zdarzeń kanału. Pełny
++       opis znajduje się przy `susurration.Channel`.
++   entry .Session   `susurration.Session`, uwierzytelnione połączenie, dostępne z modułu zbiorczego jako `Ssh.Session`
++       Alias typu i wartość towarzysząca; `Ssh.Session.Result` to to, co zwraca `exec`. Pełny
++       opis znajduje się przy `susurration.Session`.
++   entry .Signer   `susurration.Signer`, dowód tożsamości, dostępny z modułu zbiorczego jako `Ssh.Signer`
++       Alias typu i wartość towarzysząca, więc `Ssh.Signer(key)` tworzy podpisującego nad
++       załadowanym kluczem prywatnym. Pełny opis znajduje się przy `susurration.Signer`.
++   entry .Identity   `susurration.Identity`, sposób, w jaki klucze szyfru podpisują dla SSH, dostępny jako `Ssh.Identity`
++       Alias typu i wartość towarzysząca. Pełny opis znajduje się przy `susurration.Identity`.
++   entry .Agent   `susurration.Agent`, klient `ssh-agent`, dostępny z modułu zbiorczego jako `Ssh.Agent`
++       Alias typu i wartość towarzysząca, więc `Ssh.Agent(socketPath).identities()` wymienia
++       klucze agenta jako podpisujących. Pełny opis znajduje się przy `susurration.Agent`.
++   entry .Invocable   `susurration.Invocable`, sposób, w jaki polecenie staje się wierszem poleceń, dostępny jako `Ssh.Invocable`
++       Alias typu i wartość towarzysząca. Pełny opis znajduje się przy `susurration.Invocable`.
++   entry .Version   ciąg identyfikacyjny wysyłany przez tego klienta: `SSH-2.0-susurration_0.72`
++       Wiersz wysyłany, zakończony CR LF, przed wszystkim innym (RFC 4253 §4.2), i tekst
++       włączany do skrótu wymiany jako `V_C`. Własny wiersz serwera to
++       `Transport#serverVersion`.
++   entry .Message   numery komunikatów z RFC 4250 §4.1.2, jako nazwane stałe `Byte`
+
+% 1 1 0 187eb65cc9b64f341a0c8b128e4daa76
+
+@ 0 3 0 1debd88a3cff83fe1c49c7b7fe95908a
++         Pierwszy bajt ładunku każdego pakietu określa jego komunikat. Oto numery używane przez
++         protokoły transportu, uwierzytelniania i połączenia: `Disconnect` (1), `Ignore` (2),
++         `Unimplemented` (3), `Debug` (4), `ServiceRequest` (5), `ServiceAccept` (6),
+
+% 0 1 0 0abdee76d4fbb80c07ef3d1f43348339
+
+% 0 1 0 0573a22306e49e8314234e8311672a5c
+
+% 0 1 0 110eefe007adf89f069aa22fb0e72912
+
+% 0 1 0 17f3687200338896105e84537fea0991
+
+% 0 1 0 023b47ebeb5a7db710c3a34e4caffa35
+
+% 0 1 0 15ff8c7a2d33b1231980faf3fe021fc8
+
+@ 0 1 0 188fcca76f01d4101b6c1e519c8c2dd8
++         (98), `ChannelSuccess` (99) i `ChannelFailure` (100).
+
+@ 0 2 0 067d7f0adbe92c8813f9a677daafe1c4
++         To je przyjmuje `Transport#expect` i od nich `Wire.Writer` zaczyna ładunek:
+
+% 2 1 0 1f93919d9b0faec114721da46634320c
+
+% 3 1 0 132e661b1fc56f7d19558e1dde2cce15
+
+% 2 1 0 1b9b76c0e5ee49061e2cfda9a448befe
+
+% 0 1 0 0b63c05dd8a8dcd403732184fe8f8323
+
+% 0 1 0 10097aadf65273601d568288b1c6ca30
+
+% 0 1 0 1ff4ecbe5a40eabd167e840aaa7927f0
+
+% 1 1 0 09b6ec0da0182e6d06a03ae509bece4b
+
+% 0 1 0 1d784d7dcee20b580786991d8abfa559
+
+% 0 1 0 0fbd2bd73b52f27c1fc73abf69b1f3a9
+
+% 0 1 0 1d257956b1e8d49b08f792a7de50b300
+
+% 0 1 0 1ac8df5b1a28446a1408c04df3875d5a
+
+% 0 1 0 1e12c396efa0c4d7121723c403d5e728
+
+% 0 1 0 1b45f285a061d6661694e40e07865c2c
+
+% 0 1 0 1fb3c79affd4331c1ecccb9c50613dfd
+
+% 0 1 0 1c653596071b56011f3e79e94a013ee2
+
+% 0 1 0 18533b8c97b773cd189451646793ae0a
+
+% 0 1 0 1467753ec5349b301f43adfb85898b65
+
+% 0 1 0 0304b6471c64c8611cc211feaf018218
+
+% 0 1 0 0205d63528b4d82109551212937b6454
+
+% 0 1 0 1efaaf113d4691d400790d6fd982b377
+
+% 0 1 0 0c1bb52820684d2d1e65096f8cb3a0fd
+
+% 0 1 0 0cf877104e7245c514438c1f7e8527c3
+
+% 0 1 0 0261f8163895b21b0a939c3bdc4e86c0
+
+% 0 1 0 17ab715cfc8c3561024f5cfb867e5397
+
+% 0 1 0 0195eaa88605192f06e1be90fd808ee8
+
+% 0 1 0 161027141b0a32c60d25228dc60adc06
+
+% 0 1 0 104eb9fce7f6a5fa00532b635df488c0
+
+% 0 1 0 1cde17cc88bf18330c52520171eccb96
+
+% 0 1 0 09f2b7d1eed3115313e0e4e7978474c2
+
+% 0 1 0 0ee58c7f313e89e0143a84467365c626
+
+% 0 1 0 037b4973167de06216878624b2f0a187
+
+% 0 1 0 12db4fd2503a59960c42afc2209b7a9a
+
+% 0 1 0 14ef3c6af92b090a0762369ed86bc9df
+
+% 0 1 0 1017bfd0ff84418e1fb63fc4c713737d
+
+% 0 1 0 0c99775036abccff1a63e65f8b4f042b
+
+% 0 1 0 078e20ad43bb904a0f15c40c0f00182e
+
+% 0 1 0 0ba0f052e9529a231451f425f13b23d9
+
+@ 0 9 0 012420f4c69171ed0677d9974f8aab30
++   entry .Provider   dostawca `Crypto`, którego potrzebuje transport: X25519, ECDH, Ed25519, ECDSA, AES-GCM i ChaCha20
++       Uszczegółowienie `Crypto` z enigmatic o składowe wywoływane przez wymianę kluczy,
++       weryfikację klucza hosta i szyfry AEAD: `x25519` i `ecdh` (każda to
++       `Crypto.KeyAgreement`), `ed25519` i `ecdsa(digest)` (każda to
++       `Crypto.SignatureScheme`), `aesGcm` (`Crypto.Aead`) i `chaCha20`
++       (`Crypto.StreamCipher`), oprócz źródła losowości, HMAC i RSA, które ma każdy dostawca.
++       `providers.javaBaseProvider` go spełnia; jest on parametrem kontekstowym `Transport`,
++       givenów `Identity` i sesji `Ssh.Endpoint`.
++   entry .Algorithms   algorytmy oferowane przez klienta, w kolejności preferencji, według zarejestrowanych nazw
+
+% 1 1 0 0688a27ec57163a10366c3eb25b7fc71
+
+@ 0 5 0 19cce5ae3bee2e390d8932755218c478
++         `Transport` wysyła te listy w swoim `KEXINIT`, a wybierany jest pierwszy element
++         każdej z nich, który obsługuje także serwer (RFC 4253 §7.1); rodzaj bez części
++         wspólnej zgłasza `Ssh.Error` z `NoCommonAlgorithm(kind)`. Given `.default` z obiektu
++         towarzyszącego umieszcza wartości domyślne w zasięgu niejawnym, więc klient, któremu
++         one odpowiadają, nie musi wspominać tego typu; taki, któremu nie odpowiadają, wiąże
++         własny jako lokalny given.
+
+% 2 1 0 030f7b642d5331000b7d598ff02c1c53
+
+% 3 1 0 1d705ba5d87caeb70508ac081cbf1ca2
+
+% 0 1 0 152c3839fe0796da1bb75556ca6f1ec9
+
+% 0 1 0 01b8bd0789e032c21b867a401c328c76
+
+% 0 1 0 0007cc5b68494564199c9576544982e9
+
+% 0 1 0 0b12a1277bbd1a6d0c07ad27646668fa
+
+% 1 1 0 0c84d84bfa4e62da0008076381670900
+
+@ 0 18 0 068eb49f72cceed018edbe81bed0cf85
++         Pola: `kex`, metody wymiany kluczy (`curve25519-sha256`,
++         `curve25519-sha256@libssh.org`, `ecdh-sha2-nistp256`); `hostKey`, algorytmy kluczy
++         hostów (`ssh-ed25519`, `ecdsa-sha2-nistp256`, `rsa-sha2-512`, `rsa-sha2-256`);
++         `cipher`, oferowane w obu kierunkach (`chacha20-poly1305@openssh.com`,
++         `aes256-gcm@openssh.com`, `aes128-gcm@openssh.com`); `mac` (`hmac-sha2-256`),
++         którego szyfry AEAD nigdy nie używają, ale protokół wymaga jego nazwania; oraz
++         `compression` (`none`). Nazwa spoza tych wartości domyślnych jest wysyłana do
++         serwera tak, jak ją zapisano, ale nie jest zaimplementowana przez transport, więc
++         `Ssh.Algorithms(cipher = List(t"none"))` jest odrzucane przez każdy serwer, a nie
++         uzgadniane.
++     entry .default   given oferujący domyślne listy: najpierw Curve25519, Ed25519 i ChaCha20-Poly1305
++         Jest w zasięgu niejawnym przez obiekt towarzyszący, więc `Transport` nie potrzebuje
++         importu, aby użyć wartości domyślnych; lokalny `given Ssh.Algorithms` ma przed nim
++         pierwszeństwo.
++     entry #kex   metody wymiany kluczy, najbardziej preferowane najpierw
++     entry #hostKey   algorytmy kluczy hostów, najbardziej preferowane najpierw
++     entry #cipher   szyfry, najbardziej preferowane najpierw, oferowane w obu kierunkach
++     entry #mac   algorytmy MAC, nazwane ze względu na protokół; szyfr AEAD niesie własną integralność
++     entry #compression   metody kompresji: `none`
++   entry .HostKeys   polityka wobec klucza hosta serwera: czy kontynuować, biorąc pod uwagę przedstawiony klucz
+
+% 1 1 0 10228bfb52cef58d01cbbf8da55d0e04
+
+@ 0 6 0 0b44cf49558258ac0b7fc536ddc6f3e1
++         Zanim czemukolwiek zaufa się, wymiana kluczy przekazuje polityce host, port, typ
++         klucza (`ssh-ed25519`, `ecdsa-sha2-nistp256`, `ssh-rsa`) oraz jego blob w postaci
++         OpenSSH, a `#accept` mówi, czy kontynuować; `false` sprawia, że `Transport#connect`
++         zgłasza `Ssh.Error` z `HostKeyRejected(keyType)`. Zarówno `Transport`, jak i sesja
++         `Ssh.Endpoint` przyjmują politykę jako wartość kontekstową, a wartości domyślnej nie
++         ma: trzeba ją wybrać.
+
+% 2 1 0 0f5c9b7a143792ab02471d0ac2eb63ca
+
+% 3 1 0 0b162a1e1210afe719923541084cd83c
+
+% 1 1 0 1d965623f602ebf81d0863967e38b4b9
+
+% 0 1 0 0341371a3e710e251515820ee736de03
+
+% 0 1 0 0e94fa3e8a7ac4bc0fc42ed9d5416329
+
+% 0 1 0 1a50f96456ebc31316b94759595933cc
+
+% 1 1 0 03cfb0092098a0b81ddaaeb22d29b86b
+
+@ 0 6 0 150504b62c567bb31932a7e33efc60be
++         `.knownHosts` to given nad `KnownHosts` w zasięgu, więc samo `given KnownHosts = …`
++         udostępnia ścisłą politykę; `.trustOnFirstUse` akceptuje klucz, o którym plik nie
++         wspomina, tak jak `ssh` z `StrictHostKeyChecking=accept-new`; a
++         `.insecurelyAcceptAll` służy do testów z serwerem, którego klucza nie warto
++         zapisywać. Polityka, która akceptuje klucz widziany po raz pierwszy, powinna go
++         zapisać, co `KnownHosts.line` robi we własnej postaci pliku.
+
+% 0 1 0 046c89c6d3d84f8e1257a54cfd971896
+
+@ 0 14 0 19571fd9faef2b4012a4027f73f2eafb
++     entry .knownHosts   ścisła polityka: klucz jest akceptowany tylko wtedy, gdy `KnownHosts` w zasięgu uznaje go za `Known`
++         Given zbudowany z `KnownHosts` i `Crypto` w zasięgu, więc nie wymaga importu, gdy
++         istnieje `given KnownHosts`; werdykt `Changed`, `Revoked` lub `Unknown` odrzuca klucz.
++         Można go też wywołać bezpośrednio: `Ssh.HostKeys.knownHosts(using known, crypto)`.
++     entry .trustOnFirstUse   akceptuje klucz `Known` lub `Unknown`, a odrzuca klucz `Changed` lub `Revoked`
++         To, co robi `ssh` przy `StrictHostKeyChecking=accept-new`: host, którego plik nigdy
++         nie widział, jest zaufany, a host, którego klucz różni się od zapisanego, nie. Wymaga
++         `Crypto` dla wpisów haszowanych. Za zapisanie zaakceptowanego klucza odpowiada
++         wywołujący, ponieważ polityka nie zapisuje pliku.
++     entry .insecurelyAcceptAll   akceptuje każdy klucz, niczego nie weryfikując
++         Do testów z jednorazowym serwerem. Połączenie przy tej polityce jest szyfrowane, ale
++         nieuwierzytelnione: serwerem może być każdy na trasie.
++     entry #accept   czy kontynuować przy przedstawionym hoście, porcie, typie klucza i blobie klucza
++   entry .Credentials   skąd pochodzą tożsamości, gdy transport otrzymuje tylko URL: użytkownik i podpisujący
+
+% 1 1 0 0147a503cfaecdf10bbaf8cd7663c029
+
+@ 0 4 0 09923f5459661e3a161f8d8600d718b7
++         Transport gita lub dowolny klient, który otrzymał `ssh://user@host/path`, potrzebuje
++         dla hosta użytkownika (jeśli URL go nie podaje) oraz podpisujących, których należy
++         tam wypróbować; `Credentials` odpowiada na oba pytania. `gitTransports.soundnessSsh`
++         z Octogenarian przyjmuje go jako wartość kontekstową.
+
+% 2 1 0 04670e0fa62f014a17ece49f82375d96
+
+% 3 1 0 1765e04839db677518f78ea117155341
+
+% 4 1 0 0f2b4df49df38eb3165488d5bc07d309
+
+% 5 1 0 13b64a54ce652d691bb101deb0a807a3
+
+% 2 1 0 0f6a6202aaa143731b8242e1e1de2d1a
+
+% 1 1 0 18cdc960d5cd8a211e44256cd0d6aed1
+
+% 0 1 0 19daf6e41b87cd2b0475c5ef50776afc
+
+% 1 1 0 1002ebe31c5daae7106ccb5e0706905d
+
+@ 0 2 0 17e2f230ca98cf191b8edda799f87a37
++         `Ssh.Credentials(signers*)` oferuje tych samych podpisujących każdemu hostowi i nie
++         ma zdania co do użytkownika; `.agent` oferuje każdy klucz, który trzyma `ssh-agent`.
+
+% 0 1 0 130797d3c93e9fc61f7fa9e78fb1b5d7
+
+% 0 1 0 1949e4ae27fedfdf0b74d8a430fddd4a
+
+@ 0 10 0 1e525375d614376912fbc18679570502
++     entry .apply   ci sami podpisujący dla każdego hosta, bez zdania co do użytkownika
++         `Ssh.Credentials(Ssh.Signer(key1), Ssh.Signer(key2))`: `user` to `Unset` dla każdego
++         hosta, a `signers` to podana lista, niezależnie od hosta i użytkownika.
++     entry .agent   każdy klucz trzymany przez `ssh-agent` pod ścieżką gniazda, wymieniany na nowo przy każdym wywołaniu
++         Wymaga `Socket.Backend` i `Diagnostics`. `signers` za każdym razem pyta agenta o jego
++         tożsamości; agent, z którym nie da się połączyć, nie daje żadnych podpisujących
++         zamiast błędu, więc uwierzytelnianie kończy się wtedy niepowodzeniem
++         z `Unauthenticated`.
++     entry #user   użytkownik, którym należy być na hoście, lub `Unset`, aby użyć tego z URL lub wywołującego
++     entry #signers   podpisujący do wypróbowania dla hosta i użytkownika, po kolei
++   entry .Endpoint   cel: host, port, użytkownik i podpisujący, którego `session` łączy się, uwierzytelnia i uruchamia polecenia
+
+% 1 1 0 0b0d35b0bdad10f6134a67dd673bb5c1
+
+@ 0 5 0 01c69571fb72b2780d98fe8d2b34b508
++         `Endpoint` jest `Sessional` (przez `.sessional`), więc `endpoint.session: ssh ?=> …`
++         otwiera połączenie TCP, wykonuje wymianę kluczy, sprawdza klucz hosta względem
++         `Ssh.HostKeys` w zasięgu, uwierzytelnia jako `#user` przy użyciu `#signers`
++         (wygrywa pierwszy zaakceptowany przez serwer), pożycza blokowi `Session`, a po
++         zakończeniu bloku, jakkolwiek się on zakończy, rozłącza się i zamyka gniazdo.
+
+% 2 1 0 0f7d12a9c543d2ec0f0e24a7d34db3f0
+
+% 3 1 0 1195fab0899d0bd8158e157ab0ce4351
+
+% 4 1 0 0d4b1a5ae14f075a16089caad8b491e0
+
+% 5 1 0 062669d4a3c2186708495ebb7cc1c13b
+
+% 2 1 0 0fa4331ff26c2bb01f9015f6cb3acddb
+
+% 3 1 0 0936963771dcd08a1ca00e9c60c2b437
+
+% 1 1 0 0f173221c2aa9384153235e384a73d0f
+
+% 0 1 0 18464b19ab8acee113076f882fe63822
+
+% 0 1 0 0a2e252fedb67daa153c82ae9a1e2c86
+
+% 1 1 0 0972f93f3fc5e790017b3c9975ea599d
+
+% 0 1 0 1cc3b0e519c77d4c1c98c05c46dfe672
+
+% 0 1 0 18bedf4f231657dd01e3928261366abe
+
+% 0 1 0 10c2dbeb812baf2e02ea066e413669df
+
+% 0 1 0 0fb9e38a6025e33914d9df573dc04272
+
+% 0 1 0 018052ee56965d9f12185afc6e0ed849
+
+% 0 1 0 1abdabe4d61121cd1b4eabfd80b1b326
+
+% 0 1 0 05d2c76b83f6009b1ea303915249dbb4
+
+% 1 1 0 12665113cd9f6d460876088d634dfae4
+
+@ 0 6 0 0087e02b1484b5f01fde5f7fa225427c
++         Sesja wymaga `Online`, `Socket.Backend`, `Every[Socket.Option.Tcp]`, `Ssh.Provider`,
++         `Ssh.Algorithms`, `Ssh.HostKeys`, `Hash in Sha2[256]`, `Tactic[Ssh.Error]`
++         i `Diagnostics`. Połączenie, którego nie da się nawiązać, zgłasza `Ssh.Error`
++         z `Unreachable(reason)`; port spoza zakresu 1–65535 zgłasza `Malformed`. Uchwyt musi
++         być w bloku nazwany – `ssh ?=>` – ponieważ gołe `session` wewnątrz niego rozwiązuje
++         się do rozszerzenia `session` z aperture, a nie do pożyczonej wartości.
+
+@ 0 2 0 11dc29aa5cc1e6220ab988a0480a1a53
++         `#resolved` stosuje `SshConfig`, więc endpoint nazwany tak, jak nazywa go użytkownik
++         w wierszu poleceń (`work`), staje się hostem, portem i użytkownikiem podanymi przez
++         konfigurację.
+
+% 0 1 0 1029cb56995d36e518d438073ea70f9b
+
+% 0 1 0 1899ba6bd14b174203e5a13bc92c35ef
+
+@ 0 13 0 1e658004e0514d091aa3e01d8f9d79ea
++     entry .sessional   given, który czyni `Endpoint` `Sessional`, pożyczając blokowi `Session`
++         `EndpointSessional`, przechwytujący `Online` i `Tactic[Ssh.Error]`, z którymi go
++         zbudowano. Jest w zasięgu niejawnym przez obiekt towarzyszący; potrzebne mu wartości
++         kontekstowe wymieniono przy `Ssh.Endpoint`.
++     entry #host   host, z którym należy się połączyć, jako nazwa lub adres
++     entry #port   port TCP, 22 dla standardowego serwera
++     entry #user   użytkownik, jako który następuje uwierzytelnienie
++     entry #signers   dowody tożsamości do zaoferowania, po kolei; używany jest pierwszy zaakceptowany przez serwer
++     entry #resolved   endpoint w postaci rozwiązanej przez `SshConfig`: jego `HostName`, `Port` i `User`
++         `endpoint.resolved(config)` wyszukuje `#host` jako wzorzec `Host` i zastępuje host
++         wartością `HostName` z konfiguracji, port jej `Port`, a użytkownika jej `User`, jeśli
++         jest ustawiony (w przeciwnym razie zachowując własnego użytkownika endpointu).
++         Podpisujący pozostają bez zmian: `IdentityFile` to ścieżka, którą musi załadować
++         wywołujący.
+
+% 2 1 0 014b031bffd130331048a92776fc3dc5
+
+% 3 1 0 17cbb5cd18da1d170bd030a1eb6ff5fd
+
+% 4 1 0 1f1542a2632443fc01d36750298b1347
+
+% 0 1 0 120f2babb24f70821a3d1eff92c10552
+
+% 0 1 0 0a5d3175c4a717a418a9d5e7f107db08
+
+% 0 1 0 19225d95cd79142a0c4e75c5eebfaf37
+
+% 1 1 0 06fe7612153b574105061ad72f7ccc7e
+
+@ 0 1 0 19acfd450103a4580ea4f1b4ff337f2c
++   entry .EndpointSessional   instancja `Sessional` stojąca za `Ssh.Endpoint#session`
+
+% 1 1 0 1b874eb48876953507ce65d7110d41fb
+
+@ 0 5 0 0abfb9b7a8fcb96a1682032757bb7b41
++         Nazwana klasa zamiast anonimowego givena, aby jej składowa typowa `Result` –
++         `Session^` – nie była odświeżana przez inferencję. Jest konstruowana przez
++         `Ssh.Endpoint.sessional` z wartości kontekstowych w zasięgu i zwykle nie jest
++         nazywana przez użytkownika.
++     entry #session   łączy się, uwierzytelnia i pożycza blokowi `Session`, a potem wszystko zamyka
++   entry .Error   zgłaszany przez każdą warstwę, gdy połączenie się nie powiedzie, z `Reason` mówiącym jak
+
+% 1 1 0 146513e2c9d1f68b14065ab2594bd278
+
+@ 0 4 0 0ec18997a2a17682167c453e4e215510
++         Błąd `↯/s.122.2`: _the SSH connection failed because …_, z dołączonym własnym
++         komunikatem i numerem przyczyny. Jeden typ błędu obsługuje protokoły transportu,
++         uwierzytelniania i połączenia, więc `Tactic[Ssh.Error]` to jedyna taktyka, jakiej
++         potrzebuje którykolwiek z nich; `Wire.Error` z niepoprawnego komunikatu jest do niego
++         włączany jako `Malformed`.
+
+% 2 1 0 0d662a3a485767e90e7865ea61e8f69a
+
+% 3 1 0 12b4ec81b13df6a711d144a689faa601
+
+% 4 1 0 00e2ff06281897c81ce6b923e15d5ff5
+
+% 0 1 0 06dc15c047182bd40d9e861f38721fad
+
+% 0 1 0 1ef0105e4efff4cb091df97e0041b808
+
+% 1 1 0 04109648f45e38f40c6cfdd419a5ab00
+
+@ 0 2 0 08471f0dc997ccc401ab31646f866bb8
++     entry .communicable   przedstawia każdy `Reason` jako jego komunikat
++     entry .Reason   sposoby, w jakie połączenie się nie udaje, każdy z numerem i komunikatem
+
+% 1 1 0 12175bfea6918f710901343728060f6b
+
+@ 2 4 0 11e1efca3a0c744d0861bd2cd8a7e823
++         column  Przypadek
++         column  Kod
++         column  Komunikat
++         column  Uwagi
+
+% 0 1 0 07171baff44bc53a1dda77f764b8f0eb
+
+@ 0 7 0 00691563a92a0cf21a5ecc641dd2e7f3
++         row  `Unexpected(message)`  2  _the server sent an unexpected message `message`_  łącznie z `3` dla `SSH_MSG_UNIMPLEMENTED`: serwer nie zrozumiał czegoś, co wysłał ten klient
++         row  `NoCommonAlgorithm(kind)`  3  _the server offers no supported `kind` algorithm_  `key exchange`, `host key` lub `cipher`
++         row  `HostKeyRejected(keyType)`  4  _the server's `keyType` host key was not accepted_  polityka `Ssh.HostKeys` odrzuciła klucz
++         row  `BadSignature`  5  _the server's signature over the exchange is wrong_  podpis klucza hosta nad skrótem wymiany nie przeszedł weryfikacji
++         row  `Disconnected(code, text)`  6  _the server disconnected with code `code`: `text`_  serwer wysłał `SSH_MSG_DISCONNECT`
++         row  `ClosedConnection`  7  _the connection was closed_  gniazdo zamknęło się w trakcie komunikatu
++         row  `Integrity`  8  _a packet failed its integrity check_  jego sprawdzenie AEAD
+
+% 0 1 0 105dcd02270ed6790ecbc90d99fd2c75
+
+@ 0 5 0 05dc4b4695cba4520c21c54a5d2bfb3b
++         row  `Unauthenticated(methods)`  10  _no identity was accepted; allowed: `methods`_  nie zaakceptowano żadnego podpisującego; metody to te, na które pozwoliłby serwer, `publickey` lub `publickey,password`
++         row  `Agent(detail)`  11  _the SSH agent `detail`_  nie udało się połączyć z `ssh-agent`, nie wymienił on swoich kluczy lub odmówił podpisania
++         row  `ChannelRefused(detail)`  12  _the server refused to open a channel: `detail`_  kanał sesji
++         row  `RequestRefused(kind)`  13  _the server refused the `kind` request_  żądanie `exec`
++         row  `Unreachable(reason)`  14  _the server could not be reached: `reason`_  nie udało się nawiązać połączenia TCP; niesie `Socket.Error.Reason`
+
+% 1 1 0 1dae7ee167fceeb903275c37feed7127
+
+@ 0 1 0 1de2b7f6347ab5ee0e67ca475c8eb49a
++     entry #reason   dlaczego połączenie się nie powiodło
+
+@ 0 1 0 12043259fdccfdc202d9c4c4610d0289
++ entry .Transport   warstwa transportowa SSH nad połączonym `Duplex`: wymiana kluczy, szyfrowane pakiety, uwierzytelnianie
+
+% 1 1 0 10d162f6096af53319814964efc4e00d
+
+@ 0 8 0 1d8ebc214e5f297711e0e4ee2d2e121e
++       `Transport(duplex, hostname, port)` opakowuje współosiowy `Duplex` już połączony
++       z serwerem. `#connect` wykonuje wymianę identyfikacji i pierwszą wymianę kluczy (RFC
++       4253 §4 i §7: `KEXINIT` w obie strony, jeden pełny obieg ECDH, skrót wymiany, podpis
++       klucza hosta nad nim oraz `NEWKEYS`), sprawdzając klucz serwera względem polityki
++       `Ssh.HostKeys` w zasięgu, zanim czemukolwiek zaufa; odtąd `#send` i `#receive`
++       przenoszą ładunek jednego pakietu naraz, zaszyfrowany uzgodnionym szyfrem AEAD.
++       `#authenticate` to uwierzytelnianie kluczem publicznym z RFC 4252 nad nimi, a `Session`
++       to protokół połączenia nad tym z kolei.
+
+% 2 1 0 142872ab04bf203b1443ad0a03c30c7a
+
+% 3 1 0 0bc8227b3118a95612112ab290e1c119
+
+% 4 1 0 039c0b56cac663bd048cd545fa62667d
+
+% 5 1 0 0c7c043c9e2b2c4b0ba5d6b905e0a9ec
+
+% 6 1 0 1ad6ae5fac297b6306f0c7ff1884d670
+
+% 7 1 0 1d40cfcf1ec337c2179c0ff0432769bb
+
+% 8 1 0 0cd2e70f7f46dbdd01e324e44aed4bf2
+
+% 9 1 0 1801a6a490cfc3c3059861dfe53f5348
+
+% 10 1 0 129520bd1095c0bb050a81e4b7d41849
+
+% 11 1 0 17961043907077320fce479c12e877f7
+
+% 5 1 0 0b6e49032e57d5100ea6ea6985b4592d
+
+% 2 1 0 1b98970a8d8d7b5418115f24d24ee8e7
+
+% 3 1 0 0961e2d9321bd24c123d0cb5381ac8eb
+
+% 4 1 0 19f2125286da553307f854a61acda61a
+
+% 0 1 0 14992d8421b941401e98bf28f952235d
+
+% 1 1 0 0f7849e46cea362b13f4e6ee861446d9
+
+% 0 1 0 09993cb2bc9c900d0392591cadca0ea7
+
+% 0 1 0 0630bf5b246ea6ff14abd1ee82d91f4c
+
+% 1 1 0 0dc959bfc5edfb7f1b0de6cfe777007c
+
+@ 0 5 0 0ef53a32609f66dc14c5420906568019
++       Konstruktor przyjmuje `Ssh.Provider`, `Ssh.Algorithms`, `Ssh.HostKeys`
++       i `Hash in Sha2[256]` jako wartości kontekstowe; każda operacja przyjmuje
++       `Tactic[Ssh.Error]` i `Diagnostics`. O `hostname` i `port` pytana jest polityka kluczy
++       hostów, więc powinny to być nazwy, pod którymi użytkownik zna serwer (jak
++       w `known_hosts`), a nie rozwiązany adres.
+
+@ 0 8 0 1a8b71f43c974ce118f305c61068e7bb
++       Transport jest sterowany przez jeden wątek: komunikat jest wysyłany, a odpowiedź na
++       niego odczytywana przez tego samego wywołującego, a transport jest współdzielony przez
++       `Session` i każdy `Channel` na nim otwarty. Niczego w nim nie można bezpiecznie
++       wywoływać z dwóch wątków jednocześnie. Szyfry to szyfry AEAD –
++       `chacha20-poly1305@openssh.com` w definicji OpenSSH oraz `aes256-gcm@openssh.com`
++       / `aes128-gcm@openssh.com` według RFC 5647 – więc nie używa się osobnego MAC,
++       a ponowna wymiana kluczy po przekroczeniu limitów z RFC 4253 nie jest jeszcze
++       wykonywana. Własne komunikaty porządkowe transportu (`IGNORE`, `DEBUG`, `EXT_INFO`) są
++       konsumowane przez `#receive`; `DISCONNECT` od serwera zgłasza `Ssh.Error`
++       z `Disconnected(code, text)`.
+
+% 1 1 0 0fc00af0a1779b750493bba149a11879
+
+% 1 1 0 04cef0dfec01fd9a083b7eb5ebd89d1d
+
+% 2 1 0 1dc41ce288ad771d1dd35d21669cf3a4
+
+@ 0 1 0 0b788f57d1bfbf52125a6d04db76eaca
++   entry .Negotiated   algorytmy uzgodnione w wymianie kluczy: metoda kex, algorytm klucza hosta i szyfr
+
+% 1 1 0 1ce2fce57290dc6c0bcd5ad19b5725de
+
+@ 0 3 0 07fbe0eae74602fd0f9c253509844957
++         Dostępne jako `Transport#negotiated` po zakończeniu `connect`. `cipher` to szyfr
++         w kierunku od klienta do serwera; szyfr w kierunku od serwera do klienta jest
++         negocjowany osobno, ale z tej samej listy preferencji.
+
+% 2 1 0 0be5e9f29c6bb5ca11d4e72878aadd71
+
+% 3 1 0 039a8c983808faf514cb65a11f828244
+
+% 0 1 0 0f12f2830648859b0381f7a8a0739cd9
+
+% 1 1 0 107a565651a69e99130785cfad1a0cf4
+
+@ 0 49 0 18d73fc6aeb86bb3022b8eec21c2cbeb
++     entry #kex   uzgodniona metoda wymiany kluczy: `curve25519-sha256`, `curve25519-sha256@libssh.org` lub `ecdh-sha2-nistp256`
++     entry #hostKey   uzgodniony algorytm klucza hosta: `ssh-ed25519`, `ecdsa-sha2-nistp256`, `rsa-sha2-512` lub `rsa-sha2-256`
++     entry #cipher   szyfr uzgodniony dla pakietów wysyłanych przez tego klienta
++   entry #sessionId   skrót wymiany z pierwszej wymiany kluczy, identyfikujący sesję; przed nią `Unset`
++       RFC 4253 §7.2: identyfikator sesji nigdy się nie zmienia, niezależnie od liczby
++       kolejnych wymian kluczy, i to nad nim podpisuje uwierzytelnianie kluczem publicznym,
++       więc podpisu nie da się odtworzyć w innym połączeniu.
++   entry #negotiated   algorytmy uzgodnione w wymianie kluczy lub `Unset` przed `connect`
++   entry #serverVersion   wiersz identyfikacyjny serwera, taki jak `SSH-2.0-OpenSSH_10.0`, lub `Unset` przed `connect`
++       Wiersze przed wierszem `SSH-` są dozwolone przez protokół i pomijane, do stu;
++       sprawdzane jest, czy wiersz zaczyna się od `SSH-2.0-` lub `SSH-1.99-`, a każdy inny
++       zgłasza `Ssh.Error` z `Malformed`.
++   entry #connect   wymiana identyfikacji i pierwsza wymiana kluczy, po których połączenie jest szyfrowane
++       Wysyła `Ssh.Version`, odczytuje wiersz serwera i wykonuje wymianę kluczy: wysyłane są
++       listy preferencji klienta, wybierany jest pierwszy element każdej z nich, który ma
++       także serwer (w przeciwnym razie `NoCommonAlgorithm(kind)`), uzgadniany jest
++       efemeryczny klucz X25519 lub P-256, klucz hosta serwera jest przekazywany polityce
++       `Ssh.HostKeys` (`HostKeyRejected(keyType)` w razie odmowy), jego podpis nad skrótem
++       wymiany jest weryfikowany uzgodnionym algorytmem (`BadSignature`, jeśli się nie
++       zgadza), a oba kierunki przełączają się na wyprowadzone klucze przy `NEWKEYS`.
++       Następnie ustawiane są `#negotiated`, `#sessionId` i `#serverVersion`.
++   entry #send   wysyła jeden pakiet z podanym ładunkiem, dopełniony i zaszyfrowany bieżącymi kluczami
++       RFC 4253 §6: ładunek jest dopełniany losowymi bajtami do bloku szyfru (co najmniej
++       cztery bajty dopełnienia; przy szyfrze AEAD pole długości jest wyłączone z wyrównania,
++       tak jak oblicza to OpenSSH), zapieczętowywany i zapisywany do dupleksu. Pierwszy bajt
++       ładunku powinien być numerem `Ssh.Message`.
++   entry #receive   ładunek następnego pakietu, z obsłużonymi komunikatami porządkowymi transportu i zgłoszonym `DISCONNECT`
++       Odczytuje i odpieczętowuje jeden pakiet (`Integrity`, jeśli tag AEAD się nie zgadza),
++       usuwa dopełnienie i zwraca ładunek – chyba że jest to `IGNORE`, `DEBUG` lub
++       `EXT_INFO`, które są konsumowane, a zamiast nich odczytywany jest następny pakiet;
++       `UNIMPLEMENTED`, które zgłasza `Unexpected(3)`, ponieważ oznacza, że serwer nie
++       zrozumiał tego klienta; albo `DISCONNECT`, które zgłasza `Disconnected(code, text)`.
++       Zamknięte gniazdo zgłasza `ClosedConnection`.
++   entry #expect   odbiera pakiet, który musi być podanego typu `Ssh.Message`, jako czytnik ustawiony za jego pierwszym bajtem
++       `transport.expect(Ssh.Message.ServiceAccept)` zwraca `Wire.Reader` ustawiony za bajtem
++       komunikatu; pakiet każdego innego typu zgłasza `Ssh.Error` z `Unexpected(number)`.
++   entry #service   żąda usługi, takiej jak `ssh-userauth`, którą serwer musi zaakceptować
++       Wysyła `SERVICE_REQUEST` i oczekuje `SERVICE_ACCEPT` nazywającego tę samą usługę
++       (w przeciwnym razie `ServiceRefused(name)`). Usługa już przyznana w tym transporcie nie
++       jest żądana ponownie, więc `#authenticate`, które samo żąda `ssh-userauth`, może bez
++       szkody nastąpić po własnym żądaniu wywołującego.
++   entry #authenticate   uwierzytelnianie kluczem publicznym jako użytkownik, kolejno każdym podpisującym, aż serwer któregoś zaakceptuje
++       RFC 4252 §7, z podpisującymi po kolei: dla każdego najpierw pyta się serwer, czy
++       w ogóle zaakceptowałby klucz (`USERAUTH_REQUEST` bez podpisu), i tylko akceptowalny
++       klucz jest proszony o podpis – co ma znaczenie dla agenta trzymającego wiele kluczy,
++       ponieważ serwer liczy odrzucone próby. Podpis obejmuje `#sessionId` i żądanie.
++       Banery są pomijane. Gdy żaden podpisujący nie zostanie zaakceptowany, zgłaszany jest
++       `Ssh.Error` z `Unauthenticated(methods)`, gdzie `methods` to rozdzielona przecinkami
++       lista metod, na które pozwoliłby serwer, taka jak `publickey`.
+
+% 2 1 0 007b50f4141e12da0b85cfd6b9136f98
+
+% 3 1 0 1f4a2c4eac5bbd01025759bb7aeb1993
+
+% 4 1 0 04ebb34df9de587e0a45d21f97e91ab3
+
+% 5 1 0 0317f27f5409d58614f984d247fd78f1
+
+% 6 1 0 172dd2c8d20638b0075eb8da38224558
+
+% 7 1 0 125e36c6040624fd098bb21e3dda4781
+
+% 8 1 0 0bf7e1fd0712bbe20d6de8a692bd00ef
+
+% 9 1 0 1160619a68ff6dab016ef9cc293db8d9
+
+% 10 1 0 1e58f3af9e9aaef218558e7c37ada96c
+
+% 11 1 0 082f299b4e53aea11f9d44917efbb5e3
+
+% 12 1 0 0d65bd746905dbf1029c389ff2eafbe8
+
+% 14 1 0 06b1d39bb605224f05e8203f3a8d314d
+
+% 15 1 0 11320139ef1ac3420e618ebee1df0f7c
+
+% 0 1 0 168909f810ae192117f7b0bd7c8e7eef
+
+% 2 1 0 0b1c2b7db3c4e3690594e872f05dd681
+
+% 3 1 0 0521443cab66e4810ee89ddc280b1da0
+
+% 4 1 0 11924e7b71a15fb0092b2755699d267d
+
+% 0 1 0 14ae2da87c2efc480978ad49ffd20f83
+
+% 1 1 0 1a7f3aae35bb4f6b03b8910fd1a2b5da
+
+@ 0 3 0 1cc4351dfb67348717e0f6da74895a1e
++   entry #disconnect   uprzejmie kończy połączenie przez `SSH_MSG_DISCONNECT` (z inicjatywy aplikacji) i zamyka dupleks
++       RFC 4253 §11.1. Wywołuje to `Session#close`, a sesja `Ssh.Endpoint` robi to po
++       zakończeniu swojego bloku.
+
+@ 0 1 0 13b44240636883bb14342570b8a332a6
++ entry .Session   uwierzytelnione połączenie, które uruchamia polecenia na serwerze
+
+% 1 1 0 07362d31a1a98d6b16b7d3e39e9cfe82
+
+@ 0 6 0 149cf28f66b2535e1cf5a447b46d5c40
++       `Session(transport)` to protokół połączenia z RFC 4254 nad `Transport`, który się
++       połączył i uwierzytelnił: `#exec` uruchamia polecenie jako jedną wymianę – dane
++       wejściowe zapisane, wyjście i standardowe wyjście błędów zebrane, kod wyjścia
++       oczekiwany – a `#channel` pożycza blokowi `Channel` dla protokołu, który przeplata
++       odczyt i zapis, takiego jak protokół gita. Sesję zwykle pożycza `Ssh.Endpoint#session`,
++       a nie buduje się jej ręcznie.
+
+% 2 1 0 06cca4cd07432be618ab052f29902cf2
+
+% 3 1 0 1fbab8339384c9b11aea654944ce3cfc
+
+% 4 1 0 17cdb4591a3417800fc0211453e3a2fa
+
+% 5 1 0 19a23ca851324f3c04981fabf13faf3a
+
+% 6 1 0 1bfa660d0d730cf8102f26bb67179072
+
+% 7 1 0 0fb22a1a95bc95c31f40f6f56dbb3496
+
+% 8 1 0 1023829a296ad9c11a94ef5a56f9ff22
+
+% 9 1 0 1a43cda41027567b02cf38c4b2feed89
+
+% 10 1 0 033c33480da6f1510e456e6ae6ed6ef5
+
+% 11 1 0 058622e0ff3a2b460c8d421c2cace636
+
+% 12 1 0 04bc26ec48854a6c12d17005db2bccff
+
+% 14 1 0 105d8eef2260ced707dee926bc5ef009
+
+% 15 1 0 04ab130f6df413bb0981132156684b07
+
+% 16 1 0 12949a65b8c06d7915a8e6d638c1c2c2
+
+% 18 1 0 113d8f4b3e0bfa041e291e63b40218aa
+
+% 0 1 0 123055d28fffbb6e1c1a43c8d9d278ae
+
+% 0 1 0 0447b201e0d529a60f045609209dca5b
+
+% 0 1 0 0492974d8b72177c01c20d11a749f89b
+
+% 0 1 0 14c71b715bc8422e1981ee157e661326
+
+% 1 1 0 0243e2cd9f20be20027796e5a126c814
+
+% 0 1 0 0652ba882ff62b76187167e4ba89e6f0
+
+% 1 1 0 0c70d406d3817ef508a7fa3f97aa4ee1
+
+% 0 1 0 01bf6047448e6a54065fc63636adc627
+
+% 0 1 0 0276d0295a0c47cf0bd6fd1677a13eb9
+
+% 1 1 0 078c901bd6ad31ba0408dacf76a7950c
+
+@ 0 3 0 07ff78da090e9b491091749a30179851
++       Przez jedną sesję może działać kilka poleceń, jedno po drugim: każde otwiera własny
++       kanał. Każda operacja przyjmuje `Tactic[Ssh.Error]` i `Diagnostics`, a sesja, tak jak
++       sterowany przez nią transport, jest przeznaczona dla jednego wątku.
+
+% 0 1 0 01302a4f56d33f4f19e716b1b7380789
+
+% 1 1 0 12ae76193576534d16b4a0f7928e3f74
+
+% 1 1 0 1ef8f3e8281a43d50a2ae6dce86a81ff
+
+@ 0 1 0 0f8f78e325428fd3099ad997bea0c8fa
++   entry .Result   co polecenie zapisało i jak się zakończyło
+
+% 1 1 0 1e262eab0fdf76b5177b4c9716b149cf
+
+@ 0 22 0 118e3abd606a94e2067a17b7ce16ea91
++         Zwracany przez `Session#exec`. `stdout` i `stderr` to całość każdego strumienia, jako
++         `Data`; `status` to kod wyjścia zgłoszony przez serwer lub `Unset`, jeśli kanał
++         zamknął się bez niego (na przykład proces zabity sygnałem). Pola są tablicami, więc
++         dwa wyniki są równe tylko co do referencji: należy porównywać `stdout.read[Text]`,
++         a nie wynik.
++     entry #stdout   wszystko, co polecenie zapisało na standardowe wyjście
++     entry #stderr   wszystko, co polecenie zapisało na standardowe wyjście błędów
++     entry #status   kod wyjścia lub `Unset`, jeśli żadnego nie zgłoszono
++   entry #open   otwiera kanał sesji, który wywołujący musi zamknąć
++       RFC 4254 §5.1 i §6.1: wysyła `CHANNEL_OPEN` dla `session` i czeka na potwierdzenie,
++       zgłaszając `Ssh.Error` z `ChannelRefused(detail)`, jeśli serwer odmówi. Żądanie
++       globalne wysłane wcześniej przez serwer (OpenSSH ogłasza w ten sposób swoje klucze
++       hosta) jest odrzucane i pomijane. `#channel` to to samo z obsłużonym zamknięciem.
++   entry #exec   uruchamia polecenie z podanym standardowym wejściem i środowiskiem oraz zbiera jego wyjście i kod wyjścia
++       `ssh.exec(command, input = Data(), environment = Nil)` otwiera kanał, ustawia każdą
++       zmienną środowiskową (którą serwer stosuje tylko wtedy, gdy jego `AcceptEnv` dopuszcza
++       tę nazwę, nie informując o tym w żadnym przypadku), uruchamia polecenie
++       (`RequestRefused(t"exec")`, jeśli serwer odmówi), zapisuje dane wejściowe, zamyka
++       wejście, odczytuje oba strumienie wyjściowe do końca i zamyka kanał. Polecenie może być
++       `Text` interpretowanym przez zdalną powłokę lub `Command` z guillotine utworzonym przez
++       `sh"…"`, którego argumenty są cytowane jeden po drugim, tak że wartość ze spacjami lub
++       znakami powłoki pozostaje pojedynczym argumentem (zob. `Invocable`).
+
+% 2 1 0 0bacd7a87bd8e4151557868c473994e8
+
+% 3 1 0 0e0a9b852b7587f204fc526b1c09aa70
+
+% 4 1 0 0de1523543379e0e0f853a3074779f41
+
+% 5 1 0 02bd33d4483f90660932d715fbc585f9
+
+% 6 1 0 1facd2a04772630e130c1963e666a210
+
+% 7 1 0 0929175cb362f98c0bd7c9aeb912950c
+
+% 8 1 0 122934a867e930340e6d196379edd8a3
+
+% 9 1 0 1ad12e2b1ddf6d560b7e55dbdfd96ca1
+
+% 10 1 0 0be04184bc2c1764090c4bbc1e80a800
+
+% 11 1 0 12f43efbe1d7f8a510154649a9995a2f
+
+% 12 1 0 187cd8b3ad9499d402b01e1739ea9882
+
+% 14 1 0 14cbfe7266a882b702db0aa49e08d2f8
+
+% 15 1 0 1e82aaa5fd7801d71b19491baa7e235e
+
+% 16 1 0 171cfee848276fe30d0c731bf5b9558f
+
+% 0 1 0 0a135823aa111b0515df2811fab7d4db
+
+% 2 1 0 08120a1423ba0c9d1f0a410571b146ec
+
+% 0 1 0 01df3ecfdda16f1204dbbd1842ce2b1b
+
+% 0 1 0 08b6688ee6b3edfa0c9c5ce1654aaee9
+
+% 1 1 0 10e741e2d1f0269a11fb4deeab02c92d
+
+@ 0 10 0 1bbeb6d489e612c3060ca7eac336e185
++       W każdym kierunku przechodzą megabajty, z dostosowaniami okna w ramach sterowania
++       przepływem; całe standardowe wyjście jest trzymane w pamięci, więc polecenie, którego
++       wyjście należy strumieniować, używa zamiast tego `#channel` i `Channel#stdout`.
++   entry #channel   pożycza blokowi otwarty kanał sesji, a potem go zamyka
++       Dla protokołu, który przeplata zapis i odczyt – dostępne są `exec`, `write`, `eof`,
++       `stdout` i `next` kanału `Channel` – z gwarantowanym zamknięciem, jakkolwiek blok się
++       zakończy.
++   entry #close   rozłącza transport
++       `Transport#disconnect`: uprzejme `SSH_MSG_DISCONNECT` i zamknięty dupleks. Sesja
++       `Ssh.Endpoint` robi to sama po zakończeniu swojego bloku.
+
+@ 0 1 0 0ab58e665e674e2917ff91ea98e745a9
++ entry .Channel   kanał sesji: zdalny proces, jego standardowe strumienie, kod wyjścia i sterowanie przepływem
+
+% 1 1 0 1f7b887a82bdcf5c1eb80707b2fecd70
+
+@ 0 7 0 168f1a7313ea376e04d3b5c561c34252
++       RFC 4254 §5–6. Kanał to proces na serwerze: jego standardowe wyjście przychodzi jako
++       `CHANNEL_DATA`, standardowe wyjście błędów jako `CHANNEL_EXTENDED_DATA`, kod wyjścia
++       jako żądanie, a dane płyną w każdym kierunku tylko tak daleko, jak pozwala okno drugiej
++       strony. Kanał jest otwierany przez `Session#open` lub pożyczany przez
++       `Session#channel` i sterowany przez jedyny wątek transportu: zapis pompuje połączenie,
++       dopóki serwer nie przyzna okna, a odczyt pompuje je do następnego zdarzenia, kolejkując
++       wszystko inne, co nadejdzie, aż przyjdzie na to kolej.
+
+% 2 1 0 12f48d3b62110c7f1dae5efafabaca8e
+
+% 3 1 0 101cda01be2a8429170c9308306193cb
+
+% 4 1 0 0aef722fd88207340d2551bfddf55822
+
+% 5 1 0 15bafbe91bb6816b19c607195218a29c
+
+% 6 1 0 06100fdca01a2ec90b826f7c1da4db46
+
+% 7 1 0 186352ae6d349c1704637e500ba15722
+
+% 8 1 0 138db0d3c961bc7b1f0049a41d2dbece
+
+% 9 1 0 052657109005fead197cdbf49b7eb44e
+
+% 10 1 0 11ed36a226080f730e25b647e153a762
+
+% 11 1 0 0e6399623775451101694e49208017bd
+
+% 12 1 0 035da120522633ef175bcd399ae020ff
+
+% 14 1 0 10d307e63374e3770ea17964327a816a
+
+% 15 1 0 1651070f8e5075be0d95348beee57784
+
+% 16 1 0 006c464cf3cc2e9704db1dd0dec1c3b6
+
+% 18 1 0 1a5b3498d56808421fd763f273bed607
+
+% 19 1 0 11c563db1b7f3bab0503157402ef6327
+
+% 0 1 0 0540d6816449b4671022aa343b514ae6
+
+% 0 1 0 093ecfbf7a17e44316df008887c95434
+
+% 0 1 0 1fde36cb0225a0c61d6388360462adeb
+
+% 1 1 0 10b89a030828eed5021af6499b8368ea
+
+% 0 1 0 10bee944f5f8ad1c0f1bb985142a81de
+
+% 0 1 0 1477a347f2fe97930ba82bc2b763c3e4
+
+% 0 1 0 1f38aec62d86032b1504bb5bdd8ba761
+
+% 1 1 0 02f6d2a34017281f0acd37ccc13b61d1
+
+@ 0 5 0 13e8ab2e58990c5217f1bb6ca0323fec
++       Zwykła kolejność to `#env` (opcjonalnie), potem `#exec`, potem `#write` i `#eof`, potem
++       `#stdout` lub `#next`, a na końcu `#close`. Każda operacja przyjmuje
++       `Tactic[Ssh.Error]` i `Diagnostics`. Żądanie globalne od serwera, które nadejdzie
++       w trakcie strumienia, jest odrzucane, jeśli oczekuje odpowiedzi, a w przeciwnym razie
++       ignorowane; komunikat dla innego kanału zgłasza `Malformed`.
+
+% 1 1 0 077a3274a2131d721ff3dca34c5e2795
+
+% 1 1 0 1bec1d5058e42380103fad17fbdcffd4
+
+@ 0 20 0 11241053528e13b704494c3df8c5625f
++   entry .InitialWindow   okno, które ten klient przyznaje serwerowi przy otwarciu: 2 MiB
++       Ile serwer może wysłać, zanim klient dostosuje okno; jest ono uzupełniane po zużyciu
++       połowy, więc strumień wyjścia nigdy nie zatrzymuje się po stronie klienta.
++   entry .MaxPacket   największy pakiet, jaki ten klient przyjmuje na kanale: 32768 bajtów
++   entry .Event   to, co dostarcza kanał: wyjście, wyjście błędów, zakończenie, sygnał, odpowiedź, koniec danych lub zamknięcie
++       Zwracany przez `Channel#next`. `Stdout(data)` i `Stderr(data)` to porcje obu
++       strumieni; `Exit(status)` – kod wyjścia procesu; `Signal(name)` – sygnał, który go
++       zabił; `Reply(success)` – odpowiedź na żądanie wysłane z `reply = true`; `Eof` – koniec
++       wyjścia serwera; a `Closed` – zamknięcie przez serwer, po którym `next` daje `Unset`.
++   entry #closed   czy serwer zamknął swoją stronę kanału
++   entry #exitStatus   kod wyjścia procesu, gdy serwer go zgłosi
++       Ustawiany, gdy nadejdzie żądanie `exit-status`, co następuje po zakończeniu wyjścia:
++       należy go odczytać po opróżnieniu `#stdout` lub gdy `#next` zwróci `Closed`.
++   entry #request   wysyła żądanie kanału danego rodzaju, a z `reply` czeka na odpowiedź serwera
++       `channel.request(kind, reply)(writer => …)` zapisuje pola specyficzne dla typu żądania
++       przez lambdę i je wysyła; przy `reply` równym true pompuje połączenie aż do
++       `CHANNEL_SUCCESS` lub `CHANNEL_FAILURE` od serwera i zwraca, które z nich nadeszło,
++       a w przeciwnym razie od razu zwraca `true`. Na nim zbudowane są `#exec` i `#env`;
++       żądanie, którego serwer nie rozumie, zwraca `false`.
+
+% 2 1 0 13e2a0287d205bc210e400d27c423db5
+
+% 3 1 0 049d14e433bdf7b80eb685fb17314bb1
+
+% 4 1 0 1f509f0644f8bf5d1a7eac40ef642182
+
+% 5 1 0 0ee1484021f919ca1d449b887a8d9865
+
+% 6 1 0 007f21725e03a59c1483ea090fc62894
+
+% 7 1 0 0021d56d1a167c3b1b9face71fed3c2a
+
+% 8 1 0 00b8702f92139ec602b6102f1a893bbe
+
+% 9 1 0 030be7a53b26e9ee17a8c02b3011166d
+
+% 10 1 0 1fb840e2c19357fb1558e7757c010cc2
+
+% 11 1 0 063ef26b17341c1e0016267fe2129ba4
+
+% 12 1 0 12caad659b2edc51172dd3baa9d156fa
+
+% 14 1 0 18ef2dbb2b2743630e9d1d546ec0ed8b
+
+% 15 1 0 065d28df80b3d45b0481e2dad898dbd2
+
+% 16 1 0 1e20d7078640b6d104b3d8d014b3e4ae
+
+% 18 1 0 0c4643c1260325b216995b3294b3d55e
+
+% 19 1 0 07cf104622196b520522d8a1a76ea7bc
+
+% 0 1 0 0c92d7b01e634e971a00ae6c167d6a1b
+
+% 1 1 0 19426c72127320fc1a04ed17a77cfd20
+
+@ 0 33 0 19f2087423fa2b6107b4f58e6c5c0d05
++   entry #env   ustawia zmienną środowiskową dla procesu, którą serwer stosuje tylko wtedy, gdy pozwala na to jego `AcceptEnv`
++       Żądanie `env` bez odpowiedzi, więc serwer w żadnym przypadku nic nie mówi: zmienna,
++       której nie wymienia `AcceptEnv` serwera, jest po cichu pomijana. Musi poprzedzać
++       `#exec`.
++   entry #exec   uruchamia polecenie, które serwer musi zaakceptować
++       Żądanie `exec` z odpowiedzią: `Text` jest uruchamiany tak, jak go zapisano, przez
++       powłokę użytkownika, a `Command` z guillotine jest cytowany argument po argumencie
++       (`Invocable`). Zgłasza `Ssh.Error` z `RequestRefused(t"exec")`, jeśli serwer odmówi, co
++       robi `sshd` z `ForceCommand` lub z kluczem z ograniczeniami.
++   entry #write   zapisuje na standardowe wejście procesu, czekając na okno, gdy go brak
++       Wysyłane w pakietach nie większych niż okno serwera i maksymalny rozmiar pakietu,
++       z pompowaniem połączenia w oczekiwaniu na `CHANNEL_WINDOW_ADJUST` za każdym razem, gdy
++       okno się wyczerpie. Zdarzenia, które nadejdą w międzyczasie, są kolejkowane dla
++       `#next`. Zapis do zamkniętego kanału nic nie robi.
++   entry #eof   kończy standardowe wejście procesu
++       Wysyła `CHANNEL_EOF` jeden raz; drugie wywołanie lub wywołanie po zamknięciu kanału nic
++       nie robi. Polecenie, które czyta swoje wejście do końca – `cat`, `sort`, `tr` – nie
++       kończy się, dopóki tego nie wysłano.
++   entry #next   następne zdarzenie od procesu lub `Unset`, gdy kanał jest zamknięty i nic nie pozostało
++       Najpierw zakolejkowane zdarzenia, potem to, co dostarczy połączenie, pompowane aż do
++       nadejścia jednego. `#stdout` to zwykły sposób konsumowania kanału; `next` służy
++       protokołowi, który musi widzieć każde zdarzenie po kolei, łącznie z `Reply`
++       i `Signal`.
++   entry #stdout   standardowe wyjście procesu jako leniwy łańcuch porcji, kończący się wraz z procesem
++       `Chain[Data]`, który pompuje połączenie w miarę wymuszania: porcje `Stdout` są
++       zwracane, porcje `Stderr` są zachowywane dla `#stderr`, a łańcuch kończy się na
++       `Closed`. Jest leniwy, więc wyjście długo działającego polecenia można przetwarzać
++       w miarę napływu; wymuszenie go do końca pozostawia ustawiony `#exitStatus`.
++   entry #stderr   porcje standardowego wyjścia błędów otrzymane dotąd, po kolei
++       Wypełniane w miarę wymuszania `#stdout` (lub wywoływania `#next`); kompletne po
++       zamknięciu kanału.
++   entry #close   zamyka kanał, opróżniając zdarzenia serwera, aż ten również zamknie swoją stronę
++       Wysyła `CHANNEL_CLOSE` (jeden raz) i pompuje, aż nadejdzie zamknięcie od serwera, tak
++       aby kod wyjścia został zapisany, a transport pozostawiony między pakietami, gotowy na
++       następny kanał. `Session#channel` i `Session#exec` wywołują go w `finally`.
+
+@ 0 1 0 10af5daf3e4956ea1b1f0b49eba57519
++ entry .Signer   dowód tożsamości: załadowany klucz prywatny lub klucz trzymany przez `ssh-agent`, który podpisuje żądanie uwierzytelnienia
+
+% 1 1 0 16b87b9dfb5da7310f42ba2c0968ef46
+
+@ 0 7 0 09cd30f2e8881e2d0efca51d255b835e
++       To, co przyjmują `Transport#authenticate` i `Ssh.Endpoint`: `#algorithm` to algorytm
++       podpisu oferowany serwerowi (`ssh-ed25519`, `ecdsa-sha2-nistp256`, `rsa-sha2-256`, …),
++       `#blob` – klucz publiczny w postaci przesyłowej OpenSSH, a `#sign` – pełny blob podpisu
++       z RFC 4253 §6.6 – nazwa algorytmu, a po niej podpis – nad danymi, które zweryfikuje
++       serwer. Podpisującego nad kluczem w tym procesie tworzy się przez `Signer(key)`;
++       podpisujący nad kluczem trzymanym przez agenta pochodzi z `Agent#identities` i podpisuje
++       tak, że klucz nigdy nie opuszcza agenta.
+
+% 2 1 0 114ddc8d8a0658fc09c0f26665257142
+
+% 3 1 0 0cb908e1256054e2082ce1614fa177f5
+
+% 4 1 0 156c8daa0159420707627acac9c7e978
+
+% 5 1 0 0c747457b4f859ac1952b613edd3cbda
+
+% 4 1 0 04122962340fd5a60b8db0cf6a4f440e
+
+% 5 1 0 08958a3d15fa774f078a287b87bccce7
+
+% 1 1 0 186ee4fc2e0ced620735883da98b3837
+
+% 0 1 0 0bc03ff50930604c02b4eb890cfce50d
+
+% 0 1 0 00723f135afde9b412a9b6e7e47e4609
+
+% 0 1 0 0ba8bd8d98e1db800c9ee9712452044d
+
+% 0 1 0 05f67b39eee70df11d2229d001abb1ea
+
+% 1 1 0 1631efa0804da6bc11d82f7ba331b595
+
+% 0 1 0 18d2eb270c44c5b90d7a21e1012175f9
+
+% 0 1 0 172773169de7a44e03b4f62955b93910
+
+@ 0 13 0 044d6e1a436f3f51134a2c029a36301b
++   entry .apply   podpisujący nad kluczem prywatnym trzymanym w tym procesie, dla dowolnego szyfru z `Identity`
++       `Signer(key: PrivateKey[cipher]^)` wymaga, aby szyfr miał `Identity` (Ed25519,
++       `Ecdsa[256 | 384 | 521]` lub `Rsa[2048 | 3072 | 4096]`) i `KeyAlgorithm`, a sam szyfr
++       był wartością kontekstową, co ma miejsce po odczytaniu klucza z dostawcą. Wynik
++       przechwytuje klucz. Klucz RSA podpisuje jako `rsa-sha2-256`; `ssh-rsa` z SHA-1 nie
++       jest oferowany. Klucz odczytany z PEM – PKCS#8, PKCS#1, SEC1 lub `openssh-key-v1`,
++       niezaszyfrowany – wymaga `Cloak` (`cloaks.heapCloak`), która go przechowa.
++   entry #algorithm   nazwa algorytmu podpisu oferowana serwerowi
++   entry #blob   klucz publiczny w postaci przesyłowej OpenSSH, tak jak koduje go wiersz `known_hosts` lub `authorized_keys` po typie
++   entry #sign   blob podpisu (nazwa algorytmu, a po niej podpis) nad danymi
++       W praktyce nad identyfikatorem sesji i żądaniem uwierzytelnienia. Agent, który odmawia
++       podpisania, daje pusty blob, który serwer odrzuca jako zwykłe niepowodzenie.
+
+@ 0 1 0 0a5217ce2c706a0001be12a30b311374
++ entry .Identity   jak klucze szyfru identyfikują użytkownika wobec serwera SSH: nazwa algorytmu i postać przesyłowa podpisu
+
+% 1 1 0 0e3fa772873af32f111af86cef0b23cb
+
+@ 0 7 0 0e5a0715aa2149b20e96a7546fe4bcc4
++       RFC 4252 §7. Klasa typów z instancją dla każdego szyfru, jakim może być klucz
++       prywatny: `.ed25519` podpisuje surowo (RFC 8709) jako `ssh-ed25519`; `.ecdsa`
++       podpisuje jako `ecdsa-sha2-nistp256`, `-nistp384` lub `-nistp521`, z `r` i `s` jako
++       `mpint` (RFC 5656 §3.1.2), ze skrótem, z którym łączy się jego krzywa; a `.rsa`
++       podpisuje jako `rsa-sha2-256` (RFC 8332). Każda instancja przywołuje swój szyfr
++       z `Ssh.Provider` w zasięgu, więc klucz ECDSA podpisuje właściwym skrótem niezależnie
++       od tego, jaki `Signature.Digest` jest dostępny. Giveny znajdują się w obiekcie
++       towarzyszącym, więc `Signer(key)` znajduje je bez importu.
+
+% 1 1 0 176a918dabb9a3be0c6a1c0c124b9ef5
+
+@ 0 10 0 1f5da3d522b78cc91f87227830ec07dd
++   entry .ed25519   `Identity` dla kluczy `Ed25519`: `ssh-ed25519`, surowy 64-bajtowy podpis
++       Wymaga `Ssh.Provider` w zasięgu.
++   entry .ecdsa   `Identity` dla kluczy `Ecdsa[256]`, `Ecdsa[384]` i `Ecdsa[521]`, jako `ecdsa-sha2-nistp*`
++       DER `SEQUENCE { r, s }` dostawcy jest ponownie kodowany jako dwa `mpint`, czego
++       wymaga postać przesyłowa SSH; skrót to SHA-256, SHA-384 lub SHA-512 zależnie od
++       krzywej. Wymaga `Ssh.Provider` w zasięgu.
++   entry .rsa   `Identity` dla kluczy `Rsa[2048]`, `Rsa[3072]` i `Rsa[4096]`, jako `rsa-sha2-256`
++       SHA-256 nad PKCS#1 v1.5. Wymaga `Ssh.Provider` w zasięgu.
++   entry #algorithm   nazwa algorytmu podpisu niesiona przez żądanie uwierzytelnienia
++   entry #sign   podpis nad danymi, w postaci przesyłowej algorytmu, podanym kluczem prywatnym
+
+@ 0 1 0 08b28036c2a7fc980ee6bd8dc0fa4910
++ entry .Agent   klient `ssh-agent`: wymienia klucze, które przechowuje agent, i podpisuje nimi, nigdy ich nie widząc
+
+% 1 1 0 0c2b01ad0713c0ea0a49fe503857f644
+
+@ 0 4 0 1e87b703a788570a010003cecf59fd32
++       `Agent(path)` łączy się z agentem przez gniazdo uniksowe pod `path` – wskazane przez
++       zmienną środowiskową `SSH_AUTH_SOCK` – posługując się draft-miller-ssh-agent: każda
++       operacja to jedno żądanie i jedna odpowiedź przez nowe połączenie. Wymaga
++       `Socket.Backend` (`socketBackends.javaBaseSockets`) i `Diagnostics`.
+
+% 2 1 0 17af3a2bb7c56a59087fe0855b4a97b8
+
+% 3 1 0 15a1551b84852f9118dd60621c846f25
+
+% 4 1 0 0ccdc8000dfc69b60d263a795c6529c4
+
+% 5 1 0 0c4b39e83ad3782c05bd56bc687f32e9
+
+% 6 1 0 1bfb88024adb2e8c0b5385bcf3db9fdb
+
+% 7 1 0 13a57d6528fa34ab151fbe73dbb0d569
+
+% 1 1 0 12a3314cbed13efc075d2d240f9c888e
+
+% 0 1 0 112891b88b3d9232001e5e91403981f0
+
+% 0 1 0 127066072c4c0ec6031c045b2e5211b8
+
+% 1 1 0 0028d7d0b6e2e8db0d06262062a3f05b
+
+@ 0 3 0 0c02dbdd2a3f8c3619ddd3ba89e8157e
++       Agent, z którym nie można się połączyć, który nie wymienia swoich kluczy, zamyka
++       połączenie lub wysyła błędną długość, zgłasza `Ssh.Error` z `Agent(detail)`.
++       `Ssh.Credentials.agent` opakowuje go jako `Credentials` dla transportów, które dostają
++       tylko URL.
+
+% 1 1 0 1410b70faf729f560d4c2e2e8e4a5d8f
+
+% 1 1 0 1691a3718b2060b309c67ecde5ae7a29
+
+@ 0 6 0 1dcd79437e038a5207e66bcfa3cedb21
++   entry #identities   klucze przechowywane przez agenta, każdy jako `Signer`, który zdaje się na agenta
++       Przyjmuje `Tactic[Ssh.Error]`. `algorithm` każdego podpisującego to typ klucza, z tym
++       wyjątkiem, że klucz `ssh-rsa` jest oferowany jako `rsa-sha2-256`, a agent jest proszony
++       flagą o podpis SHA-256; jego `blob` to klucz w postaci, w jakiej wymienia go agent; a
++       jego `sign` wysyła żądanie podpisu i zwraca pełny blob podpisu od agenta lub pusty blob,
++       jeśli agent odmówi (tak by serwer odrzucił go jak zwykłą porażkę).
+
+@ 0 1 0 0b2bc8a1c8b63b220804a88a7b03a3d2
++ entry .Invocable   jak wartość staje się wierszem poleceń, który uruchamia powłoka serwera SSH
+
+% 1 1 0 0abfbd7c4000666f0439639a09ab88b2
+
+@ 0 4 0 12000dd6bd44612d1bbbef7118745753
++       RFC 4254 §6.5 przekazuje polecenie z żądania `exec` do powłoki użytkownika. `Text` jest
++       uruchamiany tak, jak został zapisany (`.text`), więc interpretuje go powłoka; `Command`
++       z guillotine, pochodzący z `sh"…"`, jest cytowany argument po argumencie (`.command`),
++       więc wartość zawierająca spację lub znak specjalny powłoki pozostaje jednym argumentem,
++       tak jak lokalnie.
+
+% 2 1 0 160be210235950581e870fcb4f6c7603
+
+% 3 1 0 02cd1f2771e0df94141f5ca88c2cfe4e
+
+% 0 1 0 19575a63e052847619852b0d975f8758
+
+% 0 1 0 09d2336a757a0f9b1e20c4565c5d3378
+
+% 0 1 0 029f7f47b39946cf0a750a445c3f1381
+
+% 1 1 0 05d7daee60aa48fc02018f7b30724df9
+
+@ 0 7 0 013306916b6a603104184a089362ee75
++       `Session#exec` i `Channel#exec` przyjmują dowolną wartość `Invocable`. Instancje są w
++       obiekcie towarzyszącym, więc żaden import nie jest potrzebny.
++   entry .text   `Text` to wiersz poleceń w postaci zapisanej, do zinterpretowania przez zdalną powłokę
++   entry .command   `Command` z guillotine jest cytowany argument po argumencie, więc argumenty nie są ponownie dzielone
++       Ograniczony jako `[command <: Command]`, a nie samo `Command`, ponieważ `sh"…"` daje
++       `Command` rafinowany nazwą swojego pliku wykonywalnego.
++   entry #line   wiersz poleceń dla wartości
+
+@ 0 1 0 15777f1e6d89f2e60024d1be837386df
++ entry .KnownHosts   plik `known_hosts` z OpenSSH: klucz, który każdy host przedstawił wcześniej, oraz werdykt dla klucza przedstawionego teraz
+
+% 1 1 0 0f83dc6e9dc74b1e1cef17fec8b7bce1
+
+@ 0 8 0 1c8887a0aafe1bd60984c1bde8f66e7a
++       `KnownHosts(text)` parsuje wiersze pliku – `hosts type base64 [comment]`, gdzie `hosts`
++       to oddzielona przecinkami lista wzorców z symbolami wieloznacznymi `*` i `?`, negacją `!`
++       i `[host]:port` dla portu innego niż domyślny, lub zahaszowany wpis `|1|salt|hash`
++       (HMAC-SHA1 nazwy hosta z solą), opcjonalnie poprzedzony przez `@revoked` lub
++       `@cert-authority` – do `#entries`, pomijając komentarze i wiersze, które nie są
++       kluczami, tak jak pomija je OpenSSH. `#verify` to całe sprawdzanie klucza hosta: dla
++       hosta, portu, typu klucza i klucza przedstawionego przez serwer – czy jest `Known`,
++       `Changed` (ostrzeżenie, które każdy użytkownik SSH czytał wielkimi literami), `Unknown`
++       czy `Revoked`.
+
+% 2 1 0 17ca206b01d450fa1f3547d369632578
+
+% 0 1 0 1720e2e8c4ef9f5412ebc0f8ad1cbd33
+
+% 1 1 0 1102363ac460b3a9166ac8fe16ad51c3
+
+% 2 1 0 0d3d1cd40cc7dbeb0bd0655fbe8e377f
+
+% 1 1 0 0ca12eff289b0eaf0c7db8af9b3a72f1
+
+% 1 1 0 08523b61cabc55b8031ce33d4330dd85
+
+% 2 1 0 02517437717415010d102ae6d87cd432
+
+% 0 1 0 1ec2f892c862419318567fdf2818c523
+
+% 0 1 0 13f875df8efcc5eb09cd608dd5301f10
+
+% 0 1 0 1ba7c810812aaaa31d529f99f410daf5
+
+% 0 1 0 1d1efced66b3c7b8079678b5320d85e3
+
+% 0 1 0 1a2e2f0d43881a0708d4d680b2689fb3
+
+% 1 1 0 08c68627b91f2b03192be11f7bd7ef68
+
+% 0 1 0 0409e58ce448c7c402709032b6c1e518
+
+% 0 1 0 0f8add520d82583c01dc3d6ee67726ac
+
+% 0 1 0 1b31d35b7301d15d161dc9921117a7ef
+
+% 0 1 0 18c55af9f402553a06b400dea551c5a0
+
+% 0 1 0 1266d4724a675d8d0a58b003795fd5f6
+
+% 0 1 0 15fcf97e1010285902f5b7a41d8f9528
+
+% 0 1 0 0a03e00f31c91e46163957798544db86
+
+% 1 1 0 16a4087ea732ec1b035120fe3fa17bc4
+
+@ 0 8 0 098f5acade917f7c13142ceaed794a9c
++       Nazwy hostów dopasowuje się bez rozróżniania wielkości liter i według dowolnego aliasu w
++       wierszu; port inny niż domyślny pasuje tylko do swojego wpisu w nawiasach kwadratowych.
++       Dopasowanie zahaszowanego wpisu wymaga `Crypto` w zasięgu (`providers.javaBaseProvider`)
++       do obliczenia HMAC. Klucz porównuje się jako własny blob OpenSSH – pole base64 po typie,
++       które otrzymuje transport i które odczytuje `OpenSsh.publicKey` – więc wpis z kluczem
++       dowolnego typu można porównać bez jego dekodowania. `Ssh.HostKeys.knownHosts` i
++       `Ssh.HostKeys.trustOnFirstUse` zamieniają `KnownHosts` w politykę kluczy hostów, z
++       której korzysta `Transport`; `.line` zapisuje wiersz dla nowo zaakceptowanego klucza.
+
+% 1 1 0 1466cd754f16fa5a0db304291aafc641
+
+@ 0 7 0 085bef0623b9394611bfb8c4d64076ba
++   entry .Verdict   czym przedstawiony klucz jest dla pliku: `Known`, `Unknown`, `Changed` lub `Revoked`
++       `Known`: wpis hosta niebędący wpisem urzędu certyfikacji zawiera ten klucz. `Changed`:
++       host ma wpisy z kluczami tego typu, ale nie ten klucz. `Unknown`: host nie ma wpisów
++       tego typu albo nie ma żadnych. `Revoked`: wpis `@revoked` zawiera ten klucz, niezależnie
++       od tego, co jeszcze jest w pliku. Wpis `@cert-authority` poręcza za certyfikaty, a nie
++       za zwykły klucz, więc nigdy nie czyni klucza `Known`.
++   entry .Host   specyfikacja hosta w wierszu: wzorce, które wymienia, lub hasz, za którym je ukrywa
+
+% 1 1 0 197b1bc39d439b95037f3808e8937e8e
+
+@ 0 10 0 0429ce26247efa9f1be0d6483df5d406
++         `Patterns(patterns)` przechowuje listę oddzieloną przecinkami w zapisanej postaci –
++         `github.com`, `*.internal`, `!bad.internal`, `[example.com]:2222` – a `Hashed(salt,
++         hash)` wpis `|1|salt|hash`, który nie zdradza, jakiego hosta dotyczy, dopóki host
++         nie jest znany.
++     entry #matches   czy host i port są wymienione: pasuje wzorzec glob, żadna negacja nie wyklucza lub zgadza się HMAC
++         Port 22 pasuje do samej nazwy hosta; każdy inny pasuje tylko do postaci
++         `[host]:port`. Wzorce dopasowuje się bez rozróżniania wielkości liter przez
++         `KnownHosts.glob`; zahaszowany wpis dopasowuje się, obliczając HMAC-SHA1 nazwy w
++         nawiasach kwadratowych z solą, co wymaga `Crypto` w zasięgu.
++   entry .Entry   jeden wiersz pliku: jego znacznik, host, typ klucza, blob klucza i komentarz
+
+% 1 1 0 178750f07fadd89213f457ad2bf3e29a
+
+@ 0 23 0 1ae379251af4ccf9092c9f9eddc0dcff
++         Klucz przechowuje się jako własny blob OpenSSH, więc można go porównać z
++         przedstawionym kluczem dowolnego typu i ponownie zakodować dokładnie tak, jak go
++         odczytano.
++     entry #marker   `@revoked`, `@cert-authority` lub `Unset` dla zwykłego wpisu
++     entry #host   wzorce lub hasz wskazujące hosta
++     entry #keyType   typ klucza w postaci podanej w wierszu: `ssh-ed25519`, `ecdsa-sha2-nistp256`, `ssh-rsa`
++     entry #key   blob klucza, zdekodowany z base64; zaczyna się od własnego typu, który musi być typem z wiersza
++     entry #comment   reszta wiersza po kluczu lub `Unset`
++     entry #revoked   czy znacznik to `@revoked`
++     entry #authority   czy znacznik to `@cert-authority`
++   entry .apply   parsuje tekst całego pliku, pomijając komentarze i wiersze, które nie są kluczami
++       Jeden `Entry` na każdy wiersz dający się sparsować, w kolejności z pliku. Wiersz, którego
++       base64 się nie dekoduje lub którego blob nie zaczyna się od typu podanego w wierszu, nie
++       jest kluczem i zostaje pominięty, tak jak pomija go OpenSSH.
++   entry .entry   parsuje jeden wiersz lub daje `Unset`, jeśli jest pusty, jest komentarzem lub nie jest kluczem
++       Pola dzieli się na spacjach; początkowe słowo `@…` to znacznik; dalej następują host,
++       typ i base64, a wszystko po nich to komentarz. Zahaszowany host z solą lub haszem, które
++       się nie dekodują, daje `Unset`.
++   entry .glob   wzorzec glob w stylu powłoki z `*` i `?`, dopasowywany bez rozróżniania wielkości liter, tak jak OpenSSH dopasowuje nazwy hostów
++       `KnownHosts.glob(t"*.example.com", t"Git.Example.COM")` daje `true`. Ten sam mechanizm
++       dopasowania obsługuje wzorce `Host` w `SshConfig`.
++   entry .line   wiersz `known_hosts` dla hosta i jego klucza, w postaci, w jakiej zapisuje go `ssh-keyscan`
++       `KnownHosts.line(hostname, port, keyType, key)`: sam host dla portu 22, a w przeciwnym
++       razie host w nawiasach kwadratowych z portem, potem typ, potem blob klucza w base64.
+
+% 2 1 0 174bce05116aeea90b069ed6883d2f21
+
+% 3 1 0 18217f72b9ea9dde01a3d819dadea695
+
+% 1 1 0 1387f6bcc1070d071a8a9f69b8395044
+
+% 2 1 0 12fd99b76c399c410cfe8e16f6230575
+
+% 0 1 0 06351ef421f72ea6001b4be16dcf8793
+
+% 0 1 0 087560863082bdd213bf479d86b428a1
+
+% 0 1 0 01395b8b0158425311975a8cbf5312a9
+
+% 1 1 0 0d1daf4794baa17b14b14c58efaf90b8
+
+@ 0 9 0 0077b2b359e30e4f1a0a33f31770ecfb
++   entry #entries   wpisy pliku, w kolejności z pliku
++   entry #lookup   wpisy wskazujące host i port (domyślnie 22), unieważnione lub nie, w kolejności z pliku
++       Wymaga `Crypto` dla zahaszowanych wpisów. Wpisy urzędów certyfikacji są uwzględniane;
++       `#verify` je odfiltrowuje.
++   entry #verify   werdykt dla klucza przedstawionego przez host, jako blobu OpenSSH
++       `verify(hostname, port, keyType, key)`: `Revoked`, jeśli dowolny pasujący wpis oznaczony
++       `@revoked` zawiera klucz; w przeciwnym razie `Known`, jeśli zawiera go dowolny
++       nieunieważniony wpis niebędący wpisem urzędu certyfikacji; w przeciwnym razie
++       `Changed`, jeśli host ma wpis z kluczem tego typu; w przeciwnym razie `Unknown`.
++       Wymaga `Crypto` dla zahaszowanych wpisów.
+
+@ 0 1 0 15bd07e3fe399f271bc904a3f93754e6
++ entry .SshConfig   część `~/.ssh/config` potrzebna klientowi, by połączyć się z hostem tak, jak zrobiłby to własny `ssh` użytkownika
+
+% 1 1 0 0566ab1b5516d8251f8a517210894eec
+
+@ 0 8 0 065f0376957362201075a93fa9053444
++       `SshConfig(text)` odczytuje bloki `Host` pliku – wzorce z `*`, `?` i `!`, dopasowywane
++       tak jak w `KnownHosts.glob` – a w nich `HostName`, `User`, `Port` i `IdentityFile`, w
++       pisowni `Keyword value` lub `Keyword=value`. `#resolve` podaje, dla miejsca docelowego
++       nazwanego przez użytkownika, host, z którym należy się połączyć, użytkownika, port i
++       pliki tożsamości, przy czym wygrywa pierwsza uzyskana wartość, jak w OpenSSH (więc
++       konkretne bloki umieszcza się przed `Host *`), z wyjątkiem `IdentityFile`, których
++       wartości się kumulują. `%h` w `HostName` i `IdentityFile` rozwija się do hosta w podanej
++       postaci; `~` pozostawia się wywołującemu, który zna katalog domowy.
+
+% 2 1 0 03069dac618cc8b11ca8205b30fa8d7d
+
+% 3 1 0 1a53a6ac9bb601dd0d503d34fa24cab3
+
+% 0 1 0 17d4247d18ab8826183bea09eee7bc11
+
+% 0 1 0 10ecaddebc9914210192044103bfb7a7
+
+% 0 1 0 12d5e2bd019cbdac12ddb3ea9930042c
+
+% 0 1 0 1493fbab4a8859fb0c101a3f172eba44
+
+% 0 1 0 0df89ae07bf1967509c58a941f482fe5
+
+% 0 1 0 06f823fead74faaa12e2ac307262fa05
+
+% 0 1 0 0742b5d0ef360036150a82675e5b68a3
+
+% 0 1 0 1d56c64f1e4133c90207c15b323097ff
+
+% 0 1 0 18e5c74240e608b60f83c8c69fdcd92d
+
+% 0 1 0 10326529cd821dd11f4b495b4d1d7d9a
+
+% 0 1 0 1ccd839a765b96ab11ae7b25c1d26056
+
+% 0 1 0 0523b0609d920335007048adaea86898
+
+% 1 1 0 027ab906eee0254000d6127d649f3cbb
+
+% 0 1 0 0e325e9c37903c9d0a42346764aa661e
+
+% 0 1 0 00583d8d88f947201da4223d6599b9a3
+
+% 0 1 0 08c692d3bb86dfd902aede75b87a87e3
+
+% 0 1 0 0bca67c251d3fb151b01e116b12785ad
+
+% 0 1 0 0a02b6e993959a5a005b5025e415c975
+
+% 0 1 0 1a7c27f86ca25c3411fb2d5d9255e154
+
+% 1 1 0 0042836c15661a8907855348a4744dc8
+
+@ 0 3 0 10ce305d3a755f25097850ccbc820003
++       Bloki `Match`, `Include` i wszystkie inne słowa kluczowe nie są interpretowane:
++       zawartość bloku `Match` jest w całości pomijana, a nieznane słowo kluczowe wewnątrz
++       bloku `Host` jest ignorowane. `Ssh.Endpoint#resolved` stosuje konfigurację do
++       endpointu.
+
+% 0 1 0 1736e843b109aad41307ea2791d94a8a
+
+@ 0 1 0 09895b457a469fea04c2efabe9aca5c3
++   entry .Resolution   co konfiguracja mówi o hoście: jego nazwa hosta, użytkownik, port i pliki tożsamości
+
+% 1 1 0 024f10006ba92b19129bf740815049d6
+
+@ 0 8 0 124c1ff57bf02f1e1439584c87ad3b38
++         Zwracane przez `SshConfig#resolve`. `hostName` w braku wartości przyjmuje host w
++         podanej postaci, `port` – 22, a `user` to `Unset`, gdy żaden blok go nie ustawia; wtedy
++         dostarcza go wywołujący.
++     entry #hostName   host, z którym należy się połączyć: pierwszy `HostName` z rozwiniętym `%h` lub sam host
++     entry #user   pierwszy `User` lub `Unset`
++     entry #port   pierwszy `Port`, który jest liczbą, lub 22
++     entry #identityFiles   każdy `IdentityFile`, po kolei, z rozwiniętym `%h` i `~` w zapisanej postaci
++   entry .Block   blok `Host`: wzorce, do których się stosuje, i jego ustawienia, małymi literami, po kolei
+
+% 1 1 0 1b07749399a1886a19f2ca6afc89b141
+
+@ 0 19 0 13e1241f964ff439002eb480fb2a8119
++         Słowa kluczowe przed pierwszym wierszem `Host` tworzą blok ze wzorcem `*`, stosowany
++         wszędzie, i występują jako pierwsze. Nazwy słów kluczowych są zamieniane na małe
++         litery, tak by `HostName` i `hostname` były tym samym ustawieniem; wartości pozostają
++         w zapisanej postaci.
++     entry #patterns   wzorce hostów bloku, z `!` dla negacji
++     entry #settings   pary `(keyword, value)` bloku, ze słowem kluczowym małymi literami, w kolejności z pliku
++     entry #matches   czy host jest wskazany przez jakiś wzorzec i niewykluczony przez żaden
++   entry .apply   parsuje tekst pliku konfiguracyjnego na jego bloki
++       Puste wiersze i komentarze `#` są pomijane; odczytywane są wszystkie postacie:
++       `Keyword value`, `Keyword=value` i `Keyword = value`; wiersz `Match` rozpoczyna blok
++       bez wzorców, do którego nic nie pasuje, więc jego zawartość jest ignorowana.
++   entry #blocks   bloki `Host`, w kolejności z pliku, począwszy od niejawnego bloku `*` dla ustawień przed jakimkolwiek `Host`
++   entry #values   każda wartość słowa kluczowego dla hosta, w kolejności uzyskania
++       `config.values(t"work", t"IdentityFile")`: słowo kluczowe dopasowuje się bez
++       rozróżniania wielkości liter, we wszystkich blokach, których wzorce pasują do hosta, w
++       kolejności z pliku. Pierwszą wartość `#resolve` bierze dla `HostName`, `User` i `Port`;
++       wszystkie – dla `IdentityFile`.
++   entry #resolve   nazwa hosta, użytkownik, port i pliki tożsamości dla hosta
++       Pierwszy `HostName` (z `%h` zastąpionym hostem) lub sam host; pierwszy `User` lub
++       `Unset`; pierwszy `Port`, który parsuje się jako liczba, lub 22; i każdy
++       `IdentityFile`, z zastąpionym `%h`.
+
+@ 0 1 0 0a8f6116a55e2b7511335e1896fa73f5
++ entry .Wire   kodowanie przesyłowe SSH z RFC 4251 §5: `Reader` i `Writer` nad jego typami pól
+
+% 1 1 0 0d7d457c5c46a9b5185578c01e932fb5
+
+@ 0 6 0 1cab74c9f89a8b91024622dd323ca5b8
++       Każdy komunikat protokołów transportu, uwierzytelniania i połączenia to sekwencja kilku
++       typów pól: `byte`, `boolean`, `uint32` lub `uint64` w kolejności big-endian, `string` z
++       prefiksem długości (binarny lub `text` w UTF-8), `mpint` w kodzie uzupełnień do dwóch i
++       oddzielona przecinkami `name-list`. `Wire.Writer` gromadzi je w `data` komunikatu, a
++       `Wire.Reader` to kursor nad komunikatem, który odczytuje je z powrotem, zgłaszając zbyt
++       krótki lub zbyt duży komunikat jako `Wire.Error`.
+
+% 2 1 0 07d9976bc59aad20131b3a67706fc5a9
+
+% 3 1 0 04c4f44dbd7e55bf160cd1562a27d301
+
+% 4 1 0 02eb8ff76e05ad3517e7c3912f2daba7
+
+% 5 1 0 083618f6c769f89a11ffd41e0fb8da02
+
+% 0 1 0 1b1bf3b11b93e3a70a2d7a50c984b431
+
+% 0 1 0 19c394c73fed1efc1544307a16590b32
+
+% 0 1 0 1e6047e9fb1d7e5e15eac36bdc269670
+
+% 0 1 0 0377579f7408414d12cce3e2ad0a1081
+
+% 0 1 0 07dad37cb453d0461e0ab6fa59ac51d4
+
+% 0 1 0 1854b52facaa71fd0178238145ab010f
+
+% 0 1 0 02abbe5584e5ad171e25ca49b8b9e2da
+
+% 0 1 0 03f4eeba9b8535b80618a3b577634634
+
+% 0 1 0 1d69ecaa3b6b166e0b7b9514db4538c3
+
+% 0 1 0 17693b51efb193f0153650ef0d02e81d
+
+% 0 1 0 01efec4ddb56b060037c09c686a123bb
+
+% 1 1 0 1f813a6427e0e89519fc50a0d7100138
+
+@ 0 9 0 0e4f76cfc7583c76048a9fd2c2a482f0
++       Czytnik i pisarz są oba `caps.Mutable`, więc są lokalnymi wartościami z jednym
++       właścicielem: metody czytnika są metodami `update`, a każdy odczyt przyjmuje
++       `Tactic[Wire.Error]` i `Diagnostics`. Transport zamienia `Wire.Error` w `Ssh.Error` jako
++       `Malformed`, a klient `ssh-agent` – w `Agent(detail)`.
++   entry .Limit   największe pole, jakie przyjmuje czytnik: 16 MiB
++       Pakiety SSH mają w praktyce najwyżej 256 KiB (RFC 4253 §6.1 wymaga akceptowania 32 KiB),
++       więc długość przekraczająca ten limit oznacza uszkodzony lub wrogi komunikat, zgłaszany
++       jako `Oversized`, zanim cokolwiek zostanie zaalokowane.
++   entry .Error   zgłaszany przez `Wire.Reader`, gdy komunikat jest krótszy, dłuższy lub dziwniejszy, niż deklarują jego pola
+
+% 1 1 0 0a6834c31b97989f05713b19c5fb4542
+
+@ 0 3 0 073a36b88d1fa89a14927390eaa049f1
++         Błąd `↯/s.122.1`: _could not decode the SSH message because …_, z dołączoną przyczyną.
++         Zgłaszany przez `Tactic[Wire.Error]`, który przyjmuje każdy odczyt, więc sam czytnik
++         niczego nie przechwytuje.
+
+% 2 1 0 06ea74af5a0c7c5806cf716c293110e4
+
+% 3 1 0 08987da35ec9a7531a54c15540602a37
+
+% 4 1 0 013f24e9a705bd531483eb51382f3f9b
+
+% 3 1 0 132131ca82e09cbe129279f9d140d3b7
+
+% 0 1 0 0296bbd438c41f291804b43f81a9fc92
+
+% 0 1 0 14380b4002e94fe61c4aae6edb005461
+
+% 0 1 0 184ad7f1307e5a7a0d7716ec073faa4b
+
+% 1 1 0 1fb55ea3cdc7e57e050454a95b6760bc
+
+@ 0 2 0 088cedb5350b40cd0334f616dbf26dfc
++     entry .communicable   przedstawia każdy `Reason` jako jego komunikat
++     entry .Reason   `Truncated`, `Oversized(length)`, `Trailing(count)` lub `Negative`
+
+% 1 1 0 109fb90510dc90b507fbcc13258adfdd
+
+@ 2 4 0 04e1487e8667c0d1139ceea0cd705456
++         column  Przypadek
++         column  Kod
++         column  Komunikat
++         column  Uwaga
+
+% 0 1 0 0a12bd7ae463ba1d0df249d5aacf6762
+
+@ 0 2 0 1d6433a0fcfff45b1cfaf03e7ad6c769
++         row  `Oversized(length)`  2  _a field claimed a length of `length` bytes_  powyżej `Wire.Limit`
++         row  `Trailing(count)`  3  _`count` bytes followed the end of the message_  z `Reader#end`
+
+% 0 1 0 18d39ac9dd1e39731644f7e7ea143139
+
+% 1 1 0 152c4e8fd08257f602eff6c0cfffa8dc
+
+@ 0 2 0 09b938a0207ff02f0db4887bd3e0a62d
++     entry #reason   dlaczego nie udało się zdekodować komunikatu
++   entry .Reader   kursor nad komunikatem, odczytujący po jednym polu ze sprawdzaniem granic
+
+% 1 1 0 1431fcbe21ed3c2e1c048d06ab12acd3
+
+@ 0 5 0 0a4118b9e52293e40fef81777528dce0
++         `Wire.Reader(data)` zaczyna od pierwszego bajtu. Każdy odczyt przesuwa kursor i
++         zgłasza `Wire.Error` (`Truncated`), jeśli komunikat kończy się przed końcem pola, lub
++         (`Oversized`), jeśli prefiks długości przekracza `Wire.Limit`, zanim cokolwiek zostanie
++         zaalokowane. `Reader` jest `caps.Mutable`: jego odczyty są metodami `update` i
++         powinien go zużyć kod, który go utworzył.
+
+% 2 1 0 1e2661a656db0fae0eee5f3e290bcd3e
+
+% 3 1 0 0a26f741cae41e161d1f99e29e01ad1e
+
+% 2 1 0 12e155153954ac4514590ff8b945257a
+
+% 3 1 0 1ebba5fbef5d91101d17cdfacefec595
+
+% 3 1 0 079af4869c213e840ab51975ecb3e25a
+
+% 0 1 0 18edc8fa67da6713007100a2aa5ef15c
+
+% 0 1 0 0313cbdfbee104cc10b5ead2039115ba
+
+% 0 1 0 09b39bd8a3c7cda911e807ae062d9f93
+
+% 0 1 0 152be6482e97d766150ced5d0a1e0bd7
+
+% 0 1 0 0864b3ecddc6e5051482f5fb6b18e6c1
+
+% 0 1 0 107ec2e37f0377ab014eb7db4ae0a026
+
+% 0 1 0 042d8a1607fb7ee60075da628fe8530a
+
+% 1 1 0 0b3d0c76b6428c931dd76059f0c060ae
+
+@ 0 17 0 19626dae32bd6eb1116a33ced7028962
++     entry #remaining   bajty jeszcze nieodczytane
++     entry #finished   czy odczytano wszystkie bajty
++     entry #byte   jeden bajt
++     entry #boolean   jeden bajt, `true`, jeśli nie jest zerem
++     entry #uint32   32-bitowa liczba całkowita big-endian, jako `Int` (więc `0xffffffff` odczytuje się jako `-1`)
++     entry #uint64   64-bitowa liczba całkowita big-endian, jako `Long`
++     entry #string   długość `uint32`, a po niej tyle bajtów
++         Binarny `string` protokołu: blob klucza, podpis, dane kanału w pakiecie.
++     entry #bytes   kolejne `count` bajtów, bez prefiksu długości: pole o stałym rozmiarze, takie jak 16-bajtowe ciasteczko KEX
++     entry #text   `string` zdekodowany jako UTF-8
++         Nazwy usług, nazwy użytkowników, nazwy algorytmów i wiersze poleceń to wszystko `text`.
++     entry #mpint   `string` zawierający liczbę całkowitą big-endian w kodzie uzupełnień do dwóch, jako `BigInt`; pusty napis to zero
++     entry #names   `text` z nazwami oddzielonymi przecinkami, jako lista; pusty tekst to `Nil`
++         `name-list` pól algorytmów w `KEXINIT` i metod w `USERAUTH_FAILURE`.
++     entry #rest   wszystko, co jeszcze nie zostało odczytane, dla ładunku, którego kształt zależy od tego, co go poprzedza
++     entry #end   zapewnia, że komunikat został zużyty w całości, a w przeciwnym razie zgłasza `Trailing(count)`
++   entry .Writer   gromadzący pisarz komunikatów, którego `data` to dotychczasowy komunikat
+
+% 1 1 0 028028395c74714e1e067c2e71c79a5d
+
+@ 0 3 0 15daee1c7f1e72d300b543ac88b38c6d
++         `Wire.Writer()` jest pusty; każda metoda dopisuje jedno pole, a `#data` to nowa kopia
++         wszystkiego, co zapisano. `Writer` jest `caps.Mutable`, więc jest wartością lokalną,
++         budowaną i odczytywaną przez jeden fragment kodu.
+
+% 2 1 0 12d9b7f95436bda11a21eb931820b3a5
+
+% 3 1 0 13da73a9948731b307fa5d07be8d13bc
+
+% 0 1 0 01e7fb8b2ea0f1ec00c5c82c3f525d26
+
+% 2 1 0 1df30285af365cb615fdd0495060e93c
+
+% 0 1 0 165b2243b55551410e9ef62ee9f2e1f7
+
+% 0 1 0 1bff1c90cd4b80d60481982cba95a224
+
+% 0 1 0 04ee216ed39e164c04f563588957991c
+
+% 0 1 0 19fe402fc8f85b9507bfe95b2e973d86
+
+% 1 1 0 045642b1f9d0b9de11d168b780b1836a
+
+@ 0 15 0 13f5918790b8d53811a75f3e81719770
++     entry #length   dotychczas zapisane bajty
++     entry #byte   jeden bajt
++     entry #boolean   jeden bajt: `1` dla `true`, `0` dla `false`
++     entry #uint32   32-bitowa liczba całkowita big-endian
++     entry #uint64   64-bitowa liczba całkowita big-endian
++     entry #string   długość `uint32`, a po niej bajty
++     entry #bytes   bajty bez prefiksu długości: pole o stałym rozmiarze lub już zakodowany komunikat
++         `Session` łączy nim porcje wyjścia polecenia, a transport osadza nim jeden komunikat
++         w innym (podpisane żądanie uwierzytelnienia).
++     entry #text   tekst jako UTF-8, z prefiksem długości
++     entry #mpint   `BigInt` w najkrótszej postaci w kodzie uzupełnień do dwóch, z prefiksem długości; zero to pusty napis
++         Tak jak nakazuje RFC 4251: liczba dodatnia z ustawionym najstarszym bitem dostaje
++         początkowy bajt zerowy (`0x80` koduje się jako `00 80`), a liczba ujemna – swoje
++         uzupełnienie do dwóch.
++     entry #names   lista nazw połączonych przecinkami, jako tekst z prefiksem długości
++     entry #data   wszystko, co zapisano dotychczas, jako nowe `Data`

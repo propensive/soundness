@@ -1,0 +1,17 @@
+orthant 2 language
+
+@ 0 1 0 188df1fa5d3a04e71c5124dc71ff8f93
++ # `SN-339` – `PositionalError` (wycofany)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Ten błąd już nie istnieje. Strona jest zachowana, aby kod nie został użyty ponownie i aby
++ odwołanie do niego ze starszego wydania nadal dało się rozwiązać.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Co się z tym stało
+
+@ 0 4 0 1d0178c1d45a58d71c01d49023c59141
++ API `Interpolator` z Contextual, które zgłaszało ten błąd, zostało zastąpione klasą typów
++ `Interpolable` i punktem wejścia `interpolation[…]`. Interpolator zgłasza teraz niepowodzenie
++ parsowania przez własny typ błędu, umiejscowiony na podstawie `origins` przekazanych makru,
++ więc nie ma wspólnego błędu pozycyjnego do udokumentowania.

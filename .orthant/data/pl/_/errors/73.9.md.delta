@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 113a51a0265b242f149c7b4fbd75d0cf
++ # `↯/s.73.9` – `Timestamp.Error`
+
+@ 0 1 0 022d53b9c0ce7a0b0463cdcb67b66d38
++ Zgłaszany, gdy Aviation nie może sparsować napisu ze znacznikiem czasu.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 3 0 157653f122d7313214cc2eb4171b21cb
++ Parser znaczników czasu w Aviation oczekuje znacznika czasu w stylu ISO-8601. Konstruktor
++ zapisuje błędną wartość `value` oraz `reason: Reason` wskazujące, który krok parsowania się
++ nie powiódł; przedstawiony komunikat to
+
+% 0 1 0 149f699f8a00b67414dcebaad80070a5
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 1 0 15942d5a1f413b541d517eb81a1a1b5f
++ ### `↯/s.73.9.1` – `BadFormat`
+
+@ 0 2 0 00eeefdae2a273b401010a4cc6a76a0f
++ Dane wejściowe w ogóle nie pasowały do oczekiwanego wzorca znacznika czasu ISO-8601.
+
+@ 0 1 0 0a39f76c0f9849071dde88c38d8e251c
++ **Przykład.** `[↯/s.73.9.1] the time not-a-timestamp could not be parsed because the input did not match the expected timestamp format`
+
+@ 0 2 0 102997522e79412919f3e89f4ed2eb39
++ **Rozwiązanie.** Podać znacznik czasu w postaci ISO-8601 (`YYYY-MM-DD[T ]HH:MM:SS`);
++ niestandardowe dane wejściowe przetworzyć wstępnie.
+
+@ 0 1 0 03e608574f3232ae0a4be5b002480ea7
++ ### `↯/s.73.9.2` – `BadNumber`
+
+@ 0 3 0 1f16de59956dbc531d6e9a121dcb8675
++ Dane wejściowe pasowały do wzorca znacznika czasu, ale jednej z ich składowych liczbowych nie
++ udało się sparsować jako liczby całkowitej (wewnętrznie zgłoszono `Number.Error`).
+
+@ 0 1 0 0d349958f19f48470f87428053c963b0
++ **Przykład.** `[↯/s.73.9.2] the time 2024-XX-15T14:30:59 could not be parsed because a numeric component could not be parsed as an integer`
+
+@ 0 2 0 166d3c58c7d41b871ff4db7f31acc6dc
++ **Rozwiązanie.** Upewnić się, że każda składowa (rok, miesiąc, dzień, godzina, minuta,
++ sekunda) jest zwykłą dziesiętną liczbą całkowitą.
+
+@ 0 1 0 178c1d9c25626ddb13c59acae65983b8
++ ### `↯/s.73.9.3` – `BadTime`
+
+@ 0 2 0 127e2439b0a3012e0c433e5699c5c650
++ Składowa daty lub czasu była poza swoim poprawnym zakresem – np. miesiąc 13, dzień 32 albo
++ godzina 25 (wewnętrznie zgłoszono `Moment.Error`).
+
+@ 0 1 0 00a751945fa005620c40389aff728de8
++ **Przykład.** `[↯/s.73.9.3] the time 2024-13-15T14:30:59 could not be parsed because a date or time component was outside the valid range`
+
+@ 0 3 0 0ed982eef14ef72d1392930c827c0497
++ **Rozwiązanie.** Zwalidować wartości składowych przed formatowaniem albo obliczać je z
++ kalendarza, który ogranicza je do dozwolonych zakresów.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 1b685d9cf86d9fb51dd03ae5247b6c58
++ - Źródło: `lib/embarcadero/src/containerd/embarcadero.Timestamp.scala`

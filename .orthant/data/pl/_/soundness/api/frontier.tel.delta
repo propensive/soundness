@@ -1,0 +1,231 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1839d307a452d6e40b6426e09bb0c989
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1d5d77e097f4a573135aea5c8b4ecee4
++ info   wyjaśnia brakujący given jako drzewo wypróbowanych kandydatów i givenów ze ścieżki klas, które by pasowały
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 15781cd8e8cd524117f24b34ea0c8644
++     _Frontier_ zastępuje lakoniczny komunikat kompilatora _no given instance of type `T` was
++     found_ wyjaśnieniem wyszukiwania: którzy kandydaci zostali wypróbowani, których z ich
++     własnych parametrów kontekstowych nie udało się znaleźć i które giveny w innych miejscach
++     ścieżki klas – niezaimportowane lub w pakiecie wyboru – dostarczyłyby brakującą wartość,
++     wraz z importem wskazującym każdy z nich.
+
+% 0 1 0 121f5d49fa83450310393c10f05ce4fa
+
+% 0 1 0 1b9261087ab5c65c00494e8c15158853
+
+% 0 1 0 003b0f83b764717304597eb74f0aacc5
+
+% 0 1 0 1a1aad2b12e3225a03151ad4b70d251e
+
+% 1 1 0 10f0167f8011fb52161242df18c834d2
+
+@ 0 6 0 0e4302b1c58e79600cb440ac0084a4ac
++     Działa za pomocą jednego givena typu catch-all, `explainMissingContext`, o typie
++     `[any] => any`, który jest kandydatem w każdym wyszukiwaniu. Gdy zostaje wypróbowany,
++     sam ponownie uruchamia wyszukiwanie i albo stwierdza, że wyszukiwanie udaje się bez niego –
++     wtedy zawodzi i pozwala kompilatorowi wybrać instancję z nienaruszonym wnioskowaniem
++     typów – albo buduje drzewo `Diagnostic` tego, czego brakowało, i przerywa z tym drzewem
++     przedstawionym jako komunikat. Given catch-all nigdy nie wnosi do programu żadnego termu:
++     jest czysto diagnostyczny.
+
+@ 0 7 0 078b94650e82336d0a4c194a77e1e2f2
++     Opiera się na adnotacji `@scala.annotation.internal.diagnostic`, która istnieje w
++     kompilatorze Proscala, z którym budowane jest Soundness. Given z tą adnotacją, który
++     przerywa podczas wyszukiwania niejawnego, zawodzi tak jak zwykły kandydat, więc
++     `summonFrom`, domyślne argumenty `using` i `NotGiven` zachowują się tak jak bez niego; ale
++     kompilator zachowuje jego błędy jako `DiagnosticFailure` i jeśli całe wyszukiwanie
++     zawiedzie, zgłasza ten komunikat dosłownie zamiast własnego (i zamiast ewentualnego
++     `@implicitNotFound`). W kompilatorze bez tej adnotacji given catch-all nie nadaje się do
++     użytku.
+
+@ 0 1 0 063ed4f4d045da3e04b5beaf4ec2366a
++     Given catch-all wprowadza się do zasięgu na jeden z dwóch sposobów:
+
+@ 0 4 0 17473136a501065a08e47c2ac175fac4
++     - `import soundness.*` wprowadza `soundness.explainMissingContext`, które jest dawnego typu
++       `implicit def`, a nie `given`, właśnie po to, by obejmował je import z symbolem
++       wieloznacznym;
++     - `import frontier.context.explainMissingContext` wprowadza `given` z nazwy, dla kodu,
++       który nie importuje modułu zbiorczego.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 12921236bce385d40855562298c83f0e
+
+% 1 1 0 1ce8b8e2cc9e49dd052da87a9b8e52e8
+
+@ 0 5 0 0ad980165e6bd28b173fb26df2620255
++     W łańcuchu klauzul `using` pokazywane jest wyjaśnienie dla najgłębiej brakującej wartości –
++     najbardziej wewnętrznej przyczyny – ponieważ to tam given catch-all rozwija się najpierw.
++     Wyjaśnienie jest ograniczone: łańcuch kandydatów głębszy niż sześć albo ponad 256
++     wyszukiwań niejawnych w jednym wyjaśnieniu jest zgłaszany jako brakujący zamiast być
++     śledzony, a przedstawione drzewo jest ucinane na 100 wierszach.
+
+@ 0 3 0 1995f22dc81cceef0ca99943218a7b68
++     Biblioteka to pojedynczy zbiór źródeł `frontier.core`. `Diagnostic` celowo nie jest
++     eksportowany do modułu zbiorczego `soundness`, gdzie kolidowałby z
++     `harlequin.Diagnostic`: należy sięgać po niego jako `frontier.Diagnostic`.
+
+% 0 1 0 194151561e25ce5919101cdcc2b88ded
+
+% 0 1 0 0f221ed2717ac3a9100b15b50965dad6
+
+@ 0 1 0 143f892d26c7f152076ee372cd452cfa
++ entry .context   pakiet wyboru zawierający given catch-all `explainMissingContext`, importowany z nazwy
+
+% 1 1 0 0250e6d3bec738dc1f6e99a441ce4524
+
+@ 0 3 0 1df638e1da7a94dd01c6a065c74420a9
++       Pakiet, którego jedyny given importuje się z nazwy, ponieważ `import frontier.context.*`
++       nie importuje givenów. Kod importujący moduł zbiorczy `soundness` go nie potrzebuje:
++       `import soundness.*` wprowadza równoważne `soundness.explainMissingContext`.
+
+% 0 1 0 0d9fb0b7a1b2e2741a9a29ca5ceafd0b
+
+@ 0 10 0 13ba0b5714ff1e5017f905e65dccb707
++   entry .explainMissingContext   wyjaśnia nieudane wyszukiwanie niejawne jako drzewo kandydatów i propozycji ze ścieżki klas
++       `transparent inline given` typu `[any] => any`, oznaczony
++       `@scala.annotation.internal.diagnostic`, więc jest kandydatem w każdym wyszukiwaniu
++       niejawnym. Gdy zostaje wypróbowany, powtarza wyszukiwanie bez siebie: jeśli wyszukiwanie
++       się uda, given catch-all zawodzi, aby kompilator sam wybrał instancję przy wciąż
++       otwartych zmiennych typu; jeśli wyszukiwanie zawiedzie, given catch-all przerywa z
++       przedstawionym drzewem `Diagnostic`, które kompilator zgłasza jako błąd, jeśli żaden
++       inny kandydat się nie powiedzie. Dla celu `NotGiven[X]` udaje się trywialnie, tak aby
++       negacja stosowana przez kompilator do każdego kandydata zamieniła go w niepowodzenie, a
++       decydowały własne instancje `NotGiven`, i `NotGiven[X]` zachodzi dokładnie wtedy, gdy nie
++       ma `X`.
+
+% 2 1 0 06cf5b78f266969317260c70d1be036e
+
+% 0 1 0 00973241d22ea8a4012caaf81aeec69a
+
+% 0 1 0 08ee91ce048da1c30d2890f29f3caf49
+
+% 0 1 0 08ee91ce048da1c40d2890f29f3caf4a
+
+% 0 1 0 12689b8f01a131a817529a2fc39db27f
+
+% 0 1 0 001296c3f114510b1dcb0810a6100700
+
+% 1 1 0 173abe80ab8de7320a022afa3ad9a82f
+
+@ 0 3 0 040e488b9dfa1b2209cd459f85f02a20
++       Komunikat zgłasza brakujące `B`, najbardziej wewnętrzną przyczynę. Propozycja
++       polimorficznego givena podaje wiązania jego parametrów typu (`textual = Char`), a
++       wymaganie `NotGiven[X]` kandydata jest pokazywane jako _prohibits X_, wraz z givenem,
++       który je narusza.
+
+@ 0 1 0 112679f98c94cf5e029814da099941fd
++ entry .Diagnostic   wstępnie przedstawione drzewo opisujące nieudane wyszukiwanie niejawne oraz jego renderer
+
+% 1 1 0 111ccd669e24327e0e2215c7b3f5a7e6
+
+@ 0 5 0 1af5b916d8cd9dbc0744090e38b9c065
++       Niezależny od formatu model wyjaśnienia: każdy węzeł ma rodzaj, `#name` już przedstawione
++       jako `Text`, opcjonalną `#label` i swoje `#children`. Ponieważ nazwy są już
++       przedstawione, renderer nie zależy od kompilatora, a ten sam model może zbudować każde
++       makro, które musi wyjaśnić niepowodzenie – generyczna derywacja Wisterii dołącza do
++       każdego węzła nazwę pola lub wariantu jako jego etykietę.
+
+@ 0 2 0 0583359f1acf43ba1ad88239ce325dfc
++       Sześć przypadków wyliczenia to jego rodzaje węzłów, z których każdy przyjmuje nazwę,
++       opcjonalną etykietę i listę dzieci:
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 9 0 10a5462555db93a905f090192d9fd9a6
++       column  Przypadek
++       column  Przedstawiany jako
++       column  Węzeł
++       row  `Resolving`  _■ resolving T_  korzeń: rozwiązywany typ
++       row  `Candidate`  _▪ candidate g_  given w zasięgu, który został wypróbowany
++       row  `Requires`  _✗ requires T_  parametr kontekstowy kandydata, którego nie udało się znaleźć
++       row  `Propose`  _▸ propose pkg.g_  given na ścieżce klas, poza zasięgiem, który dostarczyłby wartość
++       row  `Prohibits`  _⊘ prohibits X_  wymaganie `NotGiven[X]`, rozpakowane do `X`; jego dzieckiem jest `Found`, który je narusza, albo nie ma dziecka i ma etykietę `absent`, gdy jest spełnione
++       row  `Found`  _✓ found T_  wartość, którą znaleziono
+
+% 1 1 0 085a396440b94d5306c5eeced83a5004
+
+% 2 1 0 0673280dafa8be1405a02105a60e7489
+
+% 3 1 0 1b4080545ef535db03e59e50845d3623
+
+% 0 1 0 159b8d4e6cbaeaa113aac703fafd78db
+
+% 0 1 0 0c010ed7b57d2432034695f2df013319
+
+% 0 1 0 074caed5ee138b4b1f3de4bb9a5c300f
+
+% 0 1 0 0144d3b883890cf6199de2eb989393b7
+
+% 0 1 0 1ac6c91edfd6628f153d3499d8dd5942
+
+% 1 1 0 189bdac6354e2b190f71ebae5e8f5b8a
+
+@ 0 2 0 090a9e23fefe70e41403e95bb193df9c
++       `Diagnostic` nie jest eksportowany do modułu zbiorczego `soundness`, gdzie kolidowałby
++       z `harlequin.Diagnostic`.
+
+% 0 1 0 149718fb9e8fd11705bdc5d2784127e8
+
+@ 0 7 0 0f5e55e677ee66fd1d4195833f518f79
++   entry .render   przedstawia drzewo diagnostyczne jako tekst kolorowany ANSI, pod nagłówkiem, z limitem liczby wierszy
++       Korzeń powinien być węzłem `Resolving`, który dostarcza wiersz _■ resolving T_; każdy inny
++       węzeł jest w taki opakowywany. `headline` domyślnie ma wartość _contextual value not
++       found_, a `limit` – 100: zapisywanych jest co najwyżej tyle wierszy drzewa, a po nich
++       _… n more_, gdy jakieś wiersze pominięto. Poddrzewo niebędące liściem, identyczne z już
++       zapisanym, jest zapisywane tylko jako jego pierwszy wiersz, z etykietą _as above_,
++       ponieważ wyjaśnienie w dużym zasięgu mogłoby inaczej liczyć tysiące wierszy.
+
+% 2 1 0 019e19c47039c5bf1abf90decbf575e6
+
+% 3 1 0 09191a818f4814431c9d16f104a5c608
+
+% 0 1 0 03d6c89fab88062410e2e91683f1cc17
+
+% 0 1 0 0496797d163b904a1aee7903434fe546
+
+% 0 1 0 172dc24bf11f412d152e2648b4ff9f32
+
+% 1 1 0 04344e64d8e0e93c0151bedc6c1ff3a0
+
+@ 0 6 0 0beef1a9cb55de5b058ededce6df918f
++   entry .treeStyle   styl rysowania ramek, którym rysowane jest drzewo diagnostyczne
++   entry .expandable   pozwala rozwinąć `Diagnostic` w jego dzieci, aby narysować go jako drzewo
++   entry #name   przedstawiona nazwa typu lub givena węzła
++   entry #label   opcjonalna adnotacja pokazywana po nazwie, np. nazwa pola lub `absent`
++   entry #children   węzły potomne węzła
++   entry #rebuild   węzeł tego samego rodzaju z tą samą nazwą, ale z nową etykietą i dziećmi
+
+@ 0 1 0 121f77e66ff8a44e0911ee9a30e423e0
++ entry .internal   makro stojące za `explainMissingContext`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 0faa10a70af475360a95cad1e69d78dc
++       Nie do bezpośredniego użytku. Każdy krok od givena catch-all do jego makra musi być
++       `transparent inline`: tylko wywołania transparent inline są rozwijane podczas
++       typowania, więc krok nieprzezroczysty pozostawiłby makro nierozwinięte podczas
++       wypróbowywania givena catch-all, a wyszukiwanie fałszywie by się powiodło.
++   entry .explanation   punkt wejścia transparent inline makra wyjaśniającego
++   entry .explain   makro, które ponownie uruchamia wyszukiwanie oraz buduje i przedstawia jego `Diagnostic`
++   entry .NoCandidates   dopasowuje niepowodzenie wyszukiwania niejawnego bez kandydatów, podając jego wyjaśnienie
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 2 0 1e1fd34ade08fb8e132b0c4df5ca9693
++         Ekstraktor nad `quotes.reflect.ImplicitSearchFailure`, używany przez makro.
++     entry .unapply   wyjaśnienie niepowodzenia wyszukiwania bez kandydatów, jeśli nim jest

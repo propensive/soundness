@@ -1,0 +1,113 @@
+orthant 2 language
+
+@ 0 4 0 05eb45037408fb11057e10c2d258b133
++ Klasa case złożona z [typów liczbowych](numbers.md#numeric-types) o określonym rozmiarze opisuje
++ układ binarny. Każde pole podaje swoją dokładną szerokość i sposób odczytu swoich bajtów, więc
++ kształt rekordu jest jego definicją, a odczytanie wartości sprowadza się do podania jej typu
++ pod danym przesunięciem. Zapis wartości to ta sama definicja, użyta w przeciwnym kierunku.
+
+@ 0 2 0 01975e84328eeafd011bff4658ef7c51
++ Wszystko pochodzi z pakietu `soundness`. Drugi import pozwala przykładom wypisywać wyniki, a
++ trzeci – czytać bajty bez obsługi błędu, który zgłasza zbyt krótki rekord:
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+@ 0 3 0 0978ea4ebe0c10cf13b30da5abfcb4c0
++ Rekord binarny to klasa case złożona z pól o stałej szerokości, która otrzymuje instancję
++ `Structural` przez derywację. Kolejność bajtów w obrębie pola należy do formatu, więc wybiera
++ się ją tam, gdzie deklarowany jest układ, importując ją z `byteOrders`:
+
+% 0 1 0 0a8651b622749bd0166cad14fbf97d34
+
+% 0 1 0 0f679049a59664ee16c7b65094aa5a6d
+
+@ 0 2 0 121fdababb84873516a123afa2a5743c
++ Szerokość każdego pola wynika z jego typu. Tutaj szerokości wynoszą cztery, dwa, dwa i cztery
++ bajty, więc rekord ma dwanaście bajtów. Mówi to `Structural.width`, bez wartości pod ręką:
+
+% 0 1 0 192f2ea9c942ba560b5d0f33c3e229eb
+
+@ 0 4 0 1123519ccc868c4a14358701bdc3d455
++ Rekordy się zagnieżdżają. Pole, którego typ sam jest `Structural`, wnosi całą swoją szerokość,
++ więc układ składa się z mniejszych układów i nie trzeba go spłaszczać ręcznie. Zagnieżdżony
++ rekord zachowuje kolejność bajtów, z którą go zadeklarowano, i tak opisuje się format, który
++ miesza obie kolejności.
+
+@ 0 2 0 133fd897f6b30b1e161e10884120d899
++ Derywacja bez kolejności bajtów w zasięgu się nie kompiluje, podobnie jak derywacja, w której
++ pole ma typ bez stałego układu.
+
+@ 0 1 0 1a2d3814d3f219c800a048918d540232
++ `unpack` czyta wartość wybranego typu z bajtów pod danym przesunięciem:
+
+% 0 1 0 1fb77bda4754774f0d717049ab6cf6de
+
+@ 0 3 0 1921303bc0c82e35039c589101dc7766
++ Cały rekord jest sprawdzany względem długości danych raz, zanim zostanie odczytane
++ jakiekolwiek pole. Rekord, który wychodziłby poza koniec, zgłasza `Structural.Error`, który
++ podaje przesunięcie, szerokość rekordu i liczbę dostępnych bajtów:
+
+% 0 4 0 1c275054af78b2b5039fad57cd82dc6a
+
+@ 0 2 0 1d31d1c6fb4ef67f1452fef38d6ebebe
++ Formaty binarne lubią powtarzane sekcje, a sekcję rekordów rozpakowuje się według jej
++ przesunięcia i liczby rekordów, jako jedną tablicę:
+
+% 0 1 0 0183ba2bae654924132d91e7c239d9ee
+
+% 0 1 0 12d7d14b458cc4a4087e7805f3b62a4d
+
+% 0 1 0 03526977cd93fab21559afc1f77220cd
+
+@ 0 2 0 1be62d39b4f2f82201a781a907eadb7e
++ To samo wywołanie czyta rekord z `Expanse`, takiego jak `Terrain` bajtów odwzorowanych w
++ pamięci, pod przesunięciem typu `Long`. Czytane są z niego tylko własne bajty rekordu.
+
+@ 0 1 0 031e799c979801b01abdd3555d287aac
++ ### Zapis
+
+@ 0 2 0 12625a32c9350e1318f814a1dda0e14a
++ `pack` działa odwrotnie: układa wartość w dokładnie tylu bajtach, ile wynosi szerokość jej
++ układu, z tą samą instancją, więc to, co zostanie spakowane, `unpack` odczytuje z powrotem:
+
+% 0 2 0 038b7938c9a79fa30bdf117f54902562
+
+% 0 5 0 0588620aca8349f90a757086ce8bc2ef
+
+@ 0 1 0 1d40e167098578ad11be08eac45bb0a2
++ ### Klasa typów
+
+@ 0 4 0 07ca347fd28d05670b8bd3d8c0b63482
++ `Structural` opisuje typ o stałym układzie, w obu kierunkach. Instancja podaje trzy rzeczy:
++ `width`, czyli liczbę bajtów zajmowanych przez wartość; `load`, które czyta wartość z tych
++ bajtów pod przesunięciem; oraz `store`, które zapisuje wartość do tablicy bajtów. `unpack` i
++ `pack` sprawdzają, czy bajty są obecne, a następnie je wywołują.
+
+@ 0 4 0 0eff5f1f96c99fb10fd0f2fbaf624011
++ Derywacja wylicza każde przesunięcie w [czasie kompilacji][czas kompilacji], gdy układ jest
++ deklarowany, i rozwija się do jednego ładowania dla każdego pola pod jego przesunięciem, w
++ wybranej kolejności bajtów. Odczyt rekordu to więc jedno sprawdzenie granic i tyle ładowań, ile
++ jest pól, bez alokowania czegokolwiek poza rekordem.
+
+@ 0 3 0 03612a23538f3392152fbb45e12d10da
++ Typy o określonym rozmiarze ustalają, jak bajty są *interpretowane*, a nie tylko ile ich jest.
++ `B32` to cztery surowe bajty, `U32` czyta je jako liczbę całkowitą bez znaku, a `S32` jako
++ liczbę ze znakiem. Można też używać zwykłych typów Scali, dla układów, które łatwiej za ich
++ pomocą wyrazić:
+
+@ 0 3 0 00129bea2dcd95f91e5ab6d723a0a3ff
++ Pole dowolnego innego typu potrzebuje własnej instancji `Structural`, którą derywacja składa
++ potem jak zagnieżdżony rekord. Tak nadaje się polu reprezentację, której nie oferują typy o
++ określonym rozmiarze, na przykład trzy bajty koloru:
+
+% 0 1 0 12dfed929269776716973385c9f2f8ad
+
+% 0 4 0 03375ecb7bafac6b0fdbc4bf0dd7a337
+
+% 0 2 0 06d72899db3cc813045940dd54be4864
+
+% 0 4 0 0312126fd12062990f08b39b6798ee97
+
+@ 0 2 0 02da14b1c70e3aa012b5f78d99666356
++ `load` i `store` nie są sprawdzane: wywołuje się je dopiero wtedy, gdy wywołujący ustalił, że
++ obecnych jest `width` bajtów.

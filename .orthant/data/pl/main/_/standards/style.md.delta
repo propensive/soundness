@@ -1,0 +1,41 @@
+orthant 2 language
+
+@ 0 4 0 1c1902d2afe7b9801eeac822185723d5
++ Dokumenty w `doc/work/soundness/modules/` są samouczkami, z których każdy wprowadza jedną funkcję
++ Soundness – możliwość, która może obejmować kilka wewnętrznych modułów – czytelnikowi,
++ który styka się z nią po raz pierwszy. Ten przewodnik określa, jak je pisać: do kogo się
++ zwracają, jakim głosem mówią i jakich konwencji przestrzegają.
+
+@ 0 10 0 1d1b8603f33b4c510a3852b70716f80f
++ - Przykład musi wprowadzać każdą nazwę, której używa, w bloku kodu tego samego samouczka,
++   tak by bloki tworzyły jedną ciągłą sesję. Gdy samouczek potrzebuje wartości, której nie
++   da się sensownie skonstruować w prozie – ścieżki, która musi istnieć, działającej usługi –
++   wiązanie należy umieścić w `etc/fixtures/<tutorial>.scala`, które oba narzędzia kompilują
++   przed pierwszym blokiem.
++ - Wiersz, który celowo się nie kompiluje, ma na końcu komentarz `// does not compile` (z
++   opcjonalnym wyjaśnieniem po dwukropku). Oba narzędzia kompilują go osobno i zgłaszają go,
++   jeśli jednak się skompiluje; fuel pokazuje jego błąd jako notatkę przy wierszu. Nowe
++   przykłady używają zamiast tego bloku `errors show`, z powodu podanego w części
++   „Pokazywanie zamiast opisywania”.
++ - Blok kodu, który mówi więcej niż jego kod, robi to w preambule TEL: otwiera się
++   przez ` ```scala fuel `, a preambuła kończy się na wierszu zawierającym `##`. Jej
++   dyrektywy opisano poniżej.
+
+@ 0 9 0 01c4ec9013f5cd181a943251159092c2
++ - pojęcie, którego uczy inny samouczek, przy jego pierwszym użyciu w każdej sekcji, z
++   kotwicą sekcji tam, gdzie celem jest jedna sekcja długiej strony:
++   `[strategy](errors.md#choosing-a-strategy)`;
++ - połączenie dwóch funkcji, z obu stron. Gdy instancja łączy typ jednego modułu z klasą
++   typów innego – data kodowana w JSON, wielkość pokazywana w tabeli, ścieżka będąca
++   parametrem wiersza poleceń – każdy samouczek poświęca temu połączeniu krótką sekcję lub
++   zdanie, z przykładem, i linkuje do drugiego;
++ - idea projektowa, do jej eseju w `doc/work/philosophy/`, raz, tam, gdzie objaśniany jest projekt;
++ - byt API, przez nazwanie go w kodzie w tekście wraz z jego sigilem (`` `#Json` `` dla typu,
++   `` `.fetch` `` dla termu), który fuel rozwiązuje i linkuje.
+
+@ 0 4 0 1b87f88d1cf8a39e1b25121794ec7fd4
++ Słowo o precyzyjnym znaczeniu w Soundness – *taktyka*, *strategia*, *zdolność*, *pakiet
++ wyboru* – jest zdefiniowane w `doc/work/soundness/glossary.tel` i zapisywane w nawiasach tam, gdzie
++ czytelnik może go jeszcze nie znać: `[tactic]` lub `[strategies][strategy]` dla formy
++ odmienionej. Fuel pokazuje definicję po wskazaniu terminu i linkuje go do strony nazwanej w
++ jego wpisie.

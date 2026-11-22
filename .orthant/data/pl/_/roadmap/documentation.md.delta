@@ -1,0 +1,172 @@
+orthant 2 language
+
+@ 0 1 0 0358872660e6faa409dcd901a28eaf0f
++ # Dokumentacja i przystępność
+
+@ 0 5 0 1aa4b69c31a4451302d427c9d596b1d5
++ Dokumentacja jest częścią opowieści o bezpieczeństwie. Nieudokumentowane API zachęca do
++ zgadywania, a zgadywanie to droga do zaskakujących porażek – dla ludzi i, jeszcze dotkliwiej,
++ dla agentów AI, które pewnie syntetyzują wszystko, czego dokumentacja nie mówi. Standardem jest
++ pełne pokrycie: każdy moduł udokumentowany, każdy kod błędu wyjaśniony, każda nowatorska idea
++ wyspecyfikowana, a każdy komunikat zgodny ze spisaną konwencją.
+
+@ 0 9 0 1723ba1cd99058ba0fdd50aaa077dd16
++ Proza istnieje dziś w trzech równoległych systemach: przewodnikach tematycznych w
++ `doc/en/modules/` – kierunku, w którym zmierzamy, i miejscu, w którym powstaje zasadnicza część
++ tekstu – w starszych szablonach dla poszczególnych modułów w `lib/*/doc/`, odziedziczonych
++ z czasów, gdy każdy moduł był osobnym repozytorium, oraz w osobnej kopii materiałów
++ filozoficznych w `web/res/content/`. Trzy systemy oznaczają rozbieżności, a rozbieżność
++ oznacza, że jeden z nich kłamie. Ten nurt scala je w jeden, uzupełnia pokrycie i dodaje
++ warstwę, której proza zapewnić nie może: generowaną, przeszukiwalną dokumentację API –
++ infrastrukturę, od której zależą też fluence i wersjonowanie LIRA wyprowadzane z API. Kończy
++ się najsilniejszym istniejącym testem przystępności: agent, mając wyłącznie dokumentację,
++ buduje i wdraża działającą aplikację.
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ Pozycje tego nurtu wraz z horyzontami i twardymi zależnościami; [`status.tel`](status.tel) rejestruje, na jakim etapie jest każda z nich:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 12 0 1e1723c8910fe58608679e2f10af8e11
++ column  Pozycja
++ column  Tytuł
++ column  Horyzont
++ column  Wymaga
++ row  doc-1  każdy typ błędu ma kod i stronę  bliski
++ row  doc-2  standard komunikatów jest spisany  bliski
++ row  doc-3  starsze systemy dokumentacji zostają wycofane  bliski
++ row  doc-4  każdy moduł jest objęty tematem  średni
++ row  doc-5  dokumentacja API jest generowana i publikowana  średni
++ row  doc-6  witryna wywodzi się z `doc/`  średni
++ row  doc-7  nowatorskie idee są o jeden krok  daleki
++ row  doc-8  przewodnik od zera  daleki  tool-2, tool-4
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 088d38de12cb74151b1461e9ac2f6ca0
++ ## doc-1: każdy typ błędu ma kod i stronę
+
+@ 0 2 0 17d7c44780401f8b1f8c498157714b45
++ Horyzont: bliski
++ Stan wyjściowy: 41 typów błędów nie ma kodu bolt; istnieje 247 stron błędów (pomiar 2026-10-21; 40 i 241 w dniu 2026-09-25; 39 i 233 w dniu 2026-08-01)
+
+@ 0 3 0 1e3b6eb02bb2fb540217d4d349a13903
++ Kody bolt obejmują błędy kompilacji zgłaszane przez makra; pozostałe typy błędów czasu
++ wykonania otrzymują kody i strony w ramach tej samej dyscypliny niewykorzystywania kodów
++ ponownie, a zgodność między typami, kodami i stronami staje się kontrolą CI, by nie mogła się
++ rozjechać. Nic w `etc/` jeszcze tej zgodności nie sprawdza.
+
+@ 0 1 0 1e10bdcf95bed4aa128a9f1ce07e87ce
++ Ukończone, gdy: kontrola zgodności działa w CI i
+
+% 0 1 0 1bdf33953eae45dc1c2f5b884dbb8f33
+
+@ 0 1 0 0c7a7d2a401bbbd21b0119d42a3bc1bb
++ ## doc-2: standard komunikatów jest spisany
+
+@ 2 1 0 17ab2720867ae8111d9d599f47d28d50
++ Zrobione: #2306 (2026-10-21)
+
+@ 0 3 0 1428b21c265c30b913cda163dc81d49d
++ `doc/standards/messages.md` był, z własnej deklaracji, zalążkiem, mimo że konwencja komunikatów
++ jest nośna w każdym module. Standard jest już spisany: rejestr, struktura, słownictwo, czego
++ komunikat zawierać nie może, składanie przez `Communicable` oraz zdarzenia logu.
+
+@ 2 1 0 03f202f8bf010c101dd08021ad543252
++ Ukończone, gdy:
+
+% 0 1 0 0dba55afda5b5758005ab4659f4df53c
+
+@ 0 1 0 0c9927a8b037ae271c8e087c8ab10f12
++ ## doc-3: starsze systemy dokumentacji zostają wycofane
+
+@ 0 5 0 1093e7c0e6b946dd05516daccac71e83
++ Zrobione: #1791 (2026-08-14)
++ Stan wyjściowy wynosił 92 pliki szablonowych readme dla poszczególnych modułów i 98 katalogów
++ `lib/*/doc/` (pomiar 2026-08-01). Szablony były starsze niż monorepo; to, co w `lib/*/doc/`
++ warto było zachować, przeniesiono do tematów w `doc/modules/`, a resztę usunięto, zamiast
++ zostawiać ją, by wprowadzała w błąd. Nie pozostał żaden katalog `lib/*/doc/`, a szablonowa fraza
++ niczego nie dopasowuje.
+
+@ 0 1 0 0900a5ddb113209d1354b00d82edbee4
++ ## doc-4: każdy moduł jest objęty tematem
+
+@ 0 2 0 197393089856cb5c0f2509c3bbcd6fd5
++ Zrobione: #2306 (2026-10-21)
++ Stan wyjściowy wynosił 99 tematów w `doc/modules/` i 1 ze 144 bibliotek nieobjęty (pomiar 2026-09-25; 91 tematów i 35 nieobjętych w dniu 2026-08-01); w dniu 2026-10-21 101 tematów obejmuje 145 ze 145
+
+@ 0 5 0 10c607d670b62b8101dae541037747a8
++ Każdy publikowany moduł jest objęty co najmniej jednym tematem w `doc/modules/`, a skrypt
++ pokrycia odwzorowuje moduły na tematy, by sieroty były widoczne:
++ `etc/check-doc-coverage.py`, uruchamiany przez `make
++ build`, kończy się kodem niezerowym, gdy znajdzie sierotę. Ostatnią, burdock, obejmuje
++ `packaging.md`; wpis `COVERED_BY`, który wskazywał ten temat dla ziggurat (biblioteki usuniętej
++ w #1973), wskazuje teraz burdock.
+
+@ 2 1 0 13a1375cd0328fbe1525b12456615af8
++ Ukończone, gdy:
+
+% 0 1 0 1ba62d2089bad9d41967ba24204a3f6c
+
+@ 0 1 0 1cc798e6e2c1e8c61aa3cdb9cfd3b3f5
++ ## doc-5: dokumentacja API jest generowana i publikowana
+
+@ 0 2 0 03ba7b62e48036560475cb2eba36751b
++ Horyzont: średni
++ Stan wyjściowy: każdy publikowany `docJar` jest pusty – `build.mill` nadpisuje to zadanie tak, by zapisywało pusty jar (pomiar 2026-09-25, bez zmian od 2026-08-01)
+
+@ 0 3 0 0c7f063f00f74dd013697a3434dc1109
++ Potok ekstrakcji jest wspólnym fundamentem: fluence go przeszukuje (`tool-7`), a wersjonowanie
++ wyprowadzane z API porównuje jego wersje (`dist-4`). Bezpośrednim produktem jest publikowana
++ dokumentacja API.
+
+@ 0 2 0 1d7cd2efcc0c94871a130646ff65da22
++ Ukończone, gdy: artefakt dokumentacji każdego publikowanego komponentu jest niepusty,
++ a dokumentacja API jest publikowana dla każdego wydania.
+
+@ 0 1 0 02251824a373debc15f49bd28471c2b0
++ ## doc-6: witryna wywodzi się z `doc/`
+
+@ 2 1 0 145e5b98677ee68d1071327f412959a9
++ Horyzont: średni
+
+@ 0 3 0 0c895d7ebf2623bb11579fc074f5b2ef
++ Proza w `web/res/content/` ręcznie powiela materiały filozoficzne: dziesięć stron, ostatnio
++ zmienianych w #801, każda będąca starszą i krótszą kopią strony z `doc/philosophy/`. Witryna
++ jest generowana z `doc/` – jedno źródło, bez równoległych kopii.
+
+@ 0 1 0 1c13dd5d72371e8b1044905d160d2cb9
++ Ukończone, gdy: `web/res/content/` nie zawiera żadnego ręcznie utrzymywanego duplikatu
++ jakiejkolwiek strony z `doc/`.
+
+@ 0 1 0 05112a75a76d057a037f86af8ebaf9cb
++ ## doc-7: nowatorskie idee są o jeden krok
+
+@ 2 1 0 1da71cc8a3d2501102512a3a7983010d
++ Horyzont: daleki
+
+@ 0 3 0 1c487f6f26957dc41d1705e960be1b65
++ Każda nowatorska idea w Soundness – sprawdzanie przechwytywania w praktyce, mutowalność
++ sprawdzana separacją, ograniczone zasięgi, deklarowane błędy – ma stronę filozoficzną, a każde
++ API, które tę ideę ucieleśnia, do niej odsyła. Czytelnik nigdy nie jest dalej niż o jeden krok
++ od wyjaśnienia.
+
+@ 0 2 0 036ddf33fefdc5fc01e4c723c46ef4d0
++ Ukończone, gdy: kontrola odnośników weryfikuje, że do każdej strony filozoficznej odwołują się
++ przewodniki tematyczne modułów, które ją ucieleśniają, i działa ona w zwykłej kompilacji.
+
+@ 0 1 0 094c970e32420b4017ae996cd8ad2bb0
++ ## doc-8: przewodnik od zera
+
+@ 0 2 0 12f719b526ca670611e64c8611bfb812
++ Horyzont: daleki
++ Wymaga: tool-2, tool-4
+
+@ 0 3 0 011ab0612ca4077f0673854c02ada675
++ Integrujący test przystępności i ostatnie kryterium bramki: samouczek od zera, który agent może
++ wykonać od początku do końca – nowy projekt, kompilacja za pomocą fury, testy za pomocą fume,
++ wdrożenie aplikacji WWW na JVM i JavaScript – używając wyłącznie `doc/` i narzędzi ekosystemu.
+
+@ 0 2 0 087239e290d576c213d6e958e2895253
++ Ukończone, gdy: przewodnik jest wykonywany przez agenta w CI, a przebieg jest rejestrowany
++ z każdym wydaniem.

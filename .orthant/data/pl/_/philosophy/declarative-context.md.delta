@@ -1,0 +1,121 @@
+orthant 2 language
+
+@ 0 1 0 1bfc33e2edf2fc8f121308653215d922
++ # Kontekst deklaratywny
+
+@ 0 7 0 1d92e83ec686989c182a8572fbb330ee
++ Soundness konfiguruje zachowanie deklaratywnie, za pomocą wartości kontekstowych w zasięgu, a
++ nie argumentów przekazywanych ręcznie ani flag sprawdzanych w czasie wykonania. Wybór formatu
++ wyjściowego, strategii obsługi błędów, kodowania znaków czy konkretnej implementacji sprowadza
++ się do wprowadzenia odpowiedniego `given` do zasięgu, po czym wybór stosuje się automatycznie do
++ wszystkiego w tym zasięgu. Ponieważ konfiguracja jest deklaratywna, jest niezależna od przepływu
++ sterowania i łatwo o niej wnioskować: to, co jest w zasięgu, określa, co się dzieje, gdziekolwiek
++ działa kod, którego to dotyczy.
+
+@ 0 5 0 0ccd789078bba8931f8edef54dab7236
++ Siła tego podejścia polega na tym, że zasięg jest precyzyjnym narzędziem. Given zaimportowany na
++ początku pliku konfiguruje plik; zadeklarowany wewnątrz bloku konfiguruje tylko ten blok,
++ nadpisując każdy szerszy wybór; a blok `locally` ogranicza wyjątek do kilku wierszy.
++ [Ograniczone zasięgi](delimited-scopes.md#scope-is-a-precise-instrument) pokazują wszystkie trzy
++ w jednym przykładzie.
+
+@ 0 4 0 1df4daca083094a405998d73f5729c9a
++ Konfiguracja składa się tak jak kod, który konfiguruje. Projekt definiuje swoje domowe wybory
++ raz i udostępnia je przez `export`, więc `import myproject.conventions.*` wyposaża dowolny plik
++ w strategię obsługi błędów, kodowania i formaty zespołu – konfiguracja jako biblioteka,
++ wersjonowana i przeglądana jak biblioteka.
+
+@ 0 8 0 15130699107ff7ce07eb333f08b1a870
++ Dwa narzędzia utrzymują uczciwość tego podejścia. Wartości kontekstowe reprezentujące zdolności
++ lub konfigurację rozszerzają znacznik `Findable`, którego wtyczka kompilatora Soundness używa,
++ by odróżnić kontekst *odnajdywalny* – rzeczy, które użytkownik ma dostarczyć lub zaimportować –
++ od wewnętrznej maszynerii. A gdy brakuje wymaganego givena, zaimportowanie
++ `explainMissingContext` zamienia gołe „no implicit found” kompilatora w diagnozę: przeszukuje
++ ścieżkę klas w poszukiwaniu instancji, które *spełniłyby* wyszukiwanie, i nazywa importy, które
++ je dostarczają, więc odpowiedzią na brakujący kontekst jest jednowierszowy import, a nie sesja
++ archeologiczna.
+
+@ 0 1 0 1f2cfe28048ef52a014414f319348b48
++ ## Co trafia do zasięgu
+
+@ 0 3 0 08ab6e64349664401a049f51916e12fc
++ Warto zobaczyć cały zakres naraz, ponieważ jednolitość jest tu sednem. Jeden mechanizm przenosi
++ wybory, które inne projekty rozproszyłyby po argumentach konstruktorów, ustawieniach globalnych,
++ metodach budowniczych i flagach czasu wykonania:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 1 0 0d44811bd8d018c410e4192246a748b7
++ column  Wybór
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 10 0 02cd44ba0a872ef0186f15a0a71e663f
++ row  co robi niepowodzenie  `strategies.throwUnsafely`
++ row  jak tekst staje się bajtami  `codepages.utf8Codepage`
++ row  jak przedstawiany jest JSON  `formatting.compactJsonFormatting`
++ row  jak pokazywane są daty  `dateFormats.iso8601DateFormat`
++ row  jak pokazywana jest wartość logiczna  `affirmations.yesNoAffirmation`
++ row  na czym działa zadanie  `threads.virtualThreads`
++ row  co dzieje się z niedokończonymi zadaniami  `probates.cancelProbate`
++ row  który transport HTTP jest używany  `httpBackends.soundnessHttp`
++ row  która implementacja systemu plików  `filesystemBackends.javaBaseFilesystem`
++ row  który kalendarz oznacza literał daty  `calendars.gregorianCalendar`
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0f4325e2e28fd8fe0eb6619c2d9e23bf
++ Jeden idiom do nauczenia się, a to samo rozumowanie – „to, co jest w zasięgu, określa, co się
++ dzieje” – stosuje się do nich wszystkich.
+
+@ 0 1 0 051ff2ba1d0a5e911e96d25d468d9ce8
++ ## Nazewnictwo czyni wybór czytelnym
+
+@ 0 3 0 0338cae7de17808a12f362eb0e0255c4
++ Given nazywa się od tego, co *wybiera*, a nie od swojego typu, ponieważ czytelnik widzi wiersz
++ importu. `import strategies.throwUnsafely` mówi coś o kodzie poniżej; `import strategies.given`
++ by nie mówiło.
+
+@ 0 4 0 1f2308d40559540504acf589b86bbe3d
++ Dlatego ta konwencja ma tu większe znaczenie niż gdzie indziej: wartość kontekstowa jest
++ wywoływana bez zapisywania jej w miejscu wywołania, więc import jest jedynym miejscem, w którym
++ jej wybór jest widoczny. Źle nazwany given czyni konfigurację kontekstową dokładnie tak
++ nieprzejrzystą, jak twierdzą jej krytycy.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ile to kosztuje
+
+@ 0 2 0 021c580bb192a4c90d3cf4ac02f1998f
++ Uczciwym zarzutem wobec konfiguracji kontekstowej jest działanie na odległość i nie jest on
++ błędny.
+
+@ 0 5 0 08a8364f101114b81d9f5e65f3c4db5c
++ **Efekt nie jest lokalny dla miejsca wywołania.** `json.show` przedstawia inaczej w zależności od
++ importu umieszczonego być może sto wierszy wyżej, a nic w miejscu wywołania o tym nie mówi.
++ Czytelnik musi wiedzieć, gdzie szukać. Łagodzi to precyzja zasięgu – im węższy zasięg, tym
++ bliżej given jest tego, na co wpływa – ale napięcie jest realne, a given zaimportowany dla
++ całego pliku naprawdę jest działaniem na odległość.
+
+@ 0 4 0 0bf53ac56528f89c034b002070df71e2
++ **Niejednoznaczność jest błędem kompilacji, i to mylącym.** Dwa givens tego samego typu w
++ zasięgu czynią kod niejednoznacznym, co jest bezpieczne, ale zgłaszane w kategoriach
++ rozwiązywania implicitów, a nie jako „wybrano dwa formaty JSON”. Dokładnie to powoduje
++ zaimportowanie dwóch niezgodnych zestawów konwencji.
+
+@ 0 4 0 12e85f801961fb31108ba097de7fe655
++ **Refaktoryzacja może po cichu zmienić zachowanie.** Przeniesienie funkcji do innego pliku
++ wyprowadza ją z jednego zbioru importów i wprowadza do innego. Typy nadal się zgadzają;
++ zachowanie może być inne. To najostrzejsza krawędź tego podejścia i powód, dla którego konwencje
++ projektu lepiej zebrać w jednym współdzielonym obiekcie, niż składać doraźnie w każdym pliku.
+
+@ 0 5 0 1e2bd1a98a0147f819f7a3476225b5bf
++ **Nie ma nadpisania w czasie wykonania.** Ponieważ konfiguracja jest rozwiązywana podczas
++ kompilacji kodu, nie można jej zmienić opcją wiersza poleceń ani plikiem konfiguracyjnym bez
++ jawnego przekazywania decyzji. Tam, gdzie konfigurowalność w czasie wykonania jest naprawdę
++ pożądana, wartość musi być zwykłym parametrem – a rozpoznanie, którego z tych dwóch wymaga dany
++ wybór, jest decyzją projektową, a nie automatyczną.
+
+@ 0 3 0 1f04c87e82ebf96301e4edea8825ca01
++ Zobacz [ograniczone zasięgi](delimited-scopes.md), by dowiedzieć się, jak ustanawia się zasięg,
++ oraz [uczciwe sygnatury](honest-signatures.md), by zrozumieć, dlaczego to właśnie obecność
++ wymagań w sygnaturze w ogóle czyni to czytelnym.

@@ -1,0 +1,300 @@
+orthant 2 language
+
+@ 0 1 0 1c8f982420a54f811ad8df5c2ea7076d
++ # Toolchain
+
+@ 0 7 0 061c8595138ea8a8086af196e6aa1a7e
++ Kod Soundness powinien być pisany, kompilowany, testowany, eksplorowany i debugowany za pomocą
++ narzędzi, które podzielają jego filozofię – totalnych, uczciwych, sprawiających wrażenie
++ natywnych – a nie za pomocą toolchainu z ery Mavena, starszego niż każda idea, którą ucieleśnia
++ platforma. Stan docelowy to programista, człowiek lub agent, który nigdy nie opuszcza
++ ekosystemu: flame do eksploracji, fury do kompilowania, fume do testowania, fluence do
++ wyszukiwania API, serwer LSP exegesis w dowolnym edytorze, debuger, który mówi językiem
++ Soundness, a nie Javy, oraz serwer MCP synesthesia, dający agentom ten sam dostęp
++ programistycznie.
+
+@ 0 3 0 17b9aa15e0252c911310c74e071a4787
++ Poszczególne elementy są w różnym stanie, a mapa drogowa uczciwie mówi, w jakim. Z narzędzi,
++ które żyją gdzie indziej, ten nurt rejestruje tylko to, co Soundness jest winien każdemu z
++ nich, nigdy ich własnych postępów:
+
+% 2 1 0 0746e3e2f97349fd1a699b40d4c78c29
+
+@ 0 11 0 0fced98b312fcfbf1a3081b147a366ad
++ column  Narzędzie
++ column  Rola
++ column  Gdzie
++ column  Stan
++ row  flame  eksploracja (REPL)  własne repozytorium  przypięte w `etc/tools` (0.8.0), skonfigurowane w `.pyrocosm/`
++ row  fury  kompilowanie  własne repozytorium  nie potrafi jeszcze skompilować tego repozytorium
++ row  fume  testowanie  własne repozytorium  przypięte w `etc/tools` (0.8.3), skonfigurowane w `.pyrocosm/`; uruchamia zestawy testów tego repozytorium
++ row  fluence  wyszukiwanie API  własne repozytorium  nierozpoczęte
++ row  exegesis  serwer LSP  to repozytorium  działa
++ row  vivisection  debuger  to repozytorium  działa
++ row  synesthesia  serwer MCP  to repozytorium  działa
+
+% 1 1 0 18791bf40f9540a608c7be26fc5e709e
+
+@ 0 4 0 0afb7d31fa5c6ac41f1d77b37b699c6e
++ fume jest frontendem i runnerem nad frameworkiem probably, który pozostaje biblioteką. TEL –
++ język konfiguracji, na którym standaryzuje się cały toolchain – jest wyspecyfikowany i
++ zaimplementowany, a stratiform jest jego implementacją referencyjną. Testem samowystarczalności
++ dla całego nurtu jest możliwość skompilowania Soundness przez fury z poświadczeniem równym
++ kompilacji Mill.
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ Pozycje tego nurtu wraz z horyzontami i twardymi zależnościami; [`status.tel`](status.tel) rejestruje, na jakim etapie jest każda z nich:
+
+% 2 1 0 1a49486c3b4d2d2d15f5c2c51b85eebd
+
+@ 0 16 0 004f35216f4e62830eb00b3642fc87e3
++ column  Pozycja
++ column  Tytuł
++ column  Horyzont
++ column  Wymaga
++ row  tool-1  flame nadąża za bieżącymi wydaniami  bliski
++ row  tool-2  fume uruchamia zestawy testów  bliski → średni
++ row  tool-3  serwer LSP obsługuje prawdziwą sesję  bliski → średni
++ row  tool-4  Soundness kompiluje się za pomocą fury  średni
++ row  tool-5  agenci sięgają do wszystkiego przez MCP  średni
++ row  tool-6  kwestia testowania właściwości zostaje rozstrzygnięta  średni
++ row  tool-7  fluence przeszukuje API  daleki  doc-5
++ row  tool-8  fume raportuje na żywo do sieci  daleki
++ row  tool-9  TEL wszędzie  daleki
++ row  tool-10  debuger, który mówi językiem Soundness  bliski → średni
++ row  tool-11  pokrycie jest śledzone  średni  tool-2
++ row  tool-12  benchmarki dla każdego commitu  średni  tool-2
+
+% 1 1 0 0699488e3fee36720c52ee3c880e0d32
+
+@ 0 1 0 057bb8e13af0dd60111d7ee90f27f993
++ ## tool-1: flame nadąża za bieżącymi wydaniami
+
+@ 0 2 0 1aa390cb1eb0ef98059dd7d58723befc
++ Horyzont: bliski
++ Stan wyjściowy: flame 0.8.0 jest przypięte w `etc/tools`; bieżące wydanie Soundness to 0.72.0 (pomiar 2026-10-21; 0.3.0 i 0.68.0 w dniu 2026-09-25; w dniu 2026-08-01 flame było budowane względem 0.62.0, gdy wydaniem było 0.64.0)
+
+@ 0 5 0 1f24488dfe61490217abec6ed0acd2a4
++ REPL, który pozostaje w tyle za platformą, nie może być jej drzwiami frontowymi. flame jest
++ budowane względem każdego wydania, gdy tylko ono się ukazuje, a nadążanie staje się sprawdzaną
++ własnością, a nie zamiarem. Od #2044 flame jest przypiętym narzędziem z własnym
++ `.pyrocosm/flame/config.tel`, a `make doccheck` uruchamia przez nie przykłady z każdego
++ samouczka; nic jeszcze nie wiąże wydania Soundness z udaną kompilacją flame.
+
+@ 0 2 0 0e178bbedbf04672130d13e259310097
++ Ukończone, gdy: CI flame buduje je względem każdego nowego wydania Soundness, a wydanie nie jest
++ ogłaszane, dopóki ta kompilacja się nie powiedzie.
+
+@ 0 1 0 0207c57463cebb281d4dbab2a074e752
++ ## tool-2: fume uruchamia zestawy testów
+
+@ 0 2 0 0314ca07b1efaa200fe8aea551c41f81
++ Zrobione: #2091 (2026-09-27), które ponownie włączyło zestaw testów orthodoxy
++ Stan wyjściowy wynosił: fume 0.4.1 uruchamiające zestaw testów z 1 wyłączonym zestawem (orthodoxy) (pomiar 2026-09-25; w dniu 2026-08-01 fume nie istniało, a 3 zestawy były wyłączone); w dniu 2026-10-21 fume 0.8.3 uruchamia każdy zestaw
+
+@ 0 5 0 0f9355ed7350590d0b54d14700d009d6
++ fume jest narzędziem do testowania nad frameworkiem probably: wiele formatów raportów,
++ aktualizacje na żywo w terminalu i wyniki zapisywane jako noty git obok istniejących not
++ poświadczeń. Jego pierwszy kamień milowy – uruchamianie własnych zestawów testów tego
++ repozytorium w CI – został osiągnięty: `make ci` to `fume run` nad zbiorczym assembly wskazanym
++ w `.pyrocosm/fume/config.tel`, a probably nie generuje już własnych raportów. Żaden zestaw nie
++ jest wyłączony.
+
+@ 0 1 0 13e8ed562ec5096a18ce26830fe9f457
++ Ukończone, gdy: fume uruchamia pełny zestaw testów Soundness w CI oraz
+
+% 0 1 0 179096856be57f2015d8c8b03cbb5c20
+
+@ 0 1 0 04211f0b38c3caa213e7792da69efb3d
++ ## tool-3: serwer LSP obsługuje prawdziwą sesję
+
+@ 0 1 0 1ab880ee5d02c1ea1d60c0cf49f6c644
++ Horyzont: bliski → średni
+
+@ 0 6 0 1a3e5712de4c97bc1fa070af186c7925
++ exegesis dostarcza framework LSP; kryterium to przeżyte doświadczenie przełożone na mechanizm:
++ skryptowa sesja edytora – otwarcie, diagnostyka, uzupełnianie, nawigacja – działa w CI względem
++ projektu Soundness. Własny zestaw testów exegesis już steruje serwerem w tym samym procesie
++ przez JSON-RPC (initialize, open, diagnose, hover, zmiana przyrostowa, uzupełnianie, zwijanie,
++ zmiana nazwy i podpowiedzi wstawiane w tekst), a ramkowanie komunikatów jest testowane przez
++ `Stdio` w pamięci; od kryterium dzieli go nawigacja (definicja, odwołania) oraz sesja względem
++ prawdziwego projektu w CI (2026-10-21).
+
+@ 0 1 0 0fd4fc347ac863c118dfa0f663a08bac
++ Ukończone, gdy: skryptowy test sesji edytora przechodzi w CI.
+
+@ 0 1 0 0192ab7c13424d9204822090aa0c4bc5
++ ## tool-4: Soundness kompiluje się za pomocą fury
+
+@ 2 1 0 0f4140b3e757116103f81b7270bed095
++ Horyzont: średni
+
+@ 0 5 0 0ecaab5145d7a03508780c16724c605f
++ Kryterium jest samowystarczalność: `fury build` wytwarza te same artefakty co kompilacja Mill,
++ weryfikowane według tej samej dyscypliny skrótu wejść poświadczenia, na tym repozytorium –
++ najtrudniejszej kompilacji Scali, z jaką się kiedykolwiek zmierzy. Samo fury jest
++ [zewnętrzną bramką](index.md#dependencies); ta pozycja śledzi stronę Soundness w tym
++ procesie – rzeczy, których narzędzie do kompilacji potrzebuje od własnych bibliotek tego
++ repozytorium, każdą zgłoszoną jako issue:
+
+% 2 1 0 1cdc986c7638c4c001ba6d0a4871ccdc
+
+@ 0 1 0 1da17ad0983abbd60068c2189fc66202
++ column  Potrzeba
+
+% 0 1 0 14d2172591cac0f60a7c7f01625b3fb2
+
+@ 0 9 0 02c5ed15ab7d45131c1ceccb3e83929b
++ row  rekord `source` manifestu  #2022
++ row  rekordy `Tool` o zasięgu sekcji i `Setting`  #2023
++ row  zamknięta `Lira.Hash.Domain`  #2024
++ row  pamięć podręczna `Materializer` względem warstwy pochodnej magazynu  #2025
++ row  akcesor wersji kompilatora  #2026
++ row  elementy diagnostyki, które gubi `ScalacEdges`  #2027
++ row  zachowywane sesje kompilatora dla demona  #2028
++ row  identyfikatory UUID TASTy względem determinizmu z LIRA §17  #2029
++ row  rekordy `Tel.Provider` nad własnymi walidatorami (zagnieżdżone i powtarzalne związki są zrobione)  #2030
+
+% 1 1 0 0a74712f5870351e003df9eae86ba1a6
+
+@ 0 2 0 01efab7c2578843c0a853559109c44b4
++ Ukończone, gdy: `fury build` kompiluje Soundness z czystego checkoutu, z poświadczeniem równym
++ kompilacji Mill.
+
+@ 0 1 0 0cc1c69b36d34ade17a797edc5f4a97c
++ ## tool-5: agenci sięgają do wszystkiego przez MCP
+
+@ 2 1 0 0291f07ee01845ea0327e841224d8b0e
++ Horyzont: średni
+
+@ 0 4 0 1e2c4d1190cd523a00720a3458ea66a5
++ synesthesia udostępnia agentom wiedzę platformy: dokumentację modułów, strony błędów, stan
++ mapy drogowej ze `status.tel` oraz instrukcje migracji. Agent nigdy nie powinien musieć
++ klonować repozytorium, by odpowiedzieć na pytanie „co oznacza ↯/s.42.1?”. Dziś synesthesia
++ jest generyczną biblioteką MCP – narzędzia, zasoby i prompty – i żaden z tych zasobów nie
++ istnieje.
+
+@ 0 2 0 145c4d0f97b2b3bf1cefe9296d16ca98
++ Ukończone, gdy: skryptowa sesja MCP rozwiązuje w CI kod błędu na jego stronę, moduł na jego
++ przewodnik tematyczny i pozycję mapy drogowej na jej stan.
+
+@ 0 1 0 028f842dacc1c3a5049a774024a09f31
++ ## tool-6: kwestia testowania właściwości zostaje rozstrzygnięta
+
+@ 2 1 0 1f32101c3825cf6618c6bbf5eb873104
++ Horyzont: średni
+
+@ 0 4 0 0070c1e6ea50579e0a9b830685d11f41
++ probably testuje za pomocą osi i rozrzutów, a nie `forAll` i zmniejszania. Albo to jest
++ odpowiedź – i wtedy argumentuje za nią strona filozofii – albo generatywne testowanie ze
++ zmniejszaniem trafi do probably. Każdy z tych artefaktów zamyka pozycję; niedopuszczalne jest
++ to, by kwestia domyślnie pozostawała otwarta.
+
+@ 0 2 0 078e917d2e33c6a10d40e53329dbc669
++ Ukończone, gdy: probably dostarcza generowanie w stylu `forAll` ze zmniejszaniem albo strona
++ filozofii dokumentuje, dlaczego osie i rozrzuty są zamierzonym projektem.
+
+@ 0 1 0 10b99e60d3ee9852140a381abd10b3d3
++ ## tool-7: fluence przeszukuje API
+
+@ 0 2 0 10d14d1e91367e391c3a63aed3834664
++ Horyzont: daleki
++ Wymaga: doc-5
+
+@ 0 2 0 19823062ac54ae4e15d9fb469a252e0a
++ fluence czyni powierzchnię API przeszukiwalną – po nazwie, po typie, po sygnaturze – nad
++ potokiem wyodrębniania, który buduje `doc-5`.
+
+@ 0 2 0 1d26029765e735ca1b4a3666132aa505
++ Ukończone, gdy: fluence odpowiada na zapytania o nazwy, typy i sygnatury względem opublikowanej
++ dokumentacji API bieżącego wydania.
+
+@ 0 1 0 0d833e0fe2af89b8171a316654706832
++ ## tool-8: fume raportuje na żywo do sieci
+
+@ 2 1 0 19b22567d67abcf5066e082989281ce8
++ Horyzont: daleki
+
+@ 0 2 0 15556929d246fe24109f4bf910db550f
++ Drugi frontend fume: raportowanie testów na żywo przez HTTP i WebSockets, z tymi samymi danymi,
++ które napędzają renderer terminalowy.
+
+@ 0 2 0 1a6a95857bf738b104f02a619f78f9d7
++ Ukończone, gdy: przebieg fume można obserwować na żywo w przeglądarce, a raport zapisany w
++ nocie git zgadza się z tym, co zostało przesłane strumieniowo.
+
+@ 0 1 0 04b7babf9708ab540ea2c2fb6743166f
++ ## tool-9: TEL wszędzie
+
+@ 2 1 0 139d45777b4ba12117649e48539c961f
++ Horyzont: daleki
+
+@ 0 4 0 1077283f5b130ff6132311bd3c36cc03
++ Każde narzędzie ekosystemu, które wymaga konfiguracji, czyta TEL, ze stratiform jako
++ implementacją referencyjną. Żadne narzędzie w ekosystemie nie żąda konfiguracji w YAML, JSON
++ ani HOCON. Trzy narzędzia, które uruchamia to repozytorium – flare, flame i fume – już czytają
++ swoją konfigurację z `.pyrocosm/<tool>/config.tel`.
+
+@ 0 1 0 1150a33981ea2f720e65a4e37da2053a
++ Ukończone, gdy: powierzchnia konfiguracji żadnego narzędzia ekosystemu nie przyjmuje formatu
++ innego niż TEL.
+
+@ 0 1 0 0d4d40248ec5c9d41ee1af27e5cc4a97
++ ## tool-10: debuger, który mówi językiem Soundness
+
+@ 0 2 0 187e1b4dc166ae9e16e788c443e4b817
++ Zrobione: #2306 (2026-10-21)
++ Stan wyjściowy wynosił: rdzeń JDWP, ewaluator wyrażeń i serwer DAP, którego zestaw testów prowadził żywą sesję od początku do końca, przy czym obiekt był inspekcjonowany jako nazwa swojej klasy JVM i nie było tematu (pomiar 2026-09-25)
+
+@ 0 9 0 13b974a8b07085a3199826a41cfefef3
++ Debugowanie działającej aplikacji powinno sprawiać wrażenie natywnego, a nie hostowanego:
++ punkty przerwania, wykonywanie krokowe i inspekcja przez serwer Debug Adapter Protocol, z
++ inspekcjonowanymi wartościami przedstawianymi jako ich typy Soundness – ta sama dyscyplina
++ braku kodowań Javy, którą `core-5` stosuje do śladów, zastosowana do stanu na żywo.
++ vivisection jest takim serwerem: `vivisection.DapServer` obsługuje zestaw żądań (launch,
++ attach, punkty przerwania, wątki, ślady stosu, zasięgi, zmienne, ewaluacja, wykonywanie
++ krokowe), a `DapClient` z jego zestawu testów prowadzi żywy program debugowany przez punkt
++ przerwania, krok `next` i inspekcję w zwykłym przebiegu, przy czym każda zmienna lokalna jest
++ przedstawiana przez swoją instancję `Inspectable`, a migawka obiektu jest pokazywana przez swoją
++ prostą nazwę i tożsamość, a nie nazwę klasy JVM. Tematem jest `doc/en/modules/debugging.md`.
+
+@ 0 2 0 0410a4ae5fc4d63d08a62d02d2a2a05c
++ Ukończone, gdy: skryptowa sesja DAP – ustawienie punktu przerwania, krok, inspekcja wartości
++ przedstawionej w kategoriach Soundness – przechodzi w CI względem działającej aplikacji
++ Soundness.
+
+@ 0 1 0 0bd02c939481520e06b6a2b79fca9c9f
++ ## tool-11: pokrycie jest śledzone
+
+@ 2 2 0 16edf826d66e2555172360daf227ae07
++ Horyzont: średni
++ Wymaga: tool-2
+
+@ 0 5 0 1c2966437a8535bb1e4e0d657c6f94c0
++ Własny czytnik scoverage w probably odszedł wraz z jego rendererem raportów, gdy fume przejęło
++ raportowanie; pokrycie wraca jako sprawa fume, śledzona własność zamiast jednorazowego raportu:
++ pokrycie testami jednostkowymi zapisywane dla każdego commitu, przechowywane w notach git obok
++ raportów z testów, tak by trend dało się odpytywać, a regresja była widoczna w czasie przeglądu.
++ Spis niebezpieczeństwa flare (`safety-7`) już przechowuje w ten sposób swój zapis i jest wzorem
++ do naśladowania.
+
+@ 0 2 0 002919cbf698e4821e890e61fc1ab10a
++ Ukończone, gdy: każdy przebieg CI zapisuje pokrycie w nocie git, a jedno polecenie podaje
++ różnicę pokrycia między dowolnymi dwoma commitami.
+
+@ 0 1 0 085206600ce406a70eb047faecb64985
++ ## tool-12: benchmarki dla każdego commitu
+
+@ 2 2 0 19d14190f6d57f5802a1225453f7abbf
++ Horyzont: średni
++ Wymaga: tool-2
+
+@ 0 3 0 0dd98c795b01b67818b9dead2aa16d26
++ Zestawy benchmarków są uruchamiane dla każdego commitu, a wyniki są przechowywane w notach git
++ według tej samej dyscypliny co raporty z testów i poświadczenia, tak że historia wydajności
++ podróżuje wraz z repozytorium, a regresje są wychwytywane w chwili, gdy się pojawiają, a nie
++ wtedy, gdy zauważą je użytkownicy.
+
+@ 0 2 0 184919d3c1cf0d9b197ed3b2f69b374f
++ Ukończone, gdy: każdy commit na głównej gałęzi niesie notę git z benchmarkami, a jedno
++ polecenie podaje różnicę benchmarków między dowolnymi dwoma commitami.

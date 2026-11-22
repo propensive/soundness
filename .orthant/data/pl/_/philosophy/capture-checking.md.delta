@@ -1,0 +1,159 @@
+orthant 2 language
+
+@ 0 1 0 1ec603b4c009ad6c0b820afa5985a451
++ # Sprawdzanie przechwytywania
+
+@ 0 5 0 1a4af1972ab96dd91d21a3beaed99770
++ Soundness wykorzystuje sprawdzanie przechwytywania w Scali, aby wzmocnić gwarancje, które już
++ wyrażają jego [zdolności o ograniczonym zasięgu](delimited-scopes.md). Sprawdzanie
++ przechwytywania śledzi, od których zdolności zależy wartość, dzięki czemu kompilator może
++ udowodnić, że zasób, handler błędów czy kontekst współbieżności nie wymyka się z bloku, który go
++ ustanowił. To, co zasięgi wyrażają przez strukturę, sprawdzanie przechwytywania egzekwuje przez
++ typ.
+
+@ 0 2 0 191d93ac3c38cba11fa1bb14aaa56518
++ Niemożliwa staje się cała rodzina błędów ucieczki, których same zasięgi nie potrafią zatrzymać –
++ w każdym z nich wartość przemyca martwą zdolność poza swój blok:
+
+% 2 1 0 0e949f74aefc607d01a582ebb86c1fcc
+
+% 3 1 0 0602cc2f4ebfcb0c0c0f11802bbaf3a0
+
+% 4 1 0 07563ccc2c56dbda0f27e98908ead537
+
+% 0 1 0 174f3aa2fbd61afa0d003d618cd1feb9
+
+% 0 1 0 02279e19d37c1c41190b1cd223689e5c
+
+% 0 1 0 1f39cfc5bf5a4f7119ff88659876dba4
+
+% 0 1 0 1dc9835d775f0cc30812caab2b940c85
+
+% 0 1 0 0d4959e40d67cc0c042a3dd4d3ac88a9
+
+% 0 1 0 1a852a3203de96031c01eac9eb135f6b
+
+% 0 1 0 1dd155deee7e04520e6abd1ad539bca1
+
+% 0 1 0 0b2800afe3b094ad104dcb7200a2d807
+
+% 0 1 0 0f627cd31a91080311e777504fda1d73
+
+% 1 1 0 1e0df54e6b038f82143fc957136782d9
+
+@ 0 2 0 07495102508fa60408d681abc8ae484a
++ Przy sprawdzaniu przechwytywania każdy z tych przypadków jest błędem kompilacji, ponieważ każda
++ wartość przechwytuje zdolność, która nie może przeżyć swojego zasięgu. Poprawka, którą wymusza
++ kompilator, jest właściwa:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 0dfce39898444daa01b904d5694147f5
++ column  Uciekająca wartość
++ column  Przechwytuje
++ column  Poprawka
++ row  leniwy strumień  otwarty uchwyt  skonsumować strumień wewnątrz bloku
++ row  domknięcie  `Tactic`  wykonać zawodny kod tam, gdzie żyje jego handler
++ row  zadanie  `Monitor`  czekać na zadanie pod jego nadzorcą
+
+% 1 1 0 01d1537675720ad011ec2d0e056c4b7e
+
+@ 0 5 0 191b65bd47c0580c07fbba5b2ee1b959
++ Gwarancja sięga głębiej, niż mogłaby dyscyplina: leniwość, domknięcia i współbieżność to
++ dokładnie te cechy, które pokonują rozumowanie o czasie życia „na oko”, ponieważ odrywają to,
++ *kiedy* kod się wykonuje, od tego, *gdzie* go napisano. Sprawdzanie przechwytywania z powrotem je
++ łączy – zasięg zdolności podróżuje w typie, więc ucieczki nie da się zapisać, a nie tylko nie
++ należy jej próbować.
+
+@ 0 1 0 0dc12f9e6600044719df5f8af9b17362
++ ## Sprawdzanie separacji
+
+@ 0 3 0 01184c8f50c5d9cf1ace3d0d488420f0
++ Sprawdzanie przechwytywania odpowiada na pytanie: „czy ta wartość może przeżyć ten zasięg?”. Jego
++ towarzysz, sprawdzanie *separacji*, odpowiada na drugie pytanie: „czy mogą jednocześnie istnieć
++ dwa odwołania do tej wartości?”.
+
+@ 0 4 0 0ae04412547ba63b1fd8876408ff1bc5
++ Niektóre zasoby można bezpiecznie współdzielić, a inne nie. `Stream` w jądrze strumieniowania
++ udostępnia mutowalne okno na bufor bez kopiowania go, co sprawia, że jądro jest szybkie – i co
++ jest poprawne tylko wtedy, gdy czyta je dokładnie jeden konsument. Dwa aliasy konsumowałyby
++ nawzajem bajty, których oczekiwał ten drugi.
+
+@ 0 1 0 0d917dacbaf7005b0284eb6e3a0a1a34
++ `Stream` jest więc zdolnością *na wyłączność*, a utworzenie jego aliasu się nie kompiluje:
+
+% 2 1 0 03dbbd8d142b264208ad27062ec63eae
+
+% 3 1 0 17f56a3760c0f035139f76c515bd4ae4
+
+% 4 1 0 1797f361dd0c472213a40fcb922c11ce
+
+% 0 1 0 100c9b81efd376d50bcec948e06367ec
+
+% 0 1 0 17581f0eb62f6fab167ed01f3bace403
+
+% 1 1 0 0040b825e65d81ee1d42de0d2dde0f3a
+
+@ 0 4 0 01f34c38e9c594f41e5bdafa6a8be6ae
++ Moduły, które od tego zależą – samo jądro i jego bezpośredni konsumenci – są kompilowane z
++ włączonym sprawdzaniem separacji, więc gwarancja jest sprawdzana, a nie tylko udokumentowana. To
++ pozwala zaoferować projekt bez kopiowania jako zwykłe API, a nie jako niebezpieczne API z
++ dołączonym ostrzeżeniem.
+
+@ 0 1 0 0b1ebd96643c123e07f2f1d9b6637815
++ ## Czego wymaga kompilator
+
+@ 0 2 0 136322f37f253c370d1e16a417acb5aa
++ To uczciwa część tego dokumentu. Sprawdzanie przechwytywania nie jest darmowe, a koszty ponosi
++ ten, kto pisze kod, a nie ten, kto go czyta.
+
+@ 0 5 0 198da3a89387c2fc0477ea250fba8b05
++ **Adnotacje pojawiają się w sygnaturach.** Metoda zwracająca wartość, która coś przechwytuje,
++ mówi o tym – `(Stream[Data] over Credit)^` – a parametr, który zostanie skonsumowany, a nie
++ pożyczony, jest oznaczony `consume`. To prawdziwa składnia, której czytelnik musi się nauczyć, i
++ ona się propaguje: sygnatura zwracająca wartość przechwytującą zmusza sygnatury wywołujących, by
++ to uwzględniły.
+
+@ 0 4 0 0ad7131d9e4edb420a2eb2c0a72c002d
++ **Błędy są trudne.** Naruszenie przechwytywania jest zgłaszane w kategoriach zbiorów
++ przechwytywania, a czasem zmiennych skolemowych, co jest dość odległe od „ten strumień
++ przeżyłby swój plik”. Płynne czytanie takiego błędu wymaga praktyki, a tej praktyki nie da się
++ przenieść ze zwykłej Scali.
+
+@ 0 5 0 12ccb5c51e98ae8c110d97f58dc24b82
++ **To wciąż dojrzewa.** Sprawdzanie przechwytywania to funkcja kompilatora na poziomie badawczym,
++ a Soundness używa forka z poprawkami, których jeszcze nie ma w głównym repozytorium. Niektóre
++ idiomy, które powinny działać, jeszcze nie działają – port zlib w module kompresji, intensywnie
++ korzystający z aliasów, jest kompilowany ze sprawdzaniem przechwytywania, ale bez sprawdzania
++ separacji, ponieważ surowszy zestaw reguł odrzuca wierny port kodu, który mimo to jest poprawny.
+
+@ 0 5 0 1be9382b0b8f0aec0f4a99e89a726b1f
++ **Pozostają pewne furtki.** `caps.unsafe.unsafeAssumePure` i
++ `@caps.unsafe.untrackedCaptures` istnieją dla miejsc, w których mechanizm sprawdzający nie widzi
++ jeszcze tego, co autor potrafi udowodnić. Każde użycie to mała dziura w gwarancji i każde jest
++ opatrzone komentarzem z argumentem, dlaczego jest poprawne – co jest właściwym sposobem
++ traktowania takich rzeczy, ale nie jest tym samym, co brak potrzeby ich używania.
+
+@ 0 1 0 1d86f26103aa06bf0a7b45e944a43fc1
++ ## Dlaczego warto ponieść ten koszt
+
+@ 0 2 0 0901d0ef0b2fd2a614a9341c21cb878c
++ Ponieważ alternatywą nie jest „brak kosztu”, lecz „ten sam koszt, zapłacony później i przez
++ kogoś innego”.
+
+@ 0 6 0 036252fc0d6e7f681f72b07f1287e367
++ Strumień odczytany po zamknięciu jego pliku to błąd, który odtwarza się sporadycznie, pod
++ obciążeniem, ze śladem stosu wskazującym na odczyt, a nie na ucieczkę. Domknięcie, które zgłasza
++ błąd bez handlera w zasięgu, zawodzi w miejscu wywołania odległym od miejsca, w którym je
++ utworzono. To jedne z najtrudniejszych do zdiagnozowania klas błędów, właśnie dlatego, że
++ przyczynę i objaw rozdzielają dokładnie te mechanizmy – leniwość, domknięcia, współbieżność – do
++ których śledzenia istnieje sprawdzanie przechwytywania.
+
+@ 0 2 0 0d150909ae0bb39f0c92374a50a7744d
++ Skarga kompilatora jest wczesna, lokalna i dotyczy faktycznej pomyłki. To lepszy interes, niż
++ się początkowo wydaje.
+
+@ 0 3 0 1c65ab24f2b259c805bdaa9acb73d9a2
++ Zobacz [zasięgi ograniczone](delimited-scopes.md), aby poznać strukturę, którą to egzekwuje, oraz
++ [ekspresywne błędy](expressive-errors.md), aby dowiedzieć się, dlaczego błędy muszą być czyste –
++ `throw` jest jedynym kanałem, którego ta analiza nie widzi.

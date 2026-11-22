@@ -1,0 +1,1046 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1f26b2fe3e14e5f7088d3b4c175c365b
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1c16381874b6ce4b05859b9cfe64e3af
++ info   benchmarki, testy obciążeniowe i profile: kod w cytacie etapowany do osobnej JVM, mierzony i raportowany obok testów zestawu
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 3 0 012e34336760e39e17f2bb7e92dfcdf7
++     _Sedentary_ mierzy kod, zamiast go sprawdzać. Oferuje trzy rodzaje pomiarów, każdy
++     zapisywany wewnątrz `Suite` z probably obok jego testów i raportowany w tym samym raporcie,
++     z tymi samymi nazwami, osiami i selekcją:
+
+@ 0 9 0 11cf43cdbdc2856000b9670278ca8173
++     - `Bench` mierzy **szybkość**: ile trwa jedna operacja powtarzana szeregowo, wraz z
++       rozrzutem, przedziałem ufności, alokacją na operację oraz, przy podanym
++       `OperationSize`, przepustowością w bajtach lub znakach na sekundę;
++     - `Stress` mierzy **zachowanie pod obciążeniem**: operację uruchamianą współbieżnie na
++       wielu workerach przez okno czasu ściennego, raportując alokację, szczytowe zużycie
++       sterty, zbiór żywych obiektów, odśmiecanie i percentyle opóźnień jako `Strain`, i
++       opcjonalnie przeglądając lub przeszukując liczbę workerów w poszukiwaniu najlepszej
++       utrzymywalnej przepustowości (`StressSearch`);
++     - `Profile` mierzy, **na co idzie czas**: operację uruchamianą pod nagraniem JFR wewnątrz
++       procesu, z jej najgorętszymi metodami raportowanymi jako `Hotspots`.
+
+@ 0 5 0 0f22099b6bf660fc0087712e6567858f
++     Ciałem każdego pomiaru jest **wyrażenie w cytacie**, `'{ … }`. Jest ono etapowane przez
++     superlunary: kompilowane do pliku JAR razem z testowanym kodem, wdrażane na
++     `BenchmarkDevice` i uruchamiane we własnej JVM, ze stałą stertą, wybranym odśmiecaczem i
++     opcjonalnie ograniczoną liczbą procesorów, tak aby nic innego w zestawie – jego pozostałe
++     testy, alokacja samego runnera, JIT rozgrzany już przez coś innego – nie zniekształcało
++     wyniku.
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 14f9c325451410601fe228db57704df4
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0903c101a1f971dc12f4a0673dd6f4e1
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 12c5c459f0fc46b61a922ccc93d29672
+
+% 0 1 0 191a0fd4f8a251131c9d7a016bb964e6
+
+% 0 1 0 12529c28d31d0fcf17cafc1eb81421bf
+
+% 0 1 0 1f78934eb5688b3f16d90cfb3b1f049e
+
+% 0 1 0 0a9de0b62369958e032f3dc0052472d9
+
+% 0 1 0 154a6d555d0f44ef12243490f2e3c002
+
+% 0 1 0 056f1ac8a1c9ad26123215ad85983717
+
+% 0 1 0 1843236fdfc18fac158057dd2d605479
+
+% 0 1 0 12be52dc5624b9eb00b72854b81f9b20
+
+% 1 1 0 1833a1df3256efc61155dc3945dd8d60
+
+% 0 1 0 15105d63343e192d1872da7926b4326e
+
+% 1 1 0 000805341c7b77281b0c03a61f8cc24f
+
+% 0 1 0 0e18c842d278db9609d81229cecc3fe8
+
+% 0 1 0 12543df6075bfe2803e9e2f83ad463d6
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 7 0 118511a351f18faa11173ab78dbd30d5
++     Każdy pomiar bierze swoje wartości kontekstowe z `Suite`, w którym jest zapisany
++     (`Runner`, `Inclusion` dla swojego rodzaju wyniku, `Testable` i `Codepoint`), a resztę z
++     importów: `Classloader` i `Environment` do zbudowania pomiaru, `System`,
++     `TemporaryDirectory` i `Stageable` (`embeddings.automaticEmbedding` z superlunary) do jego
++     etapowania, `BenchmarkDevice`, na którym zostanie uruchomiony, oraz taktyki dla
++     `Compiler.Error` i `Rig.Error`. `Stress` potrzebuje ponadto `Threading` z parasite, które
++     wybiera rodzaj wątku, na którym działają jego workery.
+
+@ 0 4 0 06e62bce0ec5f59e031034c877ea07f2
++     Pomiar, którego runner nie wybrał, jest pomijany **przed** etapowaniem, więc nie kosztuje
++     ani kompilacji, ani JVM, a każdy pomiar deklaruje w swoich metadanych oczekiwany czas
++     trwania, dzięki czemu host może zaplanować budżet przebiegu przed jego rozpoczęciem.
++     Mnożnik czasu trwania hosta (`--scale` w fume) wydłuża lub skraca jednakowo każdy
++     zadeklarowany czas docelowy.
+
+@ 0 8 0 0613270b94ba206e192267689cbba3d3
++     Kod w ciele w cytacie jest kompilowany podczas etapowania pomiaru, a nie tam, gdzie jest
++     zapisany, co ma swoje konsekwencje. Metoda inline, która rozwiązuje instancję za pomocą
++     `summonFrom` lub `summonInline` – na przykład derywowany dekoder – widzi tylko importy
++     zapisane **wewnątrz** cytatu, a nie te na początku pliku: import należy zapisać w ciele
++     albo związać instancję z `val` na zewnątrz i się do niej odwołać. Transparentne makro
++     given w ogóle nie może się rozwinąć wewnątrz cytatu, więc takie wywołanie należy umieścić
++     w zwykłej metodzie i wywołać ją. Wartości spoza cytatu wstawia się za pomocą `$value` i
++     trafiają one do JVM pomiaru przez `References` z superlunary, więc komórki różniące się
++     tylko danymi współdzielą jedną kompilację.
+
+@ 0 3 0 07ac2b9c5ac91e0a0bea8ec198d03d9a
++     Biblioteka to jeden zbiór źródeł, `sedentary.core`, tylko dla JVM: wymaga JDK 21 lub
++     nowszego (do rozliczania alokacji całego procesu), launchera `java` na urządzeniu oraz JFR
++     dla `Profile`. Wszystko jest eksportowane do modułu zbiorczego `soundness`.
+
+% 0 1 0 1e8353f0c43d5b3b07311113a8d31d6d
+
+% 0 1 0 102fa0e45724c85c160dd7297d73167e
+
+% 0 1 0 116db7830ea9abe510135f70a907a796
+
+% 0 1 0 1d64177c115587a61e8aeceaf8805642
+
+% 0 1 0 0b5d107b1fde7d8c0dc330c508197801
+
+% 0 1 0 137ad897da74db3b0e04a695c15c6072
+
+% 0 1 0 10852e3d88251052161caa863c1d3d57
+
+% 0 1 0 105e179156f6caa51777b036d513c751
+
+% 0 1 0 1a1be6ac033dcd7b0624cab3102429d4
+
+@ 0 1 0 1a42784ce3d92da61ae1f80c4f2b3f65
++ entry .Bench   harness benchmarków: mierzy czas operacji w cytacie we własnej JVM, pojedynczo lub wzdłuż jednej lub dwóch osi
+
+% 1 1 0 1fa8f0965b76ec661a05d01816a30621
+
+@ 0 4 0 19ada0f251fe8a6a129a5133c0fe001a
++       `Bench` to `Rig` z superlunary, który etapuje kod w cytacie do pliku JAR, wdraża go na
++       `BenchmarkDevice` w zasięgu i tam mierzy jego czas. Konstruuje się go raz, zwykle na
++       początku `run()` zestawu, i stosuje do nazwy i ustawień, co daje `Bench.Plan`, który z
++       kolei stosuje się do ciała w cytacie albo rozpina `over` jedną lub dwiema osiami:
+
+% 2 1 0 0c88283e290f75180846223bb3dfa605
+
+% 3 1 0 168ba10efc5247501f26ca4f977a7980
+
+% 4 1 0 065fd54bc74b1bc914fefc3a3cfaaae3
+
+% 5 1 0 0b7a6e486e32887808b94c2b3d119650
+
+% 6 1 0 14a2c1800a6118510329558f1958e311
+
+% 7 1 0 0c48a76f74897ae30c4ff04f5bb895c3
+
+% 8 1 0 1a4977a9361811f9150698a4a26c482a
+
+% 9 1 0 1bbe80933d01774304eea9219846f05a
+
+% 10 1 0 1bb479cc3e71c18111b190f0a526558e
+
+% 11 1 0 0b7e9cea22e94edc0b5d76e9745ade70
+
+% 13 1 0 1ed8762558edf06e17d62ab8f80d766e
+
+% 0 1 0 180f63698d353f231d3d1bcee4189c31
+
+% 0 1 0 078568442019b1a9173dcaa1f22a9acc
+
+% 0 1 0 1e47356470d92fcb1d0ff4f5c807aa7f
+
+% 1 1 0 0369626ffe19ab66037ad0660bee5100
+
+% 0 1 0 194765c16c6d665019b32f897b412e1b
+
+% 0 1 0 0a33aaabb07321d6042a33e8984f6c65
+
+% 0 1 0 118dc962e44081d302a26cf5a5654df0
+
+% 0 1 0 1c8e64c1ca3e3c3414b733c4e69f04c0
+
+% 0 1 0 0b72eccefc8f574c1b0a69645fc70b8c
+
+% 0 1 0 168f78d5b3b6d2790a3294e27ae5c328
+
+% 0 1 0 1801d498ca999b760675c7168d2f443b
+
+% 0 1 0 121fccede81b4f291443c0bdc3db40f7
+
+% 0 1 0 08ae23dd5a5ea6d6084725977f5467f5
+
+% 0 1 0 015e10686e23b02d0e138d266ddac898
+
+% 0 1 0 09dbae3b95a9d00102529567c620b6a0
+
+% 0 1 0 00424f7e1cdbd11008cb16648fcc48b3
+
+% 0 1 0 179aa060674bf1800e53c5d7c28261db
+
+% 0 1 0 0942b31982e342ef09ea2d2735121fea
+
+% 0 1 0 115279f87d0d69380b41c3342b282296
+
+% 1 1 0 01cf3f2cfcb8b2060a7b69463589ac36
+
+@ 0 11 0 194ae79c3c50abba0fc1779739c896a7
++       Każda komórka jest mierzona w ten sam sposób. Ciało jest wiązane raz jako osobna metoda,
++       uruchamiane dziesięć razy bez pomiaru, a następnie w partiach o podwajanym rozmiarze, aż
++       jedna partia zajmie co najmniej `target/iterations`; potem następuje `warmups` pełnych
++       partii, dostosowujących rozmiar partii do tego czasu, a mediana ich szybkości go ustala.
++       Następnie wykonuje się `iterations` mierzonych partii, z żądaniem odśmiecania między
++       każdymi dwiema, a alokacja w ich trakcie jest odczytywana z licznika alokacji wątku JVM.
++       Wynik każdej operacji jest zapisywany do ujścia, przez które JIT nie widzi, więc ciało,
++       którego wartość nie jest używana, nie zostaje wyeliminowane; ciało, które po 2³⁴
++       powtórzeniach nadal nic nie mierzy, kończy się niepowodzeniem jako podejrzany martwy kod.
++       Wynikiem każdej komórki jest `Benchmark` z probably: łączny i średni czas, minimum,
++       maksimum, odchylenie standardowe, przedział ufności, bajty alokowane na operację oraz,
++       przy podanym `OperationSize`, rozmiar i szybkość operacji.
+
+@ 0 7 0 09f4a0442d1cb12a1ef774deb2a25c03
++       Parametry konstruktora ustalają JVM pomiaru. `heap` ustawia zarówno `-Xms`, jak i `-Xmx`
++       (w składni `-Xmx`, `t"256m"`; domyślnie stałe `1g`); `cpus` ogranicza ją do takiej liczby
++       procesorów (co to oznacza na każdej platformie, opisuje `BenchmarkDevice#invoke`); a `gc`
++       wskazuje odśmiecacz w składni `-XX:+Use<gc>GC` (`t"G1"`, `t"Z"`; domyślnie `Serial`,
++       którego jednowątkowe, deterministyczne pauzy pasują do mikrobenchmarków). Ciało, które
++       uruchamia środowisko włókien lub wiele wątków wirtualnych, powinno zażądać `gc = t"G1"`
++       i sterty o rozmiarze takim, jakiego użył harness rywala.
+
+@ 0 2 0 199ad109a3db72350bc1d9ad6b0e5258
++       `Bench` potrzebuje `Classloader`, `Environment` i `BenchmarkDevice` w miejscu, w którym
++       jest konstruowany. Wiersze benchmarków to te, które wybiera przełącznik `--bench` w fume.
+
+% 1 1 0 0fc2368eae29db751af35f142748e3af
+
+% 1 1 0 1f0be51406acad4f16518b610b4ce975
+
+% 0 1 0 0e403d9e5d6f2a3418dd853ada1269fc
+
+% 1 1 0 0424f690b7e606e015fcd5366f8fde2e
+
+@ 0 1 0 142373299b764d8c1f1ccf3cec19424a
++   entry .Plan   nazwany, skonfigurowany benchmark, czekający na ciało w cytacie lub osie, wzdłuż których zostanie rozpięty
+
+% 1 1 0 186f339183e2551003c893de75c3de53
+
+@ 0 2 0 16dda84513dbfaab10cfa75a92973ca6
++         `Plan` to to, co zwraca `Bench#apply`: nazwa benchmarku, jego tagi i ustawienia wraz z
++         `Bench`, który go uruchomi. Używa się go na jeden z trzech sposobów:
+
+@ 0 5 0 1016b90878ba8a681fc38d22ba606702
++         - stosowany bezpośrednio do ciała w cytacie, `plan('{ … })`, dla pojedynczego pomiaru;
++         - rozpinany `over` jedną lub dwiema osiami, z ciałem, które odwzorowuje każdą wartość
++           osi (lub parę wartości) na ciało w cytacie, dla jednego pomiaru na wartość –
++           przedstawiany jako wiersz komórek lub, dla dwóch osi, tabela krzyżowa;
++         - najpierw wyposażany za pomocą `sized` w `OperationSize` dla każdej komórki, a
++           następnie rozpinany `over`.
+
+@ 0 2 0 1ab107c8d90ff6e40ac9a4070790131b
++         Oto plan w miarę jego rozrastania: pojedynczy pomiar, potem jeden na implementację,
++         potem jeden na implementację i dane wejściowe, przy czym rozmiar każdej komórki wynika z
++         jej danych wejściowych.
+
+% 2 1 0 0dda004d987de2720908baa7841e0e4d
+
+% 3 1 0 00c46d8a90f1145e15f87479f43581b2
+
+% 1 1 0 147cde430ef7ec391f9a15f41aff2bcd
+
+@ 0 1 0 0b5397b6f7e0196f09a7d4485170274d
++           label Pojedynczy pomiar
+
+% 1 1 0 12e1f8a52ca3f393103bbd8d8f877cc7
+
+% 0 1 0 104403956ec9806b03193f1763a4bbae
+
+% 0 1 0 0a12d0b765427bfd0f865bf1021662a7
+
+% 1 1 0 18362320d373d6990c879862612f6dd5
+
+@ 0 1 0 194eae04b05e96c4191ce63d44d8ba4c
++           label Jeden pomiar na implementację, względem punktu odniesienia
+
+% 1 1 0 14f277f60f1cb8400de684ef55b005ae
+
+% 2 1 0 0e535bc6591f2ac80bb989fe2a2f99ec
+
+% 0 1 0 0c9f4125313dbbf6009a0aeee0e396c2
+
+% 0 1 0 05b0a463719f4f18010619f803b9963f
+
+% 0 1 0 0639917274254f39093aeeaec2a36063
+
+% 1 1 0 011c05e1705d1fd91910f89f8d865430
+
+@ 0 1 0 13c3139364b3b8a31b148d0faf33a212
++           label Jeden na implementację i dokument, z rozmiarem każdego wynikającym z dokumentu
+
+% 1 1 0 08542b0bcd2177a8065d8c7257acba45
+
+% 2 1 0 167c8df4c5de5b6e09f2c70c85de88ee
+
+% 0 1 0 0525edb0503a5a191865fb0bdc0901e8
+
+% 0 1 0 1bb2dbe2f3233b560d500a86c57f6ce2
+
+% 0 1 0 13400330a2dfb5630263942350a4c984
+
+% 0 1 0 10e76d2c2b29565e174f67ab0e320537
+
+% 0 1 0 1940d26a898cd59c070fa55acd386cd2
+
+% 1 1 0 02ed7059a6e2a970004cbad4051f965e
+
+% 0 1 0 04719a2cdfefd91e14fe0fa75b6e4fb6
+
+% 0 1 0 01752734f8d2128a1db183fb54714d6e
+
+% 1 1 0 0d1e1e129980b1540f59a0618cb30fe4
+
+% 0 1 0 02b3f8837790cfd507f6579e8f350178
+
+% 1 1 0 04a05fba78c94a9105eab767b48627ad
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 5 0 039e33188b2841d0021edb6f69528d91
++         Każda komórka planu jest etapowana i wysyłana osobno, ale komórki, których etapowane
++         drzewa się pokrywają – różniące się tylko wartością wstawioną za pomocą `$` –
++         współdzielą jedną kompilację, a każda odrębna implementacja kompiluje się raz. Wartość
++         wstawiona do ciała trafia przez `References` z superlunary i jest wydobywana raz na
++         przebieg.
++     entry .Uniaxial   plan, którego komórki wzdłuż jednej osi otrzymują każda własny `OperationSize`
+
+% 1 1 0 1a9fec72808f21bd133d6d3ebe7286ea
+
+@ 0 11 0 1e3568db8f26111600b6e0afff944c71
++           To, co zwraca `Plan#sized` dla funkcji jednej wartości. Jego `#over` mierzy każdą
++           zdefiniowaną wartość osi, określając rozmiar każdej komórki za pomocą `#size`; komórka,
++           dla której funkcja zwraca `Unset`, wraca do własnego `operationSize` planu.
++       entry #plan   plan, którego ustawienia przyjmuje każda komórka
++       entry #size   rozmiar komórki dla wartości osi lub `Unset` dla własnego rozmiaru planu
++       entry #over   jeden pomiar na każdą zdefiniowaną wartość osi, każdy z rozmiarem z `#size`
++           Jak `Bench.Plan#over` dla jednej osi. Ciało jest funkcją częściową z wartości osi w
++           ciało w cytacie: wartość, dla której nie jest zdefiniowana, jest luką w wierszu,
++           wykrywaną bez etapowania czegokolwiek. Jeśli plan ma `baseline` wśród wartości osi,
++           ta komórka jest raportowana jako punkt odniesienia, z którym porównywane są pozostałe.
++     entry .Biaxial   plan, którego komórki tabeli krzyżowej otrzymują każda własny `OperationSize`
+
+% 1 1 0 0f8394cbc60800db14b4f3a4ecc194e4
+
+@ 0 28 0 062595539d48454517fd017fb628ac9e
++           To, co zwraca `Plan#sized` dla funkcji dwóch wartości. Jego `#over` mierzy każdą
++           zdefiniowaną kombinację dwóch osi, określając rozmiar każdej komórki za pomocą
++           `#size`, z własnym `operationSize` planu wszędzie tam, gdzie funkcja zwraca `Unset`.
++       entry #plan   plan, którego ustawienia przyjmuje każda komórka
++       entry #size   rozmiar komórki dla pary wartości osi lub `Unset` dla własnego rozmiaru planu
++       entry #over   jeden pomiar na każdą zdefiniowaną kombinację dwóch osi, każdy z rozmiarem z `#size`
++           Jak `Bench.Plan#over` dla dwóch osi. Ciało jest funkcją częściową z pary wartości osi
++           w ciało w cytacie, więc kombinacja bez sensu pozostaje luką. `baseline` jest
++           poszukiwany najpierw wśród wartości pierwszej osi, a potem drugiej.
++     entry #bench   `Bench`, który etapuje i uruchamia pomiary planu
++     entry #name   nazwa benchmarku jako `Message`
++     entry #tags   tagi oznaczające benchmark na potrzeby selekcji i wykluczania, takie jak `slow`
++     entry #target   docelowy czas pomiaru jako liczba nanosekund typu `Long`
++         `target` podany do `Bench#apply`, jako ogólny czas trwania. Jest dzielony między
++         mierzone partie i skalowany mnożnikiem czasu trwania runnera przed użyciem.
++     entry #operationSize   rozmiar jednej operacji, dla szybkości przepustowości, lub `Unset`
++     entry #iterations   ile mierzonych partii wykonuje każda komórka: pięć, jeśli nie ustawiono inaczej
++     entry #warmups   ile pełnych partii kalibracyjnych poprzedza mierzone: tyle, ile `#iterations`, jeśli nie ustawiono inaczej
++     entry #confidence   percentyl raportowanego przedziału ufności: 95, jeśli nie ustawiono inaczej
++     entry #anchor   wartość osi, z której komórką porównywane są pozostałe, lub `Unset`
++     entry #comparison   jak pozostałe komórki są porównywane z punktem odniesienia: `Baseline` z probably
++         Która statystyka jest porównywana (`Min`, `Mean` lub `Max`), jako szybkość czy czas, oraz
++         czy porównanie jest geometryczne, czy arytmetyczne; `Baseline()` porównuje średnie
++         geometryczne szybkości.
++     entry #apply   pojedynczy pomiar ciała w cytacie
++         `plan('{ … })` etapuje ciało, uruchamia je na urządzeniu planu i dołącza do raportu jeden
++         `Benchmark`, chyba że runner go nie wybrał – wtedy nic nie jest etapowane. Ciało jest
++         wyrażeniem w cytacie dowolnego typu, budowanym z `References` z superlunary i
++         etapującymi `Quotes` w kontekście.
+
+% 2 1 0 0dc99f54069f8fd0193629dfafa1f661
+
+% 3 1 0 0c392f2c064107b7131ff7b6399a84aa
+
+% 4 1 0 11a42567c4d8344a1b4264cb60ec73cb
+
+% 0 1 0 137cc79651f187010240b5a9a8b1d647
+
+% 0 1 0 1bfa8d33794acead0ed6300dde116a62
+
+% 1 1 0 18d2e7571d3f26cf18782cc5a23c9365
+
+@ 0 14 0 09cf3d8f70dbc4520d44a62afe2c88bf
++     entry #sized   nadaje każdej komórce własny `OperationSize` według jej wartości osi
++         `plan.sized((value: A) => …)` zwraca `Bench.Plan.Uniaxial`, a `plan.sized((left: A,
++         right: B) => …)` – `Bench.Plan.Biaxial`, których `over` mierzy następnie osie. Parser
++         mierzony na dokumentach o różnej długości raportuje rozmiar każdego dokumentu, dzięki
++         czemu szybkości komórek są porównywalne tam, gdzie ich czasy nie są. Komórka, dla której
++         funkcja zwraca `Unset`, używa `operationSize` planu. Typy parametrów lambdy muszą być
++         zapisane, aby została wybrana właściwa przeciążona wersja.
++     entry #over   jeden pomiar na każdą zdefiniowaną wartość osi lub na każdą kombinację dwóch
++         `plan.over(axis)(body)` przyjmuje `Axis` (`Axis(t"limit")(1000, 4000)`) oraz funkcję
++         częściową z każdej jej wartości w ciało w cytacie; `plan.over(first, second)(body)`
++         przyjmuje dwie osie i funkcję częściową par, i przedstawia tabelę krzyżową. Obiekt
++         towarzyszący wyliczenia może zastąpić oś wszystkich jego przypadków –
++         `plan.over(Summation)` – na dowolnej pozycji. Wartość lub para, dla której ciało nie
++         jest zdefiniowane, pozostawia lukę, wykrywaną bez etapowania czegokolwiek, a komórka,
++         której runner nie wybrał, jest pomijana przed etapowaniem.
+
+% 2 1 0 050ee8629b31b49919491d02a6f4500a
+
+% 3 1 0 0ec6041e0ca8ed7f15553a751625eac3
+
+% 4 1 0 0696b6deedefe5a900eaedf4ae74e03e
+
+% 0 1 0 013a450c45c33b19165b4ec1614a5d9b
+
+% 0 1 0 1d3d91ae096bea4e05d54415f7598fa6
+
+% 0 1 0 0a504752dded7f98128ccc94c2da3129
+
+% 0 1 0 01116eadf6457d0919e83e429bb68c4e
+
+% 0 1 0 19288318648803fe1bc203919348690e
+
+% 0 1 0 19600315cf8732cb0435a077841769a3
+
+% 0 1 0 0b5b6edd91829e9f16adfd8a0a76cfdc
+
+% 1 1 0 0b91ab95e9cc16df19a362d76c69718d
+
+@ 0 3 0 1c50901c65247d0d17430f9df3e59413
++         Tutaj obie komórki współdzielą jedną kompilację, ponieważ różnią się tylko wstawionym
++         `limit`. Każda komórka współdzieli `operationSize` planu; `#sized` nadaje każdej własny.
++   entry .Error   zgłaszany, gdy urządzenie benchmarkowe nie może wdrożyć, uruchomić lub usunąć pomiaru
+
+% 1 1 0 0601ed45c1a1f7f41c5cff5fc0d8546a
+
+@ 0 5 0 0a313933cb25f88000bf8db55e1f2ce9
++         Błąd `↯/s.10.1`: _unable to run benchmarks_. Zgłaszany przez `BenchmarkDevice`, gdy nie
++         powiedzie się skopiowanie etapowanego pliku JAR na urządzenie, uruchomienie JVM pomiaru
++         lub usunięcie pliku JAR, albo gdy JVM pomiaru zakończy się niezerowym statusem. `Bench`,
++         `Stress` i `Profile` przekształcają go w `Rig.Error` z superlunary, z przyczyną `Staging`
++         lub `Invocation`, więc zestaw widzi `Rig.Error`.
+
+@ 0 11 0 05e4e7d66cab319612f06e34c30d164d
++         `LocalhostDevice` przekazuje etapowane dane wejściowe do JVM pomiaru jako argument
++         wiersza poleceń, więc ciało, które wstawia bardzo dużą wartość (korpus wielkości
++         megabajta lub więcej), może przekroczyć systemowy limit długości argumentów i zakończyć
++         się tym błędem.
++   entry #heap   stały rozmiar sterty JVM pomiaru jako tekst `-Xmx` lub `Unset` dla `1g`
++   entry #cpus   ilu procesorów może używać JVM pomiaru lub `Unset` dla wszystkich
++   entry #gc   odśmiecacz JVM pomiaru, jak w `-XX:+Use<gc>GC`, lub `Unset` dla `Serial`
++   entry #Result   typ wyniku etapowanego wywołania: same dane wyjściowe
++   entry #Form   postać, w jakiej przesyłane są etapowane dane wejściowe i wyjściowe: `Text`
++   entry #Target   to, co daje etapowanie: `Path on Linux` wdrożonego pliku JAR
++   entry #Transport   jak wstawiane wartości są kodowane dla JVM pomiaru: `Json`
++   entry #apply   nazywa i konfiguruje benchmark, zwracając `Bench.Plan` do zastosowania do ciała
+
+% 0 1 0 1638b62455698dac06ad99f49cbf930c
+
+% 0 1 0 14e2876a4284c5e212088057a5af69f0
+
+@ 0 2 0 14edb5265077c69d09b54e54760af0df
++       - `name` to `Message`, `m"…"`, a `tags` oznaczają benchmark na potrzeby selekcji
++         (`n"slow"`, co wymaga zaimportowania po nazwie `Nominative` płaszczyzny tagów:
+
+% 0 1 0 04d93e6e880d38940cf1e1cc8c07cfe6
+
+@ 0 14 0 1dcac95e410b892f11f63135725c004c
++       - `target` to czas pomiaru, dowolny czas trwania (`1*Second`, `50*Milli(Second)`);
++       - `operationSize` to rozmiar jednej operacji, zwykle wielkość taka jak `4096*Byte`,
++         przekształcana przez `OperationSize.conversion`, dla wartości przepustowości;
++       - `iterations` to liczba mierzonych partii (domyślnie pięć), a `warmups` – liczba partii
++         kalibracyjnych (domyślnie tyle, ile `iterations`);
++       - `confidence` to percentyl przedziału ufności: 80, 85, 90, 95 (domyślnie), 96, 97, 98
++         lub 99;
++       - `baseline` to wartość osi, której komórka jest punktem odniesienia porównania, dla
++         planu rozpiętego `over` osią, a `comparison` – sposób porównania, `Baseline` z
++         probably.
++   entry #stage   buduje mierzony kod do pliku JAR i wdraża go na urządzenie
++       Pakuje etapowany kod z wykonawcą superlunary jako punktem wejścia, nazywa plik JAR
++       świeżym UUID i wywołuje `deploy` urządzenia. Niepowodzenie budowania lub wdrożenia jest
++       zgłaszane jako `Rig.Error` z przyczyną `Staging`. `Bench`, `Stress` i `Profile` etapują
++       w ten sam sposób; zestaw nigdy nie wywołuje tego sam.
+
+@ 0 1 0 0971a444cb9ba9e80c2c87934ce848fc
++ entry .Stress   test obciążeniowy: operacja w cytacie uruchamiana współbieżnie przez okno czasu, raportująca pamięć, GC i opóźnienia
+
+% 1 1 0 17b43318962557c70d7f5a5a093113fc
+
+@ 0 7 0 0ba1ba0ddd7a6f850380b9405d341481
++       Podczas gdy `Bench` mierzy czas jednej operacji powtarzanej na pojedynczym wątku,
++       `Stress` uruchamia operację jednocześnie na `concurrency` workerach, z których każdy
++       powtarza ją, dopóki nie zamknie się okno czasu ściennego, i raportuje to, co ukrywa
++       wartość przepustowości, jako `Strain` z probably: liczbę workerów, liczbę ukończonych
++       operacji i zajęty czas, łączną alokację (a więc alokację na operację), szczytowe zużycie
++       sterty, zbiór żywych obiektów zachowany po odśmiecaniu, liczbę i czas trwania odśmiecań
++       oraz 50., 90., 99. i 99,9. percentyl opóźnienia operacji, z histogramu
++       logarytmiczno-liniowego o dokładności około 3%.
+
+% 2 1 0 0c5632446d90c9280c473b3878b0b6d9
+
+% 3 1 0 10d6990922f5b6090a6bace2819c7684
+
+% 4 1 0 1b0444d1f78dada40bbbceec2d1309b9
+
+% 5 1 0 148d24bcfcb98d740b61a42b75b2a93e
+
+% 6 1 0 1b023298762149cd1c37ea36f949e088
+
+% 7 1 0 0e6a62d31221a37001d3d8b81dd92c0c
+
+% 8 1 0 19fa19239c519a0c1e1776080f7633d9
+
+% 9 1 0 0d980df55aa723e11afbd020742c12eb
+
+% 10 1 0 1cbfaec232b19044170cf93718d5be21
+
+% 11 1 0 094e75bfd1188a0411714df7f8b8f7d7
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 2 1 0 177f5eeaa38e141d08211076ed168377
+
+% 0 1 0 063588d4267db2ba1be3eb3c918c0a53
+
+% 1 1 0 195a4018785235671e201aee7120ff42
+
+% 0 1 0 1ce43691b8ac4cab0da5299cf6553178
+
+% 0 1 0 1f662383de99f12915b87410a26dbeed
+
+% 0 1 0 0bdef44397527184019c66356db144a4
+
+% 1 1 0 1c318f1b27cc792715891085f8566a2a
+
+% 0 1 0 045fd5dbc1645960178e73576b044668
+
+% 1 1 0 0338d8900365daf9175752f80ed0c9a7
+
+% 1 1 0 17fef7a8af285ebf171f5c4ca943bc0f
+
+@ 0 4 0 052f739eda17aac91ed09eb84bf46c1f
++       Pojedyncze okno to jeden pomiar. Trzy ustawienia `#apply` zamieniają je w przeszukiwanie
++       liczby workerów, w którym liczba dla każdego okna jest wybierana przez `StressSearch` na
++       podstawie wyniku poprzednich okien, a każde okno jest raportowane jako komórka na osi `N`
++       testu, więc przeszukiwanie czyta się jako krzywą względem `N` w jednym teście, a nie jako
++       wiele testów:
+
+@ 0 12 0 1cf4ddb3c9ec394a0e3efa23bcd648cf
++       - `sweep` podwaja liczbę workerów od `concurrency` (domyślnie jeden) do `sweep`,
++         zatrzymując się wcześniej na oknie, któremu zabrakło pamięci lub które ponad połowę
++         czasu spędziło na odśmiecaniu – więc przy ograniczonej stercie ostatni wiersz to
++         największa współbieżność, jaką ta sterta utrzymuje;
++       - `threshold` i `compliance`, podane razem, szukają **pojemności**: największej liczby
++         workerów, przy której co najmniej `compliance` procent operacji kończy się w ciągu
++         `threshold`, wyszukiwanej binarnie z dokładnością do około 12%, a następnie
++         potwierdzanej w oknie trzy razy dłuższym; potwierdzony wiersz jest oznaczany
++         `sustained`;
++       - `refine` szuka liczby **optymalnej** zamiast potęgi dwójki lub największej zgodnej
++         liczby: najmniejszej, której przepustowość mieści się w 5% najlepszej – szczytu krzywej
++         ze szczytem lub kolana krzywej, która się wypłaszcza – mierzonej ponownie w wydłużonych
++         oknach i oznaczanej `sustained`.
+
+@ 0 5 0 177ac85618ebbe4c104e3af3473a2f85
++       Wątki workerów są tego rodzaju, jaki tworzy `Threading` w zasięgu: przy
++       `threads.virtualThreads` pomiar o dużej współbieżności multipleksuje swoje workery na
++       puli wątków nośnych, tak jak robiłaby to masowo współbieżna aplikacja. Alokacja jest w
++       każdym przypadku w pełni rozliczana. Worker, którego operacja rzuci wyjątek, powoduje
++       niepowodzenie swojego okna, raportowane raz na standardowym wyjściu błędów, zamiast
++       wypisywania śladu dla każdego workera.
+
+@ 0 4 0 00092d16cd4d51641fe64777697ded1a
++       Parametry konstruktora `heap`, `cpus` i `gc` ustalają JVM pomiaru tak jak w `Bench`;
++       nasycone wielowątkowe obciążenie mierzące opóźnienia ogonowe powinno wybrać
++       `gc = t"G1"`, aby pauzy stop-the-world odśmiecacza Serial nie zdominowały 99.
++       percentyla. Wiersze testów obciążeniowych wybiera się przełącznikiem `--stress` w fume,
++       a nie `--bench`.
+
+% 0 1 0 0d553e4a50ec2ffd0d2d4e429e3f68d2
+
+% 0 1 0 1c72aea31cb3ed901de16e442bd5ffa4
+
+% 1 1 0 1b772b4549d3d32d121f67a9efbf845b
+
+@ 0 8 0 00de051860bc1eae0a15f05b7c7a4780
++   entry #heap   stały rozmiar sterty JVM pomiaru jako tekst `-Xmx` lub `Unset` dla `1g`
++   entry #cpus   ilu procesorów może używać JVM pomiaru lub `Unset` dla wszystkich
++   entry #gc   odśmiecacz JVM pomiaru, jak w `-XX:+Use<gc>GC`, lub `Unset` dla `Serial`
++   entry #Result   typ wyniku etapowanego wywołania: same dane wyjściowe
++   entry #Form   postać, w jakiej przesyłane są etapowane dane wejściowe i wyjściowe: `Text`
++   entry #Target   to, co daje etapowanie: `Path on Linux` wdrożonego pliku JAR
++   entry #Transport   jak wstawiane wartości są kodowane dla JVM pomiaru: `Json`
++   entry #apply   uruchamia test obciążeniowy ciała w cytacie: jedno okno, przegląd, szukanie pojemności lub doprecyzowanie
+
+% 0 1 0 1cb09e8438ae5c73091f2172c595f5ef
+
+@ 0 8 0 0917700994ea5353108986174cdf4f22
++       - `target` to długość każdego okna, dowolny czas trwania, skalowana mnożnikiem czasu
++         trwania runnera; `threshold`, będący kryterium opóźnienia, a nie odcinkiem czasu, nie
++         jest skalowany;
++       - `concurrency` to liczba workerów lub pierwsza liczba przeszukiwania (domyślnie jeden);
++       - `sweep` to największa liczba workerów, jaką może osiągnąć przeszukiwanie (1024 dla
++         szukania pojemności bez niej);
++       - `threshold` i `compliance` (procent) razem ustalają cel opóźnienia; podanie tylko
++         jednego z nich jest błędem programistycznym i powoduje panikę;
++       - `refine` szuka optymalnej liczby workerów.
+
+@ 0 5 0 1ca59d92009242a601f7560083c527b0
++       Ciało jest wyrażeniem w cytacie, jak w `Bench.Plan#apply`. Test deklaruje swoją oś `N`,
++       ograniczoną przez `concurrency` i `sweep`, zanim cokolwiek się uruchomi, dzięki czemu
++       host może zaoferować ograniczenia `N` w listowaniu, a jego oczekiwany czas trwania to
++       jedno okno dla pojedynczego pomiaru i w przybliżeniu logarytmiczny względem `sweep` dla
++       przeszukiwania. Okno, któremu zabrakło pamięci, nie jest raportowane; każde inne jest,
++       łącznie z nieudanym potwierdzeniem.
+
+% 2 1 0 0183f411203548ab144de5ae655cb0e1
+
+% 3 1 0 0ad6bba58ffa1e9c13c9048938e7a847
+
+% 4 1 0 183d14a1fffbd70d041c467695816135
+
+% 0 1 0 0787c35b8b1aeb46028377f3b06dc97d
+
+% 0 1 0 13f11a5c042c9e061c2889397b0650b3
+
+% 0 1 0 156cfb84ebbf3ad71e15b9b5a7e79a51
+
+% 1 1 0 12abbb71609e956c1163d0b64680b89c
+
+@ 1 2 0 1c003e8d559922221275caaec12a9b9d
++   entry #stage   buduje mierzony kod do pliku JAR i wdraża go na urządzenie
++       Jak `Bench#stage`: niepowodzenie to `Rig.Error` z przyczyną `Staging`.
+
+@ 0 1 0 1453596b77fff71a0c828f7b03abd0bc
++ entry .StressSearch   wybiera liczbę workerów każdego okna przeszukiwania `Stress` na podstawie okien poprzednich
+
+% 1 1 0 0dbb760731e1219007356174b544725f
+
+@ 0 3 0 0cd324935e3d10f302a2e92055bf4ac9
++       Przeszukiwanie, które wykonuje `Stress` z `sweep`, `threshold` i `compliance` lub z
++       `refine`. Działa wewnątrz JVM pomiaru, wywoływane z etapowanej pętli, ale jest zwykłą
++       klasą, więc przeszukiwanie można przetestować na symulowanym obciążeniu bez etapowania
++       czegokolwiek:
+
+% 2 1 0 04e1c0bd91af91841d4fe29a51d41fc7
+
+% 3 1 0 12aca7ea61edca5802106ec8e50b99d6
+
+% 0 1 0 1decf38be3a89b90130724b706331eeb
+
+% 0 1 0 0e1408fe951bf02d0ba77b069828815d
+
+% 0 1 0 1cd448f9dc5840ca00ae2482faccbc9c
+
+% 0 1 0 0e0e34dbd91f0743135b504087a6644e
+
+% 0 1 0 06df997f6a0a9d1b171dbbeb1fdaf892
+
+% 0 1 0 04be5aaa9aa14b0c0caf616d3db12fbc
+
+% 1 1 0 0abd30175b0aa56e04c79264ea0804ae
+
+@ 0 3 0 1116a2614e1fba671aa16585fbb2ca28
++       Konstruktor przyjmuje pierwszą liczbę workerów, największą, informację, czy istnieje cel
++       opóźnienia (SLO), oraz czy doprecyzowywać. Każde przeszukiwanie zaczyna się od **wspinaczki**,
++       podwajającej liczbę i trafiającej dokładnie w limit, nawet jeśli nie jest on potęgą
++       dwójki:
+
+@ 0 16 0 0e486af33fe771e405baea83f72b4a06
++       - Bez SLO wspinaczka stanowi całość zwykłego przeglądu, zatrzymując się na limicie lub
++         na oknie, które wyczerpało pamięć lub thrashowało. Zwykły przegląd nie ma zwycięzcy.
++       - Z SLO wspinaczka zatrzymuje się na pierwszym oknie, które nie osiąga celu, a granica
++         między największą zgodną a najmniejszą niezgodną liczbą jest wyszukiwana binarnie z
++         dokładnością do około 12%. Największa zgodna liczba jest potwierdzana w wydłużonym
++         oknie, schodząc w razie niepowodzenia potwierdzenia o około 12% naraz, do trzech razy.
++         Jeśli celu nie osiąga już pierwsze okno, przeszukiwanie kończy się na nim, bez
++         zwycięzcy.
++       - Z `refine`, po wspinaczce (i ewentualnym wyszukiwaniu granicy) sonduje w połowie luk
++         wokół najszybszej wykonalnej liczby, aż mieszczą się one w około 6% – najpierw
++         **szczyt**, potem **kolano**, najmniejszą liczbę w obrębie `.Plateau` od najszybszej –
++         i ponownie mierzy kolano, liczbę poniżej niego i szczyt w wydłużonych oknach. Wygrywa
++         najmniejsza z nich mieszcząca się w 5% najszybszego ponownego pomiaru. Jeśli ponowny
++         pomiar szczytu wypada o ponad 5% gorzej, szczyt był szczęśliwym oknem: ponowne pomiary
++         zastępują pierwsze, a przeszukiwanie zaczyna się od nowa, do `.Restarts` razy. Okno,
++         które zakończyło się niepowodzeniem lub nie osiągnęło SLO, ogranicza sondowanie, ale
++         nigdy nie jest kandydatem.
+
+% 0 1 0 1727f9716b5975e80840a6bc7d0a7f80
+
+@ 0 19 0 1da1ed1c889683c8037ea2bc8466d00d
++   entry .MaxProbes   najwięcej okien poświęcanych na sondowanie wokół szczytu i ponownie wokół kolana: 12
++   entry .Plateau   ułamek najlepszej przepustowości, w obrębie którego liczba jest równie dobra jak najlepsza: 0.05
++   entry .Restarts   ile razy doprecyzowywane przeszukiwanie zaczyna się od nowa po znalezieniu szczęśliwego szczytu: 2
++   entry .Phase   etap, na którym jest przeszukiwanie, od wspinaczki do zakończenia
++       `Ascent` podwaja liczbę; `Boundary` wyszukuje binarnie granicę SLO; `Peak` i `Knee`
++       sondują w poszukiwaniu optimum w doprecyzowywanym przeszukiwaniu; `Confirmation` mierzy
++       ponownie kandydatów w wydłużonych oknach; `StepDown` cofa się o około 12% naraz od
++       nieudanego potwierdzenia; a `Done` kończy przeszukiwanie.
++   entry #done   czy przeszukiwanie się zakończyło, więc żadne kolejne okno nie powinno się uruchomić
++   entry #current   liczba workerów, z jaką powinno się uruchomić następne okno
++   entry #extended   czy następne okno jest potwierdzeniem, uruchamianym trzy razy dłużej niż czas docelowy
++   entry #winner   liczba porządkowa zwycięskiego okna, licząc od zera każde zarejestrowane okno, lub -1
++       Zwykły przegląd i przeszukiwanie, w którym żadne potwierdzenie się nie utrzymało, nie mają
++       zwycięzcy. `Stress` oznacza wiersz zwycięskiego okna jako `sustained`.
++   entry #record   rejestruje wynik okna właśnie uruchomionego z `#current` workerami
++       `record(throughput, ok, exhausted)`: przepustowość okna w operacjach na nanosekundę; czy
++       było wykonalne – bez niepowodzenia, bez wyczerpania pamięci, bez thrashingu i w ramach
++       SLO, jeśli jest; oraz czy zabrakło mu pamięci lub thrashowało, co kończy wspinaczkę
++       zwykłego przeglądu. Przeszukiwanie wybiera następnie kolejne `#current` albo się kończy.
+
+@ 0 1 0 00ec4294954df0f00e8b2dbd8ae9ebbe
++ entry .Profile   profil: operacja w cytacie uruchamiana pod JFR, raportująca swoje najgorętsze metody jako histogram
+
+% 1 1 0 05e9fb05f87525e00ba9bb00894fb622
+
+@ 0 7 0 0b85ae0c935ed2771a1bebb46d8cfdbf
++       Podczas gdy `Bench` mierzy, jak szybko działa operacja, a `Stress` – jak się skaluje,
++       `Profile` mierzy, na co idzie jej czas. Ciało działa wielokrotnie na jednym wątku przez
++       docelowy czas, podczas gdy nagranie JFR wewnątrz procesu próbkuje wykonanie co
++       milisekundę, rejestrując obok próbki metod natywnych, dzięki czemu potok ograniczony
++       kodem natywnym (na przykład zlib) nie jest niewidoczny. Zliczana jest górna ramka każdej
++       próbki – metoda faktycznie wykonywana, jej **czas własny** – a najgorętsze metody są
++       raportowane jako `Hotspots` z probably, przedstawiane jako histogram z metodami
++       pokolorowanymi według pakietu.
+
+% 2 1 0 168cf28ca4a274210149c825641b6d1f
+
+% 3 1 0 0b96a50727d69f1800943beecb4ed5c6
+
+% 4 1 0 009e6974bc7a9d140bbf23ef4574deda
+
+% 5 1 0 18e448b035937a540e9aaf2336a5be23
+
+% 6 1 0 050ac6c00150ee6a0071377a02c910d9
+
+% 7 1 0 16ae5bccd631ddd2106bf5280164e632
+
+% 8 1 0 04cda3c8fefacda11ea91cb47d89acbf
+
+% 9 1 0 0fda860b103ee822025be249c33e4968
+
+% 10 1 0 16f6be2650747dcb16cb4a7b3e2f0561
+
+% 11 1 0 04cd20177a936df817cb3bf7d15c7916
+
+% 13 1 0 048b6e179a3ed06913389570cd560dc0
+
+% 0 1 0 06cf456b7492c4f21084d8d5df471c5a
+
+% 1 1 0 1fab5f48dd2f72f50de12638b0765be0
+
+% 0 1 0 04d3020ceb42d0761788b109d89e9d23
+
+% 0 1 0 1423069f1c30b7c30ed5b0c3a7bc2e63
+
+% 1 1 0 190ca94a7debe5a21a8cffeaa8db0cfa
+
+% 0 1 0 1f5b12279f6e806905fe807d2b53f3f0
+
+% 1 1 0 10f2c4c485c01a6604f8a727dc5fb3b8
+
+% 1 1 0 1e73af66dfd2c3fc07c5133d601755ba
+
+@ 0 6 0 125785145ec5f854142d5e3ef5b76695
++       Próbnik wykonania JFR obserwuje tylko wątki gotowe do działania, więc jest to profil
++       procesora: czas spędzony w stanie zaparkowanym lub w oczekiwaniu się nie pojawia.
++       Próbkuje jednak każdy wątek, więc wątki tworzone przez ciało są profilowane razem z nim.
++       Parametry konstruktora `heap` i `cpus` ustalają JVM pomiaru tak jak w `Bench`; profil
++       zawsze używa domyślnego odśmiecacza urządzenia. Wiersze profili wybiera się
++       przełącznikiem `--profile` w fume: samo `--bench` ich nie uruchamia.
+
+% 0 1 0 115fbdc33a1fefee14498e416da9bb9e
+
+% 1 1 0 1a667f14b1126ddd04f250c229b712f1
+
+@ 0 11 0 134f42024d28626c1f0afab0103f1f9d
++   entry #heap   stały rozmiar sterty JVM pomiaru jako tekst `-Xmx` lub `Unset` dla `1g`
++   entry #cpus   ilu procesorów może używać JVM pomiaru lub `Unset` dla wszystkich
++   entry #Result   typ wyniku etapowanego wywołania: same dane wyjściowe
++   entry #Form   postać, w jakiej przesyłane są etapowane dane wejściowe i wyjściowe: `Text`
++   entry #Target   to, co daje etapowanie: `Path on Linux` wdrożonego pliku JAR
++   entry #Transport   jak wstawiane wartości są kodowane dla JVM pomiaru: `Json`
++   entry #apply   profiluje ciało w cytacie przez docelowy czas, raportując jego najgorętsze metody
++       `profile(name, tags*)(target, frames, inclusive)(body)`: `target` określa, jak długo
++       nagrywać – dowolny czas trwania, skalowany mnożnikiem czasu trwania runnera; `frames`
++       ogranicza liczbę raportowanych metod (domyślnie 25); a `inclusive` zlicza próbkę dla
++       każdej odrębnej metody na jej stosie, a nie tylko dla górnej ramki.
+
+@ 0 8 0 17b115bc28d0ec220683d50a36942ab9
++       Profil inkluzywny podaje udział każdej metody w czasie spędzonym w niej **lub w czymkolwiek,
++       co wywołała**, co pozwala znaleźć koszt ukryty w wywoływanej metodzie lub rozłożony na
++       kilka z nich – na przykład konstruktor napisu wstawiony inline do wygenerowanej pętli –
++       który histogram czasu własnego przypisuje gdzie indziej. Udziały sumują się wtedy do
++       więcej niż całości, a najbardziej zewnętrzne ramki pokazują blisko 100%. Nazwy metod i
++       klas są raportowane w postaci źródłowej, z cofniętym manglingiem kompilatora.
++   entry #stage   buduje mierzony kod do pliku JAR i wdraża go na urządzenie
++       Jak `Bench#stage`: niepowodzenie to `Rig.Error` z przyczyną `Staging`.
+
+@ 0 1 0 122794e79e95a63b07b8a9c22352b6fb
++ entry .BenchmarkDevice   miejsce, w którym działa JVM pomiaru: lokalna maszyna lub host osiągany przez SSH
+
+% 1 1 0 07ebe0009706e42a1b23ae3aa2fd361d
+
+@ 0 4 0 0eec77e39b3a2d5611a42db0baded16a
++       `BenchmarkDevice` wdraża etapowany plik JAR, uruchamia JVM, która wykonuje go z podanymi
++       danymi wejściowymi, zwraca jego dane wyjściowe i usuwa plik JAR. `Bench`, `Stress` i
++       `Profile` przyjmują je jako wartość kontekstową przy konstrukcji, więc zestaw wybiera
++       urządzenie raz, jako given:
+
+% 2 1 0 10d7391824e4ce2b1f83f5f065aef55a
+
+% 3 1 0 19b473b41b6079ef1e1980051d70f277
+
+% 5 1 0 092e880b2ec25e050b994ee4e695c432
+
+% 6 1 0 1d222192963f8caf07ee966263868b39
+
+@ 0 5 0 150170a6d7d8f68b18f19c0f208737a2
++       `LocalhostDevice` uruchamia JVM na lokalnej maszynie; `NetworkDevice` kopiuje plik JAR na
++       zdalny host za pomocą `scp` i uruchamia go za pomocą `ssh`, a jego `session` multipleksuje
++       każdą operację na jednym połączeniu SSH. Urządzenie na cichej, dedykowanej maszynie z
++       Linuksem daje najstabilniejsze wyniki i jest jedynym rodzajem, na którym `cpus` przypina
++       proces do rdzeni. Każda operacja w razie niepowodzenia zgłasza `Bench.Error`.
+
+@ 0 3 0 1063f6e53d5ed12504854a8dbaa2469f
++       JVM pomiaru jest uruchamiana ze stałą stertą (`-Xms` i `-Xmx` równe `1g`, chyba że podano
++       `heap`), z wstępnie dotkniętą stertą, dwoma wątkami kompilatora JIT i odśmiecaczem
++       Serial, chyba że podano `gc`.
+
+% 0 1 0 0abd61e249b9fe3213519bde9da1b082
+
+% 1 1 0 142520e7623eaa2104e26498485df1ae
+
+% 0 1 0 1a66efb3a26dc89b12bcf0a066996bdd
+
+@ 0 5 0 18deae3f757311da0a3ae58bf5db33a3
++   entry #deploy   udostępnia etapowany plik JAR na urządzeniu pod nazwą pochodzącą z jego UUID
++       Zgłasza `Bench.Error`, jeśli pliku JAR nie można tam skopiować.
++   entry #invoke   uruchamia etapowany plik JAR w świeżej JVM na urządzeniu z jednymi danymi wejściowymi i zwraca jego dane wyjściowe
++       `invoke(path, input, heap, cpus, gc)` zgłasza `Bench.Error`, jeśli JVM nie można
++       uruchomić lub kończy się ona niezerowym statusem.
+
+@ 0 12 0 0d46d42e97863bef09c5e0bce3718825
++       - `heap` nadpisuje stały rozmiar sterty, w składni `-Xmx` (`t"256m"`), zarówno dla
++         `-Xms`, jak i `-Xmx`; nieustawiony wynosi `1g`. Ograniczona sterta pokazuje, co
++         obciążenie utrzymuje w małej, ustalonej ilości pamięci.
++       - `cpus` ogranicza JVM do takiej liczby procesorów za pomocą
++         `-XX:ActiveProcessorCount`, co określa liczbę wątków GC i JIT oraz rozmiar każdej puli
++         wyprowadzanej z liczby dostępnych procesorów. Na linuksowym `NetworkDevice` proces jest
++         dodatkowo przypinany do takiej liczby rdzeni za pomocą `taskset`; gdzie indziej, w tym
++         na `LocalhostDevice` z macOS, wątki platformowe nadal są szeregowane na wszystkich
++         rdzeniach, więc limit ma charakter doradczy.
++       - `gc` wskazuje odśmiecacz w składni `-XX:+Use<gc>GC` (`t"G1"`, `t"Parallel"`,
++         `t"Z"`); nieustawiony to `Serial`.
++   entry #undeploy   usuwa etapowany plik JAR z urządzenia
++       Zgłasza `Bench.Error`, jeśli pliku JAR nie można usunąć.
+
+@ 0 1 0 097e7cc8b54c0fe00a5482d4c9c12d95
++ entry .LocalhostDevice   urządzenie benchmarkowe, które uruchamia każdą JVM pomiaru na lokalnej maszynie
+
+% 1 1 0 07662c9930f20a1106fadc9524e71572
+
+@ 0 4 0 1cba31ac24d3473c07c8ed11a8aca0d6
++       Wdrożenie i usunięcie pliku JAR nic nie robią, ponieważ etapowany plik JAR jest już w
++       lokalnym systemie plików, a `invoke` uruchamia bezpośrednio `java` ze ścieżki.
++       Standardowe wyjście błędów JVM pomiaru jest dziedziczone, więc jego komunikaty
++       diagnostyczne – ślad stosu nieudanego workera – pojawiają się na bieżąco i nie mogą
++       zapełnić nieopróżnianego potoku i zablokować harnessu.
+
+% 2 1 0 02132e0249c0dadf1a3ddde244232650
+
+% 3 1 0 1a18b33033f475aa05dd98d4f4b53a08
+
+% 5 1 0 1afc4338cf4fb2cf1538dcd1b114d693
+
+% 6 1 0 07d5980d7bfad05e124deefd1b958767
+
+@ 0 4 0 16d9d7f28344f7cb1f35fe9d0982c6f1
++       Etapowane dane wejściowe trafiają do JVM jako argument wiersza poleceń, więc ciało, które
++       wstawia wartość wielkości megabajta lub więcej, może przekroczyć systemowy limit długości
++       argumentów i zakończyć się `Bench.Error`. Limit `cpus` ma charakter doradczy na macOS,
++       który nie ma odpowiednika `taskset`.
+
+% 1 1 0 0eea005aad54e9d419c56fd77ed0e9aa
+
+@ 0 5 0 19adf6255f6a40670d1d2ec09ddfbc80
++   entry .deploy   nic nie robi: etapowany plik JAR jest już lokalny
++   entry .invoke   uruchamia etapowany plik JAR za pomocą `java` na lokalnej maszynie i zwraca jego standardowe wyjście
++       Zgłasza `Bench.Error`, jeśli JVM nie można uruchomić lub kończy się ona niezerowym
++       statusem. Opis `heap`, `cpus` i `gc` zawiera `BenchmarkDevice#invoke`.
++   entry .undeploy   nic nie robi: etapowany plik JAR pozostaje tam, gdzie zapisało go etapowanie
+
+@ 0 1 0 00141e54bb7a9ba81969bf3628524c5e
++ entry .NetworkDevice   urządzenie benchmarkowe na zdalnym hoście, osiągane jako użytkownik przez SSH
+
+% 1 1 0 1174d52bb656028709ddde43c660a8da
+
+@ 0 4 0 0ef39549f06042a90044d63ff156a905
++       `NetworkDevice(user, host)` kopiuje każdy etapowany plik JAR do katalogu domowego
++       użytkownika na `host` za pomocą `scp`, uruchamia go tam za pomocą `ssh` i `java`, a
++       potem go usuwa. Opiera się na lokalnych poleceniach `ssh` i `scp` oraz na konfiguracji i
++       kluczach SSH użytkownika: połączenie musi uwierzytelniać się bez monitu.
+
+@ 0 4 0 18a8d1c9da2e94191f3907a4327e915c
++       Zdalna maszyna z Linuksem to urządzenie, którego należy używać dla wyników, które nie
++       mogą być zakłócane przez własną maszynę programisty, i jedyne, na którym limit `cpus`
++       przypina JVM pomiaru do rdzeni za pomocą `taskset`. Każda operacja płaci za uzgadnianie
++       SSH; `session` płaci za nie raz:
+
+% 2 1 0 040dee9e7f16903c17a27882d36a591f
+
+% 3 1 0 0fe593e3c1c3e4871691cf151e63684c
+
+% 4 1 0 1248ed009b41a26209ccdee9d672c3c7
+
+% 5 1 0 1aba592ed6482619173da2c18b5d53f2
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 08a5eb3653039a1f1945c53b0a78e4c9
+
+% 0 1 0 0ead24f05c6609861ccf2c152613cc92
+
+% 0 1 0 08e1bc1e308592700b6608717e244480
+
+% 0 1 0 1c4527fe1977b09e18a89092ac5ef160
+
+% 1 1 0 17882ae01ed89f39014280b3bc87d5d0
+
+@ 0 2 0 06373b73e07431400580430d0b9b89c3
++       Umożliwia to given `NetworkDevice.sessional` w obiekcie towarzyszącym, który wymaga
++       `Tactic[Bench.Error]` w zasięgu do otwarcia połączenia.
+
+% 0 1 0 0def39e27e4a60500e00090257aec6c0
+
+% 0 1 0 073f750f4a52a9c2124713f133474230
+
+% 1 1 0 0f2a673c734893690608cb542b5cea3a
+
+@ 0 5 0 0cd756025db6fbaa1d0019c18b14d788
++   entry .sessional   pozwala `device.session` otworzyć jedno multipleksowane połączenie SSH z `NetworkDevice`
++       Instancja `Sessional` dla `NetworkDevice`, w zasięgu niejawnym: `NetworkDeviceSessional`,
++       zbudowana z `Tactic[Bench.Error]` w zasięgu, która zgłasza błąd, jeśli nie można otworzyć
++       połączenia nadrzędnego.
++   entry .Session   urządzenie benchmarkowe multipleksujące każdą operację na jednym połączeniu OpenSSH ControlMaster
+
+% 1 1 0 0dbf2cb8f598376f1ac6c3df42b08266
+
+@ 0 21 0 1f8cc2ccec86a2231e76d82c6035445e
++         Urządzenie, które `session` z `NetworkDevice` pożycza swojemu blokowi. Wdraża, uruchamia
++         i usuwa pliki JAR na tym samym hoście co jego `NetworkDevice`, ale przez gniazdo
++         sterujące połączenia nadrzędnego otwartego raz, więc żadna operacja nie płaci za własne
++         uzgadnianie SSH. Nie konstruuje się go bezpośrednio: sesja otwiera połączenie, pożycza
++         urządzenie i zamyka połączenie, gdy blok się kończy, niezależnie od tego, czy zwraca
++         wartość, czy rzuca wyjątek.
++     entry #deploy   kopiuje etapowany plik JAR na host przez współdzielone połączenie
++         Zgłasza `Bench.Error`, jeśli kopiowanie się nie powiedzie.
++     entry #invoke   uruchamia etapowany plik JAR na hoście przez współdzielone połączenie i zwraca jego dane wyjściowe
++         Jak `NetworkDevice#invoke`, bez własnego uzgadniania. Zgłasza `Bench.Error`.
++     entry #undeploy   usuwa etapowany plik JAR z hosta przez współdzielone połączenie
++         Zgłasza `Bench.Error`, jeśli usunięcie się nie powiedzie.
++   entry #user   nazwa użytkownika, jako który następuje logowanie na host
++   entry #host   zdalny host jako `Hostname`
++   entry #deploy   kopiuje etapowany plik JAR do katalogu domowego użytkownika na hoście za pomocą `scp`
++       Zgłasza `Bench.Error`, jeśli kopiowanie się nie powiedzie.
++   entry #invoke   uruchamia etapowany plik JAR na hoście za pomocą `ssh` i `java` i zwraca jego dane wyjściowe
++       Zgłasza `Bench.Error`, jeśli połączenie się nie powiedzie lub JVM zakończy się
++       niezerowym statusem. Na hoście limit `cpus` zarówno ustawia liczbę procesorów JVM, jak i
++       przypina proces do takiej liczby rdzeni za pomocą `taskset`, więc host musi go mieć.
++       Zobacz `BenchmarkDevice#invoke`.
++   entry #undeploy   usuwa etapowany plik JAR z hosta za pomocą `ssh`
++       Zgłasza `Bench.Error`, jeśli usunięcie się nie powiedzie.
+
+@ 0 1 0 0d7f11ce0222053510d5c21e46e1c557
++ entry .NetworkDeviceSessional   instancja `Sessional`, która otwiera sesję SSH o ograniczonym zasięgu na `NetworkDevice`
+
+% 1 1 0 0291a8e46d3e431f06aa53461dca0b88
+
+@ 0 6 0 0a610454e33dd9d1194655cdfaa927b6
++       Nazwana klasa instancji, zwykle niepisana ręcznie: dostarcza jej `NetworkDevice.sessional`,
++       a używa `device.session`. Jej `#session` otwiera połączenie OpenSSH ControlMaster z
++       hostem (uwierzytelniane raz, z gniazdem sterującym w `/tmp`), pożycza blokowi
++       `NetworkDevice.Session` i zamyka połączenie nadrzędne, gdy blok się kończy, niezależnie
++       od tego, czy zwraca wartość, czy rzuca wyjątek. Przyjmuje `Tactic[Bench.Error]`, przez
++       którą zgłaszany jest błąd, jeśli połączenia nie można otworzyć; niepowodzenie jego
++       zamknięcia jest ignorowane.
+
+% 1 1 0 1856e314226bf7401eba0264cc93ceda
+
+@ 0 6 0 1e0a4febb4434e52022d1809ac9a5425
++   entry #Self   cel sesji: `NetworkDevice`
++   entry #Result   to, co sesja pożycza swojemu blokowi: `NetworkDevice.Session`
++   entry #session   otwiera połączenie nadrzędne, pożycza blokowi `NetworkDevice.Session` i je zamyka
++       Wywoływana przez rozszerzenie `session`, `device.session: session ?=> …`, a nie
++       bezpośrednio. Wynik bloku może opuścić sesję; samo urządzenie sesji nie powinno, ponieważ
++       jego połączenie jest zamykane, gdy blok się kończy.
+
+@ 0 1 0 1d7a3c228792696e13f64a4f8d67be41
++ entry .OperationSize   rozmiar jednej operacji benchmarku, który zamienia czas w szybkość przepustowości
+
+% 1 1 0 007ae37fce5360fc180805ec21e14eea
+
+@ 0 4 0 193808a6dd68ea4b1c3f0ed62748b06e
++       Benchmark przetwarzający dane raportuje swoją szybkość – megabajty lub znaki na sekundę –
++       oprócz czasu na operację, gdy wie, ile przetwarza każda operacja. Rozmiar podaje się
++       zwykle jako wielkość, którą `.conversion` zamienia w `OperationSize`:
+
+% 2 1 0 121c04bcab8e71d718fe549d348ff0c9
+
+% 3 1 0 1ceed2796d9ea1780881021b096ab645
+
+% 4 1 0 1cc1eaeb75b51284026ea0a35a546fef
+
+% 0 1 0 10c05c64b3454b3304d95998ab704c70
+
+% 0 1 0 03643882053a944d04ea9e9188faed74
+
+% 1 1 0 0154b7195b9639381cdf42cc6346a721
+
+@ 0 3 0 1a57474d218dbf6c0c29c519f301ad8c
++       Rozmiar jest przedstawiany z przedrostkiem metrycznym (`4.2 MB`), a szybkość podobnie
++       (`MB/s`). Rozmiary dla poszczególnych komórek podaje się za pomocą `Bench.Plan#sized`, dla
++       benchmarku, którego komórki przetwarzają różne ilości danych, tak aby ich szybkości były
++       porównywalne tam, gdzie czasy nie są.
+
+% 1 1 0 1ff036ee7b762dcd1f8b74968b944c74
+
+% 1 1 0 0f4d91832331b0db07efa69913f3c5cb
+
+@ 0 9 0 0679515f859c527c19d07984bfbe8c7d
++   entry .conversion   przekształca `Quantity` w `OperationSize` dla `operationSize` z `Bench#apply`
++       Przekształca się dowolna `Quantity` dowolnej miary, przy czym `Decimalizer` w zasięgu
++       przedstawia zarówno rozmiar, jak i – gdy znany jest średni czas – szybkość, w jednostkach
++       wielkości na sekundę. Given jest `inline`, więc przedstawienie jest elaborowane tam, gdzie
++       przekazywana jest wielkość, z widocznymi givenami jednostek i przedrostków wywołującego:
++       konwersja inna niż inline przedstawiłaby `4194304*Byte` bez jednostki i przedrostka.
++   entry #sizeText   rozmiar operacji przedstawiony do czytania: `4.2 MB`
++   entry #rateText   przedstawia szybkość na podstawie średniego czasu operacji w sekundach: `120 MB/s`
++   entry #value   rozmiar jako liczba w jednostce podstawowej (bajtach lub znakach), do wykresów

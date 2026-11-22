@@ -1,0 +1,178 @@
+orthant 2 language
+
+@ 0 1 0 1697104509eaad480ac7b84102fc11d4
++ entry .Terrain   `Expanse`, którego bajty są w pamięci i czyta się je tam, gdzie leżą: plik odwzorowany w pamięci albo bajty na stercie
+
+% 1 1 0 1d2d43abbc556280043457e64eb6d264
+
+@ 0 13 0 110b3ddc217ac7a50f82398a9c83af58
++       Liczby całkowite ładuje się spod dowolnego przesunięcia, w porządku little-endian, bez
++       kopiowania, a `slice` to węższy widok tej samej pamięci. Teren należy do zasięgu – plik
++       jest odwzorowywany na czas trwania bloku – więc jest pożyczany jako śledzony `Terrain^`
++       i nic nie ładuje danych z pamięci, która nie jest już odwzorowana. `Terrain(data)` to
++       teren nad bajtami, które już są na stercie.
++   entry #u8   bajt bez znaku pod przesunięciem, jako `Int`
++   entry #u16   16-bitowa liczba całkowita bez znaku pod przesunięciem, jako `Int`
++   entry #u32   32-bitowa liczba całkowita bez znaku pod przesunięciem, jako `Long`
++   entry #u64   64-bitowa liczba całkowita pod przesunięciem, jako `Long`
++   entry #i32   32 bity pod przesunięciem jako `Int` ze znakiem
++   entry #slice   widok części pamięci, współdzielący ją i jej czas życia
++   entry #same   czy bajty pod przesunięciem są bajtami pewnych `Data`, porównywane na miejscu
++   entry #compare   porządek pewnych bajtów względem pewnych `Data`, porównywanych na miejscu, przy czym właściwy prefiks sortuje się jako pierwszy
+
+@ 0 1 0 07161a9b0652a0aa1a17db213819117e
++ entry .Structural   klasa typów typu o stałym układzie w bajtach: rekordu liczb całkowitych o określonym rozmiarze, czytanego przez `unpack` i zapisywanego przez `pack`
+
+% 1 1 0 1dbdb63afee1f932156ed79702a8c661
+
+@ 0 6 0 128e315dd90f3568120e87157c8b8686
++       Klasa case, której pola są liczbami całkowitymi o określonym rozmiarze (`B32`, `U16`,
++       `S64`, … albo zwykłe `Byte`, `Short`, `Int` i `Long`), *jest* układem binarnym: typ
++       każdego pola określa jego szerokość i interpretację, a `Structural.derived` składa je w
++       kolejności deklaracji, obliczając każde przesunięcie tam, gdzie układ jest
++       deklarowany. Kolejność bajtów w obrębie pola należy do formatu, więc w zasięgu derywacji
++       musi być jeden z givens `byteOrders` i to tam zostaje ona ustalona.
+
+% 2 1 0 1028348aece70ff31c7aaeed6837ca1c
+
+% 3 1 0 1896b8c0fd7e20bf1ab326a30c99f925
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 145c2a0e5b655f4a01551ae66745ea11
+
+% 0 1 0 168466ec95ae64f612bc885cb2b2841d
+
+% 0 1 0 093c6418b1f1700a18f1408c98a066b3
+
+% 0 1 0 0615a36d4f727fca02926d57d58112ad
+
+% 0 1 0 189ffa41490178111b536fb9e978357e
+
+% 0 1 0 0d039d9fc0a074461f06c4c8881b3917
+
+% 0 1 0 0623aad5d5ab330b14edbda2daf2aa25
+
+% 0 1 0 1ddb200b0bd0fd091d26a860a273ba8d
+
+% 1 1 0 0d40c4a93de9c323126dc8a441ea820a
+
+@ 0 5 0 15c8c758d092fc251614546e2bfce78a
++       Derywacja rozwija się do jednego ładowania (i jednego zapisu) na pole pod jego
++       przesunięciem, więc odczyt rekordu to jedno sprawdzenie granic i tyle ładowań, ile jest
++       pól. Pole dowolnego innego typu potrzebuje własnej instancji `Structural`: tak
++       zagnieżdżają się rekordy, każdy zachowując kolejność bajtów, z którą go zadeklarowano, i
++       tak polu nadaje się reprezentację, której nie oferują liczby całkowite o określonym
++       rozmiarze.
+
+@ 0 2 0 13110f9cb023a7e71678dba20250a369
++       Znajduje się w komponencie `zephyrine.layout`, który dodaje zależność od hypotenuse ze
++       względu na liczby całkowite o określonym rozmiarze, i kompiluje się na każdą platformę.
+
+% 0 1 0 1ccfba1656f9ccc70c9054f4bd681ef1
+
+% 0 1 0 058d7a75c2bb1d1903db18c18ef15834
+
+% 0 1 0 1ef84f397a13cf410f01323e64924852
+
+@ 0 4 0 1bc592d720ca964706fd45171fed07e4
++   entry .derived   układ klasy case, w kolejności bajtów obecnej w zasięgu; nie kompiluje się bez niej ani dla pola bez stałego układu
++   entry .width   liczba bajtów zajmowanych przez wartość danego typu, bez posiadania wartości
++   entry .Error   zażądano rekordu pod przesunięciem, pod którym nie ma całej jego szerokości
++       Niesie `offset`, szerokość rekordu `width` i rozmiar `size` danych lub obszaru.
+
+% 0 1 0 1c4f3e0c99e11c4411895c65f9246c30
+
+@ 0 3 0 0ac6e16edc7a15da10ff1df8d7dd4462
++   entry #width   liczba bajtów zajmowanych przez układ
++   entry #load   wartość ułożona pod przesunięciem, bez sprawdzania: sprawdzanym punktem wejścia jest `unpack`
++   entry #store   układa wartość w tablicy bajtów pod przesunięciem, bez sprawdzania: sprawdzanym punktem wejścia jest `pack`
+
+@ 0 5 0 073bbbd5db87b69d1bc422484fb59138
++ entry .unpack   czyta rekord o stałym układzie z `Data` albo z `Expanse` pod przesunięciem
++     `data.unpack[T](offset)` sprawdza raz, czy cały rekord jest obecny, zgłaszając
++     `Structural.Error`, jeśli go nie ma, a następnie go ładuje. `data.unpack[T](offset, count)`
++     czyta powtarzaną sekcję `count` rekordów jako tablicę. Na `Expanse`, takim jak `Terrain`
++     pamięci odwzorowanej, przesunięcie jest typu `Long` i czytane są tylko własne bajty rekordu.
+
+@ 0 1 0 1a8068e940a69be61d8478647b738c6b
++ entry .pack   bajty wartości o stałym układzie: dokładnie tyle, ile wynosi szerokość jej układu
+
+@ 0 3 0 08bb951cb83163ed1539cbb483ceb5f2
++ entry .ByteOrder   kolejność bajtów pola wielobajtowego: `BigEndian` albo `LittleEndian`
++     Sprawdzana przez `Structural.derived` tam, gdzie deklarowany jest układ, przez given
++     importowany z `byteOrders`.
+
+@ 0 3 0 06b7ea3d72d532bf1160db93d95677f1
++ entry .byteOrders   kolejności bajtów, każda jako given do zaimportowania po nazwie tam, gdzie derywowany jest układ
++   entry .bigEndianByteOrder   najbardziej znaczący bajt najpierw, jak w formatach sieciowych i plikach fontów
++   entry .littleEndianByteOrder   najmniej znaczący bajt najpierw
+
+@ 0 1 0 0833390a9f3ea0de00a05e7c4ef60e79
++ entry .layoutInternal   makro stojące za `Structural.derived` i zapisy, do których się rozwija
+
+% 1 1 0 0f148338f1aac85318242f2f9b2fe261
+
+@ 0 1 0 1c20bcc328e8566b052a425d501b2b14
++ entry .Holding   `Terrain`, który można zmieniać tam, gdzie leży: zapisywany pod przesunięciem i rozszerzany
+
+% 1 1 0 05f75a5b3e3bdc5b121c3e8a020f114f
+
+@ 0 14 0 1fc606f03c17fca60f8681cc5ca8bb55
++       To, przez co zmienia się format przechowywany i zmieniany na miejscu: plik odwzorowany
++       do zapisu przez jedyny proces, który jest jego właścicielem (`hold` z galilei), albo
++       bajty na stercie (`Holding(size)`, `Holding(data)`). Każdy zapis odbywa się pod
++       przesunięciem i żaden adres w jego pamięci nie jest wydawany, ponieważ `expand` może ją
++       przenieść; `slice` czyta przez przytrzymanie, z którego pochodzi, i pozostaje ważny po
++       rozszerzeniu.
++   entry #set8   zapisuje bajt pod przesunięciem
++   entry #set16   zapisuje 16-bitową liczbę całkowitą pod przesunięciem, w porządku little-endian
++   entry #set32   zapisuje 32-bitową liczbę całkowitą pod przesunięciem, w porządku little-endian
++   entry #set64   zapisuje 64-bitową liczbę całkowitą pod przesunięciem, w porządku little-endian
++   entry #write   zapisuje bajty pewnych `Data` od przesunięcia
++   entry #zero   zapisuje zerowe bajty na zakresie
++   entry #move   kopiuje zakres pod inne przesunięcie, z którym może się on nakładać
++   entry #expand   powiększa przytrzymanie co najmniej do danego rozmiaru, z nowymi bajtami zerowymi; nigdy go nie zmniejsza
++   entry #flush   utrwala to, co zapisano, tam, gdzie istnieje plik, w którym może zostać utrwalone
+
+@ 0 1 0 0d8f4cf87083945e1a83c5e80dcf998d
++ entry .Viewable   klasa typów wartości, której bajty można pożyczyć jako `Terrain` na czas trwania bloku
+
+% 1 1 0 02d61088aef9e5921be1c93bfc7a44dd
+
+@ 0 8 0 0bef3200f1a8e8871cba9f72bec143a9
++       Ścieżka jest `Viewable`, a jej plik jest odwzorowywany na czas bloku; tak samo obraz,
++       który jest już na stercie, i teren, który jest już pod ręką. Format czytany na miejscu
++       otwiera się z każdego z nich tak samo.
++   entry #view   pożycza bajty wartości jako `Terrain`
++   entry #hold   pożycza bajty wartości do zmiany jako `Holding` albo zwraca `otherwise`, jeśli nie da się ich zmienić
++       Plik jest odwzorowywany do zapisu pod blokadą na wyłączność, a posiadane przytrzymanie
++       jest pożyczane takie, jakie jest; bajty niemutowalne, jak wszystko, co nie stanowi
++       inaczej, zwracają `otherwise`.
+
+@ 0 1 0 1d63dd87fd4f5677117bdc5b51b32bce
++ entry .Surveyable   klasa typów postaci czytanej na miejscu z widoku jej bajtów: `Form is Surveyable by Flag to Handle`
+
+% 1 1 0 145174b3209a5d680323fbd5ec8e1ae5
+
+@ 0 4 0 16f068234f5f4b8b18a0176f5834c305
++       Jest to instancja dla postaci, a nie dla tego, co pożycza widok, i właśnie to pozwala
++       pożyczającemu, który sam jest zdolnością – `Observer` opublikowanej nazwy – otworzyć
++       widok jako postać.
++   entry #survey   otwiera widok jako postać, z flagami, i udostępnia uchwyt kontekstowo na czas trwania bloku
+
+@ 0 8 0 17dc62c86d3ce90c1f9827154fa5f3ca
++       `Stream` czyta się raz; `Spring[medium]` można pobierać dowolnie wiele razy, a każde
++       `apply()` daje nowy strumień nad tą samą treścią. Jest to trait, a nie typ funkcyjny,
++       ponieważ lambda nie może jako wyniku utworzyć nowej zdolności o ograniczonym zasięgu,
++       podczas gdy wynik metody jest ponownie poziomowany w każdym miejscu wywołania; a
++       ponieważ `apply` przyjmuje `Tactic[Truncation.Error]` (to przy pobraniu zgłaszane jest
++       źródło przerwane przedwcześnie), lambda nie konwertuje się na `Spring`.
++       `Spring(expression)` tworzy źródło, które przy każdym `apply()` oblicza wyrażenie od
++       nowa; argument typu podaje się, jak w `Spring[Data](…)`, tam, gdzie sam typ oczekiwany
++       go nie ustala. Działa również klasa anonimowa.
+
+% 0 1 0 01b8dfabb485bf69089d4d5c0df0dc55
+
+@ 0 1 0 01b50f4322e8d8860d8e2d8aaf23d35c
++   entry .apply   `Spring(expression)`: źródło, którego każde pobranie oblicza wyrażenie, by uzyskać nowy strumień

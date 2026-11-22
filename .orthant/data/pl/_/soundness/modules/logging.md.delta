@@ -1,0 +1,470 @@
+orthant 2 language
+
+@ 0 1 0 1372f8cc74a816e50233e487d3e9f85f
++ ## Logowanie
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 3 0 1b409aa52819b3c91262d1e2ee2a5fca
++ Logowanie jest typowane. Metoda, która loguje, mówi o tym w swoim typie zwracanym za pomocą
++ typu infiksowego `logs` i emituje wartość typowanego zdarzenia, a nie napis. Zamiast zwracać
++ `Long`, zwraca `Long logs Backup.Event`.
+
+@ 0 6 0 19b5c9b42ed3d6510d5fd323fb13bbec
++ Logger umieszczony w zasięgu wywołującego odbiera te zdarzenia i gdzieś je zapisuje: do
++ terminala, do pliku albo do dziennika systemowego. Bez loggera w zasięgu logowanie jest
++ ciche i nic nie kosztuje, więc zadeklarowanie, że metoda loguje, nie nakłada żadnego
++ obowiązku na kod, który ją wywołuje. Klauzula `logs` to
++ [uczciwa sygnatura](../../philosophy/honest-signatures.md): określa, co metoda rzeczywiście
++ emituje, więc wywołujący wie, co jest do przekierowania.
+
+@ 0 5 0 0f5c21b0d398c9d60400332a0fb74001
++ Logger jest zwykłą [wartością kontekstową][wartość kontekstowa]. Kilka może być w zasięgu
++ jednocześnie, a każde zdarzenie trafia do każdego z nich. Każdy logger ma własny próg
++ ważności, własny format i własne miejsce docelowe. Decyzja o tym, dokąd trafiają logi i z jaką
++ szczegółowością, należy do aplikacji, a nie do bibliotek, których ona używa. Wybieranie tego
++ na podstawie tego, co jest w zasięgu, to
++ [kontekst deklaratywny](../../philosophy/declarative-context.md).
+
+@ 0 1 0 1eac257104da567a0812d15467206183
++ ### O logowaniu
+
+@ 0 5 0 0cb90615c111cac10a847555416e3ebf
++ Większość logowania jest typowana jako napisy i zawsze włączona. Instrukcja logowania
++ formatuje komunikat zachłannie, niezależnie od tego, czy cokolwiek go przeczyta. Koszt
++ zbudowania napisu jest ponoszony nawet wtedy, gdy poziom jest wyłączony, więc staranny kod
++ osłania każdą instrukcję sprawdzeniem poziomu. Sam komunikat jest nieprzezroczystym napisem,
++ więc to, co go odbiera, nie może go przeformatować, filtrować po jego zawartości ani
++ zredagować pola, o którego istnieniu nie wiedziało.
+
+@ 0 1 0 0b27eba2d85b6a731aa5a024a73959bd
++ Tutaj te trzy kwestie są rozdzielone:
+
+@ 0 3 0 1a30e1e7fa8f8d361bcec72c89913f42
++ - Metoda deklaruje w swoim typie, *że* loguje i *co* loguje.
++ - Emitowane przez nią zdarzenie ma typowane pola, a nie sformatowany tekst.
++ - *Dokąd* trafia zdarzenie i *jak* jest zapisywane, rozstrzygają loggery w zasięgu.
+
+@ 0 3 0 04c5a5d4ec7ea9d511f3ade49205a499
++ Argument wywołania logowania jest przekazywany przez nazwę i obliczany tylko wtedy, gdy
++ któryś logger go zapisze. Wyłączona instrukcja niczego nie oblicza, więc wywołania logowania
++ można pisać swobodnie, bez osłon. Gdy w zasięgu nie ma żadnego loggera, cały mechanizm
++ znika podczas kompilacji.
+
+@ 0 3 0 1cf7dba9595c88e505a986ec516d2dff
++ Wszystko pochodzi z pakietu `soundness`. Program, który loguje, potrzebuje też formatu,
++ miejsca do zapisu i kontekstu [współbieżności](concurrency.md), w którym działa logger:
+
+% 2 1 0 1f151699ed390c2d15bdd18f114736d3
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 08347f60cff45ea01d6839192e37736f
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 13384f30cdd00a6f0d56c6f7fd9277a5
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 15855dca1aeb270f1cf30da311ccebe4
+
+% 0 1 0 01c93e6097c6710d10912de7ba18e5c3
+
+% 0 1 0 03367cd25358d1041b32aecd7b439a70
+
+% 0 1 0 0927f96e561a641f0d43349d32e36f6f
+
+% 0 1 0 16045fd084739fdc12ba511474bebeed
+
+% 0 1 0 0573ee4bb2ec9c80157d6296b9e909bb
+
+% 0 1 0 105b875be77538bf01a3d000c979fb06
+
+% 0 1 0 18c7a687010107340f80aa20e40c04f8
+
+% 0 1 0 187deca283ea14a40bca998ac1ee8616
+
+% 1 1 0 1dd7255fcbf2a0701e3e7365f7d2afc7
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 8 0 0bb1e041675c0ff106ac6679c585476f
++ column  Import lub given
++ column  Rozstrzyga
++ row  `logFormats.ansiTimestampedLogFormat`  jak zapisywane jest zdarzenie: tutaj w kolorze, dla terminala
++ row  `LogPalette`  kolory, których używa ten format
++ row  `writables.outTeletypeWritable`  że na standardowe wyjście można zapisywać tekst ze stylami
++ row  `stdios`, `termcapDefinitions`  dokąd trafia standardowe wyjście i co terminal potrafi wyświetlić
++ row  `threads`, `probates`  jak działa zadanie loggera w tle
++ row  `strategies.throwUnsafely`  że błąd jest rzucany jako wyjątek
+
+% 1 1 0 00d220a17931d83c1076bb5625270c62
+
+@ 0 1 0 1ab675c3eff99c62179f5d57631ecb16
++ ### Konfigurowanie loggera
+
+@ 0 4 0 0738dd0dc61264d806ad94ae21ff2383
++ `Logger` zapisuje zdarzenia do miejsca docelowego. Umieszczenie go w zasięgu jako [given]
++ czyni go miejscem docelowym wszystkiego, co jest logowane w tym zasięgu. Jego dwa parametry
++ typu określają, jakie zdarzenia przyjmuje, z `Any` dla wszystkich, oraz postać, w jakiej są
++ zapisywane. Logger, który zapisuje na standardowe wyjście, wystarczy, by zobaczyć wyjście
++ logów:
+
+% 2 1 0 1403fdfe069595e31571b55e83c251be
+
+% 3 1 0 0265cad37eccab250c33637a26ac9f23
+
+% 4 1 0 155607f0648297d90d3d8b86129c9a18
+
+% 5 1 0 158a360222e841ad11e9fb1016e8963b
+
+% 6 1 0 196b3e7baf50f42016ab031e35f0b385
+
+% 0 1 0 125948e0e8bb2cd108373bd0312a7abc
+
+% 1 1 0 137dd8880512112019f7069399ab3036
+
+@ 0 1 0 02d148d680bf898819767fe5f1a5971b
++ Komunikat jest zapisywany na standardowe wyjście, ze znacznikiem czasu.
+
+@ 0 3 0 18f4096922703f3c089a6f0f9910e547
++ Zawężenie pierwszego parametru filtruje według rodzaju. `Logger[Http.Event, Message]`
++ odbiera zdarzenia HTTP i nic więcej, więc zdarzenia jednej biblioteki można przekierować lub
++ wyciszyć niezależnie od reszty.
+
+@ 0 3 0 188f8e509038d77e11d3ceceb6a7ace6
++ `Logger` wykonuje swoje zapisy w wątku w tle, więc potrzebuje kontekstu współbieżności,
++ który zapewnia `supervise`. Format w zasięgu rozstrzyga, jak zapisywane jest zdarzenie.
++ Każdy format importuje się z pakietu `logFormats`:
+
+% 2 1 0 19872a894059a9b70b411343a18721d3
+
+% 0 1 0 1f44cd52edfe79f606866f1b941ba69c
+
+@ 0 5 0 10b9c9e6cdd92f7109ebb5ffbb0dd4e7
++ column  Przedstawia
++ column  Dla
++ row  `ansiTimestampedLogFormat`  przyciemniony znacznik czasu i poziom na kolorowym tle  terminala
++ row  `timestampedLogFormat`  znacznik czasu i poziom jako tekst  miejsca docelowego w zwykłym tekście, takiego jak plik
++ row  `untimestampedLogFormat`  poziom jako tekst, bez znacznika czasu  miejsca docelowego w zwykłym tekście
+
+% 1 1 0 0f947188f394712f1401534512b10584
+
+@ 0 1 0 10d2536870591f6502e885e165a0930d
++ Próg odrzuca wszystko poniżej wybranego poziomu:
+
+% 2 1 0 0381bea05c1e19d406a12e045e382d1e
+
+% 3 1 0 0d5992829440def4031a41ee17399f8b
+
+% 4 1 0 093b82ffc00a41f11432f2603c158708
+
+% 5 1 0 1f49c06328cb3026136ccc0d9642504f
+
+% 0 1 0 075c1f4c8709440e1fefecbf331a4dbf
+
+% 0 1 0 106e949233b2c8e913ccdc9eedaef1e4
+
+% 0 1 0 087bd940c43f122709ba0a3f2d75f17c
+
+% 1 1 0 1b5db5f7607e7220041db05946844fc7
+
+@ 0 1 0 141078bb5e8c8f5605fc27197568a8fe
++ ### Logowanie komunikatu
+
+@ 0 5 0 0270c0f7df0f44af1543504ad4492bc9
++ Najprostszą rzeczą do zalogowania jest komunikat, zapisany za pomocą
++ [interpolatora `m"…"`](errors.md#defining-an-error). Pasuje to do kodu aplikacji, w której
++ autor kontroluje zarówno logowanie, jak i odczyt. Biblioteka powinna zamiast tego
++ zdefiniować dedykowany [typ zdarzenia](#event-types), aby jej zdarzenia pozostały
++ ustrukturyzowane i można je było filtrować. Cztery metody logują komunikat, każda na innym
++ poziomie:
+
+% 2 1 0 1485f8b4a576b0b601cc520907a02f6a
+
+% 0 1 0 0a850cbdc92484101ffac0f649edbd66
+
+% 0 1 0 0a9ce577da3512c30fb60e5a2dc9cc2b
+
+% 0 1 0 0586dd642abeebfe02b7d34e35386661
+
+% 0 1 0 0b94a92b70c1796711e2125f44c634a6
+
+% 0 1 0 0b0c62fe6a99d919123a2a4fc781a0cb
+
+% 1 1 0 0201f3a65cb8ba6c0bc94f10bb0c95a2
+
+@ 0 2 0 03e542b82bfe150e0c01906dbfa0c5d6
++ Bez loggera w zasięgu `report` się kompiluje i niczego nie loguje. Komunikat jest domyślnie
++ `Loggable`, więc metoda, która loguje tylko komunikaty, nie wymaga deklaracji.
+
+@ 0 1 0 0c2f1f6aa623103d13570f9c7aad8844
++ ### Poziomy
+
+@ 0 2 0 078d85f00a0fc22e11f115f473be028c
++ Poziom odzwierciedla jednocześnie częstotliwość i ważność. `Fine` jest zwykle wyłączony, więc
++ może być rozwlekły. `Fail` stosuje się oszczędnie.
+
+% 2 1 0 08b31790b00ea1de0149047ec3258f12
+
+@ 0 8 0 0725cebbd1e35d3b1355a4e58c277b28
++ column  Poziom
++ column  Metoda
++ column  Dla
++ column  Na przykład
++ row  `Fine`  `Log.fine`  częstych szczegółów na poziomie pojedynczych jednostek, przydatnych tylko przy debugowaniu  każda ramka, każdy pakiet, każdy otwarty plik
++ row  `Info`  `Log.info`  jednego wiersza na istotną operację lub etap cyklu życia  nawiązane połączenie, serwer, który zaczął nasłuchiwać, zakończone pobieranie
++ row  `Warn`  `Log.warn`  sytuacji naprawialnej lub nieoczekiwanej, ale obsłużonej  wymuszone zabicie, zresetowane połączenie, wybrana ścieżka rezerwowa
++ row  `Fail`  `Log.fail`  operacji, która zakończyła się nienaprawialnym niepowodzeniem, emitowany wraz ze zgłaszanym błędem
+
+% 1 1 0 1987ca97a4897b6716e51c6905c55ef5
+
+@ 0 1 0 063e41823071d13304a6095432aeae49
++ ### Typy zdarzeń
+
+@ 0 4 0 0c0cf2dc2dc738cc0269d59447c59d4c
++ Zdarzenie jest [wyliczeniem][wyliczenie], którego przypadki przechowują istotne wartości jako
++ typowane pola. Towarzyszy mu instancja `Communicable` w jego obiekcie towarzyszącym, która
++ odwzorowuje każdy przypadek na komunikat. Zachowanie typów wartości, zamiast formatowania ich
++ z góry, pozwala każdemu loggerowi zapisać je na swój sposób:
+
+% 2 1 0 0ec5fb3b6c5dc30810d960e4147352ac
+
+% 0 1 0 1fc4230ca3712a7c0ec6708d98b639ba
+
+% 0 1 0 1394eac630bcee8004b6e550f6929f1e
+
+% 0 1 0 098c890c9d81a1f91fd391d3f9cd7f77
+
+% 0 1 0 1c1e12b4cf38624a11513ff88b905464
+
+% 0 1 0 0d771213c81e91cc060e54c36800d811
+
+% 0 1 0 12db4c6f0e04c7e10b5ef43a651e18aa
+
+% 0 1 0 14395079c6428aef106fccbd39c5bd09
+
+% 0 1 0 01304a46aca78a821167f524742e2f74
+
+% 0 1 0 12f3a8319ff983900d8276b5f5ec70b6
+
+% 0 1 0 13e64294aac9ab940e30917623fddd90
+
+% 1 1 0 05428b837cd1ffe510978ad45beb353e
+
+@ 0 1 0 1172464a432e2ef50b9c7c2c6d290d46
++ ### Deklarowanie, że metoda loguje
+
+@ 0 2 0 068beb96fbb494370adf8718e662aafe
++ Metoda włącza się w logowanie, nazywając swój typ zdarzenia w typie zwracanym za pomocą
++ `logs`. Następnie loguje zdarzenie jako wartość w miejscu, w którym zachodzi efekt uboczny:
+
+% 2 1 0 18ad1e3ba1d087200cd4d8297f2f8393
+
+% 0 1 0 110f00ac55641c0a127f0fb75e4e25a0
+
+% 0 1 0 0d24a22aef23e34a00fd5e4054723fec
+
+% 0 1 0 1e909a6b13347dbd15785360e3f5272e
+
+% 0 1 0 18beaf0c7787ec090bf0f1697bc3a3d6
+
+% 0 1 0 0ac63dbde0dbe5f911080d45455e0a0e
+
+% 1 1 0 1e2b38d15e87d24b15f084da4f6ea6a2
+
+@ 0 3 0 09a6ed12f1692538139948515a7d1c3a
++ Wymaganie się propaguje. Metoda, która wywołuje `backup`, sama musi dopuszczać
++ `Backup.Event`, deklarując je albo mając dla niego logger w zasięgu. Metoda, która loguje
++ więcej niż jeden rodzaj zdarzeń, łączy deklaracje w łańcuch, jak w
++ `Unit logs Http.Event logs Exec.Event`.
+
+@ 0 3 0 01a64a0cda53738515f00a5057830b81
++ Biblioteka, która bazuje na pracy innej, ponownie wykorzystuje jej zdarzenia, zamiast je
++ duplikować. *Transkrypcja* jednego zdarzenia na przypadek innego przekazuje opakowane
++ zdarzenie bez zmian. Biblioteka, która planuje kopie zapasowe, wykorzystuje więc zdarzenia
++ kopii zapasowej:
+
+% 2 1 0 1457d54cfc03b9ef10843ed369291e19
+
+% 0 1 0 015937e89b55d3e61428d7bb2841e0c5
+
+% 0 1 0 0bc89c22cea8c47f0b37268782ed5249
+
+% 0 1 0 04976d220bdd4f050e542e2dd0da0aef
+
+% 0 1 0 0de15b6220b5326c1b9d09a03c102bea
+
+% 0 1 0 03fdbfa90a5198bd1f40e55b7cdd477e
+
+% 0 1 0 0474e90c07f64abd1cafa1a7a33ec5af
+
+% 0 1 0 0e1607a53400d59a1ad58cdc95431770
+
+% 0 1 0 174476a0137d7c240c0294a9e971deb4
+
+% 0 1 0 01d852ad1169fd0e1f83ea2fbd27fe5e
+
+% 0 1 0 08ee67fe5e982f0c0eefa9d585cc65fb
+
+% 0 1 0 0b2a482bf1ee54a014bde1d15f441ede
+
+% 1 1 0 1d1e29fd6b8d9dde01bcc11e2b34850a
+
+@ 0 2 0 149dc3576995bcd5174c96f335827c78
++ Gdy transkrypcja jest w zasięgu, zdarzenia `backup` są akceptowane przez deklarację
++ `nightly`, opakowane jako `Schedule.Ran`, a logger dla `Schedule` widzi oba rodzaje.
+
+@ 0 1 0 09410b4e0efe26e619d572de2c32b527
++ ### Koszt przy wyłączeniu
+
+@ 0 4 0 1057aa8378d4d2771868ec0d65a7c1f7
++ Argument każdej metody `Log` jest przyjmowany przez nazwę, a poziom jest sprawdzany przed
++ obliczeniem argumentu. Gdy żaden logger nie przyjmuje zdarzenia na jego poziomie, co obejmuje
++ przypadek, w którym w zasięgu nie ma żadnego loggera, zdarzenie nigdy nie jest konstruowane,
++ a jego pola nigdy nie są obliczane. Wyłączona instrukcja logowania nic więc nie kosztuje,
++ a wywołania logowania nie wymagają osłon.
+
+@ 0 5 0 03e7a7a4d79e758805982f158681f5db
++ Dlatego zdarzenie powinno przechowywać swoje oryginalne typowane wartości i zostawiać
++ formatowanie swojemu `Communicable`: formatowanie zachodzi tylko wtedy, gdy zdarzenie
++ zostanie faktycznie zapisane. Wyjątkiem jest wartość, której formatowanie zależy od
++ kontekstu dostępnego tylko tam, gdzie jest logowana. Taką wartość należy sformatować na
++ miejscu, do zdarzenia. Formatowanie nadal działa tylko wtedy, gdy zdarzenie jest logowane, bo
++ argument jest przekazywany przez nazwę.
+
+@ 0 1 0 1c458f90e398133318b265ad6e24e280
++ ### Przekierowanie w kilka miejsc
+
+@ 0 4 0 100dc95629abd106014f9f01f83a3f08
++ Logger jest po prostu wartością kontekstową, więc w zasięgu może być ich więcej niż jeden,
++ a zdarzenie dociera do każdego. Dwa loggery, jeden do pliku i jeden do terminala, odbierają
++ każde zdarzenie, a każdy stosuje własny próg. Plik może zachowywać szczegóły poziomu `Fine`,
++ a terminal pokazywać tylko `Warn` i `Fail`.
+
+@ 0 2 0 0dc7496be7ca193a105c634bc98836b4
++ Plik jest zapisywany jako tekst, więc jego logger importuje format tekstowy. Ten import jest
++ bliżej, więc ma pierwszeństwo przed formatem terminalowym zaimportowanym wyżej:
+
+% 2 1 0 1559099ac877902c136c6b6cb91be11b
+
+% 3 1 0 0fa11124886407ab1b0f48582e7277b0
+
+% 4 1 0 118bb1e9d8a954f5185e82ef192b79bf
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 1483be96032e38e11ed484e72bb2c7e3
+
+% 0 1 0 0e54bce6affba4421b29ae79a3921947
+
+% 1 1 0 15df16b7f55a744e0220efffbb8ffe20
+
+% 0 1 0 0f48a4f33de245f916e58750c1903c88
+
+% 0 1 0 0b178855fe8e97de19453fe2261f42bc
+
+% 0 1 0 174b67231714cc0c0aa9e2823079b473
+
+% 0 1 0 0786a4728e5703d306787d237ea183e9
+
+% 0 1 0 1749a9240e7c94ac18ab343a39fe8b8c
+
+% 0 1 0 12ce69a6c5b0fa5d0aae56d78d2044e5
+
+% 1 1 0 10cca59c18bf2b4b0d7bab2fe2aba36e
+
+@ 0 2 0 077909a7d067cad50d1e80ec77e16184
++ Pierwszy komunikat trafia tylko do pliku, a drugi do obu.
++ [System plików](filesystem.md) opisuje ścieżkę, do której zapisuje logger plikowy.
+
+@ 0 1 0 10d3eae300ec599d08b82a7c8d0d7d12
++ ### Wyciszanie
+
+@ 0 2 0 1f910c97226b4bb6145560837f248436
++ Pojedynczy blok można uruchomić z wyciszonym jednym rodzajem zdarzeń, niezależnie od tego,
++ jakie loggery są w zasięgu, za pomocą `mute`:
+
+% 2 1 0 0bdbff0a6df921eb03030e0bd9c97363
+
+% 3 1 0 0a782c95f3987f2c0a8a2472ccb4d84c
+
+% 4 1 0 102e2e52b3736886118b1c1efdf62258
+
+% 5 1 0 0d45e781869a56cd08cc3a6af3564e59
+
+% 6 1 0 03562bc880826bd3035f5a63ff8234d1
+
+% 0 1 0 0cbdbdad636d5d0e1a6501cad563bb66
+
+% 0 1 0 0ca5c6f2466b96ec1c0bd51c98ae0c17
+
+% 1 1 0 196ef5fe898ed412199b8f7bd7c3a70c
+
+@ 0 3 0 161fda9edcefea390aa5af2c00df5fd3
++ Zaimportowanie `logging.silentLogging` wycisza całe logowanie w całym pliku, co przydaje się
++ tam, gdzie loguje zależność, a jej wyjście nie jest potrzebne. Przewodniki po
++ [kliencie HTTP](http-client.md) i [procesach](processes.md) importują go z tego powodu.
+
+@ 0 1 0 15e83eda5eb1031213d1d23f0353dc1b
++ ### Pisanie dobrych logów
+
+@ 0 3 0 0a1fb0aec166f6290a9b83e8d5f0c71f
++ Należy logować tylko obserwowalne efekty uboczne, które zajmują czas lub mogą się nie
++ powieść: operacje w sieci, w systemie plików, na procesach i na usługach zewnętrznych. Czysta
++ praca w pamięci, taka jak haszowanie, parsowanie czy arytmetyka, nie generuje wyjścia logów,
++ niezależnie od tego, jak jest kosztowna.
+
+@ 0 1 0 0e14fe02c89ea0cd1f64e694a35cf373
++ Komunikat powinien być konkretny:
+
+@ 0 4 0 0ff37e3dd4e365ae0e46b805d578d82e
++ - Należy nazwać zasób, którego dotyczy: adres i port, ścieżkę, identyfikator procesu, URL.
++ - Należy podawać ilości, gdy jest to tanie: liczby bajtów, upływające milisekundy, kody
++   statusu.
++ - Nigdy nie należy logować sekretów: danych uwierzytelniających, tokenów, ciasteczek,
++   materiału kluczy ani całej treści żądania lub odpowiedzi. Zamiast tego należy zalogować
++   wersję zredagowaną, rozmiar lub krótki podgląd.
+
+@ 0 2 0 0094cf853a2ea04504498f3f19f1ba35
++ Komunikaty są pisane małymi literami, zwięźle, w czasie teraźniejszym i bez kropki na końcu.
++ Podstawia się w nie istotny kontekst:
+
+% 2 1 0 07f1c07fd3d03a381cddd9a43e7df6d2
+
+% 0 1 0 1652452a4abd65451cf90c64ca7806b5
+
+% 0 1 0 143b8402cfb8211e192e79fec7d33b57
+
+% 0 1 0 1eeca28cd87464f40f8078bb9c735946
+
+% 0 1 0 00f59f3a2f56ccdf104ae295b3f07373
+
+% 1 1 0 0ec7b8fe4c61e11000f41ae5d2cde9fd
+
+@ 0 2 0 024f49ec4d91e7631f6d9ff9dde28a0e
++ Komunikat, który mówi tylko, że coś się wydarzyło, taki jak `m"a failure occurred"`, nie
++ wystarcza. Należy nazwać to, co zawiodło, i podać jego identyfikator.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 6 0 01262583370def8d13ecf887e2199a2e
++ - [Błędy](errors.md#defining-an-error) opisują komunikaty, jako które zapisywane są zdarzenia.
++ - [Terminal](terminal.md#styled-text) opisuje tekst ze stylami, który zapisuje logger
++   terminalowy.
++ - [Współbieżność](concurrency.md) opisuje `supervise`, w ramach którego działa logger.
++ - [Ślady stosu](stack-traces.md) przedstawiają ślad logowanego błędu.
++ - [Serwer HTTP](http-server.md), [wykrywanie usług](service-discovery.md) i [metaprogramowanie](metaprogramming.md) logują swoje zdarzenia przez ujścia w zasięgu.

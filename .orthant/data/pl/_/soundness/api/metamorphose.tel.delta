@@ -1,0 +1,285 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 074cb2b06862cb6511a47e6757c8c663
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 186a3cd5567cfac613f193dfe1da4f60
++ info   permutacje jako odwracalne przestawienia, przechowywane zwięźle jako kody Lehmera w systemie silniowym
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 1d25a20f209439ee140a51c909d0a8bf
++     _Metamorphose_ reprezentuje permutację – odwracalne przestawienie ciągu – jako pojedynczą
++     liczbę. `Permutation` buduje się z przestawionych indeksów, stosuje do dowolnej listy co
++     najmniej tak samo długiej i odwraca; ciąg indeksów, który nie jest permutacją, z duplikatem
++     lub luką, daje typowany `Permutation.Error`.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 086413dd1ed06a7f0308fb9a2b45c416
+
+% 0 1 0 176c273b083e376f0b9830995ed83cda
+
+% 0 1 0 147621970c49f97703781a6dc8ae581e
+
+% 0 1 0 0c944ef3109ee6e112efa0a6411e0b9f
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 6 0 1adf4d2236d0783b099af8304d93cd4c
++     Wewnętrznie permutacja to jej [kod Lehmera](https://en.wikipedia.org/wiki/Lehmer_code)
++     zapisany w silniowym systemie liczbowym, `Factoradic`: jedna liczba całkowita, która
++     jednoznacznie ją identyfikuje, więc permutacje są zwięzłe w przechowywaniu i wyliczaniu, a
++     `Permutation.bySize(n)` wymienia po kolei wszystkie `n!` z nich. Permutacja *n* elementów
++     zajmuje O(*n* log *n*) bitów, czyli minimum teorioinformacyjne. `Factorial` dostarcza
++     silnie, na których zbudowane jest kodowanie.
+
+@ 0 2 0 0a3036efd74c0b020345dbec501b805a
++     Biblioteka ma jeden zbiór źródeł, `metamorphose.core`, który kompiluje się na każdą
++     platformę. Wszystko jest eksportowane do modułu zbiorczego `soundness`.
+
+% 0 1 0 1edb1e424710940606cb6ebfe36953d3
+
+% 0 1 0 131b074edfb9618d1066c7590f6cd89e
+
+% 0 1 0 09d697f913f3d39c038ec8e2a5bd3aee
+
+@ 0 1 0 0d76e504eb9e35271dcf863bae516788
++ entry .Permutation   odwracalne przestawienie ciągu, przechowywane jako jego kod Lehmera w systemie silniowym
+
+% 1 1 0 0a56f6325e279b8f122cc0f4ba5e33b3
+
+@ 0 3 0 1e6015261ef7b29302b4e45d7dd1e0c5
++       `Permutation` tworzy się z przestawionych indeksów ciągu za pomocą `.apply`, które
++       sprawdza, czy są to dokładnie liczby od `0` do `n - 1`, każda raz, albo bezpośrednio z jej
++       numeru za pomocą `Permutation(Factoradic(n))`; ponieważ numer *jest* permutacją, oba
++       sposoby są zgodne:
+
+% 2 1 0 13a5c10038001dc205b1c2b8da8f345e
+
+% 3 1 0 096cc3af222bf1f81e9fdc380f5db54f
+
+% 4 1 0 0c659212c1a17b4d1a8549c04d1198e5
+
+% 0 1 0 0e2e25d3d226f080044d5ed0f054ede5
+
+% 2 1 0 19779f0d1f4ca4890723be70bd3d4710
+
+% 0 1 0 06956a9d1da6e029150e73591dffc12d
+
+% 0 1 0 0fcb58c2173270f51b4e10ccb262c550
+
+% 1 1 0 1b9f8efc24f5eb9012317006d9788c65
+
+@ 0 6 0 1ef3fbdcb0fdab0112a4964a8743eb7d
++       Zastosowana do listy przestawia jej elementy (`#apply`); `#inverse` to cofa. Permutacja
++       nie zapamiętuje długości, z której została zbudowana, a jedynie najkrótszy sufiks, który
++       przemieszcza: identyczność dowolnego rozmiaru to `Permutation(Factoradic(0))`, a
++       permutacja pozostawiająca początkowe elementy na miejscu ma krótszy `#lehmer` niż jej
++       ciąg indeksów. Zastosowana do dłuższej listy pozostawia nadmiarowe początkowe elementy
++       tam, gdzie są, a resztę przestawia.
+
+@ 0 2 0 0a590861b076ff8d1e90fe07aa2f47e6
++       Permutacja koduje się jako `Data` (`.encodable`), czyli bajty big-endian w kodzie
++       uzupełnień do dwóch jej liczby silniowej: `permutation.in[Data]`.
+
+% 0 1 0 15fe34721d4a0e351b811bcee165ca99
+
+% 0 1 0 1a5a108620feaf061d2e8c635ffab16e
+
+@ 0 5 0 1ae4c1de8f631c5a17fc011d5d72440f
++   entry .apply   permutacja z przestawionych indeksów, sprawdzonych, czy każda z liczb od `0` do `n - 1` występuje raz
++       `Permutation(Sequence(3, 1, 0, 2))` to przestawienie, które stawia na początku element
++       o indeksie 3, potem o indeksie 1 itd. Wymaga `Tactic[Permutation.Error]`, zgłaszanego z
++       `InvalidIndex` dla indeksu mniejszego od 0 lub nie mniejszego od długości oraz z
++       `DuplicateIndex` dla indeksu, który występuje dwukrotnie.
+
+% 2 1 0 19fefe591100cb8f14013ec7a74c253e
+
+% 3 1 0 04ba69cba9dc197f0012b47a9f3cd408
+
+% 4 1 0 02ed9e420c3e29940b09641e11e309b6
+
+% 0 1 0 05f6e4c49c8b0f371255b5864ebde744
+
+% 0 1 0 079be43c3ff2b60b14a28d544cdd25ff
+
+% 1 1 0 0e8d112c3389356e097cce7005906ed5
+
+@ 0 5 0 1928212459cf55110e017ca5b1a8d5d8
++       Konstruktor klasy case `Permutation(factoradic)` tworzy permutację z jej numeru, bez
++       sprawdzania, ponieważ każda nieujemna liczba silniowa jest permutacją.
++   entry .bySize   wszystkie permutacje `n` elementów, w kolejności ich numerów silniowych
++       `Chain` wszystkich `n!` permutacji, od identyczności (`Factoradic(0)`) do odwrócenia
++       (`Factoradic(n! - 1)`). Jest obliczany zachłannie, więc nadaje się tylko dla małych `n`.
+
+% 2 1 0 11ac437672d85b6e13e89de6ed03bc70
+
+% 3 1 0 1d8ca2b5f0c39744087098423b5639e0
+
+% 0 1 0 0a7a9050c0b6f6691787d097e0f14973
+
+% 0 1 0 17ddd8edf40a5ad61ecbff420c879e29
+
+% 1 1 0 0490c1b8ba4ceb21099244d266efbacf
+
+@ 0 5 0 094136985fedd42000ab31d760391eb1
++   entry .encodable   koduje permutację jako `Data`: bajty jej liczby silniowej
++       Bajty big-endian w kodzie uzupełnień do dwóch liczby z `#factoradic`, tak jak daje je
++       `BigInt#toByteArray`. Nie ma givena dekodującego; aby odzyskać permutację, należy
++       odczytać bajty jako `BigInt` i opakować go w `Factoradic`.
++   entry .Error   zgłaszany, gdy indeksy lub ciąg nie tworzą permutacji albo do niej nie pasują
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 2 0 1e8d4b715f5abb4a0741b40efb226173
++         Błąd `↯/s.28.1`: _could not construct permutation because `reason`_, gdzie przyczyna to
++         jeden z przypadków `Permutation.Error.Reason`:
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 8 0 0707645d1de25ceb066f3571de20a983
++         column  Przypadek
++         column  Kod
++         column  Komunikat
++         column  Uwaga
++         row  `BaseRange(value, base)`  1  _the value `value` is too large for its positional base `base`_  cyfra przekazana do `Factoradic(List(…))` nie jest mniejsza od podstawy swojej pozycji
++         row  `DuplicateIndex(index, element)`  2  _the index `index` was duplicated at `element`_  `Permutation(Sequence(…))` napotkało indeks po raz drugi; `element` to pozycja, na której pojawił się ponownie
++         row  `InvalidIndex(last, max)`  3  _the index `last` appears, but every index should be in the range 0-`max`_  indeks przekazany do `Permutation(Sequence(…))` jest ujemny lub nie mniejszy od długości ciągu
++         row  `TooShort(length, min)`  4  _the input, of size `length`, is too short for the permutation of size `min`_  `Permutation#apply` otrzymało listę krótszą niż kod Lehmera permutacji
+
+% 1 1 0 103c816640cfbfd3197f4f237a96bf27
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 04a7b63515a602231b122035a24490af
+
+% 0 1 0 106deaa96caf177b11a011bd78d27b0b
+
+% 1 1 0 04b778efdd50cbbd1bdeaa069fe624a6
+
+@ 0 1 0 1d94348d6927a6021b40aaf0cd278cfb
++     entry .Reason   dlaczego nie udało się utworzyć lub zastosować permutacji
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 19 0 0d87814bcbe028c71a238f45058456ba
++           Wyliczenie `BaseRange`, `DuplicateIndex`, `InvalidIndex` i `TooShort`, każdy z
++           wartościami wymienionymi w komunikacie; kiedy każdy z nich jest zgłaszany, opisuje
++           `Permutation.Error`. Każdy przypadek ma `#number`, od 1 do 4, czyli drugorzędny kod
++           błędu.
++       entry #number   drugorzędny kod błędu przyczyny, od 1 do 4
++     entry .communicable   przedstawia każdy `Permutation.Error.Reason` jako komunikat
++     entry #reason   dlaczego nie udało się utworzyć lub zastosować permutacji
++   entry #factoradic   numer permutacji w silniowym systemie liczbowym
++   entry #lehmer   kod Lehmera permutacji: dla każdej pozycji, ile mniejszych indeksów występuje po niej
++       `#factoradic` rozwinięty na cyfry, od najbardziej znaczącej, bez wiodących zer, więc jest
++       tak długi jak sufiks, który permutacja przemieszcza. Każda cyfra liczy, ile spośród
++       pozostałych indeksów jest mniejszych od indeksu wybranego na tej pozycji.
++   entry #expansion   przestawione indeksy: permutacja zastosowana do liczb od `0` do `n - 1`
++       Indeksy przekazane do `.apply`, dla permutacji, której pierwszy element się przemieszcza:
++       dla `Permutation(Sequence(3, 1, 4, 2, 0, 5))` jest to `List(3, 1, 4, 2, 0, 5)`. Jest tak
++       długie jak `#lehmer`, więc pomija wszelkie początkowe indeksy, które permutacja
++       pozostawia na miejscu.
++   entry #apply   przestawia listę albo podaje indeks, z którego dana pozycja bierze swój element
++       `permutation(list)` przestawia listę co najmniej tak długą jak `#lehmer`, a w przeciwnym
++       razie zgłasza `Permutation.Error` z `TooShort`; dłuższa lista zachowuje nadmiarowe
++       początkowe elementy na miejscu, a reszta jest przestawiana.
+
+% 2 1 0 052c974523d0aba71357f2276fcd0dc5
+
+% 3 1 0 148789ced9487d4d1cdfa36a9792cd17
+
+% 4 1 0 1fc18fff8bb3951d17e375e01763cff1
+
+% 2 1 0 0e5c8f8919eec18b1210fce65048c13f
+
+% 0 1 0 1fd467599cb1808a1a822171f56801be
+
+% 0 1 0 166e333dce619e0c08d6946f9b8a97a4
+
+% 0 1 0 1b3da4b0ca701f660f2b53fe563ea313
+
+% 1 1 0 00c09e35756631d7172d8dc13fc20ee8
+
+@ 0 6 0 07f2e686115a2ff903677a4591f8f464
++       `permutation(n)` z `Int` to `n`-ty element `#expansion`, a poza nim samo `n`, ponieważ
++       permutacja ustala każdy punkt poza swoją dziedziną. Odczytuje `List` po pozycji, więc
++       jest liniowa względem `n`.
++   entry #inverse   permutacja, która cofa tę permutację
++       Dla każdej dostatecznie długiej listy `xs` zachodzi `p.inverse(p(xs)) == xs`.
++       Identyczność jest swoją własną odwrotnością.
+
+@ 0 1 0 0a260c0214c7f0181c4b9c2a7cc65f5a
++ entry .Factoradic   nieujemna liczba całkowita w silniowym systemie liczbowym, w którym zapisuje się kod Lehmera
+
+% 1 1 0 106ed4f417e3cb9317bafda111f6b787
+
+@ 0 5 0 174348a73b767e1a15f234d9592f42eb
++       W silniowym systemie liczbowym cyfra na pozycji *i* od prawej ma podstawę *i* + 1 i
++       wartość pozycyjną *i*!, więc każda nieujemna liczba całkowita ma jedną reprezentację, a
++       ciągi cyfr danej długości wyliczają permutacje tej długości. `Factoradic` przechowuje
++       liczbę jako `BigInt` (`#number`); `.apply` buduje ją z cyfr, od najbardziej znaczącej, a
++       `#expand` je zwraca.
+
+% 2 1 0 0b85015396c5d7230e69a87eb472d42d
+
+% 3 1 0 1648eb832e0c5a0a1fc354ad568c6cb2
+
+% 4 1 0 1252d186968653140d9516a346f44dc3
+
+% 0 1 0 072f671fde1d37491176e8a0c98de8a3
+
+% 0 1 0 146c4e4a2104e40c1e9f8a2e5b711bfe
+
+% 1 1 0 15fbaaac40791a1d00e1f3a6762d7b78
+
+% 0 1 0 000230cdddd2e831190cdae1c10c3499
+
+@ 0 9 0 19b1b6efbd106e321fb5ed897fd7e78b
++   entry .apply   liczba silniowa z cyfr, od najbardziej znaczącej, z których każda jest sprawdzana, czy jest mniejsza od swojej podstawy
++       Ostatnia cyfra ma podstawę 1, więc musi być równa 0; poprzednia podstawę 2 itd. Cyfra,
++       która nie jest mniejsza od swojej podstawy, zgłasza `Permutation.Error` z `BaseRange`,
++       więc wymaga `Tactic[Permutation.Error]`. Konstruktor klasy case `Factoradic(number)`
++       przyjmuje `BigInt` bezpośrednio.
++   entry #number   liczba całkowita jako `BigInt`
++   entry #expand   cyfry liczby, od najbardziej znaczącej, bez wiodących zer
++       `Factoradic(0).expand` to `Nil`; w przeciwnym razie lista kończy się zawsze zerową cyfrą
++       jedności. Jest to `#lehmer` permutacji.
+
+@ 0 1 0 14a24b3083e6718016a8898544fc65b4
++ entry .Factorial   silnie jako `BigInt` oraz ciągi silni, których używa kodowanie silniowe
+
+% 1 1 0 077371ab7234a7401ed5bc34dba3962f
+
+@ 0 1 0 003aeb9a11e20e2e086184bd6013e051
++       Obiekt z narzędziami do silni, obliczanych dokładnie arytmetyką `BigInt`.
+
+% 2 1 0 11d1af2305e1a40e16bd8da9f9639b6a
+
+% 3 1 0 060f53f569e0d1c018b3444739dbcf42
+
+% 0 1 0 110e627f59c5734f11bb5bd1f27edf30
+
+% 0 1 0 03cb928309300785015cb857c42be865
+
+% 1 1 0 129e650bd2792fa20a4f86d664a1d76e
+
+@ 0 8 0 05300b173f935aa2142caec3dc988dca
++   entry .apply   `n!` jako `BigInt`
++       `Factorial(0)` to 1. Argument powinien być nieujemny.
++   entry .magnitude   o jeden więcej niż liczba cyfr silniowych potrzebnych do zapisania `n`
++       Najmniejsze `i`, dla którego `(i - 1)!` przekracza `n`: rozmiar tabeli wartości
++       pozycyjnych potrzebnej `Factoradic#expand`, plus jeden.
++   entry .sequence   silnie od `(n - 1)!` do `0!`, jako lista `n` wartości `BigInt`
++       Wartości pozycyjne `n`-cyfrowej liczby silniowej, od najbardziej znaczącej:
++       `Factorial.sequence(3)` to `List(2, 1, 1)`.

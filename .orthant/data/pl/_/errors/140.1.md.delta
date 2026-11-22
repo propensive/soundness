@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 0115a31ca43d05821326cc35d72968a7
++ # `↯/s.140.1` – `Upgrade.Error`
+
+@ 0 1 0 14ef401502b40ce418c5cff44229edb4
++ Zgłaszany, gdy demon nie może przygotować aktualizacji dla swojego launchera.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 5 0 04ab73ae303b9d8d1cc8b6346b8bdd2d
++ Aplikacja Ethereal może zastąpić własny plik binarny, umieszczając nowy jako
++ `<data>/<name>/.pending`, który launcher weryfikuje i podmienia na początku swojego następnego
++ wywołania. Ten błąd obejmuje źródło, którego nie dało się odczytać, nazwę aplikacji, która nie
++ jest dostępna (demona nie uruchomił launcher), oraz plik `<name>/.pending`, którego nie dało się
++ zapisać. Kandydat odrzucony przez launcher nie jest tutaj błędem: zgłasza go później
+
+% 0 1 0 1025a485c7bd35e91836f2291677da71
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Kod
++ column  Przyczyna
++ column  Komunikat
+
+% 0 1 0 09fd44d0bfa124ec0ca1617d3f59643f
+
+% 0 1 0 0c9a8d777bb7fa940a5f445a0723f612
+
+% 0 1 0 176574de4f6880b01b50e5d8779a4d1f
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 4 0 0d6a5466e8d42b7e11e9f11427be2ce5
++ Należy uruchamiać aplikację przez jej launcher XEK, który przekazuje demonowi jego nazwę, i
++ upewnić się, że katalog danych (`$XDG_DATA_HOME`, `~/.local/share` lub `%LOCALAPPDATA%`) jest
++ zapisywalny. Przed zaoferowaniem aktualizacji należy sprawdzić `Upgrade.enabled`: plik
++ wykonywalny zbudowany bez klucza wydania i identyfikatora aplikacji odrzuca każdego kandydata.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 1910f0aaa51329071c6159525711cd00
++ - Źródło: `lib/ethereal/src/core/ethereal.Upgrade.scala`

@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 06446e9a39f62e3507ccb9ffef598286
++ # `↯/s.118.10` – `Tel.Provider.Error`
+
+@ 0 1 0 1b38fbff9b18d78e1b0a261b128e2cf8
++ Zgłaszany, gdy dokument TEL nie jest zgodny ze schematem, według którego odczytuje go
++ `Tel.Provider`.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 4 0 0e145a3d5d510b671effa85ec11846c3
++ `Tel.Provider` biblioteki Stratiform odczytuje dokument przez jego schemat w miarę odczytywania
++ pól rekordu i zgłasza każdą niezgodność przez `Tactic` kodu, który odczytuje pole, aby czytnik
++ walidujący mógł zebrać je wszystkie. Komunikat to
++ `the TEL did not conform to its schema because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 1 0 1414bac3b0e5ccc61cf4ab26c45b1161
++ ### `↯/s.118.10.1` – `Absent`
+
+@ 0 1 0 1c8091b1eb0a18cb130521b74f2ef2fb
++ W dokumencie brakuje pola, którego wymaga schemat.
+
+@ 0 1 0 183419b440a5b75f0ef7f8124ae4f7c4
++ **Przykład.** `[↯/s.118.10.1] the TEL did not conform to its schema because the field first-name is required`
+
+@ 0 1 0 003370cb5fc2dedb1dded204d9c65e45
++ **Rozwiązanie.** Należy dodać pole albo uczynić je opcjonalnym w schemacie.
+
+@ 0 1 0 14428d06f4f508ef03f56b63f7ea2902
++ ### `↯/s.118.10.2` – `NotSigil`
+
+@ 0 1 0 0441e219ebeee7af1c58c5446274c489
++ Pole odczytywane przez walidator `Sigil` zawiera atom dłuższy niż jeden znak.
+
+@ 0 1 0 134b87d0a09020b114fdba18b08f1cdc
++ **Przykład.** `[↯/s.118.10.2] the TEL did not conform to its schema because the value ab is not a single character`
+
+@ 0 1 0 070fffe127b5331d02a17136303bb986
++ **Rozwiązanie.** Pole powinno zawierać pojedynczy znak.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 3 0 0983160802cfa25c184ce9a9cb237f2d
++ - [`↯/s.106.3` – `Json.Provider.Error`](106.3.md)
++ - [`↯/s.128.4` – `Xml.Provider.Error`](128.4.md)
++ - Źródło: `lib/stratiform/src/core/stratiform.Tel4.scala`

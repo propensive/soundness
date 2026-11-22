@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 1990139d61bdf161086f5ce67fae7634
++ # `↯/s.105.7` – `PrivateKey.Error`
+
+@ 0 1 0 16dc2dddf29445001dc821951b256700
++ Zgłaszany, gdy dokumentu klucza nie da się odczytać jako klucza prywatnego żądanego szyfru.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 4 0 17a1300885da038210c3354899399f75
++ Klucz prywatny odczytuje się z dokumentu – PKCS#8, PKCS#1, SEC1 lub własnego kontenera
++ OpenSSH, gołego lub w opakowaniu PEM – jako klucz nazwanego szyfru, na przykład
++ `PrivateKey[Ecdsa[256]]`. Ten błąd obejmuje dokument, który w ogóle nie jest kluczem, taki,
++ który zawiera klucz innego algorytmu lub rozmiaru, oraz taki, którego nie da się użyć w obecnej
++ postaci.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Kod
++ column  Przyczyna
++ column  Komunikat
+
+% 0 1 0 113bacf08540a99b1e1b2539f1a4bcbb
+
+% 0 1 0 1ee3e6184817505f0dbc96517d266c97
+
+% 0 1 0 0fa9ef46e80437d017db764b8505bc8b
+
+% 0 1 0 05cded517bb34cdc02a5ac57e833f631
+
+% 0 1 0 02ad2fb73a0cce881e1f919498ae904a
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 5 0 1c8e66a4e6bb00060b81f525c0ea6261
++ `Mismatch` wskazuje, co zawiera dokument: należy odczytać klucz jako ten szyfr albo dostarczyć
++ klucz, o który chodziło. Klucz chroniony hasłem trzeba odszyfrować przed odczytem, na przykład
++ za pomocą `ssh-keygen -p` lub `openssl pkcs8`. Klucz EC, Ed25519 lub ML-DSA zapisany bez swojej
++ części publicznej nie może odpowiedzieć na `public`; należy go zapisać ponownie narzędziem,
++ które dołącza klucz publiczny, tak jak robi to `openssl pkey`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 2 0 1bd9ab0cbbc3852511b7d13e82a75913
++ - Źródło: `lib/enigmatic/src/core/enigmatic.PrivateKey.scala`
++ - `↯/s.105.8` – `PublicKey.Error`, to samo dla klucza publicznego

@@ -1,0 +1,572 @@
+orthant 2 language
+
+@ 0 1 0 0c96663fd6468e6a0d4727729ef491f9
++ ## Wykresy
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 5 0 08ff5d6573125ac9145902f24c990802
++ Wykres zamienia ciąg liczb w obraz: słupki dla kategorii, linię dla trendu, wycinki dla części
++ całości, histogram dla rozkładu. Wykresy rysuje się tutaj jako [SVG](svg.md) z typowanych
++ danych, w czterech rozdzielnych warstwach: kształt danych, rodzaj wykresu, dopasowanie jednego do
++ drugiego i styl. Każdą z nich można wybrać, nie naruszając pozostałych, a wykres można
++ aktualizować w miarę napływu nowych danych.
+
+@ 0 1 0 03f59cd1461598590bc0266df9006621
++ ### O wykresach
+
+@ 0 5 0 1ce739b08b019be501acd7b2c92317bf
++ Biblioteki wykresów zwykle przyjmują worek liczb i worek opcji, a w [czasie wykonania][czas wykonania]
++ odkrywają, że jedno do drugiego nie pasuje: wykres kołowy z trzech serii, linia przez etykiety
++ kategorii, oś logarytmiczna nad zakresem obejmującym zero. Decyzje, które powinny być osobne –
++ czym są dane, jak są rysowane, jak dobiera się ich osie i jak wyglądają – przychodzą splątane w
++ jednym wywołaniu.
+
+@ 0 7 0 0ba4c741ab60fc040d5a6fb7ce19aed4
++ Tutaj te cztery decyzje są rozdzielone. *Kształt* danych zawiera się w ich typach. Seria nad
++ `Text` jest kategoryczna, a seria nad `Double` lub `Duration` jest ciągła. *Rodzaj* wykresu jest
++ zgodny z niektórymi kształtami, a z innymi nie, i kompilator sprawdza to zestawienie.
++ *Dopasowanie* danych do osi – liniowe lub logarytmiczne, rozszerzone do okrągłych liczb lub
++ ścisłe, zakotwiczone w zerze lub nie – jest kalibracją wybieraną dla każdego typu osi albo
++ przekazywaną jawnie. Wszystko, co dotyczy *stylu* – rozmiar, kolory, krój i legenda – jest
++ osobną wartością. To [rozprzęganie](../../philosophy/decoupling.md) znaczenia od sposobu
++ przedstawienia.
+
+@ 0 2 0 0bcbe4c8555c85431339fc36c514f36f
++ Wszystko pochodzi z pakietu `soundness`. Drugi import wybiera [strategię][strategia] obsługi
++ błędów, a trzeci pozwala przykładom wypisać wyniki:
+
+% 2 1 0 1fae61954e023d26038f4043e06b964b
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0a5bea9cc766c6ff010cb926bcc71c55
++ ### Serie
+
+@ 0 1 0 0019d74d8b44ed2712e747f4815e11b9
++ `Series` to nazwany ciąg punktów, z których każdy jest odciętą w parze z rzędną:
+
+% 2 1 0 1c0949b26336a2a1154c75aaf303ebf7
+
+% 0 1 0 05c577267af84d641e80ee73864c95a5
+
+% 0 1 0 13e792d6c381ec9901eaaa5ad79e0510
+
+% 1 1 0 099229e0299c6bc2107cadd647c3f612
+
+@ 0 4 0 0808d78d9b99ff3d0de657adeb3c2b27
++ Typ odciętej decyduje o osi. `Text`, [wyliczenie] lub `Category` jest
++ `Categorical`: jego wartości to odrębne etykiety, w kolejności ich pierwszego wystąpienia. Liczba,
++ `Duration`, `Instant` lub dowolna `Quantity` jest `Continuous`: jej wartości mają położenia na
++ osi liczbowej. Każdą z tych [klas typów][klasa typów] można dostarczyć dla własnego typu.
+
+@ 0 2 0 1eae6d48ab6af09f1443852b6b9a5336
++ `Chart.Estimate` to wartość ciągła wraz z przedziałem, w którym leży, rysowanym przez wykres
++ jako słupek błędu lub pas:
+
+% 2 1 0 0d348e2e435cb1db19e7f9af71be349b
+
+% 0 1 0 1e64d10b4259f7b206f1f3f6da48cefa
+
+% 0 1 0 1a3efbf02f8e35620f38c5b4682d1f46
+
+% 1 1 0 0238e30a2d10a792070c6ce447ada140
+
+@ 0 3 0 01fbc378f63d53fc02871db7fed292fd
++ Wartość może też nieść notatkę, jak `Noted(3.0, t"Paris")`, którą wykres punktowy lub liniowy
++ umieszcza obok punktu. Nazwa serii, podobnie jak nazwa zbioru próbek czy `Category`, to dowolna
++ wartość, którą można pokazać, taka jak tekst, przypadek wyliczenia lub liczba, przedstawiana raz,
++ w chwili utworzenia.
+
+@ 0 4 0 0d23fa25a2bda14e198a1fe0674cf9b5
++ Seria jest [niemutowalna][niemutowalny], a `add` dołącza punkt w zamortyzowanym czasie stałym,
++ czego potrzebuje wykres zasilany pomiarami po jednym. Kilka serii to dowolna ich kolekcja, taka
++ jak `List`, `Sequence` czy `Set`, ponieważ zgodność jest określona dla wszystkiego, co da się
++ przejść seriami.
+
+@ 0 1 0 02d71fa2f3dcf9d204772f975d92abcb
++ ### Rodzaje wykresów
+
+@ 0 1 0 0a6b5cbfc4126e1403b5c97a0876dbb9
++ Rodzaj wykresu jest wartością, a każdy rysuje dane własnego kształtu:
+
+% 2 1 0 0865c84c80c49ccc1bb373ff0fbabbce
+
+@ 0 13 0 1915ddfa5be868470f3aae595d32a7b1
++ column  Rodzaj
++ column  Rysuje
++ column  Odcięta
++ column  Rzędna
++ column  Styl
++ row  `Bars()`  serię lub kolekcję serii  kategoryczna  ciągła  `Bars.Style`
++ row  `StackedBars()`  kolekcję serii  kategoryczna  ciągła  `StackedBars.Style`
++ row  `Lines()`  serię lub kolekcję serii  ciągła  ciągła  `Lines.Style`
++ row  `Scatter()`  serię lub kolekcję serii  ciągła  ciągła  `Scatter.Style`
++ row  `Pie()`  dokładnie jedną serię  kategoryczna  ciągła  `Pie.Style`
++ row  `Histogram()`  `Samples` lub ich kolekcję  ciągła  liczności  `Histogram.Style`
++ row  `Boxes()`  `Samples` lub ich kolekcję  jedno pudełko na zbiór  ciągła  `Boxes.Style`
++ row  `Doughnut()`  `Dag` węzłów `Weighted`, `Progressive`  brak  brak  `Doughnut.Style`
+
+% 1 1 0 15e6a05d8a61cab01842cda25c07048c
+
+@ 0 2 0 1305ec78ed1531fc1837a3a683bfe80d
++ Metoda `chart` łączy dane z rodzajem i kompiluje się tylko tam, gdzie rodzaj potrafi narysować
++ kształt danych:
+
+% 2 1 0 0872adde109405760243a620f54b68db
+
+% 0 1 0 0d268f7fce66118817ed40228b92779d
+
+% 1 1 0 1cc6391d1ab022911fc5eef435e72fa0
+
+@ 0 3 0 036967466ba45f020b3eb0165529a4b9
++ Histogram i wykres pudełkowy przyjmują `Samples`, czyli surowe pomiary, a nie punkty.
++ Zestawienie bez sensu jest błędem kompilacji, a nie niespodzianką w czasie wykonania. Seria
++ kategoryczna nie ma liczbowej odciętej dla linii:
+
+% 2 1 0 0eb0b6370bc0530714cf735a217fd8d7
+
+% 3 1 0 04ec2fba972063400d880eccda0e3695
+
+% 4 1 0 0568b2a7a08c70941c46dfe96197adee
+
+% 5 1 0 082b674df0a3f84200f834b52889c6b2
+
+% 0 1 0 0431ae51bcb20187165538eea7aa0239
+
+% 1 1 0 07ae1407f6a244fc0d6cbeca8ec3b980
+
+@ 0 1 0 0808a411d6e0a16b05ce7510d72cffa1
++ Wykres kołowy to jedna seria:
+
+% 2 1 0 06420a45d59874b21333c65a9ceb648a
+
+% 3 1 0 1f9ee84f1151b3cb0031e65562bfc4a2
+
+% 4 1 0 002903d75f07c61f02c81201d30f6c68
+
+% 5 1 0 1a71dc5975612d121bce64c2876e7a33
+
+% 0 1 0 1b07f216788204340b09a14da37dc934
+
+% 1 1 0 132f5237bd5dce17075e69d3ebf0b1be
+
+@ 0 2 0 0a6877543df6f55818bd8e87e22c2e9b
++ Zestawienie jest instancją `Plottable`. Nowy rodzaj wykresu to nowa wartość z instancjami dla
++ kształtów, które potrafi narysować, i nic innego nie musi się zmieniać.
+
+@ 0 1 0 1bf734d912b8e09719926501a9b33f5d
++ ### Dopasowanie
+
+@ 0 4 0 01202d4e65c43f920c626ed65d3d6d58
++ Dopasowanie wybiera zakres i podziałki każdej osi na podstawie danych. Rodzaj wykresu decyduje,
++ co oś musi pokazać. Rzędna wykresu słupkowego jest zakotwiczona w zerze, a rzędna wykresu
++ liniowego nie. `Calibration` decyduje, jak: liniowe lub logarytmiczne położenia, rozszerzone na
++ zewnątrz do pełnych kroków lub ściśle przylegające do danych. Domyślnie jest liniowa.
+
+@ 0 2 0 1502b838a90dc67d119389b9d858a87c
++ Kalibracja jest wiązana z typem wartości na osi, więc given o ograniczonym zasięgu zmienia każdą
++ oś tego typu, a import zmienia każdą oś:
+
+% 2 1 0 13f397e165896a891f227549c9e370f9
+
+% 0 1 0 11eb99bd787cd2dc0654d6959d24d568
+
+% 1 1 0 1e3cb016af6ff425006a46444ff3515a
+
+% 3 1 0 0e7362370e9a42700aecf0b132aa9f35
+
+% 4 1 0 148572ac3bea0764041167a8c4c6b610
+
+% 5 1 0 1aaa434a18afcf9d1b284b7a76302730
+
+% 0 1 0 19b6403d61741b8404571c9c37e2b647
+
+% 0 1 0 1ea1f64cab316b230c8253a91d0f3fe8
+
+% 0 1 0 064a901684ea100402c530e6e079099a
+
+% 0 1 0 024bdc24d804486a1d104184939e6905
+
+% 0 1 0 1a745a715f559fe515900c5a07f2a61f
+
+% 1 1 0 09fa8ba6a58189de1ae4fd0c5abc1b3a
+
+@ 0 1 0 029d237acb45cb7f09c44d0c02a09a6a
++ Kalibrację można też przekazać rodzajowi wykresu dla jednej osi, gdy obie osie mają ten sam typ:
+
+% 2 1 0 0d3c565288bc6a45094b388397c94826
+
+% 0 1 0 12b25e580520e64d0ed4ae008e990c52
+
+% 1 1 0 0cff0272d1f5549a1fbbef84c8a9f4d9
+
+@ 0 1 0 113cc6c9ef9009db1f7afed90c9dd8c4
++ Kalibracje są givenami w pakiecie `calibrations`:
+
+% 2 1 0 01ae43b5f0b29fbf1415becbed99c154
+
+@ 0 7 0 170b318875e04d0715bf239d77a0db16
++ column  Kalibracja
++ column  Położenia
++ column  Zakres
++ row  `linearCalibration`  liniowe  rozszerzony na zewnątrz do pełnych podziałek; domyślna
++ row  `logarithmicCalibration`  logarytmiczne lub liniowe, gdy dane sięgają zera  pełne dekady
++ row  `adaptiveCalibration`  logarytmiczne, gdy zakres obejmuje trzy rzędy wielkości, w przeciwnym razie liniowe  rozszerzony
++ row  `tightCalibration`  liniowe  dokładnie rozciągłość danych
+
+% 1 1 0 0c3a15fb0388856204a375294dca2273
+
+@ 0 4 0 0b3d4a464eac82aa0a8dd118cae2a2cf
++ Kalibracja adaptacyjna to zwykle to, czego wymagają czasy benchmarków w funkcji rozmiaru wejścia.
++ `Scale`, którą tworzy dopasowanie, to zwykłe dane: jej granice, przekształcenie i podziałki.
++ Podziałki rozmieszcza się co wielokrotności jednego, dwóch i pięciu dla liczb oraz co kroki
++ zegarowe, takie jak sekundy, półminuty i godziny, dla czasów trwania i chwil.
+
+@ 0 1 0 0f9da56da06abf8815251102b719ea7f
++ ### Styl
+
+@ 0 8 0 16e8ac4fdd741f900935c8033d17e2b4
++ Wszystko, co dotyczy wyglądu wykresu, a nie jest danymi, to *styl*: trait z metodą dla każdego
++ komponentu rysowanego przez wykres, takiego jak znacznik osi, etykieta znacznika, słupek,
++ wycinek czy próbka koloru legendy. Każda metoda przyjmuje geometrię obliczoną przez
++ wykres i zwraca figury do narysowania. `Chart.Style` zawiera to, co wspólne dla wszystkich
++ rodzajów: płótno, krój pisma, legendę i sposób składania tekstu. `Chart.Cartesian` dodaje osie,
++ podziałki, siatkę, tytuły, znaczniki punktów i słupki błędów. Każdy rodzaj dodaje własne:
++ `Bars.Style` ma `bar`, `Lines.Style` ma `line` i `band`, a `Pie.Style` ma `wedge`. Wykres wymaga
++ stylu swojego rodzaju, więc wykres słupkowy kompiluje się względem `Bars.Style`.
+
+@ 0 2 0 13bba648c7097a2d0ca9c6f9f18a2303
++ `Chart.Standard` implementuje je wszystkie. Jest klasą case, więc jej parametry są argumentami
++ nazwanymi, a każdy komponent można nadpisać:
+
+% 2 1 0 12635a4a953ab1500ca45e8416a0e5df
+
+% 0 1 0 13fcfac96f11d9f5060c782ebaab8d48
+
+% 0 1 0 121c274ccbb7b4261681efbf04ed78f3
+
+% 0 1 0 08983f04256a67cc1d9f7efc6c654bd8
+
+% 0 1 0 1ae5bac0326c0c4e1b29e900e072e06c
+
+% 0 1 0 0ba10acfc6bfbbe011306e9c640bb3a9
+
+% 0 1 0 1d295cf1792a44250c496cad7ce36dc6
+
+% 1 1 0 0cfd6a85f8f14e53098ab3898e7dac73
+
+@ 0 1 0 1bd297cff10a3a5d0556f075dd86bbcd
++ Metody stylu obejmują szczegóły, po których zwykle ocenia się wykres:
+
+% 2 1 0 065b2dd1803ae3ed1940cd15cd60a062
+
+@ 0 20 0 128c67d0c12709f3072b4962a711da34
++ column  Metoda
++ column  Rysuje
++ column  Zdefiniowana w
++ row  `fontStyle`, `lettering`  rozmiar i kolor tekstu; każdy fragment tekstu  `Chart.Style`
++ row  `backdrop`  płótno za wykresem  `Chart.Style`
++ row  `swatch`, `legendLabel`  wpis legendy  `Chart.Style`
++ row  `leader`  linię od przesuniętej etykiety z powrotem do jej punktu  `Chart.Style`
++ row  `axisLine`  kreskę każdej osi  `Chart.Cartesian`
++ row  `axisBreak`  znak przerwania, gdzie oś liniowa zaczyna się z dala od zera  `Chart.Cartesian`
++ row  `arrowhead`  koniec osi  `Chart.Cartesian`
++ row  `tick`, `gridLine`  podziałkę i jej linię siatki  `Chart.Cartesian`
++ row  `tickLabel`  etykietę znacznika osi, jej położenie i to, czy jest obrócona  `Chart.Cartesian`
++ row  `axisTitle`  tytuł osi  `Chart.Cartesian`
++ row  `marker`, `errorBar`  punkt i jego przedział  `Chart.Cartesian`
++ row  `pointLabel`  notatkę punktu `Noted`  `Chart.Cartesian`
++ row  `bar`  słupek  `Bars.Style`
++ row  `line`, `band`  linię serii i pas oszacowania  `Lines.Style`
++ row  `box`, `whisker`, `median`  części wykresu pudełkowego  `Boxes.Style`
++ row  `wedge`, `wedgeLabel`  wycinek i jego procent  `Pie.Style`
++ row  `shade`, `sector`, `remainder`  kolor sektora i jego dwie części  `Doughnut.Style`
+
+% 1 1 0 154b23be00d128f40403102c283637fe
+
+@ 0 2 0 0c2302e080b7a86d0fdc0b03144c8ea9
++ `labelRoom` informuje układ, ile miejsca zajmują etykiety znaczników osi, więc styl,
++ który je obraca, nadpisuje ją obok `tickLabel`.
+
+@ 0 2 0 18366fc25794b53a0ba6e01ac5ae76ea
++ Kolory to `ChartPalette`, nazwane według ról: rampa serii, osie, siatka, napisy. Jeden styl
++ przedstawia się więc w każdej palecie, a paletę wybiera się, importując ją:
+
+% 2 1 0 156fe033f3f729520883ded0b073b061
+
+% 0 1 0 0b4baa4babbe394e0cef4346332c8405
+
+% 1 1 0 0c414f1234d02afa160107762a54815a
+
+@ 0 4 0 08287a1d2475bf4c191d38d5b0b1491b
++ `font` stylu to `Font in Web`: odmiana pisma w parze z udostępnieniem jej
++ kroju, jak opisują [czcionki](fonts.md#providing-a-typeface). Wykres można więc
++ złożyć tylko krojem, dla którego jego SVG będzie niosło `@font-face`, albo rodziną generyczną,
++ co jest wartością domyślną. Udostępnienie deklaruje się raz, a czcionkę wybiera się w stylu:
+
+% 2 1 0 135eb1f741890a571793e0533a2050b7
+
+% 0 1 0 086a108bf83a31bb1110712e206bf3ab
+
+% 0 1 0 19f41b45aa9f01b10700f4faef780fc0
+
+% 1 1 0 06d8ce0a1434fada087db0e64c24cb1a
+
+@ 0 4 0 1ecccf5445ab85f906a113687b454fb1
++ Tekst jest mierzony, aby rozmieścić etykiety osi i legendę. Używane są szerokości przesuwu glifów
++ osadzonej czcionki, więc mierzona odmiana jest tą samą, która jest przedstawiana, a marginesy
++ dokładnie mieszczą swoje etykiety. Dla czcionki bez dostępnego pliku przyjmuje się średnią
++ szerokość każdego znaku. Każde z tych zachowań można zastąpić, importując metrykę:
+
+% 2 1 0 1c20b66c3e6179650e6b72f7af7082c6
+
+% 0 1 0 1925dccbc71c725813e5c32d77396476
+
+% 1 1 0 1d3efa5c5b2d392c11fd1bb44d54a259
+
+@ 0 6 0 0861e544045acb140cbd151621ef10bb
++ Oś nad [wielkością](quantities.md) jest tytułowana tym, co mierzy, i jej jednostką, pobranymi z
++ typu. Seria wartości `Quantity[Metres[1]]` ma tytuł rzędnej `distance / m`, a seria wartości
++ `Metre/Second` ma `velocity / m·s¯¹`, z jednostkami przedstawionymi tak jak wszędzie indziej.
++ Tytuł podany w stylu zastępuje nazwę, ale zachowuje jednostkę. Podany wyżej styl tytułuje rzędną
++ `units sold`, więc ten wykres wysokości w metrach ma tytuł `units sold / m`:
+
+% 2 1 0 05ecd88f2932fe461252c9108e56c272
+
+% 0 1 0 19af03434c40585b17e1d78e0ea779b5
+
+% 1 1 0 00db0dcf163a090801f7647a301c0cb8
+
+% 3 1 0 05cb28843b301d030a1cb06e718b3cf3
+
+% 4 1 0 0ca8b1cd391d2c0c127b07557bf138ea
+
+% 5 1 0 0e271484733a35021c68c1d2073c2b00
+
+% 0 1 0 0e03e887a0d1f7190086744795a5b58f
+
+% 1 1 0 1df927aed3f7443515c053affa1e4e8f
+
+@ 0 2 0 1e6dd270dcd6e6801ac0f759eea4dc0a
++ Oś `Duration` ma tytuł `time`, a jej podziałki niosą własne jednostki, takie jak `250ms` i
++ `1m30s`, ponieważ kroki zegarowe nie są dziesiętne.
+
+@ 0 1 0 03287d32f8590fc206c6a987574d4ca1
++ ### Rozmieszczanie etykiet
+
+@ 0 7 0 195f36632d50b50d1a1c87570cec9a5a
++ Tekst na wykresie jest rozmieszczany przez [rozmieszczanie etykiet](label-placement.md), więc
++ etykiety nie kolidują. Etykiety znaczników osi, tytuły osi i wpisy legendy pozostają na
++ miejscu, a etykieta znacznika osi, która nachodziłaby na sąsiednią, jest pomijana. Notatka obok
++ punktu `Noted` i procent w wycinku wykresu kołowego są przesuwane. Notatkę punktu umieszcza się
++ po jego prawej stronie, gdy ta strona jest wolna od innych notatek, znaczników i linii, po innej
++ stronie, gdy nie jest, a dalej, z linią odniesienia z powrotem do punktu, gdy każda strona jest
++ zajęta. Procent wycinka znajduje się w wycinku albo jest przesuwany na zewnątrz z linią
++ odniesienia, gdy przeszkadza etykieta sąsiedniego wycinka.
+
+@ 0 3 0 09f16b0b70851a181379cf9b15f3e2d0
++ `Arranger` w zasięgu decyduje o rozmieszczeniu. Domyślny umieszcza etykiety po kolei. Dla
++ zatłoczonego wykresu symulowane wyżarzanie rozważa etykiety razem; wybiera się je, importując
++ je:
+
+% 2 1 0 1e657a9a35ab64631273d1bc5e7ffd0a
+
+% 0 1 0 07df0a12b6dc6fcf13fcb991bfad5d23
+
+% 1 1 0 1ac5dcf69a06ecb01062ba8c55f43b9b
+
+@ 0 3 0 1407a04433753df50b78c668b92049d5
++ Styl rysuje każdą etykietę tam, gdzie umieściło ją rozmieszczenie. `tickLabel`, `pointLabel` i
++ `wedgeLabel` przyjmują `Chart.Anchoring`, czyli punkt i wyrównanie, które ustawia tekst po
++ właściwej stronie punktu, a `leader` rysuje linię od przesuniętej etykiety z powrotem do jej
++ punktu.
+
+@ 0 1 0 0644d0e91014059201012368fc0e7313
++ ### Przedstawianie
+
+@ 0 1 0 146cf99daf1045a3093e92ce0180d0a1
++ Wykres przedstawia się jako `Svg`, które serializuje się do tekstu XML jak każde inne:
+
+% 2 1 0 121bb4c062e3bb0b1a35ff607e354dce
+
+% 3 1 0 14ecedfe5c2975470ba8ddc9afc375fd
+
+% 4 1 0 0e03ab8f84a8e32107bb69996b13beaa
+
+% 0 1 0 0dcd73f60caba365012aad73ddb3a147
+
+% 0 1 0 060db6bdad79f96a1639d5d82b0fed44
+
+% 1 1 0 08abc61117f0daad053e847a1856ed80
+
+@ 0 2 0 02da70fa94cb69b614e1bc43e5723183
++ Każda część rysunku jest grupą o stabilnym identyfikatorze, co czyni wykres aktualizowalnym:
+
+% 2 1 0 185b71f255c50f3304ce93070147ed81
+
+@ 0 10 0 16532a3919bf3fed082ffaf59df6e86c
++ column  Identyfikator
++ column  Zawiera
++ column  W
++ row  `backdrop`  płótno, w kolorze tła palety  każdym wykresie
++ row  `grid`  linie siatki  wykresach kartezjańskich
++ row  `abscissa`, `ordinate`  każdą oś, jej podziałki i tytuł  wykresach kartezjańskich
++ row  `legend`  legendę  wykresach z legendą
++ row  `series-0`, `series-1`, …  każdą serię  wykresach kartezjańskich
++ row  `wedges`  każdy wycinek i jego etykietę  `Pie`
++ row  `rank-0`, `rank-1`, …  każdy pas  `Doughnut`
+
+% 1 1 0 0b90fbb85042aa3e1e23d7c20c4bfcd7
+
+@ 0 1 0 0c98c9f6a206185f092e4eaf027c2765
++ ### Aktualizacja
+
+@ 0 3 0 1981bda70016bcd719d1c7fda2da1bb4
++ Wykres jest niemutowalny. Dla nowych danych `revise` zwraca następny wykres i listę tego, co
++ zmieniło się na stronie. Jeśli dopasowanie nadal mieści nowe dane, osie pozostają na miejscu i
++ zastępowane są tylko części, które się różnią. Jeśli punkt wypada poza nie, cały wykres jest
++ rysowany od nowa:
+
+% 2 1 0 16870e1755249f5919e9aaf3a245e923
+
+% 3 1 0 1fe8175879eabc800e05c64e5a454c28
+
+% 4 1 0 0c5f7091344e438f1fb94f3ee2a8f768
+
+% 5 1 0 1d1db7f68e2806030b3adc0718624965
+
+% 0 1 0 05334ec6b66b6b391a19f11b599af89a
+
+% 0 1 0 09f63558bbc040810b78686e8ee9aa40
+
+% 0 1 0 1dc80aa4dd8fc7a816a42d0dcfb3f1cc
+
+% 1 1 0 0098a26f43570b011f6be276b33f0408
+
+@ 0 4 0 1f81d889adc8a1d60f8c2b02b141aafb
++ Jedyna zmiana to `Chart.Revision.Replace` dla `series-0`. Strona zawierająca SVG potrzebuje tylko
++ dwóch operacji – zastąpienia elementu według identyfikatora i zastąpienia całego rysunku – więc
++ wykres można utrzymywać aktualnym przez WebSocket, wysyłając każdą zmianę w chwili jej
++ powstania.
+
+@ 0 1 0 130ec102035b54480bb76ee4e21b3dd4
++ ### Rozkłady
+
+@ 0 3 0 1c15d16bf09255271327b43ece2d4e60
++ Surowe pomiary to `Samples`. `Histogram` dzieli ich zakres na równe przedziały, według reguły
++ Sturgesa, o ile nie podano liczby przedziałów, i zlicza próbki w każdym z nich. `Boxes`
++ podsumowuje każdy zbiór próbek jako pudełko między kwartylami, z wąsami do wartości skrajnych:
+
+% 2 1 0 11f29b9b17574cf418ce85d39712aa68
+
+% 3 1 0 02e51c5735e45dd3192c75fe8065554f
+
+% 4 1 0 14edd651438a3e69002e5acfa8f67400
+
+% 5 1 0 06997d1615b693500c9859027dce69cd
+
+% 0 1 0 033413227a5a19bc161a20d8abb03a01
+
+% 0 1 0 120641c5ed15b98719881891031cd91d
+
+% 0 1 0 16eaab8e03df40b91564bc83c7d578e4
+
+% 0 1 0 08a4d5eaf52798fb102bf632a7a154e9
+
+% 0 1 0 039e03d91e4f895d1863647075c6d3d5
+
+% 1 1 0 04e091e103d977c91d49843136a78104
+
+@ 0 1 0 06561035a92422101cd7dc5d18ffb45c
++ Oba przyjmują dowolną kolekcję zbiorów próbek, tak jak inne rodzaje przyjmują kolekcje serii.
+
+@ 0 1 0 011d83e381dd7f9214bb8471ad71a2cd
++ ### Wykresy pierścieniowe
+
+@ 0 5 0 10c61f40162d8d7803c0b4fe67b283c0
++ `Doughnut` rysuje graf zależności, [`Dag`](graphs.md), jako koncentryczne pasy. Węzły, które od
++ niczego nie zależą, są w najbardziej wewnętrznym pasie, a każdy kolejny pas zawiera węzły o
++ jeden poziom dalej, więc kompilacja wypełnia się od środka na zewnątrz. Każdy węzeł jest
++ sektorem swojego pasa, zakreślającym kąt proporcjonalny do jego rozmiaru w obrębie poziomu, a
++ pas jest tak gruby, jak udział jego poziomu w całkowitym rozmiarze.
+
+@ 0 7 0 174d054413f9c42015242617e7d5556d
++ Rozmiar węzła i jego postęp, od `0.0` do `1.0`, pochodzą z dwóch klas typów dla typu węzła:
++ `Weighted` i `Progressive`. Sektor wypełnia się zgodnie z ruchem wskazówek zegara w takim
++ stopniu, w jakim węzeł jest ukończony, a reszta ma przygaszony odcień koloru sektora. Tym kolorem
++ jest pierwszy kolor palety, cieniowany według położenia sektora: jego barwa obraca się o
++ trzydzieści stopni od lewej do prawej, a poniżej środka jest ciemniejszy, powyżej zaś jaśniejszy.
++ Wykres pierścieniowy nie ma etykiet ani legendy. Każdy pas to grupa `rank-0`, `rank-1`, …, każdy
++ sektor to ścieżka `sector-0`, `sector-1`, …, a nieukończona część sektora to `sector-0-rest`.
+
+@ 0 3 0 186d282768e4a38b0e1b4a430a91b85d
++ Węzeł niesie swój postęp, więc wykres pierścieniowy aktualizuje się jak każdy wykres, nowymi
++ danymi. Dopasowanie przetrwa każdy graf o tym samym kształcie i rozmiarach, a zastępowane są
++ tylko pasy, których sektory wypełniły się dalej:
+
+% 2 1 0 18f4b7aff6b0de110e30179153ee763a
+
+% 0 1 0 1c9603d260d4845d0627ad6edabe3b4a
+
+% 0 1 0 16177b4b4491d314047ceb7a82921210
+
+% 0 1 0 09cc65b4500751fe18583ec2678045f9
+
+% 0 1 0 19fbe38972d93a8301629fc4a2d1ada1
+
+% 0 1 0 1d37cb09c68e85f6025ad2b133644a13
+
+% 0 1 0 0df9837846b58da419cb2d50259e7ec0
+
+% 0 1 0 18ceb764a89b38990f901c38d106eee2
+
+% 1 1 0 13cbc4141a3177041f7a4636c73314f0
+
+% 3 1 0 13abf6457ef29e920ca7e7e87e026661
+
+% 4 1 0 1188afa3209114471cb16aa280be7ca9
+
+% 5 1 0 1c89bbe9b2220ba91c446b729f51bf20
+
+% 5 1 0 0af780ea235f9323035be0c8310c8b6a
+
+% 0 1 0 144953e5d6637f7211871894602a275f
+
+% 0 1 0 0ede66e7c1428cd21f0d3a7cce77dfd5
+
+% 0 1 0 1a1a1757fda426f01cd5a437e645ec0e
+
+% 1 1 0 1bb306cc8eda97d4084e5d4752dd8e6d
+
+@ 0 1 0 0b5a150e94b838ff0c05fd0f9cea858d
++ Są trzy pasy, po jednym na każdy poziom. Ukończenie `typecheck` zastępuje tylko `rank-1`.
+
+@ 0 5 0 0ef8f078864b9b480d7386095e5501ec
++ `Chart.Standard(hole = 0.3)` wydrąża środek. `sectorGap` i `bandGap` to szerokości fugi między
++ sektorami i między pasami. `Doughnut.Style` ma `shade` dla koloru sektora wynikającego z jego
++ położenia oraz `sector` i `remainder` dla jego dwóch części. Poziomowanie jest tym, które opisują
++ [grafy](graphs.md#layering): `import rankings.balancedRanking` rysuje każdy węzeł tak blisko
++ węzłów od niego zależnych, jak to możliwe, a nie tak blisko środka.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 8 0 073cfdea2b0f98e207a2a38e223c33c8
++ - [SVG](svg.md) opisuje rysunek, jako który przedstawia się wykres.
++ - [Rozmieszczanie etykiet](label-placement.md) opisuje, jak etykiety wykresu unikają siebie
++   nawzajem.
++ - [Czcionki](fonts.md) opisują kroje pisma, którymi można złożyć wykres.
++ - [Wielkości](quantities.md) opisują jednostki tytułujące oś.
++ - [Grafy](graphs.md) opisują `Dag`, który rysuje wykres pierścieniowy.
++ - [Kolory](colors.md) opisują kolory palety.
++ - [Czas](time.md) opisuje czasy trwania i chwile, które może zawierać oś ciągła.
++ - [Wskaźniki](gauges.md) i [tabele](tables.md) przedstawiają wartości w terminalu, a
++   [testowanie](testing.md) przedstawia wyniki benchmarków na wykresach.

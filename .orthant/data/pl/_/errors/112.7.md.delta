@@ -1,0 +1,40 @@
+orthant 2 language
+
+@ 0 1 0 03b632ddc1ba56f7094d5672b9f0af40
++ # `↯/s.112.7` – `JsonRpc.Error`
+
+@ 0 1 0 1e2d6389d26b7b84114e3f81c6e5f7ea
++ Zgłaszany, gdy operacja JSON-RPC się nie powiedzie.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 4 0 05dbd7211b1fc1a509c9812aaeb2df58
++ Dyspozytor JSON-RPC z Obligatory zgłasza ten błąd, gdy nie można przetworzyć żądania.
++ Konstruktor przyjmuje `reason: Reason`; przedstawiony komunikat to
++ `the JSON-RPC operation failed because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 1 0 10d385792366bd2405f1052ce7c33d38
++ ### `↯/s.112.7.1` – `UnknownMethod`
+
+@ 0 3 0 16abf98775676a350bec2b100b07e8c1
++ Pole `method` przychodzącego żądania JSON-RPC nie pasowało do żadnej z metod zadeklarowanych w
++ interfejsie dyspozytora – jest to przypadek domyślny w wygenerowanym dyspozytorze.
+
+@ 0 1 0 047256202a3543b00d232e69bd3cee5e
++ **Przykład.** `[↯/s.112.7.1] the JSON-RPC operation failed because the method name was not recognised by the dispatcher`
+
+@ 0 2 0 0a63d0bb9fe9cdde10002a6fe219d3fd
++ **Rozwiązanie.** Sprawdzić, czy nazwa metody odpowiada metodzie w interfejsie RPC; poszukać
++ literówek.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 3 0 1473b6334e16fd3a19a0036de94f5eed
++ - Źródło: `lib/obligatory/src/json/obligatory.JsonRpc.scala`
++ - `↯/s.112.8` – ogólne niepowodzenie RPC
++ - `SN-728` – brakujący `Tactic[JsonRpcError]` w czasie kompilacji

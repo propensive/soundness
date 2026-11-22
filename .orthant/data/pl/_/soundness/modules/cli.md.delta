@@ -1,0 +1,806 @@
+orthant 2 language
+
+@ 0 1 0 075bb461108c95771362bfe99e99218f
++ ## Aplikacje wiersza poleceń
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 3 0 117bf8e90b6089601943e86837c91878
++ Aplikacja wiersza poleceń ma trzy części: punkt wejścia, który przekazuje programowi jego
++ argumenty, interpretację tych argumentów jako podpoleceń, flag i operandów oraz uzupełnianie
++ tabulatorem dla każdej powłoki.
+
+@ 0 4 0 0de7d33d68f5eb11096aa652a2367d8c
++ Nietypowe jest to, że uzupełnienia są wyprowadzane z tego samego kodu, który wykonuje
++ polecenie, więc nie mogą rozminąć się z tym, co program faktycznie robi. Nie może też tekst
++ pomocy, strona podręcznika ani lista kodów wyjścia. Wszystko to jest odczytywane z programu, a
++ nie pisane obok niego.
+
+@ 0 1 0 13b4865027f5a84815aff574312f967b
++ ### O wierszu poleceń
+
+@ 0 5 0 0dd68484fd9940a3142cf7cf76eabcdf
++ Argumenty przekazywane przez powłokę to płaska lista tekstów. Każdy program wiersza poleceń
++ musi odtworzyć ich strukturę, zanim zacznie się jakakolwiek prawdziwa praca: które słowa są
++ podpoleceniami, które flagami i które wartości do czego należą. Skrypty uzupełniania
++ implementują potem tę samą interpretację jeszcze raz, ręcznie, dla każdej powłoki, i rozmijają
++ się z programem, który opisują. Nowa flaga istnieje, ale uzupełnienia nigdy o niej nie
++ słyszały.
+
+@ 0 6 0 0e5cd4f921c400aa118b64316f503dfe
++ Tutaj lista argumentów zamieniana jest na wartości typowane: podpolecenie dopasowane po
++ nazwie, flagę odczytaną jako `Int`, operand [zdekodowany](decoding.md) do ścieżki. O każdym
++ argumencie zapisuje się dość, by go uzupełnić. Naciśnięcie `tab` uruchamia własny kod programu
++ obsługujący argumenty, w trybie, który zamiast efektów produkuje podpowiedzi. Flaga, której
++ program szuka, staje się więc flagą, którą program może podpowiedzieć, a uzupełnienia są
++ zgodne z programem z samej konstrukcji.
+
+@ 0 3 0 0c397cfcf5a417e21c7bddd983517a40
++ Każdy parametr i sposób jego parsowania deklaruje się tam, gdzie definiowane jest polecenie –
++ to styl [kontekstu deklaratywnego](../../philosophy/declarative-context.md) zastosowany do
++ wiersza poleceń.
+
+@ 0 3 0 0be719ba855bc2d8122aba2ab6ed6431
++ Poniższe sekcje zaczynają od minimalnego punktu wejścia i przechodzą przez podpolecenia i
++ flagi do uzupełnień, pomocy i stron podręcznika. Wszystko pochodzi z pakietu `soundness`, wraz
++ z kilkoma wyborami, których potrzebuje punkt wejścia:
+
+% 2 1 0 02a77dac1f793e61058d47d4a910acb9
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 12776c3c58403dcf0383186c062f4474
+
+% 0 1 0 0e110ee4c374ea9e0a34a6213a7a8ff6
+
+% 0 1 0 17bef8dc1edab8da1623ee0b5deff790
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 6 0 1e22f527b9f9001c002bc59119695fbb
++ column  Decyduje
++ row  `interpreters.posixInterpreter`  o tym, jak płaska lista argumentów jest odczytywana jako flagi i operandy
++ row  `executives.directExecutive`  o tym, co zwraca ciało punktu wejścia; [Uzupełnianie tabulatorem](#tab-completions) używa innego
++ row  `backstops.genericErrorMessageBackstop`  o tym, co jest wypisywane, gdy błąd wydostanie się z programu
++ row  `systems.javaBaseSystem`  o tym, skąd pochodzą [właściwości systemowe](environment.md#system-properties)
++ row  `strategies.throwUnsafely`  o tym, że błąd jest rzucany jako wyjątek
+
+% 1 1 0 00d220a17931d83c1076bb5625270c62
+
+@ 0 1 0 064417b8467a34330ea4796a3be668c9
++ Przykłady na tej stronie definiują całe programy, więc są kompilowane, ale nie uruchamiane.
+
+@ 0 1 0 103e9b35ca3475ac1743673039a3eaf2
++ ### Punkt wejścia
+
+@ 0 2 0 145a01b954c5f1361f82c2de55c2dcce
++ Metoda `application` opakowuje punkt wejścia programu. Daje swojemu ciału kontekst programu i
++ oczekuje w zamian kodu wyjścia `Exit`. Przyjmuje argumenty jako listę tekstów.
+
+@ 0 2 0 0c8615b4417addcd076fe2c7714cd7f7
++ Ten sam program może równie dobrze być obiektem rozszerzającym `Application`. Ta klasa
++ abstrakcyjna dostarcza metodę `main`, która konwertuje argumenty JVM, i wymaga jedynie
+
+% 0 1 0 06e9403629bc18ea011c9e4882733fa7
+
+% 2 1 0 019fdcf1e21fb20818818f34006c522c
+
+% 0 1 0 14c414b93399500718323b4c237b11b4
+
+% 1 1 0 123d416a894f8e83115647107ea81709
+
+% 0 1 0 1f6b06b3a0288a0d08299e5af4443e6d
+
+% 0 1 0 1c9ee16211be36a006455bd51638ba39
+
+% 0 1 0 0550eda7b20141fd1917f71781eeafe5
+
+% 0 1 0 0693fc9840ad1394109517444289602b
+
+% 1 1 0 14be5909c3f613fc0dd3a8c6f2fa3b85
+
+% 0 1 0 1bba4eb39d03daf01befac22af62d39e
+
+% 0 1 0 183a8b791ed2da9e146ddf6def4b4ea6
+
+% 0 1 0 0a764f1f217cf51e0790cb37c8a99324
+
+% 0 1 0 135581dff005d63d069f9a04fb8f49c0
+
+% 1 1 0 1a006f538ed3d82702b29cb63774ee52
+
+% 2 1 0 1b36cee6b62a418a0b6155003287b5d1
+
+@ 0 4 0 1524118c733aa9280ce9d29956093e30
++ Spakowany jako wykonywalny JAR, którego `Main-Class` to `mytool` lub `MyTool`, program
++ uruchamia się z powłoki. `Exit.Ok` zgłasza powodzenie. `Exit.Fail(1)` lub dowolny dodatni kod
++ zgłasza niepowodzenie. Kod wyjścia trzeba zwrócić i nigdy nie jest on domyślny.
++ [Pakowanie](packaging.md) buduje JAR.
+
+@ 0 1 0 0cb7d2c54804a82516abd80db5ddcc8b
++ ### Argumenty
+
+@ 0 2 0 17cb1397f467872302f476840fa3f17b
++ W ciele `arguments` to lista argumentów, które otrzymał program. Każdy jest wartością
++ `Argument`, a zastosowanie go daje jego `Text`:
+
+% 2 1 0 1213434f37a47baf1f87b66680952b9d
+
+% 0 1 0 00f33009b4fbfbdd0d6059f89e5bdf42
+
+% 0 1 0 1cce43df410435301584b94528a07855
+
+% 0 1 0 0f475df2eeb176d71f5fdd6e012008c0
+
+% 1 1 0 1b0edf6f01ddbcc104f77c2f35f948b6
+
+% 2 1 0 03be575c139bf7870f6b67cc5f4d7d02
+
+@ 0 4 0 198004afb13e475117e344a2a5199b15
++ `Argument` to więcej niż jego tekst. Pamięta swoją pozycję w wierszu poleceń, i to później
++ pozwala uzupełnieniu wiedzieć, który argument uzupełnia. Pozycje są numerowane od `0` dla
++ pierwszego argumentu po poleceniu, a nie od `1`, jak w większości języków skryptowych.
+
+@ 0 5 0 0678130b06b1a4f80301096cafde9408
++ Dwa słowa często używane są zamiennie, a warto je rozróżnić. *Argumenty* to płaska sekwencja
++ wartości tekstowych, którą przekazuje powłoka. *Parametry* to ich znaczenie po interpretacji.
++ Argumenty `grep -rA4 pattern` to `-rA4` i `pattern`. Jego parametry to „szukaj rekurencyjnie”,
++ „pokaż cztery wiersze kontekstu po dopasowaniu” i „szukaj `pattern`”.
+
+@ 0 2 0 12b798dccb86aece0ffad7539eeab94d
++ Interpreter w zasięgu jest tym, co zamienia pierwsze w drugie, i dlatego wybiera się go
++ importem, a nie ustala na stałe. Pakiet `interpreters` ma trzy:
+
+% 2 1 0 04c7d4b01cea15ed1b5c35359bd9eb3f
+
+% 0 1 0 0ffb7784bb8a55e01a2ffd92639c4464
+
+@ 0 4 0 10b9100610447b221ffded5f8bdb5f79
++ column  Odczytuje
++ row  `posixInterpreter`  flagi `--long` i `-s`
++ row  `posixClusteringInterpreter`  flagi `--long` i `-s` oraz `-rA4` jako `-r -A 4`, przy czym wartość przyjmuje ostatnia litera grupy
++ row  `simpleInterpreter`  każdy argument jako operand, bez flag
+
+% 1 1 0 0101814926c1a64c13b7edadabd6d2ac
+
+@ 0 1 0 02303c87211351910560854df38228ec
++ ### Podpolecenia
+
+@ 0 3 0 09aa372c589591aa1c3d22cbfaae91f7
++ `Subcommand` nazywa tryb, w którym program może działać, wraz z opisem dla pomocy i
++ uzupełnień. Jest także ekstraktorem, więc pierwszy argument dopasowuje się do niego w zwykłym
++ wzorcu:
+
+% 2 1 0 1cb41fbb58664ae517c8ef29fb5e40d2
+
+% 0 1 0 062559d6b9930f6110fc041711e0bb59
+
+% 0 1 0 0403899955d6084a07b1305165971478
+
+% 0 1 0 0655eb1d1f787cc903cea2c4b242e3b9
+
+% 1 1 0 08e803f5202b7cab1b4b8f6638091a74
+
+% 0 1 0 1f25e203fd10a66518e840e2e77a2cc6
+
+% 0 1 0 02cb1b3821663e091d23708aeeb26062
+
+% 0 1 0 14ea3bf8ce3c46220187d97c546393e6
+
+% 1 1 0 183f1786a8496a1c03dbb10a7a44358e
+
+@ 0 3 0 0b8f8184022e92db1086f680938b8940
++ Opis zapisuje się interpolatorem `e"…"`, który niesie [style](terminal.md#styled-text) dla
++ powłok, które je pokazują. Zwykły opis typu `Text` także działa.
+
+@ 0 4 0 15c018e58695b5f015fe3c02f8aee09f
++ Podpolecenia się zagnieżdżają. Dopasowanie podpolecenia, a potem ponowne dopasowanie
++ pozostałych argumentów daje drzewo poleceń, każde z własnymi flagami. Podpolecenie może mieć
++ `hidden = true`, co wyłącza je z pomocy i uzupełnień. Podpolecenia grupuje się w pomocy pod
++ nagłówkami za pomocą `CommandGroup`:
+
+% 2 1 0 1498457fc23309db07fdd6939f63af0f
+
+% 0 1 0 13e59cb06f51fede1d019cf15aa394f7
+
+% 0 1 0 1400d22de70e6b0b0a55f25a8a1d70d4
+
+% 1 1 0 0d5ccd52b9852b41070081abdf933a31
+
+@ 0 1 0 15625c54289d995e0fe732fdaee827f1
++ ### Flagi
+
+@ 0 4 0 1df3741093005dc50d960f742611ed02
++ `Flag` to argument zaczynający się od `-` lub `--`. Zadeklarowanie jej i zastosowanie
++ odczytuje jej wartość z wiersza poleceń. Wynik jest [`Optional`](optional-values.md), ponieważ
++ flagi może nie być. Typem flagi jest to, do czego ma zostać zdekodowana jej wartość, i każdy
++ typ, który da się odczytać z tekstu, działa bez dalszych ceremonii:
+
+% 2 1 0 0a9d01be5742fbb41fe4a1de4d1294fa
+
+% 0 1 0 1c9713e15f1d0b7e0c44f395fa7e5ace
+
+% 1 1 0 04f9b026bd467f60009924c9e1459b7a
+
+% 0 1 0 19c52d0b9fcac4e00775c142a1915772
+
+% 0 1 0 02501c5eac4b40b8148a279c3218bf15
+
+% 0 1 0 08213eb2e256cc5c09c6d5b3d3d11ef3
+
+% 1 1 0 0bca7c4ed15601b60a5a3c91043901d1
+
+% 0 1 0 0d26ebc378cc279c17830bf92e1a412d
+
+% 0 1 0 12f65cad1eb673450e209c16c98f0c69
+
+% 1 1 0 11535544f248d1180b0af024ff94cf9e
+
+@ 0 1 0 0608bf8a454985990c037e526cf29590
++ Flagę deklaruje się z następującymi parametrami:
+
+% 2 1 0 0e154ac4980a8e6613b53c3fbffc51c4
+
+@ 0 8 0 1689b16219b41c000986f71f1d3c5b23
++ column  Parametr
++ column  Domyślnie
++ column  Znaczenie
++ row  `name`  wymagany  postać długa, jako `--name`, albo `Char` dla krótkiej
++ row  `aliases`  `Nil`  inne postacie, na przykład krótka `-j`
++ row  `description`  `Unset`  tekst pokazywany w pomocy i obok uzupełnień
++ row  `repeatable`  `false`  czy flaga może wystąpić więcej niż raz
++ row  `secret`  `false`  czy pominąć flagę w uzupełnieniach i pomocy
+
+% 1 1 0 1afe7c086dd1e0df14ef8d649c01719a
+
+@ 0 1 0 19c70760831c2a7105f401f1d11496d5
++ `aliases` podaje postacie krótkie, więc `--jobs 4`, `-j 4` i `--jobs=4` odczytuje się tak samo.
+
+@ 0 5 0 1d88607c14cf1f830b155473189de3ca
++ Wystąpienia flagi powtarzalnej odczytuje się razem, przez typ `List`. `--tag a --tag b`
++ odczytuje się jako `List(t"a", t"b")`, a każdy operand interpretuje się jako typ elementów. Typ
++ `Optional` odczytuje operand, który może być niepoprawny, jako `Unset`, zamiast zgłaszać błąd.
++ Liczenie `List` wymaga jej przejścia, więc `size` żąda
++ [potwierdzenia `linearSize`](collections.md#positions-and-access):
+
+% 2 1 0 122c69778b5d92ea03ea1aea7b1be6ad
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 12d83ca59ec19a3414bb446742b9d1e3
+
+% 0 1 0 16d90a4354adc6161dc434fea8ce078b
+
+% 0 1 0 193fb3589e79ca8c09af3786b61b29d0
+
+% 0 1 0 038f8d2677e2f6501902762ff46f40c5
+
+% 1 1 0 02f545710855c5ac17d5ab7376e852b7
+
+% 2 1 0 0de04cb5e5253fc90d9fce54ee13f753
+
+@ 0 1 0 10bf83733f3f3cce0d001f83cb77c6d5
++ Flaga, która nie przyjmuje wartości i jest po prostu włączona lub wyłączona, to `Switch`:
+
+% 2 1 0 108c172a5eac4c090d2aecec551fd7a8
+
+% 0 1 0 0b57ee3de01a99930d37b5bb38fceb38
+
+% 1 1 0 0ccd9dde2cd0df1a09d5266dca049bfa
+
+@ 0 1 0 0be19ab73c174de518cfc915e1abff1a
++ ### Ustawienia
+
+@ 0 5 0 1a5b3eff3c349f760885fb868b205558
++ Wiele opcji powinno dać się ustawić nie tylko w wierszu poleceń, ale także
++ [zmienną środowiskową](environment.md), właściwością systemową lub plikiem konfiguracyjnym, w
++ ustalonej kolejności pierwszeństwa. `Setting` deklaruje taką opcję raz, pod kanoniczną nazwą w
++ notacji camelCase, a każde źródło wyprowadza z niej według konwencji własną nazwę.
++ Zadeklarowanie tożsamości aplikacji, jako `Configurator.Prefix`, uruchamia standardową kaskadę:
+
+% 2 1 0 16b5594af871acbe1ae9e07a764bec99
+
+% 0 1 0 181c1770d819efa91a91871f68b53acd
+
+% 0 1 0 19e7341d8713a3601771bdfa031a7f21
+
+% 0 1 0 0ff2c28d377bf1b706fca78a5f02aaec
+
+% 1 1 0 0f916d93cf69d4760fc8867226b45ec3
+
+@ 0 2 0 0995259171b307e11056bd41640a7e08
++ Odczyt `LogLevel()` w ciele sprawdza jego źródła po kolei, a wygrywa pierwsze, które ma
++ wartość:
+
+% 2 1 0 0dad7aabc24b82ae04bc9e7803159d61
+
+@ 0 6 0 01c0ba70676a7fe1037510c5e4df0f8a
++ column  Źródło
++ column  Nazwa dla `logLevel`
++ row  opcja wiersza poleceń  `--log-level`
++ row  zmienna środowiskowa podana jako `variable`, jeśli jest  dosłownie, jako `MYAPP_HOME` dla `Home`
++ row  właściwość systemowa  `myapp.log.level`
++ row  zmienna środowiskowa  `MYAPP_LOG_LEVEL`
+
+% 1 1 0 0c15190a83a153400a1731dcc95c0039
+
+@ 0 4 0 170f6136e43fc9081d2b5c3ece347fa1
++ Wynik jest `Optional`, więc wartość domyślną podaje się w zwykły sposób, jako
++ `LogLevel().or(t"info")`. `variable` jest dla ustawienia, którego zmienna środowiskowa nie
++ trzyma się konwencji. Odczyt ustawienia rejestruje jego flagę do uzupełniania tabulatorem,
++ dokładnie tak, jak zrobiłby to bezpośredni odczyt flagi.
+
+@ 0 5 0 0d3634e1a064b39c16ee9dbd1f332063
++ Każde źródło jest wartością `Configurator`, która ma jedną metodę abstrakcyjną, z kanonicznej
++ nazwy ustawienia w opcjonalną wartość tekstową. Kaskada to zwykłe złożenie za pomocą `++`, w
++ którym pierwszeństwo ma lewa strona. Żaden format pliku konfiguracyjnego nie jest narzucony,
++ ale każde źródło może dołączyć do kaskady jako funkcja w jednym wierszu. Zdefiniowanie givena
++ `Configurator` zastępuje standardową kaskadę, choć opcja wiersza poleceń zawsze ma
++ pierwszeństwo:
+
+% 2 1 0 0cbb8df4ece1133703cdfef4d4977069
+
+% 0 1 0 111f6c17f1f38c2d06e62e6735e2c81a
+
+% 0 1 0 0d897706358ecf65189d8c3428ea55f6
+
+% 0 1 0 161802418ccd3e680d4d5d68a9f73cc4
+
+% 1 1 0 16440beee084bee70298ea30be11b04c
+
+@ 0 1 0 0cdde65bf92fb31c1e1944eef24fb35d
++ ### Kod wyjścia i błędy
+
+@ 0 4 0 0a051e52da1f8c961d5c388f1765c4b9
++ Ciało zwraca `Exit`: `Exit.Ok` albo `Exit.Fail(code)` w razie niepowodzenia.
++ [Błąd](errors.md), który wydostanie się z ciała, jest przechwytywany przez *backstop* w
++ zasięgu, który zamienia go w kod wyjścia zamiast śladu stosu. Backstop wybiera się, importując
++ go z pakietu `backstops`:
+
+% 2 1 0 01cc22f7f4980612091dfc13ab2c715c
+
+% 0 1 0 0f164885cf74aa1217a6e45f2855a677
+
+@ 0 5 0 1047d26b555149d90d432c29e4636f54
++ column  Wypisuje
++ row  `genericErrorMessageBackstop`  krótki, stały komunikat: `An unexpected error occurred.`
++ row  `exceptionMessageBackstop`  własny komunikat wyjątku
++ row  `stackTraceBackstop`  pełny ślad stosu
++ row  `silentBackstop`  nic
+
+% 1 1 0 135dc82f77661d0919a79a4467a762b4
+
+@ 0 1 0 05e8d20353e844101b719bb7430ffe77
++ Każdy kończy działanie z kodem 1 dla wyjątku i z kodem 2 dla każdego poważniejszego błędu.
+
+@ 0 2 0 150d8c2555be4ac703d2b46a92fe9561
++ Sam kod wyjścia niewiele mówi użytkownikowi. Niepowodzenie, które program przewiduje, lepiej
++ zadeklarować jako `Status`, czyli obiekt z kodem i opisem:
+
+% 2 1 0 0e7b493480f22ecd1736a3bf87e3f2e2
+
+% 0 1 0 1102ad3f14aac8ac1149e99721d6ed07
+
+% 0 1 0 0e8f006dd1a7d72103f0005f7cebd1fb
+
+% 1 1 0 0a1d43e65bc06f7e0e7d3934ccbe06a6
+
+@ 0 3 0 0650f1f02191553c1df01002cf106562
++ `Status` zwraca się wszędzie tam, gdzie `Exit`. Przy wykonawcy uzupełnień, opisanym niżej, kody,
++ które polecenie może zwrócić, są odkrywane z jego kodu i pojawiają się w jego pomocy i na
++ stronie podręcznika, bez wymieniania ich gdziekolwiek indziej.
+
+@ 0 1 0 1d2295c11724223d17489bc1303359ac
++ ### Uzupełnianie tabulatorem
+
+@ 0 3 0 0aa1ea788791baa11057875ffc7cccf5
++ Uzupełnianie tabulatorem to jedna z najbardziej użytecznych rzeczy, jakie oferuje program
++ wiersza poleceń. Pozwala użytkownikowi odkrywać funkcje, widzieć, jakie flagi i wartości są
++ dostępne, i w ogóle unikać literówek.
+
+@ 0 6 0 125491d4b4d4d0c80805ae7993515dfe
++ Zwyczajowo jest ono też utrzymywane osobno od samego programu. Dla każdej powłoki istnieje inny
++ skrypt, często pisany przez różne osoby. Każdy przybliża zachowanie polecenia, wymieniając jego
++ podpolecenia i flagi, a czasem idzie dalej, aby wzajemnie wykluczające się flagi pozostawały
++ spójne. Powłoki nie zgadzają się nawet co do tego, czym jest uzupełnienie: Bash oferuje sam
++ tekst uzupełnienia, a Zsh i Fish mogą pokazać obok niego opis. To praca godna podziwu i
++ niemożliwa do utrzymania w poprawności.
+
+@ 0 5 0 02d36ccbf9950cd81a168b8bdadd90c3
++ Tutaj jedynym źródłem prawdy jest sam program. Ten sam kod, który interpretuje argumenty,
++ produkuje uzupełnienia, więc są one zgodne z samej konstrukcji. Skrypty dla poszczególnych
++ powłok kurczą się do niczego istotnego: przechwytują niepełny wiersz poleceń, pozycję kursora
++ i nazwę powłoki i przekazują je aplikacji w trybie uzupełnień.
+
+@ 0 3 0 058222c1e47a553f17a798089753d85f
++ Włączenie uzupełnień zastępuje domyślnego wykonawcę wykonawcą uzupełnień. Importuje się go
++ tam, gdzie definiowany jest punkt wejścia, tak aby to on, a nie wykonawca bezpośredni, był w
++ zasięgu dla tego programu:
+
+% 2 1 0 1d15f2db5436d1501efc91132259bd83
+
+% 0 1 0 197f1109e7f809191be0a5e6413d8524
+
+% 1 1 0 158b6285908e99d0091b8456ce61643e
+
+@ 0 5 0 14889ac18ea8f67210edf406f025143d
++ Przy tym wykonawcy ciało zwraca `Execution`, a jedynym sposobem zbudowania go jest blok
++ `execute`. Kod *przed* `execute` to *prolog*. Działa zarówno przy wywołaniu polecenia, jak i
++ przy żądaniu uzupełnień. Blok `execute` działa *tylko* przy prawdziwym wywołaniu. Prolog
++ obsługuje więc argumenty, a efekty uboczne mieszkają wewnątrz `execute`:
+
+% 2 1 0 06bac51ce5830a36066a8d687277eac8
+
+% 1 1 0 0d625f7e41cde2400b295dd6c23b3d7b
+
+@ 0 1 0 08ce615116da37af0a3339cc7deb347a
++   label Podpolecenia, przy wykonawcy bezpośrednim
+
+% 1 1 0 1db1758a2c47d7fd1e4143242470f102
+
+% 0 1 0 06ad9756a4ea8ec30c97d603afec1cf1
+
+% 1 1 0 18babe3aa903135912fa7c4ce94b243a
+
+% 2 1 0 12d2f3fd2f3bb055151fb248b81bfa1f
+
+% 3 1 0 11a58e90162eb5031040c81486776098
+
+% 0 1 0 09f97e67067ca680066cc5757413fb87
+
+% 0 1 0 0d9eb79b2ad23e230aa7f51d7b4c2f23
+
+% 0 1 0 005e9ad648615fb30f12414b80890dee
+
+% 1 1 0 0d0ee31695075020158bab8c7c1cbcb3
+
+@ 0 1 0 06b5cf56cc6657f919bd455ebd7c4876
++   label Z flagą odczytaną w prologu
+
+% 1 1 0 036bf21fd447ccf50c158c7fb3484a3d
+
+% 0 1 0 1a58044c761fd53b1180bb7ec0ad199b
+
+% 1 1 0 0a6d5f5c6ff0f0f5147fb17f9b6387ff
+
+% 2 1 0 0e63c0bfd75851730f2e749d6c3f78e9
+
+% 3 1 0 00daf7029e16e3851dada24e2fba601a
+
+% 3 1 0 1effcbc511147eb3116f03a7af60362b
+
+% 0 1 0 0b34716f8834fc8c1705fe0b47cdb20a
+
+% 0 1 0 0456f19f3e475d9b1884daad74611506
+
+% 0 1 0 08770c8d2d48ab3c1cecaf6dd69ac37e
+
+% 2 1 0 08ecbab33254968200a65cd30babdb20
+
+% 0 1 0 01c854bba92cd15f0096c576018ec171
+
+% 1 1 0 0c9ee0d7cd03aa1d13a347da1637a15f
+
+@ 0 1 0 18c9954ea07ac59d123bf09a7dec12b8
++   label Przy wykonawcy uzupełnień efekty wewnątrz `execute`
+
+% 1 1 0 1203571ff9e6c8260d8d467c228fe833
+
+% 0 1 0 18da09856b99d5d212c18114bb6ac2c3
+
+% 0 1 0 092a354f9704715616ac8382e89c832a
+
+% 1 1 0 1bf907fc46b01ff6035bd15d3a8a8415
+
+% 2 1 0 184d4926762d54ab060ccf146211d68f
+
+% 3 1 0 164e9f283b449e650e6900be46f06ecd
+
+% 0 1 0 19d7b3f16223fc120a52186265eb5796
+
+% 0 1 0 03a1b885eeb30dad19d065411c801740
+
+% 0 1 0 07a313accd7fa6de0a6c0f6b5f635f5a
+
+% 0 1 0 14648cf2c1d7887a04b1732bc65385cc
+
+% 2 1 0 1bae3b6f9e52bd741786512b5a304d8c
+
+% 0 1 0 1b2c6a91f82b5aa408e06f2b9ebb5917
+
+% 1 1 0 1396e2013f78438804dce694572f6705
+
+% 2 1 0 137fb66f55aef72d0b685cd613f77200
+
+@ 0 3 0 00a463325f8a9c8a1e7bd9c7f0831dc7
++ Dopasowanie `Build` i zadeklarowanie flagi `--jobs` odbywa się w prologu, więc działa, gdy
++ użytkownik naciska `tab`. Po `mytool ` powłoka oferuje `build`, a po `mytool build ` –
++ `--jobs`.
+
+@ 0 5 0 1cd4660978516ae6156ce2d08b6efe9f
++ Gwarantuje to struktura. `Execution` nie da się wyprodukować bez bloku `execute`, a prolog,
++ który rejestruje uzupełnienie, jest dokładnie tym prologiem, który odczytuje wartość, więc
++ uzupełnianie i wykonanie nigdy nie mogą się rozejść. Wykonawca uzupełnień odcina też prolog od
++ standardowego wyjścia, ponieważ podczas uzupełniania nie ma go dokąd wysłać. `Out.println` jest
++ dostępne tylko wewnątrz `execute`.
+
+@ 0 1 0 044ecbc2d6baec690a170e9e3244f4e8
++ #### Uzupełnienia warunkowe
+
+@ 0 3 0 1c3b83eb41cf9a040defa9b95c4cf690
++ Flaga odczytana w prologu daje uchwyt `Prospective`, a nie samą wartość. Jego `present` i
++ `absent` można sprawdzić od razu, aby zdecydować, co jeszcze zaoferować, ale zastosowanie go w
++ celu uzyskania wartości jest możliwe tylko wewnątrz `execute`.
+
+@ 0 4 0 0c91f1a6360ba15f042b789073ac57ec
++ Konsekwencje sięgają głębiej niż „flaga, która jest odczytywana, jest flagą, która jest
++ oferowana”. Odczyt może być warunkowy, a wtedy oferowanie też jest warunkowe, i to *dokładnie
++ pod tym samym warunkiem*. Weźmy polecenie z flagą `-v`, która włącza wyjście, i flagą
++ `--verbosity`, która ma sens tylko obok niej:
+
+% 2 1 0 0662425162ab589e0c0c63b03fe67a13
+
+% 0 1 0 12c970baa9d590bf0485b135395164fa
+
+% 0 1 0 01af92bec8d2b5af19f53e9d32123a46
+
+% 0 1 0 1a8bfcbf6e0a204a09307f7db7a380f0
+
+% 1 1 0 07d87285ff54ec1500f5ef8f175a893a
+
+% 0 1 0 1be8aec77db3133c08e3dcd95b366126
+
+% 1 1 0 100b8c4d5409ebda0643e3eb4acbca05
+
+% 0 1 0 0c374ebc1fd0122912b748e866ece8bd
+
+% 0 1 0 159f1fa2ea7938e80c944d45bc63cc3d
+
+% 2 1 0 0cea2515635d2e5707376edb9f11a720
+
+% 0 1 0 00a78ba0d2b60b121c2fb4b6008c4295
+
+% 1 1 0 1ebcdb49df5451e8022f4054816953fa
+
+% 2 1 0 1ded8e2a305b8f3618f455e4caf02bda
+
+@ 0 2 0 157a1c597062dd0819371dcf8be18253
++ Flaga, której typ jest [wyliczeniem][wyliczenie], odczytuje swoją wartość po nazwie, w stylu
++ wybranym przez zaimportowany given `enumIdentification`: tutaj `--verbosity loud`.
+
+@ 0 6 0 0849246dfcba4f461b5f2af0855a78f5
++ Naciśnięcie `tab` po samym `-` uruchamia ten prolog. `-v` jest sprawdzane, więc staje się
++ kandydatem. Jeśli nie ma go jeszcze w wierszu poleceń, jest oferowane. Jeśli *już* tam jest,
++ uruchamia się też gałąź sprawdzająca `--verbosity`, więc `--verbosity` również staje się
++ kandydatem, a `-v`, które ma sens tylko raz, już nie. Nigdzie nie napisano żadnej tabeli
++ zależności między flagami. Struktura warunkowa kodu jest strukturą warunkową uzupełnień,
++ niezależnie od tego, jak złożona się stanie.
+
+@ 0 5 0 01761808a79aa67809b5695967e1707c
++ Jedno zastrzeżenie dotyczy kodu `inline`. `Flag#apply()` jest metodą `transparent inline`.
++ Wewnątrz innego `inline def` nie jest rozwijana, gdy typowane jest to ciało, więc jej wynik nie
++ jest zawężany do `Prospective`, a `.present` na nim odpowiadałoby `true` dla każdej flagi.
++ Metoda inline powinna odczytywać flagę przez `Flag#present`, gdziekolwiek, albo przez
++ `Flag#value`, wewnątrz `execute`. Obie są zwykłymi metodami, które odczytują flagę bezpośrednio.
+
+@ 0 1 0 0c667bee6da064841f1c6ebdcd869f3d
++ ### Flagi wymagane i walidowane
+
+@ 0 4 0 1af05eeee36076631b8cdb8394e2926a
++ Flagę, która musi być obecna, odczytuje się przez `require()` zamiast `()`, a taką, której
++ wartość musi też się poprawnie zdekodować – przez `validate()`. W prologu każda daje uchwyt
++ `Requisite`, którego wartość jest bezwarunkowo dostępna wewnątrz `execute`, ponieważ brakujący
++ lub niepoprawny wymóg w ogóle nie pozwala blokowi się uruchomić.
+
+@ 0 3 0 1850b092467f263015999363e1bababa
++ Każdą taką flagę sprawdza się przed startem bloku. Użytkownik dowiaduje się więc o wszystkich
++ naraz, z kodem wyjścia 2, zgodnie z konwencją dla błędów użycia, a nie o jednej przy każdym
++ uruchomieniu programu:
+
+% 2 1 0 1eda6c0b269e3496007d92a66d3b9600
+
+% 0 1 0 0e3669b53f3f66c30e1964f8c8647d9a
+
+% 1 1 0 198b13a7c642c9b0027b24c1c972ecff
+
+% 2 1 0 18ffbf70c2ecb71214e03147370731be
+
+% 0 1 0 055bd4f21953ebd6142c9648a717fa58
+
+% 0 1 0 1ad7f150c79bd2bd1d8eb66eea2401a2
+
+% 2 1 0 0d8b9a95f043da1d1ce64a195b0eda31
+
+% 0 1 0 048300028baab6901e6f664feba2e624
+
+% 1 1 0 07901049c8aa69920440b708a9ca215e
+
+% 2 1 0 0aa85df7f19430051d0b6a880087b518
+
+@ 0 3 0 073b7dc4dddd86f1032393e1e8e7da76
++ Wewnątrz `execute` te same wywołania dają wartość bezpośrednio i od razu zgłaszają
++ `Flag.Error` (z przyczyną `Missing` lub `Invalid`), aby zgłosił go backstop. Flaga wymagana
++ jest też oznaczana jako wymagana w tekście pomocy.
+
+@ 0 1 0 0fe0ae69246004e408426083efda5089
++ Każdy sposób odczytu flagi daje co innego w prologu i wewnątrz `execute`:
+
+% 2 1 0 048495d83118d08c1e5f15f50a518d4c
+
+@ 0 8 0 0f1f84c8496aaf641809353d1e92f607
++ column  Odczyt
++ column  W prologu
++ column  Wewnątrz `execute`
++ row  `flag()`  `Prospective`, którego `present` i `absent` odpowiadają od razu  wartość `Optional`
++ row  `flag.require()`  `Requisite`, sprawdzany przed uruchomieniem `execute`  wartość albo `Flag.Error`
++ row  `flag.validate()`  `Requisite`, sprawdzany przed uruchomieniem `execute`  wartość albo `Flag.Error`
++ row  `flag.present`  `Boolean`  `Boolean`
++ row  `flag.value`  niedostępne  wartość `Optional`
+
+% 1 1 0 0d5c74e738e724321c2df0745ff51563
+
+@ 0 1 0 172d97923af567de1db42030eac6db81
++ ### Wykonawca i metody z efektami
+
+@ 0 2 0 169d217ee1daa46206f70569af95ad19
++ *Wykonawca* określa typ zwracany przez ciało punktu wejścia oraz
++ [wartości kontekstowe][wartość kontekstowa] dostępne wewnątrz niego:
+
+% 2 1 0 1a21d435332e000b13142a3d3a0887fb
+
+@ 0 5 0 0a6c93e71c6e7c6b0a7a20b3250d1d24
++ column  Wykonawca
++ column  Ciało zwraca
++ column  `Stdio` i `Effectful`
++ row  `directExecutive`  `Exit`  w całym ciele
++ row  `completionsExecutive`  `Execution`  tylko wewnątrz `execute`
+
+% 1 1 0 05d6efd6badf81c1184999ab9e0622f9
+
+@ 0 3 0 1552aca509e249b604878716491aabf8
++ `directExecutive` nigdy nie uruchamia ciała spekulatywnie, więc flaga odczytana gdziekolwiek w
++ jego ciele jest swoją wartością. Wybór wykonawcy importem pozwala API punktu wejścia pozostać
++ jednolitym, a jednocześnie nakładać naprawdę różne wymagania na kod w jego wnętrzu.
+
+@ 0 2 0 16ecaa0995f173c00eb4c844586f2af7
++ Blok `execute` dostarcza także wymazany `Effectful`. Nic go wewnętrznie nie konsumuje. Chodzi o
++ to, by metoda mogła go *zażądać*:
+
+% 2 1 0 0687b3c0d328a9db1d7f374705c9d8e4
+
+% 0 1 0 103ce96eea955e3b073f463de7b744d4
+
+% 1 1 0 02ea2b29f4e58c5e1c665255ff72ac7f
+
+@ 0 6 0 0db53d18084beb170df24eb78ae091d8
++ Przy wykonawcy uzupełnień `Effectful` można uzyskać tylko wewnątrz bloku `execute`. Takiej
++ metody nie da się więc wywołać z prologu, czyli nie może ona działać, gdy użytkownik jedynie
++ naciska `tab`. Oznaczenie w ten sposób operacji naprawdę nieodwracalnych utrudnia
++ przypadkowe wywołanie którejś z kodu, który uruchomią uzupełnienia. Operacja `install`, która
++ zapisuje skrypty uzupełniania na miejsce, wymaga go właśnie z tego powodu.
+
+@ 0 1 0 16fc2fc1207397f803d79b3b470aba16
++ ### Uzupełnianie wartości
+
+@ 0 3 0 0293fc0a052cd260192083277fd553fa
++ Flaga uzupełnia własne wartości, gdy jej typ potrafi je opisać. Typowi mówi się, jak
++ podpowiadać wartości, instancją `Discoverable`, a jak odczytać wybraną wartość – instancją
++ `Interpretable`:
+
+% 2 1 0 1ee92d407db896690a8abd9bf33020e8
+
+% 0 1 0 1ca3dc21408c148103631a833be9fe99
+
+% 0 1 0 0d3086bf5abaef020695a60125d868d1
+
+% 0 1 0 116b33f9189dc941145a9d0e669f65b2
+
+% 0 1 0 002469b4696ae7850268330307a41fe0
+
+% 0 1 0 017a7f5eb8ba1c9c0378aecaa2f66cb7
+
+% 0 1 0 1848374006f66b37038773d25456752a
+
+% 0 1 0 1aaadd1df7abd62307ef2ee0cdc14b01
+
+% 0 1 0 01e0d6ab1074ad3c13024a73d9257a44
+
+% 1 1 0 0b3db4c98d30a74c040059f47b8b50c4
+
+% 2 1 0 14908c336b0958300eeef39beb2ab088
+
+% 0 1 0 1b3d55208702f6931c7355d8b55bdc76
+
+% 0 1 0 17a3147aa1e4e6870a3bce907c68c406
+
+% 1 1 0 0ac89b2f3586491514a4eac517d16630
+
+@ 0 5 0 1011e339cc0ce6cd1eba2b7ed392ee3d
++ Z nimi w zasięgu `mytool build --mode ` oferuje `debug` i `release`. `Suggestion` może mieć
++ opis, pokazywany przez powłoki, które go obsługują. Może być oznaczony jako `incomplete`, aby
++ uzupełniać wartość po jednym segmencie, jak w przypadku ścieżki pliku. Flaga typu `Pathname`
++ uzupełnia w ten sposób [ścieżki systemu plików](paths.md) bez dodatkowego kodu i rozwija
++ początkową `~` tak, jak zrobiłaby to powłoka.
+
+@ 0 1 0 1cdc8712071013801ac958bbea4377e1
++ ### Pomoc i strony podręcznika
+
+@ 0 7 0 129d95c33cfce7451641b2004f15cd37
++ Prolog opisuje cały interfejs: podpolecenia, flagi, ich opisy, które flagi są wymagane i jakie
++ kody może zwrócić każde polecenie. Pomoc nie potrzebuje więc osobnego źródła. Wykonawca
++ uzupełnień odbudowuje interfejs jako drzewo `Help`, uruchamiając prolog ponownie z
++ syntetyzowanymi prefiksami argumentów, i rozmieszcza je, wyrównane, w stylu strony
++ podręcznika. To samo drzewo zapisuje się jako
++ [stronę podręcznika](https://en.wikipedia.org/wiki/Man_page) w roff, przez `roff`, a
++ `Manpages.install` zapisuje ją na miejsce.
+
+@ 0 4 0 010f39f68aa3c8150988862d65de4554
++ Wszystko, co zostaje odkryte, jest udokumentowane. `Status` zwracany z bloku `execute` pojawia
++ się w sekcji *Exit status*, a zmienna środowiskowa odczytywana w prologu – w sekcji
++ *Environment*. Opisy, których odkrywanie nie może dostarczyć, na przykład znaczenie zmiennej
++ środowiskowej albo przykładowe wywołanie, dodaje się przez `Manual`:
+
+% 2 1 0 1056c66933c574581897d78681852fc9
+
+% 0 1 0 0f1ec052ea13b93e1b5c99af51bd09ea
+
+% 0 1 0 0ec323a7a9a611a1100284514062d04f
+
+% 0 1 0 0e746d24dd517f321783c032175a9759
+
+% 1 1 0 0ac4bc5641250102006d8f3b36451ea2
+
+@ 0 2 0 18293475e83180b9195165a24921ac3f
++ W obrębie polecenia `explain` dołącza akapit lokalnej pomocy do sekcji bieżącego podpolecenia,
++ więc głęboko zagnieżdżone podpolecenie dokumentuje się tam, gdzie jest zdefiniowane.
+
+@ 0 1 0 0de1df58586eb526008a0dd7d52aad97
++ ### Instalowanie uzupełnień
+
+@ 0 4 0 1c20fc13d9945b2e117b0b39a211fdc5
++ Gotowa aplikacja jest dostarczana z ogólnym, identycznym skryptem uzupełniania dla każdej
++ powłoki: Bash, Zsh, Fish i PowerShell. Skrypt nie robi nic poza przekazaniem bieżącego wiersza
++ poleceń aplikacji w trybie uzupełnień. Wbudowane polecenie administracyjne zapisuje te skrypty
++ na miejsce:
+
+% 0 1 0 15a5f1f7e49cceab1ba03bc009fa86b5
+
+% 0 1 0 0a46bbdcefc1f03b1023426554ae0c6a
+
+% 1 1 0 0e70743821943e3d19e8a20a75de0478
+
+@ 0 2 0 143b9dfbcffc10b910e028f306c316a6
++ Po instalacji każda powłoka uzupełnia polecenie przez samą aplikację, więc nowe podpolecenia i
++ flagi nie wymagają zmian w żadnym skrypcie.
+
+@ 0 1 0 18606afbbea7f6f7173205d18de53495
++ ### Szybki start
+
+@ 0 6 0 19dc340b5f3976d016fc1d77e7880eec
++ Polecenie wywoływane do uzupełniania musi startować szybko, inaczej powłoka wydaje się
++ ociężała. Uruchomienie aplikacji jako [demona](daemons.md) usuwa koszt startu JVM z
++ każdego wywołania. Program pozostaje w pamięci, a każde polecenie, w tym każde żądanie
++ uzupełnień, jest przekazywane do działającego procesu. To samo ciało, które uruchamia
++ `application`, uruchamia `daemon`, więc aplikacja zyskuje szybki start dzięki zmianie sposobu
++ uruchamiania, a nie sposobu pisania.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 7 0 1d28549d9774ca0711d9ed86d53790f1
++ - [Demony](daemons.md) utrzymują aplikację w pamięci, dla szybkiego startu.
++ - [Środowisko](environment.md) odczytuje zmienne i właściwości, do których odwołują się
++   ustawienia.
++ - [Dekodowanie](decoding.md) odczytuje wartość flagi jako typ.
++ - [Terminal](terminal.md) nadaje styl wyjściu i interaktywnie odczytuje klawiaturę.
++ - [Pakowanie](packaging.md) buduje plik wykonywalny.
++ - [Wskaźniki](gauges.md), [LSP](lsp.md), [procesy](processes.md), [czas](time.md) i [UUID](uuid.md) opisują, co aplikacja wiersza poleceń pokazuje, uruchamia i parsuje.

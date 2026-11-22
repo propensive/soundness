@@ -1,0 +1,1973 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1d0d8ca941a31ee70408ad32cbc2dc15
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0214c8453750cfed17af47e6d60e67d9
++ info   YAML parsowany do wartości typowanych i wyświetlany z powrotem: dokumenty, ścieżki, kodeki i literały `y"…"`
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0128a72293a0d31703cb49c464d77029
++     _Ypsiloid_ obsługuje YAML tak, jak Soundness obsługuje JSON: tekst parsuje się do
++     wartości `Yaml`, `Yaml` dekoduje się do klasy case (lub dowolnego typu z `Decodable in
++     Yaml`) i koduje się z niej z powrotem, a interpolator `y"…"` zapisuje YAML, który jest
++     sprawdzany podczas kompilacji kodu. Parser obejmuje język w takiej postaci, w jakiej
++     naprawdę się go używa – style blokowy i przepływowy, trzy rodzaje cytowania skalarów,
++     skalary blokowe z ich wskaźnikami obcinania, tagi, kotwice i aliasy, dyrektywy oraz
++     strumienie wielodokumentowe – a `Yaml` wyświetla się z powrotem przez `show` jako czysty
++     tekst w stylu blokowym, który można ponownie sparsować.
+
+@ 0 5 0 18eb69c022983355006b86281def88e9
++     Centralnym typem jest `Yaml`, dokument: niemutowalne drzewo (`Yaml.Ast`) oraz, gdy
++     dokument sparsowano z włączonym śledzeniem pozycji, indeks, z którego można odtworzyć
++     wiersz i kolumnę dowolnego węzła. Węzeł w dokumencie adresuje się przez `YamlPath` (z
++     tym samym escapowaniem RFC 6901 co JSON Pointer, zapisywany jako `#/a/b`); dzięki temu
++     błąd dekodowania mówi, _gdzie_ wystąpił, a `locate` znajduje pozycję węzła w źródle.
+
+% 2 1 0 10b088ef36c5bd93168e18f2f616e1b2
+
+% 3 1 0 12e7f0036e7d3fb41f07f4afb744d5e5
+
+% 4 1 0 05a392bbea2c8ddc0e73ca91cac5eddf
+
+% 0 1 0 11c5e85304224b291919158842bfcc37
+
+% 2 1 0 07369ca7273e357d12f70de4115af217
+
+% 0 1 0 12f48d4397330d0e1830511436b2f200
+
+% 0 1 0 1d2f5ba770af861417eadb0f93db5c41
+
+% 0 1 0 018df32a66755b81072501e976745a09
+
+% 1 1 0 1e289d3441566c0b0b0ffdecd97892d3
+
+@ 0 8 0 03451fdf9c3e4e750dc67e75aed5838e
++     Dekodowanie to ta sama derywacja, której używa każdy inny format (z wisteria, nad
++     `Decodable in Yaml` i `Encodable in Yaml`), więc rekord nie potrzebuje adnotacji: `@name`
++     zmienia nazwę pola lub wariantu w postaci przesyłanej, wyliczenie koduje się z polem
++     dyskryminatora nazwanym przez given `discriminables` w zasięgu, a pole `Optional` lub
++     `Option` odczytuje brakujący klucz lub `null` jako `Unset`/`None` według polityk, które
++     zmienia pakiet `optionalityOptions`. Przy strategii kumulującej (`validate`)
++     dekodowanie zbiera każdy błąd w dokumencie, każdy oznaczony `Yaml.Focus` – jego ścieżką
++     oraz, dla dokumentu śledzonego, jego pozycją – zamiast zatrzymywać się na pierwszym.
+
+@ 0 5 0 17c547bc817ecd3307371a524bf2b0e1
++     Rekord może też mieć _bezpośredni_ parser i drukarkę (`Yaml.Parsable` i
++     `Yaml.Printable`), które odczytują pola wprost ze sparsowanego drzewa i zapisują tekst
++     bez budowania drzewa: `derives Yaml.Direct` derywuje oba do obiektu towarzyszącego, a
++     `import codecs.direct` wybiera ścieżkę bezpośrednią dla każdego rekordu w zasięgu
++     (`codecs.derived` i `codecs.strict` to pozostałe tryby).
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     Biblioteka ma dwa zbiory źródeł:
+
+@ 0 6 0 030f6dd187537efb0bb9921d0311a5d6
++     - `ypsiloid.core` – `Yaml` i wszystko w nim, `YamlPath`, interpolatory `y"…"` i
++       `yp"…"` oraz pakiety wyboru `formatting`, `optionalityOptions`, `discriminables`,
++       `dynamicAccess` i `conversions`. Kompiluje się dla JVM, Scala.js i Scala Native.
++     - `ypsiloid.http` – givens `postables`, `servables` i `construables`, które pozwalają
++       przesłać `Yaml` jako ciało żądania lub odpowiedzi `application/yaml`.
+
+@ 0 7 0 0e51d3c6b3c40e3018400f84c3183729
++     Kilka givens to wybory, które trzeba importować z nazwy, bo `import soundness.*` nie
++     importuje givens: `formatting.blockYamlFormatting` włącza `show` i kodowanie HTTP,
++     `dynamicAccess.dynamicYaml` włącza dostęp `yaml.field` i aktualizacje
++     `yaml.field = value`, `discriminables.yamlByTypeDiscriminable` (lub `…ByKind…`) jest
++     potrzebny do kodowania lub dekodowania typu sumy, a `parsing.trackPositions` (z
++     zephyrine) włącza śledzenie pozycji. Wszystko jest eksportowane do modułu zbiorczego
++     `soundness`, gdzie pakiety wyboru łączą się z pakietami innych formatów.
+
+% 0 1 0 085bf2d0276d003f0660c91fe77fcc54
+
+% 0 1 0 12c3866784f7c7c417874414782cf51c
+
+% 0 1 0 1c8e84636d7bb7281d87a4ca699f575d
+
+% 0 1 0 042a927df2aa0d9b048d0ace9ac048e4
+
+% 0 1 0 0e265cd0376176bb1cb8c20c86a5204e
+
+@ 0 1 0 044f4bb1f2be96e11bf61b1a2aa131ed
++ entry .Yaml   dokument YAML: niemutowalne drzewo, dekodowane przez `as`, aktualizowane przez soczewki, wyświetlane przez `show`
+
+% 1 1 0 1f7d324046f346dd12b77385e4c612b8
+
+@ 0 5 0 1338d267587be13b1d906e1d217886f6
++       `Yaml` opakowuje sparsowane drzewo (`#root`, `Yaml.Ast`) oraz, gdy sparsowano go z
++       `parsing.trackPositions` w zasięgu, `#positionIndex`, z którego `locate(path)` znajduje
++       wiersz i kolumnę dowolnego węzła. Powstaje przez `text.read[Yaml]`, `data.read[Yaml]`,
++       literał `y"…"`, `value.in[Yaml]` lub `Yaml.make(field = …)`, a konsumuje go `#as`, które
++       dekoduje go jako dowolny typ z `Decodable in Yaml`.
+
+% 2 1 0 1cd4cbfa57671f1511601280a48b779c
+
+% 3 1 0 0e2c6ad7f613f45b153823017bd740d2
+
+% 4 1 0 1ad245904164345812ca45acba6eb126
+
+% 5 1 0 113a9ada597ed58a032d1a8a95f83c33
+
+% 1 1 0 18e48abd5d11822406275060e2c54a4e
+
+% 2 1 0 09621152b30aaf7c1f9157e21c2240a5
+
+% 0 1 0 130a7ec3f188c872100f2979b6c6548c
+
+% 0 1 0 131b807994bfd51811b98fa4b2adf1a2
+
+% 0 1 0 05784f9e48fdd56e07082a1bffe5a351
+
+% 0 1 0 0846fa03d2a4d886085d80c38b3098fd
+
+% 0 1 0 084ddf1c12b224b113af4f95f3c9c707
+
+% 0 1 0 08207439c1c43e141c75f1faf502a3a1
+
+% 1 1 0 0207864e7070362d0dece850b3d66535
+
+@ 0 3 0 10ab3fb3c6a8fca70ece824a386a3a18
++       Dokument jest wartością: każda aktualizacja (`#update`, `#updateDynamic`, `lens`)
++       buduje nowy `Yaml` i zostawia stary bez zmian. Dwa dokumenty są równe, gdy ich drzewa
++       są strukturalnie równe (`Yaml.Ast.deepEquals`), niezależnie od pozycji.
+
+@ 0 5 0 0e4f116c4d3bbab014d87392905b7eb6
++       Odczyt: `.decodable` i `.aggregable` parsują tekst, `.aggregableData` parsuje bajty bez
++       transkodowania, a `.aggregableAll` odczytuje strumień rozdzielony przez `---` jako
++       `List[Yaml]`. Źródło strumieniowe jest parsowane w miarę napływania, nigdy wcześniej
++       sklejane, więc duży plik parsuje się bez trzymania go w całości. Parsowanie zgłasza
++       `Parse.Error`, którego problem to `Yaml.Ast.Issue`, mówiący, co było źle i gdzie.
+
+@ 0 5 0 1d5529f08fbd18480bb9bb8ada9fc6b4
++       Dekodowanie: `#as` oraz kodeki prymitywne, kolekcyjne, `Option`/`Optional` i derywowane
++       zgłaszają `Yaml.Error` – `Reason.NotType(found, expected)` dla wartości o złym
++       kształcie, `Reason.Absent` dla brakującego pola – i śledzą `Yaml.Focus`, więc
++       strategia kumulująca zgłasza każdy błąd przy jego ścieżce. Skrót:
++       `text.read[Person in Yaml]` odczytuje i dekoduje w jednym kroku, a
++       `person.in[Text over Yaml]` koduje i wyświetla w jednym.
+
+@ 0 5 0 0d05d6c50cd38cc1010a61d5d51424f0
++       Wyświetlanie: `show` wymaga `Yaml.Formatting` w zasięgu (`formatting.blockYamlFormatting`,
++       jedynego) i emituje styl blokowy – wcięcie dwiema spacjami, `{}` i `[]` dla pustych
++       kolekcji, napis jako zwykły skalar tylko wtedy, gdy nie można go pomylić z liczbą,
++       wartością logiczną ani null, a w przeciwnym razie w podwójnym cudzysłowie – dobrany
++       tak, aby tekst parsował się ponownie do tego samego drzewa. `.emit` wyświetla po jednym
++       bloku, a `.streamable` czyni z `Yaml` `Stream[Text]`.
+
+@ 0 4 0 157573ea90f91a2c1bed74e53922464e
++       Dostęp dynamiczny (`#selectDynamic`, `#applyDynamic`, `#updateDynamic`, `#update` i
++       given `.lens`) jest uzależniony od `Yaml is Dynamical`, które
++       `dynamicAccess.dynamicYaml` nadaje zasięgowi, a `dynamically[Yaml]:` blokowi, aby
++       `doc.name` nigdy nie zostało przypadkiem wzięte za składową `Yaml`.
+
+@ 0 5 0 0b8dfdc8b2d07efd033580bf75a89fff
++       Kodeki rezerwowe, do których dociera każdy typ – `decodable`, `encodable`, `optional`,
++       `optionalEncodable`, `encodableOver` i `aggregableIn` – są dziedziczone z warstwy
++       priorytetu `Yaml2`, a punkty wejścia kodeków bezpośrednich (`aggregableParsed`,
++       `encodableOverPrinted` i dwa błędy `codecs.strict`) z `Yaml1`; są opisane przy tych
++       traitach.
+
+% 0 1 0 1f2cb2afea28e87f1e5592d38c60d312
+
+% 0 1 0 0b7a15c9748b21171f2074cd664c8c1d
+
+% 1 1 0 0b2c93c8349311d801ccf433bf8d3aa6
+
+% 0 1 0 13c52c996820ed0d1459221f10c2e969
+
+% 0 1 0 064d04157cc1492c0c4ced497604ed1e
+
+@ 0 17 0 052f4e94fc3d9bbe02f93d73a7db3ba7
++   entry #root   drzewo dokumentu, `Yaml.Ast`
++       Sparsowane drzewo, dla akcesorów w obiekcie towarzyszącym `Yaml.Ast` (`isObject`,
++       `objectKey`, `arrayElement`, `string`, …) i dla pomostów do innych formatów drzewiastych.
++       `Yaml.unseal` to ten sam węzeł, jako nazwany akt przebicia się przez abstrakcję.
++   entry #positionIndex   indeks pozycji zbudowany przez śledzone parsowanie albo `Unset`
++       Wypełniony tylko wtedy, gdy dokument sparsowano z `parsing.trackPositions` w zasięgu;
++       `Unset` dla parsowania bez śledzenia i dla każdego `Yaml` zbudowanego z wartości. To po
++       nim przechodzą `locate(path)` i `locateKey(path)` (rozszerzenia `Positionable` z
++       zephyrine, przez `.positionable`), aby znaleźć `Yaml.Ast.Position` węzła.
++   entry #as   dekoduje dokument jako dowolny typ z `Decodable in Yaml`
++       `doc.as[Person]` dekoduje przez `Person is Decodable in Yaml` w zasięgu – derywowane
++       dla klasy case lub wyliczenia albo jeden z givens obiektu towarzyszącego dla prymitywów,
++       `Text`, `List`, `Set`, `Map[Text, _]`, `Option` i `Optional`. Zgłasza `Yaml.Error` i
++       śledzi `Yaml.Focus`: przy `strategies.throwUnsafely` pierwszy błąd rzuca wyjątek; w
++       bloku `validate[Yaml.Focus]` każdy błąd jest kumulowany, a każdy fokus niesie ścieżkę
++       pola (`#/address/city`) oraz, dla dokumentu śledzonego, jego pozycję w źródle, którą
++       `#as` uzupełnia dla każdego zarejestrowanego fokusu przed zwróceniem wyniku.
+
+% 2 1 0 15015301203c1eec06cf06c75728c778
+
+% 3 1 0 0966984aa2158aa91b129e2fbc70eb0b
+
+% 4 1 0 05ca27befdc997ad1788fef807d83659
+
+% 0 1 0 0708fc4f50b5ca920d184bac07ff48d1
+
+% 0 1 0 1a2d0f72970e49d01ca3795f4ae9f3c1
+
+% 0 1 0 06fff591b2b92c8b168cc33d7ff098a4
+
+% 0 1 0 1c944975948c07eb0be2701fece91a6a
+
+% 1 1 0 1ab25955b9f1064c14b79b6f0b143ea0
+
+@ 0 6 0 0eb9f644e3d62a080272eaf3be6d3c00
++   entry #apply   `doc(index)` to element sekwencji; `doc(field)` to wartość mapowania lub brak
++       `doc(1)` to drugi element sekwencji, zgłaszający `Yaml.Error` z
++       `Reason.NotType(found, Sequence)`, gdy korzeń nie jest sekwencją. `doc(t"name")` to
++       wartość pod kluczem tekstowym albo nieobecny `Yaml` (taki, którego korzeń `isAbsent`),
++       gdy brak klucza lub korzeń nie jest mapowaniem; dekodowanie nieobecnego dokumentu jako
++       `Option` lub `Optional` daje `None`/`Unset`, a jako cokolwiek innego zgłasza
++       `Reason.Absent`.
+
+% 2 1 0 02e65292817fd45a0d774b1afd6c1721
+
+% 3 1 0 1d83e45764321d8804895c7bb59b0611
+
+% 4 1 0 1076452ed6d981d419ea1fd46e69dbc0
+
+% 0 1 0 07c761273c729c2e035958882bc45aa2
+
+% 0 1 0 0af26c38cd44da040100d7bd4e775b9b
+
+% 1 1 0 0254d975c6c4095f11bc80bf20d2e1b7
+
+@ 0 18 0 12001cb827a3f6a718f689ec79965f78
++   entry #selectDynamic   `doc.field`: wartość mapowania według nazwy, przy włączonym dostępie dynamicznym
++       `doc.name` rozwija się do `selectDynamic("name")` i jest `#apply` z kluczem tekstowym,
++       więc brakujący klucz daje nieobecny dokument, a nie błąd. Wymaga `Yaml is Dynamical`
++       w zasięgu: `import dynamicAccess.dynamicYaml` lub bloku `dynamically[Yaml]:`.
++   entry #applyDynamic   `doc.field(index)`: element pola o wartości sekwencji
++       `doc.items(1)` to `doc(t"items")(1)`: pole według nazwy, potem element według indeksu,
++       ze zgłoszeniem `Yaml.Error`, gdy pole nie jest sekwencją. Wymaga `Yaml is Dynamical`.
++   entry #update   `doc(index) = value`: nowy dokument z jednym zastąpionym elementem sekwencji
++       Koduje `value` przez jego `Encodable in Yaml` i zwraca kopię dokumentu z zastąpionym
++       elementem pod `index`; indeks poza końcem zostawia sekwencję bez zmian. Korzeń, który
++       nie jest sekwencją, zgłasza `Yaml.Error`. Wymaga `Yaml is Dynamical`.
++   entry #updateDynamic   `doc.field = value` dodaje lub zastępuje wpis mapowania; `= Unset` go usuwa
++       `doc.age = 31` rozwija się do `updateDynamic("age")(31)`: wartość jest kodowana przez
++       jej `Encodable in Yaml`, a wynikiem jest nowy dokument, w którym `age` zostaje
++       zastąpione, jeśli istnieje, a w przeciwnym razie dopisane. `doc.age = Unset` usuwa wpis
++       i nic nie robi dla klucza, którego nie ma. Korzeń, który nie jest mapowaniem, zgłasza
++       `Yaml.Error`. Wymaga `Yaml is Dynamical`.
+
+% 2 1 0 1a1419b4b02fcb8c0b23cd75170cf4bc
+
+% 3 1 0 0aa893ffae4205400d1be53437f3b2ce
+
+% 4 1 0 052aedb7f4d9272d13e2f1fee39e2cde
+
+% 5 1 0 135fd59a43b3ecf404659f82867f564c
+
+% 0 1 0 05b423974bb715c51847ca7349fe613c
+
+% 0 1 0 17dee4b2bf04f7df0b860854726758a0
+
+% 0 1 0 0307b8544db4e72506e1dc18519dd40f
+
+% 1 1 0 1ec50315ae200b5516725702bc760eab
+
+@ 0 8 0 180f456d6ee9e5da0a7052e0e7c6d0d5
++   entry .apply   opakowuje drzewo jako dokument: `Yaml(ast)` lub `Yaml(ast, positions)`
++       Buduje `Yaml` nad węzłem, opcjonalnie z `Yaml.PositionIndex` śledzonego parsowania.
++       Parametr ma typ `Any`, bo `object Yaml` rozszerza `Dynamic` (dla `.make`), co wyłącza
++       proxy konstruktora; wartość musi naprawdę być `Yaml.Ast`. `.ast` to postać typowana dla
++       węzła, który już jest pod ręką.
++   entry .ast   opakowuje węzeł `Yaml.Ast` jako dokument
++       `Yaml.ast(node)` to `Yaml(node)` ze sprawdzonym typem węzła: w ten sposób optyka i
++       kodeki odbudowują dokument po zastąpieniu części jego drzewa.
+
+% 2 1 0 11ecc29c0aed7aac157415062c853869
+
+% 3 1 0 0ad8d3327b5c0758037b26b72b1a9389
+
+% 0 1 0 19a4c74648573bbf02fa8ae66012f864
+
+% 1 1 0 080135330bb01d230ad23ba64c470976
+
+@ 0 4 0 17ef56c6a4d975460dec8c7018496fe2
++   entry .unseal   drzewo wewnątrz dokumentu, jako nazwany akt przełamania abstrakcji
++       `Yaml.unseal(doc)` to `doc.root`: `Yaml.Ast`, do dopasowania do wzorca z
++       ekstraktorami `Yaml.Ast.Sequence`, `Mapping`, `Str`, … lub do porównania dwóch
++       parsowań przez `Yaml.Ast.deepEquals`.
+
+% 2 1 0 1239461f34d35bf000bf7f6bd8ae57fe
+
+% 3 1 0 13991127ed72613b162710bb3b943f82
+
+% 4 1 0 002212948307c1c21718b40b2da0dbbb
+
+% 0 1 0 0258461e74211c1c19e7021345efd19f
+
+% 0 1 0 089b53a8636118b302f3ffa43a055baa
+
+% 0 1 0 190dc2e37be2c8810919d531930a90af
+
+% 1 1 0 136d2eb7a34391ee1f94f941e0fa7fea
+
+@ 0 5 0 1765ab25193035520e2cff4bab092c56
++   entry .applyDynamicNamed   `Yaml.make(field = yaml, …)`: dokument-mapowanie z argumentów nazwanych
++       `Yaml.make(name = t"Kate".in[Yaml], age = 30.in[Yaml])` rozwija się do
++       `applyDynamicNamed("make")(("name", …), ("age", …))` i buduje mapowanie z wpisami w
++       kolejności zapisu; każdy argument już jest `Yaml`, więc dla zagnieżdżonych mapowań
++       zagnieżdża się wywołania `Yaml.make`. Jedyną akceptowaną nazwą metody jest `make`.
+
+% 2 1 0 003871fc4905414f0eec05e7cac9778d
+
+% 3 1 0 13bc82a8dd0fb66b15ea6c16947f8289
+
+% 4 1 0 075947571faa8dba1b543ae125671723
+
+% 2 1 0 06d49e6868c23b361b2e008133c9245e
+
+% 0 1 0 19843350e1e735c70bb99714ae082d0f
+
+% 1 1 0 0c794dda82f6f3bd0829f4489819c0cb
+
+@ 0 10 0 078cccef73611a881084415c4ca49725
++   entry .showable   wyświetla dokument jako tekst YAML w stylu blokowym, przy danym `Yaml.Formatting`
++       `Showable` w obiekcie towarzyszącym `Yaml`, więc `doc.show` działa wszędzie tam, gdzie
++       w zasięgu jest `Yaml.Formatting` (`import formatting.blockYamlFormatting`). Wynik to
++       zachowawczy styl blokowy, dobrany tak, aby parsował się ponownie do strukturalnie
++       identycznego drzewa: liczby całkowite jako same cyfry, liczby dziesiętne przez
++       `Double.toString` lub `.inf`, `-.inf`, `.nan`, wartości logiczne jako `true`/`false`,
++       null jako `null`, napis jako zwykły skalar tylko wtedy, gdy jest ciągiem liter, cyfr,
++       `_` i `-` zaczynającym się od litery, który nie zapisuje wartości logicznej ani null, a
++       w przeciwnym razie w podwójnym cudzysłowie (z sekwencjami `\"`, `\\`, `\n`, `\r`, `\t` i
++       `\uXXXX`); mapowania i sekwencje to kolekcje blokowe z wcięciem dwóch spacji, a puste
++       to `{}` i `[]`. Tekst zawsze kończy się znakiem nowego wiersza.
+
+% 2 1 0 11e37f7c9553bdaf123befec2a19032f
+
+% 3 1 0 0a70fdb68c3c569d1526d31aaec1b2c5
+
+% 4 1 0 13a6ebd6bc66d1fa1e8f52027bff7b77
+
+% 5 1 0 1bede710b434a43d1a831b536d69c307
+
+% 0 1 0 06abb0e796672d971420d824ae360190
+
+% 0 1 0 05128144eefb843c00791e3e06024593
+
+% 0 1 0 05304d35f2d69e6501f62360dc399bec
+
+% 0 1 0 03b2ce708b11c5580705a2e49c65b36b
+
+% 0 1 0 03b2ce708b11c5590705a2e49c65b36c
+
+% 0 1 0 0bfc3b0e7ea5ea1b0c829df367b24a10
+
+% 1 1 0 025f36634efffd30095f97cf4f9c49e6
+
+@ 0 11 0 1a105a387a26d638181ea4c395888c7e
++   entry .inspectable   diagnostyczna postać dokumentu w jednym wierszu: `yaml"name: Percy\nage: 30\n"`
++       Nie wymaga `Formatting`, więc debugger lub nieudany test zawsze mogą pokazać dokument:
++       tekst w stylu blokowym ze znakami końca wiersza zamienionymi na sekwencje ucieczki,
++       opakowany jako `yaml"…"`, aby dokument dało się odróżnić od `Text` zawierającego te same
++       znaki.
++   entry .emit   wyświetla dokument po jednym bloku, pobieranym jako iterator lub przekazywanym do funkcji
++       `Yaml.emit(doc)` to `Iterator[Text]`, który przy każdym pobraniu wyświetla kolejne wpisy
++       drzewa i zatrzymuje się między dwoma wpisami, gdy blok osiągnie pojemność `Buffering` w
++       zasięgu (jeden długi skalar może ją przekroczyć). `Yaml.emit(doc, deliver)` to postać
++       wypychająca: wyświetla w wątku wywołującego i przekazuje każdy blok do `deliver`, gdy
++       się zapełni – to kształt do zapisu do pliku, gniazda lub `OutputStream`. Sklejone bloki
++       to dokładnie to, co wyświetla `show`. Obie postacie wymagają `Yaml.Formatting` i
++       `Buffering`.
+
+% 2 1 0 0f04110ac9ca92370adccf1ab61043e3
+
+% 3 1 0 0d2e4f8458139bda1910133d976e665e
+
+% 4 1 0 1bd2da3c4cae3ee012ff93d7830af7e9
+
+% 5 1 0 13ddb60a6c089faa07a3407fb3f0fe81
+
+% 0 1 0 1cfe894df37d86cc0ad108bef861a2fa
+
+% 0 1 0 086e4e85c767a6e71bc0243e66c0789a
+
+% 1 1 0 0447032ca98b05500e7f0a1279667eb1
+
+@ 0 27 0 0ad22f65cfeaca4c17b9888f7306695c
++   entry .streamable   dokument jako `Stream[Text] over Credit`, wyświetlany w miarę pobierania
++       Zbudowany na `.emit`, więc porcje strumienia to bloki emitera; wymaga
++       `Yaml.Formatting` i `Buffering`. To pozwala zapisać `Yaml` do dowolnego tekstowego
++       ujścia, które przyjmuje strumień.
++   entry .Formatting   opcje, z którymi wyświetla się dokument: obecnie tylko styl blokowy
++       `Yaml.Formatting` (`zephyrine.Formatting`) musi być w zasięgu dla `show`,
++       `in[Text over Yaml]`, `.emit`, `.streamable`, `.abstractable` i givens HTTP. Styl
++       blokowy YAML jest ustalony i ograniczony wymogiem obiegu w obie strony, więc trait nie
++       ma jeszcze żadnych opcji; `formatting.blockYamlFormatting` to jedyna instancja,
++       importowana z nazwy.
++   entry .decodable   `Yaml is Decodable in Text`: `text.as[Yaml]` parsuje cały tekst jako dokument
++       Jako `Yaml is Decodable in Text` jest to `text.as[Yaml]`: parsuje cały tekst przez
++       `Yaml.Parser`, przy `PositionTracking` w zasięgu (pozycje są zapisywane tylko przy
++       zaimportowanym `parsing.trackPositions`), i zgłasza `Parse.Error` dla niepoprawnego
++       wejścia.
++   entry .aggregable   parsuje strumień tekstu jako jeden dokument, w miarę napływania
++       `Yaml is Aggregable by Text` stojące za `text.read[Yaml]` i `stream.read[Yaml]`:
++       `Chain[Text]` jest sklejany i parsowany w całości, ale `Stream[Text] over Credit` jest
++       transkodowany do UTF-8 i podawany kursorowi parsera w miarę pobierania, więc duży
++       dokument nigdy nie jest trzymany w całości, a znacznik `---` rozdzielony między dwie
++       porcje nadal jest granicą. Wymaga `Tactic[Parse.Error]` i respektuje
++       `PositionTracking` w zasięgu.
++   entry .aggregableData   parsuje strumień bajtów jako jeden dokument, bez transkodowania
++       `Yaml is Aggregable by Data` stojące za `data.read[Yaml]` oraz odczytem pliku lub ciała
++       HTTP: parser działa na bajtach UTF-8, więc bajty są odczytywane tak, jak przychodzą, a
++       wiodący znacznik kolejności bajtów jest pochłaniany. Wymaga `Tactic[Parse.Error]`.
++   entry .aggregableAll   odczytuje strumień rozdzielony przez `---` jako `List[Yaml]`, po jednym na dokument
++       `text.read[List[Yaml]]`: każdy dokument strumienia YAML, po kolei. Dyrektywy (`%YAML`,
++       `%TAG`) dotyczą tylko dokumentu, który po nich następuje, jak mówi specyfikacja, a
++       pusty tekst daje pustą listę. Respektuje `PositionTracking` tak jak `.aggregable`.
+
+% 2 1 0 18d1959754dc1dcf13b664e748065c0c
+
+% 3 1 0 088b6555b5714cb01aeea86d5690194a
+
+% 4 1 0 11af3eec742ca04d1e6bf443587a3e87
+
+% 0 1 0 1134632dfcc627970d5873de1f24332a
+
+% 1 1 0 1e30276c1245d76e1cd77a414c361898
+
+@ 0 52 0 1192b65d8c07621805d4743c2b399414
++   entry .aggregableDerived   `import codecs.derived`: ścieżka przez drzewo nawet tam, gdzie w zasięgu jest parser bezpośredni
++       Ma pierwszeństwo przed `.aggregableParsed` tylko przy `Codecs.Derived` i kieruje odczyt
++       przez `.aggregableIn`.
++   entry .aggregableStrict   `import codecs.strict`: parser bezpośredni albo błąd kompilacji
++       Przy `Codecs.Strict` typ z `Yaml.Parsable` odczytuje się bezpośrednio przez to, a typ
++       bez niego trafia na `.aggregableStrictFailure`, który zgłasza _has no direct codec_,
++       nazywając typ w miejscu użycia, zamiast wracać do drzewa.
++   entry .encodableOverDerived   `import codecs.derived`: ścieżka przez drzewo nawet tam, gdzie w zasięgu jest drukarka bezpośrednia
++   entry .encodableOverStrict   `import codecs.strict`: drukarka bezpośrednia albo błąd kompilacji
++       Tworzy parę z `.encodableOverStrictFailure`, który przerywa kompilację dla typu bez
++       `Yaml.Printable` – na przykład wyliczenia, które nie ma refleksji produktu, a więc ani
++       derywowanej drukarki.
++   entry .encodableOverData   `person.in[Data over Yaml]`: tekst YAML jako bajty w `Codepage` w zasięgu
++       Koduje przez `in[Text over Yaml]`, a następnie `Codepage` (taką jak
++       `codepages.utf8Codepage`); `data.read[Person in Yaml]` odczytuje to z powrotem.
++   entry .abstractable   dokument jako ciało HTTP, z typem zawartości `application/yaml`
++       `Yaml is Abstractable across HttpStreams to HttpStreams.Content`: ciało to wyświetlony
++       tekst w `Codepage` w zasięgu, z typem zawartości `application/yaml;
++       charset=<encoding>`. Wymaga `Yaml.Formatting`; givens `postables` i `servables` z
++       `ypsiloid.http` to instancje telekinesis zbudowane z tego samego wyświetlania.
++   entry .instantiable   odczytuje ciało żądania lub odpowiedzi HTTP z powrotem jako dokument
++       `Yaml is Instantiable across HttpRequests from Text`: tekst ciała jest parsowany jak
++       `text.read[Yaml]`, ze zgłoszeniem `Parse.Error`, przy `PositionTracking` w zasięgu.
++   entry .yaml   `Yaml is Decodable in Yaml`: `doc.as[Yaml]` to sam dokument
++       Dekoder tożsamościowy, więc pole typu `Yaml` w klasie case zachowuje tę część drzewa
++       niezdekodowaną, do późniejszego zbadania lub zdekodowania.
++   entry .yamlEncodable   `Yaml is Encodable in Yaml`: dokument koduje się jako on sam
++       Koder tożsamościowy, odpowiednik `.yaml`: pole typu `Yaml` jest wstawiane do mapowania
++       bez zmian, a `Yaml.make` przyjmuje przez niego swoje argumenty.
++   entry .int   `Int is Decodable in Yaml`: skalar całkowity lub dziesiętny, obcięty do `Int`
++       Liczba całkowita YAML (`42`, `0x2A`, `0o17`) lub dziesiętna (obcięta) odczytuje się
++       jako `Int`; każdy inny węzeł rejestruje `Yaml.Error` z `Reason.NotType(found, Integer)`
++       – lub `Reason.Absent` dla brakującego pola – i kontynuuje z `0`, aby sąsiednie pola
++       mogły w bloku `validate` kumulować własne błędy. Przy `throwUnsafely` pierwszy błąd
++       rzuca wyjątek.
++   entry .long   `Long is Decodable in Yaml`: skalar całkowity lub dziesiętny jako `Long`
++       Jak `.int`. Liczba całkowita poza zakresem `Long` jest trzymana w drzewie jako `Bcd` i
++       tutaj obcinana; dla pełnej precyzji odczytuje się ją jako `Yaml.Ast#bcd` przez
++       `Yaml.unseal`.
++   entry .double   `Double is Decodable in Yaml`: skalar dziesiętny lub całkowity jako `Double`
++       `.inf`, `-.inf` i `.nan` odczytują się jako wartości IEEE. Węzeł o złym kształcie
++       rejestruje `Reason.NotType(found, Decimal)` i kontynuuje z `0.0`.
++   entry .float   `Float is Decodable in Yaml`: skalar dziesiętny lub całkowity jako `Float`
++   entry .boolean   `Boolean is Decodable in Yaml`: skalar logiczny
++       Tylko `true`/`false` (w dowolnej z pisowni YAML) rozwiązują się jako wartości logiczne;
++       `"true"` w cudzysłowie to napis i rejestruje `Reason.NotType(Str, Bool)`.
++   entry .text   `Text is Decodable in Yaml`: skalar napisowy
++       Skalar w cudzysłowie, skalar blokowy, zwykły skalar, który nie rozwiązuje się jako
++       liczba, wartość logiczna ani null, lub dowolny skalar z tagiem `!!str`. Liczba nie jest
++       przekształcana: `42` rejestruje `Reason.NotType(Integer, Str)`; dla tekstu pisze się
++       `!!str 42` lub `"42"`.
++   entry .string   `String is Decodable in Yaml`: skalar napisowy, jako `String` Javy
++   entry .unit   `Unit is Decodable in Yaml`: skalar null
++       `null`, `~`, pusta wartość lub cokolwiek z tagiem `!!null`; każdy inny węzeł rejestruje
+
+% 0 1 0 0f368cde3bc4b6d9053f804d16f2abf1
+
+@ 0 18 0 1aa754b092b735ba0c235f0d2153d101
++   entry .memory   `Memory is Decodable in Yaml`: liczba bajtów ze skalara całkowitego
++       Odczytuje węzeł jako `Long` i robi z niego `Memory` (liczbę bajtów z rudiments).
++   entry .listDecodable   `List[T] is Decodable in Yaml` dla dowolnego elementu z dekoderem
++       Odczytuje sekwencję, ustawiając fokus na każdym elemencie według jego liczebnika
++       porządkowego, więc błąd elementu jest zgłaszany przy `#/items/2`. Węzeł, który nie jest
++       sekwencją, rejestruje `Reason.NotType(found, Sequence)`. `List` to własna
++       (nieprzezroczysta) lista Soundness, więc jest to given odrębny od `.iterable`, który
++       obejmuje kolekcje biblioteki standardowej.
++   entry .setDecodable   `Set[T] is Decodable in Yaml`: sekwencja odczytana do `Set`
++   entry .seriesDecodable   `Sequence[T] is Decodable in Yaml`: sekwencja odczytana do `Sequence`
++   entry .iterable   każde `Iterable` biblioteki standardowej z `Factory` jest dekodowalne z sekwencji
++       Ogólny given dla typów `scala.collection` (`Vector`, `scala.List`, …) budowanych przez
++       ich `Factory`; `.listDecodable`, `.setDecodable` i `.seriesDecodable` to jego instancje
++       dla własnych kolekcji Soundness.
++   entry .map   `Map[Text, T] is Decodable in Yaml`: mapowanie odczytane z kluczami jako tekst
++       Każdy klucz musi być skalarem: napis jest brany bez zmian, klucz liczbowy lub logiczny
++       jest wyświetlany jako tekst, a klucz `null` staje się `t"null"`; klucz będący kolekcją
++       przerywa dekodowanie z `Reason.NotType(found, Str)`. Węzeł, który nie jest
++       mapowaniem, rejestruje `Reason.NotType(found, Mapping)` i kontynuuje z pustą mapą.
+
+% 2 1 0 187dd25b5bffbf5e03054c437db9f063
+
+% 3 1 0 07129a6f3c13100412378b1989c3a29d
+
+% 4 1 0 0419986cbdd77ebf011d08c981586a22
+
+% 0 1 0 0b50139662f54c161324b6b6448037cd
+
+% 1 1 0 109fe04cf50bbb9e1d9628856966d65a
+
+@ 0 34 0 19b3de8f579b5e0314ba5b937ed53138
++   entry .option   `Option[T] is Decodable in Yaml`, według polityk `optionalityOptions`
++       Brakujący klucz odczytuje się jako `None`, chyba że w zasięgu jest `strictYamlAbsence`
++       (wtedy `Yaml.Error(Absent)`); `null` YAML odczytuje się jako `None`, chyba że w zasięgu
++       jest `strictYamlNulls` (wtedy widzi go dekoder wewnętrzny i zawodzi dla wszystkiego
++       oprócz `Unit`); a wartość odrzucona przez dekoder wewnętrzny jest błędem, chyba że w
++       zasięgu jest `lenientYamlFaults` (wtedy `None`). Trzy polityki to `Decodable.Absence`,
++       `Nullity` i `Fault` `in Yaml`, z domyślnymi w distillate: tolerancyjną dla braku,
++       tolerancyjną dla null i ścisłą dla błędów.
++   entry .optionEncodable   `Option[T] is Encodable in Yaml`: `None` koduje się jako brak
++   entry .intEncodable   `Int is Encodable in Yaml`: skalar całkowity
++   entry .longEncodable   `Long is Encodable in Yaml`: skalar całkowity
++   entry .integralEncodable   każdy typ `Integral` koduje się jako skalar całkowity, przez `toLong`
++   entry .doubleEncodable   `Double is Encodable in Yaml`: skalar dziesiętny, z `.inf` i `.nan` zapisanymi tak jak w YAML
++   entry .floatEncodable   `Float is Encodable in Yaml`: skalar dziesiętny
++   entry .booleanEncodable   `Boolean is Encodable in Yaml`: `true` lub `false`
++   entry .textEncodable   `Text is Encodable in Yaml`: skalar napisowy, w cudzysłowie, gdy wymaga tego wyświetlanie
++       Drzewo trzyma tekst bez zmian; `show` decyduje, czy może on być zwykłym skalarem, czy
++       musi być w podwójnym cudzysłowie, więc `t"42"` przechodzi obieg jako napis `"42"`, a
++       nie liczba.
++   entry .stringEncodable   `String is Encodable in Yaml`: skalar napisowy
++   entry .unitEncodable   `Unit is Encodable in Yaml`: skalar `null`
++   entry .listEncodable   `List[T] is Encodable in Yaml`: sekwencja kodowań elementów
++   entry .setAliasEncodable   `Set[T] is Encodable in Yaml`: sekwencja, w kolejności iteracji zbioru
++   entry .seriesAliasEncodable   `Sequence[T] is Encodable in Yaml`: sekwencja
++   entry .iterableEncodable   każde `Iterable` biblioteki standardowej koduje się jako sekwencja
++   entry .mapEncodable   `Map[K, V] is Encodable in Yaml` dla dowolnego klucza z `Encodable in Text`
++       Klucze są wyświetlane jako tekst przez ich `Encodable in Text` i stają się skalarami
++       napisowymi; wartości kodują się przez swoje `Encodable in Yaml`. Wpisy zachowują
++       kolejność iteracji mapy.
++   entry .discriminatedUnion   `Discriminable in Yaml` oparte na polu mapowania o dowolnej nazwie
++       `Yaml.discriminatedUnion[Shape](t"kind")` określa, jak wariant typu sumy jest nazwany
++       w postaci przesyłanej: `discriminate` odczytuje napis pod `kind`, `rewrite` przy
++       kodowaniu dodaje lub zastępuje pole nazwą wariantu, a `variant` usuwa je, zanim
++       uruchomi się własny dekoder wariantu. Pakiet `discriminables` zawiera dwa częste
++       wybory, `type` i `kind`, jako givens do zaimportowania; dla każdej innej nazwy pola
++       wywołuje się tę metodę i wiąże wynik jako lokalny given.
+
+% 2 1 0 184b182b6e258f470a12ec0275a8ca8b
+
+% 3 1 0 1906a9ce531cbcdf1c80af49da1fdf3e
+
+% 4 1 0 0726afee39ff4dad07dbe8defcfb5568
+
+% 2 1 0 000bab8c145243510224c7e43c8eee95
+
+% 3 1 0 0adf95eb4b3275f704c512680b2081b4
+
+% 4 1 0 05950d897e2bf8500339ccf8c6482f02
+
+% 0 1 0 09c7f57a2d63104e0e71ddd2e8b09669
+
+% 0 1 0 1cf46dd188d3407405f2945b937a4c79
+
+% 1 1 0 05b23888426263c604a474b03fc2b8f6
+
+@ 0 6 0 050715945b4436040b5ab697ea44fe98
++   entry .positionable   `doc.locate(path)` i `doc.locateKey(path)`: pozycja węzła w źródle
++       `Yaml is Positionable by YamlPath to Yaml.Ast.Position` stojące za rozszerzeniami
++       `locate` z zephyrine. `locate` daje pozycję wartości pod `YamlPath`, a `locateKey`
++       pozycję klucza mapowania, który ją zawiera; oba dają `Unset` dla dokumentu
++       nieśledzonego (sparsowanego bez `parsing.trackPositions`) i dla ścieżki, która się nie
++       rozwiązuje, a `locateKey` także dla korzenia. Wiersze i kolumny są liczone od 1.
+
+% 2 1 0 1ec83dfd65b0fd570309cac6abd00636
+
+% 3 1 0 10fa4a71e1fe878606cb2719890710ef
+
+% 4 1 0 0f7cff86875458d61ad32b239f4e724f
+
+% 0 1 0 1cdc57769a14db061e8c86d90120bb16
+
+% 0 1 0 05f98e0bb0f14cdb1f237a9160991405
+
+% 0 1 0 110f751c8ce651890d616782501a6f05
+
+% 0 1 0 06f1c5193a09e6a51141c3d4dcf735a7
+
+% 1 1 0 08b5cb5221a1c36117c95831f9408c29
+
+@ 0 13 0 04cd522bbd9896e61e7229e5bcd67641
++   entry .interpolator   given stojący za `y"…"`: literał YAML parsowany podczas kompilacji kodu
++       `Yaml is Interpolable`, z wynikiem `Yaml`. Co przyjmuje interpolator, opisuje
++       `ypsiloid.y`.
++   entry .extrapolator   given stojący za `case y"…" =>`: literał YAML jako wzorzec
++       `Yaml is Extrapolable`: wzorzec `y"…"` dopasowuje dokument strukturalnie, a luka `$x`
++       w nim wiąże węzeł na tej pozycji jako `Yaml`. Zob. `ypsiloid.y`.
++   entry .lens   `"field" is Lens from Yaml onto Yaml`: wpis mapowania jako soczewka, według jego etykiety
++       Given, dzięki któremu działa `doc.lens(_.inner.n = value)`: każda etykieta w ścieżce to
++       soczewka, której getterem jest `#selectDynamic`, a setter zastępuje (lub wstawia) wpis,
++       więc zagnieżdżona aktualizacja odbudowuje mapowanie na każdym poziomie i zwraca nowy
++       dokument. Jest uzależniony od `Yaml is Dynamical` (`dynamicAccess.dynamicYaml`) i
++       wymaga `Tactic[Yaml.Error]`. Przypisywana wartość musi być `Yaml`: koduje się ją przez
++       `in[Yaml]` lub importuje `conversions.encodableToYaml`, aby przypisywać bezpośrednio
++       dowolną kodowalną wartość.
+
+% 2 1 0 139b4c5b6637a64013f26f9ad3681e2f
+
+% 3 1 0 164b6a1b84ceef510ac185ac0deb76e9
+
+% 4 1 0 07168ea46f30457403dabc7ae8ef348a
+
+% 5 1 0 0a06584cbca6af3c06868f47c8a3c950
+
+% 6 1 0 146481280e455f151b1582830ad1d712
+
+% 0 1 0 0d5ccecbbce63eb0005561572df9b843
+
+% 0 1 0 0c2b61eb37bed9ac0a5a4a2c5432f55e
+
+% 0 1 0 01d011873b3e634a0c2b9f2b3564f811
+
+% 0 1 0 13a77b3b4aa789d10db3ef0594ed6ea0
+
+% 0 1 0 0bbf50a6e7fdf0f51ba990be532b2b73
+
+% 1 1 0 1f5e5f42300658d61616cc7ab2d45669
+
+@ 0 10 0 06193cb5ec8a98880f716ef094fcf36b
++   entry .ordinalOptical   `Ordinal is Optical from Yaml onto Yaml`: jeden element sekwencji, według pozycji
++       Sprawia, że `doc.lens(_.items(Prim) = value)` aktualizuje pierwszy element pola o
++       wartości sekwencji; liczebnik porządkowy poza końcem lub węzeł, który nie jest
++       sekwencją, zostawia dokument bez zmian.
++   entry .eachOptical   `Each is Optical from Yaml onto Yaml`: każdy element sekwencji
++       `doc.lens(_.items(Each) = 0)` stosuje aktualizację do każdego elementu sekwencji i nic
++       nie robi dla niczego, co sekwencją nie jest.
++   entry .filterOptical   `Filter[Yaml] is Optical from Yaml onto Yaml`: elementy wybrane przez predykat
++       `doc.lens(_.items(Filter[Yaml](_.as[Int] > 15)) = 0)` aktualizuje tylko elementy, dla
++       których predykat jest spełniony, a pozostałe zostawia bez zmian.
+
+% 2 1 0 162138cc8e17f8041181792bd3251fc1
+
+% 3 1 0 0ceb13c6bb9c86310da4a8c589b8efc2
+
+% 4 1 0 126871836a9aaa121bdb1a18d903c8cc
+
+% 5 1 0 14dcf9053d61302d04a9381b93b951d6
+
+% 6 1 0 099105aa768d57011e50c8f070d15bbd
+
+% 0 1 0 0d7cc3952bcaf225025db1ccf7e3fea3
+
+% 0 1 0 1f27403983e982870fd9c93d1919cd56
+
+% 1 1 0 15698275119db0230c5f537f11e85f0b
+
+@ 0 27 0 1dd524c08b840b580a5cf1bdc8941e11
++   entry .primitive   rodzaj `Yaml.Primitive` węzła: to, co błąd zgłasza jako _found_
++       `Yaml.primitive(ast)` klasyfikuje węzeł jako `Null`, `Bool`, `Integer`, `Decimal`,
++       `Str`, `Sequence` lub `Mapping`; liczba wysokiej precyzji `Bcd` jest zgłaszana jako
++       `Decimal`, a węzeł nieobecny jako `Null`.
++   entry .YamlString   reprezentacja JVM skalara napisowego w drzewie: `String`
++   entry .YamlInteger   reprezentacja skalara całkowitego: `Long` albo `Bcd` poza zakresem `Long`
++   entry .YamlDecimal   reprezentacja skalara dziesiętnego: `Double` albo `Bcd` powyżej 17 cyfr znaczących
++   entry .YamlBoolean   reprezentacja skalara logicznego: `Boolean`
++   entry .YamlNull   wartownik dla `null` YAML w drzewie, odrębny od węzła nieobecnego
++       Obiekt i jego typ singletonowy. `null` YAML i wartość nieobecna (brakujące pole,
++       reprezentowane jako `Unset`) muszą pozostać odrębne – pole `Optional` traktuje je
++       według różnych polityk – więc null to ten wartownik, a nie `null` JVM.
++       `Yaml.Ast.Null` to węzeł, a `isNull` test.
++   entry .YamlSequence   reprezentacja sekwencji: zamrożona `Array[Any]` o nieparzystej długości
++       Sekwencje i mapowania dzielą jedną reprezentację tablicową i rozróżnia się je
++       parzystością długości: tablica sekwencji ma zawsze nieparzystą długość, dopełnianą
++       wartownikiem, gdy liczba elementów jest parzysta. `Yaml.Ast.sequenceLength` daje
++       rzeczywistą liczbę.
++   entry .YamlMapping   reprezentacja mapowania: zamrożona `Array[Any]` z naprzemiennymi kluczami i wartościami
++       Zawsze o parzystej długości, `[k0, v0, k1, v1, …]`, w kolejności dokumentu. Klucze są
++       węzłami i tylko klucze napisowe są adresowalne przez `Yaml#apply`, `YamlPath` i
++       derywowane dekodery.
++   entry .PositionIndex   płaski indeks pozycji w źródle, który śledzone parsowanie zapisuje obok drzewa
++       Nieprzezroczysta zamrożona `Array[Int]` deskryptorów pozycji, po jednym na węzeł,
++       ułożona tak, że wycinek na dowolnej granicy deskryptora sam jest poprawnym indeksem.
++       Jest budowana tylko wtedy, gdy w zasięgu jest `parsing.trackPositions`, przenoszona
++       jako `Yaml#positionIndex` i przechodzona przez `.positionable`, aby odpowiedzieć na
++       `locate` i `locateKey`; nie ma publicznego sposobu, by odczytać ją bezpośrednio.
++   entry .Focus   miejsce wystąpienia błędu dekodowania: jego `YamlPath` i pozycja, jeśli dokument był śledzony
+
+% 1 1 0 1bd46c3a967d0b9015549a78035fdced
+
+@ 0 4 0 14ffc6efe7012f370362650ea02f7bc0
++         Fokus, który śledzi `Yaml#as`, aby strategia kumulująca mogła zgłosić każdy błąd w
++         jego miejscu: `pointer` to ścieżka do pola (`#/address/city`, od korzenia), a
++         `position` to jego wiersz i kolumna, uzupełniane przez `#withPosition` dla każdego
++         zarejestrowanego fokusu, gdy dokument ma `positionIndex`, a w przeciwnym razie
++         `Unset`.
+
+% 2 1 0 127151345d3d955812bb9ae005bd3d4d
+
+% 3 1 0 06f27788d97735bf0a55b09649774a2d
+
+% 4 1 0 0d613a8f3fd16b1e0d41447f509ad8b3
+
+% 0 1 0 0c5e7da21545287f0200475c5c26fe72
+
+% 0 1 0 079224546a6c87c70db325ed7be30c2f
+
+% 0 1 0 0b45670b200971d0029006fbbde5e807
+
+% 0 1 0 0c76e6da84827bd1029b9d73ed16aeb7
+
+% 0 1 0 056661f221c689760705c0a04124abb1
+
+% 0 1 0 1bec820d92b8ed9c061b1cb2911abb6c
+
+% 0 1 0 1ccb69a10bd7dcf614719dbef4d0dc7c
+
+% 0 1 0 1b1514e39c4cd0891d2117d2f1181f36
+
+% 0 1 0 0d61d5cc56fb87080a7c852d06fed419
+
+% 1 1 0 133e3cddd4242a5b1596e27a71a3583f
+
+@ 0 6 0 1fc06564ac1ca5e813ad6f083dd904ea
++     entry #pointer   ścieżka węzła z błędem, od korzenia
++     entry #position   pozycja węzła w źródle albo `Unset` dla dokumentu nieśledzonego
++     entry #withPosition   kopia z `position` ustaloną względem indeksu dokumentu
++         `focus.withPosition(doc)` to `focus` z `position` ustawioną na `doc.locate(pointer)`;
++         `Yaml#as` stosuje to do każdego zarejestrowanego fokusu, więc handler rzadko musi to
++         robić.
++   entry .Ast   węzeł drzewa: skalar bez opakowania, sekwencja lub mapowanie, badane przez rozszerzenia
+
+% 1 1 0 07fc6f7d4e57c0e6013f7b0aeed820a7
+
+@ 0 8 0 1b168ada4ce061320470e283be4da4a8
++         `Yaml.Ast` to typ nieprzezroczysty nad reprezentacjami JVM wartości YAML – skalarem
++         `String`, `Long`, `Double`, `Boolean` lub `Bcd`, wartownikiem `YamlNull`, zamrożoną
++         tablicą dla sekwencji lub mapowania i `Unset` dla wartości nieobecnej – więc skalar
++         jest przechowywany bez opakowania. Obiekt towarzyszący to całe API: konstruktory
++         (`Str`, `Integer`, `Sequence`, …), które służą też jako ekstraktory w dopasowaniu do
++         wzorca, predykaty (`isString`, `isObject`, …) i akcesory (`string`, `arrayElement`,
++         `objectIndexOf`, …) jako metody rozszerzające, `deepEquals` do porównań
++         strukturalnych oraz typy `Position` i `Issue`, które zgłasza parsowanie.
+
+% 2 1 0 12f91a919dbdb998182858bddfb54c89
+
+% 3 1 0 125472d507e8d3c9187ec5c8673e7214
+
+% 4 1 0 134abc7d4f817db6113fc2c0023126c3
+
+% 0 1 0 1676aada3da7f5ee14a6d61366e7771a
+
+% 0 1 0 17afc517ae3eb63e19b508574616c426
+
+% 0 1 0 021e82497336572e12f0a89aa9021240
+
+% 0 1 0 0f07c1f573ab1aa61d9a8ef3a68eb3ff
+
+% 0 1 0 06af713f955fe5500df007cd82b916cc
+
+% 0 1 0 0decc8ae50b06f401c98cf70ff4a8e6a
+
+% 0 1 0 1a12fc32ecb0f8e114b58c6cfe378f0f
+
+% 0 1 0 01eaf633481877090f646482e7e75c3d
+
+% 1 1 0 0b5896b535cb06a61623af9e0896adc2
+
+@ 0 4 0 1aec19c4def2d80d02fbb44a4947cfc8
++         Dokument (`Yaml`) opakowuje węzeł; większość kodu pracuje przez dokument i jego
++         kodeki, a do węzła sięga tylko po to, by dopasować strukturę lub odczytać liczbę
++         wysokiej precyzji jako `Bcd`. Obiekt towarzyszący jest też `Format` parsowania YAML,
++         nazwanym `YAML`, którego błędy `Parse.Error` niosą `Yaml.Ast.Issue` i
++         `Yaml.Ast.Position`.
+
+% 0 1 0 0b3060986179f3db1a547ce673d9103b
+
+% 0 1 0 1f3cf91c242f7b15103b43655ce639d6
+
+% 0 1 0 07878f1aaec1bf3b1c743feef0aaa515
+
+@ 0 74 0 1a4495f701a10fbd09b2a1aa42ffe122
++     entry .name   nazwa formatu, `YAML`, tak jak podają ją komunikaty `Parse.Error`
++     entry .showable   wyświetla węzeł jako tekst YAML w stylu blokowym, przy danym `Yaml.Formatting`
++         Ten sam emiter co `showable` dla `Yaml`, na samym węźle.
++     entry .inspectable   diagnostyczna postać węzła w jednym wierszu, z przyrostkiem `ᵃˢᵗ`
++         Tak jak przy badaniu dokumentu, ze znakami końca wiersza zamienionymi na sekwencje
++         ucieczki, plus indeks górny `ᵃˢᵗ`, aby sam węzeł dało się odróżnić od `Yaml`, który by
++         go opakowywał.
++     entry .apply   opakowuje dowolną wartość reprezentacji jako węzeł
++         `Yaml.Ast(value)` dla `Long`, `Double`, `Bcd`, `Boolean`, `String`, zamrożonej
++         `Array[Any]`, `YamlNull` lub `Unset`; typowane konstruktory `.Str`, `.Integer`, … są
++         czytelniejsze, gdy rodzaj jest znany.
++     entry .Null   węzeł `null`
++     entry .Bool   `Yaml.Ast.Bool(true)` tworzy węzeł logiczny; `case Yaml.Ast.Bool(b)` go dopasowuje
++     entry .Integer   `Yaml.Ast.Integer(42L)` tworzy węzeł całkowity; `case Yaml.Ast.Integer(n)` go dopasowuje
++         Ekstraktor dopasowuje tylko liczbę całkowitą w zakresie `Long`; liczba całkowita
++         trzymana jako `Bcd` pasuje do `.BcdValue`.
++     entry .Decimal   `Yaml.Ast.Decimal(3.14)` tworzy węzeł dziesiętny; `case Yaml.Ast.Decimal(d)` go dopasowuje
++     entry .BcdValue   węzeł liczby wysokiej precyzji, trzymanej jako `Bcd`; dopasowuje taki węzeł we wzorcu
++         Liczba całkowita poza zakresem `Long` lub dziesiętna z więcej niż 17 cyframi
++         znaczącymi parsuje się do `Bcd`, a nie jest zaokrąglana; to konstruuje lub wydobywa
++         taki węzeł.
++     entry .Str   `Yaml.Ast.Str(t"x")` tworzy węzeł napisowy; `case Yaml.Ast.Str(text)` go dopasowuje
++     entry .Sequence   `Yaml.Ast.Sequence(items)` tworzy sekwencję z zamrożonej tablicy węzłów; dopasowuje sekwencję
++         Ekstraktor zwraca elementy jako zamrożoną `Array[Yaml.Ast]`, bez wartownika
++         dopełnienia, który może nieść reprezentacja; zarówno konstruktor, jak i ekstraktor
++         kopiują, gdy liczba elementów jest parzysta.
++     entry .Mapping   `Yaml.Ast.Mapping(entries)` tworzy mapowanie z par klucz–wartość; dopasowuje mapowanie
++         Konstruktor przyjmuje zamrożoną `Array[(Yaml.Ast, Yaml.Ast)]` i ją spłaszcza;
++         ekstraktor zwraca pary w kolejności dokumentu.
++     entry .sequenceLength   liczba elementów tablicy sekwencji, bez wartownika dopełnienia
++         Niskopoziomowy akcesor na reprezentacji (`Array[Any]`); `arrayLength` to to samo na
++         węźle.
++     entry .mappingSize   liczba wpisów tablicy mapowania: połowa jej długości
++     entry .foreachItem   stosuje ciało inline do każdego elementu tablicy sekwencji
++         Pętla na gorącej ścieżce dla dekoderów kolekcji, bez iteratora i bez boxingu indeksu.
++     entry .foreachEntry   stosuje ciało inline do każdego klucza i wartości tablicy mapowania
++     entry .deepEquals   równość strukturalna dwóch węzłów, przechodząca przez sekwencje i mapowania
++         Dwa parsowania tego samego tekstu to różne instancje tablic; ta metoda porównuje je
++         według zawartości i jej używa `Yaml#equals`. Liczby porównuje się według rodzaju i
++         wartości, więc `Integer(1)` i `Decimal(1.0)` nie są równe.
++     entry .deepHash   skrót zgodny z `.deepEquals`, używany przez `Yaml#hashCode`
++     entry .isAbsent   czy węzeł jest wartownikiem nieobecności: brakującym polem lub wynikiem `Yaml#apply` dla brakującego klucza
++     entry .isNull   czy węzeł to `null` YAML
++     entry .isLong   czy węzeł jest liczbą całkowitą w zakresie `Long`
++     entry .isDouble   czy węzeł jest liczbą dziesiętną trzymaną jako `Double`
++     entry .isBcd   czy węzeł jest liczbą wysokiej precyzji trzymaną jako `Bcd`
++     entry .isNumber   czy węzeł jest liczbą całkowitą lub dziesiętną dowolnej precyzji
++     entry .isString   czy węzeł jest skalarem napisowym
++     entry .isBoolean   czy węzeł jest skalarem logicznym
++     entry .isObject   czy węzeł jest mapowaniem
++     entry .isArray   czy węzeł jest sekwencją
++     entry .arrayLength   liczba elementów węzła sekwencji; nieokreślona dla każdego innego węzła
++         Akcesory `arrayLength`, `arrayElement`, `objectSize`, `objectKey` i `objectValue` dla
++         szybkości nie sprawdzają typu: najpierw należy sprawdzić `isArray` lub `isObject` albo
++         użyć sprawdzanych `array`, `string`, `long`, …, które rejestrują `Yaml.Error`.
++     entry .arrayElement   element pod indeksem węzła sekwencji, bez sprawdzania
++     entry .objectSize   liczba wpisów węzła mapowania, bez sprawdzania
++     entry .objectKey   klucz pod indeksem pary węzła mapowania, jako `String`, bez sprawdzania
++         `String` klucza; klucz nienapisowy nie przejdzie rzutowania, więc dla mapowania, które
++         może mieć klucze skalarne innych rodzajów, używa się `objectIndexOf` lub dopasowania do
++         `.Mapping`.
++     entry .objectValue   wartość pod indeksem pary węzła mapowania, bez sprawdzania
++     entry .objectIndexOf   indeks pary klucza napisowego w mapowaniu albo `-1`
++         Liniowe przeszukanie dopasowujące tylko klucze napisowe; `-1` dla brakującego klucza i
++         dla węzła, który nie jest mapowaniem. Indeks zasila `objectKey` i `objectValue`.
++     entry .array   elementy węzła sekwencji albo zarejestrowany `Yaml.Error` i pusta tablica
++         Wymaga `Tactic[Yaml.Error]`: węzeł, który nie jest sekwencją, rejestruje
++         `Reason.NotType(found, Sequence)` (lub `Reason.Absent`) i kontynuuje bez elementów.
++     entry .double   węzeł jako `Double`, z liczby dziesiętnej, całkowitej lub `Bcd`; w przeciwnym razie zarejestrowany `Yaml.Error`
++     entry .long   węzeł jako `Long`, z liczby całkowitej, dziesiętnej lub `Bcd`; w przeciwnym razie zarejestrowany `Yaml.Error`
++     entry .bcd   węzeł jako `Bcd`, z pełną precyzją, z dowolnej liczby; w przeciwnym razie zarejestrowany `Yaml.Error`
++         Sposób na odczytanie bez strat liczby zbyt dużej dla `Long` lub zbyt precyzyjnej dla
++         `Double`: `Yaml.unseal(doc).bcd.toBigDecimal`.
++     entry .string   węzeł jako `Text`, ze skalara napisowego; w przeciwnym razie zarejestrowany `Yaml.Error`
++     entry .boolean   węzeł jako `Boolean`; w przeciwnym razie zarejestrowany `Yaml.Error`
++     entry .primitive   rodzaj `Yaml.Primitive` węzła
++     entry .Position   pozycja w źródle: wiersz i kolumna (liczone od 1), z przesunięciem i długością węzła
+
+% 1 1 0 16517a3fc7b9680f1bf5ce50bec124b5
+
+@ 0 10 0 134bbee2ed4b6b921189bb78c1998691
++           `Format.Position` parsowania YAML, niesiona przez każdy `Parse.Error` i zwracana
++           przez `locate`. `line` i `column` są liczone od 1, tak jak pokazuje je edytor;
++           `span` to zakres liczony od 0, który podświetla diagnostyka. `describe` wyświetla
++           `line 2, column 10`.
++       entry #line   wiersz, liczony od 1
++       entry #column   kolumna, liczona od 1
++       entry #offset   przesunięcie znakowe od początku źródła, jeśli jest znane
++       entry #length   długość tekstu źródłowego węzła, jeśli jest znana
++       entry #describe   pozycja jako tekst: `line 2, column 10`
++       entry #span   pozycja jako `Span` liczony od 0, o długości `length` znaków
++     entry .Issue   co parsowanie może uznać za błędne, każde z komunikatem
+
+% 1 1 0 152f15f51715856518b9bde543a2978b
+
+@ 0 18 0 1154a15b7fc10b59190d86ad4ed57828
++           `Format.Issue` parsowania YAML: `issue` błędu `Parse.Error` to jeden z nich, a
++           `describe` podaje jego komunikat. Przypadki obejmują strukturę dokumentu (brak `---`
++           między dokumentami, treść po `...`, dyrektywę w złym miejscu lub niepoprawną,
++           powtórzone `%YAML` lub bez wersji `major.minor`, `%TAG` bez uchwytu i prefiksu),
++           właściwości węzła (dwie kotwice lub dwa tagi na węźle, kotwicę na aliasie,
++           niezakończony tag dosłowny, `UndefinedTagHandle(handle)`, `UnknownAlias(name)`,
++           zarezerwowany wskaźnik na początku węzła), strukturę blokową (tabulację we wcięciu,
++           mapowanie zaczynające się w wierszu `---`, sekwencję w wierszu klucza, klucz bez
++           jego `:`, wielowierszowy klucz niejawny, łańcuchową wartość w jednym wierszu, zbyt
++           małe wcięcie kontynuacji), skalary w cudzysłowie (niezakończony pojedynczy lub
++           podwójny cudzysłów, niezakończoną, niepoprawną lub uciętą sekwencję ucieczki, złą
++           cyfrę szesnastkową, treść po cudzysłowie zamykającym, znacznik dokumentu wewnątrz
++           wielowierszowego skalara), kolekcje przepływowe (niezakończone `[` lub `{`, pusty
++           wpis, oczekiwany `,` lub znak zamykający, klucz i jego `:` w różnych wierszach, zbyt
++           małe wcięcie treści, znacznik dokumentu w kontekście przepływowym), skalary blokowe
++           (niepoprawny nagłówek, wskaźnik wcięcia spoza 1–9 lub powtórzony, powtórzony
++           wskaźnik obcinania, wiodące puste wiersze ze zbyt dużym wcięciem, komentarz w
++           nagłówku bez poprzedzającego białego znaku) oraz komentarz niepoprzedzony białym
++           znakiem.
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 045412dfde465a9c01b6523a99947589
+
+% 0 1 0 0d86740dc839cbc21d228ae5723842cd
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 2 0 129c79489b6abbff15c7d5ddcd138abb
++       entry #describe   komunikat problemu, taki jak _the alias *name does not refer to a known anchor_
++     entry .Byte   stałe bajtów ASCII, według których rozgałęzia się parser
+
+% 0 1 0 1dbd995455f497aa1e6b704af81ae91c
+
+% 1 1 0 0cfae82a36adc9830abbf88f939f135b
+
+@ 0 3 0 0a4d454ddd19342e0e989ad501b29fa7
++           Nie do bezpośredniego użytku: nazwane stałe (`Colon`, `Minus`, `OpenBracket`, …) dla
++           wartości bajtów, z którymi porównują tablice rozgałęzień parsera.
++   entry .Error   zgłaszany, gdy dokumentu nie można zdekodować jako żądanego typu
+
+% 1 1 0 1083fe3b0cf7f553168ac5d0aeb681e2
+
+@ 0 9 0 0515ca665a6c951e01968543635ba6f1
++         Błąd `↯/s.134.1`: _could not access the YAML value because `reason`_. Zgłaszany przez
++         `Yaml#as`, `Yaml#apply`, aktualizacje i każdy `Decodable in Yaml`, gdy węzeł ma zły
++         kształt lub brakuje wymaganego pola. Przyczyna jest jedną z dwóch:
++         `Reason.NotType(found, expected)` – _the YAML value had type `found` instead of
++         `expected`_, oba będące `Yaml.Primitive` – oraz `Reason.Absent` – _the YAML value was
++         not present_. Prymitywne dekodery rejestrują błąd i kontynuują z wartownikiem, więc
++         przy strategii kumulującej rekord z trzema złymi polami zgłasza trzy błędy, każdy z
++         fokusem na swoim polu; konstrukcja warunkowa nigdy nie uruchamia konstruktora rekordu
++         na wartościach wartowniczych.
+
+@ 0 2 0 052feaaa0124c1a716e8494568b5faf8
++         Niepowodzenie parsowania nie jest `Yaml.Error`: niepoprawny tekst zgłasza `Parse.Error`
++         z zephyrine, z `Yaml.Ast.Issue` i `Yaml.Ast.Position`.
+
+% 0 1 0 0109a0417f4887e2035fb6c53fa01b33
+
+% 0 1 0 009656fc58dc334e0f89f24549e288e7
+
+@ 0 2 0 037e92a72eb8b1b21f1cbf1d14a712e6
++     entry #reason   dlaczego wartości nie dało się odczytać: `NotType(found, expected)` lub `Absent`
++     entry .Reason   dwie przyczyny: węzeł złego rodzaju albo brakująca wartość
+
+% 1 1 0 03e277bae24edb6e1f350eef62208f9e
+
+@ 0 4 0 14fafa0e5a363931012745c47488a9bd
++           `NotType(found: Yaml.Primitive, expected: Yaml.Primitive)` (numer 1) to węzeł złego
++           rodzaju, na przykład napis tam, gdzie należała się liczba całkowita; `Absent` (numer
++           2) to pole, którego mapowanie nie ma, albo `null` lub brakująca wartość przy ścisłej
++           polityce opcjonalności. Obie są `Clarification`, więc numer błędu to `31.1` lub
+
+% 0 1 0 0c7700da024c97471ff8574afe00a3e2
+
+@ 0 2 0 18896bc32f059f250cb9de988fa9cd2f
++       entry .communicable   wyświetla przyczynę jako jej komunikat
++   entry .Primitive   siedem rodzajów węzłów, którymi błąd nazywa to, co znalazł i czego oczekiwał
+
+% 1 1 0 08ca8cca139f2a2a11d1c0f423738faf
+
+@ 0 5 0 1e0cc947306fdb140d914e2341183d21
++         `Null`, `Bool`, `Integer`, `Decimal`, `Str`, `Sequence` i `Mapping`.
++         `Yaml.primitive(node)` klasyfikuje węzeł; liczba `Bcd` to `Decimal`, a węzeł
++         nieobecny to `Null`.
++     entry .communicable   wyświetla nazwę rodzaju w komunikacie
++   entry .Direct   nośnik `derives` dla bezpośredniego parsera i drukarki rekordu
+
+% 1 1 0 009789d88eabde241dee1b50d096bd88
+
+@ 0 7 0 008f7e321d7228d21b7e8c3cf13d879c
++         `case class Config(…) derives Yaml.Direct` derywuje `Yaml.Parsable` i `Yaml.Printable`
++         dla `Config` jeden raz, do jego obiektu towarzyszącego, gdzie służą każdemu
++         `read[Config in Yaml]` i `in[Text over Yaml]` – z `import codecs.direct` lub bez
++         niego, bo ten import inaczej derywowałby je od nowa przy każdym użyciu, i przed nim,
++         bo instancja w obiekcie towarzyszącym ma pierwszeństwo przed importem. Klasa typów z
++         typem `Self` nie może sama wystąpić w klauzuli `derives`, dlatego istnieje ten
++         sparametryzowany nośnik; `.declared` w `Parsable` i `Printable` go rozpakowują.
+
+% 2 1 0 05cb1563abaadfaa15e202bac203291f
+
+% 3 1 0 116f853c75c6539b1a42b14d0ee85920
+
+% 4 1 0 184b3cd584ffeb78148ef3b3a77eaaa7
+
+% 0 1 0 14227f9931bcb39c051f8bb27a242664
+
+% 0 1 0 1549984e4ca98bd403d825711ccbe19d
+
+% 0 1 0 09cedd63fe9f39ca1488f87cb9cb5d76
+
+% 1 1 0 0e898c958af186c612e17f25fadd11aa
+
+@ 0 4 0 0c591c821103ad60175af6e3f76cc321
++     entry .derived   derywuje `Direct` dla produktu: jego parser i drukarkę, pole po polu
++     entry #parsable   bezpośredni parser rekordu
++     entry #printable   bezpośrednia drukarka rekordu
++   entry .Parsable   typ odczytywany wprost ze sparsowanego drzewa, bez budowania `Yaml` wokół każdego węzła
+
+% 1 1 0 0ef3e74adfc8042e0a301301531b1e68
+
+@ 0 10 0 1e7c4ce63990b77d19697fcdf2880f60
++         Włączana na żądanie powierzchnia bezpośredniego odczytu: typ z `Yaml.Parsable` jest
++         odczytywany przez `read[T in Yaml]` poprzez `.aggregableParsed`, a nie przez
++         `Decodable in Yaml`. Instancja pochodzi z `derives Yaml.Direct`, z
++         `Parsable.derived[T]` związanego jako given, z `import codecs.direct` (każdy produkt,
++         derywowany w miejscu użycia) lub z pomostów `fromField` i `fromDecodable`. `Parsable`
++         jest `Yaml.Field`, więc parser rekordu służy też jako parser pola wewnątrz innego
++         rekordu. Parser bezpośredni daje te same wyniki i te same błędy z fokusem co ścieżka
++         przez drzewo oraz respektuje `@name`, wartości domyślne i polityki
++         `optionalityOptions`.
++         Given `generated` jest dziedziczony z warstwy priorytetu `Parsable2` i tam opisany.
+
+% 0 1 0 14a1c4c16860b2260aebc2e25693a016
+
+% 1 1 0 18340ec162d509fc0d295b5dda850726
+
+% 1 1 0 1997a5954cd3841d067eef03b8e5f237
+
+@ 0 7 0 1832eb99da023202018c9e0179d61fc9
++     entry .derived   derywuje bezpośredni parser dla produktu z jego `ProductReflection`
++     entry .fromField   `Parsable` z `Yaml.Field`: powierzchnia włączana na żądanie z tej, która rozwiązuje się zawsze
++     entry .fromDecodable   `Parsable`, który dekoduje węzeł jako `Yaml` przez `Decodable in Yaml`
++         Pomost ze świata drzewa, w całości: dla typu, którego odczyt nie może być
++         bezpośredni, ale który musi spełniać `codecs.strict`.
++     entry .declared   parser typu, który `derives Yaml.Direct`, z `Direct` jego obiektu towarzyszącego
++   entry .Field   wartość odczytana z węzła drzewa, tak jak derywowany parser odczytuje każde pole
+
+% 1 1 0 061e54ce96924d3802ba1c9d1804c5ab
+
+@ 0 8 0 0ddb4164275674ca08295c030e5f63cd
++         Zawsze rozwiązujący się nadtyp `Yaml.Parsable`: każdy typ ma `Yaml.Field` – givens
++         obiektu towarzyszącego dla prymitywów, `Text`, `Unit`, `Option`, `Optional`, `List`,
++         `Set`, `Sequence`, `Map[Text, _]` i dowolnego `Iterable` biblioteki standardowej,
++         derywowany dla dowolnego produktu (`.product`) oraz pomost z dowolnego
++         `Decodable in Yaml` (`.decodable`) – więc derywowany parser może odczytać pole
++         dowolnego typu. `Field` odczytuje z `(reader, node)`, gdzie węzeł jest wartownikiem
++         nieobecności dla klucza, którego brak w mapowaniu.
++         Givens `product` i `decodable` są dziedziczone z warstw priorytetu `Field1` i
++         `Field2` i tam opisane.
+
+% 0 1 0 0d9faa42677074af08476f8e3bd1a3bb
+
+% 1 1 0 0c82b4dd7259d53604ad2f70523e8b2b
+
+@ 0 11 0 1f1b1eff0ac7d6231f1454250ab7ab9d
++     entry #Transport   format, z którego odczytuje się pole: `Yaml`
++     entry #Reader   czytnik, przez który pole jest odczytywane: `Yaml.Reader`
++     entry #parse   odczytuje wartość z węzła albo z węzła nieobecnego, gdy wywołane z samym czytnikiem
++     entry .parseField   odczytuje jedno pole przez jego `Field`, z czytnika niesionego jako `AnyRef`
++         Punkt wywołania na obrzeżu dla kodu derywowanego, który nie może trzymać czytnika o
++         typie zdolności w parametrze funkcji.
++     entry .readerOf   czytnik, z jego nośnika `AnyRef`
++     entry .lookup   wartość pod kluczem napisowym w węźle mapowania albo `null`
++         `null` także dla węzła, który nie jest mapowaniem. Dopasowywane są tylko klucze
++         napisowe, jak przy wyszukiwaniu w dekoderze drzewa.
++     entry .int   `Int is Yaml.Field`: węzeł całkowity lub dziesiętny
+
+% 0 1 0 09c3e518abc980dd1cf6eb5754cee75b
+
+% 0 1 0 1ecfd89eab23d9ac1cbe27d293f4dc43
+
+% 0 1 0 136f9d666b32f8fa1361ac4b9a437fa9
+
+% 0 1 0 02364c9b9de7248f0c05ff23d9a80027
+
+@ 0 1 0 07b844636b6d8c51011453b7304cb985
++     entry .text   `Text is Yaml.Field`: węzeł napisowy
+
+% 0 1 0 1a8fec41bfa5c82f1854d66aefb18451
+
+@ 0 12 0 1d5fc1c2015181a2055b8971222ac550
++     entry .unit   `Unit is Yaml.Field`: węzeł null
++     entry .optional   `Optional[T] is Yaml.Field`, według polityk `optionalityOptions`
++         Jak `Yaml.optional` dekodera drzewa: brak i `null` odczytują się jako `Unset`, chyba
++         że w zasięgu jest `strictYamlAbsence` lub `strictYamlNulls`, a odrzucona wartość jest
++         błędem, chyba że w zasięgu jest `lenientYamlFaults`.
++     entry .option   `Option[T] is Yaml.Field`, według tych samych polityk, dające `None`
++     entry .iterable   dowolne `Iterable` biblioteki standardowej z `Factory`, z węzła sekwencji, z fokusem na każdym elemencie według liczebnika porządkowego
++     entry .list   `List[T] is Yaml.Field`: węzeł sekwencji
++     entry .set   `Set[T] is Yaml.Field`: węzeł sekwencji
++     entry .series   `Sequence[T] is Yaml.Field`: węzeł sekwencji
++     entry .map   `Map[Text, T] is Yaml.Field`: węzeł mapowania z kluczami napisowymi
++   entry .Reader   kontekst, w którym czyta parser bezpośredni: taktyka i fokusy odczytu
+
+% 1 1 0 02582c3dce9e1db6183ed09fa70118e9
+
+@ 0 15 0 03ac89965a128a0d0059f9b82c9c291c
++         `Yaml.Parsable` odczytuje swoje węzły przez `Reader`, który trzyma `Tactic[Yaml.Error]`
++         i `Foci[Yaml.Focus]` odczytu, więc instancje nie wymagają konstruowania, a ten sam
++         parser służy każdemu odczytowi. Jego metody skalarne rejestrują przez taktykę błąd
++         złego rodzaju lub braku i kontynuują z wartownikiem, tak jak dekodery drzewa, więc
++         sąsiednie pola kumulują własne błędy. Tworzy go tylko `.aggregableParsed`; ręcznie
++         napisany `Parsable` go otrzymuje.
++     entry #int   węzeł całkowity lub dziesiętny jako `Int` albo zarejestrowany błąd i `0`
++     entry #long   węzeł całkowity lub dziesiętny jako `Long` albo zarejestrowany błąd i `0`
++     entry #double   węzeł dziesiętny lub całkowity jako `Double` albo zarejestrowany błąd i `0.0`
++     entry #float   węzeł dziesiętny lub całkowity jako `Float` albo zarejestrowany błąd i `0.0f`
++     entry #boolean   węzeł logiczny albo zarejestrowany błąd i `false`
++     entry #string   węzeł napisowy jako `String` albo zarejestrowany błąd i `""`
++     entry #unit   sprawdza, czy węzeł to `null`, a w przeciwnym razie rejestruje błąd
++     entry #shape   rejestruje węzeł złego kształtu – skalar tam, gdzie należała się sekwencja lub mapowanie – i kontynuuje
++   entry .Printable   typ zapisywany wprost do tekstu YAML z jego pól, bez budowania drzewa
+
+% 1 1 0 0c3134bbcf41336a0911e47aa75a42eb
+
+@ 0 8 0 0d2fe23ca3e7f6ef129728e49eec9954
++         Włączana na żądanie powierzchnia bezpośredniego zapisu: typ z `Yaml.Printable` jest
++         zapisywany przez `in[Text over Yaml]` poprzez `.encodableOverPrinted` oraz przez
++         `Printable.print` i `Printable.emit`, a nie przez `Encodable in Yaml` i `show`.
++         Instancja pochodzi z `derives Yaml.Direct`, z `Printable.derived[T]`, z
++         `import codecs.direct` lub z pomostów `fromWritable` i `fromEncodable`. Tekst jest
++         dokładnie tym, co `show` wyświetla dla drzewa wartości.
++         Given `generated` jest dziedziczony z warstwy priorytetu `Printable2` i tam opisany.
+
+% 0 1 0 0aed4b9c9c3d5e150620104efac7f396
+
+% 1 1 0 16ede631f73c075703ad81af65df57dd
+
+% 1 1 0 0641919829278e3e17b3f0ef9498a8bc
+
+@ 0 5 0 11adc020b90c7b6314f66aa6918bd4b3
++     entry .derived   derywuje bezpośrednią drukarkę dla produktu z jego `ProductReflection`
++     entry .fromWritable   `Printable` z `Yaml.Writable`
++     entry .fromEncodable   `Printable`, który koduje wartość do drzewa i zapisuje je w miejscu
++     entry .declared   drukarka typu, który `derives Yaml.Direct`, z `Direct` jego obiektu towarzyszącego
++     entry .print   cały tekst YAML wartości, przez jej `Printable`
+
+% 1 1 0 126d1845504fe2400da4ff9323f5cb68
+
+% 2 1 0 0c7bc8fe78286e70020f1c4a1cb4cca9
+
+% 0 1 0 0e3ea85a8a7d33b90596b0f230e7ff82
+
+% 0 1 0 082aa163bac3d4221e7ddc601aa143d9
+
+% 1 1 0 061735f34cb0755c05f361ffb8e321aa
+
+@ 0 4 0 169c319a7e8c08900543372c8adb2c44
++     entry .emit   zapisuje tekst wartości blokami o pojemności `Buffering`, przekazując każdy do funkcji
++         Postać wypychająca dla dużej wartości: każdy ukończony wiersz jest przekazywany do
++         `deliver`, gdy tekst osiągnie pojemność, więc tekst całej wartości nigdy nie jest
++         budowany.
++   entry .Writable   wartość zapisywana jako wartość mapowania, element sekwencji lub dokument, tak jak derywowana drukarka zapisuje każde pole
+
+% 1 1 0 1b0f65fba968df581291bb24f6b621b0
+
+@ 0 8 0 1e5574a77f6b90e01bfd226ff1e85541
++         Zawsze rozwiązujący się nadtyp `Yaml.Printable`: każdy typ ma `Yaml.Writable` –
++         givens obiektu towarzyszącego dla prymitywów, `Text`, `Unit`, `Option`, `Optional`,
++         `List`, `Set`, `Sequence`, `Map` i dowolnego `Iterable` biblioteki standardowej,
++         derywowany dla dowolnego produktu (`.product`) oraz pomost z dowolnego
++         `Encodable in Yaml` (`.encodable`). `Writable` zapisuje do `Yaml.Out` jako wartość
++         należną po znaczniku `key:` lub `-` i przez `#absent` mówi, czy należy go całkiem
++         pominąć w mapowaniu.
++         Givens `product` i `encodable` są dziedziczone z warstw priorytetu `Writable1` i
++         `Writable2` i tam opisane.
+
+% 0 1 0 0e18938cdda29ce00a3267e3d20c4cfe
+
+% 1 1 0 0b7b2e17c59ddda80c9e891ae8209019
+
+@ 0 4 0 02328be6ca2a56481fc25c6baf1e99ac
++     entry #absent   czy wartość jest pomijana w mapowaniu: pole `Unset` lub `None`
++     entry #write   zapisuje wartość do `Yaml.Out`, jako wartość należną po znaczniku lub jako dokument
++     entry .writeField   zapisuje jedno pole przez jego `Writable`, do pisarza niesionego jako `AnyRef`
++     entry .keyOf   zapisuje znacznik `key:` do pisarza niesionego jako `AnyRef`
+
+% 0 1 0 11259f7017a6e8d00fdd22978ac02243
+
+% 0 1 0 1c70a13b9e21bd1d0e95f5172f23deec
+
+% 0 1 0 1c206b4ef28661e51d72df995aaa872c
+
+% 0 1 0 1731fbd2a0bd81890bb4f7873f12cc54
+
+% 0 1 0 0dba5689e8e07f060e27314a5c31cf58
+
+@ 0 1 0 1d874e236ecbb1ff08f6881dc72eb50a
++     entry .text   `Text is Yaml.Writable`: zwykły lub w podwójnym cudzysłowie, jak zdecyduje `show`
+
+% 0 1 0 11380873112f7d221979410356c691d3
+
+@ 0 9 0 0e2fd59c9cba919f0c4271a5078fab11
++     entry .unit   `Unit is Yaml.Writable`: zapisuje `null`
++     entry .optional   `Optional[T] is Yaml.Writable`: `Unset` oznacza brak i jest pomijane w mapowaniu
++     entry .option   `Option[T] is Yaml.Writable`: `None` oznacza brak
++     entry .iterable   dowolne `Iterable` biblioteki standardowej zapisuje się jako sekwencja blokowa, `[]`, gdy jest puste
++     entry .list   `List[T] is Yaml.Writable`: sekwencja blokowa
++     entry .set   `Set[T] is Yaml.Writable`: sekwencja blokowa
++     entry .series   `Sequence[T] is Yaml.Writable`: sekwencja blokowa
++     entry .map   `Map[K, V] is Yaml.Writable` dla dowolnego klucza z `Encodable in Text`: mapowanie blokowe, `{}`, gdy jest puste
++   entry .Out   pisarz, do którego zapisuje drukarka bezpośrednia: dotychczasowy tekst, wcięcie i znacznik czekający na swoją wartość
+
+% 1 1 0 0b0132399818568707550de650037b55
+
+@ 0 7 0 18f2cd9f1ab39fb10e1b912ee71cd453
++         Układa tekst dokładnie tak, jak emiter blokowy układa drzewo: `#key` lub `#item`
++         zapisuje znacznik `key:` lub `-` i zostawia po nim należną wartość; skalar zapisuje się
++         wtedy w tym samym wierszu, a niepusta kolekcja w wierszach poniżej, o jeden poziom
++         głębiej, między `#open` a `#close`. Każdy ukończony wiersz jest przekazywany dalej,
++         gdy tekst osiągnie limit pisarza, więc `Printable.emit` może zapisać wartość po jednym
++         bloku. Tworzą go tylko `Printable.print` i `Printable.emit`; ręcznie napisany
++         `Writable` go otrzymuje.
+
+% 2 1 0 0e9c179f18881ded0ec31413e50a86c6
+
+% 3 1 0 1c7f592ae4d507cc1b7e8c9fef2752f4
+
+% 0 1 0 0843c77b25fe644403e9a0df7c04b14f
+
+% 0 1 0 02ba4bca7ed46a51079322d4dc2410f5
+
+% 0 1 0 0e2d452d7fcfda58037b122277fa65e2
+
+% 0 1 0 09269c94ea3dcf0108769b249fbbafe1
+
+% 0 1 0 0324789defe21dfd128feb74e3a5dcf6
+
+% 0 1 0 1a8dc7550d7c1b7c0453af00c2b9c6b0
+
+% 0 1 0 0b3e0df251be8bce05fc10d52b4ecc1f
+
+% 0 1 0 0c1ecb925b292114168010d1c1fce27b
+
+% 1 1 0 167d11cbc293fdb8148c0f7773988e1a
+
+@ 0 13 0 03a636442b32cc27033a052eca91a2a5
++     entry #long   zapisuje liczbę całkowitą jako należną wartość
++     entry #double   zapisuje liczbę dziesiętną jako należną wartość, z `.inf`, `-.inf` i `.nan` zapisanymi tak jak w YAML
++     entry #boolean   zapisuje `true` lub `false` jako należną wartość
++     entry #string   zapisuje napis jako należną wartość, zwykły lub w podwójnym cudzysłowie, jak zdecyduje `show`
++     entry #nullValue   zapisuje `null` jako należną wartość
++     entry #empty   zapisuje `{}` lub `[]` jako należną wartość
++     entry #key   zapisuje znacznik `key:` wpisu mapowania, z bieżącym wcięciem
++     entry #item   zapisuje znacznik `-` elementu sekwencji
++     entry #open   otwiera niepustą kolekcję w wierszach poniżej jej znacznika, zwracając to, co przywraca `#close`
++         Na początku dokumentu nic nie jest należne, a wpisy zapisują się przy marginesie.
++     entry #close   przywraca wcięcie zwrócone przez `#open`
++     entry #tree   zapisuje `Yaml.Ast` jako należną wartość, tak jak zrobiłby to emiter blokowy
++   entry .FieldDerivation   derywacja `Yaml.Field` produktu, stojąca za parsowaniem bezpośrednim
+
+% 1 1 0 109300d85ad823d102be755760c94cae
+
+% 2 1 0 1737c542fa263b4710620f953a0dad98
+
+@ 0 4 0 000cdbf73abcdb49131e670f8d20cd8e
++         Nie do bezpośredniego użytku: docierają do niej `Yaml.Field.product` i
++         `Yaml.Parsable.derived`.
++     entry .conjunction   parser pól produktu: każde pole odczytane z węzłów mapowania
++     entry .FieldProductParser   `Field`, którym staje się derywowany parser, nad lambdą przyjmującą czytnik jako `AnyRef`
++   entry .WritableDerivation   derywacja `Yaml.Writable` produktu, stojąca za drukowaniem bezpośrednim
+
+% 1 1 0 0a56dfadd90b740e088051de8b93cbb1
+
+% 2 1 0 1d8cf9b56ade53050f13136ee02663d9
+
+@ 0 4 0 09c4a19102e0768e139259b1f4b3da98
++         Nie do bezpośredniego użytku: docierają do niej `Yaml.Writable.product` i
++         `Yaml.Printable.derived`.
++     entry .conjunction   pisarz pól produktu: każde obecne pole zapisane po jego znaczniku `key:`
++     entry .WritableProductPrinter   `Writable`, którym staje się derywowana drukarka, nad lambdą przyjmującą pisarza jako `AnyRef`
++   entry .Field1   warstwa priorytetu zawierająca `Yaml.Field.product`
+
+% 1 1 0 1c987de824baee6b1573690c96c8885d
+
+% 2 1 0 121fdcc180d8cbcf1f15b69307c39088
+
+@ 0 6 0 09292b45e0ef47031ed806fe76fd9552
++         Nie do bezpośredniego użytku: rodzic `object Yaml.Field`, aby derywowany parser
++         produktu miał niższą rangę niż własne givens obiektu towarzyszącego i wyższą niż
++         pomost `Decodable`.
++     entry #product   derywowany parser pól dla dowolnego produktu, z jego `ProductReflection`
++         Inline, w `Yaml.Field1`, więc zagnieżdżony rekord wewnątrz parsera bezpośredniego sam
++         jest odczytywany bezpośrednio, bez wywoływania dla niego kodeka.
++   entry .Field2   warstwa priorytetu zawierająca `Yaml.Field.decodable`
+
+% 1 1 0 0dbe4a55b1686ff512bce85bddde5d54
+
+% 2 1 0 17e4eda90d502c1f0f701fdbeef7da1f
+
+@ 0 6 0 152a69a5c40a343c11aafeea19be9f8f
++         Nie do bezpośredniego użytku: najniższy rodzic `object Yaml.Field`.
++     entry #decodable   pomost: dowolny `Decodable in Yaml` odczytuje węzeł opakowany jako `Yaml`
++         W `Yaml.Field2`, najniżej w priorytecie, więc typ bez własnego bezpośredniego parsera
++         pól – wyliczenie lub typ z ręcznie napisanym dekoderem – nadal daje się odczytać
++         wewnątrz parsera bezpośredniego, ścieżką przez drzewo dla tego jednego pola.
++   entry .Writable1   warstwa priorytetu zawierająca `Yaml.Writable.product`
+
+% 1 1 0 196216b99d2c0bc716b9d2d3e256edaa
+
+% 2 1 0 17d6575882ee87dc1e67823e76d055c4
+
+@ 0 3 0 1b7241ebd65e9b4f173009f8bb3c0414
++         Nie do bezpośredniego użytku: rodzic `object Yaml.Writable`.
++     entry #product   derywowany pisarz pól dla dowolnego produktu, w `Yaml.Writable1`
++   entry .Writable2   warstwa priorytetu zawierająca `Yaml.Writable.encodable`
+
+% 1 1 0 01c9c31ff8d666f30c24c7d61477ae5c
+
+% 2 1 0 0e771ea0ca88db600dca7701b1969e17
+
+@ 0 3 0 12ef5bd140c15eb615ca1a801896c333
++         Nie do bezpośredniego użytku: najniższy rodzic `object Yaml.Writable`.
++     entry #encodable   pomost: dowolny `Encodable in Yaml` zapisuje swoje drzewo w miejscu, w `Yaml.Writable2`
++   entry .Parsable2   warstwa priorytetu zawierająca `Yaml.Parsable.generated`
+
+% 1 1 0 0177ffee425a2caa078a719809d5f8a5
+
+% 2 1 0 19b6c02a506eefd20693e06879ed97ab
+
+@ 0 7 0 0ef4d36ca17f83580161dd32b3d4655d
++         Nie do bezpośredniego użytku: rodzic `object Yaml.Parsable`, aby `import
++         codecs.direct` miał niższą rangę niż instancja w obiekcie towarzyszącym lub
++         `derives Yaml.Direct`.
++     entry #generated   `import codecs.direct`: derywowany parser dla każdego produktu, w miejscu użycia
++         Rozwiązuje się tylko przy `Codecs.Direct` i tylko dla typu z `ProductReflection`;
++         wyliczenie zachowuje ścieżkę przez drzewo. Instancja w obiekcie towarzyszącym lub
++         `derives Yaml.Direct` ma przed nim pierwszeństwo.
++   entry .Printable2   warstwa priorytetu zawierająca `Yaml.Printable.generated`
+
+% 1 1 0 0edce4bcb896248e0a949548de54b074
+
+% 2 1 0 138c7b3f5c180e861c8b6bf3bd1dabdb
+
+@ 0 2 0 1cc486da5448a9ab0b80290d5753898b
++         Nie do bezpośredniego użytku: rodzic `object Yaml.Printable`.
++     entry #generated   `import codecs.direct`: derywowana drukarka dla każdego produktu, w miejscu użycia
+
+@ 0 1 0 176fcd50d53705ae0adae45fe355bfc3
++ entry .Yaml1   warstwa priorytetu `object Yaml` zawierająca punkty wejścia bezpośrednich kodeków
+
+% 1 1 0 0d3593f206208f8813ee72ce1180cdcf
+
+% 2 1 0 0db8cc48c90030d400d2524178e58a37
+
+@ 0 17 0 05bb7e528574a97603eb2bfbbffddc5d
++       Nie do bezpośredniego użytku: rodzic `object Yaml`, zawierający `aggregableParsed`,
++       `encodableOverPrinted` i dwa niepowodzenia `codecs.strict`, tak by typ z
++       bezpośrednim kodekiem wybierał go przed kodekami drzewa z `Yaml2`.
++   entry #aggregableParsed   `text.read[Person in Yaml]` przez bezpośredni parser, jeśli istnieje
++       Dla typu z `Yaml.Parsable` – takiego, który `derives Yaml.Direct`, ma instancję
++       w obiekcie towarzyszącym lub jest produktem przy `import codecs.direct` – dokument nadal jest
++       parsowany w całości (aliasy YAML mogą odwoływać się do dowolnego wcześniejszego węzła, więc żadnego rekordu nie można
++       odczytać, zanim dokument nie zostanie wczytany), ale pola rekordu są następnie odczytywane wprost
++       z węzłów drzewa, bez budowania `Yaml` wokół któregokolwiek z nich i bez wybierania kodeka dla każdego
++       pola. Błędy niosą ten sam fokus i tę samą pozycję co na ścieżce drzewa.
++   entry #encodableOverPrinted   `in[Text over Yaml]` przez bezpośrednią drukarkę, jeśli istnieje
++       Dla typu z `Yaml.Printable` tekst jest zapisywany wprost z pól, bez
++       budowania drzewa, przez `Yaml.Printable.print`; tekst jest taki sam jak na ścieżce drzewa.
++   entry #aggregableStrictFailure   błąd kompilacji zgłaszany przez `codecs.strict` dla typu bez bezpośredniego parsera
++       Inline i ponad wpisami drzewa, więc przy `Codecs.Strict` każdy typ, którego `.aggregableStrict`
++       nie przyjmuje, trafia do niego i nie kompiluje się, z nazwą typu w komunikacie.
++   entry #encodableOverStrictFailure   błąd kompilacji zgłaszany przez `codecs.strict` dla typu bez bezpośredniej drukarki
+
+@ 0 1 0 1b879b89b8fce12b1a3cee3d92e9729f
++ entry .Yaml2   najniższa warstwa priorytetu `object Yaml`: kodeki drzewa i derywacje
+
+% 1 1 0 1509d40f7183251a0ecb0ae3b0f52b2f
+
+% 2 1 0 11d998c2b101b0030cd57c84b5cbef8c
+
+@ 0 21 0 0154ded40a29c9b208723117f7132e04
++       Nie do bezpośredniego użytku: najniższy rodzic `object Yaml`, zawierający rezerwowe
++       giveny `decodable` i `encodable` dla każdego typu, `optional`, `optionalEncodable`,
++       `encodableOver`, `aggregableIn` oraz dwa obiekty derywacji.
++   entry #decodable   `Decodable in Yaml` dowolnego typu, z jego dekodera tekstu lub przez derywację
++       Jako `[value] => value is Decodable in Yaml`, inline i o najniższym priorytecie, daje
++       każdemu typowi dekoder: typ z `Decodable in Text` jest odczytywany ze skalara napisowego YAML
++       (więc wyliczenie z dekoderem tekstu odczytuje się ze swojej nazwy), a typ z
++       `Reflection` z wisterii – klasa case lub zapieczętowana hierarchia – jest derywowany przez
++       `#DecodableDerivation`. Klasa case odczytuje się z mapowania, pole po polu, przyjmując
++       wartość domyślną pola dla klucza, którego w mapowaniu brak, i zgłaszając `Yaml.Error(Absent)` dla pola
++       bez wartości domyślnej; typ sumy odczytuje swój wariant z pola dyskryminatora wskazanego przez
++       `Discriminable in Yaml` w zasięgu (`discriminables.yamlByTypeDiscriminable`). Adnotacje
++       `@name[Yaml](t"full_name")` i samo `@name` zmieniają nazwę pola lub wariantu
++       w postaci przesyłanej.
++   entry #encodable   `Encodable in Yaml` dowolnego typu, z jego kodera tekstu lub przez derywację
++       Inline i o najniższym priorytecie: typ z `Encodable in Text` koduje się jako skalar
++       napisowy, a typ z `Reflection` jest derywowany przez `#EncodableDerivation` – klasa case
++       do mapowania w kolejności pól, z pominięciem pola, którego kodowanie jest nieobecne
++       (`Unset` lub `None`), a typ sumy do mapowania swojego wariantu z polem dyskryminatora
++       dodanym przez `Discriminable in Yaml` w zasięgu. Zmiany nazw przez `@name` obowiązują przy wyjściu
++       tak samo jak przy wejściu.
+
+% 2 1 0 05df8af5104270d90b2bc030f3725221
+
+% 3 1 0 0ecbfae7a90d8bc019bac405a1dccabd
+
+% 4 1 0 0959c93c082228cb184b8aa6aa625c4d
+
+% 5 1 0 0e98daca6ee3531d140c4ee2c24a416c
+
+% 1 1 0 10ac75edd6ea97b11ccd8697a9fcd66d
+
+% 3 1 0 05a8496a680bfa950bd3cbd6606594f8
+
+% 4 1 0 1db08ff0d85f884a1c1c9415880d6d89
+
+% 5 1 0 0b934b0e4f1bcea817020a95c536f86a
+
+% 0 1 0 19185b83d136147d072c28bad180e8a9
+
+% 1 1 0 060bc4d3042b7b8c12a3d5c7dbefdeec
+
+@ 0 4 0 03d36fea4262c3f704d77576dfde04c8
++   entry #optional   `Optional[T] is Decodable in Yaml`: jak `.option`, dając `Unset`
++       Te same trzy polityki, dla pola typu `Optional[Int]` (lub dowolnego `value >: Unset.type`,
++       które jest `Mandatable to inner`): brak i `null` odczytują się domyślnie jako `Unset`, a
++       wartość złego typu jest błędem, chyba że zaimportowano `lenientYamlFaults`.
+
+% 2 1 0 01a8c8fed174cbf41a829ac4ecedcd46
+
+% 3 1 0 0b37423985f93b8c1aa57f32eab93d89
+
+% 4 1 0 14deb678b4c14f3d0fbba6254e51f918
+
+% 0 1 0 044c487d699586481700b3ec44ca98de
+
+% 0 1 0 18aae1ca0f3c449608756a0d57516cc8
+
+% 0 1 0 007382f27533bf6f1f4528acb2cf6a0e
+
+% 0 1 0 0cb407862da8a7350ffade9d65c64e68
+
+% 0 1 0 0c394ec49b4955470a094a00da593eda
+
+% 0 1 0 00a44b73b5e1e64516e3c24f9618b497
+
+% 1 1 0 13f23cd646f7645211501a4c18bd4a81
+
+@ 0 13 0 1d3880370ca1756916ffa8e2c0829afe
++   entry #optionalEncodable   `Optional[T] is Encodable in Yaml`: `Unset` koduje się jako brak
++       Pole `Unset` koduje się jako nieobecny węzeł, który derywowane mapowanie całkowicie pomija;
++       wartość obecna koduje się przez wewnętrzne `Encodable in Yaml`.
++   entry #encodableOver   `person.in[Text over Yaml]`: kodowanie do drzewa i przedstawienie w jednym kroku
++       Lustrzane odbicie `read[Person in Yaml]` po stronie zapisu: `Encodable in Yaml` wartości buduje
++       drzewo, a `Yaml.Formatting` w zasięgu je przedstawia, dając dokładnie ten tekst, który przedstawia
++       `show`. Typ z `Yaml.Printable` przyjmuje zamiast tego `.encodableOverPrinted`.
++   entry #aggregableIn   `text.read[Person in Yaml]`: parsowanie i dekodowanie w jednym kroku, przez drzewo
++       `(value in Yaml) is Aggregable by Text` dla dowolnego typu z `Decodable in Yaml`:
++       tekst (lub strumień) jest parsowany do `Yaml` i dekodowany przez `as`, więc wymaga
++       `Tactic[Parse.Error]` i `Tactic[Yaml.Error]`. Typ z `Yaml.Parsable` przyjmuje
++       zamiast tego `.aggregableParsed`, który ma pierwszeństwo przed tym.
++   entry #DecodableDerivation   derywacja `Decodable in Yaml` z wisterii dla produktów i sum
+
+% 1 1 0 0fa01dae0cb9e7110ba0e0ff2ef59c15
+
+% 2 1 0 166e098dfe330e2504cb833079930b0f
+
+@ 0 9 0 015067784390e789043882f083db539f
++         Nie do bezpośredniego użytku: `Yaml.decodable` sięga do niej dla każdego typu z `Reflection`.
++         `conjunction` derywuje dekoder produktu – każde pole odczytywane w jego własnym fokusie,
++         brakujące pole przyjmuje wartość domyślną lub rejestruje `Absent`, a konstrukcja jest bramkowana, tak
++         by konstruktor nigdy nie działał na wartościach wartowniczych – a `disjunction` dekoder sumy, przez
++         `Discriminable in Yaml` w zasięgu, z `Variant.Error` dla nieznanego lub brakującego
++         dyskryminatora zwiniętym w jeden `Yaml.Error` w fokusie sumy.
++     entry .conjunction   dekoder produktu, z mapowania, pole po polu
++     entry .disjunction   dekoder sumy, według pola dyskryminatora
++   entry #EncodableDerivation   derywacja `Encodable in Yaml` z wisterii dla produktów i sum
+
+% 1 1 0 1b47f030c1619ded1aa4c4452798a271
+
+% 2 1 0 09abe7f65c50ebac0faa56ae6332199d
+
+@ 0 5 0 101eac54384b01370d5d079f79033f45
++         Nie do bezpośredniego użytku: `Yaml.encodable` sięga do niej dla każdego typu z `Reflection`.
++         `conjunction` zapisuje produkt jako mapowanie w kolejności pól, z pominięciem nieobecnych
++         kodowań; `disjunction` zapisuje wariant sumy i dodaje pole dyskryminatora.
++     entry .conjunction   koder produktu, do mapowania
++     entry .disjunction   koder sumy, z dodanym dyskryminatorem
+
+@ 0 1 0 1edcd51b9cce269a0f055b2cd3ca99ce
++ entry .YamlPath   adres węzła w dokumencie, zapisywany jako `#/a/0/b` z eskapowaniem JSON Pointer
+
+% 1 1 0 01031578375f970d1db08b7308dfffa7
+
+@ 0 8 0 05b97668bb0c90aa066cd43c9e4e4625
++       `YamlPath` nazywa węzeł kluczami i indeksami od korzenia: `YamlPath()` to
++       cały dokument (`#`), a `YamlPath()(t"servers")(Prim)(t"port")` to `port`
++       pierwszego serwera (`#/servers/0/port`). Jest to ścieżka serpentine na własnej płaszczyźnie, więc
++       buduje się ją przez `/` lub metody `apply`, zapisuje interpolatorem `yp"…"` (sprawdzanym
++       podczas kompilacji kodu), dekoduje z tekstu przez `as[YamlPath]` i koduje przez `encode`.
++       Segmenty używają eskapowania z RFC 6901 – `~0` dla `~` i `~1` dla `/` – więc ścieżka jest
++       wskaźnikiem JSON tego samego węzła, gdy dokument traktuje się jako JSON. Adresowalne są tylko
++       napisowe klucze mapowań.
+
+@ 0 2 0 1497faae67820ea41a54451afb5ddc3c
++       Ścieżkę niesie `Yaml.Focus`, więc skumulowany błąd dekodowania mówi `#/age`; i
++       to ją przyjmuje `locate`, aby znaleźć pozycję węzła w źródle śledzonego dokumentu.
+
+% 2 1 0 0455933ce53f230a1178df5b92256e50
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0e37a6e02fcaceea05257b0a4130b121
++         label Dokument sparsowany z zapisem pozycji
+
+% 1 1 0 1999497d5f290cac14f8b78b370002a5
+
+% 2 1 0 18412c62fe15cc0319c6b7b21d60b19a
+
+% 3 1 0 00e84ab971127b9418c2d7b9b1fdf42b
+
+% 4 1 0 1774477afe03bd981701d1b999139009
+
+% 6 1 0 0af0eb0269b74554110087ffa3979ae6
+
+% 1 1 0 05e8aac36550572611c7a53b89cbbc1c
+
+@ 0 1 0 1bea6d4c71ed304c19eb454f2ee6cb46
++         label Ścieżka do portu pierwszego serwera
+
+% 1 1 0 0ab4792faf524ebe09e8f1d5d365bd97
+
+% 2 1 0 05bf45b0519617400b75f7e725927047
+
+% 3 1 0 11e9d38809f882130b83e315f064e1ff
+
+% 4 1 0 1b4584bec4698dc01ad0c582912f90fb
+
+% 6 1 0 132d862d69890f4519f9834723616ed7
+
+% 7 1 0 1b9bd2086f622606005952fb59bdb992
+
+% 0 1 0 17e219426ef9234d0cd15e6ccabca21b
+
+% 1 1 0 01c3daaf242b7e5e10d7349787af8137
+
+@ 0 1 0 05a4642e2969e48d090477d2a7fe9e68
++         label Gdzie ten węzeł znajduje się w źródle
+
+% 1 1 0 041a30bf4f982cbe1d8359daeb5b94fb
+
+% 2 1 0 0268effb54fe220c17e8a50f47a1796c
+
+% 3 1 0 046da1b9b8bd481e0f403a87bf336230
+
+% 4 1 0 08d1ec25a931228604617eb503606905
+
+% 6 1 0 0105204f691e902f1b794a526ca58f8d
+
+% 7 1 0 00544635c6916c331c2a09166c0a0792
+
+% 8 1 0 063a6b4c6cbb7d271233cdbd641234bd
+
+% 1 1 0 1fbfad3ad03e115907ec86174328f528
+
+@ 0 1 0 0b98dd5305f9605318f37a3358a724b3
++         label Sam węzeł, osiągnięty i zdekodowany
+
+% 1 1 0 0bfcab7f6e47afcd0a7fb8c19bbd9888
+
+% 2 1 0 16a8e1d0f49217ac1007d562f60495fc
+
+% 3 1 0 1478450f1edd4fc41330b621bd93e676
+
+% 4 1 0 0ae8d0cb759145eb13b5e3c97823ec2e
+
+% 6 1 0 1f44852f41eb0bd814f76d895ad69b94
+
+% 7 1 0 1ddc835584a16408084dcd536837cfb8
+
+% 8 1 0 0f52cf210d410a3e1d9452bb87a3fbd3
+
+% 0 1 0 1271967b918e326415d259c3c733ef57
+
+% 1 1 0 081977c35b1369791e2a67c11e25e83e
+
+% 2 1 0 0a999c6a39654932041442241184edf8
+
+@ 0 2 0 025713f4c0a71e77040b47c3604ea05c
++       Dekodowanie tekstu zgłasza `YamlPath.Error`, gdy tekst nie zaczyna się od `#`, gdy
++       fragment nie zaczyna się od `/` lub gdy po `~` nie następuje `0` ani `1`.
+
+% 0 1 0 04f7ad819037c3f8164d522f86e7e86a
+
+% 1 1 0 10af99ba747cc2e910203e58f3cd433c
+
+% 0 1 0 071aa137f3f0031f05b0b4770db576ed
+
+@ 0 23 0 12ebbd1c0cc150a71d6dcf2bf66a0356
++   entry .Plane   płaszczyzna ścieżek YAML: sam `YamlPath`
++   entry .navigable   `Ordinal` jako segment ścieżki: jego indeks liczony od zera jako tekst
++       `YamlPath()(Prim)` koduje się jako `#/0`, więc indeks zapisuje się tak, jak zapisuje go
++       wskaźnik JSON.
++   entry .admissible   każdy `Ordinal` jest dopuszczalnym segmentem
++   entry .admissible2   każdy `Text` jest dopuszczalnym segmentem; eskapowanie następuje przy kodowaniu
++   entry .filesystem   gramatyka ścieżek: separator `/`, `#` jako bieżący, `..` jako rodzic, eskapowanie RFC 6901
++       Nazywa się `YAML`. `escape` zamienia `~` na `~0` i `/` na `~1`, a `unescape` to odwraca,
++       więc klucz zawierający którykolwiek z tych znaków jest adresowalny.
++   entry .interpolable   given stojący za `yp"…"`; zobacz `ypsiloid.yp`
++   entry .decodable   odczytuje ścieżkę z tekstu: `#`, `#/` lub `#/a/b`
++       `t"#/a/b".as[YamlPath]`, zgłaszając `YamlPath.Error` z przesunięciem znakowym
++       błędu: `ExpectedHash` na pozycji 0 dla tekstu niezaczynającego się od `#`, `ExpectedSlash` na pozycji 1 dla
++       fragmentu niezaczynającego się od `/` i `BadEscape` na `~` dla niepoprawnej sekwencji eskapującej.
++       Segmenty są odeskapowywane podczas odczytu, a puste segmenty są odrzucane. Ścieżka ma także
++       anonimowy given `Encodable in Text` w obiekcie towarzyszącym, więc `path.encode` przedstawia
++       `#/a/b` (i `#` dla korzenia) z eskapowanymi segmentami.
++   entry .unsafeParse   dekoduje ścieżkę, której poprawność już udowodniono, bez taktyki
++       Dla interpolatora `yp"…"`, który sparsował literał podczas kompilacji: token
++       `Unsafe` stwierdza, że ponowne parsowanie w czasie wykonania nie może się nie powieść.
++   entry .divisible   `path / t"key"`: ścieżka rozszerzona o segment tekstowy
++   entry .divisible2   `path / ordinal`: ścieżka rozszerzona o segment indeksu
++   entry .Error   zgłaszany, gdy tekst nie jest poprawną ścieżką YAML
+
+% 1 1 0 1d26370fe0f033aa19f94a8850ac95e1
+
+@ 0 6 0 1403027d7c47376f1e530ab5254a5489
++         Błąd `↯/s.134.2`: _the YAML path was not valid because `reason`_. Zgłaszany przez `.decodable`
++         i raportowany, co do znaku, przez interpolator `yp"…"` podczas kompilacji
++         kodu. `offset` to indeks w tekście, pod którym znaleziono błąd.
++     entry #reason   `ExpectedHash`, `ExpectedSlash` lub `BadEscape`
++     entry #offset   indeks znaku błędu w tekście
++     entry .Reason   trzy sposoby, w jakie ścieżka może być niepoprawna
+
+% 1 1 0 1bddb00d6511c2dd0f0babcc48b248f9
+
+@ 0 2 0 096aa9c0baf164af054a6b75b78e993f
++           `ExpectedHash` (numer 2): _a YAML path must begin with '#'_. `ExpectedSlash`
++           (numer 3): _a YAML path fragment must begin with '/'_. `BadEscape` (numer 4): _a
+
+% 0 1 0 1b6b2345aa22cd6b1c0cfb3e5d3d0f05
+
+@ 0 4 0 1b4ad8fda2f98b0b0bf68e7bb819c712
++     entry .communicable   przedstawia przyczynę jako jej komunikat
++   entry #path   bazowa ścieżka serpentine `Path on YamlPath`
++   entry #apply   `path(t"key")` lub `path(ordinal)`: ścieżka rozszerzona o jeden segment
++       To samo co `/`, jako metoda: `YamlPath()(t"servers")(Prim)(t"port")`.
+
+@ 0 10 0 0edba9a5b77f8c2f15cd1f25c8a3d527
++ entry .y   interpolator `y"…"`: literał YAML, sprawdzany podczas kompilacji kodu, z dziurami `$`; także wzorzec
++     `y"name: $name\nage: $age"` to dokument `Yaml`, którego tekst jest parsowany podczas kompilacji
++     kodu – niepoprawny literał jest błędem kompilacji, którego podświetlenie obejmuje dokładnie błędny fragment
++     szablonu – a którego dziury `$` są wypełniane w czasie wykonania. Dziura na pozycji wartości
++     przyjmuje dowolny `Yaml` (lub wartość z `Encodable in Yaml`, zakodowaną przez nie); dziura
++     wewnątrz zwykłego skalara (`greeting: hello $name`) wstawia tekst wartości do
++     napisu; a `$xs*` jako ostatni element sekwencji rozkłada w niej elementy `Iterable`
++     (każdy zakodowany przez swoje `Encodable in Yaml`). Wartość bez kodera albo
++     rozłożenie, które nie jest ostatnie lub nie jest `Iterable`, to błąd kompilacji podświetlony na
++     dziurze. Wynik nie niesie pozycji.
+
+% 2 1 0 069e84a59d82eea61bb37d8edc91d5ab
+
+% 3 1 0 0a72ff7ff4ccc46411c710c62336bfa2
+
+% 4 1 0 192636d81c283ccb0b62db76c1faf00c
+
+% 2 1 0 00f505b5977fdfc716086145bdee8b14
+
+% 0 1 0 1ad7cdac55026673175edc020ebc20e7
+
+% 0 1 0 09de2ddcbeaf2a7e086d95a6ebb563f6
+
+% 0 1 0 1651633ab1be7c9f1ec5d7c65fc78bef
+
+% 0 1 0 004cbdb6de44020e077742172c6e549d
+
+% 0 1 0 0cf6363626a940a20bbd081b74ff0b02
+
+% 0 1 0 0d5c45be77eb80c61cc22f1e5ddaeade
+
+% 0 1 0 0e647005598b6313055dc8fd6c75ccd4
+
+% 0 1 0 096ac16adb8a9fa00682330d9776fac2
+
+% 1 1 0 07a259e5997241bd1fb37843d61e26b4
+
+@ 0 3 0 04072fcca866b7580c4fdddc934aecaf
++     We wzorcu `case y"name: $n" =>` dopasowuje dokument, którego struktura jest strukturą
++     literału, i wiąże `n` z węzłem w miejscu dziury, jako `Yaml`; literał bez dziur
++     dopasowuje się według równości strukturalnej.
+
+% 2 1 0 0a74c3ad605febc30803409d2c4870f9
+
+% 3 1 0 01d6f69d28488b4509aa896c1513529e
+
+% 4 1 0 0fd207f016a6c1511241ca449df9f93d
+
+% 0 1 0 1337a2a542ed3adb126c4d141148a3f2
+
+% 0 1 0 00ce88689107a696023b065dd42432e7
+
+% 0 1 0 12d7ff39898546740606521632477dd0
+
+% 1 1 0 14e13ba9f512de0e0604e7bc22c8b556
+
+@ 0 5 0 0059857b850a1f5a06a019bfc47f0892
++ entry .yp   interpolator `yp"…"`: literał `YamlPath`, sprawdzany podczas kompilacji kodu
++     `yp"#/servers/0/port"` to `YamlPath` tego tekstu, dekodowany podczas kompilacji kodu
++     własnym dekoderem `YamlPath`, więc niepoprawna ścieżka jest błędem kompilacji wskazującym
++     błędny znak: `yp"/servers"` jest odrzucany na `/` (_a YAML path must begin with
++     '#'_), a `yp"#/a~2b"` na `~`. Interpolator nie przyjmuje podstawień `$`.
+
+% 2 1 0 0cd1dd6b32e8783b017cc6b31eff1549
+
+% 3 1 0 086810ef3b64821b04515d4c4b563079
+
+% 0 1 0 17f5a684a426b18c0c0883e23778ba43
+
+% 0 1 0 165f094f69277ac10d4b6a1c1288270a
+
+% 1 1 0 0a112d042d85d5c412963de3fe85aac2
+
+@ 0 1 0 01509f6e2ded94240c6a516906383dad
++ entry .formatting   sposób przedstawiania dokumentu: jeden given, importowany po nazwie
+
+% 1 1 0 0f9a23bf979b91f601f6a41b1bcec9b8
+
+@ 0 2 0 1bdd09da5c14eb321dfa5ba8dfc2f49c
++       `show`, `in[Text over Yaml]`, `Yaml.emit` i giveny HTTP wymagają `Yaml.Formatting`
++       w zasięgu, a `import soundness.*` żadnego nie wprowadza, więc wybór jest zawsze jawny:
+
+% 2 1 0 027756a3ca1a5acf0e6d2786827d5149
+
+% 3 1 0 1079ccdcd3b8b45e10fc92d2e5562f39
+
+% 4 1 0 18416278aaaffad512c0a60ada1ea058
+
+% 5 1 0 0acef7a8988726911b989e0b6f5fe46e
+
+% 0 1 0 0988ef323304845104dfe8b8a5385fd1
+
+% 1 1 0 171fc357231024a3133dadd38028bad9
+
+@ 0 8 0 01ee872303904f0c1d58b81e4780be37
++       Styl blokowy jest obecnie jedynym formatowaniem; pakiet istnieje po to, by formatowanie w stylu przepływowym
++       lub z opcjami mogło zostać dodane obok bez zmiany jakiegokolwiek miejsca wywołania.
++       W module zbiorczym `soundness` pakiet łączy się z pakietami `formatting` innych formatów
++       (`indentedJsonFormatting`, …).
++   entry .blockYamlFormatting   styl blokowy z wcięciem dwóch spacji, z `{}` i `[]` dla pustych kolekcji
++       Domyślne i jedyne `Yaml.Formatting`. Jego wynik jest dobrany tak, by po ponownym sparsowaniu dawał to samo
++       drzewo: skalary są zapisywane tak, by parser rozwiązał je z powrotem do tego samego rodzaju, a
++       napis jest zwykły tylko wtedy, gdy nie można go pomylić z niczym innym.
+
+@ 0 1 0 00750fd5d246e3e312b2b3246f557d30
++ entry .optionalityOptions   jak pole `Optional` lub `Option` odczytuje brakujący klucz, `null` lub złą wartość
+
+% 1 1 0 07545dd1c31188b51077f4abaa970aaa
+
+@ 0 5 0 1e1ed2ff01cb446109d5efdb6dad7724
++       Trzy niezależne polityki, każda jako para givenów, z których jeden importuje się po nazwie;
++       domyślne (z distillate) to tolerancyjny brak, tolerancyjne nulle i ścisłe błędy.
++       Rządzą one zarówno `Yaml.optional` i `Yaml.option`, jak i bezpośrednimi `Yaml.Field.optional` i
++       `Yaml.Field.option`. W module zbiorczym pakiet łączy się z `optionalityOptions` innych formatów,
++       więc nazwy zawierają `Yaml`, by pozostać różne.
+
+% 2 1 0 08539d7b39f9fac6158a688a23033235
+
+% 0 1 0 1a64040dc63845e7121043dd67139bee
+
+% 1 1 0 18e1e17281ab535916c544b433820b5e
+
+% 2 1 0 10daf487394b362d0a7dfc1520c696de
+
+% 3 1 0 18028c8a797c631f0db117c5d6113570
+
+% 2 1 0 17c7e518b8b9df410c77e6bddcf66cd7
+
+% 0 1 0 1ca27e4057528e84133eb07a179322c6
+
+% 0 1 0 0f13b2d297538a76178b238c0f2d8947
+
+% 0 1 0 0309e14355e7383005ab8e7b0248e95a
+
+% 0 1 0 03c61282620ea78616295d7c855a951c
+
+% 0 1 0 07e253f3624b8da30eab6cc67e48a7b8
+
+% 1 1 0 07efe15c21df60c115ea8ae4dbd88690
+
+% 2 1 0 1756d680ec28f6a5077c212f83658f9d
+
+% 3 1 0 133db89c7e21d089012a04b69db5bd15
+
+% 0 1 0 1b304068ed8d2ddc192028286ab334d4
+
+% 2 1 0 12db348d5077cd141fe405d0edf3a1ef
+
+% 0 1 0 1c4594c3e0ccc4b80a0547246696c293
+
+% 0 1 0 10b09172fb6555b616dfbf7322563850
+
+% 0 1 0 08cf580088938a470696e6e0a7198fd8
+
+% 1 1 0 0c4b511dbe2f67191e7306802be6583a
+
+% 2 1 0 0af76077936f5100097a156d594d003f
+
+% 3 1 0 03d198faee4dda8a142bd64d7aefbc86
+
+% 0 1 0 06d67c447ad5ffea1029911f8d975292
+
+% 2 1 0 1a79e624038858391fb5bb84944d175e
+
+% 0 1 0 09cf5e054fd09c5c0abf8cb4bf48a985
+
+% 0 1 0 0793af297d81d277159e0c3a0cacd25b
+
+% 0 1 0 17f5b2fbd0fdd4d6187da5973c1ea22e
+
+% 1 1 0 0ee7add46e08edf207590826f772d947
+
+% 2 1 0 01bb6839ede799f81d9bc9317563e368
+
+% 3 1 0 1e4557722bdaad6707a253e01f9c9655
+
+% 0 1 0 004553ec98f23fbc12835eae2aced976
+
+% 2 1 0 0ceb24e9b899ed1006ff9754fbd46dec
+
+% 0 1 0 1ccf92c7773f6ccd12dbd6c294138d38
+
+% 1 1 0 05fe7decfc6399eb0e19d97ff82fcc5e
+
+% 2 1 0 1c8b034f77e2398a00a72c690b074459
+
+@ 0 8 0 07e0521a7613f480015a1905f0bd5fbd
++   entry .strictYamlAbsence   brakujący klucz to `Yaml.Error(Absent)`, nawet dla pola `Optional`
++   entry .lenientYamlAbsence   brakujący klucz odczytuje się jako `Unset` lub `None`: ustawienie domyślne
++   entry .strictYamlNulls   `null` jest przekazywany wewnętrznemu dekoderowi, który zawodzi dla wszystkiego poza `Unit`
++   entry .lenientYamlNulls   `null` odczytuje się jako `Unset` lub `None`: ustawienie domyślne
++   entry .strictYamlFaults   wartość odrzucona przez wewnętrzny dekoder jest błędem: ustawienie domyślne
++   entry .lenientYamlFaults   wartość odrzucona przez wewnętrzny dekoder odczytuje się jako `Unset` lub `None`
++       Wewnętrzne dekodowanie działa pod `tactic.tolerate`, więc przy strategii kumulującej błąd
++       również nie jest rejestrowany.
+
+@ 0 1 0 1d7d94b304b9fc5718c75151300ea5dd
++ entry .discriminables   jak wariant typu sumy jest nazywany w postaci przesyłanej: polem `type` lub `kind`
+
+% 1 1 0 028579f07827cb730fd6135b7ea40b3a
+
+@ 0 6 0 06e959c6caef313607543db7a6699337
++       Kodowanie lub dekodowanie wyliczenia albo zapieczętowanej hierarchii wymaga `Discriminable in
++       Yaml` w zasięgu, którego `import soundness.*` nie wprowadza; należy zaimportować jeden z tych givenów po
++       nazwie lub zbudować własny dla innego pola za pomocą `Yaml.discriminatedUnion`. Nazwa wariantu
++       (lub jego `@name`) jest zapisywana jako skalar napisowy pod tym polem, obok
++       własnych pól wariantu; przy dekodowaniu pole jest odczytywane, a następnie usuwane, zanim
++       zadziała dekoder wariantu. Moduł zbiorczy łączy ten pakiet z pakietami innych formatów.
+
+% 2 1 0 1e5f9366842461bb02cdcb5a52a9c3d1
+
+% 3 1 0 1633353ba32ccb7d1ff7ebbc3c846b5d
+
+% 4 1 0 1d46735e8c60663810b88d76ea9495c5
+
+% 1 1 0 03ef21726064b27d151a0e22f05c7b44
+
+% 3 1 0 1b6a0d1d6d7b809d1cf61cf18fd75b75
+
+% 4 1 0 10cc1c5ade49260205f2734cffe0bf51
+
+% 5 1 0 1600afcf722ced4a099a04050887cca2
+
+% 0 1 0 0068d7efa3baacb61021362bc885c659
+
+% 1 1 0 1cbd1eea153a0f0c1ee35990bdfca9c5
+
+@ 0 2 0 02164e2c66e89931033f549fc591905f
++   entry .yamlByTypeDiscriminable   nazwa wariantu pod polem `type`
++   entry .yamlByKindDiscriminable   nazwa wariantu pod polem `kind`
+
+@ 0 1 0 1149eb61152317351925088cf20f5f4f
++ entry .dynamicAccess   given, który włącza odczyty `doc.field` i aktualizacje `doc.field = value`
+
+% 1 1 0 1ffa6779dd83afc61e73867075c3b527
+
+@ 0 5 0 0c38f8c5fba2ce4914cdf1628a45d4fb
++       `Yaml#selectDynamic`, `#applyDynamic`, `#update`, `#updateDynamic` i given `Yaml.lens`
++       są bramkowane przez `Yaml is Dynamical`, tak by błędnie zapisana nazwa składowej była
++       błędem kompilacji, a nie cichym wyszukaniem pola. Należy zaimportować `dynamicYaml`, by przyznać go
++       zasięgowi, lub opakować blok w `dynamically[Yaml]:` (albo `dynamically:` dla każdego formatu),
++       by przyznać go tylko tam.
+
+% 2 1 0 0cae3c1356df26a504043263326de904
+
+% 3 1 0 1f5c34c630a49c911ccd13ae3abd79d7
+
+% 4 1 0 19b78f1f337df27700dd73fafafd15b4
+
+% 5 1 0 073cb8fe28f10fb516f8158b5ce55036
+
+% 0 1 0 1f0c443514ea8eb11e01017913ac87bb
+
+% 0 1 0 05670f506d953e4411dd43afd4381828
+
+% 1 1 0 0ed2a04af3d55e091ca6861be0641cdf
+
+@ 0 2 0 1fa126fcb69b2e8a0508855818efc040
++   entry .dynamicYaml   `Yaml is Dynamical`: dynamiczny dostęp do składowych dokumentów, w zasięgu, do którego go zaimportowano
++       Wymazany given: nic nie kosztuje w czasie wykonania i istnieje tylko po to, by być w zasięgu.
+
+@ 0 1 0 138c4197261fceef04019abf4c5f36c6
++ entry .conversions   konwersja pozwalająca przypisać dowolną kodowalną wartość przez soczewkę
+
+% 1 1 0 0441db24722861b41490612ec462b95c
+
+@ 0 5 0 170c10ce55073f7e0bfdf0e8e347fe72
++       `doc.lens(_.field = value)` oczekuje `Yaml` po prawej stronie; przy zaimportowanym
++       `encodableToYaml` każda wartość z `Encodable in Yaml` jest konwertowana na miejscu, więc
++       `doc.lens(_.age = 31)` czyta się tak, jak powinno, zamiast `doc.lens(_.age = 31.in[Yaml])`.
++       Konwersja ma zasięg ograniczony do importu.
++   entry .encodableToYaml   `Conversion[T, Yaml]` dla dowolnego `T` z `Encodable in Yaml`
+
+@ 0 1 0 1c0794cfd3b44eb716f03002a20e8cbb
++ entry .postables   dokument jako treść żądania HTTP, dla zbioru źródeł `ypsiloid.http`
+
+% 1 1 0 102a7ea4a9d4ae8703a22509718916d6
+
+@ 0 5 0 15cde5173f9cfc650c025966a739f7ed
++       Importowany po nazwie, jak każdy wybór `Postable` z telekinesis:
++       `import postables.yamlPostable` pozwala, by `Yaml` był treścią `post` lub `put`.
++   entry .yamlPostable   `Yaml is Postable` z typem mediów `application/yaml; charset=UTF-8`
++       Treścią jest przedstawiony tekst (`show`) w `Codepage` w zasięgu, więc potrzebne są zarówno `Codepage`, jak i
++       `Yaml.Formatting`.
+
+@ 0 1 0 1277a2ec1182c86f042c82f74cbbb8cb
++ entry .servables   dokument jako treść odpowiedzi HTTP, dla zbioru źródeł `ypsiloid.http`
+
+% 1 1 0 0da97d18db27677319bab95e0a1d761e
+
+@ 0 5 0 0e0a0de1299a16ca140fb42be12ce4e4
++       `import servables.yamlServable` pozwala handlerowi odpowiadać wartością `Yaml`;
++       odpowiedzią jest przedstawiony tekst jako treść o stałej długości z typem mediów `application/yaml;
++       charset=UTF-8`.
++   entry .yamlServable   `Yaml is Servable` z typem mediów `application/yaml; charset=UTF-8`
++       Wymaga `Codepage` i `Yaml.Formatting` w zasięgu.
+
+@ 0 1 0 0c8da4dd9ffc5de6151f7a1882986f5b
++ entry .construables   odczyt treści `application/yaml` jako `Yaml`, dla zbioru źródeł `ypsiloid.http`
+
+% 1 1 0 1c0b31f2b84c74a20d5383b011473ef1
+
+@ 0 3 0 04c309dd72f19bf6077e1063c209e658
++       `import construables.yamlConstruable` informuje negocjację treści z gesticulate, że
++       treść o typie mediów `application/yaml` jest konstruowana jako `Yaml`, więc treść żądania lub
++       odpowiedzi tego typu jest parsowana po nadejściu. Niedostępne w Scala.js.
+
+% 0 1 0 1ea759b6169f018700c45ee2c15be266
+
+@ 0 1 0 04c92de5aa4c4f530f6e54aeac8819ca
++ entry .internal   implementacje makr stojące za `y"…"` i `yp"…"`
+
+% 1 1 0 1143f714a9375f9f1bf06031bca54bb2
+
+% 2 1 0 0ce38ebf4ed3f1f80994db9290a5e9b4
+
+@ 0 7 0 0747efa0d4b0d4501a76a15942b4389a
++       Nie do bezpośredniego użytku: obiekt istnieje po to, by makra miały stałe miejsce. `y"…"`
++       łączy części literału znacznikiem wartowniczym, parsuje wynik prawdziwym
++       parserem i rozpoznaje wartownika w drzewie jako dziurę; przesunięcie błędu parsowania jest
++       odwzorowywane z powrotem przez części na fragment źródła szablonu.
++   entry .interpolator   makro stojące za `y"…"` jako wyrażeniem
++   entry .extractor   makro stojące za `y"…"` jako wzorcem
++   entry .yamlPath   makro stojące za `yp"…"`: dekoduje literał podczas kompilacji i raportuje znak błędu

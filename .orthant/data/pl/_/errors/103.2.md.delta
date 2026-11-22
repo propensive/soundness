@@ -1,0 +1,50 @@
+orthant 2 language
+
+@ 0 1 0 1e30ab7929bf34ba0f1e63c6c8a224f3
++ # `↯/s.103.2` – `Http.Request.Error`
+
+@ 0 1 0 005a4461066515c51fd2df1c6236101d
++ Zgłaszany, gdy żądania HTTP nie można skonstruować ani wysłać.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 3 0 1f3eaa70997f2ee81309113d33d8da5f
++ Obejmuje usterki samego żądania – URL, którego nie da się wyrazić, niepoprawny nagłówek,
++ treść, której nie można ująć w ramki – w odróżnieniu od nieudanej odpowiedzi, która jest
++ `HttpError`, lub nieudanego połączenia, które jest `ConnectError`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Kod
++ column  Przyczyna
++ column  Komunikat
+
+% 0 1 0 0b50672c8207281a1cd70985271e6e3f
+
+% 0 1 0 1fef6c0f444e31e71436c96afb19a97e
+
+% 0 1 0 1473fda1164814c1054a58c7589978b9
+
+% 0 1 0 18c5e98445f4aff618744b427f5b441f
+
+% 0 1 0 18bd29f07a7962121accf160ddcd0c18
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 2 0 11ff39f1ada1db05046d71d24ff79f5c
++ Przyczyna wskazuje błędną część żądania. Typowe przypadki to wartość nagłówka zawierająca
++ znak końca wiersza lub metoda, której transport nie obsługuje.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 082742a867b8ffd405367b3235b24eba
++ - Źródło: `lib/telekinesis/src/core/telekinesis.Http.scala`

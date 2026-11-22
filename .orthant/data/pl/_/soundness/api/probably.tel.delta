@@ -1,0 +1,2086 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 15a79ecf9193b41d08b338a67c1c74b4
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 18a73cbf36db49000b31a7ff44697573
++ info   framework testowy: zestawy testów jako wartości, asercje ze strukturalnymi kontrastami i typowany strumień zdarzeń dla hosta
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 16e72a68d9901b151609bd1b2aec7caa
++     _Probably_ to framework testowy Soundness. Test jest **wartością**: `test(m"…")` nadaje mu
++     nazwę, blok pod spodem wytwarza wynik, a `assert`, `check` lub `matches` określa, co musi
++     być prawdą o tym wyniku. Nieudana asercja równości jest zgłaszana nie jako dwa wyniki
++     `toString`, lecz jako strukturalny **kontrast** wartości oczekiwanej i zaobserwowanej
++     (`Juxtaposition` z chiaroscuro), a każdy wynik opuszcza zestaw jako typowane `TestEvent`,
++     więc host przedstawia przebieg tak, jak chce.
+
+% 2 1 0 1d7a38919fdae0941821c2d44d56d552
+
+% 3 1 0 1f3524100f14ef5b0ada9b3fcfff6983
+
+% 0 1 0 09d36b8a1c1202c71cd9e02bf572e5a8
+
+% 0 1 0 0a9de0b62369958e032f3dc0052472d9
+
+% 0 1 0 11c97151aafb539d10219f1e737f28c0
+
+% 0 1 0 0505914d45a7d63910e10da63e9d8742
+
+% 0 1 0 08276fd2a86277760ab4e293cb8aacaf
+
+% 1 1 0 0578abe7559af877164177e31345002f
+
+% 0 1 0 18404f8d39f8a64c10a601eb2ab4cb0c
+
+% 0 1 0 118b4f55d30a236a010ea49dde1ffdcc
+
+% 0 1 0 18b42bd6d5c7ad900151e8cb76790d6b
+
+% 1 1 0 15f2df14b6470ca10cd59efda6cee03b
+
+% 1 1 0 08d13d5edb07f3c21c10bdb014ca60ef
+
+@ 0 8 0 061fc18794c4faaa1c2ee716b7483f9e
++     `Suite` **nie jest klasą główną**, a testy nie mają `main`: wtyczka kompilatora
++     beneficence wypisuje każdy obiekt `Suite` w `META-INF/services/probably.Suite`, a każdy
++     test w `META-INF/probably/tests`, zaś runner `fume` odkrywa zestawy z tych indeksów na
++     zbudowanej ścieżce klas, prowadzi każdy przez `Suite#invoke` z ujściem zdarzeń i
++     przedstawia zdarzenia `TestEvent`. Komponent `events` przenosi je przez granicę
++     classloadera jako ramki BinTEL z prefiksem długości (`Streamer`) albo poza osobną JVM
++     (`Standalone`). Repozytorium, które chce zwykłego punktu wejścia `java` dla CI, pisze
++     `Suite.main(arguments, Tests)`, co wypisuje jeden wiersz na każdy ukończony test i kończy
++     działanie ze statusem zestawów.
+
+@ 0 1 0 0031065f2dc8fd2d136cbcd30c9214d4
++     Elementy, od powierzchni w dół:
+
+@ 0 22 0 141e2eed77dcc3781e901145a7fb9def
++     - **Deklarowanie**: `test`, `suite`, `impromptu` i `aspirationally` to funkcje na poziomie
++       pakietu; każda wymaga w zasięgu `Testable` (własnego dla `Suite`, bloku `suite` lub
++       bloku `impromptu`), a do asercji – `Runner`. Test może nieść stały przydomek
++       (`n"square"`) i tagi (`n"slow"`), oba jako literały `n"…"` sprawdzane w czasie kompilacji
++       względem płaszczyzn nazewnictwa `Probing` i `Tagging`.
++     - **Asercje**: `Test#assert` i `Test#check` to makra, które znajdują `Runner` i instancje
++       `Inclusion` dla jego typu raportu, uruchamiają ciało i zapisują `Verdict`. `assert`
++       wymaga **czystego** ciała (niedomykającego się nad żadną zdolnością), dzięki czemu runner
++       z kolejką (`--workers=<n>`) może je uruchomić w wątku workera; `check` przyjmuje
++       dowolne ciało, uruchamia je w miejscu i zwraca wartość. Żadne z nich nie rozstrzyga
++       niczego w kwestii tego, jak porażka zostałaby pokazana: nieudana asercja jest
++       diagnozowana później i tylko wtedy, gdy host o to poprosił (`--diagnose=…`; zobacz
++       `Diagnosis`).
++     - **Rozpinanie**: `Test.Id#over` uruchamia jeden test raz dla każdej wartości `Axis` (lub
++       dla każdej kombinacji dwóch), zapisując każdy werdykt przy tej współrzędnej jednego
++       nazwanego testu.
++     - **Uruchamianie**: `Runner` budowany jest z `Selection` (parsowanej z argumentów wiersza
++       poleceń: haszy, przydomków, wzorców glob, `kind:`, `tag:`, `not:`, ograniczeń osi,
++       `--list`, `--scale=`, `--workers=`) i `Reporter`; `Reporter.report` gromadzi `Report`,
++       drzewo wpisów `Entry`, których komórki zawierają przebiegi `Run` metryk `Metric`, i
++       emituje każdą daną jako `TestEvent`.
++     - **Pomiary**: `Benchmark`, `Strain` i `Hotspots` to wyniki trzech mierzonych czasowo
++       rodzajów (benchmarków, testów obciążeniowych i profili, deklarowanych przez bibliotekę
++       sedentary), każdy z `Inclusion[Report, …]`, która zapisuje go jako metryki przy danej
++       współrzędnej.
+
+@ 0 11 0 1c329d577e48e36b0a7ab042056c9d59
++     Biblioteka ma cztery komponenty. `probably.core` (JVM, Scala.js i Scala Native) zawiera
++     wszystko poza `Suite` i formatem przesyłowym; `probably.cli` dodaje `Suite`;
++     `probably.events` dodaje `Streamer` i `Standalone`, ramkowanie BinTEL strumienia
++     zdarzeń dla hosta; a `probably.diagnosis` (tylko JVM) dodaje `Dissector`, silnik
++     diagnozujący nieudaną asercję, a wraz z nim zależność od kompilatora. Wszystko jest
++     eksportowane do modułu zbiorczego `soundness` poza `probably.Tag`, którego nazwa oznacza
++     tam tag HTML z honeycomb: gdy trzeba nazwać ten typ, pisze się `probably.Tag` (tagi
++     zwykle zapisuje się jako literały `n"…"`). Słownictwo sprawdzania z hypotenuse – `===`,
++     `!==`, `+/-`, `±`, `Checkable` i `Tolerance` – jest tu reeksportowane, aby `import
++     probably.*` nadal je dostarczał. Pakiety wyboru `harnesses` i `decimalizers` zawierają
++     giveny importowane po nazwie, ponieważ `import probably.*` nie importuje givenów.
+
+@ 0 4 0 05b331b9c42a29a9199cdbad6f492d1b
++     Listowanie (`--list`, czyli sposób, w jaki host szacuje budżet przebiegu, zanim cokolwiek
++     przygotuje) wykonuje całe `run()`: ciała `assert` są pomijane, gdy nie zostały wybrane,
++     ale każde ciało `check` jest wykonywane, podobnie jak każda instrukcja między testami,
++     więc `val` używaną tylko wewnątrz ciał testów najlepiej uczynić `lazy`.
+
+% 0 1 0 16c984898692604517e2e92b3c9518f9
+
+% 0 1 0 16df343634c20762131a5431b1cbb45e
+
+% 0 1 0 190bcb346d1952440bc4c807d0b1fbe7
+
+% 0 1 0 0d64ecec458e8b390962c97835796ad3
+
+% 0 1 0 15e2503a0704dd491d66f83e9ee832f3
+
+% 0 1 0 190bc98bfc70b6331251f026351307c2
+
+% 0 1 0 179c3dfbc1570928005eea298ec5f5b9
+
+@ 0 1 0 0396e174688c5fe414874cf960bd781e
++ entry .test   deklaruje test przez jego opis, z opcjonalnym przydomkiem i tagami
+
+% 1 1 0 0c4750caa41b96861196c632a5407ca2
+
+@ 0 6 0 0b0be6a9076f1b730e4bdf5dce21ecb7
++       `test(m"…")` tworzy `Test.Id` z opisu, `Testable` w zasięgu (który mówi, do jakiego
++       zestawu należy test) i `Codepoint` wywołania; zastosowanie id do bloku tworzy `Test`,
++       który następnie uruchamia `assert`, `check` lub `matches`. Po opisie mogą następować
++       tagi, `test(m"fetches", n"slow", n"network")`, za pomocą których selekcja dopuszcza lub
++       wyklucza test; każdy jest literałem `n"…"` sprawdzanym względem reguły `Tagging` (znaki
++       identyfikatora i `-`).
+
+@ 0 3 0 02d32ba03b95b4d00980ad1ef4fe88ad
++       Druga postać nadaje testowi najpierw **przydomek**, `test(n"square", m"square a
++       number")`: sprawdzany w czasie kompilacji identyfikator Javy, który w stały sposób
++       wskazuje test w selekcjach i wykresach, jakkolwiek zostanie przeredagowany jego opis.
+
+% 2 1 0 1a6af09365070626199d9b4e9d11aafc
+
+% 3 1 0 007cfff478f7dca51ef06a8484b907c8
+
+% 4 1 0 1a2417821f775aa514ad0460d37db985
+
+% 6 1 0 0afc5dadde2ab76914688ce5b875a7ba
+
+% 3 1 0 0e3d1025a1b9fe2a08c61a7d1bd0f955
+
+% 0 1 0 06bc1580fb355db00b9a50251b94e31d
+
+% 0 1 0 069fce817e4dbb721f7617d49701e953
+
+% 1 1 0 17556d1a7b9e6f2a13015103bafef6e2
+
+@ 0 1 0 18deaaf94a96999a053d92a146941a65
++       `test` bez `Testable` w zasięgu to błąd kompilacji, _a test must be declared for a
+
+% 0 1 0 1957fa2d6d023f4d1a5fbb9f53fec204
+
+@ 0 3 0 05ac422e1cec1b92112fc6f3f0f00d93
++       or inside an `impromptu` block_. Metoda, która deklaruje testy dla zestawu, nazywa go
++       przez jego id, `def numbers()(using Testable of "parser"): Unit`, albo jest generyczna
++       względem tematu, `[topic <: Label](using Testable of topic)`.
+
+% 1 1 0 042692cf66a94da01ffac212e000814a
+
+% 1 1 0 07bb8c49fdc4f1dc1c67a2a258627c89
+
+% 0 1 0 1c9aea237a4092c70d819bcb4ed03ce2
+
+@ 0 1 0 0bf66ced2c94a445150b49bfda84d40a
++ entry .suite   grupuje testy pod nazwą, jako zestaw zagnieżdżony w zestawie w zasięgu
+
+% 1 1 0 1f877c65f81c7b0c0646785c16ef1555
+
+@ 0 6 0 1fec6b17fe6578a10d8df0f1b07fbf5b
++       `suite(m"Numbers") { … }` deklaruje grupę: blok działa z nowym `Testable` o tym samym
++       temacie co otaczający, więc testy wewnątrz należą do grupy, która należy do zestawu, a
++       ich ścieżki (`parser/Numbers/a decimal integer parses`) i identyfikatory to
++       odzwierciedlają. Wymaga otaczającego `Testable`, `Runner` (który wchodzi do grupy i
++       zgłasza jej początek i koniec) oraz `Codepoint`. Druga postać nadaje grupie przydomek,
++       `suite(n"numbers", m"Numbers")`.
+
+@ 0 4 0 079832ad22bb64d702daf9205d859b49
++       Do grupy zawsze się wchodzi, bez względu na selekcję: jej ciało jest tanie, a
++       przycinanie po nazwie udaremniłoby selekcję testów wewnątrz niej po haszu lub
++       przydomku. Przy runnerze z kolejką zdarzenie `SuiteEnded` grupy jest wstrzymywane, aż
++       zakończy się ostatnia asercja zakolejkowana w jej obrębie.
+
+% 1 1 0 11d26f283887ab9d17b2f1b4b2c25bfc
+
+% 1 1 0 1d7da67f3428d33715438001e93e43f0
+
+@ 0 1 0 02851ccdab783e5e1ef23fb81e1e9b28
++ entry .impromptu   dopuszcza testy, których żaden `Suite` nie deklaruje statycznie
+
+% 1 1 0 0581ab007e2b2fd71c490002d0fa712f
+
+@ 0 7 0 14dcf23321fa28ef00032e4b356d2b86
++       Testy, które program tworzy w trakcie działania – po jednym na plik korpusu zgodności –
++       albo testy uruchamiane poza jakimkolwiek zestawem na własnym `Runner` wywołującego,
++       deklaruje się wewnątrz bloku `impromptu`. W jego obrębie `test`, `suite` i pozostałe
++       działają jak zwykle, przypisane do pozycji otaczającego `Testable`, jeśli taki istnieje
++       (w przeciwnym razie `Testable.detached`), ale tematem ich `Testable` jest `Impromptu`,
++       więc wtyczka beneficence pomija je w zapisywanym indeksie testów, a host dowiaduje się
++       o nich dopiero w trakcie ich działania.
+
+% 2 1 0 1e05c73a04d240cb09257c624cf35e56
+
+% 3 1 0 04895e28117a6adc18de006bcc15e71b
+
+% 5 1 0 16210dc211f877f61a317c30328c0c0f
+
+% 6 1 0 0fa794e4bdab66f20fb6e9d89b3009f7
+
+% 2 1 0 0477f7f55aa1d53116502438a40f92c8
+
+% 0 1 0 019cca88fb1057ab06c87cbfaf2c7060
+
+% 0 1 0 1f189306eee82e1107369672921dbbc3
+
+% 1 1 0 093f76ef9c76c5e81402baf1b625a262
+
+@ 0 1 0 06749a2d6759d35f0f9cd76aaa33413b
++       Wynik bloku jest zwracany, więc `impromptu(test(m"probe"))` to `Test.Id`.
+
+% 1 1 0 1509a6c5a6d15600188c3274fe2a5903
+
+% 1 1 0 1f01927154ada7e70004cd1567d63a07
+
+@ 0 1 0 127f99ae33b7ffa80a9aba8ffb78d1f1
++ entry .aspirationally   zapisuje każdą asercję w bloku jako aspirację, która ani nie zawodzi, ani nie zostaje zapomniana
+
+% 1 1 0 1892b6fbe691ba8a1d157dd9ea07f072
+
+@ 0 7 0 14f800edbc1dde000e3c35bc753e6645
++       Test, który *powinien* przechodzić, ale wiadomo, że jeszcze nie przechodzi, pisze się
++       jak każdy inny, wewnątrz bloku `aspirationally`. Każdy werdykt w jego obrębie jest
++       zapisywany jako `Verdict.AspirePass` lub `Verdict.AspireFail` (a wyjątek jako
++       `AspireFail`), więc przebieg nie kończy się przez niego porażką, a host zgłasza go
++       osobno, gdy zacznie przechodzić. Blok widzi widok `Runner.Aspirational` kontekstowego
++       runnera, który współdzieli jego stan i raport, a różni się tylko sposobem zapisywania
++       werdyktów; czysta aspiracja jest kolejkowana pod `--workers` jak każda inna asercja.
+
+% 2 1 0 1bb955e3187bf21f14affec3f14bc6bd
+
+% 3 1 0 1ae2bd8c24ec666f1a28b06de605817c
+
+% 5 1 0 09b947f69921150f10529640dff1a711
+
+% 6 1 0 0cd32a79ff66034d04e52bc469dd882a
+
+% 0 1 0 0c52cf27a569c90e08e13e2d3afc08bf
+
+% 0 1 0 14561097192d2e010b785e01cfe1c933
+
+% 0 1 0 0fd1b8e0e27c94fd13988a6697ee292e
+
+% 0 1 0 12b2bd9689dcddfb1249c094dcdfb35d
+
+% 1 1 0 184e366e8f3209d609e0ca70bf4c9679
+
+% 1 1 0 0b19f1f1cb4922ea1e8bc98ea62d80c7
+
+% 1 1 0 0d33ed41d59ace62024d548c094f0fdb
+
+@ 0 1 0 110367fc5461f162198391248b58df8c
++ entry .Suite   zestaw testów: obiekt z tytułem, id i ciałem `run()`, prowadzony przez hosta za pomocą `invoke`
+
+% 1 1 0 0eb5a2efc1a492c71018ee005deb1036
+
+@ 0 6 0 0039e783f9e955671f0be398d541ffe6
++       `Suite` to jednostka, którą uruchamia host. Jest to `object` rozszerzający `Suite(id,
++       title)` lub `Suite(title)`, którego ciało `#run` deklaruje testy, i **nie jest klasą
++       główną**: wtyczka beneficence zapisuje każdy obiekt `Suite` w indeksie
++       `META-INF/services/probably.Suite` pliku jar, a runner fume odkrywa tam zestawy,
++       prowadzi każdy przez `#invoke` z ujściem zdarzeń i przedstawia strumień zdarzeń
++       `TestEvent`. Sam zestaw niczego nie przedstawia.
+
+% 2 1 0 11e9cb92c4e501910106f08a0588cac4
+
+% 3 1 0 02ab662639b691a31f4af379bbc564ed
+
+% 4 1 0 152ae1da069417491a06650c5fa956b1
+
+% 0 1 0 0e636f17610c418313f06ee6ac052dd8
+
+% 1 1 0 101e6f126de9c9621f147f64b5f699d3
+
+% 0 1 0 1dee046c3f7e7eee1b4f98799669803c
+
+% 0 1 0 005b58f2c611d8f71d8eb69bf426213c
+
+% 0 1 0 1109e2c89bad9009186e40f8aa1590eb
+
+% 0 1 0 18d2279a23523aed01989e084081c5b1
+
+% 1 1 0 1c221e79f8b55aea0e77df640291aa49
+
+@ 0 8 0 17dea4705b6e74a5145cddb7125a32a0
++       Zestaw ma **tytuł** i **id**. Id to to, po czym rozpoznają go selekcja i ścieżka; jest
++       albo podawane jako literał napisowy przed tytułem, albo wyprowadzane z tytułu przez
++       `.derive`: `Suite(m"Honeycomb Tests")` ma id `honeycomb-tests`. Podane id jest też typem
++       `Topic` zestawu: w jego ciele kontekstowy `Testable` to `Testable of "parser"`, każdy
++       blok `suite` przekazuje temat dalej, a metoda deklarująca testy dla zestawu wyraża to
++       przez `(using Testable of "parser")`. Zestaw z wyprowadzonym id ma temat `Derived`,
++       któremu nie jest równy żaden literał, więc jego testy pisze się w jego ciele lub w
++       metodzie generycznej względem tematu.
+
+@ 0 5 0 17117f8d92c966ba125d65264ec612cf
++       Zestaw jest `Testable` (jego nazwą jest tytuł, a jego `key` – id) i dostarcza swojemu
++       ciału dwa giveny: `#testable`, czysty widok samego siebie, oraz `#runner`, runner
++       bieżącego wywołania. Host może wywołać zestaw dowolną liczbę razy przez jeden
++       classloader: każde `#invoke` instaluje nowy runner, a `#runner` jest `inline`, więc
++       każda asercja odczytuje bieżący.
+
+@ 0 2 0 1311ad80e0455b9102920548b164baaa
++       Dla CI lub hosta zbyt starego, by odczytać schemat zdarzeń pliku jar, `.main` i `.run`
++       są zwykłym punktem wejścia: własny `main` obiektu testowego to
++       `Suite.main(arguments, Tests)`.
+
+% 1 1 0 1a9404b7e600a127095c57efa1171557
+
+% 1 1 0 024ca385db0ea80b0f2ea8b8c3b3c45b
+
+% 1 1 0 142cb7662f0b21a80b1dd71cb9e0654f
+
+% 1 1 0 0d0c1e21ae9d50cc1e1fc6ad8250aa1f
+
+@ 0 9 0 0d3e1562c0e5a6b0187050ad071b1f14
++   entry .Derivation   dowód, który ustala temat zestawu zawierającego tylko tytuł jako `Derived`
++       `Suite(title)` ma parametr typu, którego nic innego nie ogranicza; jedyna instancja
++       `Derivation`, `.derivation`, to `Derivation[Derived]`, i to ona nadaje takiemu
++       zestawowi temat `Derived`. Nie pisze się tego samodzielnie.
++   entry .derivation   given `Derivation[Derived]` w zasięgu niejawnym
++   entry .derive   id wyprowadzone z tytułu: małe litery i cyfry, z `-` między ciągami
++       Każdy ciąg znaków innych niż litera lub cyfra staje się jednym `-`, bez żadnego na
++       żadnym z końców, a jeśli nic nie zostaje – `suite`: `Suite.derive(t"Honeycomb Tests")`
++       to `honeycomb-tests`, a `Suite.derive(t"  y\"…\" interpolator (v2) ")` to
+
+% 0 1 0 1be2944eb9069c8e11bd75b6a836c9f1
+
+@ 0 7 0 05f03400528380631daa8b50bd1b6caa
++   entry .run   uruchamia zestawy ze zwykłym tekstowym raportem na `Stdio` w zasięgu, zwracając ich status
++       `Suite.run(arguments, suites*)` wywołuje każdy zestaw z argumentami (terminami selekcji
++       rozdzielonymi spacjami lub znakami nowego wiersza; pusty tekst oznacza wszystko),
++       wypisując `[pass] parser / Numbers / a decimal integer parses` dla każdego ukończonego
++       testu, `DetailMessage` albo `expected:`/`found:` z `DetailCompare` pod nim, `suite
++       threw: …` dla przerwanego przebiegu, a na końcu `3 passed, 1 failed`. Zwraca najgorszy
++       status: 0 – wszystko przeszło, 1 – porażki, 2 – zestaw rzucił wyjątek. Wymaga `Stdio`,
++       na przykład `stdios.javaLangSystemStdio`.
+
+% 2 1 0 1ed1210949b568bc05ff46dc20aff95b
+
+% 3 1 0 1231d90ccd896808149de3517a1884f9
+
+% 0 1 0 1d0b2713fa1789c10c19a076366533d2
+
+% 2 1 0 05e4428ed03bf51f0686e343c2fc9fec
+
+% 0 1 0 097fba90868731c313f59422748889f5
+
+% 0 1 0 1ca744e6b3cde6050bd25e43aa9d5004
+
+% 1 1 0 1bc4d70fff214b32175b2a4b4e875f38
+
+@ 0 13 0 0a321758a2f4a9f5036c83cba6feb051
++   entry .main   punkt wejścia `java` dla obiektu testowego: uruchamia zestawy, a następnie kończy działanie z ich statusem
++       `Suite.main(arguments, Tests)` to `.run` na standardowym `Stdio`, po którym następuje
++       `Exit(status).terminate()`. Obiekt testowy, który ma być uruchamiany jako `java -cp …
++       Tests`, definiuje `def main(arguments: Array[String]): Unit = Suite.main(arguments,
++       Tests)`; host taki jak fume nigdy tego nie potrzebuje.
++   entry #Topic   temat zestawu: jego id jako typ literałowy lub `Derived`
++   entry #workers   na ilu workerach mogą działać zakolejkowane asercje tego zestawu, gdy host w ogóle kolejkuje
++       Z `--workers=<n>` runner używa większej z dwóch wartości: liczby hosta i tej; wartość
++       domyślna, 1, zachowuje kolejność deklaracji. Należy ją nadpisać w zestawie, którego
++       czyste asercje mogą działać obok siebie. Kolejkowane są tylko asercje, których czystość
++       zweryfikował kompilator, więc nic, czego zasięg wyznaczają bloki zestawu, nie może być
++       współdzielone między workerami, ale efekty, których sprawdzanie nie śledzi (surowe I/O
++       z JDK, właściwości systemowe, biblioteka przywiązana do wątku), pozostają
++       odpowiedzialnością zestawu.
+
+% 2 1 0 09d18066f3398b8d1133e6ffe7526b39
+
+% 3 1 0 01ff550f55e7904f1af7c38fb4697b81
+
+% 4 1 0 0c91b8008771f7c4062ad6f5066e417c
+
+% 0 1 0 0a2666563368cab1123dd9c74af4e90a
+
+% 0 1 0 1fbc55b5c0b08de000d4d2c3cf2357fb
+
+% 0 1 0 1d6fc7b78ec9508d170ad8e41df010ce
+
+% 1 1 0 061691119e5e2ff814163b68255441ad
+
+@ 0 26 0 008c00f5c78383b81a872eeda83fd3e6
++   entry #runner0   runner bieżącego wywołania, zastępowany przez każde `invoke`
++       Stan danego przebiegu. Jest publicznym `var` tylko po to, by `#runner` mógł być
++       odczytującym go `inline given`; ciało zestawu sięga po runner przez `#runner`, a host
++       przez `#invoke`.
++   entry #runner   given `Runner[Report]`, przez który asercje wykonuje ciało zestawu
++       Inline, więc każde przywołanie odczytuje *bieżący* runner: zapamiętany alias
++       zachowałby pierwszy runner, jaki zestaw kiedykolwiek zobaczył, co jest błędne dla
++       zestawu wywoływanego więcej niż raz w jednym classloaderze – przez hosta uruchamiającego
++       kilka zestawów przez jeden loader albo przez inny zestaw, który wywołuje go jako zestaw
++       zagnieżdżony.
++   entry #testable   given `Testable of Topic`, dla którego ciało zestawu deklaruje testy
++       Czysty widok `Testable` zestawu, a nie sam zestaw, który przechwytuje swój runner, a
++       więc jest zdolnością. Równość `Testable` jest strukturalna (nazwa i rodzic), więc widok
++       jest wymienny z zestawem wszędzie tam, gdzie testy są grupowane lub raportowane.
++   entry #run   ciało zestawu: miejsce deklarowania jego testów
++       Abstrakcyjne; każda instrukcja w nim jest wykonywana przy każdym wywołaniu, również
++       przy `--list`, więc wartość używaną tylko wewnątrz ciał testów najlepiej zadeklarować
++       jako `lazy`.
++   entry #apply   uruchamia ciało zestawu jako zestaw zagnieżdżony w runnerze w zasięgu
++       `Tests()` w ciele innego zestawu wchodzi do tego zestawu jako do grupy tamtego, na
++       runnerze wywołującego, który na ten czas staje się `#runner` tego zestawu.
++   entry #invoke   uruchamia zestaw z ujściem zdarzeń i zwraca jego status zakończenia
++       `invoke(arguments, sink)` parsuje argumenty jako `Selection` (terminy rozdzielone
++       znakami nowego wiersza w jednym `Text`; pusty tekst oznacza brak terminów), instaluje
++       nowy runner, którego raport emituje każdą daną jako `TestEvent` przez `sink`, uruchamia
++       `#run`, opróżnia zakolejkowane asercje i zwraca 0 (wszystko przeszło), 1 (porażki) lub
++       2 (zestaw rzucił wyjątek, po zdarzeniu `RunTerminated`). Strumień kończy się
++       `RunCompleted`; selekcja, która niczego nie dopuszcza, najpierw emituje
++       `NothingMatched`.
+
+@ 0 4 0 068864593521d8e21e1e22e0a4810320
++       Gdy wśród argumentów jest `--list`, nic nie jest uruchamiane: przejście zapisuje, co
++       dopuszcza selekcja, i emituje po jednym `TestScheduled` na każdy dopuszczony test, z
++       jego rodzajem, oczekiwanym czasem pomiaru, tagami i osiami – w ten sposób host szacuje
++       budżet przebiegu, zanim cokolwiek przygotuje.
+
+% 2 1 0 1b250c8c524caf0113bdc1a0556a9906
+
+% 3 1 0 10a4b421fd36d3b10eb6104a0c0b07e9
+
+% 5 1 0 1528ae978e0fe1ec1862c8b2f8471d54
+
+% 1 1 0 14cb300d1f86823b10489eedc776d05f
+
+% 0 1 0 1a4360cdcc1239691068da04b017d244
+
+% 0 1 0 1e92350ae479102d133dcaef0ae2ff4c
+
+% 0 1 0 04a6cbcba78d64a419bc4e8671c2710e
+
+% 0 1 0 1e046f71bcfda4f81a90d87f37ba26d0
+
+% 1 1 0 0a42ed35f4dd2c490a674d74a935329f
+
+@ 0 2 0 03359035ed7417dc182402e7e55ac254
++       Ujście jest czystą funkcją (`TestEvent -> Unit`) i pod `--workers` może być wywoływane
++       z wątku workera, więc musi być bezpieczne przy współbieżnych wywołaniach.
+
+@ 0 1 0 00c52d6d6c04e3d815ecaab445e3223d
++ entry .Testable   to, do czego dołączone są testy: `Suite`, grupa `suite` lub blok `impromptu`
+
+% 1 1 0 15bf09be10c654cd0efdfeada1a2c0ef
+
+@ 0 7 0 1b20fdfbdd77398704f7c48df2484550
++       Każda deklaracja `test` i `suite` przyjmuje `Testable` jako parametr kontekstowy, który
++       mówi, gdzie należy test; jego `#Topic` mówi to **statycznie**: literałowe id zestawu
++       `Suite`, dla którego zadeklarowano test (`Testable of "parser"`), przekazywane dalej
++       przez każdą grupę `suite` w jego obrębie; `Derived` dla zestawu, którego id wyprowadzono
++       z tytułu; lub `Impromptu` dla testów znanych dopiero po ich uruchomieniu. Kompilator
++       odrzuca więc test, który nigdzie nie należy, a wtyczka beneficence, odczytując temat z
++       każdej kompilowanej deklaracji, wypisuje testy każdego zestawu bez uruchamiania
++       czegokolwiek.
+
+@ 0 4 0 0862453795c4053401843fcc97912535
++       `Testable` ma `#name` (`Message`), opcjonalne `#parent`, opcjonalne `#moniker` oraz, w
++       przypadku zestawu, `#key` (jego id). Równość jest strukturalna – nazwa i rodzic – więc
++       dwie wartości zbudowane w różnych wierszach dla tej samej pozycji w hierarchii są równe,
++       a `Test.Id#id` jest funkcją wyłącznie tekstów nazw.
+
+% 2 1 0 0b220132041f9e69078c141bc829eb23
+
+% 3 1 0 0068f9994aeafa1700325faff86cf5af
+
+% 0 1 0 1a82537c8ccbfded0549558574f81c20
+
+% 0 1 0 025f170ab08f18ff0998d6e2ee0e45b5
+
+% 0 1 0 1205b6ccf06baff904b0685e67322ccf
+
+% 1 1 0 03624fa2b3b5e86f0718eb713fba68e3
+
+% 1 1 0 06a5c0ce3df87dea0bacc76394a86da9
+
+% 1 1 0 18c37e73bebb2c100500983de13d0c8b
+
+% 1 1 0 1886e396d31f391d132c91db01de766e
+
+% 0 1 0 0aadd1e1bfcc1f6e173418802d748fa1
+
+@ 0 22 0 1c7ef3b48beb8c500df2e48494aaa09b
++   entry .orphan   błąd kompilacji dla `test` bez `Testable` w zasięgu
++       Tekst adnotacji `@missingContext` na parametrze każdej deklaracji: _a test must be
++       declared for a Suite — in its body, or in a method taking `(using Testable of "<the
++       suite's name>")` — or inside an `impromptu` block_.
++   entry .of   tworzy `Testable of topic` z nazwy, z opcjonalnym rodzicem, przydomkiem i kluczem
++       `Testable.of[topic](name, parent, moniker, key)` wymaga `Codepoint`, który wskazuje
++       miejsce deklaracji. `suite` używa go, aby tworzyć `Testable` każdej grupy z
++       otaczającego.
++   entry .impromptu   ta sama pozycja w hierarchii co `Testable`, z tematem `Impromptu`
++       Dla testów nieprzypisanych statycznie do danego `Testable`: `impromptu` buduje w ten
++       sposób kontekst bloku, więc test impromptu jest zgłaszany na pozycji otaczającego
++       zestawu, ale nie ma go w indeksie.
++   entry .detached   miejsce, do którego trafiają testy `impromptu`, gdy blok nie jest otoczony żadnym `Testable`
++       Korzeń `Testable of Impromptu` o nazwie `impromptu` i wartość, którą należy związać
++       jako given tam, gdzie testy są uruchamiane poza jakimkolwiek zestawem, jak w REPL lub w
++       samouczku.
++   entry #Topic   zestaw, do którego należą testy, jako typ: literałowe id, `Derived` lub `Impromptu`
++   entry #name   tytuł zestawu lub grupy
++   entry #moniker   stały przydomek grupy, jeśli go nadano
++   entry #key   id zestawu jako tekst; `Unset` dla grupy
++       W odróżnieniu od przydomka id nie musi być identyfikatorem Javy (`html-5` nim jest),
++       więc jest zwykłym tekstem, a selekcja, która je podaje, może zostać sparsowana jako
++       wzorzec glob.
++   entry #parent   grupa lub zestaw, w którym ten się znajduje, albo `Unset` dla korzenia
++   entry #id   `Test.Id` samego zestawu lub grupy: to, po czym rozpoznaje go ścieżka i węzeł raportu
+
+@ 0 4 0 1325b7623eaa2199007c113a40c012d6
++ entry .Impromptu   temat `Testable`, którego testy nie są w czasie kompilacji przypisane do żadnego `Suite`
++     Nieprzezroczysty `Label`, któremu nie jest równy żaden literał: testy zadeklarowane pod
++     `Testable of Impromptu` (wewnątrz bloku `impromptu` lub dla metody przyjmującej `(using
++     Testable of Impromptu)`) są znane dopiero po ich uruchomieniu i nie obejmuje ich żadne
++     listowanie wykonane bez uruchomienia zestawu.
+
+@ 0 5 0 1142414bf30122871e28217f5e1b744c
++ entry .Derived   temat zestawu, którego id wyprowadzono z tytułu
++     Nieprzezroczysty `Label`, któremu nie jest równy żaden literał, podobnie jak
++     `Impromptu`, więc testy `Suite(m"Jacinta tests")` można zadeklarować tylko tam, gdzie w
++     zasięgu jest jego własny `Testable` – w jego ciele – albo w metodzie generycznej
++     względem tematu, `[topic <: Label](using Testable of topic)`. Zestaw, któremu nadano id,
++     ma natomiast to id jako temat.
+
+@ 0 1 0 1cd9e1c0228d2401022b9740adc87555
++ entry .Test   zadeklarowany test wraz z ciałem, gotowy do asercji, sprawdzenia lub dopasowania
+
+% 1 1 0 10cdbdda22643e6517966343c09534bd
+
+@ 0 3 0 18dbcef5e891101c0ebba8291a31444a
++       `Test[result]` łączy `Test.Id` z `#action`, czyli ciałem jako funkcją `Harness`, który
++       je uruchamia, i powstaje przez zastosowanie `Test.Id` do bloku: `test(m"…")(body)`.
++       Rozszerzenia obiektu towarzyszącego to trzy sposoby uruchomienia testu:
+
+@ 0 10 0 1cff00a92a3a624a092b069bcc7608cf
++       - `.assert(predicate)` uruchamia ciało, stosuje predykat, zapisuje `Verdict` i zwraca
++         `Unit`. Jego ciało musi być **czyste** – nie może domykać się nad żadną zdolnością
++         (`Monitor` z otaczającego `supervise`, `Online`, uruchomionym serwerem) – ponieważ
++         runner z kolejką może je uruchomić na workerze już po wyjściu z bloku, który wyznaczał
++         zasięg zdolności. Ciało, które jej potrzebuje, tworzy ją wewnątrz siebie albo test
++         staje się `check`. Niewybrane `assert` w ogóle się nie uruchamia.
++       - `.check(predicate)` przyjmuje dowolne ciało, uruchamia je w miejscu, zapisuje werdykt
++         i **zwraca wartość**, więc późniejsze testy mogą na niej budować. Niewybrane `check`
++         nadal się uruchamia (jego wartość płynie dalej), ale niczego nie zapisuje.
++       - `.matches { case … }` stwierdza, że wartość pasuje do wzorca.
+
+% 2 1 0 00e812cc4835509c186994839fe0a40d
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 02673415149e3cd2086e02e3d5c1994a
++         label Test jest nazwaną wartością
+
+% 1 1 0 068d034c1bd349d30250e61d66fd6eef
+
+% 2 1 0 146bc98a616803790124c7772f4f2104
+
+% 4 1 0 1516ed574110415b0e9580b6f3991b02
+
+% 5 1 0 023312f6ba7753db1709d3792fff1178
+
+% 7 1 0 19ff268ef9a0e225175d73a0f23c61fa
+
+% 0 1 0 0400a891b63f5c23038995aecca0fb46
+
+% 1 1 0 11746f8389a0b6921a9b12f875292d29
+
+@ 0 1 0 00110fb8b7bd16d815ac92638f46b456
++         label Asercja zapisuje werdykt i niczego nie zwraca
+
+% 1 1 0 12f07540d46b7d800346c18ce954f14b
+
+% 2 1 0 170be942ebb6ac5f0097e859cf3b5648
+
+% 3 1 0 03e3bcd7a718ae621ad2c9e47616d385
+
+% 5 1 0 0a9478c087a0d57f18c786121c0fc010
+
+% 6 1 0 161fb19c5cc56db00fe600091746a2e8
+
+% 8 1 0 0a1007f632c4827a15a348509fc6b76e
+
+% 0 1 0 0266961267021b3607e4916866b789e9
+
+% 1 1 0 1d18d388b25dd5fd1d2ed7470954ccea
+
+@ 0 1 0 1387fb6d50f0be011060cc42e9bdcf68
++         label Sprawdzenie zwraca wartość, na której może budować późniejszy test
+
+% 1 1 0 04b49aaa56f2626912a0403f26c1dfbe
+
+% 2 1 0 1a65f73c0e32ba2411ffd5788600f124
+
+% 3 1 0 15d4353cc3c1abb009ddd30346bb08f1
+
+% 5 1 0 060ef5207dc249861038dbafd725b8a1
+
+% 6 1 0 0af84b0b6e2df7e503d9939dec9c13b5
+
+% 8 1 0 1ab03fa05f7bae6206722d37b67b0aba
+
+% 0 1 0 0b6e5c30591f88211c651d8607733a4f
+
+% 0 1 0 0e4b7df6c6778e3908963ec834ea559b
+
+% 1 1 0 08f6055ab353e18a09eee7ac91881732
+
+@ 0 1 0 10d7724afbe569ff10c08b1f646b0dac
++         label Nieudana równość jest zgłaszana jako kontrast, pole po polu
+
+% 1 1 0 1cc98a39e8150ebd08a35ad4d4b8aaad
+
+% 2 1 0 13f79a07c4d860a917f4ba090cd8345d
+
+% 3 1 0 056300f5d837926f0fea3077aa032f6e
+
+% 5 1 0 1c76a96c1145f65d1117d2fbef28fc7b
+
+% 6 1 0 05fc5cb5d452a7d51e6a8b9c64525852
+
+% 8 1 0 0b6ec48ddfd450de1fb46dd17ba069bc
+
+% 0 1 0 0ea2eee90952a7141318367f6e8d2ecf
+
+% 0 1 0 166f47a2278e821a0bb53037a07bc712
+
+% 1 1 0 0d804373d0fae29e0efb0bb3e6a36883
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 12 0 09019798abe4575413c6e9c2ebe40079
++       Zarówno `assert`, jak i `check` to makra, które znajdują `Runner` w zasięgu (w
++       przeciwnym razie błąd kompilacji _No `Runner` instance is available_) oraz
++       `Inclusion[report, Verdict]` i `Inclusion[report, Verdict.Detail]` dla jego typu
++       raportu. Nic innego nie jest rozstrzygane przy asercji: zapisuje ona, gdzie napisano jej
++       predykat, i zbiera, tylko w razie porażki, zmienne lokalne, nad którymi predykat się
++       domyka. Nieudany predykat jest następnie przekazywany zainstalowanemu `Diagnostician`,
++       jeśli przebieg miał diagnozować porażki, a jego wyjaśnienie –
++       `Verdict.Detail.Dissection` wartości pośrednich predykatu, a dla równości
++       `Verdict.Detail.Compare` obu jej stron – jest zapisywane i emitowane jako
++       `TestEvent.DetailDissection` i `TestEvent.DetailCompare`. Ciało, które rzuca wyjątek,
++       zapisuje
++       `Verdict.Throws`; predykat, który rzuca wyjątek – `Verdict.CheckThrows`. Wartości
++       przechwycone za pomocą `Harness#capture` podczas nieudanego testu są zapisywane jako
++       `Verdict.Detail.Captures`.
+
+% 1 1 0 0d9cf07f5adc422404acc29251562888
+
+% 1 1 0 00227d75aba64b8419b9cadb64f01567
+
+% 1 1 0 1ec124565bf3b65b0731f73feb850132
+
+% 1 1 0 10f675517d27b73613862b81c9e9c5a0
+
+% 1 1 0 079b9330fe7bf9d407b04fb552c13739
+
+@ 0 18 0 004e2db5df6f4860175effd17cb0104e
++   entry .assert   uruchamia czysty test i zapisuje, czy jego predykat był spełniony; `assert()` zapisuje, że test się wykonał
++       Rozszerzenie dla `Test[test]`. `assert(predicate)` zapisuje `Pass` lub `Fail` (albo,
++       wewnątrz `aspirationally`, `AspirePass`/`AspireFail`); `assert()` bez predykatu
++       przechodzi zawsze, gdy ciało zwróci wartość. Ciało musi być czyste: w jednostce
++       kompilowanej ze sprawdzaniem przechwytywania `Test`, który przechwytuje zdolność, jest
++       odrzucany w miejscu wywołania przez sprawdzanie przechwytywania, ponieważ rozwinięcie
++       przekazuje go do parametru typu czystego `Test[test]`. Pod `--workers` kolejkowana
++       jest tylko asercja,
++       której czystość zweryfikował kompilator; asercja z jednostki skompilowanej bez
++       sprawdzania przechwytywania działa w miejscu, po kolei.
++   entry .matches   stwierdza, że wartość pasuje do wzorca funkcji częściowej
++       `test(m"…")(value).matches { case Some(_) => }` to `assert(pf.isDefinedAt(_))`.
++   entry .check   uruchamia dowolny test w miejscu, zapisuje werdykt i zwraca wartość
++       Rozszerzenie dla `Test[test]^`, więc ciało może domykać się nad zdolnościami. Wartość
++       jest zwracana do użytku późniejszych testów; ciało, które rzuca wyjątek, rzuca go
++       ponownie po zapisaniu `Verdict.Throws`, ponieważ nie ma wartości do zwrócenia. `check`
++       uruchamia się nawet wtedy, gdy selekcja go nie dopuszcza, oraz pod `--list`, więc
++       długie obliczenie potrzebne tylko późniejszym asercjom obciąża każde listowanie.
++   entry .Id   tożsamość testu: jego nazwa, zestaw, miejsce deklaracji oraz przydomek, tagi i klucz
+
+% 1 1 0 02cc942834040e3a0d43abb34984c083
+
+@ 0 5 0 168b721de8d119790b8958f5369c8853
++         `Test.Id` to to, co zwraca `test(m"…")` przed podaniem ciała, i to, czym kluczowany jest
++         każdy wiersz raportu, zdarzenie i selekcja. Jego `#id` to sześć cyfr szesnastkowych
++         obliczanych wyłącznie z **tekstu** nazwy i nazw zestawów, więc host czytający indeks
++         wtyczki beneficence dochodzi do tego samego id bez konstruowania testu. Jest
++         `Comparable` leksykograficznie według ścieżki identyfikatorów od korzenia.
+
+@ 0 2 0 032e644c616443d61b336c5e4d37d3f4
++         Zastosowanie id do bloku tworzy `Test`; `#over` zamiast tego rozpina go na jednej lub
++         dwóch osiach.
+
+% 0 1 0 1be038fca72645e01fb87bce5d0b3fce
+
+% 0 1 0 08248bb1543949521c28c5e6760d3893
+
+@ 0 26 0 1a63d099dc4f2fc4010520848c265dea
++     entry .comparable   porządkuje identyfikatory według ich ścieżki haszy od zestawu głównego
++     entry #name   opis, jako `Message`
++     entry #suite   `Testable`, dla którego zadeklarowano test, lub `Unset` dla korzenia
++     entry #codepoint   miejsce deklaracji testu: plik źródłowy i wiersz
++     entry #moniker   stały identyfikator `n"…"`, jeśli go podano
++     entry #tags   zadeklarowane tagi, w kolejności deklaracji
++     entry #key   id zestawu; `Unset` dla testu lub grupy
++     entry #timestamp   moment utworzenia id, w milisekundach od epoki
++     entry #id   sześć cyfr szesnastkowych: dolne 24 bity hasza nazw
++         Jeśli `h(suite)` to suma wartości `String#hashCode` tekstów nazwy zestawu i nazw jego
++         przodków, id to dolne 24 bity `h(suite) ^ name.text.hashCode` zapisane szesnastkowo,
++         więc `a quoted name` pod `Probably Tests/group` ma id, które może obliczyć każdy, kto
++         czyta nazwy.
++     entry #ids   identyfikatory od tego wpisu w górę do korzenia, począwszy od tego
++     entry #label   to, co oprócz hasza i nazwy wskazuje ten wpis: przydomek lub id zestawu
++     entry #apply   tworzy `Test` z ciała, które może używać `Harness` w zasięgu
++         `test(m"…")(body)`: ciało jest typu `Harness ?=> result`, więc może wywoływać
++         `capture`. Przechwycenie dowolnej zdolności przez ciało trafia do zwracanego `Test`
++         (`Test[result]^{body}`), a nie do `result`, więc test, który sprawdza czystą wartość
++         obliczoną za pośrednictwem zdolności, nie odciska tej zdolności na typie wartości.
++     entry #over   rozpina test na jednej lub dwóch osiach, z jedną komórką na każdą wartość określoną przez ciało
++         `over(axis)(body)` to `Spread`: ciało jest uruchamiane raz dla każdej wartości `Axis`,
++         a każdy werdykt jest zapisywany przy współrzędnej tej wartości w tym jednym nazwanym
++         teście. Ciało częściowe (`{ case … }`) pozostawia luki przy wartościach, dla których
++         nie jest określone. Zamiast osi może wystąpić obiekt towarzyszący enuma, `over(Codec)`,
++         z przypadkami enuma jako wartościami. `over(first, second)` to `Spread2` nad siatką
++         dwóch osi.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 11484d296722d2901d59412f447e10fb
+
+% 0 1 0 02b23851acf6cc14036aebc5882c785c
+
+% 0 1 0 14c6a61b109d3fc90a0fde7def253b07
+
+% 0 1 0 0bae4a69a36e11e610be3c56d7cbcfc3
+
+% 0 1 0 18cdbedc4f5ed69f1b2aa2dc71a380cc
+
+% 0 1 0 051e13b32723cd8612ac72b1a91cc67d
+
+% 0 1 0 0abba437830a5d4906e96e60c4129248
+
+% 0 1 0 01358bbbbf19d48104ef1f0c77673d5b
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 3 0 143a3d11b715cd651276bd899e6ad604
++     entry #depth   na ilu poziomach poniżej korzenia znajduje się ten wpis
++   entry #id   `Test.Id` testu
++   entry #action   ciało, jako funkcja `Harness`, który je uruchamia
+
+@ 0 1 0 11c3386f893ef06507888dc57d54338c
++ entry .Tag   etykieta testu, niezależna od jego nazwy: `slow`, `network`, `nightly`
+
+% 1 1 0 0ccfff7a60736a7c141e2bbfe947c7c6
+
+@ 0 5 0 0e263d4a6e7654b00822d3758842d734
++       Tag zapisuje się jako literał `n"…"` po opisie testu, `test(m"fetches", n"slow",
++       n"network")`, sprawdzany w czasie kompilacji względem reguły `Tagging`
++       (`[A-Za-z_][A-Za-z0-9_-]*`, więc można go wpisać bez cudzysłowów w wierszu poleceń i
++       uzupełnić w powłoce). Selekcja dopuszcza po tagu (`tag:slow,network`: dowolny z nich) i
++       wyklucza po tagu (`not:tag:slow`), a host może wyliczyć z indeksu tagi, które niesie
++       ścieżka klas.
+
+@ 0 4 0 04a3c3e437396a51197f9224f96e9be6
++       `Tag` jest własnym typem, a nie `Text`, więc deklaracja nie może pomylić opisu z tagiem,
++       i jest typem `into`, więc literał `Name[Tagging]` jest akceptowany bezpośrednio. **Nie**
++       jest eksportowany do modułu zbiorczego `soundness`, gdzie `Tag` to tag HTML z honeycomb:
++       gdy trzeba zapisać ten typ, nazywa się go `probably.Tag`.
+
+% 0 1 0 0584ac7ea544517111ff119d161b4304
+
+% 1 1 0 0f1ccabcd97cf8d81bb425d24b709662
+
+@ 0 8 0 1f80db6d9f1f3d99025d9e8e59625dce
++   entry .showable   przedstawia tag jako jego tekst
++   entry .inspectable   przedstawia tag jako `Tag(slow)`
++   entry .conversion   `Conversion[Name[Tagging], Tag]`, dzięki której literał `n"…"` może być tagiem
++       Gdy w zasięgu jest też płaszczyzna `Probing`, literał będący poprawnym identyfikatorem
++       Javy jest wnioskowany jako przecięcie obu płaszczyzn i dzięki kowariancji jest
++       `Name[Tagging]`; literał z `-` jest wyłącznie tagiem.
++   entry #name   tag jako zweryfikowana `Name[Tagging]`
++   entry #text   tekst tagu
+
+@ 0 1 0 0b983a100a9a0ab905362e7e209befe7
++ entry .Tagging   płaszczyzna nazewnictwa tagów: `Name[Tagging]`
+
+% 1 1 0 1ea1b1e56b237f6a14e9a88f67515800
+
+@ 0 5 0 1c8544289e2383b11996bc65e61849e6
++       Zapieczętowany trait bez własnych wartości, używany jako płaszczyzna nazw nomenklatury
++       dla tagów. Jego reguła `.nominative` to `MustMatch["[A-Za-z_][A-Za-z0-9_-]*"]` i jest
++       eksportowana na poziomie pakietu jako `taggingNominative`, więc `n"no-network"` jest
++       poprawne wszędzie tam, gdzie zaimportowano `probably`.
++   entry .nominative   reguła, do której musi pasować nazwa tagu: znaki identyfikatora i `-`
+
+@ 0 1 0 019027ec5d5306220a98195ea713a9ef
++ entry .Probing   płaszczyzna nazewnictwa przydomków: `Name[Probing]`
+
+% 1 1 0 1eae97b59bb64d14035911cc66839b12
+
+@ 0 6 0 0c547dc1db704e41085c480b1f403490
++       Zapieczętowany trait bez własnych wartości, używany jako płaszczyzna stałych
++       identyfikatorów testów, zestawów i osi. Jego reguła `.nominative` to `JavaIdentifier` i
++       jest eksportowana na poziomie pakietu jako `nominative`, więc `n"square"` jest poprawne
++       wszędzie tam, gdzie zaimportowano `probably`; przydomek wskazuje test w selekcjach,
++       wykresach i porównaniach historycznych niezależnie od jego opisu.
++   entry .nominative   reguła, do której musi pasować przydomek: poprawny identyfikator Javy
+
+@ 0 5 0 084e872f3f41012e04f7bdac82fea33f
++ entry .nominative   `Probing.nominative`, eksportowane, aby przydomki `n"…"` działały z `import probably.*`
++     Zarówno ta reguła, jak i `taggingNominative` są razem w zasięgu, więc literał poprawny
++     w obu płaszczyznach (`n"slow"`) jest wnioskowany jako ich przecięcie i może służyć
++     zarówno jako przydomek, jak i jako tag; literał z `-` jest wyłącznie tagiem. Moduł
++     zbiorczy `soundness` eksportuje ją pod tą samą nazwą, więc zestaw używający literałów
++     `n"…"` importuje `soundness.nominative` po nazwie.
+
+@ 0 1 0 00efcd0d875dc3c402fa3571ab20ac9c
++ entry .taggingNominative   `Tagging.nominative`, eksportowane, aby tagi `n"…"` działały z `import probably.*`
+
+@ 0 6 0 190ab6a78d8c820f02cae9919f8397e4
++ entry .Checkable   `Checkable` z hypotenuse, reeksportowane: jak `===` porównuje wartość z inną
++     Słownictwo sprawdzania – `===`, `!==`, `+/-`, `±`, `Checkable` i `Tolerance` – znajduje
++     się w `hypotenuse.check`, aby moduły, które jedynie porównują wartości, nie musiały
++     zależeć od frameworku testowego, i jest tu reeksportowane, aby `import probably.*` nadal
++     je dostarczał. `left === right` wymaga `left is Checkable against right`: równe tablice
++     zamrożone, łańcuchy element po elemencie, dowolna wartość `Commensurable` albo wartość
++     względem `Tolerance`.
+
+% 2 1 0 0254c86f158f7dcc09b642eee48afc1d
+
+% 3 1 0 00a61528876178a5067fc205bcda4a3a
+
+% 0 1 0 050b2b72426fbf11149ed98c04ef8033
+
+% 0 1 0 1fb326121d1db29004cc168ddf7361e7
+
+% 0 1 0 18d586290779212d0608249e003e7a5d
+
+% 1 1 0 0b1bed186660021809ae6c6759a79e46
+
+@ 0 4 0 13a08b4bc1a9d51d00342b0e0d49659f
++ entry .Tolerance   `Tolerance` z hypotenuse, reeksportowane: wartość z marginesem, tworzona przez `+/-` lub `±`
++     `base +/- tolerance` (lub `base ± tolerance`) to `Tolerance[value]`, która obejmuje
++     (`covers`) każdą wartość leżącą ściśle w obrębie marginesu, dla `===` w asercji
++     liczbowej, w której dokładna równość jest niewłaściwa.
+
+@ 0 1 0 0c3d23680fe7ad6508f5df94175065be
++ entry .Harness   to, pod czym działa ciało testu: miejsce na przechwytywanie nazwanych wartości do raportu o porażce
+
+% 1 1 0 13d3e43915023f84052593da3a10869d
+
+@ 0 6 0 1e7eefe4d5619d310f070d65d173ed2b
++       Każde ciało testu jest typu `Harness ?=> result`; runner dostarcza nowy `Harness` dla
++       każdego przebiegu, a `#capture` zapisuje w nim nazwaną wartość. Gdy test się nie
++       powiedzie, przechwycone wartości są zapisywane jako `Verdict.Detail.Captures` i
++       emitowane jako `TestEvent.DetailCaptures`, więc raport pokazuje wartości pośrednie obok
++       werdyktu. Given `harnesses.threadLocalHarness` przechwytuje przez bieżący harness
++       runnera z kodu, który nie ma własnego `Harness`.
+
+% 2 1 0 11460e7e40dd79fe065afdb74d383ea0
+
+% 3 1 0 0296899e2559020719b85e1a6450ea6c
+
+% 5 1 0 1c25b00dbc25695c04b05c684363087e
+
+% 6 1 0 05da82368410452c156c4f1c56edf954
+
+% 0 1 0 01625f8d295eda8009eefe2f6da534cf
+
+% 0 1 0 10f21de0d58ad99111676bc776f4ff19
+
+% 0 1 0 12b71f3942364ab00745ec26d755d2ed
+
+% 0 1 0 00f3b51ba3acff0f137a556b7adf0557
+
+% 0 1 0 1504fa6f948001c3194edaec6b636f7d
+
+% 1 1 0 0218613d52112a1c044238e194478fcf
+
+@ 0 3 0 1383d913a1cc9da716987a820ef6168b
++   entry #capture   zapisuje nazwaną wartość, zdekomponowaną na potrzeby raportu, i zwraca ją bez zmian
++       Wymaga `Decomposable` dla typu wartości (derywowanego dla klas case, kolekcji i
++       wszystkiego, co jest `Inspectable`); przedstawieniem jest `inspect` dekompozycji.
+
+@ 0 1 0 1441bde88e60e53b17b962aa4ac6c7cd
++ entry .Diagnosis   jak nieudana asercja jest diagnozowana po fakcie: żądanie i miejsce
+
+% 1 1 0 030d192820bf1ba113ce554164f5183c
+
+@ 0 5 0 1f2d5323ca762bb90cfbbb555827ba4f
++       Miejsce asercji nie zawiera żadnej logiki przedstawiania. Gdy jej predykat zawiedzie, a
++       przebieg uruchomiono z `--diagnose=<presentations>`, zainstalowany `Diagnostician`
++       otrzymuje miejsce, wartość, dla której predykat zawiódł, i zmienne lokalne, nad którymi
++       predykat się domyka, a odpowiada wartościami `Verdict.Detail`. Ciało testu nie jest
++       uruchamiane ponownie; predykat jest obliczany jeszcze raz, na tej samej wartości.
+
+% 1 1 0 1c2c7607776589810100c81512c2dd11
+
+% 0 1 0 1dd798981ee15bec1c1a7dea38b2c991
+
+% 1 1 0 140afe7f809f173103fd41c7d54be28d
+
+@ 0 5 0 194e06d225380346008d6b53c306d26c
++       Ponieważ sposób przedstawienia wybiera się w chwili diagnozy, zestaw dostarcza
++       instancje `Inspectable`, `Showable` i `Contrastable` – w obiekcie towarzyszącym, przez
++       import poprzedzający asercję albo jako składową obiektu, w którym napisano zestaw – nie
++       wiedząc, czy jakikolwiek frontend o nie poprosi. Given lokalny dla metody albo
++       składowa klasy zamiast obiektu nie jest widoczny.
+
+% 1 1 0 10b4ad9765963dd807c48cc3f43fdc20
+
+% 1 1 0 057958c328ed37001f4d0b8aad3af27e
+
+@ 0 13 0 06324554b77e24ad1a22525b1beeb894
++   entry .Presentation   jeden ze sposobów przedstawienia porażki: `Inspect`, `Show`, `Contrast` lub `Dissect`
++       `Inspect` przedstawia każdą wartość przez `Inspectable`, a `Show` przez `Showable`
++       (każdy w razie potrzeby korzysta z drugiego); `Contrast` porównuje strukturalnie obie
++       strony nieudanej równości; `Dissect` podaje każdą wartość pośrednią predykatu.
++   entry .Request   sposoby przedstawienia, o które poprosił host
++     entry .none   brak jakiejkolwiek diagnozy, wartość domyślna
++     entry .parse   odczytuje rozdzieloną przecinkami listę `inspect`, `show`, `contrast` i `dissect`, ignorując inne słowa
++     entry #nil   czy o nic nie poproszono
++     entry #has   czy poproszono o dany sposób przedstawienia
++   entry .Site   miejsce zapisania predykatu: otaczająca go klasa najwyższego poziomu, jego przesunięcia w źródle i jego tekst
++       Przesunięcia to przesunięcia drzewa predykatu w TASTy klasy; po nich silnik odnajduje
++       go ponownie. `#known` jest fałszem dla predykatu niezapisanego przy asercji, takiego
++       jak predykat `assert()`.
+
+@ 0 1 0 05980b86a5c6a4e11b294c3a96841d7b
++ entry .Diagnostician   silnik, który potrafi wyjaśnić nieudany predykat
+
+% 1 1 0 15639446330ba76f0540a398e07c140a
+
+@ 0 4 0 033acf17887118750da22ac8c3ba5d05
++       `#diagnose` podaje szczegóły porażki albo `Nil`, gdy nie ma nic do powiedzenia; nigdy
++       nie rzuca wyjątku. Silnik instaluje się dla classloadera za pomocą `.install`, co robi
++       `Streamer.stream`, gdy `probably.diagnosis` jest na ścieżce klas. Gdy żaden nie jest
++       zainstalowany, diagnozowana porażka zapisuje `toString` wartości jako komunikat.
+
+% 1 1 0 0293b2926a966ba21be98a867be5f888
+
+@ 0 2 0 0667e414bf1105a9197dc38c00afe832
++   entry .install   czyni silnik tym, do którego trafiają nieudane asercje
++   entry .apply   zainstalowany silnik, jeśli jest
+
+@ 0 1 0 0a3e7e92a2de888506678e888e50c307
++ entry .Dissector   silnik, który odczytuje nieudany predykat z TASTy i kompiluje jego instrumentowaną kopię
+
+% 1 1 0 00f39fe32b20c93316c3477a55fb7828
+
+@ 0 6 0 1d4a2bc2e4fbfb791a503b2148cca396
++       W `probably.diagnosis`, który zależy od kompilatora. Dla każdego zawodzącego miejsca,
++       jednokrotnie: drzewo predykatu jest odczytywane z TASTy klasy, która go otacza (TASTy
++       jest serializowane przed inliningiem, więc predykat jest tam w postaci zapisanej);
++       każde podwyrażenie jest opakowywane w rejestrator inline, parametr staje się wartością,
++       dla której predykat zawiódł, a każda wolna zmienna lokalna – wartością przechwyconą
++       przez miejsce; wynik jest kompilowany przez kompilator etapowania w classloaderze
++       zestawu. Dopiero wtedy rozstrzygane jest, która klasa typów przedstawia wartość.
+
+@ 0 4 0 15b05b462f82c0fa09267b12facd87c0
++       Predykat, którego nie da się zinstrumentować – używa prywatnej składowej lub metody
++       lokalnej albo jego instrumentowana kopia się nie kompiluje – jest diagnozowany mniej
++       szczegółowo: bez schodzenia do argumentów wywołań inline, a następnie wyłącznie na
++       podstawie wartości, dla której zawiódł. Ustawienie właściwości systemowej
++       `probably.diagnosis.debug` wypisuje przyczynę.
+
+% 1 1 0 1cb9118fd16e1e761e25804be466b5d9
+
+@ 0 1 0 09d19207d7ee20b6156d1c2830f8a488
++   entry #diagnose   szczegóły jednej porażki, z zapamiętanej diagnozy miejsca
+
+@ 0 1 0 17cdc4444ecce98e019d5785b9e6ece7
++ entry .harnesses   polityki `Harness`, każda jako given do zaimportowania po nazwie
+
+% 1 1 0 197fe4bd364380a003bc62c2ca6c1797
+
+@ 0 6 0 0315f2a1af0266e4079b93cc3750fbc7
++       `Harness` to zwykle ten, który ciało testu otrzymuje kontekstowo. Podany tu given
++       obsługuje kod, który nie ma pod ręką harnessu, ale działa w obrębie testu.
++   entry .threadLocalHarness   `Harness`, który przechwytuje przez test działający obecnie w tym wątku
++       `capture` deleguje do bieżącego harnessu runnera dla wątku (`Runner.run` instaluje go
++       na czas każdego ciała testu) i zwraca wartość bez zmian, gdy żaden test nie działa.
+
+@ 0 1 0 133ce82e227af5df0cb5c26fe0b92925
++ entry .decimalizers   domyślne przedstawianie liczb dziesiętnych w porównaniach liczbowych, given do zaimportowania po nazwie
+
+% 1 1 0 0ce31bcf169057f211acbb91c8b94733
+
+@ 0 3 0 14f0a48da32c8ca412a1fa7fbd9bd505
++       `Axable.double` opisuje wartość osi za pomocą `show`, co wymaga `Decimalizer`; ten
++       pakiet dostarcza wartość domyślną, zamiast by `import probably.*` robił to po cichu.
++   entry .fourDecimalPlaces   `Decimalizer(4)`
+
+@ 0 1 0 1ecae4ba9012004d0f43bfbce0f8ce7b
++ entry .Verdict   wynik jednego przebiegu sprawdzenia: sukces, porażka, wyjątek lub aspiracja
+
+% 1 1 0 0606f6be87a50f271391ec324bb77d9a
+
+@ 0 7 0 0c402bc0a7595f3d05d0291c3da25dc1
++       `Pass(duration)` i `Fail(duration)` to odpowiedź predykatu; `Throws(exception,
++       duration)` oznacza, że wyjątek rzuciło ciało, a `CheckThrows(exception, duration)` – że
++       predykat; `AspirePass` i `AspireFail` to werdykty w bloku `aspirationally`, gdzie
++       wyjątek również jest `AspireFail`. Czasy trwania podawane są w nanosekundach. Test z
++       kilkoma komórkami przechodzi, gdy jego werdykty są jednolicie `Pass`, jednolicie
++       `AspirePass` lub jednolicie `AspireFail`; każda porażka, wyjątek lub mieszanina
++       oznacza, że nie przechodzi. W postaci przesyłanej werdykt jest `TestEvent.Outcome`, a
++       wyjątek jest przedstawiany jako `TestEvent.Trace`.
+
+% 0 1 0 087fe600c2a523430625369efa469921
+
+% 1 1 0 006fb71a6ce060191f92c715488465cd
+
+@ 0 10 0 0229dbf74bd1513b03ae1d38bd894391
++   entry .Detail   informacje uzupełniające porażkę: ślad stosu, przechwycone wartości, kontrast lub komunikat
++       `Throws(stack)` i `CheckThrows(stack)` niosą `StackTrace`; `Captures(values)` – wartości
++       przechwycone za pomocą `Harness#capture`, według nazwy; `Compare(expected, found,
++       juxtaposition)` – zdekomponowane teksty obu stron nieudanej równości i ich
++       `Juxtaposition`; `Dissection(source, rows, reproducible)` – wartości pośrednie
++       nieudanego predykatu oraz to, czy zawiódł ponownie, gdy obliczono go na potrzeby
++       diagnozy; a `Message(message)` – dowolny tekst. Każdy z nich jest zapisywany przez
++       `Inclusion[Report, Verdict.Detail]` i emitowany jako odpowiednie `TestEvent.Detail…`.
++   entry #timestamp   moment wydania werdyktu, w milisekundach od epoki
++   entry #duration   czas działania ciała, w nanosekundach
+
+@ 0 1 0 0b61d0124340a437090a47e77ea77b9e
++ entry .Trial   surowy wynik uruchomienia ciała testu: jego wartość lub wyjątek, zmierzone czasowo, wraz z przechwyconymi wartościami
+
+% 1 1 0 03b0f468dd4494d50e1951d31171e512
+
+@ 0 5 0 036e86c63e77da5b099bc40926cae27b
++       `Runner#run` zwraca `Trial`: `Returns(result, duration, context)` lub
++       `Throws(exception, duration, context)`, gdzie `context` to mapa nazw na przechwycone
++       wartości, a wyjątek jest odroczonym wyrażeniem, które rzuca go ponownie. `assert` i
++       `check` zamieniają próbę w `Verdict`.
++   entry #get   wynik lub ponowne rzucenie wyjątku
+
+@ 0 1 0 15630c4d2114fe6a0fedb7d83c949721
++ entry .Runner   uruchamia testy w ramach selekcji, raportując przez `Reporter`
+
+% 1 1 0 1a4d1e3c13c1ede5186d7a0ac221ec85
+
+@ 0 6 0 03762dd3820d170a1d94eb1b5d5d18aa
++       `Runner[report]` to to, co przywołują `assert`, `check`, `suite` i rodzaje pomiarowe,
++       aby zapisywać wyniki: przechowuje `Selection`, która decyduje, co zostanie uruchomione,
++       dotychczas zgromadzony `#report` oraz kolejkę workerów, jeśli selekcja o nie poprosiła.
++       `Suite` tworzy jeden runner na każde wywołanie i udostępnia go jako given; poza zestawem
++       testów `Runner()` tworzy runner nad `Selection.all` z `Reporter[Report]` z zasięgu
++       niejawnego.
+
+% 2 1 0 07596ea427cdaa670c777b4ec9cc7e21
+
+% 3 1 0 1e30c68dbb725a5e1fbbe33f124c9cb0
+
+% 4 1 0 1d13e407a0903d400cc986d3b4182847
+
+% 6 1 0 1ae3c7390dab9046024df7ce95c6e575
+
+% 0 1 0 0bed739c563a4c570dcd3091ce85f594
+
+% 2 1 0 01b3c057be74c22111c2bf9b2458172f
+
+% 0 1 0 174b633390d030bc03e27d1e6b302a46
+
+% 0 1 0 1e65846d1c17fff900de1f6ba2798914
+
+% 1 1 0 1500ed529343d03f1b5d4bdb21b999e6
+
+@ 0 8 0 0d2c874a707ae47306804fe575158d74
++       **Wykonanie z kolejki.** Z `--workers=<n>` (`Selection#workers`) czysta asercja nie jest
++       uruchamiana tam, gdzie natrafia na nią przejście: jej thunk trafia do kolejki, zostaje
++       ogłoszony reporterowi i uruchomiony przez jeden z `n` workerów na wątkach wirtualnych,
++       podczas gdy przejście trwa dalej. Dzięki temu kod zestawu testów między testami
++       wykonuje się dokładnie raz, a harmonogram jest znany tak szybko, jak wykonują się ciała
++       testów. Do kolejki trafiają tylko asercje, których czystość zweryfikował kompilator,
++       więc worker nigdy nie sięgnie po zasób, który przejście już zwolniło; `check` i
++       wszystko inne wykonuje się w miejscu. `#drain` czeka na wszystkie workery, zanim
++       `#complete` rozstrzygnie, czy przebieg się powiódł, a `Throwable`, który wymknie się
++       workerowi, jest ponownie rzucany na wątku przejścia.
+
+@ 0 3 0 1fa5b1f94c35dd9707ec368eec52e508
++       **Listowanie.** Z `--list` (`Selection#listOnly`) `#skip` zapisuje każdy dopuszczony
++       test zamiast go uruchamiać, a `#listed` jest harmonogramem: jeden wiersz na test z jego
++       rodzajem, oczekiwanym czasem pomiaru i osiami.
+
+% 1 1 0 10489ce0f8f0819a05c8fd8995092878
+
+% 0 1 0 0e31493a8622dec30306e4b060d1ccd5
+
+% 1 1 0 00f5d50c6c07411d0c47002c92ebb02d
+
+% 1 1 0 1f7573f0949f7bb2123e211b42d7d783
+
+@ 0 5 0 05d9a68d9c60912f1d4e7a4de6df482a
++   entry .apply   runner główny nad selekcją, z opcjonalną liczbą workerów, raportujący do `Reporter` z zasięgu
++       `Runner(selection, workers)` jest `Runner.Root`. Liczba workerów nadpisuje tę z
++       selekcji (zestaw testów może poprosić o więcej, niż zaoferował host, ale nigdy o
++       kolejkowanie, o które host nie prosił).
++   entry .Scheduled   jeden wiersz listowania: test, jego rodzaj, oczekiwany czas i osie
+
+% 1 1 0 1e831453ecfe96ac02552dd96955362b
+
+@ 0 44 0 01ef0975435895f4138875a0f5c232ac
++         To, co `--list` wytwarza dla każdego dopuszczonego testu. Każda komórka rozpiętego
++         po osiach testu wywołuje `#skip`, ale stanowią one jeden test ze współrzędnymi, a nie
++         wiele testów, więc `#expected` wiersza jest sumą po jego dopuszczonych komórkach, a
++         jego `#axes` niosą napotkane różne wartości w kolejności pierwszego wystąpienia, a po
++         nich zadeklarowane osie emergentne.
++     entry #id   identyfikator testu
++     entry #kind   check, bench, stress lub profile
++     entry #expected   nanosekundy, które test spędzi na pomiarze, zsumowane po jego komórkach; brak dla rodzajów bez pomiaru czasu
++     entry #axes   osie testu z wartościami lub zadeklarowanymi granicami jego dopuszczonych komórek
++     entry #tags   własne tagi testu
++   entry .Aspirational   runner wewnątrz bloku `aspirationally`: runner bazowy, zapisujący werdykty jako aspiracje
++       Współdzieli stan i raport runnera bazowego; różni się tylko `#aspirational`.
++   entry .Root   runner, który tworzy `Runner.apply`: selekcja, listowanie, kolejka i raport w jednym
++   entry #aspirational   czy werdykty są zapisywane jako `AspirePass`/`AspireFail`; `false` poza `Runner.Aspirational`
++   entry #report   dotychczas zgromadzony raport
++   entry #queued   czy czyste asercje trafiają do kolejki workerów zamiast wykonywać się w miejscu
++   entry #defer   kolejkuje resztę asercji dla workera, ogłaszając ją jako zaplanowaną
++       Workery startują przy pierwszym odroczeniu, więc przebieg, który niczego nie
++       kolejkuje, nie ma wątków.
++   entry #drain   czeka na wszystkie zakolejkowane asercje, ponownie rzucając każdy `Throwable`, który wymknął się workerowi
++   entry #scale   mnożnik czasu trwania z selekcji, który rodzaje z pomiarem czasu stosują do swoich celów
++   entry #skip   czy test albo jedna komórka testu rozpiętego po osiach jest wykluczona przez selekcję
++       `skip(id, kind, coordinates, expected)` sprawdza `Selection#admits` z tagami testu; w
++       trybie listowania każdy test jest pomijany, a dopuszczony zostaje odnotowany dla
++       `#listed` z `expected`, czyli szacunkiem wywołującego w nanosekundach, jak długo będzie
++       mierzył (zadeklarowane metadane, nie obietnica; `Unset` dla zwykłego sprawdzenia).
++       Krótsze formy `skip(id)` i `skip(id, kind, coordinates)` przekazują `Check` i `Unset`.
++   entry #declare   ogłasza, na potrzeby listowania, oś emergentną testu wraz z granicami, w których będą leżeć jej wartości
++       `N` przeglądu obciążeniowego zyskuje wartości dopiero w miarę, jak przebieg je
++       wytwarza; zadeklarowanie go z `least` i `most` pozwala hostowi zaoferować jego zakres
++       bez iterowania po komórkach, które jeszcze nie istnieją. Poza trybem listowania nie
++       robi nic i jest raportowana tylko wtedy, gdy sam test jest listowany.
++   entry #listed   harmonogram wytworzony przez przebieg z `--list`: jeden `Runner.Scheduled` na dopuszczony test, w kolejności pierwszego wystąpienia
++   entry #admitted   ile testów lub komórek dopuściła selekcja, na potrzeby zdarzenia `NothingMatched`
++   entry #run   uruchamia ciało testu w świeżym `Harness`, mierząc jego czas, w klamrze `started` i `ended` reportera
++       Zwraca `Trial`: wartość albo `Exception` rzucony przez ciało, wraz z czasem trwania i
++       przechwyceniami. `Error` nie jest przechwytywany, ale klamra i tak się zamyka, więc
++       zakończenie nie raportuje testu jako aktywnego.
++   entry #suite   wchodzi do grupy: deklaruje ją, uruchamia jej blok z jej `Testable` i kończy ją
++       Do grupy wchodzi się zawsze, niezależnie od selekcji. Jeśli w kolejce pozostają
++       asercje z wnętrza bloku, koniec grupy jest raportowany, gdy zakończy się ostatnia z
++       nich.
++   entry #terminate   porzuca to, co jest w kolejce, czeka na to, co jest w toku, i raportuje przebieg jako zakończony przerwaniem
++       Wywoływana przez `Suite#invoke`, gdy `run()` rzuca wyjątek: `fail` reportera otrzymuje
++       błąd i testy aktywne w tym momencie, a potem następuje `complete`.
++   entry #complete   rozstrzyga przebieg: tutaj decyduje się `Report#passed` i emitowane jest `RunCompleted`
++   entry #maybeRun   uruchamia test, chyba że selekcja go pomija, zwracając `Trial` albo `Unset`
+
+@ 0 1 0 126b81048c12bf8411909264db6376d0
++ entry .Reporter   jak runner deklaruje, ujmuje w klamry i rozstrzyga zapisywane wyniki, dla danego typu raportu
+
+% 1 1 0 170caf7d0f61ad950129aefdef6d396b
+
+@ 0 7 0 027dcc77647eaa1e0d7af6ee4920334a
++       `Reporter[report]` tworzy `#report`, do którego `Runner` gromadzi wyniki, i otrzymuje
++       cykl życia przebiegu: `#declare` dla każdej grupy, `#started`/`#ended` wokół każdego
++       testu i grupy, `#scheduled` dla każdej zakolejkowanej asercji, `#fail` dla przebiegu
++       zakończonego przerwaniem i `#complete` na końcu. Werdykty i pomiary trafiają do raportu
++       natomiast przez givens `Inclusion[report, …]`. `.report` to standardowy reporter nad
++       `Report`; `Suite` instaluje własny, którego raport emituje każdą daną jako `TestEvent`,
++       a host, który chce tylko listowania, może raportować do `Unit`.
+
+% 2 1 0 1674c018ca8495681da1fc14c91d10bc
+
+% 3 1 0 0d1ed6357e08ed4c1cc0a45ef4a3acc6
+
+% 0 1 0 1294f659d6cb8b3c0a4e9c360eee6d9c
+
+% 0 1 0 0d6c7ff289d43b8d038e2bb573c341e2
+
+% 0 1 0 0de3ea42cc7d1ba605a092adb41d60ca
+
+% 0 1 0 036986b93efad98c025740da4f05fa8e
+
+% 0 1 0 0fbbd0ee8203f6b91b768a8f4229173f
+
+% 0 1 0 08456b909e8598e009b6624211f86459
+
+% 1 1 0 1a71896e24f42d12058712423afd66b1
+
+% 1 1 0 1378673f555b7bc00d077d92b363d60e
+
+% 1 1 0 08dceaffe8a687060cfd9efc276442e3
+
+% 1 1 0 1067ad8527d7c96411303c8680f73c1e
+
+@ 0 8 0 15de3777cd28a7a90fa7cbf79856c5ca
++   entry .report   given `Reporter[Report]` w zasięgu niejawnym: świeży `Report` na każdy przebieg
++   entry #report   tworzy raport, do którego przebieg gromadzi wyniki
++   entry #fail   przebieg zakończył się błędem, gdy dane testy były aktywne
++   entry #declare   nastąpiło wejście do grupy lub zestawu testów
++   entry #complete   przebieg dobiegł końca; raport rozstrzyga, czy się powiódł
++   entry #started   test (lub, gdy `suite` jest prawdą, grupa) się rozpoczął; domyślnie nic nie robi
++   entry #ended   test lub grupa się zakończyła; domyślnie nic nie robi
++   entry #scheduled   czysta asercja trafiła do kolejki workera; rozpoczyna się i kończy później, w klamrach workera
+
+@ 0 1 0 168cb48048d955fe10c2914245016112
++ entry .Report   zgromadzone wyniki przebiegu: drzewo zestawów testów, którego liście są wpisami `Entry` z komórkami
+
+% 1 1 0 0e1143d1e873888f03731a94c339dfe9
+
+@ 0 5 0 1b0b0accb0cf2fc61863a4e6bfa4a61a
++       Reprezentacja pośrednia raportu. Zestawy testów służą wyłącznie za przestrzenie nazw;
++       każdy liść to `Entry` – jeden na nazwany test dowolnego rodzaju – przechowujący osie
++       testu i rzadką mapę komórek, z których każda jest `Tally` przebiegów `Run`.
++       Przedstawianie należy do konsumenta: przy zainstalowanym ujściu (jak robi to
++       `Suite#invoke`) każda zapisana dana wychodzi także jako `TestEvent`, a `#complete`
++       emituje `RunCompleted` zamiast cokolwiek przedstawiać.
+
+@ 0 3 0 08c9d9301b9714050dff949579dd3994
++       Werdykty, szczegóły i pomiary trafiają do raportu przez givens `Inclusion` w obiekcie
++       towarzyszącym (`.verdict`, `.detail`, `.anchor`) oraz w `Benchmark`, `Strain` i
++       `Hotspots`, z których każdy zapisuje `Run` pod współrzędną i emituje odpowiadające mu
++       zdarzenie.
+
+% 2 1 0 01e9a973dc9e5d451f698d180c6b913b
+
+% 3 1 0 058fd30e573ed6720224525c3610dcfe
+
+% 5 1 0 0e77c8a2fb67557b09573d3e64962405
+
+% 6 1 0 04dc5ba0c86984cf0c1aed5735b22620
+
+% 0 1 0 0c6e63aab6448eb60bfd608a14801051
+
+% 0 1 0 0376665915c879740b5ff7fb5f56f0b7
+
+% 0 1 0 192aa2f87936809806679525a5ba08ae
+
+% 1 1 0 0599231fcf58a28e1342dee307c36af8
+
+@ 0 2 0 1f4f01f05cb8993619c7a039cbb142fb
++       Przebieg, w którym niczego nie zliczono, nie powiódł się: sprawdzenie liczy się, gdy
++       ma werdykt, a pomiar liczy się przez to, że w ogóle się wykonał.
+
+% 0 1 0 1138b9d9526dd8451f82a8fccf4d448d
+
+% 0 1 0 09843eff3fec3d840cbc60f36f8cfe0e
+
+% 1 1 0 1065e5f50d90e166130dce078e967e36
+
+% 1 1 0 1b48d034febbfed41dc1dc75618561e1
+
+@ 0 19 0 1a2146addee2437a0d204564fb2703be
++   entry .verdict   `Inclusion[Report, Verdict]`: zapisuje werdykt jako `Run` z czasem trwania i emituje `TestCompleted`
++       Werdykt `Throws` lub `CheckThrows` zapisuje też swój ślad stosu jako szczegół i
++       emituje `DetailThrows`.
++   entry .anchor   `Inclusion[Report, Anchor]`: ustawia punkt odniesienia porównania testu i emituje `AnchorRecorded`
++   entry .detail   `Inclusion[Report, Verdict.Detail]`: zapisuje szczegół i emituje odpowiadające mu zdarzenie `Detail…`
++   entry #passed   czy przebieg się powiódł: bez przerwania, coś zliczono i żaden wpis nie zawiódł
++       Rozstrzygane przez `#complete`; wcześniej `false`.
++   entry #resolve   węzeł `ReportLine.Suite` danego `Testable`, licząc od korzenia
++   entry #declare   zapisuje zestaw testów lub grupę, emitując `SuiteStarted`; druga deklaracja tego samego identyfikatora jest scalana
++       Dwa różne zestawy testów mogą mieć wspólny `Test.Id` (tożsamość to nazwa i rodzic, a
++       każdy zestaw najwyższego poziomu o tej samej nazwie ma ten sam identyfikator), więc
++       deklaracja scala się z istniejącym węzłem zamiast zastępować jego poddrzewo.
++   entry #fail   zapisuje przerwanie: błąd i testy aktywne w chwili, gdy nastąpiło; emituje `RunTerminated`
++   entry #record   zapisuje jeden `Run` pod jedną współrzędną jednego testu, tworząc wpis przy pierwszym napotkaniu
++       Powtórzone przebiegi o tych samych współrzędnych gromadzą się w komórce; `headline`,
++       jeśli podano, wyznacza główną metrykę wpisu.
++   entry #addDetail   dołącza `Verdict.Detail` do szczegółów testu
++   entry #anchor   ustawia punkt odniesienia porównania we wpisie testu; nie robi nic, jeśli test nie zapisał komórek
++   entry #complete   rozstrzyga przebieg: decyduje o `#passed` i emituje `RunCompleted`
+
+@ 0 4 0 0a7626c80460ec09105e63fe9222d8a9
++ entry .ReportLine   węzeł `Report`: zestaw testów z dziećmi albo element przechowujący `Entry`
++     `ReportLine.Suite(suite, tests)` to węzeł przestrzeni nazw, którego `tests` jest
++     `TestsMap` jego dzieci, kluczowaną przez `Test.Id`; `ReportLine.Item(entry)` to liść.
++     Korzeń to `Suite` bez `Testable`.
+
+@ 0 5 0 12264b2cb2dec6731a7c94aa7aa47832
++ entry .TestsMap   mapa wierszy raportu w jednym węźle zestawu testów, zachowująca kolejność wstawiania i chroniona muteksem
++   entry #list   wiersze w kolejności wstawiania, z ich identyfikatorami
++   entry #apply   wiersz identyfikatora testu albo `Unset`
++   entry #update   ustawia wiersz identyfikatora testu
++   entry #getOrElseUpdate   wiersz identyfikatora testu, z wstawieniem podanego, jeśli go brak
+
+@ 0 1 0 1f51974f6f5c065c041b0f2294e32393
++ entry .Inclusion   jak fragment danych testowych zostaje włączony do raportu pod współrzędnymi testu
+
+% 1 1 0 09a02b82675d5fc114d49196d51e9ec6
+
+@ 0 5 0 0d3c3bd52e96ddc0114ee631ff11b3d3
++       `Inclusion[report, data]` to klasa typów, którą przywołują makra `assert`/`check` oraz
++       rodzaje pomiarowe, aby zapisać `Verdict`, `Verdict.Detail`, `Benchmark`, `Strain`,
++       `Hotspots` lub `Anchor` w raporcie typu `report`. `Report` ma givens dla każdego z
++       nich; własny typ raportu wywołującego dostarcza własne. Dane zapisane bez
++       współrzędnych należą do jedynej komórki testu.
+
+% 2 1 0 100177820ccddd6101a8a2744561ed43
+
+% 3 1 0 04f7abb810fc26320380ac6a74c93be1
+
+% 0 1 0 065a0c10f03c2849184b6420dcd836cd
+
+% 0 1 0 03df2fa47cecfffe01c3679031416a4f
+
+% 1 1 0 0ca88ee78384682308ba13dd4540ad33
+
+% 1 1 0 1535b89b57fbf3940457714ae20cc279
+
+@ 0 2 0 1b25c0692fcce28d0b7effb8f7d52fc8
++   entry #include   zapisuje daną pod podanymi współrzędnymi podanego testu, zwracając raport
++       Forma trzyargumentowa zapisuje pod `Nil`, jedyną komórką testu bez osi.
+
+@ 0 1 0 140804aea7e1c6321d0f60c49a2cb24f
++ entry .Entry   jeden nazwany test i jego wyniki: uporządkowana lista osi i rzadka mapa komórek
+
+% 1 1 0 0fcda11736103e4f037c162f57c1dbec
+
+@ 0 5 0 061d80d8861c53750888a297926d183a
++       Liść `Report`. Jego `#axes` mogą rosnąć w trakcie przebiegu, gdy osie emergentne
++       zyskują współrzędne; jego `#cells` są kluczowane współrzędnymi w przestrzeni osi,
++       pozycyjnie dopasowanymi do osi, a każda z nich jest `Tally` przebiegów pod tym adresem.
++       Test bez osi ma dokładnie jedną komórkę, pod `Nil`; kombinacje wartości osi bez
++       komórki są lukami, przedstawianymi jako puste pozycje w siatce.
+
+% 1 1 0 0d6a69f364ee20230a3e2954da6e87b9
+
+% 1 1 0 0f2cb85b918f7d2516d54c3cc2b5890e
+
+% 0 1 0 1e80f490f8798dba0b939f2778b07a8c
+
+@ 0 15 0 07bfe618bbb66b70110a115437714246
++   entry .Kind   cztery rodzaje wpisu: `Check`, `Bench`, `Stress` i `Profile`
++       To, co wybierają `kind:test`, `kind:bench`, `kind:stress` i `kind:profile`, oraz pole
++       `kind` zdarzenia `TestCompleted` (`check`, `bench`, `stress`, `profile`).
++   entry #id   identyfikator testu
++   entry #kind   rodzaj wpisu
++   entry #headline   metryka, którą siatka lub porównanie pokazuje dla tego wpisu, jeśli ją wyznaczono
++   entry #anchor   punkt odniesienia porównania, jeśli ustawił go `Report#anchor`
++   entry #axes   dotychczas napotkane osie, w kolejności pierwszego wystąpienia
++   entry #cells   każda komórka z wartościami jej współrzędnych
++   entry #cell   `Tally` pod podanymi współrzędnymi, tworzony, jeśli go brak
++       Dołącza jeszcze nienapotkane osie i rejestruje wartości każdej osi w kolejności
++       pierwszego wystąpienia.
++   entry #values   wartości współrzędnych jednej osi w kolejności prezentacji
++       Kolejność pierwszego wystąpienia dla osi dyskretnej, kolejność liczbowa dla osi
++       całkowitej lub dziesiętnej.
+
+@ 0 1 0 0d5f6130394735b10cda7fe433408905
++ entry .Run   jedno wykonanie jednej komórki: werdykt, zapisane metryki, szczegóły niepowodzenia i ewentualny ładunek
+
+% 1 1 0 1abcbb5f565c8d4e09143591e9668d33
+
+@ 0 13 0 10bdff8d3d6b613d07d4403b4af0d806
++       Dla sprawdzenia `#verdict` jest obecny, a `#metrics` zawiera `Metric.Duration`; dla
++       pomiaru werdyktu brak, a metryki niosą wartości liczbowe (kolejność wstawiania jest
++       kolejnością prezentacji). `#payload` przechowuje strukturę, której liczba nie
++       udźwignie: gorące ramki profilu albo jednostki rozmiaru operacji benchmarku. W
++       wyszukiwaniu przepustowości granicznej `#sustained` oznacza zwycięski przebieg.
++   entry .Payload   struktura, której metryka liczbowa nie udźwignie
++       `Frames(hotspots)` to `Hotspots` profilu; `Sizing(operationSize, operationRate)` to
++       wstępnie sformatowane jednostki benchmarku.
++   entry #verdict   werdykt, dla sprawdzenia
++   entry #metrics   zapisane metryki, w kolejności prezentacji
++   entry #details   szczegóły niepowodzenia dołączone do tego przebiegu
++   entry #payload   ładunek strukturalny, jeśli jest
++   entry #sustained   czy ten przebieg jest zwycięskim wierszem wyszukiwania przepustowości granicznej
+
+@ 0 1 0 0dab6c20838217ef11cb747653824efb
++ entry .Tally   zgromadzone przebiegi pod jedną współrzędną testu
+
+% 1 1 0 17465921df33840c154e783032ec8fca
+
+@ 0 5 0 0df6eb229efcec9b1fd3d3cbbbe1872b
++       Tu gromadzą się powtórzone wykonania tej samej komórki, co uogólnia akumulację
++       powtarzanych werdyktów na wszystkie rodzaje testów. Chroniony muteksem, ponieważ
++       workery runnera z kolejką zapisują współbieżnie.
++   entry #record   dołącza przebieg
++   entry #runs   dotychczasowe przebiegi
+
+@ 0 1 0 186cdffb7cccb8be00c4393961f36083
++ entry .Axis   jedna zmienna wejściowa testu: oznaczona etykietą dziedzina wartości, z których każda jest współrzędną komórek testu
+
+% 1 1 0 1648191eb735e7a510871b791560c792
+
+@ 0 8 0 110363947b4015661b7feb5428f73405
++       Większość testów nie ma osi. Mając jedną, `Test.Id#over` uruchamia ciało raz dla każdej
++       wartości i zapisuje każdy werdykt pod współrzędną tej wartości jednego nazwanego testu;
++       benchmark porównawczy ma dyskretną oś implementacji, a dane wejściowe różnych
++       rozmiarów tworzą oś liczbową. Oś buduje się z etykiety i wartości,
++       `Axis(t"n")(1, 2, 3)`, z etykiety i zakresu, `Axis(t"n")(1 to 64)`, albo z obiektu
++       towarzyszącego wyliczenia, `Axis(Codec)`, którego etykietą jest nazwa wyliczenia
++       małymi literami, a wartościami jego przypadki. `Axis` jest typem `into`, więc obiekt
++       towarzyszący wyliczenia jest akceptowany bezpośrednio wszędzie tam, gdzie oczekiwana
++       jest konkretna oś (`.companion`).
+
+% 2 1 0 1155b1b14e1cbdcd099fb4677ff65c9d
+
+% 3 1 0 0ee1872eff9a6fcd057e0ba33b8b42e1
+
+% 0 1 0 06b67ea4407e0dd81cb5c417684df7db
+
+% 0 1 0 064ae291c697f504086bdba4ff8ab2fa
+
+% 0 1 0 1275e2a880afddf1023ad07fb222e8fe
+
+% 0 1 0 1ff9051654b7d5821b460e961c77ffe4
+
+% 0 1 0 0587467006b4df470e31093668e7e4b1
+
+% 0 1 0 0712225afcdb55e2099150576f1f62ce
+
+% 1 1 0 1635e50496930e0b0f25b00434baa538
+
+@ 0 2 0 075185a9639b21e2030d7ac736079c5c
++       Typ wartości wymaga `Axable`, który nadaje każdej wartości stabilną etykietę, a dla
++       dziedzin liczbowych także liczbę, dzięki czemu oś można uporządkować i przedstawić na
++       wykresie.
+
+% 0 1 0 0aff5bdda8b75102175c672ffc94177c
+
+% 1 1 0 03fbe8e83c171a31045c3388274019a0
+
+% 1 1 0 016ce3509efb85d81fb1bef77d33990a
+
+@ 0 2 0 1417c793bd0b1a2d16fce846a2c4120c
++   entry .Domain   rodzaj osi: etykiety `Discrete` w kolejności deklaracji albo współrzędne `Integral`/`Decimal` w kolejności liczbowej
++   entry .Spec   wymazany opis osi w postaci, w jakiej zapisuje go raport: etykieta, dziedzina i to, czy oś jest emergentna
+
+% 1 1 0 04338fd3ed60208516e5f2ea6a391995
+
+@ 0 7 0 05f41f441e87b9161ca7a74e288b3032
++         To, z czego korzystają selekcja, przedstawianie i wykresy. Oś emergentna zyskuje
++         wartości współrzędnych z samego przebiegu (`N` przeglądu obciążeniowego), a nie z
++         zadeklarowanej dziedziny.
++     entry #label   etykieta osi, którą wskazuje ograniczenie osi takie jak `N<32`
++     entry #domain   dyskretna, całkowita lub dziesiętna
++     entry #emergent   czy wartości wytwarza przebieg, a nie deklaracja
++   entry .Schedule   co listowanie wie o jednej osi testu, zanim cokolwiek się wykona
+
+% 1 1 0 1385795309401bd90bb9ab202f840a91
+
+@ 0 25 0 18a506129cae16e219f51948044d8208
++         Specyfikacja, różne wartości komórek dopuszczonych przez selekcję w kolejności
++         pierwszego wystąpienia (żadnych dla osi emergentnej) oraz – dla osi emergentnej,
++         której producent je zadeklarował – granice, w których będą leżeć jej wartości. Host
++         uzupełnia na ich podstawie ograniczenia osi.
++     entry #spec   oś
++     entry #values   wartości dopuszczonych komórek; puste dla osi emergentnej
++     entry #least   najmniejsza wartość, jaką wytworzy oś emergentna, jeśli zadeklarowano
++     entry #most   największa wartość, jaką wytworzy oś emergentna, jeśli zadeklarowano
++   entry .apply   oś z etykiety i wartości, z etykiety i `Range` albo z obiektu towarzyszącego wyliczenia
++       `Axis(label)(values*)` wymaga `Axable` dla typu wartości; `Axis(label)(range)` jest
++       `Axis[Int]`; `Axis(companion)` przyjmuje obiekt towarzyszący wyliczenia (cokolwiek z
++       `valueOf`) z `Enumerable`, z etykietą będącą prostą nazwą wyliczenia małymi literami.
++   entry .emergent   oś bez zadeklarowanych wartości, którą wypełnia przebieg
++       `Axis.emergent[Int](t"N")`: specyfikacja jest oznaczona jako emergentna, a
++       `Entry#cell` rozszerza wartości osi w miarę napływu współrzędnych.
++   entry .companion   `Conversion`, dzięki której obiekt towarzyszący wyliczenia może zastąpić oś
++       Pozycje generyczne, takie jak `over`, nie mogą uruchomić tej konwersji, więc zamiast
++       tego mają jawne przeciążenia dla obiektów towarzyszących.
++   entry #label   etykieta osi
++   entry #values   zadeklarowane wartości, w kolejności deklaracji
++   entry #emergent   czy wartości pochodzą z przebiegu
++   entry #axable   `Axable` dla typu wartości
++   entry #spec   wymazana `Axis.Spec`
++   entry #point   jedna wartość jako `Value`
++   entry #coordinate   jedna wartość jako para `(Axis.Spec, Value)`, którą adresuje się komórkę
+
+@ 0 1 0 1b6dda17a1a086381a0bd09f803b3ed3
++   entry .Value   jedna współrzędna na jednej osi: etykieta dyskretna, liczba całkowita lub dziesiętna
+
+% 1 1 0 0c6188de0a3dd0601afc6adcf7a838c5
+
+@ 0 7 0 07e0828463c03b9d1c43e94396612c3d
++         Komórkę testu adresuje się listą wartości pozycyjnie dopasowaną do osi testu; test
++         bez osi ma jeden adres, `Nil`. `Value(x)` tworzy ją przez `Axable` z zasięgu:
++         `Discrete(label)` dla dziedziny dyskretnej, `Integral(number)` lub `Decimal(number)`
++         dla liczbowych.
++     entry .apply   wartość z wartości dziedziny, przez jej `Axable`
++     entry #text   etykieta, do której dopasowuje się selekcja: etykieta dyskretna albo wyświetlana liczba
++     entry #numeric   liczba albo `Unset` dla wartości dyskretnej
+
+@ 0 1 0 1b6f6f76e7c60e0b1c3b7a79e93cd1d1
++ entry .Axable   jak wartość dziedziny staje się punktem na osi: stabilna etykieta i, dla dziedzin liczbowych, liczba
+
+% 1 1 0 1b79088e24c1e393108cc20dc2e50cba
+
+@ 0 4 0 0c4b525299dbc4a0190229cde5f3c993
++       Klasa typów stojąca za `Axis`. Obiekt towarzyszący obejmuje `Int` i `Long`
++       (całkowite), `Double` (dziesiętny, z etykietą tworzoną przez `Decimalizer` z zasięgu),
++       `Text` (dyskretny) i każde `reflect.Enum` z `Enumerable` (dyskretne, z etykietą będącą
++       nazwą przypadku). Własny typ wywołującego dostarcza `label`, a gdy jest liczbowy, także
++       `domain`/`numeric`.
+
+% 1 1 0 1a0caaa1004e2f71083d25160785d2b1
+
+% 1 1 0 14d5f11fe0bf3e2617d963004158c811
+
+@ 0 8 0 1f7e655eb77a8aa803079c30d93ada61
++   entry .int   `Int` na osi całkowitej
++   entry .long   `Long` na osi całkowitej
++   entry .double   `Double` na osi dziesiętnej
++   entry .text   `Text` na osi dyskretnej, z samym sobą jako etykietą
++   entry .enumerable   dowolne wyliczenie z `Enumerable` na osi dyskretnej, z nazwą przypadku jako etykietą
++   entry #domain   dziedzina osi dla typu; domyślnie `Discrete`
++   entry #label   stabilny tekst wartości, używany w raportach i dopasowywany przez selekcje `axis=value`
++   entry #numeric   wartość jako liczba, dla dziedzin liczbowych; domyślnie `Unset`
+
+@ 0 1 0 0c61012d5b3711fe1549cc840e4778b5
++ entry .Anchor   wyróżniony punkt porównania testu: jedna wartość na jednej osi, z ustawieniami `Baseline`
+
+% 1 1 0 10f6afbc6716ebb91d8f2e4c46fdffbf
+
+@ 0 6 0 15d2b09180c57f9c13a282e99d950d7a
++       Benchmark porównawczy ustanawia jedną wartość osi punktem odniesienia, a każda inna
++       komórka wzdłuż tej osi jest przedstawiana względem niej. Zapisywany przez
++       `Report.anchor` i emitowany jako `TestEvent.AnchorRecorded`.
++   entry #axis   oś, na której leży punkt odniesienia
++   entry #value   wartość będąca punktem odniesienia
++   entry #baseline   jak pozostałe komórki są z nią porównywane
+
+@ 0 1 0 02b89aa08a76b7270729083295ff21ef
++ entry .Baseline   jak komórki są porównywane z punktem odniesienia: która statystyka, która metryka i która średnia
+
+% 1 1 0 016c05abaa3b027c149c99895673c3c8
+
+@ 0 9 0 1089830fee3b89d511ce8ac11fec9b27
++       `Baseline(compare, metric, mode)` domyślnie przyjmuje `Mean` metryki `Cadential` w
++       trybie `Geometric`. Przypadki trzech wyliczeń są eksportowane na poziomie pakietu,
++       więc `Baseline(Min, Temporal, Arithmetic)` czyta się bez kwalifikacji.
++   entry .Compare   która statystyka komórki jest porównywana: `Min`, `Mean` lub `Max`
++   entry .Metric   która wartość jest porównywana: `Cadential` (przepustowość) lub `Temporal` (czas)
++   entry .Mode   która średnia podsumowuje porównanie: `Geometric` lub `Arithmetic`
++   entry #compare   statystyka
++   entry #metric   wartość
++   entry #mode   średnia
+
+@ 0 7 0 1dc58a379c85a88118cecbdc25466372
++ entry .Min   `Baseline.Compare.Min`, eksportowane na poziomie pakietu
++ entry .Mean   `Baseline.Compare.Mean`, eksportowane na poziomie pakietu
++ entry .Max   `Baseline.Compare.Max`, eksportowane na poziomie pakietu
++ entry .Cadential   `Baseline.Metric.Cadential`, eksportowane na poziomie pakietu
++ entry .Temporal   `Baseline.Metric.Temporal`, eksportowane na poziomie pakietu
++ entry .Arithmetic   `Baseline.Mode.Arithmetic`, eksportowane na poziomie pakietu
++ entry .Geometric   `Baseline.Mode.Geometric`, eksportowane na poziomie pakietu
+
+@ 0 1 0 1d23130e05b58645038611e3e7305720
++ entry .Benchmark   zmierzony wynik benchmarku: iteracje, czasy, ufność i alokacja
+
+% 1 1 0 0cc06bb758f7ecdc06670c7dab257d8a
+
+@ 0 7 0 0b8b4ebfe2194d711a116044ca3a3d3a
++       To, co `Bench` z biblioteki sedentary wytwarza dla jednej komórki i zapisuje przez
++       `.inclusion`: `#nanoseconds` pomiaru dla `#iterations` w `#runs` partiach, średnia
++       `#mean`, `#min`, `#max` i odchylenie standardowe `#sd` czasu na operację w
++       nanosekundach, percentyl `#confidence` przedziału oraz opcjonalne `#operationSize`,
++       `#operationRate`, `#operationQuantity` i bajty `#allocation` na operację. Czasy są w
++       nanosekundach; główną metryką jest `Throughput`, gdy zadeklarowano rozmiar operacji,
++       a w przeciwnym razie `Mean`.
+
+% 1 1 0 0bfa10cfa33550e90a73ae457a755050
+
+% 0 1 0 1c72aea31cb3ed901de16e442bd5ffa4
+
+% 0 1 0 115fbdc33a1fefee14498e416da9bb9e
+
+@ 0 23 0 16a53548f8781a710409e87ac640831e
++   entry .inclusion   `Inclusion[Report, Benchmark]`: zapisuje wartości jako metryki pod współrzędną i emituje `BenchmarkRecorded`
++       Metryki to `Iterations`, `Mean`, `Least`, `Most`, `Deviation`, `Percentile`,
++       `Confidence` (połowa szerokości przedziału jako ułamek średniej), `Throughput` oraz,
++       jeśli zmierzono, `Allocation`; zadeklarowane jednostki są przenoszone jako
++       `Run.Payload.Sizing`.
++   entry .Percentiles   poziomy ufności, które może raportować benchmark: `80 | 85 | 90 | 95 | 96 | 97 | 98 | 99`
++   entry #nanoseconds   całkowity czas pomiaru
++   entry #iterations   ile operacji zmierzono
++   entry #runs   z ilu niezależnych przebiegów pomiarowych wyliczono statystyki
++   entry #mean   średni czas na operację, w nanosekundach
++   entry #min   średnia najszybszego przebiegu
++   entry #max   średnia najwolniejszego przebiegu
++   entry #sd   odchylenie standardowe średnich z przebiegów
++   entry #confidence   percentyl przedziału ufności
++   entry #operationSize   wstępnie sformatowany rozmiar jednej operacji, jeśli zadeklarowano
++   entry #operationRate   wstępnie sformatowana jednostka tempa, jeśli zadeklarowano
++   entry #operationQuantity   rozmiar jednej operacji jako liczba, w jednostce wskazanej przez `operationSize`
++       Jeszcze nieprzenoszony przez `TestEvent.BenchmarkRecorded`, więc host go nie widzi.
++   entry #allocation   bajty alokowane na operację, jeśli harness je zmierzył
++   entry #tQuantile   jednostronny kwantyl t-Studenta dla percentyla i liczby stopni swobody
++       Stablicowany dla liczby stopni swobody do 29 (liczbę spoza tablicy zaokrągla się w
++       dół, co daje nieco szerszy przedział), a powyżej używany jest kwantyl rozkładu
++       normalnego.
++   entry #confidenceInterval   połowa szerokości przedziału ufności, w nanosekundach
++   entry #throughput   operacje na sekundę, wyliczone ze średniej
+
+@ 0 1 0 1da12fb2af1645081f690880e6d673c0
++ entry .Strain   zmierzona reakcja na test obciążeniowy: przepustowość, pamięć i opóźnienie przy współbieżności
+
+% 1 1 0 0997cd600e7198cd00e136a8f4237eb0
+
+@ 0 9 0 048bd0deb6e3c0451ba8e5b268572704
++       Odpowiednik `Benchmark` dla pamięci i skalowania, wytwarzany przez `Stress` z
++       sedentary dla jednej komórki: `#concurrency` workerów wykonywało ciało wielokrotnie
++       przez okno czasu zegara ściennego o długości `#nanoseconds`, kończąc łącznie
++       `#operations`; `#allocation` to sterta zaalokowana w oknie, `#peakHeap` – najwyższy
++       poziom, `#retained` – zbiór żywych obiektów po odśmiecaniu po przebiegu (projekt o
++       ograniczonej pamięci pokazuje płaską, małą wartość), a `#gcCount`/`#gcTime` – przyrosty
++       odśmiecacza (czas w milisekundach). Opcjonalne `#p50`, `#p90`, `#p99` i `#p999` to
++       percentyle opóźnienia na operację w nanosekundach. W wyszukiwaniu przepustowości
++       granicznej `#compliance` to ułamek operacji mieszczących się w progu opóźnienia, a
++       `#sustained` oznacza zwycięski wiersz.
+
+% 1 1 0 1a332407d675edc81b9e56f363d5a81f
+
+% 1 1 0 0988baa1a543713d06301d8721c37716
+
+@ 0 20 0 07858e39571db95d02be1ef6a715c868
++   entry .inclusion   `Inclusion[Report, Strain]`: zapisuje wartości jako metryki na emergentnej osi `N` i emituje `StrainRecorded`
++       Współbieżność jest współrzędną, nie metryką: każdy `Strain` trafia na emergentną oś
++       całkowitą `N` (chyba że producent dostarczył własną), więc kroki przeglądu gromadzą się
++       jako komórki jednego wpisu. Główną metryką jest `Throughput`.
++   entry #concurrency   ile workerów wykonywało ciało
++   entry #operations   ile operacji się zakończyło
++   entry #nanoseconds   długość okna
++   entry #allocation   łączna alokacja na stercie w oknie, w bajtach
++   entry #peakHeap   najwyższy poziom pul sterty, w bajtach
++   entry #retained   zbiór żywych obiektów po odśmiecaniu po przebiegu, w bajtach
++   entry #gcCount   liczba odśmieceń w oknie
++   entry #gcTime   czas odśmiecania, w milisekundach
++   entry #p50   mediana opóźnienia na operację, w nanosekundach, jeśli zmierzono
++   entry #p90   opóźnienie 90. percentyla, jeśli zmierzono
++   entry #p99   opóźnienie 99. percentyla, jeśli zmierzono
++   entry #p999   opóźnienie 99,9. percentyla, jeśli zmierzono
++   entry #compliance   ułamek operacji mieszczących się w progu opóźnienia, w wyszukiwaniu przepustowości granicznej
++   entry #sustained   czy to zwycięski wiersz wyszukiwania przepustowości granicznej
++   entry #throughput   operacje na sekundę w oknie
++   entry #allocationRate   bajty alokowane na operację
+
+@ 0 1 0 03ce88ff0e733ced15ee8a9ec17947d5
++ entry .Hotspots   zmierzona reakcja na profilowanie: próbki wykonania i najgorętsze metody
+
+% 1 1 0 169b57286ded749201030eafdf6d87cd
+
+@ 0 4 0 00ede69dd444b014032a5d52bbdd4d74
++       Wytwarzany przez `Profile` z sedentary z próbek wykonania JFR: w oknie profilowania
++       pobrano `#total` próbek, a `#frames` to najgorętsze metody w malejącej kolejności
++       liczby próbek, według czasu własnego. Host przedstawia je jako histogram, kolorowany
++       według pakietu.
+
+% 1 1 0 018f85bfecd8f79900b48d8ecac9f433
+
+@ 0 7 0 0c18b016803b250c0404f087b9270aff
++   entry .inclusion   `Inclusion[Report, Hotspots]`: zapisuje `Samples` jako metrykę z ramkami jako ładunkiem i emituje `HotspotsRecorded`
++   entry .Frame   jedna gorąca metoda: jej zdemanglowane nazwy klasy i metody oraz liczba próbek, które w nią trafiły
++     entry #className   klasa, zdemanglowana
++     entry #method   metoda
++     entry #samples   próbki, których najwyższą ramką była ta metoda
++   entry #total   ile próbek pobrano
++   entry #frames   najgorętsze metody, od największej liczby próbek
+
+@ 0 1 0 1d4a641a62c6117c05c740fea34c73b2
++ entry .Metric   zamknięty zbiór wielkości, które przebieg może zapisać, każda z wymiarem, kierunkiem i etykietą
+
+% 1 1 0 006591e8b622b20a121ee9e1ea76adc0
+
+@ 0 12 0 06e36f4e99481d091c36ae9eb3b1679c
++       Każda komórka testu przechowuje mapę tych wielkości na wartości, a jedna z nich (lub,
++       dla sprawdzenia, werdykt) jest główną wartością testu. Czasy są w nanosekundach,
++       pamięć w bajtach, tempa w operacjach na sekundę, a ułamki w przedziale jednostkowym.
++       Przypadki to `Duration`, `Mean`, `Least`, `Most`, `Deviation`, `Percentile`,
++       `Confidence`, `Iterations`, `Throughput`, `Operations`, `Allocation`, `PeakHeap`,
++       `Retained`, `GcCount`, `GcTime`, `P50`, `P90`, `P99`, `P999`, `Compliance` i
++       `Samples`. W postaci przesyłanej metryka jest kluczowana nazwą przypadku, która jest
++       stabilna tam, gdzie etykieta nie jest.
++   entry .Dimension   fizyczna interpretacja wartości: `Time`, `Memory`, `Rate`, `Count` lub `Fraction`
++   entry .Sense   czy lepsza jest mniejsza, czy większa wartość: `LowerIsBetter`, `HigherIsBetter` lub `Neutral`
++   entry #dimension   wymiar metryki, który wybiera jej formatowanie
++   entry #sense   który kierunek oznacza poprawę, na potrzeby porównań i orientacji wykresu
++   entry #label   etykieta wyświetlana: `μ`, `σ`, `p99`, `Alloc·op¯¹`, …
+
+@ 0 1 0 1be19ab96dbf56b6040c6646a58771c7
++ entry .Selection   które testy i które ich komórki dopuszcza przebieg, sparsowane z argumentów wiersza poleceń
+
+% 1 1 0 055c81b9fc76613e0d556c344c9ed467
+
+@ 0 9 0 0eebe74ca87d09bf161acd12462fba10
++       `Selection.parse(terms)` odczytuje argumenty, które host przekazuje do `Suite#invoke`.
++       Argumenty tożsamości – sześcioznakowe skróty szesnastkowe, przydomki i wzorce glob nazw
++       – łączą się ze sobą w sumę; argumenty `kind:test|bench|stress|profile`, argumenty
++       `tag:a,b` (dowolny z wymienionych tagów; drugi argument `tag:` daje część wspólną) i
++       ograniczenia osi (`parser=jacinta`, `N<32`, `N>=4`, `N=4..64`, `N=4..`, `N=..64`)
++       dają część wspólną z tą sumą; a argumenty `not:<term>` są odejmowane na końcu, każdy
++       usuwając to, co dopuściłby jego argument. Nierozpoznany argument jest wzorcem glob
++       nazwy. Wzorce glob podlegają regułom kaleidoscope: `*` dopasowuje w obrębie jednego
++       ogniwa ścieżki łączonej przez `/`, więc objęcie zestawu testów wymaga `**`, jak w
++       `jacinta/**` lub `**/parseJson`; dopasowuje się także identyfikator zestawu (który może
++       zawierać `-`). Pusta selekcja dopuszcza wszystko.
+
+% 2 1 0 1a78cf8b3c9d5cdb1708b50936bcd9d8
+
+% 3 1 0 06336fc246ca0d1f1ce6305c15752e3f
+
+% 0 1 0 1a3e9ad4ef158f9d1e1d66a18d74eaec
+
+% 2 1 0 111117ffb3560b80168fbb55ca95d674
+
+% 0 1 0 109bacbff0cf4e211c2cb360bc0415c0
+
+% 0 1 0 1965a768ca3abdc4061f47cba7e75a11
+
+% 0 1 0 1326344d935638481ea5daf2e3c5061a
+
+% 0 1 0 0d132094b32e2cd60972d9248d23c264
+
+% 0 1 0 03959b5d6039c5e806730dd59c404c15
+
+% 1 1 0 1869225ba07cd4c91f411e4567b392ec
+
+@ 0 5 0 0364cbf7abe65bd51e2fee0c6c1bb621
++       Trzy dalsze argumenty nie są selekcjami, ale przychodzą w tym samym wierszu poleceń:
++       `--list` (wylicz, niczego nie uruchamiaj), `--scale=<factor>` (pomnóż każdy
++       zadeklarowany czas pomiaru; niedodatni lub nieparsowalny współczynnik jest ignorowany)
++       i `--workers=<n>` (kolejkuj czyste asercje na `n` workerach; 0, wartość domyślna,
++       wykonuje wszystko w miejscu).
+
+% 1 1 0 0e7c643d9b5a9e4c06766e4eb751b9c8
+
+% 0 1 0 01fa7351c072a8b40d8f875e3ae0619d
+
+% 1 1 0 0215f004b872ba910a87105b711097ff
+
+@ 0 2 0 1aeb53a409392e181d499f01fc70de53
++   entry .Term   argument tożsamości: `Identifier` (przydomek lub skrót) albo `Glob` (dopasowywany do nazw i ścieżek)
++   entry .Constraint   ograniczenie osi: `Membership`, `Least`, `Most` lub `Interval`
+
+% 1 1 0 0cc8e1d21080a85203ad14c17068dbf0
+
+@ 0 20 0 0e234047fd2acb5a05614f8ed0574061
++         `Membership(axis, values)` to `N=4,8`; `Least(axis, limit, inclusive)` to `N>4` lub
++         `N>=4` (oraz `N=4..`); `Most` – odbicie lustrzane; `Interval(axis, least, most)` to
++         `N=4..64`, domknięty z obu stron. Ograniczenie osi, której komórka nie ma, dopuszcza
++         tę komórkę, ale jako argument `not:` niczego nie usuwa.
++     entry #axis   etykieta osi wskazana przez ograniczenie
++   entry .all   pusta selekcja, która dopuszcza wszystko
++   entry .parse   selekcja z argumentów wiersza poleceń
++   entry #terms   argumenty tożsamości, łączone w sumę
++   entry #kinds   dopuszczone rodzaje; pusty oznacza wszystkie
++   entry #constraints   ograniczenia osi, dające część wspólną
++   entry #tags   każdy argument `tag:` jako zbiór alternatyw; zbiory dają część wspólną
++   entry #exclusions   argumenty `not:`, każdy jako jednoargumentowa selekcja, odejmowane po dopuszczeniu
++   entry #listOnly   czy podano `--list`
++   entry #scale   mnożnik każdego zadeklarowanego czasu pomiaru; domyślnie 1.0
++       Geometryczny: 2.0 wykonuje każdy pomiar dwa razy dłużej, 0.25 – cztery razy krócej.
++       Progi opóźnienia nie są skalowane, ponieważ są kryteriami powodzenia, a nie czasami
++       trwania.
++   entry #workers   ilu workerów wykonuje zakolejkowane asercje; 0 niczego nie kolejkuje
++   entry #diagnosis   jak diagnozować asercje zakończone niepowodzeniem (`--diagnose=…`); domyślnie wcale
++   entry #trivial   czy selekcja nie wybiera niczego konkretnego: brak argumentów, rodzajów, ograniczeń, tagów i wykluczeń
++   entry #admits   czy test danego rodzaju, pod danymi współrzędnymi, z danymi tagami, jest dopuszczony
+
+@ 0 1 0 03dfbe00321a278c18bd589a6de54e19
++ entry .Spread   test rozpięty po dziedzinie jednej osi, oczekujący na asercję
+
+% 1 1 0 053d9cdac41d1a26056988f169c91e46
+
+@ 0 5 0 14644fa3055698ed1824dc8ee394641d
++       `test(m"…").over(axis)(body)` to `Spread[value, result]`. Jego `.assert` uruchamia
++       ciało raz dla każdej wartości osi, dla której ciało jest określone, i zapisuje każdy
++       werdykt pod współrzędną tej wartości jednego nazwanego testu; wartość, dla której
++       częściowe ciało nie jest określone, jest luką. Ciało jest czyste, tak jak ciało
++       `Test.assert`, a asercja widzi albo sam wynik, albo wartość osi razem z wynikiem.
+
+% 1 1 0 0a4ae4d72c16b51e154fd8923de1e781
+
+% 1 1 0 041440e3aec2844e0a0248bc820feabe
+
+@ 0 6 0 187f27cf222fb2b60af513ea036fdb13
++   entry .assert   sprawdza każdą komórkę: bez predykatu, z predykatem na wyniku albo z predykatem na wartości i wyniku
++       Wymaga w zasięgu `Runner` oraz `Inclusion` dla werdyktów i szczegółów, tak jak
++       `Test.assert`.
++   entry #id   identyfikator testu
++   entry #axis   oś
++   entry #action   ciało: funkcja częściowa na wartościach osi, dla każdego harnessu
+
+@ 0 1 0 1ef57aeea574f4c419bf2afb60d1df9f
++ entry .Spread2   test rozpięty po dziedzinach dwóch osi: jedna komórka na każdą kombinację, dla której ciało jest określone
+
+% 1 1 0 01f9f99e3363fa4e06895234ca607d2f
+
+@ 0 3 0 07305c2687323cf00386694652658097
++       `test(m"…").over(first, second)(body)` to `Spread2[left, right, result]`,
++       przedstawiany jako siatka z lukami w nieokreślonych kombinacjach. Predykat przekazany
++       do `.assert` może przyjmować sam wynik albo obie wartości osi i wynik.
+
+% 0 1 0 1b4903f07b31195307026841a7800055
+
+@ 0 5 0 055c2a3b48367b1d090b6a602aa44da2
++   entry .assert   sprawdza każdą określoną komórkę siatki
++   entry #id   identyfikator testu
++   entry #first   pierwsza oś
++   entry #second   druga oś
++   entry #action   ciało: funkcja częściowa na parach wartości, dla każdego harnessu
+
+@ 0 1 0 0c16accd313c09c314cc29acd8358767
++ entry .TestEvent   typowany strumień zdarzeń wytwarzany przez przebieg, dla hosta, który sam przedstawia wyniki
+
+% 1 1 0 18b812898b9a23a109c3a6ed945a255c
+
+@ 0 11 0 096cc3268f6db04c176b4d418f9722fd
++       Niskopoziomowy odpowiednik akumulatora `Report`: każda dana zapisana przez przebieg
++       wychodzi także, przez ujście instalowane przez `Suite#invoke`, jako jedno z tych
++       zdarzeń, a host (fume lub `Suite.run`) przedstawia je jako widok terminalowy, HTML lub
++       cokolwiek innego. Zdarzenia są bogate, ale **bezpieczne do przesyłu**: każdy ładunek
++       to płaska klasa case złożona ze skalarów, `Optional`, `List` i `Map[Text, Text]`, więc
++       całe wyliczenie derywuje schemat i kodek BinTEL bez ręcznie pisanych instancji, a
++       `Streamer` przenosi je przez granicę classloadera. Struktury rekurencyjne są
++       spłaszczane strukturalnie: ślad stosu staje się łańcuchem przyczyn w kolejności
++       (`Trace`), `Juxtaposition` – wierszami indeksowanymi głębokością (`CompareRow`), z
++       których mechanizm przedstawiający odbudowuje drzewo, a rejestr metryk – listą
++       oznaczonych etykietami wartości (`MetricValue`). `Message` jest przedstawiany jako
++       `Text` na tej granicy.
+
+@ 0 1 0 129e42db53b254270d296e549d9be67a
++       Przypadki, w kolejności, w jakiej emituje je przebieg:
+
+@ 0 8 0 0b0a5aee0b9ee29a11006c1fb937f9d4
++       - `TestScheduled(test, kind, expected, tags, axes)` – harmonogram: jedno na każdy test
++         dopuszczony przez selekcję z `--list` albo na każdą asercję odroczoną przez runner z
++         kolejką, zanim się wykona.
++       - `SuiteStarted(suite, timestamp)` i `SuiteEnded(suite, timestamp)` – wokół zestawu
++         testów lub grupy; koniec jest wstrzymywany, aż zakończy się ostatnia zakolejkowana
++         asercja grupy.
++       - `TestStarted(test, timestamp)` i `TestEnded(test, timestamp)` – wyłącznie postęp,
++         ujmujący w klamrę wykonanie testu na potrzeby widoku na żywo.
++       - `TestCompleted(test, kind, coordinates, outcome, metrics, timestamp)` – wynik
++         sprawdzenia, następujący po `TestEnded`.
+
+% 0 1 0 1202d6d7e2db721c1c2d2e0137cb582d
+
+% 0 1 0 057a3d10a264efc31dec32ca8c9dfc35
+
+@ 0 10 0 17cb9197adcac3c80cdafb16e5a4af2a
++         `DetailMessage(test, message)` i `DetailThrows(test, check, stack)` – informacje
++         uzupełniające o niepowodzeniu (`check` mówi, czy wyjątek rzucił predykat, a nie
++         ciało).
++       - `BenchmarkRecorded`, `StrainRecorded`, `HotspotsRecorded` – wartości rodzajów
++         pomiarowych pod współrzędną, pole w pole jak w `Benchmark`, `Strain` i `Hotspots`.
++       - `AnchorRecorded(test, axis, discrete, integral, decimal, compare, metric, mode)` –
++         punkt odniesienia porównania.
++       - `NothingMatched(admitted)` – nietrywialna selekcja niczego nie dopuściła.
++       - `RunTerminated(error, active, timestamp)` – zestaw testów rzucił wyjątek; wraz z
++         aktywnymi testami.
++       - `RunCompleted(passed, timestamp)` – zawsze ostatnie.
+
+% 2 1 0 16b8dd92bc84291e0e0497c0d521eb0a
+
+% 3 1 0 1a4a627bf1da1b350aca2ff066b06cab
+
+% 5 1 0 1b80ee04b6aa1eb51d0fe7a72dc864c7
+
+% 0 1 0 0dbf25190c2a3a96070f1e5077f8fd3a
+
+% 0 1 0 18b14d94067595f715bd046b71376360
+
+% 0 1 0 0986dee5c16c50e81efe184b18be0946
+
+% 0 1 0 1360703f17a3c4cd0e19260f19bc1ca9
+
+% 0 1 0 0c700cebb05147360ca28f5b7e9fa647
+
+% 0 1 0 108ad0eaf7af7f2d01cb27be4cbf9cdb
+
+% 1 1 0 1650c1bc0d5134c806cccdbc2b5e2a4a
+
+@ 0 3 0 06675052723df18a1650d245fda90624
++       Każda zmiana pól przypadku zmienia układ strumienia i `Streamer.fingerprint`, więc host
++       zbudowany dla innej wersji zgłasza zestaw testów jako niezgodny, zamiast go błędnie
++       odczytać.
+
+% 1 1 0 079b3603bc3b9ef21fc168b000617495
+
+% 1 1 0 1ceecad80b6bed630c58eabbfed62117
+
+% 1 1 0 060d1b88c138ee9c0e2ed4f1e6abf01d
+
+@ 0 1 0 0847be007e514bf4126c8221392888e9
++   entry .Ref   tożsamość testu lub zestawu testów w postaci przesyłanej: skrót, nazwa, przydomek, ścieżka i miejsce deklaracji
+
+% 1 1 0 06f0c4eb2e01320702ddb0a47b165a0b
+
+@ 0 27 0 180b519531fae76310df7d548bad041f
++         `path` to pełna ścieżka nazw lub przydomków od głównego zestawu testów do wpisu,
++         łącznie z samym wpisem, więc drzewo można odbudować z samych referencji. Dla
++         zestawu testów `name` jest jego tytułem, a `moniker` jego identyfikatorem.
++     entry .of   referencja `Test.Id`
++     entry #id   sześcioznakowy skrót szesnastkowy
++     entry #name   nazwa wyświetlana
++     entry #moniker   przydomek albo identyfikator zestawu testów, jeśli jest
++     entry #path   etykiety od głównego zestawu testów do tego wpisu
++     entry #file   plik źródłowy z deklaracją
++     entry #line   wiersz z deklaracją
++   entry .Frame   jedna ramka stosu: klasa, metoda, plik i wiersz
++     entry #className   klasa ramki
++     entry #method   metoda
++     entry #file   plik źródłowy
++     entry #line   wiersz, jeśli jest znany
++   entry .Hotspot   jedna gorąca metoda profilu: klasa, metoda i próbki
++     entry #className   klasa, zdemanglowana
++     entry #method   metoda
++     entry #samples   próbki, których najwyższą ramką była ta metoda
++   entry .TraceComponent   jeden wyjątek spłaszczonego łańcucha przyczyn: nazwa jego klasy, komunikat i ramki
++     entry #className   nazwa klasy wyjątku
++     entry #message   jego przedstawiony komunikat
++     entry #frames   jego ramki stosu
++   entry .Trace   ślad stosu spłaszczony do łańcucha przyczyn, od zewnętrznego
++     entry .of   ślad `StackTrace`
++     entry #components   łańcuch, od zewnętrznego wyjątku
++   entry .Outcome   werdykt bez żywego wyjątku: `pass`, `fail`, `throws`, `check-throws`, `aspire-pass` lub `aspire-fail`
+
+% 1 1 0 11e8ba99267085c006ddd336eb9a1a52
+
+@ 0 6 0 05c0c69acaf5c84f10c808e2a77b7259
++         Dwa wyniki z wyjątkiem niosą `stack`; `duration` jest w nanosekundach.
++     entry .of   wynik `Verdict`
++     entry #outcome   słowo wyniku
++     entry #duration   czas trwania ciała
++     entry #stack   ślad, dla wyników z wyjątkiem
++   entry .DissectRow   jedna wartość pośrednia rozłożonego predykatu, w porządku prefiksowym z głębokością
+
+% 1 1 0 0763a305f01b02190a59eaebdfbde396
+
+@ 0 4 0 11b124cb00c308ee056d0e1b3d24545e
++         `start` i `end` to przesunięcia w kodzie źródłowym predykatu, a `code` jest tym
++         wycinkiem, więc mechanizm przedstawiający może umieścić każdą wartość pod
++         podwyrażeniem, do którego należy. `kind` to `value` albo `thrown` dla korzenia
++         predykatu, który rzucił wyjątek.
++   entry .CompareRow   jeden wiersz spłaszczonej `Juxtaposition`, w porządku prefiksowym z głębokością
+
+% 1 1 0 143e9600ed83b61a013bfef36085c2af
+
+@ 0 11 0 066009345be280030cc11642a5e0f459
++         `kind` to `same`, `different` lub `collation`; nazwa typu zestawienia jest przenoszona
++         w `difference`, a jego dzieci następują na głębokości `depth + 1`, więc mechanizm
++         przedstawiający może odbudować drzewo.
++     entry .flatten   wiersze `Juxtaposition`
++     entry #depth   głębokość wiersza w drzewie
++     entry #label   nazwa pola lub indeks w sekwencji
++     entry #kind   `same`, `different` lub `collation`
++     entry #left   strona oczekiwana
++     entry #right   strona zaobserwowana
++     entry #difference   różnica albo nazwa typu zestawienia
++   entry .Coordinate   współrzędna osi w postaci przesyłanej: pola specyfikacji i wartość jako jedna z trzech `Optional`
+
+% 1 1 0 1e89e353578971d718f77ef3ecc08fee
+
+@ 0 1 0 1857bfdf68fc473f083444fc0352ea09
++         Dokładnie jedna z `discrete`, `integral` i `decimal` jest obecna, zależnie od
+
+% 0 1 0 050671b6e9b734ff0923fe24c6bd1933
+
+@ 0 20 0 1f8f0c9170a00f810a7fcceb4fecc11e
++     entry .of   współrzędna ze specyfikacji i wartości albo lista ze współrzędnych
++     entry #axis   etykieta osi
++     entry #domain   `discrete`, `integral` lub `decimal`
++     entry #emergent   czy oś jest emergentna
++     entry #discrete   etykieta, dla osi dyskretnej
++     entry #integral   liczba całkowita, dla osi całkowitej
++     entry #decimal   liczba, dla osi dziesiętnej
++   entry .MetricValue   jedna metryka wyniku, kluczowana nazwą przypadku `Metric`
++     entry .of   wartości rejestru metryk
++     entry #metric   nazwa przypadku, stabilna między wersjami tam, gdzie etykieta nie jest
++     entry #value   wartość
++   entry .AxisSchedule   jedna oś zaplanowanego testu: jej specyfikacja, etykiety dopuszczonych wartości i zadeklarowane granice
++     entry .of   postać przesyłowa `Axis.Schedule`
++     entry #axis   etykieta osi
++     entry #domain   `discrete`, `integral` lub `decimal`
++     entry #emergent   czy oś jest emergentna
++     entry #values   etykiety wartości dopuszczonych komórek; brak dla osi emergentnej
++     entry #least   najmniejsza wartość, jaką wytworzy oś emergentna, jeśli zadeklarowano
++     entry #most   największa, jeśli zadeklarowano
++   entry .kindName   nazwa przesyłowa `Entry.Kind`: `check`, `bench`, `stress` lub `profile`
+
+@ 0 1 0 051e1f4f7b7bf9031b3121a6bc978e46
++ entry .internal   implementacje makr stojące za `Test.assert` i `Test.check`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 12 0 0e934ade7ad105c401c165079288537d
++       Nie do bezpośredniego użytku. Obiekt istnieje po to, by makra asercji miały stabilne
++       miejsce; `assertion` to kod czasu wykonania, do którego oba się rozwijają i który
++       `Spread` i `Spread2` wywołują bezpośrednio.
++   entry .check   makro stojące za `Test.check`: `Trial`, którego wartość jest zwracana
++   entry .assert   makro stojące za `Test.assert`: przepuszcza test przez `pure` i zapisuje, czy jednostka przeszła sprawdzanie przechwytywania
++   entry .pure   identyczność na `Test[test]`, którą sprawdzanie przechwytywania wiąże z czystym typem parametru
++   entry .succeed   predykat, który zawsze zachodzi, dla `assert()` i `check()`
++   entry .assertion   uruchamia, ocenia i zapisuje jedną asercję, w miejscu lub z kolejki
++       Pomija niewybrany `assert`, uruchamia niewybrany `check` bez zapisywania, kolejkuje
++       wybrany czysty `assert`, gdy runner ma workery, a w przeciwnym razie wykonuje go w
++       miejscu; zapisuje werdykt, kontrast nieudanej równości, gdy oczekiwanie zostało
++       podniesione, oraz przechwycenia.
+
+@ 0 1 0 1cb29cf62ad67054174ef2eebf78058b
++ entry .Streamer   zapisuje zdarzenia `TestEvent` przebiegu jako ramki BinTEL z prefiksem długości do `OutputStream` hosta
+
+% 1 1 0 17f26b331e0907680bb55aa98fc57115
+
+@ 0 7 0 1eea09090d81bb3e0d42cf008e016eb2
++       Jedyna powierzchnia komponentu `events` typowana typami JDK, ponieważ host (narzędzie
++       uruchamiające testy, takie jak fume) może wywoływać `.stream` refleksyjnie z **innego
++       świata classloaderów**, którego klasy Soundness nie są klasami tego świata: wymazuje się
++       do `stream(String, String,
++       OutputStream): int`. Pierwsza ramka to **odcisk** schematu: oba końce wyprowadzają
++       schemat BinTEL z własnego `TestEvent` i porównują je, więc rozjazd wersji, który zmienia
++       układ przesyłowy, zostaje wykryty, zanim jakiekolwiek zdarzenie zostanie zdekodowane.
++       Każda ramka to 4-bajtowa długość w porządku big-endian, a po niej ładunek, opróżniany
++       do strumienia w chwili zapisu.
+
+% 2 1 0 06d5744eceefbd6600bfab196e2df011
+
+% 3 1 0 03713fd3c0154970184488cca690c9cd
+
+% 4 1 0 0cf8cb434bcc97271a080e88bf71ba26
+
+% 0 1 0 15111d8815179d2f11e0a97037a7e372
+
+% 0 1 0 1d2e53abe3fbabc20952ee17bc4fc439
+
+% 1 1 0 15907a74b411d7fd0116bc6c8d5bf862
+
+% 1 1 0 19ec8d69d695ba3c125e9b3cae4dcb80
+
+% 1 1 0 01a67ce0d1a30dac0e045a9bf58bfea9
+
+% 0 1 0 1a0a4da59c92712407ea22a2834df45c
+
+@ 0 19 0 10a3a165ddc1915a02a07d113d8c6f14
++   entry .reentrant   `true`: zestawy testów na tej ścieżce klas można wywoływać wielokrotnie przez jeden classloader
++       Host sonduje tę metodę refleksyjnie; jej brak oznacza starszą wersję Probably, której
++       zestawy testów zapamiętywały swój pierwszy runner i za każdym razem potrzebowały świeżego
++       classloadera.
++   entry .queued   `true`: zestawy testów na tej ścieżce klas rozumieją `--workers=<n>`
++       Sondowane refleksyjnie jak `.reentrant`; dla starszej wersji Probably ten termin jest
++       wzorcem nazw, który niczego nie dopuszcza, więc host nie może przekazywać go na ślepo.
++   entry .diagnostic   `true`: zestawy testów na tej ścieżce klas rozumieją `--diagnose=<presentations>`
++       Sondowane refleksyjnie jak `.reentrant`.
++   entry .fingerprint   hasz BLAKE3 struktury derywowanego schematu `TestEvent`
++       Odcisk układu przesyłowego: dwie wersje, których `TestEvent` różnią się dowolnym polem,
++       kolejnością lub przypadkiem, dają różne odciski.
++   entry .read   dekoduje ładunek jednej ramki z powrotem do `TestEvent`
++       Odwrotność kodowania, dla hosta, którego własne moduły podlegają sprawdzaniu separacji
++       i nie mogą same rozwinąć derywowanego dekodera. Niepowodzenie dekodowania rzuca wyjątek;
++       wywołania należy opakować w `safely`.
++   entry .stream   uruchamia nazwany zestaw testów z terminami selekcji, zapisując odcisk, a potem jedną ramkę na zdarzenie
++       `stream(suite, arguments, output)` wczytuje wskazany obiekt `Suite` (`parser.Tests`,
++       z tego classloadera), wywołuje go z terminami rozdzielonymi znakami nowego wiersza,
++       zapisuje każde zdarzenie pod muteksem, zamyka strumień i zwraca status zestawu testów:
++       0 – zaliczony, 1 – porażki, 2 – wyjątek rzucił zestaw testów lub maszyneria.
+
+@ 0 1 0 055c4512f4f8818e07c350d253aa9708
++ entry .Standalone   punkt wejścia do uruchamiania jednego zestawu testów we własnej JVM
+
+% 1 1 0 0d9cfab1b98082a302241abb73f1c02f
+
+@ 0 6 0 0f6cccf7fa9bbd281f7b4f8f14af5ea7
++       `java -cp <classpath> probably.Standalone <suite> <term>…` to polecenie, które host
++       uruchamia, gdy zestaw testów nie może dzielić z nim procesu. Przebieg jest
++       strumieniowany dokładnie tak, jak strumieniuje go `Streamer.stream`, na standardowe
++       wyjście, zarezerwowane dla ramek: wszystko, co sam zestaw testów wypisuje na
++       standardowe wyjście, trafia na standardowe wyjście błędów. JVM kończy działanie ze
++       statusem zestawu testów (0 – zaliczony, 1 – porażki, 2 – rzucony wyjątek; 2 także wtedy,
++       gdy nie wskazano zestawu testów).
+
+% 1 1 0 0a0481a5bfc9d29806e0ff7a2ae860ae
+
+@ 0 1 0 1ba21580b811ce591e27e5fc48ed164e
++   entry .main   uruchamia zestaw testów wskazany pierwszym argumentem, z pozostałymi jako terminami, i kończy działanie z jego statusem

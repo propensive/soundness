@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 1 0 190c098c7f6010f60a3e574246bf1613
++ # `↯/s.26.1` – `Database.Error`
+
+@ 0 1 0 05a6ff4de7ceca7c156f373b3f867d94
++ Zgłaszany, gdy operacja na bazie danych Anamnesis nie może być kontynuowana.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 5 0 1cc084dbf7a2d76913886650f97ef783
++ Anamnesis utrzymuje w pamięci magazyn referencji i relacji między nimi. Gdy zapytanie odwołuje
++ się do danych, których magazyn nie zna, zgłaszany jest ten błąd. Konstruktor przyjmuje
++ `reason: Reason`; przedstawiony komunikat to `the database operation failed because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 1 0 0866a05b1564a9fc0f1c427e373f92a3
++ ### `↯/s.26.1.1` – `UnknownReference`
+
+@ 0 2 0 161158d4a6f8d5820dfce6021e46be04
++ Wartość przekazana do `Database.ref` nie została wcześniej zapisana, więc nie można dla niej
++ zwrócić `Ref`.
+
+@ 0 1 0 1ed706efdd3a34da10aef80b439e96cf
++ **Przykład.** `[↯/s.26.1.1] the database operation failed because the value has not been stored in the database`
+
+@ 0 2 0 0d5ddbced5afdd801ca90e9acaeff98f
++ **Rozwiązanie.** Wywołać `Database.store` z tą wartością przed poproszeniem o `Ref` do niej.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 086dd6d4fa53cb2f1b5e6e6cb2a1ac9a
++ - Źródło: `lib/anamnesis/src/core/anamnesis.Database.scala`

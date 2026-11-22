@@ -1,0 +1,1020 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1861fb3ffe250f090b0aa3a7d3bbee3c
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0adc043bef3ff3a40219512bf50337e4
++ info   operatory arytmetyczne jako klasy typów, z których każda nazywa typy swoich operandów i wyniku, oraz porównanie totalne
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 001b83d42d668e8e09180a441f4c462d
++     _Symbolism_ definiuje operatory arytmetyczne `+`, `-`, `*`, `/` i prefiksowy `-`,
++     pierwiastki `sqrt` i `cbrt` oraz elementy neutralne `zero` i `one` nie jako metody
++     jakiegokolwiek typu, lecz jako rozszerzenia rozwiązywane przez klasy typów. Każda
++     dwuargumentowa klasa typów nazywa swój lewy operand (`Self`), prawy operand (`Operand`) i
++     wynik (`Result`), więc arytmetyka może mieć sens dla typów, których operandy i wyniki się
++     różnią: długość razy długość to pole powierzchni, chwila plus czas trwania to chwila, a
++     wielkość podzielona przez inną ma typ, którego żaden z operandów nie mógł przewidzieć.
+
+% 2 1 0 06d3b9172c5afd120a63ddb63ad54368
+
+% 3 1 0 14cbead5e68dfd381a5c6b8cf87d35e8
+
+% 0 1 0 0e16b1647b03e4900f19da2be178677f
+
+% 0 1 0 0a86a05adaba2a0313a09db73cbe289c
+
+% 0 1 0 0dc7c045468bfc75153f12ccdd1b7994
+
+% 0 1 0 1c4e6d6936b9abec1c7c632a2cbdb611
+
+% 0 1 0 05962f2826310a920cadc29354dfb6fa
+
+% 0 1 0 1a789eba38bc0b530a3409d0b8e528f1
+
+% 0 1 0 16730851737b8e3c04c5026f48616e9c
+
+% 0 1 0 0b32d95916ee02200f4603770be1d06b
+
+% 1 1 0 02bccdb920c57ab406902be6bead479f
+
+@ 0 7 0 1304fdc7a498e4171a98ade7c2dcc31d
++     Odczytanie typu instancji na głos mówi o niej wszystko: `Money is Addable by Money to
++     Money` – `Money` _jest dodawalne przez_ `Money` _do_ `Money`. Klasy typów to `Addable`,
++     `Subtractable`, `Multiplicable`, `Divisible`, `Negatable` i `Rootable` dla operacji;
++     `Zeroic` i `Unital` dla elementów neutralnych dodawania i mnożenia; `Concatenable`, które
++     czyni każdy typ konkatenowalny typem `Addable`, więc kolekcje i tekst łączą się przez `+`;
++     `Quotient` do rozkładania ułamka za pomocą ekstraktora `/:`; oraz `Comparable`, totalne
++     porównanie trójwartościowe zwracające `Comparison`, przez które kolekcje sortują i
++     znajdują ekstrema.
+
+@ 0 4 0 06fd0409a45e2f3604643f5268089531
++     Instancje dla prymitywnych typów liczbowych to obiekty singletonowe z metodami `inline`,
++     więc `a + b` na dwóch wartościach `Double` kompiluje się do pojedynczej instrukcji
++     maszynowej, bez alokowania instancji i bez boxingu. Klasy typów `AddOp`, `SubOp`,
++     `MulOp` i `DivOp` to starsza, opcjonalna droga do tego samego rozwijania w miejscu
++     wywołania, z której operatory nadal korzystają w pierwszej kolejności.
+
+@ 0 5 0 03b235cda1773ea80d28345f2d419e4d
++     Symbolism to maszyneria leżąca pod arytmetyką wymiarową quantitative, wektorami i
++     macierzami mosquito, liczbami o stałej szerokości z hypotenuse oraz chwilami i czasami
++     trwania z aviation. Ma jeden zbiór źródeł, `symbolism.core`, który kompiluje się na
++     każdą platformę, a wszystko jest eksportowane do modułu zbiorczego `soundness`. Każda
++     instancja znajduje się w obiekcie towarzyszącym swojego typu podmiotu lub swojej klasy
++     typów, więc żadna nie wymaga importu.
+
+% 0 1 0 18badcd7039d9c39129c5998a01d86df
+
+% 0 1 0 0137e19ffb39a5f91f53e450d96038d1
+
+% 0 1 0 1bc12d1c772357b51e8e7bd3fe28c449
+
+% 0 1 0 0ae57ce3c3193ca21a5f2acac50cd4d6
+
+@ 0 6 0 143c6a2488f000331af1baa532d3ae7e
++ entry .+   dodaje dwie wartości przez instancję `Addable` dla ich typów
++     `left + right` to rozszerzenie dla dowolnego typu, wymagające w zasięgu
++     `left is Addable by right`; jego typem jest `Result` instancji. Podczas rozwijania
++     wywołania najpierw szuka `AddOp` dla obu typów, a w przeciwnym razie wywołuje `add`
++     instancji `Addable`. Ponieważ prawy operand jest parametrem typu, sam literał po prawej
++     stronie nie przyjmuje typu lewego operandu: literał całkowity dodawany do `U64` zapisuje
++     się `count + (1: U64)`.
+
+% 2 1 0 0fcdf602c22056460e96f0fa54f8627c
+
+% 3 1 0 1ac4396c2d6a7dee1489b85f7f0e2a60
+
+% 0 1 0 01ff953220b689400919171295187cf4
+
+% 0 1 0 15bb3993525ac8331e45585e8d406dd2
+
+% 0 1 0 034b888e64fa8c1f0b08d55c456b666b
+
+% 1 1 0 1cc1c3b5310fadb810591d611661e3b4
+
+@ 0 2 0 02c902eeb94ebc091975fe87598fc650
++     Dodawanie wartości, dla których nie ma instancji, jest błędem kompilacji, a nie powrotem
++     do konkatenacji przez `toString`.
+
+@ 0 4 0 1340769e512b6d0b0e80ffa1b4ae4cac
++ entry .-   odejmuje jedną wartość od drugiej przez instancję `Subtractable` dla ich typów
++     `left - right` to rozszerzenie dla dowolnego typu, wymagające w zasięgu
++     `left is Subtractable by right`, i zwraca `Result` instancji. Podobnie jak dla `+`,
++     preferowane jest `SubOp`, jeśli istnieje.
+
+% 3 1 0 003634b81f983696178c4bb0becf942c
+
+% 4 1 0 05eaf87b495956ff1d78b80bf4c3621c
+
+% 0 1 0 0eea05f8d99cca701679a5039fb41c2f
+
+% 1 1 0 06d39eab07a051721c5db5cb7f77a10d
+
+@ 0 6 0 1cfe96953583e1f915decbdab16ef0e2
++ entry .*   mnoży dwie wartości przez instancję `Multiplicable` dla ich typów
++     `left*right` to rozszerzenie dla dowolnego typu, wymagające w zasięgu
++     `left is Multiplicable by right`, i zwraca `Result` instancji; dzięki temu długość razy
++     długość może być polem powierzchni, a długość razy liczba – długością. Preferowane jest
++     `MulOp`, jeśli istnieje. Każdy typ, który jest `Concatenable` z samym sobą i `Zeroic`,
++     mnoży się przez `Int` jako powtórzenie, więc `t"ab"*3` to `t"ababab"`.
+
+% 2 1 0 18e2dfe922aa50e403548eed9fb784f9
+
+% 3 1 0 11ec7ff3dcd869e5166e493e53eb6721
+
+% 0 1 0 0ab5e0fbf2b703cf1d5806cbc8ab6948
+
+% 0 1 0 1a13fd007aff231610d27a05474e455d
+
+% 1 1 0 117d53596954edfd0158dd4fc6f4881a
+
+@ 0 5 0 176e927d44fc8d4512a96934bdc56353
++ entry ./   dzieli jedną wartość przez drugą przez instancję `Divisible` dla ich typów
++     `left/right` to rozszerzenie dla dowolnego typu, wymagające w zasięgu
++     `left is Divisible by right`, i zwraca `Result` instancji. Dzielenie całkowite obcina
++     wynik, tak jak operator prymitywny, a `Int` podzielone przez `Double` to `Double`.
++     Preferowane jest `DivOp`, jeśli istnieje.
+
+% 3 1 0 013d822fa0c63d6a191036d4bc758a37
+
+% 4 1 0 09c7e1aeda257739023f0d84afb78384
+
+% 0 1 0 1dc0d4719231858e1785fa7735a6eaed
+
+% 0 1 0 0356a2c08ce5f03a03811a3253f0561a
+
+% 1 1 0 0f73be644b09e1520cdf748d60bfe8db
+
+@ 0 4 0 1e37432a85b56c9013c20c0f4a920e5b
++ entry .unary_-   neguje wartość przez instancję `Negatable` dla jej typu, jako prefiksowy `-`
++     `-value` to rozszerzenie dla dowolnego typu, wymagające w zasięgu `value is Negatable`, i
++     zwraca `Result` instancji. `Byte` lub `Short` neguje się z powrotem do własnego typu, z
++     zawinięciem, tak jak typy prymitywne.
+
+% 2 1 0 138eb749007778e60a23214f7e725145
+
+% 3 1 0 063b274c1aad97b915b322cee6b1be88
+
+% 0 1 0 0cb6847491cd419705c3648504b5d29d
+
+% 0 1 0 19cb0afc4e7140ce1a37694ee62dd5a3
+
+% 0 1 0 0ef44c411610aee61fc45ddfc3026e45
+
+% 0 1 0 12c7e154ec8e9dd71211f7dce1fa0cf8
+
+% 1 1 0 14c36c7016710afa1cc93dd484dc7e73
+
+@ 0 4 0 1816d7c931c911190f0efc44f3f2e2ca
++ entry .sqrt   pierwiastek kwadratowy wartości, przez jej instancję `Rootable[2]`
++     Rozszerzenie dla dowolnego typu z `Rootable[2]`, zwracające `Result` instancji. Na
++     `Double` lub `Float` rozwija się do `Math.sqrt`, bez żadnej alokacji. Nie ma instancji dla
++     `Int`, ponieważ jego pierwiastek kwadratowy na ogół nie jest `Int`: `16.sqrt` to błąd
++     kompilacji.
+
+% 2 1 0 1cbf542b31721eb1034450ee9de4fd4c
+
+% 3 1 0 0cf0a10ba408c9c7039b3bb8a54fe472
+
+% 0 1 0 10807e93ab26a6fc178aa57c71b388c6
+
+% 0 1 0 1eec60b42573e24b1f640aff321f90a3
+
+% 0 1 0 1bdb3c427c1522451a2c0fad5fbeae0e
+
+% 1 1 0 0c46250625a72b1e005913d910b82dc3
+
+@ 0 3 0 0821ba72a6b25615063bf290f601d680
++ entry .cbrt   pierwiastek sześcienny wartości, przez jej instancję `Rootable[3]`
++     Rozszerzenie dla dowolnego typu z `Rootable[3]`, zwracające `Result` instancji; na
++     `Double` lub `Float` rozwija się do `Math.cbrt`.
+
+% 2 1 0 123026e4f53d01e115434a79ca7e472c
+
+% 3 1 0 10ad3bc700cf006503dd2baab18e8892
+
+% 0 1 0 135a5c580c71aa5b047c66084c45d1f2
+
+% 1 1 0 03fa26364ed08519023c832ca5983cea
+
+@ 0 3 0 073fd6d05b41cafc01bcb207305ce1ff
++ entry .zero   element neutralny dodawania dla typu, jako `zero[Int]`
++     `zero[T]` wymaga w zasięgu `T is Zeroic`. Od niego zaczyna się suma lub powtarzana
++     konkatenacja i jest on tym, czego potrzebuje generyczny algorytm jako wartości
++     początkowej.
+
+% 2 1 0 05b66885e2b190651168f573ea957abd
+
+% 3 1 0 03067fcf1afcb8870726567b37b6d5eb
+
+% 0 1 0 0fef75edd79509a61cff098683676fa9
+
+% 0 1 0 0de6bf3677170b700bad10bed8e48653
+
+% 0 1 0 0a12d213abde7c6b072e4a640c3bf087
+
+% 1 1 0 103ef2d82a064e3d0427e6d2bf6cfe80
+
+@ 0 1 0 115a1f8a152c69c019a24b6b863e0270
++ entry ./:   ekstraktor, który rozkłada ułamek, `numerator /: denominator`, przez `Quotient`
+
+% 1 1 0 1bc98f746d55c7b8092b78de459f20b5
+
+@ 0 2 0 0cacfb56cb964c4814f127df9f5ee7a4
++       Wzorzec, który pasuje do dowolnej wartości z instancją `Quotient`, wiążąc jej licznik i
++       mianownik; wartość, której instancja nie potrafi rozłożyć, nie pasuje.
+
+% 2 1 0 000d31cd86646f331c4090433f3d43fa
+
+% 3 1 0 14c549ad32d0847e1b21cf1f736c164b
+
+% 0 1 0 0e5826d3da3d30c103535e26ed9850a5
+
+% 0 1 0 0b791519c46f44a7041f2214a0a8a295
+
+% 0 1 0 1315cf185bf45b84146a9f6a0601e2f0
+
+% 0 1 0 0404d4411a8179ee049adc364679bd72
+
+% 0 1 0 191d4a3c4e30e0c21ed3853ba93fbfc2
+
+% 0 1 0 0d389405fb62a66a0f7e2b5c09cf42de
+
+% 0 1 0 0b72e296f6608ae114abd9958390779c
+
+% 0 1 0 07ef0ac74f1876850a87a43e50b1025c
+
+% 0 1 0 1750964329dda9ef0e9d8028c88fe459
+
+% 0 1 0 183240fcffa65318024e7901a38190f0
+
+% 0 1 0 1692623ea65e7d5914447e02156122a7
+
+% 1 1 0 14617045670db1510baeb6feb0b9121f
+
+@ 0 1 0 0a8687ab07008c001d753338d8ebc1e8
++   entry .unapply   rozkłada wartość na licznik i mianownik, jeśli potrafi to jej `Quotient`
+
+@ 0 1 0 0daba5718467923004af18eddd6d6271
++ entry .Addable   klasa typów dla `+`: `Self` jest dodawalne przez `Operand` do `Result`
+
+% 1 1 0 1663371680dc2bde0a8319a6ff96a160
+
+@ 0 5 0 05ae9b11b2472e3d061f630e43ec6109
++       Klasa typów stojąca za rozszerzeniem `+`. Jej trzy składowe typowe mówią wszystko:
++       instancja `Money is Addable by Money to Money` dodaje dwie wartości `Money`, dając
++       `Money`, a `Instant is Addable by Duration to Instant` dodaje czas trwania do chwili.
++       Wynik jest składową instancji, a nie parametrem operatora, więc jeden `+` obsługuje
++       każdą kombinację.
+
+% 2 1 0 1f8529da4736245b17948c2d39a39790
+
+% 3 1 0 15617c77d2e4f07f0b9f3563ca981bef
+
+% 5 1 0 106f1d97b0f46b7710d0cd17d48eb298
+
+% 7 1 0 0a529f9e895b110115aecbb2520d748d
+
+% 0 1 0 0d578706d94c3e8e0173ca9459b0a3f8
+
+% 0 1 0 1b834b1787c2b18f08fb727e99586bd7
+
+% 0 1 0 0578de8800a3155b0e78a738fb1818d9
+
+% 1 1 0 1abb05b9d33034fd1a0a2092b2070248
+
+@ 0 2 0 1d0e5489653c0d0f0f77781bf274db46
++       Typ zyskuje arytmetykę po jednej instancji naraz, a każdy operator jest dostępny, gdy
++       tylko pojawi się jego instancja:
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 17f1e21452daca120e8f42702861ec61
++         label Zwykła klasa case nie ma arytmetyki
+
+% 1 1 0 01efe4ddc63cc62711e12fdb40e2d008
+
+% 2 1 0 0fd006c6720bb9b41c2057c5d9479bf1
+
+% 0 1 0 0300295f4abdaf0805ddb097916ce520
+
+% 1 1 0 0e01a652835172d10e85cd93181778e6
+
+@ 0 1 0 0f27b586f383b2f51761a60ecc6f45c9
++         label Instancja `Addable` daje jej `+`
+
+% 1 1 0 1f51414240273dd50a3fe9a07b4482df
+
+% 2 1 0 17ad311edf5fc5f714717219ef90862a
+
+% 4 1 0 0ab73e52aa4cb7e50fc2606737274190
+
+% 5 1 0 109a883e4e2e62de06652a996b99d25a
+
+% 6 1 0 1b9f8e6646f96bff1368023df484205d
+
+% 0 1 0 024485cfd206f65503280ddb76e45145
+
+% 1 1 0 0fbeb44cfd56692e115d52c366b8ea86
+
+@ 0 1 0 15d4fc05e6d4641a1cdbb361f7d0e015
++         label Instancja `Multiplicable`, z innym typem operandu, daje jej `*`
+
+% 1 1 0 1b0614a364e110191f35b636997184bd
+
+% 2 1 0 09cc44f2383419df01a6130a641386ff
+
+% 4 1 0 09b0091e23f138fd1a3a3b2cda8366b2
+
+% 5 1 0 1239586768c8d8410567ecbda8a6b36a
+
+% 6 1 0 102b614c8e712e1c092a290c581d80f5
+
+% 0 1 0 1d3bf118b9b8910a12cf3e6a1ff450c9
+
+% 0 1 0 031e923452f92003085533f39c728578
+
+% 0 1 0 0742d9df8973350f097d3efea7165e13
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 6 0 1233005096be334b0bd1b09e7fc72743
++       Instancje należą do obiektu towarzyszącego typu podmiotu, gdzie są znajdowane bez
++       importu. Instancje prymitywne (`Int`, `Long`, `Double`, `Float`, `Short`, `Byte` oraz
++       `Int` z `Double` w obu kolejnościach) to obiekty singletonowe w obiekcie towarzyszącym,
++       których `inline def add` sprawia, że `a + b` to jedna instrukcja. `Short` lub `Byte`
++       dodaje się z powrotem do własnego typu, z zawinięciem przy przepełnieniu. Każdy typ
++       `Concatenable` jest `Addable` przez `.concatenable`.
+
+% 0 1 0 09201a2e5addfb43047d502b0377ccfb
+
+% 0 1 0 16710fc88531dae71c6010f7250374cd
+
+% 0 1 0 189486f3e13c4f7114ad6f7dc2f965e9
+
+@ 0 28 0 1cf15fc9ae00424f1028a473cfc83104
++   entry .apply   instancja `Addable` z funkcji dwóch operandów
++       `Addable((left, right) => …)` tworzy `augend is Addable by addend to result`, z trzema
++       typami wywnioskowanymi z typu oczekiwanego, tak jak dostarcza ich zadeklarowany typ
++       givena.
++   entry .DoubleAddition   instancja `Double + Double`, rozwijana do jednej instrukcji
++   entry .FloatAddition   instancja `Float + Float`, rozwijana do jednej instrukcji
++   entry .LongAddition   instancja `Long + Long`, rozwijana do jednej instrukcji
++   entry .IntAddition   instancja `Int + Int`, rozwijana do jednej instrukcji
++   entry .IntDoubleAddition   instancja `Int + Double`, której wynikiem jest `Double`
++   entry .DoubleIntAddition   instancja `Double + Int`, której wynikiem jest `Double`
++   entry .ShortAddition   instancja `Short + Short`, z zawinięciem z powrotem do `Short`
++   entry .ByteAddition   instancja `Byte + Byte`, z zawinięciem z powrotem do `Byte`
++   entry .double   given dla `Double + Double`, typowany jako `DoubleAddition`, aby się rozwijał
++       Zadeklarowany z typem singletonowym obiektu, co pozwala inlinerowi rozwiązać `add` do
++       `inline def` obiektu; given typowany jako trait wywoływałby zamiast tego metodę przez
++       trait.
++   entry .float   given dla `Float + Float`, typowany jako `FloatAddition`, aby się rozwijał
++   entry .long   given dla `Long + Long`, typowany jako `LongAddition`, aby się rozwijał
++   entry .int   given dla `Int + Int`, typowany jako `IntAddition`, aby się rozwijał
++   entry .int2   given dla `Int + Double`, typowany jako `IntDoubleAddition`, aby się rozwijał
++   entry .int3   given dla `Double + Int`, typowany jako `DoubleIntAddition`, aby się rozwijał
++   entry .short   given dla `Short + Short`, typowany jako `ShortAddition`, aby się rozwijał
++   entry .byte   given dla `Byte + Byte`, typowany jako `ByteAddition`, aby się rozwijał
++   entry .concatenable   czyni każdy typ `Concatenable` typem `Addable`, więc `+` łączy listy, zbiory, mapy i tekst
++       Dla dowolnego `left is Concatenable by right` – `Addable` z tym samym operandem i
++       wynikiem, które wywołuje `concat`. W ten sposób `List(1) + List(2)`, `set + other` i
++       `text + more` działają przez jeden `+`.
++   entry #Augend   typ lewego operandu: alias `Self`
++   entry #Addend   typ prawego operandu: alias `Operand`
++   entry #add   dodaje drugi składnik do pierwszego, dając `Result` instancji
+
+@ 0 1 0 1f26df8d88a1089e0d649f1656cab2c2
++ entry .Subtractable   klasa typów dla `-`: `Self` jest odejmowalne przez `Operand` do `Result`
+
+% 1 1 0 1a51d983434d71510116edc334461cc6
+
+@ 0 3 0 1313ca3715fe360a1ea5a173b317e707
++       Klasa typów stojąca za dwuargumentowym rozszerzeniem `-`, której typ wyniku jest
++       składową instancji: na przykład `Instant is Subtractable by Instant to Duration`, podczas
++       gdy chwila minus czas trwania to chwila.
+
+% 2 1 0 0b2af35dae3694cd182ed5848389ca9b
+
+% 3 1 0 1bdc247c31bc5f6e188284d8a3e97f75
+
+% 5 1 0 1388f6b1c0ad7add1ad6a023b1109b91
+
+% 7 1 0 1106f41356606a7803dfaf35561c877b
+
+% 0 1 0 04b0755bae945ab216f3d64f18e41ad2
+
+% 0 1 0 0a9a6b1a8305d66d179e8d5a12475211
+
+% 0 1 0 0b435b44129212280b0a47723999db16
+
+% 1 1 0 09c92dd01c2ca9840d71f4eb3e0bd93c
+
+@ 0 2 0 0f1a9e92ab4e9263059cdaa828ade88f
++       Instancje prymitywne to obiekty singletonowe z `inline def subtract`; `Short` lub `Byte`
++       odejmuje się z powrotem do własnego typu.
+
+% 0 1 0 09201a2e5addfb45047d502b0377ccfd
+
+@ 0 16 0 156256010cb56ae217cab906cf35668f
++   entry .apply   instancja `Subtractable` z funkcji dwóch operandów
++   entry .DoubleSubtraction   instancja `Double - Double`, rozwijana do jednej instrukcji
++   entry .FloatSubtraction   instancja `Float - Float`, rozwijana do jednej instrukcji
++   entry .LongSubtraction   instancja `Long - Long`, rozwijana do jednej instrukcji
++   entry .IntSubtraction   instancja `Int - Int`, rozwijana do jednej instrukcji
++   entry .ShortSubtraction   instancja `Short - Short`, z zawinięciem z powrotem do `Short`
++   entry .ByteSubtraction   instancja `Byte - Byte`, z zawinięciem z powrotem do `Byte`
++   entry .double   given dla `Double - Double`, typowany jako `DoubleSubtraction`, aby się rozwijał
++   entry .float   given dla `Float - Float`, typowany jako `FloatSubtraction`, aby się rozwijał
++   entry .long   given dla `Long - Long`, typowany jako `LongSubtraction`, aby się rozwijał
++   entry .int   given dla `Int - Int`, typowany jako `IntSubtraction`, aby się rozwijał
++   entry .short   given dla `Short - Short`, typowany jako `ShortSubtraction`, aby się rozwijał
++   entry .byte   given dla `Byte - Byte`, typowany jako `ByteSubtraction`, aby się rozwijał
++   entry #Minuend   typ lewego operandu: alias `Self`
++   entry #Subtrahend   typ prawego operandu: alias `Operand`
++   entry #subtract   odejmuje odjemnik od odjemnej, dając `Result` instancji
+
+@ 0 1 0 0b73b35ca0ada8700761792216a2515d
++ entry .Multiplicable   klasa typów dla `*`: `Self` jest mnożalne przez `Operand` do `Result`
+
+% 1 1 0 1e4ba23bfd80ba0b090db9d419c89ded
+
+@ 0 3 0 03b6dfdc3cbee4851724b8c3fd35754f
++       Klasa typów stojąca za rozszerzeniem `*`. Operand i wynik mogą różnić się od lewego
++       operandu: wektor pomnożony przez `Int` to wektor, a w quantitative długość pomnożona
++       przez długość to pole powierzchni.
+
+% 2 1 0 12f7157a6370663505cd6ef459a795aa
+
+% 3 1 0 023a7f1cf6d870260e90659c3cb9e7ed
+
+% 5 1 0 0a706183bcca45b00ed57ddf375b56a9
+
+% 7 1 0 0df878b4427bf50e09c3cff6aa18b8f2
+
+% 0 1 0 1ddd3201b781212b1e2766b5cbae2aed
+
+% 0 1 0 0bf7e8a092a4ec5b16ca621c39f96257
+
+% 0 1 0 0e19eb81436eb88f017033629fd7769b
+
+% 1 1 0 043e0a9c9fad44ec00ec311d94c7876c
+
+@ 0 3 0 0117d6b72670ed6b0c3327f7a8c0dd1d
++       Instancje prymitywne to obiekty singletonowe z `inline def multiply`. Każdy typ, który
++       jest `Concatenable` z samym sobą i `Zeroic`, mnoży się przez `Int` jako powtórzenie,
++       przez `.concatenable`.
+
+% 0 1 0 09201a2e5addfb42047d502b0377ccfa
+
+@ 0 17 0 1c11295dc351e8ea0793745c0ba9ad9c
++   entry .apply   instancja `Multiplicable` z funkcji dwóch operandów
++   entry .DoubleMultiplication   instancja `Double*Double`, rozwijana do jednej instrukcji
++   entry .LongMultiplication   instancja `Long*Long`, rozwijana do jednej instrukcji
++   entry .IntMultiplication   instancja `Int*Int`, rozwijana do jednej instrukcji
++   entry .FloatMultiplication   instancja `Float*Float`, rozwijana do jednej instrukcji
++   entry .ShortMultiplication   instancja `Short*Short`, z zawinięciem z powrotem do `Short`
++   entry .ByteMultiplication   instancja `Byte*Byte`, z zawinięciem z powrotem do `Byte`
++   entry .double   given dla `Double*Double`, typowany jako `DoubleMultiplication`, aby się rozwijał
++   entry .long   given dla `Long*Long`, typowany jako `LongMultiplication`, aby się rozwijał
++   entry .int   given dla `Int*Int`, typowany jako `IntMultiplication`, aby się rozwijał
++   entry .float   given dla `Float*Float`, typowany jako `FloatMultiplication`, aby się rozwijał
++   entry .short   given dla `Short*Short`, typowany jako `ShortMultiplication`, aby się rozwijał
++   entry .byte   given dla `Byte*Byte`, typowany jako `ByteMultiplication`, aby się rozwijał
++   entry .concatenable   powtórzenie: wartość konkatenowalna z samą sobą i `Zeroic` razy `Int`
++       Dla dowolnego typu, który jest `Concatenable` przez siebie do siebie i `Zeroic`,
++       `value*n` to `n` skonkatenowanych kopii wartości, począwszy od `zero`, więc liczba
++       zero (lub mniejsza) daje wartość zerową.
+
+% 2 1 0 10f33ed5263e6cce085b76de71d3e570
+
+% 3 1 0 0b86be096314745915f796d86e522690
+
+% 0 1 0 19487392ae3367d602eb46bf1ad4d6ca
+
+% 0 1 0 076d56d11172fa6807996f14801df631
+
+% 1 1 0 1ce0dd107e7622931e1b18875b8582a5
+
+@ 0 3 0 0ee8f21b41ff258503cb71af958b63c9
++   entry #Multiplicand   typ lewego operandu: alias `Self`
++   entry #Multiplier   typ prawego operandu: alias `Operand`
++   entry #multiply   mnoży mnożną przez mnożnik, dając `Result` instancji
+
+@ 0 1 0 19abfe59cc307ebe1349e8ec18fd0c67
++ entry .Divisible   klasa typów dla `/`: `Self` jest podzielne przez `Operand` do `Result`
+
+% 1 1 0 1a63a85b6973f61010b18b43dca198cc
+
+@ 0 2 0 1fc3eceb96f7f09c1daf72af952a8f02
++       Klasa typów stojąca za rozszerzeniem `/`, której typ wyniku jest składową instancji: w
++       quantitative odległość podzielona przez czas to prędkość.
+
+% 2 1 0 071d1763dd89f99919b9525d972b5eff
+
+% 3 1 0 08b375183530399c1dbe7f0ebffac65e
+
+% 5 1 0 0d5723e1f0146a451e4d3a7356bb1378
+
+% 7 1 0 07165ef010d0b525014430159b84ddeb
+
+% 0 1 0 12598c4154016f090eea6b98aa9f1cc5
+
+% 0 1 0 1fe2e345b33a893213fb4eeb2dc905b4
+
+% 0 1 0 1f7e5d1aa4b851c90ea4a72200ac7df0
+
+% 1 1 0 10f783c4ae44c2d208b29f43fc06e7cc
+
+@ 0 3 0 075bc8ab29271555186a902da2d60196
++       Instancje prymitywne to obiekty singletonowe z `inline def divide`. Każdy typ całkowity
++       dzieli się przez siebie do siebie, z obcięciem, a przez `Double` do `Double`; `Double`
++       lub `Float` dzieli się przez `Int`, a `Float` przez `Double` do `Double`.
+
+% 0 1 0 09201a2e5addfb47047d502b0377ccff
+
+@ 0 30 0 1ece6c43fbece21f13c2e0391f7f3368
++   entry .apply   instancja `Divisible` z funkcji dwóch operandów
++   entry .DoubleDivision   instancja `Double/Double`, rozwijana do jednej instrukcji
++   entry .DoubleIntDivision   instancja `Double/Int`, której wynikiem jest `Double`
++   entry .FloatDivision   instancja `Float/Float`, rozwijana do jednej instrukcji
++   entry .FloatIntDivision   instancja `Float/Int`, której wynikiem jest `Float`
++   entry .FloatDoubleDivision   instancja `Float/Double`, której wynikiem jest `Double`
++   entry .LongDivision   instancja `Long/Long`, z obcięciem
++   entry .LongDoubleDivision   instancja `Long/Double`, której wynikiem jest `Double`
++   entry .IntDivision   instancja `Int/Int`, z obcięciem
++   entry .IntDoubleDivision   instancja `Int/Double`, której wynikiem jest `Double`
++   entry .ShortDivision   instancja `Short/Short`, z obcięciem z powrotem do `Short`
++   entry .ShortDoubleDivision   instancja `Short/Double`, której wynikiem jest `Double`
++   entry .ByteDivision   instancja `Byte/Byte`, z obcięciem z powrotem do `Byte`
++   entry .ByteDoubleDivision   instancja `Byte/Double`, której wynikiem jest `Double`
++   entry .double   given dla `Double/Double`, typowany jako `DoubleDivision`, aby się rozwijał
++   entry .double2   given dla `Double/Int`, typowany jako `DoubleIntDivision`, aby się rozwijał
++   entry .float   given dla `Float/Float`, typowany jako `FloatDivision`, aby się rozwijał
++   entry .float2   given dla `Float/Int`, typowany jako `FloatIntDivision`, aby się rozwijał
++   entry .float3   given dla `Float/Double`, typowany jako `FloatDoubleDivision`, aby się rozwijał
++   entry .long   given dla `Long/Long`, typowany jako `LongDivision`, aby się rozwijał
++   entry .long2   given dla `Long/Double`, typowany jako `LongDoubleDivision`, aby się rozwijał
++   entry .int   given dla `Int/Int`, typowany jako `IntDivision`, aby się rozwijał
++   entry .int2   given dla `Int/Double`, typowany jako `IntDoubleDivision`, aby się rozwijał
++   entry .short   given dla `Short/Short`, typowany jako `ShortDivision`, aby się rozwijał
++   entry .short2   given dla `Short/Double`, typowany jako `ShortDoubleDivision`, aby się rozwijał
++   entry .byte   given dla `Byte/Byte`, typowany jako `ByteDivision`, aby się rozwijał
++   entry .byte2   given dla `Byte/Double`, typowany jako `ByteDoubleDivision`, aby się rozwijał
++   entry #Dividend   typ lewego operandu: alias `Self`
++   entry #Divisor   typ prawego operandu: alias `Operand`
++   entry #divide   dzieli dzielną przez dzielnik, dając `Result` instancji
+
+@ 0 1 0 1d2b09d9a4d03fa412b423306cd2fc24
++ entry .Negatable   klasa typów dla prefiksowego `-`: `Self` neguje się do `Result`
+
+% 1 1 0 18da6ba8eab7ba571e2eee4c357f3298
+
+@ 0 2 0 12796fdf465eebcf1c921451ef3c8a5d
++       Klasa typów stojąca za rozszerzeniem `unary_-`. Wynik jest składową instancji, więc typ
++       może negować się do innego, tak jak liczba bez znaku mogłaby do liczby ze znakiem.
+
+% 2 1 0 1aa453b2d4e42cbd10eb34a1a5dfd6d8
+
+% 3 1 0 17add86c51613302081ec3513a5f7d7a
+
+% 5 1 0 1a9317f56cf13d261f94c35fcae7483d
+
+% 7 1 0 1d946a085293b4af0a98db75cbd33566
+
+% 0 1 0 123e380402734dc815c93c0dc8b6a151
+
+% 0 1 0 1ba358446f44fe8f14d32ffc8e731064
+
+% 0 1 0 0746cebb1a0ddeb4038608a27106ffad
+
+% 1 1 0 106c539c7cd2ce1914b54713f9adb30d
+
+@ 0 5 0 02fa7ff1abffca811600fe76648a5633
++       Instancje prymitywne to obiekty singletonowe z `inline def negate`, więc `-a` na
++       `Double` to jedna instrukcja; `Short` lub `Byte` neguje się z powrotem do własnego typu.
++       Kod generyczny, który neguje przez instancję, powinien wiązać ją we wzorcu `summonFrom`,
++       zamiast wywoływać `summonInline[…].negate`, co typuje instancję jako trait i wykonuje
++       boxing przez wymazaną metodę nawet dla typu prymitywnego.
+
+% 0 1 0 1e3b0d154788a55e033a7e149e34da8c
+
+@ 0 14 0 017a4300b34f61ab0d10fe633b78ea06
++   entry .apply   instancja `Negatable` z funkcji operandu
++   entry .DoubleNegation   instancja `-Double`, rozwijana do jednej instrukcji
++   entry .FloatNegation   instancja `-Float`, rozwijana do jednej instrukcji
++   entry .LongNegation   instancja `-Long`, rozwijana do jednej instrukcji
++   entry .IntNegation   instancja `-Int`, rozwijana do jednej instrukcji
++   entry .ShortNegation   instancja `-Short`, z zawinięciem z powrotem do `Short`
++   entry .ByteNegation   instancja `-Byte`, z zawinięciem z powrotem do `Byte`
++   entry .double   given dla `-Double`, typowany jako `DoubleNegation`, aby się rozwijał
++   entry .float   given dla `-Float`, typowany jako `FloatNegation`, aby się rozwijał
++   entry .long   given dla `-Long`, typowany jako `LongNegation`, aby się rozwijał
++   entry .int   given dla `-Int`, typowany jako `IntNegation`, aby się rozwijał
++   entry .short   given dla `-Short`, typowany jako `ShortNegation`, aby się rozwijał
++   entry .byte   given dla `-Byte`, typowany jako `ByteNegation`, aby się rozwijał
++   entry #negate   neguje wartość, dając `Result` instancji
+
+@ 0 1 0 1b19e9b82d0d083a081097fc4ad62ee7
++ entry .Rootable   klasa typów dla pierwiastka literałowego stopnia: `Rootable[2]` stoi za `sqrt`, `Rootable[3]` za `cbrt`
+
+% 1 1 0 1bc8f9e2742a65c31a821966efacdbbb
+
+@ 0 3 0 07f9a90ecd878b40031d47996e1f8a68
++       `Rootable[degree]` oblicza pierwiastek stopnia wskazanego przez parametr typu, literał
++       `Int`: `Rootable[2]` stoi za `sqrt`, a `Rootable[3]` za `cbrt`. Pierwiastek dowolnego
++       innego stopnia można podać jako given i przywołać lub użyć bezpośrednio.
+
+% 2 1 0 162e31646f9a6fb01c943a3b08a7ae1f
+
+% 3 1 0 0f0c3e32762434a6085c53430ba9a4b4
+
+% 0 1 0 0a02ba1e7f5f923011b87672119d7146
+
+% 0 1 0 0dc1d4cfbb04899f0628afb9ba0c0cb1
+
+% 1 1 0 1a5d0bb2c69e2f881dc1977b2b47337a
+
+@ 0 2 0 17c1db7a6636e8880599dfc2fd9fad2f
++       Instancje dla `Double` i `Float` to obiekty singletonowe, których `inline def root`
++       wywołuje bezpośrednio `Math.sqrt` lub `Math.cbrt`. Dla typów całkowitych nie ma żadnych.
+
+% 0 1 0 09e8d0ca78c15b2a1dcbf6ebebd2a93a
+
+% 0 1 0 166027e08375b0ca12fa99c00270d7e8
+
+@ 0 10 0 0e25929c19cc48c103f494259a253a07
++   entry .apply   instancja `Rootable` literałowego stopnia z funkcji operandu
++   entry .DoubleSquareRoot   pierwiastek kwadratowy `Double`, rozwijany do `Math.sqrt`
++   entry .DoubleCubeRoot   pierwiastek sześcienny `Double`, rozwijany do `Math.cbrt`
++   entry .FloatSquareRoot   pierwiastek kwadratowy `Float`, przez `Math.sqrt`
++   entry .FloatCubeRoot   pierwiastek sześcienny `Float`, przez `Math.cbrt`
++   entry .sqrt   given dla pierwiastka kwadratowego `Double`, typowany jako `DoubleSquareRoot`, aby się rozwijał
++   entry .cbrt   given dla pierwiastka sześciennego `Double`, typowany jako `DoubleCubeRoot`, aby się rozwijał
++   entry .sqrtFloat   given dla pierwiastka kwadratowego `Float`, typowany jako `FloatSquareRoot`, aby się rozwijał
++   entry .cbrtFloat   given dla pierwiastka sześciennego `Float`, typowany jako `FloatCubeRoot`, aby się rozwijał
++   entry #root   pierwiastek wartości, dający `Result` instancji
+
+@ 0 1 0 1ef889ed7c9385a11ecffb6a4caf45d4
++ entry .Zeroic   klasa typów dla elementu neutralnego dodawania typu, jako `zero[T]`
+
+% 1 1 0 08956924a4492f3a1fc9b62b5734004a
+
+@ 0 4 0 11cc372b9a5221b7016c77536ab47ff6
++       Instancja `Zeroic` dostarcza wartość, której dodanie niczego nie zmienia: `0` dla typów
++       liczbowych, pusty `String` i cokolwiek typ zdefiniowany przez użytkownika nazywa zerem.
++       Generyczne sumy i powtórzenia zaczynają się od niej, a `Multiplicable.concatenable`
++       potrzebuje jej, aby powtarzać wartość konkatenowalną.
+
+% 2 1 0 1c485740d5d4da5904cf1c6fdc8b5740
+
+% 3 1 0 159a33707cba0dba0eec92d94037ca67
+
+% 5 1 0 018feac95a950e4b1d45c88fae5bc532
+
+% 7 1 0 0a21db7cf1d1134610088bd3f904e0fb
+
+% 0 1 0 10fd872dcaa286890b079990fc4ab073
+
+% 0 1 0 0da75b470227f574017f087edbfa667c
+
+% 0 1 0 0893566d65d7d2a3194384a16d23e70a
+
+% 1 1 0 0833bdfd452204ca0ae725d78bf82a19
+
+% 0 1 0 0aefe5d534db9c83077b0182b465ebe4
+
+% 0 1 0 1a2b45b14481f50813b158b985ac0dd4
+
+@ 0 8 0 0a507541a53ae8a90e14bb63e1681739
++   entry .long   zero jako `Long`, rozwijane w miejscu wywołania
++   entry .int   zero jako `Int`, rozwijane w miejscu wywołania
++   entry .short   zero jako `Short`, rozwijane w miejscu wywołania
++   entry .byte   zero jako `Byte`, rozwijane w miejscu wywołania
++   entry .double   zero jako `Double`, rozwijane w miejscu wywołania
++   entry .float   zero jako `Float`, rozwijane w miejscu wywołania
++   entry .string   pusty `String`, rozwijany w miejscu wywołania
++   entry #zero   element neutralny dodawania dla typu
+
+@ 0 1 0 17d0c4d86fd2df641f3afc6aca8b129e
++ entry .Unital   klasa typów dla elementu neutralnego mnożenia typu, jego `one`
+
+% 1 1 0 116f05d91714fbc31c8ca791912076c9
+
+@ 0 2 0 0869082e7574486d09f05af4abbbd861
++       Instancja `Unital` dostarcza wartość, przez którą mnożenie niczego nie zmienia: `1` dla
++       typów liczbowych. Instancja implementuje chronioną metodę `makeOne`, a wywołujący
++       odczytują `#one`.
+
+% 2 1 0 09b01ab20abea3a30ca4567e3249e68d
+
+% 3 1 0 1f7181cff3b514af06dd92f27b635cce
+
+% 0 1 0 04a30710583a6ea717f57244166c0575
+
+% 0 1 0 104a570d866063b50a84280ffe8c7e83
+
+% 0 1 0 1c6e571a4db1518c00e290dce3eaea0a
+
+% 0 1 0 1c898526aed9e6861f1530c835d8e0d8
+
+% 0 1 0 1f46cc18732e8f5c1036f2bfd26be020
+
+% 0 1 0 0bb891b03dedfb9204feb8f85de41781
+
+% 1 1 0 129db91e5194dc510e3d654a95233992
+
+% 0 1 0 060b4f04a018a0a70f7e9f6c7281912b
+
+@ 0 7 0 1fc214a66a2095c4191ff58c07e7a464
++   entry .long   jedynka jako `Long`
++   entry .int   jedynka jako `Int`
++   entry .short   jedynka jako `Short`
++   entry .byte   jedynka jako `Byte`
++   entry .double   jedynka jako `Double`
++   entry .float   jedynka jako `Float`
++   entry #one   element neutralny mnożenia dla typu
+
+@ 0 1 0 1d13a1705a4d6924007107235ba627de
++ entry .Concatenable   klasa typów do łączenia dwóch wartości, która daje im też `+`
+
+% 1 1 0 05b5c2700537fe3d1d74dca6bdc526fa
+
+@ 0 5 0 12dcf17ae263a6f105c737172d06c5b4
++       `Self is Concatenable by Operand to Result` łączy dwie wartości jedną za drugą. Każdy
++       typ konkatenowalny jest `Addable` przez `Addable.concatenable`, więc to te instancje
++       sprawiają, że `+` łączy kolekcje, i to one wycofują zapisy `++` i `:::` z biblioteki
++       standardowej; typ konkatenowalny z samym sobą, który jest też `Zeroic`, mnoży się przez
++       `Int` jako powtórzenie.
+
+% 2 1 0 1ebb40dbb5b4bbce172452e1d5ec4bd6
+
+% 3 1 0 0d3428a3c7153b5d022e14cd81ab1844
+
+% 0 1 0 1b88aed01bcba1211f58dd7e7d4b7d85
+
+% 0 1 0 05b4ad2ce8d8ef8c02b5e3fdd0641590
+
+% 0 1 0 1650a2559e1d02a41cd5c5b90f7d027e
+
+% 1 1 0 153c1c0f85569c7a1ff8f3cb7ac1a766
+
+@ 0 2 0 1d257d5a659b920b159b0b6f0e31f6af
++       Instancje kolekcji znajdują się w tym obiekcie towarzyszącym, ponieważ kolekcje są
++       zdefiniowane poniżej symbolism i ich własne obiekty towarzyszące nie mogą ich zawierać.
+
+% 1 1 0 18a1aee744ffd67816f30c39d585ce01
+
+@ 0 14 0 017c4e554e679054148786ad1b0ae4ca
++   entry .list   łączy dwie listy `List`, oznaczone marką niepustości lub nie, w zwykłą `List`
++       Oba operandy mogą być dowolnym podtypem `List[element]`, więc lista oznaczona marką
++       niepustości pasuje po każdej stronie; wynikiem jest zwykła `List[element]`, więc żadna
++       marka do niego nie przenika.
++   entry .sequence   łączy dwie sekwencje `Sequence` w zwykłą `Sequence`
++   entry .chain   łączy dwa łańcuchy `Chain` leniwie, nie wymuszając żadnego z nich
++   entry .set   suma dwóch zbiorów `Set`
++   entry .map   łączy dwie mapy `Map`, przy czym dla wspólnego klucza wygrywają wartości prawego operandu
++       Z preferencją prawej strony, tak jak `concat` z biblioteki standardowej, i tak jak w
++       `Set`, gdzie suma jest konkatenacją.
++   entry .ledger   łączy dwa `Ledger`, przy czym dla wspólnego klucza wygrywa prawy operand
++   entry .frozenArray   łączy dwie tablice zamrożone w nową tablicę zamrożoną
++       Wymaga `ClassTag` dla typu elementu. Wynik to świeża alokacja o łącznej długości,
++       zamrażana, gdy oba operandy zostaną do niej skopiowane.
++   entry #concat   dołącza operand na koniec wartości, dając `Result` instancji
+
+@ 0 1 0 071b144af96ad28e0806f00dd6ac1e07
++ entry .Quotient   klasa typów dla wartości będących ułamkami: licznik nad mianownikiem
+
+% 1 1 0 1cef3fa996d638830f093840bfddecd2
+
+@ 0 4 0 1f2858d7841b1dda02fe2ac7359b5d5d
++       Instancja `Quotient` rozkłada wartość na `Topic` (licznik) i `Transport` (mianownik), i
++       to do nich dopasowuje się ekstraktor `/:`. Rozkład jest opcjonalny, więc wartość, która
++       nie jest właściwym ułamkiem, na przykład taka z zerowym mianownikiem, nie musi pasować.
+
+% 2 1 0 0c9319faaf3d0cc306932dfc5ff9f005
+
+% 3 1 0 0d7a68bc6c173fe500eff20efb30b096
+
+% 0 1 0 025e53d24c25f59c04d37c83a19074c7
+
+% 0 1 0 1a3b19770ee82ae2141ccfb95a2deb7d
+
+% 0 1 0 10b17c320ba0e0570b8c366edeb8c035
+
+% 0 1 0 0cfb2ebc50d7b72906e8778cb66aa65d
+
+% 0 1 0 0b5b9542b67e71a90ab06d3b251395fe
+
+% 0 1 0 0255cbf8babb22de0bb87d7f1ea3d1f3
+
+% 0 1 0 0a04ed26fd30e5a51acd601cccee7ceb
+
+% 0 1 0 04d89369db732d480601d57067d94693
+
+% 1 1 0 0e8f41192e5581491db520085c671360
+
+% 0 1 0 0668c7f8cc45ac3905ac4853700aa815
+
+@ 0 3 0 074393dd6286feef0c4ccecfe204d43d
++   entry #Numerator   typ licznika: alias `Topic`
++   entry #Denominator   typ mianownika: alias `Transport`
++   entry #decompose   licznik i mianownik wartości, jeśli je ma
+
+@ 0 1 0 1f3cf5b3bef1224404049a2d139d15e4
++ entry .Comparable   totalne porównanie trójwartościowe dwóch wartości danego typu, dające `Comparison`
+
+% 1 1 0 020839fdfd4579d50111ab983b3eba4b
+
+@ 0 4 0 0e7402f1e611ed0b064980954fbcd91f
++       Instancja `Comparable` porównuje dwie wartości swojego typu, zwracając
++       `Comparison.Less`, `Same` lub `More`. W ten sposób kolekcje sortują (`sorted`, `order`),
++       znajdują ekstrema i ograniczają zakresy, przez typ elementu, który jest dla nich
++       abstrakcyjny, a rozdział następuje w czasie wykonania, w odróżnieniu od
++       `Commensurable` z hypotenuse, które jest rozwiązywane statycznie przy każdym `<` lub `>`.
+
+% 2 1 0 19a2851ddd763d410e62b8d318a8a270
+
+% 3 1 0 1f0bc0d3ada10ae50870ee5687913aa6
+
+% 0 1 0 03acb1aa915ee0e0132e7efa19323fb7
+
+% 0 1 0 1884c74ce07dff421c2be55f5bf0e339
+
+% 0 1 0 02c9e5d767e069ae0cd20ead366d378e
+
+% 0 1 0 04ea0984f63a6c7415403cb34c4fde50
+
+% 0 1 0 06f1b593f518bac11cfa11665e7183ac
+
+% 0 1 0 12f2c81b1e1080670071b4e43fe6ba01
+
+% 1 1 0 12a5b9b5e6e74cb30d5e911cd4640d64
+
+@ 0 5 0 015520fb72aa094d0a5abd5e0eccecff
++       Instancje prymitywne porównują przez metody klas opakowujących z `java.lang`, więc
++       `Double` i `Float` mają *totalny* porządek JDK – `NaN` po każdej innej wartości i `-0.0`
++       przed `0.0` – a nie porządek częściowy operatora `<`. Listy porównują się
++       leksykograficznie, z właściwym prefiksem na początku, a pary według pierwszego elementu,
++       a potem drugiego.
+
+@ 0 4 0 02b1dc3316857d0f047bc9f13a2fcb3e
++       Każdy typ z `Ordering` z biblioteki standardowej w zasięgu jest `Comparable` przez
++       pomost o niskim priorytecie (`Comparable2#ordering`), więc typy zewnętrzne sortują się
++       bez ceregieli; natywna instancja zawsze ma nad nim pierwszeństwo. W drugą stronę,
++       `#ordering` tworzy `Ordering` dla nielicznych API biblioteki standardowej, które go
++       wymagają.
+
+% 0 1 0 06b588a7651e523f0a28d8501581a2fd
+
+@ 0 1 0 03d75f42a07d7281045b676780220785
++   entry .apply   instancja `Comparable` z funkcji zwracającej `Comparison`
+
+% 1 1 0 133ab6d6f58f357f1680b91c98a289c7
+
+% 2 1 0 0e08421cc566621c14ff337e18bfe8fe
+
+% 4 1 0 1a67193cadaa56ef1aba53c34b3bfebd
+
+% 0 1 0 0704441b557c34331925c202616af78a
+
+% 0 1 0 1e754cc6e3f47fba06fad0aa215a7a2a
+
+% 1 1 0 00f88528ae70d8691e0351197237443c
+
+@ 0 4 0 12cd97be94d98c410d99525d31f22c6b
++   entry .less   instancja `Comparable` z predykatu ścisłego mniejszości, jak `Ordering.fromLessThan`
++       Dla porównań naturalnie zapisywanych jako `<`. Predykat jest stosowany drugi raz, z
++       zamienionymi operandami, dla wartości, które w pierwszej kolejności nie są mniejsze:
++       cena odzyskania wyniku trójwartościowego z wyniku typu `Boolean`.
+
+% 2 1 0 058041f3fb07de2116dcaf5fc1434e24
+
+% 3 1 0 15f12311caa86d921409d65f300e58ed
+
+% 4 1 0 0ad0d2a902f585ce02452c840de80f69
+
+% 0 1 0 17d08e1995267ffc0309b96de28634ce
+
+% 1 1 0 0589734d4425c2dc1c9a8cdd8133361d
+
+@ 0 26 0 0aea00e846f3f09b1d95aa9249a3eb52
++   entry .int   porównuje wartości `Int` liczbowo
++   entry .long   porównuje wartości `Long` liczbowo
++   entry .double   porównuje wartości `Double` w totalnym porządku JDK: `NaN` na końcu, a `-0.0` przed `0.0`
++   entry .float   porównuje wartości `Float` w totalnym porządku JDK: `NaN` na końcu, a `-0.0` przed `0.0`
++   entry .char   porównuje wartości `Char` według ich jednostek kodowych UTF-16
++   entry .byte   porównuje wartości `Byte` liczbowo, jako wartości ze znakiem
++   entry .short   porównuje wartości `Short` liczbowo
++   entry .boolean   porównuje wartości `Boolean`, z `false` przed `true`
++   entry .list   porównuje listy `List` leksykograficznie, z właściwym prefiksem na początku
++       Wymaga `Comparable` dla typu elementu. Decyduje pierwsza pozycja, na której elementy się
++       różnią; jeśli jedna lista wyczerpie się pierwsza, poprzedza drugą.
++   entry .pair   porównuje pary według pierwszego elementu, a potem drugiego
++       Wymaga `Comparable` dla typu każdego elementu.
++   entry #compare   porównuje dwie wartości, dając `Comparison.Less`, `Same` lub `More`
++   entry #less   czy lewa wartość poprzedza prawą
++   entry #atMost   czy lewa wartość poprzedza prawą lub jest jej równa
++   entry #greater   czy lewa wartość następuje po prawej
++   entry #atLeast   czy lewa wartość następuje po prawej lub jest jej równa
++   entry #same   czy obie wartości porównują się jako równe
++   entry #min   mniejsza z dwóch wartości lub lewa, jeśli porównują się jako równe
++   entry #max   większa z dwóch wartości lub lewa, jeśli porównują się jako równe
++   entry #ordering   `Ordering` z biblioteki standardowej zgodny z tym porównaniem
++       Dla spoin, w których API biblioteki standardowej wymaga `Ordering`, takich jak porządek
++       kluczy `TreeMap`. Jest metodą, a nie givenem, ponieważ given tworzyłby cykl z pomostem
++       od `Ordering`, `Comparable2#ordering`.
++   entry #on   porównuje inny typ, rzutując go na ten, jak `Ordering.by`
+
+% 1 1 0 033b9bf11a75d739011a7e322559c4d7
+
+% 2 1 0 0549ef18534e55c11e9845e634db7825
+
+% 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
+
+% 0 1 0 1bc4ba25a78ffc4c0a2345b5806020e4
+
+% 1 1 0 07518cccdbb0e1ef1b824c483540e07b
+
+@ 0 1 0 156784d6740a70f2115f611f63fe1605
++ entry .Comparable2   połowa obiektu towarzyszącego `Comparable` o niskim priorytecie: pomost od `Ordering`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 178d6817ddb5310b114a32c0a6defdb5
++       Nie do bezpośredniego użycia: rozszerza go `object Comparable`, aby jego given był
++       znajdowany w zasięgu niejawnym `Comparable`, ale zawsze ustępował natywnej instancji.
++   entry #ordering   czyni każdy typ z `Ordering` z biblioteki standardowej w zasięgu typem `Comparable`
+
+% 1 1 0 03bfe56a351ca355090409451552ecd0
+
+% 2 1 0 0e2bfee5047bf07c1bfb65547d6a7b11
+
+% 4 1 0 0fba172fa1da0f3f1e08fbff3b96d3a1
+
+% 0 1 0 087236d2e5250e32196e9c1f811de45d
+
+% 0 1 0 111c8b81fb8db947044276b1eebc79c5
+
+% 1 1 0 180f0b43f83654f016126ea5d8a38677
+
+@ 0 1 0 13921c48f4d70c4d1279c1f6958e5d90
++ entry .AddOp   odpowiednik `Addable` przyjazny rozwijaniu, z którego `+` korzysta najpierw
+
+% 1 1 0 007bc452a5fb6b491998088ae6407a77
+
+@ 0 4 0 04bbb32e888879dd1b8e2cd53f822e3d
++       Klasa typów, której `op` jest `inline def`, tak aby instancja podana z jej konkretnym
++       typem (przez `transparent inline given`) miała ciało rozwinięte w `+` bez rozdziału
++       dynamicznego. Rozszerzenie `+` szuka jej w trakcie rozwijania, zanim sięgnie po
++       instancję `Addable`; tej drogi używa quantitative.
+
+@ 0 3 0 0d2b8ced41d99b6815d223957bfa7cb3
++       Instancja `Addable`, która jest obiektem singletonowym z `inline def add`, podanym z
++       własnym typem singletonowym obiektu, rozwija się równie dobrze; tak działają instancje
++       prymitywne i jest to prostszy wzorzec dla nowych instancji.
+
+% 1 1 0 0057f41bb086e7981de6e7457978e07f
+
+@ 0 1 0 1810333234913f6c12cbecb657eb331e
++   entry #op   dodaje prawy operand do lewego, rozwijane w miejscu wywołania
+
+@ 0 1 0 058f2daa93bc5b331fdd53976440a096
++ entry .SubOp   odpowiednik `Subtractable` przyjazny rozwijaniu, z którego `-` korzysta najpierw
+
+% 1 1 0 1c8a606d7ba4be3110a852da1421be74
+
+@ 0 3 0 12dd69bb751b0542115d165037586082
++       Jak `AddOp`, dla odejmowania: instancja podana z jej konkretnym typem ma swoje `inline
++       def op` rozwinięte w `-`, przed instancją `Subtractable`.
++   entry #op   odejmuje prawy operand od lewego, rozwijane w miejscu wywołania
+
+@ 0 1 0 137bead5265fd8cc031cc3ba8454ea47
++ entry .MulOp   odpowiednik `Multiplicable` przyjazny rozwijaniu, z którego `*` korzysta najpierw
+
+% 1 1 0 19593cb81d89d76117a6e2749d997f59
+
+@ 0 3 0 1964cd9ca27fe75708a3f18008d8c0a8
++       Jak `AddOp`, dla mnożenia: instancja podana z jej konkretnym typem ma swoje `inline def
++       op` rozwinięte w `*`, przed instancją `Multiplicable`.
++   entry #op   mnoży lewy operand przez prawy, rozwijane w miejscu wywołania
+
+@ 0 1 0 0b8c341ded567cac0c8181bb10b2bce2
++ entry .DivOp   odpowiednik `Divisible` przyjazny rozwijaniu, z którego `/` korzysta najpierw
+
+% 1 1 0 13274cef5ffe43350deb729d940c9db9
+
+@ 0 3 0 16e7b8f7f29883370635ac4baf33a243
++       Jak `AddOp`, dla dzielenia: instancja podana z jej konkretnym typem ma swoje `inline def
++       op` rozwinięte w `/`, przed instancją `Divisible`.
++   entry #op   dzieli lewy operand przez prawy, rozwijane w miejscu wywołania

@@ -1,0 +1,433 @@
+orthant 2 language
+
+@ 0 1 0 196871f51407b50a0fd9ef561730abb3
++ ## Fonty
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 4 0 1c7d09a75befebc9117f416470e2a31b
++ Plik fontu [TrueType lub OpenType](https://en.wikipedia.org/wiki/TrueType) to dane binarne
++ o dobrze określonej strukturze wewnętrznej: tabelach glifów, odwzorowań i metryk. Tutaj
++ odczytuje się go bezpośrednio. `Sfnt` ładuje się z dowolnego źródła bajtów, rozwiązuje znaki
++ na glify i odpowiada na pytanie, które kod typograficzny zadaje najczęściej: jak szeroki
++ jest ten tekst w tym foncie?
+
+@ 0 3 0 0bf1ab2597d2fa86020b9adf8d700a42
++ Ponad plikiem `Typeface` nazywa rodzinę fontów. `Face` wybiera z niej grubość, nachylenie
++ i funkcje. Udostępnienie `Typesettable` gwarantuje, że dokument, który nazywa
++ krój pisma, zawiera to, czego jego medium potrzebuje, aby go wyświetlić.
+
+@ 0 1 0 01ad52292ddeaf761bbf349bc0bb68d0
++ ### O metrykach fontów
+
+@ 0 4 0 0acdceb5d8d6cbbf0a1515514cfbc2a7
++ Tekst nie ma szerokości. Ma ją tekst *w danym foncie*. Złożenie nagłówka, ustalenie rozmiaru
++ przycisku i podzielenie wiersza tak, aby zmieścił się w szerokości łamu, wymagają szerokości
++ przesuwu, które znajdują się w pliku fontu, w tabelach indeksowanych przez odwzorowanie znaków
++ na glify. Dotarcie do nich zwykle oznacza użycie zestawu narzędzi do renderowania,
++ sprowadzanego do czegoś, co w gruncie rzeczy jest odczytem z tabeli w udokumentowanym formacie
++ binarnym.
+
+@ 0 4 0 1db3d07d92174573130a0aa6990e5f43
++ Tutaj format jest parsowany bezpośrednio. Font jest wartością, jego tabele są odczytywane
++ leniwie, a jego metryki to zwykłe wywołania metod. Font sparsowany z tabel, z każdą wartością
++ typowaną, realizuje
++ [bezpieczeństwo wynikające z konstrukcji](../../philosophy/safety-by-construction.md):
++ nieprawidłowy font zostaje odrzucony przy ładowaniu, a nie przy pierwszym użyciu.
+
+@ 0 1 0 19c6640c8bea873815109d890d75ca79
++ Wszystko pochodzi z pakietu `soundness`:
+
+% 2 1 0 128d8a54c105d7d2054418bec79c5bc7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1c12ab31bcd37e111a8d347c926cdc5c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 2 0 1f7a557352339ef9106bd192f0db9b81
++ Przykłady na tej stronie czytają pliki fontów, które nie są dołączone do dokumentacji, więc
++ są kompilowane, ale nie uruchamiane.
+
+@ 0 1 0 184bebeda3a1278a1e94e2cdf9cd45cc
++ ### Ładowanie fontu
+
+@ 0 4 0 1d447e8afa7172e415e6293805f248b5
++ `Sfnt` odczytuje font z dowolnego strumieniowalnego źródła bajtów: pliku, zasobu ze ścieżki
++ klas, adresu URL. Nazwa pochodzi z samego formatu. *sfnt* to kontener tabel wspólny dla
++ TrueType i OpenType. Obie specjalizacje rozróżnia się po tabelach. Tabela `CFF ` oznacza
++ kontury PostScript, więc font jest typu `Opentype`. W przeciwnym razie jest to `Truetype`:
+
+% 2 1 0 14fcdf6e41a644610c80dcff1bb4eb69
+
+% 3 1 0 06dded3e3f2ce79d1b962f4f0ed2cb94
+
+% 4 1 0 096fe8d1ec905e071e4a658fbba52dc8
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 064ac20a457139d007dfe72d72eb75b1
+
+% 0 1 0 0d79efca8497f91c00657e452fec8cf6
+
+% 0 1 0 0a2bdff8d0b9d9c20cb179eff936cf2a
+
+% 0 1 0 0d55aa34b09aefd21380c9b578ecaced
+
+% 1 1 0 0a01288dae5353f4163630af4585cde3
+
+@ 0 3 0 0e1202442ae777d5142aa3cbc72466bc
++ Konstrukcja fontu z bajtów nie może się nie powieść. Tabele są parsowane leniwie, więc plik,
++ który nie jest fontem albo któremu brakuje tabeli potrzebnej do operacji, zgłasza
++ `Font.Error` z nazwą problemu przy pierwszym odczycie tej tabeli.
+
+@ 0 1 0 170b6f5a2f39a0b3107a054817024305
++ ### Mierzenie tekstu
+
+@ 0 2 0 1921db5e070a2da11a71b12fb828d022
++ `width` mierzy tekst w danym foncie. Zwraca [wielkość](quantities.md) w jednostkach `em`,
++ jednostce względnej wobec fontu, która pomnożona przez rozmiar w punktach daje szerokość
++ fizyczną:
+
+% 2 1 0 1b0107e7d9d7dac30bbb0727e69e66b4
+
+% 0 1 0 033d21904ea611cc1a5f7d5c7562497a
+
+% 1 1 0 178ed71cac591daf109a88465cb99225
+
+@ 0 2 0 16bfd56ca35cc33209f0e38dcd108c76
++ Ponieważ wynik jest typowaną wielkością, szerokości w em nie da się pomylić z pomiarem
++ w pikselach ani punktach. Skalowanie jej przez rozmiar fontu to jawna arytmetyka.
+
+@ 0 1 0 13b9ea5cb448bc6b094a8fee3bd30e77
++ ### Glify
+
+@ 0 2 0 06945081ca7edf3601d9938f306b1613
++ Pytania o znaki przechodzą przez mechanizm glifów. Znak rozwiązuje się na swój glif, a każdy
++ glif niesie szerokość przesuwu i lewe odsunięcie boczne, w jednostkach projektowych fontu:
+
+% 2 1 0 04ce6a901eb6a984115dedf6a05b2244
+
+% 0 1 0 083fe5ee2fb372721b2bef84e86fbef0
+
+% 1 1 0 00213769db73c92310ab69977237f8f3
+
+@ 0 1 0 0b8ed80a318b5c51083c75179d2eef82
++ Każda tabela, którą odczytuje font, jest metodą o tej samej nazwie, parsowaną przy pierwszym
++ użyciu:
+
+% 2 1 0 09da1ee7c45ed4d30aeb03d5f58fa2d9
+
+@ 0 12 0 083eb089b91ffa6712e178056dfbc2dd
++ column  Tabela
++ column  Metoda
++ column  Daje
++ row  `head`  `head`  liczbę jednostek na em, wiążącą jednostki projektowe z em; prostokąt ograniczający glify
++ row  `hhea`  `hhea`  wysokości wydłużeń górnych i dolnych potrzebne w układzie pionowym
++ row  `hmtx`  `hmtx`  szerokość przesuwu i lewe odsunięcie boczne każdego glifu
++ row  `cmap`  `cmap`  odwzorowanie znaków na glify
++ row  `maxp`  `maxp`  liczbę glifów
++ row  `name`  `name`  nazwy i opisy, jako `fontName` i `familyName`
++ row  `post`  `post`  kąt kursywy, położenie i grubość podkreślenia, stałą szerokość znaków
++ row  `OS/2`  `os2`  klasy grubości i szerokości, metryki typograficzne, prawa osadzania
++ row  `fvar`  `fvar`  osie fontu zmiennego albo `Unset`
+
+% 1 1 0 097657c6cda2ce4c1ea79a59b9c4e404
+
+@ 0 4 0 0858defb23198510128d5191edf0d918
++ Odwzorowanie znaków na glify obejmuje formaty podtabel `cmap`, których fonty faktycznie
++ używają, a najlepsza podtabela jest wybierana według preferencji Unicode, a nie przez wzięcie
++ pierwszej obecnej. Znak, którego font nie odwzorowuje, daje glif brakującego znaku, a nie błąd
++ ani niewłaściwy glif.
+
+@ 0 1 0 0ea57ce7cfe5057409beccf90225baf5
++ ### Nazwy i metadane
+
+@ 0 3 0 19b307d0db07a28510cb2d6681911a33
++ Font opisuje sam siebie w tabelach `name`, `post` i `OS/2`, a te opisy są odczytywane
++ bezpośrednio, a nie zgadywane. Nazwy są wartościami [opcjonalnymi][opcjonalny], ponieważ font
++ nie musi ich zapisywać:
+
+% 2 1 0 1cdf499e775738301064073102c77ad8
+
+% 0 1 0 1d600548f39d108e047f0fc30f5df4ff
+
+% 0 1 0 0aaccda59c7502cc149f9f4041d7fbca
+
+% 1 1 0 011050679ccddfbe1e0928d1bcd29ede
+
+@ 0 3 0 0100e449390a55851597acc60b99ca1e
++ Rekordy są dekodowane zarówno z kodowania UTF-16BE, jak i z kodowań Macintosha, przy czym
++ preferowany jest wariant Windows-English, gdy obecnych jest kilka. Grubość, metryki
++ typograficzne, wysokość x i prawa osadzania pochodzą z `OS/2`, a to dokładnie to, czego
++ potrzebuje zbudowanie deskryptora fontu [PDF](pdf.md).
+
+@ 0 1 0 13be68ab1d9be39206559812d056a8e2
++ ### Kroje i odmiany pisma
+
+@ 0 5 0 170cdb13a80c86df0c6ab5f9c6a40c0e
++ Plik fontu to jedno. Krój pisma, który dokument *nazywa*, to drugie. `Typeface["Inter"]` to
++ krój pisma określony nazwą rodziny, która jest też jego typem, `Typeface of "Inter"`, więc
++ jeden krój pisma da się odróżnić od innego już podczas kompilacji kodu. `Face` mówi, jak krój
++ ma zostać złożony: jego grubość, nachylenie i szerokość, położenia na dalszych osiach fontu
++ zmiennego oraz funkcje układu do włączenia lub wyłączenia. Nie mówi nic o tym, skąd pochodzi
++ font:
+
+% 2 1 0 16eee1665012387a16fdd5c898b973f5
+
+% 0 1 0 0781f4d0e601de1e1bcc03a6fa7309ba
+
+% 0 1 0 00754da6a1d62e9c1a444c8588884403
+
+% 0 1 0 19c490d72ab4977a11f16daead909587
+
+% 0 1 0 07d2ba9e5b268bf8072b62ba4889754c
+
+% 1 1 0 030b195fd7b810331a9a2fa42b711b88
+
+@ 0 1 0 04b627a91f0bea4506d575bd83e435ff
++ Odmiana pisma ma następujące atrybuty:
+
+% 2 1 0 15c7829aae99e3c8100f40990e5a13a1
+
+@ 0 8 0 15df2ecb1aa949a4036d08063704a643
++ column  Atrybut
++ column  Wartości
++ column  Ustawiany przez
++ row  grubość  1–1000, skala wspólna dla CSS i OpenType, od `Weight.Thin` do `Weight.Black`  `thin` … `black`, `weighing(weight)`
++ row  nachylenie  `Upright`, `Italic` lub `Oblique` pod kątem  `upright`, `italic`, `oblique(angle)`, `slanted(slant)`
++ row  szerokość  procent normalnej szerokości  `condensed`, `expanded`, `stretched(stretch)`
++ row  wariacja  położenie na osi fontu zmiennego  `varying(axis, value)`
++ row  funkcje  funkcje układu OpenType, włączone lub wyłączone  `enabling`, `disabling`, `featuring`
+
+% 1 1 0 1ca8eef12fe1d5ad12f6975c4432414b
+
+@ 0 5 0 14ba444919346e500cc07e5139d36236
++ Zarejestrowane osie grubości, szerokości i kursywy fontu zmiennego ustawia się przez pierwsze
++ trzy atrybuty, więc o font statyczny i zmienny prosi się w ten sam sposób. `Variation` służy
++ do rozmiaru optycznego i własnych osi fontu. Funkcje są nazywane według ich tagów OpenType.
++ Zestawy stylistyczne, `Face.Feature.stylisticSet(n)`, i warianty znaków,
++ `Face.Feature.characterVariant(n)`, są numerowane:
+
+% 2 1 0 1a09f17bbfb130e3091ebf5039cf72ca
+
+@ 0 1 0 16303dc7adffe3361d5d64667659ae52
++ column  Funkcja
+
+% 0 1 0 149748a466abfd5a142dc31eb38f88c8
+
+% 0 1 0 039a272f51f0dfa001944e1897169e20
+
+% 0 1 0 18e036ef8aad25d00531e97fb1614936
+
+% 0 1 0 1be5850371188bda1eaf1f5b7e9d625c
+
+% 0 1 0 04d520a3c3d3ab0105061ca63593ff2d
+
+% 0 1 0 07a4ae450499a23f1c9d147a42ad0b5c
+
+% 0 1 0 1660490d5db095930aff49f112a82405
+
+% 0 1 0 11f034b65c64ebd208f417d214151506
+
+% 0 1 0 1c6e3a4bd217da4707bd6585e6e9f85d
+
+% 0 1 0 1df64e3e08cdab8a081697aa958779de
+
+% 0 1 0 03c0e4af295ce0100b8ade4c8c0648e9
+
+% 0 1 0 17b19dff9877af3e1da091f9685139a6
+
+% 0 1 0 0436f68d8837ca2e08f68491f9b76396
+
+% 0 1 0 1fe9b32ee11eca6618fe3efa53cfb469
+
+% 0 1 0 00e4b269adf1f8d11d99ec9a5ad3c648
+
+% 0 1 0 034a8631cc285c810a0f2a6bac4a0b7b
+
+% 0 1 0 1c87e76bb51c86711dee45dde264b620
+
+% 0 1 0 0dd5bf0910e1baf70cd222ac57cc4d8c
+
+% 1 1 0 07961875a2a9c6530f742e499a16f22a
+
+@ 0 1 0 063aadf845bfda501f9d231bed212a13
++ ### Udostępnianie kroju pisma
+
+@ 0 4 0 05f751115e67bd770666cd634a3399cb
++ Nazwanie kroju pisma nie sprawia, że jest on dostępny tam, gdzie wyświetla się dokument.
++ Przeglądarka bez danego fontu przechodzi na inny, a przeglądarka PDF go zastępuje.
++ Udostępnienie zamyka tę lukę. Jest to instancja `Typesettable` dla kroju pisma *w danym
++ medium*. Mówi, jak to medium uzyskuje font i jakie odmiany pisma może wtedy złożyć. Deklaruje
++ się je raz, jako [given]:
+
+% 2 1 0 13cf1c35ba1d64dd1844d273e72af06e
+
+% 3 1 0 04a3c4b0a590f556090abb6510b1fa46
+
+% 4 1 0 1662daf228b3bf87148c6e31fd322d04
+
+% 0 1 0 0d22a197a63cd0b7167652635f1b106b
+
+% 0 1 0 0e1275326cb60c280165229d583bf6ea
+
+% 0 1 0 1312d3f61315f1391b512e957a956203
+
+% 0 1 0 0ea4f736d80a946402c79fff150d45cc
+
+% 1 1 0 0ef4992aca79be9500513da5ab5aa803
+
+@ 0 6 0 1136259f8a78123301b64c6e9fa590dd
++ Plik fontu można przenosić w dowolnym dokumencie, więc udostępnienie osadzone jest
++ `in Medium`, czyli w medium obejmującym wszystkie media. Jego pokrycie, czyli oferowane
++ grubości, nachylenia i szerokości, osie fontu zmiennego oraz funkcje implementowane przez
++ jego tabele `GSUB` i `GPOS`, jest odczytywane z pliku. Kilka plików, na przykład regular,
++ bold i italic, tworzy jedno udostępnienie, którego pokrycie jest ich sumą. Inne rodzaje
++ udostępnień należą do jednego medium i są przez nie deklarowane, każde z pokryciem, które
++ dla niego zadeklarowano, ponieważ nie ma pliku do odczytania:
+
+% 2 1 0 1e722494e29bd55d0e9850e80d704b19
+
+@ 0 1 0 1fdb15b8a883954b0e34d2b01f62f23c
++ column  Udostępnienie
+
+% 0 1 0 0e1d2d21faa90afb0f12aa2985abcfe8
+
+@ 0 8 0 0afb133a660a5cfb03bba8582e9e2900
++ column  Font pochodzi z
++ column  Pokrycie
++ row  `Typesettable.embedded(files)`  `Medium`  plików przenoszonych w dokumencie  odczytane z plików
++ row  `Web.linked(url, coverage)`  `Web`  pliku fontu pod adresem URL  zadeklarowane
++ row  `Web.imported(url, coverage)`  `Web`  arkusza stylów deklarującego krój pisma  zadeklarowane
++ row  `Web.local(coverage)`  `Web`  fontu zainstalowanego przez czytelnika  zadeklarowane lub nieznane
++ row  ogólne rodziny CSS  `Web`  przeglądarki, bez deklaracji  każda odmiana pisma
++ row  standardowa czternastka PDF  `Print`  przeglądarki PDF, bez deklaracji  odmiany pisma określone przez standard
+
+% 1 1 0 14b02fabf539539c0729e5ac52de9a60
+
+@ 0 1 0 0d9b04873cd1112d0637e18bb170fbdd
++ ### Fonty
+
+@ 0 6 0 166c7375d39c73b100cbc41eb494fc8a
++ `Font` to odmiana pisma połączona z udostępnieniem jej kroju pisma, które jest w zasięgu,
++ w danym medium: `Font in Web` dla przeglądarki albo `Font in Print` dla PDF. To jedyna
++ postać, w jakiej renderer przyjmuje font. Można go utworzyć tylko tam, gdzie w zasięgu jest
++ udostępnienie, więc dokument nie może nazwać kroju pisma, którego nie zawiera. Można go też
++ utworzyć tylko dla odmiany pisma, którą udostępnienie pokrywa. Prośba o kursywę do pliku
++ zawierającego tylko pismo proste albo o cyfry nautyczne do fontu bez `onum` to `Font.Error`
++ przy łączeniu, a nie syntetyzowane lub po cichu zignorowane przedstawienie:
+
+% 2 1 0 07c0ae2491c31f3e12eae3a0619e37a3
+
+% 3 1 0 0e663ab9a6a3e2b811bbf7336a98fa5c
+
+% 4 1 0 07dc43d2d5ebec4001cb70df98f215f7
+
+% 0 1 0 11420e2d9610430e0b974703e2a09910
+
+% 0 1 0 19fc43e3d8184df012a078602dd4b0b0
+
+% 1 1 0 09c8b09b327284f514e2fca5f7e8f650
+
+@ 0 2 0 1ab724ce3b4f53c00fe14904bc055d65
++ Gdy oczekiwany typ już nazywa medium, jak pole `font` figury, wystarczy `Font(face)`. Resztę
++ robi wtedy dokument:
+
+% 2 1 0 00caa8a6a785628a01ad2c3671f97544
+
+@ 0 5 0 1e44f105d9a4d1e51b75f995afba61a7
++ column  Dokument
++ column  Co robi ze swoimi fontami
++ row  SVG  zapisuje reguły `@font-face` dla swoich napisów w swoich definicjach
++ row  arkusz stylów  otrzymuje reguły przez `Css.fontFace`
++ row  PDF  osadza plik albo nazywa jeden ze swoich standardowych czternastu fontów
+
+% 1 1 0 18be5e42853a462506d6e74fdd620acc
+
+@ 0 1 0 1c0755760617a13b1cba487a8c502042
++ ### Sprawdzanie podczas kompilacji
+
+@ 0 2 0 02dfa0ef019f355207489b72704f01aa
++ Plik fontu na ścieżce klas można sprawdzić, zanim cokolwiek zostanie uruchomione.
++ Udostępnienie utworzone z zasobu ze ścieżki klas zachowuje ścieżkę zasobu jako swój `Locus`:
+
+% 2 1 0 1b5dcc4eea9aed971bbc9f224523dfa9
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 050fdae1e4ca202e108898a80eabc864
+
+% 0 1 0 0d6947ede1c4862615f0a5bb3a0870d0
+
+% 1 1 0 1365c3dc533fc1291ddd53f18bfceed5
+
+@ 0 8 0 03212bdebf43229711e5c8e302b63721
++ Odmiana pisma z kolei zapisuje w swoim typie, o co prosił kod. `inter.bold.italic` ma grubość
++ `700` i nachylenie `"italic"` jako składowe typu, a `.enabling(Face.Feature.OldstyleNumerals)`
++ dodaje `"onum"` do potrzebnych jej funkcji. Gdy `Font` tworzy się z takiej odmiany pisma
++ i takiego udostępnienia, kompilator odczytuje plik, wyprowadza jego pokrycie dokładnie tak,
++ jak zrobiłby to czas wykonania, i odrzuca połączenie z tym samym komunikatem, jeśli plik nie
++ potrafi złożyć tej odmiany pisma: grubości, której nie ma, kursywy, której mu brakuje, funkcji,
++ której jego tabele nie implementują. Pomyłka staje się wtedy błędem kompilacji, z nazwanym
++ plikiem i żądaniem, a nie zastępczym fontem w przeglądarce.
+
+@ 0 2 0 03676d3a8be6b6180eeabb22aed45d58
++ Statycznie sprawdza się tylko to, co jest znane statycznie. Wszystko inne pozostawia
++ sprawdzenie łączeniu w czasie wykonania, które odbywa się zawsze:
+
+% 2 1 0 119aa96ccd8073031312939b3f997fc3
+
+@ 0 6 0 16a25886faf29ad607e9bbf50ccffc09
++ column  Sprawdzane podczas kompilacji
++ column  Sprawdzane tylko w czasie wykonania
++ row  nazwana grubość, `inter.bold`  obliczona grubość, `inter.weighing(weight)`
++ row  nazwana funkcja, `Face.Feature.OldstyleNumerals`  funkcja z tagu, `Face.Feature(t"ss03")`
++ row  odmiana pisma, której typ zapisuje jej żądanie  odmiana pisma oznaczona jako zwykłe `Face of "Inter"`
++ row  udostępnienie z pliku na ścieżce klas  każde inne udostępnienie
+
+% 1 1 0 05d7bda3cc4501c2089cf797e1801ec4
+
+@ 0 1 0 06542912d221f15b07ee5d9b67b05042
++ ### Tworzenie podzbiorów
+
+@ 0 2 0 18cba5cb55b35ae51cac789842ec6517
++ Osadzanie całego fontu, aby przedstawić stronę tekstu, jest marnotrawstwem i często nie jest
++ dozwolone. `subset` buduje nowy font TrueType, zawierający tylko glify potrzebne dla danego
++ zbioru znaków:
+
+% 2 1 0 151a6cab32dd27fc16aa9ea93470bd62
+
+% 0 1 0 0c030e5fd7e8f69e0e6cf05bf6dd27f5
+
+% 1 1 0 1e0288c008943af31acb9fb8d48da7cc
+
+@ 0 4 0 0cf204982328682a0d64ba4d7cb47438
++ Tworzenie podzbioru nie polega po prostu na zachowaniu glifów, na które odwzorowuje się tekst.
++ Glif złożony jest składany z innych, więc zachowany zbiór to domknięcie przechodnie względem
++ składania. Oblicza się je z samych konturów glifów, więc znak z akcentem zachowuje elementy,
++ z których jest rysowany.
+
+@ 0 5 0 1efba5096bc0255c0e04f220aaad98d4
++ Glify nie są też przenumerowywane. Odrzucone glify zachowują swoje numery i zostają
++ pozostawione z pustymi konturami, zamiast zostać usunięte, więc odwzorowanie znaków, metryki
++ i każde odwołanie jednego glifu do innego pozostają ważne bez przepisywania. Każda inna tabela
++ jest przenoszona bez zmian. Wynikiem jest kompletny i prawidłowy plik fontu, łącznie z sumami
++ kontrolnymi, gotowy do osadzenia w [PDF](pdf.md).
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 6 0 1314f48040956fac1182a96b96409f90
++ - [PDF](pdf.md) osadza fonty i ich podzbiory w dokumentach.
++ - [SVG](svg.md) i [CSS](css.md) przenoszą reguły `@font-face` dla udostępnienia.
++ - [Wielkości](quantities.md) opisują `em`, w którym mierzy się tekst.
++ - [Ścieżka klas](classpath.md) opisuje zasoby, z których ładuje się font.
++ - [Tekst](text.md) opisuje tekst, którego szerokość jest mierzona.
++ - [Wykresy](charts.md) mierzą swoje etykiety metrykami fontu.

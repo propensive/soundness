@@ -1,0 +1,13 @@
+orthant 2 language
+
+@ 0 6 0 1c1adabd3cdeaea802a09a80d2ad9b65
++       `jacinta.optics`. To one sprawiają, że działa `json.lens(…)`: soczewka panopticon dla
++       nazwanego pola i optyka, która sięga do tablic. Znajdują się w pakiecie, a nie w
++       obiekcie towarzyszącym `Json`, aby brakujący import był błędem kompilacji, a nie cichą
++       zmianą zachowania; `import optics.given` wprowadza je wszystkie (lub
++       `import soundness.optics.given`, gdzie łączy się optyka wszystkich bibliotek); import z
++       symbolem wieloznacznym nie importuje givenów. Przypisanie
++       przez soczewkę wymaga też włączonego dostępu dynamicznego oraz, aby przypisać zwykłą
++       wartość, `conversions.encodableToJson`.
+
+% 0 1 0 03cc38314ff6e76d1e4c3887cbc40ab7

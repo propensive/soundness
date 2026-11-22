@@ -1,0 +1,19 @@
+orthant 2 language
+
+@ 0 6 0 028183159a36bc8510d256d502a7fd76
++ Wewnętrznie permutacja jest przechowywana jako jej
++ [tablica inwersji](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)) w postaci o
++ podstawie silniowej, czyli pojedyncza liczba całkowita, która jednoznacznie ją identyfikuje.
++ Dzięki temu permutacje są zwarte w przechowywaniu i wyliczaniu: `Permutation.bySize(n)` zwraca
++ wszystkie `n!` z nich jako leniwy [łańcuch](collections.md#lazy-chains). Permutacja *n*
++ elementów zajmuje O(*n* log *n*) pamięci, co jest najmniejszą możliwą wartością, ponieważ
++ trzeba odróżnić *n*! permutacji.
+
+% 0 2 0 1509aa9fc2d59aab049a65e78d949d44
+
+@ 0 4 0 0f8b86e915c7fa4d015a05b8e723c808
++ Permutacja pozostawia w spokoju każdą pozycję po ostatniej, którą przemieszcza, więc
++ `shuffle`, którego szósty indeks pozostaje na miejscu, jest permutacją pięciu elementów.
++ Zastosowanie jej do dłuższego ciągu nie jest więc błędem: przestawia początkowe pozycje, które
++ obejmuje, a resztę zostawia tam, gdzie były. Pojedynczy indeks odwzorowuje się w ten sam
++ sposób, przez `shuffle(3)`.

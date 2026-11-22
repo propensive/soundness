@@ -1,0 +1,472 @@
+orthant 2 language
+
+@ 0 1 0 1ca9360ffb82cc3400089069ee86cff8
++ ## Wskaźniki
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 5 0 1b3f2f30958681f219da5766d857d962
++ Długo działający program ma coś do powiedzenia w trakcie pracy: jak daleko doszedł, że wciąż
++ żyje, jak szybko przesuwają się bajty i który etap potoku właśnie działa. Pokazuje się to
++ w postaci *wskaźników*: spinnerów, pasków postępu, mierników, wykresów sparkline, liczników
++ i wskaźników kroków. Wskaźnik jest albo osadzony w [układzie terminala](terminal.md#layout),
++ albo rysowany samodzielnie w miejscu kursora.
+
+@ 0 3 0 1e867cde23502b72136f8f35fc4b5154
++ Wskaźnik wybiera się według *typu* tego, co wyświetla. Jak wygląda, jakich kolorów używa
++ i jakimi znakami może rysować, to trzy osobne decyzje. Każdą podejmuje się jednym importem
++ i żadna z nich nie narusza dwóch pozostałych.
+
+@ 0 1 0 1d38651b6a833ddc0c17beb18afa4876
++ ### O wyświetlaniu postępu
+
+@ 0 4 0 0dbf7375856e6d990ee5802188b7c4de
++ Wyświetlanie postępu pisze się zwykle dwukrotnie: raz jako rysunek i drugi raz jako
++ arytmetykę, która decyduje, co się zmieści. Obie części utrzymuje się w zgodzie ręcznie.
++ Wynikiem jest pasek poprawny przy osiemdziesięciu kolumnach i zepsuty przy trzydziestu,
++ z wierszem, który wychodzi poza krawędź, etykietą, która wypycha pasek poza brzeg, albo
++ procentem, który nie zgadza się z paskiem obok.
+
+@ 0 6 0 0a1899c6602f196f1061da72505057cb
++ Rozdzielenie tych dwóch części usuwa powielenie. Wzór mówi, jak narysować status przy
++ dowolnej szerokości, którą otrzyma, i jak wąski może być, by nadal był użyteczny. Układ mówi,
++ ile jest miejsca. Żadne z nich nie musi wiedzieć, co zdecydowało drugie. Pasek, który
++ otrzyma sześć komórek, jest rysowany w sześciu. Gdy otrzyma trzy, staje się procentem, a gdy
++ jedną – pojedynczym odcieniem. Wzór wybierany importem, niezależnie od rysowanego statusu, to
++ [rozprzęgnięcie](../../philosophy/decoupling.md) znaczenia i wyglądu.
+
+@ 0 1 0 094f48da36e316410f71f04785bd2cc9
++ Wszystko pochodzi z pakietu `soundness`, a w zasięgu jest kilka wyborów:
+
+% 2 1 0 0e25b189f091ed3d0e1b0b18722581e8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0113ecd3cd2f810810d22a6b0e5b8695
+
+% 0 1 0 19972e70e2570a86112786d91f60abff
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 0dbd0833aa335f231fc5b058c792b15a
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1d5fc034e09e470f104bc500108eb3eb
+
+% 1 1 0 14e93cc444c239da0937f1b16866b297
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+% 3 1 0 10f39fd782d85520112a6fdadcf0c46b
+
+@ 0 5 0 18f2a4c2945806930bb0ae34a447bc3a
++ column  Decyduje o
++ row  `textMetrics.uniformMetric`  sposobie mierzenia szerokości tekstu, ponieważ wskaźnik jest rozmieszczany według szerokości tego, co rysuje
++ row  `palettes.solarizedDarkGaugePalette`  kolorach; bez niego paleta jest wybierana na podstawie tego, co zgłasza terminal
++ row  `stdios`, `termcapDefinitions`  miejscu, w którym przykłady wypisują wyniki, i tym, co terminal potrafi wyświetlić
++ row  `threads`, `probates`  kontekście [współbieżności](concurrency.md), w którym animowany wskaźnik się przerysowuje
+
+% 1 1 0 11a5012e38e64c971dd58e0222f515ab
+
+@ 0 1 0 1b9f0c492ddb2513177bee360e6a8ec4
++ ### Statusy
+
+@ 0 2 0 10411447a4a1a82218560e9b755e64ef
++ To, co wyświetla wskaźnik, jest wartością określonego typu i to ten typ wybiera wzór. Typy
++ statusów są zagnieżdżone w `Tui` i zostały z niego zaimportowane powyżej:
+
+% 2 1 0 17c843a5525e92ee0c1b39181483d546
+
+% 0 1 0 00589dbf3b0b58761ad6009321747ff6
+
+@ 0 12 0 0e0f43c956e4ca011a31ad66d8f71fa0
++ column  Wyświetla
++ column  Domyślny wzór
++ row  `Fraction`  proporcję w `[0, 1]`, przyciętą  płynny pasek z bloków
++ row  `Reckoning`  `done` względem sumy, która może być nieznana  `17/120`
++ row  `Standing`  jak zakończyła się jedna jednostka pracy  `✓ ✗ ‑`
++ row  `Duration`  czas, który upłynął  `2m41s`
++ row  `Countdown`  pozostały czas, przycięty do zera  `2m41s`
++ row  `Captioned`  dowolny status z etykietą  wyprowadzony
++ row  `Transfer`  przesłane bajty, z szybkością i oszacowaniem  *brak*
++ row  `Meter`  odczyt na ograniczonej skali  *brak*
++ row  `Sequence[Double]`  próbki w czasie  *brak*
++ row  `Sequence[Step]`  uporządkowany ciąg kroków  *brak*
+
+% 1 1 0 1b6fa11eff89a1200b2261ee3dc88a45
+
+@ 0 6 0 139ea3180d342da908ff820425995777
++ Większość z nich to typy, które program już ma. Nowy typ wprowadza się tylko tam, gdzie musi
++ być *odrębny*, ponieważ jest kluczem, według którego wyszukuje się wzór. Proporcja nie może
++ być zwykłym `Double`, bo zawłaszczyłaby dla pasków postępu każdy `Double` w programie. Czas,
++ który upłynął, to [`Duration`](time.md#durations-and-timespans), próbki to `Sequence[Double]`,
++ a ciąg kroków to `Sequence[Step]`. `Countdown` ma własny typ tylko po to, by mógł stać obok
++ czasu, który upłynął, z innym wzorem.
+
+@ 0 6 0 0f129742016554710906f01c7a101cd8
++ Każdy status może być [`Optional`](optional-values.md), a każdy wzór jest do tego
++ automatycznie podnoszony. `Optional[Fraction]` to postęp, który może nie być jeszcze znany,
++ więc zadanie, które na początku jest niemierzalne, a później poznaje swoją sumę, nie zmienia
++ typu w połowie. Wzór mówi, jak rysować, gdy nie ma wartości. Pasek przemiata, ponieważ pusty
++ pasek twierdziłby „brak postępu” tam, gdzie prawdą jest „nie zmierzono”, a spinner rysuje
++ swoje klatki. Dla przypadku opcjonalnego nic nie trzeba pisać dwukrotnie.
+
+@ 0 7 0 03e2423fc313f60109499d46d5b8df56
++ Cztery statusy bez wartości domyślnej są takie celowo. Wartość domyślna istnieje tylko tam,
++ gdzie każdy kandydujący wzór ma tę samą wysokość i mówi to samo. Bateria, termometr i tarcza
++ nie są wymienne. Sparkline z bloków i z brajla różnią się rozdzielczością pionową, a więc tym,
++ co pokazują dane. Lista kontrolna to jeden wiersz na każdy krok, a ścieżka okruszków to jeden
++ wiersz w całości. A to, czy transfer liczy się w `MB`, czy w `MiB`, jest decyzją redakcyjną.
++ Cichy wybór w tych przypadkach byłby wyborem, ile układu wywołującego zająć albo co znaczą
++ jego liczby.
+
+@ 0 1 0 0d586b0e3472bcdc0a6b4ed164c6e508
++ ### Wybór wzoru
+
+@ 0 2 0 1dc4e5dbbaccbf421d0bf365b9fc6930
++ Gdy żaden wzór nie jest zaimportowany, obowiązują wartości domyślne. `gaugeLine` rysuje jedną
++ klatkę, o szerokości wybranej przez wywołującego:
+
+% 2 1 0 169b604c113de00314483901c48fcc2c
+
+% 3 1 0 04842ff1e34bef70143b48d4e29614ff
+
+% 4 1 0 0e1ab1b786afb8291466a0584b5a2eea
+
+% 0 1 0 1c6e05b64471b4f11772f4f8e4508b18
+
+% 0 1 0 1c9534cc1eee6f280eefce54b947c6d2
+
+% 0 1 0 0a4ba8bb42937f500a7fb35170c7e29c
+
+% 1 1 0 0fffae98cfef26441cebe43a5b6283fa
+
+@ 0 2 0 1db5be2ad3f5f5be08be7185431d7f13
++ Wskaźnik zawsze potrzebuje szerokości. Nie da się narysować paska, który nie wie, jak jest
++ szeroki, więc statusu nie można wypisać samodzielnie.
+
+@ 0 1 0 1fd9f8e9efff0c3900cfe06f82ef13ae
++ Zaimportowanie wzoru po nazwie zastępuje wartość domyślną i nic innego się nie zmienia:
+
+% 2 1 0 065f9268398606e80e2aabf2f57157b1
+
+% 3 1 0 158cf8f4e295d9d815f5b933c00fdcbd
+
+% 4 1 0 1a5cdfc1cf37f0671b9bd23c45a92a84
+
+% 5 1 0 1905146bfd71169b1716b27dca20400d
+
+% 0 1 0 1da144fa4a812a0c1d8d8e349bdeda3b
+
+% 1 1 0 1c898d31a3de97d41add9c9b7fbba379
+
+% 1 1 0 095e25e44fb570ee028d6f6397687a59
+
+@ 0 4 0 1cd9c2b91be1364b103f0822f4ba0ba9
++ Spinner importuje się wtedy, gdy liczby nie warto pokazywać albo nie jest znana. Jest
++ kluczowany przez `Fraction`, tak jak pasek, i ignoruje wartość. Spinner i pasek są więc dwoma
++ wzorami dla tego samego statusu i naraz można zaimportować tylko jeden z nich. Układ, który
++ chce obu, bierze jeden z [givena][given] w lokalnym zasięgu:
+
+% 2 1 0 15c79d4e5e8619a409669be2eb2662dd
+
+% 0 1 0 186ee8d8fbb04199069cf3fe3c14ab4e
+
+% 0 1 0 12aabc4bb465f03d0aace318f5ab4e71
+
+% 0 1 0 1b21ce6864a615411c414de2dd3aed21
+
+% 1 1 0 1f0ed2d3bfbc2927000aa785ac5f9341
+
+@ 0 1 0 0b30898e8c18abe216c434991626e2c0
++ Wzory są pogrupowane w osiem rodzin, z których każda jest pakietem do importu:
+
+% 2 1 0 07acec64987a00ba0075780a3d911d24
+
+@ 0 12 0 035eedbe447935ae1c082544088dd6d1
++ column  Rodzina
++ column  Dla
++ column  Wzory
++ column  Zakres
++ row  `spinners`  `Fraction`  42  od jednokomórkowych animacji z brajla i bloków po odbijające się paski i emoji faz księżyca
++ row  `bars`  `Fraction`  18  od domyślnego płynnego paska z ósemkowych bloków przez segmentowane kropki i wypełnienia gradientowe po `[###---]`
++ row  `meters`  `Meter`  6  bateria, termometr, wskazówka, pocisk, kolumna i ASCII
++ row  `sparklines`  `Sequence[Double]`  4  bloki, wysoki, kropki i ASCII
++ row  `counters`  `Reckoning`, `Transfer`  9  liczby zwykłe, z dopełnieniem, słowne, skalowane i procentowe; raporty transferu
++ row  `standings`  `Standing`  5  znaczniki ASCII, ptaszek, pogrubione, kwadratowe i słowne
++ row  `processions`  `Sequence[Step]`  5  lista kontrolna, ścieżka okruszków, koraliki, numeracja i wstęga
++ row  `timers`  `Duration`, `Countdown`  5  zwarte i cyfrowe czasy, które upłynęły; zwarte, cyfrowe i pilne odliczania
+
+% 1 1 0 1ffda08cefc080700efedb789b73bd44
+
+@ 0 1 0 11107fa6d152c1a512cb651507270733
++ ### Kolory i glify
+
+@ 0 2 0 106195c3f4db11cd0d153d4f264c2211
++ Kolor to niezależny wybór. `GaugePalette` nazywa swoje kolory według *roli*, więc jeden wzór
++ rysuje się w dowolnej palecie:
+
+% 2 1 0 0a675187d4a9f6e71a641f43c7abc146
+
+@ 0 10 0 16c53bfbda70346e05502c674c53cb55
++ column  Rola
++ column  Koloruje
++ row  `fill`  wypełnioną część paska
++ row  `track`  niewypełnioną część paska, puste kropki, łuk, który przemiata wskazówka tarczy
++ row  `leadingEdge`  komórkę graniczną paska i czoło znacznika
++ row  `caption`  etykiety i podpisy
++ row  `muted`  ukończone kroki, czasy, które upłynęły, jednostki
++ row  `success`  krok zakończony sukcesem; dolny koniec skali ważności
++ row  `warning`  krok z ostrzeżeniem; środek skali ważności
++ row  `danger`  krok zakończony porażką; górny koniec skali ważności
+
+% 1 1 0 1d82aafd8ad7c43013290a2f8180f680
+
+@ 0 5 0 0c07c05ebfc580c51157dd6670e8a820
++ Paletę wybiera się importem, tak jak powyżej `palettes.solarizedDarkGaugePalette`. Dostępnych
++ jest dziesięć palet. Należą do nich `monochromeGaugePalette`, która nie ma barw,
++ i `ansiSixteenGaugePalette`, której kolory to kanoniczne wartości, jakie faktycznie ma
++ szesnastokolorowy terminal. Bez importu adaptacyjna paleta wybiera według tego, co zgłasza
++ terminal. Palety ogólnie opisują [Kolory](colors.md#themes-and-palettes).
+
+@ 0 1 0 122f87d952c90b320b60c177c7698f52
++ Repertuar znaków to trzeci wybór i obniża on jakość wszystkich wzorów naraz:
+
+% 2 1 0 1bc3c79b28611a3b025244ce2d10bb3e
+
+% 3 1 0 19facb99b66877cb13de34695b2720b2
+
+% 4 1 0 01d600980369b01b11f9bb2b6dac1d96
+
+% 5 1 0 08e60e1b9d621f7e1d4364d05e420065
+
+% 0 1 0 01fcaf82c4c3d17211659e0b519ef1e0
+
+% 1 1 0 0d70f432f7bce62f02fc64b56789b9db
+
+% 0 1 0 13bcfac37192a9c0085408bb3fbba406
+
+% 1 1 0 1daefa159e5bd42314b642414f6927fc
+
+@ 0 5 0 13d19b1d3635c20b0bb60379d4957f30
++ Każdy wzór ma postać ASCII, a każdy wzór, który preferuje egzotyczne glify, deklaruje, na
++ co się wycofać. Wzory z emoji stają się swoimi prostszymi odpowiednikami tam, gdzie terminal
++ nie potrafi ich pokazać, a pod `asciiGlyphs` wszystko emituje wyjście siedmiobitowe. Żaden
++ wzór nie przekazuje znaczenia wyłącznie kolorem, więc wskaźnik zapisany do pliku albo czytany
++ przez kogoś, kto nie odróżnia czerwonego od zielonego, nadal mówi, co znaczy.
+
+@ 0 1 0 14b01342f86b10160599e5b625842874
++ ### Degradacja
+
+@ 0 3 0 1f03f07d95dbcdf31bec86f51a3ec8d8
++ Każdy wzór jest rysowany dokładnie w szerokości, którą otrzymał, przy każdej szerokości,
++ i w miarę zwężania mówi mniej, zamiast wychodzić poza krawędź. Pasek traci zakończenia poniżej
++ ośmiu komórek, przy czterech staje się procentem, a przy jednej pojedynczym odcieniem:
+
+% 2 1 0 0130427a3fc8a2621db1f8f1c72c0289
+
+% 3 1 0 147ff6e14432d1ae014a6a058c74f896
+
+% 4 1 0 0f4bff5871f7e8740bcfb825575e97b4
+
+% 0 1 0 1da76c662a690b7c11b4b9064eebfa6a
+
+% 0 1 0 1655fa56c249df82045a10231d4c2b47
+
+% 1 1 0 0f93c0ed8ab78b7f07863d01b272ef81
+
+@ 0 2 0 16deec23417febed0e7cf2ccbd9abd1b
++ Wiersz złożony z kilku części pozbywa się ich w zadeklarowanej kolejności. Transfer, który
++ przy osiemdziesięciu komórkach brzmi
+
+% 2 1 0 13a9ec0bfc1f3e9e0c77cdbeabd7fb14
+
+% 0 1 0 0cfca92044f240720957c2ab1b4fddc5
+
+% 1 1 0 0a5ef8f8a2f7725310a2bbd73bce654e
+
+@ 0 3 0 0ea787b4c32adb320fe2437029320b2b
++ przy trzydziestu zachowuje tylko liczby. Podpis jest skracany, zanim ściśnie wskaźnik, który
++ opisuje, i może zająć co najwyżej połowę wiersza, zanim zacznie kosztować wskaźnik komórki.
+
+@ 0 6 0 111f969328e3816a04fd72cccdd15dc0
++ Skala wykresu sparkline jest wyborem wzoru, a nie częścią danych.
++ `Sparkline.Blocks.scaled(0, 100)` ją ustala, aby stały sygnał nie wyglądał chaotycznie, gdy
++ przesuwają się pod nim granice. Sparkline węższy niż jego seria jest *decymowany*: każda
++ komórka pokazuje maksimum próbek, które obejmuje. Nie jest obcinany. Obcięty sparkline
++ pokazywałby tylko najstarsze próbki, wyglądając jak cała seria, co jest gorsze niż pokazanie
++ mniej.
+
+@ 0 1 0 03b8c781f39ffa09141f618e52d6feca
++ ### W układzie
+
+@ 0 3 0 03f983a332d223b10a72b1c5be53a6cc
++ `gauge` buduje panel. Przyjmuje `Reading`, czyli mutowalną komórkę przechowującą bieżący
++ status. Przypisanie do komórki publikuje wartość i odświeża rysunek, więc wskaźnik napędzany
++ z zadania w tle sam się aktualizuje. Konsolę zapewnia [`Cli`](cli.md) aplikacji:
+
+% 2 1 0 1b642273e684ccdf1dfe8fb563bb8d6f
+
+% 3 1 0 1f27f1d8d9e55b130ce6f2895f021316
+
+% 4 1 0 1f3a46c6a1ef74b90011890438feea7c
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 1034409fb9d408b2189fa867270f35c9
+
+% 0 1 0 047f5ea6ebc5f79c0d842a994977aa88
+
+% 0 1 0 1340abab4b65dcb51641b8f287ad1f0c
+
+% 1 1 0 15df16b7f55a744e0220efffbb8ffe20
+
+% 0 1 0 137b72c4e68fa23e17f88d0375789994
+
+% 0 1 0 04ef01550872711d0c13bf316bcd6221
+
+% 0 1 0 0338feb7cd10c6621148a6fad2067a9a
+
+% 0 1 0 0e319ba209c276b9040df7664ba91b3f
+
+% 0 1 0 0177f7358b7483b40a8f87b6084f7f76
+
+% 0 1 0 1a1b3b3dc8e3db381c8a5b1ce0ac0d0f
+
+% 1 1 0 1233743a36e9be4a0cc09ac9f896cf40
+
+@ 0 5 0 14d19ab591ce008118c1c7cd021840f6
++ Wskaźnik zgłasza wewnętrzny rozmiar swojego wzoru za każdym razem, gdy układ jest
++ rozwiązywany, więc uczestniczy w układzie i nie zakłada szerokości. Elastyczny wzór wypełnia
++ to, co otrzyma. Nieelastyczny, taki jak spinner czy glif statusu, jest utrzymywany we własnej
++ szerokości. Wzór kilkuwierszowy, taki jak lista kontrolna, powiększa układ do liczby swoich
++ kroków. Wskaźnik nie przyjmuje wejścia, więc Tab go pomija.
+
+@ 0 3 0 1796f52e514de8501a1c61c51a45ff35
++ Wzór, który się animuje, deklaruje, jak często chce być przerysowywany. Układ bierze
++ najkrótszy okres spośród wskaźników na ekranie i uruchamia jeden zegar dla nich wszystkich,
++ a żadnego, gdy nic się nie animuje.
+
+@ 0 1 0 13e8ec0eab2820f30a0398615f105fe4
++ ### Samodzielnie
+
+@ 0 3 0 1c7acb4a69b068ed0f239314c6277695
++ Poza układem `whilst` pokazuje wskaźnik w miejscu kursora na czas trwania bloku, a potem go
++ wymazuje. Jego animacja działa jako zadanie w tle, więc wywołuje się go pod `supervise`:
+
+% 2 1 0 0eaedd16eb6f1908002067a3990ca2fd
+
+% 3 1 0 18402175a340dd451ae9132134aa7fba
+
+% 4 1 0 1023f3ac90907ac00b55282947ca8702
+
+% 1 1 0 0e8d146f6af1d04c05e0867a018ea3bf
+
+% 0 1 0 1c141fa5e1fc37a603291b8e6c79e8a5
+
+% 0 1 0 044de3f8a18030b118a5f859aaebf91b
+
+% 1 1 0 005cc173c9d183cf1c77026084d3d322
+
+@ 0 2 0 036c04d5f1ddfc8a1fbeeab04d69ef31
++ `gaugeLine` rysuje pojedynczą klatkę, dla wywołującego, który sam rysuje. Tej postaci używa
++ się, gdy przerysowywanie jest już obsłużone:
+
+% 2 1 0 1b92576c6ec070ff046759eb66c0ab42
+
+% 0 1 0 0a406156ab6931a419aab94842c4a202
+
+% 0 1 0 1815165008fe6f71147718a58e8daa7e
+
+% 1 1 0 0a71d13f8ea4322f0bedde881221827c
+
+@ 0 1 0 0d9e6726a3070ab21e1586fc0e7d84fe
++ ### Składanie
+
+@ 0 2 0 1c1b27c4c1fbc26a045a1741d29f2839
++ `Captioned` dodaje etykietę do dowolnego statusu. Wyprowadza swój wzór z tego wzoru, którego
++ już używa status bazowy, więc nie jest wyborem stylu i nie wymaga importu:
+
+% 2 1 0 167421d9608a5cf00d6fc024cf6acf5a
+
+% 3 1 0 15f17bd0c4078fcc05bd3d229532f544
+
+% 4 1 0 0d47bc0c704fa9380731f12fa02ba33e
+
+% 0 1 0 005903ca518683a30ff2d8a6ae661bf2
+
+% 1 1 0 17e94a08b278db4c08da48806e3d718d
+
+@ 0 1 0 1ed04d6e249bf8d70125b264f003e43f
++ `Sequence[Step]` ma pięć wzorów, różniących się wysokością:
+
+% 2 1 0 178390b7735057440f9cc8544aba54ef
+
+% 3 1 0 197daebb150d0cad083d2093a693e8b3
+
+@ 0 7 0 0eb36ea0db5a2c5d1fff6557b4e83dd2
++ column  Rysuje
++ column  Wysokość
++ row  `processions.checklistProcession`  listę kontrolną  jeden wiersz na krok
++ row  `processions.breadcrumbProcession`  ścieżkę okruszków  jeden wiersz
++ row  `processions.beadProcession`  łańcuch koralików  jeden wiersz
++ row  `processions.numberedProcession`  numerowaną pozycję  jeden wiersz
++ row  `processions.ribbonProcession`  wstęgę w stylu powerline  jeden wiersz
+
+% 1 1 0 0bbce1e8f01d813204a2a330ef7e7211
+
+@ 0 1 0 0065b7d99026eabe02fe58a8f94931c7
++ Na przykład lista kontrolna dla trzech kroków jest rysowana w trzech wierszach:
+
+% 2 1 0 18d26a96f03362f200adf81d9de65192
+
+% 3 1 0 1b3d5eb04e68f3ef1dec6428fe101bf7
+
+% 4 1 0 181a5e54850fa43a16f76e1f80435b14
+
+% 0 1 0 1d111ce04c196fac1c823e06879f42b6
+
+% 0 1 0 113a9fecaafdfa820c3a2241a46df01f
+
+% 0 1 0 085613c616be7c68127994f4d9480866
+
+% 0 1 0 08b834c5c134179a19d22e5d4ee3d2c3
+
+% 0 1 0 0525e1f3575fa3b40808722f8362246c
+
+% 0 1 0 1fdfe39dbeb36c54184b1258e150642e
+
+% 0 1 0 110eedce2319c1dd1cee8b1d271dbe87
+
+% 1 1 0 17c2691994db6628061edd3bfca91777
+
+% 2 1 0 196b351cfd55cf8a09f50e8425670967
+
+% 0 1 0 11246944cc1cc1cb16325acb19bcf6ec
+
+% 0 1 0 16f0952fe8328e930f3edd3adb63a38d
+
+% 0 1 0 085987f736af2d1f1f4d4b87d209244c
+
+% 1 1 0 150f1ef207804dc50939e5ce387c21c4
+
+@ 0 2 0 0634672a250f095110e7bf92b39f4b37
++ Bieżący krok jest animowany, a znacznik każdego kroku pochodzi z tego samego słownika
++ `Standing`, którego używa jednokomórkowy glif statusu.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 5 0 084ccaf02cd82821184ab6eb14e88614
++ - [Terminal](terminal.md#layout) rozmieszcza wskaźniki z innymi panelami i obsługuje wejście.
++ - [Kolory](colors.md) opisują kolory, które nazywa paleta.
++ - [Współbieżność](concurrency.md) wykonuje pracę, o której informuje wskaźnik.
++ - [Wykresy](charts.md) rysują dane już kompletne, podczas gdy wskaźnik rysuje pracę w toku.

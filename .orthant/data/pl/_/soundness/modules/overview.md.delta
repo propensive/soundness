@@ -1,0 +1,158 @@
+orthant 2 language
+
+@ 0 1 0 0141ab70aa7784f41e44f694bd889c1c
++ ## Przegląd
+
+@ 0 2 0 1b72ed9ebf92ddcb073c3a303abd44fb
++ Soundness to jedna biblioteka z wieloma częściami, a każdy z tych samouczków omawia jeden temat.
++ Pogrupowano je tutaj według tego, czym czytelnik prawdopodobnie się zajmuje.
+
+@ 0 8 0 10a91004d6525a330a00b7c359e5c96b
++ Każdy samouczek buduje swoje przykłady po kolei, a wynik przykładu jest pokazany pod nim,
++ dokładnie taki, jaki przykład wytworzył. Gdy przykład ma się nie powieść, pokazany jest zamiast
++ tego błąd kompilatora albo rzucony błąd. Słowo o ścisłym znaczeniu, takie jak
++ [klasa typów] czy [strategia], jest zdefiniowane w słowniczku, który pojawia się tam, gdzie
++ słowa użyto. Każdy samouczek kończy się listą powiązanych samouczków, a większość odsyła do
++ filozofii stojącej za ich projektem:
++ [bezpieczeństwa przez konstrukcję](../../philosophy/safety-by-construction.md),
++ [stylu bezpośredniego](../../philosophy/direct-style.md),
++ [uczciwych sygnatur](../../philosophy/honest-signatures.md) i pozostałych.
+
+@ 0 1 0 02a54c7d1934e7ef12fa63a30dec9230
++ ### Podstawy
+
+@ 0 27 0 072ede9fee7a74810f6bc5556b401006
++ - [Tekst](text.md) – pisanie, wycinanie, wyszukiwanie i przedstawianie tekstu, wraz z typami tekstowymi
++ - [Znaki](characters.md) – kodowania, właściwości Unicode, szerokości i klastry grafemów
++ - [Liczby](numbers.md) – arytmetyka kontrolowana, operacje na bitach, precyzja, liczby porządkowe i liczby ograniczone
++ - [Matematyka](mathematics.md) – liczby zespolone, wektory, macierze i permutacje
++ - [Wartości opcjonalne](optional-values.md) – brak wartości bez `Option` i ile to kosztuje
++ - [Błędy](errors.md) – deklarowanie, że kod może zawieść, wybór strategii i odtwarzanie po błędach
++ - [Kolekcje](collections.md) – typy kolekcji i to, jak przechodzą do biblioteki standardowej
++ - [Wzorce](patterns.md) – wyrażenia regularne i globy, sprawdzane podczas kompilacji kodu
++ - [Interpolacja](interpolation.md) – pisanie własnego interpolatora
++ - [Nazwy](names.md) – identyfikatory walidowane względem płaszczyzny reguł
++ - [Dekodowanie](decoding.md) – zamiana tekstu na wartości typowane i wydobywanie ich we wzorcach
++ - [Wyświetlanie](display.md) – pokazywanie i inspekcjonowanie wartości
++ - [Derywacja](derivation.md) – derywowanie instancji klas typów dla produktów i sum
++ - [Adnotacje](annotations.md) – odczyt adnotacji w czasie kompilacji
++ - [Dane generyczne](generic-data.md) – reprezentacja, przez którą można konwertować każdy format
++ - [Rekordy](records.md) – typowane rekordy ze specyfikacji
++ - [Katalogi](catalogs.md) – wartość dla każdego pola typu, adresowana ścieżką
++ - [Optyka](optics.md) – aktualizowanie zagnieżdżonych niemutowalnych wartości
++ - [Flagi bitowe](flags.md) – zbiory flag jako bity
++ - [Filtry Blooma](bloom-filters.md) – probabilistyczne sprawdzanie przynależności
++ - [Pamięć podręczna](caching.md) – pamięć podręczna LRU i wartości wygasające
++ - [UUID](uuid.md) – generowanie, parsowanie i łączenie UUID
++ - [Losowość](randomness.md) – wartości losowe, rozkłady i powtarzalne przebiegi
++ - [Wersjonowanie](versioning.md) – wersje i manifesty
++ - [Różnice](diffing.md) – różnice, łatki i ewolucje
++ - [Drzewa](trees.md) – drzewa i grafy rysowane jako diagramy
++ - [Grafy](graphs.md) – budowanie, porządkowanie, zwijanie i rysowanie grafów
+
+@ 0 1 0 0c3fdb91ee4355d602451db1fcde1d8e
++ ### Formaty danych
+
+@ 0 15 0 1b98f74fbd9340c61d016cf949bfc213
++ - [JSON](json.md) – parsowanie, typowany dostęp, budowanie, schematy i walidacja
++ - [YAML](yaml.md) – parsowanie, tagi, kotwice i kodowanie
++ - [XML](xml.md) – węzły, przestrzenie nazw, XPath i schematy
++ - [CBOR](cbor.md) – binarne kodowanie podobne do JSON, z tagami i notacją diagnostyczną
++ - [CSV](csv.md) – wiersze, nagłówki i formaty, dekodowane do klas case
++ - [TEL](tel.md) – oparty na wcięciach język danych, jego schematy i edycja
++ - [Protocol Buffers](protobuf.md) – komunikaty, pola i zgodność
++ - [Markdown](markdown.md) – parsowanie, przedstawianie i zapis z powrotem
++ - [Kodowanie Base](base-encoding.md) – Base64, szesnastkowe i inne alfabety
++ - [Dane binarne](binary-data.md) – opisywanie i odczyt układu binarnego
++ - [Kompresja](compression.md) – kompresowanie wartości i strumieni
++ - [Archiwa](archives.md) – ZIP, tar i ar
++ - [Haszowanie](hashing.md) – skróty, sumy kontrolne i szybkie haszowanie
++ - [Kryptografia](cryptography.md) – szyfrowanie, podpisywanie, klucze i certyfikaty
++ - [Typy mediów](media-types.md) – typy mediów i typy, które znają swój
+
+@ 0 1 0 1689e237f50aa752011f26db5b7c1b53
++ ### Czas, wielkości i ustawienia regionalne
+
+@ 0 8 0 070db1ad81efa60c180a73390ca39a2b
++ - [Czas](time.md) – daty, godziny, chwile, strefy, kalendarze, powtórzenia i formatowanie
++ - [Wielkości](quantities.md) – jednostki, wymiary i konwersje, sprawdzane w czasie kompilacji
++ - [Pieniądze](money.md) – kwoty, podział, ceny i podatki
++ - [Geografia](geography.md) – kąty, kierunki kompasu i lokalizacje
++ - [Chemia](chemistry.md) – pierwiastki, cząsteczki, wzory i równania
++ - [Kolory](colors.md) – przestrzenie barw, mieszanie, odległość i palety
++ - [Internacjonalizacja](internationalization.md) – tłumaczenia i ustawienia regionalne
++ - [Dzielenie wyrazów](hyphenation.md) – dzielenie wyrazów i podział na sylaby
+
+@ 0 1 0 0b85f5f5e2adb8710707c5fdcb1e276d
++ ### System plików, procesy i środowisko
+
+@ 0 14 0 1ae832d3e305efd104c4cb1a1210c24b
++ - [Ścieżki](paths.md) – budowanie, wiązanie ze sobą i rozkładanie ścieżek
++ - [System plików](filesystem.md) – pliki, katalogi, dostęp i obserwowanie
++ - [Środowisko](environment.md) – zmienne, właściwości, katalogi i maszyna
++ - [Strumienie](streams.md) – odczyt, zapis i składanie strumieni danych
++ - [Procesy](processes.md) – definiowanie, uruchamianie i łączenie poleceń w potoki
++ - [Współbieżność](concurrency.md) – nadzorowane zadania, anulowanie i obietnice
++ - [Logowanie](logging.md) – loggery, poziomy i trasowanie
++ - [Ścieżki klas](classpath.md) – zasoby, classloadery i usługi
++ - [Pakowanie](packaging.md) – odchudzone pliki JAR, których zależności pobiera się po haszu
++ - [Demony](daemons.md) – długo działające aplikacje z szybkimi klientami
++ - [Kontenery](docker.md) – budowanie i odczyt obrazów oraz komunikacja z demonem
++ - [Git](git.md) – repozytoria, commity, gałęzie i zdalne repozytoria
++ - [SSH](ssh.md) – klucze hosta, transporty i zdalne polecenia
++ - [Bazy danych](database.md) – deklarowanie, przechowywanie i odpytywanie
+
+@ 0 1 0 166b6a2affdcaab40edc80374b4322dc
++ ### Sieć i web
+
+@ 0 23 0 19a004f0d9fab2d7120c1e0efe071fcd
++ - [Adresy sieciowe](network-addresses.md) – URL-e, nazwy hostów, adresy IP i porty
++ - [Gniazda](sockets.md) – serwery, klienci, TLS i konwersacje
++ - [Klient HTTP](http-client.md) – żądania, nagłówki, treści i sesje
++ - [Serwer HTTP](http-server.md) – serwery, odpowiedzi, WebSockety i HTTP/2
++ - [RPC](rpc.md) – interfejsy przez JSON-RPC, gRPC i zdarzenia wysyłane przez serwer
++ - [E-mail](email.md) – tworzenie i wysyłanie
++ - [OAuth 2](oauth.md) – tokeny i poświadczenia
++ - [OpenAPI](openapi.md) – typowane klienty z dokumentu
++ - [Wykrywanie usług](service-discovery.md) – ogłaszanie i przeglądanie usług
++ - [Automatyzacja webu](web-automation.md) – sterowanie przeglądarką
++ - [HTML](html.md) – konstruowanie, sprawdzanie, przedstawianie i parsowanie HTML
++ - [Strony WWW](pages.md) – całe strony z archetypów
++ - [DOM przeglądarki](dom.md) – typowane skryptowanie strony
++ - [CSS](css.md) – pisanie, walidacja i przedstawianie arkuszy stylów
++ - [Formularze](forms.md) – przedstawianie i obsługa formularzy
++ - [SVG](svg.md) – kształty, ścieżki, przekształcenia i dokumenty
++ - [Wykresy](charts.md) – serie, rodzaje wykresów i przedstawianie
++ - [Rozmieszczanie etykiet](label-placement.md) – podpisy, które omijają swoje przeszkody
++ - [Obrazy](images.md) – piksele, płótna i konwersja
++ - [Dźwięk](audio.md) – odczyt, zapis, nagrywanie i odtwarzanie
++ - [Fonty](fonts.md) – ładowanie, mierzenie i tworzenie podzbiorów
++ - [PDF](pdf.md) – tworzenie, odczyt i edycja dokumentów
++ - [Znaczniki matematyczne](mathematical-markup.md) – drzewa MathML
+
+@ 0 1 0 047910004af6227e0f33566e3eb383cd
++ ### Wiersz poleceń i terminal
+
+@ 0 6 0 1df12b0b26a04bce02517e0107e6933f
++ - [Aplikacje wiersza poleceń](cli.md) – punkty wejścia, argumenty, flagi, uzupełnianie i pomoc
++ - [Terminal](terminal.md) – stylizowany tekst, wejście, menu i układ
++ - [Emulacja terminala](terminal-emulator.md) – zasilanie i inspekcjonowanie terminala
++ - [Tabele](tables.md) – tabelaryzacja wartości przy dowolnej szerokości
++ - [Wskaźniki](gauges.md) – statusy jako wskaźniki
++ - [Podświetlanie składni](syntax-highlighting.md) – podświetlanie, typy i uzupełnianie
+
+@ 0 1 0 04e11eaca150d9d30c18fcb6b9b52374
++ ### Kompilator, narzędzia i agenci
+
+@ 0 11 0 1e99dd85d04d07b1187175207dc4aa24
++ - [Kompilacja](compiler.md) – konfigurowanie i uruchamianie kompilatorów oraz tworzenie artefaktów
++ - [Metaprogramowanie](metaprogramming.md) – giveny, wartości na poziomie typów i rozwinięcia
++ - [Etapowanie](staging.md) – cytaty, wstawki i środowiska
++ - [Testowanie](testing.md) – zestawy testów, testy, kontrasty i benchmarki
++ - [Debugowanie](debugging.md) – sesje, punkty przerwania i wykonywanie krokowe
++ - [Ślady stosu](stack-traces.md) – przechwytywanie, demanglowanie i rozwiązywanie śladów
++ - [Interoperacyjność z obcym kodem](foreign-interop.md) – ładowanie obcych interfejsów i nawigacja po nich
++ - [Language Server Protocol](lsp.md) – definiowanie i uruchamianie serwera
++ - [ACP](acp.md) – protokół klienta agentów
++ - [MCP](mcp.md) – protokół kontekstu modelu
++ - [Modele językowe](llm.md) – konwersacje, narzędzia i odpowiedzi strukturalne

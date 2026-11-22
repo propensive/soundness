@@ -1,0 +1,304 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 06471244edf78cfc0f4fd709c8b745df
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 051742139185ae9e0e44430e8c61ce66
++ info   standardowe katalogi systemu uniksowego i katalogu domowego użytkownika jako typowane, zagnieżdżone nazwy
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1800e6b03e6be9b71612bef21e229b93
++     _Imperial_ nazywa konwencjonalne katalogi systemu uniksowego drzewem zagnieżdżonych
++     obiektów, dzięki czemu standardowe położenie zapisuje się jako wartość, a nie tekst, a
++     błąd w nazwie katalogu jest błędem kompilacji. `Home` to drzewo pod katalogiem domowym
++     użytkownika, a `Base` – drzewo pod korzeniem systemu plików. Każdy obiekt nosi nazwę
++     katalogu, który reprezentuje, pisaną wielką literą i bez początkowej `.` –
++     `$HOME/.local/bin` to `Home.Local.Bin`, a `/var/lib` to `Base.Var.Lib`.
+
+@ 0 3 0 17cccb2ec75d7ab11ab944f259ba8bc6
++     Każdy węzeł jest `BaseLayout`. Zastosowanie go z typem ścieżki jako argumentem typu
++     rozwiązuje go do tego typu względem `Environment` i `System` w zasięgu, więc te same nazwy
++     służą `Path on Linux`, zwykłemu `Text` lub każdej innej reprezentacji, która jest
+
+% 0 1 0 1965f24d47e5996713701b9e476b545e
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 02144ad0f83d1d2207050f0bcf5195f5
+
+% 0 1 0 166f81c9908c1cef09c4492c560ebf21
+
+% 0 1 0 10acb0208038e972123b36c3ca72b84d
+
+% 0 1 0 00dfe1bf7f1162631bf9653def00d90e
+
+% 0 1 0 1c5bbd0db4e6dcb91490fc2e200250af
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 5 0 090fa1d109709d5201e2d81beaa3328e
++     Układ mówi też, czy jest przeznaczony do zapisu: `readOnly` ma wartość `true` dla
++     `/boot`, `/efi`, `/sys`, `/usr` i wszystkiego pod nim oraz dla katalogów poszczególnych
++     procesów pod `/proc`. Układy są stałymi ścieżkami: `Home.Config` to zawsze
++     `$HOME/.config`, niezależnie od `XDG_CONFIG_HOME`; dla położeń uwzględniających XDG należy
++     użyć wartości `Xdg` z ambience.
+
+@ 0 2 0 1dd151a2e0f6494a0bed8325899f19ae
++     Biblioteka ma jeden zbiór źródeł, `imperial.core`, a wszystko jest eksportowane do modułu
++     zbiorczego `soundness`.
+
+% 0 1 0 0788cd3b9cec7daf0879d44e6e429e79
+
+% 0 1 0 079c6da2c0e561c513a1416d56d2ff7d
+
+% 0 1 0 0f97983af47232cc031cd624207a1de5
+
+@ 0 1 0 1ebf8a157598d46f10fe809a349daab7
++ entry .BaseLayout   katalog w standardowym układzie, rozwiązywany do dowolnego typu ścieżki względem środowiska
+
+% 1 1 0 0a2b0b28fa6b52d7129a8f07dfcee1fb
+
+@ 0 5 0 1f5110a7bf33310d1b427f937c8c3670
++       `BaseLayout` to jeden węzeł drzewa `Home` lub `Base`: nazwa katalogu, układ, w którym
++       się znajduje (przenoszony jako kontekstowy `BaseLayout.Dir` obiektu nadrzędnego), oraz
++       informacja, czy jest `#readOnly`. Jego składowa typu `#Topic` to krotka nazw katalogów od
++       węzła aż do korzenia, więc `Base.Var.Log` ma temat `("log", "var")`, a typ każdego węzła
++       jest odrębny.
+
+@ 0 5 0 1c2201552cfd0e2d03052f52e164f36a
++       Zastosowanie układu, `layout[Path on Linux]()`, wyznacza jego ścieżkę bezwzględną i
++       konstruuje z niej wartość żądanego typu ścieżki. Układ pod `Home` odczytuje zmienną
++       środowiskową `HOME`, zgłaszając `Environment.Error`, jeśli nie jest ustawiona; układ pod
++       `Base` w ogóle nie potrzebuje zmiennej środowiskowej, choć obie sygnatury wymagają
++       `Environment` i `System` w zasięgu.
+
+% 2 1 0 0e9f2dfafbdfb83b1f26cc6d6f4dff16
+
+% 3 1 0 0a2b7d9186c5dbd6035220e6a791c5c2
+
+% 4 1 0 1729befde87e49c91110a0515daacc42
+
+% 5 1 0 0a77c24b69bee4ab0f85c62c249067d3
+
+% 6 1 0 0fedb600b8a75cbe1c19748e3ad91d51
+
+% 0 1 0 13e7ee669c90990e15bbb523ce360b24
+
+% 0 1 0 01ec940f6f210c711636b0dcccb40c84
+
+% 1 1 0 10684ea762657a6d033693920670fa2d
+
+@ 0 2 0 14830ccaa9a39c270c187ad2c25db0f8
++       Nowy układ zagnieżdżony w istniejącym to obiekt rozszerzający `BaseLayout` wewnątrz
++       niego, który przejmuje `#dir` rodzica jako własną bazę.
+
+% 1 1 0 11ddc3c55bdf22de0d8069b1a01dd2d2
+
+% 1 1 0 1beda2fb9cb9e37d03dc85a26a0f117e
+
+@ 0 1 0 0767669c9e2dcc04171f13e2add72628
++   entry .Dir   położenie układu: czy leży pod katalogiem domowym, oraz segmenty jego ścieżki
+
+% 1 1 0 11c1f6e5c71166a9043041e2fcf0a3b7
+
+@ 0 21 0 0c935a1544e54461085fc33d2186fc0c
++         `BaseLayout.Dir` układu jest przekazywany zagnieżdżonym w nim układom jako wartość
++         kontekstowa – w ten sposób zagnieżdżony obiekt zna katalog, w którym się znajduje.
++         Segmenty są przechowywane od najbardziej wewnętrznego.
++     entry #home   czy ścieżka jest względna wobec katalogu domowego użytkownika
++     entry #path   segmenty ścieżki, od najbardziej wewnętrznego
++     entry #/   katalog potomka, według jego nazwy
++     entry #render   ścieżka bezwzględna jako tekst, przy danej ścieżce katalogu domowego
++         `Dir`, który nie jest względny wobec katalogu domowego i nie ma segmentów, daje `/`.
++   entry #readOnly   czy katalog jest zwyczajowo wyłączony z zapisu przez programy
++       `true` dla `/boot`, `/efi`, `/sys`, `/usr` i wszystkiego pod nim oraz dla katalogów
++       `/proc`; `false` dla każdego układu pod `Home`.
++   entry #Topic   nazwy katalogów od tego węzła aż do korzenia, jako typ krotki
++   entry #absolutePath   ścieżka bezwzględna układu, jako tekst
++       Wymaga `Environment` i `System`. Układ pod `Home` odczytuje zmienną środowiskową
++       `HOME`, bez końcowego `/`, i zgłasza `Environment.Error`, jeśli nie jest ustawiona.
++   entry #dir   `BaseLayout.Dir` tego układu, przekazywany zagnieżdżonym w nim układom
++   entry #apply   ścieżka bezwzględna układu, jako typ ścieżki wybrany przez wywołującego
++       `layout[Path on Linux]()` tworzy z `#absolutePath` wartość dowolnego typu, który jest
++       `Instantiable across Paths from Text`. Wymaga `Environment` i `System` oraz zgłasza
++       `Environment.Error` (dla układu `Home`, którego `HOME` nie jest ustawiona) i
+
+% 0 1 0 0da775d779ae972601034fe859f3ce34
+
+@ 0 1 0 00b6815da15cf6ba08fa907d28225761
++ entry .Home   katalog domowy użytkownika, `$HOME`, i standardowe katalogi pod nim
+
+% 1 1 0 01648c2115c568b00abb184bffca0fba
+
+@ 0 3 0 1264fb7971aa398e15ccc56456abbc76
++       `BaseLayout` rozwiązywany względem zmiennej środowiskowej `HOME`. `Home[Path on
++       Linux]()` to sam katalog domowy; jego zagnieżdżone obiekty nazywają konwencjonalne
++       katalogi pod nim.
+
+% 2 1 0 0f12ae71806ee8db00f12d41a0f69a47
+
+% 3 1 0 0bc7d78b04d14d491ea6457dc5553cf9
+
+% 4 1 0 1225f46d3787e7f21f5cdffa20586173
+
+% 5 1 0 0e172a6d39716fdb0f4adc9fe7b15c3e
+
+% 6 1 0 04f256fe20f571dd1e9fb0d88843ca93
+
+% 0 1 0 0ee821c7532e81e0051b53bec8bca330
+
+% 0 1 0 101290bb813888530d61d18237f80c63
+
+% 1 1 0 015a4073df270f231469b759ab0401eb
+
+@ 0 3 0 1afb2a39da3f6b5910fe80226e27b0b6
++       Ścieżki są stałe: `Home.Config` to `$HOME/.config` nawet tam, gdzie `XDG_CONFIG_HOME`
++       wskazuje inny katalog, więc program, który powinien respektować zmienne XDG, powinien
++       zamiast tego użyć `Xdg` z ambience.
+
+% 1 1 0 0c8b6b683b885e7a038142b4273f9b98
+
+% 1 1 0 02899b1a62e7446a102b439efee08ab7
+
+@ 0 3 0 1fbd22784f76748e1ac74118716da65e
++   entry .Cache   katalog pamięci podręcznej użytkownika, `~/.cache`
++   entry .Config   katalog konfiguracji użytkownika, `~/.config`
++   entry .Local   lokalny prefiks instalacji użytkownika, `~/.local`
+
+% 1 1 0 00e0cc5ed57784e01f9d3c94c3a55d71
+
+@ 0 6 0 1a87a94c5090f9461f69b6466877dd7c
++         Odpowiednik `/usr` dla pojedynczego użytkownika, przechowujący jego własne programy,
++         biblioteki, dane i stan.
++     entry .Bin   własne pliki wykonywalne użytkownika, `~/.local/bin`
++     entry .Lib   własne biblioteki użytkownika, `~/.local/lib`
++     entry .Share   własne dane aplikacji użytkownika, `~/.local/share`
++     entry .State   stan aplikacji użytkownika, `~/.local/state`
+
+@ 0 1 0 08e05895d13e5a670fc3a8456383e07c
++ entry .Base   korzeń systemu plików, `/`, i standardowe katalogi systemowe pod nim
+
+% 1 1 0 10ffaadd3bec5df116854fcd4cd4893f
+
+@ 0 3 0 057dcf2494db0ef7113cc2ddde13ceab
++       `BaseLayout` dla katalogu głównego, z zagnieżdżonymi obiektami dla katalogów standardu
++       Filesystem Hierarchy Standard. `Base[Path on Linux]()` to `/`. Żaden z jego układów nie
++       odczytuje środowiska, więc w praktyce żaden nie zgłasza `Environment.Error`.
+
+% 2 1 0 1dae16de24b2033e086d1fe24af20b5b
+
+% 3 1 0 04d40bb113d422800139215ac1b0866c
+
+% 4 1 0 152942308c914e6b09c03d2417f08e74
+
+% 5 1 0 0fe56aaa6ced9fb713c3f5dda7e01170
+
+% 6 1 0 0a00e5cb46380a9310df1e5891322e05
+
+% 0 1 0 10857b4d2ead102d0c138119e1234beb
+
+% 0 1 0 042e28e8d658b64f1358a2196d226eb3
+
+% 0 1 0 0afc25f2237541851c526ae1fcf81729
+
+% 1 1 0 004eb3557a536fd41e9c196b6b3c42de
+
+% 1 1 0 03d138c0a241cc890c19a725d7b8eba1
+
+% 1 1 0 1a8e70822f5a736200afaee835396c50
+
+@ 0 10 0 03c63f70fe1710440db547395afdade8
++   entry .Boot   pliki programu rozruchowego, `/boot`, tylko do odczytu
++   entry .Efi   partycja systemowa EFI, `/efi`, tylko do odczytu
++   entry .Etc   pliki konfiguracyjne systemu, `/etc`
++   entry .Home   katalog z katalogami domowymi użytkowników, `/home`
++       Nie należy go mylić z `Home` najwyższego poziomu, czyli własnym katalogiem domowym
++       bieżącego użytkownika.
++   entry .Root   katalog domowy użytkownika root, `/root`
++   entry .Srv   dane udostępniane przez system, `/srv`
++   entry .Tmp   pliki tymczasowe, `/tmp`, które mogą nie przetrwać ponownego uruchomienia
++   entry .Run   dane czasu wykonania od ostatniego uruchomienia, `/run`
+
+% 1 1 0 1cb90f561df7d39c10132e89d7d89e3e
+
+@ 0 4 0 11c8105edaebb2c901d579bf13c0f653
++         Ulotny stan, taki jak gniazda i pliki z identyfikatorami procesów, czyszczony przy
++         rozruchu.
++     entry .Log   dzienniki czasu wykonania, `/run/log`
++     entry .User   katalogi czasu wykonania poszczególnych użytkowników, `/run/user`
++   entry .Usr   współdzielone dane systemowe tylko do odczytu, `/usr`
+
+% 1 1 0 08de5396a80b287017fea026f02bc2cc
+
+@ 0 6 0 12854f3f426f48261452e33513d9bac4
++         Każdy układ pod `/usr` jest `readOnly`: znajdują się tu programy instalowane przez
++         menedżer pakietów systemu i aplikacja nie powinna tu zapisywać.
++     entry .Bin   systemowe pliki wykonywalne, `/usr/bin`, tylko do odczytu
++     entry .Include   pliki nagłówkowe C, `/usr/include`, tylko do odczytu
++     entry .Lib   biblioteki systemowe, `/usr/lib`, tylko do odczytu
++     entry .Share   dane niezależne od architektury, `/usr/share`, tylko do odczytu
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 4 0 1e4f999eafa3560507db39b4821b2205
++           Dokumentacja oraz ustawienia fabryczne, z których można odbudować `/etc` i `/var`.
++       entry .Doc   dokumentacja pakietów, `/usr/share/doc`, tylko do odczytu
++       entry .Factory   nienaruszone kopie konfiguracji systemu, `/usr/share/factory`, tylko do odczytu
+
+% 0 1 0 1fa5966119e8ae1109b0dcda52a971aa
+
+@ 0 4 0 16bb53409b0a69db014c566b6f9a8ae3
++             Ustawienia domyślne, z których można przywrócić `/etc` i `/var` systemu.
++         entry .Etc   fabryczna kopia `/etc`, `/usr/share/factory/etc`, tylko do odczytu
++         entry .Var   fabryczna kopia `/var`, `/usr/share/factory/var`, tylko do odczytu
++   entry .Var   dane zmienne, które przetrwają ponowne uruchomienie, `/var`
+
+% 1 1 0 06f7959ef6f2fede1cdf221f6c8119ea
+
+@ 0 8 0 06fdc11868af847608ff57295ad000dd
++         Dane zapisywane przez programy systemu podczas działania: pamięci podręczne, stan,
++         dzienniki, kolejki i pliki tymczasowe, które muszą przetrwać ponowne uruchomienie.
++     entry .Cache   pamięci podręczne aplikacji, `/var/cache`
++     entry .Lib   stan aplikacji, `/var/lib`
++     entry .Log   pliki dziennika, `/var/log`
++     entry .Spool   kolejki oczekujących zadań, takich jak poczta i wydruki, `/var/spool`
++     entry .Tmp   pliki tymczasowe zachowywane po ponownym uruchomieniu, `/var/tmp`
++   entry .Dev   pliki urządzeń, `/dev`
+
+% 1 1 0 1d9f46f581cd0cb9086438d0c1db4106
+
+@ 0 3 0 1d296ce989c48d751a11f9f54d91a2c2
++         Węzły urządzeń jądra.
++     entry .Shm   pamięć współdzielona, `/dev/shm`
++   entry .Proc   system plików z informacjami o procesach, `/proc`
+
+% 1 1 0 0ae0d204b22dd2ac16fde7d24e6b187a
+
+@ 0 2 0 16b0d7e1d7846d22150b7ccec7b07605
++         Widok uruchomionych procesów z perspektywy jądra. `Base.Proc(pid)` to katalog jednego
++         procesu, `/proc/<pid>`, tylko do odczytu.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 12a77f35a923ed9d02842be6213a00e5
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 3 0 027d2578eabc59200f7e01c88252b221
++     entry .apply   katalog jednego procesu, `/proc/<pid>`, według jego `Pid`
++     entry .Sys   parametry jądra, `/proc/sys`, tylko do odczytu
++   entry .Sys   drzewo urządzeń i sterowników jądra, `/sys`, tylko do odczytu

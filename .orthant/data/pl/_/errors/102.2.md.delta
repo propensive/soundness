@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 1 0 06ba4d3f4903a6e105e907f88cbf94a1
++ # `↯/s.102.2` – `Mdns.Error`
+
+@ 0 1 0 0754fdd637c7a80619dbf1455bfec13a
++ Zgłaszany, gdy nie można uruchomić opartego na gniazdach respondera mDNS (`syndesis`).
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 3 0 0998dc7089e208571740599e65948b97
++ Responder dołącza do grupy multicastowej mDNS (`224.0.0.251:5353`) na każdym interfejsie, który
++ jest aktywny i obsługuje multicast. Bez takiego interfejsu albo gdy system operacyjny odmówi
++ dołączenia, nie ma przez co mówić. Komunikat to `the mDNS responder could not start because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Warianty
+
+@ 0 1 0 14cab4f5eb3b353c0023fcb9c4d9b374
++ ### `↯/s.102.2.1` – `Join`
+
+@ 0 2 0 19075168b3da39c50cf298a633d70642
++ Nie udało się dołączyć do grupy multicastowej: związanie portu 5353 z ponownym użyciem się nie
++ powiodło albo dołączenia odmówiono na każdym interfejsie.
+
+@ 0 1 0 1ee0e0f8701e12770593b89b2100b8b0
++ **Przykład.** `[↯/s.102.2.1] the mDNS responder could not start because the multicast group 224.0.0.251:5353 could not be joined`
+
+@ 0 2 0 11d2990b9522deb90cfd444489aec9c7
++ **Rozwiązanie.** Sprawdzić, czy port 5353 nie jest zajęty bez ponownego użycia przez inny
++ program i czy interfejsy mają adresy IPv4.
+
+@ 0 1 0 022debaddccf1cf0030687c3ef8d75a5
++ ### `↯/s.102.2.2` – `NoInterface`
+
+@ 0 1 0 0e6180d6c2bcabaa19e7c45c895cbecb
++ Żaden interfejs sieciowy nie jest aktywny i nie obsługuje multicastu (pętla zwrotna się nie
++ liczy).
+
+@ 0 1 0 0a19999eb228f7471d3cc818882c0d0a
++ **Przykład.** `[↯/s.102.2.2] the mDNS responder could not start because no interface is up and capable of multicast`
+
+@ 0 1 0 17ba773332c34264121e4f5838b681d1
++ **Rozwiązanie.** mDNS potrzebuje łącza; w piaskownicy bez łącza należy użyć `Mdns.Transport.Bus` w pamięci.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 1a7ae79c01b71180108dd6cdb0df9761
++ - Źródło: `lib/syndesis/src/core/syndesis.Mdns.scala`

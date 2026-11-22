@@ -1,0 +1,431 @@
+orthant 2 language
+
+@ 0 1 0 15e4639548c1e39e040f3c52d7d4f3f1
++ ## Haszowanie
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 4 0 14952c14c6b34fa202c673f6c07ba1cb
++ [Funkcja skrótu](https://en.wikipedia.org/wiki/Hash_function) sprowadza dane dowolnego rozmiaru
++ do krótkiego odcisku o stałej długości. Można obliczyć skrót dowolnej wartości – klasy case,
++ kolekcji czy strumienia bajtów – z algorytmem nazwanym jako typ: `Sha2[256]`, `Sha1`, `Md5`
++ lub `Blake3`.
+
+@ 0 4 0 18d49b96cb5f9ec402d2107ce6e7ea9b
++ Skrót można obliczyć ze wszystkiego, co opisuje, jak przekazać swoje bajty do funkcji skrótu.
++ Klasa case robi to automatycznie, [derywując][derywacja] to ze swoich pól, więc haszowanie
++ ustrukturyzowanej wartości nie wymaga ręcznej serializacji. Skrót jest wartością, a jego
++ bajty zapisuje się szesnastkowo lub w Base64 przez to samo [kodowanie base](base-encoding.md),
++ którego używa się wszędzie indziej.
+
+@ 0 4 0 05ac4cc5582dfe7111b0d2da9d8d9e45
++ Sumy kontrolne `Crc32`, `Crc64` i `Adler32` oblicza się dokładnie tym samym API. Algorytmów
++ znanych jako słabe, MD5 i SHA-1, można używać tylko tam, gdzie ich użycie jest jawnie
++ dozwolone. Podobnie sum kontrolnych, które nie są słabymi funkcjami skrótu, lecz w ogóle nie
++ są funkcjami skrótu: suma kontrolna wykrywa przypadkowe uszkodzenie i nic więcej.
+
+@ 0 1 0 011d9039d8f4233409ee291f6b0b5d15
++ ### O haszowaniu
+
+@ 0 2 0 0a6b87bcdbb2a0cb1d996afd94230b6f
++ Typowe API haszowania przyjmuje tablicę bajtów i algorytm nazwany napisem, a zwraca kolejną
++ tablicę bajtów:
+
+@ 0 4 0 0763bda0b6aec4f706ccb1478b15b217
++ - Algorytm nie jest sprawdzany, więc literówka to niepowodzenie w [czasie wykonania][czas wykonania].
++ - Dane wejściowe trzeba przed haszowaniem ręcznie zserializować do bajtów.
++ - Wynik trzeba potem ręcznie zapisać jako tekst.
++ - Nic nie zniechęca do sięgnięcia po złamany algorytm.
+
+@ 0 5 0 1cf2c38f2f97beff10c745d2efea9fdd
++ Tutaj każdy z tych problemów jest rozwiązany. Algorytm jest typem, sprawdzanym tam, gdzie się
++ go używa, więc skrótu jednego algorytmu nie da się pomylić ze skrótem innego, co jest
++ [bezpieczeństwem z konstrukcji](../../philosophy/safety-by-construction.md). Każdą wartość z
++ instancją `Digestible` haszuje się bezpośrednio. Wynik zapisuje się przez kodowania base. A
++ słaby algorytm kryje się za zezwoleniem, na które program musi się jawnie zdecydować.
+
+@ 0 2 0 10d0626d591a5cf912b908334bfbb6d8
++ Wszystko pochodzi z pakietu `soundness`. W zasięgu są dostawca algorytmów skrótu i alfabet, a
++ ostatni import pozwala przykładom wypisywać wyniki:
+
+% 2 1 0 0b80a9d382cbc149068a1aa3937298ec
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0b21de5890a84d8d05926f25583daec4
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 00059dbd5e037a2e1eaf493b0320ab5c
++ ### Haszowanie wartości
+
+@ 0 1 0 0e1992f9ef1a482d04d49ed93f39d066
++ `digest` oblicza skrót wartości w nazwanym algorytmie, a `serialize` go zapisuje:
+
+% 2 1 0 1b35dfe94df472121e14702bbea1ee45
+
+% 3 1 0 05293c941d2ffbe1162d85acd87ef5e0
+
+% 4 1 0 06b7ad6064b73d9f1002923050aaa311
+
+% 0 1 0 08a6f7a8f5abafbb13c76a8ba48d7dbf
+
+% 1 1 0 1ef831a91c8e0349028d49cb877fcf11
+
+@ 0 2 0 19634f0d4454779c09618ccd8d5363af
++ Algorytmy dostarcza dostawca z zasięgu. Oto algorytmy, zezwolenie wymagane przez każdy z nich
++ i dostawcy, którzy oferują każdy z nich na JVM:
+
+% 2 1 0 0a60614d140f4c5c145160faecc9969d
+
+@ 0 13 0 1a15065c9edac296116804b281cb17a3
++ column  Algorytm
++ column  Rodzaj
++ column  Zezwolenie
++ column  Dostawcy
++ column  Bity
++ row  `Sha2[224]`, `Sha2[256]`, `Sha2[384]`, `Sha2[512]`  funkcja skrótu  brak  `javaBaseProvider`, `soundnessProvider`  224–512
++ row  `Blake3`  funkcja skrótu  brak  `soundnessProvider`  256
++ row  `Sha1`  słaba funkcja skrótu  `permitDeprecatedCrypto`  `javaBaseProvider`, `soundnessProvider`  160
++ row  `Md5`  słaba funkcja skrótu  `permitDisallowedCrypto`  `javaBaseProvider`, `soundnessProvider`  128
++ row  `Murmur3`  szybka funkcja skrótu  `permitNonCryptographicHashes`  `soundnessProvider`  128
++ row  `Crc32`  suma kontrolna  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
++ row  `Crc64`  suma kontrolna  `permitNonCryptographicHashes`  `soundnessProvider`  64
++ row  `Adler32`  suma kontrolna  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
+
+% 1 1 0 04869358e191f7bb18c85aea1ee80ac5
+
+@ 0 1 0 1faa33dfae5768e41e5a39bfa2161fa8
++ Zezwolenia importuje się z pakietu `cryptoPermits`.
+
+@ 0 5 0 117e9111fd9ba0df1640158f21aa2a49
++ `javaBaseProvider` używa `MessageDigest` z JDK tam, gdzie on istnieje. Poza JVM go nie ma i
++ ten sam import wybiera wtedy implementacje MD5, SHA-1, SHA-2 i CRC-32 w czystej Scali,
++ zweryfikowane bajt po bajcie z implementacjami JDK. Kod, który haszuje, wygląda więc tak samo i
++ daje te same skróty na JVM, w przeglądarce i wewnątrz komponentu WebAssembly.
+
+@ 0 1 0 1e7eb70eb97d34861988d751a4909248
++ ### Algorytm w typie
+
+@ 0 3 0 0f01e536c160957e0fcdaee278cd4de8
++ Skrót ma swój algorytm w typie, jak w `Digest in Sha2[256]`. Tam, gdzie oczekiwany typ już
++ mówi, który algorytm jest potrzebny, `digest` nie musi go nazywać. Pole zadeklarowane z tym
++ typem ustala, co oblicza `digest`:
+
+% 2 1 0 0c90edb7390e936e13e7fac9d1e3cb52
+
+% 0 1 0 0db6db932cfdec6015d8519234ec30c2
+
+% 0 1 0 090f44818e2910fc020cb51e404d9cbe
+
+% 0 1 0 17260d0c69e2727f07aa834048364f38
+
+% 1 1 0 044c5ccab1df04bf14dcbdaaaef02b28
+
+% 3 1 0 1d9fea0ce4aaa7651bf7ce7adf7af9b4
+
+% 4 1 0 129643664d63496b0a79665660723633
+
+% 5 1 0 1731960ef5552ee8158c068d011fd6c3
+
+% 0 1 0 04ed00f2458a961607476aa76e160b6c
+
+% 1 1 0 04b34241adb1477815ad12c202ed6d3c
+
+@ 0 3 0 08a5035380e864a10d50d1f4f133ecb1
++ Ten wzorzec obowiązuje wszędzie. Skróty, HMAC-i, klucze i podpisy to bajty z parametrem typu
++ dla algorytmu, który je wytworzył. Wartości z jednego algorytmu nie można przekazać tam, gdzie
++ oczekiwany jest inny, a algorytm rzadko trzeba zapisywać dwukrotnie:
+
+% 2 1 0 09147aa6117b9f540a6ed985e4bfc481
+
+% 3 1 0 15056d948c240faf18412bab5aed0b78
+
+% 4 1 0 0782695a4767ba6f17d9fb930be54123
+
+% 5 1 0 04f5544362d8630903446ee40cf91a5b
+
+% 0 1 0 19eabbbed274830c1e8305e72418c21d
+
+% 1 1 0 1d6c37df0fd5b96b0d0a536a320be52b
+
+@ 0 1 0 18057ef8b15e696d1280c5570e363d9d
++ [Kryptografia](cryptography.md) opisuje HMAC-i, klucze i podpisy.
+
+@ 0 1 0 1a53c93c9974d354007b02e0221f0726
++ ### Haszowanie własnych typów
+
+@ 0 2 0 01cbb29d3d86ae9003913fd70788fdac
++ Każda wartość, którą da się sprowadzić do bajtów, pozwala obliczyć swój skrót. Klasa case
++ derywuje to ze swoich pól, więc ustrukturyzowaną wartość haszuje się jako całość:
+
+% 2 1 0 0e179d9bf265535400a95a388fe8a091
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 1 1 0 1ab91711beb1ccc002d59cea420ff508
+
+% 3 1 0 1b326a3996312c311aa56bcb72e25bdb
+
+% 4 1 0 041fa391dc5f00210018a05510abd773
+
+% 5 1 0 072543e0666e9e350ad12485286ff453
+
+% 0 1 0 0d32f2081c79269b08a9d0588216a9c7
+
+% 0 1 0 16f57d632bbf9b141bbdad27b7b29663
+
+% 1 1 0 1dbdee16dd41b3df1e3cd9cad8c763c0
+
+@ 0 2 0 1c10252842e178ad056604035c0abbda
++ Ze skrótu też można obliczyć skrót, więc hasz można włączyć do większej struktury i haszować
++ ponownie.
+
+@ 0 1 0 04fa6e4c8611f9501ecccfd354d7c079
++ ### Haszowanie strumienia
+
+@ 0 4 0 157931921f633ae60071b8274fa771cd
++ Dane zbyt duże, by je przechowywać, haszuje się w miarę ich przepływu. Skrót akumuluje się po
++ kolejnych porcjach i przenosi częściowe bloki przez granice między nimi. Wynik jest więc
++ identyczny niezależnie od rozmiarów, w jakich przychodzą porcje, i jest skrótem całego tekstu
++ z przykładu powyżej:
+
+% 2 1 0 1d27f76ad6a0ff3c0f63d7932dcf787a
+
+% 0 1 0 0897db6080f6cf731dbf4b2174711cdf
+
+% 1 1 0 0ef672bd515a114007173140441eec3f
+
+% 3 1 0 1a4f3bfff85c34f2067463f122bda895
+
+% 4 1 0 05eea5147d859c4e038a5e1c20dc0865
+
+% 5 1 0 05abc068e077b4451d19ec4acb2777e6
+
+% 0 1 0 14a4985c0b4e90e5006ed8243b2c3aab
+
+% 1 1 0 1b5ed090ac73324819efa3397fb2b90d
+
+@ 0 3 0 1ca3a3cd78a37a69025eb559bc2bee3f
++ To pozwala obliczać skrót [strumienia](streams.md) w ograniczonej pamięci. Dlatego haszowanie
++ składa się z [kompresją](compression.md) i [szyfrowaniem](cryptography.md) w jednym potoku,
++ bez przechowywania danych między nimi.
+
+@ 0 4 0 19157a4ad8b9429119c3ada92e2b3fa3
++ `checksum` oblicza skrót tego, co stoi *za* wartością: bajtów strumienia, a dla ścieżki w
++ [systemie plików](filesystem.md) – zawartości pliku lub katalogu. Suma kontrolna katalogu
++ obejmuje jego zwykłe pliki, w kolejności ich ścieżek względnych wobec niego, a każdy wnosi swoją
++ ścieżkę względną i zawartość. Zatem:
+
+@ 0 3 0 0df93e95261ea2ce04107f3b599d6a7d
++ - zmiana nazwy, przeniesienie lub edycja zmienia sumę kontrolną;
++ - dwa katalogi zawierające te same pliki mają tę samą sumę kontrolną, gdziekolwiek się
++   znajdują;
++ - pusty katalog też ma sumę kontrolną.
+
+@ 0 1 0 108561bf68d898140f87d8e587b67dcc
++ To jest tożsamość, według której kompilacja kluczuje swoje pamięci podręczne:
+
+% 2 1 0 121229e22a6edff51d635681e81d7deb
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 16dc30250898bc2409d813344f20c8e0
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 15cca29ca309f5d3042daa91410e01ba
+
+% 0 1 0 1638390c160220060c5a503dfeb10856
+
+% 0 1 0 0b235343a7b14ae1162136fb1d457041
+
+% 1 1 0 0877e096a7d6dc2d081bebc6ff54eadc
+
+@ 0 1 0 1c6f132aea0085ca06792abdee9a023b
++ ### Przedstawianie skrótu
+
+@ 0 2 0 13a25dd9d1d3409a1bafcb5b5dff6f49
++ Bajty skrótu zapisuje się w dowolnym kodowaniu base: szesnastkowo do wyświetlania lub w
++ Base64 tam, gdzie muszą być zwięzłe:
+
+% 2 1 0 04297c48ec0a30571e71ceb86d1a7d8c
+
+% 3 1 0 1dc26f4c974ae7ff16170e4075ce356a
+
+% 4 1 0 056a81bbe517eb41017aab5ece17e011
+
+% 5 1 0 1592af61a99bcabe1cedf059b49d56e3
+
+% 0 1 0 05b1da089cc322f0121d2b13f85a919a
+
+% 0 1 0 0826585afb8117bb0371f858000d96e8
+
+% 1 1 0 068139a71d8dcfaf0714fe09521c0412
+
+@ 0 1 0 007803f5ef8e295d0925cd51465da111
++ ### Skróty samoopisujące
+
+@ 0 5 0 0bcf3605c9dafc76134810b698d09aa2
++ Bajty skrótu nic nie mówią o algorytmie, który je wytworzył. Skrót przechowywany lub wysyłany
++ samodzielnie może sprawdzić tylko coś, co już wie, jak go utworzono.
++ [Multihash](https://multiformats.io/multihash/) poprzedza skrót kodem jego algorytmu i jego
++ długością, więc opisuje sam siebie. Pamięć adresowana treścią i zbudowane na niej protokoły
++ rozproszone wymieniają multihashe:
+
+% 2 1 0 16d14fd118107e0d02a11c438e81268e
+
+% 3 1 0 05d235441be3f10a088c5ba0dd1927f8
+
+% 4 1 0 00c3475ef740692718ea72358ce369f8
+
+% 0 1 0 1ed6c81d3aa7a6d21833b244ee80ea6f
+
+% 1 1 0 1a1a3be10fa2aa2e02d0c03caa6c0c1c
+
+@ 0 3 0 19ac15dab91b06691596c9c6c5302ef1
++ Dwa bajty `12` i `20` mówią, że następuje skrót SHA-256 o długości trzydziestu dwóch bajtów.
++ Kod algorytmu pochodzi z typu skrótu, więc multihash nie może deklarować innego algorytmu niż
++ ten, który go obliczył.
+
+@ 0 1 0 06795db86f0750de1579506f6f70a11f
++ ### Słabe algorytmy
+
+@ 0 2 0 139497ee199d2026125970e83dc6ce4e
++ MD5 i SHA-1 są złamane pod względem bezpieczeństwa i pozostają tylko dla kompatybilności. Bez
++ zezwolenia w zasięgu żaden z nich się nie kompiluje:
+
+% 2 1 0 0e05009dd755e48a1e0000d83de7800d
+
+% 3 1 0 135109a58e1d3f8907b4d632aace2740
+
+% 4 1 0 01b49bb7bab10424180d9df21ff837f4
+
+% 5 1 0 0b6076da5888fee018c5e40b33e651a6
+
+% 0 1 0 159d38339884d7a102a739d5cdb038a7
+
+% 1 1 0 15e13858de4794f212bf67e8359827b8
+
+@ 0 1 0 1cb8ed3d6c7ac8e3151eb79503f1d1e5
++ Zaimportowanie zezwolenia czyni wybór widocznym i świadomym:
+
+% 2 1 0 047ec82c2ec2b21c0ca4da38e707f57f
+
+% 3 1 0 1b48ab52a48528f7170da182d491bd80
+
+% 4 1 0 1c33ec9ec4b136dd1455f2c500c0f0de
+
+% 5 1 0 15a94a88d9fa279f0eb03adda8d7de12
+
+% 0 1 0 0a891a7506f473ff0f4f5e4e168f2ac1
+
+% 0 1 0 17cbf9395ac8d81f062726bb951d99b9
+
+% 1 1 0 0758cd5d5e17299c07e00d085ffb2823
+
+@ 0 1 0 03721ecf103c152f173c948ffc24d0db
++ Silne algorytmy nie wymagają zezwolenia.
+
+@ 0 1 0 0c578595c9edc84f059f74c44e9f7b88
++ ### Sumy kontrolne
+
+@ 0 3 0 14d9894022c89c7e0e624a30abef91ad
++ `Crc32`, `Crc64` i `Adler32` to nie funkcje skrótu, lecz sumy kontrolne. Wykrywają
++ przypadkowe uszkodzenie i przed niczym nie bronią. Kryją się za własnym zezwoleniem, które
++ przyznaje jedynie, że nie ma się przed żadnym przeciwnikiem do obrony:
+
+% 2 1 0 10c65cad82b9b00d173f3181f9d26eff
+
+% 0 1 0 0e1affdd8762138d14054d267c5066b2
+
+% 1 1 0 11eee7a5cd049a13104bbf9b4dbcf38b
+
+% 3 1 0 0d3f8cd0cf509ab51f8a4a667fe5c69c
+
+% 4 1 0 0db860accc10e28b17f08bd31bdb92ad
+
+% 5 1 0 11a68be4e46004e613218b40a519c7d1
+
+% 0 1 0 17b9a0adf3d227d204154b0cd7d0eea4
+
+% 1 1 0 1960255c26787d9c12fdd2505a7c094b
+
+@ 0 2 0 06e24b0efbadf4eb14fb142eeb763743
++ Sumę kontrolną źródła bajtów, takiego jak plik lub pobierany zasób, oblicza się bez
++ przechowywania go w pamięci, obliczając skrót jego strumienia w miarę przepływu, dokładnie tak
++ jak `checksum` powyżej.
+
+@ 0 1 0 0ea19f77d3e36b38190baaaa6d101f58
++ ### Szybkie haszowanie
+
+@ 0 5 0 17175c490b955c990b436f7895afbc73
++ `Murmur3` to MurmurHash3 w wersji 128-bitowej. Nie jest sumą kontrolną, ale nie jest też
++ kryptograficzny. To funkcja skrótu stworzona do tablic haszujących,
++ [filtrów Blooma](bloom-filters.md) i shardingu, gdzie dane wejściowe nie są wrogie, a rundy
++ skrótu kryptograficznego oznaczałyby kilkukrotnie więcej pracy bez żadnej korzyści. Kryje się
++ za tym samym zezwoleniem co sumy kontrolne, a jego wynik jest bajt po bajcie taki, jaki
++ wytwarza `murmur3_128()` z Guavy:
+
+% 2 1 0 1a569264dcdd63170e3e7a80a7ce35fd
+
+% 3 1 0 133ee93e3e417fbe15344558a154e6e0
+
+% 4 1 0 0d0e7fabb3f13112011963330646af96
+
+% 5 1 0 07eedef8b02f74420920564cd61dbc88
+
+% 0 1 0 077d579a30a9106e126e400de2dad2d9
+
+% 0 1 0 1a434c9963836f390e07bb803fa2e716
+
+% 1 1 0 1b5c9cea17c37cf91c5df11660cfef86
+
+% 0 1 0 11fb4a7b5d9b2ee802bd9a27a07cb1e1
+
+@ 0 2 0 1d3d8f926c47313e1912f569edd20957
++ `Blake3` jest zaimplementowany w czystej Scali przez `soundnessProvider` i oferuje trzy tryby
++ algorytmu:
+
+% 2 1 0 18d59ede3b95d132174508c78b6b6826
+
+@ 0 6 0 021526f533a4198010b1b050bddca364
++ column  Tryb
++ column  Wejście
++ column  Zastosowanie
++ row  funkcja skrótu  dane  zwykły skrót
++ row  funkcja skrótu z kluczem  klucz i dane  uwierzytelnianie komunikatów
++ row  wyprowadzanie kluczy  napis kontekstu i materiał klucza  wyprowadzanie kluczy
+
+% 1 1 0 04658d52f0bbd7a01e6feb0d266335cd
+
+@ 0 2 0 1c7b27457a701ace1751f2091de68b38
++ Wszystkie trzy są sprawdzane z oficjalnymi danymi testowymi, dla każdej długości wejścia, jaką
++ te dane obejmują, więc implementacja jest zweryfikowana, a nie jedynie przetestowana pod kątem
++ spójności z samą sobą.
+
+@ 0 2 0 112277702b3a19d50926e89deb6e61b9
++ Jej wynik jest rozszerzalny. Skrót BLAKE3 można pobrać o dowolnej długości, nie tylko 256
++ bitów, co czyni go użytecznym zarówno do wyprowadzania kluczy, jak i do haszowania.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 1 0 088c2c1c35ab43cd0f6b3b05c94267cb
++ - [UUID](uuid.md), [pakowanie](packaging.md) i [kontenery](docker.md) identyfikują wartości
++   po ich skrótach.

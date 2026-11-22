@@ -1,0 +1,42 @@
+orthant 2 language
+
+@ 0 1 0 163676075f1e9927052753894fd4a055
++   entry .Bits   bity, które niesie każdy znak kodowania, jako typ: `Serialization.Bits[Hex]` to `4`
+
+% 0 1 0 0d2aab38ee569ecc0f5bcc34eb049c93
+
+@ 0 6 0 0a795d45706928b61794a1ff1025f7ee
++       `Alphabet(chars, padding)` to jedyny sposób utworzenia alfabetu, a `chars` musi być
++       literałem napisowym, ponieważ jest sprawdzany podczas kompilacji wywołania: musi mieć
++       dokładnie `2^bits` znaków dla danego kodowania i jeden więcej na dopełnienie, gdy
++       `padding` wynosi `true`; żaden znak nie może wystąpić dwukrotnie; a każdy znak musi być
++       znakiem ASCII. Alfabet, który narusza którykolwiek z tych warunków, się nie kompiluje, więc
++       błędny alfabet nie może istnieć w czasie wykonania. Alfabet jest czysty (`caps.Pure`), więc
++       nie może przechwycić zdolności.
+
+@ 0 23 0 1e225fc8f81c7002092d64c65fbc4b09
++   entry .serialization     przesyła bajty przez alfabet jako etap strumienia, dając tekst
++       Given `Ductile`, dzięki któremu `via(alphabet)` serializuje `Stream[Data] over Credit`
++       do `Stream[Text] over Credit`. Zapotrzebowanie jest przeliczane według dokładnej
++       arytmetyki podstawy, więc żądanie 1024 znaków szesnastkowych w dół potoku przekłada się
++       na żądanie 512 bajtów w górę potoku; dopełnienie, jeśli alfabet je ma, jest zapisywane
++       po zakończeniu strumienia.
++   entry .deserialization   przesyła tekst przez alfabet jako etap strumienia, dając bajty
++       Given `Ductile`, dzięki któremu `via(alphabet)` deserializuje `Stream[Text] over Credit`
++       do `Stream[Data] over Credit`. Potrzebuje `Tactic[Serialization.Error]`, zgłaszanego dla
++       znaku spoza alfabetu, a instancja przechwytuje tę taktykę. Grupy i dopełnienie
++       podzielone między porcje są przenoszone.
++   entry .apply        `Alphabet("…", padding)`: alfabet z literału napisowego, którego rozmiar i znaki są sprawdzane w czasie kompilacji
++       Trzeci argument podaje `#tolerance`. Kodowanie jest brane z oczekiwanego typu albo
++       zapisywane jako `Alphabet[Hex]("…", false)`.
++   entry #chars        znaki kodowania w kolejności wartości, a po nich ewentualny znak dopełnienia
++   entry #bits         bity, które niesie każdy znak, wynikające z kodowania: 4 dla `Hex`, 6 dla `Base64`
++   entry #padding      czy wynik jest dopełniany do pełnej grupy ostatnim znakiem `#chars`
++   entry #tolerance    dodatkowe znaki przyjmowane przy deserializacji, przypisane do wartości, którym odpowiadają
++       Pusty dla alfabetu ścisłego. Dla tolerancyjnego zwykle jest to odwrotność ścisłego
++       alfabetu drugiej wielkości liter, tak jak dla `hexUpperCase` jest to
++       `hexStrictLowerCase.inverse`.
++   entry #apply        znak dla wartości, liczonej od zera
++   entry #invert       wartość znaku albo `Serialization.Error` na podanej pozycji
++       `alphabet.invert(position, char)` wyszukuje znak w `#inversions`; znak bez wartości
++       zgłasza `Serialization.Error(position, char)`, więc potrzebna jest

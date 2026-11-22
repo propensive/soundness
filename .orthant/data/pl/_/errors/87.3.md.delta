@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 0df6dd72c62ee0d3050edcc758a339d9
++ # `↯/s.87.3` – Brak instancji `Encodable in Query`
+
+@ 0 2 0 1c38a6d5fb35c64704ca47c8548d470f
++ Zgłaszany w czasie kompilacji, gdy wartość nie ma instancji opisującej, jak staje się parametrem
++ zapytania.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Przyczyna
+
+@ 0 2 0 1d715ade9bece6e4090a4b6f44403d5f
++ Wartości trafiają do łańcucha zapytania przez instancję `Encodable in Query`, więc typu, który
++ jej nie ma, nie da się zakodować.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Przykładowy komunikat
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 02537b88d2a9764301fa1580ca7f6ee3
+
+% 1 1 0 19edf33b8ca6aade0e85aa8d5f61643e
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Rozwiązanie
+
+@ 0 1 0 01b75708e81af6de1c15c4914ec91350
++ Należy zdefiniować instancję dla tego typu albo przekonwertować wartość na typ, który ją ma.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Zobacz też
+
+@ 0 1 0 0a4fea4398cc22eb06d923a346595883
++ - Źródło: `lib/legerdemain/src/query/legerdemain.internal.scala`

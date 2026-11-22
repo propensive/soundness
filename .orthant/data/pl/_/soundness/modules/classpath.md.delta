@@ -1,0 +1,296 @@
+orthant 2 language
+
+@ 0 1 0 044852d4c8c8b653044b520faf5e7181
++ ## Ścieżki klas
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 2 0 19fdab46411282e20bcb4f4f57d6454a
++ [Ścieżka klas](https://en.wikipedia.org/wiki/Classpath) JVM i jej
++ [classloadery](https://en.wikipedia.org/wiki/Java_Classloader) są reprezentowane jako wartości.
+
+@ 0 3 0 0e0ad309a1aaf9cb0150d74ea0258eb2
++ Zasób dołączony do ścieżki klas odczytuje się przez referencję sprawdzaną przez kompilator.
++ Ścieżka klas jest [niemutowalną][niemutowalny] listą swoich wpisów – katalogów, plików JAR i
++ środowiska uruchomieniowego Javy – a listę tę można zbadać. Blok kodu można wykonać pod wybranym
++ classloaderem.
+
+@ 0 1 0 0733ffea3bf9da1f1a0dcf06843dbc3f
++ ### O ścieżce klas
+
+@ 0 5 0 1416a91ae24919e3166acd1d42905a3a
++ Program, który prosi o dołączony plik danych, taki jak szablon, tablica wyszukiwania czy ikona,
++ pyta ścieżkę klas, która przeszukuje katalogi i archiwa, z którymi program uruchomiono. API Javy
++ służące do tego zwraca `null`, gdy zasobu brak, oddaje surowy `InputStream` i udostępnia
++ hierarchię classloaderów jako mutowalny stan współdzielony między wątkami. Nic z tego nie jest
++ typowane. Brakujący zasób wychodzi na jaw dopiero przy dereferencji `null`.
+
+@ 0 5 0 1a7a76f9a4e123b218edfa603a8f5a87
++ Tutaj zasób ścieżki klas jest [ścieżką](paths.md) jak każda inna i odczytuje się go tym samym
++ `read` co plik. Ścieżka klas jest niemutowalną wartością, której wpisy można wyliczyć.
++ Classloader wybiera się jawnie, jako [wartość kontekstową][wartość kontekstowa], a nie sięga się
++ po niego niejawnie. Typowane wpisy i classloadery dają
++ [uczciwe sygnatury](../../philosophy/honest-signatures.md) części JVM, która zwykle ich nie ma.
+
+@ 0 3 0 060498e946852ecc0a90dcf7477e7e3b
++ Wszystko pochodzi z pakietu `soundness`. Pozostałe importy wybierają classloader,
++ [strategię](errors.md#choosing-a-strategy) obsługi błędów i dostęp do właściwości systemowych, a
++ także pozwalają przykładom wypisywać wyniki:
+
+% 2 1 0 12576e583010dd7005c3bee03121485f
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 2 0 1a2701486634ce3b1d2fda2bbdd8d1de
++ Większość przykładów na tej stronie zależy od maszyny, na której są wykonywane, więc są
++ kompilowane, ale nie uruchamiane.
+
+@ 0 1 0 1129ecc617dc946b192cd5424fc1fb30
++ ### Odczyt zasobu
+
+@ 0 4 0 02df45c0252928fc10fa3d3ac2d30547
++ [Interpolator][interpolator] `cp"…"` nazywa zasób na ścieżce klas i sprawdza referencję podczas kompilacji
++ kodu. Wynikiem jest `Resource`, który odczytuje się jak każde inne źródło: jako surowe bajty,
++ jako tekst lub jako sparsowaną wartość. Biblioteka Scali jest na każdej ścieżce klas, więc jedna
++ z jej klas tworzy zasób, który jest zawsze obecny:
+
+% 2 1 0 1eeda4de8ea6aa5f0bd15c77404f41dd
+
+% 0 1 0 17c9b532826d3b7a1a20472d2ac68a8f
+
+% 1 1 0 0158fc555cc1ccdf1d8542282f3370ba
+
+@ 0 2 0 184887244419d4b011c1d9eda446d850
++ Zasób jest rozwiązywany względem classloadera w zasięgu, więc odczyt nie wymaga ręcznie
++ przekazywanego uchwytu. Ścieżkę zasobu można też zbudować z tekstu w
++ [czasie wykonania][czas wykonania], dekodując go:
+
+% 2 1 0 111f155d4b43aa2e0e8cbcadde274b25
+
+% 0 1 0 06554551a7f4041d11fdbba2f0af049f
+
+% 1 1 0 1900a8f7662808ff148667493570b4ab
+
+@ 0 2 0 031b913a8bbc20661bd0e150a7d228c4
++ Sprawdzenie w czasie kompilacji odbywa się względem ścieżki klas kompilatora. Referencja do
++ zasobu, którego tam nie ma, jest błędem kompilacji:
+
+% 2 1 0 196e1bdce2e9038f0e39689b06e68f6f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 10d5c94e6150ee1312ecdf946033bf47
+
+% 1 1 0 12d441b353a75f2c1d8ce0de67f7db3f
+
+@ 0 2 0 108c68ae0eeadd20168626f5b7e378d2
++ Ścieżka ścieżki klas jest też *substantiable*. Jej istnienie można sprawdzić w czasie wykonania
++ przed odczytem, więc program może sprawdzić obecność opcjonalnego zasobu, zamiast obsługiwać
++ niepowodzenie.
+
+@ 0 1 0 0ed4d01721f47d360fd852cd5b830b00
++ ### Wybór classloadera
+
+@ 0 4 0 040a699060efc4f8047f82aa4c17f305
++ Referencja do zasobu nazywa ścieżkę, a nie rzecz. Dwa classloadery mogą rozwiązać tę samą
++ ścieżkę do różnych zasobów albo jeden może nie rozwiązać jej do niczego. Wybór nie może być
++ zawarty w referencji i pochodzi z kontekstu, w którym zasób jest odczytywany. Decyduje
++ `given Classloader` w zasięgu, wybierany przez import:
+
+% 2 1 0 197ba2d4b1e8585d09169a490887b09f
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 1dca8f5a278525620f22995291834708
+
+% 1 1 0 061dd84fb952cd760b92ce69cda8ca68
+
+@ 0 1 0 179718e7cc73b21f0c3a8863a7effea7
++ Pakiet `classloaders` zawiera standardowe wybory:
+
+% 2 1 0 1cde4b6910e75510032000f693131bc1
+
+% 0 1 0 1ca77613e7a1c24100f8bf0c68a101b5
+
+@ 0 5 0 1986545eda1182d20907ae0eba332739
++ column  Rozwiązuje przez
++ row  `threadContextClassloader`  classloader kontekstowy bieżącego wątku, odpowiedni dla większości aplikacji
++ row  `systemClassloader`  systemowy classloader JVM
++ row  `platformClassloader`  platformowy classloader JVM
++ row  `scalaClassloader`  classloader, który załadował bibliotekę Scali
+
+% 1 1 0 158fc6db6a75fe1f0921e4b5bc705e16
+
+@ 0 1 0 1fd91bd96ca640581e3c0b23ccf49178
++ ### Badanie ścieżki klas
+
+@ 0 3 0 11b82f10368f43261cdc8368bb43a69b
++ `LocalClasspath` to ścieżka klas jako lista wpisów. Ścieżka klas działającego programu jest
++ wartością właściwości `java.class.path`, która dekoduje się do niej. Odczyt właściwości wymaga
++ `System` w zasięgu, zaimportowanego powyżej:
+
+% 2 1 0 026d85496417416a0d51592847c4b5f6
+
+% 0 1 0 0cd3b307b85d5d170406c423c30f24b4
+
+% 1 1 0 027ee494ff156fe814be540fbece62ef
+
+@ 0 1 0 082c3e4d744f391f03e036e24226ea80
++ Jej `entries` są typowane jako jeden z czterech rodzajów `Classpath.Entry`:
+
+% 2 1 0 1c18bb0de3f8dbc90d64daf281922c2b
+
+@ 0 8 0 082ac8d483bf0df91aa5091a1ce9e1f5
++ column  Wpis
++ column  Reprezentuje
++ column  Jego `path`
++ column  Z `classify`
++ row  `Directory(path)`  katalog klas i zasobów  katalog  katalog lub ścieżka, która jeszcze nie istnieje
++ row  `Jar(path)`  archiwum  plik archiwum  plik zakończony stopką archiwum ZIP
++ row  `Url(url)`  lokalizację zdalną  `Unset`  nigdy
++ row  `JavaRuntime`  własne klasy JDK  `Unset`  nigdy
+
+% 1 1 0 0d347a2ad23e8f370ef04f3b47e6a345
+
+@ 0 2 0 1d585ae863c7d30c0ac8ab955dbdbbc5
++ Wiadomo, że wpisy *lokalnej* ścieżki klas nie są adresami URL, więc dopasowanie po nich nie
++ musi obsługiwać tego przypadku:
+
+% 2 1 0 0521b6e831c478bd1768131fb1c1f531
+
+% 0 1 0 0c7d26c1528fd15d02a36297d1e14767
+
+% 0 1 0 1a16b09eba901cbf07d5c28fcc3f05d7
+
+% 0 1 0 1fc31d78fd6e31561075bd6fda1fe629
+
+% 0 1 0 1c2f031eff7dcbd41bdc26b57a257c39
+
+% 1 1 0 14faaeb8ab9bdede076e1dc48418d589
+
+@ 0 4 0 06efb10d41b76dbd0f67271eeea546a0
++ Wpis jest klasyfikowany według tego, co jest na dysku, a nie według nazwy.
++ `Classpath.Entry.classify(path)` czyni nieistniejącą ścieżkę `Directory`, ponieważ może się nim
++ stać. Plik kończący się stopką ZIP czyni `Jar` – tym właśnie jest plik wykonywalny launchera z
++ przedrostkiem shebang, choć jego nazwa nie kończy się na `jar`. Dla każdego innego pliku zgłasza
++ `Io.Error`.
+
+@ 0 3 0 1ae82214b8d8c4b41c2cac6174d18f78
++ `LocalClasspath.running` to ścieżka klas, z której faktycznie załadowano działający proces:
++ wpisy `URLClassLoader`, następnie wpisy jego rodziców, a potem `java.class.path`, w kolejności i
++ każdy raz. Potrzebuje jej narzędzie, które kompiluje lub ładuje kod względem samego siebie:
+
+% 2 1 0 1288708b859555401e2b05075c970c5f
+
+% 0 1 0 16dc30250898bc2409d813344f20c8e0
+
+% 0 1 0 016b9edbc485bb8c0a2a61070f5d76a0
+
+% 0 1 0 0b5d58a3fc847b18154564de0ffb4f9a
+
+% 1 1 0 1b9cf1ad15dd939d0a992588f4eb10a2
+
+@ 0 1 0 10e9dc441967f411156500b16118eb13
++ ### Ładowanie usług
+
+@ 0 3 0 1365fb497a9ea68302883a50e3899d1f
++ Mechanizm [dostawców usług](https://en.wikipedia.org/wiki/Service_provider_interface) JVM
++ znajduje implementacje interfejsu zadeklarowane na ścieżce klas. `services` zwraca je,
++ otypowane typem usługi:
+
+% 2 1 0 1b02c4a280dc0b3814d5c3c3805f8d15
+
+% 0 1 0 1adb0437e185ecbb0b55d65576eca721
+
+% 1 1 0 07d40b62512ee3ef0d096c6fecb2e349
+
+@ 0 1 0 148359fe13cec8bd13e93eac7a0210f4
++ ### Budowanie classloadera
+
+@ 0 6 0 1d66c056eb6ee87402ad2a94f0a8fbb3
++ Ścieżka klas buduje classloader nad wybranym rodzicem, którym jest loader platformowy, o ile nie
++ poda się innego. *Delegacja* loadera określa, która strona wygrywa, gdy zarówno on, jak i jego
++ rodzic oferują klasę o tej samej nazwie, i zawsze podaje się ją jawnie. `Deferential` to zwykła
++ kolejność JVM, która ustępuje rodzicowi, a więc współdzieli klasy rodzica z ładowanym kodem.
++ `Preferential` przedkłada wpisy samej ścieżki klas, co izoluje wersje bibliotek wtyczki od
++ wersji jej gospodarza:
+
+% 2 1 0 133d11598ff2ce670029e59b0c2443db
+
+% 0 1 0 1d277d6a58b7e76e1cde4e092027ff08
+
+% 0 1 0 0e7f9bc9f96eb1ce0b48051dba44c98b
+
+% 0 1 0 17ddd2261b4e854b066cffb3d51c1f1a
+
+% 0 1 0 16267cd8d89ecef11f8b2c3fb7f795f0
+
+% 1 1 0 08e1415f1790c6c2113a110842275481
+
+@ 0 2 0 18be3087d7a432820831ae11b749fb50
++ Tutaj wtyczka widzi kontrakt, względem którego ją napisano, przez swojego rodzica, a wszystko
++ inne, co dołącza, jest jej własne.
+
+@ 0 2 0 025f5385eb7641081c4b0d107f4dbb7b
++ Zasób odczytuje się z loadera bezpośrednio, po ścieżce. Wynikiem jest wartość
++ [opcjonalna][opcjonalny], która niczego nie przechowuje, więc odczyt może się znaleźć w bloku
++ `safely`:
+
+% 2 1 0 02dfd8afcfa49a37041e087bf52c0bb5
+
+% 0 1 0 1370ca8e4ba5623e1672956a4c37d6c5
+
+% 1 1 0 19b488934dc03135107cb6e310b39c57
+
+@ 0 1 0 129ec83e1120d5bf02156a20f5d46d00
++ ### Wykonywanie pod classloaderem
+
+@ 0 3 0 07f446333c2766ca1778035e19aaeca0
++ Wartość `Classloader` wykonuje blok, instalując siebie jako classloader kontekstowy wątku, a
++ potem przywraca poprzedni. Ogranicza to zmianę classloadera dokładnie do kodu, który jej
++ potrzebuje, takiego jak ładowanie wtyczki:
+
+% 2 1 0 1ec4466ccb692b93017ce8f07a58c3d9
+
+% 0 1 0 1fc6b850d344aee2077c7010734c134e
+
+% 0 1 0 1303c281e918d24010ef1526dc270136
+
+% 1 1 0 08f3772224f040f50f7d8a5527aa4034
+
+@ 0 2 0 16389d814d568d6f1ce43ed8eb78d23f
++ `Classloader[T]` znajduje classloader, który załadował typ. W ten sposób sięga się do
++ classloadera wtyczki z jednej z jej klas.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 3 0 0676131f5d53467b14ceb83487b33d2f
++ - [Ścieżki](paths.md) opisują typy ścieżek, które współdzieli zasób ścieżki klas.
++ - [Strumienie](streams.md) opisują `read` i postaci, w jakich odczytuje się zasób.
++ - [Ślady stosu](stack-traces.md#resolving-frames-to-their-source) rozwiązują ramki przez
+
+% 0 1 0 1be5ef2bbc7b1e0f115f98d64c8b208a
+
+@ 0 3 0 120207ccb5abc5710534062fe4fed37b
++ - [Kompilator](compiler.md) kompiluje kod względem ścieżki klas.
++ - [Pakowanie](packaging.md) buduje pliki JAR, które stają się wpisami ścieżki klas.
++ - [Środowisko](environment.md) opisuje właściwości systemowe, z których odczytuje się ścieżkę
++   klas.

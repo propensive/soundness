@@ -1,0 +1,857 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 05ea6290cf383b1415d25369611b31e6
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0f4c16a21204bad9072e5e555bd0e99e
++ info   typowane konwersje z tekstu i innych form: `as[T]`, ekstraktor `As` i ich klasy typów
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 1e0f174c3b1dfb1a02e93d38ac1035e9
++     _Distillate_ zamienia luźne wartości – argumenty wiersza poleceń, zmienne środowiskowe,
++     przechwycenia wyrażeń regularnych, pole sparsowanego dokumentu – w typowane i czyni sposób,
++     w jaki każda konwersja może zawieść, widocznym w jej typie. Robi to za pomocą trzech klas
++     typów, z których każda ma własny tryb niepowodzenia:
+
+@ 0 5 0 1f40c8e4af3c372b0131c492189d8432
++     - `Decodable` odczytuje wartość _z_ formy (`Int is Decodable in Text`) i zgłasza typowany
++       błąd przez `Tactic`, gdy nie może tego zrobić;
++     - `Extractable` konwertuje _w kierunku_ wyniku (`Text is Extractable to Int`) i daje
++       `Unset`, gdy odmawia, czego potrzebuje dopasowanie do wzorca;
++     - `Irrefutable` konwertuje tam, gdzie nic nie może pójść źle (`Byte is Irrefutable to Int`).
+
+@ 0 2 0 03e046b02184756402acc3ed8e36ca2e
++     Codzienna powierzchnia to dwie nazwy: rozszerzenie `as`, które dekoduje, i ekstraktor `As`,
++     który wyodrębnia we wzorcu.
+
+% 2 1 0 0b5bafb24f15e461180c83d322b978fb
+
+% 3 1 0 0a27c92abba46e151a001ffa0a3c6a77
+
+% 4 1 0 028090d4d24e2d1e0fb1479a17df6561
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 05d3bce67d532d2404eaa96a1aba7f7c
+
+% 0 1 0 0d4fa444f9ea8c421b6dd2ef1fd9559b
+
+% 0 1 0 11d9e8d37bd2051e05fd9b2fd4e3497f
+
+% 0 1 0 0aa9d2abc67dc526112a149d803d0377
+
+% 0 1 0 1e49d9c9e84f2caa0d73fe7c506aa055
+
+% 1 1 0 1d9592f73a83d45301b58585e3ac221f
+
+@ 0 8 0 1e7d2d323cfe691c1fd01ce31c14c789
++     Biblioteka zawiera też elementy wspólne dla wszystkich formatów danych: `Enumerable`,
++     derywowany opis `enum`, którego kodeki każdego formatu używają do nazywania jego przypadków;
++     `Identifiable`, dwukierunkowe odwzorowanie między konwencjami nazewnictwa; `Parsable`,
++     strumieniowy odpowiednik `Decodable`, który odczytuje wartość wprost z czytnika tokenów
++     formatu; trzy polityki `Decodable.Absence`, `Decodable.Nullity` i `Decodable.Fault`, z
++     których korzysta pole `Optional`; oraz `Codecs`, kontekstowy tryb wybierający między
++     derywowanymi a bezpośrednimi (generowanymi) kodekami formatu. Kierunek kodowania,
++     `Encodable` i `value.in[Format]`, należy do `anticipation`, poniżej tej biblioteki.
+
+@ 0 4 0 0533d9d3a406aef00a860caf5c6be16d
++     Dwa pakiety wyboru zawierają givens, które trzeba importować po nazwie, ponieważ
++     `import pkg.*` nie importuje givenów: `truths`, którego pisownie `Truth` dekoder `Boolean`
++     akceptuje obok `true`/`false`, oraz `codecs`, którego trzy tryby wybierają ścieżkę kodeków
++     dla wszystkich formatów naraz.
+
+@ 0 3 0 0feea3bb2d1ca4ed0670ebde16da78c2
++     Biblioteka jest jednym zbiorem źródeł, `distillate.core`, dla każdej platformy. Wszystko
++     jest eksportowane do modułu zbiorczego `soundness`, a pakiety `truths` i `codecs` łączą się
++     z własnymi pakietami modułu zbiorczego.
+
+% 0 1 0 18eee1eb80ef1f0010edb99c2b432c96
+
+% 0 1 0 03feafdbc00573331eeff869629b76bc
+
+% 0 1 0 02d222113c027073070fd840449a835f
+
+% 0 1 0 1126c6cb023dff86198187c9e341670e
+
+% 0 1 0 191417dbb69f19ea1cb2cd8a514fcfa1
+
+@ 0 6 0 1c45b9aa1122046a033c2bd96f1e439e
++ entry .as   dekoduje wartość jako `T` za pomocą `T is Decodable in` jej formy albo konwertuje ją podanym `Irrefutable`
++     `value.as[T]` przywołuje `T is Decodable in F`, gdzie `F` to statyczny typ `value`, i go
++     stosuje. Dekoder zbudowany z `Tactic` (dekodery liczb potrzebują `Tactic[Number.Error]`,
++     dekoder `Boolean` – `Tactic[Truth.Error]`) zgłasza błąd przez nią, więc strategia w
++     zasięgu decyduje, czy nieudane dekodowanie rzuca wyjątek, daje `Unset` pod `safely`, czy
++     się akumuluje. Nic z dekodera nie jest zatrzymywane: wynik jest zwykłą wartością.
+
+% 2 1 0 034b6010bb70de160a362b03ac9011dc
+
+% 3 1 0 0cb66c7984b36d441a4980541933949e
+
+% 4 1 0 009359c5327bcbef19d8213ed069d134
+
+% 0 1 0 025b7e36cf092eed07ca38a2243d52b1
+
+% 0 1 0 0e6e7c2a8394e9ae11d720d91eb96799
+
+% 1 1 0 050c9814b2e13294106f7dc0fb57db1f
+
+@ 0 2 0 1cb95139f4c733000f914945f347f5c2
++     Drugie przeciążenie, `value.as[T](irrefutable)`, przyjmuje `Irrefutable` jawnie, jako
++     zwykły argument, a nie kontekstowy, i go stosuje; nie może zawieść.
+
+@ 0 1 0 186fe446a4d0935816ea357c775720f2
++ entry .As   ekstraktor `As[T]`, który dopasowuje wartość dopasowywaną dającą `T` i wiąże ją
+
+% 1 1 0 00638b1b4bb4bd9214328d369354085f
+
+@ 0 4 0 0752560b1e45fbda18bd92af6e210aac
++       `As[T](binding)` we wzorcu przywołuje `scrutinee.type is Extractable to T` i pasuje, gdy
++       daje on wartość, a przechodzi do następnego przypadku, gdy daje `Unset`. Ponieważ jest
++       zwykłym ekstraktorem, zagnieżdża się w dowolnym wzorcu: w grupach wzorca `r"…"`, wewnątrz
++       wzorca listy albo obok innych ekstraktorów.
+
+% 2 1 0 011310976d1797cf0936c3f76a72c20c
+
+% 3 1 0 10d279ab671d4d2918abffb9fc51e092
+
+% 0 1 0 171b8ae5b22e903717e5c3d1f02a7c7a
+
+% 0 1 0 1b0d3ef135a04dd0037a2aff2378f36d
+
+% 0 1 0 1de7b6efbc68fd4204be7e0ed4115006
+
+% 0 1 0 15475c2498c297d61636677955f69f57
+
+% 0 1 0 0a10a96b80746a8b0268dbeb5312ba5b
+
+% 0 1 0 13dc03c2da2bfa7b0dcf17072ac36121
+
+% 1 1 0 180b89ece618f0120a493c9d409829e9
+
+@ 0 4 0 16daec072d67ec75111cb4b17eb9dc6f
++       Przy sprawdzaniu przechwytywania jawny argument typu `As[T]` przepuszcza wartość
++       dopasowywaną przez typ singletonowy, którego sprawdzanie nie potrafi związać z `Self`
++       instancji; ekstraktory o ustalonym wyniku `As.Int` i `As.Boolean` nie przyjmują argumentu
++       typu i można ich używać w kodzie sprawdzanym pod kątem przechwytywania.
+
+% 1 1 0 1074f8deb6f75860080c281d3cb5350d
+
+@ 0 2 0 1b8c19e70c2337c00749be2984e04588
++   entry .unapply   dopasowuje wartość dopasowywaną, której typ singletonowy jest `Extractable` do wyniku
++   entry .Int   ekstraktor ustalony na `Int`, bez argumentu typu, dla kodu ze sprawdzaniem przechwytywania
+
+% 1 1 0 1dcacf4e0db85dc60f69584b97eff31e
+
+@ 0 5 0 1beb115dae1d63f113f436be01e8c171
++         `case As.Int(number) =>` dopasowuje dowolną wartość dopasowywaną, dla której w zasięgu
++         jest `scrutinee is Extractable to Int`, wnioskując jej typ z dopasowanej wartości, a nie
++         z typu singletonowego, więc instancja rozwiązuje się czysto przy sprawdzaniu
++         przechwytywania.
++     entry .unapply   dopasowuje wartość dopasowywaną, która jest `Extractable to Int`
++   entry .Boolean   ekstraktor ustalony na `Boolean`, bez argumentu typu, dla kodu ze sprawdzaniem przechwytywania
+
+% 1 1 0 14cae39e6d0e7711190bc18088c36193
+
+@ 0 3 0 19cfcfcfdcf8913211e197e9f170bb1e
++         `case As.Boolean(flag) =>` dopasowuje dowolną wartość dopasowywaną, dla której w
++         zasięgu jest `scrutinee is Extractable to Boolean`; dla tekstu, który jest dokładnie
++         `true` lub `false`.
++     entry .unapply   dopasowuje wartość dopasowywaną, która jest `Extractable to Boolean`
+
+@ 0 1 0 0ab14ede12f714211579a1e27fbe1d75
++ entry .Decodable   klasa typów odczytująca `Self` z `Form`, zgłaszająca typowany błąd, gdy nie może
+
+% 1 1 0 064101130e0056ae0e6db54d2b268019
+
+@ 0 5 0 07e98f2c5b177a6416f47fdfb0e2cd70
++       `T is Decodable in F` to pojedyncza funkcja `F => T`, `#decoded`. To ją stosuje
++       `value.as[T]` i na niej budują kodeki każdego formatu danych: `Person is Decodable in
++       Json`, `Int is Decodable in Text`. Instancja, która może zawieść, przyjmuje `Tactic` dla
++       swojego błędu jako parametr kontekstowy i zgłasza przez nią błąd, więc błąd jest częścią
++       tego, czego given potrzebuje, a strategię wybiera się tam, gdzie wywoływane jest `as`.
+
+@ 0 2 0 175ddaa29c8da5d41ed57a3a391b146e
++       Napisanie instancji to napisanie funkcji; w obiekcie towarzyszącym jest ona znajdowana
++       bez importu.
+
+% 2 1 0 03c9f6a886f8d8f815c4238b8f492e94
+
+% 3 1 0 0e2f18436597be350eb291197f62a843
+
+% 4 1 0 0f19f0c84500869504c3b764b50028e1
+
+% 0 1 0 045b2e8f1474650417954b11a8811d54
+
+% 0 1 0 174099191763bace1654c4c598c14280
+
+% 0 1 0 043633eea5fbd1e70e989b5d7f9bc89e
+
+% 0 1 0 11f9d08a09eea6f803cff33f6f4d5e43
+
+% 0 1 0 0f9ef0564f67647a05fdf695e8d72c8f
+
+% 0 1 0 1f1ced82adada7ce1d4ebbe60c0791de
+
+% 0 1 0 0fb1ecd6457bcf8f1ddec4d6cda99cc2
+
+% 0 1 0 16983d2de67932e805b072a1f296454f
+
+% 0 1 0 0088927ebcc57ad4038a7aedd584b6cd
+
+% 1 1 0 1ab5502455d192f70225e10b0da2d2b2
+
+@ 0 4 0 190785f33a6dc33f15e2d98e6e263965
++       Obiekt towarzyszący zawiera dekodery z `Text` dla typów prymitywnych i dla dowolnego
++       `enum` oraz trzy polityki, z których korzysta pole `Optional` (`.Absence`, `.Nullity`,
++       `.Fault`). Rozszerza `Decodable2`, którego `generic` o niższym priorytecie dekoduje
++       każdą wartość w jej własnej formie jako ją samą.
+
+@ 0 3 0 0043893ce89d7997180ac67c5e6d5743
++       Given formatu typu „łap wszystko” (`[value] => value is Decodable in Json` i podobne)
++       remisuje z każdym givenem obiektu towarzyszącego nad samym parametrem typu, co jest błędem
++       niejednoznaczności; given, którego parametr typu jest ograniczony (`[item <: Item]`), jest
++       bardziej szczegółowy i wygrywa.
+
+% 1 1 0 1c1e269b6271aad71020835811fd277b
+
+% 1 1 0 1eb427962326df06140cffe5375e596d
+
+% 1 1 0 07c1273d3005620213081d2dfd33bb5a
+
+% 0 1 0 0938c754f8aebe5607a202ce9f4b4013
+
+@ 0 10 0 101f75baec5066f70a8f9675b19fdd8c
++   entry .int   dekoduje `Int` z tekstu dziesiętnego, zgłaszając `Number.Error`, jeśli nie da się go sparsować
++       Wymaga `Tactic[Number.Error]`. Parsuje za pomocą `Integer.parseInt`, więc tekst musi być
++       dziesiętną liczbą całkowitą, opcjonalnie ze znakiem, bez otaczających spacji; każde
++       niepowodzenie, włącznie z przepełnieniem, to `Number.Error.Reason.Unparseable`.
++   entry .byte   dekoduje `Byte` z tekstu dziesiętnego, odróżniając tekst nieparsowalny od wartości spoza zakresu
++       Wymaga `Tactic[Number.Error]`. Tekst, który nie jest liczbą całkowitą, zgłasza
++       `Number.Error` z `Reason.Unparseable`; liczba całkowita spoza przedziału od −128 do 127
++       zgłasza go z `Reason.OutOfRange`.
++   entry .short   dekoduje `Short` z tekstu dziesiętnego, odróżniając tekst nieparsowalny od wartości spoza zakresu
++       Wymaga `Tactic[Number.Error]`. Tekst, który nie jest liczbą całkowitą, zgłasza
++       `Number.Error` z `Reason.Unparseable`; liczba całkowita spoza zakresu `Short` zgłasza go z
+
+% 0 1 0 09dcbf471203b65a13e9fb6f648a2688
+
+@ 0 16 0 120e2857fe8fc670150eeb37420270e1
++   entry .long   dekoduje `Long` z tekstu dziesiętnego, zgłaszając `Number.Error`, jeśli nie da się go sparsować
++       Wymaga `Tactic[Number.Error]`; parsuje za pomocą `java.lang.Long.parseLong`.
++   entry .double   dekoduje `Double` z tekstu, zgłaszając `Number.Error`, jeśli nie da się go sparsować
++       Wymaga `Tactic[Number.Error]`; parsuje za pomocą `java.lang.Double.parseDouble`, więc
++       wykładniki, `NaN` i `Infinity` są akceptowane tak, jak akceptuje je Java.
++   entry .float   dekoduje `Float` z tekstu, zgłaszając `Number.Error`, jeśli nie da się go sparsować
++       Wymaga `Tactic[Number.Error]`; parsuje za pomocą `java.lang.Float.parseFloat`.
++   entry .char   dekoduje `Char` jako pierwszy znak tekstu
++       Nie wymaga taktyki. Tekst poza pierwszym znakiem jest ignorowany, a pusty tekst nie jest
++       sprawdzany: lepiej użyć `As[Char]`, które pasuje tylko do tekstu o dokładnie jednym
++       znaku.
++   entry .boolean   dekoduje `Boolean` z dowolnej pisowni `Truth` w zasięgu, bez względu na wielkość liter, zgłaszając `Truth.Error`
++       Wymaga `Tactic[Truth.Error]` i zbiera każdą `Truth` w zasięgu (`Every[Truth]`). Tekst
++       jest przycinany i zamieniany na małe litery, a następnie oferowany kolejno każdej
++       pisowni; tekst, którego żadna nie rozpoznaje, zgłasza `Truth.Error`. `Truth.trueFalse`, w
++       obiekcie towarzyszącym `Truth`, jest zawsze w zasięgu, a każdy zaimportowany given
++       `truths` dodaje pisownię obok niej, zamiast ją zastępować.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 05ac48424d5a46fa00da1a5f4395d9aa
++         label Tylko true i false
+
+% 1 1 0 14ba17509e2a01fd0b208a6db3cdc2cb
+
+% 2 1 0 0c9f1f2234209f970a3c86d120e81b8b
+
+% 3 1 0 17934a0db3514ec511149243c6052024
+
+% 0 1 0 0991a9e8233d719e041fb7d8a3dee6ee
+
+% 0 1 0 0cfb68515eb24ad3069d7c3c87e9d167
+
+% 1 1 0 0eb413b51ea127b8046e515d1c8bd6b9
+
+@ 0 1 0 1da467d1a4b7d15a023368b5f41ed8d7
++         label Dodanie yes i no
+
+% 1 1 0 0c7ab6496c8c9b651717e185a36aa190
+
+% 2 1 0 0b68b5fdcb1aa0750dade8e0bbd23fa0
+
+% 3 1 0 0bda3ab1adbd0a23089b0381ee32dc9f
+
+% 0 1 0 0200d10b8c4c94fe1a27aee6ad721c56
+
+% 0 1 0 00acdf0e21956f74107132a1429f635e
+
+% 0 1 0 13056ca6d6d006c3135f256a75c9fa98
+
+% 1 1 0 1440c68972f55850061dcf3e511c7a0e
+
+@ 0 1 0 1964bcd8a38f694f1f144d12fe64dcf3
++         label Dodatkowo on/off oraz 1/0
+
+% 1 1 0 042289cc336b7679039b6beb3f0bdebb
+
+% 2 1 0 1f7fd978ecc659a3031a7d0c3521b46c
+
+% 3 1 0 14c760ca98ed0269007d0b429d32f8fe
+
+% 0 1 0 1ec884492935962c0e2f09857b54d72a
+
+% 0 1 0 1edd28f9e631eb331c2b3c6efee88418
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 7 0 1723b63b019fcae11e31cf493ee42893
++   entry .enumeration   dekoduje przypadek `enum` z jego nazwy, zgłaszając `Enumerable.Error`, jeśli nie nazywa żadnego
++       Dla dowolnego `enum` z `Enumerable` (derywowanym automatycznie) i `Identifiable` w
++       zasięgu oraz z `Tactic[Enumerable.Error]`. Tekst jest najpierw odwzorowywany przez
++       `#decode` z `Identifiable`, więc między tekstem a nazwami przypadków może stać konwencja
++       nazewnictwa (na wejściu snake case, na wyjściu camel case); błąd wymienia poprawne nazwy,
++       zakodowane z powrotem przez to samo `Identifiable`.
++   entry .Absence   polityka dla klucza pominiętego w dokumencie: tolerancyjna daje `Unset`, ścisła zgłasza błąd
+
+% 1 1 0 0c74acaa9ac5586d09bea475f2543071
+
+@ 0 6 0 15b3d5ad7118f6a818ee489c0b6ae06a
++         Polityka indeksowana formatem (`Decodable.Absence in Json`), z której korzysta każdy
++         format dekodujący pole `Optional` lub `Option`. Wartość domyślna, `.default`, jest
++         tolerancyjna dla każdego formatu: pominięty klucz odczytuje się jako `Unset` (lub
++         `None`). Pakiet `optionalityOptions` formatu oferuje ścisły given nazwany od formatu
++         (`strictJsonAbsence`), importowany po nazwie, który ma pierwszeństwo przed wartością
++         domyślną; można go też zadeklarować lokalnie.
+
+% 2 1 0 04d2735b6cf48c831f190b9b1a3bc067
+
+% 3 1 0 1c5834e8f858e43a1cc58f87744ff78e
+
+% 0 1 0 0d40d8693ddf593c1b985c24d3ce91d2
+
+% 0 1 0 1bac8baa5acbe6d305ff0039830c895b
+
+% 0 1 0 0a1762596a0bd6ae1a967f5795bb2523
+
+% 0 1 0 0b6b0e2d39ac03b210fe23f432065057
+
+% 1 1 0 0771fb5474794e571cdf29d26d34ce77
+
+@ 0 4 0 0427d94c67170d0b0dfc6a17c2ad694c
++     entry .apply   polityka nieobecności dla formy, ścisła lub tolerancyjna
++     entry .default   domyślna wartość obiektu towarzyszącego dla każdej formy: tolerancyjna
++     entry #strict   czy pominięty klucz jest błędem, a nie `Unset`
++   entry .Nullity   polityka dla jawnego nulla formatu: tolerancyjna daje `Unset`, ścisła zgłasza błąd
+
+% 1 1 0 129ff32be998367e0207346001298e7a
+
+@ 0 8 0 0d01f8a8fbd275620380095990592436
++         Polityka indeksowana formatem (`Decodable.Nullity in Json`), z której korzystają tylko
++         formaty mające literał null. Wartość domyślna, `.default`, jest tolerancyjna: null
++         odczytuje się jako `Unset` (lub `None`). Pakiet `optionalityOptions` formatu oferuje
++         ścisły given nazwany od formatu (`strictCborNulls`), importowany po nazwie, który ma
++         pierwszeństwo przed wartością domyślną.
++     entry .apply   polityka nullowości dla formy, ścisła lub tolerancyjna
++     entry .default   domyślna wartość obiektu towarzyszącego dla każdej formy: tolerancyjna
++     entry #strict   czy jawny null jest błędem, a nie `Unset`
++   entry .Fault   polityka dla obecnej wartości odrzuconej przez wewnętrzny dekoder: ścisła zgłasza błąd, tolerancyjna daje `Unset`
+
+% 1 1 0 0f8921d6c7911ad41601861c7ab274e2
+
+@ 0 19 0 0bd5edab8c9641410ba9578446d488a2
++         Polityka indeksowana formatem (`Decodable.Fault in Json`). Wartość domyślna,
++         `.default`, jest ścisła: błąd wewnętrznego dekodera przechodzi dalej. Pakiet
++         `optionalityOptions` formatu oferuje tolerancyjny given nazwany od formatu
++         (`lenientYamlFaults`), importowany po nazwie; przy nim odrzucona wartość dekoduje się
++         pod `tolerate` otaczającej taktyki, więc nic nie akumuluje się także przy taktyce
++         akumulującej, i odczytuje się jako `Unset` (lub `None`).
++     entry .apply   polityka usterek dla formy, ścisła lub tolerancyjna
++     entry .default   domyślna wartość obiektu towarzyszącego dla każdej formy: ścisła
++     entry #strict   czy odrzucona wartość zgłasza swój błąd, zamiast odczytać się jako `Unset`
++   entry #decodable   ta instancja, jako stabilna referencja do użycia wewnątrz lambdy
++   entry #decoded   dekoduje wartość formy jako `Self`
++       Jedyna metoda abstrakcyjna: lambda typu `Form => Self` jest instancją. Może zgłaszać błąd
++       przez taktykę, którą instancja przechwyciła przy rozwiązywaniu.
++   entry #position   wzbogaca fokus pozycyjny o to, co wiadomo o zdekodowanej formie
++       Domyślnie tożsamość. Format, którego dekodery śledzą, gdzie w dokumencie znaleziono
++       wartość (`Json.Decodable` z Jacinty), nadpisuje ją, aby doprecyzować fokus informacją
++       wyprowadzoną z `Form` po dekodowaniu.
++   entry #map   dekoder w tej samej formie dla nowego typu, stosujący funkcję po dekodowaniu
++       `summon[Int is Decodable in Text].map(Percent(_))` dekoduje `Int` i go opakowuje. Wynik
++       przechwytuje zarówno ten dekoder, jak i funkcję.
+
+@ 0 1 0 00d3a3ff4c35149a0d74487d592a91eb
++ entry .Decodable2   givens obiektu towarzyszącego `Decodable` o niższym priorytecie
+
+% 1 1 0 1797feabbfbe3b4402bfb183a1304ae4
+
+@ 0 5 0 1ce067269c2698ef1dda493948858953
++       Trait rozszerzany przez obiekt towarzyszący `Decodable`, aby jego given `generic` miał
++       niższą rangę niż każdy given zadeklarowany w samym obiekcie towarzyszącym.
++   entry #generic   dekoduje każdą wartość w jej własnej formie jako ją samą: `T is Decodable in T`
++       Dekoder tożsamościowy, więc `json.as[Json]` czy `text.as[Text]` nie potrzebuje własnej
++       instancji. Ponieważ znajduje się w rodzicu obiektu towarzyszącego, ma niższą rangę niż
++       szczegółowe givens obiektu towarzyszącego.
+
+@ 0 1 0 194ff3f7d8cf348f106524daec041b51
++ entry .Extractable   klasa typów konwertująca `Self` w kierunku `Result`, dająca `Unset`, gdy odmawia
+
+% 1 1 0 1bf4fcd2d29ceb101cec1b68d548ab8a
+
+@ 0 3 0 16c88828a013173605fde210a1783b2a
++       `Text is Extractable to Int` to pojedyncza funkcja `Text => Optional[Int]`, `#extract`;
++       jej `#unapply` wywołuje ekstraktor `As[T]`, więc instancja jest wzorcem. Nigdy nie
++       zgłasza błędu: dane wejściowe, których nie potrafi skonwertować, dają `Unset`, a
++       dopasowanie przechodzi dalej.
+
+@ 0 6 0 1259f3879484518e061d2bead3b72ebe
++       Obiekt towarzyszący zawiera konwersje z tekstu do każdego typu prymitywnego, każde
++       zawężenie między typami liczbowymi (każde odmawia, gdy wartość nie przetrwa pełnego
++       obiegu), konwersję z tekstu do przypadku `enum` po nazwie i z `Int` do przypadku po
++       liczbie porządkowej, podniesienie przez `Optional` oraz pomost od dowolnego
++       `Decodable in Text`, który wykonuje dekoder pod `safely`. Dzięki temu pomostowi
++       `As[EmailAddress]` czy `As[Uuid]` działają dla każdego typu, który można zdekodować z
++       tekstu.
+
+@ 0 1 0 120ab1b0428fb007010b4c859b8db7b4
++       Instancja może pożyczyć istniejącą:
+
+% 2 1 0 068f775d4ec116ca1f759d733b8e43bd
+
+% 3 1 0 0b6b0f0b760e57230d07eb2a16d8d2a1
+
+% 0 1 0 035909b90ccd67ea151c13bb1cab9cbe
+
+% 0 1 0 194227e2fc4d24ee142450195dbe27ec
+
+% 0 1 0 0a8722d2bd58a8d2192173456963f921
+
+% 0 1 0 1caa744938283c5e03e994997539ff37
+
+% 0 1 0 0f8a541d978a52780187be28ba9b8b0b
+
+% 0 1 0 1e55cb4ec318aa0818bebd73a2a280df
+
+% 0 1 0 0ebb44c51cf6a89b0660a84a5b7b1e37
+
+% 1 1 0 19784a7d054438bb10a7c8db1397dec4
+
+% 0 1 0 080db42da7bc15e405b077d27fe1e8a9
+
+% 1 1 0 09b7b55571385cbb0d49806872a1b581
+
+% 0 1 0 041a5fc90ebd79391834188a079b87e6
+
+@ 0 42 0 1dadf24f0be30ae50c78634d9064a8dd
++   entry .decodable   wyodrębnia dowolny typ z `Decodable in Text`, dając `Unset` tam, gdzie dekoder zgłasza błąd
++       Pomost od `Decodable` do `Extractable`: dekoder jest stosowany pod `safely`, więc każdy
++       zgłoszony przez niego błąd staje się `Unset`. Dzięki temu każdy typ dekodowalny z tekstu
++       można używać z `As[T]`.
++   entry .optional   podnosi ekstraktor przez `Optional`: `Unset` pozostaje `Unset`
++   entry .irrefutable   `String` konwertuje się za pomocą `Irrefutable` dla `Text`, po konwersji na `Text`
++   entry .textChar   wyodrębnia `Char` z tekstu o dokładnie jednym znaku
++   entry .textByte   wyodrębnia `Byte` z tekstu, odmawiając dla tekstu nieparsowalnego lub spoza zakresu
++   entry .textShort   wyodrębnia `Short` z tekstu, odmawiając dla tekstu nieparsowalnego lub spoza zakresu
++   entry .textInt   wyodrębnia `Int` z tekstu, odmawiając dla tekstu, który nie jest mieszczącą się dziesiętną liczbą całkowitą
++   entry .textLong   wyodrębnia `Long` z tekstu, odmawiając dla tekstu, który nie jest mieszczącą się dziesiętną liczbą całkowitą
++   entry .textFloat   wyodrębnia `Float` z tekstu, odmawiając dla tekstu, który nie jest liczbą
++   entry .textDouble   wyodrębnia `Double` z tekstu, odmawiając dla tekstu, który nie jest liczbą
++   entry .textBoolean   wyodrębnia `Boolean` z dokładnie `true` lub `false`, z rozróżnianiem wielkości liter
++       W odróżnieniu od dekodera `Boolean`, który przycina, zamienia na małe litery i sprawdza
++       każdą `Truth` w zasięgu, `As[Boolean]` pasuje tylko do tych dwóch dokładnych słów.
++   entry .shortByte   zawęża `Short` do `Byte`, odmawiając dla wartości, która się nie mieści
++   entry .intByte   zawęża `Int` do `Byte`, odmawiając dla wartości, która się nie mieści
++   entry .intShort   zawęża `Int` do `Short`, odmawiając dla wartości, która się nie mieści
++   entry .intFloat   konwertuje `Int` na `Float`, odmawiając dla wartości, której `Float` nie może przechować dokładnie
++   entry .longByte   zawęża `Long` do `Byte`, odmawiając dla wartości, która się nie mieści
++   entry .longShort   zawęża `Long` do `Short`, odmawiając dla wartości, która się nie mieści
++   entry .longInt   zawęża `Long` do `Int`, odmawiając dla wartości, która się nie mieści
++   entry .longFloat   konwertuje `Long` na `Float`, odmawiając dla wartości, której `Float` nie może przechować dokładnie
++   entry .longDouble   konwertuje `Long` na `Double`, odmawiając dla wartości, której `Double` nie może przechować dokładnie
++   entry .floatByte   konwertuje `Float` na `Byte`, odmawiając dla wartości, która nie jest mieszczącą się liczbą całkowitą
++   entry .floatShort   konwertuje `Float` na `Short`, odmawiając dla wartości, która nie jest mieszczącą się liczbą całkowitą
++   entry .floatInt   konwertuje `Float` na `Int`, odmawiając dla wartości, która nie jest mieszczącą się liczbą całkowitą
++   entry .floatLong   konwertuje `Float` na `Long`, odmawiając dla wartości, która nie jest mieszczącą się liczbą całkowitą
++   entry .doubleByte   konwertuje `Double` na `Byte`, odmawiając dla wartości, która nie jest mieszczącą się liczbą całkowitą
++   entry .doubleShort   konwertuje `Double` na `Short`, odmawiając dla wartości, która nie jest mieszczącą się liczbą całkowitą
++   entry .doubleInt   konwertuje `Double` na `Int`, odmawiając dla wartości, która nie jest mieszczącą się liczbą całkowitą
++   entry .doubleLong   konwertuje `Double` na `Long`, odmawiając dla wartości, która nie jest mieszczącą się liczbą całkowitą
++   entry .doubleFloat   konwertuje `Double` na `Float`, odmawiając dla wartości, której `Float` nie może przechować dokładnie
++   entry .valueOf   wyodrębnia przypadek `enum` z tekstu, który dokładnie go nazywa, przez `valueOf` wyliczenia
++       Wymaga tylko `Mirror` wyliczenia, który dostarcza kompilator: `As[Direction]` pasuje do
++       `t"North"` bez pisania instancji. Nazwa musi dokładnie odpowiadać nazwie przypadku;
++       przypadek sparametryzowany, który nie ma `valueOf`, nigdy nie pasuje.
++   entry .fromOrdinal   wyodrębnia przypadek `enum` z `Int`, według jego liczby porządkowej
++       Odmawia dla liczby porządkowej spoza zakresu wyliczenia.
++   entry #extract   konwertuje wartość albo daje `Unset`, jeśli nie może
++   entry #unapply   konwertuje wartość jako `Option`, do użycia jako ekstraktor
+
+@ 0 1 0 0e40f143828bc6250eb2293add9b552e
++ entry .Irrefutable   klasa typów konwertująca `Self` na `Result` w sposób, który nie może zawieść
+
+% 1 1 0 1030fb2fe54984570781e1d022bd240e
+
+@ 0 4 0 1416d982c70797aa088fe7ad81de95df
++       `Byte is Irrefutable to Int` to pojedyncza funkcja `Byte => Int`, `#unapply`; ponieważ jest
++       to `unapply` bez `Option`, instancja jest wzorcem nieodpartym. Obiekt towarzyszący
++       zawiera konwersje między `String` a `Text`, tożsamość i każde poszerzenie między typami
++       liczbowymi. Jest to `Typeclass.Pure`: instancja niczego nie przechwytuje.
+
+@ 0 1 0 0d25e491362704190b80662f3cd0f86b
++       `value.as[T](irrefutable)` stosuje ją jawnie.
+
+% 2 1 0 1f446875b146959c04f918c2c7329a17
+
+% 3 1 0 1079b43257b38de612afa92c3336c37a
+
+% 0 1 0 0ad02bff0579145a0127ee5c57936bd3
+
+% 1 1 0 1c071e94139853821fa7a97dcb29dd4b
+
+% 1 1 0 1f6ce7810dfe8f410bf4290fb3ce2432
+
+% 1 1 0 1758979d56b8b7df087fa2296e159b28
+
+@ 0 18 0 034be711923613e317a323dc8ed3ac92
++   entry .stringText   konwertuje `String` na `Text`
++   entry .irrefutable   `String` konwertuje się za pomocą `Irrefutable` dla `Text`, po konwersji na `Text`
++   entry .textString   konwertuje `Text` na `String`
++   entry .ident   konwertuje każdą wartość na nią samą
++   entry .byteShort   poszerza `Byte` do `Short`
++   entry .byteInt   poszerza `Byte` do `Int`
++   entry .byteLong   poszerza `Byte` do `Long`
++   entry .byteFloat   poszerza `Byte` do `Float`
++   entry .byteDouble   poszerza `Byte` do `Double`
++   entry .shortInt   poszerza `Short` do `Int`
++   entry .shortLong   poszerza `Short` do `Long`
++   entry .shortFloat   poszerza `Short` do `Float`
++   entry .shortDouble   poszerza `Short` do `Double`
++   entry .intLong   poszerza `Int` do `Long`
++   entry .intDoule   poszerza `Int` do `Double` (nazwa jest błędnie zapisana w kodzie źródłowym)
++   entry .floatDouble   poszerza `Float` do `Double`
++   entry #unapply   konwertuje wartość; nie może zawieść
++   entry #contramap   nieodparta konwersja z nowego typu, najpierw stosująca czystą funkcję
+
+@ 0 1 0 0cd006d94d9b83fd0cd9dd86c64cb8b2
++ entry .Enumerable   derywowany opis `enum`: jego nazwa, przypadki i wyszukiwanie po nazwie i liczbie porządkowej
+
+% 1 1 0 032ac40b0e026ae01a37087808b3ac42
+
+@ 0 6 0 1a5ac804b3b8163f0264836bda8ee404
++       `Enumerable` jest derywowane dla każdego `enum`, którego wszystkie przypadki są
++       singletonami, bez pisania instancji: `.derived` odczytuje przypadki z `values` obiektu
++       towarzyszącego. Podaje `#name` wyliczenia, jego `#values` w kolejności deklaracji oraz
++       wyszukiwanie w obu kierunkach, z których każde zwraca `Optional`, zamiast zgłaszać błąd,
++       ponieważ ani nazwa, ani liczba porządkowa nie muszą odpowiadać przypadkowi. Derywowane
++       kodeki każdego formatu używają go do nazywania przypadków wyliczenia, więc wszystkie są
++       zgodne.
+
+% 2 1 0 17ac936828b77cef1d99bd9ba7beb2e3
+
+% 3 1 0 139cfc9a8a58bc700da333a2ff7e6387
+
+% 0 1 0 04f7d1f6e7978ec51a6e6e62367a998c
+
+% 0 1 0 07c8340a8c5cf84214e2defb7d537c26
+
+% 0 1 0 0a4d36eba12d4ab2045842ce52f49da7
+
+% 0 1 0 1d5c375f2282ad1516eeea06a3198f98
+
+% 0 1 0 0db73de48733f548179c9810fb6b7754
+
+% 0 1 0 05d3051684910fbb18213351a666c61c
+
+% 0 1 0 1adc3a2c3b4fa27a0346a81225b450c0
+
+% 0 1 0 087c20e3a986fb4815ba4214426d30be
+
+% 1 1 0 045588de78f6723e06e98fc8cc7d8594
+
+@ 0 2 0 1f203ccdf021012411c33918a81cdbd6
++       Derywacja zatrzymuje się z komunikatem _enum `T` is not a simple choice_ dla wyliczenia
++       bez metody `values`, czyli takiego, które ma przypadek sparametryzowany.
+
+% 0 1 0 145ca79242ed388e089653ac6f6cdbe5
+
+% 0 1 0 09d985b0912f82fc0c7a8b14633403b9
+
+@ 0 2 0 0f4f925746e2fbf116220397d57f4816
++   entry .derived   derywuje `Enumerable` dla `enum` z przypadkami singletonowymi, za pomocą makra
++   entry .Error   tekst dekodowany jako wyliczenie, który nie nazywa żadnego z jego przypadków
+
+% 1 1 0 1697f3e701cdf7b716d1b4b3873a5546
+
+@ 0 14 0 1187999dac0a733102ecb6ed35b2b393
++         Błąd `↯/s.25.3`: _the specified variant (`inputLabel`) is not one of the valid variants
++         (`validVariants`) of the enumeration `sum`_. Zgłaszany przez dekoder
++         `Decodable.enumeration`.
++     entry #inputLabel   tekst, który nie nazywał żadnego przypadku
++     entry #sum   nazwa wyliczenia
++     entry #validVariants   nazwy wszystkich przypadków, w postaci akceptowanej przez dekoder
++   entry #name   nazwa wyliczenia albo nazwa jednego z jego przypadków
++       Bez argumentu – nazwa typu wyliczenia w postaci pokazywanej przez kompilator; zastosowana
++       do przypadku – nazwa tego przypadku.
++   entry #values   wszystkie przypadki wyliczenia, w kolejności deklaracji
++   entry #value   przypadek o podanej nazwie albo na podanej pozycji `Ordinal`, jeśli istnieje
++       `value(t"North")` wyszukuje przypadek po jego dokładnej nazwie, a `value(Prim)` po jego
++       pozycji; każde daje `Unset`, gdy nic nie odpowiada.
++   entry #index   liczba porządkowa przypadku liczona od zera, jako `Int`
+
+@ 0 1 0 0bb07cc37759328313c03564f9f89970
++ entry .Identifiable   dwukierunkowe odwzorowanie między konwencją nazewnictwa a nazwami składowych typu
+
+% 1 1 0 112bebbf2c3663601152b1aa38455d3b
+
+@ 0 4 0 09bb7cd9627595d9191b088a2ee01056
++       `Identifiable` to para funkcji tekstowych: `#encode` konwertuje nazwę ze Scali na
++       konwencję, a `#decode` konwertuje z powrotem. Dekoder `Decodable.enumeration` dekoduje
++       przez nie przed wyszukaniem przypadku i podaje poprawne nazwy zakodowane przez nie, więc
++       format może odczytać `first_name` jako `firstName`.
+
+% 2 1 0 10a46ba7773c5e000a89492938cf40e2
+
+% 3 1 0 0bdd6b4e3c30ab0713034ce34c096a7b
+
+% 0 1 0 15eb20b547aad48012e54248c30fd66f
+
+% 0 1 0 04802773760a9ac01f9b8c5d82e6bdeb
+
+% 1 1 0 1702470ab58be9960a3983e279acfedb
+
+@ 0 4 0 105e0419856da5120dd64a298665e3f9
++       Jest to `Typeclass.Pure`, więc instancja niczego nie przechwytuje i można ją swobodnie
++       współdzielić.
++   entry .apply   `Identifiable` z funkcji kodującej i funkcji dekodującej
++   entry #encode   konwertuje nazwę ze Scali na konwencję
++   entry #decode   konwertuje nazwę w konwencji z powrotem na nazwę ze Scali
+
+@ 0 1 0 1a5bba2902747482096dfe1685ba3da6
++ entry .Parsable   strumieniowy odpowiednik `Decodable`, odczytujący `Self` wprost z czytnika tokenów formatu
+
+% 1 1 0 08462ecf88c8a92713539f3ec3f71170
+
+@ 0 5 0 0c723fbb9cc937410183ad7c73710fd8
++       Podczas gdy `Decodable` otrzymuje już zbudowane drzewo składni (`Json`, `Xml`),
++       `Parsable` prowadzi czytnik tokenów formatu po danych wejściowych, więc wartość złożona
++       jest budowana bez drzewa pośredniego: bez jego alokacji, bez boxingu, bez drugiego
++       przejścia. `Transport` nazywa format (`Person is Parsable over Json`), a podtrait
++       każdego formatu ustala `#Reader` (`Json.Parsable` z Jacinty ustawia go na
++       `Json.Reader`).
+
+@ 0 5 0 021cb96a6971efe9084107d95debea26
++       Czytnik jest stanową zdolnością na wyłączność, pożyczaną na czas `#parse`; nic z niego
++       nie może zostać zatrzymane w wyniku. Błędy przepływają przez czytnik, który niesie własną
++       taktykę, albo przez taktykę, którą instancja przechwyciła przy rozwiązywaniu, więc samo
++       `#parse` nie deklaruje żadnego błędu. Rzadko pisze się je ręcznie: każdy format je
++       derywuje (`derives Json.Direct`), a pakiet `codecs` wybiera, kiedy są używane.
+
+% 1 1 0 12b5f6bf2e8b9349154ab8947fee2c78
+
+% 1 1 0 12c690a5a6f7301f1b365aef66b68fce
+
+@ 0 2 0 09e61e365a27db5610de1ae57b854438
++   entry #Reader   zdolność czytnika tokenów formatu, ustalana przez podtrait każdego formatu
++   entry #parse   odczytuje wartość `Self` z czytnika
+
+@ 0 1 0 01bce77e02edac1f118067a29999386d
++ entry .Number   siedziba `Number.Error`, zgłaszanego, gdy tekstu nie da się zdekodować jako liczby
+
+% 1 1 0 1f74c6d1f4f420810bd280f07eb4d071
+
+@ 0 2 0 00a31ed0956088a71768bad57d7b17ce
++       Obiekt bez składowych poza swoim typem błędu.
++   entry .Error   tekst, którego nie dało się zdekodować jako liczby, albo którego liczba była spoza zakresu
+
+% 1 1 0 10eefdec2f945ee31d0891662ce7fbc0
+
+@ 0 2 0 1a66bcdb63afc0c91c90b5e1f3887a0e
++         Błąd `↯/s.25.1`, z kodem podrzędnym dla swojego `#reason`: _`text` is not a valid
++         `specializable` because `reason`_. Zgłaszany przez dekodery liczb w obiekcie
++         towarzyszącym `Decodable`.
+
+% 2 1 0 1be13447bc9c4dd419a05c04ab2d4a42
+
+% 3 1 0 101c68c812a8f93f02e279a6cb01198e
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1b9accabb61c6934142725b4d9ded9c3
+
+% 0 1 0 14fb3b0fa5a421b41de75f12b33e47b7
+
+% 1 1 0 1de4c9131267adc8046786eb7cfb49da
+
+@ 0 1 0 08ed73cf67302ea809aa4a1446db26b7
++     entry .Reason   dlaczego liczby nie dało się zdekodować: `Unparseable` lub `OutOfRange`
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 7 0 09836c4c447d4dcf160b025124a152b6
++           Wyliczenie dwóch przypadków: `Unparseable` (kod podrzędny 1), dla tekstu, który w
++           ogóle nie jest liczbą, oraz `OutOfRange` (kod podrzędny 2), dla liczby, której typ
++           docelowy nie może reprezentować.
++       entry #number   kod podrzędny, który przyczyna wnosi do numeru błędu
++     entry .communicable   przedstawia `Number.Error.Reason` jako zdanie podrzędne komunikatu błędu
++     entry #text   tekst, którego nie dało się zdekodować
++     entry #specializable   typ liczbowy, jako który dekodowano tekst
++     entry #reason   dlaczego nie dało się go zdekodować, jako `Number.Error.Reason`
+
+@ 0 1 0 18aa1dfa97365d6d0a5f316fad4e77c7
++ entry .Truth   pisownia prawdy i fałszu, akceptowana przez dekoder `Boolean`, gdy jest w zasięgu
+
+% 1 1 0 01d18012762ecc8106aad7f098bda338
+
+@ 0 5 0 0375ad595fa8f5311024635dfad575ab
++       `Truth` to para słów, `#affirmative` i `#negative`. Dekoder `Boolean` zbiera każdą `Truth`
++       w zasięgu i akceptuje każdą z ich pisowni, po przycięciu tekstu i zamianie na małe
++       litery, więc kilka może być w zasięgu jednocześnie. `.trueFalse`, w tym obiekcie
++       towarzyszącym, jest zawsze znajdowane; pakiet `truths` dodaje importem `yes`/`no`,
++       `on`/`off` i `1`/`0`, obok niego, a nie zamiast niego.
+
+% 2 1 0 1f763295fdc24cdd1a5b676b3097438e
+
+% 3 1 0 04c144829e2fe83f081083c1cba916d3
+
+% 4 1 0 0a3bd6a72c398f481df9c44ad73d643d
+
+% 0 1 0 151794df2d5bf322001700fa158b50fc
+
+% 0 1 0 1124dbb75d2d9be1004a6400f5427f11
+
+% 1 1 0 042d80cb1c98d10b09e8d32c674ca477
+
+% 0 1 0 1a3e6e88a58119be062aab94a1d38efb
+
+% 0 1 0 13ca79f151dac2c114990c791fb342c2
+
+@ 0 2 0 1fd945b992554fe0049f7ef9fa0c45ae
++   entry .trueFalse   pisownia `true`/`false`, zawsze w zasięgu przez obiekt towarzyszący
++   entry .Error   tekst, którego żadna `Truth` w zasięgu nie rozpoznaje jako `Boolean`
+
+% 1 1 0 1ee7ebbaeb44e8050b2c4f4c3dc3b72f
+
+@ 0 6 0 12872974d5595bd1179d4f78ce336bf3
++         Błąd `↯/s.25.2`: _`text` is not a recognized Boolean_. Zgłaszany przez dekoder
++         `Boolean`.
++     entry #text   tekst, w postaci, w jakiej go podano
++   entry #affirmative   słowo dla `true`, małymi literami
++   entry #negative   słowo dla `false`, małymi literami
++   entry #apply   odczytuje tekst jako `true` lub `false`, jeśli jest jednym z dwóch słów, albo daje `Unset`
++       Porównuje dokładnie: dekoder `Boolean` przycina tekst i zamienia go na małe litery przed
++       jej wywołaniem.
+
+@ 0 1 0 12ed1f512889a09c0b89a222386fa5ab
++ entry .truths   dodatkowe pisownie `Boolean`, każda akceptowana obok `true`/`false` po zaimportowaniu
+
+% 1 1 0 193dade30f77e1841e5dae48fe69b6fa
+
+@ 0 3 0 00b340a8a5fae8161cb4cae3fee86e77
++       Pakiet wyboru, którego givens importuje się po nazwie, ponieważ `import truths.*` nie
++       importuje givenów. W odróżnieniu od większości pakietów wyboru importowanie jest
++       addytywne: dekoder `Boolean` zbiera każdą `Truth` w zasięgu, więc każdy import dodaje
++       pisownię.
+
+% 2 1 0 1db39401a4f7118a06b7aef0bfc61db0
+
+% 3 1 0 13ce7595d3bf3b4a003ce8ec45f74bb8
+
+% 4 1 0 0a570789d1f9a7e70957d5fffe424d7c
+
+% 0 1 0 095d08b9debd08d806fef95026a94d05
+
+% 0 1 0 163bc075406b1e9018842272303dbf26
+
+% 1 1 0 1b71a7e84755160a19c1a914cfb6d6f6
+
+% 0 1 0 147f2ca999da4a4209fc6e103cf50ab6
+
+@ 0 3 0 1ed53d23a26917f516ed8db47bf77098
++   entry .yesNoTruth   akceptuje `yes` i `no` jako `Boolean`
++   entry .onOffTruth   akceptuje `on` i `off` jako `Boolean`
++   entry .oneZeroTruth   akceptuje `1` i `0` jako `Boolean`
+
+@ 0 1 0 1fe5b45965fe7d730ae065b8eb45912a
++ entry .Codecs   kontekstowy tryb wybierający między derywowanymi a bezpośrednimi kodekami formatu
+
+% 1 1 0 14b96725c505264302bc31814b8f8503
+
+@ 0 7 0 0963dd4a3c4bd00b0e01378126dfb22a
++       Każdy format z generowanymi („bezpośrednimi”) kodekami oferuje dwie ścieżki do
++       typowanej wartości: derywowaną, która buduje drzewo składni formatu i je dekoduje (lub
++       do niego koduje), oraz bezpośrednią, która prowadzi czytnik tokenów lub drukarkę formatu
++       wprost do wartości lub z niej. Obiekt towarzyszący formatu wnosi givens warunkowe względem
++       jednego z tych trybów, więc jeden import z pakietu `codecs` wybiera ścieżkę dla
++       wszystkich formatów naraz. Gdy żaden nie jest w zasięgu, typ wybiera ścieżkę bezpośrednią
++       dokładnie wtedy, gdy ma własną instancję bezpośrednią (jawny given lub `derives`), a w
++       przeciwnym razie ścieżkę derywowaną.
+
+@ 0 2 0 1549b958197863e9145f755aabc1ec71
++       Wyniki są takie same na obu ścieżkach; różnią się tylko szybkość i pozycje w
++       diagnostyce błędów.
+
+% 0 1 0 161310760b33b0b5027589f7ae117d2c
+
+% 1 1 0 0fce97824206fe4f059cfd21fe86cf27
+
+@ 0 11 0 0a47e9ac98284851106e85252e3b1112
++   entry .Direct   tryb wybierający generowany kodek wszędzie tam, gdzie typ da się wstawić inline
++   entry .Derived   tryb wybierający kodek derywowany, nawet zamiast instancji bezpośredniej
++   entry .Strict   tryb wybierający generowane kodeki i błąd kompilacji tam, gdzie typ ich nie ma
++       `Strict` jest `Direct`, więc generowane instancje formatu obowiązują przy obu; ścisłość
++       jest dodawana w punktach wejścia (`read[Play in F]`, `in[Text over F]`, `in[Data
++       over F]`), które format strzeże za pomocą `.strictFailure`.
++   entry .strictFailure   błąd kompilacji zgłaszany przez format pod `codecs.strict` dla typu bez kodeka bezpośredniego
++       Makro, które zatrzymuje kompilację z komunikatem _`format`: `T` has no direct codec, and
++       `codecs.strict` does not take the derived one_. Jest zgłaszane z wnętrza givena po tym,
++       jak ten given został wybrany, więc jest wynikiem wyszukiwania, a nie nieudanym
++       kandydatem, którego wyszukiwanie mogłoby pominąć. Dla autorów formatów.
+
+@ 0 1 0 0a54052477f669f406532b4a1edc8099
++ entry .codecs   trzy tryby kodeków, każdy wybierający importem ścieżkę dla wszystkich formatów naraz
+
+% 1 1 0 104cfcdd81c04ca510869d5410d67e5e
+
+@ 0 3 0 19b4db39dd3d6aea028e38a9d03332cf
++       Pakiet wyboru, którego givens importuje się po nazwie, ponieważ `import codecs.*` nie
++       importuje givenów. Tryby są alternatywami: zaimportowanie dwóch naraz czyni ich givens
++       niejednoznacznymi wszędzie tam, gdzie oba miałyby zastosowanie.
+
+% 2 1 0 18caec70af55971d19a1476cbd158081
+
+% 3 1 0 0fa68b6c371e66cc0ae71f8aa4e76a6e
+
+% 0 1 0 0ebe51ab68611d87121007de000a5ab5
+
+% 1 1 0 108b47b7dabf996810445e03678a3a21
+
+@ 0 3 0 0405daf87bd3f69d1d124c8355bf14f3
++       `import codecs.derived` wybiera kodeki derywowane nawet zamiast instancji bezpośredniej, a
++       `import codecs.strict` wybiera kodeki generowane, z błędem kompilacji nazywającym typ
++       wszędzie tam, gdzie w przeciwnym razie po cichu wybrana zostałaby ścieżka derywowana.
+
+% 1 1 0 0429a1c3d9114fcd15811370b1c226fd
+
+@ 0 3 0 019a9b7e03f0ccd00c3df2ff6aa10baf
++   entry .direct   wybiera generowane kodeki wszędzie tam, gdzie typ da się wstawić inline, dla każdego formatu
++   entry .derived   wybiera kodeki derywowane, nawet tam, gdzie w zasięgu jest instancja bezpośrednia
++   entry .strict   wybiera generowane kodeki i czyni typ bez nich błędem kompilacji
+
+@ 0 1 0 0dcea2174f0c852710c1dddb48fdc065
++ entry .internal   implementacje makr stojące za `Enumerable.derived` i `Codecs.strictFailure`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 1d995df1e43af4ce0442edaa5a240b8a
++       Nie do bezpośredniego użycia.
++   entry .strictFailure   makro stojące za `Codecs.strictFailure`
++   entry .enumerable   makro stojące za `Enumerable.derived`

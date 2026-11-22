@@ -1,0 +1,384 @@
+orthant 2 language
+
+@ 0 1 0 1d840f45fbb16f031609c87d13146ca1
++ ## Rekordy
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 2 0 0b47deaceb5f5375094501120b62cb30
++ Kształt niektórych danych jest zdefiniowany poza programem: przez tabelę bazy danych, JSON
++ Schema lub format konfiguracji. Program powinien mimo to odczytywać ich pola ze statycznymi
++ typami.
+
+@ 0 3 0 111b4b168ef19fe70fe4b225e7b74bec
++ `Record` to wartość, której pola pochodzą z takiej zewnętrznej *specyfikacji*, odczytywanej
++ podczas kompilacji kodu. Dlatego `record.name` typuje się jako `Text`, `record.nope` się nie
++ kompiluje, a żadna klasa nie jest pisana ręcznie, by odzwierciedlać schemat.
+
+@ 0 4 0 0eec04775ed0dca908ae485e6a0f0d21
++ Na tym zbudowani są *dostawcy* [JSON](json.md#typed-records-from-a-schema), [XML](xml.md) i
++ [TEL](tel.md). Dokument JSON Schema, XML Schema lub schematu TEL daje typowane rekordy. Tak samo
++ schemat odpowiedzi operacji, przez `record()` w kliencie [OpenAPI](openapi.md). To samo może
++ zrobić każde źródło schematów, które program potrafi odczytać w [czasie kompilacji][czas kompilacji].
+
+@ 0 1 0 16916f4af379805c10863649483879a9
++ ### O zewnętrznych schematach
+
+@ 0 4 0 001b90fa898e50e41d1a04dcf678293b
++ Gdy miarodajny kształt danych znajduje się gdzie indziej, ręcznie napisana klasa case jest kopią,
++ a kopie się rozjeżdżają. Schemat zyskuje pole, klasa nie, a niezgodność ujawnia się w [czasie
++ wykonania][czas wykonania]. Zwykłą alternatywą jest dynamiczne odczytywanie pól, po napisie. To
++ oznacza rezygnację ze sprawdzania w ogóle.
+
+@ 0 6 0 0af74a7015d4a5cb14fa18d6bc912bb1
++ `Record` unika obu problemów. Schemat odczytuje się raz, podczas kompilacji programu.
++ [Typy strukturalne](https://docs.scala-lang.org/scala3/book/types-structural.html) Scali budują
++ z niego następnie dokładny interfejs rekordu, z każdym polem o typie, który deklaruje schemat.
++ Schemat nie może rozjechać się z kodem, ponieważ typy w kodzie *są* typami schematu. To
++ [bezpieczeństwo przez konstrukcję](../../philosophy/safety-by-construction.md), bez klasy do
++ utrzymywania.
+
+@ 0 2 0 0cffae2607360ad60bcda2026686055f
++ Wszystko pochodzi z pakietu `soundness`. Pozostałe importy wybierają kodowanie oraz
++ [strategię](errors.md#choosing-a-strategy) obsługi błędów:
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 1 0 1de3c5e81966ed9a0a9a478f1ff2f2b8
++ ### Używanie rekordów
+
+@ 0 4 0 045e17f26ec883ab1ceef8a3bbefc591
++ Obiekt dostawcy przechowuje schemat. Ten jest `Json.Provider`, zbudowanym z dokumentu JSON
++ Schema. W prawdziwym programie deklaruje się go we własnym pliku, z powodu, który wyjaśnia
++ [kolejność kompilacji](#compilation-order). Z tego samego powodu przykłady na tej stronie są
++ sprawdzane, ale nie uruchamiane:
+
+% 2 1 0 1495e086766d02ac0e49c4cc565a1d96
+
+% 3 1 0 037cbf5a08061e54161d8eea8837b1fa
+
+% 4 1 0 1bf1a6d1e02507bb143060564250fc6d
+
+% 0 1 0 0a87af4d0ec5fbda119ab390fdcbe436
+
+% 0 1 0 10ba014d2254dcd3076d9a543f8c2249
+
+% 0 1 0 168ff146ffda150b0e476e586aafc1e1
+
+% 0 1 0 09f81909fffbe8de1292b168fb564187
+
+% 0 1 0 1362070d19456a6d1ff95300d33f9885
+
+% 0 1 0 1801801a4ba865a909d63b9099a9992b
+
+% 0 1 0 1bc5bcc4ed89e3c3023374c5cfcb26fa
+
+% 0 1 0 0fc9cff73f111a0c12cc06307ef02288
+
+% 0 1 0 0c77b11fd8ee05fc0bb832a353adbbc7
+
+% 0 1 0 149015473f8af5b818332c25647b5a7d
+
+% 0 1 0 1a255adce984755704338ad3cff63d03
+
+% 0 1 0 15b0a682f57e42d110c3ee2a34fe3242
+
+% 0 1 0 1d086cabb9160ecc000956b4641e580d
+
+% 0 1 0 0be86f8d69ffc11606058c9696122812
+
+% 0 1 0 198a6ee6c6d76ce702d2e920fb535def
+
+% 0 1 0 0fc0f10454a7b6240d1b534d7132a368
+
+% 0 1 0 13b304132bf680561a0826cc1dc574d1
+
+% 1 1 0 16359d219418402c0d5966083d89828b
+
+@ 0 3 0 1a431015de2f42aa1b3db70718ab4057
++ Metoda `record` dostawcy zamienia surowe dane w typowany rekord. Każde pole ma typ, który nadaje
++ mu schemat. `name` jest w schemacie napisem, więc jest `Text`. `weight` jest liczbą, więc jest
++ `Double`. Schemat nie wymaga `age`, więc jest to
+
+% 0 1 0 0381810d063407f51fccad7c65227580
+
+% 2 1 0 112fa67ece34020f1a1a758111efd135
+
+% 3 1 0 00f8569c1c4f2f8d1b3af9136f4c5a1e
+
+% 4 1 0 0bc2fa5a9112f36e1f72bf4421b4c700
+
+% 0 1 0 108651c2c97f7f1d0ee01c648046e110
+
+% 0 1 0 1624c445b5cfbd1714b78624b2dece95
+
+% 0 1 0 05099aaa0b26d7820d459bffbf69c43d
+
+% 0 1 0 1654877f489d45260b574b5c5821e7f7
+
+% 1 1 0 092d2da64375bcb01a4984954e2e4d54
+
+@ 0 1 0 1cb8ac1eeedacbd51defa056f0cdf47e
++ Schemat nie ma pola o nazwie `nope`, więc `record.nope` się nie kompiluje.
+
+@ 0 3 0 0d7805b9e8231baf023e636ac2a1d6cd
++ Zagnieżdżony obiekt staje się zagnieżdżonym rekordem, a tablica – listą. Każdy dostęp jest
++ sprawdzany względem specyfikacji. Ręcznie napisana klasa dałaby tę samą gwarancję, ale klasy nie
++ ma.
+
+@ 0 1 0 1297ee29ce312e180c580059c8012a89
++ ### Krotki zamiast rekordów
+
+@ 0 3 0 17b87d2b6620cc77109a5c013c523088
++ Ten sam dostawca może zamiast rekordu utworzyć
++ [krotkę nazwaną](https://docs.scala-lang.org/scala3/reference/other-new-features/named-tuples.html),
++ przez `tuple`, bliźniaczą metodę `record`.
+
+@ 0 4 0 0efd3f1eba8e9d4c1280cd02c96a30a0
++ Dla powyższego schematu `Catalogue.tuple(input)` ma typ
++ `(name: Text, age: Optional[Int], children: List[(weight: Double)])`. Ma jeden element na każde
++ pole, nazwany tak, jak nazywa go schemat, w kolejności ze schematu. Zagnieżdżone obiekty stają
++ się zagnieżdżonymi krotkami nazwanymi, a tablice – ich listami.
+
+@ 0 2 0 0a42c18029eebbb50ca44ce744c50d3b
++ Krotkę nazwaną odczytuje się po nazwie, jak rekord. Jest ona też zwykłą krotką, więc można ją
++ rozłożyć według pozycji i przekształcić do postaci nienazwanej:
+
+% 2 1 0 014cf7d06a18e04407802a815ae4df97
+
+% 3 1 0 0fdfb4137ff3146a1ac374e488d30375
+
+% 4 1 0 1439dc20721d88771fce1539b5d99b5c
+
+% 0 1 0 1f6e4dc25c4c376c0626f81f48ac2e29
+
+% 0 1 0 19f05445560f6b0d13dab74dc7bc04e6
+
+% 0 1 0 0ca1c0cc2f3da06409d6932376f118f5
+
+% 0 1 0 02722cb3b490be451ca0580240fb25f8
+
+% 1 1 0 032553bf6fb3351f110fed15570d48d1
+
+@ 0 1 0 0ac4dc1592e56b6f111ca590978a820e
++ #### Zachłannie i leniwie
+
+@ 0 1 0 1e696f22220149510810c11e5983c33e
++ Obie postacie różnią się tym, *kiedy* dane są odczytywane.
+
+@ 0 3 0 1352b3a18fa6a8f4062beddb32a145b5
++ Rekord jest leniwy. Przechowuje surowe dane, a każdy dostęp odczytuje i przekształca swoje pole
++ od nowa. Niepoprawne pole zostaje zauważone dopiero wtedy, gdy się je odczyta, a pole odczytane
++ dwukrotnie jest dwukrotnie przekształcane.
+
+@ 0 3 0 17830e587ee7be7d08b53c8597d57aa8
++ Krotka jest zachłanna. Każde pole odczytuje się raz, przy budowie krotki, a krotka przechowuje
++ przekształcone wartości. Niepoprawne pole powoduje niepowodzenie budowy krotki, bez względu na
++ to, czy program kiedykolwiek je odczyta.
+
+@ 0 4 0 0274cc60b41412d70aea30266f495bc4
++ To zmienia typy pól. Odczyt dowolnego pola może się nie udać: wymaganej wartości może brakować,
++ wartość może być złego rodzaju albo może łamać ograniczenie schematu. Kończy się wtedy własnym
++ błędem specyfikacji, takim jak `Json.Provider.Error`, przez [taktykę][taktyka] kodu, który go
++ odczytuje.
+
+@ 0 4 0 12647dc8cc3fc6ff101ea0a1dadcd658
++ W rekordzie pole ma typ `Record.Field[Int, Json.Provider.Error]`. Jest to funkcja kontekstowa
++ nad taktyką, stosowana wszędzie tam, gdzie pole jest wybierane, więc każdy dostęp wymaga
++ handlera w zasięgu. W krotce niepowodzenie może nastąpić tylko podczas budowy. Typem elementu
++ jest po prostu `Int`, a handler musi być w zasięgu tam, gdzie buduje się krotkę.
+
+@ 0 4 0 0ccdeb81c82052fb08c985a0b3632b6e
++ Ponieważ każde niepowodzenie przechodzi przez taktykę wywołującego, odczytujący wybiera, jak je
++ obsłużyć. Jedno pole można opakować w `attempt` lub `recover`. Cały rekord można odczytać przez
++ `validate` i `track`, z `venture` dla każdego pola, co zbiera wszystkie problemy w dokumencie i
++ zgłasza je razem. Opisuje to strona [Błędy](errors.md).
+
+@ 0 1 0 154878b7202306cc0991d8a35db4942f
++ Podsumowując:
+
+% 2 1 0 0a2574fa96d0527e1c294b140e771c53
+
+@ 0 8 0 0f3fd976e40135200742c8dc746a931a
++ column  Aspekt
++ column  Rekord
++ column  Krotka
++ row  Dane są odczytywane  przy każdym dostępie do pola  raz, przy budowie krotki
++ row  Niepoprawne pole powoduje niepowodzenie  przy dostępie do niego  budowy
++ row  Pole o typie schematu integer ma typ  `Record.Field[Int, Json.Provider.Error]`  `Int`
++ row  `Tactic` musi być w zasięgu  wszędzie, gdzie wybiera się pole  tam, gdzie buduje się krotkę
++ row  Rozkłada się według pozycji  nie  tak
+
+% 1 1 0 0890aedd503880fc1ecf1e4ed13528da
+
+@ 0 1 0 1d1044c1c644821f051efb9aa4f52670
++ ### Definiowanie specyfikacji
+
+@ 0 3 0 0bd933504291edf3031de0abec2320cb
++ Nowe źródło schematów podłącza się, implementując `Specification`. Taka implementacja to
++ *dostawca*. Źródłem mogą być definicje tabel bazy danych, XML Schema lub zastrzeżony format.
+
+@ 0 3 0 05be6f171d94ee541d3e3e583564c7d0
++ Dostawca dostarcza nazwy i typy pól jako uporządkowaną listę wartości `Member`. Elementy krotki
++ są w tej kolejności. Dostarcza też prymitywne operacje na danych źródłowych:
+
+% 2 1 0 067ef579623e5b5f1da8b1743822c627
+
+% 0 1 0 1798a3663178fcb20e21d7ac388408da
+
+@ 0 11 0 02a1f577d7754fa913d0b76b97c07b47
++ column  Domyślnie
++ column  Dostarcza
++ row  `access`  brak: trzeba zaimplementować  wartość nazwanego pola, pobraną z wartości
++ row  `absent`  brak: trzeba zaimplementować  czy pobrana wartość oznacza brakujące pole
++ row  `repeated`  brak: trzeba zaimplementować  każdą wartość pola, które występuje wielokrotnie
++ row  `required`  zwraca wartość bez zmian  wartość pola odczytanego jako `One`; nadpisywany, by kończył się niepowodzeniem w razie braku
++ row  `entries`  kończy się niepowodzeniem  wartości pola z kluczami według nazwy
++ row  `kind`  kończy się niepowodzeniem  rodzaj wartości, według którego unia wybiera alternatywę
++ row  `elements`  kończy się niepowodzeniem  elementy wartości, która sama jest sekwencją
++ row  `pairs`  kończy się niepowodzeniem  nazwane wartości wartości, która sama jest słownikiem
++ row  `unoffered`  kończy się niepowodzeniem  niepowodzenie dla wartości rodzaju, którego nie oferuje żadna alternatywa unii
+
+% 1 1 0 0c4d4bac0c82dae001c2031378c6ef0d
+
+@ 0 4 0 097693ffac2e622f03d09fbdb911c4c8
++ Wartości powtarzanego pola to na przykład elementy tablicy JSON. W formacie, który powtarza
++ pole, są to wszystkie elementy siostrzane ze słowem kluczowym tego pola. Format, który ma unie
++ lub słowniki, dostarcza `entries`, `kind`, `elements` i `pairs`. Format, który ich nie ma,
++ pozostawia wartości domyślne.
+
+@ 0 3 0 10ec7fb16861e7240547d552e5a4c016
++ `Member` jest jedną z trzech rzeczy. `Value` nazywa typ skalarny zadeklarowany przez schemat.
++ `Record` zawiera dalsze składowe. `Union` zawiera alternatywy, każdą z kluczem w postaci
++ *rodzaju* wartości, który ją wybiera. Każda składowa niesie `Multiplicity`:
+
+% 2 1 0 12d3d2591838a7c8060e99930ecb4fb6
+
+@ 0 8 0 0b8f7f45e8642f4808b29825da684b87
++ column  Krotność
++ column  Odczytywana jako
++ column  Przez
++ row  `One`  wartość  `access`, potem `required`
++ row  `Optional`  `Optional`, `Unset` tam, gdzie `absent`  `access` i `absent`
++ row  `Many`  `List`  `repeated`
++ row  `Keyed`  `Map[Text, _]`  `entries`
++ row  `Series`  własna kolekcja dostawcy  `series`
+
+% 1 1 0 11ee20ecc155cca907ecce0332878653
+
+@ 0 3 0 1cd768d1dbd54a87179eed47e14380c2
++ Dostawca nie mówi nic więcej o opcjonalności ani powtarzaniu. Krotność stosuje samo makro.
++ Alternatywa unii może mieć własną, więc unia z jedną alternatywą zagnieżdża jedną krotność w
++ drugiej.
+
+@ 0 3 0 1d41592a2a0146d01a70b98397cbac41
++ Dostawca nazywa błąd, którym kończą się niepowodzenia jego pól, swoim typem `Failure`.
++ Prymitywy, które mogą się nie udać, to `access`, `repeated`, `required`, `entries`, `elements`,
++ `pairs` i `unoffered`, a każdy przyjmuje taktykę dla tego błędu.
+
+@ 0 3 0 14c86b782bee841d103ff66d13abd57a
++ Obraz dopełnia jedna [klasa typów]. Dla każdej nazwy typu skalarnego, którą może zadeklarować
++ schemat, istnieje instancja `Intensional`. Mówi, w jaki typ Scali zamienia się ta nazwa i jak
++ odczytać pojedynczą wartość tego typu. Są trzy sposoby jej utworzenia:
+
+% 2 1 0 19e67c7afbdc077a1725b97f4a038f86
+
+@ 0 5 0 1fb663572e8024b4120bf6991064f336
++ column  Konstruktor
++ column  Z
++ row  `Intensional(accessor)`  funkcji wartości
++ row  `Intensional.parametric`  funkcji wartości i parametrów składowej, dla typu takiego jak ograniczona liczba całkowita
++ row  `Intensional.Reading`  funkcji wartości, jej parametrów i `Tactic`, dla odczytu, który może się nie udać
+
+% 1 1 0 1dcbc75308d55a5c03efac495ee4ac66
+
+@ 0 4 0 14be4780ec4863b10789750828d9b1d4
++ Odczyt może się nie udać: wartość może być złego rodzaju, poza swoimi granicami lub być
++ napisem niepasującym do wzorca. Taki odczyt to `Intensional.Fallible`, którego `transform`
++ przyjmuje taktykę dla swojego `Error`. Ten `Error` musi być `Failure` dostawcy lub jego
++ podtypem, tak by każde pole kończyło się niepowodzeniem w jeden sposób. Instancja, która zgłasza
++ cokolwiek innego, jest błędem kompilacji.
+
+@ 0 3 0 194f71fa8cc7dd2d1467232435ceae45
++ Instancje znajdują się w obiekcie towarzyszącym dostawcy, więc są znajdowane bez importu.
++ Dostawca nad XML pobierałby na przykład element potomny po jego etykiecie, uznawałby pole za
++ nieobecne, gdy takiego potomka nie ma, i powtarzał po każdym potomku z tą etykietą.
+
+@ 0 8 0 1c99d68021f7e6be0f4e30746f1b30dd
++ Niektóre źródła nie znajdują się w wartościach, które się z nich odczytuje. Rekord nad plikiem
++ odwzorowanym w pamięci przechowuje tylko informację, gdzie szukać, a sam plik jest przez jakiś
++ czas otwarty, a potem zamykany. Dostawca dla takiego źródła nazywa `Context` i tworzy swoje
++ rekordy przez `Specification.recordWith`, podając typ kontekstu, w którym każdy ma być
++ odczytywany. Składową takiego rekordu można odczytać tylko tam, gdzie wartość tego typu jest
++ dostępna jako [given], obok jego taktyki, więc rekordu nie można odczytać, gdy jego źródło
++ zniknęło, a typ może mówić, z którego z kilku źródeł rekord pochodzi. Metody `accessWith`,
++ `repeatedWith` i `entriesWith` dostawcy otrzymują kontekst i odpowiadają `access`, `repeated` i
++ `entries`.
+
+@ 0 4 0 13ba4505815484a517b75d57c5da1b7c
++ `Series` także służy takiemu dostawcy. Odczytuje się jako typ `Series` dostawcy, jego własną
++ kolekcję, którą `series` tworzy z funkcji odczytującej jeden element. Kolekcja odczytuje element
++ wtedy, gdy się o niego poprosi, w kontekście, który wtedy otrzymuje, więc pole stu tysięcy
++ rekordów nic nie kosztuje, dopóki nie wyszuka się jednego z nich.
+
+@ 0 4 0 0358996d140f37351c43a6458cba92dd
++ Każdy obiekt specyfikacji dostaje `record` i `tuple` od samego `Specification`. W obiekcie nie
++ trzeba deklarować niczego poza jego schematem. Obie metody są `transparent inline`. Rozwija się
++ je w miejscu wywołania, gdy obiekt specyfikacji jest znany, więc makro może znaleźć ten obiekt
++ po jego typie i obliczyć jego `fields`.
+
+@ 0 2 0 04b58d986e6bd4ab006ddd86147446fe
++ Zadeklarowany typ zwracany `record` to `Record`. Rzeczywisty typ wywołania jest jego
++ *strukturalną rafinacją*. Dla schematu z trzema polami jest to typ taki jak ten:
+
+% 2 1 0 1c2568f587c9170719fc9b1ad125d6c9
+
+% 3 1 0 1ed21e237cc24fd90e523a12648f71a6
+
+% 4 1 0 0c3816223885b26d1a0c50a562b38883
+
+% 0 1 0 17f2029924debc9c1c0d0353f75c9da4
+
+% 1 1 0 153542cc04765f8d1b04d96f03859948
+
+@ 0 1 0 04a28d1a5cd6e69701578fcf5297c03e
++ Tylko metoda transparentna pozwala temu dokładniejszemu typowi dotrzeć do miejsca wywołania.
+
+@ 0 1 0 0b1a118ce0e154e600cde691e54a3410
++ ### Kolejność kompilacji
+
+@ 0 1 0 1d5f63fe9441d1ca0b48a50e4f874434
++ Obiekt schematu musi znajdować się w *innym pliku* niż kod, który wywołuje jego metodę `record`.
+
+@ 0 5 0 1a53a2db9e2eca910df7607bfd39fb3c
++ Makro działa podczas kompilacji kodu wywołującego. Oblicza obiekt schematu jako wartość czasu
++ wykonania, odczytując dokument JSON Schema lub odpytując bazę danych. Dlatego ten obiekt musi
++ być już skompilowany. Scala gwarantuje taką kolejność dla makra i jego użycia, pod warunkiem że
++ są w osobnych plikach bez cyklu między nimi. Jeśli są w jednym pliku, schemat nie jest jeszcze
++ dostępny, gdy potrzebuje go makro.
+
+@ 0 2 0 19d654797f5c3ab313b3010bf3ac380f
++ To także czyni ten wzorzec dostawcą typów w rozumieniu F#. Kompilator sięga do miarodajnego
++ schematu, a typy, względem których sprawdza się program, są z niego budowane.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 9 0 006b2353a026cc6d0aca7d6df2737831
++ - [JSON](json.md#typed-records-from-a-schema), [XML](xml.md) i [TEL](tel.md) opisują dostawcę
++   dla własnego języka schematów.
++ - [OpenAPI](openapi.md) buduje rekordy ze schematów odpowiedzi API.
++ - [Błędy](errors.md) opisuje `attempt`, `recover`, `validate` i `track`, które obsługują
++   niepowodzenie pola.
++ - [Wartości opcjonalne](optional-values.md) opisuje typ pola, którego schemat nie wymaga.
++ - [Metaprogramowanie](metaprogramming.md) opisuje makra, na których opiera się dostawca.
++ - [Katalogi](catalogs.md), [bazy danych](database.md) i [tabele](tables.md) operują na polach rekordu po nazwie.

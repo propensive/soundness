@@ -1,0 +1,283 @@
+orthant 2 language
+
+@ 0 1 0 08e0b694988a31f511a97ddb02d6999d
++ # Standardy logowania w Soundness
+
+@ 0 3 0 08c29def8df32e1010c968e21762738f
++ Ten dokument określa, kiedy, co i jak logować w bibliotekach Soundness. Uzupełnia
++ `syntax.md` (białe znaki i formatowanie) oraz `naming.md` (nazwy metod fabrycznych).
++ Przykłady pochodzą z `lib/*/src/core/*.scala`.
+
+@ 0 5 0 1e087fd7e1d81ce406294327c26bb9c5
++ Logowanie jest bezpieczne typowo: metoda, która loguje, deklaruje to wymaganie w swoim typie
++ zwracanym za pomocą typu infiksowego `logs` i emituje wartości typu `Event` właściwego dla
++ modułu – nigdy surowe napisy. Zdarzenia odbiera `Logger` (`Sink`) zdefiniowany w zasięgu
++ wywołującego; gdy w zasięgu nie ma loggera, logowanie jest ciche i darmowe, więc deklaracja
++ `logs` niczego nie narzuca wywołującym.
+
+@ 0 1 0 1452f29ec01ef3a904e101a152b1321e
++ ## 1. Kiedy logować
+
+@ 0 2 0 1681b4dd05f344f20ff4f3c321f7c1b6
++ Metoda powinna logować wtedy i tylko wtedy, gdy wykonuje **obserwowalny efekt uboczny z
++ opóźnieniem lub możliwością błędu**:
+
+% 2 1 0 156a2e8f8fa25727024ecb63b084fc43
+
+@ 0 6 0 0081e9817a7f59321c3c72b4de33da5a
++ column  Kategoria
++ column  Operacje
++ row  Sieć  nawiązanie połączenia, związanie, nasłuchiwanie, akceptacja, wysyłanie, odbiór, zamknięcie, uaktualnienie
++ row  System plików  otwarcie, odczyt, zapis, utworzenie, usunięcie, przeniesienie, dowiązanie symboliczne, obserwowanie
++ row  Proces  uruchomienie, zabicie, oczekiwanie, sygnał
++ row  Usługi zewnętrzne  żądania HTTP, protokoły demonów, Docker, rejestry pakietów, pobieranie i wysyłanie plików
+
+% 1 1 0 0c3c809722009b3709d7805ffe34284f
+
+@ 0 3 0 040f948dab83124908def2e95b80f552
++ Praca czysta, ograniczona przez CPU lub wykonywana w pamięci **nie może** logować:
++ haszowanie, szyfrowanie, parsowanie, kodeki, serializacja, arytmetyka i operacje na
++ strukturach danych nie produkują żadnych logów, niezależnie od kosztu.
+
+@ 0 1 0 06ca5da3aecb3dfb048c616c52471930
++ Metoda włącza się w logowanie, nazywając swój typ zdarzenia w typie zwracanym:
+
+% 2 1 0 0db7d9ec6178741c1ba376bad1d5bb0d
+
+% 3 1 0 0181daae89884fd804d3262d38c16275
+
+% 4 1 0 1810d6f8fd05d786120618a02486dfce
+
+% 0 1 0 0bf1196a40e6fb061f82f61fa116ceba
+
+% 1 1 0 102975cc429b970e0f6a426c936c6d3a
+
+@ 0 1 0 06f77517ff91aeb010b640c665922778
++ Metoda może logować więcej niż jeden typ zdarzeń przez łańcuchowanie:
+
+% 2 1 0 07f85c7100f1f52210ec1c75d482c9e9
+
+% 3 1 0 1fa9a643816227d2141f2f6156e002e0
+
+% 4 1 0 195aa014f5491e720939a05e17adf52a
+
+% 0 1 0 175e93147a4599c90da57dc57c849051
+
+% 1 1 0 14e76639192125d600b9abf657f48f4b
+
+@ 0 5 0 1e304f95509cdb2006f8a56e21dc4188
++ **Nie** należy dodawać wymagania `logs` (ani wywołania `Log`) wewnątrz metody, która
++ implementuje metodę abstrakcyjną klasy typów – dodatkowy parametr kontekstowy zmienia
++ sygnaturę i psuje nadpisanie. Zamiast tego loguje się w publicznej metodzie rozszerzającej,
++ która *wywołuje* instancję klasy typów; to także właściwa ziarnistość (jeden wpis na operację
++ na poziomie użytkownika, a nie na wewnętrzny rozdział).
+
+@ 0 1 0 16f17a575f8f155d06047645dc7b8299
++ ## 2. Poziomy
+
+@ 0 1 0 05d49585e1e08ed30d7edcf1560c5e20
++ `Level` ma cztery wartości, wybierane według **częstotliwości i wagi** łącznie:
+
+% 2 1 0 10c2c0ad141266720a54e02226333ff9
+
+@ 0 6 0 04d1236aeac5487d011f8bfa1b7283fa
++ column  Poziom
++ column  Do czego
++ column  Przykłady
++ row  `Fine`  częste szczegóły dotyczące pojedynczych jednostek, przydatne tylko podczas debugowania  każda ramka, pakiet, otwarcie pliku, odebrane żądanie, trafienie w pamięci podręcznej
++ row  `Info`  jeden wiersz na istotną operację logiczną lub etap cyklu życia  nawiązane połączenie, serwer, który właśnie nasłuchuje, wysłane żądanie, uruchomiony proces, otwarte archiwum, zakończone pobieranie
++ row  `Warn`  sytuacja możliwa do naprawienia lub nieoczekiwana, ale obsłużona  wymuszone zabicie, zresetowanie lub ponowienie połączenia, przerwany strumień, przekroczony czas bezczynności, łagodnie obsłużone naruszenie protokołu, wybrana ścieżka rezerwowa
+
+% 0 1 0 0f3659617b5f619a065d23e2fc87835b
+
+@ 0 1 0 1b33bbb2b14ed55a00ad46791fc3301c
++   cell  operacja, która zawiodła w sposób nienaprawialny, emitowana razem ze zgłaszanym `Error`; używana oszczędnie
+
+% 0 1 0 0ed568419db6988e15566084b5954923
+
+% 1 1 0 1a8eadecc0663acd1b08d1b94578a18d
+
+@ 0 2 0 1eab22a97b9ebc130247283dc3920912
++ Należy zakładać, że `Fine` jest zwykle wyłączony, i być na tym poziomie rozwlekłym: wysłanie
++ każdego pakietu to `Fine`, choć jest „normalne”, a jednorazowe dla połączenia związanie to
++ `Info`.
+
+@ 0 1 0 07d622d9dde49f4c1fb1e34fe829d832
++ ## 3. Co logować
+
+@ 0 11 0 1572579f56d51a8310445b1ab2b06a6a
++ - **Identyfikować zasób**: adres i port, ścieżkę, PID, URL, identyfikator strumienia, nazwę
++   archiwum lub wpisu, identyfikator kontenera.
++ - **Podawać wielkości, gdy to tanie**: liczby bajtów, liczby wpisów, upływ czasu w
++   milisekundach, kody statusu, kody wyjścia.
++ - **Nigdy nie logować sekretów**: danych uwierzytelniających, tokenów, ciasteczek, materiału
++   kluczy, nagłówków autoryzacji ani całych treści żądań i odpowiedzi. Zamiast tego loguje się
++   wersję zredagowaną, rozmiar lub krótki podgląd.
++ - **Ograniczać rozmiar**: logować długości i podglądy, a nie całe ładunki.
++ - **Przenosić typowane pola**, a nie wstępnie sformatowane napisy. Przypadek zdarzenia
++   przechowuje wartości; formatowaniem zajmuje się instancja `Communicable` (§4). Dzięki temu
++   zdarzenie pozostaje bezpieczne typowo, a przedstawienie może się różnić zależnie od ujścia.
+
+@ 0 1 0 09410b4e0efe26e619d572de2c32b527
++ ### Koszt przy wyłączeniu
+
+@ 0 5 0 112082b8f10ec34617cbcfa0abe81eba
++ `Log.fine`/`info`/`warn`/`fail` przyjmują argument **przez nazwę**, a `Loggable.fanOut`
++ sprawdza `accepts(level)` każdego ujścia, *zanim* go wymusi. Gdy więc w zasięgu nie ma
++ żadnego ujścia albo żadne nie akceptuje danego poziomu, wartość zdarzenia nigdy nie jest
++ konstruowana, a jego pola nigdy nie są wartościowane – wyłączona instrukcja logowania nic nie
++ kosztuje. Wywołania logowania można pisać swobodnie; nie należy ich osłaniać warunkami.
+
+@ 0 2 0 1dfd1ebf64d66c0b05dcb54b8b13a151
++ Z tego powodu lepiej przekazywać do zdarzenia **pierwotne typowane wartości** i pozwolić
++ `Communicable` je przedstawić, niż konwertować je w miejscu wywołania:
+
+% 2 1 0 0d7ab4ae5df467821db024579f671d18
+
+% 0 1 0 11e48f52e1139b59085181d41a0dd2ec
+
+% 0 1 0 081758635e05aef0047fae85da5d5d01
+
+% 1 1 0 13da109cafdc4aac0f15e5f3b6aa9f93
+
+@ 0 2 0 0baf797dbd04aec21af39247352c3ecb
++ Obie postaci są darmowe przy wyłączeniu (argument jest przekazywany przez nazwę), ale
++ typowane pola zachowują bezpieczeństwo typów zdarzenia i pozwalają przedstawieniu różnić się
++ zależnie od ujścia.
+
+@ 0 3 0 1578bc3eb46e1e3b1cb6abeb7b2cc9ad
++ **Wyjątek – kontekst miejsca wywołania.** Gdy przedstawienie wartości wymaga informacji
++ dostępnej tylko w miejscu wywołania (na przykład `serpentine.Path on plane`, którego postać
++ tekstowa zależy od `plane`), przedstawiony `Text` przechwytuje się *tam*:
+
+% 2 1 0 1d81ff96ff26bfcb05c9ae33cc787cbd
+
+% 0 1 0 135e23cece8d7bf611b07dec57013942
+
+% 0 1 0 184d37cf33f9457a1127497bae183e3f
+
+% 1 1 0 00ceb76ca5af684a038b1700c01a16d1
+
+@ 0 2 0 1e9822e15fd156430194498120503818
++ To jest poprawne, a nie kompromis: `.show` działa w miejscu wywołania (przez nazwę), gdzie
++ istnieje kontekst, i nadal tylko wtedy, gdy zdarzenie jest rzeczywiście logowane.
+
+@ 0 1 0 11336d2062a8f59e17b5b559d86da4f3
++ ## 4. Typy zdarzeń
+
+@ 0 5 0 0ce0565b67855dbf11acec01e64733d4
++ Każdy moduł, który loguje, definiuje jedno `enum` o nazwie `Event`, zagnieżdżone w obiekcie
++ nazywającym jego dziedzinę (`Exec.Event`, `Http.Event`, `Io.Event`), z obiektem towarzyszącym
++ `object` przed `enum` (L3). Przypadki to frazy czasownikowe lub rzeczownikowe w CamelCase,
++ przenoszące istotne wartości jako typowane pola, a każdy rozszerza kategorie `Log`, do
++ których należy:
+
+% 2 1 0 0a3cca879222b92401767d6e486df091
+
+% 0 1 0 1277063c7bdd1d731bcdce7023a33956
+
+% 0 1 0 12db4c6f0e04c7e10b5ef43a651e18aa
+
+% 0 1 0 1f4223029820c8ec196d5562cd0c8697
+
+% 0 1 0 0d37077fd805d5e90adc33e03b484a96
+
+% 0 1 0 12a3e1ae811cece70cba6bca884808af
+
+% 0 1 0 1c9bd2b634f74ac814d2405021c64643
+
+% 0 1 0 1b8cc76448c909d11dc63ab3f74dab5b
+
+% 0 1 0 1394eac630bcee8004b6e550f6929f1e
+
+% 0 1 0 0d8652fa5bab9a881ce6ba614d123494
+
+% 0 1 0 137ba6468e943c9c0d51c5a6038e451a
+
+% 0 1 0 17c9f90ac3656ee40c636e5c5a616834
+
+% 0 1 0 12eb61a5bf05c1bf0a9241057efe8930
+
+% 1 1 0 046ef472df7506c902549456381afa3a
+
+@ 0 2 0 1498f4b54a3eb78610f9a3326e82e627
++ Obiekt towarzyszący zawiera `given communicable: <Event> is Communicable`, który odwzorowuje
++ każdy przypadek na komunikat `m"..."`, z wyrównanymi strzałkami `=>` (Consequent Style `T1`).
+
+@ 0 1 0 166f8540cff5d74b1151be902deedc2d
++ Typ zdarzenia musi być eksportowany do pakietu `soundness` (L4).
+
+@ 0 1 0 1673f8529b5e06a30835ea2ad5292ed8
++ ### Składanie z `Exec.Event`
+
+@ 0 2 0 18c9f08055b887091d14db2bf270d384
++ Moduł, który uruchamia podproces, ponownie wykorzystuje `guillotine.Exec.Event`, przepisując
++ je na własne zdarzenie, zamiast powielać przypadki dotyczące procesów:
+
+% 2 1 0 0ca4ae5a1da99cfd1adc16b40910c91b
+
+% 0 1 0 107b080443af67aa06458ae802a1eb63
+
+% 1 1 0 1bb97bb535c76ce21fca073583206ea1
+
+@ 0 1 0 04dfb520f3cdd1e21813ae1a3d5278f2
++ (istniejący wzorzec: `CliEvent`, `octogenarian.Commandline.Event`).
+
+@ 0 1 0 1112496d901103651b9543553c25b4b2
++ ## 5. Styl komunikatów
+
+@ 0 3 0 126c563dc14a37f417864e4ca9f49a14
++ Komunikaty logów są pisane małymi literami, zwięźle, w czasie teraźniejszym, bez kropki na
++ końcu i interpolują istotny kontekst – zgodnie ze stylem przyjętym dla komunikatów o błędach
++ `fulminate` (zobacz `messages.md`):
+
+% 2 1 0 07b3fcd936a0e17d1863e3f1bdbbcb05
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 06158e9bc85c13c003ff2339606d0a72
+
+% 0 1 0 05b0531bffad75c50786cf98f6a48067
+
+% 0 1 0 0f1cd01037abf94513d257a95762db6e
+
+% 0 1 0 18f1f955701de7be1b8e8ebefa0572cf
+
+% 1 1 0 068d136e6a929596193c4784204a48a8
+
+@ 0 2 0 12fc6083ed1f2d2306c6ee2a5fa6bb9c
++ Komunikat musi mówić coś konkretnego: `m"a failure occurred"` jest nie do przyjęcia – należy
++ nazwać to, co zawiodło, i podać identyfikator.
+
+@ 0 1 0 19bbdb8224d24dcc1c44c1bc3999cc7c
++ ## 6. Emitowanie
+
+@ 0 2 0 15c3dd19bfe2c49509ad5f3880ec09aa
++ `Log.fine`, `Log.info`, `Log.warn` lub `Log.fail` wywołuje się z wartością zdarzenia w
++ miejscu, w którym zachodzi efekt uboczny:
+
+% 2 1 0 00fc8c5fd954b1c51ab7c4434fb23bc6
+
+% 0 1 0 0a310de662488d011998d4f884f53808
+
+% 0 1 0 02c13a33050af80c021a7bf46ea845c9
+
+% 0 1 0 126a62f804b1ee111a800817f6389f9b
+
+% 1 1 0 0b842d8e793572ae0dc869ba8aec8788
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 09ca4ed74a957fec117bc83b7662d366
+
+% 0 1 0 12457ff022faa0f206174cad515f807c
+
+% 0 1 0 06e37c9a40772d7c0ef0a61181e6d04b
+
+% 1 1 0 1e876abb6cb3e19b17235682eab1593e
+
+@ 0 2 0 11897875e88f24af020f95c18270cce8
++ Zdarzenie cyklu życia loguje się raz, na poziomie `Info`; zdarzenie dotyczące pojedynczej
++ jednostki (ramki, pliku) – na poziomie `Fine`; obsłużoną anomalię – na poziomie `Warn`.

@@ -1,0 +1,887 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0a5003698bdf947015429cf31614beab
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1854dc56a4f524d40e1e78ade0b23865
++ info   ścieżki jako typowane wartości: bezwzględne i względne, związane z platformą, składane operatorem `/` i sprawdzane podczas kompilacji
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0012544f100419ad06cecc93181ccc08
++     _Serpentine_ to algebra ścieżek, którą dzieli każda hierarchia w Soundness: ścieżki
++     systemu plików, ścieżka klas, ścieżki URL, wskaźniki JSON, referencje Git i wpisy archiwów
++     to zawsze `Path` lub `Relative` na jakiejś **płaszczyźnie**. Biblioteka dotyczy *kształtu*
++     ścieżki, a nie pliku na dysku; odczyt i zapis plików to sprawa galilei, i tam też znajdują
++     się same płaszczyzny platform (`Linux`, `MacOs`, `Posix`, `Windows`, `Local`) oraz
++     interpolator `p"…"`.
+
+@ 0 3 0 1b94ad61501188d513c95edc88bfbc14
++     Ścieżka bezwzględna to `Path`: korzeń, czyli zwykły tekst w notacji danej płaszczyzny, oraz
++     zejście złożone z nazw, przechowywane od liścia. Ścieżka względna to `Relative`: pewna
++     liczba kroków w górę, a potem zejście. Obie mają trzy składowe typowe, a każdą odczytuje się
++     przez infiksowy alias:
+
+@ 0 6 0 120805e84ba915bc00ce3482478ee1ce
++     - `on` – `Plane`, czyli system plików lub hierarchia, której reguł ścieżka przestrzega, więc
++       `Path on Linux` i `Path on Windows` to różne typy;
++     - `of` – `Topic`, czyli krotka nazw ścieżki, gdy kompilator je zna, od najgłębszej:
++       `% / "home" / "work"` to `Path of ("work", "home")`;
++     - `under` – `Limit`: dla `Path` typ jej korzenia (`%.type`, `Drive`); dla `Relative` liczba
++       kroków, o które się wznosi.
+
+% 2 1 0 182d4eda5d2fa20a1f5cedb10b046ae6
+
+% 3 1 0 0989b38e45c59c02134c3c742a212bdf
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 15972a4c8eefcbd70a48607212199108
+
+% 0 1 0 1b810bbdc91eab500838686c6ac0a5fa
+
+% 0 1 0 06079cf28a213a810f7c27348a037b8e
+
+% 0 1 0 139079f3da8a99f009e278a040c963a1
+
+% 0 1 0 19a17d8121a71f71084b3a53a77fae6f
+
+% 0 1 0 0815b4f4e433ff7e0553305b6d540cec
+
+% 1 1 0 135e6eeda54bf8ed098522a97622f78e
+
+@ 0 5 0 1f5418f77a39533b04a7e84e62297886
++     Ścieżka zbudowana operatorem `/` jest neutralna względem platformy, dopóki `on` nie zwiąże
++     jej z płaszczyzną, sprawdzając każdą nazwę; ścieżka zbudowana na wartości, która ma już
++     płaszczyznę (`Drive('C') / "Windows"`), na niej pozostaje, a każda dodana nazwa jest
++     sprawdzana w chwili dodania. Gdy nazwy są literałami, sprawdzenie, a także arytmetyka `+`,
++     `toward` i `conjunction`, odbywa się podczas kompilacji; gdy są tekstem z czasu wykonania, w
++     zasięgu musi być `Tactic[Name.Error]`.
+
+@ 0 6 0 12b59574cb76d420098c4c53ae6042f5
++     Klasy typów opisują, co zapewnia płaszczyzna: `Filesystem` (jej separator oraz nazwy
++     bieżącej lokalizacji i rodzica), `Radical` i `Eradicable` (jak typ korzenia zapisuje się jako
++     tekst i odczytuje z powrotem), `Admissible` i `Navigable` (które wartości mogą być na niej
++     nazwą i w jaki sposób) oraz `Submissible` i `Compliant` (które korzenie i które ścieżki
++     względne innych płaszczyzn przyjmuje). Nowa hierarchia to typ z tymi givenami w obiekcie
++     towarzyszącym oraz obiekt korzenia rozszerzający `Root`.
+
+@ 0 2 0 0d5c110762f1196403d565b2b10b682e
++     Jest jeden zbiór źródeł, `serpentine.core`, kompilowany na każdą platformę. Wszystko jest
++     eksportowane do modułu zbiorczego `soundness`, łącznie z `%`, `^` i `?`.
+
+% 0 1 0 0e8047d521777b99077effbf694a3175
+
+% 0 1 0 04f853940c55340d0d029d2ffa440b1e
+
+% 0 1 0 09ec07978e4baafd17c1d82eecad0757
+
+% 0 1 0 0c650e8452c62e1a0accbe229bf5d402
+
+% 0 1 0 048b35d7d8b9d360036b37a4f35dfdd8
+
+% 0 1 0 1045fc9e5fdb85dd195c6103114cbefa
+
+@ 0 6 0 04bf831483bf1d1a02b06b6f50f4ea24
++ entry .%   korzeń ścieżki POSIX, od którego ścieżka bezwzględna schodzi operatorem `/`
++     Obiekt `Path.%`, eksportowany do pakietu: `% / "home" / "work"` to ścieżka bezwzględna,
++     neutralna względem platformy, dopóki `on` jej nie zwiąże (`(% / "home").on[Linux]`). Jego
++     typ służy jako `Limit` ścieżki zakorzenionej w `/`, więc `Path on Linux under %.type` to
++     ścieżka linuksowa, o której wiadomo, że zaczyna się w korzeniu. Płaszczyzny galilei
++     `Linux`, `MacOs` i `Posix` dają `%.type` instancje `Radical` i `Eradicable`, więc odczytuje
++     się go i zapisuje jako `/`.
+
+@ 0 4 0 0213e61908c68ce808bec20b68b1eaa2
++ entry .^   jeden krok w górę w ścieżce względnej: `? / ^ / "sibling"`
++     Obiekt `Relative.^`, eksportowany do pakietu. Zawsze jest dzieckiem `?` lub innego
++     wznoszenia: `? / ^ / ^` wspina się o dwa poziomy jako `Ascent under 2`, a nazwa po nim
++     rozpoczyna zejście.
+
+@ 0 4 0 09d44dc0c60faa4b1f026dc082faec98
++ entry .?   bieżąca lokalizacja: ścieżka względna wskazująca na siebie, od której buduje się ścieżkę względną
++     Obiekt `Relative.?`, eksportowany do pakietu: `Relative` bez wznoszenia i bez zejścia,
++     kodowany jako nazwa bieżącej lokalizacji w systemie plików (`.`). Ścieżkę względną buduje
++     się z niego operatorem `/`, krokami w górę (`^`), a potem nazwami: `? / ^ / "more"`.
+
+@ 0 1 0 07aef0d81400b65c0efdd2609a2c63de
++ entry .Path   ścieżka bezwzględna: korzeń i zejście złożone z nazw, typowana płaszczyzną, nazwami i korzeniem
+
+% 1 1 0 033cf08166ff8b2310dc7229109c91bf
+
+@ 0 6 0 0daba183bfd552d70cf60d244eb68656
++       `Path` to klasa case złożona z `#root` – korzenia jako tekstu w notacji płaszczyzny, `/`
++       lub `C:\` – i `#descent` złożonego z nazw, przechowywanych **od liścia**, więc
++       `% / "home" / "work"` to `Path(t"/", t"work", t"home")`. Jej składowe typowe mówią, co o
++       niej wiadomo: `Plane`, na której leży (`Path on Linux`), krotka `#Topic` jej nazw, od
++       najgłębszej (`Path of ("work", "home")`), oraz `Limit`, typ jej korzenia
++       (`Path under %.type`). Każda jest opcjonalna: samo `Path` nadal jest ścieżką.
+
+% 2 1 0 162491459b66211311abc271dbd19c75
+
+% 3 1 0 14c711d04a6676651f19b5b2dedaa7a9
+
+% 4 1 0 06c3bed29f04c9fc1153d6306a5f0e25
+
+% 0 1 0 017834ebf6b357cf19e89c331f252c03
+
+% 0 1 0 1893a5989b9dfa60107ffc4c361b4c5b
+
+% 0 1 0 1b3f24b98336a75904398fdc378f363a
+
+% 0 1 0 0397928f1d07d808096c9480f024df79
+
+% 0 1 0 1955fec886f91ca70263f4a65f33106b
+
+% 0 1 0 13637f235f7491d4035e6d17e713ba4e
+
+% 1 1 0 05da08b4b260bf0a0536343a6832bc30
+
+@ 0 6 0 08f0baba2976c6710f875371e3e88456
++       `Path of …` ze znanym `Topic` konwertuje się niejawnie (`.convert`) na tę samą ścieżkę na
++       płaszczyźnie, ze sprawdzeniem nazw, więc ścieżkę literałową można przekazać tam, gdzie
++       oczekiwana jest `Path on Linux`. Tekst dekoduje się do ścieżki tylko wtedy, gdy
++       płaszczyzna jest wskazana (`as[Path on Linux]`), ponieważ to płaszczyzna decyduje o
++       separatorze i regułach; korzeń odczytuje `Eradicable` płaszczyzny, który zgłasza
++       `Path.Error` z przyczyną `InvalidRoot` przez `Tactic[Path.Error]` w zasięgu. Końcowy
++       separator jest ignorowany.
+
+@ 0 2 0 0c8d9dfc63f3c67b0371a0ad5281d23f
++       Ścieżkę dopasowuje się ekstraktorem `/:`, który odrywa korzeń, a następnie kolejne nazwy od
++       góry (`.quotient`):
+
+% 2 1 0 19a8a1968cd2726a1cc6386cc6bce161
+
+% 3 1 0 0ad277ff346653c71f4b79ea8491acd0
+
+% 4 1 0 14cc75a1d693f6a7053867aa89918470
+
+% 0 1 0 034a10215028ed5a15a2276bb8d00269
+
+% 0 1 0 13e9657dcec56fb11cc571028181b027
+
+% 0 1 0 1f955b49403cbe55005f80413066151b
+
+% 0 1 0 0a7b48a393e0b0fa0651957d5d47ad02
+
+% 1 1 0 122806593bb734ac0d388993ab0387e5
+
+@ 0 5 0 0066766d1082b17f1eca9a91fa356685
++       Pułapka: nazwa, której typ jest doprecyzowany w miejscu wywołania – `dir / t"$name.txt"`
++       albo ścieżka zbudowana od parametru lambdy – daje `Topic`, do którego nie pasują niektóre
++       giveny zdefiniowane dla zwykłej `Path on Linux`. Należy związać ścieżkę z `val` o
++       przypisanym typie `Path on Linux`, wywołać `on[Linux]` od razu po złożeniu jej od wartości
++       stabilnej albo zbudować ją z tekstu: `t"${dir.encode}/$name".as[Path on Linux]`.
+
+% 0 1 0 071ac52b966c6f9e14c27faad588af58
+
+% 0 1 0 0de900039da9cc5e1f50d327750a7570
+
+% 1 1 0 0e40812e568acdac1741b4841a0df671
+
+% 1 1 0 0396be11179880af07444a35117520e3
+
+@ 0 10 0 02864fce25dc5879061d678bc706db64
++   entry .%   korzeń ścieżki POSIX, eksportowany do pakietu jako `%`
++       Obiekt rozszerzający `Path(t"/")` z pustym `Topic`, którego `Limit` to jego własny typ.
++       `% / "name"` to początek każdej ścieżki POSIX; jest eksportowany do `serpentine` i do
++       modułu zbiorczego `soundness`, więc zapisuje się go bez kwalifikacji.
++   entry .apply   ścieżka z tekstu korzenia i nazw, od liścia, z wybraną płaszczyzną i typami
++       `Path(t"/", t"capulet", t"verona")` to konstruktor klasy case: tekst korzenia, a potem
++       nazwy od najgłębszej, i równa się `% / "verona" / "capulet"`. Przeciążenie
++       `Path[filesystem, root, topic](root, descent: List[Text])` tworzy ścieżkę z ustawionymi
++       wszystkimi trzema składowymi typowymi, niczego nie sprawdzając: to element, z którego
++       budowane są operacje oraz własne dekodery płaszczyzny.
+
+% 2 1 0 1666dc8148a7abf211481248089fd804
+
+% 3 1 0 1acf4f887b9c7f2c0c34147976532266
+
+% 0 1 0 179589beb967c3d208bcebdb3af0cbf8
+
+% 1 1 0 1a20deb1836ccd4c1f83ce4a9b56e8c6
+
+@ 0 37 0 02e613732ede5d6610ea9011d80e81e3
++   entry .unplatformed   ścieżka ze znanym tematem i korzeniem, ale bez płaszczyzny, niesprawdzana
++       `Path.unplatformed[root, topic](root, descent*)`: to, co buduje `/`, gdy dziecko nie jest
++       dopuszczalne na płaszczyźnie rodzica, więc wynik nie ma `Plane`, dopóki `on` jej nie
++       zwiąże.
++   entry .decodable   odczytuje `Path on filesystem` z tekstu, z separatorem i korzeniem płaszczyzny
++       Wymaga `Filesystem` płaszczyzny oraz `Radical` i `Eradicable` dla typu jej korzenia.
++       Korzeń odczytuje `Eradicable`, resztę dzieli się według separatora, końcowa pusta nazwa
++       jest pomijana, a każda nazwa jest odescapowywana. Instancja zachowuje `Eradicable`, a wraz
++       z nim tę `Tactic[Path.Error]`, którą on przyjął: płaszczyzna, której korzeń nie może być
++       niepoprawny (archiwum zip, sieć WWW), daje dekoder, który nie potrzebuje taktyki.
++   entry .decodable2   odczytuje `Path on filesystem under root` z tekstu, zachowując typ korzenia
++       Jak `.decodable`, dla typu docelowego, który wskazuje także korzeń, takiego jak
++       `Path on Linux under %.type`, potrzebnego w dopasowaniu do wzorca z `/:`.
++   entry .instantiable   tworzy `Path on filesystem` z tekstu, dla API przyjmujących dowolny typ ścieżki
++       Given `Instantiable across Paths from Text`: biblioteka, która zwraca ścieżki typu
++       wybranego przez wywołującego (`entry[Path on Linux]()`), dekoduje je przez niego, z tymi
++       samymi wymaganiami co `.decodable`.
++   entry .trustedInstantiable   tworzy `Path on filesystem` z tekstu ścieżki, o którym już wiadomo, że jest poprawny
++       Given `Instantiable across Paths from Paths.Trusted`: dane ścieżki pochodzące z samego
++       systemu plików nie mogą być niepoprawne, więc dekodowanie odbywa się pod własnym
++       `unsafely`, a wywołujący nie potrzebuje `Tactic[Path.Error]`. Wymaga `Filesystem`
++       płaszczyzny, `Radical` jej korzenia oraz `Eradicable`, który przyjmuje taktykę.
++   entry .encodable   przedstawia ścieżkę jako tekst w notacji jej płaszczyzny: korzeń, a potem nazwy połączone separatorem
++       Wymaga `Filesystem` płaszczyzny; każda nazwa jest escapowana przez `Filesystem#escape`.
++       Ścieżka windowsowa `Drive('D') / "Globe"` koduje się jako `D:\Globe`.
++   entry .showable   pokazuje ścieżkę jako jej zakodowany tekst, dla dowolnej ścieżki na płaszczyźnie z `Filesystem`
++   entry .communicable   przedstawia ścieżkę jako komunikat, czyli jej zakodowany tekst
++   entry .inspectable   diagnostyczne przedstawienie dowolnej ścieżki, z płaszczyzną lub bez: `/verona/capulet`
++       Zawsze dostępne, ponieważ nie wymaga `Filesystem`: korzeń jest pokazywany tak, jak jest
++       przechowywany, czyli już w notacji płaszczyzny, a nazwy są łączone znakiem `/`, bez
++       odescapowania. `(% / "verona" / "capulet").inspect` to `t"/verona/capulet"`.
++   entry .nominable   nazwa ścieżki, dla API, które nazywają rzeczy: jej liść albo tekst korzenia, jeśli ścieżka nie ma nazw
++   entry .generic   dowolna ścieżka na płaszczyźnie z `Filesystem` jako `Abstractable across Paths to Text`
++       To pozwala przekazać ścieżkę serpentine do każdego API, które przyjmuje ścieżkę dowolnego
++       typu (jak robi to `Classpath.Directory(path)`): abstrahuje się ona do swojego
++       zakodowanego tekstu.
++   entry .convert   niejawna konwersja ścieżki o znanych nazwach na tę samą ścieżkę na płaszczyźnie
++       `Conversion[Path of topic under root, Path of topic on filesystem under root]`, przez
++       `#on`, więc nazwy są sprawdzane względem płaszczyzny docelowej podczas kompilacji:
+
+% 2 1 0 0e98e0ae8125504c005f6f8b8da67ead
+
+% 3 1 0 1733164bf221aece15012639b5bde178
+
+% 0 1 0 0205218d689aefb307ba246f5bc362d0
+
+% 0 1 0 06f0e42cf9696c780a98f320307abbf7
+
+% 1 1 0 043ccd697bd514be11440521f345e897
+
+@ 0 11 0 06edcb8f5cedf3f8067d0c099bb5ab76
++   entry .quotient   ekstraktor `/:` dla ścieżki: jej korzeń, a potem reszta jako nazwa lub `Relative`
++       Ścieżka bez nazw nie pasuje. Ścieżka z jedną nazwą pasuje jako `root /: name`, a ścieżka z
++       większą liczbą nazw jako `root /: relative`, gdzie `Relative` ponownie dopasowuje się przez
++       `/:`, za każdym razem odrywając najwyższą nazwę. Korzeń jest dekodowany przez `Eradicable`
++       płaszczyzny, więc dopasowanie wymaga, by `Limit` ścieżki był znany
++       (`Path on Linux under %.type`), a dla korzenia, który może być niepoprawny, także
++       `Tactic[Path.Error]`.
++   entry .conjunction   najgłębszy wspólny przodek dwóch ścieżek, obliczany podczas kompilacji, gdy to możliwe
++       Rozszerzenie dla dowolnej `Path`. Gdy nazwy obu ścieżek są znane i mają one wspólny
++       korzeń, nazwy wyniku są w jego typie:
++       `(% / "home" / "work" / "data").conjunction(% / "home" / "more")` to
++       `Path of Mono["home"]`. W przeciwnym razie wynik obliczany jest w czasie wykonania. Wynik
++       jest `Optional`, na wypadek dwóch ścieżek o różnych korzeniach.
+
+% 2 1 0 1dd92d00062dc77311a7be2d1c9d6fd0
+
+% 3 1 0 127877e45d4e6f3215b566420ba83b8c
+
+% 0 1 0 1582d143c71aa41512a6f6e3697877c5
+
+% 0 1 0 1a8138b200d8e5dc0b5e03c1c91bb944
+
+% 0 1 0 03a3b4ed3dd62281166ccb2687dab3ae
+
+% 1 1 0 0a03ab30893b7d39060c82cd0c2543d0
+
+@ 0 5 0 074be9867a69a7f80ee36591819c3cd9
++   entry .toward   ścieżka względna od jednej ścieżki do drugiej, obliczana podczas kompilacji, gdy to możliwe
++       Rozszerzenie dla dowolnej `Path`: `a.toward(b)` to `Relative`, który dodany do `a` daje
++       `b` – w górę od `a` do `conjunction` obu ścieżek, a potem w dół do `b`. Ścieżka względna
++       zachowuje płaszczyznę celu, a gdy każda nazwa jest znana, jej wznoszenie i nazwy są w jej
++       typie. Wynik jest `Optional`.
+
+% 2 1 0 148400eb402567e40f2ee253a49aec00
+
+% 3 1 0 1ffe07c69905eedf0929e2696cce25bf
+
+% 0 1 0 1aa802faa144fc9e13b7030c681c8c4a
+
+% 0 1 0 0506e70fa1956c641b71ed9887ded4a3
+
+% 0 1 0 1ee2812664dba7d403f85307dceaaa5a
+
+% 0 1 0 05434dc40b7abc400d152f114cc800ec
+
+% 1 1 0 11b3ab24124c3c60087894b876cbe3b9
+
+@ 0 1 0 131508bf83ae8cc404de0d3aabe73989
++   entry .Error   zgłaszany, gdy ścieżki nie da się odczytać ani rozwiązać: niepoprawny korzeń lub nazwa albo różne korzenie
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 2 0 06175fbfefd0e0c60b48222a6301a77f
++         Błąd `↯/s.70.1`: _the path `path` was invalid because `reason`_, gdzie ścieżka jest
++         podana, jeśli jest znana. `#reason` to `Path.Error.Reason`:
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 4 0 0f05ca2e342788f71a13a5a1ab147c4e
++         column  Przypadek
++         column  Kod
++         column  Komunikat
++         column  Uwaga
+
+% 0 1 0 09285e4f9fa3eb9707218ee7b2310512
+
+@ 0 1 0 1b4febce0b03d89f01c6f47edad49109
++         row  `InvalidRoot`  2  _the root is not valid_  tekst, który nie zaczyna się tak jak korzeń płaszczyzny, na przykład `C:` na Linuksie
+
+% 0 1 0 085b7ba5ac8ecda71e4fbe96bfc0fc5d
+
+% 0 1 0 0ea275c53574e9e41d111261dadf9c42
+
+% 1 1 0 11362977fd60dd600121d0d6fcc71418
+
+@ 0 3 0 120b355e3952e5940467114212e795d9
++         Zgłasza go `Eradicable` płaszczyzny, gdy tekst jest dekodowany jako ścieżka, oraz
++         `Path#resolve`. Nazwa, która łamie reguły płaszczyzny w chwili *dodawania* jej do
++         ścieżki, to `Name.Error`, a nie ten błąd.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 13db34982658c5cd18dfa07704806b28
+
+% 1 1 0 0fa776a024c8f3851138a5a062382aec
+
+@ 0 5 0 070d4d887def551d0230d9fbee493f1c
++     entry .apply   błąd ścieżki z przyczyny, wybranej jako `_.InvalidRoot`, i tekstu ścieżki, jeśli jest znany
++         `Path.Error(_.InvalidRoot, t"C:")`: przyczyna jest funkcją obiektu towarzyszącego
++         `Reason`, więc `Eradicable` płaszczyzny zapisuje `abort(Path.Error(_.InvalidRoot))`.
++         Wymaga `Diagnostics` w zasięgu, jak konstrukcja każdego błędu.
++     entry .Reason   dlaczego ścieżka była niepoprawna: `RootParent`, `InvalidRoot`, `DifferentRoots` lub `InvalidName`
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 14 0 19732c7c10ca72ba193fedc9e7339f53
++           Enum czterech numerowanych przypadków, które stanowią drugą część kodu błędu. Jego
++           obiekt towarzyszący ma anonimowy given `Communicable`, przedstawiający każdy z nich
++           jako komunikat, na przykład _the root is not valid_.
++       entry #number   numer przyczyny, od `1` do `4`
++     entry #reason   dlaczego ścieżka była niepoprawna
++     entry #path   tekst ścieżki albo `Unset`, jeśli nie jest znany
++   entry #root   korzeń jako tekst w notacji płaszczyzny: `/`, `C:\`, `refs/`
++   entry #descent   nazwy ścieżki, od liścia
++       `(% / "home" / "work").descent` to `t"work"`, `t"home"`; `encode` odwraca ich kolejność.
++       Ścieżkę odbudowywaną z nazw odczytanych od góry do dołu trzeba najpierw odwrócić.
++   entry #Topic   krotka nazw ścieżki, od najgłębszej, gdy kompilator je zna
++       `% / "verona" / "capulet"` to `Path of ("capulet", "verona")`, odczytywane przez
++       infiksowy alias `of`. Nazwa z tekstu z czasu wykonania wnosi swój typ singletonowy, a
++       ścieżka, której nazwy w ogóle nie są znane, ma ograniczenie `Tuple`.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0ba42635d19052360a77709b3c79c215
++         label Korzeń
+
+% 1 1 0 118520bcf90aceb41666ddc798e91b32
+
+% 2 1 0 0fe9a3ef9c80762d1c9747c9c0348d58
+
+% 0 1 0 127bf120d1aefef616eabe54ca77d355
+
+% 1 1 0 027a109f9f0798e6158aee07311ba9f5
+
+@ 0 1 0 1eaecc6822ae1b220456280983061c4a
++         label Jedna nazwa
+
+% 1 1 0 08d512572a7ec6db1ffe6ef4d61293b7
+
+% 2 1 0 12c2b9143670b41f02c956cc440ec7a3
+
+% 0 1 0 134930ed3dc2ee7407fdefa0b1dac378
+
+% 1 1 0 0a4b9afbb718adf90bc5b099a6106aeb
+
+@ 0 1 0 04a50461923f19371d32f796df2e808f
++         label Dwie nazwy, od najgłębszej
+
+% 1 1 0 00ae6c77bec5a84f00691433f3359478
+
+% 2 1 0 0e5fc590f1fc5b581fc8c319553f585d
+
+% 0 1 0 11f5159d171faab80e8488bd36c424a6
+
+% 1 1 0 057be8d89673bb181f0527cf35e8f990
+
+@ 0 1 0 033153c46653db8d05edadb6a95efd8c
++         label Związana z płaszczyzną
+
+% 1 1 0 1255a1a32eac1b141b9a0e6c271962c3
+
+% 2 1 0 072c0497a66b27f61aaa1715861566e0
+
+% 0 1 0 15bb5fff20544bcf0d2ba9d211d71ee3
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 14 0 0a143f9e22933dcc0df8bf5729e1b8e7
++   entry #name  nazwa liścia ścieżki albo tekst jej korzenia, jeśli nie ma nazw
++   entry #nil   czy ścieżka nie ma nazw, czyli jest samym korzeniem
++   entry #knownElementTypes   czy `Topic` jest znaną krotką, nawet jeśli niektóre jej nazwy są wartościami z czasu wykonania
++   entry #knownElements   czy każda nazwa w `Topic` jest literałem znanym kompilatorowi
++       `(% / "verona" / "capulet").knownElements` to `true`; ścieżka z nazwą pochodzącą ze
++       zmiennej albo z przypisanym typem `Path on Linux` daje `false`.
++   entry #depth   liczba nazw ścieżki, obliczana z `Topic`, gdy jest znany
++   entry #on   ta ścieżka związana z płaszczyzną, z każdą nazwą sprawdzoną według jej reguł
++       `path.on[Linux]` sprawdza każdą nazwę jej instancją `Admissible on Linux` – w czasie
++       kompilacji dla literału, a przez `Tactic[Name.Error]` dla tekstu z czasu wykonania – oraz
++       sprawdza korzeń: czy jego typ jest `Submissible` na płaszczyźnie, czy dekoduje się przez
++       `Eradicable` płaszczyzny, albo czy płaszczyzna ma jeden korzeń. Ścieżka, która już leży na
++       tej płaszczyźnie, jest zwracana bez zmian. Korzeń innej płaszczyzny to błąd kompilacji, więc
++       `(Drive('C') / "verona").on[Linux]` się nie kompiluje, a ścieżka na Linuksie swobodnie
++       konwertuje się na `MacOs`.
+
+% 2 1 0 14e67ab9d72005021f9f9aa73f7f9e03
+
+% 3 1 0 04914ced739f290e05e2c2eddcfcd3c2
+
+% 0 1 0 17be1d44694286c31a369282acd671a7
+
+% 0 1 0 059f86de68af76010ba06097b67caba0
+
+% 1 1 0 0954f73d4e03ab511833589a7c50a050
+
+@ 0 6 0 13bfbf0f04ae72461856ca01246a1d01
++   entry #/   dziecko tej ścieżki: jedna nazwa więcej, sprawdzona względem płaszczyzny, jeśli ścieżka ją ma
++       Dzieckiem może być literał napisowy, `Text`, `Name` lub dowolna wartość z instancją
++       `Navigable` (`Uuid`, `Ordinal` we wskaźniku JSON). Jeśli dziecko jest `Admissible` na
++       płaszczyźnie ścieżki, wynik pozostaje na tej płaszczyźnie, a nazwa jest sprawdzana – w
++       czasie kompilacji dla literału, przez `Tactic[Name.Error]` dla tekstu z czasu wykonania. W
++       przeciwnym razie wynik jest neutralny względem platformy, a typ singletonowy dziecka jest
++       dodawany do `Topic`.
+
+% 2 1 0 03e5461c96dbcea311c89cab79ddd088
+
+% 3 1 0 1f1e8f6c7a0df7770b670f21083e8cf1
+
+% 4 1 0 1ff31e64731cc6f3054abd7332d33681
+
+% 6 1 0 0577569b3b6fcb420092ea11ad7a7b15
+
+% 0 1 0 0424ffc58a2f0e160c5379b408aca939
+
+% 0 1 0 1f6ecdb00049cc9904e9b6d80ad96e2f
+
+% 1 1 0 0fcb98e38e070ddd1f42818ecdc8358f
+
+@ 0 11 0 175c7756ef5d307d0af042d9d8bf5161
++   entry #peer   element siostrzany tej ścieżki: jej liść zastąpiony inną nazwą
++       `path.peer("montague")` na `% / "verona" / "capulet"` to `% / "verona" / "montague"`.
++       Nazwa musi być `Admissible` na płaszczyźnie ścieżki. Metoda odczytuje `Topic`, więc na
++       ścieżce, której `Topic` jest abstrakcyjny, degeneruje się; tam element siostrzany należy
++       zbudować od `#parent`.
++   entry #parent   ścieżka o jeden poziom wyżej albo `Unset` dla korzenia
++       Typowana na podstawie `Topic`, gdy jest znany, więc rodzicem `Path of ("capulet", "verona")`
++       jest `Path of Mono["verona"]`, a rodzicem korzenia jest statycznie `Unset`.
++   entry #ancestors   wszyscy przodkowie tej ścieżki, od najbliższego, aż do korzenia
++   entry #+   ta ścieżka z zastosowaną ścieżką względną: najpierw wznoszenie, potem zejście jej nazwami
++       `(% / "home" / "work" / "data") + (? / ^ / "more")` to `% / "home" / "work" / "more"`, a
++       `Topic` wyniku jest obliczany z obu.
+
+% 2 1 0 1d5dd983dc8910150e5800ef85c2ce9d
+
+% 3 1 0 1c2627eab91bc248191f5149bb34b055
+
+% 0 1 0 1e6a56925ebe53ea028bf7f980051074
+
+% 0 1 0 02bbc7493a0ad1f213e0bd4704dd0b4b
+
+% 1 1 0 1fd80a816bb9ff9814e5a0e232b372b8
+
+@ 0 4 0 145413de8a3c337b11d86f6a185d9bf2
++   entry #resolve   tekst rozwiązany względem tej ścieżki: ścieżka bezwzględna jako ona sama, względna – od tego miejsca
++       `base.resolve(text)` dekoduje tekst jako `Path on Plane`, a jeśli to się nie uda, jako
++       `Relative on Plane` dodaną do tej ścieżki; tekst, który nie jest żadną z nich, zgłasza
++       `Path.Error` z przyczyną `InvalidRoot`. Wymaga dekoderów ścieżek bezwzględnych i
++       względnych płaszczyzny oraz `Tactic[Path.Error]`.
+
+% 2 1 0 0bf999b7b9ff58e8105d6d26560aacb5
+
+% 3 1 0 1c0806ebdcb166d41ac6b20e97a53bb8
+
+% 4 1 0 046075a6bd4ce3b40c20183f312959e2
+
+% 0 1 0 05058a38821ae5300350ee5efb2f5cf0
+
+% 0 1 0 0f433df0d351b3b60db5cf9aee461859
+
+% 0 1 0 0f9fd5cb3e73e7071362f3f50ecba0bb
+
+% 1 1 0 1b4ee5fcc4c4cb85186d382c01491f40
+
+@ 0 11 0 1d84c598dc048c9d06879f1d0a903fc4
++   entry #precedes   czy ta ścieżka jest przodkiem innej albo tą samą ścieżką
++       `(% / "verona" / "capulet").precedes(% / "verona" / "capulet" / "juliet")` to `true`;
++       korzenie muszą być takie same.
++   entry #relative   nazwy tej ścieżki jako `Relative` bez wznoszenia, jakby liczone od jej korzenia
++   entry #shift   ta ścieżka bez najwyższych nazw: `(% / "a" / "b" / "c").shift(1)` to `% / "b" / "c"`
++   entry #graft   te same nazwy na innym korzeniu
++       `path.graft(root)` wymaga `Radical` nowego korzenia na płaszczyźnie ścieżki, który zapisuje
++       korzeń jako tekst; `Limit` wyniku to typ singletonowy nowego korzenia.
++   entry #sameRoot   czy dwie ścieżki mają wspólny korzeń; statycznie `true` na płaszczyźnie z jednym korzeniem
++   entry #rename   ta ścieżka z liściem przemianowanym funkcją jego starej nazwy albo `Unset` dla korzenia
++       Blok otrzymuje starą nazwę jako kontekstowy `Text aka "prior"`, który odczytuje `prior`:
+
+% 2 1 0 12a7cace3c039248081c922decfb95cc
+
+% 3 1 0 0f16f780e7fc737115d752213ad787e7
+
+% 4 1 0 168ea6f7e197f3670b1fc1cd5a399635
+
+% 0 1 0 108c51767bb087c3132519c45bf4ac49
+
+% 0 1 0 1d738162ee6e2b5006bc59454db927fe
+
+% 1 1 0 040436392959c9001865f44683af1057
+
+@ 0 5 0 0e7764a11065a2871b75a4143e7651fc
++   entry #unsafeChild   dziecko z tekstu z czasu wykonania, bez żadnego sprawdzenia, dla nazwy już zweryfikowanej
++       `path.unsafeChild(name)(using Unsafe)` dodaje nazwę bez konsultowania reguł płaszczyzny;
++       wymazany token `Unsafe` oznacza miejsce wywołania. Używa się go tam, gdzie wiadomo, że
++       nazwa jest poprawna – na przykład nazwa odczytana z listingu katalogu – a koszt lub taktyka
++       sprawdzenia są niepożądane, albo tam, gdzie nie można użyć `/`, bo `Topic` ścieżki jest
++       abstrakcyjny.
+
+@ 0 1 0 1c9fe17da192af1207d3b38f24e25a90
++ entry .Relative   ścieżka względna: pewna liczba kroków w górę, a potem zejście złożone z nazw, typowana płaszczyzną
+
+% 1 1 0 1464745c5ddecee60b7adac75a2298c0
+
+@ 0 5 0 1aec97924d9755321ee826001eaf9871
++       `Relative` to klasa case złożona z `#ascent`, liczby kroków w górę, i `#descent` złożonego
++       z nazw, przechowywanych od liścia. Buduje się go od `?` operatorem `/`: `^` dla każdego
++       kroku w górę, a potem nazwy. Jego typ niesie płaszczyznę (`on`), `#Topic` jego nazw
++       (`of`) oraz wznoszenie jako literałowy `#Limit` (`under`), więc `? / ^ / "more"` to
++       `Relative of Mono["more"] under 1`.
+
+% 2 1 0 18c69ab67e5560880ca6440306f512ce
+
+% 3 1 0 16cca5a3c2d4701215289081a668298f
+
+% 0 1 0 0855b38cb7e53a161332214f53cc8bb9
+
+% 0 1 0 0f636bc802dc9829139a40feea5febd5
+
+% 0 1 0 1d1286e56a9090e006df6c25114fbc75
+
+% 0 1 0 190211cdc2daaac0056236958c1ef5f4
+
+% 1 1 0 0c8746b5537c062d09f01ca9f1d74b5c
+
+@ 0 4 0 0b6db716d5aac47a07bf8a0ff9263fe7
++       Ścieżkę względną zwraca `Path#toward`, stosuje się ją przez `Path#+`, a koduje i dekoduje
++       z nazwami bieżącej lokalizacji, rodzica i separatora jej płaszczyzny, więc
++       `? / ^ / "verona"` to `../verona` na Linuksie i `..\verona` na Windowsie. Podobnie jak
++       ścieżka bezwzględna, dekoduje się z tekstu tylko wtedy, gdy jej płaszczyzna jest wskazana.
+
+% 0 1 0 1a6dc83ab60658d70f43c37d5902f3c2
+
+% 0 1 0 034ff7979ce68ea00c325f774e1fea26
+
+% 0 1 0 1f8d9024e45c82d8073ae035cb7af1e0
+
+@ 0 42 0 1464fd9c93cbb4bc0fa1176dfad19130
++   entry .^   jeden krok w górę, zapisywany po `?` lub innym kroku: `? / ^ / ^`
++       Eksportowany do pakietu jako `^`. Nie niesie własnej wartości: `Ascent#/` go przyjmuje i
++       dodaje jeden do wznoszenia.
++   entry .?   bieżąca lokalizacja, pusty `Relative`, od którego buduje się ścieżki względne
++       Eksportowany do pakietu jako `?`. To `Ascent` równy zeru, więc `?` koduje się jako nazwa
++       bieżącej lokalizacji płaszczyzny, `.`, a `? / ^` wspina się o jeden poziom.
++   entry .apply   ścieżka względna z wznoszenia i nazw, od liścia, z wybraną płaszczyzną i typami
++       `Relative(1, List(t"verona"))` to konstruktor klasy case i równa się `? / ^ / "verona"`.
++       Przeciążenie `Relative[filesystem, topic, limit](ascent, descent*)` ustawia trzy składowe
++       typowe, niczego nie sprawdzając.
++   entry .decodable   odczytuje `Relative on filesystem` z tekstu, z nazwami bieżącej lokalizacji, rodzica i separatora płaszczyzny
++       Tekst równy nazwie bieżącej lokalizacji to `?`; w przeciwnym razie dzieli się go według
++       separatora, pomija końcową pustą nazwę i początkową nazwę bieżącej lokalizacji, liczy
++       początkowe nazwy rodzica jako wznoszenie, a resztę traktuje jako zejście. Niczego nie
++       zgłasza.
++   entry .encodable   przedstawia ścieżkę względną w notacji jej płaszczyzny: `../verona` na Linuksie, `..\verona` na Windowsie
++       Ścieżka względna wskazująca na siebie to nazwa bieżącej lokalizacji (`.`), a ścieżka ze
++       wznoszeniem i bez nazw to powtórzona nazwa rodzica (`../..`).
++   entry .showable   pokazuje ścieżkę względną jako jej zakodowany tekst, dla ścieżki na płaszczyźnie z `Filesystem`
++   entry .inspectable   diagnostyczne przedstawienie dowolnej ścieżki względnej, w notacji POSIX: `../../verona` lub `.`
++       Zawsze dostępne, z płaszczyzną lub bez: każdy krok w górę to `..`, nazwy są łączone znakiem
++       `/`, a ścieżka względna wskazująca na siebie to `.`.
++   entry .conversion   niejawna konwersja ścieżki względnej o znanych nazwach na tę samą ścieżkę na płaszczyźnie
++       Przez `#on`, więc nazwy są sprawdzane względem płaszczyzny docelowej.
++   entry .quotient   ekstraktor `/:` dla ścieżki względnej: jej najwyższa nazwa, a potem reszta
++       Ścieżka względna z dwiema nazwami pasuje jako `name /: name`, a z większą liczbą nazw jako
++       `name /: relative`, więc ścieżkę dopasowaną przez `/:` można rozebrać nazwa po nazwie.
++       Ścieżka względna z mniej niż dwiema nazwami nie pasuje.
++   entry #ascent   o ile kroków w górę ścieżka się wspina, zanim zacznie schodzić
++   entry #descent   nazwy ścieżki, od liścia
++   entry #Topic   krotka nazw ścieżki, od najgłębszej, gdy kompilator je zna
++   entry #Limit   wznoszenie ścieżki, jako typ literałowy, gdy jest znane
++   entry #delta   zmiana głębokości wyznaczana przez ścieżkę: liczba jej nazw minus wznoszenie
++   entry #name   nazwa liścia albo `Unset`, jeśli ścieżka nie ma nazw
++   entry #self   czy to ścieżka względna wskazująca na siebie, bez wznoszenia i bez nazw
++   entry #rename   ta ścieżka z liściem przemianowanym funkcją jego starej nazwy, odczytywanej jako `prior`
++   entry #on   ta ścieżka względna związana z płaszczyzną, z każdą nazwą sprawdzoną według jej reguł
++       Ścieżka względna, która leży już na płaszczyźnie `Compliant` z docelową (ścieżka
++       linuksowa wewnątrz archiwum tar), konwertuje się bez sprawdzeń; w przeciwnym razie każdą
++       nazwę sprawdza jej instancja `Admissible` na płaszczyźnie docelowej.
++   entry #unqualified   ta ścieżka względna z zapomnianą płaszczyzną
++   entry #parent   ścieżka o jeden poziom wyżej: bez liścia albo z jednym krokiem wznoszenia więcej, jeśli nie ma nazw
++   entry #/   dziecko tej ścieżki względnej: jedna nazwa więcej, sprawdzona względem płaszczyzny, jeśli ścieżka ją ma
+
+@ 0 1 0 0288eae16d540bb00d4072b4c7fd1438
++ entry .Ascent   ścieżka względna złożona z samych kroków w górę, która przyjmuje `^` jako dziecko
+
+% 1 1 0 1f5a2e4ed5792f2811e4ce5e0bc542b2
+
+@ 0 6 0 1d79f6c4ff76f7d009e868c4b4bedee7
++       `?` to `Ascent` równy zeru, a `? / ^ / ^` to `Ascent under 2`: `Relative` bez nazw, którego
++       `/` przyjmuje `^`, a także nazwę. Jego typ niesie wznoszenie jako literał, więc ścieżkę
++       względną, która wspina się ponad korzeń, można wychwycić tam, gdzie jest zapisana.
++   entry #ascent0   liczba kroków w górę, tak jak przyjął ją konstruktor
++   entry #Topic   zawsze `EmptyTuple`: wznoszenie nie ma nazw
++   entry #/   jeszcze jeden krok w górę, zapisywany `/ ^`
+
+@ 0 5 0 0a545f98b6984556095f6e2b97707711
++ entry .Root   klasa bazowa obiektu korzenia: `Path` bez nazw i ze stałym tekstem korzenia
++     `abstract class Root(name: Text)`: rozszerza się ją, by dać nowej hierarchii korzeń, jak
++     robią to `Classpath` (`Root(t"")`), `JsonPointer` i `Drive` z galilei (`Root(t"C:\")`).
++     Dwa korzenie są równe, gdy równe są ich teksty, a `Topic` korzenia to `EmptyTuple`, więc
++     `/` na nim rozpoczyna ścieżkę.
+
+% 2 1 0 1a863a7b4c4f08b81712c306195ad2a3
+
+% 3 1 0 0b2efdb8b70b1de21130c30004b92a9d
+
+% 0 1 0 0ca6af8d139f097a1de91963129f4af0
+
+% 0 1 0 185f7336e8b56bce16d2a927196031bd
+
+% 1 1 0 042cf9e15d7ded6e0b8dd6719a0f268e
+
+@ 0 1 0 1195abd46d0b8d5219191844fc93123e
++ entry .Filesystem   notacja płaszczyzny: jej nazwa, separator, nazwy bieżącej lokalizacji i rodzica oraz escapowanie
+
+% 1 1 0 1fd9430c3718d84d1c54c7c19b7da81d
+
+@ 0 4 0 1a52e7c8249c238e084d63348340a5ec
++       Klasa typów, która czyni typ płaszczyzną, na której można zapisywać ścieżki. Jej instancja
++       znajduje się w obiekcie towarzyszącym płaszczyzny, więc odnajduje się ją bez importu:
++       `Linux` ma `/`, `.` i `..`; `Windows` ma `\`; ścieżka klas, archiwum tar i drzewo Git mają
++       własne. Potrzebuje jej każde kodowanie i dekodowanie `Path` lub `Relative`.
+
+% 2 1 0 1517ed41080488f114ef1316063d1e02
+
+% 3 1 0 07193c7dfc5500f009c963d4d6725c1e
+
+% 0 1 0 0835eddf6596999c09e89bde128d395f
+
+% 0 1 0 1092830e37aaeff319769be6845aab46
+
+% 1 1 0 0dd582a1ed0b206b037f7ba6006b245c
+
+@ 0 10 0 0e250eaf1d0d5b890fbd582ceb7c25e5
++       `#UniqueRoot` mówi, czy płaszczyzna ma jeden korzeń (`Linux`), czy kilka (`Windows`, z
++       korzeniem dla każdego dysku): na płaszczyźnie z jednym korzeniem dwie ścieżki zawsze mają
++       wspólny korzeń, więc `Path#sameRoot` jest statycznie `true`, a `on` nie musi sprawdzać
++       korzenia.
++   entry #UniqueRoot   `true`, jeśli każda ścieżka na płaszczyźnie ma ten sam korzeń, jako typ literałowy
++   entry #name   nazwa płaszczyzny, do komunikatów: `Linux`, `Windows`, `Java classpath`
++   entry #separator   tekst między nazwami: `/` lub `\`
++   entry #self   nazwa bieżącej lokalizacji w ścieżce względnej: `.`
++   entry #parent   nazwa kroku w górę w ścieżce względnej: `..`
++   entry #escape   escapuje nazwę do zakodowania; domyślnie pozostawia ją bez zmian
++   entry #unescape   odwraca `#escape` na zdekodowanej nazwie; domyślnie pozostawia ją bez zmian
+
+@ 0 1 0 098ca898042866f00bf5630eafa24a47
++ entry .Radical   jak typ korzenia zapisuje się jako tekst: czysta połowa algebry ścieżek korzenia
+
+% 1 1 0 0e90919c2b8854d202505358655d1dc0
+
+@ 0 4 0 036d501c5dce82081bdf8aa994b45599
++       `root is Radical on plane` koduje wartość korzenia jako tekst przechowywany w `#root`
++       ścieżki `Path`: `%` jako `/` na Linuksie, `Drive` jako `C:\` na Windowsie. Nie może zawieść,
++       więc nie przyjmuje taktyki. Jej połową odczytującą jest `Eradicable`; typ korzenia
++       płaszczyzny ma obie, w obiekcie towarzyszącym płaszczyzny, a `Path.decodable` wymaga tej
++       pary.
+
+% 2 1 0 18cd9151906aa68b1076df7712d3610a
+
+% 3 1 0 021e2ac0723f17420dd410b562fad29f
+
+% 0 1 0 095247fc632352960956554e3cded602
+
+% 1 1 0 119c0583ab58690e0a02bef511c50bd8
+
+% 1 1 0 02ae28316356080a06da22fa09ed14df
+
+@ 0 1 0 0868b01a5bdcda8e1e3ec4fba8081921
++   entry #encode   korzeń jako tekst w notacji płaszczyzny
+
+@ 0 1 0 002b5dabe8fc53770949756fbf0671ed
++ entry .Eradicable   jak korzeń odczytuje się z tekstu i ile tekstu zajmuje
+
+% 1 1 0 02a0a5d3525a163f0126dfefb9d69829
+
+@ 0 6 0 1f0b12a0f6e9de0f02511646e5d4e307
++       `root is Eradicable on plane` odczytuje korzeń na początku tekstu ścieżki – `/` na
++       Linuksie, `C:\` na Windowsie – i podaje, ile znaków zajął, by resztę można było podzielić
++       na nazwy. Żadna z metod nie deklaruje błędu: korzeń, który może być niepoprawny, ma
++       instancję, która przyjmuje `Tactic[Path.Error]` w sygnaturze swojego givena i ją
++       przechwytuje, zgłaszając przyczynę `InvalidRoot`, natomiast korzeń, który nie może (archiwum
++       zip, ścieżka wyszukiwania, sieć WWW), ma instancję czystą, więc ścieżka dekodowana względem
++       niego nie potrzebuje taktyki.
+
+% 2 1 0 145eead4859f5e670ef6a3d0ffa5a91d
+
+% 3 1 0 0b5a22ca5eb59a1003072d890dfc38d5
+
+% 4 1 0 0b37816d25ef51b40319f35b788d843c
+
+% 0 1 0 14fdd1fdee5c8a35082cb15781445137
+
+% 0 1 0 01584d94b28d0f8205c976a8cbc1d1ea
+
+% 0 1 0 126ceb660b072a6e1900bd180a464d88
+
+% 1 1 0 1642a726d8c1c5960712d17764ca6263
+
+@ 0 2 0 05e384dfa9ac85cb1e55c43b02bb5fc8
++       To połowa odczytująca `Radical`, oddzielona od niej, by czyste przedstawianie nigdy nie
++       niosło zdolności.
+
+% 1 1 0 0e41d01bdc3e246603d0df265d2964fd
+
+@ 0 2 0 0a9d87d500692ca8062ce82235ac0436
++   entry #decode   korzeń na początku tekstu albo `Path.Error` płaszczyzny zgłoszony przez jej taktykę
++   entry #length   ile znaków tekstu zajmuje korzeń
+
+@ 0 1 0 0cb4aa65ca76945507003f27fb9df919
++ entry .Submissible   które typy korzeni przyjmuje płaszczyzna; sprawdzane, gdy ścieżka jest z nią wiązana przez `on`
+
+% 1 1 0 183e24033ce71339105c4548f6a5744b
+
+@ 0 4 0 0da3b61b837f7d851fc8d1ebf324f922
++       `root is Submissible on plane` pozwala związać ścieżkę zakorzenioną w `root` z `plane`
++       przez `Path#on`, po sprawdzeniu tekstu jej korzenia: `%.type` jest dopuszczalny na `Linux`
++       i `MacOs`, a `Drive` na `Windows`, więc `(% / "verona").on[Windows]` się nie kompiluje.
++   entry #check   sprawdza tekst korzenia, zgłaszając błąd przez taktykę, którą przechwytuje instancja
+
+@ 0 5 0 0d3bcb8d73210d760e113f8fd34a8b3b
++ entry .Compliant   że ścieżki względne jednej płaszczyzny są poprawne na innej, więc konwertują się bez sprawdzeń
++     `source is Compliant on target` pozwala `Relative#on[target]` przyjąć ścieżkę względną na
++     `source` bez zmian, nie sprawdzając jej nazw: `Relative on Linux` nazywa poprawne wpisy w
++     archiwum tar, więc `Linux is Compliant on Tar`. Klasa typów nie ma metod: jej obecność
++     jest dowodem.
+
+@ 0 1 0 0decd7c4707d6f9309379fb6b1e31944
++ entry .Admissible   które wartości mogą być nazwą na płaszczyźnie i jakie sprawdzenie każda musi przejść
+
+% 1 1 0 072663e8bffd833412fe99e6d0ca8731
+
+@ 0 5 0 131845a8071e9a6d0d7f7a27e48432c7
++       `value is Admissible on plane` sprawdza tekst, który ma stać się nazwą w ścieżce na
++       `plane`, gdy dodają go `Path#/`, `Path#peer` i `on`. Literał napisowy jest sprawdzany w
++       czasie kompilacji według reguł `Nominative` płaszczyzny (`.admissible`), więc
++       `% / "fo/o"` na Linuksie się nie kompiluje; `Text` z czasu wykonania jest sprawdzany w
++       chwili dodania, zgłaszając `Name.Error` przez `Tactic[Name.Error]` w zasięgu (`.text`),
++       chyba że jest już `Name` tej płaszczyzny.
+
+% 2 1 0 0fbde207e578f044038c3df99a00e128
+
+% 3 1 0 001373361393c5c10cbd9691536d597c
+
+% 4 1 0 17e7d171749c9baf181d6e56cebd265f
+
+% 6 1 0 1b844dc1a3a20ccb025047d0a153f4c9
+
+% 0 1 0 07979b4fe825cf8d0f7648298daeeb2a
+
+% 0 1 0 019596169fcdedca06e63922d5ad235d
+
+% 1 1 0 04b7ad4a1c0e7f2e07894b1a7bbe63c9
+
+@ 0 3 0 063814da22c4d38f1fb1edb8e581bb60
++       Nowy rodzaj nazwy otrzymuje instancję we własnym obiekcie towarzyszącym, utworzoną przez
++       `.apply` lub, dla typu, którego każda wartość jest poprawna, przez `.unchecked` (jak robi to
++       galilei dla `Uuid` na każdej płaszczyźnie systemu operacyjnego).
+
+% 0 1 0 074867e18dfde7241dccaaacc1662542
+
+@ 0 7 0 0b61aca69875c28c08228d0bdda4aced
++   entry .unchecked   instancja, która przyjmuje każdą wartość, dla typu nazwy, który nie może być niepoprawny
++   entry .apply   instancja z funkcji sprawdzającej, która zgłasza błąd, jeśli tekst nie jest poprawną nazwą
++   entry .text   sprawdza `Text` z czasu wykonania według reguł płaszczyzny, przez `Tactic[Name.Error]`
++       `Name` danej płaszczyzny nie wymaga sprawdzenia ani taktyki; każdy inny tekst jest
++       sprawdzany jako `Name` w chwili dodania do ścieżki, zgłaszając `Name.Error`, jeśli łamie
++       regułę.
++   entry .admissible   sprawdza literał napisowy według reguł `Nominative` płaszczyzny podczas kompilacji
++   entry #check   sprawdza tekst nazwy, zgłaszając błąd, jeśli nie jest dopuszczalna
+
+@ 0 1 0 00dca6e9ec60f6ae00b98fe524ffbbf9
++ entry .Navigable   jak wartość staje się nazwą w ścieżce: jej tekst
+
+% 1 1 0 1dd7520adcd3b2460b6095d65d5dd31a
+
+@ 0 3 0 0d0a2af2f33a45a70e83464e369621d6
++       `value is Navigable on plane` zamienia dziecko ścieżki w tekst jego nazwy. Literały
++       napisowe, `Text` i `Name` są nawigowalne na każdej płaszczyźnie; inne biblioteki dodają
++       własne, na przykład `Ordinal` we wskaźniku JSON lub `Uuid` na każdej płaszczyźnie systemu
++       operacyjnego.
+
+% 2 1 0 187a24c30cc49d810cf3d9120e85c1d0
+
+% 3 1 0 1f896b41ccd3cd630a5d10827e0c114d
+
+% 4 1 0 19052c4e2c82a5db115e5b6862de49d3
+
+% 0 1 0 1d2e309ce03d18e91684d6243e7b1a80
+
+% 0 1 0 17ac0523a3834e9d0e5e499ed6cbeaa2
+
+% 1 1 0 1259eeb17809a92f15bdd330c9164f1b
+
+@ 0 4 0 0ed4cfb16a025cc100554049d1b0c559
++   entry .label   literał napisowy to nazwa, którą zapisuje
++   entry .text   `Text` to nazwa, którą przechowuje
++   entry .name   `Name` danej płaszczyzny to nazwa, którą przechowuje
++   entry #follow   tekst nazwy, której odpowiada wartość dziecka
+
+@ 0 1 0 092af76f285077ea0d74f6560544c901
++ entry .Case   jak system plików traktuje wielkość liter w nazwach: rozróżnia ją, sprowadza do małych lub wielkich albo ją zachowuje
+
+% 1 1 0 0a784cd97f505a3602711b5d3f128aa5
+
+@ 0 4 0 13a3ec13d63d49251a3f3776879e3f5b
++       Enum czterech przypadków. `Sensitive` porównuje nazwy dokładnie i zachowuje je w zapisanej
++       postaci; `Preserving` zachowuje je w zapisanej postaci, ale porównuje bez względu na
++       wielkość liter, jak robią to macOS i Windows; `Lower` i `Upper` sprowadzają każdą nazwę do
++       jednej wielkości liter i porównują bez względu na nią.
+
+% 2 1 0 04b356f194f451e710edc5f6ba56ff07
+
+% 3 1 0 12370bdddf71cfb30a08edd750830219
+
+% 0 1 0 1d43b40e8211def914a9a540b06c28b7
+
+% 0 1 0 0e087d98f79e8142021d7fb3a564dd4a
+
+% 1 1 0 05287531f85648df198471f6e855dbc8
+
+@ 0 3 0 1bcf30fd17d83f9c0fbb33fbfe8dbf8b
++   entry #apply   nazwa w postaci, w jakiej przechowuje ją system plików: sprowadzona dla `Lower` i `Upper`, w pozostałych przypadkach bez zmian
++   entry #equal   czy dwie nazwy albo dwie listy nazw są takie same według tej reguły wielkości liter
++   entry #hash   hasz zejścia złożonego z nazw, spójny z `#equal`
+
+@ 0 1 0 0e60a349eb746eca1ed001b437f22490
++ entry .internal   makra stojące za `Path.toward` i `Path.conjunction`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 02fb6661123bb12a19d473fecda7fff7
++       Nie do bezpośredniego użytku: obiekt zawiera arytmetykę ścieżek czasu kompilacji, którą
++       wklejają rozszerzenia `toward` i `conjunction` w obiekcie towarzyszącym `Path`.
++   entry .toward   makro stojące za `Path.toward`: ścieżka względna między dwiema ścieżkami, statycznie, gdy to możliwe
++   entry .conjunction   makro stojące za `Path.conjunction`: wspólny przodek dwóch ścieżek, statycznie, gdy to możliwe

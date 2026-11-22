@@ -1,0 +1,44 @@
+orthant 2 language
+
+@ 0 2 0 1ce2591c7910df8715cb6ee0ece79b7c
++ Ukończone, gdy: moduł zostaje wydany z testami, stronami błędów i tematem w `doc/en/modules/`
++ oraz wykonuje pełny obieg wektorów przykładowych z RFC 7515/7516.
+
+@ 0 5 0 185e0933a78085f60dda1fb01867e9b3
++ Zrobione: #2530 (2026-11-20). sigillate: `Jws`, `Jwe`, `Jwk` i `Jwt`, z każdym algorytmem z
++ RFC 7518 poza kompresją `zip` oraz z EdDSA i X25519 z RFC 8037; handler tokenów okaziciela dla
++ scintillate i zestawy kluczy pobierane przez HTTP. Jego testami są przykłady z dodatku A
++ RFC 7515 i dodatku A RFC 7516, odczytywane z tekstu RFC. enigmatic zyskał prymitywy, których mu
++ brakowało: wyprowadzanie kluczy, opakowywanie kluczy AES, AES-CBC z HMAC, RSA-OAEP i RSA-PSS.
+
+@ 0 2 0 19e4d46c5d18ca6c0a3eac1338b276cc
++ Ukończone, gdy: moduł zostaje wydany z testami, stronami błędów i tematem w `doc/en/modules/`
++ oraz przechodzi standardowy zestaw testów zgodności TOML.
+
+@ 0 4 0 1119703a804af95f1fb4bb604086cc3a
++ Uwierzytelnianie bez hasła dla stosu webowego, dopełniające historię, którą zaczynają OAuth 2
++ i JOSE. Obsługa COSE, od której zależy – klucze COSE i asymetryczne algorytmy podpisu – pojawiła
++ się wraz z `brd-1`, podobnie jak odczyt i walidacja łańcucha certyfikatów X.509, które niesie
++ atestacja.
+
+@ 0 2 0 1c27de11db8327eb199b7672a17cf0fc
++ Ukończone, gdy: moduł zostaje wydany z testami, stronami błędów i tematem w `doc/en/modules/`,
++ a oskryptowana ceremonia rejestracji i asercji przechodzi względem referencyjnego
++ uwierzytelniacza.
+
+@ 0 7 0 0f072c1e402a18d91bb22643f0148107
++ Zrobione: #2530 (2026-11-20). chatelaine: dwie ceremonie strony ufającej, z każdym
++ sprawdzeniem z WebAuthn Level 2 §7.1 i §7.2, oraz formaty atestacji `none` i `packed`.
++ Referencyjnym uwierzytelniaczem jest uwierzytelniacz samej specyfikacji: wyniki rejestracji i
++ uwierzytelniania z jej wektorów testowych, dla poświadczeń ES256, ES384, ES512, RS256 i
++ Ed25519, są przyjmowane, a atestacje w formacie packed są walidowane względem kotwicy zaufania
++ wektorów. Programowy uwierzytelniacz w źródłach testowych odgrywa całe ceremonie oraz sposoby,
++ w jakie są one odrzucane. Wirtualnym uwierzytelniaczem przeglądarki nie sterowano.
+
+@ 0 2 0 17114dda9db220b1111dfa3e427832ac
++ Ukończone, gdy: moduł zostaje wydany z testami, stronami błędów i tematem w `doc/en/modules/`
++ oraz współpracuje z referencyjnym serwerem i klientem HTTP/3.
+
+@ 0 2 0 0c7008ff6c9ff7ce1e83f47b9ad6f3b1
++ Ukończone, gdy: moduł zostaje wydany z testami, stronami błędów i tematem w `doc/en/modules/`,
++ a oskryptowana sesja przechodzi względem referencyjnego serwera IMAP.

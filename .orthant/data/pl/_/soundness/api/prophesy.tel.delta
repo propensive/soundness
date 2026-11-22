@@ -1,0 +1,529 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0415716c36e534a3103ab7ac353ef7ea
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0fae7dc84d36d5b11ce796d3316f5f71
++ info   słownictwo uzupełniania kodu: kandydaci, konteksty słów kluczowych i elaborowane miejsca wywołań
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 10ea3891c45958ec09972cbea5c738f0
++     _Prophesy_ zawiera typy wspólne dla silnika uzupełniania kodu i bibliotek, które on
++     obsługuje, bez zależności którejkolwiek ze stron od kompilatora. Silnik uzupełniania, taki
++     jak `Scala.highlight(…).completions` z Harlequin, wytwarza `Completions`; typ `Dynamic`
++     oferuje składowe, które przyjęłaby jego metoda `selectDynamic`, nadając swojemu obiektowi
++     towarzyszącemu interfejs `Completable`; a na uzupełnianie słów kluczowych odpowiada
++     `ScalaKeywords.pattern`, starannie opracowane drzewo trie nad tokenami prowadzącymi wstecz
++     od karetki, sprowadzonymi do abstrakcji jako `Lexeme`.
+
+@ 0 1 0 17193901196928e11f704105c7f38c94
++     Typ `Dynamic`, którego prawidłowe nazwy składowych nie są symbolami, nadal może uczciwie
++     oferować uzupełnienia:
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 14babb71825dd42a0812a9a86a24c9b5
+
+% 0 1 0 16953be36d5f617703367cc5c9865e98
+
+% 0 1 0 19626e92bec512d6058179250bd6b92b
+
+% 0 1 0 00360cb9bb1c62350c1c47362034343c
+
+% 0 1 0 07615dbbfc72883101bee1a242d343c2
+
+% 0 1 0 1eee95d370c70178054b0e765716ad71
+
+% 0 1 0 03560cc121abb7aa17cfd7bd965a2fa9
+
+% 1 1 0 13ffd710f85783531e94cf80750f225d
+
+% 0 1 0 15c859bd7281394b0f41bc31c675e71e
+
+% 0 1 0 050065f179c94c7915da9bf12b1b4175
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 1 0 1dc3101f671622521e35a71c93477b89
++     Elementy łączą się następująco:
+
+@ 0 6 0 0617bb82ead8d77904bc691b685affa9
++     - `Completion` i `Completions` to jeden kandydat i jedna odpowiedź na żądanie uzupełnienia.
++     - `Completable` to interfejs, który obiekt towarzyszący typu `Dynamic` implementuje, aby
++       oferować składowe.
++     - `Lexeme`, `KeywordPattern`, `Keywords` i `ScalaKeywords` odpowiadają, które słowa
++       kluczowe mogą wystąpić w miejscu karetki i jakiej treści niebędącej słowem kluczowym
++       oczekuje tam gramatyka.
++     - `Elaboration` rejestruje, co typer dodał do wywołania poza jego tekstem źródłowym –
++       wywnioskowane argumenty typów i syntetyzowane argumenty `using` – na potrzeby podglądu
++       po najechaniu i podpowiedzi wstawianych w tekst.
+
+@ 0 5 0 05c1d4b95063124217bf2f4ecbade183
++     Biblioteka ma jeden zbiór źródeł, `prophesy.core`. Do modułu zbiorczego `soundness`
++     eksportowany jest tylko `Completable`: `Completion` i `Completions` kolidowałyby tam
++     z uzupełnieniami wiersza poleceń z exoskeleton o tych samych nazwach, więc sięga się do
++     nich jako `prophesy.Completion` i `prophesy.Completions` (a Harlequin reeksportuje je we
++     własnym pakiecie). Do typów słów kluczowych i elaboracji sięga się przez `import prophesy.*`.
+
+% 0 1 0 10676ce6e3b47f230a1a40670d7c658f
+
+% 0 1 0 1bffaf2b57508a7100f912a083500e9e
+
+% 0 1 0 1906fc465e7c9aad1815c88974ce22a0
+
+@ 0 1 0 0dee3b849e05eeee0392fd97900849d4
++ entry .Completable   interfejs, przez który obiekt towarzyszący typu `Dynamic` oferuje uzupełnianie tabulatorem
+
+% 1 1 0 16365be60f94610a10bcb12cef959968
+
+@ 0 7 0 05a08f9bc86bbb390f04fd1f058d680e
++       Interaktywny silnik uzupełniania kompilatora nie potrafi wyliczyć składowych, które
++       przyjęłaby implementacja `selectDynamic` lub `applyDynamic`, ale rafinowany typ odbiorcy
++       często określa je w pełni. Typ `Dynamic` oferuje je, gdy jego obiekt towarzyszący
++       rozszerza `Completable`. Silnik uzupełniania (taki jak ten z Harlequin) znajduje obiekt
++       towarzyszący na podstawie typu odbiorcy w miejscu karetki, ładuje go refleksyjnie we
++       własnej JVM i wywołuje `#completions` z działającym `Quotes` oraz pełnym, rafinowanym
++       `TypeRepr` odbiorcy.
+
+% 2 1 0 177953cd4993ad870a5a9dd8ac6dedea
+
+% 3 1 0 09109412c37cd0730863c2d3551599f9
+
+% 4 1 0 08cb10c160e8274004538692d43474d2
+
+% 0 1 0 0617620ee88faef006aa3d49248ca1f3
+
+% 0 1 0 18966ac29f61face1dcd8299c78acbca
+
+% 0 1 0 1c36e7eede3f7afb12993b8cefe8df25
+
+% 0 1 0 13d4b209a199f8231d7296614ed37333
+
+% 0 1 0 125fb5746506d78c083f01ea0f5038d6
+
+% 0 1 0 049e4a78f466c07008f41807595b3431
+
+% 0 1 0 1c867d8bda39924c186e2e1433fefe7e
+
+% 0 1 0 12fd987c2c5e2eb404d802cdd4b41bb7
+
+% 0 1 0 02d68d34a8c0dc1718ef5888b4b3c3a3
+
+% 1 1 0 0d25a60a808d55cb07f26a3f0f3e7016
+
+@ 0 4 0 0a6e714681744e9c11f5affc5c3ba2e6
++       Ponieważ obiekt towarzyszący jest ładowany refleksyjnie z klas na ścieżce klas silnika,
++       musi być skompilowany i znajdować się na tej ścieżce, a nie tylko w edytowanym źródle.
++       W ten sposób wartość `Foreign` z xenophile oferuje uzupełnienia składowymi, które
++       nazywają jej obce deklaracje. `Completable` jest eksportowany do modułu zbiorczego
++       `soundness`.
+
+% 1 1 0 19c4fc63c496711e028306f89f330249
+
+@ 0 5 0 1981ef8c598ea1d90cefbb7894615ab0
++   entry #completions   uzupełnienia dla typu odbiorcy i dotychczas wpisanej części nazwy składowej
++       Przyjmuje `TypeRepr` odbiorcy i `prefix` już wpisany w miejscu karetki (być może
++       pusty), a zwraca `List[Completion]`. Implementacja może filtrować według prefiksu, ale
++       nie musi, ponieważ silnik i tak według niego filtruje. Musi być czysta i całkowita:
++       każdy rzucony przez nią wyjątek silnik przechwytuje i traktuje jako brak uzupełnień.
+
+@ 0 1 0 106b7a7e12b2cfed1d005c6269ff700d
++ entry .Completion   jeden kandydat uzupełnienia: tekst do wstawienia, jego rodzaj, sygnatura i dokumentacja
+
+% 1 1 0 1b1b76a743bfbc1405d1481cfc462d12
+
+@ 0 3 0 0a1743c9643319bd1e3a01b376c6d1ae
++       Klasa case z polami `#name`, `#kind`, `#signature` i opcjonalnym `#documentation`. Silnik
++       uzupełniania zwraca ich listę wewnątrz `Completions`, a obiekt towarzyszący `Completable`
++       buduje je dla składowych typu `Dynamic`.
+
+% 2 1 0 10cd04bad279f2591b8fa26f6fcb40b9
+
+% 3 1 0 109052273bf7ea891d9c35b808593973
+
+% 4 1 0 1bc05fd9218597881e2f8cb319dba5eb
+
+% 0 1 0 18da7f5ac4c4564904c3ab3f66101fa6
+
+% 1 1 0 1b6906c59c9308220849fef01471e352
+
+% 0 1 0 1494b31b250aa17a1cf57e766abc12fb
+
+% 1 1 0 14a652053a8e5a060ebc9d037e6e4193
+
+@ 0 3 0 066071b1e6a11fe702aeab13de13246a
++       `Completion` nie jest eksportowany do modułu zbiorczego `soundness`, gdzie nazwy tej
++       używają już uzupełnienia wiersza poleceń z exoskeleton; należy pisać
++       `prophesy.Completion` albo importować go z `prophesy`. Harlequin reeksportuje go jako
++       `harlequin.Completion`.
+
+% 0 1 0 1bb41cbf159c1d8b0da5563c9846a1e5
+
+% 0 1 0 1c8c00017837aa74154839c23066bd0b
+
+@ 0 8 0 04dc157260256f221516d36c5c28adfb
++   entry .Kind   jakiego rodzaju składową jest kandydat uzupełnienia
++       Typ wyliczeniowy z przypadkami `Term`, `Method`, `Given`, `Extension`, `Type`, `Module`,
++       `Package` i `Keyword`, z którego edytor korzysta przy wyborze ikony i przy decyzji, na
++       przykład, czy wstawić nawiasy po `Method`.
++   entry #name   tekst do wstawienia
++   entry #kind   `Completion.Kind` kandydata: term, metoda, given, rozszerzenie, typ, moduł, pakiet lub słowo kluczowe
++   entry #signature   typ składowej jako `Syntax` ze stenography: pełna sygnatura metody albo typ wartości
++   entry #documentation   dokumentacja składowej albo `Unset`, jeśli jej nie ma
+
+@ 0 1 0 0cb2b66fc5be7b9c07e0959b4fddff94
++ entry .Completions   odpowiedź na żądanie uzupełnienia: obszar do zastąpienia i kandydaci
+
+% 1 1 0 020a6b4a63e3f51a045d38055b703729
+
+@ 0 4 0 161a9d01a69bbdc4194af5ad95cbaddd
++       `#replace` to obszar źródła, który zastępuje wybrane uzupełnienie, jako `Span` w trybie
++       `Offset` – częściowy identyfikator w miejscu karetki – a `#items` to kandydaci.
++       `Scala.highlight(source, caret = …).completions` z Harlequin zwraca taką odpowiedź albo
++       `Unset`, gdy nie podano karetki.
+
+% 2 1 0 05712911534650d60629f0bb4c910852
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 1979b2e32ceb36a31e1d66d3f59a2b40
+
+% 0 1 0 0e1b2e36dcacd6581905b64a2faeffbf
+
+% 0 1 0 1660bd84cced823d1fa728679741c8b8
+
+% 0 1 0 04bded23c00d96c50f9418faf72357c8
+
+% 1 1 0 0c1d71d4bd0cb86a0c8a41a08c8c9c38
+
+@ 0 2 0 0b926566119501a90dec4a3411023c8e
++       Podobnie jak do `Completion`, sięga się do niego jako `prophesy.Completions` (lub
++       `harlequin.Completions`), a nie przez moduł zbiorczy `soundness`.
+
+% 1 1 0 0b641f63573d40f70b7c53af271e0dd5
+
+@ 0 2 0 01eb3db238dd573b010b9aba8111e53d
++   entry #replace   `Span` w trybie `Offset` obejmujący fragment źródła, który zastępuje wybrane uzupełnienie
++   entry #items   kandydaci uzupełnienia, jako wartości `Completion`
+
+@ 0 1 0 150994eb6ba9e7a30c298852812e1c6a
++ entry .Elaboration   jedno miejsce wywołania, które typer elaborował poza jego tekstem źródłowym, na potrzeby podglądu i podpowiedzi w tekście
+
+% 1 1 0 17c5bfd56e33b8e80e59e803b2b56dd9
+
+@ 0 5 0 0818c9ce66246fdb1bb5a6966ec2d377
++       Rejestruje dla jednego wywołania, co dodał kompilator, a czego programista nie napisał:
++       prostą nazwę wywoływanej metody jako `#method`, przesunięcia jej tokenu w źródle jako
++       `#start` i `#end`, *wywnioskowane* argumenty typów jako `#typeArguments` oraz
++       *syntetyzowane* argumenty `using` jako `#givenArguments`. Nic, co zapisano w źródle, nie
++       jest rejestrowane, więc edytor może pokazać dokładnie tę elaborację, która w innym razie
++       pozostaje niewidoczna.
+
+@ 0 2 0 03680f9f2390defa1383773665b59679
++       `.scan` znajduje każde takie wywołanie w typowanym drzewie. Harlequin używa go, aby
++       dołączać elaboracje do tokenów podświetlanego źródła, z kluczami według ich przesunięć.
+
+% 0 1 0 177dbea43b08f8530001e1715dd11669
+
+@ 0 1 0 002b812ec7d9f24f0374fd46b4ecee70
++   entry .Instance   given, który kompilator dostarczył dla jednego syntetyzowanego argumentu `using`
+
+% 1 1 0 1898e76e959e653302106f4715d24e15
+
+@ 0 11 0 17934101793afcd80bf1608a2ce84e48
++         `#name` to kwalifikowana nazwa symbolu głowy givena – dla instancji derywowanej nazwa
++         metody derywacji – a `#tpe` to poszerzony typ argumentu, jako `Syntax` ze
++         stenography.
++     entry #name   kwalifikowana nazwa dostarczonego givena lub metody, która go derywowała
++     entry #tpe   poszerzony typ syntetyzowanego argumentu, jako `Syntax`
++   entry .scan   każde elaborowane miejsce wywołania w typowanym drzewie, uporządkowane według pozycji
++       Przyjmuje `Quotes` i typowane `Tree`, a zwraca `List[Elaboration]` posortowaną według
++       `#start`, scalając argumenty typów i argumenty given z kilku klauzul jednego wywołania.
++       Skanowanie działa tak samo na bieżącym przebiegu typera, jak na drzewach
++       zdeserializowanych z TASTy: wywnioskowany argument typu rozpoznaje się po tym, że
++       obejmuje całe drzewo funkcji, wokół którego został owinięty, a syntetyzowany argument
++       `using` po tym, że ma zerową rozciągłość na końcu swojej klauzuli.
+
+@ 0 10 0 0e451aec76c3f88c18f41866ff2dfaf9
++       Węzeł `Inlined` wnosi swoje pierwotne wywołanie i nie schodzi się w jego głąb, ponieważ
++       drzewa rozwinięcia niosą własne pozycje definicji inline. Skanowanie nigdy nie zawodzi:
++       węzeł, którego nie da się odczytać, jest pomijany. Token selekcji przybliża się jako jej
++       końcowe `name.length` znaków, co źle umiejscawia nazwy w odwrotnych apostrofach; źle
++       umiejscowiony klucz nie zostaje dołączony do żadnego tokenu, więc kosztem jest jedynie
++       brakująca podpowiedź.
++   entry #method   prosta nazwa wywoływanej metody
++   entry #start   przesunięcie w źródle, od którego zaczyna się token wywoływanej metody
++   entry #end   przesunięcie w źródle, na którym kończy się token wywoływanej metody
++   entry #typeArguments   argumenty typów wywnioskowane przez typer, jako `Syntax`, z pominięciem zapisanych jawnie
++   entry #givenArguments   argumenty `using` syntetyzowane przez typer, jako wartości `Elaboration.Instance`
+
+@ 0 1 0 020c92c3062ef5ef0ce2dcc42f7c2e81
++ entry .Lexeme   token sprowadzony do abstrakcji na potrzeby uzupełniania słów kluczowych: słowa kluczowe i symbole zachowane, identyfikatory wymazane
+
+% 1 1 0 1c85f8dfcde85be51cd1bbb2c980b79e
+
+@ 0 5 0 1d7e9616ea4a0db81de1701d54761dc5
++       Alfabet, względem którego dopasowuje `KeywordPattern`: abstrakcja strumienia tokenów,
++       w której tekst identyfikatorów nie ma znaczenia (każdy identyfikator termu to po prostu
++       `Term`, każdy identyfikator typu – `Typal`), ale każde słowo kluczowe i każdy token
++       symboliczny jest istotny z osobna. Tokenizer, taki jak ten z Harlequin, odwzorowuje
++       swoje tokeny na leksemy, a wzorzec konsultuje się z ciągiem *odwróconym*, czytanym od
++       karetki na zewnątrz.
+
+@ 0 8 0 0fa349c600cf2c0002c8776262b12065
++       Przypadki to `Keyword(word)`, obejmujący zarówno twarde słowa kluczowe, jak i miękkie
++       modyfikatory, identyfikowane po dokładnym tekście – w pobliżu karetki miękki modyfikator
++       jest leksykalnie nieodróżnialny od identyfikatora, więc odwzorowanie odbywa się po
++       tekście; `Symbol(glyph)` dla tokenu symbolicznego, takiego jak `=>` lub `:`;
++       `Open(bracket)` i `Close(bracket)`, z `Lexeme.Bracket`; `Term`, `Typal` i `Literal`;
++       `Break`, granica instrukcji (podział wiersza, po którym kontynuacja nie ma głębszego
++       wcięcia, podczas gdy podział wiersza, który jedynie kontynuuje wyrażenie, nic nie
++       wnosi); `Start`, początek danych wejściowych; oraz `Error`, token, którego tokenizer
++       nie potrafił sklasyfikować.
+
+% 2 1 0 1a02f6fbd03f89321fca614dfd97fbb1
+
+% 3 1 0 1ecdc0d82f67283315e447eb0e29df5a
+
+% 4 1 0 05c759dab2fe6de814c5b5d5d3361373
+
+% 0 1 0 068d39d9ac661e9202c681c600e729d6
+
+% 0 1 0 13cd0381a64e93de06039891bf2967d0
+
+% 0 1 0 07a8bc5225247e9619ba69ecfb1a93df
+
+% 1 1 0 1306d00acf5f0d8c1ccb6bff3271ac4c
+
+% 2 1 0 13bcd108a11ee466062d083ad25022ac
+
+@ 0 1 0 08fce13d6a40fc2319d89e145e138f2b
++   entry .Bracket   kształt leksemu nawiasu: `Round`, `Square` lub `Brace`
+
+@ 0 1 0 08a6c5bd8cab9a7c19804c4d8967ab5f
++ entry .KeywordPattern   drzewo trie nad odwróconymi kontekstami leksemów, odpowiadające, które słowa kluczowe mogą wystąpić dalej
+
+% 1 1 0 050bb5fc4428726401bfabcce11f3031
+
+@ 0 7 0 1e6411ecdab864940c1a2491b03fe941
++       Węzeł drzewa wzorca. `#result`, jeśli występuje, to `Keywords` określone przez dotychczas
++       przetworzony kontekst; `#branches` uszczegóławiają go, patrząc o jeden `Lexeme` dalej
++       wstecz od karetki. Wyszukiwanie przez `#apply` schodzi do pierwszej gałęzi, której
++       element pasuje do kolejnego leksemu, i zwraca najgłębszy napotkany wynik, więc wynik
++       w węźle wewnętrznym jest domyślny, gdy żaden głębszy wzorzec nie pasuje, a drzewo patrzy
++       wstecz dokładnie tak daleko, jak długo ma to znaczenie. Kolejność gałęzi odpowiada ich
++       istotności: gałęzie `Exact` powinny poprzedzać gałęzie klas wieloznacznych.
+
+% 2 1 0 146cbed6618458091119ec1e255d9878
+
+% 3 1 0 0f425495f7ef6682108b6affbcaf8060
+
+% 4 1 0 174ebc83c051bc1d1881f967fe53cdae
+
+% 0 1 0 1a278f89a42dd0d01b6442c1fd1125c5
+
+% 0 1 0 0a86194f76620c2d107414cddc592264
+
+% 0 1 0 13339b9bb83cd8d00723366d14367a9f
+
+% 0 1 0 05383a18d8f120e4059f3d2f952cc363
+
+% 0 1 0 09f52cc11c8467c10f3d885a12ab3805
+
+% 0 1 0 05eb8dff3b7d2c0109c814f9a62bb8ba
+
+% 0 1 0 028a827f0a0139d2107666c7f9fd7dac
+
+% 0 1 0 0f0cef932626b2aa1034901f95c767ab
+
+% 0 1 0 0821ea535368090004520a145ec86be5
+
+% 0 1 0 161ae6b1d9a609d00e7205155b02f594
+
+% 0 1 0 10885315505c8764184f000e695d1ab4
+
+% 0 1 0 06d96a5a713e414e04fa19f9bd0603e2
+
+% 1 1 0 1d9d27ff49ece03809370a77d9183f2b
+
+@ 0 1 0 13d038166506643f18df4f8aa8e6b5ca
++       `ScalaKeywords.pattern` to starannie opracowane drzewo dla samej Scali.
+
+% 0 1 0 1a4f39fe3137a373093a08d337cf2728
+
+% 1 1 0 18ef08292988378b10ea034f2d3f583c
+
+% 0 1 0 12ca5ea4dc613f3d0786f8a39d2dbe39
+
+@ 0 1 0 056d80f5d69cbc7206ee9711296ea1fc
++   entry .Element   jeden krok wzorca słów kluczowych: dokładny leksem albo klasa leksemów
+
+% 1 1 0 182874c0f1b7a9da04810a66388bdd9a
+
+@ 0 22 0 1071dea4a2916f4e09749f6ecb52fbe3
++         Element, który gałąź `KeywordPattern` dopasowuje do pojedynczego leksemu odwróconego
++         kontekstu. `Exact(lexeme)` pasuje do jednego leksemu; elementy klas są mechanizmem
++         wieloznaczności, który pozwala opracowanemu drzewu uogólniać bez wyliczania każdego
++         dosłownego kontekstu: `AnyKeyword` pasuje do dowolnego `Lexeme.Keyword`; `AnySymbol`
++         do dowolnego `Lexeme.Symbol`, otwartej klasy operatorów takich jak `+`, `::` i `++`;
++         `ValueEnd` do dowolnego tokenu kończącego wyrażenie (nawiasu zamykającego,
++         identyfikatora termu lub literału); `TypeEnd` do dowolnego tokenu kończącego typ
++         (identyfikatora typu lub zamykającego `]`); `AnyOf(lexemes)` do dowolnego leksemu ze
++         zbioru; a `Any` do każdego leksemu.
++     entry #matches   czy ten element przyjmuje dany leksem
++   entry .Expectation   jakiej treści niebędącej słowem kluczowym oczekuje gramatyka w miejscu karetki
++       Typ wyliczeniowy: `TermBinding`, gdy zapisywana jest nowa nazwa termu (po `val`, `def`
++       lub na początku parametru), więc uzupełnienia składowych należy wstrzymać;
++       `TypeBinding`, gdy zapisywana jest nowa nazwa typu (po `class`, `trait`, `type`);
++       `TypeIdentifier`, gdy może nastąpić wyłącznie typ (po `new`, `extends`, dwukropku `:`
++       przypisania typu), więc propozycje zawęża się do typów; oraz `Nothing`, gdy żadne
++       słowo kluczowe nie jest możliwe, ale uzupełnienia składowych pozostają prawidłowe, jak
++       po `.`.
++   entry #result   słowa kluczowe określone przez dotychczas dopasowany kontekst albo `Unset`, aby odziedziczyć wynik węzła nadrzędnego
++   entry #branches   uszczegółowienia tego węzła, każde jako `Element` i poddrzewo, do którego się schodzi, gdy pasuje
++   entry #apply   wyszukuje słowa kluczowe dla odwróconego kontekstu leksemów, czytanego od karetki na zewnątrz
++       Zwraca najgłębsze `Keywords` znalezione na pierwszej pasującej ścieżce albo
++       `Keywords.empty`, jeśli żaden węzeł na niej nie ma wyniku. Kontekst jest przetwarzany
++       tylko tak głęboko, jak sięga drzewo, więc przekazanie całego długiego wiersza nie
++       kosztuje więcej niż przekazanie jego ostatnich tokenów.
+
+@ 0 1 0 092e88c38f410e1b1f0477c1f24c9609
++ entry .Keywords   słowa kluczowe prawdopodobne w miejscu karetki i inna treść, której oczekuje tam gramatyka
+
+% 1 1 0 1ca01e4fffb68b3c1705846c5004a2af
+
+@ 0 4 0 18f09e0e5531f01a0e6fb6733ccd5658
++       Wynik konsultacji `KeywordPattern`: zbiór `#keywords`, które mogą wystąpić dalej, oraz
++       opcjonalnie `#expectation`, czyli `KeywordPattern.Expectation` mówiące, czy oczekiwana
++       jest nowa nazwa, typ, czy wyłącznie składowe. Wielowyrazowe słowo kluczowe, takie jak
++       `case class`, występuje w zbiorze jako jeden element.
+
+% 2 1 0 06b8a4d0ed2bfde307d6531ebb0b6968
+
+% 3 1 0 1e67fc94a47efe9008fc8f8fe970c681
+
+% 4 1 0 029b7b0646b0376206e83b2baf1adafd
+
+% 0 1 0 0270486cabe6c8aa0837355c749d801b
+
+% 0 1 0 0b949122167d382012bfbac861f85039
+
+% 1 1 0 05e51225f66dddac0868d0a46880fdb4
+
+@ 0 3 0 14340e1ae0f064160a7b4e43c75613ae
++   entry .empty   brak słów kluczowych i brak oczekiwania: wynik wyszukiwania, które niczego nie dopasowało
++   entry #keywords   słowa kluczowe, które mogą wystąpić dalej, jako tekst; wielowyrazowe słowo kluczowe to jeden element
++   entry #expectation   oczekiwana treść niebędąca słowem kluczowym albo `Unset`, jeśli wzorzec tego nie określa
+
+@ 0 1 0 008a96f9dc6fef620afc4a1ea9a6419c
++ entry .ScalaKeywords   twarde i miękkie słowa kluczowe Scali 3 oraz opracowane drzewo uzupełniania słów kluczowych dla Scali
+
+% 1 1 0 0423f957a161d43212c0b62001f99c84
+
+@ 0 4 0 049f8ea1aa17c9d20274a6b5cd019c84
++       `.hard` i `.soft` to alfanumeryczne słowa kluczowe Scali 3, a `.all` – ich suma, jedyna
++       kopia współdzielona przez podświetlanie w Harlequin i każdy host, który musi odrzucić
++       słowo kluczowe jako nową nazwę. `.pattern` to `KeywordPattern` do uzupełniania słów
++       kluczowych w źródle Scali.
+
+@ 0 10 0 19b1209c452b14ee1bc2562c9ab691c8
++       Wzorzec jest pisany ręcznie, wyprowadzony z analizy korpusu około 445 000 wystąpień słów
++       kluczowych w rzeczywistym kodzie Scali i z nią sprawdzony; analiza ta podaje słowa
++       kluczowe zaobserwowane po każdym odwróconym kontekście karetki oraz to, jak daleko
++       wstecz trzeba czytać kontekst, zanim się ustali. Szum miękkich modyfikatorów jest
++       usuwany ze zbiorów korpusu – `open` po `def` to nazwa metody, a nie słowo kluczowe –
++       a gramatyka, którą korpus poświadcza zbyt słabo, jest dodawana z powrotem, na przykład
++       `class` i `object` po `case`. `implicit` i `with` w stylu Scali 2 po `:` nigdy nie są
++       oferowane. Gdy jeden kontekst leksemów obejmuje dwie pozycje gramatyczne, na przykład
++       wcięte ciało szablonu po `:` i przypisanie typu w tym samym wierszu, oferowana jest
++       suma, ponieważ słowo kluczowe zaproponowane tam, gdzie nie jest ściśle prawidłowe, jest
++       nieszkodliwe, a brakujące jest błędem.
+
+@ 0 1 0 01ecef948077c5ec0e20051ac0069902
++       Oto jak propozycja zawęża się w miarę odczytywania kolejnych części kontekstu przed
++       karetką:
+
+% 2 1 0 0c74a114700ea4a80934b207ba20893e
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 146336a8882fd3470358d002e75bdc9d
++         label Po `inline`: definicja albo warunek inline
+
+% 1 1 0 0985af076f28c40605279e84a79499e4
+
+% 2 1 0 1d47f2be93a1dc55154eac176f163637
+
+% 3 1 0 1c17e8333b6885b31eaf50ad118ff7ef
+
+% 0 1 0 04ff69fec2a89e3c05ca6708d6f9a304
+
+% 0 1 0 053b440d85374ce617836313c2cd0efb
+
+% 1 1 0 0b7c084000eeede902b075cb319a9b88
+
+@ 0 1 0 0527132fe3e8503b0fe4d951933922be
++         label Po `transparent inline`: tylko definicja
+
+% 1 1 0 081f597e64443222136f6faccf3bc614
+
+% 2 1 0 0d7066c6153e43a60574c4d6e913c1cf
+
+% 3 1 0 10d019a5124f69371e6fd19e4c721fd3
+
+% 0 1 0 179bfce1d0c241d61a2b91998c29f0af
+
+% 0 1 0 00c7010e78890dbf05322ffb27612bfb
+
+% 1 1 0 14de4330f12a2ab1007af2f9d4b90cb2
+
+@ 0 1 0 0b95ccc10cdf0a0900fe0efbe831b359
++         label Po `def`: nowa nazwa i brak słów kluczowych
+
+% 1 1 0 1eca4c4143f103fa1da3b3b58f8bde17
+
+% 2 1 0 13f790bdd1b26031063c8906c6c65853
+
+% 3 1 0 17173bdcae3981eb0c038ca13854baa6
+
+% 0 1 0 1b5da5e9e8bb8a2f1efc77ff65ad97b5
+
+% 0 1 0 1508986bdb2479cd055775cb66c96630
+
+% 1 1 0 06c9e20eb00befe51b3f986631ccd12d
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+% 2 1 0 1384ae0dc968651f071faf9c27000fc6
+
+% 1 1 0 0694625da3300d1900f2f60f37b57d32
+
+@ 0 3 0 0e85bb0f88c06866173c4f4d9fd6dba7
++   entry .hard   twarde alfanumeryczne słowa kluczowe Scali 3, zastrzeżone wszędzie, a więc nigdy niebędące identyfikatorami
++       Od `abstract` do `yield`, łącznie z `implicit` i `macro`, jako `Set[Text]`.
++   entry .soft   miękkie alfanumeryczne słowa kluczowe Scali 3, które są słowami kluczowymi tylko w określonych pozycjach
+
+% 0 1 0 1ab890c87c621be204d6f59eba8d711b
+
+@ 0 11 0 174f684908fb0a4915edce1b155263bd
++       `throws`, `tracked`, `transparent` i `using`: identyfikatory, które parser czyta jako
++       słowa kluczowe tam, gdzie wskazuje na to jego podgląd w przód, a które lekser bez
++       takiego podglądu oznacza jako zwykłe identyfikatory. Host rozstrzygający, czy słowo
++       jest nazwą, potrzebuje ich obok `.hard`.
++   entry .all   wszystkie słowa kluczowe Scali 3, twarde i miękkie, jako jeden zbiór
++   entry .pattern   opracowany `KeywordPattern` do uzupełniania słów kluczowych Scali
++       Konsultowany z odwróconymi wartościami `Lexeme` sprzed karetki. Granice instrukcji
++       oferują wszystko, co może rozpoczynać instrukcję; selekcja składowej oferuje tylko
++       postfiksowe `match`, singletonowe `.type` i importowe `.given`, z `Expectation.Nothing`;
++       początek definicji oczekuje nowego wiązania i nie oferuje słów kluczowych; a każdy
++       modyfikator oferuje to, co może po nim nastąpić.

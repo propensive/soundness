@@ -1,0 +1,120 @@
+orthant 2 language
+
+@ 0 1 0 043e132ec4408f70196d003879c52f48
++ # Kody błędów Soundness
+
+@ 0 3 0 109a9d8d80a6b07a0257350788513443
++ Każdy błąd numerowany przez Soundness nosi stały identyfikator, swój
++ [kod bolt](https://github.com/propensive/bolt), postaci `↯/s.m.n` lub `↯/s.m.n.v`, gdzie:
+
+@ 0 9 0 1340546497bd0ec60b5f307728ba5d5d
++ - `s` to litera, którą kody bolt oznaczają Soundness;
++ - `m` to numer modułu, w którym znajduje się błąd, według [listy modułów](modules.md) i pliku
++   `s.tel` rejestru `bolt`: moduły są numerowane w kolejności, w której każdy następuje po tych,
++   od których zależy, według stanu z chwili nadania mu numeru, a nowy moduł otrzymuje następny
++   numer;
++ - `n` to numer błędu w obrębie modułu, pierwszy wolny w chwili napisania błędu;
++ - `v`, jeśli występuje, identyfikuje konkretny wariant błędu (zazwyczaj przypadek wyliczenia
++   `Reason`).
+
+@ 0 3 0 16f734a4f7e758ae1dd4a38cae637301
++ Błąd zgłaszany z powodu błędu innego projektu nosi kod tamtego błędu po własnym: `Tel.Error` ze
++ Stratiform dla dokumentu, który Specyfikacja TEL odrzuca z `↯/t.1.7`, to `↯/s.118.1/t.1.7`.
+
+@ 0 4 0 08eee926cbcbbf28154c566af45e2a34
++ Przedstawiony przedrostek pojawia się w wyjściu kompilacji jako `[↯/s.m.n.v]`, w kolorze, jeśli
++ włączone jest ustawienie `-color` kompilatora. W źródle numery są pierwszymi argumentami
++ `fulminate.Error` i `halt`: `Error(118, 1, reason.number)`.
+
+@ 0 9 0 16eb3d0022cb1df91ca7960fbc6b9275
++ Każdy błąd jest udokumentowany w pliku markdown `<m>.<n>.md`. Gdy błąd ma warianty, każdy
++ `↯/s.m.n.v` jest udokumentowany w tym samym pliku, pod `## Variants`: jako wiersz tabeli
++ `tabular` z kolumnami `Code`, `Reason` oraz tymi spośród `Meaning`, `Message` (przykład),
++ `Resolution` i `Wire code`, które mają jego warianty; albo – gdy jest ich pięć lub mniej i każdy
++ wymaga własnego wyjaśnienia i rozwiązania – jako podsekcja `### ↯/s.m.n.v` z akapitami
++ `**Example.**` i `**Resolution.**`. Wariant opisany wyłącznie przykładowym komunikatem jest
++ zawsze wierszem.
+
+@ 0 6 0 02a212945de3d5ab1ca0ecd163c9a15c
++ Kod nigdy nie jest używany ponownie. Gdy błąd zostaje usunięty, jego strona pozostaje, oznaczona
++ `(retired)`, i mówi, co się z nim stało, a jego numer jest oznaczony jako wycofany w `s.tel`:
++ referencja do kodu z wcześniejszego wydania nadal się rozwiązuje, a numeru nie można przez
++ przypadek przydzielić ponownie. Strona wycofanego kodu podaje, co go zastąpiło, w tabeli `Was` i
++ `Now`, z wierszem dla kodu i dla każdego z jego wariantów, który ma następcę, nawet jeśli jest
++ tylko jeden.
+
+@ 0 3 0 1588a91022d79cfe160d724e3964cc49
++ Każda strona nazywa plik źródłowy, z którego zgłaszany jest jej błąd. Nie podaje numeru wiersza,
++ ponieważ numer wiersza unieważnia każda edycja powyżej niego, a nic nie sprawdza, czy nadal jest
++ poprawny.
+
+@ 0 1 0 156273eb49ed3f3709601b4c0ecd6d0a
++ ## Kody `SN-`
+
+@ 0 6 0 125c70dfb296065c0385eafac046c9ec
++ Zanim Soundness przyjął kody bolt, błąd miał postać `SN-ddd`, trzycyfrowego numeru unikalnego we
++ wszystkich modułach. [`sn.md`](sn.md) podaje kod bolt każdego kodu `SN-`, który był wówczas
++ aktywny. Strony nazwane trzema cyframi (`013.md`) to strony kodów `SN-` wycofanych wcześniej,
++ które nigdy nie miały kodu bolt; są zachowane, aby referencja z wcześniejszego wydania nadal się
++ rozwiązywała.
+
+@ 0 1 0 1d17a77f5501227a014c1ee515a48664
++ ## Rodziny
+
+@ 0 2 0 187f268abb248f4d01ab187cda3fdd60
++ Niektóre błędy są zgłaszane przez jedno sprawdzenie względem różnych granic, więc każdy ma
++ własną stronę, ale najłatwiej porównać je razem.
+
+@ 0 2 0 146c5aeab28c3e6c10f791bc03eecb0d
++ Literały całkowite Hypotenuse są sprawdzane względem zakresu ich typu:
+
+% 2 1 0 1c0a8c689c7dd0f41c8cbac804b1d9a6
+
+@ 0 5 0 080de99adb0731280b2c0a6fce66744c
++ column  Typ
++ column  Najmniejsza
++ column  Największa
++ column  Poniżej zakresu
++ column  Powyżej zakresu
+
+% 0 1 0 174f0198bc8f572e1956d26e84dcb2eb
+
+% 0 1 0 10a0ad3ca73adc8d08dbf760f6a8c0da
+
+% 0 1 0 07f0c65a054fe6110e3ef5b4b8b871a2
+
+% 0 1 0 0117980cd105f86b164dcd4cf47dd6d0
+
+% 1 1 0 1474605591279813121c680bc2404422
+
+@ 0 1 0 020d9450322308f71e6de091ebf0aac9
++ Literały binarne i szesnastkowe Hypotenuse:
+
+% 2 1 0 1c270a0b9adb220c18d17aac384a387c
+
+@ 0 7 0 14f4b67748d530910e3bf57f3abf2e8f
++ column  Kod
++ column  Literał
++ column  Odrzuca
++ row  [`↯/s.27.2`](27.2.md)  `bin"…"`  znak inny niż `0` lub `1`
++ row  [`↯/s.27.5`](27.5.md)  `bin"…"`  szerokość inną niż 8, 16, 32 lub 64 bity
++ row  [`↯/s.27.3`](27.3.md)  `hex"…"`  nieparzystą liczbę cyfr
++ row  [`↯/s.27.4`](27.4.md)  `hex"…"`  znak, który nie jest cyfrą szesnastkową
+
+% 1 1 0 045f2b7b908606db16da7efaf7949756
+
+@ 0 1 0 092ee5fd2df09a8f1fa02399ef6da8bd
++ Literały czasu sprawdzane przez makro `validTime` z Aviation:
+
+% 2 1 0 10b7d95cd45f5e701b2ef0e4cb952781
+
+@ 0 7 0 07a820cd14de0a061c087b688cee4154
++ column  Kod
++ column  Odrzuca
++ row  [`↯/s.73.8`](73.8.md)  argument, który nie jest literałem `Double`
++ row  [`↯/s.73.11`](73.11.md)  czas ujemny
++ row  [`↯/s.73.1`](73.1.md)  godzinę powyżej 12
++ row  [`↯/s.73.2`](73.2.md)  wartość minut powyżej 59
++ row  [`↯/s.73.7`](73.7.md)  minuty niezapisane dokładnie dwiema cyframi
+
+% 1 1 0 15c6421e3e308b040084b90f368dbfb1

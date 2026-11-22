@@ -1,0 +1,181 @@
+orthant 2 language
+
+@ 0 1 0 06243999aacdebca1046ca79b2e9d7b9
++ # Uczciwe sygnatury
+
+@ 0 6 0 05a48d9403baa413163dbe62a380a680
++ Sygnatura w Soundness mówi prawdę, całą prawdę i tylko prawdę o tym, czego potrzebuje
++ operacja. Najważniejsza jest część *tylko*: sygnatura nie deklaruje żadnego wymagania, które
++ nie jest potrzebne zawsze. Klasa typów opisuje pojedynczą zdolność, którą abstrahuje, bez
++ poszerzania swoich metod, by pomieścić to, czego mogłaby chcieć jakaś implementacja – bez
++ parametru kontekstowego „na wszelki wypadek”, bez błędu zadeklarowanego dlatego, że jedna
++ implementacja może zawieść.
+
+@ 0 8 0 050776059537a5f21ebabb954ea5dcc4
++ Wymagania, które mają tylko niektóre implementacje, należą do tych implementacji. `given`
++ deklaruje we własnej sygnaturze zdolności, od których zależy jego konkretna implementacja –
++ instancja oparta na sieci wymaga `Online`, zawodna wymaga `Tactic` – a wymaganie jest
++ spełniane tam, gdzie wybiera się instancję, a nie narzucane klasie typów i każdej innej jej
++ implementacji. Faktyczne wymagania metody są więc wyznaczane przez instancje, których ona
++ rzeczywiście używa: ten sam kod generyczny jest czysty z czystą instancją i sieciowy z
++ sieciową, a jego własna sygnatura nie twierdzi ani jednego, ani drugiego.
+
+@ 0 5 0 19082702522ce140151b159258ce26f0
++ Wynikiem są sygnatury, którym można ufać w obu kierunkach. Nic, czego wymaga operacja, nie
++ jest ukryte, więc wywołujący widzi prawdziwy koszt; i nic, co deklaruje, nie jest nieużywane,
++ więc wymaganie w sygnaturze zawsze ma znaczenie. Minimalną klasę typów łatwiej też
++ zaimplementować – luka między tym, czego żąda interfejs, a tym, czego potrzebuje większość
++ implementacji, to dokładnie miejsce, z którego biorą się nieuczciwe sygnatury.
+
+@ 0 1 0 0d28bfa57dc178a50304b9d5357bae5a
++ ## Wymaganie podróżuje z instancją
+
+@ 0 1 0 0e41017bf66db072143a9a63e7e34aa4
++ Klasa typów mówi tylko to, co abstrahuje:
+
+% 2 1 0 08511f38946741341bbbf25a2dfb526d
+
+% 3 1 0 190757efa6c1350e0d2c538315b96a61
+
+% 4 1 0 182f0d26b73fd2bf1a4948b33c9a9dd4
+
+% 0 1 0 02c7a26df30c501401305c4e011932e8
+
+% 0 1 0 179e46bbddd58b5718c8476807347cb6
+
+% 1 1 0 09f07a0a8270411015169f9365ad7e85
+
+@ 0 3 0 03b85a07d3ca79261d859371b061b0c8
++ Bez błędu, bez kontekstu, bez zdolności – ponieważ pokazanie wartości w ogólności niczego
++ takiego nie potrzebuje. Instancja, która *czegoś* potrzebuje, deklaruje to we własnej
++ sygnaturze, gdzie jest to prawdą:
+
+% 2 1 0 17b9f3afad580fd100610b38255e08fd
+
+% 3 1 0 0e7a270e06526271137ac9dcd3d8f10f
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 1 1 0 05fa8d9217c170b60ac90a2b81c4d78c
+
+% 0 1 0 0576420aca7e7e5e1922ada5e9e10712
+
+% 1 1 0 0301648f5402448b0e9aaf57d6d004cc
+
+@ 0 3 0 1eb4fbfd17b3a20901a1a04d5eddc357
++ W konsekwencji o faktycznych wymaganiach kodu generycznego decydują instancje, które on
++ rozwiązuje. Ta sama funkcja jest czysta, gdy dostanie czystą instancję, i zawodna, gdy dostanie
++ zawodną, a jej własna sygnatura – uczciwie – nie twierdzi ani jednego, ani drugiego.
+
+@ 0 1 0 14c93dff3f1441dc0bcc6b31b8049d15
++ ## Jak wygląda nieuczciwa sygnatura
+
+@ 0 2 0 12cc30a02acc2dec17ef1bd8aee97fe3
++ Ten tryb awarii łatwo rozpoznać, gdy już ma nazwę. Interfejs jest poszerzany tak, by
++ zmieściła się w nim najbardziej wymagająca implementacja:
+
+% 2 1 0 1e7efb761f35b79d1c3c5271c7c51c76
+
+% 3 1 0 14b629fbe10a291d183c2a96bb44aaa5
+
+% 4 1 0 1a6b3e7bf3fe96fe0f953f448acc836a
+
+% 0 1 0 0727f4fb3a23969f0fc305662732b161
+
+% 0 1 0 16e69ac9995d45220388ca90409a8294
+
+% 1 1 0 011286b2edac3720076089c0a7c14268
+
+@ 0 3 0 16d30ec94ef4c4461cc98c4bbf2d793b
++ Jedna implementacja pobiera schemat przez sieć; jedna może zawieść; więc *interfejs* wymaga
++ obu rzeczy, i teraz każdy wywołujący każdy kodek musi dostarczyć zdolność `Online` i strategię
++ obsługi błędów, niezależnie od tego, czy instancja, której używa, potrzebuje którejkolwiek z
++ nich.
+
+@ 0 5 0 0ccd8660e14c807304867b93771297c6
++ To coś gorszego niż niedogodność. Sygnatura przestała nieść informację: czytelnik, który widzi
++ `Online`, nie może już wnioskować, że operacja korzysta z sieci, ponieważ wymaganie jest tam z
++ powodu, który może nie mieć zastosowania. Gdy wiadomo, że kilka wymagań jest pozornych, żadnemu
++ nie można ufać, a dyscyplina się załamuje.
+
+@ 0 1 0 1bbf1444ff9ae7e813bfb30914acccaa
++ ## Co sygnatury rzeczywiście niosą
+
+@ 0 1 0 09b0b4f11ecac9060fcc8dd1df39d4d2
++ Ponieważ są minimalne, klauzule, które *są* obecne, coś znaczą:
+
+% 2 1 0 1b9c0c2072582f3313ab390678fd32bb
+
+% 3 1 0 0e43f4f614af615d05cbbf7dbbae4860
+
+% 4 1 0 1ed4edba580ed74604a1f8e82e2785d2
+
+% 0 1 0 018857ea871317110933c6faf344c891
+
+% 0 1 0 1ecb71c330c5f881087473b1f8518e17
+
+% 0 1 0 0e153cc65cba77c11a3d496a51bad7a4
+
+% 0 1 0 1969367c3b0bd78c082ca5e93302bda7
+
+% 1 1 0 12174855fc549fbe0659ccd5b8f2054e
+
+@ 0 1 0 1e03a2962898606107cba51ed2c04eaf
++ Każda klauzula wyraża jedno twierdzenie:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 04e35d87f6c057221c6fa6843d9bec8c
++ column  Klauzula
++ column  Oznacza, że metoda
++ row  `using Online`  sięga do sieci
++ row  `raises`  może zawieść i mówi jak
++ row  `logs`  emituje zdarzenia tego typu, więc wywołujący wie, co dokąd kierować
++ row  `using Monitor`  może wstrzymać wywołujące pasmo
+
+% 1 1 0 125abc22c916799009e53ae83ab12207
+
+@ 0 2 0 1c21f921c834a2a917fef31061bc918a
++ Metoda bez żadnej z nich nie robi żadnej z tych rzeczy, a możliwość wyrażenia takiego
++ twierdzenia jest coś warta.
+
+@ 0 1 0 1e7d385d16e6fa0f13a6c2a7d4909e82
++ ## Uczciwość co do przechwytywania
+
+@ 0 4 0 02148923c21d21470b2aebc16f24e140
++ Sygnatura może popełnić subtelniejszą nieuczciwość: zwrócić wartość, która potajemnie zależy od
++ czegoś o ograniczonym zasięgu. Strumień wciąż trzymający otwarty plik, domknięcie wciąż
++ trzymające handler błędów – typ mówi `Stream[Text]`, a prawda brzmi „strumień, ale tylko
++ dopóki ten plik jest otwarty”.
+
+@ 0 6 0 0a6594ecb32835f4187e2b96e8e5c0a4
++ [Sprawdzanie przechwytywania](capture-checking.md) czyni to również częścią sygnatury. Typ
++ wartości zapisuje zdolności, które ona przechwytuje, więc operacja nie może po cichu zwrócić
++ czegoś, czego ważność jest węższa, niż sugeruje jego typ. Dlatego zasada uczciwości i
++ sprawdzanie przechwytywania idą w parze: jedno dotyczy tego, czego operacja *potrzebuje*,
++ drugie tego, od czego *zależą* jej wyniki, i oba są przypadkami sygnatury mówiącej całą
++ prawdę.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ile to kosztuje
+
+@ 0 3 0 074cbc2bef00b976167e30cdcc717a22
++ **Instancje niosą więcej.** Przeniesienie wymagań na instancje oznacza, że instancje je
++ deklarują, a sygnatura zawodnej instancji jest dłuższa niż w wersji naiwnej. Korzysta na tym
++ czytelnik wywołujący kod generyczny, a nie ten, kto pisze instancję.
+
+@ 0 4 0 16b1d044219973741b5eed38ca038ac2
++ **Wymagania się propagują.** Metoda wywołująca coś, co potrzebuje `Online`, musi je albo
++ dostarczyć, albo zadeklarować. To mechanizm działający zgodnie z przeznaczeniem – kosztem tego,
++ że sygnatura coś znaczy, jest konieczność jej utrzymywania – ale oznacza to, że zmiana głęboko
++ w łańcuchu wywołań może wypłynąć na sam szczyt.
+
+@ 0 5 0 1c9e03e016d626df186b6663a8c70eca
++ **Niepowodzenia rozwiązywania są pośrednie.** Gdy brakuje potrzebnej instancji, kompilator
++ zgłasza nieudane wyszukiwanie niejawne zamiast „ta operacja potrzebuje `Online`”. Import
++ `explainMissingContext` zamienia to w diagnozę wskazującą import, który by je spełnił – to
++ naprawa kosztu, który w przeciwnym razie spadłby dokładnie na tych, którym uczciwość ma służyć.
+
+@ 0 2 0 07287f51d3dceaae098c1fe31ad3aff3
++ Zobacz [kontekst deklaratywny](declarative-context.md), by dowiedzieć się, jak dostarcza się
++ wymagania, oraz [obsługę błędów](error-handling.md), dotyczącą najczęstszego z nich.

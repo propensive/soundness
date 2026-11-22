@@ -1,0 +1,455 @@
+orthant 2 language
+
+@ 0 1 0 1a2ad7d31d8ddcf20045843fa0d64619
++ ## Typy mediów
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 4 0 1530efebba479db1104f8b8e899f0c7e
++ [Typ mediów](https://en.wikipedia.org/wiki/Media_type), np. `application/json` lub
++ `text/html; charset=UTF-8`, określa, co oznacza strumień bajtów. Jest reprezentowany
++ strukturalnie: jego grupa, podtyp, przyrostki `+suffix` i parametry są typowanymi częściami, a
++ nie podnapisami.
+
+@ 0 4 0 0da7e94002840ec01a356f40efa080a7
++ [Interpolator][interpolator] `media"…"` sprawdza literał względem
++ [rejestru IANA](https://www.iana.org/assignments/media-types/media-types.xhtml) w
++ [czasie kompilacji][czas kompilacji]. Błędnie zapisany typ mediów, taki, jaki przeglądarki po
++ cichu źle obsługują, jest błędem kompilacji, z podpowiedzią, o co prawdopodobnie chodziło.
+
+@ 0 3 0 02cd3c5e3626974d0808b2b873aad23e
++ [Klasa typów][klasa typów] `Media` pozwala dowolnemu typowi zadeklarować własny typ mediów. W
++ ten sposób oznaczają się odpowiedzi HTTP, udostępniane pliki i załączniki e-mail. Treści
++ wieloczęściowe, czyli format przesyłania plików, są parsowane na typowane części.
+
+@ 0 1 0 05cb7fee4487a1db1af68f3c80009871
++ ### O typach mediów
+
+@ 0 3 0 144f54e9cc688342113084748f64b1bb
++ Typy mediów wyglądają jak dowolny tekst, ale nim nie są. Gramatyka odróżnia typy
++ zarejestrowane od drzew dostawców. Przyrostki niosą znaczenie: `svg+xml` *jest* XML-em.
++ Parametry takie jak `charset` zmieniają sposób interpretacji bajtów.
+
+@ 0 3 0 0aa37ef71e1d7d5a0517e59d1e26bd2f
++ Typy mediów są zwykle obsługiwane jako napisy, więc literówka daje typ, który wygląda
++ wiarygodnie i którego żaden odbiorca nie rozpoznaje. Odbiorcy zwykle przechodzą na ścieżkę
++ rezerwową, zamiast zgłosić niepowodzenie, więc pomyłka objawia się subtelnie błędnym
++ zachowaniem, daleko od jej źródła.
+
+@ 0 4 0 1f6909325b1b26ae03ce08b885430369
++ Tutaj typy mediów są parsowane w całości, literał jest sprawdzany względem samego rejestru, a
++ wartość jest typowana. Sprawdzanie typu mediów podczas kompilacji kodu to
++ [bezpieczeństwo przez konstrukcję](../../philosophy/safety-by-construction.md) zastosowane do
++ napisu, któremu inaczej by się ufało.
+
+@ 0 2 0 1c2fee29596c6422194462ee7c65dca2
++ Wszystko pochodzi z pakietu `soundness`. Przykłady rzucają każdy błąd jako wyjątek, a ostatni
++ import pozwala im wypisywać wyniki:
+
+% 2 1 0 0683c532939f05bd1bf8f090f2826090
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1c04e3b1ab1572cf0042a99dfcb6bcab
++ ### Zapisywanie typu mediów
+
+@ 0 1 0 0a7fda08c490ef7d016ae15824f2f339
++ Interpolator `media"…"` sprawdza swój literał w czasie kompilacji. Typ zarejestrowany
++ przechodzi:
+
+% 2 1 0 15c3566bde6bb9060d9927265c49fe49
+
+% 0 1 0 1e51e920691e2cb602952889873ba491
+
+% 0 1 0 1061f158c688af9f0de776381b13f38c
+
+% 1 1 0 12a54b5f38edebf90ea5e35abd3215f7
+
+@ 0 2 0 0a55077677efe2b402cce1c7c2ba7110
++ Niezarejestrowany typ w drzewie standardowym zawodzi i podpowiadana jest zbliżona
++ zarejestrowana nazwa:
+
+% 2 1 0 151de73d1c84aa4501e1b134092e7b3a
+
+% 3 1 0 06a0b02166d3f8e61394894bb26be6ad
+
+% 4 1 0 0566b54df3c9c36b1a323a22aab32caf
+
+% 5 1 0 0b84b20b3d8dcd6f0b16cc9c3096ba77
+
+% 0 1 0 11b1cda2675e5f5108ad17e77d9326fd
+
+% 1 1 0 196c1ec6bf9b71710d974e9d3d729828
+
+@ 0 2 0 0262bf735f3ae9780d4e0eba34310427
++ Pozostałe drzewa są akceptowane bez sprawdzania w rejestrze, zgodnie z zaleceniem standardu:
+
+% 2 1 0 18cc13cea592395b1d17b063ccdf32cd
+
+@ 0 8 0 03e9a05e79ffbeb819ddd234d74984c3
++ column  Drzewo
++ column  Zapisany podtyp
++ column  Jako `Media.Subtype`
++ column  Sprawdzany w rejestrze
++ row  standardowe  `json`  `Standard`  tak
++ row  dostawcy  `vnd.…`  `Vendor`  nie
++ row  osobiste  `prs.…`  `Personal`  nie
++ row  eksperymentalne  `x-…`  `X`  nie
+
+% 1 1 0 16591c18731351661dafdaaafdfb03c8
+
+@ 0 1 0 167b73c3564b8c9418eb3b132dcb9671
++ ### Struktura
+
+@ 0 1 0 0e20dd81dcf8fe2113774cdecbe964c9
++ Sparsowany `MediaType` udostępnia swoje części:
+
+% 2 1 0 1d21539546c0f7350366474ee555b9a4
+
+% 0 1 0 1bcf89a34eb236b11eea28ea15fa251d
+
+% 1 1 0 101362b6b7811c190b7df023a288db90
+
+% 3 1 0 12cae3c6901e48d61eb27767b39e2521
+
+% 4 1 0 165c1f0e31aa30e10eedabf7d0ca1944
+
+% 5 1 0 0781b3aab4d15df10e05acf82c756687
+
+% 0 1 0 18944ea44c864bcb1a589aa28706069b
+
+% 0 1 0 0a0ccd91cc00ad9109fefed189ac4a0d
+
+% 0 1 0 0ec765a2c5e54d9d0c069f826d99e413
+
+% 1 1 0 16c8253107205e4007a8a40d8dacdaba
+
+@ 0 1 0 175904fb22627da315b892679776e30b
++ `basic` to typ mediów bez parametrów. Parametry dodaje się jako argumenty nazwane:
+
+% 2 1 0 1d16e07c1d4fc06a07c29ef7e04a8e54
+
+% 3 1 0 0012892517bf5f5a0ec6da4109d672e6
+
+% 4 1 0 1984997313c247990d9c996268dc0e1b
+
+% 0 1 0 035dd7f057e295b21f1a4645939f265e
+
+% 1 1 0 0e29c96332dbdaad1a412b1ba8635776
+
+@ 0 1 0 1cb2d325aef232be10752720aa1aa044
++ Cztery części to te, które definiuje [RFC 2046](https://www.iana.org/go/rfc2046):
+
+% 2 1 0 17edf0396bf384891675ddef25804532
+
+@ 0 7 0 02a567bf528a27f408df3c54fce4081e
++ column  Część
++ column  Pole
++ column  Czym jest
++ row  grupa  `group`  jedną z jedenastu wartości `Media.Group`: `application`, `audio`, `image`, `message`, `multipart`, `text`, `video`, `font`, `example`, `model` i `haptics`
++ row  podtyp  `subtype`  zarejestrowanym, dostawcy, osobistym lub eksperymentalnym
++ row  przyrostki  `suffixes`  zerem lub więcej, np. `+xml`, `+json` i `+gzip`
++ row  parametry  `parameters`  parami klucz–wartość, z których zdecydowanie najczęstszy jest `charset`
+
+% 1 1 0 0363bc16f67a82041eb787c896265889
+
+@ 0 3 0 0b7dd81e82e77b761ef9b2dc335f36a8
++ Grupa nazywa się `group`, a nie `type`, tylko dlatego, że `type` jest w Scali słowem
++ kluczowym. To, do którego z czterech drzew należy podtyp, jest częścią wartości, a nie kwestią
++ odczytania jego prefiksu.
+
+@ 0 4 0 0f97bc77574c494802f06fcdfba1fc23
++ Rejestracja jest sprawdzana względem kopii listy opublikowanej przez IANA, umieszczonej na
++ ścieżce klas, więc sprawdzenie nie wymaga sieci ani żadnej usługi. Nowsza lista lub lista
++ specyficzna dla danej instalacji, umieszczona wcześniej na ścieżce klas, zastępuje ją. Plik to
++ lista typów mediów, po jednym w wierszu, z przyrostkami, ale bez parametrów.
+
+@ 0 2 0 1e15076ecb7ba71f0afd17be35a3fb20
++ Tekst, który nie jest typem mediów, zgłasza `MediaType.Error`, który podaje przyczynę: brak
++ ukośnika, niedozwolony znak lub nieznany przyrostek.
+
+% 2 1 0 06769a2b6c1682700e6451a35a935951
+
+% 3 1 0 10163f6c1c7b54d30c45ee2def7aebde
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 1d98dba9c7a2ef7a03353fa3ffa8605a
+
+% 1 1 0 036c20ee1d0221ec008230c6d9a409da
+
+@ 0 1 0 1a367ace48b6d82f1299a7d53a71e540
++ ### Typy, które znają swój typ mediów
+
+@ 0 4 0 1d914dcd21358b9e131307a808adc960
++ Klasa typów `Media` nadaje typowi jego typ mediów, więc wartość można udostępnić lub załączyć
++ bez ponownego określania, czym jest. Tekst to `text/plain`, a wszystko, co ma nazwę pliku,
++ zgaduje typ z rozszerzenia. `ascribe` łączy dowolne źródło bajtów z jawnie podanym typem
++ mediów tam, gdzie nie ma typu wewnętrznego. Wynikiem jest `Content`: bajty wraz z ich typem.
+
+% 2 1 0 0fc990f8f264afaf0d258471827c2431
+
+% 0 1 0 1b5848d1882253df097aed6d0ebd3359
+
+% 0 1 0 02ae61b7a24daebc1a4266eb73e41d86
+
+% 1 1 0 00a2a21530065bab180d4304b42b2af9
+
+@ 0 4 0 0e0baba0bd8f8b690831aa917ec33421
++ To właśnie ta klasa typów pozwala [serwerowi HTTP](http-server.md#responses) zwrócić wartość
++ tak, by nagłówek `Content-Type` podążał za nią automatycznie.
++ [Klient HTTP](http-client.md#headers) przyjmuje typ mediów jako wartość nagłówka `accept`, a
++ załączniki [e-mail](email.md#composing) niosą własny.
+
+@ 0 1 0 028c057e9a6491550f305ad462e5aebc
++ ### Wykrywanie typu mediów
+
+@ 0 2 0 184e3ac623385d8916571a170dffa154
++ Treść często przychodzi bez wiarygodnej etykiety i trzeba ją rozpoznać po bajtach. Wzorzec
++ `Media["…"]` robi to dla strumienia – `Cursor` z Zephyrine – i wiąże `Detection`:
+
+% 2 1 0 12c220c8f51d35f702d2a1440f6dfe44
+
+% 0 1 0 14cfac37cf9dc6d112c4e3c0bf61180e
+
+% 0 1 0 06c5b2cea32df425016762b75b4b8d80
+
+% 2 1 0 1586377dd5406a281b47e2d48836b6fd
+
+% 0 1 0 159dc5ee293773051e32ead1d835996e
+
+% 0 1 0 100cf50bf40e7827057620a473ca5386
+
+% 0 1 0 009bff55b7bb00a21a3c5e4de9fb6f66
+
+% 1 1 0 1ebe1115ee1dde5c08197d1a2a5bd1cb
+
+@ 0 5 0 1806966a47d826f10646833bb5f42cfb
++ Każdy przypadek czyta tyle strumienia, ile potrzebuje, a potem zwraca kursor tam, gdzie go
++ zastał, niezależnie od tego, czy pasował: kolejny przypadek i kod następujący po dopasowaniu
++ widzą cały strumień. Detektor nie może złamać tej obietnicy, ponieważ nigdy nie trzyma
++ kursora. Czyta przez `Probe`, który może się poruszać tylko do przodu, a wzorzec przewija
++ kursor z powrotem, gdy detektor wraca lub rzuca wyjątek.
+
+@ 0 4 0 0233dda484add8dc0935732409505193
++ O tym, co wzorzec może wykryć, decydują instancje `Detectable` w zasięgu, każda importowana z
++ nazwy z rodziny `detectables`, tak jak dwie powyższe. Typ mediów jest sprawdzany w rejestrze
++ jak każdy inny, a wzorzec, dla którego nie zaimportowano detektora, jest błędem kompilacji:
+
+% 2 1 0 04976cd56e71c8b80e17bc4a9a20d276
+
+% 3 1 0 16c5e0e2513c664c00a9637d8b604e78
+
+% 4 1 0 1bbbb3b7d35186e90db6bf6443049d2f
+
+% 5 1 0 0aded518cfd52f2403a7df8ef55d6d2b
+
+% 1 1 0 17e5d45e0861f8cd15e083eafc6649bc
+
+% 0 1 0 0997177e9ac0595519a2c7949b9868a7
+
+% 0 1 0 0f7bca5007925bdb11e662a94388f3c7
+
+% 1 1 0 041dd216b3acb68404e9b2ba1242820c
+
+@ 0 1 0 1933147a8923f0f60a9d65b1475f2daf
++ #### Jak pewne jest wykrycie
+
+@ 0 4 0 07705cf3d6bed3af04c5f37d903b2856
++ Kilka początkowych bajtów rzadko dowodzi, czym jest strumień, a `Detection` mówi w swoim typie,
++ ile ustalono. `png` powyżej to `Detection of "image/png" under Likely to (Raster in Png)`:
++ treść wykryta jako `image/png`, z pewnością `Likely`, odczytywana jako `Raster in Png`.
++ Pewność ma jeden z trzech poziomów, ustalony przez to, co zbadał detektor:
+
+% 2 1 0 0a5da50bfec0d66e1757e0d103b1b0df
+
+@ 0 6 0 095ba882cb5a96ef1ad53cb24be4fc37
++ column  Pewność
++ column  Co zbadano
++ column  Przykład
++ row  `Plausible`  coś jedynie zgodnego z formatem, który nie rezerwuje struktury identyfikującej albo trzyma ją poza zasięgiem  początkowe `{` dla JSON; początkowe `<` dla XML
++ row  `Likely`  strukturę, którą specyfikacja formatu wyznacza jako identyfikującą, znalezioną tam, gdzie umieszcza ją specyfikacja  ośmiobajtowa sygnatura PNG; indeks na końcu pliku ZIP
++ row  `Certain`  całą treść, zwalidowaną  nie jest dostarczany: oznacza odczytanie całego strumienia
+
+% 1 1 0 1c54e3cce05e43f6081e90c5dd33039e
+
+@ 0 4 0 09e64f7eda2cfbfd0295f48874ad56cf
++ Dopasowanie `Likely` jest błędne tylko przez przypadek lub fałszerstwo i nie mówi nic o
++ poprawności reszty treści. Dopasowanie `Plausible` może być błędne z założenia: inne formaty
++ zgodnie z prawem zaczynają się tak samo, więc kolejność przypadków `Plausible` ma znaczenie,
++ podczas gdy kolejność przypadków `Likely` – nie.
+
+@ 0 3 0 15451e922f36452f0984ef2b7271467b
++ Każdy poziom jest podtypem poprzedniego – `Certain <: Likely <: Plausible` – więc wymaganie co
++ najmniej danej pewności jest ograniczeniem. Drugi argument typu wzorca stawia to wymaganie
++ detektorowi, a metoda – otrzymanemu `Detection`:
+
+% 2 1 0 00b31b4b479b1cb10cb29e216268e908
+
+% 0 1 0 0dd0f4570e839de61db4d25bd40a8e74
+
+% 2 1 0 18a5e3b66f031e5a119645bd997c4418
+
+% 0 1 0 1cd4fa5d09e06b73170338ebfcfa83b5
+
+% 0 1 0 11d4f1e6b31123140bd190c2a3f7f728
+
+% 1 1 0 1ce564b1ab1737f418f0657edb9563ea
+
+@ 0 1 0 0eb1f1c1dbc2b43506ad5f4781d3ba78
++ Detektor JSON jest tylko `Plausible`, więc wymaganie od niego więcej jest odrzucane podczas
++ kompilacji kodu:
+
+% 2 1 0 1d43573bb456d50f1b538d8174ec6e5d
+
+% 3 1 0 12534414722f65dd006264fe0263844c
+
+% 4 1 0 19b9543ae7fab7a00fb4cdf973ec3eca
+
+% 5 1 0 17b1e49dc77ea6ab1d04d01294d3e2c8
+
+% 0 1 0 1e1ebd23bbe9c95412ce5805b7b49412
+
+% 2 1 0 1deceea204970a4c08ebb1ec6ce12721
+
+% 0 1 0 0dbe7b6a9603d25f09e5f5f81b55b7f4
+
+% 0 1 0 0ab6aef57537be5b0fe50eb40a43bd38
+
+% 1 1 0 1e72eac21422eb241eafbd70d1c508eb
+
+@ 0 2 0 199bce65010a917c12f4164dfebd350f
++ Wykrycie jest dowodem, a nie drugim uchwytem do strumienia: kursor zostaje przy kodzie, który
++ go dopasował, a `png.read(cursor)` odczytuje go jako typ wskazany przez wykrycie.
+
+@ 0 1 0 0641ece95188c02c033c5e5c4e4aef9c
++ #### Formaty, których strumień nie zidentyfikuje
+
+@ 0 5 0 1572ac05a62568281ed616e546383441
++ Niektóre formaty identyfikuje coś, do czego odczyt w przód nie sięga – plik ZIP po indeksie na
++ jego końcu. Te same wzorce dopasowują treść o dostępie swobodnym, `Expanse` lub `Data` w
++ pamięci, i tam detektor może patrzeć gdziekolwiek. Detektor deklaruje, jakiego dostępu
++ potrzebuje, a jeden typ mediów może mieć oba rodzaje, ustalające różną ilość. ZIP ma oba:
++ `zipDetectable` czyta strumień i widzi jedynie, czy zaczyna się tak jak większość archiwów,
++ natomiast `zipIndexDetectable` znajduje indeks:
+
+% 2 1 0 169de5973da8f3771df8a077666fa554
+
+% 0 1 0 13dd3a717c59e20a0c8bee9aa244a5e2
+
+% 0 1 0 0e3051bf8586fbb21c620b454594b5d7
+
+% 0 1 0 0acd64defbd541de1bdd40f4ccc0ee7e
+
+% 0 1 0 1cf30c9a098626441efffa8c2d12dd50
+
+% 1 1 0 0906bdd275010735040815b04cd18a54
+
+@ 0 5 0 1c85dd0a98ce552c13c6ffa6d3101815
++ Kursor może użyć tylko pierwszego detektora, więc jego wykrycie `Media["application/zip"]` jest
++ `Plausible`, a `Media["application/zip", Likely]` się dla niego nie kompiluje. `Data` i
++ `Expanse` mogą użyć dowolnego, a wzorzec bierze ten, który ustala więcej: tam to samo wykrycie
++ jest `Likely`, a archiwum następujące po programie, jak archiwum samorozpakowujące się, nadal
++ zostaje znalezione.
+
+@ 0 1 0 1012c159c9118fa0020d880ce643d61c
++ #### Pisanie detektora
+
+@ 0 1 0 14ffb1f53ed846721c6e09c4f798ff67
++ Format, który rezerwuje sygnaturę, potrzebuje tylko jej bajtów oraz przesunięcia, jeśli nie
++ jest to początek:
+
+% 2 1 0 02cee659915321930b94310d09be1cad
+
+% 0 1 0 1336708743b5e4c607570a826ae95dbd
+
+% 0 1 0 1ae18ae2bc12b2891aa2619841bad4ee
+
+% 1 1 0 0c3c9b385c5faaa112f4fa2860124505
+
+@ 0 1 0 0c75ce3c598b518408b87d80796c302c
++ Cokolwiek innego to funkcja `Probe`, dla strumienia, lub `Expanse`:
+
+% 2 1 0 10aa06fb0eb62b1c13fca3f9ff07efaa
+
+% 0 1 0 1d07b45d20df112a0d2c48d846a021b4
+
+% 0 1 0 174b7bf76fee2b990160ecf77117ab76
+
+% 0 1 0 1027d0f77429a7f00926365d95dee1b3
+
+% 0 1 0 0ad7cfea722fbee70d17cb17fd5a0703
+
+% 0 1 0 08da1c75c642baa21a176238909a6259
+
+% 0 1 0 1dd31cbe782fcc771c9d2a7c34e417c9
+
+% 0 1 0 0910595efb5abff60e28f86e2a96bae3
+
+% 1 1 0 022f5861dbf266490d6cbcd2dab5102c
+
+@ 0 4 0 01b1549c7a29a5f01e79eced651286c6
++ Typ określa pewność, a detektor musi na nią zasłużyć: `Likely` tylko dla struktury, którą
++ specyfikacja formatu wyznacza jako identyfikującą, a `Certain` tylko dla detektora, który
++ odczytuje i waliduje wszystko – co w przypadku strumienia oznacza trzymanie go w całości w
++ pamięci, dopóki detektor nie wróci.
+
+@ 0 1 0 13fe44c10a5bca841db9384c1a4378b8
++ ### Treści wieloczęściowe
+
+@ 0 4 0 14754e421c23e42f1e17532093b55641
++ `multipart/form-data` to format przesyłania plików. Jest parsowany do `Multipart` złożonego z
++ typowanych części `Part`. Każda część ma swoją dyspozycję, nazwę, opcjonalną nazwę pliku,
++ nagłówki i strumień swojej treści. Parsowanie jest przyrostowe, więc duże przesłanie jest
++ strumieniowane, a nie gromadzone:
+
+% 2 1 0 16d408e13e77ed1d185f7bc80bb9b893
+
+% 0 1 0 0e6956689ca86bb907e71011b120d1f8
+
+% 0 1 0 013f756b8c0be6bc04aad87afbb7f5d0
+
+% 0 1 0 149eedf9604098e40fc1262ba5b345fd
+
+% 0 1 0 0e094f3c721d3a7a053c9c368fb8d81b
+
+% 0 1 0 1c947f0ea82a28150189a0750c4a528a
+
+% 0 1 0 0062953bbb1f3e801c0a847cc7dfe3b3
+
+% 0 1 0 168d0577a04c502c059b896748827a6e
+
+% 1 1 0 155f758363154deb00336ba8ae3ff8d2
+
+% 3 1 0 04fc446961c5476e1f7d5381e9b72205
+
+% 4 1 0 1c2704e72c1a2ab9012cb9c82081edfb
+
+% 5 1 0 1f13ed1a6973d8a012cc4a3ab8925b18
+
+% 0 1 0 09f648557232f1aa0a1e4d59e0b64e68
+
+% 1 1 0 06e217a3dbbef77310ee18a089a719aa
+
+@ 0 3 0 17f8390d4148c21a11a535a4ff9566fb
++ Treść części jest pożyczana z wejścia, bez kopiowania. Trzeba ją odczytać, za pomocą
++ `part.read[Data]` lub `part.body()` dla strumienia, zanim przejdzie się do następnej części.
++ Potem wszystko, co z niej zostało, jest pomijane i odczytuje się jako puste.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 1 0 1768103b5d6459251ecc539cea7d8e59
++ - [Dźwięk](audio.md), [obrazy](images.md), [interpolacja](interpolation.md) i
++   [OpenAPI](openapi.md) nazywają swoje formaty typem mediów.

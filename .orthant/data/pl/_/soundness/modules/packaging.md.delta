@@ -1,0 +1,197 @@
+orthant 2 language
+
+@ 0 1 0 1b0daa41894eebb60b141f4b1a00beab
++ ## Pakowanie
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Omówienie
+
+@ 0 4 0 14c51e664a414f8219ceff17526464f2
++ Aplikacja zbudowana z tych bibliotek jest plikiem JAR, a JAR zawierający każdą potrzebną
++ zależność jest duży. Narzędzie wiersza poleceń liczące kilkaset wierszy dostarcza dziesiątki
++ megabajtów kodu bibliotek, w większości już gdzieś publicznie opublikowanego. Burdock czyni ten
++ JAR *smukłym*, nie czyniąc go kruchym, w trzech krokach:
+
+% 2 1 0 14230c6cb7c210f11a5a165d650cee1e
+
+@ 0 6 0 1cb9b19d19c31b8c1219693b03342423
++ column  Kiedy
++ column  Krok
++ column  Działanie
++ row  w czasie kompilacji  `externalize`  zapisuje, z jakimi zależnościami zbudowano aplikację, jako skróty treści zamiast współrzędnych
++ row  po kompilacji  `repackage`  przepisuje JAR, zastępując każdą zależność mającą publiczne miejsce odwołaniem do niej i zachowując wszystko, co takiego miejsca nie ma
++ row  w czasie wykonania  program ładujący bootstrap  pobiera wskazane zależności, weryfikuje każdą względem jej skrótu, umieszcza ją w pamięci podręcznej i uruchamia aplikację
+
+% 1 1 0 16555012e229a10a05448c95cad92d25
+
+@ 0 2 0 04a0d0d3b5d6878810e5bd7095ec2f9d
++ Pierwsze uruchomienie pobiera więc zależności, każde kolejne jest natychmiastowe, a zależności,
++ która zmieniła się od czasu kompilacji, nie da się wczytać.
+
+@ 0 1 0 0d19f320e2d0d2620a52941822eb4c9c
++ ### O skrótach treści
+
+@ 0 6 0 10cf97c561130af41976a159c6e3b898
++ Narzędzia budowania identyfikują zależność po współrzędnych – grupie, nazwie i wersji – i ufają,
++ że te same współrzędne wszędzie wskazują te same bajty. Burdock identyfikuje ją po SHA-256 pliku
++ JAR, który kompilator faktycznie odczytał. To silniejsze twierdzenie. Odwołanie w przepakowanym
++ JAR wskazuje dokładne bajty, a bootstrap odrzuca wszystko inne – czy to rejestr podał inną
++ kompilację pod tą samą wersją, czy pobierany plik został po drodze zmanipulowany.
+
+@ 0 6 0 02fa5a079449d24b1a0994ec2ede1e1c
++ Skrót oddziela też to, *gdzie* zależność się znajduje, od tego, *czym* jest. Przepakowujący pyta
++ [deps.dev](https://deps.dev/), który artefakt Maven ma ten skrót, i przegląda zasoby wydań
++ repozytoriów GitHub wskazanych jako podpowiedzi. Zależność nieznaleziona w żadnym z tych miejsc
++ jest wstawiana z lokalnej pamięci podręcznej. Zachowany jest więc niezmiennik kompletności: każda
++ zależność jest albo wskazana odwołaniem, albo obecna. Skrót, który nie jest ani jednym, ani
++ drugim, zatrzymuje przepakowanie z błędem, zamiast wytworzyć JAR, który zawiedzie później.
+
+@ 0 1 0 0bba43e332729c3b196875394a062140
++ ### Eksternalizacja aplikacji
+
+@ 0 5 0 1f3541be5335c0a81b5d8db805f62a61
++ Aplikacja opakowuje swój punkt wejścia w `externalize`. W [czasie wykonania][czas wykonania]
++ makro pozostawia ciało bez zmian. W [czasie kompilacji][czas kompilacji] przechwytuje ścieżkę
++ klas kompilacji, oblicza skrót każdego pliku JAR zależności, tworzy do niego dowiązanie twarde w
++ pamięci podręcznej Burdock pod `~/.cache/soundness/jars/<sha256>.jar`, aby bajty dało się
++ odzyskać po skrócie na maszynie budującej, i osadza listę skrótów jako zasób
++ `META-INF/burdock.deps` w skompilowanym wyniku:
+
+% 0 1 0 0647b574ba405a220c6097163df25100
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 16e3cb87267665ba0c4fcb222abd3350
+
+% 0 1 0 069065b92fc2f0791e5da167e0dd364f
+
+% 0 1 0 105555d1194126fb1d16e5cc7cf5e7d5
+
+% 1 1 0 037343ccca56c0231345cf72d35c1a77
+
+@ 0 2 0 06760153eb9b24d015468b3853df424c
++ Nic innego w aplikacji się nie zmienia. Nadal jest budowana, testowana i uruchamiana jako
++ zwykły JAR, a osadzony zasób pozostaje bezczynny, dopóki nie odczyta go przepakowujący.
+
+@ 0 1 0 0c38defe50d79b5d049c0720d2f06f55
++ ### Przepakowywanie
+
+@ 0 3 0 059a71266612d0eb1c8be089cc937792
++ Punkt wejścia `soundness.repackage` uruchamia się na pliku JAR aplikacji. Lokalizuje on JAR,
++ odnajdując zasób `META-INF/burdock.deps` na własnej ścieżce klas, i przepisuje go w miejscu:
+
+% 0 1 0 15a5f1f7e49cceab1ba03bc009fa86b5
+
+% 0 1 0 0acc1b6ee82e24010c5e73c2e658d1cc
+
+% 1 1 0 1244ad88a31f11cf040180aabb4fe2cb
+
+@ 0 6 0 0f80287225b88ea21681ef380db91aec
++ Każda podpowiedź `--github owner/repo` wskazuje repozytorium, którego zasoby wydań są źródłem
++ pobrań. Opcję można powtarzać lub rozdzielać jej wartości przecinkami. GitHub nie prowadzi
++ globalnego indeksu według skrótów, więc podpowiedzi są indeksowane z góry, kilkoma żądaniami
++ na każde repozytorium, z uwzględnieniem zmiennej środowiskowej `GITHUB_TOKEN`, jeśli jest
++ ustawiona. Są sprawdzane przed deps.dev, ponieważ repozytorium wskazane przez użytkownika ma
++ pierwszeństwo przed indeksem globalnym. W przepisanym pliku JAR każdą klasę spotyka jeden z
++ trzech losów:
+
+% 2 1 0 18319e59cbae003d08f8712c7f829971
+
+@ 0 5 0 1f9795c7f46832720aaa14f5665010a5
++ column  Klasy
++ column  Są
++ row  aplikacji  zachowywane
++ row  zależności, którą udało się rozwiązać  usuwane i zastępowane odwołaniem
++ row  zależności, której nie udało się rozwiązać  wstawiane
+
+% 1 1 0 190ca61ee517f40b0019590a1fe52ed7
+
+@ 0 2 0 00a9ca4d7968cb9f1bd5196f9cb8380e
++ Zawiera dokładnie jedną dodatkową klasę, `burdock.Bootstrap`, która jest programem ładującym w
++ czasie wykonania. Manifest zapisuje ten układ:
+
+% 2 1 0 02c089334ab5b7ac1160e14e6911203c
+
+@ 0 2 0 16dd1442bc0882550fa8fd2a0f993127
++ column  Atrybut
++ column  Zawiera
+
+% 0 1 0 07c5312ccffc52c505f68bf1447cfc34
+
+@ 0 3 0 10c276d9415b46a71c2434564d7dbb7e
++ row  `Burdock-Main`  własny punkt wejścia aplikacji, uruchamiany przez bootstrap po złożeniu ścieżki klas
++ row  `Burdock-Require`  każdą eksternalizowaną zależność jako `<sha256>:<url>`, w kolejności ścieżki klas
++ row  `Burdock-Verbosity`  co bootstrap wypisuje podczas pobierania: `silent`, jak zapisuje to przepakowujący, albo `error`, `info` lub `debug`
+
+% 1 1 0 18003f635349f7941247abb38da0ad66
+
+@ 0 3 0 07102712227a7234180a15743d9e732b
++ Polecenie wypisuje podsumowanie z odczytanymi i zapisanymi wpisami, klasami zachowanymi,
++ wstawionymi i usuniętymi oraz każdym eksternalizowanym wymaganiem. Podczas rozwiązywania rysuje
++ pasek postępu, tylko na prawdziwym terminalu, więc przekierowane wyjście pozostaje czyste.
+
+@ 0 6 0 1a07fe67f310e6511400d8dcca75b306
++ Ta sama praca jest dostępna jako wywołanie biblioteczne, `Repackager.repackage`. Przyjmuje ścieżki
++ wejścia i wyjścia, `Repackager.Resolver` ze skrótu na URL, `Repackager.CacheReader` dla lokalnej
++ pamięci podręcznej, bajty klasy bootstrap i funkcję zwrotną postępu, a zwraca
++ `Repackager.Summary`, niczego nie wypisując. Punkt wejścia wiersza poleceń jest cienkim
++ przedstawieniem tego wywołania, a `DepsDev.mavenUrl` i `GitHub.index` to dwa resolvery, które
++ składa.
+
+@ 0 1 0 05dc6fafc04f6a6b1aecf946de1c9304
++ ### Uruchamianie przepakowanego pliku JAR
+
+@ 0 6 0 18e7bde3f55af00002ab7c2c83a9da7c
++ Przepakowany JAR uruchamia się poleceniem `java -jar app.jar`, dokładnie jak wcześniej. Bootstrap
++ odczytuje `Burdock-Require` i pobiera każde wymaganie, którego nie ma jeszcze w
++ `~/.cache/soundness/jars/`, równolegle, z ograniczeniem do kilku połączeń na host. Weryfikuje
++ SHA-256 każdego pobrania względem skrótu z manifestu, buduje ścieżkę klas w kolejności manifestu
++ i wywołuje `Burdock-Main`. Niezgodność sumy kontrolnej zatrzymuje uruchamianie. Aplikacja nigdy
++ nie startuje z innymi bajtami niż te, z którymi ją zbudowano.
+
+@ 0 4 0 003aff3be9ee4b4d1aeadaeb2dd32062
++ Launcher, który nadzoruje start, tak jak launcher [demonów](daemons.md), może śledzić postęp
++ pobierania, ustawiając właściwość systemową `burdock.progress` na ścieżkę pliku. Bootstrap
++ zapisuje do niej atomowo `<completed> <total> <bytes>` w miarę postępu. Launcher, który nie może
++ odczytać pliku, wraca do swojego stałego terminu.
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### Błędy
+
+@ 0 1 0 0f63fc85c4e5152d02f32e91b9b452e7
++ Przepakowywanie zgłasza niepowodzenia dwoma błędami, a wyszukiwanie, które niczego nie znajduje,
++ trzecim:
+
+% 2 1 0 0fcbd9c7a4a9b4ee09a50c0abc72d8da
+
+@ 0 5 0 14eb225712cef7a0089e226236b9612e
++ column  Błąd
++ column  Zgłaszany, gdy
++ row  `Repackager.UserError`  JAR nie został zbudowany z Burdock, jest katalogiem zamiast plikiem, argument jest niepoprawny lub nie da się wylistować wydań repozytorium GitHub
++ row  `Repackager.RepackageError`  JAR nie może zostać przepisany: nie ma manifestu lub `Main-Class` albo zależność nie jest ani opublikowana, ani w pamięci podręcznej
++ row  `DepsDev.Unresolved`  wyszukiwanie w deps.dev niczego nie znajduje, co przepakowujący traktuje jako „nieopublikowaną” zależność, a nie jako niepowodzenie
+
+% 1 1 0 1ccbc407bde80021149bb8ce9ce1ae99
+
+@ 0 2 0 088c01e63b0a1abd12fcd42b0fa0820b
++ Rozwiązywanie jest logowane przez `DepsEvent`, z jednym zdarzeniem na każdy rozwiązany skrót,
++ więc przebieg można później skontrolować.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Powiązane
+
+@ 0 8 0 1c481219ae82588b1d1d8261e53dbff3
++ - [Archiwa](archives.md) opisują format ZIP, którym jest JAR, oraz prefiks, który czyni go
++   wykonywalnym.
++ - [Kompilator](compiler.md#producing-artifacts) buduje JAR, który jest następnie przepakowywany.
++ - [Demony](daemons.md) i [LSP](lsp.md#a-thin-launcher) opisują launchery dostarczane jako cienkie
++   pliki JAR.
++ - [Haszowanie](hashing.md) opisuje skróty SHA-256 identyfikujące każdą zależność.
++ - [Ścieżka klas](classpath.md) opisuje ścieżkę klas składaną przez bootstrap.
++ - [CLI](cli.md) i [wersjonowanie](versioning.md) opisują pakowane aplikacje i manifesty.
