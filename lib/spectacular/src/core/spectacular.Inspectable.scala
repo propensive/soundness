@@ -546,6 +546,17 @@ object Inspectable extends Inspectable2:
 
   given none: None.type is Inspectable = none => "None".tt
 
+  // An attempt names its case around the value or the error, as an `Option` does. It is written
+  // out because it cannot be derived: `Attempt`'s cases take the enum's own type parameters, and
+  // the derivation of a sum cannot yet type a variant which does (#2463). The instance is in
+  // this companion since contingency lies below spectacular.
+  given attempt: [result, error <: Hazard]
+  =>  ( success: result is Inspectable, failure: error is Inspectable )
+  =>  contingency.Attempt[result, error] is Inspectable =
+
+    case contingency.Attempt.Success(value) => s"Success(${success.text(value).s})".tt
+    case contingency.Attempt.Failure(value) => s"Failure(${failure.text(value).s})".tt
+
 trait Inspectable2:
   // The `Encodable` and `Showable` branches borrow a rendering which was designed for another
   // purpose — a wire form and a human-facing form respectively — and neither is guaranteed to

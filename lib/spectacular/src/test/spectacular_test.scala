@@ -36,7 +36,11 @@ import scala.collection.immutable.Vector
 
 import soundness.*
 
+import errorDiagnostics.emptyDiagnostics
+
 case class Person(name: Text, age: Int)
+
+case class Banishment(city: Text)(using Diagnostics) extends Error(m"banished to $city")
 
 case class Leaf(value: Int)
 case class Depth4(leaf: Leaf, tag: Int)
@@ -547,6 +551,28 @@ object Tests extends Suite("show", m"Spectacular Tests"):
       test(m"serialize nested options in list"):
         (List(Some(1), None): List[Option[Int]]).inspect
       . assert(_ == t"[Some(1), None]")
+
+    suite(m"Attempt tests"):
+      test(m"a successful attempt shows its value"):
+        (Attempt.Success(3): Attempt[Int, Banishment]).inspect
+      . assert(_ == t"Success(3)")
+
+      // An error has no rendering of its own yet, so the comparison is with whatever it has.
+      test(m"a failed attempt shows its error"):
+        (Attempt.Failure(Banishment(t"Mantua")): Attempt[Int, Banishment]).inspect
+      . assert(_ == t"Failure(${Banishment(t"Mantua").inspect})")
+
+      test(m"the result of `attempt` can be inspected"):
+        attempt[Banishment](abort(Banishment(t"Mantua")) yet 3).inspect
+      . assert(_ == t"Failure(${Banishment(t"Mantua").inspect})")
+
+      test(m"a successful `attempt` can be inspected"):
+        attempt[Banishment](t"Verona").inspect
+      . assert(_ == t"Success(t\"Verona\")")
+
+      test(m"an attempt's rendering borrows nothing"):
+        Inspectable.fallbacks((Attempt.Success(3): Attempt[Int, Banishment]).inspect)
+      . assert(_ == Nil)
 
     suite(m"Optional tests"):
       test(m"serialize set optional"):
