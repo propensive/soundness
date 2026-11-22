@@ -3701,7 +3701,7 @@ object vacuous extends Library:
   object test extends Tests(core)
 
 object vexillology extends Library:
-  object core extends Component(distillate.core, hypotenuse.core):
+  object core extends Component(distillate.core, hypotenuse.core, murmuration.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
