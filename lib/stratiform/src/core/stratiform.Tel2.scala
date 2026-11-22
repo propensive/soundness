@@ -125,11 +125,19 @@ trait Tel2 extends Tel3:
 
     case given Reflection[`value`] => DecodableDerivation.derived
 
+    case _ =>
+      wisteria.internal.underivable[value is Tel.Decodable]
+        ( "a `Decodable in Text` instance would also serve" )
+
   inline given encodable: [value] => value is Tel.Encodable = summonFrom:
     case given (`value` is Encodable in Text) =>
       Tel.Encodable(() => Morphology.Str, Tel.Nature.Scalar): v => Tel.scalar(v.encode)
 
     case given Reflection[`value`] => EncodableDerivation.derived
+
+    case _ =>
+      wisteria.internal.underivable[value is Tel.Encodable]
+        ( "an `Encodable in Text` instance would also serve" )
 
   // ── Direct parsing: element-wise `Tel.Field` instances and the read path ──
 

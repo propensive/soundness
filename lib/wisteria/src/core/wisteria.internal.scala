@@ -60,6 +60,84 @@ object internal:
   // emitted alongside it are in scope.
   inline def field[typeclass[_], elem]: typeclass[elem] = ${fieldInstance[typeclass, elem]}
 
+  // Where, in a derivation, an instance is being resolved: the `label` of a field (or a variant)
+  // of `owner`. It is constructed only as the pure right-hand side of an erased given, so never
+  // at runtime. That given surrounds each resolution, so that an instance which turns out to be
+  // underivable — a fallback given's `summonFrom` reaching its catch-all, long after the search
+  // which chose that given succeeded — can say which field wanted it. The innermost one in scope
+  // is the field being resolved.
+  final class Site[owner, label, kind]()
+
+  // A field's (or a variant's) instance, resolved as `field` resolves it, inside its `Site`.
+  inline def sited[typeclass[_], elem, owner, label, kind]: typeclass[elem] =
+    erased given site: Site[owner, label, kind] = Site[owner, label, kind]()
+    field[typeclass, elem]
+
+  // The catch-all of a fallback given's `summonFrom`: stops compilation, naming the type which
+  // has no `instance` and cannot be given one by derivation, and the field which needs it. `hint`
+  // is whatever else the fallback would have accepted.
+  inline def underivable[instance](inline hint: String): Nothing =
+    ${underivableMacro[instance]('hint)}
+
+  def underivableMacro[instance: Type](hint: Expr[String]): Macro[Nothing] =
+    import quotes.reflect.*
+
+    def code(tpe: TypeRepr): String = "`"+tpe.show(using Printer.TypeReprShortCode)+"`"
+
+    // `Decodable { type Self = value; type Form = Json }` is written `Decodable in Json`, and a
+    // typeclass nested in an object, such as `Json.Decodable`, keeps the object's name. The
+    // subject is the instance's `Self`, or its only type argument.
+    def describe(tpe: TypeRepr, self: Option[TypeRepr], form: Option[TypeRepr])
+    :   (String, Option[TypeRepr]) =
+
+      tpe.dealias match
+        case Refinement(parent, "Self", TypeBounds(low, _)) => describe(parent, Some(low), form)
+        case Refinement(parent, "Form", TypeBounds(low, _)) => describe(parent, self, Some(low))
+        case Refinement(parent, _, _)                       => describe(parent, self, form)
+
+        case other =>
+          val symbol = other.typeSymbol
+          val owner = symbol.maybeOwner
+
+          val name =
+            if owner.isNoSymbol || owner.flags.is(Flags.Package) || !owner.flags.is(Flags.Module)
+            then symbol.name
+            else owner.name.stripSuffix("$")+"."+symbol.name
+
+          val suffix = form match
+            case Some(form) => " in "+form.show(using Printer.TypeReprShortCode)
+            case None       => ""
+
+          ("`"+name+suffix+"`", self.orElse(other.typeArgs.headOption))
+
+    val (instance, self) = describe(TypeRepr.of[instance], None, None)
+    val subject = self.fold("this type")(code)
+
+    val more = hint.value match
+      case Some(text) if text.nonEmpty => "; "+text
+      case _                           => ""
+
+    val reason = s"$subject is not a case class, an enum or a sealed trait$more"
+
+    Implicits.search(TypeRepr.of[Site[?, ?, ?]]) match
+      case success: ImplicitSearchSuccess => success.tree.tpe.widen.dealias.typeArgs match
+        case sci.List(owner, ConstantType(StringConstant(label)), ConstantType(kind)) =>
+          val noun = kind.value.toString
+          val site = s"the $noun `$label` of ${code(owner)}"
+
+          report.errorAndAbort
+            ( s"wisteria: $site needs a $instance instance for $subject, but none could be found "
+              +s"or derived: $reason" )
+
+        case _ =>
+          ()
+
+      case _ =>
+        ()
+
+    report.errorAndAbort
+      ( s"wisteria: no $instance instance for $subject could be found or derived: $reason" )
+
   // ---- vicarious.Specific integration ----
 
   // Inline accessor (for tests / tooling): the dotted paths overridden by an in-scope
@@ -851,7 +929,7 @@ object internal:
         val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
         val label = '{$nameExpr.tt.aka["label"]}
         val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
-        val instance = specificFieldInstance[typeclass, field](context, fieldName)
+        val instance = specificFieldInstance[typeclass, field](context, tpe, fieldName)
 
         sharedInstance[typeclass, field](index, instance): (reference, contextual) =>
           applyLambda[field](lambdaTerm, reference, List(contextual, default, label, fieldIndex))
@@ -885,7 +963,7 @@ object internal:
 
         val dereference = '{$accessor.aka["dereference"]}
         val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
-        val instance = specificFieldInstance[typeclass, field](context, fieldName)
+        val instance = specificFieldInstance[typeclass, field](context, tpe, fieldName)
 
         sharedInstance[typeclass, field](index, instance): (reference, contextual) =>
           val arguments = List(contextual, default, label, dereference, fieldIndex)
@@ -916,7 +994,7 @@ object internal:
         val fieldValue: Expr[Any] =
           '{$product.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[field]}
 
-        val instance = specificFieldInstance[typeclass, field](context, fieldName)
+        val instance = specificFieldInstance[typeclass, field](context, tpe, fieldName)
         val contextual = '{$instance.aka["contextual"]}
         val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
         val label = '{$nameExpr.tt.aka["label"]}
@@ -980,7 +1058,7 @@ object internal:
 
         val outer = Lambda(Symbol.spliceOwner, tupleFunction, { (owner, parameters) =>
           val tupleRef = parameters.head.asInstanceOf[Term]
-          val instance = specificFieldInstance[typeclass, field](context, fieldName)
+          val instance = specificFieldInstance[typeclass, field](context, tpe, fieldName)
           val contextValue: Expr[Any] = instance
           val contextual = '{$instance.aka["contextual"]}
           val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
@@ -1039,8 +1117,15 @@ object internal:
   // Resolves a field's typeclass instance via an inline `summonInline` at the use site. Deferring
   // resolution to the splice site (rather than `Expr.summon` here) is what lets a recursive or
   // repeated field find a sibling synthetic given generated alongside it, instead of re-deriving.
-  private def resolveField[typeclass[_]: Type, field: Type](using Quotes): Expr[typeclass[field]] =
-    '{wisteria.internal.field[typeclass, field]}
+  private def resolveField[typeclass[_]: Type, field: Type](using Quotes)
+    ( owner: quotes.reflect.TypeRepr, fieldName: String )
+  :   Expr[typeclass[field]] =
+
+    import quotes.reflect.*
+
+    (owner.asType, ConstantType(StringConstant(fieldName)).asType).absolve match
+      case ('[owner], '[label]) =>
+        '{wisteria.internal.sited[typeclass, field, owner, label, "field"]}
 
   // The typeclass instance for a field, honoring `context` (the product's override context — read
   // once per product: root type, dotted path so far, the in-scope `Specific` given reference, and
@@ -1049,6 +1134,7 @@ object internal:
   // common path is unchanged.
   private def specificFieldInstance[typeclass[_]: Type, field: Type](using Quotes)
     ( context: Option[(quotes.reflect.TypeRepr, String, quotes.reflect.Term, Set[String])],
+      owner: quotes.reflect.TypeRepr,
       fieldName: String )
   :   Expr[typeclass[field]] =
 
@@ -1056,7 +1142,7 @@ object internal:
 
     context match
       case None =>
-        resolveField[typeclass, field]
+        resolveField[typeclass, field](owner, fieldName)
 
       case Some((root, parentPath, given_, keys)) =>
         val childPath = if parentPath.isEmpty then fieldName else parentPath+"."+fieldName
@@ -1071,7 +1157,7 @@ object internal:
             case '[carrier] =>
               '{wisteria.internal.field[typeclass, carrier].asInstanceOf[typeclass[field]]}
         else
-          resolveField[typeclass, field]
+          resolveField[typeclass, field](owner, fieldName)
 
   // Binds a field/variant's resolved instance to a single val, so the lambda's value argument and
   // its `"contextual"` context argument share one instance instead of resolving it twice. Without

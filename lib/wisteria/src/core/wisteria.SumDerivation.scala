@@ -115,7 +115,8 @@ object SumDerivation:
               case label: String =>
                 type variant0 = variant & derivation
 
-                val typeclass = wisteria.internal.field[typeclass, variant0]
+                val typeclass =
+                  wisteria.internal.sited[typeclass, variant0, derivation, label, "variant"]
 
                 val variantIndex: Int & Variant.Index[variant0] =
                   Variant.Index[variant0](index)
@@ -232,7 +233,9 @@ object SumDerivation:
                     if predicate(using label.tt.aka["label"], index2.aka["index"])
                     then
                       val index3: Int & Variant.Index[variant0] = Variant.Index[variant0](index)
-                      val context = wisteria.internal.field[typeclass, variant0]
+
+                      val context =
+                        wisteria.internal.sited[typeclass, variant0, derivation, label, "variant"]
 
                       lambda[variant0](context)
                         ( using context.aka["contextual"],
@@ -280,7 +283,9 @@ object SumDerivation:
                     if predicate(using label.tt.aka["label"], index2.aka["index"]) then
                       val index3: Int & Variant.Index[variant0] = Variant.Index[variant0](index)
                       val variant: variant0 = sum.asInstanceOf[variant0]
-                      val context = wisteria.internal.field[typeclass, variant0]
+
+                      val context =
+                        wisteria.internal.sited[typeclass, variant0, derivation, label, "variant"]
 
                       lambda[variant0](variant)
                         ( using context.aka["contextual"],

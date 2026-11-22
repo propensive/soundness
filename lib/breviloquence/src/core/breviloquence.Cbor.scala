@@ -103,6 +103,10 @@ trait Cbor2:
     case given Reflection[`value`] =>
       DecodableDerivation.derived
 
+    case _ =>
+      wisteria.internal.underivable[value is Decodable in Cbor]
+        ( "a `Decodable in Text` instance would also serve" )
+
   // The AST-materializing read path: parse the whole input into a `Cbor`,
   // then decode. Lives at this priority so `object Cbor`'s direct-parsing
   // `aggregableParsed` wins whenever the value has a `Cbor.Parsable`; when
@@ -124,6 +128,10 @@ trait Cbor2:
   inline given encodable: [value] => value is Encodable in Cbor = summonFrom:
     case given (`value` is Encodable in Text) => value => ast(Ast(value.encode.s))
     case given Reflection[`value`]            => EncodableDerivation.derived
+
+    case _ =>
+      wisteria.internal.underivable[value is Encodable in Cbor]
+        ( "an `Encodable in Text` instance would also serve" )
 
   object DecodableDerivation extends Derivable[Decodable in Cbor]:
     // Each outer `focus` runs *after* the inner one (contingency's try/finally order), so a

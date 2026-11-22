@@ -715,6 +715,10 @@ object Xml extends Tag.Container
     case given Reflection[`value`] =>
       DecodableDerivation.derived
 
+    case _ =>
+      wisteria.internal.underivable[value is Decodable in Xml]
+        ( "a `Decodable in Text` instance would also serve" )
+
   // Single entry-point for resolving `Encodable in Xml`, the exact mirror of
   // `decodable` above. Prefers a textual encoder when one exists (so any
   // `Encodable in Text` value — `Text`, `Int`, `Long`, user identifiers, … —
@@ -726,6 +730,10 @@ object Xml extends Tag.Container
 
     case given Reflection[`value`] =>
       EncodableDerivation.derived
+
+    case _ =>
+      wisteria.internal.underivable[value is Encodable in Xml]
+        ( "an `Encodable in Text` instance would also serve" )
 
   // Wisteria-based derivation for case classes (conjunction) and sealed
   // traits / enums (disjunction). Each field is decoded from the first

@@ -279,6 +279,42 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
   extension [value](value: value)
     def display(using display: value is Display): Text = display.display(value)
 
+  // A typeclass resolved, like the codecs, through a fallback given which chooses by `summonFrom`
+  // and stops, by `underivable`, at a type it can do nothing with.
+  trait Outline:
+    type Self
+    def outline(value: Self): Text
+
+  object Outline extends Outline2:
+    given text: Text is Outline = identity(_)
+
+    given list: [element] => (outline: element is Outline) => List[element] is Outline =
+      _.map(outline.outline(_)).join(t"[", t" ", t"]")
+
+    object Derivation extends Derivable[Outline]:
+      inline def conjunction[derivation <: Product: ProductReflection]: derivation is Outline =
+        value =>
+          fields(value):
+            [field] => field => contextual.outline(field)
+          .join(t",")
+
+      inline def disjunction[derivation: SumReflection]: derivation is Outline = value =>
+        variant(value):
+          [variant <: derivation] => variant => contextual.outline(variant)
+
+  trait Outline2:
+    inline given fallback: [value] => value is Outline = compiletime.summonFrom:
+      case given Reflection[`value`] => Outline.Derivation.derived[value]
+      case _                         => wisteria.internal.underivable[value is Outline]("or so")
+
+  class Opaque
+  case class Casket(metal: Text, contents: Opaque)
+  case class Suitor(name: Text, choice: Casket)
+  case class Lottery(caskets: List[Opaque])
+  sealed trait Bond
+  case class Flesh(pound: Opaque) extends Bond
+  case class Ducats(sum: Text) extends Bond
+
   // ===== Tests =====
 
   def run(): Unit =
@@ -522,6 +558,48 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
           case class HasUnknown(unknown: java.io.File)
           Eq.derived[HasUnknown]
       . assert(!_.nil)
+
+      val reason = t"`Opaque` is not a case class, an enum or a sealed trait; or so"
+
+      def wanted(site: Text): Text =
+        t"wisteria: the $site needs a `Tests.Outline` instance for `Opaque`, but none could be "
+        + t"found or derived: $reason"
+
+      test(m"An underivable field is named, with its type and its owner"):
+        demilitarize:
+          summon[Casket is Outline]
+        . map(_.message)
+      . assert(_ == List(wanted(t"field `contents` of `Casket`")))
+
+      test(m"An underivable field of a nested product is named in that product"):
+        demilitarize:
+          summon[Suitor is Outline]
+        . map(_.message)
+      . assert(_ == List(wanted(t"field `contents` of `Casket`")))
+
+      test(m"An underivable element of a collection is named by its field"):
+        demilitarize:
+          summon[Lottery is Outline]
+        . map(_.message)
+      . assert(_ == List(wanted(t"field `caskets` of `Lottery`")))
+
+      test(m"An underivable field of a variant is named in the variant"):
+        demilitarize:
+          summon[Bond is Outline]
+        . map(_.message)
+      . assert(_ == List(wanted(t"field `pound` of `Flesh`")))
+
+      test(m"An underivable type wanted directly names no field"):
+        demilitarize:
+          summon[Opaque is Outline]
+        . map(_.message)
+      . assert:
+          _ == List(t"wisteria: no `Tests.Outline` instance for `Opaque` could be found or "+
+              t"derived: $reason")
+
+      test(m"A derivable product with a fallback given still derives"):
+        summon[Ducats is Outline].outline(Ducats(t"three thousand"))
+      . assert(_ == t"three thousand")
 
       test(m"Derivation fails on an unsupported parameter type"):
         demilitarize:

@@ -313,12 +313,20 @@ trait Json2 extends Json3:
     case given Reflection[`value`] =>
       DecodableDerivation.derived
 
+    case _ =>
+      wisteria.internal.underivable[value is Json.Decodable]
+        ( "a `Decodable in Text` instance would also serve" )
+
   inline given encodable: [value] => value is Json.Encodable = summonFrom:
     case given (`value` is anticipation.Encodable in Text) =>
       Json.Encodable(() => Morphology.Str): value => Json.ast(Json.Ast(value.encode.s))
 
     case given Reflection[`value`] =>
       EncodableDerivation.derived
+
+    case _ =>
+      wisteria.internal.underivable[value is Json.Encodable]
+        ( "an `Encodable in Text` instance would also serve" )
 
   object DecodableDerivation extends Derivable[Json.Decodable]:
     inline def conjunction[derivation <: Product: ProductReflection]
