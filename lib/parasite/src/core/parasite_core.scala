@@ -64,6 +64,13 @@ uses PlatformSupervisor, VirtualSupervisor, AdaptiveSupervisor, PooledSupervisor
   // where a thread start per task would dominate.
   given pooledThreads: Threading = () => PooledSupervisor
 
+  // Every task on a platform thread of its own with a stack of `stack` bytes, for work which
+  // recurses deeply. Not a given, since it takes the size: bind it for a `supervise` block,
+  // as `given Threading = threads.stackThreads(256.mib)`.
+  def stackThreads(stack: rudiments.Memory): Threading =
+    val supervisor: StackSupervisor = StackSupervisor(stack)
+    () => supervisor
+
   // The model for Scala.js (issue #1450): tasks run eagerly at `fork`, so structured
   // gather-style concurrency works on the event loop, with the limitations documented on
   // `JavascriptSupervisor`.

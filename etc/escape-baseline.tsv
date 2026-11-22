@@ -403,6 +403,7 @@ lib/parasite/src/bench/parasite.Benchmarks.scala	0	0	0	0	1	0	0	0	1	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Async.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Daemon.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Fault.scala	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+lib/parasite/src/core/parasite.Lane.scala	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Monitor.scala	2	0	1	0	0	0	0	0	0	2	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.PoolingSupervisor.scala	1	0	6	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Task.scala	8	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0

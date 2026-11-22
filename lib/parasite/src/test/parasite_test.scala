@@ -1424,6 +1424,105 @@ object Tests extends Suite("threads", m"Parasite tests"):
           cancelled.get()
         . assert(_ == true)
 
+      suite(m"Threads with a given stack size"):
+        def descend(depth: Int): Int = if depth == 0 then 0 else 1 + descend(depth - 1)
+
+        test(m"a deep recursion completes on a thread with a large stack"):
+          given Threading = threads.stackThreads(512.mib)
+          supervise(async(descend(400000)).await())
+        . assert(_ == 400000)
+
+        test(m"the same recursion exhausts a thread with a small stack"):
+          given Threading = threads.stackThreads(256.kib)
+
+          try supervise(async(descend(400000)).await()) yet t"completed"
+          catch case error: StackOverflowError => t"exhausted"
+        . assert(_ == t"exhausted")
+
+        test(m"a task under stack threads runs on a platform thread"):
+          given Threading = threads.stackThreads(1.mib)
+          supervise(async(Thread.currentThread.nn.isVirtual).await())
+        . assert(_ == false)
+
+      suite(m"A lane's dedicated thread"):
+        def descend(depth: Int): Int = if depth == 0 then 0 else 1 + descend(depth - 1)
+
+        test(m"a submitted block's result is its task's"):
+          val lane = Lane(t"illyria")
+          import threads.virtualThreads
+          supervise(lane.submit(() => 42).await()).also(lane.close())
+        . assert(_ == 42)
+
+        test(m"every submission runs on the lane's one thread"):
+          val lane = Lane(t"illyria")
+          import threads.virtualThreads
+
+          supervise:
+            val first = lane.submit(() => Thread.currentThread.nn)
+            val second = async(lane.submit(() => Thread.currentThread.nn).await())
+            (first.await() eq second.await(), first.await().getName.nn.tt)
+          . also(lane.close())
+        . assert(_ == (true, t"illyria"))
+
+        test(m"a lane's thread is not the submitter's"):
+          val lane = Lane(t"illyria")
+          import threads.virtualThreads
+          supervise(lane.submit(() => lane.current).await() -> lane.current).also(lane.close())
+        . assert(_ == (true, false))
+
+        test(m"blocks run in the order they were submitted"):
+          val lane = Lane(t"illyria")
+          val seen = java.util.concurrent.ConcurrentLinkedQueue[Int]()
+          import threads.virtualThreads
+
+          supervise:
+            val tasks = (1 to 20).map: index =>
+              val task = lane.submit { () => seen.add(index) }
+              Thread.sleep(2)
+              task
+
+            tasks.foreach(_.await())
+
+          lane.close()
+          scala.List.from(seen.iterator.nn.asScala)
+        . assert(_ == (1 to 20).toList)
+
+        test(m"what a block throws is delivered when its task is awaited"):
+          val lane = Lane(t"illyria")
+          import threads.virtualThreads
+
+          try supervise(lane.submit[Int](() => throw IllegalStateException("adrift")).await()).show
+          catch case error: IllegalStateException => error.getMessage.nn.tt
+          finally lane.close()
+        . assert(_ == t"adrift")
+
+        test(m"a lane goes on after a block has thrown"):
+          val lane = Lane(t"illyria")
+          import threads.virtualThreads
+
+          supervise:
+            val failed = lane.submit[Int](() => throw IllegalStateException("adrift"))
+            val next = lane.submit(() => 7)
+            safely(failed.await())
+            next.await()
+          . also(lane.close())
+        . assert(_ == 7)
+
+        test(m"a lane's thread has the stack it was given"):
+          val lane = Lane(t"illyria", 512.mib)
+          import threads.virtualThreads
+          supervise(lane.submit(() => descend(400000)).await()).also(lane.close())
+        . assert(_ == 400000)
+
+        test(m"a closed lane's thread ends"):
+          val lane = Lane(t"illyria")
+          import threads.virtualThreads
+          val thread = supervise(lane.submit(() => Thread.currentThread.nn).await())
+          lane.close()
+          thread.join(2000)
+          thread.isAlive
+        . assert(_ == false)
+
       suite(m"Multiple supervisors"):
         test(m"Platform supervisor can be used"):
           import threads.platformThreads

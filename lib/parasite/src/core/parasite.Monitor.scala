@@ -222,6 +222,18 @@ object PlatformSupervisor extends ThreadSupervisor:
         name().let(_.s).let(thread.setName(_))
         thread.start()
 
+// A supervisor whose every task has a platform thread of its own, with a stack of a given
+// size: for work which recurses deeply, such as compiling or evaluating a user's code. The
+// size is a request, which the runtime may round or ignore, as `Thread`'s constructor says.
+final class StackSupervisor(stack: Memory) extends ThreadSupervisor:
+  def name: Name[Async] = n"stack"
+
+  def fork(name: () => Optional[Text])(block: => Unit): Strand =
+    val runnable: Runnable^{block} = () => block
+
+    Strand.Threaded:
+      new Thread(null, runnable, name().let(_.s).or("stack"), stack.long).tap(_.start())
+
 // The single-threaded, eager supervision model (issue #1450): each forked task runs to
 // completion at `fork` time, on the calling strand, so every promise such a task settles is
 // already complete before anyone can await it, and parking is never needed. This is the model
