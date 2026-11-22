@@ -205,8 +205,9 @@ object Tests extends Suite("classpath", m"Hellenism Tests"):
         . assert(_ == true)
 
         test(m"The runtime's modules are in alphabetical order"):
-          val modules = Classpath.Entry.JavaRuntime.modules.map(_.s).stdlib
-          modules == modules.sorted
+          import sortingAlgorithms.timsort
+          val modules = Classpath.Entry.JavaRuntime.modules.map(_.s)
+          modules == modules.sort
         . assert(_ == true)
 
         test(m"The base module exports java.lang"):

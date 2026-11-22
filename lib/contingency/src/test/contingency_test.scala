@@ -315,6 +315,56 @@ object Tests extends Suite("errors", m"Contingency"):
         outer
       . assert(_ == 11)
 
+    suite(m"pacify"):
+      test(m"pacify returns the value when nothing is thrown"):
+        pacify(7)
+      . assert(_ == 7)
+
+      test(m"pacify raises a failed assertion as a Disturbance"):
+        capture[Disturbance](pacify(throw AssertionError("not so"))).throwable.getMessage
+      . assert(_ == "not so")
+
+      test(m"pacify raises an exhausted stack as a Disturbance"):
+        def descend(depth: Int): Int = 1 + descend(depth + 1)
+        capture[Disturbance](pacify(descend(0))).throwable.isInstanceOf[StackOverflowError]
+      . assert(_ == true)
+
+      test(m"pacify raises a linkage error as a Disturbance"):
+        capture[Disturbance](pacify(throw NoClassDefFoundError("illyria/Duke"))).throwable.getMessage
+      . assert(_ == "illyria/Duke")
+
+      test(m"pacify raises a foreign exception as a Disturbance"):
+        capture[Disturbance](pacify(throw IllegalStateException("adrift"))).throwable.getMessage
+      . assert(_ == "adrift")
+
+      test(m"a Disturbance keeps the throwable as its cause"):
+        val thrown = IllegalStateException("adrift")
+        capture[Disturbance](pacify(throw thrown)).getCause.nn eq thrown
+      . assert(_ == true)
+
+      test(m"a Disturbance names what was thrown"):
+        capture[Disturbance](pacify(throw AssertionError("not so"))).message.text
+      . assert(_ == t"foreign code threw java.lang.AssertionError with the message, not so")
+
+      test(m"safely gives Unset for a disturbed block"):
+        safely(pacify[Int](throw AssertionError("not so")))
+      . assert(_ == Unset)
+
+      test(m"a Soundness error passes through pacify untouched"):
+        capture[ErrorA](pacify(failA(3))).value
+      . assert(_ == 3)
+
+      test(m"an error raised to an enclosing safely passes through pacify"):
+        safely(pacify(failA(2)))
+      . assert(_ == Unset)
+
+      test(m"pacify does not capture an exhausted heap"):
+        try
+          safely(pacify[Int](throw OutOfMemoryError("spent")))
+          t"captured"
+        catch case error: OutOfMemoryError => t"propagated"
+      . assert(_ == t"propagated")
+
     suite(m"safely / unsafely"):
       test(m"safely returns the value when no error is raised"):
         safely(succeed(t"present"))

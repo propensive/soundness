@@ -36,9 +36,9 @@ export
   contingency
   . { abort, abortive, accrual, Accrual, accrue, amalgamate, AmalgamateTactic, Attempt, attempt,
       AttemptTactic, capture, certify, dare, deferAccrue, deferHandle, deferMitigate, deferRecover,
-      EitherTactic, Emit, Errors, Expectation, Fatal,
+      Disturbance, EitherTactic, Emit, Errors, Expectation, Fatal,
       Foci, focus, guard, Guard, HaltTactic, handle, Handler, lest, Mitigable,
-      mitigate, Mitigation, mitigates, OptionalTactic, Pointer, raise, raises, recover, Recovery,
+      mitigate, Mitigation, mitigates, OptionalTactic, pacify, Pointer, raise, raises, recover, Recovery,
       safely, survive, Tactic, throwErrors, ThrowTactic, track, TrackFoci, Tracking, tracks,
       TrackTactic, Unchecked, UncheckedTactic, unsafely, Validate, validate, Validation, venture,
       Venture, Venturer, VentureTactic }

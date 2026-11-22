@@ -123,6 +123,25 @@ def unsafely[error <: Hazard](using erased void: Void)[success]
       throw error
 
 
+// Runs foreign code — code written without Soundness, whose failures are thrown, and are not
+// all `Exception`s — and raises whatever it throws as a `Disturbance`, which the ordinary
+// handlers (`safely`, `recover`, `mitigate`) can then deal with. That is every non-fatal
+// throwable, in the sense of `NonFatal`, and also the errors which a tool driving a compiler
+// or a classloader has to survive: a failed assertion, an exhausted stack and a linkage error.
+// A Soundness error passes through untouched, as does the `Break` by which a tactic leaves a
+// block, so `pacify` does not interfere with errors raised properly inside it. Anything else
+// (an exhausted heap, an interrupt) is fatal to more than the block, and propagates.
+// The tactic is a `using` parameter, not a `raises` result: a context-function result would
+// close over the by-name block, which separation checking forbids of an unconsumed parameter.
+def pacify[result](block: => result)(using tactic: Tactic[Disturbance]^): result =
+  try block catch
+    case error: (LinkageError | AssertionError | StackOverflowError) =>
+      abort(Disturbance(error))
+
+    case NonFatal(error) if !error.isInstanceOf[fulminate.Error | boundary.Break[?]] =>
+      abort(Disturbance(error))
+
+
 def throwErrors[error <: Hazard](using CanThrow[error])[success]
   ( block: ThrowTactic[error]^ ?=> success )
 :   success =
