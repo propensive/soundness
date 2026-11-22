@@ -88,7 +88,7 @@ graffiti	yes	yes	yes	js
 guillotine	yes	no	yes	no	backends: core-jvm+core-native	`ProcessBuilder` has no Scala.js analogue; on Scala Native `Process#startTime`/`cpuUsage` are `Unset` (no `java.time`)
 hallucination	yes	yes	yes	js	backends: core-jvm+core-native	
 harlequin	yes	no	no	no		syntax highlighting via `anthology.scala` (the compiler)
-hellenism	yes	core	core	core	backends: core-jvm; JVM-only: jvm	`jvm` is the filesystem-backed classpath (`galilei.jvm`); classloader construction and `ServiceLoader` are the JVM/JS `core-jvm` set — a Scala Native program's classpath is linked into its binary
+hellenism	yes	core	yes	core	backends: core-jvm+core-native; JVM-only: jvm	`jvm` is the filesystem-backed classpath (`galilei.jvm`); classloader construction and `ServiceLoader` are the JVM/JS `core-jvm` set — a Scala Native program's classpath is linked into its binary
 hieroglyph	yes	yes	yes	js	backends: core-jvm+core-native	
 honeycomb	yes	yes	yes	js		
 hyperbole	yes	no	no	no	everywhere: tasty	`core` depends on JVM-only `harlequin.core` (the compiler); `tasty`, the compiler-free TASTy reader over `tasty-core`, crosses everywhere; `stacks` reads the filesystem (`galilei.jvm`)
