@@ -173,6 +173,22 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         dir.open[Git.Worktree]() { worktree ?=> Objects.text(worktree.blobAt(blob)) }
       .assert(_ == t"${List.range(0, 200).map { n => t"line $n" }.join(t"\n")}\nmore")
 
+      test(m"a pack which replaces one already read is read in its turn"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        gitCommit(dir, t"a", t"a\nb\n", t"second")
+        sh"git -C $dir repack -adf -q".exec[Exit]()
+        sh"git -C $dir prune-packed -q".exec[Exit]()
+        val before = gitOut(dir, t"log", t"--format=%H").cut(t"\n")
+        val earlier = dir.open[Git.Worktree]() { worktree ?=> worktree.log().value.map(_.commit.text) }
+        gitCommit(dir, t"a", t"a\nb\nc\n", t"third")
+        sh"git -C $dir repack -adf -q".exec[Exit]()
+        sh"git -C $dir prune-packed -q".exec[Exit]()
+        val after = gitOut(dir, t"log", t"--format=%H").cut(t"\n")
+        val later = dir.open[Git.Worktree]() { worktree ?=> worktree.log().value.map(_.commit.text) }
+        (earlier == before, later == after)
+      .assert(_ == ((true, true)))
+
       test(m"a pack entry ends where the next entry in the pack begins"):
         val dir = gitRepo()
         val big = List.range(0, 200).map { n => t"line $n" }.join(t"\n")

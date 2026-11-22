@@ -34,6 +34,8 @@ package octogenarian
 
 import java.nio.{ByteBuffer, LongBuffer}
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import galilei.*
@@ -151,7 +153,9 @@ private[octogenarian] object Packfile:
 
   // Reads an entry header from the pack through a positional view.
   def header(view: Expanse^, offset: Long)(using Tactic[Git.Error]): Entry =
-    val bytes = view.read(offset, 32).asInstanceOf[scala.Array[Byte]]
+    // No header is longer than 32 bytes, but the last entry may lie nearer the end than that.
+    val length = (view.size - offset).min(32L).toInt
+    val bytes = view.read(offset, length).asInstanceOf[scala.Array[Byte]]
     val first = bytes(0) & 0xff
     val typeCode = (first >> 4) & 7
 
@@ -239,20 +243,57 @@ private[octogenarian] object Packfile:
     recur(start)
     target.toByteArray.nn.asInstanceOf[Data]
 
-// One pack on disk, with its index loaded.
+// One pack on disk, with its index loaded. The pack is mapped into memory when an object is first
+// read from it, and stays mapped until the pack is retired, so that a read costs no system call.
 private[octogenarian] class Packfile(val pack: Path on Local, val index: Packfile.Index):
   import Git.Error.Reason as Reason
 
+  // The mapping is held in a field, across threads, and its lifetime is managed by hand: it is
+  // lent only within `read`, which counts itself in and out under this pack's monitor, and it is
+  // unmapped once the pack is retired and nothing is reading from it.
+  @caps.unsafe.untrackedCaptures // [synchronized] replaced under this pack's monitor
+  private var mapping: FilesystemBackend.Mapping | Null = null
+  private val readers: java.util.concurrent.atomic.AtomicInteger =
+    java.util.concurrent.atomic.AtomicInteger(0)
+
+  private val retired: java.util.concurrent.atomic.AtomicBoolean =
+    java.util.concurrent.atomic.AtomicBoolean(false)
+
   def contains(hash: Git.Hash): Boolean = index.offsetOf(hash).present
 
+  private def acquire()(using Tactic[Io.Error]): Optional[FilesystemBackend.Mapping] = synchronized:
+    if retired.get then Unset else
+      if mapping == null then
+        // [synchronized] kept in the field above, and unmapped by `unmap`
+        mapping = caps.unsafe.unsafeAssumePure(summon[FilesystemBackend on Local].mapping(pack))
+
+      readers.incrementAndGet()
+      mapping.nn
+
+  private def unmap(): Unit =
+    val held = mapping
+
+    if held != null then
+      mapping = null
+      held.unmap()
+
+  private def release(): Unit = synchronized:
+    if readers.decrementAndGet() == 0 && retired.get then unmap()
+
+  // Called when the pack is no longer among its directory's: nothing more is read from it, and
+  // it is unmapped as soon as whatever is reading from it has finished.
+  def retire(): Unit = synchronized:
+    retired.set(true)
+    if readers.get == 0 then unmap()
+
   // Reads and resolves the object at `offset`, following deltas within this pack; a delta whose
-  // base lies in another pack is resolved through `external`.
+  // base lies in another pack is resolved through `external`. A retired pack has no objects.
   def read(hash: Git.Hash, external: Git.Hash => Optional[(Git.Object.Kind, Data)])
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Optional[(Git.Object.Kind, Data)] =
 
     index.offsetOf(hash).let: offset =>
-      pack.expanse: view =>
+      acquire().let: view =>
         def at(offset: Long): (Git.Object.Kind, Data) =
           val end = index.end(offset, view.size)
 
@@ -271,4 +312,4 @@ private[octogenarian] class Packfile(val pack: Path on Local, val index: Packfil
 
               (kind, Packfile.applyDelta(base, Packfile.inflate(view, data, end)))
 
-        at(offset)
+        try at(offset) finally release()
