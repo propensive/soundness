@@ -143,6 +143,15 @@ object Chain extends scala.caps.Pure:
   def concat[element](left: Chain[element], right: Chain[element]): Chain[element] =
     left.lazyAppendedAll(right)
 
+  // Multiset intersection and difference, in the left operand's order: an element of `right`
+  // accounts for at most one equal element of `left`. The right operand is read in full, so
+  // it must be finite; the left is read only as far as the result is.
+  def intersect[element](left: Chain[element], right: Chain[element]): Chain[element] =
+    left.intersect(right)
+
+  def except[element](left: Chain[element], right: Chain[element]): Chain[element] =
+    left.diff(right)
+
   def map[element, element2](chain: Chain[element], lambda: element => element2): Chain[element2] =
     chain.map(lambda)
 

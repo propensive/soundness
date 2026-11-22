@@ -168,6 +168,14 @@ object Sequence extends scala.caps.Pure:
   def concat[element](left: Sequence[element], right: Sequence[element]): Sequence[element] =
     left ++ right
 
+  // Multiset intersection and difference, in the left operand's order: an element of `right`
+  // accounts for at most one equal element of `left`.
+  def intersect[element](left: Sequence[element], right: Sequence[element]): Sequence[element] =
+    left.intersect(right)
+
+  def except[element](left: Sequence[element], right: Sequence[element]): Sequence[element] =
+    left.diff(right)
+
   def invert[element](sequence: Sequence[element]): Sequence[element] = sequence.reverse
 
   def map[element, element2](sequence: Sequence[element], lambda: element => element2)

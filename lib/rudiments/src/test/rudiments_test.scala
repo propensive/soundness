@@ -399,6 +399,53 @@ object Tests extends Suite("core", m"Rudiments Tests"):
         xs + ys
       . assert(_ == Set(1, 2, 3))
 
+    suite(m"Multiset algebra on ordered collections"):
+      test(m"except removes one occurrence for each in the operand"):
+        val after: List[Int] = List(1, 2, 2, 3, 2)
+        val before: List[Int] = List(2, 3)
+        after.except(before)
+      . assert(_ == List(1, 2, 2))
+
+      test(m"except keeps the order of the left operand"):
+        val words: List[Text] = List(t"d", t"a", t"c", t"b")
+        val gone: List[Text] = List(t"a")
+        words.except(gone)
+      . assert(_ == List(t"d", t"c", t"b"))
+
+      test(m"except counts what is new between two runs"):
+        val before: List[Text] = List(t"warn", t"warn", t"note")
+        val after: List[Text] = List(t"warn", t"warn", t"warn", t"note", t"halt")
+        after.except(before)
+      . assert(_ == List(t"warn", t"halt"))
+
+      test(m"intersect keeps an element as often as it occurs in both"):
+        val left: List[Int] = List(1, 2, 2, 2, 3)
+        val right: List[Int] = List(2, 2, 4)
+        left.intersect(right)
+      . assert(_ == List(2, 2))
+
+      test(m"except on a Sequence is a multiset difference"):
+        val left: Sequence[Int] = Sequence(1, 1, 2)
+        val right: Sequence[Int] = Sequence(1)
+        left.except(right)
+      . assert(_ == Sequence(1, 2))
+
+      test(m"intersect on a Sequence is a multiset intersection"):
+        val left: Sequence[Int] = Sequence(1, 1, 2)
+        val right: Sequence[Int] = Sequence(1, 1, 1)
+        left.intersect(right)
+      . assert(_ == Sequence(1, 1))
+
+      test(m"except on a Chain is a multiset difference"):
+        val left: Chain[Int] = Chain(1, 1, 2)
+        val right: Chain[Int] = Chain(1)
+        left.except(right).to[List]
+      . assert(_ == List(1, 2))
+
+      test(m"except on literal lists resolves"):
+        List(1, 2, 2).except(List(2))
+      . assert(_ == List(1, 2))
+
     suite(m"Keyed tests"):
       test(m"Map keys are a Set"):
         val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
