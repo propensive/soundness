@@ -112,7 +112,9 @@ object Classpath extends Root(t""):
       def apply[instantiable: Instantiable across Urls from Text](): instantiable =
         instantiable(url)
 
-    case object JavaRuntime extends Classpath.Entry:
+    // On the JVM, `JavaModules` (in `core-jvm`) lists the runtime's modules, the packages each
+    // exports and the classes in a package.
+    case object JavaRuntime extends Classpath.Entry, JavaModules:
       def path: Optional[Text] = Unset
 
   // The `java.net.URL` conversions (`Loaders.entry(url)`, `Entry#javaUrl`) live in `core-jvm`:

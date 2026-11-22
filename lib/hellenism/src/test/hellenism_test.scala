@@ -199,6 +199,48 @@ object Tests extends Suite("classpath", m"Hellenism Tests"):
             Classpath.Entry.JavaRuntime.path)
       . assert(_ == (t"/x.jar", t"/a/", Unset))
 
+      suite(m"The Java runtime's modules"):
+        test(m"The runtime's modules include the base module"):
+          Classpath.Entry.JavaRuntime.modules.has(t"java.base")
+        . assert(_ == true)
+
+        test(m"The runtime's modules are in alphabetical order"):
+          val modules = Classpath.Entry.JavaRuntime.modules.map(_.s).stdlib
+          modules == modules.sorted
+        . assert(_ == true)
+
+        test(m"The base module exports java.lang"):
+          Classpath.Entry.JavaRuntime.exports(t"java.base").has(t"java.lang")
+        . assert(_ == true)
+
+        test(m"A package exported only to named modules is not listed"):
+          Classpath.Entry.JavaRuntime.exports(t"java.base").has(t"jdk.internal.misc")
+        . assert(_ == false)
+
+        test(m"A module which does not exist exports nothing"):
+          Classpath.Entry.JavaRuntime.exports(t"illyria.base")
+        . assert(_ == Nil)
+
+        test(m"The classes of a package are named in full"):
+          Classpath.Entry.JavaRuntime.classes(t"java.base", t"java.lang").has(t"java.lang.String")
+        . assert(_ == true)
+
+        test(m"A nested class is named as the runtime names it"):
+          Classpath.Entry.JavaRuntime.classes(t"java.base", t"java.util").has(t"java.util.Map$$Entry")
+        . assert(_ == true)
+
+        test(m"A package's descriptor is not one of its classes"):
+          Classpath.Entry.JavaRuntime.classes(t"java.base", t"java.lang").has(t"java.lang.package-info")
+        . assert(_ == false)
+
+        test(m"A package the module does not have has no classes"):
+          Classpath.Entry.JavaRuntime.classes(t"java.base", t"illyria.court")
+        . assert(_ == Nil)
+
+        test(m"Every listed class is in the package asked for"):
+          Classpath.Entry.JavaRuntime.classes(t"java.base", t"java.lang").all(_.starts(t"java.lang."))
+        . assert(_ == true)
+
       test(m"The running classpath names the entries this suite was loaded from"):
         val running: LocalClasspath = unsafely(LocalClasspath.running(Classloader[Tests.type]))
         own.entries.all(running.entrySet.has(_))
