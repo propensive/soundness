@@ -1,0 +1,37 @@
+orthant 2 release
+
+@ 3 0 0 17aa0e17a924169e036e3c389d3d38c0
++ What a block writes to the two streams can be collected instead of shown. `Stdio.capture`
++ runs a block and gives its result beside the text written to each stream, and it reaches
++ whatever writes to them, including the JVM's own `System.out` and Scala's `println`:
++
++ ```scala fuel
++ run
++ ##
++ val captured = Stdio.capture:
++   Out.println(t"started")
++   Err.println(t"a warning")
++
++ Out.println(captured.out.trim)
++ Out.println(captured.err.trim)
++ ```
++
++ A terminal shows the two streams as one, in the order they were written, and a program which
++ runs a user's snippet usually wants the same. `Err.divert(Out)` sends what a block writes to
++ standard error to standard output instead, so a capture around it holds one interleaved text:
++
++ ```scala fuel
++ run
++ ##
++ val merged = Stdio.capture:
++   Err.divert(Out):
++     Out.println(t"one")
++     Err.println(t"two")
++     Out.println(t"three")
++
++ Out.println(merged.out.trim)
++ ```
++
++ `Out.divert(Err)` does the reverse. A diversion lasts for its block, and covers the tasks
++ started within it.
++

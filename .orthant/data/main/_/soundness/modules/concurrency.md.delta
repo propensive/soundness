@@ -1,0 +1,47 @@
+orthant 2 release
+
+@ 2 0 0 15b6b8440eae0dab19a0f724bb608a02
++ Some work recurses deeply: compiling or evaluating a user's code is the usual case. The stack
++ of a thread is fixed when the thread is made, so such work needs a thread made with a larger
++ one. `threads.stackThreads` is a thread model which gives every task a platform thread of its
++ own with a stack of the size asked for. It takes that size, so it is bound and not imported:
++
++ ```scala fuel
++ run
++ ##
++ def depth(count: Int): Int = if count == 0 then 0 else 1 + depth(count - 1)
++
++ val deep =
++   given Threading = threads.stackThreads(512.mib)
++   supervise(async(depth(400000)).await())
++
++ Out.println(deep.show)
++ ```
++
++ #### A thread of its own
++
++ Some foreign state may be touched from one thread only: a compiler and its context are the
++ usual example. A `Lane` is one thread to which work is handed, and which does that work one
++ block at a time, in the order it was submitted. `submit` gives an ordinary `Task` of the
++ block's result, so it is awaited, cancelled and supervised like any other, whichever task
++ submitted it:
++
++ ```scala fuel
++ run
++ ##
++ val lane = Lane(t"compiler")
++
++ val names = supervise:
++   val first = lane.submit(() => Thread.currentThread.nn.getName.nn.tt)
++   val second = lane.submit(() => Thread.currentThread.nn.getName.nn.tt)
++   (first.await(), second.await())
++
++ lane.close()
++ Out.println(names(0))
++ Out.println((names(0) == names(1)).inspect)
++ ```
++
++ A lane can be given a stack size too, as `Lane(t"compiler", 512.mib)`. Its thread is a daemon,
++ so an open lane does not keep the program alive, and `close` ends it once the work already
++ submitted is done. A lane needs a real thread, so it is not for Scala.js.
++

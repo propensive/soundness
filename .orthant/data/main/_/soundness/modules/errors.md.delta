@@ -1,0 +1,35 @@
+orthant 2 release
+
+@ 3 0 0 04320cdb53b009dd14990d8c30f76e37
++ ### Code which was not written this way
++
++ Every handler here deals with an `Exception`, which is right for code that raises its errors.
++ A tool which drives *foreign* code, such as a compiler or a classloader, must also survive what
++ that code throws, and much of it is not an `Exception` at all: a failed assertion, an exhausted
++ stack, or a class which could not be linked. None of those ends the program, but none reaches
++ `safely` or `recover` either.
++
++ `pacify` runs a block of such code, and raises whatever it throws as a `Disturbance`, an
++ ordinary error which keeps the `throwable` it stands for:
++
++ ```scala fuel
++ run
++ ##
++ def depth(count: Int): Int = 1 + depth(count + 1)
++
++ val outcome = safely(pacify(depth(0)))
++ Out.println(outcome.inspect)
++
++ val message = recover:
++   case Disturbance(throwable) => throwable.getClass.getName.nn.tt
++ . protect:
++     pacify[Text](throw AssertionError("not so"))
++
++ Out.println(message)
++ ```
++
++ `pacify` takes every throwable which is not fatal to the program, and the three kinds of
++ `java.lang.Error` named above. An exhausted heap, or an interrupt, still propagates, since no
++ handler could do anything useful with it. An error raised properly inside the block is not
++ foreign: it passes through `pacify` untouched, to the handler it was raised for.
++

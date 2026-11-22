@@ -1,0 +1,49 @@
+orthant 2 release
+
+@ 2 0 0 00d45ec4fc6d58040f99e8911f37c1c6
++ ### Sets of integers
++
++ A `Flags` value is for the cases of one enumeration, and stops at 64 of them. A `Bitset` is the
++ same idea for any non-negative integers: a set which costs one bit for each possible member, and
++ grows to its largest. It suits a set of small numbers which is consulted often, such as the rows
++ of a table which have been visited, or the positions in a text which matched.
++
++ Its members are `Ordinal`s, and it is a collection like any other. `has` tests a member, `+` and
++ `-` give a set with one added or removed, and `+` of two sets is their union:
++
++ ```scala fuel
++ run
++ ##
++ val visited = Bitset(1.z, 5.z, 64.z)
++ val more = visited + 300.z
++
++ Out.println(visited.has(5.z).inspect)
++ Out.println(visited.has(300.z).inspect)
++ Out.println(more.has(300.z).inspect)
++ Out.println((visited + Bitset(5.z, 6.z)).size.show)
++ ```
++
++ `intersect` and `except` are as for a `Set`, and a `Bitset` is traversed in ascending order,
++ whatever order it was made in:
++
++ ```scala fuel
++ run
++ ##
++ visited.intersect(Bitset(5.z, 64.z, 65.z)).each: ordinal =>
++   Out.println(ordinal.n0.show)
++ ```
++
++ A set which is filled in a loop is built in place. `Bitset.build` lends a block a builder to
++ write to, and gives back an immutable `Bitset` when the block ends, as
++ [`Map.build`](collections.md#sets-and-maps) does for a map:
++
++ ```scala fuel
++ run
++ ##
++ val thirds = Bitset.build: bits =>
++   (0 until 20).each: index =>
++     if index%3 == 0 then bits.add(index.z)
++
++ Out.println(thirds.size.show)
++ ```
++
