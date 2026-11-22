@@ -1,0 +1,23 @@
+orthant 2 release
+
+@ 0 5 0 160b88b51484ed8b1cb3fb13760f07d4
++   entry .acceptCharset   `accept-charset` on `<form>`: the form's accepted encoding, as `Utf8`
++       The given is named `acceptCharset`; the attribute it registers is `accept-charset`.
+
+@ 0 2 0 1418777861ea7ff904725e6212041506
+
+@ 0 3 0 117a8f180cdb5de616f432082fef4c54
++   entry .usemap   `usemap` on `<img>`, `<input>` and `<object>`: the image-map reference, as `HashName`
+
+@ 0 2 0 135c3dd7d578e594051dec1124b477b5
++         the `shape` attribute, so `Area.Rect` serializes as `<area shape="rect">`.
+
+@ 0 1 0 09bf226bfa3aeb3b1100c702a9d1823e
++   entry #Iframe   `<iframe>`: a nested browsing context, with no content
+
+@ 0 3 0 052f5a07b3be57fe0acea239108b1477
++       `height`, `referrerpolicy` and `loading`. It admits no children, but it is not a void
++       element: it serializes as `<iframe …></iframe>`, with the end tag the specification
++       requires.
+
+@ 0 3 0 1d3b25362cf8887f155f6fe59c63964c

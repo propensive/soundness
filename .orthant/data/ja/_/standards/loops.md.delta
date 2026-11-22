@@ -1,0 +1,198 @@
+orthant 2 language
+
+@ 0 1 0 11bbccb16729533509d0e4addc42c7f9
++ # ループと添字
+
+@ 0 6 0 005a9f0cdaa9815001181e73d5ffa774
++ Soundness はカウンターではなく証明によって反復する。
++ 添字は、それが指すコレクションに限定された `Ordinal`、つまり `Ordinal in xs.type` であり、すでに境界を確立したコンビネーターだけがそれを作り出せる。
++ 限定された添字による読み取りは、要素を返す全域的な `apply` を通る。証明されていない添字による読み取りは `Optional` を返す。
++ 排出の対象となるパターンは `var i = 0; while i < xs.length` であり、そこでは添字は何にも制約されない素の `Int` である（ロードマップ core-4、[#1666]）。
+
+@ 0 2 0 064f9ddd10f014bb1c678f2b4c35d3af
++ `make build` が実行する `etc/check-while-count.py` がこの線を守る。どのファイルも、`etc/while-baseline.tsv` が記録する数を超えて `while`、`readUnchecked`、`.charAt(` を増やしてはならない。
+
+@ 0 1 0 144361c702019e661cb8fffac7cade8d
++ ## 何が何を置き換えるか
+
+% 2 1 0 07781d3a6a565c640701402a0a79c361
+
+@ 0 15 0 17a311b31be14f5a0a8f3b6e3ee51e1c
++ column  形
++ column  置き換え
++ row  本体で使われないカウンター  `repeat(n): …`
++ row  数えられるレシーバの上の `xs(i)`  `xs.extent.each: i => … xs(i) …`
++ row  `xs(i)` からのコレクションの構築  `xs.tabulate: i => … xs(i) …`（ブランド付きの任意の部分区間の上では `range.tabulate`）
++ row  `if i < xs.length then … xs(i) …`  `xs.pick(i): i => … xs(i) …`、または本体が要素だけを必要とするなら `xs.at(i)`
++ row  同じ長さの二つのレシーバの上の `xs(i)` と `ys(i)`  `xs.coextent(ys).let: shared => … ys(shared(i)) …`、または `shared.each: (i, j) => …`
++ row  同じものを、その一部の上で  `xs.extent.capped(n).each`、または限定された端点からの `start thru end`
++ row  同じものを、コレクションに結び付けて  `xs.iterate: i => …` と `xs.iterate(range)`
++ row  降順  `xs.retrace: i => …`
++ row  呼び出し側が `i` から再開する、条件付きの走査  `xs.prefix(p)` と `xs.prefix(after)(p)`。停止位置の添字だけなら `xs.spot(p)`
++ row  末尾の切り落とし  `xs.pare(floor)(p)`
++ row  `iterator.hasNext`  供給源に対する `each` または `fuse`
++ row  一バイトずつのカーソル  `xs.survey: cursor => …`
++ row  新しい配列を埋める  `Array.scribe(n): scribe => …`
+
+% 0 1 0 08f22b0bbd452b500b35b41a6b24fc16
+
+@ 0 1 0 1e064c07ba18f89c1de357862f184e1e
++ row  固定回数の副作用  `repeat(n): …`
+
+% 1 1 0 04f45b8924fc266c1d174dab121efc0c
+
+@ 0 1 0 1f4369b5c59aec7d04e8512656362910
++ ## どのレシーバが排出できるか
+
+@ 0 3 0 115877c11981c568004887a5508de72c
++ `Countable` インスタンスを持つレシーバだけが `extent` を持ち、`Applicable` インスタンスを持つものだけが序数で読める。
++ それ以外のものの上のループには限定された形がなく、そのまま残される。
++ よく出てくるレシーバは次のとおりである。
+
+% 2 1 0 0d52858f0bd1600b114af813c976d110
+
+@ 0 9 0 0b37046c829deaa10ed8a23f4fa14a54
++ column  レシーバ
++ column  排出可能
++ column  不可能な理由
++ row  凍結済みの `Array[element]^{}`、`Data`  はい
++ row  `Sequence`、`Text`、`IndexedSeq`、`Map`、`Set`  はい
++ row  `List`、`Chain`  漸近外（dysasymptotic）の承認のもとで
++ row  可変の `scala.Array`  いいえ  `Countable` インスタンスも `Applicable` インスタンスもない
++ row  可変長引数の `Seq`（クラスのパラメーター。メソッドの反復パラメーターは `List` である）  いいえ  `Countable` インスタンスも `Applicable` インスタンスもない
++ row  要素がケイパビリティを運ぶ `IndexedSeq`  いいえ  `Countable` インスタンスはキャプチャを持たず、ケイパビリティはそこへ流れ込めない
+
+% 1 1 0 1b681c630bd4daa8112ffcd76efd16b1
+
+@ 0 2 0 1b88c87827af6a3b0f9bfbd4cafbf5d1
++ 埋められている途中の可変バッファーは、回避策を探すべき例外ではない。
++ 自身の添字にブランドを付けるハンドルを持つ `Array.scribe` を通じて書くこと。
+
+@ 0 1 0 1b36fdfd2299a02b1f63528371f0a54c
++ ## 証明された長さ
+
+@ 0 2 0 0c01d9e44829d7401d2f26a37aa4f8ad
++ ブランドは境界だけでなく*長さ*も記録できる。
++ `Sized[n]`（proscenium にあり、`Populated` の隣）は幻の細分化 `Any { type Length = n }` であり、三つの方法で作り出される。
+
+@ 0 17 0 12aca934ad84c53b149787944b766098
++ - **構築によって**。`List(a, b)` が `& Populated` を返すように、リテラルの長さを持つ `Array.fill(512)(…)`、`Array.tabulate(8)(…)`、`Data.fill(16)(…)` は `… & Sized[n]` を返す。`val` や式の長さはブランドを付けない（マクロが読める証明はコンパイル時の定数だけである）。ブランドは値の型の細分化である。凍結済み配列のコレクションのインスタンス（`Traversable`、`Encodable`、`Streamable`、`Countable`、`Applicable`、`Terminable`、そして下流の `Postable`、`Servable`、`Transmissible`、`Readable`、`Encodable in Protobuf`）は `Sized` のインスタンスを持つ。それは `Self` にブランドを入れて綴られる。キャプチャする型で上限付けられた型変数は `any.rd` を獲得するからである。しかし*メディア*の型クラス（`stream`、`Cursor(…)`、`Stream(…)` の背後にある `Addressable`）は、ストリームがその上にあるメディアを名指しし、そこではブランドは意味を持たないので、メディアとして意図された `Data` はその型を名指しする。`val payload: Data = Data.fill(100)(_.toByte)` である。新しい `Data is X` の given に対する規則は次のとおりである。`Self` が引数の位置にだけ現れるなら、その隣に `sized…` の双子（`[length <: Int] => (Data & Sized[length]) is X`）を加え、証明されたブロックが素のものが受け入れられるあらゆる場所で受け入れられるようにする。`Self` が結果やストリームの要素（メディア）であるなら、加えない。
++ - **宣言によって**。512 バイトの tar ヘッダーや 8 バイトのチャンクヘッダーのようにレイアウトを固定する生産者は、結果に `Sized[n]` を宣言し、境界で一度それを解消する。
++ - **検査によって**。`xs.sized[512]` は `Optional[xs.type & Sized[512]]` を返す。これは `occupied` に対応するものである。
+
+@ 0 9 0 19ff9efc772f99da0b55805b3371ab48
++ `Sized[n]` のレシーバでは、`xs(156.z)`、あるいは序数リテラルは整数にインライン化されるので `xs(Quat)` も、展開時に `156 < n` を判定するマクロによって読まれる。読み取りは全域的であり、長さを超えるリテラルはコンパイルされない。
++ 序数は素の型を保つ（細分化されたリテラル型は、それを束縛するすべての `val` に推論されてしまう）。`Sized` のレシーバに対する変数の序数は、`at` と同様に `Optional` を返し、計算された添字に対しては `pick`/`extent` が引き続き証明となる。
++ 長さは型レベルで組み合わさる。
++ 証明された二つの配列の `Array.concat` は `Sized[n + m]` であり、両方がリテラルであれば簡約され、そうでなければ記号的に運ばれる。
++ レイアウトが固定されている場合は常に、コメント付きの `readUnchecked` よりもブランドを優先すること。バイトを探るテスト（`header(156.z)`）はまさにこの場合である。
+
+@ 0 1 0 0aa26bec63addfd9036ae4f60e8e0193
++ ## 凍結済み配列の編集
+
+@ 0 2 0 14e77fe83ae82fb508da1db997316c6a
++ 凍結済み配列（`Array[e]^{}`）は決して書き込まれない。編集はコピーであり、コピーの形が編集を名指しする。
+
+% 2 1 0 14eaae118bedd442052cba66c1c54488
+
+@ 0 6 0 04f705b328e6311d197ee636f85ca31e
++ column  編集
++ column  コピー
++ row  一つのスロット  `xs.define(i, v)`
++ row  一つのスロットの削除  `xs.omit(i)`
++ row  区間の置き換え  `Array.concat(xs.before(i), replacement, xs.after(i))`。三つの部分を一度だけコピーする
++ row  一度に複数のスロット  `Array.thaw(xs)`。`copy(i) = v` で書き込まれ、`Array.freeze` で再び凍結される排他的なコピー
+
+% 1 1 0 087c70ec25b9e6180b3243ec22266c79
+
+@ 0 3 0 00122ffbfbff7ba419de9cd6a2c0d649
++ 区間は、序数の周りの `before`/`upto`/`from`/`after`、または個数による `keep`/`skip` である。
++ これらはどれも標準ライブラリのビューを通らない。`xs.stdlib.updated`、`take ++ … ++ drop`、`ArrayBuffer.from(xs.stdlib)` が、これらが置き換える形である。
+
+@ 0 1 0 0f2c650aa5ab1dc308d3f091699ef0ba
++ ## `while` が残ってよい場合
+
+@ 0 2 0 1b558b2d2a17cf530de15cb3105fd122
++ `while` が残ってよいのは、その条件の中のどの式も、本体が添字で読むコレクションのサイズと比較されない場合だけである。
++ 三つの形がこれに当たる。
+
+@ 0 8 0 1813e8d71ccdae690e66732f3487c1d2
++ 1. **境界ではなく状態による終了。** `while !settled do`、`while cursor.more do`、`while capacity < required do capacity *= 2`。
++ 2. **データから導かれる添字の算術。** Knuth の除算、圧縮器の後方参照、PNG の予測子、ヒープのふるい分け、`charCount` ずつ進む UTF-8 の走査である。ループの上の一つのコメントが、すべての添字を範囲内に保つ不変条件を名指しし、読み取りはそのコメントを証明として `readUnchecked` を使う。
++ 3. **語彙そのものの内部。** denominative、concordance、zephyrine、proscenium にあり、ライブラリの残りが使うコンビネーターを実装する。
+
+@ 0 1 0 08a5c0a76a6963ce183e93c93f0eddc2
++ ## `Iterator` が正直な型である場合
+
+@ 0 8 0 026156f9c1d01d6d1d30d15b83279cc9
++ `murmuration.Iterator[element]`（rudiments とアンブレラがエクスポートする）はワンショットで状態を持つプルであり、それはまさにこの型が表すべきものである。外界から一度だけ読まれる供給源（ソケットのフレーム、HTTP のイベントストリーム、端末のキー押下、各エントリーのペイロードが開かれるにつれてチャンクごとに直列化されるアーカイブ）や、バックトラックする探索が再開するカーソルである。
++ これは `caps.Stateful` のケイパビリティなので、それを進めるメソッドは `update def` であり、それを引き取るコンビネーターは `consume def` であり、コンパイラは消費されたイテレーターの二度目の使用を拒否する。
++ `hasNext`/`next()` の組はない。これを読む正直な方法は三つある。
+
+@ 0 13 0 11edaac9ded9cd190a8e34115bc82266
++ 1. **終端操作**。`each`、`fold`、`exists`、`all`、`count`、`size`、`seek`、`chain`、`to[result]` で、その場でイテレーターを排出する。`each` がループである。
++ 2. **`next()`**。イテレーターをフィールドに保持する状態を持った消費者（`Stream` の供給源、端末のイベントポンプ）のためのもの。一回の呼び出しで進み、`element | Iterator.Exhausted` を返すので、呼び出し側は要素を得る前に `Iterator.Exhausted` に対してマッチしなければならない。
++ 3. **移動スタイル**、`pull`。要素と、要素の間で止まる権利を必要とする手書きのループのためのもの。`iterator.pull` はイテレーターを消費し、`Iterator.Exhausted` か、それを所有する `Cursor[element]^` を返す。`cursor.value` が要素を読み、`cursor.pull` がカーソルを消費して進む。型付きのパターン（`case cursor: Iterator.Cursor[Int]`）で分岐し、各ステップでハンドルを束縛し直し、同じ式の中で `cursor.pull` より前に `cursor.value` を読むこと。消費されたカーソルの再利用や、カーソルなしでの値の読み取りはコンパイルされない。
+
+@ 0 7 0 112e05ca1fb52a3b05c338f406319366
++ 実装は高速な中核、すなわち移動して要素を `var` に実体化する `update def advance(): Boolean` と、素の読み取りである `def current: element` を提供し、残りのすべてを継承する。
++ 遅延評価のコンビネーター（`map`、`filter`、`sweep`、`keep`、`skip`、`zip`、`indexed`、`trace`、`excerpt`、`batched`、`distinct`、`concat`、`flatMap`）はレシーバを消費し、キャプチャ集合がラムダを名指しする新しいイテレーターを返す。そのため、排他的な値を捕捉するラムダは結果も排他的にする。`flatMap` は、イテレーターではなく*コレクション*（`Traversable`）を返すラムダを取る。
+
+@ 0 4 0 0f1df231c7ac7add1928aa9e5b70e9c3
++ `scala.collection.Iterator` には境界でしか触れない。入り口では `Iterator.from(javaIterator)` と `Iterator.from(stdlibIterator)` がそれを包み、`iterator.stdlib` はそれを求める標準ライブラリや JDK の API にイテレーターを渡す。すべての橋渡しと同様に `[stdlib-boundary]` のタグが付く。
++ 以前 `xs.stdlib.iterator` に頼っていたものには、すべてネイティブな形があった。
+
+% 2 1 0 189001873ce2559308a2a10ac8480785
+
+@ 0 7 0 1ed24952c27b686305f8014cc6f966da
++ column  用途
++ column  ネイティブな形
++ row  `Chain` の上のストリームまたはカーソル  `Stream(chain)`、`Cursor(chain)`
++ row  `Chain` の上のフレーマー  `chain.frames[F]`
++ row  生きているチェーン  `each` で排出する
++ row  歩調を合わせた走査  `zip(…).each` または `indexed.each`
++ row  遅延評価の最初の合致の探索  名前渡しの `or` を伴う `fuse`
+
+% 1 1 0 1ade6af34ca3158513f2edadde24349f
+
+@ 0 1 0 1736df3749f7ea5619a360a8f9bd6f27
++ ## 証明のコメント
+
+@ 0 5 0 1d48f3163a6f3c340f73abb1361b7b0d
++ `attested` と `readUnchecked` は、境界がプログラムを追えない二つの場所である。
++ それぞれの呼び出し箇所は、その行かその一つ上の行に、境界を証明する構成を名指しするコメントを持つ。「`n = min(a.length, b.length)`, checked at :117」のようにである。
++ コメントが証明であり、ラチェットはコメントのない `attested` を拒否する。
++ 証明の及ぶ範囲が見えるように、ブロック形式 `xs.attested(i): i => …` を優先すること。
+
+@ 0 1 0 160e0bac3849e02e11ce3cc3ed77dc58
++ ## 落とし穴
+
+@ 0 4 0 088118e23b409c1816ccf19aea0a1842
++ ループより長く生きるカウンターは、単純に削除することはできない。
++ 最初のループが止まったところから再開する後のループと共有されているかもしれず、その場合、宣言を取り除くと二番目のループが実行される回数が黙って変わる。あるいは再利用の前にリセットされているかもしれず、その場合は宣言が移動する。
++ どちらもコンパイルに失敗しない。
+
+@ 0 5 0 04f6d962ccc2f6cd089b7fd00e04a96c
++ `each` はよくある名前である。
++ ファイルがインポートする型のコンパニオンを通じて届く、無関係な型の上の同名の拡張メソッドは、区間の `each` より優先され、何のエラーもなくブランドを剥がす。読み取りは単に再び `Optional` になる。
++ そのような名前はアンブレラに届かないので、通常は衝突を捕らえるコンパイルエラーが発生しえない。修正方法は、`hypotenuse.Bcd#each` が `eachNibble` になったように、もう一方のメソッドの名前を変えることである。
+
+@ 0 6 0 01e22303c3fb0f591e98c77559352f5e
++ `package soundness` へ入る名前は三通りに失敗しうるが、そのどれも、命名の哲学が衝突を捕らえると述べるコンパイルエラーではない。どれも黙って失敗する。
++ 一つの名前をエクスポートする二つのモジュールは、一方を落とす。
++ 暗黙のスコープを通じて届くブランドのない代替は、ブランド付きのものより優先され、まったくエラーなしにブランドを剥がす。
++ そして*オーバーロードされた*拡張メソッドの `export` は一つのオーバーロードしか転送しないので、もう一方は消える。`thru`、`till`、`each` がエクスポートされずにアンブレラのファイルで手書きされているのはそのためである。
+
+@ 0 8 0 0c8a196b5dbbcd8b1d3c03512074d41d
++ 拡張メンバーはブランド付きの序数の上で解決される。`i.n0`、`i.next`、`i.within(ys)` などは、アップキャストなしに `Ordinal in xs.type` の上で働き、`i + 1` と `i - j` は `Ordinal` のコンパニオンにあるブランド汎用の given を通る（算術は証明された範囲を離れるので、結果は素の `Ordinal` である）。
++ アップキャスト `(i: Ordinal).n0` は、もはやどこでも必要ない。
++ これを可能にしているのは `denominative.internal` の中身である。そこにあるすべてのインライン拡張メソッドは、消去されるキャスト（`ordinal.asInstanceOf[Int]`）でレシーバを拡大する。呼び出しがコンパイル単位をまたぐと、インライナーは素の、あるいは型注釈付きのレシーバをブランドに対して型付けし直せないからである。
++ 新しいものを加えるときも、その規律を守ること。
+
+@ 0 3 0 003b39ed536851310736cf643ab8dbd5
++ 一つのブランドは二つのレシーバに仕えることはできない。`Ordinal in xs.type & Ordinal in ys.type` はどちらの部分型でもない（同名のエイリアスの細分化は交差して一つにはならない）ので、並行した読み取りは `coextent` を通る。そのトークンが代わりに証明を引き渡す。
+
+@ 0 3 0 1f1708808cfac34c1aba05306026c57a
++ `extent` と区間のコンビネーターは `denominative` のパッケージレベルにあるので、初めてそれらに触れるファイルには `import denominative.*` が必要である。不透明型自身のコンパニオンにある操作だけが、暗黙のスコープを通じて届く。
+
+% 0 1 0 008df0fcc830bdcd0e955842dd357116

@@ -1,0 +1,70 @@
+orthant 2 language
+
+% 0 1 0 198aa3faa12e2e761cb023cb9d4a5cef
+
+@ 0 2 0 030797335e8d9d7d02a2715426f1ccbd
++ Lançado quando o Metamorphose não consegue construir uma permutação a partir dos argumentos
++ fornecidos.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 0a94406b24bce47a0381f762ceac278f
++ As permutações no Metamorphose são construídas a partir de uma sequência de índices sobre uma base
++ posicional. As variantes do erro indicam as quatro formas pelas quais os índices podem ser
++ inconsistentes com a base pedida ou com o comprimento da entrada. A mensagem é
++ `could not construct permutation because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0b3f97083d8a1963130135e3160f9373
+
+@ 0 1 0 1a9a0e4ccd21d4991a2058fc2b632351
++ Um valor posicional é maior ou igual à sua base.
+
+@ 0 1 0 03dd3deeab25705915d1f7d59a51084e
++ **Exemplo.** `[↯/s.28.1.1] could not construct permutation because the value 5 is too large for its positional base 4`
+
+@ 0 2 0 05f46dc375c086111c22512a77caeaa7
++ **Resolução.** Reduza o valor problemático ou aumente a base da permutação.
+
+% 0 1 0 17fc650e96b3ae1b1bca1c204c58cdd8
+
+@ 0 2 0 0f0f402afc4ad03a1c4a27682a6d6a44
++ O mesmo índice aparece em duas posições distintas, o que mapearia duas entradas para a mesma saída.
+
+@ 0 1 0 11fda1658bf3f93616190c44b439500a
++ **Exemplo.** `[↯/s.28.1.2] could not construct permutation because the index 3 was duplicated at 5`
+
+@ 0 2 0 00db5178b8ed9ecb0ca6e5ceba1005b0
++ **Resolução.** Cada índice deve aparecer exatamente uma vez; remova as duplicatas da entrada.
+
+% 0 1 0 173f80531bb013c802b9bae4702fc1ec
+
+@ 0 1 0 0f23ac038550155d0709099e25b0fd38
++ Um índice está fora do intervalo válido `0..max`.
+
+@ 0 1 0 1ebd90d2c32422bb1d0fab750d79a3a9
++ **Exemplo.** `[↯/s.28.1.3] could not construct permutation because the index appears, but every index should be in the range 0-7`
+
+@ 0 1 0 051e421c749fa91b0f95796d284105e6
++ **Resolução.** Use apenas índices dentro do tamanho da permutação.
+
+% 0 1 0 042fd2209e8d923a089cd2d6af43cd87
+
+@ 0 1 0 1f5150416f18860b0dff6b2a059a49a2
++ A entrada tem menos elementos do que a permutação exige.
+
+@ 0 1 0 1f47a002eebcb4c813080e7c6b23d153
++ **Exemplo.** `[↯/s.28.1.4] could not construct permutation because the input, of size 3, is too short for the permutation of size 5`
+
+@ 0 2 0 1f1be192a01323fd043a59ec9762b82c
++ **Resolução.** Forneça uma entrada pelo menos tão longa quanto o tamanho da permutação, ou construa
++ uma permutação menor.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 09657371824b40a900f30ac879cbd7af
++ - Código-fonte: `lib/metamorphose/src/core/metamorphose.Permutation.scala`

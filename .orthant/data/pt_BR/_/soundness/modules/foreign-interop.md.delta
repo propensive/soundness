@@ -1,0 +1,285 @@
+orthant 2 language
+
+@ 0 1 0 0a4f483ea62cd8d10a65ca4e98ac46dd
++ ## Interoperabilidade com outras linguagens
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 4 0 15f516eae90c212a03b9cdb3af1f1177
++ Outras linguagens também têm sistemas de tipos. Suas definições, como um arquivo de declarações
++ TypeScript, um header C, uma interface [WebIDL](https://en.wikipedia.org/wiki/Web_IDL) ou uma
++ descrição [WIT](https://component-model.bytecodealliance.org/design/wit.html) de WebAssembly,
++ dizem com precisão quais membros existem e o que eles aceitam.
+
+@ 0 3 0 0874b9139ae77229037a3fbbf26173aa
++ Essas definições são lidas enquanto o código compila, e as expressões *estrangeiras* são
++ verificadas contra elas. Navegar por um tipo estrangeiro, selecionar um membro e aplicar uma
++ função são, cada um, verificados contra as próprias declarações da linguagem estrangeira.
+
+@ 0 5 0 1ccdbf808c9ec1981037f72dc9a0cdb4
++ Um `Ecosystem` nomeia um mundo estrangeiro e a gramática em que suas definições são escritas.
++ Uma `Interface` carrega um arquivo de definições para ele. Um valor `Foreign` navega pelos tipos
++ declarados e produz uma expressão a ser entregue ao que quer que execute naquele mundo. Este é o
++ mecanismo por trás do [scripting tipado do DOM](web-automation.md) do navegador, e ele está
++ aberto a qualquer ecossistema com uma linguagem de interface legível.
+
+@ 0 1 0 1db2a51914aba05b1e0c7a5fcc923fb8
++ ### Sobre tipos estrangeiros
+
+@ 0 4 0 1eb6fe842210528513a41f064aa55ffb
++ A interoperação geralmente descarta o sistema de tipos estrangeiro na fronteira. Uma chamada
++ JavaScript a partir de Scala é uma string. Uma função C é um binding declarado à mão. As
++ declarações oficiais, o `*.d.ts`, o header ou a IDL, ficam sem ser lidas enquanto o programador
++ as transcreve, e os erros são exatamente os que o compilador estrangeiro teria apanhado.
+
+@ 0 5 0 0b5eb6e47eef01bf19e590a6868a0a03
++ Aqui as declarações são lidas. O arquivo de definições é analisado em [tempo de compilação],
++ cada passo de uma navegação é resolvido contra ele, e um membro que não existe, ou um argumento
++ do tipo estrangeiro errado, é um erro de compilação Scala. Verificar uma chamada estrangeira
++ contra as próprias definições do mundo estrangeiro é
++ [segurança por construção](../../philosophy/safety-by-construction.md) através de uma fronteira
++ entre linguagens.
+
+@ 0 1 0 19c6640c8bea873815109d890d75ca79
++ Tudo vem do pacote `soundness`:
+
+% 2 1 0 128d8a54c105d7d2054418bec79c5bc7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 1 1 0 09a8f67b183dcdd50adab2731fead1e5
+
+@ 0 1 0 02950028bc55726e10c6bd79633befc4
++ ### Carregar uma interface
+
+@ 0 3 0 16475cb0a13eab311c19bcb3daafda5c
++ Uma `Interface` vincula um ecossistema a um arquivo de definições no
++ [classpath](classpath.md). O arquivo é lido enquanto o código compila, então precisa estar no
++ classpath do compilador. Cada gramática suportada é um `Dialect` que o ecossistema nomeia:
+
+% 2 1 0 1c1712af55265b4c0ce3b3cb1805b78f
+
+@ 0 5 0 09cdfaaf0077e37e04bf6e3cd8b4de3f
++ column  Definições
++ column  Ecossistema
++ column  Dialeto
++ row  Declarações TypeScript  `Typescript`  `TypescriptDialect`
++ row  Headers C  `Native`  `CHeader.Dialect`
+
+% 0 1 0 1d1884dfc6698f8e1c8afb6e11398e33
+
+% 0 1 0 187bc859d5d36af8135f2ccd421503ca
+
+@ 0 1 0 0320087de8b38f4405223414cbfc10ea
++ row  `@Metadata` de Kotlin em classfiles  `Kotlin`  `KotlinDialect`
+
+% 1 1 0 1bce088b2cff5bd31ca785ec0b77824f
+
+@ 0 1 0 1ed02d4e2b0ef9771beb3a1fe8bb5c09
++ Uma interface TypeScript, por exemplo:
+
+% 2 1 0 134dca16c9c82399184e6f8c70a33657
+
+% 3 1 0 18165897d10e0fed043a6c58b7704303
+
+% 4 1 0 0686ceefe78a5e88146bc147c2a812d8
+
+% 0 1 0 1956a1471c62b3b9112a90e1992d8036
+
+% 0 1 0 12146a8f0cdb735a04505ee23c0ade11
+
+% 1 1 0 166cccd7bbcbc01f063f1e935ec94d73
+
+@ 0 1 0 1ba4a720ba6ba66601b43af104ec9dae
++ ### Navegar por tipos estrangeiros
+
+@ 0 4 0 00dae521d99128471de8936c066bf803
++ Um valor `Foreign` representa um valor de um tipo estrangeiro. Seus membros são navegados como
++ se as declarações estrangeiras fossem Scala. O tipo de cada passo vem das declarações, de modo
++ que o refinamento acompanha exatamente o que o sistema de tipos estrangeiro diz. Aqui `Play`
++ declara um membro `scene` do tipo `Scene` e um método `greet` que recebe uma string:
+
+% 2 1 0 0b7f91b1bb45f3390753c27269446d17
+
+% 3 1 0 156ade9bfa34357011ab974f939956bd
+
+% 4 1 0 1c9198223240f35802cc38183a011441
+
+% 0 1 0 19e5605409360863054e0dad196deb83
+
+% 0 1 0 03ba52d39d1e33cf1e600a96f2f38c86
+
+% 0 1 0 08a7bb1a93891cf009ae4a674a68cef6
+
+% 1 1 0 0d0271e595d0727808334b6d6b11ff9d
+
+@ 0 2 0 03e6253b5f79ee1e10c083692f3472b2
++ `Play` não declara nenhum membro chamado `missing`, e `greet` não recebe um número, então
++ nenhum destes compila:
+
+% 2 1 0 19077b4994bdc3350721b0ef9a56da85
+
+% 3 1 0 12b750ab12f0fb150d887fa32cac407e
+
+% 4 1 0 1417ec5a17e8317214f613f351bb2e04
+
+% 5 1 0 199394c4ae59627a1755bcde0f57b2d7
+
+% 0 1 0 13d28bbdfc9485d202da2b176ed295c6
+
+% 1 1 0 1edc3f6268bff34d1d4b91d50a9a2cb3
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 16af7c0135b043f705b99ffeb5ac97fb
+
+% 4 1 0 11e21ea8e3e4d91a0b31e7458e39bf4a
+
+% 5 1 0 1ff55a334cb9215f1a6cddcbac0719fd
+
+% 0 1 0 1de2300d865aaa2d0141b2a9bdeb000c
+
+% 1 1 0 0d38ddf0b30f4a0815d673b13e0f0182
+
+@ 0 3 0 0ff11043eb2745a808e56039541b6814
++ Valores Scala passam como argumentos quando uma instância de `Interoperable` os mapeia para o
++ tipo estrangeiro: texto para uma string, e os números com tamanho para as larguras estrangeiras
++ correspondentes. A fronteira é tipada nas duas direções.
+
+@ 0 1 0 116ede136c6400ab0333ed2b7ed3b497
++ ### Facades de Kotlin e Java
+
+@ 0 5 0 16f644c656f5776616db48a2f7b5a7d3
++ Uma biblioteca JVM escrita em Kotlin está no mesmo classpath, então suas declarações não
++ precisam de um arquivo separado. Elas estão nos classfiles, no `@Metadata` que um compilador
++ Kotlin grava. Essas declarações são lidas em tempo de compilação, e uma *facade* envolve um
++ valor vivo de modo que seus membros são alcançados como se fossem de Scala. Cada acesso se torna
++ uma chamada JVM direta e com tipagem estática, sem reflexão e sem objeto invólucro. Com a
++ biblioteca padrão de Kotlin no classpath:
+
+% 2 1 0 18964c2c8b5f92880438dd26bc732a65
+
+% 3 1 0 04dd4bcf1ba5caa50b02adabe7327b42
+
+% 4 1 0 0e0e035af2b9b18f03d258b113afa6f6
+
+% 0 1 0 0931057d568a2d2806efb45a77b014e9
+
+% 0 1 0 107135aa7e6d2d9514a1ebfc6121acc8
+
+% 0 1 0 05929ff42d0628961506778e66592923
+
+% 0 1 0 06fc7ecdea01c0b31f87975def3dde66
+
+% 1 1 0 1e105396e3e84d7e145b1d51d6495760
+
+@ 0 1 0 07cb3692d14184180326df9beab4f623
++ Três métodos dão entrada em um tipo Kotlin:
+
+% 2 1 0 16ae707fc547824e1b6227156bf590c8
+
+@ 0 5 0 0c117d710abdf29f09d42f7da0862a80
++ column  Método
++ column  Alcança
++ row  `make[T](…)`  uma nova instância de `T`, por meio de seu construtor
++ row  `companion[T]`  os membros do objeto companheiro de `T`
++ row  `singleton[T]`  os membros do objeto `T`
+
+% 1 1 0 198d5e951a420b111e562cf0e03f427d
+
+@ 0 3 0 0261839636738ae708c3e86902a1ebf7
++ Os tipos são substituídos ao longo do caminho, de modo que `pair.first` é um `Text` e não um
++ `Any`, e um `Text` passa onde quer que se espere uma `CharSequence`. A nulabilidade de Kotlin é
++ respeitada. Um resultado que pode ser nulo é um [`Optional`](optional-values.md), ausente onde
++ Kotlin retornaria null.
+
+@ 0 4 0 07c45623de54ee3b067189b2c7c3fadf
++ Propriedades são lidas como membros, e propriedades `var` aceitam atribuição, por meio dos
++ getters e setters que Kotlin gerou. Atribuir a um `val` não compila. Um parâmetro Kotlin de tipo
++ função recebe uma lambda Scala comum. O parâmetro da lambda é ele próprio uma facade sobre o
++ tipo Kotlin, de modo que o valor dentro dela também pode ser navegado:
+
+% 2 1 0 1b5c90c3291f3e0e1bf438df78d555eb
+
+% 3 1 0 12ef33e501d06a4c09dcfab61b5a80d6
+
+% 4 1 0 10b89527640b4a7c0dd966734c96de6a
+
+% 0 1 0 0989acba7b22e7f6073706075ed64c61
+
+% 1 1 0 14679f478b565aca1137eb5f917e3340
+
+@ 0 3 0 1a50b23b833c0b7e1819f82e31c5cd31
++ Aqui `replaced` é `t"a<1>b<2>"`. Um membro que a classe não declara, ou um argumento do tipo
++ errado, é um erro de compilação. Quando o nome está próximo de um real, o erro o sugere, grafado
++ como Kotlin o grafa.
+
+@ 0 1 0 0ec83308f9f8dfdf0bb27d5b6dd1efc6
++ ### Expressões, não efeitos
+
+@ 0 5 0 01e759a3b2f6ad8b1f6251c5f410f2cc
++ A navegação constrói uma *expressão*, uma árvore tipada de referências, seleções e aplicações,
++ e não executa nada por si. Executar a expressão é tarefa do ecossistema. O ecossistema do
++ navegador a renderiza em JavaScript para um handler de evento, e um ecossistema WebAssembly
++ rebaixa chamadas WIT para imports. A verificação é o que importa. Quando uma expressão sai de
++ Scala, cada passo dela já foi verificado contra as próprias definições do mundo estrangeiro.
+
+@ 0 1 0 03dc9a06030fd5a50b5d4721a13b66b5
++ ### Os próprios tipos de Java
+
+@ 0 6 0 1042de90672b47ae1ad7eee5f7258d7d
++ A biblioteca padrão da JVM tem tipos para coisas para as quais estas bibliotecas têm tipos
++ próprios: caminhos, URLs, instantes, durações. O código que encontra os dois mundos precisa
++ passar de um para o outro sem copiar valores à mão. Em vez de converter, cada tipo Java é
++ transformado em uma *representação* do conceito. Qualquer operação que peça seu resultado “como
++ um caminho” ou “como um instante” pode então produzir o tipo Java diretamente. Qual
++ representação se pretende é uma escolha, feita por import:
+
+% 2 1 0 1178ce7b9e2d691602ce61d6f1f9fcdf
+
+@ 0 2 0 04c118806059bc66117947983525734d
++ column  Tipo Java
++ column  Representa
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 7 0 0f77284119cc893d11c576512970ae0c
++ row  `java.nio.file.Path`  um caminho  `pathInterfaces.javaNioPath`
++ row  `java.io.File`  um caminho  `pathInterfaces.javaIoFile`
++ row  `java.net.URL`  uma URL  `urlInterfaces.javaNetUrl`
++ row  `java.time.Instant`  um instante  `instantInterfaces.javaTimeInstant`
++ row  `java.util.Date`  um instante  `instantInterfaces.javaUtilDate`
++ row  `Long`, milissegundos desde a época  um instante  `instantInterfaces.javaLongInstant`
++ row  `Long`, nanossegundos  uma duração  `durationInterfaces.javaLongDuration`
+
+% 1 1 0 060aa7da670c23f3158144b75fec3ce1
+
+@ 0 1 0 0e938398b57a84e81bd4931330169119
++ Por exemplo:
+
+% 2 1 0 1972af97ca8da61417baefc7e7375b71
+
+% 0 1 0 11b749a29b0fa45b0f03b7b68e79b6e4
+
+% 0 1 0 0fed01cae4da52fe159bae22d7269b65
+
+% 1 1 0 0c6122bfee5ca9301a8947f44855effb
+
+@ 0 3 0 07645d3514c382db055c5b7b7607000f
++ Com esses no escopo, um [tempo](time.md) lido de um arquivo ou de um relógio chega como um
++ `java.time.Instant`, e uma duração como um `Long` de nanossegundos, prontos para entregar a uma
++ API Java que os espera. O resto do programa mantém seus próprios tipos.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 6 0 084c15b112fb12471e630e320371b0ed
++ - [Automação web](web-automation.md) faz scripting do DOM do navegador por meio de expressões
++   estrangeiras.
++ - [Classpath](classpath.md) descreve o classpath do qual um arquivo de interface é lido.
++ - [Compilador](compiler.md) compila código-fonte Kotlin para os classfiles que uma facade lê.
++ - [Tempo](time.md) e [caminhos](paths.md) descrevem os tipos que as representações Java
++   representam.
++ - [DOM do navegador](dom.md) e [realce de sintaxe](syntax-highlighting.md) se apoiam em
++   definições de interfaces estrangeiras.

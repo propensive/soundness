@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 0adde46597424c431f799e23e4624b32
++ # `SN-924` — Layout von `for`-Comprehensions (ausgemustert)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Diesen Fehler gibt es nicht mehr. Die Seite wird aufbewahrt, damit der Code nicht wiederverwendet
++ wird und damit ein Verweis darauf aus einem älteren Release weiterhin aufgelöst werden kann.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Was daraus wurde
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ Das Compiler-Plugin Decorum, das diesen Fehler auslöste, wurde aus Soundness herausgelöst und ist
++ nun [Consequent](https://github.com/propensive/consequent), ein eigenständiger Prüfer für den
++ Consequent Style. Die Regel lebt dort unter einem neuen Bezeichner fort, in dem der Buchstabe das
++ Prinzip benennt, aus dem sie abgeleitet ist:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  Früher
++ column  Jetzt
+
+% 0 1 0 19101b808ad2cf741e8bcf9023048630
+
+% 0 1 0 18091c160dd5850a0f41988d2e62c8a7
+
+% 0 1 0 1f28172c670dbe5f0b3df52996aabee2
+
+% 0 1 0 06471242c045f7b5073a51c5fef2b51d
+
+% 0 1 0 0d660d59197e310a0336ae62673aab58
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

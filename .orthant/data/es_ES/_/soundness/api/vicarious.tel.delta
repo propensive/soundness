@@ -1,0 +1,420 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 14c573472161d1591a0ab821784a0dbd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1c512d48a8f747e81db84ebb3f7b85c8
++ info   valores indexados por las rutas de campos de un tipo, direccionados mediante un proxy comprobado en tiempo de compilación
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 155d14c6d575c2930cb9a653992f2865
++     _Vicarious_ trata la estructura de una case class —cada campo alcanzable desde ella, a
++     cualquier profundidad, y el propio valor completo— como un conjunto fijo de **rutas**,
++     `opponent.name` en lugar de `name`, y permite que el código nombre esas rutas mediante un
++     **proxy**: un valor sustituto del tipo sin campos propios, sobre el que cada selección se
++     resuelve, mientras se compila el código, en el índice de la ruta que nombra. Una ruta que el
++     tipo no tiene es un error de compilación, así que ninguna ruta se escribe nunca como texto.
+
+@ 0 6 0 0d0f3feabc53640b06c3f7f07eb53459
++     Sobre el proxy se construyen dos estructuras. Un `Catalog[Key, Value]` contiene un `Value`
++     por cada ruta de `Key`, calculado por una única función a partir de un valor de `Key`, leído
++     por ruta, transformado con `map` y combinado entrada a entrada con `braid`. Un `Specific`
++     asigna instancias de clases de tipos a algunas rutas de un tipo, para que una derivación (la
++     de `wisteria`, y por tanto las de `jacinta`, `stratiform` y los demás códecs) las use
++     exactamente en esas rutas en lugar de la instancia del tipo del campo.
+
+% 2 1 0 1630ecd701d1902615b8979173abf571
+
+% 3 1 0 0c533d0ca0adb7e81427ebb98cb3c6db
+
+% 5 1 0 047ba6561d06fc3210c636a9856fb595
+
+% 6 1 0 0a449e935ff23efa0cb0634c4c83f0c4
+
+% 8 1 0 10b102ee5e4686091d0fa183f8334a41
+
+% 9 1 0 02ec097a1894293103015980210e56e7
+
+% 0 1 0 1f98fc376d93d26407b211694cd470ef
+
+% 0 1 0 1cde67ede7001b021ed1a5446cab1794
+
+% 1 1 0 1a308ac5173f5d601eb177d3087611bf
+
+@ 0 4 0 1f597724a09d4f661173e2eee129a9cb
++     Las rutas se aplanan en profundidad con la raíz primero: para `Duel` son el `Duel` completo,
++     `challenger`, `challenger.name`, `challenger.age`, `opponent`, `opponent.name` y
++     `opponent.age`, así que un catálogo sobre `Duel` tiene siete entradas, y dos catálogos sobre
++     la misma clave se alinean posición a posición.
+
+@ 0 3 0 0a68eb7b1e05921207e39ce3a09baf88
++     La biblioteca tiene un único conjunto de fuentes, `vicarious.core`. `Catalog`, `catalog`,
++     `Proxy`, `Specific`, `root` y `specifically` se exportan al paraguas `soundness`; el given
++     de `Proxy` está en su objeto compañero, en el ámbito implícito, así que no se importa nada
++     por nombre.
+
+% 0 1 0 16736c53b26096c207f0082614094673
+
+% 0 1 0 15cd18d3b7919aa80115166de491bebc
+
+% 0 1 0 16ef5f905f86975c0f40c8ed9c1f6402
+
+% 0 1 0 1ed6710e6599bce30402f78dacf05b60
+
+% 0 1 0 0f8b59d3fb7a104900a03684ad28f8bf
+
+@ 0 7 0 155cd0e998cd35dd142a8e70fd93f635
++ entry .catalog   construye un `Catalog` aplicando una única función polimórfica a un valor y a cada campo que contiene
++     `catalog(value)(lambda)` es una macro que recorre la estructura de case class del tipo de
++     `value` mientras se compila el código, y aplica `lambda` —una función polimórfica pura
++     `[field] => (field: field) -> result`— al valor completo y luego a cada campo, en
++     profundidad, en orden de declaración. La función debe aceptar un campo de cualquier tipo, así
++     que solo puede hacer con él lo que admite cualquier valor. Se necesita un `ClassTag` para el
++     tipo del resultado, ya que las entradas se guardan en un array.
+
+% 2 1 0 1d6f55d230d8ef4d0009f57724ac1919
+
+% 3 1 0 00bf0f847813c1a10603df9f8863a003
+
+% 5 1 0 1b28e8913075260f04967776bf2ec2ac
+
+% 6 1 0 16f08b8f114259901d79c58d31358e24
+
+% 8 1 0 11459718a47ea6f618f5b7020f8ca339
+
+% 9 1 0 0e911233e342b37205980a5266957913
+
+% 0 1 0 045154aee157ecd10e8e88020155681d
+
+% 0 1 0 0bda1787e6dfd4d40d817764375dee42
+
+% 1 1 0 08859f5cc6e75c9f1aa6e1c0a30529b7
+
+@ 0 1 0 01331c7d4920278d0e058a0e42ff0e24
++ entry .Catalog   un valor por cada ruta de campo de un tipo clave, leído mediante una ruta comprobada mientras se compila el código
+
+% 1 1 0 08f07553092055fd1bb89d74ced64c91
+
+@ 0 6 0 0c24dfecd599c58f18625d55183256df
++       Un `Catalog[Key, Value]` contiene un `Value` en cada posición de la estructura aplanada de
++       `Key` —primero el valor completo y luego cada campo en profundidad— en `#values`. Se
++       construye con `catalog`, se lee con `#apply` y una ruta escrita mediante un proxy, se
++       transforma con `#map`, se sobrescribe en rutas con nombre con `.brush` y se combina con
++       otro catálogo sobre la misma clave con `#braid`. El tipo clave es lo que hace combinables
++       dos catálogos y lo que comprueba cada ruta que se usa para leer uno.
+
+% 2 1 0 02514956fb2369b305f17caf77c73c29
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 01f65e0e42f642a612e72164231a5895
++         label Un catálogo con el rótulo de cada campo
+
+% 1 1 0 19749c2033ff89da1a0e3513dfc0fade
+
+% 2 1 0 0af6169059bf084006f7be94d1b94a84
+
+% 4 1 0 1d9c2f63627e4ed6023b2aa8c8463ba4
+
+% 5 1 0 149a8328f5268ee102d4a7f0c2c1f621
+
+% 7 1 0 19364089144447960bf7a51143444db7
+
+% 8 1 0 13d82c5ae2ef7a8f0d9fe21623024396
+
+% 0 1 0 16087901fc7780a11caff7f97772c4dc
+
+% 1 1 0 05d27781c35ce76e04a550841a2a475d
+
+@ 0 1 0 1d2255833216fb750fb13b636f50456c
++         label Transformado en un catálogo de anchuras, direccionado por las mismas rutas
+
+% 1 1 0 0cf1f647db68b9df1a5727278b75182d
+
+% 2 1 0 18944a177445cae10c3f27f59a925efe
+
+% 4 1 0 1dde0ab126d2c8db0e4d5c942a74a121
+
+% 5 1 0 1af3a7fc27c031c41c0ff56878f590a6
+
+% 7 1 0 14eb899416168e8e1e399b40eedb113f
+
+% 8 1 0 06e08923ff95329f1f103645e783a646
+
+% 9 1 0 13ae7673a36f262017eff493aafa53ab
+
+% 0 1 0 042c74f71a7d57df151dadb04e7d860d
+
+% 1 1 0 101f2f084c6fbf2517e300659acc48ba
+
+@ 0 1 0 1b080daada2ad15d1f06a552a3772b6a
++         label Trenzado con los rótulos, entrada a entrada
+
+% 1 1 0 18b50400be569d0d1df5fa33c0257fa5
+
+% 2 1 0 0240e032b4884c3111d79186ebde3f29
+
+% 4 1 0 12b37d55f6738bbd070ee18cbda3c900
+
+% 5 1 0 1b74d67c513c71801c4c7ec166a46725
+
+% 7 1 0 1b50283bd7682527055d079cae4a5092
+
+% 8 1 0 191d93e739f1476f1b9dcd00bb0459fd
+
+% 9 1 0 0a55b7e6a509d2ab091f478dae893b65
+
+% 0 1 0 1edf6d73f92a6077057be7b0d93a3c6f
+
+% 0 1 0 1a4eeee82407baca06928eeea9720351
+
+% 1 1 0 0750e4fddf46d29d1e7ac716d5ec8b60
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 09b6a9da700cbea610e83d01e07a0ea2
++       Así se reúne una tabla de ajustes por campo: catálogos de rótulos, anchuras y cualquier otra
++       cosa que importe, construidos por separado y trenzados entre sí, cada uno direccionado por
++       las mismas rutas. Un `Catalog` es `Findable`.
+
+% 0 1 0 16cebf059ababff11de6f4787d27b308
+
+% 0 1 0 02dcdff5f415749b17058cab8bd8264f
+
+@ 0 5 0 059a52a2593b13420fff1cdd3e18a343
++   entry .brush   una copia de un catálogo con las entradas de algunas rutas sustituidas, mediante una función parcial de rutas
++       Una extensión sobre cualquier `Catalog`, que necesita el `Proxy` derivado del tipo clave.
++       El argumento es una función contextual del proxy a una función parcial sobre proxies: cada
++       `case` nombra una ruta, como patrón sobre el proxy, y da su nuevo valor; toda ruta que no
++       coincide conserva su entrada.
+
+% 2 1 0 1816e5301ac89296087e83d67698707c
+
+% 3 1 0 16889a812e3598660ad60b7a765bb229
+
+% 5 1 0 0198c7b370a12e201da6faa80e5c7f45
+
+% 6 1 0 0886091d12e30edc09bdb937e0f6a3f1
+
+% 8 1 0 1cc36380dc457f95125461057d939016
+
+% 9 1 0 1d65bcffa7b00c400a72088e4b7f3c22
+
+% 0 1 0 194a622562029f0c1f041e159addef5f
+
+% 1 1 0 1506c446973f9402169a4369348fcadf
+
+@ 0 17 0 12561df964cea0530ea160f92272e480
++   entry #values   las entradas, una por ruta, primero el valor completo y luego cada campo en profundidad
++   entry #size   el número de entradas: una para el valor completo y una por cada campo a cualquier profundidad
++   entry #apply   la entrada de una ruta, escrita como selecciones sobre un proxy del tipo clave
++       `catalog(proxy ?=> proxy.opponent.name)` resuelve la ruta, mientras se compila el código,
++       en el índice de su entrada; `proxy ?=> proxy` es la entrada del valor completo, y un campo
++       que el tipo no tiene es un error de compilación. `challenger.name` y `opponent.name` son
++       entradas distintas, ya que una ruta es una posición, no un nombre.
++   entry #map   un catálogo sobre la misma clave con una función aplicada a cada entrada
++       Las rutas no cambian, así que toda ruta válida en este catálogo es válida en el resultado.
++       Se necesita un `ClassTag` para el nuevo tipo de valor.
++   entry #braid   combina dos catálogos sobre la misma clave, entrada a entrada, con una función de ambos valores
++       `left.braid(right)(lambda)` no necesita emparejar nombres: los catálogos sobre la misma
++       clave se alinean posición a posición. Se necesita un `ClassTag` para el tipo del
++       resultado.
++   entry #tie   evalúa un bloque con este catálogo y el proxy de su clave en el contexto, para que una ruta lea su entrada
++       Dentro del bloque, el catálogo es un valor contextual, así que `proxy.opponent.name()`
++       —una ruta seguida de `()`, que es `Proxy#apply`— lee directamente la entrada de esa ruta;
++       pueden leerse varias rutas en una misma expresión.
+
+% 2 1 0 1f8a808e7079e1371b9a995e6d45c567
+
+% 3 1 0 13ddc6a91efaeb301fbcdd56c863a75e
+
+% 5 1 0 13b0a936b9b1eadb1ee3282321dec80a
+
+% 6 1 0 13b29fdec15dcd3613c07b9c407db629
+
+% 8 1 0 0cf513a96ce8d84f018942a901d89466
+
+% 9 1 0 067ec14707ea069d0bf6f24860b9c952
+
+% 0 1 0 1f78210f9cdbb88b01dd795ff6dadf70
+
+% 1 1 0 034bb435c26063d3111d607891a707a6
+
+@ 0 1 0 1b3dcb699e0f413815fca62bb9aa6c8b
++ entry .Proxy   un sustituto de un valor de un tipo clave, cuyas selecciones de campos se resuelven en índices de ruta mientras se compila el código
+
+% 1 1 0 0727847a5ff05fdc19af564fb8046362
+
+@ 0 5 0 02a3fbfaf35c7e571598a607e928bf5c
++       Un `Proxy[Key, Value, Ordinal]` se sitúa en una ruta de `Key`: `Ordinal` es el índice de
++       esa ruta como tipo literal (`0` para la raíz), y `#id` el mismo índice en tiempo de
++       ejecución. Seleccionar un campo sobre un proxy (`proxy.opponent.name`) es una macro
++       `selectDynamic` que busca la ruta extendida en la estructura aplanada de `Key` y da el
++       proxy correspondiente, así que un campo que el tipo no tiene es un error de compilación,
++       _vicarious: `opponent.title` is not a valid field path_.
+
+@ 0 5 0 084a9c54e63322d30d71a65562252595
++       El proxy raíz de un tipo clave es `.derived`, en el ámbito implícito; `Catalog#apply` y
++       `Catalog#tie` lo proporcionan, y `specifically` proporciona uno como `root`. Un proxy se
++       usa de tres maneras: como dirección (`Catalog#apply`), para leer una entrada de un catálogo
++       que está en el contexto (`#apply`), y como extractor en un patrón (`#unapply`), que es
++       como `specifically` y `.brush` nombran rutas en sus `case`. Un `Proxy` es `Findable`.
+
+% 0 1 0 177512859589bc0b04c1e630ac9f3ac0
+
+% 1 1 0 172eeb380c8468d01a3e69e3884cb7d5
+
+@ 0 12 0 00110f3b46649c7615ebc69edf18a92d
++   entry .derived   el proxy raíz de un tipo clave, refinado con los proxies de sus campos para que las selecciones pasen la comprobación de tipos
++       Una macro `transparent inline given`, en el ámbito implícito: su tipo es
++       `Proxy[Key, Value, 0]` refinado con un miembro por cada campo, recursivamente, cada uno un
++       proxy cuyo `Ordinal` es el índice de ruta de ese campo.
++   entry #selectDynamic   el proxy de un campo de la ruta de este proxy, o un error de compilación si no lo hay
++       Lo llama una selección como `proxy.opponent`; no se escribe directamente.
++   entry #id   el índice de la ruta de este proxy en la estructura aplanada de su tipo clave, siendo `0` la raíz
++   entry #apply   la entrada de la ruta de este proxy en el `Catalog` del contexto
++       `proxy.opponent.name()` necesita un `Catalog[Key, Value]` como valor contextual, como el
++       que proporciona `Catalog#tie`.
++   entry #unapply   coincide con un proxy de la misma ruta, para que una ruta pueda ser un patrón de `case`
++       `case root.opponent.name() =>` coincide exactamente con el proxy cuyo `#id` es el de
+
+% 0 1 0 0243ae7f465791a608a9ad6bfdda5963
+
+@ 0 1 0 175d0a7a3cc3ba8e0f595aababa4588e
++ entry .Specific   instancias de clases de tipos para rutas de campos con nombre de un tipo, para que una derivación las use allí
+
+% 1 1 0 1a66212c5b3e7312163686c65125a813
+
+@ 0 6 0 047f1e13fb4c1a1f0fb5aa212d71697a
++       `Key is Specific over Typeclass` registra excepciones a una derivación genérica: para
++       algunas rutas de campos de `Key`, la instancia que se usará en esa ruta exacta en lugar de
++       la que resolvería el tipo del campo. Un given en el ámbito cambia a la vez todos los campos
++       de un tipo; un `Specific` cambia una ruta y ninguna otra. Se construye con `specifically`,
++       que comprueba cada ruta y el tipo de cada instancia mientras se compila el código, y lo
++       consultan las derivaciones de `wisteria`, y por tanto los códecs derivados mediante ellas.
+
+% 2 1 0 16dcfe704a624d5d1539c37572924830
+
+% 3 1 0 18ed564fa589e9ea0b349e7d4aed2b1b
+
+% 0 1 0 1ae279738df7173f06e307f4ba453ed1
+
+% 2 1 0 1b57ab72b70c598c0e3d02af8b5ce210
+
+% 3 1 0 1911432e92d095001c2d66a70d44489c
+
+% 0 1 0 0fe48aac32b3e04c02475eea17911527
+
+% 0 1 0 1043da8253ec428f0d7a20fdf4e6c4ad
+
+% 0 1 0 180753d80529814408db5e20955928be
+
+% 0 1 0 094437e7d319e44611be777f4c838517
+
+% 0 1 0 0e9de0781ffa769b0ba933873ba65e95
+
+% 0 1 0 17cff6e98f731a190567f40115fa37b6
+
+% 1 1 0 0f48e23c19780e950c09f1c4395a96a7
+
+@ 0 1 0 167532bb7f68b6950969d96373770082
++       Una derivación ignora un `Specific` cuyo `#Transport` sea para otra clase de tipos.
+
+% 1 1 0 1e89910a68f3cbdd1cca2de0b92519ac
+
+% 0 1 0 1bdfa24802e8a5be0630be87c36ed944
+
+@ 0 7 0 122be1d5a0ac3ff402b643bce7cebcf4
++   entry .Cases   la función parcial de casos de rutas de campos que lee `specifically`: patrones de proxy a instancias
++       `Specific.Cases[Key]` es `PartialFunction[Proxy[Key, Any, Nat], Any]`. `specifically`
++       lee sus `case` del árbol mientras se compila el código; la función en sí nunca se ejecuta.
++   entry #Self   el tipo clave cuyas rutas de campos se sobrescriben
++   entry #Transport   la clase de tipos a la que pertenecen las instancias que sobrescriben, como `Json.Encodable`
++   entry #instances   cada ruta con puntos sobrescrita (`"opponent.name"`), con su instancia, con el tipo borrado
++       La derivación lee una instancia de este mapa y le vuelve a dar tipo en el campo que visita.
+
+% 2 1 0 001562dbab8c3b4a05f31745c3ba28c1
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 0 1 0 0d3e1e96a9a341711c002cb5d6088f65
+
+% 1 1 0 0fd96e306876e4020cea7891021a7aba
+
+@ 0 6 0 15d733745934215c1ae396fd8826623d
++ entry .specifically   construye un `Specific` a partir de patrones `case` que nombran rutas de campos mediante `root`
++     `specifically { case root.opponent.name() => instance; … }` es una macro cuyos `Key` y
++     `Typeclass` proceden del tipo esperado (`Duel is Specific over Json.Encodable`). En cada
++     `case`, el patrón de proxy da la ruta, y la instancia debe ser un `Typeclass` para el tipo de
++     esa ruta, o la definición no compila, _vicarious: the instance for this path is not a …_;
++     una ruta desconocida es igualmente un error de compilación.
+
+% 2 1 0 189fd1d56a5e0e070306a294b77561b5
+
+% 3 1 0 0612b0405f94b9170c4cded9eb39c851
+
+% 4 1 0 07789afcd770f35a076f31477f8e0362
+
+% 0 1 0 04f32810549cd2d3141ed7609699624c
+
+% 1 1 0 120ab930fd90d071122b8e8a23a38e0d
+
+% 0 1 0 1ef1291d32a376d00522b4014c5dbb9b
+
+% 0 1 0 13e889e5f84f0847194bec61163fc3d4
+
+% 1 1 0 11734e336822b41409c5941a4864298c
+
+@ 0 2 0 1a1c2044b410b8350e56c81d5cef7488
++     Una ruta que termina en una colección recibe una instancia para la colección, así que
++     volver a derivarla allí con un given local vuelve a codificar sus elementos en ese único
++     lugar:
+
+% 2 1 0 0ed6d9df7cec1804016fef740e2e904f
+
+% 3 1 0 0c4326b9bd003c8713ce6bed06a6532e
+
+% 4 1 0 079d2279ce330baf1211d8a891d35512
+
+% 0 1 0 010b4076bdea45d907086e626f0712a1
+
+% 1 1 0 00ed6eda6f6c4d7a063819533c09ab94
+
+% 0 1 0 1e170b060d00f03d18ba58a1bc7f05f4
+
+% 0 1 0 0f93724d09df2c631d72c766449826e4
+
+% 0 1 0 0e6ce2e262378341143b95407ab52c0b
+
+% 1 1 0 099fea93b547e29212041b9bc67e602f
+
+@ 0 4 0 0ee7642deadbc6cd01a26b21b6a99f1c
++ entry .root   el proxy raíz dentro de los casos de `specifically`, desde el que se selecciona cada ruta
++     Se resuelve en el proxy que `specifically` proporciona como valor contextual etiquetado
++     `"root"`, así que `case root.opponent.name() =>` no necesita ligador. Fuera de un bloque
++     `specifically` no existe tal valor, y `root` no compila.
+
+@ 0 1 0 1b76f4823a87212019fe7505839e6ab9
++ entry .internal   las macros que hay detrás de `catalog`, `Proxy` y `specifically`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 10 0 1056004685957b511296ec90e8619e33
++       No son para uso directo: `catalog`, `Proxy.derived`, `Proxy#selectDynamic` y
++       `specifically` las insertan. Las funciones auxiliares de rutas aplanan en profundidad los
++       campos de una case class con la raíz, `""`, en el índice 0.
++   entry .catalog   construye un `Catalog` a partir de un valor y una función polimórfica
++   entry .fieldNames   las rutas con puntos de los campos de un producto, en profundidad, bajo un prefijo
++   entry .paths   todas las rutas aplanadas de un producto, con la ruta raíz `""` primero
++   entry .fieldReprs   el tipo de cada ruta aplanada de un producto, alineado con `.paths`
++   entry .dereference   resuelve una selección de campo sobre un proxy en el proxy de la ruta extendida
++   entry .specific   construye un `Specific` a partir de los `case` de una función parcial de rutas
++   entry .proxy   construye el proxy raíz refinado de un tipo clave

@@ -1,0 +1,65 @@
+orthant 2 language
+
+% 0 1 0 0175068990ac4ec90175f87c94d87198
+
+@ 0 1 0 082d27b5813492f414cda6558a358c0b
++ Levée lorsque Enigmatic ne parvient pas à lire une valeur ASN.1 encodée en DER.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 10 0 17415dccb299e5c9142cc15cf69c24c0
++ DER (les Distinguished Encoding Rules) est le sous-ensemble canonique de BER :
++ chaque valeur a exactement un encodage valide. Le décodeur d'Enigmatic est
++ strict, donc tout ce que BER permet mais que DER interdit — longueurs indéfinies,
++ longueurs et numéros de tag trop longs, entiers non minimaux, chaînes construites,
++ ensembles non triés — est une erreur plutôt que quelque chose à tolérer. C'est
++ cette rigueur qui permet de réencoder une valeur relue vers les octets dont elle
++ provient, ce dont dépend la vérification d'une signature portant sur le
++ `TBSCertificate` d'un certificat. Le message est
++ `could not process the ASN.1 value because $reason`, et chaque raison porte la
++ position, en octets, à laquelle le problème a été trouvé.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 2 0 0663ad2cc1085314025eed7bb8567a24
++ column  Raison
++ column  Signification
+
+% 0 1 0 0249aa51fd8056d51a0c1dba7eb0290e
+
+@ 0 20 0 0c08bb35c853f7b906cd872930fdcac2
++ column  Résolution
++ row  `↯/s.105.4.1`  `Truncated`  L'entrée s'est terminée avant la valeur en cours.  `[↯/s.105.4.1] could not process the ASN.1 value because the input was truncated at byte 42`  Vérifiez que l'entrée est complète ; un corps PEM tronqué, ou un préfixe de longueur lu à la mauvaise position, en sont les causes habituelles.
++ row  `↯/s.105.4.2`  `IndefiniteLength`  Une valeur a utilisé la forme à longueur indéfinie de BER, que DER interdit.  `[↯/s.105.4.2] could not process the ASN.1 value because an indefinite length was found at byte 1`  Réencodez l'entrée en DER ; `openssl asn1parse` montre où se trouvent les longueurs indéfinies.
++ row  `↯/s.105.4.3`  `NonMinimalLength`  Une longueur n'a pas été écrite sur le moins d'octets possible : soit la forme longue a été utilisée pour une longueur inférieure à 128, soit son premier octet était nul.  `[↯/s.105.4.3] could not process the ASN.1 value because an overlong length was found at byte 1`  Réencodez l'entrée en DER.
++ row  `↯/s.105.4.4`  `NonMinimalTag`  Un numéro de tag inférieur à 31 a été écrit sous la forme des numéros de tag élevés, ou un numéro de tag élevé avait un groupe initial nul.  `[↯/s.105.4.4] could not process the ASN.1 value because an overlong tag number was found at byte 1`  Réencodez l'entrée en DER.
++ row  `↯/s.105.4.5`  `NonMinimalInteger`  Un entier portait un octet initial `0x00` ou `0xFF` redondant. DER exige la représentation en complément à deux la plus courte.  `[↯/s.105.4.5] could not process the ASN.1 value because an overlong integer was found at byte 0`  Réencodez l'entrée en DER.
++ row  `↯/s.105.4.6`  `EmptyInteger`  Un entier n'avait aucun octet de contenu ; ASN.1 en exige au moins un.  `[↯/s.105.4.6] could not process the ASN.1 value because an integer with no content was found at byte 0`  Vérifiez ce qui produit l'entrée : un zéro doit être encodé par l'unique octet `0x00`.
++ row  `↯/s.105.4.7`  `Overflow`  Une longueur ou un numéro de tag était trop grand pour être représenté : une longueur nécessitant plus de quatre octets, une longueur supérieure à `Int.MaxValue`, ou un numéro de tag supérieur à `Int.MaxValue`.  `[↯/s.105.4.7] could not process the ASN.1 value because an unrepresentable length was found at byte 1`  Des valeurs aussi grandes indiquent presque toujours que l'entrée n'est pas du tout du DER, ou que l'analyse a commencé à la mauvaise position.
++ row  `↯/s.105.4.8`  `Trailing`  Une valeur complète a été lue, mais des octets restaient après elle. Un document DER contient exactement une valeur.  `[↯/s.105.4.8] could not process the ASN.1 value because unexpected trailing bytes were found from byte 2`  Si l'entrée contient plusieurs valeurs concaténées — une chaîne de certificats, par exemple —, découpez-la avant de la décoder.
++ row  `↯/s.105.4.9`  `InvalidUtf8`  Les octets de contenu d'une chaîne n'étaient pas de l'UTF-8 valide.  `[↯/s.105.4.9] could not process the ASN.1 value because invalid UTF-8 was found at byte 12`  Vérifiez l'encodage du texte source ; les types de chaînes ASN.1 autres que `UTF8String` peuvent porter un autre jeu de caractères.
++ row  `↯/s.105.4.10`  `ReservedTag`  Le numéro de tag universel 0 a été trouvé ; il est réservé par X.690.  `[↯/s.105.4.10] could not process the ASN.1 value because the reserved tag number 0 was found at byte 0`  L'entrée n'est pas de l'ASN.1 valide ; vérifiez que le décodage a commencé au début d'une valeur.
++ row  `↯/s.105.4.11`  `BadOid`  Un identifiant d'objet était malformé : il n'avait aucun contenu, ou le bit de continuation de son dernier sous-identifiant était positionné, ou un sous-identifiant commençait par l'octet de remplissage `0x80`.  `[↯/s.105.4.11] could not process the ASN.1 value because a malformed object identifier was found at byte 3`  Réencodez l'entrée en DER.
++ row  `↯/s.105.4.12`  `OidArcOverflow`  Un arc d'identifiant d'objet était trop grand pour un `Int`. Des arcs aussi grands apparaissent sous l'arc UUID `2.25`, que l'`Asn1.ObjectId` d'Enigmatic ne modélise pas encore.  `[↯/s.105.4.12] could not process the ASN.1 value because an arc too large for Int was found at byte 3`  Pour l'instant, lisez la valeur sous forme d'octets bruts ; des arcs plus larges sont une extension prévue.
++ row  `↯/s.105.4.13`  `UnsortedSet`  Les membres d'un `SET` n'étaient pas dans l'ordre croissant de leurs encodages, comme l'exige X.690 §11.6.  `[↯/s.105.4.13] could not process the ASN.1 value because the set at byte 5 was not in ascending order`  Réencodez l'entrée en DER ; les encodeurs qui émettent du BER laissent souvent les membres d'un `SET` dans leur ordre de déclaration.
++ row  `↯/s.105.4.14`  `BadTime`  Un `UTCTime` ou un `GeneralizedTime` n'était pas dans l'unique forme que permet DER — respectivement `YYMMDDHHMMSSZ` et `YYYYMMDDHHMMSSZ` — ou désignait une date qui n'existe pas.  `[↯/s.105.4.14] could not process the ASN.1 value because a malformed time value was found at byte 0`  Réencodez l'entrée en DER : les fractions de seconde, les décalages par rapport à UTC et l'omission des secondes sont tous interdits.
++ row  `↯/s.105.4.15`  `BadBoolean`  L'octet de contenu d'un booléen n'était ni `0x00` ni `0xFF`. BER permet à tout octet non nul de signifier `true` ; DER non.  `[↯/s.105.4.15] could not process the ASN.1 value because a boolean with the content byte 1 was found at byte 0`  Réencodez l'entrée en DER.
++ row  `↯/s.105.4.16`  `BadLength`  La longueur d'une valeur n'était pas une longueur que permet son type : un `NULL` avec du contenu, un booléen dont la longueur n'était pas 1, ou un `BIT STRING` sans contenu.  `[↯/s.105.4.16] could not process the ASN.1 value because the tag 5 had the invalid length 1 at byte 0`  Vérifiez ce qui produit l'entrée.
++ row  `↯/s.105.4.17`  `BadUnusedBits`  L'octet initial d'un `BIT STRING` déclarait plus de sept bits inutilisés, déclarait des bits inutilisés pour une chaîne vide, ou les bits qu'il déclarait inutilisés n'étaient pas nuls.  `[↯/s.105.4.17] could not process the ASN.1 value because a bit string declaring 8 unused bits was found at byte 0`  Réencodez l'entrée en DER.
++ row  `↯/s.105.4.18`  `NotPrimitive`  Un type que DER exige primitif — les types de chaînes, les entiers, `BIT STRING`, `OCTET STRING`, `NULL`, les identifiants d'objets et les deux types temporels — a été encodé sous forme construite.  `[↯/s.105.4.18] could not process the ASN.1 value because the tag 4 was encoded in constructed form at byte 0`  Réencodez l'entrée en DER ; les chaînes segmentées (construites) sont une fonctionnalité de BER.
++ row  `↯/s.105.4.19`  `NotConstructed`  Un `SEQUENCE` ou un `SET` a été encodé sous forme primitive.  `[↯/s.105.4.19] could not process the ASN.1 value because the tag 16 was encoded in primitive form at byte 0`  L'entrée n'est pas de l'ASN.1 valide ; vérifiez que le décodage a commencé au début d'une valeur.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 3 0 07b83881075914fe1c1efc2980698422
++ - Source : `lib/enigmatic/src/asn1/enigmatic.Asn1.scala`
++ - `↯/s.105.1` — `PemError`, levée lorsque l'armure PEM autour d'un contenu DER
++   ne peut pas être analysée

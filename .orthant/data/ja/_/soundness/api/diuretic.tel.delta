@@ -1,0 +1,264 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0f6e36f2a51eb75f17ecabade6985971
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0ecdba4b6f176732094d93641cda7721
++ info   パス、URL、時点、継続時間に対する Java の標準型を、Soundness の概念の表現として使う
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 1f942e205b18ce5415dfbd88fb14e4c0
++     _Diuretic_ は、Soundness が抽象化する概念の代わりに JVM 自身の型を使えるようにする。
++     anticipation は各概念をドメインとして名指す（`Paths`、`Urls`、`Instants`、`Durations`）。パス、URL、時点を生成または受け取る API は、そのドメインの汎用表現から `Instantiable` である型、あるいはそこへ `Abstractable` である型だけを要求する。汎用表現は、パスや URL ならテキスト、時点ならエポックからのミリ秒の `Long`、継続時間ならナノ秒の `Long` である。
++     Diuretic はそれらのインスタンスを `java.io.File`、`java.nio.file.Path`、`java.net.URL`、`java.time.Instant`、`java.util.Date`、そして素の `Long` に対して供給するので、両方の世界にまたがるプログラムは、手作業で変換することなく値を受け渡せる。
+
+@ 0 8 0 05db768f3b8e110805af07679c290829
++     各インスタンスはオブジェクト（`JavaIoFile`、`JavaNioPath`、`JavaNetUrl`、`JavaTimeInstant`、`JavaUtilDate`、`JavaLongInstant`、`JavaLongDuration`）であり、`Abstractable`（`.genericize`、Java の値からその汎用表現へ）であると同時に `Instantiable`（`.apply`、汎用表現から Java の値へ）でもある。
++     Java の型には Soundness が追加できるコンパニオンがないので、どれも暗黙のスコープにはない。それぞれは anticipation の選択パッケージの一つ、`instantInterfaces`、`durationInterfaces`、`pathInterfaces`、`urlInterfaces` で given として提供され、名前でインポートされる。`import instantInterfaces.*` は given をインポートしないからである。
+
+% 2 1 0 18784b2633da657c1c7bcd5d2b02b746
+
+% 3 1 0 1db73ce7ff7743a1113551b456f1ea82
+
+% 0 1 0 0fec6cbef0d0f6741696d32ab34bc4ff
+
+% 0 1 0 1ab1db3247debc8f18db2130f5192406
+
+% 0 1 0 16673f91ad61ea77084fea8b67da137a
+
+% 0 1 0 09b61dc4a082ae69024c85c406ecdf85
+
+% 0 1 0 1de1af9f01f8115a12c8508b628e6093
+
+% 0 1 0 1e8f943973a0501019f7716091956ca4
+
+% 1 1 0 0ea7bc43f80e6c8604794d22dca04080
+
+@ 0 3 0 1be12df2f7080ddc1a056fa45b949ea0
++     二つの `Long` インスタンスは、それぞれのドメインに合わせて意図的に非対称である。`JavaLongInstant` はエポックからのミリ秒を数え、`JavaLongDuration` はナノ秒を数える。
+
+@ 0 5 0 07e469372689c53d1602ba67098b8c6b
++     このライブラリには一つのソースセット `diuretic.core` があり、JVM の `java.io`、`java.nio.file`、`java.net`、`java.time` パッケージを必要とする。
++     その七つのオブジェクトは `soundness` アンブレラにエクスポートされ、anticipation の選択パッケージに寄与する given もそこにミラーされるので、ユーザーが書くのは `import soundness.*` と、名前によるインポート一つだけである。
++     given そのものはパッケージ `anticipation` で宣言され、そこで文書化されている。
+
+% 0 1 0 0096fefc9cb1ad13188f4a7db63833ac
+
+% 0 1 0 17ab5b84ea3244ad108c0b15ead1e019
+
+% 0 1 0 0547ad9bbcd3dd050c64f2a99795b618
+
+% 0 1 0 0b187556d463b1df13c0df95e7bc88fb
+
+% 0 1 0 0ea153813f892a56128abb4510f5b068
+
+% 0 1 0 019b2165bca4bb8e1a80a35be8bdab0f
+
+@ 0 1 0 1a911bf6445f9f561f5dd4e8fea13a00
++ entry .JavaIoFile   パスとしての `java.io.File`：絶対パスのテキストに抽象化し、テキストからインスタンス化する
+
+% 1 1 0 0d7d55e176d6853704420b9ac5c4ec5a
+
+@ 0 4 0 06c7dfdb55227cd513dc3cbefc2deee6
++       `java.io.File is Abstractable across Paths to Text` かつ `java.io.File is Instantiable across Paths from Text` であるオブジェクト。
++       名前でインポートされる given `pathInterfaces.javaIoFile` として提供されるので、パスを生成するどの API も `File` を返せる。
+
+% 2 1 0 1eedbffb7e40308a07a5da77f0cf2c35
+
+% 3 1 0 1b1d6b9154e244bd1825f09be34ca781
+
+% 0 1 0 1937a1507552b49819a8baef9a558fd8
+
+% 0 1 0 04d110c49ef33be11057429fbb9c614d
+
+% 0 1 0 023b039de968335e078364ccf5259fe3
+
+% 1 1 0 0ee67744432ca35f164b1525c13a0cfc
+
+@ 0 3 0 0c9e8fee4f27c5541933d5d6280ae7d5
++       抽象化は常に絶対パスを与えるので、相対的な `File` は JVM の作業ディレクトリを基準に解決される。
++       `java.io.File` は `javaIoFileRepresentative` を通じて `Representative of Paths` でもある。
+
+% 1 1 0 00feece0a8df7bda02456a9bd0a4532d
+
+% 0 1 0 05c5d2cc555d8e2d0e8cfb728a4123a4
+
+@ 0 4 0 14a6d8b7c975c5c3191629501cda1eea
++   entry .apply        パスのテキストに対する `java.io.File`。`new File(path)` と同じ
++   entry .genericize   ファイルの絶対パス（テキスト）
++       `getAbsolutePath`。相対的なファイルは作業ディレクトリを基準に解決され、シンボリックリンクはたどらない。
+
+@ 0 1 0 17ebbf72bfb8d5e20ebb917bd2603cd1
++ entry .JavaNioPath   パスとしての `java.nio.file.Path`：絶対パスのテキストに抽象化し、テキストからインスタンス化する
+
+% 1 1 0 1add54a8651bfeb400614c06cf8117f9
+
+@ 0 3 0 070174ec96fa5231135f4ac8b2bd91e0
++       `java.nio.file.Path is Abstractable across Paths to Text` かつ `java.nio.file.Path is Instantiable across Paths from Text` であるオブジェクト。
++       名前でインポートされる given `pathInterfaces.javaNioPath` として提供される。
+
+% 2 1 0 17cc3784c613805803eafef34c1e6203
+
+% 3 1 0 0861b03e2daaf68405f0467f1a34364d
+
+% 0 1 0 1dc3da7c008fb4f117e2428d65bc9dea
+
+% 0 1 0 0e4c6cca595d2141128bbbe41ada4e8b
+
+% 0 1 0 1d273d6594c2847c05407937bf266aea
+
+% 0 1 0 05e01478bd59a9d3012096233ef0f57f
+
+% 1 1 0 17a75d09d85c8cff1347eb3ef821b6e9
+
+@ 0 4 0 1f80dab1984dd6551cf53437f627b075
++       インスタンス化は `Paths.get` であり、冗長な区切りを正規化するので、`/tmp//example` は抽象化すると `/tmp/example` に戻る。
++       抽象化は常に絶対パスを与える。
++       `java.nio.file.Path` は `javaNioPathRepresentative` を通じて `Representative of Paths` でもある。
+
+% 1 1 0 151f924c637ab27305d4dd246cca81bc
+
+% 0 1 0 0ef8ccf21e9bb91d18fd16aa8394bb5a
+
+@ 0 4 0 1c911b4083ac56df02e1713b457d48b8
++   entry .apply        パスのテキストに対する `java.nio.file.Path`。`Paths.get` による
++   entry .genericize   パスの絶対形式（テキスト）
++       `toAbsolutePath`。相対パスは作業ディレクトリを基準に解決される。パスは `Paths.get` が行った以上には正規化されず、シンボリックリンクはたどらない。
+
+@ 0 1 0 0ce790316f138a36138a8a54ac8ba5d0
++ entry .JavaNetUrl   URL としての `java.net.URL`：テキストに抽象化し、テキストからインスタンス化する
+
+% 1 1 0 11fe801e259291fe04ae9ceed3bcb7a3
+
+@ 0 3 0 1762b50f433659211a3e94d3d381e6a9
++       `java.net.URL is Abstractable across Urls to Text` かつ `java.net.URL is Instantiable across Urls from Text` であるオブジェクトで、名前でインポートされる given `urlInterfaces.javaNetUrl` として提供される。
+
+% 2 1 0 1e44fa1556f4a97f13eefc06daa55bfb
+
+% 3 1 0 14d371afd3b164330919ef547d92cd69
+
+% 0 1 0 122ec393712e0e9a1e87b53a34b21441
+
+% 0 1 0 011bfca5ce4545c312e017ea8cda522e
+
+% 0 1 0 0ff08c7d08b2b9aa0961be8c3e8239a0
+
+% 1 1 0 0fdcdaa53d891967199db65308a7cea1
+
+@ 0 1 0 133b4274cd2568281fd9a06e33201fa9
++       ポート、パス、クエリ文字列は変わらずに往復する。
+
+% 0 1 0 1239d8c416dc753117c18d4544a7b78a
+
+@ 0 6 0 126d5fe5689221a30db66f8dcdea3ee3
++   entry .apply        テキストから `java.net.URI` を通じてパースした `java.net.URL`
++       `URI(text).toURL()`、非推奨でない経路である。不正なテキストは、Soundness のエラーを発生させるのではなく、Java API と同じく `URISyntaxException` または `MalformedURLException` を投げるので、プログラムの外から来たテキストは、たとえば `HttpUrl` として、先に検証すべきである。
++   entry .genericize   `toString` が与える URL のテキスト
+
+@ 0 1 0 0351866a6332c6420257b83e308caca9
++ entry .JavaTimeInstant   時点としての `java.time.Instant`：エポックからのミリ秒の `Long` との相互変換
+
+% 1 1 0 092f2a7e426f92cf0295e3cc304269d4
+
+@ 0 4 0 0d57bcc9b541eae710551f28697ae653
++       `java.time.Instant is Abstractable across Instants to Long` かつ `java.time.Instant is Instantiable across Instants from Long` であるオブジェクトで、名前でインポートされる given `instantInterfaces.javaTimeInstant` として提供されるので、ファイルや時計から読んだ時刻を `java.time.Instant` として受け取れる。
+
+% 2 1 0 1e0e867dd6ff456703a1ee12a84c24fe
+
+% 3 1 0 1c835755ea3a0b491cdbf266ec86aab8
+
+% 0 1 0 1607a2d7c848bf4d0588ca26aaa1be01
+
+% 0 1 0 0325dffe58180f32178f218872b508a1
+
+% 0 1 0 00ebc172cd543cd00f6ef7957b48f28a
+
+% 1 1 0 16d2b942a738edfd01c35884f9dff7d7
+
+@ 0 2 0 1c7171b5096750d61d71a3aac2445c93
++       汎用表現の精度はミリ秒なので、`java.time.Instant` のミリ秒未満の部分は `.genericize` によって切り捨てられる。
++       エポックより前の時点は負になる。
+
+% 1 1 0 1f0a72396f27c60603c7b405fafaee7c
+
+% 0 1 0 1325dc7d93eb17630096bac18e675441
+
+@ 0 4 0 1da6623411c1c0a800d36149244b37f4
++   entry .apply        エポックからのミリ秒から得る `java.time.Instant`。`Instant.ofEpochMilli` による
++   entry .genericize   時点のエポックからのミリ秒。`toEpochMilli` による
++       ミリ秒未満の部分は切り捨てる。エポックから遠すぎてミリ秒の `Long` に収まらない時点に対しては、`toEpochMilli` と同じく `ArithmeticException` を投げる。
+
+@ 0 1 0 1a7a26612760279c0ef332605b51d19a
++ entry .JavaUtilDate   時点としての `java.util.Date`：エポックからのミリ秒の `Long` との相互変換
+
+% 1 1 0 12e6d950defccf3908d01a1ab25e3a56
+
+@ 0 4 0 093a443a423525ae0bd50889b8fe34a4
++       `java.util.Date is Abstractable across Instants to Long` かつ `java.util.Date is Instantiable across Instants from Long` であるオブジェクトで、今も `Date` を受け取るレガシーな Java API のために、名前でインポートされる given `instantInterfaces.javaUtilDate` として提供される。
+
+% 2 1 0 0925ecf4277e72180724ece1bb12a851
+
+% 3 1 0 06c4283d005ba7091dc9537a7cab610a
+
+% 0 1 0 1a78c2a507bd8470028066af681c5fd3
+
+% 0 1 0 1635c553600112cf0fab67e2c5b654b9
+
+% 1 1 0 1c1739ef139a54b218fb37d5420d41b7
+
+% 1 1 0 144b8784f96ab55f0c90a9c089645411
+
+@ 0 2 0 1c8cc44103c725850b0fbc131d480612
++   entry .apply        エポックからのミリ秒から得る `java.util.Date`
++   entry .genericize   日付のエポックからのミリ秒。`getTime` による
+
+@ 0 7 0 0300f29ed22b529106c23a4e44b13c6b
++ entry .JavaLongInstant   エポックからのミリ秒を数える、時点としての素の `Long`
++     `Long is Abstractable across Instants to Long` かつ `Long is Instantiable across Instants from Long` であり、どちらも恒等写像であるオブジェクトで、名前でインポートされる given `instantInterfaces.javaLongInstant` として提供される。
++     これによって、時点を生の `System.currentTimeMillis` 形式で受け取ったり与えたりできる。
++     `Long` がナノ秒を数える `JavaLongDuration` との非対称性に注意すること。
++     そのメンバー `apply` と `genericize` は、どちらも引数をそのまま返す。
+
+% 2 1 0 0219aafb5e24b23911b6b58fc04138cb
+
+% 3 1 0 1fd254dca2384ef81b6db789d2e7aaab
+
+% 0 1 0 11c16afe874c18021c3200275a3db184
+
+% 0 1 0 12e4516775cfdb9812747ca946e89ff0
+
+% 1 1 0 00c9bc0414ff6bd116b1df0e1971a519
+
+@ 0 7 0 1dd5738dbe99514c08564014f808b73b
++ entry .JavaLongDuration   ナノ秒を数える、継続時間としての素の `Long`
++     `Long is Abstractable … to Long` かつ `Long is Instantiable … from Long` であり、どちらも恒等写像であるオブジェクトで、名前でインポートされる given `durationInterfaces.javaLongDuration` として提供されるので、タイムアウトやスリープを生の `System.nanoTime` の差として与えられる。
++     `Long` は **ナノ秒** の数であり、これは `Durations` の汎用表現である。`JavaLongInstant` のようなミリ秒ではない。
++     そのメンバー `apply` と `genericize` は、どちらも引数をそのまま返す。
+
+% 2 1 0 0457acb3c52c565a074667412ae77bf9
+
+% 3 1 0 0eeca76978e40b780695d59d6da02b59
+
+% 0 1 0 183c7fcaeef0552905a3cc3c2399f799
+
+% 0 1 0 1da931a4bdd0b4ca0fd4204700fa73f1
+
+% 1 1 0 120102d56928233e0c9f023ef91ec604
+
+@ 0 3 0 0b83addad93c1a980d8bbb515a9f3d68
++     素の `Long` には単位がないので、ミリ秒や秒の継続時間が欲しい場所では、anticipation の `abstractables` パッケージにある単位ごとの given が代わりになる。一度にスコープに置ける `Long` の継続時間インスタンスは一つだけである。
+
+@ 0 5 0 1c50d340881696d91b9ad6b7ddf7b0c7
++ entry .javaIoFileRepresentative   `java.io.File` が `Representative of Paths` であるという証拠
++     消去された given であり、`[path: Representative of Paths]` で境界付けられたメソッドに `java.io.File` を要求できるようにする。
++     どのコンパニオンの外にもある、パッケージ `diuretic` のトップレベルの given なので（`java.io.File` には Soundness が追加できるコンパニオンがない）、名前でインポートしなければならない。`import diuretic.javaIoFileRepresentative`。
+
+@ 0 5 0 07c90b40e15905751dfec453d061e552
++ entry .javaNioPathRepresentative   `java.nio.file.Path` が `Representative of Paths` であるという証拠
++     消去された given であり、`[path: Representative of Paths]` で境界付けられたメソッドに `java.nio.file.Path` を要求できるようにする。
++     どのコンパニオンの外にもある、パッケージ `diuretic` のトップレベルの given なので、名前でインポートしなければならない。`import diuretic.javaNioPathRepresentative`。
++     消去されているので、コンテキスト境界のような消去された位置でしか召喚できない。

@@ -1,0 +1,262 @@
+orthant 2 language
+
+@ 0 1 0 103629cd6cdabfbe1a2d06180576bdf5
++ info   le tableau périodique, les molécules, les formules et les équations chimiques sous forme de valeurs typées
+
+@ 0 1 0 01378691848364bd0c1742170214fc0a
++ entry .Chemical   un espace de noms pour le vocabulaire de la chimie : éléments, formules et équations
+
+@ 0 1 0 15280788efa6e7fe01d962a7f4219bf2
++   entry .Element   un élément chimique : son numéro atomique, son symbole et son nom
+
+@ 0 10 0 116752b908c9f3d2111dc710efa950b4
++     entry .showable   affiche un élément sous la forme de son symbole, `Fe`
++     entry .inspectable   inspecte un élément avec un signe d'atome et son numéro, `⚛Fe(26)`
++     entry #number   le numéro atomique
++     entry #symbol   le symbole chimique, `Fe`
++     entry #name   le nom anglais, `Iron`
++     entry #apply   une molécule de cet élément répété, le nombre étant un argument de type, `O[2]`
++         `O[2]` est la molécule de deux atomes d'oxygène : le nombre est un type littéral
++         d'entier naturel, et doit donc être connu lors de la compilation du code. Pour un nombre
++         connu seulement à l'exécution, utilisez `O ** n`.
++     entry #molecule   cet élément sous forme de molécule d'un atome
+
+@ 0 1 0 0077ef00fcb0f3680ffcfc506fc0a4f1
++   entry .Formula   une somme de molécules, chacune affectée d'un coefficient : `2H₂ + O₂`
+
+@ 0 8 0 1646f802f2d21a7500c3b6430cbdb6fd
++     entry .apply   une formule d'une seule molécule de coefficient 1
++     entry .showable   affiche une formule sous la forme de ses termes joints par ` + `, en omettant les coefficients de 1
++     entry .inspectable   inspecte une formule en écrivant chaque coefficient, ou `∅` si elle est vide
++     entry #molecules   chaque molécule de la formule, avec son coefficient
++     entry #formula   la formule elle-même, comme l'exige `Formulable`
++     entry #atoms   le nombre d'atomes de chaque élément sur l'ensemble des termes, coefficients compris
++         Le multiensemble des atomes d'un côté d'une équation : les atomes de chaque molécule
++         multipliés par son coefficient, puis additionnés. Deux côtés sont équilibrés lorsque
++         leurs `atoms` sont égaux.
+
+@ 0 1 0 194a8438e2a9c3b70a4461cd53f44389
++   entry .Equation   deux formules jointes par une flèche de réaction : `2H₂ + O₂ → 2H₂O`
+
+@ 0 10 0 103d74ab22889cd60db0888fe09a0d91
++     entry .showable   affiche une équation sous la forme de ses deux côtés, séparés par la flèche de la réaction
++     entry .inspectable   inspecte une équation avec ses parties et la réaction nommée, et non dessinée
++         `Equation(2H₂ + 1O₂ ╱ NetForward ╱ 2H₂O)`, afin que son inspection ne soit jamais la
++         notation que produit `show`.
++     entry #lhs   la formule à gauche de la flèche
++     entry #reaction   la sorte de réaction que dénote la flèche
++     entry #rhs   la formule à droite de la flèche
++     entry #balanced   indique si les deux côtés ont le même nombre d'atomes de chaque élément
++         Compare `lhs.atoms` à `rhs.atoms`. La charge n'est pas comparée ; une équation dont les
++         côtés ne diffèrent que par leur charge est donc considérée comme équilibrée.
+
+% 2 3 0 1084f693e06ddf6b06c900d0b94e789b
+
+% 0 3 0 18d4d80dd1a4185d1e5236154c46cb80
+
+@ 0 1 0 061c2f7b6bdae24f0977b7658719df52
++ entry .Molecule   des atomes liés entre eux, avec une charge électrique et un état physique optionnel
+
+@ 0 7 0 09c5da15e3ef67420c4d1b305fb14a4d
++   entry .apply   une molécule vide et non chargée, ou une molécule d'un seul atome d'un élément
++   entry .showable   affiche une molécule dans l'ordre de Hill, avec nombres en indice, charge et état : `O₄S²⁻(aq)`
++   entry .inspectable   inspecte une molécule sous la forme de la formule que donne `show`, `H₂O`
++   entry #elements   chaque élément de la molécule, avec son nombre d'atomes
++   entry #charge   la charge électrique, en unités de charge élémentaire
++   entry #state   l'état physique, ou `Unset` si aucun n'a été donné
++   entry #molecule   la molécule elle-même, comme l'exige `Molecular`
+
+@ 0 1 0 0da2972d9e5737d804a9a556c3da284b
++ entry .Molecular   tout ce qui est une molécule : se lie avec `*`, se met à l'échelle, et porte une charge et un état
+
+@ 0 15 0 122385267eaa91dc1714a68e34da21e0
++   entry #molecule   cette valeur sous forme de `Molecule`
++   entry #formula   cette valeur sous forme de formule d'une seule molécule de coefficient 1
++   entry #*   se lie à une autre molécule, ou donne une formule avec un coefficient `Int`
++       `H[2]*O` est une seule molécule avec les atomes et les charges des deux ; `water*2` est la
++       formule `2H₂O`. La liaison laisse l'état physique non défini.
++   entry #**   la molécule avec chaque nombre d'atomes et sa charge multipliés
++       `(H[2]*O) ** 3` donne `H₆O₃`, une seule molécule ; comparez avec `*` suivi d'un `Int`, qui
++       donne un coefficient.
++   entry #unary_-   la molécule avec sa charge diminuée de un : `-Cl` est l'ion chlorure
++   entry #unary_+   la molécule avec sa charge augmentée de un : `+Na` est l'ion sodium
++   entry #ion   la molécule avec sa charge remplacée : `Fe.ion(3)`
++   entry #inState   la molécule avec son état physique remplacé, ou retiré avec `Unset`
++       ```scala
++       import soundness.*
++       import PeriodicTable.{Cl, Na}
+
+% 0 2 0 1ee8e69699eabe34179a2e0977eab669
+
+@ 0 2 0 022b063e6d4ed1df10b776d0d7313221
++       Attention à la précédence : `Na*Cl.inState(…)` fixe l'état du seul chlore, et la liaison
++       l'écarte ensuite.
+
+@ 0 1 0 0eac964146e5769010bb15a4eafbe3fc
++ entry .Formulable   tout ce qui peut former un côté d'une équation : s'additionne avec `+` et accepte une flèche de réaction
+
+@ 0 10 0 0f91c64fcf78c2f1062e5df9f199f093
++   entry #formula   cette valeur sous forme de `Chemical.Formula`
++   entry #+   la somme de deux formules, qui additionne les coefficients d'une molécule présente dans les deux
++   entry #-->   une équation avec une réaction nette dans le sens direct, `→`
++       `lhs --> rhs`. Elle lie aussi fort que `+` et s'associe à gauche ; une somme à droite
++       nécessite donc des parenthèses : `CH₄ + 2O₂ → CO₂ + 2H₂O` s'écrit
++       `C*H[4] + O[2]*2 --> (C*O[2] + H[2]*O*2)`.
++   entry #<->   une équation avec une résonance, `Reaction.Resonance`
++   entry #<=>   une équation qui se produit dans les deux sens, `⇄`
++   entry #<~>   une équation à l'équilibre, `⇋`
++   entry #===   une équation avec une relation stœchiométrique, `Reaction.Stoichiometric`
+
+@ 0 1 0 0996117b8cd57ad900cb4f7c5be984e1
++ entry .PhysicalState   l'état de la matière d'une molécule : solide, liquide, gazeux ou aqueux
+
+@ 0 1 0 0b1ace2718b32c031a2387dd666c9dda
++   entry .showable   affiche un état sous la forme `(s)`, `(l)`, `(g)` ou `(aq)`
+
+@ 0 1 0 06a978e891636c0409d10cae95bb2061
++ entry .Reaction   la relation qu'affirme une équation chimique entre ses deux côtés
+
+@ 0 5 0 141b26b616fa66e713addbc7fd87095b
++   detail
++       Une énumération de `NetForward` (affiché `→`, issu de `-->`), `BothDirections` (`⇄`, issu de
++       `<=>`), `Equilibrium` (`⇋`, issu de `<~>`), `Stoichiometric` (`=`, issu de `===`) et
++       `Resonance` (`↔`, issu de `<->`). La flèche qu'écrit un chimiste a un sens, et une équation
++       la conserve.
+
+@ 0 1 0 0bcc81c6dcfeeab013a3e5eb68f6baae
++   entry .showable   affiche une réaction sous la forme de sa flèche
+
+@ 0 1 0 1b744dbb3f1c51c20d2f00aac13d326c
++ entry .PeriodicTable   les 118 éléments chimiques, par symbole, numéro atomique ou nom
+
+@ 0 129 0 10f3e29466f9954d1a3d0d0eefd3eece
++   entry .apply   l'élément de numéro atomique ou de symbole donné, ou `Unset` s'il n'y en a pas
++       `PeriodicTable(26)` et `PeriodicTable(t"Fe")` sont tous deux le fer ; un numéro hors de
++       l'intervalle 1 à 118 ou un symbole inconnu donne `Unset`. La recherche par symbole est
++       sensible à la casse.
++   entry .elements   chaque élément, dans l'ordre des numéros atomiques
++   entry .symbols   chaque élément, indexé par son symbole
++   entry .element   l'élément de numéro atomique donné, avec son nom et son symbole systématiques de l'UICPA
++       Construit le nom provisoire à partir des chiffres du numéro — `nil`, `un`, `bi`, `tri`,
++       `quad`, `pent`, `hex`, `sept`, `oct`, `enn` — et `ium`, un `i` doublé étant élidé : 119
++       est `Ununennium` (`Uue`), 120 `Unbinilium` (`Ubn`), et 122 `Unbibium` (`Ubb`). Elle donne
++       un élément systématique pour chaque numéro, y compris ceux qui ont un vrai nom dans le
++       tableau.
++   entry .H   hydrogène, élément 1
++   entry .He   hélium, élément 2
++   entry .Li   lithium, élément 3
++   entry .Be   béryllium, élément 4
++   entry .B   bore, élément 5
++   entry .C   carbone, élément 6
++   entry .N   azote, élément 7
++   entry .O   oxygène, élément 8
++   entry .F   fluor, élément 9
++   entry .Ne   néon, élément 10
++   entry .Na   sodium, élément 11
++   entry .Mg   magnésium, élément 12
++   entry .Al   aluminium, élément 13
++   entry .Si   silicium, élément 14
++   entry .P   phosphore, élément 15
++   entry .S   soufre, élément 16
++   entry .Cl   chlore, élément 17
++   entry .Ar   argon, élément 18
++   entry .K   potassium, élément 19
++   entry .Ca   calcium, élément 20
++   entry .Sc   scandium, élément 21
++   entry .Ti   titane, élément 22
++   entry .V   vanadium, élément 23
++   entry .Cr   chrome, élément 24
++   entry .Mn   manganèse, élément 25
++   entry .Fe   fer, élément 26
++   entry .Co   cobalt, élément 27
++   entry .Ni   nickel, élément 28
++   entry .Cu   cuivre, élément 29
++   entry .Zn   zinc, élément 30
++   entry .Ga   gallium, élément 31
++   entry .Ge   germanium, élément 32
++   entry .As   arsenic, élément 33
++   entry .Se   sélénium, élément 34
++   entry .Br   brome, élément 35
++   entry .Kr   krypton, élément 36
++   entry .Rb   rubidium, élément 37
++   entry .Sr   strontium, élément 38
++   entry .Y   yttrium, élément 39
++   entry .Zr   zirconium, élément 40
++   entry .Nb   niobium, élément 41
++   entry .Mo   molybdène, élément 42
++   entry .Tc   technétium, élément 43
++   entry .Ru   ruthénium, élément 44
++   entry .Rh   rhodium, élément 45
++   entry .Pd   palladium, élément 46
++   entry .Ag   argent, élément 47
++   entry .Cd   cadmium, élément 48
++   entry .In   indium, élément 49
++   entry .Sn   étain, élément 50
++   entry .Sb   antimoine, élément 51
++   entry .Te   tellure, élément 52
++   entry .I   iode, élément 53
++   entry .Xe   xénon, élément 54
++   entry .Cs   césium, élément 55
++   entry .Ba   baryum, élément 56
++   entry .La   lanthane, élément 57
++   entry .Ce   cérium, élément 58
++   entry .Pr   praséodyme, élément 59
++   entry .Nd   néodyme, élément 60
++   entry .Pm   prométhium, élément 61
++   entry .Sm   samarium, élément 62
++   entry .Eu   europium, élément 63
++   entry .Gd   gadolinium, élément 64
++   entry .Tb   terbium, élément 65
++   entry .Dy   dysprosium, élément 66
++   entry .Ho   holmium, élément 67
++   entry .Er   erbium, élément 68
++   entry .Tm   thulium, élément 69
++   entry .Yb   ytterbium, élément 70
++   entry .Lu   lutécium, élément 71
++   entry .Hf   hafnium, élément 72
++   entry .Ta   tantale, élément 73
++   entry .W   tungstène, élément 74
++   entry .Re   rhénium, élément 75
++   entry .Os   osmium, élément 76
++   entry .Ir   iridium, élément 77
++   entry .Pt   platine, élément 78
++   entry .Au   or, élément 79
++   entry .Hg   mercure, élément 80
++   entry .Tl   thallium, élément 81
++   entry .Pb   plomb, élément 82
++   entry .Bi   bismuth, élément 83
++   entry .Po   polonium, élément 84
++   entry .At   astate, élément 85
++   entry .Rn   radon, élément 86
++   entry .Fr   francium, élément 87
++   entry .Ra   radium, élément 88
++   entry .Ac   actinium, élément 89
++   entry .Th   thorium, élément 90
++   entry .Pa   protactinium, élément 91
++   entry .U   uranium, élément 92
++   entry .Np   neptunium, élément 93
++   entry .Pu   plutonium, élément 94
++   entry .Am   américium, élément 95
++   entry .Cm   curium, élément 96
++   entry .Bk   berkélium, élément 97
++   entry .Cf   californium, élément 98
++   entry .Es   einsteinium, élément 99
++   entry .Fm   fermium, élément 100
++   entry .Md   mendélévium, élément 101
++   entry .No   nobélium, élément 102
++   entry .Lr   lawrencium, élément 103
++   entry .Rf   rutherfordium, élément 104
++   entry .Db   dubnium, élément 105
++   entry .Sg   seaborgium, élément 106
++   entry .Bh   bohrium, élément 107
++   entry .Hs   hassium, élément 108
++   entry .Mt   meitnérium, élément 109
++   entry .Ds   darmstadtium, élément 110
++   entry .Rg   roentgenium, élément 111
++   entry .Cn   copernicium, élément 112
++   entry .Nh   nihonium, élément 113
++   entry .Fl   flérovium, élément 114
++   entry .Mc   moscovium, élément 115
++   entry .Lv   livermorium, élément 116
++   entry .Ts   tennesse, élément 117
++   entry .Og   oganesson, élément 118

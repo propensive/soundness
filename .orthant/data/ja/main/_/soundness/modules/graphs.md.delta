@@ -1,0 +1,8 @@
+orthant 2 language
+
+@ 0 7 0 0f69aa704889b83009468d9357fd3e7e
++ - [木](trees.md)は、木とグラフをテキストとして描画する。
++ - [コレクション](collections.md)は、グラフが共有する語彙と、`dysasymptotics` にあるコストの承認を説明する。
++ - [並行性](concurrency.md)は、依存グラフが順序付けるタスクを実行する。
++ - [不可能な状態](../../philosophy/impossible-states.md)は、`Dag` が循環を持てない理由を説明する。
++ - [チャート](charts.md)はグラフを環状グラフとして描画し、[コンパイラ](compiler.md)はツールチェーンをグラフとして構築する。

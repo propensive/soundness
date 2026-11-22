@@ -1,0 +1,12 @@
+orthant 2 release
+
+@ 0 1 0 13afa3fc7054ff171b336e7a10d1d16b
++   def stage(out: Path on Local): LocalClasspath = classpath(out)
+
+@ 0 5 0 0e31ec5086c776e11e2e6adab70c3c3b
++ Code which runs elsewhere can fail, but an error raised in the staged block is not carried back
++ across the boundary as itself. `dispatch` raises only a `Compiler.Error`, if the staged code
++ does not compile, or a `Rig.Error`, for a failure of the rig. With the `Jvm` rig, staged code
++ which throws makes its subprocess exit with a failure, which is reported as a `Rig.Error` whose
++ reason is `Invocation`: the same error as a subprocess which would not start. Staged code which
++ may fail should therefore return its failure as a value.

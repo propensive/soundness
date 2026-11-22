@@ -1,0 +1,13 @@
+orthant 2 language
+
+@ 0 6 0 1c1adabd3cdeaea802a09a80d2ad9b65
++       `jacinta.optics`. Sono ciò che fa funzionare `json.lens(…)`: la lente panopticon per un
++       campo con nome, e le ottiche che raggiungono l'interno degli array. Vivono in un package
++       anziché nell'oggetto compagno di `Json` così che un import mancante sia un errore di
++       compilazione anziché un cambiamento silenzioso di comportamento; `import optics.given` le
++       porta tutte (o `import soundness.optics.given`, dove si fondono le ottiche di ogni
++       libreria); un import con carattere jolly non importa i given. Un assegnamento tramite lente
++       richiede anche l'accesso dinamico abilitato e, per assegnare un valore semplice,
++       `conversions.encodableToJson`.
+
+% 0 1 0 03cc38314ff6e76d1e4c3887cbc40ab7

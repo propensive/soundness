@@ -1,0 +1,447 @@
+orthant 2 language
+
+@ 0 1 0 177458f2ce3336591e1c667bc92820e7
++ ## Cliente HTTP
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 5 0 0c8303365fe5eeb00abf7436d89f3002
++ Uma requisição [HTTP](https://en.wikipedia.org/wiki/HTTP) é uma expressão: uma
++ [URL](network-addresses.md#urls), um método como `fetch` e o tipo como o qual a resposta deve ser
++ lida. Cada parte é tipada. A URL é verificada em [tempo de compilação], o valor de um cabeçalho
++ precisa servir ao cabeçalho que ele define, o corpo de uma requisição carrega seu próprio tipo de
++ mídia, e o corpo da resposta é lido como o tipo que for pedido.
+
+@ 0 4 0 07a4731109eb28cc16bb41876f85bc06
++ A falha também é tipada. Um status fora da faixa de sucesso e uma conexão que não pode ser feita
++ são dois erros distintos, e um método que faz requisições declara ambos. Uma requisição também
++ precisa da [capability] `Online` no escopo, de modo que um método que alcança a rede diz isso em
++ sua assinatura, e um que não deveria alcançá-la não consegue.
+
+@ 0 1 0 0de2ab4839a9a1ea1bbb59f0cacdd5b0
++ ### Sobre requisições HTTP
+
+@ 0 4 0 1a2fdc82e7be4dd3168665a400821816
++ Um cliente HTTP típico recebe uma URL como string, cabeçalhos como um mapa de strings para
++ strings e um corpo como bytes. Ele devolve uma resposta cujo status precisa ser verificado à mão e
++ cujo corpo precisa ser decodificado à mão. A URL pode estar malformada, o nome de um cabeçalho pode
++ estar escrito errado, e o tipo de mídia do corpo pode não corresponder a seus bytes. Nada disso é
++ descoberto até que a requisição seja executada, e talvez nem então.
+
+@ 0 1 0 0b5955bb8bddd9840f10d616d5a54fc0
++ Aqui cada um desses erros é encontrado pelo compilador:
+
+% 2 1 0 00e312e7f3a0481708a4a5d74554fe9e
+
+@ 0 9 0 197928002f9059101a9f1994d612de79
++ column  Parte de uma requisição
++ column  Como é verificada
++ row  a URL  um [interpolador] `url"…"` a valida onde ela é escrita
++ row  um cabeçalho  um argumento nomeado, cujo valor tem o tipo que esse cabeçalho recebe
++ row  o corpo da requisição  um valor tipado que fornece seu próprio `Content-Type`
++ row  o corpo da resposta  lido com `receive`, como o tipo nomeado
++ row  um status de falha  um `Http.Error`, declarado pelo método que pode lançá-lo
++ row  uma conexão que falhou  um `Connect.Error`, declarado da mesma forma
++ row  o acesso à rede  a capability `Online`, exigida no escopo
+
+% 1 1 0 01969b71a1970bee1a9c1d5defba4ba1
+
+@ 0 2 0 0276b6b8f8f8f1431c8882e77a759bea
++ Relatar a falha pelos tipos, e deixar que quem chama decida o que uma falha faz, é o
++ [tratamento de erros](../../philosophy/error-handling.md) tal como funciona em todo o resto.
+
+@ 0 1 0 102645620c93fd8c16e13e78c8a2c16e
++ ### O que uma requisição precisa no escopo
+
+@ 0 2 0 071c7638108b061415935284659048eb
++ Tudo vem do pacote `soundness`. Uma requisição também depende de várias decisões que são tomadas
++ importando um [given] de um [pacote de escolhas], para que nenhuma seja tomada em silêncio:
+
+% 2 1 0 141547dfc4b7fa230205c829a7e40203
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+% 3 1 0 1c3a697c9e7022af1b7495d90d387257
+
+% 3 1 0 10f39fd782d85520112a6fdadcf0c46b
+
+@ 0 7 0 1e9e0204c4ecc42a070fc719c0108588
++ column  Decide
++ row  `charsets.utf8Charset`, `codepages.utf8Codepage`  como bytes se tornam texto, e texto se torna bytes
++ row  `errorDiagnostics.stackTracesDiagnostics`  que um erro registra um stack trace
++ row  `httpBackends.javaNetHttp`  qual implementação envia a requisição: aqui, o `java.net.http` da JVM
++ row  `internetAccess.online`  que este código pode usar a rede
++ row  `logging.silentLogging`  que as requisições não são registradas em log; [logging](logging.md) tem as alternativas
++ row  `strategies.throwUnsafely`  que um erro é lançado como exceção; [erros](errors.md#choosing-a-strategy) tem as outras estratégias
+
+% 1 1 0 1bf3649d0ef7eed418bc3b0f5602a32b
+
+@ 0 1 0 0e8e7d95a92774d308f11b1ecf14da5e
++ ### Uma requisição GET
+
+@ 0 2 0 0d28083dcb8763fd0a89f575c122d3aa
++ `fetch` envia uma requisição GET para uma URL. Ele dá a resposta, e `receive` lê o corpo da
++ resposta como o tipo nomeado:
+
+% 2 1 0 01ff5b06e0b23b89120ee4fba75d7b5a
+
+% 3 1 0 1378acda9615b7ff0f096d31b8327076
+
+% 4 1 0 0767df0deb722369197ae77f489f0c0d
+
+% 0 1 0 0ac54a62185ac3031581513c689f3c38
+
+% 1 1 0 024022b20b5b5ecc1bb2ae5fef6216b4
+
+@ 0 4 0 1f5395b55f750f670c68572b97d3809a
++ O tipo passado a `receive` escolhe como o corpo é lido. `Text` o decodifica com o charset no
++ escopo, `Data` dá seus bytes, e um [stream](streams.md) o entrega uma parte de cada vez, sem
++ guardar o corpo inteiro na memória. Um tipo com um decodificador para um formato é lido da mesma
++ forma, de modo que uma resposta [JSON](json.md#json-over-http) é recebida como `Json`.
+
+@ 0 1 0 0edae2bc6c595fbd19aa9bbeb533388a
++ A resposta informa seu status sem que seu corpo seja lido:
+
+% 2 1 0 1524771d0d6363eb0e3aa3525917b18c
+
+% 3 1 0 0126d378a2ed70720c7eff6eba873420
+
+% 4 1 0 113f2b65724b344005229bf17acc2545
+
+% 0 1 0 1b580d99f7aef7fb0978d3487c6f9604
+
+% 1 1 0 16e90b4fa6b2e5f012f13aa7f908bc94
+
+@ 0 1 0 00975b59226dfd8c15102d02192027dc
++ Para uma página que existe, isso é `Http.Ok`.
+
+@ 0 2 0 11024b0ea29ef58d0f9b474d269b9d8e
++ A URL é um valor tipado, e não uma string, de modo que uma URL malformada nunca chega à rede. O
++ interpolador a rejeita:
+
+% 2 1 0 0aa82769c8195d1f08fcb6c984af937b
+
+% 3 1 0 01ae78c6ace150ce14a14a9106c02b2a
+
+% 4 1 0 0a68bc751c216eb80c11bfb845c929ff
+
+% 5 1 0 1ac563f153a3aa4e15cf98e69376a58e
+
+% 0 1 0 019fc721bde1fe0b0ce3493479a9a680
+
+% 1 1 0 1530e898fea5af3611bd168ee08fb691
+
+@ 0 3 0 1669918cfe3bc4d81cdb95b44e2a551a
++ Uma URL que não é conhecida até que o programa seja executado é, em vez disso,
++ [analisada em tempo de execução](network-addresses.md#parsing-at-runtime), e é na análise que uma
++ URL inválida é relatada.
+
+@ 0 1 0 0325d804222f183917eb978379da2555
++ ### Cabeçalhos
+
+@ 0 3 0 156976df19c704a802a083ead7eed4c6
++ Um cabeçalho de requisição é um argumento nomeado de `fetch`. Seu nome é o nome do cabeçalho em
++ camel case, e seu tipo é o que quer que esse cabeçalho carregue: `accept` recebe um
++ [tipo de mídia](media-types.md), e não um texto qualquer.
+
+% 2 1 0 1c328dcdeafd6e6201c77cb13d1318d7
+
+% 3 1 0 161aa2eb684c128b081817107d33ca85
+
+% 4 1 0 1f7df0bd5505e99f0126a857cfe280c9
+
+% 0 1 0 115eab087e856d4617a739eccb480752
+
+% 1 1 0 182e24e9237ad54e1aa0e5facf59e569
+
+@ 0 1 0 0c1a057014379e401473b8a737588b47
++ Um valor do tipo errado para seu cabeçalho não compila:
+
+% 2 1 0 102ab4d0e803042506536e4050efd3d7
+
+% 3 1 0 0174be6608bebe1f1cc6e2860bb7ac3e
+
+% 4 1 0 11a948623cc909920c36a60c7023ec5a
+
+% 5 1 0 17380113b983c44e0b7ea46bbf1cb719
+
+% 0 1 0 19c1f06dd93cdd760f72537cd2c4b5d3
+
+% 1 1 0 1e3fe035307ba3960b69e0bfc2be09ae
+
+@ 0 1 0 0c286de51ab9841d0060f1123bbdb695
++ Nem um cabeçalho cujo nome está escrito errado, já que nenhum cabeçalho com esse nome recebe valor
++ algum:
+
+% 2 1 0 06e12d4bc2b45368115aa2e68baaccdd
+
+% 3 1 0 0d2cb0e2451e3b231ebc283dff498f29
+
+% 4 1 0 0c02b858004e53df196baec2de0c11e1
+
+% 5 1 0 14390f5545070cf9019387bdf689e2f2
+
+% 0 1 0 0a8cd15c476434d11464438e2bfe0e5f
+
+% 1 1 0 147c7906eaec752f0aa5c26df2f059a3
+
+@ 0 1 0 0e6a0b77a323e96a1c7e99eb0995afdb
++ ### Enviando um corpo
+
+@ 0 2 0 1b5756f8dd47045f1adf8117217420f5
++ `submit` envia uma requisição que tem um corpo. Sua primeira lista de parâmetros recebe o método
++ e quaisquer cabeçalhos, e a segunda recebe o corpo:
+
+% 2 1 0 0ef6ceae9ccb11f70f16aed33cd11d64
+
+% 3 1 0 19acc351587efa7114c11790c5b547a8
+
+% 4 1 0 1a3a85417deb13981658d3634155d850
+
+% 0 1 0 15afbe4b757b78340142b188d5ed58c8
+
+% 1 1 0 08dd4b8c12787cd211d4fa8860abd10f
+
+@ 0 1 0 01a456a66f4fc11a19ef747685ee1944
++ `Http.Put`, `Http.Delete` e os outros nomeiam os métodos restantes.
+
+@ 0 5 0 166e02ec3e91d39908fd129676973c89
++ O corpo é um valor tipado, e seu tipo decide o `Content-Type` da requisição, de modo que o
++ cabeçalho nunca pode discordar dos bytes que o seguem. Texto é enviado como `text/plain`, uma
++ `Query` é enviada como uma [submissão de formulário](forms.md#submissions), e um valor `Json` é
++ enviado como `application/json`.
++ [Tipos que conhecem seu tipo de mídia](media-types.md#types-that-know-their-media-type) descreve
++ como um tipo próprio participa.
+
+@ 0 1 0 1b3452ef3120ae531a7b61762244949a
++ ### Lendo a resposta
+
+@ 0 3 0 13c090be72d2ec9f14455fa9607eccfa
++ `receive` lê o corpo como qualquer tipo que possa ser lido de uma resposta: `Text`, `Data`, um
++ stream, ou um valor analisado a partir do corpo. O status é um valor comum, para inspecionar ou
++ para retornar, de modo que um programa decide o que um dado status significa.
+
+@ 0 2 0 1aa4b954362616f019d61c981bd80290
++ Por padrão, uma resposta fora da faixa de sucesso não é lida de forma alguma: `receive` lança um
++ `Http.Error`, descrito em [Erros](#errors).
+
+@ 0 1 0 11b47e421d6c37bb1452912897d06265
++ ### Sessões
+
+@ 0 3 0 0469a0931d0aeb5d070bb4da94a804b6
++ Um único `fetch` abre uma conexão e a fecha. Onde várias requisições vão para a mesma origem, uma
++ [sessão] abre uma conexão e a empresta a um bloco, e toda requisição feita no bloco a
++ compartilha:
+
+% 2 1 0 18fc8022978e2ac40344c8f2a0a5af47
+
+% 3 1 0 0f44df48bcacf14a027d2ac1ad0a1e25
+
+% 4 1 0 0d49725ca069de4917e00c114ad89e5e
+
+% 0 1 0 006400da816652821b3a2103b753ed7f
+
+% 0 1 0 10b23da8489c5a5010fd6d3e77471a89
+
+% 0 1 0 13099d463e9d84230816a8a9c9189fc0
+
+% 0 1 0 1fe10b3bec06f3ab10f2eac7c34f57dd
+
+% 0 1 0 1b6f3fe6d8d786a70f0fe85ab875b51a
+
+% 0 1 0 196ff31d783e94650d081e5aee506a0a
+
+% 0 1 0 065472f82c61827f1f8f0f57b74e71a2
+
+% 1 1 0 05d21b51c1727ed8148a5f2e241a793c
+
+% 1 1 0 03f3f4ca8b40c8fd1f314d8feebded70
+
+% 1 1 0 177860d025618a6f0a92ca24424517eb
+
+@ 0 2 0 1691f827976e52290854c45dfc7663a8
++ O protocolo fica fixo enquanto a sessão durar. Para `https`, o servidor e o cliente o combinam
++ durante o handshake TLS, por
+
+% 0 1 0 0ec037f1dd33b2fc1a684b0de35181a5
+
+% 2 1 0 025ade35453b346e11a5366389633616
+
+@ 0 6 0 10143ceafb50294e04fc7f122a23dda8
++ column  Esquema
++ column  Negociado
++ column  Sessão
++ row  `https`  `h2`  HTTP/2 *multiplexado*: os fetches se intercalam sobre uma conexão
++ row  `https`  `http/1.1`  HTTP/1.1 *sequencial*
++ row  `http`  nada  HTTP/1.1 *sequencial*, com keep-alive fixando uma conexão
+
+% 1 1 0 14b0214707b6c0971fb5e66e6f8b7b74
+
+@ 0 3 0 0ea077e0ab59510f0463ac9c198328f0
++ A fronteira do bloco é imposta pelo compilador. Um corpo de resposta que ainda está chegando em
++ stream da conexão ativa não pode ser retornado do bloco, porque a conexão da qual ele lê é fechada
++ quando o bloco termina. Um valor que já foi lido para a memória pode ser retornado livremente.
+
+@ 0 2 0 1bf5128cba450646068f02e248eff821
++ Uma resposta que fica sem ser lida não causa dano. O fetch seguinte primeiro descarta o que restar
++ do corpo anterior, para começar na resposta seguinte.
+
+@ 0 1 0 1565dd528212ef92119dcdccd19305ea
++ ### Escolhendo um transporte
+
+@ 0 1 0 155bc50672b0a901025a777d20ea7c78
++ A implementação que envia as requisições é um [given], escolhido por import:
+
+% 2 1 0 07da89ea37d106a019f86b25dcffe892
+
+% 3 1 0 05914df5f04aa26b18175611615e3559
+
+@ 0 3 0 1f58d043596de2e710db872e85b8aa94
++ column  Envia as requisições com
++ row  `httpBackends.javaNetHttp`  o próprio cliente `java.net.http` da JVM
++ row  `httpBackends.soundnessHttp`  os próprios codecs HTTP do Soundness, diretamente sobre um [socket](sockets.md)
+
+% 1 1 0 0551fb88f5b2a3c20090e28df6b9d959
+
+@ 0 1 0 198a5a6f1bca33e30ad6643f77e46e43
++ Um bloco `locally` confina uma escolha diferente a poucas linhas:
+
+% 2 1 0 1f9264f586eea9611d89df0c938592cb
+
+% 3 1 0 101116dc8d57541000252bffa5e543b7
+
+% 4 1 0 085ff9202dab5acd0e0c26c6942d2f32
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 1753cafcfd900c610c42d24cb8bb42b6
+
+% 0 1 0 1beea1c654d1fa600a24ef273895638e
+
+% 1 1 0 16e2c8a10c82ac391e411ace03755063
+
+@ 0 4 0 0ad19ea850c38e710202d12cce5d1f0d
++ O backend `soundnessHttp` mantém as conexões HTTP/1.1 vivas e as reusa em requisições posteriores
++ à mesma origem. Sobre TLS, ele negocia HTTP/2 ou HTTP/1.1 por ALPN e fala o que o servidor
++ escolheu. Se uma conexão mantida se revelar fechada pelo servidor, a requisição é tentada de novo
++ uma vez em uma conexão nova. Outras plataformas fornecem seus próprios backends da mesma forma.
+
+@ 0 1 0 13b60bd18b0bffa218b83f320fc60bae
++ ### Redirecionamentos
+
+@ 0 2 0 07fa9fa1d086e99c1253d9af343483a1
++ Um redirecionamento é seguido por padrão, até um limite. Importar uma política mais estrita
++ impede isso, e uma resposta de redirecionamento passa a ser um `Http.Error` que carrega o status
++ do redirecionamento:
+
+% 2 1 0 136c201ad9a6b442090c12584d4dded2
+
+% 0 1 0 0f2632bcab06af620bb624ef44cf3f1c
+
+% 1 1 0 11a370981460abd20c8dfad2086cdb16
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### Erros
+
+@ 0 1 0 117f5e42f21d2bc3098b5951c51eaf4f
++ Uma requisição falha de uma de duas formas, e cada uma é um erro de tipo próprio:
+
+% 2 1 0 0f6a6bb55691658004039e751dc10b6f
+
+@ 0 5 0 0c35ab7b410a22fd10b953fb86668e2b
++ column  Erro
++ column  Lançado quando
++ column  Carrega
++ row  `Http.Error`  uma resposta está fora da faixa de sucesso  o status e os cabeçalhos
++ row  `Connect.Error`  nenhuma conexão pode ser feita: um host que não pode ser resolvido, uma conexão recusada, uma falha de TLS  o motivo
+
+% 1 1 0 0dcbe097f9186b1503dd158e0031fd70
+
+@ 0 3 0 1f9b17a6ee213ad5135ad733f067c768
++ Sob a [estratégia] `throwUnsafely` importada acima, qualquer um deles é lançado como exceção. Um
++ método que não deve lançar exceções declara os erros, em vez disso, com [`raises`][raises], e quem
++ o chama escolhe o que fazer com eles; [Erros](errors.md) trata das escolhas.
+
+@ 0 2 0 1ae4e3d5e06004e210c34ab2739e964f
++ `capture` executa uma expressão da qual se espera que falhe, e dá o erro. Um `Http.Error` tem o
++ status, de modo que quem chama pode reagir ao que deu errado:
+
+% 2 1 0 05391f537a61ab57032f1bae7fc7cbb2
+
+% 3 1 0 0193712dc9d2d29617f1f469eb806833
+
+% 4 1 0 05ad7c0034914d3c01d95c66f9c1b03a
+
+% 0 1 0 17d08a4c1316545917ca775bc926edcf
+
+% 1 1 0 1879e6068ae78f1111305f303255ce5c
+
+@ 0 1 0 0303868004bd2a0d1aef54344fe6dc20
++ Para uma página inexistente, isso é `Http.NotFound`.
+
+@ 0 1 0 0ddb38ef227217fa1fe5460381b7655d
++ Um `Connect.Error` tem um `reason`, que diz por que nenhuma conexão foi feita:
+
+% 2 1 0 06a19d7f3c41244a07be3f0bdfdb988c
+
+% 3 1 0 14b638e971aa95cf08a1cc8a4f0c5bdb
+
+% 4 1 0 1660bec22ec7614000153fa1c9bf0166
+
+% 0 1 0 07ab171481e503c410be862e7e1bd504
+
+% 1 1 0 1bc6f18118ab991911fdcee0ac427677
+
+% 3 1 0 1113d04ebc7625a01b5173d4b5471b34
+
+@ 0 7 0 04cd7849adf0f56314fbbdf414c67830
++ column  Motivo
++ column  Significa
++ row  `Dns`  o nome do host não pôde ser resolvido
++ row  `Refused`  o host recusou a conexão
++ row  `Ssl(reason)`  a camada TLS não pôde ser estabelecida; seu próprio motivo é `Handshake`, `Key`, `Peer` ou `Protocol`
++ row  `Timeout`  o servidor não respondeu dentro do limite de tempo
++ row  `Unknown`  a falha não foi reconhecida como nenhuma das outras
+
+% 1 1 0 08e5c8898c17c80c17db2c2c4c7cfd07
+
+@ 0 5 0 1ff6e80c2a25c8320d6aa11c3ed19920
++ Uma falha de TLS, portanto, é distinguida de uma falha de rede, e seu motivo diz em que estágio
++ ela aconteceu. Um certificado expirado, um certificado para o host errado, um certificado
++ revogado, uma cipher suite quebrada e um grupo Diffie–Hellman pequeno demais são, cada um,
++ recusados durante o handshake. O cliente é testado contra a coleção [badssl.com](https://badssl.com/)
++ de endpoints quebrados de propósito, de modo que cada recusa é verificada.
+
+@ 0 4 0 1abea0b24f045bfe0f3bfc4d4b6a5e31
++ Às vezes é preciso fazer uma conexão com um host cujo certificado não pode ser validado, como um
++ servidor de desenvolvimento com um certificado autoassinado. Um `TlsAcceptance` relaxado no escopo
++ o permite. Aceitar um certificado não validado passa a ser, então, uma decisão que pode ser
++ encontrada buscando o import no código.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 5 0 0dc92be166b0e14c0d11d50a6bf75920
++ - [Servidor HTTP](http-server.md) responde a requisições com o mesmo vocabulário `Http` de
++   métodos, status e cabeçalhos.
++ - [JSON sobre HTTP](json.md#json-over-http) envia um valor `Json` e recebe outro.
++ - [OAuth](oauth.md#credentials-for-a-typed-client) obtém o token que uma requisição autorizada
++   envia.
++ - [Endereços de rede](network-addresses.md) trata de URLs, hostnames e portas.

@@ -1,0 +1,479 @@
+orthant 2 language
+
+% 0 1 0 0aa7e74db567b4831d0dc81ff895a17b
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 3 0 13cb4f68643a8d220eb9db4eab8124ac
++ [CBOR](https://en.wikipedia.org/wiki/CBOR) ist ein binärer Verwandter von JSON. Es hat dasselbe
++ Datenmodell, kompakt für Maschinen statt lesbar für Menschen kodiert, und ist als
++ [RFC 8949](https://datatracker.ietf.org/doc/html/rfc8949) standardisiert.
+
+@ 0 3 0 015c85d1292c97d01611ae22711fd0e9
++ Es wird mit derselben Schnittstelle gelesen und geschrieben wie die textuellen Formate. Bytes
++ werden zu einem `Cbor`-Wert geparst. Case-Klassen werden mit [abgeleiteten][Ableitung] Codecs in
++ ihn und aus ihm umgewandelt. Navigation, Aktualisierungen und Linsen funktionieren wie bei
++ [JSON](json.md) und [YAML](yaml.md).
+
+@ 0 1 0 00ba26345b6873d30caa289219891e19
++ ### Über binären Datenaustausch
+
+@ 0 3 0 1d22ec9e4ca0e108098ceefaa69505d1
++ JSON bezahlt seine Lesbarkeit mit Bytes und mit Parsezeit. Wo kein Mensch die Daten liest, etwa
++ in einem Geräteprotokoll, einem Cache-Eintrag oder einer Message-Queue, kauft dieser Preis
++ nichts. CBOR behält die Gestalt von JSON aus Maps, Arrays, Zahlen, Text und Byte-Strings bei, in
++ einer kompakten binären Form.
+
+@ 0 4 0 16cdd148f1ebfed41f82ab5b586714e9
++ Binäre Formate werden meist über APIs verarbeitet, die mit einzelnen Bytes hantieren und weit
++ schwerfälliger sind als die ihrer textuellen Gegenstücke. Hier erhält CBOR die volle Behandlung
++ eines textuellen Formats: abgeleitete Codecs, typisierte Fehler mit Gründen, dynamischen Zugriff
++ und Optiken. Die Wahl des kompakten Formats kostet den Code keine Ausdruckskraft.
+
+@ 0 3 0 1a7c28911c81c822085fb5a23e17be06
++ Der Codec wird aus dem Typ abgeleitet, also ist der Typ das Schema. Die
++ [Korrektheit](../../philosophy/correctness.md) der Kodierung folgt aus der Definition, nicht aus
++ Tests.
+
+@ 0 2 0 0c17d3ff00e9ad521a168794996ea02d
++ Alles stammt aus dem Paket `soundness`. Die Beispiele werfen jeden Fehler als Exception, und der
++ letzte Import lässt sie ihre Ergebnisse ausgeben:
+
+% 2 1 0 0a014aa077766c0e19cc2515b4eb1aa8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 174e339ee5ceabff091d520aa1b0e1c7
++ ### Kodieren und dekodieren
+
+@ 0 1 0 0de710a63d1e11940483607e12966092
++ `in[Cbor]` kodiert einen Wert als `Cbor`-Wert, und `as` dekodiert einen in einen Typ:
+
+% 2 1 0 14dc84a2bbb04f7f0cbf531ccbda86ff
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 06d7e7b4a9cc1f231de1ae705d39655e
+
+% 1 1 0 0ae6af0b355b626508990d4248642059
+
+% 3 1 0 0126fb71f62a13f416bebf2112828b46
+
+% 4 1 0 0457659abc0b791b1db1e73c9187dab5
+
+% 5 1 0 081bf2ead08971d01c53ffda7f3e2701
+
+% 0 1 0 16961ba24f67a8350b17658aad92555a
+
+% 1 1 0 0dc3956086204a5219520a09e0ce0456
+
+@ 0 2 0 175c7ad4fc53307c09c9eb36a74eb112
++ Ein `Cbor`-Wert ist ein Baum. `Cbor.unseal` legt ihn als `Cbor.Ast` offen, der sich zu seinen
++ Bytes serialisiert:
+
+% 2 1 0 0dac70e087744c721fb2f35ae843ad80
+
+% 0 1 0 04776ed941cccf621c4cfc8c6131310b
+
+% 1 1 0 1604747b9dfaadcc0de1b34e8a282761
+
+@ 0 2 0 02a4cffda91603431906c6b49af23af1
++ Bytes werden mit `read[Person in Cbor]` in einem Schritt direkt zurück in einen Typ gelesen, ob
++ sie als Ganzes oder als [Stream](streams.md) von Chunks ankommen:
+
+% 2 1 0 107a58b2b1e47bc80460f388b30e06a9
+
+% 3 1 0 040d01adf36aed9e1f96b1e3e1c01017
+
+% 4 1 0 1313dd8d39cc63df0fcaac24603f26b9
+
+% 0 1 0 10ebe3a8bcc51b1c0fbf4d7459fa2180
+
+% 0 1 0 1910d92d472a190a0f38b5ff7442c4bd
+
+% 1 1 0 0711d8665c63e6fc0a37c1ecb3396950
+
+@ 0 2 0 1c30f4e6a2b3ea5618bf0ff9f5388ead
++ Die beiden Schritte des Schreibens lassen sich auf dieselbe Weise verbinden. `in[Data over Cbor]`
++ kodiert einen Wert direkt in seine Bytes und ist das Spiegelbild von `read[Person in Cbor]`:
+
+% 2 1 0 10885f3260873d4505fc9f34e7853d22
+
+% 3 1 0 084e1160946a1d841b49e2da168f4aae
+
+% 4 1 0 13aab4f09ba7500d17559b246ee9fb69
+
+% 0 1 0 0d967ba9256e7d53133ab875081346a5
+
+% 1 1 0 0d6b4294cf84f1f507cc032201a05099
+
+@ 0 1 0 1ac58c08105dbde5177030615f2a15ce
++ Dieselbe `Person`, als kompaktes [JSON](json.md) geschrieben, umfasst 26 Bytes.
+
+@ 0 2 0 197bb7f71cb6e7ec1927b4db86e9526d
++ Die [Annotation](annotations.md) `@name[Cbor]` benennt ein Feld in der kodierten Map um. Eine
++ versiegelte Hierarchie wird mit einem Diskriminator kodiert, der einmal deklariert wird:
+
+% 2 1 0 105a21c6926639a513f2bee537a6ddab
+
+% 0 1 0 02db9e1b73d5c5521143ec73eac70fbe
+
+% 0 1 0 1cc829c7966ae5510546cd22e946cc3b
+
+% 0 1 0 18810d85a35ec0131eac8a39663bb6a7
+
+% 0 1 0 18d56cdc91da34b007e9bdbb945fe3d9
+
+% 0 1 0 17cbf1c1b2f88a950c0158720124ea99
+
+% 1 1 0 1c38c0f5c79024af1adb2eee1785e38d
+
+% 3 1 0 09985cddd9e7414d03dd4e2ea7e7f489
+
+% 4 1 0 1bd50b4fb774a3ca1d7b0c15afd448cd
+
+% 5 1 0 1701a4bdf1371b5d05c0c88949500894
+
+% 0 1 0 0bc6e77113dc267b141f2ab6ff708bbb
+
+% 1 1 0 097f7f1719953bfd116b43e7cd67891b
+
+@ 0 1 0 144fe1e096ebc90c106331620bc1b49e
++ ### Optionale Felder
+
+@ 0 3 0 00302a73721be86e1b840ffecec7ccf8
++ Ein `Optional`-Feld wird aus der Map weggelassen, wenn es nicht gesetzt ist, und ein Feld mit
++ einem Standardwert erhält diesen Standardwert, wenn er in der Map fehlt. Eine Nachricht kann daher
++ Felder hinzugewinnen, ohne Leser zu brechen, die älter sind als sie.
+
+@ 0 3 0 00b41b36d46ad4cf014b02009bf74a2f
++ Das Lesen eines `Optional`-Felds folgt den Richtlinien, die
++ [Dekodierung](decoding.md#policies-for-optional-fields) beschreibt. Jede wird separat variiert,
++ durch ein Given im Paket `optionalityOptions`:
+
+% 2 1 0 0cc71aad7ad741f400c005aec8d8cfa3
+
+@ 0 6 0 1f32c166cb54137100466137e13ffafa
++ column  Ein Feld, das
++ column  Gelesen als
++ column  Außer
++ row  in der Map fehlt oder `undefined` ist  `Unset`  `strictCborAbsence` macht es zu einem Fehler
++ row  ein CBOR-`null` ist  `Unset`  `strictCborNulls` übergibt es dem inneren Decoder
++ row  vorhanden ist, aber vom inneren Decoder abgelehnt wird  ein Fehler  `lenientCborFaults` liest es als `Unset`
+
+% 1 1 0 15b02f5f43f774eb03af51afac3759dc
+
+@ 0 1 0 0c684a1d814035a205c1555871f0304a
++ Hier steht ein Text, wo eine Zahl hingehört, und die nachsichtige Richtlinie liest ihn als
++ `Unset`:
+
+% 2 1 0 17bdd22cc9970ded110ffa7b32846d7f
+
+% 0 1 0 1f475b1102b27d1d120eb51f49ad9fc4
+
+% 0 1 0 07ff2c9f0b0eaff2022a98b58d693ac6
+
+% 0 1 0 0b7114d37596942708a6dbd3e3b615fc
+
+% 0 1 0 161be2cda6b84eac16b1d21303956ac2
+
+% 0 1 0 0f2c16441a98695914951dce76cff619
+
+% 1 1 0 10ae5639ef490fb401d3b4b2ff5f9718
+
+% 3 1 0 0bd61d98600006021bd4ee902295507b
+
+% 4 1 0 0c2facd88dac618401ca35069e1c9ea2
+
+% 5 1 0 0e54c3deba3c75161a6cbacf066b1ffb
+
+% 0 1 0 141aa914cc85d2ba18f3063adf07bb9c
+
+% 1 1 0 025a8f2a135c61c505e514d4fa7786b8
+
+@ 0 1 0 0a429356bc825bc3171873cfbd26352d
++ ### Navigieren und aktualisieren
+
+@ 0 2 0 18382c63453d8dfa0d124df00b5c7e4d
++ Mit aktiviertem dynamischem Zugriff werden die Felder einer Map als Member gelesen, und ein Array
++ wird indiziert. Eine Zuweisung an ein Feld ergibt einen neuen Wert, und die Zuweisung von `Unset`
++ entfernt das Feld:
+
+% 2 1 0 1cf656f43d618a1b0b42167b9028ea29
+
+% 0 1 0 044fb166331dd0d504a62e2486cae76d
+
+% 0 1 0 0f91e092d72589c31a1c3665709f237a
+
+% 1 1 0 17d1d2d38d697eca17f63912480edf54
+
+% 3 1 0 13f609c0ccb7212b1ede95a81f9b0cb4
+
+% 4 1 0 00920bc560d4bdc40b3f6c2776654944
+
+% 5 1 0 11a909349cf7a5710e1cae9b293df5e3
+
+% 0 1 0 156f6e4c658eaab81898ebd818428fae
+
+% 0 1 0 1533208883c6b0c1163d5a85455bd723
+
+% 1 1 0 1fe25cc573d2fc6a019f13ad94548039
+
+@ 0 3 0 07e617d667e62a91007ee2f5a76f3170
++ Der Import gewährt die Freigabe `Cbor is Dynamical` für den Rest seines Geltungsbereichs.
++ `dynamically[Cbor]:` gewährt sie stattdessen einem einzelnen Block, wie
++ [JSON](json.md#fields-as-members) beschreibt.
+
+@ 0 2 0 013646e4035d8a150837bad8584698e4
++ Eine tiefere Aktualisierung verwendet eine [Linse](optics.md), mit den Optiken `Each` und
++ `Filter`, um viele Elemente auf einmal zu ändern, genau wie bei den textuellen Formaten.
+
+@ 0 1 0 0bf26d8387ce219a0f44a7f777d37446
++ ### Direkt aufbauen
+
+@ 0 1 0 0b38fc37b981cbcf0d2dbd7b2bffcd70
++ Wo keine Case-Klasse passt, wird eine CBOR-Map aus benannten Argumenten zusammengesetzt:
+
+% 2 1 0 1e54113d5f0b629e0b0bc1b3a2d6c7f1
+
+% 3 1 0 1e10f0a5c30f9f730eb2d5698a93853b
+
+% 4 1 0 05ba0050ddceab61154b64bf6896a75b
+
+% 0 1 0 1c4ec162c42848a904d9afebccfecb47
+
+% 1 1 0 0a3adf8667cfba5916c940c32329115b
+
+@ 0 1 0 133b7d47e26d887d1ef8815c05a1ce11
++ ### Diagnosenotation
+
+@ 0 3 0 06bc0739897b3a6915bbfd6ba93363f6
++ RFC 8949 definiert eine für Menschen lesbare Darstellung von CBOR. Sie ist das Gegenstück des
++ Formats zu einem Hexdump, aber eines, das sich tatsächlich lesen lässt, und `show` erzeugt sie.
++ Ein Byte-String wird als `h'…'` geschrieben, Arrays und Maps als ihre JSON-ähnlichen
++ Entsprechungen:
+
+% 2 1 0 1be0d1ed18d497ca1e67a2ad882b2ff1
+
+% 3 1 0 01cc52b028420cb405f67b68c22ff006
+
+% 4 1 0 0ab895f39f8875d718f5c6c304a65bc6
+
+% 0 1 0 1939321c462c7e3106343eeb535dd083
+
+% 0 1 0 1cbb9ed89d817a010dc56278837ba561
+
+% 1 1 0 01dd2de9cc791402156cc6e7c029daea
+
+@ 0 3 0 1b7afe2b4220f08d0950299d333fd38f
++ Dazu greift man, wenn eine Nachricht nicht ist, was sie sein sollte. Die Notation sagt, was die
++ Bytes bedeuten, im eigenen Vokabular des Formats. [Basiskodierung](base-encoding.md) beschreibt
++ die `hex"…"`-Literale.
+
+% 0 1 0 140952e0eb3777530cc4641fed18cda7
+
+@ 0 4 0 14221ced43994d8c1d10c28e8da27ab0
++ Die Tags von CBOR versehen einen Wert mit seiner Bedeutung. Tag 1 ist eine Epochenzeit, Tag 2
++ eine große Ganzzahl, und die Registry umfasst Hunderte. Ein getaggter Wert behält sowohl sein Tag
++ als auch den Wert darin, sodass ein Dokument mit Tags gelesen und geschrieben wird, ohne sie zu
++ verlieren. Diese Bytes sind Tag 1 um die Ganzzahl 1363896240:
+
+% 2 1 0 0185d5a2dc44601d0f8dd7b713f79e33
+
+% 0 1 0 12def72eacffbe8f0e95b4d9b32c8d24
+
+% 0 1 0 13d9ba12116c9da50b2346d78b6da5b9
+
+% 1 1 0 0e74c39a6eee4664147558db50ea479c
+
+% 3 1 0 1db63bb2ec0a31c616326d1b15fceff5
+
+% 4 1 0 1a07acbaee13a25a03ae2b01cab69366
+
+% 5 1 0 1a03d3356779c5fc18fb59f67a80f514
+
+% 0 1 0 074ffe19ba0a0d251bedfb374e64c0f4
+
+% 0 1 0 1df9fc1edfcddcca1c325380971173f2
+
+% 1 1 0 049f1107507128241c57e87c9638f8f4
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### Fehler
+
+@ 0 2 0 1b7ffb6f89cc41fd1dff9cf10d043375
++ Ein fehlerhaftes Dokument oder eine Umwandlung, die sich nicht durchführen lässt, löst einen
++ `Cbor.Error` mit einem spezifischen Grund aus. Ein Protokollfehler wird anhand des Fehlers
++ diagnostiziert, nicht anhand eines Hexdumps:
+
+% 2 1 0 0b56f20454d84bfb0502e0628b783f58
+
+@ 0 13 0 198eeb073557313903d0dae4a3e05a94
++ column  Grund
++ column  Ausgelöst, wenn
++ row  `Truncated(offset)`  die Eingabe mitten in einem Wert endet
++ row  `Reserved(offset, byte)`  ein Kopfbyte eines ist, das CBOR reserviert
++ row  `BadSimpleValue(offset, value)`  ein einfacher Wert ungültig ist
++ row  `InvalidUtf8(offset)`  ein Textstring kein gültiges UTF-8 ist
++ row  `Overflow(offset)`  eine Ganzzahl zu groß für einen `Long` ist
++ row  `UnexpectedBreak(offset)`  ein Break-Stoppcode unerwartet ist
++ row  `Trailing(offset)`  auf das Ende des Werts noch Bytes folgen
++ row  `OutOfRange`  ein Array-Index außerhalb des Bereichs liegt
++ row  `NotType(found, expected)`  ein Wert den falschen Typ hat
++ row  `NonStringKey`  ein Map-Schlüssel kein String ist
++ row  `Absent`  ein Wert nicht vorhanden ist
+
+% 1 1 0 1008d72f4a413a8c0fef36afeca5e419
+
+@ 0 4 0 1904ba9f990acc8711c4ea354d2a27ba
++ Ein Parsefehler trägt den Offset des Bytes, an dem er auftrat, und bei einem binären Format ist
++ das die ganze Diagnose. Eine Eingabe, die mitten in einem Wert endet, nennt den Offset des Bytes,
++ das hätte folgen sollen. Überzählige Bytes nennen, wo der Überschuss beginnt. Ein reserviertes
++ Kopfbyte nennt sowohl seinen Offset als auch seinen Wert.
+
+@ 0 1 0 12f82d488025786505838c2a831d96b0
++ Diese Bytes versprechen ein Array aus drei Elementen und liefern zwei:
+
+% 2 1 0 14a21e218417264e1668b6ec3bab914a
+
+% 3 1 0 17ea6daf390feab102e70e63af54168a
+
+% 4 1 0 1785c2737893c5350e03100b96ccef9c
+
+% 5 1 0 1070e9b05535142e09d6ba644fd5f146
+
+% 0 1 0 11fccc894503e3a2069d2b4ae6b55c90
+
+% 1 1 0 0bd856ffc680e03514f98c113bef3521
+
+% 3 1 0 1b0f2280ee0bfb30181789d932d8be9c
+
+% 4 1 0 136674246305cfdf18c206eeb9bd2fc3
+
+% 5 1 0 0861879966e441aa16a87e91cfd6ee1d
+
+% 0 1 0 12b06cf81e7cb7b717cf84614a682beb
+
+% 1 1 0 1e71bf4bc23290481ea5b41847142105
+
+@ 0 1 0 1126327ccf5ff0bd12013462d50465f4
++ Eine Umwandlung in den falschen Typ wird ebenso klar gemeldet:
+
+% 2 1 0 16fe39c1896c06811f8869fd9df074ec
+
+% 3 1 0 01b0889db290171c12f158f60c0f434f
+
+% 4 1 0 04e8f17ec9a4baff116a9bd04561fa6e
+
+% 5 1 0 18d13c40cd4fa3cf09c07ad2d1720581
+
+% 0 1 0 19c43a75b6c7388707a712433e6cfa94
+
+% 1 1 0 158a63b0c6c9e2fd0b90a613e72950b5
+
+@ 0 1 0 0d7d72dd795d6afd0ab45189385226ce
++ ### Direktes Parsen
+
+@ 0 2 0 08d37d8384e244600779196b79c13f30
++ Ein Typ mit einer `Cbor.Parsable`-Instanz wird direkt aus den Bytes gelesen, ohne
++ Zwischenbaum. Die Instanz wird zur [Kompilierzeit] abgeleitet und setzt einen Parser für genau
++ diese Gestalt zusammen:
+
+% 2 1 0 017cf1f5d30a01400b3d63da053fb3dd
+
+% 3 1 0 03f127ddeab0734d1b2f5077cb2d2b4f
+
+% 4 1 0 09c44f6f610f07630bec2de87878c025
+
+% 0 1 0 1f5654498625134507353d6e509f5d7b
+
+% 0 1 0 040cefdfe6867c0c167b3575c426d8d4
+
+% 0 1 0 1a8c4371301e9dbf1b7f41338b79422d
+
+% 1 1 0 073a1aebc91eb3e91a150bac7e5f4cee
+
+@ 0 3 0 13519c187c549a881aebc9814d441fe7
++ Die Ableitung wird namentlich importiert. Eine versiegelte Hierarchie und ein Feld, dessen Typ
++ ein handgeschriebenes `Inlinable` hat, benötigen außerdem das Modul `breviloquence.staged`, das
++ den Diskriminator und diese Instanzen beim Kompilieren des Codes auswertet.
+
+@ 0 4 0 046dd874c9fca23e02c3146609f09117
++ Das Lesen aus einem Stream funktioniert genauso, und die Eingabe wird nie vorher zusammengesetzt.
++ Der Parser liest jeden Chunk, sobald er ankommt, sodass ein Wert, der über zwei Chunks verteilt
++ ist, genauso gelesen wird wie einer, der als Ganzes ankommt. Der belegte Speicher ist durch das
++ eine Item begrenzt, das gerade gelesen wird, nicht durch das Dokument. `read[Cbor]` liest die
++ Chunks ebenfalls, sobald sie ankommen, baut aber den ganzen Baum auf.
+
+@ 0 1 0 1abd37e896cbdb3e12c3207c12bff33f
++ ### Direktes Ausgeben
+
+@ 0 2 0 122856a995529971091ec9e963eb1589
++ Dieselbe Ableitung erzeugt die Schreibseite. Ein `Cbor.Printable` schreibt die Bytes eines Werts
++ direkt hinaus, ohne Baum, und `in[Data over Cbor]` verwendet eines, wo immer es existiert:
+
+% 2 1 0 09271e6af7bd648110744a593404c8b2
+
+% 3 1 0 10241ae142ecaf1b0ba4035ca2e3d2bd
+
+% 4 1 0 04bfbc7eafa26aa6042dc1712f66a5c6
+
+% 0 1 0 172c69bba48d0ecf07985626ea524527
+
+% 0 1 0 0c1fa88d4b6fd1d80d9318d2cb8c7806
+
+% 1 1 0 0d6943e060b45bb406ae42aa986a2385
+
+@ 0 3 0 1343bc2dc5f9fe3c1310fb53a02f107b
++ Die Bytes sind genau die, die die abgeleitete Kodierung schreibt. `Cbor.Printable.emit` schreibt
++ sie blockweise und übergibt jeden Block einer Funktion, sobald er voll ist, sodass ein Wert
++ gesendet werden kann, ohne dass seine ganze Kodierung je gehalten wird.
+
+@ 0 1 0 1c555ed5399ee61c077ba377bf165e62
++ ### Den Weg für jeden Typ wählen
+
+@ 0 3 0 1fc088dc7f2dc7e01050d70aef829801
++ Ein Datensatz kann mit `derives Cbor.Direct` beide Instanzen auf einmal in sein Begleitobjekt
++ erzeugen. Ein einziger Import wählt dann den Weg für jeden Datensatz im Geltungsbereich. Ein
++ Typ, der kein Datensatz ist, ist eine generische Case-Klasse oder eine versiegelte Hierarchie:
+
+% 2 1 0 010c759e3f4a64161bddc2668c746bfa
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 5 0 1e32f01fea447fd2138cb65a4cc61979
++ column  Für einen Datensatz
++ column  Für jeden anderen Typ
++ row  `codecs.direct`  ein erzeugter Parser und Printer  die abgeleiteten Codecs, sofern er keine eigene direkte Instanz hat
++ row  `codecs.derived`  die abgeleiteten Codecs, sogar über einer direkten Instanz  die abgeleiteten Codecs
++ row  `codecs.strict`  ein erzeugter Parser und Printer  ein Kompilierfehler, der den Typ nennt, sofern er keine direkte Instanz hat
+
+% 1 1 0 0bc3dae46640c00612bedd66e8f1ac1e
+
+@ 0 2 0 15ea4a3415a3ee460a3b16064e0bf359
++ Unter `codecs.strict` fallen `read[Play in Cbor]` und `in[Data over Cbor]` nie auf den Baum
++ zurück. Die Modi sind Alternativen, importieren Sie also jeweils nur einen.
+
+@ 0 1 0 05e698dc3a16622d191bb8b38a8e39ad
++ ### CBOR über HTTP
+
+@ 0 3 0 15c3fb684b7921a70ec4566423484d13
++ Ein `Cbor`-Wert ist ein Request-Body oder ein Response-Body mit dem Medientyp
++ `application/cbor`, und ein Body wird bei der Ankunft zurückgeparst. Eine binäre API wird daher
++ mit demselben Code verwendet und angeboten wie eine [JSON-API](json.md#json-over-http). Nur der
++ Typ des Formats unterscheidet sich.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 1 0 1880def239f995951e7c76b15d61a728
++ - [Binärdaten](binary-data.md) beschreibt die Bytes, in denen CBOR geschrieben wird.

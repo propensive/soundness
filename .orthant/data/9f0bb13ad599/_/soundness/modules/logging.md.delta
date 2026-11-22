@@ -1,0 +1,8 @@
+orthant 2 release
+
+@ 0 1 0 192f76a6c5156586131e417dd782493b
++ import pathInterfaces.pathOnLocal
++ import systems.javaBaseSystem
+
+@ 0 1 0 1483be96032e38e11ed484e72bb2c7e3
++ val logFile = temporaryDirectory[Path on Local] / "logging" / "app.log"

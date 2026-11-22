@@ -1,0 +1,21 @@
+orthant 2 language
+
+@ 0 10 0 07718803880c96c903ec955211037dd5
++ - Le modifiche successive all'ultima release si accumulano in `doc/work/migration/<version>.md`,
++   che fin dall'inizio prende il nome della release di cui faranno parte (per esempio
++   `doc/work/migration/0.71.0.md` dopo Soundness 0.70.0). Ogni PR che apporta una modifica
++   sostanziale all'API pubblica o al comportamento osservabile vi aggiunge una voce; la prima
++   modifica di questo tipo dopo una release crea il file.
++ - Il tag della release pubblica il file così com'è, quindi nessuna modifica deve essere
++   integrata prima. La release si rifiuta di procedere finché `<version>.md` manca, o finché le
++   note di un'altra versione non sono state rilasciate, quindi le note non possono essere saltate
++   né restare bloccate sotto la versione sbagliata. I file rilasciati non vengono più modificati
++   in seguito, se non per correggere errori.
++ - Il risultato è un file per release, ciascuno dei quali descrive esattamente le modifiche tra
++   la release precedente e quella.
+
+@ 0 4 0 05ef0321cd1f045d1da39699bdbda558
++ Per aggiornare un progetto dalla versione `A` alla versione `B`, si istruisce un agente LLM a
++ leggere ogni file `doc/work/migration/<v>.md` con `A < v <= B`, in ordine crescente di versione, e ad
++ applicare al codice del progetto le modifiche descritte in ciascuno. Per esempio, passare dalla
++ 0.64.0 alla 0.67.0 significa leggere `0.65.0.md`, `0.66.0.md` e `0.67.0.md`, in quest'ordine.

@@ -1,0 +1,2460 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 19d04e78f026516a15e11da4741944e7
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1f981af7af0a61fb1a37e844dc0e04e2
++ info   固定幅の整数、ビットパターン、浮動小数点数、有理数、十進数と、オプトインの検査付き算術
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 2 0 1a1bfe91c626d6b818f07a68244da6dd
++     _Hypotenuse_ は、JVM の雑多な数値型を規則的な型の集まりで置き換える。
++     各型は、その幅とビットの読み方を名前で示す。
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 8 0 10125f241502ba640f0f0ba62af09aa0
++     column  型
++     column  値
++     row  `U8`, `U16`, `U32`, `U64`  符号なし整数
++     row  `S8`, `S16`, `S32`, `S64`  2 の補数表現の符号付き整数
++     row  `F32`, `F64`  IEEE 浮動小数点数
++     row  `B8`, `B16`, `B32`, `B64`  生のビットパターン。シフト、回転、マスクを持つが、算術は一切持たない
++     row  `Decimal`  任意精度の十進数
++     row  `Q64`, `Q32`  一つの `Long` または `Int` に詰め込まれた正確な有理数
+
+% 1 1 0 0f6a763b0e5eb2560b9448802c941150
+
+@ 0 2 0 1dcf95b6f4b686e81729040dd56ef318
++     いずれも JVM のプリミティブ（`Decimal` の場合は凍結済みの配列）の上の不透明型なので、これらの区別は実行時には一切残らない。
+
+@ 0 10 0 16d342855da7cde10c4bbd8a1c2178aa
++     算術演算子はこれらの型のメソッドではない。
++     `+`、`-`、`*`、`/`、前置の `-` は symbolism の汎用演算子であり、各型のコンパニオンにある `Addable`、`Subtractable`、`Multiplicable`、`Divisible`、`Negatable` のインスタンスを通じて解決される。
++     整数型では、これらのインスタンスはインポートによって選ぶ **ポリシー** から得られる。
++     `+`、`-`、`*` はスコープ内の `CheckOverflow` の given を、`/` は `DivisionByZero` の given を取り、`arithmeticOptions` パッケージはそれぞれを検査ありと検査なしの形で提供する。
++     `uncheckedOverflow` のもとでは、和はハードウェアと同じようにラップアラウンドする。
++     `checkedOverflow` のもとでは、その型は `S32 raises Arithmetic.Error` となり、オーバーフローは黙ったラップアラウンドではなく、処理される失敗となる。
++     ポリシーをインポートしなければ、演算子はそもそもコンパイルされない。
++     選択は常に行われ、しかも目に見える形で行われる。
+
+% 2 1 0 0181a14fff87ed4f071989b476941607
+
+% 3 1 0 06a74985228f65bd0565c0e895a58672
+
+% 0 1 0 1d74f9905b0b53f814c4c0d7f771a290
+
+% 0 1 0 17e6ec739583a34c116a6814bedea14d
+
+% 0 1 0 12140bb3acf0dd15104075622603f2df
+
+% 0 1 0 08852040d7ff64450bed1c4b41bd87b3
+
+% 0 1 0 1cf896c67738ca1e01d5c62f400fc295
+
+% 0 1 0 101d31a96536407f06b5b2ca798a5e4a
+
+% 0 1 0 19382d195068043d1a88a822d96bffac
+
+% 0 1 0 09428b3bfee513de1dcbaabf67b55ad0
+
+% 0 1 0 1c2485f011b348c116fb386fabb80d65
+
+% 0 1 0 138e8fea70e0c789058325fea0378b01
+
+% 0 1 0 1bd4f7e7562f3af80c46a8e963a01253
+
+% 0 1 0 13bd9831f7a1cf5e0908cd44c74a53e2
+
+% 1 1 0 03b85c963a3f5a2d0e9e375b61ae7cb3
+
+@ 0 7 0 1fd587e7f1ccadd71b252d5c39fa1a74
++     各ポリシーのインスタンスは、そのシングルトン型で名指されるシングルトンオブジェクトである。
++     そのため、インライナーはそれらのために導入したプロキシを取り除ける。
++     `S32` に対する検査なしの `a + b` は、ハードウェアが持つ一つの `iadd` 命令にコンパイルされ、何もアロケーションしない。
++     検査ありの場合は、同じ命令の後に判定が続くだけである。
++     同じパターンにより、`F64` と `F32` は混合算術を持つ。
++     `Double`、`Int`、`U8` のオペランドは、そのオペランド型のためのインスタンスを持つ `Widening` オブジェクトを通じて変換されるので、`ratio*2` のコストは変換一回と乗算一回だけである。
+
+@ 0 6 0 12d6a6ca8531c074024a588352a416c1
++     比較はコンパイル時の型クラス `Commensurable` であり、その `<`、`<=`、`>`、`>=` はインラインで、数学と同じように連鎖する。
++     `1.2 < x < 1.4` は一回の範囲判定である。
++     Java が `java.lang.Math` にばらばらに置いている数学関数は、すべての数値型の拡張メソッド（`abs`、`floor`、`round`、`**`、床剰余の `%%`、`gcd`）である。
++     三角関数と対数関数は `F64` 上の普通の関数であり、`median`、`minimum`、`maximum` はコレクションを集約する。
+
+@ 0 1 0 16707b0243a5c7ae0b09cc91aab78a2f
++     このライブラリには二つのソースセットがあり、どちらも JVM、Scala.js、Scala Native 向けにコンパイルされる。
+
+@ 0 6 0 0ac3d28a4fb9b6491cd964d51bf6e9a1
++     - `hypotenuse.core` — 上記のすべての型、ポリシー、`bin"…"` と `hex"…"` のリテラル、拡張メソッド、数学関数、`arithmeticOptions` パッケージ。
++     - `hypotenuse.check` — `===` と `!==` 演算子の背後にある型クラス `Checkable` と、許容幅の範囲内で値を比較するための、`+/-`（または `±`）で作る `Tolerance`。probably のアサーションはこれを使って比較する。
+
+@ 0 4 0 03794873db494a481f64e33612a11c89
++     すべては `soundness` アンブレラにエクスポートされ、`arithmeticOptions` はアンブレラ自身の同名のパッケージと統合される。
++     そのため利用者は `import soundness.*` と書き、その後でポリシーを名前でインポートする。
++     `import p.*` は given をインポートしないので、`arithmeticOptions.*` だけではスコープにポリシーは一つも入らない。
+
+% 0 1 0 1140cf7c7210fcd1028be3837c8187bd
+
+% 0 1 0 171808e5efe4c6a00a6d52f66213c8fb
+
+% 0 1 0 1ca1db136099ad000b654c6c83ac92a6
+
+% 0 1 0 150e8d7fed2a5b1a1474c9dc59226ef2
+
+% 0 1 0 0ba3734075498434119b2fae91191348
+
+% 0 1 0 031c020006bdac5611fb53d948a8a00e
+
+% 0 1 0 15d03df12c0d858c1d0d6f133c71b670
+
+% 0 1 0 166bc1828f8ac56604e7ff7d5c48bdd9
+
+% 0 1 0 1a43dcdf69f9fe1e07e90d1b67e3707d
+
+% 0 1 0 0ba4d2423efd3a050b02a1b582ca3223
+
+@ 0 1 0 037d1b5360dcfdfc18e0f456a060fedb
++ entry .U64   符号なし 64 ビット整数。`0` から `18446744073709551615` まで
+
+% 1 1 0 1bca25decc48b5d7070030fd15a9083d
+
+@ 0 4 0 16e02892da58a97c0435d72604bc10d2
++       `U64` は `Long` の上の不透明型で、そのビットは符号なし整数として読まれる。
++       ビットパターンから `U64(42L.bits)` として作るか、`genericNumberLiterals` が有効な場所ではリテラルから `val count: U64 = 123` として作る。
++       リテラルはコンパイラが `Long.parseUnsignedLong` でパースし、範囲外ならコンパイル時に拒否する。
+
+% 2 1 0 0a12f988d94a36180c7d6c0d673d55c8
+
+% 3 1 0 1ba8d4e62590495f1d4ec8ecd61f96a9
+
+% 4 1 0 1ecc16fd733b4b29060e641e54878ad0
+
+% 1 1 0 0c790efc6148b78e1d323c30b9aa447b
+
+% 2 1 0 193902590a6e55ca0aa93c5657a8c281
+
+% 0 1 0 0813b3da7187493f10a3f03635efe5da
+
+% 0 1 0 0208cf1f8940096d048211204788ca0d
+
+% 0 1 0 1d4aaef7ee8ae77218d2214aa81fef6b
+
+% 0 1 0 1e24a1a015bd49410fa3e478d9aade03
+
+% 1 1 0 04ff3b6fdbacd80d1c3293b0ec888d57
+
+@ 0 7 0 001ea190866acf521cf2f9ce3e4ddd41
++       `+`、`-`、`*` は `.addable`、`.subtractable`、`.multiplicable` を通じて解決され、いずれもスコープ内の `CheckOverflow` ポリシーのインスタンスである。
++       `/` は `DivisionByZero` ポリシーから得られる `.divisible` を通じて解決される。
++       `arithmeticOptions` からポリシーをインポートしなければ、演算子はコンパイルされない。
++       汎用演算子のオペランドは型パラメーターなので、整数リテラルのオペランドはレシーバの型を取らない。
++       そのため型を明示する：`count + (1: U64)`。
++       オーバーフローし得ない剰余 `%` は常に使える拡張メソッドであり、符号なしで計算される。
+
+@ 0 5 0 0b0138185a5a499f041bbaf84a14a494
++       `U64` の拡張メソッドは、`bits`（`B64` としてのパターン）、`text`、`base32`、`hex`、`octal`、`binary`（各基数での符号なしの値、パディングなし）、`%`、`gcd` である。
++       `<`、`<=`、`>`、`>=`、`min`、`max` による比較は符号なしであり（`.orderable`）、`==` は別の `U64` との間でのみ許される。
++       `F64` への変換は不正確になるので存在しない。
+
+@ 0 2 0 15a4b4297e668ba30d83ecac3c8845a1
++       コンパニオンのメンバーは `internal.U64` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 2 1 0 1b355bf6f8afc26a1f4287a531d3a130
+
+% 2 1 0 06bf00f4f99287251f828bbf254fbaa2
+
+% 1 1 0 08f161a394c44ee5112df82aaaf30539
+
+@ 0 1 0 03a98f13d6642f251c06c6ca6f974d43
++ entry .U32   符号なし 32 ビット整数。`0` から `4294967295` まで
+
+% 1 1 0 0697c94cdad80fef15a41097a7d35f74
+
+@ 0 5 0 0c961431e444e46d1e2a5c4ec6f9e7b0
++       `U32` は符号なしとして読まれる `Int` の上の不透明型である。
++       ビットパターンから `U32(0x80000000.bits)` として作るか、`genericNumberLiterals` のもとで整数リテラルから作り、リテラルは範囲内にあることがコンパイル時に検査される。
++       すべての整数型と同じく、`+`、`-`、`*` はスコープ内の `CheckOverflow` ポリシーを、`/` は `DivisionByZero` ポリシーを取る。
++       `/` は符号なしとして除算する。
+
+% 2 1 0 1926e3dfb1cfb94c17def2180be427ef
+
+% 3 1 0 05795a1727ceeb6f0a45eaa0f2e1dfa5
+
+% 1 1 0 0b302b6adca810041d4e878be5da792a
+
+% 2 1 0 06d23b9640412f170ba7584f670b8602
+
+% 0 1 0 021e7e19d45ad89118b0c8cedafae529
+
+% 0 1 0 0633844cb143f8d102506cef0e9ea520
+
+% 1 1 0 1fed63ddec7d7f8f1dec741d7438dcff
+
+@ 0 4 0 0cec171a598915ff14d6022b33343bff
++       `U32` の拡張メソッドは、`bits`、`text`、`base32`、`hex`、`octal`、`binary`、`long`（`Long` としての符号なしの値）、符号なしの剰余 `%`、`s64` と `u64`（正確な拡大）、`gcd` である。
++       `U32` は `F64.u32Conversion` を通じて暗黙かつ正確に `F64` に変換されるので、`F64(1.0) + u32` や `f64*u32` にキャストは要らない。
+
+@ 0 2 0 09c4f047d104ef8800f80ad656db6bc5
++       コンパニオンのメンバーは `internal.U32` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 2 1 0 0769a8f49198f6061219855c450eb01d
+
+% 3 1 0 02fbfea3b02759850944a61f9961989e
+
+@ 0 1 0 0f70ce6964a8d2d81aa787709c75a353
++ entry .U16   符号なし 16 ビット整数。`0` から `65535` まで
+
+% 1 1 0 1d3b2c48b0d2d1800984cd883c99c6fa
+
+@ 0 4 0 00b49252c74e63d81168e6daf05c48d7
++       `U16` は符号なしとして読まれる `Short` の上の不透明型である。
++       ビットパターンから `U16(256.toShort.bits)` として作るか、`genericNumberLiterals` のもとで整数リテラルから作り、`0` 未満や `65535` 超はコンパイルエラーになる。
++       `+`、`-`、`*` はスコープ内の `CheckOverflow` ポリシーを、`/` は `DivisionByZero` ポリシーを取る。
+
+@ 0 4 0 0e24804ee422e0350673f3814b9f0a51
++       `U16` の拡張メソッドは、`bits`、`text`、`base32`、`hex`、`octal`、`binary`、`int` と `long`（符号なしの値）、符号なしの剰余 `%`、正確な拡大 `s32`、`s64`、`u32`、`u64`、そして `gcd` である。
++       `U16` は `F64.u16Conversion` と `F32.u16Conversion` を通じて、暗黙かつ正確に `F64` と `F32` に変換される。
+
+@ 0 2 0 0cdd11270aa9e5151807ee820faa422d
++       コンパニオンのメンバーは `internal.U16` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 2 1 0 0827ae30bf602b8d0f1e7d032f656437
+
+@ 0 1 0 01743fa5e8931e0f0feeb08b1c01de78
++ entry .U8   符号なし 8 ビット整数。`0` から `255` まで
+
+% 1 1 0 1327a328bee1e40d18866a5832ce3cb4
+
+@ 0 4 0 1b205e5f18f05dbb0994af9613d03c68
++       `U8` は符号なしとして読まれる `Byte` の上の不透明型なので、`U8(200.toByte.bits)` は `-56` ではなく `200` である。
++       ビットパターンから作るか、`genericNumberLiterals` のもとで整数リテラルから作る。
++       `+`、`-`、`*` はスコープ内の `CheckOverflow` ポリシーを、`/` は `DivisionByZero` ポリシーを取る。
+
+% 2 1 0 018254c3f97936340d203190fa212bf3
+
+% 3 1 0 16a561b99fa5215b038f9108f84d90dd
+
+% 4 1 0 1c74c4eafa5af0650ae494834aa7d765
+
+% 0 1 0 1482461767f08a961ee7d5ed53423944
+
+% 0 1 0 1e09dbb018ccae3b169e9ca4f722aa0e
+
+% 0 1 0 06f0065947551a9403b4106c8566d570
+
+% 1 1 0 01715454281dfe7313b8606264f844eb
+
+@ 0 5 0 144b53182c519aff0404ee4dbfd66dbc
++       `U8` の拡張メソッドは、`bits`、`text`、`base32`、`hex`、`octal`、`binary`、`byte`（生のバイト）、`short`、`int`、`long`（符号なしの値）、符号なしの剰余 `%`、正確な拡大 `s16`、`s32`、`s64`、`u16`、`u32`、`u64`、そして `gcd` である。
++       `U8` は `F64.u8Conversion` と `F32.u8Conversion` を通じて暗黙に `F64` と `F32` に変換され、127 を超える値には符号なしの値が与えられる。
+
+@ 0 2 0 1fe907ebd8b2d4b40db0f7c603e0e343
++       コンパニオンのメンバーは `internal.U8` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 2 1 0 11efd6326db10b23076217f2c6fbcbc7
+
+@ 0 1 0 073a6fbe879a64d0048e61f3eb1f76e9
++ entry .S64   2 の補数表現の符号付き 64 ビット整数。`S64.Min` から `S64.Max` まで
+
+% 1 1 0 1c1b6af7cd43cc9217890c469b5efcd3
+
+@ 0 5 0 067c954f108850930300f2e5d7690a9b
++       `S64` は `Long` の上の不透明型であり、意味もまさにそのとおりである。
++       この型が存在するのは、符号付き 64 ビットの量をビットパターン（`B64`）や符号なしの量（`U64`）と区別し、その算術がポリシーを通るようにするためである。
++       ビットパターンから `S64(5L.bits)` として作るか、`genericNumberLiterals` のもとで整数リテラルから作り、`long` で `Long` に戻す。
+
+% 2 1 0 0f5f3c1942754d7e13562865031f3e64
+
+% 3 1 0 0afe417b98924b391638fbb9dc11b78e
+
+% 4 1 0 11d42a2e737732911f431a253c299680
+
+% 0 1 0 1fe29c91c3c0e65f160e747bd6c997eb
+
+% 0 1 0 01ecb959d6a90897042602f7f0d79e73
+
+% 0 1 0 1a955d36c30d249f1115e7571cfbf4fa
+
+% 0 1 0 1f42ab9e2ec7bf3c0b1e6199e8ef24a9
+
+% 1 1 0 034ede12041a6e4715e31f44edcc5259
+
+@ 0 6 0 0f07e61f4002881d0f13ee59688cedeb
++       `+`、`-`、`*` はスコープ内の `CheckOverflow` ポリシーを、`/` は `DivisionByZero` ポリシーを取る。
++       検査ありの検出は正確である。
++       和は、両方のオペランドが和の持たない符号を持つときにオーバーフローする。
++       差は、オペランドの符号が異なり、結果の符号が被減数の符号と異なるときにオーバーフローする。
++       積は、`Math.multiplyHigh` が下位ワードの符号拡張でないときにオーバーフローする。
++       そのため `S64.Min + S64(-1)` は捕捉され、通常の負の数の算術は妨げられない。
+
+@ 0 6 0 00e39fde20f8cb48058604eb191761e0
++       `S64` の拡張メソッドは、`abs`、`long`、`octal`、`hex`、`base32`、`binary`（`java.lang.Long` と同じ描画で、負の数は 2 の補数）、`%%`（床剰余。正の除数に対して負にならない）、`/-`（床除算）、`%`（切り捨ての剰余）、`**`（累乗。`Double` として）、`bits`、`gcd` である。
++       `S64` は任意の符号付き型や浮動小数点型と `==` で比較できるが、`F64` への暗黙の変換は不正確になるので持たない。
+
+@ 0 2 0 1fba74ed714a810318f44f2cbd0e0f5b
++       コンパニオンのメンバーは `internal.S64` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 2 1 0 13fb1133458913380a60418fbde5ee23
+
+% 3 1 0 14768573064994750f135b379e0aa982
+
+@ 0 1 0 1c3c5aeb2b27f4a10f48fdc026c52d6e
++ entry .S32   2 の補数表現の符号付き 32 ビット整数。`S32.Min` から `S32.Max` まで
+
+% 1 1 0 07db680b16894e60039e2eacd3dd1634
+
+@ 0 5 0 1d8b8ae6099df0070b4f5a4ebf051cb7
++       `S32` は `Int` の上の不透明型である。
++       ビットパターンから `S32(42.bits)` として作るか、`genericNumberLiterals` のもとで整数リテラルから作り、`int` と `long` でプリミティブに戻す。
++       `+`、`-`、`*` はスコープ内の `CheckOverflow` ポリシーを、`/` は `DivisionByZero` ポリシーを取る。
++       検査なしの和は一つの `iadd` にコンパイルされ、検査ありの和は同じ命令の後に正確なオーバーフロー判定が続く形にコンパイルされる。
+
+% 2 1 0 0d6654b22541fe08183beef22290b080
+
+% 3 1 0 12271a7523c07c071403ab3159f56522
+
+% 4 1 0 1f6b17b7d5f2c20b08abfd8aaba8560c
+
+% 1 1 0 09f71b3d5056d1a0153c1b1cce849dab
+
+% 1 1 0 13538521ec6d59a008137f6696ce2e56
+
+% 0 1 0 0b684d64159010ed170770c113b679ae
+
+% 0 1 0 00e9a8765b08969f0a32126ea6bcb66a
+
+% 0 1 0 1251b42006c1cedc0d5c13fb77ea7432
+
+% 0 1 0 075bdc600dd780281a2e556b32b6fcb1
+
+% 0 1 0 0fc204f3844aa06c0000d1329b97063e
+
+% 0 1 0 19fc2433e15ef36c0227b969756e99a2
+
+% 1 1 0 192eba82bb68a1c2000cc65058e84f8a
+
+@ 0 4 0 1fa9db4d4ca0f0de0e0a841e65ba2034
++       `S32` の拡張メソッドは、`int`、`long`、`abs`、`**`、`octal`、`hex`、`base32`、`binary`、`%%`、`/-`、`%`、`bits`、`gcd` である。
++       `S32` は `F64.s32Conversion` を通じて暗黙かつ正確に `F64` に変換され、任意の符号付き型や浮動小数点型と `==` で比較できる。
+
+@ 0 2 0 13dab10bc3e8e4e80c686d56d761357f
++       コンパニオンのメンバーは `internal.S32` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 2 1 0 002f5e30de7246d41d373f46d120fd0f
+
+% 3 1 0 00f0c032af86a7fd15896832114ec55e
+
+@ 0 1 0 041e2a7cb4fe52d51e9b73c7953f0be8
++ entry .S16   2 の補数表現の符号付き 16 ビット整数。`-32768` から `32767` まで
+
+% 1 1 0 126404f5f0ffeef11a1cd5f5975a4a1f
+
+@ 0 5 0 04e142fb51e57db816fc661b89155b0a
++       `S16` は `Short` の上の不透明型で、ビットパターンから `S16((1: Short).bits)` として作るか、`genericNumberLiterals` のもとで整数リテラルから作り、16 ビットの範囲外はコンパイルエラーになる。
++       `+`、`-`、`*` はスコープ内の `CheckOverflow` ポリシーを、`/` は `DivisionByZero` ポリシーを取る。
++       各演算は `Int` で計算され、ポリシーの指定に従って縮小されるか検査される。
+
+@ 0 3 0 029651b176a233290ee6c9cede8fd5b7
++       `S16` の拡張メソッドは、`short`、`int`、`long`、`abs`、`**`、`octal`、`hex`、`base32`、`binary`、`%%`、`/-`、`%`、`bits`、`gcd` である。
++       `S16` は `F64.s16Conversion` と `F32.s16Conversion` を通じて暗黙に `F64` と `F32` に変換される。
+
+@ 0 2 0 16f2d1eafd8dda750378510290300be8
++       コンパニオンのメンバーは `internal.S16` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 2 1 0 00ed636d0c397c5b1a3c36edbb77b129
+
+@ 0 1 0 0fe1cc62d47c8bf604f1850e0f75c6fa
++ entry .S8   2 の補数表現の符号付き 8 ビット整数。`-128` から `127` まで
+
+% 1 1 0 0f3508c9ac2136cf1373ff1de32ddfe9
+
+@ 0 5 0 0dcbea836733a57206a36c3f456f8fc2
++       `S8` は `Byte` の上の不透明型で、ビットパターンから `S8((-1: Byte).bits)` として作るか、`genericNumberLiterals` のもとで整数リテラルから作り、8 ビットの範囲外はコンパイルエラーになる。
++       `+`、`-`、`*` はスコープ内の `CheckOverflow` ポリシーを、`/` は `DivisionByZero` ポリシーを取る。
++       `checkedOverflow` のもとでは、`128` は収まらないので、`S8.Min*S8(-1)` は `Arithmetic.Error` を発生させる。
+
+@ 0 4 0 0b576097d15de7d51becdfb11ddcd312
++       `S8` の拡張メソッドは、`byte`、`short`、`int`、`long`、`abs`、`**`、`octal`、`hex`、`base32`、`binary`、`%%`、`/-`、`%`、`bits`、`gcd` である。
++       `S8` は `F64.s8Conversion` と `F32.s8Conversion` を通じて暗黙に `F64` と `F32` に変換される。
+
+@ 0 2 0 12bf2e32d06b440a0d2effc5ff3e2bef
++       コンパニオンのメンバーは `internal.S8` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 2 1 0 00397e0045977253000ed4b80b2f0044
+
+@ 0 1 0 1d52291fa2ae6ab119d39e56396724dc
++ entry .F64   64 ビット IEEE 浮動小数点数。これに拡大できるあらゆるものとの混合算術を持つ
+
+% 1 1 0 0027fae8b374f71a0eb6e395afbb9f26
+
+@ 0 8 0 1cbae52b350f0b181bd8997f7e412c4c
++       `F64` は `Double` の上の不透明型である。
++       `F64(1.5)` で作るか、`F64(bits: B64)` でビットパターンから、あるいは符号、指数部、仮数部から作るか、`genericNumberLiterals` のもとでリテラルから作る。
++       `double` で `Double` に戻す。
++       その `+`、`-`、`*`、`/`、前置の `-` は、このコンパニオンにあるインスタンスを通じて解決される symbolism の演算子である。
++       これらは別の `F64` だけでなく、`Widening` 変換を持つ任意のオペランドを取る：`Double`、`Float`、`Int`、`Short`、`Byte`、`U32`、`S32`、`U16`、`S16`、`U8`、`S8`。
++       オペランドが変換され、演算はプリミティブのものなので、`ratio*2` のコストは変換一回と乗算一回であり、何もアロケーションしない。
+
+% 2 1 0 01d1a670df2d5c6507944a13927716fb
+
+% 3 1 0 16f126bf07b62e8a16cfa45e19ab7dca
+
+% 4 1 0 003a27bd52cbc377186b4cbcc227da84
+
+% 0 1 0 16d7fb99c41d313f0ae26d846493791a
+
+% 0 1 0 169c688196e3fff6147135a9a1d30f63
+
+% 0 1 0 08d6553ff63867d9129a2932543bff07
+
+% 0 1 0 0683e94f355a27531eb102cdba980eff
+
+% 0 1 0 070402f7f100b18109e733c10de535ec
+
+% 0 1 0 07aa442d8610efc70ac48cdec4746025
+
+% 0 1 0 00e381f020707cd414b62f67edc93990
+
+% 1 1 0 040197025299b9621a0dba3c02d49d8d
+
+@ 0 9 0 1aa32f3383885e7d184ca95906244c47
++       `Long`、`S64`、`U64` は、変換が不正確になるので拡大を持たない。
++       これらの値は明示的に変換する。
++       `F64` の拡張メソッドは、`double`、`**`（累乗。拡大できる任意のオペランドを取る）、`mantissa`（`B64` としての下位 52 ビット）、`exponent`（`B16` として）、`abs`、`sqrt`、`cbrt`、`ceiling`、`floor`、`increment` と `successor`（次に大きい表現可能な値）、`decrement` と `predecessor`、`round`（`Long` へ）、`scalb`、`signum`、`ulp`、`bits` と `rawBits`（IEEE のパターン。`NaN` を正規化したものとしないもの）、そして判定の `finite`、`infinite`、`nan` である。
++       三角関数と対数関数 `sin`、`cos`、`exp`、`ln` などは `F64` 上の普通の関数である。
+
+@ 0 2 0 0147d9e71c143bf6034ecf700073ae97
++       コンパニオンのメンバーは `internal.F64` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 0 1 0 0599ddd10bd89ce10a029bbe433ce498
+
+% 0 1 0 16ff7b24085bc06412e333b37b33a0a1
+
+@ 0 1 0 1fc95932f111ab2f0ac94f61e6d9b654
++ entry .F32   32 ビット IEEE 浮動小数点数。これに拡大できるあらゆるものとの混合算術を持つ
+
+% 1 1 0 00c60e29c4e7c6cb1c24ededcd436186
+
+@ 0 7 0 16c8a610b092e9a9017a2df20f26f04c
++       `F32` は `Float` の上の不透明型で、`F64` の単精度版である。
++       `F32(1.5f)` で作るか、`F32(bits: B32)` でビットパターンから、あるいは符号、指数部、仮数部から作り、`float` と `double` でプリミティブに戻す。
++       その `+`、`-`、`*`、`/`、前置の `-` はこのコンパニオンにあるインスタンスを通じて解決され、`Widening` を通じて `Float`、`Short`、`Byte`、`U16`、`S16`、`U8`、`S8` のオペランドを受け付ける。
++       `Double`、`Int`、`U32`、`S32` は、不正確になるので `F32` への拡大を持たない。
+
+% 2 1 0 1aaaa567ac91113a0dfa68136c66e37a
+
+% 3 1 0 1ba7fa403fc78c750585779fbceadf60
+
+% 0 1 0 08ca2fddbd89fa7c0233abceaf9547e2
+
+% 0 1 0 1399566348e8992300a7b7aacc6d7533
+
+% 0 1 0 03284e185a0fddd8015855a9d663e361
+
+% 1 1 0 03027ea0cefd301c1bc07e64dde5b92b
+
+@ 0 4 0 0c4e3693092340320255ee35ddb75db9
++       `F32` の拡張メソッドは、`float`、`double`、`**`、`abs`、`sqrt`、`cbrt`、`ceiling`、`floor`、`exponent`（`Int` として）、`increment`、`decrement`、`successor`、`predecessor`、`round`、`scalb`、`signum`、`ulp`、`bits`、`rawBits`、`finite`、`infinite`、`nan` である。
+
+@ 0 2 0 156816056eb29fda16c2ed9a1ac6d4ba
++       コンパニオンのメンバーは `internal.F32` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 0 1 0 12581d6a9cc1b75c034f3a484d8e3e68
+
+@ 0 1 0 1408e2c4464101101acfe47c80869a9a
++ entry .B64   64 ビットのパターン。シフト、回転、マスク、ビット指定を持つが、算術は持たない
+
+% 1 1 0 08235109eb09efcf189938ea0f8f1591
+
+@ 0 5 0 0b8c3fb20b94eb320e1a97436256e5d7
++       `B64` はビットの集まりとして読まれる `Long` の上の不透明型である。
++       `+` は持たない。
++       `B64` は解釈される前の数の姿であり、`s64` と `u64` はそれをコストなしで符号付きまたは符号なしの整数として再解釈する。
++       浮動小数点数については `F64(bits)` が同じことをする。
++       パターンは、任意の整数から `.bits`（`0xf0L.bits`）で、`B64(long)` とその狭い型のオーバーロードで、あるいはビッグエンディアンの 8 バイトから `B64(bytes, offset)` で作る。
+
+@ 0 3 0 0f5b59155652401b1aa0e99bbf4fb7ec
++       ビットは序数で指定し、最下位ビットが `Prim` である。
++       そのため、インデックスが仕様独自の数え方と混同されることはない。
++       ビットの連なりは `Interval` である。
+
+% 2 1 0 058bd5966e10a72e0bb30d797d2c2206
+
+% 3 1 0 05890b400723ed660070a822fad90977
+
+% 0 1 0 070a3dc62a8adf101368a4b90aba173d
+
+% 0 1 0 00a7670a49f3a4621d8dc1f93fee1052
+
+% 0 1 0 129118c197716ed210d9a44cea972fb0
+
+% 0 1 0 064bb3fd3c6127e912834da2cff39b15
+
+% 0 1 0 02894505526ef7a415c1ab7da2d142ae
+
+% 0 1 0 172ac9ea31da287413a65cb5c925e3b5
+
+% 1 1 0 1cd0cc03f1dd27cd0732b8c3582beea1
+
+@ 0 8 0 184831bcfda7ff27020ed0ad5261a421
++       `B64` の拡張メソッドは、`apply(interval)`（連なりのビットを下へシフトしたもの）、`apply(bit: Int)`（0 始まりの位置による一つのビット）、`bit`、`set`、`clear`、`flip`（それぞれ `Ordinal` または `Interval` による）、シフトの `<<` と `>>`（後者は論理シフトで、符号拡張しない）、回転の `<<<` と `>>>`、`&`、`|`、`^`、前置の `~`、`leadingZeros`、`trailingZeros`、`ones` と `zeros`（ポピュレーションカウント）、`reverse`、`bytes`（ビッグエンディアンの 8 バイト）、`hex` と `octal`（型の幅いっぱいの 16 文字と 22 文字にゼロ埋めされる）、`binary`、そして再解釈の `s64` と `u64` である。
++       `B64` は別の `B64` との間でのみ `==` で比較できる。
+
+@ 0 2 0 15735b6f01dc26b61a2f9471017f420b
++       コンパニオンのメンバーは `internal.B64` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 0 1 0 0ac4cfd7295265760c5eb7b823041ab4
+
+% 0 1 0 04978c25a901bf1b1fb6fbc281e7eaba
+
+@ 0 1 0 1520032befc971930d6b51ca54ebb100
++ entry .B32   32 ビットのパターン。シフト、回転、マスク、ビット指定を持つが、算術は持たない
+
+% 1 1 0 1024705758d70ea214338f0d147a61a3
+
+@ 0 5 0 12355ce780f06ff31bd1ed0ae57430ff
++       `B32` はビットの集まりとして読まれる `Int` の上の不透明型で、`B64` と同じ演算を 32 ビットで持つ：`apply`（区間または位置による）、`bit`、`set`、`clear`、`flip`、`<<`、`>>`、`<<<`、`>>>`、`&`、`|`、`^`、`~`、`leadingZeros`、`trailingZeros`、`ones`、`zeros`、`reverse`、`bytes`（ビッグエンディアンの 4 バイト）、`hex`（8 文字）、`octal`（11 文字）、`binary`、そして再解釈の `s32` と `u32`。
+
+% 2 1 0 0e4b791e0f3d8fb21b7b14ea156b3354
+
+% 3 1 0 122a66a5c99537da12ae4a173a61b368
+
+% 0 1 0 0a699dc795a76808100d16e145583b97
+
+% 0 1 0 1ecac4b5d17385e019f44805a006debf
+
+% 0 1 0 11bc6561c1e4599805a7395140f3ff27
+
+% 0 1 0 1829fdced77b6f541e53083a03efad08
+
+% 0 1 0 1308306de5969d6c06b62a95437a9c47
+
+% 0 1 0 1d4fff25c9e06f3e0cd055a187877f1b
+
+% 1 1 0 0bcae47f146bf88d154cb5d4c91a1d6c
+
+@ 0 2 0 09269ddaac12d4db0f1c1c0b6e3e66f2
++       描画では先頭のゼロを落とさず型の幅までパディングするので、文字数からどの型が生成したかがわかる。
+
+@ 0 2 0 0993978d547a8a9b0da3b29b1bd2682f
++       コンパニオンのメンバーは `internal.B32` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 2 1 0 15ffdd968864f51a1d2281d77ec67eca
+
+@ 0 1 0 1dcb6e1d8b9dba6919cde8992663dd58
++ entry .B16   16 ビットのパターン。シフト、回転、マスク、ビット指定を持つが、算術は持たない
+
+% 1 1 0 13a6c5329e2ac2fa1e5738426aebf1f5
+
+@ 0 5 0 0d2d04ffef8375f6135d0e451cd1e572
++       `B16` はビットの集まりとして読まれる `Short` の上の不透明型で、`B64` の演算を 16 ビットで持つ。
++       `bytes` はビッグエンディアンの 2 バイトを、`hex` は 4 文字を、`octal` は 6 文字を与え、再解釈の `s16` と `u16` を持つ。
++       `(0x1234: Short).bits`、`B16(short)`、`B16(byte)`、`B16(bytes, offset)` で作り、`Short(bits: B16)` でプリミティブに戻す。
+
+@ 0 2 0 0cabb86c8e1f802804b39646d4a13e98
++       コンパニオンのメンバーは `internal.B16` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 2 1 0 16bde2d2b62c2aa11a27797e691d32e4
+
+@ 0 1 0 026734759eccfa4e1bfe6b51360063fc
++ entry .B8   8 ビットのパターン。シフト、回転、マスク、ビット指定を持つが、算術は持たない
+
+% 1 1 0 00ce6cfac42bfff7165f521864c8c85e
+
+@ 0 4 0 198fcbb5cffc3b6f0d21d1c4ac634d58
++       `B8` はビットの集まりとして読まれる `Byte` の上の不透明型で、`B64` の演算を 8 ビットで持つ。
++       `hex` は 2 文字、`octal` は 3 文字であり、`s8` と `u8` はそのバイトを符号付きまたは符号なしの整数として再解釈する。
++       `(0xf0.toByte).bits` または `B8(byte)` で作り、8 桁の `bin"…"` リテラルは、それを作るための `Byte` を与える。
+
+% 2 1 0 1d9a547cd072623f03779b6166892cc2
+
+% 3 1 0 1afb4f531dc5501803b0551ee8a516f9
+
+% 0 1 0 19bd2028a4ded58e1b8d6db21355a1f1
+
+% 0 1 0 13bd95d0bf037cd502a7b4532be43ab0
+
+% 0 1 0 01474ae8b7e175e20ed22052eabff012
+
+% 0 1 0 0047e7d5eebcca770857e77b6062919f
+
+% 1 1 0 12a00f984d5199a30b66ed6d7c24cd82
+
+@ 0 2 0 02db738e0a0af66208de43c5d7d715a5
++       コンパニオンのメンバーは `internal.B8` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 2 1 0 1ceb8b3b0d795ed71339af8bd5ec3217
+
+% 0 1 0 06cdb8726de7fd9200e0fd9dde82ba88
+
+@ 0 1 0 1b713aff978c635909f7d27f9a491f08
++ entry .arithmeticOptions   オーバーフロー、ゼロ除算、有理数除算のポリシー。それぞれ名前でインポートする given である
+
+% 1 1 0 15ae1f6be03125f00659611909b000ad
+
+@ 0 5 0 01e968c7a8511c361792717b3b4a4023
++       整数型の算術には、`+`、`-`、`*` のためにスコープ内の `CheckOverflow` の given が、`/` のために `DivisionByZero` の given が必要であり、`import soundness.*` はどちらももたらさない。
++       選択は各種類の given を一つずつ名前でインポートすることで行い、スコープにポリシーがないまま使った演算子はコンパイルされない。
++       二つの検査は独立しているので、ラップアラウンドしてはならないが除数は信頼するプログラムは、`checkedOverflow` だけをインポートする。
+
+% 2 1 0 14fed254df79e5270b98cb570a68d733
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1e20de3a96f23cfb091d633b531fe879
++         label ポリシーなし：演算子が解決されない
+
+% 1 1 0 1e45057bcc7fa7631afd4504800fa5ca
+
+% 2 1 0 09acc9e7017b5e8308ff3e98a4c96971
+
+% 2 1 0 1297857aa6a7a30e098eb11c931bf241
+
+% 0 1 0 15b7b7f999ec72d41570510f7f73edbb
+
+% 1 1 0 0189afa2aeb88c9d0e1347208dc11b0b
+
+@ 0 1 0 03e537e42740f67a040189b346451100
++         label 検査なし：和はハードウェアと同じようにラップアラウンドする
+
+% 1 1 0 1c94f7c2affc2d43129a3c3364ea0569
+
+% 2 1 0 14f3ba61cd8312b61701541637d4c724
+
+% 0 1 0 065e74b0947a0cbe095504f19b23a40e
+
+% 2 1 0 06892ad813e2ba7405a94dfe87a17c45
+
+% 0 1 0 092c8f2a279c63fd05494b441bb6e1b0
+
+% 1 1 0 067cfd4e801316d512b757ef61f08072
+
+@ 0 1 0 185bf0d9674a37611d26149a2099f6c3
++         label 検査あり：結果の型はエラーを発生させ得るものとなり、`safely` が失敗を吸収する
+
+% 1 1 0 0c27548314d0ea0b079fa576d98ac344
+
+% 2 1 0 19c6fede75e2ba040cc4aa892bcc9bb6
+
+% 3 1 0 159ac016469c713e085f2a4c2fea2a32
+
+% 5 1 0 044f252cbcf3a500038cc0529bb99a9a
+
+% 0 1 0 005192d2bed59926102422b89dff4038
+
+% 1 1 0 0abe6c0e53ba1a7708d3cba63af0095e
+
+@ 0 1 0 1219ac884b9184761af68c727ca23e4b
++         label 検査ありで処理する：失敗は `Arithmetic.Error` であり、デフォルト値がそれを置き換える
+
+% 1 1 0 0eb33e91712a1c911c28eccf57fc7420
+
+% 2 1 0 04e5cd9399684c360cdcd68ad03843ba
+
+% 3 1 0 023d03f3e9dfb3c006b0991870686538
+
+% 5 1 0 140e1b7da28de87a0130471a3b539ed5
+
+% 0 1 0 16d4fddcd9a233f21a8ac6321f18c1be
+
+% 1 1 0 032903b6556ee75e024d41e892544eec
+
+% 2 1 0 1b254f5bafb282e20dda84cf188f1bdc
+
+@ 0 7 0 16680ad1ce1329021a5cd827593257dd
++       各ポリシーはシングルトンオブジェクトであり、その given はオブジェクトのシングルトン型で型付けされる。
++       そのため、そのもとでインライン化された演算子は、アロケーションしなければならないインスタンスではなく、インライナーが取り除く純粋なパスを参照する。
++       `S32` に対する検査なしの `a + b` は一つの `iadd` であり、検査ありの場合は同じ命令の後にオーバーフロー判定が続く。
++       検査ありの given は、演算子の結果の型を `Tactic[Arithmetic.Error]^ ?->{} result` に変える。
++       これは `result raises Arithmetic.Error` の部分型である純粋なコンテキスト関数なので、`safely`、`recover`、`raises` の戻り値型のいずれもそれを受け付ける。
+
+@ 0 4 0 004347effd32356d177c46b8b4f48fb3
++       二つの有理数の given は種類が異なる。
++       `q64RationalDivision` をインポートすると、そのスコープでは二つの `Q64` に対する `/` が `Double` を返すようになり、コンパニオンの正確な除算より優先される。
++       これにより、（分散を `Double` へと除算しなければならない）`std` が有理数のコレクションに対して解決される。
+
+% 1 1 0 031557a59d517a0a0f2a3848f8235d07
+
+% 2 1 0 01036437bafe25520fe5bf095f9ec7c8
+
+% 2 1 0 10405821c1b2045509f06691b14ecb74
+
+@ 0 17 0 16aeac11dfd8419319929d01bcbfa126
++   entry .uncheckedOverflow   整数型に対する `+`、`-`、`*` は、ハードウェアと同じようにラップアラウンドする
++       シングルトン型による `CheckOverflow.Unchecked` である。
++       各演算子の結果はそのままの型であり、演算はそのための一つの命令にインライン化される。
++   entry .checkedOverflow   整数型に対する `+`、`-`、`*` は、結果が収まらないところで `Arithmetic.Error` を発生させる
++       シングルトン型による `CheckOverflow.Checked` である。
++       各演算子の結果は `T raises Arithmetic.Error`（理由は `Overflow`）となるので、`safely`、`recover`、`unsafely`、あるいはそれ自体がエラーを発生させるメソッドの中で使う。
++       検出は正確である。
++   entry .uncheckedDivision   整数型に対する `/` はハードウェアと同じように除算し、ゼロの除数では例外を投げる
++       シングルトン型による `DivisionByZero.Unchecked` である。
++       ゼロの除数はスコープの制約なしに `java.lang.ArithmeticException` を投げる。
++   entry .checkedDivision   整数型に対する `/` は、ゼロの除数で `Arithmetic.Error` を発生させる
++       シングルトン型による `DivisionByZero.Checked` である。
++       結果は `T raises Arithmetic.Error`（理由は `DivisionByZero`）となる。
++   entry .q64RationalDivision   このスコープでは、二つの `Q64` に対する `/` がその商を `Double` として返す
++       レキシカルにインポートされると、コンパニオンの `Q64.divisible` より優先されるので、`List[Q64]#std` が解決される。
++       インポートがスコープを外れると、正確な除算は再び `Q64.divisible` となる。
++   entry .q32RationalDivision   このスコープでは、二つの `Q32` に対する `/` がその商を `Double` として返す
+
+@ 0 1 0 16693d9f5bd07fee173123042aa62836
++ entry .CheckOverflow   固定幅整数に対する `+`、`-`、`*` のポリシー：ラップアラウンドするか、エラーを発生させるか
+
+% 1 1 0 1b4195b95992b7c71151432498f55238
+
+@ 0 6 0 0033fef4026d67b11107fefd18d7e46f
++       `CheckOverflow` は、すべての `U*` 型と `S*` 型に `Addable`、`Subtractable`、`Multiplicable` のインスタンスを提供し、`#Wrap` はそれが各結果をどう扱うかである。
++       `.Unchecked` ではそのままの型、`.Checked` では `Tactic[Arithmetic.Error]^ ?->{} result` であり、後者は `result raises Arithmetic.Error` を満たす純粋なコンテキスト関数である。
++       コンパニオンの given（`S32.addable` は `overflow.addS32`）はスコープ内のポリシーに転送し、ポリシーは `arithmeticOptions` から名前でインポートされる。
+
+@ 0 7 0 11c525a61503359204f455f2e8e1e406
++       各インスタンスはその given から安定したパスで到達できる `object` である。
++       そのため、インライナーがそれらのために導入するプロキシは純粋なパスとなり、インライナーはそれを取り除く。
++       `a + b` は、ハードウェアがそのために持つ一つの命令にコンパイルされる。
++       `new` で構築したインスタンスは、匿名であれ final であれ、インライン化の後も演算ごとのアロケーションとして残ってしまう。
++       独自のポリシー（ログを取るもの、飽和するもの）は、このトレイトを継承するオブジェクトであり、その 24 個のメンバーは `Arithmetic.Addition[S32, Wrap]` とその兄弟を継承するオブジェクトで、ポリシーのシングルトン型の given を伴う。
+
+% 2 1 0 074c689f3ddb30441cb6a5d90fe19458
+
+% 3 1 0 1ac749779f41605614795309ca5cb71d
+
+% 4 1 0 162de86f8e974c291be8326ce4fd65e4
+
+% 0 1 0 14d875d08df1b6a41ab2550112334189
+
+% 0 1 0 065bafedb46c27eb194b6a0d416d1bb1
+
+% 1 1 0 1900104676380837095ef30d9e67bbdf
+
+% 2 1 0 137d17395069fb841f1575c11faea76d
+
+% 1 1 0 0c47588bf62d362413ede99e6f15b944
+
+% 2 1 0 0c700ecc4cb00d5b160a5359d2e6ebd3
+
+@ 0 10 0 11106c50d908a87618eba38c72fd9e30
++   entry .Unchecked   ハードウェアと同じようにラップアラウンドするポリシー
++       `Wrap[result] = result` である。
++       各演算はプリミティブのものであり、型の幅に縮小される。
++       `arithmeticOptions.uncheckedOverflow` がこのオブジェクトである。
++   entry .Checked   結果が収まらないところで `Arithmetic.Error` を発生させるポリシー
++       `Wrap[result] = Tactic[Arithmetic.Error]^ ?->{} result` である。
++       符号付きの和は、両方のオペランドが和の持たない符号を持つときにオーバーフローする。
++       符号なしの和は、結果がどちらかのオペランドより小さくなるときにオーバーフローする。
++       積は、上位ワードが下位ワードの符号拡張でないとき、あるいは狭い幅では、より広い型で計算した積が範囲外になるときにオーバーフローする。
++       `arithmeticOptions.checkedOverflow` がこのオブジェクトである。
++   entry #Wrap   ポリシーが結果をどう扱うか：そのままの型か、エラーを発生させ得る型か
+
+% 0 1 0 0bc0aff6c66e1f3b0df8a8f6d8ccbaf0
+
+% 0 1 0 1362171921760f8806706899a73a275e
+
+% 0 1 0 07324a9655b498d61591cf9faa827c76
+
+% 0 1 0 0ed3b1b8b0bc89230e098f4278efe8e4
+
+% 0 1 0 05d78f57035e69ce1f6cf9cadc42811e
+
+% 0 1 0 0d78f6795e665a1b17e4b96daaafed8c
+
+% 0 1 0 0b1744355d2fcf921a8717e9d259ffcf
+
+% 0 1 0 1e790e94707e963103d58078a3753cc7
+
+% 0 1 0 07fa7c3b6f2fa869048ad6b3250e7c31
+
+% 0 1 0 1497f7821ec9285d12e2a247d5de8fd8
+
+% 0 1 0 02deda055fbaa80c18ec51b3740a1510
+
+% 0 1 0 0f7c554c0f54280007441d4824da28b8
+
+% 0 1 0 0cb80f83d88d379b112b24fc8d0d8860
+
+% 0 1 0 19558aca8826b78f1f82f0913ddd9c07
+
+% 0 1 0 00e8aecb264b104f075cbf09f6a2435d
+
+% 0 1 0 078d553e3066c26807546e379461e00f
+
+% 0 1 0 18bb135e4acf241405f9b265b23d914f
+
+% 0 1 0 174cf2d61db9acce15e906faa16a6c62
+
+% 0 1 0 06581315a1dc94411ec13c2ddc48773c
+
+% 0 1 0 04e9f28d74c71cfb0eb090c2cb755250
+
+% 0 1 0 0e001c83cc9a09e60cc7a0542cb92b48
+
+% 0 1 0 0c91fbfb9f8492a01cb6f4e91be6065b
+
+% 0 1 0 0f45cb367fa8f6fc09f5de3e00584df4
+
+% 0 1 0 1c7daa0eba9f20e61af4e39afe671d21
+
+@ 0 1 0 1bf068666ecc4af403650305ff42b1e4
++ entry .DivisionByZero   固定幅整数に対する `/` のポリシー：ゼロで例外を投げるか、エラーを発生させるか
+
+% 1 1 0 01b653dd62c5269d0fbd9348e7e190da
+
+@ 0 6 0 0a06d90ac14654c81f9082d528502115
++       除算における `CheckOverflow` の対応物である。
++       `DivisionByZero` はすべての `U*` 型と `S*` 型に `Divisible` のインスタンスを提供し、`#Wrap` はそれが商をどう扱うかである。
++       コンパニオンの given（`U64.divisible` は `division.divideU64`）はスコープ内のポリシーに転送し、ポリシーは `arithmeticOptions.uncheckedDivision` または `checkedDivision` として名前でインポートされる。
++       どちらのポリシーのもとでも、符号なしの型は符号なしとして除算し、符号付きの型はハードウェアと同じようにゼロ方向に切り捨てる。
++       `/-` は床除算である。
+
+% 2 1 0 1abb283c87d03938021583b21812e06c
+
+% 3 1 0 1a8143a35c5c33340bdcdff6a41eafa7
+
+% 1 1 0 0238da460ba4709c1520f057cf6a17ba
+
+% 0 1 0 0ffb79b719b77abe00bc197de4646f2d
+
+% 0 1 0 15ef34d31d8ce5a407e72a201fbc85d2
+
+% 1 1 0 16f0158273446bae1cb84a475c64abd7
+
+% 2 1 0 1f9ea05eed6e19ca0d77f91a820bc7fa
+
+% 1 1 0 06f5a864a7c434081192ea822f3fafc9
+
+@ 0 10 0 1875b3d88f0997a417fd65ed65175fb2
++   entry .Unchecked   ハードウェアと同じように除算するので、ゼロの除数は `ArithmeticException` を投げる
++       `Wrap[result] = result` である。
++       `arithmeticOptions.uncheckedDivision` がこのオブジェクトである。
++   entry .Checked   ゼロの除数で `Arithmetic.Error` を発生させる
++       `Wrap[result] = Tactic[Arithmetic.Error]^ ?->{} result` であり、理由は `DivisionByZero` である。
++       `arithmeticOptions.checkedDivision` がこのオブジェクトである。
++   entry #Wrap   ポリシーが商をどう扱うか：そのままの型か、エラーを発生させ得る型か
++   entry #divideU64   `U64 is Divisible by U64 to Wrap[U64]`。符号なし
++   entry #divideS64   `S64 is Divisible by S64 to Wrap[S64]`。切り捨て
++   entry #divideU32   `U32 is Divisible by U32 to Wrap[U32]`。符号なし
++   entry #divideS32   `S32 is Divisible by S32 to Wrap[S32]`。切り捨て
+
+% 0 1 0 0ab84b36d2094c820871c817282df6e2
+
+% 0 1 0 0befb2c38ce020fc112abfb17075a007
+
+% 0 1 0 11a372979eec17f811426c1ecd4213eb
+
+% 0 1 0 00a6e1aeb77ff4d1194bc23c5fabadbd
+
+@ 0 1 0 1dddf096e43e9f24059f44cad85804de
++ entry .Arithmetic   算術演算の失敗と、ポリシーのインスタンスの形
+
+% 1 1 0 143670cbc51d7f0a07f2dc455bb335a2
+
+@ 0 7 0 09f96a099633c3640fc9975c0164279f
++       `Arithmetic.Error` は、演算が表現可能な結果を持たないときに発生する。
++       `arithmeticOptions.checkedDivision` のもとでのゼロ除算、`checkedOverflow` のもとでのオーバーフロー、あるいは `divide` による `Decimal` のゼロ除算である。
++       この二つは一つの概念なので、二つの型ではなく、二つの `Reason` を持つ一つのエラー型である。
++       一方、それらを検出する検査は独立したインポートのままである。
++       四つのトレイト `Addition`、`Subtraction`、`Multiplication`、`Division` は、`CheckOverflow` や `DivisionByZero` のポリシーのインスタンスがとる形である。
++       すなわち、数とそれ自身から、ポリシーがラップする結果への演算である。
+
+% 2 1 0 0f0160ae8399e35516dd53493df7f70c
+
+% 3 1 0 1004f607547412761b899d5b7d1e78c1
+
+% 4 1 0 010f8c302e55c743001517cbc4a159f8
+
+% 0 1 0 1a7dcfada89e1abd14742255b1bef207
+
+% 1 1 0 02ce85aa0339fa1c1ba41d7cd86b5a9f
+
+% 1 1 0 1e690e7918be13c8001cb057b47d29c3
+
+% 2 1 0 040aaaa1c397bb7d160d3e7e5eb65041
+
+@ 0 1 0 0c4e55c230d4f6911a074f786c460a5d
++   entry .Error   演算が表現可能な結果を持たないとき、すなわちゼロの除数やオーバーフローのときに発生する
+
+% 1 1 0 0d13184e43c2389d05c1267e5fa756f2
+
+@ 0 17 0 1585edd90b0a068514b572ebeb8e6c32
++         エラー `↯/s.27.15`、_the arithmetic operation could not be completed because `reason`_ である。
++         理由は `Reason.DivisionByZero`（_the divisor was zero_）または `Reason.Overflow`（_the result exceeded the range of its type_）であり、理由の番号（1 または 2）がエラーの詳細番号である。
++         検査ありのポリシーが `Tactic[Arithmetic.Error]` を通じて発生させ、それは `safely`、`recover`、`unsafely`、あるいは `raises` のシグネチャが提供する。
++     entry .Reason   演算が失敗した理由：`DivisionByZero` または `Overflow`
++         `number`（`DivisionByZero` は 1、`Overflow` は 2）と、それぞれをメッセージとして描画する `communicable` の given を持つ列挙型である。
++     entry .communicable   `Reason` をメッセージとして描画する
++     entry #reason   二つの失敗のどちらが起きたか
++   entry .Addition   ポリシーの `+` インスタンスの形：`number is Addable by number to wrap[number]`
++       `Self`、`Operand`、`Result` を固定し、`add` をポリシーのオブジェクトに委ねるトレイトである。
++       `F64.Addition` と `CheckOverflow.Unchecked.addS32` がそのインスタンスである。
++   entry .Subtraction   ポリシーの `-` インスタンスの形：`number is Subtractable by number to wrap[number]`
++   entry .Multiplication   ポリシーの `*` インスタンスの形：`number is Multiplicable by number to wrap[number]`
++   entry .Division   ポリシーの `/` インスタンスの形：`number is Divisible by number to wrap[number]`
+
+@ 0 1 0 1bce4239c166644b0e1759df79e43aac
++ entry .Commensurable   `<`、`<=`、`>`、`>=` の背後にあるコンパイル時の比較の型クラス
+
+% 1 1 0 0d30d516715bb9181f4ae54f56dddcdc
+
+@ 0 7 0 022268bfd300eeb91f2b4d8d8dc0ff6c
++       `left is Commensurable against right` は、`left` を `right` とどう比較するかを、一つのインラインメソッド `#compare` を通じて示す。
++       その `strict` と `greaterThan` のフラグはインラインの定数なので、四つの演算子はそれぞれ、コンパイル時に、それが意味する一つのプリミティブの比較に簡約される。
++       演算子 `<`、`<=`、`>`、`>=` は、スコープにそうしたインスタンスを持つ任意の値の拡張メソッドである。
++       `Orderable` は型をそれ自身と比較する特別な場合であり、`min` と `max`、そしてコレクションの集約 `minimum` と `maximum` がそれを必要とする。
+
+@ 0 4 0 16181862478cf38504c1890ac92b675c
++       比較は数学と同じように連鎖する。
++       `1.2 < x < 1.4` は `(1.2 < x) < 1.4`、すなわち `Double` と比較される `Boolean` としてパースされ、それを `.numeric` の given が処理する。
++       マクロが左側の比較を `Boolean` の式から読み戻し、全体を一つの範囲判定 `1.2 < x && x < 1.4` に書き換える。
+
+% 2 1 0 1e7e5323bed22e970dd5799c88e0d643
+
+% 3 1 0 0a74b503922a731c02c3ca7ef691c581
+
+% 0 1 0 18324ade38fdca4c14d77360d5e9e199
+
+% 0 1 0 1e3aac79b0560bf81ecdd3ba6e04fb3d
+
+% 0 1 0 1d583f575cc6acfc080cad43f16b0ffe
+
+% 1 1 0 19de746b01c54a7004d7f9721a33fe34
+
+@ 0 5 0 0edddebd099f1d6d19f1abd91f19b9cf
++       連鎖は左側の境界から始めなければならない。
++       `1.4 > x > 1.2` はエラー `↯/s.27.16`、_this cannot be written as a range expression_ である。
++       このライブラリのすべての数値型はコンパニオンに `Orderable` を持ち、`F64` はさらに `Int` や `Double` とも比較できる。
++       symbolism の `Comparable`（あるいは `Comparable` の橋渡しを通じた stdlib の `Ordering`）を持つ任意の型は、`.orderable` を通じて `Orderable` である。
+
+% 0 1 0 1bb15d1e1b5fb0c71556a10c68bcffa0
+
+% 0 1 0 0fe7fde55d9d79da16eb2f94b33afa87
+
+% 0 1 0 00979ee19cd915f81a63b0aeb71ee5ba
+
+@ 0 13 0 0280593e961ae1ad13dcf6472f3f5892
++   entry .numeric   `(a < x) < b`：プリミティブに対する連鎖した比較を、一つの範囲判定に書き換える
++       `Boolean is Commensurable against Int | Long | Double | Float | Char | Byte | Short` である。
++       その `compare` はマクロであり、`Boolean` の中に同じプリミティブ型の比較があるかを調べ、式がそうでなければエラー `↯/s.27.16` で停止する。
++   entry .memory   `Memory is Orderable`：メモリサイズはバイト数で比較される
++   entry .ordinal   `Ordinal is Orderable`：`Prim < Sec`
++   entry .orderable   任意の `Comparable` な型は `Orderable` であり、`<` や `max` が使える
++       `[value: Comparable] => value is Orderable` である。
++       実行時の三方向の `compare` が、四つのコンパイル時の演算子を与える。
++       順序がまだ stdlib の `Ordering` である型は、`Comparable` 自身の優先度の低い橋渡しを通じてここに至るので、一つのインスタンスで両方をまかなえる。
++   entry #compare   `compare(left, right, strict, greaterThan)`：四つの演算子が簡約される一つの比較
++       `strict` は `<` と `<=` を区別し、`greaterThan` は `>` の系統と `<` の系統を区別する。
++       どちらもインラインなので、実装はコンパイル時にそれらで分岐する。
+
+@ 0 1 0 0bd6197dfb512d4c0b1c960d54046f65
++ entry .Orderable   それ自身と比較される型：`Contrast = Self` である `Commensurable`
+
+% 1 1 0 1496a9db2feb95d20ea07f5de62b1bb9
+
+@ 0 4 0 10e616c8a4c6b49d1a0d1c4fa47d6eaf
++       `Orderable` は、すべての数値型がコンパニオンに持つインスタンスであり（`S32.orderable`、`Q64.orderable`、`Decimal.orderable`、`F64.orderable`）、`min`、`max`、`minimum`、`maximum`、`median`、`Checkable.commensurable` が必要とするものである。
++       順序が別の型の順序の関数である型は、`#contramap` でそれを得る。
+
+% 2 1 0 015343c38549de9b132debbb2c26f255
+
+% 3 1 0 0a68b2add9bc000b18bc5f3b4c6d6f64
+
+% 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
+
+% 0 1 0 07abc21c17c93ab812192bad302b437f
+
+% 0 1 0 13459642b920470e1d7a69a140e47abb
+
+% 1 1 0 1547fffd39294e2c0f80212b6de1fc09
+
+% 0 1 0 1b6aef6b00bc52481a2a793d45865143
+
+@ 0 3 0 0dd67134b34793e51da44b985beb7f7b
++   entry #Contrast   比較の相手となる型：その型自身
++   entry #contramap   別の型の値をこの型に写すことで得られる、その型の `Orderable`
++       `orderable.contramap(f)` は、二つの値をそれぞれの `f` を比較することで比較する。
+
+@ 0 1 0 14f0a46de10c4ae21c50c72d58ca7151
++ entry .Rational   テキストが有理数でないときに発生するエラー
+
+% 1 1 0 1a48cd6c4a26130214b033c6b8d0a162
+
+@ 0 2 0 0d4aa2736e400f92160ab4fb9a1a37f8
++       `Q64.parse` と `Q32.parse` は、整数でも分数 `numerator/denominator` でも `NaR` でもないテキストに対して `Rational.Error` を発生させる。
+
+% 1 1 0 0023048d103c141f0c2e3c0dcb41dc9a
+
+@ 0 1 0 1d549f3a365d7ebb168def68ce57c798
++   entry .Error   エラー `↯/s.27.11`：_`text` is not a representable rational number_
+
+% 1 1 0 1e3806e208ae5d3c0ff6eab18c5bf43a
+
+@ 0 2 0 1ba253109efd61320be2f7608f6f1b60
++         `Q64.parse(text)` と `Q32.parse(text)` が `Tactic[Rational.Error]` を通じて発生させる。
++     entry #text   パースできなかったテキスト
+
+@ 0 1 0 045cb4b16bf3c4dc17d5294c605c4139
++ entry .Decimal   任意精度の十進数：符号、絶対値、スケールを持ち、正確で正規形である
+
+% 1 1 0 0184e8bdaeeb7f4e06830d242307efc6
+
+@ 0 6 0 0a0428052c6268d81309a57bbe204559
++       `Decimal` は符号、任意の大きさの絶対値、十進のスケールからなる。
++       そのため、金額の合計、ドキュメントから読んだ座標、あるいは大きさについて何の約束もない任意の数値を正確に保持する。
++       JVM の `BigDecimal` のラッパーではなく純粋な Scala なので、すべてのプラットフォームで動作し、ネイティブの 64 ビット算術を一切必要としない。
++       絶対値は 10⁹ 進のリムで保持されるので、中間の積はすべて `Long` に収まる。
+
+% 2 1 0 12277d39866035680a35172746221c7e
+
+% 3 1 0 1796f92906150e5402275dae630c1eab
+
+% 4 1 0 1d8a6937d009648a0047a1aa50f45320
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0e71121de4c184a402e29571779563e4
+
+% 0 1 0 086abf9d6282bee80f03746d17641072
+
+% 0 1 0 157008aca365654d0d062aec18d66524
+
+% 0 1 0 00fb7939126f15ee1a1ea8858381ac6a
+
+% 0 1 0 10e743c138cdef21048b15ba0411f5d1
+
+% 0 1 0 01e9adbbc8c54d5912f2d8b7ed0e1a64
+
+% 1 1 0 0a892471cde17bb30fbe75957ed2cf10
+
+@ 0 9 0 17adf3f69545cc001943300f3bfeadab
++       すべての値は正規形である。
++       値を作るときに末尾のゼロはスケールに吸収され、ゼロの表現は一つしかない。
++       そのため、数値として等しい二つの十進数は同じ値であり、`BigDecimal` における `equals` と `compareTo` の不一致に相当するものはない。
++       `+`、`-`、`*`、前置の `-` は、このコンパニオンにある given を通じた symbolism の演算子であり、正確で、ポリシーを必要としない。
++       除算は常に正確にはできないので `/` ではない。
++       `.divide` は結果のスケールと `Rounding` を取り、ゼロの除数では `Arithmetic.Error` を発生させる。
++       8 分の 1 を小数点以下 2 桁にするとちょうど中間になる。
++       `HalfUp` は切り上げ、`HalfEven` は偶数の桁に丸める。
++       10 桁では丸めは必要なく、末尾のゼロが残されることはない。
+
+% 2 1 0 0962298c2ffafbf40309b282eb3cccdb
+
+% 0 1 0 116130dfd63928ac09e2bfec1af21bdc
+
+% 1 1 0 14b5d9385ff1ad911cc2c70a0cc784de
+
+% 2 1 0 0884fdb13354e6231d0882c6b796674b
+
+% 3 1 0 0268e9b8a8be8f84090bac9e109ec249
+
+% 0 1 0 0b20c6da2855604708f581dc242d3a64
+
+% 0 1 0 186774a156de1a291d344c60e9a17bdf
+
+% 1 1 0 0c917a572eb0344e0e278e1930f69c4e
+
+% 2 1 0 087310f06d8b82b51726e7d8cb983e8f
+
+% 3 1 0 10c006dce95eb39c05ee5e04fcafefda
+
+% 0 1 0 09d073204a7da1e6023a1c96dc2ecf55
+
+% 0 1 0 13dc356a730fb29a1e759ba71583ed66
+
+% 1 1 0 1e1650542ff295300f481e80fad583b4
+
+% 2 1 0 00d7ba58801b9b9b0b29c417b96ab8b8
+
+% 3 1 0 1d493526912d708f075cf66775fe9c6a
+
+% 0 1 0 0c88f678df2bc2851663c00576dd5c0c
+
+% 0 1 0 0ff5871666839ed611e3c6486123fbc9
+
+% 1 1 0 1dc4e5ed1f29b12f1dbde21fd601fda1
+
+% 2 1 0 1cfe2e37036a048d08ecc2ab777658a0
+
+% 3 1 0 065dd866f28393e708811ec540d53bfa
+
+% 0 1 0 1d8e19a5f1b674de064230eba2edbcdf
+
+% 1 1 0 18ab9a5bf6822e8d18fb8e4cb82ca508
+
+% 2 1 0 073fccab8e414b9e0e21f58f9bd3c9e3
+
+@ 0 4 0 0c9dc4b9ca3319aa06d757198b112e8c
++       丸めモードは `java.math.RoundingMode` のものと一致し、`text` は指数を使わない通常の表記で、`BigDecimal#stripTrailingZeros.toPlainString` と同じように描画する。
++       `Decimal` は `Orderable` であり、`Textualizable` を通じて描画され、純粋な値なので、十進数のコレクションが余分にボックス化するものはない。
+
+@ 0 2 0 0b6a69591bddf859109266cc6c1bfd97
++       コンパニオンのメンバーは `decimalInternal.Decimal` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 1 1 0 0329ef8fc551b2ce1ada1ef5470fba98
+
+% 1 1 0 1e0e58d76732d622180e83b451bd9102
+
+@ 0 1 0 01d149ff4f2ea9f7016a2ecbc9b5e36d
++ entry .decimalInternal   `Decimal` の不透明なスコープ
+
+% 1 1 0 0dd96ff2a6176f56014ec580ccd4e959
+
+% 2 1 0 040b03a7657a49441e46732de66ab4da
+
+@ 0 5 0 02f94410f46a42340c9bde89c373476b
++       直接使うためのものではない。
++       このオブジェクトは、`Decimal` の表現（凍結済みの `Array[Int]^{}`：符号、スケール、続いて 10⁹ 進のリム）をパッケージの他の部分からさえ隠し、外部のあらゆる場所でコンパニオンのスコープによる given の解決を損なわないために存在する。
++       型とそのコンパニオンは `Decimal` として `hypotenuse` にエクスポートされる。
++   entry .Decimal   任意精度の十進数。`hypotenuse.Decimal` を参照
+
+% 1 1 0 1fd5b2de866864ee1af6ce58806eef0a
+
+@ 0 45 0 13dde1cb4e002507182168613ec8483a
++         不透明型 `Decimal` のコンパニオンであり、型とともに `hypotenuse` パッケージにエクスポートされる。
++     entry .Zero   ゼロの唯一の表現
++     entry .Rounding   商をそのスケールにどう丸めるか：`Up`、`Down`、`Ceiling`、`Floor`、`HalfUp`、`HalfDown`、`HalfEven`
++         `Up` はゼロから遠ざかる方向に、`Down` はゼロに向かって丸める。
++         `Ceiling` は正の無限大に向かって、`Floor` は負の無限大に向かって丸める。
++         三つの `Half` モードは最も近い値に丸め、ちょうど中間の場合はそれぞれゼロから遠ざかる方向、ゼロに向かう方向、偶数の隣の値に決める。
++         いずれも同名の `java.math.RoundingMode` と一致する。
++     entry .apply   `Int`、`Long`、スケールなしの `Long` とスケール、あるいは `Double` からの `Decimal`
++         `Decimal(unscaled, scale)` は `unscaled × 10⁻ˢᶜᵃˡᵉ` なので、`Decimal(-1234567, 4)` は `-123.4567`、`Decimal(42, -3)` は `42000` である。
++         `Decimal(double)` は有限の `Double` を、往復可能な最短の十進表現を通じて変換する。
++         そのため `Decimal(0.1)` は、`java.math.BigDecimal` の `Double` コンストラクターが与える 55 桁の二進展開ではなく、正確に `0.1` となる。
++         `NaN` や無限大に対しては `Decimal.Error` を発生させる。
++     entry .parse   `-12.34e+2` のようなテキストからの `Decimal`、または `Decimal.Error`
++         文法は、省略可能な符号、省略可能な小数点を伴う数字（小数点の少なくとも一方の側に数字がある）、そして独自の符号を持つ省略可能な指数である。
++         それ以外のもの、すなわち `1.2.3`、空文字列、指数だけのものなどは `Decimal.Error` を発生させる。
++     entry .comparison   符号付きの三方向比較：`-1`、`0`、`1`
++         まず符号で判定し、次に小数点より前の桁数で判定し、それらが一致するときだけ絶対値の桁をそろえる。
++         そのため、極端なスケールの違いが展開されることはない。
++     entry .orderable   十進数に対する `<`、`<=`、`>`、`>=`、`min`、`max`。`Decimal.comparison` による
++     entry .fromDigits   `genericNumberLiterals` のもとで、数値リテラルからの `Decimal`
++         `val price: Decimal = 12.99` のように使う。
++         リテラルの数字はコンパイラが検証するので、それらのパースは失敗しない。
++     entry .negation   符号を反転した値。ゼロは変わらない
++     entry .sum   二つの十進数の正確な和。大きいほうのスケールにそろえる
++     entry .product   二つの十進数の正確な積。スケールは足し合わされる
++     entry .addable   `Decimal + Decimal`。正確
++     entry .subtractable   `Decimal - Decimal`。正確
++     entry .multiplicable   `Decimal * Decimal`。正確
++     entry .negatable   `Decimal` に対する前置の `-`
++     entry .textualizable   `.text` と同じように、十進数を通常の表記で描画する
++     entry .signum   `Decimal` の拡張：`-1`、`0`、`1`
++     entry .scale   `Decimal` の拡張：絶対値を割る 10 の冪
++         正規形が末尾のゼロを吸収するので、末尾にゼロを持つ値では負になる。
++         `Decimal(42000).scale` は `-3` である。
++     entry .abs   `Decimal` の拡張：絶対値
++     entry .divide   `Decimal` の拡張：指定したスケールと丸めでの商
++         `left.divide(right, scale, rounding)` は、10⁹ 進での Knuth のアルゴリズム D によって商を小数点以下 `scale` 桁まで計算し、余りを `Rounding` の指定どおりに丸める。
++         除数がゼロのときは `Tactic[Arithmetic.Error]` を通じて `Arithmetic.Error`（理由は `DivisionByZero`）を発生させる。
++         結果は正規形なので、`scale` より少ない桁で足りる商はその少ない桁数になる。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 12b36630ba4606cc1e0225eb20246c2a
+
+% 0 1 0 1a973841f2b80cb516aca1b50e9a7595
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 6 0 09700a4050669ccc02c526cf09b0c025
++     entry .text   `Decimal` の拡張：指数も末尾のゼロもない、通常の十進表記
++         `Decimal(7, 5).text` は `0.00007`、`Decimal(1100, 2).text` は `11` である。
++         このテキストをパースすると同じ値に戻る。
++     entry .double   `Decimal` の拡張：正しく丸められた最も近い `Double`
++     entry .whole   `Decimal` の拡張：値が整数かどうか
++     entry .Error   エラー `↯/s.27.10`：_`text` is not a representable decimal number_
+
+% 1 1 0 1d0038d69569ce75162c86c1c33d01f5
+
+@ 0 3 0 1de534a5ddf7c3c40bcf87ebcac2c52a
++           `Decimal.parse` が文法外のテキストに対して、`Decimal(double)` が `NaN` または無限大の `Double` に対して、`Tactic[Decimal.Error]` を通じて発生させる。
++       entry #text   拒否されたテキスト、または `Double` の描画
+
+@ 0 1 0 1ce735205f5b8eda1f33359f06180e4c
++ entry .Q64   一つの `Long` に収まる正確な有理数：正規形で、除算について全域的であり、未定義には `NaR` を用いる
+
+% 1 1 0 1b8612150522d4e61814c8d0647bc4a7
+
+@ 0 7 0 09fd8acc12e5343202dfa39112953620
++       `Q64` は一つのマシンワードに詰め込まれた有理数なので、そのコレクションはプリミティブの `long[]` となり、その算術はアロケーションを一切行わない。
++       絶対値部は値の連分数を Elias ガンマ符号で表したもので、これにより各有理数はちょうど一つの符号化を持ち、それはすでに既約である。
++       ビットの等価性が値の等価性であり、gcd による正規化はどこにも存在しない。
++       符号は最上位ビットであり、絶対値部がすべてゼロで符号ビットが立ったものが `NaR`（「not a rational」）である。
++       これはゼロ除算の結果であり、`Double.NaN` と同じく算術を通じて伝播し、比較では順序付けられないものとして扱われる。
+
+% 2 1 0 0aa5d967ce205c8c02ce16d8c3d2dcdf
+
+% 3 1 0 1789c5c900da6f861434a7611d9a475b
+
+% 4 1 0 10bbd5c61c685829094d393b7992af67
+
+% 0 1 0 06cb8ba8bdcbbeb107ff22085f154492
+
+% 0 1 0 0ea907518411489b0bcd94b16fb0b677
+
+% 0 1 0 1c9008599f0f1e5d05fd73c970d25767
+
+% 0 1 0 17002a92750417c4125ae3fc277316d6
+
+% 0 1 0 003f2af69b97e9061da786eee7862345
+
+% 0 1 0 14624c233c51807d1cb9042d76490764
+
+% 0 1 0 029dd97150f898fe06824c825cc2bde9
+
+% 0 1 0 0aa69a5add03dcde0c05edc668261ce8
+
+% 0 1 0 09cb4cd54c77746d0ff8f20d1602029d
+
+% 0 1 0 1dc2d8504a226f3d0c9c92320a2b386f
+
+% 1 1 0 0965f8ab9d0f988110d9a8097eaedfe9
+
+@ 0 6 0 09ac83b569a68024006357ec4ea7dbe3
++       整数は `2³¹−2`（`Q64.Max`）まで、単位分数は `1/(2³¹−1)` まで表せ、分子と分母がともに `2²⁴` 以下の有理数はすべて正確に表現できる。
++       正確な結果が 62 ビットのペイロードに収まらないとき、エンコーダーはその連分数のうち収まる最長の接頭部を残すので、結果は正確な値の近似分数または中間近似分数となる。
++       つまり、ラップアラウンドや例外ではなく、分母がそれ以下の有理数の中での最良近似となる。
++       `Q64(Long.MaxValue)` は `Q64.Max` に飽和する。
+
+@ 0 7 0 01ea50821ad2fd4d1a5ffa72f5ae2d42
++       `+`、`-`、`*`、`/`、前置の `-`、`sqrt` は、このコンパニオンにあるインライン given を通じた symbolism の演算子であり、インポートすべきポリシーはない。
++       `*` と `/` は `Int`、`Long`、`Double` のオペランドも取る。
++       統計的な集約である `mean`、`median`、`variance` は有理数上で正確であり、`std` は `import arithmeticOptions.q64RationalDivision` のもとで解決される。
++       このインポートにより `/` は `Double` を返すようになる。
++       拡張メソッドは `numerator`、`denominator`、`signum`、`nar`、`abs`、`whole`、`reciprocal`、`floor`、`ceiling`、`round`、`double`、`text`、`q32` である。
+
+@ 0 2 0 0141c0be7761a9980188b76fffcfcc38
++       コンパニオンのメンバーは `rationalInternal.Q64` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 0 1 0 1f63c4403ac9b54603854ecf1bd90fcb
+
+% 0 1 0 0fe7fde55d9d79fa16eb2f94b33afaa7
+
+% 0 1 0 02796616cbf494c11462d00ea587a853
+
+% 1 1 0 016bab2feb536d6715cb93f52868a3bc
+
+@ 0 1 0 15b2121d760cab7403fa75b9dc75c72d
++ entry .Q32   一つの `Int` に収まる正確な有理数：`Q64` の 32 ビット版
+
+% 1 1 0 08c24b21e413d5ee03367977d1992257
+
+@ 0 6 0 114792eac9cd0d9b024bc7285d787fcd
++       `Q32` は、`Q64` の符号化を 30 ビットのペイロードで用いて有理数を `Int` に詰め込む。
++       整数は `±32766` まで、単位分数は `1/32767` まで表せ、分子と分母がともに `2¹¹` 以下の有理数はすべて正確である。
++       算術は `Q64` と同じである。
++       `+`、`-`、`*`、`/`、前置の `-`、`sqrt` はインライン given を通じて提供され、`*` と `/` は `Int`、`Long`、`Double` を取り、ゼロの除数には `Nar` を返し、表現範囲を超えると最良近似に丸める。
++       `Q32` は `q64` によって、あるいは暗黙に、`Q64` へ正確に拡大される。
+
+% 2 1 0 03234a4f44b76a3d118ae0cad892c83e
+
+% 3 1 0 1b27b64950280e3f13f775d4a3020f6c
+
+% 0 1 0 11c8f0b6bee4670e102d9be461b73cde
+
+% 0 1 0 184a50e33d0ba79606ed4f6c1f0fb38d
+
+% 0 1 0 1642e546b5291a481ce949e4ed82a35e
+
+% 0 1 0 154184d3b5c50461113e7773a8242511
+
+% 1 1 0 1a9d3ff820e8875209029d4a662e1a88
+
+@ 0 2 0 01cbe05f81c0a3720033dfbffd98bc98
++       `Q32` の配列はプリミティブの `int[]` であり、これが `Q64` とは別にこの型が存在する理由である。
++       収まる分数については、同じメモリに二倍の有理数を格納できる。
+
+@ 0 2 0 040450ad84da8d7912c7e542ddb4d5cd
++       コンパニオンのメンバーは `rationalInternal.Q32` で宣言されており、型はそこからエクスポートされ、ドキュメントもそこにある。
+
+% 1 1 0 18336cabbb45881517cc5428a1077f75
+
+@ 0 1 0 1d576212bf40338007e4419e1b4484a7
++ entry .rationalInternal   `Q64` と `Q32` の不透明スコープ
+
+% 1 1 0 1c220f4faca37284180e4de57f4b3d3b
+
+% 2 1 0 1c167878a5063df9081e2b7f86b1ee55
+
+@ 0 5 0 02918418a6fbb8d10ce1ea653a6be06e
++       直接使うためのものではない。
++       このオブジェクトは有理数の表現（Stern–Brocot 木における位置を、ガンマ符号化した連分数として `Long` または `Int` に収めたもの）を閉じ込め、パッケージの他の部分からも隠す。
++       二つの型とそのコンパニオンは、`Q64` と `Q32` として `hypotenuse` にエクスポートされる。
++   entry .Q64   64 ビットの有理数。`hypotenuse.Q64` を参照
+
+% 1 1 0 1a45518e895bb70f001460acd75b9d17
+
+@ 0 5 0 0a9c39185996eac71d28672523db748a
++         不透明型 `Q64` のコンパニオンで、型とともに `hypotenuse` パッケージにエクスポートされる。
++     entry .Zero   ゼロ。すべてのビットがゼロのワード
++     entry .One   1
++     entry .Nar   有理数でないもの：ゼロ除算の結果で、伝播し、比較では順序付けられないものとして扱われる
++     entry .Max   最大の整数、`2147483646`
+
+% 0 1 0 0ab01c6c094358ff1cb56fe2733900b9
+
+@ 0 21 0 05dc4b621dc001c918144f51ecad5514
++     entry .underlying   `Q64` の実体が `Long` であるという証拠
++     entry .canEqual   `Q64` は `==` で別の `Q64` とのみ比較できる
++     entry .classTag   `Array[Q64]` をプリミティブの `long[]` にする `ClassTag`
++     entry .apply   `Int` または `Long` から、分子と分母から、あるいは `Double` から作る `Q64`
++         `Q64(numerator, denominator)` は既約分数に約分し、負の符号を分子に移す。
++         分母がゼロなら `Nar` となり、表現範囲を超える値は最良近似に丸められる。
++         `Q64(double)` は有限の `Double` を表現可能な範囲で最もよく近似したもの（`Q64(0.375)` はちょうど `3/8`）であり、`NaN` や無限大に対しては `Nar` となる。
++     entry .parse   `7`、`-5/3`、`NaR` から読み取る `Q64`、または `Rational.Error`
++     entry .comparison   符号付きの三方比較で、`NaR` は何よりも小さい
++         関係演算子そのものは `NaR` を順序付けられないものとして扱う。
++         こちらはソートに必要な全順序である。
++     entry .orderable   有理数に対する `<`、`<=`、`>`、`>=`、`min`、`max`。`NaR` との比較はすべて偽となる
++     entry .fromDigits   `genericNumberLiterals` のもとで、整数リテラルまたは小数リテラルから作る `Q64`
++         `val ratio: Q64 = 0.35` はちょうど `7/20` である。
++         小数リテラルは、その分数がペイロードに収まる限り正確に変換される。
++     entry .textualizable   有理数を `7`、`-5/3`、`NaR` の形で描画する
++     entry .addable   `Q64 + Q64`。正確に、あるいは収まる範囲での最良近似で計算する
++         インラインで、`add` もインラインなので、型そのものでの使用はインスタンス呼び出しもボックス化もなしに `Long` の算術を行う。
++         型は `[self <: Q64]` とされており、統計的な集約が作るようなスコーレム化された要素型でもこれを見つけられる。
+
+% 0 1 0 0b23483a54f1bc8e0137a21771403d3e
+
+% 0 1 0 153a36adc83e6f291dfcb4a1b2bd387b
+
+@ 0 36 0 136915f80e55836f1b29d39bac798288
++     entry .divisible   `Q64 / Q64`：全域的で、ゼロの除数には `Nar` を返す
++     entry .negatable   `Q64` に対する前置の `-`。`-Nar` は `Nar`
++     entry .zeroic   加法の単位元としての `Q64.Zero`。`total` と `mean` のため
++     entry .unital   乗法の単位元としての `Q64.One`
++     entry .rootable   `Q64` に対する `sqrt`：表現可能な有理数の平方なら正確で、そうでなければ最良近似
++         `Q64(2).sqrt` は √2 を符号化の深さいっぱいまで近似する。
++         負のオペランドは `Nar` を返す。
++     entry .divisibleDouble   `Q64 / Double`。除数はまず有理数に変換される
++         コレクションのサイズやちょうど半分の値は正確に変換され、これが `mean` と `median` を正確に保つ。
++     entry .multiplicableDouble   `Q64 * Double`。乗数はまず有理数に変換される
++     entry .multiplicableInt   `Q64 * Int`。両端の二つを除くすべての `Int` で正確で、両端はクランプされる
++     entry .multiplicableLong   `Q64 * Long`。`±(2³¹−2)` の範囲内で正確で、それより大きい乗数はクランプされる
++     entry .divisibleInt   `Q64 / Int`。ゼロ除算は `Nar` を返す
++     entry .divisibleLong   `Q64 / Long`。ゼロ除算は `Nar` を返す
++     entry .quotient   `Q64` を `case numerator /: denominator` として分解する。`NaR` はマッチしない
++     entry .intConversion   `Int` は暗黙に `Q64` へ変換される。`Int.MaxValue` と `Int.MinValue` を除いて正確である
++         両端の二つは 1 だけ丸められて `±(2³¹−2)` となる。
++         `F64` への変換がないのと同じく、正確ではないため `Long` からの変換はない。
++     entry .shortConversion   `Short` は暗黙に `Q64` へ変換される
++     entry .byteConversion   `Byte` は暗黙に `Q64` へ変換される
++     entry .q32Conversion   `Q32` は暗黙に、常に正確に `Q64` へ変換される
++     entry .numerator   `Q64` の拡張：既約分数での符号付きの分子。ゼロと `NaR` では `0`
++     entry .denominator   `Q64` の拡張：既約分数での分母。ゼロでは `1`、`NaR` に限り `0`
++     entry .signum   `Q64` の拡張：`-1`、`0`、`1` のいずれかで、`NaR` では `0`
++     entry .nar   `Q64` の拡張：値が `NaR` かどうか
++     entry .abs   `Q64` の拡張：絶対値
++     entry .whole   `Q64` の拡張：分母が 1 かどうか
++     entry .reciprocal   `Q64` の拡張：`1/q`。ゼロでは `Nar`
++     entry .floor   `Q64` の拡張：値を超えない最大の整数を `Q64` として返す
++     entry .ceiling   `Q64` の拡張：値を下回らない最小の整数を `Q64` として返す
++     entry .round   `Q64` の拡張：最も近い整数を `Long` として返す。`Double` に対する `math.round` と同じく、半分は切り上げる
++     entry .double   `Q64` の拡張：正しく丸めた `Double`。`NaR` では `NaN`
++     entry .text   `Q64` の拡張：`7`、`-5/3`、`0`、`NaR` の形で、`Q64.parse` で読み戻せる
++     entry .q32   `Q64` の拡張：`Q32` での最良近似で、値が収まる場合は常に正確
++   entry .Q32   32 ビットの有理数。`hypotenuse.Q32` を参照
+
+% 1 1 0 05c13f84414dcf7d118cf9080dc6869e
+
+@ 0 5 0 1ed25c0035b762c012a3bf1bdd38dd7b
++         不透明型 `Q32` のコンパニオンで、型とともに `hypotenuse` パッケージにエクスポートされる。
++     entry .Zero   ゼロ
++     entry .One   1
++     entry .Nar   有理数でないもの：ゼロ除算の結果
++     entry .Max   最大の整数、`32766`
+
+% 0 1 0 19af62d74f44bc8517113c9788793bc0
+
+@ 0 10 0 06b4e3cc51241116170af94ae8be8a18
++     entry .underlying   `Q32` の実体が `Int` であるという証拠
++     entry .canEqual   `Q32` は `==` で別の `Q32` とのみ比較できる
++     entry .classTag   `Array[Q32]` をプリミティブの `int[]` にする `ClassTag`
++     entry .apply   `Int` または `Long` から、分子と分母から、あるいは `Double` から作る `Q32`
++     entry .parse   `7`、`-5/3`、`NaR` から読み取る `Q32`、または `Rational.Error`
++     entry .comparison   符号付きの三方比較で、`NaR` は何よりも小さい
++     entry .orderable   `Q32` に対する `<`、`<=`、`>`、`>=`、`min`、`max`。`NaR` との比較はすべて偽となる
++     entry .fromDigits   `genericNumberLiterals` のもとで、整数リテラルまたは小数リテラルから作る `Q32`
++     entry .textualizable   `Q32` を `7`、`-5/3`、`NaR` の形で描画する
++     entry .addable   `Q32 + Q32`。インラインで、アロケーションを行わない
+
+% 0 1 0 055ae450f6fed4441ea9786ab15093c6
+
+% 0 1 0 0f71d2c46a4b86df1b6e8af4f2cd8f04
+
+@ 0 5 0 051775dd10858d500ea06f376cb14d53
++     entry .divisible   `Q32 / Q32`：全域的で、ゼロの除数には `Nar` を返す
++     entry .negatable   `Q32` に対する前置の `-`
++     entry .zeroic   加法の単位元としての `Q32.Zero`
++     entry .unital   乗法の単位元としての `Q32.One`
++     entry .rootable   `Q32` に対する `sqrt`。表現可能な有理数の平方なら正確
+
+% 0 1 0 0bd87688548051c2166f79e77b652b06
+
+% 0 1 0 11fdbe238594ed77175bd202e9622903
+
+@ 0 2 0 18f7713aed3ecb60168c3f6e8ac7e5e5
++     entry .multiplicableInt   `Q32 * Int`。`±32766` の範囲内で正確
++     entry .multiplicableLong   `Q32 * Long`。`±32766` の範囲内で正確
+
+% 0 1 0 01bbe77167115c8b0b206bff12299147
+
+% 0 1 0 17de5bf399e3635c1e3c95a779798814
+
+@ 0 16 0 14d47e764de88168125f69351ffc6988
++     entry .quotient   `Q32` を `case numerator /: denominator` として分解する
++     entry .shortConversion   `Short` は暗黙に `Q32` へ変換される。両端の二つを除いて正確である
++     entry .byteConversion   `Byte` は暗黙に `Q32` へ変換される
++     entry .numerator   `Q32` の拡張：既約分数での符号付きの分子
++     entry .denominator   `Q32` の拡張：既約分数での分母。`NaR` では `0`
++     entry .signum   `Q32` の拡張：`-1`、`0`、`1` のいずれか
++     entry .nar   `Q32` の拡張：値が `NaR` かどうか
++     entry .abs   `Q32` の拡張：絶対値
++     entry .whole   `Q32` の拡張：分母が 1 かどうか
++     entry .reciprocal   `Q32` の拡張：`1/q`。ゼロでは `Nar`
++     entry .floor   `Q32` の拡張：値を超えない最大の整数
++     entry .ceiling   `Q32` の拡張：値を下回らない最小の整数
++     entry .round   `Q32` の拡張：最も近い整数を `Long` として返す。半分は切り上げる
++     entry .double   `Q32` の拡張：正しく丸めた `Double`
++     entry .text   `Q32` の拡張：`7`、`-5/3`、`0`、`NaR` の形
++     entry .q64   `Q32` の拡張：同じ値を `Q64` として、常に正確に返す
+
+@ 0 1 0 045e03a50b49bb2c0eac247701bcccf8
++ entry .Bcd   パック形式の二進化十進数。JSON や YAML のパーサーが数値を蓄積するときの形
+
+% 1 1 0 10a2cbe458986c9f110d6ac75c3a8b43
+
+@ 0 6 0 05d8d7a00720146e17afbe9c4414da2d
++       `Bcd` は、数値の数字を書かれたとおりに（数字、小数点、指数とその符号を、それぞれ一ニブルずつ）凍結済みの `Array[Double]^{}` に保持する。
++       最初のワードはヘッダー（符号とニブル数）で、残りのワードはそれぞれ 16 ニブルを運ぶ。
++       これは jacinta の JSON パーサーの数値表現であり、YAML ライブラリが JSON ライブラリに依存せずに済むようここへ移された。
++       数値の正確なテキストを保持し、求められるまで `Double`、`Long`、`BigDecimal` のいずれにも確定させない。
+
+@ 0 5 0 0c90936dc4c00c7e1584b40163e3114b
++       ニブルは、数字が `0x0`–`0x9`、`.` が `0xA`、`e` が `0xB`、`e-` が `0xC` である。
++       小数点の前の先頭の `0` は格納時に省かれ、描画時に再び挿入される。
++       配列形式のほかに、小さな数値のための二つのコンパクトなパッキングがあり、パーサーは値を一つの `Long`（最大 14 ニブル）または `Int`（最大 7 ニブル）に保持し、それを溢れたときにだけ `Bcd` を構築できる。
++       それらの読み書きは `packBcdLong` の一族が行う。
+
+% 2 1 0 0485459b530ecbad18200a6da7db0488
+
+% 3 1 0 106e6ff9463922e212cc314ff8eb7fa6
+
+% 0 1 0 1c3393a2d692af78123a2aedf5bd6909
+
+% 0 1 0 023ab207fe552a2d1e7e22bf1da37e50
+
+% 0 1 0 1fa0d8da8d2ede3d0b8cd43e75938e70
+
+% 0 1 0 0735eb69782bdc0f1ef36af6c2da6ecb
+
+% 0 1 0 0571c0dc8506a6321eb6593db69b88bb
+
+% 1 1 0 046da2919424d8da0c8717f79edd00ec
+
+@ 0 27 0 0a6a8782fdce296a02a2f7b829eb316d
++   entry .adopt   新たに構築した `Array[Double]` を `Bcd` として包み、配列のケイパビリティを一度だけ解放する
++   entry .NibblesPerDouble   16：一つのデータワードが保持するニブル数
++   entry .MaxBcdLongNibbles   14：単一 `Long` のパッキングが保持できる最大のニブル数
++   entry .packBcdLong   蓄積した `content`、そのニブル数、符号を、単一 `Long` の形式に詰め込む
++       ビット 63 が符号、ビット 56–62 がニブル数、ビット 0–55 がニブルで、最新のものが下位 4 ビットに入る。
++       ニブル数が `MaxBcdLongNibbles` 以下であることは呼び出し側が確認する。
++       有効な値には少なくとも一つのニブルがあるので、`0L` は未初期化のスロットのために予約されている。
++   entry .bcdLongNibbleCount   単一 `Long` の値のニブル数
++   entry .bcdLongNegative   単一 `Long` の値の符号
++   entry .bcdLongText   単一 `Long` の値の、正規の JSON 数値テキスト
++   entry .bcdLongToDouble   単一 `Long` の値を、そのテキストを経由して `Double` にしたもの
++   entry .MaxBcdIntNibbles   7：単一 `Int` のパッキングが保持できる最大のニブル数
++   entry .packBcdInt   蓄積した `content`、そのニブル数、符号を、単一 `Int` の形式に詰め込む
++       ビット 31 が符号、ビット 28–30 がニブル数、ビット 0–27 がニブルである。
++   entry .bcdIntNibbleCount   単一 `Int` の値のニブル数
++   entry .bcdIntNegative   単一 `Int` の値の符号
++   entry .bcdIntText   単一 `Int` の値の、正規の JSON 数値テキスト
++   entry .bcdIntToDouble   単一 `Int` の値を、そのテキストを経由して `Double` にしたもの
++   entry .repackBcdIntAsLong   単一 `Int` の形式を単一 `Long` の形式に符号化し直したもの
++   entry .packBcdIntFromLong   単一 `Long` の形式を単一 `Int` の形式に符号化し直したもの。ニブルが 7 個以下の値に用いる
++   entry .fromContent15   パーサーの `Long` アキュムレーターから直接作る、ちょうど 15 ニブルの `Bcd`
++   entry .apply   `Bcd(bigDecimal)`：`BigDecimal` のプレーンな文字列の数字
++   entry .fromString   正の絶対値を表す数値文字列と符号フラグから作る `Bcd`
++       テキストには数字、一つの `.`、そして省略可能な符号付きの `e`/`E` の指数を含められる。
++       先頭の `-` は呼び出し側が取り除き、`negative` として渡す。
++       先頭の `0.` は、パーサーと同じくゼロを除いて格納される。
++   entry .Builder   パーサーが読むのに合わせて、`Bcd` を一ニブルずつ組み立てる
+
+% 1 1 0 1438a191b803da8b0eb2449e16184d53
+
+@ 0 21 0 188ed2c3579457be09202ebcd158443a
++         可変のアキュムレーターである。
++         `#add` はニブルを追加し、16 個ごとにデータワードを確定させる。
++         `#overwriteLast` は最新のニブルを書き換え（`-` が続いたときに `e` を `e-` にする）、`#seedFromLong` はパーサーの単一 `Long` アキュムレーターが溢れたときにその内容を写し入れ、`#finish` は符号とともに結果を凍結する。
++     entry #add   ニブルを一つ追加する。`0x0`–`0xC`
++     entry #overwriteLast   最後に追加したニブルを置き換える
++     entry #seedFromLong   単一 `Long` のアキュムレーターに保持された `count` 個のニブルを追加する
++     entry #nibbleCount   追加されたニブルの数
++     entry #finish   与えられた符号を持つ、完成した `Bcd`
++   entry .negative   `Bcd` の拡張：数値が負かどうか
++   entry .nibbleCount   `Bcd` の拡張：数値が持つニブルの数
++   entry .eachNibble   `Bcd` の拡張：古い順に各ニブルを訪れる
++       `each` ではなく `eachNibble` という名前なのは、`Bcd` はコレクションではなく数値であり、そうしなければ `Bcd.*` をインポートしたファイルのすべてのレシーバについて、コレクションの `each` が隠されてしまうからである。
++   entry .text   `Bcd` の拡張：書かれたとおりの数値を、正規の JSON 形式で返す
++       数字、省略可能な小数点と小数部、省略可能な `e[-]digits` の指数からなり、負なら `-` が前に付き、先頭の小数点の前には `0` が再び挿入される。
++   entry .toBigDecimal   `Bcd` の拡張：正確な値を `BigDecimal` として返す
++   entry .toDouble   `Bcd` の拡張：最も近い `Double`
++   entry .toLong   `Bcd` の拡張：値を `Long` として返す。収まる整数でなければ `Unset`
+
+@ 0 7 0 01f3212b18a24bfb11fa2bbf6fa99036
++ entry .bin   `bin"…"` リテラル：8、16、32、64 桁の二進数から作る `Byte`、`Short`、`Int`、`Long`
++     `bin"00001111"` は `Byte` の `15` であり、コードのコンパイル時に検査される。
++     読みやすさのために数字を空白で区切ってよく、結果の型は桁数によって選ばれるので、`bin"1111 0000 1111 0000"` は `Short` である。
++     `0`、`1`、空白以外の文字はエラー `↯/s.27.2`（_a binary value can only contain characters '0' or '1'_）となり、8、16、32、64 以外の桁数はエラー `↯/s.27.5` となる。
++     結果はプリミティブであり、`bits` でそれを `B8`、`B16`、`B32`、`B64` にできる。
+
+% 2 1 0 0e623ab6dc9b882b1341418eb156a9d1
+
+% 3 1 0 04a28a8aba2cca1b0423473298d5dfce
+
+% 0 1 0 02871b2c072f30651fae55d57d909739
+
+% 0 1 0 0ada551a194f9cbd16cd2237d6708189
+
+% 1 1 0 1e061f3393d5257c0b5383f8f858ca01
+
+@ 0 6 0 1d2cb3b0ccc1856204a2155e11284f87
++ entry .hex   `hex"…"` リテラル（凍結済みのバイト配列）と、任意の整数の十六進表記
++     `hex"cafe babe"` は、数字が表すバイトからなる `Array[Byte]^{}` であり、コードのコンパイル時に構築される。
++     数字の間の空白と改行は無視されるので、長い定数を行に分けて並べられ、数字は大文字でも小文字でもよい。
++     十六進数字でない文字はエラー `↯/s.27.4` となり、桁数が奇数ならエラー `↯/s.27.3`（_a hexadecimal value must have an even number of digits_）となる。
+
+% 2 1 0 1d8eb03b4980fde606c402e796cf077d
+
+% 3 1 0 07a839ffcdc69aa917f7123948b72294
+
+% 0 1 0 1bd5cba59df652aa18453fe6d77fbffc
+
+% 0 1 0 1721913b3bade5c5189a0489e5384e66
+
+% 1 1 0 04d2a81c02e2b11608f144466f4f6293
+
+@ 0 5 0 19d44d68fafb2b15070e0e7930904c7f
++     拡張メソッドとしての `hex` は、`Byte`、`Short`、`Int`、`Long` を `java.lang.Integer.toHexString` と同じように十六進で描画する。
++     `Byte` と `Short` は符号なしのビットパターンとして（`(-1: Byte).hex` は `t"ff"`）、`Int` と `Long` は 2 の補数として描画され、ゼロ埋めはされない。
++     `B8`…`B64` の `hex` は型の幅までゼロ埋めし、`U*` や `S*` の `hex` は符号なしまたは符号付きの値を 16 進で表す。
+
+@ 0 4 0 07140f9554ea065815398e4a474182db
++ entry .minimum   コレクションの最小要素。空なら `Unset`
++     任意の `Traversable` コレクションと任意の `Iterable` に対する拡張で、要素に `Orderable`（厳密には自分自身に対する `Commensurable against`）が必要である。
++     一回の走査で済み、等しい最小要素が複数あれば最初のものが選ばれる。
+
+% 2 1 0 18a3320da57e1f3f1ea9363739dac3ba
+
+% 3 1 0 0df9b04467581c6405b557629142b95e
+
+% 0 1 0 1c772a86d178c19b110fc0b87c142dc9
+
+% 0 1 0 1bbf34a94c762ff911d7082997f609b0
+
+% 1 1 0 0a7a46cceaabe31a1aadbe35e8da783b
+
+@ 0 3 0 13b18c2b580b5f8d0427759635a4ef36
++ entry .maximum   コレクションの最大要素。空なら `Unset`
++     `minimum` と同じく、任意の `Traversable` コレクションと任意の `Iterable` に対する拡張で、要素に `Orderable` が必要である。
+
+@ 0 8 0 0965bbeb5b699c4604871bfa794a5aa7
++ entry .median   コレクションの中央の値、または中央の二つの値の平均。あるいは `Unset`
++     任意の `Traversable` コレクションと任意の `Iterable` に対する拡張である。
++     中央値はクイックセレクトで求める。
++     これはソートではなく選択なので、コレクション全体が並べ替えられることはない。
++     個数が偶数のときは中央の二つの値を平均するので、要素型には `Orderable` だけでなく、自分自身との `Subtractable`、その差の `Double` による `Divisible`、そして結果を要素に足し戻す `Addable` が必要となる。
++     数値、量、有理数はいずれもこれを満たし、結果の型はその加算が生むものとなる。
+
+% 2 1 0 062435de85287adc05afa4dda395151f
+
+% 3 1 0 0def476fff35aacd1ae0a425394f6012
+
+% 0 1 0 1cb236a30814cc9c086f020c6f281acd
+
+% 0 1 0 140724088a6b3a360c2b2133dda447ac
+
+% 0 1 0 11b09a050df8a8f015808f2376df1920
+
+% 1 1 0 1232a6867d04b462097d75d4e7ee2b85
+
+@ 0 4 0 1d08f9fae514d5830a6094e0690da981
++ entry .abs   `Float`、`Double`、`Byte`、`Short`、`Int`、`Long` の絶対値
++     `math.abs` と同じく、各プリミティブに対する拡張である。
++     符号付きの型 `S8`…`S64`、`F32`、`F64`、`Q64`、`Q32`、`Decimal` は独自の `abs` を持つ。
++     Java と同じく、`Byte.MinValue.abs` は `Byte.MinValue` である。
+
+@ 0 2 0 16c5cd7ffc39cd410e540511c32042e7
++ entry .ceiling   `Float` または `Double` を下回らない最小の整数値
++     拡張としての `math.ceil` である。
++     `F32` と `F64`、そして `Q64` と `Q32` にもある。
+
+@ 0 3 0 0cce89173a5616401a3f5bfa36e0cb4a
++ entry .floor   `Float` または `Double` を超えない最大の整数値
++     拡張としての `math.floor` である。
++     `F32`、`F64`、`Q64`、`Q32` にもある。
++     整数の床除算は `/-` である。
+
+@ 0 2 0 06ff00c36c4114b30045662fbfff59b5
++ entry .exponent   `Float`（`Int` として）または `Double`（`B16` として）の、バイアスを除いた二進指数
++     拡張としての `math.getExponent` である。
++     `F32` と `F64` にもある。
+
+@ 0 2 0 0d00d4f08cf558db15a1b99a127a1dfa
++ entry .increment   この値より大きい、次に表現可能な `Float` または `Double`
++     拡張としての `math.nextUp` であり、`successor` も同じである。
++     `F32` と `F64` にもある。
+
+@ 0 2 0 0186af7643ffc0a404c54918576cf893
++ entry .decrement   この値より小さい、次に表現可能な `Float` または `Double`
++     拡張としての `math.nextDown` であり、`predecessor` も同じである。
++     `F32` と `F64` にもある。
+
+@ 0 1 0 04aff6b1945c42d41a126ed664ae2925
++ entry .successor   この値より大きい、次に表現可能な `Float` または `Double`。`increment` と同じ
+
+@ 0 1 0 0e4161f1ca4d2402101d5dcc9a62639d
++ entry .predecessor   この値より小さい、次に表現可能な `Float` または `Double`。`decrement` と同じ
+
+@ 0 2 0 00ba13341762fea80d5f07400cd54eb3
++ entry .round   `Float` または `Double` を最も近い `Long` に丸めたもの。半分は切り上げる
++     拡張としての `math.round` である。
++     `F32`、`F64`、`Q64`、`Q32` にもある。
+
+@ 0 2 0 1493507e1832d00a03461ac0fb749ec4
++ entry .scalb   `Float` または `Double` に 2 のべき乗を掛けたもの：`value.scalb(n)` は `value × 2ⁿ`
++     拡張としての `math.scalb` で、範囲内のすべての結果について正確である。
++     `F32` と `F64` にもある。
+
+@ 0 3 0 04267a54596170490267efa84e2643c3
++ entry .signum   `Float` または `Double` の符号。型は `-1.0 | 0.0 | 1.0`
++     拡張としての `math.signum` で、結果の型は取りうる三つの値のユニオンである。
++     `F32` と `F64` にもある。
++     `Q64`、`Q32`、`Decimal` は整数の `signum` を持つ。
+
+@ 0 2 0 12749d03a64634261d572ac1a267a6f0
++ entry .ulp   `Float` または `Double` の最終桁の単位：次の値までの距離
++     拡張としての `math.ulp` である。
++     `F32` と `F64` にもある。
+
+@ 0 6 0 1b783857993e79a31c507b1223aeaf5d
++ entry .bits   プリミティブのビットパターンを、その幅の `B8`、`B16`、`B32`、`B64` として返す
++     `(0xf0: Byte).bits` は `B8`、`0xf0.bits` は `B32`、`0xf0L.bits` は `B64` であり、コストはかからない。
++     逆変換は `Short(bits)`、`Int(bits)`、`Long(bits)` である。
++     `Float` と `Double` については IEEE のパターン（`floatToIntBits`、`doubleToLongBits` で、`NaN` は正規化される）であり、`Double` のものは `B64` となる。
++     `U*` 型と `S*` 型はそれぞれパターンを返す `bits` を持ち、`F64` と `F32` のものは IEEE のパターンを返す。
+
+% 2 1 0 17046065214043f70fc7bf064846eb74
+
+% 3 1 0 140ada37b2b706551fc705da59ca6a6c
+
+% 0 1 0 084b5411bad606ac171fff0332d40ee6
+
+% 0 1 0 0397f04c09f3b556079c858e22033bc9
+
+% 0 1 0 1c0bfa6fda682548158f99ec7252867b
+
+% 0 1 0 014fb2e5084016b9054faece4a98d0bb
+
+% 1 1 0 04ec562dd174735d07359650672c775e
+
+@ 0 3 0 1ff61d2faa4c9d160f45bf25e37a782d
++ entry .rawBits   `Float` または `Double` の IEEE パターン。`NaN` のペイロードを保持する
++     拡張としての `floatToRawIntBits` と `doubleToRawLongBits` である。
++     `bits` はすべての `NaN` を一つのパターンに正規化する。
++     `F32` と `F64` にもある。
+
+@ 0 2 0 0365fefe412f4f631c06eb12da94f956
++ entry .finite   `Float` または `Double` が無限大でも `NaN` でもないかどうか
++     `F32` と `F64` にもある。
+
+@ 0 2 0 07cc07176d1abfc719f4a18ffe0b14c4
++ entry .infinite   `Float` または `Double` が正または負の無限大かどうか
++     `F32` と `F64` にもある。
+
+@ 0 2 0 03b5ad2d0b6836e10562c54ea2b7f5de
++ entry .nan   `Float` または `Double` が `NaN` かどうか
++     `F32` と `F64` にもある。
++     有理数の未定義値は、代わりに `nar` で判定する。
+
+@ 0 2 0 14d15a1e759666581144629663455781
++ entry .mantissa   `Double` の IEEE パターンの下位 52 ビットを `B64` として返す
++     `Double` と `F64` に対する拡張である。
+
+@ 0 6 0 02a4758536c52af204da27f60024da45
++ entry .**   数値をべき乗する：`base ** exponent`。指数は `Double`
++     `Float`（結果は `Float`）と、`Double`、`Byte`、`Short`、`Int`、`Long`（結果は `Double`）に対する拡張で、`math.pow` と同じである。
++     整数の形は切り捨てるのではなく拡大するので、`(200: Short) ** 2.0` は `40000.0`、`2 ** 0.5` は `√2` である。
++     `F64 ** x` と `F32 ** x` は、それらに拡大できる任意のオペランドを取り、自身の型を返す。
++     `S*` 型は `Double` を返す。
+
+@ 0 5 0 065be12481b058451ec2af2d1c8abd02
++ entry .%%   床剰余：除数の符号を持つ剰余で、除数が正なら決して負にならない
++     `Float`、`Double`、`Byte`、`Short`、`Int`、`Long`、そして `S8`…`S64` に対する拡張である。
++     被除数の符号を取る `%` とは異なり、`-7 %% 3` は `2`、`7 %% -3` は `-2` なので、時計の時刻のように値を範囲内に収められる。
++     対応する除算は `/-` である。
+
+% 2 1 0 07180cc7484066b60f6a91d6646165f1
+
+% 3 1 0 198e3698c372b74509df9432819ade7a
+
+% 0 1 0 0ce9056e152d176c017beab31fcc26e5
+
+% 0 1 0 11aaf2a26771f6a707a02e51eb6754b0
+
+% 0 1 0 10f874cb8ea2a5fc03c6b3848745e421
+
+% 1 1 0 049c8b6df93359dc11fea8dca90179e8
+
+@ 0 4 0 04210322b4decfb0086f27c2d8fd8803
++ entry ./-   床除算：商を負の無限大の方向へ丸める
++     `Byte`、`Short`、`Int`、`Long`、そして `S8`…`S64` に対する拡張で、`math.floorDiv` と同じである。
++     `/` が `-3` を返すところで、`-7 /- 2` は `-4` を返す。
++     `%%` と対になっており、`(a /- b)*b + (a %% b) == a` が成り立つ。
+
+@ 0 3 0 0681f3c4464997370757101290ce74d6
++ entry .long   `Byte`、`Short`、`Int` を `Long` に拡大したもの
++     それぞれに対する拡張である。
++     `S*` 型にも `long` があり、`U*` 型の `long` は符号なしの値である。
+
+@ 0 2 0 0c53c4a59b626aad149735290b3e69b8
++ entry .int   `Byte` を拡大したもの。また、`S8`、`S16`、`S32`、`U8`、`U16` の `Int` の値
++     `Byte` に対する拡張は、`short` と同じく型が `Long` である。
+
+@ 0 1 0 13c508271ecbfee81dd687e22f321560
++ entry .short   `Byte` を拡大したもの。また、`S8`、`S16`、`U8` の `Short` の値
+
+@ 0 4 0 1430cc32a0c69e7212a20f36f2a34e36
++ entry .octal   `Byte`、`Short`、`Int`、`Long` の八進表記
++     `toOctalString` と同じく、`Byte` と `Short` は符号なしのビットパターンとして、ゼロ埋めなしで描画される：`(-1: Byte).octal` は `t"377"` である。
++     `B*` 型は幅までゼロ埋めし、`U*` 型と `S*` 型は値を 8 進で描画する。
+
+@ 0 2 0 17faf11420e7333712d9406f56906743
++ entry .base32   `Byte`、`Short`、`Int`、`Long` の 32 進表記。数字は `0`–`9` と `a`–`v`
++     `java.lang.Integer.toString(value, 32)` と同じく符号付きである。
++     `U*` 型と `S*` 型にもある。
+
+@ 0 4 0 04012a19bceca6e413d7e429f29086e2
++ entry .binary   `Byte`、`Short`、`Int`、`Long` の二進表記
++     `toBinaryString` と同じく、`Byte` と `Short` は符号なしのビットパターンとして描画されるので、`(-1: Byte).binary` は八つの `1` である。
++     `B*` 型は幅までゼロ埋めし、`U*` 型と `S*` 型は値を 2 進で描画する。
+
+@ 0 3 0 0d2e66b867e5b676082ad1264a5d609e
++ entry .gcd   二つの整数の最大公約数。ユークリッドの互除法による
++     `Byte`、`Short`、`Int`、`Long`、そしてすべての `U*` 型と `S*` 型に対する拡張で、それぞれ自身と同じ型のオペランドを取る。
++     `gcd(0)` はレシーバである。
+
+@ 0 2 0 12527f00fa4268b00f0b9867a03f0c13
++ entry .lcm   二つの `Byte`、`Short`、`Int`、`Long` の最小公倍数
++     `a*b/a.gcd(b)` をレシーバ自身の幅で計算するので、その幅を超える積はラップアラウンドする。
+
+@ 0 5 0 1c61eff9bc8ca62e0ed63e914d4b6654
++ entry .\   `numerator \ denominator`：`Q64` としての正確な有理数
++     `Int` と `Long` に対する拡張である。
++     `\` は最も高い優先順位の層にあり、`*`、`/`、`+`、`-` より強く結合するので、括弧なしで `1 \ 3 + 1 \ 6` は二つの分数の和、`2 \ 3*3 \ 4` はそれらの積となる。
++     分母がゼロなら `Q64.Nar` となり、分子や分母が負なら符号は移される：`-5 \ 3` は `Q64(-5, 3)` である。
+
+% 2 1 0 0b5bd010af4599340b376de4e74a67db
+
+% 3 1 0 05c8b7f43d69773e11a2db7f85413bd0
+
+% 0 1 0 1733dcb37bf3000616b31caf141bf660
+
+% 0 1 0 05b07b38e58de798048857eab66d9bd3
+
+% 0 1 0 14fa7f061f8782280e2c9118c0d71843
+
+% 1 1 0 026afce1587beec5101d0f370b430563
+
+@ 0 6 0 0fbc190dd449586e1bdf4226484247fc
++ entry .apply   `Short(bits)`、`Int(bits)`、`Long(bits)`、`Double(long)`、そしてビッグエンディアンで読む `Short(bytes)`、`Int(bytes)`、`Long(bytes)`
++     プリミティブのコンパニオンに対する拡張である。
++     `Short(bits: B16)`、`Int(bits: B32)`、`Long(bits: B64)` はパターンをプリミティブとして再解釈し、コストはかからない。
++     `Double(long)` は `Double.longBitsToDouble` であり、`Short(bytes)`、`Int(bytes)`、`Long(bytes)` は凍結済みの `Array[Byte]^{}` の先頭 2、4、8 バイトをビッグエンディアンの整数として読む。
++     これらは `soundness` アンブレラにはエクスポートされていないので、`import hypotenuse.*` が必要である。
+
+@ 0 3 0 0e2e3f4e17ae50201f037811fa857a3e
++ entry .erf   ガウスの誤差関数 `erf(x)`。小数点以下約 7 桁の精度
++     Abramowitz と Stegun による有理近似（公式 7.1.26）で、絶対誤差はどこでも `1.5 × 10⁻⁷` 未満である。
++     `erf(0.0)` は `0.0` であり、`erf(x)` は `±1` に近づく。
+
+@ 0 1 0 18304d28887a6e7f1bcf094b03bdab04
++ entry .π   円周と直径の比、`math.Pi`
+
+@ 0 1 0 06f2d07196901e6e11607e3b19763f77
++ entry .pi   `π` を入力できないキーボードのための `π`
+
+@ 0 1 0 02814a7eeb4ada1b042538e318d4be53
++ entry .euler   ネイピア数、`math.E`
+
+@ 0 1 0 0d2a2d7c8ce6dfd512501e5218856895
++ entry .φ   黄金比、`(1 + √5)/2`
+
+@ 0 1 0 00b58d9fe7bb6dc010ebdbdbdba97b44
++ entry .goldenRatio   `φ` を入力できないキーボードのための `φ`
+
+@ 0 4 0 182fba8c5a3b38760d0b0aa24364dd8e
++ entry .cos   ラジアンで表した角の余弦を `F64` として返す
++     三角関数と対数関数はいずれも、`F64` に変換できるもの（`Double`、`Int`、`F64`、`U8`）を取り、`F64` を返すので、キャストなしで関数を合成できる：`cos(π/3)`、`ln(exp(2))`。
+
+% 2 1 0 0b4566c7e0e577fe157be0184bdca4ce
+
+% 3 1 0 09359d7bdbf6a9471174c9cd6f6b6908
+
+% 0 1 0 0e6c5483b8fa6d520f12f68bc82102ef
+
+% 0 1 0 0924d8ded15ccb740f93b5b4cba1a433
+
+% 0 1 0 06140d36234328730750bf0f6e6a61e4
+
+% 1 1 0 19df789265ee9fc717924f968b7d325d
+
+@ 0 1 0 12ca7cbf65de804e157a5fda0f3b2b19
++ entry .acos   逆余弦をラジアンで、`F64` として返す
+
+@ 0 1 0 12174d23caae1c8c179c8feabaa2c6c4
++ entry .cosh   双曲線余弦を `F64` として返す
+
+@ 0 1 0 0a6db7534895a2ed1ef220fc8dbb3762
++ entry .sin   ラジアンで表した角の正弦を `F64` として返す
+
+@ 0 1 0 02b99eddca078a7d01bba13e91985cf6
++ entry .asin   逆正弦をラジアンで、`F64` として返す
+
+@ 0 1 0 145f80c71cfd64281e4ed9834b3027f7
++ entry .sinh   双曲線正弦を `F64` として返す
+
+@ 0 1 0 18b828bb35a741e40851c64f1f7d759c
++ entry .tan   ラジアンで表した角の正接を `F64` として返す
+
+@ 0 1 0 149e6a882a4eff2110edc6dc3d56950c
++ entry .atan   逆正接をラジアンで、`F64` として返す
+
+@ 0 3 0 1592d7808fbc83bd06a9fde43ceac8ae
++ entry .hyp   `hyp(a, b)`：斜辺 `√(a² + b²)`。途中でオーバーフローしない
++     `math.hypot` である。
++     第一引数は `F64` に変換できる任意のもので、第二引数は `F64` である。
+
+@ 0 1 0 0db2ac14f62f056517b462334e3bba47
++ entry .exp   `e` のべき乗を `F64` として返す
+
+@ 0 1 0 1ad84b7e28b895721bf33f5b114a23eb
++ entry .expm1   `exp(x) - 1`。小さな `x` で精度が高い
+
+@ 0 1 0 04793f0bfd2b6087096a7f309edeab48
++ entry .ln   自然対数を `F64` として返す
+
+@ 0 1 0 15072399d52743340b212982f69552f3
++ entry .log10   常用対数を `F64` として返す
+
+@ 0 1 0 029e683fcc4d397102b87dd61e56c82a
++ entry .log1p   `ln(1 + x)`。小さな `x` で精度が高い
+
+@ 0 5 0 1a82c0167e6571771984f2a51db08c0c
++ entry .<   任意の `left is Commensurable against right` に対する `left < right`
++     任意の値に対するインラインの拡張である。
++     スコープ内の `Commensurable` の given を用いる。
++     これには、各数値型のコンパニオンの `Orderable`、`F64` の `Int` や `Double` との比較、`Commensurable.orderable` を通じた任意の `Comparable` 型が含まれる。
++     また連鎖でき、`a < x < b` は `Commensurable.numeric` によって書き換えられた一つの範囲判定となる。
+
+@ 0 1 0 1af27982775365a411eb334797767839
++ entry .<=   任意の `left is Commensurable against right` に対する `left <= right`。`<` と同じく連鎖できる
+
+@ 0 1 0 1afda7b4c5db02aa1af5ea1918b240ea
++ entry .>   任意の `left is Commensurable against right` に対する `left > right`
+
+@ 0 1 0 092149d9fe4d94ae00829c2d43e1627a
++ entry .>=   任意の `left is Commensurable against right` に対する `left >= right`
+
+@ 0 3 0 09be044cb94027db05a15832d2eb84db
++ entry .min   `left min right`：`Orderable` な型の二つの値のうち小さい方
++     レシーバの型はオペランドの型なので、`S32.Max min S32(1.bits)` も `1.5 min 2.0` も解決される。
++     コレクションに対する形は `minimum` である。
+
+@ 0 1 0 10eacadd9e40b22c062aa0adf31b9b23
++ entry .max   `left max right`：`Orderable` な型の二つの値のうち大きい方
+
+@ 0 1 0 0267e916d879b4340c9cd62b405a41f5
++ entry .internal   固定幅の型とその拡張メソッドの不透明スコープ
+
+% 1 1 0 07b631fa97e68eb513b255f885e65c35
+
+% 2 1 0 132551408c5c3b2c0e5aac666ffd4b6c
+
+@ 0 7 0 19abac9648e48aad1c545b0c7979cfc1
++       直接使うためのものではない。
++       `U8`…`U64`、`S8`…`S64`、`F32`、`F64`、`B8`…`B64` はここで宣言された不透明型であり、その表現はパッケージの他の部分からも隠される。
++       それらはそれぞれの名前で `hypotenuse` にエクスポートされ、そこにそれぞれのページがある。
++       それらに対する拡張メソッドもここで宣言されており、名前ごとにこのオブジェクトの項目として列挙されている。
++       各型のページに、その型がどれを持つかが書かれている。
++   entry .Bits   `Bits[8 | 16 | 32 | 64]`：与えられた幅の `B*` 型を表すマッチ型
++   entry .U64   符号なし 64 ビット整数。`0` から `18446744073709551615` まで。`hypotenuse.U64` を参照
+
+% 1 1 0 0abd34581c3fb3f61258656ac92b10fc
+
+@ 0 29 0 13ec7f6afe9db97a085a3dc12a84a2bb
++         不透明型 `U64` のコンパニオンで、型とともに `hypotenuse` パッケージにエクスポートされる。
++     entry .Min   ゼロ
++     entry .Max   `18446744073709551615`。すべてのビットが立っている
++     entry .underlying   `U64` の実体が `Long` であるという証拠。不透明型の仕組みのためのもの
++     entry .addable   `U64 + U64`。スコープ内の `CheckOverflow` ポリシーが定めるとおりに計算する
++         インスタンスはスコープ内の `CheckOverflow` の given の `overflow.addU64` であり、そのシングルトン型で型付けされているので、`arithmeticOptions.uncheckedOverflow` のもとでは加算が一つの `ladd` にインライン化される。
++         `checkedOverflow` のもとでは結果は `U64 raises Arithmetic.Error` となり、和がどちらかのオペランドより小さくなったときにエラーが発生する。
++     entry .subtractable   `U64 - U64`。スコープ内の `CheckOverflow` ポリシーが定めるとおりに計算する
++         `overflow.subtractU64` である。
++         `uncheckedOverflow` のもとではラップアラウンドし、`checkedOverflow` のもとでは減数の方が大きいときに `Arithmetic.Error` を発生させる。
++     entry .multiplicable   `U64 * U64`。スコープ内の `CheckOverflow` ポリシーが定めるとおりに計算する
++         `overflow.multiplyU64` である。
++         `checkedOverflow` のもとでは、積の上位ワード（`Math.unsignedMultiplyHigh`）がゼロでないときに `Arithmetic.Error` を発生させる。
++     entry .divisible   `U64 / U64`。符号なしで、スコープ内の `DivisionByZero` ポリシーが定めるとおりに計算する
++         `division.divideU64` であり、`Long.divideUnsigned` で除算する。
++         `arithmeticOptions.uncheckedDivision` のもとではゼロの除数は JVM の `ArithmeticException` を投げ、`checkedDivision` のもとでは `Arithmetic.Error` を発生させる。
++     entry .canEqual   `U64` は `==` で別の `U64` とのみ比較できる
++     entry .fromDigits   `genericNumberLiterals` のもとで、整数リテラルから作る `U64`
++         符号なしとして解析され、有効な符号なし 64 ビット整数でないリテラルはコンパイル時に失敗する。
++     entry .textualizable   符号なしの十進値を `Text` として描画する
++     entry .apply   `U64(bits: B64)`：ビットパターンを符号なし整数として読む
++         パターンがそのまま値なので、コストはかからない。
++         `U64(Long.MinValue.bits)` は `9223372036854775808` である。
++     entry .orderable   `<`、`<=`、`>`、`>=`、`min`、`max` のための符号なし比較
++         コンパニオンを通じて暗黙のスコープにあり、`Long.compareUnsigned` で比較する。
++   entry .U32   符号なし 32 ビット整数。`0` から `4294967295` まで。`hypotenuse.U32` を参照
+
+% 1 1 0 11858a657fd3a8c115605f88556cd5f4
+
+@ 0 22 0 142b4cee4b3904b20b9f8189a8aa9f38
++         不透明型 `U32` のコンパニオンで、型とともに `hypotenuse` パッケージにエクスポートされる。
++     entry .Min   ゼロ
++     entry .Max   `4294967295`。すべてのビットが立っている
++     entry .underlying   `U32` の実体が `Int` であるという証拠
++     entry .addable   `U32 + U32`。スコープ内の `CheckOverflow` ポリシーによる
++         `overflow.addU32` である。
++         `checkedOverflow` のもとでは、和が `4294967295` を超えると `Arithmetic.Error` を発生させる。
++     entry .subtractable   `U32 - U32`。スコープ内の `CheckOverflow` ポリシーによる
++         `overflow.subtractU32` である。
++         `checkedOverflow` のもとでは、結果が負になるときに `Arithmetic.Error` を発生させる。
++     entry .multiplicable   `U32 * U32`。スコープ内の `CheckOverflow` ポリシーによる
++         `overflow.multiplyU32` である。
++         積は `Long` で計算され、`checkedOverflow` のもとでは 32 ビットの範囲に対して検査される。
++     entry .divisible   `U32 / U32`。符号なしで、スコープ内の `DivisionByZero` ポリシーによる
++         `division.divideU32` であり、`Integer.divideUnsigned` を用いる。
++         ゼロの除数は、`checkedDivision` のもとでは `Arithmetic.Error` を発生させ、`uncheckedDivision` のもとでは例外を投げる。
++     entry .canEqual   `U32` は `==` で別の `U32` とのみ比較できる
++     entry .fromDigits   `genericNumberLiterals` のもとで、整数リテラルから作る `U32`
++     entry .textualizable   符号なしの十進値を `Text` として描画する
++     entry .apply   `U32(bits: B32)`：ビットパターンを符号なし整数として読む
++     entry .orderable   `<`、`<=`、`>`、`>=`、`min`、`max` のための符号なし比較
++   entry .U16   符号なし 16 ビット整数。`0` から `65535` まで。`hypotenuse.U16` を参照
+
+% 1 1 0 010d0aa6308df82918b50d6ee8fd92a7
+
+@ 0 21 0 1e7ab61061bb4c3a11358b5ec0a1dfec
++         不透明型 `U16` のコンパニオンで、型とともに `hypotenuse` パッケージにエクスポートされる。
++     entry .Min   ゼロ
++     entry .Max   `65535`。すべてのビットが立っている
++     entry .underlying   `U16` の実体が `Short` であるという証拠
++     entry .addable   `U16 + U16`。スコープ内の `CheckOverflow` ポリシーによる
++         `overflow.addU16` である。
++         `Int` で計算され、`checkedOverflow` のもとでは `65535` に対して検査される。
++     entry .subtractable   `U16 - U16`。スコープ内の `CheckOverflow` ポリシーによる
++         `overflow.subtractU16` である。
++         `checkedOverflow` のもとでは、負の結果は `Arithmetic.Error` を発生させる。
++     entry .multiplicable   `U16 * U16`。スコープ内の `CheckOverflow` ポリシーによる
++         `overflow.multiplyU16` である。
++         `checkedOverflow` のもとでは `U16(256) * U16(256)` はオーバーフローする。
++     entry .divisible   `U16 / U16`。スコープ内の `DivisionByZero` ポリシーによる
++     entry .canEqual   `U16` は `==` で別の `U16` とのみ比較できる
++     entry .fromDigits   `genericNumberLiterals` のもとで、整数リテラルから作る `U16`
++         範囲外のリテラルに対しては、エラー `↯/s.27.12`（_a U16 may not be less than 0_）とエラー `↯/s.27.14`（_a U16 may not be greater than 65535_）がコンパイル時に報告される。
++     entry .textualizable   符号なしの十進値を `Text` として描画する
++     entry .apply   `U16(bits: B16)`：ビットパターンを符号なし整数として読む
++     entry .orderable   `<`、`<=`、`>`、`>=`、`min`、`max` のための符号なし比較
++   entry .U8   符号なし 8 ビット整数。`0` から `255` まで。`hypotenuse.U8` を参照
+
+% 1 1 0 163d6b95c112f3fe1a6b02f5582f73eb
+
+@ 0 18 0 1e45ec8f4c68ddd3163ba33ff54bbacd
++         不透明型 `U8` のコンパニオンで、型とともに `hypotenuse` パッケージにエクスポートされる。
++     entry .Min   ゼロ
++     entry .Max   `255`。すべてのビットが立っている
++     entry .underlying   `U8` の実体が `Byte` であるという証拠
++     entry .addable   `U8 + U8`。スコープ内の `CheckOverflow` ポリシーによる
++         `overflow.addU8` である。
++         `checkedOverflow` のもとでは、`255` を超える和は `Arithmetic.Error` を発生させる。
++     entry .subtractable   `U8 - U8`。スコープ内の `CheckOverflow` ポリシーによる
++     entry .multiplicable   `U8 * U8`。スコープ内の `CheckOverflow` ポリシーによる
++     entry .divisible   `U8 / U8`。スコープ内の `DivisionByZero` ポリシーによる
++     entry .canEqual   `U8` は `==` で別の `U8` とのみ比較できる
++     entry .fromDigits   `genericNumberLiterals` のもとで、整数リテラルから作る `U8`
++         エラー `↯/s.27.8`（_a U8 may not be less than 0_）と、上限を超えるリテラルに対するエラー `↯/s.27.9` がコンパイル時に報告される。
++     entry .textualizable   符号なしの十進値を `Text` として描画する
++     entry .apply   `U8(bits: B8)`：ビットパターンを符号なし整数として読む
++     entry .orderable   `<`、`<=`、`>`、`>=`、`min`、`max` のための符号なし比較
++   entry .S64   符号付き 64 ビット整数。2 の補数で、`S64.Min` から `S64.Max` まで。`hypotenuse.S64` を参照
+
+% 1 1 0 1250d42b01ce231306f984b7eca33eca
+
+@ 0 1 0 0c94f89bf0c548871a0378ea90524f3b
++         不透明型 `S64` のコンパニオンで、型とともに `hypotenuse` パッケージにエクスポートされる。
+
+% 0 1 0 0d3d5b378d78bd210e05d0fe2cace16c
+
+% 0 1 0 0f5292f3fc39cf321601525f2b95b064
+
+@ 0 21 0 0815cd1e8ad8f73d0a3b418bb7e89271
++     entry .underlying   `S64` の実体が `Long` であるという証拠
++     entry .addable   `S64 + S64`。スコープ内の `CheckOverflow` ポリシーによる
++         `overflow.addS64` である。
++         `uncheckedOverflow` のもとでは一つの `ladd` となり、`checkedOverflow` のもとでは結果は `S64 raises Arithmetic.Error` となって、両方のオペランドが和にない符号を持つときにエラーが発生する。
++     entry .subtractable   `S64 - S64`。スコープ内の `CheckOverflow` ポリシーによる
++     entry .multiplicable   `S64 * S64`。スコープ内の `CheckOverflow` ポリシーによる
++         `checkedOverflow` のもとでは、`S64.Min*S64(-1)` は `Arithmetic.Error` を発生させる。
++         上位ワード（`Math.multiplyHigh`）が下位ワードの符号拡張でない積も同様である。
++     entry .divisible   `S64 / S64`。切り捨てで、スコープ内の `DivisionByZero` ポリシーによる
++         `Long` の除算がゼロ方向に切り捨てるのと同じく、`S64((-7L).bits)/S64(2L.bits)` は `-3` である。
++         床除算は `/-` である。
++     entry .canEqual   `S64` は `==` で任意の符号付き、浮動小数点、プリミティブの数値型と比較できる
++         `F64`、`F32`、`S64`、`S32`、`S16`、`S8`、`Float`、`Double`、`Long`、`Int`、`Short`、`Byte` である。
++     entry .fromDigits   `genericNumberLiterals` のもとで、整数リテラルから作る `S64`
++     entry .textualizable   符号付きの十進値を `Text` として描画する
++     entry .apply   `S64(bits: B64)`：ビットパターンを符号付き整数として読む
++     entry .orderable   `<`、`<=`、`>`、`>=`、`min`、`max` のための符号付き比較
++   entry .S32   符号付き 32 ビット整数。2 の補数で、`S32.Min` から `S32.Max` まで。`hypotenuse.S32` を参照
+
+% 1 1 0 1beefd60ac2e361803ec57db41bdf96c
+
+@ 0 1 0 10e03a21d4befb80025635fa7d4cb97a
++         不透明型 `S32` のコンパニオンで、型とともに `hypotenuse` パッケージにエクスポートされる。
+
+% 0 1 0 132ef17d14896aa502e8843e7a19e743
+
+% 0 1 0 15c7f2e5072e7df619efc21f483bb4c4
+
+@ 0 15 0 07ee031a03501aca03984c41534287d2
++     entry .underlying   `S32` の実体が `Int` であるという証拠
++     entry .addable   `S32 + S32`。スコープ内の `CheckOverflow` ポリシーによる
++         `overflow.addS32` である。
++         `checkedOverflow` のもとでは、`S32.Max + S32(1)` と `S32.Min + S32(-1)` は `Arithmetic.Error` を発生させる。
++     entry .subtractable   `S32 - S32`。スコープ内の `CheckOverflow` ポリシーによる
++     entry .multiplicable   `S32 * S32`。スコープ内の `CheckOverflow` ポリシーによる
++         積は `Long` で計算され、`checkedOverflow` のもとでは `Int` に収まるかが検査される。
++     entry .divisible   `S32 / S32`。切り捨てで、スコープ内の `DivisionByZero` ポリシーによる
++     entry .canEqual   `S32` は `==` で任意の符号付き、浮動小数点、プリミティブの数値型と比較できる
++     entry .fromDigits   `genericNumberLiterals` のもとで、整数リテラルから作る `S32`
++     entry .textualizable   符号付きの十進値を `Text` として描画する
++     entry .apply   `S32(bits: B32)`：ビットパターンを符号付き整数として読む
++     entry .orderable   `<`、`<=`、`>`、`>=`、`min`、`max` のための符号付き比較
++   entry .S16   符号付き 16 ビット整数。2 の補数で、`-32768` から `32767` まで。`hypotenuse.S16` を参照
+
+% 1 1 0 05c5206ef886573a0d160243020e8d0f
+
+@ 0 1 0 1d2a8d64b12c8f37187aee5cb33b885e
++         不透明型 `S16` のコンパニオンで、型とともに `hypotenuse` パッケージにエクスポートされる。
+
+% 0 1 0 022e37e85a8ace2c1d4450f38f5a2249
+
+% 0 1 0 0efd97cbf50699d718ad9e2f4d7483f2
+
+@ 0 13 0 0787fd43d677aac00c4e2c2677f52d20
++     entry .underlying   `S16` の実体が `Short` であるという証拠
++     entry .addable   `S16 + S16`。スコープ内の `CheckOverflow` ポリシーによる
++     entry .subtractable   `S16 - S16`。スコープ内の `CheckOverflow` ポリシーによる
++     entry .multiplicable   `S16 * S16`。スコープ内の `CheckOverflow` ポリシーによる
++     entry .divisible   `S16 / S16`。切り捨てで、スコープ内の `DivisionByZero` ポリシーによる
++     entry .canEqual   `S16` は `==` で任意の符号付き、浮動小数点、プリミティブの数値型と比較できる
++     entry .fromDigits   `genericNumberLiterals` のもとで、整数リテラルから作る `S16`
++         エラー `↯/s.27.1`（_an S16 may not be less than -32768_）とエラー `↯/s.27.7`（_an S16 may not be greater than 32767_）がコンパイル時に報告される。
++     entry .textualizable   符号付きの十進値を `Text` として描画する
++     entry .apply   `S16(bits: B16)`：ビットパターンを符号付き整数として読む
++     entry .orderable   `<`、`<=`、`>`、`>=`、`min`、`max` のための符号付き比較
++   entry .S8   符号付き 8 ビット整数。2 の補数で、`-128` から `127` まで。`hypotenuse.S8` を参照
+
+% 1 1 0 1022fa8fc8d9dfcb1257b7290c0c58fd
+
+@ 0 1 0 19ade10f68d5662405819bbaa029eb03
++         不透明型 `S8` のコンパニオンで、型とともに `hypotenuse` パッケージにエクスポートされる。
+
+% 0 1 0 0561972a06975f5c10db68b2b7896cb3
+
+% 0 1 0 1363ae282b7bc2e413f7313f1482ad25
+
+@ 0 16 0 1041ec27029104861cf017f9cc9acfd0
++     entry .underlying   `S8` の実体が `Byte` であるという証拠
++     entry .addable   `S8 + S8`。スコープ内の `CheckOverflow` ポリシーによる
++     entry .subtractable   `S8 - S8`。スコープ内の `CheckOverflow` ポリシーによる
++     entry .multiplicable   `S8 * S8`。スコープ内の `CheckOverflow` ポリシーによる
++     entry .divisible   `S8 / S8`。切り捨てで、スコープ内の `DivisionByZero` ポリシーによる
++     entry .canEqual   `S8` は `==` で任意の符号付き、浮動小数点、プリミティブの数値型と比較できる
++     entry .fromDigits   `genericNumberLiterals` のもとで、整数リテラルから作る `S8`
++         エラー `↯/s.27.6`（_an S8 may not be less than -128_）とエラー `↯/s.27.13`（_an S8 may not be greater than 127_）がコンパイル時に報告される。
++     entry .textualizable   符号付きの十進値を `Text` として描画する
++     entry .apply   `S8(bits: B8)`：ビットパターンを符号付き整数として読む
++     entry .inquality   `<`、`<=`、`>`、`>=`、`min`、`max` のための符号付き比較
++         コンパニオンを通じて暗黙のスコープにある `S8 is Orderable` の given である。
++         他のすべての数値型の `orderable` の given に対応するもので、名前だけが異なる。
++   entry .F64   64 ビットの IEEE 浮動小数点数。それに拡大できる任意のものとの混合算術を持つ。`hypotenuse.F64` を参照
+
+% 1 1 0 1db69c1ebdadfe050649128b05862b84
+
+@ 0 2 0 0a29581d83528ccb063cf418c1d8b586
++         不透明型 `F64` のコンパニオンで、型とともに `hypotenuse` パッケージにエクスポートされる。
++     entry .Min   `Double.MinValue`。最も小さい（負の方向に最大の）有限値
+
+% 0 1 0 159826ad3fbbb7f10f0cef64a05f2a8f
+
+@ 0 14 0 117f2f022c23ba07040144aec082d3a5
++     entry .underlying   `F64` の実体が `Double` であるという証拠
++     entry .Addition   `F64 + F64` のインスタンス。`add` が `dadd` にインライン化されるようシングルトンオブジェクトになっている
++     entry .Subtraction   `F64 - F64` のインスタンス。シングルトンオブジェクト
++     entry .Multiplication   `F64 * F64` のインスタンス。シングルトンオブジェクト
++     entry .Division   `F64 / F64` のインスタンス。シングルトンオブジェクト
++     entry .Negation   `F64` に対する前置の `-` のインスタンス。シングルトンオブジェクト
++     entry .addable   `F64 + F64`。そのシングルトン型による `Addition` オブジェクト
++         コンパニオンを通じて暗黙のスコープにあるので、ジェネリックな `[n: Addable by n to n]` の境界は、インポートなしで `F64` によって満たされる。
++     entry .subtractable   `F64 - F64`。そのシングルトン型による `Subtraction` オブジェクト
++     entry .multiplicable   `F64 * F64`。そのシングルトン型による `Multiplication` オブジェクト
++     entry .divisible   `F64 / F64`。そのシングルトン型による `Division` オブジェクト
++     entry .negatable   `F64` に対する前置の `-`。そのシングルトン型による `Negation` オブジェクト
++     entry .Widening   `F64` への変換で、そのオペランドとの `F64` の算術も運ぶもの
+
+% 1 1 0 110ff93c2d63bdef1b85095213cf2a5f
+
+@ 0 10 0 118ff2cdbc3f69081ee5ee7d7f3b31fa
++           `Widening[right]` は `Conversion[right, F64]` を拡張し、四つのシングルトンオブジェクト `Addition`、`Subtraction`、`Multiplication`、`Division` を保持する。
++           それぞれは、左に `F64`、右に `right` を取る、対応する symbolism の型クラスのインスタンスであり、右のオペランドを変換したうえでプリミティブの演算を行う。
++           このコンパニオンのすべての変換オブジェクト（`DoubleConversion`、`IntConversion`、`U8Conversion`、…）はこれを拡張し、`addableWidening` の一族の given はこれを通じてインスタンスを見つける。
++           `F64(1.5)*2` や `F64(0.5) + u8` が解決されるのはこのためである。
++           `F64` の算術に新たなオペランド型を加えるライブラリは、`Widening[T]` を拡張するオブジェクトと、そのシングルトン型の given を与える。
++       entry #Addition   `F64 + right`。右のオペランドをまず変換する
+
+% 0 1 0 10ba01e83859a7ab0fec1d28837965c4
+
+% 0 1 0 1d1d8e347a43b86908388702dc310ee8
+
+% 0 1 0 18d1279f50f1cc1f0738ce25626b8ff8
+
+@ 0 38 0 1ebb0171638e7de010786589bc12ccd8
++     entry .addableWidening   `Widening` を持つ任意の `right` に対する `F64 + right`。`F64 is Addable by right to F64` として
++         透過的（transparent）で、依存型ではなく単純な詳細化型を持つので、探索は `Widening` を探す前に、期待されるオペランドから `right` を確定させる。
++         召喚されたインスタンスは依然としてオブジェクトのシングルトン型を持ち、それを通じて `add` がインライン化される。
++     entry .subtractableWidening   `Widening` を持つ任意の `right` に対する `F64 - right`
++     entry .multiplicableWidening   `Widening` を持つ任意の `right` に対する `F64 * right`
++     entry .divisibleWidening   `Widening` を持つ任意の `right` に対する `F64 / right`
++     entry .canEqual   `F64` は `==` で `F64`、符号付き整数、`Double`、`Long`、`Int`、`Short`、`Byte` と比較できる
++     entry .apply   `F64(double)`、`F64(bits: B64)`、または `F64(sign, exponent: B16, mantissa: B64)`
++         `F64(bits)` は `Double.longBitsToDouble` である。
++         三引数の形は、符号ビット、バイアス付きの指数、52 ビットの仮数から IEEE のパターンを組み立てる。
++     entry .orderable   `<`、`<=`、`>`、`>=`、`min`、`max` のための二つの `F64` の比較
++         IEEE の比較なので、`NaN` との比較はすべて偽となる。
++     entry .commensurableInt   `f64 < 2`：`F64` と `Int` の比較
++     entry .commensurable   `f64 < 2.5`：`F64` と `Double` の比較
++     entry .DoubleConversion   `Widening[Double]`：`Double` はすでに `F64` である
++     entry .doubleConversion   `F64` が求められる場所に `Double` を置き、そのオペランドにすることを可能にする given
++     entry .FloatConversion   `Widening[Float]`
++     entry .floatConversion   `Float` を `F64` に変換する given
++     entry .IntConversion   `Widening[Int]`
++     entry .intConversion   `Int` を `F64` に正確に変換する given
++     entry .ShortConversion   `Widening[Short]`
++     entry .shortConversion   `Short` を `F64` に変換する given
++     entry .ByteConversion   `Widening[Byte]`
++     entry .byteConversion   `Byte` を `F64` に変換する given
++     entry .U32Conversion   `Widening[U32]`。符号なしの値による
++     entry .u32Conversion   `U32` を `F64` に正確に変換する given
++     entry .S32Conversion   `Widening[S32]`
++     entry .s32Conversion   `S32` を `F64` に正確に変換する given
++     entry .U16Conversion   `Widening[U16]`。符号なしの値による
++     entry .u16Conversion   `U16` を `F64` に変換する given
++     entry .U8Conversion   `Widening[U8]`。符号なしの値によるので、`U8(200)` は `200.0` である
++     entry .u8Conversion   `U8` を `F64` に変換する given
++     entry .S16Conversion   `Widening[S16]`
++     entry .s16Conversion   `S16` を `F64` に変換する given
++     entry .S8Conversion   `Widening[S8]`
++     entry .s8Conversion   `S8` を `F64` に変換する given
++   entry .F32   32 ビットの IEEE 浮動小数点数。それに拡大できる任意のものとの混合算術を持つ。`hypotenuse.F32` を参照
+
+% 1 1 0 067bc2e5c82af3911bd8dfad2f3711cc
+
+@ 0 2 0 1dad68f2be320135066cfb8db577a976
++         不透明型 `F32` のコンパニオンで、型とともに `hypotenuse` パッケージにエクスポートされる。
++     entry .Min   `Float.MinValue`。最も小さい（負の方向に最大の）有限値
+
+% 0 1 0 112464be7767770f175c41e4676bfec7
+
+@ 0 12 0 1f65d25ba0cdd69f1fa14c0e2e4a65de
++     entry .underlying   `F32` の実体が `Float` であるという証拠
++     entry .Addition   `F32 + F32` のインスタンス。`add` が `fadd` にインライン化されるようシングルトンオブジェクトになっている
++     entry .Subtraction   `F32 - F32` のインスタンス。シングルトンオブジェクト
++     entry .Multiplication   `F32 * F32` のインスタンス。シングルトンオブジェクト
++     entry .Division   `F32 / F32` のインスタンス。シングルトンオブジェクト
++     entry .Negation   `F32` に対する前置の `-` のインスタンス。シングルトンオブジェクト
++     entry .addable   `F32 + F32`。そのシングルトン型による `Addition` オブジェクト
++     entry .subtractable   `F32 - F32`。そのシングルトン型による `Subtraction` オブジェクト
++     entry .multiplicable   `F32 * F32`。そのシングルトン型による `Multiplication` オブジェクト
++     entry .divisible   `F32 / F32`。そのシングルトン型による `Division` オブジェクト
++     entry .negatable   `F32` に対する前置の `-`。そのシングルトン型による `Negation` オブジェクト
++     entry .Widening   `F32` への変換で、そのオペランドとの `F32` の算術も運ぶもの
+
+% 1 1 0 11604bbd493e27820f0b1edd3c92ed6d
+
+@ 0 5 0 17f721dcde7a0fed1fa8ffc6b5b3b5a9
++           `Widening[right]` は `Conversion[right, F32]` を拡張し、`F64.Widening` が `F64` に対してそうするように、左に `F32`、右に `right` を取る `Addition`、`Subtraction`、`Multiplication`、`Division` のインスタンスを保持する。
++           変換オブジェクト `FloatConversion` … `S8Conversion` はこれを拡張する。
++       entry #Addition   `F32 + right`。右のオペランドをまず変換する
+
+% 0 1 0 0dd8fae3081b23fd0f5ace042569e976
+
+% 0 1 0 1a3c872f4a0534bb07a737de7e21929a
+
+% 0 1 0 15f0209a20b3487106a77f01045c13aa
+
+@ 0 22 0 0605263a22c710e116a24bd1c3bcfeff
++     entry .addableWidening   `Widening` を持つ任意の `right` に対する `F32 + right`
++     entry .subtractableWidening   `Widening` を持つ任意の `right` に対する `F32 - right`
++     entry .multiplicableWidening   `Widening` を持つ任意の `right` に対する `F32 * right`
++     entry .divisibleWidening   `Widening` を持つ任意の `right` に対する `F32 / right`
++     entry .canEqual   `F32` は `==` で `F32`、符号付き整数、`Float`、`Long`、`Int`、`Short`、`Byte` と比較できる
++     entry .orderable   `<`、`<=`、`>`、`>=`、`min`、`max` のための二つの `F32` の IEEE 比較
++     entry .apply   `F32(float)`、`F32(bits: B32)`、または `F32(sign, exponent: B16, mantissa: B32)`
++     entry .FloatConversion   `Widening[Float]`：`Float` はすでに `F32` である
++     entry .floatConversion   `F32` が求められる場所に `Float` を置き、そのオペランドにすることを可能にする given
++     entry .ShortConversion   `Widening[Short]`
++     entry .shortConversion   `Short` を `F32` に正確に変換する given
++     entry .ByteConversion   `Widening[Byte]`
++     entry .byteConversion   `Byte` を `F32` に変換する given
++     entry .U16Conversion   `Widening[U16]`。符号なしの値による
++     entry .u16Conversion   `U16` を `F32` に変換する given
++     entry .U8Conversion   `Widening[U8]`。符号なしの値による
++     entry .u8Conversion   `U8` を `F32` に変換する given
++     entry .S16Conversion   `Widening[S16]`
++     entry .s16Conversion   `S16` を `F32` に変換する given
++     entry .S8Conversion   `Widening[S8]`
++     entry .s8Conversion   `S8` を `F32` に変換する given
++   entry .B64   64 ビットのパターン：シフト、回転、マスク、ビット単位のアクセスを持つが、算術は持たない。`hypotenuse.B64` を参照
+
+% 1 1 0 181e8091b0cb16951e6be102882a59c4
+
+@ 0 9 0 0775573a68b185cc17d1cacce608f7d2
++         不透明型 `B64` のコンパニオンで、型とともに `hypotenuse` パッケージにエクスポートされる。
++     entry .underlying   `B64` の実体が `Long` であるという証拠
++     entry .block   `B64.block(n)`：下位 `n` ビットが立ったもの
++     entry .set   序数で指定した一つのビット、または区間で指定したビットの並びが立ったマスク
++         `B64.set(Ter)` は `0b100`、`B64.set(Prim thru Ter)` は `0b111` である。
++     entry .apply   `Long`、`Int`、`Short`、`Byte` から、またはビッグエンディアンの 8 バイトから作る `B64`
++         `B64(bytes, offset = 0)` は `bytes(offset)` を最上位バイトとして読む。
++         より狭いプリミティブは、`toLong` と同じく符号拡張される。
++   entry .B32   32 ビットのパターン：シフト、回転、マスク、ビット単位のアクセスを持つが、算術は持たない。`hypotenuse.B32` を参照
+
+% 1 1 0 1dc87c101dbab8fd0978f36f422f3224
+
+@ 0 6 0 05307900efcf7ac0014f4fb2471a61ad
++         不透明型 `B32` のコンパニオンで、型とともに `hypotenuse` パッケージにエクスポートされる。
++     entry .underlying   `B32` の実体が `Int` であるという証拠
++     entry .block   `B32.block(n)`：下位 `n` ビットが立ったもの
++     entry .set   序数で指定した一つのビット、または区間で指定したビットの並びが立ったマスク
++     entry .apply   `Int`、`Short`、`Byte` から、またはオフセット位置のビッグエンディアンの 4 バイトから作る `B32`
++   entry .B16   16 ビットのパターン：シフト、回転、マスク、ビット単位のアクセスを持つが、算術は持たない。`hypotenuse.B16` を参照
+
+% 1 1 0 14e237175a2bdac701d31c521d7bb958
+
+@ 0 6 0 0ad9ba7841448f3e0dea21e19048606a
++         不透明型 `B16` のコンパニオンで、型とともに `hypotenuse` パッケージにエクスポートされる。
++     entry .underlying   `B16` の実体が `Short` であるという証拠
++     entry .block   `B16.block(n)`：下位 `n` ビットが立ったもの
++     entry .set   序数で指定した一つのビット、または区間で指定したビットの並びが立ったマスク
++     entry .apply   `Short` または `Byte` から、またはオフセット位置のビッグエンディアンの 2 バイトから作る `B16`
++   entry .B8   8 ビットのパターン：シフト、回転、マスク、ビット単位のアクセスを持つが、算術は持たない。`hypotenuse.B8` を参照
+
+% 1 1 0 146ec9c66f2baef101e81e2616d79ac6
+
+@ 0 68 0 0c7e1f153a881e93028ea4fb83aa5051
++         不透明型 `B8` のコンパニオンで、型とともに `hypotenuse` パッケージにエクスポートされる。
++     entry .underlying   `B8` の実体が `Byte` であるという証拠
++     entry .block   `B8.block(n)`：下位 `n` ビットが立ったもの
++     entry .set   序数で指定した一つのビット、または区間で指定したビットの並びが立ったマスク
++     entry .apply   `B8(byte)`：`Byte` から作るパターン
++   entry .abs   絶対値：`S8`…`S64`、`F32`、`F64`
++   entry .long   値を `Long` として返す：`S8`…`S64`、および `U8`…`U32` の符号なしの値
++   entry .int   値を `Int` として返す：`S8`、`S16`、`S32`、および `U8` と `U16` の符号なしの値
++   entry .short   値を `Short` として返す：`S8`、`S16`、および `U8` の符号なしの値
++   entry .byte   `S8` または `U8` の生のバイト
++   entry .octal   値の 8 進表記：すべての `U*` 型と `S*` 型。`B8`…`B64` では幅までゼロ埋めする
++   entry .hex   値の 16 進表記：すべての `U*` 型と `S*` 型。`B8`…`B64` では幅までゼロ埋めする
++   entry .base32   値の 32 進表記：すべての `U*` 型と `S*` 型
++   entry .binary   値の 2 進表記：すべての `U*` 型と `S*` 型。`B8`…`B64` では幅までゼロ埋めする
++   entry .text   `U8`…`U64` の符号なしの十進値を `Text` として返す
++   entry .%%   `S8`…`S64` に対する床剰余
++   entry ./-   `S8`…`S64` に対する床除算
++   entry .%   `S8`…`S64` に対する切り捨ての剰余と、`U8`…`U64` に対する符号なしの剰余
++   entry .**   べき乗。`S8`…`S64` では `Double` を返し、`F32` と `F64` では同じ型を返す
++   entry .bits   任意の `U*`、`S*`、`F*` の値のビットパターンを、その幅の `B*` として返す
++   entry .gcd   すべての `U*` 型と `S*` 型に対する最大公約数
++   entry .s8   `B8` を符号付きとして再解釈したもの
++   entry .u8   `B8` を符号なしとして再解釈したもの
++   entry .s16   `B16` を符号付きとして再解釈したもの、または `U8` を拡大したもの
++   entry .u16   `B16` を符号なしとして再解釈したもの、または `U8` を拡大したもの
++   entry .s32   `B32` を符号付きとして再解釈したもの、または `U8` や `U16` を拡大したもの
++   entry .u32   `B32` を符号なしとして再解釈したもの、または `U8` や `U16` を拡大したもの
++   entry .s64   `B64` を符号付きとして再解釈したもの、または `U8`、`U16`、`U32` を拡大したもの
++   entry .u64   `B64` を符号なしとして再解釈したもの、または `U8`、`U16`、`U32` を拡大したもの
++   entry .apply   `B*` に対して：`Interval` のビットを下へシフトしたもの、またはゼロ始まりの位置で指定した一つのビット
++   entry .set   `B*` に対して：一つのビット、またはビットの並びを立てたパターン
++   entry .clear   `B*` に対して：一つのビット、またはビットの並びをクリアしたパターン
++   entry .flip   `B*` に対して：一つのビット、またはビットの並びを反転したパターン
++   entry .bit   `B*` に対して：序数の位置のビットが立っているかどうか。`Prim` が最下位ビットである
++   entry .<<<   `B*` に対して：指定したビット数だけ左に回転する
++   entry .>>>   `B*` に対して：指定したビット数だけ右に回転する
++   entry .<<   `B*` に対して：左シフト
++   entry .>>   `B*` に対して：論理右シフト。符号拡張はしない
++   entry .&   `B*` に対して：ビット単位の AND。パターンの型に変換できる任意のオペランドを取る
++   entry .|   `B*` に対して：ビット単位の OR
++   entry .^   `B*` に対して：ビット単位の排他的 OR
++   entry .unary_~   `B*` に対して：前置の `~` によるビット反転
++   entry .leadingZeros   `B*` に対して：最上位の立ったビットより上にあるゼロのビットの数
++   entry .trailingZeros   `B*` に対して：最下位の立ったビットより下にあるゼロのビットの数
++   entry .ones   `B*` に対して：立っているビットの数を `S32` として返す
++   entry .zeros   `B*` に対して：幅から立っているビットの数を引いたものを `S32` として返す
++   entry .reverse   `B*` に対して：ビットの順序を逆にしたパターン
++   entry .bytes   `B16`、`B32`、`B64` に対して：パターンをビッグエンディアンのバイト列として返す
++   entry .double   `F64` または `F32` の `Double`
++   entry .float   `F32` の `Float`
++   entry .mantissa   `F64` のパターンの下位 52 ビットを `B64` として返す
++   entry .exponent   `F64`（`B16` として）または `F32`（`Int` として）の、バイアスを除いた指数
++   entry .sqrt   `F64` または `F32` の平方根
++   entry .cbrt   `F64` または `F32` の立方根
++   entry .ceiling   `F64` または `F32` の天井関数
++   entry .floor   `F64` または `F32` の床関数
++   entry .increment   次に大きい `F64` または `F32`
++   entry .decrement   次に小さい `F64` または `F32`
++   entry .successor   次に大きい `F64` または `F32`。`increment` と同じ
++   entry .predecessor   次に小さい `F64` または `F32`。`decrement` と同じ
++   entry .round   `F64` または `F32` を最も近い `Long` に丸めたもの
++   entry .scalb   `F64` または `F32` に 2 のべき乗を掛けたもの
++   entry .signum   `F64` または `F32` の符号。`-1.0 | 0.0 | 1.0` として
++   entry .ulp   `F64` または `F32` の最終桁の単位
++   entry .rawBits   `F64` または `F32` の IEEE パターン。`NaN` のペイロードを保持する
++   entry .finite   `F64` または `F32` が有限かどうか
++   entry .infinite   `F64` または `F32` が無限大かどうか
++   entry .nan   `F64` または `F32` が `NaN` かどうか
+
+@ 0 1 0 0f09cbf14874477f0beb94c116a3c864
++ entry .protointernal   `bin"…"`、`hex"…"`、型付きのリテラル、連鎖した比較の背後にあるマクロの実装
+
+% 1 1 0 13ffd91eed20f64609258037d09d79ea
+
+% 2 1 0 0b41955e154e125a028841ee72825ccc
+
+@ 0 12 0 070de7423e6b3d6e04371e41da5d9c0b
++       直接使うためのものではない。このオブジェクトは、マクロに安定した置き場所を与えるために存在する。
++   entry .bin   `bin"…"` の背後にあるマクロ：数字を検証し、`Byte`、`Short`、`Int`、`Long` のいずれかをスプライスする
++   entry .hex   `hex"…"` の背後にあるマクロ：数字を検証し、凍結済みのバイト配列をスプライスする
++   entry .parseU64   `U64` リテラルの数字を、`FromDigits` を通じてコンパイル時にパースする
++   entry .parseS64   `S64` リテラルの数字をパースする
++   entry .parseU32   `U32` リテラルの数字をパースする
++   entry .parseS32   `S32` リテラルの数字をパースする
++   entry .parseU16   `U16` リテラルの数字をパースし、範囲外なら停止する
++   entry .parseS16   `S16` リテラルの数字をパースし、範囲外なら停止する
++   entry .parseU8   `U8` リテラルの数字をパースし、範囲外なら停止する
++   entry .parseS8   `S8` リテラルの数字をパースし、範囲外なら停止する
++   entry .commensurable   `Commensurable.numeric` の背後にあるマクロ：`(a < x) < b` を `a < x && x < b` に書き換える
+
+@ 0 1 0 1b5ef8f16c91692703c3b32e6e496b12
++ entry .Checkable   `===` と `!==` の背後にある型クラス：ある値が、場合によっては別の型の、別の値と照合して一致するかどうか
+
+% 1 1 0 0cb0619322e21bb81a9804e2d73b391a
+
+@ 0 6 0 1aac2c39965cbf8c04015743b8a314f1
++       `left is Checkable against right` は `left` が `right` に一致するかどうかを決めるものであり、`===` が参照するものである。
++       これは意図的に `==` よりゆるい。両辺は型が異なってもよいので、値を `Tolerance` と照合したり（`x === 1.0 ± 0.01`）、凍結済み配列を別の凍結済み配列とその内容で照合したり、`Chain` を `Chain` と要素ごとに照合したりでき、`===` で書いたテストのアサーションは、それが意味する比較として読める。
++       これは probably のアサーションが使う比較であり、`hypotenuse.check` にある。
+
+% 2 1 0 1693f65ad7b622ad1bcf5c105d372cf7
+
+% 3 1 0 09ed7cbdc1b0a8040beb6271df1aa547
+
+% 0 1 0 18e69f60ed34507a1458127c33bbe0f3
+
+% 0 1 0 0bfac7570776361d1110321f71d6a5de
+
+% 0 1 0 16bc40d84af16d410aff81e68afd59e1
+
+% 0 1 0 116a719c7032233b1d8ef6c1ce6b9009
+
+% 0 1 0 08fbba636d59e5e20aebe5ad5b4d0166
+
+% 1 1 0 11ea0d224c249fe91d271b2397df89cd
+
+@ 0 2 0 043d300b49cfda560655dd75ca471b69
++       インスタンスは `.apply` を通じてラムダとして書き、`#contramap` はある型をサブジェクトに写すことで、その型に対するインスタンスを導出する。
+
+% 0 1 0 080cac64f0e17d4809ce4035aed741d8
+
+% 0 1 0 03b4a7b40688f87b0e51407c9d219f10
+
+@ 0 10 0 0810a770ecfcf2210a200f2f75ba3883
++   entry .frozenArray   二つの凍結済み配列は、要素の型が何であれ、要素が等しいときに等しいと照合される
++   entry .stream   二つの `Chain` は、要素が `Checkable` であるとき、要素ごとに等しいと照合される
++       長さが一致しなければならない。短いほうのチェーンが接頭辞として一致するのではない。
++   entry .tolerance2   値は、その型の `Tolerance` がそれを含むとき、その `Tolerance` と照合して一致する
++   entry .commensurable   自身と比較できる任意の型は、どちらも他方より小さくないとき、等しいと照合される
++       スコープにある `Commensurable` を通じた `left <= right && right <= left` なので、どの数値型も独自のインスタンスなしに自身に対して `Checkable` である。
++   entry .apply   `Checkable((left, right) => …)`：述語から作るインスタンス
++   entry #check   `left` が `right` に一致するかどうか
++   entry #contramap   照合の前に別の型をこの型に写すことで得る、その別の型に対するインスタンス
+
+@ 0 1 0 163c7ab0fd684e0a1e1338badc76acf7
++ entry .Tolerance   両側に幅を持つ値。`===` は値をこれと照合する
+
+% 1 1 0 009e1bbb0eff7c1304f249c429ce35fb
+
+@ 0 3 0 1f8059ed029d8d440c7250c211e1bbfc
++       `Tolerance(base, tolerance)` は `base - tolerance` から `base + tolerance` までのすべての値を、境界を含めて対象とする。
++       `Orderable`、自身による `Addable`、自身による `Subtractable` を持つ任意の型に対して、`+/-` または `±` で作り、`===` で照合する。
+
+% 2 1 0 0cf24ed3b7924d37056cee1dffd2843b
+
+% 3 1 0 1ea0a9621ef29cb404ddcc381c391e38
+
+% 0 1 0 113d856c6e720a46119af05e4169799d
+
+% 0 1 0 0350d30819b260aa0b7901201de7c480
+
+% 0 1 0 1470c00a635281f11689f1f82f7738e6
+
+% 0 1 0 0781c7f5d8946cd70c878119958af75a
+
+% 1 1 0 0643ecefd18ab5b108e562409e85a406
+
+% 0 1 0 17c9655cd380655616309b10a5b4899f
+
+% 0 1 0 1aa4b8b636cbe89501c80ddebc045fe1
+
+@ 0 3 0 0be9cc8fba2cbf6315b2c5814f3d2686
++   entry #base   範囲の中心
++   entry #tolerance   範囲の半分の幅
++   entry #covers   値が境界を含めて範囲内にあるかどうか
+
+@ 0 5 0 10ee6e3716b89b7403ccb05b18ab6b70
++ entry .===   `left === right`：`Checkable` を通じて、`left` が `right` と照合して一致するかどうか
++     `hypotenuse.check` にある任意の値に対する拡張であり、スコープにある `left is Checkable against right` を受け取る。
++     `==` と異なり、両辺は異なる型であってもよいので、数を `Tolerance` と比較でき、ある型のテスト用の同値の概念を、その `equals` に手を触れずに与えられる。
+
+@ 0 1 0 02c8272964e7c78f0307185fe22185c4
++ entry .!==   `left !== right`：`===` の否定
+
+@ 0 5 0 08dfab0c3f2553c00eea09feaa82ab8b
++ entry .+/-   `base +/- tolerance`：`===` が照合する `Tolerance`
++     自身に対して `Commensurable` であり、自身によって自身へ `Addable` であり、自身によって自身へ `Subtractable` である型の任意の値に対する拡張である。プリミティブ、型付きの数、量がそれに当たる。
++     `10 +/- 2` は、型の `Commensurable` の `>=` を通じて、`8` から `12` までのすべての値を、境界を含めて対象とする。
+
+@ 0 1 0 0268aca0f56ef4e31b3ce690bc98b4c2
++ entry .±   `base ± tolerance`：`+/-` と同じ `Tolerance`。その記号を打てるキーボードのためのもの

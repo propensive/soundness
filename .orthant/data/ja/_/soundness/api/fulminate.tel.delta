@@ -1,0 +1,679 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 13823121897fee7e15809ea5817ec9a2
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 087361cc8a07c1141306004178086fd1
++ info   構造化されたメッセージを持つ値としてのエラー：`Error`、`Message` と `m"…"`、`Panic`、`Diagnostics`
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0f5446647d39c8da0c3697c1cfbddf52
++     _Fulminate_ は、すべての Soundness ライブラリが共有する失敗の語彙である。
++     **エラー**は値であり、`Error` を継承するケースクラスとして、何がうまくいかなかったかを説明する型付きのフィールドと、それらから組み立てられる**メッセージ**を持つ。
++     `Message` は文字列ではなく構造化された値であり、`m"…"` 補間子で書かれる。補間子は埋め込まれた各部分を周囲の語から区別したまま保つので、同じメッセージをプレーンテキスト、スタイル付きの端末テキスト、Markdown、HTML として描画できる。
++     `Communicable` インスタンスを持つものなら何でも埋め込めるので、型は自分が文章の中でどう読まれるかを一度だけ決める。
+
+% 2 1 0 0f9e3d4c5531ab800d01d764ae661f1f
+
+% 3 1 0 1ad955a1beb7cc0e140de402cb78b4d9
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 020a0412c73473b41777c60a4749ff18
+
+% 0 1 0 180e0cad3e7b2b590a536e40f52fbaac
+
+% 0 1 0 144efdc0424766891a05274f1b987c82
+
+% 1 1 0 0b44d0d6bfba20d703b0e50008dd914d
+
+@ 0 6 0 0ae7822513db22b804469eb30be867c2
++     エラー型にはボルトコードがある。
++     `Error(25, 1, 0)`、つまり 25 番目のモジュールの最初のエラーは `↯/s.25.1` であり、このコードはリリースをまたいで安定し、再利用されることはなく、`doc/errors/25.1.md` に文書化される。
++     エラーの個々の原因は `Clarification` を継承する `Reason` 列挙型のケースであり、それぞれエラーの中で番号が付けられ（`↯/s.25.1.1`）、それぞれ自身の `Communicable` を通して描画される。
++     完全なエラーを一段階ずつ組み立てると次のようになる（900 はエラーがあるモジュールの番号の代わりである）。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 0ae1a21f912c45ef17a8dd4ca99a798a
++       label メッセージを持つエラー
+
+% 1 1 0 0328d1534a36af590237e09ac5593eea
+
+% 2 1 0 0b11842f1e079a7c10806ffb42ea1fc2
+
+% 4 1 0 1743357d284a3aed0122a77f73a2ac3d
+
+% 0 1 0 09fabbabb96b7b7b1f9f53862768f12a
+
+% 0 1 0 01c2873408e850f10adc1b68e6bab1c1
+
+% 1 1 0 19a8dc7a790845e70c37c28bf854a679
+
+@ 0 1 0 15e0d275ed3ff6400dd1654f8419c734
++       label 目録のための番号を付ける
+
+% 1 1 0 068e2a721018f5a6190b9cd3a332965d
+
+% 2 1 0 0fd7c9b0199bb0830e02c95064297f92
+
+% 4 1 0 127eda6eff15b0541b2f45911cc4a3e3
+
+% 0 1 0 003cadc07451c21106f2dcb9aaff95fe
+
+% 0 1 0 16b6f5bddc917a791598712c48679a21
+
+% 0 1 0 1f3bf6b677165efc094c7326fac365e8
+
+% 1 1 0 139e2da6efee7c150d71e0cf12b4f3ec
+
+@ 0 1 0 1106b721b26c20a10a190d88c308de62
++       label エラーの中で番号を付けた理由を加える
+
+% 1 1 0 194f8f947e6be87311bb8378d41d49c1
+
+% 2 1 0 111706587623671c018395dd8f0c261a
+
+% 0 1 0 02fdb30f117464470d5d8a10d9e87e3d
+
+% 0 1 0 0dc8cc56619eac3006f2dd8a8de719e0
+
+% 0 1 0 1c39d16e0c8758041335b87d90f12820
+
+% 0 1 0 0081504e0ee4283b0465561120fecbdd
+
+% 0 1 0 1b83e0dcd82ee60e0939f836a29d75fd
+
+% 0 1 0 134c90bd9a042ba40e2fcb6a137c9839
+
+% 0 1 0 1550269f423e76200f45c7f468d2237d
+
+% 0 1 0 0561cb2b10556e9f1abdb66112fbdb6a
+
+% 0 1 0 082e02a5b551f3c51ea1bf779ac2214d
+
+% 0 1 0 1bee96452562dac91666b59056c4dcac
+
+% 0 1 0 1953fc3e63191b981e019cb162594b10
+
+% 0 1 0 1551a45598799c7a05325a7f27b76e86
+
+% 0 1 0 1eccf6e29bf99c3a057fd856cc64c0fa
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 8 0 0ff8be92e706d8b10761ea9376e7e0c6
++     すべてのエラーは `Hazard`、つまり `caps.Pure` である `Exception` なので、それを閉じ込めたスコープの外へ生きたケイパビリティを運び出すことは決してできない。エラーが保持するのは開けなかったパスであって、開いたハンドルではない。
++     エラーがスタックトレースを捕捉するかどうかは、`Diagnostics` の given というコンテキスト上の選択である。
++     `errorDiagnostics.stackTracesDiagnostics` はスタックトレースを記録し、`errorDiagnostics.emptyDiagnostics` は省く。だからすべてのエラーのコンストラクターは `(using Diagnostics)` を取り、予期されて処理されるエラーは他のどの値よりも組み立てるのに費用がかからない。
++     `Panic` は処理されることを意図しない唯一の失敗であり、ある状況がなぜ不可能だと信じられていたかを述べる `java.lang.Error` である。
+
+@ 0 4 0 1586d1bdf9786f63023aab263d37bce5
++     マクロに対しては、`halt` と `warn` が `Message` をコンパイル時の診断として報告し、同じボルトコードを接頭辞とする。また外部の `Throwable` は `Error.Unchecked` として包まれ、`Hazard` になる。
++     エラーをどう*発生させ*、どう*処理する*か（`raises`、`Tactic`、`safely`、`recover`…）は、このライブラリの上に築かれる `contingency` の役目である。
+
+@ 0 7 0 11cd230cad243b911130fd8957f4282d
++     ライブラリには二つのソースセットがある。
++     `fulminate.core` は上記のすべてを持ち、JVM、Scala.js、Scala Native 向けにコンパイルされる。`fulminate.print` は `printables.messagePrintable`、つまり `Message` を出力できるようにする `Printable` インスタンスを加える。これを分けておくのは、エラーの語彙が出力に依存しないようにするためである。
++     すべては `soundness` アンブレラにエクスポートされ、選択パッケージ `errorDiagnostics` と `printables` はアンブレラ自身のものと統合されるので、それらの given は名前でインポートする（`import errorDiagnostics.stackTracesDiagnostics`）。ワイルドカードインポートは given を決してインポートしない。
+
+% 0 1 0 0afc6443f648f4f31ac1dc48d6a16eab
+
+% 0 1 0 178d51de9e4ed77d1a55624949f5e859
+
+% 0 1 0 05a4f924dcf33d8305bf103c78caed92
+
+% 0 1 0 1795a2df43e7052d13f20017cfafffd2
+
+% 0 1 0 1a67ed30f0cf88061235702b5f37216a
+
+% 0 1 0 1a4262049dd395cd1d61a31a45add749
+
+% 0 1 0 0db7ca6617f1b5c50f03c89938e496e6
+
+@ 0 1 0 04b35377cdce06240778ca0777d8309a
++ entry .Error   すべての Soundness エラーの基底：番号、構造化されたメッセージ、オプショナルな診断情報
+
+% 1 1 0 0803f60870d2a7b90024267a53d67d95
+
+@ 0 5 0 1f074a11e3e9b0710bf04738c1f23f3d
++       エラーは `Error` を継承するケースクラスであり、それを説明する値をフィールドとして持ち、メッセージはその同じフィールドから `m"…"` で書かれる。そのため、メッセージが値の状態と違う状態を述べることは決してない。
++       主コンストラクターは `Error(d, e)(message, cause)(using Diagnostics)` であり、短い形が二つある。`Error(d, e)(message)` と `Error(message, cause = null)` で、後者は番号のないエラーのためのものである。
+
+% 2 1 0 0d491ab674b9a5380ff5a11d66332cf2
+
+% 3 1 0 0ad95af81941bd8a0976297a3f25774b
+
+% 4 1 0 17a6e8a7f0f327f11db3743f9a229561
+
+% 2 1 0 157983f23aaa21770fa5dc6e236bb050
+
+% 3 1 0 16267d4ca443c23104e6be7c52e21938
+
+% 0 1 0 144443d7e7968e081a8a4faf96943c68
+
+% 0 1 0 0aa90aad8bcdce76139490af670e2891
+
+% 0 1 0 155ff78dba9cf8d209f73b4d00d46ccb
+
+% 0 1 0 1a047e92dd258538077154b7641bee1f
+
+% 1 1 0 01068e5a799be0741ef8acac3b160a47
+
+@ 0 11 0 19d0a8d2167931e0146293929bc0aa5c
++       エラーは三つの番号で識別され、それがボルトコードになる。
++       `module` はエラーがあるライブラリの番号で、`bolt` レジストリの `s.tel` が記録しているものである。
++       `number` はそのライブラリの中でのエラー自身の番号で、エラー型を書いたときに次に空いているものが使われ、決して再利用されない（廃止された番号はそうと印を付けてレジストリに残る）。
++       `variant` はエラーの理由の番号、つまり `Clarification` を継承する列挙型である `Reason` のケースの `number` であり、エラーに理由がなければ 0 である。
++       エラーは `doc/errors/<module>.<number>.md` に、その原因と通常の対処法とともに文書化されるので、ユーザーの報告にある `↯/s.25.1` は推測するのではなく調べられる。
++       `Error(message)` と書かれたエラーは `module = 0` であり、コードを持たず、`getMessage` は代わりにそのコンポーネントを接頭辞とする。
++       コードは `#labelled`、`getMessage`、コンパイル時の `halt` の接頭辞 `[↯/s.25.1.2]` に描画される。
+
+@ 0 7 0 0cb182ea64cce1430eb008e342a52635
++       `Error` は `caps.Pure` であり、生きたケイパビリティを保持することは決してできない。`throw` はキャプチャ検査が見通せない唯一の経路であり、スコープの外で捕捉された例外は、そのキャプチャが消去された状態で届くからである。
++       `Diagnostics` の given は、コンストラクターがスタックトレースを捕捉するかどうかを決める（`Exception` の `writableStackTrace` はそこから設定される）。これが、エラーを定義するときに課される唯一の手続きである。
++       メッセージのテキストは例外の `getMessage` でもあるので、投げられた例外として逃げ出したエラーも正しく読める。
+
+@ 0 4 0 0b6f654c48ede4541a940cb6f02515e6
++       メッセージの書き方の流儀は `doc/standards/messages.md` にある。小文字で書き、末尾にピリオドを付けず、現在時制で書き、問題のある特定のリソースを型付きの値として埋め込み、述部全体を *invalid* や *bad* にすることは決してない。
++       エラーはマッチされることを意図している。ハンドラはケースクラスとその `Reason` を分解するのであって、テキストを分解するのではない。
+
+% 1 1 0 18189a56275f46ee09dbb519c6d80e16
+
+% 0 1 0 13030e7e0f0a6e1d17173d1683e2a7d9
+
+% 0 1 0 1bebfe4fcc5efa011d455316ccc24d13
+
+% 1 1 0 11f7e8def6ea75820429a1e912688a47
+
+% 0 1 0 16e18ae3bbfc914a05958525dfac50ce
+
+% 0 1 0 1198682780fae52b0e4b6a6ec7658ed1
+
+@ 0 26 0 08b481cb1dea92ea1e1252aff27ddaa5
++   entry .apply   任意の `Throwable` を `Error` として：それが `Error` ならそのまま、そうでなければ `Error.Unchecked` として包む
++       `Error(throwable)` は `Error` をそのまま通し、それ以外の `Throwable` を `Error.Unchecked` に包む。これはメッセージとスタックトレースを保つ。
++       こうして JDK の例外は、発生させることのできる `Hazard` になる。
++   entry #module   エラーのライブラリの番号：`↯/s.25.1.2` の `25`、番号のないエラーでは 0
++   entry #number   ライブラリの中でのエラーの番号：`↯/s.25.1.2` の `1`
++   entry #variant   エラーの中での理由の番号：`↯/s.25.1.2` の `2`、または 0
++   entry #bolt   エラーのボルトコード。番号のないエラーでは `Bolt.Uncoded`
++       別のプロジェクトのエラーが理由で報告されるエラーは、これをオーバーライドしてそのエラーのコードを持つ。
++       TEL Specification が番号を付けた理由に対する Stratiform の `Tel.Error` は `↯/s.118.1/t.1.7` である。
++   entry #message   エラーのメッセージ。構造化された `Message` として
++   entry #diagnostics   エラーを組み立てたときの `Diagnostics`
++       これがあるので、翻訳されたエラーを元のエラーと同じ選択で組み立てられる：`InputError(text)(using error.diagnostics)`。
++   entry #fullClass   エラークラスの完全修飾名を、その区切りごとに
++   entry #className   エラークラスの単純名
++   entry #component   クラス名の最初の区切り：それを定義するライブラリ
++       クラスの完全修飾名の最初の区切りであり、Soundness のエラーではトップレベルのパッケージである。
++       番号のないエラーでは `getMessage` の接頭辞なので、`galilei: the path is not a directory` のようなメッセージは、エラーがどこから来たかを示す。
++   entry #errorCode   テキストとしてのコード、`↯/s.25.1` または `↯/s.25.1.2`。番号のないエラーでは空
++   entry #colourCode   ANSI カラー付きの `[↯/s.25.1.2]` としてのコード。番号のないエラーでは空
++   entry #labelled   コードを接頭辞としたメッセージ：`[↯/s.25.1.2] message`
++       エラーに番号がなければメッセージだけである。
++       エラーがコンパイルエラーになるときに `HaltTactic` が報告するのはこれである。
+
+@ 0 1 0 03960099997858210b9ce1c3b49cb5e8
++   entry .Unchecked   外部の `Throwable` を `Error` として包み、発生させられるようにしたもの
+
+% 1 1 0 1a8e31cb4c0ed5290069f711cffe3d26
+
+@ 0 8 0 0d897d164659fe66000941c9f328707e
++         エラー `↯/s.15.1`：_unchecked error with message, `text`_ または _unchecked error with no message_。
++         `Unchecked(throwable)` は元のメッセージを `#text` として保ち、そのスタックトレースを引き継ぐ。また、運ぶトレースは元のものなので、`emptyDiagnostics` で組み立てられる。
++         通常の作り方は `Error(throwable)` であり、これは本物の `Error` をそのまま通し、それ以外を包む。
++         元の例外そのものは保たれず（`getCause` は `null`）、そのメッセージとスタックトレースだけが保たれる。そのため、これに出会ったハンドラは、元の例外のクラスでマッチするのではなく、型付きのエラーとして表に出すか、投げている箇所を直すべきである。
+
+% 0 1 0 17eb8adb6e00f77a1f587e115ef02545
+
+@ 0 4 0 053bdffe1fadcf9a1753321ec16bfa03
++     entry .describe   元のメッセージのテキストに対するメッセージ。空なら _with no message_
++     entry .apply   `Throwable` を包み、そのメッセージとスタックトレースを保つ
++     entry #text   元の例外のメッセージ、または空のテキスト
++     entry #stackTrace   元の例外のスタックトレース。JVM の配列として
+
+@ 0 1 0 0a15ebd0a2c74600140a0a32e30c6b48
++ entry .Bolt   ボルトコード：`↯/s.25.1.2` や `↯/s.118.1/t.1.7` のような、診断の名前
+
+% 1 1 0 1f0d6c72542d251d1bcc2584f1d88024
+
+@ 0 7 0 080d3de261e544db02582b5e4fe1ecd0
++       ボルトコードは、Propensive のプロジェクトの一つの診断を、すべてのプロジェクトに共通の一つの形で名付ける。`↯` と、それぞれ `/` で始まる一つ以上のグループからなる。
++       グループはプロジェクトの文字（`s` は Soundness）とその番号である。番号は、プロジェクトの下位区分（Soundness ではライブラリ）、その中のエラー、そして省略可能なエラーのバリアントと、それが報告される箇所である。
++       複数のグループからなるコードは複合コードである。最初のグループは報告されたエラーであり、その後のものは報告の理由となった `cause` で、それ自体が一つのコードである。
+
+% 2 1 0 114a44ee8640f6901f7a6fa0ef0d6e8a
+
+% 0 1 0 0b44719f5c0e5542150760ac6398e922
+
+% 0 1 0 01b0f8eef48ddda00537354cab44d844
+
+% 0 1 0 1be5994cf971a7af0d77f31987577ded
+
+% 0 1 0 1ed8496af1986f400900f16f4d9b5170
+
+% 1 1 0 03c28723925ab5a601cff9e98da20d82
+
+@ 0 2 0 1e42b06c995d9a4f0576039facd8d8f9
++       各コードの意味の記録は [bolt](https://github.com/propensive/bolt) リポジトリにある。
+
+% 1 1 0 14ef3baace8ad76611a2a923841d290a
+
+@ 0 18 0 106991bec040f6231d360a4858b9239a
++   entry .Soundness   ボルトコードが Soundness を名付ける文字、`s`
++   entry .Uncoded   コードを持たない診断のコード
++   entry .prefix   テキストの先頭にあるコード（括弧付きかどうかを問わない）と、それが占める文字数
++       テキストがコードで始まらなければ `Uncoded` と 0 である。
++       数にはコードの後に続く空白が含まれるので、その文字数を落とすとメッセージが残る。
++   entry .parse   テキスト全体が表すコード。テキストがちょうどコードでなければ `Uncoded`
++   entry #project   プロジェクトの文字
++   entry #subdivision   プロジェクトの部分の番号。Soundness ではライブラリの番号
++   entry #error   下位区分の中でのエラーの番号
++   entry #variant   エラーのバリアントの番号、または 0
++   entry #site   エラーが報告される箇所の番号、または 0
++   entry #cause   このエラーが報告される理由となったコード、または `null`
++   entry #coded   そもそもコードであるかどうか。`Uncoded` の場合だけ false
++   entry #carrier   報告されたエラー。その原因は除く
++   entry #carrying   別のコードを運ぶこのコード。運ばれるコードは複合コードの最も内側に入る
++   entry #text   書かれるとおりのコード、`↯/s.25.1.2`。`Uncoded` では空
++   entry #label   メッセージの前に書かれるとおりの、括弧で囲んだコード
++   entry #colorLabel   ANSI カラー付きの括弧で囲んだコード
+
+@ 0 6 0 030e4cdbe1b56ebf10763fe927280a2a
++ entry .Hazard   発生させることのできる値の領域：任意の純粋な `Exception`
++     `type Hazard = Exception & caps.Pure`。
++     `Error` は継承によって純粋なので、すべての Soundness のエラーは `Hazard` である。JDK の例外は、任意の `Throwable` のサブクラスについて純粋性を確かめることができないので、発生させるには（`Error(throwable)` によって `Error.Unchecked` として）包まなければならない。
++     すべての `Tactic[error]`、`raises error`、`Attempt[_, error]` は、そのエラーを `Hazard` で上限付けする。
+
+@ 0 1 0 09c9082abae7915e18aadca4f81573b1
++ entry .Message   構造化されたメッセージ：型付きで区別できる部分を埋め込んだ固定のテキスト
+
+% 1 1 0 15debc45561bf9c1146c2a54f2a91563
+
+@ 0 5 0 0189ba36a7c0b6ef1c10bc666e6fd479
++       `Message` は、リテラルの断片である `texts` と、埋め込まれた部分である `messages` を交互に並べたものである。`messages` は `texts` より一つ少ない。これにより、メッセージの固定部分と可変部分の境界が、描画の時点まで保たれる。
++       `m"…"` がこれを組み立てる。`#text` はプレーンテキストに平坦化し、`#colorText` は埋め込まれた部分を端末上でイタリックにして描画する。Markdown、HTML、スタイル付きテキストの描画器は `#segments` や `#fold` をたどる。
+
+% 2 1 0 1e5ebdf183347edf016dc5b6ba415ea3
+
+% 3 1 0 18a00485b3bd795109723048a65d4651
+
+% 0 1 0 0c89b7db98b1a0900b2b2275eb90ce1f
+
+% 0 1 0 1a629175e24703eb162d1df7c3696cc0
+
+% 0 1 0 12fe8bc0056773cc0c0409a42b56f88d
+
+% 0 1 0 08f0fb5b1b87372706da73b8680fb7a9
+
+% 0 1 0 1cb02e80b139288615f4942410df34c0
+
+% 0 1 0 1affb38f10a25488036fea45773a287a
+
+% 1 1 0 1d059076dba91a221e7b9ecb2fb6c92a
+
+@ 0 6 0 092649811126157c1b14786c1f8e829e
++       メッセージの部分はいくらでも深く入れ子にできる。埋め込まれた `Message` は自身の構造を保ち、`m"…"` はバッククォートの間のテキストも部分として埋め込むので、`m"the field `name` is absent"` は `name` を区別できる部分として描画する。
++       `Message` は（それ自身として）`Communicable` なので、メッセージは別のメッセージに埋め込め、`List[Message]` は箇条書きとして埋め込まれる。
++       `Message` を出力するには、`fulminate.print` の `printables.messagePrintable` が必要である。
+
+% 1 1 0 0191588842b204f60e516a039c14fc8d
+
+% 0 1 0 18dde09716a20df30516406192b1045a
+
+% 0 1 0 0923ba834fc086d7131f4446fa6e0b57
+
+@ 0 25 0 0e2d8fad0c1269ce12bf5d7408984145
++   entry .apply   一つのリテラルテキストからなるメッセージ
++       `Message(text)` は埋め込まれた部分のないメッセージである。
++       オーバーロード `Message[tuple] (messages, done)` は、置換のタプルをその `Communicable` インスタンスを通して変換するために `m"…"` マクロが使うインラインのヘルパーであり、直接使うためのものではない。
++   entry .communicable   `Message` はそれ自身として別のメッセージに埋め込まれる
++       `Message is Transcribable to Message` の暗黙のスコープに入るように `Message` 自身のコンパニオンにあり、これによってロガーは裸のメッセージを記録できる。
++   entry #texts   リテラルの断片。埋め込まれた部分より一つ多い。部分が隣接するところでは空のテキスト
++   entry #messages   埋め込まれた部分を順に
++   entry #+   `left + right`：連結。継ぎ目のテキストは一つの断片に統合される
++   entry #segments   メッセージを、テキストと部分を交互に並べた一つの平らなリストとしたもの
++   entry #fold   メッセージを深さ優先で描画する。関数は各テキストをその入れ子の深さとともに受け取る
++       `message.fold(initial)((accumulator, text, level) => …)`：メッセージとその部分のすべてのリテラルの断片を、読む順に、埋め込まれた深さ（トップレベルは 0）とともに渡す。
++       `#text` と `#colorText` は fold である。
++   entry #text   プレーンテキストに平坦化したメッセージ。複数行のリテラルは展開される
++       三重引用符の `m"""…"""` の各行は前後の空白が除かれて一つの空白で連結され、空行は改行になる。そのため、メッセージをソース上で複数行に配置しても、そのレイアウトは読み手に届かない。
++   entry #colorText   端末テキストとしてのメッセージ。埋め込まれた部分はイタリック、さらに深い部分は太字のイタリック
++       名前に反して色は付けず、ANSI のスタイルだけを使う。深さ 1 はイタリック、深さ 2 以上は太字のイタリックである。
++       マクロの `halt` は、コンパイラのカラー設定が有効なときにこれを使う。
++   entry #unwrap   複数行の文字列をまとめる。各行の前後の空白を除いて空白で連結し、空行を改行とする
++       `#text` が適用する正規化である。描画器がリテラルに同じ規則を適用できるように公開されている。
+
+@ 0 8 0 1c1df70cf8ee7f600922f9b8d1c61768
++ entry .m   `m"…"` 補間子：リテラルテキストと `Communicable` な置換からなる `Message`
++     `m"the port $port is not available"` は、置換の間のテキストをリテラルの断片とし、置換を部分とする `Message` を組み立てる。各置換はその `Communicable` インスタンスを通して変換されるので、文章の中でどう読まれるかを知っている値だけを埋め込め、インスタンスのない値はコンパイルエラーになる。
++     `Message` はそれ自身として、`Text` もそれ自身として（空または前後に空白があれば `“ ”` で引用して）、プリミティブはその十進表記または文字のテキストとして、任意の `Textualizable` はそのテキストを通して、`List[Message]` は箇条書きとして埋め込まれる。
+
+% 2 1 0 080c4aaaa4c040640b7ce0b1a22d961c
+
+% 3 1 0 19b5b883b99f339d03b4bd0375ed741c
+
+% 0 1 0 1c9769053f0173fb0ac0d060dce26e0b
+
+% 0 1 0 1957adcee2ee33bc15698fd933c27fed
+
+% 0 1 0 0d7f55b364d8676219fd5d8ad3ba5257
+
+% 0 1 0 1b4ca5974a7ce9cb0bdce535e23e7a72
+
+% 0 1 0 01129071b6926718054f47e47f430891
+
+% 1 1 0 19c6788aff86530210f0e17f282e907d
+
+@ 0 7 0 133e6fedf1262b801427114ec24a2e3c
++     一組のバッククォートの間のテキストは埋め込まれた部分、つまりそれ自体が置換を含みうる一つのメッセージになるので、文章中の識別子やリテラルの断片は周囲の語から区別でき、端末ではイタリックとして、Markdown ではコードとして描画される。
++     対になっていないバッククォートはコンパイルエラー _the m"" interpolator has an unmatched backtick_ になる。
++     エスケープ `\n`、`\r`、`\t`、`\f`、`\b`、`\e`、`\\`、`\"`、`\'`、`\uXXXX` はコンパイル時にデコードされ、それ以外のエスケープはコンパイルエラーになる。
++     三重引用符の `m"""…"""` は複数行にまたがってよく、`Message#text` がそれを展開する。
+
+@ 0 1 0 02edaaeae12f74cb148e8582e38cd76e
++     メッセージが何を述べるかの流儀は `doc/standards/messages.md` にある。
+
+@ 0 1 0 1ed2cedd19f1bfd41f4b8d393016c907
++ entry .Communicable   文章の中で読める値の型クラス：値から `Message` へ
+
+% 1 1 0 1d2b3e510214c40b10fa0a74b662e9ac
+
+@ 0 9 0 078416fbea8a2473102a655c7a055549
++       `value is Communicable` は値を `Message` に変換するものであり、`m"…"` が各置換に求めるものである。
++       メッセージに現れる型は、そのコンパニオンにインスタンスを与える。通常はテキストとしての描画から導出されるので、そのような値についてのすべてのメッセージは、それがどう読まれるかについて一致する。`Reason` 列挙型は、各ケースを言い表すインスタンスを与える。
++       コンパニオンにあるインスタンスは、`Text`（空または前後に空白があるときは `“ ”` で引用されるので、存在しない値や空白だけの値が見える）、`String`、`Char`、`Int`、`Long`、`Message`、任意の `Textualizable`、`List[Message]`（1 行に一つずつの箇条書きとして）、`Specializable`（プリミティブ型を名指すメッセージのために、`Int` を `int` として）、そしてマクロの中で `Quotes` がスコープにあるときの `Term` または `Expr` をカバーする。
+
+% 2 1 0 17a79ecbe06f0424055063d142788481
+
+% 3 1 0 08efc07760e9826a14aff92fedfee4a5
+
+% 0 1 0 1a088d7cc72006e01e0a5862f787f2e8
+
+% 0 1 0 04b489e8f8b2598d05b85d18b94e76e6
+
+% 0 1 0 19e392dc58a773c3150da8aecea29e32
+
+% 0 1 0 19530c5f2e80b89301864330a462617f
+
+% 0 1 0 05e2cc5f8e8480ae1f13313b0cd976d0
+
+% 0 1 0 00563016e218e12012782ccbf7fae300
+
+% 0 1 0 02a4671c3b4336fa19b991f3f5441f27
+
+% 1 1 0 0f8d4bb18f16ad66039819d8169ffd0a
+
+@ 0 4 0 0bafdbabfe80d9801d152a5a07a7e9e9
++       `Communicable` は `Transcribable to Message` である。値をメッセージに変換することは、まさに記録可能なイベントをログのキャリアに書き写すことであり、これによってロガーは、それ以上の橋渡しなしに任意の `Communicable` なイベントを記録できる。
++       `value.communicate` は、この変換を拡張メソッドとしたものである。
+
+% 1 1 0 0e4b266afb969cec00bf40d80d875b24
+
+% 1 1 0 0047eae1946031b21ae3485cb292b614
+
+% 0 1 0 175ffc5341b679381ab2db8c43261eeb
+
+@ 0 13 0 062682d45547079012e487f3207c9f25
++   entry .text   `Text` をそれ自身として。空、または空白で始まるか終わる場合は `“ ”` で引用する
++   entry .string   `String` をそのテキストとして
++   entry .char   `Char` をその文字として
++   entry .int   `Int` を十進表記で
++   entry .long   `Long` を十進表記で
++   entry .textualizable   任意の `Textualizable` な値をそのテキストとして
++   entry .term   `quotes.reflect.Term` をコンパイラが表示するとおりに。マクロ用で、`Quotes` がスコープにあるとき
++   entry .expr   `Expr[T]` をコンパイラが表示するとおりに。マクロ用で、`Quotes` がスコープにあるとき
++   entry .specializable   プリミティブのコンパニオン（`Int`、`Boolean`…）を小文字の名前として
++       `Number.Error` の _is not a valid int_ のように、プリミティブ型を名指すメッセージのためのものである。
++   entry .listMessage   `List[Message]` を、1 行に一つのメッセージの箇条書きとして
++       各メッセージはそれぞれの行に ` - ` を接頭辞として置かれるので、他のエラーを集約するエラーは、その数を述べてその下に列挙する。
++       メッセージを手でカンマで連結してはならない。
+
+% 0 1 0 0ea6bcfa716420281516b24b1c0b6be1
+
+@ 0 4 0 08990125b0a8706b0976bcdb7f23c4dc
++   entry #message   値に対するメッセージ
++   entry #record   値に対するメッセージ。同じ変換の `Transcribable` 側の名前
++   entry #contramap   別の型に対する `Communicable`。その型をこの型に写すことで作る
++       `String` のインスタンスは `Communicable.text.contramap(_.tt)` として作られている。
+
+@ 0 1 0 0cff86a3a4b102110dd2f7bd3935ec42
++ entry .communicate   `value.communicate`：その `Communicable` を通した `Message` としての値
+
+@ 0 8 0 063f0d9811f50917072f41f93b8399e8
++ entry .Clarification   `Reason` 列挙型が継承するトレイト：エラーの個々の原因に対する番号
++     `trait Clarification { def number: Int }`。
++     エラーの個々の原因は `Clarification` を継承する `Reason` 列挙型のケースであり、それぞれエラーの中で一意な番号を持つ。そのため `Error(25, 1, reason.number)` は `↯/s.25.1.1`、`↯/s.25.1.2`… と描画され、それぞれが `doc/errors` にあるエラーのページの小節を持つ。
++     `Reason` は診断に必要なところでは独自のデータを持ち（`Ipv4ByteOutOfRange(byte: Int)`）、各ケースを言い表す独自の `Communicable` インスタンスを与え、エラーのメッセージがそれを埋め込む。
++     `Clarification` を渡された `halt` や `warn` は、その番号を診断の接頭辞に入れる。
+
+% 2 1 0 069206f7c6c020f4099a571186506b26
+
+% 3 1 0 0fbf3143ec95d19016fc04b4ad326e05
+
+% 0 1 0 07d9fda9feeb831d0a87d5e164fe64a7
+
+% 0 1 0 05c0ffa24de6952504546b3171e81a7e
+
+% 0 1 0 083d0e91463131ba1900514871565603
+
+% 0 1 0 0c848d71488e01f00a2feedc0163f9c0
+
+% 0 1 0 099dc5fd05ccda9e191dbfa63f172dc0
+
+% 1 1 0 192aba54fb29f9071c9d65c73dc6d584
+
+@ 0 1 0 00b1797ec363f38f1cc845d241e6ffdf
++ entry .Diagnostics   エラーがスタックトレースを捕捉するかどうか：`Diagnostics.capture` または `Diagnostics.omit`
+
+% 1 1 0 158c494051901ff51503c5e4ec4b676d
+
+@ 0 7 0 00d88eef3e76a0771264152124aa6693
++       二つの値を持つ不透明型である（`fulminate.internal` からエクスポートされる）。
++       すべてのエラーのコンストラクターはこれをコンテキストパラメーターとして取り、`captureStack` を `Exception` の `writableStackTrace` に渡す。そのため `omit` のもとで組み立てたエラーはスタックトレースを持たず、他のどの値よりも費用がかからない。これが、エラーが予期されて処理されるホットパスでも型付きのエラーを使える理由である。
++       エラーを捨てる戦術（`safely`、`recover`）は自ら `omit` を与え、エラーを保つ戦術はスコープにある `Diagnostics` を取り、例外を投げる戦術は `capture` を使う。
+
+% 2 1 0 19255ec83813cd8602bac62e933075e5
+
+% 3 1 0 053132de18aa422c0137ee68f7c5c9c6
+
+% 2 1 0 0823b74bc01c96280b75760f51f37a5e
+
+% 3 1 0 0e8235c20bbe3d261b34b55af9c9ba63
+
+% 2 1 0 13fbc5e5eab3450c037f10b023def64f
+
+% 0 1 0 11420fbb5e6b718f1b3000e7ba19486d
+
+% 0 1 0 1d186ac06c9efc2c183862503ad8f05f
+
+% 2 1 0 07e7157a20592ac10d2ab440d4c58977
+
+% 0 1 0 18f5aa26b33b5d75164ce04461dfd972
+
+% 0 1 0 070f2f1622bcba18198bfe3101efaf84
+
+% 1 1 0 184e6f4731ecd69b1ca8ae95e669190d
+
+@ 0 1 0 0618eefdbf505c8f1bf4710b1d86daef
++       選ぶ通常の方法は、`errorDiagnostics` の given の一つを名前でインポートすることである。
+
+% 0 1 0 0163c571e04c5920016250c9a29905d9
+
+% 1 1 0 0f5b5c3dba37cd33097787c06bb357be
+
+@ 0 1 0 0ce7812318f2ee01164abe240b930fe8
++ entry .errorDiagnostics   二つの `Diagnostics` の選択肢を、名前でインポートする given として
+
+% 1 1 0 050075c64a0d0bb2033622194eab7f03
+
+@ 0 4 0 10529abb7c13359f04d0e9794ac19037
++       ワイルドカードインポートは given を決してインポートしないので、`import soundness.*` はどちらも持ち込まない。戦術のサンクの外でエラーを組み立てる場所（テスト、`mitigate` のケース、直接の `PortError(80)`）では、一つを名前でインポートする。
++       `abort(…)` と `raise(…)` の中では戦術が自身のものを与えるので、`raises` メソッドにインポートは要らない。
+
+% 2 1 0 0d009dc699db24b30b36facdba45a437
+
+% 3 1 0 16a30e40476cb7461b1fc20fdcedca9b
+
+% 4 1 0 1181d99ce6e347bc1611e67ace7585f3
+
+% 1 1 0 052232952f6381a509d59a6b8923d0ea
+
+% 1 1 0 188adf8a7b6bbcb015a45b8075c63871
+
+@ 0 2 0 096d425e068f30590b9dffec7b90b222
++   entry .emptyDiagnostics   `Diagnostics.omit`：スタックトレースなし。エラーが予期されて処理される場所ではより安価
++   entry .stackTracesDiagnostics   `Diagnostics.capture`：スタックトレースあり。デバッグ用
+
+@ 0 1 0 128419ef4c220f6e0e1f05b57a43650e
++ entry .Panic   捕捉されることを意図しないエラー：プログラマーの理解が誤っていた
+
+% 1 1 0 059e8192a6599bd318f2cf778861f834
+
+@ 0 5 0 04141182da23a0b114ed062babd7aea2
++       その状況がなぜ不可能だと信じられていたかを述べる `Message` を持つ `java.lang.Error`（`Exception` ではなく、したがって `Hazard` でもない）である。
++       これに至ることは処理の失敗ではない。どの `raises` 節にも現れず、どの戦術も捕捉しない。
++       `panic(message)` はこれを投げ、`Panic(exception)` は予期せず投げられた例外を、そのクラスとテキストを名指すメッセージとともに包む。
+
+% 2 1 0 07c20c3533221db51fc08bcf80a2070a
+
+% 3 1 0 117bb1af2b37062c11d9fd1064757790
+
+% 0 1 0 112c373021ddc262094ba15ce932f6f7
+
+% 0 1 0 190999d6c15d389512c8529b26a450df
+
+% 1 1 0 1ee3e3fee7720165092e298baebc545c
+
+% 0 1 0 1d647f153b0a0b80114ef4de132142df
+
+@ 0 4 0 18da0ee4f86e7a6a05cd99cd4e636a34
++   entry .apply   予期せず投げられた例外に対するパニック
++       `Panic(exception)` のメッセージは _an `ClassName` exception was unexpectedly thrown; the error was: `text`_ であり、メッセージのない例外では `[null]` となる。
++   entry #message   その状況がなぜ不可能だと信じられていたか
+
+@ 0 4 0 0b7ad92bb8e1673115424ab29d53f6a5
++ entry .panic   メッセージ付きの `Panic` を投げる：その状況は不可能だと信じられていた
++     `panic(m"…")` の型は `Nothing` なので、値が必要などこにでも置ける。マッチの到達しない分岐や、前の段階が保証した検査の `else` がその例である。
++     これは処理すべきエラーではなく、シグネチャで宣言されることもない。
+
+@ 0 12 0 16cb5647bd90c4100dc733b2079a83bf
++ entry .halt   マクロからコンパイルエラーを報告し、展開を中止する
++     マクロの実装用で、`Quotes` がスコープにあるときに使う。
++     `halt(message)` は `Message` のテキストを（コンパイラの `-color` 設定が有効なときは `Message#colorText` を通して色付きで）`report.errorAndAbort` で報告し、`halt(message, position)` は位置を添える。
++     番号付きのオーバーロードは、診断の接頭辞にエラーのコードを `[↯/s.25.1] ` として付けるか（`halt(module, number, message)`、`halt(module, number, message, position)`）、その理由の番号を `[↯/s.25.1.2] ` として付ける（`halt(module, number, reason, message)` と `halt(module, number, reason, message, position)`。ここで `reason` は `Clarification` である）。
++     番号付きの形の位置パラメーターは `Matchable` であり、`quotes.reflect.Position` でない値（または `null`）では位置なしで報告する。
++     マクロが発生させるすべてのコードは、実行時のエラーと同じく `doc/errors` にページを持つ。
+
+% 2 1 0 02a48611362d461e0226da392ed47025
+
+% 3 1 0 0f5a51c74283bfb01e202aaebfd8c2e9
+
+% 0 1 0 17aa25563b6ef5f20ef33c4527c8861e
+
+% 0 1 0 08813f89405a48fe137845c61f358491
+
+% 0 1 0 0546aea4ca06a0af18dbf62dc8b35ac8
+
+% 0 1 0 0b9e627db83890290c01ace59d03f955
+
+% 1 1 0 1848c1bae463f99a116720e6b4b1ab22
+
+@ 0 2 0 003a54a1a6f71e711f73f89ef05fae3f
++     `contingency` の `HaltTactic` は、発生させられた `Error` を、その `labelled` メッセージの `halt` に変えるので、実行時に発生させるパーサーは、同じエラーをコンパイル時に報告する。
+
+@ 0 5 0 158bac973b84b36c1688024204f392ec
++ entry .warn   マクロからコンパイル警告を報告する
++     マクロの実装用で、`Quotes` がスコープにあるときに使う。
++     `halt` と同じオーバーロード（`warn(message)`、`warn(message, position)`、`warn(d, message)`、`warn(d, message, position)`、`warn(d, reason, message)`、`warn(d, reason, message, position)`）を持ち、`report.errorAndAbort` の代わりに `report.warning` を使うので、展開は続く。
+
+@ 0 1 0 190937ab60c2efc21d27a888d07ef0e0
++ entry .TextEscapes   テキスト中の標準的なエスケープシーケンスをデコードする：`\n`、`\t`、`\uXXXX`…
+
+% 1 1 0 05ccedeec59996f706a0998634b04290
+
+@ 0 6 0 0be3696d0b3895eb041277c1ea3f608f
++       `m"…"` と他の補間子が共有するエスケープの規則を、入力中でエスケープに出会うパーサーのための実行時の関数として提供する。
++       `escape(text)` はテキスト中のすべてのエスケープをデコードし、`standardEscape` はそのループの一段階である。
++       認識されるエスケープは `\\`、`\n`、`\r`、`\f`、`\b`、`\t`、`\e`、`\"`、`\'`、`\uXXXX` である。
++       これらの関数は `TextEscapes.Error` を検査例外として投げる（`raises` ではなく `throws`）ので、呼び出し側には `CanThrow[TextEscapes.Error]` または `unsafeExceptions.canThrowAny` がスコープに必要である。
+
+% 2 1 0 109f345d18a7136c1f52072e71ad3ab3
+
+% 3 1 0 005bab09caa0ce24134048893f2a5328
+
+% 0 1 0 04730089dbbde68612610fed08563f9c
+
+% 0 1 0 0bd017d0658991251a7f82e999e63b67
+
+% 1 1 0 14475c7abac07d9011552f07177ea691
+
+@ 0 8 0 1beba6f02770085a130796775b2cf341
++   entry .standardEscape   ある位置の 1 文字をデコードする：文字（または -1）、次の位置、エスケープが開いているかどうか
++       `standardEscape(text, cursor, escaping)` は、`cursor` の位置の文字を `escaping` が示す状態で読み、デコードした文字（その文字がエスケープを開いて何も生まなかったときは `-1`）、続きを読む位置、新しい状態を返す。
++   entry .escape   テキスト中のすべてのエスケープをデコードする
++       認識できないエスケープ、不完全な `\u` シーケンス、単独のバックスラッシュで終わるテキストに対して `TextEscapes.Error` を投げる。
++   entry .Error   エスケープシーケンスが有効でないときに発生する
+
+% 1 1 0 141f933cd84fa62f1b2dcef1cc040760
+
+@ 0 4 0 13e4351ba13d497018cae3ec7d9f587f
++         エラー `↯/s.15.2`：_the character `c` should not be escaped_、_the unicode escape is incomplete_ または _the final character cannot be an escape_。
++         `escape` と `standardEscape` が投げる。
++     entry #initMessage   無効なエスケープを説明するメッセージ
+
+@ 0 1 0 1f35cb9cff96be8d13521e886490e7c9
++ entry .printables   `Message` に対する `Printable` インスタンスを、名前でインポートする given として
+
+% 1 1 0 07202c24b97677a716a590ba4ccd47fb
+
+@ 0 4 0 0ad22b61728ef04f05511227c479e515
++       これは別のソースセットである `fulminate.print` にあるので、すべてのモジュールが依存するエラーの語彙が出力にも依存することはない。
++       そこからでは given は `Message` の暗黙のスコープに入らないので、インポートしなければならない。`Printable` には汎用の代替がないので、インポートを忘れた呼び出し箇所は、劣化したものを出力するのではなく、コンパイルに失敗する。
+
+% 2 1 0 1120688565fc7439065ee4629797c2dc
+
+% 3 1 0 0b85761646101d900481e52c0d117a50
+
+% 0 1 0 034be053725dc6ad1c679036533262ec
+
+% 0 1 0 1f48a0a0e8c01b3b10f4167929a40652
+
+% 0 1 0 1ce570b588c2901109d732798d700c35
+
+% 1 1 0 0261860c9fbf98de1830bc17e3ff3d8a
+
+@ 0 1 0 083e30d1576601f100a2143c462d8fe1
++   entry .messagePrintable   端末が何であれ、`Message` をプレーンな `text` として出力する
+
+@ 0 1 0 1638be5e5c2552021a7e1795d7fdae06
++ entry .internal   `Diagnostics` と `m"…"` マクロの置き場所
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 1c8fccd0051fb4cf19fe6cbcf88e7d25
++       直接使うためのものではない。
++       `Diagnostics` は `Boolean` の上の不透明型としてここで宣言され、`fulminate` パッケージにエクスポートされる。`m"…"` の背後にあるマクロとそのヘルパーも同じ場所にある。
++   entry .Diagnostics   不透明型 `Diagnostics`。`fulminate.Diagnostics` を参照
+
+% 1 1 0 1566a1c3d7dc599305a0634541514e9c
+
+@ 0 7 0 073d79aedef5ebbe14ce35114a387d99
++         ここで宣言されてエクスポートされる。説明は `fulminate` パッケージの下にあるそのページにある。
++     entry .capture   エラーはスタックトレースを記録する
++     entry .omit   エラーはスタックトレースを記録しない
++   entry .captureStack   `Diagnostics` の拡張：スタックトレースを捕捉すべきかどうか
++       `Error` のコンストラクターが `Exception` の `writableStackTrace` に渡す `Boolean` である。
++   entry .mSubMessages   置換、またはそのタプルを、`Communicable` を通してメッセージに変換する
++   entry .mMacro   `m"…"` の背後にあるマクロ：エスケープをデコードし、バッククォートで分割し、`Message` をスプライスする

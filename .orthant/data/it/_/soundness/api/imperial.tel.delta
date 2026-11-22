@@ -1,0 +1,304 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 06471244edf78cfc0f4fd709c8b745df
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 051742139185ae9e0e44430e8c61ce66
++ info   le directory standard di un sistema Unix e della home di un utente, come nomi tipizzati e annidati
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1800e6b03e6be9b71612bef21e229b93
++     _Imperial_ nomina le directory convenzionali di un sistema Unix come un albero di oggetti
++     annidati, così che una posizione standard si scriva come un valore anziché come testo, e una
++     directory scritta male sia un errore di compilazione. `Home` è l'albero sotto la home
++     directory dell'utente, e `Base` l'albero sotto la radice del filesystem. Ogni oggetto prende
++     il nome dalla directory che rappresenta, con l'iniziale maiuscola e senza l'eventuale `.`
++     iniziale: `$HOME/.local/bin` è `Home.Local.Bin` e `/var/lib` è `Base.Var.Lib`.
+
+@ 0 4 0 1725406e7f7675611de77542f05fff51
++     Ogni nodo è un `BaseLayout`. Applicarne uno, con un tipo di percorso come argomento di tipo,
++     lo risolve in quel tipo rispetto all'`Environment` e al `System` nell'ambito, così gli stessi
++     nomi servono per un `Path on Linux`, per un semplice `Text` o per qualsiasi altra
++     rappresentazione che sia `Instantiable across Paths from Text`:
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 02144ad0f83d1d2207050f0bcf5195f5
+
+% 0 1 0 166f81c9908c1cef09c4492c560ebf21
+
+% 0 1 0 10acb0208038e972123b36c3ca72b84d
+
+% 0 1 0 00dfe1bf7f1162631bf9653def00d90e
+
+% 0 1 0 1c5bbd0db4e6dcb91490fc2e200250af
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 5 0 090fa1d109709d5201e2d81beaa3328e
++     Una struttura dice anche se è destinata a essere scritta: `readOnly` è `true` per `/boot`,
++     `/efi`, `/sys`, `/usr` e tutto ciò che sta sotto, e per le directory per processo sotto
++     `/proc`. Le strutture sono percorsi fissi: `Home.Config` è sempre `$HOME/.config`, qualunque
++     cosa dica `XDG_CONFIG_HOME`; per le posizioni che rispettano XDG, si usino i valori `Xdg` di
++     ambience.
+
+@ 0 2 0 1dd151a2e0f6494a0bed8325899f19ae
++     La libreria ha un unico insieme di sorgenti, `imperial.core`, e tutto è esportato nel modulo
++     ombrello `soundness`.
+
+% 0 1 0 0788cd3b9cec7daf0879d44e6e429e79
+
+% 0 1 0 079c6da2c0e561c513a1416d56d2ff7d
+
+% 0 1 0 0f97983af47232cc031cd624207a1de5
+
+@ 0 1 0 1ebf8a157598d46f10fe809a349daab7
++ entry .BaseLayout   una directory in una struttura standard, risolta in qualsiasi tipo di percorso rispetto all'ambiente
+
+% 1 1 0 0a2b0b28fa6b52d7129a8f07dfcee1fb
+
+@ 0 5 0 1f5110a7bf33310d1b427f937c8c3670
++       Un `BaseLayout` è un nodo dell'albero `Home` o `Base`: il nome di una directory, la
++       struttura in cui si trova (portata come `BaseLayout.Dir` contestuale del suo oggetto
++       contenitore) e se è `#readOnly`. Il suo membro di tipo `#Topic` è una tupla dei nomi delle
++       directory dal nodo fino alla sua radice, così `Base.Var.Log` ha il topic `("log",
++       "var")` e il tipo di ciascun nodo è distinto.
+
+@ 0 5 0 1c2201552cfd0e2d03052f52e164f36a
++       Applicare una struttura, `layout[Path on Linux]()`, produce il suo percorso assoluto e ne
++       costruisce un valore del tipo di percorso richiesto. Una struttura sotto `Home` legge la
++       variabile d'ambiente `HOME`, sollevando `Environment.Error` se non è impostata; una sotto
++       `Base` non ha bisogno di alcuna variabile d'ambiente, sebbene entrambe le firme richiedano
++       un `Environment` e un `System` nell'ambito.
+
+% 2 1 0 0e9f2dfafbdfb83b1f26cc6d6f4dff16
+
+% 3 1 0 0a2b7d9186c5dbd6035220e6a791c5c2
+
+% 4 1 0 1729befde87e49c91110a0515daacc42
+
+% 5 1 0 0a77c24b69bee4ab0f85c62c249067d3
+
+% 6 1 0 0fedb600b8a75cbe1c19748e3ad91d51
+
+% 0 1 0 13e7ee669c90990e15bbb523ce360b24
+
+% 0 1 0 01ec940f6f210c711636b0dcccb40c84
+
+% 1 1 0 10684ea762657a6d033693920670fa2d
+
+@ 0 2 0 14830ccaa9a39c270c187ad2c25db0f8
++       Una nuova struttura annidata in una esistente è un oggetto che estende `BaseLayout` al suo
++       interno, e che assume il `#dir` del genitore come propria base.
+
+% 1 1 0 11ddc3c55bdf22de0d8069b1a01dd2d2
+
+% 1 1 0 1beda2fb9cb9e37d03dc85a26a0f117e
+
+@ 0 1 0 0767669c9e2dcc04171f13e2add72628
++   entry .Dir   la posizione di una struttura: se sta sotto la home directory, e i segmenti del suo percorso
+
+% 1 1 0 11c1f6e5c71166a9043041e2fcf0a3b7
+
+@ 0 21 0 0c935a1544e54461085fc33d2186fc0c
++         Il `BaseLayout.Dir` di una struttura viene passato alle strutture annidate come valore
++         contestuale, ed è così che un oggetto annidato conosce la directory in cui si trova. I
++         segmenti sono conservati dal più interno.
++     entry #home   se il percorso è relativo alla home directory dell'utente
++     entry #path   i segmenti del percorso, dal più interno
++     entry #/   la directory di un figlio, dato il suo nome
++     entry #render   il percorso assoluto come testo, dato il percorso della home directory
++         Un `Dir` che non è relativo alla home e non ha segmenti viene reso come `/`.
++   entry #readOnly   se la directory è per convenzione non scritta dai programmi
++       `true` per `/boot`, `/efi`, `/sys`, `/usr` e tutto ciò che sta sotto, e per le directory
++       di `/proc`; `false` per ogni struttura sotto `Home`.
++   entry #Topic   i nomi delle directory da questo nodo fino alla radice, come tipo tupla
++   entry #absolutePath   il percorso assoluto della struttura, come testo
++       Richiede un `Environment` e un `System`. Una struttura sotto `Home` legge la variabile
++       d'ambiente `HOME`, senza `/` finale, e solleva `Environment.Error` se non è
++       impostata.
++   entry #dir   il `BaseLayout.Dir` di questa struttura, dato alle strutture annidate in essa
++   entry #apply   il percorso assoluto della struttura, come tipo di percorso scelto dal chiamante
++       `layout[Path on Linux]()` crea da `#absolutePath` un valore di qualsiasi tipo che sia
++       `Instantiable across Paths from Text`. Richiede un `Environment` e un `System`, e
++       solleva `Environment.Error` (per una struttura `Home` il cui `HOME` non è impostato) e
+
+% 0 1 0 0da775d779ae972601034fe859f3ce34
+
+@ 0 1 0 00b6815da15cf6ba08fa907d28225761
++ entry .Home   la home directory dell'utente, `$HOME`, e le directory standard sotto di essa
+
+% 1 1 0 01648c2115c568b00abb184bffca0fba
+
+@ 0 3 0 1264fb7971aa398e15ccc56456abbc76
++       Un `BaseLayout` risolto rispetto alla variabile d'ambiente `HOME`. `Home[Path on
++       Linux]()` è la home directory stessa; i suoi oggetti annidati nominano le directory
++       convenzionali sotto di essa.
+
+% 2 1 0 0f12ae71806ee8db00f12d41a0f69a47
+
+% 3 1 0 0bc7d78b04d14d491ea6457dc5553cf9
+
+% 4 1 0 1225f46d3787e7f21f5cdffa20586173
+
+% 5 1 0 0e172a6d39716fdb0f4adc9fe7b15c3e
+
+% 6 1 0 04f256fe20f571dd1e9fb0d88843ca93
+
+% 0 1 0 0ee821c7532e81e0051b53bec8bca330
+
+% 0 1 0 101290bb813888530d61d18237f80c63
+
+% 1 1 0 015a4073df270f231469b759ab0401eb
+
+@ 0 3 0 1afb2a39da3f6b5910fe80226e27b0b6
++       I percorsi sono fissi: `Home.Config` è `$HOME/.config` anche dove `XDG_CONFIG_HOME` nomina
++       un'altra directory, quindi un programma che deve rispettare le variabili XDG dovrebbe usare
++       invece `Xdg` di ambience.
+
+% 1 1 0 0c8b6b683b885e7a038142b4273f9b98
+
+% 1 1 0 02899b1a62e7446a102b439efee08ab7
+
+@ 0 3 0 1fbd22784f76748e1ac74118716da65e
++   entry .Cache   la directory di cache dell'utente, `~/.cache`
++   entry .Config   la directory di configurazione dell'utente, `~/.config`
++   entry .Local   il prefisso di installazione locale dell'utente, `~/.local`
+
+% 1 1 0 00e0cc5ed57784e01f9d3c94c3a55d71
+
+@ 0 6 0 1a87a94c5090f9461f69b6466877dd7c
++         La controparte per utente di `/usr`, che contiene programmi, librerie, dati e stato
++         propri dell'utente.
++     entry .Bin   gli eseguibili propri dell'utente, `~/.local/bin`
++     entry .Lib   le librerie proprie dell'utente, `~/.local/lib`
++     entry .Share   i dati applicativi propri dell'utente, `~/.local/share`
++     entry .State   lo stato applicativo dell'utente, `~/.local/state`
+
+@ 0 1 0 08e05895d13e5a670fc3a8456383e07c
++ entry .Base   la radice del filesystem, `/`, e le directory di sistema standard sotto di essa
+
+% 1 1 0 10ffaadd3bec5df116854fcd4cd4893f
+
+@ 0 3 0 057dcf2494db0ef7113cc2ddde13ceab
++       Un `BaseLayout` per la directory radice, con oggetti annidati per le directory del
++       Filesystem Hierarchy Standard. `Base[Path on Linux]()` è `/`. Nessuna delle sue strutture
++       legge l'ambiente, quindi nessuna solleva in pratica `Environment.Error`.
+
+% 2 1 0 1dae16de24b2033e086d1fe24af20b5b
+
+% 3 1 0 04d40bb113d422800139215ac1b0866c
+
+% 4 1 0 152942308c914e6b09c03d2417f08e74
+
+% 5 1 0 0fe56aaa6ced9fb713c3f5dda7e01170
+
+% 6 1 0 0a00e5cb46380a9310df1e5891322e05
+
+% 0 1 0 10857b4d2ead102d0c138119e1234beb
+
+% 0 1 0 042e28e8d658b64f1358a2196d226eb3
+
+% 0 1 0 0afc25f2237541851c526ae1fcf81729
+
+% 1 1 0 004eb3557a536fd41e9c196b6b3c42de
+
+% 1 1 0 03d138c0a241cc890c19a725d7b8eba1
+
+% 1 1 0 1a8e70822f5a736200afaee835396c50
+
+@ 0 10 0 03c63f70fe1710440db547395afdade8
++   entry .Boot   i file del boot loader, `/boot`, in sola lettura
++   entry .Efi   la partizione di sistema EFI, `/efi`, in sola lettura
++   entry .Etc   i file di configurazione del sistema, `/etc`
++   entry .Home   la directory che contiene le home directory degli utenti, `/home`
++       Da non confondere con `Home` di primo livello, che è la home directory dell'utente
++       corrente.
++   entry .Root   la home directory dell'utente root, `/root`
++   entry .Srv   i dati serviti dal sistema, `/srv`
++   entry .Tmp   i file temporanei, `/tmp`, che possono non sopravvivere a un riavvio
++   entry .Run   i dati di runtime dall'ultimo avvio, `/run`
+
+% 1 1 0 1cb90f561df7d39c10132e89d7d89e3e
+
+@ 0 4 0 11c8105edaebb2c901d579bf13c0f653
++         Stato volatile come socket e file di identificativi di processo, cancellato all'avvio.
++     entry .Log   i log di runtime, `/run/log`
++     entry .User   le directory di runtime per utente, `/run/user`
++   entry .Usr   i dati di sistema condivisibili e in sola lettura, `/usr`
+
+% 1 1 0 08de5396a80b287017fea026f02bc2cc
+
+@ 0 6 0 12854f3f426f48261452e33513d9bac4
++         Ogni struttura sotto `/usr` è `readOnly`: qui risiedono i programmi installati dal
++         gestore di pacchetti del sistema, e un'applicazione non dovrebbe scriverci.
++     entry .Bin   gli eseguibili di sistema, `/usr/bin`, in sola lettura
++     entry .Include   i file header C, `/usr/include`, in sola lettura
++     entry .Lib   le librerie di sistema, `/usr/lib`, in sola lettura
++     entry .Share   i dati indipendenti dall'architettura, `/usr/share`, in sola lettura
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 4 0 1e4f999eafa3560507db39b4821b2205
++           La documentazione, e i valori predefiniti di fabbrica da cui si possono ricostruire
++           `/etc` e `/var`.
++       entry .Doc   la documentazione dei pacchetti, `/usr/share/doc`, in sola lettura
++       entry .Factory   le copie originali della configurazione di sistema, `/usr/share/factory`, in sola lettura
+
+% 0 1 0 1fa5966119e8ae1109b0dcda52a971aa
+
+@ 0 4 0 16bb53409b0a69db014c566b6f9a8ae3
++             I valori predefiniti da cui si possono ripristinare `/etc` e `/var` di un sistema.
++         entry .Etc   la copia di fabbrica di `/etc`, `/usr/share/factory/etc`, in sola lettura
++         entry .Var   la copia di fabbrica di `/var`, `/usr/share/factory/var`, in sola lettura
++   entry .Var   i dati variabili che persistono attraverso i riavvii, `/var`
+
+% 1 1 0 06f7959ef6f2fede1cdf221f6c8119ea
+
+@ 0 8 0 06fdc11868af847608ff57295ad000dd
++         I dati che i programmi del sistema scrivono durante l'esecuzione: cache, stato, log, code
++         e file temporanei che devono sopravvivere a un riavvio.
++     entry .Cache   le cache delle applicazioni, `/var/cache`
++     entry .Lib   lo stato delle applicazioni, `/var/lib`
++     entry .Log   i file di log, `/var/log`
++     entry .Spool   le code di lavoro in sospeso, come posta e stampe, `/var/spool`
++     entry .Tmp   i file temporanei conservati attraverso i riavvii, `/var/tmp`
++   entry .Dev   i file di dispositivo, `/dev`
+
+% 1 1 0 1d9f46f581cd0cb9086438d0c1db4106
+
+@ 0 3 0 1d296ce989c48d751a11f9f54d91a2c2
++         I nodi di dispositivo del kernel.
++     entry .Shm   la memoria condivisa, `/dev/shm`
++   entry .Proc   il filesystem delle informazioni sui processi, `/proc`
+
+% 1 1 0 0ae0d204b22dd2ac16fde7d24e6b187a
+
+@ 0 2 0 16b0d7e1d7846d22150b7ccec7b07605
++         La vista del kernel sui processi in esecuzione. `Base.Proc(pid)` è la directory di un
++         processo, `/proc/<pid>`, ed è in sola lettura.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 12a77f35a923ed9d02842be6213a00e5
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 3 0 027d2578eabc59200f7e01c88252b221
++     entry .apply   la directory di un processo, `/proc/<pid>`, dato il suo `Pid`
++     entry .Sys   i parametri del kernel, `/proc/sys`, in sola lettura
++   entry .Sys   l'albero dei dispositivi e dei driver del kernel, `/sys`, in sola lettura

@@ -1,0 +1,267 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 190ec4d62720b9ed1208d6feea1b9002
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 195d48afee3c8de11257f1f82abcee2b
++ info   listas, conjuntos y mapas de tipos literales en el nivel de tipos, reificados como valores de tiempo de ejecución en tiempo de compilación
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 1b4a124088e81fc90abb89ed1eba45c9
++     _Typonym_ transporta datos estáticos en tipos y los vuelve a convertir en valores. Una macro
++     parametrizada por una lista de nombres, un conjunto de opciones o un mapeo no puede recibirlos
++     como parámetros ordinarios, ya que debe verlos mientras se compila el código; un tipo sí puede
++     transportarlos, como tipos singleton literales dispuestos en un `TypeList`, un `TypeSet` o un
++     `TypeMap`, y `reify` convierte ese tipo en el valor de tiempo de ejecución que describe.
+
+% 2 1 0 12e4948aa5aabab815b4668a29751538
+
+% 3 1 0 1a148629a407ceed0acb89d5b1468b21
+
+% 0 1 0 0461e7ac6abe697b0206572d417b1620
+
+% 0 1 0 122d6fcd547f71ae0735b4441c645bd8
+
+% 0 1 0 060faa9d3ed44a23084d95e1e8f62687
+
+% 0 1 0 1428f2f9e99543c9005df2dbcb21489e
+
+% 1 1 0 16df10b1b2bfe5600cc9d77294671a2f
+
+@ 0 4 0 1e523100ea9933220ef5b5e93aed6965
++     Las clases de literales son `Int`, `Double`, `String` y `Boolean`; un `TypeList` es una tupla
++     de ellos, un `TypeSet` una unión y un `TypeMap` una tupla de pares, y los tres se anidan, de
++     modo que los valores de un mapa pueden ser a su vez `TypeList`. Un tipo que no es ninguno de
++     estos —`Int` en lugar de `42`, por ejemplo— es un error de compilación, porque no hay ningún
++     valor que reificar.
+
+@ 0 5 0 08953af65c3bd59a05bd6656e4073f55
++     `reify` es transparente, así que su resultado tiene el tipo preciso que construye la macro;
++     `reifyAs` fija el tipo del resultado donde la inferencia necesita ayuda, y la clase de tipos
++     `Reifiable` permite que un método exija un parámetro de tipo reificable como valor contextual.
++     Desde dentro de la implementación de una macro, donde el tipo solo se tiene como `Type[T]`, la
++     sobrecarga `reify(Type)` da la reificación como un `Expr`.
+
+@ 0 2 0 0ae62cf8d9265bbb08bc404ad7dd07a4
++     La biblioteca tiene un único conjunto de fuentes, `typonym.core`, que compila para todas las
++     plataformas, ya que todo su trabajo ocurre en tiempo de compilación. Todo se exporta al
++     paraguas `soundness`.
+
+% 0 1 0 14ec2b79f66c646a06c7ddf542568ae3
+
+% 0 1 0 1640cfdea6d4fbcd179ded34afec07a8
+
+% 0 1 0 13d94057e930e10a1f4268e53c210caa
+
+% 0 1 0 1a9c013efedb6a9916666a23fe0a10be
+
+% 0 1 0 11b5933b1461e9040a13a2fca61a2ef9
+
+@ 0 5 0 1f20ff95d62293a0085ec7285c12433b
++ entry .TypeList   un tipo fantasma que transporta una lista ordenada de tipos literales como una tupla
++     `TypeList[("one", "two", "three")]` describe la lista `List("one", "two", "three")`. El
++     parámetro de tipo es una tupla cuyos elementos son tipos literales (singletons de `Int`,
++     `Double`, `String` o `Boolean`) o tipos `TypeList`, `TypeSet` o `TypeMap` anidados. El trait
++     es sellado y no tiene instancias: solo existe para escribirse en un tipo y pasarse a `reify`.
+
+% 2 1 0 1ff1ce9ac35535a61de559266823a4f6
+
+% 3 1 0 093f50fd44c6ab161efc779131e17ee2
+
+% 0 1 0 1e4941a57a9b570d0ede73fb7a3776da
+
+% 0 1 0 1946fa559e486b2e0de0d11e095c089a
+
+% 1 1 0 082f1320ff66b0031c3e7d288231d14a
+
+@ 0 4 0 19c7ff95e280e7c304700daaae8137e4
++     Cada elemento se reifica por separado, así que el tipo de elemento de la lista no se infiere de
++     la tupla: `reify` da un `List` cuyo tipo de elemento estático es `Any`, y `reifyAs` con un tipo
++     de elemento más estrecho, como `List[String]`, no supera su comprobación. Un `TypeSet` se
++     reifica con su tipo de elemento, que es la razón por la que `Reifiable.listUnion` pasa por uno.
+
+@ 0 4 0 078ac74b21c0580d1ec663aae2a9fd53
++ entry .TypeSet   un tipo fantasma que transporta un conjunto de tipos literales como una unión
++     `TypeSet["one" | "two" | "three"]` describe los miembros de la unión. Se reifica como un
++     `List` de los miembros, en el orden en que se escribió la unión (tal como la guarda el
++     compilador), tipado con el tipo de elemento de la unión, de modo que
++     `reifyAs[TypeSet["a" | "b"], List[String]]` supera la comprobación.
+
+% 2 1 0 14475c9436d97ca80528190336d7a50f
+
+% 3 1 0 1d118ceb3eddbcd4179e0de516404885
+
+% 0 1 0 173473b9aff7bbe508b3a3679b4e89c6
+
+% 1 1 0 1e76c244615d3c9f1b74dc48d329af97
+
+@ 0 3 0 01a121113003a14317b914b55d760455
++     Cada miembro de la unión debe ser un tipo literal; `TypeSet["one" | Int]` es un error de
++     compilación. El resultado es un `List` y no un `Set`, de modo que se conserva el orden de la
++     unión para el código que lo necesite.
+
+@ 0 4 0 10c76ef242db65cb0f4506efa2194861
++ entry .TypeMap   un tipo fantasma que transporta un mapa de tipos literales como una tupla de pares
++     `TypeMap[((1, "one"), (2, "two"))]` describe el mapa `Map(1 -> "one", 2 -> "two")`. Cada
++     elemento de la tupla es un tipo par cuya clave y cuyo valor son cada uno un tipo literal o un
++     `TypeList`, `TypeSet` o `TypeMap` anidado, de modo que un multimapa es un `TypeMap` de
++     `TypeList`.
+
+% 2 1 0 0585edc44a7159080673f73429c76b6e
+
+% 3 1 0 09950bf51064d064015119acd21d3611
+
+% 0 1 0 15c31bc82c5e29750c2f5e7cc7e5c59f
+
+% 0 1 0 14c8d7036ea8f0311926016227543431
+
+% 1 1 0 05b7c91d2066af900af3277e88c34945
+
+@ 0 4 0 053a06346f11d3d60316d3fb90f4091a
++ entry .TypeElement   un tipo fantasma sellado que envuelve un único tipo, para estructuras en el nivel de tipos
++     `TypeElement[T]` es un marcador sin instancias ni reificación propia: `reify` trata
++     `TypeList`, `TypeSet`, `TypeMap` y los tipos literales sueltos, no `TypeElement`. Está
++     disponible para las bibliotecas que construyen sus propias codificaciones en el nivel de tipos
++     sobre el vocabulario de Typonym.
+
+@ 0 5 0 05fc1bd7e682eeac004844fbf934a8f8
++ entry .reify   convierte un tipo literal, o un `TypeList`, `TypeSet` o `TypeMap` de ellos, en su valor
++     `reify[T]` es una macro transparent inline: lee `T` mientras se compila el código e inserta el
++     valor que describe, de modo que el tipo estático del resultado es el preciso que construye la
++     macro. Un tipo literal se reifica como su valor, un `TypeList` como un `List`, un `TypeSet`
++     como un `List` de los miembros de la unión y un `TypeMap` como un `Map`, anidándose como se
++     anida el tipo.
+
+% 2 1 0 12623bbeef718c7e0ac5712a05ee2d46
+
+% 3 1 0 18a8c87e8d145e620676a350209fcb4e
+
+% 0 1 0 1868b81bb9d5cda2084a0d858b07ff21
+
+% 0 1 0 1f9e912266c6bcd61ca051aec19e9b29
+
+% 0 1 0 170408b6f676b3410b1e4bcd91d1ff4f
+
+% 0 1 0 0fe9bb28898c3d7f1e068e5e2ed6fa89
+
+% 0 1 0 146b85be45b02791102067eb94ef657a
+
+% 1 1 0 0539cf22ca11acf70c366046dea71dca
+
+@ 0 2 0 1529f2a4500d5db20cd330649fdfced0
++     Para la macro, solo los singletons de `Int`, `Double`, `String` y `Boolean` son tipos
++     literales; cualquier otro tipo, en el nivel superior o dentro de una colección, no se
++     expande.
+
+@ 0 3 0 129d6caf834fe017011f3b13a4ea15e8
++     La segunda sobrecarga, `reify(phantomType)`, toma un `Type[T]` y devuelve un `Macro[Any]`
++     —un `Expr` en un contexto `Quotes`— para usarlo dentro de la implementación de otra macro,
++     donde el tipo solo se conoce de forma abstracta:
+
+% 2 1 0 106ab90c7b4d7fce02e57332477ef377
+
+% 0 1 0 17aa25563b6ef5f20ef33c4527c8861e
+
+% 1 1 0 03683557f751aba6066aa7200860680a
+
+% 0 1 0 06f8fe8c8e52849d1238b72bd1226af2
+
+% 1 1 0 1bb15b48939503151774da0cd04da7fa
+
+@ 0 4 0 05da8d32784166bf0c295a7635cdb7d2
++ entry .reifyAs   reifica un valor del nivel de tipos, comprobándolo contra un tipo de resultado indicado explícitamente
++     `reifyAs[T, R]` es `reify[T]` con su resultado tipado como `R`: donde el resultado
++     transparente de `reify` es demasiado preciso, o no lo bastante, para el código que lo rodea,
++     el llamador nombra el tipo que quiere, y la expansión de la macro se comprueba contra él.
+
+% 2 1 0 16b877f6884053e50daf5d5a361f212b
+
+% 3 1 0 14816b590e9c43060f89614900ad1f8b
+
+% 0 1 0 19e2828e3a51fff30444101430324ed9
+
+% 0 1 0 05cead7eb9e0424c183f1b7586cf5edd
+
+% 1 1 0 128173f61bfa417217c92cac4817db70
+
+@ 0 2 0 08daf58ad486091c1b094c6454688c13
++     Un `TypeList` reifica sus elementos de forma independiente, como `Any`, así que `reifyAs` con
++     un tipo de lista más estrecho falla para él; enumera los elementos como un `TypeSet` donde
++     importe el tipo de elemento.
+
+@ 0 1 0 01b9f857000014d6047f89cbb015c034
++ entry .Reifiable   una clase de tipos para un tipo cuyo valor puede recuperarse en tiempo de compilación
+
+% 1 1 0 1261b25529a086e012fc6b255aafe374
+
+@ 0 3 0 00be826c54f570070b1a7a98fe1b9685
++       `T is Reifiable to R` es la evidencia de que el tipo `T` describe un valor de tipo `R`, que
++       devuelve `#reify`. Permite que un método exija, como valor contextual, que su parámetro de
++       tipo transporte datos estáticos:
+
+% 2 1 0 057483c311d7080d0063191da107b615
+
+% 3 1 0 193f4d439b4e06ac1d6571caceee4a8c
+
+% 0 1 0 119915d467e189bd1c2a22ce7475ae86
+
+% 0 1 0 1b92362d6ae77179107558490c72a1ef
+
+% 0 1 0 13cf391ba530315001eafc7550f77c31
+
+% 1 1 0 198fe8997d5c50820ffc5f5721c84487
+
+@ 0 2 0 0d1cc2c497a49d680c522a9460e80d2b
++       El `.listUnion` del objeto compañero proporciona la instancia para una unión de tipos
++       literales, reificada como lista; las demás instancias se crean con `Reifiable(value)`.
+
+% 0 1 0 0bd318dc9bea7ac812f6cdfddef70c7d
+
+% 0 1 0 1fc6c0bd7dbfbe4807072ca32bd9cef8
+
+@ 0 9 0 1a2c52bfeb50bc760fb027acca8ca1af
++   entry .listUnion   reifica una unión de tipos literales como un `List` de sus miembros
++       Un given transparent inline, en el ámbito implícito, que proporciona
++       `phantom is Reifiable to List[value]` para cualquier `phantom`: expande
++       `reifyAs[TypeSet[phantom], List[value]]`, de modo que una unión `"yes" | "no"` se convierte
++       en `List("yes", "no")`, y un tipo que no es una unión de literales no se expande allí donde
++       se exige la instancia.
++   entry .apply   crea una instancia de `Reifiable` que devuelve un valor que ya se tiene
++       `Reifiable[T, R](value)` es la instancia `T is Reifiable to R` cuya `#reification` es
++       `value`. Es como una biblioteca proporciona sus propias reificaciones, para tipos que la
++       macro no trata.
+
+% 2 1 0 11730b1a5c4835b41dc2d6ab5a82955c
+
+% 3 1 0 177f33c40f7682af1f0a6d5ca62ec133
+
+% 0 1 0 154bf9671b5c4a7a1e0a7a826ac9ca5c
+
+% 1 1 0 168c9a42b81627b601efa9ef08bc3522
+
+@ 0 4 0 1be5818344a364cf1859a620556acee2
++   entry #reification   calcula el valor que describe el tipo
++       El método abstracto que implementa una instancia; `#reify` lo llama.
++   entry #reify   el valor que describe el tipo, como `Result`
++       Un alias de `#reification()`, para leerlo en un punto de uso.
+
+@ 0 1 0 0b247d65fba3525f0c837ce6884ba4db
++ entry .internal   las implementaciones de macro que hay detrás de `reify` y `reifyAs`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 1c17b730a1c3516114f656abb2e3d6a9
++       No es para uso directo: el objeto contiene los cuerpos de macro que insertan `reify` y
++       `reifyAs`.
++   entry .reify   la macro que hay detrás de `reify`: de un tipo a la expresión de su valor
++   entry .reifyAs   la macro que hay detrás de `reifyAs`: `reify`, convertido al tipo de resultado indicado
++   entry .reflect   la inversa de `reify`: de un valor al tipo que lo describe
++       Convierte un `String`, `Int`, `Double` o `Boolean` en su `ConstantType` singleton, y un
++       `List` de ellos en un `TypeList` de una tupla, para una macro que debe devolver un valor al
++       sistema de tipos.

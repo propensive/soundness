@@ -1,0 +1,465 @@
+orthant 2 language
+
+% 0 1 0 1372f8cc74a816e50233e487d3e9f85f
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 3 0 1b409aa52819b3c91262d1e2ee2a5fca
++ Il logging è tipizzato. Un metodo che scrive log lo dichiara nel suo tipo di ritorno, con il
++ tipo infisso `logs`, ed emette un valore di un tipo di evento, non una stringa. Anziché
++ restituire `Long`, restituisce `Long logs Backup.Event`.
+
+@ 0 6 0 19b5c9b42ed3d6510d5fd323fb13bbec
++ Un logger posto nell'ambito del chiamante riceve quegli eventi e li scrive da qualche parte: un
++ terminale, un file o il log di sistema. Senza alcun logger nell'ambito, il logging è silenzioso
++ e non costa nulla, quindi dichiarare che un metodo scrive log non impone alcun obbligo al codice
++ che lo chiama. Una clausola `logs` è una
++ [firma onesta](../../philosophy/honest-signatures.md): dichiara ciò che il metodo emette
++ davvero, così un chiamante sa che cosa c'è da instradare.
+
+@ 0 5 0 0f5c21b0d398c9d60400332a0fb74001
++ Un logger è un normale [valore contestuale]. Ce ne possono essere diversi nell'ambito
++ contemporaneamente, e ogni evento va a ciascuno di essi. Ogni logger ha la propria soglia di
++ gravità, il proprio formato e la propria destinazione. La decisione su dove vanno i log, e con
++ quale dettaglio, spetta all'applicazione, non alle librerie che essa usa. Sceglierlo in base a
++ ciò che è nell'ambito è [contesto dichiarativo](../../philosophy/declarative-context.md).
+
+@ 0 1 0 1eac257104da567a0812d15467206183
++ ### Sul logging
+
+@ 0 5 0 0cb90615c111cac10a847555416e3ebf
++ La maggior parte del logging è tipizzata come stringhe, ed è sempre attiva. Un'istruzione di log
++ formatta il suo messaggio subito, che qualcosa lo legga o no. Il costo di costruire la stringa
++ si paga anche quando il livello è disattivato, quindi il codice accurato protegge ogni
++ istruzione con un controllo del livello. Il messaggio stesso è una stringa opaca, quindi
++ qualunque cosa lo riceva non può riformattarlo, filtrarlo in base al contenuto, o oscurare un
++ campo che non sapeva fosse lì.
+
+@ 0 1 0 0b27eba2d85b6a731aa5a024a73959bd
++ Qui le tre questioni sono separate:
+
+@ 0 3 0 1a30e1e7fa8f8d361bcec72c89913f42
++ - Un metodo dichiara nel suo tipo *che* scrive log, e *che cosa* scrive.
++ - L'evento che emette ha campi tipizzati, non testo formattato.
++ - *Dove* va l'evento, e *come* viene scritto, lo decidono i logger nell'ambito.
+
+@ 0 3 0 04c5a5d4ec7ea9d511f3ade49205a499
++ L'argomento di una chiamata di log viene passato per nome, e valutato solo se qualche logger lo
++ registrerà. Un'istruzione disattivata non valuta nulla, quindi le chiamate di log si possono
++ scrivere liberamente, senza controlli. Quando non c'è alcun logger nell'ambito, il meccanismo si
++ riduce a nulla in compilazione.
+
+@ 0 3 0 1cf7dba9595c88e505a986ec516d2dff
++ Tutto proviene dal package `soundness`. Un programma che scrive log ha bisogno anche di un
++ formato, di un luogo in cui scrivere e del contesto di [concorrenza](concurrency.md) sotto cui
++ un logger scrive:
+
+% 2 1 0 1f151699ed390c2d15bdd18f114736d3
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 08347f60cff45ea01d6839192e37736f
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 13384f30cdd00a6f0d56c6f7fd9277a5
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 15855dca1aeb270f1cf30da311ccebe4
+
+% 0 1 0 01c93e6097c6710d10912de7ba18e5c3
+
+% 0 1 0 03367cd25358d1041b32aecd7b439a70
+
+% 0 1 0 0927f96e561a641f0d43349d32e36f6f
+
+% 0 1 0 16045fd084739fdc12ba511474bebeed
+
+% 0 1 0 0573ee4bb2ec9c80157d6296b9e909bb
+
+% 0 1 0 105b875be77538bf01a3d000c979fb06
+
+% 0 1 0 18c7a687010107340f80aa20e40c04f8
+
+% 0 1 0 187deca283ea14a40bca998ac1ee8616
+
+% 1 1 0 1dd7255fcbf2a0701e3e7365f7d2afc7
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 8 0 0bb1e041675c0ff106ac6679c585476f
++ column  Import o given
++ column  Decide
++ row  `logFormats.ansiTimestampedLogFormat`  come viene scritto un evento: qui, con i colori, per un terminale
++ row  il `LogPalette`  i colori che quel formato usa
++ row  `writables.outTeletypeWritable`  che sullo standard output si può scrivere testo stilizzato
++ row  `stdios`, `termcapDefinitions`  dove va lo standard output, e che cosa il terminale può mostrare
++ row  `threads`, `probates`  come viene eseguito il task in background del logger
++ row  `strategies.throwUnsafely`  che un errore viene lanciato come eccezione
+
+% 1 1 0 00d220a17931d83c1076bb5625270c62
+
+@ 0 1 0 1ab675c3eff99c62179f5d57631ecb16
++ ### Configurare un logger
+
+@ 0 4 0 0738dd0dc61264d806ad94ae21ff2383
++ Un `Logger` scrive eventi in una destinazione. Porne uno nell'ambito, come [given], lo rende la
++ destinazione di tutto ciò che viene registrato in quell'ambito. I suoi due parametri di tipo
++ dicono quali eventi accetta, con `Any` per tutti, e la forma in cui vengono scritti. Per vedere
++ l'output dei log basta un logger che scrive sullo standard output:
+
+% 2 1 0 1403fdfe069595e31571b55e83c251be
+
+% 3 1 0 0265cad37eccab250c33637a26ac9f23
+
+% 4 1 0 155607f0648297d90d3d8b86129c9a18
+
+% 5 1 0 158a360222e841ad11e9fb1016e8963b
+
+% 6 1 0 196b3e7baf50f42016ab031e35f0b385
+
+% 0 1 0 125948e0e8bb2cd108373bd0312a7abc
+
+% 1 1 0 137dd8880512112019f7069399ab3036
+
+@ 0 1 0 02d148d680bf898819767fe5f1a5971b
++ Il messaggio viene scritto sullo standard output, con un timestamp.
+
+@ 0 3 0 18f4096922703f3c089a6f0f9910e547
++ Restringere il primo parametro filtra per tipo. Un `Logger[Http.Event, Message]` riceve gli
++ eventi HTTP, e nient'altro, quindi gli eventi di una libreria si possono instradare, o
++ silenziare, indipendentemente dal resto.
+
+@ 0 3 0 188f8e509038d77e11d3ceceb6a7ace6
++ `Logger` esegue le sue scritture su un thread in background, quindi ha bisogno del contesto di
++ concorrenza che `supervise` fornisce. Il formato nell'ambito decide come viene scritto un
++ evento. Ogni formato si importa dal package `logFormats`:
+
+% 2 1 0 19872a894059a9b70b411343a18721d3
+
+@ 0 6 0 1aeee89f27899819086e4ac8288231fc
++ column  Formato
++ column  Rende
++ column  Per
++ row  `ansiTimestampedLogFormat`  un timestamp attenuato e il livello su sfondo colorato  un terminale
++ row  `timestampedLogFormat`  il timestamp e il livello come testo  una destinazione di solo testo, come un file
++ row  `untimestampedLogFormat`  il livello come testo, senza timestamp  una destinazione di solo testo
+
+% 1 1 0 0f947188f394712f1401534512b10584
+
+@ 0 1 0 10d2536870591f6502e885e165a0930d
++ Una soglia scarta tutto ciò che sta sotto un livello scelto:
+
+% 2 1 0 0381bea05c1e19d406a12e045e382d1e
+
+% 3 1 0 0d5992829440def4031a41ee17399f8b
+
+% 4 1 0 093b82ffc00a41f11432f2603c158708
+
+% 5 1 0 1f49c06328cb3026136ccc0d9642504f
+
+% 0 1 0 075c1f4c8709440e1fefecbf331a4dbf
+
+% 0 1 0 106e949233b2c8e913ccdc9eedaef1e4
+
+% 0 1 0 087bd940c43f122709ba0a3f2d75f17c
+
+% 1 1 0 1b5db5f7607e7220041db05946844fc7
+
+@ 0 1 0 141078bb5e8c8f5605fc27197568a8fe
++ ### Registrare un messaggio
+
+@ 0 5 0 0270c0f7df0f44af1543504ad4492bc9
++ La cosa più semplice da registrare è un messaggio, scritto con
++ l'[interpolatore `m"…"`](errors.md#defining-an-error). Si addice al codice di un'applicazione,
++ in cui l'autore controlla sia il logging sia la lettura. Una libreria dovrebbe invece definire
++ un [tipo di evento](#event-types) dedicato, così che i suoi eventi restino strutturati e si
++ possano filtrare. Quattro metodi registrano un messaggio, ciascuno a un livello:
+
+% 2 1 0 1485f8b4a576b0b601cc520907a02f6a
+
+% 0 1 0 0a850cbdc92484101ffac0f649edbd66
+
+% 0 1 0 0a9ce577da3512c30fb60e5a2dc9cc2b
+
+% 0 1 0 0586dd642abeebfe02b7d34e35386661
+
+% 0 1 0 0b94a92b70c1796711e2125f44c634a6
+
+% 0 1 0 0b0c62fe6a99d919123a2a4fc781a0cb
+
+% 1 1 0 0201f3a65cb8ba6c0bc94f10bb0c95a2
+
+@ 0 2 0 03e542b82bfe150e0c01906dbfa0c5d6
++ Senza un logger nell'ambito, `report` compila, e non registra nulla. Un messaggio è `Loggable`
++ per impostazione predefinita, quindi un metodo che registra solo messaggi non ha bisogno di
++ alcuna dichiarazione.
+
+@ 0 1 0 0c2f1f6aa623103d13570f9c7aad8844
++ ### Livelli
+
+@ 0 2 0 078d85f00a0fc22e11f115f473be028c
++ Un livello rispecchia insieme frequenza e gravità. `Fine` è di norma disattivato, quindi può
++ essere prolisso. `Fail` si usa con parsimonia.
+
+% 2 1 0 08b31790b00ea1de0149047ec3258f12
+
+@ 0 8 0 0725cebbd1e35d3b1355a4e58c277b28
++ column  Livello
++ column  Metodo
++ column  Per
++ column  Come
++ row  `Fine`  `Log.fine`  dettagli ad alta frequenza, per singola unità, utili solo durante il debug  ogni frame, ogni pacchetto, ogni file aperto
++ row  `Info`  `Log.info`  una riga per ogni operazione significativa o tappa del ciclo di vita  una connessione stabilita, un server ora in ascolto, un download completato
++ row  `Warn`  `Log.warn`  una condizione recuperabile, o inattesa ma gestita  un'uccisione forzata, una connessione azzerata, un ripiego adottato
++ row  `Fail`  `Log.fail`  un'operazione fallita in modo irrecuperabile, emessa insieme all'errore sollevato
+
+% 1 1 0 1987ca97a4897b6716e51c6905c55ef5
+
+@ 0 1 0 063e41823071d13304a6095432aeae49
++ ### Tipi di evento
+
+@ 0 4 0 0c0cf2dc2dc738cc0269d59447c59d4c
++ Un evento è un'[enumerazione] i cui casi contengono i valori pertinenti come campi tipizzati. È
++ accompagnato da un'istanza `Communicable` nel suo oggetto compagno, che associa ogni caso a un
++ messaggio. Mantenere i valori tipizzati, anziché formattarli in anticipo, permette a ogni logger
++ di scriverli a modo suo:
+
+% 2 1 0 0ec5fb3b6c5dc30810d960e4147352ac
+
+% 0 1 0 1fc4230ca3712a7c0ec6708d98b639ba
+
+% 0 1 0 1394eac630bcee8004b6e550f6929f1e
+
+% 0 1 0 098c890c9d81a1f91fd391d3f9cd7f77
+
+% 0 1 0 1c1e12b4cf38624a11513ff88b905464
+
+% 0 1 0 0d771213c81e91cc060e54c36800d811
+
+% 0 1 0 12db4c6f0e04c7e10b5ef43a651e18aa
+
+% 0 1 0 14395079c6428aef106fccbd39c5bd09
+
+% 0 1 0 01304a46aca78a821167f524742e2f74
+
+% 0 1 0 12f3a8319ff983900d8276b5f5ec70b6
+
+% 0 1 0 13e64294aac9ab940e30917623fddd90
+
+% 1 1 0 05428b837cd1ffe510978ad45beb353e
+
+@ 0 1 0 1172464a432e2ef50b9c7c2c6d290d46
++ ### Dichiarare che un metodo scrive log
+
+@ 0 2 0 068beb96fbb494370adf8718e662aafe
++ Un metodo aderisce al logging nominando il suo tipo di evento nel tipo di ritorno, con `logs`.
++ Registra poi l'evento per valore, nel punto in cui avviene l'effetto collaterale:
+
+% 2 1 0 18ad1e3ba1d087200cd4d8297f2f8393
+
+% 0 1 0 110f00ac55641c0a127f0fb75e4e25a0
+
+% 0 1 0 0d24a22aef23e34a00fd5e4054723fec
+
+% 0 1 0 1e909a6b13347dbd15785360e3f5272e
+
+% 0 1 0 18beaf0c7787ec090bf0f1697bc3a3d6
+
+% 0 1 0 0ac63dbde0dbe5f911080d45455e0a0e
+
+% 1 1 0 1e2b38d15e87d24b15f084da4f6ea6a2
+
+@ 0 3 0 09a6ed12f1692538139948515a7d1c3a
++ Il requisito si propaga. Un metodo che chiama `backup` deve a sua volta ammettere
++ `Backup.Event`, dichiarandolo oppure avendo un logger per esso nell'ambito. Un metodo che
++ registra più di un tipo di evento concatena le dichiarazioni, come in
++ `Unit logs Http.Event logs Exec.Event`.
+
+@ 0 3 0 01a64a0cda53738515f00a5057830b81
++ Una libreria che si basa sul lavoro di un'altra ne riusa gli eventi, e non li duplica.
++ *Trascrivere* un evento in un caso di un altro fa passare l'evento avvolto invariato. Così una
++ libreria che pianifica i backup riusa gli eventi di backup:
+
+% 2 1 0 1457d54cfc03b9ef10843ed369291e19
+
+% 0 1 0 015937e89b55d3e61428d7bb2841e0c5
+
+% 0 1 0 0bc89c22cea8c47f0b37268782ed5249
+
+% 0 1 0 04976d220bdd4f050e542e2dd0da0aef
+
+% 0 1 0 0de15b6220b5326c1b9d09a03c102bea
+
+% 0 1 0 03fdbfa90a5198bd1f40e55b7cdd477e
+
+% 0 1 0 0474e90c07f64abd1cafa1a7a33ec5af
+
+% 0 1 0 0e1607a53400d59a1ad58cdc95431770
+
+% 0 1 0 174476a0137d7c240c0294a9e971deb4
+
+% 0 1 0 01d852ad1169fd0e1f83ea2fbd27fe5e
+
+% 0 1 0 08ee67fe5e982f0c0eefa9d585cc65fb
+
+% 0 1 0 0b2a482bf1ee54a014bde1d15f441ede
+
+% 1 1 0 1d1e29fd6b8d9dde01bcc11e2b34850a
+
+@ 0 2 0 149dc3576995bcd5174c96f335827c78
++ Con la trascrizione nell'ambito, gli eventi di `backup` sono accettati dalla dichiarazione di
++ `nightly`, avvolti come `Schedule.Ran`, e un logger per `Schedule` vede entrambi.
+
+@ 0 1 0 09410b4e0efe26e619d572de2c32b527
++ ### Costo quando è disattivato
+
+@ 0 4 0 1057aa8378d4d2771868ec0d65a7c1f7
++ L'argomento di ogni metodo di `Log` viene preso per nome, e il livello viene controllato prima
++ che l'argomento sia valutato. Quando nessun logger accetta un evento al suo livello, compreso il
++ caso in cui non c'è alcun logger nell'ambito, l'evento non viene mai costruito, e i suoi campi
++ non vengono mai valutati. Un'istruzione di log disattivata quindi non costa nulla, e le
++ chiamate di log non hanno bisogno di controlli.
+
+@ 0 5 0 03e7a7a4d79e758805982f158681f5db
++ Ecco perché un evento dovrebbe contenere i suoi valori tipizzati originali, e lasciare la
++ formattazione al suo `Communicable`: la formattazione avviene solo se l'evento viene
++ effettivamente registrato. L'eccezione è un valore la cui formattazione dipende da un contesto
++ disponibile solo dove viene registrato. Quello va formattato lì, dentro l'evento. La
++ formattazione viene comunque eseguita solo quando l'evento viene registrato, perché l'argomento
++ è passato per nome.
+
+@ 0 1 0 1c458f90e398133318b265ad6e24e280
++ ### Instradare verso più destinazioni
+
+@ 0 4 0 100dc95629abd106014f9f01f83a3f08
++ Un logger è solo un valore contestuale, quindi nell'ambito ce ne può essere più di uno, e un
++ evento li raggiunge tutti. Due logger, uno verso un file e uno verso il terminale, ricevono
++ entrambi ogni evento, e ciascuno applica la propria soglia. Il file può conservare il dettaglio
++ di `Fine`, mentre il terminale mostra solo `Warn` e `Fail`.
+
+@ 0 2 0 0dc7496be7ca193a105c634bc98836b4
++ Il file viene scritto come testo, quindi il suo logger importa il formato di testo. Quell'import
++ è più vicino, quindi ha la precedenza sul formato per terminale importato sopra:
+
+% 2 1 0 1559099ac877902c136c6b6cb91be11b
+
+% 3 1 0 0fa11124886407ab1b0f48582e7277b0
+
+% 4 1 0 118bb1e9d8a954f5185e82ef192b79bf
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 1483be96032e38e11ed484e72bb2c7e3
+
+% 0 1 0 0e54bce6affba4421b29ae79a3921947
+
+% 1 1 0 15df16b7f55a744e0220efffbb8ffe20
+
+% 0 1 0 0f48a4f33de245f916e58750c1903c88
+
+% 0 1 0 0b178855fe8e97de19453fe2261f42bc
+
+% 0 1 0 174b67231714cc0c0aa9e2823079b473
+
+% 0 1 0 0786a4728e5703d306787d237ea183e9
+
+% 0 1 0 1749a9240e7c94ac18ab343a39fe8b8c
+
+% 0 1 0 12ce69a6c5b0fa5d0aae56d78d2044e5
+
+% 1 1 0 10cca59c18bf2b4b0d7bab2fe2aba36e
+
+@ 0 2 0 077909a7d067cad50d1e80ec77e16184
++ Il primo messaggio raggiunge solo il file, e il secondo raggiunge entrambi.
++ [Filesystem](filesystem.md) descrive il percorso su cui scrive il logger del file.
+
+@ 0 1 0 10d3eae300ec599d08b82a7c8d0d7d12
++ ### Silenziare
+
+@ 0 2 0 1f910c97226b4bb6145560837f248436
++ Un singolo blocco si può eseguire con un tipo di evento soppresso, qualunque siano i logger
++ nell'ambito, con `mute`:
+
+% 2 1 0 0bdbff0a6df921eb03030e0bd9c97363
+
+% 3 1 0 0a782c95f3987f2c0a8a2472ccb4d84c
+
+% 4 1 0 102e2e52b3736886118b1c1efdf62258
+
+% 5 1 0 0d45e781869a56cd08cc3a6af3564e59
+
+% 6 1 0 03562bc880826bd3035f5a63ff8234d1
+
+% 0 1 0 0cbdbdad636d5d0e1a6501cad563bb66
+
+% 0 1 0 0ca5c6f2466b96ec1c0bd51c98ae0c17
+
+% 1 1 0 196ef5fe898ed412199b8f7bd7c3a70c
+
+@ 0 3 0 161fda9edcefea390aa5af2c00df5fd3
++ Importare `logging.silentLogging` sopprime tutto il logging per un intero file, il che è utile
++ dove una dipendenza scrive log e il suo output non è desiderato. I tutorial sul
++ [client HTTP](http-client.md) e sui [processi](processes.md) lo importano per questo motivo.
+
+@ 0 1 0 15e83eda5eb1031213d1d23f0353dc1b
++ ### Scrivere buoni log
+
+@ 0 3 0 0a1fb0aec166f6290a9b83e8d5f0c71f
++ Si registrano solo effetti collaterali osservabili, che richiedono tempo o possono fallire:
++ operazioni sulla rete, sul filesystem, sui processi e sui servizi esterni. Il lavoro puro in
++ memoria, come hashing, parsing o aritmetica, non produce output di log, per quanto sia costoso.
+
+@ 0 1 0 0e14fe02c89ea0cd1f64e694a35cf373
++ Un messaggio dovrebbe essere specifico:
+
+@ 0 4 0 0ff37e3dd4e365ae0e46b805d578d82e
++ - Nominare la risorsa a cui si riferisce: un indirizzo e una porta, un percorso, un id di
++   processo, un URL.
++ - Riportare quantità quando costa poco: numeri di byte, millisecondi trascorsi, codici di stato.
++ - Non registrare mai segreti: credenziali, token, cookie, materiale crittografico, o l'intero
++   corpo di una richiesta o di una risposta. Registrare invece una versione oscurata, una
++   dimensione o una breve anteprima.
+
+@ 0 2 0 0094cf853a2ea04504498f3f19f1ba35
++ I messaggi sono in minuscolo, concisi, al presente, e senza punto finale. Sostituiscono il
++ contesto pertinente:
+
+% 2 1 0 07f1c07fd3d03a381cddd9a43e7df6d2
+
+% 0 1 0 1652452a4abd65451cf90c64ca7806b5
+
+% 0 1 0 143b8402cfb8211e192e79fec7d33b57
+
+% 0 1 0 1eeca28cd87464f40f8078bb9c735946
+
+% 0 1 0 00f59f3a2f56ccdf104ae295b3f07373
+
+% 1 1 0 0ec7b8fe4c61e11000f41ae5d2cde9fd
+
+@ 0 2 0 024f49ec4d91e7631f6d9ff9dde28a0e
++ Un messaggio che dice solo che qualcosa è accaduto, come `m"a failure occurred"`, non basta.
++ Si nomina ciò che è fallito, e se ne include l'identificatore.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 6 0 01262583370def8d13ecf887e2199a2e
++ - [Errori](errors.md#defining-an-error) descrive i messaggi in cui vengono scritti gli eventi.
++ - [Terminale](terminal.md#styled-text) descrive il testo stilizzato che un logger per terminale
++   scrive.
++ - [Concorrenza](concurrency.md) descrive `supervise`, sotto cui viene eseguito un logger.
++ - [Stack trace](stack-traces.md) presenta la traccia di un errore che viene registrato.
++ - [Server HTTP](http-server.md), [individuazione dei servizi](service-discovery.md) e [metaprogrammazione](metaprogramming.md) registrano i loro eventi tramite i sink nell'ambito.

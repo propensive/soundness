@@ -1,0 +1,489 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 07e53f3de3fd2d2c0bd6471728e693c3
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 02038a9ec49aa55d1a80d0aef80afd20
++ info   email composte da parti tipizzate e inviate tramite un corriere scelto in base a ciò che è nell'ambito
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0ba0d551b9e81bf8068af2d174e23bcf
++     _Caduceus_ compone un'email da parti tipizzate — un corpo di testo, di HTML o di entrambi,
++     contenuto inline e allegati — e la invia tramite un `Courier`, il servizio di consegna, che
++     è un valore contestuale. La struttura MIME discende dal contenuto
++     (`multipart/alternative` per testo con HTML, `multipart/related` con contenuti inline,
++     `multipart/mixed` con allegati), e gli indirizzi sono gli `EmailAddress` di urticose,
++     verificati durante la compilazione del codice quando sono scritti come letterali
++     `email"…"`.
+
+@ 0 3 0 1e452a5de5abce540cb4270080aed1b0
++     Qualsiasi cosa sia `Sendable` — `Text`, un documento con un tipo di media come una pagina
++     HTML, o un'`Email` composta — si invia con `send`, che accetta l'oggetto e i destinatari e
++     richiede nell'ambito un `Courier` e un `Sender`:
+
+% 2 1 0 19131b85c88bf3dc11aba0e458545462
+
+% 3 1 0 0d63d29b8b9158f206a4e322f6fa6a7b
+
+% 4 1 0 17c82306264d1bb6124677c13495db0e
+
+% 5 1 0 03e120a31c951a44097d81d54d5f86fc
+
+% 6 1 0 08c73028ce0bdd321fc8a6d8829a39ab
+
+% 7 1 0 0b9e1d765ba1f3f805b0bd9605b5cafa
+
+% 8 1 0 016ef003097081eb08952e01981ce485
+
+% 9 1 0 126b5c62da9f38900b02fa192014f014
+
+% 0 1 0 055bee1611938ddc0e54e567c7ffef73
+
+% 1 1 0 0fe7a29ee0f5170700e823f985719b0c
+
+% 0 1 0 0b4ee182bacbc5d915f88aa97ff9e12f
+
+% 0 1 0 0ae1e022b087dbfd0cce418b43b2112f
+
+% 1 1 0 0ce1033e2711eaa301c335d7c91a7db3
+
+@ 0 2 0 1bd9ce2956662af50950766cfb01c3cc
++     Il risultato di `send` è il tipo `Result` proprio del corriere: il corriere Resend
++     restituisce un `Resend.Receipt`, e un altro corriere può restituire qualcos'altro, o
++     `Unit`.
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     La libreria ha due insiemi di sorgenti:
+
+@ 0 5 0 1a160b5a2c63e2171b0c06a7ed7c3a0b
++     - `caduceus.core` — `Email`, `Envelope`, `Sender`, `Courier`, le typeclass `Sendable` e
++       `Attachable` e l'estensione `send`. Ha bisogno di un corriere per fare qualcosa.
++     - `caduceus.resend` — `Resend` e il given `couriers.resendCourier`, che consegna
++       attraverso l'API HTTP di [Resend](https://resend.com/). Solo JVM, poiché richiede un
++       client HTTP.
+
+@ 0 3 0 03432ec8e08b97bb097df4449282112d
++     Tutto è esportato nel modulo ombrello `soundness`. Un corriere si seleziona importandolo
++     per nome dal package di scelta `couriers`, poiché `import couriers.*` non importa i given;
++     il package si fonde con quello dell'ombrello.
+
+% 0 1 0 14796e252ed6e26c1b77dad1df6a7eea
+
+% 0 1 0 067bb704e114285301e73353f6c80976
+
+% 0 1 0 19e47db073b361d11d987303c5cbed6f
+
+% 0 1 0 1edaa5787b66fe1911389bf194dc2f8a
+
+% 0 1 0 0293a070f9126adc157138b1dc4d75b4
+
+@ 0 5 0 06bb7a67316da708050cb1f1a478748b
++ entry .send   invia come email qualsiasi valore `Sendable`, con un oggetto e dei destinatari, tramite il `Courier` nell'ambito
++     `value.send(subject, to, cc, bcc, replyTo)` trasforma il valore in un'`Email` con il suo
++     `Sendable`, costruisce un `Envelope` dal `Sender` nell'ambito e dagli argomenti, e
++     consegna entrambi al `Courier` nell'ambito. Ciascuno tra `to`, `cc`, `bcc` e `replyTo`
++     accetta un solo `EmailAddress` o una `List` di essi; tutti tranne `to` hanno come valore
++     predefinito nessuno.
+
+% 2 1 0 10681245943b095602255db22008ecab
+
+% 3 1 0 008b3a593bebdf0c1f566ce4757d2d62
+
+% 4 1 0 195d7c9259c4b7f01cc7db60d4d20949
+
+% 5 1 0 1bfc6763e8024ade13484d041710d26d
+
+% 6 1 0 1164e8994e8521a712f83da14b5dc6d3
+
+% 7 1 0 02cc9acf5b300c750de48af358571c8a
+
+% 8 1 0 0dea2a4a6c79972804f563b0ea941c5a
+
+% 9 1 0 067781534e8ff7e21f3e97513e9f6596
+
+% 0 1 0 0e3f0fcc8256783d0bb95f5dfc1002e6
+
+% 1 1 0 09f67f9a2ab97bb912ad1a4f7d0ecb4d
+
+% 0 1 0 017fe614f93018621488e05762be9243
+
+% 0 1 0 15f4ae15d0abb29d16ab954696802106
+
+% 0 1 0 0624eed76b04e9cb07a173998d870840
+
+% 0 1 0 03949c3479c5054b141c22a2b5faa942
+
+% 1 1 0 025acb249ecd472104cb589f3090f11b
+
+@ 0 2 0 098e389bc6970c4810d31f1903aa2597
++     Il tipo del risultato è il `Result` del corriere, e segnalare i fallimenti spetta al
++     corriere: il corriere Resend solleva `Courier.Error`.
+
+@ 0 1 0 0537c7925b3332e709cdc14f7b43bb0f
++ entry .Sender   l'indirizzo da cui si inviano le email, come valore contestuale
+
+% 1 1 0 1324b5400a6fde8e09b62d8dfb8446e5
+
+@ 0 4 0 0ac070b473cdd4c11ce01f0f53b14626
++       `given Sender = Sender(email"noreply@example.com")`: `send` prende l'indirizzo `from`
++       della busta dal `Sender` nell'ambito, quindi lo si sceglie una volta per un programma o
++       per un ambito anziché ripeterlo a ogni invio.
++   entry #email   l'indirizzo del mittente
+
+@ 0 1 0 09e12d46a7e1dc150efc367d783aadb7
++ entry .Envelope   chi invia un'email e a chi, e il suo oggetto: ciò che serve a un corriere oltre al messaggio
+
+% 1 1 0 03eb80a3c8a059391954613b00fb9832
+
+@ 0 12 0 03bd18b7cc5b69121ce4c347ff93a804
++       I metadati di un `Document[Email]`: il mittente, i destinatari `to`, `cc`, `bcc` e
++       `replyTo`, e l'oggetto. `send` la costruisce dai suoi argomenti e dal `Sender`
++       nell'ambito; un `Courier` la legge dai `metadata` del documento.
++   entry .many   un valore o una lista di valori, come lista
++       `Envelope.many(address)` è `List(address)`, e `Envelope.many(addresses)` è la lista
++       stessa. È il modo in cui `send` accetta l'una o l'altra forma per ogni campo dei
++       destinatari.
++   entry #from   l'indirizzo del mittente
++   entry #to   i destinatari principali
++   entry #cc   i destinatari di una copia
++   entry #bcc   i destinatari di una copia nascosta, non mostrati agli altri
++   entry #replyTo   gli indirizzi a cui deve andare una risposta, se diversi dal mittente
++   entry #subject   la riga dell'oggetto
+
+@ 0 1 0 18a1633c8c316d040bac363387f5cdc0
++ entry .Email   un messaggio email: intestazioni, un corpo di testo o di HTML o di entrambi, contenuto inline e allegati
+
+% 1 1 0 003dc32dd6fe4edb1087472caf4dc956
+
+@ 0 5 0 15e388d77eedd2ed081b6512bf250870
++       Un'`Email` è una mappa di intestazioni aggiuntive e un `Email.Message`, che annida un
++       `Email.Content` (un `Email.Body` ed eventuali `Email.Inline`) dentro una lista di
++       allegati, ciascuno un `Asset`. Ogni strato riporta il proprio tipo di contenuto MIME,
++       derivato da ciò che contiene. Un'email è `Documentary` con un `Envelope` come metadati,
++       quindi un corriere riceve un `Document[Email]`.
+
+% 2 1 0 1670be706feada051e138bd40b621e7a
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 188bcd9e354a606f0f55a6c0819e8f10
++         label Solo testo
+
+% 1 1 0 0e0ae5c3e10b232b17a2153169e2645c
+
+% 2 1 0 080629a45b31ad8d0adf208962eac9e3
+
+% 0 1 0 0d6ec7600c40e0b203ad68d7f5aab751
+
+% 0 1 0 0aba77f389a48d4b127444835f4b4d3e
+
+% 1 1 0 032e9a7981207afb1b7b71319b7397c2
+
+@ 0 1 0 1f2c9d645d5f2ff21e36ac6b3d1412c4
++         label Testo con HTML
+
+% 1 1 0 199018d2fedd3ca419d1ac254b796dcb
+
+% 2 1 0 1b5e8853a5c4dc9217b0e01c3d08634f
+
+% 4 1 0 0b4d23b2270dbd3e1198a9d536751188
+
+% 0 1 0 169554eba9f06c7b1862b182b25d1e33
+
+% 0 1 0 059eaf49bbed3f670ac7ac1a49bd884b
+
+% 1 1 0 1ebec5aba4e068ea03cba084cdcda264
+
+@ 0 1 0 0261c7ad1f0c7a06045a9cc46bf8ef60
++         label Con un allegato
+
+% 1 1 0 1459fce406f884a613988a9ff5f1ffdc
+
+% 2 1 0 1fb93c9b849c50650332afeaea196f22
+
+% 4 1 0 0531a84d5cdf432c1e4843edd019a6f8
+
+% 0 1 0 105342b7b9425f541a306be932dfebe6
+
+% 0 1 0 17ccd87eb66850940df22c7d406f9979
+
+% 0 1 0 162ccfe9a01cb0ac13eb35974412ebf2
+
+% 1 1 0 1d730ea3f4cbc3e70a35a73edbecd25e
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 2 0 0655973d78a05cc2042d9c85fcdb72b5
++       Un'email restituisce le sue parti con `#text`, `#html`, `#inlines` e `#attachments`,
++       quindi un messaggio composto si può verificare prima di inviarlo.
+
+% 0 1 0 074e17cc3a2215cf0b1455194bd451bb
+
+% 0 1 0 110fdbcbdad69e970b9ee010fc5d89c4
+
+% 0 1 0 11a23e0551e024510784d2c9437d0488
+
+@ 0 5 0 08fbcce876853c100ccd61221f82ec5f
++   entry .apply   un'email costruita da qualsiasi valore `Sendable`: `Email(t"hello")`
++       Usa il `Sendable` del valore: il testo diventa un corpo di testo semplice, un documento
++       HTML un corpo solo HTML, e un'`Email` è sé stessa. Il risultato non ha intestazioni,
++       contenuti inline né allegati.
++   entry .Body   il corpo di un'email: testo, HTML, o entrambi come alternative
+
+% 1 1 0 06c7e9063d3ce7f3170eead1998f7922
+
+@ 0 4 0 0e867e91161d1acf0f8f742d434bfca9
++         Un'enumerazione di tre casi: `TextOnly(content)`, `HtmlOnly(content)` e
++         `Alternatives(textContent, htmlContent)`. L'ultimo si invia come
++         `multipart/alternative`, quindi un client in grado di visualizzare l'HTML lo mostra e
++         qualsiasi altro mostra il testo.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 15027c01b2f1e1f41c0d709fa1c6b4c1
+
+% 0 1 0 010b11b3d8c3c96317e7fecfffac221d
+
+% 0 1 0 196b9977168da0fb18655f347d1bdd70
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 5 0 1e83626dddf89c8713716c5daa61d067
++     entry .apply   un corpo di testo, o alternative di testo e HTML: `Email.Body(text, html)`
++     entry #html   la versione HTML, o `Unset` per un corpo solo testo
++     entry #text   la versione di testo, o `Unset` per un corpo solo HTML
++     entry #contentType   `text/plain`, `text/html` o `multipart/alternative`, a seconda delle versioni che il corpo ha
++   entry .Inline   contenuto a cui un corpo HTML fa riferimento tramite il suo content ID, come un'immagine incorporata
+
+% 1 1 0 16afa03eeaa0102c00536c9431cac31a
+
+@ 0 7 0 078e7bec05acec550aaec46a9d3c48ed
++         Una parte inline ha un content ID, `cid`, a cui l'HTML fa riferimento come `cid:…`, un
++         tipo di media e un corpo. La sua presenza rende il contenuto `multipart/related`. Il
++         corriere Resend non invia le parti inline.
++     entry #cid   il content ID a cui fa riferimento l'HTML
++     entry #contentType   il tipo di media del contenuto inline
++     entry #body   il contenuto inline
++   entry .Content   un corpo con l'eventuale contenuto inline a cui fa riferimento
+
+% 1 1 0 1dc1cf2f24e157b406d5a05d514196c6
+
+% 0 1 0 0a5dc4e5b72c1a9b147c8d17ee2685ac
+
+@ 0 18 0 12671497e1fec5a70ab71157ab852a85
++     entry #body   il corpo di testo o HTML
++     entry #inlines   le parti inline a cui il corpo fa riferimento
++     entry #contentType   `multipart/related` se ci sono contenuti inline, altrimenti il tipo del corpo
++   entry .Message   il contenuto di un'email con i suoi allegati
++     entry #content   il corpo e le sue parti inline
++     entry #attachments   i file allegati, in ordine
++     entry #contentType   `multipart/mixed` se ci sono allegati, altrimenti il tipo del contenuto
++   entry #headers   intestazioni aggiuntive, per nome
++   entry #message   il corpo, il contenuto inline e gli allegati
++   entry #Self   il tipo documentario, `Email` stesso
++   entry #Metadata   i metadati di un documento email: un `Envelope`
++   entry #html   la versione HTML del corpo, o `Unset` se non ce n'è
++   entry #text   la versione di testo del corpo, o `Unset` se non ce n'è
++   entry #inlines   le parti inline del contenuto
++   entry #attachments   i file allegati, nell'ordine in cui sono stati allegati
++   entry #attach   l'email con un allegato aggiunto in fondo
++       Accetta qualsiasi valore `Attachable`: un `Asset`, o qualsiasi cosa con un nome, un tipo
++       di media e uno stream di byte. L'email è immutabile, quindi `attach` ne restituisce una
++       nuova.
+
+% 2 1 0 0ff9829287cc373a08b1e3f5ec011c83
+
+% 3 1 0 019d56ed747f519e0c2823efb12164e1
+
+% 0 1 0 1ef7996c4e3931960b260a7edfb87b14
+
+% 0 1 0 0d0083e3e5984721030f99dd3363160c
+
+% 1 1 0 1fb37cccd2ac5af01b26ab0b39087c38
+
+@ 0 1 0 0e6868dee12c87381c751ec1a5aec3ad
++ entry .Sendable   una typeclass per i valori che si possono inviare come email
+
+% 1 1 0 1b143225cda10c640fb795f1ac121987
+
+@ 0 4 0 01dd1738ffb9b28e08912bb790549e21
++       `value.send(…)` ed `Email(value)` accettano qualsiasi valore con un `Sendable`, che lo
++       trasforma in un'`Email`. Sono fornite istanze per `Text`, per la stessa `Email`, e per
++       qualsiasi documento con un tipo di media che si trasmette come testo, come una pagina
++       HTML di honeycomb. Un nuovo tipo si rende inviabile facendolo corrispondere a uno che lo
++       è già:
+
+% 2 1 0 01caba7933f461751b035902f67370d9
+
+% 3 1 0 1e00d9cc3eedf0971d1d2dc6f01bebd3
+
+% 0 1 0 1ccc7f7c4179ab711cb96aa5a2a978a5
+
+% 0 1 0 0d7598ec7a95c78c0307734bbee43cb6
+
+% 1 1 0 05a095e0aa856b7e05c91e613ac6f712
+
+@ 0 8 0 013318d286cfad2d1f87d83fe413eec2
++   entry .text   il testo si invia come corpo di testo semplice
++   entry .document   un documento con un tipo di media si invia come il suo testo, solo HTML se è `text/html`
++       Per qualsiasi tipo con un `Media` e uno `Streamable by Text`: un documento il cui tipo
++       di media è `text/html` diventa un corpo `HtmlOnly`, e qualsiasi altro un corpo di testo.
++       Il documento viene letto per intero quando si costruisce l'email.
++   entry .email   un'email si invia come sé stessa
++   entry #email   il valore come email
++   entry #contramap   un `Sendable` per un altro tipo, che prima lo converte in questo
+
+@ 0 1 0 00befc19f7e1e0f61d1995b69a40c75a
++ entry .Attachable   una typeclass per i valori che si possono allegare a un'email
+
+% 1 1 0 099ca588d97d2f0e198ce5fef30a6289
+
+@ 0 10 0 1ee3c0d599a9ba1b03ccfdd8a084063d
++       `Email#attach` accetta qualsiasi valore con un `Attachable`, che lo trasforma in un
++       `Asset`: un nome, un tipo di media e i byte. Un `Asset` è allegabile come sé stesso, e
++       qualsiasi valore che abbia un nome (`Nominable`), un tipo di media (`Media`) e uno
++       stream di byte è allegabile senza altro lavoro.
++   entry .generic   allega qualsiasi valore che abbia un nome, un tipo di media e uno stream di byte
++       Per i tipi con un `Nominable`, un `Media` e uno `Streamable by Data`: l'asset prende il
++       nome del valore come nome del file, il suo tipo di media, e i suoi byte come stream.
++   entry .asset   un `Asset` si allega come sé stesso
++   entry #attachment   il valore come asset da allegare
++   entry #contramap   un `Attachable` per un altro tipo, che prima lo converte in questo
+
+@ 0 1 0 158da013069726a21334ee785ebdf672
++ entry .Courier   un servizio di consegna delle email, scelto come valore contestuale
+
+% 1 1 0 1aec6a696664da1501e8206ac9214d42
+
+@ 0 3 0 03b068df2dff101d10c4252100b87054
++       Un `Courier` invia un `Document[Email]` — l'email e il suo `Envelope` — e restituisce
++       un `Result` di sua scelta. Quello fornito è `couriers.resendCourier`; un altro servizio
++       si collega implementando l'unico metodo:
+
+% 2 1 0 1dbe9805e9072660039cfcca6150d699
+
+% 3 1 0 084c5b80683655e2110a96644de8fc63
+
+% 0 1 0 1fe4bfb356b3bce90f1149b1baac6357
+
+% 0 1 0 19f448fc1bd758f0103f0ad6892c4995
+
+% 0 1 0 061863b080fbea9c03c375486deb7d32
+
+% 0 1 0 0390482d9817f18f1c5a1993b023e38a
+
+% 1 1 0 075b5674b15cd15814c490682f32dfe1
+
+@ 0 2 0 08eb07dc3a004749160b821967bb2a13
++       Un corriere è una capability: è costruito da altre capability (un client HTTP, una
++       `Tactic`) e le trattiene.
+
+% 0 1 0 1fdc4baa5e9023620e0a79fc2d7223d7
+
+@ 0 1 0 0b0a3722d1061f2f12ef76e2e3b1d8ba
++   entry .Error   sollevato quando un corriere non riesce a consegnare un'email
+
+% 1 1 0 1d58274a4431a5371d95e72f74ee607a
+
+@ 0 7 0 129d9df656656c550b75f19a468d0b78
++         Errore `↯/s.107.1`: _unable to send email from `from` to `to` with subject `subject`_.
++         Il corriere Resend lo solleva per qualsiasi mancata connessione, uno stato di errore
++         HTTP o una risposta che non riesce a leggere. Il `to` è il primo dei destinatari
++         principali della busta.
++     entry #from   l'indirizzo del mittente
++     entry #to   l'indirizzo del primo destinatario principale
++     entry #subject   l'oggetto dell'email
++   entry #send   consegna un'email con la sua busta, restituendo il `Result` del corriere
+
+@ 0 1 0 1b7dc90d177140b903ffae4b777fa6a3
++ entry .Resend   le impostazioni e i risultati del corriere Resend
+
+% 1 1 0 0024329820ebda9a1a74c3ad6d11a366
+
+@ 0 3 0 00d7bc9a87f0848515fcaae80cb613fb
++       [Resend](https://resend.com/) è un servizio di consegna delle email con un'API HTTP. Il
++       suo corriere, `couriers.resendCourier`, prende la sua chiave API da un given
++       `Resend.ApiKey` e restituisce un `Resend.Receipt` per ogni email inviata.
+
+% 0 1 0 08cb027500f1a5ee0802a6fba8af4b2a
+
+@ 0 1 0 1a49cd5ae364e9e905c3b69c268221da
++   entry .ApiKey   la chiave API di Resend, come valore contestuale
+
+% 1 1 0 0bed7bd1d9e20a38038eed4908c638ea
+
+@ 0 5 0 108b360478ac5d4f0e648b5b0bc4be9a
++         `given Resend.ApiKey = Resend.ApiKey(t"re_…")`. Si invia come bearer token con ogni
++         richiesta. Va letta dall'ambiente o da un archivio di segreti anziché scritta nel
++         sorgente.
++     entry #key   la chiave, come testo
++   entry .Receipt   la conferma di Resend per un'email che ha accettato
+
+% 1 1 0 0b857952bce497800550b3236d09ced9
+
+@ 0 3 0 1597fd2ab7ff54b10a323383e379dde3
++         Decodificata dalla risposta JSON a un invio. L'ID identifica l'email nell'API e nella
++         dashboard di Resend.
++     entry #id   l'ID dell'email presso Resend
+
+@ 0 1 0 014d67d3b3ef54f71c829509d6f082d1
++ entry .couriers   i corrieri email forniti, ciascuno un given da importare per nome
+
+% 1 1 0 0ab14400c58df02108680c4eb25d1325
+
+@ 0 3 0 06940dc59a891aa811429ff934332f6d
++       Un package di scelta, fuso con i `couriers` dell'ombrello. Quale servizio consegna le
++       email lo decide il given `Courier` nell'ambito, e `import soundness.*` non ne porta
++       nessuno: se ne importa uno per nome.
+
+% 2 1 0 001d2d2d6ac8b83516bd1bbfd3e82d17
+
+% 3 1 0 0b5ff29358ffac9a0291a46f30ee5d98
+
+% 2 1 0 1ab22b42e16385d1083cf8240e6bd996
+
+% 1 1 0 120479115a50a4761f5d05ddf97e909f
+
+@ 0 6 0 1e0446e3457a356d01769df6fd95842a
++   entry .resendCourier   consegna le email tramite l'API HTTP di Resend, restituendo un `Resend.Receipt`
++       Invia ogni email, con i suoi corpi di testo e HTML, le sue intestazioni aggiuntive e i
++       suoi allegati (codificati in Base64), a `https://api.resend.com/emails`, autorizzata
++       dalla `Resend.ApiKey` nell'ambito. Richiede una `Tactic[Courier.Error]`, `Online` (da
++       `internetAccess`), un `Http.Client` (come `httpBackends.javaNetHttp`) e la chiave API, e
++       registra le sue richieste HTTP come `Http.Event`.
+
+% 2 1 0 1f18be80eaf84f1015f33f92007d3379
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 1a73ed501bc05b9609c7ade416500758
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 0 1 0 0d95e158a2e74a4308f5a7dadf486a7f
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 01d1437f6d67cab0197176d451a04963
+
+% 0 1 0 1687bf0756babc9e1c45ad2e22eaf34f
+
+% 0 1 0 003d1a042ee935141a0456949a47f253
+
+% 1 1 0 1c30cc213fa31402001a60513fcddf7c
+
+@ 0 3 0 171fac63a3e3461601065f5db5ae0e24
++       Una connessione fallita, uno stato di errore o una risposta illeggibile sollevano
++       `Courier.Error`; il motivo sottostante viene prima stampato sullo standard output. Le
++       parti inline non vengono inviate, e un'email senza alcun destinatario `to` fallisce
++       anziché sollevare un errore.

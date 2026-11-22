@@ -1,6 +1,0 @@
-orthant 1 language
-
-- The `cellulose` module, which implemented CoDL and its binary form BCoDL, has been
-- removed. Its role is filled by [TEL](/doc/soundness/modules/tel.md), whose binary encoding is BinTEL.
-+ O módulo `cellulose`, que implementava o CoDL e sua forma binária, o BCoDL, foi removido. Seu papel
-+ é cumprido pelo [TEL](/doc/soundness/modules/tel.md), cuja codificação binária é o BinTEL.

@@ -1,0 +1,445 @@
+orthant 2 language
+
+@ 0 1 0 1fc139ef1e00e4f2025e814e7ac80b00
++ ## Mathématiques
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 1 0 184f6ee6393b58e806283beda800f513
++ Au-delà des [nombres](numbers.md) ordinaires, il y a les valeurs structurées des
++ mathématiques :
+
+@ 0 7 0 035cd9ccf6f3bad80dc487b3297ba128
++ - les [nombres complexes](https://en.wikipedia.org/wiki/Complex_number), dont les parties
++   réelle et imaginaire peuvent être de tout type numérique adéquat ;
++ - les [vecteurs](https://en.wikipedia.org/wiki/Euclidean_vector) et les
++   [matrices](https://en.wikipedia.org/wiki/Matrix_(mathematics)), dont les dimensions font
++   partie de leurs types, de sorte qu'une incompatibilité de dimensions ne compile pas ;
++ - les [permutations](https://en.wikipedia.org/wiki/Permutation), qui sont des réarrangements
++   réversibles stockés sous une forme canonique compacte.
+
+@ 0 4 0 18613918cbdf41901d0d175239c13e47
++ Les trois se composent avec le reste de l'arithmétique. Un vecteur de longueurs multiplié
++ scalairement par un vecteur de longueurs donne une aire, et un nombre complexe de
++ [quantités](quantities.md) conserve ses unités, car les opérations sont définies partout au
++ moyen des mêmes [classes de types arithmétiques](numbers.md#overloading-the-operators).
+
+@ 0 1 0 11e7574b99b80729102239269082bdf4
++ ### À propos de la structure mathématique
+
+@ 0 5 0 1c2bdd5302fb97de006b76d7056a6ceb
++ Un vecteur n'est pas une liste. Une liste de trois nombres et une liste de quatre se
++ concatènent sans difficulté. Des vecteurs de dimensions différentes ne peuvent même pas être
++ additionnés, et un produit matriciel n'est défini que lorsque les dimensions intérieures
++ concordent. Une bibliothèque qui les modélise sous forme de tableaux reporte chacune de ces
++ règles [à l'exécution][exécution], où une incompatibilité de formes devient une exception,
++ ou pire, un non-sens silencieux, longtemps après l'erreur.
+
+@ 0 5 0 0c0123fdb69b2aa716e0aca64c15939c
++ Ici, les dimensions sont dans les types. Un `Vector[Int, 3]` et un `Vector[Int, 2]` sont des
++ types différents. Une `Matrix[…, 2, 3]` multiplie une `Matrix[…, 3, 2]`, et rien d'autre.
++ Une multiplication incompatible est un
++ [état impossible](../../philosophy/impossible-states.md) de l'algèbre linéaire. Le type des
++ éléments est générique sur tout ce qui possède la bonne arithmétique, et c'est ainsi que les
++ unités circulent au travers d'un calcul.
+
+@ 0 3 0 021f7700233a60a31d03230281205ef7
++ Tout provient du package `soundness`. L'arithmétique entre de simples nombres et ces types
++ repose sur les conversions *into* du compilateur ; cette fonctionnalité du langage est donc
++ aussi activée, et le dernier import permet aux exemples d'afficher leurs résultats :
+
+% 2 1 0 0900e6fa73f434a20f66ec0bd0fee7c1
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1983cda2abcdd53d0362a0ccc635b790
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 19e82c234b72b0fa1cc4188c98686b2c
++ ### Nombres complexes
+
+@ 0 1 0 0583d9a81f389436033de978310d9a73
++ Un `Complex` associe une composante réelle à une composante imaginaire, et prend en charge
++ l'arithmétique habituelle :
+
+% 2 1 0 0ca9392288af71dc0ff07efb156de1c6
+
+% 3 1 0 14f77f546bc1baf61cd631c433fae894
+
+% 4 1 0 19fe2ba8d02f315e1afc7d4d3e8224cf
+
+% 0 1 0 0725a067800c176506803e014e04d5de
+
+% 0 1 0 0b660e45b0cf1f051704d0aabc4aa1c8
+
+% 0 1 0 05cefe75419a1fa3158a354eebb97f13
+
+% 1 1 0 16c8f721907961f2076a89538b0ee85d
+
+@ 0 2 0 03532d9beee11fa813c3f2338bf61e1b
++ Un nombre complexe peut aussi s'écrire en ajoutant un multiple de `i`, l'unité imaginaire,
++ ou se donner sous forme polaire, comme un module et un `Angle` :
+
+% 2 1 0 1ddec130d06511711fc48db2ea28fdd8
+
+% 0 1 0 098d4d8381dca7d412ded296ad9b71d8
+
+% 0 1 0 13fe7bcb0876ba6d19d13a9a7065a735
+
+% 1 1 0 0f88d46e1408033e0f966d438681e1f4
+
+@ 0 2 0 066fd9423960ee5c03fcf32d32d8f676
++ `modulus` et `argument` restituent la forme polaire, l'argument étant un angle typé.
++ L'opérateur préfixe `~` donne le conjugué complexe.
+
+@ 0 3 0 1388ed35ab666e071db18db96c72a389
++ Les composantes peuvent être de tout type qui possède l'arithmétique dont une opération a
++ besoin. Cela inclut les quantités ; une impédance complexe conserve donc ses unités. Une
++ quantité s'écrit au moyen d'un `Decimalizer`, qui indique combien de chiffres significatifs
++ afficher :
+
+% 2 1 0 0a89ce033a4e9d5f0265afcc26234ce3
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 0 1 0 1ccb8557815f9dce1000586c07812fb3
+
+% 0 1 0 10a6461369886fb312874b1bf1670a12
+
+% 1 1 0 0b208fc1230124351f95d089a7a3d4b8
+
+% 3 1 0 085eb41a8c44c95b108285df0427ec9b
+
+% 4 1 0 0177e00c325ca87b06e011b38e040b23
+
+% 5 1 0 058329e9acf0b5f60fec8e1e94584e89
+
+% 0 1 0 0d665cfdc97f3fa31258b8e23b30e841
+
+% 1 1 0 1bd15d365d49525216a5b417ff44bf66
+
+@ 0 1 0 05dd1d21ea10d18a0e8b9a336ab6466d
++ ### Vecteurs
+
+@ 0 4 0 0455bf3f9235b3a01b6de6a5207cc685
++ Un `Vector` est un nombre fixe de composantes, avec la dimension dans son type. C'est en
++ fait un hybride entre un `Tuple`, dont la taille est connue statiquement, et une collection,
++ dont les éléments partagent un type. C'est ce qu'est un vecteur euclidien, et c'est pourquoi
++ aucun des deux choix ordinaires ne lui convient tout à fait.
+
+@ 0 1 0 1a96d326138bd7600949631607dd0cc2
++ Construire un vecteur infère à la fois le type des éléments et la taille :
+
+% 2 1 0 144de43859c874471f8cdc972681e937
+
+% 0 1 0 114dd86d45cdc5f41390e8b06869a4b7
+
+% 1 1 0 08d36502b409fe6803a351dd6325c583
+
+@ 0 1 0 0f71eb79ee12cc51012bf2d48a9405d6
++ Une valeur de la mauvaise taille ne compile pas :
+
+% 2 1 0 12bead1532887901022801e2075d8c07
+
+% 3 1 0 11e6132500bf25500dd81a96cf2753db
+
+% 4 1 0 04b71d9c581d4d9811ba6d0de1ed610e
+
+% 5 1 0 00633061e37df6ba13a540686bebf998
+
+% 0 1 0 0a4c1d3e3e5b315715a4e1c77cf3d8d9
+
+% 1 1 0 1c0f03613d4d84b310fd397eb801fa47
+
+@ 0 3 0 000ccd794efd6b5c0a3bf2f209b742d8
++ Les vecteurs de même dimension s'additionnent et se soustraient. Un vecteur se négative, et
++ se multiplie et se divise composante par composante, soit par un scalaire, soit par un autre
++ vecteur de même dimension, dès lors que ses composantes le permettent :
+
+% 2 1 0 138008e01faf735d08c4dc4afc21e040
+
+% 3 1 0 05ed9a080d0bded01e58dd2d8c26459f
+
+% 4 1 0 03eb2d65d304e89304945fe906c7c24b
+
+% 0 1 0 00a811c2e9727e7d0fcb12cb98c08eb0
+
+% 0 1 0 0c274425069723c80b914f8e303776db
+
+% 0 1 0 19fd194ec3ebaf601276bbcc387c6472
+
+% 0 1 0 1eb45ac8bf89b14413547e8019bc3820
+
+% 1 1 0 164ff34b56ddd11f150ce0f9fd1890ed
+
+@ 0 1 0 083fe0e6680ddba800422bda7f2968fb
++ Additionner des vecteurs de dimensions différentes ne compile pas :
+
+% 2 1 0 1972b1302b277c9f0b8e387db79a0e65
+
+% 3 1 0 1ed3eedfb49aaec119050ae0e895c7dc
+
+% 4 1 0 109fae262709e5f7021358d0c967239a
+
+% 5 1 0 1e56ef4abb0cac5202e7e71f878752c7
+
+% 0 1 0 049c73241745abd201da6e32c9e9912a
+
+% 1 1 0 1acfa7978ab209150de97b5bd8a98ad8
+
+@ 0 2 0 1edbb07d4897017f1033148c7c927ca0
++ `dot` calcule le produit scalaire et, en trois dimensions, `cross` calcule le produit
++ vectoriel :
+
+% 2 1 0 1c8b8445bc1466630ef94c9170e52992
+
+% 3 1 0 1af43e768058b75700c21bf6b1197555
+
+% 4 1 0 0ad303d97162d17b0cdc368e14d05387
+
+% 0 1 0 0d3d7f4780a5ffda174c01cf5b46bb48
+
+% 0 1 0 1f206b543b7652481d6dd956964371c5
+
+% 1 1 0 0c9ad8d59e7912ec1be81ad9e631bcb2
+
+% 0 1 0 0e3b4f00a59b70a71b51113cc77bd854
+
+@ 0 2 0 0ec461be4ecc9a451a997f3f0e027d4e
++ Une `Matrix` a ses nombres de lignes et de colonnes dans son type. Ils s'écrivent comme
++ arguments de type, et la matrice se remplit ligne par ligne :
+
+% 2 1 0 063f7871353426e11484c47b4dcf81f9
+
+% 0 1 0 138327158f5dbf391f84c33200e6aa44
+
+% 0 1 0 1db77eab95c1e1ed0291b63d005bd32f
+
+% 1 1 0 18da1d60533a2d430d16378554293e9d
+
+@ 0 1 0 10f3667ea151329b00c09f8edf436725
++ Une matrice multiplie une autre matrice, un vecteur ou un scalaire, et se négative :
+
+% 2 1 0 1e1e4008978917b513b387a77d48fce2
+
+% 3 1 0 1ba75f0e09cc1e221eb3ec3589f402ba
+
+% 4 1 0 11c6010fe4fa152801d5b8bfdb69e396
+
+% 0 1 0 1a3b498dad53d81702f5e7dc8b0c1d2f
+
+% 0 1 0 00fd9363d76ec79a135245870758b4e8
+
+% 0 1 0 0b4281100487c83619f02921b49f03c5
+
+% 0 1 0 156a4b0282d21d5a0da84018a198dd6c
+
+% 1 1 0 1c224fb8c8570b5411e79c07deb693ba
+
+@ 0 1 0 13f2b17e43e501350c86f9295d9aee20
++ Un produit dont les dimensions ne concordent pas est une erreur de compilation, et non une
++ vérification des formes à l'exécution :
+
+% 2 1 0 0cf311e7c015e6f8199c63241c19eb10
+
+% 3 1 0 110060be1e99267107acbf5642cee69b
+
+% 4 1 0 001153385953d28218b5d131aabb74bc
+
+% 5 1 0 0ffcde83d236545b1312cd9a7b2c709c
+
+% 0 1 0 07a9ba2fce0563ab1f2e426b7d1fbf3e
+
+% 1 1 0 116f416599fa7d4e0c0d6d65653cef4e
+
+@ 0 2 0 0023b43e9d9538b10c2e94b2d2aeab2d
++ Au-delà de son arithmétique, une matrice offre ces opérations. Celles d'une matrice carrée
++ n'existent que pour une matrice carrée :
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 13 0 0120b136ebcbf9710db1fee23a5247bf
++ column  Méthode
++ column  De
++ column  Donne
++ row  `transpose`  toute matrice  la transposée
++ row  `rank`  toute matrice  le rang
++ row  `frobeniusNorm`  toute matrice  la racine carrée de la somme des carrés de ses coefficients
++ row  `determinant`  une matrice carrée  le déterminant
++ row  `trace`  une matrice carrée  la somme de la diagonale
++ row  `inverse`  une matrice carrée  l'inverse, ou `Unset` pour une matrice singulière
++ row  `solve`  une matrice carrée  la solution d'un système linéaire, sous forme de vecteur `Optional`
++ row  `adjugate`  une matrice carrée  la transposée de la matrice des cofacteurs
++ row  `eigenvalues`  une matrice carrée de `Double`  les valeurs propres, sous forme de vecteur `Optional`
++ row  `eigenvectors`  une matrice carrée de `Double`  les vecteurs propres, sous forme de matrice `Optional`
+
+% 1 1 0 005df6cb1614dd1a1ae0eb553a92472a
+
+% 3 1 0 06dd9f1d25fecc341576eb8d42ecd012
+
+% 4 1 0 0d92ddd325ed5fa30934444ff9a0462e
+
+% 5 1 0 14cfd441d65b61ca1e30b5b6fd8164da
+
+% 0 1 0 12f69ab435181bd51cf8875c268b729b
+
+% 0 1 0 10abcccc119d6b151a03fd11abc17933
+
+% 0 1 0 1747e795e6298a4a1edd4361edbded9f
+
+% 1 1 0 0bbaa6489a0ddfa2049498aaa5dfdf36
+
+@ 0 1 0 0953f9d2e5398e420b22b4a30451452e
++ `inverse` donne une matrice [optionnelle](optional-values.md), puisqu'une matrice singulière
++ n'en a pas.
+
+@ 0 2 0 1508fba36052762505bdf089b5bde6f0
++ L'`adjugate` est disponible pour elle-même. Elle est définie sur tout anneau, et pas
++ seulement là où la division est possible ; une matrice d'entiers a donc une matrice adjointe
++ là où elle n'a pas d'inverse :
+
+% 2 1 0 06002b6e0023cd821625abdcda47a2b1
+
+% 3 1 0 047d118fe1d4e15617fd9fa1e4521790
+
+% 4 1 0 1695d04d5796f0c0053ca508425c9b5c
+
+% 0 1 0 1b9724b141b32627054144ce99095765
+
+% 1 1 0 1e249e4c63d3865b02d27bb304429ed9
+
+@ 0 2 0 1054e17641c1996d1afd2a20a85709d8
++ `frobeniusNorm` donne la grandeur d'une matrice. `eigenvalues` donne les valeurs pour
++ lesquelles elle a un vecteur propre, sous forme d'`Optional`, puisque toute matrice n'a pas
++ de valeurs propres réelles :
+
+% 2 1 0 06e5c9e31733769f0c226aa3261199f1
+
+% 3 1 0 0101d2bc4a30358c115471cc863cac07
+
+% 4 1 0 06ba4c1e0c90325b0790fa560ab0ffdb
+
+% 0 1 0 121f78e56f743f1512a60d37170db9cf
+
+% 0 1 0 0fcef5c38c7de51d0b3a119c57adfc7a
+
+% 1 1 0 18b6abd2283f32510c143eab49c2c4da
+
+@ 0 1 0 15b1d3eed73417481d4eabfea283ea86
++ ### Des éléments qui ne sont pas des nombres
+
+@ 0 4 0 0d1ca8ee9316f6921c21c81a8213a716
++ Rien de ce qui précède n'exige que les coefficients soient des `Double`. Les vecteurs et les
++ matrices sont génériques dans leur type d'élément, et leurs opérations sont trouvées au moyen
++ des classes de types arithmétiques ; tout ce qui a la bonne structure fonctionne donc. Cela
++ inclut les [quantités](quantities.md) typées, dont les dimensions se composent comme le fait
++ l'arithmétique :
+
+% 2 1 0 140e42e15d249de11fe0970c95eef437
+
+% 0 1 0 02a6d8af547843630172756efd386946
+
+% 0 1 0 0e7a3e349956ae6e0ee28422007ee850
+
+% 1 1 0 1e8759abeda89fab01a272f76c719f04
+
+% 3 1 0 0dcf4e1c52705b4f1a51bd58a58dccd8
+
+% 4 1 0 1640ceb9acbe333000f6146c60084472
+
+% 5 1 0 13150bee8d75b1d319eddca8db2dee87
+
+% 0 1 0 137c58e8ee2982af038a31ded317e4c9
+
+% 1 1 0 0c4920b685c24bd202929eb1ddcc048f
+
+@ 0 2 0 07173873ab7d34dd05c75c33a25f513d
++ Un produit scalaire de longueurs est une aire, et le type le dit. Il en va de même pour des
++ coefficients complexes, pour des rationnels exacts, et pour tout autre type d'élément doté
++ des opérations dont un calcul a besoin.
+
+% 0 1 0 0f0972a9a8731f270e68c26b9ef8062d
+
+@ 0 2 0 08daa237734d23050635285317aff072
++ Une `Permutation` est un réarrangement réversible. Elle se construit à partir des indices
++ réordonnés, et s'applique à toute liste d'au moins cette longueur :
+
+% 2 1 0 11de304f622b7bdd02b15946b7fc50ab
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 1fe8b6e6d2df44cd0b916bbec8004f01
+
+% 0 1 0 17e71bda713b2f29081b6fd1d9d4d063
+
+% 1 1 0 134231f9a08b649209c8ced443db3ddb
+
+% 3 1 0 0cf10f0902f5f0c91e68a26b296165b2
+
+% 4 1 0 0680670508a67683082515f80f530c6b
+
+% 5 1 0 06ef001b84e3f9811929298e65739396
+
+% 0 1 0 1c4bfa37b543bdd51b3ba36b433748a3
+
+% 0 1 0 1c48388deba08c5b0334667e35be7397
+
+% 1 1 0 07e3d6557ead925c0da5a584f6d6658c
+
+@ 0 2 0 0c246cdf87817e13018554c8ea5778eb
++ Une séquence d'indices qui n'est pas une permutation, parce qu'elle contient un doublon ou
++ un trou, est une erreur typée :
+
+% 2 1 0 1e09ba5ab88f952d030387e5247d1927
+
+% 3 1 0 15355a8bedff20d41c38b7073edf8cf0
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 0a7eac9bbf358e3e0edded4192c5878d
+
+% 1 1 0 18c2a4af203f78780863a4a6514c98c5
+
+@ 0 6 0 09f09950f4dff4cb13decd2038c807e5
++ En interne, une permutation est stockée sous forme de son
++ [code de Lehmer](https://en.wikipedia.org/wiki/Lehmer_code) en base factorielle, qui est un
++ entier unique qui l'identifie de façon univoque. Cela rend les permutations compactes à
++ stocker et à énumérer : `Permutation.bySize(n)` les donne toutes, `n!` au total, sous forme
++ de [chaîne paresseuse](collections.md#lazy-chains). Une permutation de *n* éléments occupe un
++ espace en O(*n* log *n*), qui est le minimum possible, puisqu'il y en a *n*! à distinguer.
+
+@ 0 2 0 0b27d2f1f3a3a4ae0bd843da09588b19
++ Le nombre *est* la permutation ; il peut donc être donné directement, et les deux
++ représentations peuvent être relues :
+
+% 2 1 0 146c5327825e4c8b0695f9873b3beca8
+
+% 3 1 0 06bc9ec542e8edba1fd42afa51f66ae6
+
+% 4 1 0 1c1f6170c51203fc12440630eeca6341
+
+% 0 1 0 1f25e0cd4ac755c617e7d0060589ae78
+
+% 0 1 0 17c1c67d47d3d79d0ea8c8d6685c837c
+
+% 0 1 0 13e601655bca8146135589fdc1b53d06
+
+% 1 1 0 04a7e21e006e342c198f917192e4eba9
+
+@ 0 3 0 16b145f038c8973712c7b318b859b796
++ Une permutation laisse intactes toutes les positions hors de sa propre étendue. L'appliquer
++ à une séquence plus longue n'est donc pas une erreur : elle réarrange les positions qu'elle
++ couvre, et laisse les autres où elles étaient.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 1 0 1619b3be7088fb1f0aab10eb709a6e41
++ - Le [balisage mathématique](mathematical-markup.md) met en forme ce qui est calculé ici, et
++   l'[aléatoire](randomness.md) échantillonne ses distributions.

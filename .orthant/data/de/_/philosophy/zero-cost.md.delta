@@ -1,0 +1,164 @@
+orthant 2 language
+
+@ 0 1 0 1aa94afa9fe43dba1fa81c13c4a66c91
++ # Null Kosten
+
+@ 0 6 0 12893373d05452180d6a62cc944063cb
++ Soundness bezahlt seine Sicherheit zur Kompilierzeit, nicht zur Laufzeit. Opake Typen, Inlining
++ und Berechnungen auf Typebene bewirken, dass die Garantien eines Typs – die Einheiten einer Größe,
++ ein validierter Name, ein geprüfter Pfad – in der Regel auf den bloßen Wert herunterkompiliert
++ werden, den sie umhüllen, ohne dass ein Wrapper-Objekt allokiert wird oder eine Prüfung
++ übrig bleibt. Sicherheit ist deshalb keine Steuer auf die Performance: Genau der Code, der
++ nachweislich korrekt ist, ist auch so schnell wie die ungeprüfte Fassung, die ein sorgloser
++ Programmierer von Hand geschrieben hätte.
+
+@ 0 1 0 194920cf413d32d4001e2196365ee4ca
++ ## Was die Typen zur Laufzeit kosten
+
+@ 0 2 0 0ff9c1638664d9511d91931db00f1917
++ Im Normalfall nichts, denn sie sind gar nicht da. Ein opaker Typ ist seine zugrunde liegende
++ Darstellung unter einem anderen Namen, der nur für den Compiler existiert:
+
+% 2 1 0 0e8a9d57a4981e4000bba9188a14e854
+
+% 3 1 0 04d19b78fbdfc2781233f534cea3d073
+
+% 4 1 0 0f8c669b140c78161993b1ce4cec5ceb
+
+% 0 1 0 1f29fe33329d0fdb1a6090b6cee52a0c
+
+% 0 1 0 0cbf92c0ff406f531cc93de9b5ec3e77
+
+% 0 1 0 08936ef72555ceae0c5ed79641b70f5d
+
+% 0 1 0 0871db3e46b29de50e4201cc59a2dd4e
+
+% 0 1 0 0e41f304801724c80e46ac8bad49f6fa
+
+% 1 1 0 141180964439b00b020d5e0dd52e0f92
+
+@ 0 2 0 0fb25d821c8101f205e033d7206d3c1d
++ `Optional[value]` ist dann einfach `Unset | value` – eine Union mit einem durch null realisierten
++ Sentinel, sodass ein fehlender Wert eine Null-Referenz kostet und ein vorhandener genau den Wert.
+
+@ 0 3 0 06bfd94728a9f3bd0731f4eb7c31b642
++ Eine `Quantity[Metres[1]]` ist ein `Double`. Eine Million davon in einem Array sind eine Million
++ Doubles, nicht eine Million Objekte. Die Einheiten existieren, während der Code typgeprüft wird, und
++ sind verschwunden, wenn er läuft.
+
+@ 0 3 0 04c82918342d0ae200bb9ca8e67134ca
++ Dieselbe Überlegung gilt für die Operationen. Sie sind `inline`, sodass eine dimensionsbehaftete
++ Berechnung zu den Arithmetikinstruktionen wird, die der entsprechende Code mit bloßem `Double`
++ erzeugt hätte – kein Wrapper zu allokieren, keine Typklassenmethode, an die verteilt werden müsste:
+
+% 2 1 0 08fbda1cc4cab6e51ab710dc243d7d68
+
+% 3 1 0 0741bc480694b87e13266e659dc2976b
+
+% 4 1 0 0a9c06621d301e4c1ba8f4a0a3626f9d
+
+% 0 1 0 08587b413de912fb1740e01b0fa905db
+
+% 0 1 0 0bd72fd524f01ded0f3e6a25a450609c
+
+% 0 1 0 12dcaa370104ae7e14b6f895080175d7
+
+% 0 1 0 192c7b6a32bb589010fb608001ab5eb5
+
+% 0 1 0 0cdae38f35fcf74316d1a9e7c74d8b1f
+
+% 0 1 0 0315ed95e1726869115c6f6ac3045972
+
+% 1 1 0 04507a954e90e7bd1c16d5945eb9c06b
+
+@ 0 2 0 1082be9e8a8180ad04aab144fe31bdf8
++ Jede Dimension in dieser Signatur wird beim Kompilieren geprüft. Nichts davon überlebt bis in den
++ Bytecode.
+
+@ 0 1 0 198723e6d9bc0c7402a7e7b58b70d50f
++ ## Die Behauptung wird getestet, nicht nur aufgestellt
+
+@ 0 3 0 018213ed332a73db0124328834cc119f
++ Eine Performance-Behauptung, die nur aufgestellt wird, hört gern auf, wahr zu sein – eine
++ Inline-Annotation entfernt, eine Typklassenmethode, die nicht mehr spezialisiert wird, und die
++ Garantie ist stillschweigend verschwunden, während die Dokumentation sie noch verspricht.
+
+@ 0 4 0 095c36707e40b5c6179fd00ed88024bf
++ Deshalb liest die Testsuite den kompilierten Bytecode und schlägt fehl, wenn die Garantie verfallen
++ ist. Sie parst das Classfile, durchläuft die Instruktionen repräsentativer Berechnungen und sichert
++ zu, dass keine virtuelle oder Interface-Verteilung an eine Typklassenoperation überlebt und kein
++ Boxing auftritt:
+
+% 2 1 0 1f07b2bbe1b2a97a014c1cb3cea23749
+
+% 3 1 0 0daff0e084b9ec7b17f59080400b2c21
+
+% 4 1 0 002721501da8d99508deac8e171bb198
+
+% 0 1 0 06d451209c19eed41a0f9d0083ad909e
+
+% 0 1 0 1b200465c57fdf6e12fbf8f61cd071bb
+
+% 0 1 0 13ffe0cd979a979a1d56260556b68786
+
+% 0 1 0 01c6ccda5a9ba44e13a992cc72333823
+
+% 0 1 0 0a563bb6f7acae8019de746f7e6b7887
+
+% 0 1 0 0b2b94bd5874194c152b360f8eebf1fd
+
+% 0 1 0 11f9afa54a68157d02f7e84f4514dee2
+
+% 1 1 0 0af6c2974a25a2430f6222499baa4dbd
+
+@ 0 3 0 191e8dd69be4f3670579c1cd3249123a
++ Das Modul [Metaprogrammierung](../en/modules/metaprogramming.md) existiert zum Teil, um das zu
++ ermöglichen: Wenn eine Behauptung darüber, was der Compiler ausgegeben hat, es wert ist, aufgestellt
++ zu werden, ist sie es auch wert, bei jedem Build geprüft zu werden.
+
+@ 0 1 0 079f5d730989cb5508161ade7244a6e5
++ ## Wo die Kosten nicht null sind
+
+@ 0 1 0 0ef41bf0dda30b821c768df6a2862db6
++ Hierbei ehrlich zu sein ist wichtiger als die Behauptung selbst.
+
+@ 0 3 0 046b02c97c26023504fc6408c9a22f9c
++ **Geprüfte Arithmetik kostet, was sie prüft.** Ein Import von `arithmeticOptions.checkedOverflow`
++ fügt jeder Addition einen echten Test hinzu. Die Vorgabe ist ungeprüft, sodass die Kosten nur dort
++ anfallen, wo sie verlangt werden – aber wo sie verlangt werden, fallen sie an.
+
+@ 0 2 0 1b20f45cafddcab80affdf4f4f229c09
++ **Validierung kostet einmal, bei der Konstruktion.** Wird Text in einen `Port` umgewandelt, wird er
++ geparst und auf seinen Wertebereich geprüft. Die Ersparnis besteht darin, dass stromabwärts nichts
++ erneut prüft, nicht darin, dass die erste Prüfung kostenlos wäre.
+
+@ 0 4 0 0079351502704df71e7ad9cef55dbae5
++ **Manche Sicherheit ist wirklich strukturell.** Die Disziplin des alleinigen Besitzes eines
++ `Stream` wird vom Typsystem ohne Laufzeitkosten durchgesetzt, doch die Pufferung und die Fenster,
++ die ihn kopierfrei machen, sind echte Mechanik. Capture-Checking beweist, dass die Mechanik sicher
++ ist; es lässt sie nicht verschwinden.
+
+@ 0 4 0 1f53d1108d1028361bdfc556a306293b
++ **Die Kompilierzeit ist die Rechnung.** Berechnungen auf Typebene, Inlining und Makroexpansion sind
++ Arbeit, die bei jedem Build geleistet wird, um Arbeit bei jedem Lauf zu vermeiden. Ein
++ Soundness-Projekt kompiliert langsamer als ein locker typisiertes Gegenstück, und `-Xmax-inlines`
++ ist eine Einstellung, die gelegentlich erhöht werden muss. Das ist der Handel, in der Richtung
++ benannt, in der er tatsächlich verläuft.
+
+@ 0 1 0 12784414e4b65cbc1a6691e34e408af0
++ ## Warum dieses Prinzip tragend ist
+
+@ 0 3 0 14545fee662b7ba60dcb16e547e28029
++ Ohne es wird jedes andere Prinzip dieser Sammlung zur Verhandlungssache. Ein Team, das glaubt,
++ Sicherheit koste Performance, greift in der inneren Schleife zum ungeprüften Typ – und die innere
++ Schleife ist genau der Ort, an dem ein Fehler am teuersten ist.
+
+@ 0 4 0 04b4898a50cc61171253e9d20b7a15a5
++ Wenn die sichere Fassung auch die schnelle ist, stellt sich die Frage nie. Deshalb wird „null
++ Kosten“ als Entwurfsvorgabe für neue Abstraktionen behandelt und nicht als erfreuliche Beobachtung
++ über bestehende: Eine Abstraktion, die sich nicht zum Verschwinden bringen lässt, wird überdacht,
++ bevor sie hinzukommt.
+
+@ 0 2 0 0c493f1cfe6d1dcb0d639adeb54a223d
++ Siehe [Korrektheit](correctness.md) dafür, was die Rechnung der Kompilierzeit erkauft, und
++ [Optionalität](optionality.md) für den verbreitetsten Fall eines entfernten Wrappers.

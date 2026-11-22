@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 163676075f1e9927052753894fd4a055
++   entry .Bits   エンコーディングの各文字が運ぶビット数を型として表したもの：`Serialization.Bits[Hex]` は `4` である
+
+% 0 1 0 0d2aab38ee569ecc0f5bcc34eb049c93
+
+@ 0 6 0 0a795d45706928b61794a1ff1025f7ee
++       アルファベットを作る方法は `Alphabet(chars, padding)` だけであり、`chars` は文字列リテラルでなければならない。呼び出しがコンパイルされるときに検査されるからである。
++       それはエンコーディングに対してちょうど `2^bits` 文字を持ち、`padding` が `true` のときはパディングのためにさらに 1 文字を持たなければならない。どの文字も二度現れてはならず、すべての文字が ASCII でなければならない。
++       これらのどれかに反するアルファベットはコンパイルされないので、間違ったアルファベットが実行時に存在することはない。
++       アルファベットは純粋（`caps.Pure`）であるので、ケイパビリティをキャプチャすることはできない。
+
+@ 0 30 0 015632a6793362c212292f7dcfd8400f
++   entry .serialization     段階としてアルファベットを通じてバイトをストリームし、テキストを得る
++       `via(alphabet)` で `Stream[Data] over Credit` を `Stream[Text] over Credit` に直列化できるようにする `Ductile` の given である。
++       要求は基数の正確な算術によって変換されるので、下流からの 16 進数 1024 文字の要求は、上流に 512 バイトを求める。アルファベットにパディングがあれば、ストリームの終わりに書かれる。
++   entry .deserialization   段階としてアルファベットを通じてテキストをストリームし、バイトを得る
++       `via(alphabet)` で `Stream[Text] over Credit` を `Stream[Data] over Credit` に逆直列化できるようにする `Ductile` の given である。
++       アルファベットにない文字に対して発生させる `Tactic[Serialization.Error]` が必要であり、インスタンスはその戦術をキャプチャする。
++       チャンクの間で分割されたグループとパディングは持ち越される。
++   entry .apply        `Alphabet("…", padding)`：文字列リテラルから作るアルファベット。そのサイズと文字はコンパイル時に検査される
++       三つ目の引数は `#tolerance` を与える。エンコーディングは期待される型から取られるか、`Alphabet[Hex]("…", false)` のように書かれる。
++   entry #chars        値の順に並べたエンコーディングの文字。パディングの文字があればその後に続く
++   entry #bits         各文字が運ぶビット数。エンコーディングから決まり、`Hex` では 4、`Base64` では 6
++   entry #padding      出力を `#chars` の最後の文字でグループ全体までパディングするかどうか
++   entry #tolerance    逆直列化の際に受け入れる追加の文字。それぞれが表す値に写される
++       厳格なアルファベットでは空である。
++       許容的なアルファベットでは、通常は大文字小文字の他方の厳格なアルファベットの逆写像であり、`hexUpperCase` のものは `hexStrictLowerCase.inverse` である。
++   entry #apply        0 から数えた値に対する文字
++   entry #invert       文字の値、または与えられた位置での `Serialization.Error`
++       `alphabet.invert(position, char)` は文字を `#inversions` で引く。値のない文字は `Serialization.Error(position, char)` を発生させるので、`Tactic[Serialization.Error]` が必要である。
++   entry #inverse      アルファベットが受け入れるすべての文字を、その値に写したもの
++       アルファベット自身の文字（パディングの文字があれば、最後の値の次の値として）とその `#tolerance` を一つの `Map` にしたもの。
++   entry #inversions   文字コードでインデックスを付けた密な表としての `#inverse`。値がなければ `-1`
++       逆直列化が文字ごとに `Map` ではなく配列を読むように、一度だけ遅延して計算される。

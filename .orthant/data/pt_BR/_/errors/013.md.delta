@@ -1,0 +1,27 @@
+orthant 2 language
+
+@ 0 1 0 10d736f7aa8b5b0a1145f45e2438d65a
++ # `SN-013` — Espaço único entre tokens específicos (aposentado)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Este erro não existe mais. A página é mantida para que o código não seja reutilizado, e para
++ que uma referência a ele vinda de uma versão mais antiga ainda possa ser resolvida.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## O que aconteceu
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ O plugin de compilador Decorum, que lançava este erro, foi extraído do Soundness e
++ agora é o [Consequent](https://github.com/propensive/consequent), um verificador independente do
++ Consequent Style. A regra sobrevive lá sob um novo identificador, no qual a letra
++ indica o princípio de que ela deriva:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  Antes
++ column  Agora
+
+% 0 1 0 0f2ab6e44922abca07cd5639f762ab22
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

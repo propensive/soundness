@@ -1,0 +1,56 @@
+orthant 2 language
+
+% 0 1 0 1990139d61bdf161086f5ce67fae7634
+
+@ 0 1 0 16dc2dddf29445001dc821951b256700
++ Levée lorsqu'un document de clé ne peut pas être lu comme une clé privée du chiffrement demandé.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 4 0 17a1300885da038210c3354899399f75
++ Une clé privée est lue à partir d'un document — PKCS#8, PKCS#1, SEC1 ou le conteneur propre à
++ OpenSSH, nu ou sous armure PEM — comme une clé d'un chiffrement nommé, tel que
++ `PrivateKey[Ecdsa[256]]`. Cette erreur couvre un document qui n'est pas du tout une clé, un
++ document qui contient une clé d'un autre algorithme ou d'une autre taille, et un document
++ inutilisable en l'état.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 1 0 067cb1f1318b02481e3bbc36bb1f7f3d
++ column  Raison
+
+% 0 1 0 0249aa51fd8056d51a0c1dba7eb0290e
+
+% 0 1 0 113bacf08540a99b1e1b2539f1a4bcbb
+
+% 0 1 0 1ee3e6184817505f0dbc96517d266c97
+
+% 0 1 0 0fa9ef46e80437d017db764b8505bc8b
+
+% 0 1 0 05cded517bb34cdc02a5ac57e833f631
+
+% 0 1 0 02ad2fb73a0cce881e1f919498ae904a
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 5 0 1c8e66a4e6bb00060b81f525c0ea6261
++ Un `Mismatch` nomme ce que contient le document : lire la clé comme ce chiffrement, ou fournir la
++ clé qui était prévue. Une clé protégée par une phrase de passe doit être déchiffrée avant d'être
++ lue, par exemple avec `ssh-keygen -p` ou `openssl pkcs8`. Une clé EC, Ed25519 ou ML-DSA écrite
++ sans sa moitié publique ne peut pas répondre à `public` ; la réécrire avec un outil qui inclut la
++ clé publique, comme le fait `openssl pkey`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 2 0 1bd9ab0cbbc3852511b7d13e82a75913
++ - Source : `lib/enigmatic/src/core/enigmatic.PrivateKey.scala`
++ - `↯/s.105.8` — `PublicKey.Error`, la même chose pour une clé publique

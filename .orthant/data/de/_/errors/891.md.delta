@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 1 0 10d576318d0c641116416f8facef3e7e
++ # `SN-891` — `Break` (ausgemustert)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Diesen Fehler gibt es nicht mehr. Die Seite wird aufbewahrt, damit der Code nicht wiederverwendet
++ wird und damit ein Verweis darauf aus einem älteren Release weiterhin aufgelöst werden kann.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Was daraus wurde
+
+@ 0 2 0 0e7c0c1cc023612a0c1bf9b5ee16acaf
++ Contingency verwendet keine Exception mehr, um aus einer verschachtelten Berechnung
++ auszubrechen, daher gibt es diesen Fehler nicht mehr.

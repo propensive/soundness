@@ -1,0 +1,169 @@
+orthant 2 language
+
+@ 0 1 0 140e4416644c115e14c1279b02c5c1fc
++ # O escoamento da biblioteca padrão
+
+@ 0 6 0 1e47e992fff4fcae03a08ae9a36b5319
++ O Soundness promete que o código não pode falhar de surpresa em tempo de execução. As bibliotecas
++ padrão de Java e de Scala não fazem essa promessa: suas coleções lançam exceções diante de heads
++ vazios e chaves ausentes, seu I/O lança exceções não verificadas, seus tipos são ambíguos quanto
++ a null. Cada lugar em que um módulo do Soundness passa por cima das próprias abstrações e chega à
++ biblioteca padrão é um lugar por onde essa parcialidade volta a vazar — e um único vazamento
++ compromete a afirmação em toda parte, porque um usuário não consegue distinguir uma superfície
++ selada de uma porosa.
+
+@ 0 9 0 038bbf1a8a8942731de12d956a9b8b6f
++ A resposta já está implantada: o proscenium é a fronteira opaca. Suas coleções envolvem as
++ estruturas de dados da biblioteca padrão por trás de APIs totais, seu `Array` torna a mutação
++ verificada por separação, e o prelúdio `-Yimports:java.lang,proscenium` torna a superfície
++ selecionada parte do ambiente, deixando todo o resto deliberadamente fora de alcance. O que resta
++ é o escoamento: os shims de migração em `proscenium.compat` existiam justamente para que os
++ pontos de chamada pudessem compilar sem mudanças no primeiro dia, e cada um deles era um
++ encaminhador que podia ser excluído de forma independente. O ciclo do escoamento era descontinuar
++ → corrigir os pontos de chamada → excluir; o arquivo de compatibilidade já não existe. Esta
++ trilha estará concluída quando a biblioteca padrão for invisível — em assinaturas, em stack
++ traces, em valores renderizados — em toda parte, exceto dentro do próprio proscenium.
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ Os itens da trilha, com os seus horizontes e dependências rígidas; [`status.tel`](status.tel) registra a situação de cada um:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 1c9766d1627faf630369fb490d6f524f
+
+@ 0 9 0 10a2141a42104cfc1047da55adc2dc9e
++ column  Título
++ column  Horizonte
++ column  Requer
++ row  core-1  coleções ordenadas têm equivalentes no Soundness  próximo
++ row  core-2  `proscenium.compat` está vazio  próximo → médio  core-1
++ row  core-3  nenhum import direto de `scala.collection`  próximo → médio  core-1
++ row  core-4  o acesso indexado é total por construção  médio
++ row  core-5  nada com cara de Java na hora de depurar  médio → longo
++ row  core-6  a auditoria de totalidade  longo
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0c4c19e16c10c64210f8ec0c02dca8d7
++ ## core-1: coleções ordenadas têm equivalentes no Soundness
+
+@ 0 2 0 1d5d786df4501e040c61da8843687597
++ Horizonte: próximo
++ Linha de base: 31 arquivos (medido em 2026-10-21; 32 em 2026-09-25; 16 em 2026-08-01)
+
+@ 0 5 0 10a3c58f53428642106dc61821f34160
++ Os arquivos que usam `TreeMap`, `TreeSet`, `TrieMap`, `SortedMap` ou `SortedSet` não têm um
++ tipo opaco para o qual escoar; os equivalentes precisam existir antes que o escoamento possa
++ absorvê-los. A contagem dobrou em sete semanas porque novos módulos — vivisection, praxinoscope,
++ mandible, sedentary — foram escritos contra os tipos ordenados da stdlib por falta de
++ alternativa, o que é o argumento para que os equivalentes existam primeiro.
+
+@ 2 1 0 1db30e5434e1de2712146ed80b50842f
++ Concluído quando:
+
+% 0 1 0 0305f5e9bb7a10231ca736737990fb60
+
+@ 0 1 0 1b4d397e3e91c7f802f5a08eafd68da7
++ ## core-2: `proscenium.compat` está vazio
+
+@ 0 7 0 0f804b35a13c0b621a4fb9e8a6a84bad
++ Concluído: #1848 (2026-08-24)
++ A linha de base era de 475 arquivos com import e um arquivo de compatibilidade de 551 linhas
++ (medido em 2026-08-01). O arquivo e sua catraca (`etc/check-compat-ratchet.py`,
++ `etc/compat-baseline.txt`) foram excluídos; o compilador agora é a guarda. Os últimos pontos
++ levaram suas provas pelo sistema de tipos (literais com marca, `prim`/`unique`, varreduras com
++ marca) ou, nos dois lugares em que uma prova não consegue acompanhar o programa — fronteiras de
++ quote e aritmética de índices —, por `attested` e `readUnchecked` com comentários de construção.
+
+@ 0 1 0 1df8de5c62c23f7213e387103ebb7ef0
++ ## core-3: nenhum import direto de `scala.collection`
+
+@ 0 3 0 10b2e6c50a105a3d0ed28194fb09e169
++ Horizonte: próximo → médio
++ Requer: core-1
++ Linha de base: 239 arquivos, dos quais 115 importam `scala.collection.mutable` (medido em 2026-10-21; 228 e 106 em 2026-09-25; 219 e 170 em 2026-08-01)
+
+@ 0 3 0 1370fc5d83a525f30be39808bae671f4
++ Importar `scala.collection` contorna inteiramente a seleção do prelúdio. Os imports mutáveis são
++ a maior parte, e o que os substitui não é a imutabilidade, mas a mutabilidade *segura*:
++ estruturas verificadas por separação no estilo de `proscenium.Array`.
+
+@ 0 5 0 17ef2ae784ad7c01147988bb6dcfb981
++ Indicador: a coluna `collectionImport` de `etc/check-escape-count.py` (executado por
++ `make build`) aplica uma catraca às linhas de import por arquivo, tanto em fontes principais
++ quanto de teste, para que um arquivo já escoado não volte a ganhar uma; `--totals` imprime a
++ contagem. A ponte `xs.stdlib`, a outra forma de chegar à API da stdlib a partir de uma coleção
++ nativa, recebe uma catraca e é lida por forma (`--stdlib`) pelo mesmo script (`safety-7`).
+
+@ 2 1 0 0942fd38fe9a365a0eda6632cc1cda62
++ Concluído quando:
+
+% 0 1 0 0ee067afb466e7061f9713b96c868fdd
+
+@ 0 1 0 16c1b0f6ca199b8c1e465999944ee90f
++ ## core-4: o acesso indexado é total por construção
+
+@ 0 6 0 18f958a14ff8a1b01793df6154bf959e
++ Horizonte: médio
++ Linha de base: 1669 laços `while`, 993 `readUnchecked` e 514 `.charAt(` em `lib/*/src/core`
++ (sem comentários e strings, medido em 2026-10-21; 1606, 476 e 507 em 2026-09-25). A contagem
++ de `readUnchecked` dobrou quando #2274 removeu o `IArray` da stdlib e toda leitura de array
++ congelado passou pelo único acessor; é uma população diferente da do número de setembro, e não
++ uma regressão da mesma
+
+@ 0 8 0 04dfa62773204c3108277fe82583bf8d
++ O padrão `var i = 0; while i < length` é maximamente eficiente e maximamente inseguro: o índice
++ é apenas um `Int`, sem nenhuma restrição imposta pela coleção que ele indexa. O design em
++ [#1666](https://github.com/propensive/soundness/issues/1666) torna a indexação total por
++ construção: um índice tipado como `Ordinal in collection.type` só pode existir dentro do
++ intervalo, então o `apply` `inline` que o recebe é total a custo zero, enquanto um `Ordinal` não
++ qualificado alcança apenas o `apply` de fallback que retorna `Optional`. A iteração passa então
++ por combinadores inline que fornecem ordinais com tipos dependentes, compilando para o mesmo
++ bytecode que os laços que substituem.
+
+@ 0 4 0 0a264f4f923151dd1f90f9971723cda7
++ Concluído quando: nenhuma coleção em `lib/` expuser um `apply` indexado parcial, e todo `while`
++ que restar for uma das três formas que [`doc/standards/loops.md`](../standards/loops.md)
++ sanciona, com o comentário que nomeia seu invariante. Um zero literal não é o objetivo: a
++ aritmética de índices derivada dos dados, e os internos dos próprios combinadores, continuam
++ como laços.
+
+@ 0 4 0 15ebe6da972bb5321dcdd3ddb7e31c40
++ O escoamento é limitado por quais receptores podem carregar uma marca, e não por quantos laços
++ existem. Um laço sobre um `scala.Array` mutável, um `Seq` de varargs ou um `IndexedSeq` que
++ carrega uma capability não tem forma confinada alguma, então o corpus alcançável é menor do que
++ a contagem sugere. Indicador provisório, com catraca por arquivo em `make build`:
+
+% 0 1 0 19cc3aef7c45b8351be0e19f09ec7abf
+
+@ 0 1 0 13fea1ce9268fa841aedd5cd25dc727c
++ ## core-5: nada com cara de Java na hora de depurar
+
+@ 0 1 0 0315e8ae4f26388c058da978ec42a29d
++ Horizonte: médio → longo
+
+@ 0 6 0 093bb74a29104b320ed0f5b4580ca65d
++ Um stack trace, um valor renderizado ou um nome de tipo relatado nunca expõe uma codificação
++ Java: o digression renderiza traces em termos do Soundness, e os valores exibidos são os tipos
++ opacos, não suas representações subjacentes. É isso que faz a depuração parecer nativa, e não
++ hospedada. O digression já faz o demangle de nomes e, desde #2063, renderiza a localização de
++ cada frame como uma coluna contínua, alinhada pelos dois-pontos; o que falta é a suíte que
++ afirme a ausência de codificações, e não a presença de renderizações específicas.
+
+@ 0 2 0 06c929fe2969e4170cf16c959d7a1b0f
++ Concluído quando: uma suíte de testes afirmar que a renderização de stack traces, valores e
++ nomes de tipos representativos não contém codificações Java, e for executada na suíte comum.
+
+@ 0 1 0 0185c5684f4d7e9211af2cd3046b0916
++ ## core-6: a auditoria de totalidade
+
+@ 0 1 0 1bb46aa264c11d1404ac4c98f85b6bf8
++ Horizonte: longo
+
+@ 0 3 0 1e17d1ad1ed4cabc122018cb45abeb75
++ A afirmação “nenhuma API parcial” passa a ser verificada em vez de afirmada: uma auditoria
++ automatizada — no estilo do larceny, ou no nível do bytecode — verifica que nenhuma operação
++ exportada lança uma exceção não declarada nem retorna null.
+
+@ 0 1 0 1e7305e26b6e86281962aa9e9a771079
++ Concluído quando: a auditoria for executada na CI e relatar zero violações.

@@ -1,0 +1,39 @@
+orthant 2 language
+
+% 0 1 0 002ede7bd5f8998210efef2f7636d1b6
+
+@ 0 1 0 08b102ae8e91858712849761ea07e83f
++ Sollevato quando un documento XML non può essere letto come XML Schema.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 100005ac3ad5e5cb03e4621e7795b9e6
++ `Xsd.parse` legge un documento di schema nel modello `Xsd`, e riporta il primo costrutto che non
++ può accettare. Il messaggio è `the XML Schema could not be read because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 12 0 0a02af38c5b2849215bf4cb1adb66dd8
++ column  Codice
++ column  Motivo
++ column  Significato
++ column  Messaggio
++ column  Soluzione
++ row  `↯/s.128.3.1`  `NotSchema`  L'elemento del documento non è `schema` nel namespace di XML Schema.  `[↯/s.128.3.1] the XML Schema could not be read because the document element is root, not an XML Schema`  Passare il documento di schema stesso, con il suo prefisso `xs:`, `xsd:` o predefinito legato a `http://www.w3.org/2001/XMLSchema`.
++ row  `↯/s.128.3.2`  `Unexpected`  Un elemento compare dove la grammatica dello schema non lo ammette.  `[↯/s.128.3.2] the XML Schema could not be read because {http://www.w3.org/2001/XMLSchema}oops may not appear in schema`  Correggere lo schema, o segnalare il costrutto se è uno che il modello non legge ancora.
++ row  `↯/s.128.3.3`  `MissingAttribute`  A una dichiarazione manca un attributo che deve avere, come il `name` di un elemento globale.  `[↯/s.128.3.3] the XML Schema could not be read because the element has no name attribute`  Aggiungere l'attributo.
++ row  `↯/s.128.3.4`  `BadOccurs`  Un `minOccurs` o un `maxOccurs` non è né un numero né `unbounded`.  `[↯/s.128.3.4] the XML Schema could not be read because lots is not a valid number of occurrences`  Usare un intero non negativo, o `unbounded` per `maxOccurs`.
++ row  `↯/s.128.3.5`  `UnknownPrefix`  Un `type`, `ref`, `base`, `itemType`, `memberTypes` o `substitutionGroup` usa un prefisso che il documento non lega.  `[↯/s.128.3.5] the XML Schema could not be read because the prefix zz is not bound to a namespace`  Dichiarare il prefisso con `xmlns:zz="…"` sull'elemento schema o su un antenato.
++ row  `↯/s.128.3.6`  `BadFacet`  Il valore di una faccetta non è del genere che la faccetta accetta, come una `length` non numerica.  `[↯/s.128.3.6] the XML Schema could not be read because many is not a valid value for the maxLength facet`  Dare alla faccetta un valore del genere giusto.
++ row  `↯/s.128.3.7`  `Duplicate`  Un elemento, tipo, attributo o gruppo globale è dichiarato due volte con lo stesso nome.  `[↯/s.128.3.7] the XML Schema could not be read because the element a is declared more than once`  Rimuovere o rinominare una delle dichiarazioni.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+% 0 1 0 179ff6b5b3b621a911c0d3101a18c746

@@ -1,0 +1,307 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 06471244edf78cfc0f4fd709c8b745df
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 051742139185ae9e0e44430e8c61ce66
++ info   die Standardverzeichnisse eines Unix-Systems und des Home-Verzeichnisses eines Benutzers, als typisierte, verschachtelte Namen
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1800e6b03e6be9b71612bef21e229b93
++     _Imperial_ benennt die üblichen Verzeichnisse eines Unix-Systems als Baum verschachtelter
++     Objekte, sodass ein Standardort als Wert statt als Text geschrieben wird und ein vertipptes
++     Verzeichnis ein Kompilierfehler ist. `Home` ist der Baum unterhalb des Home-Verzeichnisses
++     des Benutzers, `Base` der Baum unterhalb der Dateisystemwurzel. Jedes Objekt ist nach dem
++     Verzeichnis benannt, für das es steht, großgeschrieben und ohne einen führenden `.` —
++     `$HOME/.local/bin` ist `Home.Local.Bin` und `/var/lib` ist `Base.Var.Lib`.
+
+@ 0 4 0 1725406e7f7675611de77542f05fff51
++     Jeder Knoten ist ein `BaseLayout`. Seine Anwendung mit einem Pfadtyp als Typargument löst
++     ihn gegen das `Environment` und das `System` im Geltungsbereich zu diesem Typ auf; dieselben
++     Namen dienen also einem `Path on Linux`, schlichtem `Text` oder jeder anderen Darstellung,
++     die `Instantiable across Paths from Text` ist:
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 02144ad0f83d1d2207050f0bcf5195f5
+
+% 0 1 0 166f81c9908c1cef09c4492c560ebf21
+
+% 0 1 0 10acb0208038e972123b36c3ca72b84d
+
+% 0 1 0 00dfe1bf7f1162631bf9653def00d90e
+
+% 0 1 0 1c5bbd0db4e6dcb91490fc2e200250af
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 5 0 090fa1d109709d5201e2d81beaa3328e
++     Ein Layout sagt auch, ob darin geschrieben werden soll: `readOnly` ist `true` für `/boot`,
++     `/efi`, `/sys`, `/usr` und alles darunter sowie für die prozessbezogenen Verzeichnisse unter
++     `/proc`. Die Layouts sind feste Pfade: `Home.Config` ist immer `$HOME/.config`, was auch
++     immer `XDG_CONFIG_HOME` sagt; für die XDG-bewussten Orte verwenden Sie die `Xdg`-Werte von
++     ambience.
+
+@ 0 2 0 1dd151a2e0f6494a0bed8325899f19ae
++     Die Bibliothek hat ein einziges Source-Set, `imperial.core`, und alles wird in das
++     `soundness`-Umbrella exportiert.
+
+% 0 1 0 0788cd3b9cec7daf0879d44e6e429e79
+
+% 0 1 0 079c6da2c0e561c513a1416d56d2ff7d
+
+% 0 1 0 0f97983af47232cc031cd624207a1de5
+
+@ 0 1 0 1ebf8a157598d46f10fe809a349daab7
++ entry .BaseLayout   ein Verzeichnis in einem Standard-Layout, gegen die Umgebung zu jedem Pfadtyp aufgelöst
+
+% 1 1 0 0a2b0b28fa6b52d7129a8f07dfcee1fb
+
+@ 0 5 0 1f5110a7bf33310d1b427f937c8c3670
++       Ein `BaseLayout` ist ein Knoten des Baums `Home` oder `Base`: der Name eines
++       Verzeichnisses, das Layout, in dem es liegt (als kontextuelles `BaseLayout.Dir` seines
++       umschließenden Objekts mitgeführt), und ob es `#readOnly` ist. Sein Typ-Member `#Topic`
++       ist ein Tupel der Verzeichnisnamen vom Knoten bis zu seiner Wurzel; `Base.Var.Log` hat
++       also das Topic `("log", "var")`, und der Typ jedes Knotens ist eindeutig.
+
+@ 0 5 0 1c2201552cfd0e2d03052f52e164f36a
++       Die Anwendung eines Layouts, `layout[Path on Linux]()`, stellt seinen absoluten Pfad dar
++       und konstruiert daraus einen Wert des angeforderten Pfadtyps. Ein Layout unter `Home` liest
++       die Umgebungsvariable `HOME` und löst `Environment.Error` aus, wenn sie nicht gesetzt ist;
++       eines unter `Base` braucht überhaupt keine Umgebungsvariable, obwohl beide Signaturen ein
++       `Environment` und ein `System` im Geltungsbereich verlangen.
+
+% 2 1 0 0e9f2dfafbdfb83b1f26cc6d6f4dff16
+
+% 3 1 0 0a2b7d9186c5dbd6035220e6a791c5c2
+
+% 4 1 0 1729befde87e49c91110a0515daacc42
+
+% 5 1 0 0a77c24b69bee4ab0f85c62c249067d3
+
+% 6 1 0 0fedb600b8a75cbe1c19748e3ad91d51
+
+% 0 1 0 13e7ee669c90990e15bbb523ce360b24
+
+% 0 1 0 01ec940f6f210c711636b0dcccb40c84
+
+% 1 1 0 10684ea762657a6d033693920670fa2d
+
+@ 0 2 0 14830ccaa9a39c270c187ad2c25db0f8
++       Ein neues Layout, das in einem bestehenden verschachtelt ist, ist ein Objekt darin, das
++       `BaseLayout` erweitert und das `#dir` seines Elternteils als eigene Basis übernimmt.
+
+% 1 1 0 11ddc3c55bdf22de0d8069b1a01dd2d2
+
+% 1 1 0 1beda2fb9cb9e37d03dc85a26a0f117e
+
+@ 0 1 0 0767669c9e2dcc04171f13e2add72628
++   entry .Dir   die Position eines Layouts: ob es unter dem Home-Verzeichnis liegt, und seine Pfadsegmente
+
+% 1 1 0 11c1f6e5c71166a9043041e2fcf0a3b7
+
+@ 0 22 0 0f44934da0740a4e00bed86c33736fb1
++         Das `BaseLayout.Dir` eines Layouts wird seinen verschachtelten Layouts als Kontextwert
++         übergeben; so weiß ein verschachteltes Objekt, in welchem Verzeichnis es liegt. Die
++         Segmente werden mit dem innersten zuerst gehalten.
++     entry #home   ob der Pfad relativ zum Home-Verzeichnis des Benutzers ist
++     entry #path   die Segmente des Pfads, das innerste zuerst
++     entry #/   das Verzeichnis eines Kindes, über seinen Namen
++     entry #render   der absolute Pfad als Text, gegeben den Pfad des Home-Verzeichnisses
++         Ein `Dir`, das nicht relativ zum Home-Verzeichnis ist und keine Segmente hat, wird als
++         `/` dargestellt.
++   entry #readOnly   ob in das Verzeichnis üblicherweise nicht von Programmen geschrieben wird
++       `true` für `/boot`, `/efi`, `/sys`, `/usr` und alles darunter sowie die Verzeichnisse von
++       `/proc`; `false` für jedes Layout unter `Home`.
++   entry #Topic   die Verzeichnisnamen von diesem Knoten bis zu seiner Wurzel, als Tupeltyp
++   entry #absolutePath   der absolute Pfad des Layouts, als Text
++       Braucht ein `Environment` und ein `System`. Ein Layout unter `Home` liest die
++       Umgebungsvariable `HOME`, ohne abschließenden `/`, und löst `Environment.Error` aus, wenn
++       sie nicht gesetzt ist.
++   entry #dir   das `BaseLayout.Dir` dieses Layouts, den in ihm verschachtelten Layouts übergeben
++   entry #apply   der absolute Pfad des Layouts, als Pfadtyp nach Wahl des Aufrufers
++       `layout[Path on Linux]()` erzeugt aus `#absolutePath` einen Wert jedes Typs, der
++       `Instantiable across Paths from Text` ist. Braucht ein `Environment` und ein `System` und
++       löst `Environment.Error` (für ein `Home`-Layout, dessen `HOME` nicht gesetzt ist) und
++       `Property.Error` aus.
+
+@ 0 1 0 00b6815da15cf6ba08fa907d28225761
++ entry .Home   das Home-Verzeichnis des Benutzers, `$HOME`, und die Standardverzeichnisse darunter
+
+% 1 1 0 01648c2115c568b00abb184bffca0fba
+
+@ 0 3 0 1264fb7971aa398e15ccc56456abbc76
++       Ein `BaseLayout`, aufgelöst gegen die Umgebungsvariable `HOME`. `Home[Path on
++       Linux]()` ist das Home-Verzeichnis selbst; seine verschachtelten Objekte benennen die
++       üblichen Verzeichnisse darunter.
+
+% 2 1 0 0f12ae71806ee8db00f12d41a0f69a47
+
+% 3 1 0 0bc7d78b04d14d491ea6457dc5553cf9
+
+% 4 1 0 1225f46d3787e7f21f5cdffa20586173
+
+% 5 1 0 0e172a6d39716fdb0f4adc9fe7b15c3e
+
+% 6 1 0 04f256fe20f571dd1e9fb0d88843ca93
+
+% 0 1 0 0ee821c7532e81e0051b53bec8bca330
+
+% 0 1 0 101290bb813888530d61d18237f80c63
+
+% 1 1 0 015a4073df270f231469b759ab0401eb
+
+@ 0 3 0 1afb2a39da3f6b5910fe80226e27b0b6
++       Die Pfade sind fest: `Home.Config` ist `$HOME/.config`, auch wo `XDG_CONFIG_HOME` ein
++       anderes Verzeichnis nennt; ein Programm, das die XDG-Variablen beachten soll, sollte
++       stattdessen `Xdg` aus ambience verwenden.
+
+% 1 1 0 0c8b6b683b885e7a038142b4273f9b98
+
+% 1 1 0 02899b1a62e7446a102b439efee08ab7
+
+@ 0 3 0 1fbd22784f76748e1ac74118716da65e
++   entry .Cache   das Cache-Verzeichnis des Benutzers, `~/.cache`
++   entry .Config   das Konfigurationsverzeichnis des Benutzers, `~/.config`
++   entry .Local   das lokale Installationspräfix des Benutzers, `~/.local`
+
+% 1 1 0 00e0cc5ed57784e01f9d3c94c3a55d71
+
+@ 0 6 0 1a87a94c5090f9461f69b6466877dd7c
++         Das benutzerbezogene Gegenstück zu `/usr`, das die eigenen Programme, Bibliotheken,
++         Daten und Zustände eines Benutzers enthält.
++     entry .Bin   die eigenen ausführbaren Dateien des Benutzers, `~/.local/bin`
++     entry .Lib   die eigenen Bibliotheken des Benutzers, `~/.local/lib`
++     entry .Share   die eigenen Anwendungsdaten des Benutzers, `~/.local/share`
++     entry .State   der Anwendungszustand des Benutzers, `~/.local/state`
+
+@ 0 1 0 08e05895d13e5a670fc3a8456383e07c
++ entry .Base   die Dateisystemwurzel, `/`, und die Standard-Systemverzeichnisse darunter
+
+% 1 1 0 10ffaadd3bec5df116854fcd4cd4893f
+
+@ 0 3 0 057dcf2494db0ef7113cc2ddde13ceab
++       Ein `BaseLayout` für das Wurzelverzeichnis, mit verschachtelten Objekten für die
++       Verzeichnisse des Filesystem Hierarchy Standard. `Base[Path on Linux]()` ist `/`. Keines
++       seiner Layouts liest die Umgebung, sodass in der Praxis keines `Environment.Error`
++       auslöst.
+
+% 2 1 0 1dae16de24b2033e086d1fe24af20b5b
+
+% 3 1 0 04d40bb113d422800139215ac1b0866c
+
+% 4 1 0 152942308c914e6b09c03d2417f08e74
+
+% 5 1 0 0fe56aaa6ced9fb713c3f5dda7e01170
+
+% 6 1 0 0a00e5cb46380a9310df1e5891322e05
+
+% 0 1 0 10857b4d2ead102d0c138119e1234beb
+
+% 0 1 0 042e28e8d658b64f1358a2196d226eb3
+
+% 0 1 0 0afc25f2237541851c526ae1fcf81729
+
+% 1 1 0 004eb3557a536fd41e9c196b6b3c42de
+
+% 1 1 0 03d138c0a241cc890c19a725d7b8eba1
+
+% 1 1 0 1a8e70822f5a736200afaee835396c50
+
+@ 0 10 0 03c63f70fe1710440db547395afdade8
++   entry .Boot   die Dateien des Bootloaders, `/boot`, schreibgeschützt
++   entry .Efi   die EFI-Systempartition, `/efi`, schreibgeschützt
++   entry .Etc   die Konfigurationsdateien des Systems, `/etc`
++   entry .Home   das Verzeichnis, das die Home-Verzeichnisse der Benutzer enthält, `/home`
++       Nicht zu verwechseln mit dem `Home` der obersten Ebene, dem eigenen Home-Verzeichnis des
++       aktuellen Benutzers.
++   entry .Root   das Home-Verzeichnis des Root-Benutzers, `/root`
++   entry .Srv   vom System bereitgestellte Daten, `/srv`
++   entry .Tmp   temporäre Dateien, `/tmp`, die einen Neustart möglicherweise nicht überstehen
++   entry .Run   Laufzeitdaten seit dem letzten Start, `/run`
+
+% 1 1 0 1cb90f561df7d39c10132e89d7d89e3e
+
+@ 0 4 0 11c8105edaebb2c901d579bf13c0f653
++         Flüchtiger Zustand wie Sockets und Prozess-ID-Dateien, beim Start geleert.
++     entry .Log   Laufzeitprotokolle, `/run/log`
++     entry .User   benutzerbezogene Laufzeitverzeichnisse, `/run/user`
++   entry .Usr   gemeinsam nutzbare, schreibgeschützte Systemdaten, `/usr`
+
+% 1 1 0 08de5396a80b287017fea026f02bc2cc
+
+@ 0 6 0 12854f3f426f48261452e33513d9bac4
++         Jedes Layout unterhalb von `/usr` ist `readOnly`: Hier liegen die vom Paketmanager des
++         Systems installierten Programme, und eine Anwendung sollte nicht hineinschreiben.
++     entry .Bin   ausführbare Systemdateien, `/usr/bin`, schreibgeschützt
++     entry .Include   C-Header-Dateien, `/usr/include`, schreibgeschützt
++     entry .Lib   Systembibliotheken, `/usr/lib`, schreibgeschützt
++     entry .Share   architekturunabhängige Daten, `/usr/share`, schreibgeschützt
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 4 0 1e4f999eafa3560507db39b4821b2205
++           Dokumentation und die Werksvorgaben, aus denen `/etc` und `/var` neu aufgebaut werden
++           können.
++       entry .Doc   Paketdokumentation, `/usr/share/doc`, schreibgeschützt
++       entry .Factory   unberührte Kopien der Systemkonfiguration, `/usr/share/factory`, schreibgeschützt
+
+% 0 1 0 1fa5966119e8ae1109b0dcda52a971aa
+
+@ 0 4 0 16bb53409b0a69db014c566b6f9a8ae3
++             Die Vorgaben, aus denen `/etc` und `/var` eines Systems wiederhergestellt werden
++             können.
++         entry .Etc   die Werkskopie von `/etc`, `/usr/share/factory/etc`, schreibgeschützt
++         entry .Var   die Werkskopie von `/var`, `/usr/share/factory/var`, schreibgeschützt
++   entry .Var   veränderliche Daten, die Neustarts überdauern, `/var`
+
+% 1 1 0 06f7959ef6f2fede1cdf221f6c8119ea
+
+@ 0 8 0 06fdc11868af847608ff57295ad000dd
++         Daten, die die Programme des Systems während der Ausführung schreiben: Caches,
++         Zustände, Protokolle, Warteschlangen und temporäre Dateien, die einen Neustart
++         überstehen müssen.
++     entry .Cache   Anwendungs-Caches, `/var/cache`
++     entry .Lib   Anwendungszustand, `/var/lib`
++     entry .Log   Protokolldateien, `/var/log`
++     entry .Spool   Warteschlangen anstehender Arbeit, etwa Mail- und Druckaufträge, `/var/spool`
++     entry .Tmp   temporäre Dateien, die über Neustarts hinweg erhalten bleiben, `/var/tmp`
++   entry .Dev   Gerätedateien, `/dev`
+
+% 1 1 0 1d9f46f581cd0cb9086438d0c1db4106
+
+@ 0 3 0 1d296ce989c48d751a11f9f54d91a2c2
++         Die Geräteknoten des Kernels.
++     entry .Shm   gemeinsamer Speicher, `/dev/shm`
++   entry .Proc   das Dateisystem für Prozessinformationen, `/proc`
+
+% 1 1 0 0ae0d204b22dd2ac16fde7d24e6b187a
+
+@ 0 2 0 16b0d7e1d7846d22150b7ccec7b07605
++         Die Sicht des Kernels auf laufende Prozesse. `Base.Proc(pid)` ist das Verzeichnis eines
++         Prozesses, `/proc/<pid>`, und ist schreibgeschützt.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 12a77f35a923ed9d02842be6213a00e5
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 3 0 027d2578eabc59200f7e01c88252b221
++     entry .apply   das Verzeichnis eines Prozesses, `/proc/<pid>`, über seine `Pid`
++     entry .Sys   Kernelparameter, `/proc/sys`, schreibgeschützt
++   entry .Sys   der Geräte- und Treiberbaum des Kernels, `/sys`, schreibgeschützt

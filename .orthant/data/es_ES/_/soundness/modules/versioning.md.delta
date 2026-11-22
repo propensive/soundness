@@ -1,0 +1,169 @@
+orthant 2 language
+
+@ 0 1 0 1c67038a08375a6c063f04fe3e84beba
++ ## Versionado
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 5 0 149b2c5688b5a38a1e04ae062e7e1457
++ Una [versión semántica](https://semver.org/) es una afirmación estructurada: esta versión mayor,
++ esta menor, este parche y quizá una versión preliminar. La especificación tiene reglas precisas de
++ validez y de ordenación, y `Semver` las implementa con exactitud. Un literal de versión se comprueba
++ en [tiempo de compilación], las versiones se comparan según las reglas de precedencia de la
++ especificación, y el texto se analiza con un error tipado.
+
+@ 0 2 0 009d3a81c9091a461672ded4050e1f29
++ Aquí también se tratan los *manifiestos* JAR. Se leen y se escriben como valores tipados, cuyos
++ atributos estándar tienen tipos reales: un `Main-Class` es un [Fqcn](stack-traces.md), no una
++ cadena.
+
+@ 0 1 0 1cbbe610c5927d7b17569eebbfc874f4
++ ### Sobre los números de versión
+
+@ 0 3 0 0c3c81b1eb6c8fdf097ea6d6497fc55e
++ Las cadenas de versión invitan a pensar en cadenas: dividir por los puntos, comparar los caracteres,
++ y `1.10.0` queda antes que `1.9.0`. La especificación del versionado semántico fija tanto la
++ gramática como las reglas de precedencia, incluidas las sutiles:
+
+@ 0 4 0 022752055e3574b605b6cd5aed0f2ec0
++ - Los ceros a la izquierda son ilegales, y un identificador de versión preliminar solo puede contener
++   ciertos caracteres.
++ - Los identificadores numéricos se comparan numéricamente.
++ - `1.0.0-alpha` precede a `1.0.0`.
++ - Los metadatos de compilación nunca afectan a la ordenación.
+
+@ 0 3 0 14d7622ebdcd2fa00da436ab22992d66
++ Unas reglas tan precisas pertenecen a un tipo. Una versión que no puede construirse no válida, y que
++ se compara como dice la especificación, es
++ [seguridad por construcción](../../philosophy/safety-by-construction.md).
+
+@ 0 2 0 0c17d3ff00e9ad521a168794996ea02d
++ Todo procede del paquete `soundness`. Los ejemplos lanzan cualquier error como excepción, y la última
++ importación les permite imprimir sus resultados:
+
+% 2 1 0 0a014aa077766c0e19cc2515b4eb1aa8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 14cf61e60c799f4b180bc0494e246f57
++ ### Versiones
+
+@ 0 1 0 0b7970bb4db161ad054498a5ba3b9b84
++ El [interpolador] `v"…"` escribe una versión y la comprueba en tiempo de compilación:
+
+% 2 1 0 15aba6ac2a3ddfaf0aa688d4f63eb510
+
+% 3 1 0 09b0d46b86a7c83f0e466b4a3ea8a43f
+
+% 1 1 0 0418e04c4e9f93be05f1d57b0bbb2db1
+
+% 0 1 0 02e6883f6a2539e70770c5f7c9e44f4e
+
+% 1 1 0 1c948a85720a665118dc8ca6694d9463
+
+@ 0 1 0 1f2833e1d66d7b42169c17058b812168
++ Un literal que no es una versión semántica no compila:
+
+% 2 1 0 0e857c56f316597006334d28b4abedd0
+
+% 3 1 0 0e1618a4b2eca0190021609f27201b9f
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 05d0f564977b34110bf2c3ada065f07e
+
+% 1 1 0 0047d2238add15ec14c497a3852d5088
+
+@ 0 2 0 0739c84f2ef0155316b18de8e21e5cd6
++ El texto se [decodifica](decoding.md#decoding-a-value) al mismo tipo con `as[Semver]`, y una versión
++ mal formada lanza un `Semver.Error`:
+
+% 2 1 0 1129d8566937c3e9168f3c79c1d3a535
+
+% 3 1 0 07342ef725133540182b39c5213b4196
+
+% 2 1 0 15291148a4894dd810edfb644670ff29
+
+% 0 1 0 1d4ec4bece211c390a6afea786c6229c
+
+% 1 1 0 002926f2233db8f21f91517a8e4f6f0d
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 1b3294f1db5e92050e68521b853fb2c9
+
+% 1 1 0 08c64a7cda18d3891d5c40d792ff6f76
+
+@ 0 1 0 00d98f1bbed76cad1eea4766ca89f783
++ ### Ordenación
+
+@ 0 2 0 005c5afd22e13fba1e0794f0e103937c
++ La ordenación sigue exactamente la especificación. Una versión preliminar más larga va después de una
++ más corta, los identificadores numéricos se comparan como números, y una versión definitiva supera a
++ sus propias versiones preliminares:
+
+% 2 1 0 1462c3df597eac0516ec9b4e2ec12f00
+
+% 3 1 0 1a958c57b21e7a3915694221e33ca5ae
+
+% 1 1 0 13d651d74d6b20e90047f3e84420c64e
+
+% 2 1 0 12f5c6021ff3c34507c63c3b4111d8e4
+
+% 0 1 0 1bf038c6fe7cc73008ac5ca087615b43
+
+% 0 1 0 0403b9c01363978d16db4c9d0f734eab
+
+% 0 1 0 130b617dbbfe86c2168b00d96d3ee834
+
+% 0 1 0 0553cb578b135dab02608eff75603516
+
+% 1 1 0 121b3f7812ac94eb170517b9dc843a04
+
+@ 0 2 0 12b289881aa40f4a1a8204a434fc824d
++ Una versión sabe si aún está en `development` inicial, con versión mayor cero, cuando cualquier cosa
++ puede cambiar. `release` elimina las partes de versión preliminar y de compilación.
+
+@ 0 1 0 005d8987a511c7df1941e16edaf9f6fa
++ ### Manifiestos
+
+@ 0 2 0 06bee457e57744e21d9d53464b559a47
++ El `META-INF/MANIFEST.MF` de un JAR se lee y se escribe como un `Manifest` de atributos tipados. Los
++ atributos estándar son valores con nombre, y leer uno da un valor de su tipo propio:
+
+% 2 1 0 13bc640e1c09a6fc00dbed73953d8273
+
+% 0 1 0 098615c20d4411b514e77713fae6a3d6
+
+% 0 1 0 1814e903993f49c91642d31c511636bf
+
+% 0 1 0 040256c3b33b528707f648c453feabd7
+
+% 0 1 0 0f4a5e84b2cadc961028265719638d99
+
+% 0 1 0 1601f450bb05c37916bc32ae51e78a28
+
+% 0 1 0 06d6517e2c8963331afb3a28bca48866
+
+% 1 1 0 1e8b0f23a78d27ad1edf2fcf4052927d
+
+@ 0 3 0 0c22e4fdbdd550aa1e031c896c3bfa75
++ Un manifiesto leído de un JAR se analiza a través del mismo tipo. Las herramientas que inspeccionan o
++ reescriben manifiestos, como hace [Empaquetado](packaging.md), trabajan por tanto con valores, no con
++ las quisquillosas reglas del formato para partir las líneas. [Archivos](archives.md) lee y escribe el
++ propio JAR.

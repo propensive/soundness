@@ -1,0 +1,241 @@
+orthant 2 language
+
+@ 0 1 0 174847c0af5a008b055dafe37865ab7f
++ ## Filtros de Bloom
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 3 0 16a1dd7e6b51372f0cf1eeda60fe2dca
++ Un [filtro de Bloom](https://en.wikipedia.org/wiki/Bloom_filter) responde a la pregunta «¿he visto
++ esto antes?» en espacio constante, a cambio de algún falso positivo ocasional. Un *no* siempre es
++ correcto. Un *sí* es correcto con una probabilidad que controla el tamaño del filtro.
+
+@ 0 3 0 1d8b735dbbf310120b059033382a744b
++ Un filtro se construye a partir de los dos números que de verdad importan: cuántos elementos
++ contendrá aproximadamente y la tasa de falsos positivos que se tolera. El tamaño del array de bits y
++ el número de hashes se deducen de ellos.
+
+@ 0 3 0 058a065521401ff61f62900c3a3f718c
++ Se puede añadir cualquier valor [digerible](hashing.md#hashing-your-own-types), y el algoritmo de
++ hash se elige como un tipo. Un filtro es [inmutable]: añadir un elemento da un filtro nuevo, de modo
++ que los filtros se comparten y se acumulan con tanta seguridad como cualquier otro valor.
+
+@ 0 1 0 0b13d7632ca9b2171ad13922dfcc172d
++ ### Sobre la pertenencia probabilística
+
+@ 0 3 0 083265a7789a65ed18be96864c95fd1c
++ Guardar todos los elementos de un conjunto grande solo para responder si algo es miembro suele ser
++ un desperdicio. Una caché de URL que ya se han descargado, una protección contra enviar dos veces una
++ notificación y una comprobación previa a una búsqueda costosa sobreviven todas a algún *sí* falso
++ ocasional.
+
+@ 0 4 0 164620c662e795ee14ef03dfcfc1d753
++ Un filtro de Bloom aplica a cada elemento un hash que lo lleva a un puñado de posiciones de un array
++ de bits, y solo recuerda los bits. Eso supone unos pocos bits por elemento, sea cual sea el tamaño
++ de los elementos. Pero ajustar un filtro significa elegir el tamaño del array de bits y el número de
++ funciones hash, mediante una fórmula que la mayor parte del código copia de un libro de texto, a
++ veces mal.
+
+@ 0 5 0 1b9f52631f9956900c3f54f1e990c4ed
++ Aquí el filtro se pide por intención: el tamaño esperado y la tasa de error objetivo. Los parámetros
++ se calculan. La tasa de error es un [número acotado](numbers.md#bounded-numbers), así que una tasa
++ fuera de `[0, 1]` no compila. La tasa de error del filtro queda fijada por cómo se construye, y no se
++ comprueba en cada uso, lo cual es
++ [seguridad por construcción](../../philosophy/safety-by-construction.md).
+
+@ 0 2 0 0a6cb9795323e1cd184ee79c5f26a44d
++ Todo procede del paquete `soundness`. Hay un proveedor de algoritmos de hash en el ámbito, y la
++ última importación permite a los ejemplos imprimir sus resultados:
+
+% 2 1 0 01ce785686a310d0044d228be12b9f67
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 15d424d635741b6c0b0280f10d3a9f19
+
+% 0 1 0 081221781e257e3608baf9d74a781dd3
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 10e23740bb9874ad0feab5b8a47f2db8
++ ### Crear y añadir
+
+@ 0 2 0 02ba9ab52bae748413739488b3845a40
++ Un filtro se crea para un tipo de elemento, un tamaño esperado y una tasa de error. `+` añade un
++ elemento, y `++` añade muchos:
+
+% 2 1 0 0a66508a63d57df909bf4e3304744cb7
+
+% 0 1 0 0b21618dc1d85a2a07d712164f497759
+
+% 0 1 0 178a7b8ab1af34bb107f72e22f9a3891
+
+% 1 1 0 00d2492281c1206316018e7f86585ecd
+
+@ 0 2 0 0783a574a0f07d210a37b9b4e6049a2e
++ Cualquier cosa con una instancia de `Digestible` puede ser un elemento, incluidos el texto, los
++ números y las case classes, ya que los elementos entran en el filtro mediante el mismo hashing que
++ todo lo demás.
+
+@ 0 1 0 1fb6126a0c9918ec0ff7c75f289d2371
++ Una tasa de error que no es una probabilidad no compila:
+
+% 2 1 0 143033d6c79f789917dde4d99a2ad129
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 01e66449976668ab11b2846f7f45ef6d
+
+% 1 1 0 0acd992af8d33b6d1e9c157165066ebd
+
+@ 0 1 0 08738ff9214c82e812358f7e33270b16
++ ### Consultar
+
+@ 0 3 0 1dfaf8c5957a4ff602a267df88c85b34
++ `hits` pregunta si un elemento puede estar presente. Un `false` es definitivo: el elemento nunca se
++ añadió. Un `true` significa *probablemente*, con la probabilidad de falso positivo para la que se
++ construyó el filtro:
+
+% 2 1 0 14a821e6789644a801420dcf512a157f
+
+% 3 1 0 06b2e17ab406f5400737136342bd9336
+
+% 4 1 0 082075b2eaa6140119e248cd418d899b
+
+% 0 1 0 1d1c2899acfeef2c19b90ed21e2baf18
+
+% 0 1 0 0f2076b931df83490560f6ab983f3407
+
+% 0 1 0 0678bbe59443f1ae1b62392850b5a4f2
+
+% 1 1 0 12eea25f86243f0d193c5ea980f790f2
+
+@ 0 1 0 03a25ec862de6cd31d2fc40c42582efe
++ La última línea muestra que el propio `bloom` no cambió cuando se creó `fuller` a partir de él.
+
+@ 0 2 0 15a4ecb4c61124340c87a225a130ac5f
++ La asimetría es el contrato. Un filtro de Bloom encaja exactamente en los lugares donde un *sí* falso
++ cuesta una comprobación redundante, y un *no* falso sería un error de programación.
+
+@ 0 1 0 029985e4be79f65e0fce58b981d609fc
++ ### Elegir los parámetros
+
+@ 0 5 0 014e1f435b87ae1a0770f3b5a37393c5
++ Los dos números que se dan en la construcción son el número esperado de elementos y la tasa
++ tolerable de falsos positivos. El tamaño del array de bits y el número de funciones hash se derivan
++ de ellos mediante las fórmulas estándar. Declarar la intención, y no los parámetros, hace que ambos
++ no puedan contradecirse: un filtro dimensionado para cien elementos a uno entre mil es exactamente
++ eso.
+
+@ 0 4 0 07ab69e4520e620c196db3a814288f10
++ Conviene saber qué ocurre cuando el *tamaño esperado* es erróneo. Un filtro que recibe muchos más
++ elementos de aquellos para los que se construyó sigue funcionando, pero su tasa de falsos positivos
++ sube por encima de la solicitada. La tasa es una promesa sobre un filtro usado según lo previsto, no
++ una garantía que se cumpla se llene como se llene el filtro.
+
+@ 0 1 0 18808b8c12902a0618a932b73f12f82d
++ ### De dónde salen los bits
+
+@ 0 6 0 1c4579dc026aa27a1b5d27b3a7aa8079
++ El algoritmo de hash forma parte del tipo del filtro, y cada posición de bit se deriva de un único
++ resumen del elemento. Las dos primeras palabras de 64 bits del resumen, `h₁` y `h₂`, dan la posición
++ *i* como `h₁ + i·h₂`, módulo el tamaño del array de bits. Este es el esquema de doble hashing que
++ también usa Guava, y cuesta un resumen por elemento, se necesiten las posiciones que se necesiten. Un
++ algoritmo cuyo resumen sea de menos de dieciséis bytes, como un CRC, se vuelve a aplicar con un
++ contador hasta reunir bytes suficientes.
+
+@ 0 2 0 0b7040fc13f27a621debba7bf6c7fdf5
++ Por tanto, el algoritmo que hay en el ámbito decide el comportamiento del filtro, y dos filtros sobre
++ los mismos elementos solo coinciden si coinciden en el algoritmo.
+
+@ 0 4 0 0330bff726a1c32a195be868e573a559
++ Un filtro de Bloom no tiene ningún adversario al que resistir, solo una distribución que repartir,
++ así que el criptográfico BLAKE3 es más hash del que necesita. `Murmur3`, el MurmurHash3 de 128 bits,
++ cuesta más o menos una quinta parte por elemento, y es el algoritmo que usan los filtros de Guava. Se
++ elige nombrándolo, tras el mismo [permiso](hashing.md#fast-hashing) que las sumas de verificación:
+
+% 2 1 0 1fe6db2d31bb9b8912480d71004e2f55
+
+% 0 1 0 0e1affdd8762138d14054d267c5066b2
+
+% 0 1 0 1b2c4d2d751ec2541d344f482ea9ba8d
+
+% 1 1 0 0d719128773f580212a9af75806e7ffa
+
+@ 0 1 0 184784bd75b5884a013a7a4caec7a850
++ ### Llenar un filtro en el sitio
+
+@ 0 3 0 066798a43c548108176483f8b85d6565
++ Un filtro recién salido de `BloomFilter[Text](n, p)` es *exclusivo*. Pertenece al código que lo
++ creó, y ese código lo llena en el sitio, con `add` y `addAll`, sin ninguna copia, y después lo
++ congela:
+
+% 2 1 0 04e715f8448464ed1c5a91545a3a9e1a
+
+% 0 1 0 06526a1fe714a2f41ea9273f4465db00
+
+% 0 1 0 0f287de235e586830f91fa5f61a82f20
+
+% 0 1 0 1f4f03f504aba3190b7709147b6e5467
+
+% 0 1 0 1234e807fc2df9cd145e72d173f40705
+
+% 1 1 0 11b5dd044d32d6470d005fcd3d34924f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 197e78722fae5ffc1cc655f0a0074fd3
+
+% 0 1 0 1b08a5456ea5b5c61e7cde9e2155ebb4
+
+% 1 1 0 0b5b1915b95430a712709ff47b5dbc1d
+
+@ 0 4 0 1db155a6e1eeb0a81df3082334db3b99
++ `freeze` consume el filtro exclusivo, y la comprobación de separación del compilador rechaza
++ cualquier uso posterior de `filter`. Lo que da es la forma congelada, que se puede compartir entre
++ hilos, guardar en una estructura de datos y consultar desde cualquier parte, pero en la que nunca se
++ escribe. Es la misma disciplina que congelar un array, y es lo que hace que la inmutabilidad de abajo
++ salga gratis, sin copias.
+
+@ 0 1 0 0ef55e8e615c12861dbd1e19cef5f274
++ ### Inmutabilidad
+
+@ 0 4 0 1a2f4b87a51a7450086c2972020d28ee
++ `+` y `++` dan filtros nuevos y no cambian el original, al precio de una copia de los bits cada uno.
++ Construir un filtro a partir de una colección grande con `++` es una sola pasada y una sola copia, no
++ la secuencia de copias que haría `+` repetido. Llenar un filtro exclusivo con `addAll`, antes de
++ congelarlo, no hace ninguna copia.
+
+@ 0 1 0 054bd7ba6ad676440f219e48e3e83f3d
++ Las operaciones sobre un filtro, una junto a otra:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 10 0 058d88079a09cc610aa926879705b5d2
++ column  Operación
++ column  Se aplica a
++ column  Produce
++ column  Copia los bits
++ row  `filter + element`  cualquier filtro  un nuevo filtro congelado  una vez
++ row  `filter ++ elements`  cualquier filtro  un nuevo filtro congelado  una vez
++ row  `filter.add(element)`  un filtro exclusivo  nada; lo llena en el sitio  nunca
++ row  `filter.addAll(elements)`  un filtro exclusivo  nada; lo llena en el sitio  nunca
++ row  `BloomFilter.freeze(filter)`  un filtro exclusivo, que se consume  el filtro congelado  nunca
++ row  `filter.hits(element)`  cualquier filtro  `false` si está ausente, `true` si probablemente está presente  nunca
+
+% 1 1 0 01063ef32a8e10320b68d65bd4781c51
+
+@ 0 2 0 18d295fc2d21e8c814f1d38d31d625ba
++ [Caché](caching.md) trata el caso en que hay que recordar la propia respuesta, y no solo si se ha
++ visto.

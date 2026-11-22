@@ -1,0 +1,2552 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 169b2a1ae1d5c18b03ad74d4c0a0e9dc
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0e98b7fa9732f6af0768624d45037ef7
++ info   TCP-, UDP-, Unix-Domain- und TLS-Sockets sowie ein DNS-Resolver, hinter einer transportgenerischen API
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 023b4652b4d41a5d1247b477bab32acd
++     _Coaxial_ ist Socket-Programmierung, bei der der Transport durch den **Typ des
++     Socket-Werts** bestimmt wird statt durch eine andere API: Ein `Tcp.Port` und ein `Uds`
++     werden mit demselben `listen` bedient; mit einem `Endpoint[Tcp.Port]`, einem `Uds` und
++     einem `SecureEndpoint` wird mit demselben `transmit`, `react` und `duplex` verbunden. Die
++     Operationen werden durch Typklassen gesteuert — `Bindable` für alles, was bedienen kann,
++     `Serviceable` für einen Request/Response-Client, `Connectable` für einen dauerhaften
++     bidirektionalen `Duplex`, `Routable` für ein Fire-and-Forget-Datagramm, `Subscribable` für
++     eine Multicast-Gruppe —, und die Transporte unterscheiden sich nur darin, welche Instanzen
++     existieren.
+
+@ 0 7 0 0979e260dbef75630e07038d1682b9a0
++     Ein Server ist eine **Leihgabe**: `listen` bindet, führt für jede Ankunft einen Handler in
++     einer eigenen überwachten Aufgabe aus, leiht den laufenden Server einem Block als
++     `Socket.Service` und stoppt ihn, wenn der Block endet. Ein Client ist eine ausgehende
++     Nachricht und ein eingehender Antwort-Stream (`transmit`), ein Zustandsautomat über einer
++     Konversation (`react`, `exchange`) oder ein `Duplex`, der einem Block geliehen wird
++     (`duplex` oder die Leihgabe `session`). Was über die Leitung geht, ist ein Wert, keine
++     Bytes: `Transmissible` sagt, wie eine Nachricht zu Bytes wird, und `Ingressive`, wie Bytes
++     zu einer Nachricht werden.
+
+% 2 1 0 12bcdf7995cd29760ac262a10df5d170
+
+% 3 1 0 1620d3a5a9bc18111f3fdb93bcbb2693
+
+% 4 1 0 1356cee9277c99671b68e97965b16e09
+
+% 5 1 0 0e588b423ac3f5a001a2dc87a82a23e1
+
+% 6 1 0 07797a54ea9d43c41519b89581d1464c
+
+% 7 1 0 0313d3dcc332f1cb0c702cd628f535e8
+
+% 8 1 0 058aca1de872833e1da136f04853f402
+
+% 9 1 0 0a06b2e4779d71b80d9629e48613a3ed
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0d5bf406e74cd04a13d75d4030990ef7
+
+% 1 1 0 16744b932deeb87a0ba9c36f7ff81f01
+
+% 3 1 0 1b8087c42b458f4f183a5d7640c6762d
+
+% 0 1 0 10b911416a79b75e13b68882700753f5
+
+% 0 1 0 05f6da11aedb71f115e12f446505ce84
+
+% 0 1 0 15f4acc1f6ecefcb18e763866dd81ba4
+
+% 0 1 0 1cba195f614d2b9c13cba1ac926f51f7
+
+% 0 1 0 006aa579392aec3f11de2eb4ee04eb84
+
+% 1 1 0 109e92208b20d9570a0709cfb9caa480
+
+@ 0 7 0 00112d21f4f471e60ba0dfd12cc3dfa5
++     Nichts in der API nennt eine Plattform. Die primitiven Operationen, die jede Rolle braucht
++     — binden und annehmen, verbinden und kommunizieren, empfangen und antworten, ein Datagramm
++     versenden, einer Gruppe beitreten —, sind in `Socket.Backend` gesammelt, das durch den
++     namentlichen Import eines Givens aus dem Paket `socketBackends` gewählt wird
++     (`import socketBackends.javaBaseSockets`; `import coaxial.*` und `import soundness.*`
++     bringen kein Backend herein). Socket-Optionen sind ebenfalls Givens, namentlich aus
++     `socketOptions` importiert und pro Verbindungsart gesammelt (`Every[Socket.Option.Tcp]`,
++     `.Udp`, `.Domain`), sodass die Socket-Richtlinie eines Programms einmal festgelegt wird
++     statt bei jedem Aufruf.
+
+@ 0 1 0 18b5259a85e28e15163e759bc4f3e220
++     Die Bibliothek ist danach aufgeteilt, was jede Plattform kann:
+
+@ 0 21 0 0255428774fb885718d3efafa8092c82
++     - `coaxial.core` — die gesamte plattformneutrale API: `Socket` (sein `Backend`, seine
++       `Option`s, `Event`s, `Service` und `Error`), `Bind`, die Typklassen `Bindable`,
++       `Connectable`, `Routable`, `Serviceable`, `Duplexable` und `Subscribable`, `Duplex`,
++       `Uds`, `Multicast`, `Packet`, `UdpResponse`, `Control`, `Transmitter`, `Transmissible`,
++       `Ingressive`, die Leihgaben `listen`, `listenOn`, `subscribe`, `transmit`, `react`,
++       `exchange` und `duplex`, das Given `connectableSessional` und das Paket `socketOptions`.
++       Sie kompiliert überall, wo ein Backend existiert.
++     - `coaxial.jvm` — `socketBackends.javaBaseSockets` über `java.net` und
++       `java.nio.channels` (TCP-, UDP-, Multicast- und Unix-Domain-Sockets), die TLS-Schicht
++       (`Tls`, `TlsAcceptance`, `Trust`, `SecureEndpoint` für Clients und `SecurePort` für
++       Server, mit ALPN und gegenseitiger Authentifizierung), die Rohstrom-`Connection` mit
++       ihrer Leihgabe `listenConnections` und `streamsDuplex`.
++     - `coaxial.native` (Scala Native) — `socketBackends.scalaNativeSockets` (TCP, UDP und
++       Multicast; Unix-Domain-Sockets lösen `Unsupported` aus) sowie `Tls` und
++       `SecureEndpoint` über OpenSSL mittels seiner C-API: ein TLS-Client mit Verifikation, aber
++       ohne ALPN, ohne serverseitiges TLS und ohne `TlsAcceptance`/`Trust`.
++     - `coaxial.wasi` (eine Wasm-Komponente) — `socketBackends.wasiSockets` über
++       `wasi:sockets`: nur TCP, zu IPv4-Literalen, ohne UDP, Multicast, Unix-Domain-Sockets oder
++       TLS; dazu die WIT-Schnittstelle `wasiApis.wasiSocketsApi` und der Typ `WasiSocketsApi`.
++     - `coaxial.dns` — `query` auf einem `Endpoint[Udp.Port]`: eine DNS-Nachricht an einen
++       Nameserver und seine Antwort, über den einmaligen Datagrammaustausch des Backends.
+
+@ 0 1 0 19e4c38011f0ce371d0e5879fdf3d51d
++     Was das Backend jeder Plattform unterstützt:
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 1 0 026f6f4a83c9361815032cb42e654051
++     column  Merkmal
+
+% 0 1 0 093dabe263e605940e4b308140f3b969
+
+% 0 1 0 1434589956cf1de40c484a3b2199fcd8
+
+% 0 1 0 18e48d50d04b8dbe0577372873c9d824
+
+@ 0 8 0 0f25d8eeb6491a6f18eca6fc46ab367d
++     row  TCP  ja  ja  nur zu IPv4-Literalen
++     row  UDP  ja  ja  nein
++     row  Multicast  ja  ja  nein
++     row  Unix-Domain-Sockets  ja  löst `Unsupported` aus  nein
++     row  TLS-Client  ja  ja, über OpenSSL  nein
++     row  ALPN  ja  nein  nein
++     row  TLS-Server  ja  nein  nein
++     row  `TlsAcceptance`, `Trust`  ja  nein  nein
+
+% 1 1 0 1b6d3652a7b8e5480d3be63bf0a5b04c
+
+@ 0 9 0 05a06ee194e1e10c1f1394a756f38269
++     Es gibt zwei Fehler: Das Binden scheitert mit `Bind.Error` (Port belegt, Zugriff
++     verweigert, Adresse nicht verfügbar, nicht unterstützt) und alles danach mit
++     `Socket.Error`, dessen Grund angibt, ob es beim Annehmen, Übertragen, Schließen, beim
++     TLS-Handshake, bei einem Timeout, beim Verbinden, bei einer Abweisung, bei der
++     Namensauflösung oder bei einer nicht unterstützten Socket-Art geschah. Jede Operation, die
++     verbindet, braucht eine `Tactic[Socket.Error]`; `listen` braucht eine
++     `Tactic[Bind.Error]`; Verbindungen zu einem entfernten Host brauchen `Online`
++     (`import internetAccess.online`); und die Leihgaben brauchen einen `Monitor` und eine
++     `Probate` (einen `supervise`-Block mit `threads.platformThreads` und
++     `probates.awaitProbate`) sowie ein `Socket.Event is Loggable` (`logging.silentLogging`
++     verwirft die Ereignisse).
+
+@ 0 3 0 1d79799c23e8aadf1ad389ea0c9c92b9
++     Alles wird in den Umbrella `soundness` exportiert, und die Auswahlpakete
++     `socketBackends`, `socketOptions` und `wasiApis` verschmelzen mit denen des Umbrellas,
++     sodass ein Benutzer `import soundness.*` schreibt und dann ein Backend und beliebige
++     Optionen namentlich importiert.
+
+% 0 1 0 0528b988050a4ea813c50e1cf8cd4b10
+
+% 0 1 0 1eb9bc1d372bcb8003d73b9b2a098378
+
+% 0 1 0 01754128fb7918841dfa84c2989a0a97
+
+% 0 1 0 1c0a1581b83867b804d93de753a459a0
+
+% 0 1 0 1cf1769ad2ab73d1080945b0a6170000
+
+% 0 1 0 1b5e8195df326c1d06574077fe013dcb
+
+% 0 1 0 028244423dcf4fd6019677c13d0ffc7a
+
+% 0 1 0 09ffcce2eba2843f1d3a9409bd7eeb23
+
+% 0 1 0 0aa2f38c967178d61625260547bc2eca
+
+% 0 1 0 00679c86796a28aa0c689f05ab4df169
+
+% 0 1 0 05fa953b885e55e819de1c9eb6cb223d
+
+% 0 1 0 158455b4d34483641f00ebe0f1684f80
+
+% 0 1 0 0b2e116958dfd4d20c5de332c04e5716
+
+% 0 1 0 08d6cc2d25c05fd0092f4f75f01294b3
+
+% 0 1 0 1e12612dd8b22e070692a84fb259d270
+
+% 0 1 0 12eedd73cb81202410fe0a2012255a5d
+
+@ 0 1 0 12b4e4e34f5c8283183070f4c14d6cf6
++ entry .listen   bedient einen Socket für die Dauer eines Blocks: ein Handler pro Ankunft, jeder in seiner eigenen Aufgabe
+
+% 1 1 0 1ce182667933786400392f1740739ee0
+
+@ 0 6 0 1d99b1b4d59f78cd10b298cc290d6db5
++       `socket.listen[input](handler)(block)` bindet jeden `Bindable`-Socket — einen `Tcp.Port`,
++       einen `Udp.Port`, einen `Uds`, eine `Multicast`-Gruppe oder, auf der JVM, einen
++       `SecurePort` —, führt `handler` für jede Ankunft aus und leiht den laufenden Server
++       `block` als `Socket.Service`-Capability. Der Server wird gestoppt, wenn der Block endet,
++       ob er zurückkehrt oder wirft, sodass die Accept-Schleife den Code, der sie brauchte, nie
++       überleben kann (deshalb ist `listen` eine Leihgabe und keine Methode, die einen Server
++       zurückgibt).
+
+@ 0 5 0 13c8ad3771e0886d173b6de1c31ff752
++       Der Socket-Typ bestimmt über `Bindable#Input` und `Bindable#Output` die Gestalt des
++       Handlers: Ein TCP- oder Unix-Domain-Handler ist `Duplex => Data` (die Anfrage aus
++       `Duplex#source` lesen, die ganze Antwort zurückgeben), ein UDP-Handler ist
++       `Packet => UdpResponse` (das Datagramm mit seinem Absender; antworten oder ignorieren),
++       und ein Multicast-Handler ist `Packet => Multicast.Reply`.
+
+% 2 1 0 1715ac5fe9e23ddb065b5e02f9d077c0
+
+% 3 1 0 0cc304303909935013d6cdaa62790444
+
+% 4 1 0 057400beea4ea1640860c893c974aef0
+
+% 5 1 0 1f53fd3148edf5280a91bed7ffba472d
+
+% 6 1 0 003b7d4484f1800e07100c8bbb26b8b4
+
+% 7 1 0 1987f9e01ee1f54915896f500fe40042
+
+% 8 1 0 1c5bb19ed995ad61081e1a34734fc479
+
+% 9 1 0 08e7343153a324c00bac16a0f692bb6a
+
+% 10 1 0 0b18819493f0e7d00984bd3a583e128c
+
+% 2 1 0 14f76170d7d8334f168754b39e27bdd2
+
+% 0 1 0 1c6b3473f47b49cd1cb55a09153add22
+
+% 0 1 0 09890beb4d8c777708f048ae5ac6bb6e
+
+% 0 1 0 0eb63b684ce8604606681f68af01c095
+
+% 1 1 0 13d9ccab43083a1405a35442e6e2f3a8
+
+% 2 1 0 06624c9aedf2381d005588375f85a0d8
+
+@ 0 9 0 1438417faef804fe03b7ec3a1ca75692
++       Jede angenommene Verbindung wird von ihrer eigenen überwachten `async`-Aufgabe bedient,
++       sodass Verbindungen nebenläufig behandelt werden; ein Fehlschlag des Handlers, ein
++       abgebrochener Client oder eine gescheiterte Antwort beendet nur die Aufgabe dieser
++       Verbindung (die Verbindung wird immer geschlossen), während die Accept-Schleife weiterläuft,
++       und ein Fehlschlag beim Annehmen überspringt eine Iteration. Die Leihgabe braucht einen
++       `Monitor` und eine `Probate` (einen `supervise`-Block), löst `Bind.Error` aus, wenn der
++       Socket nicht gebunden werden kann, und protokolliert `Socket.Event.Listening` beim Start
++       und `Socket.Event.Closed` beim Stoppen. `listenOn` ist dieselbe Leihgabe mit einer lokalen
++       Netzwerkschnittstelle, an die gebunden wird. Das Typargument ist der Antworttyp des
++       Handlers (`listen[Data]`): Der Typparameter `input` wird aus dem `Bindable` des Sockets
++       inferiert.
+
+% 1 1 0 0e7650f622281d1814d4492ba59c6ff7
+
+% 0 1 0 1d16bf642a61aed01a2dd365263fc1d4
+
+% 0 1 0 1b3ff907536d003c0c3396321077cb50
+
+% 1 1 0 1cc33ef2019507590538d59dfd331452
+
+@ 0 8 0 0283f8c1aade471807dc6e04e981f96a
++ entry .listenOn   `listen`, an eine lokale Netzwerkschnittstelle gebunden, über deren MAC-Adresse
++     `socket.listenOn(interface)(handler)(block)` ist `listen` mit einer `Optional[MacAddress]`,
++     die die Schnittstelle nennt, an die gebunden wird (`Unset` bindet an jede Schnittstelle, wie
++     `listen`). Ein TCP-Port wird an die Adresse der Schnittstelle gebunden (ihre IPv4-Adresse,
++     wenn sie eine hat); ein UDP-Port verwendet die Schnittstelle für ausgehenden Multicast; ein
++     Unix-Domain-Socket hat keine Schnittstelle und ignoriert das Argument. Eine Adresse, die zu
++     keiner lokalen Schnittstelle gehört, wird ignoriert, und der Socket wird an alle
++     Schnittstellen gebunden. Die Form mit Schnittstelle hat einen eigenen Namen, weil sich ein
++     Standardargument nicht mit den pfadabhängigen `Input`/`Output`-Typen des Handlers
++     kombinieren lässt.
+
+@ 0 1 0 104e774ae1a2746b0a5501dfe49e1a61
++ entry .subscribe   tritt für die Dauer eines Blocks einer Multicast-Gruppe bei, mit einem Handler pro Datagramm
+
+% 1 1 0 0e7eb8d46c18efbb0e11541538c3982c
+
+@ 0 6 0 1f6a58018a9acf5d1a343fc39f9b0378
++       `group.subscribe(handler)(block)` tritt einer `Multicast`-Gruppe auf jeder Schnittstelle
++       bei, die aktiv und multicastfähig ist (außer Loopback), führt `handler` für jedes
++       Datagramm aus, das die Gruppe zustellt — jedes in seiner eigenen Aufgabe —, und leiht
++       `block` eine `Multicast.Subscription`, die auch *unaufgefordert* an die Gruppe senden kann:
++       eine Ankündigung, eine Verabschiedung. `listen` auf einer Gruppe (über
++       `Multicast.bindable`) kann nur antworten; diese Leihgabe ist für ein Mitglied, das auch
++       zuerst spricht, und das ist die Gestalt von mDNS und anderen Protokollen zur
++       Diensterkennung.
+
+% 2 1 0 0eaec268d325b03d13b2924d3676e025
+
+% 3 1 0 0b9ea65fa38ca7af1268fecab9787587
+
+% 4 1 0 1a849cfe180fbb170757d6da62402665
+
+% 5 1 0 1b84174272e2c1d40f65b94735bdec27
+
+% 6 1 0 0d88f102b7af845e1543fb9edd4f9b3d
+
+% 7 1 0 0b8af50b47c408ff0942ad3ff87742ad
+
+% 8 1 0 042e66f40cd9e98e10444af876e12742
+
+% 9 1 0 08b2d2be33ae0eec16b072a603857dfc
+
+% 10 1 0 13754fc78220d437025938f6d030cc14
+
+% 0 1 0 1a211a56feabaa401f9f5c1b3d73ed54
+
+% 2 1 0 11fe78091468cbcd0b0f8aa57d994583
+
+% 0 1 0 17322001462b8c2e14c93bedca1cfa17
+
+% 0 1 0 0534dcbb6dd54e200b71412fd4a0f061
+
+% 0 1 0 0c11d9a9e63d755713f33fabd7912f7b
+
+% 1 1 0 1b1cc7ed8758472201b74e3fd3c2b875
+
+@ 0 9 0 021a38be52f2acbe0f640142b71f955e
++       Das Urteil des Handlers ist ein `Multicast.Reply`: `Group(data)` antwortet der ganzen
++       Gruppe (die Multicast-Norm, damit jedes Mitglied die Antwort erfährt), `Unicast(data)` nur
++       dem Absender und `Ignore` niemandem. Der Port der Gruppe wird mit Adress- und
++       Port-Wiederverwendung gebunden, sodass mehrere Programme auf einem Host nebeneinander
++       abonnieren. Das Abonnement verlässt die Gruppe, wenn der Block endet; ein `Monitor`, eine
++       `Probate` und ein `Socket.Event is Loggable` werden gebraucht, und `Bind.Error` wird
++       ausgelöst, wenn der Port nicht gebunden werden kann. Auf Scala Native geht ein Senden an
++       die Gruppe einmal über die Standard-Multicast-Route des Kernels, nicht einmal pro
++       Schnittstelle, und die Optionen `MulticastLoop`/`MulticastHops` werden nicht angewandt;
++       auf WASI gibt es keinen Multicast.
+
+% 1 1 0 11c680fd89928a3003978de7d9179cf5
+
+% 1 1 0 098ab3ad4c1495e3136540815a5b6b5a
+
+% 0 1 0 14ba9efcf68ff0441871b2de828edbfa
+
+@ 0 1 0 14510f40c88557b6186761f3ff3038e9
++ entry .transmit   sendet eine Nachricht an einen Endpunkt: einen Antwort-Stream zurück für ein `Serviceable`, nichts für ein `Routable`
+
+% 1 1 0 096411dbec74530b1daa3819b4a178ce
+
+@ 0 1 0 15f332f33893d55200e6356c5364910d
++       Zwei Überladungen, gewählt nach der Typklasse des Endpunkts:
+
+@ 0 8 0 1f55bf93e04d9c8b105790ea3ae15339
++       - Für einen `Serviceable`-Endpunkt — einen `Endpoint[Tcp.Port]`, einen `Tcp.Port` (auf dem
++         lokalen Host) oder einen `Uds` — verbindet `endpoint.transmit(message)`, streamt die
++         serialisierte Nachricht und schließt seine Ausgabe halb, dann gibt es die Antwort als
++         lazy `Stream[Data] over Credit` zurück, der endet, wenn die Gegenstelle halb schließt.
++         Der Stream leiht sich die Verbindung, daher wird er innerhalb des Geltungsbereichs
++         gelesen (oder `memoize`d), der ihn erzeugt hat, und das `Serviceable`-Given braucht eine
++         `Tactic[Truncation.Error]` für einen Lesevorgang, der mittendrin scheitert.
++       - Für einen `Routable`-Endpunkt — einen `Endpoint[Udp.Port]` oder einen `Udp.Port` —
++         versendet es die Nachricht als einzelnes Datagramm und gibt `Unit` zurück; auf nichts
++         wird gewartet.
+
+% 2 1 0 1f67c8f1ddb9fea70317cbdaf48cbcd7
+
+% 3 1 0 12b30faeea89313102867581a59ff495
+
+% 4 1 0 07f32d7423aadec20c9d0f7bb359bcb9
+
+% 5 1 0 1540bac129c07b2515afb7035bc27d91
+
+% 6 1 0 1a213a9f0f82bc6107a786c70d922f96
+
+% 7 1 0 13e00f18b2a711751c06dd6d0b040fd3
+
+% 1 1 0 173a01f7c4eeaea104086f20e6e3aa28
+
+% 2 1 0 0f112784a32490981e2f13b023c9e74c
+
+% 0 1 0 1e1b911b4606b36a0cf462e20106cd26
+
+% 0 1 0 024e3a7cb9e83af90df9183924b79fd4
+
+% 1 1 0 12ec09edb63058c613610e4655b1e864
+
+@ 0 7 0 175af37e0c42eb55002ab767237d95af
++       Jeder `Transmissible`-Wert ist eine Nachricht: `Data`, `Text` (über die `Codepage` im
++       Geltungsbereich), eine `Chain[Data]` oder alles, was `Encodable in Text` ist. Beide
++       Überladungen brauchen eine `Tactic[Socket.Error]`, ausgelöst, wenn die Verbindung nicht
++       hergestellt werden kann (`Dns`, `Refused`, `Timeout`, `Connect`) oder die Übertragung
++       scheitert; ein entfernter TCP-Endpunkt braucht außerdem `Online`. Jede protokolliert
++       `Socket.Event.Connected`. Da das Verwerfen von Werten jedes Ergebnis zu `Unit` passend
++       macht, lässt sich die `Routable`-Überladung nicht allein durch Typannotation wählen, wenn
++       beide Typklassen zutreffen; ein UDP-Endpunkt hat nur die `Routable`-Überladung.
+
+% 1 1 0 01b0db4792b49ba70340bc33e3ee44df
+
+% 0 1 0 02ea66b645065d6b1b8d544e0497482f
+
+% 1 1 0 0ba7a993b7d8cabd019feb1033cdef32
+
+% 2 1 0 0f022faffdbf817102015758344ed0bc
+
+@ 0 1 0 112257f508e32a901d443d8e16ba12af
++ entry .react   steuert eine clientseitige Konversation als Zustandsautomat, ein `Control` pro eingehender Nachricht
+
+% 1 1 0 0c7594fee1a43326067e04483b9e8a9a
+
+@ 0 7 0 0ca1abcb97d1704419a7230f04221937
++       `endpoint.react(initialState)[message](handle)` verbindet sich mit einem
++       `Serviceable`-Endpunkt und führt eine Schleife aus: Jede eingehende Nachricht — ein
++       Nachfüllfenster des Antwort-Streams, über das `Ingressive` für `message` dekodiert — wird
++       an `handle` übergeben, das den aktuellen Zustand als Kontextwert sieht und mit einem
++       `Control` antwortet: `Continue(state)` wartet auf mehr, `Reply(message, state)` sendet eine
++       Antwort und wartet, `Conclude(message, state)` sendet eine Antwort und hört auf, und
++       `Terminate` hört auf. Der Endzustand wird zurückgegeben, und die Verbindung wird
++       geschlossen, wie auch immer die Schleife endet.
+
+% 2 1 0 1c8bde89152a4f5a0ff65042900c1450
+
+% 3 1 0 1973877251473b7f12726b95eec122bc
+
+% 4 1 0 162891df052836900527086731c9e681
+
+% 5 1 0 033d648519882afd1846dbf565707275
+
+% 6 1 0 1951924614c3bab612dd5f513c7f47dc
+
+% 7 1 0 0ba919533f43e77d067b9aae2c1b056a
+
+% 1 1 0 09204c46771ff9d40df68d78a60e503e
+
+% 1 1 0 1e8df8b21f74db690d88e65730c9e5bf
+
+% 2 1 0 1f534ea32931c3910b59728a296264ba
+
+% 1 1 0 1c85e98d269ed6630244a320d43b6f42
+
+% 2 1 0 19be0f08774b6437184be9e88e1a671a
+
+% 0 1 0 034a8bc8c0dbd39c16fe1fa7292ed1a5
+
+% 0 1 0 10158fdbdcd914c70a907fe712ce1513
+
+% 1 1 0 0484c3a6eac0d09d02e826011beaa90e
+
+@ 0 6 0 0b971190f57714b4084e45fea2b3e1bc
++       Ein auf diese Weise geschriebenes Protokoll hält seine Zustände explizit, statt sie dadurch
++       anzudeuten, wo sich die Kontrolle gerade in einer Folge verschränkter Lese- und
++       Schreibvorgänge befindet. Ein `Serviceable` kann nur antworten, nie zuerst senden: Für
++       einen Transport, der das kann, fügt `exchange` einen `Transmitter` hinzu. Die Methode
++       braucht ein `Buffering` (die Fenstergröße), eine `Tactic[Socket.Error]` und ein
++       `Socket.Event is Loggable` sowie für Textnachrichten ein `Charset` oder eine `Codepage`.
+
+% 0 1 0 1518e122d114c2500d43eecbc7c9f946
+
+% 1 1 0 11e14d03eb7f505b10ee4576ce78b001
+
+% 1 1 0 1ed37142f844920b1641ff481993e953
+
+@ 0 1 0 1d9c82806c8f845f0155dbfafda1bece
++ entry .exchange   eine Vollduplex-Konversation: der Zustandsautomat von `react` plus ein `Transmitter`, um zuerst zu senden
+
+% 1 1 0 07c969d04994198302df89d7b10f6114
+
+@ 0 7 0 0c7e4bdf56c2bd61066cda739f8b4ffc
++       `endpoint.exchange(initialState)[message](handle)(interact)` ist `react` über einem
++       `Duplexable`-Transport — einem, dessen `transmit` wiederholt und nebenläufig zu `receive`
++       aufgerufen werden darf und nie halb schließt. Sobald die Verbindung geöffnet ist, und bevor
++       die `handle`-Schleife beginnt, erhält `interact` einen `Transmitter[message]`, sodass der
++       Client proaktiv senden kann — eine Begrüßung oder einen Push aus einer Aufgabe, die er
++       startet —, während `handle` weiterhin über `Control` antwortet. Der Nachrichtentyp wird
++       durch das annotierte `handle` festgelegt, weshalb es vor `interact` steht.
+
+% 2 1 0 17bd2b87e4379fc305ea23b7759dd9e2
+
+% 3 1 0 170cbb63db171c6206578653ee34b1a7
+
+% 1 1 0 008581c190ca68941427f30b5d7017fe
+
+% 0 1 0 1403731ddfbe6d970f0db958849d798c
+
+% 0 1 0 1f345529128f9913145298eacbd55520
+
+% 0 1 0 00f033462284841c027e1236f7704860
+
+% 0 1 0 016ca193323b09981c53ad64be20ecc8
+
+% 0 1 0 1402741389a060f10c896675967518a3
+
+% 0 1 0 02838a3cdfdb1fc917dac527656300c5
+
+% 0 1 0 18dd2635365383041553e0410ea4987f
+
+% 1 1 0 0ae9ab80651f08e9058f4e45cca4254e
+
+@ 0 3 0 14dbdc5b1201535c09669ec27cb56b50
++       Die eigenen Socket-Givens von Coaxial sind `Serviceable`, nicht `Duplexable` (ein
++       einfacher Request/Response-Socket fährt seine Ausgabe nach dem Übertragen herunter); ein
++       WebSocket-Client ist die Art von Transport, die ein `Duplexable` bereitstellt. Die
++       kontextuellen Anforderungen der Methode sind die von `react`.
+
+% 1 1 0 0a8334db218f2ba614a00adf45f744a1
+
+% 0 1 0 07e832167bb1c53118098c12ff52f048
+
+% 1 1 0 0f5d255773df536a14a5bfe653b01130
+
+@ 0 1 0 02eabb1c4d75398a01ac28260dac1185
++ entry .duplex   leiht einem Block eine dauerhafte bidirektionale `Duplex`-Verbindung und schließt sie danach
+
+% 1 1 0 154b45283001d98710f8c3719a9dfba0
+
+@ 0 6 0 10bbba2b17fb68811fb8d26dc1c23ab6
++       `endpoint.duplex(lambda)` verbindet sich mit jedem `Connectable`-Endpunkt — einem
++       `Endpoint[Tcp.Port]`, einem `Uds`, einem `SecureEndpoint` — und übergibt den offenen
++       `Duplex` an `lambda`, wobei er geschlossen wird, wenn das Lambda zurückkehrt oder wirft.
++       Anders als beim Request/Response-`transmit` wird die Verbindung nie halb geschlossen: Lesen
++       und Schreiben sind unabhängig, und das ist die Gestalt, die ein multiplexendes Protokoll
++       wie HTTP/2 braucht. `duplex(lambda)(interface)` bindet die lokale Seite zuerst an die
++       Schnittstelle mit dieser MAC-Adresse.
+
+% 2 1 0 166a5ebc75fdd2370727410a9bd06685
+
+% 3 1 0 1ce74f4074c73c3409221c3d58ad6730
+
+% 4 1 0 1c2512670e4af88519f3746e3672b78b
+
+% 5 1 0 0a5dbe924d777e371f2c338080d3fb01
+
+% 6 1 0 1649b079449ba9af0f874336dc1192c6
+
+% 7 1 0 08d114c59e03aa5409d37d85290efe8f
+
+% 8 1 0 195a57000b41194f0f9c2648505cd7b8
+
+% 10 1 0 0aef2f67d817bef80c92f14c826b9971
+
+% 0 1 0 1251159b2a4f9d3c145ae71221768061
+
+% 0 1 0 1cd5424027acf010058dfdb0aa3524b4
+
+% 1 1 0 10f9096ff134925510bb2cc57928ff3d
+
+@ 0 5 0 001328c22fc87299079267a6a7c08232
++       Eine langlebige Verbindung, die jeden einzelnen Block überdauern muss, hält das Lambda am
++       Laufen — etwa auf seinem Supervisor geparkt —, bis der umschließende Geltungsbereich endet,
++       woraufhin die Leihgabe sie schließt. Die Leihgabe `session` (über `connectableSessional`)
++       ist dasselbe als Kontextwert. Braucht eine `Tactic[Socket.Error]` und ein
++       `Socket.Event is Loggable` sowie `Online` für einen entfernten Endpunkt; protokolliert
++       `Connected` beim Öffnen und `Closed` beim Schließen.
+
+% 1 1 0 13a735868cb7024c01dee5d36e81f98c
+
+% 1 1 0 15c8bcfbcf4bc1eb1731480e30525b52
+
+% 1 1 0 180838c8510b764c06e600c41f9d6ebb
+
+@ 0 8 0 12c6558adf965ac200809787837d7a4a
++ entry .connectableSessional   das `Sessional`-Given: `endpoint.session` leiht einem Block einen `Duplex`
++     Jeder `Connectable`-Endpunkt beherbergt eine Sitzung auf Transportebene:
++     `endpoint.session { duplex ?=> … }` öffnet die Verbindung, leiht sie als Kontextwert und
++     schließt sie, wenn der Block endet, wobei an `duplex` delegiert wird. Der Ergebnistyp wird
++     außerhalb des Blocks quantifiziert, sodass ein Wert, der sich noch die aktive Verbindung
++     leiht, ihm nicht entkommen kann, ein memoisierter aber schon. Der Trait `Sessional` selbst
++     lebt in `aperture`, das keine Transporte kennt, daher liegt dieses Given auf oberster Ebene
++     in `coaxial` statt in einem Begleitobjekt — `import coaxial.*` (oder `soundness.*`) bringt
++     es herein. Es fängt das `Socket.Event is Loggable` und die `Tactic[Socket.Error]` ein, die
++     es braucht.
+
+% 2 1 0 043c1b0d4c52b3e20d2899dc5631dcb3
+
+% 3 1 0 10ddfdd82fbfecfb0734fac42a0b811b
+
+% 4 1 0 159a356b18a3ff370aaef713d0b7d0f6
+
+% 5 1 0 0028e422b2162c460e48ec4bc4c52a96
+
+% 6 1 0 1f36753ba578e4ea011959329d30d0a7
+
+% 1 1 0 05ebbbd4e006f8141b264ef5108a2678
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 1 1 0 14d6b17a8a4d22e40fd71d4f80dbd7fd
+
+% 0 1 0 14ff205b259866760088aca20a9ca38f
+
+% 0 1 0 1beaef048192c7500639162926f1b841
+
+% 0 1 0 119bffa9f98b641d18fbd651be399d22
+
+% 1 1 0 0613b8787fb9cdd40e47866efb6a3a3d
+
+@ 0 4 0 1bed1726adc742d81387d4f2bbf063c8
++ entry .Sessional   die Sitzungstypklasse, aus `aperture` re-exportiert, damit `import coaxial.*` unverändert kompiliert
++     `Sessional` (und seine Leihgabe `session`) zog von Coaxial nach `aperture`, da Sitzungen
++     nicht socketspezifisch sind; beide werden hier re-exportiert. `connectableSessional` ist die
++     Instanz von Coaxial, für jeden `Connectable`-Endpunkt.
+
+@ 0 3 0 18e9ef9a9e355212054f231f6d0a1357
++ entry .session   die Leihgabe `session`, aus `aperture` re-exportiert
++     `target.session { handle ?=> … }` für jedes `Sessional`-Ziel; für einen Socket-Endpunkt ist
++     das Handle ein `Duplex` (siehe `connectableSessional`).
+
+@ 0 1 0 129601e11c0e733114c4237adac2fc8e
++ entry .Socket   das Socket-Vokabular: das Plattform-Backend, die Optionen, die Ereignisse, der laufende Dienst und der Fehler
+
+% 1 1 0 0c2268b0e5a4eb441760062e076418ff
+
+@ 0 7 0 1138e7a4ad4840dd193a40306ab41de5
++       Es gibt keinen Typ `Socket` — Coaxial spricht in `Bindable`, `Connectable` und `Duplex` —,
++       daher ist `Socket` ein Namensraum für das Vokabular, das jeder Transport teilt:
++       `.Backend`, die plattformspezifische Implementierung, über die jede Typklasseninstanz
++       definiert ist; `.Option`, die Socket-Optionen, mit denen eine Verbindung geöffnet wird,
++       jede typisiert nach den Transporten, für die sie gültig ist; `.Event`, was ein Server oder
++       Client protokolliert; `.Service`, das Handle auf einen laufenden Server, das `listen`
++       leiht; und `.Error` mit seinem `Reason` für alles, was nach einem erfolgreichen Binden
++       schiefgeht.
+
+% 2 1 0 12713a816a8b4ece0512a81f9763c017
+
+% 3 1 0 1bd4208858049b89175e610b612e7cee
+
+% 0 1 0 01e0edeed6472a2f1edabc46db9b3ead
+
+% 0 1 0 06ffb0cc7481a34302011e7ec44494f4
+
+% 1 1 0 058a772b1f34db001261922449fec0d8
+
+% 1 1 0 185fae4020a48fe0150d7656f749ad75
+
+% 1 1 0 0a484001e9a12d3602a1f0bcf541e939
+
+% 1 1 0 0993ec9d9b5319d41598179320859b6c
+
+% 0 1 0 0a16ee08452bb01d1f2fbb6eff9b5b84
+
+@ 0 1 0 0504f59bd5b459fc1d19bc272e4b6cdb
++   entry .Backend   die Socket-Operationen der Plattform, nach Rolle gruppiert; ein Given pro Plattform in `socketBackends`
+
+% 1 1 0 06e52623d7de3a760161c2d52f7b677e
+
+@ 0 8 0 045ab40bf9e47d0a1e10fac2b29d86a0
++         Die austauschbare Nahtstelle zwischen der plattformneutralen API von Coaxial und dem
++         Betriebssystem: die vollständige Menge der Socket-Operationen, gegen die die Instanzen
++         von `Bindable`, `Connectable`, `Serviceable`, `Routable` und `Subscribable` geschrieben
++         sind, ohne Bezug auf eine Plattform-API. Ein Backend ist ein Given, das namentlich aus
++         dem Paket `socketBackends` importiert wird: `javaBaseSockets` (`java.net`/
++         `java.nio.channels` der JVM), `scalaNativeSockets` (Scala Native) und `wasiSockets`
++         (`wasi:sockets`). Ein Backend eines Drittanbieters implementiert jedes Member; die
++         höheren Schleifen (`listen`, `react`, `exchange`, `duplex`, `subscribe`) laufen dann
++         unverändert darüber.
+
+@ 0 14 0 13a0dc0b38d09a12080db744a2e9e414
++         Die Operationen sind nach den sechs Rollen gegliedert, die die Typklassen spielen, weil
++         jede ihre eigene Disziplin der Byteübertragung hat: Ein Stream-*Server*
++         (`#listenTcp`/`#listenDomain`, `#accept`, `#shutdown`) bindet, nimmt an und schreibt
++         jeder Verbindung eine ganze Antwort; ein Datagramm-*Server* (`#listenUdp`, `#receive`,
++         `#reply`, `#unbind`) empfängt ein `Packet` und antwortet seinem Absender; ein einmaliger
++         *Austausch* (`#exchangeUdp`) sendet ein Datagramm und wartet auf eine Antwort; eine
++         *Multicast*-Mitgliedschaft (`#joinMulticast`, `#receiveMulticast`, `#sendGroup`,
++         `#sendTo`, `#leaveMulticast`); ein Request/Response-*Austausch* (`#dialTcp`,
++         `#dialTcpPort`, `#dialDomain`, `#request`, `#response`, `#hangUp`) streamt eine Anfrage
++         und schließt dabei halb, dann liest er bis zum halben Schließen der Gegenstelle; ein
++         dauerhafter *Duplex* (`#duplexTcp`, `#duplexDomain`) gibt einen `Duplex` zurück, der nie
++         halb schließt; und ein Datagramm-*Kurier* (`#routeUdp`, `#routeUdpPort`, `#dispatch`)
++         sendet ein Datagramm. Jede Rolle hat einen opaken Handle-Typ (`#ServerSocket`,
++         `#DatagramSocket`, `#MulticastSocket`, `#Exchange`, `#Courier`), der an das Backend
++         zurückgereicht und nie inspiziert wird.
+
+@ 0 5 0 02c95ce47a3561e10a098c8f09c5d879
++         Eine Operation, die ein Backend nicht unterstützen kann, löst einen Fehler aus, statt sie
++         anzunähern: Unix-Domain-Sockets auf Scala Native und WASI lösen
++         `Bind.Error(Unsupported)` oder `Socket.Error(Unsupported)` aus; UDP und Multicast auf
++         WASI lösen `Socket.Error` aus. Optionen sind die abstrakten `Socket.Option`s von Coaxial,
++         angewandt in den Begriffen, die die Plattform versteht, und eine Option, die eine
++         Plattform nicht unterstützt, wird stillschweigend übersprungen.
+
+% 2 1 0 1c90f5b8779f1fc900a11dbf64147f63
+
+% 3 1 0 1fe867e7008ad1971e11ab5d845b5b28
+
+% 1 1 0 074ced630925e296061a531fca68267c
+
+% 0 1 0 0741377a29b6f71e1404df915d53f5ca
+
+% 1 1 0 018fa202a417d7f81d8b4ff1d56aa52d
+
+% 0 1 0 0081b171422f8af809f854bb52fdb7be
+
+% 0 1 0 12f673e2492eddb60b4ae619673a3c5b
+
+@ 0 81 0 1ab39b4b721ceddb1947476d07546129
++     entry #ServerSocket   das Handle eines gebundenen, lauschenden Stream-Sockets (TCP oder Unix-Domain)
++     entry #DatagramSocket   das Handle eines gebundenen Datagramm-Sockets
++     entry #MulticastSocket   das Handle eines Sockets, der auf jeder seiner Schnittstellen einer Multicast-Gruppe beigetreten ist
++     entry #Exchange   das Handle einer Request/Response-Client-Verbindung
++     entry #Courier   das Handle eines Fire-and-Forget-Datagrammziels
++     entry #listenTcp   bindet einen TCP-Port, auf einer Schnittstelle oder allen, mit den gegebenen Optionen
++         `listenTcp(port, interface, options)` löst `Bind.Error` aus — `PortInUse`,
++         `PermissionDenied` oder `AddressUnavailable`, nach dem Fehlschlag der Plattform
++         eingeordnet — und gibt den `#ServerSocket` zurück, den `#accept` nimmt. Die Backends für
++         JVM und Native binden einen `java.net.ServerSocket` (der eine `Timeout`-Option
++         berücksichtigt); WASI bindet einen TCP-Socket von `wasi:sockets` an die
++         IPv4-Wildcard-Adresse.
++     entry #listenDomain   bindet einen Unix-Domain-Socket an einem Pfad, mit den gegebenen Optionen
++         Löst auf Scala Native und WASI, die keine Unix-Domain-Sockets haben,
++         `Bind.Error(Unsupported)` aus. Auf der JVM wird die Socket-Datei am Pfad des `Uds`
++         angelegt und darf noch nicht existieren.
++     entry #accept   blockiert bis zur nächsten eingehenden Verbindung, als `Duplex`
++         Der Handler liest die Anfrage aus der `source` des Duplex, und die Accept-Schleife
++         schreibt die Antwort mit `send`. Löst `Socket.Error(Accept)` aus, wenn das Annehmen
++         scheitert, und das meldet ein unterbrochenes Annehmen, wenn der Server gestoppt wird.
++     entry #shutdown   schließt einen lauschenden Stream-Socket und gibt ein wartendes `#accept` frei
++     entry #listenUdp   bindet einen UDP-Port, mit den gegebenen Optionen, zum Empfangen von Datagrammen
++         Optionen werden vor dem Binden angewandt, damit `ReuseAddress` und `ReusePort` wirken.
++         Die Schnittstelle wird, wenn angegeben, zur ausgehenden Multicast-Schnittstelle des
++         Sockets. Die Option `DatagramSize` legt den Puffer fest, in den jedes Datagramm empfangen
++         wird (1472 Bytes, sofern nicht gesetzt). Gibt auf WASI, wo jede Datagrammoperation einen
++         Fehler auslöst, ein Unit-Handle zurück.
++     entry #receive   blockiert bis zum nächsten Datagramm auf einem gebundenen UDP-Socket, als `Packet`
++         Löst `Socket.Error(Timeout)` aus, wenn eine `Timeout`-Option abläuft, und `Accept` für
++         jeden anderen Fehlschlag. Ein Datagramm, das länger als die `DatagramSize` ist, wird auf
++         diese gekürzt.
++     entry #reply   sendet ein Datagramm an den Absender und Port eines empfangenen Pakets zurück
++         Löst `Socket.Error(Transmit)` aus, wenn das Senden scheitert.
++     entry #unbind   schließt einen gebundenen UDP-Socket und gibt ein wartendes `#receive` frei
++     entry #exchangeUdp   sendet ein Datagramm von einem ephemeren Port und blockiert bis zu einer Antwort
++         `exchangeUdp(endpoint, interface, options, data)` ist die Gestalt einer DNS-, NTP- oder
++         STUN-Abfrage: ein frischer Socket, ein Datagramm hinaus, ein `Packet` herein, der Socket
++         geschlossen. Eine `Socket.Option.Timeout` in `options` begrenzt das Warten und zeigt sich
++         als `Socket.Error(Timeout)`; die Antwort trägt ihren Absender, sodass ein Aufrufer prüfen
++         kann, dass sie von der richtigen Stelle kam. `query` in `coaxial.dns` baut darauf auf.
++         Löst auf WASI, das kein UDP hat, `Transmit` aus.
++     entry #joinMulticast   bindet den Port einer Gruppe mit Adress- und Port-Wiederverwendung und tritt der Gruppe auf jeder Schnittstelle bei
++         `joinMulticast(multicast, interfaces, options)` bindet den Port mit `SO_REUSEADDR` und
++         `SO_REUSEPORT` (so entworfen, keine Option: mehrere Abonnenten auf einem Host teilen den
++         Port), tritt dann der Gruppe auf jeder Schnittstelle bei, die eine Adresse der Familie
++         der Gruppe hat — eine, die das Betriebssystem verweigert, wird ausgelassen —, und hält
++         die Mitgliedschaften bis `#leaveMulticast`. Der Wildcard-Beitritt wird vermieden, weil er
++         willkürlich eine Schnittstelle wählt, und auf macOS unzuverlässig.
++     entry #receiveMulticast   blockiert bis zum nächsten Datagramm, das die Gruppe zustellt, als `Packet`
++     entry #sendGroup   sendet ein Datagramm an die Gruppe selbst
++         Auf der JVM einmal über jede beigetretene Schnittstelle (eine IPv6-Link-Local-Gruppe
++         braucht die Schnittstelle als ihren Scope); auf Scala Native einmal über die
++         Standard-Multicast-Route des Kernels. Löst bei einem Fehlschlag
++         `Socket.Error(Transmit)` aus.
++     entry #sendTo   sendet ein Datagramm vom Socket der Gruppe an ein einzelnes Unicast-Ziel und einen Port
++         Die Antwort an einen Absender, der um eine gebeten hat. Löst bei einem Fehlschlag
++         `Socket.Error(Transmit)` aus.
++     entry #leaveMulticast   schließt den Socket der Gruppe, gibt seine Mitgliedschaften auf und gibt ein wartendes Empfangen frei
++     entry #dialTcp   verbindet sich für einen Request/Response-Austausch mit einem entfernten TCP-Endpunkt
++         Löst `Socket.Error` mit `Dns` für einen nicht auflösbaren Host, `Refused`, `Timeout` oder
++         `Connect` aus. Auf WASI muss der Host ein IPv4-Literal sein (es gibt keinen Resolver),
++         sonst `Dns`.
++     entry #dialTcpPort   verbindet sich für einen Request/Response-Austausch mit einem TCP-Port auf dem lokalen Host
++     entry #dialDomain   verbindet sich für einen Request/Response-Austausch mit einem Unix-Domain-Socket
++         Löst auf Scala Native und WASI `Socket.Error(Unsupported)` aus.
++     entry #request   streamt die Anfrage hinaus und schließt die Ausgabeseite halb
++         Nimmt den Anfrage-Stream als `consume`-Parameter: Er wird hier geleert und geschlossen
++         und darf danach nicht verwendet werden.
++     entry #response   die Antwort, als frischer einmal verwendbarer Pull-Stream, der beim halben Schließen der Gegenstelle endet
++         `response(exchange)` braucht ein `Buffering` (das Nachfüllfenster) und eine
++         `Tactic[Truncation.Error]`, ausgelöst mit der Anzahl der bisher gelesenen Bytes, wenn
++         der Lesevorgang mittendrin scheitert. Der Stream fängt die Taktik ein, daher wird er
++         dort gelesen, wo er erzeugt wurde.
++     entry #hangUp   schließt eine Request/Response-Verbindung
++     entry #duplexTcp   verbindet sich mit einem entfernten TCP-Endpunkt als dauerhafter `Duplex`
++         Der Kanal ist blockierend, sodass eine Leseschleife in `read` parkt, statt aktiv
++         abzufragen, und Optionen (sowie, wenn eine Schnittstelle angegeben ist, ein lokales
++         Binden) werden vor dem Verbinden angewandt. Löst `Socket.Error` aus wie `#dialTcp`.
++     entry #duplexDomain   verbindet sich mit einem Unix-Domain-Socket als dauerhafter `Duplex`
++         Löst auf Scala Native und WASI `Socket.Error(Unsupported)` aus.
++     entry #routeUdp   ein Kurier zu einem entfernten UDP-Endpunkt, von einem ephemeren Port
++         Löst den Host des Endpunkts auf, wenn der Kurier erzeugt wird; die Schnittstelle wird,
++         wenn angegeben, zur ausgehenden Multicast-Schnittstelle des Sockets.
++     entry #routeUdpPort   ein Kurier zu einem UDP-Port auf dem lokalen Host
++     entry #dispatch   sendet einen ganzen Stream als einzelnes Datagramm an das Ziel des Kuriers
++         Der Stream wird zu einem Datagramm memoisiert, daher muss er in eines passen.
++   entry .Event   was ein Socket protokolliert: Lauschen, Verbunden und Geschlossen, jeweils mit `Log.Network` getaggt
+
+% 1 1 0 1b1a7d9ea5c46a8d136a7cb6b8ad8e2c
+
+@ 0 16 0 04a2b34e207deef8199e6b0abdeee8b7
++         Jedes `Event` erweitert `Log.Network`, sodass eine Logging-Konfiguration sie nach Tag
++         auswählen oder stummschalten kann. `listen` und `subscribe` protokollieren `Listening`
++         auf `info`, wenn der Server startet, und `Closed` auf `fine`, wenn er stoppt;
++         `transmit`, `react` und `exchange` protokollieren `Connected` auf `fine`; `duplex`
++         protokolliert `Connected` auf `info` und `Closed` auf `fine`. Jede Leihgabe nimmt ein
++         `Socket.Event is Loggable`; `logging.silentLogging` verwirft sie. Jedes Ereignis trägt
++         die Darstellung des Endpunkts als `Text`.
++     entry .communicable   gibt jedes Ereignis als Meldung wieder
++         `Listening` als _listening on `endpoint`_, `Connected` als _connected to `endpoint`_
++         und `Closed` als _closed the connection to `endpoint`_.
++     entry .Listening   ein Server hat begonnen, an einem Socket zu lauschen
++       entry #endpoint   der Socket, angezeigt
++     entry .Connected   ein Client hat sich mit einem Endpunkt verbunden
++       entry #endpoint   der Endpunkt, angezeigt
++     entry .Closed   eine Verbindung oder ein Server wurde geschlossen
++       entry #endpoint   der Endpunkt, angezeigt
++   entry .Option   eine Socket-Option, typisiert nach den Transporten, für die sie gültig ist, pro Verbindung aus dem Geltungsbereich gesammelt
+
+% 1 1 0 0aa27bc11c0891991c1bb63c12ffde99
+
+@ 0 6 0 15c9197dd88643651bcf9fb2e5e95fbe
++         Eine Socket-Option wird auf einen frisch konstruierten Socket angewandt, bevor er
++         gebunden oder verbunden wird. Jede konkrete Option erweitert die Marker-Traits der
++         Transporte, für die sie gilt — `.Tcp`, `.Udp` und `.Domain` (Unix-Domain) —, und eine
++         Stelle, die bindet oder verbindet, sammelt `Every[Socket.Option.Tcp]` (oder `.Udp`,
++         `.Domain`) aus den Givens im Geltungsbereich, sodass immer nur Optionen gesammelt werden,
++         die für diesen Transport gültig sind, und eine reine TCP-Option wie `NoDelay` keinen
++         UDP-Socket erreichen kann.
+
+@ 0 6 0 14707959a3fe884701dd8baabe0d94c1
++         Flag-Optionen, die lediglich eine Funktion einschalten, sind parameterlose Objekte
++         (`ReuseAddress`, `ReusePort`, `NoDelay`, `KeepAlive`, `Broadcast`, `MulticastLoop`):
++         Ihr Vorhandensein ist eine Abweichung von der standardmäßig ausgeschalteten Grundlinie.
++         Optionen, die einen Wert tragen, nehmen einen Parameter (`ReceiveBuffer`, `SendBuffer`,
++         `Timeout`, `Linger`, `TrafficClass`, `MulticastHops`, `DatagramSize`). Das Paket
++         `socketOptions` hat ein benanntes Given für jedes Flag und eine Fabrik für jede
++         Wertoption, sodass eine Richtlinie einmal festgelegt wird:
+
+% 2 1 0 1b070250e30c95030bac4f9b51f83cc8
+
+% 3 1 0 1121a2d7dfb3c666098ea96b9bc7e091
+
+% 0 1 0 1a21c040da87df810bb2a88150870e29
+
+% 0 1 0 1e24e58ffb1e578519d63a47e2cdef77
+
+% 0 1 0 0898289cf839f04412d717a03e1430e8
+
+% 0 1 0 08466e61e8d0315c1f3b876d05e27f51
+
+% 1 1 0 173f933b7743953708fc3052528f1b24
+
+@ 0 4 0 1584264cf4364ca51399796a51855113
++         Ein Backend wendet jede Option in den Begriffen seiner Plattform an und überspringt
++         stillschweigend eine, die der jeweilige Socket nicht unterstützt (ein Server-Socket hat
++         kein `TCP_NODELAY`; Scala Native hat kein portables `ReusePort`). `DatagramSize` wird
++         vom Empfangen des Backends verbraucht, statt auf dem Socket gesetzt zu werden.
+
+% 0 1 0 1c9bae0f05d8765914368227780fd3a3
+
+@ 0 10 0 0af13d72b8fa3ee403f69a38346b30a7
++     entry .Tcp   der Marker einer für einen TCP-Socket gültigen Option; `Every[Socket.Option.Tcp]` sammelt sie
++     entry .Udp   der Marker einer für einen UDP-Socket (und Multicast-Socket) gültigen Option
++     entry .Domain   der Marker einer für einen Unix-Domain-Socket gültigen Option
++     entry .ReuseAddress   `SO_REUSEADDR`: einen Port, der noch in `TIME_WAIT` ist, erneut binden; TCP, UDP und Domain
++         Für einen Server, der neu starten muss, ohne `TIME_WAIT` abzuwarten, und für mehrere
++         UDP-Sockets, die sich einen Port teilen. `socketOptions.reuseAddressSocketOption` ist
++         sein Given.
++     entry .ReusePort   `SO_REUSEPORT`: mehrere Sockets an einen Port gebunden; TCP und UDP, abhängig vom Betriebssystem
++         Übersprungen, wo die Plattform es nicht hat (und überall auf Scala Native).
++         `socketOptions.reusePortSocketOption` ist sein Given.
++     entry .ReceiveBuffer   `SO_RCVBUF`: die Größe des Empfangspuffers in Bytes; TCP, UDP und Domain
+
+% 1 1 0 18b55551a4440aab0bc4860d2906fb93
+
+@ 0 3 0 0a1da52eeb556f4e19ca9640ec3091f3
++           Erzeugt mit `socketOptions.receiveBuffer(bytes)`.
++       entry #bytes   die Puffergröße
++     entry .SendBuffer   `SO_SNDBUF`: die Größe des Sendepuffers in Bytes; TCP, UDP und Domain
+
+% 1 1 0 058ddfd8e388bea81886221ebc6d22dd
+
+@ 0 3 0 0de0e22bc25ca4b50981ea4b7a077a83
++           Erzeugt mit `socketOptions.sendBuffer(bytes)`.
++       entry #bytes   die Puffergröße
++     entry .Timeout   `SO_TIMEOUT`: wie lange ein blockierendes Lesen oder Empfangen wartet, in Millisekunden; jeder Transport
+
+% 1 1 0 075f254a647040d0194fc94305e482ce
+
+@ 0 9 0 073fed36419c59be13da647858f5bc73
++           Ein Empfangen auf einem Datagramm-Socket, das abläuft, löst `Socket.Error(Timeout)`
++           aus; `query` in `coaxial.dns` fügt eines von fünf Sekunden hinzu, wenn keines im
++           Geltungsbereich ist. Für einen selektierbaren Kanal ohne Bedeutung, dort wird es
++           übersprungen. Erzeugt mit `socketOptions.timeout(ms)`.
++       entry #milliseconds   die Wartezeit
++     entry .NoDelay   `TCP_NODELAY`: kleine Schreibvorgänge sofort senden, statt auf den Nagle-Algorithmus zu warten; TCP
++         `socketOptions.noDelaySocketOption` ist sein Given.
++     entry .KeepAlive   `SO_KEEPALIVE`: eine untätige Verbindung abfragen, damit eine tote Gegenstelle bemerkt wird; TCP
++         `socketOptions.keepAliveSocketOption` ist sein Given.
++     entry .Linger   `SO_LINGER`: wie lange `close` blockiert, um ungesendete Daten zu leeren, in Sekunden, oder `Unset` zum Abschalten; TCP und Domain
+
+% 1 1 0 075cb7738df04cdb145e94c958a5f762
+
+@ 0 3 0 1e688e0ee263b9dc163802652527e06a
++           Erzeugt mit `socketOptions.linger(seconds)`.
++       entry #seconds   das Linger-Intervall, oder `Unset` für das Standardverhalten
++     entry .TrafficClass   `IP_TOS`: die Verkehrsklasse oder der DSCP-Wert ausgehender Pakete; TCP und UDP
+
+% 1 1 0 1d17665395bda64b1ed1901f2154cb77
+
+@ 0 9 0 14c7fb52785ede851e0714a42784e30b
++           Erzeugt mit `socketOptions.trafficClass(value)`.
++       entry #value   das Type-of-Service-Byte
++     entry .Broadcast   `SO_BROADCAST`: das Senden an eine Broadcast-Adresse erlauben; UDP
++         `socketOptions.broadcastSocketOption` ist sein Given.
++     entry .MulticastLoop   `IP_MULTICAST_LOOP`: die eigenen Multicast-Sendungen eines Programms an es zurückliefern; UDP
++         Loopback kann unter Linux keinen Multicast tragen, daher setzt ein Abonnent, der seine
++         eigenen Ankündigungen sehen will, stattdessen dies. Auf Scala Native nicht angewandt
++         (dessen Kernel-Standard ist eingeschaltet). `socketOptions.multicastLoopSocketOption` ist
++         sein Given.
++     entry .MulticastHops   `IP_MULTICAST_TTL`: wie viele Router ein Multicast-Datagramm überqueren darf; UDP
+
+% 1 1 0 093c3c2f676c3b9c18b85200046e6b41
+
+@ 0 1 0 0b665fd6021c68b4039b25d8e6bcd482
++           Auf Scala Native nicht angewandt (der Kernel-Standard ist ein Hop). Erzeugt mit
+
+% 0 1 0 14e178f9919e1dd309f33e9b0b472a5d
+
+@ 0 2 0 113ae0089512fb3b1eb9311e6f67f4d3
++       entry #count   das Hop-Limit
++     entry .DatagramSize   der Puffer, in den ein Datagramm empfangen wird, und damit das größte Datagramm, das ganz ankommt; UDP
+
+% 1 1 0 1bfe3f159cdc7f1d06c94a0346d5731f
+
+@ 0 2 0 1b21736910c65d3a0a3d566cce05dc4f
++           1472 Bytes — ein Ethernet-Frame —, sofern nicht gesetzt; mDNS erlaubt 9000. Vom
++           Empfangen des Backends verbraucht, statt auf dem Socket gesetzt zu werden. Erzeugt mit
+
+% 0 1 0 13b9c2acdeb2e8b01b1216108f467f04
+
+@ 0 2 0 0cfa5fef7e4fab2e0a18088b60cf62df
++       entry #bytes   die Puffergröße
++   entry .Service   das Handle auf einen laufenden Server, von `listen` geliehen; `stop()` beendet ihn
+
+% 1 1 0 1241fe5850702314111df9522694f907
+
+@ 0 4 0 0bf039ff06edd6ab1a0d4cc1f620b626
++         Ein laufender Socket-Server ist eine exklusive Capability: Er besitzt die
++         Accept-Schleife und die überwachten Verbindungsaufgaben, bis er gestoppt wird, und das
++         Capture-Checking beschränkt ihn auf den Block, dem `listen` ihn leiht, sodass eine
++         Accept-Schleife dem Code, der sie gestartet hat, nie entkommen kann.
++         `Multicast.Subscription` erweitert ihn um Sendungen an die Gruppe.
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 1e82e1081086f5830ac1bff309a1334e
+
+% 2 1 0 0fa4331ff26c2bb01f9015f6cb3acddb
+
+% 0 1 0 0d3d74ab87d1a37e042de76c51ba63b1
+
+% 0 1 0 031cb3caf20d802a1bfde3d303278fab
+
+% 1 1 0 1202cf9d2ae1de481674fcc69a7016b3
+
+% 2 1 0 0ef186f6ad66f48f1b8b366797f98ebd
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 0 1 0 0736367a46b1affb19d414e6bb1df48c
+
+% 0 1 0 01f635d7143d8bf81e8c8245f063101e
+
+% 1 1 0 1001dc308f55b9ab11d3537b5eb40d54
+
+@ 0 4 0 194d90a61cef8ed61312da1b45fd2ebf
++     entry #stop   stoppt die Accept-Schleife, schließt den lauschenden Socket und wartet auf die Aufgabe der Schleife
++         Protokolliert `Socket.Event.Closed`. Die Leihgabe ruft es auf, wenn ihr Block endet,
++         daher ist ein eigener Aufruf nur nötig, um den Server vor dem Ende des Blocks zu stoppen.
++   entry .Error   ausgelöst, wenn eine Verbindung nach einem erfolgreichen Binden scheitert, mit einem `Reason`
+
+% 1 1 0 0b1da231938a8d580f830f4a35e3d988
+
+@ 0 7 0 130a9da3325713ed10c1b5f078c01d6f
++         Fehler `↯/s.101.2`: _the connection failed because `reason`_. Ausgelöst von jeder
++         Backend-Operation nach dem Binden — Annehmen, Übertragen, Schließen, TLS-Handshake, ein
++         abgelaufenes Empfangen, Verbinden, eine Abweisung, Namensauflösung — und von den
++         `Unsupported`-Operationen eines Backends, dem sie fehlen. Die Erweiterungen `transmit`,
++         `react`, `exchange` und `duplex` und das Given `connectableSessional` nehmen eine
++         `Tactic[Socket.Error]`; innerhalb einer `listen`-Leihgabe wird ein Fehlschlag einer
++         Verbindung von der eigenen Aufgabe der Verbindung aufgefangen, sodass er nur diese
++         Verbindung beendet.
+
+% 2 1 0 1fbbd54c364d42da0ada6aa43514154e
+
+% 3 1 0 18a24f08859ec0d91c8f7d41c39093eb
+
+% 2 1 0 12e155153954ac4514590ff8b945257a
+
+% 1 1 0 1a2a6aa62e5923b01bba3d72908cc5d9
+
+% 2 1 0 1ea8bdc7d527f30b0e6af404faa2924c
+
+% 0 1 0 144088bacc956d8a1cccbd3ba414f960
+
+% 0 1 0 1e158a058982777a10ada8c4aa22f453
+
+% 1 1 0 1bffc1d6750f57ff046d10a1d733e95d
+
+@ 0 2 0 05cdeef7ac1c828f0e0272f38a3825e8
++     entry .Reason   warum eine Verbindung gescheitert ist, nummeriert von 1 bis 9
++         Jeder ist eine `Clarification` mit einer `number`:
+
+% 1 1 0 1a8b918dc7f9969906d6d506b4bfab31
+
+@ 2 1 0 0b464a2b96f2f00b171d39951a2534e0
++         column  Fall
+
+% 3 1 0 027230102b9da3fc17aa45809644026f
+
+@ 4 2 0 00919b4e47da24a4040f3ec784677ff4
++         column  Meldung
++         column  Anmerkung
+
+% 0 1 0 07d7c223d45a8a0913986d5f257651af
+
+% 0 1 0 15587ad9da1315b40fe861d054afdffe
+
+% 0 1 0 1cab438da63f29160e69efaa0e1ababf
+
+@ 0 2 0 1c471921cb5a9bdf1feb9e710c833dc6
++         row  `Handshake`  4  _the TLS handshake with the peer failed_  ein Zertifikat, das die Vertrauensrichtlinie zurückweist, ein nicht passender Hostname oder die Ablehnung eines Client-Zertifikats durch einen Listener
++         row  `Timeout`  5  _no response arrived before the timeout_  ein Datagramm-Empfang unter einer `Socket.Option.Timeout` oder ein Verbindungsaufbau, der in ein Timeout lief
+
+% 0 1 0 09531279065fadda048dcee5344d133e
+
+% 0 1 0 1616cd7e3d4435720af4bf977bdd2039
+
+% 0 1 0 1de98d0e61aaec3d0a2c113119a92dfd
+
+@ 0 1 0 1fdddaf871af19e618fe036d3f4bd6c5
++         row  `Unsupported`  9  _the kind of socket is not supported on this platform_  ein Unix-Domain-Socket auf Scala Native oder WASI
+
+% 1 1 0 13c81f4d67a57acf0691e9f4f7527e80
+
+@ 2 2 0 1626255e6ce0506c0fce37d3e7b1052e
++     entry .communicable   gibt jeden Grund als seine Meldung wieder
++     entry #reason   der Grund
+
+@ 0 1 0 06d9fa1e52a775a519050ddf16059880
++ entry .Bind   der Fehler, der ausgelöst wird, wenn ein Socket nicht gebunden werden kann
+
+% 1 1 0 1f180d4588e52ef4049499c9ed67149c
+
+@ 0 4 0 14a452c220fe42161fc55d43710ccad1
++       `Bind` ist der Namensraum von `Bind.Error`, dem einzigen Fehlschlag, den eine `listen`-
++       oder `subscribe`-Leihgabe auslöst, bevor ihr Server läuft: Der Port ist belegt, der
++       Benutzer darf ihn nicht binden, die Adresse ist nicht auf diesem Host, oder die
++       Socket-Art existiert auf dieser Plattform nicht. Alles, was nach dem Binden scheitert,
++       ist ein `Socket.Error`.
+
+% 1 1 0 0b96765c5a17860b00a2d20ebe9670d2
+
+% 1 1 0 02e7e503c3dc6c4f175c60ec0050c285
+
+@ 0 1 0 051792425c249f8b070c11ef87449d8b
++   entry .Error   ausgelöst von `listen` und `subscribe`, wenn der Socket nicht gebunden werden kann
+
+% 1 1 0 151fa5fb30de076b0cd002fe43a8c35b
+
+@ 0 6 0 107eb501c70f06651d269989a09f94bd
++         Fehler `↯/s.101.1`: _the socket could not be bound because `reason`_. Ausgelöst von
++         `Socket.Backend#listenTcp` und `#listenDomain` (und damit von `Bindable#bind`, `listen`,
++         `listenOn` und `subscribe`), nach dem Fehlschlag der Plattform eingeordnet: Eine
++         Meldung, die ein Berechtigungsproblem nennt, ist `PermissionDenied`, eine, die eine
++         belegte Adresse nennt, ist `PortInUse`, und jede andere `AddressUnavailable`. Die
++         Backends für Native und WASI lösen für einen Unix-Domain-Socket `Unsupported` aus.
+
+% 2 1 0 1765e47bde8eaf6512b41b34499d2da3
+
+% 3 1 0 14876d8b5cbe014d01d1ce3e68bd40c7
+
+% 0 1 0 0b2a08d43ac93c6d161de95626ea7095
+
+% 0 1 0 09f4ff6263a789ff0a16a5f18c49299f
+
+% 1 1 0 17bdffe6c758338f15480d912e5083ff
+
+@ 0 1 0 173199aed8d2697f0caf960538a76ee2
++     entry .Reason   warum ein Binden gescheitert ist, nummeriert von 1 bis 4
+
+% 1 1 0 08f5b9479079e804074803cd3719a6d6
+
+@ 2 1 0 1a06a16b27ffdb8019012a08d2ff3414
++         column  Fall
+
+% 3 1 0 02548fa04e1784ef163e208e9033a79d
+
+@ 4 2 0 0810dcd803cc9e991e7bce6543e9d34c
++         column  Meldung
++         column  Anmerkung
+
+% 0 1 0 1ff0f6660ec909fd1d55989d7e573d68
+
+@ 0 1 0 18138a9a800d48b90270238c9c93524f
++         row  `PermissionDenied`  2  _the user does not have permission to bind the port_  ein Port unter 1024 ohne Privilegien
+
+% 0 1 0 1c65fe6060e8a8f10eff4f805c505c20
+
+% 0 1 0 0114fb2275bac5ad09a24a565b784bdc
+
+% 1 1 0 0bb60bed63beeb2b00584756e88c5fab
+
+@ 2 2 0 076532ad1389a456066e5e58805dbd6e
++     entry .communicable   gibt jeden Grund als seine Meldung wieder
++     entry #reason   der Grund
+
+@ 0 1 0 174e92d29508bd250e1b335d0ff535db
++ entry .Bindable   was `listen` von einem Socket braucht: binden, Ankünfte annehmen, jede beantworten, schließen, stoppen
+
+% 1 1 0 03c83f0e16a28f8d158aab7ddbd4ba93
+
+@ 0 7 0 19dbb51e516aa80414ec07061bb05787
++       Ein Socket-Wert ist `Bindable`, wenn er bedienen kann: `Tcp.Port`, `Udp.Port`, `Uds` und
++       `Multicast` sind es, über Givens in diesem Begleitobjekt und in `Multicast`, und auf der
++       JVM ist es `SecurePort`. Jede Instanz legt drei Typen fest, die den Handler von `listen`
++       formen: ein `#Binding` (das Handle des Backends, für den Aufrufer opak), den `#Input`, den
++       ein Handler für jede Ankunft erhält — ein `Duplex` für einen Stream-Socket, ein `Packet`
++       für ein Datagramm —, und den `#Output`, mit dem er antwortet — `Data` für einen Stream,
++       `UdpResponse` für ein Datagramm, `Multicast.Reply` für eine Gruppe.
+
+@ 0 5 0 0370833e50603d8818749dc1ed9cbe07
++       Die Instanzen nehmen das `Socket.Backend` im Geltungsbereich und die für ihren Transport
++       gesammelten Socket-Optionen (`Every[Socket.Option.Tcp]`, `.Udp` oder `.Domain`), sodass
++       sie ohne Import aufgelöst werden, sobald ein Backend gewählt ist. Ein Benutzer ruft die
++       Methoden selten auf: `listen` setzt sie zur Accept-Schleife zusammen. Ein Protokoll über
++       einer neuen Socket-Art stellt eine eigene Instanz bereit und erhält `listen` umsonst.
+
+% 1 1 0 06f7ebc74b5a706e01a821b81393830f
+
+% 1 1 0 1cd8f050603382b21cd1c394493e0fde
+
+@ 0 21 0 12db221d487284f407f4dd400e857a1b
++   entry .uds   bedient einen Unix-Domain-Socket: `Uds is Bindable`, Handler `Duplex => Data`
++       Bindet über `Socket.Backend#listenDomain`, daher wird die Socket-Datei am Pfad angelegt
++       und darf noch nicht existieren. Ein Domain-Socket hat keine Netzwerkschnittstelle, daher
++       wird die Schnittstelle von `listenOn` ignoriert. Nicht verfügbar auf Scala Native oder
++       WASI (`Bind.Error(Unsupported)`).
++   entry .tcpPort   bedient einen TCP-Port: `Tcp.Port is Bindable`, Handler `Duplex => Data`
++       Jede angenommene Verbindung ist ein `Duplex`; der Handler liest die Anfrage aus seiner
++       `source`, und die Antwort, die er zurückgibt, wird ganz zurückgeschrieben, dann wird die
++       Verbindung geschlossen. Ein Handler, der eine Konversation statt einer Antwort braucht,
++       liest und schreibt den `Duplex` selbst und gibt ein leeres `Data` zurück.
++   entry .udpPort   bedient einen UDP-Port: `Udp.Port is Bindable`, Handler `Packet => UdpResponse`
++       Jedes Datagramm ist ein `Packet` mit Adresse und Port seines Absenders;
++       `UdpResponse.Reply(data)` sendet ein Datagramm an diesen Absender zurück und
++       `UdpResponse.Ignore` sendet nichts. `Socket.Backend#listenUdp` deklariert keinen
++       `Bind.Error`, daher wird ein Fehlschlag beim UDP-Binden geworfen.
++   entry #Binding   das Handle des Backends auf den gebundenen Socket
++   entry #Input   was der Handler für jede Ankunft erhält: einen `Duplex` oder ein `Packet`
++   entry #Output   womit der Handler antwortet: `Data`, eine `UdpResponse` oder ein `Multicast.Reply`
++   entry #bind   bindet den Socket, auf einer Schnittstelle oder allen, und löst `Bind.Error` aus
++   entry #connect   blockiert bis zur nächsten Ankunft auf einer Bindung und löst `Socket.Error` aus
++   entry #transmit   führt die Antwort des Handlers auf eine Ankunft aus
++   entry #close   schließt die Verbindung einer Ankunft, nachdem ihre Antwort gesendet ist
++   entry #stop   schließt die Bindung und gibt ein wartendes `#connect` frei
+
+@ 0 1 0 014ef18fbac1dfe9182c38c86a874b3f
++ entry .Connectable   was `duplex` von einem Endpunkt braucht: einen dauerhaften bidirektionalen `Duplex` öffnen
+
+% 1 1 0 010bb4e69beec72e0f4f84695ffdb98c
+
+@ 0 5 0 1940e61b906e43e31bf9c6cdb46af6c1
++       Das Gegenstück zu `Serviceable` für Protokolle, die eine Verbindung offen halten und
++       nebenläufig lesen und schreiben — HTTP/2, WebSockets, SSH —, statt einer Anfrage und einer
++       Antwort. `Endpoint[Tcp.Port]` und `Uds` sind über dieses Begleitobjekt `Connectable`, und
++       auf der JVM und Scala Native ist es `SecureEndpoint`, über TLS. `duplex`,
++       `connectableSessional` und die Leihgabe `session` bauen darauf auf.
+
+% 2 1 0 0add35aceb3192c3153e50035332694d
+
+% 3 1 0 01ddfeaa190554c311dee5880559b2a1
+
+% 0 1 0 1296966e6ab111200fb6cdea03f77a11
+
+% 0 1 0 10412772a53ae1ff15f7d3c770540900
+
+% 1 1 0 0590ea12d38d7d3c106985bce1ed5df0
+
+@ 0 2 0 1369add881efa76b09d8f8994f8c9070
++       Das `connect` des Traits löst `Socket.Error` aus, daher lässt sich ein Lambda nicht in ihn
++       umwandeln; `.apply` erzeugt eine Instanz aus einer einfachen Funktion für eine Verbindung,
++       deren Öffnen nicht scheitern kann.
+
+% 1 1 0 061d493ee6162b2a0f668afc9bd5a1fc
+
+% 1 1 0 089e1751368c3c9e1ba98eaed443c71a
+
+% 1 1 0 0af0c24f26f2300408d15d8a9b1f4006
+
+@ 0 15 0 1cb203a52c9e3a291ea23faf71c0577d
++   entry .apply   eine Instanz aus einer Funktion `(endpoint, interface) -> Duplex`, die nicht scheitern kann
++       Für einen Endpunkt, dessen Duplex schon vorliegt — etwa ein prozessinternes
++       `Duplex.pair()` in einem Test. Das `connect` des Traits deklariert `raises Socket.Error`,
++       weshalb ein Lambda nicht direkt eine Instanz sein kann.
++   entry .uds   verbindet sich mit einem Unix-Domain-Socket als `Duplex`: `Uds is Connectable`
++       Über `Socket.Backend#duplexDomain`, mit dem `Every[Socket.Option.Domain]` im
++       Geltungsbereich; ein Domain-Socket hat keine Schnittstelle, daher wird das
++       Schnittstellenargument ignoriert. Löst auf Scala Native und WASI
++       `Socket.Error(Unsupported)` aus.
++   entry .tcpEndpoint   verbindet sich mit einem entfernten TCP-Endpunkt als `Duplex`: `Endpoint[Tcp.Port] is Connectable`
++       Über `Socket.Backend#duplexTcp`, mit dem `Every[Socket.Option.Tcp]` im Geltungsbereich.
++       Die Instanz wird nur mit der Erlaubnis `Online` aufgelöst
++       (`import internetAccess.online`) und ist eine Capability, die diesen Nachweis trägt,
++       sodass die Entscheidung, das Netzwerk zu erreichen, an der Verwendungsstelle sichtbar
++       ist. Ein Fehlschlag beim Verbinden löst `Socket.Error` mit `Dns`, `Refused`, `Timeout`
++       oder `Connect` aus.
++   entry #connect   öffnet die Verbindung und bindet die lokale Seite an eine Schnittstelle, wenn eine angegeben ist
+
+@ 0 1 0 090de08a551c74621eb50a093c292245
++ entry .Routable   was das Datagramm-`transmit` von einem Endpunkt braucht: verbinden und eine Nachricht versenden
+
+% 1 1 0 16078153e507f1dc02a33dcc00a786b3
+
+@ 0 5 0 0f65a0f28e26c44d054f45ea82c69f8d
++       Die Fire-and-Forget-Rolle: Mit einem `Routable`-Endpunkt kann verbunden und ihm eine
++       serialisierte Nachricht zugesandt werden, ohne auf etwas zu warten. `Endpoint[Udp.Port]`
++       und `Udp.Port` (auf dem lokalen Host) sind `Routable`; `Serviceable` erweitert es um eine
++       Antwort und ein Schließen, und das lässt das `transmit` eines TCP-Endpunkts einen
++       Antwort-Stream zurückgeben, wo das eines UDP-Endpunkts `Unit` zurückgibt.
+
+% 1 1 0 17ddbd757e0f02d608710b1633a3e182
+
+% 1 1 0 086facb37338ca12113e4767be697df9
+
+@ 0 7 0 1fa340c78dfcba1e06b8936dbddcf177
++   entry .udpEndpoint   versendet ein Datagramm an einen entfernten UDP-Endpunkt: `Endpoint[Udp.Port] is Routable`
++       Über `Socket.Backend#routeUdp` und `#dispatch`, mit dem `Every[Socket.Option.Udp]` im
++       Geltungsbereich. Der Host wird aufgelöst, wenn der Kurier erzeugt wird.
++   entry .udpPort   versendet ein Datagramm an einen UDP-Port auf dem lokalen Host: `Udp.Port is Routable`
++   entry #Connection   das Handle des Backends auf die Verbindung (ein `Courier` für einen Datagramm-Endpunkt)
++   entry #connect   öffnet die Verbindung und löst `Socket.Error` aus
++   entry #transmit   schreibt einen ganzen Stream in die Verbindung und konsumiert ihn
+
+@ 0 1 0 031ddf348dacbf7d0ee85a3f8e0efd40
++ entry .Serviceable   was `transmit` und `react` von einem Endpunkt brauchen: ein Request hinaus, ein Response-Stream zurück
+
+% 1 1 0 0458699bff4b81231d5fb4712dcde515
+
+@ 0 7 0 120011144fa7ceeb114d36c9bb34278c
++       Die Request/Response-Rolle: Mit einem `Serviceable`-Endpunkt wird eine Verbindung
++       aufgebaut, ihm wird ein Request zugestreamt, während seine Ausgabe halb geschlossen ist,
++       und er liefert einen Response-Stream zurück, der endet, wenn die Gegenseite halb schließt.
++       `Endpoint[Tcp.Port]`, `Tcp.Port` (auf dem lokalen Host) und `Uds` sind `Serviceable`.
++       Instanzen sind Capabilities — sie behalten die `Tactic[Truncation.Error]`, über die ihre
++       Response-Streams Fehler auslösen —, daher nehmen `transmit`, `react` und `exchange` den
++       Nachweis als erfassenden Using-Parameter statt als Context Bound, und die Instanz wird
++       dort aufgelöst, wo die Taktik im Geltungsbereich ist.
+
+% 2 1 0 09797fef94e1292a1326a94e458356c5
+
+% 3 1 0 1b5f87cd60a43d63094abb365a548e18
+
+% 4 1 0 0404e7f0881a01ed051e3a4f3a750761
+
+% 5 1 0 162a65d1981a69910542dfc98aab94ea
+
+% 6 1 0 189e112e5f87d76f033a951f0027f6ae
+
+% 7 1 0 1f19297ed92310cb0cbe8c942b70ceeb
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 1 1 0 1b2e4a31828ee7ac169834199faab699
+
+% 2 1 0 0c3efb81d01ad26403bb253a30892814
+
+% 2 1 0 086d5b596678fbaf048c280065ba0294
+
+% 0 1 0 0b7b87fd7acd4f3017ec2c9b0fd07a55
+
+% 1 1 0 035d2bcf9e5e8c78177de7e5845a5429
+
+@ 0 2 0 1f0585fe5bc87fc616ce1d33115fbf79
++       Ein `Serviceable` kann nur antworten, nie zuerst senden; ein `Duplexable` ist ein
++       `Serviceable`, dessen Transmit nie halb schließt, und kann es daher.
+
+% 1 1 0 1813e2bcf05c10af175e7eb33eb406d8
+
+% 1 1 0 17953270bed4acd716236abd046e1f6a
+
+% 1 1 0 12b69c1f1f74523308a05b937974dfcd
+
+@ 0 14 0 1c8419cda82af3d2130f776861e58bde
++   entry .uds   ein Request/Response-Austausch über einen Unix-Domain-Socket: `Uds is Serviceable`
++       Über `Socket.Backend#dialDomain`, `#request`, `#response` und `#hangUp`, mit dem
++       `Every[Socket.Option.Domain]` und einer `Tactic[Truncation.Error]` im Geltungsbereich.
++       Nicht verfügbar auf Scala Native oder WASI (`Socket.Error(Unsupported)`).
++   entry .tcpEndpoint   ein Request/Response-Austausch mit einem entfernten TCP-Endpunkt: `Endpoint[Tcp.Port] is Serviceable`
++       Benötigt `Online` (`import internetAccess.online`), das `Every[Socket.Option.Tcp]` und
++       eine `Tactic[Truncation.Error]`. Ein fehlgeschlagener Verbindungsaufbau löst
++       `Socket.Error` mit `Dns`, `Refused`, `Timeout` oder `Connect` aus.
++   entry .tcpPort   ein Request/Response-Austausch mit einem TCP-Port auf dem lokalen Host: `Tcp.Port is Serviceable`
++       Wie `.tcpEndpoint`, ohne `Online`: Der lokale Host ist nicht das Netzwerk.
++   entry #receive   ein frischer, einmal nutzbarer Pull-Stream über die Leseseite der Verbindung, der beim halben Schließen der Gegenseite endet
++       Benötigt ein `Buffering`. Der Stream kann die `Tactic[Truncation.Error]` der Instanz
++       behalten, daher ist sein Typ instanzabhängig, und er wird dort gelesen, wo er erzeugt
++       wurde.
++   entry #close   legt die Verbindung auf
+
+@ 0 8 0 0b07e5141ffc2fa20e15f09bbf0298e4
++ entry .Duplexable   ein `Serviceable`, dessen Transmit wiederholbar und nebenläufig sicher ist, sodass `exchange` zuerst senden kann
++     Das `transmit` eines `Duplexable`-Transports darf wiederholt aufgerufen werden, auch
++     nebenläufig zu `receive` und zu sich selbst, ohne die Verbindung je halb zu schließen.
++     Nur ein solcher Transport kann *proaktiv* senden — vor der ersten eingehenden Nachricht
++     oder aus einer anderen Aufgabe heraus —, daher wird `exchange`, das dem Aufrufer einen
++     `Transmitter` übergibt, nur für ein `Duplexable` angeboten; ein einfaches
++     Request/Response-`Serviceable` hat nur das reaktive `react`. Der Trait fügt keine Member
++     hinzu: Er ist ein Versprechen über die von `Serviceable`. Die eigenen Socket-Givens von
++     Coaxial sind nicht `Duplexable`; ein WebSocket-Client ist die Art von Transport, die es ist.
+
+@ 0 1 0 028def9c8ca6523a1b05029874d7ae63
++ entry .Subscribable   was `subscribe` von einer Multicast-Gruppe braucht: beitreten, empfangen, an die Gruppe oder ein Mitglied senden, austreten
+
+% 1 1 0 0cc8a91a77b705e6031aeebd94de9b5f
+
+@ 0 6 0 04bfaaaa2c253fbb039cc500bdcd803c
++       Die Gestalt von `Bindable` — eine Antwort pro Ankunft — kann kein unaufgefordertes Senden
++       ausdrücken, weshalb eine Multicast-Gruppe eine eigene Typklasse hat. `Multicast` ist
++       `Subscribable` über `Multicast.subscribable`, über dem `Socket.Backend` im
++       Geltungsbereich, und die Leihgabe `subscribe` setzt die Methoden zu einer Empfangsschleife
++       mit einer `Multicast.Subscription` zusammen, die auch senden kann. `Multicast.bindable`
++       leitet aus jedem `Subscribable` ein `Bindable` ab, sodass `listen` auch mit einer Gruppe
++       funktioniert, für ein Mitglied, das nur antwortet.
+
+% 1 1 0 13da7e4a8a44ee25018c6feff3b7eed2
+
+% 1 1 0 1d20a167dd499dce0cbbfb587190b6b2
+
+@ 0 9 0 136cbd495f22cc021c279529ca83a01a
++   entry #Binding   das Handle des Backends auf die beigetretene Gruppe
++   entry #join   bindet den Port der Gruppe und tritt der Gruppe auf jeder geeigneten Schnittstelle bei, oder auf der mit der angegebenen MAC-Adresse
++   entry #receive   blockiert bis zum nächsten Datagramm, das die Gruppe zustellt, und löst `Socket.Error` aus
++   entry #sendGroup   sendet ein Datagramm an die ganze Gruppe
++   entry #sendTo   sendet ein Datagramm an ein einzelnes Unicast-Ziel und einen Port
++   entry #leave   gibt die Mitgliedschaften auf und schließt den Socket, wodurch ein wartendes `#receive` freigegeben wird
++   entry #transmit   führt die `Multicast.Reply` eines Handlers auf ein empfangenes Paket aus
++       `Group(data)` geht an die Gruppe, `Unicast(data)` an den Absender des Pakets und seinen
++       Port, und `Ignore` nirgendwohin.
+
+@ 0 1 0 0f3f718aa6cdb4471b86183744832015
++ entry .Duplex   eine dauerhafte bidirektionale Verbindung: unabhängiges Lesen und Schreiben, nie halb geschlossen
+
+% 1 1 0 0ab010e3bb47c3c514142bfd71cf9314
+
+@ 0 7 0 0cba5d33ca622ae30b96309e3dfee331
++       Ein `Duplex` ist, was `duplex`, `session` und `Connectable#connect` zurückgeben und was
++       ein Handler für ein TCP- oder Unix-Domain-`listen` erhält: eine offene Verbindung,
++       deren Leseseite ein Pull-Stream ist (`#source`) und deren Schreibseite beliebig viele
++       Sendungen annimmt (`#send` oder den Push-Endpunkt `#intake`), von denen keine halb
++       schließt. Das ist die Gestalt, die ein multiplexendes Protokoll wie HTTP/2 braucht, bei
++       dem eine Seite sowohl Requests streamt als auch nebenläufig vom Server initiierte
++       Frames empfängt; das Request/Response-`transmit` ist die andere Gestalt, die ihre
++       Ausgabe nach dem Senden schließt.
+
+% 2 1 0 042ec1df01e81ed51d5d9849c1d38b19
+
+% 3 1 0 1b70ed854995120b012a5d7f7cecd038
+
+% 4 1 0 009330a0fe3f1cab1d1652cc7f7951f8
+
+% 5 1 0 053a766e8cad94b605cec622878ced67
+
+% 6 1 0 00a708a24e2bcecc105392da8b755f9f
+
+% 7 1 0 131b4c96da4d877d02d2660ffbb41128
+
+% 8 1 0 0de0992fd05e942a127d6b7061365331
+
+% 10 1 0 078d325bf49a192000d9efcb7183887e
+
+% 0 1 0 082f98e689b68c6f05b718c61dafb477
+
+% 0 1 0 1bea4509510c84791ba7d46b68653b06
+
+% 0 1 0 153621c5ab02b7820811afc322cd5473
+
+% 0 1 0 14bddd4311c745d414a327ef5e6fce30
+
+% 1 1 0 0f112b573bb97a42029d633474fb597c
+
+@ 0 5 0 09a0fe11fc26e43915b6c5b6f477f622
++       Lesevorgänge blockieren, bis Daten ankommen oder die Gegenseite schließt. Der Vertrag
++       sieht einen einzigen Leser vor, daher wird `#source` einmal geöffnet. Ein Socket-basierter
++       Duplex erfasst die Betriebssystemressourcen dahinter, daher deklariert Code, der einen
++       speichert, den Typ als `Duplex^`; das prozessinterne `.pair()` ist rein und passt
++       trotzdem. Über TLS meldet `#alpnProtocol` das Anwendungsprotokoll, das der Handshake
++       ausgewählt hat.
+
+% 1 1 0 060eb08490a942990b058460cb40ee99
+
+% 1 1 0 1263d14bbd406f011950ecf229e970fc
+
+% 0 1 0 1247a63753ff2efe1c0ea4d248c14f42
+
+@ 0 5 0 01abeb767aa6516a17d1ae43f87c813b
++   entry .pair   ein prozessinternes verbundenes Paar: Was eine Seite sendet, empfängt die andere
++       `Duplex.pair()` erzeugt zwei Rücken an Rücken verbundene Duplexe, um ein Protokoll ohne
++       Socket zu testen. Chunk-Grenzen bleiben erhalten — jede Sendung wird zu einem
++       Element memoisiert und auf der anderen Seite als ein Nachfüllfenster bereitgestellt,
++       worauf Protokolltests im Speicher angewiesen sind —, und das `close()` einer Seite
++       beendet den Stream der anderen Seite.
+
+% 2 1 0 06733be459f88b911321bc84b2545689
+
+% 3 1 0 13a8e9ec383ad07b13880312d0fe64f7
+
+% 4 1 0 179b16d948bdec080c999bb55293834f
+
+% 0 1 0 0f995baa918becf8124719a94e1c04d6
+
+% 0 1 0 163dcfec7644ed761f00188fffae35e4
+
+% 0 1 0 06ebf705d39a77fc0dfa795ea289ea98
+
+% 0 1 0 008ec0610cd21ee80ec081d553abe91d
+
+% 1 1 0 072b99a4f077a55b0b73c528a3e0e63a
+
+@ 0 16 0 066c8db1f31bf75211920afaf089323a
++   entry #send   schreibt einen ganzen Stream in die Verbindung und verbraucht ihn; wiederholbar
++       Nimmt den Stream als `consume`-Parameter: Er wird hier geleert, geschrieben und
++       geschlossen und darf danach nicht mehr verwendet werden. Kann beliebig oft aufgerufen
++       werden; schließt nie halb.
++   entry #close   schließt die Verbindung
++   entry #source   ein frischer, einmal nutzbarer Pull-Stream über die Leseseite, der blockiert, bis Daten ankommen oder die Gegenseite schließt
++       Benötigt ein `Buffering` für seine Fenstergröße. Das `^` des Ergebnisses ist tragend:
++       Der Stream ist zustandsbehaftet und behält die Verbindung. Öffnen Sie ihn einmal pro
++       Verbindung.
++   entry #alpnProtocol   das per ALPN ausgehandelte Anwendungsprotokoll (`h2`, `http/1.1`) oder `Unset`
++       `Unset` für eine Klartextverbindung oder wenn die Gegenseite keines der Protokolle
++       ausgewählt hat, die eine `Tls`-Konfiguration angeboten hat. Ein vereinheitlichter
++       HTTP-Client liest dies einmal, direkt nach dem Verbindungsaufbau, um über genau diesem
++       Socket einen HTTP/2- oder HTTP/1.1-Treiber auszuwählen. Gesetzt von `SecureEndpoint`
++       und `SecurePort` auf der JVM; der TLS-Client von Scala Native bietet kein ALPN.
++   entry #intake   ein Push-Endpunkt über die Schreibseite, der bis zur Blockgröße von `Buffering` puffert
++       Schreibvorgänge werden in einem Block gesammelt und gesendet, wenn er voll ist;
++       `flush()` und `finish()` senden das Gesammelte, ohne halb zu schließen, sodass auf
++       `finish()` weitere Sendungen folgen dürfen. `stream.pump(duplex.intake)` ist der
++       Push-seitige Weg, einen Stream in die Verbindung zu kopieren.
+
+@ 0 1 0 02468a94e7fbd5070a773bdc1e07c7e7
++ entry .Transmitter   ein Handle, um jederzeit Nachrichten über eine offene Vollduplex-Verbindung zu senden
+
+% 1 1 0 1275be7681cc54f408f052c15fd99e4d
+
+@ 0 5 0 1263f6b6d4d9aa910f609e24ddc0b686
++       Wird dem `interact`-Block von `exchange` übergeben: Ein `Transmitter[message]`
++       serialisiert jede Nachricht mit ihrem `Transmissible` und übergibt sie der Verbindung,
++       vor dem Eintreffen der ersten eingehenden Nachricht oder nebenläufig aus einer anderen
++       Aufgabe, während `Control` nur antworten kann. Er ist nur über einem
++       `Duplexable`-Transport verfügbar, dessen Transmit nebenläufig sicher aufgerufen werden
++       kann.
+
+% 1 1 0 1d1e114e3257cbec1c972068182c2b63
+
+% 1 1 0 1cee3134fdf5248b0720a332dac6cbde
+
+@ 0 1 0 113739535b9ddbe31ba25ab8c8374d56
++   entry .Post   das verbrauchende Ziel, an das ein Transmitter übergibt: ein Stream hinein, nichts heraus
+
+% 1 1 0 0e377264fd0f07e610a5cc14879b581b
+
+@ 0 4 0 0ed6e7aeb8745cf5071a03bd8ad9f725
++         Ein Trait mit einer einzigen Methode statt eines Funktionstyps, weil nur ein
++         Methodenparameter als `consume` markiert werden kann. `exchange` erzeugt einen über
++         dem Transmit der Verbindung.
++     entry #apply   schreibt einen ganzen Stream und verbraucht ihn
++   entry #send   serialisiert eine Nachricht und übergibt sie der Verbindung
+
+@ 0 1 0 16558cc4df65e10605a5e2912835a899
++ entry .Control   der nächste Schritt eines Gesprächs, den ein `react`- oder `exchange`-Handler für jede Nachricht zurückgibt
+
+% 1 1 0 01b1622068eb03021b3323c012a289fb
+
+@ 0 6 0 010277192afdd2e40a21ee5c8b529fbc
++       Ein `Control[state]` ist das Urteil des Handlers über eine eingehende Nachricht: ob
++       etwas zurückgesendet wird, was der neue Zustand ist und ob das Gespräch weitergeht. Die
++       vier sind `.Continue` (auf die nächste Nachricht warten), `.Reply` (eine Nachricht
++       senden, dann warten), `.Conclude` (eine Nachricht senden, dann aufhören) und
++       `.Terminate` (aufhören). Ein mitgeführter Zustand `Unset` lässt den Zustand unverändert,
++       daher bedeutet `Continue()` „nichts ändert sich“. `Continue` und `Reply`, die beiden,
++       die das Gespräch offen halten, sind auch `.Interactive`.
+
+% 2 1 0 0516e9f19b6f4b38080acdbb1be4e4d3
+
+% 3 1 0 0b13994183c2d35716a957600e30328d
+
+% 4 1 0 1d648dab58dbff4d0fe8dbdda2d0b856
+
+% 1 1 0 0117605ccecd820d1f44fbce1b2ed214
+
+% 0 1 0 12ea56a6a5dcebc00f3ab8517994cec7
+
+% 0 1 0 10e0019a914ac7951d7104835fc1e485
+
+% 0 1 0 1fd363964ad5e6e0083da6609f4946df
+
+% 0 1 0 1ac883fa4156e48610342be171806c2c
+
+% 1 1 0 1cd550f950bd3ae91c8364da0df6570f
+
+@ 0 2 0 1729e6604e41f8b1129a63734e399b8e
++       Die Nachrichten werden beim Aufbau des Controls über `Transmissible` serialisiert,
++       daher hält ein `Reply` oder `Conclude` seine Übertragungsbytes als `Data`.
+
+% 1 1 0 0e9884fbebba276b1669e4757bbdb723
+
+% 1 1 0 19104cea62990b1a1df536731a17ab3b
+
+@ 0 4 0 04a0c17b24a155910d58387f7d415a4a
++   entry .Interactive   die Markierung eines Controls, das das Gespräch offen hält: `Continue` und `Reply`
++   entry .Continue   auf die nächste Nachricht warten, mit einem neuen Zustand oder `Unset` für keine Änderung
++     entry #state   der neue Zustand oder `Unset`, um den aktuellen beizubehalten
++   entry .Reply   eine Nachricht senden und auf die nächste warten, mit einem neuen Zustand oder `Unset`
+
+% 1 1 0 138a7fffaba697331d2a1d4088c4e18b
+
+@ 0 6 0 0e73b788a2217a7d1bdd39ab6138ccdf
++         `Reply(message, state)` nimmt jede `Transmissible`-Nachricht und serialisiert sie
++         sofort; die Case-Klasse hält die resultierenden `Data`. Der Zustand ist standardmäßig
++         `Unset`.
++     entry .apply   `Reply(message, state = Unset)` aus einer beliebigen `Transmissible`-Nachricht
++     entry #message   die Bytes der Antwort
++     entry #state   der neue Zustand oder `Unset`
++   entry .Conclude   eine Nachricht senden und aufhören, mit einem Endzustand oder `Unset`
+
+% 1 1 0 133d8ed54f03efca007d9da11d528196
+
+@ 0 8 0 1fe4e686a49f13f90ca686e99f4a904b
++         `Conclude(message, state)` nimmt jede `Transmissible`-Nachricht und serialisiert sie
++         sofort. Die Schleife sendet sie, aktualisiert den Zustand und endet; der Endzustand ist
++         das Ergebnis von `react`.
++     entry .apply   `Conclude(message, state = Unset)` aus einer beliebigen `Transmissible`-Nachricht
++     entry #message   die Bytes der letzten Nachricht
++     entry #state   der Endzustand oder `Unset`
++   entry .Terminate   das Gespräch beenden, ohne etwas zu senden
++       Ein `Control[Nothing]`, passt also zu jedem Zustandstyp.
+
+@ 0 1 0 03d6d6373f25656f14d38a1be8a7b149
++ entry .Transmissible   wie eine Nachricht auf dem Weg hinaus zu Bytes wird: `serialize` zu einem Stream
+
+% 1 1 0 0eed7a956110648606b2d3d2ce624f34
+
+@ 0 6 0 18d50dbe078007f415ce87700b36b9b3
++       Ein Aufruf von `#serialize` liefert die Übertragungsform einer Nachricht als frischen
++       Pull-Stream. Transporte mit Nachrichten-Framing (ein UDP-Datagramm, ein
++       WebSocket-Frame) können den Stream zu einer einzigen gerahmten Einheit memoisieren;
++       Bytestream-Transporte schreiben ihn ohne Kopieren durch das Fenster. Alles, was
++       `transmit`, `Reply`, `Conclude` oder `Transmitter#send` annimmt, ist `Transmissible`:
++       `Data`, `Text` (über das `Codepage` im Geltungsbereich), eine `Chain[Data]` und jeder
++       Wert, der `Encodable in Text` ist.
+
+% 2 1 0 10ba27a75e291d121a8908b9d23bba6e
+
+% 3 1 0 1b508c38b856bf22158ae10b46ca28a2
+
+% 4 1 0 07c9a52e926d58671c404e799648512c
+
+% 0 1 0 0e5bdc6e1629849e1ca97be9c32372a9
+
+% 0 1 0 1976a8e4cb42557e01d134a556648b1d
+
+% 1 1 0 07af36795dceedd50d3ba0a3097f8f05
+
+@ 0 2 0 0622b65bcc41c43b19944271dffac536
++       Die Typklasse ist rein (sie erweitert `Typeclass.Pure`), daher kann eine Instanz
++       überall herbeigerufen und frei erfasst werden.
+
+% 1 1 0 1e648126c43d4dd40f12fa5379130839
+
+% 1 1 0 1666f81e32fc09ff0ea70d75644f04d1
+
+@ 0 13 0 1e17bd00859843a90b0ae327829f428a
++   entry .bytes   `Data is Transmissible`: die Bytes selbst, als ein einziger Chunk
++       Genau an `Data` gebunden: Ein Subtyp-Parameter würde das eingefrorene
++       Array mit einer Wildcard-Erfassung instanziieren, die nicht zurückfließen kann, daher
++       braucht ein markiertes `Data` `.sizedBytes`.
++   entry .sizedBytes   `(Data & Sized[length]) is Transmissible`: ein größenmarkierter Block wird wie der einfache übertragen
++   entry .stream   `Chain[Data] is Transmissible`: eine Kette von Chunks wird unverändert übertragen
++   entry .text   `Text is Transmissible`, über das `Codepage` im Geltungsbereich
++       `import codepages.utf8Codepage` (oder ein anderes) ist erforderlich.
++   entry .encoder   jeder `Encodable in Text`-Wert, zu Text kodiert und dann über das `Codepage`
++       Ein `Port` etwa wird als sein dezimaler Text übertragen.
++   entry #serialize   die Übertragungsform einer Nachricht, als frischer Pull-Stream
++   entry #contramap   eine Instanz für einen anderen Typ, indem dieser zuerst auf diesen abgebildet wird
++       `textTransmissible.contramap[Int](_.show)` ist ein `Int is Transmissible`. Die Funktion
++       muss rein sein (`->`).
+
+@ 0 1 0 027e60485962c1630bd82c25f06a099f
++ entry .Ingressive   wie Bytes auf dem Weg herein zu einer Nachricht werden: eine gerahmte Nachricht mit `deserialize`
+
+% 1 1 0 19fa32c35c0872e11d8fb501dad3cecf
+
+@ 0 4 0 09af7d1d3255a2f50312443aff555435
++       Das eingehende Gegenstück zu `Transmissible`: `react` und `exchange` dekodieren jede
++       eingehende Nachricht — ein Nachfüllfenster des Streams der Verbindung — über das
++       `Ingressive` für den Nachrichtentyp des Handlers. Ein über die Leitung empfangener
++       `Port` ist daher ein `Port`, bei der Ankunft validiert, statt Text, der später geprüft
++       werden muss.
+
+% 2 1 0 1e7e60a7cedc560a16f1d13111eed13e
+
+% 3 1 0 01b2f4fcde3fd54d105091740f5146d7
+
+% 4 1 0 0ca6d7a25b47c3041e4c813a6b12709a
+
+% 1 1 0 10f37dfb425b29ce0fb26bc1518bc27e
+
+% 0 1 0 0d595e1ece3ebc961a1e5e747c40890a
+
+% 0 1 0 1ae1cc0fd4a16b1309994672a14034a7
+
+% 1 1 0 0e76558db93c83110b25f13ac9510557
+
+@ 0 2 0 145971855cfbbbb80b34d3a448469908
++       Eine Instanz kann erfassen (ein `Charset`, eine Taktik), daher gibt `#map` eine zurück,
++       die diese Instanz und die Funktion erfasst.
+
+% 1 1 0 137dfe165858406c13967f9e4022a346
+
+% 2 1 0 0ef9e9637423ae48069f1487277876d7
+
+@ 0 8 0 1c3638a1d57b62890460c9bfacbf1824
++   entry .bytes   `Data is Ingressive`: die Bytes, wie sie empfangen wurden
++   entry .text   `Text is Ingressive`, dekodiert über das `Charset` im Geltungsbereich
++       `import charsets.utf8Charset` (oder ein anderes) ist erforderlich.
++   entry .decoder   jeder `Decodable in Text`-Typ, aus Text dekodiert über das `Charset`
++       Ein Dekodierungsfehler wird über die eigene Taktik des `Decodable` ausgelöst.
++   entry #deserialize   eine Nachricht aus ihren Bytes
++   entry #map   eine Instanz für einen anderen Typ, indem das Ergebnis dieser abgebildet wird
++       `Ingressive.text.map[Int](_.length)` ist ein `Int is Ingressive`.
+
+@ 0 1 0 028285ae08a2c2da0e3631e9a07bcd70
++ entry .Packet   ein empfangenes Datagramm: seine Bytes sowie Adresse und Port des Absenders
+
+% 1 1 0 1bbbe496789ac805102eb82bfb10b8ee
+
+@ 0 4 0 1c534e353653c11e1c5d5412a6fac1f2
++       Was ein UDP-`listen`-Handler und ein `subscribe`-Handler erhalten und was
++       `Socket.Backend#exchangeUdp` zurückgibt. Der Absender ist das Ziel einer Antwort, weshalb
++       `UdpResponse.Reply` und `Multicast.Reply.Unicast` keine eigene Adresse brauchen; und bei
++       einem einmaligen Austausch prüft ein Aufrufer damit, ob die Antwort von der
++       richtigen Stelle kam.
+
+% 2 1 0 17e793a6ea1424100eaeb967d8fd42f0
+
+% 3 1 0 1998fd53e159a2181e0c588d4538e09f
+
+% 0 1 0 17c2f3c7b5e910970c98215685dc7706
+
+% 0 1 0 1457894c9114ceff05a8e81ad274a9da
+
+% 1 1 0 01e7f848a916f7610e134757b38e9aa1
+
+@ 0 3 0 166b37075fd0acb511fa985ff7f284ab
++   entry #data   die Bytes des Datagramms, höchstens die geltende `Socket.Option.DatagramSize`
++   entry #sender   die IPv4- oder IPv6-Adresse des Absenders
++   entry #port   der UDP-Port des Absenders
+
+@ 0 3 0 0d198faaae9299af04093b0cfd4a3aa9
++ entry .UdpResponse   die Antwort eines UDP-Handlers auf ein Datagramm: dem Absender antworten oder es ignorieren
++     `Reply(data)` sendet `data` als ein Datagramm zurück an Absender und Port des Pakets;
++     `Ignore` sendet nichts. Ein UDP-`listen`-Handler ist `Packet => UdpResponse`.
+
+% 2 1 0 182535d50597562118df671683194870
+
+% 3 1 0 0c713e6566772eb9034fcfb68fee7edc
+
+% 4 1 0 03e971eeaa59709f08ed9ec50f4dd10a
+
+% 5 1 0 18816b69261af076128b74727a5a274c
+
+% 6 1 0 02ae4ff4217c46c40e5fe1faf4315a9c
+
+% 7 1 0 153d49df385922d710566669b4c068d8
+
+% 8 1 0 1c9e92fa3ad88af71c78171f81e8df49
+
+% 9 1 0 0d3d3401a9b430900945efb98b79312c
+
+% 1 1 0 10e26940ccace9d91d475856c814cb8b
+
+% 3 1 0 12b2c811addb56051eb70995b9f8cc87
+
+% 0 1 0 1e0bac2c4e84178b1cb301f2f6c79714
+
+% 0 1 0 1bbe72c0dbaef42c06c8cce781fda8a3
+
+% 1 1 0 1d91665a4167a77c1f425fdc17578c33
+
+@ 0 1 0 073cf04370a04af50e19bec09e69f7ff
++ entry .Uds   ein Unix-Domain-Socket, über den Pfad seiner Socket-Datei; bedienbar und verbindbar
+
+% 1 1 0 1d09edc8472d8c2e149c5c808deeea79
+
+@ 0 6 0 1407d91bc77db56c03c9e34409eb23e5
++       Ein `Uds(path)` ist ein Socket im lokalen Dateisystem — `/var/run/docker.sock`, der
++       Steuer-Socket eines Daemons —, der mit `listen` bedient werden kann (die Datei wird
++       unter dem Pfad angelegt, der noch nicht existieren darf), für einen Request/Response mit
++       `transmit` und `react` verbunden werden kann oder mit `duplex` und `session` als
++       `Duplex` offen gehalten werden kann. Er nimmt jeden Pfadtyp
++       (`Abstractable across Paths to Text`) oder Text und gibt den Pfad mit `#path` als
++       beliebigen Pfadtyp zurück.
+
+% 2 1 0 1870cf900c6f1a9f18d16061e6079dfe
+
+% 3 1 0 16fa8853f77b80fd176bfe34f719e8ae
+
+% 0 1 0 0ff4e31c6e3f169a1cce4196941588a2
+
+% 0 1 0 072bc5be0f26d99118ac449e2b891bf6
+
+% 0 1 0 025d22bd57d59dc7101cd2d58a8d2afd
+
+% 0 1 0 1e9815f1bea0bc4213d7fae8647ea181
+
+% 1 1 0 0d4abfbba70111ed0bdd78e86f824627
+
+@ 0 4 0 1dd344f54a9fe9420976d37b33b4e425
++       Unix-Domain-Sockets gibt es nur im JVM-Backend: Auf Scala Native und WASI lösen die
++       Operationen `Unsupported` aus. Auf der JVM bedient `listenConnections` einen mit rohen
++       blockierenden Streams und dem Benutzer der Gegenseite, für einen Daemon, der diese
++       braucht. Ein Domain-Socket hat keine Netzwerkschnittstelle, daher ignorieren `listenOn`
++       und `duplex(…)(interface)` die ihre.
+
+% 0 1 0 0d99d4438ffc43d509287e1dbb846214
+
+% 1 1 0 195171b3fae4fc3b1d485f16274ec76f
+
+% 1 1 0 09a1d57615e725461004ac8a43668722
+
+@ 0 6 0 1241209cfffed0510bf2cce5529f30e2
++   entry .showable   stellt den Socket als seinen Pfad dar
++   entry .inspectable   eine Debug-Darstellung mit dem Präfix `⇄`, das einen bidirektionalen Endpunkt kennzeichnet
++       Der Pfad allein wäre von jedem anderen pfadartigen Text nicht zu unterscheiden, daher
++       lautet die Darstellung `⇄/var/run/docker.sock`, im Sinne von `⌗8080` für einen Port.
++   entry .apply   `Uds(path)` aus einem beliebigen Pfadtyp oder Text
++   entry .Endpoint   ein Socket zusammen mit einem Request-Pfad: die Adresse einer Ressource hinter einem Domain-Socket
+
+% 1 1 0 013538e7f161de2c1af4f67216562f82
+
+@ 0 9 0 139ecd0cd7a67e871f395a456bb1041a
++         `Uds.Endpoint(socket, path)` — erzeugt mit `socket.at(path)` — benennt einen Pfad
++         *innerhalb* des Dienstes, vor dem ein Domain-Socket steht, so wie ein HTTP-Client über
++         dem Socket von Docker `/info` adressiert. Es ist das Domain-Socket-Gegenstück zu einer
++         URL, für Bibliotheken, die Requests über Domain-Sockets leiten.
++     entry #socket   der Socket
++     entry #path   der Pfad innerhalb des Dienstes
++   entry #path   der Pfad der Socket-Datei, als beliebiger Pfadtyp (`Instantiable across Paths from Text`)
++       Etwa `socket.path[Path on Linux]`.
++   entry #at   `socket.at(path)`: ein `Uds.Endpoint` für einen Pfad innerhalb des Dienstes
+
+@ 0 1 0 19e21bd74c34ad2d1c8cc25a7b9b1456
++ entry .Multicast   eine Multicast-Gruppe und ein Port, abonniert mit `subscribe` oder bedient mit `listen`
+
+% 1 1 0 151817e1c05bce9a04a29f4ab94ed58b
+
+@ 0 6 0 118c5ca4ee03e5fb03dd573ba41260bc
++       `Multicast(group, port)` benennt eine Gruppe über ihre IPv4- oder IPv6-Adresse und einen
++       UDP-Port. Ein Programm abonniert sie: Es tritt der Gruppe auf jeder geeigneten
++       Schnittstelle bei, empfängt die Datagramme der Gruppe und kann an die Gruppe senden
++       (eine Ankündigung) oder zurück an einen einzelnen Absender (eine Antwort, um die er per
++       Unicast gebeten hat). Die Gruppe ist eine Adresse, also eine Adressfamilie: Ein
++       Protokoll, das sowohl über IPv4- als auch über IPv6-Multicast gesprochen wird, etwa
++       mDNS, abonniert zwei Gruppen.
+
+% 2 1 0 00e8e0d20626d5da11b9947b621ff341
+
+% 3 1 0 0254fe2f83361c9b0af95ad90e967237
+
+% 4 1 0 1b9e12fc89747d750e8fcf500364257c
+
+% 5 1 0 10531abb5d0be50612061b18e44369ee
+
+% 6 1 0 178231ed21a688d70fa7fecfecea26c4
+
+% 7 1 0 015909b5370eae06064dc198e12a3e33
+
+% 8 1 0 1e6b91353100a1bf069c388c93574175
+
+% 9 1 0 0332aa284fbae50617bdc98167c5e332
+
+% 10 1 0 13b7a44f98b042311370e0c831f179d3
+
+% 0 1 0 14c89d9788ffd8db01b6959477307e43
+
+% 0 1 0 02030cc03afc0753096d048372988875
+
+% 2 1 0 177acb0dd74dc9ab1a7275593acfef3e
+
+% 0 1 0 14142cbc504ba34d1a280c835d69afdc
+
+% 0 1 0 01369e1f28e789a01a9b2b99267355f5
+
+% 1 1 0 07519f6533d0c8921b9ceed4cf0011ca
+
+@ 0 3 0 0b1e066fbbd2dfdc0ca16a1d4ec6de56
++       Der Port der Gruppe wird mit Wiederverwendung von Adresse und Port gebunden, sodass
++       mehrere Programme auf einem Host nebeneinander abonnieren können. Unterstützt von den
++       Backends für JVM und Scala Native (mit den bei `subscribe` vermerkten Unterschieden von
++       Native); WASI hat kein Multicast.
+
+% 1 1 0 00776afc46aa71a305a523143987f942
+
+% 1 1 0 04884830bbbe8dc30ee30dfd80284d36
+
+@ 0 6 0 1133a1d7d585a79d06be80829ecdc907
++   entry .showable   stellt die Gruppe als `address:port` dar, eine IPv6-Adresse in eckigen Klammern
++   entry .Reply   das Urteil eines Handlers über ein Datagramm: an die Gruppe, an den Absender oder nichts
++       `Group(data)` antwortet der ganzen Gruppe, wie bei Multicast üblich, sodass jedes
++       Mitglied die Antwort erfährt; `Unicast(data)` antwortet nur dem Absender, für eine
++       Antwort, um die er per Unicast gebeten hat; `Ignore` sendet nichts.
++   entry .Subscription   das geliehene Handle auf eine beigetretene Gruppe: `stop` von `Socket.Service` plus unaufgeforderte Sendungen
+
+% 1 1 0 0fc0379b2dd810ae104115b492603a2e
+
+@ 0 16 0 1b4b2575a96328ec08779e354d263393
++         Was `subscribe` seinem Block als Kontextwert leiht und worauf ein Handler
++         zugreifen kann, um außerhalb der Request/Response-Gestalt zu senden: eine Ankündigung
++         beim Beitritt, ein Abschied beim Austritt, eine Antwort auf etwas Beobachtetes statt
++         Empfangenes.
++     entry #send   `send(data)` an die ganze Gruppe; `send(data, destination, port)` an ein einzelnes Mitglied
++         Beide lösen bei einem Fehlschlag `Socket.Error(Transmit)` aus.
++   entry .subscribable   `Multicast is Subscribable`, über dem `Socket.Backend` und `Every[Socket.Option.Udp]` im Geltungsbereich
++       Tritt über `Socket.Backend#joinMulticast` auf den Schnittstellen bei, die `.interfaces`
++       auswählt.
++   entry .bindable   `Multicast is Bindable`, abgeleitet aus dem `Subscribable`: `listen` auf einer Gruppe
++       Für ein Mitglied, das nur antwortet: Der Handler ist `Packet => Multicast.Reply`, und
++       die Leihgabe von `listen` ist ein `Socket.Service` ohne Sendungen. `subscribe` ist die
++       Leihgabe mit ihnen.
++   entry .interfaces   die Schnittstellen, auf denen ein Abonnement beitritt: die mit einer MAC-Adresse oder jede geeignete
++       Mit `Unset` jede aktive, multicastfähige Schnittstelle außer Loopback, die unter Linux
++       kein Multicast transportieren kann (die eigenen Datagramme eines Programms kommen
++       stattdessen über `Socket.Option.MulticastLoop` zurück); mit einer `MacAddress` die
++       Schnittstelle, die sie hat.
++   entry #group   die IPv4- oder IPv6-Adresse der Gruppe
++   entry #port   der UDP-Port der Gruppe
+
+@ 0 1 0 0228970916c2fa8806305b20d81f575d
++ entry .socketOptions   die Socket-Optionen als Givens zum Import nach Namen, und Fabriken für die mit Wert
+
+% 1 1 0 12557892123f23b910e3e2f95a48d1d0
+
+@ 0 7 0 09cfa057704302d5108f636ecb39f832
++       Jede Flag-Option ist ein benanntes Given, das mit seinem konkreten Typ deklariert ist —
++       `Socket.Option.NoDelay` statt `Socket.Option` —, sodass die Suchen nach
++       `Every[Socket.Option.Tcp]`, `.Udp` und `.Domain` pro Verbindung es genau für die
++       Transporte sammeln, für die es gilt. Optionen, die einen Wert tragen, sind Fabriken, deren
++       Ergebnis die konkrete Option ist, sodass ein
++       `given Socket.Option.ReceiveBuffer = socketOptions.receiveBuffer(65536)` ebenso gesammelt
++       wird. `import soundness.*` bringt keine davon herein: Jede wird nach Namen importiert, und
++       so wird die Socket-Richtlinie eines Programms einmal festgelegt und aus seinen Importen
++       abgelesen.
+
+% 2 1 0 0b9ad316322eba7f09b372e7d27f463c
+
+% 3 1 0 0bd4fea9117652c003a3873b778f6fdb
+
+% 0 1 0 0ad9838dfb4040d21ad9686b074e3a5c
+
+% 0 1 0 12a252c229474416127562099c1f1669
+
+% 0 1 0 1729778370a9d104003c12accbffaab7
+
+% 0 1 0 192f5f4c4de03c95107fcc3797c50cbc
+
+% 0 1 0 1315ff0b94975ab3023b549143d6d493
+
+% 0 1 0 1b2e1ad81f262d4916ba31736aa676ca
+
+% 1 1 0 05ed751e00cbaa5517c29f680c5b9caf
+
+% 1 1 0 0a3940ac86dc44571c1082002372f34d
+
+@ 0 13 0 0235d26e0d054816007eceba0e25843f
++   entry .reuseAddressSocketOption   `SO_REUSEADDR`, für TCP-, UDP- und Domain-Sockets
++   entry .reusePortSocketOption   `SO_REUSEPORT`, für TCP- und UDP-Sockets, sofern die Plattform es hat
++   entry .noDelaySocketOption   `TCP_NODELAY`, für TCP-Sockets
++   entry .keepAliveSocketOption   `SO_KEEPALIVE`, für TCP-Sockets
++   entry .broadcastSocketOption   `SO_BROADCAST`, für UDP-Sockets
++   entry .multicastLoopSocketOption   `IP_MULTICAST_LOOP`, für UDP- und Multicast-Sockets
++   entry .receiveBuffer   `receiveBuffer(bytes)`: eine `Socket.Option.ReceiveBuffer`, als Given zu binden
++   entry .sendBuffer   `sendBuffer(bytes)`: eine `Socket.Option.SendBuffer`, als Given zu binden
++   entry .linger   `linger(seconds)`: eine `Socket.Option.Linger`; `linger()` deaktiviert das Nachlaufen
++   entry .trafficClass   `trafficClass(value)`: eine `Socket.Option.TrafficClass`, als Given zu binden
++   entry .timeout   `timeout(milliseconds)`: eine `Socket.Option.Timeout`, als Given zu binden
++   entry .multicastHops   `multicastHops(count)`: eine `Socket.Option.MulticastHops`, als Given zu binden
++   entry .datagramSize   `datagramSize(bytes)`: eine `Socket.Option.DatagramSize`, als Given zu binden
+
+@ 0 1 0 0eb432254a5ef43f08f904ab5958606f
++ entry .socketBackends   das `Socket.Backend` jeder Plattform, jedes ein Given zum Import nach Namen
+
+% 1 1 0 159731321de882b40bcc37ad3ec46113
+
+@ 0 5 0 15a97392aabb9ca1167fbeabeff307b7
++       Jede Socket-Operation läuft über das eine `Socket.Backend` im Geltungsbereich, und die
++       Wahl ist nie implizit: `import soundness.*` bringt kein Backend herein, und eines wird nach
++       Namen aus der Komponente importiert, die für die Plattform gebaut ist. Die Namen folgen den
++       Herkunftswörtern des Hauses: `javaBase…` für ein Java-Modul, `scalaNative…` für Scala
++       Native, `wasi…` für eine WASI-Schnittstelle.
+
+% 2 1 0 1f35426ad7edef68155aa95f1204fd07
+
+% 3 1 0 165f2b1398993df4115a4adfda36bbe4
+
+% 1 1 0 1b15c02f92fc99140d99b5a2333abf3e
+
+% 1 1 0 099529439963498d1e2ed2ff238d5edd
+
+@ 0 3 0 031badd39edf222419b370b5c08e13d2
++       Die drei Backends implementieren dieselben Operationen und unterscheiden sich darin, was
++       die Plattform bietet: Die JVM hat alles; Scala Native hat keine Unix-Domain-Sockets; WASI
++       hat TCP nur zu IPv4-Literalen. Ein Backend eines Dritten ist jedes
++       `Socket.Backend`-Given.
+
+% 1 1 0 10b44cd0d4a18545061803d7a01a2f44
+
+@ 0 16 0 005cd9d66f54126519d7fd85abfeb058
++   entry .javaBaseSockets   das JVM-Backend, über `java.net` und `java.nio.channels`; in `coaxial.jvm`
++       TCP-, UDP-, Multicast- und Unix-Domain-Sockets. Jedes Handle bewahrt die
++       Java-Repräsentation, die seine Rolle braucht — ein TCP-Server ist ein `ServerSocket` (der
++       ein `Timeout` beachtet), ein Unix-Domain-Server ein `ServerSocketChannel`, ein
++       Request/Response-Austausch ein blockierender `Socket` für TCP und ein `SocketChannel` für
++       einen Domain-Socket —, sodass kein rollenspezifisches Verhalten verloren geht.
++       Multicast-Sendungen gehen einmal über jede beigetretene Schnittstelle. Fehler beim Binden
++       und beim Verbindungsaufbau werden anhand der Exceptions und Meldungen des JDK in Gründe
++       von `Bind.Error` und `Socket.Error` eingeordnet.
++   entry .wasiSockets   das WASI-Backend, über `wasi:sockets`; in `coaxial.wasi`
++       Nur TCP, und nur zu IPv4-Literalen (WASI bietet hier keinen Resolver, daher löst ein
++       Hostname `Socket.Error(Dns)` aus). Ein Listener bindet die IPv4-Wildcard;
++       `start-connect`/`accept` werden durch Blockieren auf dem Pollable des Sockets zu Ende
++       geführt; das Netzwerk muss vom Host gewährt werden (`wasmtime run -S inherit-network`).
++       Unix-Domain-Sockets lösen `Unsupported` aus; UDP, Multicast und TLS lösen `Socket.Error`
++       aus. Das Given ist `inline`, daher expandieren die WIT-Aufrufe dort, wo es
++       herbeigerufen wird, was die Schnittstelle `wasiApis.wasiSocketsApi` und die
++       WASI-Fassaden auf dem Klassenpfad erfordert.
+
+@ 0 1 0 069d5990b9452b311780f49a6398ab22
++ entry .wasiApis   die WIT-Schnittstelle, gegen die das WASI-Backend typgeprüft wird, als Given zum Import nach Namen
+
+% 1 1 0 002494f3120bd1910b0d54d8bee603a2
+
+@ 0 6 0 128d02c2458b51570612d8aa77b77d93
++       `wasiSockets` navigiert die Welt `wasi:sockets` über `Foreign` und `call` von Xenophile,
++       die eine WIT-Schnittstelle nach Modul-IDs, Ressourcenmethoden und Parametertypen
++       befragen. Diese Schnittstelle ist die Klassenpfad-Ressource `/coaxial/sockets.wit`, die
++       vom Given hier geladen wird; sie verschmilzt mit dem Paket `wasiApis` des Umbrella neben
++       den Schnittstellen der anderen WASI-Komponenten.
++   entry .wasiSocketsApi   das Given `WasiSocketsApi`, geladen aus der Klassenpfad-Ressource `/coaxial/sockets.wit`
+
+@ 0 3 0 0d9e03f1c00d59ca02a82bedfe43a2ab
++ entry .WasiSocketsApi   der Typ der WIT-Schnittstelle `wasi:sockets`: `Interface in Wit at "/coaxial/sockets.wit"`
++     Der Typalias, den `wasiApis.wasiSocketsApi` bereitstellt und gegen den die
++     `Foreign`-Navigation des WASI-Backends typgeprüft wird. Nur in `coaxial.wasi`.
+
+@ 0 1 0 01259ee3d9fcc06511976a607f39be78
++ entry .query   eine DNS-Anfrage an einen Nameserver über UDP: eine Nachricht hinaus, ihre Antwort zurück; in `coaxial.dns`
+
+% 1 1 0 122930fa5086ad151b0d3eeab347ed2d
+
+@ 0 7 0 1bffd20f2fa5550e08a2dfe15c53a6b3
++       Zwei Überladungen, beide Erweiterungen auf einem `Endpoint[Udp.Port]`, der den Nameserver
++       benennt. `endpoint.query(message: Dns.Message)` sendet die Nachricht als ein Datagramm
++       von einem ephemeren Port (`Socket.Backend#exchangeUdp`) und gibt die Antwort zurück, die
++       die ID der Anfrage und ihre erste Frage tragen muss; andernfalls gehört sie zu einem
++       anderen Austausch, und ein `Dns.Error(Mismatch(id))` wird ausgelöst.
++       `endpoint.query(name, rtype = Dns.Type.A)` stellt die übliche Frage — die Records von
++       `rtype` für `name`, mit angeforderter Rekursion, unter einer frischen zufälligen ID — und
++       gibt die antwortenden `Dns.Record`s zurück.
+
+% 2 1 0 1badeb53999831bb15a372e8a207bbf3
+
+% 3 1 0 03f8d361a91505aa15c3d40a230a2ac2
+
+% 4 1 0 17124d59d0a195c816840efb056fa92f
+
+% 5 1 0 05eb6a14d8bdc010043b4cfd772f7a5a
+
+% 6 1 0 17696caf4214ba2b1e56c83d3efff468
+
+% 1 1 0 1ee9b993099d6e690b272be2d0886cc0
+
+% 0 1 0 0fd82cd6a93eda240ec5fb1e48b8f3c9
+
+% 0 1 0 17139d1f18a7f74007456f4e267d330a
+
+% 0 1 0 1a1548825325770808cd0d88b9484d1b
+
+% 1 1 0 142779e60471cad70e0f2a07dc7dc9a0
+
+@ 0 6 0 15bde1cbd64a91e9174d1ea67976188b
++       Die Wartezeit wird durch eine `Socket.Option.Timeout` im Geltungsbereich begrenzt, sonst
++       durch fünf Sekunden; ein verlorenes Datagramm ist ein `Dns.Error(Timeout)`, und der
++       Aufrufer entscheidet, ob er erneut fragt — es gibt keine Neuübertragung. Jeder andere
++       Socket-Fehler wird als `Socket.Error` durchgereicht. Die Methode braucht ein
++       `Socket.Backend` und das `Every[Socket.Option.Udp]` im Geltungsbereich und löst
++       `Dns.Error` und `Socket.Error` aus. Die Nachrichten- und Record-Typen sind das `Dns` von
++       Urticose. Sie heißt `query` statt `lookup`, ein Name, den `soundness` für Anamnesis
++       reserviert.
+
+% 1 1 0 0c0aa7beb236c74107395eb86e97d347
+
+@ 0 1 0 1ebc6bc6b7f1daa00e97cdfe88d4d8a1
++ entry .Tls   die Konfiguration einer TLS-Verbindung: Vertrauen und Schlüssel, Verifikation, ALPN, Versionen, gegenseitige Authentifizierung
+
+% 1 1 0 0473f5fcc82677911b88683e765c2dcc
+
+@ 0 6 0 181459da7807592d0456db52eae11a61
++       Ein `Tls`-Wert ist die kontextuelle Konfiguration, mit der jede `SecureEndpoint`-Verbindung
++       und jeder `SecurePort`-Listener erzeugt wird. Das anonyme Standard-Given, `Tls()`, ist
++       vollständig sicher: der Trust Store der Plattform, Hostname-Verifikation eingeschaltet,
++       kein ALPN angeboten (was den einfachen TLS-Handshake bewahrt, den eine `wss`-Gegenseite
++       erwartet), die Protokollversionen der Plattform und keine Client-Authentifizierung. Eine
++       reichhaltigere Richtlinie wird mit den Feldern gebaut oder aus einer `TlsAcceptance` mit
++       ihren Erweiterungen `tls(…)` und `keyed(…)` präsentiert.
+
+% 2 1 0 0038742f0312d676129342da5dfdd94a
+
+% 3 1 0 1a4514447d3f81eb112f4a89bb5d3434
+
+% 0 1 0 16a126cb3a86852804ed57b933ab1b4a
+
+% 0 1 0 0abfb538d76edc7a1663ff0d988ac271
+
+% 1 1 0 14fdf41c138c666e15011996ffc83418
+
+@ 0 6 0 1e476725aaf55adb11553020b37daa00
++       Das `Tls` der JVM hat fünf Felder: `#context` (ein `SSLContext` oder `Unset` für den
++       Standard der JVM), `#verify`, `#protocols`, `#versions` und `#mutual`. Das `Tls` von
++       Scala Native hat eines, `#verify`: Der Kontext von OpenSSL wird pro Verbindung aus dem
++       Zertifikatsspeicher des Systems gebaut, daher gibt es nichts weiter zu konfigurieren, und
++       kein ALPN, keine Versionsbeschränkung und kein serverseitiges TLS. `.keyed`,
++       `.certificate` und `.fingerprint` — die Helfer für Schlüsselmaterial, die ein Server und
++       ein pinnender Client brauchen — gibt es nur auf der JVM.
+
+% 1 1 0 0d36003d9e10bce211dd26bb0e1b8f67
+
+% 1 1 0 1add1f14450c1cdc0cd817f1c0f419fa
+
+% 1 1 0 182766f43e848dc21445426aceb20b14
+
+@ 0 7 0 13ccc64c0cd5cada1a0a13240ce21a98
++   entry .keyed   ein `Tls`, dessen Kontext das Schlüsselmaterial eines PKCS#12-Keystores präsentiert; nur JVM
++       `Tls.keyed(keystore, password)` ist die Konfiguration, mit der ein `SecurePort` lauscht
++       (der Standardkontext der JVM hat keinen privaten Schlüssel, und ein damit gebundener
++       Server würde jeden Handshake scheitern lassen), oder ein Client, der sich gegenüber einer
++       Gegenseite authentifiziert. Das Vertrauen ist der Standard der Plattform —
++       `TlsAcceptance().keyed(…)` präsentiert dasselbe Material unter jeder anderen Akzeptanz.
++       Die Bytes des Speichers werden statt eines Pfads übergeben, sodass der Aufrufer
++       entscheidet, wo Geheimnisse liegen.
+
+% 2 1 0 1181de6914e9fe570361e740c9745c74
+
+% 3 1 0 029fffe2af6adc5f18b98566da8d8328
+
+% 4 1 0 0da67b6ebff2ca5917afa4caec0bccae
+
+% 5 1 0 1df9f7ab28e2251617d13d0ff219ca45
+
+% 6 1 0 03f0900843297e6f06231216ea5df4af
+
+% 7 1 0 07215792cc23087219485238a0937f0b
+
+% 0 1 0 0cf05aec8ff076cc152e3402b9840be0
+
+% 0 1 0 0a7d123af5b4e4b3102f653f5cd27ae6
+
+% 1 1 0 1de31a6fd86e1d5b163b39bc1af4722c
+
+@ 0 19 0 164703879fe1d5500e015880ab576d89
++   entry .certificate   die DER-Kodierung des ersten Zertifikats des Keystores unter einem privaten Schlüssel; nur JVM
++       Das Zertifikat, das ein mit `.keyed(keystore, password)` gebundener `SecurePort`
++       präsentiert, und damit das, wovon ein Client den Fingerabdruck nimmt und was er pinnt.
++       `Unset`, wenn der Speicher keinen Schlüsseleintrag enthält.
++   entry .fingerprint   der SHA-256-Hashwert der DER-Kodierung eines Zertifikats; nur JVM
++       Die Identität, die `TlsAcceptance#pinning` vergleicht, und das, was
++       `openssl x509 -fingerprint -sha256` ausgibt. Zweiunddreißig Bytes.
++   entry #context   der `SSLContext`, der Vertrauen und Schlüssel liefert, oder `Unset` für den Standard der JVM; nur JVM
++   entry #verify   ob das Zertifikat der Gegenseite gegen den Hostnamen geprüft wird (und auf Native, ob ihm überhaupt vertraut wird)
++       Standardmäßig eingeschaltet (Endpunktidentifikation nach RFC 2818). Nur ausgeschaltet für
++       eine selbstsignierte Gegenseite, deren Zertifikat bereits auf anderem Weg vertraut wird;
++       eine pinnende `TlsAcceptance` schaltet es selbst aus, da der Pin die Gegenseite benennt.
++       Auf Scala Native deaktiviert das Ausschalten auch die Zertifikatsverifikation insgesamt.
++   entry #protocols   die anzubietenden ALPN-Anwendungsprotokolle, in Präferenzreihenfolge; nur JVM
++       Etwa `List(t"h2", t"http/1.1")`. Leer bietet kein ALPN an. Die Auswahl der Gegenseite
++       wird aus `Duplex#alpnProtocol` gelesen.
++   entry #versions   die zuzulassenden TLS-Protokollversionen (`TLSv1.3`, …); leer für die Standards des Kontexts; nur JVM
++   entry #mutual   ob ein mit dieser Konfiguration lauschender `SecurePort` von jedem Client ein Zertifikat verlangt; nur JVM
++       Der Kontext des Clients muss dann eines präsentieren (`TlsAcceptance#keyed`); ob das
++       präsentierte akzeptiert wird, entscheidet der Trust Manager des Listeners.
+
+@ 0 1 0 06f1b45eb1808ed00ec8970537ed3aea
++ entry .TlsAcceptance   welche Konfigurationen der Gegenseite eine TLS-Verbindung akzeptiert: standardmäßig strikt, gelockert nur unter Erlaubnissen
+
+% 1 1 0 1f0e1f6cb90b14260b86c1f26326b84c
+
+@ 0 7 0 143e2cbe3b48470c10543d909aa1d0fd
++       Eine `TlsAcceptance` ist die Vertrauensrichtlinie, nach der eine TLS-Verbindung beurteilt
++       wird, kontextuell aufgelöst, wo immer eine erzeugt wird, nach dem Vorbild der
++       kryptografischen Erlaubnisse von Gastronomy: Der strikte Standard (`.strict`) braucht keine
++       Genehmigung, während jede Lockerung nur unter einer gelöschten `Permit` für die
++       entsprechende `Concession` konstruiert wird, sodass die tolerierten Schwächen einer Codebasis
++       allein aus ihren Erlaubnis-Importen prüfbar sind, ohne Kosten zur Laufzeit. Sie wird den
++       Sockets von Coaxial durch die Erweiterungen `.tls` und `.keyed` als `Tls` präsentiert,
++       sodass eine Richtlinie sowohl den HTTP-Client des JDK als auch den eigenen von Coaxial
++       steuern kann.
+
+% 2 1 0 02414a732ed708ef022c21acc1a09b40
+
+% 3 1 0 176bafe1c01de95900033aa06963fd5c
+
+% 0 1 0 04e56e4eb7932cf209f6fb82e6f1c7f5
+
+% 0 1 0 09636736d03a9b0f01aa70ee16e9eeb7
+
+% 0 1 0 187166d9662d1e071a2b9ceb622e09e1
+
+% 1 1 0 193dd77a60b613e804b15a77c113600b
+
+@ 0 9 0 1cea157faa8227231dde99ca74f686e4
++       Kriterien auf Zertifikatsebene — Vertrauensanker, Ablauf, Selbstsignatur,
++       Hostname-Verifikation, Widerruf — werden pro Verbindung über einen umhüllenden Trust
++       Manager und `SSLParameters` durchgesetzt; nur eine gelockerte Akzeptanz zahlt für einen
++       eigenen Trust Manager, und der strikte Standard ohne Schlüssel ist genau der eigene
++       Kontext der Plattform. Die Wiederfreischaltung auf Protokollebene (TLS 1.0/1.1, kleine
++       Schlüsselgrößen) ist anders: JSSE behandelt Einschränkungen pro Verbindung als rein
++       zusätzlich zur prozessweiten Eigenschaft `jdk.tls.disabledAlgorithms`, daher werden diese
++       einmal prozessweit mit `Trust.unlock` freigeschaltet. Pinning (`#pinning`) braucht keine
++       Erlaubnis: Ein Pin ist eine stärkere Identitätsprüfung als eine Kette zu einem
++       öffentlichen Anker. Nur JVM.
+
+% 0 1 0 03050379dfb1b79e183a3cf9646df898
+
+% 1 1 0 023168edd6a73d350460b6ddc176cbe4
+
+@ 0 16 0 122792cb0af5bc26024ee2f888192cfc
++   entry .strict   das Standard-Given: `TlsAcceptance()` — Versionen der Plattform, striktes Vertrauen, nachgiebige Widerrufsprüfung
++   entry .materialize   der JSSE-`SSLContext` und die `SSLParameters`, auf die eine Akzeptanz hinausläuft
++       Eine Erweiterung `acceptance.materialize()`: der Kontext (der der Plattform für eine
++       strikte Akzeptanz ohne Schlüssel, sonst einer mit dem umhüllenden Trust Manager) und
++       Parameter mit gesetzten Versionen und gesetztem Algorithmus zur Endpunktidentifikation.
++       Für die JDK-APIs, die diese annehmen.
++   entry .tls   präsentiert eine Akzeptanz als `Tls` für `SecureEndpoint` und bietet optional ALPN-Protokolle an
++       Eine Erweiterung `acceptance.tls(protocols = Nil)`: der materialisierte Kontext,
++       `verify` aus der Hostname-Einstellung der Akzeptanz, die Versionen und die angegebenen
++       ALPN-Protokolle. Kein Schlüsselmaterial: Gegenüber der Gegenseite wird keine
++       Authentifizierung vorgenommen.
++   entry .keyed   präsentiert das Schlüsselmaterial eines Keystores unter dem Vertrauen einer Akzeptanz, für einen Server oder einen sich authentifizierenden Client
++       Eine Erweiterung `acceptance.keyed(keystore, password, protocols = Nil, mutual = false)`.
++       Was jedes Ende einer gegenseitig authentifizierten Verbindung braucht, da `Tls.keyed`
++       allein den Ankern der Plattform vertraut und `.tls` allein kein Zertifikat präsentiert.
++       Mit `mutual` verlangt ein mit dem Ergebnis gebundener `SecurePort` von jedem Client ein
++       Zertifikat, das diese Akzeptanz dann beurteilt — eine gepinnte lässt genau den gepinnten
++       Client zu.
+
+% 2 1 0 096805cff213c5450602531d30b6fe6a
+
+% 3 1 0 05e2aca81bc9ee24070779ba5932d921
+
+% 4 1 0 08b7e8b5047401830b0358f1bcc1a405
+
+% 1 1 0 0eba106bb839c230067606b1bd357785
+
+% 0 1 0 1b18a5e2297088eb06f0bbf3618adb81
+
+% 1 1 0 1fa799a531ee8eb7079d2d295b9d7e50
+
+% 2 1 0 086411f3d70ab5520a6faf2244e3e2d1
+
+% 3 1 0 0f4e93a3613c427e0eba431226981bf8
+
+% 0 1 0 0e0de1d369fbcc5d105844fc1dcbabe1
+
+% 0 1 0 148d6d2584b095111a8409207bfebcb1
+
+% 0 1 0 1de18c6bf942ee1c0595671b773b393f
+
+% 0 1 0 1e361c9803ebd20204067f6521289950
+
+% 1 1 0 03c292505fe3f8ce0ca6dc82e5c3097a
+
+@ 0 23 0 095d7dcba85c938c16100f76a23d1fbb
++   entry #versions   die zuzulassenden TLS-Versionen oder `Nil` für die Standardmenge der Plattform
++   entry #trust   die Zertifikatskriterien, ein `Trust`
++   entry #revocation   wie der Widerruf geprüft wird: `Required`, `SoftFail` (der Standard) oder `Unchecked`
++   entry #permitExpired   akzeptiert eine abgelaufene Zertifikatskette; benötigt `Permit[Concession.ExpiredCertificate]`
++       `import cryptoPermits.permitUntrustedCertificates` erteilt sie.
++   entry #permitSelfSigned   akzeptiert eine Kette ohne Pfad zu einem Anker; benötigt `Permit[Concession.SelfSignedCertificate]`
++       `import cryptoPermits.permitUntrustedCertificates` erteilt sie.
++   entry #permitHostnameMismatch   überspringt die Hostname-Verifikation; benötigt `Permit[Concession.UnverifiedHostname]`
++       `import cryptoPermits.permitUntrustedCertificates` erteilt sie.
++   entry #requireRevocationChecks   lässt eine Verbindung scheitern, deren Widerrufsstatus nicht ermittelt werden kann
++       Setzt `revocation` auf `Required`, während der Standard `SoftFail` einen unbestimmten
++       Status toleriert, ein widerrufenes Zertifikat aber nicht.
++   entry #permitRevoked   akzeptiert ein widerrufenes Zertifikat; benötigt `Permit[Concession.UncheckedRevocation]`
++       `import cryptoPermits.permitUncheckedRevocation` erteilt sie.
++   entry #trusting   vertraut den angegebenen X.509-Zertifikaten als Anker, anstelle derer der Plattform
++   entry #pinning   akzeptiert genau die Gegenseite, deren Zertifikat diesen `Tls.fingerprint` hat, und keine andere
++       Das Known-Hosts-Modell von SSH, für eine Gegenseite, deren selbstsigniertes Zertifikat auf
++       anderem Weg ausgetauscht wurde. Eine gepinnte Kette wird allein anhand des Hashwerts
++       ihres Blatts akzeptiert — ohne Prüfung von Anker, Gültigkeit oder Hostname, da
++       der Pin die Gegenseite genauer identifiziert, als jede davon es könnte —, und jede andere
++       Kette wird abgelehnt. Die Hostname-Verifikation wird ausgeschaltet. Auf einem Listener
++       (`keyed(…, mutual = true)`) benennt der Pin den einen zugelassenen Client, und in der
++       Zertifikatsanforderung werden keine Aussteller genannt, sodass ein selbstsignierter
++       Client sein Zertifikat anbietet.
+
+% 2 1 0 11c73fb5d1a3609213477a69adeab270
+
+% 3 1 0 19b95a37a10121580b511ae8d6646488
+
+% 4 1 0 0ab3b414920c3f3e1b26181e1b3961d6
+
+% 5 1 0 06d4b92faa6adf77127ec3d8432a6e2f
+
+% 6 1 0 0a2f2841139ca654024428110ce0fd93
+
+% 7 1 0 15a7d28bc79eb9ce12c071e16262e702
+
+% 0 1 0 006457590a9f3c861cd6da8ceabaa4d6
+
+% 0 1 0 1f08d752e23da44c112b5a77ea5787b7
+
+% 1 1 0 05f5f013a9ad436d0d893c5a50c664b9
+
+@ 0 1 0 002db746af8e6d22050b569a737753e3
++ entry .Trust   die Zertifikatskriterien einer `TlsAcceptance` und die prozessweite Freischaltung veralteter TLS-Versionen
+
+% 1 1 0 10a6eb079fd8e6ed091012724dbd8ae8
+
+@ 0 6 0 1102122a36c66433110b113cbd18eb73
++       Ein `Trust` sagt, welche Zertifikatsketten über eine intakte, aktuelle Kette zu einem
++       Anker der Plattform hinaus akzeptiert werden: ob eine abgelaufene (`#expired`) Kette es
++       wird, ob eine selbstsignierte (`#selfSigned`) es wird, ob der Hostname (`#hostname`)
++       geprüft wird, welche Anker (`#anchors`) die der Plattform ersetzen und welches eine
++       Zertifikat gepinnt (`#pinned`) ist. Die Methoden `permit…`, `trusting` und `pinning` von
++       `TlsAcceptance` bauen ihn; `.Strict` ist der Standard. Das Begleitobjekt enthält auch die
++       Vokabulare `Version` und `Revocation` sowie `.unlock`. Nur JVM.
+
+% 1 1 0 13c22c08555d541b15f5f3db95b25102
+
+@ 0 1 0 1a4d1cf27b888de91cd4981bb127704b
++   entry .Version   eine TLS-Protokollversion: `Tls12`, `Tls13` und die veralteten `Tls10` und `Tls11`
+
+% 1 1 0 0bfb916a49b4b2810a5b0e1430fc100c
+
+@ 0 19 0 0e06ec84641ccad01d287bef8520487b
++         `TlsAcceptance#versions` listet die zuzulassenden Versionen. `Tls10` oder `Tls11`
++         zuzulassen genügt allein nicht: JSSE deaktiviert sie prozessweit, daher muss zuerst
++         `.unlock` laufen.
++     entry #id   der JSSE-Name: `TLSv1`, `TLSv1.1`, `TLSv1.2` oder `TLSv1.3`
++   entry .Revocation   wie der Widerruf geprüft wird: `Required`, `SoftFail` oder `Unchecked`
++       `Required` lässt eine Verbindung scheitern, deren Status nicht ermittelt werden kann;
++       `SoftFail`, der Standard, toleriert einen unbestimmten Status, lehnt aber ein
++       widerrufenes Zertifikat ab; `Unchecked` akzeptiert sogar ein widerrufenes und benötigt
++       `Permit[Concession.UncheckedRevocation]`.
++   entry .Strict   die Standardkriterien: nicht abgelaufen, nicht selbstsigniert, Hostname geprüft, Anker der Plattform, nichts gepinnt
++   entry .unlock   schaltet veraltete TLS-Versionen prozessweit wieder frei; benötigt die Erlaubnisse für `Tls10` und `Tls11`
++       `Trust.unlock(versions)` entfernt die Versionen aus der Sicherheitseigenschaft
++       `jdk.tls.disabledAlgorithms`. Es muss laufen, bevor irgendeine JSSE-Maschinerie
++       initialisiert wird — spätere Aufrufe wirken sich nicht auf bereits erzeugte Kontexte aus
++       — und betrifft den ganzen Prozess, weshalb es ein expliziter Aufruf unter
++       `import cryptoPermits.permitLegacyTls` ist statt einer Einstellung pro Verbindung.
++   entry #expired   ob eine abgelaufene Kette akzeptiert wird
++   entry #selfSigned   ob eine Kette ohne Pfad zu einem Anker akzeptiert wird
++   entry #hostname   ob das Zertifikat gegen den Hostnamen geprüft wird
++   entry #anchors   die als Anker vertrauten X.509-Zertifikate oder `Nil` für die der Plattform
++   entry #pinned   der SHA-256-Fingerabdruck des einen akzeptierten Zertifikats oder `Unset`
+
+@ 0 1 0 1722de3c9d69c84b09ff252c00edcdd9
++ entry .SecureEndpoint   ein über TLS erreichtes `host:port`: das verbindbare Gegenstück eines Klartext-`Endpoint[Tcp.Port]`
+
+% 1 1 0 088bd7c0476737a2165c3782ab9e1b6d
+
+@ 0 7 0 1cf24fa4d1d0b03217c19e7028613077
++       Mit `SecureEndpoint(host, port)` wird über `duplex` und `session` eine Verbindung
++       aufgebaut, unter dem `Tls` im Geltungsbereich: Sein `Connectable` öffnet eine
++       TLS-Verbindung mit auf `host` gesetztem SNI, verifiziert den Hostnamen der Gegenseite,
++       sofern `Tls#verify` nicht ausgeschaltet ist, bietet die `Tls#protocols` für ALPN an und
++       beschränkt sich auf die `Tls#versions`, schließt den Handshake ab und präsentiert die
++       Verbindung als `Duplex`, dessen `alpnProtocol` das ist, was die Gegenseite ausgewählt hat.
++       Ein Handshake-Fehler — ein Zertifikat, das die Vertrauensrichtlinie ablehnt, ein
++       abweichender Hostname — ist `Socket.Error(Handshake)`.
+
+% 2 1 0 0d252498b1784da4039cb509d6f0f0cf
+
+% 0 1 0 1fbe22663e22b65e0aaf1fb0e21e4272
+
+% 1 1 0 1ca9453bbc46a9de17281770a6ea3e26
+
+% 2 1 0 12f300053e0b031313ef2248ddde7703
+
+% 3 1 0 0bcab5dc67ed86e306033f6e357976bb
+
+% 4 1 0 172b61eb64788a841815a3d2f669fb0a
+
+% 5 1 0 012baeafa571369f0a50faaeb477ceaa
+
+% 6 1 0 07655a224d6af8ed0d6f4fdf4ddde354
+
+% 0 1 0 01363661624807cb186c135c9bbed9cd
+
+% 0 1 0 1003ce2e97fe105c0d538e1611f4983d
+
+% 0 1 0 05f8e132f0de05ce1694fb4f01124fde
+
+% 1 1 0 129d73dc9ff155fd1efe1d79ae935c56
+
+% 2 1 0 1acdafe3939923861c5a38bd334200dd
+
+% 3 1 0 04f01fe5099bf1770a00fe091527c0cf
+
+% 4 1 0 1aefc5b0198a5858151f9e015e71a5b6
+
+% 5 1 0 1e530da95117c8fb179da8e735c366ed
+
+% 6 1 0 0f2c7b0c3b8be92d0065ffc5bd108155
+
+% 2 1 0 1ed04b63de7deea01fbc40a7e21a1e9b
+
+% 0 1 0 13b6696cf39372a11acbfbdbb88027bd
+
+% 0 1 0 0d9911570f50bc2106e181176cfe960f
+
+% 1 1 0 164a5af460eccca01890918ae45cf0d2
+
+% 2 1 0 00b936ebc3905c6506da3fc62db49b41
+
+% 3 1 0 02be0d5fb2cc0d9f0e64458c83ee4df6
+
+% 4 1 0 1caa962fd20a605b067448ce9f6ff651
+
+% 5 1 0 12f99296901cc4131a40c385eea0429b
+
+% 6 1 0 0c5bf9e884f32bdc034d2397fb843edb
+
+% 0 1 0 10bbfa0d09a5302613c081d5cf7062e9
+
+% 2 1 0 0cd3eadd6afaf2de0977a0c35621f61c
+
+% 0 1 0 168862c33f9b397804c71eecc3a93c2a
+
+% 1 1 0 1a9db2518a629c6511c81ab61cc364e0
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 9 0 166ef86678b05bd003ec5fa3a842e462
++       Auf der JVM ist die Verbindung ein `SSLSocket` aus `Tls#context` (oder dem Standard der
++       JVM), und die Socket-Optionen und ein Binden an eine lokale Schnittstelle werden vor dem
++       Verbindungsaufbau angewandt. Auf Scala Native, das kein `javax.net.ssl` hat, ist die
++       Verbindung ein OpenSSL-*Connect-BIO*, das dem Standard-Zertifikatsspeicher des Systems
++       vertraut, mit SNI und Hostname-Verifikation über `SSL_set1_host`; ein Connect-BIO öffnet
++       seinen Socket intern, daher werden Socket-Optionen und die Schnittstelle ignoriert, kein
++       ALPN wird angeboten, und jeder Fehler beim Auflösen, Verbinden oder beim Handshake ist
++       `Socket.Error(Handshake)`. Nicht verfügbar auf WASI. Host und Port werden als `Text` und
++       `Int` statt als typisierter Endpunkt genommen, weil der Host ein Name für SNI und den
++       Zertifikatsabgleich ist, keine Adresse.
+
+% 1 1 0 119a495583370fae055db333976565de
+
+% 1 1 0 0dfa9bd52670eb070092a9f337a84791
+
+% 1 1 0 05e2a401e02c32150d560ffaf4796117
+
+% 1 1 0 099afd4f901b3d451b9899606fdb028f
+
+@ 0 6 0 074c92e86747aea90d9825c5f81c1107
++   entry .showable   stellt den Endpunkt als `host:port` dar; nur JVM
++   entry .connectable   `SecureEndpoint is Connectable`, unter dem `Tls` und `Every[Socket.Option.Tcp]` im Geltungsbereich
++       Wird nur mit der Genehmigung `Online` aufgelöst (`import internetAccess.online`) und ist
++       eine Capability, die diesen Nachweis trägt, wie `Connectable.tcpEndpoint`.
++   entry #host   der Hostname, verwendet für SNI und die Zertifikatsverifikation
++   entry #port   die Portnummer
+
+@ 0 1 0 1f6474beaf4b0398114bda444afd1545
++ entry .SecurePort   ein TLS-gesicherter lauschender TCP-Port: das serverseitige Gegenstück zu `SecureEndpoint`; nur JVM
+
+% 1 1 0 0aed80364335f7060893cc14a154bd51
+
+@ 0 9 0 1c2ad8e27f80570c0b67421ec323ce7b
++       `SecurePort(port)` wird mit `listen` bedient, wie ein `Tcp.Port`, unter dem `Tls` im
++       Geltungsbereich — dessen Kontext das Schlüsselmaterial des Servers tragen **muss**
++       (`Tls.keyed` oder `TlsAcceptance#keyed`): Der Standardkontext der JVM hat keinen privaten
++       Schlüssel, und ein damit gebundener Server würde jeden Handshake scheitern lassen. Jede
++       angenommene Verbindung schließt ihren Handshake ab, bevor sie dem Handler geliehen
++       wird, daher wird ein Client, der bei Authentifizierung oder Aushandlung scheitert, als
++       `Socket.Error(Handshake)` gemeldet — was nur die Aufgabe dieser Verbindung beendet, wie
++       jeder andere Fehler pro Verbindung —, statt als abgeschnittener Lesevorgang aufzutauchen.
++       Der Handler erhält einen `Duplex`, dessen `alpnProtocol` das aus `Tls#protocols`
++       ausgehandelte Protokoll ist.
+
+% 2 1 0 1505f05958fa91971f45d186f07fed11
+
+% 3 1 0 1c99920fd23132831f5528159a034021
+
+% 4 1 0 0dbc3f8d77bf86bd1a3c472733bb99d1
+
+% 5 1 0 16a4c834e3761551076dd8dc983de93c
+
+% 6 1 0 1669fd16caf0ea5d041164a483ca47c3
+
+% 7 1 0 0539e65025992e4607be3f37424af32c
+
+% 4 1 0 1366bf0bd8513ca21f80bb2d24ba871f
+
+% 5 1 0 19b2488c9b2dafd9035f6fb7e24c8bdb
+
+% 6 1 0 106e8fb853e1b4310d4499f09fe0bd4b
+
+% 7 1 0 1116bdde7831599000df6df0a943a73b
+
+% 0 1 0 1addd8b128b5112f09fe4acc6aa30f75
+
+% 0 1 0 069c19d3ae61fdfd0d0fdcecee5dc9ba
+
+% 2 1 0 19185182e5616fa30fd786e99fa395cc
+
+% 0 1 0 1fa17d94d22b3fd91eaa6297dfee8c5f
+
+% 1 1 0 13bfb254ae69abd80f08d72245f6b3c3
+
+% 2 1 0 1c4351c5dbbe194f0329953cf13cd801
+
+@ 0 5 0 1fd57b726bc268c7094603cc62205d8e
++       Mit `Tls#mutual` verlangt der Listener von jedem Client ein Zertifikat, und der Trust
++       Manager des Kontexts beurteilt es: Ein `Tls` aus einem pinnenden `TlsAcceptance#keyed`
++       lässt genau den gepinnten Client zu. Unter TLS 1.3 schließt ein Client seinen Handshake
++       ab, bevor der Listener sein Zertifikat beurteilt hat, daher kann eine Ablehnung den
++       Client als Schließen der Verbindung ohne Antwort durch den Listener erreichen statt als
++       Handshake-Fehler.
+
+% 1 1 0 0a32dd65e519d668116afe8316223156
+
+% 1 1 0 010a8a1accc68240006b6844d5dda09e
+
+% 1 1 0 0c565b88ec4726481a823c20b70dd0de
+
+@ 0 5 0 14355983804911811ca004d02d6b6d4a
++   entry .bindable   `SecurePort is Bindable`, unter dem `Tls` und `Every[Socket.Option.Tcp]` im Geltungsbereich; Handler `Duplex => Data`
++       Öffnet einen `SSLServerSocket` aus `Tls#context`, mit angewandten ALPN-Protokollen,
++       Versionen und der Forderung nach Client-Authentifizierung; ein Fehler beim Binden ist
++       `Bind.Error`.
++   entry .showable   stellt den Port als `tls:8443` dar
++   entry #port   der TCP-Port
+
+@ 0 1 0 08f81a605196035d036ebdf4f66f28d0
++ entry .Connection   eine rohe Unix-Domain-Verbindung: blockierende Java-Streams und der Benutzer der Gegenseite; nur JVM
+
+% 1 1 0 1cfbe2351ec4f7d41d6f4bc464f9e768
+
+@ 0 7 0 171a4ef4aa7c33a1091e459be7afa6d7
++       Was `listenConnections` seinem Handler übergibt: den blockierenden `InputStream` und
++       `OutputStream` einer angenommenen Unix-Domain-Verbindung, für einen Verwender, der ein
++       `Stdio` für einen Unterprozess bauen muss (ein `PrintStream` über dem Socket, Streams,
++       die einem Kindprozess übergeben werden), statt des plattformneutralen `Duplex`, den
++       `listen` bereitstellt — etwa ein Daemon, der Befehle im Auftrag eines Clients ausführt.
++       `#peer` ist der Benutzer, den das Betriebssystem am anderen Ende meldet (`SO_PEERCRED`),
++       also die Antwort des Kernels statt der Behauptung des Clients, und damit als
++       Authentifizierungsprüfung verwendbar.
+
+% 2 1 0 16b9517e7600cbe310d266a953471be7
+
+% 3 1 0 040b9fc70475158205931eb50d0d4f95
+
+% 0 1 0 07f501c53fa93c1d072b2090473e7d78
+
+% 0 1 0 14bb9ef4be22cc050279c87a7f18b97c
+
+% 1 1 0 06818519bc4a9d001fca97617f92645f
+
+% 1 1 0 064871b0144ca0cb0709c458595072c4
+
+% 0 1 0 1cf45967cef08a210df560fb68747b9c
+
+@ 0 7 0 0f3677814e5b1df002dd4268c5d45351
++   entry #peer   der Prinzipalname des verbindenden Benutzers, wie ihn der Kernel meldet, oder `Unset`, wo die Plattform keinen bietet
++   entry #source   ein frischer, einmal nutzbarer Pull-Stream über die Leseseite
++       `connection.source()` benötigt ein `Buffering` und eine `Tactic[Truncation.Error]`, die
++       der Stream behält.
++   entry #reader   der rohe `java.io.InputStream`
++   entry #writer   der rohe `java.io.OutputStream`
++   entry #close   schließt beide Streams und ignoriert Fehler
+
+@ 0 1 0 1860e8e414b25b7d11cef26ee3bd6688
++ entry .listenConnections   bedient einen Unix-Domain-Socket mit rohen `Connection`s, für einen Daemon, der Java-Streams braucht; nur JVM
+
+% 1 1 0 07dcdce658ca0f9a1270bd1c0ba5ce27
+
+@ 0 7 0 1dc4652f1144f12a1c596f8e22613e03
++       `uds.listenConnections(handler, ownerOnly = false)(block)` ist `listen` für einen
++       `Uds`, dessen Handler eine `Connection` nimmt — das blockierende Stream-Paar und den
++       Benutzer der Gegenstelle — statt eines `Duplex`. Die Accept-Schleife und die Überwachung
++       pro Verbindung sind die von `listen`: Jede Verbindung wird in ihrer eigenen `async`-Aufgabe
++       bedient (sodass ein Fehlschlag des Handlers oder ein abgebrochener Client nur diese Aufgabe
++       beendet und die Verbindung immer geschlossen wird), ein fehlgeschlagenes Accept überspringt
++       eine Iteration, und der laufende Server wird `block` als `Socket.Service` verliehen und
++       gestoppt, wenn der Block endet.
+
+% 2 1 0 1f6cdfb74c1f16d2126f57ba98bfd1ca
+
+% 3 1 0 1fb95de8de9e10091145ef94b8465765
+
+% 4 1 0 02e327ffa2c7f0891405d21b5fa9eb43
+
+% 5 1 0 144c08b06157026b0a1b1db355c808cb
+
+% 6 1 0 1da26352d990a87b17462a476b4d3d6a
+
+% 7 1 0 0f253bcadc69fbc90def9163b6d70813
+
+% 8 1 0 15933666697e6b341096a84fdd8fdec1
+
+% 9 1 0 126b4b2cb2c507ac0d45a9cbb346f997
+
+% 2 1 0 15713cb7ee8feac50b47baa5ebc9933f
+
+% 0 1 0 1de4415735c4583a1e4c9b9184626dbe
+
+% 1 1 0 0001a367ec174272126c302856f2377a
+
+% 2 1 0 1bbc3aa5eda512410c1a8cf6ce8c131c
+
+@ 0 5 0 1d59ba181f9e56d40c086f1f7cf28902
++       Mit `ownerOnly` erhält die Socket-Datei den Modus 0600, sobald sie gebunden ist — ein
++       gebundener Socket übernimmt sonst die Umask des Prozesses, typischerweise 0755 —, sodass sich
++       nur dieser Benutzer verbinden kann; ein Dateisystem ohne POSIX-Berechtigungen bleibt, wie es
++       ist. Der Handler läuft in einer Aufgabe und darf daher nur dauerhafte Capabilities erfassen.
++       Benötigt einen `Monitor`, eine `Probate` und ein `Socket.Event is Loggable`; ein
++       Fehlschlag beim Binden wird geworfen statt ausgelöst.
+
+% 0 1 0 1c3f1fa5322b7424032da69adc716a51
+
+% 1 1 0 19e11b34bbd8c8a508ef55c1780d025f
+
+@ 0 8 0 09f3ae3375adb3d2175251c81f217a50
++ entry .streamsDuplex   ein `Duplex` über einem blockierenden Paar aus `InputStream`/`OutputStream`; nur JVM
++     `streamsDuplex(in, out, negotiated = Unset)(shutdown)` stellt die Gestalt, die ein Socket ohne
++     `SocketChannel` bietet — ein `SSLSocket` oder die Pipes eines Kindprozesses —, als `Duplex`
++     dar: Die Leseseite blockiert in `read` und endet bei EOF, jedes Senden schreibt durch und
++     leert den Puffer, `close()` führt `shutdown` aus, und `alpnProtocol` ist `negotiated`.
++     `shutdown` ist eine reine Funktion (`() -> Unit`), sodass das Duplex keine Captures hat. Die
++     TLS-Endpunkte und das TCP-Accept des JVM-Backends bauen darauf auf; eine Bibliothek, die ein
++     anderes Java-Stream-Paar an die API von coaxial anbindet, verwendet es direkt.
+
+% 2 1 0 0881bc05db3191bf19db563a3885c002
+
+% 3 1 0 01f387a5df8f00f00ccf1ff910d34de0
+
+% 0 1 0 06b5aa9bb0e2148116df5511cfb637db
+
+% 1 1 0 13a044c22d96d78511a97f25240fbe40
+
+% 2 1 0 0185e7e2bb11b8dc18e3890389ce9c29
+
+% 0 1 0 1eabd287b3d31d5515aa4d0b2b1d5f9c
+
+% 0 1 0 0fa2d15e66254432163abc81503135a1
+
+% 0 1 0 09891fdc3fec9d640968e216160ec035
+
+% 1 1 0 02523d54ed81b8811ca0add99a276d23

@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 2 0 1ce2591c7910df8715cb6ee0ece79b7c
++ Terminado cuando: el módulo se distribuye con pruebas, páginas de error y un tema en
++ `doc/en/modules/`, y reproduce en ida y vuelta los vectores de ejemplo de RFC 7515/7516.
+
+@ 0 5 0 185e0933a78085f60dda1fb01867e9b3
++ Hecho: #2530 (2026-11-20). sigillate: `Jws`, `Jwe`, `Jwk` y `Jwt`, con todos los algoritmos de
++ RFC 7518 salvo la compresión `zip`, y EdDSA y X25519 de RFC 8037; un manejador de tokens bearer
++ para scintillate, y conjuntos de claves obtenidos por HTTP. Los ejemplos del apéndice A de
++ RFC 7515 y del apéndice A de RFC 7516 son sus pruebas, leídos del texto de las RFC. enigmatic
++ ganó las primitivas que le faltaban: derivación de claves, envoltura de claves AES, AES-CBC con
++ HMAC, RSA-OAEP y RSA-PSS.
+
+@ 0 2 0 19e4d46c5d18ca6c0a3eac1338b276cc
++ Terminado cuando: el módulo se distribuye con pruebas, páginas de error y un tema en
++ `doc/en/modules/`, y supera la suite estándar de conformidad de TOML.
+
+@ 0 4 0 1119703a804af95f1fb4bb604086cc3a
++ Autenticación sin contraseña para la pila web, que completa la historia que empiezan OAuth 2 y
++ JOSE. El soporte de COSE del que depende (las claves COSE y los algoritmos de firma
++ asimétrica) llegó con `brd-1`, igual que la lectura y la validación de la cadena de los
++ certificados X.509 que lleva una atestación.
+
+@ 0 2 0 1c27de11db8327eb199b7672a17cf0fc
++ Terminado cuando: el módulo se distribuye con pruebas, páginas de error y un tema en
++ `doc/en/modules/`, y una ceremonia guionizada de registro y aserción tiene éxito frente a un
++ autenticador de referencia.
+
+@ 0 7 0 0f072c1e402a18d91bb22643f0148107
++ Hecho: #2530 (2026-11-20). chatelaine: las dos ceremonias de la parte confiante, con todas las
++ comprobaciones de WebAuthn Level 2 §7.1 y §7.2, y los formatos de atestación `none` y `packed`.
++ El autenticador de referencia es el de la propia especificación: se aceptan las salidas de
++ registro y de autenticación de sus vectores de prueba, para credenciales ES256, ES384, ES512,
++ RS256 y Ed25519, con las atestaciones empaquetadas validadas hasta la raíz de confianza de los
++ vectores. Un autenticador por software en las fuentes de prueba guioniza ceremonias completas, y
++ las formas en que se rechazan. No se ha manejado el autenticador virtual de un navegador.
+
+@ 0 2 0 17114dda9db220b1111dfa3e427832ac
++ Terminado cuando: el módulo se distribuye con pruebas, páginas de error y un tema en
++ `doc/en/modules/`, e interopera con un servidor y un cliente HTTP/3 de referencia.
+
+@ 0 2 0 0c7008ff6c9ff7ce1e83f47b9ad6f3b1
++ Terminado cuando: el módulo se distribuye con pruebas, páginas de error y un tema en
++ `doc/en/modules/`, y una sesión guionizada tiene éxito frente a un servidor IMAP de referencia.

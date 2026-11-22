@@ -1,0 +1,234 @@
+orthant 2 language
+
+@ 0 1 0 0494433b492191e6042b734ec0d7f908
++ ## Césure
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 6 0 0c412b650d34c9e406ed77dd93a4696d
++ Couper un mot en fin de ligne n'est acceptable qu'à certains points, et trouver ces points est
++ le travail de la [césure](https://en.wikipedia.org/wiki/Syllabification). Les mots sont coupés
++ avec le même algorithme, et les mêmes fichiers de motifs, que
++ [TeX](https://en.wikipedia.org/wiki/TeX), pour la composition duquel la technique a été
++ inventée. Un mot reçoit ses points de coupure admissibles, est coupé avec un caractère choisi,
++ ou est découpé en syllabes.
+
+@ 0 3 0 0cc5a2846631ab6408e8249204d4b18c
++ Les motifs d'une langue sont une [valeur contextuelle], et l'anglais américain est fourni.
++ L'ensemble des motifs peut être étendu, ou remplacé à partir de n'importe quel fichier de motifs
++ TeX, lorsqu'un mot se coupe d'une façon que les motifs standard ne connaissent pas.
+
+@ 0 1 0 0019c813b8952ea80127b98757a8d33a
++ ### La césure
+
+@ 0 5 0 01a0b03c01faae9d158fb9f1797c7f8a
++ L'endroit où un mot peut se couper n'est pas quelque chose qu'un algorithme peut lire dans son
++ orthographe. *hy-phen-ation* se coupe entre des syllabes qu'aucune règle simple n'identifie.
++ L'algorithme de Liang, conçu pour TeX, y répond avec un dictionnaire de milliers de petits
++ motifs pondérés, dérivés de vrais dictionnaires de césure. Il reste la norme, car il est précis
++ et rapide, et ses fichiers de motifs existent pour de nombreuses langues.
+
+@ 0 2 0 1e0ee0ced0b9bd511eb2ab1784a7745c
++ Cet algorithme est implémenté ici, sur les fichiers de motifs standard, et proposé sous forme
++ de trois opérations sur le [texte](text.md), la langue étant fournie par un [given] :
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 0147b76e17e889b01d85879409c1b626
++ column  Opération
++ column  Renvoie
++ column  Pour
++ row  `hyphenate`  le `Text` avec un caractère de césure à chaque coupure admissible  un texte à composer en lignes
++ row  `syllables`  une `Sequence[Text]` de syllabes et de suites de non-lettres  l'analyse des parties d'un mot
++ row  `breakPoints`  un `Array[Int]` de positions de coupure  un code qui place lui-même les coupures
+
+% 1 1 0 032e8a754ab89d4b0ed06a41312a51fc
+
+@ 0 3 0 032d6f02fc779c7018b9757afc4c7296
++ Couper un texte aux bons endroits est une fonction pure des motifs de la langue, et le reste,
++ ce qui est l'[immuabilité](../../philosophy/immutability.md) dans un domaine qui incite à
++ l'itération avec état.
+
+@ 0 2 0 18c85857c0e7a28e149dfcf775c1be30
++ Tout provient du package `soundness`, avec les motifs anglais dans la portée. Le dernier import
++ permet aux exemples d'afficher leurs résultats :
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 08f070a70bdb87031db2223cc0bdebe1
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1e24313b739f716e1525cadfcaa84fc1
++ ### Couper les mots
+
+@ 0 3 0 1fcdcdc81bd11882190d68785d4db398
++ `hyphenate` insère un caractère de césure à chaque coupure admissible. Par défaut, c'est le
++ [trait d'union conditionnel](https://en.wikipedia.org/wiki/Soft_hyphen) d'Unicode, invisible
++ à moins qu'une ligne ne se coupe effectivement à cet endroit. Passer un caractère visible montre
++ les points de coupure :
+
+% 2 1 0 1ffb0e187611d4661fdc0089c7d4547e
+
+% 3 1 0 06e3dd52e5dcdf541c7594375b601416
+
+% 4 1 0 0fbb517eb8bc7cf51e0a1a70ce6d01bb
+
+% 0 1 0 1d9baa8cc06e8f4800981feb5c8b547b
+
+% 0 1 0 07ec3a8f0e0302101739021af21597cc
+
+% 1 1 0 1e5cab8b5b86cbfe18e28f8af2b85ae6
+
+@ 0 2 0 1208113247474cf3119b1a08911da798
++ `leftMin` et `rightMin` gardent un nombre minimal de caractères attachés avant la première
++ coupure, et après la dernière, de sorte qu'une coupure ne laisse jamais une ou deux lettres
++ isolées :
+
+% 2 1 0 06ca336f4cd0e70e05319194a413ea9c
+
+% 3 1 0 04dbaab269f631db05b72df5b738132b
+
+% 4 1 0 09c4730ff66172fb02fbc41e9266ec97
+
+% 0 1 0 0b9c11cd2c15f5e41b5143fb3036c699
+
+% 0 1 0 0763edefe3a86e5e0805ecab6d62e5e3
+
+% 1 1 0 1aa664b7d47341f603999e421f345f49
+
+@ 0 1 0 10e47f90842cecc709330cc5658f2f4e
++ ### Syllabes
+
+@ 0 2 0 17c0e0e0e3c0aa3e1b4f7ae48da6030b
++ `syllables` découpe un texte en ses parties. Chaque syllabe est un segment, et chaque suite de
++ caractères qui ne sont pas des lettres passe comme un segment à part entière :
+
+% 2 1 0 169f409f49e4489d000bfa55e76ffb8b
+
+% 3 1 0 0fc3491fb15e28b3069aab37b7f16b61
+
+% 4 1 0 0a5d3762fa710276107803e3e007d270
+
+% 0 1 0 0b0321678fc9221505804bf3af366266
+
+% 1 1 0 184b1adbc62ee84c030adcae49302e74
+
+@ 0 1 0 056fd70d42d476bf14425517f349ae61
++ ### Points de coupure
+
+@ 0 2 0 0e6f09bc00e7188700b4d1f6c80480a7
++ `breakPoints` donne les positions brutes auxquelles un mot peut se couper. C'est pour un code
++ qui place lui-même les coupures, comme un algorithme de retour à la ligne, au lieu d'insérer des
++ caractères :
+
+% 2 1 0 1c462e58b47d0b4617e700b43d01a517
+
+% 3 1 0 02a6ea41b4e9ccab047264dd8e5ca56d
+
+% 4 1 0 0253eacb121c4f2711637506fab11a0d
+
+% 0 1 0 06e3fa7c89ec9b571c2d2e857a3d81ab
+
+% 1 1 0 1ea9002471ceca0511b2810f3f46785f
+
+@ 0 1 0 1d3572d220ee1b2300ebead6b8534081
++ ### Un texte qui n'est pas un seul mot
+
+@ 0 3 0 0f6273f097ef9f470527a836444c9cb4
++ La césure s'applique aux lettres, et un texte est rarement fait uniquement de lettres. Chaque
++ suite de lettres est coupée indépendamment. Tout le reste, comme les espaces, la ponctuation et
++ les chiffres, passe intact :
+
+% 2 1 0 1c7783518e875fff1cd21106c7a3d210
+
+% 3 1 0 13e99b92a20999bd104a8cbd73b1a039
+
+% 4 1 0 1696541e326560bd01950643a60a0e5f
+
+% 0 1 0 15f5e008b2e30f4312e9ee06706117ad
+
+% 0 1 0 0486ede99adf87ab03d77f000bf6b22e
+
+% 1 1 0 0eb88affaf708b8d121ffd6f866abf9e
+
+@ 0 3 0 0dd1cf2f76fd08d408c462d08af0d857
++ Les deux mots du premier texte sont trop courts pour être coupés. `syllables` suit la même
++ règle, et donne les suites qui ne sont pas des lettres comme des segments à part entière :
++ recoller les segments reproduit donc exactement le texte d'origine.
+
+@ 0 1 0 035cd0e7ea80d44f1643ec05dc3ce8e0
++ ### Étendre les motifs
+
+@ 0 2 0 1ed321a67d1e63371ece6aa6795b4ca1
++ Un mot d'un domaine spécialisé, que les motifs standard coupent mal, ou pas du tout, s'enseigne
++ avec un motif supplémentaire, dans la notation de TeX, superposé à l'ensemble existant :
+
+% 2 1 0 006f39b4cbac1a6b1bb050a66fd72ee0
+
+% 3 1 0 056fec36b21ae86f1dfeaf6071a68420
+
+% 4 1 0 1b9202f3bc3af0ab0459836a97d9bd40
+
+% 5 1 0 0fe5d1c09c74358d0f33df7b61f1d97f
+
+% 0 1 0 1b7f16e4fa2180d617d6fa11a37b38a9
+
+% 0 1 0 1d3076c36eafe0de18878ea1a8acd0f2
+
+% 1 1 0 14f6a709f6e8e7f51d563c447f40b28f
+
+@ 0 3 0 0c53230de008ff091410c1b8c8c7e9eb
++ Les motifs se fusionnent en prenant le score le plus élevé à chaque position. Un motif ajouté de
++ score impair rétablit donc une coupure qu'un motif standard de score pair avait interdite. C'est
++ ainsi qu'on corrige un mot, sans perturber le reste de la langue.
+
+@ 0 2 0 1184b8585675dd8901578fb835cca521
++ Certains mots, aucun motif ne les traite correctement. Une *exception* énonce directement les
++ coupures d'un mot, et a priorité sur l'algorithme :
+
+% 2 1 0 0396ed7e06fe982d191ea796bd80144c
+
+% 3 1 0 144695626d9df522149b740d85ee80a3
+
+% 4 1 0 05e73c20457ac49c091f981a668bd74e
+
+% 5 1 0 0f4e8ae93bab354b14f9f2a8fca9a6ff
+
+% 0 1 0 021f767ea6c4f53116e959e8365bd532
+
+% 0 1 0 0ce3e73f9fb62df811716001a5c42847
+
+% 1 1 0 0fd5effad54bc69407f7527590c96db1
+
+@ 0 2 0 190e0a094e0ce14b08d5d6fff66cb3ec
++ L'ensemble anglais standard contient déjà la liste d'exceptions que fournit TeX : `associate`
++ se coupe donc en `as-so-ciate`, et `table`
++ en `ta-ble`, là où les motifs seuls ne le feraient pas.
+
+@ 0 2 0 1a3f50a0aa687a6105efeffb056783f7
++ Une langue entière se fournit de la même façon. `Hyphenation.fromTex` lit n'importe quel fichier
++ de motifs TeX : les langues publiées pour TeX sont donc disponibles en chargeant leurs motifs.
+
+@ 0 1 0 07f43d5a194b97ae19d524abf4a3eb69
++ ### Quand aucun motif n'est disponible
+
+@ 0 4 0 089d68a7bdf08bbf02a6c070466a7be3
++ Une langue pour laquelle aucun ensemble de motifs n'a été chargé ne coupe rien, et ne devine
++ pas. `hyphenate` rend le texte inchangé, et `breakPoints` est vide. Un algorithme de retour à la
++ ligne se replie donc sur les coupures aux espaces, ce qui est le comportement correct, et
++ n'invente pas de coupures dans une langue dont il ne connaît pas les règles.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 3 0 1f14cf5da6c0d3e70bfbdc0ec5a8e515
++ - [Tableaux](tables.md) renvoie à la ligne le texte d'une colonne avec césure.
++ - [Texte](text.md) décrit les autres opérations sur le texte.
++ - [PDF](pdf.md) et [Pages](pages.md) composent des paragraphes qui se coupent sur plusieurs
++   lignes.

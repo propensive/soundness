@@ -1,0 +1,39 @@
+orthant 2 language
+
+% 0 1 0 190c098c7f6010f60a3e574246bf1613
+
+@ 0 1 0 05a6ff4de7ceca7c156f373b3f867d94
++ Wird ausgelöst, wenn eine Datenbankoperation von Anamnesis nicht fortgesetzt werden kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 4 0 19bf57dc1364091b039ba30b0e4caffc
++ Anamnesis verwaltet einen speicherinternen Bestand von Referenzen und den
++ Beziehungen zwischen ihnen. Wenn sich eine Abfrage auf Daten bezieht, die der Bestand
++ nicht kennt, wird dieser Fehler ausgelöst. Der Konstruktor nimmt
++ einen `reason: Reason`; die dargestellte Meldung lautet `the database
+
+% 0 1 0 0a337e3286fa960d1c4fa365be454124
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0866a05b1564a9fc0f1c427e373f92a3
+
+@ 0 2 0 161158d4a6f8d5820dfce6021e46be04
++ Der an `Database.ref` übergebene Wert wurde zuvor nicht
++ gespeichert, also kann für ihn kein `Ref` zurückgegeben werden.
+
+@ 0 1 0 1ed706efdd3a34da10aef80b439e96cf
++ **Beispiel.** `[↯/s.26.1.1] the database operation failed because the value has not been stored in the database`
+
+@ 0 2 0 0d5ddbced5afdd801ca90e9acaeff98f
++ **Behebung.** Rufen Sie `Database.store` mit dem Wert auf, bevor
++ Sie einen `Ref` darauf anfordern.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 086dd6d4fa53cb2f1b5e6e6cb2a1ac9a
++ - Quelle: `lib/anamnesis/src/core/anamnesis.Database.scala`

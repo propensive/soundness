@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 3 0 0e4ca06698293693048feb52cbda8aab
++ Verificare che l'elemento e i suoi attributi siano tra quelli che Savagery modella. Un SVG prodotto
++ da un programma di disegno può contenere costrutti esterni a quel sottoinsieme; il ripiego è
++ leggerlo come semplice [XML](/doc/soundness/modules/xml.md).

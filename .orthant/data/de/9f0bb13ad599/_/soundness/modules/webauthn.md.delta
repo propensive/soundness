@@ -1,0 +1,257 @@
+orthant 2 language
+
+@ 0 1 0 177c95bfd7e6d4861aa4f0bdb5c162f2
++ ## WebAuthn: Anmeldung ohne Passwort
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 5 0 16497eabd68821dc088cee4eebc1f6d7
++ [Web Authentication](https://www.w3.org/TR/webauthn-2/) erlaubt es einem Benutzer, sich mit
++ einem Schlüssel statt eines Passworts bei einer Website anzumelden. Ein *Authentifikator*, der
++ ein Sicherheitsschlüssel, ein Telefon oder die sichere Hardware eines Laptops sein kann,
++ erzeugt ein Schlüsselpaar für die Website, behält den privaten Schlüssel und signiert damit bei
++ jeder Anmeldung des Benutzers eine Challenge. Ein Credential dieser Art, das zwischen den
++ Geräten eines Benutzers synchronisiert wird, ist ein *Passkey*.
+
+@ 0 3 0 080563935e290a310adef989c4330f3a
++ Die Seite des Servers, die der Standard *Relying Party* nennt, wird hier bereitgestellt. Sie
++ erzeugt die Optionen, die eine Seite an den Browser übergibt, und prüft, was der Browser
++ zurücksendet. Die Schlüssel und Zertifikate sind die aus [Kryptografie](cryptography.md).
+
+@ 0 1 0 1a9481beff4842a0096f2aa877fa3ccf
++ ### Über Zeremonien
+
+@ 0 5 0 06b40272bbd5108d122ca4de66072902
++ Ein Server muss sich nichts merken außer einem öffentlichen Schlüssel, und es gibt nichts, zu
++ dessen Eingabe ein Benutzer verleitet werden könnte. Sorgfalt verlangt die Prüfung. Eine
++ Antwort muss sich auf die gesendete Challenge beziehen, nicht auf eine alte. Sie muss vom
++ eigenen Origin der Website kommen, nicht von einer Seite, die ihr ähnelt. Sie muss für diese
++ Relying Party erstellt sein, bei Anwesenheit des Benutzers. Die Signatur muss die des
++ Credentials sein.
+
+@ 0 2 0 196140154b8c13e6057ad4b55a607909
++ Jede der beiden *Zeremonien* besteht aus einem Aufruf, der die Optionen erzeugt, und einem,
++ der die Antwort prüft, und der zweite führt jede Prüfung durch, die der Standard verlangt.
+
+@ 0 2 0 0df9b9b4721d03bc1624ffeba6255d27
++ Alles stammt aus dem Paket `soundness`. Ein Provider von Algorithmen ist im Geltungsbereich,
++ wie bei jeder Kryptografie:
+
+% 2 1 0 16ec50c4e77ef0f311ee9dfe7efb3eef
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 1 0 142682d0543febc315ab710fcbc1688b
++ Eine Relying Party wird durch eine Domain identifiziert und nennt die Origins, von denen ihre
++ Seiten ausgeliefert werden:
+
+% 2 1 0 15cbd76ddf715fb51acb4caa5f3633e3
+
+% 0 1 0 17047b08f1770eb202b6e53654d42744
+
+% 1 1 0 0b50bd1717cc85ff0802259052a235a5
+
+@ 0 1 0 19ac6b8d9e0b0273169ace3b7edd4b79
++ ### Registrierung
+
+@ 0 3 0 1f5f4acfc3f7af4014196bb95a3745b9
++ Ein Credential wird für ein Konto registriert, das ein `WebAuthn.User` ist. Seine `id` ist ein
++ Handle von bis zu 64 Bytes, der das Konto identifiziert. Ein Authentifikator speichert ihn,
++ daher sollte er nichts über die Person verraten:
+
+% 2 1 0 0e8336fae96af3480289c23e78c16314
+
+% 0 1 0 090dc34ab0567ede0ed4540516fd6e90
+
+% 1 1 0 1c1706c689a3f374176294703eab3f81
+
+@ 0 3 0 1cfd3a375adb2ca714f7391d7eb67075
++ Eine Zeremonie beginnt mit einer frischen `WebAuthn.Challenge`, die der Server aufbewahrt, bis
++ die Antwort eintrifft. `WebAuthn.registration` erzeugt die Optionen, als das JSON, das eine
++ Seite an `PublicKeyCredential.parseCreationOptionsFromJSON` und dann an
++ `navigator.credentials.create` übergibt:
+
+% 2 1 0 0587bf1ab0d79cad0a5574e7e8fe88dc
+
+% 0 1 0 1421e354c1065a440fb0efc24a00738f
+
+% 0 1 0 0b03d98d6fb2e7b61510adab047014ee
+
+% 1 1 0 03730af1c49d5e2c13fb6a85aad26ed6
+
+@ 0 2 0 0a6798bf00e0d5e600c3c8c2e7dfb277
++ Die Seite sendet das `toJSON()` des Credentials zurück, und `WebAuthn.register` prüft es. Es
++ gibt das `WebAuthn.Credential` zurück, das für das Konto zu speichern ist:
+
+% 2 1 0 05c0e31b6f83b2ff131cdc1d2e670169
+
+% 3 1 0 10fa60d358b7ed4d0202089d74356423
+
+% 4 1 0 1f8b36abbcb2b9271fb62fec347ae964
+
+% 0 1 0 0e7d332eecc8758806a1e84cd17f379a
+
+% 0 1 0 11d21d831e19a5cb0795e20cb0280c68
+
+% 1 1 0 1b64a46e9c5b01ad10cf28e201976437
+
+@ 0 3 0 07e59cd0b4b1d63017a2acebf79b36dd
++ Ein Credential hat eine `id`, über die es wiedergefunden wird, den öffentlichen Schlüssel
++ `key` und einen Signaturzähler `counter`. Zwei Dinge bleiben dem Aufrufer überlassen, weil nur
++ er die Daten hat: zu prüfen, dass die `id` nicht bereits für ein anderes Konto registriert
++ ist, und das Credential zu speichern.
+
+@ 0 1 0 0319a41720bd566f18d984c2a645a56b
++ `registration` nimmt weitere Parameter, jeder mit einer Vorgabe:
+
+% 2 1 0 0f82d2805a0d12141ac77818347a02e4
+
+% 0 1 0 0e135d4b9e9b8a7407f82db8f076a4f9
+
+@ 0 6 0 15b0f028085f63c201e345eb542ad125
++ column  Vorgabe
++ column  Bedeutung
++ row  `existing`  keine  die Bezeichner der Credentials, die das Konto bereits hat, damit ein Authentifikator nicht zweimal registriert wird
++ row  `algorithms`  `WebAuthn.Algorithms`  die akzeptierten COSE-Algorithmen, nach Präferenz geordnet: ES256, EdDSA und RS256
++ row  `verification`  `false`  ob der Benutzer verifiziert werden muss, durch eine PIN oder einen Fingerabdruck, und nicht bloß anwesend sein
++ row  `attestation`  `none`  die vom Authentifikator verlangte Übermittlung der Attestierung
+
+% 1 1 0 1e846ab014e6f6fc1c80d064a937e453
+
+@ 0 2 0 0c45aaf217b4331e1931d37e7a76a62e
++ Was in `verification` und `algorithms` verlangt wird, muss auch an `register` übergeben
++ werden, denn dort wird es durchgesetzt.
+
+@ 0 1 0 1b6911e091cca09119565edb21d17b50
++ ### Authentifizierung
+
+@ 0 4 0 0b8ddb5c8a8f7f0908a6f6a4edc57890
++ `WebAuthn.authentication` erzeugt die Optionen für die Anmeldung, für
++ `navigator.credentials.get`. Die Bezeichner der Credentials des Kontos werden übergeben, wo das
++ Konto bereits bekannt ist, und weggelassen, wo der Authentifikator beliebige Credentials
++ anbieten soll, die er für die Website hält:
+
+% 2 1 0 1fb9cd8a4d694a670b16cc7b3a164824
+
+% 0 1 0 04a704116af2181d06204a357bda7b90
+
+% 0 1 0 18f5fff085e2dd3d180a15f2c3c4c0d9
+
+% 1 1 0 1739161aecaac13814d7215659924ef3
+
+@ 0 2 0 04db3a8d1e67a93a0238ee3a2cd138de
++ Die Antwort nennt das Credential, von dem sie stammt. `WebAuthn.identifier` liest diesen
++ Namen, sodass das gespeicherte Credential gefunden werden kann, und `WebAuthn.authenticate`
++ prüft die Antwort dagegen:
+
+% 2 1 0 16c1e252639b91de052f307aa74909df
+
+% 3 1 0 1ac51757ed0b88071d7036bb24980257
+
+% 4 1 0 1001cc32401e95e5123093b6ecd08546
+
+% 0 1 0 18dfc4e7b0e7959a1f07f4d64e620344
+
+% 0 1 0 11c407f619b587b210c111bd3dcdbba5
+
+% 0 1 0 035427129f8e5f4c00ea1df534fa5dd4
+
+% 1 1 0 0687e97ebb693a58038abf70a1bc085a
+
+@ 0 4 0 0ec6a7456f1f8c2b0bc6470df2f7cef5
++ Beim zurückgegebenen Credential ist der Zähler weitergezählt, und es wird anstelle des alten
++ gespeichert. Ein Zähler, der sich *nicht* erhöht hat, bedeutet, dass der private Schlüssel an
++ zwei Orten liegt, daher wird die Antwort verweigert. Ein Authentifikator, der nicht zählt,
++ meldet jedes Mal null; das wird akzeptiert, solange auch der gespeicherte Zähler null ist.
+
+@ 0 2 0 181253d3892d7e1b1d14652e1d31cecd
++ Jede Verweigerung ist ein `WebAuthn.Error`, dessen Grund angibt, welche Prüfung
++ fehlgeschlagen ist. Eine Challenge gilt für eine Zeremonie und wird verworfen, ob die Antwort
++ akzeptiert wird oder nicht.
+
+@ 0 1 0 0ad5b8c446edfdd208ed4de3044b0525
++ ### In einer Webanwendung
+
+@ 0 4 0 1e87c40cb666c0c019b4a904611edb32
++ Eine Challenge muss von dem Request, der die Optionen einer Zeremonie erzeugt, bis zu dem
++ Request aufbewahrt werden, der ihre Antwort bringt. `Ceremonies` ist ein Speicher dafür, mit
++ der `Session` des Benutzers als Schlüssel. `begin` erzeugt die Challenge einer Sitzung und
++ merkt sie sich. `conclude` gibt sie einmal zurück und vergisst sie:
+
+% 2 1 0 12d6570e591c37591719bfd5e21f2da6
+
+% 0 1 0 148726101117471e1bf41081fdc1a445
+
+% 1 1 0 10d01995ccb52d4906822eea92f074f6
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 1ba4ca4d3f4f3c581e95b14aed4cf220
+
+% 4 1 0 1ef3f9c56b399d0f1fcb7e5a6eea1603
+
+% 0 1 0 0bed94833f58d8e30ba6b69924b42908
+
+% 0 1 0 061ba6891ffc027f0c75b409b982583a
+
+% 0 1 0 165eb20f5e5d6b1b1f7bb926ec88698c
+
+% 0 1 0 05bdd3da375a0ccd06ae897a87313c42
+
+% 0 1 0 0603d59a86ad5c171d91364dbf91e789
+
+% 1 1 0 08fdf4c95ac1142c16486a8d097e1dd3
+
+@ 0 2 0 1c1afee269f245c41d7bea86b288becb
++ Da `conclude` eine Challenge nur einmal zurückgibt, findet eine Antwort, die ein zweites Mal
++ angeboten wird, keine laufende Zeremonie und wird verweigert.
+
+@ 0 1 0 0555ef1dabc1114f19c56c16706fcd0a
++ ### Attestierung
+
+@ 0 2 0 140743384e5ac2e710db46302483ee3a
++ Ein Authentifikator kann das Credential, das er erzeugt, *attestieren*; das ist eine Aussage
++ über den Authentifikator selbst. Die `attestation` eines Credentials sagt, was festgestellt
++ wurde:
+
+% 2 1 0 085168d5d41ede3b01c0bd32b6e22415
+
+@ 0 5 0 13ae08faa07741000043df5a6a3f40ff
++ column  Attestierung
++ column  Bedeutung
++ row  `Unattested`  der Authentifikator hat keine Aussage gemacht
++ row  `Self`  die Aussage wurde mit dem eigenen Schlüssel des Credentials signiert und beweist nichts über den Authentifikator
++ row  `Certified`  die Aussage wurde mit einem Schlüssel signiert, den eine Zertifikatskette beglaubigt
+
+% 1 1 0 1b6d58ac2f1a572213196774a725ec8d
+
+@ 0 5 0 08a94a8a0f2301aa105675b787a5bac7
++ Die meisten Relying Parties akzeptieren jeden Authentifikator und verlangen keine
++ Attestierung. Eine, die die akzeptierten Modelle einschränkt, verlangt die Übermittlung
++ `direct` und übergibt `register` die Wurzeln, denen sie vertraut, als `anchors`. Eine
++ `Certified`-Attestierung wird dann nur akzeptiert, wenn ihre Kette zu einer davon führt, und
++ dann ist ihr Member `trusted` gleich `true`. Ohne Anker wird die Kette gemeldet und nicht validiert.
+
+@ 0 1 0 00bfe45a2f825b971221280ff698ba8c
++ Die Formate `none` und `packed` werden verstanden. Jedes andere Format löst einen
++ `WebAuthn.Error` aus.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 4 0 1061b3ab31d011111395e43d7ebf38de
++ - [Kryptografie](cryptography.md) stellt die Schlüssel und Zertifikate bereit.
++ - [JOSE](jose.md) stellt Tokens bereit, für die Sitzung, die auf eine Anmeldung folgt.
++ - [OAuth 2](oauth.md) delegiert die Anmeldung an eine andere Partei.
++ - [HTTP-Server](http-server.md) liefert die Seiten aus und empfängt die Antworten.

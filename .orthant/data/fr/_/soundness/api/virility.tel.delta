@@ -1,0 +1,298 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 06562905e99fab72131bd8cdc5dc656a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 191f5c47ae476c8315ebd94bdf845c5b
++ info
++     les pages de manuel Unix comme arbre de document typé, sérialisé en roff avec un échappement
++     correct
+
+@ 0 5 0 0edc6deb45274bd5037fccb2e1fb2856
++ detail
++     _Virility_ construit une page de manuel Unix comme une valeur — un document `Roff` de sections
++     titrées, de paragraphes, de paragraphes tagués, d'exemples et de blocs indentés, avec des
++     passages en gras et en italique — et la sérialise en source roff que rend `man`, au moyen du
++     package de macros man (`.TH`, `.SH`, `.SS`, `.P`, `.TP`, `.EX`/`.EE`, `.RS`/`.RE`).
+
+@ 0 5 0 14eca3cdcb1c4c7a00e0d43680c364a1
++     L'échappement est la raison d'être de la bibliothèque : un texte écrit à la main dans un
++     document roff est facilement pris pour du balisage. Chaque `-` dans la prose devient `\-`,
++     afin qu'une option comme `--verbose` reste recherchable et copiable dans la page rendue ;
++     chaque `\` devient `\[rs]` ; une ligne commençant par `.` ou `'`, que roff prendrait pour une
++     ligne de contrôle, est protégée par `\&` ; et un saut de ligne au sein d'une ligne devient une
++     espace.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 06fd7c3732f9b38e0978880242cd4b75
+
+% 0 1 0 1971fb6fdff5c85c0b46d3f40555a9a2
+
+% 0 1 0 195b9d1eee049e791f6a3ecf764ce91f
+
+% 0 1 0 0f8bd7b4e74b432904b1c46105a11685
+
+% 0 1 0 17bdfbae78c37db113c8deb4c82feda9
+
+% 0 1 0 009d850715cc550a1520b319b75ee172
+
+% 0 1 0 1dc09c07682b520516f528a29c19fe11
+
+% 0 1 0 10742f2393ecd0941ad69c3264589e1f
+
+% 0 1 0 1e987cb7719ebbb1107899c5ab15a25b
+
+% 0 1 0 09b05a5367acd98e0f7bfced010bc903
+
+% 0 1 0 177c315e378d99e60b2361e1b4a42185
+
+% 0 1 0 1ae0477d94da20240f6cdb53292509d3
+
+% 0 1 0 14f98e6f1ba318e20b1c53802fd5a08a
+
+% 0 1 0 1072917e9c55263a172a24bf6a17feec
+
+% 0 1 0 1e448bf5421592c81299436fad8a5b07
+
+% 0 1 0 0df06f87942f510f1f640b3a246bf2e1
+
+% 0 1 0 0fd4c46719e6757016e0b5c33feaa608
+
+% 0 1 0 0a5413908b6447e605ee4780fc4270ff
+
+% 0 1 0 187ee86dc0a8927c1709d7d2a9c37afc
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 3 0 019ae1017e865c7904384a4fee815414
++     La prise en charge des pages de manuel d'Exoskeleton génère ses pages au moyen de cette
++     bibliothèque, à partir des propres définitions de ligne de commande du programme. Virility a
++     un seul ensemble de sources, `virility.core`, et tout est exporté vers le package parapluie
++     `soundness`.
+
+% 0 1 0 008c746b5bd31cef04c583614389c524
+
+% 0 1 0 0f00b820f8a0117a1d0cb24afd9a0eb3
+
+% 0 1 0 118e3f9a71c0b01e122f18a574fb4cfa
+
+@ 0 1 0 04ba6ff3899deabc08e9d19eca78aa46
++ entry .Roff
++   info
++       une page de manuel Unix : sa ligne de titre `.TH` et une liste de blocs, sérialisée en roff
+
+@ 0 5 0 0b00a97cdad55b660a48fce913dbd5a8
++   detail
++       Un `Roff` est une page de manuel. Ses champs deviennent les arguments de la ligne `.TH` qui
++       ouvre la page : le `#title` (rendu en majuscules), le numéro de `#section`, et les champs
++       optionnels `#date`, `#source` (le programme et sa version) et `#manual` (le titre du manuel
++       auquel elle appartient, comme `User Commands`). Ses `#blocks` en constituent le corps.
+
+% 2 1 0 1ae52a075d1a6665126844f1e602f345
+
+% 3 1 0 187409dfaaea47510d150875324119da
+
+% 0 1 0 0a635894ded961811991631df9b7b841
+
+% 0 1 0 166a4715d83eb1b901b8035b439e74d2
+
+% 0 1 0 043f0f7e2f3dd65400cbb4cb3176867c
+
+% 1 1 0 18dd2c791d3ec8a905cea710dbc9f513
+
+@ 0 3 0 1236d665aa07a6940973423e29155804
++       Les arguments non définis en fin de ligne sont retirés de la ligne `.TH`, et ceux qui
++       précèdent un argument défini s'écrivent comme des arguments vides entre guillemets. Un
++       `Roff` s'affiche, et s'encode en `Text`, sous la forme de sa source produite par
++       `#serialize` : il peut donc être écrit dans un fichier avec `write`.
+
+% 0 1 0 112329b882b74d0b04cc94c5d8deb2ee
+
+% 0 1 0 1db2d2b50643db6f1d5d120097e5a476
+
+@ 0 1 0 076c9217016b5d370a362723bad1ffad
++   entry .showable
++     info
++         affiche une page sous forme de sa source roff
+
+@ 0 1 0 0d006e9b0e3258131f2a92dabb9eef4f
++   entry .encodable
++     info
++         encode une page sous forme de son texte source roff
+
+@ 0 1 0 1f6304a63419072a14c30eb4dd424090
++   entry .escape
++     info
++         échappe un texte pour une ligne de texte roff
+
+@ 0 3 0 1608e4513581d19e07c3686ae198fb37
++     detail
++         Chaque `-` devient `\-`, `\` devient `\[rs]`, et un saut de ligne devient une espace. Elle
++         ne protège pas un `.` ou un `'` initial : les blocs le font pour chaque ligne qu'ils
++         émettent ; un texte passé seulement par `.escape` et écrit en début de ligne a donc encore
++         besoin de `\&`.
+
+@ 2 1 0 04eb90a98edc8269120d8a2a66c51592
++         ```scala
+
+@ 3 1 0 0b4887d72c23d52b1e27789c8cb1cb29
++         import soundness.*
+
+@ 0 1 0 0d17328f2083b1da06fed240c2a9b5fc
++         Roff.escape(t"list-files")   // t"list\\-files"
+
+@ 1 1 0 0979fb72fcb0377b00a1870455407dbb
++         ```
+
+@ 0 1 0 0b9c48ce54a52abc1e7770b12d094928
++   entry .quote
++     info
++         échappe un texte et le met entre guillemets doubles comme argument de macro
+
+@ 0 3 0 006d739dff49e9fc1c334ce43ffbc74e
++     detail
++         Pour les arguments de `.TH`, `.SH` et `.SS`. Entre les guillemets, `"` devient `\[dq]` et
++         `\` devient `\[rs]`, mais `-` reste tel quel : un trait d'union dans un titre ou une date
++         est de la prose, et un trait d'union échappé dans la date de `.TH` met en échec l'analyse
++         des dates de `mandoc`.
+
+@ 2 1 0 1b495a85e3e9b6d60a44a6c82e04a6c6
++         ```scala
+
+@ 3 1 0 1277a10f25335b67165f009f1d4ab0b8
++         import soundness.*
+
+@ 0 1 0 017ad8c0894f64df14fcd7038f0fddae
++         Roff.quote(t"2026-08-17")   // t"\"2026-08-17\""
+
+@ 1 1 0 07a629f0052c8618045826d1ef2258a9
++         ```
+
+@ 0 1 0 0a993f9b2159092e0f897bc36c166d87
++   entry .Inline
++     info
++         un passage de texte au sein d'une ligne : normal, gras ou italique
+
+@ 0 5 0 010e9138a805ba530b50141da7786632
++     detail
++         Une énumération de trois cas. `Plain(text)` est un texte échappé ; `Bold(inlines)` et
++         `Italic(inlines)` enveloppent une liste d'autres passages dans les changements de police
++         `\fB…\fP` et `\fI…\fP` : les styles peuvent donc s'imbriquer. Les méthodes `plain`, `bold`
++         et `italic` du compagnon construisent les formes courantes à passage unique.
+
+% 2 1 0 158f842d810dd6b71e30d85ef35f4d15
+
+% 3 1 0 1f684d954814f8461643c413d698aeb3
+
+% 0 1 0 139c11efba42b4130410ae4317caafdc
+
+% 0 1 0 142469118c1d7d2719cf60cf3cc81fb5
+
+% 1 1 0 1d4f51e31f74c7620fe742a7d5096b70
+
+@ 0 1 0 1b43ea049844ccde1def47a22d707b49
++     entry .plain
++       info
++           une liste d'un seul passage de texte normal, la forme que prend la prose d'un paragraphe
+
+@ 0 1 0 1ee3d23707a7b1b2098e363f5e6dc6c4
++     entry .bold
++       info
++           un seul passage en gras de texte normal
+
+@ 0 1 0 02b2bf5d75773d270b0940118cecef2a
++     entry .italic
++       info
++           un seul passage en italique de texte normal
+
+@ 0 1 0 1b8b8d33a110d6b713d9b57eae773004
++     entry #serialize
++       info
++           le passage sous forme de texte roff, échappé et avec ses changements de police
+
+@ 0 1 0 0414b69317fa1d380c2af27638a5ab22
++   entry .Block
++     info
++         un bloc d'une page de manuel : une section, un paragraphe, un paragraphe tagué, un
++         exemple ou une indentation
+
+@ 0 2 0 0d4b65e63ba0592c0ec7411d4ebd9794
++     detail
++         Une énumération des structures de bloc des macros man :
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 9 0 188e84704d2e71361957917d750e514b
++         column  Cas
++         column  Macros
++         column  Bloc
++         row  `Section(title, blocks)`  `.SH`  une section, comme `Name`, `Synopsis` ou `Options`
++         row  `Subsection(title, blocks)`  `.SS`  une sous-section
++         row  `Paragraph(prose)`  `.P`  un paragraphe de passages en ligne ; comme premier bloc d'une section ou d'une sous-section, le `.P` redondant est omis
++         row  `Tagged(tag, body)`  `.TP`  la forme de l'entrée d'une option : le tag sur une ligne et sa description indentée en dessous ; un corps vide n'émet que le tag
++         row  `Example(lines)`  `.EX`, `.EE`  des lignes littérales, chacune échappée et protégée
++         row  `Indented(blocks)`  `.RS`, `.RE`  des blocs indentés
+
+% 1 1 0 06e035ecc20ff5951b483a5308814210
+
+% 2 1 0 08a1aaa27a33b3d600c40a4777139099
+
+% 3 1 0 15ed7097a93bde601582783fd7b9ecca
+
+% 0 1 0 01246ac97dbd57bd0310858cfe204f70
+
+% 0 1 0 0d4156af82670a3402e1e5f4806801e7
+
+% 1 1 0 050f9320d81c09911fa055695197b539
+
+@ 0 1 0 0511b1f6b8fc238e02dcf05215d9fa26
++     entry #serialize
++       info
++           le bloc sous forme de lignes de source roff
+
+@ 0 2 0 1750fc4c54fcacc2089adde82de1d0e3
++       detail
++           Chaque ligne de texte qui commence par `.` ou `'` est protégée par `\&` : la prose ne
++           peut donc jamais être prise pour une ligne de contrôle.
+
+@ 0 1 0 04054eb083156ed00d2bf45134cfde54
++   entry #title
++     info
++         le nom de la page, en général celui de la commande, rendu en majuscules sur la ligne `.TH`
+
+@ 0 1 0 045148865b97f3ec04832cab332f7d55
++   entry #section
++     info
++         le numéro de section du manuel : 1 pour les commandes utilisateur, 5 pour les formats de
++         fichiers, 8 pour l'administration
+
+@ 0 1 0 0bdcba348690287614d3856ab7add21e
++   entry #date
++     info
++         la date de la dernière modification de la page, sous forme de texte
+
+@ 0 1 0 0c02ddf7487961cd1ab9175abf09f5ee
++   entry #source
++     info
++         la source du programme, en général son nom et sa version
+
+@ 0 1 0 1962e4ea8dfaa8900030abd9f0a26d57
++   entry #manual
++     info
++         le titre du manuel auquel appartient la page, comme `User Commands`
+
+@ 0 1 0 1893afa243b66878179f9a50da3732a4
++   entry #blocks
++     info
++         le corps de la page
+
+@ 0 1 0 03bf504a037635e118ce8839177c76db
++   entry #serialize
++     info
++         la page entière sous forme de source roff, terminée par un saut de ligne

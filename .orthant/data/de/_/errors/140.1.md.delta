@@ -1,0 +1,52 @@
+orthant 2 language
+
+% 0 1 0 0115a31ca43d05821326cc35d72968a7
+
+@ 0 1 0 14ef401502b40ce418c5cff44229edb4
++ Wird ausgelöst, wenn ein Daemon kein Upgrade für seinen Launcher bereitstellen kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 6 0 1c6f0624269bdecd0217fa4d28fd8fb3
++ Eine Ethereal-Anwendung kann ihr eigenes Binary ersetzen, indem sie das neue als
++ `<data>/<name>/.pending` bereitstellt, das der Launcher zu Beginn seines nächsten Aufrufs
++ verifiziert und einsetzt. Dieser Fehler umfasst eine Quelle, die nicht gelesen werden konnte, einen
++ Anwendungsnamen, der nicht verfügbar ist (der Daemon wurde nicht von einem Launcher gestartet), und
++ eine Datei `<name>/.pending`, die nicht geschrieben werden konnte. Ein Kandidat, den der Launcher
++ ablehnt, ist hier kein Fehler: Er wird danach von `Upgrade.outcome` gemeldet.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 2 0 1db5f3bb22f47958123f6ac253b017e2
++ column  Grund
++ column  Meldung
+
+% 0 1 0 09fd44d0bfa124ec0ca1617d3f59643f
+
+% 0 1 0 0c9a8d777bb7fa940a5f445a0723f612
+
+% 0 1 0 176574de4f6880b01b50e5d8779a4d1f
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 4 0 0d6a5466e8d42b7e11e9f11427be2ce5
++ Führen Sie die Anwendung über ihren XEK-Launcher aus, der dem Daemon seinen Namen übergibt, und
++ stellen Sie sicher, dass das Datenverzeichnis (`$XDG_DATA_HOME`, `~/.local/share` oder
++ `%LOCALAPPDATA%`) beschreibbar ist. Prüfen Sie `Upgrade.enabled`, bevor Sie ein Upgrade anbieten:
++ Ein Executable, das ohne Release-Schlüssel und Anwendungs-ID gebaut wurde, lehnt jeden Kandidaten
++ ab.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 1910f0aaa51329071c6159525711cd00
++ - Quelle: `lib/ethereal/src/core/ethereal.Upgrade.scala`

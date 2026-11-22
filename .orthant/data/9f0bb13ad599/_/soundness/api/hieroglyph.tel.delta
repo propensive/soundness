@@ -1,0 +1,68 @@
+orthant 2 release
+
+@ 0 3 0 0268e1bbe28946bc0af4aa966c481712
++     `import textMetrics.uniformMetric`.
+
+@ 0 3 0 16a6fe1ac93d2a4b01e818ee08afefd1
++       tolerant in another according to which sanitiser is imported there.
+
+@ 0 2 0 15950f3d6329ac981ac7e96263d72d8b
++       `?` for ASCII) by default. Under `encodingSanitizers.strictEncodingSanitizer` it raises
++       `Codepage.Error` instead; the `EncodingSanitizer` in scope where the codepage is
++       summoned decides. Encoding a stream is incremental
+
+@ 0 3 0 113136249fd7e52c0988599e5f6c0aaa
++         error type for a character outside an encoding's repertoire. `Codepage#encoded`
++         raises it under `encodingSanitizers.strictEncodingSanitizer`; by default an unmappable
++         character is replaced, as `String#getBytes` replaces it.
+
+@ 1 0 0 1496d70afefb24bb097ba90b3e187cf5
++   entry #sanitizer   the `EncodingSanitizer` consulted at each character which cannot be encoded
++   entry #sanitized   the same codepage under another `EncodingSanitizer`
+
+@ 0 1 0 1aa0d0ce3f4006eb116cc21f2038494c
++       replaced, or reported to the codepage's `EncodingSanitizer`, which the strict one
++       raises as `Codepage.Error`.
+
+@ 0 2 0 08aa01e99b78bfe90de031cf53b14b5e
++       `skipSanitizer` is.
+
+@ 0 5 0 0a35aa8f90fbe8f11851cceac284b1a2
++   entry .iso88591Charset   ISO-8859-1 (Latin-1), with the sanitiser in scope
++       Every byte is a valid Latin-1 character, so the sanitiser is never consulted, but one
++       must be in scope, as for the other charsets.
+
+@ 0 2 0 017997e13a62f1f3101e6a969b789f5b
+
+@ 2 0 0 09c3bea73935739f100efbcee9b8e10f
++ entry .encodingSanitizers   the policies for unencodable characters, each an `EncodingSanitizer` given to import by name
++   detail
++       A `Codepage` consults the `EncodingSanitizer` in scope where it is summoned for each
++       character its encoding cannot represent. Unlike a `TextSanitizer`, one is always
++       available: the default, in `EncodingSanitizer`'s companion, substitutes silently, so
++       importing from here is needed only to be strict.
++
++       ```scala
++       import soundness.*
++       import strategies.throwUnsafely
++       import encodingSanitizers.strictEncodingSanitizer
++
++       codepages.asciiCodepage.encoded(t"café")   // raises Codepage.Error('é', ASCII)
++       ```
++   refer hieroglyph.EncodingSanitizer
++   refer hieroglyph.Codepage
++   entry .strictEncodingSanitizer   an unencodable character raises `Codepage.Error`; needs a `Tactic[Codepage.Error]`
++   entry .substituteEncodingSanitizer   an unencodable character is written as the encoding's substitute: the default, by name
++
++ entry .EncodingSanitizer   what a `Codepage` does with a character its encoding cannot represent
++   detail
++       The encoding counterpart of `TextSanitizer`. The codepage calls `#unmappable` with each
++       character it cannot encode; if that returns, the encoding's substitute is written in
++       the character's place. An instance whose `#substitutes` is `true` is never called, and
++       the substitution is left to the JDK's encoder, which is the fast path the default
++       takes.
++   refer hieroglyph.encodingSanitizers
++   entry .substitute   the default: substitute silently
++   entry #substitutes   whether unencodable characters are replaced without `#unmappable` being called
++   entry #unmappable   called with each character which cannot be encoded, and the encoding
++

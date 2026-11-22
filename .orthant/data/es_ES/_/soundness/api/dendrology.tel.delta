@@ -1,0 +1,787 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1f334669e90a494c0f78f350d43958f5
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0665e32f8fce328d036a93997d5c89ca
++ info   árboles y grafos acíclicos dirigidos dibujados como texto: un diagrama calcula las teselas y un estilo elige los caracteres
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 117f500f2ba958561d8b986c69da0183
++     _Dendrology_ dibuja jerarquías en el terminal —un listado de ficheros, un grafo de
++     dependencias, una jerarquía de clases, un historial de control de versiones— con los
++     caracteres de dibujo de cajas de `└─` y `├─`, y separa las dos cosas que implica un dibujo
++     así. Un **diagrama** calcula la disposición: para cada línea, las *teselas* (qué piezas de
++     conexión la atraviesan) y el nodo al que corresponde la línea. Un **estilo** asigna texto a
++     las teselas, de modo que la misma disposición se representa con caracteres de dibujo de
++     cajas o en ASCII simple, como `Text` o como salida de terminal con estilo, cambiando una
++     sola importación. Un `TreeDiagram` dibuja un árbol, y tres diagramas de DAG dibujan
++     cualquier grafo que admita un orden topológico —un `Dag` de acyclicity, una `Topology`
++     congelada o un `Hasse`—, cuyos nodos pueden tener varios padres, algo que un árbol no puede
++     mostrar.
+
+% 2 1 0 0b898a562ce00e1e165955fc4a05864b
+
+% 3 1 0 1a3498a63ca8e13510a2c72e6522f4d7
+
+% 0 1 0 0af70e80fa4ad64e1d117fcbeb40296b
+
+% 0 1 0 0820ae4d363e7fe2046b5c5bc9c1bf63
+
+% 0 1 0 07155c1b8c03ef03027e380a8ed0b5c4
+
+% 0 1 0 1b57927ee2f1b9520681fb213b51a8cc
+
+% 0 1 0 0a836080ff536113149150147ee58ed2
+
+% 0 1 0 12db5a83beb263be0d19d942177c6342
+
+% 0 1 0 1c621932b933926c0f911dba5f472a99
+
+% 0 1 0 18d655a7612588741dcc0bcfd9083a43
+
+% 0 1 0 1ee761de552167b608a82d759817342d
+
+% 0 1 0 0c21ca7fff1b71b804b0cb247754d517
+
+% 1 1 0 164ae009f486524011e4dd0dcacb6e5e
+
+@ 0 7 0 0e0adf2b1a04ab11124918a36f155cb7
++     Las tres disposiciones de grafos responden a preguntas distintas. `DagDiagram` es densa:
++     cada arista se dibuja en una cuadrícula de teselas de conexión, una línea por nodo, lo que
++     conviene a un grafo pequeño con aristas complicadas. `LaneDagDiagram` coloca cada nodo
++     como una viñeta sobre un carril vertical, con las aristas fluyendo entre los carriles, tal
++     como `git log --graph` dibuja el historial, lo que conviene a un grafo largo con pocas
++     ramas concurrentes. `LayeredDagDiagram` organiza los nodos en niveles según su
++     profundidad, ordenados dentro de cada nivel para que se crucen las menos líneas de conexión
++     posibles, lo que conviene para mostrar qué depende de qué, más que qué ocurrió y en qué
++     orden.
+
+% 2 1 0 0d3ba9d037bd30f91b00d292fec73c9e
+
+% 3 1 0 0266fbe8bf407d66168db2d46c1e9e31
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0a252e9fb29da47506084762266a9a9f
+
+% 0 1 0 19de83050add395b1c3e973740e6e8e4
+
+% 0 1 0 07fbbbde4f9068d6129148ee9ed805b3
+
+% 0 1 0 15f35e3234555baa19e5d603ec214289
+
+% 0 1 0 0d272dcd65e5c187071dc8eeef3d2103
+
+% 1 1 0 14e1644a14369c14170556c1b1aa49c9
+
+% 0 1 0 0d272dcd65e5c188071dc8eeef3d2104
+
+% 1 1 0 18ea9c6c3dd5cde41f34515a9df8b652
+
+% 0 1 0 0d272dcd65e5c189071dc8eeef3d2105
+
+% 1 1 0 0004e7845d7051a814fb1833080bf5bf
+
+@ 0 9 0 16c8ae738141214e03425433d1541ac5
++     Un estilo es un given, que se elige importándolo por nombre —`import soundness.*` no trae
++     ninguno, ya que `import pkg.*` no importa givens— de uno de tres paquetes de elección:
++     `treeStyles` (`squareTreeStyle`, `roundedTreeStyle`, `asciiTreeStyle`) para un
++     `TreeDiagram`, `dagStyles` (`boxDrawingDagStyle`, `asciiDagStyle`) para un `DagDiagram`, y
++     `laneDagStyles` (`boxDrawingLaneDagStyle`, `asciiLaneDagStyle`) para un `LaneDagDiagram` y
++     un `LayeredDagDiagram`. Los estilos de carriles miden los glifos en celdas de
++     visualización, así que también necesitan en el ámbito un `Text is Measurable`, como
++     `textMetrics.uniformMetric`. Cada estilo está parametrizado por el tipo de línea que
++     representa, de modo que un diagrama se representa directamente como texto de terminal con
++     estilo, con el mobiliario en un color y los rótulos en otro.
+
+@ 0 6 0 0701bb5629edc10908bf85a3e65ff4cf
++     La biblioteca consta de dos conjuntos de fuentes. `dendrology.tree` contiene
++     `TreeDiagram`, `TreeDiagram.Tile`, `TreeDiagram.Style`, `TreeDiagram.TextualStyle`,
++     `Expandable` y `treeStyles`; `dendrology.dag` contiene los tres diagramas de DAG,
++     `DagDiagram.Tile`, `DagDiagram.Style`, `LaneDagDiagram.Style`, sus implementaciones
++     `Textual…` y los paquetes `dagStyles` y `laneDagStyles`, y depende de `acyclicity`. Ambos
++     se exportan al paraguas `soundness`, donde los tres paquetes de elección se fusionan con
++     los del propio paraguas.
+
+% 0 1 0 06bbc774ae7fdbc61de0343e47c15934
+
+% 0 1 0 08b2db919f72a5df0801a6484c644506
+
+% 0 1 0 035db606ae51c516159178415c1228de
+
+% 0 1 0 188c29f62fec82591cb4969a4e79f618
+
+% 0 1 0 10382b91050fba2518137db1ad1d00c7
+
+% 0 1 0 0c0b51cac88f77d614a500d8d654f29d
+
+@ 0 1 0 0780ba6e8d824256076536a815c22697
++ entry .TreeDiagram   un árbol dispuesto como líneas de teselas, representado mediante un `TreeDiagram.Style`
+
+% 1 1 0 00c931fd5745e7181695f5beba5f9993
+
+@ 0 6 0 07ab527d2b4eec2c0036b49dbf2f848a
++       Un `TreeDiagram[node]` es la disposición de un árbol: una línea por nodo, en orden de
++       profundidad, cada una con las `Tile` de su prefijo —una rama o una última rama para el
++       propio nodo y, para cada antecesor, un prolongador (si ese antecesor tiene hermanos
++       posteriores) o un espacio—. Se construye a partir de sus raíces y de una manera de llegar
++       a los hijos —una función, con `by`, o una instancia de `Expandable` en el tipo de nodo,
++       con `apply`— y se representa con una función de nodo a rótulo y el `Style` del ámbito.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 1d8a23d6a11d6ea503b696f232fa1031
+
+% 1 1 0 172c73d914bec8cc06e00d83314fd4ca
+
+% 2 1 0 14bf2a0fee83411819292640a1081dbb
+
+% 0 1 0 02e81fb51ebbaa8a010c47f9c99f4d83
+
+% 1 1 0 0b1433e1f32fe11603d2839fbd64f75a
+
+% 2 1 0 1cdce820c477016d011813ea9284e22b
+
+% 3 1 0 1b1aff0537ce56660b668a8738726dee
+
+% 0 1 0 1d5c4a982af3caad12d316f0577b6562
+
+% 0 1 0 02b5e675c4cbe1651df43444f0c4165c
+
+% 0 1 0 041020412b11fa63078ba015c6b4e4ac
+
+% 1 1 0 0f214fdcc95a9f881a475c3ee31a631a
+
+% 2 1 0 174cb40d3e57f2890c554e414234081f
+
+% 0 1 0 165f494df68731db05637c088c0a7db9
+
+% 1 1 0 124913126072a5c70fb72f1204572a98
+
+% 2 1 0 04249946e0b440271b0c888fd415be8a
+
+% 3 1 0 1ebb6e1f4a604b3610270a25faf48174
+
+% 0 1 0 19e31c38e9a52e8618351c706bad4a1a
+
+% 0 1 0 02dbf9e8244cfe671466e2fd5974f83b
+
+% 0 1 0 15da890881a4a8d90f4b73ef982249b6
+
+% 1 1 0 145a45580da9a76e0e255ffacb47cb05
+
+% 2 1 0 0e08d20b5107face08940ffed2404620
+
+% 0 1 0 0802712a9f7a76450f73c24bad18c5e0
+
+% 1 1 0 0fc71f7fa9a48c621f841cbbb09c3321
+
+% 2 1 0 1dbda23303f4967a0078b7059c2c8ae6
+
+% 0 1 0 0951c603af19bed809b5327120fa2929
+
+% 0 1 0 0b523f9c7621838b0cc5cfa9a5497037
+
+% 0 1 0 00b1e83da28cfbd11467bf6f03a4e39e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 11472c8473b5b2641d310407a71153b2
++       Las líneas son una `Chain`, producida de forma perezosa: un árbol grande o profundo se
++       dibuja hasta donde se consume, y un árbol infinito se sigue dibujando, ya que representar
++       una línea solo requiere el número de hermanos de los antecesores, nunca los descendientes
++       de nodos posteriores. Un diagrama también es `Printable` (con un `Style[Text]` en el
++       ámbito y un nodo `Showable`), de modo que se puede escribir directamente en `Out`,
++       mostrando cada nodo como `▪ node`.
+
+@ 0 3 0 060e86d157a0b6a10fb5b9a697ac4468
++       Las filas están expuestas —`nodes`, `tiles` y `map`— para que un consumidor pueda
++       representar las líneas él mismo: un rótulo en color para una clase de nodo, una anotación
++       en otra, mientras los caracteres de dibujo de cajas siguen siendo cosa del estilo.
+
+% 0 1 0 0abd66b646a5c82d0cebdf7d2216d754
+
+% 0 1 0 194141aa304dced20ae531329d08516c
+
+% 0 1 0 143523fd146ddb861fa278aa357a6ee0
+
+% 0 1 0 1f2e77b0f34cb35d0b9138fac91c55a3
+
+@ 0 4 0 19db8aec390451b103bc24e87aef9de0
++   entry .apply   un diagrama de las raíces dadas, cuyos hijos se encuentran mediante la instancia de `Expandable` del tipo de nodo
++       `TreeDiagram(roots*)` para un tipo de nodo con un `given node is Expandable`: la forma
++       adecuada cuando los hijos de un tipo de nodo son lo que ese tipo entiende por hijos —una
++       ruta del sistema de ficheros, una dependencia, un nodo sintáctico—.
+
+% 2 1 0 18bf1c7bd331e0650126e567995ca122
+
+% 3 1 0 09b9420ebeed85cc145340f19d9beb45
+
+% 2 1 0 0990919c0d1a050b01de5e3a6d54a7a0
+
+% 0 1 0 097add2b36cdb59e056d0fcbfc689ea5
+
+% 0 1 0 072495fb837d7e6c0789c1f7965bf4e5
+
+% 1 1 0 02dd0e853fd250f416402fb71da24b12
+
+@ 0 17 0 0e3c526da2cb7b670b1392d34788c93d
++   entry .by   un diagrama de las raíces dadas, cuyos hijos se encuentran mediante una función
++       `TreeDiagram.by[node](node => children)(roots*)`: la forma adecuada cuando la estructura
++       ya está a mano, o cuando el mismo tipo se dibuja según relaciones distintas.
++   entry .printable   escribe un diagrama en un terminal, mostrando cada nodo como `▪ node`
++       Necesita un `Style[Text]` en el ámbito (uno de `treeStyles`) y un tipo de nodo
++       `Showable`; las líneas se unen con saltos de línea.
++   entry #lines   las teselas y el nodo de cada línea, como una `Chain` perezosa
++   entry #render   las líneas como texto representado: el rótulo de cada nodo, precedido de sus teselas mediante el `TreeDiagram.Style` del ámbito
++       `diagram.render(node => label)`, con el rótulo del tipo de línea que represente el
++       estilo: `Text` con los givens de `treeStyles`, o un tipo de terminal con estilo si hay un
++       estilo para él.
++   entry #flow   las líneas con cada rótulo ajustado a una anchura, y las filas de continuación con las teselas de continuación del estilo
++       `diagram.flow(width)(node => label)`: el contenido de cada nodo fluye en filas no más
++       anchas que `width`, incluido su prefijo de teselas, y las filas de continuación toman
++       teselas de `Style#followOn` —un prolongador continúa bajo una rama y un espacio sigue a
++       un último hijo—, de modo que las líneas del árbol se prolongan más allá de un rótulo
++       ajustado. Necesita en el ámbito un `Text is Measurable` (como
++       `textMetrics.uniformMetric`) y una `Hyphenation`, y un tipo de rótulo que sea `Textual`
++       sobre caracteres.
+
+% 2 1 0 0a43bc05565e878d194094868adeb35f
+
+% 3 1 0 13822e8cc962803f122eb87cd3752714
+
+% 0 1 0 18ce7c3e0a0994cb1e5cef2e9db10256
+
+% 1 1 0 1c1f6c4810f8e7410b33584f00e545dc
+
+% 2 1 0 1cb4a5950d7cd45c08ef4de921ea830f
+
+% 0 1 0 192fe055434ef8531e65551e898946a8
+
+% 0 1 0 08c25fad3e8b9c4500c16de8370a96f2
+
+% 0 1 0 111a6fa455a31de2169a5bfe39f2ca72
+
+% 1 1 0 1b125b505306846b0d3d112c1c47c6d2
+
+@ 0 7 0 0b05470c231ff6e20290e69244ec8302
++       Un estilo cuyas teselas de continuación son más anchas que las ordinarias se mide de
++       ambas maneras, y el contenido se ajusta al presupuesto más estrecho, de modo que ninguna
++       fila puede superar `width`.
++   entry #map   cada línea representada por una función de sus teselas y su nodo
++       `diagram.map(tiles => node => row)`: la forma general de `render`, para un consumidor
++       que representa las líneas él mismo.
++   entry #nodes   el nodo de cada línea, en el orden de dibujo
++   entry #tiles   las teselas de cada línea, en el orden de dibujo
+
+@ 0 6 0 1a502b6324cd290b1ce0fa399057102b
++   entry .Tile   una pieza del prefijo de una línea del árbol: una rama, una última rama, un prolongador o un espacio
++       Una enumeración de cuatro casos. `Branch` (`├─`) marca un nodo con hermanos posteriores
++       y `Last` (`└─`) el último de sus hermanos; a su izquierda, `Extender` (`│ `) prolonga la
++       línea de un antecesor más allá del nodo cuando ese antecesor tiene hermanos posteriores,
++       y `Space` rellena la columna cuando no los tiene. Un `Style` dice en qué texto se
++       convierte cada uno.
++   entry .Style   la clase de tipos que representa una línea de teselas de árbol y un rótulo como una sola línea
+
+% 1 1 0 1db10213c8e9dce0110cabcee221dc18
+
+@ 0 7 0 0fd7c245ed42499c06fd06f3ec33d3ec
++         `Style[line]` convierte una `List[Tile]` y el rótulo de un nodo, de tipo `line`, en una
++         línea representada, y es lo que `TreeDiagram#render` y `#flow` toman del ámbito. Está
++         parametrizado por el tipo de línea, de modo que un diagrama puede representarse tanto
++         en `Text` como en salida de terminal con estilo. `TextualStyle` lo implementa para
++         cualquier tipo de línea `Textual` a partir de cuatro textos cortos, que es todo lo que
++         necesita un estilo nuevo; el paquete `treeStyles` tiene tres ya hechos. Un estilo es
++         `Findable`, de modo que la instancia de `Printable` de un diagrama lo encuentra en el
++         ámbito.
+
+% 0 1 0 0acff1f4781516081c0fe2a074fffa02
+
+% 1 1 0 12b2711ff1817d521143f742bfa12be7
+
+@ 0 6 0 10abcaab3a97e6f7119430f46aead6af
++     entry #serialize   las teselas de una línea y su rótulo como una sola línea representada
++     entry #followOn   una fila de continuación de un nodo de varias líneas: los mismos carriles, sin glifo de rama
++         Lo usa `TreeDiagram#flow` para la segunda fila y las siguientes de un rótulo ajustado:
++         un prolongador continúa, y la rama de un último hijo cede su sitio a un espacio. Por
++         defecto repite `serialize`, para un estilo que no dibuja un prefijo de continuación
++         propio.
++   entry .TextualStyle   un `TreeDiagram.Style` para cualquier tipo de línea `Textual`, a partir de cuatro textos
+
+% 1 1 0 10fdfc421539f76400aa7a0eeca9c1f0
+
+@ 0 3 0 18c40d5257f1d1b70485cf5e4d055926
++         `TextualStyle(space, last, branch, extender)` da el texto de cada `Tile`; una línea
++         son los textos de las teselas unidos, seguidos del rótulo. Los textos suelen tener dos
++         caracteres de ancho, para que las columnas se alineen, pero no es obligatorio.
+
+% 2 1 0 071221007e0aa6c00182f4fa9bf4c402
+
+% 3 1 0 04ae79e3753c97f5064060fd509e466b
+
+% 0 1 0 08026cfc0bf8fe2d0efb1d1495635dad
+
+% 1 1 0 1ca0a8551b1fca4c190865f5284c73d0
+
+@ 0 2 0 0c912ff2506bf95a19065e7068d8db58
++         En una fila de continuación, `branch` se representa como `extender` y `last` como
++         `space`, de modo que las líneas verticales continúan bajo un rótulo ajustado.
+
+% 0 1 0 0d3798c8daa025960d108dcb3277a25e
+
+% 1 1 0 05b4e57e74ed1a6016ad97a906327b95
+
+@ 0 8 0 1a4f066511896ad71f5cecbc232ed818
++     entry #space   el texto de una tesela `Space`: bajo un último hijo
++     entry #last   el texto de una tesela `Last`: la rama hacia el último hijo de un nodo
++     entry #branch   el texto de una tesela `Branch`: la rama hacia un hijo con hermanos posteriores
++     entry #extender   el texto de una tesela `Extender`: la línea de un antecesor prolongada más allá de un nodo
++     entry #serialize   los textos de las teselas unidos, seguidos del rótulo
++     entry #followOn   los textos de continuación de las teselas unidos, seguidos del rótulo
++     entry #text   el texto de una tesela
++     entry #followOnText   el texto de una tesela en una fila de continuación: `extender` para una rama, `space` para una última rama
+
+@ 0 4 0 1d2361cdaf71fdb912fbd917112cc68f
++ entry .Expandable   la clase de tipos de un tipo de nodo que conoce sus propios hijos
++     `given node is Expandable = _.children` permite que `TreeDiagram(roots*)` encuentre los
++     hijos de cada nodo a través del tipo en lugar de a través de una función pasada en la
++     llamada. `children` devuelve una `List` del propio tipo de nodo.
+
+@ 0 1 0 075642825a22014e0bf7b7839dfa74c6
++ entry .treeStyles   los tres estilos de árbol ya hechos, cada uno un given que se importa por nombre
+
+% 1 1 0 03157ac1c0980b991f369a740dcbff24
+
+@ 0 2 0 0dfa476c754beb0414a3840d62d5a226
++       `import soundness.*` no trae ninguno de ellos; se importa uno por nombre, y proporciona
++       un `TreeDiagram.Style` para cualquier tipo de línea `Textual`.
+
+% 2 1 0 16a68449831e16840d752e138e701052
+
+% 3 1 0 16925aba1a19bd1f1717ce59f377efa7
+
+% 0 1 0 14d9b15a0f712180194822fc61a44203
+
+% 1 1 0 03d9f4a02ba63bc31f1772da5a0055ff
+
+@ 0 3 0 0676e7f23acd29b41eafdae98347898c
++   entry .squareTreeStyle   `├─`, `└─` y `│ `: esquinas en ángulo recto
++   entry .roundedTreeStyle   `├─`, `╰─` y `│ `: la última rama se curva
++   entry .asciiTreeStyle   `|-`, `+-` y `| `: solo ASCII, para una salida que deba sobrevivir a cualquier terminal
+
+@ 0 1 0 0de0077fd444077d07bb853faff8b0fd
++ entry .DagDiagram   el dibujo denso de un grafo: una línea por nodo, cada arista en una cuadrícula de teselas de conexión
+
+% 1 1 0 0211904a07c9994b043d190e39f50f33
+
+@ 0 6 0 0d1e07230571d1c515a10cabf675cab2
++       `DagDiagram(graph)` dispone cualquier grafo que admita un orden topológico —un `Dag`,
++       una `Topology[node]^{}` congelada o un `Hasse`— con una línea por nodo, en orden
++       topológico (primero las dependencias), y a la izquierda de cada línea una columna por
++       cada nodo anterior, con las teselas de las aristas que empiezan, pasan o terminan allí. El
++       resultado no puede fallar: un `Digraph`, que puede contener un ciclo, no tiene dibujo hasta
++       que `acyclic` lo ha convertido. Se representa mediante el `Style` del ámbito, del paquete
++       `dagStyles`.
+
+% 2 1 0 19bcd9faae6fc5fe14cb5088d5299bbd
+
+% 3 1 0 0b028d6b16c820c80f13e56d08f7dc0e
+
+% 4 1 0 141f4adbd65cb70c08746fd981f3840c
+
+% 1 1 0 1c02b8b1353d1e7b16793973b181a857
+
+% 0 1 0 0066612ddb1c1ec41d6049406cf7e1b3
+
+% 0 1 0 1aa7d22e928966770a377aa71762f507
+
+% 0 1 0 0d446be4798dc4180048d00208ed27a4
+
+% 0 1 0 194e4e4a3e3f6fe010750cce4dd0e1f3
+
+% 0 1 0 150d56a39a24275f0c8b86d50d9f1882
+
+% 0 1 0 116ec5e9e250b775100d5e8cd9a4e107
+
+% 0 1 0 1671092abd97b57114eab42538e5112a
+
+% 0 1 0 0e3450b1c21f1d4b04bef1b3d8b14a20
+
+% 1 1 0 088d4f2cd1c77e1100267392d563684d
+
+@ 0 4 0 1ae31b90d3c2ced80651243ab34f8297
++       Toda la disposición se calcula al crear el diagrama, como una cuadrícula del tamaño del
++       grafo al cuadrado, lo que la convierte en la forma adecuada para un grafo pequeño con
++       aristas complicadas y en la inadecuada para un historial largo; para eso está
++       `LaneDagDiagram`. Un diagrama es `Printable` con un `Style[Text]` en el ámbito y un nodo
++       `Showable`.
+
+% 0 1 0 03052f1d99dd8911037f0509daf775ec
+
+% 0 1 0 17bf87312473321b024665cc3824f67e
+
+% 0 1 0 1542ba2eaaf3e6a80a09ff74f7a28db0
+
+% 1 1 0 0d234d39e1e3d3a20a698a746636b6c9
+
+@ 0 10 0 087633732ce5077c00197432f8560c10
++   entry .apply   la disposición densa de cualquier grafo `Nodal` y `Topological`
++       Toma del ámbito las instancias de `Nodal` y `Topological` del grafo, que un `Dag`, una
++       `Topology` congelada y un `Hasse` proporcionan desde sus objetos compañeros, de modo que
++       una llamada no necesita ninguna importación.
++   entry .printable   escribe un diagrama en un terminal, mostrando cada nodo como `▪ node`
++       Necesita un `Style[Text]` (uno de `dagStyles`) y un tipo de nodo `Showable`.
++   entry #lines   las teselas y el nodo de cada línea, en orden topológico
++   entry #size   cuántas líneas hay: una por nodo
++   entry #render   las líneas como texto representado, con el rótulo de cada nodo tras sus teselas, mediante el `DagDiagram.Style` del ámbito
++   entry #nodes   el nodo de cada línea, en el orden de dibujo
++   entry #tiles   las teselas de cada línea
+
+@ 0 9 0 0b3be08743fc38140b4412f568b1d42b
++   entry .Tile   una celda de un dibujo de DAG: un nodo, un carril, una esquina, una te, un cruce o un espacio
++       Una enumeración de catorce casos, con nombres según los puntos cardinales de sus brazos.
++       `Space`; los carriles `Vertical` y `Horizontal`; las esquinas `CornerNe`, `CornerNw`,
++       `CornerSe` y `CornerSw`; las tes `TeeN`, `TeeS`, `TeeE` y `TeeW`; `Crossing`, un carril
++       horizontal que pasa por encima de uno vertical que continúa sin unirse a él; `Junction`,
++       donde los carriles se encuentran desde los cuatro lados; y `Node`, la viñeta de un nodo en
++       un diagrama de carriles. `DagDiagram` usa los ocho primeros; `LaneDagDiagram` y
++       `LayeredDagDiagram` usan los catorce. Un `Style` o un `LaneDagDiagram.Style` dice en qué
++       texto se convierte cada uno.
++   entry .Style   la clase de tipos que representa una línea de un `DagDiagram` denso
+
+% 1 1 0 0758779b853b145f086d306139efc446
+
+@ 0 5 0 07618b000ae4d7d61626d6d600947e98
++         `Style[line]` convierte la `List[Tile]` de una línea y el rótulo de un nodo en una
++         línea representada de tipo `line`, y es lo que `DagDiagram#render` toma del ámbito.
++         `TextualStyle` lo implementa para cualquier tipo de línea `Textual` a partir de ocho
++         textos; el paquete `dagStyles` tiene uno de dibujo de cajas y uno ASCII. Es `Findable`,
++         de modo que la instancia de `Printable` del diagrama lo encuentra.
+
+% 0 1 0 0e2197ac044d89b41803924668c24785
+
+% 1 1 0 1469f3cfb0bffdb01e4d25d0f0499828
+
+@ 0 2 0 037834f6a0cc86d900e4e1a68bbb1127
++     entry #serialize   las teselas de una línea y su rótulo como una sola línea representada
++   entry .TextualStyle   un `DagDiagram.Style` para cualquier tipo de línea `Textual`, a partir de ocho textos
+
+% 1 1 0 09fdaa9b5d3e2db906b0139a2626f2f9
+
+% 0 1 0 1d9c899db60a699a162173ef39664dd4
+
+@ 0 2 0 0650605fc3bbb8250eb528f77812fa18
++         da el texto de cada una de las teselas que dibuja un `DagDiagram`; cualquier otra
++         `Tile` se representa como `space`. Una línea son los textos de las teselas unidos,
++         seguidos del rótulo.
+
+% 2 1 0 00936060487783930cc1c3fff8e3a630
+
+% 3 1 0 101a3b58c20831ec1d5d64c783920e81
+
+% 0 1 0 13e34be9c88dfd901b8d6da902aa5452
+
+% 0 1 0 14f158ff6e096c380c8099438cbd56c6
+
+% 1 1 0 05013786c247157d1cbc06dbb1708a24
+
+% 0 1 0 12875549150dd68906f2c58d35fdb947
+
+% 1 1 0 1eff0fb1a4e77ef20f98887bf6102de3
+
+@ 0 11 0 00c7214cbbd4f2170a480803f18e2c03
++     entry #space   el texto de una tesela `Space`
++     entry #cornerNe   el texto de una tesela `CornerNe`: una arista que gira desde un carril hacia la línea de un nodo
++     entry #vertical   el texto de una tesela `Vertical`: un carril que pasa junto a una línea
++     entry #teeE   el texto de una tesela `TeeE`: un carril con una rama hacia la derecha
++     entry #horizontal   el texto de una tesela `Horizontal`: una arista que recorre una línea
++     entry #teeN   el texto de una tesela `TeeN`: una arista que se une a una línea desde arriba
++     entry #crossing   el texto de una tesela `Crossing`: un carril cruzado por una arista
++     entry #junction   el texto de una tesela `Junction`: un carril al que se une una arista por ambos lados
++     entry #serialize   los textos de las teselas unidos, seguidos del rótulo
++     entry #text   el texto de una tesela
++     entry #followOnText   el texto de una tesela en una fila de continuación: un carril continúa, todo lo demás es espacio
+
+@ 0 1 0 1c6a9f634ecd15ab0e5e6327f572c9da
++ entry .dagStyles   los dos estilos ya hechos para un `DagDiagram` denso, cada uno un given que se importa por nombre
+
+% 1 1 0 196a078c36b2e6ff02049c9365a81557
+
+% 1 1 0 129f526836097231016708ddcda3f573
+
+% 2 1 0 0bc97b6e16268c230d2159d6da92bed9
+
+% 1 1 0 182ebf4dbe9c492618ebc3331433fad5
+
+% 1 1 0 11707fba0431780c048f7cf6e5eadc13
+
+@ 0 2 0 03cd80877f9f6f781935e26f13e25ec0
++   entry .boxDrawingDagStyle   caracteres de dibujo de cajas: `└─`, `│ `, `├─`, `──`, `┴─`, `│─`, `┼─`
++   entry .asciiDagStyle   solo ASCII: `+-`, `| `, `--`, `|-`
+
+@ 0 1 0 18f82f9b622fd645058061be9c8bf859
++ entry .LaneDagDiagram   el dibujo de carriles de un grafo: nodos como viñetas sobre carriles verticales, con aristas que fluyen entre ellos
+
+% 1 1 0 0d32c43fc7f442490d78a6b587bf4a8f
+
+@ 0 7 0 0b99bf5fe0bfdb650d87f656903435b0
++       `LaneDagDiagram(graph)` dispone cualquier grafo que admita un orden topológico —un
++       `Dag`, una `Topology[node]^{}` congelada o un `Hasse`— tal como se dibuja el historial de
++       control de versiones: cada nodo es una tesela `Node` sobre uno de unos pocos carriles
++       verticales, en orden topológico desde arriba (primero las dependencias), y entre cada dos
++       filas de nodos una fila de conexión lleva cada arista por su carril, doblándola hacia la
++       columna del nodo al que llega. Una arista hacia el nodo inmediatamente siguiente va
++       recta; una arista más larga ocupa un carril propio, el más cercano a su nodo, y un carril
++       que continúa más allá de una fila se dibuja como `Vertical`.
+
+% 2 1 0 0c9ac9b40cbd25140537343825a3d87e
+
+% 3 1 0 0fa52ba20face9bc1114900eab2cb109
+
+% 4 1 0 060b517ea48502ac068cbf8c5a76d962
+
+% 5 1 0 09520b37c88e073315cc5d800f3938f1
+
+% 6 1 0 0c53dcc50cfa62d41db6fa5a526c3e40
+
+% 8 1 0 19f94674433d89d11483d9525de5098e
+
+% 0 1 0 053e074e454ac70a0762e8d11f8922a1
+
+% 0 1 0 109979bff7d2453a1185fd71f291c56e
+
+% 1 1 0 14435a31bb9532ad1462aabb5f9bd6d1
+
+@ 0 3 0 05adfb2cfd1fe930078ede187b497b6b
++       Un glifo por nodo marca los nodos elegidos —el commit actual, una compilación fallida—
++       mediante el `render` de dos funciones, cuyas columnas se ensanchan para el glifo más
++       ancho, medido en celdas de visualización para que un carácter ancho se disponga
++       correctamente:
+
+% 2 1 0 0dfa7066e80e44e10522fa6910938b4e
+
+% 3 1 0 1c9779c976db50ea0da6f0947d06ff82
+
+% 4 1 0 1adba957929452ab02f45e189b2735b6
+
+% 5 1 0 0765b2514ea026f2138f2701f83b5bbf
+
+% 6 1 0 1d6d96eb49268893000dd512a5fe6909
+
+% 0 1 0 1841869fabc7534b0ec69b5a5e688c3c
+
+% 0 1 0 1006ef1a1bf1b33603e908eed06a409c
+
+% 0 1 0 17232ad95f7174a8019d5861cb63381e
+
+% 1 1 0 089e6b13652466531a1f1e531497838d
+
+@ 0 4 0 1beebeb840282b811f112ab0d143e30a
++       El dibujo no puede fallar: un `Digraph` no tiene dibujo hasta que `acyclic` lo ha
++       convertido. Se representa mediante el `Style` del ámbito, del paquete `laneDagStyles`,
++       que necesita además un `Text is Measurable`; un diagrama es `Printable` con un
++       `Style[Text]` en el ámbito y un nodo `Showable`, y cada nodo lleva el rótulo ` node`.
+
+% 1 1 0 1f0995fbb9aa9c291b69f1779a7c2c02
+
+% 2 1 0 12f2ecb5ff53a24d15657617b6473907
+
+% 0 1 0 0a355cba2b21775b042055b7241a29d9
+
+% 1 1 0 0e2a7f8640eb2027014918bed32b5bfb
+
+@ 0 19 0 146dec3bbcbe137701a2efc9cedae3ab
++   entry .apply   la disposición en carriles de cualquier grafo `Nodal` y `Topological`
++       Toma del ámbito las instancias de `Nodal` y `Topological` del grafo; un `Dag`, una
++       `Topology` congelada y un `Hasse` las proporcionan sin ninguna importación. Un grafo
++       vacío no tiene líneas.
++   entry .printable   escribe un diagrama en un terminal, con cada nodo rotulado ` node`
++       Necesita un `Style[Text]` (uno de `laneDagStyles`, con un `Text is Measurable`) y un
++       tipo de nodo `Showable`.
++   entry #lines   las teselas de cada fila y, para una fila de nodo, su nodo; `Unset` para una fila de conexión
++   entry #size   cuántas filas hay, contando juntas las filas de nodos y las de conexión
++   entry #render   las filas como texto representado, con un rótulo tras cada nodo, o también con un glifo por nodo
++       `render(label)` dibuja cada nodo con el glifo `node` del estilo (`● ` en el estilo de
++       dibujo de cajas) y añade `label(node)` a su fila. `render(glyph, label)` dibuja en cambio
++       cada nodo con `glyph(node)`, ensanchando la columna del nodo hasta el glifo más ancho que
++       contiene, medido en celdas de visualización por el `width` del estilo, de modo que las
++       filas de conexión siguen alineadas.
++   entry #compact   el diagrama sin sus filas de conexión de mero paso
++       Una fila de conexión formada solo por carriles `Vertical` (más de uno) y espacios no dice
++       nada que no digan las filas que la rodean, así que `compact` la elimina; una fila con
++       exactamente un carril —una arista directa al nodo siguiente— se mantiene, igual que
++       cualquier fila que se doble.
++   entry #nodes   el nodo de cada fila de nodo, en el orden de dibujo
++   entry #tiles   las teselas de cada fila, incluidas las filas de conexión
+
+@ 0 1 0 166e3430296b44ea00069f28d6ecf524
++   entry .Style   la clase de tipos que representa una fila de un `LaneDagDiagram` o de un `LayeredDagDiagram`
+
+% 1 1 0 0f2a1c7ccf7098f61090fba5de33f31c
+
+@ 0 6 0 12932abe54e170141691dff723a84aec
++         `Style[line]` convierte la `List[DagDiagram.Tile]` de una fila, los glifos que se dibujan
++         en determinadas columnas, la anchura de cada columna y un rótulo opcional en una línea
++         representada de tipo `line`, y mide la anchura de visualización de un glifo para que las
++         columnas puedan dimensionarse a su medida. `TextualStyle` lo implementa para cualquier
++         tipo de línea `Textual` a partir de catorce textos; el paquete `laneDagStyles` tiene uno
++         de dibujo de cajas y uno ASCII. Es `Findable`, de modo que las instancias de `Printable`
++         de los diagramas lo encuentran.
+
+% 0 1 0 0d6fa53f124066ee0a813b224a8a3ca5
+
+% 1 1 0 14e55338eaf0c40101cf3c46420e6419
+
+@ 0 3 0 026e14c0dd1d80c10008885a78cab0ed
++     entry #serialize   las teselas de una fila, sus glifos por columna, las anchuras de las columnas y un rótulo opcional como una sola línea
++     entry #width   la anchura de visualización de un glifo, para dimensionar su columna
++   entry .TextualStyle   un `LaneDagDiagram.Style` para cualquier tipo de línea `Textual`, a partir de catorce textos
+
+% 1 1 0 198626dac4131de215ebc7f58904da98
+
+% 0 1 0 0ec1275ddb38a46717988f2c88cdf8b4
+
+@ 0 5 0 04184bb0b71e3e1313d98a8fefe8c527
++         teeN, teeS, teeE, teeW, junction, crossing, node)` da el texto de cada `DagDiagram.Tile`,
++         y toma un `Text is Measurable` para medir los glifos en celdas de visualización en lugar de
++         en unidades de código, de modo que los caracteres anchos y las marcas combinantes se
++         disponen correctamente. Cada texto tiene dos caracteres: el primero es la celda, y el
++         segundo se repite para rellenar la columna hasta su anchura, de modo que un `──`
++         horizontal se estira y un carril `│ ` no.
+
+% 2 1 0 038e2b8b06bd0e12007ce4617004e66d
+
+% 3 1 0 1b272ee4939d0e7219fc45c64f29f9fc
+
+% 0 1 0 07b3802820aae40f00aa10b1dc7eaad8
+
+% 0 1 0 11c57b17ae0ec3551131daca41701825
+
+% 0 1 0 0aa5f2be5178474602a84622c80b976e
+
+% 0 1 0 0d664198e814ff7c08c4faa76e3492c4
+
+% 1 1 0 0a931c1da1fa82371cc42e4970fecb9f
+
+% 0 1 0 19bae180d50b69740f071bbc31c0ad17
+
+% 1 1 0 055ff67c06d14938100632222f6a4af6
+
+@ 0 17 0 156974dcad9728a91333fbab67ab0e0b
++     entry #space   el texto de una tesela `Space`
++     entry #vertical   el texto de una tesela `Vertical`: un carril que pasa junto a una fila
++     entry #horizontal   el texto de una tesela `Horizontal`: una arista que recorre una fila
++     entry #cornerNe   el texto de una tesela `CornerNe`: una arista que llega desde arriba y gira a la derecha
++     entry #cornerNw   el texto de una tesela `CornerNw`: una arista que llega desde arriba y gira a la izquierda
++     entry #cornerSe   el texto de una tesela `CornerSe`: una arista que llega desde la derecha y gira hacia abajo
++     entry #cornerSw   el texto de una tesela `CornerSw`: una arista que llega desde la izquierda y gira hacia abajo
++     entry #teeN   el texto de una tesela `TeeN`: un tramo horizontal al que se une otro desde arriba
++     entry #teeS   el texto de una tesela `TeeS`: un tramo horizontal que se ramifica hacia abajo
++     entry #teeE   el texto de una tesela `TeeE`: un carril que se ramifica hacia la derecha
++     entry #teeW   el texto de una tesela `TeeW`: un carril al que se une otro desde la izquierda
++     entry #junction   el texto de una tesela `Junction`: carriles que se encuentran desde los cuatro lados
++     entry #crossing   el texto de una tesela `Crossing`: un tramo horizontal que pasa por encima de un carril que continúa
++     entry #node   el texto de una tesela `Node`: la viñeta por defecto, que se usa cuando no se da ningún glifo para el nodo
++     entry #width   la anchura de visualización de un glifo, mediante el `Text is Measurable` con el que se creó el estilo
++     entry #serialize   la celda de cada tesela rellenada hasta la anchura de su columna, un glifo en lugar de la viñeta de un nodo, y luego el rótulo
++     entry #text   el texto de una tesela
+
+@ 0 1 0 1abd654fc15f027c00c92ca6d25dda8e
++ entry .laneDagStyles   los dos estilos ya hechos para diagramas de carriles y por niveles, cada uno un given que se importa por nombre
+
+% 1 1 0 1b13a9fd135a926f193c6e128c0ec886
+
+@ 0 3 0 1fc38e1134f496fc05d38f6cea1cfaa1
++       Cada uno necesita un `Text is Measurable` en el ámbito para resolverse, como
++       `textMetrics.uniformMetric` (una celda por carácter) o
++       `textMetrics.wideCharacterWidthMetric` (dos para un carácter ancho de Asia oriental).
+
+% 2 1 0 0175b5f98f3925ad198568a65c0299d5
+
+% 3 1 0 06630d130c039d590ca62747c9034f96
+
+% 1 1 0 09e77b8c253dc539029e46591e96f1fe
+
+% 2 1 0 0eae6388424b52131e60219eb2082a22
+
+% 1 1 0 1f103ce10b1066681522dd8b9c845e2f
+
+@ 0 2 0 0daad4ee44dbcfc71f85fb93412c4b6d
++   entry .boxDrawingLaneDagStyle   caracteres de dibujo de cajas con esquinas redondeadas, y `● ` para un nodo
++   entry .asciiLaneDagStyle   solo ASCII: `| `, `--`, `+ ` para cada esquina y cada te, y `* ` para un nodo
+
+@ 0 1 0 1e521d75e420412200583ba3b038576c
++ entry .LayeredDagDiagram   el dibujo por niveles de un grafo: nodos en niveles según su profundidad, ordenados para que se crucen pocas aristas
+
+% 1 1 0 06115fdb7075ef4c1c21326c729f7cb6
+
+@ 0 7 0 0460af5ccd2de3530fc6b1d34e1078ec
++       `LayeredDagDiagram(graph)` dispone cualquier grafo que admita un orden topológico —un
++       `Dag`, una `Topology[node]^{}` congelada o un `Hasse`— según la organización `layered`
++       del grafo: cada nodo en un nivel, las dependencias encima de los dependientes, los nodos
++       de un nivel ordenados para minimizar los cruces, y una arista que abarca varios niveles
++       atravesando en línea recta los niveles intermedios. Cada nivel es una fila de teselas
++       `Node` en sus columnas, y entre niveles una fila de conexión dobla cada arista desde su
++       columna superior hasta la inferior. Un nodo toma la columna mediana de sus vecinos del
++       nivel superior, de modo que una arista recta sigue siendo recta.
+
+% 2 1 0 09659f94e5f713f019d86312f8dc25d0
+
+% 3 1 0 1c1a75830820168f1b71c85c7f49c82a
+
+% 4 1 0 151785a6a42b89c019e2a3b4cff4b615
+
+% 5 1 0 1945b4b790273bf10d0610bbd002e087
+
+% 6 1 0 1da72a54d1b626a5053d46b2585ff803
+
+% 8 1 0 1a37899868cf3c8f001616a7d4bf7850
+
+% 0 1 0 0eda4dd176f925900b2d270c2eba6d1c
+
+% 1 1 0 14cc69ec0210ddbe0c60c2ec340b76a7
+
+@ 0 8 0 19e562c7cbf0687d0fbd85d531369e37
++       El `Ranking` del ámbito decide los niveles: por defecto, un nodo se sitúa un nivel por
++       debajo de su dependencia más profunda, de modo que todos los nodos que no dependen de nada
++       comparten la primera fila; `import rankings.balancedRanking` baja cada nodo con
++       dependientes hasta el nivel situado encima de su dependiente menos profundo, lo que acorta
++       una arista larga desde una fuente que solo alimenta algo profundo. Por tanto, las filas
++       representadas de un grafo dado dependen de la clasificación y de la minimización de
++       cruces, así que una expectativa almacenada debe regenerarse cuando cambie cualquiera de
++       las dos. Se representa mediante el `LaneDagDiagram.Style` del ámbito, como hace
++       `LaneDagDiagram`, y es `Printable` con un `LaneDagDiagram.Style[Text]` y un nodo
++       `Showable`, mostrando cada nodo como `● node`.
+
+% 1 1 0 019484f43722048f085d07b5e780b01d
+
+% 2 1 0 1c91c253edc06c0c1a85e2ed9a399c94
+
+% 0 1 0 13d604bce2dc305e142226ae17590555
+
+% 0 1 0 0c339bb1bbac2c4e0e068edb2a68bf97
+
+@ 0 16 0 188f98a6d8b5238d0b36b3fd4c991ee6
++   entry .apply   la disposición por niveles de cualquier grafo `Nodal` y `Topological`, según el `Ranking` del ámbito
++       Toma las instancias de `Nodal` y `Topological` del grafo y un `Ranking`
++       (`Ranking.LongestPath` del objeto compañero, salvo que se importe
++       `rankings.balancedRanking`). Un grafo vacío no tiene filas.
++   entry .printable   escribe un diagrama en un terminal, mostrando cada nodo como `● node`
++       Necesita un `LaneDagDiagram.Style[Text]` (uno de `laneDagStyles`, con un
++       `Text is Measurable`) y un tipo de nodo `Showable`.
++   entry #rows   las teselas de cada fila y los nodos en sus columnas; una fila de conexión no tiene ninguno
++   entry #size   cuántas filas hay, contando juntas las filas de nivel y las de conexión
++   entry #render   las filas como texto representado, con cada nodo dibujado por una función de glifo y las columnas ensanchadas a su medida
++       `render(glyph)`: cada nodo se dibuja como `glyph(node)` en su columna, y cada columna es
++       tan ancha como el glifo más ancho que contiene, medido en celdas de visualización por el
++       `width` del estilo, de modo que las filas de conexión siguen alineadas. No hay un rótulo
++       aparte: lo lleva un glifo como `t"● $node  "`.
++   entry #tiles   las teselas de cada fila, incluidas las filas de conexión
++   entry #nodesAt   para cada fila, los nodos por columna; vacío para una fila de conexión

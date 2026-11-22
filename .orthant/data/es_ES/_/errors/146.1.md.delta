@@ -1,0 +1,50 @@
+orthant 2 language
+
+% 0 1 0 001f90608b7dd22610ab692a46e148e2
+
+@ 0 1 0 0e6a3581b82c83fb0193d29a278f43cb
++ Se lanza cuando un classpath no puede reducirse al mundo cerrado que alcanzan sus puntos de entrada.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 146fc008d5517a990b24a43854e6709c
++ La reducción recompila las clases de un classpath a partir de su TASTy, sin los miembros que nada
++ alcanza, y después sigue las referencias del bytecode resultante para decidir qué otras clases van
++ con ellas. Este error abarca un mundo cerrado que no sería sólido y la terminación anómala del
++ reductor.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0445185a914a06611a6ed8aa9e7b31b8
+
+@ 0 1 0 1ea7e942cbda33c20db5d8f6cad70bd9
++ **Ejemplo.** `[↯/s.146.1.1] the classpath could not be shrunk because a problem was found: example.Main refers to render()Ljava/lang/String; of example.Page, which was removed`
+
+@ 0 5 0 0a6beb09f5addefd16e83673c5aa63bf
++ Algo que se conservó hace referencia a algo que no se conservó. El motivo lleva cada una de esas
++ referencias, como `problems`: cada una se encontró o bien en los árboles del compilador, antes de
++ generar ningún bytecode, o bien en el bytecode después. También abarca una unidad que no pudo
++ recompilarse ni fijarse en su lugar, con los propios errores del compilador como problemas.
+
+@ 0 4 0 054f9ecd59a5c94216c88c08bbb08648
++ **Solución.** Una referencia que solo hace la reflexión no es una que el análisis pueda encontrar:
++ conserva la clase que alcanza, con el `keep` de `Shrink` o con `shrinkOptions.keep`. Una referencia
++ que el análisis debería haber encontrado es un fallo suyo; fijar la unidad que hace la referencia,
++ con `pin` o `shrinkOptions.pin`, copia esa unidad tal como estaba y conserva todo aquello a lo que
++ hace referencia.
+
+% 0 1 0 1b762c079bc654b5142014f9af7b1a17
+
+@ 0 1 0 03df6e2c0d24a7d11d98571df5e1a5ff
++ **Ejemplo.** `[↯/s.146.1.2] the classpath could not be shrunk because the shrinker terminated abnormally`
+
+@ 0 1 0 184f587cfad810a00a1733b948aecece
++ El motivo lleva la traza de pila.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 02e06909ce28d85e05bef9ddc48783d3
++ - Código fuente: `lib/abscission/src/core/abscission.Shrink.scala`

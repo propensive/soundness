@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 5 0 12f616587e1d40261eaad5c40b24f46b
++     Una disposición indica también si está pensada para escribir en ella: `readOnly` es `true`
++     para `/boot`, `/efi`, `/sys`, `/usr` y todo lo que hay debajo, y para los directorios por
++     proceso bajo `/proc`. Las cinco disposiciones de `Home` que la especificación XDG Base
++     Directory permite mover al usuario siguen sus variables: `Home.Config` es `$HOME/.config`
++     salvo que `XDG_CONFIG_HOME` tenga como valor una ruta absoluta, en cuyo caso es esa ruta.
+
+@ 0 24 0 14cf3883801275e111a4d6e9e704a313
++         El `BaseLayout.Dir` de una disposición se pasa a sus disposiciones anidadas como valor
++         contextual, que es como un objeto anidado conoce el directorio en el que se encuentra.
++         Los segmentos se guardan empezando por el más interno.
++     entry #home   si la ruta es relativa al directorio personal del usuario
++     entry #path   los segmentos de la ruta, empezando por el más interno
++     entry #/   el directorio de un hijo, por su nombre
++     entry #render   la ruta absoluta como texto, dada la ruta del directorio personal
++         Un `Dir` que no es relativo al directorio personal y no tiene segmentos se representa
++         como `/`.
++   entry #readOnly   si, por convención, los programas no escriben en el directorio
++       `true` para `/boot`, `/efi`, `/sys`, `/usr` y todo lo que hay debajo, y para los
++       directorios de `/proc`; `false` para todas las disposiciones bajo `Home`.
++   entry #Topic   los nombres de directorio desde este nodo hasta su raíz, como tipo tupla
++   entry #absolutePath   la ruta absoluta de la disposición, como texto
++       Necesita un `Environment` y un `System`. Una disposición que nombra una `#variable` es el
++       valor de esa variable, si es una ruta absoluta. En caso contrario, una disposición bajo
++       `Home` lee la variable de entorno `HOME`, sin `/` final, y lanza `Environment.Error` si no
++       está definida.
++   entry #variable   la variable de entorno que reubica la disposición, si la hay
++   entry #relocation   adonde lleva `#variable` la disposición: su valor, si es una ruta absoluta
++   entry #dir   el `BaseLayout.Dir` de esta disposición, entregado a las disposiciones anidadas en ella
++   entry #apply   la ruta absoluta de la disposición, como un tipo de ruta elegido por el llamador
++       `layout[Path on Linux]()` crea, a partir de `#absolutePath`, un valor de cualquier tipo que
++       sea `Instantiable across Paths from Text`. Necesita un `Environment` y un `System`, y
++       lanza `Environment.Error` (para una disposición de `Home` cuyo `HOME` no está definido) y
+
+@ 0 5 0 01aa2e748611aecf137de178c7d6d652
++       `Cache`, `Config`, `Local.Bin`, `Local.Share` y `Local.State` son los directorios que la
++       especificación XDG Base Directory permite mover al usuario, y cada uno está donde indica su
++       variable cuando esta tiene como valor una ruta absoluta: `Home.Config` es
++       `$XDG_CONFIG_HOME`, y si no, `$HOME/.config`. Un valor relativo o vacío se ignora, como
++       exige la especificación. Las demás disposiciones son fijas.
+
+@ 0 3 0 11d0e7a0fc4ed11505d86722fbaebfdd
++   entry .Cache   el directorio de caché del usuario, `$XDG_CACHE_HOME` o `~/.cache`
++   entry .Config   el directorio de configuración del usuario, `$XDG_CONFIG_HOME` o `~/.config`
++   entry .Local   el prefijo de instalación local del usuario, `~/.local`
+
+@ 0 6 0 12bb298788522c6106cc24f983f11dce
++         La contrapartida por usuario de `/usr`, que contiene los programas, bibliotecas, datos y
++         estado propios de un usuario.
++     entry .Bin   los ejecutables propios del usuario, `$XDG_BIN_HOME` o `~/.local/bin`
++     entry .Lib   las bibliotecas propias del usuario, `~/.local/lib`
++     entry .Share   los datos de aplicación propios del usuario, `$XDG_DATA_HOME` o `~/.local/share`
++     entry .State   el estado de las aplicaciones del usuario, `$XDG_STATE_HOME` o `~/.local/state`

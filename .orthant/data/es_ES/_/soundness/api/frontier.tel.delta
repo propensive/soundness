@@ -1,0 +1,228 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1839d307a452d6e40b6426e09bb0c989
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1d5d77e097f4a573135aea5c8b4ecee4
++ info   explica un given que falta como un árbol de los candidatos probados y de los givens del classpath que encajarían
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 15781cd8e8cd524117f24b34ea0c8644
++     _Frontier_ sustituye el escueto _no given instance of type `T` was found_ del compilador por
++     una explicación de la búsqueda: qué candidatos se probaron, cuáles de sus propios parámetros
++     contextuales no se pudieron encontrar y qué givens de otras partes del classpath —sin importar,
++     o en un paquete de elección— proporcionarían el valor que falta, con la importación que nombra a
++     cada uno.
+
+% 0 1 0 121f5d49fa83450310393c10f05ce4fa
+
+% 0 1 0 1b9261087ab5c65c00494e8c15158853
+
+% 0 1 0 003b0f83b764717304597eb74f0aacc5
+
+% 0 1 0 1a1aad2b12e3225a03151ad4b70d251e
+
+% 1 1 0 10f0167f8011fb52161242df18c834d2
+
+@ 0 6 0 0e4302b1c58e79600cb440ac0084a4ac
++     Funciona mediante un único given comodín, `explainMissingContext`, de tipo `[any] => any`, que
++     es candidato en todas las búsquedas. Cuando se prueba, vuelve a ejecutar él mismo la búsqueda y,
++     o bien descubre que la búsqueda tiene éxito sin él, en cuyo caso falla y deja que el compilador
++     elija la instancia con su inferencia de tipos intacta, o bien construye un árbol `Diagnostic` de
++     lo que faltaba y aborta con ese árbol representado como mensaje. El comodín nunca aporta un
++     término a un programa: es puramente de diagnóstico.
+
+@ 0 7 0 078b94650e82336d0a4c194a77e1e2f2
++     Se apoya en la anotación `@scala.annotation.internal.diagnostic`, que existe en el compilador
++     Proscala con el que se construye Soundness. Un given que la lleva y aborta durante una búsqueda
++     implícita falla como lo haría un candidato ordinario, de modo que `summonFrom`, los argumentos
++     `using` por defecto y `NotGiven` se comportan igual que sin él; pero el compilador conserva sus
++     errores como un `DiagnosticFailure` y, si la búsqueda entera falla, ese mensaje se notifica
++     literalmente en lugar del propio del compilador (y de cualquier `@implicitNotFound`). Con un
++     compilador que no tenga la anotación, el comodín no se puede usar.
+
+@ 0 1 0 063ed4f4d045da3e04b5beaf4ec2366a
++     El comodín se trae al ámbito de una de estas dos formas:
+
+@ 0 4 0 17473136a501065a08e47c2ac175fac4
++     - `import soundness.*` trae `soundness.explainMissingContext`, un `implicit
++       def` a la antigua en lugar de un `given` precisamente para que lo incluya una importación con
++       comodín;
++     - `import frontier.context.explainMissingContext` trae el `given` por nombre, para el código que
++       no importa el paraguas.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 12921236bce385d40855562298c83f0e
+
+% 1 1 0 1ce8b8e2cc9e49dd052da87a9b8e52e8
+
+@ 0 5 0 0ad980165e6bd28b173fb26df2620255
++     En una cadena de cláusulas `using`, la explicación que se muestra es la del valor que falta más
++     profundo —la causa más interna—, ya que el comodín se expande allí primero. Una explicación está
++     acotada: una cadena de candidatos de más de seis niveles de profundidad, o más de 256 búsquedas
++     implícitas en una explicación, se notifica como ausente en lugar de seguirse, y el árbol
++     representado se corta a las 100 líneas.
+
+@ 0 3 0 1995f22dc81cceef0ca99943218a7b68
++     La biblioteca es el único conjunto de fuentes `frontier.core`. `Diagnostic` no se exporta a
++     propósito al paraguas `soundness`, donde chocaría con `harlequin.Diagnostic`: se accede a él como
++     `frontier.Diagnostic`.
+
+% 0 1 0 194151561e25ce5919101cdcc2b88ded
+
+% 0 1 0 0f221ed2717ac3a9100b15b50965dad6
+
+@ 0 1 0 143f892d26c7f152076ee372cd452cfa
++ entry .context   el paquete de elección que contiene el given comodín `explainMissingContext`, importado por nombre
+
+% 1 1 0 0250e6d3bec738dc1f6e99a441ce4524
+
+@ 0 3 0 1df638e1da7a94dd01c6a065c74420a9
++       Un paquete cuyo único given se importa por nombre, ya que `import frontier.context.*` no
++       importa givens. El código que importa el paraguas `soundness` no lo necesita:
++       `import soundness.*` trae el equivalente `soundness.explainMissingContext`.
+
+% 0 1 0 0d9fb0b7a1b2e2741a9a29ca5ceafd0b
+
+@ 0 10 0 13ba0b5714ff1e5017f905e65dccb707
++   entry .explainMissingContext   explica una búsqueda implícita fallida como un árbol de candidatos y propuestas del classpath
++       Un `transparent inline given` de tipo `[any] => any`, marcado con
++       `@scala.annotation.internal.diagnostic`, de modo que es candidato en todas las búsquedas
++       implícitas. Cuando se prueba, repite la búsqueda sin sí mismo: si la búsqueda tiene éxito, el
++       comodín falla, para que el compilador seleccione él mismo la instancia con sus variables de
++       tipo aún abiertas; si la búsqueda falla, el comodín aborta con un árbol `Diagnostic`
++       representado, que el compilador notifica como error si ningún otro candidato tiene éxito.
++       Para un objetivo `NotGiven[X]` tiene éxito trivialmente, de modo que la negación por candidato
++       del compilador lo convierte en un fallo y deciden las propias instancias de `NotGiven`, y
++       `NotGiven[X]` se cumple exactamente cuando no hay ningún `X`.
+
+% 2 1 0 06cf5b78f266969317260c70d1be036e
+
+% 0 1 0 00973241d22ea8a4012caaf81aeec69a
+
+% 0 1 0 08ee91ce048da1c30d2890f29f3caf49
+
+% 0 1 0 08ee91ce048da1c40d2890f29f3caf4a
+
+% 0 1 0 12689b8f01a131a817529a2fc39db27f
+
+% 0 1 0 001296c3f114510b1dcb0810a6100700
+
+% 1 1 0 173abe80ab8de7320a022afa3ad9a82f
+
+@ 0 3 0 040e488b9dfa1b2209cd459f85f02a20
++       El mensaje notifica el `B` que falta, la causa más interna. Una propuesta de un given
++       polimórfico nombra las ligaduras de sus parámetros de tipo (`textual = Char`), y un requisito
++       `NotGiven[X]` de un candidato se muestra como _prohibits X_, con el given que lo infringe.
+
+@ 0 1 0 112679f98c94cf5e029814da099941fd
++ entry .Diagnostic   un árbol ya representado que describe una búsqueda implícita fallida, y su representador
+
+% 1 1 0 111ccd669e24327e0e2215c7b3f5a7e6
+
+@ 0 5 0 1af5b916d8cd9dbc0744090e38b9c065
++       Un modelo de explicación independiente del formato: cada nodo tiene una clase, un `#name` ya
++       representado como `Text`, un `#label` opcional y sus `#children`. Como los nombres ya están
++       representados, el representador no depende del compilador, y cualquier macro que necesite
++       explicar un fallo puede construir el mismo modelo: la derivación genérica de Wisteria asocia
++       a cada nodo un nombre de campo o de variante como rótulo.
+
+@ 0 2 0 0583359f1acf43ba1ad88239ce325dfc
++       Los seis casos del enum son sus clases de nodo, y cada uno recibe un nombre, un rótulo opcional
++       y una lista de hijos:
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 9 0 10a5462555db93a905f090192d9fd9a6
++       column  Caso
++       column  Se representa como
++       column  Nodo
++       row  `Resolving`  _■ resolving T_  la raíz: el tipo que se está resolviendo
++       row  `Candidate`  _▪ candidate g_  un given en el ámbito que se probó
++       row  `Requires`  _✗ requires T_  un parámetro contextual de un candidato que no se pudo encontrar
++       row  `Propose`  _▸ propose pkg.g_  un given del classpath, fuera del ámbito, que proporcionaría el valor
++       row  `Prohibits`  _⊘ prohibits X_  un requisito `NotGiven[X]`, desenvuelto a `X`; su hijo es el `Found` que lo infringe, o no tiene hijo y lleva el rótulo `absent` cuando se cumple
++       row  `Found`  _✓ found T_  un valor que se encontró
+
+% 1 1 0 085a396440b94d5306c5eeced83a5004
+
+% 2 1 0 0673280dafa8be1405a02105a60e7489
+
+% 3 1 0 1b4080545ef535db03e59e50845d3623
+
+% 0 1 0 159b8d4e6cbaeaa113aac703fafd78db
+
+% 0 1 0 0c010ed7b57d2432034695f2df013319
+
+% 0 1 0 074caed5ee138b4b1f3de4bb9a5c300f
+
+% 0 1 0 0144d3b883890cf6199de2eb989393b7
+
+% 0 1 0 1ac6c91edfd6628f153d3499d8dd5942
+
+% 1 1 0 189bdac6354e2b190f71ebae5e8f5b8a
+
+@ 0 1 0 1197c363afaa19051362d291bf39f096
++       `Diagnostic` no se exporta al paraguas `soundness`, donde chocaría con
+
+% 0 1 0 1dd3fb3c96d677ba0f578faa816a4a11
+
+% 0 1 0 149718fb9e8fd11705bdc5d2784127e8
+
+@ 0 7 0 0f5e55e677ee66fd1d4195833f518f79
++   entry .render   representa un árbol de diagnóstico como texto con colores ANSI, bajo un titular, hasta un límite de líneas
++       La raíz debe ser un nodo `Resolving`, que proporciona la línea _■ resolving T_; cualquier
++       otro nodo se envuelve en uno. `headline` vale por defecto _contextual value not found_, y
++       `limit`, 100: se escriben como mucho esas líneas del árbol, seguidas de _… n more_ cuando se
++       han omitido líneas. Un subárbol no hoja idéntico a otro ya escrito se escribe solo con su
++       primera línea, con el rótulo _as above_, ya que una explicación en un ámbito grande podría
++       ocupar de otro modo miles de líneas.
+
+% 2 1 0 019e19c47039c5bf1abf90decbf575e6
+
+% 3 1 0 09191a818f4814431c9d16f104a5c608
+
+% 0 1 0 03d6c89fab88062410e2e91683f1cc17
+
+% 0 1 0 0496797d163b904a1aee7903434fe546
+
+% 0 1 0 172dc24bf11f412d152e2648b4ff9f32
+
+% 1 1 0 04344e64d8e0e93c0151bedc6c1ff3a0
+
+@ 0 6 0 0beef1a9cb55de5b058ededce6df918f
++   entry .treeStyle   el estilo de caracteres de dibujo de cajas con el que se dibuja un árbol de diagnóstico
++   entry .expandable   hace que un `Diagnostic` se pueda expandir en sus hijos, para dibujarlo como un árbol
++   entry #name   el nombre representado del tipo o del given del nodo
++   entry #label   una anotación opcional que se muestra tras el nombre, como un nombre de campo o `absent`
++   entry #children   los nodos hijos del nodo
++   entry #rebuild   la misma clase de nodo con el mismo nombre, pero con un rótulo y unos hijos nuevos
+
+@ 0 1 0 121f77e66ff8a44e0911ee9a30e423e0
++ entry .internal   la macro que hay detrás de `explainMissingContext`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 0faa10a70af475360a95cad1e69d78dc
++       No es para uso directo. Cada paso desde el comodín hasta su macro debe ser `transparent
++       inline`: solo las llamadas transparent inline se expanden durante el tipado, así que un paso
++       no transparente dejaría la macro sin expandir mientras se prueba el comodín, y la búsqueda
++       tendría éxito de forma espuria.
++   entry .explanation   el punto de entrada transparent inline de la macro explicativa
++   entry .explain   la macro que vuelve a ejecutar una búsqueda y construye y representa su `Diagnostic`
++   entry .NoCandidates   coincide con un fallo de búsqueda implícita que no tuvo candidatos, y da su explicación
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 2 0 1e1fd34ade08fb8e132b0c4df5ca9693
++         Un extractor sobre `quotes.reflect.ImplicitSearchFailure`, que usa la macro.
++     entry .unapply   la explicación de un fallo de búsqueda sin candidatos, si lo es

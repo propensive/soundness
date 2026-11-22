@@ -1,0 +1,520 @@
+orthant 2 language
+
+@ 0 1 0 01c7cb95a5e831a91c0c521ea72c99aa
++ # Capacités et effets
+
+@ 0 6 0 1c6b63aec3a98d84047132d6260e5ae3
++ Les signatures honnêtes ne sont honnêtes que dans la mesure où elles sont appliquées. Le contrôle
++ des captures rend vérifiables les promesses d'une signature sur les effets ; le contrôle de
++ séparation rend la mutation sûre par construction ; le mécanisme `raises` rend l'échec visible
++ dans les types. Les trois sont déjà le comportement par défaut — 435 des 447 modules du build
++ compilent avec le contrôle de séparation — mais un comportement par défaut n'est pas une garantie.
++ Chaque appel à `caps.unsafe` est un endroit où le contrôleur a été désavoué à la main, et chacun
++ est une reconnaissance de dette permanente envers la promesse de sûreté.
+
+@ 0 9 0 193a84f9df03ab5f0e8c03414653464e
++ Les échappatoires sont donc la mesure centrale de ce chantier. Certaines sont une véritable dette,
++ avec une recette connue pour la résorber ; d'autres sont bloquées par des défauts ou des lacunes du
++ contrôleur de captures lui-même — et c'est à nous de les corriger, car Soundness est construit avec
++ le compilateur Proscala, par choix. Le compilateur peut être modifié chaque fois que le contrôle des
++ capacités ou des effets l'exige ; le répertoire `rep/` contient une reproduction minimale de chaque
++ classe de blocage, et `rep/STATUS.md` indique lesquelles sont corrigées, lesquelles sont ouvertes
++ et lesquelles ont été signalées en amont. La seule contrainte est la compatibilité vers
++ l'extérieur : quoi que fasse Proscala, les artefacts que publie Soundness doivent rester lisibles
++ par le compilateur Scala officiel. Le chantier se termine lorsque la recherche de `caps.unsafe` ne
++ renvoie plus rien, et que cette garantie de lisibilité est vérifiée plutôt que supposée.
+
+@ 0 2 0 0df5a7de4c0e774f146e091da36d7339
++ Mesurées le 2026-10-07 sur `lib/`, on compte 1485 échappatoires visibles, et à peu près autant
++ cachées derrière les enveloppes nommées :
+
+% 2 1 0 1ebfb6768706bc6109c31252bcec103d
+
+@ 0 3 0 1a5b9c6a52801ff107ee42f7ad27fe01
++ column  Échappatoire
++ column  Nature
++ column  Nombre
+
+% 0 1 0 15e5e6c83a0a250217083cef6bb4d8d0
+
+% 0 1 0 1127358812a3a07009552a44192ef743
+
+% 0 1 0 0f2dbaa66e385f350592534df3b1e662
+
+% 0 1 0 1e1a9d0e9e01aa571630d25f01b0532f
+
+@ 0 5 0 07d96267c30d9a7a0180dc8332bd3290
++ row  `Array.unsafeFrozen`  enveloppe  283
++ row  `Array.unsafeJvm`  enveloppe  205
++ row  `Array.frozen`  enveloppe  151
++ row  `unsafeMutable`/`unsafeImmutable`  enveloppe  ~40
++ row  `!!`  enveloppe  30
+
+% 1 1 0 099946063bedaa331e6425010783c420
+
+@ 0 2 0 11de6e3e0b4c67cd110e86249f64c0db
++ Le résidu n'est pas un problème mais neuf, et ils ne sont pas aussi difficiles les uns que les
++ autres. Par cause profonde, les groupes sont :
+
+% 2 1 0 02606fecf890c71716aa29f72753a464
+
+@ 0 12 0 189511042cf62bd40b68dd24134e2b48
++ column  Groupe
++ column  Nombre
++ column  Résorbé par
++ row  `@untrackedCaptures` sur des champs `var`/`val` (437 vars ; ~270 d'entre elles de type primitif, `Optional` ou collection immuable)  505  la recette de `safety-1`, module par module
++ row  `unsafeAssumeSeparate` des harnais de test (pilotes tmux, `await`, `recur`)  236  un assistant en forme de prêt par harnais (`safety-9`)
++ row  ancres de dérivation `unsafeAssumePure(Json.…Derivation.derived)` dans les bindings JSON-RPC  103  la règle de pureté des champs, une fois les tactiques partagées (`safety-8`)
++ row  givens de codec scellés dont la SAM se referme sur une tactique  ~125  la forme honnête de given `^{tactic}`, débloquée par `safety-8`
++ row  chevauchement de tactique exclusive `unsafeAssumeSeparate(json.as[…])` et les trois scellements dans contingency même  ~60  `safety-8`
++ row  blanchiments de self, de rappels et de poignées (`unsafeAssumePure(this)`, proxys RPC, rappels stockés)  ~60  conception au cas par cas
++ row  thunks de codec d'élément par nom blanchis en `() -> …`  ~46  captures par nom nommables (`safety-10`)
++ row  `unsafeErasedValue` pour des preuves effacées  50  mécanique, si `compiletime.erasedValue` suffit
++ row  mise en étapes, quotes et macros (le mur des quotes)  ~27  côté compilateur
+
+% 1 1 0 1b24c0dbbc6b330b09572886e3c1705e
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ Les éléments du chantier, avec leurs horizons et leurs dépendances fortes ;
++ [`status.tel`](status.tel) indique où en est chacun :
+
+% 2 1 0 1a49486c3b4d2d2d15f5c2c51b85eebd
+
+@ 0 2 0 19713a418b5f653b07d58e9a0583f064
++ column  Élément
++ column  Titre
+
+% 0 1 0 1d660ee4e7a7cab803a3c88e3fac2fde
+
+@ 0 13 0 1253f1b5aa8c6fe11cfe79f20d7f3996
++ column  Prérequis
++ row  safety-1  résorber `untrackedCaptures`  proche
++ row  safety-2  chaque échappatoire restante nomme sa raison  proche
++ row  safety-3  `rep/` s'exécute sur la toolchain épinglée  proche
++ row  safety-4  zéro échappatoire  moyen → lointain  safety-8, safety-10
++ row  safety-5  le fork est un atout, pas un piège  lointain
++ row  safety-6  le contrôle de séparation sans exemption  lointain
++ row  safety-7  mesurer toute la surface d'échappement, pas une recherche à la fois  proche
++ row  safety-8  les tactiques sont des capacités partagées  proche  safety-3
++ row  safety-9  les harnais de test ne scellent pas  proche → moyen
++ row  safety-10  les paramètres par nom peuvent être nommés dans les ensembles de capture  moyen  safety-3
++ row  safety-11  la branche 3.10 est évaluée pour ce qu'elle corrige  proche → moyen  safety-3
++ row  safety-12  un standard des capacités  proche
+
+% 1 1 0 13db5320d118f5480b5793462fe33b3b
+
+@ 0 1 0 19afaa45c8a8c1381bde4883abe140bf
++ ## safety-1 : résorber `untrackedCaptures`
+
+@ 0 2 0 117b1ab886816b5a02d05f743954b7cb
++ Horizon : proche
++ Référence : 385 occurrences (mesuré le 2026-10-21 ; 484 le 2026-10-08 ; 507 le 2026-10-07 ; 468 le 2026-09-25 ; 288 le 2026-08-01)
+
+@ 0 17 0 136eb77bbe0b2b5c1c8aab17a8790535
++ La recette de résorption est documentée et mécanique : la classe annotée devient `caps.Mutable`,
++ les méthodes de mutation deviennent des `update def`, les consommateurs détiennent `X^`, et les
++ références mutuelles inverses sont aplaties. 437 des annotations portent sur des `var`, et environ
++ 270 de celles-ci sont des primitifs, des `Optional` ou des collections immuables dans des classes
++ qui ne sont pas encore `Mutable` — des données pures derrière un classificateur manquant. Les
++ premiers modules sont ceux déjà en partie migrés (l'analyseur `Xml` de xylophone, le `Llm` de
++ sibylline, le `Tel` de stratiform, le cœur de zephyrine), puis les autres par taille. Les 88
++ champs `AnyRef | Null` sont différents : chacun est une poignée de capacité passée en fraude devant
++ le contrôleur, et chacun est un cas de conception, pas un balayage. Le premier balayage (retirer
++ chaque annotation de type primitif et laisser le compilateur protester) n'en a trouvé que 2
++ retirables sur 140 : les autres protègent des `var` dans des classes qui ne sont pas `Stateful`, ou
++ des variables locales capturées par des fermetures, et rendre une classe `Stateful` lui impose,
++ ainsi qu'à ses appelants, la discipline de la lecture seule et des `update def` — la recette est
++ donc d'une classe par changement. La première, `profanity.Board` avec ses six surfaces (et
++ `Terminal`, dont les surfaces lisent la taille), a retiré 22 annotations et trois scellements de
++ séparation pour un seul scellement de pureté étiqueté (`Stdio.print` est en lecture seule par
++ interface) ; `rep/DECISIONS.md` consigne la recette telle qu'elle s'est réellement déroulée, y
++ compris les deux règles qui l'ont façonnée : une méthode en lecture seule ne peut pas utiliser un
++ thunk impur capturé, et une fabrique doit renvoyer un `X^` frais, faute de quoi chaque détenteur
++ devient un alias en lecture seule.
+
+@ 2 1 0 1ef2d469040a060b14bd3c2c3ff2fa86
++ Terminé lorsque :
+
+% 0 1 0 1f6f0038c39163ff163d95deb0bd73ed
+
+@ 0 1 0 13e9552d0eb80870035839ffe97036db
++ ## safety-2 : chaque échappatoire restante nomme sa raison
+
+@ 0 2 0 099f4e9d1d569e591f27b66b26654f54
++ Terminé : #2306 (2026-10-21)
++ La référence était de 419 `unsafeAssumeSeparate`, 511 `unsafeAssumePure`, 50 `unsafeErasedValue` (mesuré le 2026-10-07 ; 416, 502 et 50 le 2026-09-25 ; 323, 273 et 45 le 2026-08-01) ; 37 d'entre elles citaient `rep/`, 2 en nommant un cas. Le 2026-10-21, les échappatoires sont au nombre de 218, 289, 35 et 381 `untrackedCaptures`, toutes étiquetées ; `etc/check-escape-count.py --tags` lit le résidu par étiquette, et son cliquet maintient `untagged` à zéro.
+
+@ 0 8 0 0300020d9feaba971ded1e1e3a10fbed
++ Chaque occurrence est soit corrigeable dès maintenant, soit bloquée par quelque chose de nommé. Le
++ tri rend la distinction explicite grâce à un vocabulaire fermé d'étiquettes de raison, défini dans
++ le standard des capacités (`safety-12`), chacune rattachée à un cas de `rep/` ou à une section du
++ standard — `[tactic-overlap]`, `[field-purity]`, `[by-name-capture]`, `[quote-wall]`,
++ `[curried-cft]`, `[js-expandsams]`, `[iarray-opacity]`, `[fresh-in-lambda]`,
++ `[registry-lifetime]`, `[test-harness]` et ainsi de suite. Une échappatoire porte son étiquette
++ dans un commentaire adjacent ; le recensement (`safety-7`) compte le résidu par étiquette, ce qui
++ décide de la file du fork, et échoue sur un site non étiqueté une fois que le nombre de sites non
++ étiquetés a été ramené à zéro par le cliquet.
+
+@ 0 2 0 13a881e95f2cc2d91a2f980ad6388e1c
++ Terminé lorsque : chaque occurrence restante de `caps.unsafe` dans `lib/` porte une étiquette de
++ raison, ce que vérifie le script de recensement en signalant zéro occurrence non étiquetée —
++ `python3 etc/check-escape-count.py --tags`.
+
+@ 0 1 0 038c7138fd40e3b10f39cd12aa8501be
++ ## safety-3 : `rep/` s'exécute sur la toolchain épinglée
+
+@ 2 1 0 0b7d5ace6225104206e8ccbf391a069b
++ Horizon : proche
+
+@ 0 9 0 03b95c4488d1df8c0386d3bdc42c2903
++ La file n'est une file que si ses entrées peuvent être exécutées. Jusqu'au 2026-10-07,
++ `rep/compile.sh` récupérait un compilateur 3.8.4 standard et les scripts de sondage nommaient des
++ worktrees construits localement, si bien qu'aucun cas n'avait été réexécuté sous la version du fork
++ qu'utilise réellement le build — et les réparations optionnelles du fork (`-Z…`) n'étaient jamais
++ passées, si bien qu'un cas corrigé pouvait encore apparaître en rouge. `rep/toolchain.sh` exécute
++ désormais `dotc` depuis la version en cache avec les options `-Z` lues dans `build.mill` ; chaque
++ cas et la suite de sondes sont réexécutés sous lui, et `rep/STATUS.md` consigne les verdicts. La
++ classe `capturing-raises` que nommait cet élément a été corrigée à la source le 2026-07-06
++ (tactiques ambiantes en `caps.Unscoped`) et compile ; les classes dominantes sont désormais le
++ chevauchement de tactique exclusive (`safety-8`) et la lacune des captures par nom (`safety-10`).
+
+@ 0 2 0 1b522c6d5497df511f25c11145ec8e04
++ Terminé lorsque : `rep/STATUS.md` consigne un verdict pour chaque cas sous la version épinglée, et
++ la suite de sondes ainsi que chaque cas calibré s'exécutent avec le résultat attendu depuis une
++ copie de travail propre.
+
+@ 0 1 0 01e7de354fbdd46a0273a4e1f54a5cec
++ ## safety-4 : zéro échappatoire
+
+@ 0 3 0 01996f7c07f8cddd1d450025857f2b50
++ Horizon : moyen → lointain
++ Prérequis : safety-8, safety-10
++ Référence : 928 occurrences au total (mesuré le 2026-10-21 ; 1485 le 2026-10-07 ; 1436 le 2026-09-25 ; 929 le 2026-08-01)
+
+@ 0 1 0 1517b914591e3df40b95a240d30e4998
++ Une fois les blocages corrigés, le résidu se réduit à néant. La recherche est le signal.
+
+@ 2 1 0 14b625c5827357bc0b5e7d9f84f52a02
++ Terminé lorsque :
+
+% 0 1 0 13c77e5a6bb58be609892811b1fa93c7
+
+@ 0 1 0 0e0da2a4829a9a5c1e83b0fbd8a1ffd1
++ ## safety-5 : le fork est un atout, pas un piège
+
+@ 2 1 0 0750a37f4f9676d10380c7a834002907
++ Horizon : lointain
+
+@ 0 5 0 130610219ce42159006bbe717d65df5c
++ Construire avec Proscala est une décision de conception, pas une dette : la liberté de corriger le
++ contrôleur de captures est ce qui rend zéro échappatoire tout simplement atteignable. Ce qui garde
++ cette liberté sûre, c'est la lisibilité en aval — chaque artefact publié reste utilisable depuis un
++ projet construit avec le compilateur Scala officiel — et un rebasage sur chaque version amont dont
++ le coût est connu plutôt que redouté.
+
+@ 0 6 0 0d4758a3f06ca5870c2b155b83aa51c0
++ Les artefacts publiés de Soundness référencent un seul symbole de bibliothèque propre au fork —
++ `scala.Spreadable` (les givens `multiSpreads` de proscenium) ; `scala.caps.SharedUnscoped`, que les
++ tactiques ambiantes portaient depuis `safety-8` jusqu'à ce que #2328 les rende pures, n'est plus
++ référencé — livré dans le jar supplémentaire `proscala-library` du fork. Un consommateur du
++ compilateur officiel a donc besoin de ce jar sur son classpath ; le test de lisibilité ci-dessous
++ doit le dire ou le rendre inutile.
+
+@ 0 2 0 1ede65794dd5ffd11454e2495a3d0e23
++ Terminé lorsque : un test de CI consomme des artefacts Soundness publiés depuis un projet en Scala
++ officiel, et `rep/` documente la procédure de rebasage et le coût mesuré des deux rebasages les plus
++ récents.
+
+@ 0 1 0 03d3a8e15bb00a6c05516b991ab98741
++ ## safety-6 : le contrôle de séparation sans exemption
+
+@ 0 4 0 06fbcd2acc5562f71c30a858c5ecda33
++ Horizon : lointain
++ Référence : 12 des 447 modules se retirent de `settings.sep` — 11 vers les options simples, 1 vers
++ `settings.cc` — chacun avec un commentaire de raison dans `build.mill` (mesuré le 2026-10-21 ; 81
++ sur 464 le 2026-10-07 ; 87 sur 424 le 2026-09-25)
+
+@ 0 7 0 10e2335bd652acdb1fe36f3ce34c2ac1
++ Le contrôle de séparation est désormais le comportement par défaut : depuis #2202, `Component`,
++ `Tests` et `Benchmarks` compilent tous avec `settings.sep` à moins de redéfinir `checking`, si bien
++ qu'un module n'est non vérifié que par déclaration, jamais par omission. Les douze qui restent
++ nomment chacun leur blocage — un objet de suite qui contient des tableaux de charge utile exclusifs
++ comme champs (les benchmarks contre des bibliothèques rivales), les backends WASI revérifiés sous
++ une origine supprimée, les tests `NoPadding` d'orthodoxy — et l'état final n'en compte aucun.
++ Chacun est basculé par la sonde à coup unique (`rep/probe-suite.sh`, `rep/probe-core.sh`) dès que
++ son cas de `rep/` est vert.
+
+@ 0 1 0 14e9272e31392a5b15ca133dbcf2784c
++ Terminé lorsque : aucun composant de `build.mill` ne compile avec quoi que ce soit de plus faible
++ que `settings.sep`.
+
+@ 0 1 0 0d58307660767b1601142856b09349f0
++ ## safety-7 : mesurer toute la surface d'échappement, pas une recherche à la fois
+
+@ 2 1 0 177df81bb783710c1129de8ac02f7630
++ Horizon : proche
+
+@ 0 6 0 02f2b7b906fc2fa81b2fc171e62fab73
++ Les échappatoires que ce chantier résorbe étaient comptées à la main, à partir de références qui se
++ périmaient entre deux mesures : les 929 de `safety-4` avaient été mesurées en août 2026 et avaient
++ dérivé au-delà de 1400 avant que quiconque relance la recherche. Deux cliquets couvraient
++ correctement une partie de la surface, fichier par fichier et de manière imposée —
++ `etc/check-while-count.py` pour `while`, `readUnchecked` et `charAt`, et
++ `etc/check-stdlib-count.sh` pour le pont `xs.stdlib`, sous la forme d'un seul nombre agrégé sur les
++ seules sources du cœur — et le reste n'était pas mesuré.
+
+@ 0 11 0 07de880aa2dddb620f8a7456ab7bcd76
++ Le plugin flare (épinglé dans `etc/tools`, configuré par `.pyrocosm/flare/config.tel`, activé sur
++ chaque composant vérifié par les options `-P:flare:` de `flareToolchain`) fournit le recensement :
++ chaque règle de la configuration comptée sur les sources — les échappements déclarés (`unsafely`,
++ la famille `caps.unsafe`, chaque nom préfixé par `unsafe`, chaque méthode protégée par le jeton),
++ les contournements de la confiance du compilateur (`asInstanceOf`, `.nn`, `@unchecked`, `???`, les
++ clauses attrape-tout), les lectures partielles, et les constructions impératives que le noyau de
++ flux est censé confiner. `make unsafety` exécute `flare metrics --dry-run` et l'affiche ;
++ `flare metrics` le consigne dans les notes git, commit par commit, de sorte que la tendance vit dans
++ git plutôt que dans un paragraphe de feuille de route. Une règle bloque déjà : `S1.1`, une méthode
++ qui reçoit `(using Unsafe)` doit être nommée `unsafe…`, fait échouer le build ; sa réciproque
++ `S1.2` est indicative, et les huit définitions qui l'enfreignent sont listées dans
++ `doc/standards/naming.md`.
+
+@ 0 7 0 05d9c1dd65e2b0780551fef8f9deee28
++ Le contrôle existe : `etc/check-escape-count.py`, exécuté par `make build` (et
++ `make check-escapes`), tient dans `etc/escape-baseline.tsv` une référence par fichier des quatre
++ échappatoires `caps.unsafe`, des enveloppes de tableaux qui cachent une capture
++ (`Array.unsafeFrozen`, `Array.unsafeJvm`, `Array.frozen`, l'opérateur de preuve effacée `!!`), des
++ conversions forcées qui font passer une capacité devant le contrôleur, et des échappatoires qui ne
++ portent aucune étiquette de raison — avec la même sémantique `--update`/`--totals` que
++ `check-while-count.py`, plus `--tags` pour le résidu par étiquette de raison (`safety-2`), dont le
++ vocabulaire fermé réside dans le script. Il a été initialisé le 2026-10-09 et réinitialisé le
++ 2026-10-21 :
+
+% 2 1 0 083dba319a53a06e02afa5d7f66593ad
+
+@ 3 1 0 1c646d6a318a9aec0cd4c03977aaddc1
++ column  Colonne
+
+% 0 1 0 026c7839bedb00f418e621b84fef5625
+
+% 0 1 0 0aeb4d4aca2112921f19361456d03ca6
+
+% 0 1 0 1eaba987b6f5ca2505b986e9edec36c2
+
+% 0 1 0 1eb7f01b78fc38291388a165dfc13355
+
+% 0 1 0 181d839950587e230f73151ef71cea31
+
+% 0 1 0 001dd397441b20621dedd44940c85060
+
+% 1 1 0 07e8f192bb3086c8158917cf549dcf25
+
+% 0 1 0 0f7bc8b23e2cc61a0a7a71a700e2b483
+
+% 1 1 0 15a24f07c8f06785039e050362285ea1
+
+% 0 1 0 013e0e54bcec410d0ed872c8351637ab
+
+% 1 1 0 0e7190db6875cd84179acf13019ced62
+
+% 0 1 0 11ee15eebdf6b84c0f4b1e59571c4c49
+
+% 1 1 0 0e327398a0367fd50d31c0b4b734cfab
+
+% 0 1 0 013e0e54bcec41100ed872c8351637ae
+
+% 1 1 0 1a8d3941e55362f41027beddc68832fe
+
+% 0 1 0 1df1b03967935acd15e77ed58231b5e9
+
+% 1 1 0 11983f8add5e7c73077066e983a2f90a
+
+% 0 1 0 0de10594519ffecd097249e35e56fe6c
+
+% 1 1 0 0234fb6966cfa5c40cd7b035f8ad7fdc
+
+% 0 1 0 051c7a3b91294873180b7106202e49ec
+
+% 1 1 0 06a1b435fe427d0c1ae771bfd73444f5
+
+% 0 1 0 0dfc4dee4dd55b85082511523f679178
+
+% 1 1 0 185b30220bc5a3431f2edbe42b8dc90a
+
+% 0 1 0 00526481a1e5a6610fd24572fa3b8b76
+
+% 1 1 0 00cdec08fcf0657906ad04e9f244f738
+
+% 0 1 0 167b22ff591b6d2c0e5825ae46487802
+
+% 0 1 0 130f682d84805d9511a39c06da790f1c
+
+% 1 1 0 12d29749db93de0e0180609ec18289b2
+
+@ 0 5 0 0f07abc70dc668450673bdda1b237e81
++ Le cliquet `xs.stdlib` a été intégré le 2026-10-26 : le pont est compté fichier par fichier sur
++ les sources du cœur comme sur celles des tests (l'ancien script excluait les tests, où se
++ trouvaient 1000 des usages, et manquait la forme de continuation `. stdlib`), les benchmarks
++ exceptés. Trois colonnes de forme lisent le résidu comme une file, et une quatrième compte les
++ imports de `core-3` ; `--stdlib` liste le résidu selon ce qui suit le pont. Les colonnes, avec les
++ nombres auxquels elles ont été initialisées :
+
+% 2 1 0 1f348fcfe012db540ac165a0896c8269
+
+@ 0 8 0 192b00f110beb97c18b54fc6b0c6567d
++ column  Colonne
++ column  Compte
++ column  Valeur initiale
++ row  `stdlib`  chaque usage du pont  1859
++ row  `stdlibGate`  les contournements des portes dysasymptotiques : `xs.stdlib.head`, `.stdlib(i)`, les lectures de taille  464
++ row  `stdlibRound`  les allers-retours : `xs.stdlib.toList`, `Array.from(xs.stdlib)`  310
++ row  `stdlibIterator`  les itérateurs obtenus par le pont  62
++ row  `collectionImport`  les imports directs de `scala.collection`  340
+
+% 1 1 0 1f3980007cb1390a113e59519f34d5ae
+
+@ 0 1 0 1aac23c1e79f094514db6c52ccf93d10
++ Il reste à intégrer le cliquet `while`.
+
+@ 0 3 0 195a5e36b5a8169b017fea908bad5019
++ Terminé lorsque : le recensement est consigné à chaque version, `safety-1`, `safety-2` et
++ `safety-4` lisent leurs références dans celui-ci plutôt que dans une recherche lancée à la main, et
++ le contrôle par fichier a remplacé `etc/check-while-count.py`.
+
+@ 0 1 0 1d0e277801fe1eed1168376d7fbc6ff8
++ ## safety-8 : les tactiques sont des capacités partagées
+
+@ 0 3 0 088836575af765b219e94b888988efbe
++ Terminé : #2195 (2026-10-07) ; le dernier résultat de la recherche, un commentaire de `Emit.scala` décrivant les anciens scellements, a été reformulé dans #2306
++ Prérequis : safety-3
++ Référence : ~60 scellements de chevauchement de tactique exclusive dans `lib/*/src/core`, dont 3 dans contingency ; 103 ancres de dérivation et ~125 givens de codec scellés en aval (mesuré le 2026-10-07)
+
+@ 0 8 0 0790976c15a82e590532ebb7bb55b322
++ `contingency.Emit` — et donc `Tactic`, la capacité derrière `raises` — est une
++ `caps.ExclusiveCapability`, choisie en juillet comme « la classification prudente ». C'est la plus
++ importante cause profonde du résidu. Un codec invoqué pour `Json#as` capture la tactique ambiante,
++ et `as` reçoit la même tactique comme paramètre `using` : deux usages d'une même capacité
++ *exclusive* dans un seul appel, ce que le contrôle de séparation rejette
++ (`rep/sepcheck-probes/p15`). Chaque `unsafeAssumeSeparate(json.as[…])` est cette erreur, et les
++ ancres de dérivation des bindings JSON-RPC ont abandonné la forme honnête paramétrée par la
++ tactique pour la même raison, au sein de la dérivation.
+
+@ 0 11 0 176c53f23b51150806ffc8ddfd1c6ae8
++ Une tactique est partagée par nature — de nombreux codecs en sont légitimement des alias — et lever
++ une erreur est un effet qui ne consomme rien. `caps.SharedCapability` garde chaque capture de
++ `raises`/`emits` suivie et exempte seulement les alias d'une même tactique de la vérification de
++ chevauchement ; une tactique qui mute (accumulation, `Foci`) doit alors être séquentielle en
++ interne, la position déjà adoptée pour `Monitor` et les files de parasite. Les stratégies ambiantes
++ abandonnent `caps.Unscoped` (des classificateurs sans rapport ne peuvent pas se combiner, `p16`) ;
++ sur la version épinglée, la forme minimale de `raises` n'en a plus besoin (`rep/shared-unscoped`,
++ VERT). Le basculement est conditionné par des sondes : contingency d'abord, avec comme contrôle le
++ cas `capturing-raises` adossé à Soundness ; si la forme complète se heurte à un mur de niveau, le
++ fork ajoute un classificateur partagé et exempté de niveau avant que le basculement ne se
++ poursuive. Puis jacinta (`as` abandonne son paramètre de tactique inutilisé), le balayage des
++ consommateurs (sibylline, tarantula, orthodoxy, breviloquence, ethereal, les scellements des
++ thunks `abort`), et les ancres.
+
+@ 0 12 0 078dfbe0ce5d2129089a72b6a92eba42
++ État : `Emit` est partagé et les stratégies sont de simples `Tactic` ; les scellements de
++ chevauchement de neuf modules ont disparu (`unsafeAssumeSeparate` 419 → 350). Le mur de niveau a
++ survécu sous une forme — `strategies.throwUnsafely` invoqué dans le thunk de champ d'une dérivation
++ (`rep/sepcheck-probes/p17`, identique sur 3.10) — visible des utilisateurs, si bien que le fork a
++ gagné `caps.SharedUnscoped` (proscala `sharedunscoped`) pour les stratégies ambiantes, et
++ `rootclassify` pour le plantage de `normalizeLocalCaps` que les tactiques partagées révélaient dans
++ chaque prêt `Sessional` ; les deux ont été livrés dans 3.9.1-dev-p18. (#2328 a ensuite retiré
++ `SharedUnscoped` de Soundness : les stratégies ambiantes sont des valeurs *pures*, comme l'est le
++ `canThrowAny` de l'amont, et `Emit` est `caps.Control` ; voir `rep/DECISIONS.md`.) Une valeur de
++ stratégie *globale* partagée a été essayée à la place puis rejetée : un package ne peut pas
++ exporter une capacité, un `object strategies` impose `uses soundness.strategies` à chaque objet
++ utilisateur, et une instance de classe de capacité ne peut pas être typée pure
++ (`rep/DECISIONS.md`). Les ancres de dérivation (désormais `[field-purity]`) demeurent.
+
+@ 0 1 0 1c63386602657f16155eabf3aed00aaf
++ Terminé lorsque : `Emit extends caps.SharedCapability` ; `git grep -c 'unsafeAssumeSeparate' -- lib/contingency` vaut 0 ; il ne reste aucune étiquette `[tactic-overlap]`.
+
+@ 0 1 0 0d73e1c344d6108a0b26f89398fcbede
++ ## safety-9 : les harnais de test ne scellent pas
+
+@ 0 2 0 0dbf3bb02108b3ac0aabcb8dc99f9c8d
++ Terminé : #2224 (2026-10-09), après #2212 et #2217
++ La référence était de 236 `unsafeAssumeSeparate` dans `lib/*/src/test` (mesuré le 2026-10-07) : exoskeleton 63, zephyrine 50, facsimile 38, galilei 29, turbulence 19
+
+@ 0 7 0 027d321f80f6828d169802d49c937c6d
++ Plus de la moitié de tous les sites `unsafeAssumeSeparate` se trouvent dans des suites de tests,
++ presque aucun n'est commenté, et ils prennent une poignée de formes : les pilotes de complétion
++ tmux (`Bash.tmux()(Tmux.completions(…))`), `async(…).await()`, `recur()` et `gather.data`. Les
++ tests sont soumis au contrôle des captures comme les bibliothèques, c'est donc un résidu réel, et
++ c'est le lot le plus mécanique : un assistant en forme de prêt par harnais (la jonction de coaxial
++ — un trait de démarrage et d'arrêt et un prêt `transparent inline` — éprouvée dans syndesis), un
++ `Task#await` qui ne fait pas du `Monitor` un alias de la poignée, après qu'une sonde par forme a
++ caractérisé ce à quoi le contrôleur objecte.
+
+@ 0 1 0 191cdacbeed713a11dab017c54d7baed
++ Terminé lorsque : `git grep -c unsafeAssumeSeparate -- 'lib/*/src/test'` vaut 0.
+
+@ 0 1 0 13e559f148109f3d11c736d6ae212d3f
++ ## safety-10 : les paramètres par nom peuvent être nommés dans les ensembles de capture
+
+@ 0 3 0 03bb8ef3a1ef221e1aaaa610dca2066d
++ Horizon : moyen
++ Prérequis : safety-3
++ Référence : 61 échappatoires étiquetées `[by-name-capture]` (mesuré le 2026-10-21 ; ~46 scellements de thunks purs dans jacinta, spectacular, gastronomy et turbulence le 2026-10-07)
+
+@ 0 8 0 1c8eb6bf45a0b9ac03462fea6cbd1fb7
++ Un paramètre par nom (`inner: => (X is Codec)^`) n'est pas une référence stable, si bien qu'un
++ given dont l'instance le conserve ne peut pas déclarer `^{inner}` et est scellé en un thunk pur
++ `() -> …` à la place — la forme de la phase 6, commentée avec franchise mais un scellement tout de
++ même. Cette forme est porteuse : la résolution des givens synthétise le thunk, et la dérivation
++ récursive dépend de son report, si bien qu'aucune forme côté source ne préserve les deux. C'est une
++ lacune du compilateur (« upstream candidate #5 » dans `rep/DECISIONS.md`) : un paramètre par nom
++ devrait pouvoir être nommé comme l'ensemble de capture de son thunk synthétisé. D'abord un cas
++ autonome `rep/byname-capture` ; ensuite la modification du fork ; puis un signalement en amont
++ accompagné du cas.
+
+@ 0 1 0 070d7556c14ec34e01287629d0082bb3
++ Terminé lorsque : `rep/byname-capture` compile sous la version épinglée et il ne reste aucune étiquette `[by-name-capture]`.
+
+@ 0 1 0 021da96dadf4ee9a01c47868085700ac
++ ## safety-11 : la branche 3.10 est évaluée pour ce qu'elle corrige
+
+@ 0 2 0 1f035d6d1dcef9530e3a11f62f316eeb
++ Horizon : proche–moyen
++ Prérequis : safety-3
+
+@ 0 11 0 05f0de97e568419b1653b7ba524a1001
++ Le fork garde une ligne 3.10 à côté de la 3.9, et le contrôleur de captures de l'amont a évolué
++ depuis le point de bifurcation de la 3.9 — 65 commits dans `cc/` et `scala/caps` en août 2026 :
++ `consume` sur les redéfinitions et les case classes et dans l'application de méthodes,
++ classificateurs `only`/`except` et classificateurs dans les capacités de résultat, détection des
++ fuites de LocalCap, réparation du statut boxé. Une partie de cela pourrait dissoudre ici des
++ groupes sans modification du fork (les formes des harnais, une classification plus fine des
++ tactiques, la fuite de quote `?1` dans le décodeur Query de legerdemain) ; une autre partie touche
++ exactement ce sur quoi Soundness s'appuie (le resserrement de `Unscoped` ; l'abandon des capacités
++ d'atteinte). L'évaluation est mesurée, pas devinée : un contrôle propre de l'arborescence sur la
++ version 3.10, l'ensemble du corpus `rep/` et la suite de sondes sur les deux lignes, consignés comme
++ une deuxième colonne de `rep/STATUS.md`, et une sentinelle non scellée par groupe compilée
++ uniquement sur 3.10. La décision — changer la ligne attestée, ou rétroporter les commits précis
++ sur la 3.9 — découle de ce tableau.
+
+@ 0 2 0 14a1c5181671b45c15aacc6b81c383b7
++ Terminé lorsque : `rep/STATUS.md` porte une colonne 3.10 pour chaque cas et chaque sonde, et la
++ feuille de route consigne la décision sur la ligne.
+
+@ 0 1 0 0de0bcbdac4379dd076200bcced51122
++ ## safety-12 : un standard des capacités
+
+@ 2 1 0 0d9e9d699e9141ba10cf3789ce7ed95c
++ Horizon : proche
+
+@ 0 7 0 1481653866e4d46319be8221b09cb1ef
++ Les recettes qui rendent praticables le contrôle des captures et le contrôle de séparation —
++ quand un type est Exclusive, Shared, Unscoped, Mutable ou Pure, et les pièges du treillis entre
++ eux ; le manuel des givens honnêtes (`(tactic: Tactic[E]) => ((X is TC)^{tactic})`, une preuve
++ capturante explicite au lieu de bornes de contexte) ; où un résultat frais peut ou non être créé ;
++ les jonctions `consume` et de prêt ; ce qu'un test peut ou non faire — n'existent que sous forme
++ d'entrées dans `rep/DECISIONS.md`, un journal de 2400 lignes. Elles ont leur place dans
++ `doc/standards/capabilities.md`, avec le vocabulaire d'étiquettes sur lequel s'appuie `safety-2` et
++ l'unique forme d'échappatoire autorisée pour chaque étiquette, ainsi qu'un renvoi depuis
++ `doc/philosophy/capture-checking.md`.
+
+@ 0 2 0 09f18ea7d845b7fc1860f65ace511957
++ Terminé lorsque : `doc/standards/capabilities.md` existe, définit chaque étiquette que reconnaît le
++ recensement, et les sections de recettes de `rep/DECISIONS.md` y renvoient au lieu de les répéter.

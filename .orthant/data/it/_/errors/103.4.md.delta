@@ -1,0 +1,35 @@
+orthant 2 language
+
+% 0 1 0 0bd3753c9b4d1bec190ad08d4761f24a
+
+@ 0 1 0 185d5e67ffc825aa046925de0993c3f4
++ Sollevato quando un valore di autenticazione HTTP non è valido.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 0ab992e7e8b8be26076f4306238ae4d3
++ Telekinesis lancia questo errore quando il valore di un'intestazione `Authorization` (o simile)
++ non corrisponde alla sintassi dello schema atteso.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Messaggio di esempio
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1b34dbda6c2849881799c3104af2fd73
+
+% 1 1 0 1e5ef7c111823b4d0b92b0f03dbb1cc9
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 2 0 1114adad4c9ac14e00348a77e764ed99
++ Verificare che il valore corrisponda allo schema atteso (`Basic`, `Bearer`, ecc.) e sia
++ codificato correttamente.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 1c328bf15c9fc04b1261c9feb5027250
++ - Sorgente: `lib/telekinesis/src/core/telekinesis.Auth.scala`

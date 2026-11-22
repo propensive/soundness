@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 1 0 0eb888a7ed7e046d0ccf2a4c685a4521
++ # `↯/s.112.3` — Fehlende `Probate`-Instanz
+
+@ 0 2 0 0b2e676b3c422eae019ab6fa00d230b1
++ Wird zur Kompilierzeit vom Makro `rpc` von Obligatory ausgelöst, wenn keine kontextuelle
++ `Probate`-Instanz verfügbar ist.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 2 0 08002dc9b76921dc14fa8becdf59f4b8
++ Das Makro benötigt eine `Probate`, um Ressourcen zu verfolgen und aufzuräumen, die von der
++ RPC-Mechanik angelegt werden.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0a146d3d20e5df5817e17a244d5c18f7
+
+% 1 1 0 163403ecc173bffd1293527bbc2fcc3b
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 2 0 060a52ee90941e7e155077cc741d27f2
++ An der Aufrufstelle eine `Probate` in den Geltungsbereich bringen (z. B. über einen `Daemon` oder
++ einen ähnlichen Ressourcen-Geltungsbereich).
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 1b26732fe62cfa1207b80e721b9a052d
++ - Quelle: `lib/obligatory/src/json/obligatory.internal.scala`

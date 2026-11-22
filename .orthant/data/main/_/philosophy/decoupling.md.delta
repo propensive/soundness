@@ -1,0 +1,9 @@
+orthant 2 release
+
+@ 0 1 0 151361fc1ddb36fb189aac7175d9064b
++ in the [filesystem](/doc/soundness/modules/filesystem.md) API is defined in terms of them. The
+
+@ 0 3 0 10e8e072399a3b04160a453e7a6097d8
++ same shape gives [sockets](/doc/soundness/modules/sockets.md) a `SocketBackend`,
++ [compression](/doc/soundness/modules/compression.md) its per-platform DEFLATE engines, and
++ [images](/doc/soundness/modules/images.md) their codecs.

@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 10996649dbddf2770882afee00687cb5
++ # `↯/s.27.4` — O literal hexadecimal contém um caractere não hexadecimal
+
+@ 0 2 0 1fe3ff25ad820387149e028f64131adc
++ Lançado em tempo de compilação pela macro de literais `hex"…"` do Hypotenuse quando o corpo
++ contém um caractere que não é um dígito hexadecimal.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 1 0 12b9fb29622710eb18d5c63a5bc7da41
++ Literais hexadecimais admitem apenas `0`-`9`, `a`-`f` e `A`-`F`.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0df98ba25af089750f14d1e94dd0d6a8
+
+% 1 1 0 0c7c8b12931c8d6202a38f79ae84e51e
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 1 0 00bb0cd6d7952d951791c61388c34840
++ Remova ou corrija o caractere problemático.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 2 0 1f783763bc94d7c00f0bb1776327e25f
++ - Os outros erros de literais binários e hexadecimais: [Famílias](README.md#families)
++ - Código-fonte: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

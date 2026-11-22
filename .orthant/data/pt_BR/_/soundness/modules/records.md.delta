@@ -1,0 +1,389 @@
+orthant 2 language
+
+@ 0 1 0 1d840f45fbb16f031609c87d13146ca1
++ ## Registros
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 2 0 0b47deaceb5f5375094501120b62cb30
++ A forma de alguns dados é definida fora do programa: por uma tabela de banco de dados, um JSON
++ Schema ou um formato de configuração. Ainda assim, o programa deve ler seus campos com tipos
++ estáticos.
+
+@ 0 3 0 111b4b168ef19fe70fe4b225e7b74bec
++ Um `Record` é um valor cujos campos vêm de uma *especificação* externa desse tipo, que é lida
++ enquanto o código compila. Assim, `record.name` passa na verificação de tipos como `Text`,
++ `record.nope` não compila, e nenhuma classe é escrita à mão para espelhar o schema.
+
+@ 0 4 0 0eec04775ed0dca908ae485e6a0f0d21
++ Os *provedores* de [JSON](json.md#typed-records-from-a-schema), [XML](xml.md) e [TEL](tel.md)
++ são construídos sobre isso. Um JSON Schema, um XML Schema ou um documento de schema TEL produz
++ registros tipados. O mesmo faz o schema de resposta de uma operação, por meio de `record()` no
++ cliente [OpenAPI](openapi.md). Qualquer origem de schemas que um programa consiga ler em
++ [tempo de compilação] pode fazer o mesmo.
+
+@ 0 1 0 16916f4af379805c10863649483879a9
++ ### Sobre schemas externos
+
+@ 0 4 0 001b90fa898e50e41d1a04dcf678293b
++ Quando a forma oficial dos dados vive em outro lugar, uma case class escrita à mão é uma cópia,
++ e cópias divergem. O schema ganha um campo, a classe não, e a incompatibilidade aparece em
++ [tempo de execução]. A alternativa habitual é ler os campos dinamicamente, por string. Isso
++ abre mão da verificação por completo.
+
+@ 0 6 0 0af74a7015d4a5cb14fa18d6bc912bb1
++ Um `Record` evita as duas coisas. O schema é lido uma vez, enquanto o programa compila. Os
++ [tipos estruturais](https://docs.scala-lang.org/scala3/book/types-structural.html) do Scala
++ então constroem a partir dele a interface exata do registro, com cada campo no tipo que o
++ schema declara. O schema não pode divergir do código, porque os tipos no código *são* os do
++ schema. Isso é [segurança por construção](../../philosophy/safety-by-construction.md), sem
++ nenhuma classe para manter.
+
+@ 0 2 0 0cffae2607360ad60bcda2026686055f
++ Tudo vem do pacote `soundness`. Os outros imports escolhem uma codificação e uma
++ [estratégia](errors.md#choosing-a-strategy) para erros:
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 1 0 1de3c5e81966ed9a0a9a478f1ff2f2b8
++ ### Usando registros
+
+@ 0 4 0 045e17f26ec883ab1ceef8a3bbefc591
++ Um objeto provedor contém um schema. Este é um `Json.Provider`, construído a partir de um
++ documento JSON Schema. Em um programa real, ele é declarado em um arquivo próprio, pelo motivo
++ que a [ordem de compilação](#compilation-order) explica. Pelo mesmo motivo, os exemplos desta
++ página são verificados, mas não executados:
+
+% 2 1 0 1495e086766d02ac0e49c4cc565a1d96
+
+% 3 1 0 037cbf5a08061e54161d8eea8837b1fa
+
+% 4 1 0 1bf1a6d1e02507bb143060564250fc6d
+
+% 0 1 0 0a87af4d0ec5fbda119ab390fdcbe436
+
+% 0 1 0 10ba014d2254dcd3076d9a543f8c2249
+
+% 0 1 0 168ff146ffda150b0e476e586aafc1e1
+
+% 0 1 0 09f81909fffbe8de1292b168fb564187
+
+% 0 1 0 1362070d19456a6d1ff95300d33f9885
+
+% 0 1 0 1801801a4ba865a909d63b9099a9992b
+
+% 0 1 0 1bc5bcc4ed89e3c3023374c5cfcb26fa
+
+% 0 1 0 0fc9cff73f111a0c12cc06307ef02288
+
+% 0 1 0 0c77b11fd8ee05fc0bb832a353adbbc7
+
+% 0 1 0 149015473f8af5b818332c25647b5a7d
+
+% 0 1 0 1a255adce984755704338ad3cff63d03
+
+% 0 1 0 15b0a682f57e42d110c3ee2a34fe3242
+
+% 0 1 0 1d086cabb9160ecc000956b4641e580d
+
+% 0 1 0 0be86f8d69ffc11606058c9696122812
+
+% 0 1 0 198a6ee6c6d76ce702d2e920fb535def
+
+% 0 1 0 0fc0f10454a7b6240d1b534d7132a368
+
+% 0 1 0 13b304132bf680561a0826cc1dc574d1
+
+% 1 1 0 16359d219418402c0d5966083d89828b
+
+@ 0 3 0 1a431015de2f42aa1b3db70718ab4057
++ O método `record` do provedor transforma dados brutos em um registro tipado. Cada campo tem o
++ tipo que o schema lhe dá. `name` é uma string no schema, então é um `Text`. `weight` é um
++ número, então é um `Double`. O schema não exige `age`, então ele é um
+
+% 0 1 0 0381810d063407f51fccad7c65227580
+
+% 2 1 0 112fa67ece34020f1a1a758111efd135
+
+% 3 1 0 00f8569c1c4f2f8d1b3af9136f4c5a1e
+
+% 4 1 0 0bc2fa5a9112f36e1f72bf4421b4c700
+
+% 0 1 0 108651c2c97f7f1d0ee01c648046e110
+
+% 0 1 0 1624c445b5cfbd1714b78624b2dece95
+
+% 0 1 0 05099aaa0b26d7820d459bffbf69c43d
+
+% 0 1 0 1654877f489d45260b574b5c5821e7f7
+
+% 1 1 0 092d2da64375bcb01a4984954e2e4d54
+
+@ 0 1 0 1cb8ac1eeedacbd51defa056f0cdf47e
++ O schema não tem nenhum campo chamado `nope`, então `record.nope` não compila.
+
+@ 0 3 0 0d7805b9e8231baf023e636ac2a1d6cd
++ Um objeto aninhado se torna um registro aninhado, e um array se torna uma lista. Todo acesso é
++ verificado contra a especificação. Uma classe escrita à mão daria a mesma garantia, mas não há
++ classe nenhuma.
+
+@ 0 1 0 1297ee29ce312e180c580059c8012a89
++ ### Tuplas em vez de registros
+
+@ 0 3 0 17b87d2b6620cc77109a5c013c523088
++ O mesmo provedor pode produzir uma
++ [tupla nomeada](https://docs.scala-lang.org/scala3/reference/other-new-features/named-tuples.html)
++ em vez de um registro, por meio de `tuple`, o gêmeo de `record`.
+
+@ 0 4 0 0efd3f1eba8e9d4c1280cd02c96a30a0
++ Para o schema acima, `Catalogue.tuple(input)` tem o tipo
++ `(name: Text, age: Optional[Int], children: List[(weight: Double)])`. Ela tem um elemento para
++ cada campo, nomeado como o schema o nomeia, na ordem do schema. Objetos aninhados se tornam
++ tuplas nomeadas aninhadas, e arrays se tornam listas delas.
+
+@ 0 2 0 0a42c18029eebbb50ca44ce744c50d3b
++ Uma tupla nomeada é lida por nome, como um registro. Ela também é uma tupla comum, então é
++ desmontada por posição e se converte em sua forma sem nomes:
+
+% 2 1 0 014cf7d06a18e04407802a815ae4df97
+
+% 3 1 0 0fdfb4137ff3146a1ac374e488d30375
+
+% 4 1 0 1439dc20721d88771fce1539b5d99b5c
+
+% 0 1 0 1f6e4dc25c4c376c0626f81f48ac2e29
+
+% 0 1 0 19f05445560f6b0d13dab74dc7bc04e6
+
+% 0 1 0 0ca1c0cc2f3da06409d6932376f118f5
+
+% 0 1 0 02722cb3b490be451ca0580240fb25f8
+
+% 1 1 0 032553bf6fb3351f110fed15570d48d1
+
+@ 0 1 0 0ac4dc1592e56b6f111ca590978a820e
++ #### Ansioso e preguiçoso
+
+@ 0 1 0 1e696f22220149510810c11e5983c33e
++ As duas formas diferem em *quando* os dados são lidos.
+
+@ 0 3 0 1352b3a18fa6a8f4062beddb32a145b5
++ Um registro é preguiçoso. Ele mantém os dados brutos, e cada acesso lê e converte seu campo de
++ novo. Um campo malformado só é notado quando esse campo é lido, e um campo lido duas vezes é
++ convertido duas vezes.
+
+@ 0 3 0 17830e587ee7be7d08b53c8597d57aa8
++ Uma tupla é ansiosa. Todo campo é lido uma vez, quando a tupla é construída, e a tupla mantém
++ os valores convertidos. Um campo malformado faz falhar a construção da tupla, quer o programa
++ chegue a lê-lo, quer não.
+
+@ 0 4 0 0274cc60b41412d70aea30266f495bc4
++ Isso muda os tipos dos campos. A leitura de qualquer campo pode falhar: um valor obrigatório
++ pode estar ausente, um valor pode ser da categoria errada ou pode violar uma restrição do
++ schema. Ela falha com o próprio erro da especificação, como `Json.Provider.Error`, por meio da
++ [tática] do código que a lê.
+
+@ 0 4 0 12647dc8cc3fc6ff101ea0a1dadcd658
++ Em um registro, um campo tem o tipo `Record.Field[Int, Json.Provider.Error]`. Isso é uma função
++ de contexto sobre a tática, aplicada onde quer que o campo seja selecionado, então cada acesso
++ precisa de um handler no escopo. Em uma tupla, uma falha só pode acontecer durante a
++ construção. O tipo do elemento é simplesmente `Int`, e o handler deve estar no escopo onde a
++ tupla é construída.
+
+@ 0 4 0 0ccdeb81c82052fb08c985a0b3632b6e
++ Como toda falha passa pela tática de quem chama, quem lê escolhe como lidar com ela. Um campo
++ pode ser envolvido em `attempt` ou `recover`. Um registro inteiro pode ser lido com `validate`
++ e `track`, com uma `venture` para cada campo, que reúne todos os problemas de um documento e os
++ informa juntos. [Erros](errors.md) descreve essas operações.
+
+@ 0 1 0 154878b7202306cc0991d8a35db4942f
++ Em resumo:
+
+% 2 1 0 0a2574fa96d0527e1c294b140e771c53
+
+@ 0 8 0 0f3fd976e40135200742c8dc746a931a
++ column  Aspecto
++ column  Registro
++ column  Tupla
++ row  Os dados são lidos  a cada acesso a um campo  uma vez, quando a tupla é construída
++ row  Um campo malformado falha  quando é acessado  a construção
++ row  Um campo de tipo integer no schema tem o tipo  `Record.Field[Int, Json.Provider.Error]`  `Int`
++ row  A `Tactic` deve estar no escopo  onde quer que um campo seja selecionado  onde a tupla é construída
++ row  Desestruturação por posição  não  sim
+
+% 1 1 0 0890aedd503880fc1ecf1e4ed13528da
+
+@ 0 1 0 1d1044c1c644821f051efb9aa4f52670
++ ### Definindo uma especificação
+
+@ 0 3 0 0bd933504291edf3031de0abec2320cb
++ Uma nova origem de schemas se conecta implementando `Specification`. Uma implementação assim é
++ um *provedor*. A origem pode ser as definições de tabelas de um banco de dados, um XML Schema
++ ou um formato proprietário.
+
+@ 0 3 0 05be6f171d94ee541d3e3e583564c7d0
++ Um provedor fornece os nomes e os tipos dos campos como uma lista ordenada de valores `Member`.
++ Os elementos de uma tupla seguem essa ordem. Ele também fornece operações primitivas sobre os
++ dados subjacentes:
+
+% 2 1 0 067ef579623e5b5f1da8b1743822c627
+
+@ 0 12 0 07aee46ec79ab2ec180a62c6b2589448
++ column  Gancho
++ column  Padrão
++ column  Fornece
++ row  `access`  nenhum: deve ser implementado  o valor de um campo nomeado, obtido de um valor
++ row  `absent`  nenhum: deve ser implementado  se um valor obtido representa um campo ausente
++ row  `repeated`  nenhum: deve ser implementado  todos os valores de um campo que ocorre muitas vezes
++ row  `required`  retorna o valor tal como está  o valor de um campo lido sob `One`; sobrescrito para falhar quando está ausente
++ row  `entries`  falha  os valores de um campo com chaves, por nome
++ row  `kind`  falha  a categoria de um valor, pela qual uma união escolhe sua alternativa
++ row  `elements`  falha  os elementos de um valor que é ele próprio uma sequência
++ row  `pairs`  falha  os valores nomeados de um valor que é ele próprio um dicionário
++ row  `unoffered`  falha  a falha para um valor de uma categoria que nenhuma alternativa de uma união oferece
+
+% 1 1 0 0c4d4bac0c82dae001c2031378c6ef0d
+
+@ 0 4 0 097693ffac2e622f03d09fbdb911c4c8
++ Os valores de um campo repetido são os elementos de um array JSON, por exemplo. Em um formato
++ que repete um campo, eles são todos os irmãos com a palavra-chave do campo. Um formato que tem
++ uniões ou dicionários fornece `entries`, `kind`, `elements` e `pairs`. Um que não tem mantém os
++ padrões.
+
+@ 0 3 0 10ec7fb16861e7240547d552e5a4c016
++ Um `Member` é uma de três coisas. Um `Value` nomeia o tipo escalar que o schema declarou. Um
++ `Record` contém outros membros. Uma `Union` contém alternativas, cada uma identificada pela
++ *categoria* de valor que a seleciona. Todo membro tem uma `Multiplicity`:
+
+% 2 1 0 12d3d2591838a7c8060e99930ecb4fb6
+
+@ 0 8 0 0b8f7f45e8642f4808b29825da684b87
++ column  Multiplicidade
++ column  É lido como
++ column  Por meio de
++ row  `One`  o valor  `access`, depois `required`
++ row  `Optional`  um `Optional`, `Unset` onde `absent`  `access` e `absent`
++ row  `Many`  uma `List`  `repeated`
++ row  `Keyed`  um `Map[Text, _]`  `entries`
++ row  `Series`  a coleção própria do provedor  `series`
+
+% 1 1 0 11ee20ecc155cca907ecce0332878653
+
+@ 0 3 0 1cd768d1dbd54a87179eed47e14380c2
++ O provedor não diz nada além disso sobre opcionalidade ou repetição. A própria macro aplica a
++ multiplicidade. Uma alternativa de uma união pode ter a sua própria, então uma união com uma
++ única alternativa aninha uma multiplicidade dentro de outra.
+
+@ 0 3 0 1d41592a2a0146d01a70b98397cbac41
++ Um provedor nomeia o erro com que seus campos falham como seu tipo `Failure`. As primitivas que
++ podem falhar são `access`, `repeated`, `required`, `entries`, `elements`, `pairs` e
++ `unoffered`, e cada uma recebe a tática para esse erro.
+
+@ 0 3 0 14c86b782bee841d103ff66d13abd57a
++ Uma [classe de tipos] completa o quadro. Há uma instância de `Intensional` para cada nome de
++ tipo escalar que o schema pode declarar. Ela diz em qual tipo Scala o nome se torna e como ler
++ um único valor dele. Há três formas de criar uma:
+
+% 2 1 0 19e67c7afbdc077a1725b97f4a038f86
+
+@ 0 5 0 1fb663572e8024b4120bf6991064f336
++ column  Construtor
++ column  A partir de
++ row  `Intensional(accessor)`  uma função do valor
++ row  `Intensional.parametric`  uma função do valor e dos parâmetros do membro, para um tipo como um inteiro limitado
++ row  `Intensional.Reading`  uma função do valor, de seus parâmetros e de uma `Tactic`, para uma leitura que pode falhar
+
+% 1 1 0 1dcbc75308d55a5c03efac495ee4ac66
+
+@ 0 4 0 14be4780ec4863b10789750828d9b1d4
++ Uma leitura pode falhar: o valor pode ser da categoria errada, ou estar fora de seus limites,
++ ou ser uma string que não casa com seu padrão. Uma leitura assim é um `Intensional.Fallible`,
++ cujo `transform` recebe a tática para seu `Error`. Esse `Error` deve ser o `Failure` do
++ provedor, ou um subtipo dele, para que todo campo falhe de uma única forma. Uma instância que
++ lança qualquer outra coisa é um erro de compilação.
+
+@ 0 3 0 194f71fa8cc7dd2d1467232435ceae45
++ As instâncias ficam no objeto companheiro do provedor, então são encontradas sem import. Um
++ provedor sobre XML, por exemplo, obteria um elemento filho por seu rótulo, consideraria um campo
++ ausente onde não existe tal filho e repetiria sobre todo filho com o rótulo.
+
+@ 0 8 0 1c99d68021f7e6be0f4e30746f1b30dd
++ Algumas origens não estão nos valores lidos a partir delas. Um registro sobre um arquivo
++ mapeado em memória guarda apenas onde procurar, e o próprio arquivo fica aberto por um tempo e
++ depois é fechado. Um provedor para uma origem assim nomeia um `Context` e cria seus registros
++ com `Specification.recordWith`, informando o tipo do contexto em que cada um deve ser lido. Um
++ membro de um registro assim só é lido onde um valor desse tipo é [given], junto com sua tática,
++ então um registro não pode ser lido depois que sua origem deixou de existir, e o tipo pode dizer
++ de qual de várias origens um registro veio. Os métodos `accessWith`, `repeatedWith` e
++ `entriesWith` do provedor recebem o contexto e fazem as vezes de `access`, `repeated` e
++ `entries`.
+
+@ 0 4 0 13ba4505815484a517b75d57c5da1b7c
++ Uma `Series` também serve a um provedor assim. Ela é lida como o tipo `Series` do provedor, uma
++ coleção própria dele, que `series` cria a partir de uma função que lê um elemento. A coleção lê
++ um elemento quando um lhe é pedido, no contexto que lhe é dado nesse momento, então um campo de
++ cem mil registros não custa nada até que um deles seja consultado.
+
+@ 0 4 0 0358996d140f37351c43a6458cba92dd
++ Todo objeto de especificação recebe `record` e `tuple` do próprio `Specification`. Nada precisa
++ ser declarado no objeto além de seu schema. Os dois métodos são `transparent inline`. Eles são
++ expandidos onde são chamados, com o objeto de especificação conhecido, para que a macro possa
++ encontrar esse objeto por seu tipo e avaliar seus `fields`.
+
+@ 0 2 0 04b58d986e6bd4ab006ddd86147446fe
++ O tipo de retorno declarado de `record` é `Record`. O que uma chamada de fato tem é um
++ *refinamento estrutural* dele. Para um schema de três campos, é um tipo como este:
+
+% 2 1 0 1c2568f587c9170719fc9b1ad125d6c9
+
+% 3 1 0 1ed21e237cc24fd90e523a12648f71a6
+
+% 4 1 0 0c3816223885b26d1a0c50a562b38883
+
+% 0 1 0 17f2029924debc9c1c0d0353f75c9da4
+
+% 1 1 0 153542cc04765f8d1b04d96f03859948
+
+@ 0 1 0 04a28d1a5cd6e69701578fcf5297c03e
++ Só um método transparente permite que esse tipo mais preciso chegue ao lugar onde é chamado.
+
+@ 0 1 0 0b1a118ce0e154e600cde691e54a3410
++ ### Ordem de compilação
+
+@ 0 1 0 1d5f63fe9441d1ca0b48a50e4f874434
++ O objeto de schema deve estar em um *arquivo diferente* do código que chama seu método
++ `record`.
+
+@ 0 5 0 1a53a2db9e2eca910df7607bfd39fb3c
++ A macro executa enquanto o código que chama compila. Ela avalia o objeto de schema como um
++ valor de tempo de execução, lendo o documento JSON Schema ou consultando o banco de dados.
++ Portanto, esse objeto já deve estar compilado. O Scala garante essa ordem para uma macro e seu
++ uso, desde que estejam em arquivos separados sem ciclo entre eles. Se estiverem em um único
++ arquivo, o schema ainda não está disponível quando a macro precisa dele.
+
+@ 0 2 0 19d654797f5c3ab313b3010bf3ac380f
++ É também isso que faz do padrão um provedor de tipos, no sentido do F#. O compilador consulta o
++ schema oficial, e os tipos contra os quais o programa é verificado são construídos a partir
++ dele.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 9 0 006b2353a026cc6d0aca7d6df2737831
++ - [JSON](json.md#typed-records-from-a-schema), [XML](xml.md) e [TEL](tel.md) descrevem, cada
++   um, o provedor de sua própria linguagem de schema.
++ - [OpenAPI](openapi.md) constrói registros a partir dos schemas de resposta de uma API.
++ - [Erros](errors.md) descreve `attempt`, `recover`, `validate` e `track`, que lidam com a falha
++   de um campo.
++ - [Valores opcionais](optional-values.md) descreve o tipo de um campo que o schema não exige.
++ - [Metaprogramação](metaprogramming.md) descreve as macros das quais um provedor depende.
++ - [Catálogos](catalogs.md), [bancos de dados](database.md) e [tabelas](tables.md) trabalham com os campos de um registro por nome.

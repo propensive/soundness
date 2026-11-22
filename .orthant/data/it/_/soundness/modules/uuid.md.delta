@@ -1,0 +1,220 @@
+orthant 2 language
+
+@ 0 1 0 1ca2aa4a69ea5c811cdb43d6c312cdcb
++ ## UUID
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 4 0 0361c650e8e048730e21a0fcbcf68b28
++ Un [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) è un identificatore a 128
++ bit, abbastanza unico da poter essere assegnato senza coordinamento. È rappresentato come un valore
++ `Uuid`. Se ne genera uno nuovo, uno noto si scrive come letterale controllato dal compilatore, e
++ uno si analizza da un testo con un errore tipizzato in caso di fallimento. I suoi byte e i suoi bit
++ sono disponibili quando servono.
+
+@ 0 1 0 0bf75eecdf0941960674259b18a0686d
++ ### Sugli UUID
+
+@ 0 4 0 1686ec0048fd708f0f5545a346ae6ff8
++ Un UUID viene quasi sempre trasportato come stringa, e una stringa è una dimora inaffidabile per
++ esso. Un letterale con una cifra sbagliata, o un valore che non è affatto un UUID, non si può
++ distinguere da uno valido finché qualcosa non lo analizza e fallisce. Niente nel tipo indica una
++ particolare stringa come identificatore ben formato.
+
+@ 0 4 0 0f9446a40ad6ba251be091a59fd31bac
++ Un `Uuid` è un valore che si sa essere ben formato. Un letterale viene validato a
++ [tempo di compilazione]. Il parsing a [runtime] segnala un `Uuid.Error` tipizzato, e non
++ restituisce mai un valore rotto. Un UUID che non si può costruire malformato è la
++ [sicurezza per costruzione](../../philosophy/safety-by-construction.md) nella sua forma più
++ semplice.
+
+@ 0 2 0 0dab7bfd8ab0ef2001c3e80a89f0c88d
++ Tutto proviene dal package `soundness`. Il secondo import permette agli esempi di stampare i loro
++ risultati:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1353f137610bddec0f806bc903166d61
++ Le operazioni, ciascuna trattata più avanti:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 10 0 07e786bb68fed6b81e1e9d339c47717e
++ column  Operazione
++ column  Fornisce
++ row  `Uuid()`  un nuovo identificatore casuale
++ row  `uuid"…"`  un identificatore letterale, controllato mentre il codice compila
++ row  `Uuid.parse(text)`  l'identificatore, oppure un `Uuid.Error` sollevato
++ row  `Uuid.extract(text)`  un identificatore `Optional`; `Uuid(id)` è lo stesso come pattern
++ row  `id.text`  il testo canonico
++ row  `id.in[Data]`  i sedici byte, prima la metà più significativa
++ row  `id.msb`, `id.lsb`  i 64 bit più e meno significativi
++ row  `a ^ b`, `~a`  l'or esclusivo di due identificatori, e l'inverso di uno
+
+% 1 1 0 1c787982f4e04b2b074825fde8357a24
+
+@ 0 1 0 0f8db4e11cc07a061404fd2f9603f98a
++ ### Generazione
+
+@ 0 1 0 194df59fae3448d20d2a13bf7f773b62
++ `Uuid()` produce un nuovo identificatore casuale, diverso ogni volta:
+
+% 2 1 0 06c25f6a28a1ec07004078b9b81316b9
+
+% 0 1 0 113f7a54b0908329198c04c8de3c15fc
+
+% 1 1 0 1e14a4dcfbd28d901e6fc50038a09e81
+
+@ 0 1 0 037e1aac6557139f12ad9e7b4e2588fc
++ ### Letterali
+
+@ 0 1 0 002ad8150ceb7f5d11617cb187506fd7
++ L'[interpolatore] `uuid"…"` scrive un identificatore noto, e lo controlla a tempo di compilazione:
+
+% 2 1 0 0fd35630dbf2b2671783d7e76559ba14
+
+% 0 1 0 03577244cb219eca1ea971aad6ed3ccc
+
+% 1 1 0 1a9dab4e2220925c07007dadf6601088
+
+@ 0 1 0 11bae98385b70012154f659171ab8de6
++ Un letterale malformato non compila:
+
+% 2 1 0 0abd01f219589885189fde94c26f9ac9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 03e66bdadd3aa623020411bb8102b64b
+
+% 1 1 0 00cae8a2340791d00acb904383bc2ee5
+
+% 0 1 0 0be7689b9275055a16fd7074497e2d45
+
+@ 0 2 0 1c82cde8c9e8c5e615cf2d0ee8d5b87f
++ Un testo che arriva a runtime potrebbe non essere un UUID, quindi `Uuid.parse` solleva un
++ `Uuid.Error` in caso di fallimento, che la [strategia] nell'ambito gestisce:
+
+% 2 1 0 12649924952f98561eba830bda750666
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+% 3 1 0 042e73bdc0550b5d19298413dd7d0b7b
+
+% 4 1 0 19c9b9965081e8b50118a06e4b3ee733
+
+% 5 1 0 025e7ee7206dd45e16ff93ea93595efb
+
+% 0 1 0 14127deeaa2b310609d83c168a57ed78
+
+% 1 1 0 008777c352b95942081d475a5b06bbaf
+
+% 3 1 0 19e04bfd3328682811e8d082605665a7
+
+% 4 1 0 0bb7f35259e4768e032d138d68d0a04b
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 0c06cc5e946841490219e070b540bd6d
+
+% 1 1 0 1312eb5c2832149900f7bea160f581d1
+
+@ 0 2 0 1cb3ef36456b87af0a0461c7e2150458
++ `Uuid.extract` fornisce invece un valore [opzionale](optional-values.md), e lo stesso estrattore
++ funziona in un pattern:
+
+% 2 1 0 1d5640210d0f0e350a94ee8c2eec4cf7
+
+% 0 1 0 0b84fa381db920de1ed9bdc54a22ef97
+
+% 0 1 0 18563c5bfcc0b1371a5a5540485bbf8a
+
+% 0 1 0 048fbcb9d6cd413e0bc8afadacbaae9b
+
+% 1 1 0 1abba4f153cba2f716563a644562d957
+
+% 3 1 0 04e83c880bedbfed125056d6c8bb13f4
+
+% 4 1 0 06dae8eed4a587f80d235b68c34d9cb5
+
+% 5 1 0 1a122f2f325eb599050a8812f42131b7
+
+% 0 1 0 1b1d49b953dfaa87172350d54f3a5657
+
+% 0 1 0 0e25ec27f4e5d3021500922a8735d80e
+
+% 0 1 0 1352447760ad0b4b0a8e53421ef6e7da
+
+% 1 1 0 12cfeefbd058a0db0452d6f0c698a681
+
+@ 0 3 0 0002dc90792e5af31126c2d09ab0113e
++ `as[Uuid]` [decodifica](decoding.md#decoding-a-value) il testo nello stesso modo, quindi un campo
++ `Uuid` in una case class si legge da [JSON](json.md) o da un
++ [parametro da riga di comando](cli.md) senza altro codice.
+
+@ 0 1 0 04664ceaea24118813e376f6e7be3751
++ ### Resa e byte
+
+@ 0 2 0 0894892c8d2a2d9e0bcc4f9aa2827cb8
++ `text` fornisce il testo canonico di un UUID. Sono disponibili anche i suoi sedici byte e le sue
++ due metà da 64 bit:
+
+% 2 1 0 04d5e8bf022f7c3414b49641aa753361
+
+% 3 1 0 09e80e61f63de58011986beca3bcdccc
+
+% 4 1 0 00ab9c90b79785d109a745484d63a40a
+
+% 0 1 0 161c9229850da6b11808285754db3d0e
+
+% 0 1 0 0b0f69fe01c7b9ef1ac04acc180576c6
+
+% 0 1 0 0a725a171cbedffc1669c637da80a46d
+
+% 0 1 0 048d643db80e9d6d14e72a282470a233
+
+% 1 1 0 005f98131fa1c757168dba87cfc99599
+
+@ 0 1 0 1f541ff99b1bdf5c1affc799c992696d
++ ### Combinazione
+
+@ 0 3 0 1b071ecf0380df820a89d9f8366fb8bf
++ Due identificatori si combinano con l'or esclusivo, e uno si inverte con `~`. Servono per le
++ occasioni in cui un UUID viene trattato come il pattern di bit che è, come derivare un
++ identificatore stabile da altri due:
+
+% 2 1 0 004c027b15ede2f8071e0d199f204e35
+
+% 0 1 0 03e6c22a1e253895122ddcb9ac22245e
+
+% 1 1 0 1b67859fd542cac90bb2a035ffafb1b9
+
+% 3 1 0 10161119cca35c1d0d81f3fd3b832911
+
+% 4 1 0 118d7d800139c72619ea4e05ebff2119
+
+% 5 1 0 0b62f8894488d927092f798e8850e17b
+
+% 0 1 0 074b76f3c82cba6e1caecaf448012daa
+
+% 0 1 0 12cdc1f710e07bdd1c13eb79d80ec710
+
+% 1 1 0 14383155ef76779f06fb9944e0887eeb
+
+@ 0 2 0 07b99617e1a73d651c863a07c5062acc
++ L'[hashing](hashing.md) deriva un identificatore dal contenuto, e [Casualità](randomness.md)
++ controlla la sorgente da cui attinge `Uuid()`.

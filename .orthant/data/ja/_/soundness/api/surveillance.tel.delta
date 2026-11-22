@@ -1,0 +1,452 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0cec90b7d674f3271e8749aa998f2007
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 02195584dbd3f15d0f09d0f205f9badf
++ info   ディレクトリとファイルの変更を、スコープ付きの型付きイベントのストリームとして監視する
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1ee710e1ead1bc5319e758a341a6a33f
++     _Surveillance_ はファイルシステムを監視する。
++     パス、またはパスのコレクションを `Watch` として*開く*と、ブロックの中で `Watch.Handle` が、起きた変更（ファイルの作成、変更、削除、ディレクトリの作成）を `Watch.Event` の遅延 `Chain` として、あるいはツリーがしばらく静かになった後に `Watch.Batch` にまとめて生み出す。
++     オペレーティングシステムへの登録はちょうどブロックの間だけ続き、キャプチャ検査がハンドルとそのストリームをブロックの中に閉じ込める。
+
+% 2 1 0 19e4fe697eee4c04071f3ac244df9a7c
+
+% 3 1 0 1dd8b6e02b28c817193abf3a06741b08
+
+% 4 1 0 0b6e525faaea92591b5f262b57b3d780
+
+% 5 1 0 0dd7f231ef971f2e1f22b5504e07ae08
+
+% 6 1 0 0a8e76785e7ef6bf1ed0f9ffbef164de
+
+% 0 1 0 1ba47d70455b82081d6c1d958e9c2376
+
+% 1 1 0 0900a2265c4a843e011512393b059fc3
+
+% 2 1 0 0b11e91e5fd1dfc2190e626c461f5436
+
+% 4 1 0 0866633c31cdcd740a20c4f0dfbcf334
+
+% 0 1 0 0a04c15b6b6b12f3197202aea2435fe1
+
+% 0 1 0 14e900dcabf9791b0d4f312cf17ed9fe
+
+% 0 1 0 1cbbbffc9a109c771c27a04eab9757ed
+
+% 0 1 0 1f1ff5fec060a3480705c707a18d5d67
+
+% 0 1 0 0cfe35b29a17aa33021840f75b365879
+
+% 0 1 0 0605e5c3918a344d06f80a4418b6815f
+
+% 1 1 0 0202d68fa0be0eab06d1f66f60e56257
+
+@ 0 5 0 0523fbfba1a858be0e52d040ca8bd912
++     変更の検出は `Watcher` バックエンドに委ねられる。
++     インポートがなければ `Watcher.default` が適用される。これはオペレーティングシステム自身の通知サービス（`java.nio.file.WatchService`）の上に作られた `JavaBaseWatcher` である。
++     それが使えないか信頼できない場所（一部のネットワークファイルシステムやコンテナーのファイルシステム）では、`watchers.polling(interval)` で作る `PollingWatcher` が代わりに各ディレクトリのスナップショットの差分を取る。これはローカルな given として束縛して選ぶ。
+
+@ 0 3 0 0134fd908841c7de1ca0ff3928f3000e
++     監視は、ディレクトリのサブツリー全体ではなく、その直下のエントリーを対象とする。ファイルを指すパスはその親ディレクトリを監視し、その一つの名前に絞り込む。
++     一緒に開いた複数のパスは一つのイベントストリームを共有する。
+
+@ 0 4 0 0f71b27d6d0b2a2202fafed0eed7f652
++     ライブラリには JVM 向けの一つのソースセット `surveillance.core` があり、parasite の監督付きタスクと turbulence の `Relay` の上に作られている。
++     すべては `soundness` アンブレラにエクスポートされ、`watchers` オブジェクトはパッケージとして写される。`import watchers.*` は given をインポートしないので、その `javaBaseWatcher` の given は名前でインポートする。
+
+% 0 1 0 1fbee5f213f4d1fe081534fcf5d8afae
+
+% 0 1 0 06f08944f4f7469904d6dfee1dc6b36b
+
+% 0 1 0 15522c39789a5bf60860023ec1d1bedd
+
+% 0 1 0 0737af66c950417e1a9a75b522a7ca77
+
+@ 0 1 0 059481c7daae3a6313a97724b8d0db4e
++ entry .Watch   監視するパスの登録、そのイベント、そして `open[Watch]` の形式
+
+% 1 1 0 0226f03064affea91fd75f43a7c10b4c
+
+@ 0 5 0 0ea0762f1f160d500693f3d1f4dd5ec3
++       `Watch` は、パスを監視するために開くときの形式であり、有効な登録の型である。
++       ふつうの入口は `path.open[Watch]() { watcher ?=> … }` であり、`.openable`（パスのコレクションなら `.allOpenable`）を通じて、パスを登録し、`Watch.Handle` をブロックに貸し出し、ブロックがどう終わっても終わったときに登録を解除する。
+
+% 2 1 0 0b10f6816318b6951efdcb4cae814190
+
+% 3 1 0 11fe5550dd95af671fa0237a1df9ec61
+
+% 4 1 0 18067d56d85bff7404e9157f837924fb
+
+% 5 1 0 12f0f30b750e68180a48f63051644fb6
+
+% 6 1 0 0662418e09b06159148156743ecc3fd3
+
+% 0 1 0 097beb2d551a40861eb78cf8410cfc61
+
+% 1 1 0 1ca4051cbfa31eb90edc8424bc1d7df0
+
+% 2 1 0 0f843481ddf7bfb51610b28f4d439bd2
+
+% 0 1 0 0f260a972238d9a80f3ba7ec91cc7aa9
+
+% 0 1 0 105557c15c5f7df51bc55e423196b996
+
+% 0 1 0 00c02426123d7cbe04e2d04de6291257
+
+% 0 1 0 0328b3aae07ae1d41ae8dcd661649d5c
+
+% 1 1 0 1b4065caeb67b27b0a87da545c57c17a
+
+@ 0 5 0 05d095af2de4f8f91096d5c43ef5a9ef
++       `Watch` の値は、どのスコープの外でも `Watch(paths)` で直接作れる。その場合は、登録をキャンセルして `#stream` を終了させるために `#unregister` を呼ばなければならず、そうしなければ `#stream` は終わらない。
++       監視は純粋な観察なので、ハンドルのどの操作も権限で制限されない。`open` に渡すモードは無関係であり、既定の `Read` がそれを最もよく表す。
++       フラグはない。
+
+@ 0 2 0 1ae9dd7987a697b0016d15d308f27480
++       パスが存在しない場合、ディレクトリでない場合、このユーザーが監視できない場合、オペレーティングシステムの監視数の上限を超える場合に、登録は `Watch.Error` を発生させる。
+
+% 0 1 0 1d9c0f8cf350dba70b5f6ef80fd671fd
+
+% 0 1 0 0942472d38af86f11ec5265b46eb5df7
+
+% 0 1 0 13151c5f897a71ea1004d94940b10ae7
+
+@ 0 23 0 101a45138aa53f9618ecec5b399071fc
++   entry .apply   任意のパスのコレクションをスコープ内の `Watcher` に登録し、有効な `Watch` を返す
++       `Watch(paths)` は、`Abstractable across Paths to Text` であるパスの値の任意の `Traversable` なコレクション（Soundness の `List(…)` や標準ライブラリの `Iterable`）を取り、`Watcher` と `Tactic[Watch.Error]` を必要とする。
++       各ディレクトリは全体が監視され、それ以外の各パスはその親ディレクトリを監視して自身の名前に絞り込み、同じディレクトリのパスは一つの登録を共有する。
++       結果はウォッチャーを捕捉し、`Watch#unregister` で登録を解除しなければならない。`open[Watch]` はそれを自ら行う。
++   entry .openable   一つのパスを `Watch` として開く：`path.open[Watch]() { watcher ?=> … }`
++       `Abstractable across Paths to Text` である任意のパスの型に対する `Openable` の given で、コンパニオンにあるので暗黙のスコープにある。
++       `Watcher`（既定のもので足りる）と `Tactic[Watch.Error]` を必要とし、ブロックに `Watch.Handle` を貸し出し、ブロックが終わると登録を解除する。
++   entry .allOpenable   パスのコレクションを `Watch` として開き、そのすべてに一つのイベントストリームを与える
++       パスの任意の `Iterable` に対する `Openable` の given で、`List(a, b).open[Watch]() { … }` と書く。
++       `Openable` の `Self` は非変にマッチされるので、具体的なコレクションの型でパラメーター化されている。
++       `Watcher` と `Tactic[Watch.Error]` を必要とする。
++   entry .Openable   `.openable` の背後にある `Openable` インスタンスを、名前付きのクラスとしたもの
++       フラグがなく（`Operand` は `Nothing`）、ハンドルが `Watch.Handle` である `path is Openable in Watch`。
++       無名のインスタンスは推論された `Result` の中でハンドルのケイパビリティの型をフレッシュにしてしまうので、無名ではなく名前を付けている。
++   entry .AllOpenable   `.allOpenable` の背後にある、パスのコレクションに対する `Openable` インスタンス
++       `Watch.Openable` と同じで、`Self` がパスのコレクションである。
++   entry .Handle   `open[Watch]` ブロックが受け取るスコープ付きのケイパビリティで、監視のストリームを持つ
+
+% 1 1 0 1ee7668a7222111d132e89f897a675c3
+
+@ 0 4 0 0134b516294619eb0ed8d0e19e600f91
++         `path.open[Watch]()` が貸し出すハンドル。
++         ブロックに閉じ込められた排他的なケイパビリティなので、それもそこから導いたストリームも登録より長く生き延びることはできない。
++         ブロックの中ではそれがコンテキストパラメーターであり、トップレベルの `watch` がそれを名前で与える。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 1e82e1081086f5830ac1bff309a1334e
+
+% 2 1 0 16b3543e7f032ae81c6bf699ed4343a9
+
+% 0 1 0 1f98cbc7a3762ff907317e8e4d607571
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1fc240acafda73dd16e0bbcd13b68942
+
+% 0 1 0 14be27296813c09f01fd32982431482b
+
+% 0 1 0 0956572607c4da38011e2ebe1d00f2bd
+
+% 0 1 0 19c658cdfc89d55407aab23dd4284c29
+
+% 0 1 0 0206b6cb3861a8221ac433b3f70ca798
+
+% 1 1 0 0ff69adcca9f0d7101b984b8b125656b
+
+@ 0 9 0 01313af621ca3d241ab4d23602df02ea
++     entry #stream   すべてのイベントを、届いたときに一つずつ
++         次のイベントを待ってブロックし、登録がキャンセルされると終わる `Watch.Event` の遅延 `Chain`。
++         これはイベントキューを単一の所有者が排出するものであり、二つの走査は同じイベントを奪い合う。
++     entry #batches   ツリーがしばらく静かになるたびに一つの `Watch.Batch` にまとめたイベント
++         `batches(quiet)` は任意の継続時間の値（`0.2*Second`）を取り、その長さの間イベントが届かないたびに `Watch.Batch` を生み出すので、エディターからの一連の保存は落ち着いた後に一度だけ報告される。
++   entry .Event   監視するディレクトリへの一つの変更：ファイルの作成、変更、削除、またはディレクトリの作成
+
+% 1 1 0 114894661fe3d54b010f9c2ed18b8292
+
+@ 0 4 0 0cf2b2619fd048f51ba83d72aff5f9c7
++         各イベントは、監視するディレクトリ `#dir` をテキストとして、そしてその中で変更されたエントリーの名前を記録する。`#path` はその二つを、呼び出し側が選ぶパスの型として結合する。
++         四つのケースはパッケージのレベルにもエクスポートされているので、`case NewFile(dir, file) =>` は `Watch.Event` の接頭辞なしでマッチする。
+
+% 2 1 0 16bf44ee3267c2bf0c9102e17c375c4a
+
+% 3 1 0 1430c2699a407ec101bd69d48763a9b9
+
+% 0 1 0 030be54b7b55daab163c354cd82809c2
+
+% 0 1 0 1cd57a509834acff1f3cd443d0aa87cf
+
+% 0 1 0 1d43ec24cb5718890eeb94407a6d469c
+
+% 0 1 0 1bd3500b44f60ab81e55f30c95b1c6c2
+
+% 0 1 0 0e71f00a4f5f276a06bc9b278814d55f
+
+% 0 1 0 00384e3497dc8fa30b24850ae933ec2a
+
+% 1 1 0 193f6d00f3cbe36615d424b6d0b2479e
+
+@ 0 21 0 169258fdc5c580b109b51d117bc83032
++         オペレーティングシステムのバックエンドは、プラットフォームの報告するとおりに変更を報告するので、一回の保存が複数のイベントになることがある。ポーリングのバックエンドは、走査の間にサイズか更新時刻が変わるごとに一つの変更を報告し、その両方を変えない変更は見ることができない。
++         どちらもディレクトリの変更は報告しない。
++     entry .NewFile   監視するディレクトリに、ファイル、またはディレクトリでない何かが作成された
++       entry #dir    監視するディレクトリ。テキストとして
++       entry #file   ディレクトリの中での新しいエントリーの名前
++     entry .NewDirectory   監視するディレクトリにディレクトリが作成された
++       entry #dir         監視するディレクトリ。テキストとして
++       entry #directory   監視するディレクトリの中での新しいディレクトリの名前
++     entry .Modify   監視するディレクトリのファイルが変更された
++       entry #dir    監視するディレクトリ。テキストとして
++       entry #file   ディレクトリの中での変更されたファイルの名前
++     entry .Delete   監視するディレクトリからエントリーが削除された
++       entry #dir    監視するディレクトリ。テキストとして
++       entry #file   ディレクトリの中での削除されたエントリーの名前
++     entry #dir   変更が起きた、監視するディレクトリ。テキストとして
++     entry #path   変更されたエントリーの完全なパス。呼び出し側が選ぶパスの型として
++         `event.path[Path on Local]`（または任意の `Instantiable across Paths from Text`）は、ディレクトリとエントリーの名前を結合し、結果を正規化する。
++   entry .Batch   一つの静かな期間のイベント。`Watch.Handle#batches` が生み出すとおり、古いものから順に並ぶ
+
+% 1 1 0 1cf6e3988e8ead480caa821f5259f428
+
+@ 0 2 0 1f008ce211e159c801202b31bd3fb448
++         イベントのない期間で終わる一連の活動。
++         `#paths` は触れられたパスをそれぞれ一度ずつ列挙し、これは変更のたびに再ビルドするループがふつう求めるものである。
+
+% 2 1 0 0f70d9fd1d4d25f91fa560fd87b6f97f
+
+% 3 1 0 1e2e5052093b9daf162ef52fdf36ad4b
+
+% 0 1 0 1944d60232be8ac216d9b36559c93d13
+
+% 0 1 0 176b1cb9e1bc47ab09b715391fb23c61
+
+% 1 1 0 04d9acb9cd0cdfe30641bb136cfd9fa9
+
+@ 0 3 0 0837ca601a9ae82703df6ac8e9d79e54
++     entry #events   バッチのイベント。古いものから順に並ぶ
++     entry #paths   バッチで触れられたすべてのパス。それぞれ一度ずつ、最初に現れた順に並ぶ
++   entry .Error   パスを監視できないときに発生する
+
+% 1 1 0 1c1c7266736a016819d286e51608a1b3
+
+@ 0 6 0 1e8914aa822ecebb1fe77df81f73c24d
++         エラー `↯/s.98.1`：_the path could not be watched because …_。理由は四つのうちの一つである。
++         `LimitExceeded`（_the operating system's limit on watched paths has been exceeded_。inotify の `max_user_watches` など）、`Nonexistent`（_the path does not exist_）、`NotDirectory`（_the path is not a directory_。監視するパスの親が通常のファイルである場合など）、`PermissionDenied`（_the user does not have permission to watch the path_）。
++         登録が行われるときに、`Watch(paths)` と `open[Watch]` が発生させる。
+
+% 2 1 0 1f7509c748d84da5115f1bea69793b50
+
+% 3 1 0 0e7f33ca5fef07811940731617bc79a5
+
+% 2 1 0 19f07633c5ebab7d1134f09bdb4d9b48
+
+% 0 1 0 0365816d401b8f550e7b2e4ce5f43e05
+
+% 0 1 0 1c18700b15c5094a14dcd2a72d989c8f
+
+% 1 1 0 1e1724985f5e53510b8af9e9b30d51af
+
+@ 0 1 0 1921f2c6669278f803ae717fa6be1cf9
++     entry .Reason   パスを監視できなかった理由：上限、存在しないパス、ディレクトリでないもの、またはパーミッション
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 1 0 0f85849e3216eb8601b925d62bf60d39
++           各ケースのエラー `↯/s.98.1` の枝番は、その `#number` である。
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  注記
+
+% 0 1 0 0b86d78e39d8163a0a40a93a8ea597d0
+
+% 0 1 0 07c27b661e05978d02d03ab08775c9a2
+
+% 0 1 0 1bcdaceca128ab5d1d8c4d146d26a7a1
+
+% 0 1 0 1903ed76d535d0c11f6a48d55535ec40
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 10 0 02e1138ef99dbfc91e9f726e8d549bd4
++       entry #number   エラー `↯/s.98.1` における理由の枝番
++     entry .communicable   各理由を、_the path could not be watched because …_ を完成させる句として描画する
++     entry #reason   パスを監視できなかった理由
++   entry #stream   監視の登録が解除されるまで、すべてのイベントを一つずつ
++       `#unregister` が呼ばれると終わる `Watch.Event` の遅延 `Chain`。
++       これを走査すると、次のイベントごとにブロックする。
++   entry #batches   与えた長さの静かな期間のたびに `Watch.Batch` にまとめたイベント
++   entry #unregister   登録をキャンセルし、イベントストリームを終わらせる
++       この監視のディレクトリについてバックエンドがイベントを届けるのを止め、`#stream` と `#batches` を終了させる。
++       `open[Watch]` は、そのブロックが終わるときにこれを呼ぶ。
+
+@ 0 1 0 1f8c4a695fed81f30554d967332e9f1e
++ entry .Watcher   ファイルシステムの変更を検出するバックエンド：オペレーティングシステムのサービス、またはポーリング
+
+% 1 1 0 14ef38233d7893db1fadebc06df8daea
+
+@ 0 4 0 1335a6861b1253c607b02b95f0e3c29b
++       `Watcher` は、ディレクトリの集合を、起きたイベントをリレーに入れる `Watcher.Registration` に変える。
++       バックエンドは自身の監督付きタスクを動かすので、これはケイパビリティである。
++       インポートがなければ `.default`（オペレーティングシステムの通知サービスである `JavaBaseWatcher`）が使われる。別のバックエンドはローカルな given にする。
+
+% 2 1 0 0de631d57a6af9911fec4ebc3aaca67b
+
+% 3 1 0 035bc8bfe664adbe14b4a81c7d6d848d
+
+% 4 1 0 0fc36e21c8da89fe12aaa16da83d5ce0
+
+% 5 1 0 1a06e5d224a0ce11041ace5b6b690622
+
+% 6 1 0 099ad4df0407981418e3a585b19600c7
+
+% 1 1 0 032851a103b17b3b10f22217df890ee2
+
+% 2 1 0 16342e128f1e3a4b066f9b9693226476
+
+% 0 1 0 1d4781735a53c0a60594adce157c0e33
+
+% 0 1 0 1766004f9e6ad64d018324657f50ac4d
+
+% 0 1 0 06059c908e8e2bba1feef70571f80aca
+
+% 0 1 0 001c43f3bad8720118135eb0e76ae901
+
+% 1 1 0 0525be26ac13424111baafcfbcfea576
+
+@ 0 2 0 103b0dde1128e7841474c1d17adc4ae9
++       既定の given はケイパビリティなので、そこに届くコードはそれを捕捉する。そうするテストの本体は、遅延されずにインラインで実行される。
+
+% 0 1 0 000684d38425cd661c3e655c5b440194
+
+% 0 1 0 14079390e23581eb0c7e824e312b210c
+
+% 0 1 0 194f24a587f87d570feefd374a2f2cf6
+
+@ 0 4 0 192dad57f084cf7e1beece336ef75d96
++   entry .default   他の `Watcher` がスコープにないときに使われるバックエンド、`JavaBaseWatcher`
++       コンパニオンにあるので、インポートなしに暗黙のスコープにある。ローカルな given や、インポートした `watchers.javaBaseWatcher` がそれより優先される。
++   entry .Registration   一つのバックエンドへの登録。`#cancel` で終わる
+
+% 1 1 0 00240a7cbf32d2990613fadfc4a9897e
+
+@ 0 8 0 0395e38047ac106603db3c4d8997ed2a
++         `Watcher#watch` が返すもの。これをキャンセルすると、その呼び出しで登録したディレクトリについて、それ以降のイベントの配送が止まる。
++         `Watch#unregister` がこれをキャンセルする。
++     entry #cancel   登録したディレクトリについてイベントの配送を止める
++   entry #watch   ディレクトリを、それぞれエントリー名に対するフィルターとともに登録し、イベントをリレーに届ける
++       `watch(directories, spool)`：各ディレクトリは、そのエントリーの名前に対する純粋な述語と対にされ、名前がマッチするイベントは `Relay` に入れられる。
++       ディレクトリを登録できなければ `Watch.Error` を発生させる。
++       `Watch(paths)` がフィルターを作ってこれを呼ぶ。利用者が直接呼ぶことはまれである。
+
+@ 0 8 0 15ffb10ada6c837e119e5e097c135129
++ entry .JavaBaseWatcher   オペレーティングシステムの通知サービスの上の `Watcher`。既定のもの
++     `java.nio.file.WatchService`（Linux では inotify、他ではプラットフォームの相当物）を包む。
++     プロセス内のすべての登録が一つのサービスと一つのポーリングタスクを共有し、何も監視されなくなるとサービスは閉じられる。
++     監視するディレクトリが削除されると、そのディレクトリはレジストリから外れる。
++     登録の失敗は `Watch.Error` に対応付けられる。存在しないパスは `Nonexistent` に、ファイルは `NotDirectory` に、拒否されたアクセスは `PermissionDenied` に、その他の I/O の失敗（実際にはプラットフォームの監視数の上限）は `LimitExceeded` になる。
++     これは `Watcher.default` であり、`watchers.javaBaseWatcher` がそれを名指す。
+
+@ 0 9 0 1ff2bce5389de95903d0c72426a20df1
++ entry .PollingWatcher   一定の区間ごとに各ディレクトリのスナップショットの差分を取る `Watcher`
++     `PollingWatcher(interval)` で、ふつうは `watchers.polling(interval)` を通じて任意の継続時間の値で作る。
++     区間ごとに、監視する各ディレクトリを一覧し、各エントリーの種類、更新時刻、サイズを記録し、前回の走査と比べて作成、変更、削除を報告する。
++     オペレーティングシステムの支援を必要としない代わりに、区間で上限が決まるレイテンシがあり、サイズと更新時刻をそのままにする変更は見えない。
++     各登録はそれぞれのバックグラウンドタスクを持ち、キャンセルされるとそれが中断される。パスが存在しないかディレクトリでない場合、登録は `Nonexistent` または `NotDirectory` を伴う `Watch.Error` を発生させる。
+
+@ 0 3 0 178aa252cf81974c0225b73597fde6bc
++ entry .watch   `open[Watch]` ブロックの中で、スコープ内にある `Watch.Handle`
++     `watch` はコンテキストのハンドルをその正確な捕捉型で返すので、ブロックは、galilei の `file` と同じように、ハンドルのパラメーターに名前を付けずにおける。
+
+% 2 1 0 0de38f91409432e7048e9e7d08c28998
+
+% 3 1 0 072dca177d6844590a0631fb490c3ad4
+
+% 4 1 0 07d6d1ba64a6b2201914428bf5c2c734
+
+% 5 1 0 0fb30dd4a814e2fc04e399971570877d
+
+% 6 1 0 147ec8287a822eb51fab7ab230dd8458
+
+% 1 1 0 07780dfd83bc4a2306ed804b6de043b1
+
+% 2 1 0 00f24ba15c6c4a5814e87714a6d0bcbf
+
+% 4 1 0 1bfa65880625561f17c2355f3b2ce46a
+
+% 0 1 0 06e706e29e477d481db882527c5d0d6e
+
+% 0 1 0 0d3696a5aa9004f614fcbe9549654c9e
+
+% 1 1 0 112124f2a1b878790832a4136cda43f9
+
+@ 0 10 0 0755c22d4ff684f6139c76bb6a2b9b69
++ entry .NewFile   マッチのためにエクスポートされた `Watch.Event.NewFile`：監視するディレクトリにファイルが作成された
++     パッケージにエクスポートされたイベントのケースで、マッチで `case NewFile(dir, file)` と書ける。
++     `dir` は監視するディレクトリ、`file` はその中での新しいエントリーの名前である。
++ entry .NewDirectory   マッチのためにエクスポートされた `Watch.Event.NewDirectory`：ディレクトリが作成された
++     パッケージにエクスポートされたイベントのケースで、マッチで `case NewDirectory(dir, name)` と書ける。
++ entry .Modify   マッチのためにエクスポートされた `Watch.Event.Modify`：監視するディレクトリのファイルが変更された
++     パッケージにエクスポートされたイベントのケースで、マッチで `case Modify(dir, file)` と書ける。
++ entry .Delete   マッチのためにエクスポートされた `Watch.Event.Delete`：監視するディレクトリからエントリーが削除された
++     パッケージにエクスポートされたイベントのケースで、マッチで `case Delete(dir, file)` と書ける。
+
+@ 0 1 0 1c2f8aff7ac55a470737b59b246a813e
++ entry .watchers   `Watcher` バックエンド。名前でインポートする given か、given として束縛する値
+
+% 1 1 0 12fc3630351ab2fe09cf60f512fd9763
+
+@ 0 4 0 12055b3d80002d47155fabd0f3862913
++       どのバックエンドが変更を検出するかは、スコープ内の `Watcher` の given で決まる。何もなければ `Watcher.default` が適用される。
++       アンブレラで `watchers` パッケージとして写されるこのオブジェクトは、代わりの選択肢を保持する。既定のものを明示的に名指す `javaBaseWatcher` と、区間を与えてポーリングのバックエンドを作るメソッド `polling` である。
+
+% 2 1 0 11c9e5536f9d14471202e970c3566088
+
+% 0 1 0 184d48e7399fe047179e0899a9dba6bf
+
+% 1 1 0 0dc5c595e538b6cd19dfdb1c478872c5
+
+% 1 1 0 0789caafcbbe72d91ef9fd6d698649de
+
+% 2 1 0 08cb52a3a311347f15372abb1d04e019
+
+% 0 1 0 197abd435889b83c121bd7bd3e7ca19e
+
+% 1 1 0 0a33e51c2ef3f06003ae8013f6f4e809
+
+% 0 1 0 101474dc7ff312710f54beccd36d954c
+
+% 1 1 0 062a25796f11c45c14b996233bdac195
+
+% 2 1 0 1f2e98f8c952ce8f09cb30d651dd5db9
+
+% 1 1 0 1f00d35fe7b87642088a3901f92ca6b5
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 6 0 0c69d1e293bc3b2005d069dcfbae7d6a
++       `javaBaseWatcher` は given なので、名前でインポートしなければならない。`import watchers.*` は given をインポートしない。
++   entry .javaBaseWatcher   オペレーティングシステムの通知サービス `JavaBaseWatcher` を given としたもの
++   entry .polling   与えた区間で走査する `PollingWatcher` を作る
++       `watchers.polling(interval)` は任意の継続時間の値を取り、`Watcher` を返す。
++       given ではなくメソッドなので、ローカルに束縛する：`given Watcher = watchers.polling(0.05*Second)`。

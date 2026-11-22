@@ -1,0 +1,41 @@
+orthant 2 language
+
+@ 0 1 0 163676075f1e9927052753894fd4a055
++   entry .Bits   i bit che porta ciascun carattere di una codifica, come tipo: `Serialization.Bits[Hex]` è `4`
+
+% 0 1 0 0d2aab38ee569ecc0f5bcc34eb049c93
+
+@ 0 6 0 0a795d45706928b61794a1ff1025f7ee
++       `Alphabet(chars, padding)` è l'unico modo per crearne uno, e `chars` deve essere un
++       letterale stringa, perché viene controllato mentre la chiamata viene compilata: deve avere
++       esattamente `2^bits` caratteri per la codifica, più uno per il padding quando `padding` è
++       `true`; nessun carattere può comparire due volte; e ogni carattere deve essere ASCII. Un
++       alfabeto che viola una di queste regole non compila, per cui uno sbagliato non può esistere
++       a runtime. Un alfabeto è puro (`caps.Pure`), per cui non può catturare una capability.
+
+@ 0 23 0 1e225fc8f81c7002092d64c65fbc4b09
++   entry .serialization     fa scorrere i byte attraverso un alfabeto come stadio, producendo testo
++       Il given `Ductile` che permette a `via(alphabet)` di serializzare uno
++       `Stream[Data] over Credit` in uno `Stream[Text] over Credit`. La domanda viene tradotta con
++       l'aritmetica esatta della base, per cui una richiesta a valle di 1024 caratteri
++       esadecimali chiede a monte 512 byte; il padding, se l'alfabeto lo prevede, viene scritto
++       quando lo stream termina.
++   entry .deserialization   fa scorrere il testo attraverso un alfabeto come stadio, producendo byte
++       Il given `Ductile` che permette a `via(alphabet)` di deserializzare uno
++       `Stream[Text] over Credit` in uno `Stream[Data] over Credit`. Richiede una
++       `Tactic[Serialization.Error]`, sollevato per un carattere che non è nell'alfabeto, e
++       l'istanza cattura quella tattica. I gruppi e il padding divisi tra chunk vengono riportati.
++   entry .apply        `Alphabet("…", padding)`: un alfabeto da un letterale stringa, con dimensione e caratteri controllati a tempo di compilazione
++       Un terzo argomento fornisce la `#tolerance`. La codifica viene presa dal tipo atteso,
++       oppure scritta come `Alphabet[Hex]("…", false)`.
++   entry #chars        i caratteri della codifica in ordine di valore, poi il carattere di padding se presente
++   entry #bits         i bit che porta ciascun carattere, dalla codifica: 4 per `Hex`, 6 per `Base64`
++   entry #padding      se l'output viene completato fino a un gruppo intero con l'ultimo carattere di `#chars`
++   entry #tolerance    ulteriori caratteri accettati in deserializzazione, associati ai valori che rappresentano
++       Vuota per un alfabeto rigoroso. Per uno tollerante, di solito l'inverso dell'alfabeto
++       rigoroso dell'altra forma, maiuscola o minuscola, come quella di `hexUpperCase` è
++       `hexStrictLowerCase.inverse`.
++   entry #apply        il carattere per un valore, a partire da zero
++   entry #invert       il valore di un carattere, o un `Serialization.Error` alla posizione data
++       `alphabet.invert(position, char)` cerca il carattere in `#inversions`; uno senza valore
++       solleva `Serialization.Error(position, char)`, per cui richiede una

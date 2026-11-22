@@ -1,0 +1,544 @@
+orthant 2 language
+
+@ 0 1 0 00d5ebf732ccc10a1086b863b99df40b
++ ## Demoni
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 3 0 1424aa269bfd3d2409dd083b6a9c8ddc
++ Uno strumento da riga di comando sulla JVM paga il costo di avvio della JVM a ogni invocazione,
++ e perde l'ottimizzazione che il compilatore just-in-time aveva accumulato. Ciò fa sembrare lento
++ alla shell anche un programma veloce.
+
+@ 0 4 0 13fc7d4db1ca6df30e0cdbb8fe0329c0
++ Rendere residente l'applicazione elimina il costo. La prima invocazione avvia un demone. Ogni
++ invocazione successiva viene smistata al processo in esecuzione da un piccolo launcher nativo,
++ con i suoi argomenti, l'ambiente, la directory di lavoro, gli stream standard e i segnali, tutti
++ inoltrati fedelmente.
+
+@ 0 5 0 160bedbe27605f9f003ef0bc70cbeb2c
++ Il cambiamento costa una parola. Il corpo di
++ un'[applicazione da riga di comando](cli.md) racchiuso in `cli`, invece che in `application`,
++ diventa un demone. L'impacchettamento produce un unico eseguibile autonomo, che è il launcher
++ nativo con l'applicazione al suo interno, e il launcher sa verificare e applicare aggiornamenti
++ firmati di sé stesso.
+
+@ 0 1 0 07cc650b5e4d48be04178ee94e1511f4
++ ### Sulle applicazioni in forma di demone
+
+@ 0 5 0 120979d5002c115719d40b6deed0bb95
++ L'idea è vecchia. Nailgun teneva calda una JVM esattamente per questo motivo. Ma sono i dettagli a
++ decidere se ci si può fidare. Ogni invocazione deve comportarsi *esattamente* come farebbe un
++ processo nuovo: con il proprio ambiente e la propria directory di lavoro, il proprio standard
++ input e il proprio codice di uscita, e con Ctrl-C che raggiunge l'invocazione giusta, e non il
++ demone. E il demone deve gestirsi da sé: avviarsi su richiesta, spegnersi quando è inattivo, e
++ sopravvivere agli aggiornamenti.
+
+@ 0 6 0 020835083f5bfa531835a3e2888f529d
++ Qui quei dettagli sono gestiti in un launcher nativo per ciascuna piattaforma, e in un protocollo
++ su un [socket](sockets.md) di dominio Unix. L'applicazione Scala semplicemente gira, con molte
++ invocazioni contemporaneamente, ciascuna con il proprio contesto fedele. Un demone che serve ogni
++ invocazione rispetto all'ambiente proprio di quell'invocazione è il
++ [contesto dichiarativo](../../philosophy/declarative-context.md) preso sul serio: nulla del
++ chiamante è globale.
+
+@ 0 6 0 103055221a929ab21b7a4f80e1a77b03
++ Il protocollo è uno schema [TEL](tel.md#bintel), `ethereal-launcher`, il cui testo è
++ `Launcher.schemaText`. Ogni connessione che il launcher apre comincia con un documento BinTEL di
++ quello schema: un'invocazione con i suoi argomenti e il suo ambiente, un segnale, o una richiesta
++ di uno stato di uscita. Il demone risponde allo stesso modo. Entrambe le parti controllano la
++ firma dello schema prima di leggere un campo, così un launcher e un demone costruiti secondo
++ contratti diversi si rifiutano a vicenda, invece di fraintendersi.
+
+@ 0 2 0 1141991f69b3e9030b2ddac84ef2886f
++ Tutto proviene dal package `soundness`, accanto agli import di cui un'applicazione da riga di
++ comando ha bisogno:
+
+% 2 1 0 1c2dad6c98610b3e07dbdad6b48078aa
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 15108db9c092389807062bc8690bee00
+
+% 0 1 0 197f1109e7f809191be0a5e6413d8524
+
+% 0 1 0 17bef8dc1edab8da1623ee0b5deff790
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 1 1 0 1226ce93b56a9ac519a2410ef2e24599
+
+@ 0 1 0 064417b8467a34330ea4796a3be668c9
++ Gli esempi di questa pagina definiscono programmi interi, quindi vengono compilati ma non
++ eseguiti.
+
+@ 0 1 0 0d4d638dfa035798171d50cd654a2bd8
++ ### Un'applicazione demone
+
+@ 0 2 0 1714a9605dc326620630835a74dd617f
++ `cli` è la controparte in forma di demone di `application`. Ha lo stesso corpo, e la stessa
++ struttura per i [completamenti](cli.md#tab-completions), e gira come residente:
+
+% 2 1 0 12bf5e50d0e9a2a01cbb28d7353b0904
+
+% 0 1 0 16e3cb87267665ba0c4fcb222abd3350
+
+% 0 1 0 177455db41ec14d00d74d6ef4179e8b2
+
+% 1 1 0 1e5bea3024eb985715dc05d3303f01ca
+
+% 0 1 0 1bc2f1f9e9b0230219be99110aaa0962
+
+% 1 1 0 05d6926efcb633f403b1b2cb816abbbe
+
+% 2 1 0 105d13fbaf28a3450a16efff5146e443
+
+@ 0 3 0 1600648669beffb202b74e607609cb19
++ `cli` non prende argomenti. Il launcher li inoltra, con l'ambiente, la directory di lavoro e gli
++ stream standard della shell che l'ha invocato, e il corpo li vede attraverso gli stessi
++ `arguments`, `Out` ed `Exit` di un'applicazione ordinaria.
+
+@ 0 3 0 02d1d04ccd11eaed0943e0622ee6b405
++ La prima esecuzione avvia il demone. Le esecuzioni successive vi si connettono, e terminano alla
++ velocità di uno strumento nativo. I completamenti con il tasto tab ne guadagnano di più: ogni
++ richiesta di completamenti è un'invocazione, e un processo residente risponde in millisecondi.
+
+% 0 1 0 1429385f03aa262e1533cc9289f06fef
+
+@ 0 4 0 1927eac06d1d76e70a4985d411d6c1cd
++ L'output deve passare per `Out` ed `Err`. Il `println` di Scala scrive sul `System.out` globale
++ della JVM, che appartiene al processo *demone*, non a un client, quindi qualsiasi cosa stampi non
++ raggiunge alcun utente, e di solito va persa. `Out` ed `Err` risolvono lo
++ [`Stdio`](streams.md#standard-streams) dell'invocazione corrente, che è quello del client.
+
+@ 0 4 0 0d41bdf3f7a12c46009048fc979c181a
++ Quando il lettore di quello stream se ne va, come in `mytool | head -1` una volta che `head` è
++ terminato, il launcher lo segnala. La scrittura successiva dell'invocazione sullo stream solleva
++ un `Egress.Error`, che termina l'invocazione con lo stato 141, come `SIGPIPE` terminerebbe un
++ processo che scrive su una pipe.
+
+@ 0 5 0 192c6b38ebe43f7c1198d30cfd0cee65
++ Il codice che non può essere modificato, come una libreria che stampa su `System.out`, viene
++ reindirizzato con `Stdio.divert`. La deviazione appartiene a un *thread*, non alla JVM. Segue il
++ thread su cui viene fatta, i thread avviati sotto di essa, e ogni task generato al suo interno,
++ così un demone può deviare l'output di più client contemporaneamente, senza che si mescolino.
+
+@ 0 4 0 179fa80b7171a82d161358302c345c1a
++ Gli argomenti e i valori delle variabili d'ambiente arrivano come testo. Una sequenza di byte in
++ uno dei due che non è UTF-8 valido viene consegnata con U+FFFD al suo posto. È la stessa
++ sostituzione che la JVM fa per i propri argomenti, così un'applicazione vede ciò che avrebbe
++ visto se fosse stata eseguita direttamente.
+
+@ 0 1 0 051ba9aa00d326cf1a43ca0d2d19c8a7
++ ### Che cosa sa l'invocazione del suo client
+
+@ 0 3 0 020395c80771926b07069434138bebe9
++ Il demone possiede un socket, non il processo del client, quindi tutto ciò che sa
++ dell'invocazione è ciò che il launcher gli ha detto. Il `resident` dell'invocazione, un
++ `Resident`, è il suo handle sul demone, ed è dove si legge quella conoscenza:
+
+% 2 1 0 1163e7a1d9266f800381a6d9f019ef95
+
+@ 0 7 0 1e98569599565cda109c8f254e2dfe7a
++ column  Membro
++ column  È
++ row  `resident.cliInput`, `cliOutput`, `cliError`  se ciascuno stream standard è un `Terminus.Terminal` o un `Terminus.Pipe`
++ row  `resident.invokedAs`  il nome con cui l'eseguibile è stato invocato: `argv[0]` come l'ha fornito il chiamante
++ row  `resident.umask`  la maschera di creazione dei file dell'invocazione
++ row  `resident.windowSize`  la dimensione del terminale del client, misurata quando l'invocazione è iniziata e a ogni ridimensionamento
++ row  `resident.buildId`  l'identificatore della build in esecuzione
+
+% 1 1 0 04d4f60b46e3af231a13c045af4cb5a8
+
+@ 0 2 0 0f3a3a5e0d5834bc022c1eae2711092f
++ Un solo eseguibile installato con più nomi, tramite link simbolici, può quindi smistare in base a
++ `invokedAs`, mentre tutti gli alias condividono un unico demone caldo:
+
+% 2 1 0 1592cca5f895a50800f56996af41a96b
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 09891fe778e9239819654084fbcc0878
+
+% 1 1 0 086f666d58746d9315de06eb3ebf7cc6
+
+% 0 1 0 16d76a08224e23f00710293ff7648662
+
+% 0 1 0 09d3262899755b8205703953d588e195
+
+% 0 1 0 110bc44b9c158b8503f8e7481dd9480e
+
+% 1 1 0 0f28b00d993e789814f3fb8607bda9f7
+
+% 2 1 0 1b637d5fa8417a5a1270f1d4d1ba1369
+
+@ 0 3 0 17a40d490a4e6cb11406eb6d51cc8fa0
++ Il [filesystem](filesystem.md#creation-masks) applica `umask` a qualsiasi cosa l'invocazione
++ crei. Il `Termcap` dell'invocazione legge la stessa misura di `windowSize`, così le
++ [tabelle](tables.md) e il testo mandato a capo si adattano al terminale com'è in quel momento.
+
+@ 0 1 0 1a9aaebefdb82b150d52b981ae0ba644
++ ### Segnali e spegnimento
+
+@ 0 5 0 071aaa4546bc5ff9161ce28c97de55ec
++ Un'invocazione intercetta i segnali che le interessano, e la risposta raggiunge il codice di
++ quell'invocazione, non il processo condiviso. Un'intercettazione vede un `Signal`: l'interrupt
++ stesso, e qualsiasi cosa il launcher vi abbia allegato. Questa è la nuova dimensione del
++ terminale, con `WINCH` e `CONT`. Su Windows, è il tempo che il sistema concede dopo un evento di
++ chiusura, di disconnessione o di spegnimento, prima di terminare comunque il client:
+
+% 2 1 0 0cd7ac797d1f4909050ad519d6c6f6f5
+
+% 0 1 0 09c819007bf9c03a0f973fd7483a4333
+
+% 0 1 0 1a52bfa7829b28661278f2ec7ea8ef5f
+
+% 1 1 0 1db63a21f8ce6341193d218be87e3ff9
+
+% 0 1 0 0b84238fd1f8ec1a0099250c74469b3c
+
+% 0 1 0 108d3493474efe4f0a6ac6465f7bca65
+
+% 0 1 0 1c061aa14c1d5fd0132a4f32aa04a294
+
+% 1 1 0 0266af18b09fa2e41561a8621949455c
+
+% 0 1 0 1888ce4d20d9af9314cc5c093a44b968
+
+% 1 1 0 19a76d285daed8501fbb9374a466afff
+
+% 0 1 0 1345a6681eaa2c0f1d33564dc7ffea1f
+
+% 1 1 0 047bf575af39cb2113b7e4ee9245e555
+
+% 0 1 0 1b87eb0f8d915ff414f9eefdc58295dc
+
+% 1 1 0 02d1275a2baad30610355401f580d883
+
+@ 0 2 0 1f350e29348228981c3db7576780aa22
++ Il demone si ritira da sé dopo sei ore di inattività, o quando i suoi file di stato vengono
++ rimossi, o su richiesta, attraverso il sottocomando integrato `'{admin}'`:
+
+% 2 1 0 1e93a13447fea62b0e3299b65e37695d
+
+@ 0 5 0 13843f045c81746f13df52935b641bde
++ column  Sottocomando
++ column  Effetto
++ row  `pid`  comunica il pid del demone
++ row  `kill`  termina subito il demone
++ row  `shutdown`  non serve più alcuna invocazione, lascia finire quelle in corso, poi esce
+
+% 1 1 0 0c259aea7fecf0d00d6fe56be45ab5a8
+
+@ 0 3 0 102cc096e72a7f661991870a4edb6acd
++ Una JVM calda tenuta per un comando eseguito di rado può quindi essere recuperata, senza
++ cercarne il pid. Un eseguibile che è stato ricostruito soppianta il suo demone allo stesso modo
++ di `shutdown`.
+
+@ 0 1 0 0fd22315f46694590b710113f15e805a
++ ### Chiedere un terminale in modalità canonica
+
+@ 0 5 0 01f7f3e8033c5e121f53001530a86ba2
++ Il launcher mette il terminale in modalità raw prima di connettersi, così che le pressioni di
++ tasto possano essere inoltrate a una [sessione di terminale](terminal.md#keyboard-input)
++ interattiva. Ciò è sbagliato per un comando che vuole soltanto una riga di input. Senza l'aiuto
++ del driver del terminale non c'è eco, e Backspace arriva come byte letterale all'interno della
++ riga. `cooked` chiede al launcher la modalità canonica per la durata di un blocco, e la modalità
++ raw viene ripristinata dopo:
+
+% 2 1 0 1f2082da833754c21851d25ff3029a98
+
+% 0 1 0 12b0f684179125e00e19f87dfe926dd6
+
+% 1 1 0 0210de6ac9ce62d70d69db6393455e17
+
+% 0 1 0 100b18fc2341beb610cd538f0a57ba1f
+
+% 0 1 0 077c01e6d1c45f7c10cacc754e6adf93
+
+% 0 1 0 06355b4bd8ee407517fc9e4bf6eea3a3
+
+% 0 1 0 14bde17e88dddbe4132b864cc4e016d0
+
+% 1 1 0 060216e1ae7553d01c3964e1fc2c37f3
+
+% 2 1 0 02e27f50a1e78ede1bd3f06c4f61f6f9
+
+@ 0 2 0 1f43f32033b6c16b09e8ef2ed6fc7d10
++ L'eco e la modifica della riga provengono allora dal driver del terminale stesso. Un launcher
++ senza un tale canale, come una pipe o un launcher più vecchio, lascia scadere la richiesta senza
++ danni.
+
+@ 0 1 0 1d6423ce57fc1c25045ba3303961c849
++ ### Il bus dei messaggi
+
+@ 0 4 0 1a3b7c22ac020d41136cc03c51756755
++ Le invocazioni concorrenti di un demone condividono un *bus* tipizzato. Un'invocazione diffonde
++ un messaggio, e le altre osservano lo stream. È così che si esprime «il comando watch in
++ esecuzione si accorge che un'altra invocazione ha appena cambiato la configurazione». Il tipo del
++ messaggio è l'argomento di tipo di `cli`, così ogni invocazione del demone concorda su ciò che si
++ può inviare:
+
+% 2 1 0 0904e4049803bf7b0f0f45a2b9f8c11b
+
+% 0 1 0 1a7b46b8dbf8deaf1b5464092ffd571d
+
+% 0 1 0 1d67a6ae22ffb73017ff431124bc44f7
+
+% 0 1 0 1c6e213df81464421f86ff9c27f0ebe4
+
+% 1 1 0 1118cc907504e1640b447643b8280ebf
+
+% 0 1 0 0cc631478eb28fd81a42d94da78079c3
+
+% 0 1 0 004f9bdfca7b30c01b6d28223fcca7b1
+
+% 0 1 0 0568bca44fa769b91eb25f9c8687b302
+
+% 1 1 0 1a6c7e5cf73c062915e10f73ee7644ee
+
+% 2 1 0 087a88e1563b65c40e774e46cf79023e
+
+@ 0 1 0 1f484fdbfb10ecc90199bfab6a825d4a
++ ### Impacchettamento
+
+@ 0 4 0 103faa5979e94c2e0db9ed2ca61ea662
++ Il distribuibile viene assemblato dal builder `xek`. È pubblicato, con i launcher, da
++ [propensive/xek](https://github.com/propensive/xek), e si installa con
++ `curl -fsSL https://propensive.dev/xek | sh`. Unisce il launcher nativo della piattaforma, un
++ piccolo record di configurazione e il JAR dell'applicazione in un unico file eseguibile:
+
+% 2 1 0 0d4aa2192a74d0891af19c09ee284db6
+
+% 0 1 0 1e8c8ac910712b97155a9481f20159e2
+
+% 1 1 0 0eb4b6f3599b8d5010eb0cac55f26ff0
+
+@ 0 5 0 1fe3e98fafda8e1d116e5cfe47a2d21a
++ Questo scrive `mytool`, per la piattaforma su cui gira `xek`.
++ `xek build -p linux-x64 -p windows-x64 mytool.jar` costruisce per altre piattaforme.
++ `xek build --polyglot mytool.jar` costruisce un unico file per tutte, che gira in `sh`, e in
++ PowerShell e `cmd.exe` una volta rinominato, e spacchetta il launcher giusto dove viene eseguito.
++ Le flag che questa pagina usa sono:
+
+% 2 1 0 04b5ca65b5fcea270555657256405d02
+
+@ 0 1 0 1ac339ac65b65f410da295c54b18b83c
++ column  Comando
+
+% 0 1 0 1c23cee35c2f4c40160c0560d2218823
+
+@ 0 12 0 00f47ae4cec5c0c21a118215a959960c
++ column  Effetto
++ row  `xek build`  `-p` *piattaforma*  costruisce per quella piattaforma; ripetibile
++ row  `xek build`  `--polyglot`  costruisce un unico file per ogni piattaforma
++ row  `xek build`  `--build-id` *n*  incorpora l'identificatore di build, che deve crescere da un rilascio all'altro
++ row  `xek build`  `--public-key` *file*  incorpora la chiave di rilascio
++ row  `xek build`  `--recovery-key` *file*  incorpora la chiave di ripristino
++ row  `xek build`  `--app-id` *id*  incorpora l'identificatore dell'applicazione
++ row  `xek keygen`  `--out` *prefisso*  scrive `<prefix>.seed` e `<prefix>.pub`
++ row  `xek sign`  `--key` *seme*  firma con quella chiave
++ row  `xek sign`  `--in` *file*, `--out` *file*  nomina il binario da firmare e il risultato firmato
++ row  `xek sign`  `--allow-downgrade`  permette al candidato di sostituire una build più recente
++ row  `xek sign`  `--foreign-key`  permette di firmare con una chiave che il binario non porta
+
+% 1 1 0 1b25b4d814fde1c50164e98e5c2397cd
+
+@ 0 1 0 1d0b84be89601ddd15e93db913cc4e43
++ `xek --help` elenca il resto.
+
+@ 0 4 0 12693035dd53f7b70ec743694d27358d
++ Il launcher trova o scarica una JVM adatta, e avvia il demone quando non ce n'è uno in
++ esecuzione. Dove è stata incorporata una chiave pubblica, accetta solo binari firmati quando
++ l'applicazione [si aggiorna](https://en.wikipedia.org/wiki/Digital_signature) sul posto.
++ [L'impacchettamento](packaging.md) tratta le altre forme di distribuibile.
+
+@ 0 1 0 1525a84a63be13ca172a5beacb9690f1
++ ### Firmare un rilascio
+
+@ 0 4 0 054c5455d70cb253008ddde5fd7c5e77
++ Un'applicazione può essere distribuita con una chiave pubblica e un identificatore
++ dell'applicazione incorporati. Il launcher li usa per verificare qualsiasi aggiornamento
++ candidato, prima di sostituirlo all'originale. La verifica avviene nel launcher, prima che parta
++ la JVM, così nessun codice Scala dell'applicazione in esecuzione si trova sul confine di fiducia.
+
+@ 0 2 0 16c9b93c2805579b16ab644e4fd11ec4
++ `xek` firma anche i rilasci. I suoi sottocomandi di firma richiedono Java 24 o successivo. Genera
++ una coppia di chiavi:
+
+% 2 1 0 1296a2ae9d314cc40d5e3098ca5d80bc
+
+% 0 1 0 18d0e6ad5e23f7f50c33002f7139d099
+
+% 0 1 0 145856911563db8f01664f856770055c
+
+% 1 1 0 0d79ab27e641a0110963fca7916d1831
+
+@ 0 6 0 0bfadc9e40e9fce00c97078f59a73864
++ Ciascuno scrive un seme per una chiave di firma, di 32 byte, come `<prefix>.seed`, e una chiave
++ pubblica ML-DSA-44, di 1312 byte, come `<prefix>.pub`. **I semi vanno tenuti offline**, e il
++ seme di ripristino più di tutti. Chiunque possieda il seme di rilascio può distribuire un binario
++ che i launcher degli utenti accetteranno. La chiave di ripristino esiste perché perdere o far
++ trapelare il seme di rilascio non lasci bloccata ogni installazione.
++ [La crittografia](cryptography.md#signing) descrive le firme ML-DSA.
+
+@ 0 2 0 1ef21b79b630921f1ee162111c9b8209
++ Ogni rilascio viene poi costruito e firmato, in due passi. La build incorpora un identificatore
++ di build, entrambe le chiavi pubbliche e l'identificatore dell'applicazione:
+
+% 2 1 0 112635e9b8ea8c970a219494fd84f04a
+
+% 0 1 0 19c05dfd23bc776418d9e16d61939324
+
+% 0 1 0 168b0d9ee202cb9102262d7e674b94ea
+
+% 0 1 0 10283c7f3785962f04b5592ab902da6e
+
+% 1 1 0 1c2c3c2068d244b30baad0542ba310bc
+
+@ 0 5 0 03ac6f801004055e075bfd888909c9c9
++ `--build-id` è un numero a 64 bit che deve crescere da un rilascio all'altro. Il launcher
++ rifiuta un candidato che non sia più recente di sé stesso. Un candidato costruito per un altro
++ identificatore di applicazione viene rifiutato, anche quando è firmato con la stessa chiave.
++ Omettere `--public-key` e `--app-id` produce un binario il cui launcher rifiuta *ogni*
++ aggiornamento, che è la scelta predefinita giusta per una build locale, dove la via dell'aggiornamento non
++ viene mai percorsa.
+
+@ 0 1 0 08e4693a3647c4ce12bf13d8113df9dd
++ La firma produce poi il file da distribuire:
+
+% 2 1 0 17fe5832a96c533f166350b73fda4cf5
+
+% 0 1 0 0772bfecb4c1ca0a0892604265c06727
+
+% 1 1 0 00defff2b7f8759f169a1df45bd9518d
+
+@ 0 1 0 077e714f478e77180ca91dbf98e96e8d
++ Quell'output è al tempo stesso un eseguibile valido e un candidato valido per l'aggiornamento.
+
+@ 0 1 0 121ead2e26eb6d9d14db13398ecd1a95
++ #### Preparare un aggiornamento
+
+@ 0 5 0 199eada87845f8210aab72ab2f428d17
++ L'applicazione prepara un candidato passando a `Upgrade.stage` una qualsiasi sorgente di byte: un
++ file, una [risposta HTTP](http-client.md), uno [stream](streams.md). Scrive il candidato come
++ `<name>/.pending`, nella directory dei dati dell'applicazione, e ritorna. Il launcher lo verifica
++ all'inizio dell'invocazione successiva, lo sostituisce all'originale, e avvia un nuovo demone al
++ posto di quello vecchio, così nulla viene interrotto:
+
+% 2 1 0 0196e90a99f48e3208c8869ce90b0ca7
+
+% 3 1 0 0faf882b7a735ba409295d61e0481f68
+
+% 4 1 0 1007e65334c6b1bd1a82a04f94d5cd4a
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 16ad754e62114ed9009b72f25c43cc63
+
+% 0 1 0 070272e2a8f2243b08d36ae331c5156a
+
+% 0 1 0 10d8484cf76983e11a5ca703b33a2332
+
+% 0 1 0 07636102ae11429a055d4f94241d6cd3
+
+% 0 1 0 11872135f816a230160443d2c5ceec47
+
+% 0 1 0 16588fc9a68eeeb01b715e83f58bbc79
+
+% 1 1 0 164f69d3f371ba1207594ae5e1c8d98f
+
+@ 0 3 0 0b6ebd4232f8a3820e02ddf9f20fe775
++ `Upgrade.enabled` è falso in una build senza chiave, o senza identificatore dell'applicazione, il
++ cui launcher rifiuterebbe qualsiasi candidato. `resident.buildId` è l'identificatore della build
++ in esecuzione, da confrontare con quello di un rilascio disponibile.
+
+@ 0 3 0 13e7f30284322acf0ab20e4c246a29d7
++ Il launcher registra che cosa ha fatto con un candidato, e `Upgrade.outcome` rilegge la
++ registrazione: il `result`, gli identificatori di build `candidate` e `previous`, e `when` è
++ avvenuto. Il risultato è uno di:
+
+% 2 1 0 15009abff53e603d0ec25bef84047131
+
+@ 0 9 0 173efff5783f50f710016581ddd99150
++ column  Risultato
++ column  Significato
++ row  `Applied`  l'aggiornamento è stato applicato
++ row  `Disabled`  l'eseguibile in esecuzione non accetta aggiornamenti
++ row  `NoRecord`  il candidato non è un eseguibile XEK
++ row  `WrongApplication`  il candidato è stato costruito per un'altra applicazione
++ row  `BadSignature`  la firma del candidato non viene verificata
++ row  `NotNewer`  il candidato non è più recente dell'eseguibile in esecuzione
++ row  `SwapFailed`  il candidato non ha potuto essere sostituito all'originale
+
+% 1 1 0 124e63446d835c6111fe8717a67fba1a
+
+@ 0 1 0 128807ab0bdedc7d1ab461b5dfceffee
++ `Upgrade.acknowledge()` cancella la registrazione, così ogni esito viene segnalato una volta
++ sola:
+
+% 2 1 0 1971aced541562b70444d4ce1855ad52
+
+% 3 1 0 01167bf606b4ce3a050a00ec859e3dce
+
+% 4 1 0 12cc097c5994e82d197a2b9abab8e739
+
+% 0 1 0 07b8413604e17c9d11718112cd2ffb53
+
+% 0 1 0 02e243825bd43c9e0665d0e4f2d2e23c
+
+% 0 1 0 1e2f81c51831fa9c033ca6ae08c8e5a0
+
+% 0 1 0 1252b81c58c7682c03acfefe80d57dff
+
+% 1 1 0 181d1c7909426a031f7c15639d29c334
+
+@ 0 1 0 1c64121c353a8dd118b7b5c6a08dd382
++ #### Che cosa copre la firma
+
+@ 0 1 0 0647a0e73e45efb8090d3351c6a3df7e
++ Ciò che la firma copre è scelto in modo che ciascuna sua parte sventi un attacco specifico:
+
+% 2 1 0 0e34f32b37ebd58b137103bb48a63c88
+
+@ 0 8 0 083be6f8b9c380791c52e10b31e5bde6
++ column  Parte firmata
++ column  Impedisce
++ row  il codice del launcher stesso  la manomissione del launcher
++ row  il JAR incluso  la manomissione dell'applicazione
++ row  l'identificatore di build  la riproposizione di un rilascio più vecchio, firmato legittimamente
++ row  l'identificatore dell'applicazione  l'installazione al suo posto del rilascio di un'altra applicazione
++ row  il byte di flag che permette un downgrade  la sua attivazione a posteriori
++ row  le chiavi stesse  la sostituzione di una diversa chiave di rilascio in un binario altrimenti legittimo
+
+% 1 1 0 0d012ddb7386cd290f7928533e30d9b9
+
+@ 0 2 0 1c192c2c9b8c494b183345dc82e3c3a1
++ Un rollback deliberato, come distribuire la 42 sopra una 43 difettosa, viene firmato con
++ `--allow-downgrade`, che imposta quel flag all'interno del payload firmato.
+
+@ 0 6 0 15d6875064138f01090d461a2faa4ac5
++ Le chiavi rispetto a cui un candidato viene controllato sono sempre quelle del binario *in
++ esecuzione*, così la rotazione delle chiavi funziona come una catena. Un rilascio firmato con la
++ vecchia chiave può portare una nuova chiave come sua `--public-key`, dopodiché i rilasci vengono
++ firmati con quella nuova. `xek sign` chiede `--foreign-key` per firmare con una chiave che il
++ binario non porta, poiché altrimenti si tratta quasi sempre di un errore. Anche un rilascio
++ firmato con la chiave di ripristino viene accettato, e può sostituire l'una o l'altra chiave.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 6 0 0fa2a2d1a81ca1a402377b31497d51b9
++ - [Le applicazioni da riga di comando](cli.md) descrivono il corpo che `cli` esegue.
++ - [L'ambiente](environment.md#overriding-for-a-block) spiega come ogni invocazione vede il
++   proprio ambiente.
++ - [La concorrenza](concurrency.md) esegue le invocazioni fianco a fianco.
++ - [L'impacchettamento](packaging.md) costruisce altri tipi di distribuibile.
++ - [Il server HTTP](http-server.md), [LSP](lsp.md), [i processi](processes.md) e [la scoperta dei servizi](service-discovery.md) descrivono ciò che un demone serve, avvia e pubblicizza.

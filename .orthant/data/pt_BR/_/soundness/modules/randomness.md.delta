@@ -1,0 +1,327 @@
+orthant 2 language
+
+@ 0 1 0 051268bec1ae679f0f73e22092352fe4
++ ## Aleatoriedade
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 3 0 08ac1775963e7956019568ac03e537cb
++ Valores aleatórios de qualquer tipo, e não só números, vêm da [classe de tipos] `Randomizable`.
++ Uma instância é [derivada][derivação] para uma case class ou uma enumeração a partir de sua
++ estrutura, então uma árvore inteira de dados de teste é uma única chamada.
+
+@ 0 4 0 11a3b60a640951071e4fe6787450a869
++ A *origem* da aleatoriedade e a *forma* dos números são escolhas separadas, e ambas são
++ explícitas. A origem é um [given] no escopo, e é ou semeada e reproduzível, ou
++ criptograficamente segura. A distribuição da qual um `Double` é sorteado é outro given:
++ uniforme, gaussiana ou gama.
+
+@ 0 1 0 115fc41d9aca576a1c617c80fb9c61f7
++ ### Sobre a aleatoriedade
+
+@ 0 1 0 0b287a0af7aebe3b17dc4f54548f2e68
++ A aleatoriedade esconde suposições:
+
+@ 0 6 0 1b5dd433ca65ae0507fcb9a1f59ee7f0
++ - `math.random()` responde a apenas uma pergunta estreita, um `Double` uniforme, e todo o resto
++   é montado à mão.
++ - A semente é global e implícita, então um teste que falhou e dependia do acaso não pode ser
++   reproduzido.
++ - Se o gerador é previsível ou não, isso não aparece em lugar nenhum do código. É inofensivo em
++   uma simulação, e fatal em um gerador de tokens.
+
+@ 0 1 0 0d07b3c5d8cf53660ac5db44716c3863
++ Aqui as preocupações são separadas, e cada uma tem um nome:
+
+% 2 1 0 12c5742241ea281c1a9b8653c408c57c
+
+@ 0 6 0 1f4f2900b3256139083c9df9b88b8f9a
++ column  Preocupação
++ column  Declarada por
++ row  onde a aleatoriedade é usada  um bloco `stochastic`
++ row  qual gerador a fornece  uma importação de `randomization`
++ row  qual distribuição dá forma a um número  um given `Distribution`
++ row  como um valor de algum tipo é gerado  uma instância de `Randomizable`, geralmente derivada
+
+% 1 1 0 1def067bc124cb0017204b046ed10b65
+
+@ 0 3 0 007a19228b8facd803d38a1cb4dce6ca
++ Uma origem de aleatoriedade que é uma [capability], e não um global, é
++ [contexto declarativo](../../philosophy/declarative-context.md): a reprodutibilidade decorre do
++ escopo, e não da disciplina.
+
+@ 0 2 0 043a31d248d554780d48d3d6a882ef20
++ Tudo vem do pacote `soundness`. Uma origem semeada faz cada execução produzir os mesmos valores,
++ e a última importação permite que os exemplos imprimam seus resultados:
+
+% 2 1 0 0cf9f186964347b40bcc4502858b99e7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1029d9e35407c08d0fa10ba8fd604607
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 181527155f388374010f313f7859cc7a
+
+% 1 1 0 1b4764e12438c8d616d73180548a9442
+
+@ 0 1 0 15a1dfc9ffacdf830f6a556d844cdc28
++ ### Geração de valores
+
+@ 0 3 0 0f740b055791c076148617bcbfcfdd23
++ `stochastic` abre um escopo que tem uma origem de aleatoriedade. Dentro dele, `arbitrary` produz
++ um valor de qualquer tipo com uma instância de `Randomizable`. Os tipos primitivos têm
++ instâncias, e uma case class ou uma enumeração deriva uma a partir de seus membros:
+
+% 2 1 0 16ecc03c1637b0b21ddfec033bb7e1a3
+
+% 0 1 0 01a43426d283013d1411ba98ade18d0c
+
+% 1 1 0 12f4fabba0a742b8156d3f40eaffc33b
+
+% 3 1 0 141eb5e17bf7ec3402b5dd5bc45b802c
+
+% 4 1 0 0949720f8fabcdfa1bb66c00eae56077
+
+% 5 1 0 19ef4871d9460e8307786bc9247d81fa
+
+% 6 1 0 1fd0358d41cadc18041d908ca2b2d56b
+
+% 0 1 0 0134b703c20f7c0f13adca1344e6ab03
+
+% 0 1 0 1f81ec2f5ed054621aeb36c292c8b720
+
+% 1 1 0 03a21f8ab5cc2c7c0dac28a7fdaa5f1d
+
+@ 0 2 0 1366c69bef6079fb15f5943710dade9f
++ A origem é a semeada, então executar o código de novo com a mesma semente produz os mesmos
++ valores. É disso que a reprodução de um teste de propriedade que falhou precisa.
+
+@ 0 1 0 0acb5620b50e2580186197663118d23a
++ Fora de um bloco `stochastic` não há origem, e nenhum valor aleatório pode ser pedido:
+
+% 2 1 0 0e7c432000adafdc14d82c668c7f8742
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 0f7bd0488d11bb2a1c2a5e98a6f8beff
+
+% 1 1 0 158e7f2f2e8806e101b5498b2dd63b05
+
+@ 0 1 0 130ec102035b54480bb76ee4e21b3dd4
++ ### Distribuições
+
+@ 0 3 0 19b24c4162cb42440e6eb8577d13f375
++ Um `Double` aleatório precisa de uma forma, que uma `Distribution` no escopo fornece. Até que o
++ código diga a que tipo de `Double` se refere, nenhum pode ser gerado, o que impede o erro
++ clássico de tratar um sorteio uniforme como se fosse normal.
+
+% 2 1 0 183e9a4539a9c8ab1b4b8679a6951c52
+
+@ 0 6 0 1ab15f7b4a9964e6155b877cea0b7d14
++ column  Distribuição
++ column  Parâmetros
++ column  Sorteia de
++ row  `Gaussian`  `mean`, com padrão `0.0`, e `std`, com padrão `1.0`  uma [distribuição normal](https://en.wikipedia.org/wiki/Normal_distribution)
++ row  `UniformDistribution`  `start` e `end`  um intervalo plano
++ row  `Gamma`  `shape` e `scale`  uma [distribuição gama](https://en.wikipedia.org/wiki/Gamma_distribution)
+
+% 1 1 0 0d5b4e686aaec1af1e1f3beb0c65aa12
+
+@ 0 1 0 013e4dac56a7f82c0e7c63860999bdd4
++ As escolhas comuns também são givens, a importar do pacote `randomDistributions`:
+
+% 2 1 0 075b784d4a7b996c122e98e44eb9c744
+
+% 0 1 0 1ca77613e7a1c24100f8bf0c68a101b5
+
+@ 0 5 0 17930fc81a070c38046496e5f157595b
++ column  Sorteia de
++ row  `gaussianDistribution`  a distribuição normal padrão
++ row  `uniformUnitIntervalDistribution`  um intervalo plano de 0 a 1
++ row  `uniformSymmetricUnitIntervalDistribution`  um intervalo plano de -1 a 1
++ row  `binaryDistribution`  um `Long` aleatório, convertido em `Double`
+
+% 1 1 0 0be6b0eeba31cb7f1ab5bcd63257f2f4
+
+@ 0 1 0 1d02fd52b8279153025858d72a2743c1
++ Dez mil sorteios de uma gaussiana com desvio padrão 2 têm uma média próxima de 0:
+
+% 2 1 0 0c9ceb530fe59d6206c626b1e683e0ef
+
+% 0 1 0 194ab27b6849161811d3353a638d2a5c
+
+% 0 1 0 059d0245709801201bf6e45fb94aad1e
+
+% 0 1 0 1acc30011bf354720580295b08959665
+
+% 1 1 0 0424e221e947adbd0960ce313ebef16b
+
+% 3 1 0 103b223bf3a59879160eed0f31879006
+
+% 4 1 0 1f2959cf75c5dcfa0212600668625f1f
+
+% 5 1 0 13c1ae4e76f6f9cc118466a6801d9c82
+
+% 0 1 0 1573d5949d155f9901d805a256407e9b
+
+% 1 1 0 1200bb4733db0aeb0baa320ddaccc1d4
+
+@ 0 1 0 07d00fd6f6523d0803467bdc7727a7fc
++ [Matemática](mathematics.md) tem as estatísticas para descrever uma amostra assim.
+
+@ 0 1 0 168d95327db3f0d30be9facbb9afa210
++ ### Origens
+
+@ 0 4 0 15e3146ddffcc2500b377d8dbd541c73
++ O gerador por trás de um escopo é escolhido por uma importação do pacote `randomization`. Os
++ geradores seguros sorteiam da origem
++ [criptograficamente segura](https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator)
++ do JDK, para valores que um adversário não pode prever:
+
+% 2 1 0 07ca240061a7c51b02133d26fd7812b7
+
+@ 0 7 0 0276cd5022a929a40fe847398f2b6a2a
++ column  Importação
++ column  Gerador
++ column  Reproduzível
++ row  `seededRandomization`  comum, a partir da `Seed` no escopo  sim
++ row  `unseededRandomization`  comum  não, varia de uma execução para outra
++ row  `secureUnseededRandomization`  seguro  não
++ row  `stronglySecureRandomization`  a origem segura mais forte da plataforma  não
+
+% 0 1 0 0f2bed8aa7e6961717544fd19f931ad4
+
+% 0 1 0 1bed5aa34f3598a212f0b94e79b0bd8f
+
+@ 0 1 0 1670d17ebb2f4a9f0b75db47ca4a2970
++   cell  seguro, semeado a partir da `Seed` no escopo
+
+% 0 1 0 0ed568419db6988e15566084b5954923
+
+% 1 1 0 1a8eadecc0663acd1b08d1b94578a18d
+
+@ 0 2 0 08c027161ddc0c85089f5f5345d725d7
++ A simulação e a geração de segredos, portanto, não podem ser confundidas: a diferença está
++ escrita na importação. [Criptografia](cryptography.md) gera chaves a partir das origens seguras.
+
+@ 0 1 0 0fd7938dbbdb68b002133b0c2728d8de
++ ### Coleções e tipos próprios
+
+@ 0 2 0 1b426a4d520a92371d104f5c847bae52
++ Uma coleção aleatória precisa de um tamanho, que é escolhido por um given `Random.Size`.
++ `randomSizes.uniformSizeUpto100` o limita a cem elementos.
+
+@ 0 2 0 0da63febff67ef2915102d984cb749c3
++ Um tipo cujos valores precisam de mais cuidado do que gerar cada campo define uma instância
++ própria, ou mapeia uma existente:
+
+% 2 1 0 02e59fd1a7c650650b8de2ef0d6e5f81
+
+% 0 1 0 0c8d61cba5532130139b955485d8fe14
+
+% 0 1 0 16b9d030eaa0bb9319e96f8669d14d86
+
+% 0 1 0 18e08edbf5ed637010452ad5ec96b5e8
+
+% 0 1 0 199e4e07a8a8230c0a542a7ab37b39d3
+
+% 1 1 0 01afef018911e76401731506abccfd3a
+
+% 3 1 0 035e8439b0afceab107df3cc637c2354
+
+% 4 1 0 16e26f7524d76b011db0b4abe38e56aa
+
+% 5 1 0 12d3ac4143030e1308d06c59856c0b2c
+
+% 6 1 0 0469e3ff3a58b73f18bc78b7e19544ab
+
+% 0 1 0 0fff18ebbb1fdd0e04ae5d335011f820
+
+% 1 1 0 17398cf8fe086c7f15753b13c7bcabba
+
+@ 0 3 0 15b0cf2fc0d6c7191c717806ef02070e
++ Onde gerar cada campo *é* o certo, a instância é derivada do tipo. Uma case class de campos
++ randomizáveis é randomizável, e uma hierarquia selada escolhe entre suas variantes. É disso que
++ o [teste](testing.md) baseado em propriedades precisa, para gerar valores de um tipo
++ arbitrário.
+
+@ 0 1 0 194184dfb26c034f0b4a05696de5550b
++ ### Reprodução de uma execução
+
+@ 0 4 0 1d441281b967468d10c7554d69b4e298
++ Um teste aleatorizado que falha não vale nada se não puder ser executado de novo. Sob
++ `seededRandomization`, o escopo inteiro é uma função de sua `Seed`. Registrar a semente de uma
++ execução que falhou, e fornecê-la de novo, reproduz exatamente os mesmos valores. Isso inclui os
++ tamanhos das coleções geradas, que são sorteados do mesmo gerador:
+
+% 2 1 0 02b1d92a3f6e8f7d1a15dd2291c9759f
+
+% 0 1 0 1f7047c7ba0ee630119084bd827ab81c
+
+% 0 1 0 187d6bd54615a92c174fe4b332aa3e96
+
+% 0 1 0 0605760c2127a12103ce0198b90fbaa4
+
+% 0 1 0 16bd281bd1ac28721962e36a9969637b
+
+% 0 1 0 12439fc06c330cee0154f739d0e5fb78
+
+% 1 1 0 015a711dff93f2850271c29aeaecaf75
+
+% 3 1 0 1c0a646c65a2a2d301ec4b174176f00a
+
+% 4 1 0 0619190b5586988609d152ed423610ed
+
+% 5 1 0 1c8fa37c2102a1a00ea728b0265d41f0
+
+% 1 1 0 1d3a2a758bd489421276b7a018978acc
+
+% 1 1 0 08a350d3561414051e0e74e5093fe45e
+
+% 1 1 0 1ed64cddc17330d01afa035bfdf238f1
+
+@ 0 2 0 1782bbd1d10ab19d1ee7f36b2824fd8e
++ O aninhamento também é determinístico. O gerador de um escopo é derivado do gerador do escopo
++ que o envolve, então restaurar a semente externa restaura a sequência interna.
+
+@ 0 6 0 036edd62e03bf25a074655033f03d784
++ O que fica determinado é a *sequência de sorteios*, e ela só é tão reproduzível quanto o código
++ que os faz. Código de uma única thread sorteia em uma ordem fixa, e reproduz exatamente. Código
++ [concorrente](concurrency.md) que sorteia de um mesmo escopo, não. Suas threads se intercalam
++ de maneira diferente a cada execução, então a mesma semente entrega valores diferentes a threads
++ diferentes. Onde uma computação concorrente precisa ser reproduzível, cada fio precisa de um
++ escopo próprio, semeado de forma determinística.
+
+@ 0 1 0 0041d7998c8fa67615fb213e7db833a0
++ ### Embaralhamento e cara ou coroa
+
+@ 0 2 0 0e5d97fce900569c12c0b4906f440eaf
++ Um `Random` no escopo também embaralha uma sequência, e responde a um cara ou coroa justo. São
++ pequenas conveniências que, de outro modo, acabam escritas à mão, e mal:
+
+% 2 1 0 1a91a5fef4ab398f1d232a166a58c1a0
+
+% 3 1 0 07044499cfc47a56185b898c9ff5c543
+
+% 4 1 0 141649117256874d0fbfdf720f633313
+
+% 0 1 0 0aafeb3723b5c8871e7f33bb07714917
+
+% 0 1 0 14abeb1cfc1f76b20fbac394e97409ae
+
+% 0 1 0 1810c5ec00edd34f13114768c10f4fe4
+
+% 1 1 0 0692f74cb9b667830aac75391cf7d782
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 1 0 027436a7ee410be51132a8daf41b26cf
++ - [UUIDs](uuid.md) e o [posicionamento de rótulos](label-placement.md) sorteiam de uma origem de aleatoriedade semeada.

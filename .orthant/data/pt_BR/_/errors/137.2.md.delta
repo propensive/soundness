@@ -1,0 +1,29 @@
+orthant 2 language
+
+% 0 1 0 0f1fc0986cbdbd7c0e9ffb1209c4c120
+
+@ 0 1 0 18b727aa733ee7710eda9ac95b1d1d52
++ Lançado quando uma ferramenta nativa de que o linker precisa não está no `PATH`.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 09fffb1ab7d0a0b11f5c7079248322ca
++ Linkar um binário nativo ou um pacote Android invoca, pelo shell, ferramentas que a JVM não
++ fornece — `clang` para a linkagem nativa, e o R8 e as ferramentas de assinatura para um APK. Este
++ erro nomeia a ferramenta que não pôde ser encontrada.
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 1 0 181c427c5ae66d56030a5179d4e9ed65
++ Instale a ferramenta nomeada, ou acrescente-a ao `PATH` do processo que executa o build.
+
+@ 0 1 0 0b71e6280b1370aa1e108b1a528a55e4
++ > Este erro usava antes o código `↯/s.137.3`, que colidia com `CompilerError`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 14ebaa7ce423e2b41522f803fe786b5d
++ - Código-fonte: `lib/anthology/src/core/anthology.Toolchain.scala`

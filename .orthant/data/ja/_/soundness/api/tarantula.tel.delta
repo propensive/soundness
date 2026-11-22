@@ -1,0 +1,1376 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 16042307d651ed5508cc5040a8d03817
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1e5bb8325dbb8463142e7e843ed26b14
++ info   W3C WebDriver プロトコルによるブラウザ自動化：セッション、要素、アクション、スクリーンショット
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 039c4f088f1479cb06f47724678906e9
++     _Tarantula_ は [WebDriver](https://www.w3.org/TR/webdriver2/) プロトコルを通して Scala からウェブブラウザを操作する。
++     ブラウザは値であり、`WebDriver.Chrome`、`WebDriver.Firefox`、`WebDriver.Safari`、`WebDriver.Edge` のそれぞれが、そのブラウザの標準のドライバープログラムを表す。
++     その値でセッションを開くと、ドライバーを起動し、待ち受けを始めるまで待ち、セッションを作成する。そしてブロックが終わると、ブロックが値を返したか例外を投げたかにかかわらず、セッションを削除してドライバーを停止する。
++     すでに動いているドライバーやリモートの Selenium グリッドは、`WebDriver(url, capabilities)` によって同じ `WebDriver.Session` インターフェースで操作する。
+
+@ 0 5 0 168d2f70a86f98131b0380f6a71a82c3
++     セッションの中では、`browser` がスコープ内のハンドルである。
++     これはページを移動し、タイトルとソースを読み、型付きの条件で要素を探す。条件は HTML タグ、検証済みの DOM id、クラスのリスト、CSS セレクターのリスト、XPath やリンクテキスト、そして `Focusable` インスタンスを持つあらゆるものである。
++     さらにウィンドウとフレームを切り替え、アラートを処理し、クッキーとタイムアウトを管理し、キーボードとポインターのアクションを実行し、JavaScript を実行し、ページを印刷し、スクリーンショットを撮る。
+
+% 2 1 0 1c1bdf69fda8a01b059e5cbe24aaf84e
+
+% 3 1 0 0755df3a74dab3680060380ca025906d
+
+% 4 1 0 17d6c98b5abf7c0c1b0d4b69a5843e2f
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 1e13bb2d27b6fcca0581e75784422724
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 1 1 0 06ceab4636d2e5561f158dcde8bc05fa
+
+% 2 1 0 0a8cca522fa4b09d1175af1b76e9dbad
+
+% 3 1 0 180e80c27ca44f83061efdc97160b7ee
+
+% 2 1 0 09f66897003c39d800ab1f949f063544
+
+% 1 1 0 195693bda4cceac80613f9088269e653
+
+@ 0 4 0 1e8e1129596843e71a5359cbc683969e
++     セッションには、インターネットアクセス（`internetAccess.online`）、ドライバーと通信する HTTP クライアント（`httpBackends.javaNetHttp`）、`Tactic[WebDriver.Error]` と `Diagnostics`、そして `Http.Event` のロガーが必要である。
++     ローカルのドライバーを起動するには、さらに `Monitor`（`supervise` ブロック）、`WorkingDirectory`、ドライバープロセスのための `Environment`、そして `Exec.Event` のロガーが必要である。
+
+@ 0 7 0 04de9c25f63469e006d2c3e9225d61ed
++     `WebDriver.Session` ハンドルはケイパビリティであり、キャプチャ検査によって、それを所有するブロックの中に閉じ込められる。
++     それを返すこと、またはそれをキャプチャするものを返すことはコンパイルエラーになる。
++     `WebDriver.Element` ハンドルは純粋な値だが、それに対するすべての操作はセッションをコンテキストパラメーターとして受け取る。そのため、ハンドルはセッションの外では何もできず、ページが変わった後に使うと、理由 `StaleElement` の `WebDriver.Error` が発生する。
++     到達できないドライバー、形の誤った応答、ドライバーが報告するあらゆるエラーなど、すべての失敗は一つの `WebDriver.Error` として届き、W3C のエラーコードをその `WebDriver.Error.Reason` として持つ。
+
+@ 0 4 0 0d71c40d7da9afe9173faa8c9a803971
++     要素の選択は `/` ではなく `\` で書く。
++     `browser \ Li`、`element \ cls"item"`、`shadowRoot \ Button` はそれぞれ一致するものをすべて返し、`element(…)` はちょうど一つを返し、そうでなければ `NoSuchElement` を発生させる。
++     バックスラッシュを使うことで、symbolism の算術の `/` が、同じスコープで量を割るために空いたままになる。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     このライブラリには二つのソースセットがある。
+
+@ 0 8 0 0277ff94e0466907131af169257bd96c
++     - `tarantula.core` — `WebDriver` とその入れ子の `Session`、`Element`、`ShadowRoot`、`Error`、`Local`、`browser` アクセサー、そして要素の拡張（`click`、`value`、`innerText`、`attribute`、…）。ブラウザを起動するには、ドライバーのバイナリー（`chromedriver`、`geckodriver`、`safaridriver`、`msedgedriver`）がパス上に必要である。プロトコルの層そのものはただの HTTP なので、どの WebDriver エンドポイントに対しても試せる。
++     - `tarantula.image` — `screenshot()` 拡張。スクリーンショットを hallucination によって `Raster in Png` にデコードする。ブラウザ自動化が画像コーデックに依存しないよう、分けてある。
+
+@ 0 2 0 1bae0a484bb0a74d190bf26698ca9455
++     すべては `soundness` アンブレラにエクスポートされているので、ユーザーは `import soundness.*` と書き、上記の環境の given を名前でインポートする。
+
+% 0 1 0 1de92eea923899891f87ee2d2549fc9f
+
+% 0 1 0 19b732b9b7efa4471d0079e891ac4989
+
+% 0 1 0 03d04ce52428b0dc1cbd321fc1fb3e50
+
+@ 0 1 0 161f825464c05ad41209a2099b285c7f
++ entry .WebDriver   操作するブラウザ：ローカルのドライバープログラム、またはすでに URL で待ち受けているドライバー
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 7 0 079fb060952aee8f1305a47d8b25ed9e
++       `WebDriver` は名前を共有する二つのものである。
++       **型**としては、すでに待ち受けているドライバー（手で起動したもの、または Selenium グリッド）であり、その `#base` URL と、要求される `#capabilities` によって指定され、`WebDriver(url"http://localhost:4444", capabilities)` で作る。
++       **オブジェクト**としては、四つのローカルブラウザ（`.Chrome`、`.Firefox`、`.Safari`、`.Edge`）の置き場所であり、それぞれがセッションの間ドライバープログラムを起動する `WebDriver.Local` である。また、すべてのセッションが使う型 `Session`、`Element`、`ShadowRoot`、`Error` の置き場所でもある。
+
+@ 0 2 0 011389b8975d84ce089a3a2cde4e1508
++       どちらも `Sessional` なので、`driver.session: session ?=> …` でどちらにもセッションを開ける。セッションは、ブロックが終わると `finally` の中で閉じられ、起動したドライバーも停止される。
+
+% 2 1 0 07268d3e3cd785431b5ec5e9ed2c7f71
+
+% 3 1 0 07bad6332436d64b008af29515d11852
+
+% 4 1 0 0e55d76e344ca0b116a9ae8cd8235fec
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 00abfc3c0dc8d1e40c575642504c5ed2
+
+% 0 1 0 175d5074f3e6597c0675032ed74d163d
+
+% 0 1 0 014976018f1c004b00d0cf02658b8e6e
+
+% 0 1 0 163dd072280af31914aa9ef6d2b64ce6
+
+% 1 1 0 002e485b7c8088771f223420447f5d0b
+
+% 2 1 0 007b72edda9142a11583d6c606566b91
+
+@ 0 3 0 1ab55cb2b46fffdb1f4701b04052a9ec
++       `apply` で作った `WebDriver` は、その `capabilities` の JSON をそのまま `POST /session` のペイロードとして送る。そのため、Selenium グリッド独自の拡張、プロキシ、タイムアウト、モバイルエミュレーションはすべてこれを通して要求できる。
+
+% 0 1 0 0d45e06297bd6b991d5e7567ce632101
+
+% 0 1 0 0761615d7984f09a0533cb47a4135584
+
+% 0 1 0 03be0b5f6c79342f1cf06afbca556f63
+
+% 0 1 0 1ab8d8eb9b18c99019d257f32a423dd6
+
+@ 0 1 0 02f683e312a26e5812ef0dbf25431f17
++   entry .Driver   四つの W3C ドライバープログラム：chromedriver、geckodriver、safaridriver、msedgedriver
+
+% 1 1 0 1171ca25bef6605b0e3ef42db75724b9
+
+@ 0 17 0 16b0e459f2a4134d13266142d030096f
++         `WebDriver.Local` が起動できるドライバープログラムの列挙型であり、サブクラスではなくデータとして表される：`Chromedriver`、`Geckodriver`、`Safaridriver`、`Edgedriver`。
++         それぞれが、ポートを指定して自身を起動するコマンド、そのブラウザが応じる `browserName` ケイパビリティ、そしてそのブラウザをヘッドレスモードにする引数を知っている。
++         プロセスのライフサイクルはどれも同じなので、ブラウザを追加するには新しいケースを一つ足せばよい。
++     entry #command   ポートで待ち受けるようにドライバーを起動するシェルコマンド
++         `chromedriver --port=N` と `msedgedriver --port=N` はポートを等号付きで受け取り、`geckodriver --port N` と `safaridriver --port N` は別の引数として受け取る。
++         ドライバーのバイナリーはパス上になければならない。
++     entry #browserName   ドライバーのブラウザが応じる `browserName` ケイパビリティ
++         W3C のケイパビリティオブジェクトの綴りどおり、`chrome`、`firefox`、`safari`、`MicrosoftEdge` のいずれか。
++     entry #headless   ブラウザにヘッドレスモードがあれば、それを選ぶブラウザ引数
++         Chrome と Edge では `--headless=new`（古い `--headless` がその別名になって以来、サポートされている綴り）、Firefox ではダッシュ一つの `-headless`、そして Safari では何もない。Safari にはヘッドレスモードがないので、それを求めてもエラーにはならず、何も起きない。
++   entry .Local   ブラウザと、それを操作するドライバープログラムを表す純粋な値
+
+% 1 1 0 0780e7b4c07d080c17e0c0044272d27e
+
+@ 0 6 0 02d7d3e084a0cba91ca6aac4c11c28a0
++         `WebDriver.Local` は、操作するブラウザを、その `WebDriver.Driver`、ドライバーが待ち受けるポート（`#on` で指定しない限り `4444`）、ブラウザを起動するときの引数、そして任意で、生成されるものの代わりに送るケイパビリティオブジェクトによって指定する。
++         プロセスも接続もセッション id も持たないので、テスト間で共有する `val` にして、複数のセッションで順番に使える。`.Chrome`、`.Firefox`、`.Safari`、`.Edge` は四つの標準の値である。
+
+% 2 1 0 0a5258bffb3bfa74019029432b16aed9
+
+% 3 1 0 1e759c446bcd4895121d52ed7366967a
+
+% 4 1 0 0af4f944e97e3e42151cccec0676969e
+
+% 0 1 0 010665a457d299ee1483d2a88ce7bbe2
+
+% 2 1 0 12c2b394b112716a17ca302d2c8f3dc6
+
+% 0 1 0 149388f4119b4b04180e8c50f2af55ad
+
+% 1 1 0 03a7596355105d5b1b3198d3afa3e0ca
+
+% 0 1 0 1391a6377a4ce25615ed3bd0a1d0f043
+
+% 1 1 0 077bff8a964b5be91943398aed6236f6
+
+@ 0 6 0 14a001e83c449dd3113c27e85ee12462
++         セッションを開くと、ドライバーのコマンドをフォークし、応答するまで最大五秒間、50 ミリ秒ごとにその `GET /status` エンドポイントをポーリングし、`#capabilities` でセッションを開き、ブロックが終わるとドライバーを停止する。
++         フォークできないドライバーは理由 `SessionNotCreated` の `WebDriver.Error` を発生させ、待ち受けを始めないドライバーは理由 `Timeout` のものを発生させる。
++         同じポートで同時に二つのセッションを開くと衝突するので、セッションを並行して実行するテストスイートは、`#on` でそれぞれに別のポートを与える。
+
+% 0 1 0 1ad010f6f466c48109f2e4bb51cb9c01
+
+% 1 1 0 1028621768ccd3be06bf335f11646a13
+
+@ 0 1 0 146393cdcde9c2ec0f7f66bdb237d9fb
++     entry .Sessional   `WebDriver.Local` でセッションを開く：ドライバーをフォークし、待ち、操作し、停止する
+
+% 1 1 0 1a99ac5f26d3c98d15948533f4206b14
+
+@ 0 47 0 01cd3622234e90961f4f572efe03f5e9
++           `WebDriver.Local` のための `aperture.Sessional` インスタンスで、`Self = Local`、`Result = Session^` である。
++           `Online`、`Http.Backend`、`WorkingDirectory`、（ドライバープロセスが継承する）`Environment`、`Monitor`、`Http.Event` と `Exec.Event` のロガー、`Tactic[WebDriver.Error]`、`Diagnostics` が必要である。
++           `.sessional` given がこれを構築するので、呼び出し側がクラスの名前を書くことはない。
++       entry #session   ドライバーをフォークし、待ち受けを待ち、ブロックを実行し、ドライバーを停止する
++           新しい `WebDriver.Session` をスコープに置いて `lambda` を実行し、その後 `finally` の中でドライバーのジョブを中止する。
++           フォークの失敗は理由 `SessionNotCreated` の `WebDriver.Error` として報告され、五秒以内に `GET /status` に応答しないドライバーは理由 `Timeout` のものとして報告される。
++     entry .sessional   `local.session: session ?=> …` を解決できるようにする given
++         `WebDriver.Local` のコンパニオンにあるので、必要なコンテキスト値がスコープにあれば、インポートなしで見つかる：`Online`、`Http.Backend`、`WorkingDirectory`、`Environment`、`Monitor`、`Http.Event is Loggable`、`Exec.Event is Loggable`、`Tactic[WebDriver.Error]`、`Diagnostics`。
++     entry #driver   このブラウザを操作するドライバープログラム
++     entry #port   ドライバーが待ち受けるポート。デフォルトは `4444`
++     entry #arguments   `--headless=new` など、ブラウザを起動するときの引数
++     entry #requested   生成されるものの代わりに送るケイパビリティオブジェクト、または `Unset`
++     entry #on   ドライバーを別のポートで動かす同じブラウザ
++         ポートごとのセッションにはそのポートが空いている必要があるので、並行して実行するセッションはそれぞれ自分のポートを取る：`WebDriver.Chrome.on(4451)`。
++     entry #headless   ウィンドウなしで起動する同じブラウザ
++         ドライバーのヘッドレス引数（`WebDriver.Driver#headless`）を `#arguments` に追加する。ヘッドレスモードのない Safari では何も変えない。
++     entry #arguing   起動引数を追加した同じブラウザ
++         `WebDriver.Chrome.arguing(t"--window-size=1280,800", t"--lang=en")` は、`goog:chromeOptions`、`moz:firefoxOptions`、`ms:edgeOptions` の指定どおり、ブラウザを起動するときの引数を追加する。
++     entry #requesting   ケイパビリティオブジェクトを丸ごと置き換えた同じブラウザ
++         プロキシ、タイムアウト、モバイルエミュレーション、グリッドの拡張など、`WebDriver.Local` がモデル化しないものについては、`POST /session` のペイロード全体を `Json` として与え、生成される `alwaysMatch` オブジェクトを置き換えられる。
++     entry #capabilities   `POST /session` のペイロード：ブラウザとその引数を指定する `alwaysMatch` オブジェクト
++         W3C の形 `{"capabilities": {"alwaysMatch": {…}}}` で、ブラウザの名前とベンダーのオプションオブジェクト（`#arguments` を持つ `goog:chromeOptions`、`moz:firefoxOptions`、`ms:edgeOptions`。Safari は名前だけを取る）を含む。
++         `firstMatch` は一つのリクエストを複数のドライバーに合わせるためにあり、`Local` はちょうど一つのドライバーを指定するので、生成されるのは `alwaysMatch` だけである。
++         `#requested` が設定されていれば、代わりにそれを返す。
++   entry .Chrome   ポート 4444 の `chromedriver` を通した Chrome
++       `WebDriver.Local(WebDriver.Driver.Chromedriver)`。`WebDriver.Chrome.headless.session: …` はヘッドレスの Chrome セッションを開く。
++   entry .Firefox   ポート 4444 の `geckodriver` を通した Firefox
++   entry .Safari   ポート 4444 の `safaridriver` を通した Safari
++       Safari にはヘッドレスモードがないので、`WebDriver.Safari.headless` は `WebDriver.Safari` と同じである。
++   entry .Edge   ポート 4444 の `msedgedriver` を通した Microsoft Edge
++   entry .Sessional   すでに待ち受けているドライバーでセッションを開く
+
+% 1 1 0 0618dd3ccad4569d129733786409958a
+
+@ 0 19 0 17bf89f005ec377207cc84c612aacb0c
++         `WebDriver` のための `aperture.Sessional` インスタンスで、`Self = WebDriver`、`Result = Session^` である。
++         `POST /session` とドライバーの `#capabilities` でセッションを作成し、ハンドルをスコープに置いてブロックを実行し、`finally` の中でセッションを削除する（これがブラウザを閉じる）。
++         削除の失敗は握りつぶす。すでに終了したドライバーは後始末ができず、それを報告するとブロック自身のエラーが隠れてしまうからである。
++         ローカルのドライバーの起動（`WebDriver.Local.Sessional`）は、これを合成したものである。
++         `Online`、`Http.Backend`、`Http.Event` のロガー、`Tactic[WebDriver.Error]`、`Diagnostics` が必要である。
++     entry #session   セッションを作成し、それをスコープに置いてブロックを実行し、削除する
++         セッションの `Result` 型は新しい `Session^` である。呼び出しごとのハンドルはそれぞれ独自のケイパビリティなので、ブロックはそれも、それをキャプチャするものも返せない。
++   entry .sessional   `webDriver.session: session ?=> …` を解決できるようにする given
++       `WebDriver` のコンパニオンにあるので、`Online`、`Http.Backend`、`Http.Event is Loggable`、`Tactic[WebDriver.Error]`、`Diagnostics` がスコープにあれば、インポートなしで見つかる。
++   entry .apply   すでにベース URL で待ち受けているドライバーと、要求するケイパビリティ
++       `WebDriver(url"http://localhost:4444", capabilities)` は、手で起動したドライバーや Selenium グリッドを、ローカルのブラウザと同じ `Session` インターフェースで操作する。
++       ケイパビリティは `POST /session` のペイロードとしてそのまま送られる。`WebDriver.Chrome.capabilities` は既製のものであり、ケイパビリティを必要としないドライバーには `t"{}".read[Json]` で足りる。
+
+% 2 1 0 07abcf4cbdc8cebb19509f6dd6f6038f
+
+% 3 1 0 0cb4d3e116e9d17817fc31c1688e46d8
+
+% 4 1 0 09d78a55c108f4731688026f4ccf0799
+
+% 0 1 0 1e0ee7bcadecb3de095db31a90514942
+
+% 1 1 0 16cb49d46afb4ab1033e8829e1f0d27e
+
+% 2 1 0 139b826e37699b6300554a99387c3fb5
+
+% 2 1 0 1daa274d18e44b8812a752b2c493c7a2
+
+@ 0 3 0 12b978690826955505d179d7a75a48b6
++   entry #base   ドライバーが待ち受ける URL。コマンドは `base/session/id` の下に宛てられる
++   entry #capabilities   `POST /session` のペイロードとして送る JSON
++   entry .Error   失敗した WebDriver のアクション：W3C のエラーコード、ドライバーのメッセージ、そのスタックトレース
+
+% 1 1 0 1d447c6664cb49391089f2cf1ba51254
+
+@ 0 7 0 1b328567aaeec5660a787a4114eb1ae2
++         エラー `↯/s.127.1`：_the WebDriver action failed because `reason`: `detail`_。`WebDriver.Error.Reason` の番号をサブコードとする。
++         セッションのすべての失敗は、この一つの型として届く。ドライバーが 4xx または 5xx の応答で返したエラーオブジェクト、到達できないドライバー、仕様が定める JSON ではない応答（理由 `UnknownError`）、途中で切れた応答、起動できなかったドライバー（`SessionNotCreated`）、待ち受けを始めなかったドライバー（`Timeout`）がそうである。
++         これは、セッションを開いたときにスコープにあった `Tactic[WebDriver.Error]` を通して発生する。
+
+% 2 1 0 0729940f861326ea1292e5863c70589f
+
+% 3 1 0 1d616e4fd5863486176421bde07d67b0
+
+% 4 1 0 044b521d61bed8e3063c152d5c4fafa6
+
+% 5 1 0 01fd9d47d5c5f38c14999750551a7cd0
+
+% 6 1 0 1623210948a4e88b14867892ea0cbd64
+
+% 7 1 0 0f1a8d6cbb7756100be76d02e81fe289
+
+% 0 1 0 0321688c26f738d114ccbc688586487c
+
+% 0 1 0 1224ec73fb658d94072c5b3332649156
+
+% 1 1 0 079415180350de600b311015920aa797
+
+@ 0 4 0 14156377719f19810b7ae3eeb910383f
++         ドライバー自身のメッセージは `#detail` であり、要素ごとに一行のそのスタックトレースは `#browserStacktrace` である。
++         `#data` は仕様が定める任意の追加オブジェクトを保持する。`UnexpectedAlertOpen` のときにプロンプトのテキストを運ぶのはこれであり、受け入れるか閉じるかを呼び出し側が決めるのにまさに必要なものである。
+
+% 0 1 0 01f0919780723a0b17de51ef47c5c435
+
+@ 0 1 0 04f22c6faa79abce06c3bf23e2f9359b
++     entry .Reason   ドライバーが報告した W3C のエラーコードを、安定した番号を持つ列挙型として表したもの
+
+% 1 1 0 0e9572e3f55196c51d54f6cbdedd47c8
+
+@ 0 2 0 19edc9405a758630165f8e036d6f9030
++           WebDriver 仕様が定めるエラーコードごとに一つのケースがあり、ドライバーがエラーオブジェクトの `error` フィールドに書く綴りのコードを持つ。
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 0616fef9283d88c50bc24170ec4af959
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  W3C コード
+
+% 0 1 0 0458d02b69b4322211d1a01fcf6e6c0c
+
+% 0 1 0 11a2443379a011fb13c6e45d8d92464b
+
+% 0 1 0 18dc7397e65442e70917437d09a07944
+
+% 0 1 0 1bd3dedeba59b81d0a8cb05d334ccf90
+
+% 0 1 0 0ec2bf10d40815bc031aa5a7a32b5d80
+
+% 0 1 0 050dc488255d9468188c8334c8357c4e
+
+% 0 1 0 044d57a752ba89620fa7baf4d33605f7
+
+@ 0 1 0 1bdba1ac7e334e10156720422eff224b
++           row  `Other(code)`  8  _the WebDriver reported the error code `code`_  その他すべて。`code` として保持される
+
+% 0 1 0 0355f74072fe37680ba8c9871f7579bf
+
+% 0 1 0 0b9bf1d7cda5c17b01462ef3138b3ae8
+
+% 0 1 0 089ed6f2f37ba712044d5f86ba7202b3
+
+% 0 1 0 0b0e92fcca0de24619d4f3e819f1a225
+
+% 0 1 0 111425ea7b8dc9320100fdb126f1ffe0
+
+% 0 1 0 0b52129fdb8130db024c3744016862d9
+
+% 0 1 0 09c0bd7d85e60fc00d456acfe9c24276
+
+% 0 1 0 14305d3f31083e250899460d27fcaa98
+
+% 0 1 0 1c71ceb239adf1860c498b2796ec9864
+
+% 0 1 0 1b300c265a2762f802ba21fcd122a31c
+
+% 0 1 0 0d17cc40666bfb130e43ede97af61bc9
+
+% 0 1 0 00c3a311475de32b0bb686a15b140026
+
+% 0 1 0 1709cafd8af991fa0ab378d61e31c354
+
+% 0 1 0 139d397e704860011e336bfa6dcb661d
+
+% 0 1 0 08db237dc73c30421bce8e6d65858a66
+
+% 0 1 0 068d5f4a78dbb8f20a293ca9f8964a89
+
+% 0 1 0 1c896b919d5d1e110354fe1a0dd2889b
+
+% 0 1 0 09964b440723e3f517861083b42d932a
+
+% 0 1 0 127f717b72e47a4b1ff7b88eb262db60
+
+% 0 1 0 0429902132d3990306cb5eb2a96475ab
+
+% 0 1 0 1da8cf6321c047fd1d36deb5e9c2df9c
+
+% 1 1 0 15e4db487d184958073649684a20edfc
+
+@ 0 4 0 1dfa9e0a1f17e07c1981b9a9f0a81f59
++           番号はエラーのサブコードであり、凍結済みである。
++           1 から 8 は最初に公開されたときの意味を保つ。`Other` がアルファベット順から外れて 8 にあるのはそのためであり、それ以降に追加されたコードはすべて 9 から続く。
++           列挙型が知らないコードは `Other` になるので、デコードは全域的であり、ドライバーが送ったコードが失われることはない。
+
+% 2 1 0 0dc8cc4164f76df81c1284a7ea6ffdc7
+
+% 3 1 0 1c978e3a561382171d4c4f10e40e273f
+
+% 4 1 0 17af307283c9cf9b048951511cbe2e81
+
+% 5 1 0 1fc41dd8cbfee9b51a2d0c3ea7a2f33d
+
+% 6 1 0 0b7137f8a518e2af1cd5023b401feeff
+
+% 0 1 0 1ca5903ed5be0b6f0dc7bd6b55ee3e78
+
+% 0 1 0 02b830a610c3a7851f58e1a2c692a14f
+
+% 1 1 0 1896481952ccbd39099a07cb776ae7c0
+
+@ 0 2 0 13ac5d21c8c857ff0bda594f9c5cba4e
++       entry .apply   `no such element` などの W3C のエラーコードを、その `Reason` にデコードする
++           全域的である：認識できないコードは `Other(code)` になる。
+
+% 2 1 0 05fdc9ff6edd43040bf9756c5db86988
+
+% 3 1 0 12f73c9a9d8c136316e29b20857a9afa
+
+% 0 1 0 11199e623d377f5c069ad3137bb3e6d9
+
+% 1 1 0 0bb7a3ea578283480733dd1907ad17b1
+
+@ 0 13 0 045932373f0732250d1ff0ee3509543f
++       entry .Other   列挙型が名前を持たないエラーコードを、ドライバーが送ったとおりに保持したもの
++         entry #code0   ドライバーが綴ったとおりのコード
++       entry #number   理由の凍結済みのサブコード。1 から 29
++       entry #code   `no such element` など、仕様の綴りどおりのコード
++     entry .communicable   _the requested element was not found_ のように、各 `Reason` を文として描画する
++         `WebDriver.Error.Reason` のための `Communicable` given で、そのコンパニオンのスコープにある。エラーのメッセージの `reason` を埋めるのはこれである。
++     entry #reason   ドライバーが報告した W3C のエラーコード。`WebDriver.Error.Reason` として表す
++     entry #detail   ドライバーのメッセージ。W3C のエラーオブジェクトでなかったときは、生の応答
++     entry #browserStacktrace   要素ごとに一行のドライバーのスタックトレース。送られなかったときは空
++     entry #data   エラーオブジェクトの任意の `data` メンバー。開いているプロンプトのテキストを運ぶ
++         `UnexpectedAlertOpen` のときは `data.text` がプロンプトのテキストなので、呼び出し側はそれを読み、`WebDriver.Session#acceptAlert` と `WebDriver.Session#dismissAlert` のどちらにするかを決められる。
+
+% 2 1 0 13b062223e8b45d31420759f5482c14e
+
+% 3 1 0 1802cafacd3a908a1bc7dd078b92ce48
+
+% 4 1 0 1f8aca460a1045a3181cf9b01a5a6d26
+
+% 5 1 0 108ed5b082a045871264d3d7e2c104f0
+
+% 6 1 0 0b3676ae449f1d5b1cb5601d179654c5
+
+% 0 1 0 058b42b48d82265a0f278871853365f6
+
+% 1 1 0 09549d82c47aa41302437a4880f67ba6
+
+@ 0 1 0 041c4e24ccca76bf163f9bb32784efc7
++   entry .Element   ページのノードに対するハンドル：純粋な値で、そのセッションがスコープにあるときだけ使える
+
+% 1 1 0 046b6ffed56b53a9000402e4c1ac94de
+
+@ 0 6 0 0ccf01550a39d2f417d1a3f10e517d62
++         ドライバーが DOM ノードに対して返した不透明な参照であり、それを生んだセッションにとってだけ意味を持つ。
++         ケイパビリティもセッションも保持しない純粋な値なので、その `List` を作って自由に受け渡せる。
++         それに対するすべての操作（`click`、`innerText`、`value`、`attribute`、`element`、その他 `tarantula` パッケージの拡張）は `WebDriver.Session` をコンテキストパラメーターとして受け取るので、要素はそのセッションのブロックの外では何もできない。
+
+% 2 1 0 138f873ceb273f4e041df021a7c5bd82
+
+% 3 1 0 013a2107b00a390819e4eb4f9fb86609
+
+% 4 1 0 044b98343a0491d41cefe5456f9b08ef
+
+% 5 1 0 1ea4be0269e9b0ff1298093d6142ee99
+
+% 6 1 0 07a5a128297af12707ecf2a8be94b71d
+
+% 7 1 0 12cfe3e182b776611a742300fca36bf5
+
+% 0 1 0 1e8aae6d9dd6b3451c8e57d4272f5d87
+
+% 0 1 0 16c9ac6d8f7ae40e0f54cb34fd7268a8
+
+% 0 1 0 09949608108bfe1809a15ad04c54afac
+
+% 1 1 0 1766cf770ca0179d15b23f9ec9bae3e8
+
+@ 0 2 0 1c65fd224ce995cc01f12caa9f2d642f
++         漏れ出た要素は生きたハンドルではなく、宙に浮いた id である。
++         ページが変わった後に使うと、理由 `StaleElement` の `WebDriver.Error` が発生する。
+
+% 1 1 0 175c4e3d15f5688b1f1032282ff4117f
+
+% 0 1 0 1a11913ce1b1629a127ecbc253effb25
+
+@ 0 12 0 1314a094a6f5579501c7aad3a83b4868
++     entry .encodable   要素を、スクリプトの引数やポインターの原点が取るワイヤ形式にエンコードする
++         W3C の _web element identifier_ 形式 `{"element-6066-11e4-a52e-4f735466cecf": id}` である。そのため、要素を `element.in[Json]` として `WebDriver.Session#execute` の引数に渡すと、スクリプトからは生きた DOM ノードが見える。
++     entry .\   要素の下、または要素のリストのそれぞれの下で、ロケーターに一致するすべてのもの
++         `element \ Li` は、任意の `Focusable` ロケーター（HTML タグ、`cls"…"` クラスリスト、`Name[DomId]`、`SelectorList`、`XPath`、リンクテキスト）に一致するすべての子孫をドライバーに求め、文書順に返す。一つもなければ空のリストを返す。
++         二つ目の形は `List[WebDriver.Element]` に対するもので、それまでに見つかったすべての要素から選ぶので、選択を連鎖できる：`element \ Name[DomId](t"menu") \ Li \ cls"item"`。
++         プロトコルには一括の検索がないので、連鎖した形は要素ごとに一回リクエストを送り、重複は取り除かれない。
++         `WebDriver.Session` がスコープに必要である。
+
+@ 0 5 0 02ed0c50a57f09c10e6bd5d266651a9d
++         `/` ではなく `\` と書くのは、`soundness` がエクスポートする symbolism の汎用の `/` が、すべてのレシーバーに対してその名前を占めてしまうからである。
++         どちらの形も `WebDriver.Element` のコンパニオンにあるので、インポートは要らない。
++     entry #elementId   ドライバーがノードに付けた不透明な id
++   entry .ShadowRoot   要素が持つ開いたシャドウルート。その中の要素を探すためのハンドル
+
+% 1 1 0 00fc0ac9fa18be3915dd8474d37640f7
+
+@ 0 6 0 062e7e56fadedeba0c61da1e7f9bc83f
++         `element.shadowRoot()` で得る。
++         プロトコルはシャドウルートを要素とは別に扱い、それに対して有効なのは検索だけなので、別の純粋なハンドルになっている：`WebDriver.Session` をスコープに置いて、すべての一致には `\` で、ちょうど一つには `element` で検索する。
++         到達できるのは*開いた*シャドウルートだけである。閉じたものを求めると理由 `NoSuchShadowRoot` の `WebDriver.Error` が発生し、ホストがページから外れたものを使うと `DetachedShadowRoot` が発生する。
+
+% 2 1 0 0ff176a595d0126d1e8cd4aa6f27d4df
+
+% 3 1 0 0533bca5b1f5d0ae0fa952cff13c026e
+
+% 4 1 0 1322003d3af3fcf91f5b27a5b695f0f7
+
+% 5 1 0 1ee9519ce8bed5b716640d884be9a896
+
+% 6 1 0 0dbad0de67cab3921a1e204d7c5d9491
+
+% 0 1 0 0314158a1abfe6de1df50dd39e1ae058
+
+% 0 1 0 08a46857efed93f402d6471cdbf30b39
+
+% 0 1 0 0944991f00cfc2a1085fdcffc41eecdf
+
+% 1 1 0 077fc631aae46e6c0c26ce723b370fc6
+
+@ 0 6 0 1edfa4c0c5d933da1acc2c6a091f7f4c
++     entry .\   シャドウルートの中でロケーターに一致するすべてのもの。文書順
++         `root \ Button` は、任意の `Focusable` ロケーターに一致するシャドウツリー内のすべての要素を返し、なければ空のリストを返す。
++         `WebDriver.Session` がスコープに必要であり、`WebDriver.ShadowRoot` のコンパニオンにあるので、インポートは要らない。
++     entry #shadowId   ドライバーがシャドウルートに付けた不透明な id
++   entry .Session   生きた WebDriver セッション：一つのブラウザ、そのウィンドウとクッキー。そのブロックに閉じ込められる
+
+% 1 1 0 112a8d6b356c202516c645971bc813ad
+
+@ 0 4 0 1eace512ca5831df0e5bb09993bb60c7
++         ドライバーとのやり取りのこちら側の端であり、`base/session/id` の下に宛てられる。
++         セッションを直接構築することはない：`WebDriver` または `WebDriver.Local` の `session` がセッションを開き、コンテキスト値としてブロックに貸し出し、ブロックが終わるとそれを削除する（ブラウザを閉じる）。
++         ブロックの中では、`browser` がそれを指す。
+
+@ 0 4 0 0e57c7c672e2fbf8004ab6134e821d4a
++         これはケイパビリティなので、キャプチャ検査によって、それ自身とそれを閉じ込むすべてのクロージャーは、それを所有するブロックの中に閉じ込められる：セッション、またはそれを使うラムダを返すことはコンパイルエラーになる。
++         コマンドが返すもの（`Text`、`Data`、`Json`、`WebDriver.Element`、矩形）は純粋なデータである。すべてのコマンドは完結した往復だからである。
+
+@ 0 2 0 0ae4b24605a8a86113cd344d30074f51
++         スクリプトは一段ずつ育てていく：セッションを開き、ページを移動し、要素を探し、操作し、結果を読み戻す。
+
+% 2 1 0 1166e742314911670d07d6e794c40789
+
+% 3 1 0 1229cd80e79320430605e6d2e8b48dcf
+
+% 1 1 0 147cde430ef7ec391f9a15f41aff2bcd
+
+@ 0 1 0 11af3d58c187e2061b04261e551d7d75
++           label セッションを開く
+
+% 1 1 0 171a97b7e15aafce1c7185bf227433a4
+
+% 2 1 0 1e8d69c454f2d1561bf42e10570ef3a6
+
+% 3 1 0 0dbd271fc06c90d40660e0f766753e6b
+
+% 1 1 0 1fbc571c49f300e60df56a7a54624c0b
+
+% 2 1 0 156801387e7a22d1045d0f441e3bdfa2
+
+@ 0 1 0 12875ed68ffa23cd004f509225b4363d
++           label ページに移動する
+
+% 1 1 0 0dfceed57ce96ded123536439c1e56f9
+
+% 2 1 0 0eeb0960a86cd72d1ad954711fbeb166
+
+% 3 1 0 06e427409314871a05903c3e127ce7aa
+
+% 4 1 0 1be29960bfd5a54205a66c2f9ccfbfd9
+
+% 1 1 0 00784074d3baad0a0f3f34db45faa2d1
+
+% 2 1 0 154d5111807cb0eb1d9687cc728d40fe
+
+@ 0 1 0 0c1dbd8bada00ea1004e3b9d1e55774e
++           label フィールドを探して入力する
+
+% 1 1 0 00940c5cb726390709acfe6856133a77
+
+% 2 1 0 086481ce43f2be320706e3195506370e
+
+% 3 1 0 184b19ad07ca9b05049a6b6aaafbedf1
+
+% 4 1 0 19fae91be8e43d961a3c3ef21d2244b1
+
+% 0 1 0 0d533f7c8b7dcff01bd229feb59bf37d
+
+% 0 1 0 035b93ff22e97afd147c8f8d1523b869
+
+% 0 1 0 15f054d1e318983402d68eb4724e59c0
+
+% 1 1 0 151fe02c2b2202c70ea58ca121d6e04f
+
+@ 0 1 0 0f3f2b0234cbad6d0ff74f70e9ebdf06
++           label 送信して結果を待つ
+
+% 1 1 0 0e0d68bba211e49813652bfa2c66c618
+
+% 0 1 0 18a2de4b811ff7d81641b23ff6513453
+
+% 1 1 0 09fc488cfe98061114cb5f1503e280d8
+
+% 2 1 0 01b83d79b7742b381b9db736daa513bf
+
+% 3 1 0 11c7e1cb5eb689a51f60a1ee229127dd
+
+% 0 1 0 03e189da4e1c43071f7de124362b014e
+
+% 0 1 0 02b5341640fefcf106596c631c9784a1
+
+% 0 1 0 167e44fba51333c01c6fae4fcec6bb29
+
+% 1 1 0 127e5273c7cdc2f314f01830af4c9a6d
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 4 0 15cd5ee019f1896315cae7dd3c09dedc
++         すべてのコマンドは、セッションを開いたときにスコープにあった `Tactic` を通して `WebDriver.Error` を発生させ、それ以上は何も必要としない。
++         待機（`#awaitElement`、`#awaitElements`、`#awaitUntil`）は、呼び出しの場所でさらに `Tenacity`、`Monitor`、`Tactic[Tenacity.Error]` を受け取る。
+
+% 0 1 0 1cdb4a832530052101923a6e0586e211
+
+% 0 1 0 1426e38a41ec875f1b64af6556bfa38e
+
+% 0 1 0 0ca07e555fc44cc20aa9c960a8e053a0
+
+@ 0 1 0 0c5b9387a76932d908079c38ea75df26
++     entry .Rect   要素またはウィンドウの境界ボックス。CSS ピクセル単位
+
+% 1 1 0 0a09ea2f5005ee6d0a1d95c08f749b54
+
+@ 0 3 0 0f9cd11b32ad276d0d52c4a09904973e
++           `WebDriver.Session` の `windowRect`、`maximize`、`minimize`、`fullscreen` コマンドと、要素の `rect` 拡張が返し、`windowRect(rect)` がウィンドウを移動しサイズを変えるために受け取る。
+
+% 2 1 0 08633a1f5c3fec4803bd0b01bbcd6c40
+
+% 3 1 0 15f3877c87823f8a0d7cafc413e57e2f
+
+% 4 1 0 1581b8763388f9ba0bc2a18c7ed4d294
+
+% 5 1 0 17b62b782085455b0525b3dbab0adb46
+
+% 0 1 0 0f0ff23650bd596b0dbcb0a2d6bb079e
+
+% 0 1 0 0948a3e93215c337130e82185a538e6a
+
+% 0 1 0 1a046e45dc61104e1b0a5fd8bfcd6134
+
+% 1 1 0 0c04bd29c322ff0f0f5d0f9135caca0b
+
+@ 0 8 0 0cea81a2bccccc3b04c9571cc842db5d
++       entry #x   ビューポートまたは画面の原点から測った左端
++       entry #y   ビューポートまたは画面の原点から測った上端
++       entry #width   幅。CSS ピクセル単位
++       entry #height   高さ。CSS ピクセル単位
++     entry .cm   センチメートル単位の長さ。印刷のページと余白が受け取る `Quantity[Metres[1]]` として表す
++         `WebDriver.Session.cm(1.5)` は 15 ミリメートルである。
++         `Page` や `Margin` にはどんな長さの量でも使える（`21.0*Centi(Metre)`、`8.5*Inch`）ので、これは便宜のためのものにすぎない。
++     entry .Page   印刷をレイアウトする用紙のサイズ。デフォルトは US レター
+
+% 1 1 0 079a880c258fc248114d41fa732a7336
+
+@ 0 3 0 07d249bf8878c84c110f76da2624ce57
++           長さは `Quantity[Metres[1]]` なので、どの単位でも書け、プロトコルが求めるセンチメートルでドライバーに送られる。
++           デフォルトは仕様自身のもので、21.59cm × 27.94cm である。
+
+% 2 1 0 17c1ec4a00e052ac1f75322ddabb2a63
+
+% 3 1 0 09910379a21c0397083cc9b5bfb71fd5
+
+% 0 1 0 1f5a241d45ad8a2f06701af1fb17f975
+
+% 1 1 0 1e85056f7252cbec0378ba6f4ca12f21
+
+@ 0 3 0 0b3d460c6ce7c04506cf3ee6c1a684c2
++       entry #width   ページの幅。長さとして表す
++       entry #height   ページの高さ。長さとして表す
++     entry .Margin   印刷されるページの四つの余白。デフォルトはそれぞれ 1 センチメートル
+
+% 1 1 0 165fcbd8264546811816c8fccb019864
+
+@ 0 3 0 06aa9fcbeb9b615008487d1a7ef21a32
++           長さは `Quantity[Metres[1]]` で、センチメートルでドライバーに送られる。
++           `.uniform` は四つの等しい余白を作る。
++       entry .uniform   与えた長さの四つの等しい余白
+
+% 1 1 0 1ca9ddf99ae8d0f319ca6e1f5f440524
+
+% 2 1 0 04e1bb9d46b1445b0b05a6f557aea5ca
+
+% 0 1 0 18294c8f8712ffbf15cbebed68596caa
+
+% 1 1 0 1b5c8e75968a85f015eaed34525d565a
+
+@ 0 7 0 0f2237ba2ad65b671379820db56c18b1
++       entry #top   上の余白
++       entry #bottom   下の余白
++       entry #left   左の余白
++       entry #right   右の余白
++     entry .Orientation   ページを `Portrait` と `Landscape` のどちらで印刷するか
++       entry #name   プロトコルの綴りどおりの向き：`portrait` または `landscape`
++     entry .Print   `WebDriver.Session#printPage` が受け取るオプション：向き、倍率、用紙、余白、ページ
+
+% 1 1 0 1f62a6e433e2f6620e393ef1ab71209c
+
+@ 0 4 0 1dfad21399f731e80f11567bb2405719
++           どのフィールドにも仕様のデフォルトがある：`Portrait`、倍率 `1.0`、背景グラフィックなし、US レターの `Page`、1 センチメートルの `Margin`、幅に合わせた縮小、すべてのページ。
++           `pageRanges` は、`List(t"1-3", t"5")` のような、プロトコル自身のテキスト形式である。そこでは範囲の端を開いたままにできるからである。
+
+% 2 1 0 139be46c39cf4e301999a565c040d351
+
+% 3 1 0 1ed840cd9afb53391a124a5b18af564b
+
+% 4 1 0 0cf357c0777f2767049b23fdc41eefef
+
+% 0 1 0 017360e941375dd80ff3d29b79883100
+
+% 2 1 0 1510c277d9fe6df01e981aab15dddeba
+
+% 3 1 0 0ed6fff562beb6971568841f6a57defd
+
+% 0 1 0 0cd4aa0a13026cca10a457077fe5f2cb
+
+% 0 1 0 071248c8298740a303333c875d521121
+
+% 0 1 0 1b0e8bb0a74248580de4c5f5ef66ac83
+
+% 1 1 0 0a575a4b8d09ed9b017d00d3a099b1db
+
+@ 0 8 0 032821cee9d6c9ce05898a866fdbacc8
++       entry #orientation   `Portrait` または `Landscape`
++       entry #scale   倍率。0.1 から 2.0。デフォルトは `1.0`
++       entry #background   背景の色と画像を印刷するかどうか。デフォルトは `false`
++       entry #page   用紙のサイズ。`WebDriver.Session.Page` として表す
++       entry #margin   余白。`WebDriver.Session.Margin` として表す
++       entry #shrinkToFit   内容をページの幅に合わせて縮小するかどうか。デフォルトは `true`
++       entry #pageRanges   印刷するページ。`1-3` や `5` のようなテキストで表す。空ならすべてのページ
++     entry .Timeouts   セッションが保持する三つのタイムアウト。ミリ秒単位
+
+% 1 1 0 133a92f5975c224308b2d2201dd2d981
+
+@ 0 4 0 11894181b8c3750407708d5e638f5fd4
++           `implicit` は、検索コマンドが `NoSuchElement` を報告するまでに再試行する時間であり、スクリプトがスリープせずにページが落ち着くのを待つ方法である。
++           `pageLoad` はページの移動を、`script` は `WebDriver.Session#execute` と `WebDriver.Session#executeAsync` を制限する。
++           `Unset` のフィールドは、ドライバーの設定のまま残る。
+
+% 2 1 0 1d5fda7d318793a106ccaa2f82156cf5
+
+% 3 1 0 083e0c960f70e03d0f7c8d3193a3afa2
+
+% 4 1 0 0891427e32cc3dd7089f25ad5ae2207b
+
+% 5 1 0 05d3c54a8d9d8e7b0873f2bfaa2f970b
+
+% 6 1 0 19ad628264a0f26a09a15b45940f90c0
+
+% 0 1 0 050105380e470147037b626914882c3e
+
+% 0 1 0 0c0af9414306a65d12912899c2631a54
+
+% 1 1 0 031a0ea4813ed7261da528d001e83f06
+
+@ 0 6 0 16cefc09e6579dd4006e3b7ddb695e62
++           暗黙のタイムアウトは検索コマンドだけに及ぶ：ボタンが有効になることや見出しのテキストが変わることは、`WebDriver.Session#awaitUntil` で待つ。
++       entry #implicit   検索が諦めるまでに再試行する時間。そのままにするなら `Unset`
++       entry #pageLoad   ページの移動にかけてよい時間。そのままにするなら `Unset`
++       entry #script   スクリプトを実行してよい時間。そのままにするなら `Unset`
++     entry .Action   `WebDriver.Session#perform` のための、キーボードまたはポインターの入力シーケンスの一段
+
+% 1 1 0 1738a2c00e045cac15a88de00cfc0f53
+
+@ 0 4 0 0d3a0c903e53e33418ac7e5ad713e40a
++           W3C の `/actions` エンドポイントは、修飾キー、同時押し、ホバー、ドラッグを送る唯一の方法であり、`Action` はその一段である：キーを押す、離す、一時停止、ポインターのボタンを押す、離す、ポインターの移動。
++           段のリストは、一つの入力ソース `WebDriver.Session.Action.Source` に対して実行される。
+
+% 2 1 0 10c116a4a74b3840068f3c42767e10a4
+
+% 3 1 0 061f1de970a6689b0eb007776000e9da
+
+% 4 1 0 0315712a1413343a047c30e1fbb2c5af
+
+% 0 1 0 110eef0dd2587103140bb2233ab3fa17
+
+% 2 1 0 1c2030c3232e80600b8806c2c053fc91
+
+% 3 1 0 1237175569cf8e7618ca587b5b9e25c7
+
+% 0 1 0 1add21a3c6b5671e0d998231e61694e9
+
+% 0 1 0 1bfdbf41bb76347415eaa19d418986d8
+
+% 0 1 0 0d2f95c18e96e17f04ccc536af114b33
+
+% 0 1 0 0e1ed13bb4437bf112ff1cede04e58b7
+
+% 1 1 0 0b835eab80d0aa05054638ecdbf3e875
+
+@ 0 4 0 13fc056888277f161db5d4066da95a53
++           フィールドへの普通のテキスト入力は、要素の `value` 拡張のほうが簡単で速い。キー押下は `WebDriver.Session#press` が最も簡単で、これは `.steps` で段を組み立てる。
++       entry .Source   アクションのシーケンスが操作する入力ソース：`Key` または `Pointer`
+
+% 1 1 0 0e8098eda548a1c216700ccf992b8a2e
+
+@ 0 14 0 0e02a55f538edb3c196284e41b4a0768
++             一回の `perform` 呼び出しは一つのソースを操作する。
++             仕様には「none」ソースもあるが、それは一時停止しかできず、それはこの二つのどちらにもできる。二つのソースを歩調を合わせて動かすには、組み立てた JSON を `WebDriver.Session#actions` に渡す必要がある。
++         entry #id   シーケンスにおけるソースの id：`keyboard` または `pointer`
++         entry #kind   ソースの種類：`key` または `pointer`
++       entry .LeftButton   マウスの左ボタン。仕様のボタンの番号付けでは `0`
++       entry .MiddleButton   マウスの中ボタン。DOM の番号付けでは `1`
++       entry .RightButton   マウスの右ボタン。DOM の番号付けでは `2` であり、推測しがちな `1` ではない
++       entry .codepoint   `Keypress` が入力する文字、または名前付きキーの私用領域のコードポイント
++           文字キーはその文字そのものである。`Enter`、`Tab`、`Backspace`、`Escape`、矢印キー、`Home`、`End`、`PageUp`、`PageDown`、`Insert`、`Delete`、`F1` から `F12` は、仕様が Unicode の私用領域の U+E000 から割り当てたコードポイントである。
++           修飾キー単独、1 から 12 以外のファンクションキー、端末のエスケープシーケンスは `Unset` である。
++       entry .steps   `Keypress` を、それを生むキーアクションとして表したもの。修飾キーはその前後で押したままにする
+
+% 1 1 0 0071a5ccab02a992088be0ddc7585a04
+
+@ 0 3 0 174d8aadf35fcf5e129db7b4cc318794
++             修飾付きのキー押下は、修飾キーを押し、内側のキー押下を打ち、修飾キーを離すという形になり、どの深さまでも入れ子にできる。プロトコルには「Control を押したままこれを入力する」というコマンドがないからである。
++             ブラウザに対応するもののないキー押下は、段を一つも持たない。
+
+% 0 1 0 17e783c4bd3cb224175227ce43b79ad6
+
+% 1 1 0 1745a1123e19efec07fdf7ab02417a61
+
+@ 0 1 0 060260145c9b7b2a0eaed23c3971e5ca
++               label 名前付きキー
+
+% 1 1 0 10a3dab65d3c6b370e8986db380eaa8e
+
+% 0 1 0 0611c1647660a2a6167994d917dbdd22
+
+% 0 1 0 13d1d2bf743c1896182158bea15a292c
+
+% 1 1 0 019d0195ee44f0df1a406e0555e7819e
+
+@ 0 1 0 09a83cc658dfeba41c043960ad52ff9d
++               label Control を押したまま
+
+% 1 1 0 110949f84ced48cc00e23ce4e400970a
+
+% 0 1 0 014db0ad76fadd5500ae892dbc8d8dca
+
+% 0 1 0 101050d2d43c5a42151f4f5d18614685
+
+% 1 1 0 1fe6e4f88c787faf08528046de95b213
+
+@ 0 1 0 1e21b51c6701571b15a55e7f1bd8b053
++               label Control と Shift を押したまま
+
+% 1 1 0 0f300c7d03cf79160df6738b875021bc
+
+% 0 1 0 1b5365f0423930540d25190b90b97a9a
+
+% 0 1 0 0ea4e9d50a4eaa8b13298ea10005b489
+
+% 0 1 0 04359be001a2f6db06dd6a2779db54e3
+
+% 0 1 0 1770f2a480f8390e043db7cf9df77021
+
+% 0 1 0 0886f09d22a849f8174ec96cea203f24
+
+@ 0 34 0 18db5dca9ba0b64f1c3b463d4defd8cc
++       entry .encodable   アクションを、`{"type":"keyDown","value":"a"}` のような仕様の JSON としてエンコードする
++           判別子がキャメルケースの値を持つ `type` フィールドであり、各バリアントが独自のキーを持つので、手で書いている。原点のない `PointerMove` は `viewport` からの相対である。
++       entry .KeyDown   キーを、それが入力する文字またはコードポイントで指定して押す
++         entry #value   キー。文字、または `WebDriver.Session.Action.codepoint` による私用領域のコードポイントとして表す
++       entry .KeyUp   キーを、それが入力する文字またはコードポイントで指定して離す
++         entry #value   キー。文字、または `WebDriver.Session.Action.codepoint` による私用領域のコードポイントとして表す
++       entry .Pause   次の段の前に、指定したミリ秒だけ待つ
++         entry #duration   一時停止の時間。ミリ秒単位
++       entry .PointerDown   ポインターのボタンを押す。デフォルトは左ボタン
++         entry #button   ボタン。DOM と同じ番号付けで、`0` が左、`1` が中、`2` が右
++       entry .PointerUp   ポインターのボタンを離す。デフォルトは左ボタン
++         entry #button   ボタン。DOM と同じ番号付けで、`0` が左、`1` が中、`2` が右
++       entry .PointerMove   ポインターを、ビューポートまたは要素の中心からの相対で動かす
++         entry #x   水平方向のオフセット。CSS ピクセル単位
++         entry #y   垂直方向のオフセット。CSS ピクセル単位
++         entry #duration   移動にかかる時間。ミリ秒単位。デフォルトは `100`
++         entry #origin   オフセットの基準となる中心を持つ要素。ビューポートなら `Unset`
++     entry #sessionId   作成時にドライバーがこのセッションに与えた id
++     entry #capabilities   ドライバーが同意したもの。求めたものと異なることがある
++         `POST /session` に対するドライバーの応答に含まれる、交渉済みのケイパビリティオブジェクトである。応答したブラウザとそのバージョンを示し、`setWindowRect` や `acceptInsecureCerts` などの任意の振る舞いが使えるかどうかを示す。
++         ベンダーのキー（`moz:*`、`goog:*`）は `Json` のまま残る。`#browserName`、`#browserVersion`、`#platformName` は共通のものを読む。
++     entry #browserName   交渉済みのケイパビリティによる、応答したブラウザの名前
++     entry #browserVersion   応答したブラウザのバージョン。ドライバーが示さなかったなら `Unset`
++     entry #platformName   ブラウザが動くオペレーティングシステム。ドライバーが示さなかったなら `Unset`
++     entry #navigateTo   現在のウィンドウで URL を読み込み、読み込みが終わるまで待つ
++         `url"https://…"` の結果のような `HttpUrl`、または `Abstractable across Urls to Text` である任意の URL 型を受け取る。
++         `HttpUrl` のためのオーバーロードがあるのは、補間子の結果がシングルトン型 `Url["https"]` を持ち、`Url["http" | "https"]` に対して宣言された汎用の形ではそれが拒まれるからである。
+
+% 2 1 0 04b7112f29987b59056b8f5949c03318
+
+% 3 1 0 12e68a88926921120cb475c882bea24e
+
+% 4 1 0 11d26e5e691b04191a209bd73128c41c
+
+% 5 1 0 150ab01fe746374e1bd5ff044ba90c59
+
+% 6 1 0 0e72c4acbbecb7ac01032c6c9783302a
+
+% 7 1 0 0e265cd0b05108c503bf968e26dc8ec8
+
+% 0 1 0 0990e01b944660ee0940d9052533a679
+
+% 1 1 0 16addebd2d85bbf91976c26ff69ca169
+
+@ 0 21 0 1b3bf92d024176a4157ad7498abb2f53
++     entry #url   現在のウィンドウの URL。呼び出し側が選んだ URL 型として表す
++         `browser.url[HttpUrl]()`、または `Instantiable across Urls from Text` である任意の型。
++     entry #back   現在のウィンドウの履歴で一ページ戻る
++     entry #forward   現在のウィンドウの履歴で一ページ進む
++     entry #refresh   現在のページを再読み込みする
++     entry #title   現在のページのタイトル
++     entry #source   現在のページのマークアップ。ブラウザが DOM を直列化したもの
++         サーバーが送ったバイトではなく、今の状態の DOM を直列化したものである：ページのスクリプトが変えたものはすべて含まれる。
++     entry #screenshotData   現在のビューポート、または一つの要素の PNG。生のバイトとして表す
++         `screenshotData()` はビューポートを、`screenshotData(element)` は一つの要素を撮る。
++         バイトはドライバーが送ったものを Base64 からデコードしたものである。
++         `tarantula.image` コンポーネントの `screenshot` 拡張は、それをさらに `Raster in Png` にデコードする。
++     entry #window   現在のウィンドウまたはタブのハンドル
++     entry #windows   開いているすべてのウィンドウとタブのハンドル。順序は決まっていない
++     entry #closeWindow   現在のウィンドウを閉じ、残ったウィンドウのハンドルを返す
++         `#switchTo` が別のウィンドウを選ぶまで、コマンドはどのウィンドウにも届かない。最後のウィンドウを閉じると、ドライバーから見てブラウザのセッションは終わる。
++     entry #switchTo   別のウィンドウまたはタブを、そのハンドルで指定して、すべてのコマンドの対象にする
++         コマンドに応答するのは現在のウィンドウだけなので、`#newWindow` や `#windows` から得たハンドルは、そのウィンドウを使う前にここに渡す。
+
+% 2 1 0 08d0d3b17bffda000790a8d834d83546
+
+% 3 1 0 0305c37c4c493aee1be90d05fdfead3f
+
+% 4 1 0 19639491cbbf78bd0b5564eafb534ff8
+
+% 5 1 0 1613db3b7ec6ce8b0be822b68bdab811
+
+% 6 1 0 1dfca410de76f2260b719ed7504b499e
+
+% 0 1 0 0e617a0fb5cb0b6804db94b9fa9029d4
+
+% 0 1 0 0c8af247c46e5c86105a1add7d21b582
+
+% 0 1 0 0f06ab0406714996188947d611667009
+
+% 1 1 0 0f61f530d926c67907f925cd3156c5db
+
+% 0 1 0 061a8449fc12c1ce1b95ecd1fbb833fb
+
+% 0 1 0 1d5e18186d29465e13505c9bf14d1cdf
+
+% 1 1 0 1dac21afe45b5de8090603b22d16016c
+
+@ 0 15 0 118c3207dc873e6f15cf072b1b0262c6
++     entry #newWindow   新しいタブまたはウィンドウを開き、そこに切り替えずにハンドルを返す
++         `newWindow()` はタブを、`newWindow(tab = false)` はウィンドウを開く。
++         仕様のとおり、現在のウィンドウはそのまま残る：使うにはハンドルを `#switchTo` に渡す。
++     entry #windowRect   現在のウィンドウの位置とサイズを返す、またはウィンドウを移動しサイズを変える
++         `windowRect()` はウィンドウの `WebDriver.Session.Rect` を読む。`windowRect(rect)` は新しいものを求めるが、ウィンドウマネージャーはそれを完全には認めないことがあり、ヘッドレスのブラウザは無視することがある。
++     entry #maximize   現在のウィンドウを最大化し、実際に取った形状を返す
++     entry #minimize   現在のウィンドウを最小化し、実際に取った形状を返す
++     entry #fullscreen   現在のウィンドウを全画面にし、実際に取った形状を返す
++     entry #frame   フレームに、その要素またはインデックスで指定して入り、すべてのコマンドの対象にする
++         コマンドは現在のブラウジングコンテキストに宛てられるので、フレームに入ることは各コマンドへの引数ではなく、モードの変更である。
++         `#parentFrame` は一段外に戻り、`#topFrame` はどの深さからでもトップレベルの文書に戻る。
++         存在しないフレームは理由 `NoSuchFrame` の `WebDriver.Error` を発生させる。
+
+% 2 1 0 0f530068a53a4c1901db0174f22e4747
+
+% 3 1 0 1d21e3b513d5d3ed04c9808224de2b15
+
+% 4 1 0 10083954f5cad0d01bf5505bc304d602
+
+% 5 1 0 0a98c00371e53ebb159ef2d7d342b27e
+
+% 6 1 0 1ab360243dbd9d351069c0ef55999779
+
+% 0 1 0 1f8e5c9640e203b10f2bd41d77f8757c
+
+% 0 1 0 1247269ec5990d121c6760ffdc6d4a15
+
+% 0 1 0 09662b3bad2c8e501fa58852258030f2
+
+% 1 1 0 1d3475ea931c957b112e238402c7071e
+
+@ 0 28 0 16507dc4f479f72002223200727566e4
++     entry #parentFrame   現在のフレームを出て、それを含むフレームに移る
++     entry #topFrame   どの深さのフレームからでもトップレベルの文書に戻る
++         明示的な `null` のフレーム id を送る。プロトコルはこれを id がない場合と区別する。
++     entry #acceptAlert   開いているアラート、確認、プロンプトを、OK ボタンを押したように受け入れる
++         プロンプトが開いている間は、他のすべてのコマンドが理由 `UnexpectedAlertOpen` の `WebDriver.Error` で失敗し、その `WebDriver.Error#data` がプロンプトのテキストを運ぶ。プロンプトが開いていなければ、これは `NoSuchAlert` を発生させる。
++     entry #dismissAlert   開いているアラート、確認、プロンプトを、キャンセルボタンのように閉じる
++     entry #alertText   開いているプロンプトのメッセージを返す、またはそこに答えを入力する
++         `alertText()` は開いているアラート、確認、プロンプトのメッセージを読む。`alertText(text)` は、`#acceptAlert` が送信する前に `prompt` に入力する。
++     entry #timeouts   セッションのタイムアウトを返す、または設定する
++         `timeouts()` は有効な `WebDriver.Session.Timeouts` を読む。`timeouts(timeouts)` は `Unset` でないものを設定し、残りはそのままにする。
++     entry #cookies   現在のページから見えるすべてのクッキー
++         それぞれが telekinesis の `Cookie.Value` で、そのフィールドはプロトコルが使う名前である。
++         `sameSite` を持たないので、その属性は読みも設定もされない。
++     entry #cookie   現在のページから見える、指定した名前のクッキー
++         なければ理由 `NoSuchCookie` の `WebDriver.Error` を発生させる。
++     entry #addCookie   現在のページのドメインにクッキーを設定する
++         `Cookie.Value` を受け取る。
++         別のドメインのクッキーは理由 `InvalidCookieDomain` の `WebDriver.Error` を発生させるので、先にそのドメインに移動する。
++         `sameSite` 属性が必要なクッキーは、代わりに `#execute` で設定できる。
++     entry #deleteCookie   指定した名前のクッキーを削除する
++     entry #deleteCookies   現在のページから見えるすべてのクッキーを削除する
++     entry #perform   一つの入力ソースで、`WebDriver.Session.Action` のシーケンスを実行する
++         段を、キーボードまたはポインターのソースで、一つのシーケンスとして `/actions` エンドポイントに送る。
++         押したままのキーとボタンは、`#releaseActions` まで押されたままになる。
+
+% 2 1 0 10e203573dbef0c40f5aaa9f428ae8ae
+
+% 3 1 0 055a838ca19c78f10f06e9bdf8815e14
+
+% 4 1 0 03d73e22e990aad403b07d946ceefdf0
+
+% 0 1 0 1af20e7383fc818f0b91c08d2e608108
+
+% 2 1 0 0f9c560f8f4e83b11e9c5de26197df5a
+
+% 3 1 0 13ea9945dc42538603d469033847369b
+
+% 0 1 0 1800c6d5ac1813130e5ba6a4b92c18bf
+
+% 0 1 0 01d4cab10cc394350085fa0a23da544a
+
+% 0 1 0 173b62f8621adef111c2a56441199517
+
+% 1 1 0 05fcf96238f00be709f4a33f852d7c59
+
+@ 0 9 0 19c351136643020a13e8764207146ad1
++     entry #actions   組み立てた `/actions` のペイロードを送る。歩調を合わせて動くソースのためのもの
++         キーボードとポインターにまたがるまれな同時操作のための、`#perform` の下にある逃げ道である：`Json` はリクエストの本文 `{"actions": […]}` として、そのまま送られる。
++     entry #press   キー押下のシーケンスを、修飾キーを前後で押したまま入力する
++         各 `Keypress`（文字、`Keypress.Enter` や `Keypress.FunctionKey(3)` のような名前付きキー、または `Ctrl`、`Shift`、`Alt`、`Meta` で包んだもの）は、`WebDriver.Session.Action.steps` のキーアクションになり、すべてが一回のリクエストでキーボードのソースで実行される。
++         フィールドを普通のテキストで埋めるには、要素の `value` 拡張のほうがよい：文字ごとに複数のアクションを送るのではなく、一回のリクエストで済む。
+
+% 2 1 0 03fe683268a8e43c02989dbfc490bdf9
+
+% 3 1 0 07a5f40e67bc88e1177d5fdac72cf3ee
+
+% 4 1 0 1e796425b205000015c4e822f36a9fb2
+
+% 5 1 0 1a16ca391b339acf187e3a319701d70e
+
+% 6 1 0 0fb6781ee1a4fbc41f9d074ab760004a
+
+% 0 1 0 1a567eaebd33c0e51b3ea30a5949c86f
+
+% 0 1 0 13414d853295eaa90cb81181be17d36e
+
+% 1 1 0 0b69177196ad3ba70b4c54b1ecdc5903
+
+@ 0 12 0 1c7489b6b6fb64b40f5a317e572f3490
++     entry #releaseActions   押したままのすべてのキーとボタンを離し、入力の状態を消去する
++     entry #printPage   現在のページを PDF として印刷したもの。生のバイトとして表す
++         `WebDriver.Session.Print` のオプションを受け取り、与えなければ仕様のデフォルトを使う。
++         これはページが印刷されたときの姿であり、描画されている姿ではない：それを撮るのは `#screenshotData` である。
++         すべてのドライバーがこれを実装しているわけではなく（Safari はしていない）、実装していないドライバーは理由 `UnknownCommand` または `UnsupportedOperation` の `WebDriver.Error` を発生させる。
++     entry #execute   ページで JavaScript の関数本体を実行し、その結果を `Json` として返す
++         プロトコルがモデル化しないあらゆるもののための逃げ道である。
++         スクリプトは関数本体なので `return` を使い、その引数は `arguments[0]`、`arguments[1]` などである：`element.in[Json]` として渡した `WebDriver.Element` は生きた DOM ノードとして届き、返された要素はワイヤ形式で戻ってくる。
++         例外を投げるスクリプトは理由 `JavascriptError` の `WebDriver.Error` を発生させる。
+
+% 2 1 0 082e5c2ffd1d324110d38141793f8aa7
+
+% 3 1 0 1ecd383b4087730607a51ab885e87cd9
+
+% 4 1 0 196448b43e8a12ef0a7de9e8392f45e5
+
+% 5 1 0 034e0f1585fbdd360c041fafe1422474
+
+% 6 1 0 1eabb28706f913841eeabed91a68e831
+
+% 0 1 0 1a7c57efde7b30b80fec863fdb176cd9
+
+% 0 1 0 0f01ae1311bd2e171b44c2e3ffea5a66
+
+% 1 1 0 0b596cf1ed71f4ba0121b465f645ed8f
+
+@ 0 11 0 06204627e59565270f2d1bf3643dd5ea
++     entry #executeAsync   非同期の JavaScript を実行し、それがコールバックに渡す値を返す
++         `#execute` と同じだが、スクリプトは最後の引数としてコールバックを受け取り、スクリプトがそれを呼んだときにコマンドが完了する。`script` タイムアウトのうちに呼ばないスクリプトは、理由 `ScriptTimeout` の `WebDriver.Error` を発生させる。
++     entry #element   ロケーターに一致する一つの要素。ページ全体、または要素やシャドウルートの下で探す
++         `browser.element(H1)` は、任意の `Focusable` ロケーター（HTML タグ、`cls"…"` クラスリスト、`Name[DomId]`、`SelectorList`、`XPath`、またはリンクテキストとしての `Text`）に最初に一致するものをドライバーに求める。
++         一致するものがなければ、セッションの暗黙のタイムアウトの後に、理由 `NoSuchElement` の `WebDriver.Error` が発生する。
++         `WebDriver.Element` または `WebDriver.ShadowRoot` を受け取る形はその下を探し、ふつうは `element` 拡張を通して書く：`menu.element(Li)`。
+
+% 2 1 0 0e518c0f10ac91dc1f8dcb42b134ab25
+
+% 3 1 0 0c6ab1d144eb15361232c80f63b8c58b
+
+% 4 1 0 0a91e5e73444beec17bbd2c737fcefc7
+
+% 5 1 0 15e6ac16d50b62ed033d8ae48f446ba2
+
+% 6 1 0 01495440d730147103391db13461db64
+
+% 0 1 0 1a19e8296eed8f93182828a84905eb72
+
+% 0 1 0 13de9e9731e3a96e1825838968be0184
+
+% 1 1 0 16dfb264f382b6d31b2dc44c2abbd94e
+
+@ 0 15 0 1a3ee3abc726386b10aa3e950b3b2e26
++     entry #elements   ロケーターに一致するすべての要素。ページ全体、または要素やシャドウルートの下で探す
++         `#element` と同じだが、一致するものをすべて文書順に返し、一つもなければエラーではなく空のリストを返す。
++         ページ全体では `browser \ Li` が同じものである。
++     entry #\   ページ全体でロケーターに一致するすべての要素。`browser \ Li` のように書く
++         別名の `#elements` である。
++         選択が `/` ではなく `\` なのは、`soundness` がエクスポートする symbolism の汎用の `/` が、すべてのレシーバーに対してその名前を占めるからである。
++         結果に対してもう一度 `\` を使うと、見つかった各要素の下から選ぶ：`browser \ Ul \ Li`。
++     entry #activeElement   フォーカスを持つ要素
++     entry #awaitElements   ロケーターに一致するすべてのもの。少なくとも一つになるまでポーリングする
++         プロトコルには検索の暗黙のタイムアウト以外に待機のコマンドがないので、これはスコープにある `Tenacity`（呼び出し側が選ぶスケジュール）のもとで `POST /elements` をポーリングし、ポリシーが諦めると `Tenacity.Error` を発生させる。
++         `Monitor` も必要である。
++         複数形のエンドポイントをポーリングするのは意図的である：それは存在しないことを空のリストとして報告するが、単数形のものはエラーを発生させ、そのエラーはセッション自身の戦術に回されるので、ここで捕まえて再試行に使うことができない。
+
+% 2 1 0 13eef65e8b3407261ba11f550e25f18b
+
+% 3 1 0 0f9c2400c1a89a130e9dbe2416e421bb
+
+% 4 1 0 067aae7bbc686f1a05bfe75d2a609458
+
+% 5 1 0 08cd7aefe2a79bde1d1eabbf22b42418
+
+% 7 1 0 0fd75f3b4e0f996910c7c1ba6b1e5c4d
+
+% 8 1 0 1a4067525ecd0fc905c6e71d90f01102
+
+% 0 1 0 0b4c89af7bce30481890400fe4b38e9e
+
+% 1 1 0 1555b2c1ee6699f51773feb98dd543aa
+
+@ 0 7 0 01879198dd8a6faa1cfcc75d0c207ff6
++     entry #awaitElement   ロケーターに最初に一致するもの。一つ見つかるまでポーリングする
++         `#awaitElements` と同じで、最初に見つかった要素を返す。`Tenacity`、`Monitor`、`Tactic[Tenacity.Error]` が必要である。
++     entry #awaitUntil   スコープにある `Tenacity` のもとで、条件が成り立つまでポーリングする
++         タイトル、要素の数、属性、クッキーなど、呼び出し側がエラーを発生させずに評価できるあらゆるもののための、汎用の待機である。
++         条件は試行ごとに評価し直され、ポリシーが諦めると `Tenacity.Error` が発生する。
+
+% 2 1 0 1f6aa92520d79dfa189a16a999ef7de3
+
+% 3 1 0 1042b9311de5599c0e953a6910c0bbf7
+
+% 4 1 0 020e96ac6d91a11c1d59ff477491096d
+
+% 5 1 0 16f561229983049e1d5ec8e9e8d6afc5
+
+% 7 1 0 09303e875f6f9ee919d0950b857071f6
+
+% 8 1 0 14d87c35847b100914314435d835e958
+
+% 0 1 0 00323f5ee9446eac0f0fed255fd96b91
+
+% 0 1 0 1c3a641e6e3c560c094a7e9006f3495b
+
+% 1 1 0 1e0d1fb1745cf7180c5c4547d339246c
+
+@ 0 29 0 0dc5210e56f2ba7d1088e95a7389d90d
++     entry #shadowRoot   要素が持つ開いたシャドウルート
++         ふつうは要素の `shadowRoot` 拡張を通して書く。
++         閉じた、または存在しないシャドウルートは理由 `NoSuchShadowRoot` の `WebDriver.Error` を発生させる。
++     entry #click   要素の中心をクリックする。先にスクロールして表示させる
++         ふつうは `click` 拡張を通して書く：`button.click()`。
++         別の要素に覆われた要素は理由 `ElementClickIntercepted` の `WebDriver.Error` を発生させ、クリックできない要素は `ElementNotInteractable` を発生させる。
++     entry #clear   入力欄やテキストエリアなどの編集可能な要素を空にする
++     entry #value   キーボードと同じように、要素にテキストを入力する
++         ふつうは `value` 拡張を通して書く：`field.value(t"search terms")`。
++         テキストはすでにあるものに追加される。置き換えるには先に `#clear` する。
++     entry #innerText   要素の描画されたテキスト。`innerText` アルゴリズムによる
++         DOM の `textContent` ではなく、読む人に見えるものであり、隠れたテキストは省かれ、レイアウトが置く場所で改行される。
++         `text` ではなく `innerText` という名前なのは、`text` がすでに `soundness` アンブレラの拡張だからである。
++     entry #tagName   `h1` などの、要素のタグ名
++     entry #role   `button` や `heading` などの、要素の算出された ARIA ロール
++     entry #label   スクリーンリーダーが読み上げるような、要素の算出されたアクセシブルな名前
++     entry #enabled   フォームのコントロールが有効かどうか
++     entry #selected   チェックボックス、ラジオボタン、オプションが選択されているかどうか
++     entry #attribute   マークアップにあるとおりの属性。要素が持たなければ `Unset`
++         スクリプトがノードに触れるとすぐに `#property` と違ってくる：入力欄の `value` 属性はページが送られたときのものであり、そのプロパティはフィールドが今保持しているものである。
++     entry #property   要素の生きた DOM プロパティ。持たなければ `Unset`
++     entry #css   `color` などの、要素の CSS プロパティの算出値
++     entry #rect   要素の境界ボックス。CSS ピクセル単位の `WebDriver.Session.Rect` として表す
++     entry #displayed   仕様の表示判定による、要素が表示されているかどうか
++         W3C の仕様は JSON Wire Protocol の `displayed` コマンドを削除したので、これは適合するすべてのクライアントと同じく、要素の `getClientRects().length > 0` をスクリプトとして実行する。
+
+@ 0 5 0 120c0911513e0f2b065d7df19c066080
++ entry .browser   スコープにある `WebDriver.Session`。コマンドを `browser.title()` のように読めるようにする
++     `session` ブロックの中では、ハンドルはコンテキスト値である。`browser` はそれを指し、そのキャプチャ集合をセッション自身のものとして保つので、それが返すものはすべて同じブロックに閉じ込められる。
++     これはセッションを名前付きのコンテキストパラメーターとして受け取るメソッドであり、`summon` ではない。`summon` では、ブロックが所有するケイパビリティを参照するのではなく、新しいケイパビリティを作ってしまう。
+
+% 2 1 0 07c47f44650ee6ad1fef66883ac9b76c
+
+% 3 1 0 05bcaf69e4f0c19f04da76ecca256f2b
+
+% 4 1 0 116879f4fb62d55f08bf1fb7f4fd6b22
+
+% 5 1 0 02c196a54cbf10df09e5db5687849af2
+
+% 6 1 0 07bc9e430d2b8a74155db6cecd788b1b
+
+% 7 1 0 1c5420126eed9ac31fc801d91fd98e76
+
+% 0 1 0 1e7e289bc95ae2bb1beefd334f52538b
+
+% 1 1 0 1a92ef2e485fd73a19b972be6fa04c00
+
+@ 0 3 0 023af3b21e522e191110e54531791c0b
++ entry .click   スコープにある `WebDriver.Session` を通して、要素の中心をクリックする
++     `WebDriver.Element` の拡張で、`WebDriver.Session#click` に委譲する。
++     別の要素に覆われた要素は理由 `ElementClickIntercepted` の `WebDriver.Error` を発生させる。
+
+% 2 1 0 0879055c577bcf7304f6f549083680ff
+
+% 3 1 0 11363a435f62c3cb01339c5d1db1ce0e
+
+% 4 1 0 1208a3c3df48a27c195b5a02f7a10b68
+
+% 5 1 0 1a604b2a108ee4b21be14efdcaab67a8
+
+% 6 1 0 1464894699b2122d18d7f172bb01b96c
+
+% 0 1 0 1917ae27646b72700aff6991dca436da
+
+% 1 1 0 1fbb70079832f71d12c93c717d3ef2d1
+
+@ 0 2 0 004b9345f9ef9e580459938bd2372ba9
++ entry .clear   スコープにある `WebDriver.Session` を通して、編集可能な要素を空にする
++     `WebDriver.Element` の拡張で、`WebDriver.Session#clear` に委譲する。
+
+@ 0 4 0 1974223faa9b7a500dc1ef8d6f771023
++ entry .innerText   スコープにある `WebDriver.Session` を通して得る、要素の描画されたテキスト
++     `WebDriver.Element` の拡張で、DOM の `textContent` ではなく、`innerText` アルゴリズムによる、読む人に見えるものを返す。
++     `text` がすでに `soundness` アンブレラの拡張なので、`text` という名前ではない。
+
+@ 0 2 0 1ac6479be837997311b2eaa422149ee0
++ entry .tagName   スコープにある `WebDriver.Session` を通して得る、`h1` などの要素のタグ名
++     `WebDriver.Element` の拡張で、`WebDriver.Session#tagName` に委譲する。
+
+@ 0 2 0 0daa16f15ef8a3d702de670903c12693
++ entry .enabled   スコープにある `WebDriver.Session` を通して得る、フォームのコントロールが有効かどうか
++     `WebDriver.Element` の拡張で、`WebDriver.Session#enabled` に委譲する。
+
+@ 0 3 0 01fb7eef921da5bd1493d5b84c5aca59
++ entry .selected   チェックボックス、ラジオボタン、オプションが選択されているかどうか
++     `WebDriver.Element` の拡張で、`WebDriver.Session#selected` に委譲する。セッションがスコープに必要である。
+
+@ 0 3 0 1901638394b8e61804b11e973f1afff8
++ entry .displayed   スコープにある `WebDriver.Session` を通して得る、要素が表示されているかどうか
++     `WebDriver.Element` の拡張である。
++     W3C のプロトコルには表示判定のコマンドがないので、`WebDriver.Session#displayed` はそれをスクリプトとして評価する。
+
+@ 0 2 0 015e9b31001e0d0903da1c4ce90f0d18
++ entry .role   スコープにある `WebDriver.Session` を通して得る、要素の算出された ARIA ロール
++     `WebDriver.Element` の拡張で、`WebDriver.Session#role` に委譲する。
+
+@ 0 3 0 19d26a523c8b706506a88bb7f50031d3
++ entry .label   スコープにある `WebDriver.Session` を通して得る、要素の算出されたアクセシブルな名前
++     `WebDriver.Element` の拡張で、`WebDriver.Session#label` に委譲する：スクリーンリーダーが、そのテキスト、`aria-label`、または関連付けられた `<label>` から読み上げる名前である。
+
+@ 0 4 0 1d08303bbde164df120db14af1581832
++     `soundness` アンブレラは、導出の中のフィールドやケースの名前である wisteria の `label` もエクスポートするので、`import soundness.*` のもとでは二つの名前が衝突し、`element.label()` が解決できないことがある。`browser.label(element)` なら、拡張を使わずに同じコマンドに届く。
+
+@ 0 3 0 11a1d8abba392c3408b36f7dd7f64cad
++ entry .cssValue   `color` などの、要素の CSS プロパティの算出値
++     `WebDriver.Element` の拡張で、`WebDriver.Session#css` に委譲する。セッションがスコープに必要である。
+
+% 2 1 0 1354af91a6e2d3b41aa3d133ad900cc2
+
+% 3 1 0 105ce92d3292792613a5abce90dfac2e
+
+% 4 1 0 0717e730048924851e479655f1298933
+
+% 5 1 0 18c43cc7657fd4b20eb1abf8f50c45f8
+
+% 6 1 0 167635ef992f2b6902cabb34096bd614
+
+% 0 1 0 1f69de3b552f5104021066310e4953e9
+
+% 1 1 0 025c417c3e41109d168bf6325b0382ac
+
+@ 0 4 0 01b73c252c0345080b337b9d2116c34e
++ entry .shadowRoot   スコープにある `WebDriver.Session` を通して得る、要素が持つ開いたシャドウルート
++     `WebDriver.Element` の拡張で、`\` または `element` で検索する `WebDriver.ShadowRoot` を返す。
++     閉じた、または存在しないルートは理由 `NoSuchShadowRoot` の `WebDriver.Error` を発生させる。
+
+@ 0 2 0 1f2679f5f4c9621c1fdcdc6ad8804b5c
++ entry .rect   スコープにある `WebDriver.Session` を通して得る、CSS ピクセル単位の要素の境界ボックス
++     `WebDriver.Element` の拡張で、`WebDriver.Session.Rect` を返す。
+
+@ 0 4 0 01a1aef68056265b09d9f448b52a1265
++ entry .value   スコープにある `WebDriver.Session` を通して、要素にテキストを入力する
++     `WebDriver.Element` の拡張で、`WebDriver.Session#value` に委譲する。
++     テキストはフィールドがすでに保持しているものに追加され、どれほど長くても一回のリクエストで済む。名前付きキーと同時押しには `WebDriver.Session#press` が必要である。
+
+% 2 1 0 0b8420ac59e5039e01e24fcd0774ccb7
+
+% 3 1 0 08d2ae041fea9dfd0610e58ac7edcbdb
+
+% 4 1 0 1354f9f251a5a4f1010d4db95834523e
+
+% 5 1 0 0f39f803123d30731e62b7f880ad8716
+
+% 6 1 0 117cbf340e2fa9ab1eec6b3a962afd2c
+
+% 0 1 0 134843b65074c1af1ecad3d29b595c43
+
+% 0 1 0 0442255b8ff7f58b0b3c976cc7009cfe
+
+% 0 1 0 0fe2647209d6af5f0a33bd95992dc192
+
+% 0 1 0 134fe6486c7a1c660c81b416d4768a94
+
+% 1 1 0 0f017719092bf5d00860c1994c1a6c9f
+
+@ 0 3 0 0124dde36c3884040b9e6a2ff6a6d0e0
++ entry .screenshotData   スコープにある `WebDriver.Session` を通して得る、一つの要素の PNG。生のバイトとして表す
++     `WebDriver.Element` の拡張である。
++     `tarantula.image` の `screenshot` 拡張は、同じバイトを `Raster in Png` にデコードする。
+
+@ 0 4 0 081ec4740481478e15d64361ce899fe5
++ entry .attribute   マークアップにあるとおりの要素の属性。持たなければ `Unset`
++     `WebDriver.Element` の拡張で、セッションがスコープに必要である。
++     スクリプトがノードに触れると `property` と違ってくる：入力欄の `value` 属性はページが送られたときのものであり、その `value` プロパティはフィールドが今保持しているものである。
+
+@ 0 2 0 1be74d2a2e652810197fe5ef0cb3bb82
++ entry .property   要素の生きた DOM プロパティ。持たなければ `Unset`
++     `WebDriver.Element` の拡張で、セッションがスコープに必要である。
+
+% 2 1 0 0b14321ab5ed961b12adceaba6b99c21
+
+% 3 1 0 15052e9de51b95141be5dec00f2f78bd
+
+% 4 1 0 1af7e357d97b82710d1a0c4af25431a9
+
+% 5 1 0 0866a33306e7fa451f767e71a2c2fe1b
+
+% 6 1 0 0ddeb0468b3e15550cb6fc24fc7fbcb8
+
+% 0 1 0 0cea0ffeede83aef0b02b4aa50832888
+
+% 0 1 0 0e0d1e1cc0097ccc09c04c9f5bb8968e
+
+% 0 1 0 1f928ea03d265c3a0c8c18e9c3c1cc35
+
+% 1 1 0 1b2ff60c362a8ef2030ed6ec9684dcd8
+
+@ 0 5 0 0f2d0a50c2d05f811b865cb2f460fbbf
++ entry .element   要素またはシャドウルートの下で、ロケーターに一致する一つの要素
++     `WebDriver.Element` と `WebDriver.ShadowRoot` の拡張で、任意の `Focusable` ロケーターを受け取り、セッションがスコープに必要である：`menu.element(Li)`。
++     一致するものがなければ理由 `NoSuchElement` の `WebDriver.Error` が発生する。`\` は代わりに一致するものをすべて返し、なければ空のリストを返す。
+
+% 2 1 0 0165219911708ad210660c67b1cc682a
+
+% 3 1 0 12e4a058107fa883067d96a49ec097f3
+
+% 4 1 0 0b0a15401ee7989612bd2da6c64ceaab
+
+% 5 1 0 1b9bcb36b4e6a8541760d28585a27ef3
+
+% 6 1 0 15b856436a12c3980511b02df5cbe88b
+
+% 0 1 0 00916b1ebe02deb012168d7752b17d56
+
+% 0 1 0 1fc704690165685e1cc3f4c92e43e2a3
+
+% 1 1 0 17cd2d7448331c151906a65187c0705d
+
+@ 0 5 0 1e0d61bfa80408c80c57fdc5bf09c5b0
++ entry .screenshot   ビューポートまたは一つの要素のスクリーンショット。`Raster in Png` としてデコードしたもの
++     `WebDriver.Session` と `WebDriver.Element` の拡張で、画像コーデックをブラウザ自動化から切り離しておく `tarantula.image` コンポーネントにある：`screenshotData` を hallucination の PNG コーデックでデコードしたものである。
++     コーデックが読めないスクリーンショットは例外として投げられる。それはドライバーが PNG でないものを送ったことを意味するからである。
+
+% 2 1 0 137b066b948da42b119c9db506fb4de8
+
+% 3 1 0 1d0bb6eb741758691abc8a207573a107
+
+% 4 1 0 179a459f2cd103f208be9234ee788562
+
+% 5 1 0 0e97572254e8917616324afc76ca2869
+
+% 6 1 0 0fa8e6c724d57a250a7bdbe9e81f5812
+
+% 7 1 0 1b3e9cc9442e7e5e1031a86a872f1cd9
+
+% 0 1 0 005266ddb4c8c0f51b2c34cf201a1958
+
+% 0 1 0 13b8951ae283025203374e920ed55633
+
+% 1 1 0 1bf7e46559a177c01f6b861765cf23ae

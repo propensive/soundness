@@ -1,0 +1,38 @@
+orthant 2 language
+
+@ 0 1 0 1bb20c9ef4d81da60f49eb04dce1773b
++ # `↯/s.16.1` — Untere Schranke muss ein `Double`-Singleton-Literal sein
+
+@ 0 2 0 03b79d6edea2f7960fd9b42f80ec983e
++ Wird vom Makro `NumericRange` von Cardinality ausgelöst, wenn der Typ der unteren
++ Schranke kein `Double`-Singleton-Literaltyp ist.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 1e57ffe4e1275f2213aa505c0d72a546
++ Das Makro untersucht den Typ der unteren Schranke und erwartet einen
++ `ConstantType(DoubleConstant(_))`. Jede andere Gestalt löst diesen
++ Abbruch aus.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1c97d9769471156417e6b598ac422308
+
+% 1 1 0 18f491662511df6104e021cdd73879fc
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 2 0 0d21d8d4024006391082d864cc463646
++ Geben Sie als untere Schranke einen `Double`-Singleton-Literaltyp an (z. B.
++ `0.0` statt `0`).
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 182b99dddf81d5651ccd9f6afc52f756
++ - Quelle: `lib/cardinality/src/core/cardinality.internal.scala`

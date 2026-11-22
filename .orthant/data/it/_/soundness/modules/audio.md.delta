@@ -1,0 +1,386 @@
+orthant 2 language
+
+% 0 1 0 1aada154887975180c6310d5cfb496d3
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 6 0 0b24ee0a4905ba000c9952c5329d7603
++ L'audio si legge e si scrive come valori tipizzati, si registra dagli ingressi della macchina e si
++ riproduce attraverso le sue uscite. Leggere un file [WAV](https://en.wikipedia.org/wiki/WAV),
++ [AIFF](https://en.wikipedia.org/wiki/Audio_Interchange_File_Format), AIFC o AU fornisce un valore
++ `Audio`: un blocco [immutabile] di campioni
++ [PCM](https://en.wikipedia.org/wiki/Pulse-code_modulation) che conosce la sua frequenza di
++ campionamento, il suo numero di canali, la sua profondità di bit e ogni campione che contiene.
+
+@ 0 4 0 19dddb5d4ed727611384c7f981366252
++ Il formato dell'audio risiede nel suo tipo. Un `Audio in Wave` è distinto da un `Audio in Aiff`, e
++ convertire dall'uno all'altro, o tra un valore audio e i suoi byte codificati, è un solo metodo. La
++ registrazione e la riproduzione trasmettono l'audio in chunk, con la disposizione dei canali, mono,
++ stereo o surround, anch'essa portata nel tipo.
+
+@ 0 1 0 1a1d7939b51e825313b0b75e6d9ba99b
++ ### Sull'audio
+
+@ 0 4 0 05de9d23a99da7e41baa56aceeb91614
++ Sotto la superficie l'audio non compresso è semplice: una griglia di numeri, uno per ogni campione
++ di ogni canale, riprodotti a una frequenza fissa. I formati di file differiscono soprattutto nelle
++ intestazioni, e non nella sostanza. La libreria audio di Java espone tutto questo tramite oggetti
++ mutabili e formati non tipizzati, dove un numero di canali o una profondità di bit sbagliati si
++ manifestano come rumore anziché come errore.
+
+@ 0 5 0 108a88dd3dba853f17ff02b2b446bc27
++ Qui le stesse funzionalità sono presentate come valori immutabili e tipizzati. Il formato fa parte
++ del tipo. La frequenza di campionamento è una vera [grandezza](quantities.md) in hertz, non un
++ numero nudo. Leggere, convertire e scrivere sono le stesse operazioni polimorfiche usate ovunque.
++ Poiché il formato sta nel tipo, una conversione non supportata è un errore di compilazione, e tali
++ [stati impossibili](../../philosophy/impossible-states.md) non possono essere rappresentati.
+
+@ 0 4 0 06b8ea4357379c1b1bf3b67ee160952e
++ Tutto proviene dal package `soundness`. Il secondo import sceglie una
++ [strategia](errors.md#choosing-a-strategy) per gli errori, e il terzo permette agli esempi di
++ stampare i loro risultati. Il `Decimalizer` fissa con quante cifre significative si stampa una
++ [grandezza](quantities.md):
+
+% 2 1 0 1e12e9617a79e7391c8b7db8ecb3b5f8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0433d9363e1303900355a7f4dc583bf9
+
+% 1 1 0 0df11236c93f6fc6056f73429819669b
+
+@ 0 1 0 03fad4d7e98a60010a6d184f373d5f0e
++ ### Lettura dell'audio
+
+@ 0 1 0 159f7166e2f160a10a51aa2715e00c68
++ Qualsiasi sorgente di byte si legge come audio quando si nomina il formato atteso, come uno di
++ questi tipi:
+
+% 2 1 0 1d2cb2f9d1dc2b2c015f34b46d4811ce
+
+@ 0 3 0 144c2e7988ad86e0005f53d877130013
++ column  Formato
++ column  Tipo
++ column  Tipo di media
+
+% 0 1 0 1f2f82964d2822dc0465dd32cc5b3390
+
+% 0 1 0 0d23b9d6f342b6d903c12afab51eca7a
+
+% 0 1 0 18378596f8c435a10f20b463ee95d763
+
+% 0 1 0 168bdac38a39e51a0ee087c7b02bfdf5
+
+% 0 1 0 049dc7976576eca11d2f70114b8afb6f
+
+% 1 1 0 1430d9a56718b4641d7f82f25a6257b5
+
+@ 0 2 0 13bc503b95f0b02410736a1355f83b1b
++ Questi byte sono un file WAV completo, con un canale, campioni con segno a 16 bit a 8 kHz, e
++ quattro frame che contengono i valori 100, 200, 300 e 400. È abbastanza piccolo da essere scritto
++ per esteso:
+
+% 2 1 0 1c07927f7d2aae83184bc44c35dd31c5
+
+% 0 1 0 00bf70e8d2853501064bd22efc955bb8
+
+% 0 1 0 138ddece3c805fcb1cdfee8c72d77c23
+
+% 0 1 0 0ff7c126975c04541d473a0c2c2e925b
+
+% 1 1 0 155386cfd78c642a05e9db7e7df48b76
+
+@ 0 1 0 1b00e73212c6a5380463b3b7e5f0174b
++ Il valore conosce la propria forma:
+
+% 2 1 0 138e599d72f7e4c0045a280e4baeda60
+
+% 3 1 0 17da4a515955265d18a39bc34ef332d4
+
+% 4 1 0 0050a74cf046a6e30f94b935ee7adb2d
+
+% 0 1 0 0cae5083ab80c2170cb0549c3796d1f2
+
+% 0 1 0 090c952501048b2b0adbeec4bc92cae7
+
+% 0 1 0 1ca7ab157a4289c207576cefd2a66d6e
+
+% 0 1 0 154f84c16d707a410e0fcf254c61418f
+
+% 0 1 0 13fc883e899a8c640b518c55c6fda487
+
+% 1 1 0 041fabab58118237134cfaed4ba02565
+
+@ 0 1 0 0303cb3b6c33c5d90552b5cf153fa96a
++ La frequenza di campionamento si stampa in secondi inversi, cioè in hertz, e la durata in secondi.
+
+@ 0 2 0 0328030cb332d4701bbf8167cf97aa83
++ La lettura può fallire, perché i byte possono non contenere audio nel formato indicato. Ricorre
++ quindi alla strategia di errore nell'ambito, e solleva un `Audio.Error` che nomina il formato
++ atteso:
+
+% 2 1 0 081da6e8e0df64010c085d597be46df5
+
+% 3 1 0 08f49a5522bfa6ed015fe41425fae4fc
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 035484a9a0bf5b8c17db555a0a361a1d
+
+% 1 1 0 06a7fd8ad6090fe9179f09bd96981f82
+
+@ 0 1 0 11636a55da7984420b656c47b1b290fd
++ Applicare un valore audio a un canale e a un frame fornisce quel singolo campione:
+
+% 2 1 0 0e9d7ccb4f9738ae0631f65f191d4288
+
+% 3 1 0 1df7dfce305e50741d190b5001341395
+
+% 4 1 0 00f21d1d2f0b816a0c82b9e165dd14e0
+
+% 0 1 0 1d6f63577faaf47b13574ffc241471ed
+
+% 0 1 0 04ea46283a6259e20cefa61922c896c2
+
+% 1 1 0 071cbb499d2aa74705fd95bfff5fed35
+
+@ 0 3 0 1331f1d044ababcc163dc5532e9c1ecc
++ L'audio che non è già PCM viene convertito in PCM con segno a 16 bit durante la lettura, così ogni
++ valore `Audio` ha la stessa semplice forma interna, comunque fosse memorizzato. Un file su disco si
++ legge allo stesso modo tramite il suo handle, per la durata di un ambito, come qualsiasi
++ [file](filesystem.md):
+
+% 2 1 0 1ca6981d0edf5b0d01ffa455c47097ce
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 0516bd7f0d9a8c731e381f298b6ea4d2
+
+% 0 1 0 154965eeca3b5b1f0eacb7d96c2dd6e3
+
+% 1 1 0 0725c4ad44677c9407070804f40730e1
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 0d17bebd81d32a1a1046352aa7c47f2a
+
+% 0 1 0 028d1d36ae72f9001a1c70930a70571d
+
+% 0 1 0 02911e41a06189c301e8e06bbade2277
+
+% 1 1 0 0820264f86b3588e0444ab6ec9cb63ac
+
+@ 0 1 0 14edd77c34b8b4230597962106a6c9ed
++ ### Conversione e scrittura
+
+@ 0 2 0 0f9d29f369fb41cd1d283437cc3917c8
++ `to` esprime di nuovo un valore audio in un altro formato, e leggerlo come `Data` produce i byte
++ codificati. L'audio sopravvive all'andata e ritorno:
+
+% 2 1 0 066042acc1f3e3671e01fda1b1c2c7d6
+
+% 3 1 0 0f8dca66667687540a106952266177da
+
+% 4 1 0 192234ebb2ff348105e0edfbdfbca078
+
+% 0 1 0 0c1f58025080eb4b12af0da1bfd5ac9c
+
+% 0 1 0 0313422421c1621d1c53f181e10fdb64
+
+% 0 1 0 112185f5848aad261c356412a895451e
+
+% 1 1 0 1318bda2865ad374141233ce33df1ba9
+
+@ 0 4 0 13e52e053b8173a90a6f38e599852ec0
++ Leggere un `Audio` *come* byte e leggere byte *come* un `Audio` sono la stessa operazione `read`,
++ in ciascuna direzione. Scrivere un file significa quindi leggere il suo audio come `Data` e
++ inviarlo alla destinazione. Oppure si passa all'handle il valore audio stesso, poiché un `Audio`
++ viene trasmesso come i suoi byte codificati:
+
+% 2 1 0 1df220a77925ad8f01f057dde7351b9b
+
+% 3 1 0 1ed483e6f0f8eff40236487edfb2e060
+
+% 4 1 0 14e194c01f76c018053e9a911d4e632a
+
+% 0 1 0 09d52ed06540e6970402666cf0774e80
+
+% 0 1 0 0e3074aabb7a8357061285843303a128
+
+% 0 1 0 0e3197d99ac3a35305fe2cec7faaeb0b
+
+% 0 1 0 0a5b666ce28e532f0d208783fe356afc
+
+% 1 1 0 108c3f1f47833187126da1dd02f31dd2
+
+@ 0 1 0 076b987f81bdd6c81b0f5dea6190b916
++ ### Disposizioni dei canali
+
+@ 0 1 0 1454120409823f3a08adff92881e9e38
++ Una disposizione dei canali può essere registrata nel tipo accanto al formato, scritta con
++ `across`:
+
+% 2 1 0 181baf5b7027b9d8198c7e80798e5420
+
+@ 0 2 0 01e933a555c311361fe309ed41658053
++ column  Disposizione
++ column  Canali
+
+% 0 1 0 00e2537858a2be871fcaed1571eaa110
+
+% 0 1 0 0c445beb339cb04c128f1dcaa2b77ba9
+
+@ 0 1 0 1cd53f5d75331ea11f7946fd5887a5d7
++ row  `Surround[n]`  `n`, in una configurazione surround
+
+% 1 1 0 02b48a87a148b05009488e5f767672ac
+
+@ 0 1 0 0b8aef2b826949760a5b4d032ecfb3c0
++ La disposizione è una [typeclass], quindi il suo numero di canali è noto staticamente:
+
+% 2 1 0 05c89a77e773f6d307aad00f716e9643
+
+% 3 1 0 1b4be2eacbe0110307ca869dac34a924
+
+% 4 1 0 178511df7cdc00f51d76a8a4f93e9737
+
+% 0 1 0 0cdf5e2d97037a6719ed2026533c3ca4
+
+% 0 1 0 13d57c63af6261461f18fc0b70ec95d6
+
+% 1 1 0 004967938548f6cd04f1c683021bd00f
+
+@ 0 1 0 0f405c6824be73331294ef944c487325
++ ### Registrazione
+
+@ 0 1 0 1f190370f392e0c51421827671a99f94
++ Il resto di questa pagina richiede dispositivi audio, perciò i suoi esempi vengono compilati ma non
++ eseguiti.
+
+@ 0 5 0 0f50d83c137f938205b0b130ae4b0553
++ Un dispositivo di ingresso è un `Audio.Feed`. Gli ingressi della macchina si elencano con
++ `Audio.Feed.list`, ciascuno con un `name`, un `vendor`, una `description` e le `configurations` che
++ offre. Un ingresso registra a una frequenza di campionamento, una profondità di bit e una
++ disposizione scelte, e produce una `Recording` il cui `stream` fornisce audio in chunk finché non
++ viene fermata. Una macchina può non avere alcun ingresso, quindi il primo è un valore [opzionale]:
+
+% 2 1 0 10fc66b371d4d925092fd8f08f682311
+
+% 3 1 0 04f5fd545dd3077509568d0a5080ab0e
+
+% 0 1 0 0efc30d4422f343611e32de3b3bf0a4b
+
+% 0 1 0 021afb03e7a186860e088edc1379d3d1
+
+% 0 1 0 13fbddfbcd78a06e08de1dae757fc3fd
+
+% 0 1 0 0b897d0653fe330707fdb417af7c4eef
+
+% 1 1 0 1d5b6e62eeccc1d007129092a3a056b8
+
+@ 0 3 0 04e136d2de909da519e3f66b6013403f
++ `supports` chiede se un ingresso può rispettare una configurazione prima che la registrazione
++ inizi. Registrare da un ingresso non disponibile o mal configurato solleva un `Audio.Feed.Error`.
++ Su macOS alla JVM dev'essere stata concessa l'abilitazione all'uso del microfono, altrimenti non è
++ disponibile alcun ingresso.
+
+@ 0 1 0 07217023ebfa8bae18830686d2007b9f
++ ### Riproduzione
+
+@ 0 3 0 1c1b886f59cf4eca1cd72fd2dc4cecad
++ Un dispositivo di uscita è un `Audio.Outlet`, elencato con `Audio.Outlet.list`. Riprodurre un
++ valore audio restituisce un `Playback`, che gira in background. `await` blocca finché non termina,
++ e `stop` lo interrompe in anticipo:
+
+% 2 1 0 0bb7cc07a1229c5d12bd224230d1773a
+
+% 1 1 0 15ca46db27fac0730713d959d9dc40e4
+
+% 0 1 0 0847fe983bb3492f0090fb2951fcf2cf
+
+% 0 1 0 05617666850873f404f94d2381f62d0f
+
+% 1 1 0 1b49404990d055731a2c89e7046634cf
+
+@ 0 2 0 1440ecf6f3dd28401aac665970ebfc7a
++ Riprodurre su un'uscita non disponibile, o che non può accettare la configurazione dell'audio,
++ solleva un `Audio.Outlet.Error`.
+
+@ 0 1 0 0fd2f99c47794d2e18b5a6bb2016455b
++ ### Linee con ambito
+
+@ 0 5 0 03881b042892eb2e02a8d277285ed1f9
++ `record` e `play` si prestano a un uso aperto, in cui il dispositivo viene tenuto per tutto il
++ tempo che il programma desidera. Dove il dispositivo deve essere tenuto per esattamente un blocco,
++ si *apre* invece una linea, come [si fa con un file](filesystem.md). La linea dura esattamente
++ quanto l'ambito. La disposizione e la configurazione si danno come la forma e le sue flag, che sono
++ `PcmFlag.Rate`, `PcmFlag.Bits` e `PcmFlag.Chunk`:
+
+% 2 1 0 0f9dadc93dfa28e10eb54853e6539ce7
+
+% 3 1 0 0eac2ade7fca5f6013cb6be56075c3eb
+
+% 0 1 0 0a00470fb1a7ef7b1dd0b25a312fbd7d
+
+% 0 1 0 05769ede54d399de1087d73662e4aa23
+
+% 1 1 0 15bea77162cabe5f1de837a2f39aba39
+
+% 0 1 0 0f099e80e56972bd01222217f2068585
+
+% 0 1 0 067f60db12bc222b011cd227ba5fbcd6
+
+% 1 1 0 029a12982856b00c1271ebe64fbee13e
+
+@ 0 2 0 1bb52b032d23467b0658a3ea090645f6
++ La riproduzione richiede il permesso `Write`, quindi su una linea aperta per la cattura non si può
++ riprodurre, e a dirlo è il compilatore, non il driver audio.
+
+@ 0 1 0 1392db642fccdcb807899dca0ddbb965
++ I due tipi di dispositivo a confronto:
+
+% 2 1 0 0e6c130dfef8427f0af217ea29e3c14c
+
+@ 0 1 0 07ac815ea191e3cc115a610b5ee1b959
++ column  Aspetto
+
+% 0 1 0 013952e1389b11a81a5581824d012725
+
+% 0 1 0 02b67d3e33e7865715380e69b5c0db57
+
+@ 0 5 0 01aafdd84d0662cf16f3adf029778dd9
++ row  Direzione  ingresso  uscita
++ row  Elencato con  `Audio.Feed.list`  `Audio.Outlet.list`
++ row  Uso aperto  `record`, che dà una `Recording`  `play`, che dà un `Playback`
++ row  Linea con ambito  `open[Pcm](Read, …)`  `open[Pcm](Write, …)`
++ row  Errore  `Audio.Feed.Error`  `Audio.Outlet.Error`
+
+% 1 1 0 18c08b5764db607602d268d9c02b090c
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 8 0 1926978bf0a858d313a6087747fbb1a3
++ - [Grandezze](quantities.md) descrive gli hertz e i secondi in cui si misurano una frequenza di
++   campionamento e una durata.
++ - [Filesystem](filesystem.md) descrive gli handle tramite cui si leggono e si scrivono i file
++   audio.
++ - [Dati binari](binary-data.md) descrive `hex"…"` e il `Data` che è l'audio codificato.
++ - [Stream](streams.md) descrive `read`, che qui funziona in entrambe le direzioni.
++ - [Tipi di media](media-types.md) nomina i formati.
++ - Le [immagini](images.md) portano il loro formato nel tipo allo stesso modo.

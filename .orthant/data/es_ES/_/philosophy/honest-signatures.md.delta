@@ -1,0 +1,183 @@
+orthant 2 language
+
+@ 0 1 0 06243999aacdebca1046ca79b2e9d7b9
++ # Signaturas honestas
+
+@ 0 6 0 05a48d9403baa413163dbe62a380a680
++ En Soundness, una signatura dice la verdad, toda la verdad y nada más que la verdad sobre lo que
++ necesita una operación. Lo más importante es el *nada más que*: una signatura no declara ningún
++ requisito salvo que siempre se necesite. Una clase de tipos describe la única capacidad que
++ abstrae, sin ensanchar sus métodos para acomodar lo que pudiera querer alguna implementación:
++ ningún parámetro contextual «por si acaso», ningún error declarado porque una implementación
++ puede fallar.
+
+@ 0 8 0 050776059537a5f21ebabb954ea5dcc4
++ Los requisitos que solo tienen ciertas implementaciones pertenecen a esas implementaciones. Un
++ `given` declara en su propia signatura las capacidades de las que depende su implementación
++ concreta —una instancia que se apoya en la red requiere `Online`, una falible una `Tactic`—, y el
++ requisito se satisface allí donde se elige la instancia, en lugar de imponerse a la clase de tipos
++ y a todas sus demás implementaciones. Así, los requisitos efectivos de un método los determinan
++ las instancias que realmente usa: el mismo código genérico es puro con una instancia pura y usa la
++ red con una que la usa, y su propia signatura no afirma ninguna de las dos cosas.
+
+@ 0 5 0 19082702522ce140151b159258ce26f0
++ El resultado son signaturas en las que se puede confiar en ambos sentidos. Nada de lo que requiere
++ una operación está oculto, así que quien llama ve el coste verdadero; y nada de lo que declara
++ queda sin usar, así que un requisito en una signatura siempre tiene sentido. Una clase de tipos
++ mínima también es más fácil de implementar: la distancia entre lo que exige una interfaz y lo que
++ necesitan la mayoría de las implementaciones es justamente de donde salen las signaturas
++ deshonestas.
+
+@ 0 1 0 0d28bfa57dc178a50304b9d5357bae5a
++ ## El requisito viaja con la instancia
+
+@ 0 1 0 0e41017bf66db072143a9a63e7e34aa4
++ Una clase de tipos dice solo lo que abstrae:
+
+% 2 1 0 08511f38946741341bbbf25a2dfb526d
+
+% 3 1 0 190757efa6c1350e0d2c538315b96a61
+
+% 4 1 0 182f0d26b73fd2bf1a4948b33c9a9dd4
+
+% 0 1 0 02c7a26df30c501401305c4e011932e8
+
+% 0 1 0 179e46bbddd58b5718c8476807347cb6
+
+% 1 1 0 09f07a0a8270411015169f9365ad7e85
+
+@ 0 3 0 03b85a07d3ca79261d859371b061b0c8
++ Ningún error, ningún contexto, ninguna capacidad, porque mostrar un valor, en general, no necesita
++ nada de eso. Una instancia que *sí* necesita algo lo declara en su propia signatura, donde es
++ cierto:
+
+% 2 1 0 17b9f3afad580fd100610b38255e08fd
+
+% 3 1 0 0e7a270e06526271137ac9dcd3d8f10f
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 1 1 0 05fa8d9217c170b60ac90a2b81c4d78c
+
+% 0 1 0 0576420aca7e7e5e1922ada5e9e10712
+
+% 1 1 0 0301648f5402448b0e9aaf57d6d004cc
+
+@ 0 3 0 1eb4fbfd17b3a20901a1a04d5eddc357
++ La consecuencia es que los requisitos efectivos del código genérico los deciden las instancias que
++ resuelve. La misma función es pura cuando recibe una instancia pura y falible cuando recibe una
++ falible, y su propia signatura, honestamente, no afirma ninguna de las dos cosas.
+
+@ 0 1 0 14c93dff3f1441dc0bcc6b31b8049d15
++ ## Cómo es una signatura deshonesta
+
+@ 0 2 0 12cc30a02acc2dec17ef1bd8aee97fe3
++ El modo de fallo es fácil de reconocer una vez que tiene nombre. Se ensancha una interfaz para que
++ quepa la implementación más exigente:
+
+% 2 1 0 1e7efb761f35b79d1c3c5271c7c51c76
+
+% 3 1 0 14b629fbe10a291d183c2a96bb44aaa5
+
+% 4 1 0 1a6b3e7bf3fe96fe0f953f448acc836a
+
+% 0 1 0 0727f4fb3a23969f0fc305662732b161
+
+% 0 1 0 16e69ac9995d45220388ca90409a8294
+
+% 1 1 0 011286b2edac3720076089c0a7c14268
+
+@ 0 3 0 16d30ec94ef4c4461cc98c4bbf2d793b
++ Una implementación obtiene un esquema a través de la red; otra puede fallar; así que la
++ *interfaz* requiere ambas cosas, y ahora cada llamante de cada códec debe proporcionar una
++ capacidad `Online` y una estrategia de errores, tanto si la instancia que usa necesita alguna de
++ ellas como si no.
+
+@ 0 5 0 0ccd8660e14c807304867b93771297c6
++ Esto es peor que una molestia. La signatura ha dejado de transmitir información: quien lee
++ `Online` ya no puede concluir que la operación toca la red, porque el requisito está ahí por un
++ motivo que puede no aplicarse. En cuanto se sabe que unos cuantos requisitos son espurios, ya no
++ se puede confiar en ninguno, y la disciplina se derrumba.
+
+@ 0 1 0 1bbf1444ff9ae7e813bfb30914acccaa
++ ## Lo que sí transmiten las signaturas
+
+@ 0 1 0 09b0b4f11ecac9060fcc8dd1df39d4d2
++ Como son mínimas, las cláusulas que *sí* aparecen significan algo:
+
+% 2 1 0 1b9c0c2072582f3313ab390678fd32bb
+
+% 3 1 0 0e43f4f614af615d05cbbf7dbbae4860
+
+% 4 1 0 1ed4edba580ed74604a1f8e82e2785d2
+
+% 0 1 0 018857ea871317110933c6faf344c891
+
+% 0 1 0 1ecb71c330c5f881087473b1f8518e17
+
+% 0 1 0 0e153cc65cba77c11a3d496a51bad7a4
+
+% 0 1 0 1969367c3b0bd78c082ca5e93302bda7
+
+% 1 1 0 12174855fc549fbe0659ccd5b8f2054e
+
+@ 0 1 0 1e03a2962898606107cba51ed2c04eaf
++ Cada cláusula hace una afirmación:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 04e35d87f6c057221c6fa6843d9bec8c
++ column  Cláusula
++ column  Significa que el método
++ row  `using Online`  llega a la red
++ row  `raises`  puede fallar, y dice cómo
++ row  `logs`  emite eventos de ese tipo, así que quien llama sabe qué dirigir adónde
++ row  `using Monitor`  puede suspender la hebra que llama
+
+% 1 1 0 125abc22c916799009e53ae83ab12207
+
+@ 0 2 0 1c21f921c834a2a917fef31061bc918a
++ Un método sin ninguna de ellas no hace ninguna de esas cosas, y poder afirmarlo vale la pena.
+
+@ 0 1 0 1e7d385d16e6fa0f13a6c2a7d4909e82
++ ## Honestidad sobre las capturas
+
+@ 0 4 0 02148923c21d21470b2aebc16f24e140
++ Hay una deshonestidad más sutil que puede cometer una signatura: devolver un valor que depende en
++ secreto de algo con ámbito. Un flujo que aún mantiene abierto un fichero, una clausura que aún
++ retiene un manejador de errores: el tipo dice `Stream[Text]` y la verdad es «un flujo, pero solo
++ mientras ese fichero esté abierto».
+
+@ 0 6 0 0a6594ecb32835f4187e2b96e8e5c0a4
++ La [comprobación de capturas](capture-checking.md) hace que eso también forme parte de la
++ signatura. El tipo de un valor registra las capacidades que captura, de modo que una operación no
++ puede devolver discretamente algo cuya validez es más estrecha de lo que sugiere su tipo. Por eso
++ el principio de honestidad y la comprobación de capturas van juntos: uno trata de lo que una
++ operación *necesita*, el otro de aquello de lo que *dependen* sus resultados, y ambos son casos
++ de una signatura que declara toda la verdad.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Lo que cuesta
+
+@ 0 3 0 074cbc2bef00b976167e30cdcc717a22
++ **Las instancias llevan más.** Trasladar los requisitos a las instancias significa que las
++ instancias los declaran, y la signatura de una instancia falible es más larga que la de la
++ versión ingenua. Quien se beneficia es quien llama al código genérico, no quien escribe la
++ instancia.
+
+@ 0 4 0 16b1d044219973741b5eed38ca038ac2
++ **Los requisitos se propagan.** Un método que llama a algo que necesita `Online` debe
++ proporcionarlo o declararlo. Es el mecanismo funcionando —el coste de que una signatura signifique
++ algo es que hay que mantenerla—, pero sí implica que un cambio en lo más hondo de una cadena de
++ llamadas puede aflorar en lo más alto.
+
+@ 0 5 0 1c9e03e016d626df186b6663a8c70eca
++ **Los fallos de resolución son indirectos.** Cuando falta una instancia necesaria, el compilador
++ informa de una búsqueda implícita fallida en lugar de «esta operación necesita `Online`».
++ Importar `explainMissingContext` lo convierte en un diagnóstico que nombra la importación que lo
++ satisfaría, lo que remedia un coste que de otro modo recaería justamente sobre las personas a las
++ que la honestidad pretende servir.
+
+@ 0 2 0 07287f51d3dceaae098c1fe31ad3aff3
++ Véase [contexto declarativo](declarative-context.md) para saber cómo se proporcionan los
++ requisitos, y [gestión de errores](error-handling.md) para el más habitual de ellos.

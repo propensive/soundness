@@ -1,0 +1,61 @@
+orthant 2 language
+
+% 0 1 0 15cbebbfe2bf34ca0df92686a61b1811
+
+@ 0 1 0 0386783804bbfa41009b4121df180cf1
++ Wird ausgelöst, wenn eine WebSocket-Gegenstelle das Protokoll verletzt.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 079badd69f273b9014871492df49a46d
++ Perihelion implementiert RFC 6455 strikt, einschließlich der Anforderungen, die andere
++ Implementierungen oft lockern: Maskierung, Fragmentierungsregeln, Grenzen für Steuer-Frames,
++ UTF-8-Gültigkeit von Text-Frames und die zulässigen Close-Codes.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 2 0 1db5f3bb22f47958123f6ac253b017e2
++ column  Grund
++ column  Meldung
+
+% 0 1 0 08e1ffc1e8eecb320e0a5eb2e9b88c54
+
+% 0 1 0 05b67016a1a3bca9186ba5aeab97eccd
+
+% 0 1 0 0a61e361662ba0f20f88bc37620eeb2a
+
+% 0 1 0 00f36fc4aa9eae39011232dda749dedb
+
+% 0 1 0 14b1dc0f317d83690ff9875d588535bb
+
+% 0 1 0 09b41d87e2f4456a0540c6a8b6e93844
+
+% 0 1 0 16f9b2d2907383df15c2f953277cec31
+
+% 0 1 0 1272e3d356fc046a00e0b33b70459288
+
+% 0 1 0 0d4a6ebb8b5faaf21214386cf34d3727
+
+% 0 1 0 10a5919db1a96c2e16ed3625a6ec45bf
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 3 0 1e0322c64fa0ef431504ccd3580896aa
++ Eine Verletzung ist der Fehler der Gegenstelle, nicht des lokalen Programms; die richtige
++ Reaktion ist meist, die Verbindung mit dem passenden Close-Code zu schließen, und das tut die
++ Implementierung. Die Meldung nennt die Anforderung, die verletzt wurde.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 02fc19409539cd451d3a47f276006c36
++ - Quelle: `lib/perihelion/src/core/perihelion.Websocket.scala`

@@ -1,0 +1,1576 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0eca55478231cd681755d97e040abf5b
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0703e3a070cd7bc01df54db665f0e019
++ info   processos externos como valores tipados: comandos verificados em tempo de compilação, executados, encadeados e lidos como tipos
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 13247a613327a74b12951680c8ef47e2
++     _Guillotine_ executa programas externos. Um comando é um `Command` — uma lista de argumentos,
++     sem shell no meio — construído pelo interpolador `sh"…"`, que analisa aspas e escapes como um
++     shell POSIX faria **enquanto o código compila**: uma aspa não fechada é um erro de compilação,
++     e um valor substituído no comando é escapado para a posição em que cai, de modo que um nome de
++     arquivo com espaço continua sendo um único argumento. Comandos se juntam em uma `Pipeline` com
++     `|`, e qualquer um dos dois é executado de forma síncrona com `exec[T]()`, cujo parâmetro de
++     tipo decide como a saída do processo é lida, ou iniciado em segundo plano com `fork[T]()`, que
++     retorna um `Job` no qual escrever, do qual ler, e que se pode aguardar, abortar ou matar.
+
+% 2 1 0 1f7c49cb613e4e1800fcde1c7571ba8d
+
+% 3 1 0 12157c16342f038603162edf47cfdae6
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 0 1 0 043d0443a826aa590c585b4bb4438aa9
+
+% 0 1 0 088000bff55976160205a17be7016df9
+
+% 0 1 0 05e8ef5c4324c45c04c3b5660b04bdaf
+
+% 0 1 0 1775cfddb4b327010fc33934d4b86cfd
+
+% 1 1 0 09ac11102d47533c17e698dd4d4d9b20
+
+@ 0 8 0 0ad255ec85c296f5094ab34de0d8fd3d
++     Toda execução precisa de quatro valores contextuais: um `WorkingDirectory` (o diretório de
++     trabalho do processo; `workingDirectories.javaBaseWorkingDirectory` é o desta JVM), um
++     `Environment` (suas variáveis; `environments.javaBaseEnvironment` herda as deste processo,
++     `environments.emptyEnvironment` não lhe dá nenhuma, e `variables(…)` acrescenta a qualquer
++     um deles), uma `Tactic[Exec.Error]` (`strategies.throwUnsafely`, ou um bloco
++     `tend`/`mitigate`) e um `Exec.Event is Loggable` (`logging.silentLogging`, ou um log de
++     verdade). Nenhum deles vem com `import soundness.*`, já que cada um seleciona uma política:
++     `import pkg.*` não importa givens, então cada um é importado pelo nome.
+
+@ 0 8 0 17a0bf97f9fac18612034b22bbaee711
++     O tipo do resultado de `exec` e `fork` é qualquer coisa com uma instância de `Computable`:
++     `Text` e `String` (toda a saída padrão, lida quando o processo termina), `List[Text]` e
++     `Chain[Text]` (suas linhas, com a cadeia puxada de forma preguiçosa à medida que o processo
++     escreve), `Data` (os bytes brutos), `Stderr` (o erro padrão como texto), `Exit` (o status de
++     saída, `Exit.Ok` ou `Exit.Fail(code)`), `Unit` (esperar e descartar a saída) e qualquer tipo
++     de caminho (a saída aparada, decodificada). Um comando cujo nome é um utilitário POSIX pode
++     ser aplicado sem tipo nenhum — `sh"echo hi"()` —, e os givens `Intelligible` em
++     `PosixCommands` escolhem o tipo de resultado que o comando implica.
+
+@ 0 6 0 02ec33a044ebe91008ea9935fab54936
++     Um comando também pode ser executado em um pseudoterminal com `Command#pty`, para que encontre
++     um terminal em seus streams padrão, e conduzido de forma interativa por meio de um `session`;
++     sua disciplina de linha é um `Termios`. Um processo que deve sobreviver a este é iniciado com
++     `detach`, que guarda só o seu `Pid`. `Process` é um handle para qualquer processo do sistema,
++     por `Pid`, com seu pai, seus filhos, a hora de início e o tempo de CPU; `Pid.Error` é lançado
++     quando nenhum processo assim está em execução.
+
+@ 0 8 0 1f5426bd6bf37f62059d73bca89fd3da
++     A biblioteca é o componente único `guillotine.core`, que compila para a JVM e para Scala
++     Native (não para Scala.js, que não tem `ProcessBuilder`). Três peças privadas são separadas
++     por plataforma: o pseudoterminal (pela API de funções estrangeiras na JVM, por interop com C
++     no Native, em Linux e macOS nos dois casos), a ligação de uma pipeline (o `startPipeline` do
++     JDK na JVM; no Native, cada estágio é iniciado sobre pipes, e uma thread daemon copia nele a
++     saída do seu predecessor) e a hora de início e o tempo de CPU de um processo, que a javalib do
++     Native não consegue informar, de modo que `Process#startTime` e `Process#cpuUsage` são `Unset`
++     ali. Tudo é exportado para o guarda-chuva `soundness`.
+
+% 0 1 0 188a530422b122f2112064e384060cc3
+
+% 0 1 0 106d8b53c6d1b7081d63b55a6c3d535a
+
+% 0 1 0 0c147bd9a816e0e60fd95fefbbf46e8a
+
+% 0 1 0 1f9490b290101a8d09a8c8438dd92c6a
+
+% 0 1 0 1060d6dfbba72ba60e0d903c678494af
+
+% 0 1 0 1f5b2d60615e116a0d1cb4e17bf5d1ae
+
+@ 0 10 0 17517008a361969e1fc4b47a43413d13
++ entry .sh   o interpolador `sh"…"`: um `Command` analisado enquanto o código compila, com substituições escapadas
++     `sh"ls -la $directory"` é um `Command` cujos argumentos são as palavras do literal, separadas
++     por espaços em branco, com aspas simples, aspas duplas e escapes com barra invertida
++     respeitados como um shell POSIX os respeita. Nenhum shell é executado: os argumentos vão
++     direto para o programa, de modo que um metacaractere em um valor substituído nunca é
++     interpretado. A análise acontece enquanto o código compila, por meio do parser `Sh.Runtime`,
++     e um erro é informado no caractere que o causou: _this single quote is never closed_ e _this
++     double quote is never closed_ na aspa que foi aberta, _a command cannot end with an escape
++     character_ na barra invertida final, e _an escape character cannot appear immediately before
++     a substitution_ em uma barra invertida escrita antes de um `$`.
+
+% 2 1 0 1d36d21fca2ffc9f1cad0c4508ef9eaf
+
+% 3 1 0 0bb4ab43a679a54f18e6594b65ec37e1
+
+% 0 1 0 127439ec3b6a4a031bc6c10a84d1b25b
+
+% 0 1 0 1b52a89265ca77431bc7a370b1d2e166
+
+% 0 1 0 06454df37c8a59ab1481f35e66c81e98
+
+% 0 1 0 185e0bbca4d68ad500328337e9514a33
+
+% 1 1 0 12da1fae1a3bcb10091ec05b385cd3ee
+
+@ 0 10 0 09486d70d6121b850e8f1c6b987b74bf
++     Um valor substituído é escapado para a posição em que cai. Fora de aspas, um `Text` é
++     exatamente um argumento, seja qual for o seu conteúdo, e uma `List[Text]` é um argumento por
++     elemento (uma lista vazia não contribui com nenhum); dentro de aspas, os elementos de uma lista
++     são unidos com espaços no único argumento que as aspas delimitam. Um valor adjacente a texto
++     literal se junta a ele (`${a}x` dá `ax`). Um `Command` é substituído como seus argumentos, de
++     modo que `sh"sh -c '$inner'"` passa um comando interno a um shell como um único argumento.
++     Qualquer outro tipo é substituído por meio de uma instância de `Parameterizable` — `Pid` é
++     renderizado como `↯42`, e qualquer coisa `Encodable in Text` (um `Path`, uma URL) como sua
++     codificação —, e um tipo sem instância é um erro de compilação, _can't substitute `T` into a
++     sh-interpolator_. A seleção de um membro `val` de uma classe envolvente (`$config.host`) não
++     pode ser substituída; vincule-a primeiro a uma variável local.
+
+@ 0 4 0 14bac1a26172f35e15c29aaf0d1da759
++     O tipo estático do resultado é um refinamento, `Command { type Exec = "ls" }`, que carrega o
++     nome do comando como tipo literal, que é o que `Executable#apply()` usa para encontrar a
++     evidência `Intelligible` que dá o tipo de resultado implícito do comando. Dois comandos escritos
++     com espaços em branco ou aspas diferentes são iguais quando seus argumentos são iguais.
+
+@ 0 1 0 092af24dd63ec92e1fc135775137a66e
++ entry .Executable   o que pode ser executado: um `Command` ou uma `Pipeline`, com `exec`, `fork`, `detach` e `|`
+
+% 1 1 0 0a739d7c271b50f300bdcfbf7e041375
+
+@ 0 7 0 13d69929d3e374a41fed10435011a263
++       O trait selado das duas coisas executáveis, `Command` e `Pipeline`, e o lugar das operações
++       que as duas compartilham. Cada execução recebe um `WorkingDirectory` e um `Environment` para
++       o filho (um ambiente capaz de enumerar suas variáveis substitui inteiramente o deste
++       processo, e um nome de comando simples é então procurado no `PATH` *desse* ambiente, já que o
++       JDK procuraria no desta JVM), uma `Tactic[Exec.Error]` para um processo que não pode ser
++       iniciado e um `Exec.Event is Loggable` para os eventos de início, término, aborto e morte.
+
+% 2 1 0 091f19782529c84616e33493136ff976
+
+% 3 1 0 07913af5d714a49c1fae749c2b53b6f2
+
+% 4 1 0 10c3dd9a8d8292721cc675b3fbb2b779
+
+% 5 1 0 16d0a1ad9c5fbd091e4c543e288acbf0
+
+% 6 1 0 063ddf801d0057ca153ca134065d01a5
+
+% 7 1 0 18e6ae53dd834eec11ba6b4d73421a36
+
+% 0 1 0 0ff1020db1caab7018da2a81c19f4055
+
+% 0 1 0 0d133c7705b998fb0d9a71526985f84a
+
+% 0 1 0 1b811b02fc96dbfc174cad3d0067a4b9
+
+% 0 1 0 0faea02e838cf0c106cf0a785bdba03c
+
+% 1 1 0 1cc91c3dcf05dc300ccb2077485f1aba
+
+@ 0 3 0 1876de414d727e411f7c29192b777086
++       `exec` espera o processo e interpreta sua saída como o tipo nomeado; `fork` o inicia e
++       retorna o `Job`; `detach` o inicia e guarda só o seu `Pid`. O `apply()` sem argumentos é
++       `exec` com o tipo de resultado implícito no nome do comando.
+
+% 1 1 0 1e802c352c62e52e1ce9274cbf68dda2
+
+% 1 1 0 09cdc1ee2bcebd620a10310d6777e70b
+
+% 1 1 0 0d94350ded3a11d404305ffef631f567
+
+% 1 1 0 1cfccdfe1e6f63e319647734badb97fb
+
+@ 0 12 0 1251cd3cca63de9f16ce809de620b9ea
++   entry #Exec   o nome do comando como tipo literal, quando conhecido
++       Um `Command` construído por `sh"…"` tem `Exec` definido como sua primeira palavra
++       (`sh"ls -la"` é um `Command { type Exec = "ls" }`); um construído com `Command(…)` o deixa
++       abstrato. `apply()` o usa para convocar `Exec is Intelligible`, a evidência do tipo de
++       resultado que um comando implica, e o primeiro parâmetro de tipo de um `Job` é ele.
++   entry #fork   inicia o processo e retorna seu `Job` sem esperar
++       `fork[result]()` inicia o comando (ou cada estágio de uma pipeline, ligados entre si) e
++       retorna um `Job[Exec, result]^` de imediato: o tipo de resultado é fixado agora e lido com
++       `Job#await()` depois. O job é uma capability, rastreada como nova, de modo que não pode
++       escapar para um valor não rastreado. Precisa de um `WorkingDirectory`, de um `Environment`,
++       de uma `Tactic[Exec.Error]` (lançado quando o programa não pode ser iniciado) e de um
++       `Exec.Event is Loggable`, e registra `Exec.Event.ProcessStart` ou `PipelineStart` em `info`.
+
+% 2 1 0 10d2c75366a82d7d05a1850b2efe124c
+
+% 3 1 0 0b55876fe25693980e238e51c6d2448d
+
+% 4 1 0 00de66fd6b5f78320fc2d800fedc99b8
+
+% 5 1 0 05f39bb8119014531704d8fda6ca7ef6
+
+% 6 1 0 18c5dac57c56528406953e610071542f
+
+% 7 1 0 0dfa6c5c639efa900c6cda03acd0a4c3
+
+% 9 1 0 0584d835238ca5e40ba4abd8fb78bc67
+
+% 0 1 0 1d87622195118b110ce7b08902ae35b6
+
+% 0 1 0 0554d19e19fbca9d0c18868facc8de2f
+
+% 1 1 0 087cac6c703f642b058df4d224cfe982
+
+@ 0 11 0 011ebf7e93bebcd0076361e8383846b3
++   entry #detach   inicia o processo para sobreviver a este, guardando só o seu `Pid`
++       Para um filho que deve continuar rodando além deste programa — um servidor, um daemon. Sua
++       entrada padrão é o dispositivo nulo, e sua saída e seus erros são descartados (`detach()`) ou
++       acrescentados a um arquivo de log (`detach(log)`, que aceita qualquer tipo de caminho
++       `Abstractable across Paths to Text` e cria os diretórios pais do log). Um filho criado com
++       `fork` herda pipes que ninguém esgota, e um servidor que escreve neles acaba bloqueando; um
++       filho desacoplado não. Para uma pipeline, a cabeça lê o dispositivo nulo, a cauda escreve o
++       log, e os erros de cada estágio vão junto com os da cauda; o `Pid` é o da cauda. O ambiente
++       do filho é o `Environment` em escopo, de modo que `environments.emptyEnvironment` com
++       `variables(…)` lhe dá exatamente as variáveis nomeadas. Registra `ProcessStart` e lança
++       `Exec.Error` se o programa não puder ser iniciado.
+
+% 2 1 0 1a4fa75cb808a3ef1ab5fb9a45690ac2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 036bf989159b9ada118608c65591db90
+
+% 3 1 0 10d58e9b7a27ff8c1c4c21ef7fed08c7
+
+% 4 1 0 00d91c2889826d720e5ccf1ee5269be8
+
+% 5 1 0 13dde84c4db4183610e4c94dc4c8165c
+
+% 0 1 0 1f04638265358737135668d64f6a638b
+
+% 1 1 0 1a7af580a6c7bc9515196e3fc4f20b87
+
+@ 0 7 0 15d871bcd797d77d0e6003eca2aac00f
++   entry #exec   executa o processo até o fim e lê sua saída como o tipo nomeado
++       `exec[result]()` é `fork[result]().await()`: o processo é executado, e sua saída é
++       interpretada pela instância `result is Computable` em escopo — `Text`, `List[Text]`,
++       `Chain[Text]`, `Data`, `Stderr`, `Exit`, `Unit` ou um tipo de caminho (veja `Computable`).
++       O tipo decide mais do que uma conversão: qual stream é lido, se um status diferente de zero
++       é uma falha ou uma resposta, e se a chamada retorna quando o processo termina (`Text`) ou
++       assim que ele começa (`Chain[Text]`, cujas linhas chegam de forma preguiçosa).
+
+% 2 1 0 0ea825d98ff9878b1af27f99e94c57aa
+
+% 3 1 0 1c74c52fa39207df05f94ce2a9e718bb
+
+% 4 1 0 151aa04bada4b30818c7b18f615eaa57
+
+% 5 1 0 1c36616ddfdfce4e1aecdb1834743bfc
+
+% 6 1 0 10bb9129086bfd1504c50a8470c22ace
+
+% 7 1 0 0110e9e3ab3b3dc30628c8cbea90d364
+
+% 0 1 0 040911a2a2c0bdea1b07a7db60bb67d5
+
+% 0 1 0 0620134a8da0a55e142bdb2613cc6a94
+
+% 0 1 0 19365e6088c91f29032bd52616c62ce7
+
+% 0 1 0 0b69adbc2a1050431d022c4002cabb32
+
+% 1 1 0 0a60f82cb0594ebe054f564d841bcc68
+
+@ 0 13 0 120aa456b860045903c0d64837b1dd57
++       `Exec.Error` é lançado quando o programa não pode ser iniciado — um binário ausente, um
++       diretório que não é executável — e nomeia o comando que falhou; uma leitura da saída
++       interrompida antes do fim (um `Truncation.Error`) é informada como o mesmo erro, com o
++       último comando de uma pipeline como seu comando. Um programa que roda e termina com status
++       diferente de zero não é um erro: peça um `Exit` para ver seu status.
++   entry #apply   `command()`: executa-o com o tipo de resultado que seu nome implica; `a(b)`: a pipeline `b | a`
++       O `apply()` sem argumentos executa o comando como `exec`, com o tipo de resultado escolhido
++       pela evidência `Intelligible` do nome `Exec` do comando: `sh"echo hi"()` é um `Text`,
++       `sh"ls"()` uma `Chain[Text]`, `sh"sleep 1"()` um `Exit`, como dizem os givens em
++       `PosixCommands`. Ele é `inline` e precisa do mesmo `WorkingDirectory`, `Environment`,
++       `Computable`, `Tactic[Exec.Error]` e `Exec.Event is Loggable` que `exec`. Um comando cujo
++       nome não tem instância de `Intelligible`, ou que foi construído com `Command(…)` em vez de
++       `sh"…"`, não compila assim: nomeie o tipo com `exec[T]()`.
+
+% 2 1 0 0f1f51e7a1b47fa40f612a18cb1b9afa
+
+% 3 1 0 0855aa081ffe3011002ab7df4fad380f
+
+% 4 1 0 146530d1f3f77c2f00002621f184ebe7
+
+% 5 1 0 1465ce9833a361b71f238c2f1115390f
+
+% 6 1 0 19caefe28b65cfbd0a53c45abfe67a8e
+
+% 7 1 0 0e3100f50c4ead020f8eed9b35d696d5
+
+% 0 1 0 11487312d80a5a4b06a2c2dc584b6cc9
+
+% 0 1 0 021438bf98d4c3bd0074d0bba2e8e65b
+
+% 0 1 0 14424aa0845c3fc30f59f06004a0decf
+
+% 1 1 0 1bc9d491071e25c3011b1fbec34cb891
+
+@ 0 8 0 0c87475de97067e71a9e36ab1f3c0aa1
++       `apply(command: Executable)` é o inverso de `|`: `b(a)` é `a | b`, a pipeline em que a
++       saída de `a` alimenta `b`. As duas formas se achatam, de modo que uma pipeline aplicada a uma
++       pipeline é uma única pipeline com todos os seus comandos.
++   entry #|   `a | b`: a pipeline em que a saída do primeiro estágio é a entrada do segundo
++       Constrói uma `Pipeline`, achatando: `a | b | c` é uma única `Pipeline` de três comandos, e
++       uma pipeline encadeada em um comando, ou um comando em uma pipeline, a estende em vez de
++       aninhar. A saída e o status de saída da pipeline são os do seu último comando, e a entrada
++       escrita nela vai para o primeiro.
+
+% 2 1 0 07f6ca6ade08ffcd1037f8aaae584369
+
+% 3 1 0 177090c5369edd1004dd4e78c2e536e9
+
+% 0 1 0 1937cd6f4c1f02df002b503b0eb6b08e
+
+% 1 1 0 0ce21bd7da71a42a07da21ae1655fc9a
+
+@ 0 1 0 12a3884e87f8e77d10a95b6bba4e211d
++ entry .Command   um programa e seus argumentos, como valor: construído por `sh"…"`, executado com `exec`, `fork` ou `pty`
+
+% 1 1 0 175aed4a118d8620171398bd1d8116a0
+
+@ 0 6 0 081aeee7c44e67dd1a5859aaa0b9b232
++       Um `Command` é uma lista de `#arguments`, a primeira nomeando o programa, sem shell no
++       meio: cada argumento chega ao programa exatamente como está guardado. Ele é um
++       `Executable`, de modo que `exec[T]()`, `fork[T]()`, `detach`, `apply()` e `|` são as
++       maneiras de executá-lo e combiná-lo. `sh"…"` é a maneira habitual de construir um, e
++       `Command(t"ls", t"-la")` a direta; os dois são iguais quando seus argumentos são, embora só
++       a forma interpolada carregue seu nome no seu tipo `Exec`.
+
+% 2 1 0 0507e814845fed7d131c472a92b986d4
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 17cee968ed0022d90b28e8011f9d0f54
++         label Um comando, com um valor escapado em um único argumento
+
+% 1 1 0 0d84accb77ba5f80121344e388b701ef
+
+% 2 1 0 0a4da8a5e3e46b79055f724be8efda51
+
+% 4 1 0 089735c2f0a942a8056aa0503788d3a2
+
+% 0 1 0 01e817e23a3e8f2e091723a6cece79cc
+
+% 1 1 0 0421a7aa3db2968214e4ce23694a69d9
+
+@ 0 1 0 177f0707d1780166035db85c5710eb01
++         label Encadeado em um segundo comando
+
+% 1 1 0 12149421e9180dc71190189b2f2ff469
+
+% 2 1 0 1afc8f801d9e590d0e5002fc63ee64ef
+
+% 4 1 0 1dbe761a2171f5210491ba0ce6e88134
+
+% 0 1 0 150776774db3e56e1456175f544ccbcb
+
+% 1 1 0 188acce4e05fc18d1b76292e3cf06dd2
+
+@ 0 1 0 01fc4107210334e102f3db604203c5dc
++         label Executado, com a saída lida como o tipo nomeado
+
+% 1 1 0 1599779243c30bd00ca2b1f13a3b185e
+
+% 2 1 0 0cd5e4340e7c646e1ad8072f810e4e82
+
+% 0 1 0 0c4ca26c4b2b9150098f5c00b9cf93c4
+
+% 0 1 0 0a98ae082f952800010439d6e277a866
+
+% 0 1 0 0798179fd46066390d73f0f2d8a2bf3e
+
+% 0 1 0 19e5a642d4befcc50f034187f2948dc0
+
+% 2 1 0 197483ac7fce9a6f163d0d216364dd1f
+
+% 0 1 0 0ee5b3b3dd806631087f4926fc62b8b6
+
+% 1 1 0 016c2915185311361f0db6ad8d40ca3a
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 0d62194190c3053504c323e39fd58fa1
++       Um comando é renderizado de duas maneiras: `show` o dá como seria digitado em um shell, com
++       cada argumento entre aspas só se precisar (`echo 'a b'`), e `inspect` dá o código-fonte que o
++       construiria (`sh"echo 'a b'"`, entre aspas triplas se for preciso uma aspa dupla). `#escape`
++       dá a forma estrita, com todo argumento entre aspas simples, para passar um comando inteiro a
++       um shell. Um comando também pode ser substituído em outro `sh"…"`, como seus argumentos.
+
+@ 0 2 0 019aa7a7fe102c7f1931801fb3dbad69
++       Na JVM e no Scala Native, `#pty` executa o comando em um pseudoterminal em vez de em pipes;
++       `Command.OnTerminal` é o valor que ele retorna.
+
+% 1 1 0 0975fb109e83109e02f4bee8578ed958
+
+% 1 1 0 10fb7a87b3a78aa416dc4d08183b8744
+
+% 1 1 0 14b9f9a79707ee740e6686ad1eafcd84
+
+% 1 1 0 133863bbd011ab8b1e8743baf91de67c
+
+@ 0 10 0 1069922f6c6bd83a078608d622ca4f15
++   entry .inspectable   renderiza um comando como o código-fonte `sh"…"` que o constrói
++       `sh"echo 'a b'"`, com cada argumento entre aspas como `show` o põe, e entre aspas triplas
++       quando um argumento contém uma aspa dupla. O given é limitado aos subtipos de `Command`, de
++       modo que o tipo refinado em que `sh"…"` se expande também o encontra.
++   entry .showable   renderiza um comando como seria digitado em um shell
++       Cada argumento é escrito sem aspas se for simples, entre aspas simples se contiver espaço,
++       tab, barra invertida ou aspa dupla, entre aspas duplas se contiver uma aspa simples, e entre
++       aspas duplas com as aspas duplas escapadas se contiver as duas; os argumentos são unidos com
++       espaços. `sh"echo 'a b'".show` é `echo 'a b'`.
++   entry .OnTerminal   um comando a ser executado em um pseudoterminal novo de um dado tamanho
+
+% 1 1 0 03084b57004850ad13be4be047a9ce4c
+
+@ 0 8 0 006f98bbecdb00761600619dd8501ab1
++         O que `Command#pty` retorna: o comando, a `#width` e a `#height` do terminal em
++         caracteres, e a disciplina de linha `#termios` a definir antes que ele comece, ou `Unset`
++         para deixar a do sistema. É uma descrição, não um terminal: cada `#exec` ou `session`
++         aloca um pseudoterminal com `posix_openpt`, executa o comando no seu lado escravo como
++         líder de sessão (de modo que o terminal é o seu terminal de controle, e um `^C` digitado
++         nele o interrompe) e libera o terminal depois. Na JVM isso passa pela API de funções
++         estrangeiras, então execute com `--enable-native-access=ALL-UNNAMED` para silenciar o aviso
++         do JDK; no Scala Native, por interop com C. Só Linux e macOS.
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 1e82e1081086f5830ac1bff309a1334e
+
+% 2 1 0 11ee899a509bce52021a519a020a042d
+
+% 3 1 0 19a35f2744d80e02148f56f5d1a89a89
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 1 1 0 17592c5a450d35af137b4605a399ec21
+
+% 0 1 0 1901bbb1ded629960d29686cb3c999c7
+
+% 0 1 0 1e47294abebea68a136331395e939dce
+
+% 0 1 0 14f067647882455900e1638aafc418df
+
+% 0 1 0 09ee6476f2927b9a0906bc042a726956
+
+% 0 1 0 132b013b83f004d51cdf54f52d4f00ab
+
+% 1 1 0 052f402f745c0f6c107ed6ed7f8c5669
+
+@ 0 8 0 136411b4bd86b7d606c46d5f95a47f93
++         Um `session` (a extensão de aperture, por meio de `.sessional`) empresta o comando em
++         execução a um bloco como um `Command.OnTerminal.Job` e o encerra quando o bloco retorna ou
++         lança uma exceção: um comando ainda em execução recebe um hangup (`SIGHUP`), como faria o
++         fechamento de um terminal real, e é morto se não tiver terminado em um segundo. A saída do
++         job é tudo o que o programa escreve no terminal, erro padrão incluído, com sequências de
++         escape e tudo; qualquer coisa `Writable` nele — `Text`, `Data`, um stream — é digitada no
++         terminal. Um terminal não tem fim de entrada: um programa que lê até o fim do arquivo
++         recebe o caractere de fim de arquivo, `^D` (byte 4), em vez de ter sua entrada fechada.
+
+% 0 1 0 1a58b1de3600d1b70c2b251bdaac59d5
+
+% 0 1 0 0797de790294be411dda9431c0e89740
+
+@ 0 12 0 1f5853b9709325271d35f9cd739570de
++     entry .showable   renderiza o comando e o tamanho do seu terminal: `stty size on 80×24`
++     entry .Sessional   a classe de instância de `Sessional`: empresta um `OnTerminal.Job` em execução a um bloco
++         A classe por trás de `.sessional`, uma classe nomeada (como uma instância de `Sessional`
++         precisa ser) que recebe o `WorkingDirectory`, o `Environment`, a `Tactic[Exec.Error]` e o
++         `Exec.Event is Loggable` de que a execução do comando precisa, e cujo `session` inicia o
++         comando em um terminal novo, passa seu `Job` ao bloco como valor contextual e o encerra
++         depois.
++     entry .sessional   o given que faz `onTerminal.session: terminal ?=> …` funcionar
++         No escopo implícito, de modo que não precisa de import, mas precisa de um
++         `WorkingDirectory`, de um `Environment`, de uma `Tactic[Exec.Error]` e de um
++         `Exec.Event is Loggable` em escopo onde `session` é chamado. O bloco recebe um
++         `Command.OnTerminal.Job` como seu valor contextual `session`, que pode ser usado dentro do
++         bloco, mas não guardado.
++     entry .Job   um `Job` executado em um pseudoterminal: redimensionável, com uma disciplina de linha configurável
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 4 0 196a80c645480938005407b095933a40
++           O handle que um `session` empresta: um `guillotine.Job` cujo tipo de resultado é `Exit`,
++           com tudo o que um job tem — `text()`, `stdin`, `await()`, `exitStatus()`, `kill()` — e
++           três coisas que só um terminal tem. Seu stream de saída é o do terminal, levando também
++           o erro padrão, e seu stream de erro é vazio.
+
+% 0 1 0 16e5dd92da138cdb1a8049c3ab21a689
+
+% 0 1 0 1c2fd15b30390e3506e0f272e8cd0f7d
+
+% 0 1 0 06d7630252786fc7146a6e450199213b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 0d18a63c6a8ea9581143528bfe1b8124
+
+% 0 1 0 1f3de2f7adc1dab51cbd6eaa5740b17c
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 1a7b9a9e4a324c8014f4a330cdd0d018
+
+% 0 1 0 004d8c79d5fea98807aa0d2c04c429d8
+
+% 0 1 0 1abfdeb6e2b4318e0997e21755efb780
+
+% 0 1 0 0f8732f70517513f139b170b1d7c9f9c
+
+% 0 1 0 0e1b11261d79e42b13b8cfb35b1499ea
+
+% 0 1 0 1670524790192d65096afb052600c2b8
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 33 0 05b4e3d7e9b954d5099cf241df2d8724
++       entry #resize   define o tamanho do terminal, em caracteres; o programa recebe `SIGWINCH`
++       entry #mode   a disciplina de linha do terminal, como um `Termios`, que se pode ler e atribuir enquanto o comando roda
++           `terminal.mode` lê do terminal as chaves que `Termios` nomeia, e
++           `terminal.mode = Termios.raw` as define, deixando o resto da disciplina como está — o que
++           o próprio programa faria com `stty`. Desligar `canonical` também faz uma leitura retornar
++           assim que um byte tiver chegado.
++     entry #command   o comando a executar
++     entry #width   a largura do terminal, em caracteres
++     entry #height   a altura do terminal, em caracteres
++     entry #termios   a disciplina de linha a definir antes que o comando comece, ou `Unset` para a do sistema
++     entry #exec   executa o comando no seu terminal até o fim, lendo sua saída como o tipo nomeado
++         Como `Executable#exec`, mas em um pseudoterminal novo: a saída lida é a do terminal, com o
++         erro padrão misturado, e o status de saída é informado como em pipes (`Exit.Fail(137)`
++         para um comando morto). Precisa de um `Computable` para o resultado, de um
++         `WorkingDirectory`, de um `Environment`, de uma `Tactic[Exec.Error]` — lançado para um
++         comando que não pode ser encontrado ou iniciado — e de um `Exec.Event is Loggable`.
++   entry #arguments   o programa e seus argumentos, em ordem
++   entry #detach   inicia o comando para sobreviver a este programa, guardando só o seu `Pid`
++       A entrada do comando é o dispositivo nulo, e sua saída e seus erros não vão a lugar nenhum,
++       ou são acrescentados ao arquivo de log dado (com seus diretórios pais criados). Veja
++       `Executable#detach`.
++   entry #fork   inicia o comando e retorna seu `Job` sem esperar
++       Inicia o programa sobre pipes, no `WorkingDirectory` e com o `Environment` em escopo,
++       registra `Exec.Event.ProcessStart` e retorna um `Job[Exec, result]^`. Lança `Exec.Error`
++       se o programa não puder ser iniciado. Veja `Executable#fork`.
++   entry #pty   este comando, a ser executado em um pseudoterminal do tamanho dado
++       `pty(width = 80, height = 24, termios = Unset)` retorna um `Command.OnTerminal`: nada é
++       executado até seu `exec` ou um `session`. Um `Termios` dado aqui é definido antes que o
++       comando comece; `Termios.raw` é o que um programa de tela cheia quer.
++   entry #escape   o comando como uma linha que um shell POSIX analisa de volta nestes argumentos
++       Todo argumento entre aspas simples, com uma aspa simples dentro de um deles escrita como
++       `'\''`, já que nada pode ser escapado dentro de aspas simples.
++       `Command(t"echo", t"a b").escape` é `'echo' 'a b'`. Esta é a forma para entregar um comando
++       inteiro a `sh -c`, `ssh` ou qualquer outra coisa que o analise de novo.
+
+@ 0 1 0 15a7d53fdc7f6f591e6b6577c5880d78
++ entry .Pipeline   vários comandos, a saída de cada um sendo a entrada do seguinte, executados como um só
+
+% 1 1 0 0cb44133aa1634ad0940c8ac98d62853
+
+@ 0 6 0 146116363ad94a9305dd460fcb210ea8
++       Construída com `|` (ou `apply`) a partir de `Command`s, e sempre achatada: `#commands`
++       contém todos os estágios, qualquer que seja a forma como a pipeline foi montada. Ela é um
++       `Executable`, executada como um comando: `exec[T]()` lê a saída do último estágio como `T`,
++       e o status de saída do último estágio é o da pipeline; `fork[T]()` dá um `Job` cujo `stdin`
++       escreve no primeiro estágio e cujos streams leem do último (o JDK substitui a entrada de
++       cada estágio posterior por um stream que lança uma exceção na escrita); `detach` inicia
++       todos os estágios desacoplados.
+
+% 2 1 0 0f16625566c4403a0f67fd1e8d5488c8
+
+% 3 1 0 0f7233f78e88b28714b3d98cdb4a8e51
+
+% 4 1 0 0060afda76e1fac517f211ea6fb96c52
+
+% 5 1 0 0ee3cfe7a3cd96bc107089dc05b8ce04
+
+% 6 1 0 1968ee356a511f2f0ca132bb11b71381
+
+% 7 1 0 1f00c586c71dec301fcdb7704b10323d
+
+% 0 1 0 05662911af0b335605c4c5ef30e6ed3e
+
+% 1 1 0 197176b4a2687ae201ff7e855eb5cb26
+
+@ 0 4 0 19600332ab30552b1207a515b4f3e383
++       Na JVM, os estágios são ligados no kernel por `ProcessBuilder.startPipeline`; no Scala
++       Native, cada estágio é iniciado sobre pipes, e uma thread daemon copia a saída do seu
++       predecessor na sua entrada, fechando-a no fim do stream. Uma pipeline é renderizada com
++       `show` e `inspect` como seus comandos unidos por ` | `.
+
+% 1 1 0 0b2362f995a1b76d03fabb5eeb134da0
+
+% 1 1 0 16938a7e4b66cc1a009424dda06778e8
+
+@ 0 10 0 122a822b7ce1932c0633a47f88e61b0b
++   entry .communicable   uma pipeline como mensagem: as formas `show` dos seus comandos unidas por ` | `
++   entry .inspectable   renderiza uma pipeline como as formas `sh"…"` dos seus comandos unidas por ` | `
++   entry .showable   renderiza uma pipeline como as formas de shell dos seus comandos unidas por ` | `
++   entry #commands   os estágios, em ordem, achatados
++   entry #detach   inicia todos os estágios desacoplados, guardando só o `Pid` do último estágio
++       O primeiro estágio lê o dispositivo nulo, o último escreve o log (ou em lugar nenhum), e o
++       erro padrão de cada estágio vai para onde vai a saída do último. Veja `Executable#detach`.
++   entry #fork   inicia todos os estágios, ligados entre si, e retorna o `Job` do todo
++       Registra `Exec.Event.PipelineStart`. A saída, o status de saída e o `pid` do job são os do
++       último estágio; seu `stdin` e seu `intake` escrevem no primeiro. Veja `Executable#fork`.
+
+@ 0 1 0 0a58ed4a418e34bc10e468fcf6616bdd
++ entry .Job   um subprocesso em execução, vindo de `fork`: seus streams, seu resultado, seu término e seu tempo de vida
+
+% 1 1 0 1d07a8e6f4702df8170c33ae71db71c8
+
+@ 0 7 0 0e1a26b435c50ff4060c8b7131844fc2
++       `Job[exec, result]` é o que `Executable#fork[result]()` retorna: um handle ativo para o
++       processo, rastreado como capability (novo, vindo de `fork`, de modo que não pode ser guardado
++       em um valor não rastreado, embora possa ser compartilhado entre tarefas: uma esgotando cada
++       stream, outra aguardando-o, uma terceira abortando-o). Ele é um `Subprocess` (os streams e o
++       status que um `Computable` lê), um `Process.Ref` (o pid e os sinais) e `Durable`. Seu tipo
++       `result` foi fixado no fork, e `#await` o lê por meio do `Computable` em escopo.
+
+% 2 1 0 19a5dfe360f9582b106c9a4924263ec8
+
+% 3 1 0 08692c9bec0f884104ffea8afa85f9a7
+
+% 4 1 0 0502c52df62aa59a019457d3633a7226
+
+% 5 1 0 1a00b14535ca89f015e79667965e9b8e
+
+% 6 1 0 14889eed4fc7d76c1bdd4d7261d6fe50
+
+% 7 1 0 0f2474a814b7986a0f4e24d29c88fb85
+
+% 9 1 0 16687ef9f8a5dc5b143367115d65da65
+
+% 0 1 0 0ec631c72574d1d71991542f123444d4
+
+% 0 1 0 1011e76ba013aa8c1d48213737f571c6
+
+% 0 1 0 00839cff290a298f15445b6255a512e2
+
+% 0 1 0 1822aceb93e2ee3111bf355d67c69891
+
+% 1 1 0 076baaea36c4b2a0064982af50b2f401
+
+@ 0 3 0 1f9d0a9f8daf5c381a92995fcbbd4b8c
++       Para uma pipeline, o job tem um processo em cada ponta: a saída, o status de saída e o `pid`
++       são os do último estágio, e `stdin` e `intake` escrevem no primeiro. Um job em um
++       pseudoterminal é um `Command.OnTerminal.Job`, que acrescenta `resize` e `mode`.
+
+% 1 1 0 0e67e43ac311814b01131ce7e66fa597
+
+% 2 1 0 1a76e4c2816acbd01f2355ff2557b36e
+
+% 1 1 0 0bc2095921ceabfe13791e26b01775da
+
+% 0 1 0 169a2ddbcc17b179024402344a06db99
+
+@ 0 18 0 19d62cf2b4dc9beb0225eb63b643c483
++   entry .writable   `stream.writeTo(job)`: qualquer stream que o `Process.Input` do job aceite, para sua entrada padrão
++       O given `Writable` para um `Job^` rastreado, para qualquer tipo de chunk para o qual
++       `Process.Input is Writable` — `Data` (precisando de um `Emit[Truncation.Error]`) ou `Text`
++       (e um `Codepage`). Ele delega a `#stdin`, que fecha o pipe quando o stream termina.
++   entry .writableText   `text.writeTo(job)`: texto codificado com o codepage do sistema, para a entrada padrão
++       O given `Writable by Text` para um `Job^` rastreado, que só precisa de um
++       `Emit[Truncation.Error]`: o texto é codificado com `Codepage.system`. É o que
++       `t"hi\r".writeTo(terminal)` usa em uma sessão de pseudoterminal.
++   entry #pid   o `Pid` do processo; o de uma pipeline é o do seu último estágio
++   entry #alive   se o processo ainda está em execução
++   entry #attend   espera o processo terminar, descartando seu status e sua saída
++   entry #stdout   a saída padrão como um stream preguiçoso de bytes, lido continuamente do pipe ativo
++       Um `Stream[Data] over Credit`, puxado à medida que é forçado; cada chamada continua lendo de
++       onde o pipe está, e nada fica em cache a menos que `memoize` seja chamado. Precisa de uma
++       `Tactic[Truncation.Error]`, lançada se o stream terminar antes do que seu enquadramento diz.
++   entry #stderr   o erro padrão como um stream preguiçoso de bytes
++       Como `#stdout`, a partir do pipe de erro. Em um pseudoterminal, o stream de erro é vazio, já
++       que o erro padrão do programa é o terminal.
+
+% 2 1 0 11c33ccd1ca3fb7e0f64d712e31feeaa
+
+% 3 1 0 0c9789a41c406086175f9b73b36280ad
+
+% 4 1 0 070a7f32a0ef9c8b1d52bf41e71b510d
+
+% 5 1 0 1a0a66a038d0c4b51b7b502c5352106b
+
+% 6 1 0 17c2645d6d28843c1c3d0d0c8902cf7e
+
+% 7 1 0 1292aa4e2fd435c7171ca6cffd181664
+
+% 0 1 0 1abeaf604c63c5150466bf5a3ff76090
+
+% 0 1 0 15ea396f3476ac7300ce8784e6597c18
+
+% 0 1 0 1d7c0249a99c32bd1d4b429dbbb6bc99
+
+% 0 1 0 10ad36c8a4ef3ef017e5870901b5b366
+
+% 1 1 0 0b7a3adb0cebf07a11757c2d288378b5
+
+@ 0 22 0 1579317444d468c300c54b99c7c3c333
++   entry #text   toda a saída padrão, como texto UTF-8, lida até o fim do stream
++       Bloqueia até que o processo feche sua saída (normalmente, até que ele termine).
++   entry #errorText   todo o erro padrão, como texto UTF-8, lido até o fim do stream
++   entry #lines   a saída padrão como um stream preguiçoso das suas linhas
++       UTF-8, com `\n`, `\r\n` e `\r` encerrando cada um uma linha, como `BufferedReader.readLine`
++       os trata; um `Stream[Array[Text]] over Credit` cujos `records` são as linhas, uma por vez.
++       Precisa de uma `Tactic[Truncation.Error]`. As instâncias de `Computable` para `Chain[Text]`
++       e `List[Text]` leem isto.
++   entry #status   espera o processo terminar e dá seu código de saída bruto
++       `0` para sucesso; para um processo encerrado por um sinal, 128 mais o número do sinal
++       (`137` para `SIGKILL`). `#exitStatus` dá o mesmo como um `Exit`, registrado no log.
++   entry #stdin   escreve um stream inteiro na entrada padrão e fecha o pipe quando ele termina
++       `job.stdin(stream)` recebe um `Stream[chunk] over Credit` para qualquer tipo de chunk de que
++       `Process.Input is Writable by` — `Data`, ou `Text` com um `Codepage` em escopo —, escreve-o
++       e fecha a entrada do processo, o que serve para um programa que lê sua entrada até o fim e
++       termina. Para uma pipeline, o stream vai para o primeiro estágio. Um filho de vida longa
++       conduzido mensagem a mensagem pede `#intake` em vez disso.
++   entry #intake   a entrada padrão como um endpoint de push, para conduzir um processo ativo de forma incremental
++       Um `Intake[Data] over Credit` sobre o pipe de entrada do processo: cada `put` é escrito e
++       `flush` o envia, com o pipe deixado aberto, de modo que um servidor de linguagem ou um REPL
++       pode receber uma mensagem, ter sua resposta lida e receber outra; `finish` fecha o pipe.
++       Precisa de um `java.io.OutputStream is Sink by Data over Credit`, que turbulence fornece.
+
+% 2 1 0 1e457ee2d7ea1f5b18253abd5f5cba6c
+
+% 3 1 0 1b12eea3f9349f7a0b0825a9843cd3e9
+
+% 4 1 0 0d8c374cdf415af21e4c5939521ba65b
+
+% 5 1 0 1ae7b6bb454a09ae0dcea6b47a56035d
+
+% 6 1 0 1dc35df09f2a30790e60a9925abacfe0
+
+% 7 1 0 1d5e0433974afc3413ffe147bd02b7a6
+
+% 9 1 0 094f7d1ee08c17ac0c24207849935c38
+
+% 0 1 0 19b3c1b3339337ba07785bb7651644f6
+
+% 0 1 0 1ddd1c774974ca5f1b86539797ea7aa8
+
+% 0 1 0 02940bb78ced41591588b20006611fa8
+
+% 0 1 0 1178757a119bd465174f9831884ef036
+
+% 0 1 0 0f12d4dfc7e9144a0da9864838dbc240
+
+% 0 1 0 091d50e094c50cd61e5f31788890a5e3
+
+% 0 1 0 154285bd38e2411e1df7861324ad29f5
+
+% 1 1 0 0973572f7468816b09f77c1efaa69b4d
+
+@ 0 5 0 07fb732c447008ef0877f1c626bcdee9
++   entry #await   o resultado do job, por meio do `Computable` em escopo, agora ou dentro de uma duração
++       `await()` calcula o `result` para o qual o job foi criado com fork: para `Text`, espera a
++       saída terminar; para `Exit`, espera o processo terminar; para `Chain[Text]`, retorna de
++       imediato com uma cadeia preguiçosa. Precisa do `result is Computable` e de uma
++       `Tactic[Truncation.Error]`, lançada se a saída terminar antes do que seu enquadramento diz.
+
+@ 0 5 0 0bd1dbefa649740d0e9cfed2114bfbf7
++       `await(duration)` recebe qualquer tipo de duração `Abstractable across Durations to Long`
++       (nanossegundos; um `Long` simples de milissegundos com
++       `abstractables.millisecondsAbstractable`), espera no máximo esse tempo que o processo
++       termine e então calcula o resultado; se ele não tiver terminado, lança
++       `Async.Error(Async.Error.Reason.Timeout)` por meio de uma `Tactic[Async.Error]`.
+
+% 2 1 0 0ab68c7f63a5cd7c16f078ad2dc2a420
+
+% 3 1 0 1edaa49b3984256e0609e1a428e8a5d3
+
+% 0 1 0 0b78a915063968591f7338f44c86803a
+
+% 1 1 0 10a2def3c695288a0af652c74a96f72f
+
+% 2 1 0 17f34087427950c90bad9dc64b766f1c
+
+% 3 1 0 112b22c42989b8b117651e8d3637b375
+
+% 4 1 0 0dc45ad8d3e0dcb206fd4eb75f668d4f
+
+% 0 1 0 16127c0ccc8667f1040a29ebb1c0d362
+
+% 0 1 0 16100520352e5e4e0643ded127afa5e3
+
+% 0 1 0 08180c05ceeedf790b205f436104e0f5
+
+% 1 1 0 089c63e92a6725ea0ec0854b64e7c81e
+
+@ 0 21 0 1d442e7b4a62da1408902cf11478d530
++   entry #exitStatus   espera o processo terminar e dá seu status como um `Exit`, registrado no log
++       `Exit.Ok` para zero, caso contrário `Exit.Fail(code)`; registra `Exec.Event.ProcessExit` em
++       `fine` para zero e como aviso nos demais casos, então precisa de um
++       `Exec.Event is Loggable`. Um processo morto informa `Exit.Fail(137)`, e um interrompido por
++       `^C` no seu terminal, `Exit.Fail(130)`.
++   entry #abort   pede ao processo que pare, com `SIGTERM`
++       `destroy()`: o processo pode capturar o sinal e fazer a limpeza, ou ignorá-lo. Registra
++       `Exec.Event.AbortProcess` em `info`.
++   entry #kill   para o processo, com `SIGKILL`
++       `destroyForcibly()`: o processo não pode ignorá-lo. Registra `Exec.Event.KillProcess` como
++       aviso.
++   entry #process   o `Process` do sistema operacional por trás do job, pelo seu pid
++       `Process(pid)`, de modo que precisa de uma `Tactic[Pid.Error]`, lançada se o processo já
++       tiver desaparecido; o resultado é um `Process^` rastreado, com o pai, os filhos e a árvore de
++       processos que um `Job` não tem.
++   entry #startTime   quando o processo começou, como qualquer tipo de instante, ou `Unset`
++       Por meio de `Process#startTime`, engolindo um `Pid.Error` como `Unset`; recebe um tipo de
++       instante `Instantiable across Instants from Long` (milissegundos). Sempre `Unset` no Scala
++       Native.
++   entry #cpuUsage   o tempo de CPU que o processo usou, como qualquer tipo de duração, ou `Unset`
++       Por meio de `Process#cpuUsage`; recebe um tipo de duração
++       `Instantiable across Durations from Long` (nanossegundos). Sempre `Unset` no Scala Native.
+
+@ 0 1 0 166a8eb7e5a132f205041c6a90fdfe83
++ entry .Subprocess   o que um `Computable` lê: os streams e o status de saída de um processo em execução, sem dependência de plataforma
+
+% 1 1 0 192e0261485799ce0c9a957230f69b26
+
+@ 0 4 0 1e636c092368cd561a3a92f869aa6b16
++       O trait a partir do qual uma instância de `Computable` calcula seu resultado: a saída e o
++       erro padrão como streams preguiçosos de bytes ou como texto inteiro, as linhas da saída e o
++       status de saída, sem menção a `java.lang.Process` ou a qualquer outro tipo da plataforma.
++       `Job` é sua única implementação. Um novo `Computable` é escrito contra ele.
+
+% 1 1 0 0ce0d7cb0813acae1d074d8d73722eb0
+
+% 1 1 0 167126b9eb7f7ad9090220fbe35fe0a7
+
+@ 0 6 0 187e87ddfb1f537f1257ae2e2faf994a
++   entry #stdout   a saída padrão como um stream preguiçoso de bytes; precisa de uma `Tactic[Truncation.Error]`
++   entry #stderr   o erro padrão como um stream preguiçoso de bytes; precisa de uma `Tactic[Truncation.Error]`
++   entry #text   toda a saída padrão como texto UTF-8, lida até o fim
++   entry #errorText   todo o erro padrão como texto UTF-8, lido até o fim
++   entry #lines   a saída padrão como um stream preguiçoso de linhas; precisa de uma `Tactic[Truncation.Error]`
++   entry #status   espera o término e dá o código de saída bruto
+
+@ 0 1 0 0dae46ed5c0482b71d3ab50366d410f3
++ entry .Computable   como a saída de um processo se torna um resultado do tipo `T`: a classe de tipos por trás de `exec[T]`
+
+% 1 1 0 0316fbd940726ba80952be6b9de37a98
+
+@ 0 4 0 1b193ce6d049bc401a995d49f817e59a
++       `T is Computable` diz como ler um `Subprocess` como um `T`: qual stream, quando e o que o
++       status de saída significa. `exec[T]()` e `Job#await()` a convocam para o seu parâmetro de
++       tipo, de modo que o tipo nomeado *é* a interpretação. As instâncias no objeto companheiro,
++       encontradas sem import:
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 11 0 0d684844e42f580506989a3f6e47b365
++       column  Tipo de resultado
++       column  Lê
++       column  Precisa de
++       row  `Text`, `String`  toda a saída padrão, quando o processo a fecha
++       row  `List[Text]`  as linhas da saída padrão, quando ela termina
++       row  `Chain[Text]`  as linhas como uma cadeia preguiçosa e memoizante, puxada à medida que o processo as escreve, de modo que a chamada retorna de imediato  um `Buffering`
++       row  `Data`  toda a saída padrão como bytes, memoizada  um `Buffering`
++       row  `Exit`  o status de saída, `Exit.Ok` ou `Exit.Fail(code)`; diferente de zero é uma resposta, não um erro
++       row  `Unit`  nada: espera o término e descarta tudo
++       row  `Stderr`  o erro padrão, como `Stderr(text)`; o given está no objeto companheiro de `Stderr`
++       row  qualquer tipo de caminho `Instantiable across Paths from Text`  a saída padrão, aparada, decodificada como o caminho: `sh"which git".exec[Path on Linux]()`
+
+% 1 1 0 0ec87f143c8d0126144c1b9d6fe646a2
+
+@ 0 3 0 02f37e150df00fa21e51ab5f8970da18
++       O tipo de uma linha por vez é uma `Chain` porque um `Iterator` exclusivo não pode ser o
++       resultado da evidência `Intelligible` apagada. Para os bytes de forma preguiçosa, use
++       `Subprocess#stdout()` em um `Job` criado com fork.
+
+@ 0 3 0 17a7d56a2cd9568b157528b6618062b8
++       Um tipo não coberto ganha uma instância mapeando uma existente (`Computable` é um funtor) ou
++       por meio da fábrica `.apply`, que recebe o `Subprocess` e a `Tactic[Truncation.Error]` de que
++       suas leituras precisam:
+
+% 2 1 0 1eb46bebbe64d42911549ca7393c0f3a
+
+% 3 1 0 1d28181a6000d24c0d7dd57be59defce
+
+% 0 1 0 0ca9b23c2a4f8d4f0c4b8e842479efab
+
+% 0 1 0 113ed28b6a1f295501c4b49e29aa80b7
+
+% 0 1 0 0e050861888e724f06c26e2d01a822ca
+
+% 0 1 0 12781b5e9c411c50005d4b2327eb445a
+
+% 0 1 0 1af9e8c95442714e039e15a4d18664da
+
+% 0 1 0 0b58c342a6e18c4e04eb6059b76f6c37
+
+% 1 1 0 09937b2f65b6adc81cd8da37516ca16d
+
+@ 0 3 0 13849f5d9f39f266023ac2a1fcc5295f
++       Uma leitura interrompida — o stream terminando antes do que seu enquadramento diz — é um
++       `Truncation.Error` por meio da tática, que `exec` informa como `Exec.Error` para o comando.
+
+% 0 1 0 17677bcf3fa8ee060c6ac2434c6b4034
+
+% 1 1 0 02eaa0eac69e517b080cb91035c0fc79
+
+% 0 1 0 09cf98bc5ad594d51490364f12fd8fab
+
+@ 0 21 0 1b63fbd586617ad1181e51e00e852fa2
++   entry .apply   cria uma instância a partir de uma função do `Subprocess` e da tática de truncamento
++       `Computable[T]((process, tactic) => …)`: a fábrica com a qual escrever uma instância, já que
++       um método com uma cláusula `using` não é um método abstrato único e uma lambda não se
++       converte nele. A tática é passada como um segundo argumento simples; vincule-a com
++       `given Tactic[Truncation.Error] = tactic` onde uma leitura precisar dela.
++   entry .lineStream   `Chain[Text]`: as linhas da saída padrão, de forma preguiçosa, à medida que o processo as escreve
++       Precisa de um `Buffering` em escopo. A cadeia é pura e memoizante: forçá-la puxa a próxima
++       linha do pipe ativo, e uma linha, uma vez lida, é mantida.
++   entry .list   `List[Text]`: as linhas da saída padrão, depois que ela termina
++   entry .text   `Text`: toda a saída padrão, em UTF-8, quando o processo a fecha
++   entry .string   `String`: como `.text`, como uma string Java
++   entry .data   `Data`: toda a saída padrão como bytes, memoizada; precisa de um `Buffering`
++   entry .exitStatus   `Exit`: `Exit.Ok` para zero, caso contrário `Exit.Fail(code)`, quando o processo termina
++   entry .unit   `Unit`: espera o processo terminar e descarta sua saída e seu status
++   entry .instantiable   qualquer tipo de caminho: a saída padrão, aparada, decodificada como o caminho
++       Para um tipo `Instantiable across Paths from Text`, como `Path on Linux`: o que
++       `sh"which git".exec[Path on Linux]()` e o resultado implícito do comando `which` usam.
++   entry #compute   lê o `Subprocess` como um `Self`, lançando `Truncation.Error` para uma leitura interrompida
++   entry #map   uma instância para outro tipo, por meio de uma função do resultado desta
++       `summon[Text is Computable].map(_.trim)` é um `Text is Computable` que apara, e
++       `map(Count(_))` um para um `Count`: a maneira habitual de cobrir um novo tipo.
+
+@ 0 1 0 0be4a7ea9254bc2b0546257e93ff2245
++ entry .Stderr   o erro padrão de um processo como texto: `exec[Stderr]()`
+
+% 1 1 0 1ae11fb22edc8f6a05296c2334c84bdd
+
+@ 0 3 0 18a8228ae02a5e5a05a88200afa50fd2
++       Um invólucro para um resultado lido do stream de erro, e não do stream de saída. A
++       instância de `Computable` do seu objeto companheiro lê todo o erro padrão, quando o processo
++       o fecha, como texto UTF-8.
+
+% 2 1 0 10bcadc5d623dd960e94b616d5a84e73
+
+% 3 1 0 053bca89dde09fb51d492c483004836e
+
+% 4 1 0 10753639f3c34d7d1321684e02f6e86a
+
+% 5 1 0 181c59cce455791f161134959572f5bc
+
+% 6 1 0 14ad23f18b78299b127df2f728587498
+
+% 7 1 0 14877495e6516e860f7982c5431eb1b8
+
+% 0 1 0 070ae920d65f1c6b1cdd9dad3af9301e
+
+% 1 1 0 08d9e501c1b545d800cd9a3570b2675b
+
+% 1 1 0 1db7830c1aac4f370d17b398a4684371
+
+@ 0 2 0 1dd547b486b68ee3176743746e08ed4d
++   entry .computable   lê todo o erro padrão, como texto, em um `Stderr`
++   entry #text   o que o processo escreveu no erro padrão
+
+@ 0 1 0 06fe98b5059145bd0a8b3422f88453e8
++ entry .Process   um handle para qualquer processo do sistema, por `Pid`: sua árvore, seu tempo de vida e seus sinais
+
+% 1 1 0 1ae3d3116bfa40cf023eadd76b708056
+
+@ 0 7 0 00ad24ba95785c2c1af2960a2ec78117
++       Um `Process` envolve um `ProcessHandle`: um handle ativo e rastreado para um processo do
++       sistema operacional, quer este programa o tenha iniciado, quer não. `Process()` é o processo
++       atual, `Process(pid)` qualquer processo em execução (lançando `Pid.Error` se nenhum tiver
++       esse pid), `Process.all` todo processo visível a este e `Process.roots` os que não têm pai.
++       Ele é um `Process.Ref` — `pid`, `alive`, `attend()`, `kill()`, `abort()` — com `#parent` e
++       `#children` para percorrer a árvore, e `Durable`. É uma capability compartilhada: várias
++       tarefas podem observá-lo, e uma pode abortá-lo.
+
+% 2 1 0 006fa466166a13a20f4eca5a5dfc7879
+
+% 3 1 0 192f7d78325e5e8b0ff2082137548376
+
+% 1 1 0 008c01b3d45b0c570c6d56acf78d49c5
+
+% 2 1 0 1659b40e5dba11b80e97c92c3d8d4d11
+
+% 0 1 0 083cda2dc9f7e28b12a10380a9a6304a
+
+% 0 1 0 1d757ab289525d340efeea2c18435104
+
+% 0 1 0 1868ce2aa8867d390288b3b17f8431f2
+
+% 0 1 0 1ccc10b52a62933508c81827528f471a
+
+% 1 1 0 073c8e0abab9d8ba1b9b14712a361c9b
+
+@ 0 2 0 12b056d12ed2bbbe0bc5f5fb652af2f5
++       Com `import soundness.*`, `Process` é este tipo, e não `java.lang.Process`; escreva este
++       último por extenso onde for o caso. Um `Job` chega ao seu próprio `Process` com
++       `Job#process`.
+
+% 0 1 0 108dd3f496360971119fe6c0a1889588
+
+% 1 1 0 0bde312c4cda853c1d5ba2cfd82d521d
+
+@ 0 7 0 186d867fc94d92901d56f182e7d35624
++   entry .apply   `Process()`: este processo; `Process(pid)`: o processo em execução com esse pid
++       `Process(pid)` precisa de uma `Tactic[Pid.Error]`, lançada quando nenhum processo com esse
++       pid está em execução. O resultado é rastreado (`Process^`), de modo que pode ser usado, mas
++       não guardado em um valor não rastreado; tire seu `pid` ou outro valor simples de um
++       `capture` ou de uma tarefa.
++   entry .all   todo processo visível a este
++   entry .roots   todo processo visível que não tem pai
++   entry .Input   a entrada padrão de um processo como um sink, em que `Job#stdin` escreve
+
+% 1 1 0 1682eaa34be3bc4a1512e534a77aec81
+
+@ 0 8 0 1d6fb5c09c64d3a406b247fc9d862aac
++         O tipo por meio do qual a entrada de um `Job` é escrita, para que `java.io.OutputStream`
++         nunca apareça na API: `Process.Input is Writable by Data` e `by Text` são os givens do seu
++         objeto companheiro, e `Job.writable` os eleva ao próprio job. Um usuário não constrói um;
++         seu construtor é interno.
++     entry .data   escreve um stream de `Data` na entrada de um processo; precisa de um `Emit[Truncation.Error]`
++     entry .text   escreve um stream de `Text` na entrada de um processo, por meio do `Codepage` em escopo
++         Precisa de um `Codepage` (`codepages.utf8Codepage`) e de um `Emit[Truncation.Error]`.
++   entry .Ref   o que todo handle de processo pode fazer: `pid`, `alive`, `attend`, `kill`, `abort`, tempos
+
+% 1 1 0 109167db08ec4749175293ecb3dd53da
+
+@ 0 27 0 0ca244d8e6c38f261f2e56791e6c602b
++         O trait que `Process` e `Job` compartilham: uma referência a um processo do sistema, por
++         pid, com seu tempo de vida, os dois sinais, e sua hora de início e seu uso de CPU onde a
++         plataforma os informa. Um código que só precisa esperar ou parar um processo pode receber
++         um `Process.Ref` e receber qualquer um dos dois.
++     entry #pid   o `Pid` do processo
++     entry #kill   para o processo com `SIGKILL`; precisa de um `Exec.Event is Loggable`
++     entry #abort   pede ao processo que pare com `SIGTERM`; precisa de um `Exec.Event is Loggable`
++     entry #alive   se o processo ainda está em execução
++     entry #attend   espera o processo terminar
++     entry #startTime   quando o processo começou, como qualquer tipo de instante `Instantiable across Instants from Long`, ou `Unset`
++     entry #cpuUsage   o tempo de CPU usado, como qualquer tipo de duração `Instantiable across Durations from Long`, ou `Unset`
++   entry #pid   o `Pid` do processo
++   entry #kill   para o processo com `SIGKILL`, por meio de `ProcessHandle.destroyForcibly`
++   entry #abort   pede ao processo que pare com `SIGTERM`, por meio de `ProcessHandle.destroy`
++   entry #alive   se o processo ainda está em execução
++   entry #attend   bloqueia até que o processo termine
++   entry #parent   o processo pai, ou `Unset` para um processo que não tem pai
++       `Process().parent` é o shell ou o inicializador que iniciou este programa. O elemento é um
++       `Process` rastreado, então faça casamento de padrões sobre ele ou tire seu `pid` com `lay`.
++   entry #children   os filhos diretos do processo, como handles `Process`
++   entry #startTime   quando o processo começou, em qualquer tipo de instante, a partir de `ProcessHandle.Info`
++       Recebe um tipo `Instantiable across Instants from Long` (milissegundos desde a época):
++       `startTime[Moment]` com aviation. `Unset` quando a plataforma não o informa, e sempre no
++       Scala Native, cuja javalib não tem `java.time`.
++   entry #cpuUsage   o tempo total de CPU que o processo usou, em qualquer tipo de duração
++       Recebe um tipo `Instantiable across Durations from Long` (nanossegundos). `Unset` quando a
++       plataforma não o informa, e sempre no Scala Native.
+
+@ 0 1 0 1814b96938c4291f0f55415b5bd7361b
++ entry .Pid   um identificador de processo, como tipo próprio: renderizado como `↯1234`, analisado a partir de um número
+
+% 1 1 0 1c59299a5ec2f8ad1b31de3dfe0bc360
+
+@ 0 5 0 140b6d2d53891fd10fb4a8105613d967
++       `Pid(value: Long)` é um id de processo, distinto de um código de saída ou de um número de
++       descritor, para que os três não possam ser confundidos. Ele é mostrado, codificado e
++       inspecionado como o número marcado com `↯` (`Pid(1234L).show` é `↯1234`), decodificado a
++       partir de um número simples (`t"42".as[Pid]`) e substituído em `sh"…"` pela sua forma
++       mostrada. `Job#pid` e `Process#pid` dão um, `Process(pid)` procura um, e
++       `Executable#detach` devolve um.
+
+% 2 1 0 116b10de28fd0ee407ee90141c42069f
+
+% 3 1 0 1cb9cef0af03bdab1debecf15ddb14c0
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 1b777cb1845322fc1f510d62689408d7
+
+% 0 1 0 1f0ad54f7b0a3b11159b5af73d4e39ef
+
+% 0 1 0 03ecc438f50359221d395fabd132efa4
+
+% 1 1 0 095149f1a960a4a5074cdfc12ad4d778
+
+% 1 1 0 11419abd95cc2faf0e1a3b52e0bf586d
+
+% 0 1 0 0f13a7a65edd18f20a28574b7d16f17c
+
+@ 0 11 0 1bf11a3046604183061c9cd9a97953b6
++   entry .showable   renderiza um pid como `↯` seguido do seu número
++   entry .encodable   codifica um pid em texto, como `↯1234`
++   entry .inspectable   a renderização de depuração, o mesmo `↯1234`
++   entry .decodable   lê um pid a partir de um número decimal em texto, lançando `Number.Error` caso contrário
++       `t"42".as[Pid]` é `Pid(42L)`; o texto é analisado como um `Long`, e um valor malformado
++       lança `Number.Error(text, Long, Unparseable)` por meio de uma `Tactic[Number.Error]`.
++   entry .sshAgentPid   a variável de ambiente `SSH_AGENT_PID`, lida como um `Pid`
++       Uma `Variable["sshAgentPid", Pid]` de ambience, de modo que `Environment.sshAgentPid`
++       (com um `Environment` no escopo) é o pid do agente SSH em execução; lança `Number.Error`
++       se a variável não for um número. Precisa de uma `Tactic[Number.Error]`.
++   entry .Error   lançado quando nenhum processo com um dado pid está em execução
+
+% 1 1 0 1cb8e8abeac70bc407efb678b596f897
+
+@ 0 5 0 01d0ce07c263d8eb1f74622811574ca9
++         Erro `↯/s.84.2`: _the process with PID `1234` is not running_. Lançado por
++         `Process(pid)`, e portanto por `Job#process`, quando `ProcessHandle.of` não encontra
++         nada: o processo terminou, ou nunca existiu. Precisa de um `Diagnostics` no escopo para
++         ser construído.
++     entry #pid   o pid que foi procurado
++   entry #value   o número
+
+@ 0 1 0 1b0cd8c1c53265a411ab50d1d8f1ef3c
++ entry .Exec   o vocabulário da execução de um comando: `Exec.Error` e os `Exec.Event`s registrados no log
+
+% 1 1 0 035d7529ba52d1ca0863f9b467f2d6ab
+
+@ 0 4 0 0e2f1325407068e6146e3a6a969ad539
++       Um espaço de nomes, não um tipo: uma execução em si é um `Job` ou um `Process`.
++       `Exec.Error` é lançado quando um comando não pode ser executado, e `Exec.Event` é o que
++       os inícios, os términos e os sinais registram no log. (`Executable#Exec`, o membro de tipo
++       que contém o nome de um comando, é outra coisa, que compartilha a palavra.)
+
+% 1 1 0 16939682ee1bc9d1158fd19e46a8ebdf
+
+@ 0 1 0 181e8efb763170340a0a011aea672b41
++   entry .Error   lançado quando um comando não pode ser executado: um binário ausente, ou uma leitura da sua saída interrompida
+
+% 1 1 0 1cffaf1e3aefe5d008971e84aa55a46c
+
+@ 0 7 0 128db9d2bb8597521cc91714d68bf511
++         Erro `↯/s.84.1`: _execution of the command `ls -la` failed_. Lançado por `exec`,
++         `fork`, `detach` e `Command.OnTerminal#exec` quando o programa não pode ser iniciado —
++         ele não está no `PATH`, ou o arquivo não é executável —, e por `exec` quando uma
++         leitura da saída é interrompida (um `Truncation.Error`, relançado como este erro para o
++         comando; o último comando de uma pipeline). Ele nomeia o `#command`, de modo que uma
++         falha relata o que foi tentado, e não um errno; os campos `#stdout` e `#stderr` ficam
++         vazios, a menos que quem lançou tivesse saída para anexar.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 1 1 0 11621829530a7bef0191b6af5796467c
+
+% 2 1 0 152bab8f97844ee716e34b9bf0145bcb
+
+% 3 1 0 0f286eebc258ce89150716543fe4abe7
+
+% 1 1 0 086e0058de4fcd1c1c7bfc2ea9a09335
+
+% 0 1 0 11a0917b1cbb9e8504cae93488cabe04
+
+% 0 1 0 0dda2a621eb2650303c17e584647fb65
+
+% 1 1 0 03f1867ec2ae181d0fe21bb1e4104da9
+
+@ 0 6 0 0d1dbbe6221d5ffc1575c2bb95a4ba1b
++         Um programa que inicia e termina com status diferente de zero não lança este erro: o
++         seu status é o seu resultado, lido como um `Exit`.
++     entry #command   o comando que não pôde ser executado
++     entry #stdout   qualquer saída padrão anexada, como `Data`; vazia por padrão
++     entry #stderr   qualquer erro padrão anexado, como `Data`; vazio por padrão
++   entry .Event   o que a execução de um comando registra no log: inícios, términos, abortos e kills
+
+% 1 1 0 1100e477caada65303b8b7395094d5b1
+
+@ 0 7 0 17223d0f6e0dc0bd03fb2c16b0497d5e
++         Todo `Event` tem a tag `Log.Process`. `ProcessStart(command)` é registrado em `info`
++         por `fork`, `exec`, `detach` e por uma sessão de terminal; `PipelineStart(commands)`, da
++         mesma forma, para uma pipeline; `ProcessExit(pid, code)` por `Job#exitStatus()`, em
++         `fine` para zero e como aviso nos demais casos; `AbortProcess(pid)` em `info` por
++         `Job#abort()`; e `KillProcess(pid)` como aviso por `Job#kill()`. Um `Exec.Event is
++         Loggable` precisa estar no escopo onde quer que estes sejam executados;
++         `logging.silentLogging` os descarta.
++     entry .communicable   renderiza cada evento como uma mensagem
+
+% 0 1 0 0eb983b84f1777680a67ad136983a754
+
+% 0 1 0 0d1d0009039a49ae1bb89f62bbde0bf3
+
+% 0 1 0 02d33691fe2c8a450d585e0d0de7ee08
+
+@ 0 1 0 0e6ee3771c4b839111240ee02b85ad42
++ entry .Intelligible   evidência de que o nome de um comando implica o seu tipo de resultado, para `sh"…"()`
+
+% 1 1 0 08466cd2a10bb47a10e92ee7eaad8b1c
+
+@ 0 8 0 0d9293da1264632c0f270269b81b852c
++       `"ls" is Intelligible to Chain[Text]` diz que um comando chamado `ls` é lido como uma
++       `Chain[Text]` quando é aplicado sem tipo: `sh"ls -la"()` convoca a evidência
++       `Intelligible` para o membro de tipo `Exec` do comando (o seu nome, como tipo literal) e
++       executa `exec` com o tipo `Result` da evidência (herdado de `Resultant`). O trait é
++       selado e as suas instâncias são apagadas: existem apenas para o compilador escolher um
++       tipo, e não custam nada em tempo de execução. O objeto companheiro estende
++       `PosixCommands`, então a evidência de todo utilitário POSIX está no escopo implícito sem
++       nenhum import; um comando fora dessa lista não tem tipo implícito e é executado com
++       `exec[T]()`.
+
+% 2 1 0 04695fad23e0d0c0092b7670a291c409
+
+% 3 1 0 14ebac6af49678000c63b1cc496e68d1
+
+% 4 1 0 051db038c434ce401aaea86ada1dda00
+
+% 5 1 0 09a96f7d11c835dd18c476a405be9fff
+
+% 6 1 0 038b308eaf1f3ee11623a934bd6464f1
+
+% 7 1 0 07cfa489c1fdb13418eed6fdc2a0ebdb
+
+% 0 1 0 15b59a11e78fcbf509844b3818f65206
+
+% 0 1 0 081b7250f4fccf93059edc36d92955d6
+
+% 0 1 0 09f5703b2bbb916f14e0280e17a81aa3
+
+% 1 1 0 09ad1a66f4324e09043b0b4832522a6b
+
+@ 0 3 0 197f1994bf0505650c90f9ddf151333a
++       Uma instância para um programa próprio é um `erased given ("mytool" is Intelligible
++       to Text)` — escrito como os givens de `PosixCommands` —, mas a sua construção precisa da
++       classe privada `Evidence` do objeto companheiro, então, na prática, a lista é a da
++       biblioteca.
+
+% 0 1 0 012fe3f5e1c12ae60d6b800b3451c210
+
+% 1 1 0 073ef04bea83c9401fab61d04edb6d24
+
+% 2 1 0 0819c0b89642491a06cc98a63fe8fd8f
+
+@ 0 1 0 029df34668e50eee11456caa1173af2e
++   entry #Self   o nome do comando, como um tipo literal, por exemplo `"ls"`
+
+@ 0 1 0 03eed665b45f61190715aa6257a374f5
++ entry .PosixCommands   o tipo de resultado que cada utilitário POSIX implica, um given apagado por comando
+
+% 1 1 0 09d5409a3797568e1d703b1189d6a34c
+
+@ 0 11 0 138bbb330a4fe0b118e2111f953806c1
++       O trait que contém um given `Intelligible` para cada um dos utilitários de shell POSIX,
++       misturado ao objeto companheiro de `Intelligible` para que sejam encontrados sem nenhum
++       import. Cada um diz o que `sh"<command> …"()` devolve: `Text` para um utilitário cuja
++       saída é um relatório lido por inteiro (`echo`, `date`, `wc`, `pwd`, `uname`, a maior parte
++       da lista); `Chain[Text]` para um cuja saída são linhas que vale a pena ler à medida que
++       chegam (`cat`, `grep`, `head`, `ls`, `man`, `sed`, `sort`, `strings`, `tail`, `uniq`);
++       `Exit` para um cujo efeito, e não a saída, é o que importa (`chgrp`, `chmod`, `chown`,
++       `cp`, `kill`, `ln`, `mkdir`, `mkfifo`, `mknod`, `mv`, `newgrp`, `rm`, `rmdir`, `sleep`,
++       `touch`); e, para `which`, qualquer tipo de caminho que quem chama pedir. Todos são
++       `erased`: nenhuma instância existe em tempo de execução, e a escolha é feita inteiramente
++       pelo compilador. O given para `wait` se chama `waitCommand`, já que `wait` é um método de
++       todo objeto.
+
+% 2 1 0 15955fb30e6f66a007d140d47a8bbe15
+
+% 3 1 0 09adb1eedd5c16fc0271067a3f9004d2
+
+% 4 1 0 1d7ce5296617bf911762ac6e073e3655
+
+% 5 1 0 0362177e7e164478112d86c87ed643ec
+
+% 6 1 0 192edac5649659a21aaf467ace3af26b
+
+% 7 1 0 0a98a8e1bfbd3c881381346eeaab2dea
+
+% 0 1 0 139853c9aee3ec3f05860b58dd7df61e
+
+% 0 1 0 14b66bc5404f0bda0fd6e126d1754824
+
+% 0 1 0 1b12cdf88eb0899b14281b30c660ff02
+
+% 1 1 0 047b65f521349cc317a1c667b60a8ff4
+
+% 0 1 0 14a2e30b34614dc1129d51bb0f37789d
+
+% 1 1 0 050a1f29592d72c50c9ac86c61919934
+
+@ 0 103 0 1f1326be7d1c5278167ad8f3c851cc2b
++   entry #alias   `alias` (lista ou define aliases do shell) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #ar   `ar` (mantém bibliotecas de arquivos) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #at   `at` (enfileira um comando para ser executado mais tarde) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #awk   `awk` (a linguagem de varredura de padrões) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #basename   `basename` (reduz um caminho ao seu último segmento) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #batch   `batch` (enfileira um comando para ser executado quando a carga permitir) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #bc   `bc` (a calculadora de precisão arbitrária) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #cat   `cat` (concatena arquivos) é executado como `Chain[Text]`: as suas linhas, de forma preguiçosa
++   entry #chgrp   `chgrp` (muda o grupo de um arquivo) é executado como `Exit`: o seu status é o seu resultado
++   entry #chmod   `chmod` (muda o modo de um arquivo) é executado como `Exit`: o seu status é o seu resultado
++   entry #chown   `chown` (muda o proprietário de um arquivo) é executado como `Exit`: o seu status é o seu resultado
++   entry #cksum   `cksum` (o checksum CRC e o tamanho de um arquivo) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #cmp   `cmp` (compara dois arquivos byte a byte) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #comm   `comm` (as linhas que dois arquivos ordenados compartilham ou não) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #command   `command` (executa um comando contornando as funções do shell) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #cp   `cp` (copia arquivos) é executado como `Exit`: o seu status é o seu resultado
++   entry #crontab   `crontab` (edita a tabela do cron) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #csplit   `csplit` (divide um arquivo por contexto) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #cut   `cut` (seleciona colunas de cada linha) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #date   `date` (imprime ou define a data) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #dd   `dd` (copia e converte blocos) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #df   `df` (espaço livre em disco) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #diff   `diff` (as diferenças entre dois arquivos) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #dirname   `dirname` (reduz um caminho ao seu diretório) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #du   `du` (uso de disco) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #echo   `echo` (escreve os seus argumentos) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #ed   `ed` (o editor de linhas) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #env   `env` (imprime ou modifica o ambiente) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #expand   `expand` (transforma tabulações em espaços) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #expr   `expr` (avalia uma expressão) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #file   `file` (adivinha o tipo de um arquivo) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #find   `find` (percorre uma árvore de diretórios) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #fold   `fold` (quebra linhas longas) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #gencat   `gencat` (constrói um catálogo de mensagens) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #getconf   `getconf` (valores de configuração) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #getopts   `getopts` (analisa argumentos de opções) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #grep   `grep` (as linhas que casam com um padrão) é executado como `Chain[Text]`: as suas linhas, de forma preguiçosa
++   entry #hash   `hash` (a tabela hash de comandos do shell) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #head   `head` (as primeiras linhas de um arquivo) é executado como `Chain[Text]`: as suas linhas, de forma preguiçosa
++   entry #iconv   `iconv` (converte entre codificações de caracteres) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #id   `id` (as identidades do usuário e dos grupos) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #join   `join` (junta dois arquivos por um campo comum) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #kill   `kill` (envia um sinal) é executado como `Exit`: o seu status é o seu resultado
++   entry #ln   `ln` (cria um link) é executado como `Exit`: o seu status é o seu resultado
++   entry #locale   `locale` (informações de localidade) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #localedef   `localedef` (compila uma definição de localidade) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #logger   `logger` (escreve no log do sistema) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #logname   `logname` (o nome de login) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #lp   `lp` (envia um arquivo para uma impressora) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #ls   `ls` (lista um diretório) é executado como `Chain[Text]`: as suas linhas, de forma preguiçosa
++   entry #m4   `m4` (o processador de macros) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #mailx   `mailx` (envia e lê e-mail) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #man   `man` (uma página de manual) é executado como `Chain[Text]`: as suas linhas, de forma preguiçosa
++   entry #mesg   `mesg` (permite ou nega mensagens para o terminal) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #mkdir   `mkdir` (cria um diretório) é executado como `Exit`: o seu status é o seu resultado
++   entry #mkfifo   `mkfifo` (cria um pipe nomeado) é executado como `Exit`: o seu status é o seu resultado
++   entry #mknod   `mknod` (cria um arquivo especial) é executado como `Exit`: o seu status é o seu resultado
++   entry #mv   `mv` (move arquivos) é executado como `Exit`: o seu status é o seu resultado
++   entry #newgrp   `newgrp` (muda o grupo atual) é executado como `Exit`: o seu status é o seu resultado
++   entry #od   `od` (despeja um arquivo em octal ou em outra base) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #paste   `paste` (junta arquivos linha a linha) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #patch   `patch` (aplica um diff) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #patchchk   `patchchk` (verifica um patch) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #pax   `pax` (o arquivador portátil) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #pr   `pr` (pagina um arquivo para impressão) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #printf   `printf` (saída formatada) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #ps   `ps` (os processos em execução) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #pwd   `pwd` (o diretório de trabalho) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #read   `read` (lê uma linha para variáveis) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #renice   `renice` (altera a prioridade de um processo) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #rm   `rm` (remove arquivos) é executado como `Exit`: o seu status é o seu resultado
++   entry #rmdir   `rmdir` (remove um diretório vazio) é executado como `Exit`: o seu status é o seu resultado
++   entry #sed   `sed` (o editor de streams) é executado como `Chain[Text]`: as suas linhas, de forma preguiçosa
++   entry #sleep   `sleep` (pausa por um tempo) é executado como `Exit`: o seu status é o seu resultado
++   entry #sort   `sort` (ordena linhas) é executado como `Chain[Text]`: as suas linhas, de forma preguiçosa
++   entry #split   `split` (divide um arquivo em pedaços) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #strings   `strings` (as strings imprimíveis em um binário) é executado como `Chain[Text]`: as suas linhas, de forma preguiçosa
++   entry #stty   `stty` (lê ou define a disciplina de linha do terminal) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #tabs   `tabs` (define as paradas de tabulação do terminal) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #tail   `tail` (as últimas linhas de um arquivo) é executado como `Chain[Text]`: as suas linhas, de forma preguiçosa
++   entry #tee   `tee` (copia a entrada para arquivos e para a saída) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #test   `test` (avalia uma condição) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #touch   `touch` (atualiza os carimbos de tempo de um arquivo, criando-o se necessário) é executado como `Exit`: o seu status é o seu resultado
++   entry #tput   `tput` (capacidades do terminal) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #tr   `tr` (traduz caracteres) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #tsort   `tsort` (uma ordenação topológica) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #tty   `tty` (o nome de dispositivo do terminal) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #umask   `umask` (a máscara de criação de arquivos) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #unalias   `unalias` (remove um alias) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #uname   `uname` (o nome do sistema) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #unexpand   `unexpand` (transforma espaços em tabulações) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #uniq   `uniq` (descarta ou conta linhas repetidas) é executado como `Chain[Text]`: as suas linhas, de forma preguiçosa
++   entry #uudecode   `uudecode` (decodifica um arquivo codificado com uuencode) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #uuencode   `uuencode` (codifica um arquivo para e-mail) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #waitCommand   `wait` (espera um job em segundo plano) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #wc   `wc` (conta linhas, palavras e bytes) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #who   `who` (quem está conectado) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #write   `write` (escreve no terminal de outro usuário) é executado como `Text`: toda a sua saída, quando ele termina
++   entry #which   `which` (encontra um programa no `PATH`) é executado como o tipo de caminho que quem chama pedir
++       Um given inline, para qualquer tipo `Instantiable across Paths from Text`: `val git: Path
++       on Linux = sh"which git"()` lê a saída aparada como um caminho, por meio da instância de
++       `Computable` para tipos de caminho. O tipo precisa ser fixado pelo tipo esperado, já que o
++       comando sozinho não pode escolhê-lo.
+
+@ 0 1 0 1b7690d68689f9270f5bf4d5308717b5
++ entry .Parameterizable   como um valor de um tipo é renderizado como argumento de comando em `sh"…"`
+
+% 1 1 0 0ee8afeaff167c7c161c4fe0a6bff864
+
+@ 0 6 0 02bc27d20adc99690ddc3aa0e0bb0e91
++       `T is Parameterizable` permite que um `T` seja substituído no interpolador `sh"…"`:
++       `#show` o renderiza como o texto de um argumento, que o interpolador então escapa conforme
++       a sua posição, de modo que a instância nunca se preocupa com aspas. O `.encodable` do
++       objeto companheiro cobre todo tipo `Encodable in Text` — um `Path`, uma URL, um `Pid` —, e
++       um tipo sem nenhum dos dois é um erro de compilação na substituição. `Text`, `List[Text]` e
++       `Command` são substituídos pelas suas próprias inserções de `Sh`, e não por esta.
+
+% 2 1 0 0ffeb3fa6668767e0c4215e88f81d9d3
+
+% 3 1 0 1e7094cf67d5e5c802a78aaef264b6e9
+
+% 0 1 0 05aa700a541404ab10d2235b9156bea7
+
+% 0 1 0 1c2ed558c3c83b1a04de618d3efae7a8
+
+% 0 1 0 1a2e1d4fbae3b6cc150428cbfab687d4
+
+% 1 1 0 0d5f12cecd9cef8c1d05ebe1b79c2738
+
+% 1 1 0 017a72a3e78de0af057295bf970f7de3
+
+@ 0 6 0 13646779ef074c330280d02705cc0164
++   entry .encodable   qualquer tipo `Encodable in Text` é substituído pela sua codificação
++       Um `Path on Linux` é substituído como `/etc/hosts`, um `Pid` como `↯42`, uma URL pelo seu
++       texto.
++   entry #show   o valor como o texto de um argumento de comando
++   entry #contramap   uma instância para outro tipo, por meio de uma função para o tipo desta
++       `summon[Text is Parameterizable].contramap(f)` é a forma usual de escrever uma instância
++       para um tipo que tem uma forma textual própria.
+
+@ 0 1 0 18e365e0962fedda1a5cd39819a1b4cf
++ entry .Termios   a disciplina de linha de um terminal: as chaves de `stty` que um programa muda com mais frequência
+
+% 1 1 0 016785d901d44df8188a5a02ca5cfe18
+
+@ 0 7 0 1fda0b7e66468cb1058c361364d4fb77
++       As configurações de um pseudoterminal que decidem como o que é digitado chega ao programa
++       e como o que ele escreve chega à tela, nomeadas segundo as flags POSIX de `termios` que
++       representam, cada uma um `Boolean` que é ligado por padrão. `.cooked` é tudo ligado —
++       edição de linha, eco, sinais e as traduções que um shell espera — e `.raw` é tudo
++       desligado, como um programa de tela cheia configura antes de desenhar. Um `Termios` dado a
++       `Command#pty` é aplicado antes de o comando iniciar, e o de um comando em execução é lido e
++       alterado por meio de `Command.OnTerminal.Job#mode`.
+
+% 2 1 0 1f12dd13f45544e90485104bec8849d9
+
+% 3 1 0 0f8ea0588517d7f3187b7e2d2b2d25bd
+
+% 0 1 0 18d14fb02a5bccd812f3d5e1a6cb9e5a
+
+% 0 1 0 0dd0e35fac59405c1760aa8a2f61ad83
+
+% 0 1 0 12eae3018f89014410ab42b0c3b97c14
+
+% 1 1 0 10a3ed961d61dddf140e2ed313c9a771
+
+% 1 1 0 0194e6cc425498421dfa21e416f3b44f
+
+@ 0 14 0 0d50e9d2eada94a302b4c10b5c50e99e
++   entry .cooked   todas as chaves ligadas: entrada editada e ecoada uma linha por vez, `^C` é um sinal
++   entry .raw   todas as chaves desligadas: cada byte entregue como foi digitado, sem eco, `^C` é um byte comum
++       O que `stty raw -echo` configura, e o que um programa de tela cheia, como um editor,
++       precisa. Desligar `canonical` também faz a leitura devolver cada byte assim que ele chega.
++   entry .showable   renderiza as chaves como `stty` as relata: `echo -icanon isig …`
++       Cada chave pelo nome da sua flag POSIX, prefixada com `-` quando desligada, na ordem
++       `echo`, `icanon`, `isig`, `iexten`, `icrnl`, `ixon`, `opost`.
++   entry #echo   `echo`: se os caracteres digitados são ecoados de volta para o terminal
++   entry #canonical   `icanon`: se a entrada é reunida e editada uma linha por vez, ou entregue como é digitada
++   entry #signals   `isig`: se `^C` e `^Z` enviam sinais ao programa em primeiro plano
++   entry #extensions   `iexten`: se os caracteres extras de edição de linha são interpretados
++   entry #translateReturn   `icrnl`: se um retorno de carro digitado chega como quebra de linha
++   entry #flowControl   `ixon`: se `^S` e `^Q` pausam e retomam a saída
++   entry #postprocessing   `opost` com `onlcr`: se uma quebra de linha que o programa escreve é enviada como retorno de carro e quebra de linha
+
+@ 0 1 0 0f4171910af8dd0c0b1a82bbb710dfd7
++ entry .Sh   o parser do interpolador `sh"…"` e as suas regras de inserção
+
+% 1 1 0 19e832559100fa22077cefbd14982d51
+
+@ 0 8 0 0c855056c559050f16830816ffb347b6
++       O mecanismo por trás de `sh"…"`: o parser (`.Runtime`), que tanto a macro executa em tempo
++       de compilação, para verificar o literal, quanto o código gerado executa em tempo de
++       execução, para montar os argumentos com os valores substituídos; o `.State` e o
++       `.Context` do parser; os `.Parameters` com que uma substituição contribui; o `.Error` que
++       um literal malformado lança; e os givens contextuais de `Insertion`, que dizem como um
++       `Text`, uma `List[Text]`, um `Command` ou qualquer valor `Parameterizable` se torna
++       parâmetros. Um programa não os chama diretamente, mas um `given Insertion[Sh.Parameters,
++       T]` no escopo da interpolação é uma forma de substituir um tipo, sendo `Parameterizable`
++       a usual.
+
+% 1 1 0 1b66fb8153baf0721b160a602058f1c2
+
+% 0 1 0 0c36bedfd9467f701fd292a8c56265de
+
+@ 0 4 0 1f15903224d51dbb105e8eb5418b62a4
++   entry .Context   onde o parser está: `Awaiting` uma palavra, em uma palavra `Unquoted`, em `Quotes2` ou em `Quotes1`
++       `Awaiting` é entre argumentos, `Unquoted` dentro de uma palavra sem aspas, `Quotes2`
++       dentro de aspas duplas e `Quotes1` dentro de aspas simples, onde uma barra invertida é
++       literal.
++   entry .State   o estado do parser: contexto, um escape pendente, os argumentos até agora e offsets
+
+% 1 1 0 1f9c88a409aaa1eb1206521463be362c
+
+@ 0 11 0 0a923f7fe1945dfa17e162ec4d0495d6
++         `State(current, escape, arguments, offset, quoteStart)`: o `Context`, se o último
++         caractere foi uma barra invertida não consumida, os argumentos concluídos e em
++         andamento, quantos caracteres foram consumidos (cada substituição contando como um) e o
++         offset da aspa de abertura do contexto entre aspas atual, ou `-1`, para que uma aspa não
++         fechada seja relatada onde foi aberta.
++     entry #current   o contexto de parsing
++     entry #escape   se há uma barra invertida pendente
++     entry #arguments   os argumentos até agora, o último possivelmente ainda em construção
++     entry #offset   caracteres consumidos, cada substituição contando como um
++     entry #quoteStart   o offset da aspa de abertura do contexto entre aspas atual, ou `-1`
++   entry .Parameters   aquilo com que uma substituição contribui: zero ou mais textos de argumentos
+
+% 1 1 0 18075c1c458d5fc2020b4ffe5e12bd23
+
+@ 0 5 0 01e5cc081a0158e81375fc2e402a2f5a
++         Um `Text` contribui com um, uma `List[Text]` com um por elemento, um `Command` com os
++         seus argumentos. Sem aspas, cada um é um argumento próprio (unido a qualquer texto
++         literal adjacente); dentro de aspas, eles são unidos com espaços no único argumento que
++         as aspas delimitam.
++     entry #params   os textos contribuídos
++   entry .Error   um literal `sh"…"` malformado: uma aspa não fechada ou um escape solto, com o seu offset
+
+% 1 1 0 1c545533e8299adf147e3a0860590763
+
+@ 0 2 0 19ca98e6f119153107aebbd13b0c6872
++         Lançado pelo parser e relatado pela macro como um erro de compilação no caractere
++         problemático: _this double quote is never closed_, _this single quote is never closed_,
+
+% 0 1 0 11f12c6e0dbea3880ef8b118e5cec5b4
+
+@ 0 5 0 07e9db19293e806c04481bea0d80b148
++         immediately before a substitution_. Em tempo de execução, como o literal já foi
++         verificado, ele não pode ocorrer.
++     entry #detail   a mensagem
++     entry #offset   onde no literal está a falha, contando cada substituição como um caractere
++   entry .Runtime   o parser: `initial`, `parse`, `insert`, `skip` e `complete`
+
+% 1 1 0 1d740dabfafbdafa156c94451a6d7fb3
+
+@ 0 13 0 0e53393998c0274b0ca03cee729d9c06
++         Uma pequena máquina de estados sobre os caracteres das partes literais, que a macro
++         conduz com `skip` no lugar de cada substituição, para verificar o literal, e que o
++         código gerado conduz com `insert`, para inserir os valores reais. Não se destina a uso
++         direto.
++     entry .initial   o estado antes de qualquer caractere: aguardando uma palavra, sem argumentos
++     entry .parse   alimenta o estado com os caracteres de uma parte literal
++     entry .insert   insere os `Parameters` de uma substituição no estado, conforme o seu contexto
++     entry .skip   avança além de uma substituição em tempo de compilação, quando o seu valor ainda não é conhecido
++     entry .complete   termina: o `Command`, ou `Sh.Error` para uma aspa não fechada ou um escape no final
++   entry .nothing   uma substituição de `Nothing` contribui com o argumento vazio
++   entry .text   uma substituição de `Text` é exatamente um argumento, seja qual for o seu conteúdo
++   entry .list   uma substituição de `List[Text]` é um argumento por elemento ou, entre aspas, um único argumento unido por espaços
++   entry .command   uma substituição de `Command` são os seus argumentos, de modo que `sh"sh -c '$inner'"` o passa como um só
++   entry .parameterizable   qualquer valor `Parameterizable` é substituído pelo seu texto `show`, como um argumento
+
+@ 0 1 0 0332a1f060f3a6b6006e367901d863d5
++ entry .internal   a implementação de macro por trás de `sh"…"`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 06fc3b83935fabfc1682f67ea5932e6b
++       Não se destina a uso direto: o objeto existe para que a macro `sh` tenha uma sede estável.
++   entry .sh   a macro: analisa as partes literais em tempo de compilação, posiciona os erros e insere a análise em tempo de execução
++       Verifica o literal com `Sh.Runtime` (relatando um `Sh.Error` no caractere que o causou,
++       mapeado de volta para o código-fonte através de `$$` e de escapes unicode), convoca uma
++       `Insertion[Sh.Parameters, T]` para cada tipo substituído (falhando com _can't substitute
++       `T` into a sh-interpolator_) e produz um `Command` refinado com a sua primeira palavra
++       como o tipo `Exec`.

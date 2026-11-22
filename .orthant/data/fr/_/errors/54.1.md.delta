@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 1 0 1363a091759d59b40b705a86cfaf3e6b
++ # `↯/s.54.1` — Quanta n'inclut pas cette unité
+
+@ 0 2 0 1833a3cde88a422b0e2e0c8cc6cf6ca8
++ Levée lorsqu'on demande à la macro `Quanta` de rechercher une unité qui ne fait pas partie du
++ `Quanta` auquel elle a été appliquée.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 3 0 1e3db1ead1f4a7731473d524e4f5c781
++ Les macros d'Abacist dérivent le multiplicateur d'une unité en cherchant la puissance de cette
++ unité dans le type `Quanta`. Si l'unité demandée n'est pas présente dans le `Quanta`, la
++ recherche échoue et la macro s'interrompt.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 143d40cd55d0786511eb0088d5e5ff20
+
+% 1 1 0 164926ea9d6ecc39055bb50525616e53
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 2 0 1bdbffcb4a7bca4f18f635ac76ab531a
++ Incluez l'unité dans le type `Quanta` au site d'appel, ou effectuez la recherche avec une unité
++ qui fait déjà partie du `Quanta`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 04d8baca2a2af52311c0f14c2b57dfb5
++ - Source : `lib/abacist/src/core/abacist.internal.scala`

@@ -1,0 +1,42 @@
+orthant 2 language
+
+% 0 1 0 083d0161faae9d1215ca00b36edc4877
+
+@ 0 1 0 031a16b75637ea7907e59142beb9324e
++ Lançado quando o Geodesy não consegue analisar um valor como uma URI `geo:`.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 5 0 0c4830b095eec05d1fd550d6deaafd1c
++ O Geodesy analisa URIs geo da RFC 5870 da forma
++ `geo:<lat>,<lon>[,<alt>][;<param>=<value>]…`. Se alguma parte da URI não satisfizer a sintaxe,
++ este erro é lançado com a variante que identifica qual parte. A mensagem é
++ `the geo URI is not in the correct format because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 12 0 1562cf0f029b514f15a17833718fcd2a
++ column  Código
++ column  Motivo
++ column  Significado
++ column  Mensagem
++ column  Resolução
++ row  `↯/s.46.1.1`  `MissingEquals`  Um componente de parâmetro não tinha um `=` para separar o nome do valor.  `` [↯/s.46.1.1] the geo URI is not in the correct format because the parameter does not contain an `=` ``  Escreva os parâmetros como `name=value`.
++ row  `↯/s.46.1.2`  `MultipleEquals`  Um único parâmetro continha mais de um `=`.  `` [↯/s.46.1.2] the geo URI is not in the correct format because the parameter contains more than one `=` ``  Use a codificação percentual nos caracteres `=` que devem aparecer no valor.
++ row  `↯/s.46.1.3`  `BadScheme`  A URI não começava com `geo:`.  `` [↯/s.46.1.3] the geo URI is not in the correct format because the value does not begin with the `geo:` URI scheme ``  Prefixe a URI com `geo:`.
++ row  `↯/s.46.1.4`  `ExpectedSemicolon`  Depois do valor da altitude, esperava-se um `;`, que não foi encontrado.  `` [↯/s.46.1.4] the geo URI is not in the correct format because a `;` was expected after the altitude value ``  Separe a altitude de quaisquer parâmetros seguintes com `;`.
++ row  `↯/s.46.1.5`  `UnexpectedSuffix`  Às coordenadas seguia-se um conteúdo que não começava nem com `,` nem com `;`.  `` [↯/s.46.1.5] the geo URI is not in the correct format because a `,` or `;` was expected ``  Use `,` para introduzir a altitude e `;` para introduzir parâmetros.
++ row  `↯/s.46.1.6`  `ExpectedCoordinates`  A latitude e a longitude estavam ausentes ou não puderam ser analisadas como números.  `[↯/s.46.1.6] the geo URI is not in the correct format because latitude and longitude coordinates were expected`  Forneça dois números decimais separados por vírgula logo depois de `geo:`.
++ row  `↯/s.46.1.7`  `BadUncertainty`  O valor de um parâmetro `u=` (incerteza) não era um número válido.  `` [↯/s.46.1.7] the geo URI is not in the correct format because the `uncertainty` parameter vas not a valid number ``  Forneça um valor decimal não negativo para `u=`.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 1144be88f2df39e800aa365a21b4ffba
++ - Código-fonte: `lib/geodesy/src/core/geodesy.Geolocation.scala`

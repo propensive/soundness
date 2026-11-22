@@ -1,0 +1,1211 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 020e9af13aaabefd037e0c106d73c906
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0122281df872933d11bbbe64e55428e0
++ info   CSV, TSV y otros textos delimitados: filas analizadas con un formato elegido, y decodificadas a clases case y codificadas desde ellas
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0b90bbdc36bec69907e2da5a854f3769
++     _Caesura_ lee y escribe valores separados por delimitadores (CSV, su pariente separado por
++     tabuladores TSV, y datos separados por espacios), con las convenciones de entrecomillado,
++     escape y cabecera decididas por un `Dsv.Format` elegido en el ámbito en lugar de
++     adivinadas. El texto se analiza en un `Sheet`, un array materializado de filas; cada fila es
++     un `Dsv`, un array de celdas que conoce los nombres de sus columnas cuando los datos tenían
++     cabecera; y una fila se decodifica en una clase case, o una clase case se codifica en una
++     fila, mediante una derivación a partir del tipo, de modo que la correspondencia entre
++     columnas y campos nunca se escribe a mano.
+
+% 2 1 0 157faad6c82e52c50bf58b529fdeb7b4
+
+% 3 1 0 1db1e66a5d0b97031899cd30ccbcd243
+
+% 4 1 0 160216c1a1e0dcb80dd50ad18540fbfb
+
+% 5 1 0 05c6384ba52fc12e16323a3799a2523f
+
+% 2 1 0 14c39385ba74b21405046ae62c5ce01d
+
+% 0 1 0 17a61f7822ba883218d25c74b7a0ca86
+
+% 0 1 0 055b5394d0d16f731c844c2e2be3a093
+
+% 0 1 0 16a7d9be2959183a011edd33c632f9a9
+
+% 0 1 0 1fe12e8ad6210e681ccc4e41bf354214
+
+% 0 1 0 1eb272f55d9b8c7c1d3977de6d265cbb
+
+% 1 1 0 1f3448ae4af0427603cab0510db1523a
+
+@ 0 4 0 06ae211399ab16a404d1e52b5520b32b
++     Una clase case anidada se aplana en tantas columnas como campos tiene (su _tramo_, la clase
++     de tipos `Spannable`), un campo `Optional` lee una fila corta como `Unset`, y con un
++     formato con cabecera cada campo se empareja con la columna de su mismo nombre, así que el
++     orden de las columnas no tiene por qué coincidir con el de los campos.
+
+@ 0 8 0 16146c939335515d1e5bc9526aeefb1c
++     Hay dos caminos del texto a un valor. El **decodificador de filas** construye un `Dsv` para
++     cada fila y lo decodifica con un `Decodable in Dsv`, que deriva todo tipo producto; con una
++     estrategia acumulativa informa de cada celda errónea, cada una con su foco en un `CellRef`.
++     El **analizador directo** lee un tipo que tiene un `Dsv.Parsable` directamente del búfer de
++     filas reutilizable del analizador, sin construir ningún `Dsv`, y es el camino rápido para
++     ficheros grandes. Los modos de `codecs` (`codecs.direct`, `codecs.derived`,
++     `codecs.strict`) eligen entre ellos igual que para cualquier otro formato. Un fichero
++     demasiado grande para tenerlo en memoria se lee con `rows` o `rowsOf` sobre un flujo de
++     caracteres, que produce una fila cada vez.
+
+@ 0 2 0 1d0fdc96dcc78fe1102834540490ffed
++     Las opciones son givens de paquetes, que se importan cada uno por nombre, porque
++     `import soundness.*` no importa givens:
+
+@ 0 6 0 1c045e8fb8c3afbe0f2a2b425a93d2a8
++     - `dsvFormats`: el formato, `csvFormat`, `tsvFormat` y `ssvFormat`, cada uno con una
++       variante `…WithHeaderFormat`. Sin uno, nada se analiza ni se representa.
++     - `dsvRedesignations`: cómo se hace corresponder un nombre de miembro en camel case con un
++       nombre de cabecera para el acceso dinámico, como `capitalizedWordsRedesignation`
++       (`targetPerson` a `Target Person`).
++     - `dynamicAccess`: `dynamicDsv`, que permite leer las celdas de una fila como miembros,
+
+% 0 1 0 16fb8752cd65d06d1b3ba5f519f34b37
+
+@ 0 5 0 04bf62eb15247148092a6b478536dda3
++     - `optionalityOptions`: si un campo `Optional` trata una celda ausente o mal formada como
++       `Unset` o como un error.
++     - `optics`: lentes sobre las celdas de una fila y las filas de una hoja, para el `lens` de
++       `panopticon`.
++     - `construables`: los tipos de medio `text/csv` y `text/tab-separated-values` interpretados
++       como un `Sheet`, para clientes HTTP.
+
+@ 0 4 0 14a735e060de17a30a39c17ba8fdea89
++     La biblioteca tiene dos componentes. `caesura.core` lo contiene todo salvo las
++     correspondencias de tipos de medio, y es independiente de la plataforma. `caesura.http`
++     añade el paquete `construables`, y depende de `gesticulate`. Todo se exporta al paraguas
++     `soundness`, y los paquetes de elección se fusionan con los paquetes del mismo nombre del
++     propio paraguas.
+
+% 0 1 0 014d286e745d74f914bcc9be0dd95fda
+
+% 0 1 0 16642a3698bb01fb0dd8211931d94a1e
+
+% 0 1 0 1e5fc3d62f56cee60ce69937f7479516
+
+% 0 1 0 0228b5520494dbe50e2865c7ca8a49e8
+
+% 0 1 0 0b9ac194a85040510cf6b6af99485961
+
+% 0 1 0 0fcfd56bf7af14880b149c12eda5f072
+
+@ 0 1 0 04580a743ebd61310a91feab0ee86cac
++ entry .Dsv   una fila de datos delimitados: un array de celdas, con los nombres de las columnas cuando los datos tenían cabecera
+
+% 1 1 0 1cdddb4d89b044290c456c6c352102f7
+
+@ 0 6 0 027398ee00ef8d81132cac0fc0082d5b
++       Un `Dsv` es una sola fila: su `#data` son las celdas de la fila como `Text`, en orden, y
++       su `#columns` asocia cada nombre de columna con su índice cuando la fila se analizó con
++       un formato con cabecera (y es `Unset` en caso contrario). Es el valor del que están
++       hechas las filas de un `Sheet`, lo que `rows` produce a partir de un flujo, y la `Form` de
++       todo códec de filas: un tipo es `Decodable in Dsv` si puede leerse de una fila, y
++       `Encodable in Dsv` si puede escribirse como una.
+
+% 2 1 0 1765863041372b2b1aaa5d6c51c6346d
+
+% 3 1 0 15b383ec5e0e57f20c49028b9883f244
+
+% 4 1 0 187337b17e9510bf09b8495083d4cc79
+
+% 5 1 0 03b2440034291db808f7723a839a129e
+
+% 7 1 0 127aca9201509d670a0233f460bcc869
+
+% 0 1 0 09203616bb9e165d142ffbb5ba4ecb9e
+
+% 0 1 0 0682035aa3b4758b0c1c5be2cf71ceea
+
+% 0 1 0 0811167fe2934f4509162a573d8cd081
+
+% 0 1 0 10f3898c3d36d10a1353813c16f528f7
+
+% 1 1 0 01bdead578251831156519239552625a
+
+@ 0 8 0 1f7a0704a63c1f2b0fc881a719ed4d17
++       El objeto compañero contiene todos los códecs, así que ninguno necesita importación:
++       decodificadores de celdas para `Int`, `Long`, `Double`, `Float`, `Boolean`, `Text` y
++       `String`; una alternativa que lee la primera celda de una fila como cualquier tipo
++       `Decodable in Text` (en `Dsv2`); campos `Optional`; la codificación de cualquier tipo
++       `Encodable in Text` como fila de una celda; las derivaciones de decodificadores y
++       codificadores de filas para todo tipo producto; y los givens `Aggregable` que hay detrás
++       de `read[Play in Dsv]` y `read[List[Play] in Dsv]` (algunos en sus padres, `Dsv1` y
++       `Dsv2`). También tiene `Format`, `Error`, `Redesignation`, y las clases de tipos de
++       análisis directo `Parsable` y `Field`.
+
+@ 0 4 0 1337022ad5e3f6de18db43ece8981125
++       Los decodificadores de celdas primitivos no abortan ante una celda errónea: lanzan un
++       `Dsv.Error` y continúan con un valor provisional, de modo que cuando una fila se
++       decodifica en un producto con una estrategia acumulativa (`Validate[…, CellRef]`) se
++       informa de cada celda mal formada o ausente, cada una con su foco en el `CellRef` de su
++       columna, y no solo de la primera.
+
+@ 0 2 0 18f53452490d48f5003f1fee965f9ad2
++       Con `dynamicAccess.dynamicDsv` importado y un `Dsv.Redesignation` en el ámbito, una celda
++       es un miembro de la fila: `row.age[Int]` (véase `#selectDynamic`).
+
+% 0 1 0 0d4b17993e3918591a071121ce79cbb8
+
+% 1 1 0 067dc4c3cfd1cbd207b592932154fce8
+
+% 1 1 0 0d33899b04fc59110e9cf1c241ac3412
+
+% 0 1 0 0fd4d7af4eca3bd91377666fbf8322e0
+
+@ 0 11 0 0b3d54ef809382fe0fdefd30024faa6e
++   entry .apply   crea una fila a partir de sus celdas, dadas como argumentos o como `Iterable[Text]`
++       `Dsv(t"a", t"b")` y `Dsv(cells)` crean una fila sin nombres de columnas. Una fila con
++       nombres de columnas procede del análisis con un formato con cabecera, o del constructor
++       de la clase case, `Dsv(data, columns)`.
++   entry .optionalDecodable   decodifica un campo `Optional`: una celda ausente es `Unset`, y una presente la decodifica el tipo interior
++       Una fila sin celdas (una fila posicional corta, o una columna de cabecera que falta en la
++       fila) se decodifica como `Unset`; una celda presente, aunque esté vacía, la decodifica el
++       `Decodable in Dsv` del tipo interior. Ambas respuestas son políticas que se eligen en
++       `optionalityOptions`: un `Decodable.Absence in Dsv` estricto lanza
++       `Dsv.Error.Reason.Absent` ante una celda ausente, y un `Decodable.Fault in Dsv` permisivo
++       lee como `Unset` una celda que el decodificador interior rechaza. Los valores por
++       defecto son ausencia permisiva y fallos estrictos. Necesita un `Dsv.Format` y una
+
+% 0 1 0 0ddfd5beb3264f8b1150c937d6a9ccf6
+
+@ 0 22 0 1d6dcb503f17c6161591ee720e86fb35
++   entry .encoder   escribe cualquier tipo que sea `Encodable in Text` como fila de una celda
++   entry .int   decodifica la primera celda de una fila como `Int`, lanzando `Dsv.Error` y continuando si no puede
++       Como todo decodificador de celdas primitivo: una celda ausente lanza
++       `Dsv.Error.Reason.Absent` y una que no se puede analizar
++       `Dsv.Error.Reason.Unparseable(cell, t"Int")`, cada una mediante `raise`, de modo que una
++       estrategia acumulativa recoge el error y la decodificación sigue con `0`. Necesita un
++       `Dsv.Format` y una `Tactic[Dsv.Error]`.
++   entry .long   decodifica la primera celda de una fila como `Long`, lanzando `Dsv.Error` y continuando si no puede
++   entry .double   decodifica la primera celda de una fila como `Double`, lanzando `Dsv.Error` y continuando si no puede
++   entry .float   decodifica la primera celda de una fila como `Float`, lanzando `Dsv.Error` y continuando si no puede
++   entry .boolean   decodifica la primera celda de una fila como `Boolean`: solo se aceptan `true` y `false`
++       Cualquier otro texto, incluidos `TRUE` o `1`, lanza `Dsv.Error.Reason.Unparseable` y la
++       decodificación continúa con `false`.
++   entry .text   decodifica la primera celda de una fila como `Text`; lanza `Dsv.Error` solo si falta la celda
++   entry .string   decodifica la primera celda de una fila como `String`; lanza `Dsv.Error` solo si falta la celda
++   entry .decodableDerivation   deriva un decodificador de filas para cualquier tipo producto, que toma por turno las celdas de sus campos
++       Cada campo toma tantas celdas como indica su tramo (`Spannable`): una para un campo que
++       es `Decodable in Text`, y la suma de los tramos de sus propios campos para una clase
++       case anidada. Con un formato con cabecera, cada campo se busca en cambio por la columna
++       de su mismo nombre, escrito exactamente como el campo, y un campo cuya columna falta
++       recibe una fila vacía, de modo que un campo `Optional` es `Unset`. Con una estrategia
++       acumulativa cada campo se decodifica dentro de un `focus(CellRef(…))`, y el registro solo
++       se construye cuando todos los campos se han decodificado sin errores.
+
+% 2 1 0 00488595a3a51ca40884ff78214c1662
+
+% 3 1 0 1b846d63d0a3c37a0918cdac167cf329
+
+% 4 1 0 01c029e0a41c687d052761c964781278
+
+% 5 1 0 06d957eef4eebc2f179d276d874c953a
+
+% 7 1 0 01802095551cf21700b11848593c8d8a
+
+% 3 1 0 191e8d1fe301741a04bb0961fc6afae6
+
+% 0 1 0 15e110ebd34f929f014bf88d99401893
+
+% 1 1 0 198bcec437302afb148e60e19f0841ff
+
+@ 0 20 0 12c656c981dfcb9908152ea15da00c1f
++   entry .encodableDerivation   deriva un codificador de filas para cualquier tipo producto, que concatena las celdas de sus campos
++       Una clase case anidada aporta sus propias celdas en su lugar, así que la codificación es
++       el reflejo de la lectura posicional de `.decodableDerivation`.
++   entry .showable   representa una fila como una línea de texto delimitado en el `Dsv.Format` del ámbito
++       Las celdas se unen con el delimitador del formato. Una celda solo se entrecomilla si
++       contiene el carácter de comillas, el delimitador, un salto de línea o un retorno de
++       carro, y unas comillas dentro de una celda entrecomillada se duplican.
++   entry .aggregableDerived   con `codecs.derived`, lee `Play in Dsv` mediante el decodificador de filas aunque `Play` tenga un `Dsv.Parsable`
++       Seleccionado con `import codecs.derived`, tiene prioridad sobre el camino directo para un
++       tipo que tiene un `Dsv.Parsable` en el ámbito, de modo que un programa puede comparar
++       ambos, o mantener el decodificador de filas acumulativo para una lectura.
++   entry .aggregableStrict   con `codecs.strict`, lee `Play in Dsv` directamente, mediante el `Dsv.Parsable` del ámbito
++       Va emparejado con `Dsv1#aggregableStrictFailure`: con `import codecs.strict` un tipo con
++       un `Dsv.Parsable` se analiza directamente, y uno sin él es un error de compilación que
++       nombra el tipo, en lugar de recurrir al decodificador de filas.
++   entry .aggregableParsedList   `read[List[Play] in Dsv]`: analiza cada fila directamente, mediante el `Dsv.Parsable` de `Play`
++       No hay contrapartida con decodificador de filas para una hoja entera, así que esta
++       lectura es directa en todos los modos de `codecs`, y necesita un `Dsv.Parsable` para el
++       tipo de los elementos (que `codecs.direct` deriva para cualquier producto). Necesita un
++       `Dsv.Format`, una `Tactic[Dsv.Error]` y un `Buffering`.
+
+% 2 1 0 02dd1ffe816e148e0c6e67d925d3e0d2
+
+% 3 1 0 02f0534548654ae30438d2403850b721
+
+% 4 1 0 148cd4ca52d52fae17f73ec1a0495ac5
+
+% 5 1 0 152f39525e327d1a145dff0260a517e9
+
+% 0 1 0 14e82097fcd5855d1bde4f5045b26a28
+
+% 0 1 0 125b6790ea8071fb0fda2447dc3e0ac7
+
+% 0 1 0 000aa57660abbcc30ef7a39a20048446
+
+% 1 1 0 1b6cf42032db80f0071a1371f08424bc
+
+@ 0 1 0 026f971a1005b2e60487db67fe405655
++   entry .Parsing   el padre común de `Dsv.Parsable` y `Dsv.Field`: lee un valor de un `DsvReader`
+
+% 1 1 0 0d565a598aa815771904323f722eb84f
+
+@ 0 5 0 00121d9ed0eaa4c007ae4cfd9f449540
++         Un `distillate.Parsable` cuyo `#Transport` es `Dsv` y cuyo `#Reader` es un
++         `DsvReader`. Una instancia ocupa `#width` celdas de la fila actual y las lee, desde un
++         desplazamiento dado, con `#parse`. Ni `Parsable` ni `Field` es subtipo del otro:
++         `Parsable` es la superficie de adhesión voluntaria que cambia una lectura al camino
++         directo, y `Field` la operativa que resuelve todo tipo de campo.
+
+% 1 1 0 1b6fea3da392583c1acea222db5f1bfe
+
+@ 0 5 0 030c9a6b98f83632090390b353c6dd43
++     entry #Transport   el formato de transporte: `Dsv`
++     entry #Reader   el lector de tokens del que analizan las instancias: `DsvReader`
++     entry #width   el número de celdas que ocupa el valor en una fila posicional; `1` salvo que se sobrescriba
++     entry #parse   lee el valor de la fila actual de un `DsvReader`, desde un desplazamiento de celdas (`0` por defecto)
++   entry .Parsable2   el lugar de baja prioridad de `Dsv.Parsable.generated`, la derivación de `codecs.direct`
+
+% 1 1 0 043f73f10d7c484c13cc078f3c222dc7
+
+% 2 1 0 1add02e9fbc850f11d02230e690d0442
+
+@ 0 7 0 0f7bbcac27d705591ba5576f66831a22
++         El padre del objeto compañero de `Dsv.Parsable`, que contiene el given que activa
++         `codecs.direct`. No es para uso directo.
++     entry #generated   con `codecs.direct`, un `Dsv.Parsable` derivado para todo tipo producto
++         Un tipo con su propio `Dsv.Parsable` usa ese en su lugar. La derivación lee cada campo
++         mediante `Dsv.Field`, así que un producto con un campo que no es `Decodable in Text` (o
++         un producto de tales campos) no se deriva, en lugar de recurrir a una alternativa.
++   entry .Parsable   la clase de tipos de adhesión voluntaria para analizar un tipo directamente desde la fuente, sin un `Dsv` por fila
+
+% 1 1 0 130c991831fbd6f00042c6667a7cd691
+
+@ 0 4 0 1f4db59a85ed474f1c5cfd3c1e4ad41a
++         Un tipo que es `Dsv.Parsable` lo leen `read[Play in Dsv]`, `read[List[Play] in Dsv]` y
++         `rowsOf[Play]` directamente del búfer de filas reutilizable del analizador, con sus
++         celdas direccionadas en su sitio, de modo que no se construye ningún valor de fila `Dsv`
++         para cada registro. Declarar uno cambia el camino; un tipo sin él mantiene el
++         decodificador de filas, salvo que se importe `codecs.direct`.
+
+% 2 1 0 19bae06f36a5d40712d700157cd6ef7a
+
+% 3 1 0 0820bb5d8dde7b6f032620c50756ffba
+
+% 4 1 0 052eae230db21f7f0cf8cd9a01d0da29
+
+% 1 1 0 0f4120b9c78c1c640477f4b6e8c52dba
+
+% 0 1 0 0ee076335a2ce1b50dbecfd94e91347a
+
+% 0 1 0 1a420fa516684915025cd96bcf71b983
+
+% 0 1 0 0a6296f1de4ba6b11f6a21b4a8789f79
+
+% 0 1 0 1363b44f2d71f53c10ffde66e7f57b3b
+
+% 0 1 0 0875568724b97aa30ec5c29c342a5a3f
+
+% 1 1 0 0a0c128ae8398bdf1afce9baa8b501cd
+
+@ 0 3 0 10f04dfa4cb680cf037499a0a7060920
++         Los campos se emparejan por encabezado con un formato con cabecera, y por posición en
++         caso contrario, y un campo `Optional` al que la fila no llega es `Unset`. Un análisis
++         directo falla enseguida: no acumula cada celda errónea como hace el decodificador de
++         filas.
+
+@ 0 1 0 12465fea0188fb3f0269aa700fd8ff2d
++         El objeto compañero hereda la derivación de `codecs.direct`, `generated`, de su padre
+
+% 0 1 0 14ddc79dbc7d651c1d334e686df80997
+
+% 0 1 0 0b6b4643cf11d3fd0ffddf9f1ceec9d3
+
+% 1 1 0 153a1942a39a5aa60126f8fb8702b960
+
+@ 0 6 0 04d8754eabd7b8ca01fe8e282d015ab3
++     entry .derived   deriva un `Dsv.Parsable` para un tipo producto, leyendo cada campo mediante su `Dsv.Field`
++         `given Play is Dsv.Parsable = Dsv.Parsable.derived`, o `derives Dsv.Parsable`. Cada
++         campo debe tener un `Dsv.Field`, que tienen todo tipo `Decodable in Text`, todo
++         `Optional` de uno de ellos, y todo producto de tales campos.
++     entry .fromField   crea un `Dsv.Parsable` a partir de un `Dsv.Field`, conservando su anchura
++   entry .Field   cómo lee sus celdas de un `DsvReader` un campo de un producto analizado directamente
+
+% 1 1 0 197c710d8baca0681b6130ac05f958fd
+
+@ 0 17 0 1e493acbd351f5bb1da3a92a7e1a6b09
++         La clase de tipos que convoca la derivación de `Dsv.Parsable` para cada campo. Siempre
++         se resuelve para un tipo que es `Decodable in Text`, que lee una celda; un producto
++         anidado es un `Field` de la anchura sumada de sus propios campos (mediante
++         `Dsv.ParsableDerivation`); y un campo `Optional` también lo es. Una celda ausente aborta
++         con `Dsv.Error.Reason.Absent` mediante la táctica del lector, salvo donde `.optional` lo
++         intercepta.
++     entry .decodable   cualquier tipo que sea `Decodable in Text`, leído de una celda
++     entry .optional   un campo `Optional`: `Unset` ante una celda ausente, según dicten las políticas de `optionalityOptions`
++         Como `Dsv.optionalDecodable` para el decodificador de filas: una celda ausente es
++         `Unset` salvo que la ausencia sea estricta, y una celda que el campo interior rechaza
++         lanza un error salvo que los fallos sean permisivos, en cuyo caso es `Unset`.
++     entry .parseField   llama al `#parse` de un campo sobre un lector guardado como referencia neutra; para código generado
++         No es para uso directo: la lambda de análisis derivada no puede recibir la capacidad del
++         lector como parámetro, así que la lleva como `AnyRef` y llama a través de este método.
++     entry .fieldColumn   el índice de columna de un encabezado sobre un lector guardado como referencia neutra; para código generado
++         No es para uso directo. `Unset` en modo posicional.
++   entry .ParsableDerivation   la derivación de productos de `Dsv.Field`, que hay detrás de `Dsv.Parsable.derived`
+
+% 1 1 0 0317bd52bdd4192d10b6aa4591875375
+
+% 2 1 0 06ad95e4f518f6db0cd3d358817bdfe6
+
+@ 0 8 0 0482e9c34516771b116b8528099f4028
++         No es para uso directo: la llama `Dsv.Parsable.derived`. Con un formato con cabecera,
++         un campo se busca por el nombre de su columna; en caso contrario, cada campo lee su
++         tramo a partir de un desplazamiento acumulado.
++     entry .DsvProductParser   el `Dsv.Field` que produce una derivación: una anchura y una función de análisis
++       entry #width   el tramo total de los campos del producto
++       entry #parse   lee el producto de la fila actual, desde un desplazamiento de celdas
++     entry .conjunction   la macro que deriva un `Dsv.Field` para un producto
++   entry .DecodableDerivation   la derivación de productos de `Decodable in Dsv`, que hay detrás de `Dsv.decodableDerivation`
+
+% 1 1 0 1a6fa2c1341de2d410c68e7a3db604b7
+
+% 2 1 0 114973f0417b16e71f167160dcec98fc
+
+@ 0 10 0 16efdf4e1997a3e10b120fc094d4086e
++         No es para uso directo: la llama el given `Dsv.decodableDerivation`. Recorre los campos
++         una vez, decodificando cada uno a partir de su tramo (o, con cabecera, de su columna con
++         nombre), y con una estrategia acumulativa pone el foco de cada uno en un `CellRef` y
++         solo construye el registro cuando todos los campos han tenido éxito.
++     entry .DsvProductDecoder   el `Decodable in Dsv` que produce una derivación, que envuelve su función de decodificación
++       entry #Self   el tipo producto decodificado
++       entry #Form   la forma desde la que se decodifica: `Dsv`
++       entry #decoded   decodifica una fila al producto
++     entry .conjunction   la macro que deriva un decodificador de filas para un producto
++   entry .EncodableDerivation   la derivación de productos de `Encodable in Dsv`, que hay detrás de `Dsv.encodableDerivation`
+
+% 1 1 0 021f318b6341b87f044301015fadfcc2
+
+% 2 1 0 00d3e8ff363eac591fba724d3ad4aa23
+
+@ 0 3 0 07ca8c2f086a7852097d9798f2f303c9
++         No es para uso directo: la llama el given `Dsv.encodableDerivation`.
++     entry .conjunction   la macro que deriva un codificador de filas para un producto, concatenando las celdas de sus campos
++   entry .Error   se lanza cuando un texto delimitado no se puede analizar, o una fila no se puede decodificar
+
+% 1 1 0 0eaef628a277e2dc16d98a64493b878b
+
+@ 0 8 0 093cfd6ca3fea84d0f92e17ed6fb5545
++         Error `↯/s.83.1`, con un subcódigo que procede de su `#reason`. Un fallo de **análisis**,
++         unas comillas encontradas después del comienzo de una celda sin entrecomillar, dice
++         _could not parse row data at row `row`, column `column` because a quote was found after
++         the start of a cell_, y lleva la fila y la columna, contadas desde 1, y el
++         desplazamiento en caracteres dentro de la entrada. Un fallo de **decodificación** dice
++         _could not decode the cell because the cell was absent_, o _because the value `value`
++         could not be parsed as `expected`_; su posición no está en el propio error (`#row` y
++         `#column` son `Prim`, `#offset` es `0`) sino en el foco `CellRef` que registra con él
++         una estrategia acumulativa.
+
+% 2 1 0 033d2bae05b5636f121c39a5c0865243
+
+% 3 1 0 0cd2971282f7001f1a5e4790c8900af1
+
+% 4 1 0 0673b0a7296cf7b4033d7ac8f3503688
+
+% 0 1 0 1beda05b355ecc71182945a9c5f0608f
+
+% 0 1 0 0deca616a9f105d20ed9bf8e6a0e8f16
+
+% 1 1 0 10db13c5b24fcaf801a0b490c4f1e01c
+
+@ 0 7 0 1a101b7e8479d11e19383548a7c0bf14
++         Lo lanzan, mediante la `Tactic[Dsv.Error]` del ámbito, `read[Sheet]`,
++         `read[Play in Dsv]`, `rows`, `rowsOf` y `Dsv#as`. `Reason` es el enum `MisplacedQuote`
++         (subcódigo 1, un fallo de análisis), `Absent` (2, una celda que falta en una fila corta
++         o una columna de cabecera que la fila no tiene) y `Unparseable(value, expected)` (3,
++         una celda que su decodificador rechazó, con el texto de la celda y el nombre del tipo
++         esperado).
++     entry .communicable   representa un `Dsv.Error.Reason` como la cláusula con la que termina el mensaje del error
++     entry .Reason   por qué fallaron los datos delimitados: `MisplacedQuote`, `Absent` o `Unparseable(value, expected)`
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 16 0 049a46177a45dd0d1080474b8da42a2c
++           `MisplacedQuote` (subcódigo 1) es un fallo de análisis: un carácter de comillas
++           encontrado después del comienzo de una celda sin entrecomillar. `Absent` (2) es un
++           fallo de decodificación de una celda que la fila no tiene.
++           `Unparseable(value, expected)` (3) es un fallo de decodificación de una celda cuyo
++           texto, `value`, no pudo leerse como el tipo que nombra `expected`.
++       entry #number   el subcódigo del motivo, que sigue al número de error 364
++     entry .apply   crea un error de la fase de decodificación a partir de un formato y un motivo, sin posición
++         La posición se rellena con valores provisionales (`Prim`, `Prim`, `0`), ya que la
++         posición de un decodificador la lleva el `CellRef` en el que tiene puesto el foco.
++     entry #format   el `Dsv.Format` con que se leyeron los datos
++     entry #reason   el `Dsv.Error.Reason` del fallo
++     entry #row   la fila, contada desde 1, de un fallo de análisis; `Prim` para un fallo de decodificación
++     entry #column   la columna, contada desde 1, de un fallo de análisis; `Prim` para un fallo de decodificación
++     entry #offset   el desplazamiento en caracteres (unidades de código UTF-16) de un fallo de análisis dentro del texto decodificado; `0` para un fallo de decodificación
++         No se dispone de un desplazamiento en bytes: el analizador lee texto que ya se ha
++         decodificado a partir de bytes.
++   entry .Format   las convenciones de un formato delimitado: fila de cabecera, delimitador, caracteres de comillas y de escape
+
+% 1 1 0 09c8b8fa0679f57902b05ae786bd84d1
+
+@ 0 5 0 0a0b9daa9ce0269b1957edb54c6531dc
++         Un `Dsv.Format` indica si la primera fila de los datos es una cabecera (`#header`), qué
++         carácter separa las celdas (`#delimiter`), cuál entrecomilla una celda (`#quote`) y cuál
++         escapa unas comillas (`#escape`). Sin uno en el ámbito, nada se analiza ni se
++         representa; los estándar están en `dsvFormats`, y se importan por nombre, y cualquier
++         otro es un valor ligado como given local:
+
+% 2 1 0 1386790ec791d4a71506647e55ff3cff
+
+% 3 1 0 1366d5230773448c0f19618bb7d7c73d
+
+% 1 1 0 10c75085845bdbdf08b47c1db265ea53
+
+% 0 1 0 142599fd82657df1155bea3a07d75a89
+
+% 0 1 0 1ebbf2d116d2f8d31903e7360e28fefd
+
+% 1 1 0 1e8529da1a7749d2125c82fe9dcb94be
+
+@ 0 4 0 06030242dba683e41a95a656300a0ee7
++         Con un formato con cabecera, `read[Sheet]` toma la primera fila como los nombres de las
++         columnas, de modo que las celdas de cada fila pueden direccionarse por nombre y un
++         decodificador derivado empareja campos con columnas por nombre. Tanto el analizador
++         como el representador escapan unas comillas dentro de una celda entrecomillada
++         duplicándolas, que es la convención que usan todos los formatos estándar.
+
+% 0 1 0 1508125cf7fef7f61d8319dcd87dbc34
+
+@ 0 9 0 05f96a31b55a3bf90e96bf37f82813d4
++     entry #header   si la primera fila nombra las columnas
++     entry #delimiter   el carácter entre celdas: `,`, un tabulador o un espacio en los formatos estándar
++     entry #quote   el carácter que encierra una celda que contiene el delimitador, unas comillas o un salto de línea
++     entry #escape   el carácter que escapa unas comillas dentro de una celda entrecomillada; el mismo que `#quote` en todos los formatos estándar
++     entry #Delimiter   el delimitador como identificador estable, para usarlo en patrones
++     entry #Quote   el carácter de comillas como identificador estable, para usarlo en patrones
++     entry #Escape   el carácter de escape como identificador estable, para usarlo en patrones
++     entry #doublingEscapes   si unas comillas se escapan duplicándolas: si `#escape` es `#quote`
++   entry .Redesignation   cómo se hace corresponder un nombre de miembro en camel case con un nombre de cabecera, para el acceso dinámico a las celdas de una fila
+
+% 1 1 0 11cd38295d1d015c117110509dcb50ec
+
+@ 0 5 0 192670bbe17c5d8d0878b9f66b75c786
++         Un trait de un solo método: `#transform` hace corresponder un nombre de Scala como
++         `targetPerson` con el texto de cabecera con el que debe coincidir, como
++         `Target Person`. `Dsv#selectDynamic` necesita uno en el ámbito, de modo que
++         `row.targetPerson[Text]` lee la columna `Target Person`. Los estándar están en
++         `dsvRedesignations`, y se importan por nombre; no hay ninguno por defecto, y una lambda
++         de `Text` a `Text` es uno.
+
+% 2 1 0 12019cebb5fdea621250e3893b73b001
+
+% 3 1 0 1036662d75223c0419881d80edb0792a
+
+% 0 1 0 08a16e738ce0b07f01f65c41faa924b3
+
+% 0 1 0 0ec4837b87acc86700c2d1b88ea599ba
+
+% 1 1 0 0ba0b79a0ca1c2eb0d87a700aeea01fb
+
+@ 0 2 0 0d730f68a43a319c165c12d34afa24d6
++         Una redesignación solo se aplica al acceso dinámico a miembros: un decodificador
++         derivado empareja cada campo con la columna que tiene exactamente el nombre del campo.
+
+% 0 1 0 16788863de4161b602ada6917fe546f9
+
+@ 0 6 0 19631abb3598dca9189703a34a565806
++     entry #transform   hace corresponder un nombre de miembro con el texto de cabecera con el que debe coincidir
++   entry #data   las celdas de la fila, en orden
++   entry #columns   el índice de cada columna por su nombre, cuando los datos tenían cabecera; `Unset` en caso contrario
++   entry #as   decodifica la fila como un tipo que es `Decodable in Dsv`, como cualquier clase case
++       Necesita una `Tactic[Dsv.Error]`, y acumula mediante el `Foci[CellRef]` del ámbito, que
++       es el predeterminado salvo que una estrategia acumulativa como `Validate[…, CellRef]`
++       proporcione uno.
+
+% 2 1 0 05970c840df65a1211fdaa027e91b053
+
+% 3 1 0 16044d9e5b8964131425d98c26c7a592
+
+% 4 1 0 1e7ccc08fd641dd715b50b689a382515
+
+% 5 1 0 1f7e6312b5e3ef060bb5a0e23562ec96
+
+% 7 1 0 0d8adab957b7c5331fe023d56149815d
+
+% 0 1 0 13e8407d633ef8f1026090b05ae905df
+
+% 1 1 0 17c2ea0fb67613db15d90aa25470a3c0
+
+@ 0 9 0 0785dcaf6d37236a0141d5cb9fe76379
++   entry #header   los nombres de las columnas en orden, cuando la fila los tiene; `Unset` en caso contrario
++   entry #apply   lee la celda de una columna con nombre, decodificada a cualquier tipo `Decodable in Text`
++       `row[Int](t"age")` es `Unset` si la fila no tiene nombres de columnas o no tiene esa
++       columna, y en caso contrario es la celda decodificada por el `Decodable in Text` del
++       tipo, que puede lanzar un error mediante su propia táctica.
++   entry #selectDynamic   lee la celda de una columna como miembro, `row.age[Int]`, con el acceso dinámico activado
++       Necesita `Dsv is Dynamical` (`import dynamicAccess.dynamicDsv`, o un bloque
++       `dynamically[Dsv]:`) y un `Dsv.Redesignation`, que hace corresponder el nombre de
++       miembro con el nombre de la columna. El resultado es `Optional`, `Unset` cuando la fila
++       no tiene esa columna.
+
+% 2 1 0 17e458d5e1d65e921c0c121aa9947411
+
+% 3 1 0 11bafae62ee783b7044b8a376b273ae7
+
+% 4 1 0 0fbce4b5001b9e9f19f94b9b161eedfd
+
+% 5 1 0 0ac6fe0c9d69b88800e44575fe6eb673
+
+% 6 1 0 0fa50f3806b9226b18681f9ab43bce81
+
+% 7 1 0 156620f48034ad181908abb65e9722d3
+
+% 0 1 0 0df91fec60d1f5f70c49b13e37b33673
+
+% 0 1 0 14235b01f51171170bb5112bf0b6f865
+
+% 1 1 0 0526d609e51556ff059d1e8427f4a8b3
+
+@ 0 1 0 08f02878ccbc0ad90ad7cda2def8abbe
++ entry .Dsv1   los givens de prioridad intermedia del objeto compañero de `Dsv`: la lectura directa de `Play in Dsv` y el fallo de `codecs.strict`
+
+% 1 1 0 0ce44a0378205b25195ad7cea083ed24
+
+% 2 1 0 119bf8f3c54ff5b20d8fbbbb4f3e5a75
+
+@ 0 10 0 1ccf62aefd16c89e0a3590c8b85ec4e1
++       Un padre del objeto compañero de `Dsv`, de modo que sus givens están en el ámbito
++       implícito de `Dsv` con menor prioridad que los del propio objeto compañero. No se hace
++       referencia a él directamente.
++   entry #aggregableParsed   `read[Play in Dsv]` mediante el `Dsv.Parsable` de `Play`: la primera fila, analizada directamente
++       Tiene prioridad sobre el decodificador de filas de `Dsv2`, así que declarar un
++       `Dsv.Parsable` cambia el camino. Una entrada sin ninguna fila de datos lanza
++       `Dsv.Error.Reason.Absent`. Necesita un `Dsv.Format`, una `Tactic[Dsv.Error]` y un
++       `Buffering`.
++   entry #aggregableStrictFailure   con `codecs.strict`, un error de compilación para una lectura de `Play in Dsv` sin códec directo
++       Un given inline que nombra el tipo en el error, lanzado en el punto de uso después de la
++       selección, de modo que `codecs.strict` informa de un tipo que el camino directo no puede
++       leer en lugar de dejar que lo tome el decodificador de filas.
+
+@ 0 1 0 18510e87faae352a102428eab697a273
++ entry .Dsv2   los givens de menor prioridad del objeto compañero de `Dsv`: la alternativa de texto, las escrituras de un solo registro y la lectura con el decodificador de filas
+
+% 1 1 0 1fa65211ffde180e119459a123f0f944
+
+% 2 1 0 1aa5b644b00ed99618c1007834e9e150
+
+@ 0 6 0 0118444651c330ed14fc3fe8298bf5c0
++       Un padre del objeto compañero de `Dsv`, por debajo de `Dsv1`, que contiene las
++       instancias que cualquier tipo toma solo cuando no se aplica nada más específico. No se
++       hace referencia a él directamente.
++   entry #decoder   cualquier tipo `Decodable in Text`, decodificado de la primera celda de una fila
++       Está por debajo de los decodificadores de celdas primitivos, que acumulan errores, así
++       que `Int` y los demás usan esos; este aborta ante una celda errónea mediante el
++       decodificador de texto.
++   entry #encodableOver   `play.in[Text over Dsv]`: un valor como un registro de texto en el `Dsv.Format` del ámbito
+
+% 1 1 0 07ae3233eddc7483030a25f8778bf48f
+
+% 2 1 0 0eb63a6b29751e2718c8cfd9d8f1d9ef
+
+% 3 1 0 015a458bf73e25b60ed648a53a043704
+
+% 2 1 0 140bb1e6d6131e840715f8716d009e9f
+
+% 0 1 0 0b4f7e87ead7069f16ba6279e3e1aa44
+
+% 1 1 0 0dff37059cb07f470f9edb7ba5778ed8
+
+@ 0 5 0 122d108e3a2814bd1cbe35b183bb6b88
++   entry #encodableOverData   `play.in[Data over Dsv]`: un valor como un registro, codificado como bytes en la `Codepage` del ámbito
++   entry #aggregableIn   `read[Play in Dsv]` mediante el decodificador de filas: la primera fila, decodificada con el `Decodable in Dsv` de `Play`
++       El camino para un tipo sin `Dsv.Parsable`, y para cualquier tipo con `codecs.derived`.
++       Al leer de un flujo solo se analiza hasta donde llega el primer registro. Necesita un
++       `Dsv.Format`, una `Tactic[Dsv.Error]` y un `Buffering`.
+
+@ 0 1 0 13536bc052ff43501e350a2c50457b3c
++ entry .Sheet   datos delimitados guardados en memoria: todas las filas, con el formato y los nombres de columnas con que se leyeron
+
+% 1 1 0 0f6d2863cc87fc751363ac7b1d72d0ed
+
+@ 0 5 0 1e0f4dff69edede91c5631f7aae92667
++       Un `Sheet` es la forma materializada de los datos delimitados: sus `#rows` son un array
++       de filas `Dsv`, que se puede recorrer de nuevo, indexar y comparar con poco coste, con el
++       `#format` con que se analizaron y las `#columns` que nombra una fila de cabecera, cuando
++       la había. El texto se lee como hoja con `read[Sheet]` bajo un `Dsv.Format`, y una hoja
++       se vuelve a representar como texto con `show` bajo uno; una lista de valores
++       codificables se convierte en hoja con `dsv`.
+
+% 2 1 0 1158a1154d8f0d801308bcfbfed42de3
+
+% 3 1 0 1c043fa19308c0f31f941d86007a2c3b
+
+% 4 1 0 0f107fca50d42ed5128cc217bc40a733
+
+% 5 1 0 1fee0d22ec33a8aa0da8565ae0c7638e
+
+% 7 1 0 00dee516bc40d1231ca03d8c87fdd3df
+
+% 2 1 0 15c1a2751ab5a203004df30e4a8d19bf
+
+% 0 1 0 08080e3360115f3b1b0bd7f74c746ad0
+
+% 0 1 0 19ee054e69d3539a1cc2d6d5c96a352d
+
+% 0 1 0 08b0e42f537763cf00bac963357c57c3
+
+% 1 1 0 045cd0790bc49a1b0808a947ca62a4ab
+
+@ 0 3 0 1f1ab31e0637677e141ec848e6de6a46
++       El formato decide cómo se escriben las mismas filas, entrecomillando una celda que
++       contiene su delimitador: en CSV la coma necesita comillas, en TSV nada las necesita, y
++       los valores separados por espacios entrecomillan el espacio:
+
+% 2 1 0 0defa960a51dce610569b7ccb3872c5d
+
+% 0 1 0 01ab4f889598d811064f397710341cb9
+
+% 1 1 0 07e75f02f257fec61b5a384ef8447304
+
+% 2 1 0 15243dae0c5a169f058356bfbae2df1b
+
+% 3 1 0 1862135d2616f7991ffb5e227672322b
+
+% 0 1 0 034a5b5220d489590ed65b54edfcfd7f
+
+% 0 1 0 03b4caee985343971c47c291192576c1
+
+% 1 1 0 1f4512e25051fd1111a773e6a7679fbb
+
+% 2 1 0 08e62befa4060add1c9c57603df77a65
+
+% 0 1 0 0d167756f2131c341a39913ce51e1b4b
+
+% 0 1 0 1a784c8c157e8cd10d6b9fc0ef00df2b
+
+% 0 1 0 177be68b0bac4162093bae7f116dafad
+
+% 1 1 0 05f10c1a154d3d54131e9e0f274ca813
+
+% 2 1 0 021a4f48664b9d5913bbee0bae4642b6
+
+% 0 1 0 0731817d8d62d9a518b6f52d2f0e1911
+
+% 0 1 0 1ce4df4d66962429177cc169f899ade3
+
+% 1 1 0 095601b44a52bd211e55bc3b635febd1
+
+% 2 1 0 16ec5372c633881a165f61c385fb5ac1
+
+@ 0 5 0 18de68e0232c49f70a6c45c8f2265d52
++       Un fichero demasiado grande para tenerlo en memoria no necesita hoja: `rows` sobre un
++       flujo de caracteres produce las filas de una en una con el mismo analizador, y `rowsOf`
++       analiza cada una directamente a un tipo. Una hoja también es `Tabular`, así que
++       `escritoire` la representa como una tabla con una columna por cada encabezado (o por
++       cada posición), y es el cuerpo de una respuesta HTTP, enviado como `text/csv`, o como
++       `text/tab-separated-values` cuando el delimitador de su formato es un tabulador.
+
+% 0 1 0 1f87c5b90c2233991edaef1e4c4457fe
+
+% 1 1 0 0153037c83c75fea08b2a437adec6ca0
+
+% 0 1 0 1fa04fb8bf3302ff028eba98d45a2b21
+
+@ 0 31 0 054fcf3c4ce0817016dee5292d8bc574
++   entry .aggregable   lee texto como un `Sheet`, en el `Dsv.Format` del ámbito
++       El given que hay detrás de `read[Sheet]`. Las celdas entrecomilladas pueden contener el
++       delimitador, saltos de línea y comillas duplicadas, y pueden extenderse sobre varios
++       fragmentos de un flujo. Con un formato con cabecera, la primera fila se toma como los
++       nombres de las columnas: no es una de las `#rows`, el `Dsv#columns` de cada fila asocia
++       los nombres con índices, y las `#columns` de la hoja los enumeran. Necesita una
++       `Tactic[Dsv.Error]`, mediante la cual unas comillas encontradas después del comienzo de
++       una celda sin entrecomillar se lanzan como `Dsv.Error.Reason.MisplacedQuote`.
++   entry .showable   representa una hoja como texto delimitado en el `Dsv.Format` del ámbito, una línea por fila
++       Las filas se unen con un salto de línea, sin ninguno al final; cada fila se representa
++       como la representa `Dsv.showable`, entrecomillando solo las celdas que lo necesitan. No
++       se escribe ninguna cabecera: las `#columns` de la hoja no se representan.
++   entry .streamable   representa una hoja como un flujo de texto, una fila y un salto de línea por fragmento
++       Necesita un `Dsv.Format`. Es lo que permite escribir una hoja en cualquier sumidero que
++       acepte un flujo de `Text`.
++   entry .inspectable   una representación de depuración del formato, los nombres de columnas y las celdas de una hoja, que no necesita formato
++       `Sheet(format:○ ╱ columns:○ ╱ rows:⟦⟨ t"hello" t"world" ⟩⟧)`: cada celda se inspecciona
++       como `Text`, de modo que una celda que contiene un delimitador no puede confundirse con
++       dos, como podría ocurrir en la representación de `show`.
++   entry .tabular   representa una hoja como una tabla de `escritoire`, con una columna por cada nombre de cabecera o por cada posición
++       Las columnas son las `#columns` de la hoja cuando las tiene y, si no, los números `1`,
++       `2`, … hasta la anchura de la primera fila; cada columna es plegable, y una celda que
++       falta en la fila queda vacía.
++   entry .abstractable   envía una hoja como cuerpo HTTP, como `text/csv`, o `text/tab-separated-values` si el delimitador es un tabulador
++       Necesita una `Codepage` para codificar el texto y un `Dsv.Format`; el tipo de medio se
++       elige según el delimitador del propio `#format` de la hoja.
++   entry #rows   las filas, en orden, cada una un `Dsv`; la fila de cabecera no está entre ellas
++   entry #format   el `Dsv.Format` con que se analizó la hoja, o `Unset` para una construida a mano
++   entry #columns   los nombres de las columnas de la fila de cabecera, en orden; `Unset` si los datos no tenían cabecera
++   entry #as   decodifica cada fila como un tipo que es `Decodable in Dsv`, en una `List`
++       Necesita una `Tactic[Dsv.Error]` y un `Foci[CellRef]`, que es el predeterminado salvo
++       que una estrategia acumulativa proporcione uno.
+
+@ 0 1 0 139cb53e270976ed1b38478d4e90cb89
++ entry .DsvReader   el lector de tokens del que lee un `Dsv.Parsable`: una fila cada vez, con sus celdas direccionadas en su sitio
+
+% 1 1 0 0759b9f730f47ddb1434a5f7f0f1884c
+
+@ 0 6 0 00585776e8727ac31cbf49b3d3a07757
++       Un `DsvReader` es la vista que tiene de la entrada el analizador directo: avanza una
++       fila de datos cada vez con `#nextRow` y expone las celdas de la fila actual, guardadas en
++       el búfer reutilizable del analizador, por índice con `#cell` y por encabezado con
++       `#column`, de modo que un `Dsv.Parsable` lee un registro sin que se construya ningún
++       valor de fila `Dsv`. Lleva el formato y la táctica de errores, así que las instancias no
++       necesitan ninguno de los dos. Es una capacidad exclusiva y con estado, propiedad de la
++       lectura mientras dura: nada de ella puede conservarse en el valor analizado.
+
+@ 0 4 0 0b024023b80c3de90f5d3dc9c62d63aa
++       Los lectores solo los crea el propio caesura, para `read[Play in Dsv]`,
++       `read[List[Play] in Dsv]` y `rowsOf`; un programa solo se encuentra con uno cuando
++       escribe a mano un `Dsv.Parsable` o un `Dsv.Field`, en lugar de derivarlo. La clase no se
++       exporta al paraguas `soundness`, y se llama `caesura.DsvReader`.
+
+% 1 1 0 1c136326d7284fa1122de92f5454350a
+
+% 0 1 0 0948d4ac44fa986c083dfd2441aa2599
+
+@ 0 5 0 1f6bb735002ebcde14a097017848dce4
++   entry #absent   aborta la lectura con `Dsv.Error.Reason.Absent`, para una celda que falta en la fila
++   entry #nextRow   avanza a la siguiente fila de datos, consumiendo antes la fila de cabecera con un formato con cabecera; `false` al final
++   entry #cells   el número de celdas de la fila actual
++   entry #cell   la celda en un índice de la fila actual, o `Unset` si la fila es más corta
++   entry #column   el índice de un encabezado, o `Unset` en modo posicional o para un encabezado desconocido
+
+@ 0 1 0 1931793dec8d672b03b2b55089f6fd6b
++ entry .CellRef   la posición de una celda que se está decodificando: el foco con el que se registra cada `Dsv.Error` acumulado
+
+% 1 1 0 1f30695f7697d1c40242750c0b64652b
+
+@ 0 4 0 165da680e10f171013cc9d643576cef2
++       Cuando una fila se decodifica en un producto con una estrategia acumulativa, cada campo
++       se decodifica dentro de un `focus(CellRef(…))`, de modo que cada error que recoge la
++       estrategia viene con el `CellRef` de la columna en que se encontró.
++       `Validate[…, CellRef]` lo nombra como tipo de foco, y su manejador lo lee como `prior`.
+
+% 2 1 0 0ff9dbbc069ecef503621642b15b52ab
+
+% 3 1 0 03c85318deb830c0034635b363d0a068
+
+% 4 1 0 0539795e4efb96620e18b4d97423bcaf
+
+% 0 1 0 0bf87a32fe9bce971e59d6ea8c2a0221
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 0 1 0 0ca2412ef5c2001f05dc584802c06612
+
+% 0 1 0 1298b5d778c7614201a05ffed7767653
+
+% 0 1 0 0da089cb780e8f1f06dba8037296c453
+
+% 0 1 0 116dc653125986ba021eae5756b2fd3b
+
+% 0 1 0 1004a4a8589cfa250475be3357ffdd9b
+
+% 0 1 0 10efafb5be8d28cd0cc24230709a1448
+
+% 0 1 0 08dca152ea5077170041192da16dc639
+
+% 0 1 0 15b235bf75e7d4bc04bb90ea6c30447e
+
+% 0 1 0 1c506d8dfe4cc7340ee3e690c0821d1d
+
+% 0 1 0 031ae2d0e8306390179a6a855f2a6122
+
+% 1 1 0 04fe748f63e5a01315ed451888f4c3f6
+
+% 0 1 0 041e1e20608328be0401aa07d9c07fba
+
+@ 0 2 0 165c1de9e975f6fa19b1e889c329d3cf
++   entry #ordinal   la fila de la celda; el decodificador derivado, que ve una sola fila, siempre registra `Prim`
++   entry #column   el nombre del campo que se está decodificando, que es el nombre de la columna cuando hay cabecera
+
+@ 0 1 0 01de81d3f7d339cf1219c8854b4f889a
++ entry .Spannable   cuántas celdas ocupa un tipo en una fila posicional, campo a campo
+
+% 1 1 0 01980d2628a59e971275facd80ffa23d
+
+@ 0 5 0 09c3b8a250168932144faee5d824c41b
++       Un `Spannable` da los tramos de los campos de un tipo: una celda para un campo que es
++       `Decodable in Text`, el tramo del tipo interior para un campo `Optional`, y el total de
++       los tramos de sus propios campos para una clase case anidada. El decodificador de filas
++       y el analizador directo lo usan para saber dónde empieza cada campo de una fila
++       posicional, sin descubrirlo durante el análisis. `Spannable.derived` da la instancia
++       para cualquier tipo producto.
+
+% 2 1 0 004667344b776ea1164d9f9bc26ce8b7
+
+% 3 1 0 1e28fe5f7086e83c001b2b75f9079b45
+
+% 2 1 0 093da510b04cedbd0acf2b1b15087cc2
+
+% 3 1 0 1369de36ee640c7d01b6fb9559bca1af
+
+% 0 1 0 07703d6ec2f03d1c07a217e99199b859
+
+% 1 1 0 0c4d52369903207507494f4bbbe3db85
+
+@ 0 8 0 1bbb74d9a0f844e9006ad0a2d72f1acc
++       La decodificación posicional es frágil por naturaleza: un campo añadido a una clase case
++       anidada desplaza todas las columnas que vienen después, sin que nada en el fichero lo
++       indique. Un formato con cabecera, que empareja campos con columnas por nombre, lo evita.
++   entry .conjunction   la macro que deriva los tramos de un producto, uno por campo
++   entry .decoder   un tramo de una celda, para cualquier tipo que sea `Decodable in Text`
++   entry .optional   un campo `Optional` ocupa exactamente tantas celdas como su tipo interior
++       Un valor presente ocupa el tramo interior, y uno ausente deja esas celdas vacías.
++   entry #spans   el tramo de cada campo, en orden; para un tipo de una sola celda, `Array(1)`
+
+@ 0 3 0 0454ceb3db1bb50004c96a3612a8d82f
++ entry .dsv   codifica un valor como fila `Dsv`, o una lista de valores como `Sheet`
++     Una extensión sobre cualquier valor que sea `Encodable in Dsv`, que deriva todo tipo
++     producto, y sobre una `List` de ellos. El resultado se representa como texto con `show`
++     bajo un `Dsv.Format`.
+
+% 2 1 0 030990b77ed369061a54f53af83d0976
+
+% 3 1 0 0f4ea8d1f2a1736618fa534c11a82f83
+
+% 4 1 0 0ba827392f31c7450050d7659975a26f
+
+% 2 1 0 1fda446533af28140dcbbfb059d4c789
+
+% 0 1 0 113f786de134340f1f84189fdc8eb036
+
+% 0 1 0 12970b3f06b32ada1429f4b631d9e1bf
+
+% 0 1 0 1805ed7ee2b7154a0697753c63d176a4
+
+% 1 1 0 0932fe5a4a36552216fb013cc6ab22b1
+
+@ 0 7 0 0e4b93953df60d311fce91ff9c13a478
++ entry .rows   las filas de un flujo de caracteres, analizadas de una en una, como un `Iterator[Dsv]` de un solo uso
++     La contrapartida en flujo de `read[Sheet]`, que guarda todas las filas: una extensión sobre
++     un `Stream[Text] over Credit`, que consume, y que produce cada fila a medida que se
++     analiza. Una celda entrecomillada puede cruzar los límites de fragmentos y de líneas, ya
++     que el analizador conserva su estado entre recargas. Con un formato con cabecera, la fila
++     de cabecera no se produce, pero cada fila conoce los nombres de sus columnas. Necesita un
++     `Dsv.Format`, una `Tactic[Dsv.Error]` y un `Buffering`.
+
+% 2 1 0 12fe13ba470fe7591478f8a403b1d4e5
+
+% 3 1 0 1671c95e1823939f08b7371d4d1ba631
+
+% 0 1 0 1b1812d8c43d37cd028fd0909b36432e
+
+% 1 1 0 10548205dea2c975137bb30dde7bcd8b
+
+% 0 1 0 1ef2adb272067c72102c8e0d39e42945
+
+% 0 1 0 0c583d633053fb8b1dd5e78a78d870fd
+
+% 1 1 0 189da9506320136b055b400612e91a28
+
+@ 0 5 0 1ab7c2d6c93b15ed19757138e2c5084b
++ entry .rowsOf   las filas de un flujo de caracteres, cada una analizada directamente a un tipo mediante su `Dsv.Parsable`
++     `stream.rowsOf[Play]` consume el flujo y produce un `Play` por cada fila de datos, leído
++     directamente del búfer del analizador sin construir ningún `Dsv`: la forma más rápida de
++     recorrer un fichero grande. `Play` necesita un `Dsv.Parsable`, declarado o (con
++     `codecs.direct`) derivado. Necesita un `Dsv.Format`, una `Tactic[Dsv.Error]` y un
++     `Buffering`.
+
+% 2 1 0 0040e41791771ff3135cf06324929aa7
+
+% 3 1 0 1a9cd7004e47e5f50aeee5336f134f52
+
+% 4 1 0 071ba7be3b426a7608a34e8d7815eb83
+
+% 5 1 0 18838c979750591d03bd0773b788be94
+
+% 0 1 0 038939ef05b829b20b6e6b23852fcba4
+
+% 0 1 0 15e612278eac352704bd92db529db0d7
+
+% 0 1 0 06c8a7c6b17ef6060b319816997e447e
+
+% 1 1 0 03ede130fbe75fbe0a1dc6d6ecebf869
+
+@ 0 1 0 121c3cc575e8f6e7036bd0b7bbdaebf6
++ entry .dsvFormats   los formatos delimitados estándar (CSV, TSV y separado por espacios, con y sin cabecera) que se importan por nombre
+
+% 1 1 0 15dbb7b02ef428991a823afabd794124
+
+@ 0 3 0 1b1d9cb682dc5b6002a451691d5e073c
++       Todo análisis y toda representación necesitan un `Dsv.Format` en el ámbito, y la elección
++       nunca es implícita: `import soundness.*` no trae ninguno de ellos, y se importa uno por
++       nombre. Cada uno entrecomilla con `"` y escapa unas comillas duplicándolas.
+
+% 2 1 0 0828e7fe4ad6c8a5080b73f1579913a8
+
+% 0 1 0 15baee82b66ca01c0cc2759e1bfb8499
+
+% 1 1 0 05706e03e4e3cb0604e400e3e010c263
+
+% 2 1 0 01fe32038b0aed550012d85c634ce7a9
+
+% 3 1 0 181106b8d20b34cd0de2869f7771dbd2
+
+% 1 1 0 16720c4f54ccae8f09079eaafc42d606
+
+% 0 1 0 112deb5090e0cbbf016672c40d132477
+
+% 0 1 0 16c0380d96e7de8906fe122a62155355
+
+% 1 1 0 1401044f7d6ff1890fb7e344d723ec06
+
+% 2 1 0 0c1a033f829067ef0c619d7665eeef70
+
+% 0 1 0 18999b3f2807e2c81a66eac3e863e836
+
+% 1 1 0 0ce980cd582d348d087a1ff84eabd63e
+
+% 0 1 0 171b428a80a049ad0abf184e98a68f0f
+
+% 1 1 0 191b1eb9611956ca14e3df0b19352edc
+
+% 2 1 0 1d5c641360f2b3e111b1dc01a426c551
+
+@ 0 1 0 0b75032617ebd57813b43350fc0dcbda
++       Un formato con otro delimitador es un valor `Dsv.Format` ligado como given local.
+
+% 1 1 0 0ef38f4e95b04bc604ac605ba9ea3cbc
+
+@ 0 6 0 0016deded6241ef60f63adf921af07ac
++   entry .csvFormat   valores separados por comas, sin fila de cabecera
++   entry .csvWithHeaderFormat   valores separados por comas cuya primera fila nombra las columnas
++   entry .tsvFormat   valores separados por tabuladores, sin fila de cabecera
++   entry .tsvWithHeaderFormat   valores separados por tabuladores cuya primera fila nombra las columnas
++   entry .ssvFormat   valores separados por espacios, sin fila de cabecera
++   entry .ssvWithHeaderFormat   valores separados por espacios cuya primera fila nombra las columnas
+
+@ 0 1 0 0f191be03215c3741655db7feb5c2359
++ entry .dsvRedesignations   las correspondencias de nombres de miembros en camel case con nombres de cabecera, para el acceso dinámico, que se importan por nombre
+
+% 1 1 0 1308e876ad4fb5a90087e49d3467d4e1
+
+@ 0 4 0 05d2c465af20c50903387e56f6af70cc
++       `Dsv#selectDynamic`, la forma de miembro `row.targetPerson[Text]`, necesita un
++       `Dsv.Redesignation` en el ámbito para encontrar la columna que nombra un miembro, y no
++       hay ninguno por defecto: se importa uno por nombre, o se liga una lambda de `Text` a
++       `Text` como given local.
+
+% 2 1 0 1cf437d0a4c61d5c0386e7cb196d2e67
+
+% 0 1 0 0b1c5ecccbde06fc1cb978cdeada645b
+
+% 1 1 0 0aa61bc8d0956d81147cdf053d62ec89
+
+% 2 1 0 07099bc4a59de9b3138d3976559d95ec
+
+% 0 1 0 1583d89760b8025c1c4f252613bee528
+
+% 0 1 0 0cbfd9e66366fec91f5a14e20ca42e72
+
+% 0 1 0 1a8a19951c50e59c018b467b17a72234
+
+% 1 1 0 11614d7621d245cf049a93fea2003c18
+
+% 2 1 0 1d4979988c6275c90544f51c4a439f5d
+
+% 0 1 0 02b9369023a65146045439d57c443ae7
+
+% 0 1 0 1f2ab3609fef787117fdd28e3f4b940f
+
+% 0 1 0 0fe7cd51128e28e8140ecc3140075280
+
+% 1 1 0 00484666919677250ec9e9f15705d14c
+
+% 2 1 0 028ce89b580e1a0c00a8cdc7a0b67c67
+
+% 0 1 0 05f99a0f9517a7651dae4a7614ad62c4
+
+% 0 1 0 08ea52c8ab28d7221247da3d29981442
+
+% 1 1 0 0f47adc1389072fe07c54198ffb1be59
+
+% 2 1 0 18e5dd43c86cf5ea04cadf84c2af8c8f
+
+% 0 1 0 1acfed3c19209eeb1822be049e9c0a78
+
+@ 0 9 0 0d6bba026558f2d300226bde8ffe5672
++   entry .unchangedRedesignation   el nombre de miembro tal cual: `targetPerson` coincide con la cabecera `targetPerson`
++   entry .capitalizedWordsRedesignation   palabras con mayúscula inicial separadas por espacios: `targetPerson` coincide con `Target Person`
++   entry .lowerWordsRedesignation   palabras en minúsculas separadas por espacios: `targetPerson` coincide con `target person`
++   entry .lowerDottedRedesignation   palabras en minúsculas, pensadas para cabeceras separadas por puntos como `target.person`
++       Tal como está implementado, las palabras se unen con espacios, así que da
++       `target person`, lo mismo que `lowerWordsRedesignation`.
++   entry .lowerSlashedRedesignation   palabras en minúsculas, pensadas para cabeceras separadas por barras como `target/person`
++       Tal como está implementado, las palabras se unen con espacios, así que da
++       `target person`, lo mismo que `lowerWordsRedesignation`.
+
+@ 0 1 0 06bfc2b1399100e51531ea791d69a42e
++ entry .dynamicAccess   el given que permite leer las celdas de una fila como miembros, que se importa por nombre
+
+% 1 1 0 061f2533603fccca1a7e9395e1731027
+
+@ 0 3 0 01cc9f508d542ea8029f1784b5969702
++       El acceso dinámico a miembros está desactivado salvo que haya `Dsv is Dynamical` en el
++       ámbito, de modo que un miembro mal escrito no se convierte silenciosamente en una
++       búsqueda de columna. `import dynamicAccess.dynamicDsv` lo concede para el resto del
++       ámbito; `dynamically[Dsv]:` lo concede para un bloque.
+
+% 2 1 0 075bbb1cdd305a8c182b36c1542925d1
+
+% 3 1 0 17a840fcf43a624c11d6a619b8121639
+
+% 4 1 0 165d8cc6691fa74e08dd9797ea79b7d0
+
+% 5 1 0 19892d40cd812a211a75d78c32b5a025
+
+% 6 1 0 0dc61b4e065ae0710abe7c48e79277f3
+
+% 7 1 0 0630f9f820b0b4b808acc33750d3fbfe
+
+% 0 1 0 06a8869839236aca104fdf7742a6a841
+
+% 1 1 0 1c87405818aab70808bbf15552359a39
+
+@ 0 3 0 1356470e9648df5b09892d075ffd9094
++   entry .dynamicDsv   `Dsv is Dynamical`: activa `row.column[T]` para todas las filas del ámbito
++       Un testigo borrado; no cuesta nada en tiempo de ejecución. El given `optics.dsvCellLens`
++       también lo necesita.
+
+@ 0 1 0 07d1c11eda3de78f19012ce9a92eb8b2
++ entry .optionalityOptions   las políticas para la celda ausente o mal formada de un campo `Optional`, que se importan por nombre
+
+% 1 1 0 18cbb7ad67251d181753607ed331a5e1
+
+@ 0 5 0 0fc1bd85d2a6fe8f1ae99667ab600722
++       Un campo `Optional` de una fila decodificada se encuentra con dos situaciones: su celda
++       está **ausente** (una fila posicional corta, o una columna de cabecera que falta en la
++       fila), o su celda está presente pero su decodificador interior la **rechaza**. Por
++       defecto, una celda ausente es `Unset` y una rechazada es un error; cada comportamiento
++       se cambia importando por nombre uno de estos givens. Una celda vacía es un valor
++       presente, no uno ausente.
+
+% 2 1 0 04550645d7799cc11264aa4e6591b383
+
+% 0 1 0 184d48e7399fe047179e0899a9dba6bf
+
+% 1 1 0 0dc5c595e538b6cd19dfdb1c478872c5
+
+% 2 1 0 08bb033480a2a44c0fc67c6001ac56f3
+
+% 3 1 0 13f812eb2dad90891bf95d2ec369d2a4
+
+% 1 1 0 1a716b0e2fb67de1163741fa20a636f0
+
+% 0 1 0 1b2b260396b5378b194f065a2b7011b5
+
+% 0 1 0 17f5b2fbd0fdd4d6187da5973c1ea22e
+
+% 1 1 0 0ee7add46e08edf207590826f772d947
+
+% 2 1 0 10a4fbd25ff64e7b09f4b2c7aef93aea
+
+% 3 1 0 0c77cf296db4ae7e0e2d7a7974ed51dd
+
+% 0 1 0 0ffeae2d400649fe004291da41f91b6d
+
+% 1 1 0 1d8e25ffeb603a3b0fe51a2986770be7
+
+% 0 1 0 02e8ec173f7dc04d06962da03a17219d
+
+% 1 1 0 1b157a04c68531240619097d0ebac7b1
+
+% 2 1 0 10d2d0f3cb7ee63d0b2df1d57e1f8575
+
+@ 0 7 0 1b57f79601c43b941f990820858b3e5e
++       Gobiernan tanto el decodificador de filas (`Dsv.optionalDecodable`) como el analizador
++       directo (`Dsv.Field.optional`).
++   entry .strictDsvAbsence   una celda ausente de un campo `Optional` lanza `Dsv.Error.Reason.Absent`
++   entry .lenientDsvAbsence   una celda ausente de un campo `Optional` es `Unset`; el valor por defecto
++   entry .strictDsvFaults   una celda que el decodificador interior rechaza lanza `Dsv.Error`, incluso para un campo `Optional`; el valor por defecto
++   entry .lenientDsvFaults   una celda que el decodificador interior rechaza es `Unset` para un campo `Optional`
++       La decodificación interior se ejecuta bajo `tolerate`, así que su error se descarta en
++       lugar de lanzarse.
+
+@ 0 1 0 024b6476007288d51368465d6af936dd
++ entry .optics   lentes sobre las celdas de una fila por nombre de columna y sobre las filas de una hoja, que se importan por nombre
+
+% 1 1 0 052b9d8cb2704b7500e5037948f86563
+
+@ 0 4 0 1b6d6a125bffe2be062532233b2e8fca
++       Las ópticas de `panopticon` para datos tabulares, que reflejan la estructura de filas y
++       celdas: una celda de una fila con cabecera se direcciona por el nombre de su columna, y
++       las filas de una hoja por posición, todas a la vez o por un predicado. Con ellas
++       importadas, `lens` actualiza una hoja en lugar de una copia escrita a mano.
+
+% 2 1 0 19a6aaebd8a4135a19a16a448d9608c7
+
+% 3 1 0 139dab432b4b2f5a099e24429bba4a11
+
+% 4 1 0 119b09b7cbd3a7490b634ebe755fb6c3
+
+% 1 1 0 13c625ff44364bc10ad00fb737250f51
+
+% 0 1 0 1c9505469b96240e06c6eb5f3418f13d
+
+% 1 1 0 096f4a69a56b769b1bf777fc5e54165d
+
+% 2 1 0 0db35588c2151ea91d53e7698935c8c3
+
+% 0 1 0 1123cfa9b6b7a2aa1af514c6cdce3fd7
+
+% 0 1 0 12eefb93f02dbbd41badfc1d137b99df
+
+% 0 1 0 1de68d6c5614ea650ccf818e98af4a10
+
+% 1 1 0 0bfa5b4fb5eff0fd1548b1655ff4507f
+
+@ 0 7 0 005fa9bdf9d9564a1a92779016e2a1ac
++   entry .dsvCellLens   una lente de una fila a la celda de una columna con nombre, `_.name`
++       Necesita `Dsv is Dynamical` (`dynamicAccess.dynamicDsv`). Leer una columna que falta en
++       la fila da el texto vacío, y escribirla deja la fila sin cambios. El nombre de la
++       columna es el nombre de miembro tal como se escribe: no se aplica ningún
++       `Dsv.Redesignation`.
++   entry .dsvRowOptical   direcciona la fila de una hoja en un `Ordinal`: `_(Sec)` es la segunda fila
++   entry .dsvRowEachOptical   direcciona todas las filas de una hoja: `_(Each)`
++   entry .dsvRowFilterOptical   direcciona las filas de una hoja que cumplen un predicado: `_(Filter[Dsv](…))`
+
+@ 0 1 0 1e55c4c3ef201ba70dac2b2a3c4bda1e
++ entry .construables   los tipos de medio `text/csv` y `text/tab-separated-values` interpretados como un `Sheet`, que se importan por nombre
+
+% 1 1 0 15c0a1e896c81a5613d5c98cf346586f
+
+@ 0 4 0 1896b27d0878d4aa09e2442211897b4f
++       En el componente `caesura.http`. Un `Construable` indica a un cliente HTTP como qué tipo
++       leer el cuerpo de una respuesta de un tipo de medio dado; nada se interpreta sin una
++       elección deliberada, así que cada correspondencia se importa por nombre. Con una en el
++       ámbito, un cliente de `apoplexy` lee una respuesta CSV como un `Sheet`.
+
+% 2 1 0 12089d89c4e416cb138af6737850a06e
+
+% 3 1 0 00d33b9fdcd5cd8112c4114dd825dfba
+
+% 0 1 0 10e05a85a698ba8512baa178efd7990c
+
+% 1 1 0 0e5513c9d853c595032fcf9d0f2b31a6
+
+@ 0 2 0 0607b29e4e0b75420cc59b27f5eb5602
++   entry .csvConstruable   un cuerpo `text/csv` es un `Sheet`
++   entry .tsvConstruable   un cuerpo `text/tab-separated-values` es un `Sheet`

@@ -1,0 +1,32 @@
+orthant 2 language
+
+@ 0 1 0 08a75dd5f46ceef21888820fdb82c5ed
++ # Soundness-Standards für den Aufbau von Modulen
+
+@ 0 1 0 168477d6c167de2a1bc6797dbe55c63f
++ _(Entwurf — Umfang zur Prüfung; der vollständige Inhalt folgt.)_
+
+@ 0 2 0 0c7e2be44269cbf71f98b7eb09b62714
++ Dieser Standard wird festlegen, wie ein Soundness-Modul auf der Festplatte angelegt ist und wie
++ sein Namensraum strukturiert ist. Er wird diese Konventionen abdecken:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 8 0 1d59784e3f5cd4b806cdeba1eac75758
++ column  Ort
++ column  Enthält
++ row  `src/core`  die Bibliothek
++ row  `src/test`  Tests
++ row  `src/bench`  Benchmarks
++ row  `src/<variant>`  optionale Integrationen
++ row  `<module>.<Type>.scala`  einen Top-Level-Typ, nach ihm benannt
++ row  `<module>_core.scala`  givens und Erweiterungen auf Paketebene, Begleitobjekt zuerst
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 5 0 08afcf11b77ae23d083b2a4f0e8e5f49
++ Er wird außerdem den Reexport `soundness_<module>_core.scala` beschreiben, der die öffentliche
++ Oberfläche eines Moduls in das Umbrella-Paket `soundness` hebt, sowie die Regeln dafür, was
++ exportiert und was intern gehalten wird. Einiges davon wird bereits in den Locatability-Regeln
++ von Consequent Style (`L1`–`L5`, siehe [`syntax.md`](syntax.md)) berührt; dieser Standard wird
++ die strukturellen Konventionen an einem Ort zusammenführen.

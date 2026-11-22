@@ -1,0 +1,69 @@
+orthant 2 release
+
+@ 0 1 0 0662400cfd60738804910cc9930ead94
++ info   SVG charts from typed data: bars, lines, scatter, pie, histogram, box plots and annuli
+
+@ 0 1 0 04fe70a520c981030ef767e854a49e03
++       `Histogram()`, `Boxes()` or `Annulus()` — and `data.chart(kind)` compiles only where a
+
+@ 0 1 0 1d40013d6881039106bf6767cb9ecc85
++     nodes lack `Weighted` or `Progressive` cannot be `Annulus()`.
+
+@ 0 1 0 001acd7c1b78122013146687455dfa99
++       with `bands` and `ordinate`, `Lines.Fit` with two scales, `Annulus.Fit[node]` with its
+
+@ 0 1 0 06d9605695b8da5204d14e43a94f0085
++       reserves no room for one. An annulus has no legend whatever the setting.
+
+@ 0 1 0 12a6cbf8ae9c2f4e023ece4447c9d5b2
++         `Histogram.Style` extend it; `Pie.Style` and `Annulus.Style` do not, having no axes.
+
+@ 0 1 0 1c95e980eb76479b11a5c57c3a9f1b92
++         `Scatter.Style`, `Boxes.Style`, `Pie.Style` and `Annulus.Style` at once, so one value
+
+@ 0 1 0 0dee0fc95de8422c0b3199e8a3506f74
++         `legend`; an annulus `rank-0`, `rank-1`, …. The identifiers are what a
+
+@ 0 1 0 0bdb28b5cd1b61041efec015640cd6bf
++       data: a pie needs one categorical series, a line needs numeric axes, an annulus a `Dag`
+
+@ 0 1 0 0305c8c51318430b12fde28197a3f627
++       `Bars.series`, `Bars.traversable`, `Lines.series`, `Histogram.samples`, `Annulus.dag`,
+
+@ 0 1 0 1159e14dc89531a2008bd874b9eeb183
++       category is a known band; for a pie, the categories are unchanged; for an annulus, the
+
+@ 0 2 0 034f3f478d36d239008546c01c8ddeb9
++ entry .Weighted   the extent of an annulus's node: its share of its rank's angle and of the band's thickness
++     `node is Weighted` gives `weight(node): Double`. In an `Annulus`, a node's sector sweeps
+
+@ 0 1 0 160f118fdd22e6d40c59331b8780f9d3
++ entry .Progressive   how far an annulus's node has come, from 0 (not started) to 1 (done)
+
+@ 0 1 0 0434a041a41d47b61dd278daaafd737b
++     A node carries its own progress, so an annulus is revised like any chart, with a new
+
+@ 0 1 0 1ada7501bdc182470f947ff9d8dab475
++   refer tasseomancy.Annulus
+
+@ 0 1 0 041dace7d1bebfc5194f5d80208f0911
++ entry .Annulus   a dependency graph as concentric bands: one per rank, each node a sector filled as far as it is complete
+
+@ 0 1 0 0caae6b8cb2f0ef503e65675a03576a8
++       lies. An annulus has no labels, no axes and no legend.
+
+@ 0 2 0 18ebe672b757defc158ae711fda684d6
++       val annulus = Dag(typecheck -> parse, emit -> typecheck).chart(Annulus())
++       annulus.fit.bands.size   // 3: one band per rank
+
+@ 0 1 0 0308e5568c234c0606f55f232f0059cd
++       annulus.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: a Replace of rank-1
+
+@ 0 1 0 1753003bc6739a3d050a84f901c02603
++   entry .Style   the components of an annulus: each sector's completed part and remainder, and the grout
+
+@ 0 1 0 043b7a8e29246f9404c07c0817d73b43
++         `x` and `y` run from -1 at the left or bottom of the annulus to 1 at the right or
+
+@ 0 1 0 076abc51e6cafbd019910647a233acdf
++   entry .dag   a `Dag` of weighted, progressive nodes is plottable as an annulus, given a `Ranking`

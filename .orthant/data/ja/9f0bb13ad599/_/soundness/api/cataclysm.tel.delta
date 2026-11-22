@@ -1,0 +1,32 @@
+orthant 2 language
+
+% 10 1 0 0910609b9679525c13cff87a432f4ae2
+
+% 10 1 0 1cb9e1b064257f0f16b50789eafee86e
+
+% 10 1 0 109f42a57f87821b140bc3d53c7858ea
+
+@ 0 32 0 0b5c195f738b6d571cb44228d729119f
++         `Web` のすべてのファクトリーが返すクラスであり、これによってプロビジョンは安定した型を持つ。
++         `Web.Provision[family](sources, coverage)` は `(Typeface of family) is Typesettable in Web` であり、その `#sources` はブラウザが書体を入手する `Typesettable.Source` であり、`#coverage` は宣言されたときの `Font.Coverage` である。
++         `FontFace.rules` はソースを一つずつ描画する。
++     entry #sources   ブラウザが書体を得る場所：リンク、インポート、ローカル、総称
++     entry #coverage   プロビジョンが提供すると宣言された太さ、傾き、字幅、軸
++     entry #Self   提供される書体 `Typeface of family`
++     entry #Form   メディア `Web`
++   entry .sansSerif   総称ファミリー `sans-serif`。宣言なしにウェブで提供される
++       ブラウザは各総称ファミリーを手持ちのもので組むので、プロビジョンは単一の `Generic` ソースと、すべてのフェイスを認める `Font.Coverage.Unknown` を持つ。
++       アットルールは描画せず、引用符なしの `font-family: sans-serif` を描画する。
++   entry .serif   総称ファミリー `serif`。宣言なしに提供される
++   entry .monospace   総称ファミリー `monospace`。宣言なしに提供される
++   entry .cursive   総称ファミリー `cursive`。宣言なしに提供される
++   entry .fantasy   総称ファミリー `fantasy`。宣言なしに提供される
++   entry .systemUi   総称ファミリー `system-ui`。宣言なしに提供される
++   entry .linked   ブラウザが URL から取得するフォントファイルからのプロビジョン
++       `Web.linked[family](url, coverage, format)` は、`Abstractable across Urls to Text` であるあらゆる URL 型（`url"…"` からの `HttpUrl`、またはテキスト）、ファイルが持つと宣言された `Font.Coverage`、そして `format()` のヒントのための省略可能な `Typesettable.Source.Format`（`Ttf`、`Otf`、`Woff`、`Woff2`）を取る。
++       ファイルは手元になく読めないので、宣言されたものだけが認められる。そのため、ある太さで宣言されたフォントは、ブラウザに合成させるのではなく、別の太さの要求を拒む。
++       型引数 `family` は、普通は given の宣言された型から推論される。
++       `src` が `url("…") format("woff2")` である `@font-face` として描画される。
++   entry .local   読み手がインストールしていると期待されるフォントからのプロビジョン
++       `Web.local[family](coverage)` は書体を `src: local("Name")` の中で名指し、書体のファミリー名はリテラル `family` である。
++       読み手がそれを持っている保証は何もないので、これは最も弱いプロビジョンであり、そのカバレッジ（与えなければすべてのフェイスを認める `Font.Coverage.Unknown`）は宣言されたことしか述べない。

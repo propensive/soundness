@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 0af7e31e640fb47417858fb2622edbdb
++ # `↯/s.16.4` — Valore inferiore al suo limite inferiore
+
+@ 0 1 0 047c9cca11d39cb61ad1ab7b52b19076
++ Sollevato a tempo di compilazione quando un letterale è minore del minimo consentito dal suo tipo
++ limitato.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 1607a4c68683baa80a5cfa48b680b24b
++ Un tipo numerico limitato porta il proprio intervallo nel tipo, quindi un letterale fuori
++ dall'intervallo viene rifiutato nel punto in cui è scritto.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Messaggio di esempio
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 023e81c8779d66bb0f8b795be075ab47
+
+% 1 1 0 113d4536c178a2fb0b1200599b7273e6
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 1 0 08b6e696d832cfc91546add82b94adac
++ Usare un valore entro l'intervallo, oppure allargare i limiti del tipo.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 182b99dddf81d5651ccd9f6afc52f756
++ - Sorgente: `lib/cardinality/src/core/cardinality.internal.scala`

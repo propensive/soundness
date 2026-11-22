@@ -1,0 +1,25 @@
+orthant 2 language
+
+@ 0 1 0 0127c55be7e455411100fba9cff712a1
++ # `SN-926` — インデント幅は偶数でなければならない（廃止）
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ このエラーはもう存在しない。
++ このページは、コードが再利用されないように、また古いリリースからの参照が今でも解決できるように残されている。
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## その後
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ このエラーを発生させていた Decorum コンパイラプラグインは Soundness から切り出され、現在は Consequent Style のための独立したチェッカーである [Consequent](https://github.com/propensive/consequent) になっている。
++ 規則はそこで新しい識別子の下に残っており、その文字は規則の由来となった原則を表す：
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  旧
++ column  新
+
+% 0 1 0 0f0380663c49beba1021adcee9ffaa28
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

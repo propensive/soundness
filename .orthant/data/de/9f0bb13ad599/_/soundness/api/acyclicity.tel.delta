@@ -1,0 +1,27 @@
+orthant 2 language
+
+% 0 4 0 00c2b0b4755587fb158510c7379f9947
+
+@ 3 0 0 126e45750d1d96470753b7a416f37c42
++       Die Schichten und Verbindungen sind `Sequence`s, gelesen über `Ordinal`, und `rank` und
++       `position` sind `Map`s, sodass jeder Lesezugriff ein `Optional` liefert: `Unset` für eine
++       Schicht, die es nicht gibt, oder einen Knoten, der nicht im Graphen ist.
+
+@ 0 4 0 00e8b1f2d88a57b91a87591af6b117e0
++       `LayeredDagDiagram` aus `dendrology` weist einer Schichtung Spalten zu und stellt sie dar;
++       eine andere Zeichnung nimmt `layers` und `links` direkt.
+
+@ 0 11 0 13b2ff4a59f011121d17e855e3ec1fcf
++   entry .Vertex   ein Platz in einer Schicht: ein Knoten des Graphen oder der Punkt, an dem eine längere Kante hindurchläuft
++       Ein Enum: `Real(value)` ist ein Knoten des Graphen, und `Virtual(source, target)` ist die
++       Stelle, an der die Kante von `source` nach `target`, die mehrere Schichten überspannt, durch
++       diese hindurchläuft. Eine Zeichnung gibt einer virtuellen Ecke eine Spalte und zeichnet die
++       Kante durch sie hindurch.
++   entry #layers   die Schichten, von oben nach unten, jede eine `Sequence` von `Layering.Vertex` in gezeichneter Reihenfolge
++   entry #links   `links(i)` verbindet Schicht `i` mit Schicht `i + 1`, als Paare von Positionen innerhalb jeder
++       Eine `Sequence` mit einer `List` von Verbindungen für jede Schicht außer der letzten. Jede
++       Verbindung verbindet benachbarte Schichten: Eine Kante, die mehr überspannt, wird an
++       ihren virtuellen Ecken aufgebrochen.
++   entry #rank   die Schicht jedes Knotens, als `Map`
++   entry #position   die Position jedes Knotens innerhalb seiner Schicht, als `Map`
++   entry #crossings   wie viele Paare von Verbindungen sich kreuzen, über die ganze Schichtung

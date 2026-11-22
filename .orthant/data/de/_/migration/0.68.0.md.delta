@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 1 0 0c7c7875e28c69fa09c0db0bf1e0fc3e
++ # Änderungen seit 0.67.0
+
+@ 0 3 0 01c92304f886cba21c1a676845610aa1
++ Diese Datei wird von einem LLM-Agenten gelesen, um Code, der Soundness-Bibliotheken verwendet, von
++ 0.67.0 auf das nächste Release zu aktualisieren. Jeder Eintrag gibt genau an, was sich geändert
++ hat; das Format beschreibt `AGENTS.md`. Die Einträge sind nach Modul gruppiert, innerhalb eines
++ Moduls der zuletzt hinzugefügte zuletzt.
+
+% 0 1 0 1eecc11d4eed23d30cc8cf10b4de468a
+
+@ 0 8 0 0bac8da40c227f45069121c85ef59f92
++ - `anticipation.Chroma#red` hat seine Semantik geändert: Es ist jetzt `inline def red: Int = (chroma >>
++   16)&255`, zuvor `inline def red: Int = chroma >> 16`. `green` und `blue` waren bereits
++   maskiert und sind unverändert. Code muss dort geprüft werden, wo ein `Chroma` mit
++   `Chroma(value: Int)` aus einem `Int` konstruiert wurde, in dem irgendein Bit oberhalb der
++   unteren vierundzwanzig gesetzt ist (einschließlich eines negativen `Int`), da `red` diese Bits
++   zuvor zurückgab und sie jetzt verwirft. `Chroma`-Werte, die aus
++   `Chroma(red: Int, green: Int, blue: Int)`, dem Interpolator `rgb"…"`,
++   `iridescence.Pixel#chroma`, `iridescence.Rgb12#chroma` oder `iridescence.Rgb32#chroma`
++   stammen, sind nicht betroffen, da all diese bereits maskierten. (#2036)
+
+% 0 1 0 1596bb652e5891230b44b58e4458fbe5
+
+@ 0 1 0 01cf847b682a34071180f64c40d4d31f
++ - `iridescence.Channel` und die Kanal-Traits `iridescence.Red`, `iridescence.Green`,
+
+% 0 1 0 1e3f4b509bdeb9fa01d3151cb48d7c36
+
+@ 0 6 0 060530a8657b7d9c0c1ba3c32ac2078d
++   `iridescence.Yellow`, `iridescence.Key` und `iridescence.Grey` sind nach `anticipation`
++   verschoben: `anticipation.Channel`, `anticipation.Red` und so weiter. Alle Definitionen,
++   Typparameter und Match-Typen sind unverändert. Das `soundness`-Umbrella exportiert dieselben
++   Namen, nun aus `anticipation`, daher braucht Code, der sie über das Umbrella importiert, keine
++   Änderung; Code, der für sie `iridescence.*` importiert, muss `anticipation.*` importieren.
++   `Channel` bleibt `@unexported` und wird als `anticipation.Channel` erreicht. (#2037)
+
+% 0 1 0 05ae2e565038e46506b8cc852c20137f
+
+% 0 1 0 005494de3701318517fa199c6f1d281d
+
+@ 0 3 0 0f5be6f7d2a2561d02dfcfc7fe946e10
++   iridescence.Srgb` entfernt. Ersetzen Sie `hue(c)` durch `c.color`, die Erweiterung `extension (chroma:
++   anticipation.Chroma) def color: Color in Srgb`, die in `iridescence` deklariert und vom
++   `soundness`-Umbrella als `color` exportiert wird. Die Ergebnisse sind identisch. (#2036)

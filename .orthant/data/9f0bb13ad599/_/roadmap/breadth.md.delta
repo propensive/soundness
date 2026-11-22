@@ -1,0 +1,39 @@
+orthant 2 release
+
+@ 2 1 0 174e198cfecf963c021f926d6fe31d32
++ Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and
+
+@ 2 0 0 1a3dfd1091333985130c892e2c48b4c2
++ Done: #2530 (2026-11-20). sigillate: `Jws`, `Jwe`, `Jwk` and `Jwt`, with every algorithm of RFC 7518
++ but `zip` compression, and EdDSA and X25519 from RFC 8037; a bearer-token handler for
++ scintillate, and key sets fetched over HTTP. The examples of RFC 7515 appendix A and RFC 7516
++ appendix A are its tests, read from the RFCs' text. enigmatic gained the primitives it lacked:
++ key derivation, AES key wrap, AES-CBC with HMAC, RSA-OAEP and RSA-PSS.
++
+
+@ 2 1 0 1eb2cae7ff0bf6031c07a8c0b4d64b0c
++ Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and
+
+@ 0 1 0 1eed44012aaee58f0c8c2e63b1f49394
++ The COSE support it depends on — COSE keys and the asymmetric signature algorithms — arrived
++ with `brd-1`, as did the reading and chain validation of the X.509 certificates an attestation
++ carries.
+
+@ 2 1 0 11ac4c6f793d3bea09c0f09767581e1b
++ Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and a
+
+@ 2 0 0 199532ad42b2a4d81eb7f866efc95383
++ Done: #2530 (2026-11-20). chatelaine: The relying party's two ceremonies, with every check of
++ WebAuthn Level 2 §7.1 and §7.2, and the `none` and `packed` attestation formats. The
++ reference authenticator is the specification's own: the registration and authentication
++ outputs of its test vectors, for ES256, ES384, ES512, RS256 and Ed25519 credentials, are
++ accepted, with packed attestations validated to the vectors' trust root. A software
++ authenticator in the test sources scripts whole ceremonies, and the ways they are refused.
++ A browser's virtual authenticator has not been driven.
++
+
+@ 2 1 0 09df5dfa3c12ca1f12ac219e13724ffc
++ Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and
+
+@ 2 1 0 033c63899ed0f88a1522b666b0e8f733
++ Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and a

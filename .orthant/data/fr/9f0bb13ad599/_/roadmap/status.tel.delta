@@ -1,0 +1,11 @@
+orthant 2 language
+
+@ 0 3 0 1d978083cec1800a1c94c46973a8700a
++   status done
++   done  #2530 (2026-11-20)
++   baseline  lib/sigillate : Jws, Jwe, Jwk et Jwt, avec les composants `http` et `server` ; 95 tests, dont les vecteurs proviennent des RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 et RFC 8037 ; `↯/s.147.1` ; doc/en/modules/jose.md (2026-11-20)
+
+% 1 2 0 09bdf54590857d591a8545cb3ee491cd
+
+@ 0 1 0 049ddac88d5f34260c7a028bfdb08cf5
++   baseline  lib/chatelaine : WebAuthn.registration/register et authentication/authenticate, attestation `none` et `packed`, avec un composant `server` ; les cérémonies d'enregistrement et d'authentification des vecteurs de test de la spécification du W3C (§16.2–16.11) passent, de même que des cérémonies scriptées contre un authentificateur logiciel dans les sources de test ; aucun authentificateur virtuel de navigateur n'a été piloté ; `↯/s.148.1` ; doc/en/modules/webauthn.md (2026-11-20)

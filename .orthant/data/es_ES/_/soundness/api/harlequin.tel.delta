@@ -1,0 +1,1232 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 077abfe3620ebdd316b20af5894b01d7
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 12b8f2eb07f1c73311f74a9b8c2bff2e
++ info   Código fuente Scala y Java resaltado por el propio compilador de Scala, con tipos, diagnósticos y compleciones
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 06f91b45cd1400ac1f7ab86cfdd853ab
++     _Harlequin_ resalta código fuente Scala (y Java) ejecutando sobre él el compilador real,
++     en lugar de aproximar el lenguaje con expresiones regulares. El tokenizador y
++     el analizador clasifican cada token exactamente como lo lee el compilador —las palabras
++     clave blandas solo son palabras clave según su posición, las cadenas interpoladas son
++     cadenas, el nombre de un `val` es una ligadura y un uso posterior suyo es un uso— y,
++     cuando hay un compilador y un classpath en el ámbito, se ejecuta también todo el frontend,
++     de modo que cada identificador lleva el *tipo* que le dio el compilador, los diagnósticos
++     del compilador vuelven ubicados en el código fuente y una posición del cursor de inserción
++     convierte el resaltado en compleción.
+
+@ 0 4 0 16fca05f2d9be75a120f708765029e1d
++     El resultado de `Scala.highlight` es un `SourceCode`: una cuadrícula de líneas, cada una
++     una `List` de `SourceCode.Token`s, donde un token tiene su texto, un `Accent` (la categoría
++     de color que una paleta asigna a un color), un `Token.Role` opcional (ligadura o uso), su
++     posición como un `Span` y, en los niveles más profundos, un `SourceCode.Token.Meta` que
++     contiene su tipo.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1c7e83a7f58ea1b318fdee3f9de39764
+
+% 0 1 0 0d0258a7ca2f9f2218ca173ce8f16f98
+
+% 0 1 0 1b4ce3cce227e09e1ec14998b96575e7
+
+% 1 1 0 102df4e3de81f9b0115a09652b4acf5a
+
+@ 0 7 0 06fc183c3a88d73118e7e44fb9c231b2
++     La profundidad del resaltado la decide el `Highlight` given en el ámbito, uno de los tres
++     del paquete `highlighting`: `tokenizedScala`, el predeterminado (es también
++     `Highlight.default`, así que `Scala.highlight` funciona sin ninguna importación), no
++     necesita más que el texto; `typecheckedScala` y `compiledScala` necesitan como givens un
++     `Scalac` de anthology y un `LocalClasspath` de hellenism, y `sessionScala` el
++     `Scalac.Session.Frontend` de una sesión de compilador ya caliente. Se importan por nombre,
++     puesto que `import highlighting.*` no importaría los givens.
+
+% 2 1 0 03daed8d7f5bb21d00f570ce496547a4
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 1 1 0 0c5ceab6fcbd3b691fba3cf9ed81c8a0
+
+% 0 1 0 0da7686689dbeb930de62b97601ee87d
+
+% 0 1 0 19a7dbcfbf9b3c810df80cb2a6798b8a
+
+% 0 1 0 121a5301b989bd911288c1f35ffa54d6
+
+% 0 1 0 17d80058e21e961415e559b18473cda4
+
+% 0 1 0 05aa7805e95aca161a5d2b6ce6dd5bed
+
+% 0 1 0 1d8f6f12bd0272d80f7ffdc3ff3d3ef7
+
+% 1 1 0 00ae7f80667b7c62146f34555fe56e69
+
+@ 0 1 0 0817a1e27c20e18418d14aff8e72a5fa
++     La biblioteca se divide en conjuntos de fuentes según lo que necesita cada uno:
+
+@ 0 13 0 1e2c82ced88233ca1dd49fc67ff835ac
++     - `harlequin.core`: `SourceCode`, `SourceCode.Token`, `Accent`, `Token.Role`,
++       `ProgrammingLanguage` con `Scala` y `Java`, `Highlight` y `Depth`, `Diagnostic`,
++       `Fragment`, `Lexis`, `Completion`/`Completions` (reexportados desde prophesy) y
++       `highlighting.tokenizedScala`. Incorpora el compilador de Scala, así que solo funciona
++       en la JVM.
++     - `harlequin.typed`: `highlighting.typecheckedScala`, `highlighting.compiledScala` y
++       `highlighting.sessionScala`, que ejecutan un `Scalac` de anthology contra un
++       `LocalClasspath` de hellenism.
++     - `harlequin.ansi`: `ScalaSyntaxPalette` y los givens de `syntaxHighlighting`, que
++       representan un `SourceCode` como `Teletype` de escapade, con o sin números de línea.
++     - `harlequin.md`: `CommonFormattable`, la representación HTML de los bloques de código
++       delimitados, detrás de `formattables.scalaFormattable` y `formattables.javaFormattable`
++       de punctuation.
++     - `harlequin.compiler`: el `Shim` sobre la API interna del compilador, que difiere entre
++       las ramas Scala 3.9 y 3.10; no está pensado para uso directo.
+
+@ 0 6 0 1524393ba277b22d05dde8a18f9154c6
++     Todo se exporta al paraguas `soundness` salvo los nombres que colisionan en él: en el
++     paraguas, `Fragment` pertenece a honeycomb y `Completion`/`Completions` a exoskeleton, así
++     que los de harlequin se alcanzan como `harlequin.Fragment`, `harlequin.Completion` y
++     `harlequin.Completions`; del mismo modo, `syntaxHighlighting.tokenTeletypeable` solo es
++     `harlequin.syntaxHighlighting.tokenTeletypeable`. Los paquetes de elección
++     `highlighting`, `syntaxHighlighting` y `formattables` se fusionan con los del propio
++     paraguas.
+
+% 0 1 0 10013c8522abd368023745223d075b55
+
+% 0 1 0 09ebe97501406f4e0f02e4adcdc15d54
+
+% 0 1 0 1dd4000558e0cf540daa5d4190bce7f1
+
+% 0 1 0 102fe4b88ed6fbf404ef8121feaaf51c
+
+% 0 1 0 0c85dc324096592e0f01e4c83be988d0
+
+% 0 1 0 04d35f5dcee8ff2100174f449779c83f
+
+@ 0 1 0 12ad258386c503c01fce6d7e3571ebce
++ entry .SourceCode   código fuente resaltado: una cuadrícula de tokens con acento, con diagnósticos y compleciones
+
+% 1 1 0 1ea15dbc258bc3f4098f47d7a18fee4c
+
+@ 0 6 0 1a302b835d27370205c0121d966e83da
++       Un `SourceCode` es lo que producen `Scala.highlight` y `Java.highlight` (y `SourceCode.apply`
++       directamente): `#lines`, un array de líneas, cada una una `List[Token]`, numeradas desde
++       `#offset` (que es `1` para un texto recién resaltado, y el número de la primera línea para
++       un `#fragment`); los `#diagnostics` que recogió una ejecución con comprobación de tipos o
++       compilada; y, cuando se dio un cursor de inserción, las `#completions` en él. Un tramo
++       `#focus`, fijado por `#extract`, es lo que subraya el representador de terminal numerado.
+
+@ 0 3 0 07dfe876f69bf5bc0d986484d412d280
++       Los tokens de cada línea cubren exactamente el texto de la línea, en orden, con los
++       espacios en blanco y los comentarios como tokens `Accent.Unparsed`, de modo que al unir
++       los textos de los tokens de una línea se recupera la línea. Los saltos de línea finales
++       no son tokens. Los tabuladores se representan como dos espacios.
+
+% 2 1 0 0125b783449378111defa1bda8f1db7e
+
+% 3 1 0 05c17d6531f891ff03479a858e28960b
+
+% 0 1 0 16477e7438b9b0800668d72058ada090
+
+% 0 1 0 1a095682c45ce5570153d00dd623fa31
+
+% 0 1 0 00dc0ad1f6e5f61e17604f8d7133350b
+
+% 0 1 0 01329dbfb6ffda6b1076413e9f50ee9a
+
+% 0 1 0 1d1bdf8fbf9a9cf91998462502903605
+
+% 1 1 0 05d75a73a62f6066045d47f278194522
+
+@ 0 5 0 1f6d910fb164294703619a7202090bfe
++       Qué profundidad de resaltado lo produjo lo decide el `Highlight` given en la llamada: en
++       `Depth.Tokenized` ningún token tiene un `Token.Meta` y `#diagnostics` está vacío; en
++       `Depth.Typechecked` y `Depth.Compiled` cada identificador que resolvió el typer lleva su
++       tipo, y los diagnósticos son los del compilador. Un error de compilación nunca hace
++       fallar el resaltado: el código fuente se resalta *con* sus errores.
+
+% 0 1 0 110d4ce243b932a01303925d2aac8be3
+
+% 1 1 0 191a4cdddaef270c16875fcc7a6ace4b
+
+% 1 1 0 008a92bfa4c4553f1a1653ff32f4e461
+
+% 0 1 0 0a9179d13ca2f44a0e35cdb8b2a26984
+
+@ 0 8 0 055d0c87e096e3b50ee0fed8dcd97cfb
++   entry .apply   resalta texto en un lenguaje, a la profundidad del `Highlight` en el ámbito
++       `SourceCode(language, text, caret)(using Highlight)` es el motor que hay detrás de
++       `ProgrammingLanguage#highlight`, que es la forma habitual de invocarlo. Tokeniza el
++       texto con el escáner del compilador (el escáner de Java para `Java`), superpone el árbol
++       sintáctico para decidir qué identificadores son términos y cuáles tipos, y cuáles de
++       cada uno son ligaduras; en `Depth.Typechecked` o `Depth.Compiled` ejecuta también el
++       frontend de la `Highlight.Compilation` para recoger tipos, elaboraciones y diagnósticos
++       y, cuando se da un `caret`, compleciones.
+
+@ 0 6 0 1acb14edc01cd34d018d7a2253a98ef6
++       Los modificadores blandos (`inline`, `opaque`, `open`, `transparent`, `infix`, `erased`,
++       `tracked`, `using`, …) llevan el acento `Modifier` solo donde son modificadores —delante
++       de una palabra clave dura— y `Term` en los demás casos, igual que los trata el
++       analizador. Un literal de cadena o de carácter sin terminar al final de la entrada, que
++       el escáner divide en un token de error y un último carácter derramado, se vuelve a
++       plegar en un único token `Error`, de modo que un literal a medio escribir se resalta
++       como una unidad.
+
+@ 0 38 0 09d8e092a7c0dd5115630694262c13c7
++       La canalización tokenizada se ejecuta con el `-source future` del compilador y sin
++       classpath, así que no necesita más que el texto; un `Highlight` es un parámetro
++       contextual, y se usa `Highlight.default` (tokenizado) cuando no se importa ninguno.
++   entry #language   el lenguaje en el que se resaltó el código fuente: `Scala` o `Java`
++   entry #offset   el número de la primera línea: `1` para un texto completo, o la primera línea de un fragmento
++       Los números de línea son lo que imprime el representador de terminal numerado y lo que
++       reciben `#apply`, `#extract` y `#fragment`.
++   entry #lines   las líneas, cada una una `List[Token]` que cubre exactamente el texto de la línea
++       Un `Array[List[Token]]`, indexado desde cero; `#apply`, en cambio, lo indexa por número
++       de línea. Los saltos de línea no son tokens, así que los textos de los tokens de una
++       línea, unidos, son la línea.
++   entry #focus   un tramo de interés, si lo hay, que el representador numerado marca
++       `Unset` salvo que lo fijen `#extract` o `#fragment`. `syntaxHighlighting.numberedTeletypeable`
++       dibuja un circunflejo (`╱╲`) o un subrayado (`‾‾‾`) bajo un foco de una sola línea y una
++       `║` en el margen de las líneas que cubre uno de varias líneas.
++   entry #diagnostics   los diagnósticos del compilador, vacíos en `Depth.Tokenized`
++       Cada `Diagnostic` tiene un `Span` en modo desplazamiento dentro del texto, su mensaje y
++       su `Diagnostic.Importance`. En `Depth.Typechecked` son los del frontend; en
++       `Depth.Compiled`, también los de las fases posteriores.
++   entry #completions   las compleciones en el cursor de inserción, o `Unset` si no se dio ninguno
++       Un `Completions` es el tramo de texto que sustituye la compleción elegida y sus elementos
++       `Completion`. Con un cursor de inserción, siempre se ofrecen compleciones de palabras
++       clave, a cualquier profundidad, a partir del árbol de patrones de prophesy sobre los
++       tokens anteriores al cursor; con un compilador en el ámbito se fusionan las propias
++       compleciones del compilador: miembros, nombres en el ámbito, tipos en una posición de
++       tipo y los miembros de un receptor `Dynamic` según su objeto compañero `Completable`.
++       Véase `Scala` para ejemplos.
++   entry #lastLine   el número de la última línea: `offset + lines.length - 1`
++   entry #apply   los tokens de una línea, por su número
++       `code(n)` es la línea con el número `n` contando desde `#offset`, así que
++       `code(code.offset)` es la primera línea y `code(code.lastLine)` la última. Un número
++       fuera de ese rango es un error.
++   entry #extract   las líneas en torno a un tramo, como un fragmento enfocado en él
++       Recibe un `Span` en modo línea (como un `Token#span`) y da el `#fragment` desde su
++       primera línea hasta una más allá de la última (dos más allá, para un tramo de varias
++       líneas), con el tramo como `#focus`, de modo que un diagnóstico o un token pueda
++       mostrarse en contexto.
++   entry #fragment   las líneas de un número a otro, como un `SourceCode` propio
++       `code.fragment(startLine, endLine, focus)` conserva las líneas numeradas de `startLine` a
++       `endLine`, ambas incluidas, con `#offset` fijado a `startLine` para que se conserven sus
++       números, y `focus` como nuevo `#focus`. Los diagnósticos y las compleciones no se
++       trasladan.
+
+@ 0 1 0 06e2b0d58dec6dde17f4af343ca5092f
++   entry .Token   un token de código fuente resaltado: su texto, acento, posición, papel y tipo
+
+% 1 1 0 1a380c5db186c69113f25b6158312b35
+
+@ 0 5 0 07597212c0af97a61de898e2095afda1
++         Un token es la unidad de la que está hecho un `SourceCode`: un trozo de `#text` que
++         nunca contiene un salto de línea, el `#accent` que lo clasifica, un `#span` que lo
++         ubica y, para un identificador de término o de tipo, su `#role` como ligadura o como
++         uso. A profundidad con comprobación de tipos o compilada, un identificador que resolvió
++         el typer tiene además un `#meta` que contiene su tipo como `Syntax` de stenography y,
++         en el destinatario de una llamada, lo que el typer elaboró en la llamada.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 1c49e0a70aeae8f718fcee017a719300
+
+% 0 1 0 09e2e4440c22ed3f0ff06645ed10edc9
+
+% 0 1 0 07eeec7b907cc0eb1440342ec6595d9f
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 3 0 005f3eebe477eae710c3c04f7036ed80
++         Dos tokens son iguales cuando lo son sus cinco campos, que es como se encuentra
++         `Token.Newline` en un flujo. Un token es `Showable` solo como su texto, que es lo que
++         necesita un listado representado, e `Inspectable` con todos sus campos.
+
+% 0 1 0 12bbafd9c9f0c569014e32ffaafe1549
+
+% 0 1 0 05f2b164e2c172fe0cf96d55ebf609db
+
+% 0 1 0 1d6e0d5789ea077f1e897ec722f2b758
+
+@ 0 9 0 14c378b6b357a4e41ed232771164609a
++     entry .Newline   el token que separa las líneas mientras se ensambla un código fuente
++         `Token("\n", Accent.Unparsed)`. Nunca aparece en las líneas de un `SourceCode`
++         terminado, que se dividen por él.
++     entry .showable   un token se muestra como su texto
++     entry .inspectable   un token se inspecciona con todos sus campos, en forma de producto
++         `Token(text:t"val" ╱ accent:Keyword ╱ meta:○ ╱ span:⟪∅⟫ ╱ role:○)`. Un `#meta` presente
++         se muestra como `｢Meta｣` sin su tipo, ya que representar un `Syntax` necesita un
++         contexto `Imports` que la inspección no puede proporcionar; un papel presente, como
++         `｢Binding｣` o `｢Usage｣`.
++     entry .Meta   lo que el typer sabe de un token: su tipo y cualquier elaboración de su llamada
+
+% 1 1 0 1a6cf28f029677e3029a26de3caaab37
+
+@ 0 5 0 1ce1eb27e1ba455107a8f9ceb90b18d2
++           Se adjunta a un token solo en `Depth.Typechecked` o `Depth.Compiled`, y solo a los
++           identificadores a los que el typer dio un tipo: el nombre de un `val`/`def` lleva su
++           tipo declarado o inferido, una selección o un identificador su tipo, un árbol de tipo
++           su tipo. Los tokens que el compilador no pudo tipar (por un error cercano, o por un
++           tipo que stenography no puede representar) simplemente no tienen `Meta`; el resaltado
++           nunca falla por uno de ellos.
+
+% 0 1 0 16e5dd92da138cdb1a8049c3ab21a689
+
+% 0 1 0 1c2fd15b30390e3506e0f272e8cd0f7d
+
+% 0 1 0 06d7630252786fc7146a6e450199213b
+
+% 0 1 0 049d98ed308ed6091e647657d39fb749
+
+% 0 1 0 109e0c56664e26f71e76577319fa5a56
+
+% 0 1 0 166aac36e6c2d883090dd4637c225bf3
+
+% 0 1 0 1b695ea2965638710ea8fa0d5201a360
+
+% 0 1 0 060753e95147af6e12a6bea9b3041b07
+
+% 0 1 0 0880fd5ed8bb365403c1d8bb8dca7f54
+
+% 0 1 0 1d7b83c6765623720d5a423e86f3fbbb
+
+% 0 1 0 123a0907bc5281d81252c9897a10e235
+
+% 1 1 0 193f11c6cceb75ad09460a0fc68d45ea
+
+@ 0 24 0 03156fab1f9feb430bb8f98a229bc058
++       entry #tpe   el tipo del token, como `Syntax` de stenography
++           Se representa con `Syntax#text` (abreviado respecto a un `Imports` en el ámbito) o
++           con `Syntax#qualified`.
++       entry #elaboration   lo que el typer añadió en este punto de llamada, si es que añadió algo
++           Presente en el token del destinatario de una llamada que el typer elaboró más allá de
++           su texto fuente: una `prophesy.Elaboration` que enumera los argumentos de tipo
++           inferidos y los argumentos `using` sintetizados, cada uno con el nombre del given
++           resuelto. Los argumentos escritos explícitamente nunca se registran.
++     entry #text   el texto del token, que nunca contiene un salto de línea
++     entry #accent   la categoría de color: palabra clave, término, tipo, número, cadena, símbolo, …
++     entry #meta   lo que el typer sabe del token, o `Unset` a profundidad tokenizada
++     entry #span   dónde está el token: un `Span` en modo línea con línea, columna y longitud contadas desde 0
++         `Span.empty` para un token hecho a mano; un token de un `SourceCode` tiene su línea y
++         su columna, que se leen como `span.startLine`, `span.startColumn` y `span.endColumn`,
++         cada una un `Ordinal`.
++     entry #role   `Role.Binding` o `Role.Usage` para un identificador de término o de tipo; si no, `Unset`
++         Se decide a partir del árbol sintáctico, así que está presente a cualquier
++         profundidad: el nombre de un `val`, `def`, parámetro, patrón o definición de tipo es
++         una ligadura, y un identificador que se refiere a uno de ellos es un uso. Las palabras
++         clave, los literales y la puntuación no tienen papel.
++     entry #length   la longitud del texto del token
++     entry #snip   el token partido en dos en un desplazamiento de carácter
++         `token.snip(point)` es el par de tokens con el texto anterior a `point` y el que
++         empieza en él, cada uno con el acento, el meta, el tramo y el papel del original.
++     entry .Role   si un token de término o de tipo liga un nombre o se refiere a uno
+
+% 1 1 0 0d654f0686d897aa060a9be8ced2e118
+
+@ 0 6 0 15b91e785f54d0e907a7eccc0d90ba72
++           `Binding` es el nombre que se está definiendo —el nombre de un `val`, `var`, `def` o
++           parámetro, una variable de patrón (incluido cada nombre de un patrón de tupla, un
++           ligador de `case` o un generador de comprensión `for`), o el nombre de una clase,
++           trait, objeto, tipo o parámetro de tipo— y `Usage` es un identificador que se refiere
++           a un nombre ligado en otra parte. Se decide solo a partir del árbol sintáctico, así
++           que está presente a profundidad tokenizada, y es `Unset` en un token que no es ni un
++           término ni un tipo.
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 0ce2808ea372ea2203d5e7fe777b4476
+
+% 0 1 0 1ea4c5d636767740058ac591d3499d05
+
+% 0 1 0 1849258b284566cb1e3dc74a4fd3f760
+
+% 1 1 0 1d8b89767a4f80a41a2cf77e5d49ea46
+
+@ 0 2 0 18c2ba8efcd0127818a0b6f50f988fad
++           Un papel se muestra como su nombre en minúsculas.
++       entry .showable   un papel se muestra como su nombre en minúsculas
+
+@ 0 1 0 0b2fc68361e8427919fdff2bc941b8af
++ entry .Accent   la categoría de color de un token, que una paleta asigna a un único color
+
+% 1 1 0 0a8cdecb653e180b0e06cd23e65a8a84
+
+@ 0 8 0 0a5b71b0f3f368f519813e1732c83511
++       Un acento es una categoría de color y nada más. `Error` es un token que el escáner no
++       pudo leer (un literal sin terminar, por ejemplo); `Number`, un literal numérico;
++       `String`, un literal de cadena, de carácter o de cadena interpolada; `Term`, un
++       identificador de término, incluidos los operadores simbólicos como `+` y `::`, que Scala
++       trata como identificadores; `Typal`, un identificador de tipo; `Keyword`, una palabra
++       clave dura; `Modifier`, una palabra clave modificadora (`private`, `lazy`, `override`, y
++       un modificador blando como `inline` donde lo es); `Symbol`, un token de puntuación como
++       `=`, `=>`, `:` o `,`; `Parens`, un paréntesis o corchete; y `Unparsed`, los espacios en
++       blanco, los comentarios y cualquier otra cosa que el escáner haya saltado.
+
+@ 0 5 0 00fbd49ab0924cc919b206d329531af7
++       Si un token `Term` o `Typal` define un nombre o lo usa es una anotación aparte,
++       `Token.Role`, de modo que el nombre de un `val` y un uso suyo comparten un mismo acento y
++       una política de estilo puede añadir cursiva o negrita a las ligaduras además del color.
++       En el terminal, `ScalaSyntaxPalette` da a cada acento su color; en HTML,
++       `CommonFormattable` convierte cada acento en una clase CSS con el mismo nombre en
++       minúsculas.
+
+@ 0 2 0 0b365f27704de7ae0683a3b57803985d
++       Un acento se muestra como su nombre en minúsculas: `Accent.Keyword.show == t"keyword"`.
++   entry .showable   un acento se muestra como su nombre en minúsculas
+
+@ 0 1 0 080a95a4174730cf0e06c67ac21aec2f
++ entry .ProgrammingLanguage   un lenguaje que harlequin puede resaltar: `Scala` o `Java`
+
+% 1 1 0 13b62f8da22518411d7909c80b7c3913
+
+@ 0 4 0 13bdd63ba7169cdc1a6e7fa3e8acfd97
++       Un trait sellado con dos instancias, los objetos `Scala` y `Java`. Su método `#highlight`
++       es el punto de entrada a la biblioteca, y su tipo `#Context` permite a un lenguaje decir
++       qué rodea a un fragmento —un término o un tipo de Scala, en lugar de un fichero
++       completo— para que un fragmento que no es una unidad de compilación completa se pueda
++       analizar igualmente.
+
+% 1 1 0 0ca680b18fb975f90969d3a3fe576bd4
+
+% 0 1 0 1e1214df94810b4705822d446986141e
+
+% 1 1 0 1f606b890395d9f20d55f569b3b75fd6
+
+@ 0 9 0 185285ec74494a72112f084b2978ab31
++   entry #Context   en qué puede estar incrustado un fragmento de este lenguaje
++       `Scala.Context` es `Top`, `Term` o `Type`; `Java.Context` solo es `Top`.
++   entry #highlight   resalta texto en este lenguaje, a la profundidad del `Highlight` en el ámbito
++       `language.highlight(text, context, caret)(using Highlight)`: envuelve el texto como
++       exige su `context` (`#preprocess`), lo resalta con `SourceCode.apply` y elimina el
++       envoltorio del resultado (`#postprocess`). `context` es `Unset` por defecto, una unidad
++       de compilación completa, y `caret`, un desplazamiento `Ordinal` dentro del texto, es
++       `Unset` por defecto, lo que significa que no se calculan compleciones. El `Highlight`
++       given decide la profundidad; `Highlight.default` es tokenizado, así que para el
++       resaltado simple no hace falta ninguna importación.
+
+% 2 1 0 04ea994001a1e4b00a8e31b50bbeeef7
+
+% 3 1 0 052ca99b2414608d06e516066018caf1
+
+% 0 1 0 05345434cb59ff010d71fc826bfbc860
+
+% 0 1 0 0ef41b787639101b16ec807e5bbbc221
+
+% 0 1 0 06f6d881cfd4c9491e0fcd468d107556
+
+% 1 1 0 01c9b9f2233d096610ea4f73736adc1d
+
+@ 0 5 0 17c41aad3170cc3e04f8a9501b15fb28
++   entry #preprocess   el texto con el que un lenguaje envuelve un fragmento antes de resaltarlo
++       La identidad para una unidad de compilación completa (`Unset` o `Top`); `Scala` envuelve
++       un `Term` en un `val` y un `Type` en un alias `type`.
++   entry #postprocess   la eliminación del envoltorio del resultado resaltado
++       Descarta las líneas que añadió `#preprocess`, de modo que las líneas del resultado son
++       las del propio fragmento.
+
+@ 0 1 0 0f0ec912dbdf36f11f52c1fafc7c9eaa
++ entry .Scala   el lenguaje Scala: `Scala.highlight`, y los contextos en los que puede estar un fragmento de Scala
+
+% 1 1 0 01dd6d04df47a8d404f50eec22f625d8
+
+@ 0 6 0 0ccab36ab0f3226704ecd9b551ca4794
++       El `ProgrammingLanguage` para Scala 3. `Scala.highlight(text)` tokeniza el texto con el
++       escáner y el analizador del propio compilador; con un compilador en el ámbito
++       (`highlighting.
++       typecheckedScala` o `compiledScala`, que necesitan un `Scalac` y un `LocalClasspath`, o
++       `sessionScala`, que necesita un `Scalac.Session.Frontend`) ejecuta también el frontend,
++       de modo que cada identificador conoce su tipo, y `compiledScala` ejecuta además las fases
++       posteriores, por los diagnósticos que solo ellas producen.
+
+% 2 1 0 1b424960b98c5d68110b3d9a389b5923
+
+% 0 1 0 0ec8f40a121e51bc0100e2649c5e26af
+
+% 1 1 0 16d9950ef3b5e76d0cd212af5ce30add
+
+% 2 1 0 19145a8ee7d353f300a36f03b7b6a183
+
+% 0 1 0 1c5b9c2a56f89c19161f534704c48407
+
+% 1 1 0 18d5eadf9bea9b4a0eb1a138408959af
+
+% 0 1 0 037dda275c2f6fb900eac78d00b3dbde
+
+% 0 1 0 036da6185fde40810850cef65b465413
+
+% 0 1 0 0cb8a951767ed38119ae7b3efd6df2e0
+
+% 1 1 0 0699089f532fbf78101fdba9d6965c93
+
+% 2 1 0 077e0ba7fc0fefaf1a60985c2f1b29ac
+
+% 3 1 0 0c3f24745b7615ae1c5221a60290ea07
+
+% 4 1 0 038ace529601bcff049cec75b90445ae
+
+% 0 1 0 19d5ebd6a20fc7cb054ff3a505023881
+
+% 1 1 0 05134832ff9b864118bdd79775c3b966
+
+% 0 1 0 080210cfb3a0a21d19dc4954ea1cdc61
+
+% 0 1 0 1df856f3f7d749a10df12c9436635be2
+
+% 0 1 0 05e6dfc8503dd2a6027c7a8ae8e4e148
+
+% 1 1 0 0fe1a81cf6606443187574b20334333d
+
+% 2 1 0 1002df2f504a389e1c65260d5c88d420
+
+% 3 1 0 0f5e95e5793133d311543bd3a70e8dca
+
+% 4 1 0 09f5fd619c505f1c12142ecc5ad28960
+
+% 0 1 0 129c6596fff31bd90949582a5912e5da
+
+% 0 1 0 1270e020ba556e470bd9c4c46f7ec4e3
+
+% 1 1 0 1c44ac3e48123e161c33f03929858c70
+
+% 2 1 0 037894ec05d42aab136e63d3e890b95d
+
+@ 0 3 0 18a1100bdea0fdca1a29984460942f5e
++       Un fragmento que no es una unidad de compilación completa —una expresión suelta, o un
++       tipo— se resalta en un `Scala.Context`, que lo envuelve para que se pueda analizar y
++       desenvuelve el resultado:
+
+% 2 1 0 033229daf82e02421aa5c0dd3dbec9d6
+
+% 3 1 0 0ab9b30a78862a921c13ff7021bc0c20
+
+% 0 1 0 13285a0364320aad0ce902959ddee97d
+
+% 0 1 0 056658ae190fd80d1ce43e1b3a86091e
+
+% 1 1 0 00ea9ba88b214a1e1eae1baebfa76f75
+
+@ 0 6 0 1225f2ea584145a706b58dddbe43af40
++       Un desplazamiento `caret` convierte el resaltado en compleción. Las compleciones de
++       palabras clave proceden de los tokens anteriores al cursor de inserción y no necesitan
++       compilador: `va` al principio de una sentencia ofrece `val` y `var`, `xs match ` ofrece
++       `case`, y una posición que debe ser un nombre nuevo (tras `val `) o un tipo no ofrece
++       ninguna palabra clave. Con un compilador en el ámbito, el motor interactivo del
++       compilador añade los miembros tras un `.`, los nombres en el ámbito para un
++       identificador suelto, y solo tipos, módulos y paquetes en una posición de tipo.
+
+% 2 1 0 0c2e19744f5afca81367e6fe0901b0bc
+
+% 3 1 0 00f3b877cd09afa80e1f7474b496f8bb
+
+% 0 1 0 09f4411141aaec02158c7b6c10b84f23
+
+% 0 1 0 1a6aafe99b7c17330736b9c3f3955978
+
+% 0 1 0 0459a0677f9309f518b3a566e69ab91c
+
+% 1 1 0 063e89c110f79d330aaa0e4a11627d17
+
+% 2 1 0 02534176a96c8b0c186dfffa6f1daf35
+
+% 3 1 0 1f7f4ea47e4aacba07532d821e374bcf
+
+% 4 1 0 054ab02e63fb37dd1dcca5710d0252c5
+
+% 5 1 0 07ba3af21457813e14064b97bed59250
+
+% 6 1 0 03bacf0da4f7117918b8dfc2fe2f0418
+
+% 7 1 0 16c64429410d3fd01aa4e4864c95bdf3
+
+% 0 1 0 1660bd84cced823d1fa728679741c8b8
+
+% 0 1 0 17976cfac8aef4c010e72249fe27c752
+
+% 0 1 0 092b493386f27a5f1b64548f30275861
+
+% 1 1 0 0d6750d125983d6b0d4ee75bf3b01886
+
+@ 0 4 0 035af921fde245470d3052b63192bdd7
++       Un miembro de un receptor `scala.Dynamic` no tiene ningún símbolo que completar, así que
++       cuando el cursor de inserción está sobre una selección de un tipo `Dynamic`, se carga
++       en esta JVM el objeto compañero del tipo y, si implementa `prophesy.Completable`, se le
++       pregunta qué miembros admite el tipo refinado del receptor.
+
+% 1 1 0 0c1ec9494bfe76ca0d99e1ee5a352e78
+
+% 1 1 0 0d9870b369bec2fb10ca5f847f8c03fc
+
+% 1 1 0 09d1cd43521aba4d0d74c7499e9f9582
+
+@ 0 5 0 07f32a27de1db2b90dbfe234ee46f99c
++   entry .Context   qué es un fragmento de Scala: una unidad completa, un término o un tipo
++       `Top` es una unidad de compilación completa, lo mismo que no dar ningún contexto. `Term`
++       envuelve el fragmento como cuerpo de un `val` para que una expresión suelta se pueda
++       analizar, y `Type` como lado derecho de un alias `type`, para que `Map[Text, Int]` se
++       resalte como un tipo; en ambos casos, las líneas del envoltorio se eliminan del
++       resultado.
+
+@ 0 1 0 0280be9cba5760741d4cfde4f0c4e785
++ entry .Java   el lenguaje Java: `Java.highlight`, tokenizado con el escáner de Java del compilador
+
+% 1 1 0 08c68804b53fc25800879a405a3da1db
+
+@ 0 4 0 0101f9fd5d8338970be27218c87dcd07
++       El `ProgrammingLanguage` para Java. `Java.highlight(text)` tokeniza con el escáner de
++       Java del compilador de Scala, de modo que las palabras clave, los literales y los
++       identificadores de Java reciben sus acentos; solo se aplica la profundidad tokenizada,
++       puesto que el frontend de Scala no tipa Java. Su único `Java.Context`, `Top`, es una
++       unidad de compilación completa.
+
+% 2 1 0 1161f9eb5f444d1218d5e28076b7fc26
+
+% 3 1 0 0785fce4a90227420349510a5b9b6767
+
+% 0 1 0 163d7da5c8570e6f1e2c7d99303063ba
+
+% 1 1 0 0da0ba13e606970c01f9358fd4bd16c2
+
+% 1 1 0 0619a925ed1fc51706d74dd574c2cf92
+
+@ 0 1 0 1ce581e6dcb54dbf1505934fa4b8dfa6
++   entry .Context   el único contexto en el que puede estar un fragmento de Java: `Top`, una unidad completa
+
+@ 0 1 0 0cecea8adc326d6804637dbbbb2ac7d5
++ entry .Highlight   hasta dónde llega el resaltado, y el compilador que ejecuta: el given de cada llamada a `highlight`
+
+% 1 1 0 113788b5d0d3be121114941feec701d7
+
+@ 0 4 0 16a9c70af95e9e3e04f02c87dad633d9
++       Un `Highlight` es el valor contextual que reciben `Scala.highlight` y `SourceCode.apply`:
++       su `#depth` dice si solo hay que tokenizar, si hay que ejecutar el typer o si también
++       las fases posteriores, y su `#compilation` describe el compilador que se ejecuta cuando
++       la profundidad lo necesita. Las instancias son los givens del paquete `highlighting`,
++       que se importan por nombre:
+
+% 2 1 0 0330409942b35f3712d7c2e8e4bfcd4e
+
+% 3 1 0 104ef177596fe7fd08c41e29dbb0483f
+
+% 0 1 0 1ad604366fe28bbe0a03fa3ada5e4852
+
+% 1 1 0 024876a7f6907d750da7b5e5c55f78b0
+
+@ 0 4 0 0590a9fca0dcfca91a3abaa4b5fc1914
++       `Highlight.default` es el tokenizado y vive en el objeto compañero, así que se encuentra
++       sin ninguna importación; una importación por nombre de `typecheckedScala`,
++       `compiledScala` o `sessionScala` tiene prioridad sobre él. Un `Highlight` a medida es un
++       valor con un `Depth` y una `Highlight.Compilation`, ligado como given local.
+
+% 1 1 0 025d0ffff01518300197bc3d5c29c9eb
+
+% 1 1 0 1c1f4b132967ba2a09999782426c1933
+
+@ 0 4 0 1cd389fad219f95d04353c84803e76c8
++   entry .default   el resaltado predeterminado, `highlighting.tokenizedScala`, en el ámbito implícito
++       Se encuentra a través del objeto compañero siempre que no haya otro `Highlight` en el
++       ámbito léxico, así que `Scala.highlight(text)` no necesita ninguna importación para el
++       resaltado tokenizado.
++   entry .Compilation   lo que el resaltado con comprobación de tipos o compilado necesita de un compilador
+
+% 1 1 0 13f258f463c0513405b7273aa35a04aa
+
+@ 0 15 0 106bd6a1045e45361150ee24cb99c63e
++         Los argumentos, el classpath y la instancia de compilador que necesita una ejecución
++         del frontend, abstraídos para que `harlequin.core` no sepa nada de anthology ni de
++         hellenism: `harlequin.typed` construye uno a partir de un `Scalac` y un
++         `LocalClasspath`, o a partir del `Scalac.Session.Frontend` de una sesión caliente.
++         Una herramienta con un compilador propio puede implementarlo directamente.
++     entry #arguments   los argumentos de línea de comandos del compilador
++     entry #classpath   el classpath, como un único texto en la forma `-classpath` de la plataforma
++     entry #compiler   un `dotty.tools.dotc.Compiler` nuevo que ejecutar
++     entry #context   un contexto en el que tipar, para una compilación que mantiene caliente un compilador
++         Por defecto es `Unset`, en cuyo caso se crea un contexto nuevo a partir de `#classpath`
++         y `#arguments` en cada ejecución, cargando cada vez la tabla de símbolos del classpath.
++         Una sesión caliente aporta en su lugar su contexto base: cada ejecución recibe un hijo
++         nuevo de él, de modo que lo que la sesión ya ha cargado y compilado está en el ámbito.
++   entry #depth   `Tokenized`, `Typechecked` o `Compiled`
++   entry #compilation   el compilador que ejecutar, o `Unset` a profundidad `Tokenized`
+
+@ 0 8 0 00a6382ba1d8d3241ac0769d7a1913de
++ entry .Depth   las tres profundidades de resaltado: tokenizada, con comprobación de tipos, compilada
++     `Tokenized` clasifica los tokens solo con el escáner y el analizador y no necesita
++     classpath. `Typechecked` ejecuta el frontend del compilador hasta el typer, de modo que
++     los identificadores llevan sus tipos (`SourceCode.Token.Meta`), se recogen los
++     diagnósticos y un cursor de inserción produce las compleciones del compilador. `Compiled`
++     ejecuta además las fases posteriores al typer (deteniéndose antes de la generación de
++     bytecode, así que no se escribe nada) únicamente para sacar a la luz los diagnósticos que
++     solo ellas pueden producir; los tipos se siguen leyendo de la ejecución detenida en el
++     typer, así que siguen siendo los del nivel del código fuente. El `Highlight` given en el
++     ámbito lleva la profundidad.
+
+@ 0 1 0 14b52b1983a4a0600b78f06d6a6f8d91
++ entry .highlighting   los givens de `Highlight`, uno por profundidad, cada uno para importar por nombre
+
+% 1 1 0 0db6dfbcd651847e0b2f7b0002c1c735
+
+@ 0 4 0 0a0ac40d844e9eda0c903636ab1a3f0b
++       A qué profundidad trabaja `Scala.highlight` lo decide el `Highlight` given en el
++       ámbito, e `import highlighting.*` no importaría un given, así que se importa uno por
++       nombre. `tokenizedScala` es también `Highlight.default`, así que se aplica sin ninguna
++       importación; los otros tres viven en `harlequin.typed` y necesitan un compilador.
+
+% 2 1 0 15660f78add619cf073924280361999e
+
+% 3 1 0 1ead2ef2a4ead2a30d93cbe58c8814aa
+
+% 4 1 0 19e0090e8d1748a51a41e67382bc0347
+
+% 5 1 0 03eaf3d8a7bef3d41c8e0b1fe4ef9b97
+
+% 6 1 0 171f51446cc6b4c51e3cba294f0ab394
+
+% 7 1 0 00cd5eb0007d18ad018f710e0488cb7b
+
+% 0 1 0 1ade2f57974836c009e7c7cc5666afb9
+
+% 1 1 0 160fc8ad9197131e0068681e36457bc3
+
+@ 0 3 0 0635e4587d0820150a7bbc40a4d6ebbd
++       El `LocalClasspath` debe ser aquel contra el que está escrito el código que se resalta:
++       `LocalClasspath.of(Classloader[SomeClass])` para el classpath del que procedían las
++       propias clases de un programa en ejecución.
+
+% 1 1 0 15765921bb99994d0599825392448e0f
+
+% 1 1 0 059a6993953ccb780933e8b828078f57
+
+@ 0 19 0 14d4599610bf9f9113d5a5bd5a39dec4
++   entry .tokenizedScala   resaltado tokenizado: acentos y papeles, sin classpath ni ejecución del compilador
++       `Depth.Tokenized` sin `Highlight.Compilation`. Está en `harlequin.core`, y es también el
++       `Highlight.default` del objeto compañero.
++   entry .typecheckedScala   resaltado con comprobación de tipos mediante un `Scalac` y un `LocalClasspath`
++       `Depth.Typechecked`: ejecuta el frontend del `Scalac` de anthology given, con sus
++       argumentos de línea de comandos, sobre el `LocalClasspath` given (sus entradas de
++       directorio y de JAR, unidas con el separador de la plataforma). Necesita ambos como
++       givens en el ámbito. Cada llamada crea un contexto de compilador nuevo y carga la tabla
++       de símbolos del classpath, así que resaltar muchos fragmentos de código contra un mismo
++       classpath es más rápido mediante una sesión y `sessionScala`. Está en `harlequin.typed`.
++   entry .compiledScala   resaltado compilado mediante un `Scalac` y un `LocalClasspath`
++       Como `typecheckedScala`, a `Depth.Compiled`: se ejecutan también las fases posteriores
++       al typer, por los diagnósticos que solo ellas producen. Está en `harlequin.typed`.
++   entry .sessionScala   resaltado con comprobación de tipos dentro de una sesión de compilador caliente
++       `Depth.Typechecked`, ejecutado con el propio compilador de la sesión y en un hijo de su
++       contexto base, a partir del `Scalac.Session.Frontend` given en el ámbito: el valor que
++       da `compilation.frontend` dentro de `scalac.on(classpath).session:`. Un fragmento de
++       código se tipa contra todo lo que ha compilado la sesión, sin volver a cargar la tabla
++       de símbolos del classpath, de modo que un REPL puede resaltar cada línea contra sus
++       definiciones anteriores.
+
+% 2 1 0 1bd3527b67c2dd9f1fc9b738849ce9af
+
+% 3 1 0 0f26902b36ae8dba0fe5dd303555a361
+
+% 4 1 0 045b508f9641bb7704baf3f08446fb39
+
+% 0 1 0 0f690ce8861de30a192d0bdc055b7ccb
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0b9a872872b0d33c160f9349282eead7
+
+% 0 1 0 1a594ea3c86bc7cd1405f34514ac5ebf
+
+% 0 1 0 03f5dd233c5c27da01f1bdd626442203
+
+% 0 1 0 0aa392d8591e65a216df27dd163f4cbe
+
+% 0 1 0 106b4623b584404a1dc6e5e47605a25a
+
+% 1 1 0 1645d9a8544e7716115617efe5fe0be2
+
+@ 0 5 0 13856199a3b3435809d015a21cb51313
++       Dos advertencias: debe ejecutarse en el hilo de la sesión, como las propias
++       compilaciones de la sesión (el compilador fija su base de contexto al hilo de su primera
++       ejecución); y como el fragmento se tipa como un fuente de la sesión, los nombres de
++       nivel superior que define permanecen en el ámbito de esta hasta que el siguiente
++       fragmento los sustituye. El frontend se obtiene de nuevo en cada uso, ya que una sesión
++       sustituye su compilador cuando este falla. Está en `harlequin.typed`.
+
+@ 0 1 0 149ee827f9f9b5ac0cfc9bf25ee20c85
++ entry .Diagnostic   un diagnóstico del compilador capturado durante el resaltado: su tramo, mensaje e importancia
+
+% 1 1 0 195e04b498ab82c31f0f311674c6e06d
+
+@ 0 6 0 08f9d723056121df05fce9c8d57dbabe
++       Lo que contiene `SourceCode#diagnostics`, en `Depth.Typechecked` o `Depth.Compiled`. El
++       `#span` es un `Span` en modo desplazamiento (un desplazamiento de carácter dentro del
++       texto y una longitud), que se mantiene separado del flujo de tokens porque un
++       diagnóstico puede cubrir parte de un token o varios tokens; un representador lo vuelve a
++       aplicar a los tokens con los que se solapa. Los diagnósticos sin posición se descartan,
++       y se aplica la propia eliminación de duplicados que hace el compilador con los mensajes
++       repetidos en una misma posición.
+
+% 2 1 0 0ea2bfe2d0959ca40594d2b8a6742112
+
+% 3 1 0 1dedb247c675e58c026438105bc5d898
+
+% 4 1 0 1a61793f29f6853e17705e989dc591a8
+
+% 5 1 0 1b39705cab8d215a04c3c8e9c1515c18
+
+% 6 1 0 175205ec7873040b02dc80668374f3d4
+
+% 7 1 0 1c8866a9ad24b49d1bfeac602699215a
+
+% 0 1 0 0df5fdcad8106f33165e3d110d83b46e
+
+% 0 1 0 1c5d1f8a1bef0ae21aaff8cd8cf9a9e0
+
+% 1 1 0 19bda19216cfcccd1bc090c9896acade
+
+% 1 1 0 164bc98d326d120209452ed9ee235bbf
+
+@ 0 6 0 1986cf347978e52a1b6ab96be89be6a4
++   entry .Importance   la gravedad de un diagnóstico: `Info`, `Warning` o `Error`
++       Un enum propio de Harlequin, con los mismos nombres que el `Importance` de anthology y
++       el de larceny, para que `harlequin.core` no dependa de anthology.
++   entry #span   dónde está el diagnóstico: un `Span` en modo desplazamiento dentro del texto resaltado
++   entry #message   el mensaje del compilador, como texto
++   entry #importance   `Info`, `Warning` o `Error`
+
+@ 0 8 0 1e428518294770f20d50b94bf13f78cf
++ entry .Completion   una candidata a compleción: un nombre, su clase y su signatura
++     Reexportado desde prophesy (`prophesy.Completion`), puesto que las compleciones de
++     harlequin se expresan con los tipos de prophesy. Una `Completion` tiene el `name` que
++     insertar, su `kind` (`Term`, `Method`, `Given`, `Extension`, `Type`, `Module`, `Package` o
++     `Keyword`), su `signature` como `Syntax` de stenography (la signatura completa de
++     parámetros y resultado de un método, el tipo de un valor o la propia palabra clave) y una
++     `documentation` opcional. En el paraguas `soundness`, el nombre `Completion` pertenece a
++     exoskeleton, así que a este se llega como `harlequin.Completion`.
+
+@ 0 6 0 0c9078b0ea686d2d108c51374510a695
++ entry .Completions   el resultado de una petición de compleción: el tramo que sustituir y las candidatas
++     Reexportado desde prophesy (`prophesy.Completions`): `replace` es el `Span` en modo
++     desplazamiento del nombre parcial que sustituye la compleción elegida (vacío en el cursor
++     de inserción cuando aún no se ha escrito nada), e `items` son las `Completion`s, con las
++     palabras clave primero y ordenadas. Es lo que contiene `SourceCode#completions` cuando se
++     dio un cursor de inserción. En el paraguas `soundness`, el nombre pertenece a
++     exoskeleton, así que a este se llega como `harlequin.Completions`.
+
+@ 0 1 0 1a314707e5385d210cd51ffd3b0b259d
++ entry .Fragment   análisis de un fragmento de código en torno a un cursor, antes de que se ejecute ningún compilador
+
+% 1 1 0 18f8d7bd3d79e07b1d15a4bab436a842
+
+@ 0 7 0 1c4f003446c87da80a32d374d43149be
++       La división de texto puro y tokenizada que realiza un anfitrión de compleción —un REPL,
++       una consola de depurador— antes de decidir si invocar siquiera al compilador: dónde
++       empieza el identificador parcial en el cursor, si selecciona un miembro, si el token
++       anterior es un valor que espera un método infijo, qué paréntesis quedan abiertos y
++       dónde está el `:` o el `=` de profundidad cero de una línea. Nada de ello necesita un
++       classpath; `infixBase` tokeniza con el escáner, y el resto es solo texto. Los
++       desplazamientos son desplazamientos de carácter dentro del texto, con el cursor justo
++       después del carácter en `offset - 1`.
+
+% 2 1 0 04aa4225d2d299b81e97b6b4927c0520
+
+% 3 1 0 02c9494183f0ddf60a916bd8fe5d42a8
+
+% 0 1 0 007968fca71aa9ce09f368212b302b1a
+
+% 0 1 0 1ae93907747142ea02a04f67d5828454
+
+% 0 1 0 16ccf6396543468c196badf60f2f1fd4
+
+% 0 1 0 13d20117e359dd8d1cd2c37052de4e0c
+
+% 0 1 0 00fa7280df3018cf14cbe9d5603b19bf
+
+% 1 1 0 1a8b6e210d10d7a70c3114dd70e97093
+
+@ 0 2 0 174f67c55f1201c806ade274d2a01159
++       En el paraguas `soundness`, el nombre `Fragment` pertenece a honeycomb, así que este se
++       importa por nombre como `harlequin.Fragment`.
+
+% 0 1 0 15a39807b75f835b0c86af505da8e2a0
+
+% 1 1 0 0448ba3478cf9f3a01d7f36d9d07e679
+
+@ 0 13 0 00f14dc760acf3cc06526cb4dd560179
++   entry .identifierChar   si un carácter puede formar parte de un identificador alfanumérico
++       Una letra, un dígito o `_`.
++   entry .identifierStart   el desplazamiento en el que empieza el identificador parcial que termina en un desplazamiento
++       Retrocede sobre los `identifierChar`s desde `offset`; es igual a `offset` cuando el
++       cursor no sigue a un carácter de identificador.
++   entry .memberBase   la base de la selección de miembro y el nombre parcial en el cursor
++       `memberBase(code, offset)` divide el texto en el cursor en la base —todo hasta el `.`
++       inmediatamente anterior al nombre parcial del miembro, incluido este— y el parcial. La
++       base es `Unset` cuando el cursor no está seleccionando un miembro (un identificador que
++       es el primer token, el primer segmento de un import), de modo que no hay ningún tipo
++       fijo contra el que enumerar. `memberBase(t"text.length", 7)` es `(t"text.", t"le")`: el
++       parcial termina en el cursor, no al final de la entrada.
++   entry .introducers   las palabras clave tras las cuales un identificador es un nombre, no un valor
+
+% 0 1 0 176fe969df7071c415e6e53995202934
+
+@ 0 37 0 00ca332baba4b5ba0af9991865daf94d
++       `import`, `export`, `case`, `extension` y `new`: un nombre que sigue a una de ellas se
++       está definiendo, importando o construyendo, así que no es un receptor infijo.
++   entry .infixBase   el receptor de valor antes de un espacio y un nombre parcial, con un `.` sintético
++       Cuando el cursor está en `<value> <space> <partial>` —un valor seguido de espacio en
++       blanco, que es un método infijo que se está escribiendo—, `infixBase(code, offset)` es
++       la expresión del valor con un `.` añadido al final, para que la sirva la ruta de
++       compleción de miembros, y el nombre parcial: `infixBase(t"xs ma", 5)` es
++       `(t"xs.", t"ma")`. La base es `Unset` cuando no hay receptor de valor: el token anterior
++       al espacio es una palabra clave (dura o blanda: se rechazan todas las palabras clave de
++       Scala 3, así que `erased ab` e `inline de` no dan receptor), un operador, una coma o un
++       paréntesis de apertura, o un nombre en posición de definición o de import
++       (`val xs ma`). Un receptor entre paréntesis se recorre como un grupo equilibrado, así
++       que `hal(nym, sly) ma` produce `hal(nym, sly).`.
++   entry .expressionStart   dónde empieza la expresión de valor que termina al final de un texto
++       Retrocede sobre caracteres de identificador, `.` y grupos de paréntesis equilibrados, y
++       se detiene en un operador, un espacio o un paréntesis de apertura de profundidad cero:
++       `expressionStart(t"a + hal.nym")` es `4`, y para `hal(nym).sly` es `0`.
++   entry .unclosed   los paréntesis de cierre de los que quedan abiertos, del más interno al más externo
++       `unclosed(t"hal(nym, List[Int")` es `List(']', ')')`, así que al añadirlos en orden se
++       completa el fragmento. Los paréntesis dentro de literales de cadena y de carácter
++       (simples, con escapes y con triples comillas) y dentro de comentarios de línea y de
++       bloque no cuentan; un cierre sin nada abierto se ignora, de modo que un fragmento
++       cortado desde dentro de un grupo se sigue pudiendo recorrer. El escáner no ve el
++       interior del `${…}` de una interpolación, que pasa por cadena.
++   entry .outermost   el desplazamiento del primer carácter de profundidad cero que satisface una prueba
++       `outermost(code, ':')` es el desplazamiento del primer `:` fuera de todo grupo de
++       paréntesis, cadena y comentario —los dos puntos del tipo de retorno en
++       `def f(a: Int): String`, no los de un parámetro— o `Unset` si no hay ninguno;
++       `outermost(code)(predicate)` prueba en su lugar el desplazamiento de cada carácter de
++       profundidad cero, para una prueba como «un `=` no seguido de `>`».
++   entry .split   las partes de un texto entre sus apariciones de profundidad cero de un separador
++       `split(t"a.*, b.{c, d}, e.given", ',')` es `a.*`, ` b.{c, d}` y ` e.given`: un
++       separador entre paréntesis no divide. Las partes no se recortan ni se descartan cuando
++       están vacías, de modo que se pueden recuperar las posiciones de los separadores; un
++       texto sin separador de nivel superior es su propia y única parte.
++   entry .groups   el contenido de cada grupo de paréntesis abierto a profundidad cero, en orden
++       `groups(code)` da las cláusulas de parámetros de la cabecera de una definición sin sus
++       paréntesis —`def f[T](a: T, b: (Int, Int))(using c: C): T` da `a: T, b: (Int, Int)` y
++       `using c: C`— y `groups(code, '[')`, sus cláusulas de parámetros de tipo. Un grupo
++       abierto y nunca cerrado se omite, por estar sin terminar.
+
+@ 0 1 0 0e0a7b88532e54920462e406ea276c07
++ entry .Lexis   los tokens de harlequin proyectados sobre el alfabeto `Lexeme` de prophesy, para la compleción de palabras clave
+
+% 1 1 0 181d00e0669699e119796ce7ec9b81f8
+
+@ 0 9 0 11fec2e5334320270bb772b2d4f1d93c
++       La compleción de palabras clave es gramatical: lo que puede seguir a un cursor de
++       inserción depende de los tokens que lo preceden, no de ninguna tabla de símbolos.
++       `Lexis` proyecta un flujo de tokens sobre los `Lexeme`s de prophesy —la abstracción en
++       la que el texto de los identificadores es irrelevante (un identificador de término es
++       simplemente `Term`) pero cada palabra clave y cada símbolo son significativos, con
++       `Break` en cada frontera de sentencia— y extrae el contexto invertido en un cursor de
++       inserción, que busca el `ScalaKeywords.pattern` de prophesy. La misma proyección sirve
++       a la compleción en tiempo de ejecución y al análisis de corpus que deriva el árbol de
++       patrones, de modo que ambos coinciden siempre en cómo es un contexto.
++       `Scala.highlight` con un cursor de inserción la usa; un anfitrión que quiera el propio
++       contexto llama a `context`.
+
+% 2 1 0 0548a510b62e6e1408a53be6f65c9f45
+
+% 3 1 0 12abd6e178049b360259435116055e59
+
+% 0 1 0 154f59fe455a909d04684671b33268f7
+
+% 0 1 0 130ab1d339c5351b0801b2ee68a894db
+
+% 0 1 0 0cab33ce56e500ba1126ae7a393f6144
+
+% 1 1 0 13f04f1478701d600f5d9def60a14462
+
+% 0 1 0 1c47372dcad07f410677dec019254fe9
+
+@ 0 18 0 1d233569dd3b0e531b18591ca6cd7cd1
++   entry .lexeme   el lexema de un token, o `Unset` para los espacios en blanco
++       La puntuación se clasifica solo por su texto, nunca por su acento (un `(` es
++       `Open(Round)`, un `=` un `Symbol`); una palabra clave o un modificador, por su texto; un
++       identificador de término es `Term`, salvo que sea un modificador blando como `inline` o
++       `using`, que es un `Keyword` dondequiera que aparezca, puesto que antes de un cursor de
++       inserción no se puede distinguir de un identificador; un tipo es `Typal`; los números y
++       las cadenas son `Literal`; un token `Unparsed` no aporta nada.
++   entry .lexemes   la secuencia completa de lexemas de un `SourceCode`, con `Start` primero
++       Con `Break` insertado en cada frontera de línea que empieza una sentencia nueva: una
++       línea no en blanco sangrada al mismo nivel que la línea no en blanco anterior, o menos.
++       Una línea con más sangría continúa la expresión que la contiene, así que no aporta
++       ninguna frontera.
++   entry .context   el identificador parcial en un cursor de inserción y el contexto de lexemas invertido anterior a él
++       `context(text, caret, limit)` es el fragmento de identificador que toca el cursor de
++       inserción (`Unset` cuando el cursor no sigue a un carácter de identificador) y los
++       lexemas que lo preceden, del más cercano al más lejano, como máximo `limit` (8 por
++       defecto). El texto anterior al fragmento se tokeniza de nuevo a profundidad tokenizada,
++       así que no se ejecuta ningún compilador. Un cursor de inserción en una línea en blanco
++       sangrada al mismo nivel que la última línea significativa, o menos, emite el `Break`
++       que tendrá la sentencia una vez escrita.
+
+@ 0 8 0 06cb0264545ea99b199f6626867e956b
++ entry .ScalaSyntaxPalette   una paleta con un color por acento, para representar código fuente en el terminal
++     El tipo que los representadores de `syntaxHighlighting` reciben como given: una
++     `Palette` de iridescence con `Form = Srgb`, refinada con un color para cada `Accent`
++     —`scalaError`, `scalaNumber`, `scalaString`, `scalaTerm`, `scalaType`, `scalaKeyword`,
++     `scalaSymbol`, `scalaParenthesis`, `scalaModifier` y `scalaComment` (para los tokens
++     `Unparsed`, representados en cursiva)— y tres para el margen del representador numerado:
++     `margin` como su fondo, `accented` para los números de línea y `subdued` para el divisor
++     y el marcador de error. La propia `Palette` exige `background` y `foreground`.
+
+@ 0 2 0 1ae7f8f519dfe3c91b7c90888155a6b0
++     Ninguna biblioteca incluye una predeterminada, puesto que una paleta es una elección de
++     colores; un programa define una como given, rellenando los campos con colores de
++     iridescence:
+
+% 2 1 0 15b054493bc6e83310f7245c80120b93
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 048e6dcaed9f474e0dc661747b5de4d6
++       label Una paleta de iridescence, con los dos colores que tiene toda paleta
+
+% 1 1 0 1ae4ad7ad37691970d37420c82b4674f
+
+% 2 1 0 105b58b0bff9912b1e1aff0a63e89455
+
+% 3 1 0 085ef1c599d5ad6f0c1290a4f9162696
+
+% 0 1 0 1c5105bf2ded1a6c183d4b520816a133
+
+% 0 1 0 12be1f334bff8e0e029d03aba2aa7e05
+
+% 1 1 0 121369581c344c8e03fe5814df6ad70c
+
+@ 0 1 0 108e2b37694051d31a749ceb23d54205
++       label Un color por acento
+
+% 1 1 0 0dfed74f1fb6f0f60a8fe86dacb49e5b
+
+% 2 1 0 1cd0a39ccb000de7066cb0f12668379f
+
+% 3 1 0 07b5d3d98573dbe008f1ed0360338ff4
+
+% 4 1 0 046af0df7b880bb01916ca87eef751c7
+
+% 5 1 0 0de06815052ab2240844ea0542eeb852
+
+% 6 1 0 159304fdddb5bf221db5fbbe59cbecdf
+
+% 7 1 0 0732ec1bf5b875d41565a71e2c928712
+
+% 8 1 0 14a97170fadc8375145f5ba74698f8f7
+
+% 9 1 0 1e02b96f93d5e00d1df50155789619c0
+
+% 10 1 0 060af502a1be25b809427c4bfa8a159f
+
+% 11 1 0 0baec0da803afef61a6f84d5420c810b
+
+% 12 1 0 09df46bbb18ed18e0799749a79fa438d
+
+% 13 1 0 056a2353b08972581e304d1e076f97f4
+
+% 14 1 0 1c4d202dadc05db307e0031b358d4f13
+
+% 15 1 0 0d6410dc0858ebaa138e92f3f5ab5088
+
+% 1 1 0 154ae048216c3eba1e3041795da1bdcd
+
+@ 0 1 0 0ef6ac7810bc7c37097ad21efd52f3b7
++       label Y los tres que usa el margen del representador numerado
+
+% 1 1 0 1ab440d7ef199a9c116e5c0324d9d714
+
+% 2 1 0 0f405c77f41a88691906908e39e3cce1
+
+% 3 1 0 03be81da507ec1e71f33937f0052e8dd
+
+% 4 1 0 134c592785ef68411cbc246336d38b42
+
+% 5 1 0 1d576a6ba7d4351c0ca65c83bf0a132e
+
+% 6 1 0 0d68a79acce413c90abc3b85405b05d0
+
+% 7 1 0 06312efffb43c6931d91b9d73e7a2f3a
+
+% 8 1 0 075130b416dd866511ca63a2412e599c
+
+% 9 1 0 159c89f9473d65ca1f23b29234adb1c3
+
+% 10 1 0 16c7aba49e7038c21d389cf211b99a0d
+
+% 11 1 0 1d53be140ecd49991b50d1aa2ffec3d1
+
+% 12 1 0 10b04b41fa58fdd20dabdbd6ef9e599d
+
+% 13 1 0 05f3f35d073db10301dc67bffd8998fb
+
+% 14 1 0 1381c5c45c0e8ff60ae46ed99cc0c148
+
+% 15 1 0 06fd9c3eb88fb6921be688bbfd104fb1
+
+% 0 1 0 0d90f83bc3f6cf2f0af1fd58929d39cd
+
+% 0 1 0 05524847f758719e001046b28d2e84ef
+
+% 0 1 0 1d8ed67aeda2162c07754abb715e4439
+
+% 1 1 0 059d7ba465bd36050d11b3cf6ad4baea
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 4 0 05a28952c44505c608823da5b9844dc7
++     Una paleta asigna un color a cada acento y nada más: si un token es una ligadura o un
++     uso es su `Token.Role`, y cualquier estilo adicional de las ligaduras es una política
++     aplicada encima. La misma paleta sirve al `scalaTeletypeFormattable` de punctuation y a
++     la representación `teletype` de los mensajes del compilador de delicious. Está en
++     `harlequin.ansi`.
+
+@ 0 1 0 1ee590af26df71fe13cdbbebeac545a7
++ entry .syntaxHighlighting   los representadores de terminal de código fuente resaltado, cada uno un given que importar por nombre
+
+% 1 1 0 0b113dd5104cd4be140416bba505276f
+
+@ 0 4 0 0c08b3267c5445bb123f56ac3f41810c
++       Tres givens `Teletypeable` de escapade, en `harlequin.ansi`, cada uno de los cuales
++       necesita un `ScalaSyntaxPalette` given en el ámbito. `numberedTeletypeable` y
++       `unnumberedTeletypeable` representan ambos un `SourceCode`, así que se importa por
++       nombre exactamente uno; `tokenTeletypeable` representa un único `SourceCode.Token`, y es
++       lo que usan los otros dos para cada token.
+
+% 2 1 0 07463a9a7e93f2ad0fa3198d1ca3fb4c
+
+% 0 1 0 098cedece490c6d1187f4b64f2ba4f23
+
+% 1 1 0 0e62336eeefa0b5f128f127e98f40e04
+
+% 2 1 0 0c9aba39c514347e1cdf601477946b00
+
+% 0 1 0 163face8aa7685061f9dcb3af3a9c903
+
+% 1 1 0 063b17405d48ecfb0f74c8544acac5d7
+
+% 2 1 0 198efb978632431d01ad5794fdc20441
+
+% 0 1 0 1d9b6b00bfb2c2810612825c51089ae9
+
+% 0 1 0 0415394804b2e16d1d89fda257973ac7
+
+% 0 1 0 0864d805beb13bff02855545ed68159e
+
+% 1 1 0 1a681e5f152d919c0d170fa686d03561
+
+% 2 1 0 1a85ef6219e86978125c4953898ba1fa
+
+% 0 1 0 1b1e3515306f437106327e63297d5c2a
+
+% 1 1 0 1b47376bb9a3d6310e526250fa84bfae
+
+% 2 1 0 06eeb4d69d88b9a210f860c02f9d9b32
+
+% 0 1 0 002f8514c84cc1c016073d8c9b3e9e1b
+
+% 0 1 0 04482772b3ea7f800b9389a811248f97
+
+% 1 1 0 1b80c9285a4498591ab89a9c41cfbfd4
+
+% 2 1 0 1ed52e6502364ca202ba582a21502ccf
+
+@ 0 2 0 0af2adb286359d230d3cfe62a3107916
++       Solo `numberedTeletypeable` y `unnumberedTeletypeable` se reflejan en el paquete
++       `syntaxHighlighting` del paraguas `soundness`; `tokenTeletypeable` se importa como
+
+% 0 1 0 0984d6474c4d2dd018b63b374b3c456d
+
+% 0 1 0 173eead191544d4b16bbfa86edb81f5f
+
+% 1 1 0 1752b63d1c2e0eb112c92d4c7f128236
+
+@ 0 15 0 1ae756e66c0ef71e0034b4c1c194c879
++   entry .tokenTeletypeable   representa un `Token` en el color de la paleta de su acento
++       Cada acento se representa en el color de la paleta del mismo nombre (`Error` en
++       `scalaError`, `Parens` en `scalaParenthesis`, etc.), y un token `Unparsed` —espacios en
++       blanco y comentarios— en `scalaComment` y en cursiva. El papel del token no recibe
++       estilo. Necesita un `ScalaSyntaxPalette`.
++   entry .numberedTeletypeable   representa un `SourceCode` con un margen de números de línea, marcando su foco
++       Cada línea va precedida de su número (desde `SourceCode#offset`), alineado a la derecha
++       a la anchura del número de la última línea, en el color `accented` de la paleta sobre su
++       fondo `margin`, seguido de un divisor `┋` en `subdued`. Un `SourceCode#focus` se marca:
++       un foco de una sola línea y anchura cero recibe un circunflejo `╱╲` bajo su columna, y
++       uno con anchura, un subrayado de `‾`, ambos en `scalaError`; un foco que abarca varias
++       líneas marca las líneas que cubre con `║` en el margen. Necesita un
++       `ScalaSyntaxPalette`.
++   entry .unnumberedTeletypeable   representa un `SourceCode` solo como sus líneas, coloreadas por acento
++       Las líneas unidas con saltos de línea, cada token en el color de su acento, sin margen
++       ni marcado del foco. Necesita un `ScalaSyntaxPalette`.
+
+@ 0 1 0 01fcb0d30ecd6d6b194a80a2439b9f26
++ entry .CommonFormattable   representa un bloque de código delimitado como HTML, un elemento `<code>` por token
+
+% 1 1 0 153f30c2cec9bfc6111f5e854c808094
+
+@ 0 7 0 05e2f5552b155fa6112606c2ed446908
++       El `Formattable` de punctuation detrás de `formattables.scalaFormattable` y
++       `formattables.javaFormattable`, en `harlequin.md`: un bloque delimitado etiquetado
++       `scala` o `java` en un documento Markdown se resalta con `Scala.highlight` o
++       `Java.highlight` y se representa como `<div class="amok"><pre>…</pre></div>`, con cada
++       línea como un `<span class="line">` y cada token como un `<code>` cuyas clases son su
++       acento y su papel. Una hoja de estilos es la política de estilo para este frontend:
++       `.keyword` colorea las palabras clave, y `.binding` puede poner en cursiva las
++       ligaduras además del color de su acento.
+
+% 2 1 0 1b3ec30ec96a63b61397e4c61196e09a
+
+% 3 1 0 116d8a966cc82f8714fe4b6c1ff77f6c
+
+% 0 1 0 1e0628804613fc050acf27853468e6a3
+
+% 0 1 0 06ef0ad5c547523e0be5c0168cb74eb2
+
+% 1 1 0 1d5146cbbfb7cf311b1e6e766770e870
+
+@ 0 3 0 150ae4d805c3433500d9e8ed51b0ac34
++       Un frontend a medida para otro lenguaje extiende el trait con un tipo `Self` (la
++       etiqueta del bloque delimitado) y un `format` que resalta el contenido y pasa el
++       `SourceCode` al `postprocess` del trait.
+
+% 0 1 0 0c00e5e96b09d4a91d217845bff4fa78
+
+% 0 1 0 0fd5d0ca9465838a047f7bbfdfa290cc
+
+@ 0 7 0 13c0fb89c04599ad15f25527982cf14d
++   entry #lineClass   el given que permite `class="line"` y `class="amok"` en los elementos
++   entry #classes   las clases CSS de un token: su acento, y su papel si lo tiene
++       `classes(accent, role)` es una `ClassList` con el nombre en minúsculas del acento
++       (`keyword`, `term`, `typal`, …) y, para un identificador de término o de tipo,
++       `binding` o `usage`.
++   entry #element   un token como `<code class="…">text</code>`
++       `element(accent, role, text)` es el elemento `code` con `#classes` como atributo de
++       clase y el texto del token como contenido.
+
+@ 0 1 0 0a76c069f46b9f3c1ef25d40f27c97ac
++ entry .Shim   la forma de la API interna del compilador que envuelve harlequin, por rama del compilador
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 19318569f70d92601f59180d6417fdc4
++       No está pensado para uso directo. `harlequin.compiler` contiene un `Shim` para la rama
++       Scala 3.9 y otro para la 3.10, que definen los mismos nombres contra las formas de cada
++       rama, de modo que nada más en harlequin sabe cuál está en juego.
++   entry .interactiveDriver   un `InteractiveDriver` sobre los ajustes del compilador, para las compleciones
++       La 3.10 sustituyó el parámetro `Option[LogicalPackage]` del controlador por un
++       `CachedLogicalPackage` sin valor por defecto; el shim de la 3.9 lo omite y el de la 3.10
++       pasa `CachedLogicalPackage.none`, que es el mismo caso vacío.

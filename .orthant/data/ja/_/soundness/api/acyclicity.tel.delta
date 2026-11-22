@@ -1,0 +1,1208 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 008e1f784f0ea89e0b486934b5cd6e3e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1383faeae4adb4080e61292bc56ab0aa
++ info   値としての有向グラフ：構成上非巡回であり、順序付け、探索、編集、描画ができる
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 1d09c200a0743abc1d5a382f99d1081d
++     _Acyclicity_ は、有向グラフ（ビルドシステム、タスクのスケジュール、型の階層、パッケージの依存関係の形）を、そうしたグラフに必要な操作を持つ不変の値として表す。操作とは、トポロジカル順序、到達可能性、推移閉包と推移簡約、ノードの周りの切り出し、そしてグラフを非巡回に保つ編集である。
++     中心となる型は `Dag` で、これは**循環を持てない**グラフである。それを作るどの方法も、一度だけ検査する（そして `Dag.Error` を発生させる）か、構成上非巡回性を保つので、`linearized`、`reduction`、`traversal` には失敗の仕方がない。
++     その傍らには二つの型がある。`Digraph` は循環を含みうる一般の有向グラフで、ただ一つの検査付きの段階である `acyclic` によって `Dag` に変換される。`Topology` はその場で編集されるグラフで、辺が加わるたびにトポロジカル順序を最新に保ち、凍結すると高速な問い合わせのために配置された形になる。
+
+@ 0 4 0 0e4f4b05976bf1c71e58f3a8e0b7b471
++     すべての辺は**依存関係**として読まれる。`a -> b` は `a` が `b` に依存することを意味するので、ノードの `successors` はその依存先、`predecessors` はその依存元であり、`sources` は何にも依存しないノード（ビルドが始まる場所）、`sinks` は何からも依存されないノードである。
++     トポロジカル順序は、すべてのノードをその依存先の*後に*並べる。
+
+% 2 1 0 1274911920eac4e90516e5c24d99db2f
+
+% 3 1 0 1d0bbfbb915120701de533c396886dae
+
+% 4 1 0 0fa0866463feaebf1387532d08ee92d3
+
+% 0 1 0 00dc49615b68038b076b440b44ff49e9
+
+% 0 1 0 1efc6000b7ab7f1f17c768ad6344a4e5
+
+% 0 1 0 1054864bcc5cae0e1f4fc16dded9fe31
+
+% 0 1 0 1b0e4a7ab1e5a70a1654e93f014475cf
+
+% 0 1 0 1811c80c432602cd0b19cef7402e54fe
+
+% 0 1 0 17b92fc472a2e25e027d257be1098433
+
+% 1 1 0 1fa13d8ca714123e033408a2752fd1d0
+
+@ 0 8 0 0e1408e577dba0871ff050811c6d722f
++     これらすべてと、グラフの形をした他のもの（`Hasse` 図、`Map[node, Set[node]]`、`Ledger`）は、`Nodal` 型クラス（ノードの集合と各ノードの後続）を通して一つの語彙を共有する。前任も保存する表現には `Bidirectional`、値が循環を持てない表現には `Topological`、ネイティブの探索や反転を持つ表現には `Reachable` と `Invertible` がある。
++     パッケージレベルの拡張（`nodes`、`edges`、`sources`、`sinks`、`cycle`、`acyclic`、`reachable`、`closure`、`invert`、そして `Topological` なグラフに対する `linearized`、`reduction`、`traversal`、`layered`）はそれらの型クラスに対して一度だけ書かれているので、`Hasse` や `Map` も `Dag` とまったく同じようにそれらに答える。
+
+@ 0 6 0 1d2a54b62fcfe3210fdd95c21566fadb
++     `Dag` や `Digraph` は前向きの方向しか保存しないので、ノードの前任を見つけるにはすべての辺を走査することになる。
++     それを必要とする操作（`predecessors`、`ancestors`、`lineage`、`bypass`、`bypassAll`、`-`）は `Dysasymptotic.LinearScan` で制限されており、`import dysasymptotics.linearScan` で承認する。限られたノードの選択に対してマップ全体を再構築する `subgraph` は、`Dysasymptotic.LinearSize` で制限されている（`import dysasymptotics.linearSize`）。
++     凍結された `Topology` は両方向を保持するので、どちらも必要としない。
+
+@ 0 3 0 068a6215d0ecd87d104b3042c676e91d
++     `Dag` は `Dot` を通して GraphViz の DOT 文書として描画され、`Dag[Text]` に対しては `dag.dot` を使う。`dendrology` ライブラリは任意の `Topological` なグラフを端末に描画し、`Dag#layered` はそのためにグラフを交差を最小化した層に配置する。
+
+@ 0 4 0 1297e7fbab5fc9121e7b684c36985cb7
++     ライブラリは一つのソースセット `acyclicity.core` からなり、すべてのプラットフォーム向けにコンパイルされ、`soundness` アンブレラにエクスポートされる。そこでは `rankings` 選択パッケージがアンブレラ自身のものと統合される。
++     ユーザーが名前でインポートする given は `rankings.balancedRanking` だけで、他はすべてコンパニオンから解決される。
+
+% 0 1 0 01c5bf2c3b34e767126003078b82ca17
+
+% 0 1 0 09822351b46e7fcb013aa62611cea364
+
+% 0 1 0 1241e73184f3274a06697282313e5756
+
+% 0 1 0 0077bba20955ca741d3560bf3052e456
+
+% 0 1 0 177a99173680c2511d605cdb4703ecfd
+
+% 0 1 0 1d3d92a38a1f62ff1dc5918bbba917e4
+
+@ 0 1 0 0453b8d2265aaeea124f09a2ee3c2532
++ entry .Dag   永続的な値としての有向非巡回グラフ。失敗しえないトポロジカル順序を持つ
+
+% 1 1 0 078bcc33f02b9c74006f218f688b0339
+
+@ 0 9 0 1d184d73491bbfdf1d526c836787a52c
++       `Dag[node]` は、循環を持たない有限の有向グラフを不変の値として表したものである。それは各ノードから、それが指すノードの集合（依存関係として読めば、その依存先）への、挿入順のマップである。
++       すべての辺の終点はそれ自身ノードなので、宙に浮いた辺は表現できない。
++       循環がないことは、値が作られるときに一度だけ確立される。ファクトリーの `Dag(…)` は検査し（`Reason.Cyclic` を伴う `Dag.Error` を発生させる）、`acyclic` は同じ検査で `Digraph` を変換し、`Dag(topology)` は不変条件によって非巡回である `Topology` を消費する。
++       そうすると、どの編集も、循環を作りえない（`-`、`remove`、`bypass`、`subgraph`、`descendants`）か、循環を作りうるただ一つの経路を検査する（`add`）か、循環がありうる場合に `Digraph` を返す（`+`、`++`、`map`、`flatMap`）かのいずれかである。
+
+% 2 1 0 0510829b9cd2acfe0f08a039dde547a7
+
+% 3 1 0 0c7372920e835d311b635c66432cb7cf
+
+% 4 1 0 0c8b4ec5b809754c1c959b71d069dcb3
+
+% 2 1 0 12f2d463060d4a720018608e88e5d22d
+
+% 0 1 0 09f1c02660438a961eae4d85d147187d
+
+% 0 1 0 0e7169ab3172885f0bf266c5fb86f1bf
+
+% 0 1 0 0bb74aec98086c951c68682cc636f720
+
+% 0 1 0 19187da2abe90c360b8563ab92bb763b
+
+% 0 1 0 1c221c224d0126e51960efb6ecbf7549
+
+% 1 1 0 03224e52d9ba28780aa25013916809e1
+
+@ 0 5 0 12cf7da2fcb498c416da6c21005dd6cd
++       非巡回性によって得られるのは、失敗の仕方のない `linearized`、`reduction`、`traversal` と、汎用の拡張にもそれらを持たせる `Topological` インスタンスである。
++       コレクションとしては、`Dag` はトポロジカル順序に並んだそのノードである（`traversable`）ので、`dag.has(n)`、`dag.size`、`dag.each(…)`、`dag.map(…)` が適用できる。`map` は `Digraph` を返す。二つのノードが一つに名前を変えられて循環を閉じることがあるからである。
+
+@ 0 1 0 1c0b1ad24977e5d4165c840e6c0ef76a
++       `Dag` は辺を一つずつ加えて組み立てることができる。
+
+% 2 1 0 1632a10a225eb6481d979c4f9e877cea
+
+% 3 1 0 003418e81c4da5da0b01ce908aa448e0
+
+@ 0 1 0 175295e7ea332ca8163b1948421b555f
++         label 最初の辺：両端がノードになる
+
+% 1 1 0 151578f181255acd1f41b34167396589
+
+% 0 1 0 12444ca0bfa953041d33ffc1015ae68a
+
+% 0 1 0 1681235dcc22a7e30a27bb096fdb53bc
+
+% 1 1 0 1273b84443a8dba10903d539a7a59b75
+
+@ 0 1 0 1618f06a594638c30c5436fbed626b38
++         label 二つ目の依存関係。追加されるときに検査される
+
+% 1 1 0 0c57f87ccfd3733409debd4b44eb5489
+
+% 2 1 0 0c9df9f4686045ed1104d512b4631e8b
+
+% 0 1 0 19bf79bf9341852c0ce45a3c7b258cee
+
+% 1 1 0 11bc5226287162190ab063b5d3d6de04
+
+@ 0 1 0 11cdf5496fe1fdd01b55bbf9f1a77f9e
++         label 順序に逆らう辺は拒否される
+
+% 1 1 0 0b3e0618ec0606cd0439306534d1e2e1
+
+% 2 1 0 07dc0a08eefea9ed194fc975720f8243
+
+% 0 1 0 175581fcb7dad0e00ac4ed2b823e9468
+
+% 1 1 0 19fe7d1105bdc63514c5b4833ee82ad2
+
+@ 0 1 0 05347775224b114c01dd575cea874ebf
++         label 循環を閉じうる辺は、代わりに Digraph を返す
+
+% 1 1 0 1225af99f70f56b11c82f8682a86599f
+
+% 2 1 0 0e0b3d4f66e39333100c743b25b65dfb
+
+% 0 1 0 055b137a563a483f0789b7b1e174a520
+
+% 1 1 0 1926ba355f229c540a14df1bfee3929c
+
+% 2 1 0 0b8c9b72709e82920485e0d90038209a
+
+@ 0 6 0 021bf427447e71591ac728de9791a566
++       検査付きの `add` には新しい辺の終点からの到達範囲の分のコストがかかるので、辺の多いグラフは `add` の畳み込みではなく一回の `Dag(edges*)` 呼び出し（一回の O(n + e) の検査）で組み立て、何度も編集するグラフは `Topology` に解凍し、その場で編集してから、再び凍結するほうがよい。
++       到達可能性に依存するグラフ全体の問い合わせ（`closure`、`reduction`）は凍結した形のビット行列を通るので、そのように二回以上問い合わせるグラフは、`#freeze` で一度凍結して保持しておくのが最善である。
+
+@ 0 2 0 1a7d86c1cce9e8be172316aa194a6ca2
++       二つの `Dag` は、ノードがどの順で与えられたかにかかわらず、その隣接関係が等しいときに等しい。`Dag` は `case class` ではないので、`unapply` も `copy` も持たない。
+
+% 0 1 0 103ced421355708b056760dffcd7be34
+
+% 0 1 0 146458c90f0a62db0e2954fd0c82fb90
+
+% 1 1 0 138628e246dd70420ef319e68dc693e2
+
+% 1 1 0 17560cfc915bce6610e3ce52e17ac0e2
+
+@ 0 3 0 052bf73956276a2f04b4e6c7f6107a38
++   entry .apply   辺から、後続を伴うノードから、ノードの集合と関数から、`Map` から、または `Topology` から作る `Dag`
++       五つのコンストラクターがあり、そのうち四つは循環を検査し、見つければ `Dag.Error`（`Reason.Cyclic`）を発生させる。
+
+@ 0 10 0 08febf81e8eb56da074c2658f9f1acc2
++       - `Dag(a -> b, a -> c, …)` は辺だけから作る。すべての辺の両端が、最初に現れた順にノードになる。
++       - `Dag(a -> Set(b, c), b -> Set(), …)` は各ノードとその依存先の集合から作る。自身のエントリーを与えられていない後続は、依存先のないノードになる。
++       - `Dag(nodes)(node => dependencies)` はノードの集合と関数から作る。集合の外にある後続はノードになる。これは `Tactic[Dag.Error]` を `raises` 節ではなく普通のコンテキストパラメーターとして取る。
++       - `Dag(adjacency)` は `Map[node, Set[node]]` から作り、すべての終点についてノードの集合を閉じる。
++       - `Dag(topology)` は `Topology[node]^` から作り、それは**消費**される。トポロジーは不変条件によって非巡回なので、検査も `Dag.Error` もなく、ハンドルは二度と使えない。
+
+% 2 1 0 01fab4b7e55be2f0168049757bc2f790
+
+% 3 1 0 18a71727b22985331ab568c260d8ebc1
+
+% 4 1 0 0f95a60d0d3ec0801a698f03d05343f2
+
+% 0 1 0 0224a9f865586c4601ebf71bf6ffd3ff
+
+% 0 1 0 162ddb4c66cc982c03f426d071787f28
+
+% 0 1 0 05fc5cf6bc7b32bf1ca2519a43261a19
+
+% 0 1 0 0a5a12615d506bc814f0a1b657dfc835
+
+% 1 1 0 08d9f46d8158503e0da5dfad7eebdf78
+
+@ 0 7 0 01361f89b63144d80e8a712addbeedb2
++       `Dag(1 -> 2, 2 -> 3, 3 -> 1)` は `Dag.Error` を発生させる。同じ引数の `Digraph(…)` は巡回グラフを作り、それに対する `cycle` がその証人である。
++   entry .dot   `Dag[Text]` を GraphViz の DOT の有向グラフとして表したもの。各ノードのテキストが識別子となる
++       `Dag[Text]` に対する拡張である。すべての辺に対して辺の文 `"a" -> "b"` を持つ一つの `Dot.Digraph` である。
++       ノードのテキストがその DOT のノードの名前になるので、それは有効な DOT の識別子（空でなく、二重引用符も改行も含まない）でなければならず、そうでないノードは `Name.Error` を発生させる。スコープに `Tactic[Name.Error]` がなければならない。
+
+% 2 1 0 142175d0a418955c10b3b838ef593741
+
+% 3 1 0 1c31ccc38036d0a014cce1eb63bb9761
+
+% 4 1 0 1e5c5ad2648f78c618abe33958e3f965
+
+% 0 1 0 079e9eb45aca5b6103eecb5ad85a41f7
+
+% 1 1 0 082fe2d3fe2d5db213edee3f388becdc
+
+@ 0 3 0 068afed3c42ca5ef157f4f3e4a52d0ac
++       他のノードのグラフは `map(_.show).acyclic.dot` を通して描画する（二つのノードが同じ表示になることがあるので、`map` は `Digraph` を返す）。
++   entry .Error   グラフの操作が循環を見つけたとき、またはグラフにないノードについて問われたときに発生する
+
+% 1 1 0 1f5dad71370b9c4f1369dd0711865c2e
+
+@ 0 8 0 175206fc8bd72de019afb1a7b13ab524
++         エラー `↯/s.72.1`：_the DAG operation failed because `reason`_。理由はその中で番号付けされる。
++         `Reason.Cyclic`（191.2、_the graph contains a cycle_）は、検査付きのファクトリー `Dag(…)`、任意のグラフに対する `acyclic`、終点がすでに始点に到達している辺に対する `Dag#add`、そして同様に `Topology#add` によって発生する。編集中のグラフは変更されずに残る。
++         `Reason.NodeMissing(node)`（191.1、_the node `node` is not present in the
++         graph_）は、グラフにないノードに対して `reachable`、`descendants`、`ancestors`、`lineage` によって発生する。`Dag` でも `Digraph` でも汎用の拡張を通しても同じであり、ノードはその `toString` で描画される。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 1c4d260429f2a0a0171138b586d3341f
+
+% 0 1 0 1b9eabd3ccfd9e7305eb11e32f4ce846
+
+% 0 1 0 07163e601f85e5cb1bbef385cdfb273e
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 28 0 1f44c93f2e7a8a7d081e5024c56ef80f
++     entry .Reason   操作が失敗した理由：`Cyclic` または `NodeMissing(node)`
++         `number`（`NodeMissing` は 1、`Cyclic` は 2）を持つ列挙型で、各ケースはエラーのメッセージが引用する `Clarification` である。
++     entry .communicable   理由をそのメッセージとして描画する
++     entry #reason   `Dag.Error.Reason`：`Cyclic` または `NodeMissing(node)`
++   entry .nodal   `Nodal` インスタンス：`Dag` のノードと各ノードの後続
++       コンパニオンを通して暗黙のスコープにある。
++       `nodes` は与えられた順のノード、`successors(n)` は `n` が指すノード（グラフにないノードでは空）であり、`has` はマップの検索であって、走査ではない。
++   entry .bidirectional   `Bidirectional` インスタンス。`Dysasymptotic.LinearScan` で制限されている
++       `Dag` は前向きの方向しか保存しないので、その前任は、すべての辺を走査して値ごとに一度だけ計算される転置から得られる。
++       したがってこのインスタンスは `Dysasymptotic.LinearScan` を取り、それは `import dysasymptotics.linearScan` で承認する。これが、`Dag` に対する汎用の `predecessors` 拡張が必要とするものである。
++       凍結された `Topology` は、制限なしに同じ問いに答える。
++   entry .topological   `Dag` が循環を持たないことを保証する目印
++       暗黙のスコープにある `Topological` インスタンスである。
++       これにより、`Dag` は汎用の拡張を通して `linearized`、`reduction`、`traversal`、`layered` に、そして `dendrology` の図に受け入れられる。
++   entry .traversable   トポロジカル順序に並んだノードのコレクションとしての `Dag`
++       `Traversable` インスタンスなので、`dag.each`、`dag.fold`、`dag.to[List]` をはじめとするコレクションの語彙は、すべてのノードがその依存先の後に来る順でノードを見る。
++   entry .inclusive   `dag.has(node)`：ノードがグラフにあるかどうか
++   entry .countable   `dag.size` と `dag.nil`：ノードがいくつあるか、そして一つもないかどうか
++   entry .mappable   `dag.map(lambda)`：ノードの名前を変え、`Digraph` を返す
++       `Result[node2] = Digraph[node2]` である `Mappable` インスタンスである。二つのノードが一つに対応付けられることがあり、それはそれらの辺を合わせて循環を閉じうるので、結果は `acyclic` が検査するまで `Dag` ではない。
+
+% 2 1 0 1b4c63c32161e80b0d77be0a36a2c5e5
+
+% 3 1 0 192ccc2eb982bb000940ec2edf93574a
+
+% 4 1 0 194dc891aec9795110420587eb6166a7
+
+% 0 1 0 1c1a8f1546929eb51d0e8a3e0b688aae
+
+% 0 1 0 190b3c3d887531d910697bed222292b2
+
+% 1 1 0 072032395a9c145f173cd462bee92bf6
+
+@ 0 12 0 0c7d45739ba5b13f176108ef89f3a446
++   entry #nodes   すべてのノードを集合として表したもの
++   entry #successors   ノードが指すノード：その依存先。存在しないノードでは空集合
++   entry #edges   すべての辺を `(from, to)` の対として表したもの：`from` は `to` に依存する
++   entry #sources   後続のないノード：何にも依存しないもの
++       ビルドやインストールが始まる場所である。
++       グラフ全体を対象とするので、承認は必要ない。
++   entry #sinks   前任のないノード：何からも依存されないもの
++       辺を一回たどるだけで、`Dysasymptotic.LinearScan` は必要ない。問いは一つのノードではなくグラフ全体についてのものだからである。
++   entry #linearized   トポロジカル順序に並んだノード：すべてのノードが、それが依存するものすべての後に来る
++       値ごとに一度だけ計算されて保持される。
++       間に経路のないノード同士は、ノードが与えられた順に並ぶので、順序は安定している。
++       これは失敗しえない。`Dag` には循環がない。
+
+% 2 1 0 17c9df318ffa30980f1906328f37cb01
+
+% 3 1 0 1daa7491bd5985820be104882202e146
+
+% 4 1 0 03b4ab1ff12a59b00193acec7d0c1311
+
+% 0 1 0 1a6db0c1b43dbb61073f75e7b36d28d1
+
+% 1 1 0 0d333251944c5e28079bca9e2acaaaaa
+
+@ 0 9 0 108ec1f9752a08de1241acf22c58624e
++   entry #invert   すべての辺を逆にした同じグラフ。これも `Dag` である
++       すべての辺を逆にしても非巡回性は保たれるので、結果はこのグラフのシンクをソースとする `Dag` である。`invert.invert` は元のものと等しい。
++   entry #digraph   循環を作りうる操作のための、`Digraph` としての同じグラフ
++   entry #freeze   このグラフの凍結された `Topology[node]^{}`。問い合わせのために配置されている
++       すでにトポロジカル順序に並んだノードで `Topology` を組み立て、凍結する。
++       凍結した形は隣接関係の両方向を保持するので、`predecessors` に承認は必要なく、到達可能性の行列が組み立てられれば `reaches` に O(1) で答える。`Dag` に対する `closure` と `reduction` はこれを通る。
++       このように繰り返し問い合わせるグラフは、一度凍結しておくべきである。
+
+% 2 1 0 009a95dccfff6a501d873aff8777f4b8
+
+% 3 1 0 05b093c15a5d24af17d8c03e8ef592e9
+
+% 4 1 0 023a10251e6fee9502492cc39e9e6314
+
+% 0 1 0 02dda2b4568fb31c177351a82b15ca76
+
+% 0 1 0 18743ec22773412e1ba91d89c7fa7210
+
+% 0 1 0 0bce0e93c533b9fd1ba9b2ca407e68bf
+
+% 0 1 0 0bb43092b913781104c8350dc97a0238
+
+% 1 1 0 17886b6487361a890c2cf3d76db75776
+
+@ 0 11 0 00737322962a30f3177da851661d436e
++   entry #thaw   このグラフのノードと辺を保持する、編集可能な `Topology[node]^`
++       `Topology(dag)` と同じである。新しい、排他的に所有されたトポロジーで、`add`、`remove`、`bypass` でその場で編集され、`Dag(topology)` か `Topology.freeze` で `Dag` として戻される。
++       多くの編集に適した形で、そこでは各編集のコストは約 1 マイクロ秒であり、`Dag#add` の到達範囲の大きさの検査とは対照的である。
++   entry #including   ノードがなければ、辺なしでそれを加えたグラフ
++   entry #add   辺 `from -> to` を加えたグラフ。循環を閉じるなら `Dag.Error` を発生させる
++       `from` は `to` に依存する。
++       辺が循環を閉じる唯一の場合は、`to` がすでに `from` に到達している（または `from == to`）場合であり、これは `to` の到達範囲の探索で検査される。したがってコストはグラフの大きさではなく、その到達範囲の大きさである。
++       新しい終点はノードになる。
++       結果は `Dag` である。`+` は検査なしの形で、`Digraph` を返す。
+
+% 2 1 0 07cb1bc2157857a7163705c3d420fb3f
+
+% 3 1 0 0b3675013278b7120d112d6e4fc4c030
+
+% 4 1 0 0d3e5c9946ef1c821b11fdacaa83f696
+
+% 0 1 0 0de0abe1cb6d3a5e14369f9b44de45bf
+
+% 0 1 0 08560fb08c72c5c30b2d6e6170f7afb4
+
+% 0 1 0 1754467b2e184e551048625ad2a22cdb
+
+% 1 1 0 1748dc2b47f1bf4a0682efe64092a415
+
+@ 0 16 0 127f59dd203b173904c654f7aa7e600d
++   entry #+   `dag + (from -> to)`：検査なしに辺を加えたもの。`Digraph` として返す
++       結果は循環を持ちうるので `Digraph` である。`acyclic` はそれを検査して `Dag` に戻し、`cycle` は証人があればそれを示す。
++       `add` は検査付きの形である。
++   entry #++   `dag ++ other`：二つのグラフのノードと辺の和。`Digraph` として返す
++       二つの非巡回グラフが合わさって巡回グラフになることがあるので、結果は `Digraph` である。
++   entry #remove   辺 `from -> to` を取り除いたグラフ。両方のノードは残る
++       辺がなければ変わらない。
++       辺を取り除いても循環は作られないので、結果は `Dag` である。
++   entry #-   `dag - node`：ノードと、その両端のすべての辺を取り除いたもの
++       ノードを指す辺は転置を通して見つけるので、`Dysasymptotic.LinearScan`（`import dysasymptotics.linearScan`）が必要である。
++       ノードの依存元はその依存関係を失い、他のものは得ない。それらを付け替える形は `bypass` である。
++   entry #bypass   ノードを取り除き、その各依存元をその各依存先へ付け替えたもの
++       ノードを通るすべての経路が残る。各前任はすべての後続を直接の依存先として得る。
++       各前任はすでにノードを通して各後続に到達していたので、これが循環を作ることはない。
++       `Dysasymptotic.LinearScan` が必要である。
+
+% 2 1 0 1bb5605e17c2b32801a05bd8e7984de3
+
+% 3 1 0 19e3c991cf90d5ed0ae0668bff72ec1d
+
+% 4 1 0 1dbe153da1025115126649f70469aa31
+
+% 0 1 0 19877de71de69ee10465826305d991a2
+
+% 2 1 0 004c0adadec701491334a77b825aff89
+
+% 0 1 0 0c2d64177b1feaef050d95aed39e9521
+
+% 0 1 0 1404e7af9c3f6acb0ef1a2c74f407ba1
+
+% 1 1 0 020245654d723338085c91dddf538f55
+
+@ 0 33 0 1179639e3e2b49da04a3e23761100d2c
++   entry #bypassAll   複数のノードを順に迂回したもの。それらの連なりを通る経路が残る
++       述語ではなくノードの `Set` を取り（ラムダの引数はノードと区別できないからである）、それらを順に迂回するので、`Dag(1 -> 2, 2 -> 3, 3 -> 4).bypassAll(Set(2,
++       3))` は辺 `1 -> 4` を保つ。
++       `Dysasymptotic.LinearScan` が必要である。
++   entry #subgraph   ノードの集合が誘導する部分グラフ：それらのノードと、その間の辺
++       `Dysasymptotic.LinearSize`（`import dysasymptotics.linearSize`）が必要である。限られたノードの選択がマップ全体を再構築するからである。
++       集合の外のノードへの辺は、付け替えられずに取り除かれる。
++   entry #flatMap   すべてのノードをグラフで置き換える。`Digraph` として返す
++       各辺 `a -> b` について、`lambda(a)` のすべてのノードは `lambda(b)` のすべてのノードを指し、`lambda(a)` のノードはその中の自身の辺を保つ。
++       結果は循環を持ちうるので `Digraph` である。
++   entry #reachable   ノードが到達するすべて。それ自身を含む。存在しないノードには `Dag.Error` を発生させる
++       ノードの推移的な依存先を集合として表したもので、訪問済みの集合を伴う反復的な探索で求めるので、十万個のノードの連鎖でもスタックが溢れることはなく、その到達範囲より多くの時間はかからない。
++       `Dag.Error(NodeMissing)` は、グラフにないノードに対してだけ発生する。
++   entry #descendants   ノードが到達する部分グラフ。それ自身を含む。存在しないノードには `Dag.Error` を発生させる
++       `subgraph(reachable(node))` であり、承認は必要ない。ノードの下にあるすべてが誘導する部分グラフである。
++   entry #ancestors   ノードに到達する部分グラフ。それ自身を含む。存在しないノードには `Dag.Error` を発生させる
++       推移的にノードに依存するすべてと、その間の辺である。
++       転置をたどるので、`Dysasymptotic.LinearScan` が必要である。
++   entry #lineage   ノードが到達するすべてとノードに到達するすべての部分グラフ
++       `ancestors` と `descendants` を合わせて誘導したものである。
++       `Dysasymptotic.LinearScan` が必要で、存在しないノードには `Dag.Error` を発生させる。
++   entry #closure   暗黙の辺をすべて明示したもの：経路があるところすべてに辺がある
++       推移閉包である。凍結した形の到達可能性の行列を通して O(e·n/64) で求める。集合の和で求めればすべての到達範囲の合計のコストがかかる。
++       `closure.reduction` は `reduction` であり、`reduction.closure` は `closure` である。
++   entry #reduction   同じ到達可能性を持つ最小のグラフ：より長い経路が暗示する辺をすべて取り除いたもの
++       推移簡約であり、依存関係のグラフが普通描かれる形である。
++       二本の辺の経路が暗示する辺だけでなく、任意の長さの経路が暗示するすべての辺が取り除かれ、グラフの辺だけが保たれる。
++       凍結した形の上で、そのビット行列に対する Aho、Garey、Ullman の方法で計算される。
+
+% 2 1 0 117f1e8eaa1fc4fc0c9fd6f60c67f587
+
+% 3 1 0 0e3e7177482074851da3f00554f14150
+
+% 4 1 0 0902979b0a104f0806ff61ad4bac3fc7
+
+% 0 1 0 08e2d4cd82c99d7a1f659e8e30940e0c
+
+% 1 1 0 1c6484897c9f35fe05027cd95d123fbf
+
+@ 0 14 0 1e297f24c5d79af41b96826d6db106d0
++   entry #layered   描画のために層に配置したグラフ。`Layering` として返す
++       各ノードは層に割り当てられ（依存先が依存元より上）、各層は隣の層とつなぐリンクの交差を減らすように並べられる。これは GraphViz の `dot` が描くような、Sugiyama の層状の手法である。
++       スコープ内の `Ranking` が層を決める。コンパニオンのデフォルトである `Ranking.LongestPath` は、すべてのノードを最も深い依存先の一つ下の層に置く。`import rankings.balancedRanking` は、依存元を持つ各ノードを、最も浅い依存元の一つ上の層まで引き下げる。
++       `dendrology` の `LayeredDagDiagram` が結果を描画する。
++   entry #traversal   すべてのノードに対する値。その依存先の値から計算される
++       `dag.traversal[result]((dependencyValues, node) => …)` はトポロジカル順序でノードを訪れるので、ラムダの各呼び出しはノードの後続のすでに計算された値を `Set` として見て、すべてのノードからその値への `Map` を返す。
++       これは依存関係のグラフに対するほとんどの処理（ビルドのコスト、伝播する制約、蓄積される推移的な集合）の形であり、手書きの再帰も訪問済み集合の管理も要らない。
+
+% 2 1 0 180a71981f83f3ec0f5a0fadf648c3d2
+
+% 3 1 0 09d9b647c4c3e9e507faab8bbac80069
+
+% 4 1 0 1ffebb7e50dd9621166f31eee98c6f92
+
+% 0 1 0 1104c0ff55edb29a11b3de599a67a60c
+
+% 0 1 0 15bc83114de814cd1ebf55f8b011b9f3
+
+% 1 1 0 12f00919e72f9c491d366648077cb10e
+
+@ 0 1 0 146fe0a8e11f923d0e4e4374c3fb1a4b
++ entry .Digraph   循環を含みうる有向グラフを永続的な値として表したもの
+
+% 1 1 0 10274f4b5f87a9b20d98a1ff7a4e2ef0
+
+@ 0 6 0 0aead5b77e0f9b440545fe2d9120a06f
++       `Digraph[node]` は有限の有向グラフであり、各ノードからそれが指すノードの集合（依存関係として読めば、その依存先）への、挿入順のマップとして表される。
++       すべての辺の終点はノードなので、コンストラクターはノードの集合を閉じ、宙に浮いた辺は表現できない。
++       `Digraph` には非巡回性を前提とするものは何もない。これは `Dag` の検査なしの編集（`+`、`++`、`map`、`flatMap`）が返すものであり、`explore` が後続の関数から実体化するものであり、`acyclic` が検査する前のグラフの姿である。
+
+% 2 1 0 0e03941634b58d0e0c2950f554a4dce5
+
+% 3 1 0 0498016ac7a09e2300eef044d9826e38
+
+% 4 1 0 0373615bac3d0eed16335e0b09a63484
+
+% 0 1 0 017a0466c4d7f3270e665a03509a7ac2
+
+% 0 1 0 0634abf204e97ac80dfab06b24b7b604
+
+% 0 1 0 19a800a899bf5668127a6d32ed06d3ad
+
+% 0 1 0 1114713fa73ded8403c6035315692123
+
+% 1 1 0 18b8208684773f9d1046f85de18b798f
+
+@ 0 7 0 0d157504e2493ce6027a74e8cfe4ca38
++       循環がありうるので、`Digraph` には `linearized`、`reduction`、`traversal`、`layered` がない。`acyclic` はグラフを O(n + e) で一度だけ検査し、それらを持つ `Dag` を返すか、そうでなければ `Dag.Error`（`Reason.Cyclic`）を発生させる。
++       `Dag` が提供する他のもの（ノードと辺の問い合わせ、編集のメソッド、到達可能性と切り出し、`closure`、`invert`）はすべて `Digraph` も提供し、`reachable`、`closure`、切り出しは巡回グラフでも全域的である（再帰ではなく訪問済みの集合を使う）。
++       コレクションとしては、与えられた順に並んだそのノードである。
+
+@ 0 4 0 03104183eb413b5f076d9a916c109485
++       前向きの方向しか保存されないので、`-`、`bypass`、`bypassAll`、`ancestors`、`lineage`、`Bidirectional` インスタンスは `Dysasymptotic.LinearScan`（`import dysasymptotics.linearScan`）を取り、`subgraph` は `Dysasymptotic.LinearSize` を取る。
++       二つの `Digraph` は、その隣接関係が等しいときに等しい。
+
+% 1 1 0 019760dfa385a31c14e93d6eb3701d6d
+
+% 0 1 0 1ca38419924f4189004ae5bc9198f51c
+
+@ 0 52 0 067cfa077dc6fac701fd1e35064f136f
++   entry .apply   辺から、後続を伴うノードから、ノードの集合と関数から、または `Map` から作る `Digraph`
++       `Dag.apply` と同じ四つの形で、循環の検査もエラーもない。辺から作る `Digraph(a -> b,
++       …)`（両端が最初に現れた順にノードになる）、各ノードとその後続から作る `Digraph(a ->
++       Set(b, c), …)`（エントリーのない後続はノードになる）、ノードの集合と関数から作る `Digraph(nodes)(node => successors)`、そしてすべての終点について閉じた、`Map[node, Set[node]]` から作る `Digraph(adjacency)` がある。
++   entry .nodal   `Nodal` インスタンス：`Digraph` のノードと各ノードの後続
++       コンパニオンを通して暗黙のスコープにある。`has` はマップの検索である。
++   entry .bidirectional   `Bidirectional` インスタンス。`Dysasymptotic.LinearScan` で制限されている
++       前任はすべての辺を走査して値ごとに一度だけ計算される転置から得られるので、このインスタンスの解決には `import dysasymptotics.linearScan` が必要である。
++   entry .traversable   与えられた順に並んだノードのコレクションとしての `Digraph`
++   entry .inclusive   `graph.has(node)`：ノードがグラフにあるかどうか
++   entry .countable   `graph.size` と `graph.nil`
++   entry .mappable   `graph.map(lambda)`：ノードの名前を変え、一つにまとまる二つのノードの辺を合わせる
++   entry #nodes   すべてのノードを集合として表したもの
++   entry #successors   ノードが指すノード。存在しないノードでは空集合
++   entry #edges   すべての辺を `(from, to)` の対として表したもの
++   entry #sources   後続のないノード：何にも依存しないもの
++   entry #sinks   前任のないノード：何からも依存されないもの
++       辺を一回たどるだけである。問いはグラフ全体についてのものなので、承認は必要ない。
++   entry #invert   すべての辺を逆にした同じグラフ
++   entry #digraph   このグラフ自身
++       `Dag`/`Digraph` の面に対して書かれたコードが、どちらに対してもその `Digraph` を求められるようにするためである。
++   entry #including   ノードがなければ、辺なしでそれを加えたグラフ
++   entry #add   辺 `from -> to` を検査なしに加えたグラフ
++       新しい終点はノードになる。`+` は辺を対として取る。
++   entry #+   `graph + (from -> to)`：辺を加えたもの
++   entry #++   `graph ++ other`：二つのグラフのノードと辺の和
++   entry #remove   辺 `from -> to` を取り除いたグラフ。両方のノードは残る
++   entry #-   `graph - node`：ノードと、その両端のすべての辺を取り除いたもの
++       `Dysasymptotic.LinearScan` が必要である。
++   entry #bypass   ノードを取り除き、その各前任をその各後続へ付け替えたもの
++       ノードを通るすべての経路が残る。`Dysasymptotic.LinearScan` が必要である。
++   entry #bypassAll   複数のノードを順に迂回したもの
++       述語ではなくノードの `Set` を取る。取り除いたノードの連なりを通る接続は保たれる。
++       `Dysasymptotic.LinearScan` が必要である。
++   entry #subgraph   ノードの集合が誘導する部分グラフ：それらのノードと、その間の辺
++       `Dysasymptotic.LinearSize` が必要である。
++   entry #reachable   ノードが到達するすべて。それ自身を含む。存在しないノードには `Dag.Error` を発生させる
++       巡回グラフでも全域的である。`Digraph(1 -> 2, 2 -> 1).reachable(1)` は `Set(1, 2)` である。
++   entry #descendants   ノードが到達する部分グラフ。それ自身を含む。存在しないノードには `Dag.Error` を発生させる
++   entry #ancestors   ノードに到達する部分グラフ。それ自身を含む。存在しないノードには `Dag.Error` を発生させる
++       `Dysasymptotic.LinearScan` が必要である。
++   entry #lineage   ノードが到達するすべてとノードに到達するすべての部分グラフ
++       `Dysasymptotic.LinearScan` が必要で、存在しないノードには `Dag.Error` を発生させる。
++   entry #cycle   グラフに循環があれば、その一つ：各ノードが次のノードを指し、始まった場所で終わる
++       非巡回グラフでは `Unset` である。そうでなければ、最初と最後のノードが同じで、連続するすべての対が辺である `List` である。
++       深さ優先探索で見つけ、この探索は、先の枝がすでに終えたノードを通して閉じる循環も捉える。
++   entry #acyclic   一回の検査の後の、`Dag` としてのグラフ。循環があれば `Dag.Error` を発生させる
++       O(n + e) で一度だけ行う。これが返す `Dag` が再び検査することはない。
+
+@ 0 1 0 1399406f0ec3bfa40aed37ffd7de496e
++ entry .Topology   トポロジカル順序を最新に保ちながらその場で編集するグラフ。凍結すると問い合わせのための形になる
+
+% 1 1 0 14c0311bcb8109a700e29d7194e8b285
+
+@ 0 6 0 01d8a1c12aee506509063ab8f31ea4ce
++       `Topology[node]` は、排他的に所有されたハンドルを通してその場で編集される有向非巡回グラフである。
++       その名は、それだけが維持するものに由来する。ノードのトポロジカル順序であり、Pearce と Kelly のアルゴリズムによってすべての `add` を通して有効に保たれる。このアルゴリズムは新しい辺の両端の間にあるノードだけに触れ、循環を閉じる辺は**拒否**してグラフを変えずに残す。
++       したがってこれは不変条件によって非巡回であり、`linearized` は順序を読むだけである。
+
+@ 0 8 0 19f43beedd69053f1d30319fb6d52fad
++       `Array` と同じく、可変性はキャプチャ集合で表される。`Topology[node]^` は編集可能であり、`Topology.freeze` はそれを消費して `Topology[node]^{}` を与える。その上では `add`、`remove`、`bypass` を呼べず、何も変わりえない。
++       凍結した形は問い合わせのためのもので、`Nodal`、`Bidirectional`、`Topological`、`Reachable`、`Invertible` のインスタンスを持ち、隣接関係の両方向を密な配列に保持してソースとシンクを維持するので、`predecessors` に `LinearScan` の承認は必要ない。
++       その到達可能性の行列は、最初の使用時に O(e·n/64) で組み立てられ、`reaches` に O(1) で答え、`closure` と `reduction` に用いられる。
+
+% 2 1 0 1270d04cd845d3e01c9117ee234fa8ab
+
+% 3 1 0 046121344f8bc6f2016025d6d157147f
+
+@ 0 1 0 00e0ed58b2d20f961a16c69c7a3a5618
++         label 排他的に所有された空のトポロジー
+
+% 1 1 0 0ceeaf35cf5c928113ae584a29ac1aa0
+
+% 2 1 0 0997af9905a5a45c1b2521f163d60dc5
+
+% 0 1 0 02ce6eba7307d25d02a353deb222e43a
+
+% 1 1 0 117c5c6faa118efa1407762530016796
+
+@ 0 1 0 074b50152e68ada80f05fc30107d4779
++         label 辺：両方のノードが、依存先を先にして順序に加わる
+
+% 1 1 0 1726f1c777cd02e30fdb60c6a3b37fbc
+
+% 2 1 0 1cbd9e1b30f7b1ed1c6e35094c63c5a9
+
+% 3 1 0 1b11212fd314cc201a5d06a25cbcd0d6
+
+% 0 1 0 09dd85113ce4971905bdb4f787322a10
+
+% 1 1 0 0d1c079a4dcfd275009a7ee8e99783ec
+
+@ 0 1 0 0223cc3da4cd8a26140430f12b2592dc
++         label 既存のノードの下に追加された依存関係：順序は作り直されず、修復される
+
+% 1 1 0 104fad5f6afaa416042caaa1187a379e
+
+% 2 1 0 105126f2875fea74087cb84a03396e67
+
+% 3 1 0 1819ca3508dc5a400675545dd7f7b359
+
+% 4 1 0 1c6f09908ec7165902f6e399faf51627
+
+% 1 1 0 14c1f193f3fc4d1d063b73eeae2c5114
+
+% 2 1 0 0c76782d85cfd564092bac86eb01316f
+
+@ 0 1 0 08ce3a4d07f5e84b1e45d5882b604f39
++         label 循環を閉じる辺は Dag.Error で拒否され、何も変わらない
+
+% 1 1 0 1062eb4d5adb8a5c0f1dcc20523c0499
+
+% 2 1 0 1fb757549f7b350818d0bf799c15b604
+
+% 3 1 0 0a42b5e0021c13a012fdb822dc62c66d
+
+% 4 1 0 018b00e544cc53050926cf22e0918ba7
+
+% 0 1 0 0afcc391fc4391a016accdd21a4cd153
+
+% 1 1 0 1afa32a78154f8480695e36d6b53b636
+
+% 2 1 0 07ec0a2e5e3c5a5e13f3233718d1fe3a
+
+@ 0 1 0 0de69960b282db7c02e16f0e52ad0638
++         label 凍結はハンドルを消費する：結果は問い合わせられるが、決して編集できない
+
+% 1 1 0 1f32f79a161e1b6a11549c858014edf4
+
+% 2 1 0 0ab096fccbdb550d00c14471530d22af
+
+% 3 1 0 1fd005add02b3b59068d8b8e0e2cac25
+
+% 4 1 0 1262436c5e1714c508f73f3e3a291487
+
+% 0 1 0 0704f0c450d954bf153d3f2453bb6ff6
+
+% 0 1 0 04aa7e576e3fb64d1b132b1c1b78a1eb
+
+% 0 1 0 128ecf57f2c5baba13b43d2ec13771b6
+
+% 1 1 0 0668bab4398b048514ff321ffc49c0b8
+
+% 2 1 0 170e121bee6bde2c1948b839bb2ccf0e
+
+@ 0 7 0 11bcdf04f8f3c2e418150881a738547b
++       編集可能な `Topology` は、少しずつ育つか変わるグラフ（タスクを見つけていくビルドシステム、ジョブを受け付けるスケジューラー）のためのものである。辺一本のコストは 1 マイクロ秒を十分に下回り、検査付きの `Dag#add` はその終点の到達範囲の分のコストがかかる。
++       編集が終わればハンドルは `Topology.freeze` か `Dag(topology)` に手放されるので、結果が陰で編集されることは決してない。`snapshot` はハンドルを手放さずに `Dag` を取り、`Topology(frozen)` や `dag.thaw` は新しい編集可能なコピーを作る。
++       シグネチャの中の素の `Topology[node]` は、編集可能な `^` の形を意味する。
+
+@ 0 5 0 1f3e1062accaafc01547673061cfee32
++       行列は編集のリビジョンに対してキャッシュされる。編集できない凍結されたハンドルはそれを保持し、それ以降に編集された編集可能なハンドルは呼び出しのたびにそれを計算し直す。`closure`、`reduction`、`reaches` が凍結した形のためのものであるのはこのためである。
++       ノードのキーはボックス化され、オープンアドレス法の表を通してハッシュされるので、汎用のキーのコストはそれらの `HashMap` と同じである。
+
+% 1 1 0 1d103d9f483f2981023b8887603ff5e1
+
+% 1 1 0 0f07103bff2312fb144991f50d51e602
+
+% 2 1 0 0d884a4116c59d0f012c1d936eed5831
+
+@ 0 18 0 0df249dd7190c21f09e181937dc9244d
++   entry .apply   新しい空のトポロジー、凍結したものの編集可能なコピー、または `Dag` の編集可能なコピー
++       `Topology[node]()` は空の編集可能な `Topology[node]^` である。
++       `Topology(frozen)` は `Topology[node]^{}` を新しい編集可能なものにコピーする。それ自体は変わりえない凍結したグラフを編集する方法である。`Topology(dag)` は `Dag` を解凍し、`dag.thaw` と同じである。
++       どちらのコピーもノードをトポロジカル順序で加えるので、並べ替えが必要な辺はない。
++   entry .freeze   編集可能なトポロジーを消費し、凍結したものを `Topology[node]^{}` として返す
++       `Topology.freeze(topology)` は、編集可能なトポロジーから凍結したトポロジーを生む唯一のものである（`Dag#freeze` は自分で組み立てる）。
++       ハンドルは**消費**される。すべての書き手は静的に退役させられるので、残った参照はコピーなしにその排他性を手放し、編集のメソッドはもうそれに対して呼べない。
++   entry .nodal   凍結した `Topology[node]^{}` の `Nodal` インスタンス
++       トポロジカル順序に並んだノード、出力リストから得る各ノードの後続、そしてハッシュの探査による `has` である。
++       インスタンスは凍結した形のためだけのものである。編集可能なハンドルは `Nodal` ではない。
++   entry .bidirectional   凍結したトポロジーの `Bidirectional` インスタンス。承認は必要ない
++       前任はトポロジーが保持する入力リストから読まれるので、`Dag` と違って `Dysasymptotic.LinearScan` は必要ない。
++   entry .topological   凍結したトポロジーが循環を持たないことを保証する目印
++   entry .traversable   トポロジカル順序に並んだノードのコレクションとしての凍結したトポロジー
+
+% 0 1 0 1d76b4c42331b0e90b046320a2d201c5
+
+@ 0 49 0 1eda70ef0cb16e8f0a1f0bf13debe14f
++   entry .countable   `frozen.size` と `frozen.nil`
++   entry .grown   `Int` の配列をより大きなものにコピーしたもの。実装の補助関数
++       直接使うためのものではない。
++       成長の補助関数は、分離検査器がその引数だけを見るように、クラスではなくコンパニオンに置かれている。
++   entry .grownLongs   `Long` の配列をより大きなものにコピーしたもの。実装の補助関数
++   entry .grownRefs   `AnyRef` の配列をより大きなものにコピーしたもの。実装の補助関数
++   entry .grownFlags   `Boolean` の配列をより大きなものにコピーしたもの。実装の補助関数
++   entry .hash   上位ビットを下位ビットに畳み込んだキーのハッシュ。実装の補助関数
++   entry #size   トポロジーが現在持つノードの数
++   entry #edgeCount   トポロジーが現在持つ辺の数
++   entry #has   ノードがトポロジーにあるかどうか。ハッシュの探査で調べる
++   entry #add   ノード、または辺 `from -> to` を加える。循環を閉じるなら `Dag.Error` を発生させる
++       編集可能なハンドルでのみ使える。
++       `add(node)` は、ノードがなければ順序の末尾に加え、その内部 ID を返す。`add(from, to)` は辺（`from` は `to` に依存する）を加え、どちらかのノードがなければそれも加える。
++       `to` がすでに `from` より下に位置していれば何も動かない。そうでなければ、二つの間にある `from` の依存元と `to` の依存先が並べ替えられる。その探索が `from` の依存元の中で `to` に出会えば、辺は循環を閉じることになる。そのときはスコープ内の `Tactic[Dag.Error]` を通して `Dag.Error`（`Reason.Cyclic`）が発生し、グラフはまったく元のまま残される。
++       重複する辺は無視される。
++   entry #remove   ノードと、その両端のすべての辺を取り除く
++       編集可能なハンドルでのみ使える。未知のノードは無視される。
++   entry #bypass   ノードを取り除き、その各依存元をその各依存先へ付け替える
++       編集可能なハンドルでのみ使える。
++       すべての依存元はすでにすべての依存先より上に位置しているので、並べ替えが必要になることはない。
++   entry #reachable   ノードが到達するすべて。それ自身を含む。存在しないノードでは空集合
++       出力リストの深さ優先のたどりである。`Dag#reachable` と違い、存在しないノードは例外を発生させずに空集合を返す。
++   entry #reaches   あるノードが別のノードに到達するかどうか。到達可能性の行列があれば O(1)
++       `frozen.reaches(from, to)`：行列の一ビットであり、行列は最初の使用時に組み立てられ、凍結したハンドルでは保持される。
++       どちらかのノードがなければ `false` である。
++   entry #edges   すべての辺を `(from, to)` の対として表したもの
++   entry #successors   ノードが指すノード。存在しないノードでは空集合
++   entry #predecessors   ノードを指すノード。そのために保持された入力リストから得る
++       承認は必要ない。トポロジーは両方向を保存している。
++   entry #sources   後続のないノード。グラフの変化に応じて維持される
++   entry #sinks   前任のないノード。グラフの変化に応じて維持される
++   entry #linearized   維持されているトポロジカル順序。依存先が先に来る。O(n) で読むだけである
++   entry #nodes   すべてのノードを集合として表したもの
++   entry #closure   暗黙の辺をすべて明示したもの。到達可能性の行列から `Dag` として求める
++       凍結したハンドルのためのものである。行列の各ノードの行が、その後続の集合になる。
++   entry #reduction   同じ到達可能性を持つ最小のグラフ。到達可能性の行列から `Dag` として求める
++       凍結したハンドルのためのものである。
++       Aho、Garey、Ullman の方法である。ノードの後続を順位の降順に訪れながらそれらの行の和を累積していくと、すべての辺が O(degree·n/64) で決まるので、千個のノードのグラフの推移簡約は 1 ミリ秒の何分の一かで済む。
++   entry #invert   すべての辺を逆にしたもの。別の凍結したトポロジーとして返す
++       逆にした順序は逆にした辺に対して有効な順序なので、コピーに並べ替えは必要ない。`frozen.invert.linearized` は `frozen.linearized.reverse` である。
++   entry #snapshot   ハンドルを手放さずに得る、現在のグラフの永続的な `Dag`
+
+@ 0 1 0 1debea7c1393f1fe01e972a2eb8647bb
++ entry .Nodal   有限の有向グラフの型クラス：ノードの集合と各ノードの後続
+
+% 1 1 0 1b73dd8c614f48911c07a8fcf5832fa6
+
+@ 0 6 0 044ff32276691d5d1dd04519228baa52
++       `graph is Nodal by node` は、型 `graph` の値が `node` の上の有限の有向グラフであることを示す。それはその `nodes` を列挙でき、任意のノードの `successors`（それが指すノード。Soundness 全体で使う依存関係の読み方では（`a -> b` は `a` が `b` を必要とすることを意味する）その依存先）に答えられ、ノードを `has` するかどうかを走査ではなく基本操作として答えられるので、ノードの欠落の検査が O(n) になることはない。
++       辺の向きはインスタンスではなく契約によって決まっている。トポロジカル順序は、ノードをその後続の後に並べる。
+
+@ 0 5 0 0615de7f80d8d8270aabeb336e3f09de
++       インスタンスは `Dag`、`Digraph`、凍結した `Topology[node]^{}`、`Hasse` に対して（それぞれのコンパニオンに）提供され、ここでは任意の `Map[node, Set[node]]` と `Ledger[node,
++       Set[node]]` に対して提供されるので、依存関係の普通のマップも、変換なしにパッケージレベルの拡張（`nodes`、`edges`、`sources`、`sinks`、`cycle`、`acyclic`、`reachable`、`closure`、`invert`）に答える。
+
+% 2 1 0 0b556780c1fea89a1e68e361a0dd57f2
+
+% 3 1 0 09ab602f365045a11cb1b7a45cfe9abc
+
+% 4 1 0 06188bfff561dd9e05e1ae1ce4138503
+
+% 0 1 0 0ca8fc206c4856b810751b5374ee66e0
+
+% 0 1 0 06cbcf7e46e6e18b1e4ee04665ac613a
+
+% 0 1 0 04e12c93b13f22a10231ac035188d7b1
+
+% 0 1 0 17976642edc6f77e0a44da81b93f5f3c
+
+% 1 1 0 0257d77bbd1d6a330e2fc1cee0963020
+
+@ 0 7 0 0c33c6f898e28765078a7ca5cad95150
++       メソッドは `murmuration.Iterator` を返す。これはどの表現も生み出せる最も安価なものであり、拡張がそれを `Set` や `List` に変える。
++       stdlib のイテレーターを持つ独自のインスタンスは、それを `Iterator.from(…)` で包む。
++       後続の*関数* `node =>
++       Iterable[node]` は意図して `Nodal` ではない。それには有限のノードの集合も決定可能な `has` もないからであり、`explore` がそれを `Digraph` に実体化する。
++       前任も保存する表現はそのことを `Bidirectional` で示し、値が循環を持てない表現は `Topological` で示す。
+
+% 0 1 0 1656e9850ca5c5721b1613290655bbab
+
+% 1 1 0 1435e72a355ae7050dcfe00527b97061
+
+% 2 1 0 062ad445da57118e123f2eb789678c5b
+
+% 0 1 0 01b525e1083a34bf00b0675a26b195fa
+
+@ 0 11 0 1f81bdffa7890b3b036327d72005e674
++   entry .map   任意の `Map[node, Set[node]]` の `Nodal` インスタンス
++       `Map` は proscenium に属するので、型クラスのコンパニオンを通して暗黙のスコープにある。
++       キーの集合にない終点はノードでは**ない**。インスタンスはマップをそのまま報告し、終点についてノードの集合を閉じるコンストラクターは `Digraph(adjacency)` である。
++       インスタンスは部分型についてパラメトリックなので、細分化されたマップの型にも一致する。
++   entry .ledger   任意の `Ledger[node, Set[node]]` の `Nodal` インスタンス
++       `Ledger` に対する `.map` と同じである。そのキーがその順のままノードとなり、欠けたキーには後続がない。
++   entry #nodes   すべてのノードをイテレーターとして表したもの
++   entry #successors   ノードが指すノードをイテレーターとして表したもの。存在しないノードでは空
++   entry #has   ノードを走査せずに、グラフがノードを持つかどうか
+
+@ 0 1 0 09b9af0e0eb3cda217bde524a10bc9ba
++ entry .Bidirectional   ノードの前任に直接答えられるグラフの型クラス
+
+% 1 1 0 05a58afc43e63ba2038369e1353f3428
+
+@ 0 7 0 1078316c8a5be73b139fca8c41f5e902
++       `graph is Bidirectional by node` は、グラフがすべての辺を走査せずに、どのノードがあるノード*を*指すか（依存関係の読み方ではその依存元）に答えられることを示す。
++       凍結した `Topology` と `Hasse` は両方向を保存しており、制限のないインスタンスを持つ。
++       `Dag` や `Digraph` は前向きの方向しか保存しないので、そのインスタンスは `Dysasymptotic.LinearScan` の背後に制限されている。そこで一つのノードの前任を見つけるにはすべての辺の転置が必要で、そのコストは問いの範囲の外にあり、`import dysasymptotics.linearScan` によってプログラムにそれを承認させる。
++       パッケージレベルの `predecessors` 拡張はこのインスタンスを必要とする。
+
+% 1 1 0 1426f86b62a80ffb1eb9b25b8da2df7b
+
+@ 0 1 0 0db7e4ba7759a94b13f1cc0a66c885ca
++   entry #predecessors   ノードを指すノードをイテレーターとして表したもの
+
+@ 0 9 0 068840296a747b220a1a1a0e64dfc9d7
++ entry .Topological   値が循環を持てないグラフの型の、目印となる型クラス
++     `graph is Topological` は、その型の値がトポロジカル順序を許すこと、つまり有向の循環を含まないことを、**構成によって**保証する。`Dag`、凍結した `Topology[node]^{}`、`Hasse` は、どれも検査か不変条件を通してしか組み立てられないので、それぞれインスタンスを持つ。
++     インスタンスは目印であり、一般の型に対する実行時の検査の結果では決してない。`Digraph` は `acyclic` によってのみ `Topological` になり、それは `Dag` を返す。
++     拡張の `linearized`、`reduction`、`traversal`、`layered` はこれを必要とし、`dendrology` の図も同様なので、巡回グラフには、例外を発生させる操作ではなく、そうした操作そのものがない。
+
+@ 0 1 0 0d71086775dcea4c03d1c1497c76e6e2
++ entry .Reachable   独自の到達可能性の探索を持つグラフの型クラス
+
+% 1 1 0 0ef1e4541d6b01b402af770132fc2581
+
+@ 0 7 0 19d9aaaff0350ffd17b315ad4d0cdeb3
++       `graph is Reachable by node` は、あるノードから到達できるすべてのもの（そのノード自身を含む）を集合として答える。
++       再帰ではなく訪問済みの集合によるので循環する入力に対しても全域的であり、それ自体の理由でエラーを発生させることは決してない。これを呼ぶ拡張 `reachable` が `Dag.Error` を発生させるのは、グラフにないノードに対してだけである。
++       ネイティブのインスタンスは凍結済みの `Topology` のもので、そのエッジのリストをたどる。それ以外の `Nodal` なグラフは `.generic` によって汎用的に探索され、拡張はこれをコンテキスト引数の既定値として受け取るので、`Map` や `Hasse` には独自のインスタンスが要らない。
+
+% 1 1 0 001bef3025c9b4ab0e3c076507f6c117
+
+@ 0 7 0 0d6941d6984bc89c0ed414b4c3fcddb6
++   entry .topology   凍結済みの `Topology[node]^{}` の `Reachable` インスタンス
++   entry .generic   任意の `Nodal` なグラフに対する、後続をたどる深さ優先探索による `Reachable`
++       given ではなくメソッドである：拡張 `reachable` と `closure` はこれを `using` 引数の既定値として受け取るので、入れ子の given の探索なしに到達される。入れ子の探索では、`Map` のような不透明なレシーバに対して別名が展開されてしまい、何にもマッチしない。
++       自身のグラフ型に対する `Reachable` を召喚するコードは、これを直接呼び出せる。
++   entry #reachable   あるノードが到達するすべてのもの。そのノード自身を含む
+
+@ 0 1 0 1088e3fcb002086a067e60742d6e3d7b
++ entry .Invertible   すべてのエッジを逆にできるグラフの型クラスと、逆にした結果の型
+
+% 1 1 0 0a515c266fda9f4a13f6806c8b4d779a
+
+@ 0 6 0 1fa5c41987cc5b521d50b8482e18f279
++       `graph is Invertible by node to result` は、すべてのエッジを逆にしたグラフを、それを保持するのに最も適した型の値として答える。
++       `Dag` は `Dag` に反転する。すべてのエッジを逆にしても非巡回性は保たれるからである。`Hasse` は、保存している二つの方向を入れ替えることで O(1) で `Hasse` に反転する。凍結済みの `Topology` は別の凍結済みの `Topology` に反転する。それ以外の `Nodal` なものは、`.generic` を通じてエッジを畳み込むことで `Digraph` に反転する。拡張 `invert` はこれをコンテキスト引数の既定値として受け取る。
+
+% 1 1 0 02da5cb91b3dfc160610a9ebadeea64a
+
+@ 0 8 0 134bf918e22bd9211b0abe0d88000d84
++   entry .digraph   `Digraph` は `Digraph` に反転する
++   entry .dag   `Dag` は `Dag` に反転する：すべてのエッジを逆にしても非巡回性は保たれる
++   entry .topology   凍結済みの `Topology[node]^{}` は別の凍結済みの `Topology` に反転する
++   entry .hasse   `Hasse` は、保存している二つの方向を入れ替えることで、O(1) で `Hasse` に反転する
++   entry .generic   任意の `Nodal` なグラフに対する、`Digraph` を答える `Invertible`
++       `Reachable.generic` と同じ理由で、given ではなくメソッドである：拡張はこれを既定値として受け取り、不透明なレシーバでは失敗してしまう入れ子の given の探索を避ける。
++   entry #invert   すべてのエッジを逆にしたグラフ。インスタンスの `Result` として返す
+
+@ 0 1 0 0a994124a910710d10d9be509c962c3b
++ entry .Hasse   半順序のハッセ図：各要素の直接の被覆。推移的に導かれる比較は取り除かれる
+
+% 1 1 0 0ff1957d24e40d9a021ab675f35232f9
+
+@ 0 4 0 1951c5ac087eecd61a67c29df0c1ec50
++       `Hasse(elements)(lessOrEqual)` は集合と順序関係（`lessOrEqual(a, b)` は `a ≤ b` を意味する）を受け取り、被覆関係を計算する：各要素について、その直上にある要素（`parents`）と直下にある要素（`children`）であり、すでにパスによって導かれる比較はすべて除かれる。
++       12 の約数を、割り切れる関係で順序付けると次のようになる：
+
+% 2 1 0 14f34b7f1b0d2bae0a691627461fcb82
+
+% 3 1 0 17593b537489f40b0ddbcfc62b871837
+
+% 0 1 0 168e731b9af96dd606cf98d674faa2a5
+
+% 0 1 0 013cdb2ca6d8ea6b06079f6dcf173faa
+
+% 0 1 0 11b9093ef1a93ae312af4364dcdda11d
+
+% 0 1 0 14500b39e072ded30c5dd54b3a112c14
+
+% 0 1 0 19e6ce6c04dfcc6e0e39e61ad6447660
+
+% 0 1 0 0600e8a0ef8b13bf0582055e83e88962
+
+% 1 1 0 12fc5b47f34389931350f9c880c75d47
+
+@ 0 6 0 10c68232887118211233b265fe8add1c
++       要素は一つずつ挿入される。各挿入は、現在の極大元から下りていくことで直上の親を、現在の極小元から上っていくことで直下の子を見つけ、比較によって除外された時点で部分木全体を刈り込む。すべての比較はメモ化されるので、比較されるのは順序付きの組全体よりはるかに少ない。
++       関係のもとで同値な二つの要素（互いに相手以下であるもの）は併合される：後の要素は最初の要素の別名となり、どちらに対する問い合わせも両方について答える。
+
+@ 0 6 0 19c1e417acb221591fbfa48f21072edb
++       `Hasse` はそれ自体がグラフであり、各要素は自身が被覆する要素を指す。したがって `Nodal`、`Bidirectional`（両方向が保存されている）、`Topological`（半順序には循環がない）である：`divisors.linearized` は下から上へと並び、その `sources` は極小元、`sinks` は極大元であり、`dendrology` の図はこれを直接描く。
++       `dag` は同じ関係を `Dag` として表したものであり、`Poset#dag` は `PartiallyOrdered` インスタンスを通じてそれを構築する。
+
+% 1 1 0 098d97fcc07568990ac6993cdf9a90f8
+
+% 1 1 0 02ad02c8ae13287719703d57e76f83c1
+
+@ 0 24 0 124a42d23fe2ce341b91e988cb44834b
++   entry .apply   `lessOrEqual` 関係のもとでの集合のハッセ図
++       `Hasse(elements)((a, b) => a ≤ b)`。
++       結果が被覆関係になるためには、関係は半順序（反射的、同値なものの併合を除いて反対称的、推移的）でなければならない。関係は順序付きの組ごとに高々一度しか呼ばれない。
++   entry .nodal   `Nodal` インスタンス：`Hasse` の要素。各要素は自身が被覆する要素を指す
++   entry .bidirectional   `Bidirectional` インスタンス：要素の前任はその被覆であり、直接読み取られる
++       両方向が保存されているので、`Dysasymptotic.LinearScan` は要らない。
++   entry .topological   `Hasse` が循環を持たないことを保証するマーカー：半順序は循環を持ちえない
++   entry #parents   ある要素の直上にある要素：その被覆
++   entry #children   ある要素の直下にある要素：それが被覆するもの
++   entry #elements   すべての要素。集合として返す
++   entry #maxima   上に何もない要素
++   entry #minima   下に何もない要素
++   entry #dag   被覆関係を `Dag` として表したもの。各要素は自身が被覆するものを指す
++       検査は要らない：半順序の被覆関係は非巡回である。
++       `hasse.dag.edges` は `hasse.edges` である。
++   entry #invert   同じ関係を上向きに読んだもの：各要素は自身を被覆するものを指す
++       O(1)：保存している二つの方向が入れ替えられる。
++       `invert.children(x)` は `parents(x)` である。
++   entry #bottom   現在のすべての極小元の下に、比較なしの一回の走査で付け加えられる新しい要素
++       構築上すべてのものより小さいと分かっている値のためのものである（型における `Nothing`）。そのため、各要素と比較する必要がない。
++       それが唯一の極小元となり、以前の各極小元がそれを被覆する。
++   entry #top   現在のすべての極大元の上に、比較なしの一回の走査で付け加えられる新しい要素
++       `#bottom` の対になるもので、型における `Any` である。
++       それが唯一の極大元となる。
+
+@ 0 1 0 1e340dcf1732dd781255bbcb6faed80e
++ entry .PartiallyOrdered   半順序を持つ型の型クラス：`compare(left, right)` は `left ≤ right` である
+
+% 1 1 0 0ee8378262e87a7f19297ead0bdc7297
+
+@ 0 3 0 1d9152626944c2980bc55e6a12c70140
++       `element is PartiallyOrdered` は、`Poset` のために、`left ≤ right` と読む `compare(left, right): Boolean` を提供する。
++       関係は反射的、反対称的、推移的であるべきである。すべての組を関係付ける必要はない。
++       given はラムダとして書く：
+
+% 2 1 0 04b278f0197365e00812914d35f8c6cf
+
+% 3 1 0 04510a37fce13ec909a92bde067c9e91
+
+% 0 1 0 061a99e7c0f79b661bbd3fa21095342a
+
+% 0 1 0 0cdf762b9299282b1dfd9277410c8d1e
+
+% 1 1 0 031f8ed40c28be5703ef64769ebc3d8c
+
+% 1 1 0 14345edbec4460f01cb02cca09384ff9
+
+@ 0 1 0 0f7067c654a86b11078ad4e4f3ce016a
++ entry .Poset   `PartiallyOrdered` インスタンスを持つ要素の集合と、その被覆関係の `Dag`
+
+% 1 1 0 13ab337c5520ecf9116781670655d34b
+
+@ 0 4 0 1c69a211605357aa016081dc2d1f4f97
++       `Poset(elements*)` は型が `PartiallyOrdered` である要素の集合を保持し、`dag` は順序のハッセ図を `Dag` として表したものである。各要素は自身の直**上**にある要素（その被覆）を指す。これは順序の `compare` を使って `Hasse` を通じて構築され、比較を刈り込むので、後から簡約する必要がない。
+
+% 2 1 0 134d23e26ea27bdd0fab566c74481052
+
+% 3 1 0 11a8924604c5ea2706e2d7f5fa1b5525
+
+% 0 1 0 117d4d711593115e0bb3c98a751e02a3
+
+% 0 1 0 0c18a5313278106408138a9156a70973
+
+% 1 1 0 1afe11ce23b95e4a1d0951afac7ae5d7
+
+@ 0 3 0 1216e07a119eae68032f52d656568609
++       方向に注意すること：`Poset#dag` は上向き（被覆を指す）であり、`Hasse#dag` は下向き（被覆されるものを指す）である。同じ関係による `Hasse` は、両方向、極大元、極小元を持つ、より豊かな値である。
+
+% 0 1 0 1e72f1a44ab56fdd0f932c6e469b55ff
+
+% 0 1 0 0e8c0d381270e4000e008af3312bc62f
+
+@ 0 3 0 18f48b0e6c35ce281ea93d8aab30a9c8
++   entry .apply   与えられた要素の `Poset`
++   entry #elements   要素。集合として返す
++   entry #dag   被覆関係を `Dag` として表したもの。各要素は自身の直上にあるものを指す
+
+@ 0 1 0 1422d1b2040d815e03f7b106cf902542
++ entry .Layering   描画のために層に配置されたグラフ。依存先が依存元の上にあり、交差は減らされている
+
+% 1 1 0 18faf5cadc99b2a01f9bb633de3ecc4f
+
+@ 0 10 0 1ff7f4e6144eddbd1a55224d3f3e5861
++       `Dag#layered`（および任意の `Topological` なグラフに対する拡張 `layered`）の結果である。
++       すべてのノードは層に割り当てられる。`Ranking.LongestPath` では最も深い依存先の一つ下の層に置かれるので、ソースは層 0 を共有する。`import rankings.balancedRanking` を使うと、最も浅い依存元の一つ上の層まで引き下げられる。二つ以上の層にまたがるエッジは、間にある各層で `Layering.Vertex.Virtual` を通過するので、結果のすべてのリンクは隣接する層を結ぶ。
++       次に、各層の頂点は、その層と隣の層を結ぶリンクの交差を減らすように並べ替えられる。重み付き中央値による走査と隣接する要素の入れ替えを交互に行い、最大 24 回の走査か、描画が平面的になるまで続ける。これは、GraphViz の `dot` が描くのと同じ Sugiyama の手法である。
+
+% 2 1 0 011fc43eb3bfbcfe11e0d9b1a0fcfc4f
+
+% 3 1 0 1ddd18da55df890917197ec6fc3be282
+
+% 4 1 0 1627a028719e2afa1f66925f4d6eb71f
+
+% 0 1 0 1765edbf8c9a2fb70eaffba3ba435450
+
+% 0 1 0 0e948f0aec81affc1603fb8deff3e36a
+
+% 0 1 0 02c6ec41e9f1471f0a656aa23d1dd259
+
+% 0 1 0 1d16642fd557254813cb289af7cedbb2
+
+% 0 1 0 034cc5718e0b7596040571422d3c4cc0
+
+% 0 1 0 03e7b7e82d629d4b156dfc855cd17eb4
+
+% 0 1 0 135fa14995a0f6a90598eb3e00ef12cc
+
+% 1 1 0 011859498c315a1d190b5bd2635ff884
+
+@ 0 2 0 04293f7e3a01e6301d9ee152031e8c5b
++       `dendrology` の `LayeredDagDiagram` は、層構造に列を割り当てて描画する。別の描画方法では、`layers` と `links` を直接使う。
+
+% 0 1 0 0c339bb1bbac2c4e0e068edb2a68bf97
+
+% 1 1 0 0a259ebc7c9ce0b40699c7f6df823bc2
+
+@ 0 10 0 1ceb9f67a85c604b0c693d1925daedaa
++   entry .Vertex   層の中の位置：グラフのノード、またはより長いエッジが通過する点
++       列挙型である：`Real(value)` はグラフのノードであり、`Virtual(source, target)` は、いくつもの層にまたがる `source` から `target` へのエッジがこの層を通過する場所である。
++       描画は仮想の頂点に列を与え、エッジがそこを通るように描く。
++   entry #layers   上から順の層。それぞれは描画順の `Layering.Vertex` のリストである
++   entry #links   `links(i)` は層 `i` と層 `i + 1` を結ぶ。それぞれの層の中での位置の組として表す
++       すべてのリンクは隣接する層を結ぶ：それより多くの層にまたがるエッジは、その仮想の頂点で分割される。
++   entry #rank   各ノードの層。`Map` として返す
++   entry #position   各ノードの、その層の中での位置。`Map` として返す
++   entry #crossings   層構造全体で、交差するリンクの組がいくつあるか
+
+@ 0 1 0 1094fd9276da52ee198bac275abd244b
++ entry .Ranking   `layered` が各ノードを層に割り当てる方法：`LongestPath` または `Balanced`
+
+% 1 1 0 0d974163f6826cc712df9bfbaf6bbc6a
+
+@ 0 7 0 03ecf45d4f2796bb121e510f0c201cc3
++       列挙型で、`Dag#layered`、拡張 `layered`、`dendrology` の `LayeredDagDiagram` がコンテキスト値として受け取る。
++       `LongestPath` はすべてのノードを最も深い依存先の一つ下の層に置くので、何にも依存しないノードはすべて層 0 を共有する。
++       `Balanced` はそこから始めて、依存元を持つすべてのノードを、最も浅い依存元の一つ上の層まで引き下げる。これにより、深いところにあるものだけに供給するソースからの長いエッジが短くなる。
++       コンパニオンの `default` は `LongestPath` であり、`import rankings.balancedRanking` はそれより優先される。
+
+% 1 1 0 090bb18592fc745818aab1e6b7c707ae
+
+% 1 1 0 03967fc2ccb77ba60dc6f0dbc5fbf4f1
+
+@ 0 1 0 07c6aea46f275721107d26393b1ddf24
++   entry .default   `Ranking.LongestPath`。何もインポートされていないときに適用される given
+
+@ 0 1 0 1b6e7a777c3080c013f02823bccb2552
++ entry .rankings   `layered` のための二つの層割り当てポリシー。名前でインポートする given として提供される
+
+% 1 1 0 1486050ed3913d9813638e506553b2ba
+
+@ 0 3 0 13e91e8e3a6d497b05aa734d9d7ea985
++       `import soundness.*` は `Ranking` のコンパニオンから `Ranking.LongestPath` を解決する。これらのうち一つを名前でインポートすると、ポリシーを明示的に選択できる。`Balanced` を選択する方法は `balancedRanking` だけである。
+
+% 2 1 0 01fec0fcd095bf8f01b47613a40856a2
+
+% 3 1 0 0e4e35438cbc81f809b6c526a9d0fb70
+
+% 4 1 0 11df5012ae5c0f6f06a4d360ec311e99
+
+% 0 1 0 107cd6b5f8c4da6e0877fca1d99c87f5
+
+% 0 1 0 0d856b813ae39cf819b0f022a1b1c8cd
+
+% 0 1 0 089291606c717a3d016864dc0e369b01
+
+% 1 1 0 1457b6966938a98b02b875ad3f7d84b1
+
+@ 0 3 0 143a315c5ed3157a0804ee78c1e6a333
++       インポートがなければ、`deep.layered.rank(5)` は 0 である。
++   entry .longestPathRanking   `Ranking.LongestPath`：すべてのノードを最も深い依存先の一つ下の層に置く
++   entry .balancedRanking   `Ranking.Balanced`：依存元を持つすべてのノードを、最も浅い依存元の一つ上の層まで引き下げる
+
+@ 0 1 0 1dec89a7021ce0bd1135703cec9f475e
++ entry .Dot   識別子、エッジ、属性から構築され、テキストに直列化される値としての GraphViz の DOT 文書
+
+% 1 1 0 196b0ed07efe1530144f255c143c453e
+
+@ 0 6 0 18925c26ceb8cc921117a36549d0d547
++       `Dot` は二つのケース、`Graph`（無向）と `Digraph`（有向）を持つ列挙型であり、それぞれが省略可能な名前、`strict`（重複するエッジがない）であるかどうか、そしてその `Dot.Statement` を保持する。
++       コンパニオンの `digraph`、`strictDigraph`、`graph`、`strictGraph`、`subgraph` がそれらを構築し、文は `Name[Dot.Id]` の識別子から、拡張演算子 `-->`（有向エッジ）、`--`（無向エッジ）、`:=`（代入）、`id(key -> value, …)`（属性を持つノード）で構築される。
++       `serialize` は DOT のテキストを書き出す。
+
+% 2 1 0 08489056c59de60802c6c65a030fe7f4
+
+% 3 1 0 0ea00241ea4572f808d7dca5c41f9c83
+
+% 4 1 0 057be87d840da39e0b6bb5d9af9f5352
+
+% 0 1 0 13af4cc3af32ed68076e71060a727f50
+
+% 0 1 0 1d8e7470bfcb6fef0581a3656e24283e
+
+% 0 1 0 1c53e12de0a0215c1b99361dffa7f7d1
+
+% 0 1 0 0dcfaffb02554c951144eed8bca4d4a0
+
+% 0 1 0 0e07471248a4d8f31bd87be8e56380ca
+
+% 0 1 0 1d26812238659b7007bc5323e4299c05
+
+% 1 1 0 07895e7a272113e708e54581b1e69977
+
+@ 0 5 0 1cefd2c58c11c9d313a79f6bc7b26a1c
++       すべての識別子は二重引用符で囲まれて出力されるので、`Dot.Identifier` の規則は寛容である：二重引用符も改行も含まない空でない任意のテキストである。
++       それ以外のものに対しては、`Name[Dot.Id](text)` は `Name.Error` を発生させ（`Tactic[Name.Error]` が必要である）、`n"…"` リテラルはコードのコンパイル時に検査される。
++       `Dag[Text]` は `dag.dot` を通じて描画され、これは依存ごとに一つのエッジを持つ `Dot.Digraph` を作る。
+
+% 1 1 0 15e53a43261ab90116835f476b6ee3d3
+
+@ 0 15 0 072abebb333756d918a4817841488d7d
++   entry .digraph   与えられた文から成る、名前付きまたは無名の有向グラフ
++       `Dot.digraph(id, statements*)` または `Dot.digraph(statements*)`。strict ではない。
++   entry .strictDigraph   `strict` と指定された名前付きの有向グラフ：重複するエッジは併合される
++   entry .graph   与えられた文から成る名前付きの無向グラフ
++   entry .strictGraph   `strict` と指定された名前付きの無向グラフ
++   entry .subgraph   名前付きまたは無名の `subgraph { … }` 文。グラフの中に入れ子にするか、エッジの終点にする
++       `Dot.subgraph(id, statements*)` または `Dot.subgraph(statements*)`。
++       エッジはサブグラフで終わることができる：`a --> Dot.subgraph(b, c)`。
++   entry .--   `a -- b`：識別子から識別子またはサブグラフへの無向エッジの文
++   entry .-->   `a --> b`：識別子から識別子またはサブグラフへの有向エッジの文
++   entry .:=   `a := b`：代入の文。`"a" = "b"` として出力される
++   entry .apply   `id(key -> value, …)`：属性を持つ識別子を宣言するノードの文
++       `Name[Dot.Id]` に対する拡張である：`a(t"color" -> t"red")` は `"a" [ color="red" ]` として出力される。
++       属性がなければ、むき出しのノードを宣言する。
++   entry .Target   エッジの右辺：有向かどうか、その行き先、そして省略可能な連鎖する次のターゲット
+
+% 1 1 0 1e380526f22192980cc4ec506685eaed
+
+@ 0 17 0 0b70ed4bad8e84040cb379dd031c1268
++         `directed`、`dest`（識別子または `Statement.Subgraph`）、`link` を持つケースクラスである。`link` は、`a -> b -> c` のような連鎖のためのさらなる `Target` である。
++         `-->` と `--` の演算子がこれを構築する。手で書くことはまれである。
++     entry #directed   エッジが `--` ではなく `->` で描かれるかどうか
++     entry #dest   行き先：`Name[Dot.Id]` または `Statement.Subgraph`
++     entry #link   このターゲットの後に連鎖するさらなるターゲット。あれば
++   entry .Property   ノードの一つの `key="value"` 属性
++     entry #key   属性の名前
++     entry #value   属性の値。二重引用符で囲まれて出力される
++   entry .Statement   グラフの一つの文：ノード、エッジ、代入、またはサブグラフ
++       列挙型である：`Node(id, attrs*)`、`Edge(id, rhs: Target, attrs*)`、`Assignment(id, id2)`、`Subgraph(id: Option[Name[Dot.Id]], statements*)`。
++       コンパニオンのコンストラクターと `Name[Dot.Id]` に対する演算子がこれらを作る。`Subgraph` はエッジのターゲットになることもできる。
++   entry .serialize   `Dot.serialize(tokens)`：トークンのリストをインデントされた DOT のテキストとして配置する
++       インスタンスメソッドが使う低レベルの書き出し器である：波括弧はインデントされたブロックを開閉し、`;` は行を終え、`[` と `]` は属性を囲み、それ以外のトークンは空白で区切られる。
++   entry .Id   DOT の識別子の命名プレーン：`Name[Dot.Id]`
+
+% 1 1 0 1beeecc130464784191606e3cf685254
+
+@ 0 11 0 0a18ef402a74527d0131840e607cc835
++         シールされたマーカー型である。
++         `Name[Dot.Id]` は、ノード、エッジの端点、代入の辺、（サブ）グラフのいずれにも同じように名前を付け、このオブジェクトの given `nominative` によって `Dot.Identifier` に従わされる：`Name[Dot.Id](text)` は実行時に検査し（`Name.Error` を発生させる）、`n"…"` はコードのコンパイル時に検査する。
++     entry .nominative   `Name[Dot.Id]` を `Dot.Identifier` の規則に従わせる given
++   entry .Identifier   DOT の識別子が満たすべき規則：空でなく、二重引用符も改行も含まない
++       `nomenclature` の規則である。
++       識別子は常に二重引用符で囲まれて出力されるので、他に何もエスケープする必要がない。失敗のメッセージは _must be a valid DOT identifier_ である。
++   entry #serialize   インデントされ、改行で始まる DOT のテキストとしてのグラフ
++       `Dag(t"a" -> t"b").dot.serialize` は `"\ndigraph {\n  \"a\" -> \"b\"\n}"` である。
++   entry #add   さらなる文を末尾に追加したグラフ
+
+@ 0 5 0 0aacba1d0623776b02b020e9fd1ba652
++ entry .explore   `start.explore(dependencies)`：あるノードから探索することで、後続の関数を `Digraph` として実体化する
++     任意の値に対する拡張である。
++     関数 `node => Iterable[node]` はそれ自体では有限のノードの集合を持たないので、`Nodal` ではない。`explore` は `start` から外側へとたどり、到達したノードごとに関数を一度呼び出して、見つかったすべてのもののグラフを答える。
++     関数は自分自身へと戻ってくることがあるので、結果は `Digraph` であり、`acyclic` がそれを検査する。
+
+% 2 1 0 0b31083e3950a22f09123f352b79f6cd
+
+% 3 1 0 1e6749b3bcb1bf840e201c40effa932b
+
+% 4 1 0 0cffe0d99a0ff75e169902db1d27e718
+
+% 0 1 0 034fcaa2bf30d57303a3fa1642797d5f
+
+% 1 1 0 1d28b99d798fdbbf158e2a4b66d3f2a7
+
+@ 0 4 0 0bffc6af09ac25261fca97930ae0dc45
++ entry .nodes   任意の `Nodal` なグラフのすべてのノード。集合として返す
++     任意の `graph is Nodal by node` に対する汎用の拡張である：`Map[node, Set[node]]`、`Ledger`、`Hasse`、凍結済みの `Topology`、あるいはいずれかのグラフ型（これらは同じ名前をメソッドとして提供し、そちらが優先される）。
+
+@ 0 1 0 1f6c1e97141ab1a40354f6029a5f6abe
++ entry .successors   任意の `Nodal` なグラフで、あるノードが指すノード：その依存先。集合として返す
+
+@ 0 1 0 1172705babe7f3881c40dd7932ba797d
++ entry .edges   任意の `Nodal` なグラフのすべてのエッジ。`(from, to)` の組として返す
+
+@ 0 2 0 01d576d8ef439190163d9dfa199ff9fa
++ entry .sources   任意の `Nodal` なグラフで、後続を持たないノード：何にも依存しないもの
++     グラフ全体を対象とするので、前向きのみの表現でも承認は要らない。
+
+@ 0 3 0 11e8390d710aa35b0ae5dfba00bafe37
++ entry .sinks   任意の `Nodal` なグラフで、前任を持たないノード：何からも依存されないもの
++     すべてのエッジに対する一回の走査なので、`Bidirectional` インスタンスも承認も要らない：問いは一つのノードではなくグラフ全体に関するものである。
+
+@ 0 4 0 046c856d195232c5103d9d33737c0977
++ entry .predecessors   任意の `Bidirectional` なグラフで、あるノードを指すノード
++     `graph is Bidirectional by node` が必要である：凍結済みの `Topology` や `Hasse` では制限されないが、`Dag` や `Digraph` では `Dysasymptotic.LinearScan`（`import dysasymptotics.linearScan`）によって制限される。これらは答えるためにすべてのエッジを転置しなければならないからである。
+
+@ 0 2 0 0c14be402bf0d6ff0e983e9244df94f3
++ entry .cycle   任意の `Nodal` なグラフの循環。あれば：各ノードが次のノードを指し、始まった所で終わる
++     非巡回のグラフでは `Unset` である。
++     深さ優先探索により、任意のグラフに対して全域的である。
+
+@ 0 2 0 1409cb2dbbec2e0209f7e90ddb0049f0
++ entry .acyclic   一回の検査の後、任意の `Nodal` なグラフを `Dag` として返す。循環があれば `Dag.Error` を発生させる
++     O(n + e) で、一度だけ行われる。ノードの集合は、すべてのエッジのターゲットについて閉じられる。
+
+% 2 1 0 146511835c1956541dc59e8655ee983a
+
+% 3 1 0 137df9e45d805ca215f857751c8b9a21
+
+% 4 1 0 099a6de0e1aa82100e63ec4ffe5b7d43
+
+% 0 1 0 022f36ed379b9ab6199e3705b1230f7e
+
+% 1 1 0 1a80505f8d1c34da01b7aef3b97f1148
+
+@ 0 1 0 0301a029fe7ff8e203638e2a12141f1b
++ entry .digraph   任意の `Nodal` なグラフを `Digraph` に複写したもの。そのノードの集合は、すべてのエッジのターゲットについて閉じられる
+
+@ 0 5 0 0cc6f0a7d5e170da1554083d1c23b51b
++ entry .reachable   任意の `Nodal` なグラフで、あるノードが到達するすべてのもの。そのノード自身を含む
++     インスタンスの `has` によって、グラフにないノードに対してだけ `Dag.Error`（`Reason.NodeMissing`）を発生させる。探索そのものは循環するグラフに対しても全域的である。
++     独自の `Reachable` インスタンスを持つグラフ（凍結済みの `Topology`）はネイティブに探索され、それ以外は `Reachable.generic` を通じて探索される。
+
+@ 0 4 0 1acd6f5f7035d25c0da41d19a847e97e
++ entry .closure   任意の `Nodal` なグラフで、導かれるすべてのエッジを明示したもの。`Digraph` として返す
++     グラフの `Reachable` インスタンスまたは汎用の探索を通じて、ノードごとに一回の到達可能性の探索を行う。結果の中で、ノードは自分自身を指さない。
++     `Dag#closure` と凍結済みの `Topology` のものは、ビット行列を通じたより速い形式である。
+
+@ 0 3 0 0e9d407af17c304103c93d35de58eec6
++ entry .invert   任意の `Nodal` なグラフのすべてのエッジを逆にしたもの。その `Invertible` インスタンスが名指す型として返す
++     `Dag` は `Dag` に、`Hasse` は `Hasse` に、凍結済みの `Topology` は別のものに、それ以外のもの（`Map` や `Ledger`）は `Invertible.generic` を通じて `Digraph` になる。
+
+@ 0 4 0 185eb3adc419b8d117daa2c533937309
++ entry .linearized   任意の `Topological` なグラフのノードをトポロジカル順に並べたもの：すべてのノードはその後続より後に来る
++     `Dag`、凍結済みの `Topology`、`Hasse` のためのものである。`Digraph` には、`acyclic` が変換するまでこの操作がない。
++     関係のないノードの間では、順序はインスタンスの `nodes` に従うので、挿入順を保つ表現では安定した順序が得られる。
+
+@ 0 2 0 1bb7dd2a5df7e2d30cf75c64298f044b
++ entry .reduction   任意の `Topological` なグラフと同じ到達可能性を持つ最小のグラフ。`Dag` として返す
++     呼び出しのために一度だけ構築される、凍結済みの `Topology` のビット行列を通じて求める。
+
+@ 0 4 0 0d304768da4d16b01c5df45345da0a26
++ entry .traversal   任意の `Topological` なグラフのすべてのノードに対する、その後続の値から求めた値
++     `graph.traversal[result]((successorValues, node) => …)`：ノードはトポロジカル順に訪問されるので、各呼び出しはノードの後続に対してすでに計算された値を見る。結果は、すべてのノードからその値への `Map` である。
+
+@ 0 4 0 056c02855927aa2b00998fafccc2e3ef
++ entry .layered   任意の `Topological` なグラフを、交差を最小化した層に配置したもの。`Layering` として返す
++     スコープにある `Ranking` を受け取る（既定では `Ranking.LongestPath`。変更するには `import rankings.balancedRanking`）。
++     `Dag` 以外のグラフは、検査なしで一度だけ変換される。`Topological` がそれに循環がないことを保証しているからである。

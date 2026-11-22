@@ -1,0 +1,434 @@
+orthant 2 language
+
+% 0 1 0 15e4639548c1e39e040f3c52d7d4f3f1
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 4 0 14952c14c6b34fa202c673f6c07ba1cb
++ Un [hash](https://en.wikipedia.org/wiki/Hash_function) reduce datos de cualquier tamaño a una
++ huella digital corta de longitud fija. Puede calcularse el resumen de cualquier valor, ya sea
++ una case class, una colección o un flujo de bytes, con el algoritmo nombrado como un tipo:
++ `Sha2[256]`, `Sha1`, `Md5` o `Blake3`.
+
+@ 0 4 0 18d49b96cb5f9ec402d2107ce6e7ea9b
++ Puede resumirse cualquier cosa que describa cómo introducir sus bytes en un hash. Una case class
++ lo hace automáticamente, [derivado][derivación] de sus campos, así que aplicar un hash a un valor
++ estructurado no requiere ninguna serialización manual. Un resumen es un valor, y sus bytes se
++ escriben en hexadecimal o en Base64 mediante la misma [codificación en base](base-encoding.md)
++ que se usa en todas partes.
+
+@ 0 4 0 05ac4cc5582dfe7111b0d2da9d8d9e45
++ Las sumas de verificación `Crc32`, `Crc64` y `Adler32` se calculan exactamente con la misma API.
++ Los algoritmos que se sabe que son débiles, MD5 y SHA-1, solo pueden usarse donde su uso está
++ permitido explícitamente. Lo mismo ocurre con las sumas de verificación, que no son hashes
++ débiles, sino que no son hashes en absoluto: una suma de verificación detecta la corrupción
++ accidental, y nada más.
+
+@ 0 1 0 011d9039d8f4233409ee291f6b0b5d15
++ ### Sobre el hashing
+
+@ 0 2 0 0a6b87bcdbb2a0cb1d996afd94230b6f
++ La API de hashing habitual toma un array de bytes y un algoritmo nombrado mediante una cadena, y
++ devuelve otro array de bytes:
+
+@ 0 4 0 0763bda0b6aec4f706ccb1478b15b217
++ - El algoritmo no se comprueba, así que una errata es un fallo en [tiempo de ejecución].
++ - La entrada debe serializarse a bytes a mano antes de aplicarle el hash.
++ - La salida debe escribirse como texto a mano después.
++ - Nada disuade de recurrir a un algoritmo roto.
+
+@ 0 5 0 1cf2c38f2f97beff10c745d2efea9fdd
++ Aquí se resuelve cada uno de estos problemas. El algoritmo es un tipo, que se comprueba allí
++ donde se usa, de modo que el resumen de un algoritmo no puede confundirse con el de otro, lo que
++ constituye [seguridad por construcción](../../philosophy/safety-by-construction.md). Cualquier
++ valor con una instancia de `Digestible` se resume directamente. El resultado se escribe mediante
++ las codificaciones en base. Y un algoritmo débil queda tras un permiso al que el programa debe
++ adherirse voluntariamente.
+
+@ 0 2 0 10d0626d591a5cf912b908334bfbb6d8
++ Todo procede del paquete `soundness`. En el ámbito hay un proveedor de algoritmos de hash y un
++ alfabeto, y la última importación permite que los ejemplos impriman sus resultados:
+
+% 2 1 0 0b80a9d382cbc149068a1aa3937298ec
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0b21de5890a84d8d05926f25583daec4
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 00059dbd5e037a2e1eaf493b0320ab5c
++ ### Aplicar un hash a un valor
+
+@ 0 1 0 0e1992f9ef1a482d04d49ed93f39d066
++ `digest` calcula el resumen de un valor, con un algoritmo nombrado, y `serialize` lo escribe:
+
+% 2 1 0 1b35dfe94df472121e14702bbea1ee45
+
+% 3 1 0 05293c941d2ffbe1162d85acd87ef5e0
+
+% 4 1 0 06b7ad6064b73d9f1002923050aaa311
+
+% 0 1 0 08a6f7a8f5abafbb13c76a8ba48d7dbf
+
+% 1 1 0 1ef831a91c8e0349028d49cb877fcf11
+
+@ 0 2 0 19634f0d4454779c09618ccd8d5363af
++ El proveedor del ámbito suministra los algoritmos. Estos son los algoritmos, el permiso que
++ necesita cada uno y los proveedores que ofrecen cada uno en la JVM:
+
+% 2 1 0 0a60614d140f4c5c145160faecc9969d
+
+@ 0 4 0 0cb062054805e67f0f273e63873d316f
++ column  Algoritmo
++ column  Clase
++ column  Permiso
++ column  Proveedores
+
+% 0 1 0 10fe7f69a46f33c405cbaa413f2c47cd
+
+@ 0 8 0 1d36dc9534513168015d90c56c67270f
++ row  `Sha2[224]`, `Sha2[256]`, `Sha2[384]`, `Sha2[512]`  hash  ninguno  `javaBaseProvider`, `soundnessProvider`  224–512
++ row  `Blake3`  hash  ninguno  `soundnessProvider`  256
++ row  `Sha1`  hash débil  `permitDeprecatedCrypto`  `javaBaseProvider`, `soundnessProvider`  160
++ row  `Md5`  hash débil  `permitDisallowedCrypto`  `javaBaseProvider`, `soundnessProvider`  128
++ row  `Murmur3`  hash rápido  `permitNonCryptographicHashes`  `soundnessProvider`  128
++ row  `Crc32`  suma de verificación  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
++ row  `Crc64`  suma de verificación  `permitNonCryptographicHashes`  `soundnessProvider`  64
++ row  `Adler32`  suma de verificación  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
+
+% 1 1 0 04869358e191f7bb18c85aea1ee80ac5
+
+@ 0 1 0 1faa33dfae5768e41e5a39bfa2161fa8
++ Los permisos se importan del paquete `cryptoPermits`.
+
+@ 0 5 0 117e9111fd9ba0df1640158f21aa2a49
++ `javaBaseProvider` usa el `MessageDigest` del JDK donde lo hay. Fuera de la JVM no lo hay, y
++ entonces la misma importación selecciona implementaciones en Scala puro de MD5, SHA-1, SHA-2 y
++ CRC-32, validadas byte a byte frente a las del JDK. Por tanto, el código que aplica hashes se lee
++ igual, y produce los mismos resúmenes, en la JVM, en un navegador y dentro de un componente
++ WebAssembly.
+
+@ 0 1 0 1e7eb70eb97d34861988d751a4909248
++ ### El algoritmo en el tipo
+
+@ 0 3 0 0f01e536c160957e0fcdaee278cd4de8
++ Un resumen lleva su algoritmo en su tipo, como en `Digest in Sha2[256]`. Donde el tipo esperado
++ ya indica qué algoritmo se quiere, `digest` no necesita nombrarlo. Un campo declarado con ese
++ tipo fija lo que calcula `digest`:
+
+% 2 1 0 0c90edb7390e936e13e7fac9d1e3cb52
+
+% 0 1 0 0db6db932cfdec6015d8519234ec30c2
+
+% 0 1 0 090f44818e2910fc020cb51e404d9cbe
+
+% 0 1 0 17260d0c69e2727f07aa834048364f38
+
+% 1 1 0 044c5ccab1df04bf14dcbdaaaef02b28
+
+% 3 1 0 1d9fea0ce4aaa7651bf7ce7adf7af9b4
+
+% 4 1 0 129643664d63496b0a79665660723633
+
+% 5 1 0 1731960ef5552ee8158c068d011fd6c3
+
+% 0 1 0 04ed00f2458a961607476aa76e160b6c
+
+% 1 1 0 04b34241adb1477815ad12c202ed6d3c
+
+@ 0 3 0 08a5035380e864a10d50d1f4f133ecb1
++ Ese es el patrón en todas partes. Los resúmenes, los HMAC, las claves y las firmas son todos
++ bytes con un parámetro de tipo para el algoritmo que los produjo. Un valor de un algoritmo no
++ puede pasarse donde se espera otro, y rara vez hay que escribir el algoritmo dos veces:
+
+% 2 1 0 09147aa6117b9f540a6ed985e4bfc481
+
+% 3 1 0 15056d948c240faf18412bab5aed0b78
+
+% 4 1 0 0782695a4767ba6f17d9fb930be54123
+
+% 5 1 0 04f5544362d8630903446ee40cf91a5b
+
+% 0 1 0 19eabbbed274830c1e8305e72418c21d
+
+% 1 1 0 1d6c37df0fd5b96b0d0a536a320be52b
+
+@ 0 1 0 18057ef8b15e696d1280c5570e363d9d
++ [Criptografía](cryptography.md) trata los HMAC, las claves y las firmas.
+
+@ 0 1 0 1a53c93c9974d354007b02e0221f0726
++ ### Aplicar un hash a tus propios tipos
+
+@ 0 2 0 01cbb29d3d86ae9003913fd70788fdac
++ Cualquier valor que pueda reducirse a bytes es resumible. Una case class lo deriva de sus campos,
++ de modo que un valor estructurado se resume como un todo:
+
+% 2 1 0 0e179d9bf265535400a95a388fe8a091
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 1 1 0 1ab91711beb1ccc002d59cea420ff508
+
+% 3 1 0 1b326a3996312c311aa56bcb72e25bdb
+
+% 4 1 0 041fa391dc5f00210018a05510abd773
+
+% 5 1 0 072543e0666e9e350ad12485286ff453
+
+% 0 1 0 0d32f2081c79269b08a9d0588216a9c7
+
+% 0 1 0 16f57d632bbf9b141bbdad27b7b29663
+
+% 1 1 0 1dbdee16dd41b3df1e3cd9cad8c763c0
+
+@ 0 2 0 1c10252842e178ad056604035c0abbda
++ Un resumen es en sí mismo resumible, así que un hash puede combinarse en una estructura mayor y
++ volver a resumirse.
+
+@ 0 1 0 04fa6e4c8611f9501ecccfd354d7c079
++ ### Aplicar un hash a un flujo
+
+@ 0 4 0 157931921f633ae60071b8274fa771cd
++ Los datos demasiado grandes para retenerlos se resumen a medida que pasan. El resumen se acumula
++ sobre fragmentos sucesivos y arrastra los bloques parciales a través de las fronteras entre
++ ellos. Por tanto, el resultado es idéntico sean cuales sean los tamaños en que lleguen los
++ fragmentos, y es el resumen del texto completo de antes:
+
+% 2 1 0 1d27f76ad6a0ff3c0f63d7932dcf787a
+
+% 0 1 0 0897db6080f6cf731dbf4b2174711cdf
+
+% 1 1 0 0ef672bd515a114007173140441eec3f
+
+% 3 1 0 1a4f3bfff85c34f2067463f122bda895
+
+% 4 1 0 05eea5147d859c4e038a5e1c20dc0865
+
+% 5 1 0 05abc068e077b4451d19ec4acb2777e6
+
+% 0 1 0 14a4985c0b4e90e5006ed8243b2c3aab
+
+% 1 1 0 1b5ed090ac73324819efa3397fb2b90d
+
+@ 0 3 0 1ca3a3cd78a37a69025eb559bc2bee3f
++ Esto es lo que permite calcular un resumen sobre un [flujo](streams.md) con memoria acotada. Es
++ la razón por la que el hashing se compone con la [compresión](compression.md) y el
++ [cifrado](cryptography.md) en una sola canalización, sin retener los datos entre ellos.
+
+@ 0 4 0 19157a4ad8b9429119c3ada92e2b3fa3
++ `checksum` resume lo que hay *detrás* de un valor: los bytes de un flujo y, para una ruta del
++ [sistema de ficheros](filesystem.md), el contenido de un fichero o de un directorio. La suma de
++ verificación de un directorio abarca sus ficheros regulares, en el orden de sus rutas relativas a
++ él, y cada uno aporta su ruta relativa y su contenido. Así:
+
+@ 0 3 0 0df93e95261ea2ce04107f3b599d6a7d
++ - un cambio de nombre, un traslado o una edición cambia la suma de verificación;
++ - dos directorios que contienen los mismos ficheros tienen la misma suma de verificación, estén
++   donde estén;
++ - un directorio vacío también tiene suma de verificación.
+
+@ 0 1 0 108561bf68d898140f87d8e587b67dcc
++ Esa es la identidad con la que una compilación indexa sus cachés:
+
+% 2 1 0 121229e22a6edff51d635681e81d7deb
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 16dc30250898bc2409d813344f20c8e0
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 15cca29ca309f5d3042daa91410e01ba
+
+% 0 1 0 1638390c160220060c5a503dfeb10856
+
+% 0 1 0 0b235343a7b14ae1162136fb1d457041
+
+% 1 1 0 0877e096a7d6dc2d081bebc6ff54eadc
+
+@ 0 1 0 1c6f132aea0085ca06792abdee9a023b
++ ### Representar un resumen
+
+@ 0 2 0 13a25dd9d1d3409a1bafcb5b5dff6f49
++ Los bytes de un resumen se escriben en cualquier codificación en base: hexadecimal para
++ mostrarlos, o Base64 donde deben ser compactos:
+
+% 2 1 0 04297c48ec0a30571e71ceb86d1a7d8c
+
+% 3 1 0 1dc26f4c974ae7ff16170e4075ce356a
+
+% 4 1 0 056a81bbe517eb41017aab5ece17e011
+
+% 5 1 0 1592af61a99bcabe1cedf059b49d56e3
+
+% 0 1 0 05b1da089cc322f0121d2b13f85a919a
+
+% 0 1 0 0826585afb8117bb0371f858000d96e8
+
+% 1 1 0 068139a71d8dcfaf0714fe09521c0412
+
+@ 0 1 0 007803f5ef8e295d0925cd51465da111
++ ### Resúmenes autodescriptivos
+
+@ 0 5 0 0bcf3605c9dafc76134810b698d09aa2
++ Los bytes de un resumen no dicen nada del algoritmo que los produjo. Un resumen que se almacena o
++ se envía solo únicamente puede comprobarlo algo que ya sabe cómo se hizo. Un
++ [Multihash](https://multiformats.io/multihash/) antepone al resumen un código para su algoritmo y
++ su longitud, de modo que se describe a sí mismo. El almacenamiento direccionado por contenido, y
++ los protocolos distribuidos construidos sobre él, intercambian multihashes:
+
+% 2 1 0 16d14fd118107e0d02a11c438e81268e
+
+% 3 1 0 05d235441be3f10a088c5ba0dd1927f8
+
+% 4 1 0 00c3475ef740692718ea72358ce369f8
+
+% 0 1 0 1ed6c81d3aa7a6d21833b244ee80ea6f
+
+% 1 1 0 1a1a3be10fa2aa2e02d0c03caa6c0c1c
+
+@ 0 3 0 19ac15dab91b06691596c9c6c5302ef1
++ Los dos bytes `12` y `20` indican que a continuación viene un resumen SHA-256 de treinta y dos
++ bytes. El código del algoritmo procede del tipo del resumen, así que un multihash no puede
++ declarar un algoritmo distinto del que lo calculó.
+
+@ 0 1 0 06795db86f0750de1579506f6f70a11f
++ ### Algoritmos débiles
+
+@ 0 2 0 139497ee199d2026125970e83dc6ce4e
++ MD5 y SHA-1 están rotos a efectos de seguridad, y solo se mantienen por compatibilidad. Sin un
++ permiso en el ámbito, ninguno de los dos compila:
+
+% 2 1 0 0e05009dd755e48a1e0000d83de7800d
+
+% 3 1 0 135109a58e1d3f8907b4d632aace2740
+
+% 4 1 0 01b49bb7bab10424180d9df21ff837f4
+
+% 5 1 0 0b6076da5888fee018c5e40b33e651a6
+
+% 0 1 0 159d38339884d7a102a739d5cdb038a7
+
+% 1 1 0 15e13858de4794f212bf67e8359827b8
+
+@ 0 1 0 1cb8ed3d6c7ac8e3151eb79503f1d1e5
++ Importar el permiso hace que la elección sea visible y deliberada:
+
+% 2 1 0 047ec82c2ec2b21c0ca4da38e707f57f
+
+% 3 1 0 1b48ab52a48528f7170da182d491bd80
+
+% 4 1 0 1c33ec9ec4b136dd1455f2c500c0f0de
+
+% 5 1 0 15a94a88d9fa279f0eb03adda8d7de12
+
+% 0 1 0 0a891a7506f473ff0f4f5e4e168f2ac1
+
+% 0 1 0 17cbf9395ac8d81f062726bb951d99b9
+
+% 1 1 0 0758cd5d5e17299c07e00d085ffb2823
+
+@ 0 1 0 03721ecf103c152f173c948ffc24d0db
++ Los algoritmos fuertes no necesitan ningún permiso.
+
+@ 0 1 0 0c578595c9edc84f059f74c44e9f7b88
++ ### Sumas de verificación
+
+@ 0 3 0 14d9894022c89c7e0e624a30abef91ad
++ `Crc32`, `Crc64` y `Adler32` no son hashes, sino sumas de verificación. Detectan la corrupción
++ accidental y no protegen contra nada. Quedan tras un permiso propio, que solo admite que no se
++ está protegiendo contra ningún adversario:
+
+% 2 1 0 10c65cad82b9b00d173f3181f9d26eff
+
+% 0 1 0 0e1affdd8762138d14054d267c5066b2
+
+% 1 1 0 11eee7a5cd049a13104bbf9b4dbcf38b
+
+% 3 1 0 0d3f8cd0cf509ab51f8a4a667fe5c69c
+
+% 4 1 0 0db860accc10e28b17f08bd31bdb92ad
+
+% 5 1 0 11a68be4e46004e613218b40a519c7d1
+
+% 0 1 0 17b9a0adf3d227d204154b0cd7d0eea4
+
+% 1 1 0 1960255c26787d9c12fdd2505a7c094b
+
+@ 0 2 0 06e24b0efbadf4eb14fb142eeb763743
++ A una fuente de bytes, como un fichero o una descarga, se le calcula la suma de verificación sin
++ retenerla en memoria, resumiendo su flujo a medida que fluye, exactamente como hizo `checksum`
++ más arriba.
+
+@ 0 1 0 0ea19f77d3e36b38190baaaa6d101f58
++ ### Hashing rápido
+
+@ 0 5 0 17175c490b955c990b436f7895afbc73
++ `Murmur3` es MurmurHash3 en su forma de 128 bits. No es una suma de verificación, pero tampoco es
++ criptográfico. Es un hash hecho para tablas hash, [filtros de Bloom](bloom-filters.md) y
++ particionado, donde la entrada no es hostil y las rondas de un resumen criptográfico supondrían
++ varias veces más trabajo sin ningún beneficio. Queda tras el mismo permiso que las sumas de
++ verificación, y su salida es byte a byte la que produce el `murmur3_128()` de Guava:
+
+% 2 1 0 1a569264dcdd63170e3e7a80a7ce35fd
+
+% 3 1 0 133ee93e3e417fbe15344558a154e6e0
+
+% 4 1 0 0d0e7fabb3f13112011963330646af96
+
+% 5 1 0 07eedef8b02f74420920564cd61dbc88
+
+% 0 1 0 077d579a30a9106e126e400de2dad2d9
+
+% 0 1 0 1a434c9963836f390e07bb803fa2e716
+
+% 1 1 0 1b5c9cea17c37cf91c5df11660cfef86
+
+% 0 1 0 11fb4a7b5d9b2ee802bd9a27a07cb1e1
+
+@ 0 2 0 1d3d8f926c47313e1912f569edd20957
++ `Blake3` está implementado en Scala puro, por `soundnessProvider`, y ofrece los tres modos del
++ algoritmo:
+
+% 2 1 0 18d59ede3b95d132174508c78b6b6826
+
+@ 0 6 0 021526f533a4198010b1b050bddca364
++ column  Modo
++ column  Entrada
++ column  Uso
++ row  hash  los datos  un resumen ordinario
++ row  hash con clave  una clave y los datos  autenticación de mensajes
++ row  derivación de claves  una cadena de contexto y material de clave  derivar claves
+
+% 1 1 0 04658d52f0bbd7a01e6feb0d266335cd
+
+@ 0 2 0 1c7b27457a701ace1751f2091de68b38
++ Los tres se comprueban con los datos de prueba oficiales, en cada longitud de entrada que cubren
++ esos datos, así que la implementación está verificada, y no solo probada en cuanto a coherencia
++ consigo misma.
+
+@ 0 2 0 112277702b3a19d50926e89deb6e61b9
++ Su salida es extensible. Un resumen BLAKE3 puede tomarse con cualquier longitud, no solo con 256
++ bits, que es lo que lo hace utilizable para derivar claves además de para aplicar hashes.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 1 0 088c2c1c35ab43cd0f6b3b05c94267cb
++ - [UUID](uuid.md), [empaquetado](packaging.md) y [contenedores](docker.md) identifican valores por sus resúmenes.

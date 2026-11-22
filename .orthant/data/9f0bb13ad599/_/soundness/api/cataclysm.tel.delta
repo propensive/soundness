@@ -1,0 +1,22 @@
+orthant 2 release
+
+@ 10 1 0 0db124faba3331f30aa0139e59c16009
++                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+
+@ 10 1 0 015aa60f87df5ea70d8522ae0190fd95
++                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+
+@ 10 1 0 15400704a34161b20adbdef9530a6e11
++                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+
+@ 0 1 0 15f97ca470a4b13f1439d89f6b4b5e10
++         obtains the typeface from and whose `#coverage` is the `Font.Coverage` it was declared
+
+@ 0 1 0 19d3b8d333e81d071d32ee934905b0e3
++       single `Generic` source and `Font.Coverage.Unknown`, which admits every face; it renders
+
+@ 0 1 0 0661b4c28afad6e80fba2c8b1789988f
++       Urls to Text` (an `HttpUrl` from `url"…"`, or text), the `Font.Coverage` the file is
+
+@ 0 1 0 1d793796b9dc32af12f61f81ae28760a
++       it, so this is the weakest provision, and its coverage — `Font.Coverage.Unknown` unless

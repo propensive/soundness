@@ -1,0 +1,737 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 132bb41f85bb6a6e045576da68ac2626
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0c923f48569655030680da73dcdc8fb3
++ info   WebSocket：アップグレードされた HTTP 接続を型付きのメッセージループとして、サーバーのハンドラとしてもクライアントとしても扱う
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 11 0 1a8ce956a70ba2e41f099b37468ca50a
++     _Perihelion_ は接続の両側で WebSocket プロトコル（RFC 6455）を話す。
++     **サーバー**側では、scintillate のハンドラが `webSocket(initial)(handle)` を返す。
++     リクエストは `101 Switching Protocols` のハンドシェイクでアップグレードされ、接続は状態機械になる。
++     受信した各メッセージはハンドラのメッセージ型にデコードされ、現在の状態とともに `handle` に渡される。
++     `handle` は `Control` で応える。
++     `Reply` はメッセージを送って続行し、`Continue` は黙って待ち、`Conclude` は最後のメッセージを送って閉じ、`Terminate` は即座に閉じる。
++     **クライアント**側では、`Websocket.Url`（`ws://` または `wss://`）が coaxial のトランスポートである。
++     したがって `url.react(initial) { message => … }` は接続し、ハンドシェイクを行い、同じループを逆方向に実行する。
++     `url.exchange` はクライアントが先に話せるようにし、`url.session` は自由な用途のために生きた `Websocket.Connection` を貸し出す。
+
+% 2 1 0 14a9db8bd66c8acc14b9bea12c4246ff
+
+% 3 1 0 1556b562dbe9b8e615d9c7a041ddafeb
+
+% 4 1 0 01805e9c4062e8f60bf416663d1141de
+
+% 5 1 0 099cd5ae59da604103ddab577af02d53
+
+% 1 1 0 0f10f48845cf5f3a0ff95c84f7617e49
+
+% 2 1 0 18da14192dee5d581d1a292548e03f9e
+
+% 3 1 0 187529a5da0ee20a19c92d590f917b26
+
+% 4 1 0 19476aed4f06d1ce0fe98b227333ed8c
+
+% 0 1 0 1d5e1a4fa6f0818802d7be243df390a3
+
+% 1 1 0 1bfa93eae20509af1227c391aea01fc4
+
+% 2 1 0 015a8ad26de56fb30c59f0a5e6f28aad
+
+% 3 1 0 07ebe7c5883ba8531ba5e9c0406acb5d
+
+% 4 1 0 178f86d904add64615fe46ffd0c812a6
+
+% 6 1 0 1a06e3e5afd1d52b1d6c68a5eba8a53a
+
+% 8 1 0 04a66ec93f178d9216bf9ef8e3c318ec
+
+% 0 1 0 0720d9ea1d5184400000e4513ad2860f
+
+% 0 1 0 104956e7a842c818046ba912fe996ab6
+
+% 0 1 0 00ede44a02af135806b8dbe602e703a7
+
+% 1 1 0 1e471ca9d9776c9a15940a2b48e06712
+
+@ 0 10 0 1499af827f0f55ad054138bbcf4d694d
++     メッセージは型付きである。
++     生の `Message`（`Text` または `Binary` のフレーム）は型のない形である。
++     `Text` のような coaxial の `Ingressive`/`Transmissible` 型はそのまま運ばれる。
++     そして `value over Json`（あるいは `over Tel`、または `Encodable in Text` である任意の形式）は、`overIngressive` と `overTransmissible` を通じて、レコードをその形式のテキストとしてテキストフレームで運ぶ。
++     プロトコルの厄介な部分、すなわちマスキング（クライアントはマスクし、サーバーはマスクせず、それぞれの側は相手の誤りを拒否する）、フラグメンテーションと再組み立て、`Ping`/`Pong`、テキストの逐次的な UTF-8 検証、クローズコードは、共有の `Reader` と `Channel` が処理する。
++     これらはハンドラには決して現れず、Autobahn テストスイートに適合する。
++     違反は `Websocket.Error` であり、その理由は相手に送られるクローズコードを持つ。
+
+@ 0 8 0 13923c98d586f3f911b1fcd453997ecd
++     ライブラリは単一のコンポーネント `perihelion.core`（JVM）であり、scintillate のサーバーと coaxial のソケットの上にある。
++     `Websocket.Masking`、`over`、`overIngressive`、`overTransmissible`、`Websocket`、`webSocket`、`WsSessional` は `soundness` アンブレラにエクスポートされる。
++     三つの名前はエクスポートされない。
++     `Message` は、fulminate の `Message` がアンブレラですでにその名前を持っているためである（`import perihelion.Websocket.Message`）。
++     クライアントの given である `wsClient` と `wsSessional` は、キャプチャ注釈付きの細分化型を合成されたエクスポートフォワーダーが失ってしまうためである（`import perihelion.wsClient`、`import perihelion.wsSessional`）。
++     `Channel` と `Reader` はパッケージ内で公開されているが、エクスポートはされない。
+
+% 0 1 0 0a9d023e7b04b8921b8c9dd6156648e3
+
+% 0 1 0 11ac59b705b277d400a35d384aab4b45
+
+% 0 1 0 012bed43bcaeca060cac55a54eb47237
+
+% 0 1 0 1896cd76afb12fde0fa44395e16fc8ae
+
+% 0 1 0 092b60bd3c85e512057f2b0dd81136f9
+
+@ 0 12 0 1e3785b3a10f25320d9e28d4802444e3
++ entry .webSocket   提供中のリクエストを WebSocket にアップグレードし、状態を持つメッセージループとして処理する
++     `webSocket(initial)(handle)` は、`Http.Request`（接続）がコンテキストにある scintillate のハンドラの中で呼ばれ、`Websocket[message, state]` を返す。
++     これは `Servable` であり、ハンドラから返すと `101` のハンドシェイクが送られ、接続がループになる。
++     `initial` は開始状態（デフォルトは `()`）であり、`handle` はコンテキスト関数 `(state: state) ?=> message => Control[state]` である。
++     デコードされた各メッセージは状態をコンテキストに置いて渡され、返された `Control` が何を送り、次の状態が何かを示す（`Unset` は現在の状態を保つ）。
++     メッセージ型はハンドラのパラメーターから推論されるので、そこに型注釈を付ける。
++     状態を読むハンドラは、明示的なコンテキストパラメーター `(count: Int) ?=> (message: Message) => …` でそれに名前を付ける。
++     変換によって挿入されたコンテキストパラメーターには名前がないからである。
+
+% 2 1 0 1e96894f68dde62d050ba9ce5bdab416
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 1704f4b53f1ef8e215573007c25d1f9f
++       label 生のメッセージのエコー
+
+% 1 1 0 0ff14f74d9442e12082f5d2b9e5ddad1
+
+% 2 1 0 192c4d6cff6a52870e60fdafb3ba8a5d
+
+% 3 1 0 1dd347e0b4a567010b82b758dc3151ce
+
+% 4 1 0 0074e3342253e71f003ceabfd2029844
+
+% 5 1 0 11c9f64289e5e22f1810b1dd676f3a31
+
+% 6 1 0 05e73fa26af4ce1102dc44090edcf5f5
+
+% 7 1 0 029904f52db9ba7a1b5196d29bd75972
+
+% 8 1 0 1f1f8b24cc5ae4cf1622345cbac27f0a
+
+% 10 1 0 1626643816d7ac751a536657b8dad6cb
+
+% 11 1 0 128b346aa780857a0d6c1d34bdbec689
+
+% 0 1 0 09ae018fe6f9bc1c00262ab0c28f3168
+
+% 0 1 0 17e82f5d9d17008c1c006a7a0591a6a3
+
+% 1 1 0 07db47cabc29fe76196b335aa29e39a8
+
+@ 0 1 0 003f130bfd2e04411af128d0c8a822f6
++       label 状態として受け渡されるメッセージの数
+
+% 1 1 0 133d0349330c24e00c750a646956a62b
+
+% 2 1 0 079319c79e70996b14bc2c562e462354
+
+% 3 1 0 185a8210923e06ac05f51adb0f25b0ec
+
+% 4 1 0 1834574b1aa764890e081eb389b458c6
+
+% 5 1 0 1cd8e77d128a556f07c074b73f99d56b
+
+% 6 1 0 1f270432dd55949204e961f236af99b9
+
+% 7 1 0 110fbe0a78f9e9f411723551ee9ef333
+
+% 8 1 0 1450046b2c9cfdcb146165c655440b22
+
+% 10 1 0 1c8fce0eba51ea3718b8e1c3a53a15d5
+
+% 11 1 0 1a510ece387f1eb31a16baee69053b03
+
+% 0 1 0 190f1b65d369248d11ab4d445577bbb1
+
+% 0 1 0 0285570f5b648e23116ad9b5e88c2e19
+
+% 1 1 0 0be67d2de57757f90154d75aa90aa76d
+
+@ 0 1 0 1d26139a8867557e09c5ac6fc25c883d
++       label JSON 上の型付きメッセージと、十番目の後のクローズ
+
+% 1 1 0 0d09bc33998df24e00ba523b9f21423a
+
+% 2 1 0 0391d0cbe956bfe71dacfd6718a4bb07
+
+% 1 1 0 02f9133e32e33ef50a86ff900d15e009
+
+% 2 1 0 1a61e3b90ac8534d1ff6138089a0b7de
+
+% 3 1 0 06ff3cd12fd31a3e0640e265eccb0618
+
+% 4 1 0 0308d532679d6b951c207f2426e56a10
+
+% 5 1 0 0a1d6895194489581d1557eb782ff217
+
+% 0 1 0 16d36e63e38a71cf1a67a289145a770d
+
+% 0 1 0 03214a9eeeaf913115b5b1a17c3cf419
+
+% 0 1 0 10129a26846d36790c11befb6781a581
+
+% 0 1 0 05d56be7634328310857c5007450e233
+
+% 0 1 0 0cdffacd1abfd7bc098823410d964616
+
+% 2 1 0 1bc8aea50a9581d01a6af71b7b896d81
+
+% 3 1 0 16267895b137474b19caaf14dde0beca
+
+% 0 1 0 16821d6a062e7a111aba588c9a19227a
+
+% 0 1 0 177f7198d5a2efc01f10ff1353f86903
+
+% 0 1 0 0ad3a464d1f7d7441c9d22dd0dc686c8
+
+% 1 1 0 0fe134fdaab1b269070280cbafb47c62
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 10 0 0ab2a1366996c5bc01cd501f078b52fb
++     メッセージ型は `Ingressive` でなければならない。
++     生の `Message`（恒等的にデコードされるので、ハンドラはフレームがテキストかバイナリかを知ることができる）、coaxial 自身のインスタンスによる `Text` または `Data`、あるいは `overIngressive` による `value over format` である。
++     最後のものには、形式の `Decodable in Text`（`Json` のものには `formatting` と `textSanitizers` の given が必要）、値の `Decodable in format`、`Charset`、そして `Tactic[Hazard]`（`strategies.throwUnsafely` など）が必要である。
++     `Reply` や `Conclude` は任意の `Transmissible` な値を取り、一つの完全なフレームに直列化する。
++     ハンドラは、スコープにある `Monitor` と `Probate` のもとで自身のタスクで実行される。
++     ループ内の `Websocket.Error` は理由のクローズコードで接続を閉じ、相手の `Close` は、初期状態の型をタスクの結果としてループを終わらせる。
+
+@ 0 1 0 1257611121a1d72a041b3ce60ced9cf2
++ entry .Websocket   サーバー側の WebSocket：ハンドシェイクのレスポンス、そのチャンネル、そのハンドラのタスク
+
+% 1 1 0 0f5adb41861b83b41444a3071a40a041
+
+@ 0 8 0 08fc6848eab0a94114c7a0b952bcd31a
++       `Websocket[message, state]` は `webSocket` が返すものである。
++       これは `Servable` な値であり、そのレスポンスは `101 Switching Protocols` のハンドシェイクである。
++       すなわち、リクエストの `Sec-WebSocket-Key` と `.magic` から計算された `Sec-WebSocket-Accept`、`Connection: Upgrade`、`Upgrade: websocket` であり、送信するフレームのストリームを本文とする。
++       scintillate は接続が続く限りこれをソケットに送り出す。
++       構築時に `#task` を開始する。
++       これはクライアントのフレームを読み、メッセージに再組み立てし、それぞれを `message` にデコードしてハンドラのループを実行する。
++       ハンドラは値を返す前に保持しておき、クライアントが何も送らないうちに `#channel` からメッセージを送ることができる。
+
+% 2 1 0 1b95623c2c6dcd8f00ef08895ca8adc7
+
+% 3 1 0 1ca957080fcca3d411e10f8ddc96a80b
+
+% 4 1 0 0410b19376de0a0b1057cede599336d0
+
+% 5 1 0 0ea53b8ab6af1c091b1a80278830078c
+
+% 2 1 0 1f3740e9f8bf446a06d8a014827e08f1
+
+% 1 1 0 147c451fbb64a563180fed72b9c8b8dd
+
+% 2 1 0 0b2de5fe18b3637e169700403c80b6a2
+
+% 3 1 0 0c8600c4e787e5de156d692a197920ea
+
+% 4 1 0 1091d5c91f7a4d2f18637a8b86f3716e
+
+% 0 1 0 07aee3a963c81e41082d67adafd250ef
+
+% 2 1 0 1e8b62b807c19b281d160a97b2e9d558
+
+% 0 1 0 0e423d575fca47920401920097bdb49e
+
+% 0 1 0 1a72c4f461f9b50106aee49671d91870
+
+% 0 1 0 1c73668f2fd536661d12be36746a7943
+
+% 0 1 0 0a165248ebd96d43177b061fe011df16
+
+% 1 1 0 007e39fc3ac946321af1717ef647a365
+
+@ 0 6 0 0dc89300c132b98a160a6a622cc2e1b5
++       コンストラクターは、リクエスト、初期状態、`Message` からハンドラの型へのデコーダー、そしてハンドラを取る。
++       `webSocket` がデコーダーを構築するので、これが意図された作り方である。
++       `Sec-WebSocket-Key` ヘッダーのないリクエストはパニックである。
++       ハンドラは、アップグレードを求めたリクエストだけをアップグレードすべきである。
++       コンパニオンはプロトコルの他の部品を持つ。
++       クライアントの `.Url` と `.Connection`、ワイヤレベルの `.Frame`、そして `.Error` 型と `.Event` 型である。
+
+% 0 1 0 16c195590f87e3e306ba97313850a060
+
+% 1 1 0 0fcb3266317b8b9c0787a3c906648a50
+
+% 0 1 0 1331208fd70561a6086c895868d59c76
+
+% 0 1 0 1518e122d114c2500d43eecbc7c9f946
+
+@ 0 17 0 0b4c8b7b2a5eac8e1aaf2c29666c19e3
++   entry .magic   RFC 6455 がキーに付け加える GUID、`258EAFA5-E914-47DA-95CA-C5AB0DC85B11`
++       `Sec-WebSocket-Accept` は、クライアントの `Sec-WebSocket-Key` にこのテキストを続けたものの SHA-1 の Base64 である。
++       サーバーは `.servable` でこれを計算し、クライアントは `wsClient` でこれを検証する。
++   entry .servable   `Websocket` を、送信するフレームのストリームを本文とする `101` のハンドシェイクとして提供する
++       ハンドラが `Websocket` を返せるようにする given である。
++       本文は `Flowing` であり、その送り元はチャンネルの唯一の読み取り側エンドポイントで、サーバーのレスポンス書き込み器によってちょうど一度だけ実体化される。
++   entry .Url   `ws://` または `wss://` の URL：`urticose.Url["ws" | "wss"]`
++       他の `Url` と同様にテキストからデコードされ（`t"ws://localhost:8080/".as[Websocket.Url]`）、専用のスキームの仕組みはない。
++       オーソリティがポートを省略した場合、`ws` では `80`、`wss` では `443` がデフォルトになる。
++       `wss://` の接続は coaxial の `SecureEndpoint` を通じて TLS 上で開かれ、スコープにある `Tls` の given で構成される。
++       デフォルトはホスト名の検証付きのシステムのトラストストアであり、自己署名のテストサーバーには `Tls(context, verify = false)` を使う。
++       `wsClient` がスコープにあれば、URL は `Duplexable` なトランスポートになるので、`url.react`、`url.exchange`、そして（`wsSessional` があれば）`url.session` がそれに適用できる。
++   entry .Connection   生きたクライアント接続：再組み立てされた受信メッセージ、`send` と `close`
+
+% 1 1 0 1b9490961431a6440770d10b8d0282f1
+
+@ 0 5 0 1669897b3aff7ae3124e10a10f6d669e
++         `wsClient` が `Websocket.Url` に接続して得るもの、そして `url.session` が貸し出すものである。
++         ハンドシェイクは完了しており、バックグラウンドのデーモンがスプールされたすべてのフレームをソケットに送り出し、受信ストリームは `101` の先まで進められている。
++         coaxial の `react` と `exchange` はこれを状態機械として駆動する。
++         セッションのスコープは `#messages`、`#send`、`#close` を直接使う。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 1e82e1081086f5830ac1bff309a1334e
+
+% 0 1 0 00920982337d627e01fe9c94d2198ebe
+
+% 0 1 0 0a2e252fedb67daa153c82ae9a1e2c86
+
+% 0 1 0 1cc3b0e519c77d4c1c98c05c46dfe672
+
+% 1 1 0 0ef91427fd5ba7ce1185a09ea5211102
+
+% 0 1 0 1483d7674d516abb1cf447f9b7b6208e
+
+% 0 1 0 031cb3caf20d802a1bfde3d303278fab
+
+% 0 1 0 00ed41fc23e6d82a10dec47c6ff8e153
+
+% 0 1 0 05a4be4afdfc5fd616c1ab116ec4c482
+
+% 0 1 0 14e2104f99484339197a71b252edb935
+
+% 0 1 0 1bdac8d8b52a79ac1a92ae12a7008c08
+
+% 1 1 0 0cb47c875281e80107dfbeea5c9f1a91
+
+@ 0 21 0 048d280938aa804814eb2369a0fe0852
++     entry #messages   受信メッセージ。ストリームの各要素が一つの完全なメッセージであり、バイトとして表される
++         共有の `Reader` を接続の上で実行する。
++         `Ping` には応答し、`Pong` は捨て、フラグメントは再組み立てし、テキストは UTF-8 として検証し、相手の `Close` でストリームが終わる。
++         各要素はメッセージのペイロードである。
++         テキストメッセージなら UTF-8 のバイト、バイナリメッセージならそのままのバイトであり、チャンクの境界がメッセージを区切る。
++         プロトコル違反のために `Tactic[Websocket.Error]` が必要である。
++     entry #send   一つのメッセージを一つの完全なフレームとして送る。マスクはチャンネルで行う
++         ストリームは消費され、フレームのバイトとしてメモ化される。
++         `Transmissible` な値の `serialize` は、まさにそのようなストリームを生成する。
++     entry #close   `1000` のクローズフレームを送り、送り出しを止め、ソケットを閉じる
++         スプールされたものの書き込みを送り出しが終えるのを待つ。
++         `Monitor` が必要である。
++   entry #key   クライアントの `Sec-WebSocket-Key`。ハンドシェイクの受諾キーはここから計算される
++   entry #channel   送信側：`send` はクライアントにメッセージを送り、`close` は接続を終える
++       ハンドラのループが返信に使う `Channel` である。
++       ハンドラは `Websocket` を保持して、返す前に `channel.send(Message.Text(…))` を呼び、まだ話していないクライアントに挨拶することができる。
++       フレームはスプールされ、`101` が送られた後で書き込まれる。
++   entry #task   構築時から実行されるハンドラのループ。その結果は最終状態である
++       クライアントが閉じたとき、またはハンドラが終了または中止したときは、ハンドラが最後に返した状態で完了する。
++       `Websocket.Error` が理由のクローズコードで接続を閉じた後は、初期状態で完了する。
++   entry .Error   相手がプロトコルに違反したときに発生する。送るべきクローズコードを持つ
+
+% 1 1 0 1adec524b6ddd56b0b01a406d58f733a
+
+@ 0 7 0 06836fee2fc00dae0d25f54ca666fa58
++         エラー `↯/s.115.1`。
++         詳細番号は理由の番号である：_the WebSocket protocol was violated because `reason`_。
++         フレームやメッセージが RFC 6455 に違反したときに `Websocket.Frame.parse` と `Reader` が、ハンドシェイクが失敗したときに `wsClient` が、そして接続が途中で切れたときに発生させる。
++         サーバー側のループはこれを捕まえ、`reason.closeCode` で接続を閉じ、初期状態を返す。
++         クライアントは自身の `Tactic[Websocket.Error]` を通じてこれを受け取る。
++     entry .Reason   プロトコルに違反した理由。それぞれ RFC 6455 のクローズコードを持つ
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 1 0 10b3946ab7b638521079ee1765d1560d
++           各ケースは送るべき RFC 6455 のクローズコードを持つ。
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 15 0 1e43649ecc0765bb196981f4c47549be
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  注記
++           row  `Unmasked`  1  _the client sent an unmasked frame_  クローズコード 1002
++           row  `BadOpcode(code)`  2  _the frame used the reserved opcode `code`_  クローズコード 1002
++           row  `BadControl`  3  _a control frame was fragmented or exceeded 125 bytes_  クローズコード 1002
++           row  `BadFragmentation`  4  _the message fragmentation was invalid_  クローズコード 1002：フラグメント化されたメッセージが開いている間にデータフレームが届いた、または継続フレームに継続すべきものがなかった
++           row  `TooLarge(size)`  5  _the frame payload of `size` bytes exceeded the limit_  クローズコード 1009：16 MiB を超えるペイロード
++           row  `InvalidText`  6  _a text frame contained invalid UTF-8_  クローズコード 1007：無効なクローズ理由も含む
++           row  `ReservedBits`  7  _a reserved header bit (RSV1/2/3) was set_  クローズコード 1002：拡張は何も交渉されていない
++           row  `BadClose`  8  _the close frame had a malformed payload or invalid code_  クローズコード 1002：1 バイトのクローズペイロード、または無効なクローズコード
++           row  `Masked`  9  _the server sent a masked frame_  クローズコード 1002
++           row  `Handshake(detail)`  10  _the WebSocket handshake failed because `detail`_  クローズコード 1002：URL にホストがなかった、サーバーが `101` で応答しなかった、またはその `Sec-WebSocket-Accept` が誤っていた
++           row  `Truncated`  11  _the connection closed before the frame was complete_  クローズコード 1006：接続のバイトがフレームの途中で終わった
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 5 0 0cf314acb91d2b84115f28f042a165c7
++       entry #number   理由の番号。エラーの詳細番号でもある
++       entry #closeCode   閉じる前に相手に送る RFC 6455 のクローズコード
++     entry .communicable   各理由をメッセージとして描画する
++     entry #reason   プロトコルに違反した理由
++   entry .Event   接続が記録するもの：送受信したメッセージ、そしてクローズ
+
+% 1 1 0 0abe8dbe6573fea417b25062eaf355f3
+
+@ 0 13 0 120a8bde4ceb98c11cd04801e063b0e6
++         すべての `Event` には `Log.Network` と `Log.Protocol` のタグが付く。
++         `Sent` は `Channel#send` がメッセージのバイト数とともに `fine` で記録し、`Received` はサーバーのループが処理した各メッセージについて `fine` で記録し、`Closed` は `Channel#close` がクローズコードとともに `info` で記録する。
++         `Channel#send` や `Channel#close` を呼ぶところでは、必ず `Websocket.Event is Loggable` がスコープになければならない。
++         `logging.silentLogging` はそれらを捨てる。
++     entry .communicable   各イベントをメッセージとして描画する
++     entry .Sent   メッセージが送られた：_sent a `bytes`-byte websocket message_
++       entry #bytes   メッセージの長さ
++     entry .Received   メッセージを受け取った：_received a `bytes`-byte websocket message_
++       entry #bytes   メッセージの長さ
++     entry .Closed   接続が閉じられた：_closed the websocket connection with code `code`_
++       entry #code   送られたクローズコード
++   entry .Frame   一つの WebSocket フレーム：カーソルからパースされ、バイトにエンコードされるワイヤ形式
+
+% 1 1 0 1acabb006f8c3dc41472e07ed71717d3
+
+@ 0 8 0 007635fc33a18362080a6a22f966a5da
++         フレームの種類の列挙型であり、それぞれが `#opcode` と `#payload` を持つ。
++         `Continuation(last, data)`、`Text(last, data)`、`Binary(last, data)` はデータフレームであり、その `last` は FIN ビットである。
++         `Close(code, reason)` は 2 バイトのコードと理由を持つ。
++         `Ping(data)` と `Pong(data)` は制御フレームである。
++         `.parse` は `Cursor` から一つを読み、マスキングの方向とすべての構造上の規則を強制する。
++         `#encode` はマスクせずに一つを書き出す。
++         `Masking.Client#outbound` は、クライアントから送るためにエンコード済みのフレームをマスクする。
++         `webSocket` や `wsClient` を使うプログラムはフレームを扱うことがない。
++         フレームはプロトコルのテストや拡張のためのものである。
+
+% 2 1 0 13d1f5533cd871ac153ba64abf1f7fb3
+
+% 3 1 0 07c2852813f3a1d0093e9b1e99c560a6
+
+% 1 1 0 10c75085845bdbdf08b47c1db265ea53
+
+% 0 1 0 166802820f76e93a021fc47a77b6b80b
+
+% 0 1 0 0cfbc081861c42dd15b78560b7806927
+
+% 0 1 0 04c1465e2f2bf4cb0a7383320bb745b8
+
+% 0 1 0 17d6e84b7b70b2831f7a0f16aa045214
+
+% 0 1 0 026ba5e60dcac5301c27b352aea226bb
+
+% 0 1 0 122254d81847ff98003573a2d956c3ed
+
+% 1 1 0 1669f5b39b4b715619d9eeff85ec5495
+
+@ 0 22 0 0272f708fcc301891120e781c58fc001
++     entry .maxPayload   受け入れるフレームのペイロードの最大値、16 MiB。それより大きいものは `1009` で閉じる
++     entry .maxControlPayload   制御フレームのペイロードの最大値、125 バイト
++     entry .closeData   クローズフレームのペイロード：2 バイトのコードの後に理由が続く
++     entry .validCloseCode   クローズコードがワイヤ上に現れてよいかどうか
++         `1000`–`1003`、`1007`–`1011`、そしてアプリケーションの範囲 `3000`–`4999` である。
++         `1004`、`1005`、`1006` のコードは決して送られず、`1012`–`2999` は未割り当てなので、それらを持つクローズフレームは `BadClose` である。
++     entry .parse   カーソルからフレームを一つデコードする。ストリームが正常に終わったときは `Unset`
++         ちょうどフレームのバイトだけを消費し、ペイロードのマスクを外す。
++         `Masking` の given が方向を決める。
++         `Masking.Server` はフレームがマスクされていること（クライアントのもの）を要求し、`Masking.Client` はマスクされていないこと（サーバーのもの）を要求する。
++         誤っていれば `Unmasked` または `Masked` で `Websocket.Error` を発生させる。
++         他に発生させるものは `ReservedBits`、`TooLarge`、`BadControl`、`BadOpcode`、`BadClose` である。
++         0 バイトのクローズペイロードは番兵のコード `1005` でデコードされる。
++         パーサーはフレームの先頭でのみブロックし、フレームの最後のバイトの後では決してブロックしないので、空の `Ping` や `Pong` は相手の次のフレームを待たずに返される。
++     entry .unmask   ペイロードと 4 バイトのマスクキーの XOR を取る。キーが空ならそのまま返す
++         自身の逆演算である。
++         マスクすることとマスクを外すことは同じ操作である。
++     entry #opcode   フレームのオペコード：`0x0` 継続、`0x1` テキスト、`0x2` バイナリ、`0x8` クローズ、`0x9` ping、`0xa` pong
++     entry #payload   フレームのペイロード。`Close` では、`closeData` が配置するとおりのコードと理由
++     entry #fin   このフレームがメッセージを完了するかどうか。制御フレームでは常に `true`
++     entry #encode   マスクされていないバイトとしてのフレーム：ヘッダー、短い形式・16 ビット形式・64 ビット形式のいずれかによる長さ、ペイロード
+
+@ 0 1 0 1664029380975c240a2c32bc8e4055e9
++   entry .Masking   接続のどちら側か、したがってフレームがマスクされるかどうか
+
+% 1 1 0 1e04818e5fdd793610f220fe5f353cdb
+
+@ 0 6 0 1226e513c849b97d0a93c48a63eaffcc
++         RFC 6455 では、クライアントは送るすべてのフレームを新しい 32 ビットのキーでマスクし、サーバーはマスクせずに送る。
++         それぞれの側は誤った方法でマスクされたフレームを拒否する。
++         `Masking` は側を決める。
++         `#outbound(frame)` は出ていく完全なエンコード済みフレームをマスクし（または素通しし）、`#inbound` は相手から読むフレームがマスクされていなければならないかどうかを示す。
++         `Websocket` は `.Server` を、`wsClient` は `.Client()` を設定する。
++         `Websocket.Frame.parse`、`Reader`、`Channel` を直接使うには、given として一つが必要である。
+
+% 2 1 0 163c02fc5cfa532d1a5fc947327e8fa7
+
+% 3 1 0 1c667ec88b13317b00ccf464896706e4
+
+% 0 1 0 1a18fe401d7a0ab706b53933593da461
+
+% 0 1 0 11458e6d13f0e7e909ca530481920352
+
+% 0 1 0 0b9055256702baa609b836a1653beaec
+
+% 1 1 0 17da91d3f8f473410202609cfd54b54e
+
+@ 0 6 0 06ff395dd61479ec090a2d6c82afe4f2
++     entry .Server   サーバー側：マスクせずに送り、受信フレームがマスクされていることを要求する
++     entry .Client   クライアント側：送信する各フレームを新しいキーでマスクし、マスクされた受信フレームを拒否する
++         `Masking.Client()` はキーのために接続ごとに一つの `SecureRandom` を保持するので、同じフレームを二度マスクすると結果は異なる。
++     entry #outbound   完全なマスクされていないフレームを送信のためにマスクする。サーバーではそのまま返す
++     entry #inbound   相手から読むフレームがマスクされていなければならないかどうか
+
+@ 0 1 0 1c48bd527b671d7501df88c70b3d0f68
++ entry .Message   完全な WebSocket メッセージ：再組み立てされ UTF-8 でデコードされた `Text`、またはバイトとしての `Binary`
+
+% 1 1 0 138d732300dafb6210e7e12a96bc7e3f
+
+@ 0 7 0 04340edec7fcbbc21a3d451e89168812
++       ハンドラのメッセージ型が `Message` 自体であるときにハンドラが目にする、二種類のメッセージの列挙型である。
++       テキストメッセージにはフラグメントを再組み立てしてデコードした `Message.Text(text)`、バイナリメッセージには `Message.Binary(data)` である。
++       制御フレームとフラグメンテーションはここには決して現れない。
++       `Message` は `Ingressive` でも `Transmissible` でもあるので、ハンドラのパラメーター型にも `Reply` の引数にもなり、`Channel#send` もこれを取る。
++       `soundness` にはエクスポートされない（fulminate の `Message` がアンブレラでその名前を持っている）ので、名前でインポートする：`import perihelion.Websocket.Message`。
+
+% 2 1 0 01867b6e6cafe21c05d10a3910b063f9
+
+% 3 1 0 03c2d799168037a40e91ee7e3659f2bc
+
+% 2 1 0 1f757edcbe626ea5054dea547a99db2f
+
+% 0 1 0 108515f6d52a4e801a3a2904e69a8f54
+
+% 0 1 0 021573f72ab8f23a15be1aba38458561
+
+% 0 1 0 18be03259578b3981e0939a5e735c2ad
+
+% 1 1 0 1f302432427523c404929644515a00f2
+
+@ 0 7 0 0c0f832805b7be4f1a0e27fc2c132d5e
++   entry .ingressive   形式上の `Message is Ingressive`。これにより `Message` は `webSocket` のメッセージの境界を満たす
++       リーダーはすでに `Message` を生成するので、`Message` のチャンネルは恒等的にデコードされ、このインスタンスが適用されることはない。
++       これは生の型が `Ingressive` の要件を満たすために存在し、インポートが不要なようにコンパニオンに置かれている。
++   entry .transmissible   メッセージを一つの完全なマスクされていないフレームに直列化する
++       `Text` はその UTF-8 バイトのテキストフレームに、`Binary` はバイナリフレームになるので、`Message` は `Reply` や `Conclude` の引数になり、そのまま書き出される。
+
+@ 0 1 0 08e6f3d136b305e802acfa93658241ee
++ entry .Channel   接続の送信側：ソケットに送り出されるフレームのスレッドセーフなキュー
+
+% 1 1 0 11c4b0e9d9c2fe6b0b0caee48f124aba
+
+@ 0 9 0 16658b2ce007faf21064650052dc6dbb
++       `Channel` はエンコード済みフレームの有界な導管である。
++       リーダー（`Ping` と `Close` への応答）、ハンドラのループ（`Reply` と `Conclude`）、そしてプログラム自身の `#send` はすべてロックのもとでここにキューを積む。
++       そして一つの送り出し役、すなわちサーバーのレスポンス書き込み器またはクライアントのデーモンがそれをソケットへ排出するので、キューが一杯になるとすべての生産者に背圧がかかる。
++       各フレームはこの境界で、スコープにある `Websocket.Masking` によって一度だけマスクされる。
++       `Websocket.Masking.Server` では素通しされ、`Websocket.Masking.Client` では新しいキーでマスクされる。
++       `Websocket.Masking` と `Buffering` を使って構築される。
++       `Websocket#channel` とクライアント接続がそれぞれの接続のものを保持しており、プログラムはそれらを通じてこれに到達する。
++       パッケージ内で公開されているが、`soundness` にはエクスポートされない。
+
+% 0 1 0 1dd0ecd19a35a3250bd156936d95a2c1
+
+% 0 1 0 165089220e647c38108ff8dae5aa494f
+
+@ 0 6 0 08d4be06982d814f01185410fb1d48a4
++   entry #send   一つのメッセージを一つの完全なフレームとしてキューに積み、`Websocket.Event.Sent` を記録する
++       `Message` を取る。
++       対話的なプロトコルはブロックを埋めるのではなく各フレームを速やかに届けなければならないので、フレームは即座にフラッシュされる。
++       `Websocket.Event is Loggable` が必要である。
++   entry #stop   送信ストリームを終わらせ、送り出しが完了して接続の本文が終わるようにする
++   entry #close   コード（デフォルトは `1000`）付きのクローズフレームをキューに積み、`Websocket.Event.Closed` を記録して停止する
+
+@ 0 1 0 1d6d4af5003279c50eefa90779fea3d5
++ entry .Reader   相手のフレームをメッセージに読み込む：再組み立て、`Ping`/`Pong`、`Close`、UTF-8 検証
+
+% 1 1 0 1dba574e4eef7b0e1ab04e721d8008c3
+
+@ 0 12 0 161f822db50791b00228b640c9d3231c
++       `Reader(body, channel)` は、サーバーとクライアントが共有する受信側の半分である。
++       その `#messages` は、`body`（チェーンが強制されるたびに貸し出し直される `Spring[Data]`）からパースされたフレームの上の遅延 `Chain[Message]` である。
++       データフレームは FIN を持つものまで蓄積され、テキストメッセージは逐次的に UTF-8 として検証されるので不正なバイトは即座に接続を失敗させる。
++       `Ping` にはチャンネルを通じて `Pong` で応答し、`Pong` は捨て、`Close` は（コードがなければ `1000` で）送り返したうえでチャンネルを止め、チェーンを終わらせる。
++       違反は `Websocket.Error` を発生させ、本文が途中で切れた場合は `Truncated` である。
++       `Tactic[Websocket.Error]` と自分の側の `Websocket.Masking` が必要である。
++       本文の上のカーソルは最初のメッセージが強制されたときに初めて作られるので、読み取りがブロックする前に、サーバーは `101` を、クライアントは最初のフレームを送ることができる。
++       パッケージ内で公開されているが、`soundness` にはエクスポートされない。
+
+% 2 1 0 1bb6c6f9d4898ad616f536bc719db004
+
+% 3 1 0 0a55f19edbefb6741a9b91fddc0790a2
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 10663412eea971e402de49e0f8b1b802
+
+% 0 1 0 146b15c27016c22f08affd79657a602d
+
+% 0 1 0 01695849077b5cc30440a2ef48c02fbe
+
+% 0 1 0 137bd5e60597627010bd732b6d1a7dce
+
+% 0 1 0 04e623de3e2e52a7121d792fc67f98be
+
+% 1 1 0 07b4a65c9de603c80ef61ed1e1e9388d
+
+% 1 1 0 1d84b1e9f313e24d0164eaeb86837970
+
+% 0 1 0 12d52007b7e3bf07141814c22454a5f7
+
+@ 0 1 0 0934f57c8206c92d0f67ca00a355341a
++   entry #messages   再組み立てされたメッセージ。相手が閉じるか本文が終わるまで、遅延的に
+
+@ 0 4 0 1bdea7082c12861b07f5493e205d3a35
++ entry .over   値にそれが乗る形式のタグを付ける：`value.over[Json]`。これにより返信はその形式を通じて直列化される
++     `over` は幻の型のメンバーなので、`value.over[Json]` は `value over Json` への何もしないキャストである。
++     これは `Reply` や `Conclude` に対して `overTransmissible` を選び、`(ping: Ping over Json)` と型付けされたハンドラのパラメーターに合致する。
++     `soundness` にエクスポートされる。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 2 1 0 056eff890dc280701473075183f5b4b3
+
+% 0 1 0 1ab72a907c4906e20db82abd0401602b
+
+% 1 1 0 165600c6d046526a0b8082e6fce6081d
+
+@ 0 6 0 01b236f5eaee99d019a965f9de52c8c2
++ entry .overTransmissible   `value over format` を、その形式のテキストからなる一つのテキストフレームとして直列化する
++     `transport is Encodable in Text`（`Json` や `Tel` がそうである）かつ `value is Encodable in transport` であるとき、任意の `value over transport` を `Transmissible` にする given であり、バイトのために `Codepage` を使う。
++     値はその形式にエンコードされ、形式はテキストにされ、テキストは一つのマスクされていないテキストフレームに包まれるので、`Reply(Ping(1).over[Json], …)` は一つの完全なフレームになる。
++     `soundness` にエクスポートされる。
+
+@ 0 7 0 07effe617cc4c34415c271d4cced647c
++ entry .overIngressive   テキストフレームのバイトを `value over format` としてデコードする
++     `transport is Decodable in Text` かつ `value is Decodable in transport` であるとき、任意の `value over transport` を `Ingressive` にする given である。
++     バイトをデコードするための `Charset` と、形式のデコーダーが戦術を条件とするため、直接の `Tactic[Hazard]`（`strategies.throwUnsafely` がこれを満たす）が必要である。
++     したがって不正なペイロードは、より狭い戦術を通じて報告されるのではなく、例外を投げる。
++     `soundness` にエクスポートされる。
+
+@ 0 10 0 178ad2e60c411b951f23a17f2ad55e56
++ entry .wsClient   `Websocket.Url` を coaxial の `Duplexable` なトランスポートにする：`url.react`、`url.exchange`
++     クライアントを接続する given である。
++     `connect` は URL のホストとポートへ TCP（`ws`）または TLS（`wss`、`SecureEndpoint` とスコープにある `Tls` を通じて）を開き、新しい 16 バイトの `Sec-WebSocket-Key` を付けてハンドシェイクを送り、レスポンスのヘッダーブロックだけをちょうど読み（サーバーがまだ送っていないフレームにまで読み進むことは決してない）、`101` と正しい `Sec-WebSocket-Accept` を確認し、送信フレームを送り出すデーモンを開始する。
++     `receive` は接続の `messages` であり、`transmit` は一つのメッセージをマスクして一つのフレームとしてスプールし、`close` は `1000` を送る。
++     これは単なる `Serviceable` ではなく `Duplexable` である。
++     そのチャンネルは並行に送っても安全であり、それによって `exchange` が能動的に送ることができるからである。
+
+% 2 1 0 1e7b32327b74cc15032403cf0f913db4
+
+% 3 1 0 0d207794cac8f0040f4634635c88515f
+
+% 4 1 0 04978ef7445ce29a1d089f50631ff9c4
+
+% 5 1 0 05d6de6699f9b4aa1c10e4c985e4f1cd
+
+% 0 1 0 15afa59c6f4168b61350c610bbcf3dec
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 1 1 0 0429402ebfafdf9c0640a2a85f24ef9d
+
+% 2 1 0 1ef571dc91da5cfe109a49a0476cefb5
+
+% 3 1 0 0ddf0c39c863f9541fa065d430a5fc11
+
+% 4 1 0 0b63f2adc53930f901b81cd9051e8946
+
+% 1 1 0 0c8301042015c0570ab1b7128fa8a91a
+
+% 2 1 0 0ad4d9087b657cbd105b1e9366b88d57
+
+% 3 1 0 0c67a1059e0483d1178cee0471a33f2c
+
+% 4 1 0 01857a8b155e53e00556043080a6f7a6
+
+% 6 1 0 029903b13b46e60700f3db5e021070ca
+
+% 8 1 0 03c3eef1b5ecba9a0af81904d4945a21
+
+% 0 1 0 0e2346fe6b5fc62210a69b05dfe6b60e
+
+% 0 1 0 03bd8ba15f2f8b330bc26dbb1eaa9eb8
+
+% 0 1 0 0918d98002d2adb7196e46fbd7a6083c
+
+% 0 1 0 072f708db04047851ada2a3c93e27455
+
+% 1 1 0 0f48db55935af8520a3a2890578bc0df
+
+@ 0 8 0 1c43530c01db25ea1f95fb504175ca77
++     `url.react(initial)(handle)` はサーバーが先に話すのを待つ。
++     `url.exchange (initial)(handle)(interact)` はループが始まる前に `interact` に `Transmitter` を渡す。
++     どちらも、ハンドラが終了するかサーバーが閉じると最終状態を返す。
++     この given には `Online`（`internetAccess.online`）、`Monitor` と `Probate`、`Every[Socket.Option.Tcp]`、`Tls`、そして `Websocket.Error`、`Http.Response.Error`、`Port.Error` のための戦術が必要であり、それらを保持するので、ケイパビリティである。
++     合成されたフォワーダーはその細分化を失ってしまうので、`soundness` にはエクスポートされない：`import perihelion.wsClient`。
+
+@ 0 1 0 187d986df208594f0dc95abecbea210e
++ entry .WsSessional   接続済みの `Websocket.Connection` をスコープに貸し出す：`url.session { connection ?=> … }`
+
+% 1 1 0 012f626fd7ed91931d988d818aafbe3e
+
+@ 0 7 0 00d2caedbe8208f712284f732f837c06
++       `Websocket.Url` のための `Sessional` インスタンスであり、given `wsSessional` の背後にある。
++       `#session` は `wsClient` を通じて接続し、`Websocket.Connection`（ハンドシェイク済みで、送り出しが動いている）をラムダに貸し出し、ラムダが終わると、返ったか例外を投げたかにかかわらず、`1000` のクローズフレームでそれを閉じる。
++       接続は新しいケイパビリティなので、それ自体もそこから借りたストリームもブロックの外に出ることはできない。
++       状態機械として消費するには `url.react` と `url.exchange` が自然な形である。
++       セッションは、メッセージごとのハンドラに収まらない対話に役立つ。
+
+% 2 1 0 0e777d5abc69a1de0d31430e5d5a2d54
+
+% 3 1 0 1f9df24ce557fa9e1998503e54024d50
+
+% 4 1 0 1f721d0962aa3bf8083e25d54744a9eb
+
+% 5 1 0 0932cfa5072a739104f7a0351f072e17
+
+% 0 1 0 1641402876a5c5c51ca8f30b603ace71
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 1 1 0 0081119c3d60eabd1aceb39da2249178
+
+% 2 1 0 14afc0a3a011f4bd062e52375aaa32b0
+
+% 3 1 0 131d9a10dfbd85bb0f2f07f6d2ffde30
+
+% 4 1 0 16b71aa4b037dbd31b3a8c9c221f00af
+
+% 2 1 0 190e8e62bd75063d1ce7b2c2bfcd363d
+
+% 0 1 0 14fa2f0eff98171b0d0c8d9bb68a9b02
+
+% 0 1 0 0599d39cba00a48a08a1319c09b4e569
+
+% 1 1 0 0864af7521e0e6c41d049ebb3ebd542c
+
+@ 0 2 0 0ae0423617a84ece1f0740cfc32e16b9
++       `wsClient` の given（キャプチャするパラメーターとして）、`Monitor`、そして接続の失敗のための `Tactic[Socket.Error]` が必要である。
+
+% 0 1 0 02051f0ca203583c09af34c9b86346c4
+
+% 0 1 0 1ab93f0e39c86b6f17642610bcb46ce8
+
+@ 0 3 0 1ba0be66dcad83181ffa775e30a543b1
++   entry #session   URL に接続し、接続をラムダに貸し出し、その後で閉じる
++   entry #Result   貸し出されるハンドル：新しい `Websocket.Connection^`
++   entry #Self   対象：`Websocket.Url`
+
+@ 0 4 0 0e3e7b8960d42c11114c51f3b1bdb030
++ entry .wsSessional   `WsSessional` の given：名前でインポートする、`import perihelion.wsSessional`
++     `wsClient` の given、`Monitor`、`Tactic[Socket.Error]` から構築され、それらを保持する。
++     合成されたフォワーダーはそのキャプチャ注釈付きの型を失ってしまうので、`soundness` にはエクスポートされない。

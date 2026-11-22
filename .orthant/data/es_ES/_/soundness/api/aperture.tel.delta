@@ -1,0 +1,857 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0a2592a6fec741bb0c121348eb0ba60d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 135d707e598580ba1870dcfa7148b0f1
++ info   acceso con ámbito a recursos: `open`, `create`, `archive` y `session`, con los modos llevados como concesiones en el tipo del descriptor
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 18b9ebdace29c0750e76f39f52b09d2b
++     _Aperture_ da nombre a un patrón que se repite en todo Soundness: un valor dice *dónde*
++     está algo —una ruta, una URL, una referencia en memoria— y llegar a su contenido es un
++     acto distinto y **con ámbito**. Un fichero se abre para leerlo o escribirlo como flujo, un
++     directorio como raíz confinada, un repositorio Git para leer sus referencias, una URL para
++     una sesión de peticiones; en cada caso se presta un descriptor a un bloque, y el final del
++     bloque es el final del acceso.
+
+@ 0 2 0 18b8db6668f313b216ece9068abb53b3
++     La biblioteca define las clases de tipos que hay tras cuatro verbos, y los métodos de
++     extensión que los invocan sobre cualquier valor:
+
+@ 0 9 0 06d946103fab05080174051637276594
++     - `open[Form](mode, flags*)`, mediante `Openable`: el acceso a algo que existe, con un
++       `Mode` (`Read`, `Write`, `Exclusive` y sus combinaciones con `&`) cuyas `Grant` se
++       llevan en el tipo del descriptor, de modo que una escritura a través de un descriptor de
++       solo lectura no compila;
++     - `create[Form](flags*)`, mediante `Creatable`: hacer que algo exista, ya sea vacío o
++       redactándolo en un ámbito que se consolida cuando el bloque termina;
++     - `archive[Form](flags*)`, mediante `Archivable`: reunir el contenido de algo en un valor
++       de archivo en memoria;
++     - `session`, mediante `Sessional`: una interacción viva —una conexión, un compilador
++       caliente, un navegador— que se presta a un bloque y se desecha cuando este termina.
+
+% 2 1 0 0556ac6c127246f71a8581adaec93966
+
+% 3 1 0 1e785c348084f90b00abfd7d85d26248
+
+% 4 1 0 081a50ccf822248e1908aa7c07eba1d4
+
+% 5 1 0 1fd73833e65f36bf0d333e77e114fb76
+
+% 6 1 0 13af1eba1dde389f03b3086ef6dc2643
+
+% 7 1 0 1aa88a439542a1f30d751191ed2b78f3
+
+% 8 1 0 08f34d97ff165925168f69dd2e3ff052
+
+% 9 1 0 07cf35a107374e4b1f7404c9c1aaabe4
+
+% 10 1 0 13c7f47fb152741812910f23cbc1e112
+
+% 0 1 0 0e1e2392ad24e5291dac8f353b309eaf
+
+% 2 1 0 0b5407e2399ebfe2043e4e51bdeb6a3f
+
+% 0 1 0 03fea899de0394b717fe66a61cd4b9b1
+
+% 0 1 0 076647ca23db91c51d9cdcc255b11ce3
+
+% 1 1 0 073ec21fe327486a18af2ab2d625be14
+
+@ 0 6 0 17786d865889da3200fbc95c8971ec8f
++     La *forma* —aquello *como* lo que se abre, se crea o se archiva el objetivo— es un
++     argumento de tipo, porque un mismo objetivo puede tener varias instancias: una ruta se
++     abre como `File`, `Directory`, `Zip` o `Pdf`. Donde un objetivo tiene exactamente una
++     instancia, la forma puede omitirse; con varias, el error de ambigüedad enumera las
++     alternativas. Los indicadores que siguen al modo son del propio tipo `Operand` de la
++     instancia, así que son específicos de lo que se abre, y un indicador que no viene al caso no
++     supera la comprobación de tipos. Toda instancia se escribe en el estilo preposicional,
+
+% 0 1 0 12f2518e9aaf0e4f120583b7c0854c3e
+
+@ 0 3 0 1e13c6b76dacc9350c89d78c05b570e0
++     Los descriptores son capacidades, confinadas a su bloque por la comprobación de capturas:
++     ni un descriptor, ni una clausura sobre él, ni una colección que lo contenga pueden ser el
++     resultado del bloque. `Stale` es la idea complementaria para los valores leídos *a
++     través de* un descriptor a partir de un estado que el descriptor no posee.
+
+@ 0 5 0 18b87c5b6cf40a240dbb36ea8dfa1fe8
++     Aperture solo depende de `prepositional`, así que se sitúa por debajo de todas las
++     bibliotecas que proporcionan instancias: galilei (ficheros, directorios, espacio
++     temporal), octogenarian (`Git.Repo`, `Git.Worktree`), bitumen y zeppelin (archivos),
++     facsimile (documentos PDF), telekinesis y coaxial (sesiones), y otras. Tiene un único
++     conjunto de fuentes, `aperture.core`, para todas las plataformas, y todo se exporta al
++     paraguas `soundness`.
+
+% 0 1 0 181978ce8813533c0eb06e7e297d768c
+
+% 0 1 0 05f3b958add35e9d1abfebc16b3b4bb6
+
+% 0 1 0 16b63a78e1b0467717697dc8df6d1722
+
+% 0 1 0 129261cde6e86a57124d0d9917fdd0b2
+
+% 0 1 0 02c8b4a252ae08bc12ef30e18c26c9db
+
+% 0 1 0 0737af66c950417e1a9a75b522a7ca77
+
+@ 0 1 0 1b58c1e4deea7932118db4cc21336d79
++ entry .Openable   una clase de tipos para objetivos que se pueden abrir en una forma, prestando un descriptor con concesiones a un bloque
+
+% 1 1 0 0b5749efdcf100081eb06933d042f120
+
+@ 0 5 0 099e7d1ce3ed3bcd07adbfda7f27b039
++       Una instancia se escribe `target is Openable in Form by Flag to Handle`: `Self` es el
++       objetivo (una ruta, una referencia), `Form` es aquello como lo que se abre, `Operand` el
++       tipo de indicador admisible para ese par, y `Result` el descriptor. El único método de la
++       instancia, `#open`, recibe el objetivo, el `Mode` que pidió quien llama y los indicadores,
++       y ejecuta el bloque con un descriptor de tipo `Result & Granting[grants]`, donde
++       `grants` son los `Grants` del modo.
+
+@ 0 1 0 08c6a22a2868bac80a8e8fa16023feb9
++       Los usuarios lo llaman mediante la extensión `open`, nunca directamente:
+
+% 2 1 0 0d2044604667e4bb126c612751500eab
+
+% 3 1 0 0a51ca518da38185013f5eb69ecaff46
+
+% 4 1 0 15da92635f98091800b9612eef66badc
+
+% 5 1 0 0c08f9a1f438c20b172d832bedd721d7
+
+% 6 1 0 1415db7bd8861cda1844cac230287f3e
+
+% 7 1 0 0156216c95035b8a0da95a4ed8714fc8
+
+% 8 1 0 0331eba7a03b995b1bdfe5370e8eb9ca
+
+% 9 1 0 162f0ea68201eec1123600d2a91e30a1
+
+% 10 1 0 0e1fbeef8e76dcfa1b4d83e2b0070ae1
+
+% 12 1 0 08d4d8f4d7146ddb1ec58d3d5696ebb8
+
+% 0 1 0 0819a788a3d64918092d6661a67f2ef2
+
+% 0 1 0 0b8917a87469bcb5186576c656c72dca
+
+% 1 1 0 10770fbb42383d3c172bbbac62c17d7d
+
+@ 0 4 0 1c9ab85ea22966981cd9d2734bfddc25
++       Las operaciones de una instancia sobre el descriptor son métodos de extensión
++       condicionados por las concesiones, como `extension (handle: (DocHandle &
++       Granting[Grant.Write])^) def append(…)`, así que el modo elegido en el punto de llamada
++       decide qué compila dentro del bloque. Una instancia traduce el modo a los términos de su
++       backend interrogando `mode.atoms` (`mode.atoms.has(Read)`).
+
+@ 0 4 0 131fb82c842d42460e0ce37fa155f236
++       Las instancias deberían ser clases con nombre y no instancias anónimas `given … = new
++       Openable:`: una subclase anónima renueva el tipo de capacidad del descriptor en el
++       miembro `Result` inferido, y entonces el descriptor del bloque no supera la comprobación
++       de tipos frente a los métodos de extensión condicionados por él.
+
+% 1 1 0 1ee0643211de745a035a97ced2b37e8e
+
+% 1 1 0 098d16432d684efa05e81acf7b78e0df
+
+% 2 1 0 0c7cba514165d44c0100e9e7d3d1014e
+
+% 1 1 0 14887555a12e7c6d0c6770c4ba14cd63
+
+@ 0 5 0 05d359d078dabc78181114e317d5933f
++   entry #open   abre un objetivo en un modo, con indicadores, y ejecuta un bloque con el descriptor con concesiones
++       `open(value, mode, flags)(block)`: la implementación que proporciona una instancia. El
++       bloque recibe el descriptor `(Result & Granting[grants])^` como parámetro contextual, y
++       su resultado se devuelve una vez que la instancia ha cerrado lo que haya abierto. Lo
++       llama `Opener#apply`; el código de usuario escribe en su lugar
++       `value.open[Form](mode, flags*)`.
+
+@ 0 1 0 0a12cab23ad351220e82c453e6a7ad08
++ entry .Opener   el aplicador que devuelve `open[Form]`, que recibe un modo opcional, los indicadores y el bloque
+
+% 1 1 0 12dd9494ed5d7f4b0bca8368fb4a88ba
+
+@ 0 4 0 0285405fbfb9017e0d5e9b31611c2c25
++       `value.open[Form]` resuelve la instancia de `Openable` solo a partir de la forma y
++       devuelve un `Opener`; su `#apply` sobrecargado recibe después los argumentos. Los dos
++       pasos son deliberados: los métodos de extensión sobrecargados no se resuelven a lo largo
++       de varias listas de parámetros, así que el aplicador es donde el modo opcional puede
++       sobrecargarse sin peligro.
+
+% 2 1 0 15c28de2528e0b94028be9c3f3743de2
+
+% 3 1 0 123f7705c23e5bd7005ea34bc459d8ca
+
+% 4 1 0 1793c93ffa7616a7002fb87c3875f321
+
+% 5 1 0 088b4191947eb00c157cb78ffd4e1b14
+
+% 6 1 0 1327060ce2b7d53b1e114ec7dd4e2809
+
+% 7 1 0 0d605b06948836b5084ffa69a7cc9044
+
+% 8 1 0 12b77035df6a122f19fb5f93888b238b
+
+% 9 1 0 1d85410a067e524c0482b809368a5d73
+
+% 10 1 0 1af0753962c5ca3316e02580222a9dae
+
+% 0 1 0 1efc2c2a82007caf058a8cdc4da418dd
+
+% 0 1 0 03a4a480e578b88215749cf1b1bfdd47
+
+% 0 1 0 0cd66392481b732a193944ababe3156c
+
+% 1 1 0 1fb94de29319005901cf39f49b73dd03
+
+@ 0 2 0 1f7f462dd2c71a07069098773cfca30a
++       El campo `#openable` es `tracked`, así que los miembros `Self`, `Operand` y `Result` de
++       la instancia se mantienen precisos en los tipos de `#apply`.
+
+% 1 1 0 1c9306a31fa36cb91bfc5d49b668b68f
+
+% 1 1 0 12f7033b964ee2481a8bc8b5ef885f62
+
+@ 0 7 0 0557582cc73f49b7124ff48bfb42bae0
++   entry #openable   la instancia de `Openable` que resolvió la forma
++   entry #value   el objetivo que se va a abrir
++   entry #apply   abre el objetivo, en solo lectura por defecto o en el modo dado, y ejecuta el bloque
++       Dos sobrecargas. `apply(flags*)(block)` abre con el modo `Read`, así que el descriptor
++       es `Granting[Grant.Read]`; `apply(mode, flags*)(block)` abre con el modo dado, así que
++       el descriptor concede exactamente `mode.Grants`. Los indicadores son del tipo `Operand` de
++       la instancia y siguen al modo. El descriptor es el parámetro contextual del bloque
++       (`handle ?=> …`).
+
+@ 0 1 0 0defabb207e604351eae1b426f94cba5
++ entry .open   abre un valor en una forma: `path.open[File](Read & Write) { handle ?=> … }`
+
+% 1 1 0 1fed61834fab93d307990d2cd07bffa4
+
+@ 0 4 0 0520248a8e7109751231b910ad43e14f
++       Una extensión sobre cualquier valor que tenga una instancia de `Openable` en la forma
++       nombrada. Devuelve un `Opener`, cuyo `apply` recibe un `Mode` opcional (por defecto,
++       `Read`), después indicadores del tipo `Operand` de la instancia, y después un bloque que
++       recibe el descriptor como parámetro contextual.
+
+@ 0 1 0 059b81a56e393b041bca4c94618c5d04
++       El modo elegido decide el tipo del descriptor y, por tanto, cuáles de sus operaciones
++       compilan:
+
+% 2 1 0 11c287423517fb591b121fab41113180
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0e746141282b3f47186118d3bf65966f
++         label Abierto sin modo: el descriptor solo concede la lectura
+
+% 1 1 0 114eeadb6319c5011a73d732b2ecbc0f
+
+% 0 1 0 1e2beb093dbc0d49086946bc0c79e482
+
+% 1 1 0 05405a2b413dd3241fbdb99680e4b6c4
+
+% 0 1 0 1492935231d11c221d05541011d30757
+
+% 1 1 0 00b266260d2a261b0ea453b977a613f4
+
+@ 0 1 0 14664edba34bcfd206fd553d0879cc59
++         label `Read & Write`: compilan ambas clases de operación
+
+% 1 1 0 0099c8f28dfbdb8b093f8aae2211873b
+
+% 0 1 0 0434ae24e518d0c51b60c80dc824d1ae
+
+% 1 1 0 06dcad5e35b7cdc80c84acff7941580e
+
+% 2 1 0 15a080379b852db31dc568b358bb7069
+
+% 1 1 0 076f96543a83248217815954211e1ef9
+
+@ 0 1 0 005e27f5ed8ce4931d7572c59fbf62bc
++         label `Read & Write & Exclusive`: y ningún otro descriptor puede solaparse con él
+
+% 1 1 0 0d31f09ad698429b10c63339e949f142
+
+% 0 1 0 03ffd1ae2db5bec1197fc8101192d0c7
+
+% 1 1 0 13582012d7bbafe81df14a93bd72641d
+
+% 2 1 0 19b394d2c20554491f76d2c3728014f7
+
+% 1 1 0 1ef8c3d9193837f418ae867faff761f3
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 1dd7e42510a6282f05edc3ad40497788
++       La forma puede omitirse, `value.open()`, cuando el objetivo tiene exactamente una
++       instancia de `Openable`; con varias, el error de ambigüedad las enumera. El descriptor
++       es una capacidad confinada al bloque: devolverlo, devolver una clausura sobre él o una
++       colección de descriptores es un error de compilación.
+
+% 1 1 0 1fa0a8f620000a0f057bafeb4d477032
+
+% 1 1 0 055579f6e76350050c472186208a9bfc
+
+% 2 1 0 003839e48112b040089bba938ac55401
+
+@ 0 1 0 09352adfff4166660fb5aa01b48bef1a
++ entry .Mode   qué concesiones confiere una llamada a `open`, componibles con `&`
+
+% 1 1 0 1ea4dd58b33fd13a154733662a19a51b
+
+@ 0 5 0 184faf1ed3464cbe1d790df8426f3139
++       Un `Mode` es una elección de concesiones a nivel de términos, llevada como su miembro de
++       tipo `#Grants` para que el modo escrito en el punto de llamada determine el tipo del
++       descriptor dentro del bloque. Los modos atómicos son `Read`, `Write` y `Exclusive` (y
++       las bibliotecas añaden los suyos, como el `Shared` de galilei); `&` los compone de forma
++       dependiente, así que `Read & Write` tiene `Grants = Grant.Read & Grant.Write` sin macros
++       ni expansión inline.
+
+% 2 1 0 15b1b47702ad57aa1e98d83c8a994381
+
+% 3 1 0 1310770e82431dd51330565696bc6c82
+
+% 0 1 0 106e66a541471e091e2525f61194128a
+
+% 0 1 0 1d1115263c7f27501340ff27baa2af01
+
+% 1 1 0 1c77e9dfad9561161f0159fa6bbc61fa
+
+@ 0 4 0 0f41948c8c1f1694106c0751c3a494ea
++       En tiempo de ejecución, un modo compuesto se identifica por sus `#atoms`, el conjunto de
++       modos atómicos a partir del cual se construyó, y así es como una instancia de `Openable`
++       traduce un modo a indicadores del sistema operativo. Los modos atómicos son valores
++       globales que se comparan por referencia, así que una biblioteca que define uno nuevo lo
++       hace como un `object … extends Mode` o un `val` de nivel superior.
+
+% 0 1 0 187ef6f98ed613170ad91ebd5608759d
+
+% 0 1 0 1e86cd1bee4ea59600f80d3dad909084
+
+@ 0 9 0 1f182e176eb5ed301323bed4eb42cc5d
++   entry #Grants   las concesiones que confiere este modo, como una intersección de subtipos de `Grant`
++   entry #atoms   los modos atómicos a partir de los que se compuso este modo
++       Los átomos de un modo atómico son solo él mismo; `Read & Write` tiene
++       `Set(Read, Write)`. Una instancia de `Openable` comprueba la pertenencia,
++       `mode.atoms.has(Write)`, para decidir cómo abrir su objetivo.
++   entry #&   compone dos modos: la unión de sus átomos, la intersección de sus concesiones
++       `Read & Write` es un `Mode granting (Grant.Read & Grant.Write)`. La operación es
++       asociativa y, en su efecto, indiferente al orden, ya que tanto las concesiones como los
++       átomos son conjuntos.
+
+@ 0 1 0 10c0867fdae569e9155cc4b3ff11a94c
++ entry .Grant   un marcador fantasma de una clase de operación permitida, que se compone por intersección
+
+% 1 1 0 07fb4efb652f350717a7257cc06de51c
+
+@ 0 4 0 1fa7ea59072976780ab47349a637d116
++       Las concesiones nunca se instancian: solo existen como tipos, que se intersecan en el
++       tipo de un descriptor mediante `Granting`, donde determinan qué métodos de extensión se
++       aplican. La intersección hace que más concesiones sean un tipo más específico, así que
++       una operación que exige `Grant.Write` acepta cualquier descriptor cuyo modo incluyera
++       `Write`, incluyera lo que incluyera además.
+
+@ 0 2 0 07b3866bba0da1bc092740b8101b6f3f
++       La jerarquía es abierta: una biblioteca que define una instancia de `Openable` puede
++       introducir concesiones propias de su dominio extendiendo `Grant`, con un `Mode`
++       correspondiente.
+
+% 1 1 0 165d4f9e3955f822152de5c1ebd1899f
+
+% 1 1 0 1ca25bf21318963b1fa29bd434f01876
+
+@ 0 8 0 0dc632214a9bf0d102b045021ba6963a
++   entry .Read   la concesión para leer el contenido de un descriptor, conferida por el modo `Read`
++   entry .Write   la concesión para modificar el contenido de un descriptor, conferida por el modo `Write`
++       Escribir no implica leer: un descriptor abierto solo con `Write` no tiene operaciones de
++       lectura, y se necesita `Read & Write` para ambas.
++   entry .Exclusive   una garantía de que ningún otro descriptor sobre la misma entidad está abierto a la vez
++       La confiere el modo `Exclusive`. Cómo mantiene una instancia la garantía es asunto suyo:
++       galilei rechaza una apertura solapada dentro del programa con un `Io.Error` cuyo motivo
++       es `Busy`, y, en el caso de un fichero, además toma un bloqueo del sistema operativo.
+
+@ 0 5 0 19da3fd6c40de929187ed2e4b24de490
++ entry .Granting   se mezcla en un descriptor para adjuntarle las concesiones que seleccionó su modo
++     `Granting[+grants <: Grant]` es el marcador que una instancia de `Openable` o de
++     `Creatable` mezcla en el descriptor que presta, como `new Handle(…) with Granting[grants]
++     {}`. Es covariante, así que un descriptor `Granting[Grant.Read & Grant.Write]` es también
++     un `Granting[Grant.Read]`, y un método de extensión escrito para
++     `(Handle & Granting[Grant.Read])^` se le aplica.
+
+% 2 1 0 06a2d75b09ced9f01907d33071b70273
+
+% 3 1 0 19f953e1fd660b090bd1d6403f5c500d
+
+% 0 1 0 04450b795ec966da13762aabd671c2c0
+
+% 0 1 0 1bcc2e8eac24b96512647bc710a57f4c
+
+% 0 1 0 0d536401313263dd0e0b7742d4e4b1fc
+
+% 0 1 0 0ffe027661a288781fc29f223c630b84
+
+% 1 1 0 07e4fed5c970253814f278d42264b858
+
+@ 0 4 0 05be6781234b4d8c1daa88c2d088e605
++ entry .granting   `Mode granting Grant.Read`: refina el miembro `Grants` de un tipo a exactamente esas concesiones
++     Un alias de tipo infijo: `refined granting grants` es `refined { type Grants = grants }`.
++     Se lee con naturalidad en las signaturas, `mode: Mode granting grants`, y es el tipo de
++     los modos atómicos: `Read` es un `Mode granting Grant.Read`.
+
+@ 0 3 0 1c47c445f3abcf2804aa6f4cb7d62fa6
++ entry .Read   el modo que concede la lectura: el modo por defecto de `open`
++     Un `Mode granting Grant.Read`. `value.open[Form]()` sin modo lo usa; pásalo
++     explícitamente para combinarlo, como `Read & Write` o `Read & Exclusive`.
+
+@ 0 3 0 08728399fedc7c1a16134db657eba3e1
++ entry .Write   el modo que concede la escritura, sin la lectura
++     Un `Mode granting Grant.Write`. `Write` por sí solo no confiere acceso de lectura: abre
++     con `Read & Write` para obtener un descriptor que lea y escriba.
+
+% 2 1 0 1b853e0395275c421bb6b49b994a0ffa
+
+% 3 1 0 065a485fa95fe0c01b1ad37af1675c0f
+
+% 4 1 0 0c4c8e8d65f9d81a0fe95e20334da425
+
+% 5 1 0 18f6f41b31b45b9313ed7832fc71f2a2
+
+% 6 1 0 0c1abd5c66d76abb1627103c805f7547
+
+% 7 1 0 1607c66852931b5e14cdd30ef334b82e
+
+% 8 1 0 0d67c680fe95fa48001033f2e08d0d41
+
+% 9 1 0 0c361341731a59060ed87b2c6e21a9e9
+
+% 10 1 0 1b538f6a857699671db2ba0ea4870606
+
+% 0 1 0 1c638bba6223ebf012b6454e651b400d
+
+% 2 1 0 02648135ce19b4871fc91a5fdb4a7326
+
+% 0 1 0 0fbce25e81b244721e748f976dd38c35
+
+% 1 1 0 111c38e163141fe600d834184ecc4e8e
+
+@ 0 5 0 175562f7b8b1cd051969cdc8da86982e
++ entry .Exclusive   el modo que concede la exclusividad: ningún otro descriptor sobre la entidad puede estar abierto mientras tanto
++     Un `Mode granting Grant.Exclusive`, combinado con otro modo, como `Read & Exclusive`. Una
++     apertura solapada mientras dura el ámbito exclusivo falla, en cualquier orden; galilei la
++     notifica como un `Io.Error` cuyo motivo es `Busy`, y, en el caso de un fichero, además
++     toma un bloqueo del sistema operativo para que la exclusividad se mantenga frente a otros
++     procesos.
+
+@ 0 1 0 1d8258fdd239db0b119dbe97f1c96ced
++ entry .Creatable   una clase de tipos para objetivos que se pueden hacer existir, vacíos o redactados en un ámbito
+
+% 1 1 0 1d5df2f3facca3d0072e87571ff432f1
+
+@ 0 3 0 17b6a2f4648b73ea18dd3c3db9e831e8
++       La contrapartida de `Openable`, para crear en lugar de acceder. Una instancia se
++       escribe `target is Creatable in Form by Flag to Handle`, y sirve para dos clases de
++       creación con un mismo verbo:
+
+@ 0 6 0 00fb26ea002902c6108d951103e322e8
++       - **instanciación**, `path.create[Directory]()`: se hace existir el artefacto, vacío,
++         sin ámbito, y se devuelve el objetivo;
++       - **redacción con ámbito**, `path.create[Tar]() { tar ?=> … }`: el artefacto se crea y
++         se rellena mediante un descriptor que tiene las `#Grants` de la instancia —acceso de
++         escritura desde su nacimiento, ya que un artefacto recién nacido pertenece
++         incondicionalmente a quien lo crea— y se consolida cuando el bloque termina.
+
+@ 0 3 0 0fb21a8867fcd21204a164b0493dba63
++       Una excepción que escapa de un ámbito de redacción no deja nada tras de sí: las
++       instancias lo garantizan preparando el resultado en un hermano temporal y moviéndolo a su
++       sitio de forma atómica, o eliminando lo que hicieron.
+
+% 2 1 0 02256acbef042f8c14eba0795def6c6f
+
+% 3 1 0 0ed080ddf58974d20ebe309f740333aa
+
+% 4 1 0 17a16ab5b03ccd3d1d9b00002105f4fa
+
+% 5 1 0 115b7ab1c4fefc7d167a462b4c9077d7
+
+% 6 1 0 10dfb596508fe8481f97d2bec743bd0a
+
+% 7 1 0 1003ea946aa662af19c7c35668011304
+
+% 8 1 0 0438c6ff1fb6136e1f01791cb261c3ad
+
+% 9 1 0 0a44556f1cb2fba7091e09c9f18462d3
+
+% 10 1 0 1a3f570a795f3ef80fb43270f5c2142c
+
+% 0 1 0 0a62474a8951568014f48b1e17c32758
+
+% 0 1 0 0eb825bb01dcc79a09ab8a71053ac37a
+
+% 0 1 0 05ede16a3ff56b0c085535023a541aa9
+
+% 1 1 0 18fa0b1cf3ef00ad0db3d1d30662e5b4
+
+@ 0 5 0 0019d213db3dd65f150b72c80d1849d9
++       No hay `Mode`: lo que puede hacer un ámbito de creación no lo elige quien llama, y los
++       permisos con los que persiste la entrada creada son cosa de los indicadores. Crear algo que
++       puede existir ya se rige por indicadores propios de cada forma (el `CreateFlag.Replace` de
++       galilei), y la sustitución nunca es el comportamiento por defecto. Esto difiere de
++       *abrir* para escritura una entidad que puede no existir (`OpenFlag.Create`), que accede
++       a lo que haya.
+
+% 1 1 0 1d0db166e77646f61220ebf51511c362
+
+% 1 1 0 1722fab6aa214b361c0794af5f804d32
+
+% 1 1 0 04ccc16f80b4c1880859a012ff864ba9
+
+@ 0 11 0 14bcd73946fae2a200bf2415e4a4d41b
++   entry #Grants   las concesiones que lleva el descriptor de redacción, fijadas por la instancia
++   entry #make   crea el artefacto, vacío, sin ámbito
++       La implementación por defecto ejecuta `#create` con un bloque que no hace nada, lo que
++       conviene a las formas de tipo builder cuyo descriptor descartado no cuesta nada. Una
++       instancia que retiene recursos del sistema operativo la redefine para crear
++       directamente; en particular, un FIFO, que nunca debe abrirse solo para crearlo, ya que
++       abrir uno para escritura se bloquea hasta que aparece un lector.
++   entry #create   crea el artefacto y ejecuta un bloque con un descriptor para redactarlo, consolidándolo si tiene éxito
++       `create(value, flags)(block)`: el bloque recibe `(Result & Granting[Grants])^` como
++       parámetro contextual; su resultado se devuelve tras consolidar el artefacto, y una
++       excepción que surja de él no consolida nada. Lo llama `Creator#apply`; el código de
++       usuario escribe `value.create[Form](flags*) { handle ?=> … }`.
+
+@ 0 1 0 0fa0e42a6788f59c001f094b42cf50da
++ entry .Creator   el aplicador que devuelve `create[Form]`, para la instanciación o para la redacción con ámbito
+
+% 1 1 0 17170809815ed5541b68afa499097db1
+
+@ 0 3 0 1d624f5721870fb5019225cc43bfb146
++       `value.create[Form]` resuelve la instancia de `Creatable` a partir de la forma y
++       devuelve un `Creator`. Su `#apply` sobrecargado recibe solo los indicadores, para crear un
++       artefacto vacío y devolver el objetivo, o los indicadores y un bloque, para redactar el
++       contenido del artefacto.
+
+% 1 1 0 00be9566d0219d160df4740ce8c5ec3a
+
+% 1 1 0 0abf71e29b9268da0ce6dd3a10c9638f
+
+@ 0 6 0 049258e25d6d4ef8106c86f73d3ec28c
++   entry #creatable   la instancia de `Creatable` que resolvió la forma
++   entry #value   el objetivo que se va a crear
++   entry #apply   crea el objetivo vacío y lo devuelve, o lo redacta dentro de un bloque
++       `apply(flags*)` llama a `Creatable#make` y devuelve el objetivo, que ahora existe;
++       `apply(flags*)(block)` llama a `Creatable#create`, prestando al bloque un descriptor con
++       las `Grants` de la instancia, y devuelve el resultado del bloque una vez consolidado el
++       artefacto.
+
+@ 0 1 0 0bd341596f11a5740bd5dabe8b835c71
++ entry .create   crea un valor en una forma: `path.create[Directory]()`, o `path.create[Tar]() { … }`
+
+% 1 1 0 00ff1e93c30c2c20071ac91b596774db
+
+@ 0 4 0 008142c07ee96071136000de5f4fae69
++       Una extensión sobre cualquier valor con una instancia de `Creatable` en la forma
++       nombrada, que devuelve un `Creator`. Sin bloque, el artefacto se crea vacío y se
++       devuelve el objetivo; con un bloque, el artefacto se redacta mediante un descriptor y se
++       consolida cuando el bloque termina, y no llega a existir si el bloque lanza una
++       excepción.
+
+% 2 1 0 0c7014aa252c62571b47129f4ed8b8fb
+
+% 3 1 0 00909420ea410df00d8b1f1c8fad79bc
+
+% 4 1 0 194b14ec460692a809f7769b1cb60b9a
+
+% 5 1 0 1fa2e2c63a8f3fac0b9e1d926e95de37
+
+% 6 1 0 07a88e74bcdb804c1f1680a37e3ce291
+
+% 7 1 0 087994495fadb9840301ca35bd5c4533
+
+% 8 1 0 127252c1de4e75d018783762af348508
+
+% 9 1 0 0040be2b7b08200902f879796bb0a9fb
+
+% 10 1 0 14eda762bc993f130834ef84272d0d48
+
+% 12 1 0 15ef58c8309bc6151539d732c73020d7
+
+% 0 1 0 15bbc3257b9a939a1ed00fb919a2334f
+
+% 0 1 0 082c5857953407ac1b9ef7d8509fd2ca
+
+% 0 1 0 1d3f9e874ebfc5bb0bd6e769ede3abdb
+
+% 1 1 0 16cf1d88cf8b279c136bb6db6a69674e
+
+@ 0 2 0 0673ce55d143e5e10d15c3da53626ee9
++       Los indicadores son del tipo `Operand` de la instancia; los de galilei son `CreateFlag`,
++       como `CreateFlag.Parents` y `CreateFlag.Replace`.
+
+% 1 1 0 0e5b6d4e5676fa7b16b9cbd202de4169
+
+% 1 1 0 1d5fcb6b496a5b8e06c2213c339f432c
+
+@ 0 1 0 1e7688e2862d4a2f10aa5fc7d0d17d2e
++ entry .Archivable   una clase de tipos para valores cuyo contenido se puede reunir en un valor de archivo
+
+% 1 1 0 1fd4d354fb8a997c173b43178ebf6384
+
+@ 0 6 0 028eaf657646f25600cb7b9322904be1
++       Una instancia se escribe `target is Archivable in Form by Flag to Result`: la forma es
++       el formato de archivo (`Tar`, `Zip`, `Ar`), `Operand` el tipo de indicador que ajusta el
++       archivado para ese par (una convención de nombres largos, un propietario que registrar,
++       un método de compresión), y `Result` el archivo en memoria que se produce. A diferencia
++       de `Creatable`, no se escribe nada: el resultado es un valor, y adónde va —en flujo,
++       comprimido, escrito en un fichero— es el siguiente paso de quien llama.
+
+% 2 1 0 0b0f033543a1939410193d2575153a94
+
+% 3 1 0 1af20fdd953da1e8153264fc3fb413e6
+
+% 4 1 0 0fb5119d4f76b55a105d8c808c96ced5
+
+% 5 1 0 131defd8dc30964112e05e60f5374c96
+
+% 6 1 0 039fd6ac8fd6dde11c7bad95ef48a3eb
+
+% 7 1 0 0143026c9f5039700680913048e983a2
+
+% 8 1 0 1f39d21a1ba5aecf07eb6c321f85c1c3
+
+% 9 1 0 03fa2337dd1d4d49178f8ad86da15efc
+
+% 10 1 0 16bbb16d389e97ef143e3fb9260ca6b4
+
+% 0 1 0 09b9718acd263c610a2247a61caaf1ee
+
+% 0 1 0 0c33f942e6a682440273de07898d23ce
+
+% 1 1 0 111baee4d32e19620401d3251b2a943f
+
+@ 0 3 0 0815f11650ff34020881849f920a815e
++       Las instancias para directorios viven en los objetos compañeros de los tipos de formato
++       (`Tar`, `Zip`, `Ar`) y recorren el árbol mediante el backend de sistema de ficheros de
++       galilei, así que están en el ámbito implícito sin ninguna importación.
+
+% 1 1 0 19d7a20cc85aa93e0eaa42cd354598fb
+
+% 0 1 0 1156c4b2b32b3f030357c98eec790e29
+
+@ 0 3 0 1f2443cb7a08e71b1560d9a6d60d70a4
++   entry #archive   reúne el contenido de un valor, ajustado por indicadores, en el valor de archivo
++       `archive(value, flags)`: la implementación que proporciona una instancia. Lo llama
++       `Archiver#apply`; el código de usuario escribe `value.archive[Form](flags*)`.
+
+@ 0 1 0 18db20637d03a6bc01287459e6e2f4c4
++ entry .Archiver   el aplicador que devuelve `archive[Form]`, que recibe los indicadores
+
+% 1 1 0 1428577169d7a7191e60f82670d69a8b
+
+@ 0 3 0 056f4d45bb5f28c006715b464ce8ed37
++       `value.archive[Form]` resuelve la instancia de `Archivable` a partir de la forma y
++       devuelve un `Archiver`, cuyo `#apply` recibe indicadores del tipo `Operand` de la instancia
++       y devuelve el archivo. La forma es análoga a la de `Opener` y `Creator`.
+
+% 1 1 0 19a2d3fc5d718ab918151642b2ed76a0
+
+@ 0 3 0 09bb34086577ad08044e17099226319e
++   entry #archivable   la instancia de `Archivable` que resolvió la forma
++   entry #value   el valor que se va a archivar
++   entry #apply   archiva el valor con los indicadores dados y devuelve el archivo
+
+@ 0 5 0 1dbb537141c80df81f99d3e11c2c8f5a
++ entry .archive   archiva un valor en una forma: `directory.archive[Tar]()` da el tarball de un árbol
++     Una extensión sobre cualquier valor con una instancia de `Archivable` en la forma
++     nombrada, que devuelve un `Archiver` cuyo `apply` recibe indicadores del tipo `Operand` de
++     la instancia. El resultado es un valor de archivo en memoria del tipo `Result` de la
++     instancia, que la biblioteca del formato serializa o comprime a continuación.
+
+% 2 1 0 13d8266c1722fee00d9efd3be804ca6c
+
+% 3 1 0 1b817663108c1e811e4cdca5998504a5
+
+% 4 1 0 0f6a2bf17921c8cd038c9da2583adda1
+
+% 5 1 0 1f0501ae7ee55ed710e3310ec80a7c69
+
+% 6 1 0 15599115b52a406904657b08198ded15
+
+% 7 1 0 0f442417ed0d248a0b9238ed230c4187
+
+% 8 1 0 04196fae53d017dd1fadbca785dd45e2
+
+% 9 1 0 19007fd046a68d771b35d20be9c7868c
+
+% 10 1 0 0cd79e6130e722f61ec6bf4254915c86
+
+% 0 1 0 18db68f2f84aa4da024449ff0a3777c1
+
+% 0 1 0 014ee61598ffda2d087cb1ee21512fbf
+
+% 1 1 0 0ab812532b337a7f030d517004431590
+
+@ 0 1 0 0069abde5f6556b115a9c7f93765a5ed
++ entry .Sessional   una clase de tipos para objetivos que prestan una sesión viva a un bloque y la desechan después
+
+% 1 1 0 003f2da884abac4b10d89b3fd42d00e0
+
+@ 0 5 0 1a409eb8b038d1b3021412fb0c6012bb
++       Una sesión es un ámbito de interacción con estado: una conexión de red, un compilador
++       caliente, un navegador controlado a distancia, un dispositivo por SSH. Una instancia se
++       escribe `target is Sessional to Handle`; su `#session` establece la sesión con el
++       objetivo, presta el descriptor al bloque mientras dura y lo desecha cuando el bloque
++       termina, tanto si retorna como si lanza una excepción.
+
+% 2 1 0 11ddee58a470abcf1298e5d95e2b149b
+
+% 3 1 0 0f5969e1f510e18c1b5f683e1108369c
+
+% 4 1 0 0c23a9bb101a217a198a0b8d6c346639
+
+% 5 1 0 06b853619c27700f0253da452b64d0a0
+
+% 0 1 0 06a007b8ffa0770b0db2af4ea355ee02
+
+% 0 1 0 05a43c9cdd34150916596034aced282b
+
+% 0 1 0 019a06f280175d460b430c4c9402435c
+
+% 0 1 0 017964186291c5070b5fb360cd17bc7f
+
+% 1 1 0 0dc2d84fe896400f13a275bcc693410e
+
+% 1 1 0 057623fdd24f157d095b7df246edaaa6
+
+% 1 1 0 15736583e83c6f8b16e59aea011d082f
+
+@ 0 6 0 1dd547445aa8e3ac1954c7342490be16
++       El tipo de resultado del bloque se cuantifica fuera de él, así que un valor que todavía
++       tome prestada la sesión —el propio descriptor, una clausura sobre él, una respuesta que
++       llega en flujo desde la conexión viva— no puede ser su resultado; un valor
++       independiente de la sesión, como uno que se ha leído entero, sí puede serlo. Las
++       instancias en una capa de transporte (la de coaxial para cualquier endpoint
++       `Connectable`) prestan una conexión en bruto; las capas más ricas prestan descriptores
++       que conocen el protocolo, como las sesiones HTTP de telekinesis o las sesiones de
++       servidor de lenguaje de exegesis.
+
+@ 0 2 0 04b44cdd9564b02a1bea98e091dae0f4
++       Las instancias cuyo sujeto pertenece a otra biblioteca son givens de nivel superior con
++       nombres cualificados por la biblioteca, que se importan por nombre
++       (`import soundness.httpUrlSessional`).
+
+% 0 1 0 0aa2bb590f713fa21aae4aaccefd4fca
+
+% 1 1 0 1bf86935119f00c51d33232aa150c609
+
+@ 0 4 0 1949bd123dbb5a1e166e3ec76010d490
++   entry #session   establece una sesión con un objetivo, ejecuta un bloque con ella y la desecha
++       `session(target)(lambda)`: la implementación que proporciona una instancia. El
++       descriptor es el parámetro contextual de la lambda, y se desecha en todos los
++       desenlaces. El código de usuario escribe `target.session { handle ?=> … }`.
+
+@ 0 7 0 0f4f5b8fd82aa0d91a2e51a50307c415
++ entry .session   abre una sesión sobre un valor y presta su descriptor a un bloque: `url.session { s ?=> … }`
++     Una extensión sobre cualquier valor con una instancia de `Sessional` en el ámbito. El
++     descriptor —del tipo que proporcione la instancia— es el parámetro contextual del bloque,
++     y se desecha cuando el bloque termina. Un valor que tome prestada la sesión no puede ser
++     el resultado: devolver el descriptor, una clausura sobre él o una colección que lo
++     contenga, o asignarlo a una variable fuera del bloque, es un error de compilación
++     (_… outlives its scope_, _… cannot flow into capture set …_).
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 149c77db45ac644f1a74f205bbafc35a
+
+% 0 1 0 18c899fbefe1b88d0c673febf0e51517
+
+% 0 1 0 14a68bffa6b708411ac2ce37360b6c83
+
+% 0 1 0 074ab1c2dd3f8ebc031901f844a03d33
+
+% 0 1 0 024567e881f4dd0f1313a9ec1163a9df
+
+% 0 1 0 18a3d633bca8b02a07d3f001113ecfa3
+
+% 1 1 0 00313a34bc35abba13ea1fbbf70abcbd
+
+@ 0 3 0 0903cfe269e1de5614b492ceaa5f186d
++     La extensión es un método simple, no inline, y la instancia y el bloque pueden compartir
++     capacidades (un monitor, una táctica): ambos reciben sus conjuntos de captura como
++     parámetros y no como conjuntos nuevos y separados.
+
+@ 0 1 0 12cb382735b944121bc842c22c8bef8b
++ entry .Stale   un valor tal como lo vio un descriptor, sobre un estado que otros procesos pueden haber cambiado desde entonces
+
+% 1 1 0 18b8e51a95ded2e31cc3b1fd5e40063d
+
+@ 0 6 0 14fd11d4273c22cb19c1229b336616d7
++       `Stale[value]` envuelve un valor leído a través de un descriptor a partir de un estado
++       que el descriptor no posee: una referencia en un repositorio en el que escriben otros
++       procesos, el tamaño de un fichero, las entradas de un directorio. El valor es inmutable
++       y puro, pero lo que registra puede haber cambiado antes de que la lectura retornara. El
++       tipo existe para que una signatura pueda decirlo: un método que devuelve
++       `Stale[Git.Hash]` resolvió una referencia, y un método que recibe uno está condicionado a
++       que la referencia siga teniendo ese valor, y falla con un error tipado si no es así.
+
+% 2 1 0 0f9818b4fd3c2c1802136764045ff651
+
+% 3 1 0 07a9df363e5a54630a58bceae0cf7078
+
+% 4 1 0 0485889e8efa662016dcc49a8fbd0c68
+
+% 5 1 0 1a3227dd1c972459179c8c3f9299fb15
+
+% 2 1 0 0e9435e601f38dba02e2d7fbdae82035
+
+% 3 1 0 0b3f7d56208aa17a0960361fc07523a0
+
+% 4 1 0 0a2489263358c461177f04c2bad37b89
+
+% 5 1 0 04f8bd3693ed2c521d78f675eab151c5
+
+% 6 1 0 0ba1c95fb631e1a80008e0ac6a4f9a2a
+
+% 7 1 0 15a9622bdf2267b1045631b4f07c2f9c
+
+% 8 1 0 0062e075a9a992e81241b9a9a4d9e260
+
+% 0 1 0 025a8cfdc31ec73d18a4e32a66514dfc
+
+% 0 1 0 13b3145d5d77076c0a035a099314247c
+
+% 0 1 0 0ee05dbc473a135a1991c4399441c55a
+
+% 0 1 0 037c13e6234abfc90d63828638fb2299
+
+% 0 1 0 162120ac8677457a05dbdf9313bbdee9
+
+% 0 1 0 1267be16c31a610102dca42374beea2f
+
+% 1 1 0 1b46d202ca01ce5617cc7a4b19680b33
+
+@ 0 2 0 19a73a68348d71d716945dfdcc0e9fc4
++       Si otro proceso movió HEAD entre la lectura y el commit, el commit falla con
++       `Git.Error(Moved(…))` en lugar de sobrescribir ese trabajo.
+
+@ 0 3 0 0419a9507b705b721a97e3edf8ea9877
++       No hay, deliberadamente, ninguna marca de tiempo: un reloj sería una dependencia, y la
++       antigüedad no es una propiedad a partir de la que razonar. El único uso correcto de un
++       valor obsoleto es devolverlo al descriptor que lo produjo, o leer su `#value` sabiendo
++       que puede estar desactualizado.
+
+% 0 1 0 071d3ceb5e7915ed12f2868090902787
+
+@ 0 4 0 1f506d79ed00d17d112e44598e3bebb6
++   entry #value   el valor tal como era cuando se leyó
++   entry #let   deriva un valor a partir de uno obsoleto, que sigue siendo exactamente igual de obsoleto
++       `Stale(1).let(_ + 1) == Stale(2)`. Un método y no una extensión, para que el `let` de
++       vacuous sobre `Optional`, que se importa en todas partes, no reclame el receptor.

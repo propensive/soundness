@@ -1,0 +1,793 @@
+orthant 2 language
+
+@ 0 1 0 078d39ffe598271e087f34120d0fcd54
++ ## Ableitung
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 7 0 129e13b7f0bf874a1a39c104df77e6f7
++ Die abgeleiteten Codecs, die überall in diesen Bibliotheken vorkommen, etwa [JSON](json.md)-Encoder
++ aus Case-Klassen, [CSV](csv.md)-Zeilen aus Feldern und Hashwerte aus Strukturen, werden alle von
++ einer einzigen Ableitungs-Engine erzeugt. Sie generiert eine Instanz einer [Typklasse] für
++ jedes *Produkt*, also eine Case-Klasse, deren Instanz die ihrer Felder kombiniert, oder jedes
++ *Koprodukt*, also eine [Aufzählung] oder einen versiegelten Trait, deren Instanz anhand
++ der Variante verteilt. Wer eine Typklasse schreibt, formuliert die beiden Kombinationsregeln
++ einmal, und jeder benutzerdefinierte Typ erhält kostenlos eine Instanz.
+
+@ 0 3 0 02872111f72cbbad1ae4208445651f12
++ Für Verwender einer Typklasse ist die [Ableitung] unsichtbar. Eine Case-Klasse zu
++ definieren, genügt. Für den Autor einer Typklasse sind es zwei Methoden: eine, die sagt, wie Felder
++ sich kombinieren, und eine, die sagt, wie Varianten unterschieden werden.
+
+@ 0 1 0 13da955ebeb416e9156cce727676ff67
++ ### Über Ableitung
+
+@ 0 5 0 04e22dc122332dbf04ca44842896f1f0
++ Die Instanzen der meisten Typklassen über den meisten Datentypen sind mechanisch. Ein `Show` für
++ eine Case-Klasse zeigt jedes Feld. Ein `Eq` vergleicht jedes Feld. Ein JSON-Encoder kodiert jedes
++ Feld unter seinem Namen. Sie von Hand zu schreiben, ist Boilerplate, die auseinanderdriftet. Für
++ jede Typklasse ein Makro zu schreiben, verlangt Fachwissen, das die meisten Bibliotheken nicht
++ haben. Gewünscht ist eine Formulierung der beiden allgemeinen Regeln, dass Produkte kombinieren und
++ Koprodukte wählen, aus der jede konkrete Instanz folgt.
+
+@ 0 3 0 0c763521cf1daacb16ffff82de3f218f
++ Die Engine hier, der Nachfolger von Magnolia, liefert genau das, als gewöhnliche Vererbung und
++ nicht als Makroschreiben. Ableitung ist das, was [kleine APIs](../../philosophy/small-apis.md)
++ möglich macht: Eine Typklasse braucht zwei Regeln, nicht eine Instanz für jeden Typ.
+
+@ 0 3 0 13ace7eeb6e5bc951b470519303cc725
++ Alles kommt aus dem Paket `soundness`. Der zweite Import holt das `label` eines Feldes herein,
++ dessen Namen das Umbrella mit dem eines Browser-Elements teilt. Der dritte erlaubt das Indizieren
++ der Arrays von Feldern, die eine Ableitung erzeugt, und der vierte wählt eine [Strategie]
++ für Fehler:
+
+% 2 1 0 1fae809b3ff69e6310c7614153ed674f
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0f222d90cb9ae22d0bb3b3b92f61fc75
+
+% 0 1 0 065602687d307d73103e811667609571
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 2 0 1f317c8fe50bb8781174a0a35767610c
++ Die Beispiele auf dieser Seite werden von einem kompilierten Test in der Bibliothek geprüft,
++ `wisteria_doccheck.scala`. Sie werden hier nicht ausgeführt.
+
+@ 0 1 0 19951c500d2f74f60b5f8bd5022f72ca
++ ### Produkte, Summen und Typklassen
+
+@ 0 1 0 1c21e16922f0a2a10d580237361b33b7
++ Zwei Wörter tragen das meiste Gewicht, *Produkt* und *Summe*:
+
+% 2 1 0 0ff134c08f7da7ef0ba339cd117b5234
+
+@ 0 6 0 0976b55c9694ed86176fc1e692992c39
++ column  Art
++ column  Ein Typ, der ist
++ column  Zum Beispiel
++ column  Besteht aus
++ row  Produkt  eine feste Folge von Werten anderer Typen  eine Case-Klasse, ein Aufzählungsfall, ein Tupel, ein Singleton  *Feldern*
++ row  Summe  eine einzelne Wahl aus einer festen Menge disjunkter Typen  eine Aufzählung, ein versiegelter Trait  *Varianten*
+
+% 1 1 0 00e84d41ff740c4810f536f0c8de0e6c
+
+@ 0 2 0 185bae055e7355931ae0057f6cebad5a
++ Die Felder eines Produkts haben feste Typen, eine kanonische Reihenfolge und Bezeichnungen.
++ Produkte und Summen sind kategorientheoretisch dual, und entsprechend sind es auch Felder und
++ Varianten.
+
+% 2 1 0 0fbdce7147dce29b08a1a35236110f83
+
+% 0 1 0 00cddb461ef03cfe0b4951203772e1c8
+
+% 0 1 0 1891d01767329f8c028043f3d88b26b0
+
+% 0 1 0 0a2ee9eaac26da48036e4d94794100b1
+
+% 0 1 0 084a27c170ddc53f1de429c2bc8efca4
+
+% 0 1 0 0f1372a54aa025e11b4f976597c7f47c
+
+% 0 1 0 0a3a1ed0cc27ec640502781a811553d4
+
+% 1 1 0 14079e73180231960d6aee1d6ac3086a
+
+@ 0 3 0 1f72dd0e3ce142a311857691e9020a04
++ Hier ist `Temporal` eine Summe, deren Varianten `Date` und `DateTime` sind. `Date`, `Time` und
++ `DateTime` sind Produkte, und `day`, `month` und `year` sind die Felder von `Date`. `Month` ist
++ eine Summe, deren zwölf Varianten selbst Produkte sind: Singletons, also Produkte ohne Felder.
+
+@ 0 5 0 0da86cfe5000674111ddc8c9f3afb20c
++ Typklassen teilen sich entlang einer verwandten Linie. Wo der Typparameter im *Rückgabetyp* der
++ abstrakten Methode erscheint, ist die Typklasse ein *Produzent*. Sie erzeugt neue Instanzen dieses
++ Typs und darf kovariant sein. Wo der Parameter in den *Parametern* der Methode erscheint, ist die
++ Typklasse ein *Konsument*. Bestehende Instanzen werden ihr übergeben, und sie darf kontravariant
++ sein. Nichts wird verbraucht. Das Wort sagt nur, in welche Richtung der Wert reist:
+
+% 2 1 0 1d1e5b246fad8fbf154f73ad4ddb4635
+
+% 0 1 0 1947713d711de50e1d0ce906682bf8ad
+
+% 1 1 0 170786eb51f77d7e04b5abd8e2a8ce73
+
+% 0 1 0 1d8f97a86842d4ff0765129e6e98a73c
+
+% 0 1 0 11ef007aa88b074a0a2b611342f486f4
+
+% 1 1 0 1116f3a723f98fbc06a2ca9fc319c5c7
+
+@ 0 2 0 1afd5e3e9c467398097357192f2ba933
++ Die Unterscheidung ist wichtig, weil die beiden unterschiedlich abgeleitet werden. Ein Konsument
++ faltet über die Felder eines Werts, den er bekommen hat. Ein Produzent hat keinen Wert, über den er
++ falten könnte, und muss einen bauen.
+
+@ 0 1 0 07690399cba00d300da069ef15bb9393
++ ### Instanzen einer Typklasse ableiten
+
+@ 0 4 0 053f67396c5588221e5fdfc4db5344d6
++ Eine Typklasse erhält Ableitung, indem sie `Derivation` erweitert, oder `ProductDerivation`, wo
++ nur Case-Klassen sinnvoll sind, und `conjunction` für Produkte und `disjunction` für Koprodukte
++ implementiert. Hier ist eine Show-ähnliche Typklasse vollständig, mit der Erweiterungsmethode, die
++ den Aufruf bequem macht:
+
+% 2 1 0 00605460fcbe600218a26ec9bf12f339
+
+% 0 1 0 05a7a9f9eba8976a07a373a02a35bb8d
+
+% 1 1 0 0cf4362be643988008597cfd2da751d9
+
+% 0 1 0 0bd2bfb3b203cee21f1ee633876c9a9c
+
+% 0 1 0 1432a907607f5822186d1f169b72997f
+
+% 0 1 0 156a6647c3ae68de0c832c1eac00ec29
+
+% 0 1 0 031c5847b77b26051df1cb5c97c0d195
+
+% 1 1 0 1c8888c8504467e001246cd45b233c99
+
+% 0 1 0 15e7cbac4fdfd12b0b84b2193320fe9c
+
+% 0 1 0 0c944b30404a0b1a1c37acd3eeed07cf
+
+% 0 1 0 1445d07492b5a8681287c34d7a3f28ca
+
+% 0 1 0 053c054ae420d55905b149bc80219921
+
+% 1 1 0 0416364f6847bc840cab01b43189b710
+
+% 1 1 0 13ac8b59f287ad0a0d3a438331b2efd5
+
+% 0 1 0 0b82098b329f29a31e26274be1a90d31
+
+% 2 1 0 14fd4019417d651f0a5382a277ac585f
+
+% 0 1 0 0b7f81916698dab901f74a5413f0e99e
+
+% 1 1 0 1ef3043076d7dd611239d676374be041
+
+@ 0 3 0 09bc2814fe93408e173077d5ddb0b075
++ `fields` faltet über die Felder eines Produkts und gibt jedem sein `label`, seine Position und die
++ `contextual`-Instanz der Typklasse für seinen Typ. `variant` verteilt anhand des tatsächlichen
++ Falls eines Koprodukts. Das sind die gesamten Kosten der Ableitung für eine Typklasse.
+
+@ 0 2 0 1d6f72d53b08cec11a41c4a352dc7b8f
++ `fields` und `variant` sind zwei aus einer kleinen Menge von Primitiven, die die folgenden
++ Abschnitte nacheinander vorstellen:
+
+% 2 1 0 09f2bf8563707d7514056cd23c3d595d
+
+@ 0 15 0 08c85d1389daa4d2014554aab22f680f
++ column  Primitiv
++ column  Verwendet in
++ column  Tut
++ row  `fields(value)`  `conjunction`  faltet über die Felder eines Produkts, mit ihren Werten
++ row  `contexts[derivation]()`  `conjunction`  faltet über die Felder eines Produkts, ohne vorliegenden Wert
++ row  `build[derivation]`  `conjunction`  konstruiert ein Produkt aus einem Wert für jedes Feld
++ row  `construct`  `conjunction`  konstruiert ein Produkt innerhalb eines Typkonstruktors, gegeben dessen `pure` und `bind`
++ row  `dereference`  einem `contexts`-Lambda  extrahiert das aktuelle Feld aus einem Produkt
++ row  `variant(value)`  `disjunction`  verteilt anhand der Variante eines Werts
++ row  `delegate[derivation](label)`  `disjunction`  verteilt an die Variante, die eine Bezeichnung nennt
++ row  `complement(other)`  einem `variant`-Lambda  verengt einen anderen Wert auf dieselbe Variante, als `Optional`
++ row  `choice[derivation]`  `disjunction`  sagt beim Kompilieren, ob jede Variante ein Singleton ist
++ row  `choices[derivation]`  `disjunction`  faltet über jede Variante, ohne vorliegenden Wert
++ row  `singleton[derivation](label)`  `disjunction`  liefert das Singleton, das eine Bezeichnung nennt
++ row  `variantLabels[derivation]`  `disjunction`  listet die Bezeichnungen der Varianten auf
+
+% 1 1 0 01b3e12ab88ee0f701bfeaf2a10a1bda
+
+@ 0 4 0 01aa9a29cfbf29bb0b42d238d2b6bd0a
++ Die Syntax `[field] => field => …` ist ein *polymorphes Lambda*, und es lohnt einen Moment, weil es
++ das einzige ungewohnte Stück ist. Es verhält sich zu einer polymorphen Methode genau wie ein
++ gewöhnliches Lambda zu einer gewöhnlichen. Wo das Lambda für `def transform(field: Field): Text`
++ `Field => Text` ist, ist das Lambda für `def transform[field](field: field): Text`
+
+% 0 1 0 09ae401f70e24fd41c9d76ea5f752bd7
+
+@ 0 6 0 0a27705dc9cf7a0b021af1c9442f122f
++ Es wird gebraucht, weil jedes Feld einen anderen Typ hat und der Rumpf über diese Typen überhaupt
++ nichts weiß, außer dem einen, worauf es ankommt: dass zwei Vorkommen von `field` *denselben* Typ
++ bezeichnen. Das genügt, denn es bedeutet, dass die neben dem Feld gelieferte `contextual`-Instanz
++ eine `Presentation[field]` für genau den Typ dieses Feldes ist und daher darauf angewandt werden
++ kann. Der Rumpf einer Ableitung hat keinen anderen Weg, mit einem Wert etwas zu tun, dessen Typ er
++ nicht sehen kann. Deshalb sorgt Parametrizität auch dafür, dass sich diese Rümpfe fast von selbst
++ schreiben.
+
+@ 0 3 0 051e4ac83ca8a3510651448cd22fe5e7
++ `contexts` ist dieselbe Faltung ohne einen Wert, über den gefaltet wird, und liefert nur die
++ Typklasseninstanz jedes Feldes. `typeName`, `tuple` und `singleton` beschreiben das Produkt, für
++ das abgeleitet wird, sodass eine Ableitung bei einem Tupel den Typnamen weglassen kann oder bei
++ einem Singleton die Klammern.
+
+@ 0 1 0 10a122cb0ffecd8d1a70b45c925ae828
++ ### Eine abgeleitete Instanz verwenden
+
+@ 0 2 0 064257bc5a5a80d10c3f4ddf8f15091e
++ Mit dem obigen Objekt im Geltungsbereich hat jede Case-Klasse oder Aufzählung eine
++ `Presentation`. Sie wird automatisch aufgelöst oder explizit mit einer `derives`-Klausel
++ angefordert:
+
+% 2 1 0 0ef82e36d14deadc14ff67f7c1ff50d3
+
+% 3 1 0 05c90970037e27fb0fc52935d3581e2c
+
+% 4 1 0 184079d7748eee6014722571e53dba57
+
+% 0 1 0 0f1038dcf87704011ae3a2fea0beb612
+
+% 0 1 0 1bab9f09487bda041dccb37986adab09
+
+% 1 1 0 04bd0b1fc227a1e104476c4a9db8c685
+
+@ 0 2 0 0bdc701749d8ef1617c2165685491efd
++ Hier ist `presented` gleich `t"Person(name=Hamlet, age=30)"`. Verschachtelte Strukturen werden
++ rekursiv abgeleitet. Eine Case-Klasse aus Case-Klassen braucht nichts weiter.
+
+@ 0 1 0 0cbf8985499bd96304d11ba3310dc8f2
++ ### Was eine Ableitung sehen kann
+
+@ 0 2 0 05e1736083815be505d32154d2bbbcca
++ Innerhalb von `conjunction` trägt jedes Feld mehr als seinen Wert, und auch der Typ, für den
++ abgeleitet wird, lässt sich beschreiben:
+
+% 2 1 0 1123dbde5dd67b7f18fd349b830b1bc7
+
+@ 0 10 0 170e4de23917ac0609aa1e46739d7607
++ column  Wert
++ column  Verfügbar in
++ column  Liefert
++ row  `label`  dem Lambda jedes Primitivs, das Felder oder Varianten besucht  den Namen des Feldes oder der Variante, wie geschrieben
++ row  `index`  dem Lambda jedes Primitivs, das Felder oder Varianten besucht  seine Position
++ row  `contextual`  dem Lambda jedes Primitivs, das Felder oder Varianten besucht  die Instanz der Typklasse für seinen Typ
++ row  `default`  den Lambdas von `fields`, `contexts`, `build` und `construct`  die deklarierte Vorgabe des Feldes oder `Unset`
++ row  `typeName[derivation]`  einer Ableitung  den Namen des Typs, für den abgeleitet wird
++ row  `tuple[derivation]`  einer Ableitung  ob dieser Typ ein Tupel ist
++ row  `singleton[derivation]`  einer Ableitung  ob dieser Typ ein Singleton ist
+
+% 1 1 0 19b0664d1adeab0b16d8c47a93b7f8e0
+
+@ 0 5 0 034e97a92f72fd9f1e35a26f75a24358
++ Eine Ableitung kann daher etwas erzeugen, das die Struktur erwähnt, und nicht nur etwas, das über
++ sie faltet. Hier erzeugt sie über `contexts` die Bezeichnungen der Felder eines Produkts, ohne
++ vorliegenden Wert. Da die Ableitung die Instanzen der Felder eines Produkts komponiert, braucht
++ jeder Feldtyp eine, auch wo sie trivial ist, wie bei den Bezeichnungen eines `Text` oder eines
++ `Int`, die keine haben:
+
+% 2 1 0 14090825326366a00bd12389b6641e88
+
+% 3 1 0 084059c4416cbac21dd35bba75f49664
+
+% 4 1 0 00e9312e07146e0019a32de30bf9e28e
+
+% 0 1 0 1128c1bb43fb92f6116926a230161844
+
+% 0 1 0 0c2778e19afdae7705ea53bb13ed141e
+
+% 0 1 0 0264a5b24b1b33e117bb044dfc92976c
+
+% 0 1 0 00a0c32aa7b174de0d63f43baec3b72a
+
+% 0 1 0 1fe86e8c122a8a02080643cc196b01bb
+
+% 0 1 0 0e4dc1c716e9764101b9e2f9adb76014
+
+% 0 1 0 0a133700ca1b63bf1f58014378a8dedc
+
+% 0 1 0 1d641ad51e1829090d8b406ab3c2775b
+
+% 0 1 0 1b646e1851b1a04e07e9037c4977bb6b
+
+% 0 1 0 16f3a4c806c68aff1cf518168136804e
+
+% 0 1 0 0168110163e3ff4f009c33f665016d07
+
+% 0 1 0 1b3466dfbba8dc9a011aa5ccfc235520
+
+% 1 1 0 1c8552557689031717b262ba2d4e5e65
+
+@ 0 4 0 0b123b0ba73b6430143ee33167406fa5
++ `Labels.derived[Person].labels` ist `List(t"name", t"age")`, und `Labels.derived[Empty].labels`
++ ist die leere Liste. Ein leeres Produkt ist ein Produkt ohne Felder, und ein Produkt mit einem
++ einzigen Feld ist kein Sonderfall. Beide werden aus derselben Regel abgeleitet, und genau hier
++ gehen handgeschriebene Instanzen gewöhnlich schief.
+
+@ 0 2 0 09240facfea25c7d0bff713e1969e915
++ Innerhalb von `disjunction` verengt `variant` den Wert auf seinen tatsächlichen Fall, sodass der
++ Rumpf bei diesem Fall typisiert ist statt bei der Summe, und die eigene Bezeichnung des Falls steht
++ für einen Diskriminator zur Verfügung.
+
+@ 0 1 0 0bbeee57432607f212d23a7f482be1c9
++ ### Einen Wert erzeugen statt einen zu konsumieren
+
+@ 0 4 0 0b78d71e33419b6c00d8323d306bc016
++ Ein Produzent hat keine Instanz, über die er falten könnte, daher verwendet er statt `fields`
++ `build`, das eine neue Instanz des Produkts konstruiert. Sein Lambda erhält die Typklasseninstanz
++ für jedes Feld, das Einzige, was einen Wert eines Typs erzeugen kann, den der Rumpf nicht sehen
++ kann, und gibt den Wert dieses Feldes zurück. Hier ist ein Parser für kommagetrennte Felder,
++ vollständig:
+
+% 2 1 0 1b78d63700cb29ad0ab61ef656199b7c
+
+% 3 1 0 1d7edf66d4091325021bccf5b8f74570
+
+% 4 1 0 1b00514bd37d40b40b9cbd9285e6ca43
+
+% 0 1 0 0a908368cad7135a0232db50cb41375f
+
+% 0 1 0 02c3a84a2c58f8401699b5fabe751559
+
+% 0 1 0 16b176e6c4bf9f4e024194f937a20ede
+
+% 0 1 0 052a0f183375453e1190562388ca9191
+
+% 0 1 0 124c597ee9dbcf2917d60aab8c8896d4
+
+% 1 1 0 00ead7af0f3cf6e919ba3682ddc7093e
+
+% 1 1 0 1898a724b20b95e91fb78006674f8e0a
+
+% 0 1 0 13efe12eb3006853194e86f611fd98c9
+
+% 0 1 0 0aebc90b9474becb14efbe3c3f7b89e4
+
+% 0 1 0 059e4f9eb36325ef0485ed1e0cc0b975
+
+% 0 1 0 19de638f40ca6efa01218be3aa34d0ce
+
+% 1 1 0 090597856788be991e455c9b3e829c03
+
+@ 0 3 0 084f7b943600993419ea09c7493bb346
++ `Parsing.derived[Person].parse(t"Hamlet,30")` ist `Person(t"Hamlet", 30)`. `Parsing` ist eine
++ eigene Typklasse und nicht das `Readable`, nach dem `read` sucht, daher kompiliert
++ `t"Hamlet,30".read[Person]` nicht. Ihre Instanzen werden über `derived` erreicht.
+
+@ 0 4 0 060ece4aa4073c140b678eb1996a8c7d
++ Das Gegenstück für Summen ist `delegate`, das die Bezeichnung der zu bauenden Variante nimmt und an
++ die Instanz dieser Variante verteilt. `variant` kann die Antwort von einem Wert ablesen, den es
++ bekommen hat. `delegate` wird gesagt, welche Variante es erzeugen soll, daher kommt die Bezeichnung
++ gewöhnlich aus der Eingabe, hier ein Präfix `Date:` oder `DateTime:`. Eine Bezeichnung, die keine
++ Variante nennt, löst einen `Variant.Error` aus:
+
+% 2 1 0 04837da082bf28090b2d41a10b07fc66
+
+% 3 1 0 00ec81263d74598805a4c71fd7819d95
+
+% 4 1 0 175381fa5b009a77023721815dbc4478
+
+% 0 1 0 1430ba7b863ae10118bae5f44a91adae
+
+% 1 1 0 180197c6db0b1238017272bc966f5df8
+
+% 0 1 0 0cca3f709f8849db17555619152063f8
+
+% 0 1 0 0375c71c173bcc831a7aca760fb27b0d
+
+% 1 1 0 0197ea8e285fc7741e336a980b66fd1f
+
+% 0 1 0 1d6e03ed1cc391b1060bc9d2d7e186ae
+
+% 0 1 0 01b3d00947807eac06fe7e399146f8b8
+
+% 0 1 0 103a182768afd3690793ec87d0524373
+
+% 0 1 0 0741241eb125a36f15ddf9556ea21498
+
+% 1 1 0 0b8d6f59806d4c5007b391b148f7ece3
+
+@ 0 3 0 03f98c56f274d2340173c9afc47bfa93
++ Wo der erzeugte Wert in einen Typkonstruktor gehüllt ist, wie bei einem Parser, der ein `Optional`
++ zurückgibt, oder einem Decoder, der ein `Attempt` zurückgibt, nimmt `construct` die polymorphen
++ Operationen `pure` und `bind` für diesen Konstruktor und fädelt die Felder hindurch.
+
+@ 0 1 0 0e7c45ae36d22aff1e6dab93969b8d26
++ ### Typklassen über zwei Werten
+
+@ 0 5 0 11f78fb857a1f67303a00198f9e089dc
++ Manche Typklassen nehmen zwei Werte desselben Typs. Eine Äquivalenz ist das offensichtliche
++ Beispiel. Über die Felder des linken Werts zu falten, ist leicht. Das entsprechende Feld des
++ rechten Werts ist das Problem. Es von Hand zu tun, hieße, parallele Arrays aus linken Feldern,
++ rechten Feldern und Instanzen zu bauen, und in dem Moment, in dem diese Werte von dem Lambda
++ getrennt werden, das sie typisiert hat, werden ihre Typen gelöscht, und nur Casts fügen sie
++ wieder zusammen.
+
+@ 0 6 0 056870ba7fd827e4147a708e007990e8
++ `dereference` und `complement` vermeiden das. Innerhalb von `contexts` ist `dereference` eine
++ Funktion vom Produkt auf das aktuelle Feld, typisiert mit dem Typ dieses Feldes, sodass dasselbe
++ Feld aus *beiden* Werten herausgezogen und der einen `contextual`-Instanz übergeben werden kann.
++ Für Summen erledigt `complement` die entsprechende Aufgabe innerhalb von `variant`. Es holt den
++ anderen Wert, verengt auf denselben Fall. Es gibt ein [`Optional`](optional-values.md) zurück, da
++ die beiden Werte nicht dieselbe Variante sein müssen, und wenn sie es nicht sind, gibt es keinen
++ sinnvoll typisierten Wert, der zurückgegeben werden könnte:
+
+% 2 1 0 1891740d8018e56d014630dddace9814
+
+% 3 1 0 1d18dd74af370f2f0aace9c53f33c1ca
+
+% 4 1 0 13ffae21194ad797001df2a7a9a8ba2c
+
+% 0 1 0 1d7d609f112ab4ec069d87a38a9a2239
+
+% 0 1 0 0b87a6e35561e8110710d6f6c5a43f19
+
+% 0 1 0 0e2fa0afe27e69f310320942a7e7c84f
+
+% 0 1 0 016d43139bfa741a18219f2adc4f5317
+
+% 0 1 0 1376b369cbd3b0d41348797e29764cdb
+
+% 0 1 0 09ec8a96b14f09c21850a828263eb794
+
+% 1 1 0 1d98724717e4421818010738edddd818
+
+% 0 1 0 0f6543aa0e7613ba0afe444df9033b31
+
+% 0 1 0 08e1a0de6ce03d8d0a81d9b01ce6edfb
+
+% 0 1 0 10e7ed485659c224067cd7946e217708
+
+% 0 1 0 13de8ad1dd6a37180cdaff5ffa6459a9
+
+% 0 1 0 1d2b07bc3514219b15749164b3a07184
+
+% 0 1 0 0e034489cce1667c13430e9d32cb27d4
+
+% 1 1 0 0fd6a658b6c7b8100964dbeb3dce7fa4
+
+% 0 1 0 1fc546e73cc33c361132750f14ccde60
+
+% 0 1 0 167ded4573a4e03f1e0c39da9f60ae72
+
+% 0 1 0 0c5c33f12a814fb71b1661a4955ec384
+
+% 0 1 0 0159bc42ad913a540af8899dd8402431
+
+% 1 1 0 070973e29b53f06903008b4f412c6dda
+
+@ 0 3 0 110bb90d8b88ab6e0cc7b0f924e2c705
++ `Equivalence.derived[Person].equal(Person(t"Hamlet", 30), Person(t"HAMLET", 30))` ist `true`, da
++ die Instanz für `Text` die Groß-/Kleinschreibung ignoriert. Verschiedene Varianten sind ungleich.
++ Dieselbe Variante wird über die Instanz verglichen, die beide teilen.
+
+@ 0 1 0 0435ef359a541fe40f86291d15815a38
++ ### Aufzählungen aus Singletons
+
+@ 0 4 0 05b5d63091ed01661d861680e253c2fc
++ Eine Aufzählung, deren Fälle alle Singletons sind, ist eine reine Wahl zwischen Namen, ohne Daten,
++ und sie unterstützt Dinge, die eine allgemeine Summe nicht unterstützt. `choice` meldet zur
++ [Kompilierzeit], ob das der Fall ist, sodass eine Ableitung sich auf solche Aufzählungen
++ beschränken und den Rest mit einer eigenen Meldung zurückweisen kann:
+
+% 2 1 0 0017346e3796d9cc19ff3ca9b41ec5d8
+
+% 0 1 0 067316cc8cea139712bc03ca4ff03ac6
+
+% 0 1 0 19ee1d525fd825f201fd60426eb58323
+
+% 0 1 0 1a4e400ff13db9df18e9f67ce37d045e
+
+% 0 1 0 19a8c4fa3d8b48101fc4f3e4a950333e
+
+% 0 1 0 185dcf79e29f13dc03730982932703ce
+
+% 0 1 0 11eed12a18b9aa0f057a9cb30be0ca8f
+
+% 0 1 0 0a1e4e894b9b24a40de869610fb6729f
+
+% 1 1 0 13c9616c235fc44b0939724b96bf6d97
+
+% 0 1 0 1ac2eabfa14b4cd80ee2d37e1f827fe0
+
+% 0 1 0 1095b21144d5594d0f0bbb99c61cf1cd
+
+% 0 1 0 104ee0147cf138be1a9a28db47457ee8
+
+% 1 1 0 199bd127ba62fc6105635e7de854b8b0
+
+@ 0 3 0 043742d3e52be35e0cece53dd30cd011
++ `Naming.derived[Month].name(Month.Mar)` ist `t"Month.Mar"`. Das `inline if` ist entscheidend. Es
++ erzwingt, dass `choice` beim Kompilieren ausgewertet wird, sodass der Zweig mit
++ `scala.compiletime.error` entweder entfernt oder erreicht wird, und ihn zu erreichen, lässt den
++ Build scheitern.
+
+@ 0 4 0 131b3d0e317a59c319b721a957edc6b6
++ Für eine solche Aufzählung verwandelt `singleton` eine Bezeichnung zurück in den Wert, den sie
++ nennt, `variantLabels` listet die Bezeichnungen auf, und `choices` faltet über jede Variante, ohne
++ einen Wert zu brauchen, anhand dessen verteilt wird. Genau das braucht eine Ableitung, die ein
++ *Schema* statt einer Instanz erzeugt.
+
+@ 0 1 0 062e0f77a85b372f021198926dae0ef4
++ ### Vorgabewerte von Feldern
+
+@ 0 5 0 1cc3bc51cd7ab8d10aac67867efff3f8
++ Eine Case-Klasse kann ihren Feldern Vorgabewerte geben, und ein Decoder will sie gewöhnlich. Ein
++ Feld, das in der Eingabe fehlt, soll die Vorgabe annehmen, die der Autor geschrieben hat, und nicht
++ scheitern. Innerhalb der Lambdas von `fields`, `contexts` und `build` steht ein kontextuelles
++ `Default[Optional[field]]` zur Verfügung, und der Aufruf von `default` liefert ein
++ `Optional[field]`: die deklarierte Vorgabe oder `Unset`, wo das Feld keine hat. Hier ist ein
++ Parser, der fehlende nachgestellte Spalten toleriert:
+
+% 2 1 0 1465f703cf8aa8da09c549b39f547f73
+
+% 3 1 0 12b3240be882ff20182b1b06ac50d277
+
+% 1 1 0 11fbab526cc88d1908b66312e2428bc1
+
+@ 0 1 0 0d589d77ccf3fcc90dc3983d982d3558
++   label Jede Spalte muss vorhanden sein
+
+% 1 1 0 1bc16c3c28c9c1cc1ddd0084e8d0f9c8
+
+% 0 1 0 0eb23f017f3667730d0ae6db60a28948
+
+% 1 1 0 039120970543f2cd0fc88a2552995cc8
+
+% 2 1 0 1627edef7985fc010f2914046a4a4ea0
+
+% 4 1 0 0f350bc64db2fbf5117f8b21c12e3c97
+
+% 5 1 0 08c0ea4b7c013a8411c8886e026725b7
+
+% 6 1 0 157860b7844ca0840a4255edc6872fba
+
+% 7 1 0 1e33f7ad12cd527a1b91bb699732582b
+
+% 0 1 0 1cc4f93273b759961610bef56f39dc95
+
+% 1 1 0 1f1fb43e54e0ba7f012801bd7cf99ca9
+
+@ 0 1 0 0b353a7f269d6fae15695d4b2731dc3e
++   label Eine fehlende Spalte nimmt die Vorgabe des Feldes an
+
+% 1 1 0 05678e5a5a6211a313b76a6591654c48
+
+% 0 1 0 1ce773d30838b8e411527c6cb31ea08e
+
+% 1 1 0 11e0e50aca6c3b001f96c65979cd2432
+
+% 2 1 0 00ca732ffb1c9f281287a84e0adf2cf1
+
+% 4 1 0 1c65a588078c3ebc0fcba6e38a6c5b7a
+
+% 5 1 0 1fe16c5c027e46bd0a30453a65832f5b
+
+% 6 1 0 12c8980cab55bd9c02a74ec56acf07d4
+
+% 7 1 0 1e304b9b2a13e4401627f076bf52cea9
+
+% 0 1 0 000063c7414ce2ba0cf79a677d87b774
+
+% 0 1 0 1511963bf68eb96905febe9cd157ca5f
+
+% 0 1 0 0f8180e7e2a3367d1650ff2e372b7ce0
+
+% 0 1 0 09218bac97ece4f0059f433571942c76
+
+% 0 1 0 1294acccdf035114113d954a59a4bf98
+
+% 1 1 0 0df9b80d699822271a77c903299355f6
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 1 0 1c9fffa602f48ffa0eb9d5d6dbe810b3
++ `LenientParsing.derived[Settings].parse(t"primary")` ist `Settings(t"primary", 3)`.
+
+@ 0 1 0 182e98668116a9490f563bd794b5b67f
++ ### Ableitung jenseits von Codecs
+
+@ 0 3 0 01b134780964f7741904f0aa88cd5179
++ Nichts an der Engine ist spezifisch für das Kodieren. Jede Typklasse, deren Instanzen sich
++ strukturell komponieren, wird auf dieselbe Weise abgeleitet, einschließlich der arithmetischen,
++ die zwei Werte eines Produkts Feld für Feld kombinieren:
+
+% 2 1 0 0d3511bdb1c5aea41509d7cafe956194
+
+% 0 1 0 077c50034f1d0a3409e40e87dc9b5bda
+
+% 0 1 0 1b8d3012606ff7951fab82ee87a98c1f
+
+% 0 1 0 048d1df099ce34b71fe81d2e378f9b7a
+
+% 1 1 0 0d17dad0236d4bf105767689620ff59d
+
+@ 0 3 0 10f67e29b15e633512081cd7e6439318
++ Hier ist `sum` gleich `Pair(t"Rosencrantz", 25)`. Addition auf `Pair` ist Addition auf jedem Feld,
++ sodass `Text` verkettet, während `Int` summiert, und für `Pair` überhaupt keine Instanz geschrieben
++ wird. `Subtractable`, `Multiplicable` und ihre Geschwister folgen derselben Regel.
+
+@ 0 1 0 1e8f7bd676b06afc043047efad45f3f1
++ ### Wenn die Ableitung scheitert
+
+@ 0 5 0 0872badad6651b671664ac3e20ad241a
++ Eine Typklasse kann sinnvollerweise für Produkte, aber nicht für Koprodukte abgeleitet werden, oder
++ umgekehrt. `ProductDerivation` statt `Derivation` zu erweitern, sagt das, und sie auf einen
++ Summentyp anzuwenden, ist dann ein Kompilierfehler, der die Abweichung benennt, und keine
++ Überraschung zur [Laufzeit]. Ein Typ ganz ohne `Mirror`, etwa ein gewöhnlicher Trait oder eine
++ Klasse, die keine Case-Klasse ist, scheitert ebenso an der Stelle der Ableitung, wo die Meldung
++ sagen kann, was fehlt.
+
+@ 0 1 0 1126a41ad3edb2a60d339386c12d5209
++ Drei Fehlschläge sind häufig genug, um sie zu benennen:
+
+% 2 1 0 010c74de0f039c1f02a18a3f1ae2fcc2
+
+% 0 1 0 1915b483a6e027a3027a5bc40a3b36f7
+
+@ 0 5 0 03d049198c63259609e5b555b9926e7d
++ column  Übliche Ursache
++ column  Lösung
++ row  eine lange Meldung, die mit "given instance derived in trait Derivation does not match type…" endet  die Typvariable eines polymorphen Lambdas hat keine obere Schranke  `[variant <: derivation]` schreiben, nicht `[variant]`
++ row  eine Typabweichung gegenüber `Product`  dem Typparameter von `conjunction` fehlt seine Schranke  `<: Product` hinzufügen
++ row  keine Instanz gefunden für einen Typ, dessen Felder in Ordnung aussehen  einem *dieser* Felder fehlt eine Instanz  einen expliziten Aufruf von `derived` kompilieren, der sagt, welchem
+
+% 1 1 0 15dcd635dd10d80d100e3e25f1ae4710
+
+@ 0 3 0 05abf72563ce9523178758ae37827467
++ Ein rekursiver Typ ist ein Sonderfall. Er kann nicht an Ort und Stelle abgeleitet werden, weil die
++ Ableitung sich auf halbem Weg selbst herbeirufen müsste. Die Instanz im Begleitobjekt des Typs zu
++ definieren, mit einer `derives`-Klausel, durchbricht den Zyklus:
+
+% 2 1 0 10cf936a504727da0575f827cc779f37
+
+% 3 1 0 191704584123f9c50251b8718fd9ebe7
+
+% 4 1 0 1d33fee99afa12fd003742b448cfdb3d
+
+% 0 1 0 0d4c8f2d5bae9f3b18d95ad3918894d7
+
+% 0 1 0 1b24d5f92ed99f3d15a5baad3db29001
+
+% 0 1 0 16883fcd32e349bc1b3856c7f77af7aa
+
+% 0 1 0 0c2e211188e873200c10bf3453e55937
+
+% 1 1 0 1f0dfda2ec88d6c514a1ae8dd3becb82
+
+@ 0 1 0 1b492aa0f8c9a8f30a66626144dcd146
++ Hier ist `tree` gleich `t"Branch(left=Leaf, value=1, right=Leaf)"`.
+
+@ 0 1 0 165acc2c54a12b4f166e4f76a6753af9
++ ### Zwischen Kandidateninstanzen wählen
+
+@ 0 4 0 1df2a4f2aeafa55010cb61590857bd91
++ Eine abgeleitete Instanz stammt aus einem von `Derivation` geerbten `given`, daher hat sie eine
++ niedrigere Priorität als jedes `given`, das im Rumpf des Begleitobjekts geschrieben ist. Das ist
++ gewöhnlich gewünscht, gelegentlich nicht. Wo eine abgeleitete und eine handgeschriebene Instanz
++ wirklich mehrdeutig sind, löst ein Anpassen der Prioritäten eine Mehrdeutigkeit meist nur, indem
++ es anderswo eine neue schafft.
+
+@ 0 3 0 1e37ffa77a2288c216a974e041b35d31
++ Die verlässliche Lösung ist, die Wahl explizit zu machen, statt sie zu ordnen. Verwandeln Sie die
++ konkurrierenden `given`s in gewöhnliche Methoden und schreiben Sie ein einziges `derived`, das mit
++ `scala.compiletime.summonFrom` der Reihe nach unter ihnen auswählt:
+
+% 2 1 0 01084b1a8c0897f61a7600d8a263782e
+
+% 0 1 0 181376be612138a01f68592fb8f79467
+
+% 0 1 0 05af1413c44d3e8a141f88a5eb2ba004
+
+% 0 1 0 10aa1605b58286d61d9a789edeec0543
+
+% 0 1 0 14b14ce0c8b4166b0051c00c74d39fc2
+
+% 0 1 0 0ef66dc579f4b42e190393ff8b590ac4
+
+% 0 1 0 1472af835932af910c1059170161e812
+
+% 0 1 0 0c60621a95f85f651b39a612fce34c3f
+
+% 0 1 0 1c9fa785f04ec1531d496bfa89872e2a
+
+% 2 1 0 1ba10a1ac64969a4149e532aa4cb7d6e
+
+% 0 1 0 043dcaf2edd921321bd3a4513a610115
+
+% 1 1 0 1b21208ee433b41a0925095da7a1912f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 1078baf283ba951004ee4fb58e66e04b
+
+% 4 1 0 198b208e6f86732f10342477ea0cf641
+
+% 0 1 0 05dfb73c142fecf6123fe55fe1083e01
+
+% 0 1 0 1afcf955a509b7be127acb2b3f7ad772
+
+% 1 1 0 002b572e320090940d1e57b1e461f964
+
+@ 0 7 0 0d608623556292e808a0bd6bdac974bb
++ Das erste geht über `Presentation`, das `Person` ableitet. Das zweite geht über `Showable`, das
++ `Double` hat. Schlicht gelesen: Verwende eine `Presentation`, wenn es eine gibt; andernfalls ein
++ `Showable`, das für die rechte Seite in den Geltungsbereich gebracht wird; andernfalls greife auf
++ den Rückfall zurück. Die Reihenfolge im Quelltext *ist* die Priorität, und deshalb ist dies
++ leichter zu durchdenken als ein Verband impliziter Geltungsbereiche. Der Typparameter ist hier aus
++ gutem Grund großgeschrieben. In einem `summonFrom`-Pattern würde ein kleingeschriebener Typname als
++ frische Pattern-Variable gelesen und nicht als der eigene Parameter des Givens.
+
+@ 0 4 0 052345f62648f6dd05c651fa4ea565ac
++ Dieselbe Technik liefert Ableitung, ohne sie offenzulegen. Definieren Sie `conjunction` und
++ `disjunction` auf einem gewöhnlichen Objekt statt auf dem Begleitobjekt und rufen Sie `derived`
++ darauf explizit überall dort auf, wo eine Instanz gewünscht ist, wie es `ParsingSums` und
++ `LenientParsing` oben getan haben. Dann erreicht nichts die implizite Suche, ohne dass danach
++ gefragt wird.
+
+@ 0 1 0 11b930712c05d9c6150f4f708985be1f
++ ### Instanzen pro Feld
+
+@ 0 3 0 0f199a512736ac2e0852cf8c5f4a7573
++ Gelegentlich braucht ein Feld eines Typs eine andere Instanz als die Vorgabe: einen besonderen
++ Codec für eine Spalte oder eine Überschreibung für einen Pfad. `specifically` baut eine solche
++ Abbildung von Überschreibungen, indem es die Pfade benennt, die gegen die tatsächliche Struktur des
++ Typs geprüft werden:
+
+% 2 1 0 0173f6aa1886f22213ea5be35cd90c24
+
+% 3 1 0 18a731c680bfb1c2016e76fd3a9ff92c
+
+% 4 1 0 097921e949ef1ab60fb1e90b07811f18
+
+% 0 1 0 13c5dbe80c7a43400a12fa801e4bb4cb
+
+% 0 1 0 17d909b654b1e5ea18f5278ba0d8c9ae
+
+% 0 1 0 0fabceb583b79ec91ae5642b20237d8e
+
+% 0 1 0 14e134f289e218050506a5ca40ad1525
+
+% 0 1 0 1f3277de94e53b0e01ca0d29cbd7b77a
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 00d466240c5589fd07f18248d224d225
+
+% 1 1 0 08bea616c737ab860256118039828499
+
+@ 0 4 0 0f8394ca0756d32c02e4138986686140
++ Hier ist `encoded` gleich `{"hero":{"name":"Othello","age":40},"villain":{"name":"IAGO","age":28}}`.
++ Ein falsch geschriebener Pfad oder eine Instanz des falschen Typs für ihr Feld ist ein
++ Kompilierfehler. Eine Ableitung, die Überschreibungen unterstützt, befragt die Abbildung bei jedem
++ Feld, das sie besucht, wie es [JSON](json.md) und [Kataloge](catalogs.md) tun.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 11 0 036af1802448937c1f186d4693cb9bf0
++ - [JSON](json.md), [CSV](csv.md), [XML](xml.md) und die anderen Formate leiten ihre Codecs auf
++   diese Weise ab.
++ - [Annotationen](annotations.md) beschreibt die Annotation `@name`, die eine Ableitung liest, um ein
++   Feld umzubenennen.
++ - [Kataloge](catalogs.md) und [Optiken](optics.md) beschreiben `Specific` und die Feldpfade, nach
++   denen es geschlüsselt ist.
++ - [Metaprogrammierung](metaprogramming.md) beschreibt die Werkzeuge zur Kompilierzeit unter der
++   Engine.
++ - [Generische Daten](generic-data.md) beschreibt einen abgeleiteten Codec über Strukturen jeder
++   Gestalt.
++ - [Kleine APIs](../../philosophy/small-apis.md) erklärt, warum zwei Regeln besser sind als eine
++   Instanz für jeden Typ.
++ - [Anzeige](display.md) und [Zahlen](numbers.md) leiten ihre Instanzen für Case-Klassen ab, und [Fehler](errors.md) beschreibt die Diagnose, wenn eine Ableitung scheitert.

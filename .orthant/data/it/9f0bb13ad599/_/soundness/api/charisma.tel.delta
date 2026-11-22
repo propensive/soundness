@@ -1,0 +1,8 @@
+orthant 2 language
+
+@ 0 5 0 0f0a020048ce75790f970f9a5a6f8db9
++       Un'enumerazione di `NetForward` (mostrata `→`, da `-->`), `BothDirections` (`⇄`, da
++       `<=>`), `Equilibrium` (`⇋`, da `<~>`), `Stoichiometric` (`=`, da `===`) e `Resonance`
++       (`↔`, da `<->`). La freccia che un chimico scrive ha un significato, e un'equazione la
++       conserva.
++   entry .showable   mostra una reazione come la sua freccia

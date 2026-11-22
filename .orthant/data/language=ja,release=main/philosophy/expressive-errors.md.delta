@@ -1,8 +1,0 @@
-orthant 1 language
-
-- The numbers are the error's identity. An error type has a bolt code — the number
-- of its module and its own within the module — and each reason a number within it, and every code has a page in `doc/work/errors` explaining
-- the cause and the usual remedies — so `↯/s.100.2` in a user's report can be looked up rather
-- than guessed at.
-+ 番号はエラーの身元である。
-+ エラー型には bolt コード（そのモジュールの番号と、モジュール内での自身の番号）があり、各理由にはその中での番号がある。そしてすべてのコードには、原因と通常の対処法を説明するページが `doc/work/errors` にある。だからユーザーの報告にある `↯/s.100.2` は、推測するのではなく調べられる。

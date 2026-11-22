@@ -1,0 +1,454 @@
+orthant 2 language
+
+% 0 1 0 1e7672bed938fea20e2c274f11822a4a
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 5 0 038300076122094813c64a4888990299
++ Un documento [PDF](https://en.wikipedia.org/wiki/PDF) se lee como un valor tipado: sus páginas y su
++ geometría, el texto dispuesto en ellas, las fuentes que usan, sus metadatos, marcadores, enlaces y
++ adjuntos. Un documento también se edita. Se sustituye el contenido, se añaden o eliminan páginas,
++ se incrustan fuentes y se establecen metadatos y enlaces. Una edición se añade al final del fichero
++ en lugar de reescribirlo, de modo que los bytes originales permanecen intactos.
+
+@ 0 2 0 169bc4b59bdda91b0ed4553a2e8bb307
++ Todo se implementa directamente sobre el formato: la sintaxis de objetos, las tablas de referencias
++ cruzadas, los filtros de flujo, el cifrado. Nada se delega en una biblioteca PDF externa.
+
+@ 0 1 0 0a1fba2b558272481c63f012c683ea64
++ ### Sobre PDF
+
+@ 0 6 0 0e591048436142681baa4262f72af2f4
++ La capa exterior de PDF es COS, un pequeño lenguaje de objetos formado por números, nombres,
++ cadenas, arrays, diccionarios y flujos, direccionados mediante referencias indirectas e indexados
++ por una tabla de referencias cruzadas al final del fichero. Su capa interior es un flujo de
++ contenido: una máquina de pila cuyos operadores colocan glifos en una página. Ninguna de las dos
++ capas es difícil, y ambas son implacables. Un desplazamiento de referencias cruzadas puede estar
++ equivocado en un byte. La longitud declarada de un flujo puede no coincidir con su contenido. Un
++ objeto puede estar presente en una actualización y ausente en el original.
+
+@ 0 8 0 1b2ae3ccb5c31aa6103f631a711e8767
++ Leer bien un formato así significa no suponer nunca que el fichero está bien formado, y no retener
++ nunca más de lo necesario. Un documento se *abre*, lo que proyecta el fichero en memoria y lee su
++ tabla de referencias cruzadas. Las páginas, los metadatos y el texto se leen a través de ese ámbito.
++ La carga útil de un flujo se extrae de forma perezosa, se decodifica a través de su cadena de
++ filtros y no se materializa al llegar. Cuando un documento está dañado hasta el punto de que ya no
++ se puede confiar en su tabla de referencias cruzadas, se recupera recorriendo el fichero en busca de
++ objetos directamente. Leer un documento de forma perezosa a través de un ámbito que posee el fichero
++ es la forma descrita en [ámbitos delimitados](../../philosophy/delimited-scopes.md).
+
+@ 0 2 0 03e2dc938a74c96a0d4c45ebc82ef710
++ Todo procede del paquete `soundness`, con una [estrategia] para los errores, una codificación de
++ texto para el contenido que se escribirá y las importaciones que permiten a los ejemplos imprimir
++ sus resultados:
+
+% 2 1 0 18eb85d10c9e973c01a070e263818d0f
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0c8ca1fa23c1001a108cad44af2db4cc
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 1 1 0 094aca692f9a6d410ad91b7490aef935
+
+@ 0 1 0 0edc64547be110a61ebd7c33f369b775
++ ### Crear un documento
+
+@ 0 4 0 07725922fbe6c9ce03c1d77e91699305
++ Un documento se crea en una ruta y se escribe dentro del ámbito del bloque. Un documento nuevo
++ tiene un catálogo y un árbol de páginas vacío, y `appendPage` añade una página con la caja de medios
++ que deba tener. Las cajas son [magnitudes](quantities.md) en puntos, no números desnudos, así que
++ una página A4 mide 595 por 842 puntos:
+
+% 2 1 0 051d548165d0506b08b94034e6f0180e
+
+% 0 1 0 0d2ccedf0a394c0216ce0e99f2642654
+
+% 0 1 0 0ba168039159df820993b40d085dfc0c
+
+% 0 1 0 0ac3e19d38f44df406a3a74b2a16be86
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 1f64538ba479ce9c0859df4f3b9f340e
+
+% 1 1 0 021b5cc7a3dc29b206dfe0cb8b621306
+
+% 3 1 0 006c6014e146c0650682b77104f2def2
+
+% 4 1 0 013d0d3ac7a33cb01f57be6f1fcb57dc
+
+% 5 1 0 06d5aaa55a9a18611723541ead6c39a9
+
+% 0 1 0 0dcd0390d13cf5e502bbefa61218347c
+
+% 0 1 0 079436508250c267154a728fb3671c20
+
+% 1 1 0 0a3b69bfb91ab55d1bad2c5668101452
+
+@ 0 2 0 17e88320bf57085d0574476e5840039a
++ El fichero se escribe entero en un hermano temporal y se mueve sobre el destino de forma atómica,
++ de modo que un fallo a mitad de camino no deja nada atrás.
+
+@ 0 1 0 110b601efc93c96d0a530634fe6d451a
++ ### Abrir un documento
+
+@ 0 2 0 1259420426d7cc7e0bad1667dc92318b
++ Un documento se abre desde una ruta o desde bytes, y se lee dentro del ámbito del bloque. El
++ accesor `pdf` alcanza el documento contextual:
+
+% 2 1 0 1c47c70a949042aa06a2e01bbe9d471a
+
+% 3 1 0 1eb9b54dd831f6f307005331f757e475
+
+% 4 1 0 118e7d79d3321b1b0335af827abf73ad
+
+% 5 1 0 1068b7f9ec33d5e601287b758c8e51ae
+
+% 0 1 0 049edda24dec76b0152f5bdecbe2af07
+
+% 0 1 0 1acaff10b75185de16740353b2df9514
+
+% 1 1 0 0d80bada443ebe0101036d221f855e14
+
+@ 0 2 0 1c97e7defefad3960852c64e5570f43a
++ Abrir para escritura requiere el modo `Read & Write`, y da el documento como un descriptor cuyas
++ operaciones de edición solo son accesibles con la concesión `Write`:
+
+% 2 1 0 1491c04d069e4b040674a3f8fa8228b4
+
+% 3 1 0 01f4db906ecf582e1b593e19132a3b42
+
+% 4 1 0 1308ff840b4246ec1da71ca3e45becb9
+
+% 5 1 0 0ff42861fe5ae18415f98c64755d9e0b
+
+% 0 1 0 1f4837e147cbfbb31b23c977bf3957f5
+
+% 1 1 0 0ee459615f9f51a710467124debe6397
+
+@ 0 3 0 1ecb891bb7004c5d039baf5275e1759d
++ Un documento cifrado se abre proporcionando su contraseña, que se comprueba al abrir el documento,
++ y no cuando se descifra la primera cadena. Una contraseña es un secreto, así que debe haber un
++ [`Cloak`](cryptography.md) en el ámbito que indique dónde se guarda:
+
+% 2 1 0 1105170254b5267f0ee2d4f0181d26b5
+
+% 3 1 0 10321ff11c0a8efb1ac9f2c7aa4843f8
+
+% 4 1 0 0b8c04c2bb4e560f0c9973df161c2abc
+
+% 0 1 0 0e420dc0f15b9ffe1bcc5f9461b53f86
+
+% 0 1 0 1898ba8e2a62cf0818067577c004ec47
+
+% 0 1 0 09732778d7e7c01d15f59e5f6f0da0ae
+
+% 1 1 0 027a549de7c365b2120d172ac12b582e
+
+@ 0 2 0 0d2315df2cede9bc1c3dfa74d895296d
++ El manejador de seguridad estándar se admite mediante RC4 y AES-256. Un manejador de clave pública
++ lanza un `Pdf.Error` que nombra el cifrado que no puede usar.
+
+@ 0 1 0 0ceaeb262dd8c9220bed09f9c9978e61
++ ### Páginas
+
+@ 0 3 0 1296d34c10e69dbc0b16ad4193fb385f
++ El árbol de páginas se aplana en una secuencia, indexada por [ordinal](numbers.md), de modo que
++ `Prim` es la primera página. La geometría de cada página se resuelve según la herencia que permite
++ el formato, así que una caja de medios declarada en la raíz del árbol se aplica a todas las páginas
++ que cuelgan de ella:
+
+% 2 1 0 0a2d3a6736c599c116de104c27a71a3f
+
+@ 0 6 0 1b72a55f039aa3190ed1d3d731859759
++ column  Caja
++ column  Heredada
++ column  Si no
++ row  `mediaBox`  sí  un `Pdf.Error`, ya que una página debe tener una
++ row  `cropBox`  sí  la caja de medios
++ row  `bleedBox`, `trimBox`, `artBox`  no  la caja de recorte
+
+% 1 1 0 1d21fec7b580672e12b8d01975bea9ff
+
+% 3 1 0 0e4d90d2142180b8144dd7a586356106
+
+% 4 1 0 00fb5526f8ea7dad1f6e9f2eaf74db58
+
+% 5 1 0 1b56044e625d5d81145b798092d9dd6e
+
+% 6 1 0 055eb14234c2830111425bd8cb96e197
+
+% 0 1 0 08dd81172ad2f0400efd9ecdff1cc1b9
+
+% 0 1 0 0c72d470f789f74b1923e4b7107c727f
+
+% 0 1 0 015c48ae734b5cb30edab5130e3c2d4a
+
+% 1 1 0 0b2b754fe2a10a5e06de1a3a92fe1c46
+
+@ 0 3 0 0b156331838aab44176d48ef1aaa6d70
++ La anchura (`width`) y la altura (`height`) de una página tienen en cuenta su rotación, por lo que
++ la página girada un cuarto de vuelta arriba mide ahora 842 puntos de ancho. Un `/UserUnit` escala
++ las cajas. Las dimensiones leídas son las que presenta la página.
+
+@ 0 1 0 0c6ffb56b6919d221febb8efc4468992
++ ### Extraer texto
+
+@ 0 2 0 1b8cd98a1b42132713310dade7cde6a9
++ El `text` de una página ejecuta su flujo de contenido y reconstruye el orden de lectura a partir de
++ las posiciones de los glifos:
+
+% 2 1 0 1ef6e8595ec0dd780a8b15f34335e87e
+
+@ 0 5 0 00d31974a26b919d17fadac35f4acda9
++ column  Entre dos muestras de texto
++ column  Se convierte en
++ row  un hueco a lo largo de una línea base  un espacio
++ row  un cambio de línea base  un salto de línea
++ row  nada: son adyacentes  nada, así que se juntan
+
+% 1 1 0 0718e293ccfd3efd08502ad4b3f2b4dc
+
+% 3 1 0 10f8d861c69514a30527b36701c4574e
+
+% 4 1 0 05fa8e8c45808677160b0ead6d9f63a5
+
+% 5 1 0 19745569eb97960b12d5361c0b19c54c
+
+% 6 1 0 0f525cce5d32959a0e1419062f4905b3
+
+% 1 1 0 08b8ee12f4cbaad41912b4e08d8405a0
+
+% 2 1 0 1c7c5afd8b3b3d260eb123c29d0ca3da
+
+@ 0 2 0 03c75164eca9f0f51b8dbdb4d19dcd00
++ La página aún no tiene contenido, así que su texto está vacío. También hay rachas posicionadas, para
++ un lector que necesite coordenadas en lugar de un párrafo.
+
+@ 0 1 0 001124915de616d219896e1a826c0e2e
++ ### Metadatos, navegación y adjuntos
+
+@ 0 4 0 10936b0f17c2b80e00c0eacb8424a30e
++ El diccionario de información del documento se lee como un `Pdf.Info`, con sus fechas analizadas
++ desde el formato `D:` de PDF, incluido su desfase cuando se indica. Una fecha mal formada se
++ notifica como ausente, no como un error. Los destinos con nombre se resuelven a través del árbol de
++ nombres moderno o del antiguo diccionario `/Dests`, y los marcadores forman un árbol de valores
++ `Bookmark`:
+
+% 2 1 0 009616c8af9018f80754a40226fdf267
+
+% 3 1 0 1f1ef6ed041a90790de6a6931a1790c2
+
+% 4 1 0 1984456ecefce45c02f1c814f431801a
+
+% 5 1 0 061be71e33a7a4a51b240675196da669
+
+% 6 1 0 17bbf1d17eab58fa1c8cbeb275246a33
+
+% 0 1 0 13e4dce9cab1ceb11e9160e3b6f37e61
+
+% 0 1 0 017dbefb9794a4280dad73bb110b9f00
+
+% 0 1 0 1fa80bffee09ffb70e2f0b384a2c2b7a
+
+% 1 1 0 0e379f3053e8a6d1031531bdcf9bd52a
+
+% 1 1 0 1b440e4941d9ca400149df4968bef1a3
+
+@ 0 1 0 19321ee1388bddd103d075f79b254c7c
++ Cada uno se lee del documento abierto:
+
+% 2 1 0 1ebf07e6562ee62212b65052aec06f83
+
+@ 0 7 0 0c110e65ae6d81851e1cd9f749f205e7
++ column  Accesor
++ column  Da
++ row  `info`  la información del documento, como un `Pdf.Info`
++ row  `destinations`  los destinos con nombre, como un `Map[Text, Pdf.Destination]`
++ row  `bookmarks`  el esquema del documento, como un árbol de `Bookmark`
++ row  `attachments`  los ficheros incrustados
++ row  `annotations`, en una página  las anotaciones de la página, como una `List[Annotation]`
+
+% 1 1 0 0a2ddcf82a02dc77169ab8bfb1f37101
+
+@ 0 2 0 00da1b3e926da96909bdd251d8b42188
++ Una anotación es un caso tipado, como `Annotation.Link` con su rectángulo y su URI, o
++ `Annotation.Note` con su contenido, y no un diccionario que inspeccionar por clave.
+
+@ 0 1 0 05dfe06c565cc7fd173a7eb60bad66cc
++ ### Edición
+
+@ 0 4 0 0ee790435f6d2d7a131a5e1eb06b370b
++ Las operaciones de edición se ejecutan dentro de un ámbito de escritura y se consolidan como una
++ actualización incremental. Los bytes originales se quedan donde estaban, y los objetos modificados
++ se añaden con una nueva sección de referencias cruzadas. Un lector que solo entienda el fichero
++ original sigue viendo un documento válido:
+
+% 2 1 0 1b0306d367819f981e873c878c4252db
+
+% 3 1 0 022e16a9a4af567f03e3b1d633ff68df
+
+% 4 1 0 1063e3cbc895ea0617cbf12c3c38f9f0
+
+% 5 1 0 09be4ce3b4247815106d86d4d11070f2
+
+% 0 1 0 077c89812ca7d42e17dfb705cf797e38
+
+% 0 1 0 1ce89a3c6cf48e17130ed5525354ef69
+
+% 0 1 0 1420d2b58c69ecc91a4fbc47f6dbecb8
+
+% 0 1 0 0beae9324d3f2f0511370599e926e6ef
+
+% 0 1 0 02ce522330b633010cd7083abb8fb3f0
+
+% 0 1 0 1f11357896e57d3a14888c288ef3930e
+
+% 0 1 0 070ce3912fbc8bb418cd75ddf4e2c7aa
+
+% 1 1 0 10610b930ca0816113097141be980cc5
+
+@ 0 1 0 05a8f6cc692d8df0129f9bb9a2cbd1fb
++ El documento tiene ahora metadatos y un enlace:
+
+% 2 1 0 0bc867fe432a940d0984ab8720bfe2aa
+
+% 3 1 0 0d0e1319dde1a01811eaf68549491647
+
+% 4 1 0 1d166de4b52b0f4e02fee762bf35bda8
+
+% 5 1 0 002ea417325db5541a62f02d67c8bf7f
+
+% 6 1 0 15cea25e6c40d7c20c8e6e4ab2e9ba49
+
+% 0 1 0 0a90e1dfe5394d7f15a62cf29deb118e
+
+% 1 1 0 17b17918a79324fa0f933c1329364991
+
+% 1 1 0 1e486c83d297ce6f0388d1c52e38e5ea
+
+% 2 1 0 1ff7ed35916cb491141e1c0fff8dd0f8
+
+@ 0 2 0 0abaf7a3fed040f113fe1830c189247e
++ El texto extraído sigue vacío. El contenido nombra una fuente, `F1`, que la página aún no tiene como
++ recurso, y que añade el paso siguiente.
+
+@ 0 1 0 17c00150158287b11d364c80ff1d8138
++ Estas son las operaciones de edición, además de las de fuentes descritas más abajo:
+
+% 2 1 0 12dc0b2b46f8b31f03bc1dbfabf3cbc9
+
+@ 0 16 0 165452cfb84ab19a0fb7c128e82f3b09
++ column  Operación
++ column  Hace
++ row  `setContents`  sustituye el contenido de una página por una lista de operadores
++ row  `setRotation`  establece la rotación de una página
++ row  `setBox`  establece una de las cajas de una página, como `MediaBox` o `CropBox`
++ row  `setPageEntry`  establece cualquier entrada del diccionario de una página
++ row  `addLink`  añade una anotación de enlace, a un URI o a un destino
++ row  `setAnnotations`  sustituye por completo las anotaciones de una página
++ row  `setInfo`  sustituye la información del documento
++ row  `setBookmarks`  sustituye por completo los marcadores
++ row  `appendPage`  añade una página nueva al final del árbol de páginas
++ row  `removePage`  elimina una página, aunque una anidada por debajo del primer nivel se deja en su sitio
++ row  `allocate`  añade un objeto nuevo, con el siguiente número de objeto libre
++ row  `newStream`  crea un objeto de flujo, para asignarlo o referenciarlo
++ row  `set`  sustituye un objeto por referencia
++ row  `free`  elimina un objeto
+
+% 1 1 0 044616a595d8400a015a7dec1aa7c291
+
+@ 0 4 0 05f6125634381c0a1b00ea96ac3dba76
++ Una [fuente TrueType](fonts.md), que es cualquier `Sfnt`, se incrusta con `embedFont`. Escribe el
++ programa como un `FontFile2` y construye a su alrededor el diccionario de fuente simple WinAnsi.
++ `addResource` nombra la fuente en una página, para que el contenido pueda seleccionarla. Aquí la
++ fuente se carga desde un recurso del classpath:
+
+% 2 1 0 026783b2f0500a6b1447ac3549f12ec3
+
+% 3 1 0 0f76ade5d3fcfc4b133e93307cf727f1
+
+% 4 1 0 1cb3a63f0004c83218218ad082904cf7
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 1 1 0 1bf13c5909f50a5a1a9c35434f0d7e94
+
+% 0 1 0 0683682e40d93291026314774db2523d
+
+% 0 1 0 1bd6f5c17984a154036be1d129a12df4
+
+% 1 1 0 00670e7d52159e7d1cdaa03026f432b2
+
+@ 0 1 0 00b7fe6333452b7e1724b22d7ac5a18c
++ ### Cargas útiles de flujos
+
+@ 0 3 0 074fb462efa20f5e1772fe3d6325b5c7
++ La carga útil de un flujo PDF se lee de forma perezosa, a través de la cadena de filtros que declare
++ el flujo y de los predictores PNG y TIFF que a menudo los siguen. Los filtros de imagen son el final
++ de la cadena. La decodificación se detiene antes de ellos, y en su lugar llega la imagen aún
++ codificada:
+
+% 2 1 0 1d87e9462231ce23011a08a014caf544
+
+@ 0 6 0 07a50ed3f897bd041b4350adbe0dfd37
++ column  Filtro
++ column  Se lee como
++ row  `FlateDecode`, `LZWDecode`  los bytes descomprimidos
++ row  `ASCII85Decode`, `ASCIIHexDecode`  los bytes decodificados
++ row  `RunLengthDecode`  los bytes decodificados
++ row  `DCTDecode`, `JPXDecode`, `CCITTFaxDecode`, `JBIG2Decode`  la imagen codificada, sin decodificar
+
+% 1 1 0 17e7258512536ced1bc74feca1b85b18
+
+@ 0 2 0 0d5735cc46c7c94e13cf289fe8dc64ba
++ La carga útil llega como un [flujo](streams.md) de bytes, así que un fichero o una imagen incrustados
++ de gran tamaño nunca se retienen enteros:
+
+% 2 1 0 0ff168d950cc1b060a25a8ad166ef7ac
+
+% 1 1 0 1476b882e3ddc43f0747774883053a4b
+
+% 0 1 0 06522f4f3d6643c1090721716c32b7f9
+
+% 0 1 0 0d181103229a92181ecf9ec724bff817
+
+% 0 1 0 13c8d5ea1afb710905000987caf96210
+
+% 1 1 0 0b7d5e6c0d32642518f909cb2631d4de
+
+@ 0 1 0 16ff23d00a55a5031b9109229a80fd27
++ ### Recuperar un documento dañado
+
+@ 0 6 0 0a4235c7cdf77aef0e6f9af08d418d53
++ Cuando falta una tabla de referencias cruzadas o es errónea, como tras una descarga truncada o una
++ reparación hecha por otra herramienta, la tabla se reconstruye en lugar de confiar en ella. Se
++ recorre el fichero entero en busca de marcadores `N G obj`, y gana la copia más reciente de cada
++ objeto; el tráiler se recupera de un diccionario `trailer` superviviente, o del propio catálogo.
++ Los desplazamientos corridos uno a uno se corrigen a medida que se resuelven los objetos.
++ Un documento que cualquier lector conforme abriría también se abre aquí, y se lee exactamente igual
++ que cualquier otro.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 7 0 0490aa2cac5bda7212066e9bba87f586
++ - [Fuentes](fonts.md) describe el `Sfnt` que se incrusta en un documento, y su reducción a
++   subconjunto.
++ - [Magnitudes](quantities.md) describe los puntos en los que se miden las cajas.
++ - [Sistema de ficheros](filesystem.md) describe las rutas y los ámbitos `create` y `open`.
++ - [Criptografía](cryptography.md) describe el `Cloak` que guarda una contraseña.
++ - [Flujos](streams.md) describe los flujos perezosos en los que llegan las cargas útiles.
++ - [Compresión](compression.md) describe los Flate y LZW que decodifican los filtros de flujo.
++ - [Separación silábica](hyphenation.md) divide las palabras que compone un documento.

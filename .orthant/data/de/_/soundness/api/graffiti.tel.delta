@@ -1,0 +1,771 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 12ff138622b10d2514ae4f86fde1adfa
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 11ed0bedf0416f3d1215aa522bbf8c43
++ info   Webseiten, zusammengesetzt aus Archetyp-Traits: Jeder fügt ein Merkmal, sein CSS und seine Metadaten hinzu
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 04d3679139f0b53d05346397d185b9fe
++     _Graffiti_ setzt eine Webseite aus wiederverwendbaren Teilen zusammen. Eine Seite ist eine
++     Klasse, die `Archetype` erweitert, die gewünschten Merkmale einmischt — einen `Masthead`,
++     ein `Hero`-Banner, `Breadcrumbs`, ein `VersoPanel` neben dem Inhalt, ein `Colophon` am Fuß,
++     `Keywords` und ein `Favicon` im Kopf — und ihre einzige Pflicht erfüllt, `content`, den
++     zentralen Inhalt. Jeder Merkmals-Trait steuert sein eigenes Markup, seine eigenen CSS-Regeln
++     und seine eigenen `<head>`-Metadaten bei, indem er umhüllt, was die vor ihm aufgeführten
++     Traits erzeugt haben; das Einmischen verschachtelt sie also in der Reihenfolge ihrer
++     Aufführung, und unabhängige Merkmale kollidieren nie. Das Ergebnis ist ein vollständiges
++     HTML-Dokument, typisiert mit dem Elementvokabular von Honeycomb, das sich mit `html` als Text
++     darstellen lässt, streamt und direkt als HTTP-Response bereitgestellt wird.
+
+% 2 1 0 0df657fae2d549bb0cfeb317ae680233
+
+% 3 1 0 1cd90e939b89677f1a1246e82f12f4ec
+
+% 4 1 0 00d76cad0b37630306ab11c3bcf93598
+
+% 0 1 0 0b014b2c52185b23001af5573e592715
+
+% 0 1 0 04641424f02bec2c14c8f48e697aef93
+
+% 0 1 0 16e7671f7cc082811ae10a03345a3687
+
+% 0 1 0 0bbbcda68bcd72ec0751cb9439f5c996
+
+% 0 1 0 172e66ef90439765046f3335e52cae2d
+
+% 0 1 0 17b97877b6bcb42200595438376fc140
+
+% 0 1 0 012b9647dc0318d81113e3cd89415498
+
+% 1 1 0 03d6449a71329df00ea682e907d02aca
+
+@ 0 8 0 010c92dcc217e2aa199f15bbbea14872
++     Weil die Seite eine Klasse ist, sieht der Compiler ihre Struktur: Eine Seite ohne `content`
++     kompiliert nicht, ein Slot, dem ein Element gegeben wird, das nicht dorthin gehört, ist ein
++     Typfehler, und zwei Merkmale, die je einen Slot gleichen Namens definieren, werden dort
++     gemeldet, wo sie kombiniert werden. Jedes Merkmal bietet Hooks, die eine Seite direkt
++     überschreibt — einen Slot (`masthead`, `verso`, `hero`), eine Einstellung (`versoWidth`,
++     `menuGap`) und einen Regelsatz (`mastheadStyles`, `menuStyles`) —, sodass eine Seite ein
++     Merkmal anpasst, ohne sein Markup anzufassen oder `super` aufzurufen. Jedes Layout verwendet
++     nur logische CSS-Eigenschaften, sodass das Setzen von `direction` auf `HDir.Rtl` die Seite
++     bei unverändertem Stylesheet spiegelt.
+
+@ 0 7 0 038eb03f38ee851619d54528cdd47a49
++     Es gibt ein Source-Set, `graffiti.core`, das auf Honeycomb (HTML), Cataclysm (CSS) und
++     Parasite aufbaut und für jede Plattform kompiliert, für die Honeycomb es tut; nichts darin
++     existiert nur auf Scala.js. Alles, einschließlich des Givens `urlText`, wird in das
++     `soundness`-Umbrella exportiert. Eine Seite braucht die Elementkonstruktoren von Honeycomb im
++     Geltungsbereich (`import htmlDoms.whatwg.*`) und, um ihr Stylesheet darzustellen, eine
++     CSS-Formatierungswahl wie `formatting.indentedCssFormatting`; der Import
++     `cataclysm.formatting.indentedCssFormatting` innerhalb der Bibliothek stellt das inline
++     eingebettete `<style>`-Element dar.
+
+% 0 1 0 0447419e3d1e867e0a6f4d977eee7cf4
+
+% 0 1 0 14635efb6e6ac74d0d6838d267ff49d0
+
+% 0 1 0 1ae9f53f6b35845b14a57023ba6bd887
+
+% 0 1 0 07ce35ed5adcf912137e4969eb82aa49
+
+@ 0 1 0 095006b48c905a301a6d5ffebea5774b
++ entry .Archetype   die Basis jeder Seite: ihr Inhalt, Titel, ihre Richtung, ihr Stylesheet und die Nahtstellen, über die Merkmale sich zusammensetzen
+
+% 1 1 0 101e8637e757a46f1c7b560355f98d3b
+
+@ 0 7 0 00abe424a50efd0314f1a83532f7151b
++       Eine konkrete Seite erweitert `Archetype` und die gewünschten Merkmals-Traits und definiert
++       `#content`. Die Traits setzen sich über drei geschützte Nahtstellen zusammen: `#frame`, die
++       Umhüllungs-Pipeline, die ein Layout-Trait als eine Dekoration von `super.frame`
++       überschreibt; `#styles`, der Stylesheet-Akkumulator, überschrieben als
++       `super.styles + ownRules`; und `#head`, der `<head>`-Akkumulator, überschrieben als
++       Fragment aus einem neuen Element und `super.head`. Ein Seitenautor berührt sie selten:
++       Jedes Merkmal bietet stattdessen eigene Hooks.
+
+@ 0 7 0 0d7567081b08a0ca1823dec635a7aca9
++       Die ganze Seite ist `#document`, ein `Document[Html]` mit einem Doctype, oder `html` (die
++       Erweiterung von Honeycomb, über `.renderable`): `<html>` mit einem `<head>` aus dem
++       `#pageTitle`, dem Stylesheet — inline in einem `<style>` oder als `<link>` auf
++       `#stylesheetUrl`, wenn eine angegeben ist — und den gesammelten Metadaten, und einem
++       `<body>`, dessen `dir` die `#direction` ist und der den umhüllten Inhalt enthält. Der
++       Zusammenbau ist final, sodass eine Seite ihn nicht überschreiben und dabei stillschweigend
++       ihr Stylesheet oder ihre Richtung verlieren kann; `#css` ist das Stylesheet allein, zum
++       Bereitstellen unter `#stylesheetUrl`.
+
+% 2 1 0 0dbaed9ae821635f1fd8115459c904d1
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 107b9a46c6f200c306b840db281a7c84
+
+% 1 1 0 1859146f032af9c6021f0a076c55fbd6
+
+% 2 1 0 1b2847d9a0f2cc1e1b7a7bc4f5927f30
+
+% 3 1 0 1b241039ec9ad6f11025459a6ecf4597
+
+% 0 1 0 09ad024aa2f61ecb0161f022e6708388
+
+% 1 1 0 136f758467d37db20303a0eb9ece9e65
+
+% 0 1 0 05e4e16206c5bcb2075f620eaa30f881
+
+% 1 1 0 08462eb4fc21b7970413308eb3c2f7c0
+
+% 0 1 0 04ad492b3f7c47f308fa348432661e15
+
+% 1 1 0 1b88afec68c6c2d30685f1514c424454
+
+% 2 1 0 0f49174813e230681de9c09fa268e036
+
+% 3 1 0 1258a7df291f65bd1a7086190847ce80
+
+% 0 1 0 09f3a1287373be060860b2daa1ada8b7
+
+% 1 1 0 140191367bdf53471af0b2badc761a03
+
+% 0 1 0 1f0d072d2271a9fa1ece0c8b8181d432
+
+% 1 1 0 0c2704856a0ebf661d1a99aafe91aa59
+
+% 0 1 0 18599b022ca8a1321167905cde79b5ba
+
+% 1 1 0 08ca925b91034fc01df8e0c2ccb67bc1
+
+% 2 1 0 1e7a6de8b66e39700526907e58396eba
+
+% 3 1 0 0f96aa56ede06fad1b89c1c0acd05e27
+
+% 0 1 0 1624fd22842c70d212e43da6ef778de9
+
+% 1 1 0 160f2ecdaa8cac5c173939801b647364
+
+% 0 1 0 0c0f2517e8e9d3f31517d6130086dec4
+
+% 1 1 0 14b39cb5cf1e39cf070f012188f5f984
+
+% 0 1 0 1e5a799fbaf602a70d0569f82eb6791c
+
+% 1 1 0 0938c16b809dd1151de90e88244f56ba
+
+% 2 1 0 1622f24f69ef7bce18330c8e34d41cf7
+
+% 3 1 0 025320d9de35cfee0396c36b2ed71b86
+
+% 0 1 0 12a9488aea0ba2821e4f926b9b0415f2
+
+% 1 1 0 1b66159b42cf4613125189990fbb7828
+
+% 2 1 0 07d1379c4f4537b10b262443eb640317
+
+% 0 1 0 025a30db0152fc76086ecafd1b0356aa
+
+% 1 1 0 123822a5934b00bd1ebe99b03852eaac
+
+% 0 1 0 16e52435c5bfc7ad1ed7af2ec00fd7d9
+
+% 1 1 0 159fc14da7b2af95075b57f7c4958c31
+
+% 2 1 0 1c07c0d894d5ad1a0c9e6a4525c75dfa
+
+% 3 1 0 10992cfa8308381411f220e13b312906
+
+% 0 1 0 1df09f558a2622ab188a85a89b77af62
+
+% 1 1 0 1ee23a0334b0ea8e0c9ce4f8f3f5f4eb
+
+% 2 1 0 12a955c416189d4907c8ebf84b50b373
+
+% 0 1 0 1fbd0df9b05064aa00deb2020076ebc7
+
+% 0 1 0 095dfa26b427c2880016af5a69587f12
+
+% 0 1 0 1e7c3dcd88781f7509e44c92909c84e7
+
+% 1 1 0 1946ee2b83c8bcf41fdcc3b549ca5bc5
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 074aa07a73152d9f046d1562bcf18056
++       Eine Seite ist auch selbst ein Response-Body: Sie deklariert den Medientyp `text/html`
++       (`.media`) und streamt ihr dargestelltes Dokument (`.streamable`), sodass ein HTTP-Handler
++       sie direkt zurückgibt und der Header `Content-Type` aus dem Wert folgt. Ein `Css`-Wert wird
++       auf dieselbe Weise bereitgestellt, als `text/css`, und mehr braucht ein verlinktes
++       Stylesheet nicht.
+
+% 2 1 0 1a50480a9f55a1cd0e140e7a03846c81
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 0 1 0 1492e2c6d04528120817b348f1092da4
+
+% 0 1 0 0e423d575fca47920401920097bdb49e
+
+% 0 1 0 0d932cfd06edad330f1f7777e2e1c685
+
+% 0 1 0 11ce5b7e67b06152117ba6cc7f0d7eb2
+
+% 0 1 0 14ede6b2350321d61cb36a728b09721d
+
+% 0 1 0 0a9497f4e82afbcc1b4d99d145b48583
+
+% 1 1 0 048b5ac8ea10b5010659bf92387b474a
+
+% 0 1 0 056ea3aeafa2ef7e188d031c5e90fa2a
+
+% 1 1 0 0d40c141884727bb12a79d608c93d337
+
+% 2 1 0 1e12ef94d7723f770d3c3ea22fcc1c5d
+
+% 1 1 0 0d790efc9722ad5d05278f91f43fde82
+
+% 0 1 0 19aceaf6479dd4ce1c2f3d076557dfc7
+
+@ 0 36 0 03fc1ab164bb2b530cc8bf05ecdac3fc
++   entry .media   der Medientyp jeder Seite: `text/html; charset=UTF-8`
++       Das `Media`-Given für jede `page <: Archetype`, im impliziten Geltungsbereich, aus dem ein
++       `Servable` synthetisiert wird, wo immer ein HTTP-Handler eine Seite zurückgibt.
++   entry .renderable   stellt jede Seite als ihr vollständiges `<html>`-Element dar
++       Das Given `Renderable in "html"` für jede `page <: Archetype`, im impliziten
++       Geltungsbereich: Es ist das, was die Erweiterung `page.html` von Honeycomb aufruft, und
++       liefert das `<html>`-Element mit seinem `<head>` (Titel, Stylesheet, Metadaten) und
++       `<body dir="…">`. Eine Seite, die einen eigenen Member `html` definiert, verdeckt die
++       Erweiterung, statt nicht zu kompilieren.
++   entry .streamable   streamt das dargestellte Dokument jeder Seite als Text
++       Das Given `Streamable by Text` für jede `page <: Archetype`, das einen `Monitor` und eine
++       `Probate` im Geltungsbereich braucht: Das `document` der Seite wird während des Streamens
++       dargestellt, innerhalb des überwachenden Geltungsbereichs, unter dem ein Server läuft, ohne
++       dass etwas gepuffert wird. `page.read[Text]` unter `supervise` ist das ganze Dokument, mit
++       dem Doctype zuerst.
++   entry #content   der zentrale Inhalt der Seite; der eine Member, den eine konkrete Seite definieren muss
++       Fluss-Inhalt: ein `P`, ein `Div`, ein Fragment aus mehreren. Das `frame` jedes Merkmals
++       umhüllt oder flankiert ihn.
++   entry #pageTitle   der `<title>` des Dokuments; leer, sofern nicht überschrieben oder durch `Headline` oder `Dashboard` gesetzt
++   entry #direction   die Schreibrichtung, standardmäßig `HDir.Ltr`
++       Als `dir` auf dem `<body>` gesetzt, da `<html>` hier keine globalen Attribute zulässt.
++       Jedes Layout verwendet nur logische Eigenschaften (`inline-size`, `inline-start`), sodass
++       `HDir.Rtl` im Browser Verso und Recto vertauscht und das ausgegebene CSS Byte für Byte
++       dasselbe bleibt.
++   entry #frame   die Umhüllungs-Pipeline: der Inhalt, wie ihn jedes bisherige Merkmal umhüllt hat; geschützt
++       An der Basis `content`. Ein Layout-Trait überschreibt es als Dekoration von
++       `super.frame`, sodass Merkmale sich in Linearisierungsreihenfolge verschachteln; ein
++       Seitenautor verwendet stattdessen die Hooks der Merkmale.
++   entry #styles   der Stylesheet-Akkumulator: die Regeln jedes bisherigen Merkmals; geschützt
++       An der Basis leer; jedes Merkmal überschreibt ihn als `super.styles + ownRules`. `css` ist
++       sein Endwert.
++   entry #head   der Akkumulator der `<head>`-Metadaten: die Elemente jedes bisherigen Merkmals; geschützt
++       An der Basis ein leeres Fragment; ein Metadaten-Trait überschreibt ihn als Fragment aus
++       seinem eigenen `<meta>` oder `<link>` und `super.head`.
++   entry #stylesheetUrl   wo das Stylesheet bereitgestellt wird, falls die Seite es verlinkt statt es einzubetten
++       Standardmäßig `Unset`, sodass das Stylesheet in ein `<style>`-Element eingebettet wird und
++       die Seite eigenständig ist. Ist sie gesetzt, verweist der Kopf stattdessen mit
++       `<link rel="stylesheet">` darauf, und die Anwendung stellt `css` unter dieser Adresse
++       bereit, sodass eine Site mit vielen Seiten ein einziges Stylesheet bereitstellt.
+
+% 2 1 0 06ab11defee815e30873926c32a00540
+
+% 3 1 0 0f0de6cb9471d4a609153c5800cb741b
+
+% 4 1 0 0373893a315a66ad1d31094f58ef508e
+
+% 0 1 0 15f6ad9a58df3b31161d24aecedae8bf
+
+% 1 1 0 1b12f4266608d4dd104a0eae873dd087
+
+% 0 1 0 09ba1429276df4dc1326bb52ff121ba7
+
+% 0 1 0 12eac6d13189cf21136277529574043f
+
+% 1 1 0 0bf82f8ffbe65bd8091a1b9485accbb8
+
+@ 0 8 0 0d257c47106d29f017eddc22b18a99f4
++   entry #css   das ganze Stylesheet der Seite, als strukturiertes `Css`; final
++       Die gesammelten Regeln jedes Merkmals, zum Bereitstellen unter `stylesheetUrl` oder zum
++       Darstellen mit `show` (das eine CSS-Formatierungswahl wie
++       `formatting.indentedCssFormatting` braucht). Es ist final: Eine Seite gestaltet ein Merkmal
++       über dessen Regel-Hook um, etwa `mastheadStyles`, nicht durch Überschreiben hiervon.
++   entry #document   die Seite als `Document[Html]` mit führendem Doctype; final
++       Die Form, die über HTTP bereitgestellt und von `.streamable` gestreamt wird: der Doctype,
++       dann das `<html>`-Element, das `html` darstellt.
+
+@ 0 1 0 13f726b8d094a4ad189bf8512e4bfcc8
++ entry .Headline   setzt den Dokumenttitel und stellt eine Überschrift der obersten Ebene voran
+
+% 1 1 0 132e7b97a6e15d1500f3781226d29880
+
+@ 0 3 0 0e2d6065f5ee850a088866d69a9b35c0
++       `Headline(title)` macht den Titel zum `pageTitle` und setzt ein
++       `<h1 class="graffiti-headline">` an den Anfang des Frames, sodass es über dem erscheint,
++       was die zuvor aufgeführten Merkmale gebaut haben. Es füllt keinen eigenen Slot.
+
+% 2 1 0 0f1b66ab1712ed690b111994386e9a89
+
+% 3 1 0 06cc252aafe0e996042ecfd68608fb8e
+
+% 4 1 0 1d27edcaba6654ed1bb39763f1d3e2d0
+
+% 0 1 0 14d8ce3bd70569d60871fc1d6192ff3d
+
+% 1 1 0 1799ef9656a8c90403c08facc8938460
+
+% 0 1 0 1f302f38d8b06a221afdf2583922e119
+
+% 1 1 0 1d1cdece8004a046167074cc72b1b098
+
+@ 0 3 0 1b9783e33d10255e141bb1929c3e548c
++   entry .headlineClass   die CSS-Klasse der Überschrift: `graffiti-headline`
++   entry #heading   die dargestellte Überschrift, ein `<h1>`; geschützt, zum Umstrukturieren überschreiben
++   entry #headlineStyles   die Regeln dieses Merkmals, ein Abstand unter der Überschrift; geschützt, zum Umgestalten überschreiben
+
+@ 0 1 0 049d9f78d8a475b5116f193dd7b8f445
++ entry .TopMenu   eine horizontale Navigationsleiste über den oberen Rand der Seite, wiederverwendbar als `menu`
+
+% 1 1 0 1748c9833df342461123454f14495dcb
+
+@ 0 3 0 0ca52d50d9399cb11c8dcddcb46dfd7a
++       Stellt ein `<nav class="graffiti-top-menu">` aus den `#menuItems` voran, angeordnet als
++       Flex-Zeile mit `#menuGap` zwischen den Einträgen. Die dargestellte Leiste ist auch `#menu`,
++       ein Helfer, den eine Seite anderswo platzieren kann — etwa in einem Seitenpanel — statt oder
++       zusätzlich zum oberen Rand.
+
+% 2 1 0 1ed6a3b574ad739e03f4ecfd29c9055f
+
+% 3 1 0 01c4f6e615dfe5be166b0c97b632d72b
+
+% 4 1 0 1dfd4904e6ffff7a1f066a1b67e52792
+
+% 0 1 0 065253a3358955141838451cd69bda11
+
+% 0 1 0 1ea226f4a5d863891e4468233e6bcf22
+
+% 0 1 0 00267f9fe7331007055f210d61760d78
+
+% 0 1 0 0e7306bc1dcda74d01f2017ed8a4b065
+
+% 1 1 0 12efc5bc4124b8b21104ac043fdbb1fb
+
+@ 0 5 0 02fd8767cbe35b9a05e18f2f8d05c870
++   entry .menuClass   die CSS-Klasse der Leiste: `graffiti-top-menu`
++   entry #menuItems   die Links der Leiste, Phrasing-Elemente; leer, bis überschrieben
++   entry #menuGap   der Abstand zwischen den Einträgen, standardmäßig `1rem`
++   entry #menu   das dargestellte `<nav>`; geschützt, ein Helfer, den eine Seite zum Füllen eines anderen Slots wiederverwenden kann
++   entry #menuStyles   die Regeln dieses Merkmals, eine Flex-Zeile mit `menuGap`; geschützt, zum Umgestalten überschreiben
+
+@ 0 1 0 0608c258b68ac347193a5b95a01ca402
++ entry .VersoPanel   ein Seitenpanel am Inline-Start-Rand, neben dem Inhalt
+
+% 1 1 0 1f74b7b5f90192c61324ef3bacfc32d7
+
+@ 0 6 0 11a1d0315975226c1af637e469b4dd2b
++       Die Verso-Seite eines Aufschlags: links in Text von links nach rechts, rechts in Text von
++       rechts nach links. Der Inhalt und ein `<aside class="graffiti-verso">` aus dem Slot
++       `#verso` werden in ein zweispaltiges Grid gesetzt, dessen Quellreihenfolge Panel, dann
++       Inhalt ist, sodass das Grid der Schreibrichtung folgt und `direction = HDir.Rtl` es ohne
++       Änderung am CSS spiegelt. Das Panel ist `#versoWidth` breit, mit `#versoGap` vor dem
++       Inhalt. Es ist unabhängig von `RectoPanel`: Eine Seite kann beide einmischen, in beliebiger
++       Reihenfolge.
+
+% 2 1 0 18c5c4c13888f33500aa6ee2f6ef1085
+
+% 3 1 0 00aafc826d3ae56f18f45d2b74262384
+
+% 4 1 0 0926b634ef7c5d3a0a49540faac6535b
+
+% 0 1 0 0bf7fea121e942210f02a223e614ba41
+
+% 1 1 0 08174352adce2161139643b6970f64c2
+
+% 0 1 0 1db075e2e40ae70f0a17164a480318f9
+
+% 0 1 0 1bfc6b0d36ca7534181cc0734374ff85
+
+% 0 1 0 06b80d3594ff01e70ba577cfe53b65e5
+
+% 1 1 0 119a568506e8ede7027bd3779e2b1bc3
+
+% 1 1 0 14396c24484825d80c5980e28ad84ece
+
+@ 0 8 0 1049edbfd2b9a8460a409354b1286dd8
++   entry .layoutClass   die CSS-Klasse des Grid-Containers: `graffiti-verso-layout`
++   entry .versoClass   die CSS-Klasse des Panels: `graffiti-verso`
++   entry .contentClass   die CSS-Klasse der Inhaltsspalte: `graffiti-verso-content`
++   entry #verso   der Inhalt des Panels; leer, bis überschrieben
++   entry #versoWidth   die Inline-Größe des Panels, standardmäßig `16rem`
++   entry #versoGap   der Abstand zwischen Panel und Inhalt, standardmäßig `1rem`
++   entry #versoArrangement   wie Panel und Inhalt angeordnet sind, ein Grid-`<div>`; geschützt, zum Ändern des Containers überschreiben
++   entry #versoStyles   die Regeln dieses Merkmals, das Grid und die Breite des Panels; geschützt, zum Umgestalten überschreiben
+
+@ 0 1 0 1d8b980b606cbe5d11962ff8f3a85f90
++ entry .RectoPanel   ein Seitenpanel am Inline-End-Rand, neben dem Inhalt
+
+% 1 1 0 098389a23963213412db8aaf6dddda5e
+
+@ 0 5 0 1e04be0cb8ba85cd12c5504caafb1646
++       Die Recto-Seite eines Aufschlags: rechts in Text von links nach rechts, links in Text von
++       rechts nach links. Der Inhalt und ein `<aside class="graffiti-recto">` aus dem Slot
++       `#recto` werden in ein zweispaltiges Grid gesetzt, dessen Quellreihenfolge Inhalt, dann
++       Panel ist, und zwar nur mit logischen Eigenschaften, sodass `direction = HDir.Rtl` es ohne
++       Zutun spiegelt. Das Panel ist `#rectoWidth` breit, mit `#rectoGap` nach dem Inhalt.
++       `FoldableRectoPanel` verfeinert es um ein Einklappen.
+
+% 1 1 0 0e1f055180b06f1d0f535c3e8e867c44
+
+% 0 1 0 119b845ed9011ca20baedcd2296d8598
+
+@ 0 8 0 0157264a5748fffa1807baf6861a8802
++   entry .layoutClass   die CSS-Klasse des Grid-Containers: `graffiti-recto-layout`
++   entry .rectoClass   die CSS-Klasse des Panels: `graffiti-recto`
++   entry .contentClass   die CSS-Klasse der Inhaltsspalte: `graffiti-recto-content`
++   entry #recto   der Inhalt des Panels; leer, bis überschrieben
++   entry #rectoWidth   die Inline-Größe des Panels, standardmäßig `16rem`
++   entry #rectoGap   der Abstand zwischen Inhalt und Panel, standardmäßig `1rem`
++   entry #rectoArrangement   wie Inhalt und Panel angeordnet sind, ein Grid-`<div>`; geschützt, zum Ändern des Containers überschreiben
++   entry #rectoStyles   die Regeln dieses Merkmals, das Grid und die Breite des Panels; geschützt, zum Umgestalten überschreiben
+
+@ 0 1 0 0a64e9ca0393da360bb0cba8ba5faad2
++ entry .FoldableRectoPanel   ein Recto-Panel, das sich einklappen lässt, allein durch CSS
+
+% 1 1 0 15c3db120153b3cb1033aaff5152ff71
+
+@ 0 4 0 164e8eddca0ce62219760aaaf870295a
++       Fügt gegenüber `RectoPanel` nichts Strukturelles hinzu: Es legt weitere Regeln auf das
++       Stylesheet, die den Überlauf des Panels abschneiden und seine Inline-Größe mit einem
++       Übergang auf `#maxRectoWidth` begrenzen, sodass ein Skript oder eine Hover-Regel, die diese
++       Größe verringert, das Panel zuklappt. Es zeigt, wie ein Merkmal ein anderes rein über seine
++       Regeln verfeinert.
+
+% 1 1 0 10556451f57a7a9f13190d30a441ea32
+
+@ 0 2 0 09318f0a18569e5515a843bf3edf4604
++   entry #maxRectoWidth   die Inline-Größe, von der aus das Panel einklappt, standardmäßig `16rem`
++   entry #foldedStyles   die Regeln des Einklappens, über denen von `RectoPanel`; geschützt, zum Ändern des Einklappens überschreiben
+
+@ 0 1 0 1009c7d93d20268e059cc7a889998d0a
++ entry .Breadcrumbs   eine Brotkrümelnavigation aus Pfadsegmenten, vor dem Inhalt
+
+% 1 1 0 1b090789072e31aa0e930660f81e0a50
+
+@ 0 2 0 13711ca9ef63091b1485b1027e0c9ef9
++       `Breadcrumbs(segments*)` stellt ein `<nav class="graffiti-breadcrumbs">` voran, das ein
++       `<ol>` mit einem `<li>` je Segment enthält, als Flex-Zeile.
+
+% 2 1 0 1dc98e169df1406b1f391aa527b834c8
+
+% 3 1 0 1ed596a6aaddaf110699fc7f540d473f
+
+% 4 1 0 0be07987fe1bbc571e2492fd7ffd8bc4
+
+% 0 1 0 0fe42199b53a8f111121c21c7260355f
+
+% 1 1 0 121d71a900a4e6781c52105bfe33d03b
+
+% 0 1 0 1ebc8684299124b6165f90c9d0a6ddc5
+
+% 1 1 0 0963012fe4d381130ba7a08c7febef9f
+
+@ 0 3 0 1871b2dce030e557165973471ae35c60
++   entry .crumbsClass   die CSS-Klasse der Navigation: `graffiti-breadcrumbs`
++   entry #breadcrumbs   die dargestellte Navigation, ein `<nav>`; geschützt, zum Umstrukturieren überschreiben
++   entry #breadcrumbStyles   die Regeln dieses Merkmals, eine Flex-Zeile; geschützt, zum Umgestalten überschreiben
+
+@ 0 1 0 0b6731ce906c04a61e1b2a9772c9fac3
++ entry .Logo   eine Marke auf Phrasing-Ebene, `logo`, die eine Seite oder ein anderes Merkmal beliebig platzieren kann
+
+% 1 1 0 08d80d12014cad63051fd2968f8cacc2
+
+@ 0 2 0 1d4fcdfd3da2793a1649543c2d310fca
++       Steuert keine eigene Struktur bei: `#logo` ist ein `<span class="graffiti-logo">` aus dem
++       `#logoText`, fett dargestellt, das eine Seite in einen Masthead, ein Menü oder ein Panel
++       setzt.
+
+% 2 1 0 0250708d8e3956d91ca62724bf885376
+
+% 3 1 0 1f03204e856e75fc0a333d8ea25f7a90
+
+% 4 1 0 0681f4100cd0239c09dda86b3eb3ff46
+
+% 0 1 0 16376051d296baac0ffd2ab8e9426ed4
+
+% 1 1 0 09e94338fb903e2317c22a6caacc0c33
+
+% 0 1 0 01d095a6da5a232a06b2bebad46ea845
+
+% 0 1 0 10bb4a126ab8c78d16a9a9037c56f11c
+
+% 1 1 0 10476805a894b60b1682f1cf3efc969e
+
+@ 0 4 0 0d4b91d7443d5015172f0a41cd372117
++   entry .logoClass   die CSS-Klasse der Marke: `graffiti-logo`
++   entry #logoText   der Wortlaut des Logos; leer, bis überschrieben
++   entry #logo   die dargestellte Marke, ein `<span>`; geschützt, zum Platzieren, wo immer die Seite will
++   entry #logoStyles   die Regeln dieses Merkmals, fetter Text; geschützt, zum Umgestalten überschreiben
+
+@ 0 1 0 00ca847a8e4ff2b50e2a272038e76ef7
++ entry .Masthead   ein `<header>`-Masthead am oberen Rand der Seite, gefüllt über den Slot `masthead`
+
+% 1 1 0 1e6397bf69e328661a3a4e2c76b57e53
+
+@ 0 3 0 0eb61f309180b6fc106dc124d3d826bd
++       Stellt ein `<header class="graffiti-masthead">` aus dem Slot `#masthead` voran — oft ein
++       Logo, eine Überschrift und ein Menü —, angeordnet als Flex-Zeile, vor dem, was die früher
++       aufgeführten Merkmale gebaut haben. Nach `Mainstay` aufgeführt, liegt er außerhalb der
++       `<main>`-Landmarke.
+
+% 2 1 0 177ee368232d70bc18b74d81631cfcae
+
+% 3 1 0 1615e4e539b2c925172a6a219190c6ed
+
+% 4 1 0 0c70386840fd0a5c1817d096ddb598d3
+
+% 0 1 0 077ef9bf583e993b13152236a60a2432
+
+% 1 1 0 0c2531721c66f8941f86e946532b85a2
+
+% 1 1 0 01b553f4388de3ba0269ac902b444610
+
+% 1 1 0 0bfe149e22703c620e4b3f482b644597
+
+% 0 1 0 1499313ed6c3088e0a99ad16185d4e2e
+
+% 1 1 0 02f1533616333ef2050761ef821636f3
+
+@ 0 3 0 0d2e408cef20b3300e27ae508defac1f
++   entry .mastheadClass   die CSS-Klasse des Headers: `graffiti-masthead`
++   entry #masthead   der Inhalt des Mastheads; leer, bis überschrieben
++   entry #mastheadStyles   die Regeln dieses Merkmals, eine Flex-Zeile mit Abstand; geschützt, zum Umgestalten überschreiben
+
+% 1 1 0 1cd3c554cd6b66890f532fb0f9fa0690
+
+% 2 1 0 066e0d5043bed9c400b006f9e92f55fe
+
+% 3 1 0 1bbf37f4d31fa4c71e9ed6dfe4046af1
+
+% 0 1 0 120d62b86dc4e88518bc39fb9d2c063a
+
+% 1 1 0 093699958d27cf3d078c59caf4267133
+
+% 0 1 0 0910e15fcf91eb1b0dd172226e67ea40
+
+% 0 1 0 0e6daa53ff39041e1f6fc44ae191b656
+
+% 0 1 0 0b922d203ab110bc0e931da945e3e1c9
+
+% 1 1 0 1934d6fd4457c36e13b5fc82badc89f7
+
+@ 0 1 0 06424c50b3d13feb13b94af923aec019
++ entry .Colophon   ein `<footer>`-Kolophon am Fuß der Seite, gefüllt über den Slot `colophon`
+
+% 1 1 0 1a9f9106aa45b12b0c969a46dd7fcd05
+
+@ 0 3 0 033438e3875a5a201b83f283436af1f8
++       Hängt ein `<footer class="graffiti-colophon">` aus dem Slot `#colophon` an — eine Sitemap,
++       eine Copyright-Zeile, Kontaktangaben — nach dem, was die früher aufgeführten Merkmale
++       gebaut haben, mit einem Abstand darüber.
+
+% 2 1 0 121766cca11e14cb1ac8334577de2192
+
+% 3 1 0 146e39378de5716c0a384af6c794c80f
+
+% 4 1 0 14ca57bd1064f97f106992b535837cdf
+
+% 0 1 0 04b137395fee0f200026e94576726c8f
+
+% 1 1 0 1c8b993c4f5bfadd051cc2e5e7071d21
+
+% 0 1 0 17003e02fd93918714948d57344d4de3
+
+% 1 1 0 04c0d7eb619c0b7904beb566a41a0eb9
+
+% 1 1 0 0ab4372b566c1cbb1d50b63b15a5ca32
+
+@ 0 3 0 1d7b6d7712b780d402b03f755ab86cda
++   entry .colophonClass   die CSS-Klasse des Footers: `graffiti-colophon`
++   entry #colophon   der Inhalt des Kolophons; leer, bis überschrieben
++   entry #colophonStyles   die Regeln dieses Merkmals, Außen- und Innenabstand; geschützt, zum Umgestalten überschreiben
+
+@ 0 1 0 0fd2d2c7306d7d5e05378589a94b613b
++ entry .Mainstay   umhüllt den bisherigen Inhalt mit einer `<main>`-Landmarke
+
+% 1 1 0 17c70d89289d2e7807cf26ee09ce3e5e
+
+@ 0 4 0 019acd5ab3afc51d139b9c6579832d9f
++       Umhüllt den Frame, den die zuvor aufgeführten Merkmale gebaut haben, mit einem
++       `<main class="graffiti-mainstay">`. Führen Sie es vor dem Seitenrahmen auf (`Masthead`,
++       `Colophon`), damit die Landmarke den Inhalt umschließt, nicht aber den Rahmen; danach
++       aufgeführt, würde sie auch den Masthead umschließen. Es fügt keine Regeln hinzu.
+
+% 2 1 0 0693c37c13052cc8026cb2f5055dfc75
+
+% 3 1 0 09ce9fe81753d8790b48acc595498d6d
+
+% 4 1 0 0dc02098410a5b1811532055b7a953a5
+
+% 0 1 0 0d688b433b3e59461798c5acd4474597
+
+% 1 1 0 1cf6deebac24bcf50a82492257b01b66
+
+% 1 1 0 096728f9b46866b511bbee93b73c5d1d
+
+% 0 1 0 1dfbda0eee966c130cda685bc11b0204
+
+% 1 1 0 110f2da40fb25cca07b6ab38dfcd5613
+
+@ 0 1 0 1b2e2b9acc8aba831b2a5fcd025c674d
++   entry .mainstayClass   die CSS-Klasse der Landmarke: `graffiti-mainstay`
+
+@ 0 1 0 0f9ee36f463d9dd505aa58650135b21b
++ entry .Hero   ein auffälliges Banner, das die Seite einleitet, mit dem Trait-Parameter als Überschrift
+
+% 1 1 0 0d8f6eab888bc87d188f75a339e6187b
+
+@ 0 3 0 0183d61aaabfb47b1f2c28f72d978300
++       `Hero(headline)` stellt eine `<section class="graffiti-hero">` voran, die ein `<h1>` aus
++       der Überschrift enthält und darunter das, was der Slot `#hero` liefert, zentriert mit
++       großzügigem vertikalem Innenabstand.
+
+% 2 1 0 1b7406396b176dea087858ad7ac90442
+
+% 3 1 0 18ffd9ed393ac6fa096d3d0f287dba88
+
+% 4 1 0 1ac3b7c31eb983081749e568b99cc7d4
+
+% 0 1 0 1305a4f310dacef516b212ecdd8c817d
+
+% 0 1 0 16916b9e9518e99e0027314d85310d3d
+
+% 0 1 0 1525d391a5c6474f01561ce198aa77af
+
+% 1 1 0 03c14f355f38285c01718c459e7e67de
+
+@ 0 4 0 11566cb15a9f8c011db342cc730f01a2
++   entry .heroClass   die CSS-Klasse des Banners: `graffiti-hero`
++   entry #hero   weiteres Bannermaterial unter der Überschrift; leer, bis überschrieben
++   entry #heroBanner   das dargestellte Banner, eine `<section>`; geschützt, zum Umstrukturieren überschreiben
++   entry #heroStyles   die Regeln dieses Merkmals, Innenabstand und zentrierter Text; geschützt, zum Umgestalten überschreiben
+
+@ 0 3 0 1348413def51ac2c17cd0cc1d3c09326
++ entry .Description   fügt dem Kopf ein `<meta name="description">` hinzu
++     `Description(text)` steuert das Beschreibungselement bei und nichts zum Body.
++     `StandardMetadata` liefert dasselbe zusammen mit einem Viewport.
+
+@ 0 1 0 0f5b97b72e5ef06b05bd305ea2ad7c7a
++ entry .Viewport   fügt dem Kopf ein responsives `<meta name="viewport">` hinzu
+
+% 1 1 0 0ff57a847a7ae6e31483bb78d9e4ce53
+
+@ 0 3 0 03085e8b300a17c80229f1a85c40ae73
++       Die Direktive ist `#viewport`, `width=device-width, initial-scale=1`, sofern nicht
++       überschrieben. `StandardMetadata` erweitert diesen Trait.
++   entry #viewport   die Viewport-Direktive, standardmäßig `width=device-width, initial-scale=1`
+
+@ 0 2 0 0bcded46fb448f971857754102250120
++ entry .Keywords   fügt dem Kopf ein `<meta name="keywords">` aus den Trait-Parametern hinzu
++     `Keywords(words*)` verbindet die Wörter mit `, ` zum Inhalt des Elements.
+
+@ 0 2 0 1e24cfb1d4e8bc4d0be93482b18f0334
++ entry .Author   fügt dem Kopf ein `<meta name="author">` hinzu
++     `Author(name)` steuert das Autorelement bei und nichts zum Body.
+
+@ 0 2 0 032ef4add5542f250fee28a09b81dc56
++ entry .ThemeColor   fügt dem Kopf ein `<meta name="theme-color">` hinzu
++     `ThemeColor(color)` nimmt die Farbe als CSS-Farbtext, etwa `t"#336699"`.
+
+@ 0 3 0 0093dac87e92aeb51822dd42581b2eb8
++ entry .Favicon   fügt dem Kopf ein `<link rel="icon">` hinzu
++     `Favicon(href)` nimmt die Adresse des Icons als `Text` — einen Pfad wie `t"/icon.png"`
++     ebenso bereitwillig wie eine URL — über das Given `urlText`.
+
+@ 0 2 0 0d8c3179451a70f2172367fa0e0002fb
++ entry .Canonical   fügt dem Kopf ein `<link rel="canonical">` hinzu
++     `Canonical(href)` nimmt die kanonische Adresse als `Text`, über das Given `urlText`.
+
+@ 0 4 0 05ca458cf35b043d03cf4f4803265c35
++ entry .StandardMetadata   die Metadaten, die fast jede Seite will: eine Beschreibung und ein responsiver Viewport
++     `StandardMetadata(description)` erweitert `Viewport` und fügt aus seinem Parameter ein
++     `<meta name="description">` hinzu, sodass eine Seite einen einzigen Trait einmischt, statt
++     jedes Element einzeln zu verdrahten. Fügen Sie bei Bedarf `Keywords`, `Author`, `Favicon`,
++     `Canonical` und `ThemeColor` daneben hinzu.
+
+% 2 1 0 1999668fbeb379c50fff64a7be3b20ed
+
+% 3 1 0 14a0d7b9b2b8c4091061fdab9469c6f4
+
+% 4 1 0 1163378ab552e4ae1901725100a12a59
+
+% 0 1 0 0bbd76582fa4dcc5097c18cd83b0e617
+
+% 0 1 0 1f916f4bde6507020b3d4f4a8058dfab
+
+% 0 1 0 1e55a38aa832b0c002eb2ff765fe0dd6
+
+% 0 1 0 13885bd3cfe2c0670a1feeec8a249e9e
+
+% 0 1 0 192501feb3587e650b1d35250deddc33
+
+% 0 1 0 17275ffa0a8c3959061892f6606d4f95
+
+% 0 1 0 155a08124e7907330792fed5c5d8608c
+
+% 1 1 0 15f8a231c322b9390b365cd845c839eb
+
+@ 0 1 0 09e060a0f60525db1dff9cfe628f48e7
++ entry .Dashboard   eine Dashboard-Ansicht: eine Marke im Masthead und Karten in einem responsiven Grid
+
+% 1 1 0 007cb42fe29321c10cf1ec818614cf88
+
+@ 0 4 0 13eb21f160eb2f300be6669f7f0e9224
++       Ein Archetyp, zusammengesetzt aus `Mainstay` und `Masthead`. Er betitelt das Dokument nach
++       `#brand`, zeigt die Marke im Masthead und legt `#cards` als Inhalt in einem Grid aus
++       `<article class="graffiti-card">`-Kacheln an, die jeweils von `#card` dargestellt werden.
++       Ein konkretes Dashboard liefert nur die Marke und die Karten.
+
+% 2 1 0 1c9f9022cd600d6e10038730c5a5ec03
+
+% 3 1 0 06cb171598cded6a1ba4ed3b0aefa0af
+
+% 4 1 0 0393d4273acaea3d1d97173760a06650
+
+% 0 1 0 02d08c57617e79ef10c2117f1d0209c2
+
+% 0 1 0 12c6c914e61998a015cc2e31059b2e3c
+
+% 0 1 0 07989679cce8f85614048a56c6efb48c
+
+% 0 1 0 15f1cd6c2b891c6b0e4e4840d2af2aba
+
+% 0 1 0 0a3a3e0ab88c93f309e57467678ad433
+
+% 1 1 0 116adf499914b9510607f125e3bc4fe0
+
+% 1 1 0 10685b3ce7e35dff0fb99c2fd905293d
+
+% 2 1 0 1f9180c96b49b6ce069ff7d85a374d07
+
+@ 0 9 0 1e07f1f363fe33d508d5dab9938a4922
++   entry .gridClass   die CSS-Klasse des Grids: `graffiti-dashboard`
++   entry .cardClass   die CSS-Klasse einer Kachel: `graffiti-card`
++   entry .Card   eine Kachel eines Dashboards: eine Überschrift und ihr eigener Fluss-Inhalt
++     entry #heading   die Überschrift der Kachel, dargestellt als `<h2>`
++     entry #body   der Inhalt der Kachel
++   entry #brand   der im Masthead gezeigte und als Titel verwendete Name; abstrakt
++   entry #cards   die Kacheln, als `Dashboard.Card`s; abstrakt
++   entry #card   stellt eine Kachel als `<article>` dar; geschützt, zum Umstrukturieren überschreiben
++   entry #dashboardStyles   die Regeln dieser Ansicht, das Grid und die Ränder der Kacheln; geschützt, zum Umgestalten überschreiben
+
+@ 0 7 0 1620520a481b334304201cce9723ef0e
++ entry .urlText   erlaubt es, einen `Text` dort anzugeben, wo Honeycomb ein URL-Attribut wie `href` will
++     Das Given `Text is Attributive to Whatwg.Url`, auf oberster Ebene des Pakets und in das
++     `soundness`-Umbrella exportiert. Honeycomb typisiert `href` als URL-Attribut und akzeptiert
++     eine `HttpUrl` oder alles, was sich zu einer abstrahieren lässt, aber die Adresse eines
++     Favicons oder eine kanonische Adresse ist naturgemäß ein beliebiger Pfad wie `/icon.png`;
++     daher nehmen `Favicon` und `Canonical` `Text`, und dieses Given reicht ihn unverändert
++     durch. Es ist mit `import soundness.*` im Geltungsbereich; außerhalb des Umbrellas
++     importieren Sie es beim Namen.

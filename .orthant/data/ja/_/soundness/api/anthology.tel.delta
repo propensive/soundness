@@ -1,0 +1,2884 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 14f7aa466e39789e07dd342ef8c79b5e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0c5523d30a7fc3671ba9d1752c8af003
++ info   値としてのコンパイラとリンカー。Scala、Java、Kotlin をプロセス内で実行し、JVM、JavaScript、Wasm、ネイティブ、Android の出力を作る
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 09f62f0ec16d9d5e1b340a75a9af44c0
++     _Anthology_ は、コンパイラとリンカーをコマンドラインではなく型付きの値としてプログラムから駆動する。
++     コンパイラ（`Scalac`、`Javac`、`Kotlinc`）は型付きのオプションを持つ値であり、オプションはそれを受け付ける言語バージョンでのみ有効である。
++     コンパイラは、名前付きのソースのマップを `LocalClasspath` に対してディレクトリーへコンパイルし、`Compiler.Process` を返す。その診断（重要度、ファイル、スパンを持つ `Compiler.Notice`）、進捗、`Compiler.Result` は値であり、再びパースすべきコンソール出力ではない。
++     クラッシュはスタックトレースを持つ `Compiler.Result.Crash` であり、実行中のコンパイルは中断できる。
+
+@ 0 10 0 1428d965ec33213b1ee8fb238c6681cb
++     リンクは後半の仕事である。
++     コンパイルが出力する中間表現は `Toolchain.Universe`（`Classfile`、`Sjsir`、`Nir`）であり、ビルドが生み出すものは `Artifact.Application` のノードである。実行可能な `Artifact.Jar`、`Library` JAR、選んだモジュールシステムでの JavaScript（`anthology.Js`）、ブラウザ向け Wasm（`anthology.Wasm`）、WASI コンポーネント（`Wasi`）、それを包む `OciImage`、`Toolchain.Triple` ごとのネイティブな `Artifact.Binary`、`Dex` アーカイブ、署名済みの `Apk` がある。
++     ユニバース、言語、アプリケーションは `Toolchain` のノードであり、`Toolchain` はツールをエッジとする有向非巡回グラフである。ある形式から別の形式を作ることはその上の経路探索なので、多段階のビルド（クラスファイルを dex 化してから APK にパッケージする、コンポーネントをリンクしてから OCI 成果物として包む）は、専用のパイプラインなしにエッジから組み立てられる。
+
+% 2 1 0 0a3763b60b4026df09c530ee112265ca
+
+% 3 1 0 19aab03d5d126116047009c66ad81379
+
+% 4 1 0 1b9252ff92e034061ca0aea8595bc220
+
+% 5 1 0 1dc9ef76f0de76ad044c9387739b6b03
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 1 1 0 05a5bc03c943f0e707070d932bb37b69
+
+% 0 1 0 059174723a298f9c186e2cbad03d1515
+
+% 1 1 0 0cfe3034adb5262a0e3d2eb0c3bc8b17
+
+% 2 1 0 1de2dfdc296b7b470c4d7858bd37afc0
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 2 1 0 1c8225d2f6837393147b5f42cfd3bb75
+
+% 0 1 0 1333bc44a24f46261439344aeb1c1f44
+
+% 0 1 0 1365544696e0382616d99992ebd6c6d1
+
+% 0 1 0 02c573240d33b38616e69334fc6d9971
+
+% 0 1 0 115cf8af5d07d6211402ae9bbafe6b7d
+
+% 0 1 0 10b113be7e4c898e0a17cdce1b75f4f5
+
+% 0 1 0 02a4f10577e41fa8130a6cad9d4037af
+
+% 0 1 0 069316fd43d405ae1f375d77714bbdf3
+
+% 0 1 0 0e302c872a805ed409e2355f0ddfdd15
+
+% 0 1 0 117d88c50896774b163adcfb2b4a4020
+
+% 0 1 0 06255cdbc33f329e009de700fec5dd88
+
+% 0 1 0 019855415bc8afad10bb48e865d571b8
+
+% 0 1 0 0c6ade4afe0c9d4218b7e2d61e83adf5
+
+% 0 1 0 1652fc113c1a9ca508484fe844fa2a70
+
+% 0 1 0 1b7b0d95a750e1d417303f22849269d1
+
+% 0 1 0 0059f4cd4f54e0561d9d0f0c2ad43964
+
+% 1 1 0 1dc8f30069a5c8130ed97c8e9a80b7e9
+
+@ 0 2 0 09c20860749775e4111a0113f1a9b744
++     このライブラリは、それぞれが包むツールごとにコンポーネントに分かれているので、ビルドは使う依存関係だけを取り込む。
+
+@ 0 26 0 0aab66024295014f0b3993b8d10f0791
++     - `anthology.core` — 語彙：`Compiler`、`Compiler.Process`、`Compiler.Notice`、`Importance`、`Compiler.Result`、`Compiler.Event`、`Artifact`、`Toolchain.Universe`、`Deliverable`、`Edge`、`Toolchain.Tool`、`Toolchain`、`EntryPoint`、`Link`、`LinkEvent`、`Toolchain.Triple`、`NirPlugin`、およびエッジを持たない二つのノード `Component` と `WasmObject`。JVM 専用である（hellenism のクラスパスが必要なため）。
++     - `anthology.scala` — `Scalac`、その `scalacOptions`、ウォームな `Scalac.Session`、コンパイルのエッジ `scalacEdges`。Scala コンパイラ（`scala3-compiler`）は*コンパイル時のみ*の依存関係である。コンパイラを駆動するプログラムが、使いたいコンパイラを自身の実行時クラスパスに置き、`Scalac.version` がそれがどれだったかを報告する。
++     - `anthology.java` — `Javac` と `javacEdges`。実行中の JDK 自身のコンパイラを使う。
++     - `anthology.kotlin` — `Kotlinc`、`kotlincOptions`、`kotlincEdges`。`kotlin-compiler-embeddable` を使い、これもコンパイル時のみである。コンパイラは呼び出し側が用意する。
++     - `anthology.linker` — `jarEdges`、`jarOptions`、`Library`、`Bundler`。外部ツールを必要としない JAR のパッケージングである。
++     - `anthology.link` — `sjsEdges`、`linkerOptions`、`Wasi`、`WasiToolchain`（およびエクスポートされない `anthology.Js` と `anthology.Wasm` のノード）。コンポーネントに同梱された JVM ライブラリである Scala.js リンカーを駆動する。WASI コンポーネントのリンクではさらに `wasm-tools` と `wit-bindgen` の scala-wasm フォークを外部コマンドとして呼び出し、`WasiToolchain()` がそれらを探す。
++     - `anthology.nir` — `nativeEdges` と `nativeOptions`。Scala Native のビルド（`tools_3`、同梱）を `clang` と `clang++` を通じて駆動し、`nativeEdges()` がそれらを `PATH` 上で探す。`Toolchain.Universe.Nir` *への*コンパイルには Scala Native コンパイラプラグインが必要で、それは `NirPlugin` の given で指定する。
++     - `anthology.dex` — `Dex`、`dexEdges`、`dexOptions`。R8 の D8 dex 化ツール（同梱）を駆動する。
++     - `anthology.apk` — `Apk`、`apkEdges`、`apkOptions`、`Axml`。Android SDK のビルドツールを一切使わずに、完全で署名済みの zip-align された Android パッケージを作る。必要なのはキーストアだけである。
++     - `anthology.oci` — `OciImage`、`ociEdges`、`ociOptions`、`OciConfiguration`。WASI コンポーネントを Wasm OCI 成果物として包む。
+
+@ 0 7 0 09384b8fcd14ce56130a085023aef86f
++     すべてのコンポーネントは JVM 専用であり、すべてが `soundness` アンブレラにエクスポートされる。ただし、そこで衝突する三つの名前は除く。`anthology.Js` と `anthology.Wasm`（アンブレラの `Js` と `Wasm` は xenophile のもので、JavaScript と Wasm の外部関数インターフェースである）、そして `anthology.Language`（アンブレラのものは cosmopolite のもの）である。
++     `import soundness.*` の下では、この三つは `anthology.Js(anthology.Js.Module.Es)` のように完全修飾で書く。
++     オプションのオブジェクト `scalacOptions` と `kotlincOptions` はアンブレラのパッケージとしても映されているので、`scalacOptions.experimental` はどちらからも同じように読める。
+
+@ 0 7 0 03785cd4e890719900a96deb734dd4ce
++     コンパイルに必要なコンテキスト値は、`System`（`systems.javaBaseSystem`）、`Monitor`（`supervise` の中で、`threads` の given とともに）、`Probate`（`probates.cancelProbate`）、`Compiler.Event is Loggable`（イベントを捨てるなら `logging.silentLogging`）、そして `Tactic[Compiler.Error]` である。`Toolchain#produce` には `Monitor`、`System`、`WorkingDirectory`、`Tactic[Link.Error]`、`LinkEvent is Loggable` が必要である。
++     ツールを探すコンストラクター `WasiToolchain()` と `nativeEdges()` は、さらに `WorkingDirectory` と `Environment` を必要とする。
+
+% 0 1 0 0e5152cb0a80081d0813ac40ff570a5a
+
+% 0 1 0 112d5899b7f448111d9c9e07371fbd4f
+
+% 0 1 0 0438d508389f00610ac2343ba5984ccb
+
+% 0 1 0 036915c7f1a495321b4eb5654965392f
+
+% 0 1 0 07fa6f2b7258bb0805a0b62a75dbcb9a
+
+% 0 1 0 08073aad6bf47e221d5d5d1e427b7d45
+
+@ 0 1 0 069537f19599add5185e2c67a0309c5d
++ entry .Compiler   プロセス内コンパイラの形。バージョンを持ち、ソースとクラスパスから `Compiler.Process` を作る
+
+% 1 1 0 141c62780ed717e015fcbbac154028e1
+
+@ 0 6 0 07efbfc398415c6f0d86c125a12115d8
++       `Compiler` は `Scalac`、`Javac`、`Kotlinc` のすべてが示すインターフェースである。`#version` はその値が駆動するコンパイラを、コンパイラ自身が報告するとおりに報告し、`#apply` は名前付きのソースのマップを `LocalClasspath` に対して出力ディレクトリーへコンパイルして、診断と結果が値として届く `Process` を返す。
++       どのコンパイラも同じ引数を同じ順で受け取るので、コンパイルを統括するツールは言語ごとに書き方を変えなくてよい。
+
+% 2 1 0 0967b3ade6d6057b1542027bc7e7acf9
+
+% 3 1 0 18b3da96c4644c001942c698f66b240e
+
+% 4 1 0 02527c84bb9023c417bf0795f09e048e
+
+% 5 1 0 0c5d19d7bc72796f09d1aa6efd673844
+
+% 6 1 0 1718c4e0b4398acf0aab0c241cc695c2
+
+% 7 1 0 1ae27f0773f6fe520216e8cd1a8e640b
+
+% 8 1 0 06e716b090967240184b66976f3ae6be
+
+% 9 1 0 14f89392bd14605314b4a0d7bae9556b
+
+% 10 1 0 0efb71e6b638651b128a6f25be8101ec
+
+% 12 1 0 171db999561a2d1113cf19f56cea90f6
+
+% 13 1 0 0749ca327acffe3e14e71354e17b0fd5
+
+% 15 1 0 1fc8b1677711c2171c49d66bc3878c3b
+
+% 0 1 0 194678915c6896d1178d0f43e2922dad
+
+% 1 1 0 15edf89c2f6bf2e205c747f82dad1087
+
+% 2 1 0 00daa24ed9a13e100d2f6e6717dec580
+
+@ 0 2 0 17a457035cf8458217865b865ad5de2d
++       コンパニオンは `Compiler.Error` を持つ。これは、コンパイラをまったく構成できないときにすべてのコンパイラが発生させる唯一のエラーであり、実行されて失敗するコンパイルとは区別される。
+
+% 1 1 0 0d0fb41b4b8d456d141232c189f4d1b0
+
+% 0 1 0 060c52244f3056531fa561f5f28b29b6
+
+% 1 1 0 11df5025adaafc7c1e899298e77a4fdd
+
+% 1 1 0 1260a6c499a162d8074eff6753677f18
+
+@ 0 1 0 1f7b7bc742428bab10b92ddcec9b0b97
++   entry .Error   コンパイラをそのオプションから設定できないときに発生する
+
+% 1 1 0 0479fd3dfa8873fa1967344cb37db399
+
+@ 0 19 0 1d48c60e8bc8841a0fa3cafaf4062521
++         エラー `↯/s.137.3`：_there was a problem with the compiler configuration_。
++         `Scalac` に与えられた引数（埋め込まれたコンパイラが拒否するオプション）からコンパイラの基本コンテキストを構築できないときに発生し、これは `Scalac.Session` を開くときに起こる。
++         これは構成の誤りであり、コンパイルの失敗ではない。コンパイルできないソースは `Notice` を伴う `Result.Failure` を、例外を投げるコンパイラは `Result.Crash` を返し、どちらもこのエラーを発生させない。
++   entry #version   この値が駆動するコンパイラのバージョン。コンパイラが報告するとおりのもの
++       埋め込まれた Scala コンパイラなら `3.10.0`、実行中の JDK の Java コンパイラなら `25.0.4`、クラスパス上の Kotlin コンパイラなら `2.4.10` である。
++       ビルドはこれを出力を生んだツールとして記録し、メモ化のキーには、コンパイラが変わったときに再ビルドがキャッシュを外すよう、これを含めなければならない。
++       コンパイルが返す `Process` は、自身の `version` として同じテキストを持つ。
++   entry #apply   名前付きのソースをクラスパスに対してディレクトリーへコンパイルし、`Compiler.Process` として返す
++       `compiler(classpath)(sources, out)`：ソースは名前（診断が引用するもの、`hello.scala`）からその内容への `Map`、クラスパスはソースのコンパイル対象となる `LocalClasspath`、`out` は `Abstractable across Paths to Text` である任意のパス型である。
++       `System` と `Monitor` を必要とし、`Compiler.Event` をログに記録し、`Compiler.Error` を発生させる。
++       `Scalac` では出力ディレクトリーがあらかじめ存在していなければならない。`Toolchain` のコンパイルのエッジはそれを作るが、直接の呼び出しは作らない。
+
+@ 0 1 0 088c983663b3e2fe13922a915d0b86f4
++   entry .Process   実行中または完了したコンパイル。その診断、進捗、結果を値として持つ
+
+% 1 1 0 1561927ab96f638f0f7702e8d787feaf
+
+@ 0 7 0 1cdbf4f1776fe006196749764bc93672
++         どのコンパイラの `apply` もすぐに `Process` を返し、その間コンパイルは専用のタスクで実行されている（`Scalac`、`Javac`、`Kotlinc`）か、すでに完了している（`Scalac.Session.Process`）。
++         `#complete()` は `Result` を待ち、`#notices` はそれまでの診断の古い順のリストであり、`#errors` と `#warnings` はその数を数え、`#updates` は診断と進捗の刻みを到着順に織り交ぜたライブなフィードで、コンパイルの進行を表示するツールのためのものである。
++         `#abort()` は、次の進捗の刻みで止まるようコンパイラに求める。
+
+% 2 1 0 1708328d8d6d4d791166ee14307150c3
+
+% 3 1 0 097c2289c4de5e920bbb9cd55b0ee6e3
+
+% 4 1 0 089f6f392efbc1ba03ea6b8da6dd8d7a
+
+% 5 1 0 15ebc65531ad5ae507a4ff63606b8726
+
+% 6 1 0 0ee2b6d23688c5ad1969ae07fd61cf0f
+
+% 7 1 0 04d2551ff72dc51406137cd50d29ccd6
+
+% 8 1 0 009ee397ad7777f016640e60b2a7d7ed
+
+% 9 1 0 00bad761efcea2e71dca866df95d2da7
+
+% 10 1 0 08135abd70c5851517f90db2ab5e1cef
+
+% 12 1 0 06a58ee3905592d6132a70cde7676038
+
+% 13 1 0 0151dd9fdac58056108e4773b1fca530
+
+% 15 1 0 167b21a33a3afc9805e27d38fe26a065
+
+% 0 1 0 01ffb0e476b78c0a1090683d8b731f9c
+
+% 0 1 0 185d4189271be9250591eda7ecbf1b0c
+
+% 0 1 0 0d71d5e30a1ff6690e5b4cb98678329d
+
+% 0 1 0 0c5df8d6c36b94691e24e721874d305d
+
+% 0 1 0 0ffa97939ea79b50104f65e9305b59ea
+
+% 1 1 0 11d92feda25b5c48185f41327786b7a4
+
+@ 0 4 0 071d51b36657a4180535d4ce9d31e4ce
++         プロセスは、コンパイラが書き込むシンクでもある（三つの `#put` オーバーロード）。別のコンパイラを包むツールは、これを通じてプロセスに書き込む。
++         その `#version` はそれを実行したコンパイラのバージョンなので、完了したコンパイルは、呼び出し側がコンパイラを手元に持っていなくても、何がその出力を生んだかを示せる。
+
+% 0 1 0 1f2ea1ed2bd6fcef083747faa9f44468
+
+% 0 1 0 176736af42a4829b1b32edf7a2d69570
+
+% 0 1 0 07921ad559fcf1e9081f569ce51b4adc
+
+@ 0 4 0 169b0eb8cf0d4e1601fb930b6747d63d
++     entry .Update   ライブなフィードの一要素。診断、または進捗の刻み
++         `Noticed(notice)` はコンパイラが報告したとおりの `Notice` を、`Progressed(progress)` は `Progress` を、到着した順に運ぶ。`#updates` がそれらを生み出す。
++         利用者は二つのケースでマッチする。
+
+% 2 1 0 0f4872edb456157b0d45c68012df6887
+
+% 3 1 0 1e60045c4122aca81d14e43e74d38efe
+
+% 0 1 0 1d4e2cc410e368ec02bdc034f708ebce
+
+% 0 1 0 1ae1064bf1137a4219ed59c91a2dcb91
+
+% 0 1 0 19f55bf95c1472cc15ac2086aa56e43a
+
+% 1 1 0 0fed48038575b7570c53ea8674b97220
+
+@ 0 27 0 1ba005e717319ec1192838a44949376f
++     entry #version   このコンパイルを実行したコンパイラのバージョン
++     entry #put   通知、進捗の刻み、結果、またはコンパイルを実行するタスクを記録する
++         プロセスに書き込むコンパイラのための四つのオーバーロードである。`put(notice)` は `Notice` を追加し、その重要度に応じてエラーまたは警告として数え、フィードに渡す。`put(progress)` は `Progress` をフィードに渡す。`put(result)` はプロセスを `Result` で完了させる。`put(task)` はコンパイルが実行される `Task[Unit]` を登録し、`#complete()` が結果の後にその終了を待てるようにする。
++     entry #errors   これまでに報告されたエラーレベルの通知の数
++     entry #warnings   これまでに報告された警告レベルの通知の数
++     entry #complete   コンパイルの結果を待ち、更新のフィードを止める
++         `Result`（`Success`、`Failure`、`Crash`）を待ち、次にコンパイルのタスクの終了を待ってからフィードを止めるので、`#updates` の利用者はその終わりを見ることができる。
++         `Monitor`、（待機のための）`Tactic[Async.Error]`、`Event is Loggable` を必要とする。
++         これが戻った後、`#notices` は完全である。
++     entry #abort   コンパイラに停止を求める
++         コンパイラが進捗コールバックを通じて調べるアトミックなフラグを解除するので、中断されたコンパイルは最後まで実行されずに次の進捗の刻みで止まる。
++         そのとき完了する結果は、コンパイラが報告するものになる。
++         `#cancelled` はそのフラグを読み返す。
++     entry #cancelled   `#abort()` が呼ばれたかどうか
++     entry #updates   診断と進捗の刻みのライブなフィード。ウィンドウのストリームとして
++         プロセスの中継の上にある、所有者が一つだけのストリームである。各ウィンドウは `Process.Update` の `Array` で、最初のものは最初の更新が届いたときに届き、残りはそれ以降に届いたものを排出する。
++         一度だけ取得し、`updates.records.each` で要素ごとに消費する。
++         コンパイルが完了すると終わる（`#complete()` が中継を止める）。完了後に取得するとフィード全体を再生してから終わるので、終わったプロセスもまだ調べることができる。
++         スコープに `Buffering` が必要である。
+
+% 2 1 0 0ed40a3055c9eefc16be84c3a5650e1d
+
+% 3 1 0 1bc6ffd78c82f231139fa9beb8fbd3cb
+
+% 4 1 0 1523806a8d2906ac1bd4a33f2e9e2d95
+
+% 5 1 0 1d712504714df9da1e69bae083a75d1d
+
+% 6 1 0 1412f9af950f60090f1590fa8ffe08e8
+
+% 7 1 0 11fe73a79c584b260f79093579db904b
+
+% 8 1 0 13481b05fb177d480a63584f6c1d8bce
+
+% 9 1 0 08a3520c7a4c39fb05378c2c26e8f0e3
+
+% 10 1 0 12f992422363bbb417cfc596e7d42dae
+
+% 12 1 0 1431149c19f72ef20dc487dc67a2b196
+
+% 13 1 0 033d66b75b53c6a51191323397cc001f
+
+% 15 1 0 1ef4b0fdf3a003db0c1a1a9f14bead70
+
+% 0 1 0 10fc6d011bc04f991cff4889126b4d82
+
+% 0 1 0 163cc6d22219fefc0df7c00680f2d80c
+
+% 0 1 0 0e414d68fb8182d30f78dfb99a3f05fd
+
+% 0 1 0 1e668aa35349cdb70431aa8a77e9b2c0
+
+% 0 1 0 1b6563f0c153f734194d759870fa0e4b
+
+% 1 1 0 1d95eae59715b7651c081f0991ec2386
+
+@ 0 10 0 1415dd745f73c3fa1e644fc6f2a0aa03
++     entry #notices   これまでに報告された診断。古い順
++         事後に調べるための正格なスナップショットであり、`#complete()` が戻った時点で完全になる。
++         ライブな利用者は、進捗も運ぶ `#updates` を使うほうがよい。
++   entry .Result   コンパイルの終わり方。成功、失敗、またはスタックトレースを伴うクラッシュ
++       `Success` はコンパイラが実行されてエラーを報告しなかったことを、`Failure` は実行されて少なくとも一つのエラーを報告したこと（`Process` の `notices` がそれを記述する）を、`Crash(error)` はコンパイラ自体が例外を投げたことを、投げた `StackTrace` とともに意味する。
++       クラッシュは例外ではなく値として届き、その後、状態を持たないコンパイラは共有のコンパイラインスタンスを置き換え（`Scalac.refresh()`、`Javac.refresh()`）、`Scalac.Session` はウォームな状態を作り直すので、次のコンパイルはきれいな状態から始まる。
+
+% 2 1 0 1214ce4199b597e7153434001c9e191d
+
+% 3 1 0 055f8bd79dbc6e2202581f54521a2eaa
+
+% 0 1 0 0b340abfa9e5f10b1bd42f06c3c64bee
+
+% 0 1 0 0e1879f1353c3b3d095e3a730b568f04
+
+% 0 1 0 190c6de313de9b43080c79183f95716d
+
+% 0 1 0 0c5539a9dc21dab00b01245f506bc6bd
+
+% 1 1 0 084080476a3eedcd0bcd599a1186e1ac
+
+@ 0 1 0 1ce10f99a511ad0f0af723783045b24f
++   entry .Event   コンパイラが実行中に記録するもの。開始、引数、各診断、クラッシュ
+
+% 1 1 0 04cc29d98413d62a0796cb40bee8f40e
+
+@ 0 17 0 07a0f62ab41c0464085fa7400e8bbe15
++         すべての `Compiler.Event` は `Log.Compiler` タグを持つ。
++         `Running(arguments)` はコンパイラの開始前にその引数リスト全体とともに `info` で記録され、`Notice(diagnostic)` は各診断が報告されるたびに `fine` で、`CompilerCrash` はコンパイラが例外を投げたときに `fail` で、`Start` は `Javac` と `Kotlinc` が実行前に `info` で記録する。
++         どのコンパイルでも、スコープに `Compiler.Event is Loggable` がなければならない。`logging.silentLogging` はそれらを捨て、`Event.relay` はそれらを `LinkEvent` のチャンネルへ転送する。
++     entry .communicable   各イベントをメッセージとして描画する
++         _starting compilation_、_the compiler crashed_、_the compiler emitted a diagnostic: `diagnostic`_、_running the compiler with arguments `arguments`_ である。
++     entry .relay   各イベントを `LinkEvent.Message` として転送する `Event is Loggable`
++         `Toolchain` のコンパイルのエッジにはツールチェーンの `LinkEvent is Loggable` が与えられるが、それらが駆動するコンパイラは `Event` を話す。`Event.relay(using linkEvents)` はコンパイルの間この二つを橋渡しするので、ある経路のイベントを監視するビルドは、コンパイルもリンクも同じように見る。
++         各イベントは `Event.communicable` を通じて描画され、`LinkEvent.Message` と同じレベルで記録される。
++         これはリンクのチャンネルが捕捉するものをすべて捕捉する。
++   entry .Progress   進捗の刻み。完了した割合と、コンパイラの現在の段階
+
+% 1 1 0 18eeca25a44c29cd1b5af7ddc689e35c
+
+@ 0 6 0 096c7bc4cc61dde104e5e55c6358ac42
++         `Scalac` はパーセントの整数値ごとに一回刻みを報告し、コンパイラがいるフェーズの名前（`typer`、`erasure`、…）を `#stage` とする。進捗を公開しない `Javac` と `Kotlinc` は、開始時に `0.1`、成功時に `1.0` を報告し、コンパイラの名前を段階とする。
++         刻みは `Process#updates` を通じて `Update.Progressed` として届く。
++     entry #complete   コンパイルが終わった割合。`0.0` から `1.0` まで
++     entry #stage   コンパイラの現在のフェーズ。コンパイラが名付けるとおりのもの
+
+@ 0 1 0 1a5e3e374787867d0e3babf29877e364
++   entry .Notice   一つの診断。重要度、ファイル、メッセージ、スパン、意味的なマークアップ
+
+% 1 1 0 1b1eda47efba43781a8911f3d0c86cd6
+
+@ 0 6 0 1261d6c225c0fa6009e39ef163c91f89
++         コンパイラがソースについて報告するものを値として表す。`#importance` は `Info`、`Warning`、`Error` のいずれか、`#file` はコンパイルの `Map` でソースに与えられた名前（`hello.scala`）でディスク上のパスではない。`#message` はテキスト、`#span` は対象となるソースの領域で、denominative の `Span` として、位置を持たない診断では `Unset` となる。
++         ツールはコンパイラの出力をそのまま表示するのではなく、問題のコードに下線を引くことができる。
+
+% 2 1 0 0812b646c7317998008d744709e46446
+
+% 3 1 0 09187b25bb5c032403f7edce48d6826a
+
+% 0 1 0 14d493e25a69f88c0dcb749c094cc8ad
+
+% 0 1 0 195f7ebe823acfbe09059e1f48c7fa87
+
+% 1 1 0 143c7c85e1cc1b9b084b47c01ffecdbc
+
+@ 0 10 0 1ab603186ef837121676d232b7ce449a
++         `#markup` は、`scalacOptions.semanticDiagnostics` の下で `Scalac` だけが設定する。コンパイラの帯域内の意味マーカー（U+E000 とその仲間）を保持した生のメッセージであり、delicious ライブラリがこれをスタイル付きのスパン、プレースホルダー、ピクルされた型からなる `SemanticMessage` にパースする。そのため、「found `A`, required `B`」というメッセージは、再びパースすべきテキストではなく、描画して比較できる二つの型として届く。
++     entry #importance   通知が情報、警告、エラーのどれであるか
++     entry #file   コンパイル時にソースに与えられた名前
++     entry #message   診断のテキスト。意味マーカーは取り除かれている
++     entry #span   通知が対象とするソースの領域、または `Unset`
++     entry #markup   `-Zsemantic-diagnostics` の下では意味マーカー付きの生のメッセージ、それ以外では `Unset`
+
+@ 0 1 0 0dd67d78f06bb78a16e1547a8d57a4a9
++ entry .Compilation   コンパイルの出力ディレクトリーとクラスパス。その `Universe` でタグ付けされる
+
+% 1 1 0 025cf6a683a7e3ac1207276bf1602c95
+
+@ 0 5 0 16b829744f7c234603d42d19ce4c8e25
++       コンパイルが書き込んだディレクトリーと、コンパイルの対象となった `LocalClasspath` を組にしたトークンで、それが属するユニバースを型パラメーターとして持つ。そのため、`Compilation[Toolchain.Universe.Nir]` が求められる場所に `Compilation[Toolchain.Universe.Sjsir]` を渡すことはできない。二つは異なる型であり、不一致はリンク時の失敗ではなくビルドツールのコンパイルエラーになる。
+
+% 2 1 0 0e89697f7ee6f4a11e2237ee421444b3
+
+% 3 1 0 11e957325721085b1c7005e3235a9e00
+
+% 0 1 0 035b83b2969ca61318513a41f99a62b6
+
+% 0 1 0 1e0282d9f69044fc1fe75ab96becb5d8
+
+% 1 1 0 11fbc502ef86fb8f0cfe4359fd7f2bff
+
+@ 0 4 0 18fb9260c9510b3d12181e8c63ae68bc
++       `Toolchain` の仕組みは、同じ組をタグなしで `Deliverable.Emission` として流す。そこではユニバースは型ではなくグラフのノードだからである。
++   entry #out   コンパイルが出力を書き込んだディレクトリー
++   entry #classpath   ソースのコンパイル対象となったクラスパス
+
+@ 0 5 0 068f511ff6f4c51b1e5631253f9e7d2b
++ entry .Importance   診断のレベル。`Info`、`Warning`、`Error`
++     Scala コンパイラ自身のレベルの順に並んでいる（その序数はコンパイラのもの）ので、重要度が `Importance.Error` である通知はエラーとして数えられる。
++     `Link.Error.Reason .CompilationFailed` も同じようにエラーを数える：`notices.filter(_.importance == Importance.Error).length`。
+
+@ 0 7 0 0f164081aecc301808cd6bc47ef8f631
++ entry .Language   ソース言語。ツールチェーンのソースノードとして：`Scala`、`Java`、`Kotlin`
++     ライブラリがコンパイラを持つ言語ごとの `Artifact.Source` で、ID は `scala`、`java`、`kotlin` である。`Deliverable.Sources` が置かれるノードであり、そこから `scalacEdges`、`javacEdges`、`kotlincEdges` が、各コンパイラが出力できるユニバースへと続く。
++     これは `soundness` アンブレラに**エクスポートされない**。アンブレラの `Language` は cosmopolite のものなので、`import soundness.*` の下では `anthology.Language.Scala` と書く。
++     `Artifact.source(t"scala")` は同じノードである。
+
+% 2 1 0 178ec7b8c45f99c30d454dd3b3776479
+
+% 3 1 0 0d839f7b7dcabedf02d6e4d834e879e5
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 0 1 0 09866ebe08e4f9d51cc144ad69591a7c
+
+% 0 1 0 0173b2ad47146740019a1868ff52a795
+
+% 1 1 0 102447f14271f35a0fb55ecc0e5ca14b
+
+@ 0 1 0 0bac91480f5ba1391bb89a94cb91e830
++ entry .NirPlugin   Scala Native コンパイラプラグインの場所。NIR を出力できることの証拠として
+
+% 1 1 0 1d8ccb6c866ef9751c3444c5256ecd6d
+
+@ 0 6 0 13bb082eaa1f91d91c9a3458e57b0112
++       NIR は Scala コンパイラに組み込まれたバックエンドではなくコンパイラプラグイン（`nscplugin`）が出力するので、`Toolchain.Universe.Nir` へのコンパイルにはプラグインの JAR の場所を知る必要がある。
++       スコープ内の `NirPlugin` の given がその証拠である。`Toolchain.Universe.nir` はそれから `Toolchain.Universe.Emission[Toolchain.Universe.Nir]` を構築してコンパイラの引数に `-Xplugin:<jar>` を加え、`scalacEdges.nir` はそれを要求する。
++       それがなければ `Scalac#targeting[Toolchain.Universe.Nir]` は適用できず、エッジは構築できない。
+
+% 2 1 0 04db0529a669695512ab95fb2d84f7c2
+
+% 3 1 0 13fc1b0f409549ae1a26e9a5e4d20e1e
+
+% 4 1 0 1e102465f6d389ba0f902e46fd814b82
+
+% 0 1 0 1ada3ecc6a4015280b3387780ef305db
+
+% 0 1 0 01e83936a27cdc72155afe699cb38397
+
+% 1 1 0 0dc7e531bf3e0187062b6f6b1a8eabb2
+
+@ 0 5 0 1b80c844dd1539ce183726a305e3007b
++       公開されている標準のプラグイン（`org.scala-native:nscplugin_<scala version>:0.5.12`）は Soundness のコンパイラで動く。Scala Native のランタイム（`scalalib`、`scala3lib`、`javalib`、`auxlib`、`clib`、`posixlib`、`nativelib`）は他のライブラリと同様にクラスパスに置き、それがなければ通常のコンパイラの診断として現れる。
++   entry #jar   プラグインの JAR のパス
+
+@ 0 1 0 1cc15878bd757ed91705e89621a4b618
++ entry .Artifact   ツールチェーンのノード。ソース言語、中間表現、またはアプリケーション形式
+
+% 1 1 0 105f2ed0e9934be10bf862eeb668dfac
+
+@ 0 5 0 11a96319824699aa13c10cc6a177ddc8
++       `Toolchain` のすべてのノードは `Artifact` であり、三つの層のいずれかに属する。コンパイラが消費する `anthology.Language.Scala` のような `.Source`、ライブラリが組み合わさる開かれた世界のリンク前の内容を保持する `Toolchain.Universe` のような `.Ir`、そしてホストが実行する閉じた形式である `Artifact.Jar` や `Apk` のような `.Application` である。
++       ツールはどの形式でも消費するが、生み出すのは常に `Ir` か `Application` だけであり、`Edge` はそれを型で示す。
+
+@ 0 7 0 02716b434315460902fd8fbad5202cca
++       形式の同一性は `#kind` と `#id` であり、それ以外の何物でもない。`equals` と `hashCode` は final で、この二つだけを比較する。
++       そのため、パラメーターが利用者の受け取るものを変える場合（JavaScript 成果物のモジュールシステム、WASI 成果物のインターフェースのバージョン、ネイティブバイナリーのターゲットトリプル）、それは `id` の一部であり、パラメーター化のそれぞれが別個のノードになる。
++       `Artifact.Binary(Toolchain.Triple.Arm64MacOs)` は、JAR が JavaScript バンドルと異なるのと同じだけ `Artifact.Binary(Toolchain.Triple.X64Linux)` と異なる。リンカーを共有しているからといって、交換可能になるわけではない。
+
+@ 0 5 0 09d79f71c842f73308b3ae189853f3ca
++       ノードの集合は開かれている。
++       形式は、種類と名前によって `.apply`、`.source`、`.ir`、`.application` でデータとして宣言できる。実行時に読まれるレジストリが、どの Soundness のリリースも知らない形式を宣言するのはこの方法による。宣言された形式は、同じ種類と名前を持つ組み込みの形式と*同じノード*なので、`Artifact.ir(t"classfile")` は `Toolchain.Universe.Classfile` に登録されたすべてのエッジに届く。
+
+% 2 1 0 111bdceda737564a150b2708edef6d62
+
+% 3 1 0 0a2d1c8e7911f8a7097f934806bcc685
+
+% 0 1 0 03a870baaaff7c8f083e4b61f1465d36
+
+% 0 1 0 1681485231a06feb0dc615f736e7b952
+
+% 0 1 0 01ba4a490045f1cc0d5f6234fe5da0b0
+
+% 0 1 0 0676cc91e152dc82104e6a4c12da32f4
+
+% 1 1 0 182307eb95df21f31f83c1791e77ce86
+
+@ 0 4 0 19bcee6c5016528a1fff74d7bfe2b33f
++       三つの層のトレイトのいずれかを通さずに `Artifact` を継承するクラスは、自分で `#kind` を定義しなければならず、どのクラスも `equals` や `hashCode` をオーバーライドしてはならない。これを継承するケースクラスには構造的な等価性が合成されないので、パラメーターでノードを区別する形式は、すべての組み込みの形式がそうするように、それを `id` にエンコードしなければならない。
+
+% 1 1 0 117d7cb7f5622b42050553e7bfbc2452
+
+% 1 1 0 0cf545747b5ed81c1a70c67e9822655e
+
+% 1 1 0 1f43fe9da9580bf51b1a90b5a686fa66
+
+@ 0 19 0 0d958b6d7530e7c91cc220845df650df
++   entry .Kind   形式が属する層。`Source`、`Ir`、`Application`
++       形式が宣言されるときの種類を、データとして表す。
++       二つの形式は種類が等しいときにだけ等しいので、ソースとアプリケーションは名前を共有できる。
++   entry .Source   コンパイラが消費する形式の層。ソース言語
++       `kind` は `Kind.Source` に固定される。
++       組み込みのソースは `anthology.Language` のケースであり、`Artifact.source(id)` で別のものを宣言する。
++   entry .Ir   中間表現の層。クラスファイル、`.sjsir`、`.nir`、コンポーネント
++       `kind` は `Kind.Ir` に固定される。
++       組み込みの中間表現は、Scala のコンパイルが出力する `Toolchain.Universe` と、エッジを持たない `Component` と `WasmObject` である。`Artifact.ir(id)` で別のものを宣言する。
++   entry .Application   ホストが実行する閉じた形式の層。JAR、APK、バンドル、バイナリー
++       `kind` は `Kind.Application` に固定される。
++       組み込みのアプリケーションは `Artifact.Jar`、`Artifact.Binary`、`Library`、`anthology.Js`、`anthology.Wasm`、`Wasi`、`OciImage`、`Dex`、`Apk` であり、`Artifact.application(id)` で別のものを宣言する。
++   entry .Jar   JDK に結びついた実行可能な JAR。`jarEdges` が `Classfile` から到達するノード
++       ID が `jar` のアプリケーションノードである。コンパイルの出力とそのクラスパス全体をまとめた実行可能な JAR で、ただ一つの `EntryPoint` を `Main-Class` とする。
++       `soundness` アンブレラの `Jar` は zeppelin のものなので、ここに `Artifact.Jar` として入れ子になっている。
++   entry .Binary   一つのターゲット `Triple` のための機械語の実行ファイル。トリプルごとに一つのノード
+
+% 1 1 0 0619c7a1489c5c69146bd6a3eb690aca
+
+@ 0 21 0 000fd10830743dbf1a9f026e64237eae
++         ID が `binary-<triple>`（たとえば `binary-arm64-apple-darwin`）のアプリケーションノードで、`Toolchain.Universe.Nir` から `nativeEdges` を通じて到達する。
++         バイナリーは一つのオペレーティングシステムとアーキテクチャーの C ライブラリに結びついているので、トリプルごとに別のノードになり、`nativeEdges(Toolchain.Triple.X64Linux)` で構築したツールチェーンには `Artifact.Binary(Toolchain.Triple.Arm64MacOs)` への経路がない。
++         アンブレラの `Binary` は monotonous のものなので、ここに `Artifact.Binary` として入れ子になっている。
++     entry #triple   バイナリーが動くターゲットプラットフォーム
++   entry .apply   `Artifact(kind, id)`：種類と名前によってデータとして宣言された形式
++       種類に応じて `.source`、`.ir`、`.application` に振り分ける。
++       結果は、その種類と ID を持つ組み込みの形式があれば、それと等しく、同じハッシュ値を持つ。
++   entry .source   `Artifact.source(id)`：宣言されたソース形式
++       `Artifact.source(t"proto")` は、どの Soundness のコンパイラも知らないが、登録されたエッジが消費できる言語のためのものである。
++       `Artifact.source(proto)` として表示される。
++   entry .ir   `Artifact.ir(id)`：宣言された中間表現
++       `Artifact.ir(t"descriptor")` は、独自のキャリアを持つユニバースである。
++       `Artifact.ir(t"classfile")` は `Toolchain.Universe.Classfile` である。
++   entry .application   `Artifact.application(id)`：宣言されたアプリケーション形式
++       `Artifact.application(t"bundle")` は、独自のホストとの契約を持つ引き渡し物である。
++       `Artifact.application(t"js-es")` は `anthology.Js(anthology.Js.Module.Es)` である。
++   entry #id   形式の名前。種類と合わせてその同一性のすべてとなる
++   entry #kind   形式が属する層
+
+@ 0 1 0 0c829b480001570a1fd03c9ac65b7611
++ entry .Deliverable   ツールチェーンの経路に沿って流れる値。ソース、出力、または製品
+
+% 1 1 0 151bc6266ec0044b09ec9a18a1483221
+
+@ 0 7 0 0f3c13b41b61205f190d3d56435acdad
++       各エッジのツールが消費し生み出すものであり、そのケースがグラフのどこに属するかを示す。`Sources(sources, classpath)`（名前付きのソースのマップと、そのコンパイル対象となるクラスパス）はソース言語のノードに、`Emission(out, classpath)`（コンパイルの出力ディレクトリーと、そのコンパイル対象となったクラスパス）は中間表現に、`Product(file)`（リンクまたはパッケージされたファイル）はアプリケーションに置かれる。
++       `Toolchain#produce` はこれを入力として、ソースとして指定するノードで受け取る。
+
+% 2 1 0 00d54e188e6812bf0160f8750c9630a6
+
+% 3 1 0 07f0c868c5478d3911de43fd84b1de74
+
+% 4 1 0 13b694e2625b0aac048ee5375bdb75af
+
+% 2 1 0 1d9e30cc6acb539604ba44fbaac23acb
+
+% 3 1 0 0cf8c7f5173ab1961222e335a6ae2776
+
+% 0 1 0 1da197e2b47ddf85135e4849c87502b8
+
+% 0 1 0 093da03dae26d63f1ae5f444c63e8c11
+
+% 0 1 0 1ab626aa629512b01131bf4c6b0a934d
+
+% 1 1 0 1697d2142ef918b10b781d42ad1efa6a
+
+@ 0 4 0 083110e1d1fc41d30d169c33acd3433d
++       ツールは自分のエッジがどのバリアントを消費するかを静的に知っており、三つのアクセサー `#sources`、`#emission`、`#product` がその変換である。それぞれ別のバリアントを与えられると、生成中の形式を挙げて、理由 `UnexpectedInput(format)` の `Link.Error` を発生させる。配線を誤ったツールチェーンはこうして診断される。
+
+% 1 1 0 1f4d46aacff176b90a64e3e6ac8058be
+
+% 0 1 0 086080c132c88e4409d1d47cf72df74d
+
+@ 0 7 0 14f3d17d73315b1203c3a29e51f2bc45
++   entry #sources   名前付きのソースとクラスパス。コンパイルのエッジのためのもの
++       これが `Sources` でなければ `Link.Error(UnexpectedInput(target.id))` を発生させる。
++   entry #emission   出力ディレクトリーとクラスパス。リンクまたはパッケージングのエッジのためのもの
++       これが `Emission` でなければ `Link.Error(UnexpectedInput(target.id))` を発生させる。
++   entry #product   ファイル。完成した製品をパッケージし直すエッジのためのもの
++       `Apk` と `OciImage` のツールは、前のエッジの製品をこの方法で消費する。
++       これが `Product` でなければ `Link.Error(UnexpectedInput(target.id))` を発生させる。
+
+@ 0 1 0 0eed15c837aadf3a079502173a3e56a7
++ entry .Edge   ツールチェーンの一つのエッジ。`source` 形式から `target` 形式を生み出すツール
+
+% 1 1 0 0feb29f5c70baf6b1f14b4498c9b1f19
+
+@ 0 6 0 0db9eb664159fc24111ec85d3424fafd
++       `Edge(source, target, tool)`。
++       ソースが生み出されることはないので、ターゲットの型は `Artifact.Ir | Artifact.Application` である。
++       エッジの提供者（`jarEdges()`、`dexEdges()`、`apkEdges()`、`sjsEdges()`、`nativeEdges()`、`ociEdges()`、`scalacEdges.classfile(…)`、`javacEdges(…)`、`kotlincEdges(…)`）はそれぞれのツールのエッジを返し、`Toolchain(…)` はそうしたリストをいくつでも組み立てる。新しい形式のためのエッジは、独自の `Toolchain.Tool` を使って直接書く。
+
+% 2 1 0 01c3ea951a307ac1130b01d59454404d
+
+% 0 1 0 07b750cd940b39ca13b1331c684c2c28
+
+% 1 1 0 0c350a5776ffba69126c55b22df55c94
+
+% 2 1 0 164f3912a0e3096a1a3539b6de2a98d8
+
+% 0 1 0 125a0b1fea034da615ceb193786a129d
+
+% 0 1 0 04e093c6a316e443122742045c3bcad9
+
+% 0 1 0 163261c8c2c7e1341ec2576f3eda60db
+
+% 0 1 0 1f4b349e0c1bb195095b9298523b9784
+
+% 1 1 0 091fcbae2c768aaa145901781759efc4
+
+@ 0 3 0 063ecf2775b0706f1125fff3bbe3470e
++   entry #source   ツールが消費する形式
++   entry #target   ツールが生み出す形式。中間表現またはアプリケーション
++   entry #tool   エッジを実行するツール
+
+@ 0 1 0 131e1e0e147296581595a88077fbd74c
++ entry .Toolchain   形式とツールのグラフ。ある形式から別の形式を作ることはその上の経路探索である
+
+% 1 1 0 194196834444fe331dfde7265cdc7692
+
+@ 0 6 0 17f1db0504217bd60731ccfb6e6bb7b2
++       `Toolchain` は、`Artifact` をノード、`Tool` をエッジとする有向非巡回グラフである。
++       `#produce` は手元にあるもの、欲しい形式、出力先を受け取り、二つのノードの間の一意な最短経路を見つけて、その上の各ツールを順に実行する。`#path` は何も実行せずに経路を報告する。
++       グラフは `.apply` でエッジのリストから組み立てられ、同じ形式の組の間の重複したエッジと循環を拒否する。
+
+% 2 1 0 1a77a263c13c7a180afbeb74473b841f
+
+% 3 1 0 1dc5e5eb7773e22e1876c99380688606
+
+@ 0 1 0 0061aaf52951885106ed47248a96fad4
++         label 実行可能な JAR はクラスファイルから直接リンクされる
+
+% 1 1 0 06d5986612f677d80dffd224833ec580
+
+% 2 1 0 0e97645fcc83886213ead0f26561f166
+
+% 3 1 0 10a7bfe14b36c91f12e61624a59cfc4e
+
+% 0 1 0 0a9d40be72e6d6121f2082917aa968d3
+
+% 0 1 0 030c599ba8c360131de08b1a3df07b19
+
+% 1 1 0 0e92294235d14d9a168de93dfc995e2d
+
+@ 0 1 0 0a4fc41495f8d11a0c171bb6d2c750a8
++         label dex のエッジを加えると、`Dex` に一段階で到達できる
+
+% 1 1 0 08798e8109eeb288141ce050bdc7b0e5
+
+% 2 1 0 1c6aec41e23a4df01fc4c12ff4d50597
+
+% 3 1 0 0da7e97ac78e437a08c324884d9add4f
+
+% 0 1 0 0e081d05f55a111701a48a95c76d4a0b
+
+% 0 1 0 09bee58fd0bdb2fc126a419e39741746
+
+% 1 1 0 13e4c171e7cadaf40724809aa5a0fd37
+
+@ 0 1 0 158e4917699c26131653be7a276b84d6
++         label APK のエッジを加えると経路が延びる。クラスファイルは dex 化されてからパッケージされる
+
+% 1 1 0 0bd5955e16a0a6571c1ba4060ed52a94
+
+% 2 1 0 0a7f53fd08f6960409f5ad5da2bf7bf8
+
+% 3 1 0 17bf905d6821ceb9157f2b17b131d4a4
+
+% 0 1 0 118267e9d00f7dd6080d86d3cdf7c1ff
+
+% 0 1 0 1fdb0c6cf3e3e5961a3bec3808227f9e
+
+% 1 1 0 0c1015352e2387281c28682361e35920
+
+% 2 1 0 11e52f4b93f872301e5f7ac6e3404694
+
+@ 0 5 0 1f8639846a1b06021841b1e7d04c52ab
++       二段階の手順は APK のツールには何も書かれておらず、経路がそれを組み立てる。
++       到達できない形式は、途中で失敗するのではなく、二つの形式を挙げて理由 `NoPath` の `Link.Error` を発生させる。同じ長さの経路が二つあれば `AmbiguousPath` を発生させ、これは呼び出し側に見えない優先規則ではなく、別の手順で中間形式を明示的に生み出すことで解決する。
+
+@ 0 5 0 0f0e36229080ed850cb910f7ffe58423
++       ツールは、ツールではなく、その生成を構成する*形式*に向けた `.Setting` で構成される。API レベルは D8 の脱糖とマニフェストの宣言の両方を左右するので、`apkOptions.minApi(24)` は `Dex` と `Apk` の両方に適用され、`linkerOptions.optimize.fast` は Scala.js リンカーが生み出すすべての形式に適用される。
++       経路上のどの形式にも一致しない設定は、どのツールも実行される前に拒否される。
+
+% 1 1 0 076e5fcbe81cb5f304d37ed5465d0c1f
+
+% 0 1 0 076ae5d98fd7e29f196bc19236e47322
+
+% 0 1 0 027fdaa6954674f20c92338b1fb7b79e
+
+@ 0 6 0 13f98e980ce8c13f1093260b4cfab91e
++   entry .apply   任意の数のエッジのリストからツールチェーンを組み立て、重複と循環を検査する
++       `Toolchain(jarEdges(), dexEdges(), apkEdges())`、または `Toolchain(List(edge1, edge2))`。
++       二つのエッジが同じ形式の組を結ぶときは理由 `DuplicateEdge(source, target)` の、エッジが循環を作るときは `CyclicToolchain` の `Link.Error` を発生させる。したがって、存在するツールチェーンは、どのノードの組の間にも直接のエッジが高々一つしかない DAG である。
++   entry .Error   ツールチェーンが外部コマンドとして呼び出すネイティブツールが `PATH` 上にないときに発生する
+
+% 1 1 0 00f42e2da20a3c7f0b2d2a34f1186222
+
+@ 0 8 0 11c07500d3c79b17027d365e12de8fca
++         エラー `↯/s.137.2`：_the native tool `tool` is not available on the PATH_。
++         ツールを探すコンストラクター（`wasm-tools` と `wit-bindgen` に対する `WasiToolchain()`、`clang` と `clang++` に対する `nativeEdges()`）が発生させるので、ツールが存在しないエッジは構築できず、ツールの欠如はリンクが失敗したときではなく、ツールチェーンを組み立てるときに見つかる。
++         `nativeEdges()` は、自身のトリプルを名指せない未知のビルドホストも、`clang` の欠如として報告する。
++     entry #tool   見つからないツールの名前
++   entry .Setting   ツールの設定。その生成を構成する形式に向けたもの
+
+% 1 1 0 15e04692eb4a845b0ec4718374dbf04f
+
+@ 0 6 0 07b4951109da55df132398fa53c087b7
++         `Toolchain` は各設定を与えられた順に、ターゲットを `#appliesTo` が受け入れる経路上のすべてのエッジの初期設定に適用し、`#edit` がそのエッジの設定を変換する。
++         契約として、`appliesTo(format)` が成り立つなら、`edit(format, _)` は `format` をターゲットとするすべてのエッジの設定型を受け取って返す。設定型の異なる形式にまたがる設定（Android の API レベルは dex 化とパッケージングの両方を構成する）は、`format` 引数で振り分ける。
+
+@ 0 3 0 1a43aa41468c3b4a0301b45ee6dca5e3
++         オプションのオブジェクト（`jarOptions`、`linkerOptions`、`nativeOptions`、`dexOptions`、`apkOptions`、`ociOptions`）は組み込みの設定であり、`.apply` は呼び出し側独自のツールのための設定を作る。
+
+% 2 1 0 0e2c9cd7433c0fb0118cc4083df2cb05
+
+% 3 1 0 1cba62e45aae209106a890bb66295196
+
+% 0 1 0 1ed0464a715b81921899537ded62f450
+
+% 0 1 0 16005f14cd51f0dd063f4efa109edb98
+
+% 1 1 0 177df02babf9af120d62c99a57cb5cf4
+
+@ 0 14 0 07cb33e211c16efd09c98ed9902fc3ba
++     entry .apply   `Toolchain.Setting[settings](appliesTo)(edit)`：一つの設定型に対する設定
++         最初の引数は、設定がどの形式を構成するかを示す。二番目の引数は、そのいずれかをターゲットとするすべてのエッジの、`settings` 型の設定を編集する。
++         例外を投げる `edit` は、理由 `Failed` の `Link.Error` で生成を失敗させる。
++     entry #appliesTo   設定がある形式の生成を構成するかどうか
++     entry #edit   エッジの設定に適用される設定。そのエッジが生み出す形式を受け取る
++   entry #edges   ツールチェーンのエッジ
++   entry #path   二つの形式の間の一意な最短経路。順に実行するエッジとして
++       `toolchain.path(Toolchain.Universe.Classfile, Apk)` は、一つ目から二つ目への `Edge` のリストである。形式は自分自身からの長さゼロの経路である。
++       経路が存在しないとき（エッジの向きに逆らう場合や、エッジが一度も登録されていないノードへの場合）は理由 `NoPath(source, target)` の、二つ以上の経路が同じ長さのときは `AmbiguousPath(source, target)` の `Link.Error` を発生させる。
++       宣言された形式（`Artifact.ir(t"classfile")`）は、それと等しい組み込みの形式とまったく同じように経路をたどる。
+
+% 2 1 0 0d047b56f7dc91ba1c977af9d5a797f2
+
+% 3 1 0 1031d2a0e904570006be91a0b871a649
+
+% 4 1 0 125ae66345f238fa1d3a433dd2125d66
+
+% 0 1 0 10f1d822669d2cb71aa3d7b432e952cb
+
+% 0 1 0 10aad8b148fc98c610757b6796b9a26f
+
+% 0 1 0 1459b5d0ca5ec0ad1f89ebaded0c728a
+
+% 0 1 0 0fa1f8081108963f160142b99e497b5c
+
+% 1 1 0 0e24c0741884485d08607f2696067d58
+
+@ 0 7 0 0e5e121e1c03194e0d0a2fa8269c2cba
++   entry #produce   経路上の各ツールを実行して入力からターゲット形式を生み出し、出力のパスを返す
++       `produce(input, source, target, out, settings = Nil, entryPoints = Nil)`：`input` は `source` にある `Deliverable` である。多段階の経路上の各中間製品は、`out` の下の、その形式の `id` を名前とするディレクトリーに書き込まれ（APK の dex アーカイブは `out/dex/` に置かれる）、最終製品は `out` そのものに書き込まれる。
++       結果は最終的な `Product` のファイルであり、ターゲットが `Toolchain.Universe.Classfile` のような中間表現の場合は `Emission` のディレクトリーである。
+
+@ 0 5 0 085951d06390c8331ce49fd6c9d41a72
++       すべての設定はまず経路のターゲットと照合され、どれにも適用されないものは、どのツールも実行される前に理由 `InapplicableSetting` の `Link.Error` を発生させる。
++       エントリーポイントは経路全体でアンビエントである。実行可能な JAR は `Main-Class` として高々一つを取り、ネイティブバイナリーと APK はちょうど一つを必要とし、`Library` と `Dex` はそれらを無視する。
+
+% 2 1 0 00c221a9d7a3804e1b85c35ef65d99f9
+
+% 3 1 0 14c230b6462b7d74140290de1eb958da
+
+% 4 1 0 11a998e1a2d2503f1d40a25ef8da7c27
+
+% 5 1 0 1d16481b094d1d011deb7923016bd957
+
+% 6 1 0 1ba1d10547447f491d67f842d370200a
+
+% 7 1 0 1645a0cb01faa4f41102cba74049329c
+
+% 8 1 0 17295f3d963b66ac0ffeab57d9799c19
+
+% 9 1 0 1f6d7f6863df885817c8f4d9ff38c278
+
+% 10 1 0 15c31f60958776981c4d6df7e0ee1f51
+
+% 11 1 0 15ff53ae8fe32fa9151f28b091b9f832
+
+% 13 1 0 1bcc016081ea17170bfcb4e121993158
+
+% 14 1 0 0af5450541a0fe5810f74df9fda21dc1
+
+% 15 1 0 051844a652a1b1cd025c62d6d2f1e0a1
+
+% 17 1 0 0b890d294390ec531e1099b6e6799825
+
+% 0 1 0 1443eaec1627e96219fbb9821ce26be2
+
+% 1 1 0 0b252077dcdc00fb153e19b2994ba3c0
+
+% 2 1 0 0991d4b5040f595818c633cb8ce33d1a
+
+% 3 1 0 0e109b573613e56f08f00d9224980052
+
+% 4 1 0 0abb66841659adf91b7d3721568b1f0d
+
+% 0 1 0 1ac93889ed5c9b3b15fb838589d557c5
+
+% 1 1 0 0138846a66c36db1039c8f32acaeb7f7
+
+% 2 1 0 1546060f6ea00e721b586112ebe69098
+
+@ 0 4 0 1c845998e1c7227e02eede3adca71883
++       `Monitor`、`System`、`WorkingDirectory` を必要とし、`Link.Error` を発生させ、最初のツールの前に `LinkEvent.Start` を、最後のツールの後に出力のパスとともに `LinkEvent.Linked` を記録する。経路上のコンパイルのエッジは、その `Compiler.Event` を同じチャンネルへ中継する。
+
+@ 0 1 0 1d859deced4cc9960548caaeea305c21
++   entry .Universe   コンパイルが出力する中間表現。`Classfile`、`Sjsir`、`Nir`
+
+% 1 1 0 08f425c0f49c8eed1559536764866e9b
+
+@ 0 8 0 16c9844f93b34d850aa61e2c8859e74f
++         コンパイルは一つの中間表現を出力し、その選択によって、どのライブラリの成果物に対してリンクでき、どのアプリケーション形式になれるかが決まる。
++         `Classfile` は JVM のクラスファイルで、`Artifact.Jar`、`Dex`、`Apk` としてリンクできる。`Sjsir` は Scala.js の IR で、リンクされた形（JavaScript、ブラウザ向け Wasm、WASI コンポーネント）はリンク時に選ぶ。`Nir` は Scala Native の IR で、LLVM を通じて機械語にリンクされる。
++         各ユニバースは `Toolchain` の `Artifact.Ir` ノードで、ID は `classfile`、`sjsir`、`nir` であり、さらにどのユニバースにも、リンク前の出力をパッケージする `Library` JAR がある。
+
+@ 0 6 0 1038e3eb74e8ccd51ef46f88c3cebaad
++         ユニバースは*型*でもあり、`Scalac` の二番目の型パラメーターなので、あるユニバース向けに構成したコンパイラを別のものとして使うことはできない。`Scalac[3.8](options)` は `Toolchain.Universe.Classfile` をターゲットとし、`targeting[Toolchain.Universe.Sjsir]` はそのターゲットを変える。
++         各ユニバースに必要なコンパイラのフラグは、手で与えるのではなく、そのユニバースの `.Emission` の given から決まる。クラスファイルには何もなく、Scala.js には `-scalajs`、Native にはプラグインのフラグがあり、後者は `NirPlugin` がスコープにあるときにだけ存在する。
+
+% 2 1 0 108835822d2a83d21dd309b74cf2ae1d
+
+% 3 1 0 198e9dbbc0a2fd2517fc09df4a747d97
+
+% 0 1 0 0879b33f4c92082b1568ecf8d9b9c55b
+
+% 0 1 0 0fd248cb658c1e3e18a229824bfe1a94
+
+% 1 1 0 13da595c848d46271ec44cfc2867fc69
+
+@ 0 5 0 0df6d241477e41e403611e1f9ae54a99
++         JVM 以外の各ユニバースには実行時の前提条件があり、他のライブラリと同様にクラスパスで与える。`Sjsir` には `scalajs-javalib`、`scalajs-library_2.13`、`scalajs-scalalib_2.13`、`scala3-library_sjs1` が、`Nir` には Scala Native のランタイム（`scalalib`、`scala3lib`、`javalib`、`auxlib`、`clib`、`posixlib`、`nativelib`）が必要である。
++         それらがないことは、別個の失敗ではなく、通常のコンパイラの診断として現れる。
+
+% 0 1 0 1ee07b172b0fe65d13fc285421c04121
+
+% 0 1 0 0d81c7104794edc712c161f37d95f0b4
+
+% 0 1 0 065745a6d33313f00d2ed69db7dbc612
+
+@ 0 15 0 01e714e98b2a9cba1a9a1b3bdba2f33a
++     entry .Classfile   JVM のクラスファイル。このケースのシングルトン型である型 `Toolchain.Universe.Classfile` でもある
++         素の `Scalac[version](options)` がターゲットとするユニバースであり、`Javac` と `Kotlinc` が出力する唯一のものである。
++         `Artifact.Jar`、`Library(Toolchain.Universe.Classfile)`、`Dex`、`Apk` としてリンクされる。
++         型エイリアス `Toolchain.Universe.Classfile` は `Universe.Classfile.type` なので、このケースを型パラメーターとして名指せる：`Compilation[Toolchain.Universe.Classfile]`。
++     entry .Sjsir   Scala.js の IR。型 `Toolchain.Universe.Sjsir` でもある
++         `scalac.targeting[Toolchain.Universe.Sjsir]` で到達し、これは `-scalajs` を加える。
++         `sjsEdges` を通じて、任意のモジュールシステムでの JavaScript、ブラウザ向け Wasm、または `WasiToolchain` と `Wasi.World` があれば WASI コンポーネントとしてリンクされ、`Library(Toolchain.Universe.Sjsir)` としてパッケージされる。
++     entry .Nir   Scala Native の IR。型 `Toolchain.Universe.Nir` でもある
++         `scalac.targeting[Toolchain.Universe.Nir]` で到達し、その `-Xplugin:` フラグのために `NirPlugin` の given を必要とする。
++         `nativeEdges` を通じてターゲットトリプルごとの `Artifact.Binary` にリンクされ、`Library(Toolchain.Universe.Nir)` としてパッケージされる。
++     entry .Emission   ユニバースの出力に必要なコンパイラのフラグ。ユニバース上の型クラスとして
+
+% 1 1 0 057dc921ba3e7cbe0d3504cdcc41acb5
+
+@ 0 17 0 1917383e929f89aa18d51aea9519598b
++           `Universe.Emission[universe]` は、コンパイラがターゲットとするユニバースのために加えるフラグを知るために、`Scalac#apply` と `Scalac.Setup` のセッションが召喚するものである。
++           三つの given `.classfile`、`.sjsir`、`.nir` はこのコンパニオンにあるので、インポートは不要である。最後のものは `NirPlugin` がスコープにあるときにだけ存在し、そのためプラグインを名指さずに Native 向けにコンパイルすることはできない。
++       entry #flags   コンパイラのコマンドラインに加える引数
++     entry .classfile   `Emission[Classfile]` の given。追加のフラグはない
++     entry .sjsir   `Emission[Sjsir]` の given：`-scalajs`
++     entry .nir   スコープの `NirPlugin` から構築される `Emission[Nir]` の given：`-Xplugin:<jar>`
++         `NirPlugin` の given なしにこれを召喚するとコンパイルエラーになるので、`Toolchain.Universe.Nir` にターゲットを変えた `Scalac` は、プラグインの場所がスコープに入るまで適用できない。
++     entry #section   このユニバースの内容を保持する LIRA セクションのラベル：`jvm`、`sjsir`、`nir`
++     entry #suffixes   このユニバースの保存形式のファイル名の接尾辞。`.tasty` を含む
++         `Classfile` には `.class` と `.tasty`、`Sjsir` には `.sjsir` と `.tasty`、`Nir` には `.nir` と `.tasty` である。各ユニバースのバイナリー形式に加えて、そのインターフェースを運ぶ TASTy がある。
++   entry .Tool   ツールチェーンのエッジの実装。コンパイラ、リンカー、パッケージャーと、その設定型
+
+% 1 1 0 16901b51e2c9525b1e296a269d9c3a1e
+
+@ 0 5 0 10a73d6ed562cc4415b81083884d0245
++         `Tool` は不活性な値である。その実行に必要なケイパビリティ（`Monitor`、`System`、`WorkingDirectory`）は、構築時に捕捉されるのではなく、`#run` のコンテキストを通じて流れる。
++         `#Settings` 型とその型の `#initial` 構成を宣言し、`Toolchain#produce` は `#run` を呼ぶ前に、適用される `Toolchain.Setting` をそこに畳み込む。
+
+% 2 1 0 1b2d2cc938c8239b162ccb7da30893e9
+
+% 3 1 0 123476d8466ba2a507abb2897ba0e542
+
+% 0 1 0 0910f4fc3beb3dce0079016a23e734ee
+
+% 0 1 0 0b317198c6e307071b9c1af5bfcfb938
+
+% 0 1 0 18f58e7e8c1c208210069aaa4b9d4c5d
+
+% 0 1 0 1f0504696923f2f4165425fdfbe7fe46
+
+% 0 1 0 164744d2dd6ec6141de78dea0b8cf765
+
+% 0 1 0 183eb08167ab1ebc0610dc4c5ede3371
+
+% 0 1 0 1f0676876a9e0bc00b0cbdd9025c1120
+
+% 0 1 0 08472d2aa9215f6a0baf8c12ba8b5366
+
+% 0 1 0 1bcd247f1820b7f4052609718236776c
+
+% 0 1 0 18f76edda21d541215878834b1ac3473
+
+% 0 1 0 1a4d2de65a1abe7c0680702582d7ca3a
+
+% 0 1 0 1d0bf88cb6b211d417c249fac5d6f318
+
+% 0 1 0 1484b2546a7aba5a1a2338bf069840fe
+
+% 1 1 0 10521d29af348ec10c42d5a306885caf
+
+@ 0 2 0 122a945c05f8183e140e195c5156074e
++         組み込みのツールはそのエッジの提供者にとってプライベートである。ユーザーが手にするのは `Edge` であり、その `tool.name` が経路の報告するものである。
+
+% 0 1 0 08abb907433137ce196aa82b35b75d02
+
+% 0 1 0 09887fcb8b19f2240a9d92d8ad074b83
+
+@ 0 14 0 192d39523706a5591675ba2a261a9713
++     entry #Settings   このツールを駆動する構成の型
++         コンパイルのエッジでは `Unit`（コンパイラが自身のオプションを持つ）、JAR のエッジでは `Text`（ファイル名）、`sjsEdges` では Scala.js の `StandardConfig`、`nativeEdges` では Scala Native の `NativeConfig`、`apkEdges` では `Apk.Configuration`、`ociEdges` では `OciConfiguration` である。
++     entry #name   経路が報告するツールの名前：`scalac`、`jar`、`dex`、`apk`、`oci`、…
++     entry #initial   `Toolchain.Setting` が適用される前の既定の設定
++     entry #run   引き渡し物に対してツールを実行してディレクトリーに書き込み、生み出したものを返す
++         `run(settings, input, entryPoints, out)`：`input` はエッジのソースノードにある `Deliverable`、`entryPoints` は経路全体でアンビエントであり（各ツールはその形式の求めに応じてそれを適用または無視する）、`out` は書き込み先のディレクトリーである。
++         `Monitor`、`System`、`WorkingDirectory` を必要とし、`Link.Error` を発生させ、`LinkEvent` を記録する。
++   entry .Triple   ネイティブリンクのターゲットプラットフォーム。LLVM のターゲットトリプルとして描画される
+
+% 1 1 0 05069f348205d8a50d67ddca136cb101
+
+@ 0 7 0 023d3d2e96621258136195e8a7907c1d
++         ターゲットは六つある：`Arm64MacOs`、`X64MacOs`、`Arm64Linux`、`X64Linux`、`Arm64Windows`、`X64Windows`。それぞれ `#text` を通じて、Scala Native に与えられる LLVM のトリプル（`arm64-apple-darwin`、`x86_64-apple-darwin`、`aarch64-unknown-linux-gnu`、`x86_64-unknown-linux-gnu`、`aarch64-pc-windows-msvc`、`x86_64-pc-windows-msvc`）として描画される。
++         `Artifact.Binary(triple)` はそのプラットフォームのバイナリーのアプリケーションノードであり、`nativeEdges(triples*)` はトリプルごとに一つのエッジを登録する。
++         ビルドホスト以外のターゲットには、それへクロスコンパイルできる C のツールチェーンと sysroot が必要である。
+
+% 2 1 0 081b578b3103963d0bafd1d7dd31eae6
+
+% 3 1 0 0f63f7a230f0304f1cda122afc52cd70
+
+% 0 1 0 18960e1aab2a5ca3040ac42567b2ae5a
+
+% 0 1 0 02483ba0dca24a3d05f285d7e0292ea3
+
+% 1 1 0 1aa57e0e9ef56f650579e41535a3d8e9
+
+% 0 1 0 0138ccf1a0c4bc230f787c7c1805abaa
+
+@ 0 5 0 01504425488783d8029a1eac82a9f441
++     entry .host   `os.name` と `os.arch` から得たビルドホスト自身のトリプル。認識できなければ `Unset`
++         ARM64 または x86-64 上の macOS、Linux、Windows が認識される。それ以外のプラットフォームは `Unset` であり、明示的なトリプルなしの `nativeEdges()` はそれを `clang` の欠如として報告する。そのようなホストには Scala Native のランタイムもないからである。
++     entry #text   LLVM のターゲットトリプル
+
+@ 0 8 0 171a398bd465899506ad84e59d46efa9
++ entry .Component   WebAssembly コンポーネントのユニバース：まだエッジを持たない中間ノード
++     id が `component` の `Artifact.Ir` である。WIT で記述されたインターフェースを通じて互いに合成される WebAssembly のライブラリコンポーネントで、TASTy によって `sjsir` と `nir` が合成されるのと同様である。
++     どの Scala のコンパイルもこれを出力しないので、`Toolchain.Universe` ではなく `Ir` である。コンポーネントは、それがエクスポートするワールドが実行可能ならアプリケーション（`Wasi`）であり、他と合成されるときはこのユニバースの内容である。
++     これを生成または消費する組み込みのエッジはない。このノードは合成ツールが自分のエッジを登録できるように存在し、それが登録されるまで、ここへの経路は `NoPath` を発生させる。
+
+@ 0 1 0 02d80569a85aac6602e7b93135e665ce
++ entry .EntryPoint   リンクされた成果物がロードされたときに `main(args: Array[String])` が実行されるクラス
+
+% 1 1 0 183dab6d473b828c1be627be42ecbdf5
+
+@ 0 9 0 0e9e3328e870d67206e9ad101873b4cd
++       `EntryPoint(Fqcn(t"com.example.Main"))`。
++       エントリーポイントは `Toolchain#produce` に渡され、経路全体を通じてアンビエントであり、各ツールは形式の求めに応じてそれを適用するか無視する。
++       実行可能な `Artifact.Jar` は高々一つを `Main-Class` として取る（なければメインクラスのない JAR となり、二つあれば理由 `ManyEntryPoints` の `Link.Error` を発生させる）。ネイティブの `Artifact.Binary` はちょうど一つを必要とする（そうでなければ `NoEntryPoint`）。`Apk` はちょうど一つを必要とし、それがランチャーのアクティビティとなる。JavaScript と Wasm のリンクはそれぞれをモジュール初期化子として初期化する。そして `Library` と `Dex` はそれらをまったく無視する。どちらもエントリーポイントを記録しないからである。
++   entry #mainClass   完全修飾クラス名
+
+@ 0 1 0 17a7314c6d909c901cc90860952fd558
++ entry .Link   `Link.Error`、すなわちリンク、経路探索、パッケージングの失敗の名前空間
+
+% 1 1 0 1532d5392e8753ee1b198fc804364aaa
+
+@ 0 7 0 11901c477df2daef0e04096d268414c2
++       `Toolchain` が失敗しうるものはすべて `Link.Error.Reason` を持つ `Link.Error` なので、一つの `Tactic[Link.Error]` で、ツールチェーンの組み立て、その探索、そのツールの実行をまかなえる。
++       ツール自身の誤り（投げられた例外）はスタックトレースを伴う `Failed` である。構造上の誤り（経路がない、エッジが重複している、構成する対象のない設定）はそれぞれ固有の理由である。そしてコンパイルのエッジの失敗は `CompilationFailed` で、コンパイラが報告したすべての `Compiler.Notice` を持つ。
++   entry .Error   ツールチェーンが発生させる：エラー `↯/s.137.1`、_linking failed because `reason`_
+
+% 1 1 0 05ae7d45d2f88fc40a7afc6b82185f70
+
+@ 0 2 0 099422ebabed691218216dd9656911f8
++         `Link.Error(reason)`。その番号の詳細部分は理由自身の番号である。
++         ケースを見分けるには `#reason` でマッチする。
+
+% 2 1 0 09b426e2c23ed0941430064a1cd2d80a
+
+% 3 1 0 10c538f61454c48f1ad491268c14a039
+
+% 0 1 0 08a95c731285b88e0c020fc4aa1b64ac
+
+% 0 1 0 11e521e8345140c01c359979bac9c994
+
+% 0 1 0 0d43cc015d8188ee194183ed32a11a75
+
+% 0 1 0 05fd37d2a97e3be20ac16633fe6dcd3f
+
+% 0 1 0 1ac38e0856a5230d099633a5196c2666
+
+% 1 1 0 10a24088556484350e6576e5a3eaadbd
+
+@ 0 1 0 1d02e34a23b9b5000a50285d6039d3bd
++     entry .Reason   リンクが失敗した理由：番号付きの 14 のケースで、それぞれメッセージを持つ
+
+% 1 1 0 1895944420d17ba902a8aafe3cb1a254
+
+@ 0 2 0 06f7bdef3270b8ea0d736e11c09ce540
++           各ケースは自身の番号を `#number` として持ち、それはエラーのコードの詳細部分である（`NoPath` なら `443.5`）。
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 6 0 1f028a62c24f40641410fa901f3a27c0
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  注記
++           row  `Failed(trace)`  1  _the linker terminated abnormally_  ツールが例外を投げた。`StackTrace` は保持される
++           row  `NoEntryPoint`  3  _the artifact requires exactly one entry point_  ネイティブバイナリと、ランチャーのアクティビティを必要とする APK に対して発生する
+
+% 0 1 0 1a2b3914663ab5330e1d6f1618c6f98f
+
+% 0 1 0 03e55c6b6631602a08476b762fe8b03d
+
+% 0 1 0 12ea113648aadd2812b372c564fc103d
+
+% 0 1 0 19b0b8f8460eaf2e0002957d1f940d6b
+
+% 0 1 0 12c6426b143d860c0c9bab02bb6f4136
+
+% 0 1 0 11f682ee1ba3b0ab0354d5bac9910670
+
+@ 0 2 0 0bf19dfcca24a2650861269fa986d4da
++           row  `UnexpectedInput(format)`  10  _the tool producing `format` cannot consume the content it was given_  誤ったバリアントの `Deliverable` がツールに届いた
++           row  `CompilationFailed(notices)`  11  _compilation failed with N errors_  N は重要度が `Error` である通知の数を数える。リストはすべての診断を保持する
+
+% 0 1 0 0ee5b79dacbc82890b3172384be11154
+
+@ 0 3 0 11326b32bac489061e315ab9cfeb7cbd
++           row  `Packaging(detail)`  13  _packaging failed: `detail`_  JAR のバンドル、dex 化、APK のパッケージング中の zip、パス、I/O、ファイル名の誤りで、元になったエラーのメッセージを伴う
++           row  `CompilerCrash`  14  _the compiler crashed_  コンパイルのエッジのコンパイラが例外を投げた
++           row  `CompilerUnusable(detail)`  15  _the compiler could not be run: `detail`_  コンパイルのエッジがそのコンパイラ（`scalac`、`javac`、`kotlinc`）を構成できなかった、または待ち合わせられなかった
+
+% 1 1 0 10196ec02554ec581674e0b0956f75c4
+
+@ 0 3 0 064b7846d2775b97145f03e15e678a4b
++       entry #number   理由の番号。エラーのコードの詳細部分
++     entry .communicable   各理由を、`Link.Error.Reason` の下に挙げたメッセージとして描画する
++     entry #reason   リンクが失敗した理由
+
+@ 0 1 0 0cefd79cc458dc8c0d237a9356a782f5
++ entry .LinkEvent   ツールチェーンがリンクの間に記録するもの：開始、各メッセージ、出力のパス
+
+% 1 1 0 14f4ed9fa2bd0f9d0e4f68545bea2149
+
+@ 0 9 0 1d6522585730074d1b97c46f7046e0f2
++       すべての `LinkEvent` は `Log.Compiler` のタグを持つ。
++       `Toolchain#produce` は、最初のツールの前に `Start` を `info` で、最後のツールの後に `Linked(path)` を `info` で記録する。各ツールはそのリンカー自身の出力を `Message(message)` として中継する — Scala.js のリンカーのエラーと警告は `warn` で、その情報は `info` で、残りは `fine` で。D8 のエラーと警告は `warn` で。そして `Compiler.Event.relay` を通じて、コンパイルのエッジの `Compiler.Event` はそれ自身のレベルで。
++       すべての `produce` について、`LinkEvent is Loggable` がスコープになければならない。
++   entry .communicable   各イベントをメッセージとして描画する
++       _starting linking_、_the linker reported: `message`_、そして _linked output written to
++       `path`_ である。
+
+@ 0 6 0 00ccf17e17e689a61cdb432280b1b900
++ entry .WasmObject   再配置可能な WebAssembly オブジェクトのユニバース：まだエッジを持たない中間ノード
++     id が `wasm-object` の `Artifact.Ir` である。リンクセクションのシンボルによって合成される再配置可能な WebAssembly オブジェクトで、`rustc --target wasm32` や clang が出力するものであり、`wasm-ld` によって WASI 0.1 のモジュールにリンクされるか、コンポーネントのツールによって `Component` ユニバースに持ち上げられる。
++     どの Scala のコンパイルもこれを出力せず、これを生成または消費する組み込みのエッジもない。このノードは、外部のコンパイラと wasm のリンカーが自分のエッジを登録できるように存在する。
+
+@ 0 1 0 0b39a2372fe60a2d00f6e65e7e430805
++ entry .Scalac   値としての Scala コンパイラ：型付きのオプション、言語バージョン、ターゲットのユニバース
+
+% 1 1 0 0b008520c2c860b20662d9d6bf93771e
+
+@ 0 5 0 1c84a56221b938d01d57a2c61b8663e0
++       `Scalac[version, universe]` は `Scalac.Option` のリストを持ち、各オプションはそれを受け入れる言語バージョンによって型付けされている。また、それが出力する `Toolchain.Universe` を持つ。
++       `Scalac[3.8](options)` — 型引数一つの形 — は `Toolchain.Universe.Classfile` をターゲットとし、`#targeting` はそのターゲットを変える。
++       クラスパスとソースに適用すると、自分専用のタスクの中でプロセス内でコンパイルし、`Compiler.Process` を返す。
+
+% 2 1 0 094c9d99d8d631921aa54d45d08111e3
+
+% 3 1 0 1d3be146434fd267037c3aac3aaab1ba
+
+% 4 1 0 1352bfee9bf83d9113ac23dc787f9f53
+
+% 5 1 0 0f006428a77ca0da1bd881e6e2e7ebf4
+
+% 6 1 0 19f60f48d398547f0376405c88c5e246
+
+% 7 1 0 0be051becc29460d1bcc79fbdec2e887
+
+% 8 1 0 0d840e7db2d2e53e0a40e9c903d25534
+
+% 9 1 0 0bc67c3750f7e5ab13ed36dc865f729c
+
+% 10 1 0 12094f24dbf9e1cd1561ce49bac4c439
+
+% 12 1 0 13e2d2a1327f226a14f77472f6a0298f
+
+% 13 1 0 0e33727c01dbcb081581a327fcbaaab8
+
+% 15 1 0 02c4c35a953c3242137de956763008fe
+
+% 0 1 0 0afd0b1562317dc809874c317d277aeb
+
+% 0 1 0 10028864858006f40268069fd953fd67
+
+% 1 1 0 0531e8d35fa6737c00c2fc49f4075882
+
+% 2 1 0 113d228b41c5b00c1772825bc5764b07
+
+@ 0 6 0 1de8d96650d11530002901182acf0093
++       バージョンパラメーターは、オプションを静的に制限する*宣言された言語ターゲット*である。バージョンにコンパイラのものを含まないオプションは、実行時のコンパイラからの苦情ではなく、ツールにおけるコンパイルエラーとなる。
++       これはコンパイラを選ぶものではない。
++       実際に実行されるコンパイラは、プログラムの実行時クラスパスにある `scala3-compiler` が何であれそれである — `anthology.scala` のコンパイル時のみの依存なので、駆動するプログラムがそれを選ぶ — そして `.version` がそれが何かを報告する。
+
+% 2 1 0 1e4054a6ee9c279e1b8ecb01b58b5fa9
+
+% 3 1 0 1bcda290ac512bef0f017c44b33c6115
+
+@ 0 1 0 1557865e2668c2541d0b72ce7b5d9460
++         label すべてのバージョンで有効なオプション
+
+% 1 1 0 1edb019a206b64df1afd3a58a7358c27
+
+% 2 1 0 1b438690a8a7298206617d8ce0c7200d
+
+% 0 1 0 0352ac8321cd33e40d97fefcbd4f9d1f
+
+% 0 1 0 1246eebebd3a8f520c3fcac65455e14e
+
+% 1 1 0 15149d78314b122c1480432930cd1a33
+
+@ 0 1 0 10af12f7c887cd2608db6cfe9f1ba67d
++         label `experimental` は 3.4 から 3.8 で受け入れられるので、3.8 はそれを取ることができる
+
+% 1 1 0 01924a6421a11a6f010bf8703ff336f1
+
+% 2 1 0 1bfdc5c3f57a4b6d0b86d5583f8828be
+
+% 4 1 0 0ea758cd51ee510c00f3da80b693a0e3
+
+% 0 1 0 1a938c0521290933168283170d7c4555
+
+% 1 1 0 10728212bbd8d1110b9abae0d1a8b0d1
+
+@ 0 1 0 1b3abc3c67e872831029ad9ed3435b64
++         label `semanticDiagnostics` は 3.9 にしか存在しない。3.8 のコンパイラはそれを拒否する
+
+% 1 1 0 02333973931d81e707b1ec0e31c4f56e
+
+% 2 1 0 0cbaaa0eee9626c61ee24c245f5931f2
+
+% 0 1 0 0010b648d3e0fc8502d59bdf2274fd9c
+
+% 1 1 0 1f1987607ea853531a2fb82f62050f39
+
+@ 0 1 0 09e79408322400c210b64cc1c73aadb3
++         label ターゲットの変更はオプションを保ち、ユニバースを変える
+
+% 1 1 0 0bf4ff12df35a5631f34250dba6b4414
+
+% 2 1 0 05adb88349bbb05d16d76dd32f0e6e63
+
+% 4 1 0 0baf670bb1709722130a4e2c1134b29c
+
+% 0 1 0 0fa699198e7f42f5152e7284bafdbb65
+
+% 0 1 0 1a0c200d1fbf2c1811a38305dc88d004
+
+% 1 1 0 1c954e8e9f00942610209b0c3159937a
+
+% 2 1 0 16f51a4b6d7b540d122411717bece391
+
+@ 0 4 0 0e830c9900f307fb001061b1b568b306
++       状態を持たない `#apply` のほかに、`#on` でクラスパスに束ねたコンパイラは*ウォームセッション*を開く — `scalac.on(classpath).session: …` — その中では複数のコンパイルが一つのロード済みシンボルテーブルを共有し、それぞれが先行するコンパイルの定義したものを見る。`Scalac.Session` を参照のこと。
++       `Toolchain` のコンパイルのエッジ（`scalacEdges`）も、同じように `Scalac` を持つ。
+
+@ 0 5 0 08acd1158f4b25620f4c76cd4d3160b8
++       状態を持たないコンパイルは、プログラム全体で一つのコンパイラインスタンスを共有し（`.compiler()`）、クラッシュの後には `.refresh()` によって置き換えられる。
++       診断はスパンを伴う `Compiler.Notice` になる。`scalacOptions.semanticDiagnostics` の下では、それぞれ意味的なマークアップも保持する。
++       進捗は整数のパーセントごとに、コンパイラのフェーズをステージとして報告され、`Compiler.Process#abort()` は次の目盛りで観測される。
+
+% 0 1 0 1426e4bc1b07478b1f38ddab2c1c72db
+
+% 0 1 0 14290c98bd1293a711e89af755795208
+
+% 1 1 0 1bc7629506b6722711f53b58cbc8e767
+
+% 1 1 0 12c3f68a7abacb0c0625108975fc034f
+
+@ 0 5 0 1c7a54083e35fcd50a4bcdeefe8d4e6d
++   entry .Versions   `Scalac` を宣言できる言語バージョン：`3.0` から `3.9`
++       リテラル型の合併 `3.0 | 3.1 | … | 3.9` であり、`Scalac` のバージョンパラメーターの境界であり、`Option` を宣言できる最も広いバージョンである。
++       バージョンはリテラル `Scalac[3.8]` であり、決して値ではない。
++   entry .Option   コンパイラのオプション。追加するフラグとして表され、それを受け入れるバージョンによって型付けされる
+
+% 1 1 0 0a645daa2540c7150edc3a061cfccf0a
+
+@ 0 4 0 117233462df9668f07f76478370e0ec2
++         `Scalac.Option[-version <: Versions](flags*)`：バージョンパラメーターは*反変*なので、`3.4 | 3.5 | 3.6` について宣言されたオプションは `Scalac[3.5]` に受け入れられ、`Scalac.Versions` について宣言されたものはどれにも受け入れられる。
++         `scalacOptions` オブジェクトは組み込みのものを保持する。このオブジェクトにないオプションは直接書く。
+
+% 2 1 0 01c31c4835d2e5821bc301959d20fb3c
+
+% 3 1 0 1506f365d87646a117799e0c97ec9560
+
+% 0 1 0 0612b2aa1f375bb415c46c72907cacf4
+
+% 0 1 0 15bef381fc7a781c00a9d367bf94f27d
+
+% 1 1 0 0743b4d0786da4d10f29c2aa25a71238
+
+@ 0 13 0 13a431bb524f871916ed2c76a1341d15
++     entry #flags   オプションが寄与するコマンドライン引数。順序通りに
++   entry .refresh   共有のコンパイラインスタンスを置き換える。クラッシュの後に起こるのと同様に
++       状態を持たないコンパイルは一つの `dotty.tools.dotc.Compiler` を共有する。クラッシュは自動的にそれを置き換え、`refresh()` は求めに応じてそうする。
++   entry .compiler   状態を持たないコンパイルが実行される、共有のコンパイラインスタンス
++   entry .version   組み込まれたコンパイラのバージョン。それ自身が報告する通りに
++       `dotty.tools.dotc.config.Properties.versionNumberString`：実行時クラスパスにある `scala3-compiler` のバージョンで、すべての `Scalac` の `#version` とすべてのプロセスの `version` が報告するのはこれである。
++   entry .apply   `Scalac[version](options)`：クラスファイルのユニバースのためのコンパイラ
++       ユニバースを `Toolchain.Universe.Classfile` に固定する、型引数一つの形である。`#targeting` がそれを変える。
++       各オプションのバージョンは、名指されたものを含まなければならない。
++   entry .Setup   クラスパスに束ねられたコンパイラ：ウォームセッションの対象
+
+% 1 1 0 05e004c2acac02e5027fd5c706e04f00
+
+@ 0 11 0 03e4838487bced7e1c15aa8a5a6e412e
++         `scalac.on(classpath)` がそれを作り、その上の `.session` は aperture の `Sessional` — ここにある `.sessional` の given — を通じて `Scalac.Session` を開く。その中では、一度ロードされたクラスパスのシンボルテーブルが、コンパイルをまたいで保持される。
++         `Setup` は組にすぎない。状態があるのはセッションのほうである。
++     entry .sessional   `Setup` から `Scalac.Session` を開く `Sessional` の given
++         コンパニオンにあるので、インポートは必要ない。
++         `System`、セットアップのユニバースに対する `Toolchain.Universe.Emission`、`Tactic[Compiler.Error]`、`Compiler.Event is Loggable` が必要であり、`setup.session: …` が解決されるのはこれである。
++     entry #scalac   コンパイラ。そのオプションとユニバースを伴う
++     entry #classpath   セッションがコンパイルの対象とするクラスパス
++   entry .Session   ウォームなコンパイラセッション：複数のコンパイルをまたいで保持される一つのシンボルテーブル
+
+% 1 1 0 1cb0c0e20a9f3dfe08cd379129c3f436
+
+@ 0 8 0 1b3c8400618e13e501ca3454d50f85a3
++         `scalac.on(classpath).session: …` で開く。ブロックの中ではセッションはコンテキストの `Scalac.Session^` であり、`compilation` として到達し、`sources.compile()` または `compilation.compile(sources)` がその中でコンパイルする。
++         REPL と同様にシンボルテーブルが実行から実行へ持続する一つの基底コンテキストと、一つのコンパイラが再利用されるので、二度目のコンパイルは一度目のクラスを見ることができ、クラスパスのロードのコストを再び払うことはない。
++         コンパイルは呼び出し側のスレッド上で同期的に実行され（コンパイラはコンテキストを最初の実行のスレッドに固定する）、返される `.Process` は返される時点で完了している。
+
+% 2 1 0 15ac4e247adcce3c14f88617c8639a52
+
+% 3 1 0 0687a59b983af7fb064018a40d023b56
+
+% 4 1 0 152960a0d1fe069d0a47eef9c26b6b5f
+
+% 5 1 0 149d054bd98ce12f072d38bfa0f311a7
+
+% 6 1 0 1987f2f3f9fa56a10fe77db25c22af63
+
+% 1 1 0 0ef91427fd5ba7ce1185a09ea5211102
+
+% 2 1 0 031f6a6aa94f1d46191b32975868b6d8
+
+% 2 1 0 0b1701676bd110d20cc69be97473332f
+
+% 0 1 0 110b7e1cc2e5a0ed1056865c3b0e8854
+
+% 0 1 0 11eda7c4544c71420df0899b50cec233
+
+% 0 1 0 18cdeb2fc09830c1092c07b461cdaf5c
+
+% 0 1 0 1a7c118a21be7a651eb25d62b130348c
+
+% 0 1 0 146cc0fbe34373450cc58c93d8951c15
+
+% 0 1 0 0b26043acbf04d7e1f663f426d461b33
+
+% 0 1 0 16e306b1cd9d6fe10bcd2ccb223baf1d
+
+% 1 1 0 065ac7ce3f99d11618d1ba8bfd3e0ca8
+
+@ 0 5 0 1d2e59db2df83ce80f9fa2b678c58290
++         出力はメモリ上に保持される。`Process#classfiles` は出力されたすべての成果物をそのクラスパス上のパスをキーとして公開し、`Process#save(directory)` は必要な場合にだけそれらをディスクに書く。
++         失敗したコンパイルの後もセッションは使える。クラッシュはコンパイラとコンテキストを一緒に作り直すので、次のコンパイルはまっさらな状態から始まる。
++         コンパイラが拒否するオプションでセッションを開くと、`Compiler.Error` が発生する。
+
+@ 0 7 0 091b589111114bf9061ed4bcd9010c2d
++         REPL 式の保持されたシンボルテーブルからは、二つの制限が生じる。同じセッションで先にコンパイルしたトップレベルの名前を再定義することはサポートされない（REPL が生成するように、コンパイルごとにソース名とクラス名を別々にすれば安全である）。また、あるコンパイルで定義されたマクロは、次に使われるとき、保持されたシンボルではなく*クラスパス*からロードされるので、同じセッション内でのマクロ展開を望む呼び出し側は、セッションのクラスパス上のディレクトリーに `save` しなければならない。
++         セッションのハンドルはブロックに閉じ込められた新鮮な排他的ケイパビリティなので、ブロックから返すことはできない。
+
+% 0 1 0 05e277de48eb383a049435f9ea651b05
+
+% 0 1 0 1d472696a8069f5415d7a3fe4e4a77a4
+
+@ 0 1 0 0aacf5ae5940d6e61e5b126515e7a375
++     entry .Frontend   セッションのコンパイラ、基底コンテキスト、クラスパス、オプションの現在の状態
+
+% 1 1 0 0b3c61ce1fdd96fe154dec9e191d861f
+
+@ 0 11 0 04ecb061c442415e05704b5a7518e156
++           セッション内でソースをコンパイルせずに型付けするツール — harlequin の `highlighting.sessionScala` の given はこれを一つ取る — のためのもので、セッションのコンパイルが定義したものを見ることができ、ロードのコストを再び払うことはない。
++           これらはコンパイラ自身の値であり、セッションのスレッド上でのみ、そして次のクラッシュ（それらを置き換える）までの間だけ有効なので、呼び出し側は一つを保持し続けるのではなく、使うたびに `Session#frontend` を新たに取得する。
++       entry #compiler   セッションの `dotty.tools.dotc.Compiler`
++       entry #context   セッションがシンボルテーブルをロードし、追加してきた基底コンテキスト
++       entry #classpath   セッションを開いたときのクラスパス。テキストとして
++       entry #options   セッションを開いたときのコンパイラ引数
++     entry .Process   セッション内の一回のコンパイルのプロセス。出力はメモリ上に保持される
+
+% 1 1 0 076231dc755746430b1f8314c7d569c1
+
+@ 0 7 0 0fcc7ece943dfba80a409cd7256ad2ef
++           セッションのコンパイルは同期的に実行されるので、返される時点で結果がすでに完了している `Compiler.Process` である。それでも `complete()` は動作し、結果を返す。
++           `#classfiles` はコンパイルが出力したものを保持し、`#save` はそれを実体化する。
++       entry #classfiles   コンパイルが出力したすべての成果物。クラスパス上のパスをキーとする
++           クラスファイル、TASTy、`.sjsir`、`.nir` を、出力を根とするクラスパス上で各成果物が占める位置（`/Alpha.class`、`/pkg/Name.tasty`）をキーとする `Map[Path on Classpath, Data]` として表す。
++           バックエンドが走る前にコンパイルが失敗した場合は空である。
+
+% 0 1 0 16e5dd92da138cdb1a8049c3ab21a689
+
+% 0 1 0 1c2fd15b30390e3506e0f272e8cd0f7d
+
+% 0 1 0 06d7630252786fc7146a6e450199213b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 1f3de2f7adc1dab51cbd6eaa5740b17c
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 1a4dfa2b92355b06107ac50272122c8e
+
+% 0 1 0 1da1174df5658ea10629769fcbb34ce5
+
+% 0 1 0 031eb4897d6fcd7a0e81b13dd3ac6fa8
+
+% 0 1 0 19298100a9451d411fba2a48873684dd
+
+% 0 1 0 1223ec82a4c4441d0c8719e4c5161652
+
+% 1 1 0 0e681e20b37f21d809db0b5112a0122b
+
+@ 0 11 0 199c91bd5b6d34641e8f4c8a78917a6b
++       entry #save   出力された成果物を、`pkg/Name.class` のようにディレクトリーの下に書く
++           `Abstractable across Paths to Text` である任意のパス型を取り、必要に応じてパッケージのディレクトリーを作る。
++           セッション内でコンパイルされたマクロが後のコンパイルで展開可能になるのは、セッションのクラスパス上のディレクトリーに保存することによってである。
++     entry #frontend   セッションのコンパイラとコンテキストの現在の状態。コンパイルせずに型付けするため
++     entry #compile   名前付きのソースをセッション内で同期的にコンパイルする
++         `session.compile(sources)` — セッションがコンテキストにあるなら `sources.compile()` — は、保持されたシンボルテーブルに対して呼び出し側のスレッド上でコンパイラを実行し、結果がすでに完了している `Scalac.Session.Process` を返す。
++         プロセスはセッションを借用するので、次のコンパイルはそれが消費されるのを待つ。
++   entry .Sessional   `Setup` のために `Scalac.Session` を開く `aperture.Sessional` のインスタンスクラス
+
+% 1 1 0 1221f22b717ac34e0449df4188a54c5e
+
+@ 0 29 0 15ad77980fd444e3157e70fccaebed2d
++         `Scalac.Setup.sessional` の背後にある名前付きのクラスである。ユーザーは `setup.session: …` を通じてのみそれに到達する。
++         その `#Self` は `Scalac.Setup[version, universe]` で、`#Result` は各 `session` 呼び出しがブロックに閉じ込める新鮮な `Scalac.Session^` のハンドルである。
++     entry #Self   対象：`Scalac.Setup[version, universe]`
++     entry #Result   セッションのブロックが受け取るハンドル：新鮮な `Scalac.Session^`
++     entry #session   新しいセッションをコンテキストのハンドルとしてブロックを実行する
++         ブロックが終わっても、OS レベルで破棄されるものは何もない。ウォームなコンテキストは単なるメモリであり、ハンドルとともに回収される。
++   entry #options   コンパイラのオプション。順序通りに
++   entry #commandLineArguments   すべてのオプションのフラグを、順序通りに連結したもの
++       オプションが寄与するものである。ユニバースの出力フラグ、`-d`、`-classpath`、ソースは呼び出し時に加えられる。
++   entry #version   組み込まれたコンパイラのバージョン、`Scalac.version`
++   entry #targeting   別のユニバースにターゲットを変えた同じコンパイラ：`scalac.targeting[Toolchain.Universe.Sjsir]`
++       オプションは保たれる。変わるのはユニバースだけで、それとともにコンパイルが加える出力フラグ（`-scalajs`、Native なら `-Xplugin:` で、その場合は呼び出し時に `NirPlugin` の given が必要になる）が変わる。
++   entry #on   コンパイラをクラスパスに `Scalac.Setup` として束ね、セッションを開く準備をする
++       `scalac.on(classpath).session: …`。
++   entry #apply   名前付きのソースをクラスパスに対してディレクトリーへコンパイルする。自分専用のタスクの中で
++       `scalac(classpath)(sources, out)`：コンパイラの引数は、ユニバースの出力フラグ、`-d out`、`-classpath`、そして `#commandLineArguments` である。それらを `Compiler.Event.Running` として記録し、共有のコンパイラ上でコンパイルを実行する `scalac` という名前のタスクを開始して、直ちに `Compiler.Process` を返す。
++       `System`、`Monitor`、`Probate`、コンパイラのユニバースに対する `Toolchain.Universe.Emission`、`Tactic[Compiler.Error]`、`Compiler.Event is Loggable` が必要である。
++       出力ディレクトリーはすでに存在していなければならない。コンパイラは見つからない `-d` を拒否し、直接の呼び出しはそれを作らない（`scalacEdges` のツールは作る）。
++       クラッシュは `Compiler.Result.Crash` になり、共有のコンパイラを置き換える。
+
+@ 0 3 0 032df2150f83dd5011f5e2b759d0989e
++       同じコンパイラの下の同じソースは、何度実行しても、出力ディレクトリーがどこであっても、バイト単位で同一の出力を生む。TASTy の UUID はファイル自身のセクションのハッシュであり、仮想的なソースは与えられた名前を持つからである。
+
+@ 0 1 0 02d283fe39ddc78d018352da8e148e86
++ entry .scalacOptions   型付きの値としての Scala コンパイラのオプション。それぞれ、受け入れるバージョンでのみ有効
+
+% 1 1 0 014bc52f39c9accc10c2f89c27a57e10
+
+@ 0 7 0 0c0a1d12dfb8341216edf158a8ce98c8
++       コンパイラのコマンドライン — 構文、警告、言語機能、内部フラグ — を `scalacOptions` の下の `Scalac.Option` として写し取り、それぞれを受け入れる言語バージョンによって型付けするので、`Scalac[3.8](List(scalacOptions.experimental))` はコンパイルでき、`Scalac[3.9](List(scalacOptions.experimental))` はコンパイルできない。
++       入れ子のオブジェクトがそれらをまとめる。`warnings`（`warnings.lint` を含む）、`internal`、`advanced`、`language.experimental` である。
++       このオブジェクトは `soundness` アンブレラのパッケージとして写し取られているので、`scalacOptions.newSyntax` はどちらから読んでも同じである。
+
+% 2 1 0 0a4f6b3e46ea27020cac81a8a2db5f43
+
+% 3 1 0 18f974eba03693980b1e7a994908d8e4
+
+% 0 1 0 14a01fae496c6f2f14216d88dd93b39e
+
+% 0 1 0 0ae0b16a64b1ec0b049818b0507c8a6e
+
+% 0 1 0 18b2fb50fa8e2023100bf2994920b553
+
+% 0 1 0 1c01abb9a15781500cb839826f82e58b
+
+% 0 1 0 00a19046d3c927dc0faa8be34cee75fb
+
+% 0 1 0 1df7aeea8cbfe82e02b09308cd2ac80d
+
+% 0 1 0 02b48e918a7d59ac10622e3a6b8431b4
+
+% 0 1 0 085e147b0b457365052f988065dfec59
+
+% 1 1 0 07cc25c150b889e613becf4923f31d39
+
+@ 0 1 0 02f7b4a8848ac2c90775a84663260c35
++       このオブジェクトにないオプションは、`Scalac.Option[Scalac.Versions](flags*)` として直接書く。
+
+% 1 1 0 0f5beef8bf304f2d1b8ed5083df34a7b
+
+@ 0 9 0 0412f16e913861d11f0ff40878c6b219
++   entry .newSyntax   `-new-syntax`。すべてのバージョンで
++   entry .sourceFuture   `-source future`。すべてのバージョンで
++   entry .experimental   `-experimental`。3.4 から 3.8 で
++   entry .semanticDiagnostics   `-Zsemantic-diagnostics`。3.9 で：各通知の意味的なマークアップを保持する
++       このオプションの下では、コンパイラはメッセージの補間された各引数に帯域内で印を付け、その中の型にはピクルされた TASTy を添える。そして `Compiler.Notice` は、印の付いたその形を、素の `message` と並べて `markup` として保持し、delicious ライブラリがそれを `SemanticMessage` にパースする。
++   entry .warnings   警告のオプション：`-feature`、`-deprecation`、`-W…` のフラグ、`-Wunused`
+
+% 1 1 0 06af99217caafc5c15c3a4e2f4b459e4
+
+@ 0 14 0 1f29d5baa9189f7014f1ba412f2e145c
++         それぞれ、存在するバージョンによって型付けされた `Scalac.Option` である。`.unused` は `Unused` の選択を取り、`.lint` は `-Wshadow` のフラグを保持する。
++     entry .feature   `-feature`。すべてのバージョンで
++     entry .deprecation   `-deprecation`。すべてのバージョンで
++     entry .implausiblePatterns   `-Wimplausible-patterns`。3.3 から 3.6 で
++     entry .enumCommentDiscard   `-Wenum-comment-discard`。3.4 から 3.6 で
++     entry .unstableInlineAccessors   `-WunstableInlineAccessors`。3.4 から 3.6 で
++     entry .nonUnitStatement   `-Wnonunit-statement`。3.4 から 3.6 で
++     entry .valueDiscard   `-Wvalue-discard`。3.4 から 3.6 で
++     entry .unused   `Unused` の選択から作る `-Wunused:…`：すべて、なし、または機能の部分集合
++         `warnings.unused(Unused.All)` は `-Wunused:all`、`Unused.None` は `-Wunused:none`、`Unused.Subset(List(UnusedFeature.Privates, UnusedFeature.Locals))` は `-Wunused:privates,locals` である。
++         オプションのバージョンは選択のバージョンである。
++     entry .lint   `-Wshadow` のリントフラグ
+
+% 1 1 0 11fff09eaf01ca391174bb3136cfa239
+
+@ 0 1 0 0c92f782c6a0e4370f60a51b43f10e20
++           `privateShadow` と `typeParameterShadow`。3.4 から 3.6 で。
+
+% 0 1 0 035be3d050a219e61fec5495d7176d5b
+
+% 0 1 0 1c1c670b861088ed18c04f7155651825
+
+@ 0 1 0 1cdc0887147d0a161f643c74fe9afcdf
++   entry .internal   `-Y` のフラグ：ターゲット名、安全な初期化、明示的な null、パターンの検査、キャプチャ検査
+
+% 1 1 0 168683455d6cf9dc004f78d9ad24eca9
+
+@ 0 9 0 0acc7982d1d8f6b409efdb3eb05be046
++         コンパイラの内部オプションを値として表す。
++     entry .requireTargetName   `-Yrequire-targetName`。すべてのバージョンで
++     entry .safeInit   `-Ysafe-init`。すべてのバージョンで
++     entry .explicitNulls   `-Yexplicit-nulls`。すべてのバージョンで
++     entry .checkPatterns   `-Ycheck-all-patmat`。すべてのバージョンで
++     entry .ccNew   `-Ycc-new`。3.4 から 3.6 で
++     entry .ccDebug   `-Ycc-debug`。3.5 と 3.6 で
++     entry .ccLog   `-Ycc-log`。3.5 と 3.6 で
++   entry .advanced   `-X` のフラグ
+
+% 1 1 0 1add7cf74d5851a00d37da4246f0a05f
+
+@ 0 3 0 1be80a3bd3c2432c1add120cf4a0a395
++         今のところ `maxInlines` だけである。その他は `Scalac.Option` として直接書く。
++     entry .maxInlines   `-Xmax-inlines n`。すべてのバージョンで
++   entry .language   `-language:` のオプション
+
+% 1 1 0 083ed279504b64b7021f673ee8e6495b
+
+@ 0 2 0 10bfac5a00c34fac1a83b094ddcc7099
++         `-language:experimental.…` の機能である `experimental` を保持する。
++     entry .experimental   `-language:experimental.…` の機能。それぞれ、それを提供するバージョンで
+
+% 1 1 0 05474da1a2707970106661f288a5222b
+
+@ 0 24 0 1a81a70536ef4abe127e200abadd176d
++           実験的な言語機能ごとに一つのオプションがあり、機能と同じ名前が付いている。`clauseInterleaving`（3.3 から 3.6）、`givenLoopPrevention`（3.4 から 3.6）、`fewerBraces`（3.1 から 3.6）、`into`（3.4 から 3.6）、`relaxedExtensionImports`（3.3）、`erasedDefinitions`（すべて）、`saferExceptions`（3.2 から 3.6）、`namedTypeArguments`（すべて）、`pureFunctions`（3.3 から 3.6）、`captureChecking`（3.3 から 3.6）、`modularity`（3.5 と 3.6）、`namedTuples`（3.5 と 3.6）、`genericNumberLiterals`（すべて）、`betterMatchTypeExtractors`（3.5 と 3.6）、`quotedPatternsWithPolymorphicFunctions`（3.6）、そして `betterFors`（3.6）である。
++       entry .clauseInterleaving   `-language:experimental.clauseInterleaving`。3.3 から 3.6 で
++       entry .givenLoopPrevention   `-language:experimental.givenLoopPrevention`。3.4 から 3.6 で
++       entry .fewerBraces   `-language:experimental.fewerBraces`。3.1 から 3.6 で
++       entry .into   `-language:experimental.into`。3.4 から 3.6 で
++       entry .relaxedExtensionImports   `-language:experimental.relaxedExtensionImports`。3.3 で
++       entry .erasedDefinitions   `-language:experimental.erasedDefinitions`。すべてのバージョンで
++       entry .saferExceptions   `-language:experimental.saferExceptions`。3.2 から 3.6 で
++       entry .namedTypeArguments   `-language:experimental.namedTypeArguments`。すべてのバージョンで
++       entry .pureFunctions   `-language:experimental.pureFunctions`。3.3 から 3.6 で
++       entry .captureChecking   `-language:experimental.captureChecking`。3.3 から 3.6 で
++       entry .modularity   `-language:experimental.modularity`。3.5 と 3.6 で
++       entry .namedTuples   `-language:experimental.namedTuples`。3.5 と 3.6 で
++       entry .genericNumberLiterals   `-language:experimental.genericNumberLiterals`。すべてのバージョンで
++       entry .betterMatchTypeExtractors   `-language:experimental.betterMatchTypeExtractors`。3.5 と 3.6 で
++       entry .quotedPatternsWithPolymorphicFunctions   `-language:experimental.quotedPatternsWithPolymorphicFunctions`。3.6 で
++       entry .betterFors   `-language:experimental.betterFors`。3.6 で
+
+@ 0 1 0 031208798f1af983079e653f89a4e5e1
++ entry .scalacEdges   ツールチェーンの Scala のコンパイルのエッジ：`Language.Scala` から各ユニバースへ
+
+% 1 1 0 1540383fb8db3011129c98a68be94275
+
+@ 0 5 0 132bcfe14a47b2db0c0fa0a90d6ffb1c
++       各エッジは、それが駆動する `Scalac` をオプションごと持つので、コンパイラ自身の構成は呼び出し側が書いた場所にとどまり、エッジの設定は空（`Unit`）である。
++       これを持つツールチェーンは `Deliverable.Sources` から始めることができるので、一本の経路が `.scala` のテキストから実行可能な JAR まで走り、コンパイラとバンドラーはどちらも経路によって選ばれる。
+
+% 2 1 0 04401e91251c74791a71c6fc95ec353c
+
+% 3 1 0 09070696289c4cbd19041da10dc84910
+
+% 4 1 0 1442a79ab8ed5e230cace83949a66f08
+
+% 5 1 0 16bc55793823365a03ce41fb5d3828ba
+
+% 6 1 0 1369d898a7423e5412ff38b35ce243e3
+
+% 7 1 0 04feaa5ad1180b85183e968c9ac14bbc
+
+% 8 1 0 1e15819a75025e950f510653c8f6e800
+
+% 9 1 0 01f1d495abb31a3d1ca2a7d608b38d55
+
+% 10 1 0 008f023f739d19f915d0722a8d70e128
+
+% 11 1 0 166b0343fc807a280a632b5a942b416d
+
+% 13 1 0 1e75049d6042a1fe0b2ff7ccf9ab5665
+
+% 1 1 0 1967c7baf710caf8168882ebefd3c6df
+
+% 0 1 0 123839e576b32bfe057b6f4420be2ab6
+
+% 2 1 0 1ebdc4a89653c8500b0b97ccc3391326
+
+% 0 1 0 05a8a29ab98ceda217de13ae95aa4dfe
+
+% 0 1 0 1b5783985d8bcbe6045d48a2a55eedd8
+
+% 0 1 0 05e97918ca8c1c5b0f896aaec23b9635
+
+% 0 1 0 198c434feb4e116302d17cce3bcd83d1
+
+% 1 1 0 0378038f5166f5c10b4b1b1d4fb498ef
+
+% 1 1 0 0c9b8ce8de6443cb13d8e9b76ae504e4
+
+% 0 1 0 124731dbd6fc62b21296ee90346ffd3c
+
+% 1 1 0 1ec19ac0ac5459d61312a5e5acc4824e
+
+% 2 1 0 1896345fc9acf8f00ddb7a3cd9332dab
+
+@ 0 6 0 08cc288befd38254049790f37930c275
++       `scalac` という名前のツールは、出力ディレクトリーを作り、コンパイラの `Compiler.Event` をツールチェーンの `LinkEvent` のチャンネルへ中継し、結果を対応づける。失敗はすべての診断を持つ理由 `CompilationFailed(notices)` の `Link.Error` を発生させ、クラッシュは `CompilerCrash` を、構成できないか待ち合わせられないコンパイラは `CompilerUnusable(t"scalac")` を発生させる。
++       与えられた `Scalac` は、何について宣言されていたかにかかわらず、エッジのユニバースにターゲットを変えられる。
+
+% 1 1 0 0402d20a57b3eb1d01bb9e8bbf83f0cd
+
+% 1 1 0 059ae2b44f7081e5117dbd193b2feb25
+
+@ 0 5 0 0ad21b520c04a83a111ff4cadfbea84e
++   entry .classfile   `Language.Scala` から `Toolchain.Universe.Classfile` へのエッジ。与えられた `Scalac` を駆動する
++   entry .sjsir   `Language.Scala` から `Toolchain.Universe.Sjsir` へのエッジ。`-scalajs` を加える
++   entry .nir   `Language.Scala` から `Toolchain.Universe.Nir` へのエッジ。`NirPlugin` の given が必要
++       NIR は Scala Native のコンパイラプラグインによって出力されるので、このエッジは、プラグインの場所の証拠が与えられたときにのみ存在し、その証拠が `-Xplugin:` のフラグを与える。
+
+@ 0 4 0 06542e815eb7c86f12a82431b3cec076
++ entry .compile   `sources.compile()`：名前付きのソースのマップを、コンテキストの `Scalac.Session` の中でコンパイルする
++     `Map[Text, Text]` 上の拡張で、セッションがコンテキストの `Scalac.Session^` である `scalac.on(classpath).session: …` のブロックの中で使える。セッション自身の `compile` に委譲する。
++     結果は、すでに完了している `Scalac.Session.Process` である。
+
+% 2 1 0 19e614465e9b858e0d7d6ef9b04f080c
+
+% 3 1 0 0f5d63539020ada70c421b00fa242390
+
+% 4 1 0 167456c870b426b2024466a32908d318
+
+% 5 1 0 0811cf8a3faf19e3178d28e5a6c01d15
+
+% 1 1 0 0f10f48845cf5f3a0ff95c84f7617e49
+
+% 1 1 0 1f5fcfc0ea8e3f9f0728c798d9ffcd49
+
+% 2 1 0 186c628c923e452b0be1a299e2f3b006
+
+% 2 1 0 1c0fefe70711057817380fee6a746eef
+
+% 0 1 0 15ced8f030bf173e0a8d327cb91498e7
+
+% 0 1 0 038ad3a8ffba26331c583a19314d3f7b
+
+% 1 1 0 07c07fe6f97ad94c0eb991488333bf92
+
+@ 0 5 0 12643cf45a2675380acabd6c2a79345c
++ entry .compilation   セッションのブロックの中にある、コンテキストの `Scalac.Session` のハンドル
++     スコープにあるセッションを、その正確なスコープ付きの型で返す `transparent inline def` であり、ハンドルに名前がない場所でも `compilation.compile(sources)` や `compilation.frontend` と書けるようにする。
++     `session: …` のブロックの外には召喚すべきセッションがなく、その呼び出しはコンパイルできない。
+
+@ 0 3 0 0e537e9812e323161a1fdf4f79d157b3
++ entry .CompileFlag   唯一のケース `Explain` を持つ列挙型
++     `anthology.scala` で宣言されているが、ライブラリの中でこれを消費するものはない。`-explain` は `scalacOptions` の中になく、`Scalac.Option[Scalac.Versions](t"-explain")` と書くことになる。
+
+@ 0 1 0 080ffb98d2d43d520b9b83a384a7fa07
++ entry .JavaVersion   JDK または JRE としての Java のリリース：`Jdk(version)` または `Jre(version)`
+
+% 1 1 0 05baf19a80f758a8071b90d1944ea6d5
+
+@ 0 4 0 18f17cf53aede13111d4f0585cf7d99e
++       `JavaVersion.Jdk(21)` または `JavaVersion.Jre(17)` で、バージョンは `.Version` のリテラル、`8` から `26` である。
++       `anthology.scala` で宣言されているが、ライブラリの中でこれを消費するオプションはない。
++   entry .Version   リテラル型としての Java のリリース番号：`8 | 9 | … | 26`
+
+@ 0 6 0 151d4940c19c49281879fe93d5090c4e
++ entry .LanguageFeature   Scala の言語機能の名前。列挙型として
++     `ClauseInterleaving`、`FewerBraces`、`RelaxedExtensionImports`、`ErasedDefinitions`、`SaferExceptions`、`PostfixOps`、`ImplicitConversions`、`Dynamics`、`ReflectiveCalls`、`CaptureChecking`、`GenericNumberLiterals`、`NamedTypeArguments`、`PureFunctions`、`Into` である。
++     `anthology.scala` で宣言されているが、ライブラリの中でこれを消費するものはない。`-language:` のオプションは `scalacOptions.language.experimental` の値である。
+
+@ 0 4 0 1f7eee21f3cf3ee00e7ded37f7e3e9e0
++ entry .Unused   `-Wunused` のための選択：`All`、`None`、または `UnusedFeature` の `Subset`
++     `scalacOptions.warnings.unused` の引数で、バージョンによって型付けされている。`All` と `None` は 3.1 から 3.8 に存在し、`Subset(features)` は 3.3 から 3.8 に存在して、そのバージョンは名指す機能のバージョンである。
++     `Unused.None` はこの列挙型のケースであり、vacuous の `Unset` ではない。
+
+% 2 1 0 0196ff061700ccc2108f4005b3c83297
+
+% 3 1 0 02cabef723eab1030e9c2ec8ffe29132
+
+% 0 1 0 1938c7f6cdbd750a13056d0c504ac433
+
+% 0 1 0 02f9f4713e77a39319bb6f93350a3dea
+
+% 1 1 0 16a2287d95ee401b01f676ba0e91e063
+
+@ 0 1 0 0e4d90d4cea9e7460a54ea72c7a4436e
++ entry .UnusedFeature   `-Wunused` が検査できる一つのカテゴリー：imports、privates、locals、explicits、implicits、params、linted
+
+% 1 1 0 06d6c0cb8db427990242a7ea22ca8998
+
+@ 0 4 0 0eb096eceecc12ec03e195b2091e0313
++       `Imports(strict)` は 3.3 に存在し、`Privates`、`Locals`、`Explicits`、`Implicits`、`Params`、`Linted` は 3.3 から 3.6 に存在する。
++       `#name` は `-Wunused:` が取る単語であり、それらの `List` は `Unused.Subset` である。
++   entry #name   `-Wunused` が綴る通りのカテゴリー：`imports`、`privates`、`locals`、…
+
+@ 0 3 0 1cdc9bdcf27820e216baf538df3a3cea
++ entry .WarningFlag   `Deprecation` と `Feature` からなる列挙型
++     `anthology.scala` で宣言されているが、ライブラリの中でこれを消費するものはない。対応するオプションは `scalacOptions.warnings.deprecation` と `scalacOptions.warnings.feature` である。
+
+@ 0 1 0 05730931cf41e7fe1b91c6545bf46aba
++ entry .Javac   値としての Java コンパイラ。実行中の JDK 自身のコンパイラの上にある
+
+% 1 1 0 01e08a7ca4c9ba680614a56caaf6b8f1
+
+@ 0 5 0 1da8a677f6d1ec54008232aebfe8b64d
++       `Javac(options)` は、システムの Java コンパイラ（`ToolProvider.getSystemJavaCompiler`）を、`Scalac` と同じ形の API を通じてプロセス内で駆動する。名前付きのソースのマップとクラスパスが、自分専用のタスクの中でディレクトリーへコンパイルされ、結果は `Compiler.Process` である。
++       Java にはバックエンドが一つしかないので、出力は常に `Toolchain.Universe.Classfile` であり、Scala と Java の混在したアプリケーションは一つの成果物にリンクされる。
+
+% 2 1 0 194af61c3fbc8dac0d7a0edc8fc3e060
+
+% 3 1 0 1bf9e0dab3bb0e8919abd1121ce3a232
+
+% 4 1 0 173fa0fbdc0720e00e0e75d9eada0d40
+
+% 5 1 0 1b0129f81085a64511e2903db8e693cd
+
+% 6 1 0 1ec0d7971f7bb9cd062ffc50f58ace37
+
+% 7 1 0 0e77da2e807cc7b71691bb9a946d417a
+
+% 8 1 0 19c4c3323e2c6f170daa218d4c1dbe83
+
+% 9 1 0 1f9c265ec0ffa13111e566457e1b9914
+
+% 10 1 0 18e7916b2b0f9ac707e37cbbaa59c844
+
+% 12 1 0 0dd2c399fd8fa079189ce4c1e10b7756
+
+% 13 1 0 0ed9e3e425cff1d618ed9b48f1d0160e
+
+% 15 1 0 12f0ded1722a3bf011529348550535ac
+
+% 0 1 0 1909c6d30ecfe23409f0b6cd7d4c3f85
+
+% 0 1 0 079c8c9de2978bae0a083008e32031a3
+
+% 1 1 0 10510deea89171481af789ef10aaf05a
+
+% 2 1 0 0f92dc4502443bd11af8360d33224c62
+
+@ 0 7 0 0d963ea7348093b50787c970ca6c8c92
++       Java の診断は `Compiler.Notice` になる。エラーは `Error`、警告と必須の警告は `Warning`、残りは `Info` となり、コンパイラが位置を与える場合はそれぞれ一行のスパンを伴う。
++       通知の `file` は、現在はソースに与えられた名前ではない。それはプレースホルダーの `name` なので、Java の診断をそのソースに帰属させなければならないツールはメッセージを読むべきである。
++       進捗は二つの目盛りで、開始時に `0.1`、成功時に `1.0` である。
++       コンパイラは実行中の JDK のものなので、バージョンパラメーターはなく、`.version` は実行環境のものである。
+
+% 1 1 0 08e5a03ddfb0824c1c57e56ec438c061
+
+% 0 1 0 00f3ddcd1542ba2614aff16685efcfc8
+
+@ 0 4 0 1f091ec7e15595f10fff854d36667e1d
++   entry .refresh   共有のコンパイラインスタンスを置き換える。クラッシュの後に起こるのと同様に
++   entry .compiler   コンパイルが実行される、共有の `javax.tools.JavaCompiler`
++   entry .version   実行中の JDK のバージョン、`Runtime.version()`：`25.0.4`
++   entry .Option   Java コンパイラのオプション。追加するフラグとして
+
+% 1 1 0 0feb91e8f1c2c9d40c0ed7a8b371d873
+
+@ 0 7 0 08cdc884bfcff5651e2dd8bf37834d68
++         `Javac.Option(flags*)`：コンパイラは実行中の JDK が何であれそれなので、Java のオプションはバージョンで型付けされない。
++         `Javac.Option(t"--release", t"17")` や `Javac.Option(t"-Xlint:all")` のように書く。
++     entry #flags   オプションが寄与するコマンドライン引数
++   entry #options   コンパイラのオプション。順序通りに
++   entry #version   実行中の JDK のバージョン、`Javac.version`
++   entry #JavaSource   名前付きのメモリ上のソース。コンパイラが読む `JavaFileObject` として
+
+% 1 1 0 1e3aeadedbffa65413a418151790b93a
+
+@ 0 11 0 1792ac14466fff211ea9d0b859c60d5a
++         `javac.JavaSource(name, code)`、すなわち `string:///name` の URI を持ち、内容がコードである `SimpleJavaFileObject` である。
++         `#apply` は各ソースをこれで包む。`JavaCompiler` の API を直接駆動するツールのために公開されている。
++     entry #name   ソースの名前
++     entry #code   ソースの内容
++   entry #apply   名前付きのソースをクラスパスに対してディレクトリーへコンパイルする。自分専用のタスクの中で
++       `javac(classpath)(sources, out)`：`-classpath`、`-d`、オプションを付けて、`async` タスクの中でシステムのコンパイラを実行し、直ちに `Compiler.Process` を返す。
++       `System`、`Monitor`、`Probate` が必要で、`Compiler.Event`（`Start`、`Running`、そして例外が投げられたときの `CompilerCrash`）を記録し、`Compiler.Error` を発生させると宣言されている。
++       クラッシュは `Compiler.Result.Crash` になり、共有のコンパイラを置き換える。
+
+@ 0 1 0 15a94b907f1d275b1f3b8153caaccc67
++ entry .javacEdges   ツールチェーンの Java のコンパイルのエッジ：`Language.Java` から `Toolchain.Universe.Classfile` へ
+
+% 1 1 0 14ef23bf815044c70d95f132249bc78c
+
+@ 0 5 0 0d3e9be74350d19a08498b1abcf30f18
++       `javacEdges(javac)` は、それが駆動する `Javac` を持つ一エッジのリストである。
++       `javac` という名前のツールは、出力ディレクトリーを作り、コンパイラのイベントをツールチェーンの `LinkEvent` のチャンネルへ中継し、失敗を理由 `CompilationFailed(notices)` の `Link.Error` に、クラッシュを `CompilerCrash` に、構成できないコンパイラを `CompilerUnusable(t"javac")` に対応づける。
+
+% 2 1 0 0bf773d8c74203970d3cba67f5a2ce1c
+
+% 3 1 0 0b082cf2259b733816a53f9f5eead8e0
+
+% 4 1 0 1a85f852156ae1991cb3c5989c71e8aa
+
+% 0 1 0 06ab7b773ff7c2990b6b03586028f22b
+
+% 0 1 0 0dd897b4371f88fc17902a224efc5103
+
+% 1 1 0 1dacaa089454467f178128ce5998d031
+
+@ 0 1 0 08b85d45c987b0ca071a8b292d99e313
++   entry .apply   `Javac` に対するエッジのリスト
+
+@ 0 1 0 0ebd5875d24fa62c18af7adb016eb127
++ entry .Kotlinc   値としての Kotlin コンパイラ：型付きのオプションと言語バージョンを持ち、クラスファイルを出力する
+
+% 1 1 0 195f5889ff304c451cefa77035684504
+
+@ 0 6 0 1c5ce0899f0a060502ccabcff7d61107
++       `Kotlinc[version](options)` は、`Scalac` や `Javac` と同じインターフェースを提示して、Kotlin コンパイラをプロセス内で駆動する。名前付きのソースのマップとクラスパスがディレクトリーへコンパイルされ、コンパイラのメッセージは結果の `Compiler.Process` 上の `Compiler.Notice` になる。
++       バージョンパラメーターは `.Versions`（`1.9` から `2.4`）の一つで、各 `kotlincOptions` の値はそれを受け入れるバージョンによって型付けされているので、あるバージョンにないオプションはツールにおけるコンパイルエラーとなる。
+
+% 2 1 0 09f22bc432a98a3b0ec7bb20ca4d123c
+
+% 3 1 0 1422c24185a3633105ade1990f7de83a
+
+% 4 1 0 0e60dfcac830f19a0f36ef45a1533a41
+
+% 5 1 0 0a03300a9e63ce3e1b2dce7956e6460c
+
+% 6 1 0 0baa27cb0bea83f60f1d1d036333e17f
+
+% 7 1 0 1579076ae73e47b40d28ee57ab9ad48c
+
+% 8 1 0 17d4657e97620ec8147a0505cfc00f83
+
+% 9 1 0 071df32682cd7ce50e66c87ae52e9fec
+
+% 10 1 0 044f3fe7e2ff6afb07c0bc53b2c9d5a9
+
+% 12 1 0 0fe64466160c60470481fa1dda8dc36e
+
+% 13 1 0 0a105d31201c0723126b5a111518671e
+
+% 0 1 0 152a1de7a14944b6058780800c557985
+
+% 2 1 0 10a38408f0b6a0691f6d4648717c9898
+
+% 0 1 0 1fc242f58cd8aa2a1f057a1b7c8b066e
+
+% 0 1 0 076654d24676b62d16f6a8faa40d9b2f
+
+% 1 1 0 0f7e1b4d009924c6199fe3c5d9c5c89e
+
+% 2 1 0 150b7bef2eddd6c904cfdab6651b9129
+
+@ 0 6 0 18dbef1ac19e12c00d0a03b2a6c641b8
++       Kotlin はソースをディスクから読むので、ソースはコンパイルの間だけ使い捨てのディレクトリーに書き出され、コンパイルが終わると削除される。それでも診断は、書き出されたファイルではなく、与えられた通りのソース名（`demo/Greeting.kt`）を名指す。
++       Kotlin の標準ライブラリが暗黙に含まれることは決してない — コンパイラは `-no-stdlib` で実行されるので、`kotlin-stdlib` は他のすべてのエントリーと同様にクラスパスに置く — そして出力はクラスファイルであり、`Dex` や `Apk` を含め、他のクラスファイルの成果物と同様にリンクできる。
+
+@ 0 5 0 100848e82d5156be1fc7939812b09b5c
++       通知になるのは、コンパイラがソースについて述べたことだけである。ソースの位置を持たない info レベルのメッセージ（ロギングの `-verbose` が大量に出すもの）は捨てられる。
++       コンパイラ自体（`kotlin-compiler-embeddable`）は `anthology.kotlin` のコンパイル時のみの依存である。それを駆動するプログラムが望むバージョンを自分の実行時クラスパスに置き、`.version` がそれが何かを報告する。
+
+% 0 1 0 1d9494e4f90eb71b1b404f85e0e4daf1
+
+% 0 1 0 0f7502748bd40d5700ce55ae14819939
+
+% 1 1 0 05751aea5b43acfd09cad2b65285bdec
+
+@ 0 2 0 0fb7402a4dcde0c017751d5949122cf5
++   entry .Versions   `Kotlinc` を宣言できる Kotlin の言語バージョン：`1.9` から `2.4`
++   entry .Option   Kotlin コンパイラのオプション。追加するフラグとして表され、それを受け入れるバージョンによって型付けされる
+
+% 1 1 0 037817dbc2f586ac1f44b6896d08b624
+
+@ 0 17 0 19253745611c479c14fe22036b8bfd4a
++         `Kotlinc.Option[-version <: Versions](flags*)` で、`Scalac.Option` と同様にバージョンについて反変なので、`Kotlinc.Versions` について宣言されたオプションはどのコンパイラにも合う。
++         `kotlincOptions` にないオプションは直接書く：`Kotlinc.Option[Kotlinc.Versions](t"-Xcontext-receivers")`。
++     entry #flags   オプションが寄与するコマンドライン引数
++   entry .version   組み込まれたコンパイラのバージョン。それ自身が報告する通りに：`2.4.10`
++   entry #options   コンパイラのオプション。順序通りに
++   entry #commandLineArguments   すべてのオプションのフラグを、順序通りに連結したもの
++   entry #version   組み込まれたコンパイラのバージョン、`Kotlinc.version`
++   entry #apply   名前付きのソースをクラスパスに対してディレクトリーへコンパイルする。自分専用のタスクの中で
++       `kotlinc(classpath)(sources, out)`：ソースを使い捨てのディレクトリーに書き出し、`-no-stdlib`、`-classpath`、`-d`、オプションを付けて、`async` タスクの中で JVM のコンパイラを実行し、直ちに `Compiler.Process` を返す。使い捨てのツリーはタスクが終わると削除される。
++       `System`、`Monitor`、`Probate` が必要で、`Compiler.Event` を記録し、`Compiler.Error` を発生させると宣言されている。
++       診断はコンパイラが報告するスパンを持ち、それは各ソースに与えられた名前へと対応づけ直される。クラッシュは `Compiler.Result.Crash` になる。
+
+@ 0 1 0 1e01c8e17533b2ac0c7fb0b057292bdf
++ entry .kotlincOptions   型付きの値としての Kotlin コンパイラのオプション
+
+% 1 1 0 01e298e56650b9420c9d354be5b77e86
+
+@ 0 4 0 10d3e1ea8d0e27b913cf803adcad25d9
++       Kotlin のコマンドラインを `kotlincOptions` の下に写し取り、それぞれを受け入れるバージョンによって型付けされた `Kotlinc.Option` とし、入れ子のオブジェクト `warnings`、`compatibility`、`explicitApi`、`advanced` を持つ。
++       このオブジェクトは `soundness` アンブレラのパッケージとして写し取られている。
+
+% 2 1 0 05ef0915647fcda51500af09e3b03430
+
+% 3 1 0 05b9b297d94216cd01bae46d1cdbbf75
+
+% 0 1 0 1c6c394755b598b304ee1d90cb43eb9f
+
+% 0 1 0 0b5aa0ee5abb0eda156c1b3cf9247940
+
+% 0 1 0 181704fe0c4190c2062183a8780681a9
+
+% 1 1 0 16c784aef3c1f58004b24e3cef5b0521
+
+% 1 1 0 0411c533ffbf07e910e3d50bdf6263e2
+
+@ 0 4 0 052422c06a40ac09051740861a5d253c
++   entry .javaParameters   `-java-parameters`：Java のリフレクションのためにパラメーター名を保持する
++   entry .noJdk   `-no-jdk`：JDK をクラスパスに置かない
++   entry .progressive   `-progressive`：プログレッシブモードを有効にする
++   entry .verbose   `-verbose`：冗長なコンパイラのロギング（そのメッセージは通知にならない）
+
+% 0 1 0 0e2632139563ad36040c1ec90ef208b4
+
+@ 0 3 0 1a08b9e07fa547f415c493334ca46c74
++   entry .jvmTarget   `-jvm-target version`：JVM のバイトコードのバージョン。`17` のような数として
++   entry .optIn   `-opt-in marker`：アノテーションの付いた API にオプトインする
++   entry .warnings   `-nowarn`、`-Werror`、`-Wextra`
+
+% 1 1 0 18a198bdb49e008215d967c5b7f29ca5
+
+@ 0 1 0 1bb9fbb65040afde18c6d44de4a43234
++         `none` と `asErrors` はすべてのバージョンで、`extra` は 2.0 から。
+
+% 0 1 0 077d414b8de0e0ca052c9f84a3d206e4
+
+@ 0 3 0 1ec7e53698bd2f441f6d1a9fc535f484
++     entry .asErrors   `-Werror`：警告でコンパイルを失敗させる
++     entry .extra   `-Wextra`。2.0 から 2.4 で
++   entry .compatibility   コンパイルの対象とする API、言語、JDK のリリースのバージョン
+
+% 1 1 0 0f99178734ac8c900e481bf276345efe
+
+@ 0 1 0 05367f19e21aed8004fc41034c6f4cc7
++         `api` と `language` は `Kotlinc.Versions` のリテラルを取り、`jdkRelease` は JDK の番号を取る。
+
+% 0 1 0 1933d9f0a38a8f8609158839f85b80fe
+
+% 0 1 0 1bf3e017cd904ddc0715ba56e52b53cd
+
+% 0 1 0 11bdb0303dab05041e1b382f0f01120c
+
+@ 0 1 0 0f57b4231210efcb0629000c5d079640
++   entry .explicitApi   `-Xexplicit-api=strict` または `=warning`
+
+% 1 1 0 05e6a6c21eae970e1488d4ecd315bd3c
+
+@ 0 2 0 134f01c2df121d5d18f30aab1dd905f7
++         ライブラリの作者のための明示的 API モード：すべての公開宣言は、その可視性と戻り値の型を明示しなければならない。
+
+% 0 1 0 0135889d22ade2f6122d7e8f003b04e2
+
+% 0 1 0 1a7f5b8a8c552b5613d371e713128fbc
+
+@ 0 1 0 02181b95065d318309a58a6ffe260739
++   entry .advanced   `-Xno-call-assertions` と `-Xno-param-assertions`
+
+% 1 1 0 043bab3c655062bd197c926855e1327c
+
+@ 0 1 0 134ab047d016d9801ddecf536b78cec1
++         Kotlin が Java との境界で出力する null 検査のアサーションを取り除く。
+
+% 0 1 0 17908a4b5e12dfcd1dcc66575ec4b398
+
+% 0 1 0 1a0c3033e491415d037468d41c778fcb
+
+@ 0 1 0 0fd7226cca69355513b826d3924127eb
++ entry .kotlincEdges   ツールチェーンの Kotlin のコンパイルのエッジ：`Language.Kotlin` から `Toolchain.Universe.Classfile` へ
+
+% 1 1 0 03666c5dee90bcde03437f1cbd6be0d5
+
+@ 0 6 0 06ce6c02d79c947b13faf53fe31da553
++       `kotlincEdges(kotlinc)` は、それが駆動する `Kotlinc` を持つ一エッジのリストである。
++       モデル化されているのは JVM のバックエンドだけである。Kotlin の他のバックエンドは、anthology が知るユニバースではなく klib を出力する。
++       `kotlinc` という名前のツールは、`scalacEdges` と同様に、失敗を理由 `CompilationFailed(notices)` の `Link.Error` に、クラッシュを `CompilerCrash` に、構成できないコンパイラを `CompilerUnusable(t"kotlinc")` に対応づける。
++   entry .apply   `Kotlinc` に対するエッジのリスト
+
+@ 0 1 0 1918390493227b810c27fa70b8da2f66
++ entry .Js   モジュールシステムを通じてホストに結び付けられた JavaScript：モジュールシステムごとに一つのアプリケーションノード
+
+% 1 1 0 0db2eba1395ed8cb082e49799c0f9b18
+
+@ 0 6 0 0a051d80803107960abbcbaaae692022
++       `anthology.Js(module)` は、id が `js-<module>` — `js-es`、`js-commonjs`、`js-script` — のアプリケーションノードである。
++       モジュールシステムは成果物の結び付きの契約 — ブラウザや Node がそれをどうインポートするか — の一部なので、ノードの同一性の一部であり、`sjsEdges()` は `Toolchain.Universe.Sjsir` からそれぞれへのエッジを一つずつ登録する。
++       これは `soundness` アンブレラに**エクスポートされない**。アンブレラの `Js` は xenophile の JavaScript 外部関数インターフェースなので、`import soundness.*` の下では完全修飾で書く。
+
+% 2 1 0 0d35a7d8064a1c1e0b2a0cb386582f98
+
+% 3 1 0 1f7ea5757a18c4610670bb5bb4981d2e
+
+% 4 1 0 0d5e05c12c1f8f9c009e16238076ee13
+
+% 0 1 0 1bc8d57a04c1106e0b61a1636064a80d
+
+% 0 1 0 140ef1e2dd2707971cd4e37397ce2ec7
+
+% 0 1 0 0f7b9cbb0c6861720516a96c21bd10f2
+
+% 1 1 0 14df9a5774f4236b171030482a398140
+
+@ 0 1 0 18e22391882df3ea0bbda5bff09032dd
++       リンクは出力ディレクトリーに `main.js` を書く。
+
+% 1 1 0 0515e646812691f40e2d0ba214d69d5e
+
+% 1 1 0 0301c32cf39f804b0cc759f053f89720
+
+@ 0 1 0 1ad1d878602b19a21572fc6ccbfb8dc0
++   entry .Module   JavaScript のホストが成果物を消費する方法：`Es`、`CommonJs`、`Script`
+
+% 1 1 0 03385c8ce38673f502bb2f048372f7ab
+
+@ 0 4 0 14bae4edd1ed65b30c934d3f5c0926ee
++         ECMAScript モジュール（`ModuleKind.ESModule`）、CommonJS モジュール、またはモジュールシステムのない素のスクリプトで、`#id` はそれぞれ `es`、`commonjs`、`script` である。
++     entry #id   ノードの id の中でのモジュールシステムの名前
++   entry #module   成果物が結び付けられたモジュールシステム
+
+@ 0 1 0 1236a68738406caa07cdb84801cc3e5e
++ entry .Wasi   WASI インターフェースのあるバージョンに結び付けられた単独の WebAssembly の成果物：バージョンごとに一つのノード
+
+% 1 1 0 124612397eba8e39109932e3b972f350
+
+@ 0 9 0 04fcacad43d66c8b1a4929d8023ba584
++       `Wasi(version)` は、id がバージョンの id — `wasip1`、`wasip2`、`wasip3` — であるアプリケーションノードである。
++       WASI の世代は成果物の ABI を決めるので別々のノードであり、それを生成するエッジを持つのは `Wasi(Wasi.Version.Wasip2)` — インポートとエクスポートが WIT で記述されたコンポーネントモデルの `.wasm` — だけで、そのエッジは `sjsEdges.wasi()` である。そのため `Wasip3` を求めると、黙って別のものを生成するのではなく `NoPath` が発生する。
++       コンポーネントのエッジには、リンカー以外に二つの前提条件があり、どちらも given である。`wasm-tools` と `wit-bindgen` を探査することでしか得られない `WasiToolchain` と、リンクの対象とする WIT のディレクトリーとワールドを名指す `.World` である。
++       その後 `ociEdges()` がコンポーネントを `OciImage` として包む。
+
+% 2 1 0 0b3e84c7f5dda4bf0c889e325e4943ba
+
+% 3 1 0 1454b3b135130d700f9dc029e296445c
+
+% 4 1 0 0ff1f4abffce8ff4064b60a5e71a6f68
+
+% 5 1 0 159c5a0c54af082d1b85a928ffa1d9ba
+
+% 6 1 0 1dfd8ba93a9459c71ef95f2db2b3371b
+
+% 7 1 0 0c734a29e59d2dad0270c85bd7d3678c
+
+% 8 1 0 18d5111c1da4e49116589682b07c4089
+
+% 9 1 0 05af5dae904ba1d41e48a42b21ba31a6
+
+% 10 1 0 0f9161bd2106353b1a7ab675208835fe
+
+% 11 1 0 1196deea3e4945411afc460f955d5c92
+
+% 13 1 0 1812610f7f7e4eda05dffab9f575f2e8
+
+% 14 1 0 0c0486d77c2100981ed89de5330d1704
+
+% 15 1 0 0838618d37e1bcfc01635435c698465f
+
+% 2 1 0 0fc76cbee0fddc1c07b6d44ad3f7fb1d
+
+% 0 1 0 173acea7d21a48540263d311d6ea9723
+
+% 2 1 0 0f2bcc40d72629210c7921626be0bc0f
+
+% 0 1 0 0706d703b369efe007f6ce6753230a7b
+
+% 0 1 0 0a9f3345381fcd6c1d6612e81aa7de47
+
+% 1 1 0 1393f7b0e32f1b1412bab4d78faa981a
+
+@ 0 1 0 187d74bcb70b33c01ed5267ed1e693a6
++       リンクは出力ディレクトリーに `main.wasm` を書く。
+
+% 0 1 0 01df9b0199fe9ff80d02db4267fb0dd1
+
+% 1 1 0 1d49d89da07772651c1010ed054e1297
+
+% 1 1 0 0af70cba11ea949d165527ce1a33b860
+
+@ 0 1 0 1f0255ee3447163d04ee71d0a8894ef2
++   entry .Version   WASI の世代：`Wasip1`、`Wasip2`、`Wasip3`
+
+% 1 1 0 16bccbfaa50ffced1aab2af39a4cbb92
+
+@ 0 5 0 0a09e5465eb478130f445191152d5288
++         `wasip1`（0.1）はコアモジュール上の平坦な libc 式のシステムコールの ABI である。`wasip2`（0.2）はコンポーネントモデルで、インポートとエクスポートは WIT で記述される。`wasip3`（0.3）はネイティブの非同期性を加える。
++         `#id` は小文字の名前である。
++     entry #id   `wasip1`、`wasip2`、`wasip3`
++   entry .World   コンポーネントのリンクが解決の対象とする WIT の定義：パッケージのディレクトリーとワールドの名前
+
+% 1 1 0 1760cfc3b83a415703df5a92bab9694e
+
+@ 0 7 0 0316d4a1abdcc6750b982b796da2577f
++         `Wasi.World(directory, world)`：ディレクトリーは `.wit` パッケージ（その依存は `deps/` の下）を保持し、`world` はリンクするワールドを名指す。
++         `sjsEdges.wasi()` と `ociEdges()` はどちらもこれを given として取る。OCI のツールは、成果物を記述するために、ディレクトリーの最上位の `.wit` ファイルからワールドのインポートとエクスポートを読む。
++     entry #directory   `.wit` パッケージのディレクトリー
++     entry #world   リンクするワールドの名前
++   entry #version   成果物が結び付けられた WASI の世代
+
+@ 0 1 0 06536cac64b15db211a7eedc8d88fc26
++ entry .WasiToolchain   `wasm-tools` と `wit-bindgen` がインストールされていることの証拠。探査によってのみ得られる
+
+% 1 1 0 044acdc13e78da3a1d56a907cc9a2f3c
+
+@ 0 6 0 04ef5782cc725d331c0671bbf49ed3d6
++       WASI のコンポーネントのリンクは、`wasm-tools` と、`wit-bindgen` の scala-wasm フォークを外部コマンドとして呼び出す。`WasiToolchain` の値はそれらが存在することの証拠であり、それを作る唯一の方法は `.apply` で、それぞれを `--version` 付きで実行する。
++       `sjsEdges.wasi()` はこれを given として取るので、ツールが存在しないコンポーネントのエッジは構築できず、欠けているツールはリンクが失敗したときではなく、ツールチェーンが組み立てられるときに発見される。
+
+% 2 1 0 18078f920668209c0cca14d92e102920
+
+% 3 1 0 10c3348e3e9438ba0195d77fd56cb250
+
+% 4 1 0 11fa46ffa0a347eb1ae8c83ff3fa815f
+
+% 5 1 0 13434c5ce15232fd0e8313214657337d
+
+% 6 1 0 109eb3f980258a0c072c878d2f238e6a
+
+% 1 1 0 13411c2f830bff2c0178e813bb4a80c0
+
+% 1 1 0 06c49b41b7bd78ba0d73dfde718821dd
+
+% 2 1 0 0bcfe51d22bdc3c70444b66095f0ae3e
+
+% 1 1 0 0ff29296da0278f90c768ad642e19c30
+
+@ 0 5 0 09c280bd037e366a0078fb412ce435f6
++   entry .apply   `wasm-tools` と `wit-bindgen` を探査し、どちらかが欠けていれば `Toolchain.Error` を発生させる
++       スコープにある `WorkingDirectory` と `Environment` を使って、guillotine を通じて `<tool> --version` を実行する — プロセスが継承すべき環境（`environments.javaBaseEnvironment`、または CLI 自身のもの）を与える — そして、正常に終了しなかった最初のツールを名指す `Toolchain.Error` を発生させる。
+
+@ 0 6 0 0c69a16fd9c08f031fb92f2eb2f2f86a
++ entry .Wasm   JavaScript のグルーを伴い、JavaScript のホストに結び付けられたコアの WebAssembly モジュール
++     `anthology.Wasm` は id が `wasm` のアプリケーションノードで、`sjsEdges()` を通じて `Toolchain.Universe.Sjsir` から到達する。Scala.js のリンカーの WebAssembly バックエンドであり、ブラウザや Node がグルーとともにロードする ES2022 のモジュールとして出力される。
++     これは `soundness` アンブレラに**エクスポートされない**。アンブレラの `Wasm` は xenophile のものなので、完全修飾で書く。
++     リンクは出力ディレクトリーに `main.wasm` を書き、ネイティブのツールを必要としない。
+
+@ 0 1 0 18f8eea5c8ff2274036495f9a8db0057
++ entry .linkerOptions   Scala.js のリンカーが生成するすべての形式のための設定：IR の検査、ソースマップ、ES のバージョン、オプティマイザー
+
+% 1 1 0 0e2586ab2d0d22c007ccde59a9366c08
+
+@ 0 3 0 0c96d05de824786200d190e98f58c643
++       それぞれ、`anthology.Js`（任意のモジュールシステム）、`anthology.Wasm`、`Wasi` のすべてに宛てた `Toolchain.Setting` であり、リンカーの `StandardConfig` を編集する。それらのどれも生成しない経路では、`InapplicableSetting` として拒否される。
+
+% 2 1 0 007378b96c5128020a470a0f2fd273e8
+
+% 3 1 0 1cfa81cd1a7ac20c0775f8b4e8ddcc70
+
+% 0 1 0 0d750b2488aff2ab068ad399cb99ad80
+
+% 1 1 0 0e1c81840a1c5c411049f52646bde49b
+
+@ 0 3 0 0c7c61612752ee761b1201482d0889da
++   entry .checkIr   リンクの前に IR を検査する
++   entry .sourceMaps   ソースマップを出力する
++   entry .esVersion   出力する ECMAScript のバージョン：`es2015` から `es2022`
+
+% 1 1 0 07ca1544701be734075b827121d7145b
+
+@ 0 10 0 0c45db5389ef3a310452b22616a659eb
++         バージョンごとに一つの設定がある。例えば `linkerOptions.esVersion.es2020` である。
++     entry .es2015   ECMAScript 2015 をターゲットとする
++     entry .es2016   ECMAScript 2016 をターゲットとする
++     entry .es2017   ECMAScript 2017 をターゲットとする
++     entry .es2018   ECMAScript 2018 をターゲットとする
++     entry .es2019   ECMAScript 2019 をターゲットとする
++     entry .es2020   ECMAScript 2020 をターゲットとする
++     entry .es2021   ECMAScript 2021 をターゲットとする
++     entry .es2022   ECMAScript 2022 をターゲットとする
++   entry .optimize   リンカーのオプティマイザーを実行するかどうか：`none` または `fast`
+
+% 1 1 0 1586c85452763e27089495ba105e51a6
+
+@ 0 3 0 133a72a0422d88ba130a1fc7647bc00b
++         `fast` はオプティマイザーを有効にし、`none` は無効にする。
++     entry .none   オプティマイザーを無効にする
++     entry .fast   オプティマイザーを有効にする
+
+@ 0 1 0 042497b0dd1f31710303171d74272a03
++ entry .sjsEdges   Scala.js のリンクのエッジ：`Sjsir` から各 JavaScript モジュールシステム、ブラウザ向け Wasm、WASI コンポーネントへ
+
+% 1 1 0 08e26b4e96dbb84b1d27032bee39a8bb
+
+@ 0 8 0 196f3c65b47a140f199e0fc05522d714
++       `sjsEdges()` は `Toolchain.Universe.Sjsir` からの四つのエッジを登録する。ES、CommonJS、script の各モジュールシステムのもとでの `anthology.Js` へのエッジと、`anthology.Wasm` へのエッジである。
++       `.wasi()` は五つ目の `Wasi(Wasi.Version.Wasip2)` へのエッジを加え、これは `WasiToolchain` と `Wasi.World` が与えられたときにのみ存在する。
++       どれも Scala.js のリンカー（`anthology.link` に同梱された JVM ライブラリ）を、コンパイル出力のディレクトリとそのクラスパスのディレクトリおよび JAR に対して駆動し、各 `EntryPoint` をその `main` を呼ぶモジュール初期化子として、出力ディレクトリに `main.js` または `main.wasm` を書き込む。
++       リンカーのメッセージは `LinkEvent.Message` としてログに記録され、例外を投げたリンカーは理由 `Failed` の `Link.Error` を発生させる。
+
+% 2 1 0 09950cd73ece48d91cc1cb447ade211a
+
+% 3 1 0 1f6ad6b27373de550f11c1db77948e2f
+
+% 4 1 0 0365aeac3507a6f10c671b41715e523f
+
+% 5 1 0 08d0f6eec37514d411f76688e803b0a2
+
+% 6 1 0 1478fa0495fa36b31c63bf3ad18fd426
+
+% 7 1 0 1c312cb0f74036941101499c7aaa8928
+
+% 8 1 0 1ee505ede02156d40454c60d26af40c1
+
+% 9 1 0 0594ba8d92785a2a0166f172a906de54
+
+% 10 1 0 0bd4f900fd22eff410dbc761957a4720
+
+% 11 1 0 028db6dd818a611f02086418a5df7d9c
+
+% 13 1 0 046bda7d69379c6e042182eca19b0b7b
+
+% 14 1 0 15f644ed3b9882061d807f781061d502
+
+% 15 1 0 057f61a0828ef8821a556a2824be23a0
+
+% 17 1 0 1104c9493e5291860269a1cbf5be6b98
+
+% 0 1 0 1197124d30dc6c8701da11dbd65fc0f8
+
+% 1 1 0 047557205e0ab89316217463217eb8fe
+
+% 0 1 0 1c598954c37840ba068bb7ac2f6eae57
+
+% 0 1 0 123e0a0d3a912afe01385c2356406d25
+
+% 1 1 0 032971743b99eca21bafd3b79431a0a9
+
+% 0 1 0 1789d1c554ac11ac00fa6fc5f8bfeab2
+
+% 1 1 0 0bb531d181b1ba66043e393cfc170988
+
+% 2 1 0 0a3aed749845f9c90bc07702faffad22
+
+@ 0 3 0 08efa8b57538dabe1817abbbc62ce005
++       コンパイル出力は、Scala.js の実行時 JAR に対して `-scalajs`（`Toolchain.Universe.Sjsir` を対象に変えた `Scalac`）でコンパイルされていなければならない。クラスファイルへのコンパイルからは、これらのノードのどれにも至る経路がない。
+
+% 1 1 0 0441521a9904ac01180a14fec8344a97
+
+% 1 1 0 011597c60a4f988d0cce026fd83b0561
+
+@ 0 7 0 030959eae3bec77b1576b38a1390db5a
++   entry .apply   ネイティブのツールを必要としない四つのエッジ：三つの JavaScript モジュールシステムとブラウザ向け Wasm
++       それぞれのツールはノードの ID（`js-es`、`js-commonjs`、`js-script`、`wasm`）で名付けられ、Wasm のエッジは ES2022 と WebAssembly バックエンドに固定される。
++   entry .wasi   探査済みの `WasiToolchain` と `Wasi.World` が与えられたときの `Wasi(Wasip2)` へのエッジ
++       リンカーを、ワールドの WIT ディレクトリとワールド名に対する `WasmComponent` モジュール向けに設定する。リンクは進行中に `wasm-tools` と `wit-bindgen` を実行する。
++       ネイティブのツールがない WASI のリンクは表現できない。given を作れないからである。
+
+@ 0 1 0 13967596cd0f90621df76f8cfc7fc8e1
++ entry .Bundler   実行中のアプリケーションのクラスパスと、クラスパスからの JAR の組み立て
+
+% 1 1 0 153a416b051266e705726a171d5202dc
+
+@ 0 4 0 04b03cbf26fc0f1b01388f21c0f2a684
++       `.applicationClasspath` は、実行中のプログラムが読み込まれたクラスパスである。
++       自分の実行中のクラスパスを生成する JAR に組み込まねばならないステージングの仕掛けは、それをコンパイル出力と組にして `Deliverable.Emission` とし、二つを `Artifact.Jar` のエッジを通じてパッケージする。こうして JAR は仕掛け自身のエグゼキューターと依存関係を持つ。
+
+% 2 1 0 1fe60bc9ddc7112f12749338fef1defe
+
+% 3 1 0 04e0fa1308b32d0c1ddb563095857ddc
+
+% 4 1 0 09c25b0a37ed7917185ffd2ca28549c5
+
+% 5 1 0 12974115ea32b0c90a700bc2c3167bd0
+
+% 6 1 0 1d710eb5a6126874062951bbd695b6fc
+
+% 7 1 0 0a482b5b279372d60144814f35526198
+
+% 8 1 0 0a10037415fdb3750d742bebb9bda887
+
+% 9 1 0 06950b3ae6f7ce65155ea9428eeb96ce
+
+% 10 1 0 0645438ca7b7cbcb023bab3bb4594a08
+
+% 11 1 0 14d7775b913c8fde0297217f53f7c2dc
+
+% 0 1 0 07b49c87e2f5febb021c779dfd9946ec
+
+% 1 1 0 0764c51678fcf8411684a59902ff8044
+
+% 0 1 0 01638f983ab43bc51bcbf9078bdfa268
+
+% 1 1 0 1f2638d8a9695fa902d9414c3e89f32d
+
+% 1 1 0 186f7a4c1ef85c2d173df45010f39b65
+
+% 0 1 0 118c04c921b2c40a0f022775153749bc
+
+% 0 1 0 12afd83aa5bd02d617bd439a2e0be8da
+
+% 0 1 0 0a284ee05bbf4d0d0a6ffe8419d21326
+
+% 1 1 0 0f06efa503abc2c8011c11a72f56e148
+
+@ 0 13 0 1bf641e5a96f6eaf178537965afb2d3a
++       `.assemble` は `jarEdges` のツールが実行する JAR の組み立てであり、独自のクラスパスをパッケージするツールのためのものである。
++   entry .assemble   クラスパス上のすべてを含む JAR を書く。`Main-Class` が与えられればそれも
++       ディレクトリのエントリーはそのファイルが `MANIFEST.MF` や `plugin.properties` を除いて加えられ、JAR のエントリーはそのエントリーがマニフェストを除いてそのまま出力し直される。二つのエントリーが同じパスを持つ場合は最初のものが残る。
++       マニフェストは `Created-By: Soundness` を記録する。
++       これは `Abscission` の `Shrunk.Jar` エッジが閉じた世界をパッケージするのに使うものである。
++   entry .applicationClasspath   実行中のアプリケーションのクラスパス。それ自身のクラスローダーから読む
++       `LocalClasspath.of(Classloader[Bundler.type])`：このクラスを読み込んだクラスローダーから調べる。スレッドのコンテキストローダーではなくそれ自身のものを使うのは、プールされたスレッドが最初に実行されたものからコンテキストローダーを受け継いでいるかもしれないからである。見つからなければ `java.class.path` プロパティに頼る。
++       コードを `URLClassLoader` に隔離するテストランナーのようなホストのもとでは、これはコードが実際に来たクラスパスである。
+
+@ 0 1 0 07ba521275f264d2103473d2d2f581b6
++ entry .Library   後段の組み立てのための、一つのユニバースのリンク前のコンパイル出力の JAR：ユニバースごとに一つのノード
+
+% 1 1 0 117511d71a01e9691c09d5adc0c9ad0a
+
+@ 0 7 0 0cf0490c80d308400e0aef957f16370e
++       `Library(universe)` は ID が `library-<universe>`（`library-classfile`、`library-sjsir`、`library-nir`）のアプリケーションノードであり、そのユニバースから `jarEdges()` を通じて到達する。
++       コンパイル自身の出力（クラスファイルと、その横にある `.sjsir` や `.nir`、そしてそれらの TASTy）だけをパッケージし、クラスパスは含めない。エントリーポイントを記録しないので、エントリーポイントは無視される。
++       ライブラリのユニバースはそのコンパイルのものと一致しなければならない。`Toolchain(jarEdges()).path(Toolchain.Universe.Sjsir, Library(Toolchain.Universe.Nir))` は `NoPath` を発生させる。
+
+% 2 1 0 16e9056b76e4370d0251a9f1eebe27eb
+
+% 3 1 0 17cadf9b1c6d44a109243ba4d7260435
+
+% 4 1 0 05e85d2d73b7bf3f1a504d9bdea43451
+
+% 5 1 0 1778f9899950ea9c0c59be29a85f5f6b
+
+% 6 1 0 13bd2161fc24b9780a19ff1c9b06367e
+
+% 7 1 0 028f11721d9029e808784a2707f828c3
+
+% 8 1 0 15a2800451b0bbf903587afd5ebd515a
+
+% 9 1 0 04544301dfc12c400762e8ed19697ba8
+
+% 10 1 0 1d6d0fd17d385df306d53f3626c71d62
+
+% 11 1 0 09989d124070c51317f59e53677f359f
+
+% 13 1 0 1a21405f6824d7ea154d33bed1150769
+
+% 14 1 0 15a89684197114d309e5da2f373713cb
+
+% 15 1 0 124690bcc2f59df1137ac59aa6f5e25e
+
+% 17 1 0 07fd7187ea7c844015cc2d058ae013e8
+
+% 1 1 0 11f0948af202fa07109b1b6459c0d691
+
+% 0 1 0 096e0943ddaa4bb7149c5cb43aa3b593
+
+% 1 1 0 08c544500e7b060e0ac8f293d45de9dd
+
+@ 0 1 0 14377d3b2acdaaf003d9a367743773cd
++       JAR の名前は、`jarOptions.name` が別に指定しない限り `main.jar` である。
+
+% 0 1 0 1cec89d1243fcb9b169636d0d7d4d79e
+
+@ 0 1 0 0b1b40c9fed912aa0111e943b868c620
++   entry #universe   ライブラリが出力をパッケージするユニバース
+
+@ 0 1 0 04ee5ffa084c3fb30b4a260bffa06063
++ entry .jarOptions   JAR をパッケージするエッジの設定
+
+% 1 1 0 090cf8392815041f112cd46e935df412
+
+@ 0 4 0 0497ba20bf0e983d0f6246548967ff02
++       ファイル名だけである。`jarOptions.name(t"app.jar")` は `Artifact.Jar` とすべての `Library` ノードに同様に向けられる。
++   entry .name   出力ディレクトリ内の JAR のファイル名。`Artifact.Jar` と `Library` ノードのため
++       既定は `main.jar` である。
+
+@ 0 1 0 0eab1549de9b18f506ce10d231d68770
++ entry .jarEdges   JAR をパッケージするエッジ：`Classfile` から `Artifact.Jar` へ、そして各ユニバースからその `Library` へ
+
+% 1 1 0 1988fc767d6de20d0df8951a61e78924
+
+@ 0 4 0 00af02d6e73085da07abd85be017640a
++       `jarEdges()` は、外部のツールを必要としない四つのエッジを登録する。`Toolchain.Universe.Classfile` から `Artifact.Jar` へのエッジと、`Toolchain.Universe.Classfile`、`Toolchain.Universe.Sjsir`、`Toolchain.Universe.Nir` のそれぞれからその `Library` へのエッジである。
++       どちらのツールの設定も JAR のファイル名（`jarOptions.name`、既定は `main.jar`）である。
+
+@ 0 8 0 1a63ac3969cb0a180d577e25c6a6709c
++       `jar` ツールはコンパイル出力のディレクトリ*とクラスパス全体*をまとめる。ディレクトリのエントリーはそのファイルが加えられ（`MANIFEST.MF` と `plugin.properties` は除く）、JAR のエントリーはそのエントリーが再圧縮なしにそのまま出力し直され（マニフェストは除く）、パスが重複するものは捨てられて最初に現れたものが勝つ。
++       マニフェストは `Created-By: Soundness` と、ただ一つの `EntryPoint` から `Main-Class` を記録する。エントリーポイントがなければ `Main-Class` のない JAR になり、二つあれば理由 `ManyEntryPoints` の `Link.Error` を発生させる。
++       `library` ツールはコンパイル出力のディレクトリだけをまとめ、エントリーポイントを無視する。
++       zip、パス、I/O、切り詰め、ファイル名の誤りは、理由 `Packaging(detail)` の `Link.Error` である。
+
+% 2 1 0 06ae6aa21f20d4ec14230f24075f6b29
+
+% 3 1 0 0fd18477968c7b5011f9ab9ebdace48b
+
+% 4 1 0 189c7090aeb4c3d8174ebe8de867a05e
+
+% 5 1 0 0eebdb8945ab2d07080779228ea71f3e
+
+% 6 1 0 11f051931f8a21700bd16814b0072a93
+
+% 7 1 0 0f43cafaee83905c0dff34e268a9abe7
+
+% 8 1 0 0fd86d7901f0b1fd1b271e52df127bca
+
+% 9 1 0 0a04dce752762fd70c752fb52f645460
+
+% 10 1 0 111a7a24d6feb30c0fa3dcb62fdfa083
+
+% 11 1 0 0a46608ea85c752d0f29f4fbac3e4897
+
+% 13 1 0 007373394c52e7cd06c2f14f29e41f19
+
+% 14 1 0 086359f581a047a217bb321c863947c6
+
+% 15 1 0 0389e371f7b81d4f0d98ab8caae4a7bb
+
+% 17 1 0 00c51760eacfe38911a3e05f2b3b53a3
+
+% 0 1 0 165e8320bf514c191a1a632c353fbd0b
+
+% 0 1 0 0ed71cad938583411afa0ce138c15c66
+
+% 0 1 0 0faa226560b3b74e1e3f99ff2c58b073
+
+% 0 1 0 08b2e678e0a1abe814cbcc7be90aa66f
+
+% 0 1 0 0f8ef6146b4cfe1c1d49a35b925e467c
+
+% 0 1 0 0538c36499e1c6570dc20ea1101da6d7
+
+% 0 1 0 140613f9e197d9fb19742eb448593864
+
+% 0 1 0 0359070cdf2df9d91c3be443d38d4fd9
+
+% 0 1 0 035b50401f34660801f276a741fabdf6
+
+% 1 1 0 1b7f2c844e9b462e02819ddcd4b8a7ba
+
+% 0 1 0 1911e334ae3c39740d91dd26202ab949
+
+% 0 1 0 13101da96eb979a707021a417c83f6dd
+
+@ 0 1 0 06dbef78737e1a3f125296533afccad5
++   entry .apply   四つのパッケージングのエッジ
+
+@ 0 1 0 10869736d71f52c8089d00c96af44ecb
++ entry .nativeOptions   ネイティブバイナリの設定：ガベージコレクター、ビルドモード、リンク時最適化
+
+% 1 1 0 08993f36b5b4e7a1021bc7033d5f064f
+
+@ 0 3 0 02595b06027c37ef0a066022870941e1
++       それぞれはすべての `Artifact.Binary` ノードに向けられた `Toolchain.Setting` であり、Scala Native の `NativeConfig` を編集する。バイナリを生成しない経路では `InapplicableSetting` として拒否される。
++       既定は `gc.immix`、`mode.debug`、`lto.none` である。
+
+% 2 1 0 0c10c8a751f3d8c209b78b889e3a7c8c
+
+% 3 1 0 161d2682437c9ea9099aa00374185e77
+
+% 0 1 0 15b1b6d6d33272a31b760a8bfd0f2891
+
+% 1 1 0 000584194cc5388c031318a4973d7eae
+
+@ 0 1 0 1b139e8f2e5373341eb3a8c4d350aa7e
++   entry .gc   ガベージコレクター：`immix`、`commix`、`boehm`、`none`
+
+% 1 1 0 01e04f0c123121261dbd9cf97c59525c
+
+@ 0 7 0 00f63babad12178b1fe3f5ee2e669637
++         Immix が既定であり、Commix はその並行版、Boehm は保守的なコレクターである。`none` は回収せずにアロケーションする。
++     entry .immix   Immix コレクター（既定）
++     entry .commix   並行の Commix コレクター
++     entry .boehm   Boehm の保守的なコレクター
++     entry .none   ガベージコレクションなし
++   entry .mode   ビルドモード：`debug`、`releaseFast`、`releaseFull`
+
+% 1 1 0 0019bb1bf6e9a8011cc8ffab9f09a91f
+
+@ 0 6 0 0646b067fd2a6bf40ee550caaaa240d2
++         `debug` が既定であり、リンクが最も速い。リリースモードは最適化を行い、`releaseFull` が最も積極的である。
++     entry .debug   デバッグビルド（既定）
++     entry .releaseFast   リンク時間を重視した最適化ビルド
++     entry .releaseFull   完全に最適化されたビルド
++   entry .lto   リンク時最適化：`none`、`thin`、`full`
+
+% 1 1 0 15811db183f7e8f90872c709bfdb07f2
+
+@ 0 2 0 14e9944b7dc9adb50ed58674590fb6f1
++         `none` が既定である。
++     entry .none   リンク時最適化なし（既定）
+
+% 0 1 0 09c538363fd3780f09b45c87c65f9491
+
+@ 0 1 0 005240dd54a2946c066573ac1a3a823e
++     entry .full   完全な LTO
+
+@ 0 1 0 022a9ddfe7bff2940b033583c07203ef
++ entry .nativeEdges   ネイティブのリンクのエッジ：`clang` を通じた、`Nir` からターゲットトリプルごとの `Artifact.Binary` へ
+
+% 1 1 0 1e7648fc9b6334711340525abb644fae
+
+@ 0 9 0 10a48d7032423c9c09bab3c53935d96a
++       `nativeEdges(triples*)` は（スコープ内の `WorkingDirectory` と `Environment` を使って）`PATH` 上の `clang` と `clang++` を一度だけ探査し、どちらかがなければ `Toolchain.Error` を発生させる。そして与えられたトリプルごとに、あるいは何も与えられなければビルドホスト自身のトリプル `Toolchain.Triple.host` について、`Toolchain.Universe.Nir` から `Artifact.Binary(triple)` への一つのエッジを登録する。
++       ツールは Scala Native のビルド（`anthology.nir` に同梱）をコンパイル出力のディレクトリとそのクラスパスに対して駆動し、バイナリのメインクラスとしてちょうど一つの `EntryPoint` を要求し（そうでなければ `NoEntryPoint`）、`main` という名前のバイナリを出力ディレクトリの下に書く。
++       ビルドホスト以外のターゲットには、それへのクロスコンパイルができる C のツールチェーンと sysroot が必要である。
+
+% 2 1 0 0239b20b6c7644e40dd9218a2189e004
+
+% 3 1 0 166fa80b43decaa814793d1281e07b8e
+
+% 4 1 0 0e9ae7c6e883e245045dea4d0ad7e7bc
+
+% 5 1 0 1d29fb912dedb8f709fead2e6ed10c19
+
+% 6 1 0 0656b988d84cbb66036367ebd991f803
+
+% 7 1 0 0448eea319bd00980febfc8df06b9067
+
+% 8 1 0 031f24a4c2a2d9600247237ae496dfc2
+
+% 9 1 0 1fb956e875c41842167b96b7c693d44f
+
+% 10 1 0 0a2450bb637785ca05559ca917d0726e
+
+% 11 1 0 1e4aeb2c31b418a503ac450c11407dc9
+
+% 13 1 0 1f39ff01853858551154f2ff87ff9d92
+
+% 14 1 0 04aeb66afa14d2901159cd1846ffc2d4
+
+% 15 1 0 027cd77129f8ed95102e8c9b4e723826
+
+% 17 1 0 0567596fb68aecd31e3fb0dfb554adba
+
+% 0 1 0 07e8d17aff5e42d21dca3041271ea709
+
+% 1 1 0 0787cab354a85dee03fb4c941c101051
+
+% 0 1 0 04245693ec507ffd0950c56eaeee444a
+
+% 0 1 0 046c35ab9be5442a197d41594a7d7e1c
+
+% 1 1 0 1775e012333399910e4419ed1f161df1
+
+% 0 1 0 0e2e0db736ea2e361cfe1bac711789e3
+
+% 1 1 0 034079658edf94c315584e874fbd9b25
+
+% 2 1 0 0738455bf29f29800123aa07ceadcf2c
+
+@ 0 5 0 012d9c2dccb100e50d5853d1442b11bc
++       コンパイル出力は、Scala Native の実行時 JAR に対して `Toolchain.Universe.Nir` にコンパイル（`NirPlugin` の given で対象を変えた `Scalac`）されていなければならない。
++       コンパイラ自身の JAR はコンパイル時のクラスパスにのみあり、ネイティブの実行時には到達できない。そのため、マクロの中でだけコンパイラを使うコードもリンクできる。
++       例外を投げたビルドは理由 `Failed` の `Link.Error` を発生させる。
+
+% 0 1 0 03186baae0321f3b1a71aac313e890a2
+
+% 0 1 0 1569ac098ad1c0500228f407bd013965
+
+% 0 1 0 025a4d3ac3d4f28f059fdba52f7e57f9
+
+@ 0 3 0 1d9200de069c81ec11c40347cd770762
++   entry .apply   `clang` と `clang++` を探査し、トリプルごと（またはホストのもの）に一つのエッジを作る
++       コンパイラがなければ `Toolchain.Error(t"clang")` を発生させ、トリプルが指定されずビルドホストのトリプルが認識できない場合も同じものを発生させる。
+
+@ 0 1 0 1b523e83825a447909f9ba0d6515e628
++ entry .Dex   Android ランタイムに結び付いた Dalvik バイトコード：`classes*.dex` ファイルのアーカイブ
+
+% 1 1 0 006a073c21f53f680502a72e59ac7b37
+
+@ 0 5 0 0e073f86eafde74a0c95f91303565f5e
++       ID が `dex` のアプリケーションノードであり、`Toolchain.Universe.Classfile` から `dexEdges()` を通じて到達する。`classes.dex`、`classes2.dex`、… の zip アーカイブ `main.dex.jar` であり、ART と `DexClassLoader` が直接消費する。またクラスファイルから `Apk` への経路上の中間ノードでもある。
++       DEX はエントリーポイントのメタデータを持たない（ART には起動時にメインクラスが伝えられる）ので、このエッジはエントリーポイントを無視する。
+
+% 2 1 0 1fcfa66b728cbdea0e52aae384d01b37
+
+% 3 1 0 13109ffc6140cbe81f027acee0223095
+
+% 4 1 0 1f6cc53a892985d507e4d02932dd80e2
+
+% 5 1 0 1692a6ac044145ab04bedd561d124a2d
+
+% 6 1 0 057fa0f5ce524f5c1ce5e2da81b6b1aa
+
+% 7 1 0 0a8ada0cc023ff4a07f8eec598f3806a
+
+% 8 1 0 17734aadd44a23291b51e9bc94c330bf
+
+% 9 1 0 01d2e126a2d19fde1c948bbcecfff95e
+
+% 10 1 0 165c66ba389897ae05b4278704b1f55b
+
+% 11 1 0 1e5804a98de5530c0d47a362d4520024
+
+% 13 1 0 1be66225120533a0104d1a38c18c9019
+
+% 14 1 0 18bf729c41026e1705b6c42259137467
+
+% 15 1 0 06ed58e649963c87106dcfdf395462a1
+
+% 17 1 0 1117892636e60f810355932a90b8782a
+
+% 0 1 0 098db4a3821f2b610ba3fd8f0871b515
+
+% 1 1 0 017c9008e601cd8d030458ed39a99413
+
+@ 0 4 0 1e090e5e8f0b51f103705ca01eeea97b
++       Scala 3 の出力はきれいに dex 化される。コンパイラはラムダを `invokedynamic` とした Java 17 のクラスファイルを出力するが、`ConstantDynamic` もネスト属性も使わないので、D8 の脱糖の最も弱い部分には触れず、API レベル 26 ではプラットフォームのスタブも要らない。
++       Panama や `java.net.http` を必要とするライブラリには、dex 化してもしなくても、動かせる Android ランタイムがない。
+
+% 0 1 0 0f17ba6deae1df1d1cf5c283842675f7
+
+% 0 1 0 014cba2b91456dfd0d24eb0c054c3d40
+
+% 1 1 0 19ac69457fda358d07014d1b2b4262b2
+
+@ 0 1 0 1ed49d5448edfba41ca2ae1673969c05
++ entry .dexOptions   dex 化の設定：最小 API レベル、プラットフォームのスタブ、D8 のモード
+
+% 1 1 0 0e9a0f570f4b35d70503943ebe1bc02b
+
+@ 0 10 0 1b290876090ae54306943d421e5dc154
++       それぞれは `Dex` ノードに向けられた `Toolchain.Setting` である。
++       既定は API レベル 26、デバッグモード、プラットフォームのスタブなしである。
++       `apkOptions.minApi` は `Dex` と `Apk` のレベルを一緒に設定するので、APK のビルドではそちらを使うべきである。
++   entry .minApi   出力が動かなければならない最も低い Android API レベル（既定は 26）
++       レベルが低いほど D8 はより多くを脱糖しなければならない。
++       24 未満のレベルには、Scala 3 がトレイトのメンバーのために出力するネイティブのデフォルトインターフェースメソッドがないので、さらに脱糖の対象として `.platform` を要求する。
++   entry .platform   Android SDK のプラットフォームのスタブ、`platforms/android-<n>/android.jar`
++       API レベル 24 未満のとき、またはプログラムがプラットフォームの型を参照するときにのみ必要である。
++   entry .mode   D8 のコンパイルモード：`debug` または `release`
+
+% 1 1 0 032d98201509390300c6e5c43702d6f1
+
+@ 0 1 0 1d9c1f196eec60de175e800e966b1ebd
++         `debug` が既定である。
+
+% 0 1 0 1d200bd92bb5c9621abe8079fee536c0
+
+% 0 1 0 09388589ab85e056158d4cd7e0bdd0b5
+
+@ 0 1 0 168feab37582220e1b4eef91d4b05435
++ entry .dexEdges   dex 化のエッジ：`Classfile` から `Dex` へ。R8 の D8 をその API を通じて駆動する
+
+% 1 1 0 119be04b14d9607d095b51f74ed3a7d3
+
+@ 0 7 0 1047cf8a9d54bec0073945ee1d33e1e5
++       `dexEdges()` はエッジ一つのリストである。
++       `dex` という名前のツールは、D8（`anthology.dex` に同梱された JVM ライブラリ）にコンパイル出力のディレクトリのクラスファイルとクラスパス全体を与え（アーカイブは丸ごと、ディレクトリは列挙した `.class` ファイルとして与え、`module-info.class` は除く）、出力ディレクトリに `main.dex.jar` を書き込む。
++       D8 のエラーと警告は `warn` で `LinkEvent.Message` としてログに記録され、例外を投げた実行は理由 `Failed` の `Link.Error` を発生させる。
++   entry .apply   dex 化のエッジ
+
+@ 0 1 0 0413c9671a0a596b1af40918b24a550e
++ entry .Apk   完全な、インストール可能な Android パッケージ：dex 化されたコード、バイナリのマニフェスト、整列済みで署名済み
+
+% 1 1 0 0b7211113ec574e002078a1bbb0456e8
+
+@ 0 7 0 1fce06496d08acc016bc40a6f50f95eb
++       ID が `apk` のアプリケーションノードであり、`Toolchain(dexEdges(), apkEdges())` によって `Toolchain.Universe.Classfile` から `Dex` を経て到達する。
++       ツールはバイナリの `AndroidManifest.xml` をエンコードし（`Axml`）、ランタイムがメモリマップできるよう dex ファイルを無圧縮で 4 バイト境界に揃えて格納し、パッケージに APK Signature Scheme v2 で署名する（`.Signer`）。こうして、デバッグ可能でエミュレーターにインストールできる `app.apk` が、Android SDK のビルドツールなしに、キーストアだけで作られる。
++       ちょうど一つの `EntryPoint` が必要であり、そのクラスがランチャーのアクティビティになる。
+
+% 2 1 0 01004cd2b2634cab008b6d159a04b555
+
+% 3 1 0 0c6afc49d79e0c4d1bb940b649bf7c27
+
+% 4 1 0 15c311c26775758217a7da513f7f893f
+
+% 5 1 0 0eb4bf06f354b7bd095f1abd328ed7a9
+
+% 6 1 0 03ce822cfe35ab151f5b8e02fd66dc12
+
+% 7 1 0 113c94e53f92564f0ed677561b2f05f8
+
+% 8 1 0 193428311f0bd814169cf1f0f667f2fc
+
+% 9 1 0 0a3a7da38de8ca1016706b7eb0273c80
+
+% 10 1 0 01dc1873ccf0e6a2011f508153dcb61a
+
+% 11 1 0 1b2022e7dd12271006ecbb44d0a37b56
+
+% 13 1 0 0861e781dd7a8f700b29461d1ca08f5b
+
+% 14 1 0 1c603d57cbe4fc74134a4993da5e8275
+
+% 15 1 0 16bedb80f046e5e2066c9acd9a6af601
+
+% 17 1 0 083fe95f978e27ec1ec64232b01b029b
+
+% 0 1 0 1c5a01f751f18f8014c111fba2522140
+
+% 1 1 0 11402526311369451d367eec63435878
+
+% 2 1 0 00b95b4e9465e67111dd6f0a75e0943c
+
+% 3 1 0 138f78d678351f8f032c7054f82788a9
+
+% 4 1 0 16c847c67cf7b63b10639613bf2c3445
+
+% 0 1 0 052e3579021c8f2615f75fe6e2e85751
+
+% 0 1 0 033c22466d29cbaa0ff54c9d3db16aeb
+
+% 0 1 0 15869da06d25118a1f2d400d9b31d798
+
+% 0 1 0 1be25ab62f899ddf00f4cc6c5cc9463b
+
+% 0 1 0 15093b90528ca58e0734f548cc901038
+
+% 1 1 0 17d19cca0c98fbc9123bc55ce559d5bf
+
+% 2 1 0 136f1ad7ff954ab404dd74d5053b4677
+
+@ 0 5 0 07187997c406ba8301cdd555bab906d8
++       設定の既定（`Apk.Configuration.default`）は、Android Studio と共有される慣習的な Android のデバッグ用キーストア `~/.android/debug.keystore` で署名する。リリースビルドは `apkOptions.keystore` で独自のものを指定する。
++       dex のアーカイブは `staged/dex/` に、パッケージは `staged/app.apk` に置かれ、その横には署名の元になった `unsigned.apk` がある。
+
+% 0 1 0 1c2781edbf4da9621482d3b491530227
+
+% 0 1 0 11a0968b570293fe010b1f16ba9f4dd6
+
+% 0 1 0 086ec2368cb757f306bb2204d51eb388
+
+% 0 1 0 099eb86e8478bdae1119d845afbb6208
+
+@ 0 1 0 0f6724e26a3016ac174a401496946955
++   entry .Configuration   パッケージがコード以外に必要とするもの：API レベル、名前、パーミッション、署名鍵
+
+% 1 1 0 198aef1793cda74609ce39866fcb1abe
+
+@ 0 21 0 1634f4e94c0282610c6459fffce79809
++         `apkOptions` が編集する APK ツールの設定の型である。API レベルの範囲、パッケージ名と人間向けのラベル、バージョンコードとバージョン名、要求する実行時パーミッション、そして PKCS#12 のキーストア、そのパスワード、鍵の別名、鍵のパスワードを持つ。
++         ランチャーのアクティビティはここにはない。それは経路の `EntryPoint` である。
++     entry .default   既定値：API 26 から 34、`dev.soundness.app`、バージョン 1 の `1.0`、Android のデバッグ用キーストア
++         `minApi` は 26、`targetApi` は 34、パッケージは `dev.soundness.app`、バージョンコードは 1 で名前は `1.0`、ラベルは `Soundness App`、パーミッションはなし、そしてキーストアのパスワード `android`、別名 `androiddebugkey`、鍵のパスワード `android` のデバッグ用キーストア `~/.android/debug.keystore` である。
++     entry #minApi   アプリケーションが動く最も低い Android API レベル
++     entry #targetApi   アプリケーションが対象とする API レベル
++     entry #packageName   Android のパッケージ名
++     entry #versionCode   整数のバージョンコード
++     entry #versionName   人間が読めるバージョン
++     entry #label   アプリケーションのラベル
++     entry #permissions   要求する実行時パーミッション。名前で
++     entry #keystore   署名に使う PKCS#12 キーストアのパス
++     entry #storePass   キーストアのパスワード
++     entry #alias   キーストア内の署名鍵の別名
++     entry #keyPass   署名鍵のパスワード
++   entry .Manifest   Android のマニフェストの `Axml.Element` の木を作る
+
+% 1 1 0 192a43b3e367168e0982b9af6e4599cd
+
+@ 0 8 0 02939fe5ea290be00ad7755fa5062f47
++         `Apk.Manifest(packageName, versionCode, versionName, minSdk, targetSdk, label, activity, permissions)` は、`Axml.encode` にそのまま渡せる `manifest` 要素を返す。`uses-sdk`、パーミッションごとに一つの `uses-permission`、そして `MAIN`/`LAUNCHER` のインテントフィルターを持つエクスポートされたランチャーの `activity` を保持する `application` から成る。
++         属性のリソース ID は安定した公開の `android.R.attr` 定数なので、プラットフォームの `android.jar` は参照されない。
++     entry .apply   与えられたパッケージ、バージョン、API レベル、ラベル、アクティビティ、パーミッションに対するマニフェストの要素
++   entry .Signer   完成した未署名のパッケージに対する APK Signature Scheme v2
+
+% 1 1 0 0ad830875e11a35708e59774d40ae4f1
+
+@ 0 9 0 1b60b72a9a5d29401f7879390f7846b7
++         整列済みの未署名の ZIP に、エントリーと中央ディレクトリの間に APK Signing Block を挿入して署名する。署名はファイル全体の 1 MiB チャンクごとの SHA-256 ダイジェストを対象とするので、後でどのバイトを変えても無効になる。そのため署名が最後の段階になる。
++         RSA 署名（`SHA256withRSA`）、キーストア、証明書は `java.security` を直接使うので、鍵は PKCS#12 のストアにある RSA 鍵でなければならない。
++         Android SDK のツールは関わらない。これは `apksigner` に代わるものである。
++     entry .sign   未署名のパッケージのバイトに、キーストアの鍵と証明書で署名する
++         `Apk.Signer.sign(unsigned, keystore, storePass, alias, keyPass)` は署名済みのパッケージのバイトを返す。
+
+@ 0 1 0 02ae2524ccd93da702b849bdd0a69982
++ entry .Axml   Android のバイナリ XML：パッケージ内の `AndroidManifest.xml` のエンコーディング
+
+% 1 1 0 08376fdfa442cd2607e783df51d9a52a
+
+@ 0 6 0 0e96eae56efdae4d0b32f03d8b768598
++       Android はパッケージのマニフェストをテキストとしてではなく、文字列プール、リソースマップ、型付きの属性値を持つバイナリ XML として読む。
++       `Axml` は文書を、値が `.Value`（文字列、整数、真偽値のいずれか。Android は各属性を特定の型で読むため）である `.Attribute` を持つ `.Element` としてモデル化し、`.encode` がバイナリ形式を書く。
++       `Apk.Manifest` はアプリケーションが必要とする木を作る。`Axml` は、それ以上を必要とするマニフェストのために公開されている。
+
+% 2 1 0 17873d7d651f6bc7147dfd0188c0d29c
+
+% 3 1 0 0152ab6a72f96f7b1a27d071c84b7756
+
+% 0 1 0 14961cc2dda55942110cd2286cf6b49d
+
+% 0 1 0 0747a5ba53b79ca0097a0ba3878b48e8
+
+% 0 1 0 1b90cfe4e08f52e60d248aef06095987
+
+% 0 1 0 03c249c4079b9cf00c636425a9bf3f8d
+
+% 0 1 0 0b6156dd96c7065d15ce8f8599d1aed5
+
+% 0 1 0 18777be31127c6bd07535d47692f247f
+
+% 1 1 0 16321c51011a981116d5a503c28b4651
+
+% 1 1 0 0d2e85865c1222b116791756f0fab8f0
+
+@ 0 7 0 0ff553e9c112dfc703c5073a09a3469c
++   entry .androidUri   Android のリソースの名前空間、`http://schemas.android.com/apk/res/android`
++   entry .androidPrefix   マニフェストが慣習的に名前空間を結び付ける接頭辞、`android`
++   entry .Value   型付きの属性値：`Str(text)`、`Num(value)`、`Bool(flag)`
++       Android は各属性を特定の `TypedValue` の型で読むので、エンコーダーはすべての値を文字列として出力するのではなく、一つの型に決める。文字列はプールを参照し、整数や真偽値はインラインで格納される。
++   entry .Attribute   属性：その名前空間、ローカル名、公開のリソース ID、型付きの値
+
+% 1 1 0 1c91b315ddc47a0612d8df19cbd26fc8
+
+@ 0 9 0 178f7a9ef4597e211ce67543ea700d4d
++         `Axml.Attribute(namespace, name, resourceId, value)`：名前空間は `android:` の属性なら `.androidUri`、`package` のような名前空間のない属性なら `Unset` である。リソース ID は、Android が属性を識別するのに使う公開の `android.R.attr` 定数、または `Unset` である。
++     entry #namespace   名前空間の URI、または `Unset`
++     entry #name   ローカル名
++     entry #resourceId   公開のリソース ID、または `Unset`
++     entry #value   型付きの値
++   entry .Element   要素：その名前、属性、子
+
+% 1 1 0 06c798d95ea57ffc119a8196f77f876d
+
+@ 0 8 0 1b5ec9e015bfdfbd1a6ad824cbb09303
++         `Axml.Element(name, attributes, children)`。
++     entry #name   要素の名前
++     entry #attributes   要素の属性。順に
++     entry #children   子要素。順に
++   entry .encode   要素の木に対するバイナリ XML 文書。`Data` として
++       チャンクのヘッダー、文字列プール（すべての名前、名前空間、文字列値を、最初に使われた順にインターン化したもの）、属性の ID のリソースマップ、`android` 名前空間の宣言、要素の木を書く。各チャンクは 4 バイト境界に揃えられる。
+
+@ 0 1 0 1a7a78a9fc7b7b0815359e90e39cc798
++ entry .apkOptions   Android パッケージの設定：API レベル、パッケージ名、ラベル、バージョン、パーミッション、キーストア
+
+% 1 1 0 0ef420562bb2ea6f0269018cdc73f4df
+
+@ 0 4 0 0d85026c3c1c889608d47fcdbf109940
++       それぞれは `Apk` ノードの `Apk.Configuration` を編集する `Toolchain.Setting` である。`.minApi` だけは `Dex` にも向けられる。レベルは D8 がどう脱糖するかとマニフェストが何を宣言するかの両方を左右するからである。
++       レベル以外の dex の設定（`dexOptions.mode`、`dexOptions.platform`）は `Dex` ノードに向けられる。
+
+% 2 1 0 13230623721467ed1d9a5635fa9d1280
+
+% 3 1 0 1cfcc597af27602c055e7753a4496d78
+
+% 5 1 0 03349d882e3b6d9208a1533ebe79c5b2
+
+% 6 1 0 13a4e59421ca135e1d22c5160b4b9469
+
+% 0 1 0 02651bd544b3afea1ca463f54cc326a0
+
+% 0 1 0 178d396a357c79d70ceb08e953075685
+
+% 0 1 0 03d84b0843568a77056d6d9ee901b518
+
+% 0 1 0 06fd3b5796f6043503c4d827ecdf81c7
+
+% 1 1 0 192a345e67e3abe0070cad31c39ed8b8
+
+@ 0 10 0 02649e1e405fdb6f1ce1bcc689a15ffd
++   entry .minApi   最も低い API レベル。`Dex` と `Apk` の両方に適用される
++       適用される形式によって振り分けられる。`Dex` では `DexConfiguration`、`Apk` では `Apk.Configuration` である。
++   entry .targetApi   アプリケーションが対象とする API レベル
++   entry .packageName   Android のパッケージ名
++   entry .label   アプリケーションの人間向けのラベル
++   entry .version   バージョンコードとバージョン名を一緒に
++   entry .permission   要求する実行時パーミッションを加える。`android.permission.VIBRATE` など
++       繰り返し使える。呼び出しごとに一つ追加される。
++   entry .keystore   PKCS#12 キーストアのパス、そのパスワード、鍵の別名、鍵のパスワード
+
+@ 0 1 0 1f336ca6082230c804406cc28f6f6476
++ entry .apkEdges   パッケージングのエッジ：`Dex` から `Apk` へ
+
+% 1 1 0 1b95294e04293b2b09828f7f5154d174
+
+@ 0 8 0 028e2d99354b2c770f22ad7cabed49c2
++       `apkEdges()` はエッジ一つのリストであり、経路上でその前の `Dex` エッジが生成した dex のアーカイブを消費する。そのため `Toolchain(dexEdges(), apkEdges())` が通常の組み合わせである。
++       `apk` という名前のツールは、ちょうど一つの `EntryPoint` を要求し（そうでなければ `NoEntryPoint` または `ManyEntryPoints`）、マニフェストをエンコードし、アーカイブの各 `classes*.dex` を無圧縮で 4 バイト境界に揃えて格納し、`unsigned.apk` を書き、それに署名し、`app.apk` を書く。
++       読めない dex のアーカイブや書けないパッケージは、理由 `Packaging(detail)` の `Link.Error` である。
++   entry .apply   パッケージングのエッジ
+
+@ 0 1 0 0aff9641fc32b56414b1d49a05d7e6c8
++ entry .OciConfiguration   OCI 成果物の構成に書き込まれるメタデータ：アーキテクチャ、OS、作者、アノテーション
+
+% 1 1 0 15847d21bdafc0400f12662cc5eab4b0
+
+@ 0 5 0 18aa2cfe4147aa9d1ca1c799fd799e76
++       `ociOptions` が編集する OCI ツールの設定の型である。既定はアーキテクチャ `wasm`、OS `wasip2`、作者なし、アノテーションなしである。
++       `#os` はコンポーネントがビルドされた WASI の世代を示す。これはコンテナーランタイムが振り分けに使うフィールドであり、WASI とともに変わる。preview-1 のシステムコール ABI なら `wasip1`、コンポーネントモデルなら `wasip2`、ネイティブの非同期が入れば `wasip3` である。
+
+% 2 1 0 0c2927b5ea9ac45305a84be23102b852
+
+% 3 1 0 0a6ecd2615cfcf8d1affbdec9693fe0e
+
+% 0 1 0 18a5198cce5a7b7c12552eb2004d4c86
+
+% 0 1 0 097ba3832ef71b5514782c3a03c7e633
+
+% 1 1 0 1ddf5c763a2fced504d7f5a268ed505b
+
+@ 0 4 0 0b5b502a7e9e5737168c978dcc8a8a70
++   entry #architecture   プラットフォームのアーキテクチャ。既定は `wasm`
++   entry #os   プラットフォームの OS、つまり WASI の世代。既定は `wasip2`
++   entry #author   成果物の作者、または `Unset`
++   entry #annotations   OCI のアノテーション。マップとして
+
+@ 0 10 0 1f027631c103c0891f9caed79fcdb102
++ entry .OciImage   Wasm の OCI 成果物としてパッケージされた WASI コンポーネント。`oci-archive` として書かれる
++     ID が `oci` のアプリケーションノードであり、`Toolchain(sjsEdges(), List(sjsEdges.wasi()), ociEdges())` によって `Toolchain.Universe.Sjsir` から `wasip2` のコンポーネントを経て到達する。Wasm のシム（`io.containerd.wasmtime.v1`）を持つコンテナーランタイムがスケジュールし、レジストリが配布する形式である。
++     ツールは出力ディレクトリに `image.tar` を書き、その横の `linked/wasip2/` にコンポーネントを置く。
++     その `component` メタデータ（ワークロードがインポートおよびエクスポートするインターフェース）は、バイナリからではなく、コンポーネントがリンクされた `Wasi.World` から読まれる。`wasi:http/incoming-handler@0.2.0` をエクスポートするワールドにはターゲット `wasi:http/proxy@0.2.0` の印が付き、これによってホストはそのコンポーネントが提供可能であることを知る。
+
+@ 0 1 0 04610546023663ad08dd0f51dfc08e34
++ entry .ociOptions   OCI イメージの設定：アーキテクチャ、OS、作者、アノテーション
+
+% 1 1 0 11bd2c1d7073623e1fe59204ac6e57c6
+
+@ 0 1 0 11144e62dd75b6dc0265b3e607fcba95
++       それぞれは `OciImage` ノードの `OciConfiguration` を編集する `Toolchain.Setting` である。
+
+% 2 1 0 1bae4957a291e1be0353cada3b1ce63a
+
+% 3 1 0 1feb58087ca7592d1db1d0fe1b117bf2
+
+% 5 1 0 05b93819edda9dba19938fdeb073fac1
+
+% 6 1 0 1095569b0bcc5db1158eaae6aef6439a
+
+% 0 1 0 1506fe343d5baa6f07d6b53c3647c691
+
+% 0 1 0 19b962048c90c63f0de6234b4e9e38ee
+
+% 1 1 0 03e9f00c7649b4f40d267072a91931e2
+
+@ 0 5 0 0d16c739f81b03df0bc706bbad3ed287
++   entry .architecture   プラットフォームのアーキテクチャ（既定は `wasm`）
++   entry .os   プラットフォームの OS、つまり WASI の世代（既定は `wasip2`）
++   entry .author   成果物の作者
++   entry .annotation   OCI のアノテーションを一つ、キーと値で加える
++       繰り返し使える。呼び出しごとにキーが一つ増える。
+
+@ 0 1 0 11ac0c1a0c2a4c8919f93614a2d5a8f5
++ entry .ociEdges   包むエッジ：`wasip2` のコンポーネントからその `OciImage` へ
+
+% 1 1 0 1d09cf93fcac8fa30f35e462287207cd
+
+@ 0 10 0 100403ce67ee8708112f950c460b66dc
++       `ociEdges()` は `Wasi(Wasi.Version.Wasip2)` から `OciImage` へのエッジ一つのリストであり、`Wasi.World` を given として取る。
++       `oci` という名前のツールは、前のエッジ（`sjsEdges.wasi()`）がリンクしたコンポーネントを消費し、ワールドのディレクトリのトップレベルの `.wit` ファイルから読んだワールドのインポートとエクスポートを使って embarcadero の `Image.wasm` でイメージを作り（探すのはそのレベルだけである。`deps/` はワールドが利用するパッケージを保持し、そのどれもワールド自体を宣言しない。見つからないワールドは失敗せず、インターフェースを何も寄与しない）、`image.tar` を書く。
++       エッジ自体はワールドだけを必要とする（WASI のツールチェーンを探査するのは、プロバイダーを持つコンポーネントのエッジである）ので、そのグラフの形は `wasm-tools` をインストールせずに検査できる。
++       例外を投げた書き込みは理由 `Failed` の `Link.Error` を発生させる。
+
+% 2 1 0 10468ae43dbbd49b050862605204ca00
+
+% 3 1 0 0061f3491b12e7950b5e7a727c402a89
+
+% 4 1 0 04ff4e7ff24727e111e62f3c89fe9636
+
+% 0 1 0 077c78bdbf9b3dd40dfc2fcce5e945b7
+
+% 0 1 0 10a7d292ac57b1230f4303a7be5decfb
+
+% 0 1 0 18405e7ebef15e7f12d79cda6de59615
+
+% 1 1 0 1613e4cba1aba10d05b7363b8237d7af
+
+% 1 1 0 1caa4d516486d7d808fdf18095e9bcae
+
+% 1 1 0 0642cb25da4aad2e16615e8be236405d
+
+@ 0 1 0 13d9850eef3bbae705f04e6fdaf2619b
++   entry .apply   包むエッジ。`Wasi.World` が与えられたとき

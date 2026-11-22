@@ -1,0 +1,484 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 07e53f3de3fd2d2c0bd6471728e693c3
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 02038a9ec49aa55d1a80d0aef80afd20
++ info   E-Mails aus typisierten Teilen, versendet über einen Kurier, der sich danach richtet, was im Geltungsbereich ist
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0ba0d551b9e81bf8068af2d174e23bcf
++     _Caduceus_ setzt eine E-Mail aus typisierten Teilen zusammen — einem Body aus Text, HTML oder
++     beidem, Inline-Inhalten und Anhängen — und versendet sie über einen `Courier`, den
++     Zustelldienst, der ein Kontextwert ist. Die MIME-Struktur ergibt sich aus dem Inhalt
++     (`multipart/alternative` für Text mit HTML, `multipart/related` mit Inline-Inhalten,
++     `multipart/mixed` mit Anhängen), und die Adressen sind `EmailAddress`es von urticose, die beim
++     Kompilieren des Codes geprüft werden, wenn sie als `email"…"`-Literale geschrieben sind.
+
+@ 0 3 0 1e452a5de5abce540cb4270080aed1b0
++     Alles, was `Sendable` ist — `Text`, ein Dokument mit einem Medientyp wie eine HTML-Seite oder
++     eine zusammengesetzte `Email` —, wird mit `send` versendet, das den Betreff und die Empfänger
++     erwartet und einen `Courier` und einen `Sender` im Geltungsbereich benötigt:
+
+% 2 1 0 19131b85c88bf3dc11aba0e458545462
+
+% 3 1 0 0d63d29b8b9158f206a4e322f6fa6a7b
+
+% 4 1 0 17c82306264d1bb6124677c13495db0e
+
+% 5 1 0 03e120a31c951a44097d81d54d5f86fc
+
+% 6 1 0 08c73028ce0bdd321fc8a6d8829a39ab
+
+% 7 1 0 0b9e1d765ba1f3f805b0bd9605b5cafa
+
+% 8 1 0 016ef003097081eb08952e01981ce485
+
+% 9 1 0 126b5c62da9f38900b02fa192014f014
+
+% 0 1 0 055bee1611938ddc0e54e567c7ffef73
+
+% 1 1 0 0fe7a29ee0f5170700e823f985719b0c
+
+% 0 1 0 0b4ee182bacbc5d915f88aa97ff9e12f
+
+% 0 1 0 0ae1e022b087dbfd0cce418b43b2112f
+
+% 1 1 0 0ce1033e2711eaa301c335d7c91a7db3
+
+@ 0 2 0 1bd9ce2956662af50950766cfb01c3cc
++     Das Ergebnis von `send` ist der eigene `Result`-Typ des Kuriers: Der Resend-Kurier liefert
++     eine `Resend.Receipt`, und ein anderer Kurier kann etwas anderes liefern oder `Unit`.
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     Die Bibliothek hat zwei Source-Sets:
+
+@ 0 5 0 1a160b5a2c63e2171b0c06a7ed7c3a0b
++     - `caduceus.core` — `Email`, `Envelope`, `Sender`, `Courier`, die Typklassen `Sendable` und
++       `Attachable` und die Erweiterung `send`. Es braucht einen Kurier, um irgendetwas zu tun.
++     - `caduceus.resend` — `Resend` und das Given `couriers.resendCourier`, das über die
++       HTTP-API von [Resend](https://resend.com/) zustellt. Nur JVM, da es einen HTTP-Client
++       braucht.
+
+@ 0 3 0 03432ec8e08b97bb097df4449282112d
++     Alles wird in den `soundness`-Umbrella exportiert. Ein Kurier wird gewählt, indem er
++     namentlich aus dem Auswahlpaket `couriers` importiert wird, da `import couriers.*` keine
++     Givens importiert; das Paket verschmilzt mit dem des Umbrellas.
+
+% 0 1 0 14796e252ed6e26c1b77dad1df6a7eea
+
+% 0 1 0 067bb704e114285301e73353f6c80976
+
+% 0 1 0 19e47db073b361d11d987303c5cbed6f
+
+% 0 1 0 1edaa5787b66fe1911389bf194dc2f8a
+
+% 0 1 0 0293a070f9126adc157138b1dc4d75b4
+
+@ 0 5 0 06bb7a67316da708050cb1f1a478748b
++ entry .send   versendet jeden `Sendable`-Wert als E-Mail, mit Betreff und Empfängern, über den `Courier` im Geltungsbereich
++     `value.send(subject, to, cc, bcc, replyTo)` macht aus dem Wert mit seinem `Sendable` eine
++     `Email`, baut aus dem `Sender` im Geltungsbereich und den Argumenten einen `Envelope` und
++     übergibt beides dem `Courier` im Geltungsbereich. `to`, `cc`, `bcc` und `replyTo` nehmen
++     jeweils entweder eine `EmailAddress` oder eine `List` davon; alle außer `to` sind
++     standardmäßig leer.
+
+% 2 1 0 10681245943b095602255db22008ecab
+
+% 3 1 0 008b3a593bebdf0c1f566ce4757d2d62
+
+% 4 1 0 195d7c9259c4b7f01cc7db60d4d20949
+
+% 5 1 0 1bfc6763e8024ade13484d041710d26d
+
+% 6 1 0 1164e8994e8521a712f83da14b5dc6d3
+
+% 7 1 0 02cc9acf5b300c750de48af358571c8a
+
+% 8 1 0 0dea2a4a6c79972804f563b0ea941c5a
+
+% 9 1 0 067781534e8ff7e21f3e97513e9f6596
+
+% 0 1 0 0e3f0fcc8256783d0bb95f5dfc1002e6
+
+% 1 1 0 09f67f9a2ab97bb912ad1a4f7d0ecb4d
+
+% 0 1 0 017fe614f93018621488e05762be9243
+
+% 0 1 0 15f4ae15d0abb29d16ab954696802106
+
+% 0 1 0 0624eed76b04e9cb07a173998d870840
+
+% 0 1 0 03949c3479c5054b141c22a2b5faa942
+
+% 1 1 0 025acb249ecd472104cb589f3090f11b
+
+@ 0 2 0 098e389bc6970c4810d31f1903aa2597
++     Der Ergebnistyp ist das `Result` des Kuriers, und Fehlschläge zu melden ist Sache des
++     Kuriers: Der Resend-Kurier löst `Courier.Error` aus.
+
+@ 0 1 0 0537c7925b3332e709cdc14f7b43bb0f
++ entry .Sender   die Adresse, von der E-Mails versendet werden, als Kontextwert
+
+% 1 1 0 1324b5400a6fde8e09b62d8dfb8446e5
+
+@ 0 4 0 0ac070b473cdd4c11ce01f0f53b14626
++       `given Sender = Sender(email"noreply@example.com")`: `send` entnimmt die `from`-Adresse des
++       Umschlags dem `Sender` im Geltungsbereich, sodass sie einmal für ein Programm oder einen
++       Geltungsbereich gewählt wird, statt bei jedem Versand wiederholt zu werden.
++   entry #email   die Adresse des Absenders
+
+@ 0 1 0 09e12d46a7e1dc150efc367d783aadb7
++ entry .Envelope   von wem eine E-Mail stammt, an wen sie geht und ihr Betreff: was ein Kurier neben der Nachricht braucht
+
+% 1 1 0 03eb80a3c8a059391954613b00fb9832
+
+@ 0 12 0 03bd18b7cc5b69121ce4c347ff93a804
++       Die Metadaten eines `Document[Email]`: der Absender, die Empfänger `to`, `cc`, `bcc` und
++       `replyTo` sowie der Betreff. `send` baut ihn aus seinen Argumenten und dem `Sender` im
++       Geltungsbereich; ein `Courier` liest ihn aus den `metadata` des Dokuments.
++   entry .many   ein Wert oder eine Liste davon, als Liste
++       `Envelope.many(address)` ist `List(address)`, und `Envelope.many(addresses)` ist die Liste
++       selbst. So akzeptiert `send` für jedes Empfängerfeld beide Formen.
++   entry #from   die Adresse des Absenders
++   entry #to   die Hauptempfänger
++   entry #cc   die Empfänger einer Kopie
++   entry #bcc   die Empfänger einer Blindkopie, die den anderen nicht angezeigt werden
++   entry #replyTo   die Adressen, an die eine Antwort gehen soll, wenn nicht an den Absender
++   entry #subject   die Betreffzeile
+
+@ 0 1 0 18a1633c8c316d040bac363387f5cdc0
++ entry .Email   eine E-Mail-Nachricht: Header, ein Body aus Text oder HTML oder beidem, Inline-Inhalte und Anhänge
+
+% 1 1 0 003dc32dd6fe4edb1087472caf4dc956
+
+@ 0 5 0 15e388d77eedd2ed081b6512bf250870
++       Eine `Email` ist eine Map zusätzlicher Header und eine `Email.Message`, die einen
++       `Email.Content` (einen `Email.Body` und etwaige `Email.Inline`s) in eine Liste von Anhängen
++       einbettet, jeder ein `Asset`. Jede Schicht meldet ihren eigenen MIME-Inhaltstyp, abgeleitet
++       aus dem, was sie enthält. Eine E-Mail ist `Documentary` mit einem `Envelope` als
++       Metadaten, sodass ein Kurier ein `Document[Email]` erhält.
+
+% 2 1 0 1670be706feada051e138bd40b621e7a
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 188bcd9e354a606f0f55a6c0819e8f10
++         label Nur Text
+
+% 1 1 0 0e0ae5c3e10b232b17a2153169e2645c
+
+% 2 1 0 080629a45b31ad8d0adf208962eac9e3
+
+% 0 1 0 0d6ec7600c40e0b203ad68d7f5aab751
+
+% 0 1 0 0aba77f389a48d4b127444835f4b4d3e
+
+% 1 1 0 032e9a7981207afb1b7b71319b7397c2
+
+@ 0 1 0 1f2c9d645d5f2ff21e36ac6b3d1412c4
++         label Text mit HTML
+
+% 1 1 0 199018d2fedd3ca419d1ac254b796dcb
+
+% 2 1 0 1b5e8853a5c4dc9217b0e01c3d08634f
+
+% 4 1 0 0b4d23b2270dbd3e1198a9d536751188
+
+% 0 1 0 169554eba9f06c7b1862b182b25d1e33
+
+% 0 1 0 059eaf49bbed3f670ac7ac1a49bd884b
+
+% 1 1 0 1ebec5aba4e068ea03cba084cdcda264
+
+@ 0 1 0 0261c7ad1f0c7a06045a9cc46bf8ef60
++         label Mit einem Anhang
+
+% 1 1 0 1459fce406f884a613988a9ff5f1ffdc
+
+% 2 1 0 1fb93c9b849c50650332afeaea196f22
+
+% 4 1 0 0531a84d5cdf432c1e4843edd019a6f8
+
+% 0 1 0 105342b7b9425f541a306be932dfebe6
+
+% 0 1 0 17ccd87eb66850940df22c7d406f9979
+
+% 0 1 0 162ccfe9a01cb0ac13eb35974412ebf2
+
+% 1 1 0 1d730ea3f4cbc3e70a35a73edbecd25e
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 2 0 0655973d78a05cc2042d9c85fcdb72b5
++       Eine E-Mail gibt ihre Teile mit `#text`, `#html`, `#inlines` und `#attachments` zurück,
++       sodass eine zusammengesetzte Nachricht vor dem Versand geprüft werden kann.
+
+% 0 1 0 074e17cc3a2215cf0b1455194bd451bb
+
+% 0 1 0 110fdbcbdad69e970b9ee010fc5d89c4
+
+% 0 1 0 11a23e0551e024510784d2c9437d0488
+
+@ 0 5 0 08fbcce876853c100ccd61221f82ec5f
++   entry .apply   eine E-Mail aus einem beliebigen `Sendable`-Wert: `Email(t"hello")`
++       Verwendet das `Sendable` des Werts: Text wird zu einem Klartext-Body, ein HTML-Dokument zu
++       einem reinen HTML-Body, und eine `Email` ist sie selbst. Das Ergebnis hat keine Header,
++       Inline-Inhalte oder Anhänge.
++   entry .Body   der Body einer E-Mail: Text, HTML oder beides als Alternativen
+
+% 1 1 0 06c7e9063d3ce7f3170eead1998f7922
+
+@ 0 4 0 0e867e91161d1acf0f8f742d434bfca9
++         Eine Aufzählung mit drei Fällen: `TextOnly(content)`, `HtmlOnly(content)` und
++         `Alternatives(textContent, htmlContent)`. Der letzte wird als `multipart/alternative`
++         versendet, sodass ein Client, der HTML anzeigen kann, es zeigt, und jeder andere den
++         Text.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 15027c01b2f1e1f41c0d709fa1c6b4c1
+
+% 0 1 0 010b11b3d8c3c96317e7fecfffac221d
+
+% 0 1 0 196b9977168da0fb18655f347d1bdd70
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 5 0 1e83626dddf89c8713716c5daa61d067
++     entry .apply   ein Text-Body oder Text- und HTML-Alternativen: `Email.Body(text, html)`
++     entry #html   die HTML-Fassung oder `Unset` bei einem reinen Text-Body
++     entry #text   die Textfassung oder `Unset` bei einem reinen HTML-Body
++     entry #contentType   `text/plain`, `text/html` oder `multipart/alternative`, je nachdem, welche Fassungen der Body hat
++   entry .Inline   Inhalt, auf den ein HTML-Body über seine Content-ID verweist, etwa ein eingebettetes Bild
+
+% 1 1 0 16afa03eeaa0102c00536c9431cac31a
+
+@ 0 7 0 078e7bec05acec550aaec46a9d3c48ed
++         Ein Inline-Teil hat eine Content-ID, `cid`, auf die das HTML als `cid:…` verweist, einen
++         Medientyp und einen Body. Seine Anwesenheit macht den Inhalt zu `multipart/related`. Der
++         Resend-Kurier versendet keine Inline-Teile.
++     entry #cid   die Content-ID, auf die das HTML verweist
++     entry #contentType   der Medientyp des Inline-Inhalts
++     entry #body   der Inline-Inhalt
++   entry .Content   ein Body mit etwaigen Inline-Inhalten, auf die er verweist
+
+% 1 1 0 1dc1cf2f24e157b406d5a05d514196c6
+
+% 0 1 0 0a5dc4e5b72c1a9b147c8d17ee2685ac
+
+@ 0 18 0 12671497e1fec5a70ab71157ab852a85
++     entry #body   der Text- oder HTML-Body
++     entry #inlines   die Inline-Teile, auf die der Body verweist
++     entry #contentType   `multipart/related`, wenn es Inline-Teile gibt, und sonst der Typ des Bodys
++   entry .Message   der Inhalt einer E-Mail mit ihren Anhängen
++     entry #content   der Body und seine Inline-Teile
++     entry #attachments   die angehängten Dateien, der Reihe nach
++     entry #contentType   `multipart/mixed`, wenn es Anhänge gibt, und sonst der Typ des Inhalts
++   entry #headers   zusätzliche Header, nach Namen
++   entry #message   der Body, die Inline-Inhalte und die Anhänge
++   entry #Self   der dokumentarische Typ, `Email` selbst
++   entry #Metadata   die Metadaten eines E-Mail-Dokuments: ein `Envelope`
++   entry #html   die HTML-Fassung des Bodys oder `Unset`, wenn es keine gibt
++   entry #text   die Textfassung des Bodys oder `Unset`, wenn es keine gibt
++   entry #inlines   die Inline-Teile des Inhalts
++   entry #attachments   die angehängten Dateien, in der Reihenfolge, in der sie angehängt wurden
++   entry #attach   die E-Mail mit einem am Ende hinzugefügten Anhang
++       Nimmt jeden `Attachable`-Wert: ein `Asset` oder alles mit einem Namen, einem Medientyp und
++       einem Byte-Stream. Die E-Mail ist unveränderlich, daher liefert `attach` eine neue.
+
+% 2 1 0 0ff9829287cc373a08b1e3f5ec011c83
+
+% 3 1 0 019d56ed747f519e0c2823efb12164e1
+
+% 0 1 0 1ef7996c4e3931960b260a7edfb87b14
+
+% 0 1 0 0d0083e3e5984721030f99dd3363160c
+
+% 1 1 0 1fb37cccd2ac5af01b26ab0b39087c38
+
+@ 0 1 0 0e6868dee12c87381c751ec1a5aec3ad
++ entry .Sendable   eine Typklasse für Werte, die als E-Mail versendet werden können
+
+% 1 1 0 1b143225cda10c640fb795f1ac121987
+
+@ 0 4 0 01dd1738ffb9b28e08912bb790549e21
++       `value.send(…)` und `Email(value)` akzeptieren jeden Wert mit einem `Sendable`, das ihn in
++       eine `Email` verwandelt. Instanzen gibt es für `Text`, für `Email` selbst und für jedes
++       Dokument mit einem Medientyp, das als Text streamt, etwa eine HTML-Seite aus honeycomb. Ein
++       neuer Typ wird versendbar, indem er auf einen abgebildet wird, der es bereits ist:
+
+% 2 1 0 01caba7933f461751b035902f67370d9
+
+% 3 1 0 1e00d9cc3eedf0971d1d2dc6f01bebd3
+
+% 0 1 0 1ccc7f7c4179ab711cb96aa5a2a978a5
+
+% 0 1 0 0d7598ec7a95c78c0307734bbee43cb6
+
+% 1 1 0 05a095e0aa856b7e05c91e613ac6f712
+
+@ 0 8 0 013318d286cfad2d1f87d83fe413eec2
++   entry .text   Text wird als Klartext-Body versendet
++   entry .document   ein Dokument mit einem Medientyp wird als sein Text versendet, als reines HTML, wenn es `text/html` ist
++       Für jeden Typ mit einem `Media` und einem `Streamable by Text`: Ein Dokument, dessen
++       Medientyp `text/html` ist, wird zu einem `HtmlOnly`-Body, jedes andere zu einem Text-Body.
++       Das Dokument wird beim Erzeugen der E-Mail vollständig gelesen.
++   entry .email   eine E-Mail wird als sie selbst versendet
++   entry #email   der Wert als E-Mail
++   entry #contramap   ein `Sendable` für einen anderen Typ, das ihn zuerst in diesen umwandelt
+
+@ 0 1 0 00befc19f7e1e0f61d1995b69a40c75a
++ entry .Attachable   eine Typklasse für Werte, die an eine E-Mail angehängt werden können
+
+% 1 1 0 099ca588d97d2f0e198ce5fef30a6289
+
+@ 0 10 0 1ee3c0d599a9ba1b03ccfdd8a084063d
++       `Email#attach` nimmt jeden Wert mit einem `Attachable`, das ihn in ein `Asset` verwandelt:
++       einen Namen, einen Medientyp und die Bytes. Ein `Asset` ist als es selbst anhängbar, und
++       jeder Wert, der einen Namen (`Nominable`), einen Medientyp (`Media`) und einen Byte-Stream
++       hat, ist ohne weiteres Zutun anhängbar.
++   entry .generic   hängt jeden Wert an, der einen Namen, einen Medientyp und einen Byte-Stream hat
++       Für Typen mit einem `Nominable`, einem `Media` und einem `Streamable by Data`: Das Asset
++       übernimmt den Namen des Werts als Dateinamen, seinen Medientyp und seine Bytes als Stream.
++   entry .asset   ein `Asset` wird als es selbst angehängt
++   entry #attachment   der Wert als anzuhängendes Asset
++   entry #contramap   ein `Attachable` für einen anderen Typ, das ihn zuerst in diesen umwandelt
+
+@ 0 1 0 158da013069726a21334ee785ebdf672
++ entry .Courier   ein Zustelldienst für E-Mails, als Kontextwert gewählt
+
+% 1 1 0 1aec6a696664da1501e8206ac9214d42
+
+@ 0 3 0 03b068df2dff101d10c4252100b87054
++       Ein `Courier` versendet ein `Document[Email]` — die E-Mail und ihren `Envelope` — und
++       liefert ein `Result` nach eigener Wahl. Der mitgelieferte ist `couriers.resendCourier`; ein
++       anderer Dienst wird angeschlossen, indem er die eine Methode implementiert:
+
+% 2 1 0 1dbe9805e9072660039cfcca6150d699
+
+% 3 1 0 084c5b80683655e2110a96644de8fc63
+
+% 0 1 0 1fe4bfb356b3bce90f1149b1baac6357
+
+% 0 1 0 19f448fc1bd758f0103f0ad6892c4995
+
+% 0 1 0 061863b080fbea9c03c375486deb7d32
+
+% 0 1 0 0390482d9817f18f1c5a1993b023e38a
+
+% 1 1 0 075b5674b15cd15814c490682f32dfe1
+
+@ 0 2 0 08eb07dc3a004749160b821967bb2a13
++       Ein Kurier ist eine Capability: Er wird aus anderen Capabilities gebaut (einem HTTP-Client,
++       einer `Tactic`) und behält sie.
+
+% 0 1 0 1fdc4baa5e9023620e0a79fc2d7223d7
+
+@ 0 1 0 0b0a3722d1061f2f12ef76e2e3b1d8ba
++   entry .Error   ausgelöst, wenn ein Kurier eine E-Mail nicht zustellen kann
+
+% 1 1 0 1d58274a4431a5371d95e72f74ee607a
+
+@ 0 7 0 129d9df656656c550b75f19a468d0b78
++         Fehler `↯/s.107.1`: _unable to send email from `from` to `to` with subject `subject`_. Der
++         Resend-Kurier löst ihn bei jedem Verbindungsfehler, einem HTTP-Fehlerstatus oder einer
++         Response aus, die er nicht lesen kann. `to` ist der erste der Hauptempfänger des
++         Umschlags.
++     entry #from   die Adresse des Absenders
++     entry #to   die Adresse des ersten Hauptempfängers
++     entry #subject   der Betreff der E-Mail
++   entry #send   stellt eine E-Mail mit ihrem Umschlag zu und liefert das `Result` des Kuriers
+
+@ 0 1 0 1b7dc90d177140b903ffae4b777fa6a3
++ entry .Resend   die Einstellungen und Ergebnisse des Resend-Kuriers
+
+% 1 1 0 0024329820ebda9a1a74c3ad6d11a366
+
+@ 0 3 0 00d7bc9a87f0848515fcaae80cb613fb
++       [Resend](https://resend.com/) ist ein E-Mail-Zustelldienst mit einer HTTP-API. Sein
++       Kurier, `couriers.resendCourier`, entnimmt seinen API-Schlüssel einem `Resend.ApiKey`-Given
++       und liefert für jede versendete E-Mail eine `Resend.Receipt`.
+
+% 0 1 0 08cb027500f1a5ee0802a6fba8af4b2a
+
+@ 0 1 0 1a49cd5ae364e9e905c3b69c268221da
++   entry .ApiKey   der Resend-API-Schlüssel, als Kontextwert
+
+% 1 1 0 0bed7bd1d9e20a38038eed4908c638ea
+
+@ 0 5 0 108b360478ac5d4f0e648b5b0bc4be9a
++         `given Resend.ApiKey = Resend.ApiKey(t"re_…")`. Er wird mit jedem Request als
++         Bearer-Token gesendet. Lesen Sie ihn aus der Umgebung oder einem Geheimnisspeicher, statt
++         ihn in den Quelltext zu schreiben.
++     entry #key   der Schlüssel, als Text
++   entry .Receipt   die Bestätigung von Resend für eine E-Mail, die es angenommen hat
+
+% 1 1 0 0b857952bce497800550b3236d09ced9
+
+@ 0 3 0 1597fd2ab7ff54b10a323383e379dde3
++         Dekodiert aus der JSON-Response auf einen Versand. Die ID identifiziert die E-Mail in der
++         API und im Dashboard von Resend.
++     entry #id   die ID der E-Mail bei Resend
+
+@ 0 1 0 014d67d3b3ef54f71c829509d6f082d1
++ entry .couriers   die mitgelieferten E-Mail-Kuriere, jeder ein Given, das namentlich importiert wird
+
+% 1 1 0 0ab14400c58df02108680c4eb25d1325
+
+@ 0 3 0 06940dc59a891aa811429ff934332f6d
++       Ein Auswahlpaket, verschmolzen mit dem `couriers` des Umbrellas. Welcher Dienst E-Mails
++       zustellt, entscheidet das `Courier`-Given im Geltungsbereich, und `import soundness.*`
++       bringt keines mit: Eines wird namentlich importiert.
+
+% 2 1 0 001d2d2d6ac8b83516bd1bbfd3e82d17
+
+% 3 1 0 0b5ff29358ffac9a0291a46f30ee5d98
+
+% 2 1 0 1ab22b42e16385d1083cf8240e6bd996
+
+% 1 1 0 120479115a50a4761f5d05ddf97e909f
+
+@ 0 6 0 1e0446e3457a356d01769df6fd95842a
++   entry .resendCourier   stellt E-Mails über die HTTP-API von Resend zu und liefert eine `Resend.Receipt`
++       Sendet jede E-Mail per POST, mit ihren Text- und HTML-Bodys, ihren zusätzlichen Headern und
++       ihren Anhängen (in Base64 kodiert), an `https://api.resend.com/emails`, autorisiert durch
++       den `Resend.ApiKey` im Geltungsbereich. Benötigt eine `Tactic[Courier.Error]`, `Online`
++       (aus `internetAccess`), einen `Http.Client` (etwa `httpBackends.javaNetHttp`) und den
++       API-Schlüssel und protokolliert seine HTTP-Requests als `Http.Event`s.
+
+% 2 1 0 1f18be80eaf84f1015f33f92007d3379
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 1a73ed501bc05b9609c7ade416500758
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 0 1 0 0d95e158a2e74a4308f5a7dadf486a7f
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 01d1437f6d67cab0197176d451a04963
+
+% 0 1 0 1687bf0756babc9e1c45ad2e22eaf34f
+
+% 0 1 0 003d1a042ee935141a0456949a47f253
+
+% 1 1 0 1c30cc213fa31402001a60513fcddf7c
+
+@ 0 3 0 171fac63a3e3461601065f5db5ae0e24
++       Eine fehlgeschlagene Verbindung, ein Fehlerstatus oder eine unlesbare Response löst
++       `Courier.Error` aus; der zugrunde liegende Grund wird zuvor auf die Standardausgabe
++       geschrieben. Inline-Teile werden nicht versendet, und eine E-Mail ohne `to`-Empfänger
++       schlägt fehl, statt etwas auszulösen.

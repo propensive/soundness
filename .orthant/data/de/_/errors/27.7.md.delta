@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 1469909138eb5b2811d3f170adf2b9d8
++ # `↯/s.27.7` — `S16`-Wert über `Short.MaxValue`
+
+@ 0 2 0 09fd53daf321b5c8152053506222719d
++ Wird zur Kompilierzeit vom Makro `s16` von Hypotenuse ausgelöst, wenn der Wert `32767` überschreitet.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 1 0 064829a75424772e1186d478a899859b
++ Ein `S16` (vorzeichenbehaftet, 16 Bit) ist nach oben durch `Short.MaxValue` begrenzt.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 13e78a9f2f36ce2b1ab32e20b7c3a8ef
+
+% 1 1 0 1c339b2876d98232051941807867b72f
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 1 0 17ccb540fc7f5b6b11388cd4d30a95b3
++ Geben Sie einen Wert im Bereich `-32768`–`32767` an.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 2 0 1670b5a1d401440e1b2b356791d92b91
++ - Die anderen Fehler bei Ganzzahlliteralen: [Familien](README.md#families)
++ - Quelle: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

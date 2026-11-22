@@ -1,0 +1,48 @@
+orthant 2 language
+
+% 0 1 0 06ba4d3f4903a6e105e907f88cbf94a1
+
+@ 0 1 0 0754fdd637c7a80619dbf1455bfec13a
++ Levée lorsque le répondeur mDNS fondé sur des sockets (`syndesis`) ne peut pas démarrer.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 3 0 0998dc7089e208571740599e65948b97
++ Le répondeur rejoint le groupe multicast mDNS (`224.0.0.251:5353`) sur chaque interface active
++ et capable de multicast. Sans interface de ce genre, ou si le système d'exploitation refuse
++ l'adhésion, il n'a aucun moyen de communiquer. Le message est `the mDNS responder could not start because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 14cab4f5eb3b353c0023fcb9c4d9b374
+
+@ 0 2 0 19075168b3da39c50cf298a633d70642
++ Le groupe multicast n'a pas pu être rejoint : la liaison du port 5353 avec réutilisation a
++ échoué, ou l'adhésion a été refusée sur toutes les interfaces.
+
+@ 0 1 0 1ee0e0f8701e12770593b89b2100b8b0
++ **Exemple.** `[↯/s.102.2.1] the mDNS responder could not start because the multicast group 224.0.0.251:5353 could not be joined`
+
+@ 0 2 0 11d2990b9522deb90cfd444489aec9c7
++ **Résolution.** Vérifiez que le port 5353 n'est pas occupé sans réutilisation par un autre
++ programme, et que les interfaces ont des adresses IPv4.
+
+% 0 1 0 022debaddccf1cf0030687c3ef8d75a5
+
+@ 0 1 0 0e6180d6c2bcabaa19e7c45c895cbecb
++ Aucune interface réseau n'est active et capable de multicast (l'interface de bouclage ne compte
++ pas).
+
+@ 0 1 0 0a19999eb228f7471d3cc818882c0d0a
++ **Exemple.** `[↯/s.102.2.2] the mDNS responder could not start because no interface is up and capable of multicast`
+
+@ 0 1 0 17ba773332c34264121e4f5838b681d1
++ **Résolution.** mDNS a besoin d'un lien ; dans un bac à sable qui n'en a pas, utilisez le
++ `Mdns.Transport.Bus` en mémoire.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 1a7ae79c01b71180108dd6cdb0df9761
++ - Source : `lib/syndesis/src/core/syndesis.Mdns.scala`

@@ -1,0 +1,18 @@
+orthant 2 language
+
+@ 0 15 0 1a577346faef63ba19f24433df1356b1
++ - [JSON](json.md) — parsing, accesso tipizzato, costruzione, schemi e validazione
++ - [YAML](yaml.md) — parsing, tag, ancore e codifica
++ - [XML](xml.md) — nodi, namespace, XPath e schemi
++ - [CBOR](cbor.md) — codifica binaria simile a JSON, con tag e notazione diagnostica
++ - [CSV](csv.md) — righe, intestazioni e formati, decodificati in case class
++ - [TEL](tel.md) — il linguaggio di dati basato sull'indentazione, i suoi schemi e la sua modifica
++ - [Protocol Buffers](protobuf.md) — messaggi, campi e compatibilità
++ - [Markdown](markdown.md) — parsing, resa e riscrittura
++ - [Codifica in base](base-encoding.md) — Base64, esadecimale e altri alfabeti
++ - [Dati binari](binary-data.md) — descrivere, leggere e scrivere una struttura binaria
++ - [Compressione](compression.md) — comprimere valori e stream
++ - [Archivi](archives.md) — ZIP, tar e ar
++ - [Hashing](hashing.md) — digest, checksum e hashing veloce
++ - [Crittografia](cryptography.md) — cifratura, firma, chiavi e certificati
++ - [Tipi di media](media-types.md) — tipi di media, e tipi che conoscono il proprio

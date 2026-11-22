@@ -1,0 +1,35 @@
+orthant 2 language
+
+% 0 1 0 03b632ddc1ba56f7094d5672b9f0af40
+
+@ 0 1 0 1e2d6389d26b7b84114e3f81c6e5f7ea
++ JSON-RPC の操作が失敗したときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 05dbd7211b1fc1a509c9812aaeb2df58
++ Obligatory の JSON-RPC のディスパッチャーは、リクエストを処理できないときにこのエラーを発生させる。
++ コンストラクターは `reason: Reason` を受け取り、描画されるメッセージは `the JSON-RPC operation failed because $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 10d385792366bd2405f1052ce7c33d38
+
+@ 0 3 0 16abf98775676a350bec2b100b07e8c1
++ 受け取った JSON-RPC リクエストの `method` フィールドが、ディスパッチャーのインターフェースで宣言されたどのメソッドにもマッチしなかった。生成されたディスパッチャーのワイルドカードによる代替である。
+
+@ 0 1 0 047256202a3543b00d232e69bd3cee5e
++ **例。** `[↯/s.112.7.1] the JSON-RPC operation failed because the method name was not recognised by the dispatcher`
+
+@ 0 2 0 0a63d0bb9fe9cdde10002a6fe219d3fd
++ **解決方法。** メソッド名が RPC インターフェースのメソッドにマッチすることを確かめる。打ち間違いがないか確認する。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 3 0 1473b6334e16fd3a19a0036de94f5eed
++ - ソース：`lib/obligatory/src/json/obligatory.JsonRpc.scala`
++ - `↯/s.112.8` — 汎用的な RPC の失敗
++ - `SN-728` — コンパイル時に `Tactic[JsonRpcError]` がない

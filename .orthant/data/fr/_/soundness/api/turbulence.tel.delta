@@ -1,0 +1,2741 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 00df1c40f11f7767053c950b05d23d19
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1b5511e5022573b81aeeced09d8818b1
++ info
++     flux d'octets et de texte : un seul `read`, `writeTo` et `source` pour toute source et tout
++     puits, avec lignes, stdio et pompes asynchrones
+
+@ 0 8 0 10bbdb623c9298e6053bb819d4c0dc9c
++ detail
++     _Turbulence_ est le vocabulaire qui sert à faire circuler des octets et du texte entre ce
++     qui les produit et ce qui les consomme. Trois verbes couvrent toute source et tout puits :
++     `read[T]` lit une source en entier sous le type nommé, `writeTo` vide une valeur dans une
++     destination, et `source[element]` ouvre une valeur comme endpoint de lecture — un
++     `Stream[Data]` ou `Stream[Text]` de zephyrine sur `Credit` — auquel les étapes suivantes
++     se rattachent avec `via` et que les opérations terminales vident. Les types qui y
++     participent sont déterminés par des classes de types ; un nouveau type de fichier, de
++     socket ou de processus rejoint donc les trois mêmes verbes que tout le reste :
+
+@ 0 6 0 014c3a6131106f780283302c8003ff46
++     - `Streamable` indique comment une valeur s'ouvre en flux de morceaux `Data` ou `Text` ;
++     - `Aggregable` indique comment un flux de `Data` ou de `Text` se réduit à une seule valeur ;
++     - `Readable` compose les deux pour former `read`, en faisant le pont entre octets et texte
++       au moyen du `Charset` ou du `Codepage` dans la portée lorsque la source et le résultat
++       diffèrent ;
++     - `Writable` indique comment une destination vide un flux entier, et `Sink` comment elle
++       s'ouvre en endpoint d'écriture (un `Intake`) pour les appelants qui écrivent par étapes.
+
+% 2 1 0 03ba8fd6ca84fc76197b172465c2cb61
+
+% 3 1 0 0c5ecb66186137e417948b1ac85cdb9e
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 1 1 0 12cb91423b8613730b3d23af41198fea
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 14a256c2392a99fb1bf831bf369fe3cf
+
+% 0 1 0 1fc0bb8b20c423741a83bcb04e50ed69
+
+% 0 1 0 1a1dce279057ee041bac7231cf4f52aa
+
+% 0 1 0 1038fff6cba041550bc921099f5b77f8
+
+% 0 1 0 13183034c05be0ae0186f12f7474b3b0
+
+% 1 1 0 0887cf9472bcafcc023ad60eeb821544
+
+@ 0 6 0 0d9595b28a9640f10a2905e414a86a4c
++     Un `Stream` est un endpoint de lecture sur un tampon, et non une liste paresseuse de
++     morceaux : un consommateur appelle `refill` avec le `Credit` qu'il est prêt à recevoir,
++     lit la fenêtre qui lui est accordée, puis la saute. Rien n'est copié ni retenu, la
++     contre-pression est simplement l'absence d'appel, et chaque flux est une capacité
++     exclusive que le contrôleur de captures interdit de lire deux fois ou de partager.
++     `Buffering` (celui de zephyrine) est l'unique politique que consulte chaque tampon, et
++     la `Truncation.Error` que signale un flux interrompu vient aussi de zephyrine, réexportée
++     ici.
+
+@ 0 8 0 17c5e7684f7457101c5f386926318adc
++     Les lignes sont une politique, non une constante : `delineate` découpe un flux de texte
++     ou d'octets en un flux d'enregistrements, un par ligne, selon la `LineSeparation` given
++     dans la portée, choisie par son nom dans le package `lineSeparation`. Les flux standard
++     sont une capacité : `Out`, `Err` et `In` écrivent et lisent via le `Stdio` dans la
++     portée, choisi dans le package `stdios`, et `Stdio.divert` et `Stdio.capture` redirigent
++     le `System.out` et le `System.err` d'un thread. Lorsque des éléments sont produits au fil
++     du temps par d'autres threads, un `Relay` réunit un nombre quelconque de producteurs vers
++     un seul lecteur ; `Confluence` fusionne des flux, `Divergence` en réplique un, et
++     `convey` pompe un flux dans un intake sur sa propre tâche.
+
+@ 0 1 0 023bbc681e3a961c01643d67e0d3bd59
++     La bibliothèque comporte quatre ensembles de sources :
+
+@ 0 9 0 0d25357f8ab3dcb21aa8b28cf0941ae9
++     - `turbulence.core` — les classes de types, les verbes `read`/`writeTo`/`source`/`load`,
++       la séparation des lignes, `Relay`, `StreamOutputStream` et les adaptateurs du JDK
++       (`inputStream`, les givens pour `InputStream`/`OutputStream`/canal/`Reader`).
++     - `turbulence.stdio` — `Stdio`, `Out`, `Err`, `In` et, dans le package `stdios`,
++       `muteStdio`, `javaLangSystemStdio` et `fileDescriptorStdio`.
++     - `turbulence.async` — `Confluence`, `Divergence` et `convey`, qui ont besoin d'un
++       `Monitor` parasite et d'un `Probate`, et s'exécutent donc à l'intérieur de `supervise`.
++     - `turbulence.wasi` — `stdios.wasiStdio`, un `Stdio` sur les ressources de flux de la CLI
++       WASI, et `wasiApis.wasiCliApi`, l'interface WIT contre laquelle il est vérifié.
+
+@ 0 5 0 1d06222f75da0b631195aa8729d34e4c
++     Tout est exporté vers le package parapluie `soundness`, et les packages de choix
++     `lineSeparation`, `stdios` et `wasiApis` fusionnent avec ceux du package parapluie. Leurs
++     givens s'importent par leur nom, car `import soundness.*` n'importe pas les givens ; les
++     givens des objets compagnons (`Streamable.bytes`, `Readable.dataText`,
++     `Writable.outputStreamData`, …) sont résolus par la portée implicite, sans import.
+
+% 0 1 0 03be5b2b53c6228511bc2d1eb0104765
+
+% 0 1 0 0c30b6b2b23dc22c02a241ea5e3aa48e
+
+% 0 1 0 1599721b2b14c19e190b19b869b27ffb
+
+% 0 1 0 15cf6f707699c5721e94f26493b42060
+
+% 0 1 0 009f8d583a1dbeb6018b9bd77799a6f1
+
+% 0 1 0 02c1359e1ae0cba21b735f9c8dd967f1
+
+% 0 1 0 065c5aa89fa2a3eb03f0694caa0489d1
+
+% 0 1 0 128f30054c43860a030e200f0b2ba945
+
+% 0 1 0 1726f3cf462785a00f14ad44bc115d1e
+
+% 0 1 0 091e05a08d5d57fa1d1abf41a15c5c71
+
+% 0 1 0 0e990d0524ffdc28094c1941de31db3f
+
+@ 0 1 0 104c8eb82289fe391a05b933dcbbb22b
++ entry .Streamable
++   info
++       une valeur qui s'ouvre en endpoint de lecture : un `Stream` de `Data` ou de `Text` sur
++       `Credit`
+
+@ 0 8 0 15619918085120db0bc07995c990dfde
++   detail
++       `value is Streamable by medium over Credit` atteste que `value` peut s'ouvrir en
++       `(Stream[medium] over Credit)^`, où `medium` est `Data` ou `Text`. C'est la moitié source de
++       `read`, la moitié source de `writeTo`, et la totalité de `source`. Le trait a une seule
++       méthode abstraite, `#stream` ; une instance qui a besoin d'une politique de tampon ou d'un
++       contexte d'erreur la reçoit en paramètre contextuel du given et la capture, ce qui explique
++       que la plupart des givens soient écrits ici
++       `(tactic: Tactic[Truncation.Error], buffering: Buffering) => (… is Streamable …)^{tactic}`.
+
+% 2 1 0 1429138d2f15d545159e2eab3b79ae91
+
+% 3 1 0 00bf59f1347f89b40eac69bc00838510
+
+% 0 1 0 16849b239edfd49818aefdf16ec2dcb3
+
+% 0 1 0 1dc82cd5786193a013fac0a411011d88
+
+% 0 1 0 0ee69b8fd1fd869c0d736f614f58db8e
+
+% 0 1 0 0ca5dabd752a3e4a1c9001c3ac3fe8fa
+
+% 0 1 0 02c58d6949cb2e36161bb345b8a7a844
+
+% 0 1 0 10624b2bade9c25701b877ba153c6b18
+
+% 1 1 0 160dfb521841c863188836fdc360a642
+
+@ 0 7 0 0c16d24f83b0c5cc15ba08d0830bce18
++       Valeurs qui peuvent former un flux sans instance propre : `Data` et `Text` (`.bytes`,
++       `.text`, et `.textData` pour diffuser du texte sous forme d'octets via le `Codepage` dans
++       la portée), une `Chain[Data]` ou une `Chain[Text]` de morceaux, un `HttpStreams.Body`, un
++       `Spring[Data]` de zephyrine, et les `InputStream`, `ReadableByteChannel` et `Reader` du
++       JDK. Un flux ouvert sur une source du JDK lève `Truncation.Error` via la `Tactic` capturée
++       par le given si la source échoue en cours de lecture, et ferme la source lorsqu'il se
++       termine.
+
+@ 0 4 0 0ba9241593186871111637fc1d577277
++       Tout type qui forme un flux de `Data` se lit aussi comme `Text`, et inversement :
++       `Readable` fait le pont via le `Charset` ou le `Codepage` dans la portée, si bien qu'une
++       seule instance de `Streamable` suffit pour une source. `#contramap` dérive une instance
++       pour un type qui peut être converti en un type disposant déjà d'une instance.
+
+% 1 1 0 16fdb3e3b2817c540e7952021f07d6a2
+
+% 0 1 0 155f6c7dbac6988f19723911ea703a20
+
+% 0 1 0 1e1f4c5c5a5c332c01477cd7bba8c620
+
+@ 0 1 0 02967d660afbd5a010635e6977e5416d
++   entry #Transport
++     info
++         le type de demande avec lequel le flux est tiré : `Credit` pour toutes les instances ici
+
+@ 0 1 0 1773f1964b23e44b07381018e95e5e80
++   entry #stream
++     info
++         ouvre la valeur en nouvel endpoint de lecture
+
+@ 0 2 0 0f1cdf959170bedb0f9e8dce1b97b109
++     detail
++         Chaque appel crée un nouveau `(Stream[Operand] over Transport)^` ; le flux est une
++         capacité exclusive, vidée par un seul consommateur. `value.source[element]` en est la
++         forme fluide.
+
+@ 1 1 0 04350f95147ce12910ca6f189eb29011
++   entry #contramap
++     info
++         une instance pour `self2`, obtenue en le convertissant d'abord en `Self`
+
+@ 0 3 0 052a6b6ce603a1e408220462772adfe0
++     detail
++         `streamable.contramap(lambda)` est `self2 is Streamable by Operand over Transport`, qui
++         diffuse `lambda(value)`. Le résultat capture à la fois l'instance d'origine et la lambda.
+
+@ 0 1 0 14a2f01ee6d03e580e53b611e4494e6f
++   entry .bytes
++     info
++         une `Data` forme un flux d'elle-même, en une seule fenêtre
+
+@ 0 2 0 15989e33ebaf1e4418a61cdb8ecb998c
++     detail
++         `Data is Streamable by Data over Credit` : `Stream(data)`, un flux stable en région dont
++         l'unique fenêtre est le tableau lui-même, partagé par référence et jamais copié.
+
+@ 0 1 0 005bff751720f49c191767862a8fc955
++   entry .sizedBytes
++     info
++         une `Data & Sized[length]` forme un flux de ses octets
+
+@ 0 2 0 097d8af1fe71156710c44002c5b6c084
++     detail
++         Un bloc dimensionné est un raffinement de `Data` auquel l'instance `.bytes`, de `Self`
++         exact, ne correspond pas ; il a donc une instance propre, au comportement identique.
+
+@ 0 1 0 15537411a5965e4f11fb1ff796a76376
++   entry .transported
++     info
++         des octets tagués par un format, `Data over transport`, forment un flux d'octets bruts
+
+@ 0 2 0 0babb95456deafba1eafec5cfdf41a61
++     detail
++         Ce qu'écrit `value.in[Data over Protobuf]` se relit par le pipeline d'octets ordinaire :
++         le tag est fantôme et le flux est `Stream(data)`.
+
+@ 0 1 0 0af5d819df9deafa0495c6d2c526da42
++   entry .text
++     info
++         un `Text` (ou tout sous-type) forme un flux de lui-même, en une seule fenêtre
+
+@ 0 2 0 1fc4e2381cc7595b006ea6fc7f4eaab7
++     detail
++         `textual is Streamable by Text over Credit` pour tout `textual <: Text` ; un texte raffiné
++         ou marqué n'a donc besoin d'aucune instance propre.
+
+@ 0 1 0 091bee9fceb5eca11e3ecf348d539310
++   entry .textData
++     info
++         un `Text` forme un flux d'octets, encodés via le `Codepage` dans la portée
+
+@ 0 4 0 093b0e1a95a3ea47109bf8b5315b145c
++     detail
++         Nécessite un `Codepage` et un `Buffering`. Le texte est encodé par étapes au travers du
++         conduit d'encodage, si bien que `text.source[Data]` et `text.read[Data]` ne conservent
++         jamais tout l'encodage à la fois. Avec un `Codepage` dans la portée, `load` préfère cette
++         voie par octets pour une source `Text`, comme le fait `read`.
+
+@ 0 1 0 18a12f84879498841304e2e009e20a7c
++   entry .chainData
++     info
++         une `Chain[Data]` paresseuse de morceaux est une source d'octets
+
+@ 0 3 0 0768146d6c98147f1373828c9e21c57a
++     detail
++         Chaque morceau devient une fenêtre. La production de la chaîne échappe au contrôle de la
++         demande par le flux — une `Chain` est produite par celui qui l'a construite — si bien que
++         le crédit ne limite que la part de chaque morceau exposée à un instant donné.
+
+@ 0 1 0 097a062a15292d0a168f1c59ed44fda9
++   entry .chainText
++     info
++         une `Chain[Text]` paresseuse de morceaux est une source de texte
+
+@ 0 1 0 0f93abe67bca481d154e8587d6c2924e
++   entry .httpBody
++     info
++         un `HttpStreams.Body` (le protocole d'échange des corps HTTP) est une source d'octets
+
+@ 0 2 0 04d682fdf067724d0d7021ff740c78a2
++     detail
++         Nécessite un `Buffering`. Chaque recharge demande au corps un morceau de la taille d'un
++         bloc ; le corps d'une requête ou d'une réponse se lit donc directement avec `read`, sans
++         être matérialisé au préalable.
+
+@ 0 1 0 0c49552381d9a8d40a6b1a1c101f57f9
++   entry .spring
++     info
++         un `Spring[Data]` de zephyrine est une source d'octets, qui crée un nouvel endpoint à
++         chaque lecture
+
+@ 0 3 0 04d75885dccfb9ad10f37672afbb676f
++     detail
++         Nécessite une `Tactic[Truncation.Error]`, que l'instance capture : le `apply()` d'une
++         source la lève lorsque la source est interrompue, si bien qu'un corps de requête ou une
++         partie multipart peut être lu avec `read` ou transmis tel quel à un analyseur.
+
+@ 0 1 0 181f7fe3cb4ffa94046d3522d4f66c8d
++   entry .inputStream
++     info
++         tout `java.io.InputStream` est une source d'octets
+
+@ 0 5 0 102e5fb8a1f8ae311dc0aa1946e2d3fd
++     detail
++         Nécessite une `Tactic[Truncation.Error]` et un `Buffering`. Les lectures passent par un
++         canal sur le flux, directement dans le stockage propre du flux, au plus un bloc accordé
++         (`buffering.capacity(Substrate.Bytes)`) à la fois. La fin de l'entrée ferme
++         l'`InputStream` ; une `IOException` en cours de lecture le ferme et interrompt avec une
++         `Truncation.Error` qui porte les octets livrés jusque-là.
+
+@ 2 1 0 130157bc659c545c12949246fafc1f5b
++         ```scala
+
+@ 3 1 0 1be5ce012e15c2d219ab65d5a05299b9
++         import soundness.*
+
+@ 4 1 0 03516260853d01b713a314892cdbc1e7
++         import strategies.throwUnsafely
+
+@ 0 1 0 009d59b1bfc1c0f90d3f666efa5821c8
++         val input = java.io.ByteArrayInputStream(Array.unsafeJvm(t"hello".read[Data]))
+
+@ 0 1 0 00c62422e38fc66e1adef233d884b0b0
++         input.read[Text]   // t"hello"
+
+@ 1 1 0 0ca00d16acebc3a109898dda63eb4043
++         ```
+
+@ 0 1 0 0e263566eb68754701468d3569810330
++   entry .channel
++     info
++         tout `java.nio.channels.ReadableByteChannel` est une source d'octets
+
+@ 0 2 0 04b57dcc8adec9891c7294cd8a518f42
++     detail
++         Comme `.inputStream`, en lisant chaque bloc avec `channel.read(buffer)` ; nécessite une
++         `Tactic[Truncation.Error]` et un `Buffering`.
+
+@ 0 1 0 15c5c4fa23a8db4f0c20e7e4fa0aee20
++   entry .reader
++     info
++         tout `java.io.Reader` est une source de texte
+
+@ 0 4 0 162ad219615e182708663a940979ff3b
++     detail
++         Nécessite une `Tactic[Truncation.Error]` et un `Buffering`. Les caractères sont lus par
++         blocs de `buffering.capacity(Substrate.Chars)` dans une fenêtre de caractères ; le
++         lecteur est fermé en fin d'entrée, et une `IOException` interrompt avec une
++         `Truncation.Error` qui porte les caractères livrés jusque-là.
+
+@ 0 1 0 0beedebfcca78d0d0b745aaf76104af1
++ entry .Readable
++   info
++       une source qui peut être lue en entier sous un type de résultat : la composition derrière
++       `read[T]`
+
+@ 0 8 0 1ca263684824cfae091c1590e87df180
++   detail
++       `source is Readable to result` est ce dont `value.read[result]` a besoin. On ne l'écrit
++       presque jamais à la main : le compagnon de `Readable` la compose à partir d'une instance
++       de `Streamable` pour la source et d'une instance d'`Aggregable` pour le résultat, en
++       faisant le pont entre octets et texte via le `Charset` ou le `Codepage` dans la portée
++       lorsque les deux diffèrent. Les quatre pipelines sont des givens ordinaires à priorités :
++       `dataToData`, dans `Readable` lui-même, a la plus haute, puis viennent `textToText` dans
++       `Readable1`, `dataToText` dans `Readable2` et `textToData` dans `Readable3`. Selon la
++       source et le résultat :
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 5 0 1afbbab2ef77a44b00bb37c3e46c9743
++       column  Source
++       column  Vers un résultat agrégé en octets
++       column  Vers un résultat agrégé en texte
++       row  octets  `dataToData`  `dataToText`, décodé via un `Charset` ; nécessite un `Buffering`
++       row  texte  `textToData`, encodé via un `Codepage` ; nécessite un `Buffering`  `textToText`
+
+% 1 1 0 112ac3ce50b375d600ab7bc846ee1761
+
+@ 0 7 0 00c8a36bd2e037651cbdde2f7fb67a02
++       Ainsi, un type qui n'a qu'une instance `Streamable by Data` se lit comme `Text`, et un
++       type qui n'a que `Streamable by Text` se lit comme `Data`, pourvu qu'un encodage soit
++       disponible ; un type qui a les deux préfère la voie directe. Comme ce sont des givens et
++       non une macro, une instance manquante est un simple échec de recherche implicite : le
++       message est _turbulence: the source cannot be read
++       as the target type; this needs a `Source` instance for the source and an `Aggregable`
++       instance for the target, plus a `Charset` or `Codepage` if their operands (Data/Text)
++       differ_.
+
+% 2 1 0 0d7061d1f66d719d0650fb07e2f9f813
+
+% 3 1 0 1363f12b5b83df6e189f004eacba4639
+
+% 4 1 0 0b550754eb4442cf1f0895d61c5e1038
+
+% 5 1 0 0d140709d4c5d76e1ad866f9287046f0
+
+% 0 1 0 189643c591d307520ab919de4aab99a8
+
+% 0 1 0 03d9c2f9eae2957c160044594b21bc4e
+
+% 0 1 0 0d00337aba2def7c15a376b5cce71f4a
+
+% 0 1 0 198733f6b13c8f1f1c14f36f234ff3e4
+
+% 0 1 0 18e078f8c3925a520179d2eff34f300a
+
+% 1 1 0 14b83698f3dff4661f84f64ea2698df4
+
+@ 0 4 0 0cb1a5d7637ade6a10453ac56f51c6f1
++       Une `Data` entière déjà disponible a des instances directes (`.dataData`, `.dataText`)
++       qui décodent en une seule étape plutôt que via un flux à une fenêtre ; c'est ce qui fait
++       du `path.read[Text]` d'un fichier une véritable lecture directe. Les pipelines avec pont
++       transcodent par étapes, dans des tampons bornés, sur le thread de lecture.
+
+% 1 1 0 0deef6a9f528fd3b1b0b6ca66b9029be
+
+% 1 1 0 1437bceff0622b65091374f9161de3e3
+
+% 0 1 0 19cc67dc85f7e6d30623ed5d1c118e7a
+
+@ 0 1 0 14960e82915c70a21c975958305083f7
++   entry #read
++     info
++         lit la valeur en entier sous le type de résultat
+
+@ 0 1 0 1970cbf0dd11dae705df246055c8b75d
++   entry .dataData
++     info
++         une `Data` se lit comme elle-même, sans copie
+
+@ 0 1 0 053a3b1c0630ad8f057e28a5450fdb1a
++   entry .dataText
++     info
++         une `Data` se lit comme `Text`, décodée en entier via le `Charset` dans la portée
+
+@ 0 1 0 0168f59e278549cd0119184d58937715
++   entry .sizedDataData
++     info
++         une `Data & Sized[length]` se lit comme `Data`
+
+@ 0 2 0 0678b419f8bad0481f3f5bef505bdaf2
++     detail
++         Un bloc dimensionné est un raffinement auquel `.dataData`, de `Self` exact, ne correspond
++         pas ; il a donc sa propre instance.
+
+@ 0 1 0 04f1135d8b73372a178168610fa99a54
++   entry .sizedDataText
++     info
++         une `Data & Sized[length]` se lit comme `Text` via le `Charset` dans la portée
+
+@ 0 1 0 04d1f6492716674e1b20f2348e06e884
++   entry .dataToData
++     info
++         une source qui forme un flux d'octets se lit sous tout résultat agrégeable en octets
+
+@ 0 2 0 02f5a6658c37d23c082d3900ff8b88b6
++     detail
++         Le pipeline composé de plus haute priorité : `source is Streamable by Data over Credit`
++         avec `result is Aggregable by Data`, sans encodage. Le résultat capture les deux
++         instances.
+
+@ 0 1 0 1d7b67fbf7db4299109435017269dde5
++ entry .Readable1
++   info
++       le pipeline `read` de deuxième priorité : d'une source texte vers un résultat texte
+
+% 1 1 0 003e82ccbb8312f80830b91812cbe170
+
+@ 0 3 0 14cc460ec6618ed610c4a6df01300d22
++   detail
++       Une couche de priorité du compagnon de `Readable`, non destinée à un usage direct : elle
++       contient le pipeline que `Readable.dataToData` surclasse et qui surclasse les deux
++       pipelines avec pont.
+
+@ 0 1 0 028726c7ef5da1090297d00dfe867cab
++   entry #textToText
++     info
++         une source qui forme un flux de texte se lit sous tout résultat agrégeable en texte
+
+@ 0 2 0 1fac68f138c65ab60ad0b3af894e0110
++     detail
++         `source is Streamable by Text over Credit` avec `result is Aggregable by Text` ; aucun
++         encodage n'est nécessaire.
+
+@ 0 1 0 135065ce7e51719f05079376c8092fce
++ entry .Readable2
++   info
++       le pipeline `read` de troisième priorité : une source d'octets décodée vers un résultat
++       texte
+
+% 1 1 0 1315bb1d5a8c6fa201f6cb6b1b59d190
+
+@ 2 2 0 1bea75f9cc2a448706dc030f93d4a010
++   detail
++       Une couche de priorité du compagnon de `Readable`, non destinée à un usage direct.
+
+@ 0 1 0 0fc9aa883865028b13faa5507565b176
++   entry #dataToText
++     info
++         une source qui forme un flux d'octets se lit sous un résultat agrégeable en texte via un
++         `Charset`
+
+@ 0 2 0 003808c800a7371e18fa3058ea2a73a4
++     detail
++         Nécessite un `Charset` et un `Buffering` : les octets sont décodés par étapes au travers
++         du conduit du charset, si bien que `bytes.read[Text]` sur un flux ne conserve jamais tout
++         le décodage à la fois.
+
+@ 0 1 0 02b40bcde80142b80e6613857dc3c372
++ entry .Readable3
++   info
++       le pipeline `read` de plus basse priorité : une source texte encodée vers un résultat en
++       octets
+
+% 1 1 0 0342338303c332d11c6619840f8afd9d
+
+@ 2 2 0 038812977d96fd0e0807c408f67b9b8f
++   detail
++       Une couche de priorité du compagnon de `Readable`, non destinée à un usage direct.
+
+@ 0 1 0 0a7595c45557343006a864f70b6e3e9a
++   entry #textToData
++     info
++         une source qui forme un flux de texte se lit sous un résultat agrégeable en octets via un
++         `Codepage`
+
+@ 0 2 0 1adbea8ef9cc6c341f07b2b72b0829f0
++     detail
++         Nécessite un `Codepage` et un `Buffering` : le texte est encodé par étapes au travers du
++         conduit du codepage.
+
+@ 0 1 0 0b0642af029c44f018184c1d48cf9813
++ entry .Aggregable
++   info
++       un type de résultat qui peut être construit à partir d'un flux de morceaux `Data` ou `Text`
+
+@ 0 6 0 015ae4ec9b6454901c226ceb8b2c0eaf
++   detail
++       `result is Aggregable by medium` est la moitié résultat de `read[result]` : la manière
++       dont un flux entier de `Data` ou de `Text` se réduit à une seule valeur. `Data` et `Text`
++       sont agrégeables par leur propre medium (`.bytesData`, `.textText`), `Text` l'est aussi
++       par `Data` via le `Charset` dans la portée (`.bytesText`), et une `Chain[element]` de
++       n'importe quoi d'agrégeable est agrégeable (`.stream`), ce qui explique le fonctionnement
++       de `read[Chain[Text]]`.
+
+@ 0 7 0 02af313e565e866106cfd5297731c08b
++       Le trait a deux méthodes. `#aggregate` prend la forme historique, une `Chain` paresseuse
++       de morceaux ; `#accept` prend un endpoint de lecture et, par défaut, matérialise un
++       morceau par recharge puis délègue à `aggregate`. Les instances pour `Data` et `Text`
++       redéfinissent `accept` pour copier chaque fenêtre directement dans un constructeur, sans
++       morceaux intermédiaires, et un format dont `accept` travaille en flux devrait faire de
++       même. `#map` dérive une instance pour un type atteignable depuis un type agrégé, en
++       transmettant `accept` aussi bien qu'`aggregate`, afin qu'un `accept` en flux ne soit pas
++       perdu par la transformation.
+
+% 2 1 0 11dd69550e2dc69f1f2ae341ed49e7f4
+
+% 3 1 0 136852ee9ce226e10ee6b6b7ec1ddce1
+
+% 0 1 0 137980bde2334d471e6f3d56bea56ebe
+
+% 0 1 0 1ff1aff2cca2aa470b8dade0f86c4143
+
+% 0 1 0 03585b233cf30f520b60f322c7e6035b
+
+% 0 1 0 0076e3406352a5180a739d1b5b87e052
+
+% 0 1 0 1fad60b83664edae017ad1e4040e48be
+
+% 0 1 0 07dfcee996343e3000ae679055069fd2
+
+% 1 1 0 11f1bad71e8b619d021eb3917bafde70
+
+% 1 1 0 08792237b7931106064214c1c7b0f1b6
+
+% 1 1 0 0eaefc807136d6fe0872af8dac4a6c9c
+
+@ 0 1 0 1866991682cedec20eed1e89416d4522
++   entry #aggregate
++     info
++         construit le résultat à partir d'une `Chain` paresseuse de morceaux
+
+@ 0 1 0 19c9858fa94a8c4a1e2aabc79db87ea3
++   entry #accept
++     info
++         construit le résultat en vidant un endpoint de lecture
+
+@ 0 2 0 18ace2222b38176d11d5849b2fddc96c
++     detail
++         Par défaut, recharge avec un crédit illimité, matérialise chaque fenêtre en un morceau
++         et transmet leur chaîne paresseuse à `#aggregate`. Redéfinissez-la pour lire les
++         fenêtres directement.
+
+@ 0 1 0 136dd647c0c23c8f0cf000634b57594d
++   entry #map
++     info
++         une instance pour `self2`, obtenue en transformant le `Self` agrégé
+
+@ 0 2 0 0013052c6b8317c00c1add8a5fa50213
++     detail
++         L'instance transformée transmet à la fois `accept` et `aggregate`, et capture l'instance
++         d'origine et la lambda.
+
+@ 0 1 0 02d6bf2c57716eb21910f2575607a6f8
++   entry .bytesData
++     info
++         un flux de `Data` s'agrège en une seule `Data`
+
+@ 0 2 0 0b66b53e2af40e1f16d7989fae88f8f5
++     detail
++         Copie chaque fenêtre dans un constructeur d'octets qui grandit, une copie par région, et
++         construit le résultat une seule fois. La forme `aggregate` additionne les longueurs des
++         morceaux et place chaque morceau.
+
+@ 0 1 0 070c67acd57369f004319971097760b1
++   entry .bytesText
++     info
++         un flux de `Data` s'agrège en `Text`, décodé via le `Charset` dans la portée
+
+@ 0 2 0 1b6d23a7ea5dc5b10df76dcacb4ae02e
++     detail
++         `.bytesData` transformé par `Charset#decoded` : les octets sont rassemblés en entier puis
++         décodés en une seule étape.
+
+@ 0 1 0 13eea4d7f37b99e40bc1fe51344633f5
++   entry .textText
++     info
++         un flux de `Text` s'agrège en un seul `Text`
+
+@ 0 1 0 150098d4a5274a4e0731d55990ac2ef4
++   entry .stream
++     info
++         une `Chain[element2]` est agrégeable par `element` partout où `element2` l'est
+
+@ 0 2 0 1d51bcda04ff4df50ab33f47dc0e0add
++     detail
++         Chaque morceau est agrégé séparément, si bien que `read[Chain[Text]]` produit un élément
++         par morceau de la source plutôt qu'une seule valeur jointe.
+
+@ 0 1 0 0d000cfcd54deafc19d4a19a586c2173
++ entry .Writable
++   info
++       une destination qui vide un flux entier de morceaux `Data` ou `Text`
+
+@ 0 7 0 02a5473ad3fb1a39131e45ff878916b2
++   detail
++       `target is Writable by medium` est ce dont `value.writeTo(target)` a besoin du côté de la
++       cible : une seule méthode, `#write`, qui prend la cible et un endpoint de lecture et le
++       vide jusqu'au bout. Les `OutputStream` et `WritableByteChannel` du JDK sont écrivables
++       par `Data` (et `OutputStream` par `Text`, via le `Codepage` dans la portée), et une paire
++       d'adaptateurs rend tout `Writable by Text` également `Writable by Data`, et inversement ;
++       une destination n'a donc besoin que d'une instance, pour le medium qui lui est naturel.
+
+% 2 1 0 12b70b89c01979c61250f2d8bfc5da3b
+
+% 3 1 0 147a3b0ac72a501e0880ea782d659496
+
+% 4 1 0 14c49b5d97dabc5e07e194b70590810f
+
+% 2 1 0 1aeacafaf05785d61de339f7097bcbe5
+
+% 0 1 0 1d9745f20fa72d4005d1d1447b83ea2d
+
+% 0 1 0 1fe8ea15615b2bef0b50119dc4bd3156
+
+% 0 1 0 0a24d4b09302cb6701f773f3c7cc75e2
+
+% 0 1 0 05d256c108328b260a81bf13b1ad4a29
+
+% 0 1 0 1cc333525dcc0be30afd2e62258b6802
+
+% 0 1 0 0792512e9b3f77261c9dab67f3b53351
+
+% 0 1 0 12d1a8cbe45f1ee403a6c9981fc1b722
+
+% 0 1 0 148335e78386f41b01c26539798e1289
+
+% 0 1 0 10f70eb2f6dbd9a319c5cc2250f02cc2
+
+% 1 1 0 0b0d4db033c70721069fe8d1bf324728
+
+@ 0 4 0 0890b7f003254dea163bae6bde94282d
++       Un échec d'écriture est signalé, non levé comme exception : les givens du JDK prennent un
++       `Emit[Truncation.Error]` et lèvent l'erreur avec `raise`, avec le nombre d'octets écrits
++       avant l'interruption, puis cessent d'écrire. La cible est fermée, que l'écriture ait
++       échoué ou non. Un écrivain n'interrompt jamais ; un given `Writable` est donc invoqué
++       sous un `Emit`, jamais sous une `Tactic`.
+
+@ 0 4 0 1ed2b9ea8631ee290327d1e172e3ad67
++       `Sink` en est le pendant côté écriture, pour les appelants qui écrivent par étapes via un
++       `Intake` au lieu de transmettre un flux entier. Le paramètre de flux de la méthode
++       `write` n'est pas déclaré `consume` ; une instance qui le transmet à une opération
++       consommatrice le fait donc passer comme référence neutre, comme le fait l'exemple.
+
+% 0 1 0 1ce097c348bcbb8008de4b440a8cef39
+
+% 1 1 0 163e705ff232ea98044aca9432e11dc6
+
+% 1 1 0 1e2a76e5759d131e02d0827877669efd
+
+@ 0 1 0 1fe4fab4b4daa9951c4f5350b00872ac
++   entry #write
++     info
++         vide le flux dans la cible, jusqu'au bout
+
+@ 1 1 0 025ae38c38a4fa0b02cb2139668fcae5
++   entry #contramap
++     info
++         une instance pour `self2`, obtenue en le convertissant d'abord en `Self`
+
+@ 0 1 0 11301c8f6504abf000f21a0120f27cb3
++   entry .outputStreamData
++     info
++         tout `java.io.OutputStream` est écrivable par `Data`
+
+@ 0 3 0 00edca05bebc5cb71ff4d23a97958edb
++     detail
++         Nécessite un `Emit[Truncation.Error]` et un `Buffering`. Chaque fenêtre est écrite
++         directement depuis le stockage propre du flux ; le flux est vidé (flush) et fermé à la
++         fin, et une `IOException` à tout moment lève une `Truncation.Error` portant les octets
++         écrits jusque-là.
+
+@ 2 1 0 0047e9bb4363a164046bd18d10eaea13
++         ```scala
+
+@ 3 1 0 063c47f8134092781951b8d5ed1ec7ad
++         import soundness.*
+
+@ 4 1 0 112f634dd718fc2e1f69e2a479631c3e
++         import strategies.throwUnsafely
+
+@ 6 1 0 04d24492f6dd902f06584f5066bc5670
++         val output = java.io.ByteArrayOutputStream()
+
+@ 0 1 0 125da97b319f5a5c03c2694811aa9d00
++         t"hello".read[Data].writeTo(output)
+
+@ 1 1 0 0a9d5f9d46d3694f174f8e882620bb6c
++         output.toByteArray.nn.length   // 5
+
+@ 2 1 0 028fe0bca932a38900fd2bdae4c1d7f9
++         ```
+
+@ 0 1 0 155b73c2d3ba491d0e8509f55602aa4b
++   entry .outputStreamText
++     info
++         un `java.io.OutputStream` est écrivable par `Text`, encodé via le `Codepage` dans la
++         portée
+
+@ 0 2 0 023279a3e9a135451c6722a6984323ee
++     detail
++         Comme `.outputStreamData`, le texte étant encodé par étapes au travers du conduit du
++         codepage ; nécessite également un `Codepage`.
+
+@ 0 1 0 1f12745b0f57cd11146cd3817613e5d0
++   entry .decodingAdapter
++     info
++         une cible écrivable par `Text` est écrivable par `Data`, via le `Charset` dans la portée
+
+@ 0 2 0 01234b3937607adc0f80d98fe6d459d5
++     detail
++         Les octets sont décodés par étapes au travers du conduit du charset avant d'atteindre
++         l'écrivain de texte ; nécessite un `Charset` et un `Buffering`.
+
+@ 0 1 0 04a4845ad4198ecc191bdc5bdea894b0
++   entry .encodingAdapter
++     info
++         une cible écrivable par `Data` est écrivable par `Text`, via le `Codepage` dans la portée
+
+@ 0 2 0 007248714e35a34c07f02a362a5a4adf
++     detail
++         Le texte est encodé par étapes au travers du conduit du codepage avant d'atteindre
++         l'écrivain d'octets ; nécessite un `Codepage` et un `Buffering`.
+
+@ 0 1 0 03d803da8bbea6380ba5b0a7ff7fa36f
++   entry .chunked
++     info
++         une cible écrivable par un medium est écrivable par un flux d'enregistrements de morceaux
++         de ce medium
+
+@ 0 4 0 0a595005df21b6481ed8ff3fd010ea85
++     detail
++         `writable is Writable by (Array[medium]^{})` : chaque enregistrement du flux est un
++         morceau, écrit dans l'ordre. C'est la forme d'un journal d'événements, où chaque
++         événement formaté est un morceau `Text` ou `Data`, et c'est ce dont la destination d'un
++         `Logger` a besoin. Nécessite l'`Addressable` du medium et un `Buffering`.
+
+@ 0 1 0 13b427c8c1bf447e01ed4adb87b01a9d
++   entry .channel
++     info
++         un `java.nio.channels.WritableByteChannel` est écrivable par `Data`
+
+@ 0 3 0 0e530261afa3f11a1676d41258b16f7a
++     detail
++         Nécessite un `Emit[Truncation.Error]` et un `Buffering`. Chaque fenêtre est enveloppée
++         dans un `ByteBuffer` et écrite jusqu'à épuisement ; un `-1` renvoyé par le canal ou une
++         exception lève une `Truncation.Error` portant les octets écrits jusque-là. Le canal n'est
++         pas fermé.
+
+@ 0 1 0 05c084f5ef9c509b152a1cb69d49d413
++ entry .Sink
++   info
++       une destination qui s'ouvre en endpoint d'écriture : un `Intake` de `Data` ou de `Text` sur
++       `Credit`
+
+@ 0 6 0 0278d05e2a8c9e1702d4dba164703970
++   detail
++       `target is Sink by medium over Credit` est le pendant côté écriture de `Writable` : au
++       lieu de vider un flux entier, `#intake` ouvre la cible en
++       `(Intake[medium] over Credit)^` de zephyrine, dans lequel un appelant écrit par étapes
++       avec `put`, et dans lequel on pompe un flux avec `pump` ou, sur sa propre tâche,
++       `convey`. `finish` ferme la ressource sous-jacente, comme le fait `Writable` à la fin
++       d'un flux.
+
+% 2 1 0 11397aea3ce5c9720fc3c585f377e7b6
+
+% 3 1 0 181c81d15e8a80af0e97b46c7739ee47
+
+% 4 1 0 07936e4ad62c6d2317ef334256ca0504
+
+% 6 1 0 085a5f52b9e4201907626bdf4f352e5f
+
+% 0 1 0 10ac6a5dc143a2f5121dbf6e36dff6ef
+
+% 0 1 0 0c9c6c0762ede4fd1b4578ab8aba0f8c
+
+% 1 1 0 07814c332f6b5fed0d0de5a3ac04662a
+
+% 2 1 0 14af82250863f09309d986b8e37529f0
+
+@ 0 4 0 088d9094d78d14791ca9df9420369da9
++       Un échec d'écriture est signalé via l'`Emit[Truncation.Error]` capturé par le given — un
++       puits ne fait que signaler une interruption, il n'interrompt jamais — et la demande de
++       l'intake tombe à zéro, de sorte qu'une pompe s'arrête. `.buffered` adapte au protocole de
++       l'intake une fonction d'écriture de chaîne entière, pour une cible qui ne dispose que de
++       cela.
+
+% 1 1 0 08ad05b7d7704234000cea0fa67943dc
+
+% 1 1 0 04760a2ba0d193e71834f0725ff12e71
+
+% 0 1 0 117621d7b00cd2670cd53e0fc10faadf
+
+@ 0 1 0 1209e230f846357414a670515a6d3c96
++   entry #Transport
++     info
++         le type de demande de l'intake : `Credit` pour toutes les instances ici
+
+@ 0 1 0 00b19ac824900a8b11ea5ab0c86a680e
++   entry #intake
++     info
++         ouvre la cible en nouvel endpoint d'écriture
+
+@ 1 1 0 1c3a61678ec1fc73185f3f7affd8a276
++   entry #contramap
++     info
++         une instance pour `self2`, obtenue en le convertissant d'abord en `Self`
+
+@ 0 1 0 180a8c5f45ee1c0111c082c5205ed617
++   entry .outputStream
++     info
++         tout `java.io.OutputStream` s'ouvre en intake d'octets
+
+@ 0 5 0 1961d535b26f2a5d001148be8bb964da
++     detail
++         Nécessite un `Emit[Truncation.Error]` et un `Buffering`. Les écritures sont placées dans
++         un bloc de `buffering.capacity(Substrate.Bytes)` octets, qui est écrit (et vidé) lorsqu'il
++         est plein, lors d'un `flush` et lors de `finish`, qui ferme ensuite le flux. Une
++         `IOException` marque l'intake comme rompu — sa demande tombe à zéro — et lève une
++         `Truncation.Error` portant les octets écrits jusque-là.
+
+@ 0 1 0 0899f7321f6da79304f2f0b9757d7b97
++   entry .channel
++     info
++         un `java.nio.channels.WritableByteChannel` s'ouvre en intake d'octets
+
+@ 0 2 0 0da25a65019d386a1accac679d650aea
++     detail
++         Comme `.outputStream`, en écrivant chaque bloc préparé via un `ByteBuffer` ; `finish`
++         ferme le canal.
+
+@ 0 1 0 07b8a27063e451860634540a3b154288
++   entry .buffered
++     info
++         un intake qui accumule les morceaux et les transmet tous à un écrivain de chaîne entière
++         lors de `finish`
+
+@ 0 5 0 0bd50c37eb70d17315deaf4d4f9350d3
++     detail
++         `Sink.buffered(target, write)` prend une `(target, Chain[medium]) => Unit` et renvoie un
++         `(Intake[medium] over Credit)^` : les écritures sont préparées par blocs de la taille
++         fixée par le `Buffering`, chaque bloc plein devient un morceau, et `finish` appelle
++         `write` une seule fois avec tous les morceaux dans l'ordre. Sa demande est, en toute
++         honnêteté, illimitée, puisqu'il conserve tout jusqu'à `finish`. Il nécessite
++         l'`Addressable` du medium et un `Buffering`.
+
+@ 2 1 0 0b6b2ffc39e3634303f8558f20f0c630
++         ```scala
+
+@ 3 1 0 1aca81306fa901d614230014ac5aa829
++         import soundness.*
+
+@ 0 1 0 16fb33a176e2d8800f95be0b9e7cff2e
++         var sizes: List[Int] = Nil
+
+@ 0 1 0 1c00859deeb9481713098a7321cdbce5
++         val intake = Sink.buffered[Unit, Data]((), (_, chunks) => sizes = chunks.map(_.length).to[List])
+
+@ 0 1 0 170a2af1c2c5e9ef18127a8c756b0871
++         intake.put(Data.fill(8)(_.toByte))
+
+@ 0 1 0 091d50e094c50cd61e5f31788890a5e3
++         intake.finish()
+
+@ 1 1 0 1966b50cfe8c0f0819b1a570275c97c1
++         ```
+
+@ 0 1 0 1e55a6220adc31c20836772b42411d7b
++ entry .Loadable
++   info
++       un type de document qui s'analyse à partir d'un flux de `Data` ou de `Text`, en conservant
++       ses métadonnées
+
+@ 0 8 0 1709e4fe8cd3b8570f0b414d8bf8e6bf
++   detail
++       `result is Loadable by medium` est ce dont `value.load[result]` a besoin du côté du
++       résultat : `#load` prend un endpoint de lecture et renvoie un `Document[result]`, la
++       racine analysée accompagnée des métadonnées découvertes lors de l'analyse (l'encodage
++       d'un prologue XML, les positions source d'un document HTML). Le `Self` doit être un
++       `Documentary`, qui déclare la nature de ses métadonnées. Des formats tels que `Xml`,
++       `Html`, `Tel` et `Math` fournissent des instances, en général une par `Text` et une par
++       `Data`, chacune capturant la `Tactic` de sa propre erreur d'analyse.
+
+% 2 1 0 11e18fd96bce6c7e1befc521ba39be65
+
+% 3 1 0 05d22b5ed46dfb781bf7b3fca249489d
+
+% 4 1 0 0533a2a45dceb8c903f45139fbac630a
+
+% 5 1 0 1c79722f095221d302779c85de94f06e
+
+% 0 1 0 1da9f8897316952c0e0a6d6aadec2862
+
+% 0 1 0 15a484c4bb518d620ee00c2c5b5c4bd8
+
+% 0 1 0 0f72973644b2dac91cd85a8eecdda77c
+
+% 1 1 0 06859a2fc5208eb3018a0affc85c58dd
+
+@ 0 3 0 00befd72c78f760a16e60da66ecbf886
++       Lorsqu'une source et un chargeur ne s'accordent pas sur le medium, `load` fait le pont
++       via le `Charset` ou le `Codepage` dans la portée ; `.fromData` et `.fromText` sont les
++       deux moitiés de cette répartition, pour le code qui détient déjà un flux.
+
+% 1 1 0 0e151b6018e1805908727b20877b4610
+
+% 1 1 0 0b8fe6d8949be28606cabe76279377f3
+
+% 0 1 0 06c53c982a07e9820935ed58e92e63ec
+
+@ 0 1 0 04227ce4de1a3b78185566299c861895
++   entry #Self
++     info
++         le type de document, un `Documentary`
+
+@ 0 1 0 0919b0e3d3c5233d1b197fbddc16c957
++   entry #Operand
++     info
++         le medium que lit le chargeur : `Data` ou `Text`
+
+@ 0 1 0 03e22bf0374ff50d0b22d9f699c56921
++   entry #load
++     info
++         analyse le flux en un `Document[Self]`
+
+@ 0 1 0 100e40ac16079a431abad7d506345cbc
++   entry .fromData
++     info
++         charge un document depuis un flux d'octets, en décodant via un `Charset` si le chargeur
++         veut du texte
+
+@ 0 4 0 0af4917097a2dbeb0e920623f2056e8e
++     detail
++         `Loadable.fromData[result](stream)` consomme le flux. Il préfère un `result is
++         Loadable by Data` ; à défaut, il utilise un `Loadable by Text` via le `Charset` et le
++         `Buffering` dans la portée ; et en l'absence des deux, la compilation échoue avec
++         _turbulence: the result
++         type has no `Loadable` instance_.
+
+@ 0 1 0 02e6f9005dc842521760ebf3b7a81d0e
++   entry .fromText
++     info
++         charge un document depuis un flux de texte, en encodant via un `Codepage` si le chargeur
++         veut des octets
+
+@ 0 2 0 1e57785614d86799132e8860a1a651f4
++     detail
++         Le jumeau textuel de `.fromData` : d'abord un `Loadable by Text`, sinon un
++         `Loadable by Data` via le `Codepage` et le `Buffering` dans la portée.
+
+@ 0 1 0 10d5a469b9064a8712a99a3d9e45de40
++   entry .whole
++     info
++         les octets d'une source à valeur entière, sous forme de flux à une seule fenêtre
+
+@ 0 3 0 17018345b28997c415e9f1edf9cd5f68
++     detail
++         `Loadable.whole(source)` lit la source avec son instance `Readable to Data` et enveloppe
++         le résultat dans un `Stream[Data]` : c'est la voie que prend `load` pour une source qui
++         ne forme pas de flux mais peut être lue en entier, comme un chemin du système de
++         fichiers.
+
+@ 0 1 0 16990a25deea2f5f027b31280e4d4fa0
++ entry .Document
++   info
++       un document analysé : sa valeur racine accompagnée des métadonnées découvertes lors de
++       l'analyse
+
+@ 0 4 0 04101a351ec4a8f51513b547c4e4c417
++   detail
++       `Document[content]` est ce que renvoie `load[content]`. `#root` (ou `#apply`) est la
++       valeur analysée, et `#metadata` est typé par la propre déclaration `Documentary` du
++       contenu : `root.Metadata` ; les métadonnées d'un document `Xml` sont donc ce que `Xml`
++       déclare.
+
+% 1 1 0 06b95a630bfb5c250750de6042353f5f
+
+% 1 1 0 0f2e6a8921d9c8a60aa3a8db99d8f132
+
+@ 0 1 0 000c0473faa2b11d0ad11381528cf9c6
++   entry #root
++     info
++         le document analysé
+
+@ 0 1 0 10d462dc3be6381203fb48f613d826f9
++   entry #metadata
++     info
++         ce que l'analyse a découvert à côté du contenu, typé `root.Metadata`
+
+@ 0 1 0 0d0629a75503488d06591e9935f077a2
++   entry #apply
++     info
++         le document analysé, sous la forme `document()`
+
+@ 0 1 0 1c0425ba3c7b16951981e7e098366e16
++ entry .Documentary
++   info
++       un type qui peut être le contenu d'un `Document`, déclarant son type de métadonnées
+
+@ 0 5 0 1318a03cfa03953916ee0bfe3c4d3417
++   detail
++       Un trait marqueur pour le type racine d'un format : `type Metadata` est ce que son analyse
++       découvre à côté du contenu, et `Document[content]` l'expose sous `root.Metadata`. `Xml`,
++       `Html`, `Tel`, `Email` et `Math` sont des documentaires ; un nouveau format l'étend et
++       fournit une instance de `Loadable`.
+
+% 1 1 0 1255a625551646291e1bacd7c06b0997
+
+% 1 1 0 1f2024894421cf6f09f6cf411f735e2a
+
+@ 0 1 0 1d1752fe07931315041a2380e0500618
++   entry #Self
++     info
++         le type documentaire lui-même
+
+@ 0 1 0 144467221ea69f0310723a05d9cab334
++   entry #Metadata
++     info
++         ce que l'analyse de ce type découvre à côté de son contenu
+
+@ 0 1 0 1e569a20751df13b1417a837c7d311c4
++ entry .Eof
++   info
++       un fichier désigné pour l'ajout : `Eof(file)` est la fin du fichier
+
+@ 0 5 0 112c0fba811d1f5008114f9393bd9dcb
++   detail
++       `Eof(path)` enveloppe un chemin de sorte que l'ouvrir revienne à ouvrir le fichier en
++       ajout. La bibliothèque de système de fichiers rend `Eof[file]` ouvrable partout où `file`
++       l'est, en ajoutant en tête l'indicateur `Append` ; `Eof(path).open(...)` ajoute donc là où
++       `path.open(...)` écraserait. L'enveloppe elle-même n'est que la case class et son unique
++       champ.
+
+@ 0 1 0 0a659a71213134621f9c32d6a96ffafe
++   entry #file
++     info
++         le fichier enveloppé
+
+@ 0 1 0 0bc1d07df254631e01922db0c11aacf2
++ entry .Line
++   info
++       une ligne de texte, rendue avec le saut de ligne qu'utilise la `LineSeparation` dans la
++       portée
+
+@ 0 4 0 0d237832a0a9c44f1ce37cc0f82841d0
++   detail
++       `Line(content)` contient une ligne sans son terminateur ; `line()` y ajoute la séquence
++       de saut de ligne de la `LineSeparation` given dans la portée, si bien qu'une même valeur
++       se rend en `\n`, `\r\n` ou `\r` selon la politique choisie.
+
+% 1 1 0 19c934b05ec613f91d495c0811023da8
+
+@ 0 1 0 0629dfcdc015c7231bebd3fce91c902d
++   entry #content
++     info
++         le texte de la ligne, sans terminateur
+
+@ 0 1 0 0d815d2069108eea0f099416ca16fae0
++   entry #apply
++     info
++         la ligne suivie du saut de ligne de la `LineSeparation`
+
+@ 0 1 0 17c4413eaad43d64165cc4674cf5bb65
++ entry .LineSeparation
++   info
++       une politique de fin de ligne : lesquels de CR, LF, CRLF et LFCR terminent une ligne, et
++       comment une ligne s'écrit
+
+@ 0 7 0 1dd42d2f9f9a90d7127f99950f51ca6b
++   detail
++       Une `LineSeparation` indique comment `delineate` découpe un texte en lignes, et quelle
++       séquence écrivent `Line#apply` et `#newlineData`. C'est une valeur à cinq champs :
++       `#newline`, la `NewlineSeq` écrite, et quatre `Action` qui disent ce que font, à la
++       lecture, un CR isolé, un LF isolé, une paire CRLF et une paire LFCR — terminer une ligne
++       (`Nl`), rester dans le texte comme caractère (`Cr`, `Lf`), être supprimés (`Skip`), ou
++       terminer une ligne en conservant une partie d'eux-mêmes (`NlCr`, `NlLf`, `CrNl`, `LfNl`)
++       ou en terminer deux (`NlNl`).
+
+@ 0 2 0 0bc7acc151a7422a1a479d3d3aa79905
++       La politique n'est jamais implicite : le package `lineSeparation` contient les politiques
++       standard, importées par leur nom, et un même texte se découpe différemment sous chacune.
+
+% 2 1 0 1951aaaf803b4ef215194fde7a6ddbc9
+
+% 0 1 0 089ad75bba0a38320e34393be575bf0a
+
+% 1 1 0 1a9ddc3f6c830d971f6def4a920c5392
+
+% 2 1 0 002e3be157a8adc8023670821e472a75
+
+% 0 1 0 155d8d482885fa000645126f6055555a
+
+% 0 1 0 0dc863e331bfcd741e3cb939f6ab004a
+
+% 0 1 0 0b827e445a4acafd15d9659895538edd
+
+% 1 1 0 181e919e2f9d030a166dcfeffe878c3b
+
+% 2 1 0 1271316a2019425308e3886c88890368
+
+% 0 1 0 08e5b1e758b66ebb035c7de38741c2f7
+
+% 0 1 0 044aeb9de90f97650f079eed562d0129
+
+% 0 1 0 0d962c243a6cc752066c89dfbfdd32b0
+
+% 1 1 0 0c4b8223ad30a818010d900006f67738
+
+% 2 1 0 12bb00de86debc8119660d76aab8ae62
+
+% 0 1 0 0df34cf5c7267e8b0b5a40b707ca2d35
+
+% 0 1 0 10c620b11916209e1167402dc85ad792
+
+% 0 1 0 02012f42830346f2094f808f15d0da33
+
+% 1 1 0 135803f8ebf5014305c6b9130317571d
+
+% 2 1 0 15399532f5a9d4b1148df6cdb826515e
+
+% 0 1 0 11e343f7b8db45db090c77bae0353616
+
+% 0 1 0 097f16b87f51425f19039e32ef0c91ed
+
+% 1 1 0 1aa25ff4c17f5b8c0e2ccbeef95c457c
+
+% 2 1 0 16a9628959d7ae95101127c09e7c3e6f
+
+@ 0 8 0 081294dbdad0599a09edbe91e4a84e0d
++       Le découpage lui-même est un `Duct` de zephyrine, appliqué comme une étape : `.lines` est
++       l'instance de `Ductile` qui permet de rattacher une valeur de politique à un flux de
++       texte avec `via`, ce qui produit un flux d'enregistrements contenant un `Text` par ligne,
++       sans son terminateur. Une dernière ligne sans terminateur est tout de même livrée ; une
++       entrée vide ne produit aucune ligne ; et une séquence de deux caractères coupée entre
++       deux fenêtres est résolue par-delà la frontière. Un flux d'octets sous un encodage
++       transparent à l'ASCII (UTF-8, ASCII, Latin-1) est découpé directement dans les octets
++       bruts par `.byteLines`, chaque ligne étant décodée en entier en une étape, ce que
++       `delineate` choisit après avoir vérifié le `Charset` ; tout autre encodage est d'abord
++       décodé.
+
+@ 0 2 0 0d74bd64906f9d741c0aa670a5c4118b
++       Une ligne dépourvue de tout séparateur fait croître sans limite la ligne partielle
++       reportée, comme pour tout lecteur de lignes ; bornez l'entrée en amont si elle peut être
++       malveillante.
+
+% 1 1 0 05666cc1653f3e7b03f1dfee4f2efae4
+
+% 1 1 0 0d904b9694e7f3721d9a50a25f5bdf5e
+
+% 0 1 0 1b06cec56affb44f06b5a8ec3e14c8de
+
+@ 0 1 0 02b626bab2ef17840f79898b39fe0e45
++   entry .NewlineSeq
++     info
++         la séquence qu'une politique écrit comme fin de ligne : `Cr`, `Lf`, `CrLf` ou `LfCr`
+
+@ 0 4 0 062b2e62a2e5a6e50b1f49c44e87e946
++     detail
++         Une énumération des quatre séquences de saut de ligne ; `#text` est la séquence sous
++         forme de `Text` (`"\r"`, `"\n"`, `"\r\n"`, `"\n\r"`), et `LineSeparation#newlineData`
++         donne la même chose en octets.
+
+@ 0 1 0 1e85a0f7e6f19c7709088488bf9cd748
++     entry #text
++       info
++           la séquence sous forme de texte
+
+@ 0 1 0 19347c5ff7a0057012b8672932108d88
++   entry .Action
++     info
++         ce qu'une politique fait d'un CR, LF, CRLF ou LFCR qu'elle lit
+
+@ 0 5 0 05e8f648bb1097751c5c1b8b43eae0f5
++     detail
++         Une énumération de neuf actions : `Nl` termine la ligne ; `Cr` et `Lf` conservent le
++         caractère dans le texte de la ligne ; `Skip` le supprime ; `NlCr` et `NlLf` terminent la
++         ligne et commencent la suivante par le caractère ; `CrNl` et `LfNl` ajoutent le caractère
++         puis terminent la ligne ; et `NlNl` termine deux lignes. Une `LineSeparation` en désigne
++         une pour chacun de ses champs `cr`, `lf`, `crlf` et `lfcr`.
+
+@ 0 1 0 027a562f3f4db0ec1f609ab5ac0bf496
++   entry .lines
++     info
++         l'instance de `Ductile` qui applique une politique à un flux de texte comme une étape
+
+@ 0 4 0 09a6dc35446eb5320d6441ace5b04c25
++     detail
++         `stream.via(lineSeparation)` rattache le conduit de découpage en lignes, ce qui produit
++         un `Stream[Array[Text]^{}]` — un flux d'enregistrements contenant un `Text` par ligne —
++         et convertit le crédit en lignes en crédit en caractères, un pour un. `delineate` fait
++         la même chose avec la politique prise dans la portée. Nécessite un `Buffering`.
+
+@ 0 1 0 1b0a9bdd7dd172a51c628cfcb3949fc8
++   entry .asciiTransparent
++     info
++         indique si un octet `0x0A` ou `0x0D` ne peut être, dans un charset, qu'un terminateur de
++         ligne
+
+@ 0 2 0 13cb9177bd2fbc7a0e7b04fc58123cd1
++     detail
++         Vrai pour UTF-8, US-ASCII et ISO-8859-1, dans lesquels aucune séquence multi-octets ne
++         contient ces octets, si bien qu'on peut trouver les lignes avant de décoder. Faux pour
++         UTF-16 et les autres.
+
+@ 0 1 0 062744871858e8a40b171f0ec68b1b92
++   entry .byteLines
++     info
++         le conduit de lignes au niveau des octets pour un encodage transparent à l'ASCII
+
+@ 0 6 0 0a0780f2291cb7a00627a85c04cee683
++     detail
++         `LineSeparation.byteLines(policy, charset)` construit un `Duct[Data, Array[Text]^{}]`
++         qui trouve les terminateurs dans les octets bruts et décode chaque ligne complète en un
++         seul appel fusionné, sans étape de décodage distincte ; un caractère multi-octets coupé
++         par une frontière de fenêtre s'accumule simplement avec la ligne. C'est une méthode et
++         non un given, appliquée par `delineate` après avoir vérifié l'encodage avec
++         `.asciiTransparent`, et elle ne doit pas être utilisée avec un encodage qui échoue à
++         cette vérification. Nécessite un `Buffering`.
+
+@ 0 1 0 16d243096ac20e0407304a98b83eaee6
++   entry #newline
++     info
++         la séquence écrite comme fin de ligne
+
+@ 0 1 0 0ec55db21b3002e10ea503026c3f059a
++   entry #cr
++     info
++         ce que fait un retour chariot isolé à la lecture
+
+@ 0 1 0 08c104b100bedffd0f16509d80d2db30
++   entry #lf
++     info
++         ce que fait un saut de ligne (LF) isolé à la lecture
+
+@ 0 1 0 03860350a8df29331d73cfc2e0d9c39c
++   entry #crlf
++     info
++         ce que fait un retour chariot suivi d'un saut de ligne à la lecture
+
+@ 0 1 0 068c8de0eb37a2ec0b829b03abfbd1d1
++   entry #lfcr
++     info
++         ce que fait un saut de ligne suivi d'un retour chariot à la lecture
+
+@ 0 1 0 067240ba638c7cba167c6ad4285e8d12
++   entry #newlineData
++     info
++         la séquence de saut de ligne sous forme d'octets
+
+@ 0 2 0 0c36b3db1bd7c292047aa254c109fa28
++     detail
++         `Data(13)`, `Data(10)`, `Data(13, 10)` ou `Data(10, 13)` pour `Cr`, `Lf`, `CrLf` et
++         `LfCr`.
+
+@ 0 1 0 02245e919d06a71f17db4ae75b35a1e3
++ entry .lineSeparation
++   info
++       les politiques de fin de ligne standard, chacune un given à importer par son nom
+
+@ 0 5 0 0fbb45451b44946d1ff2ed5adf03cf6e
++   detail
++       Les caractères qui terminent une ligne sont déterminés par la `LineSeparation` given dans
++       la portée, et ce choix n'est jamais implicite : `import soundness.*` n'en importe aucune,
++       et on en importe une par son nom. Chacune est une valeur `LineSeparation` dont la suite
++       de tests fait passer la table d'actions par toutes les fragmentations possibles de son
++       entrée.
+
+% 2 1 0 199bc33596f5607e158904bc3237a743
+
+% 3 1 0 0f9e7d21f5de1d6317ea843048a7f2b3
+
+% 0 1 0 0115ab0fde5209ee17abe67e42a01341
+
+% 0 1 0 1aa3ad1e7b7e854a086165608bc088e1
+
+% 1 1 0 07e4b975de91df1c128582881d0a47d1
+
+@ 0 3 0 13a95c81abb5a16e0da00fd22f804ef4
++       `adaptiveLinefeedLineSeparation` convient à une entrée de provenance inconnue ; les
++       politiques strictes sont destinées aux formats où un caractère isolé de l'autre type est
++       une donnée, et `javaBaseLineSeparation` suit la plateforme d'exécution.
+
+% 1 1 0 109dcdac9ad73fcf1b1409c3a5844341
+
+% 1 1 0 1492ec42b7a894cc060f51d464d662ec
+
+@ 0 1 0 09388d1e7847fd0b18f27f9d89bc2da1
++   entry .adaptiveLinefeedLineSeparation
++     info
++         n'importe lequel de CR, LF, CRLF ou LFCR termine une ligne ; écrit LF
+
+@ 0 2 0 101fb9ede01d227e1722ecbc977fd818
++     detail
++         Chaque séquence est un unique saut de ligne : `a\n\nb` fait donc trois lignes (`a`, une
++         ligne vide, `b`) et `a\r\nb` en fait deux.
+
+@ 0 1 0 06241eb0714536f80e8cab174ed95186
++   entry .linefeedLineSeparation
++     info
++         LF termine une ligne ; un CR isolé est supprimé ; CRLF et LFCR forment un seul saut ;
++         écrit LF
+
+@ 0 1 0 131c3352654d27c30c8db8ec38128e1f
++     detail
++         `a\rb` est l'unique ligne `ab`.
+
+@ 0 1 0 0fde8b2f5de2f76800600ee085e6fc8e
++   entry .strictLinefeedsLineSeparation
++     info
++         un LF isolé termine une ligne et un CR reste dans le texte ; écrit LF
+
+@ 0 3 0 093309cb23b36e061a8ee28a0bf0da4e
++     detail
++         La table d'actions, en l'état, est `cr = Nl, lf = Lf, crlf = NlLf, lfcr = LfNl` — la
++         même que celle de `strictCarriageReturnLineSeparation` — si bien que `a\nb` est l'unique
++         ligne `a\nb` et que `a\rb` en fait deux ; seul le saut de ligne écrit (LF) diffère.
+
+@ 0 1 0 0ec16be50275e4dc0733cea86bbfdca4
++   entry .carriageReturnLineSeparation
++     info
++         CR termine une ligne ; un LF isolé est supprimé ; CRLF et LFCR forment un seul saut ;
++         écrit CR
+
+@ 0 1 0 07c4e160d820d121030b7d26dbdf8555
++     detail
++         `a\nb` est l'unique ligne `ab`.
+
+@ 0 1 0 0b6a669f9f96d2bd09a1588fb8e6e86f
++   entry .strictCarriageReturnLineSeparation
++     info
++         seul CR termine une ligne ; un LF reste dans le texte ; écrit CR
+
+@ 0 1 0 18419a640a349a1e195a17827ff79455
++     detail
++         `a\r\nb` donne les deux lignes `a` et `\nb`.
+
+@ 0 1 0 0b7f4c9016e9e45f03874a5691a3a07d
++   entry .carriageReturnLinefeedLineSeparation
++     info
++         seul CRLF termine une ligne ; un CR isolé est supprimé et un LF isolé conservé ; écrit
++         CRLF
+
+@ 0 1 0 1964ca011f8a39b90253728ba825707e
++     detail
++         `a\nb` est l'unique ligne `a\nb`, `a\rb` donne `ab`, et `a\n\rb` donne `a\n` et `b`.
+
+@ 0 1 0 09256475685a2f141fb6c36e5ffcf081
++   entry .javaBaseLineSeparation
++     info
++         la politique qui correspond au `System.lineSeparator` de la JVM
+
+@ 0 3 0 19ca6a94f7e95a3801856bdf9d018449
++     detail
++         `carriageReturnLinefeedLineSeparation` sous Windows, `linefeedLineSeparation` là où le
++         séparateur est LF, `carriageReturnLineSeparation` pour CR, et sinon la politique
++         adaptative.
+
+@ 0 1 0 016f58e5878d8f8a02d3fcb398ca8f7f
++ entry .source
++   info
++       ouvre une valeur en endpoint de lecture, en nommant le type d'élément : `value.source[Data]`
+
+@ 0 7 0 0e62931eef8a84f81b13ea143a85be93
++   detail
++       Une extension sur toute valeur disposant d'une instance
++       `Streamable by element over Credit` : `value.source[Text]` ou `value.source[Data]` vaut
++       `streamable.stream(value)`, un nouveau `(Stream[element] over Credit)^`. C'est la forme
++       fluide de `Streamable#stream`, nommée `source` parce que le constructeur `.stream` de
++       zephyrine occupe ce nom dans le package parapluie. Le type d'élément est indiqué
++       explicitement lorsqu'une valeur peut former un flux des deux manières, comme `Text`
++       lorsqu'un `Codepage` est dans la portée.
+
+% 2 1 0 0d3beb0dc1874fc315336376023e2d4e
+
+% 3 1 0 1709605b6e023523031b6d7261fe4208
+
+% 4 1 0 0b4cb4ad55789b7f11af057faf565d90
+
+% 0 1 0 16bbc8a866f2b26e058e7a632e9cf3b6
+
+% 0 1 0 1489a0585171fc660d681e342cdb4693
+
+% 1 1 0 161338c94d9d85c90e7cf5b1a21c5656
+
+% 1 1 0 01e14d84de62572f152b1873c69f5e6c
+
+@ 0 1 0 136dc4e72937b7431c77736d0b3a5fbc
++ entry .read
++   info
++       lit une valeur en entier sous le type nommé : `value.read[Text]`, `value.read[Data]`
+
+@ 0 6 0 1d43d460eabb00881eba53f664dbf498
++   detail
++       Une extension inline sur toute valeur disposant d'une instance `Readable to result`. Une
++       source disposant d'une instance de `Streamable` pour l'un ou l'autre medium se lit comme
++       `Data`, comme `Text`, comme une `Chain[Data]` ou une `Chain[Text]`, ou comme tout type
++       disposant d'une instance d'`Aggregable`, le `Charset` ou le `Codepage` dans la portée
++       faisant le pont entre octets et texte. Un fichier, une URL, la sortie d'un processus et
++       une ressource du classpath se lisent tous avec ce seul verbe.
+
+% 2 1 0 1b66d2cf22db666918deccfc62530237
+
+% 3 1 0 11b25fe5d1e8607600f843623cdc0753
+
+% 4 1 0 0faa8492abbd83f41f2c67b6ef58caee
+
+% 5 1 0 11e44002fccf5f2a1b7fbeeeed9ed144
+
+% 2 1 0 0c552ab18bc65a091d1810521f71ee2a
+
+% 0 1 0 0d146845a9deb0380f8987a1b4a28be5
+
+% 1 1 0 05e470b31337c48000ae60f83978263d
+
+@ 0 2 0 169a65da577b20dd1d7649029d680cdf
++       Une source du JDK lève `Truncation.Error` via la `Tactic` capturée par son given
++       `Streamable` si elle est interrompue en cours de lecture ; une `Data` ou un `Text` déjà
++       disponible se lit sans aucun flux.
+
+% 1 1 0 05df9417ccbd4f231291aaa40b5ee894
+
+@ 0 1 0 0c7d2f209c107d5f0db6e189430c5bf7
++ entry .writeTo
++   info
++       vide une valeur dans une destination : `value.writeTo(target)`
+
+@ 0 7 0 19b3831481834c4e09534a973b98c3e3
++   detail
++       Une extension sur toute valeur disposant d'une instance `Streamable by element over Credit`,
++       pour toute cible disposant d'une instance `Writable by element` : `value.writeTo(target)`
++       diffuse la valeur et transmet le flux à l'écrivain de la cible, qui le vide jusqu'au bout
++       et ferme la cible. Le type d'élément est inféré à partir des deux instances, et les
++       adaptateurs de `Writable` permettent d'envoyer du texte vers un puits d'octets et des
++       octets vers un puits de texte via l'encodage dans la portée. Une cible du JDK signale une
++       interruption par `Truncation.Error` via son `Emit`.
+
+% 2 1 0 0aa5bb5979c2915e1b5aa8acd961ecd3
+
+% 3 1 0 05c2204c7de2ee6a1e178eeaf8c5f7ca
+
+% 4 1 0 1ef949db8927fdbc03715c9f0ba4b067
+
+% 6 1 0 145b19bea1070c570366b51c537e8feb
+
+% 0 1 0 0ea2967142f2e75f1c0e48b7c123c19a
+
+% 1 1 0 1629b07abbb4e2030a522688b0c1afc0
+
+% 1 1 0 11e1dda0306a10781caaec8fd328cd23
+
+% 1 1 0 06db56854f6ae64b0186be6b2bb53e7a
+
+@ 0 1 0 0596c8a232bd4d6d026e5052cff4c89f
++ entry .load
++   info
++       analyse une valeur sous un type de document, en conservant les métadonnées :
++       `value.load[Xml]`
+
+@ 0 9 0 1903baaa9eb97cbc167b03229365010b
++   detail
++       Une extension inline sur toute valeur : `value.load[result]` renvoie un
++       `Document[result]` pour tout `result <: Documentary` disposant d'une instance de
++       `Loadable`. Elle résout ses instances au site d'appel, dans cet ordre : une source qui
++       forme un flux d'octets avec un chargeur d'octets, sinon un chargeur de texte via le
++       `Charset` dans la portée ; une source qui forme un flux de texte avec un chargeur de
++       texte, sinon un chargeur d'octets via le `Codepage` dans la portée ; et enfin une source
++       qui ne forme pas de flux mais est `Readable to Data` (un chemin du système de fichiers),
++       lue en entier. Un `Text`, avec un `Codepage` dans la portée, prend donc la voie des
++       octets, comme le fait `read`. Chaque chargeur capture la `Tactic` de sa propre erreur
++       d'analyse, qui doit être dans la portée.
+
+% 2 1 0 0fe48239e68d53660858df2008df36c1
+
+% 3 1 0 03f59740ef02a1ee18793a6e728549a1
+
+% 4 1 0 1f63b2474ea90b5a1713ce04aae36b87
+
+% 5 1 0 12c02229d9fe9e95009013f01d942a20
+
+% 0 1 0 15bf2bbd2e012b230315aacd05019a46
+
+% 1 1 0 02444c13049fd62301879b96d6c580c0
+
+% 1 1 0 0dd47fad890c320b1154a6e13cbf28ce
+
+% 1 1 0 0da73409eb34ad931dcec0b1542107af
+
+@ 0 1 0 131d0619e69a8fdc0bd1a02221012e4b
++ entry .delineate
++   info
++       découpe du texte ou des octets en lignes selon la `LineSeparation` dans la portée
+
+@ 0 11 0 1936dc0288e6cc920d6a812b708dd970
++   detail
++       Quatre surcharges, une seule implémentation. Sur un `(Stream[Text] over Credit)^`, elle
++       rattache le conduit `LineSeparation.lines` et produit un
++       `(Stream[Array[Text]^{}] over Credit)^` — un flux d'enregistrements contenant un `Text`
++       par ligne, sans son terminateur — à vider avec `records` ou `memoize`, ou à composer plus
++       avant. Sur un `(Stream[Data] over Credit)^`, elle nécessite aussi un `Charset` : sous un
++       encodage transparent à l'ASCII (UTF-8, ASCII, Latin-1), les séparateurs sont trouvés
++       dans les octets bruts et chaque ligne est décodée en entier, en un seul appel fusionné ;
++       sous tout autre encodage, le flux est d'abord décodé, puis les caractères sont découpés.
++       Sur un `Text` ou une `Data` entiers, elle fait passer la valeur dans le même conduit
++       comme une fenêtre unique et renvoie directement un `Array[Text]^{}`. Chaque forme
++       nécessite une `LineSeparation` (importée par son nom depuis `lineSeparation`) et un
++       `Buffering`.
+
+% 2 1 0 13ae4b7096adfa7b0ab6c3483d8d402c
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 01a925c47bab7fd317cfdb0af0c0b165
+
+% 1 1 0 14323b17a94f1a9c03752f8f1de8d790
+
+% 2 1 0 0854116bbcad763c16fee7baa44182e8
+
+% 3 1 0 06bf829c808872ef1c22256083470d9a
+
+% 4 1 0 0d80484eaf9754c91e42775a41d4ca8b
+
+% 5 1 0 0567286a7108c01e1606a4674bdc327d
+
+% 7 1 0 05cb60ecce8190ce02cfa579b1966d0b
+
+% 0 1 0 03c8922c8ba2817d0595fbe7890507c3
+
+% 1 1 0 0a69dcb72c61e87817e8f0724f57af5a
+
+% 0 1 0 0e015571a9285d94192a7a38c87f9919
+
+% 1 1 0 02409d9fb8a8bd5805476f6b618a89f0
+
+% 2 1 0 1db06c7f48fb25bf04d4924e0adf5193
+
+% 3 1 0 1cd77fefd7f0df4b028dcf381ff4d4ac
+
+% 4 1 0 1dd5f459f63a462007f065e698cf2338
+
+% 5 1 0 1acf91c3030148ef044e1bd02271ceca
+
+% 7 1 0 0088f2583d2e07b700978057db7ca2f0
+
+% 0 1 0 04cee58403cfc7aa1ea8863ffbd1e7b7
+
+% 1 1 0 0427761dd012d2970694d58cffb10af7
+
+% 0 1 0 08430b1305324e5413369756d344b05c
+
+% 1 1 0 0e605dafcc27350305623264b42ec4d8
+
+% 2 1 0 0bdeaceb936b981f064f0eb88e7c27fa
+
+% 3 1 0 1703a6e1d549bd2900c2b11877778028
+
+% 4 1 0 01715ebc6afed5e9056e8bd878d6e13e
+
+% 5 1 0 10582b1de5bb33c917a6650e496b189a
+
+% 7 1 0 07e8eee45004bed0182dd9124484733c
+
+% 0 1 0 1cbdb777bb20c14601336e7d40cc7df2
+
+% 1 1 0 03f88b9b4548cbf615b74a5e651e2fae
+
+% 0 1 0 0e6279914b40a86005e6e3511d40864e
+
+% 1 1 0 12826603b77f461802c90a6050eb82a2
+
+% 2 1 0 1b9f163c6c6a904e13a8646388ab2e40
+
+% 3 1 0 0344235de13c8e3a1a7b43303f210650
+
+% 0 1 0 193e2b393d0b80a41e2fa33788906d28
+
+% 1 1 0 0c52ed82d9763e021fe09156ec74e577
+
+% 2 1 0 01c18303777ba4741f0d14c3569ed35b
+
+% 4 1 0 0963ee2cd78b6a8c05afcd45cab9786f
+
+% 0 1 0 185b37a264d914b40715d910a7aa385e
+
+% 0 1 0 15c2d82ce68199d81e83b686225a25e5
+
+% 1 1 0 15e4c2242ecbbb44172a34b0a965f401
+
+% 2 1 0 1b4e3fd258b0bf74018c8b576cbded3a
+
+@ 0 4 0 07d956a13800b8610179354a7147d08a
++       Une ligne qui s'étend sur plusieurs fenêtres est réassemblée, une dernière ligne sans
++       terminateur est livrée, et une entrée vide ne produit aucune ligne. Le nom est
++       `delineate` plutôt que `lines` parce que le `lines` de gossamer, au niveau des valeurs,
++       masquerait une extension du même nom dans le package parapluie.
+
+% 1 1 0 0af66ff5383915b40ea989366ac62c1d
+
+% 1 1 0 03c7eed74cd21ceb09a926f3fad71be4
+
+@ 0 1 0 091c4946bdff76aa084643ad1ecd9646
++ entry .inputStream
++   info
++       un flux d'octets sous forme de `java.io.InputStream`, à transmettre aux API du JDK
+
+@ 0 5 0 05850d386471552d1c24f3ccf77caf3d
++   detail
++       Deux formes. Sur un `(Stream[Data] over Credit)^` (qui nécessite un `Buffering`), le
++       résultat tire la fenêtre un bloc de crédit à la fois et ne matérialise jamais de
++       morceau ; `close` ferme l'endpoint, tout comme le fait d'atteindre sa fin. Sur une
++       `Chain[Data]`, le résultat parcourt les morceaux de la chaîne ; son `close` ne fait
++       rien. Les deux servent de pont vers une bibliothèque Java qui exige un `InputStream`.
+
+@ 2 1 0 1d74074c0d1714190d87fd43585a5a8c
++       ```scala
+
+@ 3 1 0 1cf76ece37b65718031b103202f3ed98
++       import soundness.*
+
+@ 1 1 0 07fd1d94da2b06e9020a2c4b7347edbd
++       import codepages.utf8Codepage
+
+@ 0 1 0 149c7436bdaf7d790162cce5475d9e59
++       val input: java.io.InputStream = t"hello".source[Data].inputStream
+
+@ 0 1 0 0f12841e3679d5ee14eee2a666ac139a
++       input.read()   // 104
+
+@ 1 1 0 0c458a1949c89ab40dd006e27beb865d
++       ```
+
+@ 0 1 0 0ae38eb7920942bf162247d40df9fe33
++ entry .httpBody
++   info
++       un flux d'octets sous forme de `HttpStreams.Body`, le protocole d'échange des corps HTTP
+
+@ 0 4 0 0e64b06e8f48e5220b8dc705f352a5f7
++   detail
++       Une extension sur un `(Stream[Data] over Credit)^` (consommé) : chaque `next(limit)` du
++       corps recharge le flux avec un crédit de `limit` et matérialise la région livrée, et
++       renvoie `null` une fois le flux terminé. C'est l'inverse de l'extension `stream` sur un
++       corps. Elle n'est pas exportée vers le package parapluie : on y accède par
++       `turbulence.httpBody`.
+
+@ 0 1 0 1c757bd9e742427f05c2f6a537d618d9
++ entry .stream
++   info
++       un `HttpStreams.Body` sous forme d'endpoint de lecture, un morceau par requête de la taille
++       d'un bloc
+
+@ 0 5 0 10f150996ddd76120bb2f92a2129a917
++   detail
++       Une extension sur `HttpStreams.Body`, qui nécessite un `Buffering` : chaque recharge
++       demande au corps au plus `buffering.capacity(Substrate.Bytes)` octets (ou le crédit
++       accordé, s'il est plus petit) et expose le morceau comme fenêtre ; un `null` renvoyé par
++       le corps termine le flux. C'est ce qu'utilise `Streamable.httpBody`, et elle n'est pas
++       exportée vers le package parapluie, où le constructeur `stream` de zephyrine occupe ce
++       nom : on y accède par `turbulence.stream`.
+
+@ 0 1 0 15b509295b13337a0ee2d911b28be366
++ entry .more
++   info
++       le reste d'une chaîne à l'intérieur d'un bloc `flow`
+
+@ 0 4 0 0b299fc3f7d891a41d854ba5ec418a40
++   detail
++       `more` est la `Chain` contextuelle étiquetée `"more"` que `flow` lie à côté de `next` :
++       la queue qui reste à consommer. C'est un accesseur inline qui résout la valeur
++       étiquetée ; à l'intérieur de `stream.flow(end)(... more ...)`, il se lit donc comme un
++       simple nom.
+
+% 0 1 0 0da1c91accc079ed13ffa000e094b980
+
+@ 0 1 0 097509716ff4f8a40ce97a295afcc899
++ entry .flow
++   info
++       une distinction de cas en une étape sur une chaîne : une valeur de terminaison, ou un bloc
++       sur `next` et `more`
+
+@ 0 6 0 00e9720362d7353301fb7ae633948f4e
++   detail
++       `chain.flow(termination)(proceed)` évalue `proceed` avec `next` (la tête) et `more` (la
++       queue) liés comme valeurs contextuelles si la chaîne n'est pas vide, et `termination`
++       sinon. C'est le motif `case next #:: more => … case _ => …` sous forme de combinateur,
++       avec lequel sont écrits `condense`, `drop` et `take`. Avec le contrôle des captures, les
++       liaisons étiquetées peuvent nécessiter `next.asInstanceOf[element]` à certains endroits.
+
+% 2 1 0 0d5476b036e370550f50e50a04cd4dce
+
+% 3 1 0 06e8ee2baab3bac11d3bf907b3bb1f0a
+
+% 0 1 0 1222b5a0381fe28001c12d711da42b0b
+
+% 1 1 0 172c172c65ecb2d30818628cb66650ff
+
+% 0 1 0 100612282b3b25830e21e038ac4e4b01
+
+@ 0 1 0 10959502f6b48857033a6ea2b9ba61e3
++ entry .condense
++   info
++       réduit chaque suite d'éléments égaux consécutifs d'une chaîne à un seul, paresseusement
+
+@ 0 3 0 150299bc3c319f7409032c54a14fbc83
++   detail
++       `Chain(1, 1, 2, 2, 2, 1).condense` vaut `Chain(1, 2, 1)` : seuls les doublons adjacents
++       sont fusionnés, ce qui diffère de `deduplicate`, qui élimine les doublons par clé dans
++       toute la collection. La chaîne reste paresseuse.
+
+@ 0 1 0 0a54b520ca911dcc0a8f63c1e1140abf
++ entry .strict
++   info
++       force une chaîne paresseuse jusqu'à sa fin et la renvoie
+
+@ 0 2 0 13345ea35e87272d06bbe899a47e8248
++   detail
++       Évalue chaque élément de la chaîne (en calculant sa taille) et renvoie la même chaîne,
++       désormais entièrement mémoïsée, de sorte que tous les effets de bord de sa production se
++       sont produits.
+
+@ 0 1 0 019da63eb9788bd111e3f811a9f87c5e
++ entry .drop
++   info
++       supprime un nombre d'octets au début d'une `Chain[Data]`
+
+@ 0 3 0 1d9d1767a566a4a602b836a5cdd3241f
++   detail
++       `chain.drop(bytes)` prend un nombre de `Bytes` plutôt qu'un nombre de morceaux : les
++       morceaux entiers compris dans ce nombre sont sautés et le morceau qui chevauche la
++       frontière est coupé ; le résultat est donc les mêmes octets, redécoupés à la frontière.
++       Paresseux.
+
+@ 0 1 0 1e432014df1012840cd9da9a3154ac86
++ entry .take
++   info
++       conserve un nombre d'octets au début d'une `Chain[Data]`
+
+@ 0 3 0 0d764039d09c1af112870d7adcd6aef8
++   detail
++       `chain.take(bytes)` prend un nombre de `Bytes` : les morceaux compris dans ce nombre
++       sont conservés entiers et celui qui chevauche la frontière est coupé ; le résultat
++       contient donc exactement `bytes` octets (ou moins si la chaîne est plus courte).
++       Paresseux.
+
+@ 0 1 0 03c6787f5e5c935f0c719a49e4b647d6
++ entry .shred
++   info
++       redécoupe une `Chain[Data]` en tampons dont la taille est tirée à nouveau pour chacun
+
+@ 0 3 0 05b9db564318854f0f6867b29e70f4f3
++   detail
++       `chain.shred(chunkSize)` évalue le paramètre par nom `chunkSize` une fois par morceau de
++       sortie (au moins 1) ; un appelant transmet donc une constante pour redécouper un flux
++       uniformément, ou échantillonne une distribution pour produire toutes les fragmentations
++       auxquelles un analyseur doit résister :
+
+@ 2 1 0 0cf15bcd2e74703c0bce5844047de82d
++       ```scala
+
+@ 3 1 0 1c384959a300293305f3a58b19312415
++       import soundness.*
+
+@ 0 1 0 19246b7300d6d8c11978752363ffb329
++       import randomization.seededRandomization
+
+@ 0 1 0 0f89d94dc37ab05d02c8a66d28202c08
++       given Seed = Seed(1L)
+
+@ 0 1 0 004a255013a30eb807f699c49ea4150e
++       val data: Chain[Data] = Chain(Data.fill(1000)(_.toByte))
+
+@ 0 1 0 0c1f066db95845c3104de8e162cc44d4
++       stochastic:
+
+@ 0 1 0 1ea88ec678a6dba91d40d5828a22b6e8
++         given Distribution = Gamma.approximate(20.0, 10.0)
+
+@ 0 1 0 03edf4f21db6af5318fd95b386b278cf
++         data.shred(arbitrary[Double]().toInt).map(_.length).total   // 1000
+
+@ 1 1 0 1f9752d45c2da56d0fee84cde9af10db
++       ```
+
+@ 0 1 0 0b9d8d40e053a1f917ac5d7c1160b2c3
++       Les octets sont copiés dans de nouveaux tampons, si bien que la sortie ne partage jamais
++       les morceaux de l'entrée.
+
+@ 0 1 0 1320e3dac50de1661c8cc750c1a01511
++ entry .Relay
++   info
++       un bus allant d'un nombre quelconque de threads producteurs vers un seul lecteur
++       d'enregistrements
+
+@ 0 9 0 15fe34af584645230892e05f02982f12
++   detail
++       Un `Relay[record]` est le pont côté écriture pour le trafic à la granularité de
++       l'enregistrement — événements, notifications, messages : les producteurs ajoutent des
++       enregistrements avec `#put` au fur et à mesure, l'un d'eux appelle finalement `#stop`,
++       et un unique lecteur les vide via `#stream`, `#chain` ou `#batches`. Les producteurs ne
++       bloquent jamais, par contrat et non par négligence : un relais est le bus qui réunit de
++       nombreux écrivains vers une seule évacuation (le multiplexeur de trames sortantes de
++       HTTP/2 s'appuie dessus, tout comme le spool de journalisation), où un `put` bloquant
++       risquerait un interblocage entre flux ; sa file est donc illimitée et sa discipline
++       tient à son consommateur unique. Pour un passage de relais borné de trafic d'octets ou
++       de caractères entre deux threads, on utilise le `Conduit` de zephyrine.
+
+% 2 1 0 0ce5e340ca3b8b0414c3f2c13b8da2fe
+
+% 3 1 0 1be050ca7c1ae4850b4bd04dc42e2198
+
+% 2 1 0 10634800aff5b616088021456ce6c52a
+
+% 0 1 0 18f65bb446c682f80545bc84f054b310
+
+% 0 1 0 09f2b1afe9ea76ba1313c4beb37fe271
+
+% 1 1 0 117082b30ba6af300c109784409e351f
+
+% 0 1 0 019a90d34fb9db980eec4a9a6345efec
+
+% 1 1 0 1db8d706bc60330111597bc8a02d5407
+
+@ 0 4 0 19f51489636f86d80ff4381770237f06
++       Le lecteur bloque jusqu'au premier enregistrement, puis prend dans la même fenêtre tout
++       ce qui est déjà arrivé, si bien que les enregistrements sont regroupés par lots
++       par-delà la frontière entre threads au lieu de coûter un passage de relais chacun. Les
++       enregistrements ajoutés après `stop` ne sont jamais livrés. L'ordre est préservé pour
++       chaque producteur.
+
+% 0 1 0 12a76d6a7907e4380e82d2e86203790c
+
+% 1 1 0 0799e61422fbee891b2e096c7cb52431
+
+@ 0 1 0 07458574758b5c00005f6c38fb5e5817
++   entry #put
++     info
++         ajoute un enregistrement ; ne bloque jamais
+
+@ 0 1 0 07cf9bd3de1535e01688be468609f6f3
++   entry #stop
++     info
++         termine le relais : le lecteur voit la fin une fois vidés tous les enregistrements ajoutés
++         avant
+
+@ 0 1 0 11de912be53b12ad1c1f44fbd8346865
++   entry #stream
++     info
++         l'endpoint de lecture sur les enregistrements, sous forme de flux d'enregistrements : à
++         propriétaire unique, créé une seule fois
+
+@ 0 5 0 0042aea030266ab20fcc8d90d1af9e64
++     detail
++         `(Stream[Array[record]^{}] over Credit)^`, qui nécessite l'`Addressable` du tableau
++         d'enregistrements (l'instance générique boxée convient à tout type référence) et un
++         `Buffering`. Une recharge bloque jusqu'à un premier enregistrement, puis vide dans la
++         même fenêtre tous les enregistrements déjà en file, dans la limite de sa capacité ; un
++         arrêt constaté en cours de vidage livre tout de même le lot, et la recharge suivante
++         termine le flux. Videz-le avec `records`.
+
+@ 0 1 0 11de8074b8ab62050d6d22c5283ae4b3
++   entry #chain
++     info
++         les enregistrements sous forme de `Chain` paresseuse, une cellule cons par enregistrement
+
+@ 0 3 0 140b7d7b2af6fe271154be76929485a5
++     detail
++         Ne nécessite aucun `Addressable` ; fonctionne donc pour tout type d'enregistrement, y
++         compris abstrait, au prix d'une cellule par enregistrement : c'est la forme qui convient
++         à une livraison à faible débit, comme la journalisation ou un bus de messages.
++         Paresseuse et à propriétaire unique, comme `#stream`.
+
+@ 0 1 0 04df738087f4021905174a26e70fc629
++   entry #batches
++     info
++         les enregistrements regroupés en lots selon une période de calme
+
+@ 0 8 0 1ca5b7b2f302ed9f058dd1ca830e184e
++     detail
++         `relay.batches(quiet)` prend toute durée réductible en millisecondes (un `Long` avec
++         `abstractables.millisecondsAbstractable`, ou une durée d'aviation) et renvoie une
++         `Chain[List[record]]` paresseuse. Le lecteur bloque jusqu'à un premier enregistrement ;
++         chaque nouvelle arrivée relance un minuteur de `quiet` ; lorsqu'il expire sans rien de
++         nouveau, les enregistrements rassemblés jusque-là forment un lot, du plus ancien au plus
++         récent, et le lecteur bloque à nouveau. C'est la forme « modifié, puis plus rien pendant
++         un moment » que recherchent une reconstruction ou un rehachage. Un arrêt constaté au
++         milieu d'une rafale livre tout de même le lot partiel, et un `quiet` nul se réduit à
++         vider ce qui est déjà arrivé.
+
+@ 2 1 0 0ec771c94c6284191dde6802c2536c3c
++         ```scala
+
+@ 3 1 0 18b0be0ea4af73c51d8f9e75f2aa7eb1
++         import soundness.*
+
+@ 0 1 0 0b78a915063968591f7338f44c86803a
++         import abstractables.millisecondsAbstractable
+
+@ 2 1 0 0a5fb6c0d3d5ee171231f5eb0c5ce94f
++         val relay = Relay[Text]()
+
+@ 0 1 0 137f24922aa5a4e20e7b91eaf8c8934b
++         relay.put(t"a")
+
+@ 0 1 0 0a346810a34732bd0de48aec80d6c5c4
++         relay.put(t"b")
+
+@ 1 1 0 0e15199a4f8941f109d33f082e25f4eb
++         relay.stop()
+
+@ 0 1 0 089d83e071c3458f1c722eceb72d74dc
++         relay.batches(50L).to[List]   // List(List(t"a", t"b"))
+
+@ 1 1 0 1b3ef958364235151f705032bb2c95cd
++         ```
+
+@ 0 1 0 12b6cfe0206592ee1292847790f6e97d
++ entry .StreamOutputStream
++   info
++       un `java.io.OutputStream` dont les écritures deviennent une `Chain[Data]` paresseuse
+
+@ 0 7 0 16959662b3ae88100c2b866d3e3e72a0
++   detail
++       Pour une API Java qui ne sait écrire que dans un `OutputStream` : transmettez-lui un
++       `StreamOutputStream`, et lisez ce qu'elle a écrit depuis `#stream`, une `Chain[Data]`
++       alimentée via un `Relay`. Les écritures d'un seul octet sont mises en tampon et libérées
++       sous forme de morceau lors d'un `flush` ; l'écriture d'un tableau est copiée — le JDK
++       autorise un appelant à réutiliser son tableau dès le retour de `write`, et le morceau est
++       lu plus tard — et relayée comme un seul morceau ; `close` vide le tampon et termine la
++       chaîne. Un lecteur de `stream` sur un autre thread bloque jusqu'au morceau suivant ou
++       jusqu'à la fermeture.
+
+% 2 1 0 0ff49bcf92b9f8971243d12678f0b092
+
+% 3 1 0 1744cd58f6ea49271c0372c802440f6b
+
+% 4 1 0 0c14667582fa1509093fdd7db692393d
+
+% 0 1 0 1f1d03ae718edf9b056933833c0a6566
+
+% 0 1 0 18d75c13aa955f80139d6f32f695f4a8
+
+% 0 1 0 099d0abc78de373d1e4cd3deba9e63a2
+
+% 0 1 0 07fe9d06e56e27ab08fa7facbdb03af3
+
+% 1 1 0 186c1727f56a812506675f98a20aa9bf
+
+% 1 1 0 13ad827fdbb646df1120dffe98f4bb34
+
+@ 0 1 0 1ed174a8e4050f981c28c926f1da6d10
++   entry #stream
++     info
++         les octets écrits jusqu'ici et ceux à venir, sous forme de `Chain[Data]` paresseuse
+
+@ 0 1 0 0ea85b553c5b2be9078b9e5d605b1efe
++   entry #write
++     info
++         écrit un octet (mis en tampon jusqu'au `flush`), ou un tableau, copié et relayé comme un
++         morceau
+
+@ 0 1 0 023cb40c604f05f60d726080cff7a553
++ entry .Truncation
++   info
++       `zephyrine.Truncation`, réexporté : l'erreur que lève un flux lorsqu'il est interrompu
++       prématurément
+
+@ 0 7 0 1f21d3b573366ce903abbd328ecc6091
++   detail
++       `Truncation.Error(total)` est l'erreur `↯/s.60.1`, _the stream was cut prematurely after
++       `total`_, où `total` est le nombre de `Bytes` livrés avant l'interruption. La lecture d'un
++       `Spring` et les givens `Streamable` des sources du JDK interrompent avec elle via une
++       `Tactic` ; les givens `Writable` et `Sink` des cibles du JDK la lèvent avec `raise` via un
++       `Emit`, car un écrivain ne fait que signaler une interruption et n'interrompt jamais. Le
++       type se trouve dans zephyrine, à côté de `Stream` et `Spring` ; cet export permet à
++       `import turbulence.*` de suffire aux modules qui le nomment.
+
+% 1 1 0 104339e33f9ed72b07b56eba6c0c0e20
+
+@ 0 1 0 0f8e96e9eeba7cba01aeff690736ed93
++ entry .Stdio
++   info
++       les flux standard sous forme de valeur : `out`, `err`, `in` et les capacités du terminal
+
+@ 0 11 0 1dba8a7a5323a61607971584fbd67b2b
++   detail
++       Un `Stdio` contient les trois flux standard sous forme de `PrintStream` du JDK et d'un
++       `InputStream`, ainsi que le `Termcap` qui décrit ce que le terminal à l'autre bout sait
++       rendre. C'est une valeur contextuelle et non une globale : `Out`, `Err` et `In` écrivent
++       et lisent via le `Stdio` dans la portée, si bien qu'un démon servant plusieurs clients,
++       un test qui capture la sortie ou un processus lancé avec un tube obtiennent chacun les
++       flux qui leur appartiennent. On en choisit un par son nom dans le package `stdios`
++       (`javaLangSystemStdio` pour les flux propres de la JVM, `fileDescriptorStdio` pour les
++       descripteurs du processus, `muteStdio` pour aucun, `wasiStdio` sous WASI), on le
++       construit avec `.apply`, ou il est fourni par un `Stdio.Provider`, comme une invocation
++       de CLI, que `.provided` transforme en `Stdio` partout où l'invocation est ambiante.
+
+% 2 1 0 0b6160f77ab3ddf119d4a0764e4aeecf
+
+% 3 1 0 06537125b0a4adf41b70e66d1ea5c899
+
+% 4 1 0 1ba64169cc090ee910a00e840aa760f9
+
+% 5 1 0 02039c62e1adc00810ee8ddd2737cbf1
+
+% 6 1 0 1087308b5126d95703b117f3ed919191
+
+% 7 1 0 07551fa382ab772408ce36a3cf8fb83a
+
+% 0 1 0 0f844e860392ee0a10480eddf6aa511e
+
+% 1 1 0 03d8f653d9ecbf5315f1c4010a7dea1b
+
+% 0 1 0 0ad076b58d606fe5103900c84edb2aff
+
+% 1 1 0 1a56d3233dcfa4e809786af30de8f410
+
+@ 0 4 0 1f421a3f7d75a6c20c1a77e1fc9bb070
++       Un `Stdio` est une simple valeur, non un trait de capacité : il est mélangé dans des
++       types exclusifs tels qu'une `Invocation` en tant qu'interface, et celui qui est construit
++       à partir des flux thread-safe de la JVM ne capture rien. Celui qui retient un terminal ou
++       un flux l'indique par `Stdio^{…}`.
+
+@ 0 4 0 0c5007b4686e08d4112cbe510ce0e732
++       Le code qu'on ne peut pas modifier — une bibliothèque Java qui écrit sur `System.out` —
++       est redirigé avec `.divert`, qui est un détournement du *thread* appelant et des tâches
++       lancées sous lui, non de la JVM ; un hôte peut donc détourner plusieurs invités à la fois
++       sans que leurs sorties se mélangent ; `.capture` fait de même en collectant la sortie
++       sous forme de texte.
+
+% 1 1 0 19dae7eeb3ad01071b9870ee26e4c656
+
+% 1 1 0 11e6ca5da7c27cce1287a78021f6a97e
+
+% 0 1 0 13837adc062361b41942533592a686b8
+
+% 0 1 0 1fa4f92b3b585be01bb2be74b6ee2beb
+
+@ 0 1 0 1d864244f77693bd18df7cf434be1497
++   entry .Provider
++     info
++         quelque chose qui porte un `Stdio` canonique : une invocation de CLI
+
+@ 0 4 0 08f71202b980f9fc08ee1959c1b4e238
++     detail
++         Un trait à un seul membre, `#stdio`. Le given `Stdio.provided` permet d'invoquer un
++         `Stdio` pur partout où un `Provider^` est dans la portée ; c'est ainsi que `Out.println`,
++         dans le bloc `execute` d'une CLI, trouve les flux de l'invocation sans les nommer.
+
+@ 0 1 0 15c15361b058c9f81d4d10423652df6f
++     entry #stdio
++       info
++           les flux standard du fournisseur
+
+@ 0 1 0 1aa74482a0c40b401311567d489cc2fa
++   entry .provided
++     info
++         le `Stdio` du `Stdio.Provider` dans la portée, quel qu'il soit
+
+@ 0 3 0 09902022019f981c02ce540c54b3735e
++     detail
++         Un given conditionnel dans le compagnon du type recherché, qui ne nécessite donc aucun
++         import : un `Provider^` (une capacité suivie, comme une invocation) dans la portée fournit
++         son `stdio`, une valeur pure.
+
+@ 0 1 0 0a777ba11066014109af4870c8c9d3aa
++   entry .apply
++     info
++         construit un `Stdio` à partir de flux du JDK et d'un `Termcap`, en rendant muet tout flux
++         `null`
+
+@ 0 2 0 0e794b9ae364860f05dd2be09c6cff51
++     detail
++         `Stdio(out, err, in, termcap)` : une sortie `null` est dirigée vers `.MutePrintStream` et
++         une entrée `null` vers `.MuteInputStream`, qui signale la fin de l'entrée.
+
+@ 0 1 0 099db54794db909b18cc205e7b0d3d2d
++   entry .MuteOutputStream
++     info
++         un `OutputStream` qui ignore toutes les écritures
+
+@ 0 1 0 0b61405396f87e3708e1a181d103421e
++   entry .MutePrintStream
++     info
++         un `PrintStream` sur `.MuteOutputStream` : ce que devient un `out` ou un `err` `null`
+
+@ 0 1 0 0d6cf6686ddd612d0af14200e3924e71
++   entry .MuteInputStream
++     info
++         un `InputStream` en fin d'entrée : `read()` vaut `-1` et rien n'est disponible
+
+@ 0 1 0 1bd64d8973136d3d145401af35c9f966
++   entry .Capture
++     info
++         ce qu'un bloc a affiché via les flux de la JVM pendant leur capture, à côté de son
++         résultat
+
+@ 0 4 0 16c53b148f83ac8b1da44fe8bcecab6f
++     detail
++         `Stdio.capture` renvoie `Capture(result, out, err)` : la valeur du bloc, et ce qui a
++         atteint `System.out` et `System.err` pendant ce temps, décodé en UTF-8, l'encodage
++         qu'ont utilisé les flux de capture.
+
+@ 0 1 0 0ca23fe8789a07b91853d1a2d0ad5497
++     entry #result
++       info
++           la valeur du bloc
+
+@ 0 1 0 0100b48a72399d6f04742d74ff8b8aae
++     entry #out
++       info
++           ce qui a été écrit sur la sortie standard, sous forme de texte
+
+@ 0 1 0 02d3f2832d95d57303a0bbd123bba892
++     entry #err
++       info
++           ce qui a été écrit sur l'erreur standard, sous forme de texte
+
+@ 0 1 0 09e9fd00cd11f68600bb5655e2b5ee2e
++   entry .diverted
++     info
++         le `Stdio` vers lequel sont détournées les écritures `System` de ce thread, ou `Unset`
+
+@ 0 2 0 16e2a44b59bd1b6f126d71f29a24c253
++     detail
++         Ce qu'une tâche transporte vers le thread sur lequel elle s'exécute. `Unset` sur un
++         thread où aucun détournement n'est en vigueur.
+
+@ 0 1 0 06d90df34b046c820977bde65447da74
++   entry .divert
++     info
++         exécute un bloc en redirigeant les `System.out` et `System.err` de ce thread vers un
++         `Stdio`
+
+@ 0 11 0 1e2fb7acdfeaf5ba002180067de79e2f
++     detail
++         `Stdio.divert(stdio)(block)` est un détournement du thread appelant, non de la JVM. Le
++         premier appel installe un répartiteur sur `System.out` et un sur `System.err`, conservés
++         pendant toute la vie de la JVM (`System.out` est donc ensuite un objet différent), par
++         lesquels chaque écriture atteint le flux vers lequel le thread qui écrit est détourné, ou
++         le flux d'origine s'il ne l'est pas. Un thread démarré sous un détournement en hérite, et
++         une tâche parasite s'exécute sous le détournement du thread qui l'a lancée ; un
++         détournement suit donc la structure de la concurrence, non le hasard du thread sur lequel
++         atterrit une tâche. En sortie, les flux de l'invité sont vidés et le détournement
++         précédent est restaurée, dans un `finally`. Le `println` de Scala est déjà local au
++         thread ; ce mécanisme couvre les affichages Java et tout ce qui écrit sur les flux
++         `System`. Rien n'atteint un détournement via `stdios.fileDescriptorStdio`, qui désigne
++         directement les descripteurs du processus.
+
+@ 2 1 0 0b7ee0344941104e0684322b90782374
++         ```scala
+
+@ 3 1 0 067cd4bc31d0afef0cdb5097a54a3266
++         import soundness.*
+
+@ 1 1 0 0f4558e8a1d63db71d43843129bec38d
++         import termcapDefinitions.basicTermcap
+
+@ 0 1 0 1e2caf2c684e159c0794e7390d09691d
++         val buffer = java.io.ByteArrayOutputStream()
+
+@ 0 1 0 0700570219e9d54f0544e1cd21b28685
++         val guest = Stdio(java.io.PrintStream(buffer, true, "UTF-8"), null, null, basicTermcap)
+
+@ 0 1 0 01c4b3b9a8b04e5a02d5df112bff14ad
++         Stdio.divert(guest):
+
+@ 0 1 0 0d771ad32e50793502581e19fc866dae
++           java.lang.System.out.nn.print("routed")
+
+@ 0 1 0 16c0c3970bd4cf2d080d2cbcf4709b2d
++         buffer.toString("UTF-8").nn.tt   // t"routed"
+
+@ 1 1 0 04f082cb0cef88031033f0fc302d9cdd
++         ```
+
+@ 0 1 0 12eb2b963b7000a2104cf129fbdfd319
++   entry .capture
++     info
++         exécute un bloc en collectant sous forme de texte sa sortie sur `System.out` et
++         `System.err`
+
+@ 0 4 0 1bc0d1a1370a6c9c0cf9eaf0f01bdfff
++     detail
++         `Stdio.capture(block)` est un `.divert` vers une paire de flux UTF-8 en mémoire, qui
++         renvoie une `Capture` du résultat du bloc et des deux textes. La sortie via `Out` sous
++         `stdios.javaLangSystemStdio` est également capturée, puisque ce `Stdio` enveloppe les
++         flux de la JVM ; deux captures concurrentes sur des tâches différentes gardent leurs
++         sorties séparées.
+
+@ 2 1 0 1e56a48c1525b1351bcde2673725c936
++         ```scala
+
+@ 3 1 0 029fb7d37463021f00c0346e1eb78355
++         import soundness.*
+
+@ 0 1 0 190a4aa30004480810838d01403216c8
++         Stdio.capture:
+
+@ 0 1 0 0c6036ab66d92fdd1fc498951d79872b
++           java.lang.System.out.nn.print("shown")
+
+@ 0 1 0 1af7bc25bca0ac121831019946cb00f9
++           7
+
+@ 0 1 0 143a335e0bda2536119a3ffee6832fc0
++         // Stdio.Capture(7, t"shown", t"")
+
+@ 1 1 0 1721227818a6deb9070f03b751fe461c
++         ```
+
+@ 0 1 0 1ee137df342b237c0276ec7bbdd0fb4b
++   entry #termcap
++     info
++         ce que le terminal à l'autre bout sait rendre
+
+@ 0 1 0 135f9b06b62b8d2e09eb762f456ac8f0
++   entry #out
++     info
++         la sortie standard, sous forme de `PrintStream`
+
+@ 0 1 0 17895d5d58c3e41011be707ef168c8ed
++   entry #err
++     info
++         l'erreur standard, sous forme de `PrintStream`
+
+@ 0 1 0 0914095ef72065471346f231f19f340d
++   entry #in
++     info
++         l'entrée standard, sous forme d'`InputStream`
+
+@ 0 1 0 01746ee329c9de1c05d95f0e2133a822
++   entry #ready
++     info
++         indique si un caractère peut être lu depuis `in` sans bloquer
+
+@ 0 2 0 04324c0242201ed312c4f6b303c7227c
++     detail
++         Consulte le lecteur de caractères partagé sur `in`, si bien que les caractères déjà en
++         tampon dans son décodeur sont comptés, ce qu'une vérification `available()` sur le flux
++         brut manquerait.
+
+@ 0 1 0 1ccd7a97f97b101e0ebfe1b1f6309e8a
++   entry #readChar
++     info
++         lit un caractère depuis le lecteur partagé, ou `-1` en fin d'entrée
+
+@ 0 2 0 1dfcc02226a2606f1f502df3f9d60da0
++     detail
++         Le pendant de `#ready`, pour les consommateurs qui lisent caractère par caractère, comme
++         un terminal. Le lecteur est partagé avec la surcharge `read(array: Array[Char])`.
+
+@ 0 1 0 199e62d0b4f4854a1dc27616a8b2dca9
++   entry #write
++     info
++         écrit des octets sur la sortie standard
+
+@ 0 1 0 03ce8855bcc170e7045719fb6ff8d286
++   entry #print
++     info
++         écrit du texte sur la sortie standard, comme `out.print`
+
+@ 0 1 0 17277882960d9db10df63a516d0973cf
++   entry #writeErr
++     info
++         écrit des octets sur l'erreur standard
+
+@ 0 1 0 1c172e5139f3094413d7d0797733e67c
++   entry #printErr
++     info
++         écrit du texte sur l'erreur standard
+
+@ 0 1 0 11bbef3ecb24a1b317d2e57ea71923b4
++   entry #read
++     info
++         remplit un tableau d'octets depuis `in`, ou un tableau de caractères depuis le lecteur
++         partagé, et renvoie le nombre lu
+
+@ 0 1 0 0f229a66f40508c215f9b99d2614a9de
++   entry #platform
++     info
++         indique s'il s'agit des `System.out`, `System.in` et `System.err` propres à la JVM
+
+@ 0 1 0 08129e01c5db59c00555e11e3d7c3a9e
++ entry .Out
++   info
++       la sortie standard, via le `Stdio` dans la portée
+
+@ 0 7 0 1a5b0dc7265aa2ed0b274bbe4af98a72
++   detail
++       `Out.print` et `Out.println` rendent toute valeur `Printable` — `Text`, un `Teletype`
++       stylé, tout ce qui dispose d'une instance de `Printable` — sous le `Termcap` du `Stdio`,
++       si bien que couleurs et styles ne sont émis que là où le terminal peut les afficher, et
++       l'écrivent sur le `out` du `Stdio`. L'argument est un `Termcap ?=> textual` ; une
++       expression qui a besoin du termcap pour être rendue peut donc être passée directement.
++       `println` prend un nombre quelconque de lignes et les écrit sous un verrou, si bien que
++       les lignes d'écrivains concurrents ne s'entremêlent pas.
+
+% 2 1 0 11b50006d7de61ad15964470fe56ca0a
+
+% 3 1 0 0b0c306f3390b7a10e91f2b87360201b
+
+% 4 1 0 1423727b675871b01db94afeb05a8a9d
+
+% 5 1 0 1c2229248e2aaf1d0eefbbbaa474edbe
+
+% 6 1 0 0f2174996040d0db043e395c00e48177
+
+% 7 1 0 03e846b1fe27f18700f07c0586199b16
+
+% 0 1 0 0852d096f53163cc1bc6f23db5e8520c
+
+% 0 1 0 0e198154127edf730c5c0b4afd14f8ac
+
+% 0 1 0 1eb36fb45b7495fb0d48cb3c250e4009
+
+% 0 1 0 04b1d4d9f6725a501ed0921217ca53a1
+
+% 1 1 0 1a8f5c21a94f6ea2101da3315b76cf6c
+
+@ 0 2 0 1d8dd288a308fd1b0504001b90865460
++       Dans un démon ou une CLI, le `Stdio` est celui du client ; c'est donc la seule sortie qui
++       atteint l'utilisateur ; le `println` de Scala écrit sur le `System.out` propre au
++       processus du démon.
+
+% 1 1 0 07821f32f1a572bb1535f7ac10ea7803
+
+% 1 1 0 1e19837f4b631b5712debcedb513f2cf
+
+@ 0 1 0 1fce2d788b45bb6a04d660da25c63e9e
++   entry .write
++     info
++         écrit des octets sur la sortie standard
+
+@ 0 1 0 060e4c83be57645a19f208f192ca4d91
++   entry .print
++     info
++         rend une valeur `Printable` sous le `Termcap` du terminal et l'écrit, sans saut de ligne
+
+@ 0 1 0 01f38c7d52d43d6b03145988c19265e1
++   entry .println
++     info
++         écrit chaque ligne, rendue, suivie d'un saut de ligne ; sans argument, un saut de ligne
++         seul
+
+@ 0 2 0 0c75699fcab8b9490f80a1a222590366
++     detail
++         La forme multiligne nécessite un `Stdio` simple (et non de capture) et détient un
++         mutex pendant tout l'appel.
+
+@ 0 1 0 141246c7e80897650dd6e3556214b3c1
++ entry .Err
++   info
++       l'erreur standard, via le `Stdio` dans la portée
+
+@ 0 4 0 109196e0529f46951d57f04591f443d0
++   detail
++       Le jumeau de `Out` sur le flux `err` du `Stdio` : `Err.print` et `Err.println` rendent
++       une valeur `Printable` sous le `Termcap` du terminal et l'écrivent, et `Err.write` écrit
++       des octets. `println` avec plusieurs lignes les écrit sous un verrou.
+
+% 2 1 0 11ae5313305a17511db21a953609dde2
+
+% 3 1 0 1048f4910b7233890cc877c21576feeb
+
+% 4 1 0 0e83c9cc6778f4390f79730ac3772492
+
+% 5 1 0 0a6e9f6b2c4e0cfd0aac3d036ae21786
+
+% 6 1 0 1cf4e13bd0e904370a3a3173b60b333e
+
+% 7 1 0 15f7e672f74a5af8178aca0f14135ea8
+
+% 1 1 0 17a72aef9a1495200a5f9a771ce51292
+
+% 1 1 0 162792f6f5ed1ba3088b85364b83cd63
+
+% 2 1 0 0472c0a44845073b17f6fbd96d6cf8fa
+
+% 1 1 0 0dec6609929bc05e064515870ff34559
+
+@ 0 1 0 16b1c67315e026a11fc410232d9851e7
++   entry .write
++     info
++         écrit des octets sur l'erreur standard
+
+@ 0 1 0 0690dcc8b2da864714ddb98462e10f65
++   entry .print
++     info
++         rend une valeur `Printable` sous le `Termcap` du terminal et l'écrit sur l'erreur standard
+
+@ 0 1 0 0b94b57e2d33636c047e5c17aa381b0c
++   entry .println
++     info
++         écrit chaque ligne sur l'erreur standard, suivie d'un saut de ligne ; sans argument, un
++         saut de ligne seul
+
+@ 0 1 0 1c5582740d50c8ff1c4a9fd71b0f2a62
++ entry .In
++   info
++       l'entrée standard, via le `Stdio` dans la portée
+
+@ 0 5 0 1bf95e8f98a185351cfd531e586f8e3d
++   detail
++       `In.read(array)` remplit un tableau d'octets depuis le `in` du `Stdio` et renvoie le
++       nombre lu (ou `-1` en fin d'entrée), et `In.close()` le ferme. La lecture caractère par
++       caractère passe par `Stdio#readChar` et `Stdio#ready` ; celle d'une ligne entière par un
++       lecteur sur `summon[Stdio].in`.
+
+% 2 1 0 124aa533bb9a225005c9bd6a8478a28c
+
+% 3 1 0 137b9d5e7e21a64519ae34723b9a09ab
+
+% 4 1 0 0e5e35f2c3420c9e11f3ea67f69ed456
+
+% 5 1 0 08b3a510dc8050aa092fa144464da9fb
+
+% 6 1 0 1096a0b293bebc42106a1c48b87e83fd
+
+% 7 1 0 1278f0a3cb957ae916a3e81b76c8a76f
+
+% 0 1 0 01c30195cea143130e31760c48084200
+
+% 0 1 0 1df71477105dd183011ccba58ef7909b
+
+% 1 1 0 030dd99aaf4fb9661dba792f76e376b1
+
+% 2 1 0 12804fa7ec5e9776147d9a688b557392
+
+@ 0 1 0 0f5a1c204a970022151e298fa5fe7a00
++   entry .read
++     info
++         remplit un tableau d'octets depuis l'entrée standard, et renvoie le nombre lu ou `-1` à la
++         fin
+
+@ 0 1 0 03a2035201541219125517923e55d02b
++   entry .close
++     info
++         ferme l'entrée standard
+
+@ 0 1 0 1bd10323dae338501bc2495e4a566b45
++ entry .stdios
++   info
++       les configurations des flux standard, chacune un given à importer par son nom
+
+@ 0 5 0 1632ae3adc3aa5360c938b107ebff5cb
++   detail
++       Les flux qu'utilisent `Out`, `Err` et `In` sont déterminés par le `Stdio` given dans la
++       portée, et ce choix n'est jamais implicite : `import soundness.*` n'en importe aucun, et
++       on en importe un par son nom. Tous sauf `muteStdio` nécessitent aussi un `Termcap` dans
++       la portée, choisi dans `termcapDefinitions`.
+
+% 2 1 0 1c763eb1b190d2e2075afc950f5e3816
+
+% 3 1 0 04a8321907599f5218684bd4a7a74cae
+
+% 2 1 0 1bfe715d1b5db6d210f42806eab46148
+
+% 3 1 0 19d2db6ff55e87680d69529f1d3875f2
+
+% 2 1 0 0afc704d8ec3a6d815cbaa56930cb4b8
+
+@ 0 2 0 187b9d7ead8a880003dafb71c65c68dc
++       Une invocation de CLI ou de démon fournit son propre `Stdio` via `Stdio.Provider` ; un
++       bloc `execute` n'en importe donc aucun.
+
+% 1 1 0 0653f6e308da80fb116d08bb07ddb64d
+
+@ 0 1 0 1c377b4598b202da02c3afba133de69e
++   entry .muteStdio
++     info
++         un `Stdio` qui ignore toute sortie et est en fin d'entrée, avec le `Termcap` de base
+
+@ 0 2 0 0b24645bf36be1791d5d03c8219d0c88
++     detail
++         Pour un test, ou un programme qui ne doit rien afficher : `out` et `err` sont
++         `Stdio.MutePrintStream` et `in` est `Stdio.MuteInputStream`. Ne nécessite aucun `Termcap`.
+
+@ 0 1 0 09a9ac84b92ee0421ba1dac4e7225551
++   entry .javaLangSystemStdio
++     info
++         les `System.out`, `System.err` et `System.in` de la JVM, avec le `Termcap` dans la portée
+
+@ 0 2 0 0bba659e575cda3a016bd2f345b0b4a0
++     detail
++         La sortie écrite par son intermédiaire est soumise à `Stdio.divert` et `Stdio.capture`,
++         puisque ceux-ci redirigent les flux de la JVM.
+
+@ 0 1 0 0bc42f48502dbeb41c956b0d9c8f99e5
++   entry .fileDescriptorStdio
++     info
++         les descripteurs de fichiers 0, 1 et 2 du processus lui-même, avec le `Termcap` dans la
++         portée
+
+@ 0 4 0 06517f7dffa0a70a0b975fe5a87264a3
++     detail
++         De nouveaux `PrintStream` et un `FileInputStream` sur `FileDescriptor.out`, `err` et
++         `in` : les flux tels que le système d'exploitation les a remis au processus, en
++         contournant tout ce qu'une JVM ou un hôte a installé dans `System.out`. Rien de ce qui
++         est écrit par son intermédiaire n'atteint un `Stdio.divert`.
+
+@ 0 1 0 163d65306270616d19871c21fe7550b7
++   entry .wasiStdio
++     info
++         un `Stdio` sur les ressources de flux de la CLI WASI, pour un composant Wasm
+
+@ 0 7 0 0788cab620d8d60d187f94f8e1a8505c
++     detail
++         Dans `turbulence.wasi`, avec le `Termcap` dans la portée. Chaque écriture obtient la
++         poignée du flux `stdout` ou `stderr`, appelle son `blocking-write-and-flush`, puis libère
++         la poignée ; une lecture obtient `stdin` et appelle `blocking-read`, en bloquant jusqu'à
++         ce qu'un octet soit disponible, un flux fermé étant lu comme la fin de l'entrée. `print`
++         et `printErr` envoient directement les octets UTF-8 du texte plutôt que de passer par
++         les `PrintStream`. Le given est `inline`, si bien que les imports WASI se matérialisent
++         au site qui l'invoque, lequel doit aussi voir `wasiApis.wasiCliApi` ; invoquez-le une
++         seule fois, dans le point d'entrée du composant.
+
+@ 0 1 0 1e6d71d137b7670a0a6ed39fc1cf941e
++ entry .Confluence
++   info
++       fusionne plusieurs endpoints de lecture en un seul, dans l'ordre d'arrivée
+
+@ 0 10 0 162498cbfda8d804114251c3e32ce808
++   detail
++       `Confluence(sources*)` réalise la convergence (fan-in). Une architecture en lecture
++       n'a pas de `select` sur des recharges bloquées ; la fusion est donc le coût honnête du
++       multiplexage : une tâche de pompe par entrée, chacune tirant des crédits de la taille
++       d'un transfert vers une file bornée partagée — une file pleine met les pompes en
++       attente, si bien qu'une consommation lente exerce une contre-pression uniforme sur
++       toutes les entrées — et un endpoint de lecture qui se met en attente tant que la file
++       est vide. Le flux fusionné se termine lorsque toutes les entrées se sont terminées ;
++       l'échec d'une entrée est relevé lors de la recharge suivante du lecteur. Dans
++       `turbulence.async` : nécessite l'`Addressable` du medium, un `Buffering`, ainsi qu'un
++       `Monitor` et un `Probate` parasites ; s'exécute donc à l'intérieur de `supervise`. Les
++       pompes sont des enfants de la portée englobante, et l'annuler libère les pompes en
++       attente sur une fusion que personne ne lit.
+
+% 2 1 0 0e2d7cd099ac047701306d542a2254cb
+
+% 3 1 0 1bb211803d02ea1815854fcc34681657
+
+% 4 1 0 0524f6cf757689001b5425975333ea44
+
+% 5 1 0 0dc06248ebe7108813a95ebd0aa1f4c1
+
+% 7 1 0 0da924f9252e04e81eabb8e31d9b0937
+
+% 0 1 0 038ead6baeaa1a870f0b385c7e30bb99
+
+% 1 1 0 13b365b197bc544617970ce22382e59a
+
+@ 0 3 0 0c0c5f74a33440071a2efb8a0038aa3d
++       Une source stable en région (un tampon fixe en mémoire) est partagée par référence ;
++       une source transitoire est copiée bloc par bloc avant que sa fenêtre ne soit réutilisée,
++       par blocs de `buffering.transfer(substrate)`.
+
+% 0 1 0 1b550c17d8e0025819e49af419d8fc09
+
+% 1 1 0 1d1a0fb2bc8c35ca1216c3965fde3672
+
+% 1 1 0 0d946af77a44e70714c1c41c82a4e3b3
+
+@ 0 1 0 0c53ef06dc1633850aa75c857515c97e
++   entry .apply
++     info
++         le flux fusionné d'un nombre quelconque de sources `(Stream[medium] over Credit)^`
+
+@ 0 1 0 16b8f925ff78d9ec1c964f94bcb61254
++ entry .Divergence
++   info
++       livre un endpoint de lecture à plusieurs abonnés, chaque morceau étant partagé
+
+@ 0 11 0 13dd140c66b5be6504d72a4717c0446b
++   detail
++       `Divergence(source, count)` réalise la diffusion : une tâche de pompe tire
++       la source et livre chaque morceau à chacun des `count` endpoints abonnés via un anneau
++       borné par abonné. Les morceaux sont matérialisés une seule fois et partagés en lecture
++       seule entre les abonnés ; un anneau plein met la pompe en attente, si bien que l'abonné
++       le plus lent règle le débit de la source, ce qui est la bonne contre-pression pour une
++       réplication. Un abonné qui ferme son flux ferme son anneau, ce qui libère la pompe et
++       écarte les livraisons ultérieures ; un abonné lent abandonné ne peut donc pas bloquer les
++       autres. Un échec de la source est relevé lors de la recharge suivante de chaque abonné.
++       Dans `turbulence.async` : nécessite l'`Addressable` du medium, un `Buffering`, ainsi
++       qu'un `Monitor` et un `Probate` parasites ; s'exécute donc à l'intérieur de
++       `supervise` ; la source est consommée.
+
+% 2 1 0 1c30c0f75c5284ed0785b39124539a0a
+
+% 3 1 0 0bc5bdeda25d920a05d487f8bdf120cf
+
+% 4 1 0 0e969597d3f2c99b08ec69265c35ac4f
+
+% 5 1 0 1c50bda50b883d6c0a573bab58cb086d
+
+% 7 1 0 1b63d485e6bd91c017ee94ac4ec58f42
+
+% 0 1 0 1ceb4fae5463ee310f076a7a28c95a96
+
+% 0 1 0 1ef7e0e7081eef6418b60e40d7379629
+
+% 1 1 0 1a46c52681100f4219c097796ca7dbfc
+
+@ 0 2 0 1f3b8452fa04081810fa4d1e21bc65d7
++       Le résultat est une `IndexedSeq` de `count` flux, chacun étant un endpoint exclusif vidé
++       par un seul consommateur ; lisez-les sur des tâches séparées ou l'un après l'autre.
+
+% 1 1 0 08475d179b343d1207632c05219e36e7
+
+@ 0 1 0 1195bf27b92fc7701616def58a788545
++   entry .apply
++     info
++         `count` flux abonnés sur une seule source consommée
+
+@ 0 1 0 03803e4d64bb128500642ebd6c7efbff
++ entry .convey
++   info
++       pompe un flux dans un intake sur sa propre tâche
+
+@ 0 7 0 16f57542fda8d38d070788c6ab2574dc
++   detail
++       Une extension de `turbulence.async` sur un `(Stream[medium] over transport)^` consommé :
++       `stream.convey(intake)` est `stream.pump(intake)` exécuté sur une tâche parasite, qui
++       renvoie la `Task[Unit]`, pour les transferts sans suivi et pour les pipelines
++       comportant une frontière asynchrone, où c'est l'unique thread de pompage. Les deux
++       endpoints passent à la tâche ; l'appelant n'en conserve aucun. Nécessite un `Monitor` et
++       un `Probate` ; s'exécute donc à l'intérieur de `supervise`, et l'annulation de la portée
++       libère une pompe bloquée sur un conduit vide.
+
+% 2 1 0 1d832bdb2a3d35ca0d2c6eedd057c370
+
+% 3 1 0 007530bc495239a31c964fe74c68182a
+
+% 4 1 0 114fb26afb6fe9a9015bb6fbc0f94709
+
+% 5 1 0 102c62ea9604946717612a440c443a55
+
+% 1 1 0 1edb3d85dcd743a4093f72f55998078e
+
+% 2 1 0 1a85a57fbeeb07860ed416a422b9f47d
+
+% 0 1 0 095efa93c0f40189093dce1638e64b8a
+
+% 0 1 0 1d0c89b844b43d7f03646645ad7c7288
+
+% 0 1 0 0f55794fa149e31d1361d214eba44fe1
+
+% 1 1 0 0a8aaaaf37e710490f5b644f67aa2df6
+
+% 1 1 0 06b307ab49eaaf3d05304ff1f584122c
+
+% 1 1 0 1f3e28cc5080e7de1d3ae75f679344ad
+
+@ 0 1 0 097138d3fa44932a067cc5ee5422c2af
++ entry .WasiCliApi
++   info
++       l'interface WIT du monde CLI de WASI, sous forme de type :
++       `Interface in Wit at "/turbulence/cli.wit"`
+
+@ 0 5 0 00de6b4c5c98b2671024f3404bd198fb
++   detail
++       Dans `turbulence.wasi`. Le type par rapport auquel la navigation de `stdios.wasiStdio`
++       est vérifiée, et que le matérialiseur `call` consulte pour les imports `get-stdout`,
++       `get-stderr` et `get-stdin` et pour les méthodes des ressources de flux. Sa valeur est
++       `wasiApis.wasiCliApi`.
+
+% 0 1 0 06b7871e4947037d0a8b3296e33387b8
+
+@ 0 1 0 05a561f3d9f59bbe0e9c47c15922a713
++ entry .wasiApis
++   info
++       les définitions d'interfaces WASI auxquelles se lie turbulence, chacune un given à importer
++       par son nom
+
+@ 0 3 0 14d41906941c7caa1637860f1de8656f
++   detail
++       Dans `turbulence.wasi`. Un composant Wasm qui invoque `stdios.wasiStdio` doit voir
++       `wasiCliApi` à ce site, puisque les appels de flux y sont développés.
+
+% 2 1 0 10a7a6b4c68d78f2005fa205735a1ac7
+
+% 3 1 0 1cf01f71a2ff9082110f4757849406e6
+
+% 0 1 0 0f0a2f3291a173dc0a6e362ba05a360c
+
+% 0 1 0 1bfc2bbbcd130cac0993a73354bdbf1a
+
+% 1 1 0 0573a05c8f1a6f5a1abbe374b8d44d48
+
+% 2 1 0 10e7ddd30bf6396a0e9437ea557e711d
+
+@ 0 1 0 1ec3cfb3e38b5cf4085a2970779c6116
++   entry .wasiCliApi
++     info
++         l'interface `WasiCliApi`, chargée depuis la ressource du classpath `/turbulence/cli.wit`
+
+@ 0 3 0 0e0b70ef15b245cc18d81b79c78d6876
++     detail
++         `Interface[Wit](cp"/turbulence/cli.wit")` : la ressource est vérifiée à la compilation,
++         et le WIT qu'elle contient définit les imports `stdout`, `stderr` et `stdin` avec leurs
++         ressources `output-stream` et `input-stream`.

@@ -1,0 +1,43 @@
+orthant 2 language
+
+@ 0 3 0 057cb6a0b5366b3706bfd474a63e20a4
++ entry .toss   un lancio di moneta equo: `true` o `false`, con uguale probabilità
++     `toss()` estrae dal `Random` nell'ambito, con la stessa regola di `arbitrary[Boolean]()`
++     (il segno di un `Long`), così un lancio è riproducibile da un `Seed`.
+
+@ 0 9 0 0c63b6d6a010510f0f4d8dc6bca26ab7
++   entry .global   un `Random` su un unico generatore condiviso e senza seme, da usare senza ambito
++       Ogni chiamata incapsula lo stesso generatore valido per tutto il processo, creato pigramente
++       da `randomization.unseededRandomization`, così le estrazioni da esso non sono mai
++       riproducibili. `random` lo usa.
++   entry .apply   un nuovo `Random` dalla `Randomization` nell'ambito, con il seme del `Seed` dato
++       `Random(seed)` inizializza un generatore dalla `Randomization` contestuale, che viene
++       risolta con `seed` nell'ambito: sotto `seededRandomization` il generatore parte da `seed`,
++       come fa in `Seed#stochastic`, e una randomizzazione senza seme lo ignora.
++   entry .Size   quanti elementi ha una collezione casuale, come valore contestuale
+
+@ 0 24 0 04a55a33bab0309b039431791e6f182e
++   entry #randomize   estrae un valore da un `Random`
++   entry #apply   estrae un valore dal `Random` contestuale: `summon[Int is Randomizable]()`
++   entry #map   un'istanza per un altro tipo, che trasforma ogni valore estratto
++       `randomizable.map(lambda)` estrae attraverso questa istanza e applica la lambda; il
++       risultato cattura entrambe.
++   entry .long   estrae un `Long` uniformemente casuale
++   entry .byte   estrae un `Byte`, gli otto bit bassi di un `Long` casuale
++   entry .short   estrae uno `Short`, i sedici bit bassi di un `Long` casuale
++   entry .int   estrae un `Int`, i trentadue bit bassi di un `Long` casuale
++   entry .char   estrae un `Char`, i sedici bit bassi di un `Long` casuale
++       Qualsiasi unità di codice UTF-16, compresi i surrogati spaiati e i caratteri di controllo.
++   entry .seed   estrae un `Seed` di sessantaquattro bit, da un `Long` casuale
++   entry .boolean   estrae un `Boolean`: `true` quando un `Long` casuale è negativo
++   entry .list   estrae una `List` la cui dimensione viene dal `Random.Size` nell'ambito
++   entry .set   estrae un `Set` di al più il `Random.Size` nell'ambito, con i duplicati che si fondono
++   entry .frozenArray   estrae un `Array[element]^{}` congelato con la dimensione data dal `Random.Size` nell'ambito
++       Ha bisogno di un `ClassTag` per il tipo degli elementi oltre che di un `Random.Size`.
++   entry .double   estrae un `Double` attraverso la `Distribution` nell'ambito
++       Non c'è una distribuzione predefinita: un `Double` non può essere estratto finché il codice
++       non dice che tipo di `Double` intende, il che impedisce di trattare un'estrazione uniforme
++       come se fosse normale. Se ne importa una da `randomDistributions` oppure si dichiara come
++       given una `Gaussian`, una `PolarGaussian`, una `UniformDistribution` o una `Gamma`.
++   entry .conjunction   l'istanza derivata di un prodotto: ogni campo estratto a turno dallo stesso `Random`
++   entry .disjunction   l'istanza derivata di una somma: una variante scelta uniformemente, poi estratta dallo stesso `Random`

@@ -1,0 +1,51 @@
+orthant 2 language
+
+% 0 1 0 06446e9a39f62e3507ccb9ffef598286
+
+@ 0 1 0 1b38fbff9b18d78e1b0a261b128e2cf8
++ Порождается, когда документ TEL не соответствует схеме, по которой его читает `Tel.Provider`.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Причина
+
+@ 0 3 0 149605d950edf60a1a88f0b8fad22594
++ `Tel.Provider` из Stratiform читает документ через его схему по мере чтения полей записи и
++ сообщает о каждом несоответствии через `Tactic` кода, читающего поле, чтобы проверяющий читатель
++ мог собрать их все. Сообщение — `the TEL did not conform to its schema
+
+% 0 1 0 0ec2149d5205921b19b89c2f0c0315c4
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Варианты
+
+% 0 1 0 1414bac3b0e5ccc61cf4ab26c45b1161
+
+@ 0 1 0 1c8091b1eb0a18cb130521b74f2ef2fb
++ Поле, которое требует схема, отсутствует в документе.
+
+@ 0 1 0 183419b440a5b75f0ef7f8124ae4f7c4
++ **Пример.** `[↯/s.118.10.1] the TEL did not conform to its schema because the field first-name is required`
+
+@ 0 1 0 003370cb5fc2dedb1dded204d9c65e45
++ **Решение.** Добавьте поле или сделайте его в схеме опциональным.
+
+% 0 1 0 14428d06f4f508ef03f56b63f7ea2902
+
+@ 0 1 0 0441e219ebeee7af1c58c5446274c489
++ Поле, читаемое валидатором `Sigil`, содержит атом длиной более одного символа.
+
+@ 0 1 0 134b87d0a09020b114fdba18b08f1cdc
++ **Пример.** `[↯/s.118.10.2] the TEL did not conform to its schema because the value ab is not a single character`
+
+@ 0 1 0 070fffe127b5331d02a17136303bb986
++ **Решение.** Задайте в поле один символ.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## См. также
+
+% 0 1 0 1f718dc1c824c1411f5f8454e02273b2
+
+% 0 1 0 179ff6b5b3b621a911c0d3101a18c746
+
+@ 0 1 0 007e19a11ea4dc8d028056994263800f
++ - Исходник: `lib/stratiform/src/core/stratiform.Tel4.scala`

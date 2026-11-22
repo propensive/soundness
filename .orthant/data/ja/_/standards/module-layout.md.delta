@@ -1,0 +1,29 @@
+orthant 2 language
+
+@ 0 1 0 08a75dd5f46ceef21888820fdb82c5ed
++ # Soundness のモジュール配置の標準
+
+@ 0 1 0 168477d6c167de2a1bc6797dbe55c63f
++ _（スタブ。範囲はレビュー中で、完全な内容は今後追加する。）_
+
+@ 0 2 0 0c7e2be44269cbf71f98b7eb09b62714
++ この標準は、Soundness のモジュールをディスク上にどう配置し、その名前空間をどう構成するかを定める。
++ 次の規約を扱う：
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 8 0 1d59784e3f5cd4b806cdeba1eac75758
++ column  場所
++ column  保持するもの
++ row  `src/core`  ライブラリ
++ row  `src/test`  テスト
++ row  `src/bench`  ベンチマーク
++ row  `src/<variant>`  オプショナルな統合
++ row  `<module>.<Type>.scala`  一つのトップレベルの型。その型にちなんで名付ける
++ row  `<module>_core.scala`  パッケージレベルの given と拡張。コンパニオンを優先する
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 5 0 08afcf11b77ae23d083b2a4f0e8e5f49
++ また、モジュールの公開された表面をアンブレラの `soundness` パッケージへ持ち上げる `soundness_<module>_core.scala` の再エクスポートと、何をエクスポートし何を内部に留めるかの規則も説明する。
++ その一部は、Consequent Style の Locatability の規則（`L1`–`L5`。[`syntax.md`](syntax.md) を参照）ですでに触れられている。この標準は、構造に関する規約を一か所にまとめる。

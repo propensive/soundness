@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 3 0 13e0f437e82a946314fb7b5ee55f846a
++ Eine [Stream](/doc/soundness/modules/streams.md)-Pipeline ist der deutlichste Fall. Jede Stufe nimmt einen
++ Stream und liefert einen Stream, sodass sich Stufen ohne Adapter verketten lassen, in jeder
++ Reihenfolge, die sinnvoll ist:

@@ -1,0 +1,151 @@
+orthant 2 language
+
+@ 0 1 0 08af2de9a4ac2516115537e8ecb54c57
++ # Le style direct
+
+@ 0 7 0 0219a4d0f3c72da50e632f8b8ff960ba
++ Soundness est écrit en style direct : le code se lit comme une suite simple d'étapes, et non comme
++ une chaîne de combinateurs qui font transiter une valeur à travers une monade. Les effets comme
++ l'échec, l'asynchronisme et le contexte sont portés par des capacités et par des types plutôt que
++ par des types enveloppes qu'il faut combiner à coups de `map` et de `flatMap`. Le résultat se
++ compose comme se compose du code ordinaire — avec des appels, des blocs et des valeurs locales —
++ si bien que la forme d'un programme suit la forme du problème au lieu de celle d'une abstraction
++ plaquée dessus.
+
+@ 0 3 0 1995a4a1bacae122105feda8102239e7
++ La différence se voit dans la composition. Les expressions en style direct s'imbriquent : un appel
++ faillible peut se placer dans une liste d'arguments, dans une chaîne interpolée, dans une
++ condition — partout où une expression peut aller —
+
+% 2 1 0 1082cc8907151aa40163ce8a3b515b08
+
+% 3 1 0 138593ef92e3a3f1146e9312130acb47
+
+% 4 1 0 1f1e89ec49e50a691ac72fbe0dd25f36
+
+% 0 1 0 07db6a88bb90f76e0a9c62f2f64e68b7
+
+% 1 1 0 1493ffbb3423bfcc08640caacff3374f
+
+@ 0 2 0 090f340a1195f1dd079514920e930676
++ tandis que les valeurs monadiques ne se composent que par leurs combinateurs. La même ligne, avec
++ l'échec sous forme de type enveloppe, doit être déroulée en étapes intermédiaires nommées :
+
+% 2 1 0 04677b75877140b30c2bd0b11671f073
+
+% 3 1 0 0dd1e2ed93448f431577f5fe26384e30
+
+% 4 1 0 03922e7adafefdbe0723a767b49ea72f
+
+% 0 1 0 11c36e366b28ddad0f59dfebc797db82
+
+% 1 1 0 05cbd6236364aa460eab1b9acbf318c9
+
+@ 0 6 0 048c2da7b64eebe31d405ba1efa84418
++ et chaque effet supplémentaire approfondit ce déroulement. Les for-compréhensions adoucissent la
++ syntaxe mais pas la contrainte : un `for` ne compose que des valeurs d'*une seule* monade, si bien
++ que mêler l'échec, l'asynchronisme et l'itération exige des piles de transformateurs ou une
++ plomberie manuelle, et que le flot de contrôle ordinaire — un `while`, un retour anticipé, un
++ `try`/`finally` — n'y a pas directement sa place. Deux bibliothèques monadiques aux types
++ enveloppes différents ne se composent pas du tout sans adaptateurs.
+
+@ 0 6 0 0a9165603c35497c190441e1af2fd7d6
++ Le style direct dissout le problème au lieu de le gérer. Les effets sont des capacités
++ contextuelles, si bien que les combiner revient à les avoir tous deux dans la portée, et non à
++ imbriquer leurs types ; chaque structure de contrôle du langage fonctionne sans changement ; et
++ l'appel faillible, l'appel asynchrone et l'appel pur ressemblent tous à des appels. Là où les
++ valeurs monadiques doivent être *séquencées*, les expressions en style direct se contentent
++ d'*apparaître* — c'est pourquoi la composition ne cesse jamais d'être ordinaire.
+
+@ 0 1 0 1d422644ea2b58c3156169020c169acd
++ ## Le flot de contrôle ordinaire continue de fonctionner
+
+@ 0 2 0 1e01ab0c8ac5af5005f9864272b457a4
++ L'affirmation se vérifie le plus facilement sur les constructions qu'un encodage monadique doit
++ remplacer. Chacune d'elles fonctionne sans changement autour de code faillible, asynchrone ou qui
++ détient des ressources :
+
+% 2 1 0 0fc313d262e0bf520cfd70e5317d142e
+
+% 3 1 0 0abfebc0311ec551015ca0738841043b
+
+% 4 1 0 1baac387c8a8ec860258c6733211aedf
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 12a3bb48f477fdf40e7b043dfa98b3d5
+
+% 0 1 0 03b705012a111fc61c16df5225ca2f12
+
+% 0 1 0 0a59478acccec6aa0f5e0144839a371e
+
+% 0 1 0 157980801989006f1ab5011392cf5882
+
+% 1 1 0 1d94616d117336990fcf61fddf23469e
+
+@ 0 3 0 0acbafa0c0300ce419b11e5ae53c6723
++ Pas de `traverse`, pas de `whenA`, pas de combinateur de type bracket — et aucune question de savoir
++ sur quelle monade porte le `for`, puisqu'il ne porte sur aucune. Une boucle `while`, un retour
++ anticipé, un `match`, une définition de fonction imbriquée : tous signifient ce qu'ils signifient
++ en Scala.
+
+@ 0 1 0 1ae78d5fd17ed985177b9d1074866960
++ ## Les effets apparaissent toujours dans les types
+
+@ 0 3 0 14b23249c7a8e1b00710a0a4c886b3f8
++ Le style direct n'est pas un effacement des effets. Ce dont une opération a besoin figure dans sa
++ signature, exactement comme dans l'encodage monadique — la différence est que cela y apparaît
++ comme une *exigence* plutôt que comme une enveloppe autour du résultat :
+
+% 2 1 0 0d0dcd288952cb5f1de2bed94f0a6908
+
+% 3 1 0 1b802507986911ce18db06b510632ad6
+
+% 4 1 0 04cf60ebc38fc4bf156e7c3940db6b4d
+
+% 0 1 0 088724f7f3390ae00ffa5549b78cc59d
+
+% 1 1 0 19736e2c820f1ce100eed77c87c43b84
+
+@ 0 4 0 0d47fa452a2848280165187e69145a8f
++ L'accès au réseau, la suspension et l'échec sont tous visibles. Ce qui n'est *pas* imposé, c'est un
++ changement de la forme de la valeur : la méthode renvoie `Text`, si bien que son résultat se
++ compose avec tout ce qui accepte `Text`, et un appelant qui a satisfait les exigences a une valeur
++ ordinaire en main.
+
+@ 0 2 0 08d7f431ac86cc7419cc9b42c49ff1d5
++ C'est la propriété que l'encodage monadique sacrifie. `IO[Either[HttpError, Text]]` porte la même
++ information et ne peut être passé à rien de ce qui attend un `Text`.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ce que cela coûte
+
+@ 0 4 0 1d338e6efa658f0204ac5be0e57a0fe6
++ **Les capacités doivent être dans la portée, et cela se propage.** Une méthode qui appelle quelque
++ chose ayant besoin d'`Online` doit soit le fournir, soit le déclarer. C'est la même propagation que
++ dans un encodage monadique — elle s'y trouve dans le type de retour — c'est donc un coût de
++ l'honnêteté plutôt que du style direct, mais il n'est pas nul.
+
+@ 0 5 0 112fa5284c343fce13eb7429279f710d
++ **Le mécanisme est contextuel, et le code contextuel peut surprendre.** La stratégie présente dans
++ la portée détermine ce que fait un échec, et un given importé en haut d'un fichier affecte du code
++ situé bien plus bas. C'est la puissance voulue — voir
++ [le contexte déclaratif](declarative-context.md) — mais un lecteur qui ne vérifie pas les imports
++ peut mal comprendre ce que fera un appel faillible.
+
+@ 0 5 0 014f3bc97f52a8381c7e84c5423eefb2
++ **Certains raisonnements sont réellement plus faciles avec une valeur explicite.** Une valeur
++ monadique peut être stockée, relancée, ou passée à un combinateur qui l'exécute trois fois. Une
++ expression faillible en style direct n'est pas une valeur au même sens — c'est pourquoi `defer`
++ existe, pour conserver un calcul faillible non appliqué là où l'on en veut réellement un. Qu'il
++ faille un mécanisme pour cela revient à admettre que l'enveloppe avait son utilité.
+
+@ 0 3 0 1ee093689fa61bb5002adaea87c68e71
++ **Il s'appuie sur des fonctionnalités récentes du langage.** Les fonctions contextuelles, le
++ contrôle des captures et `transparent inline` font le travail, et le deuxième de ceux-ci est encore
++ en cours de maturation. L'encodage monadique n'a besoin d'aucun d'eux et fonctionne avec n'importe
++ quel Scala.
+
+@ 0 2 0 171ed60b3f90fe701ad9f68ad9668c0f
++ Voir [les portées délimitées](delimited-scopes.md) pour savoir comment une capacité est introduite,
++ et [la gestion des erreurs](error-handling.md) pour l'effet pour lequel cela compte le plus.

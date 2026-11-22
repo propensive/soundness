@@ -1,0 +1,171 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0e19b7240e172a6e1463acb32379e7ac
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 063a3596783b20131d69b01224a6e921
++ info
++     une frappe de touche comme valeur : un caractère, une touche nommée, ou l'un ou l'autre avec
++     des modificateurs
+
+@ 0 6 0 1f86a0320ef5380809ad17fec14c5790
++ detail
++     _Clavichord_ est le vocabulaire de touches partagé par tout ce qui, dans Soundness, lit ou
++     produit une frappe de touche. Les terminaux et les navigateurs s'accordent sur ce qu'*est* une
++     frappe et ne divergent que sur la façon de l'encoder : le modèle vit donc ici, à l'écart des
++     deux. profanity décode les séquences d'échappement d'un terminal en valeurs `Keypress`, et
++     tarantula les rend sous forme des actions de touche que définit le protocole WebDriver, sans
++     que l'un ni l'autre ne connaisse l'autre.
+
+@ 0 4 0 0ea79d899386dc941817dbf5c87a79db
++     Un `Keypress` est un caractère ordinaire, une touche de fonction, l'une des touches d'édition
++     nommées, une séquence d'échappement sans autre nom, ou l'un de ceux-là enveloppé dans les
++     modificateurs maintenus en même temps. Un modificateur n'accepte que ce qui peut être modifié
++     de façon sensée : le type exclut donc les frappes qu'aucun clavier ne peut produire.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 15d368505870e3a012812d963994c34f
+
+% 0 1 0 169a12b3996d22b0179b7a905e7e6d82
+
+% 0 1 0 19bf92dcb243647102e720d640f1e9a4
+
+% 0 1 0 0b529f0937e59b90116797642b8bff06
+
+% 0 1 0 1fbd72a8ddff10a310486df01b93ba27
+
+% 0 1 0 031a60e29e1b9e9d11d4498a3d7ad264
+
+% 0 1 0 00a9c40e90ef63420dc566ed2819459e
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 2 0 0988c78676b29c9616fc770106d48833
++     La bibliothèque a un seul ensemble de sources, `clavichord.core`, pour toutes les plateformes,
++     et tout est exporté vers le package parapluie `soundness`.
+
+% 0 1 0 1797ecdbacccb8871a70287d860932f0
+
+@ 0 1 0 01ef4a600c61beaf0db47951246721ff
++ entry .Keypress
++   info
++       une touche telle que frappée : un caractère, une touche nommée ou de fonction, ou une touche
++       maintenue avec des modificateurs
+
+@ 0 2 0 14acd7e7dc8d545e0d2d5c87976b91a3
++   detail
++       Une énumération dont les cas sont :
+
+@ 0 12 0 197f4c1e7fe6fbd40e510d2185344002
++       - les touches d'édition nommées, `Tab`, `Enter`, `Backspace`, `Delete`, `Escape`, `Insert`,
++         `Home`, `End`, `PageUp`, `PageDown`, `Left`, `Right`, `Up` et `Down`, chacune étant aussi
++         un `Keypress.Editing` ;
++       - `CharKey(char)`, un caractère ordinaire, avec la majuscule déjà appliquée le cas échéant
++         (un `a` avec Shift est `CharKey('A')`) ;
++       - `FunctionKey(number)`, `F1` à `F12` et au-delà ;
++       - `EscapeSeq(id, content*)`, une séquence d'échappement sans autre nom, désignée par son
++         caractère d'identification final et ses paramètres ;
++       - et les modificateurs, qui s'imbriquent vers l'extérieur dans un ordre fixe : `Shift` d'une
++         touche d'édition ou de fonction ; `Alt` de celles-ci ou d'un `Shift` ; `Ctrl` de
++         celles-ci, d'un `Alt`, ou de l'un des caractères que peut porter un code de contrôle
++         (`'A'` à `'Z'`, `'['`, `'\\'`, `']'`, `'^'`, `'_'` et `'@'`) ; et `Meta` de n'importe
++         lequel des autres modificateurs ou touches.
+
+@ 0 3 0 0657a17d75c0e35919d9a6890a72b74b
++       Les types des paramètres des modificateurs suivent cet ordre : `Shift(CharKey('a'))` et
++       `Alt(Ctrl('C'))` ne compilent donc pas. `Ctrl(Alt(Left))` est la seule façon d'écrire cette
++       combinaison, et un filtrage n'a à en considérer qu'une.
+
+% 2 1 0 0d8b1e8e210b2d1508ab325110f737a3
+
+% 3 1 0 041f8e6f552a761003d54f0f1074e4bb
+
+% 0 1 0 1f7168d7f274c1161a30132b4f38702f
+
+% 0 1 0 0a196065917af3f7001103e8390ad348
+
+% 0 1 0 1ddd345b3dbcedbb039244e6b992d4c0
+
+% 0 1 0 068952870237f92419293fde76cf245e
+
+% 1 1 0 0ebd7dddb460b16415faa26ac9806383
+
+@ 0 2 0 1195a3af426db294001d85d0d1be812f
++       Une frappe s'affiche (`.showable`) avec un symbole Unicode entre crochets pour chaque touche
++       et chaque modificateur, joint à ce qu'il modifie par `+`.
+
+% 0 1 0 1c9d1c65cabd3eb50d6a5eb7ea530f12
+
+@ 0 1 0 078b40196188994018974d296aff8a3b
++   entry .Editing
++     info
++         le trait marqueur des quatorze touches d'édition nommées
+
+@ 0 4 0 15ab859699f761b415c7199f60bd7a7f
++     detail
++         `Tab`, `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Delete`, `Enter`, `Backspace`,
++         `Escape`, `Left`, `Right`, `Up` et `Down` l'étendent chacune. C'est un marqueur nominal
++         plutôt qu'une union des types singletons des cas, afin qu'il les admette encore lorsqu'on
++         les atteint par les redirections d'export du package parapluie, comme
++         `soundness.Keypress.Enter`.
+
+@ 0 1 0 1fadaca7da7e2b9317d44fe240462c7c
++   entry .EditKey
++     info
++         l'une quelconque des touches d'édition nommées : `Keypress & Keypress.Editing`
+
+@ 0 2 0 115312a5f62e90c6174ddd8a957a4b88
++     detail
++         Le type d'une touche que `Shift`, `Alt`, `Ctrl` et `Meta` peuvent envelopper en plus des
++         touches de fonction, et le type à utiliser pour une méthode qui ne traite que les touches
++         d'édition.
+
+@ 2 1 0 16e50cf5e9d5283e1c6596040a22ec65
++         ```scala
+
+@ 3 1 0 18d471cf1506c5160340b77345b659db
++         import soundness.*
+
+@ 0 1 0 01c15004a9254e4705dd1d962ebd8f4e
++         val key: Keypress.EditKey = Keypress.PageDown
+
+@ 1 1 0 144cc6a51f545b640b7e21ec44708d2d
++         ```
+
+@ 0 1 0 11885348911d9fb01c32a614c200d2b5
++   entry .showable
++     info
++         affiche une frappe avec un symbole Unicode entre crochets par touche et par modificateur
+
+@ 0 5 0 1c5ce15d71f04a0e08f5755b41161c43
++     detail
++         Shift est `[⇧]`, Alt `[⌥]`, Ctrl `[⌃]` et Meta `[⌘]`, chacun joint à ce qu'il modifie par
++         `+`. Les touches d'édition sont `[⇥]`, `[↵]`, `[⌫]`, `[⌦]`, `[⎋]`, `[⎀]`, les flèches
++         `[↑]` `[↓]` `[←]` `[→]`, `[↖]` pour Home, `[↘]` pour End, et `[⇞]` `[⇟]` pour les touches
++         de page. Un caractère est mis entre crochets tel quel, sauf une espace, `[␣]` ; une touche
++         de fonction est `[F5]` ; et une séquence d'échappement est `[⎋R]`, qui montre son
++         identifiant mais pas son contenu.
+
+@ 2 1 0 12a877f071a1d453010a6a5da1882093
++         ```scala
+
+@ 3 1 0 0f7718bab312c784163a8750f172c866
++         import soundness.*
+
+@ 0 1 0 17193a38b9c9f04b0d3beb8a79d0b32b
++         Keypress.Shift(Keypress.Enter).show   // t"[⇧]+[↵]"
+
+@ 0 1 0 13f3e03f02164f42177e61987e191e1d
++         Keypress.Ctrl('C').show               // t"[⌃]+[C]"
+
+@ 0 1 0 1f35362f0be6a3900e1e704277629d69
++         Keypress.FunctionKey(12).show         // t"[F12]"
+
+@ 1 1 0 1f47777353954f371d878b4fa9e4d53d
++         ```

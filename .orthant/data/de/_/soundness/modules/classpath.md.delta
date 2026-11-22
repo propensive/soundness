@@ -1,0 +1,296 @@
+orthant 2 language
+
+@ 0 1 0 044852d4c8c8b653044b520faf5e7181
++ ## Klassenpfade
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 2 0 19fdab46411282e20bcb4f4f57d6454a
++ Der [Klassenpfad](https://en.wikipedia.org/wiki/Classpath) der JVM und ihre
++ [Classloader](https://en.wikipedia.org/wiki/Java_Classloader) werden als Werte dargestellt.
+
+@ 0 3 0 0e0ad309a1aaf9cb0150d74ea0258eb2
++ Eine auf dem Klassenpfad mitgelieferte Ressource wird über eine Referenz gelesen, die der Compiler
++ prüft. Ein Klassenpfad ist eine [unveränderliche][unveränderlich] Liste seiner Einträge, also
++ Verzeichnisse, JAR-Dateien und die Java-Laufzeit, und die Liste lässt sich untersuchen. Ein
++ Codeblock kann unter einem gewählten Classloader ausgeführt werden.
+
+@ 0 1 0 0733ffea3bf9da1f1a0dcf06843dbc3f
++ ### Über den Klassenpfad
+
+@ 0 5 0 1416a91ae24919e3166acd1d42905a3a
++ Ein Programm, das nach einer mitgelieferten Datendatei fragt, etwa einer Vorlage, einer
++ Nachschlagetabelle oder einem Icon, fragt den Klassenpfad, der die Verzeichnisse und Archive
++ durchsucht, mit denen das Programm gestartet wurde. Die Java-API dafür liefert `null`, wenn eine
++ Ressource fehlt, gibt einen rohen `InputStream` zurück und legt die Hierarchie der Classloader als
++ veränderlichen, zwischen Threads geteilten Zustand offen. Nichts davon ist typisiert. Eine fehlende
++ Ressource wird erst entdeckt, wenn das `null` dereferenziert wird.
+
+@ 0 5 0 1a7a76f9a4e123b218edfa603a8f5a87
++ Hier ist eine Klassenpfad-Ressource ein [Pfad](paths.md) wie jeder andere und wird mit demselben
++ `read` gelesen wie eine Datei. Ein Klassenpfad ist ein unveränderlicher Wert, dessen Einträge sich
++ auflisten lassen. Ein Classloader wird explizit gewählt, als [Kontextwert], und nicht implizit
++ herangezogen. Typisierte Einträge und Classloader geben einem Teil der JVM, der gewöhnlich keine
++ hat, [ehrliche Signaturen](../../philosophy/honest-signatures.md).
+
+@ 0 3 0 060498e946852ecc0a90dcf7477e7e3b
++ Alles kommt aus dem Paket `soundness`. Die übrigen Imports wählen einen Classloader, eine
++ [Strategie](errors.md#choosing-a-strategy) für Fehler und den Zugriff auf die Systemeigenschaften
++ und lassen die Beispiele ihre Ergebnisse ausgeben:
+
+% 2 1 0 12576e583010dd7005c3bee03121485f
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 2 0 1a2701486634ce3b1d2fda2bbdd8d1de
++ Die meisten Beispiele auf dieser Seite hängen von der Maschine ab, auf der sie laufen, daher werden
++ sie kompiliert, aber nicht ausgeführt.
+
+@ 0 1 0 1129ecc617dc946b192cd5424fc1fb30
++ ### Eine Ressource lesen
+
+@ 0 4 0 02df45c0252928fc10fa3d3ac2d30547
++ Der [Interpolator] `cp"…"` benennt eine Ressource auf dem Klassenpfad und prüft die Referenz,
++ während der Code kompiliert. Das Ergebnis ist eine `Resource`, die wie jede andere Quelle gelesen
++ wird: als rohe Bytes, als Text oder als geparster Wert. Die Scala-Bibliothek liegt auf jedem
++ Klassenpfad, daher ergibt eine ihrer Klassen eine Ressource, die immer vorhanden ist:
+
+% 2 1 0 1eeda4de8ea6aa5f0bd15c77404f41dd
+
+% 0 1 0 17c9b532826d3b7a1a20472d2ac68a8f
+
+% 1 1 0 0158fc555cc1ccdf1d8542282f3370ba
+
+@ 0 2 0 184887244419d4b011c1d9eda446d850
++ Die Ressource wird gegen den Classloader im Geltungsbereich aufgelöst, sodass das Lesen kein von
++ Hand übergebenes Handle braucht. Ein Ressourcenpfad lässt sich auch zur [Laufzeit] aus Text
++ aufbauen, indem man ihn dekodiert:
+
+% 2 1 0 111f155d4b43aa2e0e8cbcadde274b25
+
+% 0 1 0 06554551a7f4041d11fdbba2f0af049f
+
+% 1 1 0 1900a8f7662808ff148667493570b4ab
+
+@ 0 2 0 031b913a8bbc20661bd0e150a7d228c4
++ Die Prüfung zur Kompilierzeit erfolgt gegen den Klassenpfad des Compilers. Eine Referenz auf eine
++ Ressource, die nicht vorhanden ist, ist ein Kompilierfehler:
+
+% 2 1 0 196e1bdce2e9038f0e39689b06e68f6f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 10d5c94e6150ee1312ecdf946033bf47
+
+% 1 1 0 12d441b353a75f2c1d8ce0de67f7db3f
+
+@ 0 2 0 108c68ae0eeadd20168626f5b7e378d2
++ Ein Klassenpfad-Pfad ist außerdem *substantiierbar*. Seine Existenz lässt sich zur Laufzeit prüfen,
++ bevor er gelesen wird, sodass ein Programm nach einer optionalen Ressource sehen kann, statt einen
++ Fehlschlag zu behandeln.
+
+@ 0 1 0 0ed4d01721f47d360fd852cd5b830b00
++ ### Einen Classloader wählen
+
+@ 0 4 0 040a699060efc4f8047f82aa4c17f305
++ Eine Ressourcenreferenz benennt einen Pfad, kein Ding. Zwei Classloader können denselben Pfad zu
++ verschiedenen Ressourcen auflösen, oder einer löst ihn zu gar nichts auf. Die Wahl kann nicht
++ implizit in der Referenz liegen und ergibt sich aus dem Kontext, in dem die Ressource gelesen wird.
++ Das `given Classloader` im Geltungsbereich entscheidet und wird per Import gewählt:
+
+% 2 1 0 197ba2d4b1e8585d09169a490887b09f
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 1dca8f5a278525620f22995291834708
+
+% 1 1 0 061dd84fb952cd760b92ce69cda8ca68
+
+@ 0 1 0 179718e7cc73b21f0c3a8863a7effea7
++ Das Paket `classloaders` enthält die Standardwahlen:
+
+% 2 1 0 1cde4b6910e75510032000f693131bc1
+
+% 0 1 0 1ca77613e7a1c24100f8bf0c68a101b5
+
+@ 0 5 0 1986545eda1182d20907ae0eba332739
++ column  Löst auf über
++ row  `threadContextClassloader`  den Kontext-Classloader des aktuellen Threads, der für die meisten Anwendungen passt
++ row  `systemClassloader`  den System-Classloader der JVM
++ row  `platformClassloader`  den Plattform-Classloader der JVM
++ row  `scalaClassloader`  den Classloader, der die Scala-Bibliothek geladen hat
+
+% 1 1 0 158fc6db6a75fe1f0921e4b5bc705e16
+
+@ 0 1 0 1fd91bd96ca640581e3c0b23ccf49178
++ ### Den Klassenpfad untersuchen
+
+@ 0 3 0 11b82f10368f43261cdc8368bb43a69b
++ Ein `LocalClasspath` ist der Klassenpfad als Liste von Einträgen. Der Klassenpfad des laufenden
++ Programms ist der Wert der Eigenschaft `java.class.path`, der sich zu einem solchen dekodieren
++ lässt. Das Lesen der Eigenschaft braucht das `System` im Geltungsbereich, das oben importiert
++ wurde:
+
+% 2 1 0 026d85496417416a0d51592847c4b5f6
+
+% 0 1 0 0cd3b307b85d5d170406c423c30f24b4
+
+% 1 1 0 027ee494ff156fe814be540fbece62ef
+
+@ 0 1 0 082c3e4d744f391f03e036e24226ea80
++ Seine `entries` sind typisiert, als eine von vier Arten von `Classpath.Entry`:
+
+% 2 1 0 1c18bb0de3f8dbc90d64daf281922c2b
+
+@ 0 8 0 082ac8d483bf0df91aa5091a1ce9e1f5
++ column  Eintrag
++ column  Stellt dar
++ column  Sein `path`
++ column  Aus `classify`
++ row  `Directory(path)`  ein Verzeichnis mit Klassen und Ressourcen  das Verzeichnis  ein Verzeichnis oder ein Pfad, der noch nicht existiert
++ row  `Jar(path)`  ein Archiv  die Archivdatei  eine Datei, die mit dem Trailer eines ZIP-Archivs endet
++ row  `Url(url)`  ein entfernter Ort  `Unset`  nie
++ row  `JavaRuntime`  die eigenen Klassen des JDK  `Unset`  nie
+
+% 1 1 0 0d347a2ad23e8f370ef04f3b47e6a345
+
+@ 0 2 0 1d585ae863c7d30c0ac8ab955dbdbbc5
++ Von den Einträgen eines *lokalen* Klassenpfads ist bekannt, dass sie keine URLs sind, daher muss ein
++ Musterabgleich über sie diesen Fall nicht behandeln:
+
+% 2 1 0 0521b6e831c478bd1768131fb1c1f531
+
+% 0 1 0 0c7d26c1528fd15d02a36297d1e14767
+
+% 0 1 0 1a16b09eba901cbf07d5c28fcc3f05d7
+
+% 0 1 0 1fc31d78fd6e31561075bd6fda1fe629
+
+% 0 1 0 1c2f031eff7dcbd41bdc26b57a257c39
+
+% 1 1 0 14faaeb8ab9bdede076e1dc48418d589
+
+@ 0 4 0 06efb10d41b76dbd0f67271eeea546a0
++ Ein Eintrag wird nach dem klassifiziert, was auf der Festplatte liegt, nicht nach seinem Namen.
++ `Classpath.Entry.classify(path)` macht einen nicht existierenden Pfad zu einem `Directory`, da er
++ eines werden kann. Es macht eine Datei, die mit einem ZIP-Trailer endet, zu einem `Jar`, und genau
++ das ist die ausführbare Datei eines Launchers mit Shebang-Präfix, obwohl ihr Name nicht auf `jar`
++ endet. Für jede andere Datei löst es einen `Io.Error` aus.
+
+@ 0 3 0 1ae82214b8d8c4b41c2cac6174d18f78
++ `LocalClasspath.running` ist der Klassenpfad, aus dem der laufende Prozess tatsächlich geladen
++ wurde: die Einträge eines `URLClassLoader`, dann die seiner Eltern, dann `java.class.path`, der Reihe
++ nach und jeder einmal. Ein Werkzeug, das Code gegen sich selbst kompiliert oder lädt, braucht das:
+
+% 2 1 0 1288708b859555401e2b05075c970c5f
+
+% 0 1 0 16dc30250898bc2409d813344f20c8e0
+
+% 0 1 0 016b9edbc485bb8c0a2a61070f5d76a0
+
+% 0 1 0 0b5d58a3fc847b18154564de0ffb4f9a
+
+% 1 1 0 1b9cf1ad15dd939d0a992588f4eb10a2
+
+@ 0 1 0 10e9dc441967f411156500b16118eb13
++ ### Dienste laden
+
+@ 0 3 0 1365fb497a9ea68302883a50e3899d1f
++ Der [Service-Provider](https://en.wikipedia.org/wiki/Service_provider_interface)-Mechanismus der JVM
++ findet die Implementierungen einer Schnittstelle, die auf dem Klassenpfad deklariert sind.
++ `services` liefert sie, typisiert auf den Dienst:
+
+% 2 1 0 1b02c4a280dc0b3814d5c3c3805f8d15
+
+% 0 1 0 1adb0437e185ecbb0b55d65576eca721
+
+% 1 1 0 07d40b62512ee3ef0d096c6fecb2e349
+
+@ 0 1 0 148359fe13cec8bd13e93eac7a0210f4
++ ### Einen Classloader bauen
+
+@ 0 6 0 1d66c056eb6ee87402ad2a94f0a8fbb3
++ Ein Klassenpfad baut einen Classloader über einem gewählten Elternteil, dem Plattform-Loader, sofern
++ kein anderer angegeben ist. Die *Delegation* des Loaders gibt an, welche Seite gewinnt, wenn er und
++ sein Elternteil beide eine Klasse gleichen Namens anbieten, und sie wird immer ausgeschrieben.
++ `Deferential` ist die übliche Reihenfolge der JVM, die dem Elternteil den Vortritt lässt und so die
++ Klassen des Elternteils mit dem geladenen Code teilt. `Preferential` bevorzugt die Einträge des
++ Klassenpfads selbst, was die Versionen der Bibliotheken eines Plugins von denen seines Hosts
++ isoliert:
+
+% 2 1 0 133d11598ff2ce670029e59b0c2443db
+
+% 0 1 0 1d277d6a58b7e76e1cde4e092027ff08
+
+% 0 1 0 0e7f9bc9f96eb1ce0b48051dba44c98b
+
+% 0 1 0 17ddd2261b4e854b066cffb3d51c1f1a
+
+% 0 1 0 16267cd8d89ecef11f8b2c3fb7f795f0
+
+% 1 1 0 08e1415f1790c6c2113a110842275481
+
+@ 0 2 0 18be3087d7a432820831ae11b749fb50
++ Hier sieht das Plugin den Vertrag, gegen den es geschrieben wurde, über sein Elternteil, während
++ alles andere, was es mitbringt, sein eigenes ist.
+
+@ 0 2 0 025f5385eb7641081c4b0d107f4dbb7b
++ Eine Ressource wird direkt aus einem Loader gelesen, über ihren Pfad. Das Ergebnis ist ein
++ [optionaler][optional] Wert, der nichts zurückhält, sodass das Lesen in einem `safely`-Block stehen
++ kann:
+
+% 2 1 0 02dfd8afcfa49a37041e087bf52c0bb5
+
+% 0 1 0 1370ca8e4ba5623e1672956a4c37d6c5
+
+% 1 1 0 19b488934dc03135107cb6e310b39c57
+
+@ 0 1 0 129ec83e1120d5bf02156a20f5d46d00
++ ### Unter einem Classloader ausführen
+
+@ 0 3 0 07f446333c2766ca1778035e19aaeca0
++ Ein `Classloader`-Wert führt einen Block aus, während er selbst als Kontext-Classloader des Threads
++ eingesetzt ist, und stellt danach den vorherigen wieder her. Das beschränkt einen Wechsel des
++ Classloaders auf genau den Code, der ihn braucht, etwa das Laden eines Plugins:
+
+% 2 1 0 1ec4466ccb692b93017ce8f07a58c3d9
+
+% 0 1 0 1fc6b850d344aee2077c7010734c134e
+
+% 0 1 0 1303c281e918d24010ef1526dc270136
+
+% 1 1 0 08f3772224f040f50f7d8a5527aa4034
+
+@ 0 2 0 16389d814d568d6f1ce43ed8eb78d23f
++ `Classloader[T]` findet den Classloader, der einen Typ geladen hat. So erreicht man den Classloader
++ eines Plugins von einer seiner Klassen aus.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 7 0 03af5e9c39ee2aa2182f9d2feed69c92
++ - [Pfade](paths.md) beschreibt die Pfadtypen, die eine Klassenpfad-Ressource teilt.
++ - [Streams](streams.md) beschreibt `read` und die Formen, als die eine Ressource gelesen wird.
++ - [Stacktraces](stack-traces.md#resolving-frames-to-their-source) lösen Frames über einen
++   Classloader auf.
++ - [Compiler](compiler.md) kompiliert Code gegen einen Klassenpfad.
++ - [Packaging](packaging.md) baut die JAR-Dateien, die zu Klassenpfad-Einträgen werden.
++ - [Umgebung](environment.md) beschreibt die Systemeigenschaften, aus denen der Klassenpfad gelesen
++   wird.

@@ -1,0 +1,3920 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 066e0607747f6f0c0076d2635ee00485
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1f5fa8b49fad56da124609d9ce793608
++ info   暗号化、署名、鍵合意、メッセージ認証。あらゆる選択が型になる
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 068dda9b8de940f816875afc858a597b
++     _Enigmatic_ は、アルゴリズム、鍵長、ブロック暗号のモード、パディング、署名のダイジェストといった*選択*が型であり、コードを書いたその場で検査される暗号ライブラリである。
++     CBC モードと PKCS#7 パディングを使う AES-256 での暗号化は、四つの決定すべてを `Aes[256] over Cbc against Pkcs7` と名指す。
++     カウンターモードとパディングの組み合わせのように仕様が禁じる組み合わせはコンパイルされない（`Permits`）。
++     弱い選択、すなわち DES、RC2、Blowfish、1024 ビットの RSA、DSA、ECB、そして*あらゆる*認証なしのブロック暗号のモードは、そもそも使う前に `cryptoPermits` の許可を名前でインポートする必要があるので、コードベースがレガシーな暗号を受け入れていることは、検索できる一つのインポートとして現れる。
+
+@ 0 10 0 0fc04b2aed9409db1d7cde62af443b31
++     鍵はその暗号方式で型付けされる。
++     `PrivateKey[cipher]` や `SymmetricKey[cipher]` がそのバイトを晒すことは決してない。鍵は `uncloak` ブロックの中で使われ、そこでブロックに `Encryptor` や `Decryptor` のケイパビリティとして貸し出され、キャプチャ検査がそれをブロックの中に閉じ込めるので、秘密の素材がどこで使われるかはコードの構造に表れる。
++     使われる合間にそれがどこに*保存*されるかは、スコープ内の `Cloak` が決める。これは `cloaks` パッケージから名前でインポートするもので、ヒープ上、ヒープ外のメモリ、あるいは一時的な鍵で暗号化した状態のいずれかである。
++     `Password` は、暗号方式が結びついていない同じ種類の秘密である。
++     アルゴリズムそのものは `Crypto` *プロバイダー*から来る。これも名前でインポートするもので、JDK のもの（`providers.javaBaseProvider`）、OpenSSL のもの（`providers.opensslProvider`）、純粋な Scala の `SoundnessCrypto`（`providers.soundnessProvider`）がある。
+
+% 2 1 0 1e601bd3aeb5367004bd82ba53991c58
+
+% 3 1 0 058625caea1d594103d8d939c74d3b63
+
+% 0 1 0 0ad93198262cba4102f10ea1980b5899
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0d5bf406e74cd04a13d75d4030990ef7
+
+% 1 1 0 1333e51de5d3b111114515521f7c8a8b
+
+% 2 1 0 1e9c05fbd4bbcbe51d980a2e8d19dd47
+
+% 3 1 0 03fdb5dcc0ea69cf0f5656cc1640f748
+
+% 0 1 0 0748dd2ae9d32bae02b0a4c21a25c4d4
+
+% 0 1 0 173b82e93420df05082371488719469d
+
+% 0 1 0 0aab230779b6a08b0c95afc939cee594
+
+% 0 1 0 1709475f1ef904d10424efa8ed0d4c78
+
+% 0 1 0 07bdd9ba6381f16809bdcfa682b176e3
+
+% 0 1 0 0eb593622147444300b7ff3239943f59
+
+% 0 1 0 09fc66e33c57001a0848d3739011d3df
+
+% 0 1 0 05effd46c52019bf0110e7456fd52688
+
+% 1 1 0 198ebfa6945ca2f1096d3f9c1d491c1c
+
+@ 0 1 0 11af449c315796f41f944f51f6639db7
++     ライブラリの表面を種類ごとに示す。
+
+@ 0 26 0 1021d1fc97a55c7a00aab2741af30ddf
++     - **共通鍵暗号**：`SymmetricKey`、モード `BlockCipher.Cbc`、`BlockCipher.Ecb`、`BlockCipher.Ctr`、`BlockCipher.Cfb`、`BlockCipher.Ofb` とパディング `BlockCipher.Pkcs7`、`BlockCipher.Iso10126`、`BlockCipher.NoPadding` の上のブロック暗号 `Aes`、`Blowfish`、`Des`、`TripleDes`、`Rc2`、そして `encrypt`/`decrypt` 拡張メソッド（値全体、`Chain`、`Stream` に対するもの）。暗号化のたびに `InitializationVector` を明示する。
++     - **認証付き暗号とキーストリーム**：`AesGcm` と `ChaCha20Poly1305`（ノンスと関連データのもとでの `seal` と `unseal`）、素のキーストリームとしての `ChaCha20`（`xor`）、ワンタイムの認証子としての `Poly1305`。
++     - **公開鍵暗号**：`Rsa`（暗号化と署名を行う）、`Dsa`、`Ecdsa`、`Ed25519`、耐量子の `MlDsa`（`Signature` で署名と検証を行う）、そして `X25519` と `Ecdh`（共有の秘密について `agree` する）の上の `PrivateKey`/`PublicKey`。
++     - **メッセージ認証**：任意の gastronomy のハッシュの上の `hmac[Sha2[256]](key)`。`Hmac` として得られる。
++     - **鍵のドキュメント**：`PrivateKey` は PKCS#8、PKCS#1、SEC1、または OpenSSH 独自のコンテナーの PEM や DER から読み、`PublicKey` は `PUBLIC KEY`/`RSA PUBLIC KEY` のブロックや OpenSSH の `authorized_keys` の行（`OpenSsh`）から読む。どれも名指した暗号方式に照らして検査される。`KeyAlgorithm` はその検査の背後にある型クラスで、`Pkcs8` と `Spki` は二つのドキュメントの形である。秘密鍵を書き出す（`pem(Divulgence)`、`data(Divulgence)`）には `Divulgence` トークンが必要である。
++     - **ASN.1 と DER**（`enigmatic.asn1`）：`Asn1`、すなわち PKIX が使うユニバーサル型と、正準の `Der` コーデック、そしてブロックの束を遅延的にパースする `Pem` のアーマー形式。
++     - **X.509**（`enigmatic.x509`）：`Distinguished` 名と `SignatureAlgorithm` の上の `Certificate.selfSigned` と `Certificate.issued`。ML-DSA で署名された証明書も含む。
++     - **COSE**（`enigmatic.cose`）：`CanonicalCbor` の上の、`Cose` の署名付きメッセージと MAC 付きメッセージ。`HmacCipher` が HMAC を鍵の仕組みに適合させ、`authenticate[Cose](key)` が検証する。
++     - **OpenSSL**（`enigmatic.openssl`）：`libcrypto` の上のプロバイダー `OpensslCrypto`。
++     - **キーストア**（JVM のみ）：`path.open[Keystore](password)` で開く PKCS#12 のストア。ブロックの中で `keystore` が提供する。
+
+@ 0 8 0 11d48005f39943b400be8e3046e2a05e
++     ソースセットは `enigmatic.asn1`（最下層。`Asn1`、`Der`、`Pem`）、`enigmatic.core`（その上にあるプラットフォーム中立なものすべて。純粋な Scala のプロバイダー `SoundnessCrypto` を含む）、そして JVM、Scala.js、Scala Native それぞれのためのプラットフォーム層一つずつである。
++     JVM 層には `javax.crypto` の上の本物の `JavaBaseCrypto`、四つのクロークすべて、`Keystore` がある。Scala.js と Scala Native の層には、AES、HMAC、AES-GCM、ChaCha20、X25519、Ed25519 を `SoundnessCrypto` に転送し、それ以外のもの（RSA、DSA、ECDSA、ML-DSA、レガシーなブロック暗号）ではパニックする `JavaBaseCrypto` の双子と、`heapCloak` だけがある。
++     `enigmatic.openssl`、`enigmatic.x509`、`enigmatic.cose` は `core` の上に位置する。
+
+@ 0 8 0 18914397c797e0770aa2656fa6dc0e4a
++     すべては `soundness` アンブレラにエクスポートされ、そこで選択パッケージ `cloaks`、`providers`、`blockCipherModes`、`blockCipherPaddings`、`signatureDigests` はアンブレラ自身のものとマージされる。
++     `import soundness.*` は given をインポートしないので、クローク、プロバイダー、そして（型がそれらを名指さないブロック暗号では）モードとパディングは、それぞれ名前でインポートする。
++     二つの given は、意図してそれらのパッケージから外してある。
++     `BlockCipher.Ecb.mode` と `BlockCipher.NoPadding.padding` には、型の中で名指すこと（`over BlockCipher.Ecb`、`against NoPadding`）でしか到達できない。それぞれが、再エクスポートされた given では運べないコンテキストパラメーター（それぞれ許可と `Tactic[Crypto.Error]`）を取るからである。
+
+% 0 1 0 00aca2f030b2b9cb1204dfdc4f94e288
+
+% 0 1 0 1cb9545f2666ecbc137632c8f184f16c
+
+% 0 1 0 0e7bfe5ee0df05bf18b695def15ef0e2
+
+% 0 1 0 0ef44336b742140e15c86b971cae6e2c
+
+% 0 1 0 0b414540a248e336147ba3469954ba40
+
+% 0 1 0 1625a73067616cda04f5dad7a7b6c72f
+
+% 0 1 0 01c774325a078be706c5a3ad27c4c86e
+
+% 0 1 0 10cd842112a374951ff7297b8df274cf
+
+% 0 1 0 08f282bd83486a580c1cff8ad167f11f
+
+@ 0 1 0 010a8c0b4188e859039e4d9a5e20a8fd
++ entry .Crypto   差し替え可能な暗号プロバイダー。型付きの API が処理を委ねるアルゴリズム
+
+% 1 1 0 098872834cbd33fd002c63ba9bf7ae6c
+
+@ 0 7 0 127805b04be6d21e1178b5b6f41b2aad
++       `Crypto` はプロバイダー（JDK の JCE、OpenSSL、または純粋な Scala の `SoundnessCrypto`）であり、型付きのあらゆる操作が処理を委ねる生の実装を提供する。
++       これはコンテキスト値であり、プロバイダーを一つ名前でインポートして選ぶ。
++       `providers.javaBaseProvider`（gastronomy の JDK のマーカーで、そこから `.javaBaseCrypto` が `JavaBaseCrypto` を導く）、`providers.soundnessProvider`（そこから `.soundnessCrypto` が `SoundnessCrypto` を導く）、または `providers.opensslProvider`（直接 `OpensslCrypto`）である。
++       この一つのインポートで、ハッシュと暗号の両方が選ばれる。
+
+@ 0 6 0 0762f2e3560f2de51884d47bba57521c
++       どのプロバイダーも必須の基本部分、すなわち `#random`、`#aes`、`#rsa`、`#hmac`、`#rsaSignature` を実装し、それ以外のもの（DES、Blowfish、RC2、DSA、ECDSA、Ed25519、ML-DSA、X25519、ECDH、AES-GCM、ChaCha20）は*追加の*メンバーとして提供する。暗号方式の given は、`Crypto { def ecdsa(digest: Text): Crypto.SignatureScheme }` のような構造的な細分化を通してそれらに到達する。
++       したがって、プロバイダーが提供しないアルゴリズムは、実行時の失敗ではなく、使用箇所でのコンパイルエラーになる。
+
+@ 0 4 0 0e0bb5ab1f370b9b0eacee8d47ab6f15
++       入力と出力はすべて `Data` と `Text` の記述子であり、契約にプラットフォームの暗号の型は現れない。
++       鍵の素材は JCE のエンコーディングに従う。共通鍵は生のバイト、秘密鍵は PKCS#8、公開鍵は X.509 の `SubjectPublicKeyInfo` である。共通鍵の暗号文は、モードが IV を使う場合、IV の後に生の暗号文が続いたものである。
+
+@ 0 1 0 18afdcee4cc3d3951ab2e0242c8b37a0
++       独自のプロバイダーは普通の `given Crypto` であり、テストはこのようにして乱数を固定する。
+
+% 2 1 0 1c2c3b8254fbf1f1192db36fca448977
+
+% 3 1 0 042e44ac5b2a8be6127796b6f9011ac2
+
+% 4 1 0 05a438c2a9d2739d072d30700511405f
+
+% 3 1 0 02ffa425ec0d6a6b0ca4d9f17b42adc4
+
+% 2 1 0 1a225c9ee0a3173914e0f763da786f71
+
+% 0 1 0 05524a0e9c839b860464088714cdb3e3
+
+% 0 1 0 1b0b4081b7b6e3630fa0e76bf52529eb
+
+% 0 1 0 1ee943b1c93258981e17ee5b68982d57
+
+% 0 1 0 160650dc59d4fa41075177905cbb6844
+
+% 0 1 0 1f30f32f6664e053132d85245e84be5e
+
+% 0 1 0 0c27cb8bd41ffb0f1ea1c4b4a5690267
+
+% 2 1 0 02e205180deeb5311a79cf08c65036f6
+
+% 0 1 0 0948dfaadca69b420d3efc1b50119488
+
+% 1 1 0 1d333ece2d69386109550a36a5d1a8ba
+
+% 1 1 0 030084c17ede343403e653f88fb1e2d5
+
+% 1 1 0 0777c7062a76250010a1811d5082ccdf
+
+% 1 1 0 1cfb612df8a7c498168481d732914c9a
+
+@ 0 9 0 0fa37f7b7c5a379c054ede2eba4ef3c7
++   entry .javaBaseCrypto   JDK のプロバイダー。`providers.javaBaseProvider` がインポートされていれば常に
++       gastronomy の `Provider.JavaBase` マーカーから導かれる `JavaBaseCrypto.type` の given なので、`import providers.javaBaseProvider` 一つでハッシュと暗号の両方が有効になる。
++       Scala.js と Scala Native では、これが提供する `JavaBaseCrypto` は、移植可能なアルゴリズムを `SoundnessCrypto` に転送する双子である。
++   entry .soundnessCrypto   純粋な Scala のプロバイダー。`providers.soundnessProvider` がインポートされていれば常に
++       gastronomy の `SoundnessHashing` マーカーから導かれる `SoundnessCrypto.type` の given なので、一つのインポートでハッシュと暗号方式の両方の Scala による実装が得られる。
++   entry .SymmetricCipher   プロバイダーから見たブロック暗号。生の鍵に対する JCE 流の変換
+
+% 1 1 0 1d5a239eb55f13c91346425baa90fb6c
+
+@ 0 11 0 072f0e19ff06952812c10d56bcce032f
++         `#aes` とレガシーなブロック暗号が満たす契約である。
++         `transformation` は `BlockCipher` が組み立てる完全な JCE の指定で、`AES/CBC/PKCS5Padding` のようなものである。
++         `encrypt` と `decrypt` は、IV が与えられた場合、それを暗号文の先頭のブロックとしてフレーミングする。
++         `stream` と `decryptStream` は、チャンクごとの処理のための `Cipher.Session` を開く。
++     entry #encrypt   `data` を `key` のもとで暗号化する。`iv` が与えられれば暗号文の前に付ける
++     entry #decrypt   `data` を復号する。サイズが与えられれば先頭の `ivSize` バイトを IV として読む
++     entry #blockSize   変換のブロックサイズ（バイト）。AES では 16、DES、Triple-DES、Blowfish、RC2 では 8
++     entry #generateKey   `bits` ビットの新しいランダムな鍵の素材
++     entry #stream   `key` のもとで暗号化する `Cipher.Session`。`iv` はすでに適用されている
++     entry #decryptStream   `key` のもとで復号する `Cipher.Session`。IV はすでに暗号文から切り離されている
++   entry .PublicKeyCipher   非対称暗号。公開鍵に向けて暗号化し、秘密鍵で復号する
+
+% 1 1 0 0475db071dbb85440e1fa4a032db7e4b
+
+@ 0 8 0 1bbcdf02266ff062113925a18d78aa92
++         `#rsa` が満たす契約である。
++         鍵は PKCS#8（秘密鍵）と `SubjectPublicKeyInfo`（公開鍵）である。
++         `generateKeyPair` は秘密鍵を返し、`privateToPublic` がそこから公開鍵を取り出す。
++     entry #encrypt   `input` を `SubjectPublicKeyInfo` の公開鍵のもとで暗号化する
++     entry #decrypt   `input` を PKCS#8 の秘密鍵で復号する
++     entry #generateKeyPair   `bits` ビットの新しい PKCS#8 の秘密鍵
++     entry #privateToPublic   PKCS#8 の秘密鍵の `SubjectPublicKeyInfo`
++   entry .SignatureScheme   署名方式。秘密鍵で署名し、公開鍵で検証する
+
+% 1 1 0 02975208e3d18a7319164fdbc02dd155
+
+@ 0 11 0 1ab6bb7a374fb3391faa350935e5b6aa
++         `#rsaSignature` と、構造的なメンバー `dsa`、`ecdsa`、`ed25519`、`mlDsa` が満たす契約である。
++         `verify` は、署名がデコードできないとき、例外を投げるのではなく `false` を答える（JDK の ML-DSA は最後のバイトが壊れていると例外を投げるので、プロバイダーはそれを捕捉しなければならない）。
++     entry #sign   PKCS#8 の秘密鍵による `data` に対する署名
++     entry #verify   `signature` が `SubjectPublicKeyInfo` の鍵のもとで `data` に対する有効な署名かどうか
++     entry #generateKeyPair   新しい PKCS#8 の秘密鍵。方式が公開鍵を導けない場合は公開鍵の側も持つ
++     entry #privateToPublic   PKCS#8 の秘密鍵の `SubjectPublicKeyInfo`
++   entry .Mac   鍵付きのメッセージ認証コード
++     entry #mac   `key` のもとでの `data` に対する認証コード
++   entry .KeyAgreement   Diffie–Hellman 流の合意。二つの鍵ペアから一つの共有の秘密を得る
+
+% 1 1 0 03a319fc3b4fdaef1348811e843b8506
+
+@ 0 8 0 1fb76f3508b10d1613a2d4ad4e7bc8d0
++         構造的なメンバー `x25519` と `ecdh` が満たす契約である。
++         `generateKeyPair` は公開鍵の側を持つ PKCS#8 の秘密鍵を返し、`privateToPublic` はその公開鍵の側を `SubjectPublicKeyInfo` として取り出し、`agree` は生の共有の秘密である。プロトコルはこれを直接使うのではなく、鍵導出関数に渡す。
++     entry #generateKeyPair   公開鍵の側を持つ新しい PKCS#8 の秘密鍵
++     entry #privateToPublic   PKCS#8 の秘密鍵の `SubjectPublicKeyInfo`
++     entry #agree   秘密鍵と相手の公開鍵から得られる生の共有の秘密
++   entry .StreamCipher   キーストリームとしてのストリーム暗号。`xor` で適用する
+
+% 1 1 0 09012c59dbd4010e01dd2d3f586310f5
+
+@ 0 6 0 02820e0807fb4a450fa182b24d7470ea
++         構造的なメンバー `chaCha20` が満たす契約である。
++         `xor` は、鍵、ノンス、開始ブロックカウンターに対するキーストリームをデータに適用する。これで暗号化も復号も行える。
++     entry #generateKey   `bits` ビットの新しいランダムな鍵の素材
++     entry #xor   `key`、`nonce`、ブロック `counter` のキーストリームと結合した `data`
++   entry .Aead   関連データ付き認証付き暗号。ノンスのもとで封印し、封印を解くか拒否する
+
+% 1 1 0 17caa95719fac6f50259d35a1a63abe0
+
+@ 0 9 0 17f01fe24a4366221126777c46b76280
++         構造的なメンバー `aesGcm` と `chaCha20Poly1305` が満たす契約である。
++         `seal` はタグを付け加えた暗号文を返す。
++         `unseal` はタグが検証できなければ `Unset` である。
++     entry #generateKey   `bits` ビットの新しいランダムな鍵の素材
++     entry #seal   `key` と `nonce` のもとでの `plaintext` の暗号文。`associated` も認証し、タグを付け加える
++     entry #unseal   `ciphertext` の平文。タグが検証できなければ `Unset`
++   entry .Random   暗号学的に強いランダムなバイトの源
++     entry #bytes   `size` 個のランダムなバイト
++   entry .Error   復号や封印の解除が失敗したときに発生する。誤った鍵、壊れたデータ、不正なタグ
+
+% 1 1 0 19087be469d094fe1de5a96a48e4def5
+
+@ 0 6 0 19808348a394b0f41ef2dc9d0d9193e9
++         エラー `↯/s.105.2`：_could not decrypt the data because `reason`_。
++         暗号化は全域的である（型が正当な変換を保証する）ので、失敗しうるのは処理の側だけである。
++         `Data#decrypt`、ストリーミングの `decrypt`（最後のウィンドウが引き出されるとき）、`unseal`、そして境界の揃っていない入力に対する `BlockCipher.NoPadding` での暗号化である。
++         プロバイダー自身の失敗（`javax.crypto.BadPaddingException` など）は `#reason` に対応づけられ、そのメッセージは `#detail` として保持される。
+
+% 2 1 0 192df6e62a04763719dda20c99310ce3
+
+% 3 1 0 177554eed45e795f0258bdeef9045794
+
+% 0 1 0 18464b19ab8acee113076f882fe63822
+
+% 0 1 0 0d4c8c06c12e7a171db754d8214054ed
+
+% 1 1 0 1dfca9b50faafdb5041dc722e90146d9
+
+% 0 1 0 19a760161d9bb3b60a6dbac3a892d268
+
+% 0 1 0 1f247e5be16091cf0cbddd68466c42b8
+
+% 0 1 0 0acbec2a4bca638f0fd616b8dd66b748
+
+% 0 1 0 01672fbd528afff91c2ce8ec8f443948
+
+% 1 1 0 013da9096444ca1806089ad1a6efef70
+
+@ 1 2 0 1865534471504a290de3b5ea431227b7
++     entry .communicable   各理由をメッセージとして描画する
++     entry .Reason   操作が失敗した理由
+
+% 1 1 0 0b29cb2b67d0c22e0951ce28ca4b47de
+
+@ 2 4 0 03657a026322aab81bfc1cd1f22bdf49
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  備考
+
+% 0 1 0 1ca0702d00d118c71ec77e7aa0ef4d41
+
+@ 0 2 0 1af80457e0ef9f1c1fb10f50f9ca3abc
++         row  `IllegalBlockSize`  2  _the input length was not valid for the cipher_  ブロック境界に揃えるモードで、ブロックサイズの倍数でない入力に対して `BlockCipher.NoPadding` が発生させるもの
++         row  `InvalidKey`  3  _the key was not valid for the cipher_  `SymmetricKey(bytes)` で取り込んだ、長さの誤った鍵の素材など
+
+% 0 1 0 1ef0a336bf7f00141d4ce05f724218c0
+
+@ 0 2 0 070c855e7e9ebe51072369bf3ef9fea7
++         row  `IoFailure`  5  _data could not be read or written_  それ以外の `java.security.GeneralSecurityException` の対応先
++         row  `BadTag`  6  _the authentication tag did not verify_  `unseal` から。偽造、誤った鍵、または封印時とは異なるノンスや関連データ
+
+% 1 1 0 030a59b218264fe90acbd617aca718bb
+
+@ 0 9 0 02a71c72b26ed22d198ae00436ef55b3
++     entry #reason   どの失敗だったか
++     entry #detail   プロバイダー自身のメッセージ。与えられていれば
++   entry #random   プロバイダーの乱数源。`InitializationVector.random` はここから取り出す
++   entry #aes   ブロック暗号のモードとパディングでの AES。必須
++   entry #rsa   生の RSA の暗号化と復号。必須
++   entry #hmac   `HmacSHA256` のような JCE の名前のアルゴリズムの上の HMAC。必須
++   entry #rsaSignature   名前を指定したダイジェスト（`SHA256` など）の上の RSASSA-PKCS1-v1_5。必須
++       `dsa` や `ecdsa` と違い、署名が基本部分に含まれるのは、`Rsa` が一つの鍵ペアで暗号化と署名の両方を行い、その given が `Crypto` しか求めないからである。
+
+@ 0 1 0 17725a45be0cb42f0261b456b62d98c5
++ entry .JavaBaseCrypto   JDK の `javax.crypto` と `java.security` の上の `Crypto` プロバイダー
+
+% 1 1 0 140ef611761a3558141b4c4c0d63ab4b
+
+@ 0 7 0 02894fd5ac64ae8b14d0aff05997415c
++       `import providers.javaBaseProvider` で選ばれるデフォルトのプロバイダーであり、ライブラリの中のあらゆる `javax.crypto` と `java.security` の呼び出しが置かれる唯一の場所である。
++       JVM では全機能を提供する。基本部分、レガシーなブロック暗号、DSA、ECDSA、Ed25519、ML-DSA（JDK 24 以降。それより前の JDK では最初の使用時に _the JDK does not provide ML-DSA; JDK 24 or later is required_ でパニックする）、X25519、ECDH、AES-GCM、ChaCha20、ChaCha20-Poly1305 である。
++       その署名の検証器は、JDK がデコードできない署名に対して、例外を投げるのではなく `false` を答える。
+
+@ 0 6 0 1fe2d0d061dbcbcf07b5d6c44210166b
++       EC、Ed25519、X25519、ML-DSA の秘密鍵には、JCA でその公開鍵に戻る経路がないので、プロバイダーは生成時に公開鍵を PKCS#8 のドキュメントに埋め込み（EC では SEC1 の `ECPrivateKey` の中に、それ以外では RFC 5958 のトップレベルの `[1]` フィールドに）、JCA を呼び出す前にそれを再び取り除く。
++       OpenSSL の暗黙の形でそのフィールドを持つドキュメントも読める。
++       そのフィールドのないファイルから読んだ鍵は、`PrivateKey` によって `PublicKeyAbsent` として拒否される。
+
+@ 0 5 0 0efa24f32da4c9d71b35666b9a6f29f4
++       `javax.crypto` が存在しない Scala.js と Scala Native では、`JavaBaseCrypto` は `random`、`aes`、`hmac`、`aesGcm`、`chaCha20`、`chaCha20Poly1305`、`x25519`、`ed25519` を `SoundnessCrypto` に転送する双子であり（なので、それらについては `import providers.javaBaseProvider` がそこでもそのまま動く）、`rsa`、`rsaSignature`、`ecdsa`、レガシーなブロック暗号では最初の使用時にパニックする。
+
+% 1 1 0 0e4b3b7dad573671146a0480082f35ec
+
+% 1 1 0 08c69280bf8c02ef1f3f025263eb7dc8
+
+% 0 1 0 006d3de451b96cc50e311a0f5e9de345
+
+@ 0 7 0 05e36e44fe13b77113be7cb2859942d0
++   entry .aes   `Cipher.getInstance` を通した AES。JDK が対応するあらゆるモードとパディングで
++   entry .des   DES。`Permit[Concession.Des]` が必要
++   entry .tripleDes   Triple-DES（`DESede`）。`Permit[Concession.TripleDes]` が必要
++   entry .blowfish   Blowfish。`Permit[Concession.Blowfish]` が必要
++   entry .rc2   RC2。`Permit[Concession.Rc2]` が必要
++   entry .hmac   名前を指定したアルゴリズムの上の `javax.crypto.Mac`
++   entry .rsa   `Cipher.getInstance("RSA")` を通した生の RSA
+
+% 0 1 0 09676ed84984abc61a3be13469b696a2
+
+@ 0 9 0 03b30a7f1d856a351fea1567c86967db
++   entry .ecdsa   鍵長に応じて P-256、P-384、P-521 の上の `<digest>withECDSA`
++   entry .ed25519   Ed25519。公開鍵は生成された秘密鍵に埋め込まれる
++   entry .x25519   `KeyAgreement.getInstance("X25519")` を通した X25519 の鍵合意
++   entry .ecdh   NIST の素数曲線の上の ECDH。その鍵は `.ecdsa` のものと同じドキュメントである
++   entry .aesGcm   128 ビットのタグを使う AES/GCM/NoPadding
++   entry .chaCha20   素の ChaCha20 のキーストリーム。IETF のノンスとカウンターを使う
++   entry .chaCha20Poly1305   ChaCha20-Poly1305 の AEAD
++   entry .mlDsa   レベルに応じて ML-DSA-44、-65、-87。JDK 24 以降
++   entry .dsa   DSA 署名。公開鍵は秘密鍵から計算される
+
+@ 0 1 0 1a811fd0c5e3c4bd178a46ccda834ed2
++ entry .SoundnessCrypto   純粋な Scala の `Crypto` プロバイダー。Scala が動くところならどこでも使える暗号
+
+% 1 1 0 1d0a60d412a941f9188599254420fcd3
+
+@ 0 7 0 087459b52fff903213acc308431c725f
++       `import providers.soundnessProvider`（gastronomy の純粋なハッシュとともに）で選ばれるプロバイダーであり、gastronomy のハッシュ関数の上に Scala で実装されているので、暗号は JVM だけでなく、OpenSSL なしで Scala.js、WASI、Scala Native でも動く。
++       五つのブロックモードと三つのパディングでの AES（ストリーミングを含む）、AES-GCM、あらゆる gastronomy のハッシュの上の HMAC、ChaCha20 と ChaCha20-Poly1305、X25519、Ed25519 を提供する。SSH、TLS 1.3、その他現代のインターネットが土台とするプリミティブである。
++       その暗号文と署名は、JDK のものと双方向に相互運用できる。
+
+@ 0 3 0 17ad972d3293cefb1d1ab6dafa9a4fd6
++       RSA、DSA、ECDSA、ML-DSA、レガシーなブロック暗号は提供しない。
++       `.rsa` と `.rsaSignature` はパニックし、その他は単に持っていない構造的なメンバーなので、これに `Ecdsa[256]` を求めるとコンパイルエラーになる。
+
+% 2 1 0 119cc9bc0204951003fcb02235679c84
+
+% 3 1 0 02fa312bc9427c0b1351b62090ed5cb0
+
+% 4 1 0 003c1c6acccb2ddf0107fc3132634b8a
+
+% 0 1 0 155254bd4676bb2116d9b9887e7294cc
+
+% 1 1 0 09287630121c835c14e190e50b78296c
+
+% 3 1 0 16fb9d7d179b336c159ebdc504d12dc4
+
+% 0 1 0 012a1ef9a851f71a0e2ddba192a3e551
+
+% 0 1 0 165ef4503604bcb708bd8e7f09d110db
+
+% 1 1 0 1fafd15d694063b606507970e86ff933
+
+@ 0 7 0 1a277be9fcaf73420078aba51b343efd
++       注意：これは移植可能でレビューしやすいコードであり、堅牢化されたライブラリではない。
++       独立した監査を受けておらず、その AES はバイト単位のソフトウェア実装なのでキャッシュタイミングへの耐性がなく、その Curve25519 の演算は `BigInt` を使っており、その操作は定数時間ではない（署名に数ミリ秒かかる）。
++       プラットフォームがネイティブのプロバイダー（JDK のものや OpenSSL）を提供しているなら、攻撃者が時間を計測できる鍵にはそちらを使うべきである。これは、ブラウザと WASI に何もない状態を残さないために存在する。
++       その乱数は、JVM では `SecureRandom`、Scala.js では `crypto.getRandomValues`、Scala Native では `/dev/urandom` である。
+
+% 1 1 0 1f49350d2d3c54b409d7d57e13a66ff3
+
+% 1 1 0 1668428cb8d257161d3d067907c84c66
+
+@ 0 15 0 0fff103537996bbd0a3d171baf5d7784
++   entry .random   プラットフォームのエントロピー源
++   entry .aes   Scala の Rijndael の上の AES。CBC、ECB、CTR、CFB、OFB で、PKCS#7、ISO 10126、またはパディングなし
++       CFB と OFB はフルブロック（128 ビットのフィードバック）のバリアントであり、CTR は 128 ビットのカウンターブロック全体をインクリメントする。これは JDK と一致しているので、一方で作った暗号文は他方で復号できる。
++   entry .hmac   `HmacMD5`、`HmacSHA1`、`HmacSHA224`、`HmacSHA256`、`HmacSHA384`、`HmacSHA512`、`HMAC-BLAKE3` の上の RFC 2104
++   entry .rsa   提供しない。_RSA is not provided by SoundnessCrypto; select the JDK or OpenSSL provider_ でパニックする
++   entry .rsaSignature   提供しない。`.rsa` と同じようにパニックする
++   entry .aesGcm   テーブルを使わない GHASH による AES-GCM
++   entry .chaCha20   RFC 8439 の ChaCha20 のキーストリーム
++   entry .chaCha20Poly1305   RFC 8439 の ChaCha20-Poly1305 の AEAD
++   entry .x25519   `BigInt` の体の演算の上の X25519。定数時間ではない
++   entry .ed25519   `BigInt` の体の演算の上の Ed25519。定数時間ではない
++       JDK と違い、このプロバイダーは秘密から公開鍵を導くので、公開鍵の側を持たない PKCS#8 の Ed25519 の鍵も受け入れる。
+
+@ 0 1 0 005ba955901e7e8019e0624bf1aedb50
++ entry .Cipher   あらゆる暗号方式の型が持つもの。鍵長、鍵の生成、鍵の公開鍵の側
+
+% 1 1 0 05c7a6570884277e0e948e7b2da8cb46
+
+@ 0 7 0 1fb05cf71d2df4740ed2f7c627d5ca44
++       暗号方式の階層の根である。
++       暗号方式のインスタンスは、スコープ内の `Crypto` プロバイダーとともにそのコンパニオン（`Aes.value`、`Rsa.value` など）から given として召喚され、プロバイダーの実装を持つ。
++       `SymmetricKey.generate[cipher]()` と `PrivateKey.generate[cipher]()` はその `#genKey` を呼び出す。
++       暗号方式が担う役割は、その他の親である。`Encryption`（暗号化と復号を行う）、`Signing`（署名と検証を行う）、`Agreeing`（秘密について合意する）、`Authenticated`（封印と封印の解除を行う）、`Keystream`（`xor`）、`Symmetric`（その鍵が両方の側である）である。
+
+% 1 1 0 184be51046275773013f43e2aada852c
+
+% 0 1 0 161cbb9359313bdc04d35fe876c2aa1b
+
+% 0 1 0 049738cc4b8df8660011f987e21af180
+
+@ 0 1 0 18adbabfd4d8604501c8f7dc67f53525
++   entry .Session   プロバイダーが所有する、状態を持つストリーミングのセッション。チャンクを与え、最後に終える
+
+% 1 1 0 062e03e4ea9510330370265d866cfb5f
+
+@ 0 9 0 13ee7bc00247c28c1dbd85cf9310bfe5
++         `Crypto.SymmetricCipher#stream` または `#decryptStream` で、IV をすでに適用した状態で開かれる。
++         `update` は次々とチャンクを与え、`finish` は最後のブロックを吐き出す。パディング付きの復号では、そこでパディングが取り除かれ、不正なパディングが報告される。
++     entry #update   入力のもう一つのチャンクに対する出力。ブロックがバッファーに溜まっている間は空のこともある
++     entry #finish   パディングを適用または除去した後の最後の出力
++   entry #Size   ビット単位の鍵長。リテラル型として
++   entry #keySize   ビット単位の鍵長
++   entry #privateToPublic   鍵の公開鍵の側。プロバイダーのエンコーディングで。共通鍵暗号では鍵そのもの
++   entry #genKey   プロバイダーから得る新しい鍵の素材。生の鍵、または PKCS#8 の秘密鍵
+
+@ 0 1 0 198ac56403c881b31d7b5eb28f9ed54b
++ entry .Cloak   秘密の素材を使っていない間に保存しておく場所
+
+% 1 1 0 172d0108bb5f0b23047fdac108b4f2d7
+
+@ 0 5 0 1ea9522ac5c4f541129572158d8e5367
++       どんな秘密の値（`Password`、`SymmetricKey`、`PrivateKey`、ファイルから読んだ鍵）を構築するにも、スコープ内に `Cloak` がなければならず、秘密はそれを保存するクロークをキャプチャするので、秘密がその保存場所より長く生き延びることは決してない。
++       デフォルトの given は意図して用意していない。
++       クロークは `cloaks` パッケージから名前でインポートするので、保存についての決定は常に書き記される。
+
+% 2 1 0 014aaec416e144b113853cce15145f09
+
+% 3 1 0 0ecbb53729668d0d11b73c803c445dac
+
+% 4 1 0 15465a9d87df5eb51ca55fb1c9b3b1c4
+
+% 5 1 0 0db9b4cc6b25354e1310117a9179e6ce
+
+% 2 1 0 0fb9b602f5df8ee511a88436b1f92b05
+
+% 3 1 0 0c386caf46472ff414c702d99b3f14ce
+
+% 1 1 0 1528044cebafef0d1fb65736cd40b357
+
+@ 0 7 0 02f4b637176c4a8e142afd86f8fae850
++       `heapCloak` は素材を非公開のバイト配列に保持し、純粋である。ヒープでクロークされた秘密のキャプチャ集合は空であり、自由に保存したり返したりできる。
++       `offHeapCloak` は素材を Java のヒープの外に移すので、ヒープダンプに現れない。
++       `veiledHeapCloak` と `veiledOffHeapCloak` はさらに、使用の合間に一時的な AES-256-GCM の鍵で素材を暗号化しておく。
++       これら三つはケイパビリティである。それらのもとで作られた秘密はそれをキャプチャし、`SymmetricKey[Aes[256]]` のような純粋な型を割り当てることができない。
++       これらは `java.lang.foreign` を必要とする JVM にしか存在しない。
+
+@ 0 4 0 05742e58c5c312920651c98f918815a5
++       完全な保護を与えるクロークはない。
++       デバッガーや同じプロセス内の攻撃者にはすべてが見え、JCE は鍵の素材の一時的なコピーをヒープ上に作り、`Text` からの構築はゼロで埋められない `String` をヒープ上に固定する。
++       より強いクロークが狭めるのは、平文にヒープダンプやコアファイルから到達できる*期間*である。
+
+% 0 1 0 0c69d3c6172c5369087c691c17d94e28
+
+% 0 1 0 1e6a8f8f24b4e4b519e6f4daec48184f
+
+@ 0 3 0 06f0eecf06385526024260b592930894
++   entry #cloak   バイトをクロークの保存場所にコピーし、入力をゼロで埋めて `Secret` を返す
++       入力の配列はメソッドが戻る前にゼロで埋められるので、呼び出し側の平文のコピーが残ることはない。
++       `Secret` はこのクロークをキャプチャする。
+
+@ 0 1 0 0230dfb66ee664001eab337641163884
++ entry .Secret   `Cloak` を通して保存された一つの秘密へのハンドル。`soundness` にはエクスポートされない
+
+% 1 1 0 1ec06a93d3895d1d0269af4846af3285
+
+@ 0 7 0 13c61050833b5565121e7e1e494c1d64
++       直接使うためのものではない。
++       ユーザーのコードは、`Password`、`PrivateKey`、`SymmetricKey` とその `uncloak` メソッドを通してのみ秘密に到達する。
++       `Secret` 自体はケイパビリティではない。それが追跡されるかどうかは、それを作った `Cloak` から来る。ヒープ外や暗号化を行うクロークから作られたものはそのクロークをキャプチャし、ヒープのクロークから作られたものは純粋である。
++   entry #uncloak   秘密を可変のバイト配列としてブロックに貸し出し、ブロックを抜けるときにゼロで埋める
++       配列はクロークが保存している場所から実体化され、ブロックが正常に抜けても異常に抜けても `finally` の中でゼロで埋められるので、ブロックの外に逃がしてはならない。
+
+@ 0 1 0 067efffa9dde001e0106cc78825b3d09
++ entry .Password   `Cloak` が不透明に保持するパスワード。`uncloak` の中でのみ読める
+
+% 1 1 0 04e8d04d105b3b84148cfafac62f19d6
+
+@ 0 5 0 01e85af78829de971d047c8704ff812a
++       `Password` は、暗号方式が結びついていないクロークされた秘密である。
++       その平文には `#uncloak` の中でのみ到達でき、可変の char 配列の上の `Cleartext` ケイパビリティとして得られる。キャプチャ検査がそれをブロックの中に閉じ込め、ブロックを抜けるときにゼロで埋められる。
++       その `show` と検査の形が平文を明かすことは決してない。
++       構築するにはスコープ内に `Cloak` が必要であり、`path.open[Keystore](…)` が取るフラグである。
+
+% 2 1 0 1fc6c921968e98400ecfe6124064ed07
+
+% 3 1 0 1d5dc252b3f1b0140bb62547f8c19674
+
+% 4 1 0 1cf83ebde11b43c9051704f580ed1a0d
+
+% 2 1 0 052935e8dd0597490c2f5230b75f3138
+
+% 3 1 0 0f2ce2c924ff6f2b0f5d916c0ad9a12f
+
+% 0 1 0 13a5303330e059d81db80447cb10d9d9
+
+% 1 1 0 0bb8fb355c55a6901a84aeb51b71dcb8
+
+% 0 1 0 117f3db2243905961b74d04ac0ee4e89
+
+% 1 1 0 181820bf05f4b03e0819cfc6780c6a6f
+
+@ 0 12 0 04197bc2f830f814195a2535f44e9f77
++   entry .apply   `Text`、またはゼロで埋められる可変の `Array[Char]` から作るパスワード
++       `Text` のオーバーロードでは、平文はすでに不変の `String` としてヒープ上に固定されていて、ゼロで埋めることができないので、クロークが保護するのはそれが保存するコピーだけである。
++       パスワードがコンソールからの読み込みのような可変の入力から来る場合は、`scala.Array[Char]` のオーバーロードを使うべきである。これは文字を UTF-8 にエンコードし、入力の配列とエンコード用のバッファーの両方をゼロで埋めるので、クロークされたコピーが唯一の平文として残る。
++   entry .showable   どのパスワードも `Password(•••)` として描画する
++   entry .inspectable   どのパスワードも `Password(•••)` として描画するので、デバッガーやテストのレポートには何も見えない
++   entry #uncloak   平文を `Cleartext` ケイパビリティとして貸し出してブロックを実行する
++       ブロックは `Cleartext^` の上のコンテキスト関数で、`cleartext` として到達する。
++       ケイパビリティやそれをキャプチャするクロージャーを返すとコンパイルエラーになり、文字はブロックを抜けるときにゼロで埋められるので、それも逃がしてはならない。
+
+@ 0 1 0 14e95d8e7b9395b110e47e72108ce9bc
++ entry .Cleartext   パスワードの平文のスコープ付きのビュー。`Password#uncloak` の中で貸し出される
+
+% 1 1 0 1f696709bba623a816c3af928117c740
+
+@ 0 4 0 07ab02b07b450dd81ff3f326d37bc1a1
++       可変の char 配列の上の共有ケイパビリティで、`uncloak` ブロックの中では自由にエイリアスできるが、その外ではできない。
++       `Text` のアクセサーは意図して用意していない。不変の `String` のコピーは、ブロックに閉じ込めることも、その後でゼロで埋めることもできないからである。
++       `cleartext` として到達する。
++   entry #chars   平文を可変の `scala.Array[Char]` として。ブロックを抜けるときにゼロで埋められる
+
+@ 0 3 0 07b136b82f13148e1a69b293ceb37101
++ entry .cleartext   囲んでいる `Password#uncloak` が貸し出す `Cleartext`。コンテキストから到達する
++     parasite の `monitor` と同じやり方で、`summon[Cleartext].chars` ではなく `cleartext.chars` と書く。
++     `Password#uncloak` ブロックの中でのみ意味を持つ。
+
+@ 0 4 0 173992c1850be2571387f2d3d5d1df76
++ entry .Divulgence   秘密鍵の素材を明かすために渡さなければならないトークン
++     `privateKey.pem(Divulgence)` と `symmetricKey.data(Divulgence)` は、クロークがゼロで埋めた後も生き延びる不変の `Data` を返す。まさにそれゆえに、それを得るにはこの明示的な引数が必要になる。秘密の素材がクロークから逃げ出すすべての場所は、検索できる一つの単語になる。
+
+% 2 1 0 19eee507e9a526f71ba128b1c5c164ac
+
+% 3 1 0 1398b380fd0c36781fd2779eaa2e1014
+
+% 4 1 0 11b205c91d4383b31c79ce31a4f4fb52
+
+% 5 1 0 01fe6c52bfd3f4711a37e6b0aef2d786
+
+% 0 1 0 1504606e40b0f15610a676736be3350b
+
+% 0 1 0 0631fdcc696d64ae114324b3f62dd70c
+
+% 1 1 0 04b1bc83517269c71ea77ef8bc140b65
+
+@ 0 4 0 1f76634eaf1ad20c0b74c6d19c90ffc3
++ entry .Symmetric   鍵が両方の側である暗号方式のマーカー。`SymmetricKey.generate` がこれを要求する
++     `Aes`、`AesGcm`、`Blowfish`、`Des`、`TripleDes`、`Rc2`、`ChaCha20`、`ChaCha20Poly1305`、`HmacCipher` は `Symmetric` である。
++     `SymmetricKey.generate[cipher]()` は `Cipher & Symmetric` で上限を定められているので、RSA の鍵を共通鍵として生成することはできない。
+
+@ 0 1 0 08c39358a3fc0db117b5d113d7b90ba9
++ entry .Encryption   暗号化と復号を行う暗号方式の役割。ブロック暗号と RSA
+
+% 1 1 0 1ca057ea639623c91a367490acc61e3e
+
+@ 0 5 0 1e0374448761b6d7120551965ee965b3
++       `encrypt` と `decrypt` の拡張メソッドは、その暗号方式が `Encryption` であることを要求する。
++       IV は `InitializationVector` の戦略として明示的に与える。IV を使わない暗号方式やモード（RSA、ECB）はそれを無視する。
++   entry #encrypt   `key` のもとでの `value` の暗号文。IV は `iv` が生成するもの
++   entry #decrypt   `key` のもとでの `bytes` の平文
+
+@ 0 5 0 06fe1a6f13843c60162efd7bdb9e1157
++ entry .Encryptor   鍵で暗号化するために `uncloak` が貸し出すケイパビリティ
++     鍵の素材の上の状態を持たないラッパーで、`encrypt` 拡張メソッドが取るコンテキスト値として `uncloak` ブロックに貸し出される。
++     これは `SharedCapability` であり、ブロックの中では自由にエイリアスできるが、キャプチャ検査がそれをブロックの中にとどめる。それやそれをキャプチャするクロージャーを返すと、_leaks into outer capture set_ で失敗する。
++     `uncloak` だけが作る。
+
+@ 0 3 0 014df3ddd72937c61cef8ebaf4df53a0
++ entry .Decryptor   鍵で復号するために `uncloak` が貸し出すケイパビリティ
++     `Encryptor` の対であり、`decrypt` 拡張メソッドが取り、同じようにその `uncloak` ブロックに閉じ込められる。
++     `uncloak` だけが作る。
+
+@ 0 1 0 031a2913958b36f01b3df9ab3240cf85
++ entry .Agreeing   鍵合意の暗号方式の役割。`X25519` と `Ecdh`
+
+% 1 1 0 19f83111b95c8dff1d1721d6b13ee887
+
+@ 0 4 0 0e592c96f79399cf0d1a32dfc30cc691
++       互いの公開鍵を持つ二者が、同じ共有の秘密を計算する。
++       鍵はプロバイダーのエンコーディングであり、結果は生の秘密で、プロトコルはこれを鍵導出関数に渡す。
++       `PrivateKey` に対する `agree` 拡張メソッドを通して使う。
++   entry #agree   PKCS#8 の秘密鍵と `SubjectPublicKeyInfo` の公開鍵から得られる生の共有の秘密
+
+@ 0 1 0 1101d674380c303f13831e2aabb6ca1c
++ entry .Authenticated   AEAD の暗号方式の役割。`AesGcm` と `ChaCha20Poly1305`
+
+% 1 1 0 14a280701015669c1a3965e597340d7c
+
+@ 0 11 0 1550647857c7ed6103aff791155aa888
++       `seal` はノンスのもとで平文を暗号化し、平文と関連データの両方を認証して、タグを暗号文に付け加える。
++       `unseal` はそれを元に戻し、タグが検証できない場合（偽造、誤った鍵、または封印時とは異なるノンスや関連データ）は `Unset` である。
++       一つの鍵のもとでノンスを決して繰り返してはならない。
++       プロトコルはノンスをカウンターから導く。ノンスがランダムに取り出される `InitializationVector` ではなく普通の引数であるのはそのためである。
++       `SymmetricKey` に対する `seal` と `unseal` の拡張メソッドを通して使い、これらは許可を必要としない。AEAD は `Unauthenticated` ではないからである。
++   entry #nonceSize   ノンスの長さ（バイト）。どちらの暗号方式でも 12
++   entry #tagSize   タグの長さ（バイト）。どちらの暗号方式でも 16
++   entry #seal   タグを付け加えた暗号文
++   entry #unseal   平文。タグが検証できなければ `Unset`
+
+@ 0 1 0 0e2b9a50c8da980c1f7cf20fa637e1e1
++ entry .Keystream   キーストリーム生成器として使うストリーム暗号の役割。`ChaCha20`
+
+% 1 1 0 1a35e2aa3e8eff030d564337d0aa7a6f
+
+@ 0 8 0 106917a7b8a15e73180f4b8cbcc627f7
++       `xor` はデータを、鍵、ノンス、ブロックカウンターのキーストリームと結合する。これで暗号化も復号も行える。
++       これは、プロトコルが独自の認証付きの構成を組み立てる元になる生のプリミティブである。OpenSSH の `chacha20-poly1305@openssh.com` は、パケット長に一つ、ペイロードにもう一つの ChaCha20 のキーストリームを使う。カウンターが公開されているのはまさにそのためである。
++       一つの鍵のもとでノンスを決して繰り返してはならない。
++       `SymmetricKey` に対する `xor` 拡張メソッドを通して使う。
++   entry #nonceSize   ノンスの長さ（バイト）。12
++   entry #xor   ブロック `counter` から始まるキーストリームと結合した `data`
+
+@ 0 1 0 006cafd66981f49403c3c0405117b5fd
++ entry .InitializationVector   共通鍵暗号の IV をどう生成するか。呼び出しの場で与える
+
+% 1 1 0 1a73bfb30a5208d6068bd3ef5f9a4189
+
+@ 0 5 0 0f1dc1960f0920b306ac245a03ab4cbd
++       暗号方式のブロックサイズの初期化ベクトルを生成する戦略である。
++       常に暗号化の場で明示的に与え（`value.encrypt(InitializationVector.random)`）、暗黙に解決されることは決してないので、新しいランダムな IV と再現可能な IV のどちらを選んだかは、選んだその場で見える。
++       IV を使わない暗号方式やモード（RSA、ECB）はそれを無視する。
++       ブロック暗号の暗号文は IV で始まるので、復号には戦略は必要ない。
+
+% 2 1 0 19e6553b6e15e4c903884e3bede6aa8b
+
+% 3 1 0 152b7422c2dfe3c019eeea30eb0e48e6
+
+% 4 1 0 0cb2cd6979cef14a1acf8d9bc274ea34
+
+% 5 1 0 1244cbae28f6f9bc191bffc5e6d6d092
+
+% 6 1 0 0c9b133af96b2ce50ef80185d3427fe2
+
+% 7 1 0 15cb45166391e4a419c07153d1b71cf5
+
+% 1 1 0 17b074fd5015540f1982291311ab97f7
+
+% 2 1 0 0ed2b168f77169431c26679d12cda233
+
+% 0 1 0 1d7c92e42617b12f0015ffabb385681c
+
+% 2 1 0 1151451a2504c9ae1e1c7d53c23e3640
+
+% 0 1 0 12d71b76231058d41d17ff9633d9ffb1
+
+% 0 1 0 0dc997a7a53d4c62080b71131e90ba9f
+
+% 1 1 0 0094bfe58b64b0d50d74dddf295c1508
+
+@ 0 4 0 15e36d724e7362dd0499083239a5d1c7
++   entry .random   スコープ内の `Crypto` プロバイダーから得る、暗号化のたびに新しいランダムな IV
++   entry .fixed   与えられたバイトを毎回 IV とする。決定的で、テストや既知解ベクトルのためのもの
++   entry .zero   すべてゼロの IV
++   entry #apply   ブロックサイズ（バイト）に対する IV
+
+@ 0 1 0 079eab9f4b39129b11c446be142b13fa
++ entry .Permits   ブロック暗号のモードとパディングを組み合わせてよいという証拠
+
+% 1 1 0 063721be55000b60140bb65499dd174f
+
+@ 0 18 0 09286add9d1c34d60dbdec97562bdfe5
++       `mode Permits padding` は、`Aes[256] over mode against padding` がプロバイダーの対応する組み合わせであることを確かめるコンパイル時の検査である。
++       ブロック構造のモードとフィードバックのモード（ECB、CBC、CFB、OFB）は三つのパディングすべてを取り、カウンターモードは `BlockCipher.NoPadding` しか取らないので、`Aes[128] over BlockCipher.Ctr against BlockCipher.Pkcs7` には given がなく、コンパイルされない。
++       十三の given はコンパニオンにあり、インポートなしに解決される。
++   entry .ecbNoPadding   パディングなしの ECB
++   entry .ecbPkcs7   PKCS#7 パディングの ECB
++   entry .ecbIso10126   ISO 10126 パディングの ECB
++   entry .cbcNoPadding   パディングなしの CBC
++   entry .cbcPkcs7   PKCS#7 パディングの CBC
++   entry .cbcIso10126   ISO 10126 パディングの CBC
++   entry .cfbNoPadding   パディングなしの CFB
++   entry .cfbPkcs7   PKCS#7 パディングの CFB
++   entry .cfbIso10126   ISO 10126 パディングの CFB
++   entry .ofbNoPadding   パディングなしの OFB
++   entry .ofbPkcs7   PKCS#7 パディングの OFB
++   entry .ofbIso10126   ISO 10126 パディングの OFB
++   entry .ctrNoPadding   パディングなしの CTR。カウンターモードが許す唯一のパディング
+
+@ 0 3 0 1f98b5d0ccd2b21717a1803edf7365a2
++ entry .Weakness   暗号方式の型が許可を必要とする譲歩。マッチ型として
++     `Weakness[cipher]` は、（`over`/`against` で細分化されているかもしれない）暗号方式の型を、その使用に必要な gastronomy の `Concession` に対応づける。
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 2 0 16bd40c967d0a3ad0abdfccfb61c7bda
++     column  暗号方式
++     column  譲歩
+
+% 0 1 0 17b07929a9ccbe430037f4cce51507f0
+
+% 0 1 0 1f5ab2ea3d0726e10b060f01a9ca73f8
+
+% 0 1 0 18d40108729910950d14b45bed86d8e2
+
+% 0 1 0 1b337562f1ac16861bcc2f36fd04e77e
+
+% 0 1 0 1dc7a8bc60787f6e056a4fbe37db3920
+
+% 0 1 0 1c995f971202b48b0f9f507a3390cc54
+
+@ 0 1 0 0fb56b871e48c4381ae7984063a1eb16
++     row  それ以外すべて：AES、RSA-2048 以上、ECDSA、Ed25519、ML-DSA  `Concession.Acceptable`。許可を必要としない
+
+% 1 1 0 1c7f23140cd8c8da16d9dddfaaffc07b
+
+@ 0 3 0 0ae128b029f2dfc216cf48b409b0ab8c
++     `encrypt` と `sign` は `Permit[Weakness[cipher]]` を要求し、`decrypt` と `verify` はより弱い `ProcessingPermit` を要求するので、`cryptoPermits.permitLegacyCrypto` は古いデータの読み込みを許しつつ、そうしたデータをさらに書くことは許さない。
+
+@ 0 6 0 0baaf16cdfef131f0499cbbeec2639fe
++ entry .Authentication   暗号方式の型が認証なしかどうか。マッチ型として
++     `Authentication[cipher]` は、あらゆる `BlockCipher` に対して `Concession.Unauthenticated` であり（暗号化したものを認証するブロック暗号のモードはない）、それ以外のすべて（AEAD の暗号方式や RSA を含む）に対して `Acceptable` である。
++     したがって、ブロック暗号での `encrypt` と `decrypt` には、スコープ内に `cryptoPermits.permitUnauthenticatedCrypto`（またはそれを包含する任意の許可）が必要である。
+
+@ 0 1 0 13c49d489aa2a0131098c2d683f61a4d
++ entry .SymmetricKey   暗号方式の鍵。`Cloak` が保持し、ブロックに `Encryptor` と `Decryptor` の両方として貸し出される
+
+% 1 1 0 1be465d9a4f0982e0df3ded976b485c8
+
+@ 0 5 0 0a8b28f77de95db30402394d6691452f
++       `SymmetricKey[cipher]` は、公開鍵の側がそれ自身である `PrivateKey` である。
++       `Symmetric` な暗号方式に対して `.generate` で生成するか、既存の素材から `.apply` で取り込み、スコープ内の `Cloak` に保存される。鍵はそのクロークをキャプチャする。
++       その `uncloak` は `Encryptor` と `Decryptor` の両方をブロックに貸し出す。
++       `seal`/`unseal`（`Authenticated` な暗号方式）と `xor`（`Keystream` な暗号方式）は鍵を直接取る。
+
+% 2 1 0 18051ddacab7fcbc13354a250a4c03f3
+
+% 3 1 0 197819920dd64f47092b0f5fbc611760
+
+% 4 1 0 0a4e2d2a1daa29a60b5b7a73040f59d6
+
+% 5 1 0 131ab06f5a35e39615d7b2221b9e9286
+
+% 6 1 0 1e564d52e0daf7911a6f287e96f1df43
+
+% 7 1 0 0069bf91285433e616c884c6e3fca6f8
+
+% 9 1 0 15a8fc62f35d25600164a7ca6a28476f
+
+% 5 1 0 1d1fdf555b6013b8026dc10911f153b9
+
+% 0 1 0 1d166942df7db22d1197acaf6321af9f
+
+% 1 1 0 03be32130e8d948b193dc2b59c639b6e
+
+@ 0 4 0 0f491e8c4cbbb87f15d313353fa87b15
++       モードとパディングの given がインポートされていれば、暗号方式のモードとパディングは型から省いてよい。`blockCipherModes.cbc` と `blockCipherPaddings.pkcs7` がスコープにあるときの `SymmetricKey.generate[Aes[256]]()` は、上と同じ鍵の型である。
++       また、ブロック暗号で暗号化や復号を行うには、そもそも `cryptoPermits.permitUnauthenticatedCrypto` が必要である。
+
+% 1 1 0 19684ecae39d459507ef58047f93ddbe
+
+% 1 1 0 0de49c1436ae24d012b30b8139453bbf
+
+% 1 1 0 1b125b237f8863d0180e7ed375a67c31
+
+% 1 1 0 1e15e8d31bbc67ba1a62382e78dc237e
+
+@ 0 14 0 1c3515bdf5f584341d81530db6a5828f
++   entry .generate   スコープ内のプロバイダーから得る、`Symmetric` な暗号方式の新しいランダムな鍵
++       暗号方式の given（したがって `Crypto`、そしてブロック暗号ではモードとパディング）と `Cloak^` が必要である。
++       結果はクロークをキャプチャする。
++   entry .apply   既存の鍵の素材（導出した鍵、テストベクトル）を共通鍵として取り込む
++       `Data`、またはクロークされるときにゼロで埋められる可変の `scala.Array[Byte]` を取る。後者ではクロークされたコピーが唯一の鍵の素材として残るので、素材が可変であれば配列のオーバーロードを使うべきである。
++       バイトは暗号方式にとって正当な鍵長でなければならない（不正な長さは、鍵を使うときに理由 `InvalidKey` の `Crypto.Error` として表面化する）。型は呼び出し側の主張である。`SymmetricKey[AesGcm[128]](bytes)`。
++   entry #verify   この鍵で作られた署名を検査する。`HmacCipher` のような `Signing` な共通鍵暗号方式のため
++       `key.public.verify(value, signature)`。`ProcessingPermit[Weakness[cipher]]` が必要である。
++   entry #data   `Divulgence` トークンの提示と引き換えに得る生の鍵のバイト
++       不変の `Data` はクロークがゼロで埋めた後も生き延びる。それを得るのに明示的な `Divulgence` 引数が必要なのはそのためである。
+
+@ 0 1 0 0932fefeb7813ae9037d8b5500c10c02
++ entry .PrivateKey   `Cloak` が保持する秘密鍵。署名、復号、合意を行い、公開鍵の側を与える
+
+% 1 1 0 10a35b8a47b6ab3c1c43ddacefc00b69
+
+@ 0 5 0 11abc3905550cb7e12dff64d2aef418f
++       `PrivateKey[cipher]` は、作られたとき（`.generate` で生成されたか、`.pemDecodable` と `.derDecodable` で鍵のドキュメントから読まれたとき）にスコープにあった `Cloak` が不透明に保持し、そのクロークをキャプチャする。
++       素材を必要とする操作（`#public`、`#sign`、`uncloak`、`agree`）は、クロークを通して一時的にそれを実体化し、終わるとすぐにそのコピーをゼロで埋める。素材を逃がせるのは、`Divulgence` で守られた `#pem` だけである。
+
+% 2 1 0 1766759ce56dd86116fd7ccc7dad3a11
+
+% 3 1 0 131d86b20b3f29120cfc9d0c6f8869e1
+
+% 4 1 0 1bf553a543c49fa4001ef2a3c1ab4693
+
+% 5 1 0 0259a4a3ea59c6fe1fa89938177b4895
+
+% 6 1 0 01040bfc4b646e4b0fa5b0716e22faed
+
+% 8 1 0 07d00e7d37ece97a1d86792dbc4a8d78
+
+% 0 1 0 1559cf4b973c65cb0a4d03a45b63a110
+
+% 0 1 0 09433ad1f0252a84008597996be2769c
+
+% 0 1 0 060c41a59aa63d371d83912b571421c8
+
+% 1 1 0 117363abac663acd0b6174fd5683e389
+
+@ 0 3 0 05cdf07bacf340df0a7fab46064e632d
++       すでに存在する鍵（`~/.ssh` にあるものや `openssl` が書き出したもの）は、鍵ファイルが取るどの形からでも、名指した暗号方式の `PrivateKey` に読み込める。型はドキュメントから推定されるのではなく、ドキュメントに照らして検査される。
+
+% 2 1 0 1d7454e669623e6915c507b6b58fbf9a
+
+% 3 1 0 0ebde5506adb0a881e77c9723a94f315
+
+% 4 1 0 12aa687b19a52c630936c7038d370c85
+
+% 5 1 0 02afbbed3d040b640df1b3ab40a10deb
+
+% 6 1 0 0f67de5999cb184c170234e511b3833b
+
+% 3 1 0 188d031f37be9053067bc6ef7b4af8d3
+
+% 5 1 0 057a4559bd7d842b1830972e4a0c6c3e
+
+% 3 1 0 1d37cc0097f70ff61692584e37a89c8e
+
+@ 0 1 0 0936b3404a6c369a1ea4d0b9ccecd948
++         label PEM のアーマー形式から読んだ OpenSSH の鍵
+
+% 1 1 0 0ad2d666f9f4de150f06db144557e658
+
+% 0 1 0 03783030beffb3d414987928579f16d7
+
+% 0 1 0 1740e8ea893338b318dc19ec6e782563
+
+% 0 1 0 0c06c1387a28a31b16a710f087a3f994
+
+% 0 1 0 1adaab8d8712a7a31bf7f6f58165359f
+
+% 0 1 0 05c580a511d50ffa08a2f1583b8c57c3
+
+% 0 1 0 18019d98e402c6221385fb492bb1b09b
+
+% 0 1 0 01733603308106f403bdfe1e50e0ef3c
+
+% 1 1 0 0d9eaeefa3cb61e0131e34da1ea400b0
+
+% 1 1 0 1b2e41817b631be70ea426f5aee073ec
+
+@ 0 1 0 0bb80ec870c7d7c71ad7a13031aa342d
++         label 鍵でメッセージに署名する
+
+% 1 1 0 0079e848ce2c6545167a57c8f414e397
+
+% 2 1 0 0bde3688b75ffc830538c970d45d762b
+
+% 3 1 0 18df9a361db8c5860fa3697c38e68d00
+
+% 1 1 0 164faeaf5c5815091a996e604fe3341f
+
+@ 0 1 0 0ceaa556bd1bd87e07d375bd6f49996a
++         label その公開鍵の側が署名を検証する
+
+% 1 1 0 1ae620409790bb8f125d1db4a871f0e7
+
+% 2 1 0 12cc0e284d88a3e70ebd900adb1dce3a
+
+% 3 1 0 04f6f2f5189dd04e11f626826f350885
+
+% 0 1 0 040ef46626daa17813368efc6d593665
+
+% 1 1 0 08591f1a62a354070fddae17d4f9be1f
+
+@ 0 1 0 081001f797adb0350b49c16011711c1d
++         label 公開鍵の側は `id_ed25519.pub` が持つ行である
+
+% 1 1 0 1a463cc9be0e5d661fc319070df62167
+
+% 2 1 0 0b43e0f745c02f61014f934e5cf330e1
+
+% 0 1 0 0a4ce9f54462aa0a050bf1100bf391ff
+
+% 0 1 0 1b846cfca080a9871a84c90288b5757a
+
+% 1 1 0 141dd750c14762631c4eedccf6cee6e0
+
+@ 0 1 0 1e4ad0670966791718f813f639b51714
++         label 別の暗号方式として読むと、偽りではなく不一致になる
+
+% 1 1 0 1d3b65661b3a38d213177778fba91043
+
+% 0 1 0 06b48c1f565a2da112ab38b7131369a0
+
+% 0 1 0 0f3b3ecc1853c4521bf039cf4536f7aa
+
+% 1 1 0 0be2b5cc4d7b48b41abfc9cd7405980e
+
+% 2 1 0 098ab82df0495c441951273277508ee7
+
+@ 0 2 0 03dc532334551c371bc85c1eda98b17c
++       `PrivateKey` は、`Showable` としてはその素材の SHA-256 フィンガープリントになり、`Inspectable` としては `PrivateKey(•••)` になるので、ログにもテストのレポートにも明かされない。
+
+% 1 1 0 0f07cc906f88e3720149eac576947299
+
+% 1 1 0 1832a715bb43de8c056bb912fa82133a
+
+% 1 1 0 1103486e49ec32e21356dc09c0bf2f11
+
+% 1 1 0 0307baaa10f2536007c41f8f90f942c9
+
+% 0 1 0 15e7a661c900288d1db280aaba70f6e9
+
+@ 0 28 0 0371f4356443078f0508aa5ae54f093a
++   entry .generate   スコープ内のプロバイダーから得る、暗号方式の新しい鍵ペア
++       暗号方式の given（したがって `Crypto`、そして `Rsa` と `Ecdsa` では `Signature.Digest`）と `Cloak^` が必要である。
++       結果はクロークをキャプチャする。
++       公開鍵を導けない暗号方式では、プロバイダーが公開鍵を PKCS#8 のドキュメントに埋め込む。
++   entry .derDecodable   PKCS#8 の `PrivateKeyInfo` を、名指した暗号方式の `PrivateKey` として読む
++       `der.as[PrivateKey[Rsa[2048]]]` の背後にある given で、`KeyAlgorithm` を持つ任意の暗号方式に使える。
++       `Cloak^`、`Tactic[PrivateKey.Error]`、`Diagnostics` が必要であり、結果はクロークと戦術をキャプチャする。
++       ドキュメントのアルゴリズム識別子と鍵の素材の大きさは、その暗号方式のものでなければならず（そうでなければ `Mismatch`）、オプショナルな公開鍵のフィールドなしで書かれた EC、Ed25519、ML-DSA の鍵は `PublicKeyAbsent` になる。後で `#public` に答えられないからである。
++       デコードされた `Data` と、それが経由した ASN.1 の値や base64 のテキストは不変で、ゼロで埋めることができない。テキストから読んだ鍵は、読み込まれたヒープと同じ程度にしか秘密に保たれない。
++   entry .pemDecodable   鍵ファイルが取るどの PEM の形からでも `PrivateKey` を読む
++       `text.read[PrivateKey[Ed25519] in Pem]` と `pem.as[PrivateKey[…]]` の背後にある given である。
++       `PRIVATE KEY`（PKCS#8）はそのまま読まれる。`RSA PRIVATE KEY`（PKCS#1）と `EC PRIVATE KEY`（SEC1）は `Pkcs8.fromPkcs1` と `Pkcs8.fromSec1` によって PKCS#8 に包まれる。`OPENSSH PRIVATE KEY` は `OpenSsh.privateKey` によって変換される。
++       `ENCRYPTED PRIVATE KEY`、あるいは暗号方式付きの OpenSSH のコンテナーは、理由 `Encrypted` の `PrivateKey.Error` になり（パスフレーズで保護された鍵はまだ読めない）、それ以外のラベルは見つかったブロックを示す `Mismatch` になる。
++       `.derDecodable` と同じコンテキスト値が必要である。
++   entry .inspectable   どの秘密鍵も `PrivateKey(•••)` として描画する
++       ダイジェストすら示さず、完全に伏せる。検査の表示は `show` よりはるかに多くの場所で作られるからである。テストの出力、デバッガー、囲んでいる値の入れ子になった描画などである。
++   entry .showable   秘密鍵を `PrivateKey(<base64 SHA-256 of its material>)` として描画する
++       フィンガープリントなので、同じ鍵の二つの描画は等しく比較され、鍵そのものは何も現れない。
++   entry .Error   鍵のドキュメントを、要求された `PrivateKey` として読めないときに発生する
+
+% 1 1 0 0b1d262ce80eb0540d6ac667d5fa58e1
+
+@ 0 4 0 18a52f8b593a31940629f4ed28b3a59d
++         エラー `↯/s.105.7`：_could not read the private key because `reason`_。
++         `.pemDecodable`、`.derDecodable`、`Pkcs8`、`OpenSsh.privateKey` が発生させる。
++     entry .communicable   各理由をメッセージとして描画する
++     entry .Reason   ドキュメントが拒否された理由
+
+% 3 1 0 0705e4a148629f080c762ac6c05852fa
+
+@ 0 6 0 14dc10ed735f16ea0fc21c15f94c3be8
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  備考
++         row  `Malformed(detail)`  1  _the key document was malformed: `detail`_  DER でない、`PrivateKeyInfo` でない、`RSAPrivateKey` でない、途中で切れた OpenSSH のコンテナー
++         row  `Mismatch(expected, found)`  2  _a `expected` key was expected but `found` was found_  名前は `KeyAlgorithm` のもので、`RSA-4096` と `RSA-2048`、`ECDSA P-384` と `ECDSA P-256`、あるいは `private` と `a public key block` など
+
+% 0 1 0 1f66bd11326a2b5a0c7cc7ec08b9e72a
+
+@ 0 2 0 0968d6e73c13f4bd0580c69b0e7e024b
++         row  `Unsupported(detail)`  4  _the key uses an unsupported `detail`_  複数の鍵を持つ OpenSSH のコンテナーや、OpenSSH は名前を持つがこのライブラリは対応しない鍵の種類など
++         row  `PublicKeyAbsent`  5  _the key does not carry its public key_  オプショナルな公開鍵のフィールドを持たない EC、Ed25519、ML-DSA のドキュメント。どのプロバイダーもそれを再計算できない
+
+% 1 1 0 1ce1fbe4d6be4dcb190264be95a69cd5
+
+@ 0 14 0 04ad1d02a1428a0a15cd15a7b1b75066
++     entry #reason   ドキュメントが拒否された理由
++   entry #public   鍵の公開鍵の側。`PublicKey[cipher]` として
++       秘密の素材から暗号方式の `privateToPublic` を通して計算される。RSA と DSA では算術的に導かれ、EC、Ed25519、X25519、ML-DSA では埋め込まれた公開鍵のフィールドから読まれる。
++       暗号方式の given が必要である。
++   entry #sign   `Data` としてエンコードできる値に対する署名。`Signing` な暗号方式のため
++       暗号方式の given と `Permit[Weakness[cipher]]` が必要である（なので DSA と 1024 ビットの RSA には許可が必要であり、それ以外は `Acceptable` である）。
++       値はその `Encodable in Data` でエンコードされるので、`Text` はそのバイトとして署名される。
++       RSA と ECDSA は、スコープ内の `Signature.Digest` が名指すダイジェスト（`signatureDigests` からインポートしない限り SHA-256）に署名する。Ed25519 と ML-DSA はメッセージに直接署名する。
++   entry #pem   `Divulgence` トークンの提示と引き換えに得る、`PRIVATE KEY` の PEM ブロックとしての鍵
++       PKCS#8 の `PrivateKeyInfo` で、どのプロバイダーも鍵をこの形で保持する。
++       不変の `Data` はクロークがゼロで埋めた後も生き延びる。それを得るのに明示的な `Divulgence` 引数が必要なのはそのためである。
+
+@ 0 1 0 1cae82f67e1354ba1ef944d43e226b39
++ entry .PublicKey   鍵ペアの公開側の半分。署名を検証し、所有者に向けて暗号化する
+
+% 1 1 0 12cdefe92132c24118cbce37f9e0c661
+
+@ 0 6 0 07d25481157fb8131dd1a31b05a2451d
++       `PublicKey[cipher]` は普通の値であり、その `#bytes` は X.509 の `SubjectPublicKeyInfo` であって秘密ではない。
++       秘密鍵の `public` から得るか、`PUBLIC KEY` または `RSA PUBLIC KEY` ブロック（`.pemDecodable`）、DER（`.derDecodable`）、OpenSSH の行（`OpenSsh.publicKey`）、あるいはワイヤプロトコルが運ぶ生のバイト列（`.raw`）から読む。
++       これは署名を検証し、`uncloak` の中で所有者に向けて暗号化し（`Rsa` のような `Encryption` の暗号方式の場合）、鍵合意における相手側の半分となる。
+
+% 2 1 0 18eb75f6c1f4e922179da739ad6ffab9
+
+% 3 1 0 10f51e3d18cf38081404e2114cfb0918
+
+% 4 1 0 1273b18e88bb89690583b63c7ab6bdc6
+
+% 5 1 0 1f952bef848a4caa1dfa57a9a2cd0aaf
+
+% 6 1 0 0859393f50ce2531191aef395475f2bb
+
+% 8 1 0 0e3a5596388c97f2025dee8fbc5bed45
+
+% 0 1 0 0c5d351443a5e2bf1eee824bde55b68c
+
+% 0 1 0 1276002ee8aca85809353dd077371b27
+
+% 1 1 0 16954ea26862344f04adf0bee1c696f3
+
+% 0 1 0 037a281bf2e76c901500be45d141d6b7
+
+% 1 1 0 04504cd0b5c0b1e619b2c0e62ed7038c
+
+% 1 1 0 0303e16736282b571a841c80a2a0f1d6
+
+% 2 1 0 12a8029d3cd2b498087bcf35481f3379
+
+% 1 1 0 0c172b8622ccbc5a0acaf50ef39ec6c4
+
+@ 0 14 0 14d9f0ea20d1734b1dbd7ec0acc53c57
++   entry .derDecodable   `SubjectPublicKeyInfo` を、指定された暗号方式の `PublicKey` として読む
++       `KeyAlgorithm` を持つ任意の暗号方式に対する、`der.as[PublicKey[Ecdsa[256]]]` の背後にある given である。
++       `Tactic[PublicKey.Error]` と `Diagnostics` が必要である。
++       曲線を含むアルゴリズム識別子は、その暗号方式のものでなければならない（そうでなければ `Mismatch`）。
++   entry .pemDecodable   `PUBLIC KEY` または `RSA PUBLIC KEY` ブロックから `PublicKey` を読む
++       `text.read[PublicKey[Rsa[2048]] in Pem]` の背後にある given である。
++       PKCS#1 の `RSAPublicKey` は `Spki.fromPkcs1` によって `SubjectPublicKeyInfo` に包まれる。
++       それ以外の見出しは、見つかったブロックを示す `Mismatch` になる。
++       OpenSSH の一行形式は PEM ではなく、`OpenSsh.publicKey` で読む。
++   entry .raw   生の形式からの公開鍵。`SubjectPublicKeyInfo` のビット列の中身
++       SSH や TLS のようなワイヤプロトコルが運ぶものであり、X25519 や Ed25519 では 32 バイト、EC 鍵では非圧縮の点である。
++       暗号方式の `KeyAlgorithm` は固定の識別子を持たなければならない（`algorithm` が `Unset` でない）ので、パラメーターを鍵だけが知っている DSA 鍵はこの方法では作れず、結果は `Unset` になる。
++       `#raw` の逆である。
+
+% 2 1 0 0026936a2126db1808c20ff8b9e42f97
+
+% 3 1 0 0e9d748064f8a0471319efb0886a27cc
+
+% 4 1 0 12c12512f585c0c71a37ef3aa760a293
+
+% 1 1 0 1ca19d9772ee712f1d24a0e9f5913e1d
+
+% 0 1 0 1a1517edb00a4ffc0822a8d201f6344a
+
+% 0 1 0 0bdba78604eaa5f20a324be3ec02e4a0
+
+% 1 1 0 032a7db3f5c628900f1cafcb92f152cf
+
+@ 0 4 0 023c0672b043842106c28861b0ccecde
++   entry .showable   公開鍵を `PublicKey(<lowercase hex of its bytes>)` として描画する
++   entry .encodable   公開鍵は `SubjectPublicKeyInfo` のバイト列としてエンコードされる
++   entry .inspectable   公開鍵を完全な十六進数で描画する。スコープに `Alphabet` は不要
++   entry .Error   鍵の文書を要求された `PublicKey` として読めないときに発生する
+
+% 1 1 0 0608621f3cc189d71114af7934b08fc3
+
+@ 0 4 0 05610fbb01354d700ccf1425a9f1d703
++         エラー `↯/s.105.8`: _could not read the public key because `reason`_。
++         `.pemDecodable`、`.derDecodable`、`Spki`、`OpenSsh.publicKey` が発生させる。
++     entry .communicable   各理由をメッセージとして描画する
++     entry .Reason   文書が拒否された理由
+
+% 3 1 0 069c18402e185d3b106249b6b37816fd
+
+@ 0 7 0 08b020edbffdd17002731fca4e158781
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  備考
++         row  `Malformed(detail)`  1  _the key document was malformed: `detail`_  `SubjectPublicKeyInfo` でも `RSAPublicKey` でもないもの、base64 でない行、または公開鍵でない行
++         row  `Mismatch(expected, found)`  2  _a `expected` key was expected but `found` was found_  `ECDSA P-256` や `Ed25519` のような `KeyAlgorithm` の名前を伴う
++         row  `Unsupported(detail)`  3  _the key uses an unsupported `detail`_  このライブラリが名前を持たない OpenSSH の鍵の種類や曲線など
+
+% 1 1 0 0ba0365226f1c084192cc2253b91cb81
+
+@ 0 11 0 0b81cfb253a5840b04db4b2f0d5c4104
++     entry #reason   文書が拒否された理由
++   entry #bytes   DER でエンコードされた X.509 の `SubjectPublicKeyInfo`
++   entry #verify   `Signing` の暗号方式について、署名が値に対して有効かどうか
++       その暗号方式の given と `ProcessingPermit[Weakness[cipher]]` が必要である。
++       異なる内容に対する署名、異なる鍵による署名、スコープにあるものと異なる `Signature.Digest` のもとでの署名、またはデコードできないほど壊れた署名では `false` になる。
++       値は `PrivateKey#sign` がエンコードしたのと同じく、その `Encodable in Data` でエンコードされる。
++   entry #pem   `PUBLIC KEY` の PEM ブロックとしての鍵
++   entry #raw   生の鍵、すなわちビット列の中身。バイト列が `SubjectPublicKeyInfo` でなければ `Unset`
++       X25519 や Ed25519 では 32 バイト、EC 鍵では非圧縮の点である。
++       `.raw` の逆である。
+
+@ 0 1 0 19c8d736e51f348e1609bfe1f41bc50e
++ entry .KeyAlgorithm   暗号方式の鍵が鍵の文書の中でどう識別されるか。鍵を読む処理の背後にある型クラス
+
+% 1 1 0 1d742e31d40034d71e3b1b0fa7f8e673
+
+@ 0 9 0 171983122d47f807097299bc6a56555b
++       PKCS#8 の `PrivateKeyInfo` も X.509 の `SubjectPublicKeyInfo` も、`AlgorithmIdentifier`（EC 鍵の曲線のような省略可能なパラメーターを伴うオブジェクト識別子）と鍵の素材を持つ。
++       RSA と DSA では、その素材の大きさだけが鍵の強度の記録である。
++       ファイルを `PrivateKey[Rsa[2048]]` に読み込むときは両方を確かめなければならない。
++       JDK はその型のもとで渡された 4096 ビットの鍵でも平気で署名するので、そのとき型は嘘になってしまうからである。
++       `cipher is KeyAlgorithm` がその検査であり、鍵の文書を持つすべての暗号方式（`Rsa`、`Dsa`、`Ecdsa`、`Ecdh`、`Ed25519`、`X25519`、`MlDsa`）のコンパニオンに given がある。
++       コンパニオンは、識別子を認識し、見つかったものに名前を付けるために、ライブラリが知っているオブジェクト識別子のアークを持つ。
+
+% 1 1 0 0b7eb63edad566850cace3e0e24bf733
+
+% 1 1 0 14dd060cfa8a67200d12bf864d914392
+
+@ 0 27 0 04d32871e9ece7140b3241b2e8fbb0e7
++   entry .Material   アルゴリズムが検査する鍵の文書の半分。秘密のオクテット列または公開のビット列
++       `Private(octets)` は `PrivateKeyInfo` の `privateKey` OCTET STRING の中身である。
++       `Public(bits)` は `SubjectPublicKeyInfo` の `subjectPublicKey` BIT STRING の中身である。
++   entry .Rsa   `rsaEncryption` のアーク、1.2.840.113549.1.1.1
++   entry .Ec   `id-ecPublicKey` のアーク、1.2.840.10045.2.1
++   entry .Ed25519   `id-Ed25519` のアーク、1.3.101.112
++   entry .X25519   `id-X25519` のアーク、1.3.101.110
++   entry .Dsa   `id-dsa` のアーク、1.2.840.10040.4.1
++   entry .MlDsa   レベルごとの ML-DSA-44、-65、-87 のアーク（RFC 9881）
++   entry .P256   P-256 曲線 `secp256r1` のアーク
++   entry .P384   P-384 曲線 `secp384r1` のアーク
++   entry .P521   P-521 曲線 `secp521r1` のアーク
++   entry .curve   鍵の大きさに対する曲線のアーク。256 は P-256、384 は P-384、それ以外は P-521
++   entry .identifier   `AlgorithmIdentifier` のアークと省略可能なパラメーター。値がそうでなければ `Unset`
++   entry .rsaModulus   RSA の鍵の素材の法。ここから鍵の大きさを読む
++       `RSAPrivateKey` の（バージョンの後の）二番目の整数、または `RSAPublicKey` の最初の整数である。
++       素材がそのどちらでもなければ `Unset` になる。
++   entry .describe   `Mismatch` エラーのための、文書が持つものの読みやすい名前
++       `RSA-2048`、`Ed25519`、`X25519`、`ECDSA P-256`、`DSA-1024`、`ML-DSA-65`、それ以外のものについては _the object identifier 1.2.3.4_ である。
++   entry #name   `RSA-2048` や `ECDSA P-256` のような、大きさを含むアルゴリズムの名前
++   entry #sshName   OpenSSH の形式におけるアルゴリズムの名前。OpenSSH に名前がなければ `Unset`
++       `ssh-rsa`、`ssh-ed25519`、`ecdsa-sha2-nistp256` である。
++       DSA、ECDH、X25519、ML-DSA では `Unset` なので、それらの鍵では `OpenSsh.line` は `Unset` である。
++   entry #algorithm   この型の鍵の `AlgorithmIdentifier`。パラメーターを鍵だけが知っている場合は `Unset`
++       生の素材の周りに文書を組み立てるために `PublicKey.raw` が使う。
++       DSA では `Unset` である。
++   entry #conforms   `AlgorithmIdentifier` がパラメーターを含めてこのアルゴリズムを指し、素材がこの大きさであるかどうか
+
+@ 0 1 0 0b69b55a46a40f970c80597560e86f3f
++ entry .Signature   `PrivateKey` が作る、暗号方式で型付けされた署名
+
+% 1 1 0 165550330c927bb411cbdd66dc16c30e
+
+@ 0 4 0 01e60b510466575a08f999e6220d12a0
++       `Signature[cipher]` は生の署名のバイト列を包むので、署名は同じ暗号方式の `PublicKey` に対してしか検証できない。
++       暗号方式について共変である。
++       `PrivateKey#sign` で作られ、`PublicKey#verify` で検査される。
++       base64 として `Showable`、十六進数として `Inspectable`、バイト列として `Encodable in Data` である。
+
+% 1 1 0 1c4dbc3d1893f6711105507625b69391
+
+% 0 1 0 009e816b0de796e90944df85c486476c
+
+@ 0 4 0 0255409f0a3695cc138268d077a06548
++   entry .showable   署名を `Signature(<base64>)` として描画する。スコープに `Alphabet[Base64]` が必要
++   entry .encodable   署名は生のバイト列としてエンコードされる
++   entry .inspectable   署名を完全な十六進数で描画する。スコープに `Alphabet` は不要
++   entry .Digest   RSA または ECDSA の署名の対象となるダイジェスト
+
+% 1 1 0 024d7ee638ebd63400986d9c81e81a10
+
+@ 0 12 0 0b4eafc36a74813d1f9243bfc5ca4143
++         RSA と ECDSA はメッセージそのものではなくメッセージのハッシュに署名する。
++         ハッシュの選択は署名アルゴリズムの同一性の一部である（`SHA256withRSA` は `SHA384withRSA` とは別のアルゴリズムであり、独自のオブジェクト識別子を持つ）ので、署名ごとに選ぶのではなく、暗号方式を召喚するときに固定される。
++         既定は SHA-256 であり、このコンパニオンの `.sha256Signature` から来る。
++         インポートした given はコンパニオンの given に優先するので、`signatureDigests.sha384Signature` や `signatureDigests.sha512Signature` をインポートするとそれを上書きする。
++         あるダイジェストのもとで作られた署名は、別のダイジェストのもとでは検証されない。
++         Ed25519 と ML-DSA はメッセージに直接署名し、ダイジェストをとらない。
++     entry .sha256Signature   既定の SHA-256。インポートなしで暗黙のスコープにある
++     entry #token   `SHA256` のような、JCE の変換に現れるダイジェストの名前
++         同じダイジェストの `Hash` としての名前とは異なり、ハイフンを含まない。
++   entry #bytes   生の署名
+
+@ 0 1 0 014844d4b1455798127fc66aa9603ada
++ entry .signatureDigests   RSA または ECDSA の署名の対象となるダイジェスト。それぞれ名前でインポートする given
+
+% 1 1 0 08aa0faac227c2750e5816da3ad485df
+
+@ 0 2 0 040734c8f85bbcb41abd6d9158b3a3c0
++       `Signature.Digest` のコンパニオンが SHA-256 を提供するので、これらのどれかをインポートする必要があるのは、別のものを選ぶときだけである。
++       インポートした given はコンパニオンのものに優先する。
+
+% 2 1 0 0971bcdbec3ab3221fe9329d6d639db7
+
+% 3 1 0 073c2bb44f85604f12318922c4f81fb5
+
+% 4 1 0 1cd69184e4529bef01ed980abd7ab86d
+
+% 5 1 0 019a803fb84b14ca188753b8980faf06
+
+% 0 1 0 0d4a8e240ec10b311b4c244dc5d73395
+
+% 2 1 0 07875a882cbc38b71b9702b08f36184c
+
+% 0 1 0 02142b9b8d054be3037929f996691bc8
+
+% 1 1 0 1e9dbca29c6a817e05707bc2c0da8de8
+
+@ 0 1 0 0d5e1ea724cb079a15c99aa8d27f4be5
++   entry .sha256Signature   SHA-256。既定と同じ
+
+% 0 1 0 0b4cde45a2bd238e10f491b741103d34
+
+% 0 1 0 090e624d46f82b6612ac49feada3dc67
+
+@ 0 1 0 1ea69c9260eb2e00003118994deadaa5
++ entry .BlockCipher   すべてのブロック暗号の基底。モード、パディング、そしてプロバイダーの仕組み
+
+% 1 1 0 1c57ca93e0d2283916f53f6239987ffb
+
+@ 0 7 0 00645b2565c3f75f0d911d5efbc73371
++       `BlockCipher` は、ブロック暗号の型レベルの*ポリシー*（どの `Mode` と `Padding` を適用するか、IV が必要かどうか、入力の長さをどう検査するか）を持ち、バイトレベルの*仕組み*は、暗号方式の given が召喚されたときにプロバイダーから取り込んだ `Crypto.SymmetricCipher` に委ねる。
++       `Aes`、`Blowfish`、`Des`、`TripleDes`、`Rc2` はこれを継承し、それぞれ `Aes[256] over Cbc against Pkcs7` のようにモードとパディングで細分化される。
++       `over` の型メンバーは `#Transport`、`against` のメンバーは `#Contrast` であり、暗号方式の given は `mode Permits padding` を要求する。
+
+@ 0 3 0 1b95269e21f76c07124ec5de2ac400ec
++       モードとパディングは型に書くこともでき、`blockCipherModes` と `blockCipherPaddings` からインポートした given から推論させることもできる。
++       同じ平文でも、それぞれのもとで異なる暗号文になる。
+
+% 2 1 0 16e591ac6c7d9c940d5fc67d455004e6
+
+% 3 1 0 1dc7aa86900aa21105206c5627b6ec61
+
+% 4 1 0 051e5f64de588c441d08df03501ee304
+
+% 5 1 0 1cdc89e01de161b50c1e8ec75012b4aa
+
+% 6 1 0 0f85200ae2f01ef60068d825dda54588
+
+% 7 1 0 0184c4d9ee08f48f07c95610ce6ad40c
+
+% 1 1 0 1d6ddd82ea6b074d1501eee653d3eeb4
+
+% 3 1 0 1d6f890bf801918c1ae967625ba97df5
+
+% 0 1 0 085d4ad752c35bc2028854e2975714da
+
+% 1 1 0 0e56506a0f6b8b7608dcf43976a8601a
+
+% 2 1 0 148f36bcc8cfcbb51bcd40bfcc5021e5
+
+% 1 1 0 0c954ab99fd6e0150b71859196d55971
+
+% 0 1 0 0880d36ee3cb17191c019afd4859ab68
+
+% 0 1 0 0546f7942a99b4bb0b1f536fa4a54b11
+
+% 1 1 0 0069cc826ae80a210bc319bfac90fdf6
+
+% 2 1 0 196c1ded2f75e89c13ef30430f9844b3
+
+% 0 1 0 1369384260b5e9b31401741a5f65fbe4
+
+% 0 1 0 1851a691e7a64de20a177298c71e6845
+
+% 0 1 0 0cdd0cfc73991bd21e47b054f4156dd7
+
+% 0 1 0 05eaba111b3be0e01968c3a513a48ff9
+
+% 1 1 0 1c68c647e5803a0a1534a5b94e752e45
+
+% 2 1 0 1219a4070649de960f542e4a591ee6b9
+
+% 0 1 0 1085cd8659ec89b61ba7cf6300fa9037
+
+% 0 1 0 1f57cf74595b13501fc730e57755be56
+
+% 0 1 0 0ad3b70fa0a97b7716245677e664e9e5
+
+% 1 1 0 15e393456cde1f420fa4a7d7c4e3b969
+
+% 2 1 0 0604001e9a300413152fc3dd16dcea68
+
+% 0 1 0 02571f73025322c8082840ceb4ddbb0f
+
+% 0 1 0 157a3c91fc79cdf41b00abf1d26c3d79
+
+% 1 1 0 1bbaf654e52dc39b0c29ea344fe8a7d5
+
+% 2 1 0 03708d1843fce8f719150753e57b3d5e
+
+@ 0 5 0 1862556490a785891cccd4e246a7703f
++       すべてのブロック暗号は `Unauthenticated` なので、それで暗号化や復号をするには `cryptoPermits.permitUnauthenticatedCrypto`（またはそれを包含する許可）が必要である。
++       認証付きの代わりは `AesGcm` と `ChaCha20Poly1305` である。
++       値全体の暗号文は、モードが IV を使う場合、IV の後に暗号文が続いたものである。
++       ストリームの暗号文は、IV を最初のチャンクとして出力する。
+
+% 0 1 0 0b3a7bb7174f30eb0125587c75337da9
+
+% 1 1 0 0e78bde109cdf47f09bb71da31667aed
+
+% 1 1 0 12ba37806307b8510a3d302f880d5025
+
+% 0 1 0 04711cac31914ce914159ad213a79250
+
+% 1 1 0 15a6b2dc8d25e4500de2acd098966d3b
+
+@ 0 21 0 15efc2190a5b92bb1c8f6f0dbb90c3ca
++   entry #algorithm   アルゴリズムの JCE での名前。`AES`、`DES`、`DESede`、`Blowfish`、`RC2`
++   entry #Transport   `over` の細分化としてのモード
++   entry #Contrast   `against` の細分化としてのパディング
++   entry #encrypt   値全体を暗号化する。またはパイプラインの段として `Stream[Data]` を暗号化する
++       値全体の形式は、パディングの長さの規則を検査し、モードが IV を使う場合はブロックの大きさに対する `InitializationVector` から IV を取り出し、IV と暗号文を返す。
++       ストリームの形式はダクトを通じて `Cipher.Session` を駆動し、IV を最初に出力し、全体の長さがようやく分かるストリームの終わりで `NoPadding` の整列の検査を行う。
++       `Buffering` が必要である。
++   entry #encryptStream   `Chain[Data]` をチャンクごとに遅延して暗号化する。IV が最初のチャンクになる
++       `turbulence.Compression` と同じ形である。
++       各チャンクはプロバイダーのセッションを通り、最後に `NoPadding` の検査が行われる。
++       チェーンは、それを作った `uncloak` ブロックの中で排出すること。
++       遅延して暗号化されるストリームをブロックの終了後に排出すると、クロークがすでにゼロで埋めた鍵のバイト列を読むことになる。
++   entry #decrypt   値全体を復号する。またはパイプラインの段として `Stream[Data]` を復号する
++       値全体の形式は、モードが IV を使う場合、先頭のブロックを IV として読む。
++       ストリームの形式は、セッションが始まる前にストリームから IV を消費し、`Buffering` と `Tactic[Crypto.Error]` を必要とし、プロバイダーのストリーム終端での失敗（壊れたパディング、不正なタグ）を、最後のウィンドウが引き出されるときに `Crypto.Error` として発生させる。
++   entry #genKey   プロバイダーからの `keySize` ビットの新しい鍵の素材
++   entry #privateToPublic   鍵そのもの。ブロック暗号は対称である
+
+@ 0 1 0 1b7eee776bb3111817593ca60720bf9a
++   entry .Mode   ブロック暗号のモードの型クラス。JCE での名前、IV を使うかどうか、ブロックに整列するかどうか
+
+% 1 1 0 04bd7f59911a2b6d146ed93d8e53de82
+
+@ 0 6 0 01810669adca3b1d02644bf77958fded
++         `mode is Mode` は `Aes[256] over mode` が必要とする証拠であり、`Cbc`、`Ecb`、`Ctr`、`Cfb`、`Ofb` のそれぞれのコンパニオンが `mode` として提供し、インポートによる推論のために `blockCipherModes` が再エクスポートする（`Ecb` を除く。その given は許可をとる）。
++         `blockAligned` は、ブロック構造のモードである ECB と CBC で真であり、それらは `NoPadding` とともに使うと入力の長さがブロックの大きさの倍数であることを要求する。
++         ストリーム型のモードである CTR、CFB、OFB では偽であり、任意の長さを受け入れる。
+
+% 0 1 0 06c418204836b8ed0a1a23cc11a5f41e
+
+% 1 1 0 1b0ad16ee73155010e46b603650d3b5f
+
+@ 0 5 0 15ef03907a3f47e31b06a6e4155480c4
++     entry .apply   JCE での名前、IV を使うかどうか、ブロックに整列するかどうかから、モードの証拠を作る
++     entry #name   JCE の変換におけるモードの名前。`CBC`、`ECB`、`CTR`、`CFB`、`OFB`
++     entry #usesIv   モードが初期化ベクトルをとるかどうか。とらないのは ECB だけである
++     entry #blockAligned   `NoPadding` のもとで、入力がブロックの大きさの倍数でなければならないかどうか
++   entry .Padding   ブロック暗号のパディングの型クラス。JCE での名前と長さの規則
+
+% 1 1 0 16cf09d680facc58030f2d83fa13d6c5
+
+@ 0 5 0 13aa622e0185dc361b6ffed4017bde05
++         `padding is Padding` は `Aes[256] over Cbc against padding` が必要とする証拠であり、`Pkcs7`、`Iso10126`、`NoPadding` のコンパニオンが `padding` として提供し、インポートによる推論のために `blockCipherPaddings` が再エクスポートする（`NoPadding` を除く。その given は戦術をとる）。
++         任意の入力の長さを受け入れるパディングでは、`verify` は何もしない。
++         `NoPadding` はそれを上書きして、整列していない入力を拒否する。
+
+% 0 1 0 05f58575e891df911642bfefef0284a6
+
+% 1 1 0 1037306efe6ff0be0486cf6a1b6c74da
+
+@ 0 4 0 1ee971522958d1c9185a64e6506a01c2
++     entry .apply   JCE での名前から、何もしない長さの規則を伴うパディングの証拠を作る
++     entry #name   JCE の変換におけるパディングの名前。`PKCS5Padding`、`ISO10126Padding`、`NoPadding`
++     entry #verify   入力の長さをブロックの大きさに照らして検査する。`Crypto.Error` を発生させるのは `NoPadding` だけ
++   entry .Cbc   暗号ブロック連鎖。ランダムな IV のもとで、各ブロックを直前のブロックに連鎖させる
+
+% 1 1 0 1c4e255595cbbb4f07226420e40b71e8
+
+@ 0 5 0 00c5c5c3a9a005621cb1b2563051bbea
++         多くの古い形式が使うブロック構造のモードである。
++         IV を必要とし、ブロックに整列し、三つのパディングのどれでもとる。
++         同じ平文は、`InitializationVector.random` のもとでは毎回異なる暗号文になり、固定の IV のもとでは同一の暗号文になる。
++     entry .mode   `Cbc is BlockCipherMode` の証拠。暗黙のスコープにあり、`blockCipherModes.cbc` でもある
++   entry .Ecb   電子符号表。各ブロックを独立に暗号化する。不許可として制限されている
+
+% 1 1 0 052d1ed030c377521229603d4dc3064c
+
+@ 0 8 0 0c3ef3af5fa56a1f17cb9f9fa1aa05be
++         ECB は平文の構造を露呈する（等しいブロックは等しい暗号文になる）ので、制限されている。
++         そのモードの証拠を召喚するには、どちらの方向でも、鍵の生成でさえ、`Permit[Concession.Ecb]` が必要であり、`cryptoPermits.permitDisallowedCrypto` がそれを提供する。
++         IV を使わず（`InitializationVector` は無視される）、ブロックに整列し、任意のパディングをとる。
++         コンテキスト引数を持つ given は再エクスポートできないので、`Ecb.mode` は `blockCipherModes` で再エクスポートされない。
++         モードは型に `Aes[256] over Ecb` と書く。
++     entry .mode   `Ecb is BlockCipherMode` の証拠。消去された `Permit[Concession.Ecb]` を必要とする
++   entry .Ctr   カウンターモード。増加するカウンターブロックからのキーストリームで、任意の長さを扱う
+
+% 1 1 0 1a26b24636d05eb000286350eb9d4c6e
+
+@ 0 5 0 11648320bf15190f1cb9b864a7d44767
++         ストリーム型のモードである。
++         IV を必要とし、ブロックに整列せず、`NoPadding` だけを受け入れる（`Permits.ctrNoPadding` が唯一の組み合わせである）。
++         カウンターは JDK と同じく 128 ビットのブロック全体にわたって増加する。
++     entry .mode   `Ctr is BlockCipherMode` の証拠。暗黙のスコープにあり、`blockCipherModes.ctr` でもある
++   entry .Cfb   暗号フィードバック。全ブロック版のストリーム型モード
+
+% 1 1 0 190fb44f9f86c9eb1c22345bacf721bc
+
+@ 0 4 0 02241636751650bd063a382de3d6dd2c
++         IV を必要とし、ブロックに整列せず、任意のパディングをとる。
++         フィードバックは JDK の `CFB` と同じくブロック全体（AES では 128 ビット）である。
++     entry .mode   `Cfb is BlockCipherMode` の証拠。暗黙のスコープにあり、`blockCipherModes.cfb` でもある
++   entry .Ofb   出力フィードバック。全ブロック版のストリーム型モード
+
+% 1 1 0 06864c1c8c2518b90ddd2839947806fd
+
+@ 0 4 0 12238fc7be6d279703356673eb417f56
++         IV を必要とし、ブロックに整列せず、任意のパディングをとる。
++         フィードバックは JDK の `OFB` と同じくブロック全体である。
++     entry .mode   `Ofb is BlockCipherMode` の証拠。暗黙のスコープにあり、`blockCipherModes.ofb` でもある
++   entry .Pkcs7   PKCS#7 パディング。最後のブロックをパディングのバイト数で埋める
+
+% 1 1 0 0c8291eccc47f7771de6696d1bf6ee1c
+
+@ 0 5 0 14199a7aef72abd30dca19d77aba2375
++         通常のパディングであり、決定的なので、固定の IV のもとではバイト単位で同一の暗号文になる。
++         JDK は歴史的な理由からこれを `PKCS5Padding` と呼ぶ。
++         復号時の壊れたパディング（誤った鍵）は、理由 `BadPadding` を持つ `Crypto.Error` になる。
++     entry .padding   `Pkcs7 is BlockCipherPadding` の証拠。暗黙のスコープにあり、`blockCipherPaddings.pkcs7` でもある
++   entry .Iso10126   ISO 10126 パディング。ランダムなバイト列で、最後にバイト数を置く
+
+% 1 1 0 1fb787cff613a3f50967ebac343dd331
+
+@ 0 4 0 1d8b718cdb881e1601c19cc2ff8d31d9
++         パディングのバイト列はランダムなので、固定の IV のもとでも同じ平文の最後のブロックは異なる。
++         JCE だけの方式であり、`OpensslCrypto` は提供しない。
++     entry .padding   `Iso10126 is BlockCipherPadding` の証拠。暗黙のスコープにあり、`blockCipherPaddings.iso10126` でもある
++   entry .NoPadding   パディングなし。入力はすでにモードに合っていなければならない
+
+% 1 1 0 1f509fcb64595c0501a3273e7d168c0a
+
+@ 0 8 0 1dc1f31d7b90da5b000b7ae66ba953ff
++         ブロックに整列するモード（ECB、CBC）では、入力の長さはブロックの大きさの倍数でなければならず、それは理由 `IllegalBlockSize` を持つ `Crypto.Error` として検査される。値全体では暗号化の前に、ストリームではストリームの終わりで検査される。
++         ストリーム型のモード（CTR、CFB、OFB）では任意の長さが受け入れられる。
++         この given は `Tactic[Crypto.Error]` を取り込む。
++         そのため、ほかのすべてのパディングが全域的であるのに対し、`NoPadding` の暗号方式を構築するには（したがってその鍵を生成したり使ったりするには）スコープにその戦術が必要であり、また `NoPadding.padding` は `blockCipherPaddings` で再エクスポートされない。
++         型に `against NoPadding` と書くこと。
++     entry .padding   `NoPadding is BlockCipherPadding` の証拠。`Tactic[Crypto.Error]` を取り込む
+
+@ 0 1 0 1b4e85a51f7d2359060f00bf9945c68c
++ entry .Aes   128、192、256 ビットの鍵を持つ AES。パディングを伴うブロック暗号のモードで使う
+
+% 1 1 0 0c4e918b75ad5265072728f8b61813ca
+
+@ 0 6 0 1920d613db1c82f01f1420495abf0af6
++       `Aes[bits] over mode against padding` は、`BlockCipher` としての Advanced Encryption Standard であり、プロバイダーの必須の `aes` を通じて得られるので、すべてのプロバイダーが提供する。
++       鍵の大きさはリテラル型 `Aes[128]`、`Aes[192]`、`Aes[256]` である。
++       モードとパディングは型に書くか、`blockCipherModes` と `blockCipherPaddings` のインポートから推論させる。
++       認証がないので、`cryptoPermits.permitUnauthenticatedCrypto` が必要である。
++       認証付きの暗号化には `AesGcm` を使う。
+
+% 2 1 0 1ef4168a06975b061aa666536a345e8a
+
+% 3 1 0 086d3c87513967c90e9894893afbd12e
+
+% 4 1 0 1e3cac7f297bf30214394d0aebf21394
+
+% 5 1 0 1ca0c984ffe680c207dd7354aaeee69c
+
+% 6 1 0 0da906e492547edc18baed2d99171ec7
+
+% 7 1 0 1354033b06a8bf251708a85c12f3d788
+
+% 0 1 0 0b1c693573c4012304785f4693908dab
+
+% 1 1 0 0d3aa0e79bcf788415f5367e2c6c8c6b
+
+% 2 1 0 1a9a546688187d2c11da33dfad808d63
+
+% 1 1 0 14489989f1fda1840864c62cbe45de36
+
+% 1 1 0 1c1ee63eb82eea111de81fb9ced413c4
+
+% 1 1 0 1ed5ebad82ddcfe50c40db44a8eeea8c
+
+@ 0 2 0 01488e5717a5505200be602f953e5a3d
++   entry .value   モード、パディング、それらの `Permits` の証拠、`Crypto` からの、given `Aes[bits] over mode against padding`
++   entry #keySize   128、192、256
+
+@ 0 1 0 0e9de8c4d6bf9d6e1a9c53385616a01a
++ entry .AesGcm   Galois/Counter Mode の AES。96 ビットのノンスと 128 ビットのタグによる認証付き暗号化
+
+% 1 1 0 1280b87a7e3cca8511a8a4761707aa6d
+
+@ 0 7 0 161b2aff10f4bb73020b38b68966ed16
++       SSH の `aes256-gcm@openssh.com`、TLS の `AES_*_GCM` スイート、そして現代のインターネットの大部分が使う AEAD であり、`AesGcm[128]` または `AesGcm[256]` として表す。
++       これは `Aes over BlockCipher.Cbc` やほかのブロック暗号のモードとは異なるプリミティブである。
++       認証を行い、関連データをとり、呼び出し側が決して繰り返してはならないノンスをとる。
++       そのため `BlockCipherMode` ではなく独自の `Cipher & Symmetric & Authenticated` であり、許可を必要とせず、`encrypt` と `decrypt` ではなく `seal` と `unseal` を通じて使う。
++       プロバイダーの構造的な `aesGcm` メンバーを通じて得られ、同梱のすべてのプロバイダーがそれを持つ。
+
+% 2 1 0 17b983f0fd38be5301d4d7a294767e5a
+
+% 3 1 0 032d7d4805c9c80a1aafa36f1616415b
+
+% 4 1 0 114bf64ed61cac3f134a7038ca84dc5a
+
+% 5 1 0 0c3098b7806664d306993e45df72148e
+
+% 6 1 0 1182953f88bb2f1e10a9eb323e6b5778
+
+% 3 1 0 18337aaea198c00111e1795ad46e8197
+
+% 0 1 0 1ceab47122aeee461b1451738f33720c
+
+% 0 1 0 1f8399496a2fdf8600b4b86e63fa085d
+
+% 0 1 0 1266bbad72eefc801749759aaae4c5b9
+
+% 1 1 0 1b764453a6744f740d889289d166f1f9
+
+% 1 1 0 1f72ed2b592a09491d1c69b0aedb2db1
+
+% 0 1 0 0cf9b0f53f26ed4114bc43ec084e12fe
+
+% 0 1 0 0201b91c281aa62f118d9eaa313e9fdb
+
+@ 0 4 0 09960b6b9c0a09670e6d84c64338ea55
++   entry .value   `Crypto { def aesGcm: Crypto.Aead }` からの、given `AesGcm[bits]`
++   entry #keySize   128 または 256
++   entry #genKey   プロバイダーからの新しい鍵の素材
++   entry #privateToPublic   鍵そのもの
+
+% 2 1 0 14a481548c2867fa02469aea393dbd28
+
+% 3 1 0 1a85f0d24d6336151a4e1bca587128cc
+
+@ 4 2 0 0f3e579052875139124606df8f7fd126
++   entry #seal   タグを付け加えた暗号文
++   entry #unseal   平文。タグが検証されなければ `Unset`
+
+@ 0 1 0 1772ce0af7c1d1af09062cd3dd853d28
++ entry .Blowfish   128、256、448 ビットの鍵を持つ Blowfish。不許可であり、許可が必要
+
+% 1 1 0 1a54992cd82b4917116a83779828353b
+
+@ 0 6 0 19d4dedd8be4b67d04ede954eb6204e7
++       8 バイトのブロックを持つ `BlockCipher` であり、プロバイダーの構造的な `blowfish` メンバー（JDK のものだけ）を通じて得られる。
++       その `Weakness` は `Concession.Blowfish` なので、使うにはすべてのブロック暗号が必要とする認証なしの許可に加えて、`cryptoPermits.permitDisallowedCrypto` または `permitCryptoThrough2014` が必要である。
++   entry .value   given `Blowfish[bits] over mode against padding`
++   entry #keySize   128、256、448
+
+@ 0 1 0 13e96c395ffe0c670e06acc7074fefb4
++ entry .Des   56 ビットの鍵を持つ DES。不許可であり、許可が必要
+
+% 1 1 0 115e3f0318f4b923146d5d967686fd81
+
+@ 0 5 0 006a79c24a7b3d0b1f3c94786b78fe60
++       8 バイトのブロックを持つ `BlockCipher` であり、プロバイダーの構造的な `des` メンバー（JDK のものだけ）を通じて得られる。
++       その `Weakness` は `Concession.Des` である。
++       破られており、ずっと以前に暗号化されたものを読むために、`cryptoPermits.permitDisallowedCrypto` または年に基づく許可によってのみ許される。
++   entry .value   given `Des over mode against padding`
+
+% 0 1 0 1d9bc053353251171431314b02b493dd
+
+@ 0 1 0 1707b563c3a30f6a1cd69a0e06369cf5
++ entry .TripleDes   112 または 168 ビットの鍵を持つトリプル DES（`DESede`）。非推奨であり、許可が必要
+
+% 1 1 0 1d56dd07331ea1db040bb0ecf36ab3d4
+
+@ 0 6 0 1ca50f592664ef3e07d7a4cdca9bc4de
++       8 バイトのブロックを持つ `BlockCipher` であり、プロバイダーの構造的な `tripleDes` メンバー（JDK のものだけ）を通じて得られる。
++       その `Weakness` は `Concession.TripleDes` である。
++       `cryptoPermits.permitDeprecatedCrypto` はそれによる暗号化を許し、`permitLegacyCrypto` は復号だけを許す。
++   entry .value   given `TripleDes[bits] over mode against padding`
++   entry #keySize   112 または 168
+
+@ 0 1 0 0e1de3a778fdd4d3056baf687ed3643b
++ entry .Rc2   40、64、128 ビットの鍵を持つ RC2。不許可であり、許可が必要
+
+% 1 1 0 171efb142085334c19df228500f5c8f1
+
+@ 0 5 0 068fb771f3ac60240e7dd3e57835c1ce
++       8 バイトのブロックを持つ `BlockCipher` であり、プロバイダーの構造的な `rc2` メンバー（JDK のものだけ）を通じて得られる。
++       その `Weakness` は `Concession.Rc2` であり、`cryptoPermits.permitDisallowedCrypto` または `permitCryptoThrough2014` によって許される。
++   entry .value   given `Rc2[bits] over mode against padding`
++   entry #keySize   40、64、128
+
+@ 0 1 0 13fd0024e233c0720d23368f67dedd11
++ entry .ChaCha20   RFC 8439 の ChaCha20 キーストリーム。256 ビットの鍵、96 ビットのノンス、32 ビットのカウンター
+
+% 1 1 0 02a0c511242837b3100a66a75b17fdec
+
+@ 0 6 0 166b207a7b53567510ac7d4284438114
++       `Cipher & Symmetric & Keystream` としての素のストリーム暗号であり、`SymmetricKey[ChaCha20]` の `xor` 拡張を通じて使う。
++       キーストリームを二回適用すると平文に戻る。
++       これは OpenSSH の `chacha20-poly1305@openssh.com` が `Poly1305` と組み合わせる（二つの鍵、暗号化された長さ）生のプリミティブである。
++       普通の認証付きメッセージには `ChaCha20Poly1305` を使う。
++       プロバイダーの構造的な `chaCha20` メンバーを通じて得られ、同梱のすべてのプロバイダーがそれを持つ。
+
+% 2 1 0 00e0a7a5bf5ac8e4043ad2e1790879c4
+
+% 3 1 0 0c388ecacbfcba3114fda7e6651a57e2
+
+% 4 1 0 12db294490cca0d615595c3da90535ec
+
+% 5 1 0 193107ff45c4ed9a0f323bafe301c3ff
+
+% 6 1 0 0475f53ab949ce1f062d31a5800843be
+
+% 0 1 0 0dea1f06f51d44d61176d121c43f6baa
+
+% 0 1 0 1aa69e2cca242c0c00c718b5a74698ed
+
+% 0 1 0 0ff1e977cfcab9571caaad9bcfce62df
+
+% 1 1 0 1f9bdf5afe025e730cf141381038ac7b
+
+% 0 1 0 16a625383a6303261fb23d9cd2a4d653
+
+% 0 1 0 1f94b24faf364f7115d1fa793abdc4d4
+
+% 0 1 0 02907f48d88e4fff18eb23a9cd71878f
+
+@ 0 1 0 10f774fb8f84ae87003fc68520204cad
++   entry .value   `Crypto { def chaCha20: Crypto.StreamCipher }` からの、given `ChaCha20`
+
+% 1 1 0 04a45f765c139efd08aedd667a278bc2
+
+@ 2 2 0 1379be954867fcb1191d64163309d9e5
++   entry #genKey   プロバイダーからの 32 バイトの新しいランダムなバイト列
++   entry #privateToPublic   鍵そのもの
+
+% 4 1 0 1eb2aef4abdf680f1028cecdd37af347
+
+@ 1 1 0 16b4467209d682b700f9157b22aef72c
++   entry #xor   ブロック `counter` から始まるキーストリームと組み合わせた `data`
+
+@ 0 1 0 0b3ed22f90ca18d11a1c51dcb177e837
++ entry .ChaCha20Poly1305   RFC 8439 の ChaCha20-Poly1305 AEAD。TLS 1.3 のもう一つの暗号方式であり、WireGuard のもの
+
+% 1 1 0 157136be2231cca5062b2e0b72217eb2
+
+@ 0 5 0 13c586b2b320b0c20de576666942db53
++       128 ビットの Poly1305 タグを伴う `ChaCha20` の上に組み立てられた認証付き暗号化であり、`Cipher & Symmetric & Authenticated` として、`AesGcm` とまったく同じく `seal` と `unseal` を通じて使う。
++       256 ビットの鍵、その鍵のもとで決して繰り返してはならない 12 バイトのノンス、認証されるが暗号化はされない関連データを持ち、タグは暗号文に付け加えられる。
++       プロバイダーの構造的な `chaCha20Poly1305` メンバーを通じて得られ、同梱のすべてのプロバイダーがそれを持つ。
+
+% 1 1 0 107ab429ac107b5a08a5f50c6e86e59f
+
+% 1 1 0 19385170bc9e977a0ed2dfb9e049412e
+
+@ 0 1 0 0df7067e055f1bcb0121481e95366ef5
++   entry .value   `Crypto { def chaCha20Poly1305: Crypto.Aead }` からの、given `ChaCha20Poly1305`
+
+% 1 1 0 19f83803f36649cd0484607aef6bdccb
+
+@ 2 2 0 0f5417dcb853df760db6a9cfb8860d4a
++   entry #genKey   プロバイダーからの 32 バイトの新しいランダムなバイト列
++   entry #privateToPublic   鍵そのもの
+
+% 4 1 0 12d37fb4e036546e12594910fe0904f2
+
+% 3 1 0 1892eec9b818698f1c28d5c2cb95d7cb
+
+@ 4 2 0 06cd03bfdd5e611b1b4c3052d9db9f8f
++   entry #seal   タグを付け加えた暗号文
++   entry #unseal   平文。タグが検証されなければ `Unset`
+
+@ 0 1 0 0623d691e085bfb8096deb1f909300c4
++ entry .Rsa   1024、2048、3072、4096 ビットの鍵を持つ RSA。公開鍵に向けて暗号化し、署名する
+
+% 1 1 0 1a1905d8580f3c8f18ad8c8a8a9df083
+
+@ 0 7 0 13df4b08625f87f306ab8e00c099a46a
++       RSA は暗号化と署名の両方を行う。これは一つの鍵ペアを共有する二つの異なるプリミティブである。
++       `encrypt` と `decrypt`（`uncloak` の中）は生の RSA を使い、`sign` と `verify` は、スコープにある `Signature.Digest` が指定するダイジェスト（`signatureDigests` から別のものをインポートしない限り SHA-256）に対する RSASSA-PKCS1-v1_5 を使う。
++       どちらも、すべてのプロバイダーの必須の基本機能の一部である。
++       暗号化に与えられた IV は無視される。
++       `Rsa[1024]` の `Weakness` は `Concession.SmallRsa` なので、`cryptoPermits.permitDisallowedCrypto` または `permitCryptoThrough2014` が必要である。
++       それより大きな鍵には許可は不要である。
+
+% 2 1 0 1f9c0e67312fff4915d27b73d299d302
+
+% 3 1 0 142c84c3e5e89f681e852b4bce7404c6
+
+% 4 1 0 1d6dd576b0cd954413cf6850351ff481
+
+% 5 1 0 046078858caee6ee04a5c7b0747bc60c
+
+% 6 1 0 1f3e0634aa2a6d9818717899210e3a37
+
+% 8 1 0 0618537261326b1a111bc7b58ba0cdf6
+
+% 0 1 0 00117fc4ce1772780203d5a33531aaca
+
+% 0 1 0 1b6aac234c4b3d8d08b5e5cb3516b2b9
+
+% 1 1 0 177896abebecde5315482f3ffb6762b7
+
+% 2 1 0 027d8e68a9820cd607c09a2fa62f865e
+
+@ 0 3 0 16dbfa2dd1745a9f02274c4e33e3c6ce
++       その鍵は `PRIVATE KEY`、`RSA PRIVATE KEY`（PKCS#1）、`PUBLIC KEY`、`RSA PUBLIC KEY` のブロック、`ssh-rsa` の行、OpenSSH のコンテナーから読める。
++       法の大きさは型のものと一致しなければならない。
+
+% 1 1 0 1999876624fc76f21ffdc7b15cd8df3f
+
+% 2 1 0 1ea32c77407a1ae900a73baaa295c85e
+
+@ 0 9 0 016cd0808b6646370e9c9012d2bf90c7
++   entry .value   `Signature.Digest` と `Crypto` からの、given `Rsa[bits]`
++   entry .keyAlgorithm   `Rsa[bits] is KeyAlgorithm`。`bits` ビットの法を持つ `rsaEncryption`、`ssh-rsa`
++   entry #keySize   1024、2048、3072、4096
++   entry #privateToPublic   秘密鍵から計算した公開鍵
++   entry #decrypt   秘密鍵による生の RSA 復号
++   entry #encrypt   公開鍵に向けた生の RSA 暗号化。IV は無視される
++   entry #genKey   `keySize` ビットの新しい PKCS#8 の鍵ペア
++   entry #sign   選ばれたダイジェストに対する RSASSA-PKCS1-v1_5 の署名
++   entry #verify   署名が公開鍵のもとで検証されるかどうか
+
+@ 0 1 0 16302a57a9d7778d08241fe783568ea1
++ entry .Dsa   512、1024、2048、3072 ビットの鍵を持つ DSA。不許可であり、許可が必要
+
+% 1 1 0 1ed03ea7d64cf89b11341a921ae35fb9
+
+@ 0 13 0 0d0aaf7baacf85091a1e4a7fc3419fef
++       プロバイダーの構造的な `dsa` メンバー（JDK のものだけ）を通じて得られる `Cipher & Signing` である。
++       その `Weakness` は `Concession.Dsa`（FIPS 186-5 で削除された）なので、署名には `cryptoPermits.permitDisallowedCrypto` または `permitCryptoThrough2024` が必要であり、古い署名の検証には少なくとも `permitLegacyCrypto` が必要である。
++       DSA 鍵のパラメーターは鍵の中にしかないので、その `KeyAlgorithm` は固定の識別子も OpenSSH の名前も持たず、`PublicKey.raw` はそれを組み立てられない。
++   entry .value   `Crypto { def dsa: Crypto.SignatureScheme }` からの、given `Dsa[bits]`
++   entry .keyAlgorithm   `Dsa[bits] is KeyAlgorithm`。`bits` ビットの素数 `p` を持つ `id-dsa`。OpenSSH の名前はない
++   entry #keySize   512、1024、2048、3072
++   entry #genKey   新しい PKCS#8 の鍵ペア
++   entry #sign   DSA の署名
++   entry #privateToPublic   秘密鍵から計算した公開鍵
++   entry #verify   署名が公開鍵のもとで検証されるかどうか
+
+@ 0 1 0 179dd6ac1a61f2711b3150409c60ae26
++ entry .Ecdsa   鍵の大きさで選ばれる NIST の素体曲線（P-256、P-384、P-521）上の ECDSA
+
+% 1 1 0 13d8d1ab19b9eaca0973642ad8849080
+
+@ 0 7 0 1828da6033a23de106b844defc5c4d89
++       `Ecdsa[256]` は P-256（`secp256r1`）、`Ecdsa[384]` は P-384、`Ecdsa[521]` は P-521 である。
++       スコープにある `Signature.Digest` が指定するダイジェストに署名する `Cipher & Signing` である。
++       `Rsa` と異なり必須の基本機能には含まれないので、構造的な `ecdsa(digest)` メンバー（JDK と OpenSSL のもの）を通じて得られる。
++       `SoundnessCrypto` はこれを提供せず、要求するとコンパイルエラーになる。
++       その鍵は `PRIVATE KEY`、`EC PRIVATE KEY`（SEC1）、`PUBLIC KEY` のブロック、`ecdsa-sha2-nistp*` の行、OpenSSH のコンテナーから読める。
++       曲線は型のものと一致しなければならない。
++       許可は不要である。
+
+% 2 1 0 0d133561dd61a0160590fd8d56204740
+
+% 3 1 0 0159d2120910b1d607b6e8748c2b85bd
+
+% 4 1 0 100a9a83ae83c99a03fc88cdd9a47f56
+
+% 5 1 0 182752d8f18460f804f3fa3f1ff58151
+
+% 6 1 0 017024a2c9519ea60ccdc16da3dbb1c9
+
+% 8 1 0 1588810be9857df4177ed9012af10b5d
+
+% 1 1 0 0de307e26cb1b31601a7a93f0c84009b
+
+% 2 1 0 1272eed708726e8012ef8c996d30311f
+
+% 1 1 0 1de6bed569cd83ae0b0c1cbb757b295e
+
+% 1 1 0 1c98d78b8b4d201b063ecd19b494d236
+
+@ 0 7 0 19b7999d61c0651f005d09000561df17
++   entry .value   `Signature.Digest` と `Crypto { def ecdsa(digest: Text): Crypto.SignatureScheme }` からの、given `Ecdsa[bits]`
++   entry .keyAlgorithm   `Ecdsa[bits] is KeyAlgorithm`。`bits` の曲線を持つ `id-ecPublicKey`。`ecdsa-sha2-nistp<bits>`
++   entry #keySize   256、384、521
++   entry #genKey   SEC1 の構造に公開鍵を含む、新しい PKCS#8 の鍵ペア
++   entry #privateToPublic   秘密鍵の文書に埋め込まれたフィールドから読んだ公開鍵
++   entry #sign   選ばれたダイジェストに対する ECDSA の署名
++   entry #verify   署名が公開鍵のもとで検証されるかどうか
+
+@ 0 1 0 0c9113d4b96fc1fb0b65fa60ecf9d20b
++ entry .Ecdh   鍵の大きさで選ばれる NIST の素体曲線上の ECDH 鍵合意
+
+% 1 1 0 1d9441ef20c929ff0ca4b9bb3a9fc7d0
+
+@ 0 7 0 05db5a6fd6e14a8a1f967187c3a5eadc
++       SSH の `ecdh-sha2-nistp*` と TLS の `secp*r1` グループの鍵合意であり、`Ecdh[256]`、`Ecdh[384]`、`Ecdh[521]` として表す。
++       `agree` 拡張を通じて使う `Cipher & Agreeing` である。
++       鍵は普通の EC 鍵である。
++       `PrivateKey[Ecdh[256]]` と `PrivateKey[Ecdsa[256]]` は同じ文書であり、EC 鍵のファイルはどちらとしても読めるが、一つの鍵を鍵合意と署名の両方に使うのは誤りであり、別々の型がそれを防ぐ。
++       プロバイダーの構造的な `ecdh` メンバー（JDK のものだけ）を通じて得られる。
++       共有された秘密は 32、48、66 バイトである。
+
+% 1 1 0 10da3d27f8a8a778047506bd5739a125
+
+% 1 1 0 133396c0b31385520caa50d7a5729dcb
+
+@ 0 6 0 11895cb2598ee5181bd0ca778c0fb1e1
++   entry .value   `Crypto { def ecdh: Crypto.KeyAgreement }` からの、given `Ecdh[bits]`
++   entry .keyAlgorithm   `Ecdh[bits] is KeyAlgorithm`。`bits` の曲線を持つ `id-ecPublicKey`。OpenSSH の名前はない
++   entry #keySize   256、384、521
++   entry #genKey   新しい PKCS#8 の鍵ペア
++   entry #privateToPublic   秘密鍵の文書に埋め込まれたフィールドから読んだ公開鍵
++   entry #agree   相手の公開鍵との生の共有された秘密
+
+@ 0 1 0 1b9174389d8fc0a807b55ae7474dc3f5
++ entry .Ed25519   Ed25519（RFC 8032）。OpenSSH の既定の鍵の種類であり、TLS 1.3 の署名方式の一つ
+
+% 1 1 0 13d88addc22eb278173d8c9b408247e3
+
+@ 0 8 0 02ef2015c36200540e4ca1c8d70e719f
++       Curve25519 上のエドワーズ曲線署名方式であり、固定の鍵の大きさ 256 を持ち、大きさのパラメーターを持たない `Cipher & Signing` である。
++       メッセージに直接署名する（「純粋な」版）ので、`Signature.Digest` は関与しない。
++       プロバイダーの構造的な `ed25519` メンバーを通じて得られ、同梱のすべてのプロバイダーがそれを持つ。
++       純粋な Scala のものは `BigInt` の上に実装されており、遅く、定数時間でもない。
++       その鍵は `PRIVATE KEY` と `PUBLIC KEY` のブロック、`ssh-ed25519` の行、OpenSSH のコンテナーから読める。
++       公開鍵のフィールドを持たない PKCS#8 の文書は、JDK がそれを導出できないので、JDK のもとでは `PublicKeyAbsent` になる。
++       許可は不要である。
+
+% 2 1 0 0948046065135cf71155f7512bd77cf0
+
+% 3 1 0 0a0d47720d56c0d9080779feee4467a5
+
+% 4 1 0 1b6dd011b91c79bb1a40ed804e75e741
+
+% 5 1 0 1e555a480c001a7e01d6c60863330243
+
+% 6 1 0 1303330bcd17f7c10895ec612c652a6e
+
+% 0 1 0 105a2813c11af4141d541f69216bcf05
+
+% 1 1 0 06b1a702c6a91baa0d58f4ed04197dd2
+
+% 2 1 0 1851efccd966988e07e73c221f7d7c4c
+
+% 1 1 0 03707d2c800df9a81b933554d550740a
+
+% 1 1 0 14773ce245fb8a810d2d1695aca16f47
+
+@ 0 2 0 1b35a9b98811b25c1693fff11b6843f2
++   entry .value   `Crypto { def ed25519: Crypto.SignatureScheme }` からの、given `Ed25519`
++   entry .keyAlgorithm   `Ed25519 is KeyAlgorithm`。パラメーターを持たない `id-Ed25519`。`ssh-ed25519`
+
+% 1 1 0 04c409323b29f8e3079160651b6f2d32
+
+@ 0 4 0 1be21eb4790e200c1bbd4ecf3a013e51
++   entry #genKey   RFC 5958 の `[1]` に公開鍵を埋め込んだ、新しい PKCS#8 の鍵ペア
++   entry #privateToPublic   秘密鍵の文書に埋め込まれたフィールドから読んだ公開鍵
++   entry #sign   メッセージそのものに対する Ed25519 の署名
++   entry #verify   署名が公開鍵のもとで検証されるかどうか
+
+@ 0 1 0 1bf0e408efce275b10884cc50e392e77
++ entry .MlDsa   ML-DSA（FIPS 204）。レベル 44、65、87 の耐量子格子署名
+
+% 1 1 0 10712c51e125d49b0a86101d9e4cc3de
+
+@ 0 6 0 1a759e5466fea018130068e138048a0b
++       CRYSTALS-Dilithium から標準化されたモジュール格子署名方式であり、`MlDsa[44]`、`MlDsa[65]`、`MlDsa[87]`（行列の次元。ML-DSA-65 では 6×5）として表す。
++       メッセージに直接署名する `Cipher & Signing` なので、`Signature.Digest` は関与しない。
++       プロバイダーの構造的な `mlDsa(level)` メンバーを通じて得られるが、それを持つのは JDK のものだけであり、しかも JDK 24 以降に限られる（それより前の JDK では最初の使用時にパニックする）。
++       許可は不要である。
+
+@ 0 4 0 1bc52828cf4d54100606ffbe35e41192
++       ML-DSA の鍵は、ほかの鍵と同じように証明書に署名する（`Certificate.selfSigned`）。
++       しかし TLS スタックは耐量子の鍵でハンドシェイクできないことがある（JDK のものはできない）ので、ML-DSA の鍵を識別情報とするサービスは、その鍵に、提示できる古典的な鍵に対する証明書を*発行*させる（`Certificate.issued`）。
+
+% 2 1 0 1eece767545774dd025a93f0b418647d
+
+% 3 1 0 0b30e9438b9749cc07f4484439ed7f12
+
+% 4 1 0 07e743fbe6e8b31e1cb4edba4755dff8
+
+% 5 1 0 0fad57e56a7d89180c7ca440582f90c7
+
+% 6 1 0 01574fce47263fe117918bc3182a80c8
+
+% 0 1 0 08b98b63ce79e64a0563039397d2a0dd
+
+% 1 1 0 1d98e2689f1dc04d1453f19558957f34
+
+% 2 1 0 069cd613f30b9114045b09b9e3035ac1
+
+% 1 1 0 0ef0767a9d3fa93f036614d0a4818bd7
+
+% 1 1 0 004436ce76ce3da3065ee97c62215a40
+
+@ 0 7 0 14222319d0eb0b0c09d534ecae0e3b16
++   entry .value   `Crypto { def mlDsa(level: Int): Crypto.SignatureScheme }` からの、given `MlDsa[level]`
++   entry .keyAlgorithm   `MlDsa[level] is KeyAlgorithm`。レベル自身の識別子（RFC 9881）で、パラメーターはない。OpenSSH の名前はない
++   entry #keySize   パラメーターセットである 44、65、87
++   entry #genKey   RFC 5958 の `[1]` に公開鍵を埋め込んだ、新しい PKCS#8 の鍵ペア
++   entry #privateToPublic   秘密鍵の文書に埋め込まれたフィールドから読んだ公開鍵
++   entry #sign   メッセージそのものに対する ML-DSA の署名
++   entry #verify   署名が公開鍵のもとで検証されるかどうか。デコードできないほど壊れた署名では `false`
+
+@ 0 1 0 16ffb7a8478471750ca6500cc0db47dd
++ entry .X25519   X25519（RFC 7748）、Curve25519 上の Diffie–Hellman。TLS 1.3 の既定のグループであり、SSH の `curve25519-sha256`
+
+% 1 1 0 00b83f115508942e14e06bc4ee143f22
+
+@ 0 6 0 112605f88dea27cc03378830c36f4a67
++       固定の鍵の大きさ 256 を持ち、大きさのパラメーターを持たない `Cipher & Agreeing` であり、`agree` 拡張を通じて使う。
++       互いの公開鍵を持つ二者は同じ 32 バイトの秘密を計算し、プロトコルはそれをハッシュしてセッション鍵にする。
++       プロバイダーの構造的な `x25519` メンバーを通じて得られ、同梱のすべてのプロバイダーがそれを持つ。
++       公開鍵の生の 32 バイトの形式は `PublicKey#raw` であり、`PublicKey.raw[X25519](bytes)` は相手が送ったものから公開鍵を組み立てる。
+
+% 2 1 0 1628eb8e96d5ece8106639b8bcb26ba8
+
+% 3 1 0 091eae25d824d8450cc6c9321264e451
+
+% 4 1 0 0a8c48299c0b64e91617a20cd1eb84d9
+
+% 5 1 0 07ebf442a85f23f601e4bb3eaa737852
+
+% 6 1 0 17a17e5e67031fca04007fa9aa8717c2
+
+% 0 1 0 111fc0f6ffcb436112d546d51464facb
+
+% 0 1 0 03a8b4ee53ad3e47041934e428b204ef
+
+% 0 1 0 1798c0bcf5dec5410ddd33333630188b
+
+% 0 1 0 1ca1fab3a0e9bc1c084a74054d9cb51e
+
+% 0 1 0 1f28ef5e85e81b13137e972f86ae10c0
+
+% 1 1 0 00b702706d95dc280b2df9a61f90554d
+
+% 1 1 0 13e29cd7776209eb1e7585af35d365c4
+
+% 1 1 0 0294793276ee8ae81fad67f0deee3411
+
+@ 0 2 0 1a223076dc1f73550d59e5f6a7dae68c
++   entry .value   `Crypto { def x25519: Crypto.KeyAgreement }` からの、given `X25519`
++   entry .keyAlgorithm   `X25519 is KeyAlgorithm`。パラメーターを持たない `id-X25519`。OpenSSH の名前はない
+
+% 1 1 0 1bdffb389e1bfc1e09ef7791a91bef5e
+
+@ 0 3 0 08ad4c85308cbc501e159416512cf777
++   entry #genKey   RFC 5958 の `[1]` に公開鍵を埋め込んだ、新しい PKCS#8 の鍵ペア
++   entry #privateToPublic   秘密鍵の文書に埋め込まれたフィールドから読んだ公開鍵
++   entry #agree   相手の公開鍵との生の 32 バイトの共有された秘密
+
+@ 0 1 0 1c6145f96ad0c4be09d9517d2e3e15f9
++ entry .Hmac   ハッシュアルゴリズムに基づく HMAC。値として表す
+
+% 1 1 0 03df54daad44a7cd07226591093cc7ba
+
+@ 0 4 0 1ad193052210ab650ea00930ccdd84a3
++       `Hmac in algorithm` は `hmac` 拡張の結果であり、認証コードのバイト列を、ハッシュアルゴリズムを幻の型メンバー `#Form` として持つ。
++       base64 として（スコープに `Alphabet[Base64]` があれば）`Showable`、十六進数として `Inspectable`、そして `Encodable in Data` なので、どの基数エンコーディングでも直列化できる。
+
+% 2 1 0 1899fdf04bbad8040fa2b929275717c0
+
+% 3 1 0 084a8518031b42590e6e5543760978c4
+
+% 4 1 0 13edaf0b58f6ec9012180dae19ea55df
+
+% 0 1 0 03775d0ecd055392006e7b2cb3ffcda6
+
+% 0 1 0 17fcfc04983deba8080a90ef1481aa64
+
+% 0 1 0 1b47d4cc2629697809681972b204bac6
+
+% 1 1 0 185ea547288705bd1c827fd2563cbae1
+
+% 0 1 0 11b663190656668b1cfed931fbba4119
+
+@ 0 6 0 06af173b3f8c4f380db8839a165921cb
++   entry .apply   認証コードのバイト列を `Hmac in scheme` として包む
++   entry .showable   HMAC を `Hmac(<base64>)` として描画する。スコープに `Alphabet[Base64]` が必要
++   entry .encodable   HMAC はそのバイト列としてエンコードされる
++   entry .inspectable   HMAC を完全な十六進数で描画する。スコープに `Alphabet` は不要
++   entry #bytes   認証コード
++   entry #Form   幻の型としてのハッシュアルゴリズム
+
+@ 0 7 0 03155c52574578d6181414b576d3fe13
++ entry .hmac   `value.hmac[Sha2[256]](key)`。鍵のもとでの、エンコード可能な任意の値の HMAC
++     `Encodable in Data` である任意の値に対する拡張である。
++     指定されたハッシュの `Hash in algorithm`、`Crypto` プロバイダー（その `hmac` は `HmacSHA256` のようなハッシュの JCE での名前で呼ばれる）、そして `Permit[HashWeakness[algorithm]]` が必要である。
++     そのため MD5 や SHA-1 に基づく HMAC には対応する `cryptoPermits` のインポートが必要だが、SHA-2 と BLAKE3 には何も要らない。
++     結果は `Hmac in algorithm` である。
++     鍵は普通の `Data` である。
++     HMAC の鍵は共有された秘密であり、`enigmatic.cose` の `HmacCipher` アダプターを使えば、代わりに `SymmetricKey` に持たせることができる。
+
+% 2 1 0 0279cf1f000e5a101dbc3837ac342c87
+
+% 3 1 0 1c44f293dade6126034eae037619ef3b
+
+% 1 1 0 14701783ccc9666712befcd44588fd19
+
+% 0 1 0 1a94ea18d9ba3afe12b51cc7d574e969
+
+% 0 1 0 0f4d9e19d1ef50670c38ebaaada625ad
+
+% 1 1 0 061c5e35f69779100049d2b7cad6aac4
+
+@ 0 1 0 04d59df2e12b60a91213c62c8353fd6d
++ entry .encrypt   `uncloak` が貸し出す `Encryptor` で、値、`Chain[Data]`、`Stream[Data]` を暗号化する
+
+% 1 1 0 0d9174120c96e508097c53d9d849aea9
+
+@ 0 10 0 04fdb4d5799060a51dd683f085dc11c3
++       名前を共有する三つの拡張である。
++       `Encodable in Data` である任意の値に対しては、`value.encrypt[cipher](iv)` は、ブロック暗号でも RSA でも任意の `Encryption` の暗号方式について、値全体の暗号文（モードが IV を使う場合は IV の後に暗号文）である。
++       `Chain[Data]` と `(Stream[Data] over Credit)^` に対しては、`BlockCipher` に限った、チャンクごとの遅延した暗号化である。
++       IV が最初のチャンクになり、`BlockCipher.NoPadding` の整列の検査はストリームの終わりで行われ、ストリームの形式は `Buffering` を必要とする。
++       それぞれ、外側の `uncloak` からの `Encryptor[cipher]`、暗号方式の given、`Permit[Weakness[cipher]]`、`Permit[Authentication[cipher]]` をとる。
++       そのためブロック暗号には `cryptoPermits.permitUnauthenticatedCrypto` が必要であり、弱いアルゴリズムにはそれ自身の許可が必要である。
++       暗号方式の型は、スコープにある `Encryptor` から推論される。
+
+@ 0 2 0 0214e3bc611352f019e2313402442721
++       暗号化は全域的である。
++       型が有効な変換を保証するので、失敗することはない。
++       ただし、整列していない入力に対する `BlockCipher.NoPadding` は `Crypto.Error` を発生させる。
+
+% 2 1 0 0601852bed7d79a51c54cf735995562c
+
+% 3 1 0 07c1b80fada3664504a1f1cbc19c4423
+
+% 4 1 0 0709cf105f4e7cff1df66f85c7bdf4ab
+
+% 5 1 0 1fd77197585ac3b3142d57da863f5657
+
+% 6 1 0 00c305af82e21ef21e7aac454c3dcc7a
+
+% 0 1 0 05c7b6b663c0853b10f681bb6ec5d7d3
+
+% 1 1 0 1fdb974efee19d68146a4151f0b6ddf5
+
+% 3 1 0 007af473214d1dd70ea95774bac1e402
+
+% 5 1 0 14e223ee393c8eb61480c3e598e4a66b
+
+% 0 1 0 10cfd0e8ea75945b175de853178dad73
+
+% 1 1 0 179371f1854d68711b430b4c72789657
+
+@ 0 3 0 0a14473f6306481d11a2c1f54d1ca435
++       遅延したストリームは、それを作った `uncloak` ブロックの中で排出すること。
++       暗号文の `Chain` は純粋なので、キャプチャ検査はそれがブロックを出ることを許すが、ブロックの終了後に排出されたストリームは、クロークがすでにゼロで埋めた鍵のバイト列を読む。
+
+% 1 1 0 10a9dd0fc006008f1afbbe143ce16e75
+
+% 1 1 0 174e2d025d4dfe3f0ed9910852643ea6
+
+% 0 1 0 1cd895b62abf45e80469f1eb82b4f211
+
+@ 0 1 0 0c246ec54415420705f5f81337cdfd15
++ entry .decrypt   `uncloak` が貸し出す `Decryptor` で、`Data` または `Stream[Data]` を復号する
+
+% 1 1 0 09acbbdef85b708916726fcd522e36f3
+
+@ 0 9 0 11c762e3917528b51be11e321def0594
++       名前を共有する二つの拡張である。
++       `Data` に対しては、`data.decrypt[T]` は値全体を復号し（モードが IV を使う場合は先頭の IV を読み）、平文を `Decodable in Data` である任意の型としてデコードする。たとえばスコープに `Text` のデコーダーがあれば `decrypt.as[Text]` であり、任意の `Encryption` の暗号方式について使える。
++       `(Stream[Data] over Credit)^` に対しては、`BlockCipher` について IV に暗号文が続くフレーミングを遅延して復号し、平文を得られた順に生成する。
++       `Buffering` が必要である。
++       それぞれ、外側の `uncloak` からの `Decryptor[cipher]`、暗号方式の given、暗号方式の `Weakness` と `Authentication` に対する `ProcessingPermit` をとる。
++       そのため古いデータを読むには、アルゴリズムについては `cryptoPermits.permitLegacyCrypto`、モードについては認証なしの許可だけがあればよい。
+
+@ 0 5 0 06117702c678b9ba02c701e96c15b5e4
++       暗号が失敗するのは復号においてである。
++       誤った鍵、壊れた暗号文、不正な形式の入力は `Crypto.Error`（`BadPadding`、`IllegalBlockSize`、`InvalidKey`、…）を発生させ、ストリームの形式では最後のウィンドウが引き出されるときに発生させる。
++       誤った鍵で復号しても平文は決して復元されないが、ストリーム型のモードやパディングなしでは、エラーも発生しないことがある。
++       単にでたらめを生成するだけであり、それを防ぐために認証付きの暗号方式がある。
+
+% 2 1 0 047825954e2eaa7f026e2537e2a80786
+
+% 3 1 0 187837bca7d75b121476417494c70f60
+
+% 4 1 0 14075bce3ab3d3ce0d30a3a60b289efd
+
+% 5 1 0 0135e0def74990480066db1ca63e757e
+
+% 6 1 0 0091d8e816da98171020ae6386757816
+
+% 7 1 0 1ddab26374830c22147c178d04522f23
+
+% 9 1 0 027d68ff126adca8060a453b5e24a67b
+
+% 0 1 0 1f04d6a9e4528a3b1c4fa7351804c34b
+
+% 0 1 0 09666a2d06cdf9c3107f5463cc30958f
+
+% 1 1 0 08c2ae2d5d69d993060591f22d907b41
+
+% 1 1 0 13a5c2b29622f36e16ddc7f9c4a1b5e2
+
+% 1 1 0 02da00ca8b63f5670acce265c7349a91
+
+@ 0 1 0 0863739d2abc473707ee797806ee4323
++ entry .uncloak   鍵を、ブロックに限定された `Encryptor` と `Decryptor` のケイパビリティとして貸し出す
+
+% 1 1 0 1c5efc1fe0f8a1ae1d475bde1acf2c0f
+
+@ 0 10 0 14f019b22777e5dd0d1d144a2e957f4b
++       三つの拡張がある。
++       `publicKey.uncloak(block)` は `Encryptor[cipher]` を、`privateKey.uncloak(block)` は `Decryptor[cipher]` を、`symmetricKey.uncloak(block)` はその両方を一度に貸し出す。
++       それぞれが区切られたスコープである。
++       ブロックはケイパビリティを引数とするコンテキスト関数であり、`encrypt` と `decrypt` の拡張がそれを拾い、キャプチャ検査がそれを閉じ込める。
++       ケイパビリティを返すこと、後で暗号化や復号をするクロージャーを返すこと、外側の変数にしまうことは、コンパイルエラー（_leaks into outer capture set_、_outlives its scope_）になる。
++       鍵の素材はブロックの間だけ鍵のクロークを通じて実体化され、ブロックを出るときにゼロで埋められる。
++       貸し出されたケイパビリティはその一時的な配列を見ているので、その見え方は配列とともに失われる。
++       遅延して暗号化されるストリームをブロックの中で排出しなければならないのはそのためである。
+
+% 2 1 0 126be76f0760270f053e23437d1db6bd
+
+% 3 1 0 0a27e0283b171a3d067587647330b0b9
+
+% 4 1 0 0a6015a9a035d1dc091f6165bed0234b
+
+% 5 1 0 0782dc19049688ae0ce2e297195b06c8
+
+% 6 1 0 1f5468dc99e9cccf086b9dfdab2486d7
+
+% 8 1 0 005d5dbbd690a020042a1d837e3f8443
+
+% 0 1 0 1d8c29779d5ff1d61a98048e36bacff6
+
+% 1 1 0 11c1bffd6527ada31a910bf7084d9b06
+
+% 0 1 0 1b7e9aed8e8e94ed07b00b2d501c1e55
+
+% 1 1 0 035956490e5cf4390bf58b96f5a8faba
+
+@ 0 1 0 1728346c2fc088990ad896474829e1cb
++       `Password#uncloak` はパスワードについての同じ考え方であり、代わりに `Cleartext` を貸し出す。
+
+% 0 1 0 06f2a3881f4adb8112b615587fa80251
+
+% 0 1 0 1f64b103726150a51e05f5c64f6d5a59
+
+% 1 1 0 07fa54401ebc9c7702572ad45840b9d0
+
+% 1 1 0 17696b29697556ff1d0074059d4f0fdf
+
+% 1 1 0 0f3b127131cb69a5158574f5ff7f862d
+
+@ 0 5 0 1c88007ffbbc1c8d13416ff380f9eb5a
++ entry .agree   `privateKey.agree(peerPublicKey)(block)`。鍵合意の共有された秘密をブロックに貸し出す
++     `Agreeing` の暗号方式（`X25519`、`Ecdh`）の `PrivateKey` に対する拡張である。
++     生の共有された秘密は、`uncloak` が鍵の素材を貸し出すのと同じく、ブロックを出るときにゼロで埋められる配列の一時的な `Data` のビューとしてブロックに貸し出される。
++     プロトコルは秘密をハッシュしてセッション鍵にし、その後は使い道がないので、そのどれもブロックより長く生き残るべきではない。
+
+% 2 1 0 058570f6a36404f10f7f0255be371467
+
+% 3 1 0 12d7215935894f440e5bea614899cceb
+
+% 4 1 0 0ee6480064cd8e140a56b94399a4dcb9
+
+% 5 1 0 0b94ab48477978730412fd5e1c715059
+
+% 6 1 0 100ade740fcd19bf0f5e02d267bbf6c9
+
+% 0 1 0 1f7f9560670f858904a655ca2c2e82db
+
+% 0 1 0 0673762f99d048de0e82ee481a73d056
+
+% 0 1 0 0a6cdfbcb81ee9ac1b79012d9c683b9e
+
+% 1 1 0 18c56b56a8c67e621e8707e57e5ee706
+
+@ 0 7 0 09d0485ec3c1ab0b17541baf6386776b
++ entry .seal   `key.seal(nonce, associated, plaintext)`。ノンスのもとでの認証付き暗号化
++     `Authenticated` の暗号方式（`AesGcm`、`ChaCha20Poly1305`）の `SymmetricKey` に対する拡張である。
++     平文は暗号化され、平文と関連データの両方が認証され、タグが暗号文に付け加えられる。
++     AEAD は `Unauthenticated` ではないので、許可は不要である。
++     AEAD が実際に必要とする規律（一つの鍵のもとでノンスを決して繰り返さないこと）は呼び出し側の責任であり、そのためノンスは `InitializationVector` の戦略ではなく普通の引数である。
++     関連データは空の `Data()` でもよい。
+
+% 2 1 0 1c9d4ef610a5f9f611e6a90c53ccfefa
+
+% 3 1 0 165016a35f84a71206cf37ea21fd81f7
+
+% 4 1 0 1f2ef298c82b361405160fa09ec88463
+
+% 5 1 0 05143f84dcefac940c17932fd4d53efd
+
+% 6 1 0 0614e2705f8c38f71acfbc8012e173df
+
+% 8 1 0 1bfc4d28a65d25ba078bc54f89f2b5b6
+
+% 9 1 0 19a38d04f21a7ad80588f30a8defe7d0
+
+% 10 1 0 1fa91f07a0b79dd200160b5cab723a1d
+
+% 0 1 0 1c2e320ff330f21a1abbb4ff1ac1cdd8
+
+% 1 1 0 0d1a473cc8b869601b9bc3e45c9b91d2
+
+@ 0 6 0 07bf9379a9e2b52610da17717d679101
++ entry .unseal   `key.unseal(nonce, associated, ciphertext)`：平文。タグの検証に失敗すれば `Crypto.Error`
++     `Authenticated` 暗号方式の `SymmetricKey` に対する拡張である。
++     `seal` の対であり、`Tactic[Crypto.Error]` と `Diagnostics` を必要とする。
++     改竄された暗号文、誤った鍵、封印時とは異なるノンスや関連データは、理由 `BadTag` の `Crypto.Error` を発生させ、平文は一切渡されない。
++     `open` ではなく `unseal` という名前なのは、アンブレラでは `open` が aperture のものだからである。
+
+% 2 1 0 17c8fe06e2dfaaa10f925dfca05c7134
+
+% 3 1 0 1f244c13f7eba6ec005ff614652d725f
+
+% 4 1 0 1098cf010a6b311e10dd5dc9e7c5c828
+
+% 5 1 0 0a913ceb2a00e47a118f46f708e468f4
+
+% 6 1 0 1d4feaf57ce2337c0e2ae7dd5ace2a75
+
+% 8 1 0 1cf1bb80d2f7aedd1d79c02f3d8d3a1f
+
+% 9 1 0 1bf45c4b21253cfc12fc98909240099c
+
+% 10 1 0 109255503632edf51e4b4b905c47b672
+
+% 0 1 0 1b6bfb45174ea6cf15e714837a3dd909
+
+% 0 1 0 06c094e9872aeadc1ce1a94cda3f8f54
+
+% 1 1 0 0087c824bb45453007a7330d90b82932
+
+@ 0 7 0 19c2e01193ced055045c18de5231dd18
++ entry .xor   `key.xor(nonce, counter, data)`：キーストリームを適用する。暗号化にも復号にも同じように使う
++     `Keystream` 暗号方式（`ChaCha20`）の `SymmetricKey` に対する拡張である。
++     データは、ブロック `counter` から始まる、鍵とノンスのキーストリームと結合される。
++     二回適用すると平文に戻る。
++     カウンターにより、プロトコルはストリームの途中から始められる。
++     OpenSSH は、ブロック 0 を Poly1305 の鍵のために取っておくためにこれを使う。
++     一つの鍵のもとでノンスを決して繰り返してはならず、結果は認証されない。
++     これは部品であり、メッセージ形式ではない。
+
+@ 0 1 0 0a0961e4c032501d07a6fcd85244db9f
++ entry .Pkcs8   PKCS#8 の `PrivateKeyInfo` の形と、他の鍵の形式からそれへの変換
+
+% 1 1 0 1f1cbb855fadeacf0dc66ca8d44578b4
+
+@ 0 7 0 14588ebbf47fc60e073c91ea469129d3
++       RFC 5958 の `OneAsymmetricKey` である。
++       バージョン、`AlgorithmIdentifier`、OCTET STRING としての鍵の素材、そしてその後に続くもの（属性と、バージョン 2 ではオプショナルな公開鍵）からなる。
++       これはすべての `Crypto` プロバイダーが秘密鍵を受け取る形式なので、鍵ファイルが使いうる他の各形式はここでこれに変換される。
++       変換は単純な ASN.1 の手術である。
++       PKCS#1 の `RSAPrivateKey` と SEC1 の `ECPrivateKey` は、RSA や EC の鍵について PKCS#8 のラッパーの OCTET STRING が保持するものと*まったく同じ*である。
++       `PrivateKey.pemDecodable` はこれらを使う。
++       直接使うのは、鍵のドキュメントを手で組み立てるコードである。
+
+% 1 1 0 1b83801498722ae30caf9f35401d3523
+
+% 0 1 0 0bbd9a007d92b185126906073a90782a
+
+% 1 1 0 0fb4f90e64a510d4100537edd8dde612
+
+@ 0 19 0 0ee9a87f4eb40b370bd240c437a3f8ad
++   entry .unwrap   DER の `PrivateKeyInfo` を `Pkcs8` のフィールドに分解する
++       バイト列が DER でないか `PrivateKeyInfo` でなければ、理由 `Malformed` の `PrivateKey.Error` を発生させる。
++   entry .wrap   `AlgorithmIdentifier` と鍵のオクテットを包むバージョン 0 の `PrivateKeyInfo`。DER として返す
++   entry .fromPkcs1   PKCS#1 の `RSAPrivateKey` を、NULL パラメーター付きの `rsaEncryption` のもとで PKCS#8 に包んだもの
++       ドキュメントが `RSAPrivateKey` でなければ `PrivateKey.Error`（`Malformed`）を発生させる。
++   entry .fromSec1   SEC1 の `ECPrivateKey` を PKCS#8 に包んだもの。曲線はそれ自身の `[0]` フィールドから取る
++       RFC 5915 は、曲線が他所からわかる場合に限りドキュメントが曲線を省略することを許すが、ここではわからない。
++       曲線を名指さない SEC1 の鍵は `Malformed` である。
++   entry .carriesPublicKey   鍵のドキュメントについて `PrivateKey#public` に答えられるかどうか
++       RSA や DSA の公開鍵は秘密鍵から計算できるが、EC、Ed25519、X25519、ML-DSA の公開鍵はどのプロバイダーも再計算しない点なので、ドキュメントに含まれていなければならない。
++       EC では `ECPrivateKey` の中（RFC 5915 の `[1]`）に、それ以外では `OneAsymmetricKey` のトップレベル（RFC 5958 の `[1]`。明示的な形でも暗黙的な形でもよい）に含まれる。
++   entry #version   `PrivateKeyInfo` のバージョン：0、または公開鍵を含むときは 1
++   entry #identifier   `AlgorithmIdentifier`
++   entry #octets   鍵の素材。`privateKey` の OCTET STRING の内容
++   entry #rest   鍵の素材の後に続くもの：属性と、オプショナルな公開鍵
+
+@ 0 1 0 1faad47863f9124c087e069588a6d0fa
++ entry .Spki   X.509 の `SubjectPublicKeyInfo` の形：`AlgorithmIdentifier` と、BIT STRING としての鍵
+
+% 1 1 0 15671f49ecb52a500114e00e353d4703
+
+@ 0 2 0 157bca91052512a610145d860f841a88
++       すべてのプロバイダーが公開鍵を受け取る形式である。
++       `PublicKey.pemDecodable` と `PublicKey.raw` はこれらを使う。
++       直接使うのは、鍵のドキュメントを手で組み立てるコードである。
+
+% 1 1 0 0fe9ce0011c03ef00bc96084fa22c3ab
+
+% 1 1 0 1fff4acab8e30f7b0039cea9bc92f0b8
+
+@ 0 7 0 13a63d2b0a5cf58e0a298ab9896ff8a5
++   entry .unwrap   DER の `SubjectPublicKeyInfo` を `Spki` のフィールドに分解する
++       バイト列がそれでなければ、理由 `Malformed` の `PublicKey.Error` を発生させる。
++   entry .wrap   `AlgorithmIdentifier` と鍵のビットを包む `SubjectPublicKeyInfo`。DER として返す
++   entry .fromPkcs1   PKCS#1 の `RSAPublicKey` を、`rsaEncryption` のもとで `SubjectPublicKeyInfo` に包んだもの
++       ドキュメントが `RSAPublicKey` でなければ `PublicKey.Error`（`Malformed`）を発生させる。
++   entry #identifier   `AlgorithmIdentifier`
++   entry #bits   鍵。`subjectPublicKey` の BIT STRING の内容
+
+@ 0 1 0 0a90ca4ab9fbfb0d0d47f4026de54a72
++ entry .OpenSsh   OpenSSH の二つの鍵形式：`openssh-key-v1` コンテナーと `authorized_keys` の行
+
+% 1 1 0 1122cbc12b79b4c41053236fd8bb8814
+
+@ 0 7 0 087969855dd5698e0c8703982d55486b
++       一つは、OpenSSH 7.8 以降 `ssh-keygen` が秘密鍵を書き出すコンテナーである（`OPENSSH PRIVATE KEY` としてアーマー形式にされ、`PrivateKey.pemDecodable` が `.privateKey` を通じて読む）。
++       もう一つは、`id_*.pub`、`authorized_keys`、`known_hosts` が公開鍵を保持する一行（種類、base64 のブロブ、オプショナルなコメント）である。
++       どちらも SSH のワイヤ上のエンコーディング（RFC 4251 §5）で組み立てられる。
++       どちらも ASN.1 ではないので、それぞれプロバイダーが受け取る PKCS#8 または `SubjectPublicKeyInfo` のドキュメントに変換される。
++       OpenSSH が名前を付け、このライブラリが読む鍵の種類は `ssh-ed25519`、`ssh-rsa`、`ecdsa-sha2-nistp256`/`384`/`521` である。
+
+% 2 1 0 021ba19ea15f76f01f4143dd6e8fa934
+
+% 3 1 0 0d08e4a34a856a370fd8ace2670390a0
+
+% 4 1 0 190f597c8178ee74033ba613e7b083e6
+
+% 5 1 0 1fc699c79e6f725d16802ae77b65b437
+
+% 0 1 0 1bdf8a619515844d013160abb1c5666b
+
+% 0 1 0 1a1af8dfcc45445a160340e3252acb50
+
+% 0 1 0 0e598df588b76caf085a54370e350c6b
+
+% 1 1 0 1b90ea3caeb12b62098c0a65fe0db341
+
+@ 0 3 0 0059a57fcb4a69f01705282a0a35c7b9
++       読めるのは暗号化されていない秘密鍵だけである。
++       パスフレーズで保護されたコンテナー（`none` 以外の暗号方式と KDF）には bcrypt の KDF が必要だが、それを提供するプロバイダーはないので、理由 `Encrypted` の `PrivateKey.Error` として報告される。
+
+% 1 1 0 0aecf74a14f1c52007f7c82d3be6e221
+
+% 1 1 0 1bb9f1a66473b4f00f920223458e1421
+
+% 1 1 0 0de7ecb755b894ba13f598a830de9050
+
+@ 0 21 0 06184924cedbdc2f1e9da1131d1efda2
++   entry .privateKey   `openssh-key-v1` コンテナー内の唯一の秘密鍵の PKCS#8 形式
++       `Tactic[PrivateKey.Error]` と `Diagnostics` を必要とする。
++       Ed25519 の鍵は、公開鍵を RFC 5958 の `[1]` に持つ RFC 8410 の `CurvePrivateKey` になる。
++       ECDSA の鍵は、曲線を名指す SEC1 の構造になる。
++       RSA の鍵は PKCS#1 の構造になり、OpenSSH が省略する二つの CRT 指数が計算される。
++       JDK の RSA 鍵はそれを必要とするからである。
++       コンテナーでないものは `Malformed`、暗号化されたものは `Encrypted`、複数の鍵や未知の種類の鍵を保持するものは `Unsupported` である。
++   entry .publicKey   `OpenSsh.publicKey[cipher](line)`：一行形式からの公開鍵。暗号方式と照合される
++       `Tactic[PublicKey.Error]` と `Diagnostics` を必要とする。
++       行は `<type> <base64> [comment]` である。
++       その形でない行や、ブロブが base64 でない行は `Malformed`、別のアルゴリズムの鍵は `Mismatch` である。
++       たとえば `ssh-ed25519` の行に対する `OpenSsh.publicKey[Rsa[2048]]` は _a RSA-2048 key was expected but Ed25519 was found_ と報告する。
++   entry .spki   ワイヤ上のエンコーディングによる公開鍵のブロブの `SubjectPublicKeyInfo` 形式
++       行の base64 が保持するブロブ、またはコンテナーの公開部分である。
++       SSH プロトコルの鍵エンコーディング（RFC 4253 §6.6）を、プロバイダーが受け取るドキュメントに復号する。
++   entry .line   一行形式の公開鍵。コメントが与えられればそれを付ける
++       OpenSSH が名前を持たないアルゴリズムの鍵（`KeyAlgorithm#sshName` が示すとおり、DSA、ECDH、X25519、ML-DSA）や、バイト列が正しい形のドキュメントでない鍵では `Unset` になる。
++   entry .blob   ワイヤ形式の公開鍵：SSH プロトコルが認証と鍵交換で送るもの
++       行の base64 がエンコードするバイト列であり、RFC 4253 §6.6 による。
++       `.line` と同じ条件で `Unset` になる。
+
+@ 0 1 0 1184c5101cbae2341b77023168fc06f8
++ entry .Poly1305   RFC 8439 の一回限りの認証子。Scala で書かれている
+
+% 1 1 0 04f1f6f65807acf70096650e51a1c7ce
+
+@ 0 7 0 17fd5734bea42fe916172d41c8001dcf
++       `Poly1305.mac(key, message)` は、一度しか使ってはならない 32 バイトの鍵のもとでのメッセージに対する 16 バイトのタグである。
++       そのため、プロトコルはメッセージごとにキーストリームから鍵を導出する。
++       プロバイダーから取らずにここで書かれているのは、JDK が Poly1305 を ChaCha20 と融合した `ChaCha20Poly1305` としてしか提供しないのに対し、OpenSSH の `chacha20-poly1305@openssh.com` は、`ChaCha20` キーストリームのブロック 0 から取った鍵に対する単独の Poly1305 を必要とするからである。
++       算術はメッセージの内容に関して定数時間で実行される。
+
+% 2 1 0 1e75138cddea6214155ac9b40ea33829
+
+% 3 1 0 04e85da47f9e598a05a4a21bdeb7e35a
+
+% 1 1 0 07d758f26939287f14925d166a99b0dd
+
+% 0 1 0 1dfbd6b58deb54c213592027d6f0335b
+
+% 0 1 0 03b0430e7f05993919a811bda6508c71
+
+% 0 1 0 0b7e74aaa6650dd21eb126fef8a56757
+
+% 1 1 0 08211e93c539feac0b9724e9288922db
+
+@ 0 1 0 1a34b6b96d5377f51650bfd5db1e1726
++   entry .mac   32 バイトの一回限りの `key` のもとでの `message` に対する 16 バイトのタグ
+
+@ 0 1 0 07e8035d01e3ed7914dfd02172666e20
++ entry .blockCipherModes   ブロック暗号のモード。それぞれ推論のために名前でインポートする given
+
+% 1 1 0 19186e99fda1b7af1fc9aa47e2ba4495
+
+@ 0 6 0 1f024703f331ffa51bdc38657365958f
++       ブロック暗号のモードは、型に `Aes[256] over BlockCipher.Cbc` と書くこともでき、省略してスコープ内で与えられたモードから推論させることもできる。
++       型がモードを名指すときは、コンパニオンがすでに暗黙のスコープで given を提供している。
++       これらの再エクスポートはもう一方の場合、つまり `import blockCipherModes.cbc` を伴う `SymmetricKey.generate[Aes[256]]()` のためのものである。
++       `BlockCipher.Ecb.mode` はここにない。
++       これは消去された許可を受け取るが、再エクスポートされた given はそれができないからである。
++       `over Ecb` と書くこと。
+
+% 2 1 0 09bd23160a6efdea1c315152a5153156
+
+% 3 1 0 145eae399e0dd78c05849671292a0d83
+
+% 4 1 0 1d3e0ae16f61d6001ce3dd76c7df7b9a
+
+% 5 1 0 12071c0d9e9903151f8518c9433165dc
+
+% 6 1 0 0aa99789f47d5c551c700bfaad26e3e3
+
+% 7 1 0 19a9cb4bae057c9a08c468ce993a3f88
+
+% 0 1 0 13d8bbc7f5546c7704b8fdeec5640d7e
+
+% 0 1 0 19b5b4fbc81b3c6e08481f96977a11a7
+
+% 0 1 0 11019e2ca96095cb145d0519fcbd92d0
+
+% 1 1 0 0f78609a0361828e182db614b9d5a675
+
+% 1 1 0 1d138bbe63bb338d1960ad82ab2c60ab
+
+% 0 1 0 181e17b8d8d3211314f7508d3c91abbb
+
+@ 0 4 0 1a1100b9f954980317692b933acf03cf
++   entry .cbc   暗号ブロック連鎖、`Cbc.mode`
++   entry .ctr   カウンターモード、`Ctr.mode`。`NoPadding` とだけ組み合わせられ、それは型で名指さなければならない
++   entry .cfb   暗号フィードバック、`Cfb.mode`
++   entry .ofb   出力フィードバック、`Ofb.mode`
+
+@ 0 1 0 13702e7969213a6303d872065414ee7c
++ entry .blockCipherPaddings   ブロック暗号のパディング。それぞれ推論のために名前でインポートする given
+
+% 1 1 0 17ce94d322830b491011b5a134c8e155
+
+@ 0 4 0 170abfec104bdfea13e183e3c8a34d1c
++       パディングについての `blockCipherModes` に相当する。
++       `import blockCipherPaddings.pkcs7` により、`Aes[256] over BlockCipher.Cbc` は `against BlockCipher.Pkcs7` なしで解決される。
++       `BlockCipher.NoPadding.padding` はここにない。
++       これは `Tactic[Crypto.Error]` をキャプチャするが、再エクスポートされた given はそれができないからである。
++       `against BlockCipher.NoPadding` と書くこと。
+
+% 1 1 0 0366c966a3f9aa6e1079397661105e10
+
+% 0 1 0 151ae55c4d01c3eb02ae64af3c05c05e
+
+@ 0 2 0 1b31efc0993c2bac064e79c466a67b1b
++   entry .pkcs7   PKCS#7 パディング、`Pkcs7.padding`
++   entry .iso10126   ISO 10126 パディング、`Iso10126.padding`
+
+@ 0 1 0 17586ad150edb1a70c31568f4042c2ca
++ entry .cloaks   秘密の保存場所。それぞれ名前でインポートする given
+
+% 1 1 0 0be605741dd5a7511830b0d2a3d2a7fe
+
+@ 0 8 0 1a6a3d5c3fc89658077c614c0674c97f
++       既定の `Cloak` は意図的に存在しない。
++       どの秘密（`Password`、`SymmetricKey`、`PrivateKey`、ファイルから読んだ鍵）を構築するにもスコープに `Cloak` が必要なので、保存方法の決定は常に明記される。
++       `heapCloak` はすべてのプラットフォームにあり、他の三つは `java.lang.foreign` を必要とし、JVM にだけある。
++       JVM の三つの戦略はケイパビリティなので、その given は `transparent inline` である。
++       各召喚箇所は新しいクロークを実体化し（独自のアリーナと、暗号化する戦略では独自の一時的な鍵を持つ）、それで構築された秘密はそのクロークをキャプチャするので、そのような秘密には純粋な型を付けられない。
+
+% 2 1 0 0766a396779fafed1355e86fdb2c9b4b
+
+% 3 1 0 162819420641abaf1bc029313188e0ba
+
+% 4 1 0 01d5b617f1b57af3145b50a4a9423351
+
+% 5 1 0 127f8c27d0c310d21c5e7fed38dafeca
+
+% 3 1 0 05773032c2b5fdc1011d04647c24350d
+
+% 5 1 0 111e021922e90ba711ca5ca6379fd65d
+
+% 0 1 0 009d22bcbfcb995b0d245ef84c75fbc4
+
+% 1 1 0 06761457d6a8b32308d163642fb70a4d
+
+% 2 1 0 175a45fdbab4a15816329325cd66d306
+
+% 0 1 0 1d3ac2d8258775b6063ce79d14b5a864
+
+% 0 1 0 03896f0385fc7d930cc6c6c92f938297
+
+% 0 1 0 1a027b535df5b1830592e9fef9ea65f6
+
+% 0 1 0 0ea5e801806492d31d1fc5a200bcaba4
+
+% 1 1 0 15c529b72c6f9f1d0fa08126053d3165
+
+% 2 1 0 1368582ec4a53b7a0f606d9d929431c1
+
+% 0 1 0 1419395e82b8ef161039a72515063ebb
+
+% 0 1 0 08de6f186aaf6db81856b9c111647ed1
+
+% 0 1 0 02ddd9f2283606950df1c94c83977104
+
+% 1 1 0 1b5afd130970771e02291c2712c54d4a
+
+% 2 1 0 0d264cbae61744d50a6dffb4cd422b1c
+
+% 0 1 0 0ada1ec237cebc2b1e82f504616b97a5
+
+% 1 1 0 1dce5d21ddbf903e06cbfbf3f5be0bbb
+
+% 0 1 0 1c078421765f77c616ebca78008b82ed
+
+% 1 1 0 01d7b5fa2e1b250607750254c6a2e989
+
+% 2 1 0 1cf5f8a973a775bc0bbb9b23d0887546
+
+% 0 1 0 0883ee00286d5e031d404ec49fefd418
+
+% 1 1 0 1438c1368c53711e0416c143fe516f3a
+
+% 1 1 0 0daf2409f877a2a917f87f6d2e141375
+
+% 2 1 0 0076521fa9e4e71b0061baaa7a6b213f
+
+@ 0 3 0 122c37623cce139700b3a7502913bbf6
++       どの戦略のもとでも、鍵は `uncloak` の内部で同じように使われる。
++       同じプロセス内のデバッガーに対しては、どのクロークも防御にならない。
++       より強いクロークが縮めるのは、ヒープダンプやコアファイルから平文に到達できる期間である。
+
+% 1 1 0 1cfadb3bd34e4fa912f6bb69cbd63b46
+
+@ 0 15 0 1e8c922309a167491c940b7228c0d7e5
++   entry .heapCloak   平文をヒープ上に、非公開のバイト配列として置く。すべてのプラットフォーム
++       最も弱い戦略である（素材は秘密の生存期間中ずっとヒープダンプで見える）が、移植性があり純粋である。
++       ヒープにクロークされた秘密のキャプチャ集合は空なので、追跡なしに保存したり返したりできる。
++   entry .offHeapCloak   平文をオフヒープのメモリに置く：保存中のものはヒープ上に一切ない。JVM のみ
++       各秘密は `java.lang.foreign` の共有アリーナを得て、秘密に到達できなくなるとクリーナーがそれをゼロで埋めて解放する。
++       召喚箇所ごとに新しいクロークである。
++   entry .veiledHeapCloak   暗号文をヒープ上に置き、オフヒープに保持した一時的な AES-256-GCM 鍵で暗号化する。JVM のみ
++       保存中のヒープには暗号文しかなく（秘密ごとに新しいノンスを持ち、GCM のタグが改竄に対してそれを認証する）、それを読むのに必要な鍵はオフヒープにある。
++       召喚箇所ごとに、新しい鍵を持つ新しいクロークである。
++   entry .veiledOffHeapCloak   暗号文をヒープ外に置き、ヒープ上に保持した一時的な AES-256-GCM 鍵で暗号化する。JVM のみ
++       鏡像であり、大量の秘密の素材をヒープの外に置きたいが、32 バイトの鍵がヒープに常駐するのは許容できる場合のためのものである。
++       召喚箇所ごとに、新しい鍵を持つ新しいクロークである。
+
+@ 0 1 0 00df4f0ac3d816a31ff2eb2315073e33
++ entry .providers   暗号プロバイダー。それぞれ名前でインポートする given
+
+% 1 1 0 11834964de219c6d11c0bdce16e2b78b
+
+@ 0 5 0 12db0174e44d38521c1946fd7f006568
++       `Crypto` プロバイダーは一つのインポートで選ばれ、それがハッシュも選ぶ。
++       given のうち二つは gastronomy のものである。
++       `providers.javaBaseProvider`（JDK。`Crypto.javaBaseCrypto` はこれから `JavaBaseCrypto` を導出する）と `providers.soundnessProvider`（純粋な Scala。`Crypto.soundnessCrypto` はこれから `SoundnessCrypto` を導出する）である。
++       このパッケージは、`enigmatic.openssl` にある OpenSSL のものを加える。
+
+% 1 1 0 0254f0d5709f845c05c035e80ec8e627
+
+% 1 1 0 178e6fd494585aa21b698ce2432403d1
+
+@ 0 3 0 06a8556a50b1e2d513b329251742c52b
++   entry .opensslProvider   `libcrypto` に基づくプロバイダー `OpensslCrypto`
++       given `OpensslCrypto.type` である。
++       現在、乱数、HMAC、PKCS#7 パディングまたはパディングなしの AES はネイティブである。
++       RSA は JDK のプロバイダーに委譲するので、実際には JVM 専用である。
+
+@ 0 1 0 0c64b6424455ec3a1d3c5cedcf852ede
++ entry .Keystore   PKCS#12 のキーストア。`Password` を使ってスコープの期間だけ開く。JVM のみ
+
+% 1 1 0 0ce82021eb10f51017975a8511c98d39
+
+@ 0 7 0 0991f25d930c1a640a4b2c7a3da45bfa
++       `path.open[Keystore](Password(t"…"))` は、パス（`Abstractable across Paths to Text` である任意の型）にあるストアをブロックの間だけ開き、パスワードをフラグとして渡す。
++       パスワードは不透明な `Password` なので、その平文にはスコープ付きの `Cleartext` を通じてしか到達できず、プラットフォームが必要とする char 配列はストアの読み込み後にゼロで埋められる。
++       ブロックの内部では、`keystore` が開かれた `.KeystoreHandle` であり、ストアのエイリアスと DER エンコードされた証明書を提供する。
++       開くには `Tactic[Keystore.Error]` が必要である。
++       `java.security.KeyStore` に基づくので JVM にだけあり、キーストアの書き込みが実装されるまでは読み取り専用である。
+
+% 2 1 0 124b4d727f2ed75819d2c01f307d22d0
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 07a766336e9a6e4b1bb46be10f78d8cf
+
+% 3 1 0 121e97737ae9337c19c172d710fbb792
+
+% 0 1 0 1f6b7d85434f8a0f0596cfc8c38449be
+
+% 0 1 0 04056516d35cf1d601f7d1e0db07ca4d
+
+% 0 1 0 012b6640a614693809d12262574619a2
+
+% 0 1 0 18b5e1c6a5f060491e54182cb186ef7f
+
+% 0 1 0 0990a1dc6f20286d07a0d0c4ec65b24e
+
+% 0 1 0 09d0a68f9a0ab47a0b88a113ece3a1e5
+
+% 1 1 0 02d603888e5f6df510b348a774cad138
+
+@ 0 4 0 1dfcf380dbdc017d1e1fc29dfc47e5c0
++       誤ったパスワードと壊れたストアは、意図的に区別できないようにしてある（どちらも `Unreadable`）。
++       それらを区別すると、推測している者に、二つのどちらが誤っていたかを教えてしまうからである。
++       パスワードがなければ、`KeyStore.load` と同じく、完全性の検査なしにストアを読み込む。
+
+% 0 1 0 0e80fd0bb66a68341144791297499908
+
+% 1 1 0 1b05b24a8b381d29091d1e979807ce37
+
+@ 0 1 0 1fb48afc9a0998670169ae8de461b04b
++   entry .KeystoreHandle   `open[Keystore]` ブロック内の開かれたストア。`keystore` として到達する
+
+% 1 1 0 11cbf75c73f813ef07b492c4382fa665
+
+@ 0 6 0 0eb999bd2a6b957d0fae8d05d2706da9
++         読み込まれた `java.security.KeyStore` に対する排他的なケイパビリティであり、ブロックに閉じ込められる。
++     entry #aliases   ストア内のすべてのエイリアス。`List[Text]` として返す
++     entry #certificate   エイリアスのもとに保存された DER エンコードの X.509 証明書、または `Unset`
++         `Der(bytes).as[Certificate]` で復号するか、`Asn1` として調べる。
++   entry .KeystoreOpenable   パスをキーストアとして開く `Openable`。given のための名前付きクラス
+
+% 1 1 0 0d179b0a126caa39015b7bdb38c1d670
+
+@ 0 13 0 19da13bbad8cb3271033d359de5fa0f2
++         `.openable` の背後にある実装であり、`Form = Keystore`、`Operand = Password`、`Result = KeystoreHandle` である。
++         型に言及できるよう、無名の given インスタンスではなく名前付きクラスにしている。
++         `.openable` を通じて召喚される。
++     entry #open   パスにある PKCS#12 ストアを読み込み、ハンドルを使ってブロックを実行する
++         `Write` モードは、ファイルに触れる前に `Keystore.Error`（`WriteUnsupported`）で拒否する。
++         最初の `Password` フラグがあれば、読み込みのためにクロークを外し、その後ゼロで埋める。
++     entry #loadKeystore   char 配列のパスワードを使い、ストリームから `java.security.KeyStore` を読み込む
++         JDK の読み込み時の例外（誤ったパスワード、誤った形式、切り詰め）は、どれも理由 `Unreadable` の `Keystore.Error` になる。
++   entry .openable   `path.open[Keystore](password)` を解決させる given
++       `Abstractable across Paths to Text` である任意のパス型に対するものであり、スコープ内の `Tactic[Keystore.Error]` をキャプチャする。
++   entry .Error   キーストアを読めないとき、または書き込み用に開いたときに発生する
+
+% 1 1 0 09c04a0a6cd7aa151cd17571000d8399
+
+@ 0 7 0 02a63caa6bd7a76e1fb239d68db80fd7
++         エラー `↯/s.105.3`：_the keystore operation failed because `reason`_。
++     entry .communicable   各理由をメッセージとして描画する
++     entry .Reason   操作が失敗した理由
++         `Unreadable`（1）：_the keystore could not be read with the given password_。
++         誤ったパスワードか壊れたストアであり、意図的に区別しない。
++         `WriteUnsupported`（2）：_keystores cannot yet be opened for writing_。
++         `open[Keystore](Write, …)` に対するものである。
++     entry #reason   操作が失敗した理由
+
+@ 0 4 0 1509b2bd1d771109129daf2f1b80c737
++ entry .keystore   `open[Keystore]` ブロック内の開かれた `Keystore.KeystoreHandle`。コンテキストから到達する
++     galilei の `file` と同じく、`summon[Keystore.KeystoreHandle].aliases` ではなく `keystore.aliases` と書く。
++     transparent inline なので、ハンドルの、権限で細分化された正確な型が保たれる。
++     ブロックの内部でのみ意味があり、JVM のみである。
+
+@ 0 1 0 09dce67eed4d2760197a0f4a425ad6af
++ entry .Asn1   PKIX が使う汎用型による ASN.1 の値と、厳格な DER コーデック
+
+% 1 1 0 1e51ee3a1fde860e1138682e02f44a7b
+
+@ 0 5 0 113f9e8fcf6992c307e0ae08d74b4db8
++       `Asn1` は、証明書、鍵、署名要求を構成する ASN.1 の汎用型の列挙型であり、そのような値と、`Der` ドキュメントとして保持される [DER](https://en.wikipedia.org/wiki/X.690#DER_encoding) のオクテットとの間のコーデックである。
++       `value.in[Der]` がエンコードし、`der.as[Asn1]` が復号し、`bytes.read[Asn1 in Der]` がバイトのソースから値を直接読む。
+
+% 2 1 0 0e317a87190e3fb71f9d76ba1fcd5d8f
+
+% 3 1 0 0e825d06c26c8ae1187d6aee705e4929
+
+% 4 1 0 053f40a8ebafb4250f9ec050d1a1f23a
+
+% 0 1 0 1f532031a48c546304974cac4434287c
+
+% 0 1 0 057c7222895d86581f800ad4eca5f776
+
+% 0 1 0 18c86458c04cd80c1927651e4d58282d
+
+% 1 1 0 0519031cd2c5d7bb16311cd75f0d60a8
+
+@ 0 2 0 106353e4681bed7e0e1c57a60ab00996
++       ケースは汎用型であり、それぞれ値をフィールドとするケースクラスで、書き出しに使う汎用タグ番号を持つ。
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 3 0 00de6c4e451a27620d5683f7c46d03cd
++       column  ケース
++       column  タグ
++       column  備考
+
+% 0 1 0 0af37759aa6ac93a11d142766c861f17
+
+@ 0 2 0 0816269e153880dd0e80a7c5f385b8ec
++       row  `Integer(value: BigInt)`  2  最小の長さで、2 の補数の符号拡張を伴ってエンコードされる
++       row  `BitString(bytes: Data, unusedBits: Int)`  3  末尾の未使用ビットの数を持つ。署名や公開鍵では `0`
+
+% 0 1 0 108aa9fa5090dfe219382ccb7dea4144
+
+% 0 1 0 0304aa78919a9f161ed71e5c6d68e2f0
+
+@ 0 1 0 0fb0bc95225bbe831951a2711f96c95c
++       row  `ObjectId(arcs: List[Int])`  6  アークによるオブジェクト識別子。`sha256WithRSAEncryption` は `Asn1.ObjectId(List(1, 2, 840, 113549, 1, 1, 11))`
+
+% 0 1 0 1c6247a2a0e9d522111aaec4bdbaf5b0
+
+% 0 1 0 0e2a1dfdbba1071112d7fece769c5007
+
+% 0 1 0 08e4a5ac0246c2f90bf57a5e44d8c67f
+
+@ 0 2 0 0e17e7fa518ab694051f9277ab1460f7
++       row  `UtcTime(timestamp: Long)`  23  Unix エポックからの秒数。DER の形式 `YYMMDDHHMMSSZ` のみで、端数もオフセットもない。年は 1950–2049 として読む
++       row  `GeneralizedTime(timestamp: Long)`  24  Unix エポックからの秒数。DER の形式 `YYYYMMDDHHMMSSZ` のみで、端数もオフセットもない
+
+% 0 1 0 13a075ee5e2f22ec16b5976bc953e3f7
+
+@ 0 3 0 1465aa90ecd172e01774d2dff7a06c89
++       row  `Set(elements: List[Asn1])`  17  書き出すときはメンバーをエンコーディングでソートし、読むときはソート済みであることを要求する
++       row  `Tagged(tag: Int, explicit: scala.Boolean, value: Asn1)`  `tag`  コンテキストクラスのタグ。明示的なタグは内側の値全体を包み、暗黙的なタグは内側の値のタグを置き換える
++       row  `Unknown(tagClass: Int, tag: Int, constructed: scala.Boolean, content: Data)`  `tag`  その他の任意の値。内容のオクテットをそのまま持つ
+
+% 1 1 0 05fe132e6ed11bd90b9a3dbe59d972d2
+
+@ 0 11 0 04a9b447136e8a310064ec4d0910d2a3
++       復号は**全域的**である。
++       ここでモデル化されていないタグ（`T61String`、`BMPString`、`ENUMERATED`、アプリケーションタグやプライベートタグ）は `Unknown` に復号され、構造化されたコンテキストタグは、その内容がちょうど一つの正しい形の値であるときだけ `Tagged(_, true, _)` に、そうでなければ `Unknown` に復号される。
++       したがって、*暗黙的な*タグは書き出し専用である。
++       `[0] IMPLICIT INTEGER` と `[0] IMPLICIT OCTET STRING` はバイト単位で同一であり、両者を区別するにはモジュールのスキーマが必要なので、デコーダーはプリミティブの暗黙的なタグに対して `Unknown(Asn1.Context, 0, false, bytes)` を返す。
++       `Certificate.issued` が書き出した機関鍵識別子が `Unknown` として読み戻されるのはこのためである。
++       何も捨てられないので、復号して再エンコードすると元のバイト列が正確に再現される。
++       証明書の `TBSCertificate` に対する署名の検証は、まさにこれに依存している。
+
+@ 0 5 0 0fd279ab16749dae157acace7e665cb3
++       コーデックは**厳格**である。
++       DER を書き出し、DER しか受け付けないので、不定長、冗長な長さやタグ、最小でない整数、構造化された文字列、ソートされていない集合、不正な時刻、末尾のバイトは、どれも誤りとそれが見つかったバイトオフセットを理由に示す `Asn1.Error` を発生させる。
++       DER でもある BER 以外の BER は拒否される。
+
+@ 0 5 0 0f105ebbb05c084f165d3eb89a04b956
++       バイトを運ぶケースは `Data` を保持し、その等価性は同一性によるので、`OctetString` の内容だけが異なる二つの値でも等しくないと判定されることがある。
++       代わりにエンコーディング（`value.in[Der]`。`Der` はバイトで比較する）を比較すること。
++       このコンポーネントは暗号プロバイダーを使わない純粋なバイト操作なので、JVM、Scala.js、Scala Native のいずれ向けにもコンパイルできる。
+
+% 1 1 0 1fa0746bda02bf101c301ec4d5f88325
+
+% 1 1 0 09991a62b89531e21aa1870596efc234
+
+% 1 1 0 1352e7774228891a1a184c45a4d6f709
+
+@ 0 27 0 053cd5ae7d85335f0b7563910749e3fc
++   entry .Universal   汎用タグクラス、`0`
++       識別子オクテットの上位 2 ビットがタグクラスを示す。
++       `Universal` はモデル化されたすべての型のクラスであり、モデル化されていない汎用型を保持する `Asn1.Unknown` の `tagClass` でもある。
++   entry .Application   アプリケーションタグクラス、`1`
++       アプリケーションクラスのタグはモデル化されていないので、それを持つ値は、これを `tagClass` とする `Asn1.Unknown` に復号される。
++   entry .Context   コンテキスト固有タグクラス、`2`
++       すべての `Asn1.Tagged` の値のクラスであり、`Asn1.Unknown(Asn1.Context, 1, false, bytes)` のように、暗黙的なコンテキストタグから読んだ `Asn1.Unknown` の `tagClass` でもある。
++   entry .Private   プライベートタグクラス、`3`
++       プライベートクラスのタグはモデル化されていないので、それを持つ値は、これを `tagClass` とする `Asn1.Unknown` に復号される。
++   entry .encodable   値を DER としてエンコードする。`value.in[Der]` として使う
++       暗黙のスコープにある given `Asn1 is Encodable in Der` である。
++       各ノードはまず自身の内容を描画する。
++       確定長は、それが測る内容より前に置かなければならず、`SET` はメンバーのエンコーディングで順序付けられるからである。
++       このためネストの各段階でコピーが一回生じるが、これが扱うキロバイト規模の構造では問題にならない。
++       エンコードは決して失敗しない。
++       アークが二つ未満の `ObjectId` は、そのアークのまま書き出される。
++   entry .decodable   DER ドキュメントを復号する。`der.as[Asn1]` として使う
++       暗黙のスコープにある given `Asn1 is Decodable in Der` であり、`Tactic[Asn1.Error]` を必要とし、それをキャプチャする。
++       ドキュメント全体をパースし、値の後のバイト（`Reason.Trailing`）を含め、厳格な DER でないものすべてに対して `Asn1.Error` を発生させる。
++   entry .aggregable   バイトのソースから値を読む。`bytes.read[Asn1 in Der]` として使う
++       given `(Asn1 in Der) is Aggregable by Data` であり、`Tactic[Asn1.Error]` を必要とする。
++       パースの前にソース全体を読み、結果は `Asn1` の値である。
+
+% 2 1 0 0461fe7e37eeeba80d2ad27703d9142d
+
+% 3 1 0 174dd6bdaca72bd8049676a004492f9b
+
+% 4 1 0 15c766fa8de5d9580a55bd8525e58767
+
+% 0 1 0 0c3118c8dd151cac1c942dd95a6fde04
+
+% 1 1 0 04989a4157c4c7f61c51725c8b58a034
+
+@ 0 1 0 113b5ab52d5d9890092d99d16da0ea8d
++   entry .Parser   `.decodable` の背後にある厳格な DER リーダー
+
+% 0 1 0 1d67946842fbefea114a1c07674d3027
+
+% 1 1 0 02a2f799681a6c9808fd96975d2255e2
+
+@ 0 8 0 063f1051d179904f109775a3b37c28d3
++         直接使うものではない。
++         `Asn1.decodable` と `Asn1.aggregable` が実行するリーダーであり、一つのドキュメント上の排他的で状態を持つカーソルで、そのコンストラクターは内部用である。
++         BER が許し DER が禁じるすべての構文を拒否するので、受け付けたものはすべて、読み取り元のバイト列へと再エンコードされる。
++         公開されている面は、現在の位置である `#offset` と、上限まで一つの値を読む `#value` である。
++     entry #offset   次に読むバイトの位置
++     entry #value   上限以前で終わる一つの値を読む。`Asn1.Error` を発生させる
++   entry .Error   バイト列が厳格な DER エンコーディングでないときに発生する
+
+% 1 1 0 1ce89b5246c32ee609186f25b753c70e
+
+@ 0 10 0 06385fd0af79c1a6162915e25adbe1d2
++         エラー `↯/s.105.4`：_could not process the ASN.1 value because `reason`_。
++         理由は、誤りとバイトオフセットを示す `Asn1.Error.Reason` である。
++         `Asn1.decodable` と `Asn1.aggregable`（したがって、それらを通じて復号するすべてのもの：`Certificate.decodable`、鍵のデコーダー、`text.read[Asn1 in Pem]`）が、次の場合に発生させる。
++         入力が切り詰められている、不定長や冗長な長さ、冗長なタグ、最小でない整数や空の整数、表現できないほど大きな長さ、末尾のバイト、予約されたタグ `0`、不正なオブジェクト識別子や `Int` を超えるアーク、ソートされていない `SET`、不正な時刻、`0x00`/`0xFF` 以外のブール値、`BOOLEAN`、`NULL`、`BIT STRING` の誤った長さ、不正な未使用ビットのパディング、構造化された文字列、プリミティブの `SEQUENCE`/`SET` を使っている場合である。
+
+% 2 1 0 079522856090d3d71fb99206c70d72d3
+
+% 3 1 0 1dc8dec2b960ac4d17d359d493fbfbc3
+
+% 1 1 0 10c75085845bdbdf08b47c1db265ea53
+
+% 0 1 0 1e95f81aa51aa31319a034a0a90d2cfd
+
+% 0 1 0 06d1f6349288f83518a12b881ae9f653
+
+% 1 1 0 0e1f28fb25bf053f10920e4904ab3c42
+
+@ 0 1 0 1a7830393f55a4a81c6713e025ff7b85
++     entry .Reason   バイト列の何が誤っていたか、そしてどのオフセットか
+
+% 1 1 0 03447c85406471cc0a37908bb50036d0
+
+@ 0 2 0 05938c6df7f306f9000ed5ba5c993d8e
++           十九のケースからなる列挙型であり、それぞれ誤りのバイト `offset` を持ち、エラーの副番号として番号付けされている。
+
+% 1 1 0 05f424c7a32c4c0b0b03863d383d30a5
+
+@ 2 4 0 0e01bf457d22e768016d5c9b67691157
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  備考
+
+% 0 1 0 10fe5657c057848e18be1ded5fcb9594
+
+% 0 1 0 0c264f61e8cb28f714666a19b638305f
+
+% 0 1 0 0db51886b5f3b6b40a7b7366ab261195
+
+% 0 1 0 11d5229b07b2a687198a70957548a30e
+
+% 0 1 0 0d3b1975b90142650d85dcf2d98e4a63
+
+% 0 1 0 19f166d5d89e40780a13736f51f82104
+
+@ 0 1 0 0cc6355b4924adc5166da09ebbcb593e
++           row  `Overflow(offset)`  7  _an unrepresentable length was found at byte `offset`_  大きすぎる長さまたはタグ
+
+% 0 1 0 1ac6b809defbf5170e4dc1f0fcc19c73
+
+% 0 1 0 1cbdb12252d2eca71547323f3f52e195
+
+% 0 1 0 1080e45669b54cdd1dbc3cb287618036
+
+% 0 1 0 1afff168607eec100a2da383edca7cf3
+
+% 0 1 0 0f497d89bba76c011ddb7f17e467b656
+
+% 0 1 0 157604197b6ed4fa1bcedf3a67a08ba9
+
+% 0 1 0 0a0414dd2b0e5ee40fcb43391dd9e3ef
+
+% 0 1 0 03eae37c3a27cd3c0c467783e9b82b2c
+
+% 0 1 0 06f96196a159bb860820fd75cd74138e
+
+% 0 1 0 155524b7186640e2048e5317ab0ca111
+
+% 0 1 0 08b5f4a6f96882570c539548523e3f4e
+
+% 0 1 0 165a6f7020f5a5dc14915627e6079b0e
+
+% 1 1 0 1c55c9a2c2cbb8f70e71117524ad0807
+
+@ 0 2 0 1ee491767a23847702060d21df97feb8
++       entry .communicable   各理由を、誤りとそのバイトオフセットを示すメッセージとして描画する
++     entry #reason   失敗の `Asn1.Error.Reason`
+
+@ 0 1 0 073425b8cfc4eee41828a01984abaa2a
++ entry .Der   DER ドキュメント：一つの ASN.1 の値の正準エンコーディング。バイトで比較される
+
+% 1 1 0 0d63bc42f9d69822184b7281e63223f0
+
+@ 0 6 0 1cdb1c143a4ac25617ae4702db473ba1
++       `Der` は DER エンコードされた一つの値のバイト列を保持し、ASN.1 コーデックの*形式*である。
++       `Cbor` が CBOR コーデックの形式であるのと同じく、`asn1.in[Der]` と `der.as[Asn1]` がその二つの方向である。
++       `Data` の別名ではなく別個の型であるのは、`value.in[Der]` と `bytes.read[Der]` を曖昧でなくするため、そして二つのドキュメントを**バイトで**比較するためである（`Data` は同一性で比較する）。
++       往復の検査はこうして行う。
+
+% 2 1 0 00cd09ccacd6030d18288e31e863c10b
+
+% 3 1 0 1bcd35ca1629eb8d110f413b8de69675
+
+% 4 1 0 134cbfcd59708da204f748fbeba9a2ed
+
+% 0 1 0 1392365d79128bb40235286b25408e78
+
+% 0 1 0 1bc526f4ffd55bbc1d4f357824f735ab
+
+% 1 1 0 076fcf22561b60ae00dcf375ffd9d81f
+
+@ 0 5 0 1f5b841058ec49ab013799b4a02f6dce
++       `Der` は任意のバイトのソースから `read[Der]` で読み、バイトとして書き出し（`in[Data]`、またはストリーム）、`Pem(label, der)` で PEM としてアーマー形式にし、PEM ブロックから `pem.as[Der]` で得る。
++       `PrivateKey` と `PublicKey` は PKCS#8 の `PrivateKeyInfo` や `SubjectPublicKeyInfo` を保持する `Der` から復号され、`Certificate` は X.509 証明書を保持する `Der` から復号される。
+
+% 1 1 0 041df49e37fcdb5f1d9cf92159a8f904
+
+% 2 1 0 0bac976ae7f9ee301704e58196b8b24c
+
+@ 0 12 0 17c01facfc1938e009f3bc21316271df
++   entry .encodable   ドキュメントのバイト列。`der.in[Data]` として使う
++   entry .streamable   ドキュメントのバイト列を、`Credit` で計量される `Stream[Data]` としてストリームする
++   entry .aggregable   バイトのソースからドキュメントを読む。`bytes.read[Der]` として使う
++       ソース全体を一つの `Der` に集める。
++       何もパースしない。
++       バイト列はそのまま受け取られ、`as[Asn1]` がそれを検査する。
++   entry .showable   スコープに `Alphabet[Hex]` があるとき、ドキュメントを 16 進数で表示する
++       `alphabets.hexUpperCase` や `alphabets.hexLowerCase` などの `Alphabet[Hex]` を必要とする。
++   entry .inspectable   デバッグ用の描画：ドキュメント全体を小文字の 16 進数で表した `Der(…)`
++       スコープにアルファベットがなくても常に使える。
++       何も省略されない。
++       DER ドキュメントはそのバイト列によって定義され、一バイトでも異なる二つのドキュメントは異なる値に復号されるので、バイトを省いた検査表示は、探しているものを隠してしまう。
++   entry #data   ドキュメントのバイト列
+
+@ 0 1 0 12b10dc4f1c820391acf3c18f9355105
++ entry .Pem   PEM ブロック：ラベルと、その base64 のアーマー形式が運ぶバイト列
+
+% 1 1 0 04ed4d171b11e17f073d966e7b08bc2d
+
+@ 0 5 0 0dd04a7feacbf8d607f06b7ce123dd72
++       [PEM](https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail) は、証明書、鍵、要求をやり取りするためのアーマー形式のテキストである。
++       `-----BEGIN LABEL-----` の行、64 文字ずつの行に分けた base64、そして `-----END LABEL-----` の行からなる。
++       `Pem` の値は `#label` と復号された `#data` である。
++       `#serialize` がアーマー形式を描画し、`text.read[Pem]` がそれをパースする。
+
+% 2 1 0 1adaf745e64cc62304c01729c566da61
+
+% 3 1 0 0d930a845434909a1046bc911d8af1f5
+
+% 4 1 0 068bdf0b83da90a911ebb741666db85a
+
+% 0 1 0 0acfbb96caa8a9c00629d7b7b9e0e51b
+
+% 0 1 0 08ae6a177a2c74ba17518fba17904764
+
+% 0 1 0 1867b38cec57427605cdb84c966a91c8
+
+% 0 1 0 0f7cd783859c4f52087da20383a4c931
+
+% 0 1 0 012c7fafb44eb2e50dcad34645b0f16a
+
+% 0 1 0 1c6321903dc36e311a8236c68a90b5e7
+
+% 1 1 0 0ff2b4526f5c5e5615b18f9a15452f89
+
+@ 0 9 0 0cdd4c4aeaad2602000152caf06f62fc
++       ブロックを構築するときは、ラベルを常に明示的に与える（`Pem(Pem.Label.Certificate, certificate.in[Der])`）。
++       ラベルはエンコーディングのモードではなく値についての事実であり、パーサーはそれを内容と照合しない。
++       パースはストリーミングで一行ずつ行われるので、ドキュメントは任意のソースから有界なメモリで読める。
++       多数のブロックを保持するソース（証明書チェーン、鍵の束）は、`read[Chain[Pem]]` で遅延的な `Chain[Pem]` として読める。
++       ブロック間のテキスト（OpenSSL が書き出す `subject=…` の行）は読み飛ばされ、ブロックのない入力はエラーではなく空として読まれる。
++       先頭の空白は読み飛ばされる。
++       行を終えるのは `\n` だけなので、`\r` は行に残り、境界の照合に失敗する。
+
+@ 0 5 0 0cf1078fdb19cca50cceccf97bbd85d7
++       二つの持ち上げにより、アーマー形式のテキストから*復号済みの*値を一段階で読める。
++       `text.read[X in Pem]` は、`X` に `Decodable in Pem` があればそれ（`PrivateKey`、`PublicKey`。`.aggregableInPem` による）であり、なければ、ブロックのバイト列に適用されたその `Decodable in Der`（`Pem2` から継承された `aggregableIn`）である。
++       `text.read[Asn1 in Pem]`、`text.read[Certificate in Pem]`、`text.read[Der in Pem]` はこうして動作する。
+
+@ 0 2 0 1743eb591b2365b81f46b9c34cbb7f74
++       `Pem` は `Asn1` や `Der` とともに `enigmatic.asn1` コンポーネントにあるので、すべてのプラットフォームで、暗号プロバイダーなしに使える。
+
+% 1 1 0 0a5820b00460e4cb1445c606ec96bed2
+
+% 1 1 0 0b94634707e040a20a260830775540e3
+
+% 1 1 0 172409e2dd77c27201a27e314c74e0b5
+
+@ 0 23 0 138ce6909e1099240a5d3da58b8b6a7e
++   entry .apply   DER ドキュメントをラベルのもとでアーマー形式にする：`Pem(Pem.Label.Certificate, der)`
++       `Pem.Label` と `Der` を受け取り、ドキュメントのバイト列を保持する。
++       `Pem(label, data)` は生のバイト列に対するケースクラスのコンストラクターである。
++   entry .derDecodable   ブロックのペイロードを `Der` ドキュメントとして返す。`pem.as[Der]` として使う
++       このモジュールが知るラベルはすべて DER をアーマー形式にしたものである。
++       例外は `OPENSSH PRIVATE KEY` であり、そのペイロードは OpenSSH 独自のバイナリーコンテナーで、`PrivateKey` の PEM デコーダーがラベルによって扱う。
++       ここではラベルは検査されない。
++   entry .aggregableInPem   `Decodable in Pem` を持つ `X` に対する `text.read[X in Pem]`
++       テキストの最初のブロックをパースし、ラベルを含む `Pem` 全体を `X` の `Decodable in Pem` に渡す。
++       その decodable、`Tactic[Pem.Error]`、`Diagnostics` を必要とし、`Pem2` から継承された `Pem.aggregableIn`（`Decodable in Der` に対する同じ持ち上げ）に優先する。
++       そのため、両方を持つ値はラベルによって復号される。
++       `text.read[PrivateKey[Ed25519] in Pem]` は `PRIVATE KEY` ブロックと `OPENSSH PRIVATE KEY` ブロックを区別できる。
++   entry .aggregable   テキストのソースの最初の PEM ブロックをパースする。`text.read[Pem]` として使う
++       `Tactic[Pem.Error]` と `Diagnostics` を必要とする。
++       先頭の空白は読み飛ばされる。
++       その後の最初の行は `BEGIN` の境界でなければならず、そうでなければ `Pem.Error(BeginMissing)` になる。
++       本文は `END` の境界（そのラベルは一致する必要がない）まで蓄積され、それがなければ `Pem.Error(EndMissing)` になる。
++       base64 でない本文は `Pem.Error(BadBase64)` である。
++       入力はチャンクの境界がどうであれ、チャンクごとにストリームとして消費される。
++   entry .aggregableAll   テキストのソースのすべてのブロックを遅延的に読む。`text.read[Chain[Pem]]` として使う
++       `Tactic[Pem.Error]` と `Diagnostics` を必要とする。
++       `Chain` のセルが強制評価されるごとに一つのブロックがパースされる。
++       ブロック間のテキストは読み飛ばされ、ブロックのない入力は空のチェーンになる。
+
+% 2 1 0 151428d8bceb36bd1907c76a5f4a420a
+
+% 3 1 0 037739f1da45e0ab0a5a1f2f480d14b4
+
+% 4 1 0 07a85fe6c5a9e02a1748710c27b3162c
+
+% 0 1 0 1b3bcf193d6d69181505d1301ab826cd
+
+% 0 1 0 1e06223f613a27091cb8147a79fdd5d4
+
+% 0 1 0 15297d459cdb029610e4f6b2e42fd084
+
+% 1 1 0 1ec7494a6e66018b1a59a7c4861a1b47
+
+@ 0 9 0 0067939001c30f92123e3182176d6273
++   entry .inspectable   デバッグ用の描画：ペイロードを小文字の 16 進数で表した `Pem(LABEL:…)`
++       アーマー形式は複数行なので、検査表示が示すものではない。
++       ラベルがブロックを識別し、ペイロードは一行の完全な 16 進数で示され、何も省かれない。
++   entry .streamable   アーマー形式を一行ずつ、`Stream[Text]` として返す
++       ストリームで消費する側のための `serialize` の対である。
++       `pem.read[Text]` や `pem.stream[Text]` は、`BEGIN` の行、64 文字ずつの base64 の行、`END` の行を、それぞれ `\n` 付きで返す。
++   entry .Error   テキストが PEM ブロックでないときに発生する
+
+% 1 1 0 00f3d66f2d5107e30fca6566e12ddb1f
+
+@ 0 2 0 0ced2198afaee2130f88860206023349
++         エラー `↯/s.105.1`：_could not parse PEM content because `reason`_。
++         `Pem.aggregable`、`Pem.aggregableAll`、`read[X in Pem]` の持ち上げが発生させる。
+
+% 2 1 0 19d5ce65941fb5ea18d25d3359612f20
+
+@ 0 8 0 1b13930d6137c1ad15e701e1a67a419d
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  備考
++         row  `BeginMissing`  1  _the BEGIN line could not be found_  最初の空白でない行が `BEGIN` の境界でない。空の入力も含む
++         row  `EndMissing`  2  _the END line could not be found_  入力が `END` の境界より前に終わる
++         row  `BadBase64`  3  _could not parse the BASE-64 PEM message_  本文が base64 でない
++         row  `EmptyFile`  4  _the file was empty_  宣言されているが、現在のパーサーは発生させない
+
+% 1 1 0 12e55c73538c04dd07dd4bab89686caa
+
+@ 0 4 0 17a187d401c8de380b05b58d6dde62b8
++     entry .communicable   各理由をメッセージとして描画する
++     entry .Reason   `BeginMissing`、`EndMissing`、`BadBase64`、`EmptyFile`。1 から 4 の番号が付く
++     entry #reason   失敗の `Pem.Error.Reason`
++   entry .Label   `BEGIN` と `END` の間のラベル：既知の種類、または独自のもの
+
+% 1 1 0 1a2a0d96d5b5e5261cbd6edabb215390
+
+@ 0 9 0 1351db6232d955c80a0161fbe32c916d
++         PEM ブロックが実際に持つラベルの列挙型である。
++         それぞれワイヤ上では、名前を大文字の単語に分けて綴られる。
++         `Certificate`（`CERTIFICATE`）、`CertificateRequest`、`NewCertificateRequest`、`PrivateKey`（`PRIVATE KEY`、PKCS#8）、`RsaPrivateKey`（`RSA PRIVATE KEY`、PKCS#1）、`DsaPrivateKey`、`EcPrivateKey`（`EC PRIVATE KEY`、SEC1）、`EncryptedPrivateKey`、`PublicKey`（`PUBLIC KEY`）、`BlockCipher.Pkcs7`、`Cms`、`DhParameters`、`X509Crl`、`AttributeCertificate`、`EncryptedMessage`、`SignedMessage`、`RsaPublicKey`、`DsaPublicKey`、`OpensshPrivateKey`（`OPENSSH PRIVATE KEY`）である。
++         その他のラベルは、書かれたとおりのテキストを保持する `Proprietary(label: Text)` としてパースされる。
+
+% 2 1 0 1e7aa9276dc2c4920a164b4b95343102
+
+% 3 1 0 0c8fa2e8b4a9a33f1e4249d10bc7fe84
+
+% 0 1 0 113f57f7fe8acffa0a8ac6c8b69a9adf
+
+% 0 1 0 02d51440b20573d21b9ad7014ce27cc3
+
+% 0 1 0 18717b440779cec0076d6882b722c6de
+
+% 1 1 0 168e59bd1a0e6b560befc285fc35e48a
+
+@ 0 12 0 0195f4637676b408103b5a9aac6aadbe
++     entry .index   既知のすべてのラベル。ワイヤ上の綴りをキーとする
++         `CERTIFICATE`、`PRIVATE KEY`、… からケースへの遅延的な `Map[Text, Pem.Label]` であり、`.unapply` がこれを参照する。
++     entry .showable   ラベルのワイヤ上の綴り：大文字の単語、または与えられたとおりの独自のテキスト
++     entry .unapply   ワイヤ上のテキストからのラベル。常にマッチする：既知のケース、そうでなければ `Proprietary`
++         エクストラクターとしての `Pem.Label(text)` は決して失敗しないので、`r"-----BEGIN ${Pem.Label(label)}([ A-Z]+)-----"` のようなパターンの中に置ける。
++   entry #label   ブロックの `Pem.Label`
++   entry #data   復号されたペイロード。通常は DER ドキュメント
++   entry #serialize   アーマー形式のテキスト：`BEGIN` の行、64 文字ずつの base64 の行、`END` の行
++       行は `\n` でつながれ、末尾に改行はないので、パースされたブロックは前後を切り詰めたソースへと再直列化される。
++       `Pem.streamable` は同じテキストをストリームとして返す。
+
+@ 0 1 0 0f3b9db36fb950f614bb7114f548605c
++ entry .Pem2   `Pem` コンパニオンの親トレイト。優先度の低い `read[X in Pem]` の持ち上げを保持する
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 10 0 07b673273fb34cde14dce48524dcc7ab
++       直接使うものではない。
++       このトレイトは、値が `Decodable in Pem` と `Decodable in Der` の両方を持つとき、コンパニオン自身で定義された `Pem.aggregableInPem` がここで定義された持ち上げに優先するようにするためにある。
++       given には `Pem.aggregableIn` として到達する。
++   entry #aggregableIn   `Decodable in Der` を持つ `X` に対する `text.read[X in Pem]`：アーマー形式をパースし、ペイロードを復号する
++       `X is Decodable in Der`、`Tactic[Pem.Error]`、`Diagnostics` を必要とし、decodable と戦術をキャプチャする。
++       `text.read[Asn1 in Pem]`、`text.read[Certificate in Pem]`、そして恒等の decodable を通じて `text.read[Der in Pem]` がこれに解決される。
++       DER の復号に失敗すると、キャプチャした戦術のもとで、そのデコーダー自身のエラー（`Asn1.Error`）が発生する。
+
+@ 0 1 0 09579eb33e0c050f11476e2fa8d86397
++ entry .Cose   COSE メッセージ（RFC 9052）：鍵のもとで署名または MAC されたペイロード。タグ付きの CBOR として表す
+
+% 1 1 0 19a43e1b86f29e7d1c4778d4ae02c158
+
+@ 0 8 0 0d8c5afcd52b83d8054fe46700d51002
++       `Cose` は [CBOR Object Signing and Encryption](https://www.rfc-editor.org/rfc/rfc9052) のメッセージである。
++       `#payload`、`#protectedHeader`（署名が覆うヘッダーパラメーターの直列化されたマップ）、`#unprotectedHeader`、そして `authentication` が署名または MAC のタグである `#recipients` からなる。
++       鍵の型がバリアントを選ぶ（`SymmetricKey` は `COSE_Mac0`（CBOR タグ 17）を、`PrivateKey` は `COSE_Sign1`（タグ 18）を作る）。
++       選択はその鍵の型に対する `Cose.Authenticator` の given を通じて行われ、メッセージの幻の型 `#Form`（`Cose.Mac0`、`Cose.Sign1`、…）と `#Operand`（暗号方式）がその選択を記録する。
+
+@ 0 2 0 03c5b8f2861bcef404513cb48712d86f
++       二つの操作は、メッセージを構築して認証する `Cose(payload, key)` と、ワイヤ上のメッセージをパースして検証する `bytes.authenticate[Cose](key)` である。
+
+% 2 1 0 1930b495acf5fdc71cd813b1c39b693e
+
+% 3 1 0 0cd1e43d2f675276007a22327352e876
+
+@ 0 1 0 1d15ddbbc4bc6aeb12362ea18a6027b4
++         label HMAC-SHA-256 の鍵
+
+% 1 1 0 180217064fc4517405f804a7f2d9b910
+
+% 2 1 0 09d53718962f6ef203a9a623970bc39d
+
+% 3 1 0 1f0498d1cae4b2501e94fcf0960e1464
+
+% 4 1 0 0a8bcb9f7b726f0b07e1426cda39c95c
+
+% 5 1 0 064f3f78b44787a50a32ab673fbda44c
+
+% 7 1 0 1a64064deca8751717ea5caa84757516
+
+% 8 1 0 0e72caf1f19b45e0129f4a248432e326
+
+% 1 1 0 18a69ca45cbc60251502f2b852c6a7bb
+
+@ 0 1 0 1582023d5ca190cf115b195ca5e3ef54
++         label その鍵のもとで認証されたメッセージ
+
+% 1 1 0 0175d6c0432d8bb60bd930a01e0e76f8
+
+% 2 1 0 063fc430e8ba44ab1f1ee7c9331d497b
+
+% 3 1 0 1e2a88ba2a217e4e006898f6ff3acfe0
+
+% 4 1 0 0b633cfbe0f21a220512c33856d2ae2a
+
+% 5 1 0 0efe73f5e919cf741768a21265240c82
+
+% 7 1 0 1b6db5b92333d3e6150a72aa66458bab
+
+% 8 1 0 0ce06c34c52743f909da5d24ead19ff8
+
+% 0 1 0 097ff04dd0064bfa02312cfb49f6461f
+
+% 1 1 0 0fb1f93640c0ac0c035a67cfdaee32df
+
+@ 0 1 0 0b21907292581ee30e8cf52d23f5706c
++         label そのワイヤ形式：CBOR タグ 17
+
+% 1 1 0 14b05d8215b1c2700610c3a2a5d612a5
+
+% 2 1 0 0f3017961dff158d04f9cfd37cb16bc4
+
+% 3 1 0 04b0910fc46e29090f48158a00f1ae5b
+
+% 4 1 0 0fa780ea50483df20d5979577966b216
+
+% 5 1 0 1c8240095811ee3415aed826ab22852b
+
+% 7 1 0 02bed360e749d9dd1767503748db0c7b
+
+% 8 1 0 19dccbb57b45869e0b5d8450bf221a18
+
+% 10 1 0 151ef5305571f6f902acf0fd985ed0f0
+
+% 0 1 0 1c682fbe968a85f20459202b1882773f
+
+% 1 1 0 0db9019a2338fde80fd175a4f25e7dbb
+
+@ 0 1 0 1cc2e0cbf27f9a000e8dec78eb994b0f
++         label 受信側による検証
+
+% 1 1 0 1276bcf5c4717ca5122232ea7de29be4
+
+% 2 1 0 0e4082ca05a198090231258f19192c14
+
+% 3 1 0 0240bc3f59d87dca1a7b787ff6d6552c
+
+% 4 1 0 17ae5318676a1c2b0e4f5892c1cad4c2
+
+% 5 1 0 0cbcc86126e1c7f41eb41ec8f60de3e1
+
+% 7 1 0 1acbcb70e779aa9e0d709917326ad6a3
+
+% 8 1 0 1baead5a7da4f1020a0c7c2386ad614f
+
+% 10 1 0 065a2136e1229fb50cb23e567c654021
+
+% 0 1 0 065e59559ffa8f7d19e238a30d708954
+
+% 0 1 0 079281a8ed8855340578cddb02d17e13
+
+% 1 1 0 1b8a865db6cffe4a05cbb2d044242793
+
+% 2 1 0 16376ad5c3c1caeb168cef5fa50d8c9a
+
+@ 0 7 0 0952de0501e3693c1c2eb165f7ea49d8
++       保護されたヘッダーはアルゴリズム（`1 → alg`）だけを保持し、その識別子は鍵の暗号方式が `Cose.Algorithm` のもとで持つものである。
++       ヘッダーは、署名される `Sig_structure`/`MAC_structure` と同じく、正準 CBOR（`CanonicalCbor`）としてエンコードされる。
++       保護されないヘッダーは空であり、外部 AAD も空である。
++       `Cose.parse` で読み戻したメッセージは一般的な `Form` と `Operand` を持つ。
++       ワイヤ形式はどの暗号方式が使われたかを示さないからである。
++       `#verifyWith` は、バリアントが一致する任意の `Cose.Verifier` 型の鍵と照合してそれを検査する。
+
+@ 0 8 0 06f7de40b9d05b120e19d61d738244b4
++       付属の `Cose.Algorithm` の given は HMAC-SHA-2 の三つの識別子なので、`SymmetricKey[HmacCipher[Sha2[256 | 384 | 512]]]` はそのままで `Mac0` メッセージを構築できる。
++       `PrivateKey[Ecdsa[256]]` や他の署名用の暗号方式で `Sign1` メッセージを構築するには、その暗号方式に対する `Cose.Algorithm` の given（ES256 なら `-7` のような IANA の識別子）が必要であり、呼び出し側がそれを用意する。
++       `PublicKey` で `Sign1` メッセージを*検証*するには何も要らない。
++       複数受信者のバリアント `Sign` と `Mac`（タグ 98 と 97）はパースされるが、それを構築するコンストラクターはなく、付属の検証器は `Sign1` と `Mac0` にしかマッチしない。
+
+@ 0 2 0 1a9c0995f51f9b7f115e5042f7d4e724
++       `Cose` は `enigmatic.cose` コンポーネントにあり、これは `enigmatic.core` に breviloquence（CBOR）を加える。
+
+% 0 1 0 12494296de3aaaaa0051764bc65a3a6f
+
+% 0 1 0 04a47413df5077370b77dac2e896f350
+
+% 0 1 0 105d56f57d82475d04b4ea693fa80e41
+
+@ 0 29 0 0fa6739210c5e53018548484095c4bc6
++   entry .encodable   メッセージをタグ付きのワイヤ形式に直列化する。`cose.in[Data]` として使う
++       given `cose is Encodable in Data` であり、コンストラクターが返す細分化された `Cose in Mac0 by cipher` がこれに解決されるよう、`Cose` で上限づけられている。
++       `Sign1` や `Mac0` のメッセージは、そのタグのもとでの四要素の配列 `[protected, unprotected, payload, signature]` である。
++       `Sign` や `Mac` のメッセージは、単一の署名の代わりに `[protected, unprotected, signature]` の三つ組の配列を持つ。
++   entry .apply   ペイロードに対するメッセージを構築し、鍵のもとで認証する
++       `Cose(source, key)` は、`Readable to Data` である任意の `source` からペイロードを読み、鍵の型に対する `Cose.Authenticator` の given で署名または MAC する。
++       `SymmetricKey[cipher]` からは `Cose in Cose.Mac0 by cipher` が、`PrivateKey[cipher]` からは `Cose in Cose.Sign1 by cipher` が得られる。
++       鍵の暗号方式には、`cipher & Signing` の given と、アルゴリズム識別子のための `cipher is Cose.Algorithm` が必要である。
++       呼び出しには `Tactic[Cbor.Error]` が必要であり、`Cose.Error` を発生させる。
++       inline なので、ペイロードは呼び出し箇所で、呼び出し側自身の読み取り可能性と戦術のもとで読まれる。
++   entry .parse   タグ付きの COSE エンベロープをバイト列から読み戻す
++       CBOR を復号し、タグ 17、18、97、98 のいずれか（そうでなければ `Cose.Error(UnknownTag(tag))`）と、保護されたヘッダーとペイロードがバイト文字列で、保護されないヘッダーがマップである四要素の配列（そうでなければ `MalformedStructure`）を要求する。
++       複数受信者のメッセージの受信者は、それぞれ三要素の配列でなければならない。
++       `Tactic[Cbor.Error]` と `Tactic[Cose.Error]` を必要とする。
++       結果は、`Form` と `Operand` がその上限である通常の `Cose` であり、その `#verifyWith` がそれを検査する。
++       `bytes.authenticate[Cose](key)` は、パースしてから検証することを一度の呼び出しで行う。
++   entry .make   `.apply` の背後にあるコンストラクター。`Form` と `Operand` の型を細分化する
++       六つのフィールドから、認証を行わずに `Cose in scheme by cipher` を構築する。
++       呼び出し側は、保護されたヘッダーのバイト列、保護されないヘッダー、ペイロード、コンテキスト文字列、CBOR タグ、受信者を用意する。
++       鍵のもとで認証されたメッセージには `.apply` を使うこと。
++   entry .Algorithm   暗号方式の COSE アルゴリズム識別子：`cipher is Cose.Algorithm`
+
+% 1 1 0 145b349d3d45c6901246ac7b81f165b5
+
+@ 0 5 0 1145335318d2473f19296499bd553f6f
++         暗号方式の型を IANA の COSE Algorithms レジストリ（RFC 9053）のエントリーに対応付ける型クラスであり、`Cose.apply` はそれを `alg` パラメーターとして保護されたヘッダーに書き込む。
++         コンパニオンの given は HMAC の系列を扱う。
++         `HmacCipher[Sha2[256]]` は 5（HMAC 256/256）、`[384]` は 6、`[512]` は 7 である。
++         署名用の暗号方式には独自のインスタンスが必要であり、`Cose(payload, privateKey)` を呼ぶ箇所のスコープに置く。
+
+% 2 1 0 16ee0d68adfdc6ff1d71c4aeb85c07f4
+
+% 3 1 0 1191577a6161e97e0e08c01cad99c671
+
+% 0 1 0 04557c6511cd145b1e00f13dd054442e
+
+% 0 1 0 03eccd76df78b63715b77a7b950a8d3d
+
+% 1 1 0 06be1f8d96de1dcb119db3178cdcfd75
+
+@ 0 6 0 0cc91c2902bf56791848dce0b7983fae
++     entry .hmacSha256   HMAC 256/256。識別子 5。`HmacCipher[Sha2[256]]` 用
++     entry .hmacSha384   HMAC 384/384。識別子 6。`HmacCipher[Sha2[384]]` 用
++     entry .hmacSha512   HMAC 512/512。識別子 7。`HmacCipher[Sha2[512]]` 用
++     entry #Self   暗号方式の型
++     entry #algId   `alg` ヘッダーパラメーターに書かれる、レジストリの識別子
++   entry .Authenticator   鍵の型がメッセージにどう署名または MAC するか、そしてどのバリアントを作るか
+
+% 1 1 0 1d65322a44b6f6f713c093649d5360bb
+
+@ 0 21 0 1159e36516b94ca91120d148dcb75b12
++         `key is Cose.Authenticator in form by cipher` は、`Cose.apply` が鍵のために召喚するものである。
++         これは、メッセージのバリアント（`Form`）、暗号方式、アルゴリズム識別子、署名される構造のコンテキスト文字列（`Signature1` または `MAC0`）、CBOR タグ、そして署名対象のバイト列を鍵でどう認証するかを定める。
++         二つの given は鍵の型によって選ばれる。
++         `SymmetricKey[cipher]` は `Mac0`、`PrivateKey[cipher]` は `Sign1` である。
++         `SymmetricKey` は `PrivateKey` を継承するので、対称鍵に対しては、より具体的な対称のインスタンスが選ばれる。
++         どちらも `cipher & Signing` と `cipher is Cose.Algorithm` を必要とする。
++     entry .asymmetric   `PrivateKey[cipher]` は `Sign1` メッセージを作り、暗号方式で署名する
++         `Cose.Algorithm` を持つ任意の `cipher <: Cipher & Signing` に対するものである。
++         秘密鍵の秘密は、署名の間だけクロークを外される。
++     entry .symmetric   `SymmetricKey[cipher]` は `Mac0` メッセージを作り、暗号方式で MAC する
++         `Cose.Algorithm` を持つ任意の `cipher <: Cipher & Symmetric & Signing` に対するものであり、付属の given では `HmacCipher[…]` のことである。
++     entry #Self   鍵の型
++     entry #Form   作られるバリアント：`Cose.Sign1` または `Cose.Mac0`
++     entry #Operand   暗号方式
++     entry #algId   保護されたヘッダーに書かれるアルゴリズム識別子
++     entry #contextString   `Signature1` または `MAC0`：署名される構造のコンテキスト
++     entry #cborTag   エンベロープのタグ：`Sign1` では 18、`Mac0` では 17
++     entry #authenticate   署名対象のバイト列に鍵で署名または MAC する
++   entry .Verifier   鍵の型がメッセージの署名や MAC をどう検査するか
+
+% 1 1 0 0646cf30ac75795d186abbd601981a9c
+
+@ 0 18 0 11be425b139a9d83195cc6579be9a5c9
++         `key is Cose.Verifier in form by cipher` は、`Cose#verifyWith` と `authenticate[Cose]` が召喚するものである。
++         これは、鍵が検査できるバリアントと、署名の検査方法を定める。
++         `PublicKey[cipher]` は `Sign1` メッセージを、`SymmetricKey[cipher]` は `Mac0` メッセージを検証する。
++         どちらも `cipher & Signing` の given だけを必要とし、`Cose.Algorithm` は要らない。
++         検証器は自身のコンテキスト文字列をメッセージのものと比較するので、公開鍵で検査した `Mac0` メッセージや、対称鍵で検査した `Sign1` メッセージは、`false` を返すのではなく `Cose.Error(VariantMismatch)` を発生させる。
++         保護されたヘッダーで名指されたアルゴリズムは、鍵の暗号方式とは比較されない。
++     entry .asymmetric   `PublicKey[cipher]` は `Sign1` メッセージの署名を検査する
++     entry .symmetric   `SymmetricKey[cipher]` は `Mac0` メッセージのタグを再計算して比較する
++         比較は、定数時間で実行される `HmacCipher#verify` による。
++     entry #Self   鍵の型
++     entry #Form   検査されるバリアント：`Cose.Sign1` または `Cose.Mac0`
++     entry #Operand   暗号方式
++     entry #contextString   `Signature1` または `MAC0`。メッセージのものと等しくなければならない
++     entry #cborTag   検証器が期待するエンベロープのタグ
++     entry #check   認証バイト列が、鍵のもとで署名対象のバイト列に対して有効かどうか
++   entry .Error   COSE メッセージをパースまたは検証できないときに発生する
+
+% 1 1 0 17370f37b8cf3b1616cfa64140a68ca9
+
+@ 0 8 0 1d3fbae672e5baee11f537e1d2e4b3e9
++         エラー `↯/s.105.6`：_could not process the COSE message because `reason`_。
++         `Cose.parse`（したがって `authenticate[Cose]`）が、タグでないエンベロープ（`MalformedStructure`）、17、18、97、98 以外のタグ（`UnknownTag(tag)`）、誤った形の本体（`MalformedStructure`）に対して発生させる。
++         `Cose#verifyWith` は、鍵のバリアントがメッセージのものでないとき（`VariantMismatch(expected, actual)`）に発生させる。
++         `Cose.apply` はその `raises` 節を通じて発生させる。
++         不正な CBOR そのものは `Cbor.Error` であり、同じ呼び出しが受け取る `Tactic[Cbor.Error]` を通じて発生する。
++     entry .Reason   メッセージが拒否された理由
+
+% 1 1 0 19231e4da13882b20c6d5ab0275ea63a
+
+% 1 1 0 183d5f11254e8518154a3b6c2f0be0bd
+
+@ 2 4 0 1f8bdbb9b7a7466c0ba15f159ba64a67
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  備考
+
+% 0 1 0 0ebb7808a63583eb1946f2ab5106c6d5
+
+% 0 1 0 143926a6c5d0221e0cdeee01b9398909
+
+% 0 1 0 1f09d26e83f0ff55102c67267f25cf5b
+
+% 0 1 0 0f705c0229e5c7d615e11cc968684e50
+
+@ 0 2 0 1981bacbff86a85005a388e62cc40b95
++           row  `VariantMismatch(expected, actual)`  5  _expected a `expected` COSE message but found a `actual`_  二つのコンテキスト文字列。`Text` として
++           row  `VerificationFailed`  6  _the COSE signature or MAC did not verify_  検査の失敗はこれではなく、`verifyWith` からの `false` として報告される
+
+% 0 1 0 0c4c00b55168422e0031f34cd8da5910
+
+% 0 1 0 116a453fee4e7044120173a0fe9012ae
+
+% 1 1 0 042e3bac84f57cd40d54c0f117048f8e
+
+@ 0 5 0 0dec5f3bf5c53a901e1c01e8ccb04d1d
++           このうち、現在のコードが発生させるのは `MalformedStructure`、`UnknownTag`、`VariantMismatch` だけである。
++       entry .communicable   各理由をメッセージとして描画する
++     entry #reason   失敗の `Cose.Error.Reason`
++   entry .Recipient   メッセージ上の一つの署名または MAC：独自のヘッダーと認証バイト列
+
+% 1 1 0 0c64366b06ba6de51b3524f42c5379eb
+
+@ 0 7 0 0f7dafa20aaff6940f1460f8bbd570bb
++         `Sign1` や `Mac0` のメッセージにはちょうど一つの受信者があり、そのヘッダーは空である。
++         `Cose.parse` が読んだ `Sign` や `Mac` のメッセージには、ワイヤ上の `[protected, unprotected, signature]` の三つ組ごとに一つの受信者がある。
++     entry #protectedHeader   受信者の直列化された保護されたヘッダー。`Sign1`/`Mac0` では空
++     entry #unprotectedHeader   受信者の保護されないヘッダーのマップ。`Cbor` として表す
++     entry #authentication   署名または MAC のタグのバイト列
++   entry .Structure   バリアントの分類の根：メッセージの `Form` の上限
+
+% 1 1 0 124f58b259082dcc1cd24c2445efe97a
+
+@ 0 10 0 0783886bd8fad72b194a7df2911add48
++         `Cose.Signed` と `Cose.Maced` がそれを二分し、`Cose.Sign`（タグ 98）、`Cose.Sign1`（18）、`Cose.Mac`（97）、`Cose.Mac0`（17）が RFC 9052 の四つのメッセージ型である。
++         メッセージの `Form` はそのいずれかである。
++         `Cose in Cose.Mac0 by HmacCipher[Sha2[256]]` のように書く。
++   entry .Signed   署名されたバリアント、`Cose.Sign` と `Cose.Sign1`
++   entry .Maced   MAC されたバリアント、`Cose.Mac` と `Cose.Mac0`
++   entry .Sign   `COSE_Sign`：複数の署名者、CBOR タグ 98。パースされるが構築はされない
++   entry .Sign1   `COSE_Sign1`：一人の署名者、CBOR タグ 18。`PrivateKey` が作るもの
++   entry .Mac   `COSE_Mac`：複数の受信者、CBOR タグ 97。パースされるが構築はされない
++   entry .Mac0   `COSE_Mac0`：一つの MAC、CBOR タグ 17。`SymmetricKey` が作るもの
++   entry .Tag   四つのメッセージ型の CBOR タグ番号。inline の定数
+
+% 1 1 0 193114453e5fc51b070c9a0da55ebda9
+
+@ 0 2 0 1f4b145e18f113080c6ebf87c4cef272
++         `Cose.Tag.Sign1` は 18、`Mac0` は 17、`Sign` は 98、`Mac` は 97 である（RFC 9052 §2）。
++         `Mac0` のワイヤ上のメッセージの最初のバイトは `0xD1`、つまりメジャータイプ 6 とタグの値 17 である。
+
+% 0 1 0 15998a723bc8b45b13b260d79ae0ac18
+
+% 0 1 0 1acb7de4d0dd389809492ebadd90c20e
+
+% 0 1 0 0d1c9a3434fb85e11a290162916c4a97
+
+% 0 1 0 016650208d392dd307e703a1bd8a1b9b
+
+@ 0 1 0 10421377aacf898e0d0d90442733fd98
++   entry .Context   署名される構造のコンテキスト文字列。inline の定数
+
+% 1 1 0 11805512f403ce9c0beea3b737475596
+
+@ 0 4 0 0c4bad77c7ff3a36013a161d769b375f
++         実際に署名される `Sig_structure` や `MAC_structure` の最初の要素である（RFC 9052 §4.4 と §6.3）。
++         `Sign1` では `Signature1`、`Sign` では `Signature`、`Mac0` では `MAC0`、`Mac` では `MAC` である。
++         メッセージは自身のものを `Cose#contextString` として持ち、検証器はそれで照合する。
+
+% 0 1 0 1ef42fa5048b07e409503e10f5af33ee
+
+% 0 1 0 09bd16943fa4164c07cceeab88c7f918
+
+% 0 1 0 0c98c2cd42b43fba0ff80c23339e8227
+
+% 0 1 0 054c7203ccd5a5561b044fd8ec435c18
+
+@ 0 14 0 1585fc4522514e3c0455b05df1f513d5
++   entry #Form   バリアント：`Cose.Structure` の部分型。コンストラクターによって細分化される
++   entry #Operand   メッセージの認証に使われた暗号方式。コンストラクターによって細分化される
++   entry #protectedHeader   直列化された保護されたヘッダー：正準 CBOR のマップ。ここで構築したときは `{1: alg}`
++   entry #unprotectedHeader   保護されないヘッダーのマップ。`Cbor` として表す。ここで構築したときは空
++   entry #payload   ペイロードのバイト列
++   entry #contextString   `Signature1`、`Signature`、`MAC0`、`MAC`：受信者が署名した構造
++   entry #cborTag   エンベロープが書かれるタグ：18、98、17、97
++   entry #recipients   メッセージ上の署名または MAC。`Sign1` と `Mac0` ではちょうど一つ
++   entry #verifyWith   いずれかの受信者の認証が鍵のもとで有効かどうか
++       メッセージ自身のコンテキスト文字列、保護されたヘッダー、ペイロードから（外部 AAD は空として）署名対象の構造を再構築し、鍵の `Cose.Verifier` に各受信者を検査させ、いずれかが通るかどうかを返す。
++       検証器のコンテキスト文字列がメッセージのものでないときは `Cose.Error(VariantMismatch)` を発生させる。
++       誤った鍵や改竄されたメッセージに対しては `false` を返す。
+
+% 2 1 0 089224748b6f4b120912cc62d4e78b11
+
+% 3 1 0 0c3b569686cf723f185af54a60115e3e
+
+% 4 1 0 0bd11c409b00b2fc0330eb1b72196a77
+
+% 5 1 0 160ad039a0b3ab77086951b742612e73
+
+% 6 1 0 09e46c232a897b2a11ab868e576291fa
+
+% 4 1 0 0852586763c8a3c71eb46a5133f0d5cb
+
+% 5 1 0 11bae5a65b684ab91a3e8ff74f1006e6
+
+% 0 1 0 1363bf0eab07d9fc152e2359f07acc0c
+
+% 1 1 0 1f48e5c15772b3601844a3bddb0fd575
+
+@ 0 1 0 006cbc3d3026d69717f84bfe0a2a969c
++ entry .CoseVerify   `bytes.authenticate[Cose]` のキャリア。鍵を待っている
+
+% 1 1 0 17f4f5cb45e6d1db0857e279c76f5431
+
+@ 0 10 0 0d15921db82859e20f27b2946ce6f881
++       `source.authenticate[Cose]` は `CoseVerify[source]` を返す。
++       これにより、方式は型引数として名指され、鍵の型は続く `#apply` の値引数から推論されたままになる：`bytes.authenticate[Cose](key)`。
++       保持することを意図したものではない。
++       二つの呼び出しを続けて書く。
++   entry #source   メッセージを読み取る入手元
++   entry #apply   入手元を COSE メッセージとしてパースし、鍵のもとで検証する
++       入手元を `Data` として読み（`Readable to Data` でなければならない）、`Cose.parse` でパースし、`Cose#verifyWith` で検査する。
++       鍵には `Cose.Verifier` が必要である。
++       呼び出しには `Tactic[Cbor.Error]` が必要で、`Cose.Error` を発生させる。
++       結果は、署名または MAC が検証に通るかどうかである。
+
+@ 0 8 0 16a21ecacf79343710a8af1f45bc7ad4
++ entry .authenticate   `bytes.authenticate[Cose](key)`：COSE メッセージをパースし、鍵のもとで検証する
++     `Readable to Data` である任意の入手元に対する拡張である。
++     方式は常に `Cose` である（型パラメーターはそれで上限を付けられている）。
++     `authenticate[Cose]` の結果は、`apply` が鍵を取る `CoseVerify` なので、式全体は `wire.authenticate[Cose](key)` となり、メッセージの署名または MAC がその鍵のもとで有効なら `true` である。
++     `Mac0` メッセージはそれを作った `SymmetricKey` で、`Sign1` メッセージは署名者の `PublicKey` で検査される。
++     `verify` ではなく `authenticate` なのは、アンブレラの `verify` が jacinta のスキーマ検査だからである。
+
+% 2 1 0 1d62c2f311df6b3f14113ce31caf98a1
+
+% 3 1 0 0b5aa257074d039117c13195352b2b92
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 1 1 0 0b4aded06700ff411debef445eb1a548
+
+% 1 1 0 1780b0f735f1809115dd07f2c0c3618e
+
+% 0 1 0 17c8205bfc21ec881c45d89003d8dd04
+
+% 0 1 0 0abf8afd3ae047fa14e68dac54237a73
+
+% 0 1 0 157927311fed90ca030ba19998b3852f
+
+% 0 1 0 10dd9c3bb6b068a518a4e9a5790e460f
+
+% 0 1 0 01a5d17a83db23e90ad74af3a8bb783b
+
+% 0 1 0 037832a00e736e11156448bb4b0e81c1
+
+% 0 1 0 0210057445a74aa11d55558d817f7e61
+
+% 1 1 0 171966445918bd9301f7c4aa7e007a69
+
+@ 0 1 0 125924ce0f1d144b0d095aad7d94ae47
++ entry .HmacCipher   ハッシュ上の HMAC を対称署名の暗号方式として表す：`SymmetricKey[HmacCipher[Sha2[256]]]`
+
+% 1 1 0 0587d9e814ae95b7108efd4e236008fe
+
+@ 0 7 0 021b47b4dbeb1f1915ba6e01820018be
++       `HmacCipher[algorithm]` は HMAC を `Cipher & Signing & Symmetric` として提示する。
++       これにより HMAC の鍵は `SymmetricKey` となり、他のすべての暗号方式と同じ鍵の仕組みに組み込まれる。
++       `Cose(payload, key)` がそこから `Mac0` メッセージを作れるのはこのためである。
++       （データに対する `hmac` 拡張は、HMAC へのもう一つの、出力で型付けされた経路である。）
++       鍵は 32 バイト（`Size = 256`）であり、`genKey` はそれを `Crypto` プロバイダーの乱数源から引き出し、`sign` はハッシュの `hmacName` のもとでのプロバイダーの HMAC であり、`verify` はそれを再計算して定数時間で比較する。
+
+% 2 1 0 09188c5250dc6631044d4bba3d506060
+
+% 3 1 0 01419b7f5535db5d02cbdb2a69769dfb
+
+% 4 1 0 078df937ef41a15a057709fdbb0f3952
+
+% 2 1 0 11e0364fea3b2bc71b2d921d91a5339a
+
+% 4 1 0 195d2b6869f687a516184841a012e596
+
+% 5 1 0 0d6ecf75da2d090d072e0e55b5220145
+
+% 1 1 0 034d5a242433b77f1ed350d7b038d880
+
+@ 0 3 0 08c2fee7c78b1f760811d5254b4fefcb
++       任意のハッシュ `algorithm` に対するインスタンスは `.value` が与える。
++       これには `Hash in algorithm`（gastronomy のもので、暗黙のスコープにある）と、`providers` から名前でインポートする `Crypto` プロバイダーが必要である。
+
+% 0 1 0 1819f6454e350fb018219860dd790396
+
+@ 0 2 0 1f9cd6f8440ae17a0216be6ff33e0a75
++   entry .value   スコープに `Hash` と `Crypto` がある任意のハッシュに対する given の `HmacCipher[algorithm]`
++   entry #Size   `256`：ビット単位の鍵のサイズ
+
+% 0 1 0 06f448307f21ffba0a05116433e683ee
+
+@ 0 4 0 0c3615edea4e750806179f60f76ca7c1
++   entry #genKey   プロバイダーから得る 32 バイトの乱数
++   entry #privateToPublic   鍵そのもの。MAC の鍵には公開の半分がない
++   entry #sign   プロバイダーを通じた、鍵のもとでのデータの HMAC
++   entry #verify   タグが鍵のもとでのデータの HMAC に等しいかどうか。定数時間で比較する
+
+@ 0 1 0 13d5a682af6e720e0ae679688008e94c
++ entry .CanonicalCbor   COSE が要求する、決定的な CBOR エンコーディング（RFC 8949 §4.2.1）
+
+% 1 1 0 1bbd83a3e8e62d5e11194c064c10d258
+
+@ 0 7 0 159b853d9d7962051c9171ab729154af
++       COSE はヘッダーと構造の直列化された形に署名するので、エンコーディングは決定的でなければならない。
++       最短形式の整数、確定長、そしてエンコードのバイト単位の辞書順に並んだマップのキーである。
++       breviloquence の `Cbor.Ast` エンコーダーはすでに最初の二つを出力する。
++       `CanonicalCbor.encode` は、マップ、配列、タグを再帰的にたどってキーの順序付けを加え、結果をエンコードする。
++       `Cose` は保護ヘッダーと署名対象の構造にこれを使う。
++   entry .encode   すべてのマップのキーをそのエンコードで並べ替えて、`Cbor.Ast` を決定的にエンコードする
+
+@ 0 1 0 1e8d3dd223897ef30f3c9d19b0e2af79
++ entry .OpensslCrypto   JVM と Scala Native で OpenSSL の `libcrypto` に支えられた `Crypto` プロバイダー
+
+% 1 1 0 08a0f30c523be006054e4eee78e1463a
+
+@ 0 6 0 0e7cbf5515a2ab8200430417b268e268
++       xenophile の型付きの C ナビゲーションを通じて OpenSSL 3 の `libcrypto` を呼ぶ `Crypto` プロバイダーである。
++       同梱の `/enigmatic/openssl.h` ヘッダーのプロトタイプはコードのコンパイル時にパースされ、各呼び出しは、一つのソースから、JVM では Panama のダウンコールに、Scala Native では直接の C 呼び出しになる。
++       `providers.opensslProvider` を名前でインポートして選ぶか、一つのブロックのためにローカルな `given Crypto = OpensslCrypto` として束縛すると、すべての暗号方式、鍵、HMAC がそれを通じて実行される。
+
+% 2 1 0 05b16c8a9f27370c08598d721e561eab
+
+% 3 1 0 0ec9f24a0f018ddf044db0f4eac907a3
+
+% 4 1 0 0673d40b2a3863af009954ccd181c95f
+
+% 0 1 0 05ad5d36e88dabc5068a2b9c8d6289f0
+
+% 1 1 0 1077b41f428a03950650d3eb6aaf7886
+
+% 2 1 0 02ab9ab5532fa30f1f41bd8f94b5a116
+
+% 1 1 0 09a8e1d290c9f89109ec135249fd839b
+
+% 2 1 0 0b0fecdfe605e2fe01063439ca3d0850
+
+@ 0 11 0 10ac572dcad00cc31840240af6a73ad5
++       ネイティブに実装しているものは次のとおりである。
++       `#random`（`RAND_bytes`）、`#hmac`（SHA-256、SHA-384、SHA-512、SHA-1、MD5 に対するワンショットの `HMAC`）、そして EVP 暗号 API を通じた `#aes` で、PKCS#7 またはパディングなしの `aes-<bits>-<mode>` として実装する（ISO 10126 のパディングは JCE 専用の方式なので提供されない。
++       AES 以外のブロック暗号はパニックする）。
++       その出力は JDK のプロバイダーのものとバイト単位で一致するので、一方で作った暗号文はもう一方で復号できる。
++       RSA、すなわち `.rsa`、`.rsaSignature`、`.ecdsa` は `JavaBaseCrypto` に委譲されるので、JVM では動作し、そのプロバイダーがパニックするスタブである Scala Native では利用できない。
++       Scala Native ではライブラリは静的にリンクされる（`-lcrypto`）。
++       JVM では `libcrypto` は Homebrew のパス、`/usr/local/opt/openssl@3`、またはライブラリパス上の `libcrypto.so.3`/`libcrypto.so`/`libcrypto.dylib` から読み込まれ、JVM には `--enable-native-access=ALL-UNNAMED` が必要である。
++       Scala.js のビルドはない。
+
+@ 0 15 0 147ae480e89f299005972a66a554556e
++       `OpensslCrypto` は `enigmatic.openssl` コンポーネントにあり、このコンポーネントは `enigmatic.core` に xenophile のネイティブ FFI を加える。
++   entry .random   `RAND_bytes`：`bytes(n)` が OpenSSL の乱数バイトである `Crypto.Random`
++   entry .hmac   JCE 風の名前によるワンショットの HMAC：`HmacSHA256`、`HmacSHA384`、`HmacSHA512`、`HmacSHA1`、`HmacMD5`
++       それ以外のアルゴリズム名はパニックする。
++       名前は gastronomy の `Hash#hmacName` が与えるものなので、`data.hmac[Sha2[256]](key)` は名前を名指さずにここに到達する。
++   entry .aes   EVP 暗号 API を通じた AES。ワンショットとストリーミングの両方で、鍵の型が名指すすべてのモードに対応する
++       `Aes[128 | 192 | 256]` のための `Crypto.SymmetricCipher` である。
++       変換 `AES/<mode>/<padding>` は OpenSSL の `aes-<bits>-<mode>` になり、`BlockCipher.NoPadding` ではパディングが無効になる。
++       `encrypt` は IV が与えられれば暗号文の前にそれを付け、`decrypt` はそれを取り除く。
++       `stream` と `decryptStream` はチャンクをまたいで EVP コンテキストを開いたまま保持し、`finish` でそれを解放する。
++       鍵は `random` から生成される。
++   entry .rsa   RSA。JDK のプロバイダーに委譲される。Scala Native では利用できない
++   entry .rsaSignature   ダイジェストに対する RSASSA-PKCS1-v1_5。JDK のプロバイダーに委譲される
++   entry .ecdsa   ダイジェストに対する ECDSA。JDK のプロバイダーに委譲される
+
+@ 0 1 0 1d6de38f625a86d706c849f6020f81cd
++ entry .Certificate   X.509 証明書。それ自体である ASN.1 の値として保持される
+
+% 1 1 0 06d70222fd8a3ee012e23c4cb8b0dd82
+
+@ 0 7 0 0c1eac5ccb6159110efad9718ecd8305
++       [証明書](https://en.wikipedia.org/wiki/X.509)は、公開鍵を `Distinguished` 名に有効期間のあいだ結び付けるものであり、その発行者が署名する。
++       `Certificate` はその `#asn1` の値なので、通常のコーデックを通じて DER にエンコードされ（`certificate.in[Der]`、`.encodable`）、DER から（`der.as[Certificate]`、`.decodable`）あるいはアーマー形式のテキストから（`text.read[Certificate in Pem]`）読み戻され、`#pem` としてアーマー形式にされる。
++       ASN.1 のコーデックは全域的で正準的なので、ワイヤから読んだ証明書はバイト単位で同じに再エンコードされる。
++       `#verify` はこれに依存している。
+
+@ 0 8 0 0874fdbd7e5dac00012216f3fec5d066
++       二つのコンストラクターがバージョン 3 の証明書を構築する。
++       `.selfSigned` は主体が自らの発行者であるもの、すなわちルート認証局や、開発用サーバーが自分のために作る使い捨ての証明書であり、`.issued` はある鍵の証明書を別の鍵が署名するものである。
++       どちらにも、鍵の暗号方式に加えて、`cipher is SignatureAlgorithm`（暗号方式とダイジェストの組を `AlgorithmIdentifier` として名指す）、`Signature.Digest`（デフォルトは SHA-256。
++       変えるには `signatureDigests.sha384Signature` または `sha512Signature`）、鍵識別子のための `Hash in Sha2[256]`、暗号方式の弱さに対する許可、そして `Certificate.Error` と `Asn1.Error` のための戦術が必要である。
+
+% 2 1 0 0dd90b4ba53d05ae163c8934a5cf802c
+
+% 3 1 0 12d41bf6072a7fd1099ea108c6872c74
+
+@ 0 1 0 19dc4dc0970b8c760b6a70d6859cd9ae
++         label 識別名と有効期間
+
+% 1 1 0 04af0f555c22e17f0da53474e9d7eaa7
+
+% 2 1 0 01fe83bdbf6284a11a1bc2defb290325
+
+% 3 1 0 1a1d51c9a5a82b5e18bee6af269abc87
+
+% 4 1 0 075485011ac5fce818bf60023f495d06
+
+% 5 1 0 1b863e3cd47555d8168aa9945feba98a
+
+% 6 1 0 14fdda8e086161b81fa937663f72c86c
+
+% 8 1 0 0d4fe6fb2f546e3e06cac48a2de51d30
+
+% 9 1 0 119c847a23f11ae207501b54aa6bc733
+
+% 1 1 0 10657d5f575c6c5e1510a51c64a6efd1
+
+@ 0 1 0 130bcd29fc33262c1a9252d7814616ea
++         label 認証局として印付けられた自己署名ルート
+
+% 1 1 0 0dbf200b99a1c75e18936f5018df8c85
+
+% 2 1 0 02676c55c20979d51bdb9a2327217ac1
+
+% 3 1 0 0166f4f9d3a9914b055834995d7c1a8f
+
+% 4 1 0 0e6298626a9863ce17bad986400a428c
+
+% 5 1 0 1f52a90b7b59bb9719caf35f1514ef84
+
+% 6 1 0 0b635d6dca1606f319900126f0c9b22a
+
+% 8 1 0 18095c0a28d19c280748050ac0e4faae
+
+% 9 1 0 0d350e2e990590a3133b1f1ea73d8ca2
+
+% 11 1 0 0513aa940f7e4be51a575480ba56da23
+
+% 12 1 0 003f624f959c92f7199a24ead00041e7
+
+% 13 1 0 1c0bee8d79c072f10720e6a955d19d8c
+
+% 1 1 0 1ef1d223b96bf31e1fd073eace20c870
+
+@ 0 1 0 08839f41760d04f40c6f3093957cfa2d
++         label ルートが発行した、古典的な鍵に対するリーフ
+
+% 1 1 0 18c82c7d2b9e01510c3507b8ccf91019
+
+% 2 1 0 072a8038deec1ead1aa3a0a171dbfeda
+
+% 3 1 0 06bfb9981b45832f106cbcc71eb91819
+
+% 4 1 0 0d3bbb7e56076df208b0d61d6a04136a
+
+% 5 1 0 0099929a36cd991b1b18376f06103b0d
+
+% 6 1 0 06fdbd7ed24b6df00b8f1b2bea6703b4
+
+% 8 1 0 00f2df757365dd680c676feb2db10f55
+
+% 9 1 0 09f9a343b8470fb61b78017ee3e5b6b3
+
+% 11 1 0 0d153de206bb678117f9a42f3a9bcba5
+
+% 12 1 0 0664a1f9c623d6e206087ef6e352fe34
+
+% 13 1 0 00d4e46f8a86f1620b8233b0015747ca
+
+% 15 1 0 0ef8fbba64c0d73e15dc71ecf737ad70
+
+% 17 1 0 056f155fc00fc25d0f5511d343b368f8
+
+% 18 1 0 0772cf91ce3691d5180ea4288ba7b079
+
+% 1 1 0 0e1b3c65d961f137074fb323b66c3c3d
+
+@ 0 1 0 0ca411f6757a78ee1b3d2de469d1732e
++         label どちらもルートの鍵に対して検証され、PEM として運ばれる
+
+% 1 1 0 1ea486e6cd6f55a60bf850d03f9cc499
+
+% 2 1 0 1e023c62e9d7fd691e381ff551dd550e
+
+% 3 1 0 0e73783facb892790be8174002c486fe
+
+% 4 1 0 0656621e3a5abc4b1002f5418edc9089
+
+% 5 1 0 097bee8db7369c451a54c63322bf3d55
+
+% 6 1 0 1a8c17f7dbd253cb12460129e16999ec
+
+% 8 1 0 048bd445630e003c19466bb48dfdd5eb
+
+% 9 1 0 1d7f482d91483b3316eadcb275522df8
+
+% 11 1 0 02d44093c01dd4fe12b26eb1b90623d6
+
+% 12 1 0 174d8d338e30c4a4116123dba27278d8
+
+% 13 1 0 18b5651f5667badd0639fe43189397ce
+
+% 15 1 0 146e1a263cd46fd118724c123fe4096a
+
+% 17 1 0 0d6259b2ebdb6f5c0ef2998a993d111b
+
+% 18 1 0 1fb685827a7018961b736872ae8e99cd
+
+% 0 1 0 0b1615b0d746a71e06fda5ebe920c63a
+
+% 0 1 0 1d903cc3a1815b380753b1c883dc0c89
+
+% 0 1 0 1a84377146d32b1b1e1f780f3ebf89f0
+
+% 1 1 0 1fb3a097d31e294a06e53fe9b65b836d
+
+% 2 1 0 0d91ff0a715c61dd19d171c624cfda9c
+
+@ 0 8 0 1542fc48a4b4e9f50b5d7c5cbea4ad24
++       この連鎖は、耐量子の識別情報が今日とる形である。
++       ML-DSA の鍵は FIPS 204 の識別子で証明書に署名し、JDK の `CertificateFactory` はそれをパースして検査するが、ML-DSA の鍵で*ハンドシェイク*できる TLS スタックはまだない。
++       そこでサービスは、ML-DSA の鍵が発行した ECDSA のリーフを、その鍵の自己署名ルートとともに提示し、ML-DSA の鍵を知っている相手はリーフをそれに対して検証する。
++       （JDK では、そのような連鎖は `SunX509` キーマネージャーと `X509ExtendedTrustManager` でハンドシェイクできる。
++       `PKIX` マネージャーは連鎖に対してアルゴリズムの検査を行い、拒否する。）
+
+@ 0 10 0 1edd597c6ed9f7f70f75d436373f1820
++       構築された証明書が含むものは次のとおりである。
++       バージョン 3、シリアル番号、署名アルゴリズムの識別子、発行者、2050 年より前は `UTCTime`、それ以降は `GeneralizedTime` で書かれた有効期間、主体、プロバイダーが書いた `SubjectPublicKeyInfo` としての鍵（`PublicKey#bytes`、そのまま埋め込まれる）、そして拡張である。
++       拡張は、重要な基本制約（認証局なら `cA` が true、そうでなければ空）、重要な鍵用途（認証局なら `keyCertSign` と `cRLSign`、エンドエンティティなら `digitalSignature` と `keyEncipherment`）、主体鍵識別子（RFC 7093 の方法 1：鍵の SHA-256 の最初の 160 ビット）、発行されたものなら認証局鍵識別子、そして `alternatives` のための `dNSName` の主体代替名であり、最後のものは TLS クライアントが共通名の代わりに検査するものである。
+
+@ 0 2 0 179585b4fe08a8f61a85c84a946efeed
++       `Certificate` は `enigmatic.x509` コンポーネントにあり、このコンポーネントは `enigmatic.core` に aviation（有効期間の `Period` のため）を加える。
+
+% 0 1 0 1cc27323fc6b15591ae27808936ce01a
+
+% 1 1 0 1df8dbcbbe7aa59514d8d14cf99c0c53
+
+% 1 1 0 0224390fd271010f0748830b2d14de13
+
+% 2 1 0 16c532af88feed5216e2fbf90301b997
+
+@ 0 14 0 14563c65be11179e05066be371991592
++   entry .encodable   `certificate.in[Der]` としての DER による証明書：その `asn1` の値をエンコードしたもの
++   entry .decodable   `der.as[Certificate]` としての、DER から得る証明書
++       文書を `Asn1` としてデコードして包み、厳密な DER でないバイトに対しては `Asn1.Error` を発生させる。
++       値が証明書の形をしているかは検査しないので、他の構造の文書もデコードされ、その後 `#verify` で失敗する。
++       `text.read[Certificate in Pem]` はアーマー形式から証明書を読む。
++   entry .selfSigned   主体が自らの発行者である証明書。自身が持つ鍵で署名される
++       `Certificate.selfSigned(subject, key, validity, serial, authority = false, alternatives = Nil)` は、`key.public` に対する証明書を、`subject` を主体と発行者の両方として構築し、`key` で署名する。
++       `authority = true` は認証局の証明書を作り（基本制約 `cA`、鍵用途 `keyCertSign` と `cRLSign`）、`false` はエンドエンティティの証明書を作る（`digitalSignature` と `keyEncipherment`）。
++       `alternatives` は `dNSName` の主体代替名である。
++       `serial` は正でなければならず、`validity` は始まりより後に終わらなければならない。
++       そうでなければ `Certificate.Error` である。
+
+@ 0 7 0 013992351417cc3e1eb21ad0c9897aac
++       鍵の暗号方式には `SignatureAlgorithm` の given がなければならない。
++       `Rsa[2048 | 3072 | 4096]`、`Ecdsa[256 | 384 | 521]`、`Ed25519`、`MlDsa[44 | 65 | 87]` は持っている。
++       そしてスコープにある `Signature.Digest` は、その暗号方式が識別子を持つものでなければならない（RSA と ECDSA では SHA-256、SHA-384、SHA-512）。
++       そうでなければ `Certificate.Error(UnknownAlgorithm)` である。
++       Ed25519 と ML-DSA はダイジェストを無視する。
++       また `Hash in Sha2[256]`、`Permit[Weakness[cipher]]`（`Rsa[1024]` のような弱い暗号方式には `cryptoPermits` のインポートが必要）、`Tactic[Certificate.Error]`、`Tactic[Asn1.Error]`、`Diagnostics` も必要である。
+
+% 2 1 0 009d9855f4957a510814a1442fcf032a
+
+% 3 1 0 0f2d41430528ed951390c2673b649219
+
+% 4 1 0 08ebe2e0d494e71d00aa765f1b2b6961
+
+% 5 1 0 0c6f047d1921658116b60b6e5211284b
+
+% 6 1 0 1de9d32465f853bc02429b09b5ca2744
+
+% 0 1 0 1040cb96db7e64de129bcf8960d9e85f
+
+% 2 1 0 1bad1cede668aa4c1c69f36b0dec05fc
+
+% 0 1 0 02820940eb3b95fd0c4ba3a40e8d077f
+
+% 1 1 0 1eb6d7a2f4eadd6411cfe04644f5b1be
+
+% 0 1 0 1adc94fec21623a50f9cb773611b90eb
+
+% 0 1 0 01273890b6789a030e06b8cb99fd3968
+
+% 0 1 0 0f7f0db600d6152312b43135b448a058
+
+% 1 1 0 0868d5902ff029d00ce053478c88c140
+
+@ 0 12 0 069e40a07e3df9ff0d859ea2e11e4f0f
++   entry .issued   ある鍵に対する証明書を別の鍵で署名する：認証局が行うこと
++       `Certificate.issued(subject, key, issuer, issuerKey, validity, serial, authority = false, alternatives = Nil)` は、`subject` を公開鍵 `key` に結び付ける証明書を構築し、`issuer` をその発行者として名指し、`issuerKey` で署名する。
++       これは二つの半分を分けた `.selfSigned` であり、それに RFC 5280 が発行された証明書に要求する認証局鍵識別子が加わる。
++       これは発行者の鍵の主体鍵識別子であり、検証者はそれによって連鎖の中でその証明書に署名した証明書を見つける。
++       コンテキストパラメーターは `.selfSigned` のものと同じで、*署名者の*暗号方式に対するものである。
++       保有者の暗号方式には何も要らないので、古典的な `Ecdsa[256]` の鍵を `MlDsa[65]` の鍵で証明できる。
++       どちらかの鍵のバイトが `SubjectPublicKeyInfo` でなければ `Certificate.Error(BadPublicKey)` を発生させる。
++   entry .Error   証明書を構築できないときに発生する
+
+% 1 1 0 0f9d0ef653d488261281ccb4adb04a2d
+
+@ 0 3 0 1c7d05eb348b8e331d75098a512efd4b
++         エラー `↯/s.105.5`：_could not build the certificate because `reason`_。
++         `Certificate.selfSigned` と `Certificate.issued` が発生させる。
++         読み取りと検証がこれを発生させることはない。
++         不正な証明書に対して `#verify` は `false` である。
++         理由は次のとおりである。
+
+% 2 1 0 1b1adef5976662570d80675f0b0a75bf
+
+@ 0 6 0 04b0f6516198d6100f9552e90e8392a1
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  注記
++         row  `UnknownAlgorithm(digest)`  1  _no signature algorithm is assigned to `digest`_  暗号方式とスコープにある `Signature.Digest` の組にオブジェクト識別子がない：SHA-256/384/512 以外のダイジェストを使う RSA または ECDSA
++         row  `BadPublicKey`  2  _the public key was not a SubjectPublicKeyInfo_  鍵のバイトが `SubjectPublicKeyInfo` でない
+
+% 0 1 0 0567cfd47a4dd8d31408c43592a4bb2f
+
+@ 0 1 0 160aa96d18d0d70104f609d401f34876
++         row  `BadValidity`  4  _the validity period ended before it began_  始まり以前に終わる期間
+
+% 1 1 0 197b321300d98d2808e35142736a0006
+
+@ 0 18 0 0c0a1dd2c6e11d050e25bdd67721c438
++     entry .communicable   各理由をメッセージとして描画する
++     entry .Reason   `UnknownAlgorithm(digest)`、`BadPublicKey`、`BadSerialNumber`、`BadValidity`。1 から 4 の番号が付く
++     entry #reason   失敗の `Certificate.Error.Reason`
++   entry #asn1   `Asn1` の値としての証明書：`Sequence(List(tbsCertificate, algorithm, BitString(signature, 0)))`
++       すべてのフィールドにはこの構造に合致させることで到達できる。
++       最初の要素は署名が覆う `TBSCertificate` であり、署名されたバイトとちょうど同じに再エンコードされる。
++   entry #pem   ラベル `CERTIFICATE` のもとで PEM のアーマー形式にした証明書
++       `Pem(Pem.Label.Certificate, asn1.in[Der])` である。
++       `pem.serialize` は、サーバーの設定や `.crt` ファイルの `cat` が示すテキストである。
++   entry #verify   署名が公開鍵の秘密の半分によってこの証明書に対して行われたかどうか
++       `certificate.verify(issuer)` は `TBSCertificate` を再エンコードし、暗号方式の `verify` で署名のビット列を `issuer` と照合する。
++       自己署名の証明書では、発行者は自身の鍵である。
++       `cipher & Signing` の given と `ProcessingPermit[Weakness[cipher]]` が必要である。
++       ダイジェストを取る方式（RSA、ECDSA）では、使われるダイジェストは証明書のアルゴリズム識別子が名指すものではなくスコープにある `Signature.Digest` なので、両者は一致しなければならない。
++       ML-DSA と Ed25519 には一致させるべきダイジェストがない。
++       署名された証明書の形である三要素の構造でない証明書、改竄された証明書、別の鍵で署名された証明書は `false` である。
+
+@ 0 1 0 010be6c0e36e2cb018a2c144d947628f
++ entry .Distinguished   X.501 の識別名：証明書の主体または発行者
+
+% 1 1 0 053176b3b1a491f605a62962184eeeb1
+
+@ 0 5 0 1a089a6d07ee1fb11228656ea6dde667
++       `Distinguished` は証明書が鍵を結び付ける名前であり、実際に現れる属性として表される。
++       それぞれは `Unset` をデフォルトとする `Optional[Text]` であり、存在しないときは単にエンコードされない。
++       `#commonName`（`CN`）、`#organization`（`O`）、`#organizationalUnit`（`OU`）、`#locality`（`L`）、`#state`（`ST`）、`#country`（`C`）、`#email`（`emailAddress`、PKCS#9 の属性）である。
+
+% 2 1 0 13d2c2573616c0381e4e972de649e915
+
+% 3 1 0 0fb001e1e9910536192bfb3f63fbb10a
+
+% 2 1 0 1bb4ed18cc441b3c08cec6c7c54de9c7
+
+% 1 1 0 18ca874c3f991470081b513bd40c6c82
+
+@ 0 8 0 11ea917fd6fa900200d577035b82dbed
++       これは（`.encodable`、`name.in[Der]`）`SEQUENCE OF RelativeDistinguishedName` としてエンコードされ、各属性はそれぞれ単一メンバーの `SET` に入り、慣例の順序、すなわち最も一般的なものから順に、国、州、地域、組織、組織単位、共通名、メールの順に並ぶ。
++       これは `openssl x509` が表示する順序でもあるので、JDK は上の例を `CN=example.com,O=Example,C=GB` と読む。
++       国は `PrintableString`、メールは `IA5String` であり、それぞれの定義が要求するとおりである。
++       それ以外はすべて `UTF8String` である。
++       デコーダーはない。
++       証明書から読んだ名前は、その `Asn1` の形で照合する。
+
+% 1 1 0 035fb1cc4e7e04991e01067f5148bab3
+
+@ 0 8 0 1fb2b14f8121f74117e314b795952c96
++   entry .encodable   `name.in[Der]` としての DER による名前：単一属性の `SET` からなる `SEQUENCE`
++   entry #commonName   `CN` 属性（`2.5.4.3`）。`UTF8String`。与えられていれば
++   entry #organization   `O` 属性（`2.5.4.10`）。与えられていれば
++   entry #organizationalUnit   `OU` 属性（`2.5.4.11`）。与えられていれば
++   entry #locality   `L` 属性（`2.5.4.7`）。与えられていれば
++   entry #state   `ST` 属性（`2.5.4.8`）。与えられていれば
++   entry #country   `C` 属性（`2.5.4.6`）。`PrintableString`。与えられていれば
++   entry #email   `emailAddress` 属性（`1.2.840.113549.1.9.1`）。`IA5String`。与えられていれば
+
+@ 0 1 0 0c935f1632de3b1a1fe930de7486f9a7
++ entry .SignatureAlgorithm   暗号方式とダイジェストの組が証明書の中で持つ `AlgorithmIdentifier`
+
+% 1 1 0 1338349280b8fe4d0cd40d1f0a2f6da4
+
+@ 0 9 0 1c2eca857333de6e037d6d86d8c08650
++       `cipher is SignatureAlgorithm` は、`Signature.Digest` に対して、証明書の署名に使われた署名方式を名指す ASN.1 の `AlgorithmIdentifier` を与えるか、組に識別子がなければ `Unset` を与える。
++       これは暗号方式だけの性質ではなく*組*の性質である。
++       `sha256WithRSAEncryption` と `sha384WithRSAEncryption` は同じ鍵の型に対する異なるオブジェクト識別子である。
++       ただし、Ed25519 や ML-DSA のようにダイジェストを取らない方式は例外で、その識別子は暗号方式だけを名指す。
++       `Certificate` は署名する鍵の暗号方式に対してこれを召喚し、どの検証者も認識しない識別子を書く代わりに、`Unset` を `Certificate.Error(UnknownAlgorithm)` に変える。
+
+@ 0 4 0 05327479a8420b920abef5ed6cf92fcc
++       コンパニオンは `Rsa`（1024 から 4096 ビット）、`Ecdsa`（256、384、521）、`Ed25519`、`MlDsa`（44、65、87）に対するインスタンスを与え、それらはすべて暗黙のスコープにある。
++       インスタンスを持たない暗号方式は証明書に署名できない。
++       別の暗号方式に対するインスタンスは、正しい `Asn1.Sequence` を返す一行の given である。
+
+% 1 1 0 02a94fc81e03c9250583ee118d54092f
+
+@ 0 15 0 0210a00b86e7273a1b21c5d1041cd64e
++   entry .rsa   RSASSA-PKCS1-v1_5：PKCS#1 のアークのもとでの `sha256WithRSAEncryption`、`sha384…`、`sha512…`
++       ダイジェストに応じて `1.2.840.113549.1.1.11`、`.12`、`.13` であり、RFC 3279 が要求するとおり、パラメーターのフィールドは存在して `NULL` である。
++       それ以外のダイジェストは `Unset` である。
++   entry .ecdsa   ECDSA：ANSI X9.62 のアークのもとでの `ecdsa-with-SHA256`、`-SHA384`、`-SHA512`
++       ダイジェストに応じて `1.2.840.10045.4.3.2`、`.3`、`.4` であり、曲線はすでに公開鍵が名指しているので、RFC 5758 が要求するとおり、パラメーターのフィールドは存在しない。
++       それ以外のダイジェストは `Unset` である。
++   entry .ed25519   Ed25519：パラメーターのない `1.3.101.112`。ダイジェストは無視される
++       方式が自身のハッシュを固定しているので、RFC 8410 の識別子は曲線だけを名指す。
++   entry .mlDsa   ML-DSA：NIST のアークのもとでの `id-ml-dsa-44`、`-65`、`-87`。ダイジェストは無視される
++       パラメーターセットに応じて `2.16.840.1.101.3.4.3.17`、`.18`、`.19` であり（RFC 9881）、パラメーターのフィールドは存在しない。
++       ML-DSA はメッセージのダイジェストではなくメッセージそのものに署名するので、`Signature.Digest` は何の役割も果たさない。
++   entry #Self   暗号方式の型
++   entry #identifier   ダイジェストに対する `AlgorithmIdentifier`。`Asn1.Sequence` として、または `Unset`

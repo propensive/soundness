@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 2 0 00543af9c2a3807e111626140b6fb5eb
++ Правило, которому это служит, см. в разделе о [невозможных состояниях](impossible-states.md), а
++ о том, как строится такой литерал, — в разделе об [интерполяции](/doc/soundness/modules/interpolation.md).

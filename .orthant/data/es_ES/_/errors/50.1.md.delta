@@ -1,0 +1,72 @@
+orthant 2 language
+
+% 0 1 0 131a497328dbef2f01ecabb365a5687f
+
+@ 0 2 0 1aff889ff96d2ec704529b2481b3e9c6
++ Se lanza cuando un valor no se puede analizar como un ISIN (International Securities
++ Identification Number) válido.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 124cf9b6f046be790e5d562d8df72a27
++ Plutocrat comprueba que un ISIN tiene doce caracteres, empieza por un código de país de dos letras
++ reconocido, contiene solo dígitos y letras mayúsculas, y supera la suma de verificación de Luhn. El
++ mensaje es `the ISIN
+
+% 0 1 0 1b16a3a466c2709b122ead5815df06cd
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 048ba65fd3a9786c1c27cb4c302d19fa
+
+@ 0 1 0 0f0b95dffa1c87921009ca8f5f7fe4e3
++ Un carácter no es un dígito ni una letra mayúscula.
+
+@ 0 1 0 19211d6080aee3820f8cb33fd0eb7cd6
++ **Ejemplo.** `[↯/s.50.1.1] the ISIN number is not valid because the character - at position 4 is not a digit or uppercase letter`
+
+@ 0 1 0 08fe827cec4245fe1910e67daa05460f
++ **Solución.** Usa solo `0`–`9` y `A`–`Z`.
+
+% 0 1 0 164b0416c4b6bb4b071150cf269efe9e
+
+@ 0 2 0 0a4a90403b504c2111f2a603af55a921
++ Los dos primeros caracteres no son un código de país ISO 3166-1 alfa-2 reconocido.
+
+@ 0 1 0 0928f229aefd9a190c3551eb7ee21360
++ **Ejemplo.** `[↯/s.50.1.2] the ISIN number is not valid because its country code XX was not valid`
+
+@ 0 1 0 1eae73207f1ee4370d3c61171daa529e
++ **Solución.** Usa como prefijo un código de país ISO vigente.
+
+% 0 1 0 16a8b418112d13b11844437d88d9da20
+
+@ 0 1 0 0431b4ad5c7799ec13b762f4c3b24593
++ La longitud total no es de 12 caracteres.
+
+@ 0 1 0 153dfec354f07e300afd133c40160cad
++ **Ejemplo.** `[↯/s.50.1.3] the ISIN number is not valid because it had length 11, but it should be 12 characters long`
+
+@ 0 2 0 10792e53475fee300968c30d8c8d321a
++ **Solución.** Rellena o recorta la entrada hasta exactamente 12 caracteres de la forma requerida.
+
+% 0 1 0 1a2a9fb5016e6c2e06a966962de28d52
+
+@ 0 2 0 1b215df8d4e1e9540857a736eacf0495
++ El dígito de control final no coincide con la suma de verificación de Luhn de los 11 caracteres
++ anteriores.
+
+@ 0 1 0 011a270379a1e0d30f3c388cb0da0aa2
++ **Ejemplo.** `[↯/s.50.1.4] the ISIN number is not valid because its last digit failed the Luhn check`
+
+@ 0 2 0 1a04f42b829724040553eb49b7953405
++ **Solución.** Vuelve a calcular el dígito de control, o corrige la errata del cuerpo del ISIN que
++ causó la discrepancia.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 188dc3235fa075d20589c3bc2ed66021
++ - Fuente: `lib/plutocrat/src/core/plutocrat.internal.scala`

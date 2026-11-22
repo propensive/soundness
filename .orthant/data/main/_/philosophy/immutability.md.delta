@@ -1,0 +1,7 @@
+orthant 2 release
+
+@ 0 1 0 0c5df1e4d05064540f0576d9ba2a59dd
++ [lens](/doc/soundness/modules/optics.md) takes the update written as an ordinary path assignment and
+
+@ 0 1 0 054fa487efc614030296e0edc2ea01da
++ A **`Canvas`**, obtained by opening a [raster](/doc/soundness/modules/images.md) for writing, mutates

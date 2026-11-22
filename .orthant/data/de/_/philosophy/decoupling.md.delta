@@ -1,0 +1,119 @@
+orthant 2 language
+
+@ 0 1 0 14d4c2c921e3da6e1f0c7d7e7bd995a2
++ # Entkopplung
+
+@ 0 6 0 143ea76d1855e0ac17cbd8c8cfffb4bb
++ Die Module von Soundness sind entkoppelt: Voneinander unabhängige Bibliotheken hängen nicht direkt
++ voneinander ab, selbst wenn sie zusammenarbeiten müssen. Kleine gemeinsame Abstraktionen –
++ Typklassen, die nur beschreiben, was nötig ist – lassen zwei Module kooperieren, ohne dass eines
++ vom anderen weiß, sodass jedes nach Bedarf übernommen werden und sich eigenständig weiterentwickeln
++ kann. Die nahtlose Integration, die Benutzer erleben, entsteht aus diesen gemeinsamen
++ Schnittstellen, nicht aus einem Geflecht harter Abhängigkeiten zwischen Komponenten, die getrennt
++ bleiben sollten.
+
+@ 0 1 0 0f5eb0012c34d0d61204d22c48b542b3
++ ## Das Problem, konkret formuliert
+
+@ 0 3 0 18f5e3c1cc9d9aa20898568ddfa25257
++ Eine Zeitbibliothek und eine HTTP-Bibliothek müssen beide über Zeitpunkte sprechen: Die eine
++ erzeugt sie, die andere schreibt sie in `Date`-Header. Es gibt drei übliche Wege, das einzurichten,
++ und alle drei sind schlecht.
+
+@ 0 4 0 03b4f92376456fee0cff7269ea457b6b
++ Die HTTP-Bibliothek kann von der Zeitbibliothek abhängen – und sie damit jedem Benutzer aufzwingen,
++ der nur HTTP wollte. Die Zeitbibliothek kann von der HTTP-Bibliothek abhängen – absurd, aber es
++ kommt vor. Oder jede definiert ihren eigenen Zeitpunkttyp, sodass Benutzer an jeder Grenze
++ umwandeln müssen und die beiden Definitionen voneinander abweichen dürfen.
+
+@ 0 1 0 127bb35d79a426760cd0c587e83ba2e6
++ ## Die Anordnung, die Soundness verwendet
+
+@ 0 2 0 096fce701c29626e090f37610e134976
++ Ein drittes Modul definiert einen *Marker* und ein Paar von Typklassen, die angeben, wie ein
++ beliebiger Typ in eine gemeinsame Darstellung und aus ihr zurück umgewandelt wird:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 0a8fd027f633887d0882c7e438546cf9
+
+% 0 1 0 0cad7b252d2a92491473765dc6a0d8a8
+
+% 0 1 0 15840b139a4f05950f0b5301c0ad4ced
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 039f1a94257dacaa048323a5a50c58ab
++ Die Zeitbibliothek erklärt, dass *ihr* Zeitpunkttyp über `Instants` abstrahierbar ist. Die
++ HTTP-Bibliothek erklärt, dass sie alles annimmt, was über `Instants` abstrahierbar ist. Keine
++ erwähnt die andere, und keine wird geladen, wenn das Programm sie nicht verwendet.
+
+@ 0 3 0 12175ba52cc8a1020395bf142976511d
++ Diese Marker sind klein, und es gibt nicht viele: `Instants`, `Durations`, `Dates`, `Paths`,
++ `Urls`, `HttpStreams`, `Text` und eine Handvoll weitere. Jeder benennt ein Konzept, über das sich
++ mehrere Bibliotheken einig sein müssen, und definiert nichts als diese Übereinkunft.
+
+@ 0 1 0 1856c817f4f0ebd80fe9aa1c325d6756
++ ## Was es einbringt
+
+@ 0 3 0 1e28ab4da8ef97b01d4a51c6d69431c8
++ **Übernahme nach Bedarf.** Ein Programm, das nur JSON parsen will, erhält einen Abhängigkeitsgraphen,
++ der JSON-Parsing enthält. Die Integrationen, die es nicht verwendet, sind nicht im Build, weil von
++ den Modulen, die sie bereitstellen, nicht abgehangen wird.
+
+@ 0 4 0 0e6a7a39e5b5e9c1091f27ad954539f0
++ **Fremde Typen machen mit.** Die Typklasse hat keine privilegierten Implementierungen, sodass ein
++ `java.time.Instant` oder ein Typ aus einer unabhängigen Bibliothek überall dort verwendbar wird, wo
++ ein Zeitpunkt erwartet wird, sobald eine Instanz bereitgestellt wird. Nichts muss umhüllt werden,
++ und die Integration lebt im Programm, statt dass eine der beiden Bibliotheken geändert werden
++ müsste.
+
+@ 0 3 0 160d9ee4f5b57aa81caabdb1ca3cde66
++ **Unabhängige Weiterentwicklung.** Die Zeitbibliothek kann ihre interne Darstellung ändern, ohne
++ dass die HTTP-Bibliothek neu kompiliert wird, denn was sie teilen, ist der Marker und die Gestalt
++ der Umwandlung, kein Typ.
+
+@ 0 1 0 00fc4aca294fc5280d9897a1b684b37c
++ ## Dasselbe Prinzip innerhalb eines Moduls
+
+@ 0 3 0 051a4655d945bcf109cafdac2e03a677
++ Entkopplung wirkt auch unterhalb der Modulgrenze, als *Backend-Nahtstelle*: Die Operationen, die
++ eine Capability braucht, werden in einem Trait gesammelt, und die plattformspezifischen
++ Implementierungen werden getrennt bereitgestellt.
+
+@ 0 7 0 1757a738b628648e0f1fc3d8d54f01ab
++ `FilesystemBackend` fasst Stat, Öffnen, Lesen, Schreiben, Auflisten, Verlinken und Löschen
++ zusammen; alles in der API von [Dateisystem](../en/modules/filesystem.md) ist durch sie definiert.
++ Die Implementierung mit `java.nio`, die WASI-Implementierung über `wasi:filesystem` und jede
++ künftige sind austauschbar, und die API für Benutzer erwähnt überhaupt keine Plattform. Dieselbe
++ Gestalt gibt [Sockets](../en/modules/sockets.md) ein `SocketBackend`,
++ [Kompression](../en/modules/compression.md) ihre plattformspezifischen DEFLATE-Engines und
++ [Bildern](../en/modules/images.md) ihre Codecs.
+
+@ 0 3 0 133995449cc82c4f130a298c2204f2ad
++ Das ist es, was denselben Code auf der JVM, in einem Browser, in einem nativen Binary und in einer
++ WebAssembly-Komponente laufen lässt: keine bedingte Kompilierung, sondern eine Nahtstelle, die so
++ schmal ist, dass mehrere Implementierungen ehrlich dahinter Platz finden.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Was es kostet
+
+@ 0 4 0 0701500932dba1781c55e7085e68475f
++ Indirektion ist nicht kostenlos zu lesen. Wer verfolgen will, wie ein `Yaml`-Wert zu einem
++ HTTP-Body wird, muss die Instanz `Abstractable across HttpStreams` finden, die weder beim YAML-Code
++ noch beim HTTP-Code steht – und ein Leser, der die Konvention nicht kennt, wird nicht erraten, wo
++ er suchen muss.
+
+@ 0 4 0 07177ace6f66ec990c9bdbbc11326067
++ Die Abmilderung besteht darin, dass es *eine* Konvention gibt statt eines eigenen Mechanismus pro
++ Integration, sodass die Kosten einmal beim Lernen anfallen und nicht einmal pro Grenze. Doch es sind
++ echte Kosten, und sie sind der Grund, warum die Menge der Marker klein gehalten wird: Jeder ist ein
++ Stück Vokabular, das sich jeder Leser irgendwann aneignen muss.
+
+@ 0 2 0 0f653ca96e30b4fa1b305615b38b529f
++ Siehe [ehrliche Signaturen](honest-signatures.md) dafür, warum die Typklassen minimal bleiben, und
++ [Komponierbarkeit](composability.md) dafür, was die gemeinsamen Schnittstellen möglich machen.

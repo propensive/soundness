@@ -1,0 +1,23 @@
+orthant 2 language
+
+% 0 4 0 00c2b0b4755587fb158510c7379f9947
+
+@ 0 4 0 00e8b1f2d88a57b91a87591af6b117e0
++       Las capas y los enlaces son `Sequence`s, que se leen por `Ordinal`, y `rank` y `position`
++       son `Map`s, así que cada lectura responde con un `Optional`: `Unset` para una capa que no
++       existe, o un nodo que no está en el grafo. `LayeredDagDiagram` de `dendrology` asigna
++       columnas a una disposición en capas y la representa; otro dibujo distinto toma `layers` y
++       `links` directamente.
+
+@ 0 11 0 13b2ff4a59f011121d17e855e3ec1fcf
++   entry .Vertex   una posición en una capa: un nodo del grafo, o el punto por el que pasa una arista más larga
++       Un enum: `Real(value)` es un nodo del grafo, y `Virtual(source, target)` es el punto
++       donde la arista de `source` a `target`, que abarca varias capas, atraviesa esta. Un
++       dibujo asigna una columna a un vértice virtual y traza la arista a través de ella.
++   entry #layers   las capas, de arriba abajo, cada una como una `Sequence` de `Layering.Vertex` en el orden de dibujo
++   entry #links   `links(i)` une la capa `i` con la capa `i + 1`, como pares de posiciones dentro de cada una
++       Una `Sequence` con una `List` de enlaces por cada capa salvo la última. Todo enlace une
++       capas adyacentes: una arista que abarca más se parte en sus vértices virtuales.
++   entry #rank   la capa de cada nodo, como un `Map`
++   entry #position   la posición de cada nodo dentro de su capa, como un `Map`
++   entry #crossings   cuántos pares de enlaces se cruzan, en toda la disposición en capas

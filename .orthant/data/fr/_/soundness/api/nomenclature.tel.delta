@@ -1,0 +1,1359 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0a81193df7d39ba70195f212044dabe8
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1aa35c85d608716d1e9e41e76f8b6361
++ info
++     des noms dont les règles de validité font partie de leur type, vérifiées à la compilation du
++     code et à l'arrivée du texte
+
+@ 0 10 0 037f27de38040d79054845eb9891ecdf
++ detail
++     _Nomenclature_ représente un nom — un nom de fichier, un id DOM, une classe CSS, une branche
++     Git, un id de test — sous la forme d'un `Name[plane]` : un texte dont on sait qu'il satisfait
++     les règles de l'espace de noms, ou **plan**, auquel il appartient. Un plan est un type
++     marqueur doté d'un given `Nominative` qui énonce ses règles sous la forme d'un type
++     intersection de types de contraintes, `MustNotContain["/"] & MustNotEqual[".."]`, et un `Name`
++     pour ce plan n'existe que si son texte satisfait chacune d'elles : un littéral écrit avec
++     l'interpolateur `n"…"` est vérifié pendant la compilation du code, et un texte qui arrive à
++     l'exécution devient un `Name` par `Name[plane](text)` ou `text.as[Name[plane]]`, qui lèvent
++     une `Name.Error` nommant l'unique règle enfreinte. Détenir un `Name[plane]` est donc la preuve
++     qu'il est valide dans ce plan.
+
+% 2 1 0 0a126953ff56d1a2186c0cd02ffb8ced
+
+% 3 1 0 0072a091f3033bce0c88bfb38497e8f2
+
+% 4 1 0 196342a37369401d14003bdc18411299
+
+% 5 1 0 197b757df8de8ec410eec4e04b4f02a6
+
+% 2 1 0 142f07214e09e92d0b8142c18e527621
+
+% 0 1 0 0ba4425c353af124141a12adddaebe4a
+
+% 2 1 0 0e94c575118146b61588b4e9b14dfeee
+
+% 0 1 0 0ee9344f94f99bef00ecb0da117630d3
+
+% 0 1 0 0aaa2c4ab9511f620904ea17afaec2f1
+
+% 0 1 0 16870bca5cae5c1e1635d0c096a4e078
+
+% 1 1 0 07eae694fa15ef760d6e851b424bca6f
+
+@ 0 12 0 14fd707f5dce1be61c2c88ab1591c1f4
++     Un `Name` est un sous-type de `Text` : il se passe donc partout où l'on passe du texte et est
++     égal au texte qu'il enveloppe ; il est covariant en son plan, de sorte qu'un `Name[A & B]`
++     sert là où un `Name[A]` ou un `Name[B]` est exigé, et c'est ainsi qu'un seul littéral `n"…"`
++     prend le type de chaque plan dans la portée dont il satisfait les règles. Les règles sont des
++     objets `Rule` associés à des types `Check` — `MustStart`, `MustNotStart`, `MustEnd`,
++     `MustNotEnd`, `MustContain`, `MustNotContain`, `MustNotEqual`, `MustMatch` et `MustNotMatch`,
++     chacun paramétré par un littéral — et trois règles prédicats paramétrées plutôt par leur
++     propre description : `JavaIdentifier`, `CssIdentifier` et `DomIdentifier`. Une règle sait se
++     décrire elle-même, de sorte que l'erreur de compilation pour un littéral invalide et l'erreur
++     à l'exécution pour une entrée invalide disent la même chose, dans les mêmes termes. Les plans
++     `DomId`, `CssClass` et `Required` sont intégrés ; les plans de système de fichiers de galilei
++     (`Linux`, `Windows`, `MacOs`, …), le plan `Classpath` de hellenism et le plan `Probing` des
++     ids de test de probably sont définis de la même manière.
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     La bibliothèque a deux ensembles de sources :
+
+@ 0 6 0 108cfc521037d7230819691a6e0e6464
++     - `nomenclature.core` — `Name`, `n"…"`, `Nominative`, `Rule`, `Check`, les règles `Must…`, les
++       règles d'identifiant et les trois plans intégrés. Il compile pour la JVM, Scala.js et Scala
++       Native.
++     - `nomenclature.lexicon` — `Moniker` et `Vocabulary` : des noms faciles à retenir de la forme
++       `brilliant-leopard` pour de petits entiers, construits à partir de listes de mots lues
++       depuis n'importe quelle source streamable.
+
+@ 0 6 0 16838e191ab5030218a0038979e52ee8
++     Un given `Nominative` est déclaré `inline given … = !!` : les macros derrière `n"…"` et
++     `Name[plane](…)` ne lisent que son *type*, si bien qu'aucune instance n'est jamais construite,
++     et `!!` est l'emplacement réservé effacé. Puisque `import pkg.*` n'importe pas les givens, un
++     plan déclaré dans l'objet compagnon d'une bibliothèque est trouvé par la portée implicite,
++     tandis qu'un plan déclaré au niveau supérieur d'un package doit être importé par son nom. Tout
++     est exporté vers le package parapluie `soundness`.
+
+% 0 1 0 01344a9f049a555d0c49ac610582934a
+
+% 0 1 0 0643e424fdc197da0bda9b45a647ed2f
+
+% 0 1 0 1ad89318248b78430a4e47d6df514888
+
+% 0 1 0 11eaff0bc7ac00be13ab93ec3c900aee
+
+@ 0 1 0 182f502880dd33a9078ebcee50e4b150
++ entry .Name
++   info
++       un texte dont la validité dans un plan de nommage est prouvée : `Name[plane]`, un sous-type
++       de `Text`
+
+@ 0 10 0 12586935870eaba01d6cfc0b69279f89
++   detail
++       `Name[plane]` est le type opaque `nomenclature.internal.Name[plane]`, exporté ici. C'est un
++       `Text` qui a passé chaque règle de `plane`, où `plane` est un type doté d'un given
++       `Nominative` dans la portée implicite. Un nom se crée de trois manières : `n"…"` écrit un
++       littéral et le vérifie par rapport à chaque plan dans la portée pendant la compilation du
++       code ; `Name[plane](text)` vérifie un texte connu à l'exécution par rapport aux règles d'un
++       plan et lève `Name.Error` si une règle échoue ; et `text.as[Name[plane]]` est la même
++       vérification par la classe de types `Decodable`. Un nom qui existe est valide, de sorte que
++       le code qui prend un `Name[Linux]` ne le revalide jamais. Les membres du compagnon —
++       `Name.apply`, `Name.verify`, ses givens, `Name.Error` et `Name.Extractor` — sont documentés
++       sous `nomenclature.internal.Name`.
+
+% 2 1 0 0649bf3083c5aa1a1b3b0b120c4b1a64
+
+% 3 1 0 02ccc6c005f31236056bf3e24cca8798
+
+% 4 1 0 0fce983bd1155ef106dcfa0f0f8c4203
+
+% 5 1 0 13cbc429b504a4b802940ed9bf793b62
+
+% 2 1 0 13d4d0e6cce0469c14ba325a5926d0f0
+
+% 0 1 0 0c7de9437090032f037adf6445ae39c2
+
+% 0 1 0 1768d62f1b49c9551637474d70038f83
+
+% 0 1 0 1ab6f8485d99ca471401b55f52cc49d4
+
+% 0 1 0 0b5c7266730a487e09df8ccdb6528de2
+
+% 0 1 0 1a419a2b5ee70d901fa6700a6b7faf1c
+
+% 0 1 0 1d2f7064bf5ee66b18c92ec1ac87da42
+
+% 1 1 0 0ade400695c06c37104610b1f4d1b2d4
+
+@ 0 4 0 0d787a3835d3ce3b1bc0cf8b8810aadd
++       `Name` est covariant en son plan, donc `Name[A & B]` est un `Name[A]` et un `Name[B]` : un
++       nom valide dans plusieurs plans à la fois a pour plan leur intersection. Deux plans aux
++       règles identiques restent des types différents, de sorte qu'un `Name[Branch]` n'est pas
++       accepté là où un `Name[Tag]` est exigé.
+
+@ 0 4 0 098ac5480406e44912137dbd39553947
++       Les règles sont vérifiées dans l'ordre où les écrit l'intersection du plan, et la première
++       enfreinte est celle qui est signalée, de sorte qu'une erreur nomme un unique défaut concret.
++       La vérification s'exécute à la compilation pour un littéral et à l'exécution pour un texte,
++       avec les mêmes prédicats `Rule.check`, si bien que les deux ne divergent jamais.
+
+% 0 1 0 09e6b35af477e3391b3c66352b9c7211
+
+% 1 1 0 077394122ca21de8081afd2a7a21f653
+
+% 0 1 0 1bda394a07b49d8c072025e177e73cd5
+
+@ 0 1 0 117db0793a70a2f2073d34835a216058
++ entry .n
++   info
++       l'interpolateur `n"…"` : un littéral de nom, vérifié par rapport aux plans dans la portée à
++       la compilation du code
+
+@ 0 6 0 05ea5d477596a13e0ab9e3dd14f6ea40
++   detail
++       `n"main"` est un `Name` dont le plan est l'intersection de tous les plans dotés d'un given
++       `Nominative` dans la portée dont le littéral satisfait les règles, de sorte qu'un seul
++       littéral sert partout où l'un de ces plans est exigé, et c'est une erreur de compilation si
++       aucun plan dans la portée ne l'accepte : _the name `.` is not a valid identifier in any
++       namespace in scope_. Avec un type attendu `Name[Tag]`, un littéral qui enfreint l'une des
++       règles de `Tag` n'est pas conforme, puisque `Tag` ne figure pas parmi les plans dans
++       lesquels il a été jugé valide.
+
+@ 2 1 0 064bb4e989d4a34008554a0cb0f7b722
++       ```scala
+
+@ 3 1 0 0c2b4e383d1a18aa15e1514d18339501
++       import soundness.*
+
+@ 2 1 0 0374a95aed8876a3159cb7c8f2501535
++       sealed trait Tag
+
+@ 0 1 0 1b3ef768c8027e6100caf3a40bfe9d0c
++       inline given Tag is Nominative under MustNotStart["0"] & MustNotContain["."] = !!
+
+@ 2 1 0 1944309d44ac0fa81feb08c31581b4c9
++       val tag: Name[Tag] = n"release"
+
+@ 0 1 0 0b22b168871babdd005557f30be306b7
++       val bad: Name[Tag] = n"0hello"   // does not compile
+
+@ 1 1 0 175a24bd0ff8647e1ac62bf8ae2a3469
++       ```
+
+@ 0 5 0 1ede924ed7b5b7531c473bcec7693ad8
++       L'interpolateur n'accepte aucune substitution `$`, puisque le texte doit être connu à la
++       compilation du code ; un texte connu seulement à l'exécution se vérifie avec
++       `Name[plane](text)`. Les caractères du littéral sont pris tels quels, sans traitement des
++       échappements. En tant que motif, `case n"main" =>` correspond à un `Name` égal au littéral,
++       et le littéral est d'abord vérifié par rapport au plan de la valeur filtrée.
+
+@ 0 4 0 00ad224a54d3e1d50b93f1e428c77575
++       Les plans présents dans la portée décident de ce qu'infère `n"…"` : un plan déclaré dans un
++       objet compagnon est toujours visible par la portée implicite, et les plans propres au
++       package parapluie — les plans de système de fichiers, `Classpath`, `Probing` — font partie
++       des candidats, de sorte qu'un `n"…"` non annoté a un type intersection large. Durcir les
++       règles d'un plan restreint ce qu'il accepte :
+
+@ 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
++       ```scala fuel
+
+@ 1 1 0 0a47f914ed53260906bd03717b3d64ff
++       frame
+
+@ 0 1 0 03a59cc2657c83550a806c22dfd6c78b
++         label One rule: a tag may not be empty
+
+@ 1 1 0 0443393cb54732a807e5ab87f8f7f313
++         code
+
+@ 2 1 0 04d52c503b2b09661ff207e587107fa7
++             locally:
+
+@ 3 1 0 0274bf13f4b8d18603e381e4c812bf63
++               sealed trait Tag
+
+@ 0 1 0 13050599ca4490a60045e199c58a65a6
++               inline given Tag is Nominative under MustNotEqual[""] = !!
+
+@ 0 1 0 1f2d618d49526bf20d2405d03db34126
++               val tag: Name[Tag] = n"v1.0-beta"
+
+@ 1 1 0 1bc3fda2041738f7179a8a46b4a1e2c2
++       frame
+
+@ 0 1 0 0c34c3e1b27a18c0064085a33defd064
++         label Two rules: nor may it contain a dot
+
+@ 1 1 0 0f0a0b364f7ec55217ba2ccada971430
++         code
+
+@ 2 1 0 0d16dc492f2d504305a735dc9aba1688
++             locally:
+
+@ 3 1 0 0fd3a3206f667bd01063adcee7ac75f8
++               sealed trait Tag
+
+@ 0 1 0 016b6322202214a11fcea33534565c86
++               inline given Tag is Nominative under MustNotEqual[""] & MustNotContain["."] = !!
+
+@ 1 1 0 0c0dac91dff89b611bddf5890def1235
++               val tag: Name[Tag] = n"v1-beta"
+
+@ 0 1 0 043e50fb48cb5a160375b25e441d19f6
++               val dotted: Name[Tag] = n"v1.0-beta"   // does not compile
+
+@ 1 1 0 189c7b61611f2aef1ec56557f86e2bfd
++       frame
+
+@ 0 1 0 11486c5272de72ee07b4bd819c7ce968
++         label Three rules: and it must match a pattern
+
+@ 1 1 0 0468020480e23a1218b4b7871869a797
++         code
+
+@ 2 1 0 1fcea5dde2a9cee31a580262eb35b687
++             locally:
+
+@ 3 1 0 1f0f7be042cf095b1d2ae185a8a8af67
++               sealed trait Tag
+
+@ 0 1 0 1f86c349a92a6c790cc917f9280d3f3d
++               inline given Tag is Nominative under
+
+@ 0 1 0 0a5db3e22d7e53bc1d6b1b5d0414e3d4
++                   MustNotEqual[""] & MustNotContain["."] & MustMatch["v[0-9]+(-[a-z]+)?"] = !!
+
+@ 1 1 0 14f2451839dd32fa0f9a1dd66b368635
++               val tag: Name[Tag] = n"v1-beta"
+
+@ 0 1 0 0fbeaf30998b66e70bb279820d04b049
++               val capital: Name[Tag] = n"v1-Beta"   // does not compile
+
+@ 0 1 0 0472326144a49ce71767be845f62f575
++       ##
+
+@ 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
++       ```
+
+@ 0 1 0 04b75a197104e31b05d2dc8d2d55cae5
++ entry .Nominative
++   info
++       la classe de types qui donne ses règles à un plan : `plane is Nominative under rules`
+
+@ 0 8 0 1611bcdf606e9bc81e93af41665c3275
++   detail
++       Un `Nominative` est une `Typeclass` dont le `Self` est le plan et dont la `Limit` (issue de
++       `Limited`, écrite avec l'alias `under`) est l'ensemble des règles du plan : une intersection
++       de types `Check`, chacun étant une règle appliquée à un littéral, comme
++       `MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]`. Les
++       macros derrière `n"…"`, `Name[plane](text)` et `text.as[Name[plane]]` invoquent le given
++       d'un plan et lisent son type `Limit` pour savoir quelles règles exécuter, dans l'ordre où
++       elles sont écrites.
+
+% 2 1 0 123f7c0a6e6d7c2a042747a370a575f6
+
+% 3 1 0 19d91c6bff362471039db4ac593f3c5f
+
+% 2 1 0 067f04405252bb4d1089cbfb87ae9afe
+
+% 0 1 0 0247abd22b057aec1166dc6929d21a15
+
+% 0 1 0 1806acb40e4d42d3072d7a6203d2e79b
+
+% 0 1 0 0b172320816daf081147f247b69aee55
+
+% 1 1 0 061d0aa6b92a393119270d9c14b91e5a
+
+@ 0 7 0 0db1e88bb3d33cde0da130f56f901566
++       Le given est déclaré `inline given … = !!` : seul son type est jamais lu, si bien qu'aucune
++       instance n'est construite et que `!!` tient lieu de valeur. Il a sa place dans le compagnon
++       du plan, où la portée implicite le trouve sans import ; un plan doté d'un alias `Rules`,
++       comme les plans de système de fichiers, permet de réutiliser les mêmes règles pour le type
++       d'élément d'un `Path`. Une règle dont le paramètre n'est pas un type littéral de chaîne ne
++       peut pas être évaluée à la compilation : `n"…"` ignore un tel plan, et `Name[plane](text)`
++       et `Name.verify` le signalent comme un type invalide.
+
+% 0 1 0 0235f0d0e7c37aa6091b8a6b9e188797
+
+% 1 1 0 1775991a0074c67f03089b757197e37b
+
+@ 0 1 0 091eb38a7d1700e71a3aca2498722472
++   entry .apply
++     info
++         `Nominative[plane, rules]()` : une instance à l'exécution, pour le code qui a besoin d'une
++         valeur
+
+@ 0 3 0 1f9a45ae03a17b7b19c7cb59b3b13b4a
++     detail
++         Crée une instance `plane is Nominative under rules`. Les macros lisent le type d'un given
++         et jamais sa valeur, si bien que le given d'un plan est généralement `!!` ; ce
++         constructeur sert pour un given qui doit être une véritable valeur, comme lorsqu'il est
++         passé explicitement.
+
+@ 0 1 0 05678f5acee592091d1f0f37e10d26a4
++ entry .Rule
++   info
++       ce qu'est un objet de contrainte : un prédicat sur un nom, et une phrase qui le décrit
+
+@ 0 8 0 1ea5549395c852361f06654be696190e
++   detail
++       Chaque contrainte, `MustStart`, `MustNotContain`, `CssIdentifier` et les autres, est un
++       objet qui étend `Rule` avec deux éléments : `#check`, un prédicat portant sur le nom et le
++       paramètre de la règle, et `#describe`, qui transforme le paramètre en la phrase qu'utilise
++       l'erreur, _must start with x-_. À côté de l'objet se trouve un trait scellé du même nom qui
++       étend `Check[parameter]`, et qui est le type écrit dans les règles d'un plan ; les macros
++       trouvent l'objet en tant que compagnon du trait et appellent `check` sur lui, à la
++       compilation pour un littéral et à l'exécution pour un texte.
+
+@ 0 1 0 1e2b8ae8da83a65a0eb6a60bad32e7cd
++       Une nouvelle règle est la paire :
+
+% 2 1 0 1013915bfc3a6e8b0c43b8ecf9c88f82
+
+% 3 1 0 0efc3b5287da70b8167a66fa98832225
+
+% 0 1 0 0c5d5e7ea210cf94045cf08256727b8e
+
+% 0 1 0 0eb265db8283f3f718966ce3df0858fd
+
+% 0 1 0 1a9ab344a61b79000eefb9d0b2b362eb
+
+% 0 1 0 130e254d6ed06a8c08074e46274aacb5
+
+% 1 1 0 1aec9c31192efd5112ec03fba999ce6b
+
+@ 0 5 0 05e914f7e5db138f13ef270814359297
++       La description fait partie de la règle plutôt que d'être écrite à chaque utilisation, de
++       sorte que l'erreur de compilation pour un littéral invalide et la `Name.Error` à l'exécution
++       disent la même chose. Le paramètre d'une règle est toujours un type littéral de chaîne, lu
++       comme du texte ; une règle qui n'a pas de paramètre naturel, comme `JavaIdentifier`, prend à
++       la place comme paramètre la description à utiliser dans l'erreur.
+
+% 1 1 0 1e77b294ef1339b612498ec9fc818bcb
+
+% 1 1 0 010702b9e894530e0583925a28b3690b
+
+@ 0 1 0 17ce3365258789c21950bba02ae96cf0
++   entry #describe
++     info
++         la phrase avec laquelle une violation est signalée, à partir du paramètre de la règle
+
+@ 0 3 0 0efea3d5ed7a4bae0bdce47da64dc7ac
++     detail
++         Une fonction `Text => Message` : pour `MustNotStart` et le paramètre `0`, _must not start
++         with 0_. Le message de `Name.Error` est _the name … is not valid because it_ suivi de
++         cette phrase.
+
+@ 0 1 0 0ba1a53c4e126b3d010f2ba45a7a76e5
++   entry #check
++     info
++         si un nom satisfait la règle : `(name, parameter) => Boolean`
+
+@ 0 2 0 1f6074148c33e5f412660b8f66b8c703
++     detail
++         Le prédicat, qui prend le texte candidat et le paramètre de la règle. Il est appelé à
++         l'exécution par `Name[plane](text)` et à la compilation, par la macro, pour un littéral
++         `n"…"`.
+
+@ 0 1 0 07d5a640ecac23ff04f1d6c88801947b
++ entry .Check
++   info
++       le type d'une règle appliquée à son paramètre : `MustStart["x-"]` est un `Check["x-"]`
+
+@ 0 5 0 09334c32b0fe60610f1d4d9d459b14e2
++   detail
++       Le trait qu'étend le trait scellé d'une règle, paramétré par le paramètre littéral de la
++       règle. Les règles d'un plan sont une intersection de `Check`, et les macros décomposent
++       l'intersection en ses membres `Check`, lisent le paramètre de chacun comme une constante de
++       chaîne, et trouvent l'objet `Rule` qui porte le même nom. Un `Check` n'est jamais
++       instancié : c'est uniquement une description au niveau des types.
+
+@ 0 1 0 1d72065f6693aae50e58f5a76e63a0f4
++ entry .MustStart
++   info
++       la règle selon laquelle un nom commence par le texte donné : `MustStart["x-"]`
+
+@ 0 2 0 1613bd681ef85f610126420fb3b9cc11
++   detail
++       _must start with x-_. Le préfixe entier doit se trouver au début : `x-ray` et `x-` seul
++       passent `MustStart["x-"]`, et `ray-x-` non.
+
+@ 2 1 0 1e4043df10614e1f02b4a12018d1b92c
++       ```scala
+
+@ 3 1 0 14337f7cc6a81db61314457d75393d42
++       import soundness.*
+
+@ 4 1 0 0178bd1b18ef85cc12a4be1779455a84
++       import strategies.throwUnsafely
+
+@ 5 1 0 08688194ec5e0da0161859205cfb9862
++       import errorDiagnostics.stackTracesDiagnostics
+
+@ 0 1 0 1035460a96b3c1e711bf3b21be85a0eb
++       sealed trait Prefixed
+
+@ 0 1 0 05d3d8f607196879036df640cc06fc4d
++       inline given Prefixed is Nominative under MustStart["x-"] = !!
+
+@ 0 1 0 17eb14cd24546e7a0ae79932e77480c2
++       Name[Prefixed](t"x-ray")
+
+@ 0 1 0 04e57081824689851f3319965e90b055
++       capture[Name.Error](Name[Prefixed](t"ray")).message.show
+
+@ 0 1 0 1d1705e7257398c21f13232eadcceb29
++       // t"the name ray is not valid because it must start with x-"
+
+@ 1 1 0 01dbbaa9b134f3c115d3971e6def14b0
++       ```
+
+@ 0 1 0 12fd0338fe5b9def068ed1cf4a4b5d7d
++ entry .MustNotStart
++   info
++       la règle selon laquelle un nom ne commence pas par le texte donné : `MustNotStart["0"]`
+
+@ 0 3 0 1848d0dc3f81a0c81a69d1707980dcb7
++   detail
++       _must not start with 0_. Le complément de `MustStart` : un nom dont les premiers caractères
++       sont le paramètre échoue, et tout autre nom passe, y compris un nom qui contient le texte
++       ailleurs.
+
+@ 0 1 0 1431322f4d5d8f701f21dad9a3ad071f
++ entry .MustEnd
++   info
++       la règle selon laquelle un nom se termine par le texte donné : `MustEnd["!"]`
+
+@ 0 2 0 04c628076899f8f70e53da5960762c8d
++   detail
++       _must end with !_. Un nom dont les derniers caractères sont le paramètre passe ; `hello!9`
++       échoue à `MustEnd["!"]`.
+
+@ 0 1 0 1ad574628f73d9040d0a15566795eebd
++ entry .MustNotEnd
++   info
++       la règle selon laquelle un nom ne se termine pas par le texte donné : `MustNotEnd["z"]`
+
+@ 0 2 0 1b6dc5e8505d37390a6fefce84079268
++   detail
++       _must not end with z_. `quartz` échoue à `MustNotEnd["z"]` ; `zebra` et `quartz-a` passent,
++       puisque le texte n'est interdit qu'à la fin.
+
+@ 0 1 0 1de59a134db686210edd1465e44cc548
++ entry .MustContain
++   info
++       la règle selon laquelle un nom contient le texte donné quelque part : `MustContain["-"]`
+
+@ 0 2 0 155eb7596bdf5e690dff193534f4e2a6
++   detail
++       _must contain -_. Le texte peut se trouver au début, au milieu ou à la fin : `main-nav`,
++       `-nav` et `main-` passent tous `MustContain["-"]`, et `mainnav` non.
+
+@ 0 1 0 1e3d5968cebd8c7e01eea2f243bd71b5
++ entry .MustNotContain
++   info
++       la règle selon laquelle un nom ne contient nulle part le texte donné : `MustNotContain["/"]`
+
+@ 0 2 0 09e8e59052822682015da25e224ae417
++   detail
++       _must not contain /_. La règle qu'utilisent les plans de système de fichiers pour interdire
++       un séparateur dans un élément de chemin, et un id DOM pour interdire un espace.
+
+@ 0 1 0 09069d5e35ea9c0000c1a63ba46d0bb9
++ entry .MustNotEqual
++   info
++       la règle selon laquelle un nom n'est pas exactement le texte donné : `MustNotEqual[".."]`
+
+@ 0 5 0 17cf700c9cc230731e0f0e11229a537f
++   detail
++       _must not equal .._, ou, pour le paramètre vide `MustNotEqual[""]`, _must not be empty_. La
++       forme courante d'une règle de non-vacuité, et de l'exclusion des noms spéciaux que réserve
++       un espace de noms : les plans de système de fichiers écrivent
++       `MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]`. Il n'y a pas de `MustEqual`,
++       puisqu'un plan n'ayant qu'un seul nom valide n'est pas un espace de noms.
+
+@ 0 1 0 16834210cc5798ae1562b2aee70a747d
++ entry .MustMatch
++   info
++       la règle selon laquelle un nom correspond entièrement à une expression régulière :
++       `MustMatch["[a-z]+"]`
+
+@ 0 5 0 056dc78ccd16410a1dfc92c80912a062
++   detail
++       _must match [a-z]+_. Le paramètre est une expression régulière Java, et la correspondance
++       est ancrée aux deux extrémités, comme pour `String.matches` : `MustMatch["a+"]` accepte
++       `aaa` et rejette `baa` et `aab`, où le motif ne se trouve qu'à l'intérieur du nom. Le nom
++       vide échoue à un motif « un ou plusieurs ». C'est la règle à employer lorsque l'alphabet
++       d'un espace de noms est une classe de caractères : les tags de test de probably sont
++       `MustMatch["[A-Za-z_][A-Za-z0-9_-]*"]`.
+
+@ 0 1 0 13b2128085ec336b1041a5b7dab15b8c
++ entry .MustNotMatch
++   info
++       la règle selon laquelle un nom ne correspond pas entièrement à une expression régulière :
++       `MustNotMatch["[0-9]+"]`
+
+@ 0 4 0 0b168babffa94e5e0d2c8651c3d2ef79
++   detail
++       _must not match [0-9]+_. Le complément de `MustMatch`, avec le même ancrage : `123` échoue à
++       `MustNotMatch["[0-9]+"]`, et `1a3` passe, puisque le motif ne correspond pas au nom entier.
++       Le plan `Classpath` utilise `MustNotMatch["[0-9].*"]` pour interdire un chiffre initial.
+
+@ 0 1 0 1653a4e44d00506f0c5cf0285e705edb
++ entry .JavaIdentifier
++   info
++       la règle selon laquelle un nom est un identifiant Java, paramétrée par sa description
+
+@ 0 7 0 19f9adba4557d4ae01e82d17ff62baa6
++   detail
++       _must be a valid Java identifier_, pour `JavaIdentifier["a valid Java identifier"]`. La
++       vérification suit la définition de `java.lang.Character` : non vide, un caractère de début
++       d'identifiant suivi de caractères de partie d'identifiant ; les mots-clés ne sont pas
++       exclus. Contrairement aux règles `Must…`, le paramètre n'est pas une valeur à comparer mais
++       la phrase que doit utiliser l'erreur, ce qui est la forme que prend une règle lorsque sa
++       vérification est un prédicat propre plutôt qu'une comparaison avec un littéral. C'est la
++       règle du plan `Probing` de probably, le plan des ids de test.
+
+@ 0 1 0 0a9b9cf1cd8a7ee4019494850ce49528
++ entry .CssIdentifier
++   info
++       la règle selon laquelle un nom est un identifiant CSS, paramétrée par sa description
+
+@ 0 6 0 08be9b517e5d01291a387d6f4e2250c8
++   detail
++       _must be a valid CSS identifier_, pour `CssIdentifier["a valid CSS identifier"]`. La
++       vérification suit la grammaire `<ident-token>` du CSS Syntax Module Level 3 sans
++       échappements : un `-` ou `--` initial facultatif, un caractère de début d'identifiant (une
++       lettre, `_` ou tout caractère non ASCII), puis des caractères d'identifiant, qui admettent
++       aussi les chiffres et `-`. Un `-` isolé, un chiffre initial et une séquence d'échappement
++       sont tous rejetés. C'est la règle du plan `CssClass`.
+
+@ 0 1 0 0bb88980b9463d1a022b1c015c650825
++ entry .DomIdentifier
++   info
++       la règle selon laquelle un nom est un id d'élément HTML, paramétrée par sa description
+
+@ 0 3 0 0ac53931b402d4871982b97930be14e6
++   detail
++       _must be a valid DOM id_, pour `DomIdentifier["a valid DOM id"]`. La vérification suit celle
++       du HTML Living Standard : au moins un caractère et aucun espace ASCII (tabulation, saut de
++       ligne, saut de page, retour chariot ou espace). C'est la règle du plan `DomId`.
+
+@ 0 1 0 05d8aa9b763b5e2d12c98218247f7e4b
++ entry .CssClass
++   info
++       le plan des noms de classes CSS : un `Name[CssClass]` est un identifiant CSS valide
+
+@ 0 5 0 0d518a0ba51f3e690e149d575c8a00fd
++   detail
++       Un type marqueur doté de l'unique règle `CssIdentifier["a valid CSS identifier"]`, de sorte
++       qu'un `Name[CssClass]` est un texte qui peut suivre `.` dans un sélecteur. Les éléments HTML
++       de honeycomb prennent leurs classes sous forme de `Name[CssClass]`, et c'est ainsi qu'un
++       littéral de classe mal orthographié échoue à la compilation.
+
+% 2 1 0 1b3290796740ca260cbf87dd79a4a2b4
+
+% 3 1 0 1125c907f85303a30fb5558ef8ad73f0
+
+% 4 1 0 12434a4d3bb44dc912645fb5f14d078d
+
+% 5 1 0 1ed8b8c2cb0d4fab1aff2f8205c74bed
+
+% 0 1 0 1b51963ea3ee3587030fd62dfd8b5701
+
+% 0 1 0 1d095fbfdb20f12519f11e7618603f7c
+
+% 0 1 0 14099df8c0be2e561cba32e9cb915082
+
+% 1 1 0 1a8051769b5d99d3067325855e1c4ecc
+
+% 0 1 0 1861cd670d733e4a12073f28351b3db6
+
+@ 0 1 0 1a449d0a0f91b511144fca3f38b7e923
++   entry .nominative
++     info
++         le given qui soumet les noms de classes CSS à `CssIdentifier`
+
+@ 0 1 0 12d41e3346e7b66c0c5fb67127829dcd
++     detail
++         Dans le compagnon, donc dans la portée implicite partout où `CssClass` est nommé.
+
+@ 0 1 0 180a9d457ad40cbb164dd93c765f4180
++ entry .DomId
++   info
++       le plan des ids d'éléments DOM : un `Name[DomId]` est un id HTML valide
+
+@ 0 4 0 1a9ea47d9ab4afe918cc8c7f1ef64617
++   detail
++       Un type marqueur doté de l'unique règle `DomIdentifier["a valid DOM id"]` : non vide, sans
++       espace ASCII. Les attributs `id` de honeycomb prennent un `Name[DomId]`, et un id DOM est
++       `Focusable`, il peut donc être la cible d'un `focus` sous la forme du sélecteur CSS `#id`.
+
+% 2 1 0 120ee4532fca0573104e1d94b5253ccc
+
+% 3 1 0 1558c1bcf544878002eb3d751c4aa928
+
+% 4 1 0 166c3a0886d0402a0121546a12fe537b
+
+% 5 1 0 1b04342628e60d1d09113f11e962f5b6
+
+% 0 1 0 0f5a54653dd2dc2f00e78ae70516d152
+
+% 0 1 0 1071e9fb9d6ab2ab07f436d43c631f01
+
+% 0 1 0 0727bcceb3e7140b1fcf2c879ea68a58
+
+% 1 1 0 151f0dcc08c2101216fc4992103c348b
+
+% 0 1 0 1f4c7f3e9eb63afd16405e3f61e635d2
+
+@ 0 1 0 01e5c4cd3ea4bb131971fe705f64a34d
++   entry .nominative
++     info
++         le given qui soumet les ids DOM à `DomIdentifier`
+
+@ 0 1 0 02c5f79d9eafe62d09f95fe2bcfc8396
++     detail
++         Dans le compagnon, donc dans la portée implicite partout où `DomId` est nommé.
+
+@ 0 1 0 07f6afcfe248e4cd13233c3ef7d390f0
++   entry .focusable
++     info
++         un id DOM cible son élément sous la forme du sélecteur CSS `#id`
+
+@ 0 3 0 1f4d705b7b37658e1d0e0c6a636d828b
++     detail
++         Le given `Focusable` pour `Name[DomId]`, avec la stratégie `css selector` et le texte de
++         focus `#` suivi de l'id, pour les bibliothèques qui localisent un élément sur une page par
++         un sélecteur.
+
+@ 0 1 0 0d3a0dad8a11768116df1e3beb4018a9
++ entry .Required
++   info
++       le plan dont la seule règle est la non-vacuité : un `Name[Required]` est n'importe quel
++       texte non vide
+
+@ 0 3 0 1bb60cf1050471fa00815c4b4e15a966
++   detail
++       Un type marqueur doté de l'unique règle `MustNotEqual[""]`, pour le cas courant où « non
++       vide » est tout ce qu'exige un champ. Son given `Nominative` est anonyme, dans le compagnon,
++       de sorte qu'il est dans la portée implicite partout où `Required` est nommé.
+
+@ 2 1 0 164f9f2007588a21072fa8619e5b195f
++       ```scala
+
+@ 3 1 0 0b1419c58816707310de627795983527
++       import soundness.*
+
+@ 4 1 0 1de79b91d635c1011b2349822231d26a
++       import strategies.throwUnsafely
+
+@ 5 1 0 17dc4c4b32d3fa6709d952e562c0542e
++       import errorDiagnostics.stackTracesDiagnostics
+
+@ 0 1 0 04f99f6769ca7eee164c91ca62e9642f
++       val title: Name[Required] = n"Untitled"
+
+@ 0 1 0 14c6a570a445ee5e04742bccb52763b6
++       capture[Name.Error](Name[Required](t"")).message.show
+
+@ 0 1 0 12df3a40cf0e33f5192c20e291fd9033
++       // t"the name “” is not valid because it must not be empty"
+
+@ 1 1 0 1e62608f07aa0d140fbef6b047742366
++       ```
+
+@ 0 1 0 15957abdd4a4beef15b4ea5cc69deaa9
++ entry .disintersect
++   info
++       `disintersect[A & B & C]` : un type intersection décomposé en un type tuple
+
+@ 0 5 0 0847c43983c0245418f64b49f3635168
++   detail
++       Une méthode `transparent inline` dont le résultat est une valeur du type tuple `(A, B, C)`
++       pour l'intersection `A & B & C`, et `EmptyTuple` pour un type qui n'est pas une
++       intersection. C'est l'opération au niveau des types qu'utilisent les macros pour parcourir
++       les règles d'un plan, exposée pour le code qui a besoin d'énumérer les membres d'un type
++       intersection ; la valeur elle-même est `null` convertie dans le type tuple et ne doit pas
++       être utilisée, seul son type compte.
+
+@ 0 1 0 0efd4235f0706baf0c29f1c19d61664b
++ entry .staticCompanion
++   info
++       `staticCompanion[T]` : l'objet compagnon d'un type, sous forme de valeur
+
+@ 0 3 0 150a114c5cada039013a3aa43b2326c4
++   detail
++       Une méthode `transparent inline` qui se résout en l'objet compagnon de `T`, typé
++       `Matchable` : `staticCompanion[MustStart[""]]` est l'objet `MustStart`. C'est ainsi que les
++       macros atteignent une `Rule` à partir d'un type `Check`, exposée pour le code qui a besoin
++       de la même chose.
+
+@ 0 1 0 1feb6c398c63d8c115f8852d98b555f7
++ entry .internal
++   info
++       le type opaque `Name` et son compagnon, qu'exporte le package `nomenclature`
+
+% 1 1 0 0dce44c4bf917fd312215bb755036889
+
+@ 0 5 0 06d3bf67ca2facd11645ccb56322204d
++   detail
++       Non destiné à un usage direct : `Name` se trouve ici afin que sa représentation sous forme
++       de `Text` soit cachée au reste du package, et est exporté sous le nom `nomenclature.Name`,
++       dont la page en donne la description complète. Ses membres sont `Name.apply`, `Name.verify`,
++       les givens `encodable`, `inspectable` et `decodable`, `Name.Error` et `Name.Extractor`.
+
+@ 0 1 0 1623ec7ed02a09fb16cf8ec27bee0d46
++   entry .Name
++     info
++         un texte dont la validité dans un plan est prouvée ; voir `nomenclature.Name`
+
+@ 0 4 0 1b28e1ebbc9d6b181e355cc8afa4b086
++     detail
++         Le type opaque `Name[+plane] <: Text`, avec son compagnon. Sa page sous le package
++         `nomenclature` en donne la description complète ; les membres du compagnon, que l'export
++         ne déclare pas, sont documentés ici.
+
+@ 0 1 0 17ae32ec3759187d113a1b6c156eaf7f
++     entry .apply
++       info
++           `Name[plane](text)` : vérifie un texte par rapport aux règles du plan, en levant
++           `Name.Error`
+
+@ 0 5 0 1c931d48bcd9f4ca0ea50977ffb07535
++       detail
++           Une méthode `transparent inline` qui se développe en les vérifications des règles du
++           plan, l'une après l'autre, suivies du texte converti en `Name[plane]`. Elle exige un
++           given `plane is Nominative` dans la portée — son absence est une erreur de compilation,
++           _Couldn't find a `Nominative` instance on `plane`_ — et une `Tactic[Name.Error]`, levée
++           avec la première règle qui échoue. Le paramètre de chaque règle doit être un type
++           littéral de chaîne, comme ceux que prennent les règles `Must…`.
+
+@ 2 1 0 0356d0824c20d1da0f96a1319f478caf
++           ```scala
+
+@ 3 1 0 118664a2e22d659d1711c257ec07853a
++           import soundness.*
+
+@ 4 1 0 0f52e77b9628a8e207266c5237bf031c
++           import strategies.throwUnsafely
+
+@ 5 1 0 12f5dce5e61afa620e589fce36d305f1
++           import errorDiagnostics.stackTracesDiagnostics
+
+@ 0 1 0 1743380767d7a0a300f7d60d8c3a71a9
++           Name[CssClass](t"main-nav")
+
+@ 0 1 0 0c722910857aa4d41c4869debeaf63a8
++           capture[Name.Error](Name[CssClass](t"1col")).message.show
+
+@ 0 1 0 06bda54b067913300d9aeb5cfa92f4ce
++           // t"the name 1col is not valid because it must be a valid CSS identifier"
+
+@ 1 1 0 1c3f1b3bac6981181c56ed5264723b41
++           ```
+
+@ 0 1 0 12b4743ccf51060c00ce5de8eea6d05d
++     entry .verify
++       info
++           `Name.verify[literal, plane]` : un littéral vérifié par rapport à un plan à la
++           compilation du code
+
+@ 0 6 0 0eba1e3d119c632316bb64f2cc107b0e
++       detail
++           Une méthode `inline` qui prend le nom sous forme de type littéral de chaîne et le plan
++           sous forme de type, et qui soit se développe en le littéral converti en `Name[plane]`,
++           soit fait échouer la compilation avec les propres termes de la règle, _the name is not
++           valid because it must not start with 0_. L'interpolateur `n"…"` est la manière
++           habituelle d'écrire un littéral vérifié ; `verify` est la forme destinée au code qui a
++           le plan sous la main et ne veut pas de l'inférence sur chaque plan dans la portée
++           qu'effectue `n"…"`.
+
+@ 0 1 0 07c7fe39fc8f258b0151996cd96ffc63
++     entry .encodable
++       info
++           un nom s'encode sous la forme du texte qu'il est
+
+@ 0 2 0 18738556f9c3afde1f68f00de7c333e4
++       detail
++           Le given `Encodable in Text` pour tout `Name[plane]` : l'identité, de sorte qu'un nom se
++           sérialise exactement comme son texte.
+
+@ 0 1 0 06b40f299d6e646b00d7d680593f6fe4
++     entry .inspectable
++       info
++           un nom s'inspecte sous la forme `n"…"`, distinguable du texte qu'il est
+
+@ 0 6 0 0816c6b8354f2130128913a95dffce8f
++       detail
++           Le given `Inspectable` pour tout sous-type de `Name[Any]`. Un `Name` est un `Text`, si
++           bien que sans instance propre il atteindrait l'instance de `Text` et se rendrait sous la
++           forme `t"…"`, et un nom validé serait indiscernable d'un texte non vérifié ; celle-ci
++           rend `n"puck"`, avec les caractères échappés comme ceux d'un littéral de texte. Elle est
++           écrite pour chaque sous-type de `Name[Any]` plutôt que pour un seul plan, puisque le
++           `Self` d'une classe de types est invariant et qu'une instance pour `Name[Linux]` ne
++           couvrirait pas `Name[Linux & Posix]`.
+
+@ 0 1 0 1928cbf7c90927ae0cd39e32b5bef9ed
++     entry .decodable
++       info
++           `text.as[Name[plane]]` : un décodage avec validation, par la classe de types `Decodable`
+
+@ 0 5 0 18a1ba7ba762228d0afdacb49ccc2026
++       detail
++           Un given `inline`, disponible pour tout `plane` doté d'un given `Nominative` dans la
++           portée, qui décode un texte par `Name[plane](text)`. Il exige une `Tactic[Name.Error]`
++           dans la portée, levée avec la première règle à laquelle le texte échoue, de sorte que
++           tout format qui décode ses champs par `Decodable` — un document JSON, un argument de
++           ligne de commande, un élément de chemin — peut lire directement un `Name[plane]` et
++           rejeter un nom invalide à la frontière.
+
+@ 2 1 0 1ac15467a06f2f8b1090623286d48123
++           ```scala
+
+@ 3 1 0 0a5496cf153356110d65379a417f87d0
++           import soundness.*
+
+@ 4 1 0 02a4c868e66460bc068b846a958f8cc2
++           import strategies.throwUnsafely
+
+@ 5 1 0 1bff1f764c1d391f156fda0700869cb2
++           import errorDiagnostics.stackTracesDiagnostics
+
+@ 0 1 0 072c67b39305446916a01b96ef308678
++           val id: Name[DomId] = t"main-content".as[Name[DomId]]
+
+@ 1 1 0 1b56cbd170930b201c4904eb54822769
++           ```
+
+@ 0 1 0 030ceaccdbe1171d08fe0a5c84272962
++     entry .Error
++       info
++           levée lorsqu'un texte n'est pas un nom valide dans son plan
+
+@ 0 7 0 0436c286f5545b6116ffacbebeb20a37
++       detail
++           Erreur `↯/s.68.1` : _the name `name` is not valid because it `must not start with 0`_.
++           La seconde moitié est la description, par la règle enfreinte elle-même, de son paramètre
++           (`Rule.describe`), de sorte que le message énonce la règle précise que le texte a
++           enfreinte, et non simplement qu'il était invalide. Levée par `Name[plane](text)` et par
++           `text.as[Name[plane]]` pour la première règle de l'intersection du plan à laquelle le
++           texte échoue, et exige des `Diagnostics` dans la portée, comme
++           `errorDiagnostics.stackTracesDiagnostics`.
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 1012e0401a4235931db671ec67f92f61
+
+% 0 1 0 1cce7224b7fe056907129e25d1266318
+
+% 0 1 0 044ab87093645a1716c7c1ff254ac4d5
+
+% 1 1 0 0111aa621ee0d5a31df6c5fd1674b6a8
+
+@ 0 1 0 120bab904f823f28104689148e84a100
++       entry #name
++         info
++             le texte qui a été rejeté
+
+@ 0 1 0 058d3e4a58299f581ae31bb794a1ed82
++       entry #rule
++         info
++             la `Rule` qui l'a rejeté, comme `MustNotStart` ou `CssIdentifier`
+
+@ 0 1 0 1a8a05c61edfde840af03e14f9f604aa
++       entry #parameter
++         info
++             le paramètre de la règle : le littéral auquel son type `Check` a été appliqué
+
+@ 0 2 0 029ab6f96f0c02a91b5b081b81fb2700
++         detail
++             Pour `MustNotStart["0"]`, c'est `0` ; pour une règle paramétrée par une description,
++             comme `CssIdentifier["a valid CSS identifier"]`, c'est la description.
+
+@ 0 1 0 0424ce479613fcbd0cf049369d3ba4a1
++     entry .Extractor
++       info
++           l'objet en lequel se développe un littéral `n"…"` : un nom par inférence, ou un motif
+
+@ 0 5 0 02ec98dea28d404302ed24ed0dee3471
++       detail
++           `n"hello"` se développe en `Name.Extractor["hello"]()` : c'est donc dans cette classe
++           que résident les deux usages de l'interpolateur : `#apply` crée le nom, avec le plan le
++           plus précis dans lequel le littéral est valide, et `#unapply` permet d'écrire `n"hello"`
++           comme motif face à un `Name[plane]`. Elle n'est pas construite directement.
+
+@ 0 1 0 016ed9477473cd071e502e55599de06a
++       entry #apply
++         info
++             le littéral sous forme de `Name` de chaque plan dans la portée dont il satisfait les
++             règles
+
+@ 0 5 0 088d7eceba98281316aa8700d87f378b
++         detail
++             Une méthode `transparent inline` dont le type de résultat est l'intersection des types
++             `Self` de chaque given `Nominative` dans la portée qui accepte le littéral, sous la
++             forme `Name[A & B]`. Un littéral qu'aucun plan dans la portée n'accepte est une erreur
++             de compilation, _the name `.` is not a valid identifier in any namespace in scope_. Un
++             plan dont une règle a un paramètre non littéral est ignoré plutôt que signalé.
+
+@ 0 1 0 11ed449070d9de3606a5122d02dc4eaa
++       entry #unapply
++         info
++             `case n"main" =>` : correspond à un `Name[plane]` égal au littéral
+
+@ 0 3 0 0869455ed704d30f0edd7d7b81a6e88b
++         detail
++             Un extracteur `inline` qui vérifie, à la compilation du code, que le littéral est un
++             nom valide dans le plan de la valeur filtrée — un motif qui ne pourrait jamais
++             correspondre est une erreur formulée dans les termes de la règle — puis compare les
++             deux textes à l'exécution.
+
+@ 0 1 0 1264224873e3f8180ae0819b55ad658d
++ entry .protointernal
++   info
++       les implémentations des macros derrière `n"…"`, `Name[plane](…)` et `Name.verify`
+
+% 1 1 0 1b49bb50a2179e69010972e2d124c35f
+
+@ 0 5 0 080e2885403989901f8d3f70bd317f55
++   detail
++       Non destiné à un usage direct : l'objet existe pour que les macros aient un emplacement
++       stable. Ses membres publics sont les corps de macros `extractor`, `inferName`, `makeName`,
++       `parse`, `parse2` et `disintersection`, et les auxiliaires qu'ils partagent : `build`,
++       `decompose`, `everyNominative`, `planeAccepts`, `constant` et `companion`.
+
+@ 0 1 0 02ab2e6a266fe94118e7426d6fdf1256
++   entry .extractor
++     info
++         la macro derrière `n"…"` : enveloppe le type du littéral dans un `Name.Extractor`
+
+@ 0 1 0 16215ac8f6ffcbee0e34ec9b4943bdd5
++   entry .inferName
++     info
++         la macro derrière `Name.Extractor#apply` : l'intersection de chaque plan acceptant dans la
++         portée
+
+@ 0 4 0 1463435f1f932ae71d7f6cbe38e6394e
++     detail
++         Collecte chaque given `Nominative` dans la portée, conserve le `Self` de chacun dont
++         toutes les règles acceptent le littéral, et insère par splice le littéral sous forme de
++         `Name` de leur intersection ; en l'absence de plan acceptant, elle s'arrête avec _the name
++         … is not a valid identifier in any namespace in scope_.
+
+@ 0 1 0 162d63d8fa592b571047c67c579d8778
++   entry .makeName
++     info
++         la macro derrière `Name[plane](text)` : les vérifications du plan insérées par splice en
++         séquence
+
+@ 0 1 0 0ce309429f6fb9b71cb6424e745dd85f
++   entry .parse
++     info
++         la macro derrière `Name.verify` : un littéral vérifié par rapport à un plan, qui s'arrête
++         avec les termes de la règle
+
+@ 0 1 0 1e6521767262c1b30eb1b035e86eedf7
++   entry .parse2
++     info
++         la macro derrière `Name.Extractor#unapply` : `parse`, puis un test d'égalité
+
+@ 0 1 0 1c496126da70900a1e6a15f7bf29ee5d
++   entry .disintersection
++     info
++         la macro derrière `disintersect`
+
+@ 0 1 0 0919e19ad72022501a6ea7d448524bb4
++   entry .build
++     info
++         une liste de types transformée en type tuple
+
+@ 0 1 0 0166eb984b78077d1b41c90fe6878a5d
++   entry .decompose
++     info
++         un type intersection décomposé en l'ensemble de ses membres
+
+@ 0 1 0 0fd7d12fe86b71b1050f7d8246fe2b02
++   entry .everyNominative
++     info
++         chaque given `Nominative` dans la portée au point de développement, et pas seulement le
++         meilleur
+
+@ 0 2 0 1924e8a6e58a1dca05895400441dd7cd
++     detail
++         Exécute la recherche implicite de manière répétée, en ignorant les givens déjà trouvés et
++         en intégrant les deux côtés d'une ambiguïté, afin que `n"…"` voie chaque plan dans la
++         portée.
+
+@ 0 1 0 11ec1b5faa1e1313074947a5306b1dbe
++   entry .planeAccepts
++     info
++         si chaque règle de la `Limit` d'un plan accepte un nom
+
+@ 0 1 0 1ba5377dac1e08310534060e1154a773
++   entry .constant
++     info
++         la chaîne que représente un type littéral, débarrassée des annotations de contrôle des
++         captures
+
+@ 0 1 0 019dabeb036cd7eb0452b14794dec44b
++   entry .companion
++     info
++         l'objet compagnon d'un symbole, chargé par réflexion et typé comme le demande l'appelant
+
+@ 0 1 0 07021d4c174a13f81347eaf6a2dff942
++ entry .anteprotointernal
++   info
++       la macro derrière `staticCompanion`
+
+% 1 1 0 183863057e49b74914c2252aab94c73a
+
+@ 0 3 0 14e13ccaf1f9c3070729c52d55df50e9
++   detail
++       Non destiné à un usage direct : contient `staticCompanion`, la macro qui résout un type en
++       son objet compagnon, et que `protointernal.makeName` utilise pour atteindre une `Rule` à
++       partir d'un `Check`.
+
+@ 0 1 0 1db41b1552085db41a53faa8bd9a991c
++   entry .staticCompanion
++     info
++         la macro derrière `nomenclature.staticCompanion`
+
+@ 0 1 0 0aab8f03ee6007ce046da48f323d4c9c
++ entry .Moniker
++   info
++       un petit entier doté d'un nom mémorable de deux mots, `brilliant-leopard`, issu d'un
++       `Vocabulary`
+
+@ 0 7 0 1bb3358e32a52a23014974f4c3857c29
++   detail
++       Un `Moniker` est un ordinal `Int` associé, par son plan, au `Vocabulary` qui le nomme :
++       `Moniker over Session` est un moniker dont les mots proviennent du `Vocabulary over Session`
++       dans la portée. Il s'encode en `adjective-animal` et se décode à partir de ce texte, de
++       sorte qu'une session, un build ou une tâche peut recevoir un nom qu'une personne peut relire
++       au téléphone, tandis que le programme conserve le nombre. Il se trouve dans l'ensemble de
++       sources `nomenclature.lexicon`.
+
+% 2 1 0 0fa5530ad0c95f08176d7e3fe63d62bc
+
+% 3 1 0 0f0b5a66eba6c2fe033e9daa50924d13
+
+% 4 1 0 157887d1a498648d03aa5fde63b3973a
+
+% 5 1 0 057c340da736968301d5df2c9db82a95
+
+% 6 1 0 17cc05979af9e1590b540c5cdd8cd098
+
+% 8 1 0 099f0a654ba6aa041d1d28d1c161450c
+
+% 9 1 0 0e11bd89211d9dfd1af30a54e5bb0af9
+
+% 0 1 0 03f45d838bc20c881d619ff33706c1c8
+
+% 0 1 0 154d57eadd71aaea1aa697e676a99b9e
+
+% 1 1 0 008b1044caa7fc54058c4cfd1ed05148
+
+@ 0 6 0 0cfd40dc3aa3213414b99ae6c6321dcf
++       Le plan est un type que choisit le programme, de sorte que deux vocabulaires peuvent
++       coexister sous la forme `Vocabulary over Session` et `Vocabulary over Job`, et que
++       `Moniker(10351)` écrit sans plan l'infère à partir de l'unique vocabulaire dans la portée.
++       L'encodage et le décodage exigent tous deux une `Tactic[Moniker.Error]`, puisqu'un nombre
++       peut se trouver hors de l'intervalle du vocabulaire et qu'un texte peut nommer un mot qu'il
++       ne possède pas ; un moniker *s'inspecte* sous la forme de son ordinal, `10351ᵐᵏ`, puisqu'un
++       rendu de débogage ne peut compter ni sur le vocabulaire ni sur une tactique.
+
+% 0 1 0 08dd20918dd78eaa154df952240e6ae1
+
+@ 0 1 0 01ba17926568ef10170047333f3d7676
++   entry .Moniker
++     info
++         le type opaque lui-même, un `Int`, que `nomenclature` exporte sous le nom `Moniker`
+
+@ 0 3 0 078d47ce05df264b09ccfb46c980e847
++     detail
++         `Moniker.Moniker` est déclaré à l'intérieur du compagnon afin que sa représentation sous
++         forme d'`Int` ne soit visible que là ; le package l'exporte sous le nom
++         `nomenclature.Moniker`, qui est le nom à écrire. Son plan est donné par raffinement,
++         `Moniker over Session`.
+
+@ 0 1 0 16644037f77c6e680d0f940232a94f46
++   entry .apply
++     info
++         `Moniker[plane](ordinal)` : un moniker sur le plan du `Vocabulary` dans la portée
+
+@ 0 4 0 1aa3ae22ccf5e3a317ee44fd5d787fa6
++     detail
++         Exige un given `Vocabulary over plane` ; le plan en est inféré lorsqu'un seul est dans la
++         portée. L'ordinal n'est pas vérifié ici, mais lors de l'encodage du moniker, qui lève
++         `Moniker.Error` avec `OutOfRange` pour un ordinal supérieur ou égal à la `size` du
++         vocabulaire.
+
+@ 0 1 0 13cb59c2142021f214c5a71fc1d89830
++   entry .ordinal
++     info
++         l'entier que représente un moniker
+
+@ 0 2 0 078d257f468ad8380afad245a3eb4043
++     detail
++         Une extension sur `Moniker` : l'ordinal à partir duquel il a été créé, ou celui en lequel
++         son texte s'est décodé, `adjectiveIndex × animalCount + animalIndex`.
+
+@ 0 1 0 0065b8740dc468e700151e64989f7e91
++   entry .inspectable
++     info
++         un moniker s'inspecte sous la forme de son ordinal suivi d'un suffixe en exposant :
++         `10351ᵐᵏ`
+
+@ 0 2 0 05e898ea7c5868d30c301b6d11a31e84
++     detail
++         Le suffixe le distingue de l'`Int` en lequel il s'efface. Le rendu n'utilise ni le
++         vocabulaire ni une tactique, dont un rendu de débogage ne peut supposer la présence dans
++         la portée.
+
+@ 0 1 0 0b08d7e1555e6fc604816dde30a0a2f7
++   entry .encodable
++     info
++         `moniker.encode` : le nom de deux mots, par le `Vocabulary` dans la portée
+
+@ 0 4 0 188a7db64ffd027f0c4bf719fc606116
++     detail
++         Le given `Encodable in Text` pour un `Moniker over plane`, qui exige un
++         `Vocabulary over plane` et une `Tactic[Moniker.Error]`, levée avec `OutOfRange` lorsque
++         l'ordinal n'est pas de ceux que le vocabulaire peut nommer. Le given capture la tactique :
++         c'est donc une capacité, et il est résolu là où la tactique est dans la portée.
+
+@ 0 1 0 0134c1e06189fb30001e6fb3aa62a996
++   entry .decodable
++     info
++         `text.as[Moniker over plane]` : un nom de deux mots relu sous forme de moniker
+
+@ 0 4 0 112d7b3786109eeb0115955c5dc614f6
++     detail
++         Le given `Decodable in Text` pour un `Moniker over plane`, qui exige un
++         `Vocabulary over plane` et une `Tactic[Moniker.Error]` : `Malformed` est levée pour un
++         texte qui n'est pas formé de deux mots joints par `-`, et `UnknownWord` pour un mot absent
++         de la liste du vocabulaire correspondant à sa position.
+
+@ 2 1 0 186fdcd93c2c77720c91c7ec8fc97a12
++         ```scala
+
+@ 3 1 0 13b9add1aaf25de61a4ca96738f1b504
++         import soundness.*
+
+@ 4 1 0 0db01f69c7fdfe36004387a6d85b760e
++         import strategies.throwUnsafely
+
+@ 5 1 0 12e5d587fe96428913b3a892c4a5b9c5
++         import errorDiagnostics.stackTracesDiagnostics
+
+@ 6 1 0 06bf74e897f510270f125a6aef243670
++         import classloaders.threadContextClassloader
+
+@ 8 1 0 068289910d067f30091c810194a2ffe4
++         sealed trait Session
+
+@ 9 1 0 03e95f0711ce4cb40250b808c03df051
++         given (Vocabulary over Session) = Vocabulary(cp"/nomenclature/adjectives.txt", cp"/nomenclature/animals.txt")
+
+@ 0 1 0 1009b57fbe80ceab0eb6ad270728a295
++         capture[Moniker.Error](t"justoneword".as[Moniker over Session]).message.show
+
+@ 0 1 0 0f02a3454f3d1f760cd398c18ea26595
++         // t"the moniker is not valid because justoneword is not of the form <adjective>-<animal>"
+
+@ 1 1 0 074fd0880c323caa08a4eda4acb903af
++         ```
+
+@ 0 1 0 0516bc71dc40025b1b7e00c987d78a1c
++   entry .Error
++     info
++         levée lorsqu'un moniker ne peut pas être nommé ou que son texte ne peut pas être lu
+
+@ 0 6 0 05094209a20227dd0c4f37e6f4dbb011
++     detail
++         Erreur `↯/s.68.2`, avec un sous-numéro pour sa `#reason` : _the moniker is not valid
++         because the number 100000 is outside the representable range_. Levée par
++         `Moniker.encodable` pour un ordinal que le vocabulaire ne peut pas nommer, et par
++         `Moniker.decodable` pour un texte qui n'est pas de la forme `adjective-animal` ou dont le
++         vocabulaire ne possède pas les mots. Exige des `Diagnostics` dans la portée.
+
+@ 0 1 0 0c82693473e92df0193cba4366c72ac3
++     entry #reason
++       info
++           pourquoi : `Unreadable`, `OutOfRange`, `Malformed` ou `UnknownWord`
+
+@ 0 1 0 1bd4ab5c4a719ae21f665563dfbd9309
++     entry .Reason
++       info
++           les quatre raisons pour lesquelles un moniker est invalide, chacune avec son propre
++           sous-numéro d'erreur
+
+@ 0 2 0 1478ae66f30a369d05834872e478101c
++       detail
++           Chaque cas a son propre sous-numéro d'erreur :
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 8 0 0d10f06270e5d4710f3ea43a3573d828
++           column  Cas
++           column  Code
++           column  Message
++           column  Remarque
++           row  `Unreadable`  1  _the vocabulary could not be read_
++           row  `OutOfRange(value)`  2  _the number `value` is outside the representable range_  un ordinal inférieur à zéro, ou supérieur ou égal à la `size` du vocabulaire
++           row  `Malformed(moniker)`  3  _`moniker` is not of the form `<adjective>-<animal>`_  un texte qui ne se découpe pas en exactement deux mots selon `-`
++           row  `UnknownWord(word)`  4  _the word `word` does not appear in the vocabulary_  un mot absent de la liste des adjectifs ou des animaux
+
+% 1 1 0 0a172d00302f601007f2e91a9e506c10
+
+@ 0 1 0 1e0d94e721a8a0f40edfe259482d7166
++       entry #number
++         info
++             le sous-numéro de la raison, que `Moniker.Error` signale avec l'erreur `↯/s.68.2`
+
+@ 0 1 0 055714375ae5c8a81c9b0ee4dbb89b4f
++     entry .communicable
++       info
++           rend chaque raison d'une `Moniker.Error` sous forme de son message
+
+@ 0 1 0 1079c9d5c5bb6ec30f6181a074fbecfe
++ entry .Vocabulary
++   info
++       deux listes de mots, adjectifs et animaux, qui nomment les monikers d'un plan
+
+@ 0 8 0 13ff3fbb603f9c891091ef4a6ec03334
++   detail
++       Un `Vocabulary over plane` se construit à partir de deux sources de mots, un mot par ligne,
++       et nomme chaque ordinal de `0` à `#size - 1` sous la forme `adjective-animal`, en prenant
++       l'adjectif à `ordinal / animals` et l'animal à `ordinal % animals`. Les sources sont
++       n'importe quoi de `Streamable by Data over Credit` : les listes de mots fournies avec le
++       composant `nomenclature.lexicon` sous forme de ressources du classpath
++       `/nomenclature/adjectives.txt` (400 mots) et `/nomenclature/animals.txt` (250 mots), qui
++       nomment 100 000 monikers, ou les propres fichiers d'un programme.
+
+% 2 1 0 00a2434e7112372204c5f84bbfcc4a67
+
+% 3 1 0 0d2f692c1f16873a064c3c0abd4dfb5f
+
+% 4 1 0 18f5486e3cdd7fff14788d69af2cae56
+
+% 5 1 0 07fd7f2bb0a70cef0132eac1502a6f24
+
+% 6 1 0 0c58ea1c77cffa8905265ecefb4c44fe
+
+% 8 1 0 1f7239483f2edfac144b174f0d645f6b
+
+% 0 1 0 0f9809de4083aa4809a336f2a9edadb4
+
+% 0 1 0 0b33bbe95b9157c105288323c7239f13
+
+% 0 1 0 1087637be6fd90121db54b6765012a84
+
+% 0 1 0 0626594b5bd4a48c0ebdc5c7c4964e7c
+
+% 1 1 0 05d55a7472adb91e17da29c94988c482
+
+@ 0 6 0 068779ce23944ef5069ae356e9663a05
++       Un vocabulaire se lie comme given, `given (Vocabulary over Session) = …`, pour que
++       `Moniker[Session](…)`, `encode` et `as[Moniker over Session]` le trouvent ; le plan est le
++       propre type marqueur du programme, et les deux mêmes listes liées sur deux plans donnent
++       deux espaces de noms indépendants. Les lignes vides et les espaces environnants dans les
++       sources sont abandonnés ; l'ordre des lignes est l'ordre des ordinaux, de sorte qu'une liste
++       ne doit pas être réordonnée une fois des monikers stockés.
+
+% 0 1 0 1e0f92265c2f2c0f1ed98d475f7a626a
+
+@ 0 1 0 047de38d6e8a4ba81f4eb2c8df7c7b02
++   entry .apply
++     info
++         `Vocabulary(adjectives, animals)` : un vocabulaire lu à partir de deux sources streamables
+
+@ 0 4 0 0c74951847262c95120844bc188cb357
++     detail
++         Lit chaque source comme du texte, la découpe selon les sauts de ligne, élague chaque ligne
++         et abandonne les lignes vides. Le plan est le paramètre de type `transport`, inféré à
++         partir du type attendu `Vocabulary over Session` ; les lectures exigent les valeurs
++         contextuelles qu'exigent les givens `Streamable` des sources, comme un `Classloader` pour
++         une ressource du classpath.
+
+@ 0 1 0 0a0734cb36c06e4c13cb73582e506712
++   entry #Transport
++     info
++         le plan sur lequel le vocabulaire nomme les monikers, écrit `Vocabulary over plane`
+
+@ 0 1 0 1578c1fdec9748ad1ba28f1515176906
++   entry #size
++     info
++         le nombre de monikers que le vocabulaire peut nommer : adjectifs × animaux
+
+@ 0 1 0 155c8ce8ad52099f1bb0fae25d3fe684
++   entry #name
++     info
++         le nom de deux mots d'un ordinal, en levant `Moniker.Error` s'il est hors de l'intervalle
+
+@ 0 2 0 13cb8b56dcf5b5131b73644859e002a1
++     detail
++         `OutOfRange` est levée pour un ordinal inférieur à zéro ou supérieur ou égal à `#size`.
++         Exige une `Tactic[Moniker.Error]`.
+
+@ 0 1 0 1179c05bc7f15bf60bbaa3b1ebf5d5ed
++   entry #number
++     info
++         l'ordinal d'un nom de deux mots, en levant `Moniker.Error` s'il ne peut pas être lu
+
+@ 0 3 0 117530a9799c61560580c6363984d1ce
++     detail
++         Découpe selon `-` et cherche chaque mot dans sa liste : `Malformed` pour un texte qui
++         n'est pas formé d'exactement deux mots, `UnknownWord` pour un mot absent de la liste
++         correspondant à sa position. Exige une `Tactic[Moniker.Error]`.

@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 3 0 0e4ca06698293693048feb52cbda8aab
++ 要素とその属性が、Savagery がモデル化するものに含まれていることを確かめる。
++ 描画プログラムが生成した SVG は、その部分集合の外の構文を含むことがある。その場合の代わりの手段は、それを普通の [XML](/doc/soundness/modules/xml.md) として読むことである。

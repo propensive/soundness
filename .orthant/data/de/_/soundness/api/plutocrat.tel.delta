@@ -1,0 +1,579 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0a8319544e2ec9d2084ea275fc7a7f38
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1f58a0ebe9d5c3a91c97303a289457f4
++ info   Geldbeträge mit der Währung im Typ, Preise mit Steuer und geprüfte ISINs
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 072311343e49fde908023c89339ff466
++     _Plutocrat_ stellt Geld als Festkommazahl der Untereinheiten einer Währung dar, mit der
++     Währung im Typ: Ein `Money in "EUR"` und ein `Money in "GBP"` können nicht addiert werden,
++     denn Euro zu Pfund zu addieren ist ein Fehler und keine Summe. Innerhalb einer Währung
++     lassen sich Beträge addieren, subtrahieren, skalieren, teilen, vergleichen und in Anteile
++     aufteilen, die sich genau zum Ganzen summieren; ein `Price` hält einen Grundbetrag und seine
++     Steuer getrennt; und ein Betrag wird nach dem `Currency.Style` im Geltungsbereich
++     dargestellt, mit dem Symbol der Währung oder ihrem ISO-Code.
+
+% 2 1 0 12ea31803aa7bc00049db7000afb7f1f
+
+% 3 1 0 107dbe5c22ecff6f09c9a97b8bc0696f
+
+% 0 1 0 1164ae0ce1c1e0780026602ddf1809d8
+
+% 0 1 0 0ab865311279c5950b2f577701c35259
+
+% 0 1 0 1963cc3860b02ebf19c038fbc976ac3b
+
+% 0 1 0 1b0e879f71c09d2612d01a43a2162264
+
+% 0 1 0 12b9839401583e9e1dd867c544a48872
+
+% 0 1 0 190b65b085c485730f2b926c2a81c211
+
+% 0 1 0 19f15d0d8ec2a3670d30dda38163d685
+
+% 1 1 0 1fe4d9857851971e1a7605c7e1b18799
+
+@ 0 5 0 1c1c9d76c2880f3c18b058038f83602b
++     Eine Währung ist ein Given, `"EUR" is Currency of "Euro" in "€" over 100`, das ihren
++     ISO-Code, ihren Namen, ihr Symbol und die Anzahl der Untereinheiten in einer Haupteinheit
++     festhält; sechsunddreißig der meistgehandelten liegen im Paket `currencies`, und eine weitere
++     ist eine einzige Zeile. Es gibt keinen Umtausch zwischen Währungen: Eine Umrechnung hat einen
++     Kurs, einen Zeitpunkt und eine Quelle und bleibt dem Programm überlassen.
+
+@ 0 4 0 17cd92fe2450746d1de460d4da6e434f
++     Die Bibliothek prüft auch die Bezeichner der Finanzwelt: Eine `Isin`, die internationale
++     Kennung eines Wertpapiers, wird mit ihrer Prüfziffer zur Kompilierzeit durch `isin"…"` oder
++     zur Laufzeit durch `Isin(…)` validiert, und `Luhn` berechnet und prüft die Luhn-Ziffer, die
++     Kartennummern verwenden.
+
+@ 0 5 0 02e791b3f4ae9e361b120f3d479a72d7
++     Die Bibliothek ist ein einzelnes Source-Set, `plutocrat.core`, das plattformneutral ist.
++     Alles wird in das Umbrella `soundness` exportiert. Die Währungen und die Währungsstile sind
++     Givens in den Auswahlpaketen `currencies` und `currencyStyles` und werden namentlich
++     importiert, weil `import currencies.*` keine Givens importiert; beide werden mit den
++     gleichnamigen Paketen des Umbrella zusammengeführt.
+
+% 0 1 0 00ca4d00e25e636d07df6d8f3ecc2eb1
+
+% 0 1 0 0b335e9646b20e460c7e8f3f060d9742
+
+% 0 1 0 140f839de7dcf12b1f1873c1e3871845
+
+% 0 1 0 0407b75b72c7255a13c49bdc658a87bd
+
+% 0 1 0 16188c92c7a93f7310513636768a82ab
+
+@ 0 6 0 1d75488114cfa7de05341ea50c1241cf
++ entry .Money   ein Geldbetrag: eine ganze Zahl von Untereinheiten einer Währung, mit der Währung in seinem Typ
++     `Money` ist der opake Typ `plutocrat.internal.Money`, hier exportiert, über einem `Long`.
++     `Money in "EUR"` ist ein Betrag in Euro; ein bloßes `Money` ist ein Betrag in einer nicht
++     angegebenen Währung, zu dem sich jedes `Money in c` erweitert. Ein Betrag entsteht, indem
++     man eine Währung anwendet, `Eur(3.01)`, was auf die nächste Untereinheit rundet, oder aus
++     einer Anzahl von Untereinheiten mit `Money["EUR"](301L)`.
+
+% 2 1 0 069fd1743bf6f6121e128bd5ef26ab52
+
+% 3 1 0 16beb947864a6b670d15bee52b43612b
+
+% 0 1 0 01dc4217f16c12d019d17434c549e87d
+
+% 0 1 0 1216f5221388d2b605ad749e51aa65a1
+
+% 0 1 0 01fabbb535b521600810044462bdb158
+
+% 0 1 0 078bb1b9e07184db07af6549ced46163
+
+% 0 1 0 177471f0797195ed018a1d7244447240
+
+% 0 1 0 0288b3880aad582416d984b1fc33aa31
+
+% 0 1 0 07ce89a41bc6f05c1a90e5f353d1400d
+
+% 0 1 0 1ff48870a96827d0178ff31df9a5554c
+
+% 1 1 0 1afdcff569adf52915afcf4fd9030c84
+
+@ 0 3 0 1a7b636ba8e1287a02b668915a4974e5
++     Operatoren nehmen zwei Beträge derselben Währung, daher ist das Mischen von Währungen ein
++     Kompilierfehler. Die Division durch eine Zahl schneidet in Richtung null auf ganze
++     Untereinheiten ab; `share` ist die Division, die nichts verliert.
+
+@ 0 6 0 17334a2e6a3aa87d012e03250c52fc90
++     Der dreibuchstabige Währungscode ist in die obersten fünfzehn Bits des `Long` gepackt und der
++     Betrag in Untereinheiten in die unteren neunundvierzig, sodass ein Betrag auch dort als Geld
++     wiederherstellbar ist, wo sein Typ erweitert wurde (`money.currency` ergibt `t"EUR"`), und
++     der größte Betrag etwa 2.8 × 10¹⁴ Untereinheiten beträgt. Da die Darstellung ein `Long` ist,
++     ergibt `toString` die gepackte Zahl: Stellen Sie einen Betrag mit `show` unter einem
++     `Currency.Style` dar oder mit `inspect`, das `¤EUR301ₘ` ergibt.
+
+@ 0 2 0 1febf784e4ad48c50a4db5a6c60237bd
++     Die Erweiterungsmethoden auf einem Betrag, in `plutocrat.internal`, sind `currency`,
++     `value` (die Anzahl der Untereinheiten), `tax` und `share`.
+
+@ 0 5 0 0c4ebd3d911b0b52000f8e6422fc116a
++ entry .Isin   eine International Securities Identification Number, validiert und in einen `Long` gepackt
++     `Isin` ist der opake Typ `plutocrat.internal.Isin`, hier exportiert. Eine ISIN besteht aus
++     zwölf Zeichen: einem zweibuchstabigen Ländercode, einer neunstelligen nationalen Nummer aus
++     Ziffern und Großbuchstaben und einer nach dem Luhn-Algorithmus berechneten Prüfziffer. Ein
++     Wert dieses Typs hat jede Prüfung bestanden und kostet zum Halten oder Vergleichen nicht mehr
++     als ein `Long`.
+
+% 2 1 0 1200ca50f5c2aac00c8d80a975217d2a
+
+% 3 1 0 0025a716fe19c8b81250997e6fc36c1b
+
+% 0 1 0 15ad72895dd42c88120f5a09481f0629
+
+% 0 1 0 1351b04171e3afcb0f386871f1dfba09
+
+% 0 1 0 0171c3de4cb892a2016e294d570445ca
+
+% 0 1 0 0ae9f55f6147226a0996daba9ad07a40
+
+% 1 1 0 072882ec4e9de8030f5e269dc38fbb0c
+
+@ 0 3 0 000ff2979d7d5521195461cc31d768cc
++     `isin"…"` prüft ein Literal zur Kompilierzeit; `Isin(text)` prüft eines zur Laufzeit und
++     löst `Isin.Error` aus. Eine `Isin` wird bei der Inspektion als der Interpolator dargestellt,
++     der sie erzeugen würde, `isin"US0378331005"`.
+
+@ 0 5 0 06532bc8bb79ee8c0e9ad07b1875d8fa
++ entry .isin   der Interpolator `isin"…"`: eine ISIN, geprüft, während der Code kompiliert
++     `isin"GB00BH4HKS39"` validiert sein Literal, während der Code kompiliert, mit denselben
++     Prüfungen wie `Isin(…)`, und meldet einen Fehlschlag als Kompilierfehler, der die Meldung
++     des `Isin.Error` trägt, etwa _the ISIN number is not valid because its last digit
++     failed the Luhn check_. Er nimmt keine Einsetzungen.
+
+% 2 1 0 10df69c657e63a6c01f1096a3c2d6bbb
+
+% 3 1 0 153a89c038b8f1981de8507607aa166b
+
+% 0 1 0 144fbb38b24240c50ce3e39aea7d43ec
+
+% 0 1 0 09586dd5ab0825b70af51fe9327cf8b8
+
+% 1 1 0 1f1e6328df86edd213dbea74fc0e67c0
+
+@ 0 1 0 01831c8991a7e38e0fe19715df4b1a44
++ entry .Currency   eine Währung: ihr ISO-Code, Name, Symbol und die Anzahl der Untereinheiten, als Given
+
+% 1 1 0 0c6be9c9c2073f810b9ab7f5652ec20a
+
+@ 0 2 0 1e7a7bc6905d278807dfa209e7fe7c4d
++       Eine Währung ist ein Given, dessen Typ alle ihre Fakten als literale Typen trägt und das
++       Beträge konstruiert:
+
+% 2 1 0 04ab162c9281b05014f8908ea1284ecc
+
+% 3 1 0 1e794cb913b847ec16f5189ae2227a49
+
+% 0 1 0 03f12f5b933b3ba61d93b1ceeb5a3f74
+
+% 0 1 0 0fecaae7e647a20315dc4a0792ea0d0e
+
+% 1 1 0 001f5516721d229e1e81bb8b2f420d8b
+
+@ 0 5 0 1b59296c1f16d54002d52234cfe67c0c
++       `Self` ist der ISO-4217-Code, `Topic` der Name, `Form` das Symbol und `Transport` die
++       Anzahl der Untereinheiten in einer Haupteinheit. Der Code muss aus drei ASCII-Großbuchstaben
++       bestehen, da er in jeden Betrag gepackt wird. Die Standardwährungen liegen im Paket
++       `currencies`, jede wird namentlich importiert; eine `Currency` im Geltungsbereich ist auch
++       das, was `show` von `Money` und seine Null brauchen.
+
+% 0 1 0 102c4a76074a50ab1ef295378874df39
+
+% 1 1 0 0effa39d9276bc6712ab1332871b58e4
+
+@ 0 4 0 1457b760255672801ebd54e9a9fddde3
++   entry .apply   erzeugt eine Währung aus den literalen Typen des deklarierten Typs ihres Givens: `= Currency()`
++       Alle vier Fakten werden aus dem Typ gelesen, dem das Ergebnis zugeschrieben wird, sodass
++       eine Währung allein durch ihren Typ deklariert wird.
++   entry .Style   wie ein Betrag dargestellt wird: mit dem Symbol der Währung oder mit ihrem Code
+
+% 1 1 0 1b45d43a557b96c00d85a80512634ffc
+
+@ 0 2 0 19f3e41d26350ad30d04a587a22c7a3a
++         Ein `Currency.Style` im Geltungsbereich ist das, was die `Showable`-Instanz von `Money`
++         verwendet. Das Paket `currencyStyles` hat zwei, die namentlich importiert werden:
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 0118ebd67e1219af1a4264c3a2de9e69
+
+% 1 1 0 180a769c3046e25701bad0523f9c07e6
+
+% 2 1 0 1025f2323b2e21a41976b178bc3c2302
+
+% 3 1 0 0f78730de4b6c9231674dce4692f4d94
+
+% 0 1 0 13e3386dba5b3e8110ba19dc0120e2e2
+
+% 0 1 0 0bee76bb669c391902e6b36372b1f539
+
+% 0 1 0 07434e86b03c90c91689bd92ec6aba0f
+
+% 1 1 0 0738e958c04f39f1096742a4456ff383
+
+% 2 1 0 0e98568a18ad1215116f356288293e2f
+
+% 3 1 0 1de633305294273604af3a65910a7f63
+
+% 0 1 0 0a2553b4c2edfe4d1f7e9b3f93042ba1
+
+% 0 1 0 1f87a0ff687ace38186611d3e968db02
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 15 0 0dae81d14fad4ac81abebcb741157a25
++         Ein eigener Stil ist ein Lambda vom Code, dem Symbol, den Haupteinheiten und den
++         zweistelligen Untereinheiten zu Text.
++     entry #format   stellt einen Betrag aus Code und Symbol der Währung sowie seinen Haupt- und Untereinheiten dar
++   entry #Self   der ISO-4217-Code der Währung, als literaler Typ: `"EUR"`
++   entry #Topic   der Name der Währung, als literaler Typ: `"Euro"`
++   entry #Transport   die Anzahl der Untereinheiten in einer Haupteinheit, als literaler Typ: `100`
++   entry #Form   das Symbol der Währung, als literaler Typ: `"€"`
++   entry #code   der ISO-4217-Code der Währung, `EUR`
++   entry #name   der Name der Währung, `Euro`
++   entry #symbol   das Symbol der Währung, `€`
++   entry #modulus   die Anzahl der Untereinheiten in einer Haupteinheit, `100`
++   entry #apply   ein Betrag in dieser Währung, aus einer Dezimalzahl, auf die nächste Untereinheit gerundet
++       `Eur(3.01)` ist `Money in "EUR"` von 301 Cent. Die Zahl ist ein `Double`, mit dem Modulus
++       multipliziert und gerundet, sodass ein Literal mit mehr Nachkommastellen, als die Währung
++       hat, gerundet statt abgelehnt wird.
+
+@ 0 1 0 0568f88a0236c43c0d000da17316c4ce
++ entry .Price   ein Betrag, bei dem die Steuer darauf getrennt gehalten wird: ein Grundbetrag und eine Steuer
+
+% 1 1 0 1f534c8251af0aa61f393d141e51c1b1
+
+@ 0 3 0 181759afed15d71f0421febd4b32b32e
++       Ein `Price in "GBP"` enthält den Betrag ohne Steuer und die Steuer selbst, sodass die Zahlen
++       des Verkäufers, des Käufers und der Steuerbehörde jeweils exakt sind, statt durch Division
++       rekonstruiert zu werden. Er wird meist mit `tax` auf einem Betrag erzeugt.
+
+% 2 1 0 0cb0b052865635530570135caa84d680
+
+% 3 1 0 00979ed76d035a9d075699d73425efac
+
+% 0 1 0 00b4528a81acc269157e07486f526390
+
+% 0 1 0 044e8b694921fbbf12e40fed821427c4
+
+% 0 1 0 03ea397c6d634b2a1d21167a93f8b4c1
+
+% 0 1 0 1c81e2a88f9b554a195ac3b82d61a5d4
+
+% 0 1 0 02bfbeed0dde6f801c9db8d58bab19ad
+
+% 1 1 0 1fb58cc8b82d31f81217ba3d6cf754a5
+
+@ 0 5 0 0cf2d2dba6b5950a0a05c9b627fe4bc7
++       Die Steuer ist der Grundbetrag mal dem Satz, auf die nächste Untereinheit gerundet (halb
++       aufwärts), sodass zwanzig Prozent von £2.94, also £0.588, £0.59 sind. Preise einer Währung
++       lassen sich komponentenweise addieren, subtrahieren und negieren und durch einen `Double`
++       teilen (ein anonymes Given im Begleitobjekt). Ein Preis hat kein `Showable`: Ob der Betrag
++       mit oder ohne Steuer angezeigt wird, sagt das Programm, indem es `#inclusive` oder
++       `#principal` zeigt.
+
+% 1 1 0 0b46b1d3b0847dbb07c38d03ee95304b
+
+@ 0 9 0 11c000fe43abc8870ca156a1c3973941
++   entry .apply   ein Preis aus einem Grundbetrag und einer Steuer in derselben Währung
++   entry .addable   addiert zwei Preise einer Währung, Grundbetrag zu Grundbetrag und Steuer zu Steuer
++   entry .subtractable   subtrahiert einen Preis komponentenweise von einem anderen derselben Währung
++   entry .negatable   negiert sowohl den Grundbetrag als auch die Steuer eines Preises
++   entry #Form   die Währung, als ihr literaler ISO-Code
++   entry #principal   der Betrag ohne Steuer
++   entry #tax   die Steuer auf den Grundbetrag
++   entry #effectiveTaxRate   die Steuer als Bruchteil des Grundbetrags
++   entry #inclusive   der Betrag einschließlich Steuer: Grundbetrag plus Steuer
+
+@ 0 1 0 1e70b1267fbc5abc0c17e6e92dc9691e
++ entry .Luhn   die Luhn-Prüfziffer, die Kartennummern und ISINs verwenden
+
+% 1 1 0 1b8dc4e991103ed41b4aaa22777c9b2b
+
+@ 0 2 0 1520ef51b8ff62f418d90892181dbe4a
++       Der [Luhn-Algorithmus](https://en.wikipedia.org/wiki/Luhn_algorithm) erkennt jede
++       einzelne falsch getippte Ziffer und die meisten Vertauschungen benachbarter Ziffern.
+
+% 2 1 0 174c99efd07b9f3c1f8d85915fca8134
+
+% 3 1 0 073829a3772f8c160d893f61bf53a5fe
+
+% 0 1 0 0ac121678d77c58515dc75ef3b695f8d
+
+% 0 1 0 1a2e1d82e45fb9000180495ec51434df
+
+% 0 1 0 1c369713365170791f8401651d624fa7
+
+% 1 1 0 0345ce4bcde5c82b0f2c7071c1e7b2f0
+
+@ 0 4 0 17e20effad3a35e118d93298102ec3a1
++   entry .digit   die Prüfziffer, die an eine Folge von Dezimalziffern anzuhängen ist
++       Die Eingabe darf nur aus Dezimalziffern bestehen; andere Zeichen ergeben ein bedeutungsloses
++       Ergebnis.
++   entry .check   ob die letzte Ziffer einer Zahl die korrekte Luhn-Prüfziffer für den Rest ist
++       Nimmt die Zahl als `Text` oder als `Long`. Leerer Text ist `false`.
+
+@ 0 1 0 10a331e90017a96519734aa653a88229
++ entry .currencyStyles   die bereitgestellten Währungsstile, jeder ein Given, das namentlich importiert wird
+
+% 1 1 0 1a20b65a6d0e3e5c08221cd6191c12fc
+
+@ 0 3 0 0a5a5086bacf717014da69a3ed0b9881
++       Ein Auswahlpaket, zusammengeführt mit `currencyStyles` des Umbrella. Ein Betrag braucht
++       einen `Currency.Style` im Geltungsbereich, um angezeigt zu werden, und keiner liegt im
++       impliziten Geltungsbereich: Einer wird namentlich importiert.
+
+% 2 1 0 1eca638f4d71cd6006a029a2ebbd2448
+
+% 3 1 0 19156eef4f1b9b7a10a1328edf87fcd7
+
+% 0 1 0 06d41685fa561a5811edd26c1a90cdb0
+
+% 0 1 0 060e2cd692e3c85317dd006cb74bec53
+
+% 0 1 0 10ac8f77233ea1e205e49d81d81e2403
+
+% 1 1 0 1838d7ffb106d69c16849f785b563a7f
+
+@ 0 5 0 02e98da6acf6197e145844679591cfe5
++   entry .localCurrencyStyle   das Symbol der Währung vor dem Betrag: `€3.01`
++       Passt zu einem Kontext, in dem die Währung klar ist, obwohl sich mehrere Währungen ein
++       Symbol teilen (`$`, `kr`, `¥`).
++   entry .genericCurrencyStyle   der Betrag, gefolgt vom ISO-Code: `3.01 EUR`
++       Eindeutig, daher passt er zu einem Kontext mit mehr als einer Währung.
+
+@ 0 1 0 0a8b4427c5575ec910bde6fb27b471f1
++ entry .currencies   sechsunddreißig der meistgehandelten Währungen, jede ein Given, das namentlich importiert wird
+
+% 1 1 0 06a47bdf28897714114cb94341f9c6f0
+
+@ 0 4 0 1e02e611b0536e780230b2a4294c4112
++       Ein Auswahlpaket, zusammengeführt mit `currencies` des Umbrella. Jeder Member ist die
++       gegebene `Currency` für eine Währung, benannt nach ihrem ISO-Code in Title Case, und wird
++       namentlich importiert: Er ist sowohl der Nachweis, den `show` eines Betrags braucht, als
++       auch der Wert, der Beträge erzeugt.
+
+% 2 1 0 078cd85e91f957dc08207328503beec0
+
+% 3 1 0 19de69d00d6a6f7f1b8a006be91246ae
+
+% 0 1 0 1754e9540216fe6f0bdcd5ce036a37b0
+
+% 0 1 0 187e1e520abafe1b12aedacc4b1b39c8
+
+% 1 1 0 0d8bab419972968f117dd32cbdac2e84
+
+@ 0 39 0 0a9990234708bb220b9f6f10c3b339da
++       Jede Währung hier hat einen Modulus von 100, auch solche wie der Yen und der Won, die in
++       der Praxis keine Untereinheit haben. Eine Währung, die hier nicht vorkommt, wird mit
++       `Currency()` deklariert.
++   entry .Usd   der US-Dollar, `USD`, angezeigt mit dem Symbol `$`
++   entry .Eur   der Euro, `EUR`, angezeigt mit dem Symbol `€`
++   entry .Jpy   der japanische Yen, `JPY`, angezeigt mit dem Symbol `¥`
++   entry .Gbp   das Pfund Sterling, `GBP`, angezeigt mit dem Symbol `£`
++   entry .Cny   der Renminbi, `CNY`, angezeigt mit dem Symbol `¥`
++   entry .Aud   der australische Dollar, `AUD`, angezeigt mit dem Symbol `A$`
++   entry .Cad   der kanadische Dollar, `CAD`, angezeigt mit dem Symbol `C$`
++   entry .Chf   der Schweizer Franken, `CHF`, angezeigt mit dem Symbol `CHF`
++   entry .Hkd   der Hongkong-Dollar, `HKD`, angezeigt mit dem Symbol `HK$`
++   entry .Sgd   der Singapur-Dollar, `SGD`, angezeigt mit dem Symbol `S$`
++   entry .Sek   die schwedische Krone, `SEK`, angezeigt mit dem Symbol `kr`
++   entry .Krw   der südkoreanische Won, `KRW`, angezeigt mit dem Symbol `₩`
++   entry .Nok   die norwegische Krone, `NOK`, angezeigt mit dem Symbol `kr`
++   entry .Nzd   der Neuseeland-Dollar, `NZD`, angezeigt mit dem Symbol `NZ$`
++   entry .Inr   die indische Rupie, `INR`, angezeigt mit dem Symbol `₹`
++   entry .Mxn   der mexikanische Peso, `MXN`, angezeigt mit dem Symbol `$`
++   entry .Twd   der Neue Taiwan-Dollar, `TWD`, angezeigt mit dem Symbol `NT$`
++   entry .Zar   der südafrikanische Rand, `ZAR`, angezeigt mit dem Symbol `R`
++   entry .Brl   der brasilianische Real, `BRL`, angezeigt mit dem Symbol `R$`
++   entry .Dkk   die dänische Krone, `DKK`, angezeigt mit dem Symbol `kr`
++   entry .Pln   der polnische Złoty, `PLN`, angezeigt mit dem Symbol `zł`
++   entry .Thb   der thailändische Baht, `THB`, angezeigt mit dem Symbol `฿`
++   entry .Ils   der israelische Neue Schekel, `ILS`, angezeigt mit dem Symbol `₪`
++   entry .Idr   die indonesische Rupiah, `IDR`, angezeigt mit dem Symbol `Rp`
++   entry .Czk   die tschechische Krone, `CZK`, angezeigt mit dem Symbol `Kč`
++   entry .Aed   der VAE-Dirham, `AED`, angezeigt mit dem Symbol `AED`
++   entry .Try   die türkische Lira, `TRY`, angezeigt mit dem Symbol `₺`
++   entry .Huf   der ungarische Forint, `HUF`, angezeigt mit dem Symbol `Ft`
++   entry .Clp   der chilenische Peso, `CLP`, angezeigt mit dem Symbol `$`
++   entry .Sar   der saudi-arabische Riyal, `SAR`, angezeigt mit dem Symbol `SR`
++   entry .Php   der philippinische Peso, `PHP`, angezeigt mit dem Symbol `₱`
++   entry .Myr   der malaysische Ringgit, `MYR`, angezeigt mit dem Symbol `RM`
++   entry .Cop   der kolumbianische Peso, `COP`, angezeigt mit dem Symbol `$$`
++   entry .Rub   der russische Rubel, `RUB`, angezeigt mit dem Symbol `₽`
++   entry .Ron   der rumänische Leu, `RON`, angezeigt mit dem Symbol `lei`
++   entry .Pen   der peruanische Sol, `PEN`, angezeigt mit dem Symbol `S/`
+
+@ 0 1 0 1f4baac04c5838f51f408c61fab914cc
++ entry .internal   die opaken Typen `Money` und `Isin`, ihre Begleitobjekte und Erweiterungsmethoden sowie das Makro `isin"…"`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 5 0 19a7a8bc08547bff0351715e562a74ef
++       Das Objekt existiert, damit `Money` und `Isin` über `Long` opak sein können: Nur hier ist
++       die Darstellung sichtbar. Beide Typen werden in das Paket `plutocrat` exportiert, dessen
++       Seiten für `Money` und `Isin` die vollständige Darstellung enthalten; ihre
++       Erweiterungsmethoden sind Member dieses Objekts und liegen für jeden Betrag und jede ISIN
++       im impliziten Geltungsbereich.
++   entry .Money   ein Geldbetrag, opak über einem `Long`; siehe `plutocrat.Money`
+
+% 1 1 0 187b2ab5c6298a3a0f69b94b9eee46a7
+
+@ 0 12 0 1ba6a14c57908a331358bd5522137581
++         Der Code der Währung und die Anzahl der Untereinheiten, in einen einzigen `Long`
++         gepackt. Sein Begleitobjekt enthält die Givens für Arithmetik, Vergleich und Darstellung
++         von Beträgen einer Währung, sodass keines importiert werden muss; jedes nimmt zwei
++         Beträge derselben Währung, was das Mischen von Währungen zu einem Kompilierfehler macht.
++     entry .apply   ein Betrag aus einer Anzahl von Untereinheiten, mit der Währung als Typargument
++         `Money["EUR"](301L)` ist €3.01, unabhängig vom Modulus der `Currency`; es wird kein
++         `Currency`-Given benötigt.
++     entry .underlying   Nachweis, dass die Darstellung eines Betrags eine primitive Zahl ist, für generischen numerischen Code
++     entry .showable   zeigt einen Betrag nach dem `Currency.Style` im Geltungsbereich, mit dem Symbol oder Code seiner Währung
++         Braucht das `Currency`-Given des Betrags (aus `currencies` oder deklariert) und einen
++         `Currency.Style` (aus `currencyStyles`). Die Untereinheiten werden immer zweistellig
++         geschrieben.
+
+% 2 1 0 1503271d71976630038d9e272351e6b3
+
+% 3 1 0 08efdcfd224dfe910d2fe9fc2743774e
+
+% 0 1 0 07fbac1b8ae16fc2092051a828ebfad1
+
+% 0 1 0 03436b954cc0bdbc0d734708c58a20ec
+
+% 0 1 0 03e4708d7d1498121d244820ce86f387
+
+% 1 1 0 1541aa25dc4f56001be2c0dd9c44f068
+
+@ 0 18 0 0d90dd75d95697180df2f6a99b32a790
++         Ein negativer Betrag wird nicht korrekt dargestellt: Seine Haupt- und seine
++         Untereinheiten werden jeweils mit einem Minuszeichen geschrieben.
++     entry .inspectable   inspiziert einen Betrag exakt, als Währungscode und Untereinheiten: `¤EUR301ₘ`
++         Braucht weder eine `Currency` noch einen Stil, da der Code in den Wert gepackt ist. Das
++         `ₘ` kennzeichnet die Anzahl als Untereinheiten, sodass €3.01 nicht als dreihundertein
++         Euro missverstanden werden kann.
++     entry .addable   addiert zwei Beträge derselben Währung
++     entry .subtractable   subtrahiert einen Betrag von einem anderen derselben Währung
++     entry .multiplicable   multipliziert einen Betrag mit einem `Double` und rundet auf die nächste Untereinheit
++     entry .divisible   teilt einen Betrag durch einen `Double` und schneidet auf ganze Untereinheiten ab
++     entry .divisible2   teilt einen Betrag durch einen anderen derselben Währung und ergibt ihr Verhältnis als `Double`
++     entry .divisible3   teilt einen Betrag durch einen `Int` und schneidet auf ganze Untereinheiten ab
++         Für eine exakte Aufteilung in Teile verwenden Sie `share`.
++     entry .orderable   vergleicht zwei Beträge derselben Währung mit `<`, `<=`, `>` und `>=`
++     entry .zeroic   der Nullbetrag einer Währung, der das `Currency`-Given braucht
++         Erlaubt es, Beträge zu summieren, als `List(…).total`, mit null als Summe von keinem.
++     entry .negatable   negiert einen Betrag: `-Eur(1.99)`
++   entry .Isin   eine ISIN, opak über einem `Long`; siehe `plutocrat.Isin`
+
+% 1 1 0 07939a7caff2bb761951da63ed507d61
+
+@ 0 6 0 1b4bf02234fabad616b7a6d1225e373c
++         Der zweibuchstabige Ländercode und die neunstellige nationale Nummer, in einen `Long`
++         gepackt; die Prüfziffer wird neu berechnet, wenn die ISIN dargestellt wird.
++     entry .apply   prüft eine ISIN in Text und löst `Isin.Error` aus, wenn sie ungültig ist
++         Braucht eine `Tactic[Isin.Error]`. Die Prüfungen betreffen die Länge, den Ländercode
++         (zwei Großbuchstaben), die Zeichen der nationalen Nummer (Ziffern und Großbuchstaben)
++         und die Luhn-Prüfziffer.
+
+% 2 1 0 15dc9d1a1d81ad4c02ea03bd917f8811
+
+% 3 1 0 1d6f623489d826691b4d25a8a001e81d
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 0f625644990da65c152ae19e0e5182f6
+
+% 1 1 0 00fac05d1213193b07636911a397942d
+
+@ 0 2 0 04af04bc776c64bf0f62f592a6c32faf
++     entry .inspectable   inspiziert eine ISIN als den Interpolator, der sie erzeugen würde: `isin"US0378331005"`
++     entry .Error   ausgelöst, wenn Text keine gültige ISIN ist, mit Angabe der verletzten Regel
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 6 0 1fdeb46fa8111afc12ce9486eeb80657
++           Fehler `↯/s.50.1`: _the ISIN number is not valid because …_, mit dem Grund: die falsche
++           Länge (_it had length 11, but it should be 12 characters long_), ein ungültiger
++           Ländercode, ein Zeichen, das weder Ziffer noch Großbuchstabe ist (mit seiner Position),
++           oder eine fehlgeschlagene Luhn-Prüfung der letzten Ziffer. Ausgelöst von `Isin(…)` und
++           von `isin"…"` als Kompilierfehler gemeldet.
++       entry .Reason   welche Regel eine ungültige ISIN verletzt hat
+
+% 0 1 0 1fa5966119e8ae1109b0dcda52a971aa
+
+@ 0 1 0 0777515db4777fcb044e1deabe572334
++             Nummeriert als Unternummer des Fehlers (`↯/s.50.1.3` für die falsche Länge):
+
+% 0 1 0 17a12efcb5b524961abe798015d06fdd
+
+@ 0 1 0 08cac11e5e41ebb9142e1f3a01d7d839
++             column  Fall
+
+% 0 1 0 06fd3409228a29500d6ca49d3f07d9d2
+
+@ 0 2 0 1b0a124206c199be0ba90a58f833661e
++             column  Meldung
++             column  Anmerkung
+
+% 0 1 0 1189da36231d059b0e3363ff5fcf143b
+
+% 0 1 0 1d1fbb07ce716a7315a09850dc2efd7f
+
+% 0 1 0 1a096cb0522653e701cfd480ca073ee2
+
+% 0 1 0 09cf0767c8f8abe618d5f8ccc3395ffe
+
+% 0 1 0 0886f09d22a849f8174ec96cea203f24
+
+@ 0 18 0 019f7805f21d2a27119bc63a56e17ea1
++         entry #number   die Nummer des Grundes, die Unternummer des Fehlers
++       entry .communicable   beschreibt einen Grund als den Satzteil, der die Meldung des Fehlers vervollständigt
++       entry .InvalidCharacter   der Grund für ein Zeichen an einem Index, das weder Ziffer noch Großbuchstabe ist
++       entry .BadCountryCode   der Grund für einen Ländercode, der nicht aus zwei Großbuchstaben besteht
++       entry .WrongLength   der Grund für Text, der nicht zwölf Zeichen lang ist
++       entry .LuhnCheck   der Grund für eine letzte Ziffer, die nicht die Luhn-Prüfziffer des Rests ist
++       entry #reason   welche Regel der Text verletzt hat
++   entry .currency   der ISO-Code der Währung eines Betrags, aus dem Betrag selbst gelesen: `t"EUR"`
++       Eine Erweiterungsmethode auf `Money`, verfügbar selbst dann, wenn der Typ des Betrags zu
++       einem bloßen `Money` erweitert wurde.
++   entry .value   der Betrag als Anzahl von Untereinheiten: 301 für €3.01
++       Eine Erweiterungsmethode auf `Money`.
++   entry .tax   ein `Price` aus diesem Betrag und der Steuer darauf zu einem Satz: `Gbp(2.30).tax(0.2)`
++       Eine Erweiterungsmethode auf `Money in c`. Die Steuer ist der Betrag mal dem Satz, auf die
++       nächste Untereinheit gerundet.
++   entry .share   teilt einen Betrag in eine Anzahl von Anteilen auf, die sich genau zu ihm summieren
++       Eine Erweiterungsmethode auf `Money in c`. Die Anteile unterscheiden sich um höchstens eine
++       Untereinheit, und die größeren kommen zuerst:
+
+% 2 1 0 049140896ec2d40b1034f1325807bc2c
+
+% 3 1 0 14921e32d8d51b830d025cea9cc2e93f
+
+% 0 1 0 03feb3af7b834e61019156afa08e8cb8
+
+% 0 1 0 18774c9f070da0bc073c2258924050c5
+
+% 0 1 0 1e82a914c7a7e155058342857a77bb86
+
+% 1 1 0 1df8220b9a4e09f6056783fcacdaa247
+
+@ 0 5 0 13a4e8866d47071c0e8b6152942e9411
++       Die Anzahl der Anteile muss mindestens eins sein.
++   entry .countryCode   der zweibuchstabige Ländercode einer ISIN: `t"US"`
++   entry .nsin   die nationale Nummer einer ISIN mit ihrer Prüfziffer: die letzten zehn Zeichen
++   entry .isin   eine ISIN als ihre zwölf Zeichen: `t"US0378331005"`
++   entry .interpolator   das Makro hinter `isin"…"`

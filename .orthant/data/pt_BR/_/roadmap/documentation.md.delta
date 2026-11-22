@@ -1,0 +1,173 @@
+orthant 2 language
+
+@ 0 1 0 0358872660e6faa409dcd901a28eaf0f
++ # Documentação e facilidade de aprendizado
+
+@ 0 5 0 1aa4b69c31a4451302d427c9d596b1d5
++ A documentação faz parte da história da segurança. Uma API não documentada convida a adivinhar, e
++ adivinhar é como acontecem as falhas surpreendentes — para pessoas e, de forma mais aguda, para
++ agentes de IA, que sintetizam com confiança tudo o que a documentação deixa de dizer. O padrão é a
++ cobertura total: todo módulo documentado, todo código de erro explicado, toda ideia nova
++ especificada, e toda mensagem seguindo uma convenção escrita.
+
+@ 0 9 0 1723ba1cd99058ba0fdd50aaa077dd16
++ Hoje a prosa existe em três sistemas paralelos: os guias por tópico em `doc/en/modules/` — a
++ direção a seguir, e onde acontece a escrita substancial —, os modelos legados por módulo em
++ `lib/*/doc/`, herdados da época em que cada módulo era seu próprio repositório, e uma cópia
++ separada do material de filosofia em `web/res/content/`. Três sistemas significam divergência, e
++ divergência significa que um deles está mentindo. Esta trilha os reduz a um, completa a cobertura
++ e acrescenta a camada que a prosa não pode fornecer: documentação de API gerada e pesquisável —
++ infraestrutura da qual o fluence e o versionamento derivado da API do LIRA também dependem. Ela
++ termina com o teste de facilidade de aprendizado mais forte que existe: um agente, tendo apenas a
++ documentação, constrói e implanta uma aplicação funcional.
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ Os itens da trilha, com seus horizontes e dependências rígidas; [`status.tel`](status.tel) registra em que ponto cada um está:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 1c9766d1627faf630369fb490d6f524f
+
+@ 0 11 0 1b86d207446cfeda081a95965e41ea7a
++ column  Título
++ column  Horizonte
++ column  Requer
++ row  doc-1  todo tipo de erro tem um código e uma página  próximo
++ row  doc-2  o padrão de mensagens está escrito  próximo
++ row  doc-3  os sistemas de documentação legados se aposentam  próximo
++ row  doc-4  todo módulo é coberto por um tópico  médio
++ row  doc-5  a documentação de API é gerada e publicada  médio
++ row  doc-6  o site deriva de `doc/`  médio
++ row  doc-7  as ideias novas estão a um salto de distância  longo
++ row  doc-8  o passo a passo  longo  tool-2, tool-4
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 088d38de12cb74151b1461e9ac2f6ca0
++ ## doc-1: todo tipo de erro tem um código e uma página
+
+@ 0 2 0 17d7c44780401f8b1f8c498157714b45
++ Horizonte: próximo
++ Linha de base: 41 tipos de erro não têm código bolt; existem 247 páginas de erro (medido em 2026-10-21; 40 e 241 em 2026-09-25; 39 e 233 em 2026-08-01)
+
+@ 0 3 0 1e3b6eb02bb2fb540217d4d349a13903
++ Os códigos bolt cobrem os erros de compilação lançados por macros; os tipos de erro de tempo de
++ execução restantes recebem códigos e páginas sob a mesma disciplina de nunca reutilizar, e a
++ paridade entre tipos, códigos e páginas se torna uma verificação de CI para que não possa
++ divergir. Nada em `etc/` verifica a paridade ainda.
+
+@ 0 1 0 1e10bdcf95bed4aa128a9f1ce07e87ce
++ Concluído quando: a verificação de paridade é executada na CI e
+
+% 0 1 0 1bdf33953eae45dc1c2f5b884dbb8f33
+
+@ 0 1 0 0c7a7d2a401bbbd21b0119d42a3bc1bb
++ ## doc-2: o padrão de mensagens está escrito
+
+@ 2 1 0 17ab2720867ae8111d9d599f47d28d50
++ Concluído: #2306 (2026-10-21)
+
+@ 0 3 0 1428b21c265c30b913cda163dc81d49d
++ `doc/standards/messages.md` era um esboço declarado, apesar de a convenção de mensagens ser
++ estrutural em todos os módulos. O padrão agora está escrito: registro, estrutura, vocabulário, o
++ que uma mensagem não deve conter, composição por meio de `Communicable`, e eventos de log.
+
+@ 2 1 0 03f202f8bf010c101dd08021ad543252
++ Concluído quando:
+
+% 0 1 0 0dba55afda5b5758005ab4659f4df53c
+
+@ 0 1 0 0c9927a8b037ae271c8e087c8ab10f12
++ ## doc-3: os sistemas de documentação legados se aposentam
+
+@ 0 5 0 1093e7c0e6b946dd05516daccac71e83
++ Concluído: #1791 (2026-08-14)
++ A linha de base era de 92 arquivos de texto padrão de readme por módulo, e 98 diretórios
++ `lib/*/doc/` (medido em 2026-08-01). O texto padrão era anterior ao monorepo; o que em
++ `lib/*/doc/` valia a pena manter foi para tópicos em `doc/modules/`, e o resto foi apagado em vez
++ de ser deixado para induzir ao erro. Não resta nenhum diretório `lib/*/doc/`, e a frase do texto
++ padrão não casa com nada.
+
+@ 0 1 0 0900a5ddb113209d1354b00d82edbee4
++ ## doc-4: todo módulo é coberto por um tópico
+
+@ 0 2 0 197393089856cb5c0f2509c3bbcd6fd5
++ Concluído: #2306 (2026-10-21)
++ A linha de base era de 99 tópicos em `doc/modules/` e 1 de 144 bibliotecas sem cobertura (medido em 2026-09-25; 91 tópicos e 35 sem cobertura em 2026-08-01); 101 tópicos cobrem 145 de 145 em 2026-10-21
+
+@ 0 5 0 10c607d670b62b8101dae541037747a8
++ Todo módulo publicado é coberto por pelo menos um tópico de `doc/modules/`, e um script de
++ cobertura mapeia módulos para tópicos para que os órfãos fiquem visíveis:
++ `etc/check-doc-coverage.py`, executado por `make build`, sai com status diferente de zero diante
++ de um órfão. O último, burdock, é coberto por `packaging.md`; a entrada `COVERED_BY` que nomeava
++ esse tópico para o ziggurat (uma biblioteca que o #1973 removeu) agora nomeia o burdock.
+
+@ 2 1 0 13a1375cd0328fbe1525b12456615af8
++ Concluído quando:
+
+% 0 1 0 1ba62d2089bad9d41967ba24204a3f6c
+
+@ 0 1 0 1cc798e6e2c1e8c61aa3cdb9cfd3b3f5
++ ## doc-5: a documentação de API é gerada e publicada
+
+@ 0 2 0 03ba7b62e48036560475cb2eba36751b
++ Horizonte: médio
++ Linha de base: todo `docJar` publicado está vazio — `build.mill` sobrescreve a tarefa para escrever um jar vazio (medido em 2026-09-25, inalterado desde 2026-08-01)
+
+@ 0 3 0 0c7f063f00f74dd013697a3434dc1109
++ O pipeline de extração é a base compartilhada: o fluence pesquisa nele (`tool-7`) e o
++ versionamento derivado da API calcula diferenças sobre ele (`dist-4`). A documentação de API
++ publicada é o entregável imediato.
+
+@ 0 2 0 1d7cd2efcc0c94871a130646ff65da22
++ Concluído quando: o artefato de documentação de todo componente publicado não está vazio, e a
++ documentação de API é publicada a cada release.
+
+@ 0 1 0 02251824a373debc15f49bd28471c2b0
++ ## doc-6: o site deriva de `doc/`
+
+@ 2 1 0 145e5b98677ee68d1071327f412959a9
++ Horizonte: médio
+
+@ 0 3 0 0c895d7ebf2623bb11579fc074f5b2ef
++ A prosa em `web/res/content/` duplica à mão o material de filosofia: dez páginas, alteradas pela
++ última vez no #801, cada uma uma cópia mais antiga e mais curta de uma página de
++ `doc/philosophy/`. O site é renderizado a partir de `doc/` — uma única fonte, sem cópias
++ paralelas.
+
+@ 0 1 0 1c13dd5d72371e8b1044905d160d2cb9
++ Concluído quando: `web/res/content/` não contém nenhuma duplicata mantida à mão de nenhuma página
++ de `doc/`.
+
+@ 0 1 0 05112a75a76d057a037f86af8ebaf9cb
++ ## doc-7: as ideias novas estão a um salto de distância
+
+@ 2 1 0 1da71cc8a3d2501102512a3a7983010d
++ Horizonte: longo
+
+@ 0 3 0 1c487f6f26957dc41d1705e960be1b65
++ Toda ideia nova do Soundness — a verificação de capturas na prática, a mutabilidade verificada
++ por separação, os escopos delimitados, os erros declarados — tem uma página de filosofia, e toda
++ API que encarna a ideia aponta para ela. Um leitor nunca está a mais de um salto da explicação.
+
+@ 0 2 0 036ddf33fefdc5fc01e4c723c46ef4d0
++ Concluído quando: uma verificação de links confirma que cada página de filosofia é referenciada a
++ partir dos guias por tópico dos módulos que a encarnam, e ela é executada no build comum.
+
+@ 0 1 0 094c970e32420b4017ae996cd8ad2bb0
++ ## doc-8: o passo a passo
+
+@ 0 2 0 12f719b526ca670611e64c8611bfb812
++ Horizonte: longo
++ Requer: tool-2, tool-4
+
+@ 0 3 0 011ab0612ca4077f0673854c02ada675
++ O teste integrador da facilidade de aprendizado, e o critério final do portão: um tutorial a
++ partir do zero que um agente pode executar de ponta a ponta — projeto novo, build com o fury,
++ testes com o fume, implantação de uma aplicação web JVM e JavaScript — usando apenas `doc/` e
++ ferramentas do ecossistema.
+
+@ 0 1 0 0e44bc7db7e8cd4d16ad6e4e9bb9bd9c
++ Concluído quando: o passo a passo é executado por um agente na CI e a execução é registrada a cada
+
+% 0 1 0 0ca5b0ea7cc3c36401b3771815a60846

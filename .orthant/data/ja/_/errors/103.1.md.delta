@@ -1,0 +1,47 @@
+orthant 2 language
+
+% 0 1 0 1a5c5ca1bbaf82c50b31f768066decba
+
+@ 0 1 0 1bd9a29ca4bfa65d0d6ad398041038c3
++ Telekinesis が HTTP レスポンスをパースできないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 1f3f20b8220d2d5b07314b104978a7f6
++ 接続が確立された後、レスポンスが読み取られてパースされる。
++ このエラーは不正な形式のレスポンスを報告する。
++ メッセージは `could not parse HTTP response because $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 012f0302ee1effe10e5321d2fc0a9a2c
+
+@ 0 2 0 1d66d4cec0cad4ec045a499ed96f8726
++ パーサーの現在の位置で特定の文字が期待されたが、別の文字が現れた。
+
+@ 0 1 0 10f5529094aa93f204367cd3456fdb3b
++ **例。** `[↯/s.103.1.1] could not parse HTTP response because X was found when : was expected`
+
+@ 0 2 0 0fa619df47d732f3049794282b1e6c65
++ **解決方法。** サーバーが正しい HTTP を生成していることを確かめる。
++ 相手が標準に従っていない場合は、Telekinesis を準拠した実装に向ける。
+
+% 0 1 0 1c688d86e69a583a1a8ee1f2a5659a63
+
+@ 0 2 0 10e5ec376b5433aa0313b6723f14e232
++ レスポンス行の HTTP ステータスコードが 3 桁でないか、その他の理由でパースできなかった。
+
+@ 0 1 0 0f53952acde36f01113c98eb25bd02f8
++ **例。** `[↯/s.103.1.2] could not parse HTTP response because the HTTP status code 12 was invalid`
+
+@ 0 2 0 148eea84cf6ff2f1055cf43853902182
++ **解決方法。** 相手が準拠していないステータス行を生成している。
++ サーバーを修正するか、別のサーバーを使う。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 082742a867b8ffd405367b3235b24eba
++ - ソース：`lib/telekinesis/src/core/telekinesis.Http.scala`

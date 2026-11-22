@@ -1,0 +1,142 @@
+orthant 2 language
+
+@ 0 6 0 18bde842eaafb6c2030a76a358be455a
++     Tudo é exportado para o guarda-chuva `soundness`, exceto os tipos de collation, e os
++     cinco pacotes de escolhas — `charsets`, `codepages`,
++     `textSanitizers`, `textMetrics` e `communication` — se fundem com os pacotes de mesmo
++     nome do próprio guarda-chuva. Como `import soundness.*` não importa givens, um programa
++     nomeia a codificação, o sanitizador e a métrica que quer: `import codepages.utf8Codepage`,
++     `import textSanitizers.strictSanitizer`, `import textMetrics.uniformMetric`.
+
+@ 0 23 0 1d873dff0e4308d807341aebad2d1951
++         `encoding`_. Lançado por meio de uma `Tactic[Charset.Error]` por
++         `textSanitizers.strictSanitizer` na primeira sequência não decodificável, e por
++         `textSanitizers.accrueSanitizer` em cada uma delas (que continua decodificando). A
++         posição é o offset em bytes na entrada, contado através dos chunks quando um stream é
++         decodificado, e uma sequência deixada incompleta no fim da entrada é relatada no
++         comprimento da entrada. Os sanitizadores que pulam e que substituem nunca o lançam.
++     entry #position   o offset em bytes da sequência não decodificável
++     entry #encoding   a codificação que não conseguiu decodificá-la
++   entry #encoding   a codificação que este charset decodifica
++   entry #sanitizer   o sanitizador consultado a cada sequência de bytes não decodificável
++       O `TextSanitizer` que estava no escopo quando o charset foi feito. Um given de
++       `charsets` o toma do ponto de uso, então o mesmo `charsets.utf8Charset` é estrito em um
++       bloco e tolerante em outro, conforme o sanitizador importado ali.
++   entry #Self   o que este charset produz: `Text`
++   entry #Form   o que este charset consome: `Data`
++   entry #decoded   o texto de alguns bytes, ou um stream de texto a partir de um stream de bytes
++       `decoded(bytes)` decodifica um `Data` inteiro como um único `Text`. `decoded(stream)`
++       recebe uma `Chain[Data]` e dá uma `Chain[Text]`, decodificando cada carga de buffer à
++       medida que chega e levando uma sequência multibyte incompleta para o chunk seguinte, de
++       modo que a divisão da entrada em chunks nunca afeta o texto; chunks vazios são
++       descartados da saída. Ambos consultam `#sanitizer` em cada falha e, por isso, podem
++       lançar `Charset.Error` por meio da sua tática sob `strictSanitizer` ou
++       `accrueSanitizer`. A sobrecarga de dois parâmetros `decoded(bytes, omit)` é o mesmo que
++       `decoded(bytes)`.
+
+@ 0 6 0 027a366880bc28e70fdf77d69d3c289f
++       Um caractere que a codificação não consegue representar é substituído (pelo substituto
++       da codificação, `?` para ASCII) por padrão. Sob
++       `encodingSanitizers.strictEncodingSanitizer`, ele lança `Codepage.Error` em vez disso; o
++       `EncodingSanitizer` no escopo onde o codepage é convocado decide. Codificar um stream é
++       incremental e passa os caracteres por um buffer, então um par substituto dividido entre
++       dois chunks é codificado como um único caractere astral, enquanto codificar cada chunk
++       sozinho o corromperia.
+
+@ 0 20 0 0ccaf61ff7ef5bc905e5ba9b37da6bdb
++         Erro `↯/s.35.1`: _character `char` cannot be encoded with the encoding `encoding`_. O
++         tipo de erro para um caractere fora do repertório de uma codificação.
++         `Codepage#encoded` o lança sob `encodingSanitizers.strictEncodingSanitizer`; por padrão,
++         um caractere não mapeável é substituído, como `String#getBytes` o substitui.
++     entry #char   o caractere que não pôde ser codificado
++     entry #encoding   a codificação que não conseguiu codificá-lo
++   entry #encoding   a codificação com que este codepage codifica, que se sabe capaz de codificar
++       Tipada como `Encoding { type CanEncode = true }`.
++   entry #sanitizer   o `EncodingSanitizer` consultado a cada caractere que não pode ser codificado
++   entry #sanitized   o mesmo codepage sob outro `EncodingSanitizer`
++   entry #Self   o que este codepage consome: `Text`
++   entry #Form   o que este codepage produz: `Data`
++   entry #encoded   os bytes de um texto, ou um stream de bytes a partir de um stream de texto
++       `encoded(text)` codifica um `Text` inteiro como um único `Data`, por meio de
++       `String#getBytes` com o charset resolvido. `encoded(stream)` recebe uma `Chain[Text]` e
++       dá uma `Chain[Data]`, codificando carga de buffer por carga de buffer: um par substituto
++       cujas metades caem em chunks diferentes é levado adiante e codificado inteiro, uma
++       codificação com estado é descarregada uma vez no fim, e chunks vazios são descartados da
++       saída. Entradas malformadas ou não mapeáveis são substituídas, ou relatadas ao
++       `EncodingSanitizer` do codepage, que o estrito lança como `Codepage.Error`.
+
+@ 0 5 0 138fc8d8625833211edf37a0e1c0bbaf
++       A codificação em que os bytes são lidos é decidida pelo given `Charset` no escopo, e a
++       escolha nunca é implícita: `import soundness.*` não traz nenhum deles, e um é importado
++       pelo nome. Cada um resolve o `TextSanitizer` no escopo no ponto de uso, então o mesmo
++       `utf8Charset` é estrito onde `strictSanitizer` é importado e tolerante onde
++       `skipSanitizer` é.
+
+@ 0 9 0 1dda4ae744c35904149839a2db4da54c
++   entry .utf8Charset   UTF-8, com o sanitizador no escopo
++   entry .utf16Charset   UTF-16, lendo uma marca de ordem de bytes e usando big-endian por padrão, com o sanitizador no escopo
++   entry .utf16LeCharset   UTF-16 little-endian, com o sanitizador no escopo
++   entry .utf16BeCharset   UTF-16 big-endian, com o sanitizador no escopo
++   entry .asciiCharset   US-ASCII, com o sanitizador no escopo
++       Qualquer byte acima de `0x7f` é uma falha, tratada como o sanitizador manda.
++   entry .iso88591Charset   ISO-8859-1 (Latin-1), com o sanitizador no escopo
++       Todo byte é um caractere Latin-1 válido, então o sanitizador nunca é consultado, mas um
++       deve estar no escopo, como para os outros charsets.
+
+@ 0 5 0 0c97b3626f1d4e1c1543be1670b76195
++   entry .utf16Codepage   UTF-16, escrito em big-endian com uma marca de ordem de bytes
++   entry .utf16LeCodepage   UTF-16 little-endian, sem marca de ordem de bytes
++   entry .utf16BeCodepage   UTF-16 big-endian, sem marca de ordem de bytes
++   entry .asciiCodepage   US-ASCII; um caractere acima de `0x7f` é escrito como `?`
++   entry .iso88591Codepage   ISO-8859-1 (Latin-1); um caractere acima de `0xff` é escrito como `?`
+
+@ 0 1 0 1bc692221253160f18d8f7ecab39c967
++ entry .encodingSanitizers   as políticas para caracteres não codificáveis, cada uma um given `EncodingSanitizer` a importar pelo nome
+
+% 1 1 0 1ab2e89e538479b9199f81ef40088bc0
+
+@ 0 4 0 055f70e00e9156cf02611047e6f9478c
++       Um `Codepage` consulta o `EncodingSanitizer` no escopo onde ele é convocado para cada
++       caractere que a sua codificação não consegue representar. Diferentemente de um
++       `TextSanitizer`, sempre há um disponível: o padrão, no objeto companheiro de
++       `EncodingSanitizer`, substitui silenciosamente, então importar daqui só é necessário para
++       ser estrito.
+
+% 2 1 0 0d265841fd66f0660ee65995c72b9c46
+
+% 3 1 0 06005ff627f1186c053afedd24b76537
+
+% 4 1 0 03853ef122c99fb50c5e2b25bfa3e36b
+
+% 0 1 0 0c7b755c69ee0d141ba010d0da8a937c
+
+% 0 1 0 0e6e5d8e1e031ce3087b20699ab0bd3f
+
+% 1 1 0 0c530ade344c65d91c67e27daf40aeaf
+
+% 0 1 0 0baccc87ced1e1611112b9893061fec9
+
+% 1 1 0 01ee8f0601beefb10a5954e97f18f3c5
+
+@ 0 2 0 18d3d243c215bd8109ed481526b17f43
++   entry .strictEncodingSanitizer   um caractere não codificável lança `Codepage.Error`; precisa de uma `Tactic[Codepage.Error]`
++   entry .substituteEncodingSanitizer   um caractere não codificável é escrito como o substituto da codificação: o padrão, pelo nome
+
+@ 0 1 0 068c32a217fbcc0805caabeb0770c513
++ entry .EncodingSanitizer   o que um `Codepage` faz com um caractere que a sua codificação não consegue representar
+
+% 1 1 0 0eb394207208d7b719dec6109c4e1d5d
+
+@ 0 5 0 19d8ad7719c3f5bd16cde99f8119495b
++       A contrapartida de `TextSanitizer` para a codificação. O codepage chama `#unmappable`
++       com cada caractere que não consegue codificar; se essa chamada retorna, o substituto da
++       codificação é escrito no lugar do caractere. Uma instância cujo `#substitutes` é `true`
++       nunca é chamada, e a substituição fica a cargo do codificador do JDK, que é o caminho
++       rápido que o padrão toma.
+
+% 0 1 0 14ea65ce9236353e0f565d84047c5f16
+
+@ 0 3 0 0f10f4f4f142417a1415e654ec1b327e
++   entry .substitute   o padrão: substituir silenciosamente
++   entry #substitutes   se os caracteres não codificáveis são substituídos sem que `#unmappable` seja chamado
++   entry #unmappable   chamado com cada caractere que não pode ser codificado, e a codificação

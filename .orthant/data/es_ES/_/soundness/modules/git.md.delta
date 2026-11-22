@@ -1,0 +1,545 @@
+orthant 2 language
+
+% 0 1 0 0f417907ec1b48a4162c5ee7c8430d21
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 5 0 1826228b189d369e0d45fc257a5dc37c
++ [Git](https://git-scm.com/) se maneja mediante operaciones tipadas sobre un repositorio que se abre
++ para un ámbito. Una rama, una etiqueta y un hash de commit son tipos distintos, no cadenas
++ intercambiables. Los resultados se devuelven como valores, no como texto que haya que analizar. Y
++ la API es honesta respecto a lo único sobre lo que toda biblioteca de Git debe ser honesta: el
++ repositorio está en disco, y otros procesos escriben en él.
+
+@ 0 4 0 0addad15e7f542e2163b3e9aa4191bc3
++ Un backend lleva a cabo las operaciones. El backend de línea de comandos ejecuta la orden `git`,
++ así que está disponible todo lo que Git sabe hacer. El backend nativo lee y escribe por sí mismo
++ los ficheros del repositorio, y no necesita `git` en absoluto. Ambos implementan la misma
++ [clase de tipos] `Git.Backend`, y la elección es una importación: `gitBackends.commandlineGit` o
+
+% 0 1 0 14e896417141738112754956d1de1afb
+
+@ 0 1 0 1aeac0746864bc49046427ab7d44cd3c
++ ### Sobre Git
+
+@ 0 4 0 1deffa0a076575e704351f9a42e42618
++ La verdadera interfaz de Git es su línea de comandos, pensada para una persona ante una shell.
++ Manejarlo desde un programa supone montar cadenas de órdenes, analizar a mano la salida de texto y
++ tratar por igual un nombre de rama, un nombre de etiqueta y un hash de commit hasta que Git
++ rechaza uno. Peor aún, todo programa que maneja Git compite con todos los demás. Una referencia
++ leída ahora puede haberse movido para cuando se escribe.
+
+@ 0 3 0 0363eedddae6002a10802f1e755708e9
++ Aquí, las operaciones sobre repositorios informan de sus fallos en sus tipos, no pueden ejecutarse
++ sin las [capacidades][capacidad] que necesitan y no pueden fingir que una lectura sigue vigente.
++ Son [signaturas honestas](../../philosophy/honest-signatures.md) para el control de versiones.
+
+@ 0 3 0 1729e41e7a4195421f34d1827bf4ca4f
++ Todo procede del paquete `soundness`. Las demás importaciones seleccionan un backend, ponen en el
++ ámbito las capacidades que necesitan las operaciones y permiten que los ejemplos impriman sus
++ resultados. Los ejemplos trabajan en un repositorio nuevo dentro del directorio temporal:
+
+% 2 1 0 18bf4a52a1684966161da9a237e9594c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 196c8a597bcc2c1b0933e778d81765e3
+
+% 0 1 0 134bb316812eb09e0ae92b5d532835aa
+
+% 0 1 0 1159f55a89df0ac312cc6cd0e0f7f08d
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 18f3658ca4409d550bd5b66b90967ca4
+
+% 0 1 0 1c2643a51f4c131313cd49f1e216b183
+
+% 1 1 0 05cfb639e740714c050fd9d77d35397b
+
+@ 0 1 0 0e9e1a6c32254e600f78d38fe74b807a
++ ### Abrir un repositorio
+
+@ 0 4 0 01781b31285901fe118ae692cac67f14
++ Un repositorio se crea con `Git.init`, y se abre, mientras dura un bloque, en una de dos formas.
++ Un `Git.Repo` es la base de datos de objetos y sus referencias, que es lo que tiene un repositorio
++ bare. Un `Git.Worktree` es un árbol extraído, con un índice y ficheros de trabajo, sobre su
++ repositorio.
+
+@ 0 2 0 0254332a311882031ab34a8a9eeb6cb2
++ El modo nombra las concesiones que lleva el descriptor. Un descriptor abierto solo con `Read` no
++ puede usarse para escribir, y eso es un error de compilación, no de tiempo de ejecución:
+
+% 2 1 0 1352ed03290cdf2919b04e05b75ff32f
+
+% 3 1 0 1557b3319464d9d11a741ec2783ad555
+
+% 4 1 0 0a1d24ab4764432e161a5819720864d4
+
+% 0 1 0 04ff1591ae4fa3e011a49e3d2b18c83b
+
+% 1 1 0 0b55c4883dab5bd01bd5274adabae08d
+
+% 0 1 0 1a7b22961f6a0daf1a15cfde9206aa2d
+
+% 1 1 0 0c386458f16ac4d20a2737f5aab97023
+
+@ 0 1 0 1d645a871d1ad42808551e09bfe9e396
++ El repositorio aún no tiene commits, así que `HEAD` está unido a una rama sin punta.
+
+@ 0 4 0 1e5962b5e34d4b00069c2ba572f28998
++ Un `Git.Worktree.Handle` es también un `Git.Repo.Handle`, así que toda operación de repositorio
++ está disponible en él. Es además un descriptor de directorio. Una ruta formada a partir de él,
++ como `worktree / "notes.txt"`, pertenece solo a ese descriptor, no puede expresar `..`, y puede
++ leerse y escribirse con las operaciones del [sistema de ficheros](filesystem.md) bajo las mismas
++ concesiones.
+
+@ 0 1 0 09b73b221543eac00e9d975b274e56a0
++ ### Observar un repositorio que otros modifican
+
+@ 0 3 0 1f4f0f51ac891a060cd24679cb8dcfe3
++ Toda lectura que resuelve una referencia, `HEAD`, el índice o los ficheros de trabajo devuelve un
++ valor `Stale`. Lo que contiene era cierto en el momento de la lectura, y puede haber cambiado
++ desde entonces. `head()` lee dónde está `HEAD`, y el `Stale[Git.Head]` que devuelve es la prueba
++ de lo que se vio:
+
+% 2 1 0 14e7d041a7d7460c199c3d3177c5ff2e
+
+% 3 1 0 0b7fd9a18fe14cbb116b483bd3389c22
+
+% 4 1 0 19929165d7e3fd2c02132ba77eb04809
+
+% 5 1 0 027202734ff2e9aa057e87ce2821e661
+
+% 0 1 0 13bb6c9c1109d0d20dc120307e787a7e
+
+% 0 1 0 163816474cc6d60e0f8ca4dda08677a0
+
+% 0 1 0 110cf207d583f4931170a152f586fcf9
+
+% 0 1 0 02795c588f100f0a1fc88e1f355cc5d8
+
+% 1 1 0 10fe6ab6a9af5e6811abebdcc8c99691
+
+@ 0 4 0 0f5f6c9803d3592c17fdb2c957d35c33
++ Toda escritura que mueve una referencia recibe el valor `Stale` al que está condicionada. Falla con
++ `Git.Error(Moved(ref, expected, actual))` si la referencia ya no tiene ese valor. Es el propio
++ compare-and-swap de Git, `git update-ref ref new old`, convertido en inevitable. Un commit no puede
++ sobrescribir trabajo que otro proceso confirmó entre la lectura y la escritura.
+
+@ 0 1 0 1c3e78517d1ffd7010005171b353ce1b
++ ### Hacer un commit
+
+@ 0 2 0 199a3dc14440fc640794f0f5e1fd7aac
++ Preparar y hacer commit son métodos del árbol de trabajo. `commit` recibe la lectura de `HEAD` a la
++ que está condicionado, y devuelve el hash del nuevo commit:
+
+% 2 1 0 0c04a36bef69915e1ad72601728072a1
+
+% 3 1 0 12ba61694288ae0809194759a0261d09
+
+% 4 1 0 15e50bbb1909a4d7061810265ac32139
+
+% 5 1 0 0284d971f916c4cc18cce3c969874a04
+
+% 0 1 0 1c0cd9b43f6b45f21e5fff2d6d5a8c0b
+
+% 0 1 0 15a4d9272114c10505fffc200c3c482c
+
+% 0 1 0 01cbc40c57d4dffc17bdaaec21e57add
+
+% 0 1 0 1412e1f31c321b1f031b0c88e134966c
+
+% 0 1 0 0e00381696d42edb04770ae6e4210e87
+
+% 1 1 0 1bb4afe19c2e156b1da0b54184793b50
+
+@ 0 4 0 09a80154e3d502430f63d626240fb0f6
++ El objeto commit se monta y se almacena aquí, y no lo crea `git commit`. Así, una firma
++ (`signer = …`) nunca sale del proceso, y el mismo código sirve para ambos backends. Un commit cuyo
++ árbol no ha cambiado lanza `NothingToCommit`, salvo que se indique `allowEmpty = true`. `amend`
++ reescribe la punta.
+
+@ 0 1 0 180540d33136f8f7024cdc47a228b686
++ ### Inspeccionar el historial
+
+@ 0 2 0 02c052014cce3eb119a24b2a59a17827
++ `log` da los commits como una lista, del más reciente al más antiguo. Cada uno es un `Commit` con
++ su hash, su autor, sus padres y su mensaje. La lista es `Stale`, ya que la rama que sigue puede
++ moverse:
+
+% 2 1 0 16790e40d2163e0e1dc176f3729c939a
+
+% 3 1 0 00815e7b79a73da812de419c87cc5755
+
+% 4 1 0 02f4faf2ca5859cf03ce756c538307ed
+
+% 5 1 0 0c93b7559a45807a0bf321a454370a62
+
+% 0 1 0 0bc1820cb4c501621b673337b16e2eae
+
+% 1 1 0 0d110f78d5d645b9171aea57acc66f54
+
+@ 0 1 0 045f0d8900d4ac7f1eca2cdb5a4ce003
++ Los objetos son [inmutables][inmutable] y se nombran por su contenido, así que una lectura indexada
++ por un hash es un valor simple:
+
+% 2 1 0 1ec77f457c16a32e034e29f582e49ed9
+
+@ 0 5 0 00483aa90a12a7d10acc440025e20b19
++ column  Una lectura de
++ column  Como
++ column  Devuelve
++ row  una referencia, HEAD, el índice o los ficheros de trabajo  `head`, `ref`, `resolve`, `branches`, `tags`, `log`, `note`, `remotes`, `stashes`, `diff`  un valor `Stale`
++ row  un objeto, por su hash  `show`, `commitAt`, `treeAt`, `blobAt`, `diffBetween`  un valor simple
+
+% 1 1 0 00db4964ee67b5d11428ebe30b26d386
+
+@ 0 1 0 0cb40d5deaff2a1318b8c35e13efc0f5
++ ### Ramas y etiquetas
+
+@ 0 2 0 1eca5cb997f8426e0b0a3dd9147e2dbb
++ Las ramas y las etiquetas se crean, se listan y se alterna entre ellas con referencias tipadas.
++ Una rama se crea en un commit, y cambiar de rama recibe la lectura de `HEAD` desde la que se
++ mueve:
+
+% 2 1 0 08b3a1d149a003e80accf66929abec16
+
+% 3 1 0 0eb88bb722ffb5a1115fbaa923856aed
+
+% 4 1 0 1b29e52da0100efc0f83de3f5cd972f3
+
+% 5 1 0 03dfa7075839c1d002e0e4e714e090de
+
+% 0 1 0 191e6a9553bbca731095e682aca7c271
+
+% 0 1 0 0490e645f985c2550a7331db0c09cced
+
+% 0 1 0 104b853b13a0fa0208b8479a3317932e
+
+% 1 1 0 049a3f2c1d8904d504958f5b3a4289f2
+
+@ 0 3 0 18420f9fec655bb7104475798779c9b9
++ Borrar una rama o una etiqueta recibe la lectura de su punta, así que una rama que se ha movido
++ desde que se listó no se borra por error. `makeTag` crea una etiqueta ligera. `annotatedTag`
++ escribe un objeto etiqueta con un mensaje y, opcionalmente, una firma.
+
+@ 0 1 0 173e2859184de5ce14cfb2f6ae80bf67
++ ### Clonar, traer y enviar
+
+@ 0 3 0 18425f52efaa8dd91b3af6e83d82d80f
++ Una operación que llega a un remoto necesita la capacidad `Online`. Se bloquea hasta que termina,
++ e informa de su progreso mediante un `Git.Activity`: un registro compartido de contadores
++ atómicos, actualizado a medida que llegan objetos, que una interfaz de usuario puede consultar
++ desde otro hilo con `report()`.
+
+% 2 1 0 1a36e623aa47272f1fbe779f203cf372
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 17836533437e5e410aba174f6b4cb5b3
+
+% 0 1 0 06cfdcfd3bf9241d0f102a0770e2b46a
+
+% 1 1 0 09a7334aac812bfb18db84a82400eaa6
+
+% 3 1 0 13cfcc0a03c3e8bd098e721d52099c9d
+
+% 4 1 0 1c71c65a99bdbbbe132acbdb02a040cd
+
+% 5 1 0 12c14612a4bab01602d0f6a6f64d23a3
+
+% 0 1 0 0b8ba4bda364bf26171ef1cf537309cf
+
+% 0 1 0 127df30f79501ebd1bafc59d3af7927b
+
+% 1 1 0 17f310790e1a13f21d60ab6dc8bdf0d2
+
+@ 0 3 0 0231d64df51d6de011d0e6903d11d5c4
++ `push` recibe refspecs y una política de forzado. `Push.Force.Lease` es el compare-and-swap del
++ lado remoto, `--force-with-lease`. Lleva las lecturas de las referencias del remoto a las que está
++ condicionado el envío.
+
+@ 0 1 0 0f4ef2945e9b28a90956cbc6da521484
++ ### Elegir un backend
+
+@ 0 1 0 17a3ef5980e74db21d7ae1a63c57a9e9
++ Los dos backends difieren en cómo hacen el trabajo, y por tanto en para qué sirve cada uno:
+
+% 2 1 0 12ead6de736022e2045ea21d681bf0c4
+
+% 0 1 0 011ba08513eeef2e0960fe824bf15d13
+
+@ 0 5 0 19b326895d3229d901f0bb184da06914
++ column  Funciona
++ column  Llega a los remotos
++ column  La opción para
++ row  `gitBackends.commandlineGit`  ejecutando la orden `git`  como lo hace `git`  el comportamiento completo del propio git: ganchos, filtros, ayudantes de credenciales, submódulos
++ row  `gitBackends.soundnessGit`  leyendo y escribiendo directamente los formatos de git  mediante un transporte: `SmartHttp`, `SshCommand`  no depender de `git`
+
+% 1 1 0 196056db0b9e59cf14fa0984b4cd3b09
+
+@ 0 2 0 05749561b1dac5770c1e8432282052af
++ `gitBackends.commandlineGit` ejecuta la orden `git` que encuentra
++ `gitCommands.searchpathGitCommand`, en el directorio de trabajo y el entorno que hay en el ámbito,
++ y registra cada invocación.
+
+@ 0 9 0 1de51cdb581af13809c1584e0c7f0503
++ `gitBackends.soundnessGit` es el backend nativo. Los objetos, sueltos y empaquetados, las
++ referencias, el índice, la configuración, las notas, los árboles de trabajo enlazados, la fusión,
++ el rebase y el stash se leen y escriben todos directamente, en los propios formatos de Git. Por
++ tanto, un repositorio es siempre uno que el propio `git` entiende, y una operación que un lado
++ detiene en un conflicto, el otro puede continuarla. Llega a un repositorio del mismo sistema de
++ ficheros por su ruta. Uno remoto necesita un transporte, que proporcionan los componentes `http` y
++ `ssh`. `octogenarian.Native(List(SmartHttp(), SshCommand()))` habla el protocolo de transmisión de
++ Git sobre el `Http.Backend` que haya en el ámbito, y sobre un `ssh` lanzado como proceso. `Native`
++ no se exporta a `soundness`, donde el nombre pertenece a xenophile, así que se escribe
++ cualificado:
+
+% 2 1 0 141fb876701048071f22090652b88a9d
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 0e146b94a7749c8b0587d3d57aa15fc5
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 187d136a3399ca8c01aedfe5adca6d8b
+
+% 1 1 0 0f04efedb0b4c22e0b42f5fa4cc632e6
+
+@ 0 2 0 0a7842101010cbab1b83d3323e5ed772
++ La firma es independiente del backend. Un `Git.Signer` crea la firma que lleva un commit o una
++ etiqueta, y un `Git.Verifier` la comprueba:
+
+% 2 1 0 02d59cff1e8c39dc005bb9dd4c8e21a5
+
+@ 0 5 0 086eb4c585ef49d60a4b80f79f0c68ea
++ column  Esquema
++ column  Firmante
++ column  Verificador
++ column  Maneja
++ row  SSH  `SshKeygen.Signer(key)`  `SshKeygen.Verifier(allowedSigners)`  `ssh-keygen -Y`, como hace git con `gpg.format = ssh`
+
+% 0 1 0 02f69257f732c40211d22c87649fdf17
+
+% 1 1 0 08597d76c992b1fc0b3452c455427c80
+
+@ 0 1 0 0376d37cde64bd4f0ae0937243920c69
++ Una etiqueta firmada con cualquiera de ellos es una que `git tag -v` acepta.
+
+@ 0 3 0 03493ac760ed52071a5d3c34163a61a0
++ Sea cual sea el backend elegido, `Exclusive` arbitra solo entre descriptores de esta JVM. Nunca se
++ espera a otro proceso, y por eso toda operación que mueve una referencia es un compare-and-swap
++ sobre la lectura `Stale` que recibió.
+
+@ 0 1 0 13d76204fd86bad6078cff59affae04e
++ ### Referencias
+
+@ 0 1 0 15528bba83404c140ac6b7fb2578bcfa
++ Cada clase de referencia es su propio tipo:
+
+% 2 1 0 1e396c6e96bdeabb07096255ce94e66f
+
+@ 0 7 0 08fb1f4d298ab0ac0b959a8c5939fcaa
++ column  Tipo
++ column  Nombra
++ row  `Git.Branch`  una rama
++ row  `Git.Tag`  una etiqueta
++ row  `Git.Hash`  un commit, mediante un identificador bien formado de cuarenta caracteres
++ row  `Git.Revision`  cualquiera de los anteriores, o una expresión relativa: `Git.Revision.head(1)` es `HEAD~1`
++ row  `Git.Ref`  una ruta de referencia completamente cualificada, como `refs/heads/main`
+
+% 1 1 0 0c91365bf7fe47ab0d2e1b4d5bce6bd4
+
+@ 0 1 0 1b8b377329fc9dce0cf326a02d834133
++ Así, una operación que espera una rama no aceptará una etiqueta:
+
+% 2 1 0 016dc6da7f4e81a51134733e0b0d008c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 2 1 0 00ba068b143a15dd1d55d3439d4db3b0
+
+% 0 1 0 1a7882a18b541f9e079ac917ada89e7a
+
+% 1 1 0 0b427586ad7351110e2cc430462139d5
+
+@ 0 4 0 1c5d1d902cc61796128d76acb922fe8c
++ Un `Git.Ref` se modela como una [ruta](paths.md) en el plano `Git.Refs`. Los nombres de
++ referencia siguen las propias reglas de Git: sin punto inicial, sin `..`, sin sufijo final `lock`,
++ y las demás. Las reglas se comprueban cuando se analiza un nombre a partir de texto, con
++ `Git.Branch.parse`, `Git.Tag.parse` o `Git.Refs.heads`, y un nombre incorrecto se notifica como un
++ `Git.RefError`:
+
+% 2 1 0 15675bf6dc7454d91cd787f28554725e
+
+% 3 1 0 1935c64913d770700b860495e8181c19
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 11f9b2cd256315bc19c6c991592af1d1
+
+% 1 1 0 1f01f9966360f8bd1826df87573b81cf
+
+% 0 1 0 1bdfbf37a7f22253064f3467221eb03c
+
+@ 0 3 0 12af3132e4eacdeb1475d7fd2b6cdd14
++ `diff` informa de los cambios como valores estructurados, no como texto de parche que haya que
++ volver a analizar. Cada `Git.Delta` lleva las rutas de ambos lados, la clase de cambio (añadido,
++ modificado, borrado, renombrado o copiado) y sus bloques de cambios. Cada bloque de cambios es una
++ lista de ediciones:
+
+% 2 1 0 1ed38640eec6e3c904497ddcea9f2ef9
+
+% 3 1 0 1bfca2417ba70196142f0f6f135a527a
+
+% 4 1 0 130b8f670abbcd930a3a38a39cc9d755
+
+% 5 1 0 1356ebd9be9e120a031bc8d2022418df
+
+% 0 1 0 02cb0ee0e901ee370d36d9536c51a629
+
+% 0 1 0 1116c8f114d209e11507f76c64930331
+
+% 0 1 0 028610614c2683d41eea31b55aae160e
+
+% 1 1 0 0b1fb4a67e76038017eda230a02646a4
+
+@ 0 1 0 1fd9b5bfe7f018361c5d48069cb18544
++ Cada método de diff compara dos lados:
+
+% 2 1 0 1b65f624761b0bdd0f6f7171b781bfb2
+
+@ 0 7 0 13bca5926b95ee7a1998e38595369f8b
++ column  Método
++ column  Izquierda
++ column  Derecha
++ row  `diff()`  el índice  los ficheros de trabajo
++ row  `diffStaged()`  HEAD  el índice
++ row  `diffAgainst(revision)`  la revisión  los ficheros de trabajo
++ row  `diffBetween(left, right)`  un commit  un commit
+
+% 1 1 0 03d9911f6a7866b215c61934d15e9ce3
+
+@ 0 1 0 05b76941e203e6cb18706d1299ddbf61
++ El mismo analizador, `Git.Patch.parse`, lee un parche venga de donde venga.
+
+@ 0 1 0 024fb36957fafe94009bec6b625b3dd7
++ ### Fusión, cherry-pick, reversión y rebase
+
+@ 0 3 0 1d1ab8a44d424d2c14005d3a53cb6e44
++ `merge` recibe la revisión que se va a fusionar, la lectura de `HEAD` y una política de avance
++ rápido. Si se crea o no un commit de fusión se indica explícitamente, y no se hereda de la
++ configuración. El resultado es un valor:
+
+% 2 1 0 1214cf17b8785c3305ea7dfaf7953a30
+
+@ 0 6 0 0c008979b800e18d1b1eb73e9103a3d7
++ column  Resultado
++ column  Significado
++ row  `FastForwarded(head)`  la rama avanzó hasta `head`, sin commit de fusión
++ row  `Merged(head)`  se creó un commit de fusión, `head`
++ row  `UpToDate`  no había nada que fusionar
++ row  `Stopped(operation)`  la fusión se detuvo en un conflicto
+
+% 1 1 0 08451913c816f3d3156e11d89293a231
+
+% 3 1 0 09104b9e323764f400183583411e4ec9
+
+% 4 1 0 18d4a2cd34cdb9600e8e99bcf6a0556a
+
+% 5 1 0 1f22a1f5a49fdb141d13a097b92b2279
+
+% 5 1 0 01905b610a780449043951a9d63b2aa6
+
+% 0 1 0 0f84cfb6b03f0dcd1f6846a60cb2746d
+
+% 1 1 0 08a0fcf54264c40215a1b32bb5deced8
+
+@ 0 5 0 0ebd8a0d1811f92719d44dd58c835b95
++ Un conflicto no es un error. La operación se detiene, y el resultado `Stopped` lleva una
++ `Git.Operation` que nombra las rutas en conflicto. Una vez resueltas y añadidas, `continue()`
++ termina la operación, `skip()` omite el commit y `abandon()` restaura el estado desde el que
++ empezó la operación. `cherryPick`, `revert` y `rebase` tienen la misma forma, y `stash` guarda y
++ restaura el trabajo sin confirmar.
+
+@ 0 1 0 1e6bbaebda6d2c211bb951702cc3885b
++ ### Remotos, configuración, notas y el reflog
+
+@ 0 2 0 19453e56115fd19d18e57206d52f9287
++ Los remotos se añaden, se listan y se eliminan como valores. La configuración se lee y se escribe
++ mediante un descriptor prestado, tipado por el códec del valor:
++ `repo.config { config ?=> config.get[Text](key) }`.
+
+@ 0 3 0 1178e6c184af5a3418c6ce1160020d15
++ Las notas adjuntan texto a un commit sin alterarlo, en un espacio de nombres elegido. Una escritura
++ de nota está condicionada a una lectura de la referencia de notas. Así es como las atestaciones de
++ compilación y otros metadatos ajenos al historial viajan con un repositorio, sin que un escritor
++ machaque a otro:
+
+% 2 1 0 08da98b81686f2b10d76735aed5d6a90
+
+% 3 1 0 17cb2ceaf6609aba025b5b6fa55a05d7
+
+% 4 1 0 0f346f3e50dd866501e59016467c53dd
+
+% 5 1 0 0023715be64a32a01df78fa29b6d1615
+
+% 0 1 0 1391bb0fe9a30ec31dc77bcd6484d84d
+
+% 0 1 0 042874fd356e356f0f2789c7bd877b31
+
+% 0 1 0 1582adf00d95b28519ec8d35215a1242
+
+% 0 1 0 1b0620a14f0d679c1bc7f0d0a724c212
+
+% 0 1 0 064f505e208703ba0b3278cf4f346e76
+
+% 1 1 0 0849feee9f95dfa21fae29af1ca9c8d4
+
+@ 0 2 0 09982741875338161c40684ad8bc3adc
++ `note` da `Unset` donde no hay nota. `reflog` da el historial local de adónde ha apuntado una
++ referencia, del más reciente al más antiguo. Ese registro es lo que permite recuperarse de un
++ reset equivocado.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 8 0 0fd01e3cd3a2a08f19642d3d30b1bb99
++ - [Sistema de ficheros](filesystem.md) describe los descriptores de directorio y las concesiones
++   que comparte un árbol de trabajo.
++ - [Rutas](paths.md) describe los planos sobre los que `Git.Ref` es una ruta.
++ - [Diffs](diffing.md) calcula y aplica diffs fuera de un repositorio.
++ - [Procesos](processes.md) describe cómo ejecuta `git` el backend de línea de comandos.
++ - [SSH](ssh.md) y el [cliente HTTP](http-client.md) proporcionan los transportes del backend
++   nativo.
++ - [Criptografía](cryptography.md) describe las claves que firman commits y etiquetas.
++ - [Árboles](trees.md) dibuja un historial de commits en carriles.

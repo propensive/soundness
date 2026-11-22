@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 0af7e31e640fb47417858fb2622edbdb
++ # `↯/s.16.4` — Wert unterhalb seiner unteren Grenze
+
+@ 0 1 0 047c9cca11d39cb61ad1ab7b52b19076
++ Wird zur Kompilierzeit ausgelöst, wenn ein Literal kleiner ist als das Minimum, das sein begrenzter
++ Typ zulässt.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 2 0 1607a4c68683baa80a5cfa48b680b24b
++ Ein begrenzter numerischer Typ trägt seinen Bereich in seinem Typ; ein Literal außerhalb des
++ Bereichs wird daher dort abgelehnt, wo es geschrieben steht.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 023e81c8779d66bb0f8b795be075ab47
+
+% 1 1 0 113d4536c178a2fb0b1200599b7273e6
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 1 0 08b6e696d832cfc91546add82b94adac
++ Verwenden Sie einen Wert innerhalb des Bereichs, oder erweitern Sie die Grenzen des Typs.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 182b99dddf81d5651ccd9f6afc52f756
++ - Quelle: `lib/cardinality/src/core/cardinality.internal.scala`

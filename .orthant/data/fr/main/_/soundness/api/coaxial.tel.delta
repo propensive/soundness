@@ -1,0 +1,132 @@
+orthant 2 language
+
+@ 0 81 0 0026cee60d2e94f80e45ba74dd55ff4a
++     entry #ServerSocket   le descripteur d'un socket en flux lié et en écoute (TCP ou Unix)
++     entry #DatagramSocket   le descripteur d'un socket de datagrammes lié
++     entry #MulticastSocket   le descripteur d'un socket ayant rejoint un groupe multicast sur chacune de ses interfaces
++     entry #Exchange   le descripteur d'une connexion cliente requête/réponse
++     entry #Courier   le descripteur d'une destination de datagrammes envoyés sans suivi
++     entry #listenTcp   lie un port TCP, sur une interface ou sur toutes, avec les options données
++         `listenTcp(port, interface, options)` lève une `Bind.Error` — `PortInUse`,
++         `PermissionDenied` ou `AddressUnavailable`, classée d'après l'échec de la plateforme
++         — et renvoie le `#ServerSocket` que prend `#accept`. Les backends JVM et Native
++         lient un `java.net.ServerSocket` (qui respecte une option `Timeout`) ; WASI lie un
++         socket TCP `wasi:sockets` sur l'adresse joker IPv4.
++     entry #listenDomain   lie un socket Unix à un chemin, avec les options données
++         Lève `Bind.Error(Unsupported)` sur Scala Native et WASI, qui n'ont pas de sockets
++         Unix. Sur la JVM, le fichier du socket est créé au chemin du `Uds` et ne doit pas
++         déjà exister.
++     entry #accept   bloque jusqu'à la prochaine connexion entrante, sous forme de `Duplex`
++         Le gestionnaire lit la requête depuis la `source` du duplex, et la boucle
++         d'acceptation écrit la réponse avec `send`. Lève `Socket.Error(Accept)` lorsque
++         l'acceptation échoue, ce que signale une acceptation interrompue lorsque le serveur
++         est arrêté.
++     entry #shutdown   ferme un socket en flux en écoute, en débloquant un `#accept` en attente
++     entry #listenUdp   lie un port UDP, avec les options données, pour recevoir des datagrammes
++         Les options sont appliquées avant la liaison, afin que `ReuseAddress` et `ReusePort`
++         prennent effet. L'interface, lorsqu'elle est donnée, devient l'interface multicast
++         sortante du socket. L'option `DatagramSize` fixe le tampon dans lequel chaque
++         datagramme est reçu (1472 octets sauf indication contraire). Renvoie un descripteur
++         unité sur WASI, où chaque opération sur des datagrammes lève une erreur.
++     entry #receive   bloque jusqu'au prochain datagramme sur un socket UDP lié, sous forme de `Packet`
++         Lève `Socket.Error(Timeout)` lorsqu'une option `Timeout` expire, et `Accept` pour
++         tout autre échec. Un datagramme plus long que le `DatagramSize` est tronqué à cette
++         taille.
++     entry #reply   renvoie un datagramme à l'expéditeur et au port d'un paquet reçu
++         Lève `Socket.Error(Transmit)` si l'envoi échoue.
++     entry #unbind   ferme un socket UDP lié, en débloquant un `#receive` en attente
++     entry #exchangeUdp   envoie un datagramme depuis un port éphémère et bloque jusqu'à une réponse
++         `exchangeUdp(endpoint, interface, options, data)` est la forme d'une requête DNS,
++         NTP ou STUN : un socket neuf, un datagramme sortant, un `Packet` entrant, le socket
++         fermé. Une `Socket.Option.Timeout` dans `options` borne l'attente, qui se manifeste
++         sous forme de `Socket.Error(Timeout)` ; la réponse porte son expéditeur, si bien
++         qu'un appelant peut vérifier qu'elle provient du bon endroit. `ask` dans
++         `coaxial.dns` est bâti dessus. Lève `Transmit` sur WASI, qui n'a pas d'UDP.
++     entry #joinMulticast   lie le port d'un groupe avec réutilisation de l'adresse et du port, et rejoint le groupe sur chaque interface
++         `joinMulticast(multicast, interfaces, options)` lie le port avec `SO_REUSEADDR` et
++         `SO_REUSEPORT` (par conception, et non par option : plusieurs abonnés sur un même
++         hôte partagent le port), puis rejoint le groupe sur chacune des interfaces qui
++         possède une adresse de la famille du groupe — une interface que le système
++         d'exploitation refuse est écartée — et conserve les appartenances jusqu'à
++         `#leaveMulticast`. L'adhésion joker est évitée car elle choisit une interface
++         arbitrairement, et de manière peu fiable sur macOS.
++     entry #receiveMulticast   bloque jusqu'au prochain datagramme que délivre le groupe, sous forme de `Packet`
++     entry #sendGroup   envoie un datagramme au groupe lui-même
++         Sur la JVM, une fois par interface rejointe (un groupe IPv6 lien-local a besoin de
++         l'interface comme portée) ; sur Scala Native, une fois par la route multicast par
++         défaut du noyau. Lève `Socket.Error(Transmit)` en cas d'échec.
++     entry #sendTo   envoie un datagramme depuis le socket du groupe vers une destination unicast et un port
++         La réponse à un expéditeur qui en a demandé une. Lève `Socket.Error(Transmit)` en
++         cas d'échec.
++     entry #leaveMulticast   ferme le socket du groupe, en abandonnant ses appartenances et en débloquant une réception en attente
++     entry #dialTcp   se connecte à un endpoint TCP distant pour un échange requête/réponse
++         Lève une `Socket.Error` de raison `Dns` pour un hôte impossible à résoudre,
++         `Refused`, `Timeout` ou `Connect`. Sur WASI, l'hôte doit être un littéral IPv4 (il
++         n'y a pas de résolveur), sinon `Dns`.
++     entry #dialTcpPort   se connecte à un port TCP sur l'hôte local pour un échange requête/réponse
++     entry #dialDomain   se connecte à un socket Unix pour un échange requête/réponse
++         Lève `Socket.Error(Unsupported)` sur Scala Native et WASI.
++     entry #request   envoie la requête en flux et ferme à moitié le côté sortie
++         Prend le flux de requête comme paramètre `consume` : il est vidé et fermé ici, et ne
++         peut plus être utilisé ensuite.
++     entry #response   la réponse, sous forme de flux tiré neuf à usage unique qui se termine à la fermeture à moitié du pair
++         `response(exchange)` exige un `Buffering` (la fenêtre de remplissage) et une
++         `Tactic[Truncation.Error]`, levée avec le nombre d'octets lus jusque-là lorsque la
++         lecture échoue en cours de route. Le flux capture la tactique ; il est donc lu là où
++         il a été créé.
++     entry #hangUp   ferme une connexion requête/réponse
++     entry #duplexTcp   se connecte à un endpoint TCP distant sous forme de `Duplex` persistant
++         Le canal est bloquant, si bien qu'une boucle de lecture attend dans `read` plutôt
++         que de sonder activement, et les options (et, lorsqu'une interface est donnée, une
++         liaison locale) sont appliquées avant la connexion. Lève une `Socket.Error` comme le
++         fait `#dialTcp`.
++     entry #duplexDomain   se connecte à un socket Unix sous forme de `Duplex` persistant
++         Lève `Socket.Error(Unsupported)` sur Scala Native et WASI.
++     entry #routeUdp   un coursier vers un endpoint UDP distant, depuis un port éphémère
++         Résout l'hôte de l'endpoint lorsque le coursier est créé ; l'interface, lorsqu'elle
++         est donnée, devient l'interface multicast sortante du socket.
++     entry #routeUdpPort   un coursier vers un port UDP sur l'hôte local
++     entry #dispatch   envoie un flux entier sous forme d'un unique datagramme à la destination du coursier
++         Le flux est mémoïsé en un seul datagramme ; il doit donc y tenir.
++   entry .Event   ce que journalise un socket : écoute, connexion et fermeture, chacune taguée `Log.Network`
+
+@ 0 7 0 01d4b21553a2bfc0031d3a26425fad74
++     detail
++         Chaque `Event` étend `Log.Network`, si bien qu'une configuration de journalisation
++         peut les sélectionner ou les faire taire par tag. `listen` et `subscribe`
++         journalisent `Listening` au niveau `info` au démarrage du serveur et `Closed` au
++         niveau `fine` à son arrêt ; `transmit`, `react` et `exchange` journalisent
++         `Connected` au niveau `fine` ; `duplex` journalise `Connected` au niveau `info` et
++         `Closed` au niveau `fine`. Chaque prêt prend un `Socket.Event is Loggable` ;
++         `logging.silentLogging` les ignore. Chaque événement porte le rendu de l'endpoint
++         sous forme de `Text`.
+
+@ 0 10 0 0e4115523416b6cf13f1ab38d55c59a5
++     entry .communicable   rend chaque événement sous forme de message
++         `Listening` sous la forme _à l'écoute sur `endpoint`_, `Connected` sous la forme
++         _connecté à `endpoint`_ et `Closed` sous la forme _connexion à `endpoint` fermée_.
++     entry .Listening   un serveur a commencé à écouter sur un socket
++       entry #endpoint   le socket, affiché
++     entry .Connected   un client s'est connecté à un endpoint
++       entry #endpoint   l'endpoint, affiché
++     entry .Closed   une connexion ou un serveur a été fermé
++       entry #endpoint   l'endpoint, affiché
++   entry .Option   une option de socket, typée par les transports pour lesquels elle est valide, rassemblée depuis la portée pour chaque connexion
+
+@ 0 13 0 17d666796862330602c3eef70b96aaef
++     entry #send   `send(data)` à tout le groupe ; `send(data, destination, port)` à un seul membre
++         Les deux lèvent `Socket.Error(Transmit)` en cas d'échec.
++   entry .subscribable   tout `Multicast` (ou un type affiné par son port littéral) `is Subscribable`, sur le `Socket.Backend` et l'`Every[Socket.Option.Udp]` dans la portée
++       Rejoint via `Socket.Backend#joinMulticast` sur les interfaces que choisit
++       `.interfaces`.
++   entry .bindable   `Multicast is Bindable`, dérivé du `Subscribable` : `listen` sur un groupe
++       Pour un membre qui ne fait que répondre : le gestionnaire est un `Packet =>
++       Multicast.Reply`, et le prêt de `listen` est un `Socket.Service` sans envois.
++       `subscribe` est le prêt qui les inclut.
++   entry .interfaces   les interfaces sur lesquelles un abonnement rejoint le groupe : celle ayant une adresse MAC donnée, ou toutes celles qui conviennent
++       Avec `Unset`, toutes les interfaces actives et capables de multicast autres que la boucle
++       locale, qui ne peut pas transporter de multicast sous Linux (les propres datagrammes d'un
++       programme lui reviennent plutôt via `Socket.Option.MulticastLoop`) ; avec une
++       `MacAddress`, l'interface qui la possède.
++   entry #group   l'adresse IPv4 ou IPv6 du groupe
++   entry #port   le port UDP du groupe

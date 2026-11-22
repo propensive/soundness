@@ -1,0 +1,908 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 05d9ebbe7b16e06314c693f4ff3c954b
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09bbff7899a68e751ea73e3155021b38
++ info   derivação genérica de instâncias de classes de tipos para produtos e somas, a partir de duas regras escritas uma única vez
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 04c88950aca70f1503c6922ecced67b5
++     _Wisteria_ é o motor de derivação por trás de todo codec derivado em Soundness — os
++     codificadores JSON construídos a partir de case classes, as linhas CSV construídas a partir
++     de campos, os digests construídos a partir de estruturas. Quem escreve uma classe de tipos
++     escreve duas regras, `conjunction` (como as instâncias dos campos de um **produto** se
++     combinam numa instância para o produto) e `disjunction` (como uma instância para uma
++     **soma** escolhe entre suas variantes), estendendo `Derivation`, e toda case class, tupla,
++     enumeração e trait selada passa então a ter uma instância, resolvida pelo given `derived`
++     herdado ou pedida com uma cláusula `derives`. Não há macro a escrever: as duas regras são
++     métodos inline comuns, e o trabalho campo a campo ou variante a variante é feito pelos
++     combinadores herdados `fields`, `contexts`, `build`, `construct`, `variant`, `delegate`,
++     `choices` e `singleton`.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1a79673f0c5fcfdd17ceee814d61943b
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 13147acc52e6cb8103f5ad4510211791
+
+% 0 1 0 13aa9dc6133e6a780636a2b34b76d33f
+
+% 0 1 0 144e1ca9fdf4f4931696760eeab20fb1
+
+% 0 1 0 1d2d3a970d4e705602448891021206a2
+
+% 0 1 0 17c6fd8df148d1511889a248e3654655
+
+% 0 1 0 1b7598531004cacc053a379c93161428
+
+% 1 1 0 06bff56d802acef7080a8e6e573d8128
+
+% 0 1 0 12966690a03c891315a16f87fc9a135f
+
+% 0 1 0 091e5b55970372c10eda8a5a65ed55a9
+
+% 0 1 0 10884fb74a62cc2d069c4fae82279dd8
+
+% 0 1 0 06e8b40b575b59f6094574421acdaee2
+
+% 1 1 0 0e2897de01d03d7003c2b645b75cd43e
+
+% 0 1 0 010530e45e4d14360587e77e503a8f89
+
+% 0 1 0 1a02c00a5ffb01fb0af00159237bb8e0
+
+% 0 1 0 0e85b81ce7d354c317f0db2a797b1549
+
+% 0 1 0 0a754f90293d122716f0a2fa6ccb01e6
+
+% 0 1 0 1c5e4b96e0f6458f01ac4f235999cd22
+
+% 0 1 0 15bcfcc2e868b68507a69dad802884b0
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 7 0 11804960e7a7af23155e8abe3c957920
++     Dentro da lambda polimórfica que cada combinador recebe, o campo ou a variante é descrito
++     por um punhado de valores contextuais, lidos pelos acessores do pacote: `contextual` é a
++     instância da classe de tipos para o próprio tipo do campo, `label` o seu nome tal como foi
++     escrito, `index` a sua posição, `default` (de vacuous) o valor padrão declarado do campo ou
++     `Unset`, e `dereference` uma função do produto para o campo. A sintaxe `[field] => field => …`
++     é uma lambda polimórfica: cada campo tem um tipo diferente, e o corpo sabe apenas que
++     `contextual` é uma instância exatamente para esse tipo, que é tudo de que precisa.
+
+@ 0 7 0 06408db19ed902a0115359ef8f63b748
++     Um **produto** é uma case class, uma tupla, um caso de enumeração ou um singleton (um case
++     object, ou um caso de enumeração sem parâmetros, que é um produto sem campos); seus valores
++     são **campos**, com tipos fixos, uma ordem canônica e rótulos. Uma **soma** é uma enumeração
++     ou uma trait selada; suas alternativas são **variantes**. O motor reconhece cada um através
++     de `scala.deriving.Mirror`, com os aliases aqui `Reflection`, `ProductReflection` e
++     `SumReflection`, de modo que um tipo sem mirror — uma trait simples, uma classe que não é
++     case class — falha no ponto da derivação.
+
+@ 0 7 0 0330e015d757e2a516941fd7d11afd60
++     `Derivation` deriva tanto para produtos quanto para somas; `ProductDerivation` só para
++     produtos, de modo que aplicar a classe de tipos a uma soma é um erro de compilação, e
++     `SumDerivation` só para somas. Para uma classe de tipos escrita no estilo `Self`
++     (`value is Display`), os aliases `Derivable` e `ProductDerivable` adaptam a forma. Uma
++     instância derivada fica numa prioridade mais baixa que qualquer given escrito no próprio
++     corpo do objeto companheiro, então uma instância escrita à mão para um tipo sempre vence. A
++     derivação é invisível para quem usa uma classe de tipos: definir uma case class basta.
+
+@ 0 7 0 1979e7b4646fa66a159a1fbe4ed690e1
++     O motor deriva um **grafo** inteiro de uma vez: `derived[T]` visita todo tipo alcançável a
++     partir dos campos e das variantes de `T`, emite uma instância por tipo distinto e resolve
++     cada campo pela busca implícita real, ignorando os givens de derivação da própria classe
++     de tipos, de modo que a instância de um campo é uma escrita à mão, um codec para uma
++     coleção ou uma irmã no mesmo grafo — e um tipo recursivo resolve para si mesmo em vez de
++     reentrar na derivação. Ainda assim, o melhor é dar a um tipo recursivo sua instância no
++     objeto companheiro, com uma cláusula `derives`.
+
+@ 0 5 0 036443b40882673715d41ff0ebe382be
++     Além dos codecs, o objeto `arithmetic` deriva `Addable`, `Subtractable`, `Multiplicable` e
++     `Divisible` campo a campo para qualquer produto, cada um como given importado por nome:
++     `import arithmetic.addable`. Substituições por campo vêm de vicarious: um
++     `derivation is Specific over typeclass` no escopo, construído com `specifically`, fornece
++     uma instância diferente num caminho de campo nomeado, e todo combinador o consulta.
+
+@ 0 4 0 17f3716236e5909a13ae598a2020a7ba
++     A biblioteca é um único source set, `wisteria.core`, que compila para a JVM, Scala.js e
++     Scala Native. Tudo é exportado para o guarda-chuva `soundness`, com uma ressalva: o acessor
++     `label` compartilha o nome com o `Element#label()` de tarantula, então um arquivo que
++     importa os dois e vê `label` relatado como ambíguo deve escrever `wisteria.label`.
+
+% 0 1 0 1b16f507f74ef78910d9ae05b9b17bcb
+
+% 0 1 0 1469cdb0563490d407c8700030dd2d3a
+
+% 0 1 0 02520eac0fbae18b1ef1a6378a43a69d
+
+% 0 1 0 16a304ec1cd7ff4000fa6e8070f71c3e
+
+% 0 1 0 1ed6710e6599bce30402f78dacf05b60
+
+@ 0 1 0 0aa0cca7d2547f671c239b055ca2ac7b
++ entry .Derivation   a base do objeto companheiro de uma classe de tipos que deriva tanto para produtos quanto para somas
+
+% 1 1 0 17321e16e514a18500e9ce0185ede43c
+
+@ 0 5 0 06cf81340d3c3da100c6eaeaa0f5cdee
++       `object Typeclass extends Derivation[Typeclass]` dá à classe de tipos uma derivação: o
++       objeto implementa `conjunction` (a regra de produto, de `ProductDerivation.Methods`) e
++       `disjunction` (a regra de soma, de `SumDerivation.Methods`), e herda `derived`, o given
++       pelo qual qualquer tipo produto ou soma resolve uma instância. O parâmetro de tipo é o
++       construtor de tipos da classe de tipos; uma classe de tipos no estilo `Self` usa
++       `Derivable` em vez disso.
+
+% 2 1 0 0d0337fa0da76bb5080994e64e520e32
+
+% 3 1 0 138106c240cf290f05f72c91cfdfb2ac
+
+% 4 1 0 1c77c82091b6efab11f641938afedb77
+
+% 0 1 0 067ff7c5e830be870106b98cc0352688
+
+% 0 1 0 0454a91fd21e0b71158bca0b3c6fe5d1
+
+% 0 1 0 05f33a590db72e541882d93454661130
+
+% 0 1 0 07a949f21a3498a30a9a2d75c851539a
+
+% 0 1 0 021eace761ebc7aa06ae5f95006f9c32
+
+% 0 1 0 0625be81730b847003845275b84fe0e3
+
+% 1 1 0 17c3e3b458cf6fce127bbeb3e765beee
+
+% 0 1 0 07bac2604ad319bf05da505554c55a13
+
+% 0 1 0 0f1da7bceb1a62161cfa67fb08e8ee7d
+
+% 0 1 0 1d4e753f9fc49f901cda04ec12c9277f
+
+% 0 1 0 01b5c590dfa035dc143e85c627233416
+
+% 0 1 0 1ca937a34616c150014bc9fc24d86738
+
+% 0 1 0 15350d969a6406161d89fbf9cb3ca286
+
+% 1 1 0 02a196d01ec141f20654fa187771175a
+
+% 0 1 0 032eabbbec06e4df1f7bed37c94f0df3
+
+% 0 1 0 0f4aef81f061039f0c872cef162c552b
+
+% 0 1 0 03526477d1343a2d0b94ac6508df9251
+
+% 2 1 0 02ef9817fd85db8310ce071fe6f0fc39
+
+% 0 1 0 05657e63441db3c016c9822ac7beb72c
+
+% 1 1 0 0b0d1c220e07e5d20e98be66de00532f
+
+@ 0 8 0 1dee106818cc4ef80d42c1440cbbb863
++       As duas regras são `inline`: elas se expandem no local de uso, uma vez por tipo no grafo
++       derivado, o que permite que o `contextual` da lambda seja a instância para o tipo de
++       campo certo e que `inline if choice[derivation]` rejeite uma forma em tempo de compilação
++       com `scala.compiletime.error` (escrito de forma totalmente qualificada). Dois erros são
++       comuns o bastante para serem nomeados: um erro longo que termina em _given instance
++       derived in trait Derivation does not match type…_ quase sempre significa que falta à
++       variável de tipo de uma lambda polimórfica o seu limite superior (`[variant <: derivation]`,
++       não `[variant]`), e uma incompatibilidade com `Product` significa que falta
++       `<: Product` ao parâmetro de tipo de `conjunction`.
+
+@ 0 4 0 09f69c8bc4a697e10e7a26a7cebb2097
++       O objeto não precisa ser o objeto companheiro da classe de tipos. Definidas num objeto
++       comum, as regras dão a derivação sem expô-la à busca implícita, e `Rules.derived[T]` é
++       chamado onde quer que se queira uma instância — a maneira de oferecer duas derivações de
++       uma mesma classe de tipos, digamos um parser estrito e um tolerante.
+
+@ 0 8 0 1f7d4339d29dc5701838eed5a9b5bc6c
++       Sob verificação de capturas, o tipo do resultado de uma regra é `typeclass[derivation]^`:
++       uma instância derivada pode capturar honestamente as capabilities de que sua resolução
++       precisou, como a tática de um decodificador, e a captura é apagada uma única vez, em
++       `derivedOne`. Uma derivação se expande no módulo que a usa, então um erro de captura numa
++       derivação é relatado nesse módulo, não no da própria classe de tipos. Uma regra de soma
++       que chama `delegate` ou `singleton` precisa de um `Tactic[Variant.Error]` onde se expande;
++       a forma habitual o sela dentro da instância com `provide[Tactic[Variant.Error]]`, para que
++       a instância derivada não seja ela mesma uma capability.
+
+% 0 1 0 0ee2070c762f0c5a02120dbde3000d4f
+
+% 1 1 0 0dc8e3c3d962d2520a2d79b2f9e5d2c2
+
+% 0 1 0 0790dba7c556641e1a5f3a1b3e9c5d3a
+
+@ 0 16 0 19c013751dd1808916865c7a51841b2a
++   entry #derivedOne   uma instância para um tipo, produto ou soma, com um nível de profundidade
++       Escolhe `disjunction` para uma soma e `conjunction` para um produto, inspecionando o
++       símbolo do tipo, e estreita o resultado novo para `typeclass[derivation]`. Seus campos e
++       variantes resolvem para instâncias irmãs; `derived` o chama uma vez para cada tipo
++       distinto do grafo, e uma derivação o alcança diretamente quando quer exatamente um nível.
++   entry #derived   o given que deriva uma instância para qualquer tipo com uma `Reflection`
++       `derived[derivation]`, que recebe uma `Reflection[derivation]` (um
++       `scala.deriving.Mirror`), é o given que a busca implícita encontra para todo tipo produto e
++       soma, e o método que uma cláusula `derives Typeclass` nomeia. Ele constrói o grafo inteiro
++       de tipos alcançáveis a partir de `derivation` — todo tipo de campo e tipo de variante,
++       recursivamente —, emite uma instância vinculada de forma preguiçosa por tipo distinto e
++       retorna a da raiz. Um campo cujo tipo tem um given escrito à mão, ou um codec como o de
++       `List[T]`, usa-o; um campo cujo tipo é outro produto ou soma do grafo usa sua irmã; um
++       tipo que alcança a si mesmo resolve para seu próprio vínculo. Um tipo de campo sem
++       nenhuma instância é um erro de compilação na derivação, e compilar um
++       `Typeclass.derived[T]` explícito no local da chamada é a maneira mais rápida de descobrir
++       a qual campo falta uma.
+
+@ 0 1 0 1c94e7b403abe6171266e748d590d08b
++ entry .ProductDerivation   a base do objeto companheiro de uma classe de tipos que deriva só para produtos
+
+% 1 1 0 11b4e51329b4b4be142407fd2c4126db
+
+@ 0 7 0 00214da99cfd57b5128591b7afce71e2
++       `object Typeclass extends ProductDerivation[Typeclass]` dá à classe de tipos uma derivação
++       para case classes, tuplas e singletons, e nenhuma para somas: aplicá-la a uma enumeração
++       ou a uma trait selada é um erro de compilação que nomeia a incompatibilidade, em vez de
++       uma surpresa em tempo de execução. O objeto implementa só `conjunction` e herda
++       `derived`. Os combinadores com que se escreve uma regra de produto — `fields`,
++       `contexts`, `build`, `construct`, `complement`, `typeName`, `tuple` e `singleton` — são
++       os membros de `ProductDerivation.Methods`.
+
+% 2 1 0 0e27187a328433e113a9c8d9b8fa964d
+
+% 3 1 0 1eeb3d1cfef69c4407e9d40206f7d3f9
+
+% 4 1 0 06ba31ef59d885911d9eb992209ac110
+
+% 0 1 0 19a21b97cca651720e895f942ed49233
+
+% 0 1 0 1cb5510700c904bd14478ee8cea3586f
+
+% 0 1 0 10ea6dd3436fda07173d66c8f47f6e7a
+
+% 0 1 0 18a0839b0cc040a71ec9779fa29526e6
+
+% 0 1 0 0d9121c2bb83e4e6036725c5cf74c42e
+
+% 0 1 0 03fad97a20a5fa100ef15bb83295af60
+
+% 0 1 0 095f662d33f43b9e093a571bf641a967
+
+% 0 1 0 136e1115c40308080525bf8d83358e7d
+
+% 0 1 0 1f1363ce5a99e3a2156eb29b107000b8
+
+% 0 1 0 1cc4f93273b759961610bef56f39dc95
+
+% 2 1 0 04533cfb6eee4ddb07d0cbe4d6428d26
+
+% 0 1 0 15f1a6562d1bc5f2006ae18c0508a3bd
+
+% 1 1 0 1b541ae3d6caf959179232a2d821b7cb
+
+% 2 1 0 14b1bea166369d871612d279ec9cf5dc
+
+% 2 1 0 1671d92c922f15ad00af0b0c49093d4a
+
+@ 0 1 0 1d94bd7648cef7f616afab6a61cf3442
++   entry .Methods   os combinadores de produto: o vocabulário em que se escreve um `conjunction`
+
+% 1 1 0 130fd033f84a2d0f1f5d61c6820d1ed4
+
+@ 0 9 0 07a27ae720f5800b04aee4458bc51f88
++         A trait que todo `Derivation` e `ProductDerivation` incorpora. Ela declara a regra de
++         produto abstrata, `conjunction`, e fornece os combinadores inline com que a regra é
++         escrita. Cada um recebe uma lambda polimórfica, `[field] => … => result`, e a expande
++         uma vez por campo, com os valores contextuais do campo no escopo: `contextual`, a
++         instância `typeclass[field]`; `label`, o nome do campo como `Text`; `index`, sua
++         posição como `Int & FieldIndex[field]`; `default`, um `Default[Optional[field]]` que
++         contém o padrão declarado ou `Unset`; e, em `contexts`, `dereference`, uma função
++         `derivation -> field`. Os combinadores são `protected`, então são alcançados de dentro
++         do objeto que deriva:
+
+@ 0 18 0 0b5bcd2ad2db588d107f3f544ec81531
++         - `fields(value)(lambda)` faz um fold sobre os campos de um valor, dando à lambda o
++           valor de cada campo, e retorna os resultados como um `Array[result]` congelado. É o
++           combinador do **consumidor**: um renderizador, um codificador, um hash. O parâmetro
++           da lambda é o valor do campo.
++         - `contexts[derivation]()(lambda)` é o mesmo fold sem valor: o parâmetro da lambda é a
++           instância do campo, e `dereference` está disponível para alcançar o interior de um
++           valor — ou de dois valores, que é como uma equivalência compara campos
++           correspondentes sem separá-los da lambda que os tipou. Para um schema, ou para a
++           lista dos rótulos de um produto, nenhum valor é necessário.
++         - `build[derivation](lambda)` constrói um novo valor do produto: o parâmetro da lambda
++           é a instância do campo, e ela retorna o valor do campo. É o combinador do
++           **produtor**: um parser, um decodificador, um gerador. A construção passa pelo
++           `fromProduct` do mirror, que é o que a faz funcionar para case classes aninhadas em
++           objetos e declaradas dentro de métodos.
++         - `construct[constructor, derivation](bind, pure, lambda)` é `build` para uma lambda
++           cujo resultado vem envolvido num construtor de tipos — um `Optional`, um `Attempt`,
++           uma `List` —, encadeando os campos pelos `bind` e `pure` polimórficos que recebe, de
++           modo que um campo que falha faz o produto falhar:
+
+% 0 1 0 13315afc77200bb10a6eae432453b8b3
+
+@ 0 3 0 1351cfc65fe897131e62d302f583a76c
++         - `complement(product)` lê o campo atual de outro valor do mesmo produto, tipado com o
++           tipo do campo, dentro de qualquer uma das lambdas; `dereference` é o mesmo acesso
++           como função.
+
+@ 0 7 0 19a2cd4f57ef5fed170aa8f30de6b0f0
++         Um fold convoca a classe de tipos para **todo** campo, então mesmo uma classe de tipos
++         cujas instâncias-folha são triviais (os rótulos de um `Text`, digamos) precisa
++         fornecê-las. `index` é um `Int` com marca, então uma `List` nativa é indexada com
++         `Ordinal.zerary(index)` e produz um `Optional`; a restrição de complexidade para indexação
++         (`dysasymptotics.linearAccess`) precisa ser importada onde a derivação se expande. Sob
++         verificação de capturas, um valor que uma lambda lê de um campo de tipo array mantém a
++         anotação de captura do campo, então um produto com um campo `Array[Long]^{}` congelado
++         é derivado sem problemas.
+
+@ 0 30 0 167c430cc6e1b76f0f45586460d46274
++         Como a regra é `inline`, uma operação de coleção restrita dentro dela — `.all`,
++         `.to[List]`, indexar uma `List` por um ordinal — é resolvida onde a derivação se
++         expande, contra tudo o que está importado ali. Se uma operação assim não for resolvida
++         na expansão, embora a mesma linha compile num `def` simples, mova-a para um método
++         auxiliar comum que a regra chame.
++     entry #conjunction   a regra de produto: uma instância para um produto a partir das instâncias dos seus campos
++         Abstrata, implementada pelo objeto que deriva.
++         `conjunction[derivation <: Product: ProductReflection]: typeclass[derivation]^` é
++         chamada uma vez por tipo produto num grafo derivado, com o mirror no escopo, e retorna
++         a instância, geralmente como uma lambda sobre `fields`, `contexts`, `build` ou
++         `construct`. O limite `<: Product` e o context bound são ambos obrigatórios. O
++         resultado é novo (`^`) sob verificação de capturas, então a instância pode capturar o
++         que sua construção precisou; `Derivation#derivedOne` apaga a captura.
++     entry #typeName   o nome do tipo para o qual se deriva, como `Text`
++         `typeName[derivation]` é o rótulo do mirror: `Person` para `case class Person`,
++         `Tuple2` para um par. Disponível nas duas regras, e nas lambdas, para uma renderização
++         que nomeia o tipo ou uma variante.
++     entry #tuple   se o produto é uma tupla, decidido durante a compilação do código
++         `inline if tuple[derivation] then … else …` permite que uma renderização omita o nome
++         do tipo no caso de uma tupla, cujos campos são rotulados `_1`, `_2`, ….
++     entry #singleton   se o produto é um singleton — um case object ou um caso sem parâmetros
++         `inline if singleton[derivation] then typeName[derivation] else …`: um singleton não
++         tem campos, então uma renderização mostra só o seu nome, e um parser não tem nada a
++         analisar.
++   entry #derivedOne   uma instância para um tipo produto, com um nível de profundidade
++       `conjunction` aplicada ao tipo, com seu mirror convocado, e o resultado novo estreitado
++       para `typeclass[derivation]`. Um tipo soma é um erro de compilação aqui.
++   entry #derived   o given que deriva uma instância para qualquer tipo produto
++       Como `Derivation#derived`: constrói o grafo de tipos alcançáveis e retorna a instância
++       da raiz, com cada tipo derivado por `derivedOne`. Uma soma entre os tipos alcançáveis é
++       um erro de compilação, já que esta derivação não tem `disjunction`.
+
+@ 0 1 0 1caf6de83cb84814068e68711a617ad0
++ entry .SumDerivation   a base do objeto companheiro de uma classe de tipos que deriva só para somas
+
+% 1 1 0 01810cd410a6d24301056f654514e1da
+
+@ 0 6 0 07ba64f508aec8951ab9c469aaaf400e
++       `object Typeclass extends SumDerivation[Typeclass]` dá à classe de tipos uma derivação
++       para enumerações e traits seladas, e nenhuma para produtos: as instâncias das variantes
++       precisam vir de outro lugar, via de regra de givens escritos à mão. O objeto implementa
++       só `disjunction` e herda `derived`. Os combinadores com que se escreve uma regra de soma —
++       `variant`, `delegate`, `choices`, `singleton`, `complement`, `variantLabels` e `choice` —
++       são os membros de `SumDerivation.Methods`.
+
+% 2 1 0 0a8e8b92642f3698188154e76a6ba0b4
+
+% 3 1 0 1144e867abc178e6111f9629a60cf035
+
+% 0 1 0 0117438b690aaebc0e0c6bc11cb64147
+
+% 0 1 0 10437ce778870f5203bf37312a79f45b
+
+% 0 1 0 04d009cc9431decb0f72b165fa824997
+
+% 0 1 0 0252d8b3f04aa0b31833ba1dd7c78649
+
+% 0 1 0 0f57a7e08ba1bd1e02215ec4d5951d24
+
+% 0 1 0 04c04b7a2bb4cf7f16ded1b9b6371169
+
+% 0 1 0 114f7a268b59e0e90f18e752b62315c5
+
+% 0 1 0 18bc41b444129aa905caf1ca99a5a2f5
+
+% 0 1 0 1ce79f2a3076093a0842088338f34c87
+
+% 0 1 0 1900295e8914dde01e8ba505a8fd5a7b
+
+% 0 1 0 08e309bef604dd2b1245d60636a495fb
+
+% 0 1 0 125c3c341cb854791f5a9e509cf821bb
+
+% 1 1 0 0918ff7e3958ef0c1c426ff50661fec2
+
+% 2 1 0 1bb121329c0a9bf018fbf20516bc439b
+
+% 0 1 0 1d9b5d79310caccc132d3e13708e853f
+
+@ 0 1 0 1f5868421afbf1af0e73ce49cf4a5dda
++   entry .Methods   os combinadores de soma: o vocabulário em que se escreve um `disjunction`
+
+% 1 1 0 1b4ff102e436da670dff47d5cea82c90
+
+@ 0 7 0 1aa6cc5971f5fbce0f89608a961cb93c
++         A trait que todo `Derivation` e `SumDerivation` incorpora. Ela declara a regra de soma
++         abstrata, `disjunction`, e fornece os combinadores inline com que a regra é escrita.
++         Cada um recebe uma lambda polimórfica sobre a variante,
++         `[variant <: derivation] => … => result` — o limite superior é obrigatório —, e a
++         expande com os valores contextuais da variante no escopo: `contextual`, a instância
++         `typeclass[variant]`; `label`, o nome da variante como `Text`; e `index`, sua posição
++         como `Int & Variant.Index[variant]`. Os combinadores são `protected`, então são
++         alcançados de dentro do objeto que deriva:
+
+@ 0 16 0 1785478c839190020bd2a5991924f353
++         - `variant(sum)(lambda)` despacha pelo caso real de um valor: o parâmetro da lambda é o
++           valor estreitado para a sua variante, então o corpo é tipado no caso e não na soma. É
++           o combinador do **consumidor**.
++         - `delegate(label)(lambda)` é informado de qual variante produzir, pelo seu rótulo, e
++           dá à lambda a instância dessa variante; é o combinador do **produtor**, para um
++           decodificador cuja entrada carrega um discriminador. Um rótulo que não nomeia nenhuma
++           variante lança `Variant.Error`, então um `Tactic[Variant.Error]` precisa estar no
++           escopo onde a regra se expande — via de regra selado dentro da instância com
++           `provide[Tactic[Variant.Error]]`.
++         - `singleton(label)` transforma um rótulo de volta no valor que ele nomeia, para uma
++           soma cujas variantes são todas singletons; um rótulo desconhecido também lança
++           `Variant.Error`.
++         - `choices(lambda)` faz um fold sobre todas as variantes sem valor pelo qual despachar,
++           dando à lambda a instância, o rótulo e o índice de cada variante, e retorna um
++           `Array[result]` congelado: o que precisa uma derivação que produz um schema em vez de
++           uma instância.
++         - `complement(sum)` lê o outro valor de uma classe de tipos de dois valores estreitado
++           para a variante atual, como um `Optional`, já que os dois não precisam ser da mesma
++           variante.
++         - `variantLabels` lista os rótulos das variantes, na ordem de declaração.
+
+@ 0 22 0 081c891849bff7021938dae6208313b0
++         `choice[derivation]` informa, durante a compilação do código, se toda variante é um
++         singleton — uma enumeração de nomes, sem dados — e é escrito
++         `inline if choice[derivation] then … else scala.compiletime.error("…")`, para que uma
++         derivação que só faz sentido para essas enumerações rejeite as demais com sua própria
++         mensagem.
++     entry #disjunction   a regra de soma: uma instância para uma soma a partir das instâncias das suas variantes
++         Abstrata, implementada pelo objeto que deriva.
++         `disjunction[derivation: SumReflection]: typeclass[derivation]^` é chamada uma vez por
++         tipo soma num grafo derivado, com o mirror no escopo, e retorna a instância,
++         geralmente como uma lambda sobre `variant` ou `delegate`. Nova (`^`) sob verificação
++         de capturas, como `conjunction`.
++     entry #choice   se toda variante da soma é um singleton, decidido durante a compilação do código
++         `transparent inline`, então `inline if choice[derivation]` é resolvido em tempo de
++         compilação e o ramo não tomado é eliminado — incluindo um `scala.compiletime.error`
++         que de outra forma faria o build falhar. Verdadeiro para uma enumeração de nomes simples
++         e para uma trait selada de case objects; falso assim que uma variante carrega dados.
++         Decidido inspecionando o símbolo do tipo, então é confiável mesmo no fundo da expansão
++         inline do grafo.
++   entry #derivedOne   uma instância para um tipo soma, com um nível de profundidade
++       `disjunction` aplicada ao tipo, com seu mirror convocado, e o resultado novo estreitado
++       para `typeclass[derivation]`. Um tipo produto é um erro de compilação aqui.
++   entry #derived   o given que deriva uma instância para qualquer tipo soma
++       Como `Derivation#derived`: constrói o grafo de tipos alcançáveis e retorna a instância
++       da raiz. Um produto entre os tipos alcançáveis — uma variante com campos, digamos —
++       precisa ter uma instância própria, já que esta derivação não tem `conjunction`.
+
+@ 0 1 0 08d5a3959a151b7a1795105256801bc3
++ entry .Derivable   `Derivation` para uma classe de tipos escrita no estilo `Self`: `value is Display`
+
+% 1 1 0 041b253fc40796fb19d661276b1f7fcb
+
+@ 0 5 0 09e18473a445b54e1dfeeb7c31312ffb
++       `Derivation` recebe um construtor de tipos, `Typeclass[_]`. Uma classe de tipos cujo
++       sujeito é um membro de tipo `Self` — `trait Display { type Self; def display(value: Self): Text }`,
++       usada como `Text is Display` — não tem construtor de tipos para lhe dar, então
++       `Derivable[Display]` escreve um: é `Derivation[[self] =>> Display { type Self = self }]`.
++       As regras são então escritas com a sintaxe `is` nos seus tipos de resultado, e os mesmos
++       combinadores se aplicam.
+
+@ 0 2 0 127bdc10747350561c556081bba6ed11
++       Acompanhando uma classe de tipos à medida que cresce: um `Display` escrito primeiro só
++       para produtos, com `ProductDerivable`, e depois dotado também de uma regra de soma, com
++       `Derivable`.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 176406b3a306ff89139e3c602bb149fb
++         label Só uma regra de produto: case classes são exibidas, somas não
+
+% 1 1 0 1928423003c643bc1e03823b75be9fce
+
+% 2 1 0 1dc5692799ac665707efb4c8bcc16100
+
+% 3 1 0 02f87f04dcf5dc0810e62f70cc7f6e20
+
+% 5 1 0 020c357d9b691a0c04bddf468f31a480
+
+% 6 1 0 10597ec20a8e7ead165ca1b77557308f
+
+% 7 1 0 19524aaf3101d02d0c00210e18e318d7
+
+% 0 1 0 01ba80d649231d3b12707e7f3cad11ea
+
+% 1 1 0 19e9566c61abe304139af4ae5adcc057
+
+% 2 1 0 029e18582c092a57057ac0f85d7e249d
+
+% 4 1 0 040b5fcdc834adb30018094a94d3d64e
+
+% 5 1 0 0376d0b2af7744e30298eb75269c7a2c
+
+% 6 1 0 10c9957a2e6097be1da0cf78fcffcc2b
+
+% 7 1 0 1919183200d8c524110b0aac51e64373
+
+% 8 1 0 1de78eec1e9fdd030e1f4f5ae5bd1ec7
+
+% 2 1 0 062feab503460d6d11c9ff71037b3ac5
+
+% 3 1 0 1414dc5277109a3e0afa848a73962d32
+
+% 5 1 0 1cbb61f6f41191b30f79fb2bc679f6f4
+
+% 7 1 0 156d6135e47c89e9095d40979984f584
+
+% 8 1 0 08a01df668387d2c0eccac9fc0323525
+
+% 9 1 0 196b87afe98757bf149c40f2ea1f83fd
+
+% 11 1 0 1a6ebcca001d84ec1d080203a7bcb37e
+
+% 0 1 0 150b77db62817c2c10352cece49c5793
+
+% 1 1 0 058405961cbbfb0b0fb9bc687a8969b8
+
+@ 0 1 0 1e334de49ecf1c540915f636ae5e4ba7
++         label Também uma regra de soma: a própria instância da variante a exibe
+
+% 1 1 0 04d1022e6fe227f211e1319f3f3ff076
+
+% 2 1 0 12ec126390744ce8065cd53293a049e9
+
+% 3 1 0 0e41d0503a68a7811a92f25aacdcc299
+
+% 5 1 0 05bfc6513f2f9e0105f9082296d8f52e
+
+% 6 1 0 0ef4d221ae5236141e115242f073fd03
+
+% 7 1 0 0aab4d02da9919781dbeabfd7a9d605d
+
+% 0 1 0 18d1f373c69f5df81461fd9a12fad695
+
+% 1 1 0 1908f87934e8cada16a94720d02bdb2c
+
+% 2 1 0 0d59793153e14f0e182bd626ad9eb67f
+
+% 4 1 0 091ba7af6b85222503b42921a22a1335
+
+% 5 1 0 118d9f7ead7afb1c0f825367af4eda4b
+
+% 6 1 0 176a97e133407c5c1cf47fec8162f884
+
+% 7 1 0 0d479cb383223a771886256eb307d2bf
+
+% 8 1 0 1f36d77071f722e40a7e3a0b530ecf72
+
+% 0 1 0 07921cac7d4701461947e15dc6ddc700
+
+% 1 1 0 0fbd694947311d6215b7bd7c1b26b199
+
+% 0 1 0 1697a6a840d45e9901f972943113dc82
+
+% 0 1 0 13372a1edcd9fcb00b1ced6ad3d9d915
+
+% 2 1 0 1eec1aff6acaf3240b04a56d945f9f49
+
+% 3 1 0 1f791b949d2bafac11abe73c3d129514
+
+% 5 1 0 1466a2563bf4329c1daa3e9bed8794b0
+
+% 7 1 0 1ea2c49e5b4340431d511a9525d5c6d8
+
+% 8 1 0 058ab5bee55ec4ce0379214457972deb
+
+% 9 1 0 0bb479d85adae46e0b66e0eeddaf140e
+
+% 11 1 0 03ddb52fb78a24aa139ef608696874bc
+
+% 0 1 0 0b10a05a0a4bb9cd19aba4b695fc882b
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 042fc9db001732800d7057fe4a99f87e
++       Substituições para um caminho de campo vêm de vicarious: com um
++       `Duel is Specific over Display` no escopo, construído como
++       `specifically { case root.opponent.name() => shout }`, a instância derivada usa `shout`
++       exatamente nesse caminho e os padrões no resto.
+
+% 1 1 0 17907ba806159e28012ce28565b6810f
+
+% 2 1 0 050a021a2512e9dd0d224f25a89efaae
+
+@ 0 5 0 07d2c9ce493e4a9e1cc6c6381b71c382
++ entry .ProductDerivable   `ProductDerivation` para uma classe de tipos escrita no estilo `Self`
++     `ProductDerivable[Typeclass]` é `ProductDerivation[[self] =>> Typeclass { type Self = self }]`:
++     a derivação só para produtos de uma classe de tipos cujo sujeito é seu membro de tipo
++     `Self`, com `conjunction` retornando `derivation is Typeclass`. Veja `Derivable` para a
++     forma com duas regras.
+
+@ 0 8 0 184690156361813f1a83743d8a630d89
++ entry .Reflection   evidência de que um tipo é um produto ou uma soma: `scala.deriving.Mirror.Of`
++     `Reflection[derivation]` é o `Mirror.Of[derivation]` do compilador, a evidência que todo
++     given `derived` recebe: ela existe para toda case class, tupla, enumeração, trait selada e
++     singleton, e para nada mais, e é por isso que não se pode derivar para uma trait simples
++     ou para uma classe que não é case class. Uma `ProductReflection` satisfaz uma exigência de
++     `Reflection`, já que `Mirror.ProductOf` é um `Mirror.Of`. Um mirror é resolvido dentro de
++     uma busca aninhada de context bound, o que permite convocar uma instância derivada de
++     dentro da derivação de outra classe de tipos, como o `read[T]` de um formato.
+
+@ 0 4 0 1989230590b0c72a0158d9ea753a4761
++ entry .ProductReflection   evidência de que um tipo é um produto: `scala.deriving.Mirror.ProductOf`
++     `ProductReflection[derivation <: Product]` é o context bound que `conjunction` exige. Ela
++     carrega os rótulos e tipos dos campos do produto, e seu `fromProduct` é como `build`
++     constrói um valor.
+
+@ 0 4 0 0043c123258aaeb01b42f9c76146c021
++ entry .SumReflection   evidência de que um tipo é uma soma: `scala.deriving.Mirror.SumOf`
++     `SumReflection[derivation]` é o context bound que `disjunction` exige. Ela carrega os
++     rótulos e tipos das variantes, e seu `ordinal` é como `variant` encontra o caso real de um
++     valor.
+
+@ 0 8 0 0312b9f4fb5acd5715f0142872537256
++ entry .contextual   a instância da classe de tipos para o campo ou a variante atual, dentro da lambda de um combinador
++     Dentro da lambda polimórfica dada a `fields`, `contexts`, `build`, `construct`,
++     `variant`, `delegate` ou `choices`, `contextual` é a instância `typeclass[field]` (ou
++     `typeclass[variant]`) para o tipo do elemento atual — um given escrito à mão, um codec ou
++     uma instância irmã do mesmo grafo derivado — e o único meio que o corpo tem de fazer
++     qualquer coisa com um valor cujo tipo não consegue ver. A maioria dos combinadores também
++     passa a mesma instância como parâmetro da lambda, então `[field] => parsing => parsing.parse(…)`
++     e `contextual.parse(…)` são a mesma instância.
+
+@ 0 6 0 020145a928c20f3214517d79ffefd331
++ entry .label   o nome do campo ou da variante atual, como `Text`, dentro da lambda de um combinador
++     Para um campo, o nome tal como escrito na case class (`_1`, `_2`, … para uma tupla); para
++     uma variante, o nome do caso. Um renderizador o usa como chave, um parser o compara com
++     um discriminador. No guarda-chuva `soundness`, o nome é compartilhado com o
++     `Element#label()` de tarantula: um arquivo que importa os dois e acha `label` ambíguo
++     escreve `wisteria.label`.
+
+@ 0 7 0 1fc525026d3d1ae5125a9d4575aa070b
++ entry .index   a posição do campo ou da variante atual, dentro da lambda de um combinador
++     Para um campo, um `Int & FieldIndex[field]`; para uma variante, um
++     `Int & Variant.Index[variant]`. A marca liga o número ao tipo do elemento, de modo que
++     `complement(product)` pode ler o mesmo campo de outro valor e tipá-lo corretamente. Ele se
++     compara e faz aritmética como um `Int`, mas indexar uma `List` nativa com ele se escreve
++     `columns(Ordinal.zerary(index))`, o que produz um `Optional`, sob uma restrição de
++     complexidade importada, como `dysasymptotics.linearAccess`.
+
+@ 0 6 0 196e69726addc3f613220fa57e2d9b6f
++ entry .dereference   uma função do produto para o campo atual, dentro de uma lambda de `contexts`
++     `dereference` é um `derivation -> field`: sem valor sobre o qual fazer fold, `contexts` dá
++     a cada campo um meio de ser lido de qualquer valor do produto, tipado com o tipo do campo.
++     Vincule-o uma vez — `val extract: derivation => field = dereference` — e aplique-o a cada
++     um dos valores que uma classe de tipos de dois valores compara, de modo que os dois campos
++     chegam à única instância `contextual` sem nunca perder seu tipo.
+
+@ 0 6 0 1ae4f4db720d6e2a145e52db83d6adf2
++ entry .variant   `wisteria.variant` lê do contexto o valor com a tag `"variant"`; o combinador é `SumDerivation.Methods#variant`
++     O acessor de nível de pacote `variant[value]` lê um valor contextual com a tag
++     `"variant"`, no estilo de `index` e `label`. O combinador que um `disjunction` chama como
++     `variant(value) { [variant <: derivation] => variant => … }` é o método herdado de
++     `SumDerivation.Methods`, que despacha pelo caso real de um valor de soma; dentro do objeto
++     que deriva, o método oculta este acessor.
+
+@ 0 1 0 08d4e6986e675e4e07abefb6e59368cf
++ entry .arithmetic   `+`, `-`, `*` e `/` campo a campo para qualquer produto, como givens importados por nome
+
+% 1 1 0 0d17564d6325a77901a5907d9757b6f7
+
+@ 0 5 0 035807e28a7cb21515182f906eeb5e74
++       Quatro derivações das classes de tipos aritméticas de symbolism, cada uma somando,
++       subtraindo, multiplicando ou dividindo dois valores de um produto campo a campo pelas
++       instâncias dos próprios campos, de modo que `Text` concatena enquanto `Int` soma, sem
++       nenhuma instância escrita para o produto. Cada uma é um given a importar por nome —
++       `import soundness.*` não as traz — porque uma aritmética para toda case class é uma
++       escolha, não um padrão.
+
+% 2 1 0 14fbe5ab3bac2e62054a38324aac920b
+
+% 3 1 0 1c857d45de85dfa7130746e3dade75df
+
+% 0 1 0 107ee72a262313ce044d407112366029
+
+% 0 1 0 1fdd89478da912871630955ea3d1933c
+
+% 0 1 0 0e59580ad2d89ed70c06a7c8b7ff1e62
+
+% 1 1 0 1bf4ece2f3c845b50bc69524ae6cf69c
+
+@ 0 21 0 00f06bd2925337930328a3d2772a1101
++       Os objetos de derivação (`AddableDerivation` e seus irmãos) são `ProductDerivation`s da
++       respectiva classe de tipos, disponíveis para um `derived[T]` explícito, e cada given é
++       `Derivation.derived[value]` para qualquer `value <: Product` com uma `ProductReflection`.
++   entry .AddableDerivation   `ProductDerivation` de `value is Addable by value to value`
++       Seu `conjunction` constrói a soma de dois produtos com `build`, somando cada par de
++       campos correspondentes (lidos com `complement`) pelo `Addable` do campo.
++   entry .addable   o given: qualquer produto é `Addable by` si mesmo `to` si mesmo, campo a campo
++       `AddableDerivation.derived[value]` para todo `value <: Product` com uma
++       `ProductReflection`; todo tipo de campo precisa do seu próprio `Addable`. Importado por
++       nome.
++   entry .SubtractableDerivation   `ProductDerivation` de `value is Subtractable by value to value`
++       Como `AddableDerivation`, com cada par de campos subtraído.
++   entry .subtractable   o given: qualquer produto é `Subtractable by` si mesmo `to` si mesmo, campo a campo
++       `SubtractableDerivation.derived[value]`; importado por nome.
++   entry .MultiplicableDerivation   `ProductDerivation` de `value is Multiplicable by value to value`
++       Como `AddableDerivation`, com cada par de campos multiplicado.
++   entry .multiplicable   o given: qualquer produto é `Multiplicable by` si mesmo `to` si mesmo, campo a campo
++       `MultiplicableDerivation.derived[value]`; importado por nome.
++   entry .DivisibleDerivation   `ProductDerivation` de `value is Divisible by value to value`
++       Como `AddableDerivation`, com cada par de campos dividido.
++   entry .divisible   o given: qualquer produto é `Divisible by` si mesmo `to` si mesmo, campo a campo
++       `DivisibleDerivation.derived[value]`; importado por nome.
+
+@ 0 1 0 1245df162608a47810e235b1c72574a5
++ entry .Discriminable   como a variante de uma soma é distinguida na transmissão, para o decodificador de um formato
+
+% 1 1 0 1c5e86f9242e3f0d10af530a28465afb
+
+@ 0 12 0 0f4f32516f1f27aa0f781b214fb1d2c2
++       Um formato que codifica uma soma precisa dizer qual variante um valor é, e um
++       `value is Discriminable in Form` diz como: `discriminate` lê o rótulo da variante de um
++       valor no `Form` do formato (um nó JSON, digamos), `variant` retira o discriminador para
++       deixar o payload próprio da variante, e `rewrite` acrescenta um rótulo a um payload para a
++       codificação. A classe de tipos é definida aqui, ao lado da derivação que a consulta, e
++       implementada por cada formato: o pacote `discriminables` de jacinta oferece um campo
++       `type`, um campo `kind`, um objeto envoltório indexado pelo nome da variante e um
++       envelope `type`/`value`, cada um como given importado por nome. O decodificador derivado
++       de um formato chama `discriminate` e depois faz `delegate` para a variante que ele nomeia,
++       lançando `Variant.Error` para um rótulo desconhecido.
++   entry #rewrite   um payload na forma, com o rótulo da variante `kind` escrito nele
++   entry #discriminate   o rótulo de variante que um valor na forma carrega, ou `Unset` se não tiver nenhum
++   entry #variant   o payload próprio da variante, sem o discriminador
+
+@ 0 5 0 1b47a4c69a5d2c461afcc0933496e710
++ entry .FieldIndex   a marca no `index` de um campo: `Int & FieldIndex[field]`
++     Uma trait selada e desabitada, intersectada com `Int` para ligar a posição de um campo ao
++     seu tipo, de modo que `complement(product)`, dado o índice, pode ler o campo de outro valor
++     e retorná-lo como `field`. O acessor `index` a produz dentro da lambda de um combinador de
++     produto; ela nunca é construída à mão.
+
+@ 0 1 0 03e9c3d25db31db71ba9d372b0f078cb
++ entry .Variant   o vocabulário da derivação de somas: o `Index` de uma variante, e o `Error` para um rótulo desconhecido
+
+% 1 1 0 12b282b7bcaabecc188bd2f53b3d7d98
+
+@ 0 3 0 1c52cf9705051b2f0cd66a17f58bac10
++       Não há um tipo `Variant`: uma variante é um caso da soma que está sendo derivada,
++       identificado pela sua posição (`Variant.Index`) e pelo seu rótulo. O objeto contém o erro
++       que um produtor lança quando um rótulo não nomeia nenhuma variante, e a marca no índice de
++       uma variante.
+
+% 1 1 0 0edd82c51b4122a91b750e8c360bcc4b
+
+@ 0 1 0 06d9387b528b1ffd1a291452557159e2
++   entry .Error   lançado quando um rótulo não nomeia nenhuma variante da soma: _the specified variant (`x`) is not one of the valid variants (…) of sum type `S`_
+
+% 1 1 0 020fc51fad49788e038621bd2ab7da82
+
+@ 0 6 0 190c84ac47523651070ecc45e70f69e9
++         Lançado, através de um `Tactic[Variant.Error]`, por `delegate` e `singleton` quando o
++         rótulo que recebem — geralmente um discriminador lido da entrada de um decodificador —
++         não corresponde a nenhuma das variantes da soma. A mensagem lista as variantes válidas,
++         de modo que o erro diz o que a entrada deveria ter carregado. Uma derivação que chama
++         qualquer dos dois combinadores precisa da tática no escopo onde se expande:
++         `provide[Tactic[Variant.Error]]` dentro da instância impede que a instância derivada
++         capture a de quem chama.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1d9f1403dc0472d316185a8cb732004c
+
+% 0 1 0 1f2f831994c36226146c3d36df042379
+
+% 0 1 0 169cd914d43f876e1b467e4a3f411100
+
+% 0 1 0 18ebecd33d57323007adf0f25aabbb17
+
+% 0 1 0 15819c18359b2fb117eb0b8c1d354798
+
+% 0 1 0 02516cfa6f3e56370c61b0067030d02a
+
+% 0 1 0 178b6816c7da10101e2d8c01d218c5ae
+
+% 0 1 0 0c9899ac40be17131e72818c61cb1c87
+
+% 0 1 0 079a0377cbb8fa3f13587c7c34aca18b
+
+% 0 1 0 13234ab85d3cdd4518a01d48f85af207
+
+% 0 1 0 0f88dba06ef7f4da1fdb97a8db1bef46
+
+% 0 1 0 0730cfa4cee3dffd05312a6dd97fc05b
+
+% 0 1 0 04a484f83a3985e00f98eedc6e1f4eeb
+
+% 0 1 0 0624ee964a601b940e0291d147eba6eb
+
+% 0 1 0 145d42098345cf7b1b88e3ec996acd95
+
+% 0 1 0 101137a01f722ec51d804325068f3083
+
+% 0 1 0 164e8be16805f5260d1cf9706c442156
+
+% 0 1 0 0cb4ad237d49f54a1573995dbc80ac2a
+
+% 0 1 0 1568f18160d953a40febdfdf123cc735
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 9 0 06de42572afbd5520ed0e7ac9fa42d57
++         `Variant.Error[derivation](label)` constrói o erro para um tipo soma, preenchendo o
++         nome da soma e os rótulos das suas variantes em tempo de compilação.
++     entry .apply   constrói o erro para um tipo soma: `Variant.Error[Sum](label)`
++         Um método inline que preenche `sum` e `validVariants` a partir do símbolo do tipo, de
++         modo que quem chama fornece só o rótulo problemático.
++     entry #inputLabel   o rótulo que não nomeou nenhuma variante
++     entry #sum   o nome do tipo soma
++     entry #validVariants   os rótulos das variantes da soma, na ordem de declaração
++   entry .Index   a marca no `index` de uma variante: `Int & Variant.Index[variant]`
+
+% 1 1 0 07f4a4fb1d2aa2890eabf37b178db54c
+
+@ 0 4 0 01ce2f27954a57ea0890162951be5778
++         Uma trait selada e desabitada, intersectada com `Int` para ligar a posição de uma
++         variante ao seu tipo. O acessor `index` a produz dentro da lambda de um combinador de
++         soma, e `complement(sum)` a usa para estreitar outro valor para a mesma variante.
++     entry .apply   marca um `Int` como o índice de uma variante: `Variant.Index[variant](int)`
+
+@ 0 1 0 0e60cfadf3b8945d1c62ad07e0d2a86e
++ entry .internal   as macros por trás do motor de derivação e dos combinadores
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 31 0 1e9a7b2fc5ca4086014b94c0e8804702
++       Não é para uso direto: o objeto abriga as implementações de macro que os combinadores
++       inline inserem, e os acessores que testes e ferramentas usam. `derived` é
++       `deriveGraph`; `fields`, `contexts`, `build` e `construct` são `fieldsProduct`,
++       `contextsProduct`, `buildProduct` e `constructMonadic`; `choice` é `isChoice`.
++       `fieldInstance` é a busca implícita que resolve a instância de um campo ignorando os
++       givens de derivação da própria classe de tipos, de modo que um campo cai num given escrito
++       à mão, num codec ou numa irmã do grafo e nunca reentra na derivação.
++   entry .default   o valor padrão declarado de um campo, pelo seu índice, ou `Unset`
++   entry .sumName   o nome de um tipo, como `Text`, a partir do seu símbolo
++   entry .variantLabelList   os rótulos das variantes de uma soma, na ordem de declaração
++   entry .fieldLabelList   os rótulos dos campos de um produto, na ordem de declaração
++   entry .field   a instância da classe de tipos para um elemento, resolvida sem reentrar na derivação
++   entry .overridePaths   os caminhos de campo pontuados que um `Specific over typeclass` no escopo substitui, ou `Nil`
++   entry .overridePathsMacro   a macro por trás de `overridePaths`
++   entry .Reentrant   um given marcador durante uma sondagem de reentrada, para que um tipo que alcança a si mesmo resolva para sua irmã
++   entry .reentrySentinel   o que uma sondagem de reentrada retorna; nunca é avaliado
++   entry .isSum   se um tipo é uma soma, decidido durante a compilação do código
++   entry .isSumMacro   a macro por trás de `isSum`
++   entry .fieldLabels   a macro por trás de `fieldLabelList`
++   entry .isSumType   se uma representação de tipo é uma trait selada ou enumeração com filhos
++   entry .isProductType   se uma representação de tipo é um produto que o motor consegue construir
++   entry .isChoice   a macro por trás de `choice`: se toda variante é um singleton
++   entry .fieldInstance   a macro por trás de `field`
++   entry .deriveGraph   a macro por trás de `derived`: uma instância vinculada de forma preguiçosa por tipo alcançável
++   entry .buildProduct   a macro por trás de `build`
++   entry .contextsProduct   a macro por trás de `contexts`
++   entry .fieldsProduct   a macro por trás de `fields`
++   entry .constructMonadic   a macro por trás de `construct`
++   entry .typeName   a macro por trás de `sumName`
++   entry .variantLabels   a macro por trás de `variantLabelList`
++   entry .getDefault   a macro por trás de `default`: lê o método sintético de argumento padrão

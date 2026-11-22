@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 1203848c122583cf0a01d172f1a8ac8d
++ # `↯/s.112.4` — Fehlende `Monitor`-Instanz
+
+@ 0 2 0 1623f86734df91081f5c829021c39418
++ Wird zur Kompilierzeit vom Makro `rpc` von Obligatory ausgelöst, wenn keine
++ kontextuelle `Monitor`-Instanz verfügbar ist.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 2 0 1958428d3af590861771a72dd79c062b
++ Das Makro benötigt einen `Monitor`, um asynchrone Arbeit einzuplanen und zu
++ überwachen.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1b4aa64992dbd3570036e48b92291be4
+
+% 1 1 0 0255d820acf317d0072e94b4673aa530
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 1 0 07e372d56641aee009351325f7ca195f
++ Bringen Sie an der Aufrufstelle einen `Monitor` in den Geltungsbereich (z. B. über `Daemon`).
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 1b26732fe62cfa1207b80e721b9a052d
++ - Quelle: `lib/obligatory/src/json/obligatory.internal.scala`

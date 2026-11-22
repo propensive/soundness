@@ -1,0 +1,1366 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1af590ad362c949901b19b302b7fba8e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0b5daf19d4611f791561355b2e5b1284
++ info   codifiche dei caratteri, sanitizzatori, larghezze di visualizzazione, proprietà Unicode, interruzioni tra grafemi e collazione
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 09d788acd5e910e90d10de63c035357f
++     _Hieroglyph_ è il punto in cui il testo incontra i byte e un `Char` incontra Unicode. Il
++     confine tra `Text` e `Data` è una codifica dei caratteri, e la libreria rende questa scelta
++     esplicita e tipizzata: un `Codepage` trasforma il testo in byte, un `Charset` trasforma i
++     byte di nuovo in testo, e ciascuno è un valore contestuale scelto importando per nome uno
++     dei given `codepages` o `charsets`, così nessuna conversione avviene sotto un presunto
++     default della piattaforma. Cosa fare dei byte che non si possono decodificare è una scelta
++     separata e altrettanto esplicita: un `TextSanitizer` del package `textSanitizers`, che li
++     salta, li sostituisce con `?`, solleva `Charset.Error` al primo errore, oppure accumula
++     ogni errore mentre decodifica il resto.
+
+% 2 1 0 1befafe6bfc5f70c17d1f87fead6ea09
+
+% 3 1 0 0ea25722497d1e3e0f5c65975a1a96a8
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 1c49562d26a4438704d93e4df605070e
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1634820f4aeb7d35175b99ef328b4399
+
+% 0 1 0 1bc8a4d31d44b14906b05aff0bd73626
+
+% 0 1 0 1bddbfcbdbfc04d419f89d1730ee725b
+
+% 1 1 0 0d6d8ad773ece2631b67c2c9cce5da72
+
+@ 0 6 0 05b5994b682921ac0695f2b350af962e
++     Qualsiasi codifica nota alla JVM si nomina con l'interpolatore `enc"…"`, che verifica
++     mentre il codice si compila che la codifica esista, e se sappia codificare oltre che
++     decodificare: `enc"ISO-2022-CN".decoder` compila, `enc"ISO-2022-CN".encoder` no.
++     Codifica e decodifica funzionano anche come stadi di uno stream (`Codepage#encoded` e
++     `Charset#decoded` su una `Chain`), e un carattere multibyte o una coppia surrogata divisi
++     tra due chunk vengono portati oltre il confine anziché corrotti.
+
+@ 0 1 0 1258eeb711e13087115b5b62fa59583f
++     Accanto alle codifiche ci sono i fatti a livello di carattere di cui un programma a volte
++     ha bisogno:
+
+@ 0 16 0 19b5d68f45fb6ab7182f8110fe5b0652
++     - **larghezza di visualizzazione** — `metrics` misura un `Char` o un `Text` tramite il
++       given `Measurable` nell'ambito, scelto da `textMetrics`: `uniformMetric` conta ogni
++       carattere come una colonna, `eastAsianScriptsMetric` ne assegna due agli ideogrammi
++       larghi, e `wideCharacterWidthMetric` inoltre non ne assegna nessuna ai segni combinanti
++       e ai caratteri di controllo;
++     - **proprietà Unicode** — le estensioni `letter`, `digit`, `whitespace`, `control`,
++       `printable`, `majuscular`, `minuscular`, `description`, `superscript` e `subscript` su
++       `Char`, l'interpolatore `ucs"…"` per un carattere dato il suo nome Unicode, e le tabelle
++       di nomi e larghezze est-asiatiche di `Unicode`;
++     - **cluster di grafemi** — `GraphemeBreak.boundaries` trova dove finisce un carattere
++       percepito dall'utente e inizia il successivo, secondo le regole di UAX #29;
++     - **normalizzazione e collazione** — `Normalization.decompose` dà la decomposizione
++       canonica di un testo (NFD), e `CollationTable` ordina il testo secondo l'Unicode
++       Collation Algorithm (UTS #10), con `tailor` per le personalizzazioni europee comuni. Su
++       queste si basano `collations.unicodeCollation` e `Writing` di gossamer. I tipi della
++       collazione si raggiungono come `hieroglyph.CollationTable`, `hieroglyph.CollationRule`
++       e `hieroglyph.CollationLevel`, che l'ombrello `soundness` non esporta.
+
+@ 0 6 0 0295cd2bef933819128e115c36f0bf6e
++     La libreria è un unico source set, `hieroglyph.core`, che compila per la JVM e per Scala
++     Native. I dati Unicode di cui ha bisogno (`UnicodeData.txt`, `EastAsianWidth.txt`,
++     `GraphemeBreakProperty.txt`, `emoji-data.txt`, `IndicConjunctBreak.txt` e `allkeys.txt`,
++     tutti alla versione 16.0.0) vengono letti dal classpath sotto `/hieroglyph/` al primo
++     uso; sulla JVM, una tabella assente dal classpath viene scaricata da unicode.org, mentre su
++     Scala Native le tabelle devono essere incorporate nel binario e una mancante è
++     semplicemente assente.
+
+@ 0 8 0 02ce3a5018f088861d213994c109a6bb
++     Tutto è esportato nell'ombrello `soundness` tranne i tipi della collazione, e i cinque
++     package di scelta — `charsets`, `codepages`, `textSanitizers`, `textMetrics` e
++     `communication` — si fondono con i package omonimi dell'ombrello. Poiché
++     `import soundness.*` non importa alcun given, un programma nomina la codifica, il
++     sanitizzatore e la metrica che vuole: `import codepages.utf8Codepage`,
++     `import textSanitizers.strictSanitizer`, `import textMetrics.uniformMetric`. I given
++     `iso88591Charset` e `iso88591Codepage` sono dichiarati solo in `hieroglyph.charsets` e
++     `hieroglyph.codepages`, e non vengono riesportati nei package dell'ombrello.
+
+% 0 1 0 0aa5c2fb17a30b1717399f0664ce7419
+
+% 0 1 0 14b7c1855ffb280e176be28498d517e5
+
+% 0 1 0 1b599fb08c7faa0a1512b6608c01d9b4
+
+% 0 1 0 0b538da6581adb5301664d359a5905f6
+
+% 0 1 0 1bddcf4305ecceb31153b061c2fe5d86
+
+% 0 1 0 1dcd781c406b805c023018f7915f5faf
+
+@ 0 1 0 097d4ec5a6aba40c12cd922cea8f786b
++ entry .Encoding   una codifica dei caratteri con nome supportata dalla piattaforma, da cui si ricava un `Charset` o un `Codepage`
+
+% 1 1 0 180b952948d2e98d01858bb42c711d1d
+
+@ 0 6 0 180928f9805093b609d26eb34abb7f3c
++       Un `Encoding` è una codifica dei caratteri identificata per nome — `UTF-8`,
++       `ISO-8859-1`, `ISO-2022-CN` — e la radice comune delle due direzioni di conversione:
++       `#decoder` crea il `Charset` che legge i byte come testo, e `.encoder` crea il `Codepage`
++       che scrive il testo come byte. Il suo membro di tipo `#CanEncode` registra, come `true` o
++       `false`, se la piattaforma sa codificare con essa, e `.encoder` esiste solo su un
++       `Encoding { type CanEncode = true }`, così a una codifica che sa solo decodificare non si
++       possono chiedere byte in alcun modo.
+
+@ 0 2 0 190d38985f93a61e1e7cb3afd0860a06
++       Il modo per ottenerne una è l'interpolatore `enc"…"`, che verifica il nome mentre il
++       codice si compila e dà il tipo `CanEncode` preciso:
+
+% 2 1 0 061d9fcb001f061716b11337aa185e40
+
+% 3 1 0 0aab6044e53dfb6d02797879619ac042
+
+% 4 1 0 1d0e46acef4fa004193cfea8854eb5ef
+
+% 0 1 0 05816a6f89bd498f1469b83e45f7f05c
+
+% 0 1 0 088607951b78f4ff10cfea754e834c7e
+
+% 0 1 0 0a1c759a0ea8b1611df480faa395d406
+
+% 0 1 0 0dfdd003283e02c601ef1d9c950746c5
+
+% 1 1 0 1a2638594f7ae78f18b1d7db30fea3f2
+
+@ 0 4 0 1e4dc75f1e2e74e7073861ca6037466c
++       A runtime, `Encoding.unapply(name)` cerca un nome nella tabella della piattaforma (senza
++       distinguere maiuscole e minuscole, per nome di visualizzazione o alias) come `Option`,
++       lasciando `CanEncode` astratto. `#name` è il nome di visualizzazione canonico della
++       piattaforma, qualunque sia la grafia con cui è stata richiesta la codifica, e `#charset`
++       è il `java.nio.charset.Charset` che le sta dietro, risolto una volta sola.
+
+@ 0 2 0 0832c5814e1edba70cf3c5e00faf24ac
++       Una codifica si rende come testo con il suo nome (`.textualizable`), e allo stesso modo
++       come messaggio (`.communicable`); il suo `toString` è il sorgente che la creerebbe,
+
+% 0 1 0 01cce3e1b02856ae002a20f6402b0971
+
+% 0 1 0 11bf9b5fd62b9c390174dffe10de773a
+
+% 1 1 0 03d46be6eb931a5209b86b608a2812ec
+
+% 1 1 0 12ab0af511c2b08f1f6e2e811bd4e9fb
+
+@ 0 32 0 09610bf5d19f7f1b038821c2ad22b1e7
++   entry .textualizable   rende una codifica con il suo nome canonico
++   entry .communicable   rende una codifica come un messaggio che ne contiene il nome
++       Il given che permette di interpolare un `Encoding` in un messaggio `m"…"`, come fanno
++       `Charset.Error` e `Codepage.Error`.
++   entry .unapply   cerca una codifica per nome a runtime, come `Option`
++       `Encoding.unapply(t"utf-8")` è `Some(encoding)` se la piattaforma ha una codifica con
++       quel nome o alias, confrontato senza distinguere maiuscole e minuscole, e `None`
++       altrimenti. Il `CanEncode` del risultato non è noto staticamente, quindi `encoder` non è
++       disponibile su di esso; per un nome noto quando si scrive il codice, `enc"…"` dà il tipo
++       preciso. È un estrattore, quindi serve anche in un match: `case Encoding(encoding) =>`.
++   entry .apply   crea una codifica da un nome e dall'indicazione se sa codificare, senza verificare nessuno dei due
++       `Encoding(name, canEncode)` incapsula un nome come
++       `Encoding { type CanEncode = canEncode.type }` e non verifica che la piattaforma lo
++       abbia: `#charset` risolve il nome pigramente, e un nome che manca alla piattaforma
++       fallisce lì con la `UnsupportedCharsetException` del JDK. Sono preferibili `enc"…"` o
++       `.unapply`, che verificano.
++   entry .encoder   il `Codepage` che codifica il testo come byte in questa codifica
++       Un'estensione disponibile solo su un `Encoding { type CanEncode = true }`, quindi non
++       compila su una codifica di sola decodifica come `enc"ISO-2022-CN"`. `enc"UTF-8".encoder`
++       è lo stesso codepage fornito da `codepages.utf8Codepage`.
++   entry #name   il nome di visualizzazione canonico della codifica, scritto come lo scrive la piattaforma
++   entry #CanEncode   se la piattaforma sa codificare con questa codifica: `true`, `false` o sconosciuto
++       Un membro di tipo limitato da `Boolean`. `enc"…"` lo fissa a `true` o `false` dalla
++       tabella della piattaforma; `Encoding.unapply` lo lascia astratto. Solo una codifica il
++       cui `CanEncode` è `true` ha `encoder`.
++   entry #decoder   il `Charset` che decodifica come testo i byte di questa codifica
++       Richiede un `TextSanitizer` nell'ambito, che il charset tiene come proprio e consulta per
++       ogni sequenza di byte non decodificabile. Ogni codifica sa decodificare, quindi questo è
++       disponibile qualunque sia `CanEncode`.
++   entry #charset   il `java.nio.charset.Charset` dietro questa codifica, risolto una volta sola
++       Un valore pigro, quindi la ricerca per nome della piattaforma avviene al primo uso e mai
++       più: `Codepage#encoded` passa questo a `getBytes` anziché il nome, poiché una ricerca per
++       nome a ogni chiamata è misurabile in una pipeline carica di byte.
+
+@ 0 1 0 1efc57a710cf97b515bf77627aecae68
++ entry .Charset   decodifica byte come testo in una codifica, trattando l'input errato come dice il suo sanitizzatore
+
+% 1 1 0 0bb106f8bdc731ba135ba4c032b8f94b
+
+@ 0 6 0 18eec14afb27c0851b5faf25b087e952
++       Un `Charset` è la direzione di decodifica di un `Encoding`: `#decoded` trasforma `Data`
++       in `Text`, tutto in una volta o come stream di chunk. Si crea da una codifica con
++       `Encoding#decoder` o si trova per nome con `Charset.unapply`, e il più delle volte è un
++       given importato per nome dal package `charsets` — `charsets.utf8Charset` e gli altri —
++       che è ciò in cui si risolvono `read[Text]` e `utf8` di turbulence e i given
++       `Readable`/`Aggregable` per il testo su byte.
+
+@ 0 6 0 1d6242311e64273712b805f7231f02e4
++       Ogni charset porta con sé un `TextSanitizer`, preso come valore contestuale quando viene
++       creato (`#sanitizer`), che decide cosa succede a una sequenza di byte che la codifica non
++       sa decodificare: `textSanitizers.skipSanitizer` la scarta, `substituteSanitizer` scrive
++       `?`, `strictSanitizer` solleva `Charset.Error` indicandone la posizione, e
++       `accrueSanitizer` scrive `?` e registra un `Charset.Error` a ogni errore, così l'intero
++       input viene recuperato e ogni errore segnalato.
+
+% 2 1 0 1b97206822e7861901d5ed2f7c15c9ea
+
+% 3 1 0 10957ad0ba895d331110ce3ab61669bc
+
+% 4 1 0 05a3b077153f94561b8ce5830bcdfb18
+
+% 5 1 0 01dac9abcb0bb69f1ac63135eac7d57d
+
+% 0 1 0 07d6cbbe3deaeed4025e3d3da2062b02
+
+% 2 1 0 1a2643470c5efc1c1cb51e06e9b9ca6b
+
+% 0 1 0 1476853e6c25cc8517e7e0d3b3ce43ae
+
+% 0 1 0 03422ad13b12597c066757e638343e99
+
+% 2 1 0 0db19288091672f31bbb32d1c73b93fc
+
+% 0 1 0 0ddd898f980ae1f50c0c8d4db89cc208
+
+% 0 1 0 1982c02e3a17b145032094b9d8b8f5c1
+
+% 2 1 0 0adfee5ccfebcf8d1455665f04967f03
+
+% 0 1 0 1ea5ed73543eabfa10dfb4782d69613a
+
+% 0 1 0 163e45c268302f0b1504452ef0d12b03
+
+% 1 1 0 036667f7cda2c55f17b538621f1c88d6
+
+@ 0 4 0 139d4fc770c4bbb80ac6d360ff83d21b
++       La decodifica di uno stream di chunk (`decoded(stream: Chain[Data])`) è incrementale: un
++       carattere multibyte diviso tra due chunk viene portato oltre il confine e decodificato
++       intero, e una sequenza ancora incompleta alla fine dell'input è un errore nella posizione
++       finale, quindi un `café` troncato con il sanitizzatore rigoroso dà `Charset.Error(4, …)`.
+
+@ 0 2 0 1ab918a4082ff980082403900d2d9686
++       Un `Charset` è `Findable` con `Self = Text` e `Form = Data`, ed è così che funge da
++       condotto di decodifica negli stadi di stream di turbulence.
+
+% 1 1 0 1cdf7784fe30f9030ec25258c9fb2a97
+
+% 1 1 0 0c6b10f21132c8310fdeb1dedcefbb55
+
+% 0 1 0 0cb8bfc10a68eb0908e072ff49fd16be
+
+% 1 1 0 0a5922fa71b00b280ec6c6a315b7c45c
+
+@ 0 11 0 029a6e3e49aa75e707cad53fbe40d1cc
++   entry .system   il charset predefinito della piattaforma, con il sanitizzatore nell'ambito
++       `Charset.defaultCharset` incapsulato come `Charset`, che dipende dalla locale e dal
++       `file.encoding` della JVM, quindi non è un given e non viene mai risolto implicitamente:
++       un programma che vuole il default della piattaforma lo chiede con questo nome. Richiede
++       un `TextSanitizer`.
++   entry .unapply   trova un charset per nome di codifica a runtime, come `Option`
++       `Charset.unapply(t"ISO-8859-1")` è `Encoding.unapply(name)` incapsulato come `Charset`
++       con il `TextSanitizer` nell'ambito: `Some` se la piattaforma ha la codifica (per nome di
++       visualizzazione o alias, senza distinguere maiuscole e minuscole), `None` altrimenti.
++       Utilizzabile come estrattore in un match. È così che sono costruiti i given `charsets`,
++       e così che si risolve un charset nominato in un'intestazione `Content-Type`.
++   entry .Focus   la posizione in fase di decodifica, per il blocco `validate` di un sanitizzatore cumulativo
+
+% 1 1 0 12016e5fd711412f091f5525ff5fc245
+
+@ 0 4 0 0e1cd1818b2224691e70ec607648ae23
++         Un `Charset.Focus(position)` è ciò che `textSanitizers.accrueSanitizer` mette a fuoco
++         attorno a ogni errore che segnala, così un blocco `validate[Charset.Focus]`, che
++         accumula gli errori, viene a sapere dove si è verificato ciascuno: `prior` nel blocco è
++         il focus, un `Optional[Charset.Focus]`.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 0043b54b07bc81c105559a4a6c10e9c6
+
+% 0 1 0 17534543806f1be102a0a2171760f90b
+
+% 0 1 0 00c2b3acc2df2ede15e5393a4d15c814
+
+% 0 1 0 0267e0cc8b4d15151a0137a0d35ebbee
+
+% 0 1 0 0a7736415cc469ec1c92cbd51fd1d168
+
+% 0 1 0 0f225de615d864080331db06696562af
+
+% 0 1 0 13d6828654d421161f47e6ac045f0445
+
+% 0 1 0 0bd12e4056ca8d980d1d8050d593015f
+
+% 0 1 0 00ae9422f0c0d2931bd1fb859824c94f
+
+% 0 1 0 10668dddf3dbacb90364827279b84605
+
+% 0 1 0 16136d79e6b851b51d0c46eca43ccbe8
+
+% 0 1 0 0ec55f25930be4c009d9e568c8d55187
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 2 0 1a5778db811c5f990ab8cba347d0012b
++     entry #position   l'offset in byte in cui si è verificato l'errore
++   entry .Error   sollevato quando una sequenza di byte non può essere decodificata e il sanitizzatore è rigoroso
+
+% 1 1 0 1f44e84e3efef16a0047a673cf08648d
+
+% 0 1 0 0d3036d7a16f6821132e038be816150b
+
+@ 0 25 0 09c4b9d9ecf5495d01f19f4507590279
++         `encoding`_. Sollevato tramite una `Tactic[Charset.Error]` da
++         `textSanitizers.strictSanitizer` alla prima sequenza non decodificabile, e da
++         `textSanitizers.accrueSanitizer` a ognuna (che continua a decodificare). La posizione è
++         l'offset in byte nell'input, contato attraverso i chunk quando si decodifica uno
++         stream, e una sequenza rimasta incompleta alla fine dell'input viene segnalata alla
++         lunghezza dell'input. I sanitizzatori che saltano e che sostituiscono non lo sollevano
++         mai.
++     entry #position   l'offset in byte della sequenza non decodificabile
++     entry #encoding   la codifica che non è riuscita a decodificarla
++   entry #encoding   la codifica che questo charset decodifica
++   entry #sanitizer   il sanitizzatore consultato a ogni sequenza di byte non decodificabile
++       Il `TextSanitizer` che era nell'ambito quando il charset è stato creato. Un given
++       `charsets` lo prende dal punto d'uso, quindi lo stesso `charsets.utf8Charset` è
++       rigoroso in un blocco e tollerante in un altro a seconda di quale sanitizzatore vi sia
++       importato; solo `iso88591Charset` fissa `skipSanitizer`, poiché ogni byte è Latin-1
++       valido e non c'è nulla da sanificare.
++   entry #Self   ciò che questo charset produce: `Text`
++   entry #Form   ciò che questo charset consuma: `Data`
++   entry #decoded   il testo di alcuni byte, o uno stream di testo da uno stream di byte
++       `decoded(bytes)` decodifica un intero `Data` come un unico `Text`. `decoded(stream)`
++       prende una `Chain[Data]` e dà una `Chain[Text]`, decodificando ogni carico di buffer man
++       mano che arriva e portando una sequenza multibyte incompleta al chunk successivo, così la
++       suddivisione in chunk dell'input non influisce mai sul testo; i chunk vuoti vengono
++       scartati dall'output. Entrambi consultano `#sanitizer` a ogni errore, e quindi possono
++       sollevare `Charset.Error` tramite la sua tattica con `strictSanitizer` o
++       `accrueSanitizer`. L'overload a due parametri `decoded(bytes, omit)` equivale a
++       `decoded(bytes)`.
+
+% 2 1 0 0f529b60beaa7abb0aa89816926ccf3c
+
+% 3 1 0 025bc5fc243636f80ac3a4150aa92d12
+
+% 4 1 0 1293d48930c0c3f802ed40eda78bdfd8
+
+% 0 1 0 12ca2100bb28f86a073a351a022a8bba
+
+% 0 1 0 1bd6d6a18cdbfb3b1825536f78529117
+
+% 0 1 0 119d03496fe468211e5a2d75dac0822f
+
+% 0 1 0 1003bd1dcb7432230f245cd31d84e87f
+
+% 1 1 0 0f1cf8ad26160f9706a1733597f3a3aa
+
+@ 0 1 0 0e8316991433cc8f19e0255e8f959264
++ entry .Codepage   codifica il testo come byte in una codifica, per intero o come stream di chunk
+
+% 1 1 0 0f0873c797186f3d035ac76c70902683
+
+@ 0 6 0 1cf1a1bff4ddea0815d356f8d4c5e758
++       Un `Codepage` è la direzione di codifica di un `Encoding` che sa codificare: `#encoded`
++       trasforma `Text` in `Data`, per intero o chunk per chunk. Si crea da una codifica con
++       `Encoding.encoder`, si trova per nome con `Codepage.unapply`, e il più delle volte è un
++       given importato per nome dal package `codepages` — `codepages.utf8Codepage` e gli altri —
++       che è ciò in cui si risolvono `in[Data]`, `write`, i given `Postable` e ogni altro punto
++       in cui il testo diventa byte.
+
+% 2 1 0 035343c73abb6378008623d857ffaebc
+
+% 0 1 0 030a3de70ea57a021886e947cc40fe6b
+
+% 1 1 0 0b78d2a156c85ed416fb0ab0ee471103
+
+% 2 1 0 04cae841bb5b40130a853e5b263147d9
+
+% 0 1 0 0a3bdbd673888d6c19c63534ff7228d0
+
+% 0 1 0 0a1e58af6c6c8687147b34e41df20faa
+
+% 0 1 0 017228777061631a018d18d9dbd003cc
+
+% 1 1 0 1ab793a080a16f240dee716814da5c2f
+
+% 2 1 0 060937287ec68f5303ef2fa62adb0462
+
+% 0 1 0 04a72867ebb753931eeb1ab8dfc9a2a6
+
+% 0 1 0 02a9b61aaba31aa819c8a79ddbe44d96
+
+% 0 1 0 16f09b404fc9392610db87c98d8857ce
+
+% 1 1 0 17b6b9946205e20e0e54ebccb1d13b77
+
+% 2 1 0 0781498f2a17bf58096fa29056e6669b
+
+% 0 1 0 1622e020dd21ce9218bd3bdcbe105b54
+
+% 0 1 0 0446a4756e54083a0ae754c0d45c6d71
+
+% 0 1 0 102859ded94d142e199fbf1f50dd2ef7
+
+% 1 1 0 16d5545b69d130c51afc283130ab1da9
+
+% 2 1 0 1067995ba330ec2a1874610c17f6b972
+
+% 0 1 0 018b097ce5316fad1bbfa8ecff18b04c
+
+% 0 1 0 1f3b3a50312b55b41d0d1d507a618cd9
+
+% 0 1 0 15da890881a4a8d90f4b73ef982249b6
+
+% 1 1 0 145a45580da9a76e0e255ffacb47cb05
+
+% 2 1 0 0e08d20b5107face08940ffed2404620
+
+% 0 1 0 0f183e30da6c0ccb0c98a8e2e1dbfc7e
+
+% 0 1 0 15bad5cab2daa60b1cbc85ea63693651
+
+% 1 1 0 09f2f8e5025c34a50184023aeba38e00
+
+% 2 1 0 1d9fdbee719de85f1ec1f75b04273d4c
+
+@ 0 5 0 002826a20de2f8b914e9045fbdbf6739
++       Un carattere che la codifica non sa rappresentare viene sostituito (con il sostituto
++       della codifica, `?` per ASCII) anziché sollevato: `Codepage.Error` esiste per un
++       chiamante che voglia segnalarne uno, ma `#encoded` stesso non lo solleva. La codifica di
++       uno stream è incrementale e passa i caratteri per un buffer, così una coppia surrogata
++       divisa tra due chunk viene codificata come un unico carattere astrale, dove codificare
++       ogni chunk da solo la corromperebbe.
+
+@ 0 2 0 0f7bd600355021cd0668d849b33dc7f5
++       Un `Codepage` è `Encodable` e `Findable` con `Self = Text` e `Form = Data`, ed è così che
++       funge da condotto di codifica negli stadi di stream di turbulence.
+
+% 1 1 0 0750358ed43aacbb1f10926eedf3e7cb
+
+% 1 1 0 1150fdab98df948b179d5247b4cb6382
+
+% 0 1 0 0b0342c5202ed2ae17228696f7cc2d52
+
+@ 0 10 0 169788b900b30d2d07beaf0ca2b64de5
++   entry .system   il charset predefinito della piattaforma come codepage
++       La codifica nominata da `Charset.defaultCharset` della JVM, che dipende dalla locale e da
++       `file.encoding`, quindi non è un given: un programma che vuole il default della
++       piattaforma lo chiede con questo nome.
++   entry .unapply   trova un codepage per nome di codifica a runtime, come `Option`
++       `Codepage.unapply(t"UTF-8")` è `Some(codepage)` se la piattaforma ha una codifica con
++       quel nome o alias (senza distinguere maiuscole e minuscole) che sa codificare, e `None`
++       per un nome sconosciuto o di sola decodifica. Utilizzabile come estrattore in un match.
++       È così che sono costruiti i given `codepages`.
++   entry .Error   un carattere che la codifica non sa rappresentare
+
+% 1 1 0 09f1d854129c9acd1a75ce071122a4f5
+
+@ 0 17 0 0c822668cbc12bfc17728188f32ba61c
++         Errore `↯/s.35.1`: _character `char` cannot be encoded with the encoding `encoding`_.
++         Il tipo di errore per un carattere fuori dal repertorio di una codifica.
++         `Codepage#encoded` non lo solleva — un carattere non mappabile viene sostituito, come
++         lo sostituisce `String#getBytes` — quindi è per i chiamanti che rilevano la condizione
++         da sé.
++     entry #char   il carattere che non è stato possibile codificare
++     entry #encoding   la codifica che non è riuscita a codificarlo
++   entry #encoding   la codifica con cui questo codepage codifica, nota per saper codificare
++       Di tipo `Encoding { type CanEncode = true }`.
++   entry #Self   ciò che questo codepage consuma: `Text`
++   entry #Form   ciò che questo codepage produce: `Data`
++   entry #encoded   i byte di un testo, o uno stream di byte da uno stream di testo
++       `encoded(text)` codifica un intero `Text` come un unico `Data`, tramite
++       `String#getBytes` con il charset risolto. `encoded(stream)` prende una `Chain[Text]` e
++       dà una `Chain[Data]`, codificando un carico di buffer alla volta: una coppia surrogata le
++       cui metà cadono in chunk diversi viene portata oltre e codificata intera, una codifica
++       con stato viene svuotata una volta alla fine, e i chunk vuoti vengono scartati
++       dall'output. L'input malformato o non mappabile viene sostituito, mai sollevato.
+
+% 2 1 0 0c931caa8f2a559500148a0561c2d15c
+
+% 3 1 0 00ecf2c3666be69801af4a54ae2e6a04
+
+% 4 1 0 017521bdfe6d93151918d1a48cc27996
+
+% 0 1 0 17b60040c98a34c20901037747d4cbb7
+
+% 0 1 0 1fe78f9657892dce16bf756b5acf825f
+
+% 0 1 0 18ca4c07c551f90b0f7c0a119a54e15b
+
+% 1 1 0 005d191f98f7708d02de4dbe08c29709
+
+@ 0 1 0 14861a705cb27c6f14be61f759c38e8b
++ entry .TextSanitizer   cosa fa un decoder di una sequenza di byte che non sa decodificare
+
+% 1 1 0 0978900c892c07b810077c87d2c09900
+
+@ 0 6 0 1fc2392f9be7a13f186e6eafb31bffe1
++       Un `TextSanitizer` viene consultato da un `Charset` a ogni sequenza di byte che la sua
++       codifica non sa decodificare, con la posizione dell'errore e la codifica, e risponde con
++       il carattere da scrivere al suo posto, o `Unset` per non scrivere nulla. È un valore
++       contestuale scelto importando per nome uno dei given del package `textSanitizers`, e
++       viene catturato dal `Charset` al momento della sua creazione, così la scelta è visibile
++       nell'import del codice che decodifica.
+
+@ 0 6 0 026e1846761bb0141e40f56f76082c70
++       Le quattro politiche fornite: `skipSanitizer` risponde `Unset`; `substituteSanitizer`
++       risponde `?`; `strictSanitizer` interrompe con `Charset.Error` al primo errore; e
++       `accrueSanitizer` solleva un `Charset.Error` a ogni errore in un `Charset.Focus`, perché
++       un blocco `validate` lo raccolga, poi risponde `?` e lascia continuare la decodifica.
++       Una politica personalizzata è una lambda: `given TextSanitizer = (position, encoding) =>
++       '�'` sostituisce con il carattere di sostituzione Unicode.
+
+% 1 1 0 1940f59f2def9aa70a05560913634ff2
+
+% 1 1 0 06c9663b9ae07ca9061a5286332389a9
+
+@ 0 4 0 04bf8ab3abd64fd313e796e510ea86c5
++   entry #sanitize   il carattere da scrivere in corrispondenza di un errore, o `Unset` per niente
++       Viene chiamato con l'offset in byte della sequenza non decodificabile (contato
++       attraverso i chunk quando si decodifica uno stream) e con la codifica. Il decoder poi
++       salta i byte errati e prosegue dal successivo.
+
+@ 0 1 0 1960d781d83854f510599769c2544dda
++ entry .Measurable   quanto è largo un carattere o un testo in colonne di un display a spaziatura fissa
+
+% 1 1 0 187d7e2bcb8af6b319bbbe4ef7f26420
+
+@ 0 5 0 1a2b586eb285c63b07562f67887556d8
++       Un `Measurable` dà al suo `Self` una larghezza in colonne di visualizzazione: un
++       `Char is Measurable` dice quante colonne occupa un carattere, e `Measurable.general`
++       solleva una tale metrica a `Text is Measurable` sommando. La larghezza si legge con
++       l'estensione `metrics`, ed è ciò con cui misurano `pad`, `center` e `fit` di gossamer,
++       così una colonna di testo giapponese si allinea dove contare i caratteri non basterebbe.
+
+@ 0 4 0 08722e280d66c0f01e576085a59c08a4
++       Per impostazione predefinita nessuna metrica è nell'ambito: se ne importa una per nome
++       dal package `textMetrics`, poiché la scelta riguarda anche il costo. Con `uniformMetric`
++       la larghezza di un testo è la sua lunghezza, in tempo costante; con
++       `eastAsianScriptsMetric` o `wideCharacterWidthMetric` ogni carattere viene cercato e
++       sommato.
+
+% 2 1 0 1905a369fedaf6200159117eb1d87b31
+
+% 3 1 0 0e975c72777a4835169d2dfa4bfe76f5
+
+% 0 1 0 1c9d4bf1c931e8530064e53ea3324c30
+
+% 0 1 0 1c5811ba64ed7b640c915152539224cb
+
+% 0 1 0 1c9ea29826553b89145740a42a794b35
+
+% 0 1 0 079cb67c30070fcc14837c6bc0be5fb3
+
+% 1 1 0 0cbebf3d61ed7dba1417afbbd868a239
+
+@ 0 2 0 05f0138ad4e05bf1035b3957dd386a10
++       Anche `Grapheme` e `Writing` di gossamer sono `Measurable`, tramite la metrica di `Char`
++       nell'ambito, che misura un cluster di grafemi nel suo insieme.
+
+% 1 1 0 12a10a764f723d5d199e48ea518ce6ac
+
+% 0 1 0 042a9281ddab4afe07bb8cc76de26df5
+
+@ 0 5 0 08a8447c263e7d930479438d825d5d89
++   entry .general   `Text is Measurable`, come somma delle larghezze dei suoi caratteri secondo la metrica di `Char` nell'ambito
++       Nell'ambito implicito, quindi per misurare un testo basta importare un
++       `Char is Measurable`. La somma è sulle unità di codice UTF-16, quindi alla metrica si
++       chiede separatamente di ciascuna metà di una coppia surrogata.
++   entry #width   il numero di colonne di visualizzazione occupate da un valore
+
+@ 0 5 0 11fc9419456fc5d41eb4e09b257807de
++ entry .metrics   la larghezza di un carattere o di un testo, tramite il `Measurable` nell'ambito
++     `'身'.metrics` e `t"…".metrics`: un'estensione su qualsiasi tipo con un `Measurable`, che
++     restituisce `width`. Richiede un `Char is Measurable` importato per nome da `textMetrics`
++     (`uniformMetric`, `eastAsianScriptsMetric` o `wideCharacterWidthMetric`); un `Text` si
++     misura tramite `Measurable.general`.
+
+@ 0 1 0 124edb3a8f8a68a305c7d9613b587f6e
++ entry .textMetrics   le metriche della larghezza di visualizzazione, ciascuna un given da importare per nome
+
+% 1 1 0 031b4495a82411170b5433df9e3c5719
+
+@ 0 3 0 14089f937f33e10b05d1d6d9b0117d4f
++       Quale metrica misuri un carattere lo decide il given `Char is Measurable` nell'ambito, e
++       `import soundness.*` non ne porta nessuno: se ne importa uno per nome. Le tre
++       differiscono in ciò che contano e in quanto costano.
+
+% 2 1 0 1d91ca6acc02ad2013526c806548ae24
+
+% 3 1 0 0d2a1e9c9bb9ab8f1405fcfb6e08dae8
+
+% 2 1 0 16be0b365b962e101ae2010fc1909fb8
+
+% 0 1 0 07b3802820aae40f00aa10b1dc7eaad8
+
+% 0 1 0 0a0a3ec08a08e9de1266882a0a198d7a
+
+% 2 1 0 078be50b70e0863c0676017bbedcba9d
+
+% 0 1 0 06ee154b8609850c05ba8ec815110c7c
+
+% 0 1 0 0a0a3ec08a08e9e01266882a0a198d7c
+
+% 1 1 0 08a679d5a912de811594c99cf73edb20
+
+@ 0 17 0 18abad502a7b14f70606a003e8af15e0
++       `uniformMetric` è adatta ovunque si sappia che il testo non contiene nulla di largo, e
++       non costa nulla; `eastAsianScriptsMetric` è adatta ai terminali che mostrano testo CJK;
++       e `wideCharacterWidthMetric` è la più fedele a ciò che un terminale disegna, contando
++       come niente i segni combinanti e i caratteri di controllo.
++   entry .uniformMetric   ogni carattere è una colonna
++       La larghezza di un testo con questa metrica è la sua lunghezza, senza alcuna ricerca.
++   entry .eastAsianScriptsMetric   un carattere largo o a larghezza piena occupa due colonne, ogni altro una
++       Cerca ogni carattere nella tabella `EastAsianWidth.txt` di Unicode
++       (`Unicode.eastAsianWidth`): `Wide` e `FullWidth` occupano due colonne; `Narrow`,
++       `HalfWidth`, `Neutral`, `Ambiguous` e un carattere assente dalla tabella una. Qui i
++       segni combinanti contano ancora come uno; per una metrica che non assegni loro nulla, si
++       usi `wideCharacterWidthMetric`.
++   entry .wideCharacterWidthMetric   il `wcwidth` di Markus Kuhn: un carattere largo vale due, uno combinante o di controllo zero
++       `WideCharacterWidth.width` per ogni carattere: zero per `NUL`, i controlli C0 e C1, i
++       segni non spaziatori e racchiudenti e i caratteri di formato (così un accento
++       combinante o un zero-width joiner non aggiungono nulla), due per `Wide` e `FullWidth`
++       est-asiatici, e uno per tutto il resto. È la metrica con cui sono documentate le misure
++       dei grafemi di gossamer, poiché una lettera base con un segno combinante misura allora
++       uno.
+
+@ 0 1 0 06ae2e4c8d1a505b1456bd51575debb2
++ entry .Unicode   le tabelle di Unicode: nomi dei caratteri, larghezze est-asiatiche e alcune rese
+
+% 1 1 0 150b54759ffbe4da11d6cd6c2ab1a880
+
+@ 0 8 0 18c4746fddb8952712d0b0226de39947
++       L'oggetto `Unicode` legge i file di dati di Unicode dal classpath, pigramente, e offre
++       ciò che contengono: `.name` e `.apply` cercano il nome di un carattere in entrambe le
++       direzioni, tramite `.unicodeData` e `.unicodeNames`; `.eastAsianWidth` dà la categoria
++       `EaWidth` di un code point, su cui si basano `textMetrics` e `WideCharacterWidth`; e
++       `.visible` e `.smallCaps` sono due piccole rese. Le tabelle sono `UnicodeData.txt` ed
++       `EastAsianWidth.txt` per Unicode 16.0.0, sotto `/hieroglyph/` nel classpath; sulla JVM
++       una tabella mancante viene scaricata da unicode.org, e su Scala Native una tabella
++       mancante provoca un panic, quindi le risorse devono essere incorporate nel binario.
+
+% 2 1 0 05f209dcc6406dd80ef3110d750e654c
+
+% 3 1 0 1239de5537f83c490a422fc8e55688e2
+
+% 0 1 0 10c6c76f10563f97061734eea4ee6086
+
+% 0 1 0 1977943647f3a82b123951f11ba37c25
+
+% 0 1 0 030cdab55a4d7f5c19fcb1ad6cc61c1a
+
+% 0 1 0 136431672aff85961866bc6d76a8e506
+
+% 0 1 0 1b5d4e13efb8faeb0f2e17a2f8baf118
+
+% 1 1 0 0ed64a44e9fe43f6100bb92511ac7eda
+
+@ 0 2 0 07c11dd6fc84b4041175e81593bc570a
++       Il nome di un carattere si raggiunge anche come `char.description` o
++       `char.designation`, e un carattere dato il suo nome come `ucs"…"`, verificato mentre il
++       codice si compila.
+
+% 0 1 0 0e5a3f69a24318e205eb801c6becaae7
+
+% 0 1 0 13b5c41c31c42bfb0ac81ec9c619cc0d
+
+% 0 1 0 00eb1167fab233d61259d476bcfee502
+
+@ 0 5 0 060e79ad88bedbeb1eb6e5b1e792cdbf
++   entry .smallCaps   un testo con le sue lettere ASCII minuscole sostituite da maiuscoletti
++       Da `a` a `z` diventano da `ᴀ` a `ᴢ` (con `ꜰ` per `f`, `ǫ` per `q`, e `s` e `x`, che non
++       hanno forme in maiuscoletto, lasciate come sono); ogni altro carattere resta invariato.
++       Usato da `communication.unicodeCharNamesCommunicable` per comporre il nome di un
++       carattere.
++   entry .EaWidth   la categoria di larghezza est-asiatica di un code point, da `EastAsianWidth.txt`
+
+% 1 1 0 1fd0158ba73693c10fbfaef7acb15519
+
+@ 0 38 0 11913ce855c680e500590525e87a45b2
++         Le sei categorie che Unicode assegna: `Neutral` (`N`), `Narrow` (`Na`), `Wide` (`W`),
++         `Ambiguous` (`A`), `FullWidth` (`F`) e `HalfWidth` (`H`). `#width` le riduce a colonne,
++         e `.unapply` ne legge una dal codice di due lettere della tabella. I caratteri
++         `Ambiguous` — greco, cirillico, alcuni simboli — sono larghi nei contesti est-asiatici
++         tradizionali e stretti altrove; `#width` li conta come uno.
++     entry .unapply   la categoria per un codice della tabella: `N`, `Na`, `W`, `A`, `F` o `H`
++         Un estrattore su `Text`, `None` per qualsiasi altro testo.
++     entry #width   la larghezza della categoria in colonne: due per `Wide` e `FullWidth`, una altrimenti
++   entry .eastAsianWidth   l'`EaWidth` di un carattere o di un code point, o `Unset` se la tabella non ne ha
++       Accetta un `Char` o un code point `Int`. La ricerca è una ricerca tra gli intervalli
++       della tabella, quindi costa un logaritmo della dimensione della tabella per carattere;
++       un code point non coperto da alcun intervallo è `Unset`, che le `textMetrics` trattano
++       come una colonna.
++   entry .visible   un carattere di controllo come il suo glifo Control Pictures, per la visualizzazione
++       `DEL` diventa `␥`, uno spazio `␣`, e ogni altro carattere uguale o inferiore allo spazio
++       la sua immagine dal blocco `␀`–`␟` (`'\t'` è `␉`, `'\n'` è `␊`); ogni altro carattere è
++       sé stesso. Serve a mostrare un testo i cui caratteri di controllo sarebbero altrimenti
++       invisibili o agirebbero sul terminale.
++   entry .apply   il carattere con un dato nome Unicode, o `Unset`
++       `Unicode(t"GREEK SMALL LETTER ALPHA")` è `'α'`. Il nome è scritto come in
++       `UnicodeData.txt`, in maiuscolo. Un carattere oltre il Basic Multilingual Plane è un
++       `Text` della sua coppia surrogata anziché un `Char`, quindi il risultato è
++       `Optional[Char | Text]`. La ricerca usa `.unicodeData`, quindi la prima chiamata carica
++       la tabella.
++   entry .name   il nome Unicode di un carattere, con le iniziali maiuscole, o `Unset`
++       `Unicode.name('é')` è `t"Latin Small Letter E With Acute"`: il nome della tabella con
++       ogni parola con l'iniziale maiuscola. `Unset` per un carattere a cui la tabella non dà un
++       nome, come un carattere di controllo o un code point non assegnato. Si raggiunge anche
++       come `char.description` e `char.designation`.
++   entry .unicodeData   ogni carattere con nome, indicizzato dal nome come lo scrive `UnicodeData.txt`
++       Una `Map[Text, Char | Text]` costruita pigramente dal nome in maiuscolo al carattere —
++       un `Char`, o un `Text` di due surrogati per un carattere oltre il Basic Multilingual
++       Plane. Le voci di intervallo come `<CJK Ideograph, First>` sono omesse.
++   entry .unicodeNames   il nome di ogni carattere con nome, con le iniziali maiuscole, indicizzato dal carattere
++       L'inverso di `.unicodeData`, come `Map[Char | Text, Text]`, con ogni parola del nome con
++       l'iniziale maiuscola: `Unicode.name` la legge.
++   entry .eastAsianWidths   la tabella delle larghezze est-asiatiche, come intervalli di code point verso `EaWidth`
++       Una `TreeMap` caricata pigramente da `hieroglyph.internal.CharRange` a `EaWidth`, con gli
++       intervalli adiacenti della stessa categoria fusi. `.eastAsianWidth` vi cerca; è pubblica
++       perché uno strumento possa enumerare la tabella.
+
+@ 0 1 0 1854f4a91cb8c306034874d1b2de7c54
++ entry .WideCharacterWidth   l'algoritmo `wcwidth` di Markus Kuhn: la larghezza di un code point in colonne del terminale
+
+% 1 1 0 115f5c4e4f2739a81266062f90125d62
+
+@ 0 5 0 1c7a6648a0c4faf003229efe9ee68a3b
++       La larghezza che un terminale dà a un code point, secondo le regole del classico
++       `wcwidth`: zero per `NUL`, per i controlli C0 (sotto `0x20`) e C1 (`0x7f`–`0x9f`), e per
++       i segni non spaziatori, i segni racchiudenti e i caratteri di formato; due per un code
++       point il cui `Unicode.eastAsianWidth` è `Wide` o `FullWidth`; e uno per tutto il resto.
++       Accetta un code point `Int`, quindi un emoji oltre il Basic Multilingual Plane
++       (`0x1f468`) viene misurato intero, come due.
+
+% 2 1 0 1fba0bbd612685b016b9823cfcb8bd29
+
+% 3 1 0 12054999a87fd98513663204f06beb75
+
+% 0 1 0 1c1114599143044c1b69508a6f03caa2
+
+% 0 1 0 1691fc7999197ddc01410d29c46a1e9c
+
+% 0 1 0 0f6cfbf48b13a23e01c5d99f4f039e7b
+
+% 0 1 0 0a37944fdc67e63b1cd340f222eff113
+
+% 1 1 0 161bf04d94ce0d4807ee60151add7fa7
+
+@ 0 1 0 0e6d12d0f07b733600aa188265c0d6a4
++       `textMetrics.wideCharacterWidthMetric` lo applica a ogni `Char`.
+
+% 1 1 0 023e80c693ff076e05c2169fdf6c2201
+
+@ 0 1 0 16b269f35fa54f3b08a751538fa27f41
++   entry .width   la larghezza di un code point nel terminale: zero, una o due colonne
+
+@ 0 1 0 19a8c91d4c565b070d4b17d6ef794fdd
++ entry .Chars   le forme in apice e in pedice delle cifre e dei segni aritmetici
+
+% 1 1 0 09524ca42022145f05bb6a0526a26e27
+
+@ 0 5 0 1a7e48fe8b321ebf0dbaacec0fa18733
++       Due funzioni parziali da un carattere alla sua forma Unicode in apice o in pedice,
++       definite per le cifre da `0` a `9` e per `(`, `)`, `+`, `-` e `=`. Si raggiungono come
++       `char.superscript` e `char.subscript`, che danno `Unset` dove non esiste una forma.
++   entry .superscript   da `'2'` a `'²'`, per cifre, parentesi, `+`, `-` e `=`
++   entry .subscript   da `'2'` a `'₂'`, per cifre, parentesi, `+`, `-` e `=`
+
+@ 0 4 0 0b8faa9fdb72a7ff0df661ba3749cf74
++ entry .superscript   la forma in apice di un carattere, o `Unset`
++     Un'estensione su `Char`: `'2'.superscript` è `'²'`, `'('.superscript` è `'⁽'`, e una
++     lettera — per cui Unicode non ha un alfabeto in apice coerente — è `Unset`. Definita per
++     `0`–`9`, `(`, `)`, `+`, `-` e `=`, tramite `Chars.superscript`.
+
+@ 0 3 0 110790d8d46b3a5105ecdb8c1e6c1625
++ entry .subscript   la forma in pedice di un carattere, o `Unset`
++     Un'estensione su `Char`: `'2'.subscript` è `'₂'`, `'+'.subscript` è `'₊'`, e qualsiasi
++     carattere diverso da `0`–`9`, `(`, `)`, `+`, `-` e `=` è `Unset`. Tramite
+
+% 0 1 0 0c69957854dd528d13523b1b50cfde70
+
+@ 0 4 0 1a3bf76bd612a2a90508d3eb7caddcb6
++ entry .description   il nome Unicode di un carattere, con le iniziali maiuscole, o `Unset`
++     Un'estensione su `Char`: `'é'.description` è `t"Latin Small Letter E With Acute"`, e un
++     carattere a cui il database Unicode non dà un nome è `Unset`. Equivale a `designation` e
++     a `Unicode.name`; la prima chiamata carica la tabella.
+
+@ 0 4 0 05a176970d89b12005f86b3667ced9b8
++ entry .designation   il nome Unicode di un carattere, con le iniziali maiuscole, o `Unset`
++     Un'estensione su `Char`, identica a `description`: `'ß'.designation` è
++     `t"Latin Small Letter Sharp S"`. `communication.unicodeCharNamesCommunicable` la usa per
++     rendere un carattere in un messaggio.
+
+@ 0 4 0 18a12532d65a802619435f1d082ce2a3
++ entry .minuscule   un carattere in minuscolo
++     Un'estensione su `Char`: `Character.toLowerCase`. Il predicato è `minuscular`. La coppia
++     prende il nome dalle forme delle lettere anziché da `lower`/`upper`, che sono le
++     conversioni di maiuscole e minuscole di `Text` di gossamer e collidirebbero con esse
++     nell'ombrello `soundness`.
+
+@ 0 2 0 01da015293fd55c1100e4b9d42d7a856
++ entry .majuscule   un carattere in maiuscolo
++     Un'estensione su `Char`: `Character.toUpperCase`. Il predicato è `majuscular`.
+
+@ 0 3 0 0f8632d427b8c7eb1c02c42e78105bd4
++ entry .whitespace   se un carattere è uno spazio bianco
++     Un'estensione su `Char`: `Character.isWhitespace`, che conta spazi, tabulazioni, a capo e
++     i separatori di spazio Unicode, ma non lo spazio non separabile.
+
+@ 0 3 0 0aad02e441ac4ec708274b21d171f456
++ entry .control   se un carattere è un carattere di controllo ISO
++     Un'estensione su `Char`: `Character.isISOControl`, cioè `0x00`–`0x1f` e `0x7f`–`0x9f`.
+
+@ 0 2 0 1e0f2a00933951b51e81ebbb9bf3a0c5
++ entry .printable   se un carattere non è né un carattere di controllo né uno spazio bianco
++     Un'estensione su `Char`: `!control && !whitespace`. Un carattere che lascia un segno
++     sulla pagina.
+
+@ 0 3 0 1141eb0effaf4fbe11239fde1b653098
++ entry .letter   se un carattere è una lettera in qualsiasi sistema di scrittura
++     Un'estensione su `Char`: `Character.isLetter`, quindi `'é'.letter` e `'身'.letter` valgono
++     come vale `'a'.letter`, mentre `'7'.letter` e `'.'.letter` no.
+
+@ 0 3 0 1b3537ca7b1508391be8af755a77b55e
++ entry .digit   se un carattere è una cifra in qualsiasi sistema di scrittura
++     Un'estensione su `Char`: `Character.isDigit`, che include le cifre di altri sistemi di
++     scrittura (arabo-indiche, devanagari, …) oltre a `0`–`9`.
+
+@ 0 3 0 1ad0d09907d1c92114e6e92c88614a91
++ entry .alphanumeric   se un carattere è una lettera o una cifra
++     Un'estensione su `Char`: `Character.isLetterOrDigit`. La punteggiatura e gli spazi bianchi
++     non sono né l'una né l'altra.
+
+@ 0 3 0 07d5af9c23ac3197070f452ab2ba7b1e
++ entry .majuscular   se un carattere è maiuscolo
++     Un'estensione su `Char`: `Character.isUpperCase`. `'A'.majuscular` vale; `'a'` e `'7'`,
++     che non ha maiuscole e minuscole, no. La conversione è `majuscule`.
+
+@ 0 3 0 02233233bcf197101ddb8b2e7e3b328d
++ entry .minuscular   se un carattere è minuscolo
++     Un'estensione su `Char`: `Character.isLowerCase`. `'a'.minuscular` vale; `'A'` e `'7'`,
++     che non ha maiuscole e minuscole, no. La conversione è `minuscule`.
+
+@ 0 4 0 0c41921f454802da1eae42e50d6aa016
++ entry .unicode   un code point come testo, come `0x1f600.unicode`
++     Un'estensione su `Int`: il `Text` del carattere con quel code point, che consiste di due
++     unità di codice UTF-16 per un carattere oltre il Basic Multilingual Plane. Un code point
++     non valido lancia la `IllegalArgumentException` del JDK.
+
+@ 0 8 0 0d89c9311872eff61643fc25de45f8fb
++ entry .enc   l'interpolatore `enc"…"`: una codifica per nome, verificata mentre il codice si compila
++     `enc"UTF-8"` nomina una codifica dei caratteri e verifica, mentre il codice si compila, che
++     la piattaforma abbia una codifica con quel nome (per nome di visualizzazione o alias,
++     senza distinguere maiuscole e minuscole). Un nome che non ha è un errore di compilazione,
++     _the encoding `ABCDEF` was not available_ (↯/s.35.2), e un nome non registrato presso
++     IANA compila con un avviso che potrebbe non essere disponibile ovunque. Il membro di tipo
++     `CanEncode` del risultato è fissato a `true` o `false` dalla tabella della piattaforma,
++     quindi `enc"ISO-2022-CN".decoder` compila ed `enc"ISO-2022-CN".encoder` no.
+
+% 2 1 0 064b6e34d95101ab0a4669e5ac53dbf9
+
+% 3 1 0 04d9784872c48089070165f100cddd59
+
+% 0 1 0 0d5bf406e74cd04a13d75d4030990ef7
+
+% 0 1 0 16a050383c87afcd027c802c7607c6a8
+
+% 0 1 0 1fef97563638fa02196b681b46a8d837
+
+% 0 1 0 1ee7e2fc628087220fb892f27b1840c4
+
+% 1 1 0 1e4fb4207bbe807804ae04eec2fc47b2
+
+@ 0 4 0 182be5d0f00b9dc71a82ed9621f7fe4c
++     L'interpolatore non accetta sostituzioni `$`: il nome deve essere un letterale, poiché
++     viene verificato in fase di compilazione. La verifica in fase di compilazione consulta la
++     JVM del compilatore, quindi una codifica presente lì e assente a runtime fallisce quando
++     il `charset` della codifica viene risolto per la prima volta.
+
+@ 0 7 0 03a3703e6a0ca44c1433318bc9415f36
++ entry .ucs   l'interpolatore `ucs"…"`: un carattere dato il suo nome Unicode, verificato mentre il codice si compila
++     `ucs"GREEK SMALL LETTER ALPHA"` è `'α'`, e `ucs"Grinning Face"` è il testo della coppia
++     surrogata di U+1F600: il risultato è `Char | Text`, un `Char` per un carattere nel Basic
++     Multilingual Plane e un `Text` oltre. Il nome viene confrontato con `UnicodeData.txt` in
++     maiuscolo, quindi le maiuscole non contano, e un nome che il database non ha è un errore
++     di compilazione, _the unicode character `…` does not exist_ (↯/s.35.3). Non accetta
++     sostituzioni `$`.
+
+% 2 1 0 168390099e11059c11bf7127c70a6f46
+
+% 3 1 0 1379912ec39811b9069a810a64970968
+
+% 0 1 0 1c8afe6669730ccf0499b09f3424f5a4
+
+% 1 1 0 0d48bbc628b865a61479f5fc2ce8170a
+
+@ 0 1 0 02bd53410cb980e71164215bff03cd44
++ entry .GraphemeBreak   dove finisce un carattere percepito dall'utente e inizia il successivo, secondo UAX #29
+
+% 1 1 0 0de7bebf9cecdd0612435e3430c1674a
+
+@ 0 7 0 0a90bafb52edc28c10416742d83f6b7d
++       Ciò che un lettore vede come un carattere può essere composto da più code point — una
++       bandiera è fatta di due indicatori regionali, un emoji di famiglia di più emoji uniti da
++       zero-width joiner, una lettera accentata può essere una base più un segno combinante —
++       quindi il codice che tronca, inverte o misura il testo per code point spezza i caratteri
++       a metà. `GraphemeBreak.boundaries` trova i confini tra cluster di grafemi estesi secondo
++       le regole dell'Unicode Standard Annex #29 (versione 16.0.0, inclusa la regola dei
++       congiunti indici GB9c), e anche le ricerche di proprietà su cui si basa sono pubbliche.
+
+% 2 1 0 01d5c97609ac33ab07168d0b675767a5
+
+% 3 1 0 066bba3380eaed4e09e970987f52396b
+
+% 0 1 0 1cbd2f4c787fd4510d695622034a7d78
+
+% 0 1 0 1733526339b92bb610a6c98ff4fcdd00
+
+% 0 1 0 058fce6c4846db7b1bfec092a2bc943d
+
+% 0 1 0 13d9ff6591de882c1ca35b7f71b2faa0
+
+% 1 1 0 00fc1c4441296b8c0f951d33d79977d7
+
+@ 0 3 0 03870ee7367d1d8e162f55e772958fb5
++       Le tabelle sono `GraphemeBreakProperty.txt`, `emoji-data.txt` e
++       `IndicConjunctBreak.txt` dal classpath, caricate al primo uso. `Writing` e `Grapheme` di
++       gossamer sono la vista di livello più alto: un testo come i suoi cluster.
+
+% 1 1 0 14c1703ef196158b0b84a28dc73ba24e
+
+@ 0 1 0 04e3b4aaf82992250f9342ebda1dffb1
++   entry .Property   i valori della proprietà Grapheme_Cluster_Break
+
+% 1 1 0 1aa4b09404bd48811f03059fae3da83c
+
+@ 0 14 0 0a6c5504f4db75030a4c92b376132dc2
++         I valori che UAX #29 assegna a un code point: `Other`, `Cr`, `Lf`, `Control`,
++         `Extend`, `Zwj`, `RegionalIndicator`, `Prepend`, `SpacingMark`, e le classi dei jamo e
++         delle sillabe hangul `L`, `V`, `T`, `Lv` e `Lvt`. `.property` ne legge uno per un code
++         point.
++   entry .property   la proprietà Grapheme_Cluster_Break di un code point, `Other` se la tabella non ne ha
++   entry .extendedPictographic   se un code point ha la proprietà emoji Extended_Pictographic
++       Da `emoji-data.txt`; la proprietà che permette a una sequenza emoji di proseguire oltre
++       uno zero-width joiner.
++   entry .incb   il valore Indic_Conjunct_Break di un code point: `0` consonante, `1` estensione, `2` legante, `-1` nessuno
++       Da `DerivedCoreProperties.txt`, portato sul classpath come `IndicConjunctBreak.txt`; la
++       proprietà dietro la regola GB9c, che tiene insieme consonante, virama e consonante.
++   entry .boundaries   gli offset in cui iniziano e finiscono i cluster di grafemi
++       Un array di offset UTF-16 nel testo, che inizia con `0` e finisce con la lunghezza del
++       testo, quindi un testo di `n` cluster ha `n + 1` confini e il testo vuoto ne ha uno. La
++       porzione tra due confini adiacenti è un cluster.
+
+@ 0 1 0 04c8c9b166a5c80f194e1c7732fd6308
++ entry .Normalization   decomposizione canonica (NFD) e classi di combinazione, da `UnicodeData.txt`
+
+% 1 1 0 18ae6552194f797f1e4e97462df0a1bf
+
+@ 0 4 0 0f4cd85b270338cc1f38b899466014f4
++       La normalizzazione di cui ha bisogno `CollationTable`: la decomposizione canonica di un
++       testo, con le sillabe hangul decomposte aritmeticamente nei loro jamo e i segni
++       combinanti riordinati per classe di combinazione, come prescrive la Unicode
++       Normalization Form D. La composizione (NFC) non è fornita.
+
+% 2 1 0 001e0ba04203338814557d70730f2615
+
+% 3 1 0 071e5b3bbf160ee8142f4df6662919dc
+
+% 0 1 0 084934dc2da0669e1182443d6619fc84
+
+% 0 1 0 13ef436b2bfffeee1edf81c34c98ace9
+
+% 0 1 0 08a801b1e2571374179c32ca0ff06bb5
+
+% 1 1 0 0fb0a5007f5950640997247c703d24a1
+
+% 1 1 0 17468a9a7e035696014cc42b245db346
+
+@ 0 8 0 098ddadd405960371179161c97931de6
++   entry .combiningClass   la classe di combinazione canonica di un code point, `0` per un carattere iniziale
++       Letta dal campo 3 di `UnicodeData.txt`; i valori arrivano fino a 240. Un segno con una
++       classe più alta si ordina dopo uno con una classe più bassa all'interno di una sequenza
++       di segni.
++   entry .decompose   la decomposizione canonica di un testo, o di un array di code point, come code point
++       `decompose(text)` legge i code point del testo (una coppia surrogata come uno solo) e li
++       decompone; `decompose(codepoints)` accetta un array di code point. Le mappature sono
++       chiuse ricorsivamente al caricamento, quindi ogni code point è un singolo accesso alla
++       tabella, e ogni sequenza massimale di segni combinanti viene ordinata in modo stabile per
++       classe di combinazione.
+
+@ 0 1 0 020a6f4f1fc85203175295579e2ac454
++ entry .CollationTable   l'Unicode Collation Algorithm (UTS #10): chiavi di ordinamento e confronto sulla DUCET
+
+% 1 1 0 1c53c73623d6186117fca45bb7c6bbee
+
+@ 0 7 0 096a1567ee9c8bc20ca88fca10f74c08
++       Una `CollationTable` ordina il testo come fa un dizionario: prima per lettere, poi per
++       accenti, poi per maiuscole e minuscole, quindi `cafe < café < caff` e `abc < ABC`, con
++       `æ` tra `ae` e `af` e gli ideogrammi CJK non mappati in ordine di code point. `.root` è
++       la tabella costruita dalla Default Unicode Collation Element Table (`allkeys.txt`,
++       versione 16.0.0), e `#tailor` deriva una tabella per una lingua il cui ordine differisce,
++       da una lista di `CollationRule`. Il confronto è non ignorabile — punteggiatura e spazi
++       mantengono i loro pesi — e una chiave di ordinamento ha i tre livelli.
+
+% 2 1 0 076685f3214609fd09a5088ceec5fe4b
+
+% 3 1 0 157836263fdeef8519d852e6d840e10a
+
+% 0 1 0 05494c98490fb5d0167961bcb318f612
+
+% 0 1 0 0509e8e4f33e84a0044ba62e407586b9
+
+% 0 1 0 07e9f5230f880f18027c9392a0e62573
+
+% 0 1 0 184a5d673e50e97b08f82d7120e25339
+
+% 0 1 0 1b13949064c7158400eb7d98c3b6e1a3
+
+% 0 1 0 011bce77c4dd1c3a15222d1a11d2b3b7
+
+% 0 1 0 198e86d5b1ba28e519907a9505f76b5e
+
+% 0 1 0 1f322fe225bbd551179c653b252e9169
+
+% 1 1 0 02f943453e8b63981113d36ec621d850
+
+@ 0 5 0 033970dd9cc51c2a05923843a21b5bec
++       La tabella non è esportata nell'ombrello `soundness`: si raggiunge come
++       `hieroglyph.CollationTable`, e la maggior parte dei programmi la incontra tramite
++       `collations.unicodeCollation` di gossamer, che ordina `Text` con `.root`. Il
++       caricamento di `.root` analizza `allkeys.txt` dal classpath (`/hieroglyph/allkeys.txt`,
++       o unicode.org sulla JVM se è assente) al primo uso, il che richiede un momento; la
++       tabella viene poi condivisa.
+
+% 0 1 0 09a66f102b70f46317ec5263fdc70eba
+
+% 1 1 0 19316f104a93588218c4f395a17326d9
+
+@ 0 21 0 1245d0511dbef04a0b0ccf143c4cfe34
++   entry .root   la tabella costruita dalla Default Unicode Collation Element Table
++       Un valore pigro: costruito al primo uso da `allkeys.txt`, e condiviso in seguito. Va in
++       panic se il file non è né sul classpath né, sulla JVM, raggiungibile da unicode.org.
++   entry #key   la chiave di ordinamento di un testo, o di un array di code point
++       Un array di pesi: ogni peso primario diverso da zero, poi `0`, i secondari, `0`, e i
++       terziari, così due chiavi si confrontano lessicograficamente con `#compareKeys`.
++       L'input viene prima decomposto (`Normalization.decompose`), le contrazioni vengono
++       riconosciute dalla più lunga, incluso il caso discontiguo, e un code point senza
++       mappatura prende i pesi impliciti che UTS #10 deriva dal suo code point. Per ordinare
++       molti testi, si calcoli ogni chiave una volta sola e si confrontino le chiavi.
++   entry #compare   confronta due testi: negativo, zero o positivo
++       `compareKeys(key(left), key(right))`: calcola le chiavi di entrambi i testi e le
++       confronta. Zero significa che i testi sono uguali a tutti e tre i livelli — stesse
++       lettere, accenti e maiuscole — il che non richiede che siano gli stessi code point.
++   entry #compareKeys   confronta lessicograficamente due chiavi di ordinamento, la più corta prima in caso di parità
++   entry #tailor   una tabella in cui il bersaglio di ogni regola si ordina subito dopo la sua base, al livello della regola
++       Applica in ordine una lista di `CollationRule`, quindi una regola può usare come base il
++       bersaglio di una regola precedente (in polacco `ż` dopo `ź` dopo `z`). La base di una
++       regola deve avere una mappatura in questa tabella, e al massimo 255 regole possono
++       condividere una stessa base e uno stesso livello; violare l'una o l'altra condizione
++       provoca un panic. Copre la forma comune delle personalizzazioni europee e non è un
++       interprete della sintassi completa delle regole CLDR.
+
+@ 0 1 0 1b4fe16ac5fca9d11888ab90f998d6f2
++ entry .CollationRule   una personalizzazione: un bersaglio si ordina subito dopo una base, differendo a un livello
+
+% 1 1 0 13f9148bc9037a49054eb6ee0a77d3f6
+
+@ 0 5 0 053d7be99b50466d08741be2db98aad4
++       `CollationRule(base, target, level)`: nella tabella personalizzata, `target` si ordina
++       subito dopo `base`, con la differenza contata a `level` — `Primary` per una lettera
++       distinta, come in polacco `ó` lo è da `o`; `Secondary` per un accento; `Tertiary` per una
++       variante di maiuscola o minuscola. Le regole vengono applicate in ordine da
++       `CollationTable#tailor`. Non esportata nell'ombrello `soundness`:
++       `hieroglyph.CollationRule`.
+
+% 1 1 0 15dfc0cfb95b70771fb9188be2b9f29d
+
+% 0 1 0 094191225302a73f196b00ff4941adf7
+
+@ 0 3 0 0e95a7a9838864af1c2573d36383a454
++   entry #base   il testo, già presente nella tabella, dopo cui si ordina il bersaglio
++   entry #target   il testo da installare
++   entry #level   il livello a cui il bersaglio differisce dalla sua base
+
+@ 0 4 0 1327495e92016252017b428ba4a1f798
++ entry .CollationLevel   il livello di una differenza di collazione: `Primary`, `Secondary` o `Tertiary`
++     Le differenze `Primary` sono tra lettere, le `Secondary` tra accenti sulle stesse lettere,
++     e le `Tertiary` tra maiuscole e minuscole. Usato da `CollationRule`. Non esportato
++     nell'ombrello `soundness`: `hieroglyph.CollationLevel`.
+
+@ 0 1 0 0fe83c2b606eabfb07e28de809d4de81
++ entry .charsets   i decoder standard, ciascuno un given `Charset` da importare per nome
+
+% 1 1 0 1d251985357ae93313da05f2f8d9efef
+
+@ 0 6 0 0cc3f1d809f197cb1aff00859ceaf081
++       Con quale codifica si leggono i byte lo decide il given `Charset` nell'ambito, e la
++       scelta non è mai implicita: `import soundness.*` non ne porta nessuno, e se ne importa
++       uno per nome. Ciascuno risolve il `TextSanitizer` nell'ambito nel punto d'uso, quindi lo
++       stesso `utf8Charset` è rigoroso dove è importato `strictSanitizer` e tollerante dove lo
++       è `skipSanitizer`; solo `iso88591Charset` fissa il sanitizzatore che salta, poiché ogni
++       byte è Latin-1 valido.
+
+% 2 1 0 147e4ee0242278a60ff3523a209174ca
+
+% 3 1 0 09fe521e4d0e6a7e0474c4927a453062
+
+% 0 1 0 17ae010515f1d06d1ae4a0132df07de9
+
+% 0 1 0 0d4706ca5d21504f006fd04b6ce6c2b6
+
+% 1 1 0 0db42d138076ce5e1f282264495e44aa
+
+% 0 1 0 06777a9a597e84f714acccf74074a00b
+
+% 1 1 0 0f44bc6324f145021b524627020cdb07
+
+@ 0 3 0 0cd6b29e0e2b7b061cad9e46de72b30d
++       Sono ciò in cui si risolvono `read[Text]` e `utf8` di turbulence e i given `Readable` e
++       `Aggregable` dai byte al testo. Una codifica non elencata qui è `enc"…".decoder`, legata
++       come `given Charset` locale.
+
+% 1 1 0 1655ccacade832cc068485753186508c
+
+% 1 1 0 118504bcaf8c0e1c1d85e48239f23d12
+
+@ 0 10 0 06dfe599f78f04fc03b2ed008c0865c5
++   entry .utf8Charset   UTF-8, con il sanitizzatore nell'ambito
++   entry .utf16Charset   UTF-16, che legge un byte-order mark e usa big-endian per impostazione predefinita, con il sanitizzatore nell'ambito
++   entry .utf16LeCharset   UTF-16 little-endian, con il sanitizzatore nell'ambito
++   entry .utf16BeCharset   UTF-16 big-endian, con il sanitizzatore nell'ambito
++   entry .asciiCharset   US-ASCII, con il sanitizzatore nell'ambito
++       Qualsiasi byte sopra `0x7f` è un errore, gestito come dice il sanitizzatore.
++   entry .iso88591Charset   ISO-8859-1 (Latin-1), sempre con il sanitizzatore che salta
++       Ogni byte è un carattere Latin-1 valido, quindi non c'è nulla da sanificare e non serve
++       alcun `TextSanitizer` nell'ambito. Dichiarato solo in `hieroglyph.charsets`; il package
++       `charsets` dell'ombrello `soundness` non lo riesporta, quindi si importa come
+
+% 0 1 0 09d796f607402bc71a82bc731aba4ca3
+
+@ 0 1 0 1b5fdfda57a1862d0f324c684456a7bd
++ entry .codepages   gli encoder standard, ciascuno un given `Codepage` da importare per nome
+
+% 1 1 0 0da16f63d63415ee0921497381813036
+
+@ 0 4 0 1f1e5bcf901dad7c18e2e4702dcd131a
++       In quale codifica si scrive il testo lo decide il given `Codepage` nell'ambito, e la
++       scelta non è mai implicita: `import soundness.*` non ne porta nessuno, e se ne importa
++       uno per nome. Sono ciò in cui si risolvono `in[Data]`, `write`, i given `Postable` e
++       `Servable` per i formati testuali, e ogni altro punto in cui il testo diventa byte.
+
+% 2 1 0 1d8e2a2db99d5f8a0bb705f70d3af32b
+
+% 3 1 0 1df80320ffa33d1104267d58d919f813
+
+% 0 1 0 05c7b6b663c0853b10f681bb6ec5d7d3
+
+% 0 1 0 17019931c7397bc6134da706bb66900d
+
+% 1 1 0 1427c3406dc367c6057ea77645e4018c
+
+@ 0 1 0 07b12c718988e1281f302443c06272a4
++       Una codifica non elencata qui è `enc"…".encoder`, legata come `given Codepage` locale.
+
+% 1 1 0 0aaa66f41160f55501152dfb46e87b79
+
+% 0 1 0 153d7fe24d37ca601836fa76cbbef655
+
+@ 0 7 0 1bb8866aadc322410eef53eb5cbbcf6b
++   entry .utf16Codepage   UTF-16, scritto big-endian con un byte-order mark
++   entry .utf16LeCodepage   UTF-16 little-endian, senza byte-order mark
++   entry .utf16BeCodepage   UTF-16 big-endian, senza byte-order mark
++   entry .asciiCodepage   US-ASCII; un carattere sopra `0x7f` viene scritto come `?`
++   entry .iso88591Codepage   ISO-8859-1 (Latin-1); un carattere sopra `0xff` viene scritto come `?`
++       Dichiarato solo in `hieroglyph.codepages`; il package `codepages` dell'ombrello
++       `soundness` non lo riesporta, quindi si importa come
++       `hieroglyph.codepages.iso88591Codepage`.
+
+@ 0 1 0 0f4b3c8fe332f2750e6d85394810fdd5
++ entry .textSanitizers   le politiche per i byte non decodificabili, ciascuna un given `TextSanitizer` da importare per nome
+
+% 1 1 0 17b98e6d9be8f16f01be049664c10326
+
+@ 0 5 0 1943e7cb46d5cc4f10bf34a5d3f84ef1
++       Un `Charset` consulta il `TextSanitizer` nell'ambito a ogni sequenza di byte che la sua
++       codifica non sa decodificare, e `import soundness.*` non ne porta nessuno: il codice che
++       decodifica dice quale vuole, nel suo import. Il rigore si addice a un input di cui ci si
++       deve fidare in modo assoluto; la tolleranza al testo recuperato da una sorgente con
++       perdite; l'accumulo dà sia il testo sia un elenco dei punti in cui era errato.
+
+% 2 1 0 1e346b8d1ab1ff3706a6eb01ddd61ed5
+
+% 3 1 0 112f00a2a742967910c9b711e78ff9e3
+
+% 4 1 0 11f392ced6e57afb00ccec79779a4e6b
+
+% 5 1 0 0371974a22588f640c325935b3bc5cd1
+
+% 0 1 0 02d8d1e91e57144f03b154ae8d7d489e
+
+% 1 1 0 05461b278a41556612b38884eabc7724
+
+% 2 1 0 02534176a96c8b0c186dfffa6f1daf35
+
+% 0 1 0 13cd8c9452167bf1181f3f00b37db32e
+
+% 1 1 0 0694adb9b693377d1eae965ac359dccc
+
+% 2 1 0 1580632b3715bb900cf45c6438b35d80
+
+% 0 1 0 01c660d7b8d682c11bdc5f94ce661a6f
+
+% 0 1 0 0b49f7854eca70870905ca3f54333dfb
+
+% 0 1 0 1a86ea3f2ffb2ac3056095bd873d0b2f
+
+% 1 1 0 0fa0319641adefa810ea9f935021c0f9
+
+% 2 1 0 13d7536015ecde0a04108bd389b06e16
+
+% 0 1 0 18cf17dbb3c3a570004e6845472a0265
+
+% 0 1 0 0759faed3c4db0090a841b200577d02e
+
+% 0 1 0 0d33bb40a8191bf40f98339ab982dcfb
+
+% 1 1 0 19f934dc67149488009fcb6437a3f9de
+
+% 2 1 0 033a1607e82cd0160770802f90e53c80
+
+% 0 1 0 19cade938a6eee821cb058814332ac16
+
+% 0 1 0 023222d2ae5892de0e0e5e0799c85beb
+
+% 1 1 0 0f585998eae3f9c215a4e49bcdabfaab
+
+% 2 1 0 1f55c86d4a4c4ddc00bfe85505ce9c22
+
+% 1 1 0 06a09a1f6a1b42c60f87a9b4062d8faa
+
+% 1 1 0 08ac9f329abe1b96154f989ff9d1a88d
+
+@ 0 16 0 1fcb63f2f2d3e5fa0b3834693f19adeb
++   entry .skipSanitizer   scarta una sequenza non decodificabile e prosegue
++       Risponde `Unset` a ogni errore: il testo è ciò che è stato possibile decodificare, senza
++       alcun segno di ciò che è andato perso.
++   entry .substituteSanitizer   scrive `?` al posto di una sequenza non decodificabile e prosegue
++   entry .strictSanitizer   interrompe con `Charset.Error` alla prima sequenza non decodificabile
++       Richiede una `Tactic[Charset.Error]` nell'ambito dove viene risolto —
++       `strategies.throwUnsafely`, un blocco `safely`, `capture` o `recover` — e l'errore
++       indica l'offset in byte dell'errore e la codifica. Il sanitizzatore trattiene la tattica,
++       quindi vive quanto l'ambito che lo ha risolto.
++   entry .accrueSanitizer   registra ogni sequenza non decodificabile, scrive `?` e prosegue
++       Solleva un `Charset.Error` a ogni errore, nel focus di un `Charset.Focus(position)`, poi
++       sostituisce con `?` e continua, così la decodifica si completa e ogni errore viene
++       segnalato. Richiede una `Tactic[Charset.Error]` e dei `Foci[Charset.Focus]`, che un
++       blocco `validate[Charset.Focus](accumulator)` fornisce: il suo primo blocco dice come
++       ogni errore si unisce all'accumulatore (con `prior` come focus) e il suo blocco
++       `protect` esegue la decodifica.
+
+% 2 1 0 112a38a3cf018a311d32d88140466bd6
+
+% 3 1 0 0b3dd35a7ccbb6ce173fdaa786c7b753
+
+% 1 1 0 168826c42c25a673171ebc5f7f82d9a0
+
+% 0 1 0 0bf87a32fe9bce971e59d6ea8c2a0221
+
+% 0 1 0 132720d1b88987391532c42a94044c36
+
+% 0 1 0 1298b5d778c7614201a05ffed7767653
+
+% 0 1 0 04b41cb36bef4bbe0e24a19a23447c47
+
+% 0 1 0 03e5a4083b0d3c7b0c0e14311b4befe6
+
+% 0 1 0 0e9bef819ced982f178739b4c754ccc6
+
+% 0 1 0 08c966ea44c59bc911962a2ce5248e3e
+
+% 0 1 0 1089276d3d3e20bc02b1f75d7bc584ab
+
+% 0 1 0 0bc2a42029e0b4fd17b69d63325e0b9c
+
+% 0 1 0 0dfeff801bd056f40fd9334f35397713
+
+% 1 1 0 0048d43eed03905e16c5b10dd8fd47b6
+
+@ 0 1 0 036aeca28742a88f1d9f593c7f0df12c
++ entry .communication   un `Char is Communicable` che nomina i caratteri, un given da importare per nome
+
+% 1 1 0 015d0270cec7333619ddfc2f58e51e9b
+
+@ 0 3 0 09b9ed67d899983d11c3d9872f0a5646
++       Come viene reso un `Char` quando lo si interpola in un messaggio `m"…"` è una scelta, e
++       il given di questo package lo rende con il nome Unicode del carattere. Si fonde con il
++       package `communication` dell'ombrello, e si importa per nome:
+
+% 0 1 0 16da0e62dec6fd201721108b37a17d3a
+
+@ 0 5 0 03b749e737df25241200655a01e27920
++   entry .unicodeCharNamesCommunicable   rende un carattere in un messaggio con il suo nome Unicode, in maiuscoletto
++       `m"found $char"` con `'é'` si legge _found ʟᴀᴛɪɴ sᴍᴀʟʟ ʟᴇᴛᴛᴇʀ ᴇ ᴡɪᴛʜ ᴀᴄᴜᴛᴇ [é]_: il
++       nome da `designation`, portato in minuscolo e composto in maiuscoletto da
++       `Unicode.smallCaps`, seguito dal carattere stesso tra parentesi quadre se è stampabile.
++       Un carattere senza nome si legge _unknown_.
+
+@ 0 4 0 1f6d34e70945909a16d30406df95ee52
++ entry .Nul   il carattere `NUL`, `'\u0000'`, come costante con tipo letterale
++     Ciascuna delle undici costanti `Nul`, `Bel`, `Bs`, `Ht`, `Lf`, `Ff`, `Cr`, `Esc`, `Sqt`,
++     `Dqt` e `Bsl` è un `final val` del tipo singleton del carattere, quindi si può usare dove
++     serve un tipo letterale e si legge come un nome dove `'\u001b'` non lo farebbe.
+
+@ 0 10 0 090b5ecb9307485a0b50b139f41dce5a
++ entry .Bel   il carattere campanello, `'\u0007'`
++ entry .Bs   il carattere backspace, `'\u0008'`
++ entry .Ht   la tabulazione orizzontale, `'\u0009'`
++ entry .Lf   l'avanzamento di riga, `'\u000a'`
++ entry .Ff   l'avanzamento di pagina, `'\u000c'`
++ entry .Cr   il ritorno carrello, `'\u000d'`
++ entry .Esc   il carattere di escape, `'\u001b'`, che inizia una sequenza di controllo del terminale
++ entry .Sqt   l'apice singolo, `'\''`
++ entry .Dqt   le virgolette doppie, `'"'`
++ entry .Bsl   la barra rovesciata, `'\\'`
+
+@ 0 1 0 0f8729a18c3572741b9b408e6993ac91
++ entry .internal   le macro dietro `enc"…"` e `ucs"…"`, e la chiave `CharRange` della tabella delle larghezze
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 04044cc32610bcbb11df57d9fff9355a
++       Non da usare direttamente: l'oggetto esiste perché le macro abbiano una sede stabile, e
++       perché `Unicode.eastAsianWidths` abbia un tipo di chiave compatto.
++   entry .CharRange   un intervallo inclusivo di code point, compattato in un `Long`
+
+% 1 1 0 0eb611fca296a6f11a93f2d83358cb30
+
+@ 0 14 0 00105332c85e065b041b05327c33bc91
++         `CharRange(from, to)`, o `CharRange(char)` per un intervallo di un solo elemento,
++         compattato come `(from << 32) + to` così che gli intervalli si ordinino per il loro
++         primo code point. La chiave di `Unicode.eastAsianWidths`.
++     entry .apply   un intervallo da due code point, o di un solo carattere o code point
++     entry .textualizable   rende un intervallo come `from..to`
++     entry .comparable   ordina gli intervalli come i `Long` che sono: per primo code point
++   entry .from   il primo code point di un `CharRange`
++   entry .to   l'ultimo code point di un `CharRange`
++   entry .contains   se un `CharRange` include un carattere
++   entry .encoding   la macro dietro `enc"…"`: verifica il nome rispetto alle codifiche della piattaforma
++       Si arresta con ↯/s.35.2 per un nome che manca alla piattaforma, avvisa per uno non
++       registrato presso IANA, e innesta una ricerca il cui tipo `CanEncode` è fissato dalla
++       tabella.
++   entry .char   la macro dietro `ucs"…"`: un carattere dato il suo nome Unicode
++       Si arresta con ↯/s.35.3 per un nome che `UnicodeData.txt` non ha.

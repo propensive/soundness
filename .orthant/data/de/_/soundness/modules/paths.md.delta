@@ -1,0 +1,318 @@
+orthant 2 language
+
+@ 0 1 0 0cab0599b62cbb9407305b622261282a
++ ## Pfade
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 2 0 044c314f47dcadf51c019b0843081924
++ Ein Pfad ist eine Folge von Namen, die durch eine Hierarchie führt, und die Fakten über einen Pfad
++ werden in seinem Typ festgehalten:
+
+@ 0 5 0 09852067f793da1e06b78bdfa8fcb205
++ - Ein absoluter Pfad ist ein `Path`, verwurzelt an einem Wert.
++ - Ein relativer Pfad ist ein `Relative`: eine Anzahl von Schritten nach oben, gefolgt von einem
++   Abstieg.
++ - Beide sind nach der *Plattform* typisiert, zu der sie gehören, sodass ein `Path on Linux` und
++   ein `Path on Windows` verschiedene Typen sind. Die `on`-Klausel ist einer der
++   [Infix-Typen](../../philosophy/infix-types.md), die überall verwendet werden.
+
+@ 0 3 0 0e9f7537438fd210120ce56c815aef25
++ Die Elemente eines Pfades, der im Quellcode gebaut wird, sind dem Compiler bekannt. Arithmetik auf
++ Pfaden, etwa das Absteigen, das Aufsteigen und das Finden des Weges von einem Pfad zu einem
++ anderen, wird daher zur [Kompilierzeit] geprüft.
+
+@ 0 3 0 0c2041aa987ae4911c5dcd7801b9e530
++ Dies sind abstrakte Pfade. Es geht um die *Gestalt* eines Pfades, nicht um eine Datei auf einem
++ Datenträger. Dieselbe Mechanik liegt Dateisystempfaden, URLs und jeder anderen Hierarchie
++ zugrunde. Echte Dateien zu lesen und zu schreiben ist Sache des [Dateisystems](filesystem.md).
+
+@ 0 1 0 0c1add7ee2d1c8cf0e7e01eac0483af2
++ ### Über Pfade
+
+@ 0 5 0 16f33f3fc514857d1a9787336f8e7600
++ Ein Pfad wirft drei Fragen auf: Ist er absolut oder relativ, für welche Plattform ist er, und
++ klettert dieses `..` über die Wurzel hinaus? In den meisten Bibliotheken steht keine der Antworten
++ im Typ. Ein Pfad ist ein String oder eine Klasse, die die Unterscheidungen auslöscht. Ein Fehler,
++ etwa das Verbinden zweier absoluter Pfade, das Nehmen des Elternverzeichnisses einer Wurzel oder
++ das Vermischen eines Windows-Pfades mit einem POSIX-Pfad, wird zur [Laufzeit] gefunden, wenn
++ überhaupt.
+
+@ 0 5 0 150e8a4db9c499aa183cde3a97f5712f
++ Hier wird jede Unterscheidung im Typ festgehalten. Absolute und relative Pfade sind verschiedene
++ Typen, sodass das eine nicht für das andere gehalten werden kann. Die Plattform ist ein
++ Typparameter, sodass ihre Trennzeichen und Regeln mit dem Pfad wandern. Und wo die Elemente eines
++ Pfades bekannt sind, sind sie dem Compiler bekannt, der das Ergebnis des Verbindens zweier Pfade
++ oder des Findens des Weges zwischen ihnen statisch berechnet.
+
+@ 0 2 0 1c2fee29596c6422194462ee7c65dca2
++ Alles stammt aus dem Paket `soundness`. Die Beispiele werfen jeden Fehler als Exception, und der
++ letzte Import erlaubt ihnen, ihre Ergebnisse auszugeben:
+
+% 2 1 0 0683c532939f05bd1bf8f090f2826090
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0ca311dd6ee9b785071c5ebecc8400ee
++ ### Einen Pfad bauen
+
+@ 0 1 0 0027806d2dfc3c0914a9adc3b422b055
++ Ein Pfad wird mit einer Handvoll Symbolen geschrieben, die jeweils unten beschrieben sind:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 15d0e48ab569644c0c3f94b1db89dfc5
+
+@ 0 8 0 0a695fe1274756be1c5fb154619e3f64
++ column  Bedeutung
++ row  `%`  die Wurzel des POSIX-Dateisystems
++ row  `Drive('C')`  die Wurzel eines Windows-Laufwerks
++ row  `/`  ein Schritt nach unten, zu einem benannten Kind
++ row  `?`  der aktuelle Ort, von dem ein relativer Pfad ausgeht
++ row  `^`  ein Schritt nach oben
++ row  `+`  ein relativer Pfad, angewandt auf einen absoluten
++ row  `/:`  in einem Pattern ein von vorn abgelöster Name
+
+% 1 1 0 1095677304c52d7005e9d969ec459047
+
+@ 0 2 0 0bb942646780f7300d5a5469fc9ce908
++ Ein absoluter Pfad steigt mit `/` von einer Wurzel ab. Die Wurzel `%` ist die Wurzel eines
++ POSIX-Dateisystems, und ein Windows-Pfad steigt von einem `Drive` ab:
+
+% 2 1 0 0eb8eaab9ee2ef2618032f6b93b7aa34
+
+% 0 1 0 0de1807a9a1e7527090f79e12be50b18
+
+% 0 1 0 16c9455d69a0d82d0f00a5fb716e8a69
+
+% 1 1 0 128fd283295a92950781fbf761f03a09
+
+% 3 1 0 107cfbd5c2a75e9407da54d3061badf5
+
+% 4 1 0 1c8cf7fd4c2373410fd4013a71aff046
+
+% 5 1 0 113e4b6a04d095030ae8d66597997d87
+
+% 0 1 0 1fe52c0b86c933d90e36f87f27967872
+
+% 0 1 0 166efb651ecc8b7b195b76460227643b
+
+% 1 1 0 109235695c9a0ff41ef7ba71cd36b10c
+
+@ 0 2 0 01450cfdc11b64e808e585f64d48f72d
++ Der [Interpolator] `p"…"` schreibt einen Pfad als Literal und prüft ihn zur Kompilierzeit. Er löst
++ das Literal anhand seiner Gestalt als POSIX- oder als Windows-Pfad auf:
+
+% 2 1 0 152ecddcf84d1b6617abec6e33ba1ee4
+
+% 0 1 0 131f4d7dbec44f551ef6e0c40fa52540
+
+% 0 1 0 11351b84c9c9b096145541eef4536fed
+
+% 1 1 0 12c735323f5c831013913a9027e061d6
+
+@ 0 3 0 1cdc031b407b7ee712e0eeb40354c468
++ Die Elemente eines Literals sind Teil seines Typs, mit dem letzten Element zuerst: `data` ist ein
++ `Path of ("data.csv", "user", "home") on Posix`. Ein mit `/` gebauter Pfad trägt ebenso jedes
++ Element, das ihm gegeben wurde.
+
+@ 0 1 0 1b31b79dc4d90aab021602fa6c2f4133
++ ### Relative Pfade
+
+@ 0 3 0 10717d312582460408b1e6a907d9f8e3
++ Ein relativer Pfad wird aus `?`, dem aktuellen Ort, und `^`, einem Schritt nach oben, gebaut,
++ gefolgt von einem Abstieg. Wird ein relativer Pfad zu einem absoluten addiert, werden der Aufstieg
++ und dann der Abstieg angewandt, was einen neuen absoluten Pfad ergibt:
+
+% 2 1 0 0d5a82aaba55c4851f51af7d28f0cf48
+
+% 0 1 0 0f24623910b1ebcb1c98de76d342de63
+
+% 1 1 0 1b722a838524a3c0140dd33698b08119
+
+% 3 1 0 159d95c2a1e8e69d172477e608145496
+
+% 4 1 0 17cd1e4498370890161bc34605ff5c74
+
+% 5 1 0 0c9930f7d5e6dda71a19493f4aafa054
+
+% 0 1 0 0307b52fd166f9861a1bb5fdb3ae40a9
+
+% 1 1 0 0c3e256e4a7963b309a7346c51db696e
+
+@ 0 1 0 1d98967b0583d68718e403705487d8f9
++ ### Plattformen
+
+@ 0 3 0 1aef316055da8d2c11ae62fe3a33f871
++ Ein mit `/` gebauter Pfad ist zunächst neutral zwischen den Plattformen. `on` bindet ihn an eine
++ Plattform und prüft jedes Element gegen die Regeln dieser Plattform, die einen Namen mit einem
++ Schrägstrich oder einen reservierten Namen zurückweisen:
+
+% 2 1 0 0bc77b46a5b227b71a6a55fe10b72423
+
+% 0 1 0 015bcc35d5ac39a11806d0c625a8bf1c
+
+% 1 1 0 105a3298c177eab60a43db4ef48c0ec6
+
+@ 0 3 0 1b29e7b45c24e7180191b1dd3a3d94d0
++ `Linux`, `Posix`, `MacOs` und `Windows` sind die Plattformen, und `Local` ist diejenige von ihnen,
++ die die laufende Maschine verwendet. [Namen](names.md) beschreibt, wie die Regeln jeder Plattform
++ für ein Element formuliert und geprüft werden.
+
+@ 0 1 0 1b980a5d948f5e1d1600243e9c7066df
++ ### Zwischen zwei Pfaden
+
+@ 0 2 0 0c2641421afba9fa1c72908228106636
++ `toward` berechnet den relativen Pfad von einem Ort zu einem anderen, und `conjunction` findet
++ ihren nächsten gemeinsamen Vorfahren:
+
+% 2 1 0 03b76a47d6d3b793114a4a850c5f7cc4
+
+% 0 1 0 0bacf8eb8e29e09b07be8911fe2c0ae9
+
+% 0 1 0 10ab6059c7e82262007595f05dcf4c68
+
+% 1 1 0 1c12fa0b46ab059d01db09af2125a291
+
+% 3 1 0 11ddad2ead83fe6807e390d62e1260e9
+
+% 4 1 0 03ca5fc03fe94cd518faf359be0daca6
+
+% 5 1 0 1a12d2aa5f0ee55a1c0a10c4c6b943a4
+
+% 0 1 0 069bab418ac7cce907ba7a738427c991
+
+% 0 1 0 121fa03056389e0400c373e84c99242a
+
+% 1 1 0 10690023ce990c041053b98081a4008a
+
+@ 0 1 0 0638c922b56f1a611f03c9718596f37c
++ ### Text und Pfade
+
+@ 0 2 0 198efdacfe4f85df09fc00d896571535
++ `encode` schreibt einen Pfad als Text. `as` parst Text zu einem Pfad und benennt dabei die
++ Plattform, deren Regeln gelten:
+
+% 2 1 0 14a9e292c07049dc00bdc64862806de7
+
+% 3 1 0 1b6f3bf32bf215d60346faf8525a87ea
+
+% 4 1 0 06c0d25de061d0031166d25cec825015
+
+% 0 1 0 07f10ee41cc7a640122c3f261b6b234d
+
+% 0 1 0 081a42279c0c53cf1dff238c4386cb29
+
+% 1 1 0 1c923223db77cc6502723ad357f96a53
+
+@ 0 2 0 19c273f02614a2590ee4155d09c1ac6f
++ Text, der die Regeln der Plattform verletzt, ist kein Pfad und lässt sich nicht
++ [dekodieren](decoding.md#decoding-a-value):
+
+% 2 1 0 15f4090fbf3a49af1ed888288de7344e
+
+% 3 1 0 16dbcda91fe84b820cae8c4df497976a
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 06d940afebd04dbf1b7bbdef6fadc932
+
+% 1 1 0 11e43b1e60a433590a632bf84bcf4a83
+
+@ 0 1 0 16f357d0c6c4606a1f498163a254cc64
++ ### Zerlegen
+
+@ 0 2 0 15b3704e1e7ef55814b35d021c0a65e5
++ Ein Pfad wird in einem Pattern mit dem Extraktor `/:` abgeglichen, der Namen von vorn ablöst. Ein
++ Pfad lässt sich daher ebenso bereitwillig zerlegen, wie er gebaut wird:
+
+% 2 1 0 18b9ff0780d4d8861ec8689d161be818
+
+% 0 1 0 1a6196eb3ccd03f8087ee01f57fd9a76
+
+% 0 1 0 15c4fe46b7f83df7101070de39e7054f
+
+% 0 1 0 15d2043574d855d002de10af4ace8697
+
+% 0 1 0 11ae466717248d9a17d6a268e67c0649
+
+% 1 1 0 02fe79814cb2290c09431d232d0b9edf
+
+% 3 1 0 0675ad8e575be00a017307dd430c8c92
+
+% 4 1 0 02442b828a93343a1a5d075d871403d5
+
+% 5 1 0 0434c2de8f1b72170025aea27c5daa8f
+
+% 0 1 0 194af130d84c36ad19a6b18ee6d3a4f4
+
+% 1 1 0 051990666e3595450e0e022fb5b3ca32
+
+@ 0 3 0 19e81d1876dd86e015e64ede0906c05f
++ Auch die Wurzel wird abgeglichen. Das ist wichtig, wo eine Plattform mehr als eine Wurzel hat, etwa
++ einen Windows-Laufwerksbuchstaben oder eine UNC-Freigabe, da die Wurzel Teil dessen ist, was ein
++ Pfad *ist*, und kein Präfix seines Textes.
+
+@ 0 1 0 08a91067c942c0740c9657d5c4723221
++ ### Pfade im Typ
+
+@ 0 2 0 1edb555fccf573c8009645204a946188
++ Die Elementnamen eines Pfades können in seinem Typ getragen werden, sodass ein Pfad, der zur
++ Kompilierzeit bekannt ist, genau bekannt ist:
+
+% 2 1 0 0bc2c1b8596e3f9c1c02422853939deb
+
+% 0 1 0 1e80d6e06f9013471aa236cc42924eae
+
+% 1 1 0 127ad5f66e81a08814c4a849ff104282
+
+@ 0 5 0 1f8dedb446bbff0706b2351ab9e52fe4
++ Die Namen erscheinen von innen nach außen, was der Art entspricht, wie der Pfad gebaut wird. Ein
++ Pfad, der ganz aus Literalen gebaut ist, hat daher einen Typ, der genau beschreibt, wohin er zeigt.
++ Das erlaubt es, eine Ressource im [Klassenpfad](classpath.md) oder eine Datei relativ zu einem
++ Projekt beim Kompilieren des Codes zu prüfen. Ein Pfad, dessen Elemente nicht zu dem Typ passen, der
++ ihm gegeben wird, kompiliert nicht:
+
+% 2 1 0 0060c063ef913d5908b1bc56855b894f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 023d885c1a314cf016c66bef87ada367
+
+% 1 1 0 194d949838ef1e5e183c94b581685878
+
+@ 0 3 0 1df11a63d89725861ace22d3ddda6bc6
++ Wo die Elemente nicht bekannt sind, etwa bei einem zur Laufzeit aus Text gebauten Pfad oder einem
++ aus einer Auflistung des [Dateisystems](filesystem.md) gelesenen, sagt der Typ einfach
++ `Path on Linux`, und die Operationen sind dieselben.
+
+@ 0 1 0 1110cff8cf3c30f707248eef29cd369e
++ ### Was ein relativer Pfad weiß
+
+@ 0 4 0 1ac298d57eaf7a99013b7f2131e37083
++ Auch ein relativer Pfad trägt seine Plattform, sodass ein `Relative on Linux` nicht auf einen
++ Windows-Pfad angewandt werden kann. Er trägt außerdem in seiner `Relation`, wie weit er nach oben
++ reicht. Ein relativer Pfad, der über eine Wurzel hinaus aufsteigen würde, kann daher dort
++ zurückgewiesen werden, wo er geschrieben wird, statt sich zur Laufzeit ins Nirgendwo aufzulösen.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 5 0 0e9ca6e998e2f03705ed0a34c6ec4677
++ - [Dateisystem](filesystem.md) liest, schreibt und listet die Dateien, die Pfade benennen.
++ - [Netzwerkadressen](network-addresses.md#urls) beschreibt URLs, die eigene Pfade haben.
++ - [Klassenpfad](classpath.md) benennt Ressourcen über ihren Pfad.
++ - [Namen](names.md) prüft die Elemente eines Pfades gegen die Regeln einer Plattform.

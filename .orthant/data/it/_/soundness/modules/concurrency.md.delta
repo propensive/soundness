@@ -1,0 +1,755 @@
+orthant 2 language
+
+@ 0 1 0 1f9771ce7643c4160c56db762ec2dc19
++ ## Concorrenza
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 2 0 18705431cb02e522159a7d8d23b57ca5
++ La concorrenza è strutturata. Un task viene generato dentro un ambito supervisionato, che lo
++ possiede, e l'ambito non si completa finché non si sono completati i suoi task:
+
+@ 0 3 0 11204b38de44e33f0f62840f22f7e339
++ - Un task esegue un calcolo su un thread e dà un risultato, che viene atteso.
++ - Un fallimento in un task si propaga all'ambito. Non svanisce.
++ - Annullare un ambito annulla tutto ciò che sta sotto di esso.
+
+@ 0 4 0 1d9d5ba97c2c0c1e14ca9261c7e4f656
++ Se i task girano sui platform thread della JVM o sui suoi leggeri virtual thread è una scelta
++ che si fa nell'ambito.
++ [Concorrenza strutturata](../../philosophy/structured-concurrency.md) espone le ragioni di
++ questa forma.
+
+@ 0 1 0 1b1cf6a6e5b760d8095321aec593b64b
++ ### Sulla concorrenza
+
+@ 0 5 0 19aca4d1cedeebbd0dd858cd1ae9f366
++ La concorrenza non strutturata perde. Un thread avviato senza un proprietario può sopravvivere
++ al codice che l'ha avviato. Un'eccezione lanciata su di esso scompare, a meno che qualcuno non
++ abbia pensato di catturarla. Annullare un lavoro significa rintracciare ogni thread che ha
++ generato. La durata dei task concorrenti non ha alcuna relazione con la struttura del codice,
++ quindi è difficile ragionare su che cosa sia ancora in esecuzione e su che cosa gli sia
++ successo.
+
+@ 0 4 0 0d4fc0d3d17df1d31ef53744e071175f
++ Qui il lavoro concorrente ha la stessa forma dei blocchi ordinari. Ogni task è figlio
++ dell'ambito che l'ha generato, e un ambito attende i suoi figli prima di terminare, quindi
++ nessun task sopravvive al suo ambito. Un fallimento risale fino all'ambito, e annullare
++ l'ambito annulla i suoi figli. Un programma concorrente quindi si annida, e la sua struttura è
++ visibile.
+
+@ 0 2 0 015c2c782156b90718b33c7d4c8c67e8
++ Tutto proviene dal package `soundness`. Un modello di thread e una politica per i task non
++ terminati sono nell'ambito, e l'ultimo import permette agli esempi di stampare i loro
++ risultati:
+
+% 2 1 0 12917706db95ec15052a93f6f8c02551
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 161e68b1f117a22a0b4b7f185305da70
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0d2e9d8fdc8c8ced03df979d8a4622a3
++ ### Un ambito supervisionato
+
+@ 0 3 0 1eeea3a7115242be1ef014c968115327
++ `supervise` apre un ambito, che possiede i task generati al suo interno. Non ritorna finché
++ quei task non si sono risolti, quindi il lavoro concorrente ha un confine chiaro. Fuori da un
++ ambito, nessun task può essere generato:
+
+% 2 1 0 187866a0857f217c0347746b8c32ebd5
+
+% 3 1 0 05cbad36b1d6255d1de7288015e7e3ec
+
+% 4 1 0 081a6b812bd423bb0c23d73238bc6d8d
+
+% 5 1 0 1acb89f06ad3587918774ccb9f5199e9
+
+% 0 1 0 0293ccc30ced8aa31fecc05275a509eb
+
+% 1 1 0 1d2300ace5f65a6f05eed8275ce0a638
+
+@ 0 1 0 08c2041206cc6a400cd2a0e028a55cdd
++ ### Generare un task
+
+@ 0 2 0 10e733cf4bdf0eee14af540242894be5
++ `async` genera un task, che viene eseguito in modo concorrente. `await` attende il task e ne
++ dà il risultato:
+
+% 3 1 0 1c1b32c8a68bca7d10b86f8bc9e3f1cd
+
+% 0 1 0 141a1d3443662aed0439b6bb0b239ec5
+
+% 0 1 0 12281f90b1d3e07400dca4f552cf3795
+
+% 0 1 0 07cd9ac03896cf9c015986e4620b4511
+
+% 0 1 0 1d6a4e77d6cc606a18ab9b5720d390a6
+
+% 1 1 0 0f9b87e5556b4fac10a4bf94702bf041
+
+% 3 1 0 1ce563473a272b1616facfdcece6066a
+
+% 4 1 0 06a2a581ebce0cae0d4ffd78841963d8
+
+% 5 1 0 084cc51511ef89fb11a05654781a13cb
+
+% 0 1 0 104e999933729ef41bc9ab1ea8942e77
+
+% 1 1 0 01fe61f03220e025032a32786c5cfe00
+
+@ 0 2 0 037c02e77a9cbc551ed9b4f42b0e7e9c
++ Il task appartiene all'ambito che lo racchiude, quindi l'ambito ne tiene conto, che venga
++ atteso esplicitamente o no.
+
+@ 0 6 0 015f7ba91377ad41048574302a5ffcbe
++ La parentela viaggia attraverso un `Monitor`. Sia `supervise` sia `async` ne introducono uno
++ nei loro corpi, ma `async` ne *consuma* anche uno, e `supervise` no. È questo che fa di
++ `supervise` la radice di una gerarchia e di `async` un ramo sotto di essa, ed è per questo che
++ ogni `async` deve in ultima analisi discendere da un `supervise`. Dove sono nell'ambito più
++ monitor, vince il più interno, quindi un task annidato a tre livelli di profondità è figlio del
++ task che lo racchiude immediatamente, non dell'ambito in cima.
+
+@ 0 1 0 0a63e9587dcb5675126f47895c5479d0
++ ### Perché un genitore attende
+
+@ 0 5 0 0b47d6bf34a761bc01b9e0499bdc7b2b
++ Un task non può terminare, né producendo un risultato né venendo annullato, finché i suoi figli
++ non hanno terminato. È questo che rende sicuro ragionare su un task completato. Si consideri un
++ genitore che ritorna quasi subito, mentre un figlio continua a contare. Che cosa succede al
++ figlio lo decide la [successione](#cancellation-in-both-directions) nell'ambito, e con
++ `awaitProbate` il genitore lo attende:
+
+% 2 1 0 02d8301e1f9bebfb1b3ab1d0256dc97c
+
+% 0 1 0 01859fdee6f50d440f514cc618c8f9e2
+
+% 0 1 0 1e09e85043cbd7450c18fc0657de5ba5
+
+% 0 1 0 092b0b0e1d9d73ac1e500ae4f2f94c95
+
+% 0 1 0 122be381deb3ea3e071349aa600f4a8c
+
+% 0 1 0 157af0964109f14614af7e895c0e076c
+
+% 0 1 0 15208b0de636e0020cbb792b9e05a998
+
+% 0 1 0 170c83660dd53373070ade442146f17e
+
+% 0 1 0 139928aed070e75c06390efa344ed95c
+
+% 0 1 0 146268c16901dfa80f99c8238bbb0d22
+
+% 0 1 0 0c1d40e55f31223a19d144115bb0ba9f
+
+% 0 1 0 076e970f40ba894901aad0783ac7cf1f
+
+% 1 1 0 0ea0d6fe7511fe47098881197a9d899a
+
+@ 0 5 0 0c878cc3edda94cb1ea4d3416fa4ef1f
++ Nulla si frappone fra il genitore e il suo risultato. Se `await` ritornasse subito, `written`
++ verrebbe letto mentre il figlio sta ancora contando. Invece, `parent.await()` non ritorna
++ finché il figlio non si è risolto. Con `awaitProbate` questo significa che tutti e undici gli
++ incrementi sono stati fatti. Con `cancelProbate`, il figlio viene invece annullato, e il
++ genitore comunque non termina finché questo non è avvenuto.
+
+@ 0 3 0 074caba4a233ef3413e99344c8262794
++ Questo è l'invariante in generale. Una volta che un task è stato atteso, nessuna ulteriore
++ esecuzione può avere luogo sulle risorse catturate nel suo corpo, comprese quelle sfuggite
++ attraverso un figlio.
+
+@ 0 1 0 1e87d393b4f617331391043ba6d5350d
++ ### Combinare i task
+
+@ 0 2 0 0dbaf5effdeec0800c4083aa5bb222c4
++ I task si compongono. Una collezione di task si attende tutta insieme con `sequence`. Il primo
++ a terminare si prende con `race`. `map` e `bind` derivano un task da un altro:
+
+% 2 1 0 17d70323ff153a191c5e7c0c52ec43bc
+
+% 0 1 0 0fc979378c7ec4dd08f74ca2620a2285
+
+% 0 1 0 16241756a5e2054214041c6faa49e0de
+
+% 1 1 0 0f2abdb269b8ba280f20c000e39de2da
+
+% 3 1 0 016458c7101727af0dda5a3bb0c744b0
+
+% 4 1 0 197adb4ce99c21d601902ae143defd83
+
+% 5 1 0 10c5fce14475af7908f273499f231606
+
+% 0 1 0 06bd7bbcce1a1d6212e9faedb0224a6d
+
+% 0 1 0 0bfe48cfb2c20731139a12e0727e9d0e
+
+% 1 1 0 1375de724767257918e252cfec9c7cd8
+
+@ 0 4 0 1d64d8c1d031d3fa045f72d485683c35
++ `sequence` esegue i suoi task in parallelo e raccoglie i risultati *in ordine*, quindi l'ordine
++ dei risultati non dice nulla sull'ordine in cui i task sono terminati. `race` dà il risultato
++ del primo a terminare, e gli altri vengono annullati, dato che i loro risultati non servivano.
+
+@ 0 1 0 0c06c8083c0405de17dae687e0a9bcc9
++ ### Parallelismo limitato
+
+@ 0 4 0 034e5c77efa2317914c58411a11e5afd
++ Un task è un thread, e avviarne uno costa qualche microsecondo, quindi mille lavori economici
++ non dovrebbero diventare mille task. `concurrently` esegue lavori numerati su un numero fisso di
++ task. Ogni task prende il lavoro successivo da un contatore condiviso, e i risultati vengono
++ restituiti nell'ordine dei lavori, una volta che ogni task ha terminato:
+
+% 2 1 0 0f4e1a025689b9ac1e741dfe0c922666
+
+% 0 1 0 0804afc3f8646139176c84caee46854b
+
+% 1 1 0 1045e34294b8ffd2078be5aa3cf9d1ce
+
+% 3 1 0 0cbeb1a70d8257ff0efcaf02c6ea50b7
+
+% 4 1 0 1fa6fc2b5f9a04f315dece1c4953fe03
+
+% 5 1 0 182f05794cfa29aa150eff29dae59e34
+
+% 0 1 0 1e60a31cbf23d9430910a6c5daee6643
+
+% 1 1 0 1b63c56830ed3c68019a869220390ad5
+
+@ 0 4 0 082c9e8756d446e9045ef2e0459cad5e
++ Il costo della generazione si paga otto volte, non mille. Nessun lavoro viene eseguito prima che
++ uno precedente sia stato preso, quindi il carico si bilancia da sé: un lavoro lento tiene
++ semplicemente occupato il suo task, mentre gli altri proseguono con il resto. Un'eccezione in un
++ lavoro fa fallire il task su cui girava, e viene rilanciata quando i task vengono riuniti.
+
+@ 0 1 0 08dad375620ba89e183ed81a53764077
++ ### Dare un nome ai task
+
+@ 0 4 0 0cda19fa2c157d4f167024a06c3cb912
++ `task` è `async` con un nome. Il nome viene verificato a [tempo di compilazione]
++ secondo le regole per il [nome](names.md) di un task. Non contiene separatori di percorso,
++ dato che i nomi si compongono in una gerarchia che rispecchia l'albero degli ambiti. Dentro il
++ task, `monitor.name` è il nome del task stesso, e `monitor.stack` è il percorso completo:
+
+% 2 1 0 0b7353172a08504c1709c51cd86cacd1
+
+% 0 1 0 052755a73ca1e7590925e554a95bf7f9
+
+% 0 1 0 07bcb2eb1f1228951b187c555be09f19
+
+% 1 1 0 01c9523553ba6b9118e019e1285b280d
+
+% 3 1 0 198d3a03ef9684bf09515c490e33a347
+
+% 4 1 0 064aa7b488ecff681e00fd645f2d6eef
+
+% 5 1 0 15879d00cad8dff61545d3172cb82e05
+
+% 0 1 0 02fccc0000ab980312ce5ee9371b57d2
+
+% 1 1 0 1fc9e4f095ef543c16554eb51d4e56ef
+
+@ 0 3 0 0d986e445dd50bc601d0f1176adc77e3
++ I task con un nome rendono leggibile un programma in esecuzione. Uno [stack trace](stack-traces.md),
++ un dump dei monitor o un [debugger](debugging.md) mostra `server/connection-4/reader`, non un
++ anonimo numero di thread.
+
+@ 0 1 0 19167f39cd895172140283cd65116a9e
++ ### Annullamento
+
+@ 0 3 0 0e4ae093ca50aa3b06a27baf266d451e
++ Un task si annulla con `cancel`. Un task che può essere annullato collabora, mettendosi in
++ pausa in punti dove può essere interrotto. Uno `snooze` è un punto di questo tipo, quindi un
++ task che vi sta dormendo si sveglia al suo annullamento, e non prosegue:
+
+% 2 1 0 00cd1791f0ac6f10039ac810fbab4003
+
+% 0 1 0 110538a70a9bb033126ab250afa68e7f
+
+% 1 1 0 077ed1c40e96d3730d6dbd7bb779de14
+
+% 0 1 0 11a9873003828c4f17bbe45e628fb375
+
+% 0 1 0 1c85da4c359d20f5019392b30386b53f
+
+% 2 1 0 1aa1cae3c7249b231b21f1b64baa06f0
+
+% 0 1 0 03c9b4547e2833481b1855a577fa82e5
+
+% 1 1 0 095c4a1b3a88ca2e1f460eb9d1aff8c3
+
+% 3 1 0 00042c387c2f3c891edc8cec202c7595
+
+% 4 1 0 13d1655d16074aec0ce7233300f342f8
+
+% 5 1 0 1ef3773f2959df9c044002606b8bc763
+
+% 0 1 0 05ac6353c9e2e28d138b15f67c5e2bdb
+
+% 1 1 0 0b8686263d6f8eeb1efe86049696a176
+
+@ 0 4 0 0ac884463421aa9513296bea9a9ed34d
++ Il lavoro che non si mette in pausa deve offrire da sé i propri punti di annullamento. `relent()`
++ è un punto di questo tipo. Mentre il task gira normalmente, non fa nulla. Se il task è stato
++ annullato, si ferma lì, senza produrre un valore. Un task il cui corpo non chiama mai `relent()`,
++ e non si mette mai in pausa, non può essere annullato affatto, e deve arrivare fino in fondo.
+
+% 2 1 0 0405aa4ab4594c44085a3b4aea9e6de8
+
+% 3 1 0 1078c5fcd8c196880261b18efec6199f
+
+% 4 1 0 1f32752476ee44f9070a6f566323a467
+
+% 5 1 0 0b5efaa3dc7d51ad053c3200c26b6457
+
+% 1 1 0 0bef7e92673ed0c9081bab8ed9a5eafe
+
+% 0 1 0 13e86b9ca094d29902791dbead6c58f7
+
+% 0 1 0 1c36b60b12c7b6490d1af0af57754fe6
+
+% 0 1 0 179b1c7504cfc78a069779c69446953b
+
+% 0 1 0 1343933051a71fdb138329113e5bdbec
+
+% 2 1 0 0e7809b0dc76dd2a0b915e692c13a019
+
+% 1 1 0 1ad1692b00e482a51706afd3f45a7087
+
+@ 0 3 0 14208b1aec1155cb17011a2e8b88b70d
++ Un task annullato al `relent()` non raggiunge mai l'incremento sulla riga successiva. Attende
++ comunque prima la fine della pausa, perché `sleep` non può essere interrotto, ed è questa la
++ distinzione di cui tratta la sezione successiva.
+
+@ 0 1 0 1f69f3e9d3a9991d0bc662e6b0469089
++ ### Mettersi in pausa
+
+@ 0 2 0 0645297e7905acba0ee1f1a7f4ecca28
++ Due metodi fermano temporaneamente il task corrente. Differiscono per un solo aspetto: se la
++ pausa può terminare in anticipo perché il task è stato annullato.
+
+% 2 1 0 11ea85fc9d92609519e525896cff2a07
+
+@ 0 4 0 008fa2d9b69e0ea70a49873cac0ac179
++ column  Metodo
++ column  Quando il task viene annullato durante la pausa
++ row  `snooze`  il task si sveglia subito: è un punto di annullamento
++ row  `sleep`  la pausa continua per il tempo che resta, quindi dura sempre per intero
+
+% 1 1 0 01bda9aa92050be31f55474f467d2c05
+
+@ 0 2 0 11c28d28f53bbbb31214f5ae2f4bed19
++ I nomi sono scelti per essere ricordati, non consultati. Lo *snooze* è il pulsante di una
++ sveglia, e può essere interrotto da un secondo allarme, mentre in uno *sleep* si dorme fino in
++ fondo.
+
+@ 0 2 0 1945cb0fc641461414935d4e4ef3c6f6
++ Ciascuno accetta una *durata* o un *istante*, e il tipo dell'argomento dice quale si intende.
++ Una durata fa una pausa di quella lunghezza, e un istante fa una pausa finché non arriva:
+
+% 2 1 0 128dfddc8f1002700582e693de9e213c
+
+% 3 1 0 1858be2389c3613a03e2b4ac2217b377
+
+% 4 1 0 05e0d58002388b5d1fb81fc7917ad99f
+
+% 5 1 0 013eed0aa88c281e1df3d20e009aadf3
+
+% 0 1 0 0e97a1a16558265500bc0a7de10a4d5a
+
+% 0 1 0 17f8e3a71ba2a2e30ec1e3b81a41e618
+
+% 0 1 0 19035d76541fe4c518c1ce197bd8fc69
+
+% 0 1 0 1e7ae6d1dd3579ad1fe9aa1ecf561b50
+
+% 1 1 0 0c2ac1115c0394030a20e83978b9003b
+
+@ 0 4 0 1d8162c783ffb6ab1018fea9ee5cade8
++ Il vincolo che entrambi condividono è `Schedulable`, soddisfatto da qualsiasi tipo che sia
++ `Abstractable across Durations` o `Abstractable across Instants`. Una
++ [grandezza](quantities.md) di tempo, un [`Timespan`](time.md#durations-and-timespans) e un
++ [`Instant`](time.md#instants) sono quindi tutti accettati senza conversione.
+
+@ 0 1 0 1e5e244fdb968dac0600df2281844823
++ #### Unità
+
+@ 0 3 0 0c5149cf0b38ec5e0f529a3851a52a42
++ Entrambi accettano una durata o un istante *tipizzati*, come `0.2*Second` o `10*Minute`, e un
++ valore tipizzato non può essere frainteso. Un `Long` nudo sì, quindi nulla lo interpreta finché
++ non è stata scelta un'unità per nome:
+
+% 2 1 0 082748727bb5c24b0211ca0855f61b15
+
+% 3 1 0 0699cfe69c2bc2da194be457059ed30e
+
+% 4 1 0 1355ca0321b574fc15d8546a9bbe1e72
+
+% 5 1 0 0d9eab65e92ee9c014b7dc0ee0b4d4cd
+
+% 2 1 0 0b4358bacbe92e5b03a19bf87e22d143
+
+% 3 1 0 02b8830fc7bdf4811f67cea26431f03d
+
+% 1 1 0 07b6af20d8e0d0f11a3e1cfe1d984852
+
+@ 0 1 0 153189b9537dbf2d197374168398b176
++ Il package `abstractables` offre quattro letture di un `Long`:
+
+% 2 1 0 0e1f85375ac8f0c01124d423a747db03
+
+% 3 1 0 1590d8950821d3d60db7de824156bd09
+
+@ 0 5 0 13aa84d458fe1ab30ddaeb89a206dd3e
++ column  Legge un `Long` come
++ row  `nanosecondsAbstractable`  una durata in nanosecondi
++ row  `microsecondsAbstractable`  una durata in microsecondi
++ row  `millisecondsAbstractable`  una durata in millisecondi
++ row  `epochMillisecondsAbstractable`  un istante, in millisecondi dall'epoch
+
+% 1 1 0 1b1b1f2346b7148c074573610853b48e
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 1053b7f4d00925d113a294eb36bd355e
+
+% 1 1 0 1334d90e5c6fd7a004c8b159c3e423ee
+
+% 3 1 0 19567ce6fe9c42861a6b987dfa95d113
+
+% 4 1 0 104b8b0bc0dd725a12882564c7a531cd
+
+% 5 1 0 07be78ae7dd77669134615c653271756
+
+% 2 1 0 1a368bfc188036401f33932dc0a45427
+
+% 3 1 0 12ad434aa2ad53c90316913a799f8c2d
+
+% 0 1 0 1f758951ad44e7c10009f2d9d7532662
+
+% 1 1 0 07928d2144f19d560e93dea8ac54e529
+
+@ 0 5 0 0e682f5c06b785c90ca2f7def43f5c4e
++ Le tre letture come durata condividono un tipo, quindi in un file se ne può importare
++ esattamente una. Il package `instantiables` le rispecchia tutte e quattro, per la direzione
++ opposta. Una lettura come durata e la lettura come istante non possono essere entrambe
++ nell'ambito dove si passa un `Long` nudo, perché nulla nella chiamata potrebbe allora dire quale
++ si intendeva, e le due vengono segnalate come ambigue.
+
+@ 0 3 0 04a1ed52e66e679009c1c57ed7fdb7ff
++ La distinzione conta, perché la rappresentazione sottostante di una durata è in *nanosecondi*.
++ Uno `snooze(200L)` non qualificato, letto in nanosecondi, ritorna quasi subito, e un ciclo
++ attorno a esso è un ciclo di attesa attiva, senza nulla nella chiamata che lo dica.
+
+@ 0 1 0 063dc3dee3650bb31a79020a7e255be0
++ ### Ritentare
+
+@ 0 5 0 1c81ecc9b07582c602f1f1ca6af7050b
++ Il lavoro che fallisce per un motivo transitorio va ritentato. La *pianificazione* con cui viene
++ ritentato è un valore, non un ciclo scritto a ogni uso. `retry` esegue un blocco con la
++ `Tenacity` nell'ambito, che decide quanto attendere prima di ogni tentativo, e quando smettere.
++ Al blocco vengono prestate due operazioni: `persevere()` chiede un altro tentativo, e
++ `surrender()` si arrende subito.
+
+% 2 1 0 06099b77f0ebda240ea65b41619edc8f
+
+% 0 1 0 041f58525b124e6a1e2ea54b00b4cad7
+
+% 0 1 0 12ec514cb3890b791fa33ee5710105ee
+
+% 0 1 0 0fb8bf7f261f9609063e9408cc17ae19
+
+% 0 1 0 026292ca2031575815b8a6cfe1da71f8
+
+% 0 1 0 1b9a9eedabe0709e08b863225c90138e
+
+% 0 1 0 04059eb0cbace45805db0a20c76792d3
+
+% 0 1 0 1d6cc1aac4c0c96f0bc18b9a40a2e900
+
+% 0 1 0 0c9fb078691400de0acfee61c9e13104
+
+% 1 1 0 03181cc24233f765064181dbc5507f93
+
+% 3 1 0 1c8a6529701510cb0c1ca15fe3554856
+
+% 4 1 0 135cb23b1effc0d41ff21f332a6a659d
+
+% 5 1 0 0713795e0e631a4402cdce14a5584431
+
+% 0 1 0 00be904f0fbcd3781eca1d2f08cec8d7
+
+% 0 1 0 01dad929d215e46b1e4f73dd3f68187c
+
+% 1 1 0 1495032e80f389830077539fea1e7c98
+
+@ 0 1 0 09a4218ef806f37b1240ca9373507df4
++ Le pianificazioni fornite, nel package `retryTenacities`, coprono le scelte consuete:
+
+% 2 1 0 186a5af5072195391f23ab17e9ab86a3
+
+% 3 1 0 1bfdaff7559f497c1484787d80b87cab
+
+@ 0 8 0 00d3acf27033b6e7074727d84eb4365f
++ column  Attesa prima di un nuovo tentativo
++ column  Tentativi
++ row  `exponentialForeverTenacity`  10ms, che cresce ogni volta di un fattore 1,2  illimitati
++ row  `exponentialFiveTimesTenacity`  10ms, che cresce ogni volta di un fattore 1,2  5
++ row  `exponentialTenTimesTenacity`  10ms, che cresce ogni volta di un fattore 1,2  10
++ row  `fixedNoDelayForeverTenacity`  nessuna  illimitati
++ row  `fixedNoDelayFiveTimesTenacity`  nessuna  5
++ row  `fixedNoDelayTenTimesTenacity`  nessuna  10
+
+% 1 1 0 0ff18d01461853d9187384fb9a4832ee
+
+@ 0 2 0 080c83fd900d6f940a3c67722e3446d7
++ `Tenacity.exponential` e `Tenacity.fixed`, con `limit`, ne costruiscono altre. Esaurire i
++ tentativi solleva un `Tenacity.Error`, che indica quanti ne sono stati fatti.
+
+@ 0 2 0 1d3ba74486bacef81c5ca34c2f77dd27
++ Un corpo distingue quindi un fallimento che vale la pena ritentare da uno che non riuscirà mai,
++ e la pianificazione decide il resto.
+
+@ 0 1 0 01580e5910c0078a1da3f9225b44e8c2
++ ### Promise
+
+@ 0 3 0 0f347fd304c8b95f1827124fc302cd76
++ Una `Promise` è un valore che verrà fornito più tardi, magari da un altro thread. Una parte la
++ attende, e l'altra la adempie, ed è così che il lavoro eseguito altrove restituisce un
++ risultato:
+
+% 3 1 0 197282a21bd6cbbe1a742b7d4d049a5f
+
+% 0 1 0 1c38052a3a66e47f0ad84c6a6ea352ae
+
+% 0 1 0 006d0a2fa114b02a03202eb6b5a5320f
+
+% 0 1 0 102e0bd1352b637c144113c5025fefbf
+
+% 0 1 0 01aa8d9f86be9fdc098f8c7d9ca35be7
+
+% 1 1 0 0048eaddda0a456211e948511355387a
+
+% 3 1 0 17e1d5d73c4e80911b26ac6016b0ebe5
+
+% 4 1 0 0e144ce8a47acf780e0b928b2adcbc92
+
+% 5 1 0 15a8392a486a482700902c12924e9ce3
+
+% 0 1 0 1c80607a9be3c0fd050bfabec604f7ad
+
+% 1 1 0 078e543c8764fbed0084b2a2b7b4669f
+
+@ 0 1 0 0442b2def44dd4cb0493e6eaf40703a6
++ ### Demoni
+
+@ 0 3 0 037b981005435aac1569b82c54452f4b
++ Un `daemon` è un lavoro che si avvia e poi si lascia: un ciclo in background, o un listener.
++ L'ambito non lo attende, e lo annulla quando l'ambito termina. Vive per la durata del suo
++ ambito, e non oltre.
+
+@ 0 6 0 027d39c7b73e49a50ec87a9cb11fb4a7
++ Il corpo di un demone è *igienico*: non può catturare un gestore di errori dal codice che l'ha
++ generato. È voluto. Il codice che l'ha generato è già andato avanti, quindi un gestore lì non
++ racchiude il demone in alcun senso significativo, e consegnargli un errore significherebbe
++ riprendere un calcolo che è terminato. Un demone che fallisce risale quindi come un `Fault`, che
++ un programma intercetta dove gestisce l'imprevisto. Non raggiunge mai in silenzio un gestore che
++ non era destinato a lui.
+
+@ 0 1 0 1aae990c81c58f2e0dfeb8273290074f
++ Un servizio di lunga durata è un'altra cosa, descritta in [Demoni](daemons.md).
+
+@ 0 1 0 16f45a28a00c602b0daf790ea2641681
++ ### Timeout
+
+@ 0 3 0 12db8325849c4464131a296fe11d6ca0
++ A un `await` si può dare una durata, trascorsa la quale solleva un `Async.Error` invece di
++ continuare ad attendere. Un task che ha impiegato troppo tempo viene così abbandonato, in un
++ punto scelto dal codice:
+
+% 2 1 0 1f14dfcb0f744640177634c133101aca
+
+% 0 1 0 0cf1ceb4d66646ff04f7de0ef36c0f97
+
+% 0 1 0 1bc3433a8a7d75f4167698fbc60f0550
+
+% 0 1 0 143a003d7c6514da109bf6df25502192
+
+% 1 1 0 0731e35079b42d6b064c1635f5c8f08e
+
+@ 0 2 0 0d5fcf7aaec1f825091b46ac07f3ff68
++ `safely` trasforma l'errore in `Unset`, quindi il chiamante vede un risultato assente quando la
++ scadenza passa prima che il task termini.
+
+@ 0 1 0 0a4f58e5ef23deda1baed55ead369647
++ ### Annullamento in entrambe le direzioni
+
+@ 0 2 0 11866219fe471ba5025d00c4f3048f0a
++ Annullare un ambito annulla i suoi figli. La *successione* decide che cosa accade a un figlio
++ ancora in esecuzione quando il corpo del suo genitore si completa:
+
+% 2 1 0 1442aa2d408bca010bb88cabbc0909d8
+
+@ 0 6 0 03d8451127d35e9d1228253d046422af
++ column  Successione
++ column  Un figlio non terminato
++ row  `cancelProbate`  viene annullato
++ row  `awaitProbate`  viene atteso
++ row  `failProbate`  fa sollevare all'`await` del genitore un `Async.Error` verificato
++ row  `panicProbate`  fa andare in panic l'`await` del genitore
+
+% 1 1 0 02706a5075b95ec90099104317003c59
+
+@ 0 1 0 0a1d0e6b3d78aba714bc8da8155ab7f3
++ Quale scegliere discende da ciò che fanno i figli:
+
+@ 0 8 0 11773bf43da341a7110549524ba42789
++ - Il lavoro che cambia lo stato vuole `awaitProbate`, così che ogni figlio arrivi fino in fondo.
++   Scrivere su un disco ne è un esempio, dove una scrittura a metà lascia le cose
++   incoerenti.
++ - Il lavoro puro, senza effetti collaterali, può prendere `cancelProbate`, e fermarsi ovunque si
++   trovi, dato che nulla osserva la differenza.
++ - Il codice progettato per attendere ogni task che genera vuole che un `await` dimenticato sia
++   un errore, non un'attesa silenziosa. A questo servono `failProbate` e `panicProbate`,
++   verificato o non verificato, a seconda di come il programma gestisce l'imprevisto.
+
+@ 0 4 0 0974a0f13662fc480aa5cc09483a66ac
++ L'annullamento procede anche verso l'alto. Un task che fallisce propaga il suo fallimento
++ all'ambito che lo possiede, e l'ambito annulla gli altri suoi figli. Il lavoro diventato inutile
++ quindi si ferma, e non continua a consumare risorse per conto di un calcolo che è già fallito.
+
+@ 0 1 0 196fef05ed7e63510d54b55e04550f4c
++ ### Thread
+
+@ 0 1 0 0c6ee9a10b3e460216ca40fe784e1dea
++ Il modello di thread si sceglie con un import, dal package `threads`:
+
+% 2 1 0 07591f5c23f4f2b70172a4f62a0ac505
+
+@ 0 7 0 08c082ec6bd4d86016597594364866ec
++ column  Modello di thread
++ column  Esegue ogni task su
++ row  `platformThreads`  un platform thread tutto suo
++ row  `virtualThreads`  un virtual thread tutto suo; fallisce a runtime prima di Java 21
++ row  `adaptiveThreads`  un virtual thread dove esistono, e un platform thread dove non esistono
++ row  `pooledThreads`  un thread portatore riutilizzabile: virtual sulla JVM, platform su Scala Native
++ row  `javascriptThreads`  l'event loop di Scala.js
+
+% 1 1 0 0a8b4548b715806e0bdf9e0461a5a725
+
+@ 0 4 0 1ff1d84b05da54f10a53ceeb02955089
++ I virtual thread sono abbastanza economici da generarli in gran numero. `adaptiveThreads` è ciò
++ che dovrebbe importare un'applicazione che non può imporre la propria JVM. Con
++ `javascriptThreads`, dove non ci sono affatto thread, lo stesso codice, con `supervise`, `async`
++ e `await`, gira senza modifiche.
+
+@ 0 8 0 03328abf701f1980051972f23afa6fe8
++ `pooledThreads` consegna ogni nuovo task a un portatore inattivo, dove ce n'è uno in attesa, e
++ ne avvia un altro solo dove non ce n'è nessuno. Consegnare un task costa qualche centinaio di
++ nanosecondi, mentre avviare e riunire un thread costa qualche microsecondo, quindi si adatta al
++ lavoro a grana fine: un task per ogni elemento, o una generazione e un'attesa dentro un ciclo.
++ Un task che si blocca tiene il suo portatore, e il pool cresce, quindi non può mai restare a
++ secco, e l'annullamento viene consegnato al task, non al portatore. Il prezzo è che un task non
++ ha più un thread tutto suo. Le variabili thread-local persistono fra i task che un portatore
++ esegue, e un dump dei thread mostra portatori, dove l'albero dei monitor mostra task.
+
+@ 0 1 0 0731f34f496f5eb4150033acac19622d
++ ### Intercettare la VM
+
+@ 0 4 0 0b097c15e893a6c70c2520e65add6aaf
++ Alcuni eventi non appartengono a nessun ambito: lo spegnimento della VM, un'eccezione che sfugge
++ da un thread che nessuno possiede, l'esecuzione del garbage collector. Questi si intercettano su
++ `Vm`, che rappresenta la macchina virtuale in esecuzione. L'azione viene eseguita ogni volta che
++ l'evento si verifica, finché l'`Hook` restituito non viene annullato:
+
+% 2 1 0 154a634600ae70f612597ee3edc29f5b
+
+% 3 1 0 1aca97eb99eddba10705e6cb7a38368d
+
+% 4 1 0 1542a457e6b01ab00390b73d83e74f5e
+
+% 0 1 0 193bb5f45c008cdf1e8c72f855308f3c
+
+% 0 1 0 1656060f1572b1631fc9646f44908628
+
+% 0 1 0 11e574a6c06464f20ddebe6ab9b19bd1
+
+% 1 1 0 0f086421a358df040e699cbd2e61b250
+
+@ 0 6 0 1c7cf7b67d62a5bf126989c056fb56c7
++ `Vm.intercept[Shutdown]` esegue la sua azione una volta, quando la VM termina, che sia tramite
++ `System.exit`, per la fine dell'ultimo thread non demone, o per un `SIGINT` o `SIGTERM`. È lì
++ che un server rimuove il file di socket su cui era in ascolto, così che uno stantio non accolga
++ mai il processo successivo. Le azioni di spegnimento girano su thread propri, in modo
++ concorrente e senza un ordine particolare. Un'eccezione in una di esse viene ingoiata, così che
++ non possa impedire alle altre di essere eseguite:
+
+% 2 1 0 08b01df4f6df89620e49b9cd3a635691
+
+% 3 1 0 08587cc970f1ee03062af82749d7985d
+
+% 4 1 0 0c418e6436f0354c1e69241fd417b6de
+
+% 0 1 0 13304ae640579838001802acfe4ee594
+
+% 0 1 0 1341b543162e06e91d66914643c1a6b1
+
+% 1 1 0 0b41d9f5b222472c0996e3f7fb14fa37
+
+@ 0 1 0 0e17e3886fd946961ebfa5ba9e34b588
++ [Ambiente](environment.md#the-machine) descrive gli altri fatti sulla macchina.
+
+@ 0 1 0 04745d80c31a35e3107af20ae1f58444
++ ### La sospensione come effetto
+
+@ 0 4 0 0afee7f702ef2909123294f875c4c4e5
++ Attendere non è gratis, e non è invisibile. Attendere un task o una promise, dormire e cedere il
++ passo *sospendono* tutti il task in esecuzione, e ciascuno richiede una [capability] `Monitor`
++ nell'ambito. Un metodo che può bloccarsi lo dice quindi nella sua firma, esattamente come un
++ metodo che può fallire lo dice con [`raises`][raises].
+
+@ 0 5 0 13e19d2df0639a8701303ea0abadbc6a
++ Che alla sospensione sia permesso essere *bloccante* è di per sé una decisione di progetto che
++ vale la pena difendere, dato che il blocco ha una cattiva reputazione. È nato come una comodità:
++ se un valore non è pronto, lo si attende, invece di fallire o di scrivere sia il caso pronto sia
++ quello non pronto. La comodità è reale. Il codice che si blocca è codice scritto in termini di
++ valori, non di callback, che è lo [stile diretto](../../philosophy/direct-style.md).
+
+@ 0 3 0 05ff2b0dc88434851d3589aced3fe5c2
++ Ciò che è valso al blocco la sua reputazione era il costo. Un platform thread in attesa è un
++ thread che non lavora, e un'applicazione che ne tiene migliaia spende più della sua capacità ad
++ attendere che a calcolare.
+
+@ 0 6 0 1f0f2aff25324c9b1649685f411e1c1c
++ I virtual thread cambiano questi conti. Ordini di grandezza più chiamate possono trovarsi in uno
++ stato bloccante contemporaneamente, senza un sovraccarico significativo. La comodità si può
++ quindi avere al prezzo che le alternative basate sulle callback erano state inventate per
++ evitare. Bloccarsi dove si legge più chiaramente, su thread abbastanza economici perché il blocco
++ non conti, è la forma di tutto qui. È anche la forma dello [streaming](streams.md), che legge
++ sul thread stesso del consumatore per la stessa ragione.
+
+@ 0 5 0 1ffccae41403f2481eb4a1f2f6a0b72b
++ Sotto, l'unità di esecuzione è un `Strand`, non un thread. Un trefolo è un'astrazione con le
++ quattro operazioni di cui la sospensione ha bisogno: interrompere, attendere, parcheggiare e
++ riprendere. Un supervisore fornisce i trefoli, e un supervisore è un valore. Uno scheduler che
++ non è affatto costruito sui thread, come un event loop sui waitable set di WebAssembly, si
++ inserisce quindi come supervisore, senza alcuna modifica al codice che genera e attende.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 6 0 1c5e645db26c5b5604476be89d3d081b
++ - [Stream](streams.md#combining-and-replicating-streams) unisce e replica gli stream fra i task.
++ - [Server HTTP](http-server.md) gestisce ogni connessione su un task.
++ - [Errori](errors.md) descrive come si gestisce un fallimento in un task.
++ - [Demoni](daemons.md) mantiene un programma in esecuzione come servizio.
++ - [Caching](caching.md#an-expiring-value) calcola un valore una sola volta per molti chiamanti
++   concorrenti.

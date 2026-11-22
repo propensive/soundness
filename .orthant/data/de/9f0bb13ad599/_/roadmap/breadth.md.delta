@@ -1,0 +1,46 @@
+orthant 2 language
+
+@ 0 2 0 1ce2591c7910df8715cb6ee0ece79b7c
++ Erledigt, wenn: das Modul mit Tests, Fehlerseiten und einem Thema in `doc/en/modules/` ausgeliefert
++ wird und die Beispielvektoren aus RFC 7515/7516 auf dem Hin- und Rückweg unverändert wiedergibt.
+
+@ 0 5 0 185e0933a78085f60dda1fb01867e9b3
++ Erledigt: #2530 (2026-11-20). sigillate: `Jws`, `Jwe`, `Jwk` und `Jwt`, mit jedem Algorithmus
++ aus RFC 7518 außer der `zip`-Kompression sowie EdDSA und X25519 aus RFC 8037; ein
++ Bearer-Token-Handler für scintillate und über HTTP geholte Schlüsselmengen. Die Beispiele aus
++ Anhang A von RFC 7515 und Anhang A von RFC 7516 sind seine Tests, gelesen aus dem Text der RFCs.
++ enigmatic erhielt die Primitive, die ihm fehlten: Schlüsselableitung, AES Key Wrap, AES-CBC mit
++ HMAC, RSA-OAEP und RSA-PSS.
+
+@ 0 2 0 19e4d46c5d18ca6c0a3eac1338b276cc
++ Erledigt, wenn: das Modul mit Tests, Fehlerseiten und einem Thema in `doc/en/modules/` ausgeliefert
++ wird und die Standard-Konformitätssuite für TOML besteht.
+
+@ 0 4 0 1119703a804af95f1fb4bb604086cc3a
++ Passwortlose Authentifizierung für den Web-Stack, die die Geschichte vervollständigt, die OAuth 2
++ und JOSE beginnen. Die COSE-Unterstützung, von der es abhängt —
++ COSE-Schlüssel und die asymmetrischen Signaturalgorithmen —, kam mit `brd-1`, ebenso das Lesen
++ und die Kettenvalidierung der X.509-Zertifikate, die eine Attestierung mitführt.
+
+@ 0 2 0 1c27de11db8327eb199b7672a17cf0fc
++ Erledigt, wenn: das Modul mit Tests, Fehlerseiten und einem Thema in `doc/en/modules/` ausgeliefert
++ wird und eine skriptgesteuerte Zeremonie aus Registrierung und Assertion gegen einen
++ Referenz-Authenticator besteht.
+
+@ 0 7 0 0f072c1e402a18d91bb22643f0148107
++ Erledigt: #2530 (2026-11-20). chatelaine: Die beiden Zeremonien der Relying Party, mit jeder
++ Prüfung aus WebAuthn Level 2 §7.1 und §7.2, und die Attestierungsformate `none` und `packed`.
++ Der Referenz-Authenticator ist der der Spezifikation selbst: Die Registrierungs- und
++ Authentifizierungsausgaben ihrer Testvektoren für ES256-, ES384-, ES512-, RS256- und
++ Ed25519-Credentials werden akzeptiert, wobei `packed`-Attestierungen gegen die
++ Vertrauenswurzel der Vektoren validiert werden. Ein Software-Authenticator in den
++ Testquellen spielt ganze Zeremonien durch, und die Arten, auf die sie verweigert werden. Der
++ virtuelle Authenticator eines Browsers wurde nicht angesteuert.
+
+@ 0 2 0 17114dda9db220b1111dfa3e427832ac
++ Erledigt, wenn: das Modul mit Tests, Fehlerseiten und einem Thema in `doc/en/modules/` ausgeliefert
++ wird und mit einem Referenz-Server und -Client für HTTP/3 zusammenarbeitet.
+
+@ 0 2 0 0c7008ff6c9ff7ce1e83f47b9ad6f3b1
++ Erledigt, wenn: das Modul mit Tests, Fehlerseiten und einem Thema in `doc/en/modules/` ausgeliefert
++ wird und eine skriptgesteuerte Sitzung gegen einen Referenz-IMAP-Server besteht.

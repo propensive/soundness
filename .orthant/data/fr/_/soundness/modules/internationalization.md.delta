@@ -1,0 +1,171 @@
+orthant 2 language
+
+@ 0 1 0 16318be20bd59bf41dcde98b16c5f152
++ ## Internationalisation
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 3 0 198fc2e9980dc73d0099cdaefc7896f6
++ Un programme qui parle plusieurs langues doit fournir une traduction de chaque message, dans
++ chaque langue qu'il prétend prendre en charge. Les lacunes sont le bogue : la traduction
++ française manquante est découverte par un utilisateur francophone.
+
+@ 0 5 0 06a5bb4259047a95092102dc9280bd52
++ Ici, l'ensemble des langues est suivi dans le type de la valeur multilingue elle-même : un
++ ensemble de traductions auquel manque une langue requise est donc une erreur de compilation, et
++ non un repli [à l'exécution][exécution]. Une valeur multilingue est un `Polyglot`, dont le
++ paramètre de type enregistre exactement les langues qu'il possède. Sélectionner une langue exige
++ une `Locale`, et une `Locale` pour une langue que la valeur ne possède pas ne passe pas le typage.
+
+@ 0 1 0 0353f26f670b61381bd7af32843b1635
++ ### Le texte multilingue
+
+@ 0 5 0 101498ef6441ee70003ae410910f2add
++ L'approche habituelle de la traduction est un resource bundle : un fichier de chaînes indexées
++ par clé pour chaque langue, recherchées par leur nom à l'exécution. Rien ne relie les clés du
++ code aux clés des fichiers. Une traduction manquante, une clé mal orthographiée, ou le fichier
++ d'une langue qui est en retard sur les autres, tout cela apparaît sous forme de replis à
++ l'exécution, généralement sous les yeux du seul utilisateur qui a choisi cette langue.
+
+@ 0 1 0 176cc66af407c2061ce629d5edae2b30
++ Ici, les traductions sont dans le code, et l'ensemble des langues est dans le type :
+
+@ 0 5 0 17bdd6f0855e56161706a6614c49f02f
++ - Chaque langue est une valeur, qui élève une traduction en un `Polyglot` de cette seule langue.
++ - Les alternatives se combinent avec `|`, et le type combiné enregistre toutes les langues
++   fournies.
++ - Le code qui exige un ensemble particulier de langues l'énonce dans un type, et seule une
++   traduction complète le satisfait.
+
+@ 0 3 0 0113a0c2537c52460251298e6caec2d9
++ Une locale qui est un paramètre de type, et non une chaîne à l'exécution, signifie qu'une
++ traduction manquante est une erreur de compilation : c'est la
++ [sûreté par construction](../../philosophy/safety-by-construction.md).
+
+@ 0 2 0 0912bef352deaa6311e67b789081c2f6
++ Tout provient du package `soundness`. Le deuxième import permet aux exemples d'afficher leurs
++ résultats :
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 12ae42d8bc60dae804644f60d601a3c0
++ ### Fournir des traductions
+
+@ 0 2 0 084b74c08db6b9b6136b48482f08ed7f
++ Chaque langue prise en charge est une valeur qui enveloppe une traduction : `en`, `fr`, `de`,
++ `es` et `pl`. Les traductions se combinent avec `|`, et le type enregistre ce qui a été fourni :
+
+% 2 1 0 0cf9276b3ee684020214003e6ac19f87
+
+% 0 1 0 17420e3da1b7f6f11a72c3466d1eeb91
+
+% 1 1 0 0624afa70f50aad40086a95408a195c7
+
+@ 0 4 0 0dbebd69df82ce2b07604f9810c28c54
++ Un `Polyglot[Text, en & fr]` est un texte disponible en anglais *et* en français. Ne fournir que
++ l'anglais là où les deux sont requis ne compile pas. C'est tout l'intérêt : l'exigence d'une
++ traduction française est imposée là où la valeur est écrite, et n'est pas découverte par un
++ utilisateur francophone.
+
+% 2 1 0 0b3cc603e34f6035090f74c32c6b0ed6
+
+% 3 1 0 1e8f59cd22faf22d1fa71fd0a268c67a
+
+% 4 1 0 0ecee7b9e0b7567604028c7f785fd78b
+
+% 5 1 0 041931c25db674d71f6fac190f140cba
+
+% 0 1 0 1f86d30b359f813f045298d894ff2cbf
+
+% 1 1 0 10d94ac229e49e97141d98fac3921d76
+
+@ 0 1 0 0f500e5b85cf064a16cd002f069a9138
++ ### Sélectionner une langue
+
+@ 0 2 0 159a8799e23f5e9d12fdfd42093af557
++ Une `Locale` nomme la langue à lire. Appliquer le polyglot, avec une locale dans la portée, donne
++ la valeur pour cette langue :
+
+% 2 1 0 1bbae0a68d138e981279940694dae1ed
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 2 1 0 1695886d93d1ac251ff090c0df46cdb6
+
+% 0 1 0 03adfa563f9bbdd90460339e6abd8f9f
+
+% 1 1 0 069f61940e72f1101dcefcdc8303eed5
+
+% 1 1 0 123e132970abea3302dded92da3277af
+
+% 0 1 0 1bfb0cb5b06e0cb1189111e4d4ed9013
+
+% 1 1 0 1df1b041752a8cba1407a9320fc190f7
+
+% 1 1 0 06c37428e46bf1d708419ab27c69ac7c
+
+@ 0 2 0 13ee17a62528cffe1914323a8ec864f4
++ Le type de la locale doit couvrir des langues que possède le polyglot : demander à une valeur une
++ langue qu'elle ne possède pas est donc une erreur de compilation :
+
+% 2 1 0 128ee67c32c6a03f197b8810e78b83fa
+
+% 3 1 0 061348699cb6d5cf0a29056659200756
+
+% 4 1 0 17b688d07cb09bd11c9e74c3b3a85070
+
+% 5 1 0 1dc0d6e6727d0cb11cd52605df692563
+
+% 2 1 0 07a2552c473aa440045e998b9cc54ad2
+
+% 0 1 0 1f1cea4f77a367501683a60e8d1665e6
+
+% 0 1 0 1586b2986c3f651915cd5148589e42cc
+
+% 1 1 0 05788b11356e8f0713c9d73d9f72826d
+
+@ 0 1 0 187f831b174cf1e108515b68ccc50c3e
++ ### Une locale à partir de données d'exécution
+
+@ 0 4 0 121db81ccb0dc0cd06a7df0d4ec47f52
++ La langue de l'utilisateur arrive généralement à l'exécution, depuis un en-tête HTTP, une
++ [variable d'environnement](environment.md) ou un réglage. Un code de langue est
++ [décodé](decoding.md#decoding-a-value) en une `Locale`, et un code non reconnu se replie sur
++ l'anglais :
+
+% 2 1 0 0695f8a0f8d371770a0c0df86a464fd8
+
+% 0 1 0 1063f305708e9ac514a630171461fe50
+
+% 1 1 0 04a10c60353c5d081eb0b66442f26d1f
+
+@ 0 3 0 1a57af7cf97a8c2b18cea2ba5675a3eb
++ Avec cette locale dans la portée, chaque polyglot qui couvre ces langues est lu dans la langue
++ de l'utilisateur, et la complétude de chaque traduction a déjà été vérifiée lors de la
++ compilation du code.
+
+@ 0 1 0 0075fc8d622fc1761769061b86461efe
++ ### Au-delà du texte
+
+@ 0 5 0 18cf492f209c17e91ee14b7553eb013e
++ Un `Polyglot` est générique dans ce qu'il contient, et n'est pas figé au texte. Un format de
++ date, une convention monétaire, ou toute une page de contenu peuvent varier selon la langue par
++ le même mécanisme, avec la même garantie qu'aucune langue prise en charge ne manque.
++ [Temps](time.md#describing-recurrences) utilise une locale pour décrire une récurrence en mots,
++ et [Catalogues](catalogs.md) conserve les traductions dans des fichiers lorsqu'on le souhaite.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 1 0 029a66efd7190ef20ad03638138cd61a
++ - [Affichage](display.md), [monnaie](money.md) et [pages web](pages.md) rendent des valeurs pour
++   une locale.

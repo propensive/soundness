@@ -1,0 +1,197 @@
+orthant 2 language
+
+% 0 1 0 1b0daa41894eebb60b141f4b1a00beab
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 4 0 14c51e664a414f8219ceff17526464f2
++ Un'applicazione costruita con queste librerie è un JAR, e un JAR che porta ogni dipendenza di cui
++ ha bisogno è grande. Uno strumento da riga di comando di poche centinaia di righe distribuisce
++ decine di megabyte di codice di libreria, per lo più già pubblicato in qualche luogo pubblico.
++ Burdock rende quel JAR *snello*, senza renderlo fragile, in tre passi:
+
+% 2 1 0 14230c6cb7c210f11a5a165d650cee1e
+
+@ 0 6 0 1cb9b19d19c31b8c1219693b03342423
++ column  Quando
++ column  Passo
++ column  Effetto
++ row  a tempo di compilazione  `externalize`  registra contro quali dipendenze l'applicazione è stata costruita, come hash del contenuto anziché come coordinate
++ row  dopo la build  `repackage`  riscrive il JAR, sostituendo ogni dipendenza che ha una sede pubblica con un riferimento a essa, e conservando tutto ciò che non ne ha una
++ row  a runtime  il loader di bootstrap  scarica le dipendenze riferite, verifica ciascuna rispetto al suo hash, la mette in cache, e avvia l'applicazione
+
+% 1 1 0 16555012e229a10a05448c95cad92d25
+
+@ 0 2 0 04a0d0d3b5d6878810e5bd7095ec2f9d
++ Così il primo avvio scarica, ogni avvio successivo è istantaneo, e una dipendenza che è cambiata
++ dopo la build non può essere caricata.
+
+@ 0 1 0 0d19f320e2d0d2620a52941822eb4c9c
++ ### Sugli hash del contenuto
+
+@ 0 6 0 10cf97c561130af41976a159c6e3b898
++ Gli strumenti di build identificano una dipendenza con le coordinate, cioè un gruppo, un nome e una
++ versione, e confidano che le stesse coordinate si risolvano ovunque negli stessi byte. Burdock la
++ identifica con lo SHA-256 del JAR che il compilatore ha effettivamente letto. È l'affermazione più
++ forte. Un riferimento in un JAR riconfezionato nomina i byte esatti, e il bootstrap rifiuta
++ qualsiasi altra cosa, sia che un registro abbia servito una build diversa sotto la stessa versione,
++ sia che un download sia stato manomesso lungo la strada.
+
+@ 0 6 0 02fa5a079449d24b1a0994ec2ede1e1c
++ L'hash separa anche *dove* si trova una dipendenza da *che cosa* è. Il riconfezionatore chiede a
++ [deps.dev](https://deps.dev/) quale artefatto Maven ha quell'hash, e consulta gli asset di release
++ di tutti i repository GitHub indicati come suggerimenti. Una dipendenza che non si trova in nessuno
++ dei due viene incorporata dalla cache locale. Così l'invariante di completezza vale: ogni
++ dipendenza è riferita oppure presente. Un hash che non è né l'uno né l'altro ferma il
++ riconfezionamento con un errore, e non produce un JAR che fallirà più tardi.
+
+@ 0 1 0 0bba43e332729c3b196875394a062140
++ ### Esternalizzare un'applicazione
+
+@ 0 5 0 1f3541be5335c0a81b5d8db805f62a61
++ L'applicazione incapsula il suo punto di ingresso in `externalize`. A [runtime] la macro lascia il
++ corpo com'è. A [tempo di compilazione] cattura il classpath della build, calcola l'hash di ogni JAR
++ di dipendenza, lo collega con un hard link nella cache di Burdock in
++ `~/.cache/soundness/jars/<sha256>.jar`, così che i byte restino recuperabili per hash sulla
++ macchina di build, e incorpora l'elenco degli hash come risorsa `META-INF/burdock.deps` nell'output
++ compilato:
+
+% 0 1 0 0647b574ba405a220c6097163df25100
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 16e3cb87267665ba0c4fcb222abd3350
+
+% 0 1 0 069065b92fc2f0791e5da167e0dd364f
+
+% 0 1 0 105555d1194126fb1d16e5cc7cf5e7d5
+
+% 1 1 0 037343ccca56c0231345cf72d35c1a77
+
+@ 0 2 0 06760153eb9b24d015468b3853df424c
++ Nient'altro dell'applicazione cambia. Viene ancora costruita, testata ed eseguita come un JAR
++ ordinario, e la risorsa incorporata è inerte finché il riconfezionatore non la legge.
+
+@ 0 1 0 0c38defe50d79b5d049c0720d2f06f55
++ ### Riconfezionare
+
+@ 0 3 0 059a71266612d0eb1c8be089cc937792
++ Il punto di ingresso `soundness.repackage` si avvia sul JAR dell'applicazione. Individua il JAR
++ trovando la risorsa `META-INF/burdock.deps` sul proprio classpath, e lo riscrive sul posto:
+
+% 0 1 0 15a5f1f7e49cceab1ba03bc009fa86b5
+
+% 0 1 0 0acc1b6ee82e24010c5e73c2e658d1cc
+
+% 1 1 0 1244ad88a31f11cf040180aabb4fe2cb
+
+@ 0 6 0 0f80287225b88ea21681ef380db91aec
++ Ogni suggerimento `--github owner/repo` nomina un repository i cui asset di release sono una
++ sorgente di download. L'opzione può essere ripetuta, oppure i suoi valori separati da virgole.
++ GitHub non mantiene un indice globale per hash, così i suggerimenti vengono indicizzati in anticipo,
++ con poche richieste per ciascun repository, rispettando una variabile d'ambiente `GITHUB_TOKEN` se
++ è impostata. Vengono consultati prima di deps.dev, poiché un repository nominato dall'utente ha la
++ precedenza sull'indice globale. Nel JAR riscritto, ogni classe incontra uno di tre destini:
+
+% 2 1 0 18319e59cbae003d08f8712c7f829971
+
+@ 0 5 0 1f9795c7f46832720aaa14f5665010a5
++ column  Classi di
++ column  Sono
++ row  l'applicazione  conservate
++ row  una dipendenza che ha potuto risolvere  rimosse, e riferite al loro posto
++ row  una dipendenza che non ha potuto risolvere  incorporate
+
+% 1 1 0 190ca61ee517f40b0019590a1fe52ed7
+
+@ 0 2 0 00a9ca4d7968cb9f1bd5196f9cb8380e
++ Porta esattamente una classe in più, `burdock.Bootstrap`, che è il loader di runtime. Il manifest
++ registra la disposizione:
+
+% 2 1 0 02c089334ab5b7ac1160e14e6911203c
+
+@ 0 2 0 16dd1442bc0882550fa8fd2a0f993127
++ column  Attributo
++ column  Contiene
+
+% 0 1 0 07c5312ccffc52c505f68bf1447cfc34
+
+@ 0 3 0 10c276d9415b46a71c2434564d7dbb7e
++ row  `Burdock-Main`  il punto di ingresso dell'applicazione stessa, che il bootstrap avvia una volta assemblato il classpath
++ row  `Burdock-Require`  ogni dipendenza esternalizzata come `<sha256>:<url>`, nell'ordine del classpath
++ row  `Burdock-Verbosity`  ciò che il bootstrap stampa mentre scarica: `silent`, come lo scrive il riconfezionatore, oppure `error`, `info` o `debug`
+
+% 1 1 0 18003f635349f7941247abb38da0ad66
+
+@ 0 3 0 07102712227a7234180a15743d9e732b
++ Il comando stampa un riepilogo, con le voci lette e scritte, le classi conservate, incorporate e
++ rimosse, e ogni requisito esternalizzato. Disegna una barra di avanzamento mentre risolve, solo su
++ un terminale vero, così l'output rediretto resta pulito.
+
+@ 0 6 0 1a07fe67f310e6511400d8dcca75b306
++ Lo stesso lavoro è disponibile come chiamata di libreria, `Repackager.repackage`. Prende i percorsi
++ di input e di output, un `Repackager.Resolver` da hash a URL, un `Repackager.CacheReader` per la
++ cache locale, i byte della classe di bootstrap e una callback di avanzamento, e restituisce un
++ `Repackager.Summary` invece di stampare qualcosa. Il punto di ingresso da riga di comando è una
++ sottile resa di quella chiamata, e `DepsDev.mavenUrl` e `GitHub.index` sono i due resolver che
++ compone.
+
+@ 0 1 0 05dc6fafc04f6a6b1aecf946de1c9304
++ ### Eseguire un JAR riconfezionato
+
+@ 0 6 0 18e7bde3f55af00002ab7c2c83a9da7c
++ Un JAR riconfezionato si esegue con `java -jar app.jar`, esattamente come prima. Il bootstrap legge
++ `Burdock-Require`, e scarica ogni requisito che non è già in `~/.cache/soundness/jars/`, in
++ parallelo, limitato a una manciata di connessioni per ciascun host. Verifica lo SHA-256 di ogni
++ download rispetto all'hash nel manifest, costruisce il classpath nell'ordine del manifest, e invoca
++ `Burdock-Main`. Una discrepanza di checksum ferma l'avvio. L'applicazione non parte mai con byte
++ diversi da quelli con cui è stata costruita.
+
+@ 0 4 0 003aff3be9ee4b4d1aeadaeb2dd32062
++ Un launcher che supervisiona l'avvio, come fa il launcher dei [demoni](daemons.md), può osservare
++ l'avanzamento del download impostando la proprietà di sistema `burdock.progress` a un percorso di
++ file. Il bootstrap vi scrive atomicamente `<completed> <total> <bytes>` man mano che procede. Un
++ launcher che non può leggere il file ripiega sulla sua scadenza fissa.
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### Errori
+
+@ 0 1 0 0f63fc85c4e5152d02f32e91b9b452e7
++ Il riconfezionamento segnala i suoi fallimenti con due errori, e una ricerca che non trova nulla
++ con un terzo:
+
+% 2 1 0 0fcbd9c7a4a9b4ee09a50c0abc72d8da
+
+@ 0 5 0 14eb225712cef7a0089e226236b9612e
++ column  Errore
++ column  Sollevato quando
++ row  `Repackager.UserError`  il JAR non è stato costruito con Burdock, è una directory anziché un file, un argomento è malformato, o non si possono elencare le release di un repository GitHub
++ row  `Repackager.RepackageError`  il JAR non può essere riscritto: non ha manifest o non ha `Main-Class`, oppure una dipendenza non è né pubblicata né in cache
++ row  `DepsDev.Unresolved`  una ricerca su deps.dev non trova nulla, cosa che il riconfezionatore tratta come «non pubblicata» anziché come fallimento
+
+% 1 1 0 1ccbc407bde80021149bb8ce9ce1ae99
+
+@ 0 2 0 088c01e63b0a1abd12fcd42b0fa0820b
++ La risoluzione viene registrata nel log attraverso `DepsEvent`, con un evento per ogni hash
++ risolto, così un'esecuzione può essere verificata a posteriori.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 8 0 1c481219ae82588b1d1d8261e53dbff3
++ - [Archivi](archives.md) descrive il formato ZIP che un JAR è, e il prefisso che lo rende
++   eseguibile.
++ - [Compilatore](compiler.md#producing-artifacts) costruisce il JAR che viene poi riconfezionato.
++ - [Demoni](daemons.md) e [LSP](lsp.md#a-thin-launcher) descrivono i launcher che vengono
++   distribuiti come JAR snelli.
++ - [Hashing](hashing.md) descrive i digest SHA-256 che identificano ciascuna dipendenza.
++ - [Classpath](classpath.md) descrive il classpath che il bootstrap assembla.
++ - [CLI](cli.md) e [versionamento](versioning.md) descrivono le applicazioni e i manifest che
++   vengono impacchettati.

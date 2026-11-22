@@ -1,0 +1,18 @@
+orthant 2 release
+
+@ 0 1 0 021eb930f138376f13417684a15db276
++ span, and, under `scalacOptions.boltCodes`, the bolt code Proscala gives an error or a warning,
++ such as `↯/p.1.7`. A tool can underline the offending code, and need not echo the compiler's output. A crash
+
+@ 0 1 0 1d5aa46ac2e542b4145d4785c16c1f39
++ def stage(out: Path on Local, uuid: Uuid, executor: Fqcn)(using Monitor): Path on Local =
+
+@ 0 2 0 15824c0d04ee157c0b2c914af5024383
++ def component(witDirectory: Path on Local, emission: Deliverable, destination: Path on Local)
++ :   Path on Local =
+
+@ 0 1 0 11eb61515f171dc112264d9bc53da98c
++ def binary(emission: Deliverable, destination: Path on Local): Path on Local = supervise:
+
+@ 0 1 0 03e8659c168c9a0d1037b5d6d0d0f009
++ def kotlin(kotlinSource: Text, out: Path on Local): Compiler.Result = supervise:

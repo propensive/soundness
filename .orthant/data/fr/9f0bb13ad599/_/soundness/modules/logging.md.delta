@@ -1,0 +1,478 @@
+orthant 2 language
+
+@ 0 1 0 1372f8cc74a816e50233e487d3e9f85f
++ ## Journalisation
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 3 0 1b409aa52819b3c91262d1e2ee2a5fca
++ La journalisation est typée. Une méthode qui journalise l'indique dans son type de retour, avec
++ le type infixe `logs`, et émet une valeur d'un événement typé, et non une chaîne. Au lieu de
++ renvoyer `Long`, elle renvoie `Long logs Backup.Event`.
+
+@ 0 6 0 19b5c9b42ed3d6510d5fd323fb13bbec
++ Un logger placé dans la portée de l'appelant reçoit ces événements, et les écrit quelque part :
++ un terminal, un fichier, ou le journal système. Sans logger dans la portée, la journalisation
++ est silencieuse, et ne coûte rien ; déclarer qu'une méthode journalise n'impose donc aucune
++ obligation au code qui l'appelle. Une clause `logs` est une
++ [signature honnête](../../philosophy/honest-signatures.md) : elle énonce ce que la méthode émet
++ réellement, de sorte qu'un appelant sait ce qu'il y a à router.
+
+@ 0 5 0 0f5c21b0d398c9d60400332a0fb74001
++ Un logger est une [valeur contextuelle] ordinaire. Plusieurs peuvent être dans la portée à la
++ fois, et chaque événement va à chacun d'eux. Chaque logger a son propre seuil de gravité, son
++ propre format et sa propre destination. La décision de l'endroit où vont les journaux, et avec
++ quel niveau de détail, appartient à l'application, et non aux bibliothèques qu'elle utilise.
++ En décider par ce qui est dans la portée, c'est le
++ [contexte déclaratif](../../philosophy/declarative-context.md).
+
+@ 0 1 0 1eac257104da567a0812d15467206183
++ ### Sur la journalisation
+
+@ 0 5 0 0cb90615c111cac10a847555416e3ebf
++ La plupart des journalisations sont typées comme des chaînes, et toujours actives. Une
++ instruction de journalisation formate son message immédiatement, que quelque chose le lise ou
++ non. Le coût de construction de la chaîne est payé même quand le niveau est désactivé ; un code
++ soigneux protège donc chaque instruction par une vérification du niveau. Le message lui-même
++ est une chaîne opaque ; ce qui le reçoit ne peut donc pas le reformater, filtrer selon son
++ contenu, ni masquer un champ dont il ignorait la présence.
+
+@ 0 1 0 0b27eba2d85b6a731aa5a024a73959bd
++ Ici, les trois préoccupations sont séparées :
+
+@ 0 3 0 1a30e1e7fa8f8d361bcec72c89913f42
++ - Une méthode énonce *qu'elle* journalise, et *ce qu'elle* journalise, dans son type.
++ - L'événement qu'elle émet a des champs typés, et non du texte formaté.
++ - *Où* va l'événement, et *comment* il est écrit, est décidé par les loggers de la portée.
+
+@ 0 3 0 04c5a5d4ec7ea9d511f3ade49205a499
++ L'argument d'un appel de journalisation est passé par nom, et n'est évalué que si un logger va
++ l'enregistrer. Une instruction désactivée n'évalue rien ; les appels de journalisation peuvent
++ donc s'écrire librement, sans garde. Quand aucun logger n'est dans la portée, la machinerie
++ disparaît entièrement à la compilation.
+
+@ 0 3 0 1cf7dba9595c88e505a986ec516d2dff
++ Tout provient du package `soundness`. Un programme qui journalise a aussi besoin d'un format,
++ d'un endroit où écrire, et du contexte de [concurrence](concurrency.md) sous lequel un logger
++ écrit :
+
+% 2 1 0 1f151699ed390c2d15bdd18f114736d3
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 08347f60cff45ea01d6839192e37736f
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 13384f30cdd00a6f0d56c6f7fd9277a5
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 15855dca1aeb270f1cf30da311ccebe4
+
+% 0 1 0 01c93e6097c6710d10912de7ba18e5c3
+
+% 0 1 0 03367cd25358d1041b32aecd7b439a70
+
+% 0 1 0 0927f96e561a641f0d43349d32e36f6f
+
+% 0 1 0 16045fd084739fdc12ba511474bebeed
+
+% 0 1 0 0573ee4bb2ec9c80157d6296b9e909bb
+
+% 0 1 0 105b875be77538bf01a3d000c979fb06
+
+% 0 1 0 18c7a687010107340f80aa20e40c04f8
+
+% 0 1 0 187deca283ea14a40bca998ac1ee8616
+
+% 1 1 0 1dd7255fcbf2a0701e3e7365f7d2afc7
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 8 0 0bb1e041675c0ff106ac6679c585476f
++ column  Import ou given
++ column  Détermine
++ row  `logFormats.ansiTimestampedLogFormat`  comment un événement est écrit : ici, en couleur, pour un terminal
++ row  la `LogPalette`  les couleurs qu'utilise ce format
++ row  `writables.outTeletypeWritable`  que la sortie standard peut recevoir du texte stylé
++ row  `stdios`, `termcapDefinitions`  où va la sortie standard, et ce que le terminal peut afficher
++ row  `threads`, `probates`  comment s'exécute la tâche en arrière-plan du logger
++ row  `strategies.throwUnsafely`  qu'une erreur est levée sous forme d'exception
+
+% 1 1 0 00d220a17931d83c1076bb5625270c62
+
+@ 0 1 0 1ab675c3eff99c62179f5d57631ecb16
++ ### Mettre en place un logger
+
+@ 0 4 0 0738dd0dc61264d806ad94ae21ff2383
++ Un `Logger` écrit des événements dans une destination. En placer un dans la portée, comme
++ [given], en fait la destination de tout ce qui est journalisé dans cette portée. Ses deux
++ paramètres de type indiquent les événements qu'il accepte, avec `Any` pour tous, et la forme
++ sous laquelle ils sont écrits. Un logger qui écrit sur la sortie standard suffit pour voir la
++ sortie de journalisation :
+
+% 2 1 0 1403fdfe069595e31571b55e83c251be
+
+% 3 1 0 0265cad37eccab250c33637a26ac9f23
+
+% 4 1 0 155607f0648297d90d3d8b86129c9a18
+
+% 5 1 0 158a360222e841ad11e9fb1016e8963b
+
+% 6 1 0 196b3e7baf50f42016ab031e35f0b385
+
+% 0 1 0 125948e0e8bb2cd108373bd0312a7abc
+
+% 1 1 0 137dd8880512112019f7069399ab3036
+
+@ 0 1 0 02d148d680bf898819767fe5f1a5971b
++ Le message est écrit sur la sortie standard, avec un horodatage.
+
+@ 0 3 0 18f4096922703f3c089a6f0f9910e547
++ Restreindre le premier paramètre filtre par sorte. Un `Logger[Http.Event, Message]` reçoit les
++ événements HTTP, et rien d'autre ; les événements d'une bibliothèque peuvent donc être routés,
++ ou réduits au silence, indépendamment du reste.
+
+@ 0 3 0 188f8e509038d77e11d3ceceb6a7ace6
++ `Logger` effectue ses écritures sur un thread en arrière-plan ; il a donc besoin du contexte de
++ concurrence que fournit `supervise`. Le format de la portée détermine comment un événement est
++ écrit. Chaque format s'importe depuis le package `logFormats` :
+
+% 2 1 0 19872a894059a9b70b411343a18721d3
+
+@ 0 6 0 1aeee89f27899819086e4ac8288231fc
++ column  Format
++ column  Rend
++ column  Pour
++ row  `ansiTimestampedLogFormat`  un horodatage atténué et le niveau sur un fond coloré  un terminal
++ row  `timestampedLogFormat`  l'horodatage et le niveau sous forme de texte  une destination en texte brut, comme un fichier
++ row  `untimestampedLogFormat`  le niveau sous forme de texte, sans horodatage  une destination en texte brut
+
+% 1 1 0 0f947188f394712f1401534512b10584
+
+@ 0 1 0 10d2536870591f6502e885e165a0930d
++ Un seuil écarte tout ce qui se situe sous un niveau choisi :
+
+% 2 1 0 0381bea05c1e19d406a12e045e382d1e
+
+% 3 1 0 0d5992829440def4031a41ee17399f8b
+
+% 4 1 0 093b82ffc00a41f11432f2603c158708
+
+% 5 1 0 1f49c06328cb3026136ccc0d9642504f
+
+% 0 1 0 075c1f4c8709440e1fefecbf331a4dbf
+
+% 0 1 0 106e949233b2c8e913ccdc9eedaef1e4
+
+% 0 1 0 087bd940c43f122709ba0a3f2d75f17c
+
+% 1 1 0 1b5db5f7607e7220041db05946844fc7
+
+@ 0 1 0 141078bb5e8c8f5605fc27197568a8fe
++ ### Journaliser un message
+
+@ 0 5 0 0270c0f7df0f44af1543504ad4492bc9
++ La chose la plus simple à journaliser est un message, écrit avec
++ l'[interpolateur `m"…"`](errors.md#defining-an-error). Cela convient au code d'une application,
++ dont l'auteur maîtrise à la fois la journalisation et la lecture. Une bibliothèque devrait
++ plutôt définir un [type d'événement](#event-types) dédié, afin que ses événements restent
++ structurés, et puissent être filtrés. Quatre méthodes journalisent un message, chacune à un
++ niveau :
+
+% 2 1 0 1485f8b4a576b0b601cc520907a02f6a
+
+% 0 1 0 0a850cbdc92484101ffac0f649edbd66
+
+% 0 1 0 0a9ce577da3512c30fb60e5a2dc9cc2b
+
+% 0 1 0 0586dd642abeebfe02b7d34e35386661
+
+% 0 1 0 0b94a92b70c1796711e2125f44c634a6
+
+% 0 1 0 0b0c62fe6a99d919123a2a4fc781a0cb
+
+% 1 1 0 0201f3a65cb8ba6c0bc94f10bb0c95a2
+
+@ 0 2 0 03e542b82bfe150e0c01906dbfa0c5d6
++ Sans logger dans la portée, `report` compile, et ne journalise rien. Un message est `Loggable`
++ par défaut ; une méthode qui ne journalise que des messages n'a donc besoin d'aucune
++ déclaration.
+
+@ 0 1 0 0c2f1f6aa623103d13570f9c7aad8844
++ ### Niveaux
+
+@ 0 2 0 078d85f00a0fc22e11f115f473be028c
++ Un niveau reflète à la fois la fréquence et la gravité. `Fine` est normalement désactivé ; il
++ peut donc être verbeux. `Fail` s'utilise avec parcimonie.
+
+% 2 1 0 08b31790b00ea1de0149047ec3258f12
+
+@ 0 8 0 0725cebbd1e35d3b1355a4e58c277b28
++ column  Niveau
++ column  Méthode
++ column  Pour
++ column  Par exemple
++ row  `Fine`  `Log.fine`  des détails à haute fréquence, par unité, utiles seulement au débogage  chaque trame, chaque paquet, chaque fichier ouvert
++ row  `Info`  `Log.info`  une ligne par opération significative ou étape du cycle de vie  une connexion établie, un serveur désormais à l'écoute, un téléchargement terminé
++ row  `Warn`  `Log.warn`  une condition récupérable, ou inattendue mais traitée  un arrêt forcé, une connexion réinitialisée, un repli effectué
++ row  `Fail`  `Log.fail`  une opération qui a échoué de façon irrécupérable, émise en même temps que l'erreur levée
+
+% 1 1 0 1987ca97a4897b6716e51c6905c55ef5
+
+@ 0 1 0 063e41823071d13304a6095432aeae49
++ ### Types d'événements
+
+@ 0 4 0 0c0cf2dc2dc738cc0269d59447c59d4c
++ Un événement est une [énumération] dont les cas contiennent les valeurs pertinentes sous forme
++ de champs typés. Il est associé à une instance `Communicable` dans son compagnon, qui fait
++ correspondre chaque cas à un message. Garder les valeurs typées, au lieu de les formater à
++ l'avance, permet à chaque logger de les écrire à sa manière :
+
+% 2 1 0 0ec5fb3b6c5dc30810d960e4147352ac
+
+% 0 1 0 1fc4230ca3712a7c0ec6708d98b639ba
+
+% 0 1 0 1394eac630bcee8004b6e550f6929f1e
+
+% 0 1 0 098c890c9d81a1f91fd391d3f9cd7f77
+
+% 0 1 0 1c1e12b4cf38624a11513ff88b905464
+
+% 0 1 0 0d771213c81e91cc060e54c36800d811
+
+% 0 1 0 12db4c6f0e04c7e10b5ef43a651e18aa
+
+% 0 1 0 14395079c6428aef106fccbd39c5bd09
+
+% 0 1 0 01304a46aca78a821167f524742e2f74
+
+% 0 1 0 12f3a8319ff983900d8276b5f5ec70b6
+
+% 0 1 0 13e64294aac9ab940e30917623fddd90
+
+% 1 1 0 05428b837cd1ffe510978ad45beb353e
+
+@ 0 1 0 1172464a432e2ef50b9c7c2c6d290d46
++ ### Déclarer qu'une méthode journalise
+
+@ 0 2 0 068beb96fbb494370adf8718e662aafe
++ Une méthode adhère à la journalisation en nommant son type d'événement dans son type de retour,
++ avec `logs`. Elle journalise alors l'événement par valeur, à l'endroit où se produit l'effet de
++ bord :
+
+% 2 1 0 18ad1e3ba1d087200cd4d8297f2f8393
+
+% 0 1 0 110f00ac55641c0a127f0fb75e4e25a0
+
+% 0 1 0 0d24a22aef23e34a00fd5e4054723fec
+
+% 0 1 0 1e909a6b13347dbd15785360e3f5272e
+
+% 0 1 0 18beaf0c7787ec090bf0f1697bc3a3d6
+
+% 0 1 0 0ac63dbde0dbe5f911080d45455e0a0e
+
+% 1 1 0 1e2b38d15e87d24b15f084da4f6ea6a2
+
+@ 0 3 0 09a6ed12f1692538139948515a7d1c3a
++ L'exigence se propage. Une méthode qui appelle `backup` doit elle-même admettre `Backup.Event`,
++ soit en le déclarant, soit en ayant un logger pour lui dans la portée. Une méthode qui
++ journalise plus d'une sorte d'événement enchaîne les déclarations, comme dans
++ `Unit logs Http.Event logs Exec.Event`.
+
+@ 0 3 0 01a64a0cda53738515f00a5057830b81
++ Une bibliothèque qui s'appuie sur le travail d'une autre réutilise ses événements, et ne les
++ duplique pas. *Transcrire* un événement en un cas d'un autre transmet l'événement enveloppé
++ inchangé. Ainsi, une bibliothèque qui planifie des sauvegardes réutilise les événements de
++ sauvegarde :
+
+% 2 1 0 1457d54cfc03b9ef10843ed369291e19
+
+% 0 1 0 015937e89b55d3e61428d7bb2841e0c5
+
+% 0 1 0 0bc89c22cea8c47f0b37268782ed5249
+
+% 0 1 0 04976d220bdd4f050e542e2dd0da0aef
+
+% 0 1 0 0de15b6220b5326c1b9d09a03c102bea
+
+% 0 1 0 03fdbfa90a5198bd1f40e55b7cdd477e
+
+% 0 1 0 0474e90c07f64abd1cafa1a7a33ec5af
+
+% 0 1 0 0e1607a53400d59a1ad58cdc95431770
+
+% 0 1 0 174476a0137d7c240c0294a9e971deb4
+
+% 0 1 0 01d852ad1169fd0e1f83ea2fbd27fe5e
+
+% 0 1 0 08ee67fe5e982f0c0eefa9d585cc65fb
+
+% 0 1 0 0b2a482bf1ee54a014bde1d15f441ede
+
+% 1 1 0 1d1e29fd6b8d9dde01bcc11e2b34850a
+
+@ 0 2 0 149dc3576995bcd5174c96f335827c78
++ Avec la transcription dans la portée, les événements de `backup` sont acceptés par la
++ déclaration de `nightly`, enveloppés sous la forme `Schedule.Ran`, et un logger pour `Schedule`
++ voit les deux.
+
+@ 0 1 0 09410b4e0efe26e619d572de2c32b527
++ ### Coût lorsque désactivé
+
+@ 0 4 0 1057aa8378d4d2771868ec0d65a7c1f7
++ L'argument de chaque méthode de `Log` est pris par nom, et le niveau est vérifié avant que
++ l'argument soit évalué. Quand aucun logger n'accepte un événement à son niveau, ce qui inclut le
++ cas où aucun logger n'est dans la portée, l'événement n'est jamais construit, et ses champs ne
++ sont jamais évalués. Une instruction de journalisation désactivée ne coûte donc rien, et les
++ appels de journalisation n'ont besoin d'aucune garde.
+
+@ 0 5 0 03e7a7a4d79e758805982f158681f5db
++ C'est pourquoi un événement devrait contenir ses valeurs typées d'origine, et laisser le
++ formatage à son `Communicable` : le formatage n'a lieu que si l'événement est effectivement
++ enregistré. L'exception est une valeur dont le formatage dépend d'un contexte disponible
++ seulement là où elle est journalisée. Celle-ci devrait être formatée sur place, dans
++ l'événement. Le formatage ne s'exécute toujours que lorsque l'événement est journalisé, car
++ l'argument est passé par nom.
+
+@ 0 1 0 1c458f90e398133318b265ad6e24e280
++ ### Router vers plusieurs endroits
+
+@ 0 4 0 100dc95629abd106014f9f01f83a3f08
++ Un logger n'est qu'une valeur contextuelle ; plusieurs peuvent donc être dans la portée, et un
++ événement atteint chacun d'eux. Deux loggers, l'un vers un fichier et l'autre vers le terminal,
++ reçoivent tous deux chaque événement, et chacun applique son propre seuil. Le fichier peut
++ conserver le détail de `Fine`, tandis que le terminal n'affiche que `Warn` et `Fail`.
+
+@ 0 2 0 0dc7496be7ca193a105c634bc98836b4
++ Le fichier est écrit sous forme de texte ; son logger importe donc le format textuel. Cet import
++ est plus proche ; il a donc précédence sur le format de terminal importé plus haut :
+
+% 2 1 0 1559099ac877902c136c6b6cb91be11b
+
+% 3 1 0 0fa11124886407ab1b0f48582e7277b0
+
+% 4 1 0 118bb1e9d8a954f5185e82ef192b79bf
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 1e08e13d7ad73e8b06fccd1c9451ef37
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 10a779daabd2cb4604c8e18871cc6c60
+
+% 0 1 0 0e54bce6affba4421b29ae79a3921947
+
+% 1 1 0 15df16b7f55a744e0220efffbb8ffe20
+
+% 0 1 0 0f48a4f33de245f916e58750c1903c88
+
+% 0 1 0 0b178855fe8e97de19453fe2261f42bc
+
+% 0 1 0 174b67231714cc0c0aa9e2823079b473
+
+% 0 1 0 0786a4728e5703d306787d237ea183e9
+
+% 0 1 0 1749a9240e7c94ac18ab343a39fe8b8c
+
+% 0 1 0 12ce69a6c5b0fa5d0aae56d78d2044e5
+
+% 1 1 0 10cca59c18bf2b4b0d7bab2fe2aba36e
+
+@ 0 2 0 077909a7d067cad50d1e80ec77e16184
++ Le premier message n'atteint que le fichier, et le second atteint les deux.
++ [Système de fichiers](filesystem.md) décrit le chemin dans lequel écrit le logger de fichier.
+
+@ 0 1 0 10d3eae300ec599d08b82a7c8d0d7d12
++ ### Réduire au silence
+
+@ 0 2 0 1f910c97226b4bb6145560837f248436
++ Un seul bloc peut s'exécuter avec une sorte d'événement supprimée, quels que soient les loggers
++ de la portée, avec `mute` :
+
+% 2 1 0 0bdbff0a6df921eb03030e0bd9c97363
+
+% 3 1 0 0a782c95f3987f2c0a8a2472ccb4d84c
+
+% 4 1 0 102e2e52b3736886118b1c1efdf62258
+
+% 5 1 0 0d45e781869a56cd08cc3a6af3564e59
+
+% 6 1 0 03562bc880826bd3035f5a63ff8234d1
+
+% 0 1 0 0cbdbdad636d5d0e1a6501cad563bb66
+
+% 0 1 0 0ca5c6f2466b96ec1c0bd51c98ae0c17
+
+% 1 1 0 196ef5fe898ed412199b8f7bd7c3a70c
+
+@ 0 3 0 161fda9edcefea390aa5af2c00df5fd3
++ Importer `logging.silentLogging` supprime toute journalisation pour un fichier entier, ce qui
++ est utile là où une dépendance journalise et où sa sortie n'est pas souhaitée. Les tutoriels du
++ [client HTTP](http-client.md) et des [processus](processes.md) l'importent pour cette raison.
+
+@ 0 1 0 15e83eda5eb1031213d1d23f0353dc1b
++ ### Bien journaliser
+
+@ 0 3 0 0a1fb0aec166f6290a9b83e8d5f0c71f
++ Ne journalisez que les effets de bord observables, qui prennent du temps ou peuvent échouer :
++ les opérations sur le réseau, le système de fichiers, les processus et les services externes.
++ Le travail pur en mémoire, comme le hachage, l'analyse ou l'arithmétique, ne produit aucune
++ sortie de journal, aussi coûteux soit-il.
+
+@ 0 1 0 0e14fe02c89ea0cd1f64e694a35cf373
++ Un message devrait être précis :
+
+@ 0 4 0 0ff37e3dd4e365ae0e46b805d578d82e
++ - Nommez la ressource qu'il concerne : une adresse et un port, un chemin, un identifiant de
++   processus, une URL.
++ - Donnez des quantités quand c'est peu coûteux : nombres d'octets, millisecondes écoulées, codes
++   de statut.
++ - Ne journalisez jamais de secrets : identifiants, jetons, cookies, matériel de clé, ni le corps
++   entier d'une requête ou d'une réponse. Journalisez plutôt une version masquée, une taille ou un
++   court aperçu.
+
+@ 0 2 0 0094cf853a2ea04504498f3f19f1ba35
++ Les messages sont en minuscules, concis, au présent, et sans point final. Ils substituent le
++ contexte pertinent :
+
+% 2 1 0 07f1c07fd3d03a381cddd9a43e7df6d2
+
+% 0 1 0 1652452a4abd65451cf90c64ca7806b5
+
+% 0 1 0 143b8402cfb8211e192e79fec7d33b57
+
+% 0 1 0 1eeca28cd87464f40f8078bb9c735946
+
+% 0 1 0 00f59f3a2f56ccdf104ae295b3f07373
+
+% 1 1 0 0ec7b8fe4c61e11000f41ae5d2cde9fd
+
+@ 0 2 0 024f49ec4d91e7631f6d9ff9dde28a0e
++ Un message qui dit seulement que quelque chose s'est produit, comme `m"a failure occurred"`, ne
++ suffit pas. Nommez ce qui a échoué, et incluez son identifiant.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 6 0 01262583370def8d13ecf887e2199a2e
++ - [Erreurs](errors.md#defining-an-error) décrit les messages sous la forme desquels les
++   événements sont écrits.
++ - [Terminal](terminal.md#styled-text) décrit le texte stylé qu'écrit un logger de terminal.
++ - [Concurrence](concurrency.md) décrit `supervise`, sous lequel s'exécute un logger.
++ - [Traces de pile](stack-traces.md) présente la trace d'une erreur journalisée.
++ - [Serveur HTTP](http-server.md), [découverte de services](service-discovery.md) et
++   [métaprogrammation](metaprogramming.md) journalisent leurs événements par les puits de la
++   portée.

@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 2 0 1b246355a8128b7e045abd8d6c854057
++     entry .BrightWhite   SGR 97
++   entry .background   16 色の背景色。SGR 40–47 と 100–107 で、それぞれ SGR 49 でリセットされる

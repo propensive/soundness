@@ -1,0 +1,628 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1044e12e2eb9decb08cd3fcf95b33c50
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1bb4543327382652151d3b89d68af7c5
++ info   un emulatore di terminale headless: in ingresso output ANSI e xterm, in uscita uno schermo ispezionabile di celle con stile
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 02bf193bae568f891ea13af0b8ce5248
++     _Yossarian_ è un terminale senza finestra. Un `Pty` consuma il testo che un programma scrive
++     sul suo terminale — caratteri intercalati con sequenze di escape ANSI e xterm — e calcola ciò
++     che mostrerebbe un terminale reale: una griglia di celle, ciascuna contenente un grafema con
++     il suo `Style` e un eventuale collegamento ipertestuale, più il cursore, il titolo della
++     finestra, la regione di scorrimento e le modalità impostate dal programma. Lo stato è un
++     valore immutabile, quindi un test conserva gli stati intermedi, li confronta e fa
++     asserzioni su ciò che lo schermo *mostra* anziché sullo stream di byte che lo ha prodotto.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 10c21ad4388cfb8b111cdf3bf32636d3
+
+% 0 1 0 1dcfc42e1c6428f8049bf84be374705e
+
+% 0 1 0 01b431052e46e24a125ea9d29c1502b2
+
+% 0 1 0 1fbe3f2d3b19a34819d74ca0cbf45441
+
+% 0 1 0 14adb7ebb05b90e51e3c099925544d34
+
+% 0 1 0 0399105a6b43ab81118bc9c3dbc31511
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 9 0 1a345da8105ba76400de1bcd18b2cc1e
++     L'emulatore implementa il vocabolario usato dai programmi e dalle shell reali:
++     indirizzamento e movimento del cursore, cancellazione, inserimento ed eliminazione di
++     caratteri e righe, regioni di scorrimento, stili `SGR` con la tavolozza a sedici colori, il
++     cubo a 256 colori e il colore a 24 bit, lo schermo alternativo, la visibilità del cursore,
++     le modalità di focus e di incolla delimitato, i titoli delle finestre e i collegamenti
++     ipertestuali `OSC 8`, e le segnalazioni del dispositivo che un programma può richiedere.
++     Unicode è gestito per cluster di grafemi: un carattere largo occupa due
++     celle, e un segno combinante si unisce alla cella alla sua sinistra. Le sequenze che non
++     influiscono su nulla di ciò che uno schermo mostra — modalità del tastierino, designazioni
++     di set di caratteri, negoziazione del protocollo della tastiera, notifiche della shell —
++     vengono accettate e ignorate; una sequenza che l'emulatore non riesce a interpretare
++     solleva un `Pty.Error`.
+
+@ 0 3 0 02c7d711869263550361b4452aac29d1
++     L'output letto da un terminale arriva in chunk che possono terminare a metà di una sequenza
++     di escape, quindi un `Pty` conserva una sequenza incompleta e la riprende al `consume`
++     successivo: lo schermo è lo stesso comunque si suddivida l'input.
+
+@ 0 3 0 173e7c497c536c001b306591a795cad6
++     Non c'è cronologia di scorrimento: una riga fatta scorrere oltre il bordo superiore dello
++     schermo (o della regione di scorrimento) è perduta, quindi un test che deve vedere tutto un
++     output lungo dovrebbe rendere il `Pty` abbastanza alto da contenerlo.
+
+@ 0 4 0 1b57dc92f3b3333b1cdd4ef534b1cf27
++     La libreria è un unico source set indipendente dalla piattaforma, `yossarian.core`. `Pty`,
++     `Screen` e `Style` sono esportati nel modulo ombrello `soundness`; `Screen` e `Style` sono
++     dichiarati in `yossarian.internal`, dove `Style` è un tipo opaco su un `Long`. Lo stesso
++     buffer `Screen`, con uno stile di cella diverso, sostiene le interfacce utente testuali di
++     ultimatum.
+
+% 0 1 0 140984f76c87478615fca0342abdea8a
+
+% 0 1 0 1378e08a59eda7ec03b30888512a70c0
+
+% 0 1 0 0ae3217db960d1780e0752ad98e566cf
+
+@ 0 1 0 0ef3682fd7050c400f6f64459661266d
++ entry .Pty   lo stato di un terminale come valore immutabile: schermo, cursore, modalità e risposte in sospeso
+
+% 1 1 0 02bf74caa7ad9f481697d1a5c13f5d19
+
+@ 0 4 0 12e970ea6e87832b02d176456eebd644
++       Un `Pty` si crea con una dimensione — larghezza, poi altezza, in celle — e si trasforma con
++       `#consume`, che interpreta testo e sequenze di escape e restituisce il nuovo terminale.
++       L'originale non viene toccato: `#consume` copia lo schermo prima di scrivere, quindi gli
++       stati precedenti si possono conservare e confrontare.
+
+% 2 1 0 040b195f27a783ad17826de750978c52
+
+% 3 1 0 14a14899ff0a20251a2d8306d7e9f39f
+
+@ 0 1 0 077ba4401cff9f151f4bb67a3472c878
++         label Un terminale vuoto
+
+% 1 1 0 0b1ee9aa6f236c7f0f3990fcac86657f
+
+% 2 1 0 08d6612447080f5411280115e745897a
+
+% 3 1 0 10c52040836240ec040c49badc83fa6b
+
+% 5 1 0 063c60bbacc94d3106220e7851fac21b
+
+% 0 1 0 1a7aa7c6e3396f23145c08fa6bd5dd8a
+
+% 0 1 0 05820fda149c49fc0e006f04cf8b8f46
+
+% 1 1 0 099d5cf3a1c7536d0547c244833faebf
+
+@ 0 1 0 1e3321e6d39d1a67029027d674d33a9b
++         label Del testo, poi un ritorno carrello e un line feed
+
+% 1 1 0 11b05ab037bcb99c1fcc8d9e46366bf2
+
+% 2 1 0 0d701e3530ed13891107b0827d37959b
+
+% 3 1 0 019d9fa8bb5f92801b88f70997df68d7
+
+% 5 1 0 0078f1abb839e437000165c8ac54b3b2
+
+% 0 1 0 1013711093c130e411806b0d8d9c8f9a
+
+% 0 1 0 050d2de724e2d3fb1ce57090707eeb78
+
+% 1 1 0 1a950d8af5666a1808ba90f1ea68ef2a
+
+@ 0 1 0 0688763eae542dd80c56b3a4f9291172
++         label Il cursore riportato all'inizio, e una X in grassetto scritta sopra la h
+
+% 1 1 0 095002c9e6eb7fa514db75bf6dc4851f
+
+% 2 1 0 0c22b9cadd76434016bf81efe7a92eef
+
+% 3 1 0 130922d7c2a4a4791676c6b5725a93b8
+
+% 5 1 0 024856d1336a1dfd136f158a1de2bdd4
+
+% 0 1 0 0012197edcef19c2054905081e0d1115
+
+% 0 1 0 0dd4a91ece0ee63b16aae76597816309
+
+% 0 1 0 16f4462a3e84423014eb2d78965facf5
+
+% 1 1 0 0070a85a5beed8b105f8033b7cc39542
+
+@ 0 1 0 0d123cf1990adeae0e18525aa4e95bd9
++         label La seconda riga cancellata
+
+% 1 1 0 1c4c245a0464433003e76185b31e2e65
+
+% 2 1 0 0bbd96b896e07ba01cb9128b8f27b294
+
+% 3 1 0 07420bb6920d746110b6f43cbdcd28c4
+
+% 5 1 0 1ce954fc7fb96e4c0169181f5d2eac3a
+
+% 0 1 0 00fd699ca4b0c6061beccf85be3b670c
+
+% 0 1 0 0edf4be63af912f90c4068dccf49085c
+
+% 0 1 0 0877af648357c3e703641d369f91589a
+
+% 1 1 0 1c2c9e88e3e6371a19a9ccd6855b53c7
+
+% 2 1 0 065a5ecac8ff4b680dc3f4085060dab0
+
+@ 0 4 0 01709c34e38ead24111d360ab12f9e14
++       Un line feed riporta il cursore alla prima colonna oltre a spostarlo in basso, come fa un
++       terminale nella sua consueta modalità newline. Scrivere oltre il bordo destro va a capo in
++       modo pigro: il cursore attende sull'ultima colonna e il carattere stampabile successivo va
++       all'inizio della riga seguente.
+
+@ 0 4 0 188961e399f0a0271f1deccf4f78f318
++       Alcune sequenze fanno rispondere un terminale — una segnalazione della posizione del
++       cursore (`CSI 6 n`), gli attributi primari e secondari del dispositivo — e le risposte
++       vengono messe su `#output`, rilette come `#stream`, così un programma che interroga il suo
++       terminale può essere testato rispetto alle risposte che riceverebbe davvero.
+
+@ 0 1 0 10d4266b16da94a317b6c40d6e13b63d
++       Tutto ciò che un programma ha impostato oltre allo schermo stesso si trova in `#state`, un
++       `Pty.State`.
+
+% 1 1 0 06bce6adadecd04807ae6b67aa8375e0
+
+% 1 1 0 1cbcc75204aea3111bc4f36b96485776
+
+@ 0 10 0 1887c4e6dfb285b700c54751eb4d03d2
++   entry .apply   un terminale vuoto della larghezza e dell'altezza indicate, con lo stile predefinito
++       `Pty(width, height)` crea un terminale in cui ogni cella è uno spazio nello `Style`
++       predefinito (bianco su nero, entrambi marcati come predefiniti del terminale), con il
++       cursore in alto a sinistra e la regione di scorrimento che copre tutto lo schermo.
++   entry .stream   ogni stato attraversato da un terminale mentre consuma uno stream pigro di chunk
++       `Pty.stream(pty, chunks)` consuma in modo pigro ogni `Text` della `Chain` a turno, dando il
++       terminale dopo ciascuno: l'output di un programma letto come stream diventa uno stream di
++       schermi. Una sequenza di escape divisa tra due chunk viene ripresa, come con
++       `Pty#consume`. Solleva `Pty.Error` man mano che ogni chunk viene consumato.
++   entry .Error   sollevato quando una sequenza di escape non può essere interpretata
+
+% 1 1 0 029f32e989a172561fedd3a0cc8c37e1
+
+@ 0 8 0 1c35111ade6d0e540886ffa134fe8116
++         Errore `↯/s.132.1`: _an ANSI escape code could not be handled because `reason`_, dove il
++         motivo è un `Pty.Error.Reason`. Sollevato da `Pty#consume` (e da `Pty.stream`) per una
++         sequenza di escape che non riconosce o i cui parametri non sono validi, così un test
++         scopre che un programma emette sequenze difettose, anziché un terminale reale che le
++         storpia in silenzio. La maggior parte dei difetti viene sollevata e la scansione
++         prosegue, quindi con una strategia cumulativa il resto dell'input viene
++         comunque interpretato; un parametro `SGR` non valido, un parametro non numerico o un
++         numero di colore fuori intervallo interrompono.
++     entry .Reason   il difetto in una sequenza di escape che un `Pty` non ha potuto interpretare
+
+% 1 1 0 19e149f83631454b048381349ca3bcd7
+
+@ 0 1 0 1b3fa9829eb6bccd111c77eb8c1db958
++           Ogni motivo porta il suo numero, il secondo codice dell'errore:
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 6 0 01424927abee49c2140071fde56a4a96
++           column  Caso
++           column  Codice
++           column  Messaggio
++           column  Nota
++           row  `BadSgrParameters(n)`  1  _`n` is not a valid SGR parameter sequence_  un parametro che l'emulatore non conosce; `n` è l'intera sequenza separata da `;`
++           row  `BadCsiParameter(n, command)`  2  _`n` is not a valid CSI parameter for the `command` command_  fuori intervallo per un comando come `ED` o `EL`
+
+% 0 1 0 00367a5c48c59fd51c00cf56323fc318
+
+@ 0 5 0 1ef1f2dc4508fa3b19cbddc29f1fa7fe
++           row  `BadColor(n)`  4  _`n` is not a valid color number_  un indice a 256 colori fuori da 0–255
++           row  `BadOscParameter(parameter)`  5  _`parameter` is not a recognized OSC parameter_  né un titolo, né un collegamento ipertestuale, né una delle notifiche della shell ignorate
++           row  `BadCsiCommand(param, char)`  6  _`char` (with parameter `param`) is not a valid CSI command_  un carattere finale che l'emulatore non implementa
++           row  `BadCsiEscape(char)`  7  _`char` is not valid in a CSI escape sequence_  un byte che non può comparire dentro una sequenza di controllo
++           row  `BadFeEscape(char)`  8  _`char` is not a valid Fe escape_  un `ESC` seguito da un carattere che non inizia alcuna sequenza nota
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 4 0 0aaf898f66ea89ed05e1d6e496810f48
++       entry .communicable   rende ogni motivo come un messaggio, come _x is not a valid Fe escape_
++       entry #number   il numero del motivo, la seconda parte del codice dell'errore
++     entry #reason   il `Pty.Error.Reason` che indica il difetto
++   entry .State   tutto ciò che un terminale contiene oltre allo schermo: cursore, stato salvato, modalità, titolo
+
+% 1 1 0 03df3ebe1c673ecb0303a03f255428f1
+
+@ 0 4 0 15f72d68e071b7291f6f558b16e7101c
++         Una case class delle impostazioni del terminale, aggiornata da `Pty#consume` insieme
++         allo schermo. Le posizioni sono indici di cella `Ordinal` nello schermo letto riga per
++         riga, quindi `cursor` per la colonna `x` e la riga `y` di un terminale largo `w` celle è
++         `y*w + x`; i limiti della regione di scorrimento sono ordinali di riga.
+
+% 2 1 0 108a881af57622391ba2503149479f13
+
+% 3 1 0 048a58373f6657220cd1501c09f03fed
+
+% 4 1 0 16ab275da436986f01d82eb6a5b6c103
+
+% 6 1 0 1a37dc04878a96a60333371358465e13
+
+% 0 1 0 104008882517ee4511364a4ea72c03d6
+
+% 0 1 0 0658854e4fa3d264173e3945ceb8b8d8
+
+% 0 1 0 0a52aab63b8213b603367772bf4920fb
+
+% 0 1 0 09a050c4effdfb38136e579e9b042d64
+
+% 1 1 0 1d68d20075ee2aa118fc4c7626182f1b
+
+@ 0 42 0 07ce7c179458221d0a319096ccd74ba6
++         Lo stato di un terminale nuovo ha il cursore a `Prim`, lo `Style` predefinito, il focus
++         attivo e ogni modalità disattiva; `Pty.apply` imposta `scrollBottom` all'ultima riga.
++     entry #cursor               la posizione del cursore, come indice di cella nello schermo letto riga per riga
++     entry #savedCursor          la posizione salvata da `CSI s` o `ESC 7`, ripristinata da `CSI u` o `ESC 8`
++     entry #savedStyle           lo stile salvato con il cursore da `ESC 7` (`DECSC`), ripristinato da `ESC 8`
++     entry #savedLink            il collegamento ipertestuale salvato con il cursore da `ESC 7` (`DECSC`), ripristinato da `ESC 8`
++     entry #style                lo stile che assumerà il prossimo carattere scritto, come lo hanno lasciato le sequenze `SGR`
++     entry #focusDetectionMode   se il programma ha chiesto di essere informato dei cambi di focus, con `CSI ? 1004 h`
++     entry #focus                se il terminale ha il focus, come impostato per ultimo da `CSI I` e `CSI O`
++     entry #bracketedPasteMode   se l'incolla delimitato è attivo, con `CSI ? 2004 h`
++     entry #hideCursor           se il programma ha nascosto il cursore, con `CSI ? 25 l` (`DECTCEM`)
++     entry #title                il titolo della finestra, come impostato per ultimo da `OSC 0` o `OSC 2`
++     entry #link                 il collegamento ipertestuale che porterà il prossimo carattere scritto, come impostato da `OSC 8`
++         Vuoto quando nessun collegamento è aperto: `OSC 8 ; ; url` ne apre uno, e un `OSC 8`
++         senza URL lo chiude. Ogni cella scritta mentre è aperto porta l'URL, letto con
++         `Screen#link`.
++     entry #scrollTop            la prima riga della regione di scorrimento, come impostata da `CSI r` (`DECSTBM`)
++     entry #scrollBottom         l'ultima riga della regione di scorrimento, come impostata da `CSI r` (`DECSTBM`)
++     entry #pendingWrap          se il cursore attende sull'ultima colonna, per andare a capo al carattere successivo
++     entry #mainScreen           lo schermo principale, messo da parte mentre è mostrato lo schermo alternativo, o `Unset`
++         Entrare nello schermo alternativo (`CSI ? 1049 h`, `? 1047 h` o `? 47 h`) memorizza qui lo
++         schermo principale e svuota la visualizzazione; uscirne ripristina lo schermo principale
++         com'era. La modalità 1049 salva e ripristina anche il cursore, in `#mainCursor`.
++     entry #mainCursor           il cursore dello schermo principale, salvato entrando nello schermo alternativo con la modalità 1049
++     entry #pending              una sequenza di escape incompleta alla fine dell'ultimo input, ripresa la volta successiva
++         L'output letto da un terminale arriva in chunk che possono terminare a metà di una
++         sequenza di escape; `Pty#consume` conserva qui la parte non finita e la antepone
++         all'input successivo, quindi lo schermo è lo stesso comunque si suddivida l'output.
++   entry #buffer   lo schermo: uno `Screen[Style]` di grafemi, stili e collegamenti ipertestuali, cella per cella
++       Si legge una cella con `char`, `grapheme`, `style` e `link`, ciascuno dei quali prende la
++       colonna e poi la riga come `Ordinal`, oppure tutto lo schermo con `render`. Il buffer è uno
++       `Screen` mutabile, condiviso con questo `Pty`: lo si legga, ma non si usino `set` o
++       `scroll` su di esso, altrimenti cambia anche il `Pty` che lo contiene.
++   entry #state    le impostazioni del terminale oltre allo schermo: un `Pty.State`
++   entry #output   il relay su cui il terminale mette le sue risposte alle interrogazioni del dispositivo
++       Una segnalazione della posizione del cursore (`CSI 6 n`) mette `ESC [ row ; column R`,
++       l'interrogazione degli attributi primari del dispositivo (`CSI c`) mette `ESC [ ? 1 ; 2 c`,
++       e quella secondaria (`CSI > c`) mette `ESC [ > 0 ; 0 ; 0 c`. Il relay è condiviso da ogni
++       stato derivato da uno stesso `Pty.apply`, quindi contiene tutte le risposte date finora. Lo
++       si legga come `#stream`, dopo averlo fermato con `stop()` se lo si vuole tutto in una volta.
++   entry #stream   le risposte del terminale alle interrogazioni del dispositivo, come stream pigro di testo
++       La vista di `#output` come `Chain[Text]`, che preleva le risposte man mano che viene
++       forzata. Per leggere tutte le risposte date finora, si fermi prima il relay, altrimenti la
++       catena attende altro:
+
+% 2 1 0 0a9627c4d71f10231c44f3485535d971
+
+% 3 1 0 116c8861eda148371400e17e4a207a83
+
+% 4 1 0 042a47e5fcb3e29d1816bac04b9b7307
+
+% 6 1 0 0ed02eb77d868fc01c89fc84a12c87f6
+
+% 0 1 0 133f80053d32c87e16180e71218a534a
+
+% 0 1 0 12b37fe324dcb3b81c7c8e5b5bb9a1e5
+
+% 0 1 0 02547fcfdca56a430e97c95eb635b256
+
+% 1 1 0 1b8f698042a6a7291b0ec8aea648244c
+
+@ 0 11 0 0c01770181cdc93f04975d76a2a72c85
++   entry #title    il titolo della finestra impostato dal programma, con `OSC 0` o `OSC 2`, o vuoto
++       Sono accettati entrambi i terminatori — il carattere campanello e il terminatore di
++       stringa `ESC \` — poiché i programmi li usano entrambi.
++   entry #cursor   la posizione del cursore, come indice di cella nello schermo letto riga per riga
++       Per un terminale largo `w` celle, il cursore alla colonna `x` e alla riga `y` è `y*w + x`,
++       come `Ordinal`.
++   entry #cursorVisible   se il cursore è mostrato: false dopo `CSI ? 25 l`, di nuovo true dopo `CSI ? 25 h`
++   entry #consume   interpreta testo e sequenze di escape, dando lo stato successivo del terminale
++       `pty.consume(text)` scrive ogni grafema alla posizione del cursore ed esegue ogni sequenza
++       di escape, restituendo un nuovo `Pty`; il ricevente non cambia. Richiede una
++       `Tactic[Pty.Error]`, sollevata per una sequenza che non può essere interpretata.
+
+% 2 1 0 1d253e2c4eb2217f052abaa5cc281c47
+
+% 3 1 0 014a064733028a4010ddc6697da74144
+
+% 4 1 0 0860e65de1c6704602098370d2e14791
+
+% 6 1 0 180983073619fb1a01ca99ccee4e5956
+
+% 0 1 0 10262ef16adbefb518e1ed61abb81404
+
+% 0 1 0 1b1fdff82f5ac32e07ab654ae55cb5c7
+
+% 0 1 0 11580f37eed22f610064131fb9f70731
+
+% 0 1 0 02f57f974541d0180f8445af5e46a3b1
+
+% 1 1 0 1f8cd8a2d629458a05ead0b3fe327f38
+
+@ 0 5 0 0037a330176605e11a694aadce5e0546
++       I caratteri di controllo si comportano come su un terminale: il backspace sposta a
++       sinistra senza cancellare, il tab avanza alla successiva tabulazione ogni otto colonne, il
++       ritorno carrello va alla prima colonna, e line feed e form feed scendono di una riga,
++       facendo scorrere la regione quando sono in fondo. Gli altri controlli C0 vengono ignorati.
++       `ESC c` (`RIS`) riporta il terminale al suo stato iniziale, così un solo valore `Pty` può
++       iniziare uno scenario nuovo.
+
+@ 0 1 0 0b7503f64657e29f11c4ec959193c727
++ entry .Screen   una griglia di celle, ciascuna un grafema con uno stile e un collegamento ipertestuale, leggibile cella per cella
+
+% 1 1 0 0fbddc860584195b18da99c44e0c75b2
+
+@ 0 6 0 1394f8fe65c1a66406a5b315af804a5d
++       Uno `Screen[styling]` è il buffer dietro un `Pty` (come `Screen[Style]`) e dietro le
++       interfacce utente testuali di ultimatum (con le parole di stile di escapade). `Screen` è
++       dichiarato in `yossarian.internal` ed esportato qui. Ogni cella contiene un cluster di
++       grafemi: un carattere ASCII, una sequenza combinante, un'emoji, o la metà iniziale di un
++       carattere largo, la cui cella finale contiene il grafema vuoto (`isWideTrailing`). Le
++       celle si indirizzano per colonna e poi per riga, entrambe `Ordinal`.
+
+% 2 1 0 1f6901124fe8bbe61715aaca911aeb9b
+
+% 3 1 0 18a2101a98c18c0609fbd23d6923fbe6
+
+% 4 1 0 060b68c1198e96200f6e67b08087b9b4
+
+% 6 1 0 125badaa61e159870b19fb6318cb3c6f
+
+% 0 1 0 0f142b19a8ec70cf0823634085b5d1ba
+
+% 0 1 0 0e75efbcc67b578703f7905ab2963663
+
+% 0 1 0 0237bb7147ee0aa50cabece1c0d030ac
+
+% 0 1 0 1f7ced5efdbaa5d50291db4ea6da2dc2
+
+% 0 1 0 1c3d217be06730cf15e9995281f4ab66
+
+% 1 1 0 175099cfe0b1ccee010ac24fe81c8a57
+
+@ 0 2 0 05fcba9999ca0f391a0e885f5d3e98da
++       A differenza di un `Pty`, uno `Screen` è mutabile: `set` e `scroll` lo cambiano sul posto,
++       e `copy` ne crea uno indipendente.
+
+% 1 1 0 10b1619b8f862f991e82103b3c7ccc65
+
+% 1 1 0 028a6347af47f6b50726212a5e10673f
+
+@ 0 1 0 109e5eb2d3eb3d0718073f37bf283a59
++ entry .Style   l'aspetto di una cella: otto flag di attributo, due colori, e se ciascun colore è il predefinito
+
+% 1 1 0 11259ea9084ebc7709dcf9e9e7add467
+
+@ 0 5 0 0c46cdfe19ce10cd14a9f7dfaa407fe2
++       `Style` è un tipo opaco su un `Long`, dichiarato in `yossarian.internal` ed esportato qui,
++       letto con metodi di estensione: `bold`, `faint`, `italic`, `underline`, `blink`,
++       `reverse`, `conceal` e `strike` sono le flag, `foreground` e `background` i colori come
++       `Chroma`, e `defaultForeground` e `defaultBackground` dicono se ciascun colore è il
++       predefinito del terminale stesso anziché uno scelto dall'output.
+
+@ 0 5 0 1118e44e001040c60b671a2485f66f19
++       La distinzione conta per un renderer. Una cella nuova, e una scritta dopo `SGR 0`, `SGR 39`
++       o `SGR 49`, ha i colori predefiniti: il `Chroma` è solo ciò che questo emulatore mostra per
++       essi (bianco su nero), e un renderer che disegna lo schermo nel proprio tema può usare i
++       propri. Qualsiasi colore impostato esplicitamente dall'output azzera la flag, anche se è
++       uguale al chroma predefinito.
+
+% 2 1 0 053b9a6b81059775030faa6728bdab85
+
+% 3 1 0 1ab9dac2ec0b294a0789714ebd5a1188
+
+@ 0 1 0 1318e27c0cbbfe8109db60be28c36281
++         label Una cella nuova: entrambi i colori sono i predefiniti
+
+% 1 1 0 0c9151406871db7e0e49c98554709f5b
+
+% 2 1 0 1e89e4bc4370448011fce080b348bda0
+
+% 3 1 0 0463f923f01aa62c1cb487ef37108aed
+
+% 5 1 0 0c1f213a7e4bd17311eb14041744d803
+
+% 0 1 0 11eba432a40924ad02a28c9e93f3f642
+
+% 1 1 0 06cf806996ebd7ad0646275b2ec70ee7
+
+% 1 1 0 1d16dbde6b8075481a17f2c292553b35
+
+@ 0 1 0 117c7cca5be37dd309a1519ec609aefc
++         label SGR 31 imposta un primo piano rosso: solo lo sfondo è ancora il predefinito
+
+% 1 1 0 181f00514385caf604bbdc039767532a
+
+% 2 1 0 106db708a80f6d1e0fdd45efe83e5beb
+
+% 3 1 0 141bd16c021eeb1c08a481621be5c389
+
+% 5 1 0 08e84f9e80e58d8808550298e07659e3
+
+% 0 1 0 0bfec68f6e1db62b1b7996d464893edb
+
+% 0 1 0 10380c502a94fec40f2b56713a5c3abd
+
+% 0 1 0 0b31bbd480869f171bb821b4e00b9d49
+
+% 1 1 0 167d63b684299de616970d53f9aed742
+
+@ 0 1 0 030ec1c5a2c88c0301073cd3db07adb7
++         label SGR 39 ripristina il primo piano predefinito
+
+% 1 1 0 17fb5f69960dbbe7000063797f79b816
+
+% 2 1 0 0638e43e43d9c9260b39c00624ee8504
+
+% 3 1 0 0717692cd763bb311d653c6bd713df3d
+
+% 5 1 0 1d631178ea4dd9d20b4bf41c5f9e2b59
+
+% 0 1 0 1cbc0b3209ca5eaa09ee4e4d27e01810
+
+% 1 1 0 1b616dc1ed71598f092e1a10f1f830bb
+
+% 1 1 0 14a009634a3588bb1b451fee212e7e2f
+
+% 2 1 0 05b68d1eda152d7501ad753915abcce1
+
+@ 0 5 0 150194ef63fc7e19069ece57de37f2c6
++       `SGR 30`–`37` e `40`–`47` scelgono dalla tavolozza a sedici colori, `90`–`97` e
++       `100`–`107` dalla sua metà brillante, `38;5;n` e `48;5;n` dalla tavolozza a 256 colori (i
++       sedici, un cubo 6×6×6 e una rampa di grigi in 24 passi), e `38;2;r;g;b` e `48;2;r;g;b`
++       qualsiasi colore a 24 bit. Un cambio di stile influisce sulle celle scritte dopo, non su
++       quelle già sullo schermo, come su un terminale.
+
+@ 0 2 0 01f8c27b291a52a01bf99b04cf1e0fe7
++       Uno stile si ispeziona in forma compatta come le sue flag (ogni nome preceduto da `!` quando
++       è disattiva) e i suoi due colori, come `[Bo !F !I … DF DB … …]`.
+
+% 1 1 0 07df072df7e0d8090904a31398fa2067
+
+% 1 1 0 062afa7bcf7a9d77073fe2da263417e4
+
+@ 0 1 0 15acb4d4bc40c88b19a9252aa443208a
++ entry .internal   le dichiarazioni di `Screen` e `Style`, e le estensioni che leggono uno stile
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 04358a69dc939fee09b0771df7921cda
++       Non è da usare direttamente come prefisso: `Screen` e `Style` sono esportati da qui nel
++       package `yossarian`, e le estensioni di stile (`bold`, `foreground`, …) si applicano a
++       qualsiasi `Style` senza import.
++   entry .Style   l'aspetto di una cella, come `Long` opaco; si veda `yossarian.Style`
+
+% 1 1 0 0f69ab3fb02d166a04bd825f1bb7e322
+
+@ 0 4 0 1c31a34935e14faa095036e94ca28108
++         Il tipo opaco `Style = Long`. La sua pagina sotto il package `yossarian` ne dà la
++         descrizione completa; i suoi membri, che codificano e decodificano i bit, sono qui.
++     entry .apply   lo stile predefinito: bianco su nero, con entrambi i colori marcati come predefiniti
++     entry .Bits   legge e scrive un campo di colore a 24 bit di uno stile
+
+% 1 1 0 10cf5e8dd54e68b7035cd4693badcc1e
+
+@ 0 9 0 1ad9bcfe77725dc5188faaca2da9a064
++           Un colore occupa 24 bit del `Long` a un certo offset; `Foreground` e `Background` sono
++           le due istanze.
++       entry #apply    il colore memorizzato nel campo di uno stile, come `Chroma`
++       entry #update   una copia di uno stile con il campo impostato a un colore: `Style.Foreground(style) = chroma`
++     entry .Foreground   il campo del colore di primo piano di uno stile
++     entry .Background   il campo del colore di sfondo di uno stile
++     entry .chromaInspectable   rende un `Chroma` tramite il suo intero impacchettato, per l'ispezione di uno stile
++     entry .inspectable   rende uno stile come le sue flag e i suoi colori: `[Bo !F … DF DB fg bg]`
++     entry .Bit   una flag di uno stile: un attributo, o se un colore è il predefinito del terminale
+
+% 1 1 0 0cd55a5cd81eda5a0e84592f0a4c1c2b
+
+@ 0 9 0 10a19b0981c95ee51facf2f5dad861b3
++           Le flag di attributo `Bold`, `Faint`, `Italic`, `Strike`, `Blink`, `Underline`,
++           `Conceal` e `Reverse`, e `DefaultForeground` e `DefaultBackground`, che sono impostate
++           finché un colore è il predefinito del terminale (a un reset, e dopo `SGR 39` o `49`) e
++           azzerate da qualsiasi colore impostato dall'output. Una flag legge uno stile con
++           `Bit.Bold(style)` e ne scrive uno con `Bit.Bold(style) = true`.
++       entry #bit      la posizione del bit della flag nel `Long` dello stile
++       entry #apply    se la flag è impostata in uno stile
++       entry #update   una copia di uno stile con la flag impostata o azzerata
++   entry .Screen   una griglia di celle con stile; si veda `yossarian.Screen`
+
+% 1 1 0 0bfc62a1819f13660a01fea67a78d9f7
+
+@ 0 26 0 14379de4f99b7def18e4d0c8d9abbe85
++         La classe `Screen[styling]`, generica nello stile contenuto da ogni cella. La sua pagina
++         sotto il package `yossarian` ne dà la descrizione completa; i suoi membri sono qui.
++     entry .apply   uno schermo vuoto di una data larghezza e altezza, con uno stile vuoto indicato, o lo `Style` predefinito
++         `Screen(width, height, blank)` riempie ogni cella con uno spazio nello stile `blank`, che
++         è anche lo stile che assume una cella liberata dallo scorrimento; richiede un `ClassTag`
++         per il tipo di stile. `Screen(width, height)` è lo schermo dell'emulatore di terminale,
++         uno `Screen[Style]` svuotato allo `Style` predefinito.
++     entry #width     il numero di colonne
++     entry #capacity  il numero di celle, larghezza per altezza
++     entry #height    il numero di righe
++     entry #offset    l'indice di una cella, per colonna e riga, nello schermo letto riga per riga
++     entry #style     lo stile della cella a una data colonna e riga
++     entry #link      il collegamento ipertestuale della cella a una data colonna e riga, o un testo vuoto se non ne ha
++     entry #grapheme  il grafema nella cella a una data colonna e riga, vuoto per la metà finale di uno largo
++     entry #char      il primo carattere della cella a una data colonna e riga, o uno spazio per la metà finale di un grafema largo
++         Una comodità per fare asserzioni su testo stretto: una cella che contiene una sequenza
++         combinante o un'emoji dà solo il suo primo `Char`, quindi per quelle si usi `#grapheme`.
++     entry #isWideTrailing   se la cella è la metà finale di un grafema largo contenuto nella cella alla sua sinistra
++     entry #line      tutto lo schermo come una sola riga, che condivide le celle di questo schermo
++     entry #render    il testo dello schermo, con le righe unite da newline e i grafemi larghi che compaiono una volta
++         Ogni riga viene resa per intero, spazi finali compresi, quindi una riga di dieci colonne
++         che contiene `hi` si rende come `hi` seguito da otto spazi.
++     entry #find      le celle in cui un testo compare per la prima volta sullo schermo, come schermo di una riga, o `Unset`
++         Cerca nello schermo letto come una sola riga, quindi una corrispondenza può proseguire
++         dalla fine di una riga alla successiva. Il risultato contiene copie degli stili e dei
++         collegamenti delle celle corrispondenti, così un test può trovare una parola e
++         verificare come è stata disegnata:
+
+% 2 1 0 180441d868421ec10add35d492733d58
+
+% 3 1 0 181a25e21cad5f3109fd0e45590edca2
+
+% 4 1 0 10a0bc6a2ca739df070349b96a0a06dd
+
+% 6 1 0 051696624edea30b08946a11dc5f49e5
+
+% 0 1 0 198e05741935908b15bb04a3bb4841d7
+
+% 0 1 0 1fa95221e0ca385f126e1d84ea63d9f6
+
+% 1 1 0 06ee1cc9b6a7d3581602446faa1e578e
+
+@ 0 28 0 14e87e15fe25692a19eb1a94a6be9f00
++     entry #styles    una copia congelata dello stile di ogni cella, letta riga per riga
++     entry #scroll    sposta le righe dello schermo, o di una regione, in alto di un numero di righe, o in basso se negativo
++         `scroll(n)` fa scorrere tutto lo schermo e `scroll(n, top, bottom)` le righe da `top` a
++         `bottom` incluse; le righe scoperte vengono riempite di celle vuote. Cambia lo schermo
++         sul posto. Le righe fatte uscire vengono scartate: non c'è cronologia di scorrimento.
++     entry #set       scrive un grafema, uno stile e un collegamento ipertestuale in una cella, sul posto
++         Indirizzata per colonna e riga, o per indice di cella; lo schermo viene cambiato sul
++         posto.
++     entry #copy      una copia indipendente dello schermo, su cui le scritture successive su uno dei due non influiscono
++   entry .bold                se uno stile è in grassetto, impostato da `SGR 1` e azzerato da `SGR 21` o `22`
++   entry .italic              se uno stile è in corsivo, impostato da `SGR 3` e azzerato da `SGR 23`
++   entry .blink               se uno stile lampeggia, impostato da `SGR 5` e azzerato da `SGR 25`
++   entry .faint               se uno stile è attenuato, impostato da `SGR 2` e azzerato da `SGR 22`
++   entry .conceal             se uno stile è nascosto, impostato da `SGR 8` e azzerato da `SGR 28`
++   entry .strike              se uno stile è barrato, impostato da `SGR 9` e azzerato da `SGR 29`
++   entry .underline           se uno stile è sottolineato, impostato da `SGR 4` e azzerato da `SGR 24`
++   entry .reverse             se uno stile scambia i suoi colori, impostato da `SGR 7` e azzerato da `SGR 27`
++   entry .foreground          il colore di primo piano di uno stile, come `Chroma`
++       Quando `defaultForeground` è true, è solo il colore che questo emulatore mostra per il
++       predefinito del terminale (bianco), e un renderer può sostituirlo con il proprio.
++   entry .background          il colore di sfondo di uno stile, come `Chroma`
++       Quando `defaultBackground` è true, è solo il colore che questo emulatore mostra per il
++       predefinito del terminale (nero), e un renderer può sostituirlo con il proprio.
++   entry .defaultForeground   se il primo piano di uno stile è il predefinito del terminale anziché un colore impostato dall'output
++       True per una cella nuova e dopo `SGR 0` o `SGR 39`; false dopo che è stato impostato un
++       qualsiasi colore di primo piano, anche uguale al chroma del predefinito.
++   entry .defaultBackground   se lo sfondo di uno stile è il predefinito del terminale anziché un colore impostato dall'output
++       True per una cella nuova e dopo `SGR 0` o `SGR 49`; false dopo che è stato impostato un
++       qualsiasi colore di sfondo, anche uguale al chroma del predefinito.

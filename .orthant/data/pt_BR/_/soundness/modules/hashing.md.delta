@@ -1,0 +1,432 @@
+orthant 2 language
+
+% 0 1 0 15e4639548c1e39e040f3c52d7d4f3f1
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 4 0 14952c14c6b34fa202c673f6c07ba1cb
++ Um [hash](https://en.wikipedia.org/wiki/Hash_function) reduz dados de qualquer tamanho a uma
++ impressão digital curta de comprimento fixo. O digest de qualquer valor pode ser calculado, seja
++ uma case class, uma coleção ou um stream de bytes, com o algoritmo nomeado como um tipo:
++ `Sha2[256]`, `Sha1`, `Md5` ou `Blake3`.
+
+@ 0 4 0 18d49b96cb5f9ec402d2107ce6e7ea9b
++ Tudo o que descreve como alimentar um hash com seus bytes pode ser digerido. Uma case class faz
++ isso automaticamente, por [derivação] a partir de seus campos, de modo que calcular o
++ hash de um valor estruturado não exige serialização manual. Um digest é um valor, e seus bytes
++ são escritos em hexadecimal ou em Base64 pela mesma [codificação de base](base-encoding.md) usada
++ em todos os outros lugares.
+
+@ 0 4 0 05ac4cc5582dfe7111b0d2da9d8d9e45
++ Os checksums `Crc32`, `Crc64` e `Adler32` são calculados exatamente pela mesma API. Os algoritmos
++ sabidamente fracos, MD5 e SHA-1, só podem ser usados onde seu uso é explicitamente permitido. O
++ mesmo vale para os checksums, que não são hashes fracos, mas sim nem são hashes: um checksum
++ detecta corrupção acidental, e nada mais.
+
+@ 0 1 0 011d9039d8f4233409ee291f6b0b5d15
++ ### Sobre hashing
+
+@ 0 2 0 0a6b87bcdbb2a0cb1d996afd94230b6f
++ A API de hashing usual recebe um array de bytes e um algoritmo nomeado por uma string, e devolve
++ outro array de bytes:
+
+@ 0 4 0 0763bda0b6aec4f706ccb1478b15b217
++ - O algoritmo não é verificado, então um erro de digitação é uma falha em [tempo de execução].
++ - A entrada precisa ser serializada em bytes à mão antes do hash.
++ - A saída precisa ser escrita como texto à mão depois.
++ - Nada desencoraja recorrer a um algoritmo quebrado.
+
+@ 0 5 0 1cf2c38f2f97beff10c745d2efea9fdd
++ Aqui cada um desses pontos é corrigido. O algoritmo é um tipo, verificado onde é usado, de modo
++ que um digest de um algoritmo não pode ser confundido com o de outro, o que é
++ [segurança por construção](../../philosophy/safety-by-construction.md). Qualquer valor com uma
++ instância de `Digestible` tem seu hash calculado diretamente. O resultado é escrito pelas
++ codificações de base. E um algoritmo fraco fica atrás de uma permissão à qual o programa precisa
++ aderir.
+
+@ 0 2 0 10d0626d591a5cf912b908334bfbb6d8
++ Tudo vem do pacote `soundness`. Um provedor de algoritmos de hash e um alfabeto estão no escopo,
++ e o último import permite que os exemplos imprimam seus resultados:
+
+% 2 1 0 0b80a9d382cbc149068a1aa3937298ec
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0b21de5890a84d8d05926f25583daec4
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 00059dbd5e037a2e1eaf493b0320ab5c
++ ### Calculando o hash de um valor
+
+@ 0 1 0 0e1992f9ef1a482d04d49ed93f39d066
++ `digest` calcula o digest de um valor, em um algoritmo nomeado, e `serialize` o escreve:
+
+% 2 1 0 1b35dfe94df472121e14702bbea1ee45
+
+% 3 1 0 05293c941d2ffbe1162d85acd87ef5e0
+
+% 4 1 0 06b7ad6064b73d9f1002923050aaa311
+
+% 0 1 0 08a6f7a8f5abafbb13c76a8ba48d7dbf
+
+% 1 1 0 1ef831a91c8e0349028d49cb877fcf11
+
+@ 0 2 0 19634f0d4454779c09618ccd8d5363af
++ O provedor no escopo fornece os algoritmos. Estes são os algoritmos, a autorização de que cada um
++ precisa e os provedores que oferecem cada um na JVM:
+
+% 2 1 0 0a60614d140f4c5c145160faecc9969d
+
+@ 0 4 0 0cb062054805e67f0f273e63873d316f
++ column  Algoritmo
++ column  Categoria
++ column  Autorização
++ column  Provedores
+
+% 0 1 0 10fe7f69a46f33c405cbaa413f2c47cd
+
+@ 0 5 0 061f4bd5635092070418c942f2639b64
++ row  `Sha2[224]`, `Sha2[256]`, `Sha2[384]`, `Sha2[512]`  hash  nenhuma  `javaBaseProvider`, `soundnessProvider`  224–512
++ row  `Blake3`  hash  nenhuma  `soundnessProvider`  256
++ row  `Sha1`  hash fraco  `permitDeprecatedCrypto`  `javaBaseProvider`, `soundnessProvider`  160
++ row  `Md5`  hash fraco  `permitDisallowedCrypto`  `javaBaseProvider`, `soundnessProvider`  128
++ row  `Murmur3`  hash rápido  `permitNonCryptographicHashes`  `soundnessProvider`  128
+
+% 0 1 0 11563c0c61f3fd4e1c874eb01e21f2ca
+
+% 0 1 0 1c6bd94f72906c1f1b36baf80ee3411d
+
+% 0 1 0 05c6b9c442f9d37212ff6c6d3950df4d
+
+% 1 1 0 04869358e191f7bb18c85aea1ee80ac5
+
+@ 0 1 0 1faa33dfae5768e41e5a39bfa2161fa8
++ As autorizações são importadas do pacote `cryptoPermits`.
+
+@ 0 5 0 117e9111fd9ba0df1640158f21aa2a49
++ `javaBaseProvider` usa o `MessageDigest` do JDK onde ele existe. Fora da JVM ele não existe, e o
++ mesmo import então seleciona implementações em Scala puro de MD5, SHA-1, SHA-2 e CRC-32, que são
++ validadas byte a byte contra as do JDK. O código que calcula hashes, portanto, é igual e produz os
++ mesmos digests na JVM, em um navegador e dentro de um componente WebAssembly.
+
+@ 0 1 0 1e7eb70eb97d34861988d751a4909248
++ ### O algoritmo no tipo
+
+@ 0 3 0 0f01e536c160957e0fcdaee278cd4de8
++ Um digest tem seu algoritmo no tipo, como em `Digest in Sha2[256]`. Onde o tipo esperado já diz
++ qual algoritmo se quer, `digest` não precisa nomeá-lo. Um campo declarado com o tipo fixa o que
++ `digest` calcula:
+
+% 2 1 0 0c90edb7390e936e13e7fac9d1e3cb52
+
+% 0 1 0 0db6db932cfdec6015d8519234ec30c2
+
+% 0 1 0 090f44818e2910fc020cb51e404d9cbe
+
+% 0 1 0 17260d0c69e2727f07aa834048364f38
+
+% 1 1 0 044c5ccab1df04bf14dcbdaaaef02b28
+
+% 3 1 0 1d9fea0ce4aaa7651bf7ce7adf7af9b4
+
+% 4 1 0 129643664d63496b0a79665660723633
+
+% 5 1 0 1731960ef5552ee8158c068d011fd6c3
+
+% 0 1 0 04ed00f2458a961607476aa76e160b6c
+
+% 1 1 0 04b34241adb1477815ad12c202ed6d3c
+
+@ 0 3 0 08a5035380e864a10d50d1f4f133ecb1
++ Esse é o padrão em toda parte. Digests, HMACs, chaves e assinaturas são todos bytes com um
++ parâmetro de tipo para o algoritmo que os produziu. Um valor de um algoritmo não pode ser passado
++ onde se espera outro, e o algoritmo raramente precisa ser escrito duas vezes:
+
+% 2 1 0 09147aa6117b9f540a6ed985e4bfc481
+
+% 3 1 0 15056d948c240faf18412bab5aed0b78
+
+% 4 1 0 0782695a4767ba6f17d9fb930be54123
+
+% 5 1 0 04f5544362d8630903446ee40cf91a5b
+
+% 0 1 0 19eabbbed274830c1e8305e72418c21d
+
+% 1 1 0 1d6c37df0fd5b96b0d0a536a320be52b
+
+@ 0 1 0 18057ef8b15e696d1280c5570e363d9d
++ [Criptografia](cryptography.md) trata de HMACs, chaves e assinaturas.
+
+@ 0 1 0 1a53c93c9974d354007b02e0221f0726
++ ### Calculando o hash dos seus próprios tipos
+
+@ 0 2 0 01cbb29d3d86ae9003913fd70788fdac
++ Qualquer valor que possa ser reduzido a bytes é digerível. Uma case class deriva isso de seus
++ campos, de modo que o hash de um valor estruturado é calculado como um todo:
+
+% 2 1 0 0e179d9bf265535400a95a388fe8a091
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 1 1 0 1ab91711beb1ccc002d59cea420ff508
+
+% 3 1 0 1b326a3996312c311aa56bcb72e25bdb
+
+% 4 1 0 041fa391dc5f00210018a05510abd773
+
+% 5 1 0 072543e0666e9e350ad12485286ff453
+
+% 0 1 0 0d32f2081c79269b08a9d0588216a9c7
+
+% 0 1 0 16f57d632bbf9b141bbdad27b7b29663
+
+% 1 1 0 1dbdee16dd41b3df1e3cd9cad8c763c0
+
+@ 0 2 0 1c10252842e178ad056604035c0abbda
++ Um digest é ele próprio digerível, de modo que um hash pode ser combinado em uma estrutura maior e
++ ter seu hash calculado de novo.
+
+@ 0 1 0 04fa6e4c8611f9501ecccfd354d7c079
++ ### Calculando o hash de um stream
+
+@ 0 4 0 157931921f633ae60071b8274fa771cd
++ Dados grandes demais para serem mantidos têm seu hash calculado à medida que passam. O digest se
++ acumula sobre chunks sucessivos e leva blocos parciais através das fronteiras entre eles. O
++ resultado é, portanto, idêntico quaisquer que sejam os tamanhos em que os chunks cheguem, e é o
++ digest do texto inteiro acima:
+
+% 2 1 0 1d27f76ad6a0ff3c0f63d7932dcf787a
+
+% 0 1 0 0897db6080f6cf731dbf4b2174711cdf
+
+% 1 1 0 0ef672bd515a114007173140441eec3f
+
+% 3 1 0 1a4f3bfff85c34f2067463f122bda895
+
+% 4 1 0 05eea5147d859c4e038a5e1c20dc0865
+
+% 5 1 0 05abc068e077b4451d19ec4acb2777e6
+
+% 0 1 0 14a4985c0b4e90e5006ed8243b2c3aab
+
+% 1 1 0 1b5ed090ac73324819efa3397fb2b90d
+
+@ 0 3 0 1ca3a3cd78a37a69025eb559bc2bee3f
++ É isso que torna um digest calculável sobre um [stream](streams.md) com memória limitada. É por
++ isso que o hashing se compõe com [compressão](compression.md) e
++ [cifragem](cryptography.md) em uma única pipeline, sem que os dados sejam mantidos entre elas.
+
+@ 0 4 0 19157a4ad8b9429119c3ada92e2b3fa3
++ `checksum` digere o que está *por trás* de um valor: os bytes de um stream e, para um caminho do
++ [sistema de arquivos](filesystem.md), o conteúdo de um arquivo ou de um diretório. O checksum de
++ um diretório cobre seus arquivos comuns, na ordem de seus caminhos relativos a ele, e cada um
++ contribui com seu caminho relativo e seu conteúdo. Assim:
+
+@ 0 3 0 0df93e95261ea2ce04107f3b599d6a7d
++ - renomear, mover ou editar muda o checksum;
++ - dois diretórios que contêm os mesmos arquivos têm o mesmo checksum, onde quer que estejam;
++ - um diretório vazio também tem um checksum.
+
+@ 0 1 0 108561bf68d898140f87d8e587b67dcc
++ Essa é a identidade pela qual um build indexa seus caches:
+
+% 2 1 0 121229e22a6edff51d635681e81d7deb
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 16dc30250898bc2409d813344f20c8e0
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 15cca29ca309f5d3042daa91410e01ba
+
+% 0 1 0 1638390c160220060c5a503dfeb10856
+
+% 0 1 0 0b235343a7b14ae1162136fb1d457041
+
+% 1 1 0 0877e096a7d6dc2d081bebc6ff54eadc
+
+@ 0 1 0 1c6f132aea0085ca06792abdee9a023b
++ ### Renderizando um digest
+
+@ 0 2 0 13a25dd9d1d3409a1bafcb5b5dff6f49
++ Os bytes de um digest são escritos em qualquer codificação de base: hexadecimal para exibição, ou
++ Base64 onde precisam ser compactos:
+
+% 2 1 0 04297c48ec0a30571e71ceb86d1a7d8c
+
+% 3 1 0 1dc26f4c974ae7ff16170e4075ce356a
+
+% 4 1 0 056a81bbe517eb41017aab5ece17e011
+
+% 5 1 0 1592af61a99bcabe1cedf059b49d56e3
+
+% 0 1 0 05b1da089cc322f0121d2b13f85a919a
+
+% 0 1 0 0826585afb8117bb0371f858000d96e8
+
+% 1 1 0 068139a71d8dcfaf0714fe09521c0412
+
+@ 0 1 0 007803f5ef8e295d0925cd51465da111
++ ### Digests autodescritivos
+
+@ 0 5 0 0bcf3605c9dafc76134810b698d09aa2
++ Os bytes de um digest nada dizem sobre o algoritmo que os produziu. Um digest armazenado ou
++ enviado sozinho só pode ser verificado por algo que já saiba como ele foi feito. Um
++ [Multihash](https://multiformats.io/multihash/) prefixa o digest com um código para seu algoritmo
++ e seu comprimento, de modo que ele descreve a si mesmo. O armazenamento endereçado por conteúdo,
++ e os protocolos distribuídos construídos sobre ele, trocam multihashes:
+
+% 2 1 0 16d14fd118107e0d02a11c438e81268e
+
+% 3 1 0 05d235441be3f10a088c5ba0dd1927f8
+
+% 4 1 0 00c3475ef740692718ea72358ce369f8
+
+% 0 1 0 1ed6c81d3aa7a6d21833b244ee80ea6f
+
+% 1 1 0 1a1a3be10fa2aa2e02d0c03caa6c0c1c
+
+@ 0 3 0 19ac15dab91b06691596c9c6c5302ef1
++ Os dois bytes `12` e `20` dizem que segue um digest SHA-256 de trinta e dois bytes. O código do
++ algoritmo vem do tipo do digest, de modo que um multihash não pode alegar um algoritmo diferente
++ daquele que o calculou.
+
+@ 0 1 0 06795db86f0750de1579506f6f70a11f
++ ### Algoritmos fracos
+
+@ 0 2 0 139497ee199d2026125970e83dc6ce4e
++ MD5 e SHA-1 estão quebrados para fins de segurança e permanecem apenas por compatibilidade. Sem
++ uma permissão no escopo, nenhum dos dois compila:
+
+% 2 1 0 0e05009dd755e48a1e0000d83de7800d
+
+% 3 1 0 135109a58e1d3f8907b4d632aace2740
+
+% 4 1 0 01b49bb7bab10424180d9df21ff837f4
+
+% 5 1 0 0b6076da5888fee018c5e40b33e651a6
+
+% 0 1 0 159d38339884d7a102a739d5cdb038a7
+
+% 1 1 0 15e13858de4794f212bf67e8359827b8
+
+@ 0 1 0 1cb8ed3d6c7ac8e3151eb79503f1d1e5
++ Importar a permissão torna a escolha visível e deliberada:
+
+% 2 1 0 047ec82c2ec2b21c0ca4da38e707f57f
+
+% 3 1 0 1b48ab52a48528f7170da182d491bd80
+
+% 4 1 0 1c33ec9ec4b136dd1455f2c500c0f0de
+
+% 5 1 0 15a94a88d9fa279f0eb03adda8d7de12
+
+% 0 1 0 0a891a7506f473ff0f4f5e4e168f2ac1
+
+% 0 1 0 17cbf9395ac8d81f062726bb951d99b9
+
+% 1 1 0 0758cd5d5e17299c07e00d085ffb2823
+
+@ 0 1 0 03721ecf103c152f173c948ffc24d0db
++ Os algoritmos fortes não precisam de permissão.
+
+% 0 1 0 0c578595c9edc84f059f74c44e9f7b88
+
+@ 0 3 0 14d9894022c89c7e0e624a30abef91ad
++ `Crc32`, `Crc64` e `Adler32` não são hashes, e sim checksums. Eles detectam corrupção acidental e
++ não defendem contra nada. Ficam atrás de uma autorização própria, que admite apenas que não se
++ está defendendo contra nenhum adversário:
+
+% 2 1 0 10c65cad82b9b00d173f3181f9d26eff
+
+% 0 1 0 0e1affdd8762138d14054d267c5066b2
+
+% 1 1 0 11eee7a5cd049a13104bbf9b4dbcf38b
+
+% 3 1 0 0d3f8cd0cf509ab51f8a4a667fe5c69c
+
+% 4 1 0 0db860accc10e28b17f08bd31bdb92ad
+
+% 5 1 0 11a68be4e46004e613218b40a519c7d1
+
+% 0 1 0 17b9a0adf3d227d204154b0cd7d0eea4
+
+% 1 1 0 1960255c26787d9c12fdd2505a7c094b
+
+@ 0 2 0 06e24b0efbadf4eb14fb142eeb763743
++ Uma origem de bytes, como um arquivo ou um download, tem seu checksum calculado sem ser mantida em
++ memória, digerindo seu stream à medida que ele flui, exatamente como `checksum` fez acima.
+
+@ 0 1 0 0ea19f77d3e36b38190baaaa6d101f58
++ ### Hashing rápido
+
+@ 0 5 0 17175c490b955c990b436f7895afbc73
++ `Murmur3` é o MurmurHash3 em sua forma de 128 bits. Não é um checksum, mas também não é
++ criptográfico. É um hash feito para tabelas de hash, [filtros de Bloom](bloom-filters.md) e
++ sharding, onde a entrada não é adversarial e as rodadas de um digest criptográfico seriam várias
++ vezes o trabalho sem benefício algum. Fica atrás da mesma autorização que os checksums, e sua
++ saída é byte a byte a que o `murmur3_128()` do Guava produz:
+
+% 2 1 0 1a569264dcdd63170e3e7a80a7ce35fd
+
+% 3 1 0 133ee93e3e417fbe15344558a154e6e0
+
+% 4 1 0 0d0e7fabb3f13112011963330646af96
+
+% 5 1 0 07eedef8b02f74420920564cd61dbc88
+
+% 0 1 0 077d579a30a9106e126e400de2dad2d9
+
+% 0 1 0 1a434c9963836f390e07bb803fa2e716
+
+% 1 1 0 1b5c9cea17c37cf91c5df11660cfef86
+
+% 0 1 0 11fb4a7b5d9b2ee802bd9a27a07cb1e1
+
+@ 0 2 0 1d3d8f926c47313e1912f569edd20957
++ `Blake3` é implementado em Scala puro, por `soundnessProvider`, e oferece os três modos do
++ algoritmo:
+
+% 2 1 0 18d59ede3b95d132174508c78b6b6826
+
+@ 0 6 0 021526f533a4198010b1b050bddca364
++ column  Modo
++ column  Entrada
++ column  Uso
++ row  hash  os dados  um digest comum
++ row  hash com chave  uma chave e os dados  autenticação de mensagens
++ row  derivação de chaves  uma string de contexto e material de chave  derivar chaves
+
+% 1 1 0 04658d52f0bbd7a01e6feb0d266335cd
+
+@ 0 2 0 1c7b27457a701ace1751f2091de68b38
++ Os três são verificados contra os dados de teste oficiais, em todo comprimento de entrada que
++ esses dados cobrem, de modo que a implementação é verificada, e não apenas testada quanto à
++ consistência consigo mesma.
+
+@ 0 2 0 112277702b3a19d50926e89deb6e61b9
++ Sua saída é extensível. Um digest BLAKE3 pode ser tomado em qualquer comprimento, não só em 256
++ bits, e é isso que o torna utilizável para derivar chaves e também para calcular hashes.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 1 0 088c2c1c35ab43cd0f6b3b05c94267cb
++ - [UUIDs](uuid.md), [empacotamento](packaging.md) e [contêineres](docker.md) identificam valores por seus digests.

@@ -1,0 +1,459 @@
+orthant 2 language
+
+% 0 1 0 1630e7091312466c0f737431da6aa76f
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 2 0 1ec2d88ba0b2b414141a6c6cc07c9eda
++ [Protocol Buffers](https://protobuf.dev/) ist das Übertragungsformat von gRPC und eines großen
++ Teils der Welt der Services. Es ist kompakt, wird von einem Schema gesteuert und ist durch
++ Googles proto3-Spezifikation definiert.
+
+@ 0 3 0 1a8cc37ba2a7714609282ee3bb3a82c8
++ Hier wird es direkt aus Scala-Typen kodiert und dekodiert. Eine Case-Klasse mit nummerierten
++ Feldern *ist* die Definition einer Nachricht. Es gibt keine `*.proto`-Datei zu schreiben und
++ keinen Codegenerator auszuführen, und die erzeugten Bytes stimmen mit dem überein, was `protoc`
++ für das entsprechende Schema erzeugen würde.
+
+@ 0 1 0 1d56f680be8752971b612723ca30f540
++ ### Über Protocol Buffers
+
+@ 0 5 0 1d459428aff297530553ad4220cfccf3
++ Der übliche Arbeitsablauf stellt das Schema außerhalb der Sprache. Nachrichten werden in
++ `*.proto`-Dateien definiert, ein Generator erzeugt Quellcode, und der Build hält beides im
++ Gleichschritt. Diese Umleitung erkauft Schemas, die zwischen Sprachen geteilt werden. Für ein
++ Scala-Programm, das mit einem Scala-Programm spricht, oder eines, das schlicht ein bestehendes
++ proto3-Protokoll sprechen muss, ist sie Maschinerie ohne Nutzen.
+
+@ 0 6 0 176c0611bce450690cad74019e56e0b5
++ Hier wird das Übertragungsformat aus der Case-Klasse selbst [abgeleitet][Ableitung].
++ Feldnummern sind das Einzige, was proto3 braucht und Scala nicht hat, und sie stammen aus einer
++ Annotation. Alles andere folgt aus den Typen der Felder: Varints, Zig-Zag-Kodierung,
++ längenbegrenzte Nachrichten und gepackte wiederholte Felder. Übertragungsformat und Code können
++ daher nicht voneinander abweichen; das ist [Korrektheit](../../philosophy/correctness.md) mit
++ einer einzigen Definition. Die Kodierung wird gegen die Ausgabe von `protoc` selbst geprüft.
+
+@ 0 2 0 15acddcd363eaa3f0f4197312adb9f3a
++ Alles stammt aus dem Paket `soundness`. Die Beispiele lösen jeden Fehler als Exception aus, und
++ die letzten beiden Importe lassen sie ihre Ergebnisse ausgeben, mit Bytes in hexadezimaler
++ Schreibweise:
+
+% 2 1 0 1d8fb0479565ac840034588c0ef79ff8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0b21de5890a84d8d05926f25583daec4
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0fea20cf03941bff0686881cc407e498
++ ### Nachrichten
+
+@ 0 1 0 138f5203fac4ebff0731e13241b0718e
++ Eine Nachricht ist eine Case-Klasse, deren Felder ihre proto3-Feldnummern tragen:
+
+% 2 1 0 102a04dff5cd3a850bfd1f0255984095
+
+% 0 1 0 09c425e64775366b03effcce4077ce26
+
+% 1 1 0 1544ee30e73ab20d0a1862b76e50816d
+
+@ 0 2 0 15cc21d570dbcba9120e0782ff1a3e78
++ `in[Protobuf]` kodiert einen Wert als Nachricht, und `encode` liefert die Bytes der Nachricht.
++ `read[Person in Protobuf]` liest Bytes zurück in den Typ:
+
+% 2 1 0 0fb887a54f5479da133c0a8a6316d689
+
+% 0 1 0 1097122d5306045c01e925367c6b76d4
+
+% 1 1 0 197647e241e1126f02a7433d1ced1ce9
+
+% 3 1 0 087d1d64a6135c620d340dc267803220
+
+% 4 1 0 14589ce55d7ba3bb036e0d88184b5b80
+
+% 5 1 0 0bc0d086a53ea84c1f08d64ecf3f806c
+
+% 0 1 0 13423416dcdf23d6180ec02a126fafb0
+
+% 0 1 0 155fbde3fab96d13112e9c7e7318e530
+
+% 1 1 0 1c730d309b9ec5c119aaa74ade107ada
+
+@ 0 2 0 11aef426bd88cc6602e9fe1f4b81d028
++ Das Dekodieren kann auch bei der generischen Nachricht anhalten, die später untersucht oder
++ umgewandelt wird. `read[Protobuf]` liefert einen `Protobuf`-Wert, und `as[Person]` wandelt ihn
++ um.
+
+@ 0 3 0 12df9020243084500162ba60747637d7
++ Felder ohne Annotation werden in der Reihenfolge ihrer Deklaration nummeriert. Die Nummern
++ dürfen Lücken haben, mit `@field(3)` und `@field(7)` und nichts dazwischen, wie es die
++ Weiterentwicklung eines Protokolls verlangt. [Annotationen](annotations.md) beschreibt, wie
++ `@field` gelesen wird.
+
+@ 0 1 0 1cfdcc13b266d99f0e35b97b06065c70
++ ### Feldtypen
+
+@ 0 3 0 149c55d46779ce7d0c21027f3b35eaf6
++ Der Scala-Typ bestimmt die proto3-Kodierung. Die [numerischen Typen fester
++ Größe](numbers.md#numeric-types) lassen sich genau auf die Ganzzahlarten von proto3 abbilden;
++ die Wahl des Typs ist also die Wahl der Kodierung bei der Übertragung:
+
+% 2 1 0 1c30a055bfa2ed7d1987c8d8cbcfb5ac
+
+@ 0 21 0 02399547cec5120601be83598f95e1c8
++ column  Scala-Typ
++ column  Proto3-Typ
++ column  Übertragungskodierung
++ row  `Int`  `int32`  Varint
++ row  `Long`  `int64`  Varint
++ row  `Boolean`  `bool`  Varint
++ row  `U32`  `uint32`  Varint
++ row  `U64`  `uint64`  Varint
++ row  `S32`  `sint32`  Zig-Zag-Varint
++ row  `S64`  `sint64`  Zig-Zag-Varint
++ row  `B32`  `fixed32`  vier Bytes
++ row  `B64`  `fixed64`  acht Bytes
++ row  `Float`  `float`  vier Bytes
++ row  `Double`  `double`  acht Bytes
++ row  `Text`  `string`  längenbegrenztes UTF-8
++ row  `Data`  `bytes`  längenbegrenzt
++ row  eine Case-Klasse  eine verschachtelte Nachricht  längenbegrenzt
++ row  eine Aufzählung oder versiegelte Hierarchie  `oneof`  die Variante, gewählt über die Feldnummer
++ row  `Optional[T]`  `T`, mit expliziter Präsenz  nichts bei `Unset`
++ row  `List[T]`  `repeated T`  gepackt, für eine Zahl oder `Boolean`
++ row  `Map[K, V]`  `map<K, V>`  wiederholte Schlüssel-Wert-Einträge
+
+% 1 1 0 01041c275d7f28c01d701e2bccba607d
+
+@ 0 1 0 0729f9881babb30f0b893674c394e8a2
++ Eine Nachricht darf sie frei mischen:
+
+% 2 1 0 17f611aeaa4ad3e206a48400967936ec
+
+% 0 1 0 05dc8976bbc480cd191aa89d12d46ba7
+
+% 0 1 0 001b9e38b03d63d701056fda17b7b8e6
+
+% 0 1 0 17a116b892de11b41d3265145b33d763
+
+% 0 1 0 0fefdaa78beee7f202bac112679ed3a4
+
+% 1 1 0 1fe727fbc8a236b217214c8e3036ca89
+
+@ 0 5 0 1c89f1b4ac6db3bd0ceed7d0da135e39
++ Ein wiederholtes Feld darf auch ein eingefrorenes Array sein, `Array[Long]^{}`,
++ `Array[Double]^{}` oder `Array[Message]^{}`, mit denselben Bytes wie die `List`-Form. Es ist die
++ Darstellung der Wahl für Daten, die [direkt gelesen oder geschrieben](#parsing-directly) werden.
++ Der Parser füllt es, ohne für jedes Element eine Zelle zu allozieren und ohne eine Zahl zu
++ boxen, und der Printer durchläuft es per Index.
+
+@ 0 1 0 0e2a7c415c6010de06d6fe012b106b94
++ ### Präsenz, Wiederholung und Maps
+
+@ 0 2 0 0fd885dfa3ef6d5a0bd7c86e30357267
++ Der Umgang von proto3 mit Abwesenheit ist eine bekannte Quelle der Verwirrung. Hier sagt der
++ Typ, welches Verhalten gilt:
+
+% 2 1 0 1b406e3e0b6aa5c10e3665d0a6427ccc
+
+% 0 1 0 1a2d56dabd7a6e461bb4e7231c7806c6
+
+% 0 1 0 1ffc3e5bd292ae1c12a97ba61250be55
+
+% 0 1 0 06d36fe798bbd3e91885939b5044ef24
+
+% 1 1 0 0a94a5070c775bd11dbbc4c8b5d05490
+
+@ 0 2 0 0422b8efd2e33ab001e480a720b5da26
++ Ein `Optional`-Feld hat explizite Präsenz. Ist es nicht gesetzt, schreibt es nichts, und es wird
++ als `Unset` zurückgelesen, was sich von einem vorhandenen, aber leeren Feld unterscheidet:
+
+% 2 1 0 07941b7d1d2666c806ab096833358a8d
+
+% 3 1 0 0a340f3c56f93406108503758f05eb61
+
+% 4 1 0 18838239412d83b01ceee68c22697d96
+
+% 0 1 0 0efb0cde629c5a891bc84c15b5ecf912
+
+% 0 1 0 1b8f5253fa07ac8d009cecb7e25db0ca
+
+% 1 1 0 0a510acf99e5bad50abbabf0c3764882
+
+@ 0 4 0 09a268fae9cbd769177fc31cd2ee41cd
++ Ein `List`-Feld ist wiederholt. Es behält seine Reihenfolge und behält Elemente mit dem
++ Vorgabewert: Eine Liste aus `0, 1, 2` wird als drei Elemente zurückgelesen, ohne die Null zu
++ verlieren. Wiederholte Zahlen werden in ein einziges längenbegrenztes Feld gepackt, wie proto3
++ es von einem Schreiber verlangt. Ein Leser akzeptiert sowohl die gepackte als auch die
++ ungepackte Form, wie proto3 es von einem Leser verlangt.
+
+@ 0 2 0 15f6af7ab23222b2137039080488ad4e
++ Eine `Map` wird zu den üblichen wiederholten Nachrichten aus einem Schlüssel und einem Wert;
++ eine `Map[Text, Int]` ist bei der Übertragung also genau das, was `map<string, int32>` wäre.
+
+@ 0 1 0 0e55b9e10d81bff31990227db99a2950
++ ### Durch eine Nachricht navigieren
+
+@ 0 3 0 12388a9cd0b33ca103370ba381d2ed05
++ Die Felder einer Nachricht sind über ihre Nummer adressiert, nicht über ihren Namen; eine
++ Optik wählt ein Feld daher über seine Nummer: `Prim` ist Feld 1, `Sec` ist Feld 2 und so weiter.
++ Eine [Linse](optics.md) greift durch verschachtelte Nachrichten hindurch und ersetzt ein Feld,
++ ohne den Rest zu berühren:
+
+% 2 1 0 041c8ea85c6165d006e52b32dada43c8
+
+% 0 1 0 0c6cc914be2147521db841611263ae02
+
+% 0 1 0 1480eea5d63c739e10bf3e419318e0d1
+
+% 0 1 0 01ce9b1f20a249dd0a94a3be6168c190
+
+% 0 1 0 095a9c715a9fe5ba045c1f8ae2152f70
+
+% 1 1 0 1a66dc59c6d30b520ef090dc18d5ac65
+
+% 3 1 0 1050d4a66e55c55301f568d81a36ee7c
+
+% 4 1 0 069b7deb2f92afa218cb60253e742ab0
+
+% 5 1 0 177a7334879920061a8a2e8e0d08715d
+
+% 0 1 0 1c61c07464a3b3db009087ab80fd038b
+
+% 1 1 0 17be8062455485f70202053395a09c55
+
+@ 0 2 0 00b5d89b9cf0f57f1025e49c39a03530
++ Das ist das Mittel der Wahl, wo eine Nachricht mit einem geänderten Feld weitergereicht und
++ alles andere unverändert durchgelassen werden muss, auch Felder, die dieses Programm nicht
++ kennt.
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### Fehler
+
+@ 0 2 0 11d8432f63c4283b1455fa17bee71b9f
++ Eine fehlerhafte Nachricht löst einen `Protobuf.Error` aus. Er benennt das Problem und, bei
++ einem Fehler in den Bytes, dessen Offset; ein Fehler bei der Übertragung wird also anhand des
++ Fehlers untersucht, nicht anhand eines Hex-Dumps:
+
+% 2 1 0 07c00ab9bb896713155a8899bb56a830
+
+@ 0 7 0 1cf2225535256ae705dd52b63e3bd0ec
++ column  Grund
++ column  Ausgelöst, wenn
++ row  `Truncated`  die Daten mitten in einem Feld enden
++ row  `MalformedVarint`  ein Varint fehlerhaft ist
++ row  `UnexpectedWireType`  ein Feld einen Übertragungstyp hat, den sein Scala-Typ nicht lesen kann
++ row  `Overflow`  eine Zahl zu groß für ihren Typ ist
++ row  `MissingField`  ein erforderliches Feld fehlt; er nennt die Feldnummer, keinen Offset
+
+% 1 1 0 0268b7a98f54f84107ccf05f9d409bd1
+
+@ 0 2 0 1be3132d2e0caf7210bb6d7f0c4ecef1
++ Der Offset ist eine Position innerhalb der Nachricht, oder der verschachtelten Nachricht, die
++ gerade geparst wird. Hier geht das letzte Byte einer kodierten `Person` verloren:
+
+% 2 1 0 14bae7783c3f1caa11829835e6d049b4
+
+% 3 1 0 07645d32310a672a08b3fc4eb793351a
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 0b47b20191ec5a610ced22e2ac8e4b97
+
+% 1 1 0 115fca36959c88bc0bf55ca5ae69bc68
+
+@ 0 1 0 0e3bb68f6ccb7bb70a610920dd1efe90
++ ### Kompatibilität
+
+@ 0 2 0 0a0bef5f7ad3cbfd1d88c1d2564a5df4
++ Die Kompatibilität mit `protoc` ist durch Konstruktion und durch Tests gesichert. Die
++ kanonische Beispielnachricht aus der Dokumentation von Protocol Buffers wird zu ihren
++ dokumentierten Bytes kodiert, `08 96 01`:
+
+% 2 1 0 135d43ac53a0dd361f979a70c5ed7799
+
+% 0 1 0 00a20308385bd42d02944c5664f97c39
+
+% 1 1 0 0c542529c6c8c3640ec60cafc78f6ddc
+
+% 3 1 0 1ffd655bcae95e9a1a8b11734819bcac
+
+% 4 1 0 0d96e4c3517d82f00087f20b6aa49f31
+
+% 5 1 0 06219e2a1d7bfaa510642bab15b55514
+
+% 0 1 0 0776f562a70603cd130d258a4f9323dd
+
+% 1 1 0 18224491e314102f01cb68317853eb24
+
+@ 0 3 0 17103336169b872710e8fc9b7bfd6d03
++ Die Kodierungen der numerischen Typen fester Größe werden gegen aufgezeichnete
++ Übertragungsdaten geprüft, nicht bloß geschrieben und zurückgelesen, denn Schreiben und Lesen
++ stimmen miteinander überein, selbst wenn beide falsch sind.
+
+@ 0 3 0 0cea8b00a7fb91a10be24797488df0d6
++ Wo eine Nachricht keine Interoperabilität braucht, dürfen die Feldnummern ganz entfallen. Eine
++ Nachricht ohne Annotationen nummeriert ihre Felder ab eins in der Reihenfolge ihrer Deklaration,
++ was `protoc` für dieselben Deklarationen erzeugt hätte:
+
+% 2 1 0 14a90a76bbbe3b1119b5a42086bd145c
+
+% 0 1 0 0ca22e7e25807c4b1bae144ef355b864
+
+% 1 1 0 1c388e93c408d8981692577bd062d418
+
+@ 0 1 0 0d7d72dd795d6afd0ab45189385226ce
++ ### Direktes Parsen
+
+@ 0 3 0 1099374a9151d56100ddc9604d227842
++ Ein Typ mit einer `Protobuf.Parsable`-Instanz wird direkt aus den übertragenen Bytes gelesen,
++ Feld für Feld, und es wird kein `Protobuf`-Zwischenwert aufgebaut. Die Instanz wird zur
++ [Kompilierzeit] abgeleitet und setzt einen Parser für genau diese Gestalt der Nachricht
++ zusammen:
+
+% 2 1 0 1538f11f825f70570c757fb4fbd9d7a4
+
+% 3 1 0 10720197723e35c81e8b39f41af10c50
+
+% 4 1 0 1458100a672abb7f1917ef9619a88a89
+
+% 0 1 0 19956a4741695f110530020d8e4ca10e
+
+% 0 1 0 062ed8701236046300587e7836ed585a
+
+% 0 1 0 0f34afb80a8d9f2f0fb88b175ad15b27
+
+% 1 1 0 1c59905b481005c60d1416f828f69a37
+
+@ 0 3 0 134ecdc33ac2f09919a51d03d12a90eb
++ Die Ableitung wird namentlich importiert. Eine Nachricht, deren Feldtypen handgeschriebene
++ `Inlinable`-Instanzen haben, braucht zusätzlich das Modul `locomotion.staged`, das diese
++ Instanzen beim Kompilieren des Codes auswertet. Ohne es wird ein solches Feld über sein
++ `Decodable in Protobuf` dekodiert.
+
+@ 0 6 0 185475710071c24a0eaf7e600f432189
++ Das Lesen aus einem [Stream](streams.md) funktioniert genauso, und die Eingabe wird nie zuerst
++ zusammengesetzt. Der Parser liest jeden Chunk, sobald er eintrifft; ein Feld, das auf zwei
++ Chunks verteilt ist, liest sich also genau wie eines, das am Stück eintrifft. Der belegte
++ Speicher ist durch das eine gerade gelesene Feld begrenzt, außer bei einem oneof, dessen
++ Nachricht gehalten wird, während seine Variante gewählt wird. `read[Protobuf]` dagegen liest die
++ ganze Nachricht in den Speicher, da ein `Protobuf`-Wert seine Bytes ist.
+
+@ 0 1 0 1abd37e896cbdb3e12c3207c12bff33f
++ ### Direktes Ausgeben
+
+@ 0 5 0 076bbac385dc49d205b83332248e0705
++ Dieselbe Ableitung erzeugt die schreibende Seite. Eine `Protobuf.Printable`-Instanz schreibt
++ die Felder eines Werts direkt in das Ausgabe-Array. Sie macht zwei Durchgänge, einen, um jede
++ verschachtelte Länge zu messen, und einen zum Schreiben. Kein Feld wird in einen
++ `Protobuf`-Zwischenwert kodiert, und keine verschachtelte Nachricht wird kodiert und dann in
++ ihre übergeordnete Nachricht kopiert. Ist eine Instanz im Geltungsbereich, verwendet
++ `in[Protobuf]` sie:
+
+% 2 1 0 0e6d976f67ff78601177597e807238d8
+
+% 3 1 0 02ed5603b9b83af51812f9f7bd667946
+
+% 4 1 0 0a9f5ed0edd4dc13074c58d61e6849c0
+
+% 0 1 0 15d88510bf3ee27a1b82d34b7f764fa9
+
+% 0 1 0 11efaf3a47554a351b4ed306b2f06dd1
+
+% 1 1 0 084d02545e5bbfb20f32bb9884be09fd
+
+@ 0 3 0 183c6d9b8af63a080cbccd962a867647
++ Die Bytes sind genau die, die die abgeleitete Kodierung schreibt. Eine Nachricht kann daher auf
++ der einen Seite einer Verbindung direkt ausgegeben und auf der anderen über den `Protobuf`-Wert
++ dekodiert werden.
+
+@ 0 3 0 1697a8ae416d8ac716523f36597e503b
++ `in[Data over Protobuf]` schreibt die Bytes in einem Schritt, als Gegenstück zu
++ `read[Person in Protobuf]`. Es gibt direkt aus, wo ein `Printable` existiert, und kodiert
++ andernfalls über den `Protobuf`-Wert:
+
+% 2 1 0 18c7083c41802e441d63de73b2475831
+
+% 0 1 0 03c801bf8d5fea8208606aadd6c5fa70
+
+% 1 1 0 1e3fddd8869469010d668f36f791c031
+
+% 3 1 0 1b20d6811d74dbbb0b7efd5cee74bcd9
+
+% 4 1 0 06e37187686ce73c119548a6a32a9aff
+
+% 5 1 0 104bb116f25ddb06074cca367b8ef1d5
+
+% 0 1 0 14fe786655b59ef71698ce47aeadf86d
+
+% 1 1 0 1806acb76d44d4f40e63440023137f55
+
+@ 0 1 0 1c555ed5399ee61c077ba377bf165e62
++ ### Den Weg für jeden Typ wählen
+
+@ 0 2 0 091846eaf15f4bc80b41b28f66c8ea4d
++ Eine Instanz für jeden Typ zu deklarieren ist eine Möglichkeit, sich dafür zu entscheiden. Eine
++ Nachricht kann auch ihre beiden Instanzen auf einmal in ihrem Begleitobjekt erzeugen:
+
+% 2 1 0 08cfa78ef3157635113e4a04aee8eea5
+
+% 0 1 0 17fa726b107642630e155ba9c6bdc4a4
+
+% 1 1 0 0af73fd2e2f580250c45cf18bec729e1
+
+@ 0 2 0 09b3e91d07f424e51a0cd457fb445698
++ Ein einziger Import wählt dann den Weg für jede Nachricht und jedes oneof im Geltungsbereich,
++ ohne jede Deklaration. Eine generische Case-Klasse oder eine Collection ist weder eine Nachricht
++ noch ein oneof:
+
+% 2 1 0 11563f180ef238bd0801b45a5aee7ae9
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 5 0 17ee1737a05bef740d9d4e0ee9b4deff
++ column  Für eine Nachricht oder ein oneof
++ column  Für jeden anderen Typ
++ row  `codecs.direct`  ein erzeugter Parser und Printer  die abgeleiteten Codecs
++ row  `codecs.derived`  die abgeleiteten Codecs, auch wo eine direkte Instanz im Geltungsbereich ist  die abgeleiteten Codecs
++ row  `codecs.strict`  ein erzeugter Parser und Printer  ein Kompilierfehler
+
+% 1 1 0 1c4a5ca0c3b60b3f0303bde3b2d28ecc
+
+@ 0 1 0 0611235d2f5642a31571e7cd0e240bd3
++ Die Modi sind Alternativen; importieren Sie also jeweils nur einen.
+
+@ 0 3 0 18693999764dea6a1fbae92c198bcfbf
++ Unter `codecs.direct` verwendet ein Typ, der `Protobuf.Direct` ableitet, die Instanzen, die er
++ einmal erzeugt hat, statt sie bei jeder Verwendung neu zu erzeugen, was Kompilierzeit kosten
++ würde. Die Ergebnisse sind auf beiden Wegen dieselben. Nur die Geschwindigkeit unterscheidet
++ sich, und die in Fehlern gemeldeten Positionen.
+
+@ 0 4 0 0bd395e700bf1597112c46355e87be7d
++ `codecs.strict` ist `codecs.direct` für Code, der nicht zurückfallen darf. Ein
++ `read[Play in Protobuf]` oder ein `in[Data over Protobuf]` auf einem Typ ohne direkten Codec ist
++ ein Kompilierfehler, der den Typ nennt. `in[Protobuf]` benennt den Übertragungswert selbst und
++ ist nicht eingeschränkt.
+
+@ 0 1 0 1aafd36eb32adf7712df97508aec736e
++ ### Protocol Buffers über HTTP
+
+@ 0 4 0 1aea70cc2abd54a600d2310312575a6c
++ Ein `Protobuf`-Wert ist ein Request-Body oder ein Response-Body mit dem Medientyp
++ `application/protobuf`, und ein Body wird bei der Ankunft zurückgeparst. Eine binäre API wird
++ daher mit demselben Code genutzt und angeboten wie eine [JSON-API](json.md#json-over-http). Nur
++ der Typ des Formats unterscheidet sich. [RPC](rpc.md) baut typisierte entfernte Aufrufe auf
++ solchen Nachrichten auf.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 1 0 1c00c681a61d589f0f5a2d6d0279de30
++ - [Binärdaten](binary-data.md) beschreibt die Bytes unterhalb des Übertragungsformats.

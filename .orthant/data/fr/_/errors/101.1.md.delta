@@ -1,0 +1,57 @@
+orthant 2 language
+
+% 0 1 0 056cbd73bc1ac605058c89ae72a42e4b
+
+@ 0 1 0 0dd90734f8c74f1c1eda8b12edb4bd89
++ Levée lorsque Coaxial ne peut pas lier un socket.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 3 0 1b591122a79087371600332b8cc1da08
++ Le système d'exploitation a refusé d'allouer le socket demandé. Le constructeur prend un
++ `reason: Reason` ; le message affiché est `the socket could not be bound because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 1324cf16f73660211e2acb88071225fa
+
+@ 0 1 0 11bccc8480df22e602a407102afcb383
++ Un autre processus est déjà lié au port demandé.
+
+@ 0 1 0 0f6dbb47e33cfa770f37b51afca8f994
++ **Exemple.** `[↯/s.101.1.1] the socket could not be bound because another process is already bound to the port`
+
+@ 0 2 0 1911d07542d3ca8e18a950151a86a062
++ **Résolution.** Libérez le port (arrêtez le processus en conflit) ou choisissez un autre port.
+
+% 0 1 0 0f3bfb09832e004814dfe3be277aadeb
+
+@ 0 2 0 08a84e4161224d4b0ae181e733f876e0
++ L'utilisateur courant n'a pas la permission de se lier au port demandé — c'est généralement le
++ cas des ports inférieurs à 1024 sur les systèmes POSIX.
+
+@ 0 1 0 1537527cf03efa941fa494d23c84f4ad
++ **Exemple.** `[↯/s.101.1.2] the socket could not be bound because the user does not have permission to bind the port`
+
+@ 0 2 0 0f3a0cffd28faa821a131eb5dbdc4410
++ **Résolution.** Exécutez avec des privilèges élevés, ou choisissez un port non privilégié.
+
+% 0 1 0 16330413d778713d1851acff98d31527
+
+@ 0 2 0 1b721c2dd25d9018068eba60075d3524
++ L'adresse demandée n'est pas disponible sur cet hôte (par exemple, une liaison à une adresse
++ IP qu'aucune interface ne possède).
+
+@ 0 1 0 0e30f18af65bc6ce188b70db202cf9b7
++ **Exemple.** `[↯/s.101.1.3] the socket could not be bound because the requested address is not available on this host`
+
+@ 0 2 0 0cd4aa6d9ccb680a1ec3a624ba9c9683
++ **Résolution.** Vérifiez que l'adresse est configurée sur une interface locale, ou liez-vous à
++ `0.0.0.0` / `::` pour toutes les interfaces.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 110153117b0076e609208cbcbf0aa859
++ - Source : `lib/coaxial/src/core/coaxial.Bind.scala`

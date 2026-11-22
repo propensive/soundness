@@ -1,0 +1,12 @@
+orthant 2 language
+
+% 0 1 0 064ababe6a63dda410fe6ab94b2902cf
+
+@ 0 6 0 0151eecb9f22598d1b6186f02898689d
++ El código que se ejecuta en otra parte puede fallar, pero un error lanzado en el bloque
++ preparado no se lleva de vuelta a través de la frontera como tal. `dispatch` solo lanza un
++ `Compiler.Error`, si el código preparado no compila, o un `Rig.Error`, por un fallo del
++ montaje. Con el montaje `Jvm`, el código preparado que lanza una excepción hace que su
++ subproceso termine con un fallo, que se notifica como un `Rig.Error` cuyo motivo es
++ `Invocation`: el mismo error que un subproceso que no quiso arrancar. Por tanto, el código
++ preparado que puede fallar debe devolver su fallo como un valor.

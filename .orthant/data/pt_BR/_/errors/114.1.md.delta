@@ -1,0 +1,60 @@
+orthant 2 language
+
+% 0 1 0 03b39a17f3fb9a0409fcda5d5b61298a
+
+@ 0 3 0 145ee454bd282db10fb8ef5b2ec42a32
++ Lançado quando uma operação do Language Server Protocol falha, ou por um handler para responder a
++ uma requisição com uma resposta de erro JSON-RPC. Cada motivo carrega o código de transmissão
++ padrão de JSON-RPC/LSP, que `Lsp.listen` coloca no membro `error.code` da resposta de erro.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 01362123253bc53314617c0e9eae6c37
++ O Exegesis implementa o protocolo de transmissão do LSP. Este erro cobre uma mensagem malformada,
++ uma requisição que o servidor não consegue atender e qualquer falha que um handler decida lançar:
++ um `LspError` lançado tem prioridade sobre o resultado do handler, tornando-se uma resposta de erro
++ para uma requisição, ou, caso contrário, uma notificação `window/logMessage`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 4 0 071dbd18e15a9f5b10fd3d592f1bc703
++ column  Código
++ column  Motivo
++ column  Código de transmissão
++ column  Mensagem
+
+% 0 1 0 09c51f069fd08f310c9ef8301e2bec58
+
+% 0 1 0 0502f21b65d619b81ddd0a1abe46b659
+
+% 0 1 0 1e2b3edf5f1dee891a614925cde4f4fa
+
+% 0 1 0 14c7451d016421a51fb01f3ba499ddb9
+
+% 0 1 0 1c106cc65cc5d9790e80aae5fb5e7e53
+
+% 0 1 0 11ef8ee6bef543240ed41d8039d49041
+
+% 0 1 0 111b3a20ccd636a21112d2c6935d1b0d
+
+% 0 1 0 1449dc8d64df26ca1cde9e0a910b817b
+
+% 0 1 0 0641aac9691363dc0fad88d61d8c754b
+
+% 0 1 0 04a55e9baca7418603d7596922ef73db
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 5 0 1e00c1aa9db7a5c611a9b35fc5b7868a
++ O motivo distingue uma falha de protocolo de uma requisição que estava bem formada mas não pôde ser
++ atendida. Uma falha de protocolo geralmente significa que cliente e servidor discordam sobre a
++ versão do protocolo ou sobre o enquadramento das mensagens; um motivo lançado por um handler, como
++ `RequestFailed`, descreve a recusa do próprio servidor, e seus detalhes são encaminhados ao cliente
++ na mensagem da resposta de erro.

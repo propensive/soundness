@@ -1,0 +1,55 @@
+orthant 2 language
+
+% 0 1 0 12449672bad8caa5135a98b985856cd2
+
+@ 0 2 0 0f86df0190823637185b3a16f206f4c9
++ Levée lorsque Distillate ne peut pas décoder une valeur textuelle en un type
++ numérique.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 5 0 0ebc0a05fd24632802581ec0f663a3f6
++ Les instances `Decodable in Text` de Distillate pour les primitives numériques
++ analysent l'entrée avec les analyseurs de nombres du JDK, puis vérifient qu'elle
++ respecte les bornes du type cible. Le constructeur enregistre le `text` fautif, le
++ `specializable` (le type cible) et une `reason: Reason` ; le message affiché est `$text is not a valid
+
+% 0 1 0 05250b55c47efd0d0ce5a2713024c72b
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 19dda8f4ff93aeb90f0ad888562693f9
+
+@ 0 2 0 0347f020f7e1fb3014220943d7bbd95c
++ L'entrée n'était pas un nombre syntaxiquement valide pour le type cible :
++ `Integer.parseInt` (ou une méthode sœur) a lancé une
+
+% 0 1 0 1b873ed8e57622291a45391b0cc191e5
+
+@ 0 1 0 0afd67c4ebdb5629042434081fece0a6
++ **Exemple.** `[↯/s.25.1.1] abc is not a valid Int because the input could not be parsed as a number`
+
+@ 0 2 0 1e23c6696f04df8a1c033034332ba597
++ **Résolution.** Assainissez l'entrée avant de la décoder, ou protégez-vous
++ contre les valeurs non numériques.
+
+% 0 1 0 0c7f9fca9e9f0a991c8d833e612afa8e
+
+@ 0 4 0 0e0b05467c4746ef1f29597c64f8bc93
++ L'entrée était un nombre syntaxiquement valide, mais hors de l'intervalle
++ représentable du type cible ; cette variante est actuellement levée par les décodeurs de
++ `Byte` et de `Short` lorsque l'entier sort de leurs bornes.
+
+@ 0 1 0 1728082eede3e2230f82632e059fa5e3
++ **Exemple.** `[↯/s.25.1.2]300 is not a valid Byte because the input was outside the target type's representable range`
+
+@ 0 2 0 0ccfab37794347bb1580fe375ec042ef
++ **Résolution.** Décodez vers un type plus large (par exemple `Int`), ou
++ bornez la valeur avant de la décoder.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 1dfb810349e636350de39c82796e9678
++ - Source : `lib/distillate/src/core/distillate.Number.scala`

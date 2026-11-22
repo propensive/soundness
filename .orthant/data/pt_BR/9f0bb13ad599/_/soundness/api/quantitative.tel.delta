@@ -1,0 +1,44 @@
+orthant 2 language
+
+@ 0 3 0 01c7894b220ea59c04e5126527e7ba9f
++   entry .TemperatureGradient   distância⁻¹·temperatura
++   entry .temperatureGradient   `temperature gradient`
++   entry .ThermalConductance   distância²·massa·tempo⁻³·temperatura⁻¹
+
+@ 0 20 0 069e277113fbebb615d983279506721d
++ entry .Dyne   o dina, a unidade CGS de força, um `MetricUnit`
++ entry .Erg   o erg, a unidade CGS de energia, um `MetricUnit`
++ entry .Barye   o bária, um décimo de pascal: a unidade CGS de pressão, um `MetricUnit`
++ entry .Poise   o poise, um décimo de pascal-segundo: a unidade CGS de viscosidade dinâmica, um `MetricUnit`
++     Definido como um décimo de um `Pascal`, então dimensionalmente uma pressão, e não uma viscosidade.
++ entry .Galileo   o gal, um centímetro por segundo ao quadrado: a unidade CGS de aceleração, um `MetricUnit`
++ entry .Stokes   o stokes, a unidade CGS de viscosidade cinemática, um `MetricUnit`
++ entry .Gauss   o gauss, a unidade CGS de densidade de fluxo magnético, um `MetricUnit`
++ entry .Maxwell   o maxwell, a unidade CGS de fluxo magnético, um `MetricUnit`
++ entry .Oersted   o oersted, 79,577 amperes por metro: a unidade CGS de intensidade de campo magnético, um `MetricUnit`
++ entry .Gilbert   o gilbert, 0,796 ampere: a unidade CGS de força magnetomotriz, um `MetricUnit`
++ entry .Biot   o biot, dez amperes: a unidade CGS de corrente, um `MetricUnit`
++ entry .Emu   a unidade eletromagnética de magnetização, amperes por metro quadrado, um `MetricUnit`
++ entry .Franklin   o franklin, 3,34×10⁻¹⁰ coulombs: a unidade CGS de carga, um `MetricUnit`
++ entry .Debye   o debye, 3,335×10⁻³⁰ coulomb-metros: uma unidade de momento de dipolo elétrico, um `MetricUnit`
++ entry .Lambert   o lambert, a unidade CGS de luminância, um `MetricUnit`
++ entry .Phot   o phot, a unidade CGS de iluminância, um `MetricUnit`
++ entry .Langley   o langley, 41840 joules por metro quadrado, um `MetricUnit`
++ entry .Kayser   o kayser, um número de onda de um por centímetro, um `MetricUnit`
++ entry .Darcy   o darcy, 0,987×10⁻¹² metros quadrados: uma unidade de permeabilidade, um `MetricUnit`
+
+@ 0 4 0 13e80c08f09d576b1abfa53ee4e4e537
++       86400 segundos. Seu valor de unidade é `SolarDay`.
++   entry .designation   o símbolo `d`
++   entry .ratio   `Ratio[Seconds[1] & Days[-1], 86400.0]`: um dia são 86400 segundos
++ entry .SiderealDays   o dia sideral, uma unidade de `Time`: `SiderealDays[power]`
+
+@ 0 8 0 06c90dd8a48c12d219045d8ecbdfde0b
++   entry .MagneticConstant   μ₀, a permeabilidade do vácuo, em N·A⁻²
++   entry .ElectricConstant   ε₀, a permissividade do vácuo, 8,854×10⁻¹² F·m⁻¹
++   entry .CharacteristicImpedanceOfVacuum   Z₀, 376,73 Ω
++   entry .PlanckConstant   h, 6,626×10⁻³⁴ m²·kg·s⁻¹
++   entry .GravitationalConstant   G, 6,674×10⁻¹¹ N·m²·kg⁻²
++   entry .ElementaryCharge   e, 1,602×10⁻¹⁹ C
++   entry .AvogadroConstant   N_A, 6,022×10²³ mol⁻¹
++   entry .BoltzmannConstant   k, a constante de Boltzmann, em J·K⁻¹

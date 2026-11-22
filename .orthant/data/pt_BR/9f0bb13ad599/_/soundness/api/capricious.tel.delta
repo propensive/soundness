@@ -1,0 +1,43 @@
+orthant 2 language
+
+@ 0 3 0 057cb6a0b5366b3706bfd474a63e20a4
++ entry .toss   um cara ou coroa honesto: `true` ou `false`, com a mesma chance
++     `toss()` sorteia do `Random` no escopo, pela mesma regra que `arbitrary[Boolean]()` (o
++     sinal de um `Long`), de modo que um lançamento é reproduzível a partir de uma `Seed`.
+
+@ 0 9 0 0c63b6d6a010510f0f4d8dc6bca26ab7
++   entry .global   um `Random` sobre um único gerador compartilhado e sem semente, para uso sem escopo
++       Cada chamada embrulha o mesmo gerador de todo o processo, criado sob demanda por
++       `randomization.unseededRandomization`, então os sorteios dele nunca são reproduzíveis.
++       `random` o usa.
++   entry .apply   um novo `Random` a partir da `Randomization` no escopo, com a semente da `Seed` dada
++       `Random(seed)` inicializa um gerador a partir da `Randomization` contextual, que é
++       resolvida com `seed` no escopo: sob `seededRandomization`, o gerador começa a partir de
++       `seed`, como em `Seed#stochastic`, e uma randomização sem semente a ignora.
++   entry .Size   quantos elementos uma coleção aleatória tem, como valor contextual
+
+@ 0 24 0 04a55a33bab0309b039431791e6f182e
++   entry #randomize   sorteia um valor a partir de um `Random`
++   entry #apply   sorteia um valor a partir do `Random` contextual: `summon[Int is Randomizable]()`
++   entry #map   uma instância para outro tipo, transformando cada valor sorteado
++       `randomizable.map(lambda)` sorteia por esta instância e aplica o lambda; o resultado
++       captura ambos.
++   entry .long   sorteia um `Long` uniformemente aleatório
++   entry .byte   sorteia um `Byte`, os oito bits baixos de um `Long` aleatório
++   entry .short   sorteia um `Short`, os dezesseis bits baixos de um `Long` aleatório
++   entry .int   sorteia um `Int`, os trinta e dois bits baixos de um `Long` aleatório
++   entry .char   sorteia um `Char`, os dezesseis bits baixos de um `Long` aleatório
++       Qualquer unidade de código UTF-16, incluindo substitutos sem par e caracteres de controle.
++   entry .seed   sorteia uma `Seed` de sessenta e quatro bits, a partir de um `Long` aleatório
++   entry .boolean   sorteia um `Boolean`: `true` quando um `Long` aleatório é negativo
++   entry .list   sorteia uma `List` cujo tamanho vem do `Random.Size` no escopo
++   entry .set   sorteia um `Set` de até o `Random.Size` no escopo, com as duplicatas se fundindo
++   entry .frozenArray   sorteia um `Array[element]^{}` congelado com o tamanho dado pelo `Random.Size` no escopo
++       Precisa de uma `ClassTag` para o tipo do elemento, além de um `Random.Size`.
++   entry .double   sorteia um `Double` pela `Distribution` no escopo
++       Não há distribuição padrão: um `Double` não pode ser sorteado até que o código diga que
++       tipo de `Double` quer dizer, o que impede tratar um sorteio uniforme como se fosse normal.
++       Importe uma de `randomDistributions` ou declare uma `Gaussian`, `PolarGaussian`,
++       `UniformDistribution` ou `Gamma` como given.
++   entry .conjunction   a instância derivada de um produto: cada campo sorteado por vez do mesmo `Random`
++   entry .disjunction   a instância derivada de uma soma: uma variante escolhida uniformemente e depois sorteada do mesmo `Random`

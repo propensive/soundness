@@ -1,8 +1,0 @@
-orthant 1 release
-
-- import pathInterfaces.pathOnLinux
-+ import pathInterfaces.pathOnLocal
-+ import systems.javaBaseSystem
-
-- val logFile = temporaryDirectory[Path on Linux] / "logging" / "app.log"
-+ val logFile = temporaryDirectory[Path on Local] / "logging" / "app.log"

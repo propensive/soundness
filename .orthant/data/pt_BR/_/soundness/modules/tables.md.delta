@@ -1,0 +1,568 @@
+orthant 2 language
+
+@ 0 1 0 1efcb8c25d685ce8066dccc4dd9aacb8
++ ## Tabelas
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 2 0 151f31645f90a553043e046d4cd88394
++ Os dados tabulares são desenhados em um terminal por um motor de layout que leva a sério a parte
++ difícil: encaixar colunas de conteúdo desigual em uma largura fixa.
+
+@ 0 4 0 0e2717de7427d3321ceccc8aef16f378
++ Uma tabela é definida de uma de duas maneiras. Implicitamente, uma sequência de case classes
++ torna-se uma tabela com uma coluna para cada campo. Explicitamente, cada coluna recebe um nome,
++ com seu alinhamento e sua *estratégia de dimensionamento*: quebrar como um parágrafo, truncar com
++ reticências ou recolher por inteiro quando falta espaço. O resultado é desenhado com caracteres de
++ desenho de caixa, em um estilo escolhido no escopo.
+
+@ 0 1 0 0aa353a82a544fe010055152c2fd908f
++ ### Sobre tabelas
+
+@ 0 5 0 0cf63191e805fa41090267c2fa0c5d40
++ A maioria das tabelas em um terminal são strings de formato: larguras fixas, adivinhadas quando o
++ programa foi escrito, que truncam ou transbordam quando os dados discordam. Um layout de verdade é
++ uma negociação. Algumas colunas importam mais que outras. Uma coluna de prosa pode quebrar onde
++ uma coluna de identificadores não pode. Abaixo de certa largura, é melhor descartar uma coluna do
++ que mutilá-la. Um motor de layout consegue conduzir essa negociação, e uma string de formato não.
+
+@ 0 5 0 1217a8cb59c9d5930bfbf076f0401627
++ Aqui o layout é calculado cada vez que uma tabela é desenhada. Cada coluna declara como pode
++ encolher, e o motor distribui a largura disponível, quebrando com
++ [hifenização](hyphenation.md) onde a quebra é permitida. Separar as colunas de uma tabela dos seus
++ dados, e da sua largura, é [desacoplamento](../../philosophy/decoupling.md), e é isso que permite
++ desenhar uma única definição em qualquer largura.
+
+@ 0 2 0 0433e34e2989aefa1fe2beb00529fea5
++ Tudo vem do pacote `soundness`. Um estilo, uma métrica para a largura do texto e uma política para
++ uma tabela que não cabe estão no escopo:
+
+% 2 1 0 1ac1503016433319041cb8148bd50cb6
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18516baef5bcebbb0e4e2e613028b8ed
+
+% 0 1 0 0113ecd3cd2f810810d22a6b0e5b8695
+
+% 0 1 0 0b86b4cb5c97f155146e7d82930392cf
+
+% 0 1 0 08f070a70bdb87031db2223cc0bdebe1
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 1 0 1eb1851c82436a8b0ac5318dba1ffaf3
++ ### Uma tabela a partir de uma case class
+
+@ 0 2 0 19589ac8be0052781cedbf08bf7d63a7
++ Uma sequência de case classes é tabulada diretamente, com uma coluna para cada campo, com títulos
++ tirados dos nomes dos campos:
+
+% 2 1 0 0d9d9e53a2bfec240c797fd13d5091e1
+
+% 0 1 0 0267226d76a2c65c1c2082375964d938
+
+% 0 1 0 051a001ae638d2b61e61d347eb8fc27d
+
+% 0 1 0 0b5201dc2d0d4c091ba391aba53e6c40
+
+% 0 1 0 011f15df886dfc70024ca18dac8bc75f
+
+% 0 1 0 153a71c1bd14c889192bdf0281f1f240
+
+% 0 1 0 058c5e3adca6e5fd1a928ba30b5166b9
+
+% 0 1 0 1e3016f55834016606d1d0b78c43e5c5
+
+% 0 1 0 0b8b9f2e3144b7bd0ccd27ea3eb1a300
+
+% 0 1 0 0e2986c77eb808b51c4a7803ffea31de
+
+% 1 1 0 0ef1d5198ef46ff307f40cdcf7fd6f10
+
+@ 0 1 0 02ed4e29e560e42216a009c6a3ea05d8
++ `grid` faz o layout da tabela em uma largura, e `render` dá as suas linhas:
+
+% 2 1 0 1bd3e48938c5df5213c9582fa4b8b166
+
+% 3 1 0 17686da1932085511c8a9eb118173d49
+
+% 4 1 0 10f2cb151a43ff621ef410c7e7eed908
+
+% 0 1 0 0694de922953a8101bf8c526e4ce1ba8
+
+% 1 1 0 06ef258d4b9288841c431558dfb878d8
+
+@ 0 2 0 1b7c41e64eaf58da1c63611827b11a70
++ As colunas numéricas são alinhadas à direita por padrão, e o texto à esquerda. A tabela inteira é
++ `Printable`, então imprimi-la na própria largura do terminal não precisa de nada além de
+
+% 0 1 0 1476b60c2bf2673319c64b88ea533bb5
+
+@ 0 1 0 08d4caedf44861481878bfa6cdca6dea
++ Três tipos estão em ação, e saber qual é qual explica onde cada decisão é tomada:
+
+% 2 1 0 0e30f414a8d5523a170e3e72174a233a
+
+@ 0 6 0 0c294b3d8347eb2000916d17d2f7c33d
++ column  Tipo
++ column  Contém
++ column  Criado com
++ row  `Scaffold`  como um tipo é posto em colunas — seu conteúdo, ordem e parâmetros —, mas nenhum dado  `Scaffold[Row](columns…)`
++ row  `Tabulation`  dados organizados por um scaffold: valores textuais, um por linha e coluna, sem mais referência ao tipo da linha  `scaffold.tabulate(rows)`
++ row  `Grid`  uma tabulação ajustada a uma largura específica, em que uma coluna pode encolher ou sumir  `tabulation.grid(width)`
+
+% 1 1 0 19e022b82f7c414e0b5d475bb6cfad33
+
+@ 0 3 0 19087ccacabb71281049f2f25cfeae03
++ `tabulation`, acima, derivou um scaffold para `Codebase` e o aplicou, em um único passo. As seções
++ abaixo tratam os estágios separadamente, e é isso que dá controle tanto sobre o layout quanto sobre
++ a largura.
+
+@ 0 1 0 094a22528fc12d991ad20e33e66057fa
++ ### Colunas explícitas
+
+@ 0 2 0 07140bd20e0e9e4012366e06eef17186
++ As colunas definidas à mão escolhem seus títulos, conteúdo, alinhamento e dimensionamento. Os
++ dimensionamentos ficam no pacote `columnar`:
+
+% 2 1 0 047f71e8287e242805d1afc52f0564a2
+
+@ 0 6 0 03b8268011175da013ebebb9b8247e6c
++ column  Dimensionamento
++ column  A coluna
++ row  `Paragraph`  quebra, com hifenização, mas nunca fica mais estreita que sua palavra mais longa
++ row  `Collapsible(threshold)`  mantém sua largura natural, e some quando a folga cai abaixo de `threshold`
++ row  `Fixed(width)`  tem sempre `width` de largura, truncando seu conteúdo com reticências
++ row  `Shortened(width)`  encolhe a partir de sua largura natural, truncando seu conteúdo com reticências
+
+% 1 1 0 031f8d0e14c6e7931b3132f4eb977fe3
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 0543e4732d8417c614660a128654e123
+
+% 0 1 0 155b7f40ee9c936911356f5393bff550
+
+% 0 1 0 030f9d885c7d947d150b1fc80aa8b237
+
+% 0 1 0 05d44727456fea29097b31a6e19d86a8
+
+% 0 1 0 10d0a8ab8aef0e7c1efca644d2d0b57e
+
+% 0 1 0 0d7ee3c3c0ddbc231e98a12d0caf63c6
+
+% 0 1 0 1d590a8d20fe7d141b6d9f560cea04dd
+
+% 1 1 0 08945939832ee90712e254bac49a8212
+
+@ 0 5 0 008c5e7bf1c91edb0a088bdd2dfe891e
++ Cada coluna é um título e uma função do tipo de uma linha para o valor de uma célula. As funções
++ aqui devolvem uma mistura de `Text` e `Int`, sem nenhuma anotação de tipo entre elas. Isso funciona
++ porque o *título* fixa o tipo textual. Uma instância de `Textual` é encontrada para o tipo do
++ título. Essa instância nomeia a [classe de tipos], geralmente `Showable`, que converte outros
++ valores nele, e o resultado de cada função é exibido por meio dela.
+
+@ 0 4 0 0c6753e0304745851f55415842957d88
++ O tipo de célula da própria tabela é então o menor limite superior dos das suas colunas. Assim,
++ `table`, acima, é um `Scaffold[Codebase, Text]`. Escrever os títulos como `e"Name"` em vez de
++ `t"Name"` faria dela um `Scaffold[Codebase, Teletype]`, com cor e estilo disponíveis em cada
++ célula, como descreve [Terminal](terminal.md#styled-text).
+
+@ 0 3 0 0df174ea900feec11c0e46b2d5e6d347
++ Os limiares das colunas `Collapsible` só têm significado uns em relação aos outros. Eles são
++ comparados com a *folga* com que o layout está trabalhando, que é o número que o
++ [algoritmo de layout](#the-layout-algorithm) procura:
+
+% 2 1 0 0644119fcc8bf57e167fa21593a9b31a
+
+@ 0 1 0 1f2016b426a52db01ffd0c7dc0d1ed95
++ column  Folga
+
+% 0 1 0 04663cddef916eaf1a6c20565d37bea1
+
+% 0 1 0 07fd1497e1f243631d6159a4047aea3b
+
+% 0 1 0 0998ee5d09067ee201657071b89e4b8f
+
+@ 0 3 0 17c58056927132fc102264a4a1a730aa
++ row  `0.6`  oculta  exibida  exibida
++ row  `0.4`  oculta  oculta  exibida
++ row  `0.2`  oculta  oculta  oculta
+
+% 1 1 0 042c55f578b0b931081857ed2e9580d8
+
+@ 0 1 0 007e5e123848ca3f00fbc09e98b6cf57
++ ### Renderizações em larguras diferentes
+
+@ 0 3 0 1faa49174f114e7a0435ec5e2c65a0bd
++ Eis a mesma tabela, com os mesmos dados, disposta em quatro larguras. Com 100 caracteres,
++ *Identifier* já sumiu. É a coluna recolhível cujo limiar está mais próximo de `1`, então é a
++ primeira a sair:
+
+% 2 1 0 0f7156ed3d1ba76e1b5623f3a684b33a
+
+% 3 1 0 09a1c2a0458d18a9152b5f86144b4e19
+
+% 4 1 0 0c92d37ad4044305128c6d94cf1e8a61
+
+% 0 1 0 0726135290f97e1f17765c0f4d87c0d8
+
+% 1 1 0 098fcb6c3501d4e11081ac3277dec194
+
+@ 0 1 0 0f7eea2128bdf6ca0fa121a6650a5609
++ Com 80, nenhuma outra coluna precisa ser descartada. Em vez disso, a descrição quebra:
+
+% 2 1 0 0092b154409f46a91ebbdbed53f8b479
+
+% 3 1 0 021721ae76544a87027aa20918ede13c
+
+% 4 1 0 17f9a832f89f955415f17fce3c719978
+
+% 0 1 0 0c1a13ce4050eebd1bcd9922eead4941
+
+% 1 1 0 183c372e8bfc0ce606f90de2e69993d5
+
+@ 0 2 0 1b13b08f5f75f16f041de88ecd28af06
++ Com 60, *Year* sai, já que tem o próximo limiar mais alto, e a justificação da descrição fica
++ visível, à medida que as linhas se esticam até a largura total:
+
+% 2 1 0 1243cf56613ee0b61944f78bfb4996c0
+
+% 3 1 0 02df48c7d3f49fa00e72d52190e41e31
+
+% 4 1 0 06b81fcfdba626fe042fca7e934541a2
+
+% 0 1 0 043299991b9d9e4906eec518d5a0f297
+
+% 1 1 0 1564f7125238fe6f1c427e8f40bfce13
+
+@ 0 1 0 0f3722f3da88c2e717817401022602f2
++ E com 40, restam só duas colunas, e uma descrição pode chegar a quatro linhas:
+
+% 2 1 0 05affd2e4d58d8690005b4b31d209f2e
+
+% 3 1 0 16cd9d12e9b0659813baa8962d9435b3
+
+% 4 1 0 0616a1c694a287161d07d7fb38000bb6
+
+% 0 1 0 1c4b1f63f6ea4dd4120ff10ebc949bec
+
+% 1 1 0 128db6f61875eff8118bef3b9ae60852
+
+@ 0 1 0 10834c524ed9d4620b9a5b0029fffe74
++ ### O algoritmo de layout
+
+@ 0 6 0 0a02d6032274f22001d75d903cbbcdb7
++ O scaffold não decide as larguras. Ele delega a cada coluna, passando um `Double` entre `0` e `1`.
++ Esse número é a *folga* sobre a coluna, que é simplesmente o oposto da pressão. Dada uma folga,
++ uma coluna informa a largura que ocuparia, e uma coluna sob pressão suficiente pode informar que
++ não será desenhada de todo. Uma coluna de prosa encolhe suavemente à medida que seu texto se
++ reorganiza. Uma coluna de identificadores não pode encolher além do seu conteúdo, e ou mantém sua
++ largura ou desaparece.
+
+@ 0 3 0 1121ee576f68b02c08c9eb0bba25028d
++ Somar essas larguras dá a largura da tabela naquela folga, e a partir daí é uma busca. A folga é
++ aumentada onde a tabela cabe, e diminuída onde não cabe, à procura da maior folga com que a tabela
++ ainda cabe no espaço disponível.
+
+@ 0 5 0 18ab0ae084b28e460af9d89c35d4064d
++ Esse máximo geralmente fica *logo depois* de uma coluna ter sido ocultada, o que tende a deixar
++ espaço sem uso: a coluna que sumiu liberou mais espaço do que as sobreviventes precisavam. Uma
++ segunda passada, portanto, aumenta a folga sobre as colunas restantes, sem trazer de volta as já
++ removidas, e deixa que elas se espalhem pelo que sobrou. Na prática, isso dá resultados bem
++ melhores do que parar no primeiro encaixe.
+
+@ 0 5 0 08d49f3a0836d782086aea67dfddaa8f
++ A busca se apoia em um único requisito, que qualquer `Columnar` personalizado precisa respeitar:
++ uma coluna precisa responder à folga de forma *monotônica*. Diminuir a folga pode deixar uma coluna
++ com a mesma largura, mas nunca pode deixá-la mais larga. `Paragraph`, `Collapsible`, `Fixed` e
++ `Shortened` são simplesmente as estratégias fornecidas. O conceito é aberto, e uma estratégia de
++ dimensionamento que responda à folga de algum outro modo é uma implementação comum da mesma
++ interface.
+
+@ 0 1 0 018eac97daff3b0009cf17108019446c
++ ### Estilos
+
+@ 0 3 0 0f3420853508da1d054edac9b72b7737
++ O desenho de caixa é um given `Table.Style`. O estilo é uma mudança de import, não do código que
++ define a tabela. `thinRoundedTableStyle` desenha linhas divisórias finas em toda parte, com cantos
++ arredondados:
+
+% 2 1 0 1697fcf5729dd81f1fe71d8af20b91d0
+
+% 0 1 0 0ddee35fa0d591ae0517845b629c1a05
+
+% 1 1 0 1b9459a9033b355b0febbacf30642bfc
+
+% 3 1 0 07ea34605c246ae90339571848addcd2
+
+% 4 1 0 1cfe35a86ce773af1031163b7813b819
+
+% 5 1 0 05a34c796b81fd19162df270e593b8a6
+
+% 5 1 0 0878aa023d7892ac0b4217f1d5b2c1c7
+
+% 0 1 0 0966aab01cf7d9d101ac0e7105e4b698
+
+% 1 1 0 0199b8701cdadbb81f0c12fc75f78363
+
+% 2 1 0 00f755eb387662fd1b97c871cf650167
+
+@ 0 1 0 00cce23a51811d4e001090bdcfdb8320
++ `horizontalTableStyle` mantém as linhas divisórias horizontais e descarta as verticais:
+
+% 2 1 0 16194ba483f76f5000954f2cd107544c
+
+% 3 1 0 1cd0c723048436401210ba20b09d166f
+
+% 4 1 0 147310fa38b114460b95e0f92d4a546c
+
+% 5 1 0 056e6511494fc1fe136bdc73cbc98a1f
+
+% 0 1 0 1828332b32d172080fa79687430e1337
+
+% 1 1 0 1ce847d511f530190461ba2e8916e2ba
+
+% 2 1 0 0402ba87ee3645870465f78520d4ca8d
+
+@ 0 1 0 151ba5c17fc0e5020a3c295b112adcef
++ `verticalTableStyle` faz o oposto:
+
+% 2 1 0 1955c17cdc6eeca500d984748e609338
+
+% 3 1 0 07b7bfd6abf782b61e5ebe2e147f0ee7
+
+% 4 1 0 1ea4c090cff2e98002babaf4c3ec6150
+
+% 5 1 0 02e086eb8c3a58b51b227663b75eb395
+
+% 0 1 0 016af4dd8eb0419111e41560796f4720
+
+% 1 1 0 06a6de4085c60fc6136e315e36b59246
+
+% 2 1 0 0ce2dbe625ab23b41597362716e47bc5
+
+@ 0 1 0 1ebe108c1659d5b915960cc7f4c2cde0
++ E `minimalTableStyle` deixa uma única linha divisória abaixo dos títulos, e nada mais:
+
+% 2 1 0 1db6508ac69f068914c62dbaa5b7212f
+
+% 3 1 0 1f5271fd606ee73711cfb8fd07484419
+
+% 4 1 0 06bad21f3c96980b080ff0eccad0d1e1
+
+% 5 1 0 0cd132f6a5a9fcdd11693e3e8750b17d
+
+% 0 1 0 1e7f782cfc75d1cb188fed94ac3f7eda
+
+% 1 1 0 04dc5d803265626b1a87d54ff4ad6efb
+
+% 2 1 0 13b768971c1999b60d4cf290c6d4d82f
+
+@ 0 2 0 064e6996ef5472af0a0a4f13ef56f576
++ `midOnlyTableStyle` é igual, mas reserva linhas em branco acima e abaixo, onde ficariam as linhas
++ divisórias externas, para que a tabela mantenha seu espaçamento vertical sem desenhá-las.
+
+@ 0 2 0 189e461f8687726b01d79e8e3cae1e8a
++ Texto de terminal com estilo funciona como conteúdo de uma célula em todos os estilos. Uma tabela
++ de valores realçados ou coloridos é disposta pela sua largura visível, não pelo comprimento dos
++ seus códigos de escape.
+
+@ 0 1 0 00ba71a802080d96098fb5130802555e
++ ### Alinhamento
+
+@ 0 1 0 1cf2bfa560d085f20320ab6e1c608b43
++ Cada coluna declara como seu conteúdo fica dentro da largura que lhe é dada, como um
+
+% 0 1 0 18ee3dda32fbf56c144a883db11ea82c
+
+% 2 1 0 1fc3201508a3df831061eae492ded052
+
+@ 0 6 0 1b9545adc530bfa11006ff7f14cedb49
++ column  Alinhamento
++ column  Preenche
++ row  `Left`  à direita
++ row  `Right`  à esquerda
++ row  `Center`  dos dois lados, pondo a coluna ímpar à direita onde não dá para dividir por igual
++ row  `Justify`  entre as palavras, para que toda linha exceto a última alcance a largura total
+
+% 1 1 0 0a14d880c9d8f4b8068821d5c3b074ff
+
+@ 0 1 0 0127a8c0320e2ef41b3bbb104853a475
++ `Justify` é a composição de um jornal, que serve a uma coluna de prosa e a nada mais.
+
+@ 0 3 0 0746d93ce70489a7160fdb211d697318
++ O alinhamento vertical importa assim que uma célula quebra. Uma célula quebrada torna sua linha
++ inteira mais alta, e as outras células dessa linha ficam no topo, no meio ou na base da altura
++ extra, de acordo com seu `VerticalAlignment`: `Top`, `Middle` ou `Bottom`.
+
+@ 0 1 0 0c79c0a5cdbc716f0c1ee79143c8a899
++ ### Títulos
+
+@ 0 4 0 1cb68920b15311d10f2183834fb2059b
++ Uma tabela derivada dá títulos às suas colunas a partir dos nomes dos campos, com maiúscula
++ inicial, então `linesOfCode` torna-se `Lines of code`. Onde esse não é o título desejado, um
++ `Table.Relabelling` o substitui pelo nome. O campo Scala mantém seu nome, e a tabela recebe o seu
++ próprio:
+
+% 2 1 0 0a876387c831829a0ca7a38cd5ac3cc8
+
+% 0 1 0 16c2ab31e22e26bd01b4b886970fef43
+
+% 0 1 0 06e213b80e30a473027c811501b5807b
+
+% 1 1 0 091b08db469ebe9e027cab7841a1d918
+
+@ 0 3 0 079a13f3f40bc8351cf00887a70422b3
++ Uma coluna definida explicitamente nomeia a si mesma. `retitle` renomeia uma depois do fato, o que
++ é útil onde a definição de uma tabela é compartilhada e quem chama quer um cabeçalho diferente.
+
+@ 0 1 0 14af8eb68f97c69b11c89a088da096e9
++ ### Reutilizando a definição de uma coluna
+
+@ 0 4 0 053143fc68ad076a0824710f95053a91
++ Uma `Column` tem um parâmetro de tipo para o tipo de linha que lê, o que tornaria inútil para
++ outro tipo uma coluna definida para um. `contramap` a adapta. Uma coluna definida uma única vez,
++ com seu alinhamento, dimensionamento e título, serve então a todo tipo que consiga produzir o
++ valor que ela exibe:
+
+% 2 1 0 1159670cb5e23d0c1a7633af70394562
+
+% 0 1 0 09e53a6c16c54bc1102763b6232584be
+
+% 0 1 0 139189f70e50ebae163501613bb78518
+
+% 1 1 0 17fe5ebdfab7c9c50e02288d6ee8673c
+
+@ 0 1 0 03a0dd13d2122621000f8303f3bbf1c9
++ ### Tabulando algo que não é uma case class
+
+@ 0 4 0 140b1c74bd9865c61ce5a497a8c3fadb
++ Uma sequência de qualquer coisa com uma instância de `Tabulable` é tabulada, então uma lista de
++ inteiros simples, ou de texto, é desenhada como uma tabela de uma coluna, sem um tipo invólucro.
++ É também nessa instância que entra um tipo cujas colunas não são seus campos, como um
++ [registro](records.md) lido de um schema, ou um valor cujas colunas de exibição são calculadas.
+
+@ 0 1 0 0795f4a96320e2ce004a8db5562cbc1a
++ ### Listas em colunas
+
+@ 0 4 0 01af48a0bc95d90102a671a42e986fde
++ Nem toda disposição de texto em colunas é uma tabela. Uma lista de itens curtos, como nomes de
++ arquivos ou as entradas de uma legenda, lê-se melhor quando disposta como `ls` dispõe um
++ diretório: em tantas colunas quantas a largura permitir, sem títulos e sem linhas divisórias.
++ `columnate` faz isso para uma lista de valores textuais, e dá uma linha para cada fileira:
+
+% 2 1 0 15caa0c745d760391809c62d37b22de6
+
+% 3 1 0 186ced14a44f07981ffa81991d1f9ae9
+
+% 4 1 0 1c842e066fbcb0fd0cea7b68dffdd251
+
+% 0 1 0 1b6159d53e44b9e319484bf06419b8b6
+
+% 1 1 0 10a4d4126a693f3a1f8691f93c19abae
+
+@ 0 6 0 1f3593dfb1dc7b5e15c73e48a2ef90d4
++ O número de colunas é o maior em que o conteúdo de cada coluna cabe, com `gap` células entre
++ vizinhas. Colunas de largura igual, cada uma tão larga quanto o item mais largo, são preferidas.
++ Um layout com uma coluna a mais é admitido quando os itens que caem em alguma coluna acabam sendo
++ mais estreitos, e essa coluna pode encolher. A largura que então sobrar é redistribuída entre as
++ colunas encolhidas, em direção à igualdade, sem que nenhuma coluna cresça além do item mais largo.
++ Os parâmetros de `columnate` são:
+
+% 2 1 0 149766aa27c73ced0e743821737ea666
+
+@ 0 8 0 001d82329a60793a00c494922db97714
++ column  Parâmetro
++ column  Padrão
++ column  Efeito
++ row  `width`  nenhum  a largura a preencher
++ row  `gap`  `2`  as células entre colunas vizinhas
++ row  `uniform`  `false`  quando `true`, considera apenas layouts de largura igual
++ row  `downward`  `false`  quando `true`, lê os itens descendo cada coluna em vez de atravessar cada fileira
++ row  `align`  `TextAlignment.Left`  como cada célula é preenchida dentro da sua coluna
+
+% 1 1 0 1a1d94c0f7f580ce14163f599c81f6fb
+
+@ 0 1 0 02b96d2b7a512204078013d5fd1ddf3c
++ Uma fileira alinhada à esquerda não tem preenchimento final depois do seu último item.
+
+@ 0 1 0 1b04adad405faa911a74903ee9cbae9f
++ ### Quando a tabela não cabe
+
+@ 0 2 0 14c2f4ee5120278f114dc33b4f5e3bd5
++ Abaixo de certa largura, nenhuma disposição de colunas é satisfatória, e o que deve acontecer então
++ é uma política, não um comportamento fixo. O given `columnAttenuation` decide:
+
+% 2 1 0 06e96c0ecf42d7751bca8086f4165db9
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 3 0 0eb0077ff598ff6e09c8a114184c5c45
++ column  Uma tabela que não cabe
++ row  `columnAttenuation.ignoreAttenuation`  é desenhada mesmo assim, tão bem quanto a largura permitir
++ row  `columnAttenuation.failAttenuation`  lança um `Table.Error`, em vez de produzir algo enganoso
+
+% 1 1 0 17a4d16ae27d558c0ddabbe87612d83f
+
+@ 0 3 0 017c18be945608da17904bd0f43b094b
++ O limite não é abstrato. Na tabela acima, a coluna *Description* nunca pode ser mais estreita que a
++ palavra mais longa que contém, `Statically-checked`. Abaixo de 37 caracteres, nenhuma folga a fará
++ caber, por mais que o resto se recolha.
+
+@ 0 3 0 179752d9608d78641270125ae80a9be2
++ `Table.Error` é um [erro](errors.md#recovering) verificado como qualquer outro. Ele carrega a
++ largura mínima de que a tabela precisava e a largura que lhe foi dada, para que um handler possa
++ dizer algo útil, e não precise simplesmente falhar:
+
+% 2 1 0 0a6d8d50c9147f690fc75b37d0a6ea35
+
+% 0 1 0 1408297531494e580370635bee386861
+
+% 0 1 0 1457e4d128700298037798f55e84de9e
+
+% 0 1 0 13d5befb2d1178cb1ef63455361dd122
+
+% 0 1 0 0629bf6d15990ec10b21350185a9911b
+
+% 0 1 0 09405336e5e42cad066e80b36ea78251
+
+% 0 1 0 04b68f13292630100c24d6460f2a1679
+
+% 0 1 0 1c8093f6ab1162b31bbb1d1f6475b881
+
+% 1 1 0 10e3f4d8859040300d65af2b7a76507b
+
+% 3 1 0 0d73835f3662942e1fe6ba2626955299
+
+% 4 1 0 035303159a74bc2e1919a61bb1e467ad
+
+% 5 1 0 12d0a3a143aaf4681131893026af8da8
+
+% 0 1 0 05c588ede96667f60b36e9a72ad6996c
+
+% 1 1 0 03481259a5fbbb15105ae9aae38a02a6
+
+@ 0 4 0 0ddd4378a59929d501ba143da7469e11
++ Um relatório escrito em um arquivo, onde ninguém verá que as colunas foram mutiladas, quer a falha.
++ Uma exibição interativa, em que o usuário pode alargar a janela, quer a tabela desenhada. E como
++ `ignoreAttenuation` não pode falhar, escolhê-la não exige nenhum tratamento de erros.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 6 0 1954ecda59c02d2f02f58b3a85f39927
++ - [Terminal](terminal.md) aplica estilos ao texto de uma célula e desenha interfaces ao vivo.
++ - [CSV](csv.md) lê as linhas que uma tabela exibe.
++ - [Hifenização](hyphenation.md) quebra as palavras de uma coluna quebrada.
++ - [Texto](text.md#padding-and-fitting) preenche e ajusta valores isolados.
++ - [Gráficos](charts.md) desenha os mesmos dados como uma imagem.
++ - [Catálogos](catalogs.md), [daemons](daemons.md), [exibição](display.md) e [árvores](trees.md) dispõem valores como texto no mesmo espírito.

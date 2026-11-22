@@ -1,0 +1,42 @@
+orthant 2 language
+
+% 0 1 0 1992d28bc027cd86144d8211aebbc5e3
+
+@ 0 2 0 0a914f7ca990f7411312c59f95389510
++ Levée lorsque Scintillate ne peut pas démarrer un serveur HTTP sur le
++ port demandé.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 3 0 16d858387f91b9f61d6c27a694355b4f
++ Le système d'exploitation a refusé de lier l'écouteur, généralement parce que le port est
++ déjà utilisé, ou parce qu'il est privilégié et que le processus n'a pas
++ l'autorisation nécessaire.
+
+@ 0 4 0 0d201869c13bd46b0d76dd3129898f34
++ Ce n'est **pas** une réponse HTTP 5xx. Celle-ci est
++ `Http.Status.Category.ServerError` dans telekinesis, et elle décrit une
++ réponse que le serveur a envoyée ; cette erreur-ci décrit un serveur qui n'a jamais démarré.
++ L'erreur s'appelait `ServerError` jusqu'à ce que les deux soient distinguées.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1226dc50bc5618d319fb15e7b9fa3a09
+
+% 1 1 0 1155b4147f71d900099fb1711c5f6595
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 2 0 0cae5ffc7e29ed1c10e315cb2f3e0955
++ Choisissez un autre port, libérez celui qui est en conflit, ou exécutez le processus avec
++ des privilèges suffisants.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 1d31e7adc17911a20596ff34e3235ba2
++ - Source : `lib/scintillate/src/server/scintillate.Httpd.scala`

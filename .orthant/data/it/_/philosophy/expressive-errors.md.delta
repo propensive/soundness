@@ -1,0 +1,195 @@
+orthant 2 language
+
+@ 0 1 0 169cd510ee09703b15d1c4f90928351e
++ # Errori espressivi
+
+@ 0 6 0 19a7a5431612c1bb0e753bc4a3cc1af6
++ Quando un errore si verifica, Soundness lo rende quanto più informativo possibile. Un errore è un
++ valore immutabile che porta il dettaglio completo di ciò che è andato storto (che cosa ci si
++ aspettava, che cosa si è trovato, e dove) anziché un semplice messaggio o un codice opaco. Poiché
++ quel dettaglio è un dato strutturato, può essere ispezionato, reso in forma leggibile per una
++ persona o usato in un pattern matching dal codice di gestione, e la stessa ricchezza che aiuta uno
++ sviluppatore a diagnosticare un guasto permette a un programma di reagirvi con precisione.
+
+@ 0 4 0 0405ba67b19020b51d3c067b4d5ebb4d
++ Soprattutto, gli errori sono progettati per il pattern matching. Un errore è una case class, le sue
++ cause distinte sono i casi di un'enumerazione `Reason`, e i valori che spiegano il fallimento sono
++ campi: così il codice di gestione scompone l'errore anziché analizzarne il messaggio:
+
+% 2 1 0 121588916a79ff6804078769f3caa2ce
+
+% 3 1 0 1264e7a4842de378109faf8abdc51fde
+
+% 4 1 0 0cfb7fa36795c19512a07ea594f628c4
+
+% 0 1 0 1286ab9e4062e2c717549c709e5e7a14
+
+% 0 1 0 0723c5f5e6b55281040a4ff3f33bbbe6
+
+% 0 1 0 1df5d7cbfa0afef50d673bad5ec46c2b
+
+% 0 1 0 0723ad02e085c6a71d589624a353a1d0
+
+% 1 1 0 108d5e3a93436b6a1d7cce5ee85e7efd
+
+@ 0 5 0 0ac6f86b7e700e870400ec6f53d29e02
++ Un handler che fa pattern matching sulla struttura è verificato dal compilatore (un motivo
++ rinominato rompe il match, non il comportamento in produzione) e può essere esattamente tanto
++ selettivo quanto la situazione richiede, mentre il confronto di stringhe sui messaggi è fragile
++ sotto ogni aspetto. Il messaggio che una persona legge e la struttura su cui un programma fa
++ pattern matching sono due rese di un unico valore, quindi non possono mai essere in disaccordo.
+
+@ 0 1 0 129772d86d021f5d06f63163b43d5d86
++ ## Anatomia di un errore
+
+@ 0 3 0 0336d452d60408740943277dc57adbf1
++ La forma è abbastanza coerente da meritare di essere enunciata. Un errore è una case class che
++ porta i valori che lo spiegano, le sue cause distinte sono un'enumerazione `Reason`, e il suo
++ messaggio è costruito con l'interpolatore `m"…"` a partire da quegli stessi valori:
+
+% 2 1 0 1f464a32260b764c0dd83abba2dbbd4c
+
+% 3 1 0 1af258dd12322a64086a9442716a88b1
+
+% 4 1 0 0ee76511066a11300eac959f8bf7ab3e
+
+% 0 1 0 00bc0f8e10ad6e9602574ca366bde050
+
+% 0 1 0 1d45a2ac01f56f730cdcdb560ea2a569
+
+% 0 1 0 04c819b7188a9c8f036df6dcaab41e03
+
+% 0 1 0 1bf4796fbec18ceb13ca1d7a588caade
+
+% 0 1 0 11a0fde00aef89461fac730ce9785bd3
+
+% 0 1 0 0d3a7f77454937db1ca095299502ae6b
+
+% 0 1 0 0cd4825d971afbf8161143c26caaff9b
+
+% 0 1 0 066a44a274bc871a16d46c35cffd6135
+
+% 0 1 0 0b5f5539c3b001d1034687765fb2b333
+
+% 0 1 0 07099a67fe27b0aa180aaaf3556584e7
+
+% 0 1 0 1145b289f21ffb821d839ad6ac827d8f
+
+% 0 1 0 05021db064eda89a059093fe24c98c70
+
+% 1 1 0 1b535c71aaf383af05f83552fec7d74d
+
+@ 0 2 0 13f1b2f300616e140d001523eab217d8
++ Si noti che un motivo può portare dati propri (il byte fuori intervallo, il numero di gruppi
++ effettivamente trovati) così la diagnosi è specifica anziché categorica.
+
+@ 0 4 0 049745cb252b8efc0c6cd6881bcc6507
++ I numeri sono l'identità dell'errore. Un tipo di errore ha un codice bolt (il numero del suo modulo
++ e il proprio numero all'interno del modulo) e ogni motivo ha un numero al suo interno, e ogni codice
++ ha una pagina in `doc/errors` che ne spiega la causa e i rimedi abituali: così un `↯/s.100.2` nella
++ segnalazione di un utente si può consultare anziché indovinare.
+
+@ 0 1 0 0d5d2770b1c631a11f455ebd47ef5759
++ Dalla forma derivano altre tre proprietà, e ciascuna vale la pena di averla.
+
+@ 0 5 0 0c2015700d6940ed1b53af73d30f0009
++ Il messaggio è *derivato* dai campi, quindi non può descrivere uno stato in cui il valore non si
++ trova. Un `Reason` è un insieme chiuso, quindi un handler che vi fa pattern matching è verificato
++ per esaustività, e un nuovo motivo viene segnalato in ogni punto che non l'ha considerato. E i
++ valori che spiegano il fallimento sono disponibili all'handler, non semplicemente resi in una
++ frase.
+
+@ 0 1 0 0e17c4b5d18d17440291e6cc47c380cc
++ ## Anche i messaggi sono valori
+
+@ 0 3 0 1296ac9e53c01805009d1ff92e30958f
++ Un `Message` non è un `Text`. È un valore strutturato costruito da parti interpolate, così che
++ qualsiasi cosa `Communicable` possa esservi incorporata e resa in modo coerente ovunque il
++ messaggio venga mostrato:
+
+% 2 1 0 177904f9cae24eba0b55e4cde1cbdf11
+
+% 3 1 0 0c13024419e04d11104f015a21373b31
+
+% 4 1 0 1801a934a4bc6f271618e7d468684eae
+
+% 0 1 0 18f79a633b15b25b141c107163b044a2
+
+% 1 1 0 18c74871a34ce55e05cab4da28d175c0
+
+@ 0 5 0 0062b4f9b26e69ce01e503354e26595a
++ Il motivo viene reso tramite la propria istanza di `Communicable` anziché tramite `toString`, così
++ la formulazione vive con il tipo che descrive, e un'unica dicitura serve ogni messaggio che lo
++ incorpora. È anche la giuntura attraverso cui i messaggi potrebbero essere localizzati: la
++ struttura sopravvive fino al momento della resa anziché essere appiattita in una stringa al momento
++ della costruzione.
+
+@ 0 1 0 0e6eff517519477d0c70fcb89509fe08
++ ## Gli errori sono puri
+
+@ 0 1 0 136b5a9eb0062a5218db7bc4334edcff
++ Un errore non può mai contenere una capability viva, e il compilatore lo impone: `Error` estende
+
+% 0 1 0 0aa2f27d4525a41e05b984b274d20db7
+
+@ 0 5 0 1cb137791fdb3dfc1ce81118c56ea9b9
++ La ragione è precisa. `throw` è l'unico canale che il [capture checking](capture-checking.md) non
++ può vedere (un'eccezione catturata fuori da un ambito arriva con le sue catture cancellate) quindi
++ un errore che portasse una capability sarebbe una falla nella garanzia che ciò che ha un ambito non
++ ne sfugge. La purezza la chiude: nessun errore, comunque viaggi, può far uscire di nascosto un
++ handle di file o un gestore di errori dall'ambito che lo confinava.
+
+@ 0 3 0 05730397d9b5b4e101c7e908e955a4d9
++ Questo ha una conseguenza di design che vale la pena conoscere. Un errore può portare il
++ *percorso* che non si è potuto aprire, ma non l'handle aperto; l'*URL* che ha fallito, ma non la
++ connessione. In pratica, è comunque ciò che serve a una diagnosi.
+
+@ 0 1 0 12b5dc3baea8749a1fbb2aa1942197c4
++ ## Gli stack trace sono opzionali
+
+@ 0 3 0 09c88b069907145b0a7e00fac00cf1aa
++ Catturare uno stack trace è la parte costosa della costruzione di un'eccezione, e molto spesso è
++ sprecata: un errore atteso e gestito due frame più in là non ne ha alcun bisogno.
+
+@ 0 1 0 089dadd7f0fc971e1f3ae9c6c15be813
++ Se un errore catturi una trace è quindi una scelta contestuale:
+
+% 2 1 0 1483cb9d97568aa914accf48c22168ae
+
+% 3 1 0 1be817b1031391b612c40098614b9eac
+
+% 4 1 0 0dda5f766e47ebe4186a1f5d423c41ed
+
+% 0 1 0 071ff21beab99b861550e39ebcfdc692
+
+% 0 1 0 1376db95fa3260100b9941ed4944ab13
+
+% 1 1 0 11413f36c893c2d71e57317184ca827e
+
+@ 0 3 0 1fd41bf63afbd3571252f2dc51916e4d
++ Il parametro `Diagnostics` compare per questo motivo nel costruttore di ogni errore. È l'unico
++ elemento di cerimonia che il design impone alla definizione di un errore, e compra la possibilità
++ di usare errori tipizzati nei percorsi critici senza pagare per trace che nessuno leggerà.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Quanto costa
+
+@ 0 3 0 0d09f9b28b6b81b306fc99faa9d9425a
++ **Definire un errore richiede più lavoro che lanciare una stringa.** Una case class,
++ un'enumerazione `Reason`, un'istanza di `Communicable` e un parametro `Diagnostics` sono una vera
++ cerimonia rispetto a `throw new RuntimeException("bad port")`.
+
+@ 0 4 0 0a88002cf3cdb8531b68ce2591335cba
++ La difesa è che la cerimonia è proporzionata all'importanza dell'errore e si paga una volta per
++ tipo di errore, mentre il beneficio si riscuote in ogni handler; e che l'alternativa degrada in
++ modo prevedibile: si fa pattern matching sui messaggi testuali, poi i messaggi vengono migliorati,
++ e il matching si rompe in silenzio.
+
+@ 0 3 0 10ae0efcceb28cd507ac3a07c19fd47c
++ **Le enumerazioni di motivi sono un impegno.** Aggiungere un caso è una modifica che rompe il
++ sorgente per gli handler esaustivi, ed è il controllo di esaustività che funziona come previsto,
++ ma significa che l'insieme dei motivi merita riflessione quando si progetta l'errore.
+
+@ 0 2 0 011facc043475de205eef161507ceab3
++ Si veda [la gestione degli errori](error-handling.md) per come questi valori vengono sollevati e
++ gestiti, e [le transizioni totali](total-transitions.md) per il perché l'esaustività conta.

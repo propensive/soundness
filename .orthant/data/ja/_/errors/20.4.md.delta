@@ -1,0 +1,33 @@
+orthant 2 language
+
+% 0 1 0 0e85c86ae3b7bbb901ca7daa7705c620
+
+@ 0 2 0 03377a66e83fd311159dc5dd75639be0
++ `Unset` である `Optional` の値を、定義されているかのように読んだときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 2 0 198a7335770eeb84058daea92b7b9322
++ Vacuous の厳格なアクセスのメソッドは、値が設定されていないとき、番兵を返すのではなくこのエラーを投げる。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## メッセージの例
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0221779c1414b0920a070837f070c7dd
+
+% 1 1 0 11b9f7eda954709905cce6e8652d527d
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解決方法
+
+@ 0 2 0 0b6968587a8027ef0eb967369a3147fd
++ `.lay`/`.let` でアクセスを保護するか、`.or` でデフォルトを与える。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 03e0a88873e6402e1d306cac6fdaf1a2
++ - ソース：`lib/vacuous/src/core/vacuous.Optional.scala`

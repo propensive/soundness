@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 05e22d0d0c4c952c1a616480d0d54f00
++ ### Den Benutzer identifizieren
+
+@ 0 4 0 0f1186eb9790ecf8040de3bf966f6f31
++ OAuth 2 sagt, was ein Client tun darf, aber nicht, wer der Benutzer ist.
++ [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html) ergänzt das, als
++ *ID-Token* neben dem Access-Token. Es ist ein [JWT](jose.md), vom Provider signiert, und eine
++ `Authorization` bewahrt es, wie es ankam, in `identityToken` auf.
+
+@ 0 2 0 17ee95122d77c51e1b758d53b02e70ec
++ `Oidc.discover` liest die Endpunkte eines Providers und den Ort seiner Schlüssel aus seiner
++ Well-known-URL. Der Provider ist dann ein `Issuer` für einen Client, der bei ihm registriert ist:
+
+% 2 1 0 1676f28cb17211c618c8f10965429eea
+
+% 3 1 0 12416b93396d5f01074ee5e4ff7eacd5
+
+% 4 1 0 02f205f52fb10683093ec652b6425573
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0e420dc0f15b9ffe1bcc5f9461b53f86
+
+% 0 1 0 1493e4beb236334d0483777a1c096a83
+
+% 0 1 0 06684d0c4899b42507981915848f35f1
+
+% 1 1 0 026380f622da0c1a04252c4ad06649dc
+
+@ 0 3 0 017155772118f2530999114569e9903e
++ `Oidc.identify` verifiziert das ID-Token. Die Schlüssel des Providers sind ein `Jwks`, unter denen
++ das Token einen nennt. Das Typargument ist die Chiffre, als die diese Schlüssel gelesen werden,
++ und damit das eine Signaturverfahren, das akzeptiert wird:
+
+% 2 1 0 015bcf69810dd9b51b518ff6bc627dd7
+
+% 3 1 0 0c0a6430dffcbe360ff5af91ba0b14ee
+
+% 4 1 0 1f5c2df64601e93815ea77fa019483cc
+
+% 0 1 0 01bf49b20b90b2e100bc44eec75f8da2
+
+% 0 1 0 0e11bb161cac60b512fd6ab7618e844c
+
+% 0 1 0 037312fb8cde11a7171d78bfe5dcc15d
+
+% 1 1 0 034cd2b7dbd9c2dc0010c2fde965e5be
+
+@ 0 4 0 0822b8853f541c4f10d7556f60389df7
++ Das Token muss vom Provider signiert sein, für diesen Client ausgestellt sein und nach der `Clock`
++ im Geltungsbereich innerhalb seines Gültigkeitszeitraums liegen. Wurde mit dem
++ Autorisierungs-Request eine *Nonce* gesendet, muss das Token dieselbe tragen, was es an diesen
++ Request bindet. Alles andere löst einen `OAuth.Error` aus, und der Benutzer wird nicht
++ identifiziert.

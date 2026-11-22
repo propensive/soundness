@@ -1,0 +1,149 @@
+orthant 2 language
+
+@ 0 146 0 1d92610ccdaaf44b00b8141cc6643262
++ abacist: 複合単位 混合基数 時間の分解 量
++ acyclicity: グラフ dag 有向グラフ 半順序集合 graphviz dot 部分グラフ
++ adversaria: アノテーション メタデータ リフレクション コンパイル時リフレクション
++ ambience: 環境変数 システムプロパティ 設定 xdg ディレクトリ 環境
++ anamnesis: データベース エンティティ 永続化 ストレージ データアクセス
++ anthology: scalaコンパイラ コンパイル プログラムからのコンパイラ 診断
++ anticipation: 統合 型クラスの橋渡し 抽象型クラス モジュール横断
++ aperture: 開く 作成 スコープ付きリソース ハンドル ケイパビリティ 権限 モード
++ apoplexy: openapi swagger api仕様 rest スキーマ
++ archimedes: mathml 数式 数学記法 描画
++ austronesian: pojo java相互運用 直列化 クラスローダーの分離
++ aviation: 時刻 日付 暦 タイムゾーン iso8601 rfc1123 祝日 うるう秒 tzdb
++ baroque: 複素数 数学 虚数 代数
++ beneficence: ビルドプラグイン 公開 成果物 配布
++ bitumen: tar アーカイブ pax tarball unixパーミッション
++ breviloquence: cbor バイナリjson 簡潔なバイナリ 直列化
++ burdock: ブートストラップ インストーラー 自己インストーラー
++ cacophony: オーディオ 音 aiff wav 再生 録音 ステレオ 波形
++ caduceus: 電子メール smtp mime 送信者 添付ファイル エンベロープ
++ caesura: csv tsv dsv スプレッドシート シート 区切り値
++ camouflage: キャッシュ lruキャッシュ メモ化
++ capricious: 乱数 rng 確率 ガウス分布 ガンマ分布 分布 サンプリング シード
++ cardinality: 細分化型 数値範囲 範囲付きの数 範囲
++ cartouche: ラベル配置 キャプション 障害物 配置器 衝突回避 チャートのラベル
++ cataclysm: css スタイルシート セレクター キーフレーム メディアクエリ フォント 型安全なcss
++ charisma: 化学 周期表 化学反応式 分子 化学式
++ chatelaine: webauthn パスキー fido2 認証 パスワードレス セキュリティキー アテステーション
++ chiaroscuro: 差分 比較 対比 類似度 テストのアサーション 分解
++ clavichord: キーボード キー押下 キー 修飾キー 入力
++ coaxial: ソケット tcp udp マルチキャスト dns ネットワーク ドメインソケット バインド可能 接続
++ concordance: コレクション 連結 追加可能 前置可能 結合
++ contextual: 文字列補間 補間子 型安全な補間 カスタム補間子
++ contingency: エラー処理 例外 戦術 回復 検証 エフェクト
++ corpuscular: チェックサム crc32 crc64 adler32 非暗号学的ハッシュ 完全性
++ cosmopolite: i18n 国際化 ロケール 言語 多言語 l10n
++ degustation: tasty apiの表面 apiアトム 検査 ライブラリの同一性
++ delicious: 意味的な診断 コンパイラエラー 説明 診断
++ dendrology: 木構造図 dag図 asciiツリー 可視化 木の描画
++ denominative: 序数 インデックス 0始まり 1始まり 区間
++ digression: スタックトレース コードポイント 完全修飾クラス名 イントロスペクション デバッグ
++ dissonance: 差分 myers差分 テキスト差分 編集距離 変更検出
++ distillate: デコーダー エンコーダー 型クラス 変換 抽出
++ diuretic: java相互運用 アダプター レガシーjava 互換性 javaの型
++ embarcadero: docker コンテナー コンテナーランタイム
++ enigmatic: 暗号 aes rsa hmac 暗号化 署名 pem 公開鍵
++ escapade: ansiエスケープ 端末のスタイル 色 テキストスタイル ハイパーリンク リボン テレタイプ
++ escritoire: 表 表形式 グリッド 罫線素片 端末の表 列の揃え
++ espionage: acp agent-client-protocol コーディングエージェント ide統合 json-rpc
++ ethereal: デーモン ipc バックグラウンドプロセス サービスインストーラー クライアントサーバー
++ eucalyptus: ロギング ログ 領域 ロガー 構造化ロギング
++ exegesis: lsp language-server-protocol ide統合
++ exoskeleton: cli コマンドライン アプリケーションフレームワーク エントリーポイント シェル補完
++ facsimile: pdf cos 文書 ページツリー テキスト抽出 注釈 しおり
++ frontier: 暗黙 given探索 コンパイル時リフレクション 列挙型
++ fulminate: エラーメッセージ 診断 即座に失敗する 構造化メッセージ 国際化メッセージ
++ galilei: ファイルシステム io ファイル ディレクトリ シンボリックリンク ボリューム posix
++ gastronomy: ハッシュ ダイジェスト sha256 md5 crc32 feistel チェックサム
++ geodesy: 位置情報 コンパス 座標 方角 地理 主方位
++ gesticulate: mime メディアタイプ マルチパート content-type アセット
++ gigantism: マクロ メタプログラミング コンパイル時 scalaコンパイラの内部
++ gnossienne: 参照 外部キー エンティティ参照 解決可能
++ gossamer: テキスト 文字列 テキストユーティリティ 小数の書式 双方向テキスト unicode 結合
++ graffiti: ページ アーキタイプ htmlページ ヒーロー マストヘッド パンくずリスト コロフォン ファビコン ダッシュボード
++ guillotine: シェル プロセス サブプロセス コマンド実行 posix sh
++ hallucination: 画像 png jpeg gif bmp ラスター 画像入出力
++ harlequin: 構文ハイライト ソースコード トークン化 scalaパーサー
++ hellenism: クラスパス クラスローダー jvm リソース jar
++ hieroglyph: unicode エンコーディング 文字エンコーディング utf8 書記素 テキストエンコーディング
++ honeycomb: html html5 dom 型安全なhtml タグ 属性
++ hyperbole: tasty scalaコンパイラ イントロスペクション ast マクロのデバッグ
++ hypotenuse: 数値 オーバーフロー 除算 整数演算 順序付き
++ imperial: ディレクトリ構成 ホームディレクトリ ベースディレクトリ ファイルシステムの構成 xdg
++ inimitable: uuid 識別子 guid
++ iridescence: 色 色空間 rgb cielab hsl srgb パレット テーマ 測色
++ jacinta: json パーサー 直列化 json-pointer json-schema スキーマ検証 動的アクセス
++ kaleidoscope: 正規表現 グロブ パターンマッチ スキャナー regex
++ larceny: コンパイラプラグイン コンパイルエラー テスト コンパイル時テスト
++ legerdemain: フォーム ウィジェット htmlフォーム 入力 フィールド
++ locomotion: protobuf protocol-buffers ワイヤ形式 バイナリ直列化
++ mandible: バイトコード jvm クラスファイル class-file
++ mercator: ファンクター モナド アプリカティブ 型クラス 関数型プログラミング
++ metamorphose: 置換 組合せ論 階乗進数 lehmer
++ monotonous: base64 base32 16進 バイナリエンコーディング 基数エンコーディング 直列化
++ mosquito: 行列 線形代数 数学 ベクトル
++ murmuration: コレクション 型クラス 走査可能 畳み込み可能 写像可能 フィルター可能
++ nomenclature: 名前の検証 型レベル 制約 細分化型 文字列リテラル型
++ obligatory: rpc json-rpc sse サーバー送信イベント フレーミング 長さ接頭辞 プロトコル
++ octogenarian: git バージョン管理 gitリポジトリ コミット ssh-url
++ orthodoxy: oauth 認証 認可 oauth2 スコープ
++ panopticon: レンズ オプティクス 合成可能 ケースクラス アクセサー
++ parasite: 非同期 スレッド 並行性 タスク プロミス デーモン 監督
++ perihelion: websocket フレーム wsプロトコル
++ phoenicia: フォント タイポグラフィ ttf truetype フォントメトリクス opentype
++ plutocrat: 通貨 お金 価格 金融 luhn isin 固定小数点
++ pneumatic: 圧縮 deflate gzip zlib brotli xz lzma2 lzw
++ polysyllabic: ハイフネーション liangアルゴリズム 改行 組版
++ polyvinyl: 構造的型 レコード 匿名レコード 型プロバイダー
++ praxinoscope: 正規表現 re2 オートマトン 線形時間 正規表現エンジン redos
++ prepositional: 型クラス 型の基盤 細分化型 抽象型
++ prescience: ステージング マクロ型クラス コード生成 展開時
++ probably: テスト テストランナー プロパティテスト ベンチマーク アサーション
++ profanity: 端末 tui キーボード ラインエディター 対話的 コンソール
++ prophesy: 補完 動的型 タブ補完 ideの候補
++ proscenium: 再エクスポート 標準ライブラリ ユーティリティ ボイラープレート削減
++ punctuation: markdown commonmark 散文 テキスト整形
++ quantitative: 単位 量 次元解析 si単位 測定 物理
++ querencia: dom ブラウザ 型付きdom ウェブui クライアントサイド
++ revolution: jarマニフェスト semver バージョニング
++ rudiments: ユーティリティ コアライブラリ 全単射 ループ インデックス可能
++ savagery: svg ベクターグラフィックス 2dグラフィックス パス 図形
++ scintillate: httpサーバー サーブレット ウェブフレームワーク httpルーティング
++ sedentary: ベンチマーク 性能テスト マイクロベンチマーク
++ serpentine: パス ファイルシステムのパス posix windows linux 相対パス 絶対パス
++ sibylline: llm anthropic openai gemini チャット補完 ツール使用 構造化出力 ストリーミング
++ sigillate: jose jwt jws jwe jwk トークン ベアラー 認証 署名 暗号化
++ spectacular: show 整形表示 表示 inspect
++ stenography: 型名 修飾名 インポート シンボルの描画 scalaの型
++ stratiform: tel 設定言語 レコード スキーマ バイナリtel
++ superlunary: ステージング リモート実行 多段階プログラミング 分散コンピューティング
++ surveillance: ファイル監視 ファイルシステム ファイルイベント ディレクトリ監視 nio
++ susurration: ssh sshクライアント known-hosts アイデンティティ トランスポート セッション リモートコマンド
++ symbolism: 演算子 算術 型クラス 演算子オーバーロード 代数
++ syndesis: mdns dns-sd zeroconf bonjour サービス発見 マルチキャスト
++ synesthesia: mcp model-context-protocol llm aiプロトコル
++ tarantula: webdriver ブラウザ自動化 chrome firefox safari edge selenium ヘッドレス
++ tasseomancy: チャート グラフ プロット データ可視化 svg ベンチマーク 棒グラフ 折れ線グラフ 円グラフ ヒストグラム
++ telekinesis: http httpクライアント クッキー 認証 restクライアント ウェブリクエスト
++ tessellate: レイアウト 罫線素片 リフロー 揃え フレックス テキストレイアウト
++ turbulence: ストリーム io 標準入出力 ストリーミング リアクティブ 行区切り
++ typonym: 型レベル 型リスト 型マップ 異種 リフレクション
++ ultimatum: 端末のレイアウト ペイン プログレスバー スピナー ゲージ スパークライン tui
++ ulysses: bloomフィルター 確率的データ構造 パリンプセスト
++ umbrageous: コンパイラプラグイン シェーディング 名前空間の分離
++ urticose: ホスト名 メールアドレス ipアドレス macアドレス ポート ネットワーク識別子 エンドポイント dns
++ vacuous: オプショナル null安全 option maybe null許容
++ vexillology: ビットフラグ フラグ 列挙型 ビットフィールド
++ vicarious: カタログ プロキシ 型で索引付け レコード
++ virility: roff マニュアルページ man-page troff ドキュメント cliヘルプ
++ vivisection: デバッグ jdi ブレークポイント ステップ実行 dap デバッグアダプター 変数
++ wisteria: 導出 直積型 直和型 ケースクラス 型クラスの導出 magnolia
++ xenophile: ffi 外部相互運用 wit webidl typescript kotlin wasm ネイティブ
++ xylophone: xml xmlスキーマ 型安全なxml 動的xml
++ yossarian: pty 端末エミュレーター ansiエスケープ 画面バッファー vt100 カーソル
++ ypsiloid: yaml パーサー 直列化 yaml-ast アンカー
++ zephyrine: パーサー パース カーソル エミッター 疎な形式 バイナリレイアウト パック アンパック
++ zeppelin: zip アーカイブ zipファイル 圧縮

@@ -1,0 +1,58 @@
+orthant 2 language
+
+% 0 1 0 1a59a97de63ba1600d936dfd585c555e
+
+@ 0 1 0 06555f941ac16cec13d7a6794f57ef95
++ Se lanza cuando una hoja de estilo contiene una construcción que no es CSS válido.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 04f592f817c3a7551a0bebb3929a550f
++ Cataclysm comprueba los nombres de las propiedades con el conjunto conocido y analiza los
++ selectores con la gramática moderna completa, de modo que una propiedad mal escrita o un selector
++ mal formado se notifican en lugar de pasarse a un navegador que los ignorará en silencio.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Código
++ column  Motivo
++ column  Mensaje
+
+% 0 1 0 09e1d347a6ec1e3e05b55e407c35d542
+
+% 0 1 0 18c81a5f548ff76d0c4e282d009d9033
+
+% 0 1 0 0f66cd1406aa936e0762cf528ffe2f23
+
+% 0 1 0 0a6302dfa3338c76154c3bf93a6e9730
+
+% 0 1 0 0779243d5784509408c8349893c28245
+
+% 0 1 0 0d6b0feed889ed8d0bb093fad55a365a
+
+% 0 1 0 16eabb7a3a0d845400e5964c572915a4
+
+% 0 1 0 0434d4924dcdb86d159a20d5ce7d71fc
+
+% 0 1 0 05d8c69db7d37e9c19d7fe7233f16f15
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 2 0 1d9ea88cd38553700046b198ff2acb54
++ Corrige el nombre de la propiedad o el selector. Los errores se acumulan: una regla con varios
++ fallos informa de todos ellos, y por eso el tipo de error está en plural: `CssErrors` lleva la
++ lista.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 17618b65dd2a321a07280953fe6a6175
++ - Fuente: `lib/cataclysm/src/core/cataclysm.Css.scala`

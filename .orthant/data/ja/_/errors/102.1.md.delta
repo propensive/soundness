@@ -1,0 +1,39 @@
+orthant 2 language
+
+% 0 1 0 03436614c831c1f70dfe1f0f885feb1b
+
+@ 0 2 0 1dfe712c90d7e34b0ad23b490143cafe
++ DNS-SD のサービス探索（`syndesis`）が広告、ブラウズ、または解決をできないとき、あるいはサービス、インスタンス、TXT の値が正当でないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 13488b490aeb2a1806fa0aa6bd0efbbd
++ `Discovery.Service`、`Discovery.Instance`、`Discovery.Txt` は、構築時にその部分を検証する。広告はその名前を探査し、衝突が多すぎると諦める。解決はタイムアウトの範囲内でインスタンスのレコードを待つ。そしてバックエンドは起動できなければならない。
++ メッセージは `service discovery failed because $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 11 0 1bdfeeb0968780850977d0e272a22d8b
++ column  コード
++ column  理由
++ column  意味
++ column  メッセージ
++ column  解決方法
++ row  `↯/s.102.1.1`  `Conflict`  改名の上限に達するまで、広告のために試したすべての名前を別のホストが主張し続けた。  `[↯/s.102.1.1] service discovery failed because the name Hamlet._fury._tcp.local could not be claimed after repeated conflicts`  別個のインスタンス名を選ぶか、もう一方の広告者を止める。
++ row  `↯/s.102.1.2`  `Timeout`  インスタンスの SRV、TXT、またはアドレスのレコードが、解決のタイムアウトまでに届かなかった。  `[↯/s.102.1.2] service discovery failed because the instance Hamlet._fury._tcp.local did not resolve before the timeout`  インスタンスがネットワークを離れたのかもしれない。もう一度ブラウズするか、タイムアウトを長くする。
++ row  `↯/s.102.1.3`  `InvalidName`  インスタンスのラベルが空であるか、ラベルや名前が DNS の上限（ラベルは 63 オクテット、名前は 255 オクテット）を超えている。  `[↯/s.102.1.3] service discovery failed because the name is not a valid DNS-SD name`  ラベルを短くする。ラベルは、ドットや空白を含む任意の UTF-8 を含んでよい。
++ row  `↯/s.102.1.4`  `InvalidTxt`  TXT のキーが空であるか、印字可能な ASCII でないか、`=` を含んでいる。あるいは `key=value` の組が 255 オクテットを超えている。  `[↯/s.102.1.4] service discovery failed because the TXT entry a=b is not valid`  キーは短い印字可能な ASCII の名前である。`=` は値の中に入れ、長い値はいくつかのキーに分ける。
++ row  `↯/s.102.1.5`  `InvalidService`  サービス名が空であるか、十五文字より長いか、DNS の形式が付け加えるアンダースコアで始まっている。  `[↯/s.102.1.5] service discovery failed because the service name _fury is not valid`  登録されたサービス名を、アンダースコアなしで与える。`_fury` ではなく `fury` である。
++ row  `↯/s.102.1.6`  `Unavailable`  バックエンドが起動できなかった。ソケットのレスポンダーがマルチキャストに対応したインターフェースを見つけられなかったか、mDNS グループに参加できなかった。  `[↯/s.102.1.6] service discovery failed because no service discovery backend could be started`  ホストのネットワークインターフェースと、ポート 5353 を再利用付きでバインドできることを確かめる。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 0aac7d226d20ddd91529b8334ee1c1cf
++ - ソース：`lib/syndesis/src/core/syndesis.Discovery.scala`

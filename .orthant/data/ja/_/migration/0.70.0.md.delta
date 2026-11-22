@@ -1,0 +1,224 @@
+orthant 2 language
+
+@ 0 1 0 19e6ff72d3cf85af0892cd0f01fd6130
++ # 0.69.0 以降の変更
+
+@ 0 3 0 01e76fd394b779170df325bddff480bb
++ このファイルは、Soundness のライブラリを使うコードを 0.69.0 から次のリリースへ更新する LLM エージェントが読むものである。
++ 各項目は何が変わったかを正確に述べる。形式については `AGENTS.md` を参照のこと。
++ 項目はモジュールごとにまとめられ、モジュール内では最も新しく追加されたものが最後に来る。
+
+% 0 1 0 180f3ce4211ce4c80f4c87efbb23bc3f
+
+@ 0 23 0 1575b35231dbdf6f1d2ebecbf4c44812
++ - `probably.Test#aspire(predicate: test => Boolean): Unit` と `probably.Test#aspire(): Unit`（`Test[test]^` に対する拡張）が削除された。代わりのもの：新しいトップレベルの `probably.aspirationally[report, result](using runner: Runner[report])(block: Runner[report] ?=> result): result`（`soundness.aspirationally` としてもエクスポートされる）。`block` の中で評価されるすべてのアサーション（`assert`、`check`、`matches`、スプレッド）は、通常の判定の代わりに `Verdict.AspirePass`/`Verdict.AspireFail` を記録する。`test(name)(body).aspire(p)` は `aspirationally(test(name)(body).assert(p))` になるか、テスト（または外側の `suite(…)`）を `aspirationally:` の下にインデントする。`assert` はキャプチャ検査されるユニットでは純粋な本体を要求するが、`aspire` は要求しなかった。そのようなユニットで本体がケイパビリティを捕捉する願望的なテストは、代わりに `check` を使う。(#2101)
++ - `probably.Spread#aspire[report](predicate: (value, result) => Boolean)(using Runner[report], Inclusion[report, Verdict], Inclusion[report, Verdict.Detail]): Unit` と `probably.Spread2#aspire[report](predicate: (left, right, result) => Boolean)(using …): Unit` が削除された。代わりに `aspirationally` の中で `assert` を呼ぶ。(#2101)
++ - `probably.Runner` はクラスからトレイト `trait Runner[report] extends Findable` に変わり、新しいメンバー `def aspirational: Boolean`（既定値 `false`）を持つ。作るには `probably.Runner[report](selection: Selection = Selection.all, workers0: Optional[Int] = Unset)(using Reporter[report]): Runner[report]` を使い、これは `probably.Runner.Root[report]` を返す。`new Runner(…)` はコンパイルできなくなり、`new` なしの `Runner(…)` は変わらない。`probably.Runner.Aspirational[report](base: Runner[report])` は `aspirationally` が与えるビューであり、`base` に委ね、`aspirational = true` を持つ。(#2101)
++ - `Runner#aspirational` が設定されたアサーションは、ほかのどの `assert` とも同じ条件で（キャプチャ検査されるユニットでの純粋な本体）、（`--workers=<n>` のもとで）ワーカーのキューに入れられるようになった。以前の `aspire` は常にその場で実行されていた。(#2101)
+
+% 0 1 0 16f13521983facf213aed73653b0ed8a
+
+@ 0 8 0 1d3a41d88db69a2707c9142a3ccc837a
++ - `acyclicity.Dag.apply[node](edges: (node, node)*): Dag[node]`（およびそれの上に作られている `acyclicity.Dag#add(key: node, value: node): Dag[node]`）は、すべての辺の行き先をグラフのキーにするようになり、それ自身の辺がない限り依存の集合は空である。以前は始点だけがキーだった。そのため `Dag(a -> b).keys` は、以前は `Set(a)` だったところが `Set(a, b)` になる。`sources` にはそのような行き先が含まれ、`has(target)` は `true` であり、`sorted`、`reachable`、`descendants`、`ancestors`、`lineage`、`closure`、`traversal` は、辺がそれ自身は始点でないノードに届くグラフに対して `Dag.Error(Cyclic)` を発生させなくなった。`edges` と `dot` は変わらない。(#2114)
+
+% 0 1 0 1868a4f3222d8611045fe84bfb530658
+
+@ 0 8 0 1a4e4bcf745c343113366fef52adb9aa
++ - `anthology.Link.Error.Reason.CompilationFailed(errors: Int)` は `CompilationFailed(notices: List[anthology.Notice])` になり、コンパイラが報告したすべての診断を運ぶ。以前の数は `notices.filter(_.importance == anthology.Importance.Error).length` である。メッセージ `compilation failed with N errors` は変わらない。(#2114)
++ - コンポーネント `anthology.lira`（成果物 `anthology-lira`）が削除された。reliquary とともに propensive/lira リポジトリに移った（reliquary の項目を参照）。その型である `LiraBundle` は、名前とシグネチャを変えずにパッケージ `anthology` からパッケージ `lira` に移り、`soundness` にはエクスポートされなくなった。代わりに `dev.propensive:lira` に依存する。(#2111)
+
+% 0 1 0 166710858963dd2d0d21952966ed3b25
+
+@ 0 32 0 1ee7fcb7b1674cdb121c877cf8a93dc5
++ - `breviloquence.DynamicCborEnabler`（とその `soundness` のエクスポート）が削除された。代わりのものは `breviloquence.Cbor is rudiments.Dynamical` である。`breviloquence.dynamicAccess.dynamicCbor` は残され、型が `DynamicCborEnabler` から `Cbor is Dynamical` に変わった。`Cbor#selectDynamic`、`Cbor#applyDynamic`、両方の `Cbor#updateDynamic` のオーバーロードの消去されたパラメーター `(using erased dynamicCborEnabler: DynamicCborEnabler)` と、`Cbor.lens` given の消去されたコンテキストパラメーターは、`(? >: Cbor) is Dynamical` になった。`dynamicCbor` はそれを満たし、`rudiments.dynamically[Cbor]` や `dynamically` のブロックも満たす。(#2102)
++ - 新しい `breviloquence.postables.cborPostable: Cbor is telekinesis.Postable` と `breviloquence.servables.cborServable: Cbor is telekinesis.Servable`（メディアタイプ `application/cbor`、エンコードされたバイト列を本文とする）。`soundness.postables.cborPostable` と `soundness.servables.cborServable` としてもエクスポートされる。`breviloquence.http` モジュールは `telekinesis.core` に依存するようになり、`jacinta.http` と同じく JVM 専用になったので、`breviloquence.construables.cborConstruable` は Scala.js では使えなくなった。(#2104)
++ - `breviloquence.Cbor.optional` と `Cbor.option` に、先頭の `using` 節 `(absence: distillate.Decodable.Absence in Cbor, nullity: distillate.Decodable.Nullity in Cbor, fault: distillate.Decodable.Fault in Cbor, tactic: contingency.Tactic[Cbor.Error])` が加わった（以前は `optional` が `(tactic: Tactic[Cbor.Error])` を取り、`option` が無名の `Tactic[Cbor.Error]` を取っていた）。`Cbor.option` の結果の型は `(Option[value] is Decodable in Cbor)^{tactic}` になった。`Optional[T]` のフィールドにある CBOR の `null`（0xF6）は `Unset` として、`Option[T]` のフィールドでは `None` として読まれるようになった。以前は内側のデコーダーに渡されていた（`Cbor.Error(Reason.NotType(Null, …))`）。`undefined`（0xF7）は変わらない。新しい given `breviloquence.optionalityOptions.{strictCborAbsence, lenientCborAbsence, strictCborNulls, lenientCborNulls, strictCborFaults, lenientCborFaults}`（`soundness.optionalityOptions` にエクスポートされる）。(#2130)
++ - `breviloquence.Cbor.Ast` に対する拡張メソッドが、パッケージ `breviloquence` のトップレベル（そこでは `@unexported` だった）からコンパニオン `breviloquence.Cbor.Ast` に移った：`unset`、`isInteger`、`isFloat`、`isTextString`、`isBoolean`、`nullary`、`isTag`、`isByteString`、`isMap`、`isArray`、`primitive`、`elements`、`entries`、`element`、`key`、`value`、`index`、`long`、`double`、`string`、`byteString`、`boolean`、`tag`、`array`。シグネチャと動作は変わらない。これらは、`import soundness.*` だけの場合も含め、`Cbor.Ast` が使われるところではどこでも暗黙のスコープを通じて解決されるようになった。`breviloquence` からのそれらの名前によるインポート（`import breviloquence.isTag`）は削除し、`breviloquence.long(ast)` のような接頭辞の呼び出しは `ast.long` に書き換える。(#2153)
+
+% 0 1 0 0709addc77995521151ea74263edf6fe
+
+@ 0 15 0 12f4de3a8a995dc81853beb174d87f40
++ - `caesura.DynamicDsvEnabler`（とその `soundness` のエクスポート）が削除された。代わりのものは `caesura.Dsv is rudiments.Dynamical` である。`caesura.dynamicAccess.dynamicDsv` は残され、型が `DynamicDsvEnabler` から `Dsv is Dynamical` に変わった。`Dsv#selectDynamic` の消去されたパラメーター `(using erased dynamicDsvEnabler: DynamicDsvEnabler)` と、`caesura.dsvCellLens` given の消去されたコンテキストパラメーターは、`(? >: Dsv) is Dynamical` になった。`dynamicDsv` はそれを満たし、`rudiments.dynamically[Dsv]` や `dynamically` のブロックも満たす。(#2102)
++ - `caesura.Dsv.optionalDecodable` に先頭の `using` 節 `(absence: distillate.Decodable.Absence in Dsv, fault: distillate.Decodable.Fault in Dsv, format: Dsv.Format, tactic: contingency.Tactic[Dsv.Error])` が加わり、内側のデコーダーを名前渡しではなく値として `(decodable: (inner is Decodable in Dsv)^)` で受け取るようになった。`Dsv.Field.optional` に `(absence: distillate.Decodable.Absence in Dsv, fault: distillate.Decodable.Fault in Dsv)` が加わった。コンパニオンの既定のもとでの動作は変わらない。新しい given `caesura.optionalityOptions.{strictDsvAbsence, lenientDsvAbsence, strictDsvFaults, lenientDsvFaults}`（`soundness.optionalityOptions` にエクスポートされる）。(#2130)
+
+% 0 1 0 1b963d061ec457af154e1006b71b17d4
+
+@ 0 15 0 030f15eac210698516827d8ea1848fd9
++ - `coaxial.Tls`（JVM のコンポーネント）に、`versions` の後の五番目のフィールド `mutual: Boolean = false` が加わった：`case class Tls(context: Optional[SSLContext] = Unset, verify: Boolean = true, protocols: List[Text] = Nil, versions: List[Text] = Nil, mutual: Boolean = false)`。四つのフィールドに対する位置による構築や抽出には、これを加えなければならない。名前付きの構築と `copy` には影響しない。`mutual` が `true` の `Tls` で束縛された `coaxial.SecurePort` は、その `SSLServerSocket` に対して `SSLParameters.setNeedClientAuth(true)` を呼ぶ。(#2120)
++ - `coaxial.Tls.keyed(keystore: Data, password: Text): Tls` は `TlsAcceptance().keyed(keystore, password)` として定義されるようになった。そのコンテキストは引き続きキーストアのキーマネージャーと `null` のトラストマネージャーで初期化されるので、動作は変わらない。(#2120)
++ - 厳格でない `coaxial.TlsAcceptance` が実体化するトラストマネージャーは、`checkServerTrusted` で行っていたのと同じく、三つの `checkClientTrusted` のオーバーロードでも `Trust.pinned` を適用するようになった（リーフの SHA-256 のフィンガープリントがピンと異なるチェーンは `CertificateException` で拒否される）。また、ピン留めされている間、その `getAcceptedIssuers` は空の配列を返す。これはクライアント証明書を要求するリスナーからしか観察できず、それは以前はできなかった。(#2120)
+
+% 0 1 0 07cbf3671591ab0617673a498a92a7dd
+
+@ 0 8 0 1934676fecdb4c8d0f10441c4cee883d
++ - `contingency.Foci[focus]` に抽象メンバー `def truncate(length: Int): Unit` が加わった（最初の `length` 個より後に登録されたエラーをすべて捨てる）。`contingency.TrackFoci` はこれを実装し、`Foci.default` given では何もしない。`Foci` のほかの実装はこれを定義しなければならない。`contingency.Tactic[error]` に、既定の実装（`try block catch case _: Exception => Unset`）を持つ `def tolerate[result](block: => result): Optional[result]` が加わった。これは `Accrual.AccrueTactic`、`TrackTactic`、`VentureTactic`、そして `Tactic#contramap` が作る戦術によって上書きされ、ブロックが記録したものを巻き戻す。`tolerate` という名前のメンバーをすでに定義している `Tactic` のサブクラスは、`override` を付けなければならない。(#2130)
+
+% 0 1 0 07f33a1bf4fa2505029751dde4102879
+
+@ 0 5 0 128a34938123c5151dbfa5d6755b6c95
++ - コンポーネント `degustation.lira`（成果物 `degustation-lira`）が削除された。reliquary とともに propensive/lira リポジトリに移った（reliquary の項目を参照）。その型である `TastyDiscipline` は、名前とシグネチャを変えずにパッケージ `degustation` からパッケージ `lira` に移り、`soundness` にはエクスポートされなくなった。代わりに `dev.propensive:lira` に依存する。(#2111)
+
+% 0 1 0 07d3f5d0de80f0000d3a20dc61ea01c4
+
+@ 0 5 0 1fb4a3e433f594f41251757813a7bb7f
++ - アプリケーションの JAR が XEK ランチャーなしで（`ethereal.name` が設定されずに）実行されたときに `ethereal.cli` が表示するメッセージは、`This application must be invoked through its XEK launcher.` となり、コマンドを `xeq build --jar <jar> --out <name>` ではなく `xek <jar> <name>` として示し、`https://github.com/propensive/xeq` ではなく `https://propensive.dev/xek` と `https://github.com/propensive/xek` を案内するようになった。終了ステータスは変わらない（1）。(#2113)
+
+% 0 1 0 0dcece4e80bf175c0e1cc8af95d96f6e
+
+@ 0 26 0 0b520f1712871f7211847390ce64f083
++ - `exoskeleton.Enclave`（`exoskeleton-rig`）は、段階的に用意した JAR を、`$XEQ`（既定は `dist/xeq`）が指すビルダーを `<builder> build --jar <jar> --out <target> [--build-id <id>]` ではなく、`xek` 0.10 以降のコマンドラインである `<builder> [--build-id <id>] <jar> <target>` として実行してパッケージする。したがって `$XEQ`、または `dist/xeq` は、`xek-0.10` リリース以降の `xek` でなければならない。0.9 以前の `xeq` スクリプトではパッケージに失敗する。(#2113)
++ - 新しいケース `exoskeleton.Completions.Installation.InstallResult.Unconfirmed(shell: Shell, path: Text)`：スクリプトは `path` に書かれたが、シェルがそこから読み込むことを確かめられなかった。`InstallResult` に対する網羅的な `match` はこれを扱わなければならない。`InstallResult#pathname` はその `path` を返すので、`Installation#paths`（および `{admin} install` と `Completions.ensure(force = true)` の出力）にはそれが含まれる。(#2148)
++ - `exoskeleton.Completions.install(force: Boolean)` は、各シェルのディレクトリをシェルに尋ねて選ぶ。標準入力は閉じ、標準エラーは捨て、呼び出しの `HOME`、`ZDOTDIR`、`XDG_CONFIG_HOME`、`XDG_DATA_HOME`、`XDG_DATA_DIRS`、`BASH_COMPLETION_USER_DIR` を与え、すべてのシェルを合わせて五秒の制限を設ける。zsh：`zsh -i -c` が `$fpath` を報告する（以前は `zsh -c 'source ~/.zshrc; …'` を実行していた）。`$HOME` の下にある、存在して書き込み可能な最初の `fpath` のディレクトリが使われ、なければ存在して書き込み可能な最初のもの、それもなければ `$XDG_DATA_HOME/zsh/site-functions`（作成される）が使われ、結果は `Unconfirmed` になる。bash：常に `${BASH_COMPLETION_USER_DIR:-$XDG_DATA_HOME/bash-completion}/completions`（作成される）であり、対話的な bash が bash-completion のローダー（`_comp_load`、`__load_completion`、`_completion_loader`）を定義していなければ、結果は `Unconfirmed` になる。以前は `XDG_DATA_DIRS` の最後の項目の `bash-completion/completions`、なければ `$XDG_DATA_HOME` のものであり、すでに存在する場合に限られていた。fish：fish が報告する `$__fish_config_dir/completions`（作成される。既定は `$XDG_CONFIG_HOME/fish/completions`）であり、それが `$fish_complete_path` に含まれていなければ結果は `Unconfirmed` になる。以前は `XDG_DATA_DIRS` の最後の項目の `fish/vendor_completions.d`、なければ `$XDG_CONFIG_HOME/fish/completions` であり、すでに存在する場合に限られていた。PowerShell：制限時間を除いて変わらない。制限時間内に答えないシェルは強制終了され、そのスクリプトは引き続き既定のディレクトリに書かれ、結果は `Unconfirmed` になる。(#2148)
+
+% 0 1 0 0fa8f427fcee06bf094db708d8d4518a
+
+@ 0 10 0 1625c0d229bd49310f9cce9e751420de
++ - `media"…"` 補間子のコンパイル時の検査の背後にあるレジストリ（`gesticulate/data/media.types`）が、IANA の現在のメディアタイプのレジストリから更新された。409 の型が追加され、その中には `application/protobuf`、`application/yaml`、`application/toml`、`image/jxl`、`audio/flac` があり、削除されたものはない。新たに登録された型のリテラルは、以前はコンパイルエラー（"… is not a registered media type"）だったが、今はコンパイルできる。以前コンパイルできたリテラルが拒否されることはない。(#2105)
++ - IANA の `haptics` トップレベル型（RFC 9695）のための新しい enum のケース `gesticulate.Media.Group.Haptics`。`haptics/…` のメディアタイプは、以前はパースするときも `media"…"` リテラルとしても `MediaType.Error.Reason.InvalidGroup` で拒否されていたが、今は受け付けられる。網羅的だった `Media.Group` に対する `match` には `Haptics` のケースが必要になる。(#2107)
+
+% 0 1 0 1566b19ab23a3dd01b479ed03ce8f585
+
+@ 0 9 0 0bc564d48051676306bc53723e6b998e
++ - `graffiti.hdir`（`given hdir: HDir is Attributive to Whatwg.Dir`、`soundness.hdir` としてもエクスポートされていた）が削除された。代わりのものは、同じ型と動作を持つ `honeycomb.HDir.attributive` であり、`honeycomb.HDir` のコンパニオンにあるので、インポートなしで暗黙のスコープを通じて見つかる。`graffiti.hdir` や `soundness.hdir` のインポートはすべて削除する。(#2139)
++ - 新しいメンバー `graffiti.Archetype#stylesheetUrl: Optional[Text]`、既定値は `Unset`。ページがこれを URL で上書きすると、`Archetype#html`（したがって `document`）は、インラインの `<style>` の代わりに `<link rel="stylesheet" href="…">` を書く。`stylesheetUrl` という名前のメンバーをすでに定義しているページやフィーチャーのトレイトは、それを改名するか、型が同じならこれを上書きしなければならない。(#2150)
+
+% 0 1 0 165131e53f5576cf05d71a204ac48013
+
+@ 0 21 0 19e3dbd8753673f0063cb408621ace77
++ - `honeycomb.Whatwg#Template` は、空要素のタグ `Tag.Void of "template" in Whatwg` から、コンテナー `Tag.Container of "template" over (Flow | Metadata | "caption" | "colgroup" | "col" | "thead" | "tbody" | "tfoot" | "tr" | "td" | "th" | "li" | "dt" | "dd" | "option" | "optgroup" | "legend" | "summary" | "figcaption" | "source" | "track" | "rt" | "rp") in Whatwg` に変わった。`Template(children*)` と `Template(attribute = value)(children*)` がコンパイルできるようになった。空のテンプレートは、`<template>` だったところが `<template></template>` として直列化される。`<template>` のパースは、必須の `</template>` までの子ノードを読むようになった。閉じられていない `<template>` を含む入力は、以前は空の要素としてパースされていたが、今は `Html.Issue.Incomplete("template")`（または、閉じられていないほかのコンテナーと同じく `InadmissibleTag`/`MismatchedTag`）になる。また、閉じタグが以前は `UnopenedTag`/`MismatchedTag` になっていた `<template>…</template>` は、今はパースできる。(#2139)
++ - 子を持ち、そのラベルが DOM の空要素のタグを指す `Element` を直列化する（`Html is Showable`、`Html is Inspectable`、`Document is Streamable`）と、子と閉じタグが書かれるようになった（`<br>x</br>`）。以前は子が捨てられ、閉じタグは書かれなかった。そのような要素は、DOM の空要素のタグのいずれかのラベルで定義した `Tag` からか、`Element` を直接構築したときにしか生じない。子のない要素には影響しない。(#2139)
++ - `honeycomb.Attributive.cssClassList`（`List[Name[CssClass]] is Attributive to Whatwg.CssClassList`）、`honeycomb.Attributive.classList`（`ClassList is Attributive to Whatwg.CssClassList`）、`honeycomb.Attributive.domIds`（`List[Name[DomId]] is Attributive to Whatwg.Ids`）は、空の値に対して `Unset` を返し、属性を省くようになった。以前は空の値を持つ属性（たとえば `class=""`）を返していた。(#2139)
+
+% 0 1 0 021b852f7dba238b06ccff9a0d2bb561
+
+@ 0 40 0 07d877a1bc550b9c0621c30e3c201f51
++ - `jacinta.DynamicJsonEnabler`（とその `soundness` のエクスポート）が削除された。代わりのものは `jacinta.Json is rudiments.Dynamical` である。`jacinta.dynamicAccess.dynamicJson` は残され、型が `DynamicJsonEnabler` から `Json is Dynamical` に変わった。`Json#update` と両方の `Json#updateDynamic` のオーバーロードの消去されたパラメーター `(using erased dynamicJsonEnabler: DynamicJsonEnabler)` と、`jacinta.optics.jsonLens` given の消去されたコンテキストパラメーターは、`(? >: Json) is Dynamical` になった。検証されていない `Json` に対する `Json#selectDynamic` と `Json#applyDynamic` は、`DynamicJsonEnabler` の代わりに `(? >: Json) is Dynamical` を召喚するようになった。`dynamicJson` はこれらのそれぞれを満たし、`rudiments.dynamically[Json]` や `dynamically` のブロックも満たす。(#2102)
++ - 新しい `jacinta.Json.emit(json: Json)(using Json.Formatting, parasite.Monitor, parasite.Probate): Iterator[Text]`。これはファイバー上で直列化し、テキストを生成されるそばから渡す。そして、それの上に作られた新しい given `jacinta.Json.streamable: (Json.Formatting, Monitor, Probate) => Json is turbulence.Streamable by Text over Credit`。`show` は変わらず、同じように描画する。`jacinta.core` は `parasite.core` に依存するようになった。(#2109)
++ - 新しいプッシュ形式 `jacinta.Json.emit[medium: Json.Emitter](json: Json, deliver: medium => Unit)(using Json.Formatting, zephyrine.Buffering): Unit`。これはファイバーを使わずに呼び出し側のスレッドで直列化し、各ブロックが埋まるたびにそれを `deliver` に渡す。`emit[Text]` は `Producer[Text]` を通じてテキストのブロックを届け、`emit[Data]` は、各文字列を一度の走査でエスケープしてエンコードするバイト単位のシリアライザーが直接書いた UTF-8 のバイト列を届ける。given `Json.Emitter.text` と `Json.Emitter.data` を持つ `trait Json.Emitter[medium]` が、その間を選ぶ。`deliver` が型の付いていないラムダのときは、型引数が必要である。(#2109)
++ - 新しい `jacinta.Json.lend(json: Json)(lending: zephyrine.Producer.Lending[Data])(using Json.Formatting, zephyrine.Buffering): Unit`。これはプッシュ形式の `emit` の借用版である。埋まった UTF-8 の各ブロックは、ブランドの付いた `Interval in region.type` とともに `zephyrine.Region[Data]` として貸し出され、呼び出しの間だけ有効である（`Stream.lend` の規律）ので、何もコピーされない。`emit[Data]` は今はこれの上に定義され、各ブロックを実体化する。BCD としてパースされた数は、`String` を往復することなく、バイト単位のライターがそのニブルから直接描画する。どの形式のテキストも変わらない。(#2109)
++ - `jacinta.Json.optional`、`Json.option`、`Json.fieldOptional`、`Json.fieldOption`、`Json.optionalParsable`、`Json.optionParsable` に、先頭の `using` 節 `(absence: distillate.Decodable.Absence in Json, nullity: distillate.Decodable.Nullity in Json, fault: distillate.Decodable.Fault in Json, tactic: contingency.Tactic[Json.Error])` が加わった。`Json.option` はコンテキスト境界 `[value: Json.Decodable]` を持たなくなり、`(decodable: => (value is Json.Decodable)^)` を名前渡しで受け取る。`Json.Parsable.optionality` と `Json.Parsable.boxed` は、その `using` 節で同じ四つの given を受け取る（以前は `optionality` が `tactic` だけを受け取り、`boxed` は何も受け取らなかった）。コンパニオンの既定のもとでの意味は、`Optional` については変わらない。`Option[T]` は明示的な JSON の `null` を `None` として読むようになった。以前は内側のデコーダーに渡していた（プリミティブに対しては `Json.Error(Reason.NotType(Null, …))`）。新しい given `jacinta.optionalityOptions.{strictJsonAbsence, lenientJsonAbsence, strictJsonNulls, lenientJsonNulls, strictJsonFaults, lenientJsonFaults}`（`soundness.optionalityOptions` にエクスポートされる）が、それぞれのポリシーを変える。(#2130)
+
+% 0 1 0 14282acc9e8c73b21f41ce8351cf5486
+
+@ 0 6 0 14d5c544b61784b00f8d7cdf6f5bcc91
++ - 新しい `locomotion.postables.protobufPostable: Protobuf is telekinesis.Postable` と `locomotion.servables.protobufServable: Protobuf is telekinesis.Servable`（メディアタイプ `application/protobuf`、ワイヤ形式のバイト列を本文とする）。`soundness.postables.protobufPostable` と `soundness.servables.protobufServable` としてもエクスポートされる。`locomotion.http` モジュールは `telekinesis.core` に依存するようになり、`jacinta.http` と同じく JVM 専用になったので、`locomotion.construables.protobufConstruable` は Scala.js では使えなくなった。(#2104)
+
+% 0 1 0 1b8860e67aa4a1c91891b47a0b5ee058
+
+@ 0 6 0 147736a2331d1d6c009038c8b0a8f1eb
++ - コンポーネント `mandible.lira`（成果物 `mandible-lira`）が削除された。reliquary とともに propensive/lira リポジトリに移った（reliquary の項目を参照）。その型である `ClassfileAtomizer`、`ClassfileDiscipline`、`CtSym`、`HostArchive`、`HostContracts`、`HostRelease`、`HostTree`、`JsigDiscipline`、`JvmProfile`、`UsedSets` は、名前とシグネチャを変えずにパッケージ `mandible` からパッケージ `lira` に移り、`soundness` にはエクスポートされなくなった。代わりに `dev.propensive:lira` に依存する。(#2111)
+
+% 0 1 0 0e751e64d74c65e7052e35ae687cc595
+
+@ 0 5 0 02eede9c8caa784a16c43a1d79095f6a
++ - 新しい具象メンバー `obligatory.JsonRpc#stop(): Unit`。これはインスタンスの送信チャンネルを止めるので、`outgoing` と `stream` は排出し終えたところで終わる。空のパラメーターリストを持つ `stop` という名前のメンバーをすでに定義している `JsonRpc` のサブクラス（`synesthesia.Mcp.Api`、`exegesis` と `espionage` のインターフェースを含む）は、それを改名するか、このシグネチャを持つなら `override` を付けなければならない。(#2144)
+
+% 0 1 0 13897a5b469c56bc058ae094048dac5d
+
+@ 0 9 0 1e7c28ce5f0188c518862b13d8add24e
++ - 排他的な `Array[element]^` に対する `proscenium.Array` の拡張 `apply(index: Int): element` と `update(index: Int, value: element): Unit` は、`extension [element](buffer: Array[element]^)` の普通のメソッドだったが、`inline` なレシーバを持つ拡張 `extension [element](inline buffer: Array[element]^)` の中の `inline def` になった。要素の型が具体的なら、これらはボックス化する `ScalaRunTime` のアクセスではなく、JVM の配列命令にコンパイルされる。レシーバの式は、インデックス（`update` では値も）の前ではなく後に評価されるようになった。レシーバの式と引数が互いに影響する副作用を持つコード、たとえば `grow()` が `buffer` という名前の `var` に再代入する `buffer(index) = grow()` は、引数が評価された後にレシーバが指す配列に書き込むようになった。(#2147)
+
+% 0 1 0 1e700bdc822d8d6600877dea2cb39769
+
+@ 0 11 0 0b168e49843cd06c14ecaf2db2950f78
++ - ライブラリ `reliquary` が、そのコンポーネント `reliquary.core`（成果物 `reliquary-core`）と `reliquary.derive`（`reliquary-derive`）とともに削除された。今は propensive/lira リポジトリにある。その型は、名前とシグネチャを変えずにパッケージ `reliquary` からパッケージ `lira` に移り（`reliquary.Lira` → `lira.Lira`、`reliquary.Verification` → `lira.Verification`、そのほかコンポーネントがエクスポートしていたすべての型も同様）、`soundness` にはエクスポートされなくなった。`import soundness.*` を通じてそれらに届いていたファイルは、`import lira.*` も必要になる（またはそのファイル自身がパッケージ `lira` にある）。依存 `reliquary-core` と `reliquary-derive` は、両方と、それらとともに移ったすべての規律を含む一つの成果物 `dev.propensive:lira` で置き換える。これは propensive/lira の GitHub リリースのアセットとして公開され、Soundness ではなく lira とともにバージョン付けされる（最初のリリースは 0.1.0）。`soundness-tool` バンドルにはもう含まれない。(#2111)
+
+% 0 1 0 0cc2d1f372946d701781f2258ebc29ab
+
+@ 0 9 0 0880aa9f71d81d6214f81868519b7a31
++ - `scintillate.Reactor` の最初のコンストラクターパラメーターは、`val port: Int` だったが、`requested: Int`（普通のパラメーター）になった。`Reactor#port: Int` は残るが、今はリスナーが束縛されたポートであり、引数が `0` のとき（その場合はシステムが空いているポートを選ぶ）は引数と異なる。ポートを名前で渡す呼び出し `Reactor(port = …)` は、`requested = …` を使わなければならない。(#2151)
++ - `scintillate.SocketServer(0, …).handle(…)` と `scintillate.Httpd(0, …).handle(…)` は、システムが選んだ空いているポートを束縛し、それは返される `urticose.Service#port` として報告される。そのような `SocketServer` が提供する `Http.Connection` は、以前は `0` を報告していたが、その束縛されたポートを報告する。(#2151)
+
+% 0 1 0 101a8988acb4345d0341a393aab67281
+
+@ 0 7 0 18db88b5994305420c5f26472eba6a5f
++ - `sibylline.Anthropic` は、構造化出力のスキーマ（`elicit`、`elicitAll`）を、Messages API が受け付ける JSON Schema のサブセットとして送るようになった：`type`、`properties`、`required`、`additionalProperties`、`items`、`enum`、`const`、`description`、`oneOf`/`allOf`/`anyOf`/`not`、`$ref`、そして文字列の `pattern` と `format`。jacinta の `optional` マーカー（API が未知のキーワードとして拒否する）と、数値と長さの範囲は送られなくなった。フィールドがオプショナルであることは、すでに `required` で表されている。以前は、Anthropic に対する `elicit` はどれも `Invalid`（`property 'optional' is not supported`）で失敗していた。(#2105)
+
+% 0 1 0 0ed19456d6998e511992f280a95ea1f6
+
+@ 0 39 0 110e37cb9d9d919b1b8596c2814450e1
++ - `stratiform.DynamicTelEnabler`（とその `soundness` のエクスポート）が削除された。代わりのものは `stratiform.Tel is rudiments.Dynamical` である。`stratiform.dynamicAccess.dynamicTel` は残され、型が `DynamicTelEnabler` から `Tel is Dynamical` に変わった。`Tel#modify` の消去されたパラメーター `(using erased dynamicTelEnabler: DynamicTelEnabler)` と、`stratiform.optics.telLens` given の消去されたコンテキストパラメーターは、`(? >: Tel) is Dynamical` になった。検証されていない `Tel` に対する `Tel#selectDynamic` と `Tel#applyDynamic` は、`DynamicTelEnabler` の代わりに `(? >: Tel) is Dynamical` を召喚するようになった。`dynamicTel` はこれらのそれぞれを満たし、`rudiments.dynamically[Tel]` や `dynamically` のブロックも満たす。(#2102)
++ - 新しい `telp` 文字列補間子 `extension (inline context: StringContext) transparent inline def telp: contextual.Interpolation`（`soundness.telp` としてもエクスポートされる）。これはコードのコンパイル時に検査される `stratiform.Telp` を生成する。`Telp.parse` が拒否するリテラルは、問題の部分に位置付けられたコンパイルエラーになり、置換は拒否される。新しい `stratiform.Telp.interpolable: Telp is contextual.Interpolable` given がこれを支える。実行時のパスに対する `Telp.parse(text)` は変わらない。(#2104)
++ - 新しい `stratiform.Tel.emit(tel: Tel)(using parasite.Monitor, parasite.Probate): Iterator[Text]`。これはファイバー上で直列化し、テキストを生成されるそばから一行ずつ渡す（コンパウンドを根とする `Tel` は、`show` がするのと同じく、まず Document に包まれる）。そして、それの上に作られた新しい given `stratiform.Tel.streamable: (Monitor, Probate) => Tel is turbulence.Streamable by Text over Credit`。`show` は変わらず、同じように描画する。`stratiform.core` は `parasite.core` に依存するようになった。(#2109)
++ - 新しいプッシュ形式 `stratiform.Tel.emit[medium: Tel.Emitter](tel: Tel, deliver: medium => Unit)(using zephyrine.Buffering): Unit`。これはファイバーを使わずに呼び出し側のスレッドで直列化し、各ブロックが埋まるたびにそれを `deliver` に渡す。`emit[Text]` は `Producer[Text]` を通じてテキストのブロックを届け、`emit[Data]` は、パースされたアトムのバイト列をデコードせずにコピーするバイト単位のシリアライザーが直接書いた UTF-8 のバイト列を届ける。given `Tel.Emitter.text` と `Tel.Emitter.data` を持つ `trait Tel.Emitter[medium]` が、その間を選ぶ。`deliver` が型の付いていないラムダのときは、型引数が必要である。(#2109)
++ - 新しい `stratiform.Tel.lend(tel: Tel)(lending: zephyrine.Producer.Lending[Data])(using zephyrine.Buffering): Unit`。これはプッシュ形式の `emit` の借用版である。埋まった UTF-8 の各ブロックは、ブランドの付いた範囲とともに `zephyrine.Region[Data]` として貸し出され、呼び出しの間だけ有効である。`emit[Data]` はこれの上に定義され、各ブロックを実体化する。(#2109)
++ - `stratiform.Tel.optionalDecodable` と `Tel.fieldOptional` に、先頭の `using` 節 `(absence: distillate.Decodable.Absence in Tel, fault: distillate.Decodable.Fault in Tel, tactic: contingency.Tactic[Tel.Error])` が加わった（以前はそれぞれ無名の `Tactic[Tel.Error]` と `(tactic: Tactic[Tel.Error])` だった）。`Tel.Parsable.optionality` の `using` 節も同様に、`(tactic)` ではなく `(absence, fault, tactic)` になった。コンパニオンの既定のもとでの動作は変わらない。新しい given `stratiform.optionalityOptions.{strictTelAbsence, lenientTelAbsence, strictTelFaults, lenientTelFaults}`（`soundness.optionalityOptions` にエクスポートされる）。(#2130)
+
+% 0 1 0 0edeca1688ed1712094917bf1cb39981
+
+@ 0 14 0 0a17557f2a39feb81ee5d0454e8c2c76
++ - `synesthesia.Mcp.Server#serve` は、`synesthesia.Mcp.Interface` を作る前に、`DELETE` リクエストを自分で扱う。存在するセッション（`Mcp.Server#session` の背後の表にあるもの、またはキャッシュされた `Mcp.Interface`）を指す `Mcp-Session-Id` ヘッダーがあれば、その両方を削除し、インターフェースの送信イベントストリームを終わらせ、`204 No Content` と応答する。未知の ID には `404 Not Found` と応答し、`Mcp-Session-Id` のないリクエストには `400 Bad Request` と応答する。これらのレスポンスのどれも、`Mcp-Protocol-Version` や `Mcp-Session-Id` のヘッダーを持たない。以前は、すべての `DELETE` に両方のヘッダー付きで `202 Accepted` と応答し、セッションとインターフェースを保持していた。(#2144)
++ - `synesthesia.Mcp.send` は `DELETE` を扱わなくなった。`OPTIONS`、`GET`、`POST` 以外のメソッド（`DELETE` を含む）には、`Mcp-Protocol-Version` と `Mcp-Session-Id` のヘッダー付きで `405 Method Not Allowed` と応答する。以前は、`DELETE` には `202 Accepted` と応答し、ほかのメソッドは `scala.NotImplementedError` を投げ、JSON-RPC の `-32603` エラーの本文付きの `200 OK` として応答していた。(#2144)
++ - 新しいメンバー `synesthesia.Mcp.Server#terminate(id: Text): Boolean`。`Text` を一つ受け取る `terminate` という名前のメンバーをすでに定義している `Mcp.Server` のサブクラスは、それを改名するか、このシグネチャを持つなら `override` を付けなければならない。(#2144)
+
+% 0 1 0 1308c4aae25b50821be43aace8323e07
+
+@ 0 5 0 1be9af83dbe4ee820cced3e85387391e
++ - `tessellate.Flow.wrap[textual: Textual { type Result = Char }](content: textual, width: Int, hyphen: Text = t"-")(using Text is Measurable, Hyphenation): Sequence[textual]` の最初の節に、既定値を持つ四番目のパラメーター `unbreakable: List[denominative.Interval] = Nil` が加わった。各区間は `content.plain` の中の文字オフセットのスパンであり、その中ではソフトな改行（空白やハイフネーションの位置）はとられない。その中の強制的な改行は引き続き行を区切る。既定値では動作は変わらない。(#2121)
+
+% 0 1 0 174231ea3a507bbb0da3030ca3b5bc65
+
+@ 0 15 0 1fcaf81752c0546103ea5683b0981b86
++ - `turbulence.load`（拡張 `value.load[result <: Documentary]`）は、コンテキストパラメーターを受け取らなくなった。以前は `def load[result <: Documentary](using streamable: (value is Streamable by Text over Credit)^, loadable: (result is Loadable by Text)^): Document[result]` だったが、今は `inline def load[result <: Documentary]: Document[result]` であり、`summonFrom` で次の順にインスタンスを解決する：`value is Streamable by Data over Credit` と `result is Loadable by Data`、なければそれと、`hieroglyph.Charset` と `zephyrine.Buffering` を通じた `result is Loadable by Text`。次に、`value is Streamable by Text over Credit` と `Loadable by Text`、なければそれと、`hieroglyph.Codepage` と `Buffering` を通じた `Loadable by Data`。次に、`value is Readable to Data`（`galilei.Path` のような値全体の供給源）と、同じ二つの `Loadable` の選択肢。したがって、`Streamable by Data` のインスタンスが適用されるテキストの供給源（スコープに `Codepage` がある `Text`）は、`read` と同じく、今はバイトの経路をとる。コンテキスト引数を明示的に渡していたコードは、それを削除しなければならない。`load` のインスタンスを手で召喚していたコードには影響しない（`Loadable` は変わらない）。新しいヘルパー `turbulence.Loadable.fromData[result](consume stream: (Stream[Data] over Credit)^): Document[result]` と `Loadable.fromText[result](consume stream: (Stream[Text] over Credit)^): Document[result]` は、その振り分けのオペランドごとの半分である。(#2118)
+
+% 0 1 0 095dfb6b35ecc7f404130a62cea037b4
+
+@ 0 54 0 0b8b071095df151c1d7f27cb1a43b2f1
++ - `ulysses.BloomFilter.apply[element: Digestible](approximateSize: Int, targetErrorRate: 0.0 ~ 1.0)[algorithm <: Algorithm](using Hash in algorithm, Permit[HashWeakness[algorithm]]): BloomFilter[element, algorithm]` は、フィルターの大きさを異なる方法で決める。以前：`bitSize = (-1.44·approximateSize·ln targetErrorRate).toInt`、`hashCount = (bitSize/approximateSize·ln 2 + 0.5).toInt`。新しい方法：`n = max(1, approximateSize)` と `p = max(targetErrorRate, 2⁻⁵³)` として、`bitSize = max(1, ceil(-n·ln p/(ln 2)²))` と `hashCount = max(1, round(bitSize/n·ln 2))`。そのため `BloomFilter[Text](100, 0.01).bitSize` は、663 だったところが 959 になり、`(1000, 0.01)` は 6631 だったところが 9586、`(100, 0.001)` は 994 だったところが 1438 になり、`(10_000, 0.01)` に対する `hashCount` は 5 だったところが 7 になる。以前の決め方では、要求された偽陽性率のおよそ四倍になっていた。新しい決め方では、要求された率になる。(#2126)
++ - `ulysses.BloomFilter#+`、`#++`、`ulysses.BloomFilter#hits` は、要素のビットの位置を異なる方法で導く。以前：`(0, value)`、`(1, value)`、…（`Digestible` なタプルとして）のダイジェストを連結して `BigInt` にし、それを `bitSize` で割った余りを順に位置としていた。新しい方法：`h₁` と `h₂` は要素のダイジェスト（要素だけのもの。16 バイトより少ないものを返すアルゴリズムでは、16 バイトが集まるまで 1、2、… のビッグエンディアンの `Int` を接頭辞としてダイジェストし直す）の一番目と二番目のビッグエンディアンの 64 ビットのワードであり、`0 until hashCount` の `i` に対する位置 `i` は `((h₁ + i·h₂) & Long.MaxValue) % bitSize` である。したがって、同じ要素に対しても `bits` は以前のバージョンのものと異なる。`bits` を永続化したり、古いバージョンでビルドされたコードとやり取りしたりしていたフィルターは、作り直さなければならない。(#2126)
++ - `ulysses.BloomFilter[element, algorithm]` は `case class` ではなくなった。private なコンストラクターを持つ `class BloomFilter[element: Digestible, algorithm <: Algorithm] extends caps.Mutable` である。ケースクラスとともに削除されたもの：public なコンストラクター `BloomFilter(bitSize: Int, hashCount: Int, bits: scala.collection.immutable.BitSet)`、`copy`、`unapply`、フィールド `bits: scala.collection.immutable.BitSet`、`productElement`/`productArity`。`bitSize: Int` と `hashCount: Int` は `val` として残る。`equals`/`hashCode` は `bitSize`、`hashCount`、そしてビットを比較する。新しいもの：立っているビットの数である `def population: Int`。(#2126)
++ - `ulysses.BloomFilter.apply[element: Digestible](approximateSize: Int, targetErrorRate: 0.0 ~ 1.0)[algorithm <: Algorithm](using Hash in algorithm, Permit[HashWeakness[algorithm]])` は、`BloomFilter[element, algorithm]` を返していたところが、`BloomFilter[element, algorithm]^`（排他的で可変なフィルター）を返すようになった。新しいもの：その場でビットを立て、排他的なフィルターに対してのみ呼べる `update def add(value: element): Unit` と `update def addAll[collection: murmuration.Traversable by element](elements: collection): Unit`、そして排他的なフィルターを消費し、コピーせずに凍結済みの（共有でき、読み取り専用の）形を返す `ulysses.BloomFilter.freeze[element, algorithm <: Algorithm](consume filter: BloomFilter[element, algorithm]^): BloomFilter[element, algorithm]^{}`。`+` と `++` は `BloomFilter[element, algorithm]^{}` を返すようになり、ビットを一度コピーする。`hits` は変わらない。キャプチャ検査のもとでは、`apply` からの一つの `BloomFilter[…]` の値を（共有された不変の値として）いくつかの場所で使っていたコードは、まずそれを `freeze` しなければならない。排他的な値は別名を持てないからである。`apply(…) + x ++ xs` と連ねるだけのコードは変わらない。キャプチャ検査されないコードでは、結果の型以外は何も変わらない。(#2126)
++ - `ulysses.BloomFilter#++(elements: Iterable[element]): BloomFilter[element, algorithm]` は `ulysses.BloomFilter#++[collection: murmuration.Traversable by element](elements: collection): BloomFilter[element, algorithm]` になった。`scala.Iterable` の引数は引き続き受け付けられる（`Traversable.iterable` を通じて）。不透明な `proscenium.List`、`Sequence`、`Set`、`Chain`、凍結済みの `Array` が直接受け付けられるようになった。以前はそれらを `xs.stdlib` で渡す必要があった。(#2126)
++ - `approximateSize <= 0` や、`targetErrorRate` が `0.0` または `1.0` のときの `ulysses.BloomFilter.apply` は、動作するフィルター（`bitSize >= 1`、`hashCount >= 1`。大きさの決め方の項目を参照）を返すようになった。以前：`approximateSize = 0` では `hashCount = 0` となり、`hits` はどの要素に対しても `true` だった。`targetErrorRate = 1.0` では `bitSize = 0` となり、`+`、`++`、`hits` は `java.lang.ArithmeticException` を投げた。`targetErrorRate = 0.0` では `bitSize = Int.MaxValue` になった。(#2126)
++ - `ulysses.Bibliography#lookup(prefix: Data): Iterator[Data]` は、一致するハッシュを符号なしのバイトの辞書順の昇順で返す。以前は `Bibliography#hashes` の順（`Bibliography.apply(data: List[Data])` に与えられた順）で返していた。返される集合は変わらない。`ulysses.Palimpsest#resolve` はこの順で候補を試すので、あるライブラリに対してシグネチャが曖昧にデコードされる場合、今は別のハッシュの並びに解決されることがある。(#2141)
+
+% 0 1 0 01a924463d4d2ade199e4991ad39d095
+
+@ 0 4 0 15d571f265ac092215f9376876588618
++ - `urticose.Service` は、`case class Service(cancel: () => Unit)` だったところが `case class Service(cancel: () => Unit, port: Int)` になった。`port` はサーバーが束縛されたポートである。構築ではこれを与えなければならず（`Service: () => …` の形はコンパイルできなくなった）、抽出子のパターン `Service(cancel)` は `Service(cancel, _)` にしなければならない。(#2151)
+
+% 0 1 0 0daabac2e02218c20d4f9d914c51325b
+
+@ 0 6 0 0e93ee3360a8bdea0a6b9dad328ec411
++ - `vivisection.Debuggee(command, port = 0)` は、デバッグ対象を `-agentlib:jdwp=…,address=*:0` で起動するので、エージェントは自分で選んだ空いているポートを束縛し、セッションはアタッチする前に、デバッグ対象の標準出力にあるエージェントの `Listening for transport dt_socket at address: N` の行からそれを読む。以前は、`0` の `port` はポート 0 にアタッチして失敗していた。DAP アダプターの `launch` リクエストは、探査用のソケットを束縛して解放することでポートを選ぶのではなく、今はこれを使う。(#2151)
+
+% 0 1 0 0f02ee39a925cf311ef3874ea292cb7e
+
+@ 0 7 0 1c7e1313cc0cd6660c4925a43d8f7874
++ - コンポーネント `xenophile.lira`（成果物 `xenophile-lira`）が削除された。reliquary とともに propensive/lira リポジトリに移った（reliquary の項目を参照）。その型である `CHeaderAtomizer`、`CHeaderDiscipline`、`DtsAtomizer`、`DtsDiscipline`、`KotlinMetadataAtomizer`、`KotlinMetadataDiscipline`、`WebIdlAtomizer`、`WebIdlDiscipline`、`WitAtomizer`、`WitDiscipline` は、名前とシグネチャを変えずにパッケージ `xenophile` からパッケージ `lira` に移り、`soundness` にはエクスポートされなくなった。代わりに `dev.propensive:lira` に依存する。(#2111)
+
+% 0 1 0 1e9899a0d30c19b70ffd7df14fc9c9a9
+
+@ 0 65 0 06b28e513e0a50780b89c9200ea2d424
++ - `xylophone.DynamicXmlEnabler`（とその `soundness` のエクスポート）が削除された。代わりのものは `xylophone.Xml is rudiments.Dynamical` である。`xylophone.dynamicAccess.dynamicXml` は残され、型が `DynamicXmlEnabler` から `Xml is Dynamical` に変わった。`Xml#selectDynamic(name: String)` と `Xml#applyDynamic(name: String)` の消去されたパラメーター `erased dynamicXmlEnabler: DynamicXmlEnabler` と、`xylophone.xmlLens` given の消去されたコンテキストパラメーターは、`(? >: Xml) is Dynamical` になった。`dynamicXml` はそれを満たし、`rudiments.dynamically[Xml]` や `dynamically` のブロックも満たす。(#2102)
++ - `object Xml` に新しいコーデックの given：`vacuous.Mandatable to inner` を持つ任意の `value >: Unset.type`（つまり `Optional[inner]`）に対する `optionalDecodable`/`optionalEncodable`、そして `Map[key, value]` に対する `mapDecodable`/`mapEncodable`。導出されるケースクラスは `Optional` と `Map` のフィールドを持てるようになった。`Unset` のフィールドは子要素なしに（`@Xml.attribute` のフィールドは属性なしに）エンコードされ、存在しない要素や属性は `Unset` にデコードされる。`Map` のフィールドは、項目ごとに `<key>` と `<value>` の子を持つ子要素一つにエンコードされ、同じ名前の子をすべて集めて戻される。以前は、そのようなフィールドは導出に失敗するか、（`Optional[Text]` では `Decodable in Text` の橋渡しを通じて）存在しないときに `Xml.Error(Reason.Missing)` を発生させていた。`Optional[List[element]]` は引き続きサポートされない。`List[element]` を使う。(#2104)
++ - 新しい `xylophone.servables.xmlServable: (Codepage) => Xml is telekinesis.Servable`（メディアタイプ `application/xml; charset=UTF-8`）。`soundness.servables.xmlServable` としてもエクスポートされ、既存の `xmlPostable` と並ぶ。(#2104)
++ - 新しいプッシュ形式 `xylophone.Xml.emit[medium: Xml.Emitter](document: turbulence.Document[Xml], deliver: medium => Unit)(using Xml.Formatting, zephyrine.Buffering): Unit`。これはファイバーを使わずに呼び出し側のスレッドで直列化し、各ブロックが埋まるたびにそれを `deliver` に渡す。`emit[Text]` は `Producer[Text]` を通じてテキストのブロックを届け、`emit[Data]` は、各文字列を一度の走査でエスケープしてエンコードするバイト単位のシリアライザーが直接書いた UTF-8 のバイト列を届ける。given `Xml.Emitter.text` と `Xml.Emitter.data` を持つ `trait Xml.Emitter[medium]` が、その間を選ぶ。`deliver` が型の付いていないラムダのときは、型引数が必要である。
++ - 新しい `xylophone.Xml.lend(document: turbulence.Document[Xml])(lending: zephyrine.Producer.Lending[Data])(using Xml.Formatting, zephyrine.Buffering): Unit`。これはプッシュ形式の `emit` の借用版である。埋まった UTF-8 の各ブロックは、ブランドの付いた `Interval in region.type` とともに `zephyrine.Region[Data]` として貸し出され、呼び出しの間だけ有効であるので、何もコピーされない。`emit[Data]` はこれの上に定義され、各ブロックを実体化する。`show` と、ファイバー版の `emit` のテキストは変わらない。
++ - アノテーション `xylophone.Xml.attribute`、`xylophone.Xml.xmlns`、`xylophone.Xml.unqualified` は、すでに `import xylophone.*` のもとでそうだったように、`import soundness.*` のもとでも `@attribute`、`@xmlns(…)`、`@unqualified` として届くようになった。`xmlns` と `unqualified` はエクスポートされる。`attribute` は型の別名 `soundness.attribute = xylophone.Xml.attribute` なので、解決されるのはアノテーション（型）だけで、項の `attribute` は引き続き `galilei` と `tarantula` のメソッドを指す。`@Xml.attribute` は引き続き使える。(#1953)
++ - `xylophone.Xml` は UTF-8 のバイト列からパースされる。`object Xml` の中の `by Text` だった `Aggregable` の given は、既存の名前のまま `by Data` になった：`Xml.aggregable`（`(Xml of content) is Aggregable by Data`）、`Xml.aggregable2`（`Xml is Aggregable by Data`）、`Xml.aggregableParsed`（`(value in Xml) is Aggregable by Data`）、そして `xylophone.Xml2.aggregableIn`（`(value in Xml) is Aggregable by Data`）である。また `Xml.readableParsed` は `Data is Readable to (value in Xml)` になった。`by Text` の形は、新しい名前 `Xml.aggregableText`、`Xml.aggregable2Text`、`Xml.aggregableParsedText`、`Xml2.aggregableInText`、`Xml.readableParsedText`（`Text is Readable to (value in Xml)`）で、以前と同じパラメーターのまま残される。これらはテキストを UTF-8 にエンコードしてそのバイト列をパースする。したがって、バイトの供給源（`path.read[Xml]`、HTTP の本文）は `hieroglyph.Charset` の given なしに、デコードもせずにパースされ、UTF-8 でないバイトの入力は、呼び出し側がまず `Text` にデコードしなければならない。変わるのは given の名前を書いているコードだけである。(#2116)
++ - `xylophone.Xml.Issue` に新しいケース `BadEncoding`（"the input is not valid UTF-8" と記述される）が加わった。これは、パーサーが保持する入力の一部（名前、属性値、文字データ、コメント、CDATA、処理命令）が正しい UTF-8 でない（冗長な形、サロゲート、U+10FFFF を超える値、不正な先頭バイトや継続バイト）ときに、`Parse.Error` の中で発生する。そのような入力は、以前はパースの前に `Charset` の `TextSanitizer` によって置き換えられていた。`Issue` に対する網羅的なマッチには、このケースが必要になる。(#2116)
++ - バイトの供給源に対する `xylophone.Xml.Position` はバイトを数える：`offset` と `length` は入力の中のバイトオフセットであり、追跡される `Xml.PositionIndex` の長さ（`Document[Xml]#locate`）はバイトの長さである。`column` はコードポイントを数える（以前は UTF-16 の文字を数えていた。アストラル文字は二ではなく一だけ進める）。`Text` の供給源では、`offset` と `length` は引き続きテキストの中の文字オフセットである。ASCII の入力では、どれも変わらない。(#2116)
++ - `xylophone.Xml.optionalDecodable` に先頭の `using` 節 `(absence: distillate.Decodable.Absence in Xml, fault: distillate.Decodable.Fault in Xml, tactic: contingency.Tactic[Xml.Error])` が加わった。コンパニオンの既定のもとでの動作は変わらない。新しい given `xylophone.optionalityOptions.{strictXmlAbsence, lenientXmlAbsence, strictXmlFaults, lenientXmlFaults}`（`soundness.optionalityOptions` にエクスポートされる）。(#2130)
+
+% 0 1 0 1f752abdd12c4f920aa1fc7c0aca23a0
+
+@ 0 24 0 10829c6a4e1098ac0535217098e26b9c
++ - `ypsiloid.DynamicYamlEnabler`（とその `soundness` のエクスポート）が削除された。代わりのものは `ypsiloid.Yaml is rudiments.Dynamical` である。`ypsiloid.dynamicAccess.dynamicYaml` は残され、型が `DynamicYamlEnabler` から `Yaml is Dynamical` に変わった。`Yaml#selectDynamic`、`Yaml#applyDynamic`、`Yaml#update`、両方の `Yaml#updateDynamic` のオーバーロードの消去されたパラメーター `(using erased dynamicYamlEnabler: DynamicYamlEnabler)` と、`Yaml.lens` given の消去されたコンテキストパラメーターは、`(? >: Yaml) is Dynamical` になった。`dynamicYaml` はそれを満たし、`rudiments.dynamically[Yaml]` や `dynamically` のブロックも満たす。(#2102)
++ - 新しい `ypsiloid.postables.yamlPostable: (Codepage, Yaml.Formatting) => Yaml is telekinesis.Postable` と `ypsiloid.servables.yamlServable: (Codepage, Yaml.Formatting) => Yaml is telekinesis.Servable`（メディアタイプ `application/yaml; charset=UTF-8`）。`soundness.postables.yamlPostable` と `soundness.servables.yamlServable` としてもエクスポートされる。`ypsiloid.http` モジュールは `telekinesis.core` に依存するようになり、`jacinta.http` と同じく JVM 専用になったので、`ypsiloid.construables.yamlConstruable` は Scala.js では使えなくなった。(#2104)
++ - `ypsiloid.Yaml.optional` と `Yaml.option` に、先頭の `using` 節 `(absence: distillate.Decodable.Absence in Yaml, nullity: distillate.Decodable.Nullity in Yaml, fault: distillate.Decodable.Fault in Yaml, tactic: contingency.Tactic[Yaml.Error])` が加わった（以前は `optional` が `(tactic: Tactic[Yaml.Error])` を取り、`option` は何も取らなかった）。`Yaml.option` の結果の型は `(Option[value] is Decodable in Yaml)^{tactic}` になった。`Optional[T]` のフィールドにある YAML の `null` は `Unset` として読まれるようになった。以前は内側のデコーダーに渡されていた（`Yaml.Error(Reason.NotType(Null, …))`）。`Option[T]` はすでにそれを `None` として読んでいた。新しい given `ypsiloid.optionalityOptions.{strictYamlAbsence, lenientYamlAbsence, strictYamlNulls, lenientYamlNulls, strictYamlFaults, lenientYamlFaults}`（`soundness.optionalityOptions` にエクスポートされる）。(#2130)
+
+% 0 1 0 1c4ce86cb0fa16570db4798767364955
+
+@ 0 37 0 04c174abf73203300ed63f209cab0411
++ - `zephyrine.Producer.Channel[medium]`（`Producer[medium](…)` が返すストリーミングの生産者）に二つ目の型パラメーターが加わった。今は `Producer.Channel[medium, operand]` であり、新しい `abstract class Producer.Staged[medium, operand](block: Int)(using medium is Addressable { type Operand = operand })` を継承する。これは、新しい `Producer.Sink` と共有するブロックの段階的な蓄積を保持する。`Producer[medium](…)` は、`Producer.Channel[medium] { type Operand = addr.Operand }^` の代わりに `Producer.Channel[medium, addr.Operand]^` を返すようになった。クラスの名前を書いていたコードは `Channel[Text, Char]`（または細分化の同等のもの）と綴る。`put`、`push`、`finish`、`iterator` は変わらない。(#2109)
++ - 新しい `zephyrine.Producer.sink[medium](deliver: medium => Unit, block: Optional[Int] = Unset)(using medium is Addressable, Buffering)(body: Producer[medium] { type Operand = … }^ => Unit): Unit`（クラス `Producer.Sink[medium, operand]`）：`Producer.collect` に対応する同期的なストリーミング版であり、埋まった各ブロックを呼び出し側のスレッドで `deliver` に渡し、`body` が戻った後に部分的な最後のブロックをフラッシュする。(#2109)
++ - 新しい `zephyrine.Producer.utf8(deliver: Data => Unit, block: Optional[Int] = Unset)(using Buffering)(body: Producer[Text] { type Operand = Char }^ => Unit): Unit`（クラス `Producer.Utf8Sink`）：ブロックが UTF-8 の `Data` として届けられる `Producer[Text]` であり、文字が届くそばからエンコードする。孤立したサロゲートは U+FFFD にエンコードされる。これは、新しい `zephyrine.Producer.lendUtf8(lending: Producer.Lending[Data], block: Optional[Int] = Unset)(using Buffering)(body: …): Unit` の所有版である。後者は、新しい別名 `type Producer.Lending[medium] = (region: Region[medium]) => (Interval in region.type) => Unit` のもとで、埋まった各ブロックをコピーせずに、ブランドの付いた範囲とともに `Region[Data]` として貸し出す。どちらも、バイトのブロックと文字の使い捨て領域を共有の `zephyrine.Blockpool` から借り、本体が戻ったときに返すので、`Json.lend` のライターと同じく、温まったライターは自分では何もアロケーションしない。(#2109)
++ - 新しい `trait zephyrine.Producer.Emission[medium]` と、given `Producer.Emission.text` と `Producer.Emission.data`。`Producer[Text]` に対して書かれたテキストのシリアライザーのプッシュ形式のために、`sink` か `utf8` を選ぶ。(#2109)
++ - 新しい `final class zephyrine.Producer.Utf8Writer(lending: Producer.Lending[Data], block: Int)`。`Xml.lend` と `Tel.lend` の背後にあるバイト単位のライターで、テキスト形式のプッシュ形式がエスケープだけを与えればよいように共有される：`ascii(text: String)`、`name(text: String)`（同一性または等価性で照合するエンコード済みの名前のキャッシュを通じて）、`text(text: String)`、`escaped(text: String, escapes: Utf8Writer.Escapes)`、`bytes(source: scala.Array[Byte], from: Int, end: Int)`、`byte(value: Int)`、`long(value: Long)`、`finish(): Unit` で、すべて `update` メソッドである。これは `Blockpool` から借りたブロックに UTF-8 を直接エンコードし、孤立したサロゲートは U+FFFD（`name` では `?`）にし、満杯になった各ブロックを `lending` に貸し出す。`Producer.Utf8Writer.escapes(entities: (Char, String)*): Utf8Writer.Escapes` は ASCII 文字のエスケープ表を作り、`Producer.Utf8Writer.lend(lending: Producer.Lending[Data], block: Optional[Int] = Unset)(using Buffering)(body: Utf8Writer^ => Unit): Unit` は `body` で書いてフラッシュする。
+
+@ 0 1 0 18c20a93c615d9ef129078b639b6bc9d
++ ## すべてのモジュール（ビルド）
+
+@ 0 7 0 183db6a6cc7127b017ece62611dd87e3
++ - すべての成果物は `-sourceroot <repository root>` でコンパイルされるようになったので、TASTy が各ユニットについて記録するソースパスは、ビルドマシンの絶対パス（`/home/runner/work/soundness/soundness/lib/…`）ではなく、Soundness のリポジトリからの相対パス（`lib/ethereal/src/core/ethereal.Client.scala`）になる。シンボルのソースファイルや、Soundness のライブラリからインライン化された位置のソースファイルを読むコード（マクロの `Position.sourceFile.path`、JSR-45 のソースマップ、TASTy のソースを解決するツール）は、相対パスを見ることになる。ファイルが必要なら、Soundness のチェックアウトに対してそれを解決する。ソースの変更は必要ない。(#2117)

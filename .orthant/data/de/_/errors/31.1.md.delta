@@ -1,0 +1,39 @@
+orthant 2 language
+
+% 0 1 0 10d3212dbae3745504f416304a655074
+
+@ 0 1 0 03923a1d19442abf1fc6a67b4d1b5a98
++ Wird von Gnossienne ausgelöst, wenn ein Verweis nicht aufgelöst werden kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 4 0 1386759eb00494181bbffc7ff77cc04a
++ Ein Verweis-Token (typischerweise in Markdown oder ein anderes
++ strukturiertes Dokument eingebettet) konnte nicht zu einem Ziel aufgelöst werden. Der
++ Konstruktor nimmt den fehlerhaften Text `reference` zusammen mit einem
++ `reason: Reason`; die dargestellte Meldung lautet `the reference $reference
+
+% 0 1 0 158b131027feb9391eab6e0b397ad073
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0f53c8152d7a3a4500198fa24411812b
+
+@ 0 2 0 14db448dfc373e860b8ac1dc9bbc3c49
++ Im Speicher des Resolvers war kein Ziel mit dem angegebenen Verweis
++ vorhanden.
+
+@ 0 1 0 1ac995d0f6dd1ef90b752501d8c9be50
++ **Beispiel.** `[↯/s.31.1.1] the reference hamlet.md could not be resolved because no target with that reference was found in the store`
+
+@ 0 2 0 18d1bf9a88eb5e7e0dda30e090516f86
++ **Behebung.** Stellen Sie sicher, dass das Ziel existiert und der Text des Verweises
++ genau mit ihm übereinstimmt (Groß-/Kleinschreibung, Anker usw.).
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 159aae50ba6af4261786590c9bbc8f03
++ - Quelle: `lib/gnossienne/src/core/gnossienne.Reference.scala`

@@ -1,4 +1,0 @@
-orthant 1 release
-
--     entry .BrightWhite   SGR 97, though its reset is `[49m` (the background default) rather than `[39m`
-+     entry .BrightWhite   SGR 97

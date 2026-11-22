@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 1e52ef2f298173670246c876ab7c06ed
++ # `↯/s.73.7` — Littéral horaire : les minutes doivent compter deux chiffres
+
+@ 0 2 0 1ed9e479506f224113d23389d8b565e6
++ Levée par la macro `validTime` d'Aviation lorsque le littéral n'a pas exactement deux chiffres de
++ minutes après le point décimal.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 14989873e56c4c330caac3f52c9db3e3
++ La macro examine le texte source du littéral et exige la forme `<hour>.<mm>`, où `<mm>` compte
++ deux chiffres.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 00a4f429ea1763c314a6c3062363864b
+
+% 1 1 0 0edc31f57aa3906212762f163cabdc73
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 1 0 0b4c56069449bfd21656ea91646dbec8
++ Complétez les minutes à deux chiffres (par exemple, écrivez `9.05` plutôt que `9.5`).
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 2 0 134e7c69bc3b1f9c187f8ba40d928c64
++ - Les autres erreurs de littéraux horaires : [Familles](README.md#families)
++ - Source : `lib/aviation/src/core/aviation.internal.scala`

@@ -1,0 +1,1203 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1f334669e90a494c0f78f350d43958f5
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0665e32f8fce328d036a93997d5c89ca
++ info
++     arbres et graphes orientés acycliques dessinés en texte : tuiles calculées par un diagramme,
++     caractères choisis par un style
+
+@ 0 10 0 03388b30b7d9763f0081125635d61f51
++ detail
++     _Dendrology_ dessine des hiérarchies dans le terminal — une liste de fichiers, un graphe de
++     dépendances, une hiérarchie de classes, un historique de gestion de versions — avec les
++     caractères de dessin de boîtes `└─` et `├─`, et sépare les deux choses qu'implique un tel
++     dessin. Un **diagramme** calcule la disposition : pour chaque ligne, les *tuiles* (les
++     pièces de connexion qui la traversent) et le nœud auquel la ligne correspond. Un **style**
++     associe les tuiles à du texte, si bien que la même disposition se rend en caractères de
++     dessin de boîtes ou en ASCII simple, en `Text` ou en sortie de terminal stylée, en changeant
++     un seul import. Un `TreeDiagram` dessine un arbre, et trois diagrammes de DAG dessinent tout
++     graphe qui admet un ordre topologique — un `Dag` d'acyclicity, une `Topology` gelée ou un
++     `Hasse` — dont les nœuds peuvent avoir plusieurs parents, ce qu'un arbre ne peut pas
++     montrer.
+
+% 2 1 0 0b898a562ce00e1e165955fc4a05864b
+
+% 3 1 0 1a3498a63ca8e13510a2c72e6522f4d7
+
+% 0 1 0 0af70e80fa4ad64e1d117fcbeb40296b
+
+% 0 1 0 0820ae4d363e7fe2046b5c5bc9c1bf63
+
+% 0 1 0 07155c1b8c03ef03027e380a8ed0b5c4
+
+% 0 1 0 1b57927ee2f1b9520681fb213b51a8cc
+
+% 0 1 0 0a836080ff536113149150147ee58ed2
+
+% 0 1 0 12db5a83beb263be0d19d942177c6342
+
+% 0 1 0 1c621932b933926c0f911dba5f472a99
+
+% 0 1 0 18d655a7612588741dcc0bcfd9083a43
+
+% 0 1 0 1ee761de552167b608a82d759817342d
+
+% 0 1 0 0c21ca7fff1b71b804b0cb247754d517
+
+% 1 1 0 164ae009f486524011e4dd0dcacb6e5e
+
+@ 0 7 0 0e0adf2b1a04ab11124918a36f155cb7
++     Les trois dispositions de graphe répondent à des questions différentes. `DagDiagram` est
++     dense : chaque arête est dessinée dans une grille de tuiles de connexion, une ligne par nœud,
++     ce qui convient à un petit graphe aux arêtes compliquées. `LaneDagDiagram` place chaque nœud
++     sous forme de puce sur une voie verticale, les arêtes circulant entre les voies, comme
++     `git log --graph` dessine l'historique, ce qui convient à un long graphe comptant peu de
++     branches concurrentes. `LayeredDagDiagram` range les nœuds en niveaux selon leur profondeur,
++     ordonnés au sein de chaque niveau de sorte que le moins possible de lignes de connexion se
++     croisent, ce qui convient pour montrer ce qui dépend de quoi plutôt que ce qui s'est passé
++     dans quel ordre.
+
+% 2 1 0 0d3ba9d037bd30f91b00d292fec73c9e
+
+% 3 1 0 0266fbe8bf407d66168db2d46c1e9e31
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0a252e9fb29da47506084762266a9a9f
+
+% 0 1 0 19de83050add395b1c3e973740e6e8e4
+
+% 0 1 0 07fbbbde4f9068d6129148ee9ed805b3
+
+% 0 1 0 15f35e3234555baa19e5d603ec214289
+
+% 0 1 0 0d272dcd65e5c187071dc8eeef3d2103
+
+% 1 1 0 14e1644a14369c14170556c1b1aa49c9
+
+% 0 1 0 0d272dcd65e5c188071dc8eeef3d2104
+
+% 1 1 0 18ea9c6c3dd5cde41f34515a9df8b652
+
+% 0 1 0 0d272dcd65e5c189071dc8eeef3d2105
+
+% 1 1 0 0004e7845d7051a814fb1833080bf5bf
+
+@ 0 9 0 16c8ae738141214e03425433d1541ac5
++     Un style est un given, choisi en l'important par son nom — `import soundness.*` n'en apporte
++     aucun, puisque `import pkg.*` n'importe pas les givens — depuis l'un de trois packages de
++     choix : `treeStyles` (`squareTreeStyle`, `roundedTreeStyle`, `asciiTreeStyle`) pour un
++     `TreeDiagram`, `dagStyles` (`boxDrawingDagStyle`, `asciiDagStyle`) pour un `DagDiagram`, et
++     `laneDagStyles` (`boxDrawingLaneDagStyle`, `asciiLaneDagStyle`) pour un `LaneDagDiagram` et
++     un `LayeredDagDiagram`. Les styles à voies mesurent les glyphes en cellules d'affichage, si
++     bien qu'ils nécessitent aussi un `Text is Measurable` dans la portée, comme
++     `textMetrics.uniformMetric`. Chaque style est paramétré par le type de ligne qu'il rend, si
++     bien qu'un diagramme se rend directement en texte de terminal stylé, avec le tracé dans une
++     couleur et les étiquettes dans une autre.
+
+@ 0 6 0 0701bb5629edc10908bf85a3e65ff4cf
++     La bibliothèque compte deux ensembles de sources. `dendrology.tree` contient `TreeDiagram`,
++     `TreeDiagram.Tile`, `TreeDiagram.Style`, `TreeDiagram.TextualStyle`, `Expandable` et
++     `treeStyles` ; `dendrology.dag` contient les trois diagrammes de DAG, `DagDiagram.Tile`,
++     `DagDiagram.Style`, `LaneDagDiagram.Style`, leurs implémentations `Textual…` et les packages
++     `dagStyles` et `laneDagStyles`, et dépend d'`acyclicity`. Les deux sont exportés vers le
++     package parapluie `soundness`, où les trois packages de choix fusionnent avec ceux du
++     package parapluie.
+
+% 0 1 0 06bbc774ae7fdbc61de0343e47c15934
+
+% 0 1 0 08b2db919f72a5df0801a6484c644506
+
+% 0 1 0 035db606ae51c516159178415c1228de
+
+% 0 1 0 188c29f62fec82591cb4969a4e79f618
+
+% 0 1 0 10382b91050fba2518137db1ad1d00c7
+
+% 0 1 0 0c0b51cac88f77d614a500d8d654f29d
+
+@ 0 1 0 0780ba6e8d824256076536a815c22697
++ entry .TreeDiagram
++   info
++       un arbre disposé en lignes de tuiles, rendu par un `TreeDiagram.Style`
+
+@ 0 7 0 1728c2f0fc94bf4e11e25dd2022aeb29
++   detail
++       Un `TreeDiagram[node]` est la disposition d'un arbre : une ligne par nœud, en ordre de
++       parcours en profondeur, chacune avec les `Tile` de son préfixe — une branche ou une dernière
++       branche pour le nœud lui-même, et pour chaque ancêtre un prolongateur (si cet ancêtre a des
++       frères suivants) ou un espace. Il se construit à partir de ses racines et d'un moyen
++       d'atteindre les enfants — une fonction, avec `by`, ou une instance `Expandable` sur le type
++       de nœud, avec `apply` — et se rend avec une fonction du nœud vers l'étiquette et le `Style`
++       dans la portée.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 1d8a23d6a11d6ea503b696f232fa1031
+
+% 1 1 0 172c73d914bec8cc06e00d83314fd4ca
+
+% 2 1 0 14bf2a0fee83411819292640a1081dbb
+
+% 0 1 0 02e81fb51ebbaa8a010c47f9c99f4d83
+
+% 1 1 0 0b1433e1f32fe11603d2839fbd64f75a
+
+% 2 1 0 1cdce820c477016d011813ea9284e22b
+
+% 3 1 0 1b1aff0537ce56660b668a8738726dee
+
+% 0 1 0 1d5c4a982af3caad12d316f0577b6562
+
+% 0 1 0 02b5e675c4cbe1651df43444f0c4165c
+
+% 0 1 0 041020412b11fa63078ba015c6b4e4ac
+
+% 1 1 0 0f214fdcc95a9f881a475c3ee31a631a
+
+% 2 1 0 174cb40d3e57f2890c554e414234081f
+
+% 0 1 0 165f494df68731db05637c088c0a7db9
+
+% 1 1 0 124913126072a5c70fb72f1204572a98
+
+% 2 1 0 04249946e0b440271b0c888fd415be8a
+
+% 3 1 0 1ebb6e1f4a604b3610270a25faf48174
+
+% 0 1 0 19e31c38e9a52e8618351c706bad4a1a
+
+% 0 1 0 02dbf9e8244cfe671466e2fd5974f83b
+
+% 0 1 0 15da890881a4a8d90f4b73ef982249b6
+
+% 1 1 0 145a45580da9a76e0e255ffacb47cb05
+
+% 2 1 0 0e08d20b5107face08940ffed2404620
+
+% 0 1 0 0802712a9f7a76450f73c24bad18c5e0
+
+% 1 1 0 0fc71f7fa9a48c621f841cbbb09c3321
+
+% 2 1 0 1dbda23303f4967a0078b7059c2c8ae6
+
+% 0 1 0 0951c603af19bed809b5327120fa2929
+
+% 0 1 0 0b523f9c7621838b0cc5cfa9a5497037
+
+% 0 1 0 00b1e83da28cfbd11467bf6f03a4e39e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 11472c8473b5b2641d310407a71153b2
++       Les lignes forment une `Chain`, produite paresseusement : un arbre grand ou profond est
++       dessiné dans la mesure où il est consommé, et un arbre infini se dessine tout de même,
++       puisque rendre une ligne ne nécessite que le nombre de frères des ancêtres, jamais les
++       descendants des nœuds suivants. Un diagramme est aussi `Printable` (avec un `Style[Text]`
++       dans la portée et un nœud `Showable`), si bien qu'il peut être écrit directement vers `Out`,
++       chaque nœud s'affichant sous la forme `▪ node`.
+
+@ 0 3 0 060e86d157a0b6a10fb5b9a697ac4468
++       Les lignes sont exposées — `nodes`, `tiles` et `map` — si bien qu'un consommateur peut
++       rendre lui-même les lignes : une étiquette colorée pour une sorte de nœud, une annotation
++       sur une autre, les caractères de dessin de boîtes restant l'affaire du style.
+
+% 0 1 0 0abd66b646a5c82d0cebdf7d2216d754
+
+% 0 1 0 194141aa304dced20ae531329d08516c
+
+% 0 1 0 143523fd146ddb861fa278aa357a6ee0
+
+% 0 1 0 1f2e77b0f34cb35d0b9138fac91c55a3
+
+@ 0 1 0 1ee6c6b51279836c1c9d272021608833
++   entry .apply
++     info
++         un diagramme des racines données, les enfants étant trouvés par l'instance `Expandable` du
++         type de nœud
+
+@ 0 3 0 086d97a4565332f61e826f272d44d4e3
++     detail
++         `TreeDiagram(roots*)` pour un type de nœud doté d'un `given node is Expandable` : la bonne
++         forme lorsque les enfants d'un type de nœud sont ce qu'il entend par enfants — un chemin
++         de système de fichiers, une dépendance, un nœud de syntaxe.
+
+@ 2 1 0 18bf1c7bd331e0650126e567995ca122
++         ```scala
+
+@ 3 1 0 09b9420ebeed85cc145340f19d9beb45
++         import soundness.*
+
+@ 2 1 0 0990919c0d1a050b01de5e3a6d54a7a0
++         case class Taxon(name: Text, children: List[Taxon] = Nil)
+
+@ 0 1 0 097add2b36cdb59e056d0fcbfc689ea5
++         given Taxon is Expandable = _.children
+
+@ 0 1 0 072495fb837d7e6c0789c1f7965bf4e5
++         TreeDiagram(Taxon(t"a", List(Taxon(t"b")))).nodes.to[List].map(_.name)   // List(a, b)
+
+@ 1 1 0 02dd0e853fd250f416402fb71da24b12
++         ```
+
+@ 0 1 0 12c5bedcdca1ab80021b83284f3262b6
++   entry .by
++     info
++         un diagramme des racines données, les enfants étant trouvés par une fonction
+
+@ 0 2 0 1a06a244cc4415531c2a4c8f791b44d6
++     detail
++         `TreeDiagram.by[node](node => children)(roots*)` : la bonne forme lorsque la structure est
++         déjà en main, ou lorsque le même type est dessiné selon différentes relations.
+
+@ 1 1 0 113accaa826eea0d1d439611c0c3187a
++   entry .printable
++     info
++         écrit un diagramme vers un terminal, chaque nœud s'affichant sous la forme `▪ node`
+
+@ 0 2 0 15714b95a3d9c72d140fc3779827fe72
++     detail
++         Nécessite un `Style[Text]` dans la portée (l'un des `treeStyles`) et un type de nœud
++         `Showable` ; les lignes sont jointes par des sauts de ligne.
+
+@ 0 1 0 075c2d13f5cf0efe163f5642dbbf70f9
++   entry #lines
++     info
++         les tuiles et le nœud de chaque ligne, sous forme de `Chain` paresseuse
+
+@ 0 1 0 09d9ddeba5599223147dafe39f495da9
++   entry #render
++     info
++         les lignes sous forme de texte rendu : l'étiquette de chaque nœud, précédée de ses tuiles
++         par le `TreeDiagram.Style` dans la portée
+
+@ 0 2 0 1de499ef9c1f796f09e1e75e276c68e6
++     detail
++         `diagram.render(node => label)`, avec l'étiquette du type de ligne que rend le style —
++         `Text` avec les givens de `treeStyles`, ou un type de terminal stylé avec un style adapté.
+
+@ 0 1 0 1096f3bcc065d6f51b2d8dd78f6a7ce4
++   entry #flow
++     info
++         les lignes dont chaque étiquette est coupée à une largeur, les lignes de continuation
++         prenant les tuiles de suite du style
+
+@ 0 6 0 1356159c956f79441026b26f25249948
++     detail
++         `diagram.flow(width)(node => label)` : le contenu de chaque nœud s'écoule en lignes qui ne
++         dépassent pas `width`, préfixe de tuiles compris, et les lignes de continuation prennent
++         les tuiles `Style#followOn` — un prolongateur continue sous une branche, et un espace suit
++         un dernier enfant — si bien que les lignes de l'arbre se poursuivent au-delà d'une
++         étiquette coupée. Nécessite un `Text is Measurable` (comme `textMetrics.uniformMetric`) et
++         une `Hyphenation` dans la portée, ainsi qu'un type d'étiquette `Textual` sur des
++         caractères.
+
+@ 2 1 0 0a43bc05565e878d194094868adeb35f
++         ```scala
+
+@ 3 1 0 13822e8cc962803f122eb87cd3752714
++         import soundness.*
+
+@ 0 1 0 18ce7c3e0a0994cb1e5cef2e9db10256
++         import treeStyles.squareTreeStyle
+
+@ 1 1 0 1c1f6c4810f8e7410b33584f00e545dc
++         import textMetrics.uniformMetric
+
+@ 2 1 0 1cb4a5950d7cd45c08ef4de921ea830f
++         case class Taxon(name: Text, children: List[Taxon] = Nil)
+
+@ 0 1 0 192fe055434ef8531e65551e898946a8
++         TreeDiagram.by[Taxon](_.children)(Taxon(t"the quick brown fox"), Taxon(t"leaf"))
+
+@ 0 1 0 08c25fad3e8b9c4500c16de8370a96f2
++         . flow(11)(_.name).to[List]
+
+@ 0 1 0 111a6fa455a31de2169a5bfe39f2ca72
++         // List(├─the quick, │ brown fox, └─leaf)
+
+@ 1 1 0 1b125b505306846b0d3d112c1c47c6d2
++         ```
+
+@ 0 2 0 1e544ad78184ebe81be4e2aabff6378a
++         Un style dont les tuiles de suite sont plus larges que ses tuiles ordinaires est mesuré
++         des deux façons, et le contenu se coupe selon le budget le plus serré, si bien qu'aucune
++         ligne ne peut dépasser `width`.
+
+@ 0 1 0 106ac5be56fc3d6c070cc5e41e21914d
++   entry #map
++     info
++         chaque ligne rendue par une fonction de ses tuiles et de son nœud
+
+@ 0 2 0 0bc6614d17de5dab05c52b6e62206645
++     detail
++         `diagram.map(tiles => node => row)` : la forme générale de `render`, pour un consommateur
++         qui rend lui-même les lignes.
+
+@ 1 1 0 0699eb30a0babc3513d8c1d030263180
++   entry #nodes
++     info
++         le nœud de chaque ligne, dans l'ordre du dessin
+
+@ 0 1 0 0acceaaa90f2c3371c440d3e169d6eb7
++   entry #tiles
++     info
++         les tuiles de chaque ligne, dans l'ordre du dessin
+
+@ 0 1 0 087e8b34b870ee8205419dbd295d1a13
++   entry .Tile
++     info
++         une pièce du préfixe d'une ligne d'arbre : une branche, une dernière branche, un
++         prolongateur ou un espace
+
+@ 0 4 0 0baa4571fd8d3cdd1793eda32320fc83
++     detail
++         Une énumération de quatre cas. `Branch` (`├─`) marque un nœud qui a des frères suivants et
++         `Last` (`└─`) le dernier de ses frères ; à leur gauche, `Extender` (`│ `) prolonge la
++         ligne d'un ancêtre au-delà du nœud lorsque cet ancêtre a des frères suivants, et `Space`
++         remplit la colonne lorsqu'il n'en a pas. Un `Style` indique ce que chacun devient sous
++         forme de texte.
+
+@ 0 1 0 1623831b3217ed4004d35042442d73ce
++   entry .Style
++     info
++         la classe de types qui rend une ligne de tuiles d'arbre et une étiquette en une seule
++         ligne
+
+@ 0 8 0 1f1e94352c118e0f12ddc8225872a0cc
++     detail
++         `Style[line]` transforme une `List[Tile]` et l'étiquette d'un nœud, de type `line`, en une
++         seule ligne rendue, et c'est ce que `TreeDiagram#render` et `#flow` prennent dans la
++         portée. Il est paramétré par le type de ligne, si bien qu'un diagramme peut se rendre
++         aussi bien en `Text` qu'en sortie de terminal stylée. `TextualStyle` l'implémente pour
++         tout type de ligne `Textual` à partir de quatre courts morceaux de texte, ce qui suffit à
++         un nouveau style ; le package `treeStyles` en propose trois tout faits. Un style est
++         `Findable`, si bien que l'instance `Printable` d'un diagramme le trouve dans la portée.
+
+% 0 1 0 0acff1f4781516081c0fe2a074fffa02
+
+% 1 1 0 12b2711ff1817d521143f742bfa12be7
+
+@ 1 1 0 021e4907cd8685390109ede0561b991a
++     entry #serialize
++       info
++           les tuiles et l'étiquette d'une ligne sous forme d'une seule ligne rendue
+
+@ 0 1 0 079436cf9298a32f03bb3d611f7d2ddf
++     entry #followOn
++       info
++           une ligne de continuation d'un nœud sur plusieurs lignes : les mêmes voies, sans glyphe
++           de branche
+
+@ 0 3 0 0b50f1626684e95a0491dbc7c1bd14a8
++       detail
++           Utilisé par `TreeDiagram#flow` pour la deuxième ligne et les suivantes d'une étiquette
++           coupée : un prolongateur continue, et la branche d'un dernier enfant cède la place à un
++           espace. Par défaut, il répète `serialize`, pour un style qui ne dessine aucun préfixe de
++           continuation distinct.
+
+@ 0 1 0 108827539ff198200d3a901d967910d0
++   entry .TextualStyle
++     info
++         un `TreeDiagram.Style` pour tout type de ligne `Textual`, à partir de quatre morceaux de
++         texte
+
+@ 0 4 0 13582d76d970ddf21de2689524d3af1a
++     detail
++         `TextualStyle(space, last, branch, extender)` donne le texte de chaque `Tile` ; une ligne
++         est la jonction des textes des tuiles, suivie de l'étiquette. Les morceaux font
++         généralement deux caractères de large, pour que les colonnes s'alignent, mais ce n'est pas
++         obligatoire.
+
+% 2 1 0 071221007e0aa6c00182f4fa9bf4c402
+
+% 3 1 0 04ae79e3753c97f5064060fd509e466b
+
+% 0 1 0 08026cfc0bf8fe2d0efb1d1495635dad
+
+% 1 1 0 1ca0a8551b1fca4c190865f5284c73d0
+
+@ 0 2 0 0c912ff2506bf95a19065e7068d8db58
++         Sur une ligne de suite, `branch` se rend comme `extender` et `last` comme `space`, si bien
++         que les lignes verticales se poursuivent sous une étiquette coupée.
+
+% 0 1 0 0d3798c8daa025960d108dcb3277a25e
+
+% 1 1 0 05b4e57e74ed1a6016ad97a906327b95
+
+@ 0 1 0 0ba485bd4c9a48a70fc77799212e344f
++     entry #space
++       info
++           le texte d'une tuile `Space` : sous un dernier enfant
+
+@ 0 1 0 00beb0b78a1f2d130999b0b08b5c5fad
++     entry #last
++       info
++           le texte d'une tuile `Last` : la branche vers le dernier enfant d'un nœud
+
+@ 0 1 0 0f99397b945b287814d8a3ac024610e5
++     entry #branch
++       info
++           le texte d'une tuile `Branch` : la branche vers un enfant qui a des frères suivants
+
+@ 0 1 0 017ef337d2ed672b0f3f2757153a3e89
++     entry #extender
++       info
++           le texte d'une tuile `Extender` : la ligne d'un ancêtre prolongée au-delà d'un nœud
+
+@ 1 1 0 119d31d0c40f633c04ed24d341b8bf58
++     entry #serialize
++       info
++           les textes des tuiles joints, puis l'étiquette
+
+@ 0 1 0 1fb3e1302f10ea261d8bd1ea3c38fba4
++     entry #followOn
++       info
++           les textes de suite des tuiles joints, puis l'étiquette
+
+@ 1 1 0 00dbe644aba73cca028785e2ac04d9ef
++     entry #text
++       info
++           le texte d'une tuile
+
+@ 0 1 0 0c2246c100abd40c138caab485203756
++     entry #followOnText
++       info
++           le texte d'une tuile sur une ligne de continuation : `extender` pour une branche,
++           `space` pour une dernière branche
+
+@ 0 1 0 117e8b7eb547c9a8195452c13406e4ec
++ entry .Expandable
++   info
++       la classe de types d'un type de nœud qui connaît ses propres enfants
+
+@ 0 3 0 158b598ccf6a978213386e33d15c0d78
++   detail
++       `given node is Expandable = _.children` permet à `TreeDiagram(roots*)` de trouver les
++       enfants de chaque nœud par le type plutôt que par une fonction passée lors de l'appel.
++       `children` renvoie une `List` du type de nœud lui-même.
+
+@ 0 1 0 075642825a22014e0bf7b7839dfa74c6
++ entry .treeStyles
++   info
++       les trois styles d'arbre tout faits, chacun étant un given à importer par son nom
+
+@ 0 3 0 12e1c8f80d443f0d17de9272baceade6
++   detail
++       `import soundness.*` n'en apporte aucun ; on en importe un par son nom, et il fournit un
++       `TreeDiagram.Style` pour tout type de ligne `Textual`.
+
+% 2 1 0 16a68449831e16840d752e138e701052
+
+% 3 1 0 16925aba1a19bd1f1717ce59f377efa7
+
+% 0 1 0 14d9b15a0f712180194822fc61a44203
+
+% 1 1 0 03d9f4a02ba63bc31f1772da5a0055ff
+
+@ 0 1 0 04f54a2d836d16a2060c0cafe2ce5bcc
++   entry .squareTreeStyle
++     info
++         `├─`, `└─` et `│ ` : des coins à angle droit
+
+@ 0 1 0 01345a643167e02e05b72e2c6920da07
++   entry .roundedTreeStyle
++     info
++         `├─`, `╰─` et `│ ` : la dernière branche est arrondie
+
+@ 0 1 0 0343f3cd0ba33404150b065cbe67b6b6
++   entry .asciiTreeStyle
++     info
++         `|-`, `+-` et `| ` : ASCII seulement, pour une sortie qui doit fonctionner sur n'importe
++         quel terminal
+
+@ 0 1 0 0de0077fd444077d07bb853faff8b0fd
++ entry .DagDiagram
++   info
++       le dessin dense d'un graphe : une ligne par nœud, chaque arête dans une grille de tuiles de
++       connexion
+
+@ 0 7 0 1c9b7796d6b7a4e7074cb5e039713152
++   detail
++       `DagDiagram(graph)` dispose tout graphe qui admet un ordre topologique — un `Dag`, une
++       `Topology[node]^{}` gelée ou un `Hasse` — avec une ligne par nœud, en ordre topologique
++       (les dépendances d'abord), et à gauche de chaque ligne une colonne pour chaque nœud
++       précédent, contenant les tuiles des arêtes qui y commencent, y passent ou y finissent. Le
++       résultat ne peut pas échouer : un `Digraph`, qui peut contenir un cycle, n'a pas de dessin
++       tant que `acyclic` ne l'a pas converti. Il se rend par le `Style` dans la portée, issu du
++       package `dagStyles`.
+
+% 2 1 0 19bcd9faae6fc5fe14cb5088d5299bbd
+
+% 3 1 0 0b028d6b16c820c80f13e56d08f7dc0e
+
+% 4 1 0 141f4adbd65cb70c08746fd981f3840c
+
+% 1 1 0 1c02b8b1353d1e7b16793973b181a857
+
+% 0 1 0 0066612ddb1c1ec41d6049406cf7e1b3
+
+% 0 1 0 1aa7d22e928966770a377aa71762f507
+
+% 0 1 0 0d446be4798dc4180048d00208ed27a4
+
+% 0 1 0 194e4e4a3e3f6fe010750cce4dd0e1f3
+
+% 0 1 0 150d56a39a24275f0c8b86d50d9f1882
+
+% 0 1 0 116ec5e9e250b775100d5e8cd9a4e107
+
+% 0 1 0 1671092abd97b57114eab42538e5112a
+
+% 0 1 0 0e3450b1c21f1d4b04bef1b3d8b14a20
+
+% 1 1 0 088d4f2cd1c77e1100267392d563684d
+
+@ 0 4 0 1ae31b90d3c2ced80651243ab34f8297
++       Toute la disposition est calculée lorsque le diagramme est créé, sous forme d'une grille de
++       la taille du graphe au carré, ce qui en fait la bonne forme pour un petit graphe aux arêtes
++       compliquées et la mauvaise pour un long historique ; `LaneDagDiagram` est la forme adaptée à
++       ce cas. Un diagramme est `Printable` avec un `Style[Text]` dans la portée et un nœud
++       `Showable`.
+
+% 0 1 0 03052f1d99dd8911037f0509daf775ec
+
+% 0 1 0 17bf87312473321b024665cc3824f67e
+
+% 0 1 0 1542ba2eaaf3e6a80a09ff74f7a28db0
+
+% 1 1 0 0d234d39e1e3d3a20a698a746636b6c9
+
+@ 0 1 0 0fc800d90757a90610e36ae8ae6ce57e
++   entry .apply
++     info
++         la disposition dense de tout graphe `Nodal` et `Topological`
+
+@ 0 2 0 18560f9d11cc485d0693436cd467f33c
++     detail
++         Prend dans la portée les instances `Nodal` et `Topological` du graphe, que fournissent
++         depuis leurs compagnons un `Dag`, une `Topology` gelée et un `Hasse`, si bien qu'un appel
++         ne nécessite aucun import.
+
+@ 1 1 0 1b8254c7191c8f1d151687b4325cf0e4
++   entry .printable
++     info
++         écrit un diagramme vers un terminal, chaque nœud s'affichant sous la forme `▪ node`
+
+@ 0 1 0 1b2ff16c4ff557380c36767fc1d94150
++     detail
++         Nécessite un `Style[Text]` (l'un des `dagStyles`) et un type de nœud `Showable`.
+
+@ 0 1 0 17bedd87578fae9115b455dd406fde2c
++   entry #lines
++     info
++         les tuiles et le nœud de chaque ligne, en ordre topologique
+
+@ 0 1 0 0c3db7776caaaaba08005d07ac7ff24f
++   entry #size
++     info
++         combien il y a de lignes : une par nœud
+
+@ 0 1 0 1b5d131e3eabb6d209691342161487eb
++   entry #render
++     info
++         les lignes sous forme de texte rendu, l'étiquette de chaque nœud après ses tuiles, par le
++         `DagDiagram.Style` dans la portée
+
+@ 1 1 0 1948090943cf55391e8996c3bbc95feb
++   entry #nodes
++     info
++         le nœud de chaque ligne, dans l'ordre du dessin
+
+@ 0 1 0 06777353a68e9b850810477597e9cd92
++   entry #tiles
++     info
++         les tuiles de chaque ligne
+
+@ 0 1 0 0c5d1aadf33d974402bdec2050cd3bc9
++   entry .Tile
++     info
++         une cellule d'un dessin de DAG : un nœud, une voie, un coin, un té, un croisement ou un
++         espace
+
+@ 0 7 0 1877d8dac95315730be633b78a7d5098
++     detail
++         Une énumération de quatorze cas, nommés d'après les points cardinaux de leurs bras.
++         `Space` ; les voies `Vertical` et `Horizontal` ; les coins `CornerNe`, `CornerNw`,
++         `CornerSe` et `CornerSw` ; les tés `TeeN`, `TeeS`, `TeeE` et `TeeW` ; `Crossing`, une voie
++         horizontale qui passe par-dessus une voie verticale qui continue sans la rejoindre ;
++         `Junction`, où des voies se rejoignent depuis les quatre côtés ; et `Node`, la puce d'un
++         nœud sur un diagramme à voies. `DagDiagram` utilise les huit premiers ; `LaneDagDiagram`
++         et `LayeredDagDiagram` les utilisent tous les quatorze. Un `Style` ou un
++         `LaneDagDiagram.Style` indique ce que chacun devient sous forme de texte.
+
+@ 0 1 0 0f847e8355ced67518a7d7ca32a947dc
++   entry .Style
++     info
++         la classe de types qui rend une ligne d'un `DagDiagram` dense
+
+@ 0 6 0 1682b22dfc326f941d6d848fe154263c
++     detail
++         `Style[line]` transforme la `List[Tile]` d'une ligne et l'étiquette d'un nœud en une seule
++         ligne rendue de type `line`, et c'est ce que `DagDiagram#render` prend dans la portée.
++         `TextualStyle` l'implémente pour tout type de ligne `Textual` à partir de huit morceaux de
++         texte ; le package `dagStyles` en propose un en dessin de boîtes et un en ASCII. Il est
++         `Findable`, si bien que l'instance `Printable` du diagramme le trouve.
+
+% 0 1 0 0e2197ac044d89b41803924668c24785
+
+% 1 1 0 1469f3cfb0bffdb01e4d25d0f0499828
+
+@ 1 1 0 09df60e78e4bf8d00f61794ce591d1c2
++     entry #serialize
++       info
++           les tuiles et l'étiquette d'une ligne sous forme d'une seule ligne rendue
+
+@ 0 1 0 1dc11990d9b9b6ea1cf27ce69d6353c8
++   entry .TextualStyle
++     info
++         un `DagDiagram.Style` pour tout type de ligne `Textual`, à partir de huit morceaux de
++         texte
+
+@ 0 4 0 0dab302dee05a62e1a4baed6b1b8c531
++     detail
++         `TextualStyle(space, cornerNe, vertical, teeE, horizontal, teeN, crossing, junction)`
++         donne le texte de chacune des tuiles que dessine un `DagDiagram` ; toute autre `Tile` se
++         rend comme `space`. Une ligne est la jonction des textes des tuiles, suivie de
++         l'étiquette.
+
+% 2 1 0 00936060487783930cc1c3fff8e3a630
+
+% 3 1 0 101a3b58c20831ec1d5d64c783920e81
+
+% 0 1 0 13e34be9c88dfd901b8d6da902aa5452
+
+% 0 1 0 14f158ff6e096c380c8099438cbd56c6
+
+% 1 1 0 05013786c247157d1cbc06dbb1708a24
+
+% 0 1 0 12875549150dd68906f2c58d35fdb947
+
+% 1 1 0 1eff0fb1a4e77ef20f98887bf6102de3
+
+@ 1 1 0 06bbf992ab4763d81505a9a76aad7f37
++     entry #space
++       info
++           le texte d'une tuile `Space`
+
+@ 0 1 0 168c8f81bbe8c287069b3663427651d9
++     entry #cornerNe
++       info
++           le texte d'une tuile `CornerNe` : une arête qui tourne d'une voie vers la ligne d'un
++           nœud
+
+@ 0 1 0 1f5e7d96191d276f11511bde935b1de3
++     entry #vertical
++       info
++           le texte d'une tuile `Vertical` : une voie qui passe une ligne
+
+@ 0 1 0 00d73be743adbd6b14ffd595712086da
++     entry #teeE
++       info
++           le texte d'une tuile `TeeE` : une voie avec une branche vers la droite
+
+@ 0 1 0 081afde90eb48e501912463464bf5462
++     entry #horizontal
++       info
++           le texte d'une tuile `Horizontal` : une arête qui longe une ligne
+
+@ 0 1 0 13cb2360d198497b01531a3471c75491
++     entry #teeN
++       info
++           le texte d'une tuile `TeeN` : une arête qui rejoint une ligne par le haut
+
+@ 0 1 0 060648f663f5c9bc194436792dcef890
++     entry #crossing
++       info
++           le texte d'une tuile `Crossing` : une voie croisée par une arête
+
+@ 0 1 0 1db90602e5c73b2600536e4fdae27410
++     entry #junction
++       info
++           le texte d'une tuile `Junction` : une voie rejointe par une arête des deux côtés
+
+@ 1 1 0 1b3a6132114a5f421f522624161427de
++     entry #serialize
++       info
++           les textes des tuiles joints, puis l'étiquette
+
+@ 1 1 0 1f3b215d947fe6e509c6bf4d5d9fd782
++     entry #text
++       info
++           le texte d'une tuile
+
+@ 0 1 0 098a43d2e2666bdd0f84c24d08efe850
++     entry #followOnText
++       info
++           le texte d'une tuile sur une ligne de continuation : une voie continue, tout le reste
++           est un espace
+
+@ 0 1 0 1c6a9f634ecd15ab0e5e6327f572c9da
++ entry .dagStyles
++   info
++       les deux styles tout faits pour un `DagDiagram` dense, chacun étant un given à importer par
++       son nom
+
+% 0 2 0 129f526836097231016708ddcda3f573
+
+% 2 1 0 0bc97b6e16268c230d2159d6da92bed9
+
+% 1 1 0 182ebf4dbe9c492618ebc3331433fad5
+
+% 1 1 0 11707fba0431780c048f7cf6e5eadc13
+
+@ 0 1 0 1ffc5ba349a749e20ee7f65eb15194f9
++   entry .boxDrawingDagStyle
++     info
++         caractères de dessin de boîtes : `└─`, `│ `, `├─`, `──`, `┴─`, `│─`, `┼─`
+
+@ 0 1 0 02a63e7897f5f21102585d258f6602f2
++   entry .asciiDagStyle
++     info
++         ASCII seulement : `+-`, `| `, `--`, `|-`
+
+@ 0 1 0 18f82f9b622fd645058061be9c8bf859
++ entry .LaneDagDiagram
++   info
++       le dessin à voies d'un graphe : les nœuds sous forme de puces sur des voies verticales, les
++       arêtes circulant entre elles
+
+@ 0 8 0 101a10bd03f66fcd1e06ca9e2823a999
++   detail
++       `LaneDagDiagram(graph)` dispose tout graphe qui admet un ordre topologique — un `Dag`, une
++       `Topology[node]^{}` gelée ou un `Hasse` — comme on dessine un historique de gestion de
++       versions : chaque nœud est une tuile `Node` sur l'une de quelques voies verticales, en ordre
++       topologique depuis le haut (les dépendances d'abord), et entre deux lignes de nœuds, une
++       ligne de connexion fait descendre chaque arête le long de sa voie, en l'infléchissant vers
++       la colonne du nœud qu'elle atteint. Une arête vers le nœud immédiatement suivant va tout
++       droit ; une arête plus longue prend une voie à elle, choisie au plus près de son nœud, et
++       une voie qui continue au-delà d'une ligne est dessinée comme `Vertical`.
+
+% 2 1 0 0c9ac9b40cbd25140537343825a3d87e
+
+% 3 1 0 0fa52ba20face9bc1114900eab2cb109
+
+% 4 1 0 060b517ea48502ac068cbf8c5a76d962
+
+% 5 1 0 09520b37c88e073315cc5d800f3938f1
+
+% 6 1 0 0c53dcc50cfa62d41db6fa5a526c3e40
+
+% 8 1 0 19f94674433d89d11483d9525de5098e
+
+% 0 1 0 053e074e454ac70a0762e8d11f8922a1
+
+% 0 1 0 109979bff7d2453a1185fd71f291c56e
+
+% 1 1 0 14435a31bb9532ad1462aabb5f9bd6d1
+
+@ 0 3 0 05adfb2cfd1fe930078ede187b497b6b
++       Un glyphe par nœud marque des nœuds choisis — le commit courant, un build en échec — par le
++       `render` à deux fonctions, dont les colonnes s'élargissent pour accueillir le glyphe le plus
++       large, mesuré en cellules d'affichage pour qu'un caractère large soit correctement disposé :
+
+% 2 1 0 0dfa7066e80e44e10522fa6910938b4e
+
+% 3 1 0 1c9779c976db50ea0da6f0947d06ff82
+
+% 4 1 0 1adba957929452ab02f45e189b2735b6
+
+% 5 1 0 0765b2514ea026f2138f2701f83b5bbf
+
+% 6 1 0 1d6d96eb49268893000dd512a5fe6909
+
+% 0 1 0 1841869fabc7534b0ec69b5a5e688c3c
+
+% 0 1 0 1006ef1a1bf1b33603e908eed06a409c
+
+% 0 1 0 17232ad95f7174a8019d5861cb63381e
+
+% 1 1 0 089e6b13652466531a1f1e531497838d
+
+@ 0 4 0 1beebeb840282b811f112ab0d143e30a
++       Le dessin ne peut pas échouer : un `Digraph` n'a pas de dessin tant que `acyclic` ne l'a pas
++       converti. Il se rend par le `Style` dans la portée, issu du package `laneDagStyles`, qui
++       nécessite aussi un `Text is Measurable` ; un diagramme est `Printable` avec un `Style[Text]`
++       dans la portée et un nœud `Showable`, chaque nœud étant étiqueté ` node`.
+
+% 1 1 0 1f0995fbb9aa9c291b69f1779a7c2c02
+
+% 2 1 0 12f2ecb5ff53a24d15657617b6473907
+
+% 0 1 0 0a355cba2b21775b042055b7241a29d9
+
+% 1 1 0 0e2a7f8640eb2027014918bed32b5bfb
+
+@ 0 1 0 15c025d6bb07ac830e922490ebb5aadf
++   entry .apply
++     info
++         la disposition à voies de tout graphe `Nodal` et `Topological`
+
+@ 0 2 0 0d4aaea73aa6c2ed1a07547123be27c6
++     detail
++         Prend dans la portée les instances `Nodal` et `Topological` du graphe ; un `Dag`, une
++         `Topology` gelée et un `Hasse` les fournissent sans import. Un graphe vide n'a pas de
++         lignes.
+
+@ 0 1 0 1bf62863b4ec36b617a9ac090b749e71
++   entry .printable
++     info
++         écrit un diagramme vers un terminal, chaque nœud étant étiqueté ` node`
+
+@ 0 2 0 14b4fcd3705c701e00dbca1c38e0eef3
++     detail
++         Nécessite un `Style[Text]` (l'un des `laneDagStyles`, avec un `Text is Measurable`) et un
++         type de nœud `Showable`.
+
+@ 0 1 0 05c553929b7a5e4018752d74632381bb
++   entry #lines
++     info
++         les tuiles de chaque ligne et, pour une ligne de nœud, son nœud ; `Unset` pour une ligne
++         de connexion
+
+@ 0 1 0 1c6c0ede0ac6938d02d9822feb21ba63
++   entry #size
++     info
++         combien il y a de lignes, lignes de nœuds et de connexion confondues
+
+@ 0 1 0 07842de6a66b730b1fa634259fa4712b
++   entry #render
++     info
++         les lignes sous forme de texte rendu, avec une étiquette après chaque nœud, ou aussi avec
++         un glyphe par nœud
+
+@ 0 4 0 0bbaafc5d9a34f9f1ed00e2713a95c34
++     detail
++         `render(label)` dessine chaque nœud avec le glyphe `node` du style (`● ` dans le style en
++         dessin de boîtes) et ajoute `label(node)` à sa ligne. `render(glyph, label)` dessine
++         plutôt chaque nœud avec `glyph(node)`, en élargissant la colonne du nœud jusqu'au glyphe
++         le plus large qu'elle contient, mesuré en cellules d'affichage par la `width` du style, si
++         bien que les lignes de connexion restent alignées.
+
+@ 0 1 0 12000942526f91080b1cc61754e7fa5c
++   entry #compact
++     info
++         le diagramme sans ses lignes de connexion de simple passage
+
+@ 0 3 0 0f81f2e590e2636717bec15651dabbc4
++     detail
++         Une ligne de connexion faite uniquement de voies `Vertical` (plus d'une) et d'espaces
++         n'apporte rien que les lignes environnantes ne disent déjà, si bien que `compact` la
++         retire ; une ligne comportant exactement une voie — une arête directe vers le nœud suivant
++         — reste, tout comme toute ligne qui s'infléchit.
+
+@ 0 1 0 15f7cd86aef5b0280197f74efab7be91
++   entry #nodes
++     info
++         le nœud de chaque ligne de nœud, dans l'ordre du dessin
+
+@ 1 1 0 017a333e59f7cf220d222a569722b6a9
++   entry #tiles
++     info
++         les tuiles de chaque ligne, lignes de connexion comprises
+
+@ 0 1 0 166e3430296b44ea00069f28d6ecf524
++   entry .Style
++     info
++         la classe de types qui rend une ligne d'un `LaneDagDiagram` ou d'un `LayeredDagDiagram`
+
+@ 0 7 0 1c474fbfd9876ed113587794aefda40f
++     detail
++         `Style[line]` transforme la `List[DagDiagram.Tile]` d'une ligne, les glyphes à dessiner
++         dans certaines colonnes, la largeur de chaque colonne et une étiquette optionnelle en une
++         seule ligne rendue de type `line`, et mesure la largeur d'affichage d'un glyphe pour que
++         les colonnes puissent être dimensionnées en conséquence. `TextualStyle` l'implémente pour
++         tout type de ligne `Textual` à partir de quatorze morceaux de texte ; le package
++         `laneDagStyles` en propose un en dessin de boîtes et un en ASCII. Il est `Findable`, si
++         bien que les instances `Printable` des diagrammes le trouvent.
+
+% 0 1 0 0d6fa53f124066ee0a813b224a8a3ca5
+
+% 1 1 0 14e55338eaf0c40101cf3c46420e6419
+
+@ 0 1 0 0be49d48ee3c44be00f1b3ce25dc70dc
++     entry #serialize
++       info
++           les tuiles d'une ligne, ses glyphes par colonne, les largeurs des colonnes et une
++           étiquette optionnelle sous forme d'une seule ligne
+
+@ 0 1 0 1c5c2066ea9c53711e32072b1019c105
++     entry #width
++       info
++           la largeur d'affichage d'un glyphe, pour dimensionner sa colonne
+
+@ 0 1 0 1c03e011be28a89c1e72e18668fadfbb
++   entry .TextualStyle
++     info
++         un `LaneDagDiagram.Style` pour tout type de ligne `Textual`, à partir de quatorze morceaux
++         de texte
+
+@ 0 7 0 0a27792b816d44f60df7fbd55fcc8659
++     detail
++         `LaneDagDiagram.TextualStyle(space, vertical, horizontal, cornerNe, cornerNw, cornerSe, cornerSw, teeN, teeS, teeE, teeW, junction, crossing, node)`
++         donne le texte de chaque `DagDiagram.Tile`, et prend un `Text is Measurable` pour mesurer
++         les glyphes en cellules d'affichage plutôt qu'en unités de code, si bien que les
++         caractères larges et les signes diacritiques combinants sont correctement disposés. Chaque
++         morceau fait deux caractères : le premier est la cellule, et le second est répété pour
++         compléter la colonne jusqu'à sa largeur, si bien qu'un `──` horizontal s'étire et qu'une
++         voie `│ ` ne s'étire pas.
+
+% 2 1 0 038e2b8b06bd0e12007ce4617004e66d
+
+% 3 1 0 1b272ee4939d0e7219fc45c64f29f9fc
+
+% 0 1 0 07b3802820aae40f00aa10b1dc7eaad8
+
+% 0 1 0 11c57b17ae0ec3551131daca41701825
+
+% 0 1 0 0aa5f2be5178474602a84622c80b976e
+
+% 0 1 0 0d664198e814ff7c08c4faa76e3492c4
+
+% 1 1 0 0a931c1da1fa82371cc42e4970fecb9f
+
+% 0 1 0 19bae180d50b69740f071bbc31c0ad17
+
+% 1 1 0 055ff67c06d14938100632222f6a4af6
+
+@ 1 1 0 02ca3b01e41bd8191e8e8ebe89a4c586
++     entry #space
++       info
++           le texte d'une tuile `Space`
+
+@ 0 1 0 0396048fca3eb6391d5443794944de46
++     entry #vertical
++       info
++           le texte d'une tuile `Vertical` : une voie qui passe une ligne
+
+@ 0 1 0 10352f4543924a2e0e4b58e27459262d
++     entry #horizontal
++       info
++           le texte d'une tuile `Horizontal` : une arête qui longe une ligne
+
+@ 0 1 0 16c408524ec4c59302e1f0c7859e23bc
++     entry #cornerNe
++       info
++           le texte d'une tuile `CornerNe` : une arête venue du haut qui tourne à droite
+
+@ 0 1 0 171a4eb4115a153715d79908696d83c1
++     entry #cornerNw
++       info
++           le texte d'une tuile `CornerNw` : une arête venue du haut qui tourne à gauche
+
+@ 0 1 0 061fe23d9d16a6801b846fddce67ad82
++     entry #cornerSe
++       info
++           le texte d'une tuile `CornerSe` : une arête venue de la droite qui tourne vers le bas
+
+@ 0 1 0 114d9a15b35eeb7316b2a33954906ff5
++     entry #cornerSw
++       info
++           le texte d'une tuile `CornerSw` : une arête venue de la gauche qui tourne vers le bas
+
+@ 0 1 0 1d850541037035c4149142d50082c5f0
++     entry #teeN
++       info
++           le texte d'une tuile `TeeN` : un tracé horizontal rejoint par le haut
+
+@ 0 1 0 0cd2979ee36708a6086f20c27a0db57b
++     entry #teeS
++       info
++           le texte d'une tuile `TeeS` : un tracé horizontal qui bifurque vers le bas
+
+@ 0 1 0 0a12a0b7f80cf83110b969216c37400d
++     entry #teeE
++       info
++           le texte d'une tuile `TeeE` : une voie qui bifurque vers la droite
+
+@ 0 1 0 0295679e1375bf600741ea8d67dc3564
++     entry #teeW
++       info
++           le texte d'une tuile `TeeW` : une voie rejointe par la gauche
+
+@ 0 1 0 1f873e974e48bbcb080f5123676903a6
++     entry #junction
++       info
++           le texte d'une tuile `Junction` : des voies qui se rejoignent depuis les quatre côtés
+
+@ 0 1 0 10b11ce6b7ffb32d1a334fc74603f054
++     entry #crossing
++       info
++           le texte d'une tuile `Crossing` : un tracé horizontal qui passe par-dessus une voie qui
++           continue
+
+@ 0 1 0 19b146c77b6f9477055b474e4b2a8587
++     entry #node
++       info
++           le texte d'une tuile `Node` : la puce par défaut, utilisée lorsqu'aucun glyphe n'est
++           donné pour le nœud
+
+@ 0 1 0 0b3c13ab5e7370331d9eca2ae0effd5e
++     entry #width
++       info
++           la largeur d'affichage d'un glyphe, par le `Text is Measurable` avec lequel le style a
++           été créé
+
+@ 0 1 0 059fab0544fd2fcb0eaad241d7eed50d
++     entry #serialize
++       info
++           la cellule de chaque tuile complétée jusqu'à la largeur de sa colonne, un glyphe à la
++           place de la puce d'un nœud, puis l'étiquette
+
+@ 1 1 0 0a0d6f3593ead15a1dda48c43ef80722
++     entry #text
++       info
++           le texte d'une tuile
+
+@ 0 1 0 1abd654fc15f027c00c92ca6d25dda8e
++ entry .laneDagStyles
++   info
++       les deux styles tout faits pour les diagrammes à voies et en niveaux, chacun étant un given
++       à importer par son nom
+
+@ 0 4 0 16ff2b5f1ab651d2092765477c5d9311
++   detail
++       Chacun nécessite un `Text is Measurable` dans la portée pour être résolu, comme
++       `textMetrics.uniformMetric` (une cellule par caractère) ou
++       `textMetrics.wideCharacterWidthMetric` (deux pour un caractère large d'Asie orientale).
+
+% 2 1 0 0175b5f98f3925ad198568a65c0299d5
+
+% 3 1 0 06630d130c039d590ca62747c9034f96
+
+% 1 1 0 09e77b8c253dc539029e46591e96f1fe
+
+% 2 1 0 0eae6388424b52131e60219eb2082a22
+
+% 1 1 0 1f103ce10b1066681522dd8b9c845e2f
+
+@ 0 1 0 0f60bde08e4d681b13835204a5d131db
++   entry .boxDrawingLaneDagStyle
++     info
++         caractères de dessin de boîtes avec des coins arrondis, et `● ` pour un nœud
+
+@ 0 1 0 198489fca94030881020cf50edb15b5d
++   entry .asciiLaneDagStyle
++     info
++         ASCII seulement : `| `, `--`, `+ ` pour chaque coin et chaque té, et `* ` pour un nœud
+
+@ 0 1 0 1e521d75e420412200583ba3b038576c
++ entry .LayeredDagDiagram
++   info
++       le dessin en niveaux d'un graphe : les nœuds en niveaux selon leur profondeur, ordonnés pour
++       que peu d'arêtes se croisent
+
+@ 0 8 0 08e100b9f06477bb0045861ae5ffecd6
++   detail
++       `LayeredDagDiagram(graph)` dispose tout graphe qui admet un ordre topologique — un `Dag`,
++       une `Topology[node]^{}` gelée ou un `Hasse` — selon l'arrangement `layered` du graphe :
++       chaque nœud dans un niveau, les dépendances au-dessus des dépendants, les nœuds d'un même
++       niveau ordonnés pour minimiser les croisements, et une arête qui couvre plusieurs niveaux
++       traversant tout droit les niveaux intermédiaires. Chaque niveau est une ligne de tuiles
++       `Node` placées dans leurs colonnes, et entre deux niveaux, une ligne de connexion infléchit
++       chaque arête de sa colonne supérieure vers sa colonne inférieure. Un nœud prend la colonne
++       médiane de ses voisins du niveau supérieur, si bien qu'une arête droite reste droite.
+
+% 2 1 0 09659f94e5f713f019d86312f8dc25d0
+
+% 3 1 0 1c1a75830820168f1b71c85c7f49c82a
+
+% 4 1 0 151785a6a42b89c019e2a3b4cff4b615
+
+% 5 1 0 1945b4b790273bf10d0610bbd002e087
+
+% 6 1 0 1da72a54d1b626a5053d46b2585ff803
+
+% 8 1 0 1a37899868cf3c8f001616a7d4bf7850
+
+% 0 1 0 0eda4dd176f925900b2d270c2eba6d1c
+
+% 1 1 0 14cc69ec0210ddbe0c60c2ec340b76a7
+
+@ 0 8 0 19e562c7cbf0687d0fbd85d531369e37
++       Le `Ranking` dans la portée décide des niveaux : par défaut, un nœud se place un niveau
++       sous sa dépendance la plus profonde, si bien que tous les nœuds qui ne dépendent de rien
++       partagent la première ligne ; `import rankings.balancedRanking` fait descendre chaque nœud
++       doté de dépendants jusqu'au niveau situé au-dessus de son dépendant le moins profond, ce qui
++       raccourcit une longue arête issue d'une source qui n'alimente qu'un nœud profond. Les lignes
++       rendues d'un graphe donné dépendent donc du classement et de la minimisation des
++       croisements, si bien qu'un résultat attendu enregistré doit être régénéré lorsque l'un ou
++       l'autre change. Il se rend par le `LaneDagDiagram.Style` dans la portée, comme
++       `LaneDagDiagram`, et est `Printable` avec un `LaneDagDiagram.Style[Text]` et un nœud
++       `Showable`, chaque nœud s'affichant sous la forme `● node`.
+
+% 1 1 0 019484f43722048f085d07b5e780b01d
+
+% 2 1 0 1c91c253edc06c0c1a85e2ed9a399c94
+
+% 0 1 0 13d604bce2dc305e142226ae17590555
+
+% 0 1 0 0c339bb1bbac2c4e0e068edb2a68bf97
+
+@ 0 1 0 1ee09027614306d40860495a20733b60
++   entry .apply
++     info
++         la disposition en niveaux de tout graphe `Nodal` et `Topological`, selon le `Ranking` dans
++         la portée
+
+@ 0 3 0 10dd1d052087640719af38082e8b6756
++     detail
++         Prend les instances `Nodal` et `Topological` du graphe et un `Ranking`
++         (`Ranking.LongestPath`, issu du compagnon, à moins que `rankings.balancedRanking` ne soit
++         importé). Un graphe vide n'a pas de lignes.
+
+@ 0 1 0 05c842d4098104da184a115ba70bd1e2
++   entry .printable
++     info
++         écrit un diagramme vers un terminal, chaque nœud s'affichant sous la forme `● node`
+
+@ 0 2 0 16b338f364fa206d1e9546851317eb67
++     detail
++         Nécessite un `LaneDagDiagram.Style[Text]` (l'un des `laneDagStyles`, avec un
++         `Text is Measurable`) et un type de nœud `Showable`.
+
+@ 0 1 0 131c4a57497571ba1babf20d9a0923dd
++   entry #rows
++     info
++         les tuiles de chaque ligne et les nœuds placés dans ses colonnes ; une ligne de connexion
++         n'en a pas
+
+@ 0 1 0 17bbe679a8f08973053cb169eec302ab
++   entry #size
++     info
++         combien il y a de lignes, lignes de niveaux et de connexion confondues
+
+@ 0 1 0 18fba1aa79c00a9d143de6e78aa1e876
++   entry #render
++     info
++         les lignes sous forme de texte rendu, chaque nœud dessiné par une fonction de glyphe, les
++         colonnes élargies en conséquence
+
+@ 0 4 0 06caad9296d6adfb0b0a3226dff1b564
++     detail
++         `render(glyph)` : chaque nœud est dessiné sous la forme `glyph(node)` dans sa colonne, et
++         chaque colonne est aussi large que le glyphe le plus large qu'elle contient, mesuré en
++         cellules d'affichage par la `width` du style, si bien que les lignes de connexion restent
++         alignées. Il n'y a pas d'étiquette distincte : un glyphe tel que `t"● $node  "` la porte.
+
+@ 1 1 0 07e18d6f18ae50d71fff74811378809f
++   entry #tiles
++     info
++         les tuiles de chaque ligne, lignes de connexion comprises
+
+@ 0 1 0 1c35581fddb8ba361c7d9041a57d3694
++   entry #nodesAt
++     info
++         pour chaque ligne, les nœuds par colonne ; vide pour une ligne de connexion

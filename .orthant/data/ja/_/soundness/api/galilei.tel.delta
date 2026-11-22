@@ -1,0 +1,3306 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1895e7063e1c10471bdab7b34bcabffd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 08298710bff8ab3716f1426c3bc393a1
++ info   型付きのパスを通じて、明示的なポリシーのもとで操作する、ディスク上のファイル、ディレクトリ、リンク
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 09037eb5265f0a1d0d6d8679df082c20
++     _Galilei_ はファイルシステムである。
++     `Path on Linux`、`Path on MacOs`、`Path on Windows`、`Path on Local`（serpentine の抽象パスを galilei のプラットフォーム型の一つに結び付けたもの）は、ディスクに触れるあらゆる操作を得る。読み書き、スコープのためのオープン、作成、一覧、コピー、移動、リンク、削除、チェックサムの計算である。
++     各操作は、何を発生させうるか、どのポリシーを参照するかを型で示す。
++     扱いにくい場合（上書きするか拒否するか。ディレクトリを再帰的にたどるか拒否するか。シンボリックリンクをたどるかどうか）は決して既定値にならない。
++     それらは `filesystemOptions` パッケージのコンテキスト値で、名前でインポートする。ポリシーが欠けている操作はコンパイルされない。
+
+% 2 1 0 09f1ac8720cf0922159d2777ce6527ec
+
+% 3 1 0 1e110f24cf968d5815d223a80081f5d3
+
+% 4 1 0 001d684971b671c60a483f02226ce2d1
+
+% 5 1 0 19afc33468f556b503cafa25c905d6a5
+
+% 6 1 0 1ac985a689ddaa76081f033326ae7460
+
+% 7 1 0 12ffb7f51da12cc002189e1f9a33bb76
+
+% 8 1 0 1ab63160e59fdb60114c68b6dd5bf6eb
+
+% 9 1 0 0ae0f9d86fbcc4ab01be155f76345818
+
+% 10 1 0 0de017c01e291e8511de2d156a61f76b
+
+% 11 1 0 166b81b52c26d13e17326458d6f69b3f
+
+% 12 1 0 12d8e6c9288aa88003769c8cbcb1f33c
+
+% 0 1 0 19cb2771e4e82d7e17bb586e8e6bd4fd
+
+% 0 1 0 05ab092ebcc097c4116efcf00fa9846f
+
+% 0 1 0 0fc1ed4f4c9daf131c306fee7a9d2bef
+
+% 0 1 0 1addd7c40d4ebf85199a4f49fa8da1a9
+
+% 0 1 0 1c7bf77bca472f31177b80f371b9fad5
+
+% 0 1 0 04b3c57953be90d7014e12eb2e4e04e1
+
+% 0 1 0 0126fdbd958600551031a927076c3f35
+
+% 0 1 0 0d12e1f23b04a88d1806831c9d07eb6d
+
+% 1 1 0 15c9a2a13ad50c680348a59a2c99b1ef
+
+@ 0 9 0 1e997b4d1db5a85f0df2e80e9fbc5f51
++     **プラットフォーム。** パスのプラットフォームは `Platform` を継承する幻の型である。
++     `Posix`、その細分化である `Linux` と `MacOs`、`Windows`、そして `Local` がある。`Local` は実行中のマシンが使うものを指す（その `Filesystem` インスタンスは、スコープ内の `System` から区切り文字を読む）。
++     各プラットフォームのコンパニオンは、命名の `Rules`（セグメントが何であってよいか）、`Filesystem` インスタンス（名前、区切り文字、`.` と `..`）、そしてルート（POSIX では `%`、Windows では `Drive`）をテキストから読み、テキストへ戻す `Radical`/`Eradicable` の組を持つ。
++     パスは `on[Linux]` でプラットフォームに結び付けられ、`t"/tmp/x".as[Path on Linux]` でテキストからデコードされ、あるいは `p"/tmp/x"` のようにリテラルとして書かれる。リテラルはコンパイラが検査し、`Path on Posix`（形によっては `Path on Windows`）として型付けする。
+
+@ 0 8 0 1aa587bf2a5cc99a0b22c003cf5130bc
++     **バックエンド。** 公開 API のどこにもプラットフォームの API の名前は現れない。
++     基本操作（`stat`、`open`、`children`、`createFile`、`copy`、`move`、`delete`、`realPath` など）は一つの `FilesystemBackend on <platform>` にまとめられる。これは `filesystemBackends` パッケージの given を名前でインポートして選ぶ。`javaBaseFilesystem`（`java.nio`、`galilei.jvm` 内）、`scalaNativeFilesystem`（`galilei.native`）、`wasiFilesystem`（`wasi:filesystem`、`galilei.wasi` 内で、さらに `wasiApis.wasiFilesystemApi` が必要）がある。
++     バックエンドが対応できない操作は、近似せずに `Reason.Unsupported` を伴う `Io.Error` を発生させる。
+
+@ 0 9 0 19c62b261076343c00e0a0284af386e2
++     **エラー。** ディスクに触れる操作はすべて `Io.Error` を発生させる。
++     これはパス、`Io.Error.Operation`（`Read`、`Write`、`Create`、`Copy`、`Move`、`Delete`、`Metadata`、`Open`、`Access`）、そして POSIX の errno の語彙から取った `Io.Error.Reason`（`Nonexistent`、`AlreadyExists`、`PermissionDenied`、`DirectoryNotEmpty`、`Busy`、`Unsupported`、…）を示す。そのため失敗は例外クラスではなく、何が起きたかで照合される。
++     テキストをパスにデコードすると serpentine の `Path.Error`（不正なルートや、プラットフォームの規則に反する名前）が発生する。これは別のエラーで、ディスクに触れる前に発生する。
++     スコープ内には `Tactic[Io.Error]` が必要である。`strategies.throwUnsafely`、`safely`、`unsafely`、あるいは独自の `mitigate` を使う。
+
+@ 0 9 0 1869755cd8d24227023c8d605cddb72c
++     **スコープ。** `path.open[File](Read & Write)` は、そのブロックの間だけ存在する `Handle` を伴ってブロックを実行する。`path.open[Directory](…)` は `Directory.Handle` を伴ってブロックを実行し、そのパスは新しいプレーン上にあるので、`..` はコンパイルされず、ハンドルから得たものは何も外へ逃げない。
++     `Mode` はハンドルの型に `Grant` として運ばれるので、読み取り専用のハンドルを通じた書き込みはコンパイルエラーになる。`Exclusive` と `Shared` はさらに OS の勧告ロックを取り、プロセス内の `AccessRegister` に登録される。
++     `create[File]()` と `create[Directory]()` は、まだ存在しないものに対する対応物である。
++     `Scratch` と `Scratch.File` は、エントリーを新たに作成し、スコープがどう終わろうとその終了時に削除する形式である。
++     `Ram`（JVM）はファイルをメモリマップし、`Slice` はその一つのバイト範囲を窓として切り出す。
+
+@ 0 8 0 0cacbb00f8bf6e01094040b925ae2d11
++     **一覧と調査。** `children` はディレクトリの直下のエントリーを一覧し、`descendants` は `filesystemTraversal` から選んだ `TraversalOrder` でその部分木全体を一覧し、`glob` はその下で `Glob` パターンを展開する。
++     `entry()` はパスが `File`、`Directory`、`Symlink`、`Fifo`、`Sock`、`BlockDevice`、`CharDevice` のどれであるかを示す。`filesize()`、`modified()`、`accessed()`、`hidden()`、`volume()`、`entryIdentity`、`hardLinks()` はそのメタデータを読む。
++     `canonical()` はファイルシステム自身が知るとおりのパスで、シンボリックリンクはすべて解決される。
++     `checksum[Sha2[256]]` はファイルのバイト列、またはディレクトリのファイルをその相対名とともにダイジェストする。
+
+@ 0 4 0 19b8851c398653951315906abb0fab27
++     **ストレージファイルシステムの軸。** エントリーがどのファイルシステム（`Btrfs`、`Ext4`、`Apfs`、`Ntfs`）に格納されているかは照合（`case Apfs(path) => …`）によって確かめられ、`Path on Linux over Apfs` としてパスの型に記録される。
++     これにより、拡張属性（`attribute`、`attributes`）、全域的な `creation()` 時刻、btrfs の `subvolume()` が使えるようになる。
+
+@ 0 5 0 114894f24125fcc10fda36a37cb02c1b
++     単一のパスを超えるものもある。
++     `Cas` はディレクトリの下に置く、内容でアドレス付けされた blob のストアである。
++     `Searchpaths.Stems` は XDG のサーチパスのプレーン（`Xdg.Data`、`Xdg.Config`）を実際のディレクトリへ解決し、`search`、`locations`、`listing`、`destination` を提供する。
++     `Umask` と `Fdtable` は、デーモンがクライアントの代わりに与えるコンテキスト値である（作成時に従うマスクと、`/dev/fd/N` のパスを開くときに通る記述子テーブル）。
+
+@ 0 1 0 18b5259a85e28e15163e759bc4f3e220
++     ライブラリは、各プラットフォームにできることによって分割されている。
+
+@ 0 12 0 11f21f8a8f0754c10e19c8575f0d8976
++     - `galilei.core`：プラットフォーム、`FilesystemBackend`、すべてのパス操作、`Io`、ポリシー、`Handle`、`Directory.Handle`、`Scratch`、`Slice`、`Cas`、`Searchpaths`、`Umask`、`Fdtable`。プラットフォームに依存しない。
++     - `galilei.jvm`：`filesystemBackends.javaBaseFilesystem`、メモリマップされた `Ram` ファイル、Unix ドメインの `Sock` の作成（`socketCreatable`）、デバイスノード（`Device`）、そして `javaPath`/`javaFile` という逃げ道（アンブレラにはエクスポートされない）。
++     - `galilei.native`：`filesystemBackends.scalaNativeFilesystem`。同じ `java.nio` の実装を Scala Native 向けにコンパイルしたもの。
++     - `galilei.wasi`：`wasi:filesystem` コンポーネントインターフェース上の `filesystemBackends.wasiFilesystem` と、その WIT 定義である `wasiApis.wasiFilesystemApi`。WASI にはファイルロックも `realpath` も拡張属性もボリュームも FIFO もないので、それらは `Unsupported` を発生させる。
+
+@ 0 8 0 1073ca4dbeafbd431e90c09c370e92e0
++     すべては `soundness` アンブレラにエクスポートされ、`filesystemOptions`、`filesystemTraversal`、`filesystemBackends`、`wasiApis` の選択パッケージはアンブレラ自身のものと統合される。
++     そのため利用者は `import soundness.*` と書き、各ポリシーとバックエンドを名前でインポートする。`import pkg.*` は given をインポートしない。
++     `pathInterfaces` の given（`pathOnLinux`、`pathOnWindows`、`pathOnMacOs`、`pathOnLocal`、`pathOnPosix`）は、パスの型が求められるところならどこでも `Path on Linux` を要求できるようにするもの（`temporaryDirectory[Path on Linux]`、`Home[Path on Linux]()`）で、`anticipation` パッケージで宣言され、そこで説明されている。
+
+% 0 1 0 1fde5e150c1e4e071a678f41d4766274
+
+% 0 1 0 15198dbb2ee7af7702ac40a54ad0ebae
+
+% 0 1 0 1209dd7ee558311d057dfc21b3bdaf25
+
+% 0 1 0 062b0627a57e97341fd840bf912a81b6
+
+% 0 1 0 0bf765632ba2533e05c780925fcfd24c
+
+% 0 1 0 07458429275b114004eb77e7a58d66be
+
+% 0 1 0 019573978201dc300c7a3313ca3d9035
+
+% 0 1 0 01c1a10808ceb2751002a47ed164258f
+
+@ 0 1 0 1f9b4c9c9ece1d420115bad49c4334bb
++ entry .Platform   OS のプラットフォーム型の共通の基底で、すべてのパスのディスク用 given の置き場
+
+% 1 1 0 0109a446c8e72f990ca9d96aa876fdd7
+
+@ 0 5 0 04810f3ccdd53fa0099c8fe17498ba1d
++       `Platform` は、あらゆるオペレーティングシステムのプレーンが継承する幻の型である。`Posix`（とその細分化である `Linux` と `MacOs`）、`Windows`、`Local` がある。
++       `Path on <platform>` は、名前がそのプラットフォームの規則に従う serpentine のパスである。
++       `Platform` 自身はメンバーを持たず、純粋である（決して捕捉しない）ので、パスのプレーンは `soundness` のエクスポートエイリアスを通じて正確に単一化される。
+
+@ 0 7 0 115517eb0f27e7e906e1e2b58fb19a06
++       パスに何かを*させる* given はこのコンパニオンに置かれるので、インポートなしにすべての `Path on <platform>` の暗黙のスコープに入る。
++       `.pathReadable`（`path.read[Text]`）、`.pathWritable`（`path.write` の型クラス形式）、`.pathChecksummable`（`path.checksum[Sha2[256]]`）、`.openable` と `.directoryOpenable`（`path.open[File]`、`path.open[Directory]`）、`.fileCreatable`、`.directoryCreatable`、`.fifoCreatable`（`path.create[File]()` など）、そして `.eof`（`Eof(path).open(Write)` による追記）である。
++       どれも `FilesystemBackend on <platform>` と `Tactic[Io.Error]` を必要とする。
+
+% 2 1 0 003cdf304e9d784b0d9b43e07eb55b7a
+
+% 3 1 0 0d9b519baef7784815953d7b943d1ad0
+
+% 4 1 0 0827c2fcd5d2b23c1221158b3bbe9499
+
+% 5 1 0 0be5d391cee63c1b08b810188eab1ff2
+
+% 6 1 0 086a28e57672d7670debd6ad778dc036
+
+% 7 1 0 0b460a03b2f1f57b14126b68bed6fda1
+
+% 0 1 0 1c76bc217e4841c80518badb7168087b
+
+% 0 1 0 1a0489832c0a5cfd08be846c0300a012
+
+% 0 1 0 105ca851654b82b51bf67eda432df35c
+
+% 0 1 0 0b67abe8685cad650ce5d4f951592af6
+
+% 0 1 0 1d496ef548ca7aff144004cd9b6b348e
+
+% 1 1 0 0d7fb7581396cad412b2e851b1d492c3
+
+% 2 1 0 01781b5cb83326ba12d69479e11d980d
+
+% 1 1 0 0ee1e89f47037c1c04f5c488fcbf18d8
+
+% 2 1 0 15bc03b4dfc586a61cbb7a3d9ecb73cf
+
+% 1 1 0 00e2f4d253ad5fd108b150f9bcaddfde
+
+% 1 1 0 1bc9e1afc61bcf4411480fde6a0afe49
+
+% 1 1 0 1f63cfee1b6103d207ab7eed8c912808
+
+@ 0 15 0 1f5542face134cf202a363a393b11927
++   entry .uuid   `Uuid` を任意のプラットフォームのパスの名前として使えるようにする
++       `Uuid` をパスのセグメントとして受け入れる（`directory / Uuid()`）`Admissible` の given で、検査は行わない。UUID のテキスト（16 進数字とハイフン）はどのプラットフォームの規則にも反しないからである。
++       `.uuidNavigable` がそれを描画する。
++   entry .uuidNavigable   `Uuid` のセグメントをそのテキストとして描画する
++   entry .pathChecksummable   `path.checksum[Algorithm]`：ファイルのバイト列、またはディレクトリのファイルとその名前
++       任意の `Path on <platform>` に対する `Checksummable` の given である。
++       ファイルはそのバイト列を寄与するので、そのチェックサムは内容のダイジェストである。
++       ディレクトリは、それに対する相対パスの順に通常ファイルを寄与し、それぞれを相対パスと内容として、各部分の前にその長さを置く。そのため改名、移動、内容の変更はダイジェストを変え、同じファイルを持つ二つのディレクトリはどこにあっても同じダイジェストになり、空のディレクトリは何もないもののダイジェストを持つ。
++       シンボリックリンクをたどるかどうかは、スコープ内の `DereferenceSymlinks` が決める。
++       `FilesystemBackend`、`DereferenceSymlinks`、`Tactic[Io.Error]`、`Every[Fdtable]`（既定値で満たされる）、そしてそのアルゴリズムに対する通常の gastronomy の `Hash` が必要である。
+
+% 2 1 0 05b33cb251c38c5f1effad9df84a4152
+
+% 3 1 0 10c5a4edb9a2f5d60ede1da893f4f05a
+
+% 4 1 0 08ca320a30b1675d0aeb5686abd104cb
+
+% 5 1 0 0f6b7b34e3e1c0c61bf37b3183b2f2ee
+
+% 6 1 0 1ba0a450a0d9fb051c4701b6cc9f31d1
+
+% 0 1 0 159d376a444fae2a12c7db6b8d893f68
+
+% 1 1 0 195b6bdc2c8b11360ee994c55c07e95f
+
+% 2 1 0 19c9a5104ff916711c50d422393cacbb
+
+% 0 1 0 0a2f6a9849bac1950304d65c4c2ed7f6
+
+% 0 1 0 02eb0f061d3a94c30d2b1902d922ba7a
+
+% 1 1 0 1e05caac592b6d961e7d87de959db06e
+
+@ 0 36 0 0f385556a52079e80db31daaecf694a1
++   entry .pathReadable   `path.read[Text]`、`path.read[Data]`：ファイル全体を一度に読む
++       インポートなしに任意の `Path on <platform>` で `path.read[result]` を解決させる `Readable` の given である。
++       ファイル全体が一度にメモリへ読み込まれ、ハンドルを保持せず、スコープも必要としない（スコープ内でストリームとして読むパスのオープンとは異なる）。読んだものは `Data is Readable to result`（`Text`、`Data`、あるいはバイト列からデコードできる任意のもの）に渡される。
++       `Io.Error`（`Nonexistent`、`PermissionDenied`、`IsDirectory`、…）を発生させ、ファイルが途中で途切れた読み取りは `Reason.Physical` として報告される。
++       スコープ内の `Fdtable` が管理するパスは、このプロセスのファイルシステムからではなく、その記述子を通じて読まれる。
++       主体は `path <: Path on plane` と上限が付けられているので、型が `Path on Linux` より豊かな `p"…"` リテラルや `on[Linux]` のパスも一致する。
++   entry .pathWritable   `path.write` の `Writable` 形式：ファイルの内容全体をストリームで置き換える
++       即時的な拡張メソッド `write` の型クラス版で、汎用の書き手（たとえば `open[Tel]` の書き戻し）がインポートなしに任意の `Path on <platform>` で解決されるようにする。
++       ストリームを集約して丸ごと書き込む。管理された `Fdtable` のパスは、その記述子を通じて書き込まれる。
++   entry .openable   `path.open[File](mode, flags*)`：すべてのプラットフォームのパスに対する `FileOpenable` インスタンス
++       `File` のコンパニオンではなくパスの型によってここに置かれているので、`path.open[File](…)` はインポートなしに解決される。
++       バックエンド、`Tactic[Io.Error]`、`Umask`（既定値はプロセス自身のもの）、`Every[Fdtable]` が必要である。
++       モードと `OpenFlag` が何をするかは `FileOpenable` を参照。
++   entry .directoryOpenable   `path.open[Directory](mode)`：すべてのプラットフォームのパスに対する `Directory.Openable` インスタンス
++       これと `.openable` の両方がスコープ内にあると、裸の `path.open(…)` は曖昧になるので、形式は常に明示する。`open[File]` か `open[Directory]` である。
++   entry .directoryCreatable   `path.create[Directory](flags*)`：ディレクトリを作成する、またはスコープ内で作り上げる
++       バックエンド、`Tactic[Io.Error]`、`Io.Event is Loggable`、`Umask` が必要である。
++       `Creation.DirectoryCreatable` を参照。
++   entry .fileCreatable   `path.create[File](flags*)`：空のファイルを作成する、またはスコープ内で作り上げる
++       `Creation.FileCreatable` を参照。スコープ付きの形式は一時的な兄弟ファイルに書き込み、ブロックが完了したときにそれを所定の位置へ移動する。
++   entry .fifoCreatable   `path.create[Fifo](flags*)`：名前付きパイプを作る
++       `Creation.FifoCreatable` を参照。
++       インスタンス化する形式だけが使える。FIFO をスコープ内で作り上げると、相手がもう一方の端を開くまでブロックしてしまうからである。
++   entry .eof   `Eof(path).open(Write)`：ファイルを追記のために開く
++       `File` として開けるパスに対する、`Eof[path]` の `Openable` インスタンスである。
++       `OpenFlag.Append` を先頭に加えて委譲するので、ハンドルの書き込みは既存の内容の後に続く。
+
+% 2 1 0 0808e52cc040962b1be07d114abde35c
+
+% 3 1 0 0a91ec1f44f04c870dbd1a498722f9b4
+
+% 4 1 0 1a2668db72f8c9c012668032217e3daa
+
+% 5 1 0 0f17ec65d9d42a5c0f89f942330b0c2d
+
+% 6 1 0 1db9dba3d794380a02d610c95e7ffd13
+
+% 7 1 0 0707f9496caf60d5077b35533e079a05
+
+% 0 1 0 0e0693ca472aedc01d943f55114031f7
+
+% 0 1 0 1be8f6f21cad718001e88b84b46392af
+
+% 0 1 0 1f253794fcf00d5e0dcf2521ed721dae
+
+% 1 1 0 17196d21c199c0d00d1c2373fc348fea
+
+@ 0 1 0 0ad2d607b35ec7c911e4bd1900618bc5
++ entry .Posix   POSIX プラットフォーム：`/` をルートとし、名前に `/` や `:` を含められないパス
+
+% 1 1 0 17e7dda5c1139bb608a54372b6f040ea
+
+@ 0 6 0 1e9fe4740d0b882b1f9d6f6f6c7037ec
++       あらゆる POSIX システム上のパスのプレーンで、`Linux` と `MacOs` の上位型である。
++       ルートは `%` で、`/` としてエンコードされる。
++       その `.Rules` は名前の中の `/` と `:` を禁じ、さらに `.`、`..`、空の名前、`Icon\r`（macOS のフォルダアイコンのファイル）という名前も禁じるので、`Posix` で有効なパスは両方の細分化でも有効である。
++       `p"/home/user"` は `Path on Posix` である。
++       POSIX 専用の操作（`executable`、`hardLinks()`）は、任意の `Path on <plane <: Posix>` で使える。
+
+% 2 1 0 18240df4a968956b0cba247b27ef2d29
+
+% 3 1 0 12513084ae8e2ff40c1a948918ae1aca
+
+% 4 1 0 0c874550052b18450e6eed93f8538dff
+
+% 0 1 0 0db2846be9fbad861fdd742bb98a0e17
+
+% 0 1 0 1ae00d191f3cd9e31ee3495b28b8a6b7
+
+% 1 1 0 07682eeb9ecfdcb61bf10401dd621e7e
+
+% 1 1 0 01306aff3d36014511d4cecec42f0f65
+
+% 2 1 0 050fd64e494c0c71076c22d3e998f87c
+
+@ 0 8 0 03761a0f847170a7182bc227592fd281
++   entry .Rules   POSIX の名前が何であってよいか：`/` も `:` も含まず、`.`、`..`、空、`Icon\r` でもない
++   entry .filesystem   `Filesystem` インスタンス：名前は `POSIX`、区切りは `/`、`.` と `..`、ルートは一つ
++   entry .radical   ルート `%` を `/` としてエンコードする
++   entry .eradicable   `/` で始まるテキストからルートをデコードする。そうでなければ `Path.Error(InvalidRoot)` を発生させる
++       `Tactic[Path.Error]` が必要で、それを保持する。そのためテキストを `Path on Posix` にデコードする処理が失敗するのは、ルートか、`.Rules` に反する名前の場合だけである。
++   entry .submissible   `/` で組み立てる `Path on Posix` のルートとして `%` を使えるようにする
++   entry #UniqueRoot   `true`：すべての POSIX のパスはただ一つのルート `%` を持つ
+
+@ 0 1 0 0bd8267b492bf097138a8493685828b8
++ entry .Linux   Linux プラットフォーム：素の POSIX の命名規則に従う POSIX のパス
+
+% 1 1 0 18f2b1e489859bec157009009a28572b
+
+@ 0 6 0 169b38bbf333016615aacb524719d3d7
++       `Posix` の細分化で、その `.Rules` は最小限の POSIX の規則（`/` を含まず、`.`、`..`、空でもない）であり、`MacOs` の `:` と `Icon\r` の制限は緩められている。
++       `Path on Linux` は大半のコードが扱う型である。`Xdg`、`Home`、`temporaryDirectory[Path on Linux]` が生成するのはこの型であり、XDG のサーチパス（`Searchpaths.Stems on Xdg.Data onto Linux`）の対象プラットフォームでもある。
++       `Linux` 形式の相対パスは、`searchpathCompliant` を通じてサーチパスのプレーン上で解釈し直すこともできる。
+
+% 2 1 0 004811fdf3abc0470746dfd2558e7f11
+
+% 3 1 0 100992dc952a65c415f2c3b112bbb626
+
+% 4 1 0 163c4949e92b3b810e90591a7124282d
+
+% 0 1 0 048bf4e47002d44604e1ca24e6122d8d
+
+% 0 1 0 0c18c639d35e734b06740b6eedc3c467
+
+% 1 1 0 01e71363fccd5bd91eed523a618d4fae
+
+% 2 1 0 067fb1b165b7bb7e15337c5143e051a0
+
+@ 0 11 0 07f948387431d5ba0b21c39c7e2518d7
++   entry .Rules   `/` を含まず、`.`、`..`、空の名前でもない
++   entry .nominative   Linux のパスに `.Rules` を守らせる given
++   entry .pathOnLinux   `Path on Linux` を `Paths` ドメインの代表として印を付ける
++       `Representative of Paths` の given で、`Path on Linux` をドメインによって要求できるようにする（URL やクラスパスのエントリーからの `as[Path on Linux]`）。
++       同じ given は `anticipation.pathInterfaces` からも `pathOnLinux` としてエクスポートされ、そこで名前でインポートされる。
++   entry .filesystem   `Filesystem` インスタンス：名前は `Linux`、区切りは `/`、ルートは一つ
++   entry .radical   ルート `%` を `/` としてエンコードする
++   entry .eradicable   `/` で始まるテキストからルートをデコードする。そうでなければ `Path.Error(InvalidRoot)` を発生させる
++   entry .submissible   `/` で組み立てる `Path on Linux` のルートとして `%` を使えるようにする
+
+@ 0 1 0 1aca2a3a647467670f35e74e25c63c7c
++ entry .MacOs   macOS プラットフォーム：名前に `:` と `Icon\r` も含められない POSIX のパス
+
+% 1 1 0 082db4cd1a9f8987121b7a1ffd58a85e
+
+@ 0 5 0 095282e5171ebba70bb7b606aca592d1
++       `Posix` の細分化で、その `.Rules` は macOS 独自の制限を加える。名前は `:`（古典的な Mac OS の区切り文字で、今も Finder が拒否する）を含めず、フォルダのカスタムアイコンを運ぶ隠しファイルである `Icon\r` であってもならない。
++       `MacOs` で有効なパスは `Linux` でも有効だが、その逆は成り立たない。
++       `Local` の規則は `MacOs.Rules & Windows.Rules` なので、`Path on Local` は macOS の規則も満たす。
+
+% 1 1 0 01e40af82f42739a11280db692c41c67
+
+% 1 1 0 13bb5335fcc5552118d45027b98ebed3
+
+@ 0 6 0 08aa7002b72cd85b1a16c618e9798e4f
++   entry .Rules   `/` も `:` も含まず、`.`、`..`、空、`Icon\r` でもない
++   entry .pathOnMacOs   `Path on MacOs` を `Paths` ドメインの代表として印を付ける
++   entry .filesystem   `Filesystem` インスタンス：名前は `Mac OS`、区切りは `/`、ルートは一つ
++   entry .radical   ルート `%` を `/` としてエンコードする
++   entry .eradicable   `/` で始まるテキストからルートをデコードする。そうでなければ `Path.Error(InvalidRoot)` を発生させる
++   entry .submissible   `/` で組み立てる `Path on MacOs` のルートとして `%` を使えるようにする
+
+@ 0 1 0 07d3117fb9993979050079cb21238db1
++ entry .Windows   Windows プラットフォーム：ドライブをルートとし、`\` で区切り、Windows の命名規則に従うパス
+
+% 1 1 0 1776267abb96547708bed7b11c77551f
+
+@ 0 5 0 15302c135667f5400c3b2eb1c150aa37
++       Windows のパスのプレーンである。
++       ルートは `Drive` で、`C:\` としてエンコードされる。
++       その `.Rules` は Windows のもので、名前に `\`、`/`、`:`、`*`、`?`、`"`、`<`、`>`、`|` を含めず、末尾に `.` や空白を置かず、予約されたデバイス名（`CON`、`PRN`、`AUX`、`NUL`、`COM0`–`COM9`、`LPT0`–`LPT9`。拡張子の有無も大文字小文字も問わない）のいずれでもあってはならない。
++       NTFS は作成時刻を記録するので、`Path on Windows` は独自の操作 `created()` を一つ持つ。
+
+% 2 1 0 00027b6ddf4034d3198f0fe67cb0eedb
+
+% 3 1 0 1b05157bca3213eb15ab316e4f22a0b6
+
+% 4 1 0 1cd651f762795a3a1ddfc84ff97c2281
+
+% 0 1 0 0b52f386c292fb5e0a9d2d6542a83d0e
+
+% 0 1 0 0bd240d05e92fe35148fe5dd3013ceb8
+
+% 0 1 0 145c37ae3067f2cd06d63fe7672628c7
+
+% 0 1 0 0630ff9483f12f5811b00a64abff1f00
+
+% 1 1 0 1a815979f918f23307ebd06738c891ac
+
+% 0 1 0 131c36d9beb91a5d05a469d3465fbb24
+
+% 0 1 0 1add31b8713624be14fcf1039f9f96e0
+
+@ 0 7 0 001c7772982a2e8c0cb272cb206d59a2
++   entry .Rules   `\ / : * ? " < > |` を含まず、末尾に `.` や空白を置かず、予約されたデバイス名でもない
++   entry .pathOnWindows   `Path on Windows` を `Paths` ドメインの代表として印を付ける
++   entry .filesystem   `Filesystem` インスタンス：名前は `Windows`、区切りは `\`、ルートは複数
++   entry .radical   `Drive` のルートを `C:\` としてエンコードする
++   entry .eradicable   `C:\…` の形のテキストから `Drive` をデコードする。そうでなければ `Path.Error(InvalidRoot)` を発生させる
++       ルートは 3 文字の長さで、英字、`:`、`\` からなる。
++       それらを欠くテキストは、スコープ内の `Tactic[Path.Error]` を通じて `Path.Error(InvalidRoot)` で失敗する。
+
+@ 0 1 0 0c16bcd86a84655f176b59d929404faf
++ entry .Local   実行中のマシンのプラットフォームで、それが何であってもよい
+
+% 1 1 0 171eb8f9d8475b380516a2e96960614c
+
+@ 0 6 0 041791fbec35b19e07aa3b3fa3929d71
++       `Local` は、オペレーティングシステムの名前を挙げずにどの OS でも動かなければならないコードのためのものである。
++       ルートは `%` でも `Drive` でもよいので、`Path on Local` の形は POSIX でも Windows でもありうる。その `.Rules` は `Windows.Rules` と `MacOs.Rules` の共通部分なので、`Local` で有効な名前はどこでも有効である。
++       `.filesystem` インスタンスはスコープ内に `System`（`systems.javaBaseSystem`）を必要とし、そこから `os.name` と `file.separator` のプロパティを読む。そのため `Local` は、区切り文字が実行時まで分からない唯一のプラットフォームである。
+
+% 2 1 0 118fc15b7a105ca818e6907e407b7c05
+
+% 3 1 0 199e78629ab933c017fb28d087662c93
+
+% 4 1 0 0d5e9ac628dc171d0bd24540e2d4d129
+
+% 0 1 0 1cf4664307464f100bbb951c649b1048
+
+% 0 1 0 17f89baf73da5d651707b5070da5db1a
+
+% 0 1 0 0ea066eb844889e3058d39af4a4e1a68
+
+% 1 1 0 093ff47e5e6de22215e8f670621d62b0
+
+@ 0 9 0 147d0effc4e6e2bb1dace4418809b159
++   entry .Rules   `Windows.Rules & MacOs.Rules`：すべてのプラットフォームで有効な名前
++   entry .nominative   ローカルのパスに `.Rules` を守らせる given
++   entry .pathOnLocal   `Path on Local` を `Paths` ドメインの代表として印を付ける
++   entry .filesystem   スコープ内の `System` から読み取る `Filesystem` インスタンス
++       名前は `os.name` プロパティにより、区切りは `file.separator` による。自身と親の名前は `.` と `..` で、ルートは複数である。
++       `System` が必要である。
++   entry .radical   ルートを、`%` なら `/`、`Drive` なら `C:\` としてエンコードする
++   entry .eradicable   先頭の `/` からはルートを `%` として、`C:\` からは `Drive` としてデコードする
++       ルートの長さはそれに応じて 1 または 3 である。それ以外のテキストは `Path.Error(InvalidRoot)` を発生させる。
+
+@ 0 1 0 0f89430a061342830c4cc9a8f8e40018
++ entry .Dos   DOS の 8.3 命名規則を、命名のプレーンとして表したもの
+
+% 1 1 0 1aa14d04bc71cf920d20a081e7457694
+
+@ 0 6 0 0553728b55d64d921dd19b4906a84c33
++       `.Rules` が MS-DOS のものである目印である。名前は、空白でない印字可能な ASCII 文字 1～8 個からなり、任意で `.` とさらに 1～3 個の文字が続く。
++       `Filesystem` インスタンスもルートも持たない。これは名前を 8.3 形式に照らして検査するため（FAT ボリューム、ブート媒体、あるいは DOS で読めるままでなければならないアーカイブのため）に存在し、これを通じてファイルを操作するためのものではない。
++   entry .Rules   `[^.]{1,8}(\.[^.]{1,3})?`、空白なし、印字可能な ASCII のみ
+
+@ 0 1 0 01b2f37b26f22133187373cc4a902035
++ entry .Drive   Windows のドライブ文字で、`Path on Windows` のルート
+
+% 1 1 0 1c8eb9328c758e7b09870867488c559d
+
+@ 0 4 0 076ee1b76294c82b0f3503f4d79788bf
++       `Drive('C')` はルート `C:\` である。
++       これはプレーンが `Windows` である serpentine の `Root` なので、`Drive('C') / "Windows"` は Windows のパスである。また、`Windows.eradicable` が `C:\…` の先頭からデコードするのもこれである。
++       二つのドライブは文字が等しいときに等しい。
++       パッケージは、最もよく使われる二つのドライブとして `C` と `D` を定義している。
+
+% 2 1 0 11f7482811a4939206b72da967855ab1
+
+% 3 1 0 1fdb933bcde7aece19a21a8c9a532060
+
+% 0 1 0 10ab979578bdb70302a7e147a7d5b5d3
+
+% 0 1 0 0dde39f73905e6ed1614848ebadb974f
+
+% 1 1 0 0fda4ee10e390e4a1b74db8bc3e1679a
+
+% 1 1 0 1377359b71f307a50e32d053f1274798
+
+% 0 1 0 0aa62458a394e1dc030eb101b357fb2d
+
+@ 0 5 0 067918c0b4870a501012798e8d008d4c
++   entry .apply   `Drive(letter)`：その文字のドライブ
++   entry .unapply   ドライブに一致し、その文字を取り出す
++   entry .submissible   `/` で組み立てる `Path on Windows` のルートとして `Drive` を使えるようにする
++   entry #letter   ドライブの文字
++   entry #Plane   ドライブがルートとなるプレーン：`Windows`
+
+@ 0 3 0 0d15f32eff9243c6044b6b4a24521fb6
++ entry .C   ドライブ `C:\`、`Drive('C')` として
++     通常のシステムドライブのためのトップレベルの値で、`C / "Windows"` が Windows のパスとして読めるようにする。
+
+@ 0 1 0 05be485f0e9747860d4ad5d279f05427
++ entry .D   ドライブ `D:\`、`Drive('D')` として
+
+@ 0 7 0 00dccf0c678a22f718a2ac7f9134af54
++ entry .p   `p"…"` 補間子：コンパイル時に検査され型付けされるパスのリテラル
++     `p"/home/user/data.csv"` はリテラルを POSIX のパスとして、それが失敗すれば Windows のパスとしてデコードし、それに応じてプラットフォームが `Posix` または `Windows` である `Path` を埋め込む。その `Topic` は、名前のリテラル型を葉から順に並べたタプルである。
++     `p"/verona/capulet/juliet"` は `Path of ("juliet", "capulet", "verona") on Posix` である。
++     有効な POSIX のパスでも有効な Windows のパスでもないテキストはコンパイルエラー _The path `…` is not a valid Windows or POSIX path_ になる。
++     この補間子は `$` による置換を取らない。
+
+% 2 1 0 06ba4049d010fc3c08f5cea0b6b7c041
+
+% 3 1 0 031a265ba176473b0cc63d112c57581c
+
+% 0 1 0 16be09fa3b04d37f014e50b9523745db
+
+% 0 1 0 130f2f632bbc560d005e1ef8629a7bba
+
+% 0 1 0 0aaca8dcf40ec1b71260c158dbead66c
+
+% 1 1 0 083ec98bb2750af010c28a9ccc5c269b
+
+@ 0 2 0 078555903fe6f9ed0553095c887d4b4a
++     `Path on Posix` は、どのプラットフォームのパスとも同じように読み書きできる（`Posix` は `Filesystem` を持つ）ので、`p"/tmp/x".write(t"…")` に `on[Linux]` は要らない。
+
+@ 0 1 0 02bceca4f4b7003f1503cda2f86a040d
++ entry .internal   `p"…"` の背後にあるマクロ
+
+% 1 1 0 0b74de7f2792194916b8a45a2e1ea16d
+
+% 2 1 0 0934429ca7cb378a0478c02eb973065e
+
+@ 0 3 0 0c9af911ea496a250a368572ce116a12
++       直接使うものではない。このオブジェクトは、展開時に必要とする `Radical` の given を持つプラットフォーム型のそばに、パスリテラルのマクロの置き場を用意するために存在する。
++   entry .path   補間子のリテラルを POSIX のパスとして、次に Windows のパスとしてデコードし、埋め込む
+
+@ 0 1 0 139181206e2e07310ed639d44cbb66c1
++ entry .FilesystemBackend   プレーンに対するファイルシステムの基本操作で、他のすべてはこの上に築かれる
+
+% 1 1 0 0d015b8975e157d51fa82127a77a31ff
+
+@ 0 8 0 1df6c111102d167d0f0ee37e07b8dc3f
++       `FilesystemBackend on <plane>` は、基本操作の完全な集合（stat、オープン、一覧、作成、リンク、コピー、移動、削除、属性、位置指定アクセス）を、どのプラットフォームの API にも言及せずに表したものであり、`Path on <plane>` に対する利用者向けの操作はすべてこれらによって定義される。
++       `filesystemBackends` パッケージの given を名前でインポートして一つを選ぶ。JVM では `javaBaseFilesystem`、Scala Native では `scalaNativeFilesystem`、Wasm コンポーネントでは `wasiFilesystem` である。
++       複数の基本操作を組み合わせる操作（再帰的な削除、ディレクトリへのコピー、存在しない親の作成）は、ここではなくパスの API にある。
+
+% 2 1 0 0ddfb66e577ca7040ee8670a9cf2f191
+
+% 3 1 0 0a1701226e1a8b5615cecad9658eab99
+
+% 4 1 0 1b8a2d3e82f957241391479fc1af1280
+
+% 2 1 0 035a3c5d969940501136fd94e4fc2ad7
+
+% 1 1 0 045805ec3ef11eb216f82218ad68897b
+
+@ 0 8 0 0757cdbb3403d7161dd614542be79ff7
++       各バックエンドは、ネイティブの失敗（例外、WASI のエラーコード）をできるだけ情報を失わずに共通の `Io.Error.Reason` の語彙へ対応付ける。バックエンドが対応できない操作は、近似せずに `Reason.Unsupported` を伴う `Io.Error` を発生させる。WASI にはロックも `realpath` も拡張属性もボリュームも FIFO もない。
++       いくつかの基本操作が取る `dereference` 引数は、最後の構成要素であるシンボリックリンクをたどるかどうかを示す。
++       独自のバックエンド（リモートのファイルシステム、アーカイブ、テストダブルの上のもの）を実装するプログラムは、このトレイトを実装する。`realPath` は最も新しく追加されたものである。
+
+% 0 1 0 1eef00db99cdb9920cd218fa2def1153
+
+% 0 1 0 11e743ef9bf5bd1a06308736b1b0707f
+
+% 0 1 0 001c498ad5f293171408518f3d17b633
+
+@ 0 79 0 00bf1217538c868a10492767cf25dfe4
++   entry .Attribute   バックエンドが読み書きする粗いパーミッションフラグ：`Readable`、`Writable`、`Executable`
++       `Files.isReadable` や `File#setReadable` が見るとおり、現在のユーザーの観点から見たものである。
++       `FilesystemAttribute` は型付きのパス単位の見方である。
++   entry #stat   エントリーの種類、サイズ、タイムスタンプ、inode のフィールドを一度に読む
++       `Stat` を返す。
++       作成時刻を記録しないファイルシステムでは `created` が `Unset` になり、Unix の inode を持たないプラットフォームでは inode のフィールド（`mode`、`user`、`group`、`device`）が `Unset` になる。
++       `Operation.Metadata` を伴う `Io.Error` を発生させる。存在しないエントリーでは `Nonexistent` である。
++   entry #linkTarget   シンボリックリンクが指すテキストを、格納されたとおりに返す
++       相対リンクは相対のままである。
++       エントリーがリンクでなければ `Io.Error` を発生させる。
++   entry #realPath   ファイルシステムが知るとおりのパス：絶対で、正規化され、シンボリックリンクはすべて解決される
++       `realpath(3)` である。
++       エントリーは存在していなければならない（そうでなければ `Nonexistent`）。
++       `Path#canonical()` はこの上に築かれている。WASI は `Unsupported` を発生させる。
++   entry #exists   エントリーが存在するかどうか。`dereference` が真なら最後のシンボリックリンクをたどる
++       全域的である。読めないエントリーや存在しないエントリーは単に `false` になる。
++   entry #children   ディレクトリの直下の子の名前（パスではない）
++       正格である。一覧は返す前に実体化されるので、ディレクトリの記述子は解放される。失敗は呼び出し側の `Tactic[Io.Error]` を通じて発生させる。
++       JVM では、ディレクトリでないものは空として一覧される。
++   entry #createDirectory   ディレクトリを一つ作成する。パーミッションビットが与えられればそれを付ける
++       `mode` は新しいエントリーが持つべき正確なパーミッションビットであり（呼び出しの `Umask` は `Umask.directoryBits` にすでに適用済み）、パーミッションビットを持つプラットフォームのバックエンドは作成時にそれを設定する。`Unset` ならプロセス自身のマスクが適用され、POSIX のパーミッションを持たないプラットフォームはこの要求を無視する。
++       `AlreadyExists` または `Nonexistent`（親がない）を発生させる。
++   entry #createFile   空のファイルを一つ作成する。パーミッションビットが与えられればそれを付ける
++   entry #createFifo   名前付きパイプを作成する。パーミッションビットが与えられればそれを付ける
++       JVM では `mkfifo` コマンドを通じて作成し、その失敗は `Unsupported` として報告される。WASI はそのまま `Unsupported` を発生させる。
++   entry #delete   エントリーを一つ削除する。存在しなければ `Nonexistent`、空でないディレクトリなら `DirectoryNotEmpty` を発生させる
++   entry #deleteIfExists   エントリーが存在すれば一つ削除し、そうでなければ何もしない
++   entry #symlink   `target` を指すシンボリックリンクを `link` に作成する
++   entry #hardLink   `target` のエントリーへのハードリンクを `link` に作成する
++   entry #copy   エントリーを一つコピー先へコピーする。`dereference` なら最後のシンボリックリンクをたどる
++       コピー先が存在すれば `AlreadyExists` を発生させる。パスの API の `OverwritePreexisting` ポリシーは、求められれば先にそれを片付ける。
++   entry #move   エントリーを一つ移動する。求められればアトミックに行い、`dereference` なら最後のシンボリックリンクをたどる
++       プラットフォームが行えないアトミックな移動（たとえばボリュームをまたぐもの）は `Unsupported` である。ボリュームをまたぐ通常の移動が失敗したときの理由は `NotSameVolume` である。
++   entry #touch   エントリーの変更時刻を現在の時刻に設定する
++   entry #hidden   エントリーがプラットフォームの慣習で隠されているかどうか
++       POSIX では先頭の `.`、Windows では隠し属性である。
++   entry #volume   エントリーが格納されている `Volume`：その名前とファイルシステムの種類
++       `Btrfs`、`Ext4`、`Apfs`、`Ntfs` が調べるのはこれである。
++       WASI は `Unsupported` を発生させる。
++   entry #hardLinkCount   エントリーを指すハードリンクの数
++   entry #attribute   粗いパーミッションフラグを読む、または拡張属性を読み書きする
++       三つのオーバーロードがある。
++       `attribute(path, Attribute.Readable)` は現在のユーザーのパーミッションで、全域的である。
++       `attribute(path, name)` はその名前の拡張属性を `Data` として返すか、`Unset` を返す。`attribute(path, name, value)` はそれを設定する。
++       拡張属性はストレージファイルシステムに依存するので、型付きのパスのアクセサーは `Attributed` の軸で制限されている。この継ぎ目では、拡張属性を持たないファイルシステムは `Unsupported` を発生させる。
++   entry #update   粗いパーミッションフラグをオンまたはオフにする
++       プラットフォームが変更を拒めば `PermissionDenied` を発生させる。
++   entry #attributes   エントリーの拡張属性の名前
++   entry #identity   エントリーのデバイス番号と inode 番号。プラットフォームが持たなければ `Unset`
++       全域的である。`stat` と別になっているのは、これに答えられない二つのプラットフォーム（WASI と、POSIX 以外の JVM）が、まさに `Stat` の他のすべてのフィールドが安価なものだからである。
++       `Path#entryIdentity` がパス単位のアクセサーである。
++   entry #expanse   エントリーをスコープ付きの位置指定読み取りのために開き、そのビューにラムダを適用する
++       `zephyrine.Expanse`（`size` と、`pread` 式の `read(offset, length)`。各読み取りは順次の位置から独立している）で、呼び出しのスコープの間だけ有効であり、その後で閉じられる。
++       ファイル全体のマッピングは取らないので、`Int` でアドレス付けする `Ram` の単一のマップとは異なり、2 GiB を超えるファイルもアドレス指定できる。
++       ファイルの末尾にかかる読み取りは、存在するバイト列を返す。
++   entry #slice   エントリーのバイト範囲を窓付きのビューとして開き、フラグが求めればそれをロックする
++       `#expanse` と同様だが、ビューは `[offset, offset + extent)` に限られた `Slice.Window` である。その `size` は窓のもので、読み取りは窓の先頭からの相対位置でその範囲に切り詰められ、書き込みは収まるだけ格納してその数を返す。
++       `OpenFlag.Lock` または `OpenFlag.LockShared` は、スコープの間、まさにその範囲に OS の勧告ロックを取る。書き込みは `OpenFlag.Write` があるときにだけ意味を持つ。
++       WASI は窓を提供するが、ロックを伴うオープンは `Unsupported` として拒否する。
++   entry #open   エントリーの内容をストリーミングのために開き、`Handle` にラムダを適用し、閉じる
++       `flags` は `OpenFlag`（`Read`、`Write`、`Append`、`Create`、`Truncate`、…）であり、`mode` は、`#createFile` と同様、オープンが作成するファイル（`Create` または `Exclusive`）のパーミッションビットである。
++       ハンドルは結果がどうであれ閉じられる。
++       JVM では、`Lock` と `LockShared` は開いた後に勧告ロックを取る。読み取り専用のチャンネルは排他ロックを取れないので、代わりに共有ロックが取られ（プロセス内の排他性はすでに `AccessRegister` が調停している）、`Await` は `Busy` で失敗する代わりにロックを待ってブロックする。
+
+@ 0 1 0 1c427cb0574f3d38013800e6d3abcb3d
++ entry .filesystemBackends   ファイルシステムのバックエンドで、それぞれ名前でインポートする given
+
+% 1 1 0 053ebec3a6c06cb91dab6a2dd1cc6d8f
+
+@ 0 4 0 0865e52fd0acb49b1a7bf96b8ce6c180
++       `Path on <platform>` に対するすべての操作には、スコープ内に `FilesystemBackend on <platform>` が必要であり、その選択は意図して決して暗黙にされない。`import soundness.*` はどれも持ち込まないので、一つを名前でインポートする。
++       それぞれプレーンについて汎用なので、一つのインポートで `Path on Linux`、`Path on Windows`、`Path on Local` のどれにも使える。
+
+% 2 1 0 029755fb4ca2bac3143c95c7afe3c727
+
+% 3 1 0 004d158f8b6030b8008987cb1724be83
+
+% 4 1 0 017c55da9ce7a7d50ac00515dc297e1e
+
+% 1 1 0 08a576db11af276c01abf1976300cdce
+
+@ 0 3 0 09a39d1a379164b513329a349fe934fe
++   entry .javaBaseFilesystem   `java.nio.file` のバックエンド。`galilei.jvm` 内
++       通常の JVM プログラムのバックエンドである。
++       `java.nio` の例外は、型によって `Io.Error.Reason` に対応付けられる。
+
+% 2 1 0 1c5541f2d6b91e2c1784ce76088f2342
+
+@ 0 2 0 1afde471d49abe6e0ee9e60f89bdfd65
++       column  例外
++       column  理由
+
+% 0 1 0 0628ab96a64aa8f60b5d6c036f7df447
+
+% 0 1 0 18c0eddd5e089d110c6c0c2f66c04352
+
+% 0 1 0 119f4ebad13de1630b9fab3182aaf743
+
+@ 0 1 0 1998e7ed0bc61b1d0e505de6a8406ac1
++       row  `AccessDeniedException`、`SecurityException`  `PermissionDenied`
+
+% 0 1 0 018835ef7e9efad604fd1c4ae359aef8
+
+% 0 1 0 0291e9a9379f7c381d88581759511ade
+
+% 0 1 0 1844f3de23b9066e153625dbae0f7f3c
+
+@ 0 4 0 161f6c2e6305853d0540d820aede20c0
++       row  `InterruptedIOException`  `Interrupted`
++       row  裸の `FileSystemException`  理由のテキストによる（下記）
++       row  その他の `IOException`  `Physical`
++       row  それ以外のすべて  `Unsupported`
+
+% 2 1 0 0f8fcfeebd99390411cc5863239624c7
+
+@ 0 2 0 0c0c619482dafd700e74d78380caa91a
++       裸の `FileSystemException` は、小文字にした理由のテキストによって対応付けられ、最初に一致したものが選ばれる。
+
+% 2 1 0 10b30afeb4fa84da02be3ed57d78fb9d
+
+@ 0 2 0 0f17efe86eafe81d173794ef079c5062
++       column  理由のテキストが含むもの
++       column  理由
+
+% 0 1 0 034ec54a0fc8d8ef1160d15d6765df41
+
+% 0 1 0 0b7ac90ead2715a807ccd0b401f0bbde
+
+@ 0 1 0 0944b64cbe36104f1931cd90d6ded4bc
++       row  `cross-device` または `different disk`  `NotSameVolume`
+
+% 0 1 0 05e862716abe3b18034babb897e610fc
+
+% 0 1 0 11a2a46a82e1866005f5e20388b5be8b
+
+% 0 1 0 060e8b9d76b6c344158f56c6fada8bf6
+
+% 0 1 0 05ed45a273e177120170ff6b11d65a87
+
+% 0 1 0 17fd2bf4a7a7d1130d00ea1187089b9b
+
+% 0 1 0 10a77c49b70d1b061338509d62cd7866
+
+% 0 1 0 0758cf07cae2c99615e8f9fdfbb7187e
+
+@ 1 1 0 07df8aa0b16c3dc40350cbe55981dfc5
++       row  それ以外のすべて  `Unsupported`
+
+% 2 1 0 184a74949c008eed1b5afce522a7bc32
+
+@ 0 17 0 18aaf84531ceeb6f0fd7e0cadb40bfd3
++       パーミッションビットは作成時に要求され、その後で正確に設定されるので、エントリーが要求より緩いパーミッションで存在することはない。POSIX のビューを持たないファイルシステム（Windows）では、要求されたモードは無視される。
++       FIFO は `mkfifo` で、ロックは `FileChannel.lock` で、拡張属性は `UserDefinedFileAttributeView` で作られる。ボリュームがこのビューを持たなければ `Unsupported` である。
++   entry .wasiFilesystem   Wasm コンポーネントのための `wasi:filesystem` バックエンド。`galilei.wasi` 内
++       WASI preview-2 のファイルシステムインターフェースに対する `inline` の given である。これが行う `call` はそれを召喚する場所で展開されるので、コンポーネントのインポートは Wasm を対象にコンパイルされたコードの中でだけ実体化し、そこでは `wasiApis.wasiFilesystemApi` が見えていなければならない。
++       WASI のファイルシステムはケイパビリティに基づく。ホストはあらかじめ開いたディレクトリの記述子（`wasmtime run --dir …`）としてアクセスを与え、各操作は最も長く一致する接頭辞を持つ事前オープンに対してパスを解決し、どの事前オープンにも入らないパスは `PermissionDenied` を発生させる。
++       WASI のエラーコードは `Io.Error.Reason` に対応付けられる（`no-entry` は `Nonexistent` に、`quota` は `QuotaExceeded` に、`insufficient-space` は `StorageFull` に、…）。
++       ここで対応していないもの：`realPath`（したがって `canonical()`）、FIFO、ボリューム（したがってストレージの軸の抽出子は決して一致しない）、拡張属性、パーミッションの更新、エントリーの同一性、そしてロックを伴うすべてのオープン（`Exclusive`、`Shared`、`OpenFlag.Lock`）。
+
+@ 0 1 0 069d5990b9452b311780f49a6398ab22
++ entry .wasiApis   WASI バックエンドの型検査に使う WIT インターフェースで、名前でインポートする given
+
+% 1 1 0 002494f3120bd1910b0d54d8bee603a2
+
+@ 0 4 0 15440495497193bc1cc95611741705a1
++       `wasiFilesystem` は xenophile の `Interface in Wit` を通じて `wasi:filesystem` のワールドをたどる。WIT の定義はコンテキスト値なので、`call` の実体化処理は下流の展開位置でそれを参照できる。
++       `galilei.wasi` 内にある。このパッケージはアンブレラ自身の `wasiApis` と統合される。
+
+% 2 1 0 1699a71fd990f02c142ef172fe9c31b6
+
+% 3 1 0 0e85ce9370bdc8ca05ea47e61544641e
+
+% 0 1 0 1e0d1fe56ae9c73e192581b54ceb0bfe
+
+% 0 1 0 01dd4be42700774f029cfab10b7e9d72
+
+% 1 1 0 1a97329ef576244b0536c5494d390b06
+
+@ 0 1 0 1be973017e4dcc48129ce4c14be8ba47
++   entry .wasiFilesystemApi   `galilei.wasi` に同梱された `filesystem.wit` リソースで、`WasiFilesystemApi` として
+
+@ 0 3 0 1571898b48d40a481dd3a313b41eca2c
++ entry .WasiFilesystemApi   WASI のファイルシステムの WIT インターフェースの型：`Interface in Wit at "/galilei/filesystem.wit"`
++     `wasiFilesystem` の型検査に使う WIT の定義で、クラスパス上のそのリソースパスに置かれている。`wasiApis.wasiFilesystemApi` はこの型の唯一の値である。
++     `galilei.wasi` 内にある。
+
+@ 0 1 0 0ac4ad39c5a4c5701bcfe5022bd6405d
++ entry .Io   galilei の I/O の語彙：ディスクに触れるすべての操作が発生させる `Io.Error` と、ログに記録する `Io.Event`
+
+% 1 1 0 074349ec3b0f684004efd58b92fa7767
+
+@ 0 4 0 1d83383fb519bd6d07ee57148d63b151
++       `Io` は二つのものをまとめる。
++       `Io.Error` はファイルシステムの唯一のエラー型である。パス、試みられた `Operation`、失敗した `Reason` を示すので、プログラムは何が起きたかで照合する。
++       `Io.Event` は変更を加える操作がログに記録するもの（作成、削除、移動、コピー、リンク、タッチ）で、それぞれ `Log.Filesystem` のタグが付く。
+
+% 2 1 0 02c9606f9f4359e1070b93174b08457a
+
+% 3 1 0 14b82db5f6c2b71d0f3ad2dad50f5ac7
+
+% 4 1 0 08ad5cc67ebd535a1d990a2a9c360c8e
+
+% 5 1 0 1fb6adfaa798cc2807a40bf170ac15da
+
+% 6 1 0 0bebaa1070a65a3c0502d7925748c100
+
+% 0 1 0 0b9de35a077968f1054349f310e38d12
+
+% 0 1 0 026d44ea02c10e6711d9ff15f78ffac2
+
+% 0 1 0 0c91e2ca20ad77ec16fc83330feb4271
+
+% 1 1 0 0801af191b6af62e0a49f6594d5f19c5
+
+@ 0 2 0 13eea6cf025130c10692099310ca82bd
++       `safely` はあらゆる `Io.Error` を `Unset` に変える。`capture` はエラーを保持するので、その `reason` を調べられる。
+
+% 1 1 0 1b590c30ea51c22a0cbdba984e3c17bd
+
+@ 0 1 0 1b48b1c1997f3cf41281339727cff94b
++   entry .Error   ファイルシステムの操作が失敗したときに発生する：どのパスで、どの操作が、なぜ
+
+% 1 1 0 1ce09f396378146f0b8b34fd0e74db6d
+
+@ 0 7 0 1299808d64ea159f16da2c6b0073d348
++         メッセージは _the `operation` operation at `path` on `filesystem` failed because `reason`_ と読める。たとえば _the read operation at /tmp/x on Linux failed because the entry does not exist_ である。
++         その理由は POSIX の errno の表に読みやすい名前を付けたものである（`Nonexistent` は `ENOENT`、`NotSameVolume` は `EXDEV`、`Physical` は `EIO`）。そのため、ファイルシステムが報告しうる失敗は一度だけ名付けられ、すべてのバックエンドがそれに対応付ける。
++         コンストラクター `Io.Error(path, operation, reason)` は、パスのプレーンが（それを描画するための）`Filesystem` を持ち、スコープ内に `Diagnostics` があることを必要とする。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 0239237dea428b3e0219c106c0a5bd9f
+
+% 0 1 0 19b42f1b979ba1df0dc7d24f97a826d7
+
+% 0 1 0 170f6114495007a61e39c3825fab5f20
+
+% 0 1 0 14c3edc41fb5b533127c4eb1db47a9c5
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 21 0 03bfd2a61d4206cd1589cdb4f31feb37
++         `Operation` と `Reason` はどちらも無名の given を通じて `Communicable` なので、それぞれメッセージの中で描画される。
++     entry .Operation   試みられていたこと：`Read`、`Write`、`Create`、`Copy`、`Move`、`Delete`、`Metadata`、`Open`、`Access`
++         `Metadata` は `stat`、`realPath`、`touch`、`volume`、属性、パーミッションを扱う。`Open` は `open` の呼び出しで、それが取るロックも含む。`Access` は存在やパーミッションの検査である。
++     entry .Reason   失敗した理由を POSIX の errno の語彙で表したもの
++         `PermissionDenied`（ユーザーに十分なパーミッションがなかった）、`Nonexistent`（エントリーが存在しない）、`AlreadyExists`、`IsNotDirectory`、`IsDirectory`、`DirectoryNotEmpty`、`NotSameVolume`（コピー元とコピー先が別のボリュームにある）、`Unsupported`（ファイルシステムまたはバックエンドが対応していない）、`Cycle`（シンボリックリンクのループ）、`Busy`（エントリーが使用中。`AccessRegister` が拒否したオープンも含む）、`ReadOnly`、`TooManyLinks`、`NameTooLong`、`QuotaExceeded`、`StorageFull`、`InvalidData`、`Interrupted`、`Physical`（入出力エラーで、ファイルが途中で途切れた読み書きも含む）。
++     entry .apply   `Io.Error(path, operation, reason)`：`Filesystem` を持つ任意のプレーン上のパスに対するエラー
++     entry #path   操作が試みられたパス
++     entry #operation   失敗した `Io.Error.Operation`
++     entry #reason   失敗の理由である `Io.Error.Reason`
++     entry #filesystem   パスのプレーンの `Filesystem` インスタンスで、メッセージの描画に使う
++   entry .Event   変更を加えるパス操作がログに記録するもの
+
+% 1 1 0 1251796b3d9e7a2913f2e4cfa8f123a2
+
+@ 0 23 0 1b4c3c43e2da09dd014579af258e0389
++         すべての `Event` には `Log.Filesystem` のタグが付くので、ログの設定はタグによってそれらを選んだり黙らせたりできる。
++         `create`、`delete`、`wipe`、`copyTo`、`moveTo`、`hardLinkTo`、`symlinkTo` は `info` で、`touch` は `fine` で記録する。
++         これらの操作はそれぞれ、スコープ内に `Io.Event is Loggable` を取る。
++     entry .communicable   各イベントをメッセージとして描画する：_created `path`_、_moved `from` to `to`_、…
++     entry .Create   エントリーが作成された：_created `path`_
++       entry #path   作成されたパスのテキスト
++     entry .Delete   エントリーが削除された：_deleted `path`_
++       entry #path   削除されたパスのテキスト
++     entry .Move   エントリーが移動された：_moved `from` to `to`_
++       entry #from   移動元のパスのテキスト
++       entry #to   移動先のパスのテキスト
++     entry .Copy   エントリーがコピーされた：_copied `from` to `to`_
++       entry #from   コピー元のパスのテキスト
++       entry #to   コピー先のパスのテキスト
++     entry .HardLink   ハードリンクが作られた：_hard-linked `from` to `to`_
++       entry #from   既存のエントリーのテキスト
++       entry #to   新しいリンクのテキスト
++     entry .Symlink   シンボリックリンクが作られた：_symlinked `link` to `target`_
++       entry #link   新しいリンクのテキスト
++       entry #target   それが指すもののテキスト
++     entry .Touch   エントリーの変更時刻が設定された：_touched `path`_
++       entry #path   タッチされたパスのテキスト
+
+@ 0 1 0 1c8da259e422f1b709b3e5f37c7338a2
++ entry .filesystemOptions   扱いにくい場合のためのポリシーで、それぞれ名前でインポートする given
+
+% 1 1 0 08796719a59cedb50b9c9e899c70755d
+
+@ 0 10 0 0d9c2a38b737810309e45b8cef1fef84
++       すでに何かが存在するパスへファイルを移動すると、その何かを破壊するか、移動を拒否するかのどちらかになる。ディレクトリを削除すると、中身を空にするか拒否するかのどちらかになる。シンボリックリンクをコピーすると、それをたどるかリンクをコピーするかのどちらかになる。
++       どちらの答えも一般には正しくないので、galilei は決して黙って選ばない。
++       各問いはポリシーのトレイト（`OverwritePreexisting`、`DeleteRecursively`、`CreateNonexistentParents`、`DereferenceSymlinks`、`MoveAtomically`、`CopyAttributes`）であり、それに答えなければならない操作はポリシーをコンテキストパラメーターとして取る。
++       `overwritePreexisting` も `failOnPreexisting` もスコープにない状態で `moveTo` を呼ぶとコンパイルエラーになり、欠けているポリシーの名前が示される。
++       ポリシーは寛容なものと厳格なものの対になっていて、名前でインポートする（`import soundness.*` は given をインポートしない）。ファイル全体に対しても、一つのブロックに絞っても使える。
+
+@ 0 1 0 0b0009c1426c20df1d8418e2258f3ed1
++       操作が必要とするポリシーは次のとおりである。
+
+@ 0 9 0 02379d0dfaba051a1d81d686fa4a1dbe
++       - `copyTo`、`moveTo`、`hardLinkTo`、`symlinkTo`：`OverwritePreexisting` と `CreateNonexistentParents`（コピーと移動ではさらに `DereferenceSymlinks`、移動では `MoveAtomically`）。
++       - `copyInto`、`moveInto`、`symlinkInto`：`OverwritePreexisting` と `DereferenceSymlinks`（と `MoveAtomically`）。行き先のディレクトリが指定されているので、親は作成される。
++       - `delete`、`wipe`：`DeleteRecursively`。
++       - `entry()`、`descendants`、`glob`、`hardLinks()`、`checksum`：`DereferenceSymlinks`。
++       - `create[…]`：なし。代わりに `CreateFlag.Parents` と `CreateFlag.Replace` が呼び出し位置で意図を示す。
+
+@ 0 1 0 07789554d9be9cd81c8a4ffa05ab9336
++       インポートが積み重なるにつれて、同じファイルが書き込まれ、読まれ、移動され、削除される。
+
+% 2 1 0 090969ea73e1f8021f38410f62892033
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0c39d7eaefc54e141e2e81e4b72d0803
++         label 読み書きに必要なのはバックエンドと戦術だけである
+
+% 1 1 0 008052bfdab2892812b56c244161bef6
+
+% 2 1 0 1b8179f54acff293160ff62544f5a0c7
+
+% 3 1 0 03ba2fa433d051951ba76c7e26b399c6
+
+% 4 1 0 1b7e8d0e107ee22a0d64b3305c0b866c
+
+% 2 1 0 04eb18108a5c45291fbd9bfa3f7b3f03
+
+% 3 1 0 19c8dc890b11456617c34130dd3c88c2
+
+% 0 1 0 1fc48c5f3395b5211e9ceeab3e22858b
+
+% 0 1 0 1e372205cedd9cb104944ce33094e759
+
+% 0 1 0 00ce93ecf438042610cee1a75d4a02a0
+
+% 1 1 0 00e33afbdc98fc1416f08e448a4ca631
+
+@ 0 1 0 0668c410dc6ea3ef1ed69bacbe4a6c39
++         label 移動には、衝突、存在しない親、シンボリックリンク、アトミック性に対する答えが必要である
+
+% 1 1 0 09850f620388658f183c17d244e742fd
+
+% 2 1 0 0a176311085117fb02b46a16fa0260ae
+
+% 3 1 0 0285b838908eb89e08a894f83899ab8c
+
+% 4 1 0 07ffc3822787bd450876b923eb65bd21
+
+% 0 1 0 05b229e73b543df315bb461a8bb9dedd
+
+% 0 1 0 1ddb31a451cfcaeb0138ada5b1dcd0f6
+
+% 0 1 0 0e837cd47d9de812195e19e1405d30ef
+
+% 1 1 0 14ffe09fc561d4361b408633e864dc11
+
+% 3 1 0 1365b973f1db9381173500cdac732041
+
+% 3 1 0 0c965951a04e797517698e4682beaf2a
+
+% 0 1 0 10e9ebd3ee6777270a82d2a4eb1edeb3
+
+% 1 1 0 15fb667e72d9ae680503e66952bec45c
+
+@ 0 1 0 0d8f7aa52ccba38a11149b3c2ae80434
++         label 寛容なポリシーは衝突と存在しない親を起こりえないものにする
+
+% 1 1 0 16865acef5feb03d00a165d36a9ef3e4
+
+% 2 1 0 13e1f323e8073557143dc51991b466da
+
+% 3 1 0 044fab8ff9a5382008506ef1517ca177
+
+% 4 1 0 0b7536a88c6cc1f209233c6adc2b80c9
+
+% 0 1 0 150c8c42ea9e06c00ab62e5ca8df3452
+
+% 0 1 0 0d4691dbaae0d8f80a9909bcc7770e33
+
+% 1 1 0 1914f034f1e778091e359c2385d23997
+
+% 1 1 0 0c78017972c52f011681291eb4dec629
+
+% 1 1 0 0be55f4637825ee60f04840ad8342b9f
+
+% 3 1 0 0d009cc943bb55221efa97c137156bd6
+
+% 0 1 0 0b61ea10c4972f941e173018657d6a18
+
+% 0 1 0 0aacb7af93ead0660035d7ba082bc202
+
+% 1 1 0 0d9919339cdabf170e5f014b5834d724
+
+@ 0 1 0 05f47f1191ab83921148a331fbf698d6
++         label ディレクトリの削除には再帰についての判断が必要である
+
+% 1 1 0 17fd24cca704952a1c6c42996ff37bcf
+
+% 2 1 0 045b092cf8ea27d41c72b85cae7f024b
+
+% 3 1 0 12de5b206ac575b80cc469541831f5b9
+
+% 4 1 0 1bc2645be85b4a39170f9f683273afd2
+
+% 1 1 0 19cfe7b0f59fe4080ebe7134ef7846f4
+
+% 2 1 0 1a23425db64f73cb12828587768631db
+
+% 0 1 0 0b35794d2f3581380d615ae693c15d5c
+
+% 1 1 0 161dd6b3751619e61780f6e798be8769
+
+% 2 1 0 042a26903bd8875f149d824401bb43d9
+
+@ 0 3 0 02ecf796bcf878a302a4342d74a8d626
++       `deleteRecursively` の代わりに `deleteOnlyEmpty` を使うと、最後の手順は `DirectoryNotEmpty` を伴う `Io.Error` を発生させる。
++       `overwritePreexisting` 自身もスコープ内に `DeleteRecursively` を必要とすることに注意する。ディレクトリを置き換えるとは、それを空にすることだからである。
+
+% 0 1 0 12dabe1177df3a9205dcc575a11b78d4
+
+% 0 1 0 1f3fd56ce16820e9154cc0338e925bb8
+
+% 0 1 0 0d89ee07b80f00390695714cccab6c0a
+
+% 0 1 0 18f343058f77a5bd1503cc588e2f3b1e
+
+% 0 1 0 1e43949f958bbb1313823885eb0f66ad
+
+% 0 1 0 05f8fc365244f99a17daa11c2d96fe10
+
+@ 0 47 0 05cd27fd0c762f9b1b0d848fac96a8f7
++   entry .dereferenceSymlinks   最後の構成要素であるシンボリックリンクをたどり、それが指すものを操作する
++       寛容な `DereferenceSymlinks` である。
++       `entry()` はリンク先の種類を報告し、`copyTo` はリンク先の内容をコピーし、`descendants` と `checksum` はリンクされたディレクトリの中へたどり、`hardLinks()` はリンク先のリンク数を数える。
++   entry .preserveSymlinks   シンボリックリンクをたどらず、リンクそのものを操作する
++       厳格な `DereferenceSymlinks` である。
++       `entry()` は `Symlink` を報告し、`copyTo` はリンクをコピーし、走査はリンクされたディレクトリの中へ降りない。
++       `filesize()` は常にこれを使うので、リンクのサイズはリンク自身のものである。
++   entry .moveAtomically   `moveTo` はアトミックでなければならず、それができない場合は `Unsupported` になる
++       バックエンドにアトミックな改名（JVM では `ATOMIC_MOVE`）を求める `MoveAtomically` である。
++       読み手が移動途中のエントリーを見ることはない。アトミックにできないボリュームをまたぐ移動は、コピーに切り替えるのではなく、`Unsupported` を伴う `Io.Error` を発生させる。
++   entry .moveNonAtomically   `moveTo` はコピーの後に削除を行うものであってもよい
++       アトミックでない移動を許す `MoveAtomically` である。そのためボリュームをまたぐ移動は成功するが、途中で失敗すると、移動元と不完全な移動先の両方が残りうる。
++   entry .copyAttributes   コピーは移動元の属性（タイムスタンプ、パーミッション）を伴う
++       寛容な `CopyAttributes` である。
++       現在これを参照する操作はない。このポリシーは、バックエンドが従うようになったときにコピーでの属性の扱いが明示されるように存在する。
++   entry .discardAttributes   コピーは内容だけを取り、コピーの属性は新しいものになる
++       厳格な `CopyAttributes` である。現在の位置付けについては `.copyAttributes` を参照。
++   entry .deleteRecursively   ディレクトリに対する `delete` と `wipe` は、まずその下のすべてを削除する
++       寛容な `DeleteRecursively on <plane>` で、`Explorable` とバックエンドを持つ任意のプレーンに使える。
++       守る操作の前に子を深さ優先で削除するので、`wipe()` は木全体を取り除く。
++       これは `overwritePreexisting` が必要とするものでもあり、ディレクトリを置き換えるときにそれを空にできるようにする。
++   entry .deleteOnlyEmpty   `delete` と `wipe` は子を持つディレクトリを拒否する
++       厳格な `DeleteRecursively` である。子を一つでも持つディレクトリは、何かに触れる前に `Operation.Delete` と `Reason.DirectoryNotEmpty` を伴う `Io.Error` を発生させる。
++       一度に二つ以上のエントリーを決して取り除いてはならないプログラムはこれをインポートする。
++   entry .overwritePreexisting   すでに存在する行き先は先に取り除かれる
++       寛容な `OverwritePreexisting on <plane>` で、スコープ内に `DeleteRecursively on <plane>` を必要とする（置き換えるディレクトリを空にするため）。
++       これにより `copyTo`、`moveTo`、`hardLinkTo`、`symlinkTo`、`Device.create` は `AlreadyExists` を発生させなくなる。
++   entry .failOnPreexisting   すでに存在する行き先は `Io.Error` になる
++       厳格な `OverwritePreexisting` である。操作は何にも手を付けずに進み、既存のエントリーと衝突したときにバックエンドが `Reason.AlreadyExists` を伴う `Io.Error` を発生させるので、呼び出し側がそれを処理しなければならない。
++   entry .createNonexistentParents   行き先の存在しない祖先ディレクトリが作成される
++       寛容な `CreateNonexistentParents on <plane>` で、バックエンドを必要とする。
++       操作の前に、行き先の存在しない祖先が、最も近いものからさかのぼって一つずつ作成される。
++       ディレクトリはプロセス自身のマスクで作成される。
++       `copyInto`、`moveInto`、`symlinkInto` は、行き先のディレクトリが指定されているので、暗黙のうちにこれを使う。
++   entry .requireParents   親が存在しない行き先は `Io.Error` になる
++       厳格な `CreateNonexistentParents` である。何も作成されず、バックエンドは存在しない親に対して `Reason.Nonexistent` を伴う `Io.Error` を発生させる。
+
+@ 0 1 0 10d37892f1d3dbe21b6a4ca440c95125
++ entry .DereferenceSymlinks   最後の構成要素がシンボリックリンクのときのポリシー：リンクをたどるか、リンクそのものに作用するか
+
+% 1 1 0 1a9a1305097afa7803876d28b36dfce7
+
+@ 0 7 0 1d23fdb903fa0917170854cdf074927e
++       一つの事実 `#dereference` を持つコンテキスト値であり、エントリーを読んだりコピーしたりする操作が、これをバックエンドに渡す。
++       `filesystemOptions.dereferenceSymlinks` はリンクをたどり、`filesystemOptions.preserveSymlinks` はリンクを保つ。
++       これは関数ではなく `Findable` なので、独自のインスタンスは `given DereferenceSymlinks: def dereference = …` として書く。
++       `entry()`、`copyTo`、`copyInto`、`moveTo`、`moveInto`、`symlinkInto`、`descendants`、`glob`、`hardLinks()`、`checksum` が必要とする。
++   entry #dereference   最後のシンボリックリンクをたどるなら `true`、リンクそのものに作用するなら `false`
+
+@ 0 1 0 1c42aec4cd534d7712e886a1568107e4
++ entry .MoveAtomically   `moveTo` が単一のアトミックな名前変更でなければならないかどうかのポリシー
+
+% 1 1 0 0ee843c97ba5a77d0b5d4df0b5114134
+
+@ 0 4 0 13d322ca982a19661ebbee86f290cdb8
++       `filesystemOptions.moveAtomically` はアトミック性を要求し（ボリュームをまたぐと `Unsupported` で失敗する）、`filesystemOptions.moveNonAtomically` はコピーと削除を許す。
++       `moveTo`、`moveInto`、`symlinkInto` が必要とする。
++   entry #atomic   アトミックな移動を要求するなら `true`
+
+@ 0 1 0 0d689155a4c291cf17994443286571ea
++ entry .CopyAttributes   コピーがソースの属性を引き継ぐかどうかのポリシー
+
+% 1 1 0 01777b5ea1e16124002f75307b9b46f2
+
+@ 0 4 0 0e6bf43c671c6ce114e5c1fc290246f0
++       `filesystemOptions.copyAttributes` と `filesystemOptions.discardAttributes` がその二つのインスタンスである。
++       現在これを参照する操作はない。
++       二つを区別するバックエンドのために予約されている。
++   entry #attributes   内容とともに属性をコピーするなら `true`
+
+@ 0 1 0 0126fd2e62b1f83a0b5da25b4166b8bf
++ entry .DeleteRecursively   子を持つディレクトリを削除するときのポリシー：先に空にするか、拒否するか
+
+% 1 1 0 0d472eab1a444f24056ff8cb4a7bbf64
+
+@ 0 5 0 081d16030d0785360333b7616dd1459c
++       プレーンごとのポリシー（`DeleteRecursively on Linux`）であり、その `#conditionally` が削除を包む。
++       `filesystemOptions.deleteRecursively` はまずすべての子孫を削除し、`filesystemOptions.deleteOnlyEmpty` は代わりに `Io.Error(DirectoryNotEmpty)` を発生させる。
++       `delete()` と `wipe()`、そして `overwritePreexisting` が必要とする。
++   entry #conditionally   `path` の削除を、空にしてから、または拒否して、`Tactic[Io.Error]` のもとで実行する
+
+@ 0 1 0 0dbb52defd668d2f19b5962311ffb154
++ entry .OverwritePreexisting   宛先がすでに存在するときのポリシー：先にそれを取り除くか、失敗するか
+
+% 1 1 0 0a6f28d24f9a0d661c8e74ab9e3a8cdf
+
+@ 0 7 0 149feee61a6152470fc25aad7dc0d37a
++       プレーンごとのポリシー（`OverwritePreexisting on Linux`）であり、その `#apply` が衝突しうる操作を包む。
++       `filesystemOptions.overwritePreexisting` は、操作の前に既存のエントリーを（スコープ内の `DeleteRecursively` を通して再帰的に）削除する。
++       `filesystemOptions.failOnPreexisting` は操作をそのまま実行し、バックエンドに `AlreadyExists` を発生させる。
++       `copyTo`、`copyInto`、`moveTo`、`moveInto`、`hardLinkTo`、`symlinkTo`、`symlinkInto`、`Device.create` が必要とする。
++   entry #apply   `path` で操作を実行する。その前に既存のエントリーを取り除くかどうかはポリシーによる
+
+@ 0 1 0 1bdc2bfe6fc05d090cb30cad36eacfe5
++ entry .CreateNonexistentParents   宛先の親が存在しないときのポリシー：それを作るか、失敗するか
+
+% 1 1 0 005e7771fc2324b0168330307ee8a6a0
+
+@ 0 6 0 0cdc2e180a770bd615b17baeca9c2ba1
++       プレーンごとのポリシー（`CreateNonexistentParents on Linux`）であり、その `#apply` が操作を包む。
++       `filesystemOptions.createNonexistentParents` は存在しない祖先をそれぞれ作り、`filesystemOptions.requireParents` はバックエンドが `Nonexistent` を発生させるに任せる。
++       `copyTo`、`moveTo`、`hardLinkTo`、`symlinkTo`、`Device.create` が必要とする。
++       `create[…]` の操作はこれを参照しない。
++       代わりに呼び出しの場で `CreateFlag.Parents` を受け取る。
++   entry #apply   `path` で操作を実行する。その前に存在しない祖先を作るかどうかはポリシーによる
+
+@ 0 1 0 01728ebf1541ae8210c5be394e2cce59
++ entry .filesystemTraversal   ディレクトリツリーをたどる順序。それぞれ名前でインポートする given
+
+% 1 1 0 06898f6506128d84011a3eaf0112591c
+
+@ 0 5 0 183c1712bdabe22c1ef981c399f9d6f1
++       `descendants` はディレクトリのサブツリー全体を生み出し、スコープ内の `TraversalOrder` は、各ディレクトリをその中身の前に置くか後に置くかを決める。
++       どちらも既定ではない。
++       ツリーをたどるプログラムは、どちらかを名前でインポートする。
++       前順は各ディレクトリをその中身の前に置き、ツリーを表示したりコピーしたりするときに必要な順序になる。
++       後順はそれを中身の後に置き、ツリーを削除したり合計したりするときの順序になる。
++       同じツリーを、両方の順序でたどる。
+
+% 2 1 0 058cbff1a7e197890786fb73ead22ec0
+
+% 0 1 0 186c81a8d53a044b1c225db852b32ee6
+
+% 1 1 0 19addeccc4657ff516b11ef8756a39db
+
+% 2 1 0 09e81e9222dbd2f60f0b3b38cb403c9b
+
+% 3 1 0 10924276f9422aa81dc9645d17f6b06e
+
+% 4 1 0 1152d6778f27c19f037ca2239dd7da20
+
+% 0 1 0 111c8ae308e9c4cd1f82fb1c8c32c841
+
+% 1 1 0 1844d92389e8d75c01e148e238da9616
+
+% 3 1 0 155675aebbd5032b023a88db2bbffd3b
+
+% 0 1 0 05acf7d3ea26ae04081b8b9bf21f3d9e
+
+% 0 1 0 0611781664ff14ac1171ca3adee7b6c2
+
+% 1 1 0 05cda53d19530c121baa1571e4a54d1f
+
+% 2 1 0 12c9d7cd84150d041f2e19b63ff4a4ff
+
+% 3 1 0 1cca393d3cf4a15507474d6d5f8743a4
+
+% 4 1 0 044c0a5c4ec14a9c06ace2dcc0bc187d
+
+% 0 1 0 12ee47242eb45ca81d0b806db392376a
+
+% 1 1 0 0c4802407b4de5c50b296414ee9ce4b3
+
+% 3 1 0 119a5b59658b4e6613e13bb30d9ac9eb
+
+% 0 1 0 02db0ba2f6a947431182b705270de28c
+
+% 1 1 0 0fe792dd2616dc820081f155f6ed841b
+
+% 2 1 0 13b478099600d67f1d0473f2a73d6132
+
+@ 0 1 0 028b46612d73ca850134f81f5bdf2ed9
++       兄弟はバックエンドが列挙する順序で現れ、ソートされない。
+
+% 0 1 0 145c1c1c5e949b4e0fc69972d5538282
+
+% 0 1 0 0a2e015dad1d34f90ccf431c18ea72c6
+
+@ 0 2 0 18d219968351219c1f5aa6e36235d7b2
++   entry .preOrderTraversal   `TraversalOrder.PreOrder`：ディレクトリ、続いてその子孫
++   entry .postOrderTraversal   `TraversalOrder.PostOrder`：ディレクトリの子孫、続いてそのディレクトリ
+
+@ 0 1 0 044fae6ba87b2ddc180fa98d40264dea
++ entry .TraversalOrder   `descendants` がディレクトリをその中身の前に生み出すか、後に生み出すか
+
+% 1 1 0 010c0b06aa1a117c1638da92e431a5dc
+
+@ 0 5 0 1027fc51feb4cc9403399ca68cfe3cd5
++       `PreOrder` は各ディレクトリをその子孫の前に置き、ツリーをコピーしたり表示したりするための順序になる。
++       `PostOrder` はそれを後に置き、ツリーを削除するための順序になる。
++       ディレクトリは空になってからでなければ削除できないからである。
++       この値は `descendants` のコンテキストパラメーターであり、`filesystemTraversal` からインポートする。
++       `filesize()` と `checksum` は自分で `PreOrder` に固定する。
+
+% 0 1 0 078a1ea46d66e0ae10c6d1f5fd208f1e
+
+@ 0 1 0 0da2586349570e830d04aed16a033af8
++ entry .CreateFlag   `create[…]` がエントリーを作ること以外にしてよいこと：`Parents` または `Replace`
+
+% 1 1 0 19b30c9618a085b81d4b50edb19754a6
+
+@ 0 8 0 09b3684e4252cf711a9879cac37d6d45
++       フラグがなければ厳格である。
++       呼び出し側が呼び出しの場で別の指示をしない限り、親が存在しないエントリーを作ると `Nonexistent` の `Io.Error` が発生し、すでに存在するエントリーを作ると `AlreadyExists` が発生する。
++       `Parents` は存在しない祖先ディレクトリをすべて（スコープ内の `Umask` のもとで）作り、`Replace` はまずそのパスにある既存のエントリーを削除する。
++       それがディレクトリなら再帰的に削除する。
++       フラグは形式のあとの引数として与える：`path.create[Directory](CreateFlag.Parents)`、`path.create[File](CreateFlag.Replace)`。
++       これらは意図して `filesystemOptions` のポリシーにしていない。
++       作成時の破壊的な意図は、それが起こる場所で述べるものだからである。
+
+% 2 1 0 0d78e5d852e70cbb0dfe8917800694b5
+
+% 3 1 0 1a8add386e27c3ef12b2c00e075d63c4
+
+% 4 1 0 10f2edbf06e9da57024752ecb3690c00
+
+% 5 1 0 0889190c970b02c40b5d691872cd4ef4
+
+% 6 1 0 1e8b1ac6988fa4a317788775796a0f54
+
+% 7 1 0 1c405582748daaef138088535a2300d0
+
+% 0 1 0 0a7b5aa07b46feb80a6a0276bbc265be
+
+% 0 1 0 0a5a8aff5a3c97c3119a5e5b3e0caabe
+
+% 0 1 0 0a12390cdd31de271ff1686c50d98639
+
+% 0 1 0 07b21108e7d5aea8084034bd9d5cd5b8
+
+% 1 1 0 1d336c37b0aa6fde19464bff87377a64
+
+% 1 1 0 07330d6048a8a8720d4ffe380d8e5d79
+
+@ 0 1 0 075c69560d36a2ff0efe5dc4655127b8
++ entry .Explorable   プレーンのディレクトリを列挙する型クラス：`path.children`
+
+% 1 1 0 1a040be226adf91809e63f1a842851a3
+
+@ 0 10 0 0b8c88685c2d41270be94cd68718d7ef
++       `plane is Explorable` は、`Path on plane` を列挙できることを表す。
++       `FilesystemBackend` を持つすべてのプレーンは同じように探索する。
++       `.explorable` はバックエンドに子の名前を問い合わせ、それぞれを親に付け加える。
++       したがってこの型クラスは継ぎ目であって、ユーザーが実装するものではない。
++       `children`、`descendants`、`glob`、`filesize()`、`deleteRecursively` ポリシーを制約する。
++   entry .explorable   `FilesystemBackend` を持つ任意のプレーンに対する `Explorable`
++       暗黙のスコープにある。
++       必要なのはバックエンドだけである。
++   entry #children   ディレクトリの直接の子をパスとして返し、呼び出し側の戦術を通して `Io.Error` を発生させる
++       厳格である。
++       列挙の失敗（`Nonexistent`、`PermissionDenied`）は、チェーンの中に先送りされるのではなく、ここで発生する。
+
+@ 0 1 0 06b9e3cb7f69d3c6011e3a0088f38cde
++ entry .Substantiable   `existent()` の背後にある型クラス：値が存在するものを指しているかどうか
+
+% 1 1 0 0906a9afef4f774c1183cdce2b213896
+
+@ 0 5 0 1a83428a146bc80f170f22e5825e1043
++       `path.existent()` は、任意の `Substantiable` な値に対して定義されている。
++       Galilei のインスタンス `.substantiable` は、すべての `Path on <platform>` に使える。
++       全域的で（決して発生させない）、最後のシンボリックリンクをたどるので、ぶら下がったリンクは存在しないものとされる。
++       スコープ内の `Fdtable` が管理するパスは、ファイルシステムに問い合わせることなく、このプロセスにとっては存在するものとされる。
++       Hellenism は、`Path on Classpath` に対する別のインスタンスを提供する。
+
+% 2 1 0 1eb61cc4da5f76311d4d6aff2ba3852e
+
+% 3 1 0 16c7a0007d80aa9c1baf7c87f9374da5
+
+% 4 1 0 14303e34987702c601ab2e9e9d582e5f
+
+% 5 1 0 11fd3b4ed7d699201ed204a517a54e6d
+
+% 6 1 0 0957ce48934542e103c4054eefd316bf
+
+% 0 1 0 0963b48edaed15a010ed8d45c453a7a2
+
+% 0 1 0 1124dfa8d20129fc016b9f16eaaf3830
+
+% 1 1 0 19c125936de2815d09c1df0b08bed2e6
+
+% 0 1 0 0687814ef7ba7a310fea411b445e7ce2
+
+@ 0 2 0 0607b8b9204b22010c5f75444d7f6d46
++   entry .substantiable   任意のプラットフォームのパスに対する、バックエンドの `exists` を通した `Substantiable`
++   entry #existence   値が存在するかどうか
+
+@ 0 6 0 0bf2ec2b781a4c6a195008c85650b610
++ entry .existent   `value.existent()`：パス（または任意の `Substantiable`）が存在するエントリーを指しているかどうか
++     任意の `Substantiable` な値に対する拡張である。
++     `Path on <platform>` に対しては `FilesystemBackend` だけを必要とし、決して発生させない。
++     存在しない、読めない、またはぶら下がったエントリーは `false` である。
++     `open[Directory]` ブロックの中では、ハンドルのパスに対する対応する操作は `extant()` である。
++     レキシカルにインポートされた拡張がこれを覆い隠してしまうので、別の名前になっている。
+
+@ 0 7 0 1d0ae573d6807d42085822dde7fceadd
++ entry .children   `path.children`：ディレクトリの直接のエントリーをパスとして
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、そのプレーンの `Explorable` と `Tactic[Io.Error]` を必要とする。
++     結果はエントリーの完全なパスからなる `Chain[Path on plane]` であり、バックエンドが列挙する順序（ソートされない）で並ぶ。
++     各名前は実際のディレクトリエントリーから来たものなので、構築からして正しい形をしている。
++     存在しないディレクトリや読めないディレクトリは `Io.Error`（`Nonexistent`、`PermissionDenied`）を発生させ、ディレクトリでないものは JVM では空として列挙される。
+
+% 2 1 0 0f31cba710478cc90bbb3c63229f392d
+
+% 3 1 0 02a60a2d86c5220c04928a667159b751
+
+% 4 1 0 188c1f44851b84be1bef90a4ab194828
+
+% 5 1 0 1e165f89b269824e15c3ae92434124ed
+
+% 6 1 0 0bb77294ef20460f1f4299292d7efdba
+
+% 7 1 0 0f8a220188fe28510efb579120f4d1ba
+
+% 0 1 0 1b28f018832f288c0c5a7ab1978ed34f
+
+% 0 1 0 05aa4c1ffdf2ade81062b09c66ebe48c
+
+% 1 1 0 02d343c2b80f6f8f151e99bcdb33dc1b
+
+@ 0 6 0 0cc188e9920f6fdd1fc98858677c8cb5
++ entry .descendants   `path.descendants`：ディレクトリの下にあるすべてのエントリーを、スコープ内の `TraversalOrder` で
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、`DereferenceSymlinks`、（`filesystemTraversal` からの）`TraversalOrder`、そのプレーンの `Explorable` を必要とし、`Io.Error` を発生させる。
++     結果は遅延評価される `Chain[Path on plane]` である。
++     `preOrderTraversal` では各ディレクトリがその中身の前に来て、`postOrderTraversal` では後に来る。
++     `preserveSymlinks` のもとでは、リンクされたディレクトリの中には降りていかない。
+
+% 2 1 0 13ed81320c7cc02a080314e1cb9b9a82
+
+% 3 1 0 01f02e520cfd30ee01f448d7c2dc4dee
+
+% 4 1 0 06714bf976056747136ad924356a487f
+
+% 5 1 0 05f6e7b0c4157e60139394764e4138b5
+
+% 6 1 0 17e09a2401f1b38916de130ab9c33cbc
+
+% 7 1 0 0c46078df385e7570e5e0e0df5a2556a
+
+% 0 1 0 10ad931588c9903503db50a754b3c0b0
+
+% 1 1 0 00e30ff6298dabee059d494a011ec60c
+
+% 3 1 0 09b9c45005deff570ffbaef6a0bfa83b
+
+% 0 1 0 08828d229e2f6b4808b2450fd94bbad0
+
+% 1 1 0 1d7ed74ea04a3bc011592e2ab325b679
+
+@ 0 9 0 056254b7a00d6e711bc102ee4c9e20a3
++ entry .glob   `path.glob(pattern)`：ディレクトリの下にあり、`Glob` に一致するエントリー
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、そのプレーンの `Explorable`、`DereferenceSymlinks`、バックエンドを必要とし、`Io.Error` を発生させる。
++     パターンはディレクトリを指すべきパスからの相対であり、セグメントごとに展開される。
++     通常のセグメントは、現在のディレクトリの子を一致によって絞り込み（名前の中の `*` と `?`、文字クラスの `[bd]`）、ちょうど `**` であるセグメントは、任意の数の中間ディレクトリに一致する。
++     列挙されるのはパターンの背骨にあるディレクトリだけなので、`sub1/*.jar` が `sub2` をたどることはない。
++     セグメントの中に混ざった `**`（`a**b`）は、`*` と同じく一つの名前の中で一致する。
++     結果は重複のない `List[Path on plane]` である。
+
+% 2 1 0 1ecd8c385d1f72e304a10a8738649b8e
+
+% 3 1 0 107fd498eaa1c06e0077d79585f56b67
+
+% 4 1 0 16142fe539e1942206c542d40fcdf7a5
+
+% 5 1 0 0876db7d4da4b5d30e47e7746e348186
+
+% 6 1 0 0414729bc3eab5420d065a5ba0769add
+
+% 7 1 0 0fbba9665c27e7bc0b2bbb589327d3d4
+
+% 1 1 0 19219577798c00fb17bf8db3786ef3eb
+
+% 3 1 0 1d8bdcc604c76d6410b750f1a632e570
+
+% 0 1 0 03c542731517754905ef30372d641ee3
+
+% 0 1 0 088ffc939708ec221e0e781d314d2404
+
+% 0 1 0 0658618ae3b0e62907040b30f82964bf
+
+% 1 1 0 0c7eee34e6dd3b021d5234efc18319ca
+
+@ 0 7 0 13c1ef2d1a4fbc0c0fd3319aa4cec074
++ entry .write   `path.write(content)`：ファイルの内容全体を、一つの直接の操作で置き換える
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、`Streamable by Data` なもの（`Text`、`Data`、`Chain[Data]`、ストリーム）を受け取り、`Tactic[Io.Error]` を必要とする。
++     内容はまとめられて一度に書き込まれ、ハンドルを保持せず、スコープも必要としない。
++     存在するファイルは置き換えられ、存在しないファイルは作られるが、親が存在しなければ `Nonexistent` の `Io.Error` が発生する。
++     スコープ内の `Fdtable` が管理するパスには、代わりにその記述子を通して書き込む。
++     対になるのは、`Platform.pathReadable` を通した `read[Text]` である。
+
+% 2 1 0 0b1af4478e55a1370445eb7097e49953
+
+% 3 1 0 026d0ed018d86b401cdb81209f8d4747
+
+% 4 1 0 0de0bb165c58c06510015d011708860e
+
+% 5 1 0 162a968dd2ee3cbb11f0c554c1540cb8
+
+% 6 1 0 0aaf3d98ea078426038f32f7b6196012
+
+% 7 1 0 145bab2508be7fd714278a4f3fd4b4aa
+
+% 3 1 0 15ade5724a5332bc18cf31398d7b7049
+
+% 0 1 0 0fa60b46d892408818a9f1fd9888f11f
+
+% 0 1 0 05e092a7136a84aa164c399133a82af3
+
+% 1 1 0 0880c1ab7c12013418c390c9130c371d
+
+@ 0 8 0 1efd8d25fe014cef1f806f4a9bbac4a9
++ entry .expanse   `path.expanse(lambda)`：ファイルをマップせずに、スコープの中で位置を指定して読む
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、バックエンドと `Tactic[Io.Error]` を必要とする。
++     ラムダは `zephyrine.Expanse` を受け取る。
++     これは `size` と `read(offset, length)` を持ち、各読み取りは逐次的な位置から独立している。
++     呼び出しのスコープの間だけ有効であり、そのあとファイルは閉じられる。
++     すべてのバックエンドがこれを実装しているので、シークを前提とする形式のリーダーは `java.nio` もファイル全体のマッピングも必要とせず、2 GiB を超えるファイルも扱える。
++     ファイルの終わりにかかる読み取りは、存在するバイトを返す。
+
+% 2 1 0 013b7d767da87bf0013f89c11234d70b
+
+% 3 1 0 0bb527cbbad8abf30cb6b71bbf0a111f
+
+% 4 1 0 1c1f49857287a08b0a85b63606678d01
+
+% 5 1 0 1231de80bfca7b2716abd8e6512f0e88
+
+% 6 1 0 11634384b06a30701d49b9510e14134f
+
+% 7 1 0 123621854d51ad7309697247953655f7
+
+% 0 1 0 19984a552dfb484a07a36680b9439bf0
+
+% 0 1 0 11752f6fd8deacf51b315ed65156c0aa
+
+% 0 1 0 10b078b29068ba581c3a2ef275da9d96
+
+% 1 1 0 069781b768598a4d19ff0770698cf67a
+
+@ 0 6 0 17a366e9fd573a3f1ddec4e99e280d9c
++ entry .filesize   `path.filesize()`：ファイルの大きさ、またはディレクトリの下にあるすべてのものの大きさを `Bytes` で
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、そのプレーンの `Explorable` とバックエンドを必要とし、`Io.Error` を発生させる。
++     ファイルの大きさはそれ自身の大きさであり、ディレクトリの大きさはそれ自身の大きさにすべての子孫の大きさを加えたものである。
++     子孫はシンボリックリンクをたどらずにたどられる。
++     `soundness` アンブレラでコレクションの `size` と競合しないように、`size` ではなく `filesize` という名前になっている。
+
+@ 0 6 0 1d07104e646f50ce1ea068acc3c84aa6
++ entry .delete   `path.delete()`：エントリーを削除する。`DeleteRecursively` ポリシーが許せばディレクトリの中へ再帰する
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、`DeleteRecursively on plane`（`filesystemOptions.deleteRecursively` または `deleteOnlyEmpty`）、バックエンド、`Tactic[Io.Error]`、`Io.Event is Loggable` を必要とする。
++     存在しないエントリーは `Nonexistent` の `Io.Error` を発生させ、`deleteOnlyEmpty` のもとで空でないディレクトリは `DirectoryNotEmpty` を発生させる。
++     `Io.Event.Delete` をログに記録し、パスを返す。
+
+@ 0 4 0 17ad3c754bce5e081363893ed7acc87d
++ entry .wipe   `path.wipe()`：エントリーが存在すれば削除する。`DeleteRecursively` ポリシーが許せば再帰する
++     `delete()` と同じだが、存在しないエントリーはエラーにならないので、`wipe()` は冪等な形である。
++     実行後、そのパスは存在しない。
++     `deleteRecursively` のもとでは、ツリー全体を取り除く。
+
+% 2 1 0 0f90f185a24448d4004b8d61f09da6f1
+
+% 3 1 0 05f4f0a772a32a65181090e51a24905c
+
+% 4 1 0 04212b56c4a0385700aca37d9225026c
+
+% 5 1 0 02b872a377a352330a17bacc796b417a
+
+% 6 1 0 0967bbda0d0e9f13084d8c8196d23ffb
+
+% 1 1 0 1acd973708b0277a11cb56489f28c4ad
+
+% 1 1 0 122c676701082bc813428043c5358f5b
+
+% 0 1 0 1bae8b589f39e2a20b0a5628373afe88
+
+% 0 1 0 07e4608cbb114ea40ea9acf62e4b3b58
+
+% 0 1 0 10e82323f54988cf00743cec94803d1d
+
+% 1 1 0 1242d3ff73a37b591cb4585b31b04993
+
+@ 0 4 0 02332befee2cbfc712242659d4f48b7b
++ entry .volume   `path.volume()`：エントリーがあるストレージボリューム。名前とファイルシステムの種類で
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、バックエンドを必要とし、`Io.Error` を発生させる。
++     `Volume` の `volumeType`（`ext4`、`apfs`、`btrfs`、`ntfs`、…）は、ストレージの軸の抽出子 `Ext4`、`Apfs`、`Btrfs`、`Ntfs` が検査するものである。
++     WASI は `Unsupported` を発生させる。
+
+@ 0 6 0 0ce33e8049ccb24919ab43a84a0abb09
++ entry .entryIdentity   `path.entryIdentity`：エントリーのデバイス番号と inode 番号、または `Unset`
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、バックエンドを必要とする。
++     `Stat.Identity` は、そのデバイス上でファイルを一意に指す。
++     同一性の等しい二つのパスは、一つのファイルへのハードリンクである。
++     全域的であり、プラットフォームがそれを記録しない場合（WASI、および POSIX 以外の JVM）には、発生させるのではなく `Unset` になる。
++     単に `identity` ではなく `entry()` にちなんだ名前になっているのは、`identity` ではアンブレラがインポートされるところで proscenium の関数と競合するからである。
+
+% 2 1 0 084658adfac14b031dbdd420384693f9
+
+% 3 1 0 02229abae201cee70ad89c3f145d938f
+
+% 4 1 0 14564c3d7652218c015dc7b102b8fc38
+
+% 5 1 0 087a127698f288e514415b6c7196c3c7
+
+% 6 1 0 104070e715e4693d1d619b7d1c31b988
+
+% 0 1 0 07b46ffdb1eacfb817ae8bedbb4b6306
+
+% 0 1 0 0cda49e73f967315078ebab5109b9b6f
+
+% 0 1 0 1f28c63a05dd5272005c744a545e6aa0
+
+% 1 1 0 059e2565817142511ca7acd4025309c1
+
+@ 0 6 0 017bd50721cf0c7d17c069568ec68354
++ entry .entry   `path.entry()`：パスが指すエントリーの種類
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、`DereferenceSymlinks` とバックエンドを必要とし、`Io.Error`（存在しないパスには `Nonexistent`）を発生させる。
++     結果は `Entry` のオブジェクト（`File`、`Directory`、`Symlink`、`Fifo`、`Sock`、`BlockDevice`、`CharDevice`）のいずれかであり、`Symlink` になるのは `preserveSymlinks` のもとでだけである。
++     `dereferenceSymlinks` のもとでは、リンクはそのターゲットの種類を報告する。
+
+% 2 1 0 0e89106a0ecf422a0118bc1c3c192475
+
+% 3 1 0 1f9e148839da73ff07bfe90e16aa5ef9
+
+% 4 1 0 1507edc02b4749ff033e48bfbbf56a35
+
+% 5 1 0 196ae7ae72f755821c540a29ec681d06
+
+% 6 1 0 15660db7dd7ac1cc1ce481ee85abd8ab
+
+% 0 1 0 04164f01682606db1cb435c1e15b1246
+
+% 1 1 0 16b4f7b2cc8438b5026bd2bc35b8e3cd
+
+% 3 1 0 1d605e1bc2b2ca6513813b91140b71a3
+
+% 0 1 0 0569ca8d725cf9b7173a0bf6f0fd4679
+
+% 0 1 0 0d2e4293168ba8071b5df318e964472f
+
+% 0 1 0 138b4c9a56a944e8146f7456ecb906f2
+
+% 0 1 0 118c711cd618e8c30bf7d3a0baeec593
+
+% 0 1 0 1eb28004e3cf2d3a0be2f3530af23fb5
+
+% 1 1 0 179467ac2eb689c91cc6d0d0fc51fb59
+
+@ 0 8 0 18eb92c81b9a5cbc1c6ab72fcc0a6126
++ entry .copyTo   `path.copyTo(destination)`：スコープ内のポリシーを参照して、エントリーをあるパスへコピーする
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、`OverwritePreexisting on plane`、`DereferenceSymlinks`、`CreateNonexistentParents on plane`、バックエンド、`Tactic[Io.Error]`、`Io.Event is Loggable` を必要とする。
++     `failOnPreexisting` のもとでは、既存の宛先は `AlreadyExists` を発生させ、`overwritePreexisting` のもとでは、先に取り除かれる。
++     `requireParents` のもとでは、親が存在しなければ `Nonexistent` が発生する。
++     ディレクトリは再帰的にではなく、空のディレクトリとしてコピーされる（JVM の `Files.copy`）。
++     `Io.Event.Copy` をログに記録し、宛先を返す。
+
+% 2 1 0 04e8ad39345490ac09dbd37a0bd829ba
+
+% 3 1 0 1a37d542d95e11af015088d521dddb03
+
+% 4 1 0 1bc88026edc0e9a607dec26a0684ca99
+
+% 5 1 0 1dac8afddfde9ecd1491af0128a31042
+
+% 6 1 0 10af32c96c07fcec03dc416753e6c5e3
+
+% 7 1 0 1b2be1454b0cacff13afff6db95c069a
+
+% 8 1 0 1e2638cfc4b8c59501288548bfd64aab
+
+% 9 1 0 0bc17c1f184ea0c1029d409fd15f816b
+
+% 2 1 0 18897d3006dc6ca1021e352b89fafab3
+
+% 3 1 0 0f8851e0cceb36310640cb26d72de13b
+
+% 3 1 0 19be0b2a3868a5ba1718063a49504dda
+
+% 0 1 0 0b8915f6db4637e10ed3c79a28aa5ca6
+
+% 1 1 0 1c248ff0e1a901f313ea4393033920bf
+
+@ 0 5 0 101738394c261de708dc8c1c0776119c
++ entry .copyInto   `path.copyInto(directory)`：名前を保ったまま、エントリーをディレクトリの中へコピーする
++     `copyTo(directory / path.name)` と同じである。
++     宛先はディレクトリを指し、その下でエントリー自身の名前が使われる。
++     `OverwritePreexisting on plane`、`DereferenceSymlinks`、バックエンド、`Tactic[Io.Error]` を必要とする。
++     宛先のディレクトリが明示的に指定されるので、親は作られる。
+
+@ 0 8 0 004bfca49603dff30dbce52bc28d14c6
++ entry .moveTo   `path.moveTo(destination)`：スコープ内のポリシーを参照して、エントリーをあるパスへ移動する
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、`OverwritePreexisting on plane`、`MoveAtomically`、`DereferenceSymlinks`、`CreateNonexistentParents on plane`、バックエンド、`Tactic[Io.Error]`、`Io.Event is Loggable` を必要とする。
++     `moveAtomically` のもとでは、移動は単一の名前変更であり、ボリュームをまたぐ移動は `Unsupported` になる。
++     `moveNonAtomically` のもとでは、コピーと削除になることがある。
++     厳格なポリシーのもとでは、`copyTo` と同じく `AlreadyExists` と `Nonexistent` が生じる。
++     `Io.Event.Move` をログに記録し、宛先を返す。
+
+% 2 1 0 1f81faf2083afb5c0d00f45b795ee793
+
+% 3 1 0 1dde5e0e36479cbe12e85ad03314ff69
+
+% 4 1 0 08e34cd31e54dafe1e2f227768367ef4
+
+% 5 1 0 0180df65777fd80719f1201e3d2e1447
+
+% 6 1 0 046650d580c2414504317d36fd2dd91a
+
+% 7 1 0 0ecc3537cae7ed9716caa1153aaf7ce0
+
+% 8 1 0 0f9bace75dfb25270f4bd783e2316553
+
+% 9 1 0 1aa14496af0b6af917d322e522c388be
+
+% 10 1 0 1c45e057855be3761ca61007e21ed343
+
+% 11 1 0 1c3070837d2b73920690fd94b02b94fc
+
+% 12 1 0 1d7cb250e45bcccc1940f7db76ff2573
+
+% 0 1 0 058b94bb1c0d8eb10fc1cd853f316027
+
+% 0 1 0 129462d9447645f20134d700c9cb2e45
+
+% 1 1 0 01746c89397fb64d017227d4853f98b1
+
+@ 0 4 0 034098b5a87e9bc70b82c18508831171
++ entry .moveInto   `path.moveInto(directory)`：名前を保ったまま、エントリーをディレクトリの中へ移動する
++     `moveTo(directory / path.name)` と同じである。
++     `OverwritePreexisting on plane`、`MoveAtomically`、`DereferenceSymlinks`、バックエンド、`Tactic[Io.Error]` を必要とする。
++     親は作られる。
+
+@ 0 6 0 0108ba8dbe0f043d171e5b134c2f4569
++ entry .hardLinkTo   `path.hardLinkTo(link)`：このエントリーへのハードリンクを `link` に作る
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、`OverwritePreexisting on plane`、`CreateNonexistentParents on plane`、バックエンド、`Tactic[Io.Error]`、`Io.Event is Loggable` を必要とする。
++     レシーバが既存のエントリーで、引数が新しい名前である。
++     実行後、両者は同じ `entryIdentity` を持つ。
++     `Io.Event.HardLink` をログに記録し、リンクのパスを返す。
+
+@ 0 6 0 01b889997b9fb60b185a1a94ee8a8dc8
++ entry .symlinkTo   `path.symlinkTo(link)`：このパスを指すシンボリックリンクを `link` に作る
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、`OverwritePreexisting on plane`、`CreateNonexistentParents on plane`、バックエンド、`Tactic[Io.Error]`、`Io.Event is Loggable` を必要とする。
++     レシーバがターゲットで、引数が作られるリンクである。
++     リンクにはレシーバの完全なテキストが格納される。
++     `Io.Event.Symlink` をログに記録し、リンクのパスを返す。
+
+% 2 1 0 1c868c03d29cf0100a613aed48efa1a2
+
+% 3 1 0 1d4c9d5f0aa6561f0ea1a26d5d59686d
+
+% 4 1 0 0744be79b580c22d18330230ded238b4
+
+% 5 1 0 06f5b8fe65adc3480b13c3b9a3b07103
+
+% 6 1 0 0ca75024f74c40981a8b81bf074ef7e9
+
+% 7 1 0 15f426c4b034858c1453d321709c22f0
+
+% 1 1 0 035bc91b151b184e00cdee7d8fb3a4f1
+
+% 2 1 0 166eb961f2f9bb1a10e6469d4691c3e7
+
+% 3 1 0 072d10c7749fc2a906548a98cd01712b
+
+% 0 1 0 1f1014a3c56bab9414a0e4186fe5155b
+
+% 0 1 0 02fa03ec3c4e23d702e70405d3d869f3
+
+% 1 1 0 1ea034c2467972bf1f6e06cb26db1d4a
+
+@ 0 4 0 054e380fa99797471ac1b48fb5cae232
++ entry .symlinkInto   `path.symlinkInto(directory)`：このパスへのシンボリックリンクをディレクトリの中に作る
++     `symlinkTo(directory / path.name)` と同じである。
++     `OverwritePreexisting on plane`、`MoveAtomically`、`DereferenceSymlinks`、バックエンド、`Tactic[Io.Error]` を必要とする。
++     親は作られる。
+
+@ 0 7 0 143cfcbe7fd29179062e0833a486258a
++ entry .canonical   `path.canonical()`：すべてのシンボリックリンクを解決した、ファイルシステムが知っているとおりのパス
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、バックエンドを必要とし、`Io.Error` を発生させる。
++     バックエンドの `realPath`（`realpath(3)`）が同じプレーン上のパスとして組み立て直されるので、一つのエントリーへの二つの経路（シンボリックリンクを通るもの、あるいは macOS の `/tmp` と `/private/tmp`）は同じパスに正規化される。
++     パスをキーとするレジストリが格納すべきなのはこれである。
++     エントリーは存在しなければならない（そうでなければ `Nonexistent`）。
++     異なるルートの下にある実際のパス（別のドライブへの Windows のジャンクション）は `Unsupported` であり、WASI も同様である。
+
+% 2 1 0 1fc7b4f8f210a46018d7a0d6e88ccb91
+
+% 3 1 0 0165681335df9eff1039612c32164faf
+
+% 4 1 0 0cf0af800ef9c7ee0967984abdd6cae1
+
+% 5 1 0 16e6d56f46cf63260ec955c84ea80c6b
+
+% 6 1 0 1f6ac4413dad259914d3e2c013d1370a
+
+% 7 1 0 1c69c9dd9c4ef8d80394856d000143b3
+
+% 0 1 0 088d42a8ada860a11f42d9a5223c2ac8
+
+% 0 1 0 1510e35d91c978cd0c5e75653a166a44
+
+% 1 1 0 0bf4752dda2610090b994d6f0087d922
+
+@ 0 5 0 012747f982a30c3817725ad38e9de910
++ entry .modified   `path.modified[Instant]()`：エントリーが最後に変更された時刻
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、バックエンドを必要とし、`Io.Error` を発生させる。
++     結果の型は呼び出し側が選ぶ。
++     任意の `Instantiable across Instants from Long` でよく、aviation の `Instant` や、`instantiables.epochMillisecondsInstantiable` を通したエポックミリ秒の単なる `Long` を使える。
++     最後のシンボリックリンクをたどる。
+
+@ 0 2 0 0e3eab9d2d025f0301fbb82428f12eb3
++ entry .accessed   `path.accessed[Instant]()`：エントリーが最後にアクセスされた時刻
++     アクセス時刻に対する `modified()` である。
++     `noatime` でマウントされている場合は更新されない。
+
+@ 0 5 0 081e4c57c08094fc0b914cf48ce38c9c
++ entry .created   `path.created[Instant]()`：Windows のエントリーが作られた時刻
++     `Path on Windows` だけに対する拡張である。
++     NTFS は作成時刻を記録するが、ほとんどの POSIX ファイルシステムは記録しないからである。
++     作成時刻を記録しないファイルシステムでは、`Unsupported` の `Io.Error` を発生させる。
++     ほかのプラットフォームでは、`creation()` が同じアクセサーであり、ストレージのファイルシステムが `CreationTimed` であることを条件とする。
+
+@ 0 6 0 1d0cf0b500d35db61b2c69612f17ef3d
++ entry .creation   `path.creation[Instant]()`：`CreationTimed` なファイルシステム上のエントリーの作成時刻
++     `Path on plane over <transport <: CreationTimed>` に対する拡張である。
++     これは、`Btrfs(path)`、`Apfs(path)`、`Ntfs(path)` との照合によって、ストレージのファイルシステムが作成時刻を記録するものであると確かめられたパスである。
++     したがって、`Stat.created` がオプショナルであるのに対し、これは全域的である。
++     ここで値がなければそれはバックエンドの失敗であり、`Unsupported` の `Io.Error` として報告される。
+
+% 2 1 0 03bef631c9471b2c065c8b0d43eecd5a
+
+% 3 1 0 0366e6ea2ad6a067054b4a8ea32c0e52
+
+% 4 1 0 0a324b4933c6703912445354960789e6
+
+% 5 1 0 0222b60bbad3591f10c4e2a284344b2b
+
+% 6 1 0 134789fe41cfa3011f467b09c1d1ae94
+
+% 0 1 0 191f14928d005ae617a4f7f5f0245f57
+
+% 1 1 0 1a1eda4401ad10b9053aea5321203f44
+
+% 3 1 0 1cc243259caf2fd01780547a6e635748
+
+% 0 1 0 18b05cc5e92d484c160b9975b14490db
+
+% 0 1 0 0e05f24aa62f601103bd5e91a51a0a02
+
+% 0 1 0 0b3de82be92b142712f25a6dd161396c
+
+% 0 1 0 09ca18fcb2d751ee03525d1d5f64b9dc
+
+% 1 1 0 0fe730918d4c7936019af1e5c969b4db
+
+@ 0 4 0 034e20127f2b9c070666935a04515cce
++ entry .readable   `path.readable()` と `path.readable = false`：現在のユーザーに対するエントリーの読み取りパーミッション
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、バックエンドを必要とする。
++     `FilesystemAttribute.Readable` を返す。
++     その `apply()` は現在のフラグ（全域的）であり、その `update` はフラグを設定し、プラットフォームが拒否すれば `PermissionDenied` の `Io.Error` を発生させる。
+
+@ 0 2 0 1e45b227c87f9be018d5c05430467d52
++ entry .writable   `path.writable()` と `path.writable = false`：現在のユーザーに対するエントリーの書き込みパーミッション
++     `readable` と同じで、`FilesystemAttribute.Writable` を返す。
+
+@ 0 3 0 00d89acdb44800d91f56e9cdaf4f70ea
++ entry .executable   `path.executable()` と `path.executable = true`：POSIX のエントリーの実行パーミッション
++     `Path on <plane <: Posix>` だけに対する拡張であり、`FilesystemAttribute.Executable` を返す。
++     Windows には実行ビットがない。
+
+% 2 1 0 00f0021b0175ade7026a793122a6aaf8
+
+% 3 1 0 18e249c725d3eb7b166fcc82d7f2e6cf
+
+% 4 1 0 1c4b549dbbf13c4d170330e0e95e1a98
+
+% 5 1 0 07e2b8aad658978d13dc44432fdc2be9
+
+% 6 1 0 13f691514b9ba73b1141f1d005d8d17f
+
+% 7 1 0 1abd27d9254826bc1c464d42106727b2
+
+% 0 1 0 0a5a6c4a53bc19f519bdac724dbd8d4f
+
+% 0 1 0 19bb4f4c3f5fa1051dc79140310b8acf
+
+% 0 1 0 0838eb153d43fc3b0dea19aca47e1d9f
+
+% 1 1 0 03c3d4ad5897765411f4e76b92d2026e
+
+@ 0 3 0 03731c3a180e14ad1cf657afdd5451f6
++ entry .hidden   `path.hidden()`：プラットフォームの慣習によってエントリーが隠されているかどうか
++     POSIX では名前の先頭の `.`、Windows では隠し属性である。
++     バックエンドを必要とし、`Io.Error` を発生させる。
+
+@ 0 4 0 14fe7fe38cbba5970860ba7e75906a52
++ entry .touch   `path.touch()`：エントリーの変更時刻を現在に設定する
++     任意の `Path on <plane: Filesystem>` に対する拡張であり、バックエンド、`Tactic[Io.Error]`、`Io.Event is Loggable` を必要とする。
++     シェルの `touch` と違い、存在しないファイルを作らない。
++     その場合は `Nonexistent` が発生する。
++     `Io.Event.Touch` を `fine` でログに記録する。
+
+@ 0 3 0 05d0a1905d429e011ddc4532f1ffb3a0
++ entry .hardLinks   `path.hardLinks()`：POSIX のエントリーを指すハードリンクの数
++     `Path on <plane <: Posix>` に対する拡張であり、`DereferenceSymlinks` とバックエンドを必要とし、`Io.Error` を発生させる。
++     作られたばかりのファイルは一つ持つ。
+
+@ 0 6 0 05feb91120e5f2ed0c0eb8b406d2b6f8
++ entry .attributes   `path.attributes()`：エントリーの拡張属性の名前
++     `Path on plane over <transport <: Attributed>` に対する拡張である。
++     これは、`Ext4(path)`、`Btrfs(path)`、`Apfs(path)`、`Ntfs(path)` との照合によって、ストレージのファイルシステムがユーザー定義の属性をサポートするものであると確かめられたパスである。
++     バックエンドを必要とし、`Io.Error` を発生させる。
++     照合しなければこの拡張は使えない。
++     その型は、ファイルシステムが不明であることを表している。
+
+@ 0 6 0 0d8a07972057519101130d8dc6bbb46d
++ entry .attribute   `path.attribute[Data](name)` は拡張属性を読み、`path.attribute(name, data)` はそれを設定する
++     二つのオーバーロードがあり、どちらも `Path on plane over <transport <: Attributed>` に対するもので、バックエンドを必要とし、`Io.Error` を発生させる。
++     読み取り側は結果について総称的で、`Aggregable by Data`（`Data`、`Text`）を通してデコードし、属性がなければ `Unset` を与える。
++     設定側は値を `Data` として受け取る。
++     Linux では、名前は `java.nio` の `UserDefinedFileAttributeView` が示すとおりの `user.` 名前空間のもので、接頭辞は付かない。
+
+% 2 1 0 0fb5f72a870a40521ee107d2a8791ca2
+
+% 3 1 0 000cfc1e417d2c590e69fa3b4099efdc
+
+% 4 1 0 01fe8d6bb3e075570e2629e82214e641
+
+% 5 1 0 044b30e36263132a0ca411f627db302f
+
+% 6 1 0 11e78355df6b82df046f6e850e7f01c0
+
+% 7 1 0 1b815652ceb02d83118eeda70b8d1c06
+
+% 0 1 0 15c07107ecc102db14fce71c817e4d80
+
+% 0 1 0 030447e8c2bd0f4f16e7efd5d81af261
+
+% 0 1 0 00cbe7ee029f58ba10345e3a28e05fc8
+
+% 1 1 0 1c0e67a80144dde5146659dd491d7940
+
+% 0 1 0 0b56416edf80703005a33e19fdb6a333
+
+% 0 1 0 1619a2a445d8a2b1090721eea7d2703a
+
+% 1 1 0 0213a16a271738d814364f50329be42d
+
+% 0 1 0 058516a99e13f27906df66ac58e42dd1
+
+% 0 1 0 116639bba0d13b561940d61d7a33b05b
+
+% 1 1 0 0796a103ca28020f000ce6c577b987ef
+
+@ 0 6 0 0e09edd2b368d9400cc9ef4a21b2a331
++ entry .subvolume   `path.subvolume()`：エントリーが格納されている btrfs のサブボリューム
++     `Path on plane over Btrfs` に対する拡張であり、バックエンドを必要とし、`Io.Error` を発生させる。
++     Btrfs はすべてのサブボリュームに独自の匿名デバイス番号を与えるので、サブボリュームのルートは、デバイス番号が変わらない間だけ上へたどることで、`stat` だけから見つけられる。
++     結果はそのルートを示す `Btrfs.Subvolume` である。
++     エントリーの同一性を報告できないプラットフォームは `Unsupported` を発生させる。
+
+@ 0 4 0 12e41d71598130b302992165252212e8
++ entry .subvolumeRoot   `path.subvolumeRoot`：btrfs のエントリーがそれ自体サブボリュームのルートであるかどうか
++     `Path on plane over Btrfs` に対する拡張であり、バックエンドを必要とする。
++     btrfs のサブボリュームのルートはすべて inode 256 なので、これは `existent()` と同じく全域的である。
++     inode を読めないエントリーは、これを条件とするものから見る限り、サブボリュームのルートではない。
+
+@ 0 5 0 12a9a91f9d81c17614958aa2fce589b0
++ entry .file   `open[File]` ブロックの中のコンテキストの `Handle` を、値として
++     `path.open[File](mode): handle ?=> …` の中では、ハンドルはコンテキストパラメーターである。
++     `file` は束縛子を宣言せずにそれを指すので、`path.open[File]()(file.stream.read[Data])` は開かれたファイルを読む。
++     これは transparent inline なので、ハンドルの、権限で細分化された正確な型が保たれる。
++     `file.write(…)` は、モードが `Write` を与えたときにだけコンパイルされる。
+
+% 2 1 0 17d4e313d31698c21c4bb126611a41aa
+
+% 3 1 0 115afa5d9164576116436556fbd67e26
+
+% 4 1 0 1fba18c24302458d1ff5af157238ab7d
+
+% 5 1 0 0fb6c2741244cbb213c09473ad59e7c5
+
+% 6 1 0 1fc3dcd9d62ba8350458c438d9aa4436
+
+% 7 1 0 1e9ca9fe1d20b740136e533eb42cadc2
+
+% 0 1 0 0976fcd7c81a6091146925894e2d1048
+
+% 0 1 0 0216b81b3d0cb8160283b57a003abd6c
+
+% 1 1 0 1097639b5bcd0c6917008003cf70632d
+
+@ 0 3 0 032e1b2d4683d2a417b92de43895a4ba
++ entry .dir   `open[Directory]` ブロックの中のコンテキストの `Directory.Handle` を、値として
++     ディレクトリのスコープに対する `file` である。
++     `path.open[Directory]()(dir.base.entries)` は、束縛子を指定せずに、開かれたディレクトリを列挙する。
+
+@ 0 1 0 06cf8571f9550d581c8fcc64908b7f43
++ entry .Entry   ファイルシステムのエントリーがなりうるもの：`File`、`Directory`、`Symlink` などの共通の型
+
+% 1 1 0 0271936e602c1a3e1ea0f9092bf923ab
+
+@ 0 7 0 074652a33667d0ef0917a18e4fb2461f
++       `path.entry()` と `Stat#entry` は、エントリーのオブジェクト `File`、`Directory`、`Symlink`、`Fifo`、`Sock`、`BlockDevice`、`CharDevice` のいずれかで答える。
++       `UnixEntry` と `WindowsEntry` は二つの部分集合である。
++       `File`、`Directory`、`Symlink` は両方にあり、それ以外は Unix にだけあるので、Windows のパスのエントリーに対する照合は FIFO を扱わなくてよい。
++       各オブジェクトは、`open` と `create` に渡す同じ名前の*形式*でもある（`open[File]`、`create[Directory]`）。
++       ものの種類と、それを開く方法が名前を共有している。
+
+% 0 1 0 1aca02636b6b524e1a78ad913fb32631
+
+% 1 1 0 04d9eaf551585e160caa16301e3296d5
+
+% 2 1 0 1167a54a4a2d1566037806974f3cbb1e
+
+@ 0 1 0 04932879856f56691c0fd7567a2a441e
++ entry .UnixEntry   Unix に存在するエントリーの種類：`File`、`Directory`、`Symlink`、`Fifo`、`Sock`、`BlockDevice`、`CharDevice`
+
+@ 0 1 0 1890e296d035a55111dc98177be96fd6
++ entry .WindowsEntry   Windows に存在するエントリーの種類：`File`、`Directory`、`Symlink`
+
+@ 0 1 0 0ca63a7078847c531bf0c5d8db90743b
++ entry .File   通常のファイル。エントリーの種類として、またその内容のために開いたり作ったりする形式として
+
+% 1 1 0 1e1c1a609bc8d52e0feded68fb5d0d3b
+
+@ 0 5 0 14fb549d03a47fb41051c43cacb0cfc2
++       オブジェクト `File` としては、通常のファイルに対して `entry()` が返すものである。
++       トレイト `File` としては、`path.open[File](mode, flags*)` の形式であり、これはブロックの間ファイルの内容に対する `Handle` を与える（`FileOpenable` を参照）。
++       また、空のファイルを作るか、スコープの中でファイルを書き上げる `path.create[File](flags*)` の形式でもあり（`Creation.FileCreatable` を参照）、`Slice(path, offset, extent).open[File](…)` の形式でもある。
+
+% 2 1 0 0a4d8adc9a87ab9b16481992bfe48a42
+
+% 3 1 0 0397bd3c9cf173f0067d31707a3a9a0c
+
+% 4 1 0 16ceb20dadfa14780781b1014020b15b
+
+% 5 1 0 0e0c1c53b68382f1077bea3edc2414cb
+
+% 6 1 0 1a270edc03fe8a8111754badf698c4ac
+
+% 7 1 0 1f748f52da20ccca00448c589f29968d
+
+% 9 1 0 021664f40996542e1e5a991b72b1a0ec
+
+% 0 1 0 185e699e9fa4be020e0477511a7b098c
+
+% 1 1 0 1c88175f98d5af0a054cda04f2f3c459
+
+% 0 1 0 0c070c2141b282c80f023d31274d01c8
+
+% 0 1 0 118f38cfae6267d917d7b96429ceaf97
+
+% 2 1 0 15db19be5d1c88c808d1dbb97726ed2a
+
+% 0 1 0 00d9f1481f1ad5b809eba240dba2b231
+
+% 0 1 0 14f5a5d08f1772511e5c55c3fab9d6ff
+
+% 1 1 0 158728f2fdff110815266d4d0d8ace26
+
+% 1 1 0 094cba00d55dc3ee1f665b3194fb51ff
+
+% 1 1 0 13f13c13438cc0280dd730d3c97c6d3b
+
+% 1 1 0 0ea037a6d404dcf410647199721378c9
+
+@ 0 1 0 1445df68533f0d9915a2ca91c3af15db
++ entry .Directory   ディレクトリ。エントリーの種類として、またスコープ付きの限定されたアクセスのために開く形式として
+
+% 1 1 0 175911f55eef994615ace3548672d366
+
+@ 0 9 0 10a3e65c6e4b5f811ab4c4fde15780e6
++       オブジェクト `Directory` としては、ディレクトリに対して `entry()` が返すものである。
++       トレイト `Directory` としては、`path.open[Directory](mode)` の形式であり、これは `Directory.Handle` とともにブロックを実行する。
++       ハンドルから導かれたパス（`dir / "src" / "main.scala"`）は、そのハンドル独自の新しいプレーン上にあるので、`..` はコンパイルされず、ある開かれたディレクトリのパスを別のディレクトリのもとで使うことはできず、ハンドルから導かれたものはブロックより長く残らない。
++       スコープの中でのサブツリーの操作は `contents`、`overwrite`、`extant`、`entries`、`remove` であり（`Subtree` を参照）、それぞれモードが選んだ権限によって制限される。
++       `path.create[Directory](flags*)` はディレクトリを作るか、同じ種類のスコープの中でディレクトリを書き上げる。
+
+% 2 1 0 1d585103e660d9a7081fca854a7c11c7
+
+% 3 1 0 0f91b9be282f7c1215d29d32e6b4b976
+
+% 4 1 0 01bc492fa7f6fa291b140cbc407d0a6c
+
+% 5 1 0 128e07e648358e890aaff26763988ca0
+
+% 6 1 0 0043d95ac3def69d103c44dc200b8fa8
+
+% 7 1 0 183c1673e17914d513806401c38b7ccf
+
+% 9 1 0 1a14517d204c769917f5b2af31506d57
+
+% 11 1 0 16a9d7dc85ab275e1ec432abcc5d11b7
+
+% 0 1 0 0b8917a87469bcb5186576c656c72dca
+
+% 0 1 0 07dab1d5e7d49e890adaa4fc49fa0e4c
+
+% 0 1 0 1e9ab1201adce0f5174c9cfeb1660aa0
+
+% 1 1 0 1bfcfc3593fd02530ddd4e5a1c41c8d2
+
+@ 0 5 0 1133c1eee4dcb7b307bc35e147675c3f
++       開くときには、エントリーが存在してディレクトリであることを確かめ（そうでなければ `IsNotDirectory` の `Io.Error`）、スコープを `AccessRegister` に登録する。
++       重なり合う `Read` と `Write` のスコープはいくつでも共存できるが、`Exclusive` のスコープは、重なり合うサブツリーの他のどの open ともどちらの向きでも衝突し、二つ目の open は `Busy` の `Io.Error` を発生させる。
+
+% 0 1 0 0b512145c5c33079162c46c3754c56f5
+
+% 1 1 0 1e9c7bf7cbe9ce491e7958695cd84ef8
+
+% 0 1 0 0d82f3fd1690b96e143ef6d1b9f65282
+
+@ 0 1 0 0198748d2068120f1cb1e2741238c027
++   entry .Handle   `open[Directory]` ブロックが保持するケイパビリティ：ディレクトリをルートとする新しいプレーン
+
+% 1 1 0 173bb575a288fbbd17520b79bc3bc301
+
+@ 0 19 0 05f8e230e0787f0608d88cd5fb069ca0
++         各ハンドルの `#Plane` は `Subtree` の新しい抽象サブタイプなので、スコープの中で作られたパスは、そのハンドルだけに対して型付けされる。
++         `#Under` はその下にある実際のプラットフォームであり、`#stem` は実際のディレクトリである。
++         `dir / "name"` は新しいプレーン上のパスを作り、`#base` はそのプレーンのルート（ディレクトリそのもの）である。
++         ハンドルは排他的なケイパビリティなので、保存することも返すこともできない。
++     entry #Plane   ハンドル独自の新しいプレーン。`Subtree` のサブタイプ
++     entry #Under   ディレクトリがある実際のプラットフォーム
++     entry #stem   開かれたディレクトリの実際のパス
++     entry #atoms   ハンドルを開いたときの `Mode` のアトム。実行時の権限の縮小とレジスターの検査のために使う
++     entry #base   ハンドルのプレーンのルート：`Path on Plane` としての開かれたディレクトリ
++         `dir.base.entries` はディレクトリそのものを列挙する。
++     entry #/   `dir / "name"`：ハンドルのプレーン上の、ディレクトリの下にあるパス
++         レキシカルスコープにある総称的な `/` 拡張に覆い隠されないように、拡張ではなくメソッドになっている。
++         名前はコンパイル時に `Subtree.Rules` に照らして検査されるので、`dir / ".."` はコンパイルされない。
++     entry #resolve   ハンドルのプレーン上のパスが示す、`#stem` の下にある実際のパス
++         サブツリーの操作がディスクに到達するために呼び出すものである。
++         それらが transparent inline なので公開されている。
++   entry .Openable   `path.open[Directory](mode)` の背後にある `Openable` インスタンス
+
+% 1 1 0 119db955b83aa26902e62f42621de0ae
+
+@ 0 4 0 0542f3b0464937ce06fa674d63cc290f
++         名前の付いたクラスであり、任意のプラットフォームのパスに対して `Platform.directoryOpenable` がインスタンス化する。
++         バックエンドと `Tactic[Io.Error]` を必要とし、フラグを取らない。
++         結果は、モードの権限で細分化された `Directory.Handle { type Under = filesystem }` である。
++     entry #open   エントリーがディレクトリであることを確かめ、レジスターを獲得し、ハンドルとともにブロックを実行する
+
+@ 0 6 0 1185404abfd288281e332f090b78f8ca
++ entry .Fifo   名前付きパイプ。エントリーの種類として、また `create[Fifo]()` が作る形式として
++     オブジェクト `Fifo` としては、FIFO に対して `entry()` が返すものである。
++     トレイト `Fifo` としては、パイプを作る `path.create[Fifo](flags*)` の形式である（JVM では `mkfifo` を通して作る。
++     WASI では `Unsupported`）。
++     存在するのはインスタンス化する形式だけである。
++     どちらの端を開いても相手が現れるまでブロックするので、作成のスコープの中で FIFO を書き上げることは `Unsupported` として拒否される。
+
+@ 0 3 0 0138c8894dcedd730af454e391de8b18
++ entry .BlockDevice   エントリーの種類としての、ブロックデバイスのノード
++     ブロックデバイスに対して `entry()` が返すものである。
++     オブジェクトはエントリーの種類であり、トレイトはマーカーである。
++     `Device.create`（JVM）がこれを作る。
+
+@ 0 2 0 192e8a1c4bf9f9270ceba7bbfd53c140
++ entry .CharDevice   エントリーの種類としての、キャラクターデバイスのノード
++     端末のようなキャラクターデバイスに対して `entry()` が返すものである。
+
+@ 0 1 0 12d6fbbe0cd4cd280fdfab5820ac867f
++ entry .Symlink   シンボリックリンク。エントリーの種類として、またそのパスによってリンクを指す値として
+
+% 1 1 0 074732a6cc4c71791bb8a1bb7ea292ea
+
+@ 0 5 0 007648e71f3d604008eed8eb93db3dc4
++       オブジェクト `Symlink` は、`preserveSymlinks` のもとでリンクに対して `entry()` が返すものである。
++       `dereferenceSymlinks` のもとでは、リンクは代わりにそのターゲットの種類を報告する。
++       ケースクラス `Symlink[plane](path)` は、リンクのパスを値として運び、`symlink:<path>` として表示される。
++       リンクは `symlinkTo` と `symlinkInto` で作り、格納されたテキストは `FilesystemBackend#linkTarget` で読む。
+
+% 0 1 0 0d395ddd1c4c0a881fcbe6ff4a2c67a2
+
+@ 0 1 0 0ce66c934ee429801c2266409bec62e9
++   entry #path   リンクのパス
+
+@ 0 1 0 13a3b76f3d7efb030d1435ae53fbeec9
++ entry .Sock   Unix ドメインソケット。エントリーの種類として、またバインドされたソケットのチャンネルとして
+
+% 1 1 0 0ad3e9818a50606d14571601f91963df
+
+@ 0 4 0 07314b8b41c716cf06ba3b430a1cd19c
++       オブジェクト `Sock` は、ソケットファイルに対して `entry()` が返すものである。
++       ケースクラス `Sock(channel)` は、JVM で `create[Sock]` のスコープが保持する値であり、生きていてバインドされた `ServerSocketChannel` であって、スコープが終わると閉じられる（`socketCreatable` を参照）。
++   entry #channel   バインドされた `java.nio.channels.ServerSocketChannel`
+
+@ 0 1 0 195ceb84d3f37ded08fc293b3f751e8a
++ entry .Stat   エントリーのメタデータを一つの値にしたもの：種類、大きさ、タイムスタンプ、inode のフィールド
+
+% 1 1 0 0dd6d7e46f9f4bca0074258f799e90fd
+
+@ 0 6 0 07dfd5fa169318d804dc0c6c0e6c4e89
++       `FilesystemBackend#stat` が返すものであり、`entry()`、`filesize()`、`modified()`、`accessed()` はそれぞれその一つのフィールドを読む。
++       タイムスタンプはエポックミリ秒である。
++       作成時刻を記録しないファイルシステム（ほとんどの POSIX ファイルシステムと WASI）では、`created` は `Unset` である。
++       `mode` は `st_mode` 全体であり、`ar` が格納するのと同じく、パーミッションだけでなく種類のビットも含む。
++       `device` は `st_rdev` であり、デバイスノードに対してだけ意味を持つ。
++       プラットフォームが Unix の inode を持たない場合（Windows、WASI）、inode の四つのフィールドはすべて `Unset` である。
+
+% 2 1 0 1faa42b3fc4b9bd40ee0f50b546a66b3
+
+% 3 1 0 1cd08e379257d9cf1fb4c15a39c7e939
+
+% 4 1 0 040c05ce2752d79c1084d1ffe2390c7d
+
+% 5 1 0 1742a2e92bf83d3b10f729d797b98130
+
+% 6 1 0 04df0f42229beecc01db644b50cee533
+
+% 7 1 0 16283f6750daf140009141fce3c81e6a
+
+% 2 1 0 1e22956a6c8810d91edfc0817f08a010
+
+% 0 1 0 039c5683266b9fb419317fd694636965
+
+% 0 1 0 119f118a2f143d2b0683f6a1e0f6ff36
+
+% 0 1 0 1b602f81bea864b81b9c982671576e57
+
+% 1 1 0 1ed198f9996b060d1c5ebd432f4b93e5
+
+@ 0 1 0 0d5d48eac88c78870ee80fa7321a06f6
++   entry .Identity   デバイス上でのエントリーの同一性：デバイス番号と inode 番号
+
+% 1 1 0 00db4c3e87b1527512ecaf4e5ad5ffdc
+
+@ 0 14 0 1bf0b80eef7c11d80b57edde62a7cfdd
++         同一性の等しい二つのパスは、一つのファイルへのハードリンクである。
++         Btrfs のサブボリュームの境界はデバイス番号から読み取られ（すべてのサブボリュームが独自のデバイス番号を持つ）、btrfs のサブボリュームのルートはすべて inode 256 である。
++         `Path#entryIdentity` がこれを読む。
++     entry #device   デバイス番号（`st_dev`）
++     entry #inode   inode 番号（`st_ino`）
++   entry #entry   エントリーの種類：`File`、`Directory`、`Symlink`、`Fifo`、`Sock`、`BlockDevice`、`CharDevice`
++   entry #size   バイト単位の大きさ
++   entry #modified   最後の変更時刻。エポックミリ秒で
++   entry #accessed   最後のアクセス時刻。エポックミリ秒で
++   entry #created   作成時刻。エポックミリ秒で、記録されていなければ `Unset`
++   entry #mode   種類のビットを含む `st_mode` 全体。Unix の inode がなければ `Unset`
++   entry #user   所有者の数値のユーザー ID、または `Unset`
++   entry #group   所有グループの数値の ID、または `Unset`
++   entry #device   `st_rdev`、つまりデバイスノードが参照するデバイス、または `Unset`
+
+@ 0 1 0 1e6df376f4e189a80142a2c1de8c7a67
++ entry .Volume   ストレージボリューム：その名前とファイルシステムの種類
+
+% 1 1 0 0d404628b43ad4b9086e9ff035a24afd
+
+@ 0 5 0 1cb2940ad71097830a0390cfc228308a
++       `path.volume()` が返すものであり、JVM では `FileStore` の名前（たとえば `/dev/sda1`）と種類（`ext4`、`apfs`、`btrfs`、`ntfs`）である。
++       `volume[name:type]` として表示される。
++       ストレージの軸の抽出子は、小文字にした種類を、それぞれのファイルシステムの名前と比較する。
++   entry #name   プラットフォームが報告するとおりのボリュームの名前
++   entry #volumeType   プラットフォームが報告するとおりのファイルシステムの種類
+
+@ 0 4 0 17a1f8cca7693e00096d2590e4486270
++ entry .CreationTimed   作成時刻を記録するストレージのファイルシステム：`Btrfs`、`Apfs`、`Ntfs`
++     パスの型の、ストレージのファイルシステムの軸にあるシールされたマーカーである。
++     `Path on plane over <transport <: CreationTimed>` として照合されたパスは、全域的な `creation()` アクセサーを得る。
++     ほとんどの POSIX ファイルシステムは作成時刻を記録しないので、`Stat#created` はオプショナルである。
+
+@ 0 3 0 1971ea8338a772330bd5e877d258e521
++ entry .Attributed   拡張属性をサポートするストレージのファイルシステム：`Btrfs`、`Ext4`、`Apfs`、`Ntfs`
++     ストレージのファイルシステムの軸にあるシールされたマーカーである。
++     `Path on plane over <transport <: Attributed>` として照合されたパスは、`attributes()` と二つの `attribute` アクセサーを得る。
+
+@ 0 1 0 0c38a9f292fbfdc9030a22a62fbc038b
++ entry .Btrfs   btrfs ストレージファイルシステム：パスを btrfs に格納されたものとして型付けする抽出子
+
+% 1 1 0 11c35f27b905a3351da20458b3515828
+
+@ 0 8 0 174bc50fcf23791710faedae0d4bac3c
++       エントリーがどのファイルシステムに格納されているかによって、それが持てるメタデータが決まる。
++       これはプラットフォームとは独立しており、パスはその構文からそれを知ることができない。
++       そこでこの軸は、各ファイルシステムの抽出子を通して、実行時の探査によって確かめられる。
++       `case Btrfs(path) =>` は `path` を `Path on plane over Btrfs` として束縛し、この細分化によって、制限された拡張 `subvolume()`、`subvolumeRoot`、`attributes()`、`attribute`、`creation()` が使えるようになる。
++       探査は小文字にした `path.volume().volumeType` である。
++       失敗する探査（読めないボリューム、または WASI）は、単に一致しない。
++       `Btrfs` は `CreationTimed` でもあり `Attributed` でもある。
+
+% 2 1 0 0e050e6fb70ca059026c9d5a8d20c70c
+
+% 3 1 0 0329e2d02ed62cb70c0d68353985f9ee
+
+% 4 1 0 1380ef01f20036550581a11c2766a0f8
+
+% 5 1 0 1bb6ca59a631629c175e55e7b4bcceb3
+
+% 6 1 0 11f7aed04e941b5b1825ccde9e32f1cb
+
+% 7 1 0 1e6f3471d6bdeef90b726b7a78162b3f
+
+% 0 1 0 0dd43eb501ae29a51137f6f590cdea19
+
+% 0 1 0 13e9657dcec56fb11cc571028181b027
+
+% 0 1 0 062325ba0c97fa2f058eac07f67719bc
+
+% 0 1 0 0e5f47e238cd79d81c285c5c8bd5a545
+
+% 0 1 0 16249109449a58ec05e8033ed91b0d84
+
+% 1 1 0 19649243316daddb1322bf5ec181329a
+
+% 0 1 0 0611151568774f16195c76f840634105
+
+% 0 1 0 0899c1b5dc38a2b0175c09ad4c2dcd3a
+
+% 0 1 0 1fbd652a8f4ca1e913c401979f72b4e2
+
+% 0 1 0 1fb055cd2aef62e81f62a68ec31df1b6
+
+@ 0 3 0 01bf7b9eb808adb1144686603fb93071
++   entry .unapply   btrfs に格納されたパスに一致し、それを `Path on plane over Btrfs` として型付けする
++       `FilesystemBackend on plane` を必要とする。
++       Scala の抽出子はそうしなければならないので、`Option` を返す。
++   entry .Subvolume   btrfs のサブボリューム。それがルートとするディレクトリによって指される
+
+% 1 1 0 0a5649114fb839f5112113348e77a782
+
+@ 0 6 0 048237337b85c35101a25b02d88d1926
++         `subvolume()` が返すものである。
++         Btrfs は一つのファイルシステムを、独立してスナップショットを取れるサブツリーに分割するので、エントリーのサブボリュームは、それがどこに格納されているかの一部である。
++         サブボリュームの数値の ID、UUID、世代は運ばれない。
++         btrfs はそれらを、どのバックエンドも発行できない `ioctl` を通してしか公開しないが、ルートは `stat` だけから復元できる。
++     entry #root   サブボリュームのルートディレクトリ。`Path on plane over Btrfs` として
+
+@ 0 1 0 137c3f7a43d9cf940ad3bb1659890f7d
++ entry .Ext4   ext4 ストレージファイルシステム：パスを ext4 に格納されたものとして型付けする抽出子
+
+% 1 1 0 134e0607bdb17c25146cee11a88463c9
+
+@ 0 5 0 1a785a6230a61f8317209698f6777b8d
++       `case Ext4(path) =>` は `path` を `Path on plane over Ext4` として束縛する。
++       これは `Attributed` であるが（したがって `attribute` と `attributes()` が使える）、`CreationTimed` ではない。
++       探査は `path.volume().volumeType` であり、`FilesystemBackend on plane` を必要とする。
++       軸については `Btrfs` を参照。
++   entry .unapply   ext4 に格納されたパスに一致し、それを `Path on plane over Ext4` として型付けする
+
+@ 0 1 0 180ae5e5ae84217406e069ed27775ba8
++ entry .Apfs   APFS ストレージファイルシステム：パスを APFS に格納されたものとして型付けする抽出子
+
+% 1 1 0 13d7584978256a301eda21427b8b6480
+
+@ 0 4 0 0da60e4aa48caaa61beb3f12f3593c2a
++       `case Apfs(path) =>` は `path` を `Path on plane over Apfs` として束縛する。
++       これは `CreationTimed` でもあり `Attributed` でもある。
++       macOS は作成時刻を記録し、拡張属性をサポートする。
++       `FilesystemBackend on plane` を必要とする。
++       軸については `Btrfs` を参照。
++   entry .unapply   APFS に格納されたパスに一致し、それを `Path on plane over Apfs` として型付けする
+
+@ 0 1 0 007312b2689ac8ac022268fb8f473608
++ entry .Ntfs   NTFS ストレージファイルシステム：パスを NTFS に格納されたものとして型付けする抽出子
+
+% 1 1 0 1f98d20c2394246e0591e4e7f0e81c8a
+
+@ 0 4 0 117ce2a58ef0651d0993613cab07db12
++       `case Ntfs(path) =>` は `path` を `Path on plane over Ntfs` として束縛し、これは `CreationTimed` でもあり `Attributed` でもある。
++       `Windows` のもとで、またマウントされた NTFS ボリュームについては `Linux` のもとで意味を持つ。
++       `FilesystemBackend on plane` を必要とする。
++       軸については `Btrfs` を参照。
++   entry .unapply   NTFS に格納されたパスに一致し、それを `Path on plane over Ntfs` として型付けする
+
+@ 0 1 0 0b492fbdb3ebfb5f169fe12a67873ba5
++ entry .FilesystemAttribute   エントリーの大まかなパーミッションのフラグに対する型付きのビュー。`()` で読み、`=` で設定する
+
+% 1 1 0 1bbc23d2e170cbce13fdfbf9befe9ca3
+
+@ 0 5 0 12a84cad3b3708c519a5be2f9c68797a
++       `path.readable`、`path.writable`、`path.executable` はそれぞれこれを一つ返す。
++       パスに対する小さなオブジェクトであり、その `apply()` はフラグを（全域的に、現在のユーザーの視点から）読み、その `update` はフラグを設定する。
++       したがって構文は `path.readable()` と `path.readable = false` になる。
++       設定は、プラットフォームが拒否すれば `PermissionDenied` の `Io.Error`（WASI では `Unsupported`）を発生させる。
+
+% 0 1 0 1dbca219a062250d144a59315bb25e99
+
+% 0 1 0 07255d82193924800ab330ff672a3a07
+
+% 0 1 0 18e5f1cbe12106d1018aaf3733d5baa7
+
+@ 0 9 0 0c1bcc821540908a1dc191584533d6c8
++   entry .Readable   任意のプラットフォームのパスの読み取りフラグ
++     entry #apply   現在のユーザーがエントリーを読めるかどうか
++     entry #update   読み取りフラグを設定し、拒否されれば `Io.Error` を発生させる
++   entry .Writable   任意のプラットフォームのパスの書き込みフラグ
++     entry #apply   現在のユーザーがエントリーに書き込めるかどうか
++     entry #update   書き込みフラグを設定し、拒否されれば `Io.Error` を発生させる
++   entry .Executable   POSIX プラットフォームのパスの実行フラグ
++     entry #apply   現在のユーザーがエントリーを実行できるかどうか
++     entry #update   実行フラグを設定し、拒否されれば `Io.Error` を発生させる
+
+@ 0 1 0 159c064bb61409c20b559355f90bf27d
++ entry .Handle   開かれたファイルのエンドポイント。`open[File]` または `create[File]` ブロックのスコープの間保持される
+
+% 1 1 0 15e74c2d2c5a05891d19bf3e009cf920
+
+@ 0 7 0 145f62830a2ea7251d22de97be2d269c
++       `Handle` は `open[File]` ブロックが保持するケイパビリティである。
++       チェーンとしての内容全体（`#reader`、`#writer`）と、バックエンドが自身のバッファーから提供するストリーミングの形（`#source`、`#intake`）を持つ。
++       排他的なケイパビリティなので、保存することも、返すことも、捕捉することもできず、ブロックが終わるとファイルは閉じられる。
++       それで何ができるかは型に表れている。
++       モードの `Grant` がそれを細分化するので、`Read` だけで開かれたハンドルに対する `handle.write(…)` はコンパイルされず、コンパニオンにある `Streamable`、`Writable`、`Sink` の given はそれぞれ必要な権限によって制限される。
+
+% 2 1 0 1e3978037becc2d60c017d85d1e0f311
+
+% 3 1 0 0d044541abe10d151c4c098e0d14cb20
+
+% 4 1 0 0c5e8b5598d70dc90f6a1c8886df8ebd
+
+% 5 1 0 02367bf4592c5b6207d0e6d400246595
+
+% 6 1 0 1ff4ec29844803d50f979d1b1d39922e
+
+% 7 1 0 0bbe8ad0589d1f301ee6fec41f762dbd
+
+% 9 1 0 17749f07b94e29040da0ed2a2b75d3ad
+
+% 0 1 0 1edce88f0f3dbd0012e0a79640790477
+
+% 0 1 0 0753a465d7b48c5f0858390920db01c9
+
+% 0 1 0 1d31938daa9d208d00483716221d1a4f
+
+% 0 1 0 0c819834acfc3a3c0b18952c37b8373a
+
+% 1 1 0 0be97d2b71e17bc21950f4a88c9f203b
+
+@ 0 6 0 1181a76db7143243022c8f4749184e86
++       ファイルによって途中で切れた読み取りや書き込みは `Truncation.Error` を発生させる。
++       これは、ハンドルが作られたときではなく呼び出しの場で戦術として受け取られる。
++       `path.read` と `path.write` は、それを `Reason.Physical` の `Io.Error` に対応付ける。
++       `#read` と `#write` は型クラスの given であると同時に拡張でもある。
++       スコープ付きのケイパビリティの細分化された型に対して型クラスを召喚すると、キャプチャ検査のもとで失敗することがあるからである。
++       拡張は代わりに、ソースまたは結果の型に対して型クラスを解決する。
+
+% 1 1 0 0710ed12144e7bf4003d57992644aa71
+
+% 1 1 0 0231a8a987a8b4af0ec98fed26a8fb21
+
+% 0 1 0 0dc17d52738f073e05f959b167f7c46b
+
+@ 0 20 0 14d7edb8c7e204550f0b47379a5c856d
++   entry .whole   チャンク全体のエンドポイントだけを持つハンドル。このプロセスのファイルではないソースのために
++       `Handle.whole(reader, writer)` は、内容全体を与える関数とそれを受け取る関数からハンドルを構築し、ストリーミングの形はそこから導かれる。
++       クライアントの記述子がデーモンに運ばれたときに、`Fdtable.Descriptor` が提供するのはこれである。
++   entry .streamable   `Read` を与えるハンドルは `Streamable by Data` なので、`read[T]` と `stream` が使える
++       召喚されたときの `Tactic[Truncation.Error]` を保持する。
++   entry .writable   `Write` を与えるハンドルは `Writable by Data` なので、ストリームを書き込める
++       召喚されたときの `Emit[Truncation.Error]` を保持する。
++   entry .sink   `Write` を与えるハンドルは `Sink by Data over Credit` である
++   entry .stream   `handle.stream`：`Read` を与えるハンドルに対する、`Chain[Data]` としての内容全体
++   entry .read   `handle.read[T]`：`Read` を与えるハンドルに対する、`T` としてデコードされた内容
++       任意の `Chain[Data] is Readable to T`（`Data`、`Text`、または形式のリーダー）を通して、`Tactic[Truncation.Error]` のもとで行う。
++   entry .write   `handle.write(source)`：`Write` を与えるハンドルに対して、`Streamable by Data` なものを何でも書き込む
++       `Chain[Data]`、`Text`、`Data`、またはストリームであり、`Emit[Truncation.Error]` のもとでハンドルの受け口へ送り込まれる。
++   entry #reader   `Chain[Data]` としての内容全体
++   entry #writer   `Chain[Data]` を内容として書き込む
++   entry #source   `Stream[Data] over Credit` としての内容。バックエンドのバッファーから提供される
++   entry #intake   ファイルに書き込む `Intake[Data] over Credit`
+
+@ 0 1 0 182f9d88853f325203728681ed571937
++ entry .FileOpenable   `path.open[File](mode, flags*)` の背後にある `Openable` インスタンス
+
+% 1 1 0 1bb57a992f733a060ba06e81bd25c2e9
+
+@ 0 9 0 068ee15e4623bf2b12f94fbdd11b8cf9
++       任意のプラットフォームのパスに対して `Platform.openable` がインスタンス化する名前付きのクラスであり、バックエンド、`Tactic[Io.Error]`、`Umask`、`Every[Fdtable]` を必要とする。
++       モードのアトムは `OpenFlag`（`Read`、`Write`）になり、ブロックはモードの権限で細分化された `Handle` を受け取る。
++       `Exclusive` は `OpenFlag.Exclusive` には変換されない（POSIX の `O_EXCL` が扱うのは排他的な*作成*である）：代わりに、オープンを `AccessRegister` に登録するので、ファイルのオープンはディレクトリのスコープと同じプロセス内の調停に参加する。そして `OpenFlag.Lock` を加えるので、バックエンドはプロセスをまたぐ場合のために OS の勧告ロックを取る。
++       `Shared` は `OpenFlag.LockShared` で同じことをする。
++       競合するオープンは、`OpenFlag.Await` が待つように求めない限り、`Busy` を伴う `Io.Error` を発生させる。
+
+% 2 1 0 0bde7bd27a07b207179378c306d8a386
+
+% 3 1 0 0b62f24ed214003512424c87be9c2e69
+
+% 4 1 0 1292348fc56ee6ee0817434fd8a1f965
+
+% 5 1 0 169a4f5255220b4f08d8ce8b77ace859
+
+% 6 1 0 1c440c43242e47d616e8d299d93b02fe
+
+% 7 1 0 1ebacc127efb49d91e21da417616fb66
+
+% 9 1 0 11a9c6009532c372193baa2bb2c2877a
+
+% 0 1 0 0c19d5f0844195ee15d7f2cd0bfba716
+
+% 1 1 0 1a9d710990b2e80108d3f5836102c996
+
+% 2 1 0 01b6d1de4ba810c20703deabd4df2b68
+
+@ 0 2 0 08cda79599e272631c817b7d7ec42ef9
++       スコープにある `Fdtable` が扱うパス（たとえば `/dev/fd/3`）は、ファイルシステム、レジストリ、バックエンドを参照する前に、そのテーブルを通して開かれる。
+
+% 1 1 0 017c16ed0b0b7027053054ba9db62487
+
+% 0 1 0 0a4bdff3d3ea0f4219cb9498ec60b34b
+
+% 0 1 0 0387525ffb7246e30f9d95d203c60a72
+
+@ 0 1 0 0e9e5f2865ba0c941c8450f037e82f57
++   entry #open   モードのフラグでファイルを開く。モードが求めるレジストリとロックのもとで行う
+
+@ 0 1 0 028295d36b169e51006208fd1be8b9ae
++ entry .OpenFlag   ファイルの内容を開くための、プラットフォームに依存しないオプション
+
+% 1 1 0 01710ec154ccb4be0d1487f2942d34b1
+
+@ 0 3 0 1552e4e97001c3d81e8b273ac74e1095
++       `Read` と `Write` は `open` 呼び出しの `Mode` が、`Append` は `Eof(path)` を開くことが与え、残りはモードの後に渡せる：`path.open[File](Write, OpenFlag.Create, OpenFlag.Truncate)`。
++       すべて `FilesystemBackend` が解釈する。
+
+% 2 1 0 1c1111712cbf52dc1b9217a5d4fe0c93
+
+@ 0 9 0 0b05e6ec838b88e109cab073cf4927aa
++       column  フラグ
++       column  効果
++       row  `Create`  ファイルが存在しなければ、スコープにある `Umask` のもとで作る。これがなければ、存在しないファイルを開くと `Nonexistent` を発生させる
++       row  `Exclusive`  `Create` とともに使い、ファイルが存在すれば `AlreadyExists` で失敗する（`O_EXCL`）
++       row  `Truncate`  開くときにファイルを空にする
++       row  `Sync`、`Dsync`  同期的な書き込み。データとメタデータの両方、またはデータのみ
++       row  `NoFollow`  シンボリックリンクを通して開くことを拒否する
++       row  `Lock`、`LockShared`  オープンの間、排他的または共有の OS の勧告ロックを保持する
++       row  `Await`  `Busy` でただちに失敗するのではなく、ロックとプロセス内の登録を取得できるまでブロックする
+
+% 1 1 0 18a8caaa5ba4e0f41b514fe33f4bd2ea
+
+@ 0 3 0 0abf1b708544b58a1c2a1a94423b21c5
++       `FileOpenable` は、モードが `Exclusive` または `Shared` を与えるときに `Lock` または `LockShared` を加える。ロックできないバックエンド（WASI）は、黙ってロックしないのではなく、オープンを `Unsupported` として拒否する。
+
+@ 0 1 0 101f12d4468bed3b075481e7683e8827
++       JVM の `FileChannel` では、`Read` と `Append` を組み合わせられない。
+
+% 1 1 0 0bbad929aa5291350621c8bb76b2945a
+
+@ 0 1 0 10b5247e249292761f9cfc1015ac1125
++ entry .Shared   共有ロックのモード：`path.open[File](Read & Shared)`
+
+% 1 1 0 1687a2ee6c46934616f9875af43d39bd
+
+@ 0 7 0 1c36fe133fa72b2205c1cb27fa476cc9
++       aperture の `Read`、`Write`、`Exclusive` に並ぶ三つ目の `Mode` であり、ファイルシステムの関心事なので、ここで定義される。
++       一つのファイルに対する `Shared` のオープンは、プロセスをまたいでも共有の OS の勧告ロックを通していくつでも共存できるが、`Shared` のオープンは `Exclusive` のオープンとどちらの方向でも競合する：排他的なオープンは、共有の保持者を待つ（`OpenFlag.Await` を伴う場合）か、ただちに `Busy` で失敗する。
++       `Read` は意図的にこれを含意しない：共有ロックであっても取れば、普通の読み取りのすべてが排他的にロックする者と競合することになるからである。
+
+% 2 1 0 183637bb156f49fb009b7d5728052a56
+
+% 3 1 0 0a2155f201d659971ec9d9f19928bfa0
+
+% 4 1 0 0afcee213f34230e1460fcd8addf4c3f
+
+% 5 1 0 16354a1e8a2eb035187ae1d3474c3577
+
+% 6 1 0 014e5a63c5fb39770f581b4ae83871c0
+
+% 7 1 0 0192ab4c59c0c0ab1dae94be0074bd0d
+
+% 9 1 0 06a6d72fe5da29911f2234cb7b59f784
+
+% 0 1 0 1529a953ca6eae98072df4a6846df980
+
+% 1 1 0 06560e6ffdde8bc4079734b6c6ad78c6
+
+% 2 1 0 1edbbf3dca40be38064896da0716a57b
+
+@ 0 1 0 00248271986c800d1e892856313953da
++   entry .Grant   `Shared` モードがハンドルの型に与える権限
+
+@ 0 1 0 1a39aaedeff3a5240d55ee1995ddd75e
++ entry .Creation   `path.create[Directory]`、`create[File]`、`create[Fifo]` の背後にある `Creatable` インスタンス
+
+% 1 1 0 173dfadb951c048710d4c580580227d5
+
+@ 0 7 0 0f6be9a35c3049cb174a8545df576076
++       `path.create[Directory]()` と `path.create[File]()` は空のエントリーを作る。ブロック形式（`path.create[Directory](): dir ?=> …`、`path.create[File](): handle ?=> …`）は、新しく生まれたエントリーの中身を書く。ディレクトリには新しいプレーンの `Directory.Handle` を、ファイルには書き込み用の `Handle` を使い、スコープから抜け出す例外は何も残さないことが保証される。
++       どちらも、スコープにある `Umask` と与えられた `CreateFlag` を参照する：`Parents` がなければ存在しない親は `Nonexistent` であり、`Replace` がなければ既存のエントリーは `AlreadyExists` である。
++       それぞれ `Io.Event.Create` をログに記録する。
+
+% 2 1 0 133692678ed0e6df1a4f12906c027a9a
+
+% 3 1 0 09015c039e058fbb168dcc8da23e10d5
+
+% 4 1 0 025b8ae652f18b870de2f0d96296dba0
+
+% 5 1 0 1ad3aa882ec4b352098ddb1bb35f8d8e
+
+% 6 1 0 1c9f0af233c38e8703306c1c4d4bba52
+
+% 7 1 0 053167e31dc1f5c116f6a4e056479b66
+
+% 0 1 0 14052444c88833000f4e2eea4087423b
+
+% 0 1 0 1fbdf93b4a250a1406daabca75a3dbd7
+
+% 1 1 0 19845151e4a2cc640854ad322f22bf30
+
+% 0 1 0 0aea98f9edd41a630ed80c17fe6f1319
+
+% 0 1 0 1d3f9e874ebfc5bb0bd6e769ede3abdb
+
+% 1 1 0 16cf1d88cf8b279c136bb6db6a69674e
+
+@ 0 3 0 0a52b8ee30150a1d10cd9b4208fe0501
++       インスタンスは `Platform.fileCreatable`、`directoryCreatable`、`fifoCreatable` がインスタンス化するので、インポートは不要である。このオブジェクトに直接届くのは `.wipe` のためだけである。
+
+% 0 1 0 1801bbb8ab726c9d13e303ff7bf7468d
+
+% 1 1 0 0098d2dcec48932d0b22dd1011988376
+
+% 1 1 0 04fdef44567522ff1fadc54fc3a4d6ad
+
+% 2 1 0 117eb7bcd5cf6a0512578238ed0b41c8
+
+@ 0 6 0 1d281b82ec4216041045f60aef4ac4d6
++   entry .wipe   `Creation.wipe(path)`：エントリーと、その下にあるすべてのものを再帰的に削除する
++       失敗した作成のスコープと `CreateFlag.Replace` が行う再帰的な削除であり、他のスコープを持つ後始末が共有できるように公開されている。
++       `DeleteRecursively` ポリシーは受け取らず（再帰こそがその目的である）、`Io.Error` を発生させる。
++       ポリシーに従うパスの操作は `wipe()` である。
++   entry .DirectoryCreatable   ディレクトリを作るか、新しいプレーンのハンドルの上のスコープの中でその中身を書く
+
+% 1 1 0 12630d0c67d29a6f0a6f5cf3cb8849d2
+
+@ 0 8 0 1a76cf487a9221ff0c0f246f6da8f93f
++         `create[Directory]` のためのインスタンスである。
++         その権限は `Read & Write` であり、結果は `Directory.Handle { type Under = filesystem }` である。
++         新しく生まれたディレクトリは呼び出し側が選んだ見える名前を持つので、`Scratch` のスコープと違い、開いている他のディレクトリと同じく `AccessRegister` に参加し、競合するオープンは `Busy` を発生させる。
++         ブロックから抜け出す throwable は、伝播する前にディレクトリを消去する。
++     entry #make   `Parents`、`Replace`、`Umask` に従ってディレクトリを作る
++     entry #create   ディレクトリを作り、その上のハンドルでブロックを実行する。失敗すると消去する
++   entry .FileCreatable   空のファイルを作るか、一時的な兄弟ファイルに中身を書き、成功するとそれを所定の位置に移す
+
+% 1 1 0 01ffda05a5244ce7125f8fbd82eaf4c5
+
+@ 0 10 0 178eea849952b85f08a26599fef4cd63
++         `create[File]` のためのインスタンスである。
++         スコープを持つ形式は、内容を一時的な兄弟ファイル（先頭に `.` を付け、接尾辞 `part` を付けたターゲットの名前）に書き、ブロックが完了するとそれをアトミックにターゲットへ移す：作成は、まだ何もそのパスを保持できないので、アトミックな置き換えがただで得られる唯一の瞬間である。
++         ブロックから抜け出す throwable は兄弟ファイルを削除するので、ターゲットが書きかけの状態で存在することは決してない。
++         `Replace` がなければ、既存のターゲットは、書き込みの前に `AlreadyExists` になる。
++     entry #make   `Parents`、`Replace`、`Umask` に従って空のファイルを作る
++     entry #create   ブロックの書き込みを兄弟ファイルに溜め、成功するとそれをターゲットへ移す
++   entry .FifoCreatable   名前付きパイプを作る。スコープを持つ形式は拒否される
+
+% 1 1 0 0ccfca7bc56fd47017f09a3512f49ce4
+
+@ 0 5 0 115987bb9b24fcb41f3d39eb18906055
++         `create[Fifo]` のためのインスタンスである。
++         何かをするのは `#make` だけである：`#create` は `Unsupported` を伴う `Io.Error` を発生させる。FIFO のどちらの端を開いても相手が現れるまでブロックするので、スコープを持つハンドルを安全に与えることは決してできないからである。
++     entry #make   `Parents`、`Replace`、`Umask` に従って FIFO を作る
++     entry #create   `Unsupported` を伴う `Io.Error` を発生させる
+
+@ 0 1 0 123a1a2440aea5511261114f81669731
++ entry .Scratch   一時的な作業用のディレクトリとファイルのための形式。新たに作られ、スコープが終わると取り除かれる
+
+% 1 1 0 07fe71959313d5e51bef54d141079872
+
+@ 0 6 0 14bcd28627440be512f9e60634ecf2e7
++       `parent.open[Scratch](Read & Write)` は、`parent` の下に一意の名前を持つ新しいディレクトリを作り、ブロックのためにその上の `Directory.Handle` を与え、ブロックがどのように終わろうとも、終わったときにそれを（その中で作られたすべてのものとともに）削除する。
++       ディレクトリの寿命がスコープ*そのもの*であり、新しいプレーンの仕組みが、その中へのパスがスコープを越えて生き残らないことを保証するので、削除は常に健全である。
++       ハンドルの `stem` はディレクトリの実際のパスであり、それを教えなければならないまれなツールのためのものである。
+
+@ 0 6 0 0380c6b480ffabfd043f9b854134c009
++       `parent.open[Scratch.File](Read & Write)` はファイルの形式である：`parent` の下にある一意の名前を持つ新しいファイルであり、そのハンドルは自身の `path` も知っている `Handle`（`Scratch.Located`）である。ファイルの場所を教えなければならないツール（使い捨てのインデックスやフィクスチャ）のためのものである。
++       どちらもバックエンドと `Tactic[Io.Error]` を必要とする。ファイルの形式は、スコープにある `Umask` と任意の `OpenFlag` も受け取る。
++       親はディレクトリでなければならない（そうでなければ `IsNotDirectory`）。
+
+% 2 1 0 0f391cdd38db358601d31491741d1dad
+
+% 3 1 0 14d3c95d2e55f98d0f0cc4c6da7acac7
+
+% 4 1 0 0ab3beaa2582b3c6050a7e9d108495bf
+
+% 5 1 0 0718cad37018097d07b51ba6ce6cd8a0
+
+% 6 1 0 051c69bc084e031714b666023e590258
+
+% 7 1 0 16941d35f3d6e6701925eaec8f85f826
+
+% 0 1 0 0cbcef15874d7ac1103b3bdb1de26794
+
+% 0 1 0 17ff28022ca9782f16f7102f2c9cb5d3
+
+% 0 1 0 0181b2909c67b4680951f732d6bdbe64
+
+% 0 1 0 008288aea101b5e805af53c4992df28a
+
+% 0 1 0 19b39529e32c3bba11f4f4fd6773c5b1
+
+% 0 1 0 1cf58ea4d1d5060102c7b51c42312f44
+
+% 0 1 0 09adef45986c308c1af4080027c10ab6
+
+% 1 1 0 110691fd24ac007f1028e4f6bf965cab
+
+@ 0 2 0 0488faf225c76f350997958fb80b9a81
++       使い捨てのディレクトリには `AccessRegister` の調停は不要である：他のどのスコープもその新しい名前を指せないからである。
+
+% 1 1 0 07db5d5c83758c6c0b99ad0689575622
+
+% 1 1 0 1f2fb196bd2a11ce0db0d5cbd1c765e4
+
+@ 0 1 0 013e862af9fe666b19871fcb44fb884a
++   entry .ScratchOpenable   `path.open[Scratch](mode)` の背後にある `Openable` インスタンス
+
+% 1 1 0 000870c042611afd17415c401854c7f2
+
+@ 0 9 0 0ecad14c99bafa940c1fcb7184622ef1
++         任意のプラットフォームのパスに対して `.openable` がインスタンス化する名前付きのクラスである。
++         その結果は新しいディレクトリの上の `Directory.Handle { type Under = filesystem }` であり、ディレクトリはプロセス自身のマスクで作られる。
++     entry #open   パスの下に一意の名前を持つディレクトリを作り、ブロックを実行し、それを消去する
++   entry .openable   任意のプラットフォームのパスに対する `path.open[Scratch](mode)`。バックエンドと `Tactic[Io.Error]` を必要とする
++   entry .File   使い捨てのファイルのための形式：`parent.open[Scratch.File](mode, flags*)`
++       ハンドルは `Handle & Scratch.Located[filesystem]` なので、ブロックの間 `file.path` はファイルの実際のパスであり、その後ファイルは削除される。
++   entry .Located   自身が扱うファイルのパスを知っているハンドル
+
+% 1 1 0 18e11714933ddde21db4d5a946fc3499
+
+@ 0 4 0 1c31b12d745c659d07239a4574523e41
++         使い捨てのファイルのハンドルに混ぜ込まれ、通常の `Handle` のエンドポイントに加えて `file.path` を使えるようにする。
++     entry #path   使い捨てのファイルの実際のパス
++   entry .ScratchFileOpenable   `path.open[Scratch.File](mode, flags*)` の背後にある `Openable` インスタンス
+
+% 1 1 0 02d2a33094686e7e0c6e04949f7d501f
+
+@ 0 5 0 03f8267876012f4f07b76dbc5d15d089
++         `.fileOpenable` がインスタンス化する名前付きのクラスである。
++         スコープにある `Umask` のもとで、`OpenFlag.Create` とモードのフラグを使ってファイルを作り、ブロックが終わるとそれを削除する。
++     entry #open   パスの下に一意の名前を持つファイルを作り、そのハンドルでブロックを実行し、それを削除する
++   entry .fileOpenable   任意のプラットフォームのパスに対する `path.open[Scratch.File](…)`。バックエンド、戦術、`Umask` を必要とする
+
+@ 0 1 0 0a0d05b5743b3a3c014300c66746dd90
++ entry .Slice   ファイルのバイト範囲。窓の付いたビューとして開かれ、任意で範囲がロックされる
+
+% 1 1 0 135f5c3a47c0d793109758a32eac84a8
+
+@ 0 10 0 03def996e47155ba07233283ed14dac2
++       `Slice(path, offset, extent)` は `open` の対象である：`Slice(path, 0L, 1024L).open[File](Read & Write & Exclusive): window ?=> …` はファイルを開き、`[offset, offset + extent)` に限定された `Slice.Window` をブロックに渡す。
++       ウィンドウの `size` はウィンドウのものであり、読み取りはその始まりからの相対位置で行われてその範囲に切り詰められ、書き込みは収まるだけ格納してその数を返す（`pwrite` のやり方である）ので、書き込みがその範囲の外へはみ出すことはない。
++       `Exclusive` または `Shared` のモードは、ちょうどその範囲に OS の勧告ロックを取り、その範囲を `AccessRegister` に登録する。そこでは重なる範囲とだけ競合する（ファイル全体のオープンはすべての範囲と重なる）。
++       ロックするモードなしで開いたスライスは、単に窓の付いたビューであり、ロックのないバックエンド（WASI）でさえこれをサポートする。
+
+% 2 1 0 19d7ba48d6d5a9a605e48f252f884cbf
+
+% 3 1 0 0f1ad45c5dc5d5a81fc97945701a0f99
+
+% 4 1 0 1dda45b65647d802187697983d32ea5d
+
+% 5 1 0 1d43fc97492cc6c90050d796bbd860af
+
+% 6 1 0 0bc508f5dba03f3508d62da27086e208
+
+% 7 1 0 11c98456bdf0beec0db61c19b5b98d95
+
+% 0 1 0 1a573db94cbe239d10ea6d8f4189858c
+
+% 0 1 0 0e4f6101bdd82ee01323c41bdb08e121
+
+% 0 1 0 0a4b82314722f12a0cd2bc2fb59f96b6
+
+% 0 1 0 138d38a845fb063e1bfbbcb167289cd1
+
+% 1 1 0 0dcbd440ff23396d1542b929f6645eaf
+
+@ 0 1 0 1ee9d30350c95c8a17a717b881d9cfcd
++       `read` と `write` の拡張は、`Ram` のものと同じく、モードの権限で制限される。
+
+% 1 1 0 1941ded0111a902a0f04625b5fd7e027
+
+% 1 1 0 048896f7ada500fd01deccace37feb9a
+
+% 1 1 0 1adcdf43eabfb41705b20e7b8b35980a
+
+@ 0 1 0 1ec9114a53f177b11dfc4e3b40293ecc
++   entry .Window   開いたスライスのハンドル：その範囲に窓を限った、位置を指定するビュー
+
+% 1 1 0 085ab5a5d7ce5fbb0f1a4879c87d5c53
+
+@ 0 12 0 03e3853ecf2bce780c3d7044cd46c103
++         `#size` はファイルに切り詰めたウィンドウの範囲であり、`#readFrom` と `#writeTo` は、すでに窓が限られた操作のメソッドで、権限で制限された `.read` と `.write` の拡張がこれを呼び出す。
++     entry #size   ウィンドウで利用できるバイト数。`min(extent, fileSize - offset)`
++     entry #readFrom   ウィンドウ内のオフセットで最大 `length` バイトを読む。ウィンドウに切り詰められる
++     entry #writeTo   ウィンドウ内のオフセットに `data` を収まるだけ格納する。書き込んだバイト数を返す
++   entry .read   `window.read(offset, length)`：`Read` を与えるウィンドウでの、位置を指定した読み取り
++   entry .write   `window.write(offset, data)`：`Write` を与えるウィンドウでの、格納した数を返す位置を指定した書き込み
++       ウィンドウの範囲に切り詰められるので、境界の近くに格納する呼び出し側は、黙ってデータを失うのではなく、切り詰めを観測する。終わりかそれ以降への書き込みは何も格納せず、`0` を返す。
++   entry .SliceOpenable   `slice.open[File](mode, flags*)` の背後にある `Openable` インスタンス
+
+% 1 1 0 0e681909ead9a23a0478a5730fa3816f
+
+@ 0 9 0 1938f811d237f3201ce8daf9b5f751d7
++         `.openable` がインスタンス化する名前付きのクラスである。
++         モードを `OpenFlag` に変換し、レジストリで範囲を取得し（あるいは `OpenFlag.Await` を伴って待ち）、バックエンドに窓の付いたビューを求め、ブロックに渡すウィンドウに権限を混ぜ込む。
++         競合は `Busy` を伴う `Io.Error` を発生させる。
++     entry #open   モードが求めるレジストリとロックのもとでスライスを開き、ブロックを実行する
++   entry .openable   任意のプレーンにあるスライスに対する `slice.open[File](…)`。バックエンドと `Tactic[Io.Error]` を必要とする
++   entry #path   スライスの元のファイル
++   entry #offset   ウィンドウが始まる場所。ファイルの始まりからのバイト数
++   entry #extent   ウィンドウの長さ。バイト単位
+
+@ 0 1 0 1d858edef0bbd11208c7af1dd201348e
++ entry .Subtree   すべての `Directory.Handle` の新しいプレーンに共通する上限と、そのパスに対する操作
+
+% 1 1 0 1f5230697ead15631053bb6b8aa03feb
+
+@ 0 9 0 05f248a9c1d6d3ad1b27de78ba15210c
++       開いたすべてのディレクトリのハンドルは、`Subtree` の新しい部分型である `Plane` を持つ。
++       `plane <: Subtree` について汎用的に定義された serpentine の given が、任意のハンドルのプレーン上のパスの命名規則を与えるので、`dir / "name"` はコードのコンパイル時にその名前を検証する：`.` と `..` は許されず、開いたディレクトリからの脱出は、検査されるのではなく、表現できないものになる。
++       意図的に、サブツリーのプレーンは `Filesystem` インスタンスを持たない。したがって galilei の絶対パスの操作（`read`、`write`、`delete`、`children`）はサブツリーのパスに適用できない。適用できたなら、それをハンドルではなく作業ディレクトリに対して解決してしまうからである。ここにあるサブツリーの操作がその代わりであり、それぞれプレーンによってハンドルを選び、必要な権限で制限される。
+
+% 2 1 0 1e6b12ce114f929317c05b36698f356a
+
+% 3 1 0 1fee9cd520cde32c15db4ded198487b2
+
+% 4 1 0 0353aefff078582d136f7fd1e98f04e2
+
+% 5 1 0 1c1e1e0b4d8bd74a1127592252487bb7
+
+% 6 1 0 11c9b565ee22cda61e33c93a43f21eec
+
+% 7 1 0 12646f4672dbe741112d4880de5bf9fe
+
+% 9 1 0 093c86c6366f82ce18948868693a8d63
+
+% 11 1 0 034a16906c537b1402f987b9b78d4b40
+
+% 0 1 0 0e8722b0a2484f64173781752c9330c3
+
+% 0 1 0 0e374f4c0e6813f41851f5dd2a8bb63f
+
+% 0 1 0 1db8679ae45fb6b01ff9c4fe4b02105b
+
+% 0 1 0 1cfe31829800411618a9f861a0c55401
+
+% 0 1 0 05e1f362f185a90c0c02f7852512d007
+
+% 0 1 0 0cfe29bcc0a0c2a01511fe6a65897cd8
+
+% 1 1 0 0ce807e3142c5175128e04f73e87bf41
+
+@ 0 5 0 13038d6ff736afa303698f9372f1de43
++       名前が絶対パスの操作と異なる（`read` ではなく `contents`、`existent` ではなく `extant`、`delete` ではなく `remove`）のは、レキシカルにインポートされた同名の拡張が先に試され、他に移らずに失敗してしまうからである。
++       `…Resolved` ヘルパーが公開されているのは、操作が transparent inline だからにすぎない。操作のほうを呼び出す。
+
+% 1 1 0 1f0754fa9ec60fbd16c60fff9aeccbcd
+
+@ 0 21 0 00ab98b987bb85af016520ffc2a769d1
++   entry .Rules   ハンドルのプレーン上の名前に許されるもの：`/` を含まず、`.`、`..`、空のいずれでもない
++   entry .nominative   すべてのサブツリーのプレーンのパスを `.Rules` に従わせる given
++   entry .contents   `path.contents[T]`：開いたディレクトリの下にあるファイルを `T` として読む
++       任意の `Data is Readable to T` を通して読み、ハンドルが `Read` を与えることを必要とし、`Io.Error` を発生させる。
++   entry .overwrite   `path.overwrite(content)`：開いたディレクトリの下にあるファイルを書き、置き換える
++       `Streamable by Data` である任意のものを受け取り、ハンドルが `Write` を与えることを必要とし、`Io.Error` を発生させる。
++   entry .extant   `path.extant()`：開いたディレクトリの下にあるエントリーが存在するかどうか
++       ハンドルが `Read` を与えることを必要とする。全域的である。
++   entry .entries   `path.entries`：開いたディレクトリの下にあるディレクトリの子。ハンドルのプレーン上にある
++       `dir.base.entries` は開いたディレクトリそのものを一覧する。
++       `Read` を必要とし、`Io.Error` を発生させる。
++   entry .remove   `path.remove()`：開いたディレクトリの下にあるエントリーを、それがファイルか空のディレクトリなら削除する
++       `Write` を必要とし、`Io.Error` を発生させる：ここでは `deleteOnlyEmpty` ポリシーが固定されているので、空でないディレクトリは `DirectoryNotEmpty` である。
++   entry .readResolved   `.contents` の背後にある、実際のパスでの読み取り
++   entry .writeResolved   `.overwrite` の背後にある、実際のパスでの書き込み
++   entry .existsResolved   `.extant` の背後にある、実際のパスでの存在の検査
++   entry .entriesResolved   `.entries` の背後にある、実際のパスでの一覧
++   entry .removeResolved   `.remove` の背後にある、実際のパスでの削除
+
+@ 0 1 0 1e89d4bbc3d90ff41177597762dcfe82
++ entry .AccessRegister   開いているスコープのプロセス全体のレジストリ。競合する `Exclusive` のオープンを拒否する
+
+% 1 1 0 13d7a435b075ab801cd14b9c6c2b290d
+
+@ 0 9 0 17f8d63c8ae7ccd1004b30d24ca475e3
++       すべての `open[Directory]` と `create[Directory]` のスコープ、そしてロックするすべての `open[File]` と `Slice` のオープンは、その期間中、その実際の（シンボリックリンクを解決した）パスとモードのアトムをここに登録する。
++       競合は、サブツリーの重なり（ディレクトリとその下にあるものは重なり、二つの兄弟は重ならない）と、スライスについてはバイト範囲の重なりで検出される：重なる `Read`、`Write`、`Shared` のオープンはいくつでも共存できるが、`Exclusive` のオープンは、重なるサブツリーや範囲の他のどのオープンとも、どちらの方向でも競合する。
++       独立に開いた二つのハンドルが重なるツリーを指していることはどの型システムにも見えないので、これは実行時に `open` 呼び出しの時点で検査され、そこで競合は `Busy` を伴う `Io.Error`（あるいは `OpenFlag.Await` を伴えば待機）になる。
+
+@ 0 4 0 15eabe748e604d2e0f125f9351db75ab
++       レジストリが調停するのは一つのプロセス内のスコープの間だけである。他のプロセスは、`Exclusive` と `Shared` のファイルのオープンで取られる OS の勧告ロックが扱う。
++       `soundness` アンブレラにはエクスポートされない：`open` の形式がこれを使い、プログラムがこれを直接呼び出す理由はない。
+
+% 1 1 0 0808c0f194dbabd9169cafdf7b82db9b
+
+% 1 1 0 0ca8c9efaf7f64da1385d232aedf90e8
+
+@ 0 4 0 1554e04cca0b40c614429b02f0cf1917
++   entry .acquire   実際のパスとモードのアトム（とバイト範囲）を登録する。競合すれば `false` を返す
++   entry .acquireAwait   `.acquire` と同じく登録する。競合する登録がなくなるまで待つ
++       待っている者は `.release` で起こされる。公平性はモニターによる。
++   entry .release   `.acquire` で行った登録を一つ取り除き、待っている者を起こす
+
+@ 0 1 0 1a343a339f8dd63414ffb54e95e5ce48
++ entry .Umask   POSIX の `umask(2)` が定義するファイル作成マスク。スコープにある間に作られるすべてのエントリーに適用される
+
+% 1 1 0 146bd12e452fb4e014c4e7bc4b453d35
+
+@ 0 10 0 15291b4520a1bdd90a0b320f89131d89
++       マスクが適用される間に作られるすべてのファイルとディレクトリから差し控えられるパーミッションビットである：`Umask(0x3f)`（8 進で `077`）は、所有者だけが読み書きできるエントリーを生む。
++       普通のプロセスでは、オペレーティングシステムがプロセス自身のマスクを無償で適用し、`Umask.process`（デフォルトの given）はちょうどそれを求める。
++       それぞれ独自のマスクを持つ複数の呼び出しに応えるデーモンは、プロセスのマスクに頼れないので、マスクはコンテキスト値として galilei に届く：スコープにある `Umask` は、すべての `create[…]`、`Create` を伴う `open[File]`、`Scratch.File`、`CreateFlag.Parents` のディレクトリに適用され、作成時に要求されるので、エントリーが求めたより緩いパーミッションで存在することは決してない。
++       `Umask.Provider`（デーモンのサービスのハンドル）は、宣言なしで呼び出しのマスクを召喚できるようにする。
+
+% 2 1 0 1b8274b17c566e771163466a3ae7498b
+
+% 3 1 0 16b7699042c79fd70c4d951f4b6a24c9
+
+% 4 1 0 079eda7c723893e90f59ee6c95d6a300
+
+% 5 1 0 02605914a7b9a4d4058018a6355afe2a
+
+% 6 1 0 1ccd28cdec8232c00e1300fa48fd8360
+
+% 7 1 0 01b4181198dd4fa603e437dae133719d
+
+% 0 1 0 1274e6020264fd350e553d3726db9596
+
+% 2 1 0 0fac70b5cae8c6280b47ce7e50803e4f
+
+% 0 1 0 0b3fddc1e4689ae21a1d925b8cb35111
+
+% 0 1 0 0b12c6608451c325112e7228ff34e215
+
+% 0 1 0 0c23e24b416564eb0f010da7b4f5c29e
+
+% 0 1 0 17026f7769a131121e48f7abde8d05c5
+
+% 1 1 0 0b36797b71af824012652d94e4405554
+
+@ 0 3 0 052e93234e50fc88177faacbc45e3a87
++       `Umask` は不透明な `Int` である。`umask` が表示する 8 進の形式（`022`、`077`）として表示、エンコード、デコードされ、`Umask.process` は空のテキストとして描画される。
++       POSIX のパーミッションビットを持たないファイルシステム（Windows）では、要求は無視される。
+
+% 1 1 0 10f8e51a698db89415538c1c4d6857d9
+
+@ 0 1 0 1433332cf013a9ec0c2597e7be225296
++   entry .Provider   呼び出しのマスクを知っていて、それを `Umask` として召喚できるようにするもの
+
+% 1 1 0 1c17dc4a2e658eda07eaa112de17d967
+
+@ 0 22 0 061b7cf675137cda0f0980caa1570934
++         デーモンのサービスのハンドルがこれを実装する。`.provided` は、スコープにある任意の `Provider` を `Umask` given に変え、プロバイダーがマスクを持たなければ `.process` に代わる。
++     entry #umask   呼び出しのマスク。プロセスのマスクを使うなら `Unset`
++   entry .process   プロセス自身のマスク。それが何であれ、オペレーティングシステムが適用する
++       何も宣言されていないときのデフォルトの `Umask` である。
++       その `mode(bits)` は `Unset` なので、バックエンドはパーミッションビットを要求せず、OS はいつもどおりプロセスのマスクを適用する。
++   entry .fileBits   `0o666`：マスクを適用する前に、ファイルや FIFO を作るときの慣例のビット
++   entry .directoryBits   `0o777`：マスクを適用する前に、ディレクトリを作るときの慣例のビット
++   entry .apply   `Umask(bits)`：それらのビットを差し控えるマスク（下位 9 ビットにマスクされる）
++       Scala には 8 進のリテラルがないので、`Umask(0x3f)` は `077`、`Umask(0x12)` は `022` である。
++       `.parse` は 8 進の形式を読む。
++   entry .parse   `Umask.parse(text)`：`umask` が表示する 8 進の形式からのマスク。パースできなければ `Unset`
++   entry .provided   スコープにある任意の `Umask.Provider` の `Umask`。マスクがなければ `.process`
++       継承されたデフォルトより優先されるので、プロバイダーがあればそれが勝ち、なければ何も変わらない。
++   entry .showable   マスクを 8 進で描画する：`022`
++   entry .encodable   マスクをその 8 進のテキストとしてエンコードする
++   entry .decodable   8 進のテキストからマスクをデコードする。代替は `.process`
++   entry .octal   `umask.octal`：3 桁の 8 進の描画。`.process` なら空のテキスト
++   entry .bits   `umask.bits`：差し控えるビット。`Int` で表す
++   entry .mode   `umask.mode(bits)`：作成時に要求すべきパーミッションビット。プロセスのマスクなら `Unset`
++       `bits & ~umask`：マスクを適用した `Umask.fileBits` または `Umask.directoryBits` であり、バックエンドが作成時に設定する。
+
+@ 0 1 0 11641cbd7dd481ca000be78e6b5d0ecc
++ entry .Fdtable   パスが名指すとおりの、プロセスのファイルディスクリプタのテーブル。ファイルシステムより先に参照される
+
+% 1 1 0 17ffb05d5407a80111e73426886f1b91
+
+@ 0 8 0 1508e2e6c3611241070d74ffbd6f505e
++       `/dev/fd/63`、`/dev/stdin`、`/proc/self/fd/3` は一つのプロセスのディスクリプタのテーブルのスロットであり、他のどのプロセスからそれらを開いても、そのプロセスの同じ番号のスロットに届くか、何にも届かない。
++       クライアントに代わってデーモンが実行するアプリケーションは、そうしたパスを引数として受け取り、*クライアントの*ディスクリプタを開かなければならないが、それに届くのはランチャーだけである。
++       `Fdtable` は、galilei から見たクライアントのテーブルである：すべての `open`、`read`、`write`、`existent()` の前に参照され、自身が扱うパスには正しいものを開く `Descriptor` で応え、他のすべてのパスは断る。断られたパスは、いつもどおりファイルシステムへ行く。
+
+@ 0 5 0 0f2c2051f88322ae145156f551546880
++       これは `Umask` と同じく、コンテキスト値として galilei に届く：`Fdtable.Provider`（デーモンのサービスのハンドル）は呼び出しのテーブルを召喚できるようにし、スコープに何もない所では空の `.none` が適用される。
++       参照する箇所は `Every[Fdtable]` を受け取るので、テーブルを重ねることができ、パスに最初に応えたものが勝つ。
++       独自のテーブル（たとえばテストダブル）を書くプログラムは、エンコードされたパスから `Optional[Descriptor]` への関数を与える：
+
+% 2 1 0 0ae8720e7f1fb24e19f372956b0a4f5c
+
+% 3 1 0 03540b53427de3db17d89004d587d8da
+
+% 4 1 0 1bb185c242e8a8f21553b5938ee5716f
+
+% 5 1 0 12f2908c6bcd18201b85d5f0efed3931
+
+% 6 1 0 1d930968e1c14e25012021d721141059
+
+% 7 1 0 1f035cfec7a8f5e306c3bd8fab92ba2b
+
+% 0 1 0 14788f875f401f641db67234e26a634b
+
+% 0 1 0 1fe483f8e06675a810eeb0466faec146
+
+% 0 1 0 02c7db68ea2a70e511eeb70c12d9b532
+
+% 0 1 0 02c65ca9e39475ec1c0c8d14b9a245ac
+
+% 0 1 0 194e398d0b62ca491c77ab44af3ff928
+
+% 0 1 0 04f46b82ab1d56621ba8734fcd70b3b1
+
+% 0 1 0 16ffb210366aa2b212db33efe3adbf5d
+
+% 1 1 0 1aab07ed9cacd3880e98453d997b7a6a
+
+% 1 1 0 03bf378d0e4e8d650e929e3b4511f984
+
+% 1 1 0 16bd82ae12592e781ebb6636667848c7
+
+@ 0 3 0 18067638819a5d6b1d898057345c3b3d
++   entry .Provider   呼び出しのディスクリプタのテーブルを知っていて、それを `Fdtable` として召喚できるようにするもの
++     entry #fdtable   呼び出しのテーブル。なければ `Unset`
++   entry .Descriptor   扱われるパスが名指すもの：スコープの中で、求められたフラグで開けるもの
+
+% 1 1 0 0c7bd1ffbaf797bd0babc75aba6e8307
+
+@ 0 8 0 0e565ec48cff931d190430d405201f79
++         `open(flags)(lambda)` は、`OpenFlag` が求める操作（ディスクリプタが許すものでなければならない）のためにディスクリプタを開き、`Handle` でラムダを実行し、ラムダが戻るとそれを閉じる。
++         そのように開けないディスクリプタ（クライアントが保持していないもの、あるいは読み取りしか許さないのに書き込みのために開いたもの）は `Fdtable.Refusal` を投げ、参照した箇所がそれを、開こうとしていたパスの `Io.Error` として発生させる。
++     entry #open   フラグのためにディスクリプタを開き、その `Handle` でラムダを実行する
++   entry .Refusal   求められたとおりに開けない `Descriptor` が投げる。パスの `Io.Error` になる
+
+% 1 1 0 0731d3774ecf850205b811ec9b4ac429
+
+@ 0 10 0 0504b246db2393e80c5f118ae125d25c
++         `Io.Error.Reason`（`Nonexistent`、`PermissionDenied`、…）だけを持つ例外である：テーブルには名指すべき自身のパスがないので、それを参照した箇所がパスと操作を与える。
++     entry #reason   ディスクリプタが拒否した理由
++   entry .none   空のテーブル。どのパスにも応えない
++   entry .provided   スコープにある任意の `Fdtable.Provider` の `Fdtable`。テーブルがなければ `.none`
++       継承されたデフォルトより優先されるので、プロバイダーがあればそれが勝ち、なければ何も変わらない。
++   entry .resolve   `Fdtable.resolve(tables, path)`：スコープにあるすべてのテーブルのうち、応えたものがあれば最初のディスクリプタ
++   entry #descriptor   このテーブルでパスが名指す `Descriptor`。扱わないパスなら `Unset`
++       パスはエンコードされた形式であり、プラットフォームが名指すとおりのものである。
+
+@ 0 1 0 18168a39ad65c7030620cbd08605d76c
++ entry .Cas   内容アドレス方式のストア：一つのルートの下に、バイトのダイジェストごとに一つの blob を置く
+
+% 1 1 0 1ff61ede9e79ed48168a7cdf8f402333
+
+@ 0 7 0 0f356ef8ffb2eafc1739e5ff748c50d0
++       それぞれが自身のバイトのダイジェストで名付けられた blob のディレクトリは、blob が一度だけ書かれ、書くときに検証され、そのダイジェストを知っている何者にも見つけられるストアである。
++       `Cas` はそのストアであり、ハッシュアルゴリズムはその型と、それが受け付けるすべてのダイジェストの型にある（`Cas in Sha2[256]` に BLAKE3 のダイジェストを求めることはできない）。そしてストレージはそのルートの型にある：`Cas in Sha2[256] on (Path on Linux)`。
++       ストアは、`Cas.Storage` インスタンスを持つ任意のルートに対して `Cas[Sha2[256]](root, suffix)` で作る。バックエンドを持つ任意のプラットフォームのディレクトリはその一つである。
+
+% 2 1 0 0ef6c28d0c287ba10d00c2dcbbf020ca
+
+% 3 1 0 17308611b4499fc501933686a9ee02cc
+
+% 4 1 0 02bb702e466d970b093bafacc9b204c3
+
+% 5 1 0 01fe524dbf0890471d69938e6299702a
+
+% 6 1 0 0807c28fe59523eb10d83e0ca2636099
+
+% 1 1 0 07b1e46236bb5a5e1e17875d51793924
+
+% 2 1 0 1a977957cbd7a27e0346859a83f62fec
+
+% 0 1 0 1f1e94abd07591921b205eb03ed46627
+
+% 0 1 0 0376688093ec482a06eef258ddb4ce23
+
+% 0 1 0 050a7c33d6c4310f0318319357849cb4
+
+% 0 1 0 0d3e3cacfdc0ef9210ae992d4cee8e1b
+
+% 0 1 0 1913a47a6504238819b1b622e8f9c121
+
+% 0 1 0 055ef86113580df807b609ef87a568fd
+
+% 0 1 0 198724dcc92700df10ee7d0e8c54de20
+
+% 1 1 0 1bc5c72a2eade0060a6579c9be2fc7aa
+
+@ 0 7 0 0ae52ce52582468c0f1b28da13ab8715
++       `store() = data` はデータをそれ自身のダイジェストの下に格納してそのダイジェストを返し、blob がすでにあれば何もしない。`store(digest) = data` は、データが本当にそのダイジェストを持つことを確かめた後で同じことをし、持たなければ `Cas.Error` を発生させる。
++       blob は一意の名前を持つ兄弟ファイルに書かれ、アトミックに所定の位置に移されるので、読み手が部分的な blob を見ることは決してない。
++       コレクションとしては、ストアはそのダイジェストである：`size`、`has`、`at`、走査はすべてストアに対して働き、読めないストアを空として扱う純粋なビューを通す。`Io.Error` を発生させるのはメソッドのほうである。
+
+% 0 1 0 0ea4e38e126607e01eb7d8d57f6d1932
+
+@ 0 1 0 0e4e26e74980dbb511ab4d068a090979
++   entry .Storage   ある型のルートで blob をどう保持するか：検査、読み取り、アトミックな置き換え、一覧、削除
+
+% 1 1 0 1a6bd70291918f9c0e062afb5904d1ec
+
+@ 0 14 0 126303c2c916e20d14548cef59c81d7b
++         `Cas` が格納に使う型クラスである。
++         `Cas.Storage.path` は任意のプラットフォームのディレクトリのためのインスタンスである。別のストレージ（データベース、オブジェクトストア）は別のインスタンスを与え、同じインターフェースのストアを得る。
++         `replace` は、読み手から見てアトミックでなければならない。
++     entry .path   `Path on <platform>` のディレクトリのための `Storage`。バックエンドを必要とする
++         blob の名前は 16 進に接尾辞を付けたものなので、どのプレーンでも整形式である。
++         blob は、先頭の `.`、UUID、接尾辞 `part` で名付けた兄弟ファイルに書かれ、それからアトミックに所定の位置に移される。失敗しても何も残らない。
++     entry #has   その名前の blob がルートの下に存在するかどうか
++     entry #read   blob のバイト。`Io.Error` を発生させる
++     entry #replace   blob をアトミックに書く。`Io.Error` を発生させる
++     entry #names   ルートの下のすべての名前。`Io.Error` を発生させる
++     entry #delete   blob が存在すれば削除する。`Io.Error` を発生させる
++   entry .Error   データのダイジェストが与えられたものでないときに `store(digest) = data` が発生させる
+
+% 1 1 0 00156812b6684ab81f80bd4d195ef37c
+
+@ 0 29 0 066f52a909925a781461e7776c8c0305
++         メッセージは _the data's digest, `actual`, is not `expected`_ であり、どちらも小文字の 16 進である。
++         これが発生したときには何も書かれない。
++     entry #expected   呼び出し側が主張したダイジェスト。16 進で表す
++     entry #actual   データが実際に持つダイジェスト。16 進で表す
++   entry .apply   `Cas[Algorithm](root, suffix)`：blob が `<digest><suffix>` と名付けられる、`root` にあるストア
++       アルゴリズムの `Hash` とその弱さの許可はここで一度だけ検査されるので、弱いアルゴリズムの上のストアには、それを他の用途に使うときと同じ `Permit` が必要である。
++       ルートは `Cas.Storage` を持つ任意の値でよく、接尾辞のデフォルトは空である。
++   entry .countable   ストアの `size` は、それが保持するダイジェストの数である
++   entry .traversable   ストアはそのダイジェストとして走査される
++   entry .inclusive   コレクションの語彙を通した `store.has(digest)`
++   entry .applicable   `store.at(digest)`：`defines(digest)` がそこにあると述べた後の、blob のバイト
++       `at` は `contains` の後でしか読まないので、そこでの失敗はその間に消えた blob であり、`Unset` を返すのではなくパニックする。
++   entry #Form   ハッシュアルゴリズム。型として表す
++   entry #Plane   ルートの型
++   entry #root   blob が保持されるルート
++   entry #suffix   すべての blob の 16 進の名前に付け加えられる接尾辞
++   entry #name   `store.name(digest)`：blob の名前。小文字の 16 進に続けて接尾辞
++   entry #digest   `store.digest(data)`：ストアのアルゴリズムでのデータのダイジェスト
++   entry #has   `store.has(digest)`：blob が格納されているかどうか
++   entry #missing   `store.missing(digests)`：ダイジェストのうち、格納されていないもの
++   entry #apply   `store(digest)`：blob のバイト。格納されていなければ `Unset`。`Io.Error` を発生させる
++   entry #update   `store() = data` はデータ自身のダイジェストの下に格納する。`store(digest) = data` は先にそれを検査する
++       前者はダイジェストを返し、`Tactic[Io.Error]` を必要とする。後者は `Tactic[Cas.Error]` も必要とする。
++       どちらも、すでにある blob を書き直すことはない。
++   entry #digests   格納されているすべてのダイジェスト：接尾辞を持ち、残りが 16 進である名前
++       ルートの下の他のファイルは無視される。
++       `Io.Error` を発生させる。
++   entry #prune   `store.prune(keep)`：ダイジェストが集合にないすべての blob を削除する。削除した数を返す
+
+@ 0 1 0 19bbe140887fcf4d13200248f506d2b0
++ entry .Searchpaths   サーチパスのプレーンを、実際のディレクトリの順序付きのリストへ解決する仕組み
+
+% 1 1 0 0062d2f80e9a32141ca0a6bafe28c5fa
+
+@ 0 8 0 1f341a6db99e63b70d77f98af3e811ca
++       多くのファイルは、一つの場所ではなく場所のリストに沿って探される：アイコンなら、それを持つ XDG のデータディレクトリのどれか、構成ファイルなら、いくつかの場所のうち最初のものである。
++       ambience の `Searchpath` プレーン（`Xdg.Data`、`Xdg.Config`）は、そうしたリストを一つのナビゲートできるツリーとして見せたものであり、実際のプラットフォームへの解決はコンテキストの `Searchpaths.Stems` を通して行われる：試すべきディレクトリの順序付きのリストであり、先頭のステムが書き込み可能なものである。
++       プレーン上の相対パスは、`search()` ではそれを持つ最初のステムに、`locations()` ではそれを持つすべてのステムに、`listing()` では統合されたディレクトリの一覧に、`destination()` では先頭のステムの下のその場所に解決される。
+
+% 2 1 0 05bb1e1cae0a7ffe1ceadbf513d9c4c7
+
+% 3 1 0 1677f5a893020af11f4d69a494bf2629
+
+% 4 1 0 11e66db7a1a04eea1a0e0487e5e79f4c
+
+% 5 1 0 111452515f10ed501c324226d67a2be1
+
+% 6 1 0 17789f14cfd21aef087f074e770335a4
+
+% 7 1 0 1f78c1e3d000c4a40cb575f4580ed73a
+
+% 0 1 0 12554ec23b43b85205279b5c170ba687
+
+% 0 1 0 0de70e7ada2f85171b902d76485683c4
+
+% 0 1 0 03b213d2f2ceeac303d09c0275c81042
+
+% 0 1 0 142e1ae4fd58ec120e6712a599773c7d
+
+% 0 1 0 1e3fd558a15b71931b6055760b49af6a
+
+% 0 1 0 12933b051cb72df60cc39300a48fac6c
+
+% 0 1 0 14ff65f2c9146c90189fe0cb1c603126
+
+% 0 1 0 05dff1dbde904d3703d5b09e24373d1f
+
+% 0 1 0 0bb68620defba08017d040c9d1e83f00
+
+% 0 1 0 12235134683afd96061210590bf4d24a
+
+% 1 1 0 0f7c91805d6641b4131c022b05140433
+
+@ 0 3 0 18159c9b9dcb7048159bb99b739f5a39
++       `dataSearch()` と `configSearch()` は、環境から XDG のデータと構成のサーチパスのための `Stems` を作る。
++       このオブジェクトのヘルパーが公開されているのは、操作が transparent inline だからにすぎない。操作のほうを呼び出す。
+
+% 0 1 0 0b3404a5cfadb2a50a0bd05c8d620a4c
+
+% 0 1 0 17cfb7247bdd77100dbc2bf0c9019796
+
+@ 0 1 0 00d7d355eff5e5ea006a8fb3b87f2b72
++   entry .Stems   サーチパスのプレーンが解決される先の、実際のディレクトリの順序付きのリスト
+
+% 1 1 0 199c87ccedfcb6c50bc0cae9dcfe537f
+
+@ 0 11 0 118df5e0350e82d90400056baadc1566
++         `Searchpaths.Stems on Xdg.Data onto Linux`：`#Plane` は仮想のプレーン、`#Target` はその下のプラットフォーム、`#stems` は優先順のディレクトリで、少なくとも一つある。XDG Base Directory 仕様がアプリケーションにユーザー固有のベースディレクトリにだけ書き込むよう指示するとおり、書き込みは先頭へ行く。
++     entry #Plane   サーチパスのプレーン。`Xdg.Data` など
++     entry #Target   ステムがあるプラットフォーム。`Linux` など
++     entry #stems   試すべきディレクトリ。優先順で、空でない
++   entry .resolve   `Searchpaths.resolve(stem, path)`：パスの名前をステムの下に付け加えたもの
++   entry .locateResolved   その下にパスが存在する最初のステム、または `Unset`
++   entry .locationsResolved   その下にパスが存在するすべてのステム。優先順
++   entry .entryNames   すべてのステムにわたって統合した子の名前。重複を除き、前のステムが先
+
+@ 0 5 0 0a5263e90104d11d089de05d371b1e77
++ entry .search   `path.search()`：パスが存在する、サーチパスの最初の実際のディレクトリ。なければ `Unset`
++     `Path on <plane <: Searchpath>` に対する拡張であり、プレーンのための `Searchpaths.Stems` と、そのターゲットのための `FilesystemBackend` を必要とする。
++     XDG の仕様に従い、最初に一致したものが勝つ。結果は `Path on stems.Target` である。
++     `locate` ではなく `search` と名付けられているのは、zephyrine が `locate` をアンブレラにエクスポートしているからである。
+
+@ 0 3 0 02bb07ddac4d4ab5113f327c4e4078b9
++ entry .locations   `path.locations()`：パスが存在する、サーチパスのすべての実際のパス。優先順
++     `Path on <plane <: Searchpath>` に対する拡張であり、構成ファイルのすべてのコピーを読んで段階的に統合する利用者のためのものである。
+
+@ 0 4 0 17aa1e83022da5e30a5b866db58667db
++ entry .listing   `path.listing()`：すべてのステムにわたって統合した、サーチパスのディレクトリの一覧
++     `Path on <plane <: Searchpath>` に対する拡張であり、ターゲットの `Explorable` と `Tactic[Io.Error]` を必要とする。
++     子は名前で重複を除かれ、前のステムが後のステムを覆い隠し、サーチパスのプレーン上で返されるので、仮想のツリーをナビゲートできる。
+
+@ 0 4 0 0f89585387175a8c1bbb9b7753f6ab54
++ entry .destination   `path.destination()`：先頭のステムの下にあるパスの場所。XDG の仕様が書き込み先として指示する所
++     `Path on <plane <: Searchpath>` に対する拡張である。
++     全域的である：ディスク上では何も検査されない。
++     存在しない中間のディレクトリを作るのは呼び出し側の役目であり、書き込みそのものに対する `filesystemOptions.createNonexistentParents` を通して行う。
+
+@ 0 5 0 17e5a499e5bcc370164c1e8ce1865945
++ entry .searchpathCompliant   `Linux` 流の相対パスやリテラルのパスを、サーチパスのプレーン上で解釈し直せるようにする
++     `(% / "icons" / "app.png").on[Xdg.Data]` を型検査に通す `Compliant` given である：`Linux` の規則のもとで正しい名前は、どの `Searchpath` プレーンでも正しい。
++     どちらの対象のコンパニオンもこれを置けないので、名前でライブラリを修飾したトップレベルの given である。インラインであり、アンブレラのエクスポートがスコープにあれば `soundness.*` 以外のインポートは不要である。
+
+@ 0 5 0 03d6cb4f353e036d08c581bdc35640f2
++ entry .dataSearch   `Xdg.dataSearch()`：XDG のデータのサーチパス。`Searchpaths.Stems on Xdg.Data onto Linux` として
++     `Xdg` オブジェクトに対する拡張であり、`Environment` と `System` を必要とする。
++     ステムは `XDG_DATA_HOME`（またはそのデフォルト）に続く `XDG_DATA_DIRS` の各項目であり、仕様の優先順に並び、構築時に一度だけ読まれる。パースできないディレクトリの集合は、仕様のデフォルトに代わる。
+
+% 2 1 0 16b68530a916763617edfb9a2e976082
+
+% 3 1 0 0441c64e668de17e0459768644c2589f
+
+% 4 1 0 1819b46f34aadfa9113392fe66774df8
+
+% 5 1 0 016fca507717066d125a616e8e5e4e95
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 127a57eab7ef682d0fe56853b185edb6
+
+% 1 1 0 072c2b805d867ca41807649f1501b0a1
+
+@ 0 2 0 1dc01522fc26c1b61d04b83817b02611
++ entry .configSearch   `Xdg.configSearch()`：XDG の構成のサーチパス。`Searchpaths.Stems on Xdg.Config onto Linux` として
++     `dataSearch()` と同様であり、`XDG_CONFIG_HOME` に続く `XDG_CONFIG_DIRS` のためのものである。
+
+@ 0 1 0 19d625158e16330d1c78a6b26b97ee7a
++ entry .Ram   メモリマッピングを通してファイルのバイトにランダムアクセスするための形式：`path.open[Ram](mode)`
+
+% 1 1 0 0177d40bdd7e62881fd8acad3cde1c2d
+
+@ 0 8 0 0ada8248b50d87a6111f6eb5b28ffc63
++       `galilei.jvm` にある。
++       ハンドルは `ram(offset, length)` で位置を指定した読み取りを行い、`Write` の権限が選ばれていれば、`ram(offset) = data` で位置を指定した書き込みを、`ram.grow(size)` で拡張を行う。どちらも `MappedByteBuffer` を通すので、OS が必要に応じてデータをページインおよびページアウトする。
++       `Exclusive` のモードは、さらにスコープの間 OS のファイルロックを取得するので、排他性は他のプロセスに対しても保たれる。
++       マッピングは `Int` でアドレス指定するので、2 GiB を超えるファイルは `Unsupported` を伴う `Io.Error` を発生させる。読み取りについては、`path.expanse` がプラットフォームに依存しない、上限のない代替手段である。
++       書き込みはスコープが終わるとフラッシュされる。
+
+% 2 1 0 17550b1b155003510f796b20f0b800f4
+
+% 3 1 0 028a652642d0283e005648a5a174906a
+
+% 4 1 0 116a929682a0f4bd1d283d48afff88f4
+
+% 5 1 0 16af59620f7d864d0f937d329b8a4f2c
+
+% 6 1 0 06e52e47d69841b613fd7d6cc0859deb
+
+% 7 1 0 01914ab6229a1d0e0d2bce8632c15f44
+
+% 0 1 0 0008f1ce75f9399a0ed90c0baa3a039b
+
+% 0 1 0 12d14e9868583f4c1a2959370273385e
+
+% 0 1 0 1ac0d88ebedb38bb00a794e0df566f2e
+
+% 0 1 0 055d4b63ba3bb6fa14d1a13132ee8d4f
+
+% 0 1 0 00cc012415489fcb0c045c5233762561
+
+% 0 1 0 1bfedab170b1e51a06a1e54d56b4d8f8
+
+% 0 1 0 09249efcdf863e5213e277feee8ae6fd
+
+% 0 1 0 11860e5a2070c733053ee0681f5ce8cc
+
+% 0 1 0 1ec1216c1278b07901daa9ffef95dcbf
+
+% 1 1 0 144ccafa1e29407910c0e271754035d8
+
+@ 0 3 0 11fdfe4e6bbfb56b0dc522a3db8795bf
++       `path.create[Ram](RamFlag.Size(n))` は、ちょうどその大きさの新しいファイルを作り、スコープの間読み書き可能としてマップし、スコープが失敗すれば取り除く。空のマッピングは役に立たないので、大きさは必須である。
+
+% 1 1 0 174f21c89d0f748500aa3c8be36995a4
+
+% 0 1 0 1075b64e06e600a80ecfe0dfa36f9169
+
+@ 0 1 0 03acbc20fee2b5ad1b622249f5cba33f
++   entry .RamHandle   マップしたファイルの上のハンドル：位置を指定した読み取り、書き込み、拡張、そして `Expanse` のビュー
+
+% 1 1 0 05c76ad81f8a37381e7f9a59b988209c
+
+@ 0 14 0 027a7a261cdb2d831f8a03e4799853ff
++         排他的なケイパビリティである。
++         権限で制限される操作は拡張 `.apply`、`.update`、`.grow` であり、`#readFrom`、`#writeTo`、`#growTo` はその制限のない操作の形式である。
++     entry #size   マップした大きさ。バイト単位
++     entry #readFrom   オフセットで `length` バイトを読む
++     entry #writeTo   現在の大きさの範囲内で、オフセットにデータを書く
++     entry #growTo   ファイルを拡張し、より大きな大きさでマップし直す。より小さな大きさでは何もしない
++         新しい大きさは `Int` に収まらなければならない。
++     entry #flush   マッピングの変更をファイルに強制的に書き出す
++     entry #expanse   zephyrine の `Expanse` に対して書かれた利用者のための、共有の位置を指定するビュー
++   entry .apply   `ram(offset, length)`：`Read` を与えるハンドルでの、位置を指定した読み取り
++   entry .update   `ram(offset) = data`：`Write` を与えるハンドルでの、位置を指定した書き込み
++   entry .grow   `ram.grow(size)`：古い終わりを越えた書き込みをアドレス指定できるようにマッピングを拡張する。`Write` を与えるハンドルで使う
++   entry .RamOpenable   `path.open[Ram](mode)` の背後にある `Openable` インスタンス
+
+% 1 1 0 0fe4451ba2c8f7b5069004aa1fe60170
+
+@ 0 6 0 0608a039af664f1708eec052b9e83d01
++         `.openable` がインスタンス化する名前付きのクラスである。
++         `Exclusive` のモードは、書き込み可能なチャンネル（OS の排他ロックはそれを必要とする）と、スコープの間保持されるロックを含意する。競合は `Busy` を伴う `Io.Error` を発生させる。
++     entry #open   スコープの間ファイルをマップし、`RamHandle` でブロックを実行する
++   entry .openable   任意のプラットフォームのパスに対する `path.open[Ram](…)`。`Tactic[Io.Error]` を必要とする
++   entry .RamCreatable   `path.create[Ram](RamFlag.Size(n), flags*)` の背後にある `Creatable` インスタンス
+
+% 1 1 0 0aa25b74ffe268200600d97b4c13e26e
+
+@ 0 6 0 057369680ebed7321c0f913399c64bcd
++         名前の付いたファイルを作り、その大きさまで拡張し、スコープの間読み書き可能としてマップし、スコープが失敗すれば削除する。
++         `CreateFlag.Parents` と `CreateFlag.Replace` に従う。`Size` がない、正でない、あるいは `Int.MaxValue` を超える場合は `Unsupported` であり、`Replace` なしの既存のファイルは `AlreadyExists` である。
++     entry #create   ファイルを作り、大きさを決めてマップし、`RamHandle` でブロックを実行する
++   entry .creatable   任意のプラットフォームのパスに対する `path.create[Ram](…)`。バックエンドと `Tactic[Io.Error]` を必要とする
+
+@ 0 1 0 12adcbffbcf0b4d516bd8d4b7c2f4959
++ entry .RamFlag   `create[Ram]` のフラグ：`Size(bytes)`。マップするファイルの大きさであり、必須である
+
+% 1 1 0 19203f4f5cbb77c21125c7b2e2d4c3a7
+
+@ 0 4 0 16cc65721595515d03f443959066b290
++       マップするファイルを作るには、その大きさを前もって知る必要があるので、`RamFlag.Size(n)` は任意の `CreateFlag` と並んでフラグの中になければならない。
++       `galilei.jvm` にある。
++   entry .Size   `RamFlag.Size(bytes)`：作成してマップするファイルの大きさ
++     entry #bytes   大きさ。バイト単位
+
+@ 0 1 0 12ae2280490539c1016b3b8c0dd08d1f
++ entry .Device   POSIX のファイルシステム上に、`mknod` を通してブロックデバイスまたはキャラクターデバイスのノードを作る
+
+% 1 1 0 0e54beda72d3e8211798071fa72801f3
+
+@ 0 4 0 135a8d0b60548ab10e509e8f2a4c8b59
++       `galilei.jvm` にある。
++       `Device.create(path, Device.Kind.Block, major, minor)` は `mknod` コマンドを実行し、スコープにある `CreateNonexistentParents` と `OverwritePreexisting` のポリシーを参照し、コマンドが失敗すれば `PermissionDenied` を伴う `Io.Error` を発生させる。デバイスのノードを作るには、通常 root が必要である。
+
+% 2 1 0 0b7b9b168185dc4415e5c696a4f2c90c
+
+% 3 1 0 0693b6a9e8c88916072ec0391b8e6b57
+
+% 4 1 0 00364daca4b3b98d1c6d15cfbfe308d8
+
+% 5 1 0 03eae9326f92218a0751a424a1134717
+
+% 6 1 0 0b18e38bba1a120209927f8244cf8d1c
+
+% 0 1 0 045e18a59784ef971d75c27066a4a63f
+
+% 0 1 0 13aeba78036930c805185a12877d23d6
+
+% 0 1 0 1d48f299bf65425f02655e6afc60eb71
+
+% 1 1 0 087fe192f3143da40fd1e7785c552ab3
+
+% 0 1 0 14be69f83b1231551e7f4b283971243a
+
+% 0 1 0 18d58a7e9d368da407a4063be0c2783a
+
+% 1 1 0 0f17eb24b4e2b8c704ec680d756cc53b
+
+@ 0 3 0 1a8e8f0737374e2d1004fee25d9db1c9
++   entry .Kind   `Block` または `Char`：どの種類のデバイスのノードを作るか
++     entry #flag   `mknod` の種類のフラグ：`b` または `c`
++   entry .create   与えられた種類とメジャー番号、マイナー番号で、パスにデバイスのノードを作る
+
+@ 0 1 0 0cf17da69e839f311e1d4fcff42e3de8
++ entry .SocketCreation   JVM での `path.create[Sock]()` の背後にある `Creatable` インスタンス
+
+% 1 1 0 09e3cbd8a321ff1c16c7d8445c3b25d9
+
+% 2 1 0 01bc1e4a848c2f52100aa62591e142fe
+
+@ 0 8 0 1b1048e17e23f9b80074e094d475a7e0
++       `socketCreatable` の置き場所であり、それはここからエクスポートされる。インスタンスにはその名前で届く。
++       Unix ドメインソケットのバインドは本質的にスコープを持つ：ブロック形式は、生きていてバインド済みの `Sock` を与え、スコープが終わるとそのチャンネルを閉じる（ソケットファイルは残る。スコープから抜け出す例外はそれを取り除く）。ブロックのない形式はバインドしてただちに閉じ、ソケットファイルだけを残す。
++   entry .SocketCreatable   ブロックのスコープの間、POSIX のパスに Unix ドメインソケットをバインドする
++     entry #create   `ServerSocketChannel` をパスにバインドし、`Sock` でブロックを実行する
++   entry .socket   バックエンドと `Tactic[Io.Error]` を持つ任意の POSIX プラットフォームのパスのための given
+
+@ 0 6 0 1c4af14df13a9d340d93625efa0950ba
++ entry .socketCreatable   `path.create[Sock]()`：ブロックのスコープの間、POSIX のパスに Unix ドメインソケットをバインドする
++     `galilei.jvm` にある `Sock` 形式のための `Creatable` given であり、バックエンドと `Tactic[Io.Error]` を必要とする。
++     ブロックは、バインドされた `ServerSocketChannel` を保持する `Sock` を受け取り、それはブロックが終わると閉じられる。`CreateFlag.Parents` と `CreateFlag.Replace` に従う。
++     例外がスコープから抜け出さない限り、ソケットファイルはその後も残る。
+
+% 2 1 0 10b31e893d4584820edfd5994bc260e7
+
+% 3 1 0 11e242e9b01545ea161d510996c0dec6
+
+% 4 1 0 0108f8d063244dff0c7b51876e0ce1ca
+
+% 5 1 0 0b1bfe103e4feb650291364d73207026
+
+% 6 1 0 1c9a04c6a2c4e2f41d0d2acd570ccb0c
+
+% 7 1 0 009d7c2bfaf82bd807074f6dc1885291
+
+% 0 1 0 16af877f790c5edf1779f0e78b069018
+
+% 0 1 0 169e030b215da973105baa59d436e0e7
+
+% 0 1 0 0041f765f0e276ae1d60a52e77926b99
+
+% 1 1 0 183c7b0df92c930f0a7a23d55a52c9e4
+
+@ 0 5 0 04a06f921a7ec17e016913eceb8605fb
++ entry .javaPath   `path.javaPath`：プラットフォームのパスに対する `java.nio.file.Path` で、それを取る Java の API のためのもの
++     `galilei.jvm` にある、任意の `Path on <plane: Filesystem>` に対する拡張であり、意図的に `soundness` アンブレラには*エクスポートされない*。
++     これは型付きの API からの逃げ道であり、`galilei.javaPath` として（または `import galilei.javaPath` を通じて）到達することで、それが意図的であることを保つ。
+
+% 2 1 0 0c976b96b236e78e0dbd0ec4ae5fccf5
+
+% 3 1 0 14321b2504879cec0f7b447615eaf1c3
+
+% 0 1 0 05adf28557c472101625b9f684beff7c
+
+% 0 1 0 1e3e5983ea73ff180f1763ca2f81f50f
+
+% 0 1 0 00e70c1e3d9f79210cea0cc7742a7074
+
+% 1 1 0 05d9d3b1e2900adf0e552895fff93206
+
+@ 0 2 0 01b8163724b009240a787270cb339100
++ entry .javaFile   `path.javaFile`：プラットフォームのパスに対する `java.io.File`
++     `javaPath` と同様だが、古い API のためのものである。`galilei.jvm` にあり、アンブレラにはエクスポートされない。

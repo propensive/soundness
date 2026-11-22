@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 1 0 0c96d8d28a226a930af285bddbb47a98
++ # `SN-982` — Leerzeile vor mehrzeiligem Case (ausgemustert)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Diesen Fehler gibt es nicht mehr. Die Seite bleibt erhalten, damit der Code nicht wiederverwendet
++ wird und damit ein Verweis darauf aus einem älteren Release weiterhin aufgelöst werden kann.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Was daraus wurde
+
+@ 0 2 0 13a2b176728ad2c416de438c34c360df
++ Diese Regel von Decorum wurde zurückgezogen. Der Hausstil verlangt keine Leerzeile mehr vor einer
++ mehrzeiligen `case`-Klausel.

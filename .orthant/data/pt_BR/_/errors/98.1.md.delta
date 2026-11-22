@@ -1,0 +1,76 @@
+orthant 2 language
+
+% 0 1 0 186cff16263a518e01138ac682ce1a1f
+
+@ 0 2 0 1766c53c45f026411129851c6e9759a1
++ Lançado quando o Surveillance não consegue registrar um caminho no watcher de
++ sistema de arquivos do sistema operacional.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 195a818b088df9050e8f6a673a5a68e9
++ O Surveillance envolve a API `WatchService` do JDK. Várias condições distintas
++ podem fazer o registro falhar; o construtor recebe um `reason: Reason`. A
++ mensagem renderizada é `the path could not
+
+% 0 1 0 0449712a8a243b4310bf375b9057f2d2
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0e5c125ebe6b2f4906e059e60668b48a
+
+@ 0 2 0 00fee907e2b5296d1c5f466b08ba9b13
++ O limite do sistema operacional, por processo ou por usuário, no número de
++ observações do inotify (ou equivalente) foi excedido.
+
+@ 0 1 0 080d05d54dbe25b51a6408fb5c28bdd6
++ **Exemplo.** `[↯/s.98.1.1] the path could not be watched because the operating system's limit on watched paths has been exceeded`
+
+@ 0 2 0 0a99e6a81654852a0d90cbc3130155d1
++ **Resolução.** Reduza o número de caminhos observados, ou aumente o limite do
++ sistema operacional (por exemplo, `fs.inotify.max_user_watches` no Linux).
+
+% 0 1 0 1201c3c42f89d0860d6a773d8ccc0026
+
+@ 0 1 0 1c7f0581728b971f13ef812fd1a2f4b0
++ O caminho passado a `watch` não existe.
+
+@ 0 1 0 1b0272c36394525b08ecc7de5401bbd9
++ **Exemplo.** `[↯/s.98.1.2] the path could not be watched because the path does not exist`
+
+@ 0 2 0 011c45aef422c10203c919467df06560
++ **Resolução.** Confirme o caminho antes de observá-lo, ou crie-o antes.
+
+% 0 1 0 131d41785ac560d6166bbadacf076f32
+
+@ 0 2 0 136f086894ae32680f226a570bf2428c
++ O `WatchService` do JDK só registra diretórios; o caminho fornecido era um
++ arquivo comum ou outro tipo de entrada.
+
+@ 0 1 0 19ca71dd59d80e1d0ae71ca1a7e2def5
++ **Exemplo.** `[↯/s.98.1.3] the path could not be watched because the path is not a directory`
+
+@ 0 3 0 1134e5bf46d9f3f806777debfab027c0
++ **Resolução.** Observe o diretório pai e filtre os eventos pelo nome do arquivo
++ (a extensão `watch` do Surveillance faz isso quando recebe o caminho de um
++ arquivo).
+
+% 0 1 0 125406178472b99005cd216c4c0a5cd9
+
+@ 0 1 0 1acf71bda4da1ec8074d77615ddd6d45
++ O usuário atual não tem permissão para ler o caminho.
+
+@ 0 1 0 0baf9cbf4c37c11d1f1da4348e3ec9bd
++ **Exemplo.** `[↯/s.98.1.4] the path could not be watched because the user does not have permission to watch the path`
+
+@ 0 2 0 17134ae6df1d1f301f5daad3744a7a3e
++ **Resolução.** Ajuste as permissões do sistema de arquivos, ou execute com um
++ usuário que consiga ler o diretório.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 14074eee90b6d17217292cd2a26cb1be
++ - Código-fonte: `lib/surveillance/src/core/surveillance.Watch.scala`

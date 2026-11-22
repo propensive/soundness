@@ -1,0 +1,449 @@
+orthant 2 language
+
+@ 0 1 0 07f201731a22e8cc0d42be46b9bd1e2c
++ ## Container
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 5 0 07ef0d991b90cce10d0d8ed93e0772b6
++ Un'immagine container [OCI](https://opencontainers.org/) si assembla in memoria a partire da layer
++ del filesystem e da una configurazione, e si rende come un archivio OCI standard che qualsiasi
++ runtime di container può caricare, con i digest del suo contenuto calcolati correttamente. Un
++ client separato comunica con un demone [containerd](https://containerd.io/) in esecuzione tramite
++ gRPC. Elenca e crea container, immagini e namespace, e avvia e ferma i task che vengono eseguiti
++ all'interno dei container.
+
+@ 0 4 0 09ec97c7294bb0e81c8f951f668f1e53
++ Un'immagine e tutto ciò che contiene, i suoi layer, il suo manifest e la sua configurazione, sono
++ valori tipizzati [immutabili][immutabile]. Anche ogni container, task e namespace sul demone è un
++ valore tipizzato, e non un sacco di JSON. Le due metà sono indipendenti. Un'immagine si può
++ costruire senza un demone, e un demone si può gestire senza costruire un'immagine.
+
+@ 0 1 0 143f5cd1f33ed8971a3058a72324503f
++ ### Sui container
+
+@ 0 7 0 0275ff7cae3e2181122904c7658f7da7
++ Un'immagine container non è un singolo file. È una pila di
++ [layer](https://en.wikipedia.org/wiki/OverlayFS) del filesystem, più una configurazione che dice
++ come eseguirli. Ogni pezzo è indirizzato dal
++ [digest](https://en.wikipedia.org/wiki/Content-addressable_storage) dei suoi byte. Il formato è
++ esatto. Un layer ha un digest per il suo tar non compresso e un altro per il suo blob compresso, e
++ un manifest li lega insieme tramite quei digest. Basta sbagliare un digest perché l'immagine sia
++ non valida, in silenzio.
+
+@ 0 2 0 1ed63d03acbed9551ff33699d12a3ca2
++ Eseguire un'immagine del genere è compito di un demone. containerd, il runtime sotto Docker e
++ Kubernetes, si pilota tramite un protocollo gRPC su un socket locale.
+
+@ 0 4 0 05b0eacd77d6a576150ff0e7b5945161
++ Qui il formato dell'immagine è un insieme di valori i cui digest vengono calcolati per te, e il
++ protocollo del demone è un insieme di metodi che scambiano valori tipizzati. Costruire
++ un'immagine come valore, e non eseguendo uno strumento, è [stile diretto](../../philosophy/direct-style.md):
++ i passi sono codice ordinario, verificato mentre compila.
+
+@ 0 2 0 1e4e366a1cb2e8a20df429d4db783292
++ Per i suoi layer tar, la costruzione di un'immagine si appoggia agli [archivi](archives.md).
++ Tutto proviene dal package `soundness`, e l'ultimo import permette agli esempi di stampare i loro
++ risultati:
+
+% 2 1 0 07fb23cd4067d13c0a5ee2476d107c4c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0b21de5890a84d8d05926f25583daec4
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 05d66aa2a1e0f05509a4cff5addc3c66
++ ### Costruire un'immagine
+
+@ 0 2 0 10bb8eb7f8d47a7d12ce9881eca231a8
++ Un layer è un archivio tar di file. Dato un `Tarfile`, `Oci.Layer` lo avvolge e calcola i digest
++ che il formato richiede:
+
+% 2 1 0 1727c011ae08dc320a67ea8a41748810
+
+% 0 1 0 05dc5635209d8cc406779563880c6154
+
+% 0 1 0 117c3f1a89574c220452af568063b16f
+
+% 0 1 0 13be236fa8eda1831c74450accc661db
+
+% 0 1 0 0f2992b2549776431f30e8f0b1f0fe8f
+
+% 0 1 0 0b98dcdc9a6959b40d01a46b06283c7d
+
+% 0 1 0 081dc1fd7d11ea3b10a17d5d8a59632c
+
+% 0 1 0 15d65404e0f314c1036bb9a334e91626
+
+% 0 1 0 0fb140251a0e56aa0e891dd77a79859e
+
+% 0 1 0 11c98faeaf277f780bad5251df284585
+
+% 1 1 0 1b1ebad792c5ee340d4a0d79bd807a27
+
+@ 0 2 0 1137b68517906e2804a201fdf4e260e3
++ Un `Oci.Image` assembla uno o più layer con una configurazione, che contiene il comando da
++ eseguire, l'ambiente e la directory di lavoro:
+
+% 2 1 0 12401cab63693566160a161bfbb6e7d6
+
+% 0 1 0 1b5aa3cae2654615198d2744c0e1e940
+
+% 1 1 0 09f1ccb0d09cae1f09458cdcf4caa954
+
+@ 0 1 0 091286c85bc0c6c80955093e53ade36a
++ ### Che cosa contiene un'immagine
+
+@ 0 3 0 19c6d62532bbe9411ddbd284e58a8b0d
++ L'immagine assemblata espone ogni parte che il formato definisce. Un layer riporta entrambi i suoi
++ digest. `diffId` è il digest del tar non compresso, e `digest` è il digest del blob compresso:
+
+% 2 1 0 05a7df43adb5fbd211c4791a4da9ddea
+
+% 3 1 0 08fed045dd65132b08ef31dac6d3a847
+
+% 4 1 0 16eeaa60a6aabb3917a1467aab8be7a7
+
+% 0 1 0 136feb739ac99ecc1aa9c6dda3491f09
+
+% 0 1 0 1f98623279cc65ec06ab87f49c326694
+
+% 1 1 0 0ce61525db6af9290586d368f32f761a
+
+@ 0 2 0 0c03fdf1db981299165cd5a31dab48b1
++ L'immagine porta con sé il manifest che li referenzia, con il tipo di media di ciascun layer e
++ della configurazione:
+
+% 2 1 0 15fae063ee19334712ada587ecddd14b
+
+% 3 1 0 1779d1f762ce3c4b02cf7ae5c2a3024c
+
+% 4 1 0 0ebcbb823af409ed0550496fa688dcf5
+
+% 0 1 0 0a7d48f7a596b390163dd5f3d03c6fe4
+
+% 0 1 0 198d69a430b5ad760004ca1714a82f0e
+
+% 1 1 0 1e0d707850b7e85f0badc491e32b3e67
+
+@ 0 3 0 18ccfe7dfb8e29a112878188891c2ecb
++ `image.archive` è l'intera immagine come layout tar OCI, che è la forma che un runtime importa.
++ Letta come byte e scritta su un file, produce un'immagine che `docker load` o containerd
++ accetteranno.
+
+@ 0 1 0 1535bbd1fbc0f73507fe5cb37d1a7b4b
++ ### Carichi di lavoro WebAssembly
+
+@ 0 5 0 1db7ab79fec07c8d0a8453a9f3035f16
++ Un'immagine container descrive un filesystem, ma `runc`, che ne spacchetta ed esegue uno, non è
++ l'unico modo di eseguire un carico di lavoro. Un componente [Wasm](https://webassembly.org/) non ha
++ bisogno affatto di un filesystem radice. Un runtime come [wasmtime](https://wasmtime.dev/),
++ raggiunto attraverso uno shim di containerd come `io.containerd.wasmtime.v1`, lo istanzia
++ direttamente. Ciò che cambia non è il formato di distribuzione, ma ciò che la configurazione dice
++ che l'artefatto *è*.
+
+@ 0 1 0 1cc2c62631b5c7fb0a3394d36a7072db
++ `Oci.Image.wasm` assembla questa forma, un
+
+% 0 1 0 1058dcca2384856d0ee340347b086e0d
+
+% 2 1 0 1846ddb4a25f521b05ff26886dc6dcca
+
+% 0 1 0 07a3e36d1205387317494cc6a1c82a53
+
+% 0 1 0 103f36adca9be05c03267b6e1db57595
+
+% 0 1 0 03931b186aa9b5450417cb93f5382e69
+
+% 0 1 0 0d351be1f6119a8c09346b3814462a70
+
+% 0 1 0 1102c0e2730430f7006c5b04e92ad857
+
+% 0 1 0 087d751d4d15fdcd0b67f4af26b0bc03
+
+% 0 1 0 0df21255a55abca71ea5e44a111f5258
+
+% 1 1 0 0a8753795aba1467118d83219edf0573
+
+@ 0 2 0 0c512fd8e6145ca1129ca23de11fa755
++ Il manifest, l'indice e l'archivio sono quelli ordinari, così gli stessi registri e strumenti lo
++ trasportano. Solo due cose differiscono:
+
+% 2 1 0 1dd27927dba3e1861773b8f2a5d81985
+
+@ 0 6 0 0b68ec35b1644d3c056be0464e2ae8f3
++ column  Parte
++ column  Immagine container
++ column  Artefatto Wasm
++ row  config  la configurazione di esecuzione di un filesystem  `application/vnd.wasm.config.v0+json`, che descrive un componente
++ row  layers  tar compressi, uno o più  il componente stesso, `application/wasm`
++ row  digest dei layer  `diffId` e `digest` differiscono  `diffId` e `digest` coincidono, poiché è memorizzato non compresso
+
+% 1 1 0 0c833b183b45f5410f0f38d9aac4110c
+
+@ 0 1 0 1f4379eeca72bcf10768d0e1fc425d63
++ La configurazione descrive il componente, con la generazione WASI come suo `os`:
+
+% 2 1 0 12bf4cf281dc37520785a68ee6c1f41b
+
+% 3 1 0 0ad4e277afe6ffb2114ed78d87f2b5ea
+
+% 4 1 0 03fac55c035b212e1e674febae7fd957
+
+% 0 1 0 1628f9d178bf76cf1d8963b00723c068
+
+% 0 1 0 026067a2b2b5ecfe0bccbe08513275c7
+
+% 1 1 0 1ac830f7f8e772850754f20f1fdba51f
+
+@ 0 3 0 1b698a0c4b651c4c1ddc4d78c9174ed6
++ Gli `exports` e gli `imports` sono le interfacce del Component Model che il carico di lavoro offre
++ e di cui ha bisogno. Registrarli rende l'immagine autodescrittiva. Un host può capire se è in
++ grado di soddisfare le capability del carico di lavoro prima di scaricare il componente.
+
+@ 0 2 0 12c74a32c58343c01404539a176f75b5
++ Di solito non si scrivono a mano, ma si leggono dal mondo WIT con cui il componente è stato
++ collegato, che è la dichiarazione autorevole dello stesso contratto:
+
+% 2 1 0 1271733c355cc382159ca7cf9612d783
+
+% 0 1 0 19c615adff2e79f60b652806cb4c5c27
+
+% 0 1 0 081b8a5be431ab810e2c8ed4df15a6e6
+
+% 0 1 0 0bf5b6535aac2064050e198754446777
+
+% 0 1 0 045368d90a5fc19504b42e532e628a17
+
+% 0 1 0 0ae4386bc588e30e16b8c764f8a5ef64
+
+% 0 1 0 0adf93f72398fcdf1f16dde7a64faf9d
+
+% 0 1 0 1b1851f65da1fbe813bc4eac0a46f7e9
+
+% 1 1 0 1c5cd71f5f6bef731775bad7313f2c86
+
+@ 0 3 0 06b15d8e456afa3f0a6be5af91189690
++ Il [compilatore](compiler.md#wasi-components) fa esattamente questo nel suo arco che produce
++ un'immagine OCI. Una compilazione può andare dal sorgente a un artefatto distribuibile lungo un
++ solo percorso, e nulla dichiara il contratto due volte.
+
+@ 0 1 0 16927694823b2c600ed01ba764a42b16
++ ### Leggere un'immagine
+
+@ 0 2 0 0eee86c55aa776fc035e84c22b01719b
++ Un archivio OCI esistente, che sia un file o un blocco di byte, si legge *aprendolo*. Il suo
++ contenuto è disponibile per la durata di un ambito, e non oltre:
+
+% 2 1 0 180e1b9c9a718166064b40ba3a0c5a77
+
+% 0 1 0 1be7125c5f958ae814da7c0b8b450c13
+
+% 1 1 0 1d92fa2aef09f8b0102601c97a2192a7
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 1 1 0 0683abd84365fa0a0ca23c9715cae48c
+
+% 0 1 0 11f2d87d5ab94b0d1627a55566d8e3cb
+
+% 0 1 0 15605efb10a6452e1a7a9892cfc048e9
+
+% 0 1 0 14a56f3c5666769602768223e8d28bf5
+
+% 1 1 0 1128216a3629b7bd1db1234673011f79
+
+@ 0 2 0 1fd7ede2f98e8aa30f3e03639706a646
++ `handle.verified(descriptor)` legge un layer e ne verifica il digest. I tre modi di raggiungere un
++ layer rendono esplicito il costo:
+
+% 2 1 0 186ded076be475680b499241a8d9287e
+
+@ 0 6 0 1024d44155a6e4ae1b0ed9fd4bb848a9
++ column  Metodo
++ column  Produce
++ column  Verifica il digest
++ row  `compressed`  i byte memorizzati, intatti, come stream  no
++ row  `layer`  il tar non compresso, come stream  no
++ row  `verified`  i byte memorizzati, raccolti in modo anticipato  sì, e la dimensione
+
+% 1 1 0 0f640d860d933d410573d763c74a51fb
+
+@ 0 3 0 07efe378367074560ec4c2aa03c237a3
++ `verified` solleva un `Oci.Error` se i byte non corrispondono al digest o alla dimensione che il
++ manifest dichiara. Verificare uno stream significherebbe svuotarlo, ed è per questo che
++ `verified` raccoglie prima i byte.
+
+@ 0 3 0 0f8af7e1435e53af10d97e633bf755b1
++ Un lettore che non sa già che tipo di artefatto ha aperto chiede `config`. Questo smista in base
++ al tipo di media del descrittore della configurazione. Distinguere un componente da un filesystem
++ è una domanda a cui risponde l'archivio, e non una di cui il chiamante debba già conoscere la
++ risposta:
+
+% 2 1 0 149dcf96c33f09f41f915593e0cded0c
+
+% 1 1 0 0de14d8a92fea020120e47d3b60dc597
+
+% 0 1 0 1dd364909ae42c3c06658b5532f4d438
+
+% 0 1 0 1ab03095ff527e1c0c2c222ff89ee4c6
+
+% 0 1 0 041ef2d33989bec10e5567a886861005
+
+% 1 1 0 0111124e1a133914000ea478c2405958
+
+@ 0 1 0 01a02b46d8bf4313011215ed7c5311e2
++ ### Connettersi a un demone
+
+@ 0 1 0 1a7402db1cf3e7b01129394fc5e445ab
++ Il resto di questa pagina richiede un demone in esecuzione, quindi i suoi esempi vengono
++ compilati ma non eseguiti.
+
+@ 0 2 0 11c232294bb11a780f8248019df138ef
++ Un client `Containerd` si connette a un demone attraverso un endpoint HTTP/2 sul suo socket,
++ legato a un namespace. La connessione mantiene del lavoro in background, quindi vive all'interno
++ di un ambito supervisionato:
+
+% 2 1 0 0a363643266079271517f9a29c264739
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 0dfb7410225235c40e0668297e02bdbb
+
+% 0 1 0 192875f0217a6474139776092a16684a
+
+% 0 1 0 069209a63b321eb51450ab3ac9428a31
+
+% 1 1 0 1b8135ef2ac18ead04c4b3010e92b391
+
+@ 0 4 0 0a85ead3944ac7ce0ac44308c3f21aa7
++ Qui `endpoint` è un endpoint HTTP/2 sul socket Unix di containerd, stabilito attraverso il
++ supporto per HTTP/2 e per i [socket](sockets.md), sopra il quale il client parla [gRPC](rpc.md).
++ Ogni chiamata al demone può fallire, nel socket, nel protocollo o nella richiesta stessa, così le
++ chiamate si affidano alla [strategia] per gli errori nell'ambito.
+
+@ 0 1 0 1800a27229718c7418f0d45d4ea61566
++ ### Container, immagini e namespace
+
+@ 0 2 0 1b0154acaa3b1bb807645ce8f11034aa
++ Il client elenca e ispeziona ciò che il demone contiene, e lo crea e lo elimina. Ogni risultato è
++ un record tipizzato:
+
+% 2 1 0 0096bd378d99244119b570c805e4980b
+
+% 0 1 0 13534c38d5075b480ead832c1760b3de
+
+% 0 1 0 13a1e53355030e511295f416ea5a8d69
+
+% 0 1 0 078a0da708cbd1eb15732caaa935cdc3
+
+% 0 1 0 0bf3d05b5b45140f0a9205a590549242
+
+% 0 1 0 177befcb093cb28819823a1dae911981
+
+% 0 1 0 18f198477c66980b0c5c67824bb737e0
+
+% 1 1 0 1ee507d06f90141012d537878af43a68
+
+@ 0 1 0 09d718fa67c4e3ec1ac7236ee0a38693
++ Questi sono i metodi per ciascun tipo di risorsa:
+
+% 2 1 0 00811dbd65915c451e2ee4d3afd911ba
+
+@ 0 5 0 1d1801e954432cb01437724a9d7c9861
++ column  Risorsa
++ column  Elencare
++ column  Ispezionare
++ column  Creare
++ column  Eliminare
+
+% 0 1 0 1af6cc7393ccb74b163518ca369ee59b
+
+% 1 1 0 1d9b1e7869f6de2c1244959fdee92b67
+
+% 0 1 0 0941427d4ffcd2e40bab2679edfe1c40
+
+% 0 1 0 15e1e7a47b291daf1991a32791ae16bb
+
+% 1 1 0 0e77f1e16c0240a11b2a518ed6da2234
+
+% 0 1 0 1fd8c6826921490e1062e902bf6a2828
+
+% 0 1 0 1f5f184e994f521c1ebe9b1a169ed04c
+
+% 1 1 0 1ce599b2741af9b21ecc4d65c4e67944
+
+@ 0 1 0 05d4acaf789e196f128d8be58008ca33
++   cell  immagine
+
+% 0 1 0 003d0b724c00c847133fdc7ab35670fe
+
+% 0 1 0 16d1a38335d17eda183b09569c0a65bb
+
+% 1 1 0 05b0aafac2ce2eb7186d64a214dd4c02
+
+% 0 1 0 1a8eaec0d693d69e03cc067d7f484004
+
+% 0 1 0 1defada40d3cb53203b367a77c7698bf
+
+% 1 1 0 1cedf478014fcc0c0ccf974c4644b654
+
+@ 0 1 0 10e9f8af4e2e695a13288bb8c7efcead
++ ### Task
+
+@ 0 2 0 05a2762eaf786f8b1efb974648dc372d
++ Un container è una definizione. Un *task* ne è un'istanza in esecuzione. Un task si crea da un
++ container con il filesystem radice da montare, poi si avvia, se ne attende la fine e lo si
++ termina:
+
+% 2 1 0 180b69276b1c60df108e1d1a3083d5b9
+
+% 0 1 0 100115a5decc20240e55ae6aff3f8061
+
+% 0 1 0 09107ed82def67ff040052cc440c16df
+
+% 0 1 0 19bf6bc23551d15e18ac858946150f38
+
+% 0 1 0 0b8e2dd339df03c3184cf9ffccc70e94
+
+% 0 1 0 02b2ed082a6411e218cfe46475d03e91
+
+% 0 1 0 1941b95e046754ff1c486bed64e524d6
+
+% 1 1 0 0d28648032a9751c12cc150978e0d6a0
+
+@ 0 2 0 123cf09f8f3e1a5714b8ffbf19c07307
++ `client.task(t"web")` restituisce il `Workload` corrente del task, il cui `state` riporta se è
++ creato, in esecuzione, fermato o in pausa.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 8 0 07efb6cb307687c1159ab351467b783f
++ - [Archivi](archives.md) descrive gli archivi tar di cui sono fatti i layer.
++ - [Compilazione](compiler.md#wasi-components) produce i componenti WASI e le immagini OCI che una
++   toolchain collega.
++ - [Hashing](hashing.md) descrive i digest che indirizzano ogni parte di un'immagine.
++ - [RPC](rpc.md) descrive il gRPC che il client parla con containerd.
++ - [Socket](sockets.md) descrive il socket Unix su cui il demone è in ascolto.
++ - [Concorrenza](concurrency.md) descrive `supervise`, all'interno del quale il client vive.
++ - [Compressione](compression.md) descrive il gzip con cui sono compressi i layer, e [processi](processes.md) i comandi che un task esegue.

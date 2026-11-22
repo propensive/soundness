@@ -1,0 +1,186 @@
+orthant 2 language
+
+@ 0 1 0 06243999aacdebca1046ca79b2e9d7b9
++ # Ehrliche Signaturen
+
+@ 0 6 0 05a48d9403baa413163dbe62a380a680
++ Eine Signatur in Soundness sagt die Wahrheit, die ganze Wahrheit und nichts als die Wahrheit
++ darüber, was eine Operation braucht. Der wichtigste Teil ist das *nichts als*: Eine Signatur
++ deklariert keine Anforderung, die nicht immer gebraucht wird. Eine Typklasse beschreibt die
++ einzelne Capability, die sie abstrahiert, ohne ihre Methoden so zu erweitern, dass sie
++ aufnehmen, was irgendeine Implementierung wollen könnte — kein Kontextparameter „für alle
++ Fälle“, kein deklarierter Fehler, weil eine Implementierung scheitern kann.
+
+@ 0 8 0 050776059537a5f21ebabb954ea5dcc4
++ Anforderungen, die nur bestimmte Implementierungen haben, gehören an diese Implementierungen.
++ Ein `given` deklariert in seiner eigenen Signatur die Capabilities, von denen seine bestimmte
++ Implementierung abhängt — eine netzwerkgestützte Instanz verlangt `Online`, eine fehlbare eine
++ `Tactic` —, und die Anforderung wird dort erfüllt, wo die Instanz gewählt wird, statt der
++ Typklasse und jeder anderen ihrer Implementierungen auferlegt zu werden. Die tatsächlichen
++ Anforderungen einer Methode werden also von den Instanzen bestimmt, die sie wirklich verwendet:
++ Derselbe generische Code ist mit einer reinen Instanz rein und mit einer vernetzten vernetzt,
++ und seine eigene Signatur behauptet keines von beidem.
+
+@ 0 5 0 19082702522ce140151b159258ce26f0
++ Das Ergebnis sind Signaturen, denen man in beide Richtungen trauen kann. Nichts, was eine
++ Operation verlangt, ist verborgen, sodass ein Aufrufer die wahren Kosten sieht; und nichts, was
++ sie deklariert, ist ungenutzt, sodass eine Anforderung in einer Signatur immer etwas bedeutet.
++ Eine minimale Typklasse ist außerdem leichter zu implementieren — die Lücke zwischen dem, was
++ eine Schnittstelle verlangt, und dem, was die meisten Implementierungen brauchen, ist genau der
++ Ort, an dem unehrliche Signaturen entstehen.
+
+@ 0 1 0 0d28bfa57dc178a50304b9d5357bae5a
++ ## Die Anforderung reist mit der Instanz
+
+@ 0 1 0 0e41017bf66db072143a9a63e7e34aa4
++ Eine Typklasse sagt nur, was sie abstrahiert:
+
+% 2 1 0 08511f38946741341bbbf25a2dfb526d
+
+% 3 1 0 190757efa6c1350e0d2c538315b96a61
+
+% 4 1 0 182f0d26b73fd2bf1a4948b33c9a9dd4
+
+% 0 1 0 02c7a26df30c501401305c4e011932e8
+
+% 0 1 0 179e46bbddd58b5718c8476807347cb6
+
+% 1 1 0 09f07a0a8270411015169f9365ad7e85
+
+@ 0 3 0 03b85a07d3ca79261d859371b061b0c8
++ Kein Fehler, kein Kontext, keine Capability — denn einen Wert anzuzeigen braucht im Allgemeinen
++ nichts davon. Eine Instanz, die *doch* etwas braucht, deklariert es in ihrer eigenen Signatur,
++ wo es zutrifft:
+
+% 2 1 0 17b9f3afad580fd100610b38255e08fd
+
+% 3 1 0 0e7a270e06526271137ac9dcd3d8f10f
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 1 1 0 05fa8d9217c170b60ac90a2b81c4d78c
+
+% 0 1 0 0576420aca7e7e5e1922ada5e9e10712
+
+% 1 1 0 0301648f5402448b0e9aaf57d6d004cc
+
+@ 0 3 0 1eb4fbfd17b3a20901a1a04d5eddc357
++ Die Folge ist, dass die tatsächlichen Anforderungen generischen Codes von den Instanzen
++ entschieden werden, die er auflöst. Dieselbe Funktion ist rein, wenn sie eine reine Instanz
++ erhält, und fehlbar, wenn sie eine fehlbare erhält, und ihre eigene Signatur behauptet —
++ ehrlicherweise — keines von beidem.
+
+@ 0 1 0 14c93dff3f1441dc0bcc6b31b8049d15
++ ## Wie eine unehrliche Signatur aussieht
+
+@ 0 2 0 12cc30a02acc2dec17ef1bd8aee97fe3
++ Das Fehlermuster ist leicht zu erkennen, sobald es benannt ist. Eine Schnittstelle wird so
++ erweitert, dass die anspruchsvollste Implementierung hineinpasst:
+
+% 2 1 0 1e7efb761f35b79d1c3c5271c7c51c76
+
+% 3 1 0 14b629fbe10a291d183c2a96bb44aaa5
+
+% 4 1 0 1a6b3e7bf3fe96fe0f953f448acc836a
+
+% 0 1 0 0727f4fb3a23969f0fc305662732b161
+
+% 0 1 0 16e69ac9995d45220388ca90409a8294
+
+% 1 1 0 011286b2edac3720076089c0a7c14268
+
+@ 0 3 0 16d30ec94ef4c4461cc98c4bbf2d793b
++ Eine Implementierung holt ein Schema über das Netzwerk; eine kann scheitern; also verlangt die
++ *Schnittstelle* beides, und nun muss jeder Aufrufer jedes Codecs eine `Online`-Capability und
++ eine Fehlerstrategie bereitstellen, ob die Instanz, die er verwendet, eines davon braucht oder
++ nicht.
+
+@ 0 5 0 0ccd8660e14c807304867b93771297c6
++ Das ist schlimmer als eine Unannehmlichkeit. Die Signatur trägt keine Information mehr: Wer
++ `Online` liest, kann nicht mehr schließen, dass die Operation das Netzwerk berührt, denn die
++ Anforderung steht aus einem Grund da, der womöglich nicht zutrifft. Sobald von einigen
++ Anforderungen bekannt ist, dass sie unecht sind, kann man keiner mehr trauen, und die Disziplin
++ bricht zusammen.
+
+@ 0 1 0 1bbf1444ff9ae7e813bfb30914acccaa
++ ## Was die Signaturen tatsächlich tragen
+
+@ 0 1 0 09b0b4f11ecac9060fcc8dd1df39d4d2
++ Weil sie minimal sind, bedeuten die Klauseln, die *vorhanden* sind, etwas:
+
+% 2 1 0 1b9c0c2072582f3313ab390678fd32bb
+
+% 3 1 0 0e43f4f614af615d05cbbf7dbbae4860
+
+% 4 1 0 1ed4edba580ed74604a1f8e82e2785d2
+
+% 0 1 0 018857ea871317110933c6faf344c891
+
+% 0 1 0 1ecb71c330c5f881087473b1f8518e17
+
+% 0 1 0 0e153cc65cba77c11a3d496a51bad7a4
+
+% 0 1 0 1969367c3b0bd78c082ca5e93302bda7
+
+% 1 1 0 12174855fc549fbe0659ccd5b8f2054e
+
+@ 0 1 0 1e03a2962898606107cba51ed2c04eaf
++ Jede Klausel stellt eine Behauptung auf:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 04e35d87f6c057221c6fa6843d9bec8c
++ column  Klausel
++ column  Bedeutet, dass die Methode
++ row  `using Online`  das Netzwerk erreicht
++ row  `raises`  scheitern kann und sagt, wie
++ row  `logs`  Ereignisse dieses Typs ausgibt, sodass ein Aufrufer weiß, was wohin zu leiten ist
++ row  `using Monitor`  den aufrufenden Strang anhalten kann
+
+% 1 1 0 125abc22c916799009e53ae83ab12207
+
+@ 0 2 0 1c21f921c834a2a917fef31061bc918a
++ Eine Methode ohne jede davon tut nichts davon, und das ist eine Behauptung, die man aufstellen
++ können sollte.
+
+@ 0 1 0 1e7d385d16e6fa0f13a6c2a7d4909e82
++ ## Ehrlichkeit beim Erfassen
+
+@ 0 4 0 02148923c21d21470b2aebc16f24e140
++ Es gibt eine subtilere Unehrlichkeit, die eine Signatur begehen kann: einen Wert zu liefern, der
++ insgeheim von etwas mit Geltungsbereich abhängt. Ein Stream, der noch eine offene Datei hält,
++ eine Closure, die noch einen Fehler-Handler hält — der Typ sagt `Stream[Text]`, und die Wahrheit
++ ist „ein Stream, aber nur, solange diese Datei offen ist“.
+
+@ 0 6 0 0a6594ecb32835f4187e2b96e8e5c0a4
++ [Capture-Checking](capture-checking.md) macht auch das zu einem Teil der Signatur. Der Typ eines
++ Werts hält die Capabilities fest, die er erfasst, sodass eine Operation nicht stillschweigend
++ etwas liefern kann, dessen Gültigkeit enger ist, als sein Typ nahelegt. Deshalb gehören das
++ Prinzip der Ehrlichkeit und Capture-Checking zusammen: Das eine handelt davon, was eine
++ Operation *braucht*, das andere davon, wovon ihre Ergebnisse *abhängen*, und beide sind Fälle
++ einer Signatur, die die ganze Wahrheit sagt.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Was es kostet
+
+@ 0 3 0 074cbc2bef00b976167e30cdcc717a22
++ **Instanzen tragen mehr.** Anforderungen auf Instanzen zu verlagern heißt, dass die Instanzen sie
++ deklarieren, und die Signatur einer fehlbaren Instanz ist länger als die der naiven Fassung.
++ Davon profitiert, wer den generischen Code aufruft, nicht, wer die Instanz schreibt.
+
+@ 0 4 0 16b1d044219973741b5eed38ca038ac2
++ **Anforderungen pflanzen sich fort.** Eine Methode, die etwas aufruft, das `Online` braucht, muss
++ es entweder bereitstellen oder deklarieren. Das ist der Mechanismus bei der Arbeit — der Preis
++ dafür, dass eine Signatur etwas bedeutet, ist, dass sie gepflegt werden muss —, aber es heißt,
++ dass eine Änderung tief in einer Aufrufkette ganz oben auftauchen kann.
+
+@ 0 5 0 1c9e03e016d626df186b6663a8c70eca
++ **Fehlschläge der Auflösung sind indirekt.** Fehlt eine benötigte Instanz, meldet der Compiler
++ eine gescheiterte implizite Suche statt „diese Operation braucht `Online`“. Ein Import von
++ `explainMissingContext` macht daraus eine Diagnose, die den Import nennt, der sie erfüllen würde;
++ das ist die Abhilfe für Kosten, die sonst genau die Menschen träfen, denen die Ehrlichkeit
++ dienen soll.
+
+@ 0 2 0 07287f51d3dceaae098c1fe31ad3aff3
++ Siehe [deklarativer Kontext](declarative-context.md) dafür, wie die Anforderungen
++ bereitgestellt werden, und [Fehlerbehandlung](error-handling.md) für die häufigste von ihnen.

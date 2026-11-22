@@ -1,0 +1,727 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0462e87ff8fe31d012726f30d82609bb
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0b06d8ff4f28748111a9c759c4b649c2
++ info
++     filtres de Bloom dimensionnés selon l'intention, et palimpsestes : séquences compactes de
++     hachages d'une bibliothèque partagée
+
+@ 0 2 0 14289b5f20c5c1e819b69fc5e22ccd13
++ detail
++     _Ulysses_ contient deux structures pour retenir des hachages de manière compacte.
+
+@ 0 7 0 08c84a90abdbe800127c01f546ef6901
++     Un **filtre de Bloom**, `BloomFilter`, répond à « cet élément a-t-il pu être ajouté ? » en
++     quelques bits par élément, quelle que soit la taille des éléments : un `false` est toujours
++     juste, et un `true` est juste sauf pour un taux de faux positifs fixé à la construction du
++     filtre. Le filtre est construit à partir des deux nombres qui comptent — à peu près combien
++     d'éléments il contiendra, et le taux à tolérer — et en déduit la taille de son tableau de bits
++     et le nombre de ses positions de hachage. Toute valeur `Digestible` peut être un élément, et
++     l'algorithme de hachage est un paramètre de type, choisi comme n'importe quel autre
++     condensé de `gastronomy`.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 09f789acc4a36dd71292ee5bf33b9de3
+
+% 0 1 0 0930f70935803e0304d198e997d74f09
+
+% 0 1 0 0b149537661bc7a402808aaee7f0f85f
+
+% 0 1 0 1af5bb2a6cfc24030cc19223b87a151f
+
+% 0 1 0 1e54582cfa13f59200d33853bee40056
+
+% 0 1 0 03fdd3b919bbe8671a62de413a74c4e6
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 4 0 02833ff917e2f74412770d716830380d
++     Un filtre qui sort tout juste de `BloomFilter(…)` est *exclusif* : le code qui l'a créé le
++     remplit sur place avec `add` et `addAll`, sans copie, puis `BloomFilter.freeze` le consomme
++     pour donner un filtre gelé qui peut être partagé et interrogé n'importe où mais jamais écrit.
++     `+` et `++` font croître un filtre gelé en un nouveau filtre gelé, au prix d'une copie des
++     bits chacun.
+
+@ 0 6 0 0c3bf40d243e921b1727f7fd23dc8420
++     Un **palimpseste**, `Palimpsest`, est l'encodage compact d'une séquence ordonnée de hachages
++     de longueur fixe tirés d'une bibliothèque que détiennent à la fois l'émetteur et le
++     receveur : les hachages sont combinés par XOR les uns sur les autres à des décalages fixés
++     par une `Cadence`, si bien que `n` hachages de `H` octets occupent `H + k_i + k_r·(n − 2) + 1`
++     octets au lieu de `H·n`. Le décodage (`Palimpsest#resolve`) cherche dans une `Bibliography`
++     des hachages connus la combinaison qui annule le corps. C'est l'encodage des signatures de
++     schéma de BinTEL.
+
+@ 0 6 0 07f8a6fbf732402f1344ef4daf7c669a
++     La bibliothèque a un unique ensemble de sources, `ulysses.core`, qui compile pour la JVM,
++     Scala.js et Scala Native. `BloomFilter`, `Bibliography`, `Cadence` et `Palimpsest` sont
++     exportés dans le package parapluie `soundness`. Il n'y a pas de package de choix ;
++     l'algorithme de hachage d'un filtre est choisi par type, avec un given `Hash` dans la portée
++     (`Blake3.hash`, ou un fournisseur tel que `providers.soundnessProvider`), et un algorithme non
++     cryptographique tel que `Murmur3` ou `Crc32` requiert
++     `cryptoPermits.permitNonCryptographicHashes` importé par son nom.
+
+% 0 1 0 1fc1dd8afa20dbc110ab17dd658a9131
+
+% 0 1 0 103cb923e5a519930a3b9ef04e39040e
+
+% 0 1 0 08d5871d0922e0310e67a1d41be9f77a
+
+% 0 1 0 03c4c67e87db5b7d0bca79430c575f36
+
+% 0 1 0 1800103d6e0e645e0678f732d821d7eb
+
+@ 0 1 0 16020ef8657a492208b6d3c6f9a249dc
++ entry .BloomFilter
++   info
++       un ensemble probabiliste : un `false` de `hits` est définitif, un `true` est probable
+
+@ 0 7 0 02b2d85f327608a7076484c9e761a7f0
++   detail
++       Un `BloomFilter[element, algorithm]` retient quels éléments ont été ajoutés uniquement sous
++       forme de bits. Chaque élément est condensé une fois avec `algorithm`, et ses deux premiers
++       mots de 64 bits `h₁` et `h₂` donnent les `#hashCount` positions de bits
++       `(h₁ + i·h₂) mod #bitSize` (le double hachage de Kirsch–Mitzenmacher, le schéma qu'utilise
++       Guava) ; un algorithme dont le condensé fait moins de seize octets, tel qu'un CRC, est
++       réappliqué avec un compteur jusqu'à ce que suffisamment d'octets soient réunis. Ajouter un
++       élément active ses positions ; `#hits` les vérifie.
+
+@ 0 4 0 17e27a7dbf27f05a0bb0c806073a99ce
++       Les éléments entrent via la classe de types `Digestible` de `gastronomy`, si bien que le
++       texte, les nombres et les case classes sont utilisables comme éléments sans préparation.
++       L'algorithme fait partie du type : deux filtres sur les mêmes éléments ne concordent que
++       s'ils concordent sur l'algorithme, et un filtre dont on conserve les bits doit être
++       reconstruit avec le même.
+
+@ 0 5 0 1b1bfae86b64fbd2054505bc95e887c0
++       L'accès est suivi par le contrôle de séparation, comme celui d'un `Array`.
++       `BloomFilter.apply` donne un filtre exclusif (`BloomFilter[…]^`), sur lequel `#add` et
++       `#addAll` activent des bits sur place ; `.freeze` le consomme et donne la forme gelée
++       (`BloomFilter[…]^{}`) sans copie. `#+` et `#++` copient les bits une fois et donnent un
++       nouveau filtre gelé, si bien qu'un filtre gelé croît sans que l'original change.
+
+% 2 1 0 008732d97e1352be0e8686e8d5b5a3dd
+
+% 3 1 0 1fee0fd80ee8142c08a364307f3eed4a
+
+% 0 1 0 00c89d7cc1f9ad11188cb9a6450119c5
+
+% 1 1 0 01bd36959d69e9d6090cea0093b4063e
+
+% 2 1 0 1a50af2c30dbd1df0fee86e981d7bccb
+
+% 3 1 0 004156b65f02011502cb4f64b55627d9
+
+% 4 1 0 17c29594796633580370841201246d70
+
+% 6 1 0 1e6f4aaf34bfb9a00890b7ad33c7cc3b
+
+% 1 1 0 1a5ab6ac889c21540e9d89f60196a62c
+
+% 0 1 0 12d92181498abafa088ee4fce6e1d19a
+
+% 1 1 0 10badc505df14c1113415cc8dd369f10
+
+% 2 1 0 1e6252c3d5eb76801a572679b0b435c0
+
+% 3 1 0 19c8c487b0d3ff6e08f191460a643034
+
+% 4 1 0 02cddbe4ae5baa750d301b2c2fe79f31
+
+% 6 1 0 0ea4ee5a3bf57f530a68f1a7aeb7ece1
+
+% 7 1 0 08a52aa28bd3ef501053d78d76a5ca4f
+
+% 8 1 0 12634d04fc37c98f180b3a909a8bac5c
+
+% 1 1 0 00cf03c64a6f06490aad1f381ea53378
+
+% 0 1 0 01d6aadcc1d768371456b5b61aed073d
+
+% 1 1 0 052d1cc4bfaf62d518fca92abf838d77
+
+% 2 1 0 1125f8b27291c90d00b591ecc5d8b149
+
+% 3 1 0 1b3ba42f68129be01db8cefe14289b51
+
+% 4 1 0 033103206b637cb71aae0f263f0d9ca1
+
+% 6 1 0 16679cf1891187f409c1262e75d984da
+
+% 7 1 0 17d04cb1b3ec46e30e42f0a939a12cea
+
+% 8 1 0 044239ac4e7ed5a10cad30020d2c6776
+
+% 9 1 0 060951bc675fc0720c3c92760560b8d2
+
+% 0 1 0 146ea9541d9d1c5219f5ec86075f4ec9
+
+% 1 1 0 107dc45aeaf356b80cc938bd98e11698
+
+% 0 1 0 02f255b3aca4b6e618b4e25251e8e1a8
+
+% 1 1 0 173747c53bda18ef15ab805167722651
+
+% 2 1 0 1b864de1fb744a750ae4a0a5dfdacc64
+
+% 3 1 0 079c372b91e0364304aad1c2c74876d2
+
+% 4 1 0 19302cb265efe7fc02787f037ab54069
+
+% 6 1 0 1e0d66ddc9ce5dd41643d5fe4407eff0
+
+% 7 1 0 17f95d9cc66a2f6c170c6990834ad0a5
+
+% 8 1 0 1a40a5cafa44b2841a58652bee56d5fc
+
+% 9 1 0 135c8b9a59a4a9421652c3b0668c8cf4
+
+% 0 1 0 10ea2ece44b6b56812ed1fdaa6798248
+
+% 1 1 0 0c48bb3346ea8de11f3b4546b3dd8944
+
+% 2 1 0 16ea75d26d64e2260fe94fb7f0a09d0b
+
+@ 0 3 0 08d0801cacf9e73f1bf18885db4c2549
++       Après `freeze`, le compilateur rejette toute utilisation ultérieure du `filter` consommé, et
++       `add` sur un filtre gelé ne compile pas. Deux filtres sont égaux lorsque leurs tailles,
++       leurs nombres de hachages et leurs bits le sont.
+
+@ 0 3 0 0624452c6a41f4e11e15f5072e02dc1e
++       Un filtre qui reçoit bien plus d'éléments que ce pour quoi il a été dimensionné continue de
++       fonctionner, mais son taux de faux positifs dépasse celui qui a été demandé : le taux est
++       une promesse qui vaut pour un filtre utilisé comme prévu.
+
+% 0 1 0 1bfd08a97d6c85bf0e07f22b607f4604
+
+% 0 1 0 1a29cb8d00b8559616dc45d2802ac003
+
+% 0 1 0 0efb0b0cc8f40dfd17780c194d96f619
+
+@ 0 1 0 0dd810f6179ba54d09b2d3b8bc37159a
++   entry .apply
++     info
++         un filtre vide et exclusif, dimensionné pour un nombre d'éléments attendu et un taux de
++         faux positifs
+
+@ 0 7 0 10bbde89eab12af810496f9f63d2e4fe
++     detail
++         `BloomFilter[element](approximateSize, targetErrorRate)[algorithm]` prend le nombre
++         d'éléments attendu et le taux de faux positifs tolérable, un `0.0 ~ 1.0` borné, si bien
++         qu'un taux hors de l'intervalle unité ne compile pas. Avec `n = max(1, approximateSize)`
++         et `p = max(targetErrorRate, 2⁻⁵³)`, le filtre a `max(1, ⌈−n·ln p/(ln 2)²⌉)` bits et
++         `max(1, round(bits/n·ln 2))` positions de hachage : `BloomFilter[Text](100, 0.01)` a 959
++         bits, et `(10_000, 0.01)` sept positions. Une taille nulle ou un taux de `1.0` donnent
++         tout de même un filtre qui fonctionne, et un taux nul est dimensionné pour le plus petit
++         taux que résout un `Double`.
+
+@ 0 5 0 10e400452caf15f011800bd17c5dbf6d
++         L'algorithme est la seconde liste de paramètres de type, optionnelle, inférée à partir du
++         given `Hash` dans la portée lorsqu'elle est omise. Elle requiert un `Hash in algorithm` et
++         un `Permit[HashWeakness[algorithm]]` effacé : BLAKE3 et SHA-2 ne requièrent aucun
++         permis, tandis que `Murmur3` (environ un cinquième du coût de BLAKE3, et suffisant,
++         puisqu'un filtre de Bloom n'a pas d'adversaire) et les sommes de contrôle requièrent
++         `cryptoPermits.permitNonCryptographicHashes`.
+
+@ 2 1 0 1bce7d440b9864b91198b9222c5f8396
++         ```scala
+
+@ 3 1 0 07086b5842c5f00818d80faa4e3b3197
++         import soundness.*
+
+@ 4 1 0 132f52cc3e5118401827c125719056ac
++         import providers.soundnessProvider
+
+@ 0 1 0 190c8e29a31ad7080847281e0adda70f
++         import cryptoPermits.permitNonCryptographicHashes
+
+@ 0 1 0 12efe6d6a05786b505851f39db28036f
++         val fast = BloomFilter[Text](10_000, 0.01)[Murmur3]
+
+@ 1 1 0 0911697dc8fdeb1a1a5d67906f23c5c8
++         ```
+
+@ 0 2 0 14d0852e84f9896f15c85188e5e00814
++         Le résultat est exclusif (`BloomFilter[element, algorithm]^`) : il peut être rempli sur
++         place mais pas aliasé, si bien qu'un filtre utilisé à plusieurs endroits doit d'abord être
++         gelé avec `.freeze`.
+
+@ 0 1 0 0e5411f08f3b94e3073d7bc336e8d5cf
++   entry .freeze
++     info
++         consomme un filtre exclusif et en donne la forme gelée, en lecture seule, sans copie
+
+@ 0 4 0 005af897ad1f841c187fade6eccac8a5
++     detail
++         `BloomFilter.freeze(filter)` prend le filtre exclusif comme paramètre `consume`, si bien
++         que le contrôle de séparation du compilateur rejette toute utilisation ultérieure de
++         `filter`, et renvoie les mêmes bits sous forme de `BloomFilter[element, algorithm]^{}`,
++         que toute référence peut interroger et qu'aucune ne peut écrire. C'est la même discipline
++         qu'`Array.freeze`.
+
+@ 0 1 0 1410c7d67638d6a41b33631f582c779c
++   entry #bitSize
++     info
++         le nombre de bits du filtre, fixé à sa construction
+
+@ 0 1 0 026b0a580c2d6b6e1c3510aeccf24b9a
++   entry #hashCount
++     info
++         le nombre de positions de bits que chaque élément active et que chaque requête vérifie
+
+@ 0 1 0 0d364135b97f80eb19422250bdde9849
++   entry #add
++     info
++         active sur place les positions de bits d'un élément, sur un filtre exclusif
+
+@ 0 2 0 16be9283a581c0f5092f79674cab96bc
++     detail
++         Une méthode `update`, appelable uniquement via une référence exclusive (`^`) : sur un
++         filtre gelé, elle ne compile pas. Elle n'alloue rien au-delà du condensé de l'élément.
+
+@ 0 1 0 1838b0bfa95c926a1c325141d7f87d9c
++   entry #addAll
++     info
++         ajoute sur place chaque élément d'une collection, sur un filtre exclusif
+
+@ 0 3 0 17681244c24f518f1d4bdd9ce01fdfb6
++     detail
++         Prend toute collection qui est `Traversable by element` — une `List`, une `Sequence`, un
++         `Set`, une `Chain`, un `Array` gelé ou un `scala.Iterable` — et appelle `#add` pour chaque
++         élément. Comme `#add`, c'est une méthode `update`, qui ne compile pas sur un filtre gelé.
+
+@ 0 1 0 00f44401c71fbc271ca058f5d334b6cc
++   entry #+
++     info
++         un nouveau filtre gelé contenant un élément de plus, au prix d'une copie des bits
+
+@ 0 2 0 16543755a50d4da4026033ff40f114ba
++     detail
++         L'original est inchangé : c'est ainsi qu'un filtre gelé croît. Replier `+` sur de nombreux
++         éléments copie les bits une fois par élément ; `#++` les copie une fois pour tous.
+
+@ 0 1 0 198415f2d5ac96eb0c1d0475c2bab8ff
++   entry #++
++     info
++         un nouveau filtre gelé contenant chaque élément d'une collection, au prix d'une copie des
++         bits
+
+@ 0 3 0 0ae067ef0e74d23b103e0be14cf3e20e
++     detail
++         Prend toute collection qui est `Traversable by element`. Les bits sont copiés une fois, et
++         les éléments sont ajoutés à la copie en une seule passe, si bien que `filter ++ elements`
++         est égal au repli de `+` sur ceux-ci pour une fraction de son coût.
+
+@ 0 1 0 142ee15bee771cc01785b92e4fec562f
++   entry #hits
++     info
++         si un élément a pu être ajouté : `false` est certain, `true` probable
+
+@ 0 3 0 09866a29c2f23ba30552dfb47dce68f4
++     detail
++         Vérifie les positions de bits de l'élément, en répondant `false` à la première qui est
++         inactive ; elle n'alloue rien au-delà du condensé. Un `true` pour un élément jamais
++         ajouté se produit à peu près au taux pour lequel le filtre a été dimensionné, tant qu'il
++         ne contient pas plus d'éléments que ce pour quoi il a été dimensionné.
+
+@ 2 1 0 151af474cf0e49f70108d7d563d7c208
++         ```scala
+
+@ 3 1 0 14b483333a35624e1b29f8039042c13a
++         import soundness.*
+
+@ 4 1 0 1e301640a41be95a16b830444e1a849a
++         import providers.soundnessProvider
+
+@ 0 1 0 10294f9649b4eb8f1704687c976eb80a
++         import Blake3.hash
+
+@ 0 1 0 1ce8fc6aa42b16f91fa2d5b2f0cdba65
++         case class Point(x: Int, y: Int)
+
+@ 0 1 0 18c96795ef951f661406a05bcbd7060e
++         val filter = BloomFilter[Point](100, 0.01) + Point(1, 2)
+
+@ 0 1 0 1f31fa2ed411fb1519509101cf641d09
++         filter.hits(Point(1, 2))   // true
+
+@ 0 1 0 18beedf324ac0e0313ee27a6bb4db6a8
++         filter.hits(Point(2, 1))   // false, almost certainly
+
+@ 1 1 0 08d7f5d3138b2ddd174562e235fae9a0
++         ```
+
+@ 0 1 0 02a22cbe59ac90fc07b5da1995403059
++   entry #population
++     info
++         le nombre de bits actifs, à partir duquel on peut estimer le nombre d'éléments ajoutés
+
+@ 0 1 0 1be49cf4014e40f71a0a004de80762ce
++ entry .Cadence
++   info
++       les paramètres d'un palimpseste : la taille des hachages et les décalages entre les hachages
++       superposés
+
+@ 0 7 0 1a9ac77944544fa416ebd00ec8498ef6
++   detail
++       Une `Cadence(initial, regular, hashSize)` fixe la manière dont un `Palimpsest` superpose ses
++       hachages : le hachage 0 au décalage 0, le hachage 1 `initial` octets plus loin (la _cadence
++       initiale_ `k_i`), et chaque hachage suivant `regular` octets après le précédent (la _cadence
++       régulière_ `k_r`). `regular` doit être entre 1 et 4, `initial` entre `regular` et
++       `regular + 3`, et `hashSize` l'une des `.hashSizes` (8, 10, 12, 16, 20, 24, 28, 32, 48 ou 64
++       octets) ; une cadence qui enfreint l'une de ces règles provoque une panique à sa
++       construction.
+
+@ 0 3 0 1c6eb5c463f7663d06b128a2035e10d7
++       Les trois paramètres tiennent dans un octet, `#byte`, qui clôt chaque palimpseste, si bien
++       qu'un décodeur retrouve la cadence à partir des données elles-mêmes. `Palimpsest.apply`
++       prend la cadence comme valeur contextuelle, et `.default` est dans la portée implicite :
+
+% 2 1 0 0737062eb4d8881117546ddea0bd820d
+
+% 3 1 0 0ac60cfae459be481c6609663e148831
+
+% 2 1 0 060022465513b05e0596494b99a570e8
+
+% 0 1 0 1e2f12153953461f0df0e1843694ccc6
+
+% 1 1 0 0d809ca0ac299af91defb3c2cb7bffa0
+
+@ 0 4 0 0461acfd17edac6b1dc0a046e6bfd03d
++       Des hachages plus courts donnent des palimpsestes plus courts mais augmentent la probabilité
++       que deux hachages distincts de la bibliothèque partagent un préfixe, ce qui rend le décodage
++       ambigu : le hachage de 12 octets par défaut ne convient qu'à une petite bibliothèque fermée,
++       et lorsqu'une ambiguïté a des conséquences sur la sécurité ou que la bibliothèque est
++       ouverte, une `hashSize` de 32 est le bon choix (c'est ce que fixe BinTEL).
+
+% 1 1 0 043109743d05037c13e6d120d8352c44
+
+@ 0 1 0 037f3c09cc847f220b76125c8b412240
++   entry .hashSizes
++     info
++         les tailles de hachage, en octets, qu'une cadence peut nommer : 8, 10, 12, 16, 20, 24, 28,
++         32, 48 et 64
+
+@ 0 2 0 102c1f94e35a134a1884741289db571e
++     detail
++         Un `Array[Int]` gelé ; la position d'une taille de hachage dans celui-ci est l'indice sur
++         quatre bits `#hashSizeIndex` placé dans l'octet de cadence. Les indices 10 à 15 sont
++         réservés.
+
+@ 0 1 0 0073d9bf688716760e142362f20650e2
++   entry .default
++     info
++         la cadence par défaut : des hachages de 12 octets, une cadence initiale de 4 et une
++         cadence régulière de 1
+
+@ 0 3 0 0591a741ba9c3bf11cfc306e763b2180
++     detail
++         Dans la portée implicite, si bien que `Palimpsest(hashes)` l'utilise lorsqu'aucune autre
++         `Cadence` n'est donnée. Ses hachages de 96 bits ne conviennent qu'à une petite
++         bibliothèque fermée ; définissez une `given Cadence` avec `hashSize = 32` pour une
++         bibliothèque ouverte.
+
+@ 0 1 0 05b81e29f86777ec12a4f66a207eda38
++   entry .unpack
++     info
++         la cadence que contient un octet de cadence, ou `Unset` s'il nomme une taille de hachage
++         réservée
+
+@ 0 3 0 1fcd4854f3bc823e1db73c6a64cb8859
++     detail
++         L'inverse de `#byte` : les deux bits de poids faible sont `regular − 1`, les deux suivants
++         `initial − regular`, et les quatre de poids fort l'indice dans `.hashSizes` ; un indice de
++         10 ou plus donne `Unset`.
+
+@ 0 1 0 0bcd6a4a49403f4503cccaa6e606ef7b
++   entry #initial
++     info
++         la cadence initiale `k_i` : le décalage en octets du premier hachage au second
+
+@ 0 1 0 144a355793ed5533068d3f0a12cf0370
++   entry #regular
++     info
++         la cadence régulière `k_r` : le décalage en octets entre chaque paire de hachages suivante
+
+@ 0 1 0 067e81a860dd34190b1cb5a4b5b18c8a
++   entry #hashSize
++     info
++         la longueur en octets de chaque hachage
+
+@ 0 1 0 0ab1fde4d02966d715fe4201fae57fba
++   entry #hashSizeIndex
++     info
++         la position de `#hashSize` dans `Cadence.hashSizes`, placée dans l'octet de cadence
+
+@ 0 1 0 1aaf83d3ceee6d1203c06b68418d70cc
++   entry #byte
++     info
++         l'octet de cadence : l'indice de taille de hachage et les deux cadences, placés dans huit
++         bits
+
+@ 0 2 0 1f4311dcb92ce2bc0d7752ca6375c4c2
++     detail
++         Les bits 4 à 7 contiennent `#hashSizeIndex`, les bits 2 et 3 `initial − regular`, et les
++         bits 0 et 1 `regular − 1`. Les octets d'un palimpseste combinés par XOR donnent cette
++         valeur.
+
+@ 0 1 0 066485b0017c7e6a01eff9dae2f04515
++   entry #offset
++     info
++         le décalage en octets du hachage d'indice donné dans le corps d'un palimpseste
+
+@ 0 1 0 070c2c94de96a3901d234c4851d58e78
++     detail
++         `0` pour le premier hachage, et `initial + (i − 1)·regular` pour le `i`-ième.
+
+@ 0 1 0 1e5330e9f73fba8301342ab6f330661b
++   entry #bodyLength
++     info
++         la longueur du corps d'un palimpseste de `n` hachages, avant l'octet de cadence
+
+@ 0 1 0 1958f7b20257852d0397f38bebea5ce0
++     detail
++         `hashSize` pour un hachage, et `hashSize + initial + regular·(n − 2)` pour davantage.
+
+@ 0 1 0 1fa857fc6aec4c651dabfce1112999fc
++   entry #totalLength
++     info
++         la longueur totale d'un palimpseste de `n` hachages, octet de cadence compris
+
+@ 0 1 0 073e064bf782218414ed2a3cf9802c20
++   entry #hashCount
++     info
++         le nombre de hachages que contient un corps d'une longueur donnée, ou `Unset` si aucun
++         nombre ne convient
+
+@ 0 1 0 1d8e19cf7b20a4690dea037d05d298ed
++ entry .Bibliography
++   info
++       la bibliothèque des hachages connus par rapport à laquelle un palimpseste est décodé,
++       indexée par préfixe
+
+@ 0 3 0 154e95f314ecd2211ab7b58f619aa03f
++   detail
++       Une `Bibliography` contient chaque hachage que connaît un receveur, afin que
++       `Palimpsest#resolve` puisse trouver les hachages que superpose un palimpseste.
++       `Palimpsest#resolve` en prend une comme valeur contextuelle :
+
+% 2 1 0 16a059ffcea034110f62f595f9a7a0b9
+
+% 3 1 0 0d7b9d815f2c4df30b19165ffd269962
+
+% 4 1 0 1eae1e739b1a16c90e7d3f9d85ddf992
+
+% 0 1 0 00ac0d905ea1ea6f0cfb0cdb6af8a9b7
+
+% 2 1 0 1ffc578038743a5400a6ea47d9ac517b
+
+% 0 1 0 01b328586e6de8610cfdcb4da79f1759
+
+% 0 1 0 1fc4a0d99d563a1d035d0c083376002b
+
+% 1 1 0 113be8abd690d6dd0b717453833dd526
+
+@ 0 3 0 02fa3a286d6d6d7505a6e6d61167022d
++       L'index trie les hachages dans l'ordre lexicographique des octets non signés lors de sa
++       première consultation, si bien que tous les hachages ayant un préfixe donné se trouvent dans
++       une même plage, trouvée par recherche dichotomique ; un seul ordre sert pour toutes les
++       longueurs de préfixe, si bien que la bibliographie n'a pas besoin de connaître la `Cadence`.
+
+% 1 1 0 134c04fd44ba60a405930720c6f2d42c
+
+@ 0 1 0 158c18c4c4ef38820f8619748608188d
++   entry .apply
++     info
++         une bibliographie d'une liste de hachages
+
+@ 0 2 0 056c0c482e079bf90ddf47419e60f839
++     detail
++         `Bibliography(hashes)` prend une `List[Data]`. Les hachages sont conservés dans l'ordre
++         donné dans `#hashes`, et triés paresseusement pour la recherche.
+
+@ 0 1 0 1952d8a4e3edca321b1fe6304b3c7985
++   entry #hashes
++     info
++         les hachages de la bibliothèque, sous forme d'`Array[Data]` gelé dans l'ordre où ils ont
++         été donnés
+
+@ 0 1 0 09603919421dfc7b1055f09190a527f9
++   entry #lookup
++     info
++         chaque hachage qui commence par un préfixe, dans l'ordre lexicographique des octets non
++         signés
+
+@ 0 2 0 08df1f2884b0dbfd12d2348950d67402
++     detail
++         Renvoie un `Iterator[Data]` de `murmuration`. Un préfixe vide correspond à tous les
++         hachages, et un préfixe plus long qu'un hachage ne lui correspond jamais. Les octets se
++         comparent comme non signés, si bien que `0x7f` précède `0x80`.
+
+@ 2 1 0 08049d1daaec8fc7028436dfcf82eefc
++         ```scala
+
+@ 3 1 0 1d613c2e8fb983710e78d3322d88aa70
++         import soundness.*
+
+@ 0 1 0 0e8f60d30143817117aecdac6ffcd73c
++         val shelf = Bibliography(List(Data(0x80.toByte, 1), Data(0x10, 2), Data(0x80.toByte, 0)))
+
+@ 0 1 0 1d4efe01dbfd2b0807bfd175e289cc50
++         shelf.lookup(Data(0x80.toByte)).to[List]   // the hashes 8000 and 8001, in that order
+
+@ 1 1 0 1656f116b543814b154b73c4b3a230e6
++         ```
+
+@ 0 1 0 065ad2a02bbfc38c05a4736336bec96a
++ entry .Palimpsest
++   info
++       une séquence ordonnée de hachages issus d'une bibliothèque partagée, superposés par XOR en
++       peu d'octets
+
+@ 0 7 0 0ed7dbef03c3d5d0193a5adbc5afa01d
++   detail
++       Un palimpseste encode `n` hachages de `H` octets chacun en `H + k_i + k_r·(n − 2) + 1`
++       octets (ou `H + 1` pour un seul), au lieu de `H·n`, en combinant par XOR chaque hachage dans
++       un corps commun au décalage que donne sa `Cadence`, de sorte que chacun recouvre une partie
++       de ses voisins. Un octet final est choisi de sorte que tous les octets du palimpseste
++       combinés par XOR donnent l'octet de cadence, ce qui rend l'encodage autodescriptif (le
++       receveur n'a besoin d'aucun paramètre) et fournit un contrôle d'intégrité d'un octet.
+
+@ 0 4 0 0e2d8bc66931030a0e20ca4a28a4debb
++       L'économie se paie par du travail chez le receveur : `#resolve` doit chercher dans une
++       `Bibliography` des hachages qu'il connaît la séquence qui ramène le corps à zéro. Le premier
++       hachage est recherché par ses `initial` premiers octets, chacun des suivants par `regular`
++       octets à son décalage, retiré par XOR, et la recherche revient en arrière lorsqu'un choix ne
++       mène nulle part.
+
+% 2 1 0 13f07e2f48d4ea780e3bfa568cf4b715
+
+% 3 1 0 1b8c38aec732d69c180176cf3439f314
+
+% 0 1 0 1d1289a48b397f0513eff36a835d92f4
+
+% 1 1 0 157e9208c7f4c4a60351c11678e37f39
+
+% 2 1 0 02601d4421a176c2056e3530858f0ebc
+
+% 3 1 0 029327aafee463f70c322c53c5ee6114
+
+% 5 1 0 11ba4fde780dde931ca107716f97caf1
+
+% 6 1 0 1247d5fbc76f8d6e157a55878541831e
+
+% 1 1 0 09b9228860ee92e516f4bc66f9bdefea
+
+% 0 1 0 145824fa0c9b63171acd823ce9990924
+
+% 1 1 0 010898ac0bfc95e105986e582a18c8aa
+
+% 2 1 0 166450e647c0b10a03f8b9dfe7501968
+
+% 3 1 0 11a39ac0305dbbb8096db5121f7cdb4d
+
+% 5 1 0 1dcae2959ff3bdeb1099458e1aa4cf96
+
+% 6 1 0 11fa27d40c2a7b081aca136a6efe0e2a
+
+% 8 1 0 02b70ae5197b84ef020ea353be8e932f
+
+% 0 1 0 0ca71bc7969d2bce00c7cbbf6e181fe8
+
+% 1 1 0 102204dbd1b9fedd0a8b839a5c88cdbf
+
+% 0 1 0 15400fdbe3f5a0bb0b0cef9b6cbe570f
+
+% 1 1 0 01882f43f50957bb0dd0ab238f9585d0
+
+% 2 1 0 1d6210708b39dce70cf486e360fb21a9
+
+% 3 1 0 047de93684b129ef077b252486c75d42
+
+% 5 1 0 127f1fdd99f0ac3b152279ed101c7b50
+
+% 6 1 0 0200ec94fe85276912ded6d8af63d47d
+
+% 8 1 0 15783ce3a5874f4e12dd267d7234ad6f
+
+% 0 1 0 16649b66e0d7fbca0a47c52aac2e2835
+
+% 0 1 0 15ece5999fa90fbf1c4d8b5afb2dac5c
+
+% 1 1 0 1efc49c88801f9bb0e6d392800de9672
+
+% 2 1 0 16f2e673a53441ce0fa0debbdd60d69e
+
+@ 0 1 0 1c31c6c99c00e2f00ddf324b7e58642e
++       Un palimpseste est l'encodage des signatures de schéma de BinTEL, dans `stratiform`.
+
+% 0 1 0 0fb246e41c6a38bb138f3d00fc102183
+
+% 0 1 0 14fa1a379da60b8219959b2f3ed44ef6
+
+@ 0 1 0 03b79d53b10498730b57276433ab2ecd
++   entry .searchLimit
++     info
++         la borne par défaut du nombre d'essais de candidats d'une recherche de décodage : 100 000
+
+@ 0 3 0 1558a798ef81cddd017a5137d3496904
++     detail
++         Un décodeur qui accepte des palimpsestes d'une source non fiable doit borner le travail de
++         sa recherche avec retour arrière, si bien que `#resolve` abandonne avec `Unset` après ce
++         nombre d'essais. La borne compte des essais plutôt que du temps, elle est donc
++         déterministe.
+
+@ 0 1 0 1bd765e65e084ecd1e97a651c3508bf9
++   entry .apply
++     info
++         encode une séquence non vide de hachages sous forme de palimpseste, avec la `Cadence` dans
++         la portée
+
+@ 0 5 0 038d37172348452d0a0ac431de8d5996
++     detail
++         `Palimpsest(hashes)` prend une `Sequence[Data]` et une `Cadence` contextuelle
++         (`Cadence.default` lorsqu'aucune autre n'est donnée). Chaque hachage doit faire exactement
++         `cadence.hashSize` octets, et il doit y en avoir au moins un : toute violation provoque
++         une panique, et non une erreur levée, puisqu'il s'agit d'une faute dans le code de
++         l'appelant. Une séquence de condensés BLAKE3 avec la cadence de 12 octets par défaut doit
++         donc d'abord être tronquée à douze octets.
+
+@ 0 1 0 02a5c3ab3405bece1257d9501ff7214b
++   entry #data
++     info
++         les octets du palimpseste, le corps suivi de l'octet de cadence
+
+@ 0 1 0 0bf15adc6e0c1ede071e426651d3233d
++   entry #length
++     info
++         le nombre de hachages qu'encode le palimpseste
+
+@ 0 1 0 1cefc2127c63d86b1f32d5b4dc875a23
++   entry #resolve
++     info
++         les hachages que superpose un palimpseste, trouvés dans la `Bibliography` dans la portée,
++         ou `Unset`
+
+@ 0 6 0 11733a7a61ccbbb81b67aa6f971b8b60
++     detail
++         Retrouve la `Cadence` à partir du XOR des octets, déduit le nombre de hachages de la
++         longueur, et cherche dans l'ordre les hachages dans la `Bibliography` contextuelle. Le
++         résultat est `Unset` si l'octet de cadence nomme une taille de hachage réservée, si la
++         longueur ne correspond à aucun nombre de hachages, si ce nombre diffère de `#length`, si
++         aucune combinaison des hachages de la bibliothèque n'annule le corps, ou si la recherche
++         dépasse sa limite : `Palimpsest.searchLimit` essais, ou le nombre passé sous la forme
++         `resolve(limit)`.
+
+@ 0 3 0 0359ede8e8703dac1d9e33598f030aae
++         Lorsque deux hachages de la bibliothèque partagent les préfixes qu'examine la recherche,
++         un palimpseste peut se décoder en une séquence différente de celle qui a été encodée ; les
++         candidats sont essayés dans l'ordre des octets de la bibliographie. Des hachages et des
++         cadences plus longs rendent ce cas plus rare.

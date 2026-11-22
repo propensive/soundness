@@ -1,0 +1,44 @@
+orthant 2 language
+
+% 0 1 0 06c5ab84a998c54402b0164b14277bdb
+
+@ 0 1 0 0fffb3be147ea5fc0e605f6364134d4d
++ Levée lorsqu'un keystore PKCS#12 ne peut pas être ouvert ou lu.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 11020d0fc2e3ce0610b4a59d834ad509
++ Un keystore est ouvert pour la durée d'une portée, son mot de passe étant fourni sous forme
++ d'indicateur. Cette erreur couvre un magasin illisible et une écriture non prise en charge.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 1 0 067cb1f1318b02481e3bbc36bb1f7f3d
++ column  Raison
+
+% 0 1 0 0249aa51fd8056d51a0c1dba7eb0290e
+
+% 0 1 0 07858f2209aa6df911115adbc63be3ca
+
+% 0 1 0 0c6f7dbc235736830974d2ea9d8ec745
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 3 0 07afe0313e6cdb510a75b152cb65ea22
++ Un mauvais mot de passe et un magasin corrompu sont délibérément indiscernables (tous deux sont
++ `Unreadable`), car les distinguer révélerait à quelqu'un qui devine lequel des deux a échoué.
++ L'écriture dans un keystore n'est pas encore prise en charge.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 0b88481b72eaa0a815318c4e5538b3d9
++ - Source : `lib/enigmatic/src/core-jvm/enigmatic.Keystore.scala`

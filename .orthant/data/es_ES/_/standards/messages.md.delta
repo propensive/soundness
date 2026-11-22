@@ -1,0 +1,170 @@
+orthant 2 language
+
+@ 0 1 0 040d3839eadabb860ed437b47e76c5de
++ # Normas de los mensajes de Soundness
+
+@ 0 7 0 1157aed8e8bbd5f11ba5f6a4f1937a96
++ Este documento define el estilo de la casa para los mensajes legibles por personas que se
++ escriben con el interpolador `m"…"`: el texto de los errores de `fulminate`, el `Message` que
++ lleva un evento de registro de `eucalyptus` y los diagnósticos que notifica una macro. Los tres
++ comparten un mismo estilo, porque el lector se los encuentra en los mismos sitios —un terminal,
++ un registro, un error del compilador— y no debería poder distinguir por la prosa qué módulo lo
++ escribió. Complementa a `logging.md` (cuándo y qué registrar) y a `naming.md` (cómo se nombran
++ los tipos de error). Los ejemplos proceden de `lib/*/src/core/*.scala`.
+
+@ 0 1 0 1a916e1fddcfa8c50e66201e1e56795e
++ ## 1. Registro
+
+@ 0 2 0 0a441a9021ca74b90efb97dd772c5173
++ Un mensaje enuncia un hecho sobre el mundo en el momento en que se escribió, como lo diría en
++ voz alta un colega entendido: con calma, de forma concreta y breve.
+
+@ 0 9 0 1fcd5ac3387d0d7708ceb4cd0d155916
++ - **Minúsculas.** Un mensaje empieza en minúscula, salvo que su primera palabra sea un nombre
++   propio o un identificador (`Burdock can only repackage a JAR file, not a directory`).
++ - **Sin punto final.** Un mensaje es un fragmento que puntúa la representación que lo rodea; se
++   incrusta en una traza de pila, se le antepone un código o se enumera como viñeta, y un punto
++   final sería incorrecto en cada caso.
++ - **Presente, modo indicativo.** Se enuncia lo que *es*, no lo que *ocurrió* ni lo que
++   *debería* ser: `the JAR has no manifest`, no `the JAR did not have a manifest` ni `the JAR should
++   have a manifest`. La excepción es una operación que falló en su conjunto, que va en pasado
++   porque el fallo es el hecho: `could not list the releases of $repository (HTTP
+
+% 0 1 0 1a6382f5c53c04ca1a8b2b6c5d0eb683
+
+@ 0 7 0 083b3f6b0f6c23c50e0fca0f61803e1d
++ - **Escueto.** Se dice lo único que el lector necesita para actuar. Sin disculpas (`sorry`), sin
++   alarma (`fatal`, `!`), sin consejos salvo que el remedio sea a la vez seguro y breve, y sin
++   repetir lo que ya dice el nombre del tipo de error.
++ - **Sin jerga de la implementación.** Un mensaje nombra las cosas en los términos del lector
++   —un puerto, una ruta, una cabecera, un campo—, nunca una clase, un método o una variable de
++   la biblioteca que lo lanzó. `unknown variables reference` se dirige a un cliente DAP; `null
++   frameRef in scopes()` no lo haría.
+
+@ 0 1 0 0061313c865e5a150c82da9f02a2b1b8
++ ## 2. Estructura
+
+@ 0 2 0 04afbb509a01dc520079381480bbc896
++ Un mensaje tiene un sujeto, que es la cosa concreta que falla, y un predicado, que es lo que
++ está mal en ella. Se empieza por el sujeto cuando es lo que el lector va a buscar:
+
+% 0 1 0 1d7c7855fd07bfa012c75794e827bf90
+
+% 0 1 0 09b5fa9fdb683198093442a904f2e1fa
+
+% 0 1 0 0f22a4e1f16aab361d157fcc315c0608
+
+@ 0 4 0 10fd422d972f0e7a0119778041dde0ae
++ Se interpola el contexto; no se describe. Un mensaje que dice `the file could not be read`
++ obliga al lector a buscar el fichero; `${path} could not be read`, no. Se nombra el recurso
++ concreto que falla —una ruta, un puerto, una URL, un identificador, un nombre de cabecera, una
++ línea y una columna— y se cuantifica siempre que el número ya esté a mano:
++ `${items.size} CBOR issues`, no `some
+
+% 0 1 0 0baeb9704ff8af73136460eef5b2e95c
+
+@ 0 2 0 11a4fb64ca443bec16c53b658fb3f9e1
++ Cuando la causa se conoce y es distinta del síntoma, se añade entre paréntesis o tras dos
++ puntos, por ese orden de preferencia:
+
+% 0 1 0 165c774a6a8e0b341b80d7bc5dbcd66d
+
+% 0 1 0 11318639235892601a6666bc7cbf0da0
+
+@ 0 2 0 190ce2e9f97341cd02befd39671c66b0
++ Un mensaje que agrega otros dice cuántos son, y deja que la instancia de `Communicable` para
++ `List[Message]` los represente como viñetas debajo de él:
+
+% 0 1 0 1f95f053fe4aeabe10e7c0f5ad8e99dc
+
+@ 0 1 0 04697c2f9668183b11ddfb09fd94b4d1
++ ## 3. Vocabulario
+
+@ 0 1 0 060086407914c9690ec020fde74a7b18
++ Cada situación recurrente tiene una sola frase:
+
+% 2 1 0 102bb8a92c02849f1046d94665e0b49b
+
+@ 0 10 0 073bb44515ed9bcd0d12d4e59adc43e5
++ column  Frase
++ column  Para
++ column  Ejemplo
++ row  *is not a valid X*  un valor que no se puede analizar como X  `the value $value is not a valid ISO 8601 repeating interval`
++ row  *is not a known X*  un valor que se analiza pero no está en el conjunto
++ row  *could not* + verbo  una operación que falló en el entorno (red, sistema de ficheros, proceso)  `could not list the releases of $repository`
++ row  *cannot* + verbo  una petición que la biblioteca rechaza por construcción  `a command cannot end with an escape character`
++ row  *has no X*  una parte que falta
++ row  *already has X*  una parte en conflicto
++ row  *must*  solo una regla que el lector puede cumplir cambiando su entrada  `a port number must be specified after a colon`
+
+% 1 1 0 00c76919e9eefe48191d87bac4d9a8b0
+
+@ 0 5 0 1ed03f945cc5a5cb05569802eabdaea5
++ - Se prefiere el sustantivo singular y concreto (`the manifest`, `this JAR`, `the document`) a
++   una categoría (`input`, `data`, `object`), y el artículo definido cuando hay una sola cosa así
++   en el contexto.
++ - Nunca *invalid*, *illegal*, *bad* ni *error* como predicado completo: nombran el hecho de que
++   existe un mensaje, no su contenido.
+
+@ 0 1 0 15aefff1dd791f3906d891ee81e2f0b9
++ ## 4. Lo que un mensaje no debe contener
+
+% 2 1 0 1886ff37e4f5826f11f7cee32eba1491
+
+@ 0 6 0 1c7b9222dbe5d0f30faea783c7c494f3
++ column  Nunca
++ column  En su lugar
++ row  un secreto: token, contraseña, material de claves, cookie o valor de `Authorization`, ni siquiera en parte  el *origen* de la credencial, si ayuda (`the GITHUB_TOKEN environment variable`)
++ row  una carga útil: cuerpo de petición o de respuesta, contenido de un fichero, documento serializado  el *fragmento* problemático (una línea, un token, un campo) y su posición
++ row  una traza de pila o el texto de una excepción  la causa reformulada en los términos de §3, con la original adjunta como causa del error
++ row  formato: secuencias de escape ANSI, Markdown, espacios de alineación  nada; un `Message` está estructurado, y el representador decide su aspecto
+
+% 1 1 0 064c95d6aab1dbf20ad37031b4943f55
+
+@ 0 1 0 0cd39488b492804a1e929b54f96bad9f
++ ## 5. Composición a través de `Communicable`
+
+@ 0 3 0 17218340da6f11590577468a6a8db6a7
++ Un `Message` no es una cadena. El interpolador `m"…"` conserva cada valor interpolado como una
++ parte `Message`, convertida a través de la instancia de `Communicable` del valor, de modo que el
++ formato vive en un solo lugar por tipo y no en cada mensaje. Consecuencias:
+
+@ 0 13 0 01f2eb64620692c5048fbfc08f651825
++ - Se interpola el valor tipado, no su representación: `m"…$path…"`, no `m"…${path.show}…"`.
++   La instancia de `Path` decide cómo se lee una ruta en la prosa, y todos los mensajes sobre
++   rutas coinciden.
++ - Un tipo que aparece en mensajes recibe una instancia de `Communicable` en su objeto
++   compañero, normalmente derivada de su instancia de `Textualizable` o de `Showable`; no se
++   representa a mano en el punto de llamada.
++ - El texto que puede estar vacío o tener relleno lo entrecomilla la instancia de `Text`
++   (`“ ”`), para que un valor ausente o de espacios en blanco sea visible; nunca se añaden
++   comillas propias alrededor de un `Text` interpolado.
++ - Una lista de mensajes es una lista, no una cadena unida: `List[Message]` se representa como
++   viñetas, una por línea. No se unen mensajes con `join` y comas.
++ - Los diagnósticos en tiempo de compilación que lanza una macro llevan su código bolt en el
++   prefijo estándar (`m"${bolt.label} $message"`); el cuerpo del mensaje sigue esta norma sin
++   cambios.
+
+@ 0 1 0 1f19b20982c8aa011c3cc1048e9e114f
++ ## 6. Eventos de registro
+
+@ 0 5 0 124b19d4644c3db50691b1e5d6f7d157
++ Un evento de registro es un valor del tipo `Event` de un módulo, y su instancia de
++ `Communicable` representa el mensaje. Se aplica el mismo registro, con un añadido: un evento
++ nombra la operación y su sujeto (`resolved $hash to $url`, `listening on $port`), en pasado
++ cuando ha terminado y en gerundio cuando está empezando. Los niveles se eligen según
++ `logging.md`; el mensaje no repite el nivel (`warning:` no forma parte de un mensaje).
+
+@ 0 1 0 1e7de92576a275d310f2a572e2294fa0
++ ## 7. Lista de comprobación
+
+@ 0 2 0 02bbabe8605fc958162d9fab8269d7a5
++ Antes de añadir un mensaje, se lee tal como aparecerá —tras `[↯/s.…]`, en una lista de doce o
++ al final de una traza de pila— y se comprueba:
+
+@ 0 5 0 0d19267b8db329d30ee8839805621a76
++ 1. primera letra en minúscula, sin punto final, en presente;
++ 2. el recurso concreto que falla está interpolado, como valor tipado;
++ 3. se da un número cuando se conoce;
++ 4. nada secreto, ninguna carga útil, ningún nombre de la implementación;
++ 5. el nombre del tipo de error y el mensaje no dicen lo mismo.

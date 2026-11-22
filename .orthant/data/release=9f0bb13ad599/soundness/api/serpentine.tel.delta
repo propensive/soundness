@@ -1,4 +1,0 @@
-orthant 1 release
-
--       val path: Path of ("capulet", "verona") = % / "verona" / "capulet"
-+       val path = % / "verona" / "capulet"   // a `Path of ("capulet", "verona")`

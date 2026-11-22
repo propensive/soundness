@@ -1,0 +1,172 @@
+orthant 2 language
+
+@ 0 1 0 16318be20bd59bf41dcde98b16c5f152
++ ## Internationalisierung
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 3 0 198fc2e9980dc73d0099cdaefc7896f6
++ Ein Programm, das mehrere Sprachen spricht, muss eine Übersetzung jeder Meldung liefern, in jeder
++ Sprache, die es zu unterstützen beansprucht. Die Lücken sind der Fehler: Die fehlende französische
++ Übersetzung entdeckt ein französischer Benutzer.
+
+@ 0 5 0 06a5bb4259047a95092102dc9280bd52
++ Hier wird die Menge der Sprachen im Typ des mehrsprachigen Werts selbst verfolgt, sodass eine
++ Menge von Übersetzungen, der eine verlangte Sprache fehlt, ein Kompilierfehler ist und kein
++ Rückfall zur [Laufzeit]. Ein mehrsprachiger Wert ist ein `Polyglot`, dessen Typparameter genau
++ festhält, welche Sprachen er hat. Die Auswahl einer Sprache braucht eine `Locale`, und eine
++ `Locale` für eine Sprache, die der Wert nicht hat, besteht die Typprüfung nicht.
+
+@ 0 1 0 0353f26f670b61381bd7af32843b1635
++ ### Über mehrsprachigen Text
+
+@ 0 5 0 101498ef6441ee70003ae410910f2add
++ Der übliche Ansatz für Übersetzungen ist ein Ressourcenbündel: eine Datei mit Strings unter
++ Schlüsseln für jede Sprache, zur Laufzeit per Name nachgeschlagen. Nichts verbindet die Schlüssel
++ im Code mit den Schlüsseln in den Dateien. Eine fehlende Übersetzung, ein falsch geschriebener
++ Schlüssel oder eine Datei für eine Sprache, die hinter den anderen zurückbleibt, zeigen sich alle
++ als Rückfälle zur Laufzeit, meist vor genau dem einen Benutzer, der diese Sprache gewählt hat.
+
+@ 0 1 0 176cc66af407c2061ce629d5edae2b30
++ Hier stehen die Übersetzungen im Code, und die Menge der Sprachen steht im Typ:
+
+@ 0 5 0 17bdd6f0855e56161706a6614c49f02f
++ - Jede Sprache ist ein Wert, der eine Übersetzung in ein `Polyglot` dieser einen Sprache hebt.
++ - Alternativen werden mit `|` kombiniert, und der kombinierte Typ hält alle bereitgestellten
++   Sprachen fest.
++ - Code, der eine bestimmte Menge von Sprachen verlangt, gibt sie in einem Typ an, und nur eine
++   vollständige Übersetzung erfüllt ihn.
+
+@ 0 3 0 0113a0c2537c52460251298e6caec2d9
++ Eine Locale, die ein Typparameter ist und kein String zur Laufzeit, bedeutet, dass eine fehlende
++ Übersetzung ein Kompilierfehler ist, und das ist
++ [Sicherheit durch Konstruktion](../../philosophy/safety-by-construction.md).
+
+@ 0 2 0 0912bef352deaa6311e67b789081c2f6
++ Alles stammt aus dem Paket `soundness`. Der zweite Import lässt die Beispiele ihre Ergebnisse
++ ausgeben:
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 12ae42d8bc60dae804644f60d601a3c0
++ ### Übersetzungen bereitstellen
+
+@ 0 2 0 084b74c08db6b9b6136b48482f08ed7f
++ Jede unterstützte Sprache ist ein Wert, der eine Übersetzung umhüllt: `en`, `fr`, `de`, `es` und
++ `pl`. Übersetzungen werden mit `|` kombiniert, und der Typ hält fest, was bereitgestellt wurde:
+
+% 2 1 0 0cf9276b3ee684020214003e6ac19f87
+
+% 0 1 0 17420e3da1b7f6f11a72c3466d1eeb91
+
+% 1 1 0 0624afa70f50aad40086a95408a195c7
+
+@ 0 4 0 0dbebd69df82ce2b07604f9810c28c54
++ Ein `Polyglot[Text, en & fr]` ist ein Text, der auf Englisch *und* auf Französisch verfügbar ist.
++ Nur Englisch zu liefern, wo beide verlangt sind, kompiliert nicht. Genau darum geht es: Die
++ Forderung nach einer französischen Übersetzung wird dort durchgesetzt, wo der Wert geschrieben
++ wird, und nicht von einem französischen Benutzer entdeckt.
+
+% 2 1 0 0b3cc603e34f6035090f74c32c6b0ed6
+
+% 3 1 0 1e8f59cd22faf22d1fa71fd0a268c67a
+
+% 4 1 0 0ecee7b9e0b7567604028c7f785fd78b
+
+% 5 1 0 041931c25db674d71f6fac190f140cba
+
+% 0 1 0 1f86d30b359f813f045298d894ff2cbf
+
+% 1 1 0 10d94ac229e49e97141d98fac3921d76
+
+@ 0 1 0 0f500e5b85cf064a16cd002f069a9138
++ ### Eine Sprache auswählen
+
+@ 0 2 0 159a8799e23f5e9d12fdfd42093af557
++ Eine `Locale` benennt die zu lesende Sprache. Das Polyglot anzuwenden, mit einer Locale im
++ Geltungsbereich, liefert den Wert für diese Sprache:
+
+% 2 1 0 1bbae0a68d138e981279940694dae1ed
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 2 1 0 1695886d93d1ac251ff090c0df46cdb6
+
+% 0 1 0 03adfa563f9bbdd90460339e6abd8f9f
+
+% 1 1 0 069f61940e72f1101dcefcdc8303eed5
+
+% 1 1 0 123e132970abea3302dded92da3277af
+
+% 0 1 0 1bfb0cb5b06e0cb1189111e4d4ed9013
+
+% 1 1 0 1df1b041752a8cba1407a9320fc190f7
+
+% 1 1 0 06c37428e46bf1d708419ab27c69ac7c
+
+@ 0 2 0 13ee17a62528cffe1914323a8ec864f4
++ Der Typ der Locale muss Sprachen abdecken, die das Polyglot hat, daher ist es ein
++ Kompilierfehler, einen Wert nach einer Sprache zu fragen, die er nicht hat:
+
+% 2 1 0 128ee67c32c6a03f197b8810e78b83fa
+
+% 3 1 0 061348699cb6d5cf0a29056659200756
+
+% 4 1 0 17b688d07cb09bd11c9e74c3b3a85070
+
+% 5 1 0 1dc0d6e6727d0cb11cd52605df692563
+
+% 2 1 0 07a2552c473aa440045e998b9cc54ad2
+
+% 0 1 0 1f1cea4f77a367501683a60e8d1665e6
+
+% 0 1 0 1586b2986c3f651915cd5148589e42cc
+
+% 1 1 0 05788b11356e8f0713c9d73d9f72826d
+
+@ 0 1 0 187f831b174cf1e108515b68ccc50c3e
++ ### Eine Locale aus Laufzeitdaten
+
+@ 0 4 0 121db81ccb0dc0cd06a7df0d4ec47f52
++ Die Sprache des Benutzers kommt meist zur Laufzeit an, aus einem HTTP-Header, einer
++ [Umgebungsvariablen](environment.md) oder einer Einstellung. Ein Sprachcode wird
++ [zu einer `Locale` dekodiert](decoding.md#decoding-a-value), und ein Code, der nicht erkannt wird,
++ fällt auf Englisch zurück:
+
+% 2 1 0 0695f8a0f8d371770a0c0df86a464fd8
+
+% 0 1 0 1063f305708e9ac514a630171461fe50
+
+% 1 1 0 04a10c60353c5d081eb0b66442f26d1f
+
+@ 0 3 0 1a57af7cf97a8c2b18cea2ba5675a3eb
++ Mit dieser Locale im Geltungsbereich wird jedes Polyglot, das diese Sprachen abdeckt, in der
++ Sprache des Benutzers gelesen, und die Vollständigkeit jeder Übersetzung wurde bereits geprüft,
++ als der Code kompiliert wurde.
+
+@ 0 1 0 0075fc8d622fc1761769061b86461efe
++ ### Über Text hinaus
+
+@ 0 5 0 18cf492f209c17e91ee14b7553eb013e
++ Ein `Polyglot` ist generisch in dem, was es enthält, und nicht auf Text festgelegt. Ein
++ Datumsformat, eine Konvention für Währungen oder eine ganze Seite Inhalt kann über denselben
++ Mechanismus je nach Sprache variieren, mit derselben Garantie, dass keine unterstützte Sprache
++ fehlt. [Zeit](time.md#describing-recurrences) verwendet eine Locale, um eine Wiederholung in
++ Worten zu beschreiben, und [Kataloge](catalogs.md) hält Übersetzungen in Dateien, wo das gewünscht
++ ist.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 1 0 029a66efd7190ef20ad03638138cd61a
++ - [Anzeige](display.md), [Geld](money.md) und [Webseiten](pages.md) stellen Werte für eine Locale
++   dar.

@@ -1,0 +1,84 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 19dea67b4c87ab0e04fdc5517c4d3b95
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 04e0ac29f41b3f8f1385ae2a3f122ac2
++ info   WebAuthn para relying parties: ceremonias de registro y de autenticación para llaves de acceso y llaves de seguridad
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 16ce0d66850388b2041144da57208490
++     _Chatelaine_ implementa el lado de la relying party de
++     [Web Authentication](https://www.w3.org/TR/webauthn-2/): el inicio de sesión sin contraseña
++     con un par de claves que un autenticador crea para un sitio y nunca deja salir. Todo es un
++     miembro de `WebAuthn`.
+
+@ 0 2 0 154aec462c907320098f4b31f2a8c8b3
++     Cada una de las dos ceremonias consiste en una llamada para crear las opciones que una
++     página da al navegador, y otra para comprobar la respuesta que la página devuelve:
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 09583daf6313cc2613f1f3df627c02f3
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 11a8761d091bcae20a857a0acb9e6de5
+
+% 0 1 0 084f3fa5c4af7bbc16235483c676569f
+
+% 0 1 0 01f6e077d6d404f8141c693ce5983582
+
+% 0 1 0 019ca73842e72b51096abb17ce03ad5d
+
+% 0 1 0 1606e2b0880ee61e1d66b2105c9ba64f
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 3 0 0406be96df43adb8171399cd2404808a
++     `WebAuthn.register` y `WebAuthn.authenticate` hacen todas las comprobaciones que el
++     estándar exige a una relying party (§7.1 y §7.2), y lanzan `WebAuthn.Error` para una
++     respuesta que no supera alguna. Se entienden los formatos de atestación `none` y `packed`.
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     La biblioteca tiene dos conjuntos de fuentes:
+
+@ 0 4 0 112b51161014ea551dea708d1e24e822
++     - `chatelaine.core`: `WebAuthn`, es decir, las opciones, la comprobación de respuestas y la
++       `WebAuthn.Credential` que guarda una relying party.
++     - `chatelaine.server`: `Ceremonies`, que conserva el desafío de cada sesión entre las dos
++       peticiones de una ceremonia.
+
+@ 0 3 0 19e4102d4c39c43408eb14f858e81152
++     Ambos se exportan al paraguas `soundness`. No tiene paquetes de elección propios; las
++     ceremonias necesitan un proveedor `Crypto` (`providers.javaBaseProvider`), y el registro,
++     un `Clock`.
+
+% 0 1 0 17e566a8b38b5ad51b4fedd56dc9f310
+
+% 0 1 0 0ffee6fb81b3698701c31b1ed8ce0e44
+
+@ 0 1 0 01a0f226b16b1ff609f4591746ae6258
++ entry .WebAuthn   el lado de la relying party de Web Authentication: las opciones y la comprobación de respuestas
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 4 0 10eea03e630598f712531afa7cd06380
++       `WebAuthn.registration` y `WebAuthn.authentication` crean las opciones de una ceremonia
++       como JSON; `WebAuthn.register` y `WebAuthn.authenticate` comprueban su respuesta: el
++       primero da una `WebAuthn.Credential` que guardar, y el segundo esa credencial con su
++       contador de firmas incrementado.

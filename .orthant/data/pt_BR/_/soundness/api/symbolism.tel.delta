@@ -1,0 +1,1023 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1861fb3ffe250f090b0aa3a7d3bbee3c
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0adc043bef3ff3a40219512bf50337e4
++ info   operadores aritméticos como classes de tipos, cada uma nomeando os tipos dos operandos e do resultado, e comparação total
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 001b83d42d668e8e09180a441f4c462d
++     _Symbolism_ define os operadores aritméticos `+`, `-`, `*`, `/` e o `-` prefixo, as raízes
++     `sqrt` e `cbrt` e as identidades `zero` e `one`, não como métodos de algum tipo, mas como
++     extensões resolvidas por meio de classes de tipos. Cada classe de tipos binária nomeia o
++     seu operando esquerdo (`Self`), o seu operando direito (`Operand`) e o seu resultado
++     (`Result`), de modo que a aritmética pode significar algo para tipos cujos operandos e
++     resultados diferem: um comprimento vezes um comprimento é uma área, um instante mais uma
++     duração é um instante, e uma grandeza dividida por outra tem um tipo que nenhum dos
++     operandos poderia ter previsto.
+
+% 2 1 0 06d3b9172c5afd120a63ddb63ad54368
+
+% 3 1 0 14cbead5e68dfd381a5c6b8cf87d35e8
+
+% 0 1 0 0e16b1647b03e4900f19da2be178677f
+
+% 0 1 0 0a86a05adaba2a0313a09db73cbe289c
+
+% 0 1 0 0dc7c045468bfc75153f12ccdd1b7994
+
+% 0 1 0 1c4e6d6936b9abec1c7c632a2cbdb611
+
+% 0 1 0 05962f2826310a920cadc29354dfb6fa
+
+% 0 1 0 1a789eba38bc0b530a3409d0b8e528f1
+
+% 0 1 0 16730851737b8e3c04c5026f48616e9c
+
+% 0 1 0 0b32d95916ee02200f4603770be1d06b
+
+% 1 1 0 02bccdb920c57ab406902be6bead479f
+
+@ 0 7 0 1304fdc7a498e4171a98ade7c2dcc31d
++     Ler em voz alta o tipo de uma instância diz tudo: `Money is Addable by Money to Money` — um
++     `Money` _é somável por_ um `Money` _resultando em_ um `Money`. As classes de tipos são
++     `Addable`, `Subtractable`, `Multiplicable`, `Divisible`, `Negatable` e `Rootable` para as
++     operações; `Zeroic` e `Unital` para as identidades aditiva e multiplicativa;
++     `Concatenable`, que torna todo tipo concatenável `Addable`, de modo que coleções e texto se
++     juntam com `+`; `Quotient`, para decompor uma fração com o extrator `/:`; e `Comparable`,
++     uma comparação total de três vias que retorna uma `Comparison`, por meio da qual as coleções
++     ordenam e encontram extremos.
+
+@ 0 4 0 06fd0409a45e2f3604643f5268089531
++     As instâncias para os tipos numéricos primitivos são objetos singleton com métodos
++     `inline`, de modo que `a + b` sobre dois `Double`s compila para a única instrução de
++     máquina, sem instância alocada e sem boxing. As classes de tipos `AddOp`, `SubOp`, `MulOp`
++     e `DivOp` são uma rota de adesão mais antiga para a mesma expansão inline, que os
++     operadores ainda consultam primeiro.
+
+@ 0 5 0 03b235cda1773ea80d28345f2d419e4d
++     Symbolism é a maquinaria por baixo da aritmética dimensional do quantitative, dos vetores e
++     matrizes do mosquito, dos números de largura fixa do hypotenuse e dos instantes e durações
++     do aviation. Tem um único source set, `symbolism.core`, que compila para todas as
++     plataformas, e tudo é exportado para o guarda-chuva `soundness`. Toda instância fica no
++     objeto companheiro do seu tipo sujeito ou da sua classe de tipos, de modo que nenhuma
++     precisa de import.
+
+% 0 1 0 18badcd7039d9c39129c5998a01d86df
+
+% 0 1 0 0137e19ffb39a5f91f53e450d96038d1
+
+% 0 1 0 1bc12d1c772357b51e8e7bd3fe28c449
+
+% 0 1 0 0ae57ce3c3193ca21a5f2acac50cd4d6
+
+@ 0 6 0 143c6a2488f000331af1baa532d3ae7e
++ entry .+   soma dois valores por meio da instância de `Addable` para os seus tipos
++     `left + right` é uma extensão sobre qualquer tipo, que precisa de um `left is Addable by
++     right` em escopo; o seu tipo é o `Result` da instância. Primeiro ela procura, enquanto a
++     chamada é expandida inline, um `AddOp` para os dois tipos e, caso contrário, chama o `add`
++     da instância de `Addable`. Como o operando direito é um parâmetro de tipo, um literal
++     simples à direita não assume o tipo do operando esquerdo: um literal inteiro somado a um
++     `U64` é escrito `count + (1: U64)`.
+
+% 2 1 0 0fcdf602c22056460e96f0fa54f8627c
+
+% 3 1 0 1ac4396c2d6a7dee1489b85f7f0e2a60
+
+% 0 1 0 01ff953220b689400919171295187cf4
+
+% 0 1 0 15bb3993525ac8331e45585e8d406dd2
+
+% 0 1 0 034b888e64fa8c1f0b08d55c456b666b
+
+% 1 1 0 1cc1c3b5310fadb810591d611661e3b4
+
+@ 0 2 0 02c902eeb94ebc091975fe87598fc650
++     Somar valores para os quais não há instância é um erro de compilação, e não um recurso à
++     concatenação por `toString`.
+
+@ 0 4 0 1340769e512b6d0b0e80ffa1b4ae4cac
++ entry .-   subtrai um valor de outro por meio da instância de `Subtractable` para os seus tipos
++     `left - right` é uma extensão sobre qualquer tipo, que precisa de um `left is
++     Subtractable by right` em escopo, e retorna o `Result` da instância. Como para `+`, um
++     `SubOp` é preferido quando existe.
+
+% 3 1 0 003634b81f983696178c4bb0becf942c
+
+% 4 1 0 05eaf87b495956ff1d78b80bf4c3621c
+
+% 0 1 0 0eea05f8d99cca701679a5039fb41c2f
+
+% 1 1 0 06d39eab07a051721c5db5cb7f77a10d
+
+@ 0 6 0 1cfe96953583e1f915decbdab16ef0e2
++ entry .*   multiplica dois valores por meio da instância de `Multiplicable` para os seus tipos
++     `left*right` é uma extensão sobre qualquer tipo, que precisa de um `left is Multiplicable
++     by right` em escopo, e retorna o `Result` da instância, e é assim que um comprimento vezes
++     um comprimento pode ser uma área, enquanto um comprimento vezes um número é um comprimento.
++     Um `MulOp` é preferido quando existe. Qualquer tipo que seja `Concatenable` consigo mesmo e
++     `Zeroic` se multiplica por um `Int` como repetição, de modo que `t"ab"*3` é `t"ababab"`.
+
+% 2 1 0 18e2dfe922aa50e403548eed9fb784f9
+
+% 3 1 0 11ec7ff3dcd869e5166e493e53eb6721
+
+% 0 1 0 0ab5e0fbf2b703cf1d5806cbc8ab6948
+
+% 0 1 0 1a13fd007aff231610d27a05474e455d
+
+% 1 1 0 117d53596954edfd0158dd4fc6f4881a
+
+@ 0 5 0 176e927d44fc8d4512a96934bdc56353
++ entry ./   divide um valor por outro por meio da instância de `Divisible` para os seus tipos
++     `left/right` é uma extensão sobre qualquer tipo, que precisa de um `left is Divisible by
++     right` em escopo, e retorna o `Result` da instância. A divisão inteira trunca, como faz o
++     operador primitivo, e um `Int` dividido por um `Double` é um `Double`. Um `DivOp` é
++     preferido quando existe.
+
+% 3 1 0 013d822fa0c63d6a191036d4bc758a37
+
+% 4 1 0 09c7e1aeda257739023f0d84afb78384
+
+% 0 1 0 1dc0d4719231858e1785fa7735a6eaed
+
+% 0 1 0 0356a2c08ce5f03a03811a3253f0561a
+
+% 1 1 0 0f73be644b09e1520cdf748d60bfe8db
+
+@ 0 4 0 1e37432a85b56c9013c20c0f4a920e5b
++ entry .unary_-   nega um valor por meio da instância de `Negatable` para o seu tipo, como `-` prefixo
++     `-value` é uma extensão sobre qualquer tipo, que precisa de um `value is Negatable` em
++     escopo, e retorna o `Result` da instância. Um `Byte` ou um `Short` é negado de volta ao seu
++     próprio tipo, dando a volta como fazem os tipos primitivos.
+
+% 2 1 0 138eb749007778e60a23214f7e725145
+
+% 3 1 0 063b274c1aad97b915b322cee6b1be88
+
+% 0 1 0 0cb6847491cd419705c3648504b5d29d
+
+% 0 1 0 19cb0afc4e7140ce1a37694ee62dd5a3
+
+% 0 1 0 0ef44c411610aee61fc45ddfc3026e45
+
+% 0 1 0 12c7e154ec8e9dd71211f7dce1fa0cf8
+
+% 1 1 0 14c36c7016710afa1cc93dd484dc7e73
+
+@ 0 4 0 1816d7c931c911190f0efc44f3f2e2ca
++ entry .sqrt   a raiz quadrada de um valor, por meio da sua instância de `Rootable[2]`
++     Uma extensão sobre qualquer tipo com um `Rootable[2]`, que retorna o `Result` da instância.
++     Num `Double` ou `Float`, ela é expandida inline para `Math.sqrt`, sem nada alocado. Não há
++     instância para `Int`, já que a sua raiz quadrada em geral não é um `Int`: `16.sqrt` é um
++     erro de compilação.
+
+% 2 1 0 1cbf542b31721eb1034450ee9de4fd4c
+
+% 3 1 0 0cf0a10ba408c9c7039b3bb8a54fe472
+
+% 0 1 0 10807e93ab26a6fc178aa57c71b388c6
+
+% 0 1 0 1eec60b42573e24b1f640aff321f90a3
+
+% 0 1 0 1bdb3c427c1522451a2c0fad5fbeae0e
+
+% 1 1 0 0c46250625a72b1e005913d910b82dc3
+
+@ 0 3 0 0821ba72a6b25615063bf290f601d680
++ entry .cbrt   a raiz cúbica de um valor, por meio da sua instância de `Rootable[3]`
++     Uma extensão sobre qualquer tipo com um `Rootable[3]`, que retorna o `Result` da instância;
++     num `Double` ou `Float`, ela é expandida inline para `Math.cbrt`.
+
+% 2 1 0 123026e4f53d01e115434a79ca7e472c
+
+% 3 1 0 10ad3bc700cf006503dd2baab18e8892
+
+% 0 1 0 135a5c580c71aa5b047c66084c45d1f2
+
+% 1 1 0 03fa26364ed08519023c832ca5983cea
+
+@ 0 3 0 073fd6d05b41cafc01bcb207305ce1ff
++ entry .zero   a identidade aditiva de um tipo, como `zero[Int]`
++     `zero[T]` precisa de um `T is Zeroic` em escopo. É onde começa uma soma ou uma concatenação
++     repetida, e onde um algoritmo genérico precisa de um valor inicial.
+
+% 2 1 0 05b66885e2b190651168f573ea957abd
+
+% 3 1 0 03067fcf1afcb8870726567b37b6d5eb
+
+% 0 1 0 0fef75edd79509a61cff098683676fa9
+
+% 0 1 0 0de6bf3677170b700bad10bed8e48653
+
+% 0 1 0 0a12d213abde7c6b072e4a640c3bf087
+
+% 1 1 0 103ef2d82a064e3d0427e6d2bf6cfe80
+
+@ 0 1 0 115a1f8a152c69c019a24b6b863e0270
++ entry ./:   o extrator que decompõe uma fração, `numerator /: denominator`, por meio de `Quotient`
+
+% 1 1 0 1bc98f746d55c7b8092b78de459f20b5
+
+@ 0 2 0 0cacfb56cb964c4814f127df9f5ee7a4
++       Um padrão que casa com qualquer valor que tenha uma instância de `Quotient`, vinculando o
++       seu numerador e o seu denominador; um valor que a instância não consegue decompor não
++       casa.
+
+% 2 1 0 000d31cd86646f331c4090433f3d43fa
+
+% 3 1 0 14c549ad32d0847e1b21cf1f736c164b
+
+% 0 1 0 0e5826d3da3d30c103535e26ed9850a5
+
+% 0 1 0 0b791519c46f44a7041f2214a0a8a295
+
+% 0 1 0 1315cf185bf45b84146a9f6a0601e2f0
+
+% 0 1 0 0404d4411a8179ee049adc364679bd72
+
+% 0 1 0 191d4a3c4e30e0c21ed3853ba93fbfc2
+
+% 0 1 0 0d389405fb62a66a0f7e2b5c09cf42de
+
+% 0 1 0 0b72e296f6608ae114abd9958390779c
+
+% 0 1 0 07ef0ac74f1876850a87a43e50b1025c
+
+% 0 1 0 1750964329dda9ef0e9d8028c88fe459
+
+% 0 1 0 183240fcffa65318024e7901a38190f0
+
+% 0 1 0 1692623ea65e7d5914447e02156122a7
+
+% 1 1 0 14617045670db1510baeb6feb0b9121f
+
+@ 0 1 0 0a8687ab07008c001d753338d8ebc1e8
++   entry .unapply   decompõe um valor no seu numerador e denominador, se o seu `Quotient` conseguir
+
+@ 0 1 0 0daba5718467923004af18eddd6d6271
++ entry .Addable   uma classe de tipos para `+`: um `Self` é somável por um `Operand` resultando num `Result`
+
+% 1 1 0 1663371680dc2bde0a8319a6ff96a160
+
+@ 0 5 0 05ae9b11b2472e3d061f630e43ec6109
++       A classe de tipos por trás da extensão `+`. Os seus três membros de tipo dizem tudo: a
++       instância `Money is Addable by Money to Money` soma dois `Money`s para fazer um `Money`,
++       enquanto `Instant is Addable by Duration to Instant` soma uma duração a um instante. O
++       resultado é um membro da instância, e não um parâmetro do operador, de modo que um único
++       `+` serve a toda combinação.
+
+% 2 1 0 1f8529da4736245b17948c2d39a39790
+
+% 3 1 0 15617c77d2e4f07f0b9f3563ca981bef
+
+% 5 1 0 106f1d97b0f46b7710d0cd17d48eb298
+
+% 7 1 0 0a529f9e895b110115aecbb2520d748d
+
+% 0 1 0 0d578706d94c3e8e0173ca9459b0a3f8
+
+% 0 1 0 1b834b1787c2b18f08fb727e99586bd7
+
+% 0 1 0 0578de8800a3155b0e78a738fb1818d9
+
+% 1 1 0 1abb05b9d33034fd1a0a2092b2070248
+
+@ 0 2 0 1d0e5489653c0d0f0f77781bf274db46
++       Um tipo adquire a sua aritmética uma instância de cada vez, e cada operador fica
++       disponível assim que a sua instância existe:
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 17f1e21452daca120e8f42702861ec61
++         label Uma case class simples não tem aritmética
+
+% 1 1 0 01efe4ddc63cc62711e12fdb40e2d008
+
+% 2 1 0 0fd006c6720bb9b41c2057c5d9479bf1
+
+% 0 1 0 0300295f4abdaf0805ddb097916ce520
+
+% 1 1 0 0e01a652835172d10e85cd93181778e6
+
+@ 0 1 0 0f27b586f383b2f51761a60ecc6f45c9
++         label Uma instância de `Addable` lhe dá `+`
+
+% 1 1 0 1f51414240273dd50a3fe9a07b4482df
+
+% 2 1 0 17ad311edf5fc5f714717219ef90862a
+
+% 4 1 0 0ab73e52aa4cb7e50fc2606737274190
+
+% 5 1 0 109a883e4e2e62de06652a996b99d25a
+
+% 6 1 0 1b9f8e6646f96bff1368023df484205d
+
+% 0 1 0 024485cfd206f65503280ddb76e45145
+
+% 1 1 0 0fbeb44cfd56692e115d52c366b8ea86
+
+@ 0 1 0 15d4fc05e6d4641a1cdbb361f7d0e015
++         label Uma instância de `Multiplicable`, com um tipo de operando diferente, lhe dá `*`
+
+% 1 1 0 1b0614a364e110191f35b636997184bd
+
+% 2 1 0 09cc44f2383419df01a6130a641386ff
+
+% 4 1 0 09b0091e23f138fd1a3a3b2cda8366b2
+
+% 5 1 0 1239586768c8d8410567ecbda8a6b36a
+
+% 6 1 0 102b614c8e712e1c092a290c581d80f5
+
+% 0 1 0 1d3bf118b9b8910a12cf3e6a1ff450c9
+
+% 0 1 0 031e923452f92003085533f39c728578
+
+% 0 1 0 0742d9df8973350f097d3efea7165e13
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 6 0 1233005096be334b0bd1b09e7fc72743
++       As instâncias pertencem ao objeto companheiro do tipo sujeito, onde são encontradas sem
++       import. As instâncias primitivas (`Int`, `Long`, `Double`, `Float`, `Short`, `Byte`, e
++       `Int` com `Double` em qualquer ordem) são os objetos singleton do companheiro, cujo
++       `inline def add` faz de `a + b` uma única instrução. Um `Short` ou um `Byte` soma de volta
++       ao seu próprio tipo, dando a volta em caso de overflow. Todo tipo `Concatenable` é
++       `Addable` por meio de `.concatenable`.
+
+% 0 1 0 09201a2e5addfb43047d502b0377ccfb
+
+% 0 1 0 16710fc88531dae71c6010f7250374cd
+
+% 0 1 0 189486f3e13c4f7114ad6f7dc2f965e9
+
+@ 0 28 0 1cf15fc9ae00424f1028a473cfc83104
++   entry .apply   uma instância de `Addable` a partir de uma função dos dois operandos
++       `Addable((left, right) => …)` cria um `augend is Addable by addend to result`, com os
++       três tipos inferidos a partir do tipo esperado, tal como o tipo declarado de um given os
++       fornece.
++   entry .DoubleAddition   a instância de `Double + Double`, expandida inline numa única instrução
++   entry .FloatAddition   a instância de `Float + Float`, expandida inline numa única instrução
++   entry .LongAddition   a instância de `Long + Long`, expandida inline numa única instrução
++   entry .IntAddition   a instância de `Int + Int`, expandida inline numa única instrução
++   entry .IntDoubleAddition   a instância de `Int + Double`, cujo resultado é um `Double`
++   entry .DoubleIntAddition   a instância de `Double + Int`, cujo resultado é um `Double`
++   entry .ShortAddition   a instância de `Short + Short`, dando a volta, de volta a um `Short`
++   entry .ByteAddition   a instância de `Byte + Byte`, dando a volta, de volta a um `Byte`
++   entry .double   o given para `Double + Double`, tipado como `DoubleAddition` para ser expandido inline
++       Declarado no tipo singleton do objeto, que é o que permite ao inliner resolver `add` para
++       o `inline def` do objeto; um given tipado como o trait despacharia por meio dele.
++   entry .float   o given para `Float + Float`, tipado como `FloatAddition` para ser expandido inline
++   entry .long   o given para `Long + Long`, tipado como `LongAddition` para ser expandido inline
++   entry .int   o given para `Int + Int`, tipado como `IntAddition` para ser expandido inline
++   entry .int2   o given para `Int + Double`, tipado como `IntDoubleAddition` para ser expandido inline
++   entry .int3   o given para `Double + Int`, tipado como `DoubleIntAddition` para ser expandido inline
++   entry .short   o given para `Short + Short`, tipado como `ShortAddition` para ser expandido inline
++   entry .byte   o given para `Byte + Byte`, tipado como `ByteAddition` para ser expandido inline
++   entry .concatenable   torna todo tipo `Concatenable` `Addable`, de modo que `+` junta listas, conjuntos, mapas e texto
++       Para qualquer `left is Concatenable by right`, um `Addable` com o mesmo operando e
++       resultado, que chama `concat`. É assim que `List(1) + List(2)`, `set + other` e
++       `text + more` funcionam por meio do único `+`.
++   entry #Augend   o tipo do operando esquerdo: um alias de `Self`
++   entry #Addend   o tipo do operando direito: um alias de `Operand`
++   entry #add   soma uma parcela a outra, dando o `Result` da instância
+
+@ 0 1 0 1f26df8d88a1089e0d649f1656cab2c2
++ entry .Subtractable   uma classe de tipos para `-`: um `Self` é subtraível por um `Operand` resultando num `Result`
+
+% 1 1 0 1a51d983434d71510116edc334461cc6
+
+@ 0 3 0 1313ca3715fe360a1ea5a173b317e707
++       A classe de tipos por trás da extensão binária `-`, cujo tipo de resultado é um membro da
++       instância: `Instant is Subtractable by Instant to Duration`, por exemplo, enquanto um
++       instante menos uma duração é um instante.
+
+% 2 1 0 0b2af35dae3694cd182ed5848389ca9b
+
+% 3 1 0 1bdc247c31bc5f6e188284d8a3e97f75
+
+% 5 1 0 1388f6b1c0ad7add1ad6a023b1109b91
+
+% 7 1 0 1106f41356606a7803dfaf35561c877b
+
+% 0 1 0 04b0755bae945ab216f3d64f18e41ad2
+
+% 0 1 0 0a9a6b1a8305d66d179e8d5a12475211
+
+% 0 1 0 0b435b44129212280b0a47723999db16
+
+% 1 1 0 09c92dd01c2ca9840d71f4eb3e0bd93c
+
+@ 0 2 0 0f1a9e92ab4e9263059cdaa828ade88f
++       As instâncias primitivas são objetos singleton com `inline def subtract`; um `Short` ou um
++       `Byte` subtrai de volta ao seu próprio tipo.
+
+% 0 1 0 09201a2e5addfb45047d502b0377ccfd
+
+@ 0 16 0 156256010cb56ae217cab906cf35668f
++   entry .apply   uma instância de `Subtractable` a partir de uma função dos dois operandos
++   entry .DoubleSubtraction   a instância de `Double - Double`, expandida inline numa única instrução
++   entry .FloatSubtraction   a instância de `Float - Float`, expandida inline numa única instrução
++   entry .LongSubtraction   a instância de `Long - Long`, expandida inline numa única instrução
++   entry .IntSubtraction   a instância de `Int - Int`, expandida inline numa única instrução
++   entry .ShortSubtraction   a instância de `Short - Short`, dando a volta, de volta a um `Short`
++   entry .ByteSubtraction   a instância de `Byte - Byte`, dando a volta, de volta a um `Byte`
++   entry .double   o given para `Double - Double`, tipado como `DoubleSubtraction` para ser expandido inline
++   entry .float   o given para `Float - Float`, tipado como `FloatSubtraction` para ser expandido inline
++   entry .long   o given para `Long - Long`, tipado como `LongSubtraction` para ser expandido inline
++   entry .int   o given para `Int - Int`, tipado como `IntSubtraction` para ser expandido inline
++   entry .short   o given para `Short - Short`, tipado como `ShortSubtraction` para ser expandido inline
++   entry .byte   o given para `Byte - Byte`, tipado como `ByteSubtraction` para ser expandido inline
++   entry #Minuend   o tipo do operando esquerdo: um alias de `Self`
++   entry #Subtrahend   o tipo do operando direito: um alias de `Operand`
++   entry #subtract   subtrai um subtraendo de um minuendo, dando o `Result` da instância
+
+@ 0 1 0 0b73b35ca0ada8700761792216a2515d
++ entry .Multiplicable   uma classe de tipos para `*`: um `Self` é multiplicável por um `Operand` resultando num `Result`
+
+% 1 1 0 1e4ba23bfd80ba0b090db9d419c89ded
+
+@ 0 3 0 03b6dfdc3cbee4851724b8c3fd35754f
++       A classe de tipos por trás da extensão `*`. O operando e o resultado podem diferir do
++       operando esquerdo: um vetor multiplicado por um `Int` é um vetor, e no quantitative um
++       comprimento multiplicado por um comprimento é uma área.
+
+% 2 1 0 12f7157a6370663505cd6ef459a795aa
+
+% 3 1 0 023a7f1cf6d870260e90659c3cb9e7ed
+
+% 5 1 0 0a706183bcca45b00ed57ddf375b56a9
+
+% 7 1 0 0df878b4427bf50e09c3cff6aa18b8f2
+
+% 0 1 0 1ddd3201b781212b1e2766b5cbae2aed
+
+% 0 1 0 0bf7e8a092a4ec5b16ca621c39f96257
+
+% 0 1 0 0e19eb81436eb88f017033629fd7769b
+
+% 1 1 0 043e0a9c9fad44ec00ec311d94c7876c
+
+@ 0 3 0 0117d6b72670ed6b0c3327f7a8c0dd1d
++       As instâncias primitivas são objetos singleton com `inline def multiply`. Qualquer tipo
++       que seja `Concatenable` consigo mesmo e `Zeroic` se multiplica por um `Int` como
++       repetição, por meio de `.concatenable`.
+
+% 0 1 0 09201a2e5addfb42047d502b0377ccfa
+
+@ 0 17 0 1c11295dc351e8ea0793745c0ba9ad9c
++   entry .apply   uma instância de `Multiplicable` a partir de uma função dos dois operandos
++   entry .DoubleMultiplication   a instância de `Double*Double`, expandida inline numa única instrução
++   entry .LongMultiplication   a instância de `Long*Long`, expandida inline numa única instrução
++   entry .IntMultiplication   a instância de `Int*Int`, expandida inline numa única instrução
++   entry .FloatMultiplication   a instância de `Float*Float`, expandida inline numa única instrução
++   entry .ShortMultiplication   a instância de `Short*Short`, dando a volta, de volta a um `Short`
++   entry .ByteMultiplication   a instância de `Byte*Byte`, dando a volta, de volta a um `Byte`
++   entry .double   o given para `Double*Double`, tipado como `DoubleMultiplication` para ser expandido inline
++   entry .long   o given para `Long*Long`, tipado como `LongMultiplication` para ser expandido inline
++   entry .int   o given para `Int*Int`, tipado como `IntMultiplication` para ser expandido inline
++   entry .float   o given para `Float*Float`, tipado como `FloatMultiplication` para ser expandido inline
++   entry .short   o given para `Short*Short`, tipado como `ShortMultiplication` para ser expandido inline
++   entry .byte   o given para `Byte*Byte`, tipado como `ByteMultiplication` para ser expandido inline
++   entry .concatenable   repetição: um valor concatenável consigo mesmo e `Zeroic` vezes um `Int`
++       Para qualquer tipo que seja `Concatenable` por si mesmo resultando em si mesmo e `Zeroic`,
++       `value*n` são `n` cópias do valor concatenadas, começando de `zero`, de modo que uma
++       contagem de zero (ou menos) dá o valor zero.
+
+% 2 1 0 10f33ed5263e6cce085b76de71d3e570
+
+% 3 1 0 0b86be096314745915f796d86e522690
+
+% 0 1 0 19487392ae3367d602eb46bf1ad4d6ca
+
+% 0 1 0 076d56d11172fa6807996f14801df631
+
+% 1 1 0 1ce0dd107e7622931e1b18875b8582a5
+
+@ 0 3 0 0ee8f21b41ff258503cb71af958b63c9
++   entry #Multiplicand   o tipo do operando esquerdo: um alias de `Self`
++   entry #Multiplier   o tipo do operando direito: um alias de `Operand`
++   entry #multiply   multiplica um multiplicando por um multiplicador, dando o `Result` da instância
+
+@ 0 1 0 19abfe59cc307ebe1349e8ec18fd0c67
++ entry .Divisible   uma classe de tipos para `/`: um `Self` é divisível por um `Operand` resultando num `Result`
+
+% 1 1 0 1a63a85b6973f61010b18b43dca198cc
+
+@ 0 2 0 1fc3eceb96f7f09c1daf72af952a8f02
++       A classe de tipos por trás da extensão `/`, cujo tipo de resultado é um membro da
++       instância: no quantitative, uma distância dividida por um tempo é uma velocidade.
+
+% 2 1 0 071d1763dd89f99919b9525d972b5eff
+
+% 3 1 0 08b375183530399c1dbe7f0ebffac65e
+
+% 5 1 0 0d5723e1f0146a451e4d3a7356bb1378
+
+% 7 1 0 07165ef010d0b525014430159b84ddeb
+
+% 0 1 0 12598c4154016f090eea6b98aa9f1cc5
+
+% 0 1 0 1fe2e345b33a893213fb4eeb2dc905b4
+
+% 0 1 0 1f7e5d1aa4b851c90ea4a72200ac7df0
+
+% 1 1 0 10f783c4ae44c2d208b29f43fc06e7cc
+
+@ 0 3 0 075bc8ab29271555186a902da2d60196
++       As instâncias primitivas são objetos singleton com `inline def divide`. Cada tipo
++       integral se divide por si mesmo resultando em si mesmo, truncando, e por um `Double`
++       resultando num `Double`; um `Double` ou `Float` se divide por um `Int`, e um `Float` por
++       um `Double` resultando num `Double`.
+
+% 0 1 0 09201a2e5addfb47047d502b0377ccff
+
+@ 0 30 0 1ece6c43fbece21f13c2e0391f7f3368
++   entry .apply   uma instância de `Divisible` a partir de uma função dos dois operandos
++   entry .DoubleDivision   a instância de `Double/Double`, expandida inline numa única instrução
++   entry .DoubleIntDivision   a instância de `Double/Int`, cujo resultado é um `Double`
++   entry .FloatDivision   a instância de `Float/Float`, expandida inline numa única instrução
++   entry .FloatIntDivision   a instância de `Float/Int`, cujo resultado é um `Float`
++   entry .FloatDoubleDivision   a instância de `Float/Double`, cujo resultado é um `Double`
++   entry .LongDivision   a instância de `Long/Long`, truncando
++   entry .LongDoubleDivision   a instância de `Long/Double`, cujo resultado é um `Double`
++   entry .IntDivision   a instância de `Int/Int`, truncando
++   entry .IntDoubleDivision   a instância de `Int/Double`, cujo resultado é um `Double`
++   entry .ShortDivision   a instância de `Short/Short`, truncando de volta a um `Short`
++   entry .ShortDoubleDivision   a instância de `Short/Double`, cujo resultado é um `Double`
++   entry .ByteDivision   a instância de `Byte/Byte`, truncando de volta a um `Byte`
++   entry .ByteDoubleDivision   a instância de `Byte/Double`, cujo resultado é um `Double`
++   entry .double   o given para `Double/Double`, tipado como `DoubleDivision` para ser expandido inline
++   entry .double2   o given para `Double/Int`, tipado como `DoubleIntDivision` para ser expandido inline
++   entry .float   o given para `Float/Float`, tipado como `FloatDivision` para ser expandido inline
++   entry .float2   o given para `Float/Int`, tipado como `FloatIntDivision` para ser expandido inline
++   entry .float3   o given para `Float/Double`, tipado como `FloatDoubleDivision` para ser expandido inline
++   entry .long   o given para `Long/Long`, tipado como `LongDivision` para ser expandido inline
++   entry .long2   o given para `Long/Double`, tipado como `LongDoubleDivision` para ser expandido inline
++   entry .int   o given para `Int/Int`, tipado como `IntDivision` para ser expandido inline
++   entry .int2   o given para `Int/Double`, tipado como `IntDoubleDivision` para ser expandido inline
++   entry .short   o given para `Short/Short`, tipado como `ShortDivision` para ser expandido inline
++   entry .short2   o given para `Short/Double`, tipado como `ShortDoubleDivision` para ser expandido inline
++   entry .byte   o given para `Byte/Byte`, tipado como `ByteDivision` para ser expandido inline
++   entry .byte2   o given para `Byte/Double`, tipado como `ByteDoubleDivision` para ser expandido inline
++   entry #Dividend   o tipo do operando esquerdo: um alias de `Self`
++   entry #Divisor   o tipo do operando direito: um alias de `Operand`
++   entry #divide   divide um dividendo por um divisor, dando o `Result` da instância
+
+@ 0 1 0 1d2b09d9a4d03fa412b423306cd2fc24
++ entry .Negatable   uma classe de tipos para o `-` prefixo: um `Self` é negado resultando num `Result`
+
+% 1 1 0 18da6ba8eab7ba571e2eee4c357f3298
+
+@ 0 2 0 12796fdf465eebcf1c921451ef3c8a5d
++       A classe de tipos por trás da extensão `unary_-`. O resultado é um membro da instância,
++       de modo que um tipo pode ser negado resultando em outro, como um número sem sinal poderia
++       resultar num com sinal.
+
+% 2 1 0 1aa453b2d4e42cbd10eb34a1a5dfd6d8
+
+% 3 1 0 17add86c51613302081ec3513a5f7d7a
+
+% 5 1 0 1a9317f56cf13d261f94c35fcae7483d
+
+% 7 1 0 1d946a085293b4af0a98db75cbd33566
+
+% 0 1 0 123e380402734dc815c93c0dc8b6a151
+
+% 0 1 0 1ba358446f44fe8f14d32ffc8e731064
+
+% 0 1 0 0746cebb1a0ddeb4038608a27106ffad
+
+% 1 1 0 106c539c7cd2ce1914b54713f9adb30d
+
+@ 0 5 0 02fa7ff1abffca811600fe76648a5633
++       As instâncias primitivas são objetos singleton com `inline def negate`, de modo que `-a`
++       num `Double` é uma única instrução; um `Short` ou um `Byte` é negado de volta ao seu
++       próprio tipo. Código genérico que nega por meio de uma instância deve vinculá-la num
++       padrão de `summonFrom`, em vez de chamar `summonInline[…].negate`, que tipa a instância
++       como o trait e faz boxing por meio do método apagado mesmo para um primitivo.
+
+% 0 1 0 1e3b0d154788a55e033a7e149e34da8c
+
+@ 0 14 0 017a4300b34f61ab0d10fe633b78ea06
++   entry .apply   uma instância de `Negatable` a partir de uma função do operando
++   entry .DoubleNegation   a instância de `-Double`, expandida inline numa única instrução
++   entry .FloatNegation   a instância de `-Float`, expandida inline numa única instrução
++   entry .LongNegation   a instância de `-Long`, expandida inline numa única instrução
++   entry .IntNegation   a instância de `-Int`, expandida inline numa única instrução
++   entry .ShortNegation   a instância de `-Short`, dando a volta, de volta a um `Short`
++   entry .ByteNegation   a instância de `-Byte`, dando a volta, de volta a um `Byte`
++   entry .double   o given para `-Double`, tipado como `DoubleNegation` para ser expandido inline
++   entry .float   o given para `-Float`, tipado como `FloatNegation` para ser expandido inline
++   entry .long   o given para `-Long`, tipado como `LongNegation` para ser expandido inline
++   entry .int   o given para `-Int`, tipado como `IntNegation` para ser expandido inline
++   entry .short   o given para `-Short`, tipado como `ShortNegation` para ser expandido inline
++   entry .byte   o given para `-Byte`, tipado como `ByteNegation` para ser expandido inline
++   entry #negate   nega um valor, dando o `Result` da instância
+
+@ 0 1 0 1b19e9b82d0d083a081097fc4ad62ee7
++ entry .Rootable   uma classe de tipos para a raiz de um grau literal: `Rootable[2]` está por trás de `sqrt`, `Rootable[3]` por trás de `cbrt`
+
+% 1 1 0 1bc8f9e2742a65c31a821966efacdbbb
+
+@ 0 3 0 07f9a90ecd878b40031d47996e1f8a68
++       `Rootable[degree]` extrai a raiz do grau que o seu parâmetro de tipo nomeia, um `Int`
++       literal: `Rootable[2]` está por trás de `sqrt` e `Rootable[3]` por trás de `cbrt`. Uma
++       raiz de qualquer outro grau pode ser dada, e convocada ou usada diretamente.
+
+% 2 1 0 162e31646f9a6fb01c943a3b08a7ae1f
+
+% 3 1 0 0f0c3e32762434a6085c53430ba9a4b4
+
+% 0 1 0 0a02ba1e7f5f923011b87672119d7146
+
+% 0 1 0 0dc1d4cfbb04899f0628afb9ba0c0cb1
+
+% 1 1 0 1a5d0bb2c69e2f881dc1977b2b47337a
+
+@ 0 2 0 17c1db7a6636e8880599dfc2fd9fad2f
++       As instâncias para `Double` e `Float` são objetos singleton cujo `inline def root` chama
++       `Math.sqrt` ou `Math.cbrt` diretamente. Não há nenhuma para os tipos integrais.
+
+% 0 1 0 09e8d0ca78c15b2a1dcbf6ebebd2a93a
+
+% 0 1 0 166027e08375b0ca12fa99c00270d7e8
+
+@ 0 10 0 0e25929c19cc48c103f494259a253a07
++   entry .apply   uma instância de `Rootable` de um grau literal a partir de uma função do operando
++   entry .DoubleSquareRoot   a raiz quadrada de um `Double`, expandida inline para `Math.sqrt`
++   entry .DoubleCubeRoot   a raiz cúbica de um `Double`, expandida inline para `Math.cbrt`
++   entry .FloatSquareRoot   a raiz quadrada de um `Float`, por meio de `Math.sqrt`
++   entry .FloatCubeRoot   a raiz cúbica de um `Float`, por meio de `Math.cbrt`
++   entry .sqrt   o given para a raiz quadrada de um `Double`, tipado como `DoubleSquareRoot` para ser expandido inline
++   entry .cbrt   o given para a raiz cúbica de um `Double`, tipado como `DoubleCubeRoot` para ser expandido inline
++   entry .sqrtFloat   o given para a raiz quadrada de um `Float`, tipado como `FloatSquareRoot` para ser expandido inline
++   entry .cbrtFloat   o given para a raiz cúbica de um `Float`, tipado como `FloatCubeRoot` para ser expandido inline
++   entry #root   a raiz de um valor, dando o `Result` da instância
+
+@ 0 1 0 1ef889ed7c9385a11ecffb6a4caf45d4
++ entry .Zeroic   uma classe de tipos para a identidade aditiva de um tipo, como `zero[T]`
+
+% 1 1 0 08956924a4492f3a1fc9b62b5734004a
+
+@ 0 4 0 11cc372b9a5221b7016c77536ab47ff6
++       Uma instância de `Zeroic` fornece o valor cuja soma não muda nada: `0` para os tipos
++       numéricos, a `String` vazia, e o que quer que um tipo definido pelo usuário chame de
++       zero. Somas e repetições genéricas começam dele, e `Multiplicable.concatenable` precisa
++       dele para repetir um valor concatenável.
+
+% 2 1 0 1c485740d5d4da5904cf1c6fdc8b5740
+
+% 3 1 0 159a33707cba0dba0eec92d94037ca67
+
+% 5 1 0 018feac95a950e4b1d45c88fae5bc532
+
+% 7 1 0 0a21db7cf1d1134610088bd3f904e0fb
+
+% 0 1 0 10fd872dcaa286890b079990fc4ab073
+
+% 0 1 0 0da75b470227f574017f087edbfa667c
+
+% 0 1 0 0893566d65d7d2a3194384a16d23e70a
+
+% 1 1 0 0833bdfd452204ca0ae725d78bf82a19
+
+% 0 1 0 0aefe5d534db9c83077b0182b465ebe4
+
+% 0 1 0 1a2b45b14481f50813b158b985ac0dd4
+
+@ 0 8 0 0a507541a53ae8a90e14bb63e1681739
++   entry .long   zero como um `Long`, expandido inline
++   entry .int   zero como um `Int`, expandido inline
++   entry .short   zero como um `Short`, expandido inline
++   entry .byte   zero como um `Byte`, expandido inline
++   entry .double   zero como um `Double`, expandido inline
++   entry .float   zero como um `Float`, expandido inline
++   entry .string   a `String` vazia, expandida inline
++   entry #zero   a identidade aditiva do tipo
+
+@ 0 1 0 17d0c4d86fd2df641f3afc6aca8b129e
++ entry .Unital   uma classe de tipos para a identidade multiplicativa de um tipo, o seu `one`
+
+% 1 1 0 116f05d91714fbc31c8ca791912076c9
+
+@ 0 2 0 0869082e7574486d09f05af4abbbd861
++       Uma instância de `Unital` fornece o valor pelo qual multiplicar não muda nada, `1` para os
++       tipos numéricos. Uma instância implementa o `makeOne` protegido, e quem chama lê `#one`.
+
+% 2 1 0 09b01ab20abea3a30ca4567e3249e68d
+
+% 3 1 0 1f7181cff3b514af06dd92f27b635cce
+
+% 0 1 0 04a30710583a6ea717f57244166c0575
+
+% 0 1 0 104a570d866063b50a84280ffe8c7e83
+
+% 0 1 0 1c6e571a4db1518c00e290dce3eaea0a
+
+% 0 1 0 1c898526aed9e6861f1530c835d8e0d8
+
+% 0 1 0 1f46cc18732e8f5c1036f2bfd26be020
+
+% 0 1 0 0bb891b03dedfb9204feb8f85de41781
+
+% 1 1 0 129db91e5194dc510e3d654a95233992
+
+% 0 1 0 060b4f04a018a0a70f7e9f6c7281912b
+
+@ 0 7 0 1fc214a66a2095c4191ff58c07e7a464
++   entry .long   um como um `Long`
++   entry .int   um como um `Int`
++   entry .short   um como um `Short`
++   entry .byte   um como um `Byte`
++   entry .double   um como um `Double`
++   entry .float   um como um `Float`
++   entry #one   a identidade multiplicativa do tipo
+
+@ 0 1 0 1d13a1705a4d6924007107235ba627de
++ entry .Concatenable   uma classe de tipos para juntar dois valores, que também lhes dá `+`
+
+% 1 1 0 05b5c2700537fe3d1d74dca6bdc526fa
+
+@ 0 5 0 12dcf17ae263a6f105c737172d06c5b4
++       Um `Self is Concatenable by Operand to Result` junta dois valores, um após o outro. Todo
++       tipo concatenável é `Addable` por meio de `Addable.concatenable`, de modo que as
++       instâncias são o que faz `+` juntar coleções, e o que aposenta as grafias `++` e `:::` da
++       biblioteca padrão; um tipo concatenável consigo mesmo que também é `Zeroic` se multiplica
++       por um `Int` como repetição.
+
+% 2 1 0 1ebb40dbb5b4bbce172452e1d5ec4bd6
+
+% 3 1 0 0d3428a3c7153b5d022e14cd81ab1844
+
+% 0 1 0 1b88aed01bcba1211f58dd7e7d4b7d85
+
+% 0 1 0 05b4ad2ce8d8ef8c02b5e3fdd0641590
+
+% 0 1 0 1650a2559e1d02a41cd5c5b90f7d027e
+
+% 1 1 0 153c1c0f85569c7a1ff8f3cb7ac1a766
+
+@ 0 2 0 1d257d5a659b920b159b0b6f0e31f6af
++       As instâncias das coleções ficam neste objeto companheiro, já que as coleções são
++       definidas abaixo do symbolism e os seus próprios companheiros não podem abrigá-las.
+
+% 1 1 0 18a1aee744ffd67816f30c39d585ce01
+
+@ 0 14 0 017c4e554e679054148786ad1b0ae4ca
++   entry .list   junta duas `List`s, com marca de não vazia ou não, numa `List` simples
++       Ambos os operandos podem ser qualquer subtipo de `List[element]`, de modo que uma lista
++       não vazia com marca casa de qualquer dos lados; o resultado é uma `List[element]` simples,
++       de modo que nenhuma marca vaza para ele.
++   entry .sequence   junta duas `Sequence`s numa `Sequence` simples
++   entry .chain   junta duas `Chain`s de forma preguiçosa, sem forçar nenhuma delas
++   entry .set   a união de dois `Set`s
++   entry .map   junta dois `Map`s, vencendo os valores do operando direito para uma chave compartilhada
++       Com viés à direita, como o `concat` da biblioteca padrão, e como para `Set`, em que a
++       união é a concatenação.
++   entry .ledger   junta dois `Ledger`s, vencendo o operando direito para uma chave compartilhada
++   entry .frozenArray   junta dois arrays congelados num novo array congelado
++       Precisa de uma `ClassTag` para o tipo do elemento. O resultado é uma nova alocação do
++       comprimento combinado, congelada assim que ambos os operandos são copiados para ela.
++   entry #concat   junta o operando ao final do valor, dando o `Result` da instância
+
+@ 0 1 0 071b144af96ad28e0806f00dd6ac1e07
++ entry .Quotient   uma classe de tipos para valores que são frações: um numerador sobre um denominador
+
+% 1 1 0 1cef3fa996d638830f093840bfddecd2
+
+@ 0 4 0 1f2858d7841b1dda02fe2ac7359b5d5d
++       Uma instância de `Quotient` decompõe um valor no seu `Topic` (o numerador) e no seu
++       `Transport` (o denominador), que é aquilo com que o extrator `/:` casa. A decomposição é
++       opcional, de modo que um valor que não é uma fração própria, como um com denominador
++       zero, não precisa casar.
+
+% 2 1 0 0c9319faaf3d0cc306932dfc5ff9f005
+
+% 3 1 0 0d7a68bc6c173fe500eff20efb30b096
+
+% 0 1 0 025e53d24c25f59c04d37c83a19074c7
+
+% 0 1 0 1a3b19770ee82ae2141ccfb95a2deb7d
+
+% 0 1 0 10b17c320ba0e0570b8c366edeb8c035
+
+% 0 1 0 0cfb2ebc50d7b72906e8778cb66aa65d
+
+% 0 1 0 0b5b9542b67e71a90ab06d3b251395fe
+
+% 0 1 0 0255cbf8babb22de0bb87d7f1ea3d1f3
+
+% 0 1 0 0a04ed26fd30e5a51acd601cccee7ceb
+
+% 0 1 0 04d89369db732d480601d57067d94693
+
+% 1 1 0 0e8f41192e5581491db520085c671360
+
+% 0 1 0 0668c7f8cc45ac3905ac4853700aa815
+
+@ 0 3 0 074393dd6286feef0c4ccecfe204d43d
++   entry #Numerator   o tipo do numerador: um alias de `Topic`
++   entry #Denominator   o tipo do denominador: um alias de `Transport`
++   entry #decompose   o numerador e o denominador do valor, se ele os tiver
+
+@ 0 1 0 1f3cf5b3bef1224404049a2d139d15e4
++ entry .Comparable   uma comparação total de três vias de dois valores de um tipo, dando uma `Comparison`
+
+% 1 1 0 020839fdfd4579d50111ab983b3eba4b
+
+@ 0 4 0 0e7402f1e611ed0b064980954fbcd91f
++       Uma instância de `Comparable` compara dois valores do seu tipo, retornando
++       `Comparison.Less`, `Same` ou `More`. É assim que as coleções ordenam (`sorted`,
++       `order`), encontram extremos e delimitam intervalos, por meio de um tipo de elemento que
++       para elas é abstrato, e ela despacha em tempo de execução, ao contrário do
++       `Commensurable` do hypotenuse, que é resolvido estaticamente em cada `<` ou `>`.
+
+% 2 1 0 19a2851ddd763d410e62b8d318a8a270
+
+% 3 1 0 1f0bc0d3ada10ae50870ee5687913aa6
+
+% 0 1 0 03acb1aa915ee0e0132e7efa19323fb7
+
+% 0 1 0 1884c74ce07dff421c2be55f5bf0e339
+
+% 0 1 0 02c9e5d767e069ae0cd20ead366d378e
+
+% 0 1 0 04ea0984f63a6c7415403cb34c4fde50
+
+% 0 1 0 06f1b593f518bac11cfa11665e7183ac
+
+% 0 1 0 12f2c81b1e1080670071b4e43fe6ba01
+
+% 1 1 0 12a5b9b5e6e74cb30d5e911cd4640d64
+
+@ 0 5 0 015520fb72aa094d0a5abd5e0eccecff
++       As instâncias primitivas comparam por meio dos métodos das classes box de `java.lang`, de
++       modo que `Double` e `Float` têm a ordem *total* do JDK — `NaN` depois de todo outro valor,
++       e `-0.0` antes de `0.0` — em vez da ordem parcial do operador `<`. Listas são comparadas
++       lexicograficamente, com um prefixo próprio primeiro, e pares pelo primeiro elemento,
++       depois pelo segundo.
+
+@ 0 4 0 02b1dc3316857d0f047bc9f13a2fcb3e
++       Qualquer tipo com um `Ordering` da biblioteca padrão em escopo é `Comparable` por meio de
++       uma ponte de baixa prioridade (`Comparable2#ordering`), de modo que tipos de terceiros
++       ordenam sem cerimônia; uma instância nativa sempre tem precedência sobre ela. No sentido
++       inverso, `#ordering` cria um `Ordering` para as poucas APIs da biblioteca padrão que
++       insistem em um.
+
+% 0 1 0 06b588a7651e523f0a28d8501581a2fd
+
+@ 0 1 0 03d75f42a07d7281045b676780220785
++   entry .apply   uma instância de `Comparable` a partir de uma função que retorna uma `Comparison`
+
+% 1 1 0 133ab6d6f58f357f1680b91c98a289c7
+
+% 2 1 0 0e08421cc566621c14ff337e18bfe8fe
+
+% 4 1 0 1a67193cadaa56ef1aba53c34b3bfebd
+
+% 0 1 0 0704441b557c34331925c202616af78a
+
+% 0 1 0 1e754cc6e3f47fba06fad0aa215a7a2a
+
+% 1 1 0 00f88528ae70d8691e0351197237443c
+
+@ 0 4 0 12cd97be94d98c410d99525d31f22c6b
++   entry .less   uma instância de `Comparable` a partir de um predicado estrito de menor que, como `Ordering.fromLessThan`
++       Para comparações escritas naturalmente como `<`. O predicado é aplicado uma segunda vez,
++       com os operandos trocados, para valores que não são menores na primeira ordem: o preço de
++       recuperar um resultado de três vias a partir de um `Boolean`.
+
+% 2 1 0 058041f3fb07de2116dcaf5fc1434e24
+
+% 3 1 0 15f12311caa86d921409d65f300e58ed
+
+% 4 1 0 0ad0d2a902f585ce02452c840de80f69
+
+% 0 1 0 17d08e1995267ffc0309b96de28634ce
+
+% 1 1 0 0589734d4425c2dc1c9a8cdd8133361d
+
+@ 0 26 0 0aea00e846f3f09b1d95aa9249a3eb52
++   entry .int   compara `Int`s numericamente
++   entry .long   compara `Long`s numericamente
++   entry .double   compara `Double`s na ordem total do JDK: `NaN` por último, e `-0.0` antes de `0.0`
++   entry .float   compara `Float`s na ordem total do JDK: `NaN` por último, e `-0.0` antes de `0.0`
++   entry .char   compara `Char`s pelas suas unidades de código UTF-16
++   entry .byte   compara `Byte`s numericamente, como valores com sinal
++   entry .short   compara `Short`s numericamente
++   entry .boolean   compara `Boolean`s, com `false` antes de `true`
++   entry .list   compara `List`s lexicograficamente, com um prefixo próprio primeiro
++       Precisa de um `Comparable` para o tipo do elemento. A primeira posição em que os elementos
++       diferem decide; se uma lista se esgota primeiro, ela precede a outra.
++   entry .pair   compara pares pelo primeiro elemento, depois pelo segundo
++       Precisa de um `Comparable` para cada tipo de elemento.
++   entry #compare   compara dois valores, dando `Comparison.Less`, `Same` ou `More`
++   entry #less   se o valor da esquerda precede o da direita
++   entry #atMost   se o valor da esquerda precede o da direita ou é igual a ele
++   entry #greater   se o valor da esquerda segue o da direita
++   entry #atLeast   se o valor da esquerda segue o da direita ou é igual a ele
++   entry #same   se os dois valores são iguais na comparação
++   entry #min   o menor de dois valores, ou o da esquerda se forem iguais na comparação
++   entry #max   o maior de dois valores, ou o da esquerda se forem iguais na comparação
++   entry #ordering   um `Ordering` da biblioteca padrão que concorda com esta comparação
++       Para as costuras em que uma API da biblioteca padrão insiste num `Ordering`, como a ordem
++       das chaves de um `TreeMap`. É um método e não um given, já que um given formaria um ciclo
++       com a ponte de `Ordering`, `Comparable2#ordering`.
++   entry #on   compara outro tipo projetando-o neste, como `Ordering.by`
+
+% 1 1 0 033b9bf11a75d739011a7e322559c4d7
+
+% 2 1 0 0549ef18534e55c11e9845e634db7825
+
+% 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
+
+% 0 1 0 1bc4ba25a78ffc4c0a2345b5806020e4
+
+% 1 1 0 07518cccdbb0e1ef1b824c483540e07b
+
+@ 0 1 0 156784d6740a70f2115f611f63fe1605
++ entry .Comparable2   a metade de baixa prioridade do objeto companheiro de `Comparable`: a ponte a partir de `Ordering`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 178d6817ddb5310b114a32c0a6defdb5
++       Não é para uso direto: `object Comparable` o estende, para que o seu given seja
++       encontrado no escopo implícito de `Comparable`, mas sempre com uma instância nativa tendo
++       precedência sobre ele.
++   entry #ordering   torna `Comparable` qualquer tipo com um `Ordering` da biblioteca padrão em escopo
+
+% 1 1 0 03bfe56a351ca355090409451552ecd0
+
+% 2 1 0 0e2bfee5047bf07c1bfb65547d6a7b11
+
+% 4 1 0 0fba172fa1da0f3f1e08fbff3b96d3a1
+
+% 0 1 0 087236d2e5250e32196e9c1f811de45d
+
+% 0 1 0 111c8b81fb8db947044276b1eebc79c5
+
+% 1 1 0 180f0b43f83654f016126ea5d8a38677
+
+@ 0 1 0 13921c48f4d70c4d1279c1f6958e5d90
++ entry .AddOp   uma contraparte de `Addable` amigável à expansão inline, que `+` consulta primeiro
+
+% 1 1 0 007bc452a5fb6b491998088ae6407a77
+
+@ 0 4 0 04bbb32e888879dd1b8e2cd53f822e3d
++       Uma classe de tipos cujo `op` é um `inline def`, de modo que uma instância dada no seu
++       tipo concreto (por um `transparent inline given`) tem o seu corpo expandido inline em `+`
++       sem despacho. A extensão `+` procura uma, enquanto está sendo expandida inline, antes de
++       recorrer à instância de `Addable`; o quantitative usa esta rota.
+
+@ 0 3 0 0d2b8ced41d99b6815d223957bfa7cb3
++       Uma instância de `Addable` que é um objeto singleton com um `inline def add`, dada no
++       próprio tipo singleton do objeto, é expandida inline igualmente bem, e é assim que as
++       instâncias primitivas funcionam e o padrão mais simples para as novas.
+
+% 1 1 0 0057f41bb086e7981de6e7457978e07f
+
+@ 0 1 0 1810333234913f6c12cbecb657eb331e
++   entry #op   soma o operando direito ao esquerdo, expandido inline no local da chamada
+
+@ 0 1 0 058f2daa93bc5b331fdd53976440a096
++ entry .SubOp   uma contraparte de `Subtractable` amigável à expansão inline, que `-` consulta primeiro
+
+% 1 1 0 1c8a606d7ba4be3110a852da1421be74
+
+@ 0 3 0 12dd69bb751b0542115d165037586082
++       Como `AddOp`, para subtração: uma instância dada no seu tipo concreto tem o seu `inline
++       def op` expandido inline em `-`, antes da instância de `Subtractable`.
++   entry #op   subtrai o operando direito do esquerdo, expandido inline no local da chamada
+
+@ 0 1 0 137bead5265fd8cc031cc3ba8454ea47
++ entry .MulOp   uma contraparte de `Multiplicable` amigável à expansão inline, que `*` consulta primeiro
+
+% 1 1 0 19593cb81d89d76117a6e2749d997f59
+
+@ 0 3 0 1964cd9ca27fe75708a3f18008d8c0a8
++       Como `AddOp`, para multiplicação: uma instância dada no seu tipo concreto tem o seu
++       `inline def op` expandido inline em `*`, antes da instância de `Multiplicable`.
++   entry #op   multiplica o operando esquerdo pelo direito, expandido inline no local da chamada
+
+@ 0 1 0 0b8c341ded567cac0c8181bb10b2bce2
++ entry .DivOp   uma contraparte de `Divisible` amigável à expansão inline, que `/` consulta primeiro
+
+% 1 1 0 13274cef5ffe43350deb729d940c9db9
+
+@ 0 3 0 16e7b8f7f29883370635ac4baf33a243
++       Como `AddOp`, para divisão: uma instância dada no seu tipo concreto tem o seu `inline def
++       op` expandido inline em `/`, antes da instância de `Divisible`.
++   entry #op   divide o operando esquerdo pelo direito, expandido inline no local da chamada

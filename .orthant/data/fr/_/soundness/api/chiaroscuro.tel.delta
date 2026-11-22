@@ -1,0 +1,846 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 015587dc09e5240f1c3b9da7d11009cd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1c84feaa32907a2a1fe8e8afd1e6cbb4
++ info
++     comparaison structurelle de deux valeurs : décomposition en champs et en éléments, et
++     juxtaposition des différences
+
+@ 0 8 0 1b9ffc01f06ee2cd00f2c325c917154c
++ detail
++     _Chiaroscuro_ est le contraste qui se cache derrière une assertion en échec. Là où un
++     framework de test afficherait « expected X but found Y » sous la forme de deux `toString`
++     et laisserait le lecteur les comparer à l'œil, il **décompose** les deux valeurs — les case
++     classes en champs, les collections en éléments alignés, les valeurs optionnelles en présence
++     ou absence, le texte en caractères — et **juxtapose** les deux décompositions, de sorte que le
++     rapport est un arbre dont les feuilles qui diffèrent sont marquées : un âge qui diffère de
++     deux, une liste dont un élément a été substitué, un texte dont les caractères modifiés sont
++     surlignés.
+
+% 2 1 0 12b5f1b9e578ecca18217aca2a9fced0
+
+% 3 1 0 1789a3743ce0b10d0cd595cde64af9e1
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 1793b50cb06822170a8fc5a992ff2606
+
+% 0 1 0 1d03397bdfa2a6701f08105fec460a3b
+
+% 0 1 0 1d88fb3a5acb32d7199216a6c07d94f2
+
+% 1 1 0 1ec392da29f79cb719b3da357f191860
+
+@ 0 12 0 02e802d2770cb3430bc951e6ad989278
++     Trois classes de types font le travail. `Decomposable` transforme une valeur en une
++     `Decomposition` — une feuille `Primitive`, un `Product` de champs nommés, une `Sequence`
++     d'éléments ou une `Sum` enveloppant sa variante — et est dérivée pour toute case class, toute
++     énumération, toute collection ou toute valeur optionnelle, chaque feuille restante étant
++     rendue via `Inspectable`, de sorte qu'un échec montre exactement ce que montre `.inspect`.
++     `Contrastable` transforme deux valeurs en une `Juxtaposition` — `Same`, `Different` (avec une
++     différence optionnelle telle que `+2`) ou une `Collation` d'enfants étiquetés — et est dérivée
++     de la même manière, avec des fondations écrites à la main pour les nombres (qui signalent la
++     différence signée), les ensembles (qui signalent ce que chaque côté est seul à avoir), les
++     exceptions et le texte. Les séquences sont alignées par le diff de dissonance, si bien qu'une
++     insertion apparaît comme une insertion plutôt que comme une différence de tous les éléments
++     suivants, et un élément modifié comme une seule substitution détaillée jusqu'au champ qui a
++     changé. `Similarity` est la notion interchangeable de « suffisamment similaires pour être
++     appariés » utilisée pour ce raffinement.
+
+@ 0 3 0 12dd21e70cfaf98401556c7039f669e6
++     Le moteur de diagnostic du framework de test probably appelle `contrast` sur les deux côtés
++     d'une égalité en échec, lorsqu'un hôte le demande, enregistre la `Juxtaposition` comme un
++     `Verdict.Detail.Compare`, et l'aplatit en `TestEvent.CompareRow` pour un hôte ;
++     `Harness#capture` enregistre une valeur passée par `decompose`.
+
+@ 0 8 0 00ec618bc72d58741aadfefc3cfe6c2c
++     La bibliothèque a deux composants. `chiaroscuro.core` (JVM, Scala.js et Scala Native) contient
++     les classes de types et les deux arbres ; `chiaroscuro.render` ajoute `JuxtapositionPalette`
++     et le given `teletypeables.juxtapositionTeletype`, qui rend une `Juxtaposition` sous la forme
++     d'un tableau stylé des différences pour un terminal. Tout est exporté dans le package
++     parapluie `soundness` ; le package de choix `teletypeables` fusionne avec celui du package
++     parapluie, et son given s'importe par son nom, puisque `import soundness.*` n'importe pas les
++     givens — et escapade rend toute valeur `Showable` sans style, si bien qu'un site d'appel qui
++     oublie l'import affiche le texte de l'énumération au lieu de ne pas compiler.
+
+% 0 1 0 126d4430e82066a01dde3a794048ac94
+
+% 0 1 0 1f42fa97c9d7c76d1df0f2012427b25b
+
+% 0 1 0 179c3dfbc1570928005eea298ec5f5b9
+
+% 0 1 0 16a2f7c83ee0afd21ee464348f8cf9b8
+
+% 0 1 0 190bcb346d1952440bc4c807d0b1fbe7
+
+@ 0 1 0 0d5f3b56c967b68e18f371d0668d412d
++ entry .decompose
++   info
++       `value.decompose` : la valeur sous forme de `Decomposition`, via son `Decomposable`
+
+@ 0 3 0 0c203b04cdb910e41d5d3ea8071875aa
++   detail
++       Une extension sur toute valeur dotée d'un `Decomposable`, qui est dérivé pour presque tout :
++       `24.decompose` vaut `Decomposition.Primitive(t"Int", t"24", 24)`, et une case class est un
++       `Decomposition.Product` de ses champs.
+
+@ 2 1 0 1bfd96e88f98567f0bc1ae4881a64a0f
++       ```scala
+
+@ 3 1 0 0d6cbc7cb1b42088065f8462e1310302
++       import soundness.*
+
+@ 0 1 0 13620d89823384a20318b636c938c1ca
++       val x: Optional[Int] = 12
+
+@ 0 1 0 13ab68abd3ec972d046f93df4d3756a1
++       x.decompose   // Decomposition.Sum(t"Optional", Decomposition.Primitive(t"Int", t"12", 12), 12)
+
+@ 0 1 0 11d713e744499b761dbeaef323566385
++       List('a', 'b').decompose
+
+@ 1 1 0 07850df4413837521a290d6eb00f417b
++       ```
+
+@ 0 1 0 1a471affa98d124b093b3fd54f4e5e35
++ entry .contrast
++   info
++       `left.contrast(right)` : les deux valeurs juxtaposées, via leur `Contrastable`
+
+@ 0 4 0 16377ef859039558185e4f8c37b038bc
++   detail
++       Une extension sur toute valeur dotée d'un `Contrastable`, dérivé pour les case classes, les
++       énumérations, les collections et tout ce qui est `Decomposable` ou `Showable`. La valeur de
++       gauche est la valeur attendue, celle de droite la valeur observée, et c'est ainsi que le
++       rendu d'une assertion en échec les étiquette. Des valeurs égales donnent
++       `Juxtaposition.Same`.
+
+@ 2 1 0 1895662e49632ca318ac0aed7c628892
++       ```scala
+
+@ 3 1 0 011fae6348486b630bf33a6b6270422e
++       import soundness.*
+
+@ 0 1 0 100106d4c74317970ea37c930a2a4d09
++       24.contrast(24)
+
+@ 0 1 0 096451e2e98252af02b846c1db830f6e
++       t"alpha".contrast(t"alphb")
+
+@ 0 1 0 1664ec68d1b3e7a40e5b7ac08256aa2c
++       List(1, 2, 3).contrast(List(1, 3))
+
+@ 1 1 0 084bd78f5c5f2086036f9aa1de3955aa
++       ```
+
+@ 0 1 0 08c99927e68572ef1236e92ed3470cbb
++ entry .Contrastable
++   info
++       comment deux valeurs d'un type sont juxtaposées en une `Juxtaposition` de leurs différences
+
+@ 0 9 0 049842c57166f654031565916e2ed7ca
++   detail
++       La classe de types derrière `contrast`. Son given `.derived` se résout dans cet ordre : une
++       `Contrastable.Foundation` pour le type (les instances écrites à la main pour les nombres,
++       les ensembles, les exceptions, le texte et `Decomposition` elle-même) ; une dérivation de
++       case class, qui juxtapose champ par champ en une `Collation` étiquetée par nom de champ ;
++       une dérivation d'énumération, qui juxtapose les décompositions des deux variantes ; et sinon
++       la juxtaposition des `Decomposition` des deux valeurs, qui est ce qu'utilisent les
++       collections, les valeurs optionnelles et les structures imbriquées. Un type doté seulement
++       d'un `Showable` retombe sur `Foundation.showable` : `Same` si les valeurs sont égales,
++       `Different` des deux textes affichés sinon.
+
+% 2 1 0 17dda7fe8e3da6bd0c5240af887505ca
+
+% 3 1 0 0554d95459b75cc81b31d9e5b40d27c9
+
+% 5 1 0 0e1822c9d2f3759c1a3a5a450a36a6a3
+
+% 0 1 0 14de558d96c494be1d01889e976c936b
+
+% 0 1 0 025192f232bc27981161de3f06a3913f
+
+% 0 1 0 148b6d6ef1bf1b0a05f46389bbb040d8
+
+% 0 1 0 15ef5f70f7dbf9c91e5db456ce6caafa
+
+% 1 1 0 1371f82e68cbe4b119f8abc7258995b1
+
+@ 0 2 0 01ddb704aee77eef14ddb6c3e8b8c8e8
++       Un `Contrastable` est une classe de types pure ; `#contramap` en crée une pour un autre type
++       à partir d'une fonction vers celui-ci.
+
+% 1 1 0 0f6a28305b1ad1e312df2dbc54b0858e
+
+% 1 1 0 052c5336ee96b4f91e68f12363bad9ed
+
+% 1 1 0 185fe01db0b7376f11786f70b351231b
+
+@ 0 1 0 09b29c2ee01c5c851fc018556fbb61d8
++   entry .derived
++     info
++         le given inline qui dérive un `Contrastable` pour tout type, dans la portée implicite
+
+@ 0 1 0 0fae6a2713d5490f0dc6463b17173ec4
++     detail
++         D'abord la fondation, puis le produit, puis la somme, puis la décomposition.
+
+@ 0 1 0 1f7238a43e3cc6761cb4f6690d13ef21
++   entry .Derivation
++     info
++         la dérivation wisteria de `Contrastable` pour les produits et les sommes
+
+@ 0 5 0 1dd9b322e2da28ae0f0e1363ddda77fb
++     detail
++         Un `Derivable[Contrastable]` : `conjunction` juxtapose une case class champ par champ en
++         une `Collation` (ou `Same` de la valeur affichée lorsque les deux sont égales), et
++         `disjunction` une énumération par les décompositions de ses variantes. On y accède via
++         `.derived` plutôt qu'en l'appelant directement.
+
+@ 0 1 0 015ce1d1466939520875ef2e3f9b8b87
++     entry .conjunction
++       info
++           une case class, champ par champ
+
+@ 0 1 0 09cecfcb36b43ff31517a643cc94a195
++     entry .disjunction
++       info
++           une énumération, par ses variantes
+
+@ 0 1 0 16c2ef4b034a295716db162ad31c1a93
++   entry .Foundation
++     info
++         les instances écrites à la main, et le trait qu'étend une instance propre à l'appelant
+
+@ 0 7 0 01875b9eadcf26ac1101c1bacfc5388a
++     detail
++         `Contrastable.Foundation` en tant que **trait** est un `Contrastable` dont l'unique
++         méthode abstraite est `#juxtaposition` ; `.derived` essaie une `Foundation` avant toute
++         dérivation, si bien qu'un type dont le contraste ne doit pas être structurel (un type doté
++         d'une identité, ou un nombre dont la différence a un sens) en fournit une dans son objet
++         compagnon. En tant qu'**objet**, il contient les fondations standard, chacune dans la
++         portée implicite, et hérite de `showable`, de plus basse priorité, depuis
++         `Contrastable.Protofoundation`.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 04a1a934086c0b401f08a9325263c73d
+
+% 0 1 0 07b1eb30182ba34702c408ecac6e6446
+
+% 0 1 0 14782ddf9a35854914e427c1fb97b4fd
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 1 0 0d4a5022578959d8059685e03847c9a8
++     entry .decomposition
++       info
++           deux `Decomposition`, juxtaposées structurellement
+
+@ 0 1 0 1d1a1c3b6d452c5c0ee211d972e384c6
++     entry .int
++       info
++           deux `Int` : `Same`, ou `Different` avec la différence signée
+
+@ 0 1 0 066c82ba2f19b35c18d60bb14492d7b4
++     entry .short
++       info
++           deux `Short`, en tant que `.int`
+
+@ 0 1 0 0570a0fc1a8afd7112e73ffe2af5368a
++     entry .byte
++       info
++           deux `Byte`, en tant que `.int`
+
+@ 0 1 0 1553e9b7d2651db900d884d894fecc47
++     entry .long
++       info
++           deux `Long` : `Same`, ou `Different` avec la différence signée, `+2` ou `-3`
+
+@ 0 1 0 1b900bec355b9e161017a23f1542ff80
++     entry .float
++       info
++           deux `Float`, en tant que `.double`
+
+@ 0 1 0 08bb2d201d980dc90474411cf2c0a18a
++     entry .double
++       info
++           deux `Double` : `Different` avec la différence signée à quatre chiffres significatifs
+
+@ 0 2 0 1e0eb11495ed8997095fcaad53a6e32a
++       detail
++           Les deux côtés sont affichés avec assez de décimales pour les distinguer ; la différence
++           est affichée avec un signe plus lorsqu'elle est positive.
+
+@ 0 1 0 08ac7e2eba65b451199e66fbe1c25169
++     entry .set
++       info
++           deux `Set` d'un élément `Showable` : ce que chaque côté est seul à avoir
+
+@ 0 2 0 17ac994cb0690dc500713ed1da5a6715
++       detail
++           La différence se lit `+{4}` pour les éléments présents seulement à droite, `-{1}` pour
++           ceux présents seulement à gauche, ou `-{1}╱+{4}` pour les deux, les ensembles de plus de
++           cinq éléments étant élidés.
+
+@ 0 1 0 132ef36a89e484761887c143156bede6
++     entry .exception
++       info
++           deux `Exception` : identiques lorsque leurs classes et leurs messages le sont
+
+@ 0 1 0 0adea089f0dbffe4125db581f3f7efb8
++     entry .string
++       info
++           deux `String`, en tant que `.text`
+
+@ 0 1 0 0f51570ed7a8de5b112f43f887ff631c
++     entry .text
++       info
++           deux `Text`, caractère par caractère
+
+@ 0 4 0 09b36e9e54b97c6206caa8eb9ed0b878
++       detail
++           Les caractères sont alignés par le diff de dissonance, si bien qu'une insertion ou une
++           suppression apparaît comme telle plutôt que comme une différence de tous les caractères
++           suivants ; le résultat est une `Collation` nommée `Text` dont les enfants sont des
++           caractères uniques, que le rendu pour terminal affiche sous la forme de deux lignes
++           surlignées.
+
+@ 0 1 0 1ad214c5a7a1502d134829837c7bafe1
++     entry #juxtaposition
++       info
++           la juxtaposition de deux valeurs
+
+@ 0 1 0 03ec792f9120a7de13009df22d1b209b
++   entry .Protofoundation
++     info
++         la base de l'objet compagnon de `Foundation`, qui contient le given `showable` de plus
++         basse priorité
+
+@ 0 2 0 03c758182f306cb214b76329e7d1d218
++     detail
++         `Contrastable.Foundation` hérite de `showable` depuis ici, si bien que toute fondation a
++         priorité sur lui.
+
+@ 0 1 0 03d7a86832531b431fec6952a72be0e3
++     entry #showable
++       info
++           tout type `Showable` : `Same` si les valeurs sont égales, `Different` des deux textes
++           affichés
+
+@ 0 1 0 1b1e212b65f40b830b491ea97c7dd512
++   entry .nothing
++     info
++         un `Contrastable` qui signale chaque paire comme `Same`, en montrant la décomposition de
++         la valeur de gauche
+
+@ 0 2 0 15e4d713d1c118ec1bac40590a84fa17
++     detail
++         Inline ; requiert un `Decomposable` pour le type. Pour une position qui exige un
++         `Contrastable` mais n'a rien à comparer.
+
+@ 0 1 0 13291738cbf3b69f1a5c1b6d6c444e5a
++   entry .juxtaposition
++     info
++         juxtapose deux `Decomposition` de forme quelconque, avec un nom de type pour le résultat
+
+@ 0 6 0 1729afac2ad9690e0ad0c7ac44db5121
++     detail
++         Des références égales donnent `Same` ; deux `Primitive` sont `Different` selon leurs
++         textes ; deux `Sequence` sont alignées par `.comparison` ; deux `Product` forment une
++         `Collation` sur l'union de leurs noms de champs, un champ absent d'un côté étant comparé à
++         un blanc ; deux `Sum` comparent leurs variantes (en nommant les deux types,
++         `Circle/Square`, lorsqu'elles diffèrent) ; et deux décompositions de formes différentes
++         sont `Different` selon leur genre, `<product>`/`<sequence>`.
+
+@ 0 1 0 0ca356e77260fe401a2e54d4d8fb976b
++   entry .comparison
++     info
++         aligne deux tableaux de décompositions avec un diff, sous la forme d'une `Collation` de
++         lignes étiquetées
+
+@ 0 5 0 106b7548a2e072a10618b63db87ab860
++     detail
++         Chaque ligne est étiquetée par ses indices : `3` pour un élément au même indice des deux
++         côtés, `³╱₂` (exposant à gauche, indice à droite) lorsque les indices diffèrent, ` ╱₂`
++         pour une insertion, `³╱ ` pour une suppression. Un élément substitué est juxtaposé
++         récursivement, si bien qu'un enregistrement dont un champ a changé apparaît comme la
++         différence de ce champ. Le diff est le `rdiff` de dissonance avec une fenêtre de dix.
+
+@ 0 1 0 15a4c235cd1a47dc11c17c1d994f5641
++   entry #juxtaposition
++     info
++         la juxtaposition de deux valeurs du type
+
+@ 0 1 0 197e5a7868012aba1bc435cc61f0b8d7
++   entry #contramap
++     info
++         un `Contrastable` pour un autre type, en le ramenant à celui-ci
+
+@ 0 1 0 0667fdee091d968a1e40d5b793f692f2
++ entry .Decomposable
++   info
++       comment une valeur est décomposée en une `Decomposition` pour l'affichage
+
+@ 0 13 0 02da6302f8dcd2bc15470667906415c5
++   detail
++       La classe de types derrière `decompose`, et celle qu'utilisent `Harness#capture` et les
++       macros d'assertion pour rendre les deux côtés d'un échec. Son given `derived` se résout dans
++       l'ordre : un `Decomposable.Base` pour le type (`Text`, `Int`, `String`, `Decomposition`) ;
++       une dérivation de case class en un `Product` de champs nommés ; une dérivation d'énumération
++       en une `Sum` ; `Any`, `AnyRef` et `Matchable` comme une feuille `Any` ; un `Optional` comme
++       une `Sum` nommée `Optional` de la valeur ou une feuille `Unset` affichée `∅` ; et toute
++       feuille restante via `Inspectable`, dont la propre dérivation réussit toujours, si bien
++       qu'un `Char` se rend `'a'`, qu'un `Double` n'est pas arrondi par un `Decimalizer` dans la
++       portée, et qu'un type dépourvu des deux retombe sur le `toString` marqué d'`Inspectable`.
++       Les méthodes `.list`, `.sequence` et `.frozenArray` de l'objet compagnon décomposent les
++       collections élément par élément. L'objet compagnon hérite de `derived`, `primitive`, `any`
++       et `Derivation` depuis `Decomposable2`, et de `fallback` depuis `Decomposable3`.
+
+% 2 1 0 081017c8f0ea86ca0bdd21ad2c2b7663
+
+% 3 1 0 0ca5be12fc0f35ed154ba53c46604823
+
+% 5 1 0 1a3896417d5f22c9073a30173677e671
+
+% 0 1 0 0542b8184bdc1bec15d462b0eb41b8bc
+
+% 0 1 0 07824561bd64858108d74732513ecd0c
+
+% 0 1 0 020f4d6c2fe8d4e01ff3b6eb6a309b0a
+
+% 0 1 0 1d603c94b960b7651d85805b8fdc3e39
+
+% 1 1 0 0534803debaafcd6194250ac05739831
+
+@ 0 3 0 0f003d5b90e58f241b8865e57fd9f6dd
++       La décomposition rend les feuilles via `Inspectable`, et non `Showable` : un échec de test
++       est lu par un programmeur, il doit donc montrer ce que montre `.inspect`, et un type dont le
++       `Showable` et l'`Inspectable` divergent se décompose selon ce dernier.
+
+% 0 1 0 1e5655353a7565ec1c5e7e4df538da8b
+
+% 0 1 0 0332d6654a61f09c00ecbd613acb4263
+
+% 0 1 0 03ec24798555039b13e1fae02f0e6f64
+
+@ 0 1 0 0efb013b712c58ee1bbe6cead4c29521
++   entry .Base
++     info
++         les instances de feuilles écrites à la main, et le trait qu'étend une instance propre à
++         l'appelant
+
+@ 0 3 0 0871f0a669bef2aa1dbc3342ef587250
++     detail
++         `Decomposable.Base` en tant que **trait** est un `Decomposable` que `derived` essaie avant
++         toute dérivation ; en tant qu'**objet**, il contient les feuilles standard.
+
+@ 0 1 0 13da3228ef390f45093444e920674b59
++     entry .text
++       info
++           `Text` comme une `Primitive` nommée `Text`
+
+@ 0 1 0 0b1578de61d0f4c21bf68aed08adc6bc
++     entry .int
++       info
++           `Int` comme une `Primitive` nommée `Int`
+
+@ 0 1 0 1185d5d10dc7a1a402fcd05cca1eea7b
++     entry .string
++       info
++           `String` comme une `Primitive` nommée `String`
+
+@ 0 1 0 020745ef20a313680fe6df694e407e9f
++     entry .decomposition
++       info
++           une `Decomposition` comme elle-même
+
+@ 0 1 0 0853f30861ea9f560d935e7829c21153
++     entry #decomposition
++       info
++           la décomposition d'une valeur
+
+@ 0 1 0 00641d97db6163891f37b20e7791f214
++   entry .list
++     info
++         toute `List` d'un élément décomposable, comme une `Sequence` nommée `List`
+
+@ 0 1 0 0521eebc0a0cc4581edc20d99a8ae5d7
++   entry .sequence
++     info
++         toute `Sequence` d'un élément décomposable, comme une `Sequence` nommée `Sequence`
+
+@ 0 1 0 03c3a4b4af58757a12b615d410c8a667
++   entry .frozenArray
++     info
++         un `Array[element]^{}` gelé d'un élément décomposable, comme une `Sequence` nommée `Array`
+
+@ 0 1 0 0bde9d9f061662820276cd0ba021b763
++   entry #decomposition
++     info
++         la décomposition d'une valeur
+
+@ 0 1 0 082952b9d271d97711fa8b6137d37d63
++ entry .Decomposable2
++   info
++       le trait de base de l'objet compagnon de `Decomposable`, qui contient `derived`,
++       `primitive`, `any` et `Derivation`
+
+% 1 1 0 0786a7edc332de870508415256423bfa
+
+@ 0 4 0 0de5d107e4d99e0e166f62851385facd
++   detail
++       Une couche de priorité : on accède à ses membres sous les noms `Decomposable.derived`,
++       `Decomposable.primitive`, `Decomposable.any` et `Decomposable.Derivation`, dont l'objet
++       compagnon hérite depuis ici.
+
+@ 0 1 0 082e91afc81c86391b4362b05359eb0f
++   entry #derived
++     info
++         le given inline qui dérive un `Decomposable` pour tout type, dans la portée implicite
+
+@ 0 2 0 05a3aabc03272afe028ff1230d4a0abc
++     detail
++         On y accède sous le nom `Decomposable.derived`. D'abord la base, puis le produit, puis la
++         somme, puis `Any`, puis `Optional`, puis `Inspectable`.
+
+@ 0 1 0 01a75d1826e9b431164b30a131f9edeb
++   entry #primitive
++     info
++         un `Decomposable` qui rend toute valeur comme une `Primitive` du nom de type donné, par
++         `toString`
+
+@ 0 1 0 0b750ad7d3b1231c0d8b6cbdb208bb40
++   entry #any
++     info
++         un `Decomposable` qui rend toute valeur comme une `Primitive` nommée `Any`, par `toString`
+
+@ 0 2 0 0a3c01a68562295c1481cb87dc1e2188
++     detail
++         Ce qu'utilisent les macros d'assertion lorsqu'aucune meilleure instance n'est dérivable
++         pour le type du résultat d'un test.
+
+@ 0 1 0 1f450c88bc917bde15f5702fe0b971e2
++   entry #Derivation
++     info
++         la dérivation wisteria de `Decomposable` pour les produits et les sommes
+
+@ 0 1 0 133342576be3b26d0a4b00d9e466f551
++     entry .conjunction
++       info
++           une case class comme un `Product` de ses champs, par étiquette
+
+@ 0 1 0 13babf701001f5b218081d197814c888
++     entry .disjunction
++       info
++           une énumération comme une `Sum` de la décomposition de sa variante
+
+@ 0 1 0 1083006c00e5b9731b9c2791c072eb1c
++ entry .Decomposable3
++   info
++       la couche de plus basse priorité de l'objet compagnon de `Decomposable`, qui contient
++       `fallback`
+
+% 1 1 0 1b0ac97c22c4739c00aa4549f328ccfb
+
+@ 0 2 0 0d14ec9d9f960b920f4e33c2a2e0a5e0
++   detail
++       On y accède sous le nom `Decomposable.fallback`, dont l'objet compagnon hérite depuis ici.
+
+@ 0 1 0 1f0c87c3d5c65c15020fd2ebcdec9092
++   entry #fallback
++     info
++         le given de plus basse priorité : une `Primitive` nommée `Any` par `toString`, pour tout
++         type
+
+@ 0 1 0 0aff1b7d1fb326a913abd4f9296ca260
++ entry .Decomposition
++   info
++       une valeur décomposée pour l'affichage : une feuille, un produit de champs, une séquence ou
++       une somme
+
+@ 0 9 0 1ff22b3103cfac930548fac91a6032ec
++   detail
++       Les quatre cas : `Primitive(typeName, value, ref)` est une feuille avec son texte rendu ;
++       `Product(name, values, ref)` une case class avec ses champs par étiquette ;
++       `Sequence(name, values, ref)` les éléments d'une collection ; et `Sum(name, value, ref)` une
++       énumération ou un `Optional` enveloppant sa variante. Chacun conserve la valeur d'origine
++       dans `#ref`, que `Contrastable.juxtaposition` compare en premier, si bien que des références
++       égales donnent `Same` sans parcours. `#text` rend l'arbre sur plusieurs lignes, indenté ;
++       `#short` est un résumé sur une ligne (`[..3..]` pour une séquence, le nom du type pour un
++       produit) ; et `.inspectable` rend `inspect` identique à `#text`.
+
+% 1 1 0 01148bc8b605070e1cae945243793930
+
+% 1 1 0 1d3287596afb0b4c099aa326caec57cf
+
+@ 0 1 0 16327caba2a9d53e09ffc31dc95e45a3
++   entry .apply
++     info
++         une `Decomposition` à partir d'une décomposition optionnelle, avec une feuille `Unset` en
++         cas d'absence
+
+@ 0 1 0 1e52ce6bc807896815b89e1b72f8b296
++   entry .inspectable
++     info
++         rend une décomposition comme son `#text`
+
+@ 0 2 0 1b6f508c649585fc03ded6dce8da6bee
++     detail
++         Écrite à la main plutôt que dérivée : la classe anonyme de l'instance dérivée est rejetée
++         par la chaîne de compilation de Scala.js.
+
+@ 0 1 0 15487c926e1dc50709c4aa25038f5062
++   entry #ref
++     info
++         la valeur d'origine
+
+@ 0 1 0 0933117da8c7f9eb08e2691dc225fba2
++   entry #text
++     info
++         l'arbre rendu sur plusieurs lignes, chaque niveau indenté de deux espaces
+
+@ 0 2 0 12970c492909844e148ae99e1961bf31
++     detail
++         Les champs d'un produit apparaissent sous la forme `name:` avec leurs valeurs en dessous ;
++         les éléments d'une séquence sont numérotés à partir de zéro ; une somme apparaît sous la
++         forme `Name.` devant sa variante.
+
+@ 0 1 0 108174cc33aae5131e5632977db9b8a0
++   entry #text2
++     info
++         un rendu sur une ligne : `Name(field: value, …)`, `[a, b]`, `Name:value`
+
+@ 0 1 0 0568c05f804cbf4d0bcb47263bd83ad6
++   entry #short
++     info
++         un résumé sur une ligne : le texte d'une feuille, `[..n..]` pour une séquence, le nom d'un
++         produit
+
+@ 0 1 0 1fcbf4339fde89c91736268183810668
++   entry #multiline
++     info
++         ajoute le rendu multiligne au `TextBuilder` dans la portée, avec une indentation
+
+@ 0 1 0 15aec9304fa4aab91269bdd15f01c813
++ entry .Juxtaposition
++   info
++       le résultat de la comparaison de deux valeurs : identiques, différentes, ou une collation de
++       différences étiquetées
+
+@ 0 8 0 08fcbc854018ec470f0068b6630b24ae
++   detail
++       `Same(value)` est un seul texte pour les deux côtés ; `Different(left, right, difference)` a
++       le texte attendu, le texte observé et un résumé optionnel de la différence (`+2`,
++       `-{1}╱+{4}`) ; `Collation(typeName, comparison, left, right)` est une liste étiquetée de
++       juxtapositions enfants — des noms de champs pour un produit, des étiquettes d'indice pour
++       une séquence, une par caractère pour du texte — avec les textes complets des deux côtés. Une
++       collation dont les enfants sont tous des caractères uniques est une comparaison de texte,
++       que le rendu pour terminal affiche sous la forme de deux lignes surlignées plutôt que d'un
++       tableau.
+
+% 2 1 0 0268004a0807d4bb0ba58c5998a385bd
+
+% 3 1 0 1827d6f0b59844371179fe81c943b4a6
+
+% 0 1 0 08bde9157142745b024b85e8e9462dfc
+
+% 0 1 0 1e9930e3a81ad59f06672c69df255d30
+
+% 0 1 0 14f36b342393adfd0a7f39ac49abf293
+
+% 0 1 0 1c829767ddb8bd0904240fd1fac28125
+
+% 1 1 0 160b0c9a335ee5351f4079279e4df84c
+
+@ 0 3 0 0063aebf1fc9f3090845b25eefe700a2
++       Le framework probably aplatit une juxtaposition en `TestEvent.CompareRow`, en ordre préfixe
++       avec la profondeur, pour un hôte ; `teletypeables.juxtapositionTeletype` en rend une pour un
++       terminal.
+
+% 1 1 0 1c500a0372e0b0f9151a3c4aee3e47b0
+
+% 1 1 0 14948d5aa0a125d10c21546847a228e6
+
+% 0 1 0 01c2cfadf2b8540c1dcbf66165383509
+
+@ 0 1 0 109de28fbd9a5f7e16e2d923dd34cd65
++   entry #singleChar
++     info
++         si les deux côtés font au plus un caractère : la forme des enfants d'une comparaison de
++         texte
+
+@ 0 1 0 18c5aaa7699b894c1f5d93ed57ad1536
++   entry #leftWidth
++     info
++         la largeur en caractères du côté attendu, sommée sur les enfants d'une collation
+
+@ 0 1 0 0c99470efe87f3f201e7d58482db09bb
++   entry #rightWidth
++     info
++         la largeur en caractères du côté observé, sommée sur les enfants d'une collation
+
+@ 0 1 0 1b7dfaaa4a7857741d768fe595b62651
++ entry .Similarity
++   info
++       si deux valeurs sont assez similaires pour être affichées comme une substitution plutôt
++       qu'une suppression et une insertion
+
+@ 0 7 0 0e31f016a65d12da1ceabd3f8bef7c83
++   detail
++       La comparaison seule ne peut dire que *identique* ou *différent*, si bien qu'un diff brut de
++       deux séquences signale un élément modifié comme une suppression à côté d'une insertion sans
++       rapport. `Similarity` est la classe de types du raffinement qui apparie un élément retiré
++       avec un élément ajouté — un enregistrement avec le même identifiant et un champ modifié —
++       afin que les deux soient affichés comme une seule substitution détaillée jusqu'au champ qui
++       a changé. Elle est contravariante, si bien qu'une instance pour un supertype sert ses
++       sous-types ; `.generic` est l'égalité.
+
+% 1 1 0 13098005430c736d06ef43c37255897b
+
+@ 0 1 0 173c1286482de40b0cb9cbc6b96368dd
++   entry .generic
++     info
++         le given pour tout type : similaires si égales
+
+@ 0 1 0 08542e5e23b1d4ce0b31546524073f90
++   entry #similar
++     info
++         si deux valeurs sont similaires
+
+@ 0 1 0 028ce282952db318064fedba60332a75
++ entry .JuxtapositionPalette
++   info
++       les couleurs qu'utilise une juxtaposition rendue, en sRGB
+
+@ 0 8 0 194df55933c89de6052124bdef5dc367
++   detail
++       Une `Palette` (iridescence) dotée des rôles dont a besoin un tableau de différences :
++       `#unaccented` pour les filets et les marges, `#informative` pour les valeurs inchangées,
++       `#subdued` pour l'atténuation, `#positive` pour le côté attendu et `#negative` pour le côté
++       observé, en plus des `foreground` et `background` hérités. Un vrai trait plutôt qu'un
++       raffinement structurel, puisque la sélection structurelle requiert la réflexion à
++       l'exécution, dont Scala Native est dépourvu. Le given `teletypeables.juxtapositionTeletype`
++       en prend une comme paramètre contextuel ; le framework probably ne fait plus de rendu, si
++       bien qu'un hôte fournit la sienne.
+
+% 2 1 0 02d67dbe14e1ea6803341fb1b56ba080
+
+% 3 1 0 19eb8d1aac21f6061824d3e4e2ecc24a
+
+% 2 1 0 12cbfa40ef44b7f40009bdbceccab15f
+
+% 3 1 0 01fa08153fac0e8a1e00d9d70da8091e
+
+% 4 1 0 1677048267bd74b201eb7accc38df207
+
+% 5 1 0 1156b60285bb9c8f1b19b8671c421975
+
+% 6 1 0 0cd88d540a9854920b3c72e04041c19a
+
+% 7 1 0 114e52f568addeb31f5d93f0787bfc8f
+
+% 8 1 0 15807b95465068f201a0a48c350a50ba
+
+% 9 1 0 09e5414c6e2d755010a0a279f8f6cfcb
+
+% 1 1 0 1610c22efc75b187171d332ec16e20d6
+
+% 0 1 0 06dc077bc012490f10547a2c3d729c96
+
+@ 0 1 0 0426d0790f53aa8807f673470f445161
++   entry #Form
++     info
++         la forme de couleur : `Srgb`
+
+@ 0 1 0 09ef701a25a0b3dc0e936e24e1e49773
++   entry #unaccented
++     info
++         les filets, les marges et la bordure d'un tableau
+
+@ 0 1 0 152b43af866c916715a5852b1b59dc1c
++   entry #informative
++     info
++         les valeurs identiques des deux côtés
+
+@ 0 1 0 1e234d21a00a244d18e8f43c3c9d1889
++   entry #subdued
++     info
++         le texte atténué
+
+@ 0 1 0 14e68bf8bcdc73231067ccfb96d05b00
++   entry #positive
++     info
++         le côté attendu
+
+@ 0 1 0 059fd08a22a07026164c3188439264f6
++   entry #negative
++     info
++         le côté observé
+
+@ 0 1 0 05c623e377e40ce81e96194f073fad3c
++ entry .teletypeables
++   info
++       le rendu pour terminal d'une `Juxtaposition`, un given à importer par son nom
+
+@ 0 5 0 1f9a9777a9d4124d10eec876c1883ddd
++   detail
++       Dans `chiaroscuro.render`. Le given n'est pas dans la portée implicite de `Juxtaposition`,
++       et escapade rend toute valeur `Showable` sans style, si bien qu'un site d'appel qui omet de
++       l'importer se dégrade silencieusement — en affichant `Collation(Text,List(…))` — au lieu de
++       ne pas compiler.
+
+% 2 1 0 1b3290796740ca260cbf87dd79a4a2b4
+
+% 3 1 0 1125c907f85303a30fb5558ef8ad73f0
+
+% 0 1 0 11ad1264a616272912da5271c03e7538
+
+% 0 1 0 1c58b5179ed796c41c6345855147b3ee
+
+% 0 1 0 1e9dd25e19f6f6dd08c050b2345e61b9
+
+% 2 1 0 0ebe17494b92cb9b088c5065b5775be9
+
+% 3 1 0 10414af9b94339f20636059841b03e0e
+
+% 4 1 0 17935d861245f6b00b46fdff58d76f4f
+
+% 5 1 0 11a23503e9f8b68900c4d1b7742db2e9
+
+% 6 1 0 1809b695ae43b1541ddd6229bcee58a8
+
+% 7 1 0 1a68a249a91130d40f08ac109b146033
+
+% 8 1 0 172affde7f97b3b10b214015e60419f4
+
+% 9 1 0 1c283fca2ba23a4518d8600c01931aaa
+
+% 0 1 0 02c03398e24afec00d296dc701242c02
+
+% 0 1 0 0de34cdf4cdfe81800941312d992a7f2
+
+% 1 1 0 1fa3895dc089e47915255db672a72aba
+
+@ 0 1 0 15fb57f27c2c1ee31aea92d450e6d860
++   entry .juxtapositionTeletype
++     info
++         rend une `Juxtaposition` sous forme de texte stylé pour terminal
+
+@ 0 7 0 19aee5a5e9adeda4053e6ee267200d72
++     detail
++         Requiert un `Text is Measurable` (pour la largeur des colonnes) et une
++         `JuxtapositionPalette`. Un `Same` se rend _The value `v` was expected_ ; un `Different`
++         _The result `right` did not equal `left`_ ; une `Collation` de caractères uniques sous la
++         forme de deux lignes surlignées, l'attendu au-dessus de l'observé avec les caractères qui
++         diffèrent mis en évidence et les positions des caractères dans les marges, coupées à 110
++         colonnes ; et toute autre `Collation` sous la forme d'un tableau avec l'arbre des
++         étiquettes, une colonne `Expected`, une colonne `Observed` et une colonne `Details`
++         contenant chaque différence (ou la distance de Levenshtein de deux textes qui diffèrent).

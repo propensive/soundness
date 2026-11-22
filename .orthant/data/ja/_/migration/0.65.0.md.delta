@@ -1,0 +1,287 @@
+orthant 2 language
+
+@ 0 1 0 1c06fb4c4199375c023bc573879c14d1
++ # 0.65.0 での変更
+
+@ 0 3 0 1165394560cb3c3e0b87b2459886c457
++ このファイルは、Soundness のライブラリを使うコードを 0.64.0 から 0.65.0 へ更新する LLM エージェントが読むものである。
++ 各項目は何が変わったかを正確に述べる。形式については `AGENTS.md` を参照のこと。
++ 項目はモジュールごとにまとめられ、モジュール内では最も新しく追加されたものが最後に来る。
+
+% 0 1 0 0815a537589592e21b251a53558048d3
+
+@ 0 7 0 12ebfa12e030ce50056aa3a1fb56a228
++ - `ambience.systems.javaSystem` は `javaBaseSystem` に改名された。(#1939)
++ - `ambience.environments.javaEnvironment` は `javaBaseEnvironment` に改名された。(#1939)
++ - `ambience.workingDirectories.javaWorkingDirectory` は `javaBaseWorkingDirectory` に改名された。(#1939)
++ - `ambience.workingDirectories.defaultWorkingDirectory` は削除された。代わりに `javaBaseWorkingDirectory` を使う。これは `user.dir` プロパティを読む（削除された given は `java.nio.file.Paths.get("")` を読んでおり、それは同じディレクトリに解決される）。(#1939)
++ - `ambience.temporaryDirectories.javaTemporaryDirectory` は `javaBaseTemporaryDirectory` に改名された。(#1939)
+
+% 0 1 0 174231ea3a507bbb0da3030ca3b5bc65
+
+@ 0 5 0 03b4d22417adad4c1d89f0fc8dd9f9f6
++ - `turbulence.stdios.virtualMachineStdio`（`java.io.FileDescriptor.{in,out,err}` を包む）は `fileDescriptorStdio` に改名された。(#1939)
++ - `turbulence.stdios.systemStdio`（`java.lang.System.{in,out,err}` を包む）は `javaLangSystemStdio` に改名された。(#1939)
++ - `turbulence.lineSeparation.virtualMachineLineSeparation` は `javaBaseLineSeparation` に改名された。(#1939)
+
+% 0 1 0 1b963d061ec457af154e1006b71b17d4
+
+@ 0 3 0 0f644d03ba57975c0b85e88f5f76f60f
++ - `coaxial.socketBackends.virtualMachineSockets` は `javaBaseSockets` に改名された。(#1939)
++ - `coaxial.socketBackends.native`（Scala Native のモジュール）は `scalaNativeSockets` に改名され、`soundness.socketBackends.scalaNativeSockets` として再エクスポートされるようになった。(#1939)
+
+% 0 1 0 1d90f9f17b0aa66b0d7b52e54244edf6
+
+@ 0 12 0 0c92c0292e6d6e3e1a88f9caafb01246
++ - `galilei.filesystemBackends.virtualMachineFilesystem` は `javaBaseFilesystem` に改名された。(#1939)
++ - `galilei.filesystemBackends.native`（Scala Native のモジュール）は `scalaNativeFilesystem` に改名され、`soundness.filesystemBackends.scalaNativeFilesystem` として再エクスポートされるようになった。(#1939)
++ - `galilei.filesystemOptions` の下のネストしたオブジェクトは、同じ型の given に平坦化された：`dereferenceSymlinks.enabled` → `dereferenceSymlinks`、`dereferenceSymlinks.disabled` → `preserveSymlinks`、`moveAtomically.enabled` → `moveAtomically`、`moveAtomically.disabled` → `moveNonAtomically`、`copyAttributes.enabled` → `copyAttributes`、`copyAttributes.disabled` → `discardAttributes`、`deleteRecursively.enabled` → `deleteRecursively`、`deleteRecursively.disabled` → `deleteOnlyEmpty`、`overwritePreexisting.enabled` → `overwritePreexisting`、`overwritePreexisting.disabled` → `failOnPreexisting`、`createNonexistentParents.enabled` → `createNonexistentParents`、`createNonexistentParents.disabled` → `requireParents`。オブジェクトはもう存在しない。(#1939)
+
+% 0 1 0 09d3188b2c45560007c7207681d04236
+
+@ 0 2 0 10fd34f9fca8266313b05b3bb2f7d627
++ - `telekinesis.httpBackends.virtualMachineHttp` は `javaNetHttp` に改名された。(#1939)
++ - `telekinesis.httpBackends.nativeHttp` は `soundnessHttp` に改名された。(#1939)
+
+% 0 1 0 0cc2d1f372946d701781f2258ebc29ab
+
+@ 0 8 0 1f7ca1e6df93f6940522d8a22e2f4b25
++ - `scintillate.httpServers.stdlibHttpd` は `jdkHttpserver` に、`stdlibPublicHttpd` は `jdkHttpserverPublic` に改名された。(#1939)
++ - `scintillate.httpServers.nativeHttpServer` は `soundnessHttpd` に、`nativePublicHttpServer` は `soundnessHttpdPublic` に改名された。どちらも `soundness.httpServers.{soundnessHttpd, soundnessHttpdPublic}` として再エクスポートされるようになった。(#1939)
++ - `scintillate.frontends.threadPerConnection` は `threadPerConnectionFrontend` に、`frontends.reactive` は `reactiveFrontend` に改名された。(#1939)
++ - `scintillate.webserverErrorPages.standardErrorPage` は `styledErrorPage` に改名された。(#1939)
+
+% 0 1 0 1b8a4df21a24e9b507d1dd74e6543c8d
+
+@ 0 2 0 1dbeec6cac27cf511e6f40da03c25a91
++ - `surveillance.watchers.nativeWatcher` は `javaBaseWatcher` に、`surveillance.NativeWatcher`（オブジェクト）は `JavaBaseWatcher` に改名された。(#1939)
+
+% 0 1 0 05a039658357a62915cb363c5761cf36
+
+@ 0 8 0 1bf24de8b3fbad0d1cd25a473aabdde8
++ - `gastronomy.Provider.JavaStdlib` は `Provider.JavaBase` に、`gastronomy.JavaStdlibHashing` は `JavaBaseHashing` に、`gastronomy.Hashing.javaStdlibHashing` は `javaBaseHashing` に、`gastronomy.providers.javaStdlibProvider` は `javaBaseProvider` に改名された。(#1939)
++ - 選択パッケージ `gastronomy.crypto` は `gastronomy.cryptoPermits` に改名された（メンバー `permitUnauthenticatedCrypto`、`permitDeprecatedCrypto`、`permitLegacyCrypto`、`permitDisallowedCrypto`、`permitCryptoThrough2014`、`permitCryptoThrough2024`、`permitCryptoThrough2030`、`permitLegacyTls`、`permitUntrustedCertificates`、`permitUncheckedRevocation`、`permitNonCryptographicHashes` は変わらない）。(#1939)
+
+% 0 1 0 09df00b428737c7f1cf98680616b6f7e
+
+@ 0 7 0 1e2ffcd4728a8bb70190a569364ab960
++ - `enigmatic.JavaStdlibCrypto` は `JavaBaseCrypto` に、`enigmatic.Crypto.javaStdlibCrypto` は `javaBaseCrypto` に改名された。(#1939)
++ - `enigmatic.cloaks.{cloakHeap, cloakOffHeap, cloakVeiledHeap, cloakVeiledOffHeap}` は `{heapCloak, offHeapCloak, veiledHeapCloak, veiledOffHeapCloak}` に改名された。(#1939)
++ - 選択パッケージ `enigmatic.blockCipherMode` と `enigmatic.blockCipherPadding` は `blockCipherModes` と `blockCipherPaddings` に改名された（メンバー `cbc`、`ctr`、`cfb`、`ofb`、`pkcs7`、`iso10126` は変わらない）。(#1939)
+
+% 0 1 0 1fc810244c2cd3bf14cb7bb4f199169b
+
+@ 0 2 0 1a3404243c5f2dce18d8a99516f2e1e1
++ - `kaleidoscope.Jur`（型とコンパニオン）は `JavaBaseRegex` に、`kaleidoscope.regexBackends.jur` は `javaBaseRegex` に改名された。(#1939)
+
+% 0 1 0 11d5d50734a7e80a1e85faf7259fa0fc
+
+@ 0 3 0 007869b88a18a000058ed03a949735d5
++ - トップレベルの `diuretic.javaNioFilePath` は `javaNioPathRepresentative` に、トップレベルの `diuretic.javaIoFile` は `javaIoFileRepresentative` に改名された（`Representative of Paths` のマーカーである。`anticipation.pathInterfaces.{javaNioPath, javaIoFile}` は変わらない）。(#1939)
+
+% 0 1 0 0aebba901602cb461334bf128bd66cd1
+
+@ 0 2 0 151142f2640bfeb70975c456442bfdc6
++ - `punctuation.formattables.{scala, java}`（`harlequin.md` にある `CommonFormattable` の given）は `{scalaFormattable, javaFormattable}` に改名された。(#1939)
+
+% 0 1 0 0517ef2589655f410a0f4a460ea9ee15
+
+@ 0 12 0 097a6a42db0388b00a6cb2e86502ec09
++ - `aviation.chronometries.unix` は `unixChronometry` に、`chronometries.atomic` は `taiChronometry` に改名された。(#1939)
++ - `aviation.leapModes.exact` は `exactLeapMode` に改名された。(#1939)
++ - `aviation.gapPolicies.pushBackward` は `pushBackwardGapPolicy` に、`gapPolicies.rejectGap` は `rejectGapPolicy` に改名された。(#1939)
++ - `aviation.timespanFormats.{englishRelative, frenchRelative, germanRelative, spanishRelative}` は `{englishRelativeTimespan, frenchRelativeTimespan, germanRelativeTimespan, spanishRelativeTimespan}` に改名された。(#1939)
++ - 新たに `soundness` に再エクスポートされたもの：`hourFormats.{twelveHourSecondsClock, twentyFourHourSecondsClock}`、新しいファミリー `timeSpecificities.{minutesSpecificity, secondsSpecificity}`（ライブラリのパッケージ `aviation.timeSpecificities`）、`instantInterfaces.aviationInstant` / `durationInterfaces.aviationDuration`。(#1939)
+
+% 0 1 0 180f3ce4211ce4c80f4c87efbb23bc3f
+
+@ 0 46 0 092ea394f14025ec089cef602893048d
++ - `probably.harnesses.threadLocal` は `threadLocalHarness` に改名された。(#1939)
++ - `probably.autopsies.none` は `noAutopsy` に、`autopsies.contrastExpectations` は `contrastAutopsy` に改名された。(#1939)
++ - 新しい `probably.Tag`（`into case class Tag(name: Name[Tagging])`、`def text: Text` を持つ）と命名のプレーン `probably.Tagging`（`Tagging is Nominative under MustMatch["[A-Za-z_][A-Za-z0-9_-]*"]`）。その given は、既存の `probably.nominative` と並んで、パッケージレベルで `probably.taggingNominative`（および `soundness.taggingNominative`）としてエクスポートされる。`Tag.conversion: Conversion[Name[Tagging], Tag]` により、`n"…"` リテラルを `Tag` として使える。`Tag` 自体は `soundness` に再エクスポートされない（`soundness.Tag` は `honeycomb.Tag` のままである）。`probably.Tag` として名指すこと。`Tagging` は再エクスポートされる。どちらの `nominative` の given も、`import probably.*` や `import soundness.*` ではスコープに入らない。`n"…"` リテラルを使うスイートは、それらを名前でインポートしなければならない。(#1966)
++ - `probably.Test.Id` に、`moniker` の後の五番目のフィールド `tags: List[Tag] = Nil` が加わった。ケースクラスの等価性、`unapply`、`copy` はこれを含む。(#1966)
++ - `probably.test(name: Message)(using Testable, Codepoint): Test.Id` は `test(name: Message, tags: Tag*)(using Testable, Codepoint): Test.Id` に、`test(name: Name[Probing], description: Message)(using Testable, Codepoint): Test.Id` は `test(name: Name[Probing], description: Message, tags: Tag*)(using Testable, Codepoint): Test.Id` になった。タグのない呼び出しは変わらない。`test(name)(body)` の適用は引き続き解決される。(#1966)
++ - `probably.Selection` に、`constraints` の後に順にフィールド `tags: List[Set[Text]]`、`exclusions: List[Selection]` が加わった。完全なコンストラクターは `Selection(terms, kinds, constraints, tags, exclusions, listOnly, scale)` になった。位置による構築と `unapply` は変更しなければならない。`Selection.trivial` は、`tags` と `exclusions` も空のときにだけ真になる。(#1966)
++ - `probably.Selection#admits(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)]): Boolean` は `admits(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)], tags: List[Tag]): Boolean` になった。(#1966)
++ - `probably.Selection.parse` は、さらに四つの項の形式を認識するようになった：`tag:<t1>,<t2>`（列挙したいずれかのタグを持つテストを許可する。`tag:` の項を繰り返すと積集合になる）、`not:<term>`（一つの項からなる `Selection` としてパースされ、`exclusions` に追加される。いずれかの除外が許可するセルは拒否され、セルが持たない軸に対する制約は、すべてにではなく何にもマッチしない）、`<axis>=<lo>..`（`Constraint.Least(axis, lo, inclusive = true)` としてパースされる）、`<axis>=..<hi>`（`Constraint.Most(axis, hi, inclusive = true)` としてパースされる）。空の引数は無視される。以前は `tag:x` と `not:x` は名前のグロブとして、`N=4..` は `Membership(N, {"4.."})` として、`""` はグロブとしてパースされていた。(#1966)
++ - `probably.Runner#listed: List[(Test.Id, Entry.Kind, Optional[Long])]` は `listed: List[Runner.Scheduled]` になった。新しい `Runner.Scheduled(id: Test.Id, kind: Entry.Kind, expected: Optional[Long], axes: List[Axis.Schedule])` は `def tags: List[Tag] = id.tags` を持つ。(#1966)
++ - 新しい `probably.Axis.Schedule(spec: Axis.Spec, values: List[Value], least: Optional[Double] = Unset, most: Optional[Double] = Unset)` と、新しい `probably.Runner#declare(id: Test.Id, kind: Entry.Kind, axis: Axis.Spec, least: Optional[Double], most: Optional[Double]): Unit`（一覧モードで創発的な軸の範囲を告知する。それ以外では何もしない）。(#1966)
++ - `probably.TestEvent.TestScheduled(test: Ref, kind: Text, expected: Optional[Long])` は `TestScheduled(test: Ref, kind: Text, expected: Optional[Long], tags: List[Text], axes: List[TestEvent.AxisSchedule])` になり、新しい `TestEvent.AxisSchedule(axis: Text, domain: Text, emergent: Boolean, values: List[Text], least: Optional[Double], most: Optional[Double])` と `AxisSchedule.of(schedule: Axis.Schedule): AxisSchedule` が加わった。`TestEvent` の導出された BinTEL スキーマが変わるので、`probably.Streamer.fingerprint` も変わる。以前のレイアウトに対してビルドされた利用者は、ストリームを非互換と報告する。(#1966)
+
+% 2 1 0 16c5a6a063fbdd970e1a87cc5f849ce0
+
+@ 0 12 0 1b2fca9ca9e886de16ed66468d366838
++ - `sedentary.Bench#apply(name: Message)(target, operationSize, iterations, warmups, confidence, baseline, comparison): Bench.Plan` は `apply(name: Message, tags: Tag*)(…same second list…): Bench.Plan` になり、`sedentary.Bench.Plan` に `name` と `target` の間の三番目のフィールド `tags: List[Tag]` が加わった（位置による構築と `unapply` は変更しなければならない）。(#1966)
++ - `sedentary.Stress#apply(name: Message)(target, concurrency, sweep, threshold, compliance)(body)` は `apply(name: Message, tags: Tag*)(…)(body)` に、`sedentary.Profile#apply(name: Message)(target, frames)(body)` は `apply(name: Message, tags: Tag*)(target, frames)(body)` になった。それぞれ、組み立てる `Test.Id` にタグを渡す。(#1966)
++ - `sedentary.Stress#apply` は、`Runner#skip` を呼ぶ前に、`concurrency`（デフォルトは 1）とスイープの上限で範囲を定めた創発的な整数の `N` 軸で `Runner#declare` を呼ぶようになった。そのため、ストレステストの `--list` は範囲付きの `N` 軸を報告する。(#1966)
+
+% 0 1 0 1596bb652e5891230b44b58e4458fbe5
+
+@ 0 14 0 09e8d3a8349f5769115ecf9fdc33eab4
++ - `iridescence.mixing` のすべてのメンバーに接尾辞 `Mixing` が付いた：`proportional` → `proportionalMixing`、`multiply` → `multiplyMixing`、`screen` → `screenMixing`、`darken` → `darkenMixing`、`lighten` → `lightenMixing`、`difference` → `differenceMixing`、`exclusion` → `exclusionMixing`、`linearDodge` → `linearDodgeMixing`、`linearBurn` → `linearBurnMixing`、`hardLight` → `hardLightMixing`、`overlay` → `overlayMixing`、`softLight` → `softLightMixing`、`colorDodge` → `colorDodgeMixing`、`colorBurn` → `colorBurnMixing`。(#1939)
++ - `iridescence.colorimetry` のすべてのメンバーに接尾辞 `Colorimetry` が付いた：`incandescentTungsten`、`oldDirectSunlightAtNoon`、`oldDaylight`、`iccProfilePcs`、`midMorningDaylight`、`daylight`、`srgb`、`adobeRgb`、`northSkyDaylight`、`equalEnergy`、`daylightFluorescentF1`、`coolFluorescent`、`whiteFluorescent`、`warmWhiteFluorescent`、`daylightFluorescentF5`、`liteWhiteFluorescent`、`daylightFluorescentF7`、`d65Simulator`、`sylvaniaF40`、`d50Simulator`、`coolWhiteFluorescent`、`philipsTl85`、`ultralume50`、`philipsTl84`、`ultralume40`、`philipsTl83`、`ultralume30` は `incandescentTungstenColorimetry`、…、`ultralume30Colorimetry` になる。(#1939)
+
+% 0 1 0 0f8801d07578e6311608c798ab4d808f
+
+@ 0 2 0 1b34cfc861a25134021bee46e5f9565d
++ - `gossamer.collations.unicode` は `unicodeCollation` に、`collations.codepoints` は `codepointCollation` に改名された。(#1939)
+
+% 0 1 0 0136e0d647519dc716274602a4340b64
+
+@ 0 49 0 1a06781bfa11a4b20be704bc7b4f7752
++ - 新しい `rudiments.Atomic`。`soundness.Atomic` としてエクスポートされる。`java.util.concurrent.atomic` に対する不透明でコストのないラッパーで、それぞれ保持する型にちなんで名付けられている。`Atomic.Int` は `AtomicInteger` を、`Atomic.Long` は `AtomicLong` を、`Atomic.Bool` は `AtomicBoolean` を、`Atomic.Ref[value]` は `AtomicReference[value]` を、`Atomic.Ints` は `AtomicIntegerArray` を、`Atomic.Longs` は `AtomicLongArray` を、`Atomic.Refs[value]` は `AtomicReferenceArray[vacuous.Optional[value]]` を包む。`LongAdder`、`DoubleAdder`、`LongAccumulator`、`DoubleAccumulator`、`AtomicMarkableReference`、`AtomicStampedReference`、三つの `*FieldUpdater` クラスは包まれない。`import Atomic.*` のもとでは `Atomic.Int` と `Atomic.Long` が `scala.Int` と `scala.Long` を隠すが、これは意図された使い方ではない。(#1957)
++ - マッチ型 `Atomic[value]` は、`Int` では `Atomic.Int` に、`Long` では `Atomic.Long` に、`Boolean` では `Atomic.Bool` に、それ以外では `Atomic.Ref[value]` に簡約される。抽象型パラメーターに対しても、表現が使用箇所から見えない不透明型に対しても簡約されない。`Atomic[Text]`、`Atomic[Optional[Text]]`、`Atomic[SomeClass]` は簡約されるが、プレリュードの `List` は不透明なので `Atomic[List[x]]` は簡約されない。その場合は具体的な型を名指す：`Atomic.Ref[List[x]]`。`Atomic(0)`、`Atomic(0L)`、`Atomic(false)`、`Atomic(reference)` は対応するセルを構築する。明示的な型引数（`Atomic[Int](0)`）は汎用の分岐を適用し、適合しない。すべての操作は `inline` で、置き換える `java.util.concurrent.atomic` の呼び出しと同じバイトコードにコンパイルされる。(#1957)
++ - 読み出しは `atomic()`（`get`）、書き込みは `atomic() = value`（`set`）と `atomic.publish(value)`（`lazySet`）である。`atomic.swap(value)` は `getAndSet`、`atomic.replace(expected, updated)` は `compareAndSet` である。`Atomic.Ref#apply()` は `value | Null` ではなく `value` を返すので、どの呼び出し箇所も `.nn` を必要としない。`Atomic.Ref[Optional[x]]` と宣言したセルは、値がないとき `Unset` として読まれる。元の `AtomicReference` に対する `.nn` なら例外を投げていたところである。三つの配列型は `denominative.Ordinal` で添字付けされる。新しい参照の配列は null で埋められているので `Atomic.Refs#apply` は `vacuous.Optional[value]` を返し、新しいプリミティブの配列はゼロを保持しているので `Atomic.Ints#apply` と `Atomic.Longs#apply` はプリミティブを返す。(#1957)
++ - 遷移は、遷移が押しのけた値を返す `atomic.ere(transition)` と、遷移が設定した値を返す `atomic.since(transition)` で、それぞれ `getAndUpdate` と `updateAndGet` を置き換える。これらは `Atomic.Int`、`Atomic.Long`、`Atomic.Bool`、`Atomic.Ref` に定義され、配列型には定義されない。遷移はラムダリテラルとして書かなければならない。その形はコンパイル時に読まれ、対応する JDK の組み込み関数があればそれに置き換えられ（`_ + 1` は `getAndIncrement`/`incrementAndGet` に、`_ + n` は `getAndAdd`/`addAndGet` に、`_ - 1` は `getAndDecrement`/`decrementAndGet` に、定数は `getAndSet` に、恒等は `get` になる）、そうでなければ遷移をベータ簡約して埋め込んだ compare-and-set の再試行ループに置き換えられる。どちらの場合も `java.util.function.UnaryOperator` もクロージャーもアロケーションされない。遷移は競合のもとで再実行されることがあるので、純粋でなければならない。外部から得た関数値を適用する遷移は、コンパイル時に拒否される。(#1957)
++ - `ere` は値を直接取るようにオーバーロードされているので、`bool.ere(true)` はラムダなしの `getAndSet(true)` である。対応する `since` はない。それは自分の引数を返すだけだからである。`value` が関数型である `Atomic.Ref[value]` では値のオーバーロードには到達できず、`ere` は遷移のオーバーロードに解決されてコンパイルに失敗する。`ref() = supplied` を使うこと。(#1957)
++ - `Atomic.Ref#revise(transition)` は、形を読めない遷移のために、リテラルではなく関数値を取り、設定した値を返す。`inline` なのでクロージャーはアロケーションされないが、純粋性の義務は検査されない。遷移は競合のもとで再実行されることがある。(#1957)
++ - `rudiments.test` は `mandible.core` に依存するようになった。これは `Atomic` の操作がコンパイルされるバイトコードを検証する。`rudiments` 自体には影響しない。(#1960)
+
+% 0 1 0 13897a5b469c56bc058ae094048dac5d
+
+@ 0 7 0 06e233fe05d1a4f316da25da3a805067
++ - `proscenium.Array#copyFrom(source, sourceStart, targetStart, count)` は `place` に改名され、さらに二つのオーバーロードが加わった。`place(source)` はソース全体を先頭にコピーし、`place(source, at)` は `at` にコピーする。動作は変わらない。この名前は、すでにソースをレシーバへコピーすることを意味していた `rudiments.place` と `concordance.Scribe#place` に合わせたものである。`snapshot` は引き続きその対になる操作で、新しい配列へコピーし出す。`denominative` は `proscenium` より上にあるので、インデックスは `Array` の `apply`/`update`/`readUnchecked` と同じく、`Ordinal` ではなく `Int` のままである。(#1960)
+
+% 0 1 0 015105b70d6115860b88f53408ae1428
+
+@ 0 8 0 020a46ce172711a011a8a33502140e8d
++ - `rudiments.Scribe` は伸長できるようになった。`Array.collect[element](hint)(lambda)` は、書き込まれるにつれて伸び、書き込まれたものをちょうど返す、サイズのないスクライブを貸し出す。一方 `Array.scribe[element](size)(lambda)` は引き続き固定サイズのスクライブを貸し出し、ちょうど `size` の配列を返し、伸長せずに切り詰める。既存の `Array.scribe` の動作は変わらない。(#1960)
++ - `rudiments.Scribe#append` に、カーソル位置での二つの一括のオーバーロード `append(source)` と `append(source, from, count)` が加わった。どちらも `Array[element]^{}` を取る。`place` は引き続き `Ordinal in scribe.type` を必要とするので、サイズのあるスクライブでしか使えない。(#1960)
+
+% 0 1 0 1aa1711c33dc078f11fd7629dab81114
+
+@ 0 6 0 1aa8a8a54d844d520313effc1454b227
++ - `frontier.context.explainMissingContext` と `soundness.explainMissingContext` は、探索がそれらなしで解決される場合に暗黙の候補として成功しなくなった。候補は常に失敗するようになり（その診断は探索全体が失敗したときにだけ使われる）、インスタンスの選択はコンパイラ自身に委ねられる。その効果：型パラメーターがまだ決まっていない間に行われる暗黙の探索（たとえば `join` の `element`/`textual`）は、それらのパラメーターを `Any` にインスタンス化して解決されなくなった。すでにコンパイルできていたコードの推論される型は変わらない。(#1944)
+
+% 0 1 0 108425be319504bd1ad2ccfb2700814e
+
+@ 0 12 0 0b7a518729833d4b056df96fc19b7b3d
++ - `stenography.Imports` に、`scope` で宣言された `export` エイリアスの対象（型とコンパニオン）を返す `Imports.exports(scope: Designator)(using dotty.tools.dotc.core.Contexts.Context): Set[Designator]` と、`designators` のそれぞれの `exports` で `direct` を拡張した `Imports(designators, direct)` である `Imports.resolve(designators: Set[Designator], direct: Set[Designator])(using Context): Imports` が加わった。`delicious.Reifier` に、リファイアー自身のコンテキストのもとでの `Imports.resolve` である `imports(designators: Set[Designator], direct: Set[Designator]): Imports` が加わった。`Syntax#text` や `Designator#text` のために、ワイルドカードのインポートの集合から `Imports` を手で組み立てるコード（セッションのインポートに対して型を省略表示する REPL）は、代わりに `Reifier#imports` または `Imports.resolve` を通じて組み立てるべきである。そうして初めて、ワイルドカードでインポートしたスコープの `export` を通じて到達する型（`import soundness.*` のもとでの `jacinta.Json`）が、修飾名（`jacinta.Json`）ではなく末端の名前（`Json`）で描画される。マクロの経路（`Syntax.name`、`Syntax.designator`）はすでにそうしており、変わらない。(#1959)
+
+% 0 1 0 0ed19456d6998e511992f280a95ea1f6
+
+@ 0 4 0 1c3c62aeedcb362c067b93ed682dc19c
++ - BinTEL のフレーミングが変わった（TEL の上流 8380ef7）。`Bintel.frame` と `Bintel.frameSelfContained` は、マジックナンバーの直後に、それに続くすべてのバイトを数える文書長の varint を書くようになった。この変更以前に書かれたフレームは、デコードに `Bintel.Error.Reason.BadSignatureLength`（B03）で失敗する。保存された BinTEL 文書は再エンコードすること。(#1961)
+
+@ 0 3 0 08c457d186d93d4d0d4fb9bf6cf5ba8c
++ - `Bintel.Framed(signature, body)` に三番目のフィールド `continuation: Int` が加わった。文書の後のバイトが始まるオフセットである。`Bintel.Document(signature, root)` にも同様に `continuation: Int` が加わった。どちらに対するパターンマッチも三つのフィールドを束縛しなければならない。(#1961)
+
+@ 0 7 0 037f1c12329da6c80ccc3b5223dd6dca
++ - `Bintel.decodeDocument` と `Bintel.decodeDocumentSelfContained` は単一文書のリーダーになった。文書の後のバイトはデコードも拒否もされず、結果の `continuation` がそれらの始まる位置を報告する。以前のように末尾のバイトを拒否する（B08）には、新しい `Bintel.decodeWholeDocument(data, schema)` / `Bintel.decodeWholeDocumentSelfContained(data)` を使う（それぞれ `(…, codecs: Tel.Codec.Bindings, checkCanonical: Boolean = false)` もある）。どちらの単一文書のリーダーにも、`offset: Int` を（最後のパラメーターとして）取るオーバーロードが加わった。`Bintel.unframe` も同様に末尾のバイトを拒否しなくなり、`unframe(data, offset)` が加わった。(#1961)
+
+@ 0 4 0 14a021fd375692551e978e0fcdfc530c
++ - 新規：`Bintel.decodeStream(data, schema): List[Bintel.Document]`（とコーデックを考慮するオーバーロード）は、バイトストリームのすべての文書を順にデコードし、自己完結した文書はその埋め込みスキーマに振り分ける。`Bintel.documentExtent(data)` / `documentExtent(data, offset)` は、スキーマなしにヘッダーだけから文書の継続オフセットを返す。(#1961)
+
+@ 0 4 0 05a535eda499dcc11d9c83e5763c4903
++ - `Bintel.Error.Reason` に `DeclaredLengthMismatch`（`SN-609.16`、B16：宣言された長さが構造上の範囲と一致しない）と `NestingLimitExceeded`（`SN-609.17`：Struct の入れ子が 256 を超える。デコーダーの資源制限で、B コードではない）が加わった。`TrailingBytes` のメッセージは "a whole-document reader found bytes after the document" になった。(#1961)
+
+@ 0 4 0 1f4c7db9f11ee4c8116d492bc38a9dd4
++ - BinTEL の varint のデコード（`Varint.decode`、`Bintel.decode`、`Bintel.parse`）は、`80 00` のような最小でないエンコーディングを拒否するようになった（新しい `Varint.Error.Reason.Overlong`、`SN-608.3`。`Bintel.Error.Reason.VarintError`、B02 として報告される）。使えるバイトがない varint は、`UnexpectedEoi`（B09）ではなく `VarintError`（B02）になった。(#1961)
+
+@ 0 3 0 1cfa1c1b49247ad70b017e32acdd1b0f
++ - `Bintel.decode`/`Bintel.encode` は、名前がスキーマの `SelectDefinition` でない `Tels.SelectRef` に対して `Bintel.Error.Reason.ReferenceUnresolved`（B10）を発生させるようになった。以前は、そのようなメンバーは黙ってキーワードのスロットに何も寄与しなかった。(#1961)
+
+@ 0 5 0 0bd93fabc925f6f616e9eb494e64d530
++ - `Tel.Type.assign` は、Node の子をメンバーの順序で並べるようになった（TEL §18.3）。`members[0]` を埋めるすべての要素、次に `members[1]`、…と続き、メンバー内ではアトムがコンパウンドより先に来て、それ以外はソースの順序に従う。以前は、アトムに由来するすべての要素が、コンパウンドに由来するすべての要素より先に来て、それぞれのグループは文書の順序だった。`Tel.Element.Node.children` の文書の順序に依存していたコードは、自分でソースの位置によってソートしなければならない。(#1961)
+
+@ 0 4 0 15d715bc2f34d55d0f0a380995fe8e76
++ - `Tel.Document` に `margin: Int`（四番目の位置のフィールドで、`children` の前）と `continuation: Optional[Int] = Unset`（最後のフィールド：文書の区切りの後の内容が始まる 1 始まりの行。文書が入力の終わりで終わったか、パースではなく構築された場合は `Unset`）が加わった。コンストラクターの呼び出しとパターンマッチは更新しなければならない。(#1961)
+
+@ 0 6 0 153a653b8f62abe108275af1b4727b10
++ - レイヤーの合成（`Tels.Layers.compose`）は、レイヤーのフィールドのキーワードが既存の `SelectRef` が寄与するバリアントのキーワードと一致するとき、またはレイヤーの `SelectRef` がすでに存在するバリアントのキーワードを持ち込むときに、`Tel.Error.Reason.LayerKeywordCollision`（E205）を発生させるようになった。以前は、前者は後で E201（`DuplicateKeywordInStruct`）として表に出て、後者は検出されなかった。`Tels.Validation.validate` は、バリアントも除外も持たないレイヤーで宣言されたセレクトに対して `EmptySelectVariants`（E202）を発生させるようになった。(#1961)
+
+@ 0 6 0 005d36ec8313e03b167dd156b780538a
++ - パーサーの診断が割り当て直された。コメントだけのブロックの下にインデントされた行は、E112（`ChildOfNonCompound`）ではなく E111（`OverIndentation`）になった。E112 は表形式の行の下にインデントされた行のために取っておかれる。キーワードと列の前のアトムの部分、またはいずれかの列の値が、列の区切りの位置（`M_i − 2` または `M_i − 1`）を占める表形式の行は、E118（`ColumnValueTooWide`）になった。リテラルのアトムの閉じ区切り文字の行は、開き行から末尾の空白を除いたものになった。(#1961)
+
+@ 0 3 0 11b1f40a0edf0c730c98b371a416330e
++ - `Tels.Validation.validate` は、ベーススキーマの、または一つのレイヤーの二つの定義が、そのレコード、スカラー、セレクトにまたがって名前を共有するとき、`DuplicateDefinition`（E210）を発生させるようになった。以前は、ベースの定義と重複するレイヤーの定義だけが検出されていた。(#1961)
+
+@ 0 4 0 1b0af54b2fdbc3e81bcc0e1cb72c8f15
++ - プラグマの診断：`BadPragmaPhrase`（E121）と `MisplacedPragmaPhrase`（E122）は、フレーズごとに一回ではなく、プラグマの行ごとに最初の違反フレーズで最大一回だけ蓄積されるようになった。また、最後のフレーズでない一文字のフレーズは、E122 ではなく E121 になった（シジルの形式は定義上最後である）。(#1961)
+
+@ 0 3 0 16dec1f785d88da919fc8b732fc9ff70
++ - 表形式のブロックの中のコメント行（E109、`CommentNotPreceded`）は、そのブロックの `comments` に加わるようになり、続く行は同じブロックの行のままになる。以前は新しいブロックを始め、後の行は通常のコンパウンドとしてパースされていた。(#1961)
+
+@ 0 2 0 0248f7a8a7016c231ac49a1e567a0591
++ - `Telp.delimiters` に `+` が加わった（二十二文字になった、`!"#$%&*+,./:;=?@\^_`|~`）。そのため、`Telp.parse(t"+a+b")` は、以前は `Telp.Error.Reason.Syntax` を発生させていたところで成功するようになった。(#1961)
+
+@ 0 6 0 0987684ac5d27e7314f5fc29ac8f6bc7
++ - `Base256.decodeStrict` は、最初のものだけでなくすべての違反文字を `Base256.Error.Reason.NotInAlphabet(offenders: scala.collection.immutable.List[Base256.Offender])` として報告する。`Base256.Offender(position: Int, codepoint: Int)` はゼロ始まりの*コードポイント*のインデックスを与える（以前は UTF-16 の単位のインデックスを持つ `NotInAlphabet(position: Int, character: Char)` だった）。`Base256.decode` と `decodeStrict` は、補助文字を一バイトになる一文字として扱うようになった（以前は二文字）。
+
+% 0 1 0 0e95a33c2b5adec917c41123ec8c45fa
+
+@ 0 3 0 1db75418bb6afc4a1ce372b1f3dc18a1
++ - `Palimpsest.resolve` は、バックトラックによる探索を `Palimpsest.searchLimit`（100,000）回の候補の試行に制限し、使い果たすと `Unset` を返すようになった。新しいオーバーロード `resolve(limit: Int)(using Bibliography)` は明示的な上限を取る。(#1961)
+
+% 0 1 0 07d3f5d0de80f0000d3a20dc61ea01c4
+
+@ 0 32 0 1bc8dd5e24c0f74a06dde41216160adf
++ - ランチャーとデーモンの間のプロトコルは、`ethereal-launcher` の TEL スキーマ（`ethereal.Launcher.schemaText`）の BinTEL 文書になり、行指向の `i`/`e`/`m`/`s`/`x`/`v` メッセージと一バイトの応答を置き換えた。このバージョンからビルドしたデーモンは、このバージョンの Rust のランナーのソースからビルドしたランチャーしか受け付けない。ランナーのスタブを再ビルドする（`make runners-build`）か、このプロトコルを持つリリース以降の公開済みの `runners-<version>` リリースを使うこと。古いスタブでパッケージしたアプリケーションは、パッケージし直さなければならない。
++ - `ethereal.DaemonEvent` は削除された。デーモンは `ethereal.Launcher.Message`（`Init`、`Stderr`、`Control`、`Signal`、`Exit`、`Verify`、`SignalAck`、`Verdict`、`Mode`、`ExitStatus`）で振り分ける。`Launcher.encode`、`Launcher.decode`、`Launcher.readDocument` がコーデックである。`ethereal.Tty#byte` は削除された。端末のモードの変更は、制御チャンネル上の `Launcher.Message.Mode` 文書である。
++ - `ethereal.Runners.version` は `0.4`（BinTEL プロトコルを話す最初のランナーのリリース）で、`etc/runners/0.4.tsv` がスタブのハッシュを記録する。ローカルの `dist/runners` なしでの `-Dbuild.executable` のパッケージングは、GitHub の `runners-0.4` リリースからダウンロードする。
++ - `ethereal.DaemonLogEvent` に `ProtocolMismatch`（別のスキーマのシグネチャを持つ文書）が加わった。
++ - `ethereal.core` は `stratiform.binary`（したがって `stratiform.core`、`stratiform.base256`、`ulysses.core`）に依存するようになった。
++ - ランチャーの起動の期限は*アイドル*の制限になった。デーモンは、起動されてから 10 秒以内ではなく、状態ディレクトリにある `progress` ファイルの最後の変更から 10 秒以内にソケットをバインドしなければならない。ランチャーは JVM に `-Dburdock.progress=<state dir>/progress` を渡す。冷えたキャッシュを取得する Burdock のブートストラップはそこに進捗の位置を書き、ランチャーは待つ間 `Fetching dependencies n/N (size)…` を表示し、失敗の報告は進行中のダウンロードを名指す（`it was still fetching dependency 35 of 128 … after 10s without progress`）。別のランチャーの起動を待つ二つ目のランチャーも同じ規則に従う（以前は固定の 4 秒だった）。これは Rust のランナーへの変更である。スタブを再ビルドする（`make runners-build`）か、これを含む `runners-<version>` リリースを使うこと。(#1938)
++ - `ethereal.Runners.version` は `0.5` である。`-Dbuild.executable` はランナーのスタブを GitHub の `runners-0.5` リリースからダウンロードし、`etc/runners/0.5.tsv` に対して検証する。`runners-0.4` のマニフェストは、そのリリースが提供したアセットと一致しなかった（その macOS-arm64 のダイジェストは公開されなかったスタブを名指していた）ので、キャッシュされたスタブのないマシンで実行ファイルをビルドすると失敗していた。`~/.cache/ethereal/runners/0.4` の下にすでにキャッシュされたスタブは、もう参照されない。
+
+@ 0 1 0 0938ff3e6aa308c302f99e6477fdd838
++ ## probably（fume が実行と報告を引き継ぐ）
+
+@ 0 54 0 193dc4e70f0816011b95b64562384b96
++ - `probably.Suite#main(arguments: Array[Text]): Unit` は削除された。`Suite` はもうメインクラスではない。ホストが `probably.Streamer.stream(suite: Text, arguments: Text, output: java.io.OutputStream): Int`（モジュール `probably.events`）または `probably.Suite#invoke(arguments: Text, sink: TestEvent -> Unit): Int` を通じて実行するだけである。`java -cp … <package>.Tests …` を実行していたビルドスクリプトは、代わりにビルドしたクラスパスに対して `fume` ツールを実行しなければならない（`fume run -c <jar>`、またはそれを名指す `.fume/config.tel` を置いて `fume run`）。(#1963)
++ - `probably.Suite#invoke(arguments: Array[Text]): Int`、`probably.Suite#invoke(arguments: Text): Int`、`probably.Suite#invoke(arguments: List[Text]): Int` は削除された。これらはスイートの標準入出力にレポートを描画していたが、それはもう存在しない。`invoke(arguments: Text, sink: TestEvent -> Unit): Int` が唯一のエントリーポイントとして残る。(#1963)
++ - `probably.Suite#invoke(arguments: Text, sink: TestEvent -> Unit): Int` は 3（報告中の環境のエラー）を返さなくなった。結果は 0（成功）、1（失敗あり）、2（スイートが例外を投げた）のいずれかである。(#1963)
++ - `probably.Suite#suiteIo: turbulence.Stdio` は削除された。(#1963)
++ - `probably.Report` のコンストラクターは `Report()(using ambience.Environment)(using probably.TestPalette)` から `Report()` に変わった。given は必要ない。(#1963)
++ - `probably.Report#complete(coverage: Option[probably.Coverage])(using turbulence.Stdio): Unit` は `complete(): Unit` に変わった。何も描画しない。`passed` を確定させ、設定されたシンクに `TestEvent.RunCompleted` を出力する（シンクがなければ何もしない）。(#1963)
++ - `probably.Report.Status`（列挙型 `Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench, Stress, Profile, AspirePass, AspireFail` で、`symbol(using TestPalette): Teletype` と `describe: Teletype` を持つ）は削除された。`TestEvent.Outcome#outcome: Text` が、判定ごとの語彙をイベントストリーム上で運ぶ。(#1963)
++ - `probably.Reporter.report` の given は `(turbulence.Stdio, ambience.Environment, probably.TestPalette) => Reporter[Report]` から `Reporter[Report]` に変わった。(#1963)
++ - `probably.Reporter[report]#live(report: report): Boolean` は削除された。(#1963)
++ - `probably.Runner[report]#redraw(size: Int): Unit` は削除された。`Runner` はどんな条件でも標準出力に進捗を書かなくなった。(#1963)
++ - `probably.TestPalette`（`chiaroscuro.JuxtapositionPalette` を継承するトレイト。メンバーは `warning, critical, benchmark, mixed, informative, cold, warm, hot, accented, highlight, detail, pass, fail, aspirePass, aspireFail, subdued, unaccented, positive, negative: Color in Srgb`）は、`soundness.TestPalette` とともに削除された。(#1963)
++ - `probably.Ci`（オブジェクト。メンバーは `apply(), githubActions, gitlabCi, circleCi, travisCi, jenkins, azurePipelines, teamCity, bitbucketPipelines, buildkite, appVeyor, drone, semaphore, buddy, claudeCode: Boolean`）は、`soundness.Ci` とともに削除された。代わりのものはない。(#1963)
++ - `probably.GithubActions`（オブジェクト。メンバーは `workspaceRelative(path: Text): Text`、`error/warning/notice(message: Text, file: Optional[Text], line: Optional[Int], title: Optional[Text])(using Stdio): Unit`、`debug(message: Text)(using Stdio): Unit`、`group(title: Text)(using Stdio): Unit`、`endGroup()(using Stdio): Unit`、`grouped[result](title: Text)(block: => result)(using Stdio): result`）は、`soundness.GithubActions` とともに削除された。代わりのものはない。ホストが `TestEvent` のストリームから注釈を描画する。(#1963)
++ - `probably.AnsiRenderer` と `probably.TerseRenderer` は削除された。`probably` はもうレポートを描画しない。`probably.Documenting`、`probably.Doc`、`probably.Format`（いずれも `private[probably]`）は削除された。環境変数 `CLAUDECODE` と `COLUMNS`、システムプロパティ `-Dscalac.coverage` は、もうスイートに影響しない。(#1963)
++ - モジュール `probably.coverage`（成果物 `probably-coverage`）は、`probably.Coverage`（オブジェクトと `case class Coverage(path: Text, spec: Array[Juncture], oldHits: Set[Int], hits: Set[Int])`）、`probably.Juncture`、`probably.Surface`、そして `soundness.{Coverage, Juncture, Surface}` のエクスポートとともに削除された。`soundness-test` バンドルにはもう含まれない。代わりのものはない。(#1963)
++ - `probably.core` は `chiaroscuro.render`、`ambience.core`、`digression.ansi`、`escapade.io`（したがって推移的に `escritoire.core`、`dendrology.tree`、`iridescence.core`、`turbulence.core`）に依存しなくなった。`digression.core` に直接依存する。これらのいずれかを `probably` を通じて得ていた下流のモジュールは、それらを宣言しなければならない。(#1963)
+
+% 0 1 0 162fdd68f08c465a12122d34e6c4d9a3
+
+@ 0 7 0 010422db0ec3bd9216bad0ef04178c32
++ - 新規：`hellenism.LocalClasspath.of(classloader: Classloader)(using ambience.System): LocalClasspath`。`URLClassLoader` がロード元にするクラスパス、そうでなければ `java.class.path` プロパティである。自分のクラスを実行するために JVM を起動するコード（`sh"java -classpath …"`）は、プロパティを読むのではなく、自分のクラスの一つのクラスローダー（`Classloader[MyObject.type]`）でこれからクラスパスを導くべきである。fume のようなテストを実行するホストのもとでは、プロパティはホストの JAR を名指すからである。`anthology.Bundler.applicationClasspath` と `superlunary.Rig#classpath` はこれを通るようになった（結果は以前と同じ）。(#1963)
+
+% 0 1 0 0dfcf29c1bceffc41205596c976dfcce
+
+@ 0 5 0 0c8333ffeb9ae6db08b45844a5376cfb
++ - `superlunary.Jvm` と `superlunary.Isolation` は、`hellenism.classloaders.systemClassloader` の代わりに、自分をロードしたクラスローダー（`Classloader[Jvm.type]` / `Classloader[Isolation.type]`）を `Rig` に渡すようになった。また `superlunary.Rig#classpath` は、スレッドコンテキストのクラスローダーではなく `Classloader[Rig]` からエントリーを導く。素の `java -cp` のプロセスでは同一である。リグがシステムのものでないクラスローダーでロードされたときだけ異なる。(#1963)
+
+% 0 1 0 0ef4c64348822baf04644f2877e95bc9
+
+@ 0 13 0 084b4c0fe95d67c30486f03673f97348
++ - `burdock.Bootstrap`（再パッケージされた JAR が最初に起動する実行時のクラス）は、`Burdock-Require` の依存を一つずつではなく並行して（同時に最大八つ）ダウンロードし、各ダウンロードに接続と読み込みのタイムアウトを適用し、失敗時には一時ファイルを片付ける。クラスパスの順序は変わらない。不正な `Burdock-Require` の項目は、スタックトレースではなくメッセージとともにステータス 2 で終了する。(#1938)
++ - `burdock.Bootstrap` は `XDG_CACHE_HOME` に従うようになった。キャッシュは、変数が設定されていて空でなければ `$XDG_CACHE_HOME/burdock`、そうでなければ `~/.cache/burdock` である。以前は、変数が設定されていると作業ディレクトリからの相対の `burdock` ディレクトリを使っていた。(#1938)
++ - `burdock.Bootstrap` は、オプショナルな `burdock.progress` システムプロパティを読む。設定されていれば、それはブートストラップが取得中に一行 `<completed> <total> <bytes>` で更新し続け、終わったら削除するファイルのパスである。Ethereal のランチャーがこれを設定する。素の `java -jar` の実行では何も書かない。(#1938)
++ ## probably（操作ごとのアロケーション）
+
+@ 0 8 0 04efcdaa36cb20a6103766743c8c8081
++ - `probably.TestEvent.BenchmarkRecorded` に、`operationRate` と `timestamp` の間のフィールド `allocation: Optional[Long]`（計時したバッチ全体での操作ごとのアロケーションのバイト数。生産者が測定しなかった場合は `Unset`）が加わった。アリティは 14 になった。BinTEL スキーマのフィンガープリント `probably.Streamer.fingerprint` もそれに応じて変わるので、以前の `probably` に対してビルドされたホストはスイートを非互換と報告する。fume はこのバージョンに対して再ビルドしなければならない。(#1969)
++ - `probably.Benchmark` に末尾のパラメーター `allocation: Optional[Long] = Unset` が加わり、`Benchmark.inclusion` は、それがあるとき `Run` の指標に `Metric.Allocation`（操作ごとのバイト数）を記録する。(#1969)
+
+% 2 1 0 190516a6262d44291cb12acf05b1a641
+
+@ 0 11 0 0a698333079e02e006203d30eb48d302
++ - `sedentary.Bench` のコンストラクターは `Bench()(using Classloader, Environment)(using BenchmarkDevice)` から `Bench(heap: Optional[Text] = Unset, cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset)(using Classloader, Environment)(using BenchmarkDevice)` に変わった。意味は `Stress` のパラメーターと同じで、測定用の JVM の固定のヒープ（`-Xms`/`-Xmx`、デフォルトは `1g`）、プロセッサー数、コレクター（`-XX:+Use<gc>GC`、デフォルトは `Serial`）である。`Bench()` の動作は変わらない。(#1969)
++ - `sedentary.Bench` は、セルの計時したバッチ全体でアロケーションされたバイト数を測定し（`com.sun.management.ThreadMXBean#getTotalThreadAllocatedBytes` によるので、ワーカーと仮想スレッドのアロケーションも含まれる）、それを `probably.Benchmark` と `TestEvent.BenchmarkRecorded` の `allocation` として報告する。ハーネス自身が各本体の結果をシンクへボックス化する分（プリミティブの結果では操作ごとに一つのボックス）は、差し引かれずに含まれる。セルが返すステージングされた測定のリストは、末尾に要素が一つ増える。(#1969)
+
+% 0 1 0 1c4ce86cb0fa16570db4798767364955
+
+@ 0 14 0 19092bfec82e4f5d1d8a50a3a8081835
++ - 新規：`zephyrine.Addressable#assemble(pieces: scala.collection.immutable.Seq[Self], total: Int): Self`。正確なサイズの断片を、長さ `total` の一つの値につなげる。トレイトは `allocate`/`copyChunk`/`materialize` を通じたデフォルトを提供し、`Data` と `Text` のインスタンスは、断片を一度だけコピーするようにそれをオーバーライドする。独自の `Addressable` は変更を必要としない。(#1969)
++ - `zephyrine.Stream#memoize` は、伸びていくビルダーに追加する代わりに、各領域を正確なサイズで一度だけコピーし、断片を `assemble` でつなげるようになった（領域が一つならそのコピーを直接返す）。4 MB の結果では、アロケーションは 12 MB ではなく約 8 MB になる。返される値は変わらない。(#1969)
++ - `zephyrine.Handoff#take()` と `Handoff#drain(into)` は、消費者が末尾のインデックスを読んでから終了フラグを確認するまでの間に生産者の `finish()` が観測されたとき、リングが空になった（`null` / `0`）と報告しなくなった。`done` が見えた後に末尾を読み直すので、`finish()` の前に差し出された最後の項目は必ず届けられる。以前は、生産者の最後の `offer`/`finish` の組と競合する消費者が、その項目を失うことがあった（両側が仮想スレッドの場合、受け渡し 10⁵ 回に約一回）。それ以外のすべてのインターリーブでの動作は変わらない。(#1969)
+
+% 0 1 0 1ff629affd81c87111d067a62bcc62a1
+
+@ 0 13 0 0fa0aa49c04a894e1b657607700202fe
++ - 新規：`parasite.concurrently[result: ClassTag](count: Int, parallelism: Int)(job: Int => result)(using Monitor^, Probate^, Codepoint): IArray[result] raises Async.Error`（`soundness.concurrently` としてもエクスポートされる）。共有カウンターからインデックスを取り出す最大 `parallelism` 個のタスクで `job(0)` から `job(count - 1)` までを実行し、すべてが合流したらインデックスの順に結果を返す。安価なジョブの一括処理には、要素ごとに一つの `async` よりこちらを使うほうがよい。タスクは仮想スレッドなので、生成のコストは `count` 回ではなく `parallelism` 回で済む。ジョブの例外はそのタスクを失敗させ、合流の時点で再送出される。(#1969)
++ - 新規：`parasite.PoolingSupervisor`（抽象。`protected def spawn(runnable: Runnable): Thread`、`protected def idleLimit: Int = 256`）。再利用可能なキャリアスレッドでタスクを実行する `ThreadSupervisor` である。そして `parasite.PooledSupervisor`。JVM では仮想スレッド、Scala Native ではプラットフォームスレッドを使うそのインスタンスで、新しい `parasite.threading.pooledThreading` の given で選ぶ（三つとも `soundness` から再エクスポートされる）。そのもとでは、タスクの `Thread.currentThread` はタスク間で再利用されるキャリアなので、スレッドローカルとスレッド名はタスクごとではない。キャンセル、検認、`Promise` の待機、その他すべての観測可能な動作は `virtualThreading` と一致する。(#1969)

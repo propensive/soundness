@@ -1,0 +1,199 @@
+orthant 2 language
+
+% 0 1 0 0e3b2f29cf37f35a1f8f63eefacb6fb8
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 3 0 031bf46529c0164816d880cdba390c01
++ [OAuth 2](https://www.rfc-editor.org/rfc/rfc6749) é como um cliente é autorizado a chamar uma
++ API, em nome de um usuário ou em nome próprio. O cliente obtém um token de acesso do servidor de
++ autorização da API e o apresenta a cada requisição.
+
+@ 0 4 0 0e7de8bd1e6ebaae030c5be78229d819
++ O lado do cliente disso é fornecido aqui: as concessões que obtêm um token, o PKCE para o fluxo
++ de código de autorização, e a `Credential` pela qual o token ou a chave de um esquema chega a um
++ cliente tipado. Para uma aplicação web, o fluxo de código de autorização também é fornecido como
++ middleware para um [servidor HTTP](http-server.md).
+
+@ 0 1 0 1a588ef54116e2d2121b8367d0849d1c
++ ### Sobre tokens
+
+@ 0 3 0 094a537c5c3895841e1407f24e0856da
++ Um token é mais que uma string. Ele concede escopos específicos, expira e pode vir acompanhado de
++ um refresh token. Uma `Authorization` guarda os quatro, de modo que o que um token pode fazer é
++ conhecido, e um `Scope` pode ser verificado contra ele.
+
+@ 0 3 0 060ee6004fd5e0fa0f08bf1040db9840
++ Tudo vem do pacote `soundness`. Obter um token significa fazer
++ [requisições HTTP](http-client.md#what-a-request-needs-in-scope), então os imports de que elas
++ precisam estão no escopo:
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 1 1 0 10a6a1b53a3234051acece4438dda764
+
+@ 0 1 0 185619aa4d397e5b115d9275c6e8173e
++ Os exemplos desta página contatam um servidor de autorização, então são compilados, mas não
++ executados.
+
+@ 0 1 0 008a108ca37ff5ed1b9115f22cb8f27c
++ ### Obter um token
+
+@ 0 3 0 19219ead17cce23b0f379055f040d7bc
++ Um `Issuer` é um servidor de autorização, tal como um cliente o vê. Ele tem o endpoint de token
++ do servidor, e a identidade e o segredo do cliente. Para o fluxo de código de autorização, ele
++ também tem o endpoint de autorização do servidor e a URI de redirecionamento do cliente.
+
+@ 0 2 0 048fae321ebf693612eaa9f94657be34
++ Cada concessão faz um POST no endpoint de token e lê a `Authorization` que volta. Uma recusa
++ lança um `OAuth.Error`.
+
+% 2 1 0 1154d8e5ef10e2230fb5e058dd812ca8
+
+@ 0 7 0 15d5c0996b8b77551e2d5fa38873b4fa
++ column  Método
++ column  Concessão
++ column  Dá
++ row  `clientCredentials`  credenciais do cliente (RFC 6749 §4.4)  a autorização do próprio cliente, para os escopos nomeados
++ row  `refresh`  renovação (RFC 6749 §6)  uma nova autorização, a partir de um refresh token ou de uma `Authorization` que traga um
++ row  `authorizationUrl`  código de autorização, primeiro passo (RFC 6749 §4.1.1)  a URL para a qual o usuário é enviado
++ row  `exchangeCode`  código de autorização, segundo passo (RFC 6749 §4.1.3)  a autorização, para o código que o usuário traz de volta
+
+% 1 1 0 1ebdc4c7779aca7107810dee5042b93d
+
+@ 0 1 0 1ac5e62bf1fb84fb1b8a0aaf7983902b
++ Um serviço que age por si mesmo usa a concessão de credenciais do cliente:
+
+% 2 1 0 0c2d561344d4ccd7071bc4a89765e625
+
+% 3 1 0 0004cb5bcadc2ba11839c63a6bf80674
+
+% 4 1 0 10afa786b85505f60813d4007e9145f4
+
+% 0 1 0 1e980b6a0a3dbd71080a01901e24976e
+
+% 0 1 0 1fb3cd4d956c01150b47de3432210573
+
+% 0 1 0 1b4f5bd9bf399ea118cbd8f2aafddc04
+
+% 0 1 0 00287db35f27f7f11d378a4848ff0015
+
+% 0 1 0 094d5cb11cd865971b519ac019de2179
+
+% 1 1 0 1e60997700f787cb0917c50bb8cf1e13
+
+@ 0 2 0 1bac8e1c8145a5d40d94557bd877af3d
++ `key` é o próprio token de acesso. `grants` diz se o token cobre os escopos nomeados, e
++ `refresh` obtém uma nova autorização por meio do refresh token do token.
+
+@ 0 4 0 0fcd2a66554489f4031b547e14185e5a
++ Uma aplicação que age por um usuário usa o fluxo de código de autorização, que tem dois passos.
++ `authorizationUrl` constrói a URL para a qual o usuário é enviado. Ela tem os escopos, um
++ `state` a verificar no retorno e, com um `Pkce`, o desafio S256. `exchangeCode` então troca o
++ código que o usuário traz de volta:
+
+% 2 1 0 1888ff083337a37a1d8564a918a07e23
+
+% 3 1 0 018105fb8c4f3a4216219b27321ccd1a
+
+% 4 1 0 10608f6a3c3deeed0ee5e14a0dbd744c
+
+% 0 1 0 0e9eb7726cb1284e056f489a1121dd70
+
+% 0 1 0 0a3070abcfa46c59067d40fb57be4648
+
+% 0 1 0 0b3ba159c576cfbb1e04c243765f4e73
+
+% 0 1 0 08f053f07404ca3d171161767b55af84
+
+% 0 1 0 113baa5b3f7ad9a618760f4e2e92a241
+
+% 0 1 0 10c1fa79a26d320c15403f761762713c
+
+% 0 1 0 0b5dd8b06d4eca2b1fe6092ec209edb3
+
+% 1 1 0 0a278a5d0d64f1fd06e6e61bcecf8a5c
+
+@ 0 1 0 1051ee65cabaeb6002d0d424954f4353
++ O segredo aqui é `Unset`, já que um cliente que usa PKCE não precisa ter um.
+
+@ 0 1 0 0f83bb5585f7b8a305502594231d74b1
++ ### Credenciais para um cliente tipado
+
+@ 0 2 0 1d86ca433ef4264f1bb66229f32e7efc
++ Uma `Credential` nomeia um esquema de segurança, como a especificação de uma API o nomeia, e
++ guarda o valor que o esquema exige:
+
+% 2 1 0 124ab15e023f5e3004616f6933816cea
+
+@ 0 4 0 0ae2cdfdb832b6811d0c1c7c5f89d25c
++ column  Esquema
++ column  Valor
++ row  uma chave de API  `Text`
++ row  autenticação HTTP  `Auth`
+
+% 0 1 0 16f715f1ee1592cc1e2c02338826c817
+
+% 1 1 0 1e1b075017ec97b0116c6c0e4c528d98
+
+@ 0 2 0 1cf70dadff69f1571af0a01188549886
++ O [cliente OpenAPI](openapi.md) encontra a credencial de cada esquema que uma operação exige,
++ pelo nome, e a apresenta como o esquema determina:
+
+% 2 1 0 1a4304e6dad38bef136aa863808902a7
+
+% 3 1 0 0fcab2a78de2ef9f1195927fc31ef862
+
+% 4 1 0 0cbc2bfa9357f2c40c4d1f1a1750e8c2
+
+% 0 1 0 02ce7f585e7323f517423dc7f4f475fb
+
+% 0 1 0 1d961b670e75eaee03c2fd32dfbcdbce
+
+% 0 1 0 0e0dc7f80a18b3ba06c808dfbd6ac151
+
+% 1 1 0 0bc372780edfc2901d7ed25eb3e765f7
+
+@ 0 2 0 16fd525a1f83086d02b7f488741449ba
++ O nome do esquema faz parte do tipo da credencial, de modo que uma credencial não pode ser
++ apresentada para um esquema que não seja o seu.
+
+@ 0 1 0 0ad5b8c446edfdd208ed4de3044b0525
++ ### Em uma aplicação web
+
+@ 0 2 0 1743685ecd5581d919799e3dc28debf0
++ Para uma aplicação que age por seus usuários, o módulo `orthodoxy.server` envolve um handler de
++ requisições no fluxo de código de autorização:
+
+% 2 1 0 13839e92905af9590c112bae0b068969
+
+@ 0 4 0 17d6de979159c9dd123d5314597b8fd6
++ column  Invólucro
++ column  Faz
++ row  `issuer.oauth { … }`  trata o redirecionamento de volta do emissor, trocando o código ou renovando um token expirado
++ row  `issuer.require(scope) { … }`  envia ao emissor um usuário que ainda não autorizou a aplicação e, caso contrário, executa o handler com uma `Authorization of scope` no escopo
+
+% 1 1 0 18066d45585bf93a07f99a91d444db33
+
+@ 0 1 0 09bdc47cfd4c27e70040ca5b53f08df8
++ Um `Authorizations` guarda o estado de cada sessão.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 4 0 19a72f7b2121f48f05750740b0270904
++ - [Cliente HTTP](http-client.md) faz as requisições que um token autoriza.
++ - [OpenAPI](openapi.md) gera um cliente tipado que apresenta credenciais por conta própria.
++ - [Criptografia](cryptography.md) trata das chaves e assinaturas por trás de outros esquemas de
++   autenticação.

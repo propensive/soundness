@@ -1,0 +1,171 @@
+orthant 2 language
+
+@ 0 1 0 142b83973858fed20ac3d5dd48e1d050
++ # Immutabilità
+
+@ 0 7 0 1a230fbebbefcfc11cb6e74407e2fa77
++ I valori di Soundness sono immutabili: una volta costruito, un valore non cambia mai, e ogni
++ operazione che lo altererebbe restituisce invece un nuovo valore. Questo elimina intere categorie
++ di bug (sorprese dovute all'aliasing, data race e modifiche avvertite a distanza) e rende un valore
++ sicuro da condividere liberamente tra thread e ambiti senza copie difensive. Un valore immutabile è
++ anche più facile da ragionare, perché il suo significato è fissato nel momento in cui viene creato
++ e non può essere invalidato da codice in esecuzione altrove.
+
+@ 0 1 0 1e0bda0e5956cc2a0160c5289eda389e
++ ## Aggiornare senza mutare
+
+@ 0 5 0 19c178493ef357260f6607f371b646a3
++ L'obiezione all'immutabilità è sempre la stessa: modificare un campo in profondità in una
++ struttura significa ricostruire ogni livello sopra di esso. È vero, ed è un problema di sintassi
++ più che di semantica; per questo Soundness lo risolve con la sintassi. Una
++ [lente](../en/modules/optics.md) accetta l'aggiornamento scritto come una normale assegnazione a un
++ percorso, e si occupa della ricostruzione:
+
+% 2 1 0 039650cfae1264e0142553c689d387d7
+
+% 3 1 0 08ae8ed4d750f6d819fee9b799a0b21f
+
+% 4 1 0 1a33d307a99ae5c200c0d68df273d96a
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 0a826de8ae4effd70e125f0b28f9b284
+
+% 0 1 0 020debf66e114ca6012828b10dd75205
+
+% 0 1 0 1ddf7b1759804b76189e14b087fb4351
+
+% 1 1 0 0a25eed5e86dcbb60fb30cc25599e3dd
+
+@ 0 3 0 132225dace18f3d6065f7ff46994ba04
++ Il risultato è un nuovo `Play`; l'originale resta intatto, e ogni altro riferimento a esso vede
++ ancora ciò che vedeva. Più aggiornamenti si applicano insieme, e quelli che condividono un prefisso
++ ricostruiscono la struttura condivisa una volta sola anziché una volta ciascuno:
+
+% 2 1 0 0006f04d01654bc807968e629c6a0ab2
+
+% 3 1 0 0520a141cac424e6004cf8aeaa19769c
+
+% 4 1 0 0e7cb712fd9893f408c7f49a214796c2
+
+% 0 1 0 0dbc24d0de27c1dc15bed3f95832083e
+
+% 0 1 0 1603281dbfae6bc0117d3db346ca9aa2
+
+% 0 1 0 0dca8f83ab9724a11181ee68ec5b7eb0
+
+% 1 1 0 1381e7b34096df27089233877df9cbe3
+
+@ 0 2 0 075dd8b4becc7c051bd0f99fac49c57e
++ La stessa sintassi attraversa le collezioni con `Each` e `Filter`, così che «dare a ogni attore
++ un'età di trent'anni» sia una sola espressione anziché una ricostruzione scritta a mano.
+
+@ 0 1 0 06ded5d5266d0294059bb92bf873e4c7
++ ## Condividere senza copiare
+
+@ 0 4 0 14eb3a16ab4f1c550ca560f1bb28f55d
++ Un valore immutabile non ha bisogno di copie difensive, perché non c'è niente da cui difendersi.
++ Un `Data` consegnato a tre thread viene letto da tre thread; un documento analizzato tenuto in una
++ cache non può essere alterato da chi lo ha recuperato; una configurazione passata a un sottosistema
++ non può tornare indietro modificata.
+
+@ 0 4 0 12b9ee915926204303c41e2af6287ff8
++ È questo che rende sicura la condivisione strutturale. Una lente ricostruisce solo la spina dorsale
++ lungo cui scende, e ogni ramo che non ha toccato è *lo stesso oggetto* nel vecchio valore e nel
++ nuovo. L'immutabilità è quindi ciò che rende economica la ricostruzione: senza di essa, condividere
++ una sottostruttura tra due valori sarebbe un bug.
+
+@ 0 1 0 141458cbd430e910195f01db8bccd159
++ ## Dove la mutazione sopravvive, e perché
+
+@ 0 2 0 1191bb0c606344bc0772e8670b0d3eaa
++ L'immutabilità è una proprietà dei valori, non un divieto imposto alla macchina. Quattro punti di
++ Soundness sono deliberatamente mutabili:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 7 0 143176bf35715a5c0808a88a03934fbc
++ column  Punto
++ column  Muta
++ column  Reso sicuro da
++ row  un builder  un buffer che possiede in esclusiva  nessuno osserva gli stati intermedi
++ row  il nucleo di streaming  una finestra su un buffer  il capture checking e il controllo di separazione
++ row  un `Canvas`  i pixel, sul posto  l'ambito del blocco `open` e il permesso `Write`
++ row  una cella atomica  una parola macchina condivisa  operazioni indivisibili
+
+% 1 1 0 0421a2960068d86c01c37043ae4af191
+
+@ 0 1 0 12093d507dade89513a1c9bc9242c9a1
++ I primi tre sono confinati.
+
+@ 0 2 0 1568d9bbf84829b705172c26c0db28cd
++ Un **builder** muta un buffer che possiede in esclusiva e alla fine produce un valore immutabile.
++ Nessuno osserva gli stati intermedi, quindi niente dipende da essi.
+
+@ 0 6 0 1e7c55cf0a26e2841392056db47c9da9
++ Il **nucleo di streaming** espone una finestra mutabile su un buffer, ed è proprio questo che lo
++ rende zero-copy. Quella finestra appartiene a un solo consumatore, e il compilatore lo fa
++ rispettare: uno `Stream` è una capability esclusiva, quindi crearne un alias, o lasciarlo sfuggire
++ dall'ambito che possiede la sua sorgente, non compila. La mutazione è permessa qui perché il
++ [capture checking e il controllo di separazione](capture-checking.md) dimostrano che nessun altro
++ può vederla.
+
+@ 0 5 0 1a9da3d198e21a4c054df4a851599267
++ Un **`Canvas`**, ottenuto aprendo un [raster](../en/modules/images.md) in scrittura, muta i pixel
++ sul posto, perché generare un'immagine grande una chiamata di funzione per pixel alla volta è la
++ forma sbagliata per un algoritmo di disegno. La mutazione è confinata nell'ambito del blocco `open`
++ e subordinata al permesso `Write`, e `snapshot` prende una copia indipendente per tutto ciò che
++ deve sopravvivergli.
+
+@ 0 2 0 06ebaafe3e53caeb1fa9d496674440a6
++ Lo schema è lo stesso in tutti e tre: la mutazione è una tecnica di implementazione locale con una
++ prova di confinamento, mai una proprietà di un valore che altri possono vedere.
+
+@ 0 7 0 1f1fbcafef1a1df7010542ef28025d98
++ Una **cella atomica** è l'eccezione, e vale la pena nominarla come tale anziché nasconderla. Un
++ `Atomic[Int]` o un `Atomic.Ref[State]` è deliberatamente *non* confinato: il suo unico scopo è che
++ due thread vedano una stessa locazione, quindi nessuna analisi dell'aliasing può aiutare e nessuna
++ viene tentata. Al posto del confinamento c'è una garanzia diversa. La locazione è una singola
++ parola macchina, e ogni operazione su di essa è indivisibile, quindi non esiste uno stato
++ intermedio che un altro thread possa osservare. Il tipo non promette che la mutazione sia
++ invisibile; promette che non la si può cogliere a metà.
+
+@ 0 4 0 13b31f2bd144bce214efc4839123d317
++ Per questo le operazioni prendono il nome dal valore che restituiscono. `count.ere(_ + 1)`
++ restituisce il valore che ha spodestato e `count.since(_ + 1)` il valore che ha installato, così
++ che un chiamante possa sapere se è stato lui, e non qualcun altro, a compiere la transizione: la
++ domanda che sorge solo quando la mutazione è condivisa, e a cui una `var` non sa rispondere:
+
+% 2 1 0 1b9690b9eb41d622187b205741018c6f
+
+% 3 1 0 12d35964dd654e6a0367a75fd50dc5c4
+
+% 4 1 0 029018b9749c1cd911adc908e177f332
+
+% 0 1 0 1673e2b6ab600dac1654a0c5e24eff3e
+
+% 1 1 0 07ca53e1605b0ff40a810b4aabcb1e78
+
+@ 0 3 0 03551aa5779a10c0154e8e0fe5f1e1ba
++ Le celle condivise sono uno strumento di basso livello, e la collezione le usa dove l'argomento è la
++ concorrenza: la supervisione dei task, l'accumulo di errori attraverso un ambito, e gli anelli di
++ passaggio sotto il nucleo di streaming. Non sono il modo in cui si modella un valore.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Quanto costa
+
+@ 0 5 0 0a4e170cbb75bf641a8c2e8c0366a897
++ Ricostruire non è gratuito. Un aggiornamento tramite lente alloca un oggetto per ogni livello che
++ discende, quindi un ciclo stretto che aggiorna una struttura profonda alloca più di quanto farebbe
++ la mutazione sul posto. Dove questo conta (e conta molto meno spesso di quanto suggerisca
++ l'intuizione, dato che le allocazioni sono giovani e di breve durata) la risposta è un builder o
++ una regione mutabile confinata in un ambito, non rendere mutabile il valore stesso.
+
+@ 0 2 0 082b3c583579f6890b9b7f5c8b3c50db
++ Lo scambio è deliberato: pagare un po' di allocazione per eliminare una classe di bug che
++ altrimenti si scopre solo in produzione, di martedì, sotto carico.
+
+@ 0 3 0 076397851cf4950004a37b97e0f66075
++ Vedi [stati impossibili](impossible-states.md) per la disciplina affine su ciò che un valore può
++ essere, e [capture checking](capture-checking.md) per come si dimostra che le mutazioni confinate
++ sono sicure.

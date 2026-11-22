@@ -1,8 +1,0 @@
-orthant 1 language
-
-- A [stream](/doc/soundness/modules/streams.md) pipeline is the clearest case. Each stage takes a
-- stream and yields a stream, so stages chain without adapters and in any order that makes
-- sense:
-+ Uma pipeline de [streams](/doc/soundness/modules/streams.md) é o caso mais claro. Cada estágio recebe um
-+ stream e produz um stream, de modo que os estágios se encadeiam sem adaptadores e em qualquer
-+ ordem que faça sentido:

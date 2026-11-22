@@ -1,0 +1,544 @@
+orthant 2 language
+
+% 0 1 0 08dfad901f55c09f0c39e048807ce9f7
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 6 0 0bd9c65c85424855031b0ce109c5f11f
++ Un serveur [Language Server Protocol](https://microsoft.github.io/language-server-protocol/)
++ tient en un appel à `Lsp.listen`. Son bloc enregistre un gestionnaire pour chaque
++ fonctionnalité que fournit le serveur, et le serveur sert ensuite sur l'entrée et la sortie
++ standard. Le protocole sous-jacent, avec ses messages JSON-RPC, leur tramage préfixé par la
++ longueur, la comptabilité des documents ouverts et les capacités annoncées à l'éditeur, est
++ pris en charge. Le code qui reste est la logique du langage.
+
+@ 0 5 0 0e2ecb87dcda044602b08debcb2a3110
++ Le vocabulaire du protocole est modélisé par des types ordinaires. Une `Position` est une
++ ligne et un caractère. Un `Range` est deux positions. Un `Diagnostic` est une plage avec une
++ gravité et un message. Une réponse de survol, une liste de complétions et un ensemble de
++ symboles de document ont chacun leur type. Un gestionnaire les reçoit et les renvoie sous
++ forme de valeurs typées, jamais sous forme de JSON assemblé à la main.
+
+@ 0 1 0 1ced7b89cdccf3c4047999f4e675a627
++ ### À propos du protocole
+
+@ 0 6 0 174798dfb74418400676627eeb942660
++ Un éditeur qui comprend LSP peut utiliser le serveur de n'importe quel langage, et un langage
++ qui fournit un serveur fonctionne dans n'importe quel éditeur de ce type. C'est pour cet effet
++ de levier que le protocole existe. C'est aussi pourquoi il est vaste : des dizaines de types
++ de requêtes et de notifications, chacun avec sa propre forme JSON, échangés sur un flux tramé.
++ L'implémenter à la main oblige à sérialiser du JSON et à suivre les versions des documents, un
++ travail qui n'a rien à voir avec le langage servi.
+
+@ 0 6 0 1a35f1a350b1628d1c563574c54bbc03
++ Ce travail est fait une fois pour toutes ici. Chaque type de message est un type Scala avec un
++ codec JSON dérivé. Chaque requête est répartie vers le gestionnaire enregistré correspondant.
++ Les documents ouverts sont suivis, et les modifications incrémentales appliquées. Ce qui reste
++ à écrire est la partie propre à un langage : ce que montre un survol, quelles complétions
++ proposer, quels diagnostics signaler. Déclarer les méthodes d'un serveur comme des
++ gestionnaires typés garde l'implémentation
++ [honnête](../../philosophy/honest-signatures.md) sur ce qu'elle prend en charge.
+
+@ 0 3 0 17d775b0062efd990241b34681798768
++ Tout provient du package `soundness`. Le vocabulaire LSP lui-même, c'est-à-dire
++ l'enregistrement des gestionnaires, le document ambiant et les types du protocole, provient de
++ `Lsp`, importé à l'intérieur de l'objet du serveur, où il a la précédence sur tout nom
++ qu'exporte le package parapluie :
+
+% 2 1 0 09faea4b76a0ae440dc7dd2ef35e4e43
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 15108db9c092389807062bc8690bee00
+
+% 0 1 0 197f1109e7f809191be0a5e6413d8524
+
+% 0 1 0 17bef8dc1edab8da1623ee0b5deff790
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 1 1 0 0047eb56d51cb8181210a7ce0fa442bb
+
+@ 0 1 0 01aebeea891c9d990ecbc87a04ecf525
++ Les exemples de cette page servent ou lancent des serveurs de langage ; ils sont donc compilés
++ mais pas exécutés.
+
+@ 0 1 0 1710265f28d374fe1ccd7fcd717fa670
++ ### Définir un serveur
+
+@ 0 5 0 0daa9d1d9e0ca1550600762c5325294d
++ Un serveur enregistre ses fonctionnalités dans le bloc donné à `Lsp.listen`. Il n'y a pas de
++ registre de capacités à maintenir. Chaque capacité est annoncée à l'éditeur exactement
++ lorsque son gestionnaire est enregistré ; la déclaration ne peut donc jamais contredire
++ l'implémentation. Une option dont une capacité a besoin au-delà de sa présence, comme les
++ caractères déclencheurs de complétion ou une légende pour les jetons sémantiques, est un
++ paramètre de l'enregistrement.
+
+@ 0 2 0 02cc7c193914765a0bb79afdbf3b75ee
++ À l'intérieur d'un gestionnaire, le contexte de la requête est ambiant ; aucune URI ni aucun
++ paramètre n'est donc passé à la main :
+
+% 2 1 0 15a99b71f313253c02a475c7cc208afc
+
+@ 0 6 0 1ebb70777842660e17bd154748fee50f
++ column  Nom
++ column  Est
++ row  `document`  une vue vivante du document que concerne la requête : son texte, l'accès aux lignes, la conversion position/décalage et le mot sous une position
++ row  `workspace`  les autres documents ouverts, et ce que l'éditeur a indiqué à l'initialisation
++ row  `client`  le canal de retour vers l'éditeur
++ row  `position`, `range`, `newName`, …  la charge utile de la requête
+
+% 1 1 0 00fae8f6828acef510c065bdbc09d65c
+
+@ 0 1 0 15eba6bda283510d102aeb8be0153429
++ Voici un serveur complet, avec son `main` dans l'idiome du démon résident décrit plus bas :
+
+% 2 1 0 1913abe648d991fb0ea565c8aabe0aa2
+
+% 0 1 0 19818980aa24a4161145124e606105d3
+
+% 1 1 0 1753debf3ad6938f0989a1fac560dfda
+
+% 3 1 0 011af586e1ef500d102a3b8f2d46eddd
+
+% 4 1 0 1e9304658067c30a11d0e7085ba29e07
+
+% 5 1 0 1d8c2172b8e916e0199a75d96f35a4d9
+
+% 0 1 0 0dec00a8881e2e7d1166df2df1f69d3e
+
+% 0 1 0 1949dfc92ead961e185f927675a9a259
+
+% 0 1 0 1ef85c3ee36597df1df7b6e37a2163d3
+
+% 0 1 0 0f9083c9ad9a7754164f12794914bb6e
+
+% 0 1 0 00f02d2474dd02a21433413e69810ca4
+
+% 0 1 0 1be12f930888322b06aebd084ed4d7fb
+
+% 0 1 0 1b326f4456474bfe0d38ced70271c7bf
+
+% 0 1 0 10f747410ff2ee6f0d377f1ec34d3890
+
+% 0 1 0 1454be983575571e181a6454ac3c25d9
+
+% 0 1 0 1a19e4e4e35d73340bd4dea71f776009
+
+% 0 1 0 0366afb6f78ecf10163f5e8a12f54486
+
+% 0 1 0 051514f4ba2a401c14190170f167c8d7
+
+% 0 1 0 10742f2393ecd0941ad69c3264589e1f
+
+% 0 1 0 0493c741dca554f40ee6ec6b760236cb
+
+% 0 1 0 07db2162dd91a09d12826cc4c2addb35
+
+% 0 1 0 05954c76bfdb18dd03ba79e0fd6b9711
+
+% 0 1 0 1c3aecafd66fd99d08fc303e2aac9a9d
+
+% 0 1 0 018616ff86caf8bd1b6d7600d1c76db1
+
+% 0 1 0 12fb7336a161b8930dbf0fd43dca39cd
+
+% 0 1 0 129cde3dc77afda01c3485e8ba83b907
+
+% 1 1 0 1608b4852d4c24db1b004894bc5690c7
+
+% 2 1 0 01f5ab78dcddd8d40f9c7e117fb1a1c9
+
+@ 0 1 0 0af7dd17c1b830641f19b045d72e99fa
++ Les fragments qui suivent appartiennent chacun à un tel bloc `listen`.
+
+@ 0 4 0 1c0fdbc98e7b543207644b70b7a2a921
++ Des enregistrements existent pour toute la surface du protocole. Définitions, références,
++ symboles de document, formatage, renommage, actions de code, aide à la signature, repliement,
++ jetons sémantiques, hiérarchies d'appels et de types, symboles de l'espace de travail,
++ opérations sur les fichiers et la famille `*/resolve` suivent tous la même forme : la charge
++ utile est ambiante, et il en sort un résultat typé.
+
+@ 0 1 0 14de52ca9648f9f8069bab181dca8f05
++ ### Documents et diagnostics
+
+@ 0 6 0 1e03913e17f660ab10d0564d48b483bf
++ Le serveur suit chaque document ouvert tel que l'éditeur le signale, et applique les
++ modifications incrémentales aux décalages UTF-16 du protocole. Le cycle de vie s'observe en
++ enregistrant des gestionnaires `opened`, `changed`, `saved` et `closed`, qui voient chacun
++ l'état courant du document. Depuis n'importe quel gestionnaire, `client` est le canal de
++ retour vers l'éditeur. C'est ainsi qu'un serveur pousse des diagnostics, c'est-à-dire des
++ erreurs et des avertissements, plutôt que d'attendre qu'on les lui demande, comme le fait
++ l'enregistrement `opened` ci-dessus :
+
+% 2 1 0 0a256506e04c3a181472ea22862868a2
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 08f58015323d2e820ed9bc77c4c6da19
+
+% 1 1 0 050ad7a4f6573ddd18c4a2108108e6d6
+
+% 3 1 0 15c3cd443183b74411410bee3336c72f
+
+% 0 1 0 108a9c3ecb92be1108c0d39de3ff0cda
+
+% 0 1 0 16b3725abdacc1a307623642dc73e4d6
+
+% 0 1 0 0b0216958913690405123fa1d9641cef
+
+% 0 1 0 1ef5aaf120b4e32904ca23fd8dc5b684
+
+% 0 1 0 052e3579021c8f2615f75fe6e2e85751
+
+% 0 1 0 1726f66f756720dc1294b2c69016dac7
+
+% 0 1 0 1d71556b716719b615e7729701b8c134
+
+% 0 1 0 05a218cd1b97ab630911014864c4160b
+
+% 0 1 0 0d86bcd4d29cb2791e0975ff8ea09e41
+
+% 1 1 0 080deb15a102151d08eb18b20d2483cd
+
+@ 0 2 0 0c1b081995d45804050dfa0195e81875
++ `client` porte aussi `showMessage` et `logMessage`, pour les avis montrés à l'utilisateur et
++ les lignes écrites dans le journal de l'éditeur.
+
+@ 0 1 0 1454169bde32493d10631baeb2c9f4df
++ ### Observer le trafic
+
+@ 0 4 0 0f6a48f4ca08c18913d57be2fc053331
++ La sortie standard d'un serveur est réservée au protocole de communication ; le serveur ne
++ peut donc pas y afficher un relevé de ce qu'il échange. `Lsp.listen` prend à la place un
++ observateur optionnel. Celui-ci voit chaque message sous la forme du corps JSON qui l'a
++ transporté : en entrée avant son analyse, si bien qu'un message qui ne se décode pas est
++ observé lui aussi, et en sortie avant son tramage :
+
+% 2 1 0 1dd905bd15fc277d095bbee3d58bd51f
+
+% 0 1 0 07ddc421342d0bf61cfcf0d5700289c9
+
+% 0 1 0 1af52de6c82e9a901f8bdb345e6a7329
+
+% 0 1 0 10ef5b998565f36f0f50fc3320b62a16
+
+% 1 1 0 164457721fdb4e230f0d58f386b35b1c
+
+@ 0 1 0 0b4678dc539af9181b760ce928787572
++ Le passer sous la forme `Lsp.listen(t"Demo", t"0.1.0", observer)` trace l'échange sur la
++ sortie d'erreur standard.
+
+@ 0 3 0 1e510cd6adff23721968b8183867bcb3
++ Ce que l'observateur fait d'un message est l'affaire du serveur. Il peut le transmettre en
++ continu à un second processus, l'écrire dans un fichier de trace, ou ne rien faire du tout.
++ Omettre le paramètre n'observe rien.
+
+@ 0 1 0 03de3a396147e38f01fe902d3295cccb
++ ### Signaler les erreurs
+
+@ 0 2 0 1d5fe0f045cbaf800035d0ee95c3f184
++ Un gestionnaire qui ne peut pas répondre lève une faute typée, et continue, comme le fait la
++ commande `demo.run` ci-dessus avec
++ `Lsp.Error(Lsp.Error.Reason.RequestFailed, t"nothing to run")`.
+
+@ 0 4 0 172c4e7411922d13023eec88095a64a5
++ Une faute levée prend le pas sur le résultat du gestionnaire. Pour une requête, elle devient
++ une réponse d'erreur JSON-RPC, avec le code de transmission de la raison et l'identifiant de la
++ requête. Pour une notification, à laquelle on ne peut pas répondre, elle est signalée par
++ `window/logMessage`. Une requête concernant un document qui n'est pas ouvert, et une commande
++ qui n'a jamais été enregistrée, reçoivent une réponse de la même manière.
+
+@ 0 1 0 0bdbf4facf0b02eb09640d535d08e3c8
++ ### Parler à un serveur
+
+@ 0 5 0 1164435580d440ad08b292dbf9ce380c
++ Le même vocabulaire se lit dans l'autre sens. `Lsp.Server` décrit un serveur de langage
++ auquel ce processus peut parler : une commande à lancer, ou une paire de flux déjà connectés à
++ un serveur. `session` ouvre le canal, prête une connexion pour la durée d'un bloc, et libère
++ les deux ensuite. Une connexion ne peut pas s'échapper du bloc ; elle ne peut donc jamais
++ survivre au serveur qui lui répond :
+
+% 2 1 0 0057fccf03a5a17d1d6d45e641320fd3
+
+% 0 1 0 1bf742c37dfed11a187c1e72a1c63ab3
+
+% 0 1 0 0b83d66fcc9afd920ed9fcbd17f68c51
+
+% 0 1 0 05e86a3de469967111db9cf0e01faba2
+
+% 0 1 0 1cb8c12b98b3cf050502660a6a20848a
+
+% 0 1 0 00eede1b926d27151de4274bf123aabd
+
+% 0 1 0 0e7e04c25801d6dd133c12a9e099ed97
+
+% 1 1 0 0ba7c4c3ae9aab810cc17bea1f25fe9e
+
+@ 0 5 0 0db956b8b9e2f88c0be5e7681acea75e
++ Les requêtes renvoient les mêmes types que les gestionnaires d'un serveur : `Optional[Hover]`,
++ `CompletionList`, `List[Location]`. Les notifications, à savoir `open`, `edit`, `save` et
++ `close`, ne renvoient rien. Une réponse d'erreur du serveur est levée sous forme d'une
++ `Lsp.Error` qui porte la raison que nomme son code de transmission, et n'est pas attendue
++ indéfiniment. Les requêtes reçoivent leur réponse sur une tâche propre ; plusieurs peuvent
++ donc être en cours à la fois, et revenir dans n'importe quel ordre.
+
+@ 0 3 0 1abc53481a3901931fcf5adbb2883cda
++ Ce qu'un serveur dit sans qu'on le lui demande, comme les diagnostics, les messages de fenêtre
++ et la progression, parvient à un `Lsp.Listener`. Ses méthodes ne font rien par défaut ; un
++ client n'implémente donc que ce sur quoi il agit. Un écouteur est fourni contextuellement :
+
+% 2 1 0 01007d1a98e36bd005997b6bd768ff11
+
+% 0 1 0 1ddd5dcd48c59ca019cc4019297281da
+
+% 0 1 0 040e457561e6f4f9037105a04a730084
+
+% 0 1 0 09af8910e51ad1bb14d35a45e184af42
+
+% 0 1 0 180a5fd699b6c8f51f29b5b15059e120
+
+% 1 1 0 0e4522c0dfb69d9e12752e2628820a27
+
+@ 0 1 0 0deaecabea55bc6700bc53843d0861b3
++ ### Servir de proxy à un serveur
+
+@ 0 4 0 0fe8e742b9701ea7136aefccf1d04de6
++ Un proxy est les deux moitiés à la fois. Il sert un éditeur sur sa propre entrée et sa propre
++ sortie standard, tout en maintenant une session avec un vrai serveur de langage. Il transmet
++ tout entre eux, et amende ce qu'il choisit d'amender. `Lsp.proxy` mène cet échange, et son
++ bloc enregistre les amendements :
+
+% 2 1 0 1b4a471791316798169b5761aa2e6dd9
+
+% 0 1 0 1d4342ca4cd904a90e63fc4fbaa1d7a5
+
+% 1 1 0 1bb5bbf9d2331d951bcdd9096ad2b9c5
+
+% 3 1 0 0e77b9317b838cd50cd9f171703d8e1a
+
+% 4 1 0 0ca70bc2663ced471a483a8e38eb6199
+
+% 5 1 0 0c2c134bddca44a31c1217b3f5bb83aa
+
+% 0 1 0 1f371d1a8b4fa01e13f9eb97373920e1
+
+% 0 1 0 0ba9e7e9094042730f4394ec10336976
+
+% 0 1 0 0b354b055b5a380b07433702b914be12
+
+% 0 1 0 0d7e10a6752e9e911dd60ebb3d704e62
+
+% 0 1 0 11b0afb3fa0d00771bffa7ec36ac10c1
+
+% 1 1 0 0531ee11cafd477515922f5126beef10
+
+% 2 1 0 09723d2af9ee33d2064edebf3092a5a2
+
+@ 0 4 0 0fad1fd3edf6f8ef0ca3ed0aea9a473d
++ Tout ce qui n'est pas enregistré est transmis octet pour octet : les méthodes que cette
++ bibliothèque ne modélise pas, les capacités qu'elle ne connaît pas, et les identifiants de
++ requêtes propres à l'éditeur, qui ne sont jamais réécrits. Le relais est asynchrone dans les
++ deux sens ; un proxy change donc ce que dit un échange, et non la manière dont il se
++ comporte.
+
+@ 0 2 0 1ec5371fcc025d4d1a9e5f98229d3490
++ Chaque combinateur `rewrite` décode la charge utile dans le même type que celui qu'utilise le
++ côté serveur, applique la fonction, et l'encode à nouveau :
+
+% 2 1 0 10cb037c930fd03301ab38a5a7b20537
+
+@ 0 15 0 11e1dc891a2bd8140646fc08e31186cd
++ column  Combinateur
++ column  Amende
++ column  En tant que
++ row  `rewrite.capabilities`  le résultat d'`initialize`  `ServerCapabilities`
++ row  `rewrite.hover`  le résultat de `textDocument/hover`  `Hover`
++ row  `rewrite.completions`  le résultat de `textDocument/completion`  `CompletionList`
++ row  `rewrite.definitions`  le résultat de `textDocument/definition`  `List[Location]`
++ row  `rewrite.symbols`  le résultat de `textDocument/documentSymbol`  `List[DocumentSymbol]`
++ row  `rewrite.codeActions`  le résultat de `textDocument/codeAction`  `List[CodeAction]`
++ row  `rewrite.codeLenses`  le résultat de `textDocument/codeLens`  `List[CodeLens]`
++ row  `rewrite.inlayHints`  le résultat de `textDocument/inlayHint`  `List[InlayHint]`
++ row  `rewrite.signatureHelp`  le résultat de `textDocument/signatureHelp`  `SignatureHelp`
++ row  `rewrite.diagnostics`  les rapports de `textDocument/publishDiagnostics`  `List[Diagnostic]`
++ row  `rewrite.result`  le résultat de la méthode nommée  `Json`
++ row  `rewrite.notification`  les paramètres de la notification nommée venant du serveur  `Json`
+
+% 1 1 0 0630113b45866d33103a3d2841566d36
+
+@ 0 3 0 028cda2c3f58b8a20a80ed9d23427813
++ Un résultat que le serveur a envoyé sous forme de `null`, n'ayant rien à dire, est transmis
++ tel quel ; un réécrivain n'a donc jamais à traiter explicitement le cas vide. Pour les
++ messages entiers, il existe deux autres points d'accroche, `rewrite.outbound` et
++ `rewrite.inbound`, qui renvoient chacun ce que doit devenir le message :
+
+% 2 1 0 18fd34693a251f9c080cbd0ba56bee8e
+
+% 3 1 0 0849d2d66f313ca20a54195e5bd19611
+
+% 4 1 0 15ca622c4e8c09281b61e51ddffe4c56
+
+% 0 1 0 1bc22a3802f600d91b6dfb4cfe5b79e0
+
+% 1 1 0 00eff1b8ef550c4219e980851074b3ff
+
+% 3 1 0 157b91d8e134643217b28999ea209c9d
+
+% 0 1 0 0346282a35bc458f00755102dd23e8a5
+
+% 0 1 0 1fa4ecd06c010031191be1c127209223
+
+% 0 1 0 0dadf2e3e08a78430ffb5e72b4cac410
+
+% 1 1 0 1ecedb3885f4df891d41fecf4712d708
+
+@ 0 1 0 15801aa01d01ed920cfad4294d7b0677
++ Un point d'accroche répond par l'une de quatre valeurs `Transit` :
+
+% 2 1 0 0fce050a6bdbd8b317e9046c40781b9a
+
+@ 0 6 0 0dc69749299c19e911d6b4c2925da256
++ column  Transit
++ column  Effet
++ row  `Transit.Forward`  transmet le message inchangé
++ row  `Transit.Rewrite`  transmet un message différent
++ row  `Transit.Drop`  l'absorbe
++ row  `Transit.Answer`  répond ici à une requête, que le serveur en amont ne voit jamais
+
+% 1 1 0 0ceb13b4beb369ee0bfbd32b8203b129
+
+@ 0 4 0 08e8efef71b8075f0e840f5a16b16214
++ Un proxy n'est pas limité à ce que demande l'éditeur. La session avec le serveur en amont est
++ dans la portée sous le nom `upstream` dans tout le bloc d'enregistrement ; un point d'accroche
++ peut donc poser sa propre question, typiquement sur l'état du projet que seul le serveur
++ connaît. `rewrite.connected` s'exécute une fois, sur une tâche propre, dès que cette session
++ est ouverte :
+
+% 2 1 0 1d50f151f99baa481528b2e881a63d5f
+
+% 3 1 0 1b608506bf76564206d3d64f3aeabee8
+
+% 4 1 0 090412348b5d9c641511cc8d92399dcb
+
+% 0 1 0 160c925580db4b301c7b7c33a3d01c41
+
+% 1 1 0 17daa8944dc255981cd8c87531cde57c
+
+% 0 1 0 1885e22d605caecc1adc91ca82e0e4a4
+
+% 2 1 0 1992d36943bf6de90ac7e3400515f130
+
+% 0 1 0 00e0c08cbea4883f020550fe3638cae1
+
+% 0 1 0 09d820457abade6f01ce39cd70640881
+
+% 0 1 0 05a960406136437d00515eac074ef826
+
+% 0 1 0 06a7958a50932403029acdea7b9be499
+
+% 0 1 0 15becb6b056400e0082f2707cb2f6d54
+
+% 0 1 0 1e272bc0f77338da137759edf2496df9
+
+% 0 1 0 1e1adab39abca30903fe72cd37043e57
+
+% 0 1 0 1501d224e1fe07e418b793d3e12e91fd
+
+% 1 1 0 1da4fdd354241f9a0634adce83e0f43f
+
+@ 0 2 0 1e36ab409658112d0ddf0e20941c1e4d
++ Les réponses reviennent à l'appelant qui les a demandées, et n'atteignent jamais l'éditeur.
++ Une réponse à une requête que le proxy a faite lui-même est acheminée vers celui qui
++ l'attend, et n'est pas relayée.
+
+@ 0 2 0 1d46a0314b218d7002d2d3ac19d046ed
++ Prenez garde au thread sur lequel s'exécute chaque point d'accroche. Une requête attendue sur
++ la tâche qui lit les messages du serveur, c'est-à-dire la tâche qui livrerait la réponse,
++ attendrait indéfiniment :
+
+% 2 1 0 07e2dbb22a04a41c1a8dffb78e4e4dd7
+
+@ 0 6 0 0b254eb80e90404812f14bca79a62595
++ column  Point d'accroche
++ column  S'exécute sur
++ column  Peut attendre
++ row  `rewrite.inbound`  la tâche qui lit les messages du serveur  non ; faites la requête dans un bloc `async`, comme ci-dessus
++ row  `rewrite.outbound`  la boucle qui lit l'éditeur  oui, bien que l'éditeur attende avec elle
++ row  `rewrite.connected`  une tâche propre  oui, librement
+
+% 1 1 0 0c3ae39bb6c7f68a0030d0e06439ded9
+
+@ 0 1 0 19b1eeacf1d110270a8660ff8f0733df
++ ### Exécuter le serveur
+
+@ 0 5 0 12d606d999468b410d52e8f64ee8312a
++ `Lsp.listen` sert l'entrée standard jusqu'à son épuisement. Un objet serveur fournit donc un
++ petit `main` dans l'idiome du démon résident, comme le fait `DemoServer` ci-dessus : le point
++ d'entrée `cli`, un bloc `execute`, et `supervise` pour les tâches qu'exécute le serveur. Un
++ éditeur configuré pour lancer l'objet comme serveur de langage échange du JSON-RPC avec lui
++ par le tube, et chaque requête parvient au gestionnaire correspondant.
+
+@ 0 1 0 18606afbbea7f6f7173205d18de53495
++ ### Démarrage rapide
+
+@ 0 7 0 10b8c4062f59ed470c6b6522811b8b04
++ Le point d'entrée `cli` exécute le serveur comme un [démon](daemons.md) résident. La première
++ invocation lance une JVM en arrière-plan, et chaque invocation ultérieure se connecte au
++ processus déjà en cours d'exécution. Un éditeur démarre et redémarre souvent un serveur de
++ langage ; il importe donc d'éviter le coût de démarrage de la JVM à chaque lancement, et de
++ conserver les optimisations accumulées par le compilateur à la volée. Empaqueter le JAR du
++ serveur avec le constructeur `xek`, issu de
++ [propensive/xek](https://github.com/propensive/xek), assemble un petit lanceur natif qui
++ démarre le démon ou s'y connecte, et lui transmet l'entrée standard, la sortie standard et les
++ signaux :
+
+% 0 1 0 15a5f1f7e49cceab1ba03bc009fa86b5
+
+% 0 1 0 0dce14cc2768362501147377ba39a167
+
+% 1 1 0 01f81a279ca95d5f18e2fee1cf2d0d34
+
+@ 0 1 0 14391749b873465c0b98100d652ef5bf
++ ### Un lanceur léger
+
+@ 0 7 0 0b724382813f7f890f6cfd4ba920f312
++ Par défaut, le lanceur regroupe toutes les dépendances dans un seul gros JAR. Ajouter une
++ dépendance au chargeur de dépendances à la demande, et envelopper le corps du point d'entrée
++ dans `externalize`, distribue plutôt le serveur sous forme de lanceur léger. Ses dépendances
++ sont téléchargées et mises en cache la première fois qu'on en a besoin. `externalize` calcule
++ le hachage de chaque dépendance lors de la compilation du module propre au serveur, et
++ enregistre la liste dans l'artefact compilé. Lorsque cet artefact est ensuite réempaqueté,
++ chaque dépendance publiée quelque part est référencée par URL et hachage plutôt
++ qu'intégrée ; le lanceur reste ainsi petit.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 7 0 125b7b3223a3de461a3608b20562eaa7
++ - [Démons](daemons.md) décrit le processus résident sous lequel `cli` exécute un serveur.
++ - [CLI](cli.md) décrit les points d'entrée `cli` et `execute`.
++ - [RPC](rpc.md) décrit le JSON-RPC et le tramage `Content-Length` qu'utilise le protocole.
++ - [Débogage](debugging.md) sert le protocole frère, Debug Adapter Protocol.
++ - [Concurrence](concurrency.md) décrit `supervise`, `async` et `Promise`.
++ - [Processus](processes.md) décrit la commande `sh"…"` qui lance un serveur.
++ - [Coloration syntaxique](syntax-highlighting.md) et [TEL](tel.md) décrivent les arbres sur
++   lesquels un serveur fait ses rapports, et [empaquetage](packaging.md) le lanceur léger sous
++   lequel il est distribué.

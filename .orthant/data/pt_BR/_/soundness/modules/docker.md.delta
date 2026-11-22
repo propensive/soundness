@@ -1,0 +1,449 @@
+orthant 2 language
+
+@ 0 1 0 07f201731a22e8cc0d42be46b9bd1e2c
++ ## Contêineres
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 5 0 07ef0d991b90cce10d0d8ed93e0772b6
++ Uma imagem de contêiner [OCI](https://opencontainers.org/) é montada em memória a partir de
++ camadas de sistema de arquivos e de uma configuração, e renderizada como um arquivo OCI padrão
++ que qualquer runtime de contêineres consegue carregar, com os digests de conteúdo calculados
++ corretamente. Um cliente separado conversa com um daemon [containerd](https://containerd.io/)
++ em execução por gRPC. Ele lista e cria contêineres, imagens e espaços de nomes, e inicia e para
++ as tarefas que rodam dentro dos contêineres.
+
+@ 0 4 0 09ec97c7294bb0e81c8f951f668f1e53
++ Uma imagem e tudo o que há nela, suas camadas, seu manifesto e sua configuração, são valores
++ tipados [imutáveis][imutável]. Cada contêiner, tarefa e espaço de nomes no daemon também é um
++ valor tipado, e não um saco de JSON. As duas metades são independentes. Uma imagem pode ser
++ construída sem um daemon, e um daemon pode ser gerenciado sem construir uma imagem.
+
+@ 0 1 0 143f5cd1f33ed8971a3058a72324503f
++ ### Sobre contêineres
+
+@ 0 7 0 0275ff7cae3e2181122904c7658f7da7
++ Uma imagem de contêiner não é um único arquivo. É uma pilha de
++ [camadas](https://en.wikipedia.org/wiki/OverlayFS) de sistema de arquivos, mais uma configuração
++ que diz como executá-las. Cada pedaço é endereçado pelo
++ [digest](https://en.wikipedia.org/wiki/Content-addressable_storage) de seus bytes. O formato é
++ exato. Uma camada tem um digest para seu tar descompactado e outro para seu blob compactado, e
++ um manifesto as amarra por esses digests. Erre um digest, e a imagem fica inválida em silêncio.
+
+@ 0 2 0 1ed63d03acbed9551ff33699d12a3ca2
++ Executar uma imagem assim é tarefa de um daemon. O containerd, o runtime por baixo do Docker e
++ do Kubernetes, é controlado por um protocolo gRPC em um socket local.
+
+@ 0 4 0 05b0eacd77d6a576150ff0e7b5945161
++ Aqui o formato de imagem é um conjunto de valores cujos digests são calculados para você, e o
++ protocolo do daemon é um conjunto de métodos que trocam valores tipados. Construir uma imagem
++ como um valor, e não executando uma ferramenta, é
++ [estilo direto](../../philosophy/direct-style.md): os passos são código comum, verificado ao
++ compilar.
+
+@ 0 2 0 1e4e366a1cb2e8a20df429d4db783292
++ A construção de uma imagem recorre a [arquivos tar](archives.md) para as suas camadas.
++ Tudo vem do pacote `soundness`, e o último import permite que os exemplos imprimam seus
++ resultados:
+
+% 2 1 0 07fb23cd4067d13c0a5ee2476d107c4c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0b21de5890a84d8d05926f25583daec4
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 05d66aa2a1e0f05509a4cff5addc3c66
++ ### Construindo uma imagem
+
+@ 0 2 0 10bb8eb7f8d47a7d12ce9881eca231a8
++ Uma camada é um arquivo tar de arquivos. Dado um `Tarfile`, `Oci.Layer` o envolve e calcula os
++ digests que o formato exige:
+
+% 2 1 0 1727c011ae08dc320a67ea8a41748810
+
+% 0 1 0 05dc5635209d8cc406779563880c6154
+
+% 0 1 0 117c3f1a89574c220452af568063b16f
+
+% 0 1 0 13be236fa8eda1831c74450accc661db
+
+% 0 1 0 0f2992b2549776431f30e8f0b1f0fe8f
+
+% 0 1 0 0b98dcdc9a6959b40d01a46b06283c7d
+
+% 0 1 0 081dc1fd7d11ea3b10a17d5d8a59632c
+
+% 0 1 0 15d65404e0f314c1036bb9a334e91626
+
+% 0 1 0 0fb140251a0e56aa0e891dd77a79859e
+
+% 0 1 0 11c98faeaf277f780bad5251df284585
+
+% 1 1 0 1b1ebad792c5ee340d4a0d79bd807a27
+
+@ 0 2 0 1137b68517906e2804a201fdf4e260e3
++ Um `Oci.Image` monta uma ou mais camadas com uma configuração, que contém o comando a executar,
++ o ambiente e o diretório de trabalho:
+
+% 2 1 0 12401cab63693566160a161bfbb6e7d6
+
+% 0 1 0 1b5aa3cae2654615198d2744c0e1e940
+
+% 1 1 0 09f1ccb0d09cae1f09458cdcf4caa954
+
+@ 0 1 0 091286c85bc0c6c80955093e53ade36a
++ ### O que uma imagem contém
+
+@ 0 3 0 19c6d62532bbe9411ddbd284e58a8b0d
++ A imagem montada expõe cada parte que o formato define. Uma camada informa seus dois digests.
++ `diffId` é o digest do tar descompactado, e `digest` é o digest do blob compactado:
+
+% 2 1 0 05a7df43adb5fbd211c4791a4da9ddea
+
+% 3 1 0 08fed045dd65132b08ef31dac6d3a847
+
+% 4 1 0 16eeaa60a6aabb3917a1467aab8be7a7
+
+% 0 1 0 136feb739ac99ecc1aa9c6dda3491f09
+
+% 0 1 0 1f98623279cc65ec06ab87f49c326694
+
+% 1 1 0 0ce61525db6af9290586d368f32f761a
+
+@ 0 2 0 0c03fdf1db981299165cd5a31dab48b1
++ A imagem traz o manifesto que os referencia, com o tipo de mídia de cada camada e da
++ configuração:
+
+% 2 1 0 15fae063ee19334712ada587ecddd14b
+
+% 3 1 0 1779d1f762ce3c4b02cf7ae5c2a3024c
+
+% 4 1 0 0ebcbb823af409ed0550496fa688dcf5
+
+% 0 1 0 0a7d48f7a596b390163dd5f3d03c6fe4
+
+% 0 1 0 198d69a430b5ad760004ca1714a82f0e
+
+% 1 1 0 1e0d707850b7e85f0badc491e32b3e67
+
+@ 0 3 0 18ccfe7dfb8e29a112878188891c2ecb
++ `image.archive` é a imagem inteira como um layout tar OCI, que é a forma que um runtime importa.
++ Lido como bytes e gravado em um arquivo, produz uma imagem que `docker load` ou o containerd
++ aceitarão.
+
+@ 0 1 0 1535bbd1fbc0f73507fe5cb37d1a7b4b
++ ### Cargas de trabalho WebAssembly
+
+@ 0 5 0 1db7ab79fec07c8d0a8453a9f3035f16
++ Uma imagem de contêiner descreve um sistema de arquivos, mas o `runc`, que desempacota e executa
++ uma delas, não é a única forma de executar uma carga de trabalho. Um componente
++ [Wasm](https://webassembly.org/) não precisa de nenhum sistema de arquivos raiz. Um runtime como
++ o [wasmtime](https://wasmtime.dev/), alcançado por um shim do containerd como
++ `io.containerd.wasmtime.v1`, o instancia diretamente. O que muda não é o formato de distribuição,
++ mas o que a configuração diz que o artefato *é*.
+
+@ 0 1 0 1cc2c62631b5c7fb0a3394d36a7072db
++ `Oci.Image.wasm` monta essa forma, um
+
+% 0 1 0 1058dcca2384856d0ee340347b086e0d
+
+% 2 1 0 1846ddb4a25f521b05ff26886dc6dcca
+
+% 0 1 0 07a3e36d1205387317494cc6a1c82a53
+
+% 0 1 0 103f36adca9be05c03267b6e1db57595
+
+% 0 1 0 03931b186aa9b5450417cb93f5382e69
+
+% 0 1 0 0d351be1f6119a8c09346b3814462a70
+
+% 0 1 0 1102c0e2730430f7006c5b04e92ad857
+
+% 0 1 0 087d751d4d15fdcd0b67f4af26b0bc03
+
+% 0 1 0 0df21255a55abca71ea5e44a111f5258
+
+% 1 1 0 0a8753795aba1467118d83219edf0573
+
+@ 0 2 0 0c512fd8e6145ca1129ca23de11fa755
++ O manifesto, o índice e o arquivo são os comuns, então os mesmos registros e ferramentas o
++ transportam. Só duas coisas diferem:
+
+% 2 1 0 1dd27927dba3e1861773b8f2a5d81985
+
+@ 0 6 0 0b68ec35b1644d3c056be0464e2ae8f3
++ column  Parte
++ column  Imagem de contêiner
++ column  Artefato Wasm
++ row  config  a configuração de execução de um sistema de arquivos  `application/vnd.wasm.config.v0+json`, descrevendo um componente
++ row  layers  tars compactados, um ou mais  o próprio componente, `application/wasm`
++ row  digests das camadas  `diffId` e `digest` diferem  `diffId` e `digest` coincidem, já que ele é armazenado sem compactação
+
+% 1 1 0 0c833b183b45f5410f0f38d9aac4110c
+
+@ 0 1 0 1f4379eeca72bcf10768d0e1fc425d63
++ A configuração descreve o componente, com a geração do WASI como seu `os`:
+
+% 2 1 0 12bf4cf281dc37520785a68ee6c1f41b
+
+% 3 1 0 0ad4e277afe6ffb2114ed78d87f2b5ea
+
+% 4 1 0 03fac55c035b212e1e674febae7fd957
+
+% 0 1 0 1628f9d178bf76cf1d8963b00723c068
+
+% 0 1 0 026067a2b2b5ecfe0bccbe08513275c7
+
+% 1 1 0 1ac830f7f8e772850754f20f1fdba51f
+
+@ 0 3 0 1b698a0c4b651c4c1ddc4d78c9174ed6
++ Os `exports` e `imports` são as interfaces do Component Model que a carga de trabalho oferece e
++ de que precisa. Registrá-los torna a imagem autodescritiva. Um host consegue saber se pode
++ satisfazer as capacidades da carga de trabalho antes de buscar o componente.
+
+@ 0 2 0 12c74a32c58343c01404539a176f75b5
++ Em geral eles não são escritos à mão, mas lidos do mundo WIT contra o qual o componente foi
++ linkado, que é a declaração oficial do mesmo contrato:
+
+% 2 1 0 1271733c355cc382159ca7cf9612d783
+
+% 0 1 0 19c615adff2e79f60b652806cb4c5c27
+
+% 0 1 0 081b8a5be431ab810e2c8ed4df15a6e6
+
+% 0 1 0 0bf5b6535aac2064050e198754446777
+
+% 0 1 0 045368d90a5fc19504b42e532e628a17
+
+% 0 1 0 0ae4386bc588e30e16b8c764f8a5ef64
+
+% 0 1 0 0adf93f72398fcdf1f16dde7a64faf9d
+
+% 0 1 0 1b1851f65da1fbe813bc4eac0a46f7e9
+
+% 1 1 0 1c5cd71f5f6bef731775bad7313f2c86
+
+@ 0 3 0 06b15d8e456afa3f0a6be5af91189690
++ O [compilador](compiler.md#wasi-components) faz exatamente isso na aresta que produz uma imagem
++ OCI. Uma compilação pode ir do código-fonte a um artefato distribuível por um único caminho, e
++ nada declara o contrato duas vezes.
+
+@ 0 1 0 16927694823b2c600ed01ba764a42b16
++ ### Lendo uma imagem
+
+@ 0 2 0 0eee86c55aa776fc035e84c22b01719b
++ Um arquivo OCI existente, que é um arquivo ou um bloco de bytes, é lido *abrindo-o*. Seu
++ conteúdo fica disponível durante um escopo, e não mais:
+
+% 2 1 0 180e1b9c9a718166064b40ba3a0c5a77
+
+% 0 1 0 1be7125c5f958ae814da7c0b8b450c13
+
+% 1 1 0 1d92fa2aef09f8b0102601c97a2192a7
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 1 1 0 0683abd84365fa0a0ca23c9715cae48c
+
+% 0 1 0 11f2d87d5ab94b0d1627a55566d8e3cb
+
+% 0 1 0 15605efb10a6452e1a7a9892cfc048e9
+
+% 0 1 0 14a56f3c5666769602768223e8d28bf5
+
+% 1 1 0 1128216a3629b7bd1db1234673011f79
+
+@ 0 2 0 1fd7ede2f98e8aa30f3e03639706a646
++ `handle.verified(descriptor)` lê uma camada e verifica seu digest. As três formas de chegar a uma
++ camada deixam o custo explícito:
+
+% 2 1 0 186ded076be475680b499241a8d9287e
+
+@ 0 6 0 1024d44155a6e4ae1b0ed9fd4bb848a9
++ column  Método
++ column  Produz
++ column  Verifica o digest
++ row  `compressed`  os bytes armazenados, intactos, como um stream  não
++ row  `layer`  o tar descompactado, como um stream  não
++ row  `verified`  os bytes armazenados, reunidos de forma ansiosa  sim, e o tamanho
+
+% 1 1 0 0f640d860d933d410573d763c74a51fb
+
+@ 0 3 0 07efe378367074560ec4c2aa03c237a3
++ `verified` lança um `Oci.Error` se os bytes discordarem do digest ou do tamanho que o manifesto
++ declara. Verificar um stream significaria esgotá-lo, e é por isso que `verified` reúne os bytes
++ primeiro.
+
+@ 0 3 0 0f8af7e1435e53af10d97e633bf755b1
++ Um leitor que ainda não sabe que categoria de artefato abriu pede `config`. Ele despacha pelo
++ tipo de mídia do descritor de configuração. Distinguir um componente de um sistema de arquivos é
++ uma pergunta que o arquivo responde, e não algo que quem chama precisava saber:
+
+% 2 1 0 149dcf96c33f09f41f915593e0cded0c
+
+% 1 1 0 0de14d8a92fea020120e47d3b60dc597
+
+% 0 1 0 1dd364909ae42c3c06658b5532f4d438
+
+% 0 1 0 1ab03095ff527e1c0c2c222ff89ee4c6
+
+% 0 1 0 041ef2d33989bec10e5567a886861005
+
+% 1 1 0 0111124e1a133914000ea478c2405958
+
+@ 0 1 0 01a02b46d8bf4313011215ed7c5311e2
++ ### Conectando-se a um daemon
+
+@ 0 1 0 1a7402db1cf3e7b01129394fc5e445ab
++ O restante desta página precisa de um daemon em execução, então seus exemplos são compilados,
++ mas não executados.
+
+@ 0 2 0 11c232294bb11a780f8248019df138ef
++ Um cliente `Containerd` se conecta a um daemon por um endpoint HTTP/2 em seu socket, vinculado
++ a um espaço de nomes. A conexão mantém trabalho em segundo plano, então vive dentro de um escopo
++ supervisionado:
+
+% 2 1 0 0a363643266079271517f9a29c264739
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 0dfb7410225235c40e0668297e02bdbb
+
+% 0 1 0 192875f0217a6474139776092a16684a
+
+% 0 1 0 069209a63b321eb51450ab3ac9428a31
+
+% 1 1 0 1b8135ef2ac18ead04c4b3010e92b391
+
+@ 0 4 0 0a85ead3944ac7ce0ac44308c3f21aa7
++ Aqui `endpoint` é um endpoint HTTP/2 sobre o socket Unix do containerd, estabelecido pelo suporte
++ a HTTP/2 e a [sockets](sockets.md), sobre o qual o cliente fala [gRPC](rpc.md). Toda chamada ao
++ daemon pode falhar, no socket, no protocolo ou na própria requisição, então as chamadas recorrem
++ à [estratégia] de erro no escopo.
+
+@ 0 1 0 1800a27229718c7418f0d45d4ea61566
++ ### Contêineres, imagens e espaços de nomes
+
+@ 0 2 0 1b0154acaa3b1bb807645ce8f11034aa
++ O cliente lista e inspeciona o que o daemon mantém, e o cria e exclui. Cada resultado é um
++ registro tipado:
+
+% 2 1 0 0096bd378d99244119b570c805e4980b
+
+% 0 1 0 13534c38d5075b480ead832c1760b3de
+
+% 0 1 0 13a1e53355030e511295f416ea5a8d69
+
+% 0 1 0 078a0da708cbd1eb15732caaa935cdc3
+
+% 0 1 0 0bf3d05b5b45140f0a9205a590549242
+
+% 0 1 0 177befcb093cb28819823a1dae911981
+
+% 0 1 0 18f198477c66980b0c5c67824bb737e0
+
+% 1 1 0 1ee507d06f90141012d537878af43a68
+
+@ 0 1 0 09d718fa67c4e3ec1ac7236ee0a38693
++ Estes são os métodos para cada categoria de recurso:
+
+% 2 1 0 00811dbd65915c451e2ee4d3afd911ba
+
+@ 0 6 0 1dcdec709e18a92b056653c9a4552e20
++ column  Recurso
++ column  Listar
++ column  Inspecionar
++ column  Criar
++ column  Excluir
++ row  contêiner  `containers()`  `container(id)`  `createContainer(container)`  `deleteContainer(id)`
+
+% 1 1 0 1d9b1e7869f6de2c1244959fdee92b67
+
+@ 0 1 0 0941427d4ffcd2e40bab2679edfe1c40
++   cell  espaço de nomes
+
+% 0 1 0 15e1e7a47b291daf1991a32791ae16bb
+
+% 1 1 0 0e77f1e16c0240a11b2a518ed6da2234
+
+% 0 1 0 1fd8c6826921490e1062e902bf6a2828
+
+% 0 1 0 1f5f184e994f521c1ebe9b1a169ed04c
+
+% 1 1 0 1ce599b2741af9b21ecc4d65c4e67944
+
+@ 0 1 0 05d4acaf789e196f128d8be58008ca33
++   cell  imagem
+
+% 0 1 0 003d0b724c00c847133fdc7ab35670fe
+
+% 0 1 0 16d1a38335d17eda183b09569c0a65bb
+
+% 1 1 0 05b0aafac2ce2eb7186d64a214dd4c02
+
+% 0 1 0 1a8eaec0d693d69e03cc067d7f484004
+
+@ 0 1 0 1defada40d3cb53203b367a77c7698bf
++ row  tarefa  `tasks()`  `task(id)`  `createTask(id, rootfs)`  `deleteTask(id)`
+
+% 1 1 0 1cedf478014fcc0c0ccf974c4644b654
+
+@ 0 1 0 10e9f8af4e2e695a13288bb8c7efcead
++ ### Tarefas
+
+@ 0 2 0 05a2762eaf786f8b1efb974648dc372d
++ Um contêiner é uma definição. Uma *tarefa* é uma instância em execução de um deles. Uma tarefa é
++ criada a partir de um contêiner com o sistema de arquivos raiz a montar, depois iniciada,
++ aguardada e encerrada:
+
+% 2 1 0 180b69276b1c60df108e1d1a3083d5b9
+
+% 0 1 0 100115a5decc20240e55ae6aff3f8061
+
+% 0 1 0 09107ed82def67ff040052cc440c16df
+
+% 0 1 0 19bf6bc23551d15e18ac858946150f38
+
+% 0 1 0 0b8e2dd339df03c3184cf9ffccc70e94
+
+% 0 1 0 02b2ed082a6411e218cfe46475d03e91
+
+% 0 1 0 1941b95e046754ff1c486bed64e524d6
+
+% 1 1 0 0d28648032a9751c12cc150978e0d6a0
+
+@ 0 2 0 123cf09f8f3e1a5714b8ffbf19c07307
++ `client.task(t"web")` retorna o `Workload` atual da tarefa, cujo `state` informa se ela está
++ criada, em execução, parada ou pausada.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 8 0 07efb6cb307687c1159ab351467b783f
++ - [Arquivos ZIP, tar e ar](archives.md) descreve os arquivos tar de que as camadas são feitas.
++ - [Compilador](compiler.md#wasi-components) produz os componentes WASI e as imagens OCI que uma
++   toolchain linka.
++ - [Hashing](hashing.md) descreve os digests que endereçam cada parte de uma imagem.
++ - [RPC](rpc.md) descreve o gRPC que o cliente fala com o containerd.
++ - [Sockets](sockets.md) descreve o socket Unix em que o daemon escuta.
++ - [Concorrência](concurrency.md) descreve `supervise`, dentro do qual o cliente vive.
++ - [Compressão](compression.md) descreve o gzip com que as camadas são compactadas, e [processos](processes.md) os comandos que uma tarefa executa.

@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 8 0 1431c98063de65a00a71fea57e055f77
++ column  Tentativa
++ column  Renderização
++ row  1  a própria instância de `Inspectable` do tipo
++ row  2  sua instância de `Encodable in Text`, entre `⸤` e `⸥`
++ row  3  sua instância de `Showable`, entre `⸢` e `⸣`
++ row  4  para um `Optional`, o valor que ele contém, entre `｢` e `｣`, ou `○` se não estiver definido
++ row  5  uma renderização estrutural derivada da sua forma
++ row  6  uma renderização de último recurso, seu `toString` entre `“` e `”`
+
+@ 0 2 0 00ab82423b62806a0907786a980e61f6
++ Os delimitadores marcam uma renderização que foi emprestada de outra classe de tipos, ou de
++ `toString`, e não é a do próprio tipo.

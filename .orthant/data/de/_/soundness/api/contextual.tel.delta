@@ -1,0 +1,501 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 13c6964abcab3e38030c763a9b0d905f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 192402b37623601c003f65f2662a0e55
++ info   die Mechanik geprüfter String-Interpolatoren: beim Kompilieren geparste Literale, per Typklasse typisierte Lücken
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1f9d313478bf56310d542564dc41695e
++     _Contextual_ ist die eine Mechanik hinter jedem geprüften Literal in Soundness — `url"…"`,
++     `sh"…"`, `json"…"`, `t"…"`, `media"…"` — und der Weg, neue zu definieren. Ein damit
++     definierter Interpolator validiert seine literalen Teile beim Kompilieren, meldet einen
++     Fehler genau an dem Zeichen, das ihn verursacht hat, und akzeptiert Einsetzungen nur der
++     Typen, die er deklariert, jede für die Lücke geprüft, die sie füllt. Für die
++     Compiler-Infrastruktur ist kein handgeschriebenes Makro nötig: Das Erfassen der literalen
++     Teile und ihrer Positionen in der Quelldatei erledigt einmal das Makro `interpolation`, und
++     der Autor eines Interpolators schreibt Typklasseninstanzen.
+
+@ 0 5 0 04d90b9fd33fa98e09a61d936bbae2d9
++     Drei Teile ergeben einen Interpolator: eine Präfixmethode auf `StringContext`, die
++     `interpolation[Target](context)` aufruft und dessen `Interpolation` zurückgibt; eine
++     `Interpolable`-Instanz für den Zieltyp, die den Wert aus den Teilen und den eingesetzten
++     Werten baut; und `Insertion`- oder `Substitution`-Instanzen, die angeben, welche Typen eine
++     Lücke füllen dürfen und wie jeder hineingelangt. Eine `Extrapolable`-Instanz macht dasselbe
++     Literal als Pattern verwendbar.
+
+% 2 1 0 0c9428b493c4c10d04d5a39c82d017de
+
+% 3 1 0 0e4e8c190f5ccabe037350052dd16ce8
+
+% 0 1 0 0e6dcf14681ef31d11be62d6896d8cfd
+
+% 0 1 0 09a6623c5e3e30eb186d7589b88820a9
+
+% 0 1 0 0e7818acb6057cbd1f8fa9de4a211b8e
+
+% 0 1 0 11ad5ee1daa9d46419a4e0d57ab20b7d
+
+% 0 1 0 0cb4de2ae88d0ec71dac323078c2ea1e
+
+% 0 1 0 1404bb330acf509f11291fcf93a0fbbc
+
+% 0 1 0 181dce71bcf79a9f174c858c43ca07b9
+
+% 0 1 0 0490ed618a55385d0659b89eeccd69e4
+
+% 2 1 0 1549a2cebfe631cf0ed3c063f817d956
+
+% 0 1 0 1a7623445f18adde16d9ec7776670c6d
+
+% 0 1 0 1e0e58a963f7737f13f6bceae20def45
+
+% 1 1 0 0e6eaf1440e776f41ece7db3f6b55f40
+
+@ 0 8 0 1fe1235554e8df5001faf9194c11cbc2
++     Die Teile des Literals erreichen `Interpolable#interpolate` als Typparameter `parts`, ein
++     Tupel von String-Literaltypen, und ihre Quellpositionen als `origins`, sodass ein Makro
++     hinter der Instanz sie parsen und an `Interpolation.sourcePosition` mit `halt` abbrechen
++     kann. Da die Präfixmethode `transparent inline` ist, kann ein Interpolator einen
++     genaueren Typ als sein Ziel zurückgeben: einen Pfad auf einer bestimmten Plattform, einen
++     als gültig bewiesenen Namen, ein durch sein Schema typisiertes Dokument. Die Konvention in
++     ganz Soundness ist, jeden Interpolator mit einem Laufzeit-Parser zu paaren, der denselben
++     Code ausführt (`url"…"` neben `as[Url]`), sodass ein Literal und dynamischer Text nicht
++     auseinanderdriften können.
+
+@ 0 3 0 0b5fc900b1cdb1730776faa0a40e2845
++     Die Bibliothek hat ein einziges Source-Set, `contextual.core`, das für jede Plattform
++     kompiliert, und alles wird in den `soundness`-Umbrella exportiert. Sie hat kein
++     Auswahlpaket: Ihre Givens liegen in Begleitobjekten und werden über den impliziten
++     Geltungsbereich aufgelöst.
+
+% 0 1 0 0587d7db92ab08131d385fb13eafb98d
+
+% 0 1 0 094a322bf7c941eb0692b55c30ea0da9
+
+% 0 1 0 1319a01e2290f60c0e704de9678ae28b
+
+% 0 1 0 1b228ba61b32a98a1a5b152c3d008110
+
+% 0 1 0 1b5cec878649db561a48b27a5164bdb8
+
+% 0 1 0 10526691d5bb1b47090c62b14dda0ee3
+
+@ 0 6 0 02ae0bac7484da1b12665c62d5908176
++ entry .interpolation   das Makro hinter der Präfixmethode jedes Interpolators: erfasst die Teile und Positionen eines Literals
++     `interpolation[Target](context)` nimmt den `StringContext` eines interpolierten Literals,
++     das ein dem Compiler bekanntes Literal sein muss, und gibt eine `Interpolation` zurück,
++     deren `Topic` `Target` ist und deren Typ-Member `Transport` und `Origins` die Teile des
++     Literals und ihre Quellpositionen kodieren. Eine Präfixmethode wird als
++     `transparent inline`-Erweiterung auf einem `inline`-`StringContext` geschrieben, damit das
++     Literal bis zum Makro erhalten bleibt:
+
+% 2 1 0 1a718ac094a67da31faf476bb0a1ec1f
+
+% 3 1 0 1dccbc306f5aff2d0ace1b7fb58f561c
+
+% 2 1 0 1c5b6fbbb8438da51995499519736640
+
+% 0 1 0 16810c01f18d71690a707f3c9581c514
+
+% 1 1 0 045e62765b370ad1169af775536afaa2
+
+@ 0 3 0 1d18b6f3b06e796f0fe49a56daed5141
++     `media"text/plain"` ruft dann `Interpolation#apply` auf, das die kodierten Teile an die
++     `MediaType is Interpolable`-Instanz übergibt; `case media"text/plain" =>` ruft
++     `Interpolation#unapply` auf, das sie an die `MediaType is Extrapolable`-Instanz übergibt.
+
+@ 0 1 0 19a1a681f7ef8ef20a95bc76018206e4
++ entry .Interpolation   ein interpoliertes Literal, mit seinem Ziel, seinen Teilen und deren Positionen als Typen
+
+% 1 1 0 13def7941716c74f0fb2578a5079fa7f
+
+@ 0 5 0 1ec09104b1b6407f030ab60b254222e0
++       Eine `Interpolation` ist das, was eine Präfixmethode zurückgibt: ein reiner Wert, der als
++       Typ-Member das Ziel des Interpolators (`#Topic`), die literalen Teile (`#Transport`) und
++       ihre Quellpositionen (`#Origins`) trägt. Ihr Aufruf (`#apply`) konstruiert einen Wert des
++       Zieltyps; ihre Verwendung als Pattern (`#unapply`) zerlegt einen. Werte werden nur vom
++       Makro `interpolation` erzeugt.
+
+@ 0 4 0 0bdacb3a8ed8ad0b00fda31e0df4cc40
++       Beide Typtupel werden von innen nach außen gebaut, daher enthalten sie die Teile **in
++       umgekehrter Reihenfolge**: Für `slug"a${x}b${y}c"` ist `constValueTuple[parts].toList`
++       gleich `List("c", "b", "a")`. Jeder Teil ist vorhanden, auch leere, sodass ein Literal
++       mit `n` Lücken immer `n + 1` Teile hat: `slug"$x"` hat zwei leere Teile.
+
+@ 0 2 0 06dc19dce473778c0db0f55a7eb5bedd
++       Das Begleitobjekt enthält die Hilfsfunktionen, die das eigene Makro eines Interpolators
++       verwendet, um die Teile und Ursprünge auf Typebene wieder in Werte umzuwandeln und einen
++       Fehler am richtigen Zeichen zu melden.
+
+% 2 1 0 01777d6c91d853c00c39a90119ce4bb0
+
+% 3 1 0 0ccf061a8b9b3dec14aa4aa074417d68
+
+% 4 1 0 177e5226b99a421617a7dd9f52ea1d52
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 19cc96edc586318316b31ec0030d2a58
+
+% 0 1 0 00080427682c796d137c57e2a691bddd
+
+% 0 1 0 0393af642a05c002165d2ff732ff3120
+
+% 0 1 0 178139b8aa40ae351032e0e0c4d9e3d7
+
+% 0 1 0 0eafc5b98446697a151de9573505a3c3
+
+% 0 1 0 10adb5b26f87cbe504bd2dd73d731495
+
+% 0 1 0 037df2f49453b590050566fddef3681f
+
+% 1 1 0 00f95a1eb6d780e71e1a28cb2c204e7f
+
+% 0 1 0 0a7144b78e8b961518d4217e0e8cee6f
+
+% 1 1 0 076e59f720f1725f05d58b5f06d1a0dc
+
+@ 0 28 0 1d115cb61e2e3e3a08610969cead0e68
++   entry .apply   die Makroimplementierung von `interpolation`: baut die `Interpolation` für ein Literal
++       Wird nicht direkt aufgerufen: `interpolation[topic](context)` spleißt es ein. Es liest
++       die Teile des `StringContext`, findet Anfang und Ende jedes Teils in der Quelldatei und
++       kodiert beides als Tupeltypen auf einer neuen `Interpolation`.
++   entry .decodeParts   die literalen Teile, die ein `Transport`-Typ kodiert, in Quellreihenfolge, innerhalb eines Makros
++       `Interpolation.decodeParts[parts]` benötigt ein `Quotes` und einen `Type[parts]` und
++       kehrt das Tupel auf Typebene wieder in die Quellreihenfolge um. Ein Tupelelement, das kein
++       String-Literaltyp ist, bricht die Expansion ab.
++   entry .decodeOrigins   der Quellbereich `(start, end)` jedes literalen Teils, den ein `Origins`-Typ kodiert, innerhalb eines Makros
++       `Interpolation.decodeOrigins[origins]` gibt die Paare in Quellreihenfolge zurück; ein
++       Element, das es nicht lesen kann, wird als `(0, 0)` dekodiert, die Markierung für einen
++       unbekannten Ursprung.
++   entry .literalOrigins   der Quellbereich `(start, end)` jedes String-Literals in einem `StringContext`-Baum
++       Durchläuft den Baum `StringContext.apply(…)` durch `Inlined`-, `Typed`-, `Block`- und
++       `Apply`-Wrapper und sammelt die Position jedes String-Literals. Weicht die gefundene
++       Anzahl von der erwarteten ab, ist jeder Teil `(0, 0)`, sodass Fehler auf dem ganzen
++       Ausdruck landen statt an einem falschen Zeichen.
++   entry .sourcePosition   die Position in der Quelldatei zu einem Parser-Offset in den zusammengesetzten Text eines Literals
++       `Interpolation.sourcePosition(parts, origins, substitutionWidth, offset, length)` nimmt
++       den Offset, den der Parser eines Interpolators in die „zusammengesetzte“ Eingabe meldet —
++       die Teile, verbunden mit `substitutionWidth` Zeichen als Platzhalter für jede Lücke —,
++       und gibt die `Position` des fehlerhaften Zeichens in der Quelldatei zurück, mindestens
++       ein Zeichen lang, gegen die `halt` melden kann. Escape-Sequenzen, die in der Quelle länger
++       sind als im Wert (`$$` und `\uHHHH`), werden ausgeglichen. Ein Offset, der in eine Lücke
++       fällt oder in einen Teil, dessen Ursprung unbekannt ist, ergibt die Position des ganzen
++       Ausdrucks.
++   entry .buildMapping   bildet jeden Zeichenindex im Wert eines literalen Teils auf seinen Index im Quelltext ab
++       `Interpolation.buildMapping(source, value)` berücksichtigt `$$` (zwei Quellzeichen für
++       ein `$`) und `\uHHHH` (sechs für eines); ein Index unter null wird auf `0` abgebildet und
++       einer jenseits des Endes auf die letzte Position.
+
+% 2 1 0 1a11f4d0214de4580b576cd2d07ab16a
+
+% 3 1 0 059b9479b72ad3be003288e76d1f7c88
+
+% 0 1 0 0445d963169a20dd1f92344b1bbf9190
+
+% 0 1 0 005ff8a9de45f0cb1817f36f6d4d8f5e
+
+% 1 1 0 1ff58a27dff366e71a292bcec11cdbcf
+
+@ 0 11 0 1f413967cbfc80881e341a0efcb656ca
++   entry #Topic   der Zieltyp des Interpolators, der Typ, für den eine `Interpolable`-Instanz gesucht wird
++   entry #Transport   die literalen Teile, als Tupel von String-Literaltypen in umgekehrter Quellreihenfolge
++   entry #Origins   der Quellbereich `(start, end)` jedes literalen Teils, als Tupel von Paaren ganzzahliger Literaltypen in umgekehrter Reihenfolge
++   entry #apply   konstruiert den Zielwert aus dem Literal und seinen eingesetzten Werten
++       Aufgerufen von einem interpolierten Literal wie `slug"hello $name"`, mit den eingesetzten
++       Werten als `insertions`. Es benötigt ein `Topic is Interpolable` im Geltungsbereich
++       (normalerweise im Begleitobjekt des Ziels) und gibt zurück, was `interpolate` dieser
++       Instanz zurückgibt; da es `transparent inline` ist, behält es den genauen Typ.
++   entry #unapply   zerlegt einen Wert anhand des Literals, wenn das Literal als Pattern verwendet wird
++       Aufgerufen von einem Pattern wie `case slug"hello" =>`. Es benötigt ein
++       `Topic is Extrapolable` im Geltungsbereich und gibt die `Extrapolation` der Instanz
++       zurück.
+
+@ 0 1 0 070904ea43899b8419bc6fad3bf3a2bd
++ entry .Interpolable   eine Typklasse, die einen Wert ihres Typs aus den Teilen und Lücken eines interpolierten Literals baut
+
+% 1 1 0 0bcf6f1fd2fa3593163c74f83af9a243
+
+@ 0 6 0 1277370119c85cd817d0b5dd687c2f32
++       `T is Interpolable` ist das, wonach `Interpolation#apply` sucht. Ihre einzige Methode,
++       `#interpolate`, ist `inline` und erhält die Teile und Ursprünge des Literals als
++       Typparameter `parts` und `origins` und die eingesetzten Werte als `insertions`. Eine
++       einfache Instanz liest die Teile mit `compiletime.constValueTuple`; eine prüfende spleißt
++       ein Makro ein, das sie mit `Interpolation.decodeParts` dekodiert, parst und bei einem
++       Fehler an `Interpolation.sourcePosition` abbricht, sodass ein fehlerhaftes Literal nie
++       kompiliert.
+
+% 2 1 0 159c06eb6c67a4970c7b8985cb5f49b4
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 141e3d6b3c742dde01b7a304c87275c2
++         label Ein Zieltyp
+
+% 1 1 0 0fbeb7b8ae4fb82110331fd13c67aead
+
+% 2 1 0 09caa5c3556c71cb1e1cd5096fb637f2
+
+% 2 1 0 094d631368bf08a50f06bb9dcf01a8ab
+
+% 1 1 0 115c6a374e31477513561f29187428a2
+
+@ 0 1 0 0d3515a3346925f11d6baa0c11edbc0a
++         label Eine `Interpolable`-Instanz in seinem Begleitobjekt: Die Teile kommen umgekehrt an
+
+% 1 1 0 1bc350639008d7a51e51b650226d0749
+
+% 2 1 0 05ab56d30dcfdec7060940181ab6e16e
+
+% 3 1 0 0ad5b0dd00df53340a9121ab2dadc6a3
+
+% 5 1 0 0167fa53dbe742f60b98ecf3193dc762
+
+% 7 1 0 1c2b01cec9b0b07d10d0d403326bcf56
+
+% 8 1 0 1efb9a7db8125f6f0621f03fcc2512bb
+
+% 9 1 0 061505cc35ff5fcc039f535788c0a162
+
+% 10 1 0 17d1976cf3a01d6205a16a5f3b7dbe0a
+
+% 11 1 0 140b057b3cc6b9a80f5c0d252c671e8a
+
+% 12 1 0 0cb8ff20c25fcd2c11df772bd4f1c17f
+
+% 1 1 0 09f3270af4d7f2370e2c3fbd234efaf8
+
+@ 0 1 0 184667ef882e5ed2086769f611256c5e
++         label Eine Präfixmethode, und der Interpolator ist fertig
+
+% 1 1 0 0b5a887f8dab9a7919900ae31b537778
+
+% 2 1 0 08e64f52a41d247a19e9e4c892dc2010
+
+% 3 1 0 17d6758a5b93151a1b4363d47d950ef7
+
+% 5 1 0 12b0d1df99eb934113be2781c7959e76
+
+% 7 1 0 0acb98d9dcdacfef1786baf450f3f672
+
+% 8 1 0 179c47117dfc978e004cf619be1a6f67
+
+% 9 1 0 1daf2826fcbc00380a2c8101795a6f16
+
+% 10 1 0 04c1857567a0dd17104078dae196e1e8
+
+% 11 1 0 165ec38e381021560ff2335e5effe4f6
+
+% 12 1 0 1c04dd591b503d521e75fcb57859a35d
+
+% 0 1 0 0945211460bc1f54181ed18f1d46a60a
+
+% 0 1 0 00681e9801bf03d015f08f2d3aafd8d8
+
+% 0 1 0 02827dc973bf7bb11cc6706472ba4042
+
+% 1 1 0 0cfbcaa1ca2bee311a312623bc2867f6
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 2 0 06c8f36d29787ed90ba7352621a8c68c
++       Ein Interpolator für den Produktiveinsatz legt das Parsen in ein Makro, sodass derselbe
++       Parser das Literal zur Kompilierzeit und dynamischen Text zur Laufzeit bedient:
+
+% 2 1 0 05e9cd5cc2fceee00046fd2389101a13
+
+% 3 1 0 0685817040bea8250db46bb67d66c3cc
+
+% 4 1 0 0ac2afbfd06767a3023dc8388530653b
+
+% 0 1 0 10a764d547cbe2261cb7a037335eb718
+
+% 0 1 0 08c18fcacbe0e7dd0fe7e86e6ce53261
+
+% 0 1 0 14373b8073fbf3c31fed36cfbaf4caed
+
+% 0 1 0 1bde45994d9904e5154875346e84504a
+
+% 1 1 0 1aa864a4d24bc20d119b97912baf740e
+
+% 0 1 0 06aeea67296d5c3d0f79cbd31c529a54
+
+% 1 1 0 0be35365d022e97502df6c4e2ef61e1b
+
+@ 0 7 0 03b104b2d78905121f491a93a23191aa
++   entry #Self   der Zieltyp des Interpolators
++   entry #interpolate   baut den Zielwert aus den Teilen des Literals (auf Typebene, umgekehrt) und seinen eingesetzten Werten
++       `parts` ist ein Tupel von String-Literaltypen, das die Teile des Literals in umgekehrter
++       Quellreihenfolge enthält, `origins` ebenso ihre Quellpositionen und `insertions` die
++       eingesetzten Werte in Quellreihenfolge. Da es `inline` ist und `insertions` `inline`
++       übergeben wird, sieht ein Makro dahinter jeden eingesetzten Ausdruck und seinen Typ und
++       kann für jeden eine `Insertion` oder `Substitution` auflösen.
+
+@ 0 1 0 0846ea3caa57768b07be6cf190288c2b
++ entry .Extrapolable   eine Typklasse, die einen Wert ihres Typs als Pattern mit einem interpolierten Literal abgleicht
+
+% 1 1 0 064b10de5a397e4b1d225bf6dbcaa6a4
+
+@ 0 3 0 0ee54d8484a911b105f32367b70b45d0
++       `T is Extrapolable` ist das, wonach `Interpolation#unapply` sucht, sodass ein
++       interpoliertes Literal ein `case`-Pattern sein kann; so funktionieren `json"…"`- und
++       `html"…"`-Patterns. Eine Präfixmethode dient sowohl dem Konstruieren als auch dem
++       Abgleichen.
+
+% 2 1 0 1a54f146573f9cfe0f99ca7b0159fd91
+
+% 3 1 0 0ac7d5745e5240651a92801875028515
+
+% 0 1 0 0fb60ccc3ad9fbe302e2a3204c6e9185
+
+% 2 1 0 032fb820512bc0ae1bcf82c08e05d81b
+
+% 0 1 0 0e557f1d6ca308ba004234f34813dce9
+
+% 0 1 0 198ac6e5e00085f2030f62e3a291099c
+
+% 0 1 0 0a40a3c110f46fc119a91cd1d33fabcc
+
+% 0 1 0 0deb5c0568f292f21859f51239f25edf
+
+% 0 1 0 075e46fe5cf6da6119b38a9f565df8be
+
+% 0 1 0 10781ed7e3fffbf409a3de7aa67aff52
+
+% 0 1 0 03fbb93e38caf9d404adeb3237d5d987
+
+% 0 1 0 1641f627ca1d0e0513ae6365fd4c626c
+
+% 0 1 0 0d13d395d610af870c86e711bf20f384
+
+% 0 1 0 094198c599ba95cd0fc2d1234a9d997b
+
+% 1 1 0 08f328c2234011841f6fb9268210a58e
+
+% 0 1 0 18712d2469f95dec0ac79adf88019a9e
+
+% 1 1 0 1a377ebdbdd362b402479047e4bea1a7
+
+@ 0 5 0 095f52a60cc772fc0e3a5587f2af6fcc
++   entry #Self   der Typ, den ein Pattern zerlegt
++   entry #extrapolate   gleicht einen Prüfwert mit den Teilen des Literals ab und liefert eine `Extrapolation`
++       Erhält die Teile und Ursprünge als Typparameter, genau wie `Interpolable#interpolate`,
++       und den abzugleichenden Wert. Es gibt für ein Pattern ohne Lücken einen `Boolean` zurück
++       und für eines mit Lücken eine `Option` des gebundenen Werts (oder eines Tupels davon).
+
+@ 0 4 0 0b5a823c31319cc309646343a8ffa033
++ entry .Extrapolation   was ein `Extrapolable`-Abgleich zurückgibt: einen `Boolean` oder eine `Option` der gebundenen Werte
++     `Extrapolation[result]` ist `Boolean | Option[Tuple | result]`, die drei Gestalten, die der
++     Musterabgleich von Scala von einem `unapply` akzeptiert: ein `Boolean` für ein Pattern, das
++     nichts bindet, eine `Option[result]` für eine Lücke und eine `Option` eines Tupels für
++     mehrere.
+
+@ 0 1 0 0c008df3242301fe032a63af0c4062c0
++ entry .Insertion   eine Typklasse: wie ein eingesetzter Wert eines Typs in den Eingabetyp eines Interpolators gelangt
+
+% 1 1 0 045a35adffda2a621d72504cb68f112a
+
+@ 0 5 0 1e4b2d36c36ddac01e105a39436413d3
++       `Insertion[input, value]` wandelt einen in eine Lücke eingesetzten `value` in den eigenen
++       `input`-Typ des Interpolators um, sodass der Interpolator, nicht `toString`, entscheidet,
++       wie fremde Werte hineingelangen. Ein Typ ohne Instanz kann überhaupt nicht eingesetzt
++       werden; so verbietet ein Interpolator, was er nicht sicher machen kann. Ein neuer Typ
++       wird mit einer Instanz einsetzbar, ohne den Interpolator anzufassen.
+
+% 2 1 0 0cf89c97171d8aa0111f523880162a76
+
+% 3 1 0 0df616145bc908101b2ee00ba54a92f8
+
+% 4 1 0 057faf9242199794198081ce43551d53
+
+% 0 1 0 09087eb5eb59919f0390219a413c237a
+
+% 0 1 0 02403bcc0e34a3c71ae4010347985b25
+
+% 1 1 0 0ee21940a67a349b1d42b973aed5b27a
+
+@ 0 2 0 0282dbfa9c5191f61f91de040741dfe7
++       `value` ist kontravariant, sodass eine Instanz für einen Supertyp seinen Subtypen dient.
++       Eine `Substitution` ist eine Einfügung, die dem Parser außerdem mitteilt, wofür die Lücke
++       steht.
+
+% 0 1 0 133593b5134bc7ef1426b7271fd300de
+
+% 0 1 0 062655dc7609d1f403fe7776bf515f18
+
+@ 0 5 0 0c6ec05848f995eb0f8eb9b8aad267c9
++   entry .embeddable   eine `Substitution` für jeden `Embeddable`-Typ, mit der Kennung `"x"`, im impliziten Geltungsbereich
++       Für einen `value`, der `Embeddable` ist, liefert dies `Substitution[value.Operand, value, "x"]`
++       und bettet über `Embeddable#embed` ein, sodass ein Interpolator, der nach Einsetzungen
++       fragt, für jeden einbettbaren Typ eine findet, ohne eigene Instanz.
++   entry #embed   wandelt einen eingesetzten Wert in den Eingabetyp des Interpolators um
+
+@ 0 8 0 141e77f482a5f27215f9db82a5b3e5ef
++ entry .Substitution   eine `Insertion`, die dem Parser außerdem eine Kennung als Platzhalter für die Lücke gibt
++     `Substitution[input, value, label]` verhält sich zur Laufzeit genau wie
++     `Insertion[input, value]`. Zur Kompilierzeit teilt das Singleton `Label` dem Parser des
++     Interpolators mit, was die Lücke enthielt, sodass der Parser fortfahren kann, als stünde
++     dort ein repräsentatives Token des eingesetzten Typs — `"0"` für eine Zahl, `""""` für einen
++     String —, und die *Gestalt* eines Literals mit Lücken prüfen kann, statt bei der ersten
++     aufzugeben. Wo verschiedene Lücken verschiedene Dinge akzeptieren (der Port einer URL nimmt
++     eine Zahl, ihr Pfad Text), ist es die Kennung, die sie unterscheidet.
+
+% 2 1 0 1e4c688d2b01982e02675979a6807104
+
+% 3 1 0 0b827b88ded5223a116746c9542cb76e
+
+% 0 1 0 1cf4d0147af92fdb117a3719d699a9d7
+
+% 0 1 0 0b8047f887e8ad7e178247d1006b41e8
+
+% 0 1 0 0575e7bbe23af63c1a10122f76c449a9
+
+% 0 1 0 0c7ffd9ba6f1ae8a0aeabd357e921f1d
+
+% 0 1 0 009b5fd324d01c3c145987215dfb720e
+
+% 1 1 0 02d2de82138bed7506c99d01926c5f5a
+
+@ 0 1 0 0ef53b6f4bc4eaeb077dbe101427585a
++ entry .Embeddable   eine Typklasse, die einen Wert als `Operand` eines Interpolators mit dem Ziel `Form` einbettet
+
+% 1 1 0 15fab12b7878f67d04c95812391b4102
+
+@ 0 4 0 1ec38557dd9ad1931c2a55aaf13aba9c
++       `T is Embeddable by Operand in Form` besagt, dass ein `T` in einen Interpolator mit dem
++       Ziel `Form` eingesetzt werden darf und dabei als `Operand` hineingelangt. Es ist die
++       typklassenartige Form von `Insertion`: eine Instanz im Begleitobjekt des eingesetzten
++       Typs, und `Insertion.embeddable` leitet daraus die entsprechende `Substitution` ab.
+
+% 2 1 0 122be92254b53b4b046b896a78811155
+
+% 3 1 0 0409f978291bc31c1d0a32b3f66913e9
+
+% 2 1 0 0c80c91d5021e0561612a71972879efd
+
+% 0 1 0 00dbec56e062e8820eb78dabd887ff92
+
+% 0 1 0 17c509f2a1d5cfca1919d8710744c228
+
+% 0 1 0 0999f7ae768f63c51346c7e906883f4f
+
+% 0 1 0 0974b593a86d57550489505036832057
+
+% 0 1 0 132c0030149584be19727c2736c950e1
+
+% 1 1 0 1f138b4a0dc92288155ecbf7c29981d5
+
+% 1 1 0 01a7798f960b19f101569c320280be23
+
+@ 0 5 0 1e05cef6979b5be80dcb0d3fa04c8832
++   entry #embed   wandelt einen Wert in den Operandentyp des Interpolators um
++   entry #contramap   eine Einbettung für einen anderen Typ, über eine Funktion in diesen
++       `embeddable.contramap[Int](count => Tag(count.show))` ist ein `Int is Embeddable by Text in
++       Slug`, das ein `Int` einbettet, indem es zuerst einen `Tag` daraus macht. Das Ergebnis
++       erfasst sowohl diese Instanz als auch die Funktion.

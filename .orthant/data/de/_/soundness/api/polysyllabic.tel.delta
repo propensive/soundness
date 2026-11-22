@@ -1,0 +1,344 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1acedd231e89c7d705a5c65e1625afb7
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 12cf4099ba8dd085122513165ab3907a
++ info   Silbentrennung nach Liangs Algorithmus über TeX-Patterndateien: Trennstellen, weiche Trennstriche und Silben
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1da156422b65704216f4e9ab4379ae9d
++     _Polysyllabic_ findet, wo ein Wort am Zeilenende getrennt werden darf, mit dem Algorithmus
++     und den Patterndateien, die TeX verwendet. Wo ein Wort getrennt wird, lässt sich nicht an
++     seiner Schreibung ablesen; deshalb bewertet Liangs Algorithmus jede Lücke zwischen
++     Buchstaben anhand eines Wörterbuchs aus Tausenden kleiner Patterns, die aus echten
++     Trennwörterbüchern gewonnen wurden, und erlaubt eine Trennung überall dort, wo der höchste
++     Wert ungerade ist. Die Sprache ist eine kontextuelle `Hyphenation`, und drei Erweiterungen auf
++     `Text` verwenden sie: `hyphenate` fügt an jeder zulässigen Trennstelle einen Trennstrich
++     ein, `syllables` zerlegt Text in seine Teile, und `breakPoints` liefert die rohen Positionen.
+
+% 2 1 0 03723a808ebc72fc07ac196dbdb78556
+
+% 3 1 0 1d19a29c8c119fc01093e47c03ff0179
+
+% 4 1 0 059ecc8b12296a7a144c203de7d5647a
+
+% 0 1 0 13992425f04cc99d0fab42777b11e2eb
+
+% 0 1 0 0e28d4c979ae163c1962e1d5498c80d3
+
+% 0 1 0 19340d047010097a19c2cd4ca90e2b1a
+
+% 1 1 0 1b5c3da20bf8f8541d7e6a841860408e
+
+@ 0 7 0 0f53087ed56686db0586e044844dd34e
++     Amerikanisches Englisch wird als `hyphenations.englishHyphenation` bereitgestellt, geparst
++     aus der hyph-utf8-Patterndatei von CTAN, die auf dem Klassenpfad mitgeliefert wird. Es ist
++     ein Given in einem Auswahlpaket und wird daher namentlich importiert: `import hyphenations.*`
++     importiert keine Givens. Jede andere Sprache wird mit `Hyphenation.fromTex` aus ihrer
++     TeX-Patterndatei geladen, und jede Menge wird mit `Hyphenation#extending` durch zusätzliche
++     Patterns oder Ausnahmen korrigiert. Ist keine Sprache importiert, trennt
++     `Hyphenation.fallback` aus dem Begleitobjekt nichts, sodass Text unverändert durchläuft,
++     statt nach Regeln getrennt zu werden, die das Programm nicht hat.
+
+@ 0 4 0 1c67b1b397824a5d160118c8d038beb7
++     Jede Folge von Buchstaben wird unabhängig getrennt; Leerzeichen, Satzzeichen und Ziffern
++     laufen unberührt durch. Die Bibliothek hat ein Source-Set, `polysyllabic.core`, für jede
++     Plattform, und alles wird in das `soundness`-Umbrella exportiert, wo das Paket
++     `hyphenations` mit dem gleichnamigen Paket des Umbrellas verschmilzt.
+
+% 0 1 0 137993f06410fb67033c0e5c5eeb0c17
+
+% 0 1 0 1d2517adc1a8137f127a5234448b34c0
+
+% 0 1 0 07972c3deecfa7ac1d4c1405c0309cb9
+
+@ 0 1 0 0a856f6f88e58a5b1ad2fe0202456ce3
++ entry .Hyphenation   die Trennpatterns und Ausnahmen einer Sprache, mit ihren minimalen Fragmentlängen
+
+% 1 1 0 069f9a029e36920d1716965eb42fc51f
+
+@ 0 5 0 0f832fdd444630bb10d62907cf1f38ac
++       Eine `Hyphenation` ist der Kontextwert, den jede Operation der Bibliothek liest: die
++       bewertenden `#patterns` der Sprache, ihre Liste `#exceptions` von Wörtern, deren
++       Trennstellen ausdrücklich angegeben sind, und die Zeichenzahlen `#leftMin` und `#rightMin`,
++       die eine Trennung vor und nach sich lassen muss. Sie wird als Given gewählt – meist
++       `hyphenations.englishHyphenation`, namentlich importiert – und ist unveränderlich:
++       `#extending` erzeugt eine neue.
+
+% 2 1 0 16997e4b8fe3e59a070ed76f7a126cfe
+
+% 3 1 0 00802a4835e7ce95112db416ada78fa5
+
+% 4 1 0 1642c7534ec96c6b060dbafae507123a
+
+% 0 1 0 07c696d2e895de0a14efca041998754e
+
+% 0 1 0 037638fb1d31757c075f669236486d27
+
+% 1 1 0 08ce28f651919cc0013a40ff83d49667
+
+@ 0 6 0 006fcca133232503033cd5637adda8e1
++       Eine neue Sprache wird mit `Hyphenation(patterns, exceptions)` aus rohen Patterns gebaut
++       oder mit `.fromTex` aus einer ganzen TeX-Patterndatei gelesen. Patterns stehen in der
++       Notation von TeX: die Buchstaben eines Fragments mit einer Ziffer in einer beliebigen Lücke,
++       sodass `hy3ph` in der Lücke zwischen `y` und `p` den Wert 3 vergibt, und ein `.` markiert
++       eine Wortgrenze (`.ach4`, `ion5.`). Ausnahmen sind Wörter mit Trennstrichen an ihren
++       Trennstellen, etwa `as-so-ciate`. Nur die ASCII-Buchstaben `a` bis `z` nehmen am
++       Pattern-Trie teil; ein Wort wird vor dem Nachschlagen in Kleinbuchstaben umgewandelt.
+
+% 0 1 0 12d3e61bc99acf39146fdadb0e4a0f82
+
+% 0 1 0 1e6d556594631c45039e927e078c3948
+
+@ 0 15 0 171f6744d15bba500c94b410a20f7e71
++   entry .fallback   die Silbentrennung im impliziten Geltungsbereich, wenn keine importiert ist: Sie erlaubt keine Trennungen
++       Das Given des Begleitobjekts, das gefunden wird, wenn keine andere `Hyphenation` im
++       lexikalischen Geltungsbereich ist. Seine Wörterbücher sind leer und seine minimalen
++       Fragmentlängen so groß, wie ein `Int` sein kann; daher gibt `hyphenate` seinen Text
++       unverändert zurück, `syllables` trennt nur an Nicht-Buchstaben, und `breakPoints` ist leer.
++       Ein Zeilenumbruch-Algorithmus fällt so auf das Umbrechen an Leerzeichen zurück. Ein
++       importiertes Given wie `hyphenations.englishHyphenation` hat Vorrang vor ihm.
++   entry .alphabet   das Alphabet des Pattern-Tries: die ASCII-Kleinbuchstaben, gefolgt von der Grenze `.`
++       Ein gossamer-`Dictionary.Alphabet` aus `abcdefghijklmnopqrstuvwxyz.`, in dieser
++       Reihenfolge. Die innere Schleife des Algorithmus berechnet die Slots für dieses Alphabet
++       direkt, daher wird jede `Hyphenation` darüber gebaut; ein Zeichen außerhalb davon setzt den
++       Gang durch den Trie zurück.
++   entry .apply   baut eine Silbentrennung aus Patterns und Ausnahmen im TeX-Format
++       Nimmt die `patterns` (etwa `t"hy3ph"`), optionale `exceptions` (etwa `t"as-so-ciate"`)
++       und die minimalen Fragmentlängen `leftMin`, standardmäßig 2, und `rightMin`,
++       standardmäßig 3. Die Patterns werden in einen Aho-Corasick-Trie kompiliert, sodass jedes
++       Wort in einem einzigen Vorwärtsdurchgang bewertet wird.
+
+% 2 1 0 0634226245bcbc6e1d99f04cbdc3331d
+
+% 3 1 0 05f60505f421d61f07b2b8ace8b5fc9a
+
+% 0 1 0 1a4eeb69da675b8a0e320c9fcbb32ac7
+
+% 0 1 0 097e12bad3508c2f0efc4807cba6415e
+
+% 0 1 0 0d85d2dd4191752a0aac57514f537e00
+
+% 1 1 0 08484f9e81af2d5c1d238a367b9cf041
+
+@ 0 6 0 1221e49371f9071114e3563227134ae7
++   entry .fromTex   liest eine Silbentrennung aus dem Text einer ganzen TeX-Trennpatterndatei
++       Liest eine Datei in dem Format, das hyph-utf8 von CTAN veröffentlicht: Es entfernt
++       `%`-Kommentare, nimmt die Patterns aus dem Block `\patterns{…}` und die Ausnahmen aus dem
++       Block `\hyphenation{…}` sowie die minimalen Fragmentlängen aus `\lefthyphenmin` und
++       `\righthyphenmin`, die auf 2 und 3 voreingestellt sind, wenn die Datei sie nicht setzt. Die
++       für TeX veröffentlichten Sprachen sind alle auf diese Weise verfügbar.
+
+% 2 1 0 1260cd9c9de744c30e03082a49ec9d3a
+
+% 3 1 0 0c61ac2aa2f3d1c108298dfbb082e6d8
+
+% 0 1 0 1b2fc40646840a3f068e0180d211f5ea
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 19a0ea94c9f2227808a72baf39f905b0
+
+% 1 1 0 01afd9d2e58dad1a1ccb1553305edf58
+
+@ 0 15 0 07323e3ebb9f3ec51d7ad3d143080b52
++   entry .breakPoints   die Positionen, an denen ein Wort getrennt werden darf, unter ausdrücklich angegebenen minimalen Fragmentlängen
++       Der Algorithmus selbst, als Funktion. `Hyphenation.breakPoints(word, hyphenation,
++       leftMin, rightMin)` gibt ein unveränderliches `Array[Int]` von Offsets in das Wort zurück,
++       in aufsteigender Reihenfolge: Offset `p` bedeutet, dass vor Buchstabe `p` ein Trennstrich
++       eingefügt werden darf. Ein exakter Treffer in der Ausnahmeliste überspringt den Gang durch
++       die Patterns. Eine Überladung nimmt einen `String` mit einem Offset und einer Länge, um
++       auf einem Ausschnitt zu arbeiten, ohne einen Teilstring zu allozieren. Meist will Code die
++       Erweiterung `breakPoints` auf `Text`, die die minimalen Längen aus der gegebenen
++       `Hyphenation` liest.
++   entry .breakPointsInto   schreibt die Trennpositionen eines Worts in vom Aufrufer bereitgestellte Puffer, ohne etwas zu allozieren
++       Die allokationsfreie Form von `.breakPoints` für Code, der viele Wörter trennt, wie es die
++       Erweiterung `hyphenate` tut: Sie nimmt einen `String`-Ausschnitt und drei veränderliche
++       temporäre Arrays, `padded` (mindestens die Wortlänge plus 2), `scores` (Länge plus 3) und
++       `breaks` (Länge), schreibt die Offsets in `breaks` und gibt zurück, wie viele sie
++       geschrieben hat. Die Puffer lassen sich für jedes Wort eines Texts wiederverwenden.
++   entry .Error   ausgelöst, wenn eine Trennressource nicht vom Klassenpfad geladen werden kann
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 17 0 0e78f82f6a8f56a41e67aadddd90ad19
++         _the hyphenation resource `resource` could not be loaded from the classpath_. Das
++         mitgelieferte `hyphenations.englishHyphenation` löst ihn nicht aus: Eine fehlende
++         mitgelieferte Patterndatei ist ein Paketierungsfehler und führt stattdessen zu einer Panic.
++     entry #resource   der Klassenpfad der Ressource, die nicht geladen werden konnte
++   entry #patterns   die bewertenden Patterns, kompiliert in einen Aho-Corasick-Trie mit Buchstaben als Schlüsseln
++       Ein gossamer-`Dictionary` von den Buchstaben jedes Patterns (mit `.` für eine Wortgrenze)
++       auf seine Werte, einen pro Lücke, einschließlich derer vor dem ersten und nach dem letzten
++       Buchstaben.
++   entry #exceptions   die Wörter, deren Trennstellen ausdrücklich angegeben sind, jeweils auf ihre Trennoffsets abgebildet
++       Eine Ausnahme hat Vorrang vor den Patterns, sodass ein Wort, das die Patterns falsch
++       trennen, korrigiert wird, ohne ein anderes zu stören.
++   entry #leftMin   die wenigsten Zeichen, die eine Trennung vor sich lassen darf
++   entry #rightMin   die wenigsten Zeichen, die eine Trennung nach sich lassen darf
++   entry #extending   eine neue Silbentrennung mit zusätzlichen Patterns und Ausnahmen und optional neuen minimalen Längen
++       Legt `patterns` und `exceptions` über die dieser Silbentrennung und ersetzt `leftMin` oder
++       `rightMin`, wenn einer davon angegeben ist. Patterns werden zusammengeführt, indem an jeder
++       Lücke der höhere Wert genommen wird; so stellt ein hinzugefügtes Pattern mit ungeradem Wert
++       eine Trennung wieder her, die ein Standardpattern mit geradem Wert verbot. Eine Ausnahme
++       gibt die Trennstellen eines Worts ausdrücklich an.
+
+% 2 1 0 1b62f3cc50e975a11b1d7407338f0d06
+
+% 3 1 0 14a747097c96406d0920d902b0ac7368
+
+% 4 1 0 121d0a1aa2c11ad011c01d80e81b77da
+
+% 0 1 0 1dc528685ea6d0e012c0583ef67392d7
+
+% 0 1 0 1c5c3737470eb7e11b853a4918356142
+
+% 1 1 0 16028378309946cd1ddd538784b3622a
+
+@ 0 1 0 0ef8312be51a95301209d979c50d911e
++ entry .hyphenate   fügt an jeder zulässigen Trennstelle in jeder Buchstabenfolge eines Texts einen Trennstrich ein
+
+% 1 1 0 092a7cf722ee573a00a85bf7d1b13a8c
+
+@ 0 6 0 1ff7829fb65520290f9bbdb458a15739
++       Eine Erweiterung auf `Text`, die die im Geltungsbereich gegebene `Hyphenation` verwendet.
++       Der Trennstrich ist standardmäßig der weiche Unicode-Trennstrich U+00AD, der unsichtbar
++       ist, sofern eine Zeile dort nicht tatsächlich umbricht; ein sichtbares Zeichen zeigt die
++       Trennstellen. `leftMin` und `rightMin` überschreiben die eigenen minimalen Fragmentlängen
++       der Silbentrennung, damit eine Trennung nie ein oder zwei Buchstaben allein zurücklässt.
++       Jede Buchstabenfolge wird unabhängig getrennt, und alles andere läuft unverändert durch.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 16268dd5aae49ea10b54baea04a7d9b5
++         label Jede zulässige Trennstelle
+
+% 1 1 0 12654915d74f3d250a2138aa57a11c74
+
+% 2 1 0 1be31981a91dd64517c51681418cac6a
+
+% 3 1 0 14d229424a202cfa138d67c2a003a593
+
+% 0 1 0 1665b2d7fc541cb519a91faa32293826
+
+% 1 1 0 05b8871d91d04a411623c30da2ee88fb
+
+@ 0 1 0 0ee6e8b8f169dc771ecd2f303b60c6d8
++         label Mindestens vier Zeichen vor der ersten Trennung
+
+% 1 1 0 005dc1122d0ea00c1d21e5c2f43e9780
+
+% 2 1 0 091753953f3b2d8f02b7d85921c72220
+
+% 3 1 0 15ccecea0d958a6e16b5d5d67cd4648b
+
+% 0 1 0 125191af62511d8f0a499fff507a4889
+
+% 1 1 0 1512c9ea528ca721140c486586c88148
+
+@ 0 1 0 134a10410b89e5421a991f8f4b89ba1d
++         label Mindestens sechs Zeichen nach der letzten Trennung
+
+% 1 1 0 1b148371d7a2069219bef38018138c7e
+
+% 2 1 0 009b96492a27859213b107e9c8ab086f
+
+% 3 1 0 0a13c100f583390c08d15e555c4238af
+
+% 0 1 0 0e972117d9d7ce5e0687dc5a1a4f8b41
+
+% 1 1 0 14707f1653bd26081e6c52ff2e7c0921
+
+@ 0 1 0 052be5c84b4c55c303ee9e5b62078681
++         label In fortlaufendem Text, Wort für Wort
+
+% 1 1 0 1bd7f4e57f8a0a22195fd76e926b99b8
+
+% 2 1 0 1298f8ae7a7e5aa51dec3cf65aa3e6d7
+
+% 3 1 0 14a8356633ff6bdb0b8b66bef5c11610
+
+% 0 1 0 1a4908707c1b3c030b4682e50652e465
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 2 0 112d688775560a7100804852ae7ef208
++       Temporäre Puffer werden von allen Wörtern eines Aufrufs geteilt und nur vergrößert, wenn
++       ein längeres Wort kommt, sodass das Trennen eines langen Texts kaum mehr als sein Ergebnis
++       alloziert.
+
+% 0 1 0 14a0a67bfad34f91157d7a7e3c8decdd
+
+% 0 1 0 00ae6f27e3fa253a0450dac366a481fc
+
+@ 0 4 0 199a034e7002f5070443794491a41726
++ entry .syllables   zerlegt Text in Silben, wobei jede Folge von Nicht-Buchstaben ein eigenes Segment ist
++     Eine Erweiterung auf `Text`, die die im Geltungsbereich gegebene `Hyphenation` verwendet und
++     eine `Sequence[Text]` zurückgibt. Jede Buchstabenfolge wird an ihren Trennstellen zerlegt,
++     und jede Folge von Nicht-Buchstaben ist ein Segment, sodass das Aneinanderhängen der
++     Segmente den ursprünglichen Text exakt wiederherstellt.
+
+% 2 1 0 04884696ce53db8c1568e6d7f6e6f25f
+
+% 3 1 0 0782ea631fbc620e1c20ad1aa72be3c7
+
+% 4 1 0 0515ff661c3c5b0a1aa833922448138e
+
+% 0 1 0 13d262b70fa3f1811d96c9b3865a44f1
+
+% 1 1 0 0fe07311044af0d107cd6365aecb3d20
+
+@ 0 6 0 098d181082bc4e840bb60b3bc960474f
++ entry .breakPoints   die Offsets, an denen ein Wort getrennt werden darf, unter der Silbentrennung im Geltungsbereich
++     Eine Erweiterung auf `Text` für Code wie einen Zeilenumbruch-Algorithmus, der Trennungen
++     selbst setzt, statt Zeichen einzufügen. Gibt ein unveränderliches `Array[Int]` von Offsets
++     in aufsteigender Reihenfolge zurück: Offset `p` bedeutet, dass zwischen den Buchstaben
++     `p - 1` und `p` ein Trennstrich stehen darf. Sie behandelt den ganzen Text als ein Wort,
++     mit den eigenen `leftMin` und `rightMin` der gegebenen `Hyphenation`; für fortlaufenden
++     Text verwenden Sie `syllables` oder `hyphenate`.
+
+% 2 1 0 032b05fb124b3d310e67d3ce01eea9e0
+
+% 3 1 0 0761755d7bade41f02d42462ebe5fce0
+
+% 4 1 0 0dd5653c3d509c900d6d109ad6ae1f47
+
+% 0 1 0 189ca7324de5f65d1b1feb2adba09e4e
+
+% 1 1 0 03035af83cee2edb1066057674f7051d
+
+@ 0 1 0 1444a2e1ffe13bc500f57881fa33c0ce
++ entry .hyphenations   die mitgelieferten Trennsprachen, jede ein Given, das namentlich importiert wird
+
+% 1 1 0 1629fae86b6f60190fd75896fb785205
+
+@ 0 3 0 0d534221c1d237750dbafe6d6493f19f
++       Ein Auswahlpaket: Welche Sprachregeln gelten, entscheidet das im Geltungsbereich gegebene
++       `Hyphenation`-Given, und eines wird namentlich importiert, da `import hyphenations.*`
++       keine Givens importiert. Es verschmilzt mit dem Paket `hyphenations` des
++       `soundness`-Umbrellas.
+
+% 2 1 0 0f040206f73090f00257a612fca9a2ab
+
+% 3 1 0 09ed33ebc8ddc78c149a8c596300265b
+
+% 4 1 0 1dd50837050f28301f65fc87498adc20
+
+% 1 1 0 0d6ff2d3864c33ef17b1d3fe0f640cf6
+
+@ 0 6 0 18d7f3badfdfd25f06ab3365761d8f15
++   entry .englishHyphenation   amerikanisches Englisch, aus den hyph-utf8-Patterns von CTAN und der Ausnahmeliste von TeX
++       Geparst aus `polysyllabic/hyph-en-us.tex`, das auf dem Klassenpfad mitgeliefert und unter
++       der FSF-All-Permissive-Lizenz in seinem Header unverändert weiterverbreitet wird, und zwar
++       beim ersten Gebrauch des Givens. Es enthält die Ausnahmen, die TeX mitliefert, sodass
++       `associate` als `as-so-ciate` und `table` als `ta-ble` getrennt wird, wo die Patterns allein
++       das nicht täten. Fehlt die mitgelieferte Datei auf dem Klassenpfad, führt das Given zu einer
++       Panic.

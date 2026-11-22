@@ -1,0 +1,1578 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 16042307d651ed5508cc5040a8d03817
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1e5bb8325dbb8463142e7e843ed26b14
++ info   Browserautomatisierung über das W3C-WebDriver-Protokoll: Sitzungen, Elemente, Aktionen und Screenshots
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 039c4f088f1479cb06f47724678906e9
++     _Tarantula_ steuert einen Webbrowser aus Scala über das
++     [WebDriver](https://www.w3.org/TR/webdriver2/)-Protokoll. Ein Browser ist ein Wert —
++     `WebDriver.Chrome`, `WebDriver.Firefox`, `WebDriver.Safari` oder `WebDriver.Edge`, jeweils das
++     Standard-Treiberprogramm seines Browsers —, und eine Sitzung darauf zu öffnen startet den
++     Treiber, wartet, bis er lauscht, erzeugt eine Sitzung und löscht, wenn der Block endet, die
++     Sitzung und stoppt den Treiber, ob der Block nun zurückkehrte oder eine Ausnahme warf. Ein bereits
++     laufender Treiber oder ein entferntes Selenium-Grid wird über dieselbe
++     `WebDriver.Session`-Schnittstelle mit `WebDriver(url, capabilities)` gesteuert.
+
+@ 0 5 0 168d2f70a86f98131b0380f6a71a82c3
++     Innerhalb der Sitzung ist `browser` das Handle im Geltungsbereich: Es navigiert, liest Titel und
++     Quelltext, findet Elemente anhand typisierter Kriterien — ein HTML-Tag, eine validierte DOM-ID,
++     eine Klassenliste, eine CSS-Selektorliste, ein XPath oder Linktext, alles mit einer
++     `Focusable`-Instanz —, wechselt Fenster und Frames, behandelt Alerts, verwaltet Cookies und
++     Timeouts, führt Tastatur- und Zeigeraktionen aus, führt JavaScript aus, druckt die Seite und
++     erstellt Screenshots.
+
+% 2 1 0 1c1bdf69fda8a01b059e5cbe24aaf84e
+
+% 3 1 0 0755df3a74dab3680060380ca025906d
+
+% 4 1 0 17d6c98b5abf7c0c1b0d4b69a5843e2f
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 1e13bb2d27b6fcca0581e75784422724
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 1 1 0 06ceab4636d2e5561f158dcde8bc05fa
+
+% 2 1 0 0a8cca522fa4b09d1175af1b76e9dbad
+
+% 3 1 0 180e80c27ca44f83061efdc97160b7ee
+
+% 2 1 0 09f66897003c39d800ab1f949f063544
+
+% 1 1 0 195693bda4cceac80613f9088269e653
+
+@ 0 4 0 1e8e1129596843e71a5359cbc683969e
++     Eine Sitzung braucht Internetzugang (`internetAccess.online`), einen HTTP-Client, um mit dem
++     Treiber zu sprechen (`httpBackends.javaNetHttp`), eine `Tactic[WebDriver.Error]` und
++     `Diagnostics` sowie einen Logger für `Http.Event`s; einen lokalen Treiber zu starten erfordert
++     zusätzlich einen `Monitor` (einen `supervise`-Block), ein `WorkingDirectory`, ein `Environment`
++     für den Treiberprozess und einen Logger für `Exec.Event`s.
+
+@ 0 7 0 04de9c25f63469e006d2c3e9225d61ed
++     Das `WebDriver.Session`-Handle ist eine Capability, die das Capture-Checking auf den Block
++     beschränkt, dem sie gehört: Sie zurückzugeben, oder irgendetwas, das sie einfängt, ist ein
++     Kompilierfehler. `WebDriver.Element`-Handles sind reine Werte, doch jede Operation darauf nimmt
++     die Sitzung als Kontextparameter, sodass ein Handle außerhalb seiner Sitzung wirkungslos ist, und
++     eines, das verwendet wird, nachdem sich seine Seite geändert hat, löst `WebDriver.Error` mit dem
++     Grund `StaleElement` aus. Jeder Fehlschlag — ein Treiber, der nicht erreichbar ist, eine Response
++     der falschen Gestalt oder jeder Fehler, den der Treiber meldet — kommt als ein einziger
++     `WebDriver.Error` an, der den W3C-Fehlercode als seinen `WebDriver.Error.Reason` trägt.
+
+@ 0 4 0 0d71c40d7da9afe9173faa8c9a803971
++     Elementauswahl wird `\` geschrieben, nicht `/`: `browser \ Li`, `element \ cls"item"` und
++     `shadowRoot \ Button` liefern jeweils jeden Treffer, und `element(…)` genau einen, wobei
++     andernfalls `NoSuchElement` ausgelöst wird. Der Backslash lässt das arithmetische `/` von
++     Symbolism frei, um im selben Geltungsbereich Größen zu dividieren.
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     Die Bibliothek hat zwei Source-Sets:
+
+@ 0 8 0 0277ff94e0466907131af169257bd96c
++     - `tarantula.core` — `WebDriver` und seine verschachtelten `Session`, `Element`, `ShadowRoot`,
++       `Error` und `Local`, der `browser`-Accessor und die Element-Erweiterungen (`click`, `value`,
++       `innerText`, `attribute`, …). Es braucht ein Treiber-Binary (`chromedriver`, `geckodriver`,
++       `safaridriver` oder `msedgedriver`) im Pfad, um einen Browser zu starten; die Protokollschicht
++       selbst ist einfaches HTTP und lässt sich gegen jeden WebDriver-Endpunkt ausführen.
++     - `tarantula.image` — die `screenshot()`-Erweiterungen, die einen Screenshot über Hallucination
++       in ein `Raster in Png` dekodieren; sie sind getrennt gehalten, damit die Browserautomatisierung
++       nicht von einem Bildcodec abhängt.
+
+@ 0 2 0 1bae0a484bb0a74d190bf26698ca9455
++     Alles wird in das `soundness`-Umbrella exportiert, sodass ein Benutzer `import soundness.*`
++     schreibt und die oben genannten ambienten Givens namentlich importiert.
+
+% 0 1 0 1de92eea923899891f87ee2d2549fc9f
+
+% 0 1 0 19b732b9b7efa4471d0079e891ac4989
+
+% 0 1 0 03d04ce52428b0dc1cbd321fc1fb3e50
+
+@ 0 1 0 161f825464c05ad41209a2099b285c7f
++ entry .WebDriver   ein zu steuernder Browser: ein lokales Treiberprogramm oder ein Treiber, der bereits unter einer URL lauscht
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 7 0 079fb060952aee8f1305a47d8b25ed9e
++       `WebDriver` ist zweierlei unter einem Namen. Als **Typ** ist es ein Treiber, der bereits
++       lauscht — ein von Hand gestarteter oder ein Selenium-Grid —, adressiert über seine
++       `#base`-URL und die `#capabilities`, die von ihm angefordert werden, und erzeugt mit
++       `WebDriver(url"http://localhost:4444", capabilities)`. Als **Objekt** ist es die Heimat der vier
++       lokalen Browser (`.Chrome`, `.Firefox`, `.Safari`, `.Edge`), jeder ein `WebDriver.Local`, der
++       sein Treiberprogramm für die Dauer einer Sitzung startet, sowie der Typen, die jede Sitzung
++       verwendet: `Session`, `Element`, `ShadowRoot` und `Error`.
+
+@ 0 2 0 011389b8975d84ce089a3a2cde4e1508
++       Beide sind `Sessional`, sodass `driver.session: session ?=> …` auf jedem von beiden eine
++       Sitzung öffnet, und die Sitzung wird — und ein gestarteter Treiber gestoppt — in einem
++       `finally` geschlossen, wenn der Block endet.
+
+% 2 1 0 07268d3e3cd785431b5ec5e9ed2c7f71
+
+% 3 1 0 07bad6332436d64b008af29515d11852
+
+% 4 1 0 0e55d76e344ca0b116a9ae8cd8235fec
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 00abfc3c0dc8d1e40c575642504c5ed2
+
+% 0 1 0 175d5074f3e6597c0675032ed74d163d
+
+% 0 1 0 014976018f1c004b00d0cf02658b8e6e
+
+% 0 1 0 163dd072280af31914aa9ef6d2b64ce6
+
+% 1 1 0 002e485b7c8088771f223420447f5d0b
+
+% 2 1 0 007b72edda9142a11583d6c606566b91
+
+@ 0 3 0 1ab55cb2b46fffdb1f4701b04052a9ec
++       Ein mit `apply` erzeugter `WebDriver` sendet sein `capabilities`-JSON unverändert als
++       `POST /session`-Nutzdaten, sodass sich die eigenen Erweiterungen eines Selenium-Grids, Proxys,
++       Timeouts und Mobilemulation alle darüber anfordern lassen.
+
+% 0 1 0 0d45e06297bd6b991d5e7567ce632101
+
+% 0 1 0 0761615d7984f09a0533cb47a4135584
+
+% 0 1 0 03be0b5f6c79342f1cf06afbca556f63
+
+% 0 1 0 1ab8d8eb9b18c99019d257f32a423dd6
+
+@ 0 1 0 02f683e312a26e5812ef0dbf25431f17
++   entry .Driver   die vier W3C-Treiberprogramme: chromedriver, geckodriver, safaridriver und msedgedriver
+
+% 1 1 0 1171ca25bef6605b0e3ef42db75724b9
+
+@ 0 17 0 16b0e459f2a4134d13266142d030096f
++         Eine Aufzählung der Treiberprogramme, die ein `WebDriver.Local` starten kann, als Daten statt
++         als Unterklassen: `Chromedriver`, `Geckodriver`, `Safaridriver` und `Edgedriver`. Jedes kennt
++         den Befehl, der es auf einem Port startet, die `browserName`-Capability, auf die sein Browser
++         antwortet, und die Argumente, die diesen Browser in den Headless-Modus versetzen. Einen
++         Browser hinzuzufügen ist ein neuer Fall, da der Prozesslebenszyklus für alle derselbe ist.
++     entry #command   der Shell-Befehl, der den Treiber lauschend auf einem Port startet
++         `chromedriver --port=N` und `msedgedriver --port=N` nehmen den Port mit Gleichheitszeichen;
++         `geckodriver --port N` und `safaridriver --port N` nehmen ihn als separates Argument. Das
++         Treiber-Binary muss im Pfad liegen.
++     entry #browserName   die `browserName`-Capability, auf die der Browser des Treibers antwortet
++         `chrome`, `firefox`, `safari` oder `MicrosoftEdge`, wie das W3C-Capabilities-Objekt sie
++         schreibt.
++     entry #headless   die Browserargumente, die den Headless-Modus wählen, sofern der Browser einen hat
++         `--headless=new` für Chrome und Edge (die unterstützte Schreibweise, seit das alte
++         `--headless` zu seinem Alias wurde), das mit einfachem Bindestrich geschriebene `-headless`
++         für Firefox und nichts für Safari, das keinen Headless-Modus hat: Danach zu fragen ist
++         wirkungslos statt ein Fehler.
++   entry .Local   ein Browser und das Treiberprogramm, das ihn steuert, als reiner Wert
+
+% 1 1 0 0780e7b4c07d080c17e0c0044272d27e
+
+@ 0 6 0 02d7d3e084a0cba91ca6aac4c11c28a0
++         Ein `WebDriver.Local` benennt einen zu steuernden Browser über seinen `WebDriver.Driver`, den
++         Port, auf dem der Treiber lauschen soll (`4444`, sofern `#on` nichts anderes sagt), die
++         Argumente, mit denen der Browser gestartet wird, und optional ein Capabilities-Objekt, das
++         anstelle des generierten gesendet wird. Er hält keinen Prozess, keine Verbindung und keine
++         Sitzungs-ID, darf also ein zwischen Tests geteilter `val` sein und nacheinander für mehrere
++         Sitzungen verwendet werden; `.Chrome`, `.Firefox`, `.Safari` und `.Edge` sind die vier
++         Standardwerte.
+
+% 2 1 0 0a5258bffb3bfa74019029432b16aed9
+
+% 3 1 0 1e759c446bcd4895121d52ed7366967a
+
+% 4 1 0 0af4f944e97e3e42151cccec0676969e
+
+% 0 1 0 010665a457d299ee1483d2a88ce7bbe2
+
+% 2 1 0 12c2b394b112716a17ca302d2c8f3dc6
+
+% 0 1 0 149388f4119b4b04180e8c50f2af55ad
+
+% 1 1 0 03a7596355105d5b1b3198d3afa3e0ca
+
+% 0 1 0 1391a6377a4ce25615ed3bd0a1d0f043
+
+% 1 1 0 077bff8a964b5be91943398aed6236f6
+
+@ 0 6 0 14a001e83c449dd3113c27e85ee12462
++         Eine Sitzung zu öffnen forkt den Befehl des Treibers, fragt seinen `GET /status`-Endpunkt
++         alle 50 Millisekunden bis zu fünf Sekunden lang ab, bis er antwortet, öffnet die Sitzung mit
++         `#capabilities` und stoppt den Treiber, wenn der Block endet. Ein Treiber, der sich nicht
++         forken lässt, löst `WebDriver.Error` mit dem Grund `SessionNotCreated` aus, und einer, der nie
++         zu lauschen beginnt, einen mit dem Grund `Timeout`. Zwei gleichzeitige Sitzungen auf demselben
++         Port kollidieren, daher gibt eine Testsuite, die Sitzungen parallel ausführt, jeder mit `#on`
++         ihren eigenen.
+
+% 0 1 0 1ad010f6f466c48109f2e4bb51cb9c01
+
+% 1 1 0 1028621768ccd3be06bf335f11646a13
+
+@ 0 1 0 146393cdcde9c2ec0f7f66bdb237d9fb
++     entry .Sessional   öffnet eine Sitzung auf einem `WebDriver.Local`: forkt den Treiber, wartet, steuert, stoppt
+
+% 1 1 0 1a99ac5f26d3c98d15948533f4206b14
+
+@ 0 47 0 01cd3622234e90961f4f572efe03f5e9
++           Die `aperture.Sessional`-Instanz für `WebDriver.Local`, mit `Self = Local` und `Result =
++           Session^`. Sie braucht ein `Online`, ein `Http.Backend`, ein `WorkingDirectory`, ein
++           `Environment` (das der Treiberprozess erbt), einen `Monitor`, Logger für `Http.Event` und
++           `Exec.Event`, eine `Tactic[WebDriver.Error]` und `Diagnostics`. Das Given `.sessional`
++           konstruiert sie, sodass ein Aufrufer die Klasse nie benennt.
++       entry #session   forkt den Treiber, wartet, bis er lauscht, führt den Block aus und stoppt ihn
++           Führt `lambda` mit einer frischen `WebDriver.Session` im Geltungsbereich aus und bricht dann
++           in einem `finally` den Job des Treibers ab. Ein fehlgeschlagener Fork wird als
++           `WebDriver.Error` mit dem Grund `SessionNotCreated` gemeldet; ein Treiber, der nicht
++           innerhalb von fünf Sekunden auf `GET /status` antwortet, als einer mit dem Grund `Timeout`.
++     entry .sessional   das Given, durch das `local.session: session ?=> …` aufgelöst wird
++         Im Begleitobjekt von `WebDriver.Local`, sodass es ohne Import gefunden wird, wann immer die
++         Kontextwerte, die es braucht, im Geltungsbereich sind: `Online`, `Http.Backend`,
++         `WorkingDirectory`, `Environment`, `Monitor`, `Http.Event is Loggable`,
++         `Exec.Event is Loggable`, `Tactic[WebDriver.Error]` und `Diagnostics`.
++     entry #driver   das Treiberprogramm, das diesen Browser steuert
++     entry #port   der Port, auf dem der Treiber lauscht; standardmäßig `4444`
++     entry #arguments   die Argumente, mit denen der Browser gestartet wird, etwa `--headless=new`
++     entry #requested   ein Capabilities-Objekt, das anstelle des generierten gesendet wird, oder `Unset`
++     entry #on   derselbe Browser mit seinem Treiber auf einem anderen Port
++         Jede Sitzung auf einem Port braucht diesen Port frei, daher nehmen gleichzeitig laufende
++         Sitzungen jeweils ihren eigenen: `WebDriver.Chrome.on(4451)`.
++     entry #headless   derselbe Browser, ohne Fenster gestartet
++         Hängt die Headless-Argumente des Treibers (`WebDriver.Driver#headless`) an `#arguments` an;
++         bei Safari, das keinen Headless-Modus hat, ändert es nichts.
++     entry #arguing   derselbe Browser mit weiteren Startargumenten
++         `WebDriver.Chrome.arguing(t"--window-size=1280,800", t"--lang=en")` hängt Argumente an, mit
++         denen der Browser gestartet wird, wie `goog:chromeOptions`, `moz:firefoxOptions` oder
++         `ms:edgeOptions` es vorgeben.
++     entry #requesting   derselbe Browser, mit vollständig ersetztem Capabilities-Objekt
++         Für das, was `WebDriver.Local` nicht modelliert — Proxys, Timeouts, Mobilemulation, die
++         Erweiterungen eines Grids —, lassen sich die gesamten `POST /session`-Nutzdaten als `Json`
++         übergeben, die das generierte `alwaysMatch`-Objekt ersetzen.
++     entry #capabilities   die `POST /session`-Nutzdaten: ein `alwaysMatch`-Objekt, das den Browser und seine Argumente benennt
++         Die W3C-Gestalt `{"capabilities": {"alwaysMatch": {…}}}`, mit dem Namen des Browsers und
++         seinem Herstelleroptionen-Objekt (`goog:chromeOptions`, `moz:firefoxOptions` oder
++         `ms:edgeOptions`, das `#arguments` trägt; Safari nimmt nur seinen Namen). Nur `alwaysMatch`
++         wird generiert, da `firstMatch` dazu da ist, einen Request für mehrere Treiber passend zu
++         machen, und ein `Local` genau einen benennt. Ist `#requested` gesetzt, wird stattdessen dieses
++         zurückgegeben.
++   entry .Chrome   Chrome, über `chromedriver` auf Port 4444
++       `WebDriver.Local(WebDriver.Driver.Chromedriver)`: `WebDriver.Chrome.headless.session: …` öffnet
++       eine Headless-Chrome-Sitzung.
++   entry .Firefox   Firefox, über `geckodriver` auf Port 4444
++   entry .Safari   Safari, über `safaridriver` auf Port 4444
++       Safari hat keinen Headless-Modus, daher ist `WebDriver.Safari.headless` dasselbe wie `WebDriver.Safari`.
++   entry .Edge   Microsoft Edge, über `msedgedriver` auf Port 4444
++   entry .Sessional   öffnet eine Sitzung auf einem Treiber, der bereits lauscht
+
+% 1 1 0 0618dd3ccad4569d129733786409958a
+
+@ 0 19 0 17bf89f005ec377207cc84c612aacb0c
++         Die `aperture.Sessional`-Instanz für `WebDriver`, mit `Self = WebDriver` und `Result =
++         Session^`. Sie erzeugt die Sitzung mit `POST /session` und den `#capabilities` des Treibers,
++         führt den Block mit dem Handle im Geltungsbereich aus und löscht die Sitzung — was den Browser
++         schließt — in einem `finally`, wobei sie einen fehlgeschlagenen Löschversuch verschluckt, da
++         ein bereits abgestürzter Treiber nicht aufräumen kann und eine Meldung darüber den eigenen
++         Fehler des Blocks verdecken würde. Einen lokalen Treiber zu starten
++         (`WebDriver.Local.Sessional`) ist eine Komposition darüber. Sie braucht ein `Online`, ein
++         `Http.Backend`, einen Logger für `Http.Event`, eine `Tactic[WebDriver.Error]` und
++         `Diagnostics`.
++     entry #session   erzeugt die Sitzung, führt den Block mit ihr im Geltungsbereich aus und löscht sie
++         Der `Result`-Typ der Sitzung ist ein frisches `Session^`: Das Handle jedes Aufrufs ist seine
++         eigene Capability, sodass der Block weder es noch irgendetwas, das es einfängt, zurückgeben
++         kann.
++   entry .sessional   das Given, durch das `webDriver.session: session ?=> …` aufgelöst wird
++       Im Begleitobjekt von `WebDriver`, sodass es ohne Import gefunden wird, wenn ein `Online`, ein
++       `Http.Backend`, ein `Http.Event is Loggable`, eine `Tactic[WebDriver.Error]` und `Diagnostics`
++       im Geltungsbereich sind.
++   entry .apply   ein Treiber, der bereits unter einer Basis-URL lauscht, mit den anzufordernden Capabilities
++       `WebDriver(url"http://localhost:4444", capabilities)` steuert einen von Hand gestarteten Treiber
++       oder ein Selenium-Grid über dieselbe `Session`-Schnittstelle wie einen lokalen Browser. Die
++       Capabilities werden unverändert als `POST /session`-Nutzdaten gesendet;
++       `WebDriver.Chrome.capabilities` ist ein fertiges Exemplar, und `t"{}".read[Json]` genügt für
++       einen Treiber, der keine braucht.
+
+% 2 1 0 07abcf4cbdc8cebb19509f6dd6f6038f
+
+% 3 1 0 0cb4d3e116e9d17817fc31c1688e46d8
+
+% 4 1 0 09d78a55c108f4731688026f4ccf0799
+
+% 0 1 0 1e0ee7bcadecb3de095db31a90514942
+
+% 1 1 0 16cb49d46afb4ab1033e8829e1f0d27e
+
+% 2 1 0 139b826e37699b6300554a99387c3fb5
+
+% 2 1 0 1daa274d18e44b8812a752b2c493c7a2
+
+@ 0 3 0 12b978690826955505d179d7a75a48b6
++   entry #base   die URL, unter der der Treiber lauscht; Befehle werden unterhalb von `base/session/id` adressiert
++   entry #capabilities   das JSON, das als `POST /session`-Nutzdaten gesendet wird
++   entry .Error   eine fehlgeschlagene WebDriver-Aktion: der W3C-Fehlercode, die Meldung des Treibers und sein Stacktrace
+
+% 1 1 0 1d447c6664cb49391089f2cf1ba51254
+
+@ 0 7 0 1b328567aaeec5660a787a4114eb1ae2
++         Fehler `↯/s.127.1`: _the WebDriver action failed because `reason`: `detail`_, mit der Nummer
++         des `WebDriver.Error.Reason` als Untercode. Jeder Fehlschlag einer Sitzung kommt als dieser
++         eine Typ an: ein Fehlerobjekt, das der Treiber in einer 4xx- oder 5xx-Response zurückgab, ein
++         Treiber, der nicht erreichbar war, eine Response, die nicht das von der Spezifikation
++         beschriebene JSON war (Grund `UnknownError`), eine abgeschnittene Response, ein Treiber, der
++         sich nicht starten ließ (`SessionNotCreated`), oder einer, der nie zu lauschen begann
++         (`Timeout`). Er wird über die `Tactic[WebDriver.Error]` ausgelöst, die beim Öffnen der Sitzung
++         im Geltungsbereich war.
+
+% 2 1 0 0729940f861326ea1292e5863c70589f
+
+% 3 1 0 1d616e4fd5863486176421bde07d67b0
+
+% 4 1 0 044b521d61bed8e3063c152d5c4fafa6
+
+% 5 1 0 01fd9d47d5c5f38c14999750551a7cd0
+
+% 6 1 0 1623210948a4e88b14867892ea0cbd64
+
+% 7 1 0 0f1a8d6cbb7756100be76d02e81fe289
+
+% 0 1 0 0321688c26f738d114ccbc688586487c
+
+% 0 1 0 1224ec73fb658d94072c5b3332649156
+
+% 1 1 0 079415180350de600b311015920aa797
+
+@ 0 4 0 14156377719f19810b7ae3eeb910383f
++         Die eigene Meldung des Treibers ist `#detail`, und sein Stacktrace, eine Zeile pro Element,
++         ist `#browserStacktrace`. `#data` bewahrt das optionale Zusatzobjekt der Spezifikation, das
++         bei einem `UnexpectedAlertOpen` den Text des Prompts trägt: genau das, was ein Aufrufer
++         braucht, um zu entscheiden, ob er ihn annimmt oder verwirft.
+
+% 0 1 0 01f0919780723a0b17de51ef47c5c435
+
+@ 0 1 0 04f22c6faa79abce06c3bf23e2f9359b
++     entry .Reason   der W3C-Fehlercode, den ein Treiber meldete, als Aufzählung mit stabilen Nummern
+
+% 1 1 0 0e9572e3f55196c51d54f6cbdedd47c8
+
+@ 0 2 0 19edc9405a758630165f8e036d6f9030
++           Ein Fall für jeden Fehlercode, den die WebDriver-Spezifikation definiert, mit dem Code so,
++           wie der Treiber ihn im `error`-Feld seines Fehlerobjekts schreibt:
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 1 0 01d268914a0d3e2d01fb4fa702406f38
++           column  Fall
+
+% 0 1 0 0004db7c0e557bc41b39d50a3f7070d0
+
+@ 0 2 0 0706f8a9d3c6248e06561769ba00b7c7
++           column  Meldung
++           column  W3C-Code
+
+% 0 1 0 0458d02b69b4322211d1a01fcf6e6c0c
+
+% 0 1 0 11a2443379a011fb13c6e45d8d92464b
+
+% 0 1 0 18dc7397e65442e70917437d09a07944
+
+% 0 1 0 1bd3dedeba59b81d0a8cb05d334ccf90
+
+% 0 1 0 0ec2bf10d40815bc031aa5a7a32b5d80
+
+% 0 1 0 050dc488255d9468188c8334c8357c4e
+
+% 0 1 0 044d57a752ba89620fa7baf4d33605f7
+
+@ 0 1 0 1bdba1ac7e334e10156720422eff224b
++           row  `Other(code)`  8  _the WebDriver reported the error code `code`_  jeder andere, bewahrt als `code`
+
+% 0 1 0 0355f74072fe37680ba8c9871f7579bf
+
+% 0 1 0 0b9bf1d7cda5c17b01462ef3138b3ae8
+
+% 0 1 0 089ed6f2f37ba712044d5f86ba7202b3
+
+% 0 1 0 0b0e92fcca0de24619d4f3e819f1a225
+
+% 0 1 0 111425ea7b8dc9320100fdb126f1ffe0
+
+% 0 1 0 0b52129fdb8130db024c3744016862d9
+
+% 0 1 0 09c0bd7d85e60fc00d456acfe9c24276
+
+% 0 1 0 14305d3f31083e250899460d27fcaa98
+
+% 0 1 0 1c71ceb239adf1860c498b2796ec9864
+
+% 0 1 0 1b300c265a2762f802ba21fcd122a31c
+
+% 0 1 0 0d17cc40666bfb130e43ede97af61bc9
+
+% 0 1 0 00c3a311475de32b0bb686a15b140026
+
+% 0 1 0 1709cafd8af991fa0ab378d61e31c354
+
+% 0 1 0 139d397e704860011e336bfa6dcb661d
+
+% 0 1 0 08db237dc73c30421bce8e6d65858a66
+
+% 0 1 0 068d5f4a78dbb8f20a293ca9f8964a89
+
+% 0 1 0 1c896b919d5d1e110354fe1a0dd2889b
+
+% 0 1 0 09964b440723e3f517861083b42d932a
+
+% 0 1 0 127f717b72e47a4b1ff7b88eb262db60
+
+% 0 1 0 0429902132d3990306cb5eb2a96475ab
+
+% 0 1 0 1da8cf6321c047fd1d36deb5e9c2df9c
+
+% 1 1 0 15e4db487d184958073649684a20edfc
+
+@ 0 4 0 1dfa9e0a1f17e07c1981b9a9f0a81f59
++           Die Nummern sind der Untercode des Fehlers und eingefroren: 1 bis 8 behalten die
++           Bedeutungen, mit denen sie zuerst veröffentlicht wurden, weshalb `Other` außerhalb der
++           alphabetischen Reihenfolge bei 8 steht, und jeder seither hinzugefügte Code wird ab 9
++           angehängt. Ein Code, den die Aufzählung nicht kennt, wird zu `Other`, sodass das Dekodieren
++           total ist und der Code, den ein Treiber sendete, nie verloren geht.
+
+% 2 1 0 0dc8cc4164f76df81c1284a7ea6ffdc7
+
+% 3 1 0 1c978e3a561382171d4c4f10e40e273f
+
+% 4 1 0 17af307283c9cf9b048951511cbe2e81
+
+% 5 1 0 1fc41dd8cbfee9b51a2d0c3ea7a2f33d
+
+% 6 1 0 0b7137f8a518e2af1cd5023b401feeff
+
+% 0 1 0 1ca5903ed5be0b6f0dc7bd6b55ee3e78
+
+% 0 1 0 02b830a610c3a7851f58e1a2c692a14f
+
+% 1 1 0 1896481952ccbd39099a07cb776ae7c0
+
+@ 0 2 0 13ac5d21c8c857ff0bda594f9c5cba4e
++       entry .apply   dekodiert einen W3C-Fehlercode wie `no such element` in seinen `Reason`
++           Total: Ein unbekannter Code wird zu `Other(code)`.
+
+% 2 1 0 05fdc9ff6edd43040bf9756c5db86988
+
+% 3 1 0 12f73c9a9d8c136316e29b20857a9afa
+
+% 0 1 0 11199e623d377f5c069ad3137bb3e6d9
+
+% 1 1 0 0bb7a3ea578283480733dd1907ad17b1
+
+@ 0 13 0 045932373f0732250d1ff0ee3509543f
++       entry .Other   ein Fehlercode, den die Aufzählung nicht benennt, so bewahrt, wie der Treiber ihn sendete
++         entry #code0   der Code genau so, wie der Treiber ihn schrieb
++       entry #number   der eingefrorene Untercode des Grundes, von 1 bis 29
++       entry #code   der Code so, wie die Spezifikation ihn schreibt, etwa `no such element`
++     entry .communicable   gibt jeden `Reason` als Satz wieder, etwa _the requested element was not found_
++         Das `Communicable`-Given für `WebDriver.Error.Reason`, im Geltungsbereich seines
++         Begleitobjekts, das den `reason` in der Meldung des Fehlers ausfüllt.
++     entry #reason   der W3C-Fehlercode, den der Treiber meldete, als `WebDriver.Error.Reason`
++     entry #detail   die Meldung des Treibers oder die rohe Response, wenn sie kein W3C-Fehlerobjekt war
++     entry #browserStacktrace   der Stacktrace des Treibers, eine Zeile pro Element; leer, wenn er keinen sendete
++     entry #data   das optionale `data`-Member des Fehlerobjekts, das den Text eines offenen Prompts trägt
++         Bei einem `UnexpectedAlertOpen` ist `data.text` der Text des Prompts, sodass ein Aufrufer ihn
++         lesen und zwischen `WebDriver.Session#acceptAlert` und `WebDriver.Session#dismissAlert`
++         entscheiden kann.
+
+% 2 1 0 13b062223e8b45d31420759f5482c14e
+
+% 3 1 0 1802cafacd3a908a1bc7dd078b92ce48
+
+% 4 1 0 1f8aca460a1045a3181cf9b01a5a6d26
+
+% 5 1 0 108ed5b082a045871264d3d7e2c104f0
+
+% 6 1 0 0b3676ae449f1d5b1cb5601d179654c5
+
+% 0 1 0 058b42b48d82265a0f278871853365f6
+
+% 1 1 0 09549d82c47aa41302437a4880f67ba6
+
+@ 0 1 0 041c4e24ccca76bf163f9bb32784efc7
++   entry .Element   ein Handle auf einen Knoten der Seite: ein reiner Wert, nur mit seiner Sitzung im Geltungsbereich verwendbar
+
+% 1 1 0 046b6ffed56b53a9000402e4c1ac94de
+
+@ 0 6 0 0ccf01550a39d2f417d1a3f10e517d62
++         Die opake Referenz, die ein Treiber für einen DOM-Knoten zurückgab, bedeutsam nur für die
++         Sitzung, die sie erzeugte. Sie ist ein reiner Wert, der weder eine Capability noch seine
++         Sitzung hält, sodass sich eine `List` davon frei aufbauen und herumreichen lässt; jede
++         Operation darauf — `click`, `innerText`, `value`, `attribute`, `element` und die anderen
++         Erweiterungen im Paket `tarantula` — nimmt die `WebDriver.Session` als Kontextparameter,
++         sodass ein Element außerhalb des Blocks seiner Sitzung wirkungslos ist.
+
+% 2 1 0 138f873ceb273f4e041df021a7c5bd82
+
+% 3 1 0 013a2107b00a390819e4eb4f9fb86609
+
+% 4 1 0 044b98343a0491d41cefe5456f9b08ef
+
+% 5 1 0 1ea4be0269e9b0ff1298093d6142ee99
+
+% 6 1 0 07a5a128297af12707ecf2a8be94b71d
+
+% 7 1 0 12cfe3e182b776611a742300fca36bf5
+
+% 0 1 0 1e8aae6d9dd6b3451c8e57d4272f5d87
+
+% 0 1 0 16c9ac6d8f7ae40e0f54cb34fd7268a8
+
+% 0 1 0 09949608108bfe1809a15ad04c54afac
+
+% 1 1 0 1766cf770ca0179d15b23f9ec9bae3e8
+
+@ 0 2 0 1c65fd224ce995cc01f12caa9f2d642f
++         Ein entwichenes Element ist eine verwaiste ID statt eines lebendigen Handles. Eines, das
++         verwendet wird, nachdem sich seine Seite geändert hat, löst `WebDriver.Error` mit dem Grund
++         `StaleElement` aus.
+
+% 1 1 0 175c4e3d15f5688b1f1032282ff4117f
+
+% 0 1 0 1a11913ce1b1629a127ecbc253effb25
+
+@ 0 12 0 1314a094a6f5579501c7aad3a83b4868
++     entry .encodable   kodiert ein Element in der Übertragungsform, die ein Skriptargument oder ein Zeigerursprung annimmt
++         Die W3C-Form _web element identifier_, `{"element-6066-11e4-a52e-4f735466cecf": id}`, sodass
++         ein Element in den Argumenten von `WebDriver.Session#execute` als `element.in[Json]`
++         übergeben werden kann, wo das Skript den lebendigen DOM-Knoten sieht.
++     entry .\   jeder Treffer für einen Lokator unterhalb eines Elements oder unterhalb jedes Elements einer Liste
++         `element \ Li` fragt den Treiber nach jedem Nachfahren, der zu einem beliebigen
++         `Focusable`-Lokator passt — ein HTML-Tag, eine `cls"…"`-Klassenliste, ein `Name[DomId]`, eine
++         `SelectorList`, ein `XPath` oder Linktext —, und liefert sie in Dokumentreihenfolge, eine leere
++         Liste, wenn es keine gibt. Die zweite Form, auf einer `List[WebDriver.Element]`, wählt aus
++         jedem bisher gefundenen Element aus, sodass sich Auswahlen verketten lassen:
++         `element \ Name[DomId](t"menu") \ Li \ cls"item"`. Das Protokoll kennt kein gebündeltes
++         Finden, daher stellt die verkettete Form einen Request pro Element, und nichts wird
++         dedupliziert. Sie braucht die `WebDriver.Session` im Geltungsbereich.
+
+@ 0 5 0 02ed0c50a57f09c10e6bd5d266651a9d
++         Es wird `\` statt `/` geschrieben, weil das generische `/` von Symbolism, das `soundness`
++         exportiert, diesen Namen für jeden Empfänger beanspruchen würde. Beide Formen liegen im
++         Begleitobjekt von `WebDriver.Element`, brauchen also keinen Import.
++     entry #elementId   die opake ID des Treibers für den Knoten
++   entry .ShadowRoot   die offene Shadow-Root, die ein Element beherbergt, als Handle zum Finden von Elementen darin
+
+% 1 1 0 00fc0ac9fa18be3915dd8474d37640f7
+
+@ 0 6 0 062e7e56fadedeba0c61da1e7f9bc83f
++         Erreicht mit `element.shadowRoot()`. Das Protokoll adressiert eine Shadow-Root getrennt von
++         einem Element, und nur Finden ist ihr gegenüber gültig, daher ist sie ein eigenes reines
++         Handle: Sie wird mit `\` nach jedem Treffer oder mit `element` nach genau einem durchsucht,
++         mit der `WebDriver.Session` im Geltungsbereich. Nur *offene* Shadow-Roots sind erreichbar;
++         nach einer geschlossenen zu fragen löst `WebDriver.Error` mit dem Grund `NoSuchShadowRoot`
++         aus, und eine zu verwenden, deren Host die Seite verlassen hat, löst `DetachedShadowRoot` aus.
+
+% 2 1 0 0ff176a595d0126d1e8cd4aa6f27d4df
+
+% 3 1 0 0533bca5b1f5d0ae0fa952cff13c026e
+
+% 4 1 0 1322003d3af3fcf91f5b27a5b695f0f7
+
+% 5 1 0 1ee9519ce8bed5b716640d884be9a896
+
+% 6 1 0 0dbad0de67cab3921a1e204d7c5d9491
+
+% 0 1 0 0314158a1abfe6de1df50dd39e1ae058
+
+% 0 1 0 08a46857efed93f402d6471cdbf30b39
+
+% 0 1 0 0944991f00cfc2a1085fdcffc41eecdf
+
+% 1 1 0 077fc631aae46e6c0c26ce723b370fc6
+
+@ 0 6 0 1edfa4c0c5d933da1acc2c6a091f7f4c
++     entry .\   jeder Treffer für einen Lokator innerhalb einer Shadow-Root, in Dokumentreihenfolge
++         `root \ Button` liefert jedes Element im Shadow-Baum, das zu einem beliebigen
++         `Focusable`-Lokator passt, oder eine leere Liste. Es braucht die `WebDriver.Session` im
++         Geltungsbereich und liegt im Begleitobjekt von `WebDriver.ShadowRoot`, braucht also keinen
++         Import.
++     entry #shadowId   die opake ID des Treibers für die Shadow-Root
++   entry .Session   eine lebendige WebDriver-Sitzung: ein Browser, seine Fenster und Cookies, auf ihren Block beschränkt
+
+% 1 1 0 112a8d6b356c202516c645971bc813ad
+
+@ 0 4 0 1eace512ca5831df0e5bb09993bb60c7
++         Das nahe Ende eines Gesprächs mit einem Treiber, adressiert unterhalb von `base/session/id`.
++         Eine Sitzung wird nie direkt konstruiert: `session` auf einem `WebDriver` oder einem
++         `WebDriver.Local` öffnet eine, leiht sie dem Block als Kontextwert und löscht sie — wobei der
++         Browser geschlossen wird —, wenn der Block endet. Innerhalb des Blocks benennt `browser` sie.
+
+@ 0 4 0 0e57c7c672e2fbf8004ab6134e821d4a
++         Sie ist eine Capability, daher beschränkt das Capture-Checking sie, und jede Closure über ihr,
++         auf den Block, dem sie gehört: Die Sitzung zurückzugeben, oder ein Lambda, das sie verwendet,
++         ist ein Kompilierfehler. Was ihre Befehle zurückgeben — `Text`, `Data`, `Json`,
++         `WebDriver.Element`s, Rechtecke — sind reine Daten, da jeder Befehl ein vollständiger
++         Hin- und Rückweg ist.
+
+@ 0 2 0 0ae4b24605a8a86113cd344d30074f51
++         Ein Skript wächst Stufe um Stufe: eine Sitzung öffnen, navigieren, finden, handeln und das
++         Ergebnis zurücklesen.
+
+% 2 1 0 1166e742314911670d07d6e794c40789
+
+% 3 1 0 1229cd80e79320430605e6d2e8b48dcf
+
+% 1 1 0 147cde430ef7ec391f9a15f41aff2bcd
+
+@ 0 1 0 11af3d58c187e2061b04261e551d7d75
++           label Eine Sitzung öffnen
+
+% 1 1 0 171a97b7e15aafce1c7185bf227433a4
+
+% 2 1 0 1e8d69c454f2d1561bf42e10570ef3a6
+
+% 3 1 0 0dbd271fc06c90d40660e0f766753e6b
+
+% 1 1 0 1fbc571c49f300e60df56a7a54624c0b
+
+% 2 1 0 156801387e7a22d1045d0f441e3bdfa2
+
+@ 0 1 0 12875ed68ffa23cd004f509225b4363d
++           label Zu einer Seite navigieren
+
+% 1 1 0 0dfceed57ce96ded123536439c1e56f9
+
+% 2 1 0 0eeb0960a86cd72d1ad954711fbeb166
+
+% 3 1 0 06e427409314871a05903c3e127ce7aa
+
+% 4 1 0 1be29960bfd5a54205a66c2f9ccfbfd9
+
+% 1 1 0 00784074d3baad0a0f3f34db45faa2d1
+
+% 2 1 0 154d5111807cb0eb1d9687cc728d40fe
+
+@ 0 1 0 0c1dbd8bada00ea1004e3b9d1e55774e
++           label Ein Feld finden und hineintippen
+
+% 1 1 0 00940c5cb726390709acfe6856133a77
+
+% 2 1 0 086481ce43f2be320706e3195506370e
+
+% 3 1 0 184b19ad07ca9b05049a6b6aaafbedf1
+
+% 4 1 0 19fae91be8e43d961a3c3ef21d2244b1
+
+% 0 1 0 0d533f7c8b7dcff01bd229feb59bf37d
+
+% 0 1 0 035b93ff22e97afd147c8f8d1523b869
+
+% 0 1 0 15f054d1e318983402d68eb4724e59c0
+
+% 1 1 0 151fe02c2b2202c70ea58ca121d6e04f
+
+@ 0 1 0 0f3f2b0234cbad6d0ff74f70e9ebdf06
++           label Absenden und auf die Ergebnisse warten
+
+% 1 1 0 0e0d68bba211e49813652bfa2c66c618
+
+% 0 1 0 18a2de4b811ff7d81641b23ff6513453
+
+% 1 1 0 09fc488cfe98061114cb5f1503e280d8
+
+% 2 1 0 01b83d79b7742b381b9db736daa513bf
+
+% 3 1 0 11c7e1cb5eb689a51f60a1ee229127dd
+
+% 0 1 0 03e189da4e1c43071f7de124362b014e
+
+% 0 1 0 02b5341640fefcf106596c631c9784a1
+
+% 0 1 0 167e44fba51333c01c6fae4fcec6bb29
+
+% 1 1 0 127e5273c7cdc2f314f01830af4c9a6d
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 4 0 15cd5ee019f1896315cae7dd3c09dedc
++         Jeder Befehl löst `WebDriver.Error` über die `Tactic` aus, die beim Öffnen der Sitzung im
++         Geltungsbereich war, und braucht nichts weiter. Die Wartebefehle (`#awaitElement`,
++         `#awaitElements`, `#awaitUntil`) nehmen an der Aufrufstelle zusätzlich eine `Tenacity`, einen
++         `Monitor` und eine `Tactic[Tenacity.Error]`.
+
+% 0 1 0 1cdb4a832530052101923a6e0586e211
+
+% 0 1 0 1426e38a41ec875f1b64af6556bfa38e
+
+% 0 1 0 0ca07e555fc44cc20aa9c960a8e053a0
+
+@ 0 1 0 0c5b9387a76932d908079c38ea75df26
++     entry .Rect   der umgebende Rahmen eines Elements oder eines Fensters, in CSS-Pixeln
+
+% 1 1 0 0a09ea2f5005ee6d0a1d95c08f749b54
+
+@ 0 3 0 0f9cd11b32ad276d0d52c4a09904973e
++           Zurückgegeben von den Befehlen `windowRect`, `maximize`, `minimize` und `fullscreen` einer
++           `WebDriver.Session` und von der Erweiterung `rect` auf einem Element, und angenommen von
++           `windowRect(rect)`, um das Fenster zu verschieben und seine Größe zu ändern.
+
+% 2 1 0 08633a1f5c3fec4803bd0b01bbcd6c40
+
+% 3 1 0 15f3877c87823f8a0d7cafc413e57e2f
+
+% 4 1 0 1581b8763388f9ba0bc2a18c7ed4d294
+
+% 5 1 0 17b62b782085455b0525b3dbab0adb46
+
+% 0 1 0 0f0ff23650bd596b0dbcb0a2d6bb079e
+
+% 0 1 0 0948a3e93215c337130e82185a538e6a
+
+% 0 1 0 1a046e45dc61104e1b0a5fd8bfcd6134
+
+% 1 1 0 0c04bd29c322ff0f0f5d0f9135caca0b
+
+@ 0 8 0 0cea81a2bccccc3b04c9571cc842db5d
++       entry #x   der linke Rand, vom Ursprung des Viewports oder des Bildschirms aus
++       entry #y   der obere Rand, vom Ursprung des Viewports oder des Bildschirms aus
++       entry #width   die Breite, in CSS-Pixeln
++       entry #height   die Höhe, in CSS-Pixeln
++     entry .cm   eine Länge in Zentimetern, als die `Quantity[Metres[1]]`, die Seite und Ränder eines Drucks annehmen
++         `WebDriver.Session.cm(1.5)` sind fünfzehn Millimeter. Jede Längengröße genügt in einer `Page`
++         oder einem `Margin` — `21.0*Centi(Metre)`, `8.5*Inch` —, dies ist also nur eine Bequemlichkeit.
++     entry .Page   das Papierformat, auf dem ein Druck gesetzt wird; standardmäßig US Letter
+
+% 1 1 0 079a880c258fc248114d41fa732a7336
+
+@ 0 3 0 07d249bf8878c84c110f76da2624ce57
++           Längen sind `Quantity[Metres[1]]`, lassen sich also in jeder Einheit schreiben, und werden
++           dem Treiber in den Zentimetern gesendet, die das Protokoll verlangt. Die Standardwerte sind
++           die der Spezifikation selbst: 21.59cm mal 27.94cm.
+
+% 2 1 0 17c1ec4a00e052ac1f75322ddabb2a63
+
+% 3 1 0 09910379a21c0397083cc9b5bfb71fd5
+
+% 0 1 0 1f5a241d45ad8a2f06701af1fb17f975
+
+% 1 1 0 1e85056f7252cbec0378ba6f4ca12f21
+
+@ 0 3 0 0b3d460c6ce7c04506cf3ee6c1a684c2
++       entry #width   die Breite der Seite, als Länge
++       entry #height   die Höhe der Seite, als Länge
++     entry .Margin   die vier Ränder einer gedruckten Seite; standardmäßig je ein Zentimeter
+
+% 1 1 0 165fcbd8264546811816c8fccb019864
+
+@ 0 3 0 06aa9fcbeb9b615008487d1a7ef21a32
++           Längen sind `Quantity[Metres[1]]`, dem Treiber in Zentimetern gesendet. `.uniform` erzeugt
++           vier gleiche Ränder.
++       entry .uniform   vier gleiche Ränder der angegebenen Länge
+
+% 1 1 0 1ca9ddf99ae8d0f319ca6e1f5f440524
+
+% 2 1 0 04e1bb9d46b1445b0b05a6f557aea5ca
+
+% 0 1 0 18294c8f8712ffbf15cbebed68596caa
+
+% 1 1 0 1b5c8e75968a85f015eaed34525d565a
+
+@ 0 7 0 0f2237ba2ad65b671379820db56c18b1
++       entry #top   der obere Rand
++       entry #bottom   der untere Rand
++       entry #left   der linke Rand
++       entry #right   der rechte Rand
++     entry .Orientation   ob eine Seite im Format `Portrait` oder `Landscape` gedruckt wird
++       entry #name   die Ausrichtung so, wie das Protokoll sie schreibt: `portrait` oder `landscape`
++     entry .Print   die Optionen, die `WebDriver.Session#printPage` annimmt: Ausrichtung, Skalierung, Papier, Ränder, Seiten
+
+% 1 1 0 1f62a6e433e2f6620e393ef1ab71209c
+
+@ 0 4 0 1dfad21399f731e80f11567bb2405719
++           Jedes Feld hat den Standardwert der Spezifikation: `Portrait`, eine Skalierung von `1.0`,
++           keine Hintergrundgrafik, eine US-Letter-`Page`, `Margin`s von einem Zentimeter, Verkleinern
++           auf Seitenbreite und alle Seiten. `pageRanges` ist die eigene Textform des Protokolls, etwa
++           `List(t"1-3", t"5")`, da ein Bereich dort offen sein kann.
+
+% 2 1 0 139be46c39cf4e301999a565c040d351
+
+% 3 1 0 1ed840cd9afb53391a124a5b18af564b
+
+% 4 1 0 0cf357c0777f2767049b23fdc41eefef
+
+% 0 1 0 017360e941375dd80ff3d29b79883100
+
+% 2 1 0 1510c277d9fe6df01e981aab15dddeba
+
+% 3 1 0 0ed6fff562beb6971568841f6a57defd
+
+% 0 1 0 0cd4aa0a13026cca10a457077fe5f2cb
+
+% 0 1 0 071248c8298740a303333c875d521121
+
+% 0 1 0 1b0e8bb0a74248580de4c5f5ef66ac83
+
+% 1 1 0 0a575a4b8d09ed9b017d00d3a099b1db
+
+@ 0 8 0 032821cee9d6c9ce05898a866fdbacc8
++       entry #orientation   `Portrait` oder `Landscape`
++       entry #scale   der Skalierungsfaktor, von 0.1 bis 2.0; standardmäßig `1.0`
++       entry #background   ob Hintergrundfarben und -bilder gedruckt werden; standardmäßig `false`
++       entry #page   das Papierformat, als `WebDriver.Session.Page`
++       entry #margin   die Ränder, als `WebDriver.Session.Margin`
++       entry #shrinkToFit   ob Inhalt auf die Seitenbreite verkleinert wird; standardmäßig `true`
++       entry #pageRanges   die zu druckenden Seiten, als Text wie `1-3` oder `5`; alle Seiten, wenn leer
++     entry .Timeouts   die drei Timeouts, die eine Sitzung führt, in Millisekunden
+
+% 1 1 0 133a92f5975c224308b2d2201dd2d981
+
+@ 0 4 0 11894181b8c3750407708d5e638f5fd4
++           `implicit` gibt an, wie lange ein Suchbefehl es erneut versucht, bevor er `NoSuchElement`
++           meldet, und ist die Art, wie ein Skript darauf wartet, dass eine Seite zur Ruhe kommt, ohne
++           zu schlafen; `pageLoad` begrenzt die Navigation und `script` begrenzt
++           `WebDriver.Session#execute` und `WebDriver.Session#executeAsync`. Ein `Unset`-Feld bleibt
++           so, wie der Treiber es hat.
+
+% 2 1 0 1d5fda7d318793a106ccaa2f82156cf5
+
+% 3 1 0 083e0c960f70e03d0f7c8d3193a3afa2
+
+% 4 1 0 0891427e32cc3dd7089f25ad5ae2207b
+
+% 5 1 0 05d3c54a8d9d8e7b0873f2bfaa2f970b
+
+% 6 1 0 19ad628264a0f26a09a15b45940f90c0
+
+% 0 1 0 050105380e470147037b626914882c3e
+
+% 0 1 0 0c0af9414306a65d12912899c2631a54
+
+% 1 1 0 031a0ea4813ed7261da528d001e83f06
+
+@ 0 6 0 16cefc09e6579dd4006e3b7ddb695e62
++           Der implizite Timeout deckt Suchbefehle ab und sonst nichts: Darauf, dass eine Schaltfläche
++           aktiviert wird oder sich der Text einer Überschrift ändert, wird mit
++           `WebDriver.Session#awaitUntil` gewartet.
++       entry #implicit   wie lange eine Suche es erneut versucht, bevor sie aufgibt, oder `Unset`, um es zu belassen
++       entry #pageLoad   wie lange eine Navigation dauern darf, oder `Unset`, um es zu belassen
++       entry #script   wie lange ein Skript laufen darf, oder `Unset`, um es zu belassen
++     entry .Action   ein Schritt einer Tastatur- oder Zeigereingabesequenz, für `WebDriver.Session#perform`
+
+% 1 1 0 1738a2c00e045cac15a88de00cfc0f53
+
+@ 0 4 0 0d3a0c903e53e33418ac7e5ad713e40a
++           Der W3C-Endpunkt `/actions` ist der einzige Weg, eine Modifikatortaste, einen Akkord, ein
++           Hovern oder ein Ziehen zu senden, und eine `Action` ist ein Schritt davon: eine Taste, die
++           gedrückt oder losgelassen wird, eine Pause, eine Zeigertaste, die gedrückt oder losgelassen
++           wird, oder eine Zeigerbewegung. Eine Liste von Schritten wird gegen eine Eingabequelle
++           ausgeführt, eine `WebDriver.Session.Action.Source`.
+
+% 2 1 0 10c116a4a74b3840068f3c42767e10a4
+
+% 3 1 0 061f1de970a6689b0eb007776000e9da
+
+% 4 1 0 0315712a1413343a047c30e1fbb2c5af
+
+% 0 1 0 110eef0dd2587103140bb2233ab3fa17
+
+% 2 1 0 1c2030c3232e80600b8806c2c053fc91
+
+% 3 1 0 1237175569cf8e7618ca587b5b9e25c7
+
+% 0 1 0 1add21a3c6b5671e0d998231e61694e9
+
+% 0 1 0 1bfdbf41bb76347415eaa19d418986d8
+
+% 0 1 0 0d2f95c18e96e17f04ccc536af114b33
+
+% 0 1 0 0e1ed13bb4437bf112ff1cede04e58b7
+
+% 1 1 0 0b835eab80d0aa05054638ecdbf3e875
+
+@ 0 4 0 13fc056888277f161db5d4066da95a53
++           Einfache Texteingabe in ein Feld ist mit der Erweiterung `value` auf einem Element einfacher
++           und schneller, und Tastendrücke sind am einfachsten mit `WebDriver.Session#press`, das die
++           Schritte mit `.steps` aufbaut.
++       entry .Source   welche Eingabequelle eine Aktionssequenz steuert: `Key` oder `Pointer`
+
+% 1 1 0 0e8098eda548a1c216700ccf992b8a2e
+
+@ 0 14 0 0e02a55f538edb3c196284e41b4a0768
++             Ein `perform`-Aufruf steuert eine Quelle. Die Spezifikation kennt auch eine Quelle „none“,
++             doch sie kann nur pausieren, was jede dieser beiden ebenfalls kann; zwei Quellen im
++             Gleichschritt brauchen das zusammengesetzte JSON, übergeben an `WebDriver.Session#actions`.
++         entry #id   die ID der Quelle in der Sequenz: `keyboard` oder `pointer`
++         entry #kind   der Typ der Quelle: `key` oder `pointer`
++       entry .LeftButton   die linke Maustaste, `0`, wie die Spezifikation Tasten nummeriert
++       entry .MiddleButton   die mittlere Maustaste, `1` in der Nummerierung des DOM
++       entry .RightButton   die rechte Maustaste, `2` in der Nummerierung des DOM, nicht `1`, wie man vermuten könnte
++       entry .codepoint   das Zeichen, das ein `Keypress` tippt, oder der Private-Use-Codepoint für eine benannte Taste
++           Eine Zeichentaste ist sie selbst; `Enter`, `Tab`, `Backspace`, `Escape`, die Pfeiltasten,
++           `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Delete` und `F1` bis `F12` sind die
++           Codepoints, die die Spezifikation ihnen im Private-Use-Bereich von Unicode zuweist, ab
++           U+E000. Eine Modifikatortaste für sich, eine Funktionstaste außerhalb von 1 bis 12 oder eine
++           Terminal-Escape-Sequenz ist `Unset`.
++       entry .steps   ein `Keypress` als die Tastenaktionen, die ihn erzeugen, mit um ihn herum gehaltenen Modifikatoren
+
+% 1 1 0 0071a5ccab02a992088be0ddc7585a04
+
+@ 0 3 0 174d8aadf35fcf5e129db7b4cc318794
++             Ein modifizierter Tastendruck wird zu seiner gedrückten Modifikatortaste, dem
++             angeschlagenen inneren Tastendruck und der losgelassenen Modifikatortaste, beliebig tief
++             verschachtelt, da das Protokoll keinen Befehl für „tippe dies mit gehaltener Control-Taste“
++             kennt. Ein Tastendruck ohne Gegenstück im Browser ergibt überhaupt keine Schritte.
+
+% 0 1 0 17e783c4bd3cb224175227ce43b79ad6
+
+% 1 1 0 1745a1123e19efec07fdf7ab02417a61
+
+@ 0 1 0 060260145c9b7b2a0eaed23c3971e5ca
++               label Eine benannte Taste
+
+% 1 1 0 10a3dab65d3c6b370e8986db380eaa8e
+
+% 0 1 0 0611c1647660a2a6167994d917dbdd22
+
+% 0 1 0 13d1d2bf743c1896182158bea15a292c
+
+% 1 1 0 019d0195ee44f0df1a406e0555e7819e
+
+@ 0 1 0 09a83cc658dfeba41c043960ad52ff9d
++               label Mit gehaltener Control-Taste
+
+% 1 1 0 110949f84ced48cc00e23ce4e400970a
+
+% 0 1 0 014db0ad76fadd5500ae892dbc8d8dca
+
+% 0 1 0 101050d2d43c5a42151f4f5d18614685
+
+% 1 1 0 1fe6e4f88c787faf08528046de95b213
+
+@ 0 1 0 1e21b51c6701571b15a55e7f1bd8b053
++               label Mit gehaltener Control- und Shift-Taste
+
+% 1 1 0 0f300c7d03cf79160df6738b875021bc
+
+% 0 1 0 1b5365f0423930540d25190b90b97a9a
+
+% 0 1 0 0ea4e9d50a4eaa8b13298ea10005b489
+
+% 0 1 0 04359be001a2f6db06dd6a2779db54e3
+
+% 0 1 0 1770f2a480f8390e043db7cf9df77021
+
+% 0 1 0 0886f09d22a849f8174ec96cea203f24
+
+@ 0 3 0 182c97b0a3052340108e146942dd0640
++       entry .encodable   kodiert eine Aktion als das JSON der Spezifikation, etwa `{"type":"keyDown","value":"a"}`
++           Von Hand geschrieben, da der Diskriminator ein `type`-Feld mit camel-case-Werten ist und
++           jede Variante ihre eigenen Schlüssel trägt; ein `PointerMove` ohne Ursprung ist relativ zum
+
+% 0 1 0 04177ff9b6e9b4f51ad8fcd569e3f8cf
+
+@ 0 30 0 0ae3756458bd915a1849af3ba75c76bc
++       entry .KeyDown   drückt eine Taste, anhand des Zeichens oder Codepoints, den sie tippt
++         entry #value   die Taste, als Zeichen oder als Private-Use-Codepoint aus `WebDriver.Session.Action.codepoint`
++       entry .KeyUp   lässt eine Taste los, anhand des Zeichens oder Codepoints, den sie tippt
++         entry #value   die Taste, als Zeichen oder als Private-Use-Codepoint aus `WebDriver.Session.Action.codepoint`
++       entry .Pause   wartet eine Anzahl von Millisekunden vor dem nächsten Schritt
++         entry #duration   die Pause, in Millisekunden
++       entry .PointerDown   drückt eine Zeigertaste; standardmäßig die linke
++         entry #button   die Taste, nummeriert wie im DOM: `0` links, `1` Mitte, `2` rechts
++       entry .PointerUp   lässt eine Zeigertaste los; standardmäßig die linke
++         entry #button   die Taste, nummeriert wie im DOM: `0` links, `1` Mitte, `2` rechts
++       entry .PointerMove   bewegt den Zeiger, relativ zum Viewport oder zur Mitte eines Elements
++         entry #x   der horizontale Versatz, in CSS-Pixeln
++         entry #y   der vertikale Versatz, in CSS-Pixeln
++         entry #duration   wie lange die Bewegung dauert, in Millisekunden; standardmäßig `100`
++         entry #origin   das Element, von dessen Mitte aus die Versätze gelten, oder `Unset` für den Viewport
++     entry #sessionId   die ID, die der Treiber dieser Sitzung bei ihrer Erzeugung gab
++     entry #capabilities   worauf sich der Treiber einließ, was vom Angeforderten abweichen kann
++         Das ausgehandelte Capabilities-Objekt aus der Response des Treibers auf `POST /session`: Es
++         benennt den Browser und die Version, die antworteten, und sagt, ob optionales Verhalten wie
++         `setWindowRect` oder `acceptInsecureCerts` verfügbar ist. Herstellerschlüssel (`moz:*`,
++         `goog:*`) bleiben als `Json`; `#browserName`, `#browserVersion` und `#platformName` lesen die
++         gängigen.
++     entry #browserName   der Name des Browsers, der antwortete, aus den ausgehandelten Capabilities
++     entry #browserVersion   die Version des Browsers, der antwortete, oder `Unset`, wenn der Treiber sie nicht nannte
++     entry #platformName   das Betriebssystem, auf dem der Browser läuft, oder `Unset`, wenn der Treiber es nicht nannte
++     entry #navigateTo   lädt eine URL im aktuellen Fenster und wartet, bis sie geladen ist
++         Nimmt eine `HttpUrl`, etwa das Ergebnis von `url"https://…"`, oder jeden URL-Typ, der
++         `Abstractable across Urls to Text` ist. Die Überladung für `HttpUrl` existiert, weil das
++         Ergebnis des Interpolators den Singleton-Typ `Url["https"]` hat, den die generische Form,
++         deklariert für `Url["http" | "https"]`, zurückweisen würde.
+
+% 2 1 0 04b7112f29987b59056b8f5949c03318
+
+% 3 1 0 12e68a88926921120cb475c882bea24e
+
+% 4 1 0 11d26e5e691b04191a209bd73128c41c
+
+% 5 1 0 150ab01fe746374e1bd5ff044ba90c59
+
+% 6 1 0 0e72c4acbbecb7ac01032c6c9783302a
+
+% 7 1 0 0e265cd0b05108c503bf968e26dc8ec8
+
+% 0 1 0 0990e01b944660ee0940d9052533a679
+
+% 1 1 0 16addebd2d85bbf91976c26ff69ca169
+
+@ 0 21 0 1b3bf92d024176a4157ad7498abb2f53
++     entry #url   die URL des aktuellen Fensters, als URL-Typ nach Wahl des Aufrufers
++         `browser.url[HttpUrl]()` oder jeder Typ, der `Instantiable across Urls from Text` ist.
++     entry #back   geht im Verlauf des aktuellen Fensters eine Seite zurück
++     entry #forward   geht im Verlauf des aktuellen Fensters eine Seite vor
++     entry #refresh   lädt die aktuelle Seite neu
++     entry #title   der Titel der aktuellen Seite
++     entry #source   das Markup der aktuellen Seite, wie der Browser sein DOM serialisiert
++         Das DOM, wie es jetzt steht, serialisiert, nicht die Bytes, die der Server sendete: Was immer
++         die Skripte der Seite geändert haben, ist enthalten.
++     entry #screenshotData   ein PNG des aktuellen Viewports oder eines Elements, als rohe Bytes
++         `screenshotData()` erfasst den Viewport und `screenshotData(element)` ein Element. Die Bytes
++         sind die, die der Treiber sendete, aus Base64 dekodiert. Die Erweiterung `screenshot` in der
++         Komponente `tarantula.image` dekodiert sie weiter, in ein `Raster in Png`.
++     entry #window   das Handle des aktuellen Fensters oder Tabs
++     entry #windows   die Handles aller offenen Fenster und Tabs, in keiner bestimmten Reihenfolge
++     entry #closeWindow   schließt das aktuelle Fenster und liefert die Handles der verbleibenden
++         Befehle gehen an kein Fenster, bis `#switchTo` ein anderes wählt; das letzte zu schließen
++         beendet, soweit es den Treiber betrifft, die Sitzung des Browsers.
++     entry #switchTo   macht ein anderes Fenster oder einen anderen Tab, anhand des Handles, zum Ziel jedes Befehls
++         Nur das aktuelle Fenster reagiert auf Befehle, daher wird ein Handle aus `#newWindow` oder
++         `#windows` hier übergeben, bevor das Fenster verwendet werden kann.
+
+% 2 1 0 08d0d3b17bffda000790a8d834d83546
+
+% 3 1 0 0305c37c4c493aee1be90d05fdfead3f
+
+% 4 1 0 19639491cbbf78bd0b5564eafb534ff8
+
+% 5 1 0 1613db3b7ec6ce8b0be822b68bdab811
+
+% 6 1 0 1dfca410de76f2260b719ed7504b499e
+
+% 0 1 0 0e617a0fb5cb0b6804db94b9fa9029d4
+
+% 0 1 0 0c8af247c46e5c86105a1add7d21b582
+
+% 0 1 0 0f06ab0406714996188947d611667009
+
+% 1 1 0 0f61f530d926c67907f925cd3156c5db
+
+% 0 1 0 061a8449fc12c1ce1b95ecd1fbb833fb
+
+% 0 1 0 1d5e18186d29465e13505c9bf14d1cdf
+
+% 1 1 0 1dac21afe45b5de8090603b22d16016c
+
+@ 0 15 0 118c3207dc873e6f15cf072b1b0262c6
++     entry #newWindow   öffnet einen neuen Tab oder ein Fenster und liefert sein Handle, ohne dorthin zu wechseln
++         `newWindow()` öffnet einen Tab und `newWindow(tab = false)` ein Fenster. Wie die
++         Spezifikation sagt, bleibt das aktuelle Fenster, wo es war: Übergeben Sie das Handle an
++         `#switchTo`, um es zu verwenden.
++     entry #windowRect   Position und Größe des aktuellen Fensters, oder verschiebt es und ändert seine Größe
++         `windowRect()` liest das `WebDriver.Session.Rect` des Fensters; `windowRect(rect)` fordert ein
++         neues an, das ein Fenstermanager womöglich nicht vollständig gewährt und das ein
++         Headless-Browser ignorieren kann.
++     entry #maximize   maximiert das aktuelle Fenster und liefert die Geometrie, die es tatsächlich annahm
++     entry #minimize   minimiert das aktuelle Fenster und liefert die Geometrie, die es tatsächlich annahm
++     entry #fullscreen   schaltet das aktuelle Fenster in den Vollbildmodus und liefert die Geometrie, die es tatsächlich annahm
++     entry #frame   betritt einen Frame, anhand seines Elements oder seines Index, als Ziel jedes Befehls
++         Befehle adressieren den aktuellen Browsing-Kontext, daher ist das Betreten eines Frames ein
++         Moduswechsel statt eines Arguments für jeden Befehl. `#parentFrame` tritt eine Ebene zurück
++         heraus, und `#topFrame` kehrt aus jeder Tiefe zum Dokument der obersten Ebene zurück. Ein
++         fehlender Frame löst `WebDriver.Error` mit dem Grund `NoSuchFrame` aus.
+
+% 2 1 0 0f530068a53a4c1901db0174f22e4747
+
+% 3 1 0 1d21e3b513d5d3ed04c9808224de2b15
+
+% 4 1 0 10083954f5cad0d01bf5505bc304d602
+
+% 5 1 0 0a98c00371e53ebb159ef2d7d342b27e
+
+% 6 1 0 1ab360243dbd9d351069c0ef55999779
+
+% 0 1 0 1f8e5c9640e203b10f2bd41d77f8757c
+
+% 0 1 0 1247269ec5990d121c6760ffdc6d4a15
+
+% 0 1 0 09662b3bad2c8e501fa58852258030f2
+
+% 1 1 0 1d3475ea931c957b112e238402c7071e
+
+@ 0 28 0 16507dc4f479f72002223200727566e4
++     entry #parentFrame   verlässt den aktuellen Frame zugunsten dessen, der ihn enthält
++     entry #topFrame   kehrt aus einem Frame beliebiger Tiefe zum Dokument der obersten Ebene zurück
++         Sendet eine explizite `null`-Frame-ID, die das Protokoll von einer fehlenden unterscheidet.
++     entry #acceptAlert   nimmt den offenen Alert, Confirm oder Prompt an, wie ein Klick auf seine OK-Schaltfläche
++         Solange ein Prompt offen ist, schlägt jeder andere Befehl mit `WebDriver.Error` und dem Grund
++         `UnexpectedAlertOpen` fehl, dessen `WebDriver.Error#data` den Text des Prompts trägt; ist kein
++         Prompt offen, löst dies `NoSuchAlert` aus.
++     entry #dismissAlert   verwirft den offenen Alert, Confirm oder Prompt, wie es seine Abbrechen-Schaltfläche täte
++     entry #alertText   die Meldung des offenen Prompts, oder tippt eine Antwort hinein
++         `alertText()` liest die Meldung des offenen Alerts, Confirms oder Prompts; `alertText(text)`
++         tippt in einen `prompt`, bevor `#acceptAlert` ihn absendet.
++     entry #timeouts   die Timeouts der Sitzung, oder setzt sie
++         `timeouts()` liest die geltenden `WebDriver.Session.Timeouts`; `timeouts(timeouts)` setzt
++         diejenigen, die nicht `Unset` sind, und belässt die übrigen, wie sie waren.
++     entry #cookies   jedes für die aktuelle Seite sichtbare Cookie
++         Jedes ein `Cookie.Value` von Telekinesis, dessen Felder die Namen tragen, die das Protokoll
++         verwendet. Es hat kein `sameSite`, daher wird dieses Attribut weder gelesen noch gesetzt.
++     entry #cookie   das für die aktuelle Seite sichtbare Cookie mit dem angegebenen Namen
++         Löst `WebDriver.Error` mit dem Grund `NoSuchCookie` aus, wenn es keines gibt.
++     entry #addCookie   setzt ein Cookie auf der Domain der aktuellen Seite
++         Nimmt ein `Cookie.Value`. Ein Cookie für eine andere Domain löst `WebDriver.Error` mit dem
++         Grund `InvalidCookieDomain` aus, navigieren Sie also zuerst zu der Domain. Ein Cookie, das ein
++         `sameSite`-Attribut braucht, lässt sich stattdessen mit `#execute` setzen.
++     entry #deleteCookie   löscht das Cookie mit dem angegebenen Namen
++     entry #deleteCookies   löscht jedes für die aktuelle Seite sichtbare Cookie
++     entry #perform   führt eine Sequenz von `WebDriver.Session.Action`s auf einer Eingabequelle aus
++         Sendet die Schritte als eine einzige Sequenz an den Endpunkt `/actions`, auf der Tastatur- oder
++         der Zeigerquelle. Gehalten gelassene Tasten und Knöpfe bleiben gehalten bis `#releaseActions`.
+
+% 2 1 0 10e203573dbef0c40f5aaa9f428ae8ae
+
+% 3 1 0 055a838ca19c78f10f06e9bdf8815e14
+
+% 4 1 0 03d73e22e990aad403b07d946ceefdf0
+
+% 0 1 0 1af20e7383fc818f0b91c08d2e608108
+
+% 2 1 0 0f9c560f8f4e83b11e9c5de26197df5a
+
+% 3 1 0 13ea9945dc42538603d469033847369b
+
+% 0 1 0 1800c6d5ac1813130e5ba6a4b92c18bf
+
+% 0 1 0 01d4cab10cc394350085fa0a23da544a
+
+% 0 1 0 173b62f8621adef111c2a56441199517
+
+% 1 1 0 05fcf96238f00be709f4a33f852d7c59
+
+@ 0 9 0 19c351136643020a13e8764207146ad1
++     entry #actions   sendet zusammengesetzte `/actions`-Nutzdaten, für Quellen, die sich im Gleichschritt bewegen
++         Der Notausgang unterhalb von `#perform`, für den seltenen Akkord über Tastatur und Zeiger
++         hinweg: Das `Json` wird unverändert als Request-Body gesendet, `{"actions": […]}`.
++     entry #press   tippt eine Sequenz von Tastendrücken, mit um sie herum gehaltenen Modifikatoren
++         Jeder `Keypress` — ein Zeichen, eine benannte Taste wie `Keypress.Enter` oder
++         `Keypress.FunctionKey(3)` oder einer, der in `Ctrl`, `Shift`, `Alt` oder `Meta` eingehüllt
++         ist — wird zu den Tastenaktionen von `WebDriver.Session.Action.steps`, alle in einem Request
++         auf der Tastaturquelle ausgeführt. Ein Feld mit einfachem Text zu füllen gelingt besser mit
++         der Erweiterung `value` auf einem Element: ein Request statt mehrerer Aktionen pro Zeichen.
+
+% 2 1 0 03fe683268a8e43c02989dbfc490bdf9
+
+% 3 1 0 07a5f40e67bc88e1177d5fdac72cf3ee
+
+% 4 1 0 1e796425b205000015c4e822f36a9fb2
+
+% 5 1 0 1a16ca391b339acf187e3a319701d70e
+
+% 6 1 0 0fb6781ee1a4fbc41f9d074ab760004a
+
+% 0 1 0 1a567eaebd33c0e51b3ea30a5949c86f
+
+% 0 1 0 13414d853295eaa90cb81181be17d36e
+
+% 1 1 0 0b69177196ad3ba70b4c54b1ecdc5903
+
+@ 0 12 0 1c7489b6b6fb64b40f5a317e572f3490
++     entry #releaseActions   lässt jede gehalten gelassene Taste und jeden Knopf los und löscht den Eingabezustand
++     entry #printPage   die aktuelle Seite als PDF gedruckt, in rohen Bytes
++         Nimmt `WebDriver.Session.Print`-Optionen, die Standardwerte der Spezifikation, wenn keine
++         angegeben sind. Dies ist, wie die Seite gedruckt aussähe, nicht, was dargestellt wird: Das
++         erfasst `#screenshotData`. Nicht jeder Treiber implementiert es — Safari nicht —, und einer,
++         der es nicht tut, löst `WebDriver.Error` mit dem Grund `UnknownCommand` oder
++         `UnsupportedOperation` aus.
++     entry #execute   führt einen JavaScript-Funktionsrumpf in der Seite aus und liefert sein Ergebnis als `Json`
++         Der Notausgang für alles, was das Protokoll nicht modelliert. Das Skript ist ein
++         Funktionsrumpf, verwendet also `return`, und seine Argumente sind `arguments[0]`,
++         `arguments[1]` und so weiter: Ein als `element.in[Json]` übergebenes `WebDriver.Element` kommt
++         als sein lebendiger DOM-Knoten an, und ein zurückgegebenes Element kommt in der
++         Übertragungsform zurück. Ein Skript, das eine Ausnahme wirft, löst `WebDriver.Error` mit dem
++         Grund `JavascriptError` aus.
+
+% 2 1 0 082e5c2ffd1d324110d38141793f8aa7
+
+% 3 1 0 1ecd383b4087730607a51ab885e87cd9
+
+% 4 1 0 196448b43e8a12ef0a7de9e8392f45e5
+
+% 5 1 0 034e0f1585fbdd360c041fafe1422474
+
+% 6 1 0 1eabb28706f913841eeabed91a68e831
+
+% 0 1 0 1a7c57efde7b30b80fec863fdb176cd9
+
+% 0 1 0 0f01ae1311bd2e171b44c2e3ffea5a66
+
+% 1 1 0 0b596cf1ed71f4ba0121b465f645ed8f
+
+@ 0 11 0 06204627e59565270f2d1bf3643dd5ea
++     entry #executeAsync   führt asynchrones JavaScript aus und liefert den Wert, den es an seinen Callback übergibt
++         Wie `#execute`, doch das Skript erhält einen Callback als letztes Argument, und der Befehl ist
++         abgeschlossen, wenn das Skript ihn aufruft; eines, das dies nicht innerhalb des
++         `script`-Timeouts tut, löst `WebDriver.Error` mit dem Grund `ScriptTimeout` aus.
++     entry #element   das eine Element, das zu einem Lokator passt, auf Seitenebene oder unterhalb eines Elements oder einer Shadow-Root
++         `browser.element(H1)` fragt den Treiber nach dem ersten Treffer für einen beliebigen
++         `Focusable`-Lokator: ein HTML-Tag, eine `cls"…"`-Klassenliste, ein `Name[DomId]`, eine
++         `SelectorList`, ein `XPath` oder `Text` als Linktext. Passt nichts, wird nach dem impliziten
++         Timeout der Sitzung `WebDriver.Error` mit dem Grund `NoSuchElement` ausgelöst. Die Formen, die
++         ein `WebDriver.Element` oder eine `WebDriver.ShadowRoot` nehmen, suchen darunter und werden
++         gewöhnlich über die Erweiterung `element` geschrieben: `menu.element(Li)`.
+
+% 2 1 0 0e518c0f10ac91dc1f8dcb42b134ab25
+
+% 3 1 0 0c6ab1d144eb15361232c80f63b8c58b
+
+% 4 1 0 0a91e5e73444beec17bbd2c737fcefc7
+
+% 5 1 0 15e6ac16d50b62ed033d8ae48f446ba2
+
+% 6 1 0 01495440d730147103391db13461db64
+
+% 0 1 0 1a19e8296eed8f93182828a84905eb72
+
+% 0 1 0 13de9e9731e3a96e1825838968be0184
+
+% 1 1 0 16dfb264f382b6d31b2dc44c2abbd94e
+
+@ 0 15 0 1a3ee3abc726386b10aa3e950b3b2e26
++     entry #elements   jedes Element, das zu einem Lokator passt, auf Seitenebene oder unterhalb eines Elements oder einer Shadow-Root
++         Wie `#element`, liefert aber jeden Treffer in Dokumentreihenfolge, und eine leere Liste statt
++         eines Fehlers, wenn es keinen gibt. `browser \ Li` ist dasselbe auf Seitenebene.
++     entry #\   jedes Element, das auf Seitenebene zu einem Lokator passt, wie `browser \ Li`
++         `#elements` unter anderem Namen. Die Auswahl ist `\` statt `/`, da das generische `/` von
++         Symbolism, das `soundness` exportiert, den Namen für jeden Empfänger beansprucht. Auf dem
++         Ergebnis wählt `\` erneut unterhalb jedes gefundenen Elements aus: `browser \ Ul \ Li`.
++     entry #activeElement   das Element, das den Fokus hat
++     entry #awaitElements   jeder Treffer für einen Lokator, abgefragt, bis es mindestens einen gibt
++         Das Protokoll hat keinen Wartebefehl jenseits des impliziten Timeouts für Suchen, daher fragt
++         dies `POST /elements` unter der `Tenacity` im Geltungsbereich ab, die der vom Aufrufer
++         gewählte Zeitplan ist, und löst `Tenacity.Error` aus, wenn die Richtlinie aufgibt. Es braucht
++         außerdem einen `Monitor`. Es fragt bewusst den Plural-Endpunkt ab: Dieser meldet Abwesenheit
++         als leere Liste, wo der Singular-Endpunkt einen Fehler auslöst, der, da er an die eigene
++         Taktik der Sitzung geleitet wird, hier nicht abgefangen werden könnte, um einen erneuten
++         Versuch anzustoßen.
+
+% 2 1 0 13eef65e8b3407261ba11f550e25f18b
+
+% 3 1 0 0f9c2400c1a89a130e9dbe2416e421bb
+
+% 4 1 0 067aae7bbc686f1a05bfe75d2a609458
+
+% 5 1 0 08cd7aefe2a79bde1d1eabbf22b42418
+
+% 7 1 0 0fd75f3b4e0f996910c7c1ba6b1e5c4d
+
+% 8 1 0 1a4067525ecd0fc905c6e71d90f01102
+
+% 0 1 0 0b4c89af7bce30481890400fe4b38e9e
+
+% 1 1 0 1555b2c1ee6699f51773feb98dd543aa
+
+@ 0 7 0 01879198dd8a6faa1cfcc75d0c207ff6
++     entry #awaitElement   der erste Treffer für einen Lokator, abgefragt, bis es einen gibt
++         Wie `#awaitElements`, liefert das erste gefundene Element; braucht eine `Tenacity`, einen
++         `Monitor` und eine `Tactic[Tenacity.Error]`.
++     entry #awaitUntil   fragt eine Bedingung unter der `Tenacity` im Geltungsbereich ab, bis sie gilt
++         Das allgemeine Warten, für alles, was der Aufrufer auswerten kann, ohne einen Fehler
++         auszulösen: einen Titel, eine Anzahl von Elementen, ein Attribut, ein Cookie. Die Bedingung
++         wird bei jedem Versuch neu ausgewertet, und `Tenacity.Error` wird ausgelöst, wenn die
++         Richtlinie aufgibt.
+
+% 2 1 0 1f6aa92520d79dfa189a16a999ef7de3
+
+% 3 1 0 1042b9311de5599c0e953a6910c0bbf7
+
+% 4 1 0 020e96ac6d91a11c1d59ff477491096d
+
+% 5 1 0 16f561229983049e1d5ec8e9e8d6afc5
+
+% 7 1 0 09303e875f6f9ee919d0950b857071f6
+
+% 8 1 0 14d87c35847b100914314435d835e958
+
+% 0 1 0 00323f5ee9446eac0f0fed255fd96b91
+
+% 0 1 0 1c3a641e6e3c560c094a7e9006f3495b
+
+% 1 1 0 1e0d1fb1745cf7180c5c4547d339246c
+
+@ 0 29 0 0dc5210e56f2ba7d1088e95a7389d90d
++     entry #shadowRoot   die offene Shadow-Root, die ein Element beherbergt
++         Gewöhnlich über die Erweiterung `shadowRoot` auf dem Element geschrieben. Eine geschlossene
++         oder fehlende Shadow-Root löst `WebDriver.Error` mit dem Grund `NoSuchShadowRoot` aus.
++     entry #click   klickt ein Element in seiner Mitte an und scrollt es zuvor in den sichtbaren Bereich
++         Gewöhnlich über die Erweiterung `click` geschrieben: `button.click()`. Ein von einem anderen
++         verdecktes Element löst `WebDriver.Error` mit dem Grund `ElementClickIntercepted` aus, und
++         eines, das sich nicht anklicken lässt, `ElementNotInteractable`.
++     entry #clear   leert ein editierbares Element, etwa ein Eingabefeld oder einen Textbereich
++     entry #value   tippt Text in ein Element, wie es die Tastatur täte
++         Gewöhnlich über die Erweiterung `value` geschrieben: `field.value(t"search terms")`. Text wird
++         an das bereits Vorhandene angehängt; leeren Sie es zuerst mit `#clear`, um es zu ersetzen.
++     entry #innerText   der dargestellte Text eines Elements, nach dem `innerText`-Algorithmus
++         Was ein Leser sieht, ohne verborgenen Text und mit Zeilenumbrüchen dort, wo das Layout sie
++         setzt, statt des `textContent` des DOM. `innerText` statt `text` genannt, das bereits eine
++         Erweiterung im `soundness`-Umbrella ist.
++     entry #tagName   der Tag-Name eines Elements, etwa `h1`
++     entry #role   die berechnete ARIA-Rolle eines Elements, etwa `button` oder `heading`
++     entry #label   der berechnete barrierefreie Name eines Elements, wie ein Screenreader ihn ansagen würde
++     entry #enabled   ob ein Formularsteuerelement aktiviert ist
++     entry #selected   ob eine Checkbox, ein Radiobutton oder eine Option ausgewählt ist
++     entry #attribute   ein Attribut, wie das Markup es hat, oder `Unset`, wenn das Element keines hat
++         Weicht von `#property` ab, sobald ein Skript den Knoten berührt: Das `value`-Attribut eines
++         Eingabefelds ist das, womit die Seite ausgeliefert wurde, seine Property das, was das Feld
++         jetzt enthält.
++     entry #property   eine lebendige DOM-Property eines Elements, oder `Unset`, wenn es keine hat
++     entry #css   der berechnete Wert einer CSS-Eigenschaft auf einem Element, etwa `color`
++     entry #rect   der umgebende Rahmen eines Elements, als `WebDriver.Session.Rect` in CSS-Pixeln
++     entry #displayed   ob ein Element angezeigt wird, nach der Sichtbarkeitsprüfung der Spezifikation
++         Die W3C-Spezifikation ließ den `displayed`-Befehl des JSON Wire Protocol fallen, daher führt
++         dies `getClientRects().length > 0` des Elements als Skript aus, wie es jeder konforme Client
++         tut.
+
+@ 0 5 0 120c0911513e0f2b065d7df19c066080
++ entry .browser   die `WebDriver.Session` im Geltungsbereich, sodass Befehle sich als `browser.title()` lesen
++     Innerhalb eines `session`-Blocks ist das Handle ein Kontextwert; `browser` benennt es, wobei
++     seine Capture-Menge die der Sitzung selbst bleibt, sodass alles, was es zurückgibt, auf
++     denselben Block beschränkt ist. Es ist eine Methode, die die Sitzung als benannten
++     Kontextparameter nimmt, kein `summon`, das eine frische Capability prägen würde, statt auf die
++     zu verweisen, die dem Block gehört.
+
+% 2 1 0 07c47f44650ee6ad1fef66883ac9b76c
+
+% 3 1 0 05bcaf69e4f0c19f04da76ecca256f2b
+
+% 4 1 0 116879f4fb62d55f08bf1fb7f4fd6b22
+
+% 5 1 0 02c196a54cbf10df09e5db5687849af2
+
+% 6 1 0 07bc9e430d2b8a74155db6cecd788b1b
+
+% 7 1 0 1c5420126eed9ac31fc801d91fd98e76
+
+% 0 1 0 1e7e289bc95ae2bb1beefd334f52538b
+
+% 1 1 0 1a92ef2e485fd73a19b972be6fa04c00
+
+@ 0 3 0 023af3b21e522e191110e54531791c0b
++ entry .click   klickt ein Element in seiner Mitte an, über die `WebDriver.Session` im Geltungsbereich
++     Eine Erweiterung auf `WebDriver.Element`, die an `WebDriver.Session#click` delegiert. Ein von
++     einem anderen verdecktes Element löst `WebDriver.Error` mit dem Grund `ElementClickIntercepted`
++     aus.
+
+% 2 1 0 0879055c577bcf7304f6f549083680ff
+
+% 3 1 0 11363a435f62c3cb01339c5d1db1ce0e
+
+% 4 1 0 1208a3c3df48a27c195b5a02f7a10b68
+
+% 5 1 0 1a604b2a108ee4b21be14efdcaab67a8
+
+% 6 1 0 1464894699b2122d18d7f172bb01b96c
+
+% 0 1 0 1917ae27646b72700aff6991dca436da
+
+% 1 1 0 1fbb70079832f71d12c93c717d3ef2d1
+
+@ 0 2 0 004b9345f9ef9e580459938bd2372ba9
++ entry .clear   leert ein editierbares Element, über die `WebDriver.Session` im Geltungsbereich
++     Eine Erweiterung auf `WebDriver.Element`, die an `WebDriver.Session#clear` delegiert.
+
+@ 0 4 0 1974223faa9b7a500dc1ef8d6f771023
++ entry .innerText   der dargestellte Text eines Elements, über die `WebDriver.Session` im Geltungsbereich
++     Eine Erweiterung auf `WebDriver.Element`: was ein Leser sieht, nach dem `innerText`-Algorithmus,
++     statt des `textContent` des DOM. Sie heißt nicht `text`, da `text` bereits eine Erweiterung im
++     `soundness`-Umbrella ist.
+
+@ 0 2 0 1ac6479be837997311b2eaa422149ee0
++ entry .tagName   der Tag-Name eines Elements, etwa `h1`, über die `WebDriver.Session` im Geltungsbereich
++     Eine Erweiterung auf `WebDriver.Element`, die an `WebDriver.Session#tagName` delegiert.
+
+@ 0 2 0 0daa16f15ef8a3d702de670903c12693
++ entry .enabled   ob ein Formularsteuerelement aktiviert ist, über die `WebDriver.Session` im Geltungsbereich
++     Eine Erweiterung auf `WebDriver.Element`, die an `WebDriver.Session#enabled` delegiert.
+
+@ 0 3 0 01fb7eef921da5bd1493d5b84c5aca59
++ entry .selected   ob eine Checkbox, ein Radiobutton oder eine Option ausgewählt ist
++     Eine Erweiterung auf `WebDriver.Element`, die an `WebDriver.Session#selected` delegiert; sie
++     braucht die Sitzung im Geltungsbereich.
+
+@ 0 3 0 1901638394b8e61804b11e973f1afff8
++ entry .displayed   ob ein Element angezeigt wird, über die `WebDriver.Session` im Geltungsbereich
++     Eine Erweiterung auf `WebDriver.Element`. Das W3C-Protokoll hat keinen Befehl für die
++     Sichtbarkeit, daher wertet `WebDriver.Session#displayed` eine Prüfung als Skript aus.
+
+@ 0 2 0 015e9b31001e0d0903da1c4ce90f0d18
++ entry .role   die berechnete ARIA-Rolle eines Elements, über die `WebDriver.Session` im Geltungsbereich
++     Eine Erweiterung auf `WebDriver.Element`, die an `WebDriver.Session#role` delegiert.
+
+@ 0 3 0 19d26a523c8b706506a88bb7f50031d3
++ entry .label   der berechnete barrierefreie Name eines Elements, über die `WebDriver.Session` im Geltungsbereich
++     Eine Erweiterung auf `WebDriver.Element`, die an `WebDriver.Session#label` delegiert: der Name,
++     den ein Screenreader ansagen würde, aus seinem Text, seinem `aria-label` oder seinem
++     zugeordneten `<label>`.
+
+@ 0 4 0 1d08303bbde164df120db14af1581832
++     Das `soundness`-Umbrella exportiert auch `label` von Wisteria, den Namen eines Felds oder Falls
++     innerhalb einer Ableitung, daher kollidieren unter `import soundness.*` die beiden Namen, und
++     `element.label()` wird womöglich nicht aufgelöst; `browser.label(element)` erreicht denselben
++     Befehl ohne die Erweiterung.
+
+@ 0 3 0 11a1d8abba392c3408b36f7dd7f64cad
++ entry .cssValue   der berechnete Wert einer CSS-Eigenschaft auf einem Element, etwa `color`
++     Eine Erweiterung auf `WebDriver.Element`, die an `WebDriver.Session#css` delegiert; sie braucht
++     die Sitzung im Geltungsbereich.
+
+% 2 1 0 1354af91a6e2d3b41aa3d133ad900cc2
+
+% 3 1 0 105ce92d3292792613a5abce90dfac2e
+
+% 4 1 0 0717e730048924851e479655f1298933
+
+% 5 1 0 18c43cc7657fd4b20eb1abf8f50c45f8
+
+% 6 1 0 167635ef992f2b6902cabb34096bd614
+
+% 0 1 0 1f69de3b552f5104021066310e4953e9
+
+% 1 1 0 025c417c3e41109d168bf6325b0382ac
+
+@ 0 4 0 01b73c252c0345080b337b9d2116c34e
++ entry .shadowRoot   die offene Shadow-Root, die ein Element beherbergt, über die `WebDriver.Session` im Geltungsbereich
++     Eine Erweiterung auf `WebDriver.Element`, die eine `WebDriver.ShadowRoot` liefert, die mit `\`
++     oder `element` durchsucht wird. Eine geschlossene oder fehlende Root löst `WebDriver.Error` mit
++     dem Grund `NoSuchShadowRoot` aus.
+
+@ 0 2 0 1f2679f5f4c9621c1fdcdc6ad8804b5c
++ entry .rect   der umgebende Rahmen eines Elements in CSS-Pixeln, über die `WebDriver.Session` im Geltungsbereich
++     Eine Erweiterung auf `WebDriver.Element`, die ein `WebDriver.Session.Rect` liefert.
+
+@ 0 4 0 01a1aef68056265b09d9f448b52a1265
++ entry .value   tippt Text in ein Element, über die `WebDriver.Session` im Geltungsbereich
++     Eine Erweiterung auf `WebDriver.Element`, die an `WebDriver.Session#value` delegiert. Der Text
++     wird an das angehängt, was das Feld bereits enthält, und ist ein einziger Request, wie lang er
++     auch sei; benannte Tasten und Akkorde brauchen `WebDriver.Session#press`.
+
+% 2 1 0 0b8420ac59e5039e01e24fcd0774ccb7
+
+% 3 1 0 08d2ae041fea9dfd0610e58ac7edcbdb
+
+% 4 1 0 1354f9f251a5a4f1010d4db95834523e
+
+% 5 1 0 0f39f803123d30731e62b7f880ad8716
+
+% 6 1 0 117cbf340e2fa9ab1eec6b3a962afd2c
+
+% 0 1 0 134843b65074c1af1ecad3d29b595c43
+
+% 0 1 0 0442255b8ff7f58b0b3c976cc7009cfe
+
+% 0 1 0 0fe2647209d6af5f0a33bd95992dc192
+
+% 0 1 0 134fe6486c7a1c660c81b416d4768a94
+
+% 1 1 0 0f017719092bf5d00860c1994c1a6c9f
+
+@ 0 3 0 0124dde36c3884040b9e6a2ff6a6d0e0
++ entry .screenshotData   ein PNG eines Elements, als rohe Bytes, über die `WebDriver.Session` im Geltungsbereich
++     Eine Erweiterung auf `WebDriver.Element`. Die Erweiterung `screenshot` in `tarantula.image`
++     dekodiert dieselben Bytes in ein `Raster in Png`.
+
+@ 0 4 0 081ec4740481478e15d64361ce899fe5
++ entry .attribute   ein Attribut eines Elements, wie das Markup es hat, oder `Unset`, wenn es keines hat
++     Eine Erweiterung auf `WebDriver.Element`, die die Sitzung im Geltungsbereich braucht. Sie
++     weicht von `property` ab, sobald ein Skript den Knoten berührt: Das `value`-Attribut eines
++     Eingabefelds ist das, womit die Seite ausgeliefert wurde, seine `value`-Property das, was das
++     Feld jetzt enthält.
+
+@ 0 2 0 1be74d2a2e652810197fe5ef0cb3bb82
++ entry .property   eine lebendige DOM-Property eines Elements, oder `Unset`, wenn es keine hat
++     Eine Erweiterung auf `WebDriver.Element`, die die Sitzung im Geltungsbereich braucht.
+
+% 2 1 0 0b14321ab5ed961b12adceaba6b99c21
+
+% 3 1 0 15052e9de51b95141be5dec00f2f78bd
+
+% 4 1 0 1af7e357d97b82710d1a0c4af25431a9
+
+% 5 1 0 0866a33306e7fa451f767e71a2c2fe1b
+
+% 6 1 0 0ddeb0468b3e15550cb6fc24fc7fbcb8
+
+% 0 1 0 0cea0ffeede83aef0b02b4aa50832888
+
+% 0 1 0 0e0d1e1cc0097ccc09c04c9f5bb8968e
+
+% 0 1 0 1f928ea03d265c3a0c8c18e9c3c1cc35
+
+% 1 1 0 1b2ff60c362a8ef2030ed6ec9684dcd8
+
+@ 0 5 0 0f2d0a50c2d05f811b865cb2f460fbbf
++ entry .element   das eine Element, das zu einem Lokator passt, unterhalb eines Elements oder einer Shadow-Root
++     Eine Erweiterung auf `WebDriver.Element` und auf `WebDriver.ShadowRoot`, die einen beliebigen
++     `Focusable`-Lokator nimmt und die Sitzung im Geltungsbereich braucht: `menu.element(Li)`. Passt
++     nichts, wird `WebDriver.Error` mit dem Grund `NoSuchElement` ausgelöst; `\` liefert stattdessen
++     jeden Treffer, und eine leere Liste, wenn es keinen gibt.
+
+% 2 1 0 0165219911708ad210660c67b1cc682a
+
+% 3 1 0 12e4a058107fa883067d96a49ec097f3
+
+% 4 1 0 0b0a15401ee7989612bd2da6c64ceaab
+
+% 5 1 0 1b9bcb36b4e6a8541760d28585a27ef3
+
+% 6 1 0 15b856436a12c3980511b02df5cbe88b
+
+% 0 1 0 00916b1ebe02deb012168d7752b17d56
+
+% 0 1 0 1fc704690165685e1cc3f4c92e43e2a3
+
+% 1 1 0 17cd2d7448331c151906a65187c0705d
+
+@ 0 5 0 1e0d61bfa80408c80c57fdc5bf09c5b0
++ entry .screenshot   ein Screenshot des Viewports oder eines Elements, dekodiert als `Raster in Png`
++     Eine Erweiterung auf `WebDriver.Session` und auf `WebDriver.Element`, in der Komponente
++     `tarantula.image`, die den Bildcodec aus der Browserautomatisierung heraushält:
++     `screenshotData`, dekodiert durch den PNG-Codec von Hallucination. Ein Screenshot, den der Codec
++     nicht lesen kann, wird geworfen, da dies hieße, dass der Treiber etwas sendete, das kein PNG
++     war.
+
+% 2 1 0 137b066b948da42b119c9db506fb4de8
+
+% 3 1 0 1d0bb6eb741758691abc8a207573a107
+
+% 4 1 0 179a459f2cd103f208be9234ee788562
+
+% 5 1 0 0e97572254e8917616324afc76ca2869
+
+% 6 1 0 0fa8e6c724d57a250a7bdbe9e81f5812
+
+% 7 1 0 1b3e9cc9442e7e5e1031a86a872f1cd9
+
+% 0 1 0 005266ddb4c8c0f51b2c34cf201a1958
+
+% 0 1 0 13b8951ae283025203374e920ed55633
+
+% 1 1 0 1bf7e46559a177c01f6b861765cf23ae

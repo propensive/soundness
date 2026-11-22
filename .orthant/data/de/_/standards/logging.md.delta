@@ -1,0 +1,284 @@
+orthant 2 language
+
+@ 0 1 0 08e0b694988a31f511a97ddb02d6999d
++ # Soundness-Standards für Protokollierung
+
+@ 0 3 0 08c29def8df32e1010c968e21762738f
++ Dieses Dokument legt fest, wann, was und wie in den Soundness-Bibliotheken protokolliert wird. Es
++ ergänzt `syntax.md` (Leerraum und Formatierung) und `naming.md` (Namen von Fabriken). Die
++ Beispiele stammen aus `lib/*/src/core/*.scala`.
+
+@ 0 5 0 1e087fd7e1d81ce406294327c26bb9c5
++ Protokollierung ist typsicher: Eine Methode, die protokolliert, deklariert diese Anforderung in
++ ihrem Rückgabetyp mit dem Infix-Typ `logs` und gibt Werte eines modulspezifischen `Event`-Typs
++ aus — nie rohe Strings. Ein `Logger` (eine `Sink`), der im Geltungsbereich des Aufrufers definiert
++ ist, empfängt die Ereignisse; ohne Logger im Geltungsbereich ist die Protokollierung stumm und
++ kostenlos, sodass eine `logs`-Deklaration den Aufrufern nichts auferlegt.
+
+@ 0 1 0 1452f29ec01ef3a904e101a152b1321e
++ ## 1. Wann protokolliert wird
+
+@ 0 2 0 1681b4dd05f344f20ff4f3c321f7c1b6
++ Eine Methode sollte genau dann protokollieren, wenn sie einen **beobachtbaren Seiteneffekt mit
++ Latenz oder einer Fehlerart** ausführt:
+
+% 2 1 0 156a2e8f8fa25727024ecb63b084fc43
+
+@ 0 6 0 0081e9817a7f59321c3c72b4de33da5a
++ column  Kategorie
++ column  Operationen
++ row  Netzwerk  verbinden, binden, lauschen, annehmen, senden, empfangen, schließen, upgraden
++ row  Dateisystem  öffnen, lesen, schreiben, erzeugen, löschen, verschieben, symbolisch verknüpfen, beobachten
++ row  Prozess  starten, beenden, warten, signalisieren
++ row  Externe Dienste  HTTP-Requests, Daemon-Protokolle, Docker, Paket-Registrys, Downloads und Uploads
+
+% 1 1 0 0c3c809722009b3709d7805ffe34284f
+
+@ 0 3 0 040f948dab83124908def2e95b80f552
++ Reine, CPU-gebundene oder speicherinterne Arbeit **darf nicht** protokollieren: Hashing,
++ Verschlüsselung, Parsen, Codecs, Serialisierung, Arithmetik und die Manipulation von
++ Datenstrukturen erzeugen keine Protokollausgabe, wie teuer sie auch sein mögen.
+
+@ 0 1 0 06ca5da3aecb3dfb048c616c52471930
++ Eine Methode entscheidet sich dafür, indem sie ihren Ereignistyp im Rückgabetyp nennt:
+
+% 2 1 0 0db7d9ec6178741c1ba376bad1d5bb0d
+
+% 3 1 0 0181daae89884fd804d3262d38c16275
+
+% 4 1 0 1810d6f8fd05d786120618a02486dfce
+
+% 0 1 0 0bf1196a40e6fb061f82f61fa116ceba
+
+% 1 1 0 102975cc429b970e0f6a426c936c6d3a
+
+@ 0 1 0 06f77517ff91aeb010b640c665922778
++ Eine Methode kann durch Verkettung mehr als einen Ereignistyp protokollieren:
+
+% 2 1 0 07f85c7100f1f52210ec1c75d482c9e9
+
+% 3 1 0 1fa9a643816227d2141f2f6156e002e0
+
+% 4 1 0 195aa014f5491e720939a05e17adf52a
+
+% 0 1 0 175e93147a4599c90da57dc57c849051
+
+% 1 1 0 14e76639192125d600b9abf657f48f4b
+
+@ 0 5 0 1e304f95509cdb2006f8a56e21dc4188
++ Fügen Sie **keine** `logs`-Anforderung (und keinen `Log`-Aufruf) in eine Methode ein, die eine
++ abstrakte Methode einer Typklasse implementiert — der zusätzliche Kontextparameter ändert die
++ Signatur und bricht das Überschreiben. Protokollieren Sie stattdessen in der öffentlichen
++ Erweiterungsmethode, die die Typklasse *aufruft*; das ist auch die richtige Granularität (ein
++ Eintrag pro Operation auf Benutzerebene, nicht pro interner Verteilung).
+
+@ 0 1 0 16f17a575f8f155d06047645dc7b8299
++ ## 2. Stufen
+
+@ 0 1 0 05d49585e1e08ed30d7edcf1560c5e20
++ `Level` hat vier Werte, gewählt nach **Häufigkeit und Schwere** zugleich:
+
+% 2 1 0 10c2c0ad141266720a54e02226333ff9
+
+@ 0 6 0 04d1236aeac5487d011f8bfa1b7283fa
++ column  Stufe
++ column  Für
++ column  Beispiele
++ row  `Fine`  hochfrequente Details pro Einheit, nur beim Debuggen nützlich  jeder Frame, jedes Paket, jedes Öffnen einer Datei, jeder empfangene Request, jeder Cache-Treffer
++ row  `Info`  eine Zeile pro bedeutender logischer Operation oder Lebenszyklus-Etappe  eine aufgebaute Verbindung, ein Server, der nun lauscht, ein gesendeter Request, ein gestarteter Prozess, ein geöffnetes Archiv, ein abgeschlossener Download
++ row  `Warn`  ein behebbarer oder unerwarteter, aber behandelter Zustand  ein erzwungenes Beenden, ein Zurücksetzen oder Wiederholen einer Verbindung, ein abgebrochener Stream, ein Leerlauf-Timeout, eine sauber behandelte Protokollverletzung, ein genommener Rückfall
+
+% 0 1 0 0f3659617b5f619a065d23e2fc87835b
+
+@ 0 1 0 1b33bbb2b14ed55a00ad46791fc3301c
++   cell  eine Operation, die unbehebbar fehlschlug, ausgegeben neben dem ausgelösten `Error`; sparsam verwendet
+
+% 0 1 0 0ed568419db6988e15566084b5954923
+
+% 1 1 0 1a8eadecc0663acd1b08d1b94578a18d
+
+@ 0 2 0 1eab22a97b9ebc130247283dc3920912
++ Gehen Sie davon aus, dass `Fine` normalerweise abgeschaltet ist, und seien Sie dort ausführlich:
++ Ein Senden pro Paket ist `Fine`, obwohl es „normal“ ist, während ein Binden pro Verbindung `Info`
++ ist.
+
+@ 0 1 0 07d622d9dde49f4c1fb1e34fe829d832
++ ## 3. Was protokolliert wird
+
+@ 0 11 0 1572579f56d51a8310445b1ab2b06a6a
++ - **Die Ressource identifizieren**: Adresse und Port, Pfad, PID, URL, Stream-ID, Archiv- oder
++   Eintragsname, Container-ID.
++ - **Quantifizieren, wenn es billig ist**: Byte-Zahlen, Eintragszahlen, verstrichene
++   Millisekunden, Statuscodes, Exit-Codes.
++ - **Nie Geheimnisse protokollieren**: Zugangsdaten, Tokens, Cookies, Schlüsselmaterial,
++   Authorization-Header oder ganze Request- und Response-Bodys. Protokollieren Sie stattdessen
++   eine Schwärzung, eine Größe oder eine kurze Vorschau.
++ - **Die Größe begrenzen**: Längen und Vorschauen protokollieren, nicht ganze Nutzdaten.
++ - **Typisierte Felder tragen**, keine vorformatierten Strings. Der Ereignisfall enthält die
++   Werte; die `Communicable`-Instanz übernimmt die Formatierung (§4). Das hält das Ereignis
++   typsicher und lässt die Darstellung je nach Senke variieren.
+
+@ 0 1 0 09410b4e0efe26e619d572de2c32b527
++ ### Kosten im abgeschalteten Zustand
+
+@ 0 5 0 112082b8f10ec34617cbcfa0abe81eba
++ `Log.fine`/`info`/`warn`/`fail` nehmen ihr Argument **by-name**, und `Loggable.fanOut` befragt
++ `accepts(level)` jeder Senke, *bevor* es erzwungen wird. Wenn also keine Senke im
++ Geltungsbereich ist oder keine die Stufe akzeptiert, wird der Ereigniswert nie konstruiert, und
++ seine Felder werden nie ausgewertet — eine abgeschaltete Protokollanweisung kostet nichts.
++ Schreiben Sie Protokollaufrufe freizügig; schützen Sie sie nicht durch Bedingungen.
+
+@ 0 2 0 1dfd1ebf64d66c0b05dcb54b8b13a151
++ Deshalb sollten Sie die **ursprünglichen typisierten Werte** in das Ereignis übergeben und
++ `Communicable` sie darstellen lassen, statt an der Aufrufstelle umzuwandeln:
+
+% 2 1 0 0d7ab4ae5df467821db024579f671d18
+
+% 0 1 0 11e48f52e1139b59085181d41a0dd2ec
+
+% 0 1 0 081758635e05aef0047fae85da5d5d01
+
+% 1 1 0 13da109cafdc4aac0f15e5f3b6aa9f93
+
+@ 0 2 0 0baf797dbd04aec21af39247352c3ecb
++ Beide Formen sind im abgeschalteten Zustand kostenlos (das Argument ist by-name), aber
++ typisierte Felder halten das Ereignis typsicher und lassen die Darstellung je nach Senke
++ variieren.
+
+@ 0 3 0 1578bc3eb46e1e3b1cb6abeb7b2cc9ad
++ **Ausnahme — Kontext der Aufrufstelle.** Wenn die Darstellung eines Werts Information braucht,
++ die nur an der Aufrufstelle verfügbar ist (zum Beispiel ein `serpentine.Path on plane`, dessen
++ textuelle Form von seiner `plane` abhängt), erfassen Sie den dargestellten `Text` *dort*:
+
+% 2 1 0 1d81ff96ff26bfcb05c9ae33cc787cbd
+
+% 0 1 0 135e23cece8d7bf611b07dec57013942
+
+% 0 1 0 184d37cf33f9457a1127497bae183e3f
+
+% 1 1 0 00ceb76ca5af684a038b1700c01a16d1
+
+@ 0 2 0 1e9822e15fd156430194498120503818
++ Das ist korrekt und kein Kompromiss: Das `.show` läuft an der (by-name) Aufrufstelle, wo der
++ Kontext existiert, und trotzdem nur dann, wenn das Ereignis tatsächlich protokolliert wird.
+
+@ 0 1 0 11336d2062a8f59e17b5b559d86da4f3
++ ## 4. Ereignistypen
+
+@ 0 5 0 0ce0565b67855dbf11acec01e64733d4
++ Jedes Modul, das protokolliert, definiert ein einziges `enum` namens `Event`, verschachtelt in
++ dem Objekt, das seine Domäne benennt (`Exec.Event`, `Http.Event`, `Io.Event`), mit dem
++ Begleitobjekt `object` vor dem `enum` (L3). Fälle sind Verb- oder Nominalphrasen in CamelCase,
++ die die relevanten Werte als typisierte Felder tragen, und jeder erweitert die
++ `Log`-Kategorien, zu denen er gehört:
+
+% 2 1 0 0a3cca879222b92401767d6e486df091
+
+% 0 1 0 1277063c7bdd1d731bcdce7023a33956
+
+% 0 1 0 12db4c6f0e04c7e10b5ef43a651e18aa
+
+% 0 1 0 1f4223029820c8ec196d5562cd0c8697
+
+% 0 1 0 0d37077fd805d5e90adc33e03b484a96
+
+% 0 1 0 12a3e1ae811cece70cba6bca884808af
+
+% 0 1 0 1c9bd2b634f74ac814d2405021c64643
+
+% 0 1 0 1b8cc76448c909d11dc63ab3f74dab5b
+
+% 0 1 0 1394eac630bcee8004b6e550f6929f1e
+
+% 0 1 0 0d8652fa5bab9a881ce6ba614d123494
+
+% 0 1 0 137ba6468e943c9c0d51c5a6038e451a
+
+% 0 1 0 17c9f90ac3656ee40c636e5c5a616834
+
+% 0 1 0 12eb61a5bf05c1bf0a9241057efe8930
+
+% 1 1 0 046ef472df7506c902549456381afa3a
+
+@ 0 2 0 1498f4b54a3eb78610f9a3326e82e627
++ Das Begleitobjekt enthält ein `given communicable: <Event> is Communicable`, das jeden Fall auf
++ eine `m"..."`-Meldung abbildet, wobei die `=>`-Pfeile ausgerichtet sind (Consequent Style `T1`).
+
+@ 0 1 0 166f8540cff5d74b1151be902deedc2d
++ Der Ereignistyp muss in das Paket `soundness` exportiert werden (L4).
+
+@ 0 1 0 1673f8529b5e06a30835ea2ad5292ed8
++ ### Zusammensetzen mit `Exec.Event`
+
+@ 0 2 0 18c9f08055b887091d14db2bf270d384
++ Ein Modul, das einen Unterprozess startet, verwendet `guillotine.Exec.Event` wieder, indem es es
++ in sein eigenes Ereignis überträgt, statt Prozessfälle zu duplizieren:
+
+% 2 1 0 0ca4ae5a1da99cfd1adc16b40910c91b
+
+% 0 1 0 107b080443af67aa06458ae802a1eb63
+
+% 1 1 0 1bb97bb535c76ce21fca073583206ea1
+
+@ 0 1 0 04dfb520f3cdd1e21813ae1a3d5278f2
++ (bestehendes Pattern: `CliEvent`, `octogenarian.Commandline.Event`).
+
+@ 0 1 0 1112496d901103651b9543553c25b4b2
++ ## 5. Stil der Meldungen
+
+@ 0 3 0 126c563dc14a37f417864e4ca9f49a14
++ Protokollmeldungen sind kleingeschrieben, knapp, im Präsens, ohne abschließenden Punkt, und
++ interpolieren den relevanten Kontext — passend zum Hausstil der Fehlermeldungen von `fulminate`
++ (siehe `messages.md`):
+
+% 2 1 0 07b3fcd936a0e17d1863e3f1bdbbcb05
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 06158e9bc85c13c003ff2339606d0a72
+
+% 0 1 0 05b0531bffad75c50786cf98f6a48067
+
+% 0 1 0 0f1cd01037abf94513d257a95762db6e
+
+% 0 1 0 18f1f955701de7be1b8e8ebefa0572cf
+
+% 1 1 0 068d136e6a929596193c4784204a48a8
+
+@ 0 2 0 12fc6083ed1f2d2306c6ee2a5fa6bb9c
++ Eine Meldung muss etwas Bestimmtes sagen: `m"a failure occurred"` ist nicht akzeptabel —
++ benennen Sie, was fehlschlug, und geben Sie den Bezeichner an.
+
+@ 0 1 0 19bbdb8224d24dcc1c44c1bc3999cc7c
++ ## 6. Ausgeben
+
+@ 0 2 0 15c3dd19bfe2c49509ad5f3880ec09aa
++ Rufen Sie `Log.fine`, `Log.info`, `Log.warn` oder `Log.fail` mit einem Ereigniswert an der Stelle
++ auf, an der der Seiteneffekt geschieht:
+
+% 2 1 0 00fc8c5fd954b1c51ab7c4434fb23bc6
+
+% 0 1 0 0a310de662488d011998d4f884f53808
+
+% 0 1 0 02c13a33050af80c021a7bf46ea845c9
+
+% 0 1 0 126a62f804b1ee111a800817f6389f9b
+
+% 1 1 0 0b842d8e793572ae0dc869ba8aec8788
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 09ca4ed74a957fec117bc83b7662d366
+
+% 0 1 0 12457ff022faa0f206174cad515f807c
+
+% 0 1 0 06e37c9a40772d7c0ef0a61181e6d04b
+
+% 1 1 0 1e876abb6cb3e19b17235682eab1593e
+
+@ 0 2 0 11897875e88f24af020f95c18270cce8
++ Ein Lebenszyklus-Ereignis wird einmal protokolliert, auf `Info`; ein Ereignis pro Einheit (pro
++ Frame, pro Datei) wird auf `Fine` protokolliert; eine behandelte Anomalie wird auf `Warn`
++ protokolliert.

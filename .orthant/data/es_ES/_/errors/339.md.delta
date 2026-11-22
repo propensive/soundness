@@ -1,0 +1,17 @@
+orthant 2 language
+
+@ 0 1 0 188df1fa5d3a04e71c5124dc71ff8f93
++ # `SN-339` — `PositionalError` (retirado)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Este error ya no existe. La página se conserva para que el código no se reutilice, y para que una
++ referencia a él desde una versión anterior pueda seguir resolviéndose.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Qué fue de ello
+
+@ 0 4 0 1d0178c1d45a58d71c01d49023c59141
++ La API `Interpolator` de Contextual, que lanzaba este error, se sustituyó por la clase de tipos
++ `Interpolable` y el punto de entrada `interpolation[…]`. Ahora un interpolador notifica un fallo de
++ análisis mediante su propio tipo de error, posicionado por los `origins` que recibe la macro, así
++ que no hay ningún error posicional compartido que documentar.

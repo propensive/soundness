@@ -1,0 +1,44 @@
+orthant 2 language
+
+% 0 1 0 083d0161faae9d1215ca00b36edc4877
+
+@ 0 1 0 031a16b75637ea7907e59142beb9324e
++ Wird ausgelöst, wenn Geodesy einen Wert nicht als `geo:`-URI parsen kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 4 0 0e7dc52ebee3880f0976888da67c1d24
++ Geodesy parst Geo-URIs nach RFC 5870 der Form
++ `geo:<lat>,<lon>[,<alt>][;<param>=<value>]…`. Erfüllt ein Teil der URI die Syntax nicht, wird
++ dieser Fehler mit der Variante geworfen, die den betreffenden Teil bezeichnet. Die Meldung ist `the geo URI is not in the
+
+% 0 1 0 1868c8a12925a855101d5a1b6001358b
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 11 0 1ebd0f89b970b16019fb69607484f108
++ column  Grund
++ column  Bedeutung
++ column  Meldung
++ column  Behebung
++ row  `↯/s.46.1.1`  `MissingEquals`  Eine Parameterkomponente hatte kein `=`, das Name und Wert trennt.  `` [↯/s.46.1.1] the geo URI is not in the correct format because the parameter does not contain an `=` ``  Schreiben Sie Parameter als `name=value`.
++ row  `↯/s.46.1.2`  `MultipleEquals`  Ein einzelner Parameter enthielt mehr als ein `=`.  `` [↯/s.46.1.2] the geo URI is not in the correct format because the parameter contains more than one `=` ``  Kodieren Sie `=`-Zeichen, die im Wert stehen sollen, per Prozentkodierung.
++ row  `↯/s.46.1.3`  `BadScheme`  Die URI begann nicht mit `geo:`.  `` [↯/s.46.1.3] the geo URI is not in the correct format because the value does not begin with the `geo:` URI scheme ``  Stellen Sie der URI `geo:` voran.
++ row  `↯/s.46.1.4`  `ExpectedSemicolon`  Nach dem Höhenwert wurde ein `;` erwartet, aber nicht gefunden.  `` [↯/s.46.1.4] the geo URI is not in the correct format because a `;` was expected after the altitude value ``  Trennen Sie die Höhe mit `;` von nachfolgenden Parametern.
++ row  `↯/s.46.1.5`  `UnexpectedSuffix`  Auf die Koordinaten folgte Inhalt, der weder mit `,` noch mit `;` begann.  `` [↯/s.46.1.5] the geo URI is not in the correct format because a `,` or `;` was expected ``  Leiten Sie die Höhe mit `,` und Parameter mit `;` ein.
++ row  `↯/s.46.1.6`  `ExpectedCoordinates`  Breiten- und Längengrad fehlten oder ließen sich nicht als Zahlen parsen.  `[↯/s.46.1.6] the geo URI is not in the correct format because latitude and longitude coordinates were expected`  Geben Sie unmittelbar nach `geo:` zwei durch Komma getrennte Dezimalzahlen an.
++ row  `↯/s.46.1.7`  `BadUncertainty`  Der Wert eines Parameters `u=` (Unsicherheit) war keine gültige Zahl.  `` [↯/s.46.1.7] the geo URI is not in the correct format because the `uncertainty` parameter vas not a valid number ``  Geben Sie für `u=` einen nichtnegativen Dezimalwert an.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 1144be88f2df39e800aa365a21b4ffba
++ - Quelle: `lib/geodesy/src/core/geodesy.Geolocation.scala`

@@ -1,0 +1,56 @@
+orthant 2 language
+
+% 0 1 0 1b20ccfadbfed0500d96cfd162acb9cd
+
+@ 0 1 0 1ed6ee8637ae50810a4aaf966372439e
++ Cacophony が音声のフィードから録音できないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 1260e6a6efd9e5de114814780cb4eebf
++ Cacophony は音声のキャプチャのラインを開き、そこからサンプルを読む。
++ このエラーは、ラインそのもの、要求された構成、または録音の停止後に行われた操作の問題を報告する。
++ メッセージは `could not record from feed $feed because $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 1ec234f5d6b936cb078edc535e66f43a
+
+@ 0 3 0 119987e16bd6e26c01ba47eb0cd8160f
++ 要求された音声のラインを開けなかった。典型的には、入力デバイスが接続されていないか、別のプロセスがそれを排他的に使っているためである。
+
+@ 0 1 0 1ae3a649be3e11c117d2dc71becb6cf1
++ **例。** `[↯/s.82.2.1] could not record from feed default because the audio line could not be opened`
+
+@ 0 2 0 0a10bcc644f2110819ae012c0fef4a2e
++ **解決方法。** 入力デバイスが接続されており、プロセスにそれを使うパーミッションがあることを確かめる。
+
+% 0 1 0 17a89aeecb2adaf11df666e3e6d95a15
+
+@ 0 2 0 10a144670334fe270f186c4d12c25b3b
++ サンプルレート、チャンネル数、サンプルサイズの組み合わせが、デバイスでサポートされていなかった。
+
+@ 0 1 0 169ac148e6a2000e14290360dcc9e904
++ **例。** `[↯/s.82.2.2] could not record from feed default because the requested configuration is not supported`
+
+@ 0 2 0 07c3168e3c7dad8208346ff928cd990c
++ **解決方法。** デバイスがサポートする構成を選ぶ。その能力を問い合わせ、互換性のある形式を選ぶ。
+
+% 0 1 0 00984a0c1c2dde020c24e67e75e3eb12
+
+@ 0 1 0 101e052d0bb1c9c711ed493b2a965ade
++ 録音が停止された後に操作が試みられた。
+
+@ 0 1 0 1980b764b112e78a171f0eee0f986cd9
++ **例。** `[↯/s.82.2.3] could not record from feed default because the recording has already been stopped`
+
+@ 0 2 0 008b1787c228ffcf12a5df7e017ff113
++ **解決方法。** 停止した録音を再利用するのではなく、新しい録音を開く。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 06e02ba3712ad3c4132026a245feb3ae
++ - ソース：`lib/cacophony/src/core/cacophony.Feed.scala`

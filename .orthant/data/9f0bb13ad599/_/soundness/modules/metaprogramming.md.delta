@@ -1,0 +1,8 @@
+orthant 2 release
+
+@ 0 1 0 0208a64a11161f2a17e2f09bc57ef272
++ and instructions, and each instruction carries the state of the operand stack, reconstructed.
++ Bytes which are not a classfile raise a `Classfile.Error`:
+
+@ 0 1 0 0d6c0fbd76b60e0514395d2690f9b701
++ val methods = safely(Classfile[Exit]).let(_.methods.map(_.name))

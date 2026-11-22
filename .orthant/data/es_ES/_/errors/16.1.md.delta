@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 1 0 1bb20c9ef4d81da60f49eb04dce1773b
++ # `↯/s.16.1` — La cota inferior debe ser un literal singleton `Double`
+
+@ 0 2 0 03b79d6edea2f7960fd9b42f80ec983e
++ Lo lanza la macro `NumericRange` de Cardinality cuando el tipo de la cota inferior no es un tipo
++ literal singleton `Double`.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 1e57ffe4e1275f2213aa505c0d72a546
++ La macro inspecciona el tipo de la cota inferior y espera un `ConstantType(DoubleConstant(_))`.
++ Cualquier otra forma provoca esta detención.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensaje de ejemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1c97d9769471156417e6b598ac422308
+
+% 1 1 0 18f491662511df6104e021cdd73879fc
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 2 0 0d21d8d4024006391082d864cc463646
++ Proporciona un tipo literal singleton `Double` como cota inferior (por ejemplo, `0.0` en lugar de
++ `0`).
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 182b99dddf81d5651ccd9f6afc52f756
++ - Fuente: `lib/cardinality/src/core/cardinality.internal.scala`

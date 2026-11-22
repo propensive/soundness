@@ -1,0 +1,2140 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1f418631adc3fa321304fa486e32890a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 116504c699c7cdf81e6527e42ac1203d
++ info   ネットワークの識別子（ホスト名、IP アドレス、URL、メールアドレス、ポート、MAC アドレス、DNS 名）を型付きの値として扱う
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1220c0dd2e9cc1c317dafffe3f62e8d8
++     _Urticose_ はネットワークの各識別子にそれぞれ固有の型を与え、可能な限り早い時点で検証する。
++     リテラルは補間子を通じてコードのコンパイル時に、テキストは `as[T]` を通じてデコードの瞬間に検証される。
++     そのため `Hostname`、`Ipv4` や `Ipv6` のアドレス、`HttpUrl`、`EmailAddress`、`Port`、`MacAddress` は、どこで保持されていても正しい形式であることがわかっており、その各部分も型付きである。
++     URL のホストは `Hostname | Ipv4 | Ipv6`（`Host` エイリアス）、ポートは数値であり、ポートの型はそのトランスポート（`Port over Tcp`）と、リテラルの場合はその番号（`Port over Tcp of 25`）を記録する。
+
+% 2 1 0 0ab03ee58399ecda171abc34e33b39c2
+
+% 3 1 0 1e0aabc3413b847b0276c60d0f55c33c
+
+% 4 1 0 11676a519ac5a7bd04dd4c371fc179ca
+
+% 0 1 0 15125322f5497eff1079082c899bfe0e
+
+% 0 1 0 0d48e01a9943a6bd1d2913f4fed30813
+
+% 0 1 0 194a8b6ffbcef9a9011608c6e2271504
+
+% 0 1 0 15b1ba49a06ae8691fe04326f4460332
+
+% 0 1 0 1c42675ee2c8b45d0afc163bd3b0c79b
+
+% 0 1 0 01b56145648e15dd09dd2f08894ab3b0
+
+% 0 1 0 093679b08e5e3e5e1950e01078724eb9
+
+% 1 1 0 0fd76cd241661c7d17fddbfd81ed2707
+
+@ 0 5 0 161a3f75db2fea9e07e55d082918e719
++     有効でない値は、書かれた場所でコンパイルエラーになる（`ip"192.168.0.0.0.1"` はコンパイルできない）。
++     形式に合わないテキストは、何が誤っていたかを示す型付きのエラーを発生させる。
++     `Hostname.Error`、`IpAddress.Error`、`EmailAddress.Error`、`Url.Error`、`MacAddress.Error`、`Port.Error`、`Dns.Error` のいずれかであり、それぞれがプログラムが単に拒否するだけでなく報告できる `Reason` を持つ。
+
+@ 0 5 0 1cc8483c15b6610200fce1dd83f9ef96
++     ネットワークへの**アクセス**はケイパビリティである。
++     ネットワークに到達するメソッドは `Online`（またはその上位型 `Internet`）をコンテキストパラメーターとして受け取る。
++     プログラムは `internetAccess.online` を名前でインポートしてそれを付与するか、`internet(true)` でスコープを区切り、`online` で確かめる。
++     `internetAccess.offline` はそれを拒否し、ケイパビリティが求められた時点で `Internet.Error` を発生させる。
+
+@ 0 1 0 02e881c0e2bfbd4a1c37c9b9fc5586eb
++     このライブラリは四つのソースセットに分かれている。
+
+@ 0 12 0 00990f89c4e8be511da66bf04806e50f
++     - `urticose.core`：`Hostname`、`DnsLabel`、`Ipv4`、`Ipv6`、`Ipv4Subnet`、`Ipv6Subnet`、`MacAddress`、`EmailAddress`、`Tcp`・`Udp`・`Quic` を伴う `Port`、`Endpoint` と `on` 拡張、`NetworkInterface`、`Internet`/`Online` と `internetAccess` パッケージ、そして `ip"…"`、`subnet"…"`、`mac"…"`、`tcp"…"`、`udp"…"` の補間子。
++     - `urticose.url`：`HttpUrl` を伴う `Url`、`Scheme`、`Authority`、`Origin`、URL のパスが置かれる `Www` プレーン、そして `url"…"`、`host"…"`、`email"…"` の補間子。
++     - `urticose.ansi`：URL を端末に下線付きで色を付けて描画する `teletypeables.urlTeletype` given と、その色を決める `UrlPalette`。URL のパースが ANSI のスタックを引き込まないよう、分けてある。
++     - `urticose.dns`：`Dns`。RFC 1035 の名前、質問、レコード、メッセージの語彙、そのワイヤ上のコーデック、プラットフォームのリゾルバーを通じた `Dns.resolve`、`dns"…"` 補間子、`dnsName` と `reverseName` の拡張。
+
+@ 0 6 0 1a7f1a9c1fc6dd44011d5efe92e00a63
++     すべては `soundness` アンブレラにエクスポートされる。
++     選択パッケージ（`internetAccess`、`teletypeables`、および urticose の型を anticipation のネットワーク領域の代表として指定する `emailAddressInterfaces`、`hostnameInterfaces`、`ipAddressInterfaces`、`urlInterfaces` の各パッケージ）はアンブレラ自身のものと統合される。
++     そのため利用者は `import soundness.*` と書いてから、given を一つ名前でインポートする。
++     `import soundness.*` だけでは、パッケージから given は一つも取り込まれない。
+
+% 0 1 0 148c71fca26a9b4f1c2d31d1a31f0e8e
+
+% 0 1 0 05c41d843477be191ff24189315fde53
+
+% 0 1 0 05c41d843477be1b1ff24189315fde55
+
+% 0 1 0 05f9d66e3e297b6611e47ad40641c494
+
+% 0 1 0 1c48f55aef7b5f5f1085e369ad7b19bd
+
+% 0 1 0 0293a070f9126adc157138b1dc4d75b4
+
+% 0 1 0 0f976edc08f6f4d016bdd678c4cd7f62
+
+% 0 1 0 1e22744ad5c3fc1e140c9c740e18b39c
+
+% 0 1 0 12f2b0e624e2ec9a0f85c901ef8e9d80
+
+@ 0 1 0 0b554cec81cf219a1f43cfec0a50e9ae
++ entry .Hostname   DNS ホスト名：ドットで区切られたラベルの並びで、各ラベルはラベルの規則に従う
+
+% 1 1 0 02d1937024dd1f19090bc283e7e80626
+
+@ 0 5 0 0d845d903bf1ce1303054ea9fa765d76
++       `Hostname` は `DnsLabel` の並びである。
++       `host"www.example.com"` と書くか（コンパイル時に検査される）、`as[Hostname]` でテキストからデコードする。
++       後者はテキストが規則に反すると `Hostname.Error` を発生させる。
++       各ラベルは英字、数字、`-` だけを含むことができ、`-` で始まってはならず、空であってはならず（したがって先頭、末尾、連続のドットは許されない）、63 文字を超えてはならない。名前全体は 253 文字を超えてはならない。
+
+% 2 1 0 0b2f069e38b1d890057658383f76cb0d
+
+% 3 1 0 1b2c0f524079cfdd09c7057d748ebdea
+
+% 4 1 0 01a3211c26f711621a5b58d6a6b839ca
+
+% 0 1 0 023a8a9a1fba855e1775e4c576b77950
+
+% 0 1 0 1191d8fb5c0eca371c092caa7f2f1a32
+
+% 0 1 0 0e97cc324587fc56137908d7f20ca80a
+
+% 0 1 0 044332cb4c5c46511acf3ffdbe639bcc
+
+% 1 1 0 17fa50bf8012087d025ad3914657f793
+
+@ 0 4 0 0ae0767731571fbf0d74165e574ecd50
++       ホスト名は（`Ipv4`、`Ipv6` と並ぶ）`Host` であり、したがって `Authority` のホストや `EmailAddress` のドメインになれる。
++       `Remotable` なので、`host"example.com" on tcp"80"` は `Endpoint` を作る。
++       `urticose.dns` では、`dnsName` がそれを `Dns.Name` に変換し、`Dns.resolve` がそれを解決する。
++       `Localhost` はホスト名 `localhost` である。
+
+% 0 1 0 0c17a5a73d00793100852bdb0e70c4aa
+
+% 1 1 0 1daabedd519a17d319b503088f3d0b86
+
+% 0 1 0 191c558889d69bd7038679cecdb1be9b
+
+@ 0 8 0 04e204b0af177f3b07530e0c590f10b9
++   entry .showable   ホスト名をドットで結合したラベルとして描画する
++   entry .inspectable   デバッグ用の描画で、表示形式と同じ
++       ドットで区切られたラベルは一目でホスト名とわかるので、検査用の装飾は要らない。
++   entry .decodable   テキストからホスト名を読み、有効でなければ `Hostname.Error` を発生させる
++       `Tactic[Hostname.Error]` が必要であり、given はそれをキャプチャする。
++   entry .encodable   ホスト名をテキストとしてエンコードする。表示形式と同じ
++   entry .toExpr   ホスト名を引用式に持ち上げる。ホスト名を構築するマクロのためのもの
++   entry .Error   テキストが有効なホスト名でないときに発生する
+
+% 1 1 0 0714ae2414d6e0581c160c423936e759
+
+@ 0 4 0 1b09a6c498889db21215a63b9766c42c
++         エラー `↯/s.100.10`：_the hostname is not valid because `reason`_。
++         `as[Hostname]`（`Hostname.decodable` を通じて）によって、またコンパイルエラーとして `host"…"` によって発生する。
++         `#text` はデコードされたテキスト全体であり、`#reason` はそれの何が誤っていたかを示す。
++     entry .Reason   ホスト名が拒否された理由
+
+% 1 1 0 07267db68bb492a017b09078300a0c7a
+
+@ 0 1 0 1c0d28225d048060046c1435a26e98fe
++           番号付きの五つのケースからなる列挙型で、それぞれ `Reason.communicable` を通じてメッセージを持つ。
+
+% 2 1 0 1eccaa884bfbf7d200090d1a13eb3345
+
+@ 3 4 0 099eadb46c13e2d51a1cff0e35ebf512
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  注記
+
+% 0 1 0 08ddecea11973dc40fb172d4908a2751
+
+% 0 1 0 1cf036355abbd8ef19dc240bbd959fe5
+
+@ 0 2 0 08c7a5ec3bf894940c8e52efb00d725c
++           row  `InvalidChar(char)`  3  _the character `char` is not allowed in a hostname_  英字、数字、`-`、`.` 以外の文字
++           row  `EmptyDnsLabel(n)`  4  _a DNS label cannot be empty_  先頭、末尾、または連続のドット。`n` はそれより前にあったラベルの数
+
+% 0 1 0 004525f14560fbfb0bf739b9e4e853bf
+
+% 1 1 0 1269cc32fea910be1cd19fef52b7022e
+
+@ 0 4 0 0788f480703849790154763f1dd390dd
++       entry .communicable   各理由をメッセージとして描画する
++     entry #text   デコードされたテキスト
++     entry #reason   拒否された理由
++   entry #dnsLabels   ホスト名のラベル。左端から順に並ぶ
+
+@ 0 1 0 0260d9a662588b861dd23b95649936c1
++ entry .DnsLabel   ホスト名の一つのラベルで、ドットの間にあるもの
+
+% 1 1 0 08228439ee9abcec0cc0c8ef95dc6a88
+
+@ 0 5 0 0234e7a8a68a52841d4b4d42cf6e5d86
++       `Text` の上の不透明型で、`DnsLabel(text)` で作り、その `text` 拡張で読み戻す。
++       構築時には検証されない。`Hostname.parse` がすでにラベルの規則に照らして確かめているからである。
++       `Hostname` はこれの並びであり、`Hostname#dnsLabels` がそれを返す。
++       テキストとして `Showable` である。
++       `text` 拡張は不透明型の本拠である `urticose.internal.Opaques` で宣言されている。
+
+@ 0 2 0 149d93af236bea6208dcc1b534afe441
++       そのコンパニオンのメンバーは `internal.Opaques.DnsLabel` で宣言されており、型はそこからエクスポートされ、そこで文書化されている。
+
+@ 0 5 0 0cb62a217487edf5027bba8f04992424
++ entry .Host   ホスト名または IP アドレス：`Hostname | Ipv4 | Ipv6`
++     `Authority` のホスト部と `Url#host` の型であり、ホストがなりうる三つのものである。
++     `Host` は `Ipv6.hostShowable` を通じて `Showable` であり、これは URL と同じく IPv6 アドレスを角括弧で囲む（`[::1]`）。
++     また `Ipv6.hostDecodable` を通じてテキストからデコードされ、これは IPv6、IPv4、ホスト名の順に試し、どれにも合わなければ `Hostname.Error` を発生させる。
+
+% 2 1 0 1fd1199b13629da41b2c64faeec537b6
+
+% 3 1 0 1e7c6e3be7c2aa0900e9d3614bb5cd14
+
+% 4 1 0 07dffd1e2c7bce89186f2aedba7ac82e
+
+% 0 1 0 0f1f3bc8f1fe1b271a4df534379803b9
+
+% 0 1 0 1a82bb9746851ac60d44959b8dc174b7
+
+% 1 1 0 0f6b44ce2883492410adfdbb2ceace6a
+
+@ 0 1 0 0a500c320ba9a7e90eda1deb99f96892
++ entry .Localhost   ホスト名 `localhost` を表す値
+
+@ 0 5 0 032ffd7daf5eb7990ddbe50253108ab7
++ entry .host   `host"…"` 補間子：コンパイル時に検査されるホスト名
++     `host"www.example.com"` は `Hostname` であり、有効なホスト名でないテキストは `Hostname.Error` のメッセージを伴うコンパイルエラーになる（`host"www..com"` に対しては `[↯/s.100.10.4] the hostname is not valid because a DNS label cannot be empty`）。
++     この補間子は置換を受け付けない。
++     `urticose.url` で宣言されている。
+
+@ 0 1 0 184a7af67c3bcdaf13d768d39009cff5
++ entry .Ipv4   IPv4 アドレス：四つのオクテットを、`Int` の上の不透明型として表す
+
+% 1 1 0 1397a9c3c02cf37902dba68c482d42a3
+
+@ 0 5 0 100e7f6df11f0a78065e0f9b16476af4
++       `Ipv4` は `ip"192.168.0.1"` と書くか（コンパイル時に検査される）、`Ipv4(192, 168, 0, 1)` のようにオクテットから、またはパックされた `Int` から構築するか、`as[Ipv4]` でテキストからデコードする。
++       `as[Ipv4]` は、0–255 の範囲の数値がドットで区切られてちょうど四つ並んだもの以外に対して `IpAddress.Error` を発生させる。
++       パックされた 32 ビット整数の上の不透明型なので、保持するコストは `Int` と変わらない。
+
+% 2 1 0 1cbbef0122b687890dd9f44ecc28bd37
+
+% 3 1 0 0aeb47f2e3b6e6320b57ff38a0de8f6c
+
+% 4 1 0 12b1d6074061752515ecee729acb6331
+
+% 0 1 0 154720bbb34704e61b5f3e5ff7a2b6f2
+
+% 0 1 0 10103c3424d94c5406da9bf9b2aa16cb
+
+% 0 1 0 0c6189011fa79806024869bf4b889583
+
+% 0 1 0 14603657d197814f0ecdbfa9740b2e14
+
+% 0 1 0 07ec4e73dfdaeefd05d66ba0a726ec53
+
+% 0 1 0 0b310b990232361c13536d58a891d327
+
+% 1 1 0 077e0614f49729b81bbf33e5a64e5838
+
+@ 0 6 0 055c9356051e0ea2093100e7fafed29f
++       拡張 `byte0`、`byte1`、`byte2`、`byte3` はオクテットを読み、`int` はパックされた整数を、`subnet(size)` はプレフィックス長に対する `Ipv4Subnet` を作り（ホスト部のビットをマスクする）、`bytes` は四つのオクテットをネットワークバイト順の `Data` として返す。
++       これらは不透明型の本拠である `urticose.internal` で宣言されている。
++       アドレスは `Data` との間でもエンコード、デコードできる（`in[Data]`、`data.as[Ipv4]`）。リゾルバーや DNS の `A` レコードはこの形でアドレスを運ぶ。
++       `ip"…"` 補間子は両方のファミリーを扱い、結果の型をリテラルから決める。
+
+@ 0 2 0 16786b3223395cb409e5b835a15f5c23
++       そのコンパニオンのメンバーは `internal.Opaques.Ipv4` で宣言されており、型はそこからエクスポートされ、そこで文書化されている。
+
+% 1 1 0 08bc73b8c9888ccc071b986148dd75cb
+
+% 0 1 0 036fbcdd1fc3de900fe78555ee143dcf
+
+% 1 1 0 19269d2e30d83ace1ec71c28f51214ff
+
+% 0 1 0 0c935015a86a4548113d4ae9639bc016
+
+@ 0 1 0 1eb9cca84af2b23d1f2cc39eaf1d24f9
++ entry .Ipv6   IPv6 アドレス：16 ビットのグループ八つを、二つの `Long` として保持する
+
+% 1 1 0 0c4ef0aa4a2d6f551e7e9525f2d05e84
+
+@ 0 6 0 0cef7cad97c4ae9a15ec98297fc9f2b7
++       `Ipv6` は `ip"2001:db8::1"` と書くか（コンパイル時に検査される）、`Ipv6(0x2001, 0xdb8, 0, 0, 0, 0, 0, 1)` のように八つのグループから構築するか、`as[Ipv6]` でテキストからデコードする。
++       `as[Ipv6]` は通常の表記を受け付ける。すなわち、1 桁から 4 桁の 16 進数（大文字でも小文字でもよい）のグループがコロンで区切られて最大八つ並び、ゼロのグループの連続を表す `::` は高々一つである。それ以外に対しては `IpAddress.Error` を発生させる。
++       これは `#highBits` と `#lowBits` のケースクラスであり、前半と後半の四つのグループがそれぞれ一つの `Long` にパックされている。
+
+% 2 1 0 0159cffc295d34af0477aec65246a794
+
+% 3 1 0 1fe8e13347dcc3b20bdf3e65d05e088e
+
+@ 0 1 0 1b01a1fb080d1d5f12672135473c66b1
++         label 完全に書き下したアドレス
+
+% 1 1 0 1ac6549c56f97d651369bb4a51029cff
+
+% 2 1 0 06e5d82ff5751e820a182ba6c519beda
+
+% 3 1 0 087d573bd6cc2ce01abc8447d1bcd9b7
+
+% 5 1 0 05bbbec1433e4e7f198a793a06edc44b
+
+% 1 1 0 0bbad1a2ee38dc87187a4bab5f1a4ab0
+
+@ 0 1 0 18fdb32cf0d7c1f80175d1907aa392b6
++         label 表示すると各グループの先頭のゼロは省かれる
+
+% 1 1 0 0f3226c50b94dc0b16a92d4a79b5f8be
+
+% 2 1 0 11a678d15537153313f39ead5a5e61fa
+
+% 3 1 0 179cf04842a809c60da40b7a68a1c75f
+
+% 5 1 0 0d6de5a7d967f63410fd9176989d4833
+
+% 6 1 0 0af45de1b267ee061f6c372cba6f78f9
+
+% 1 1 0 042974ad9aed2fc80259bda4ec618a39
+
+@ 0 1 0 1895a8728a3ebfc115613315f3516a54
++         label ゼロのグループの最長の連続は `::` になる
+
+% 1 1 0 039d14ac6394a01d0df41cea68ecad6b
+
+% 2 1 0 1de0acc509ad90280d2ed19241009f45
+
+% 3 1 0 01e693f727627c1208152e8e9fb05ad7
+
+% 5 1 0 17e085410a30485d15d0658dd0fa9c9a
+
+% 6 1 0 16edf6390d36c95d0c5736a4c4daf86d
+
+% 0 1 0 0cb352ab3933ff110a9d4706de0a1e09
+
+% 0 1 0 0a9042217fd85dc2113952c5b94d31a6
+
+% 1 1 0 0bbe74f26e32c77d0ddf0bee4d9231e1
+
+% 2 1 0 04bf44d6831aa65b05d39919865b7d3e
+
+@ 0 5 0 1c32e1ed09aeb8e016c32c358296787d
++       `subnet(size)` 拡張はプレフィックス長に対する `Ipv6Subnet` を作り、`bytes` は十六個のオクテットをネットワークバイト順で返す。どちらも `urticose.internal` で宣言されている。
++       アドレスは `Data` との間でエンコード、デコードでき（`in[Data]`、`data.as[Ipv6]`）、DNS の `AAAA` レコードはこの形でアドレスを運ぶ。
++       コンパニオンには `Host` ユニオンのための given である `hostShowable` と `hostDecodable` も置かれている。ユニオンは自身のコンパニオンを持たないからである。
+
+@ 0 2 0 0b65fa92247218be117e7da36a7f6a03
++       そのフィールドとコンパニオンのメンバーは `internal.Ipv6` で宣言されており、型はそこからエクスポートされ、そこで文書化されている。
+
+% 1 1 0 08bc73b8c9888cca071b986148dd75c9
+
+% 0 1 0 0f6557a52016eece0179d63a6b1cc554
+
+% 1 1 0 1fe006927a9e66eb18b47f3eea779bbf
+
+% 1 1 0 1bf5804795a83837040d6cc714c0e886
+
+@ 0 7 0 03c83972d509ae36168461f54b6acbde
++ entry .ip   `ip"…"` 補間子：コンパイル時に検査される IPv4 または IPv6 のアドレス
++     `ip"192.168.0.1"` は `Ipv4` であり、`ip"2001:db8::1"` は `Ipv6` である。
++     この補間子は transparent なので、結果はリテラルのファミリーが与える型を持ち、それはテキストがドットを含むかどうかで選ばれる。
++     無効なアドレスは `IpAddress.Error` のメッセージを伴うコンパイルエラーになり、検査は実行時のデコードと同じである。
++     IPv4 では 0–255 のグループが四つ、IPv6 では最大八つのグループ、`::` は高々一つ、各グループは 1 桁から 4 桁の 16 進数である。
+
+% 2 1 0 1074895ce5ffe09101ab2ec92ec70360
+
+% 3 1 0 0bb410e2eda1360f1bbb2ff963626f26
+
+% 0 1 0 1780718de55be95913cb49126f135a90
+
+% 0 1 0 0bd465d539c8977d1fb78837f7a7a8d0
+
+% 0 1 0 086248c459b71086199f493ce7309e51
+
+% 1 1 0 0200e2b6e7797ad50011d281c79a60e7
+
+@ 0 1 0 17f0615dcfc7f31e0ec657bc1463e6d1
++     この補間子は置換を受け付けない。
+
+@ 0 1 0 03b214476e1d3d530db6f08b5a66a89d
++ entry .IpAddress   `IpAddress.Error` の本拠。有効でない IP アドレスやサブネットに対して発生する
+
+% 1 1 0 06a7c7ae95291683109da851ba103b21
+
+@ 0 3 0 00225afe6805eb931322755f1f4f274e
++       `IpAddress` 自身はインスタンスを持たない。
++       両方のアドレスファミリーと両方のサブネット型が発生させるエラーを保持しており、どちらかをデコードするプログラムは一つの型を処理すればよい。
++   entry .Error   テキストやバイト列が有効な IPv4 や IPv6 のアドレスやサブネットでないときに発生する
+
+% 1 1 0 04ff2270d76ef0140863c6e880a504aa
+
+@ 0 5 0 16d60a8b80600ff81911f75fe768d189
++         エラー `↯/s.100.2`：_the IP address is not valid because `reason`_。
++         `as[Ipv4]`、`as[Ipv6]`、`as[Ipv4Subnet]`、`as[Ipv6Subnet]`、`Data` のデコーダーによって、またコンパイルエラーとして `ip"…"` と `subnet"…"` によって発生する。
++         アドレス部分が不正な `EmailAddress.Error` や `Url.Error` の理由として包まれることもある。
++     entry .Reason   アドレスやサブネットが拒否された理由
+
+% 1 1 0 06c750aa8773125504d05b57176f0443
+
+@ 0 1 0 165ffb493d7b991b1fc492d79ba9344c
++           番号付きの十四のケースからなる列挙型で、それぞれ `Reason.communicable` を通じてメッセージを持つ。
+
+% 2 1 0 04d9bef35f394dad0f67439b33491f7c
+
+@ 3 4 0 0ea022ecbb6cd26f08a398528328d9d6
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  注記
+
+% 0 1 0 0b772e268b44790809be8c4cd65641fe
+
+% 0 1 0 0d3cdacdbfe4ee960d2283bd8b96a587
+
+% 0 1 0 1d4f7f12e1d7ee0319c13b68452c171f
+
+% 0 1 0 0990801b41e8752204630a76d50a3f90
+
+% 0 1 0 0553692c4541364d1a0c407d0cac27f4
+
+% 0 1 0 038386ecf19ac7af1e6af30bdd3c581a
+
+% 0 1 0 060427d7dafab695030d131f65e26e69
+
+% 0 1 0 1191a54a761b991c0f41dd364b245bc8
+
+% 0 1 0 1665e188fd142ca702eff30df0e9dfdb
+
+% 0 1 0 06576b746527411b1a909a896eabdf24
+
+% 0 1 0 0ba88aae8531088813260240f44dd740
+
+@ 0 1 0 05553ac2dfa5f71c05b4f14bcd11d222
++           row  `SubnetWrongFormat(count)`  12  _the subnet contains `count` slash-separated parts instead of 2_  `/` がちょうど一つではないテキスト
+
+% 0 1 0 18758d597096186d0a53f12a27a1b146
+
+% 0 1 0 0b5b8ce500bc24c90d42098bad46e022
+
+% 1 1 0 14618a3977d7842c1384305b4ed88b6e
+
+@ 2 2 0 03ffa28bc5e0eacc0b67c37547f7e292
++       entry .communicable   各理由をメッセージとして描画する
++     entry #reason   アドレスが拒否された理由
+
+@ 0 1 0 1ce37710aa8b80360b213b5c42918401
++ entry .Ipv4Subnet   IPv4 ネットワーク：アドレスとプレフィックス長の組で、`192.168.0.0/24` のように書く
+
+% 1 1 0 16c9b986f1ce640f06bec600eaab504e
+
+@ 0 4 0 13157cc95acb9c211cfc4b610810d6ed
++       `Ipv4` に対する `address.subnet(size)` で作るか、`subnet"192.168.0.0/24"` と書くか、`as[Ipv4Subnet]` でテキストからデコードする。
++       プレフィックスより下のホスト部のビットは構築時にマスクされるので、不注意に書かれたサブネットは誤って解釈されるのではなく訂正される。
++       `subnet"255.123.143.0/12"` は `255.112.0.0/12` と表示される。
+
+% 2 1 0 0d348b526c2d5287133cf50fd08bc2c9
+
+% 3 1 0 153da04db06593ad1c57ff0c9530128b
+
+% 4 1 0 0f7651e6c290fbfd1d06ed273f21f4a5
+
+% 0 1 0 08e9363568b4fff01e339b455343990e
+
+% 0 1 0 15d3598f31c7d146183d7cce30e71385
+
+% 0 1 0 19124db33bbd3803041795a95eff3145
+
+% 1 1 0 096bb1b0620245db1ad716b58f875768
+
+@ 0 2 0 0ad9a8236ecf23760bcb8bdfdb412c22
++       そのフィールドとコンパニオンのメンバーは `internal.Ipv4Subnet` で宣言されており、型はそこからエクスポートされ、そこで文書化されている。
+
+% 1 1 0 0f2887955e81b4f50536d6c276f47571
+
+% 1 1 0 0ef3b0a8bc435780160c5d427f96ecdf
+
+@ 0 1 0 0788d685e0f454f413b0b7d6bf2e87a4
++ entry .Ipv6Subnet   IPv6 ネットワーク：アドレスとプレフィックス長の組で、`2001:db8::/32` のように書く
+
+% 1 1 0 0c62a393e276370710808e84ac62cd51
+
+@ 0 3 0 0d3058eed093b5021bd7e4b8d96ac1d0
++       `Ipv6` に対する `address.subnet(size)` で作るか、`subnet"2001:db8::/32"` と書くか、`as[Ipv6Subnet]` でテキストからデコードする。
++       プレフィックスより下のホスト部のビットは構築時にマスクされる。
+
+% 2 1 0 153c7db77f48228d0af531e6800a9bd5
+
+% 3 1 0 0e385378cb9f077a0c1e070c1f0ff311
+
+% 4 1 0 1addcb2ea40b3bec1e75436d609ae7ea
+
+% 0 1 0 155f1dba7a98c2a11ecb3b94e38b0af8
+
+% 0 1 0 0ddbd45a445a93761989f3efca47f9af
+
+% 1 1 0 1496e28c2b067aee18a39f739485b64e
+
+@ 0 2 0 03d2c12185a65a090cd4e68dd959b9e2
++       そのフィールドとコンパニオンのメンバーは `internal.Ipv6Subnet` で宣言されており、型はそこからエクスポートされ、そこで文書化されている。
+
+% 1 1 0 0f2887955e81b4f70536d6c276f47573
+
+% 1 1 0 170620ed0f81bb20066a52745833c5f2
+
+@ 0 6 0 14e0a00df4c4eea811beda726cb0cad4
++ entry .subnet   `subnet"…"` 補間子：コンパイル時に検査される IPv4 または IPv6 のサブネット
++     `subnet"192.168.0.0/24"` は `Ipv4Subnet` であり、`subnet"2001:db8::/32"` は `Ipv6Subnet` である。
++     この補間子は transparent であり、アドレスがドットを含むかどうかでファミリーを決める。
++     プレフィックスはファミリーの範囲（0–32 または 0–128）に照らして検査されるので、ありえないマスクはコンパイルエラーになり（`[↯/s.100.2.9] … the prefix length 40 is not in the range 0-32`）、プレフィックスより下のホスト部のビットはマスクされる。
++     置換は受け付けない。
+
+% 2 1 0 0fc8ae0210ebd80b18c8209b21f802f5
+
+% 3 1 0 1e38c8c3b2f8a71403c4de011fd0e5c9
+
+% 0 1 0 1e2d1b5eee8e0cd103a85c4f54113ba7
+
+% 0 1 0 0ff5aeae7a24d70f022522b13d7908ab
+
+% 1 1 0 1da92bce7a79671901735aa10ebacacb
+
+@ 0 1 0 119b5ba6f3f98f1b15083fa19256eb48
++ entry .MacAddress   48 ビットのハードウェアアドレスを、`Long` の上の不透明型として表す
+
+% 1 1 0 168f4259717f1927093088f669e95b84
+
+@ 0 5 0 0ebddc65e64af0ed17cfb21507671e13
++       `MacAddress` は `mac"01-23-45-ab-cd-ef"` と書くか（コンパイル時に検査される）、`MacAddress(1, 2, 3, 4, 5, 6)` のように六つのバイトから、またはパックされた `Long` から構築するか、`as[MacAddress]` でテキストからデコードする。
++       `as[MacAddress]` は、ちょうど 2 桁の 16 進数のグループがダッシュで区切られて六つ並ぶことを求め、そうでなければ `MacAddress.Error` を発生させる。
++       `NetworkInterface` はそのハードウェアアドレスをこの型で報告する。
+
+% 2 1 0 0090bb2d89ac93db097bced85eb4ee58
+
+% 3 1 0 01ab155fb90978020c33535cbcf249ae
+
+% 4 1 0 0d9f77f16a17825d175e118d2074a05e
+
+% 0 1 0 18267b3475e997fa199eeb1058d81073
+
+% 0 1 0 10ef8df92103248818efedcac938ff70
+
+% 0 1 0 0c5139d98eab37820b16eedc88132e9f
+
+% 0 1 0 1c694421a6b60b2d1bb1944f53d16e9a
+
+% 1 1 0 1b1868f0aa1b2be907f95bbabcc82dda
+
+@ 0 3 0 0106ab0056a67cda06336eb73288c063
++       拡張 `byte0` から `byte5` は六つのバイトを読み、`text` はダッシュ区切りの小文字の形式を描画し、`long` はパックされた値を返す。
++       これらは不透明型の本拠である `urticose.internal.Opaques` で宣言されている。
+
+@ 0 2 0 1caa8b66dd34a12b0b1c791b3971581b
++       そのコンパニオンのメンバーは `internal.Opaques.MacAddress` で宣言されており、型はそこからエクスポートされ、そこで文書化されている。
+
+% 0 1 0 0a2aaa7288ade74a03365721109c5dc9
+
+% 0 1 0 1fcc8aa11639e287101407a09d8cf774
+
+@ 0 5 0 07a8b4c97b43e09c027ef7172a8a1b83
++ entry .mac   `mac"…"` 補間子：コンパイル時に検査される MAC アドレス
++     `mac"01-23-45-ab-cd-ef"` は `MacAddress` である。
++     ダッシュで区切られた 16 進数の二桁の組が六つ並んだものでないテキストは、`MacAddress.Error` のメッセージを伴うコンパイルエラーになる（`[↯/s.100.7.2] the MAC address is not valid because group 5 should be two hex digits, but its length is 1`）。
++     置換は受け付けない。
+
+@ 0 1 0 1a03cba8cc77c8431a508bfa55d1ea8c
++ entry .Port   型がトランスポートと、リテラルの場合はその番号を記録するポート番号
+
+% 1 1 0 06681d45e254bca50239967d647ea98d
+
+@ 0 5 0 0a53d98f558f645215f9e73ac562b41b
++       `Port` は `Int` の上の不透明型であり、`Port.Type` の二つの型メンバーによって細分化される。
++       `Transport` はプロトコルを示すので、`Port over Tcp` と `Port over Udp` は別々の型である（`Tcp.Port` と `Udp.Port` はそれらのエイリアスである）。
++       `Topic` はリテラルの番号を運ぶので、`tcp"smtp"` は `Port over Tcp of 25` である。
++       そのためサーバーの `Protocolic` given は、型レベルで特定のポートに結び付けることができる。
+
+% 2 1 0 0c6f064e458e5fd80fba6ed2478293e2
+
+% 3 1 0 1415e32cb777aa660e1ec27047b9a108
+
+% 4 1 0 1a5bd1109e6ccaff01703d7f2276fc87
+
+% 0 1 0 01c66542172fc6a903d0a7f978e70cb3
+
+% 0 1 0 1d39205f2fcdcf7404bf1b845e7f5407
+
+% 0 1 0 13241ef96c92aff009a17337b3d6d058
+
+% 0 1 0 05f68ed9adbf24a70598dd04ff54768c
+
+% 0 1 0 0455913a8673c8661e755876f3787aa7
+
+% 0 1 0 12e3ad5acf245bee052634dedc90587d
+
+% 1 1 0 089220147d032e8e03b41c0a172e4f4e
+
+@ 0 7 0 1cfbe6f0f4ad54d9143d922faac80e2f
++       番号を指定しない `Port[Tcp]()` は、探査用のソケットをバインドして解放することで、オペレーティングシステムにエフェメラルポートを求める。
++       テスト用のサーバーや動的にバインドされるサービスが必要とするのはこれである。
++       その間にポートを予約するものは何もないので、呼び出し側が自分でポートをバインドする場合は、ポート 0 をバインドして得られたポートを読む（`Service#port`）のが競合のない代替手段である。
++       `number` と `privileged` の拡張は、不透明型の本拠である `urticose.internal.Opaques` で宣言されている。
++       ポートは `Showable` であり、その番号としてエンコードされる。
++       検査では `⌗25` と表示され、消去後の `Int` と取り違えられないようになっている。
+
+@ 0 2 0 05a7e86426c48203163faabc8337082d
++       そのコンパニオンのメンバーは `internal.Opaques.Port` で宣言されており、型はそこからエクスポートされ、そこで文書化されている。
+
+% 0 1 0 1af5e829cc2d1ea118291a56ce1a568e
+
+% 0 1 0 15ea9630ca71b54f0aab9d865998fc4c
+
+% 0 1 0 119e57f8e05ed9f805483a87cfe0a5ae
+
+% 0 1 0 0c9305ffdea370a617cabdb75b5f4b6b
+
+% 1 1 0 0610235b3b522896030a38c064f2391c
+
+@ 0 6 0 009354d3e340eefe068c2790d7e0e297
++ entry .tcp   `tcp"…"` 補間子：番号または IANA サービス名で指定し、コンパイル時に検査される TCP ポート
++     `tcp"443"` は `Port over Tcp of 443` であり、`tcp"smtp"` は `Port over Tcp of 25` である。
++     名前はライブラリに同梱された IANA のサービス名レジストリで、特に TCP トランスポートについて検索される。
++     そのため UDP でのみ登録されたサービスや未知の名前はコンパイルエラーになり（`[↯/s.100.11] abcdef is not a valid TCP port`）、1–65535 の範囲外の番号も同様である（`[↯/s.100.5]`）。
++     置換は受け付けない。
+
+% 2 1 0 028851b87af923fe1836b2a8ec62c491
+
+% 3 1 0 01cc181691ad257f0cb50b6ccea58bc2
+
+% 0 1 0 013d485072e3e3a101340c938db94623
+
+% 0 1 0 1e6c34de28060bec14bee712bd2c7a9c
+
+% 1 1 0 152cbbffa58c87ea01e5ab49db510231
+
+@ 0 4 0 03537b73ecd7e63d006dbac965d92f0c
++ entry .udp   `udp"…"` 補間子：番号または IANA サービス名で指定し、コンパイル時に検査される UDP ポート
++     `tcp"…"` と同様で、UDP トランスポート用である。
++     `udp"53"` と `udp"domain"` はどちらも `Port over Udp of 53` であり、TCP でのみ登録された名前はコンパイルできない（`[↯/s.100.11] docker is not a valid UDP port`）。
+
+% 2 1 0 17fa3294bff1a7801a5d793b89b65874
+
+% 3 1 0 1a43e8b0a17951810c527d11e770652c
+
+% 0 1 0 1fee05ff882ff2ef0296fb7b6b03bf37
+
+% 1 1 0 1f347a3d89f385150351a30c5d5faaba
+
+@ 0 1 0 0f57bf0c0c235a861e53cb5acbe43396
++ entry .Tcp   TCP トランスポートを、ポートとエンドポイントのための幻の型として表す
+
+% 1 1 0 07d5634c687581da09f1ddb38882b200
+
+@ 0 3 0 0b79efe5fbf620531d3af277dda91990
++       `Tcp` は `Port over Tcp` を示す。これは `Tcp.Port` と略記され、`tcp"…"` 補間子が作るものである。
++       コンパニオンの `allocatable` given により、`Port[Tcp]()` はポート 0 に `ServerSocket` をバインドして未使用のポートを見つけられる。
+
+% 1 1 0 05afc13a1179b1e007b9496ecb5084c1
+
+@ 0 4 0 0ba2d94070e316de093d907664f6d77a
++   entry .Port   エイリアス `urticose.Port over Tcp`
++   entry .allocatable   `Port[Tcp]()` のために、未使用の TCP ポートを見つける
++       ポート 0 に `java.net.ServerSocket` をバインドし、システムが選んだポートを読み、それを閉じる。
++       ポートはその時点では空いているが、予約されてはいない。
+
+@ 0 1 0 16ce0b3defd9c4601e5098d8476ed3fd
++ entry .Udp   UDP トランスポートを、ポートとエンドポイントのための幻の型として表す
+
+% 1 1 0 13fa2c81a6900a0c1e8137eaae21095c
+
+@ 0 3 0 12e5fa111afa27350e0f9bb16f9e1ab7
++       `Udp` は `Port over Udp` を示す。これは `Udp.Port` と略記され、`udp"…"` 補間子が作るものである。
++       コンパニオンの `allocatable` given により、`Port[Udp]()` はポート 0 に `DatagramSocket` をバインドして未使用のポートを見つけられる。
+
+% 1 1 0 0ed0ecd883422ceb087153687ee1d62d
+
+@ 0 4 0 086460762631ae071ca3c5287be8d818
++   entry .Port   エイリアス `urticose.Port over Udp`
++   entry .allocatable   `Port[Udp]()` のために、未使用の UDP ポートを見つける
++       ポート 0 に `java.net.DatagramSocket` をバインドし、システムが選んだポートを読み、それを閉じる。
++       ポートはその時点では空いているが、予約されてはいない。
+
+@ 0 4 0 0e85a9c4fd9b13e20c9c23ca709d8660
++ entry .Quic   QUIC トランスポートを、ポートのための幻の型として表す
++     QUIC は UDP の上で動くが、`Port over Quic` は `Port over Udp` とは別の型である。
++     `Allocatable` のインスタンスは提供されないので、QUIC のポートには明示的な番号 `Port[Quic](443)` が必要であり、`Port[Quic]()` はコンパイルできない。
+
+@ 0 1 0 169bbd3a8660632f09f02f59b7784567
++ entry .Allocatable   オペレーティングシステムが未使用のポートを見つけられるトランスポート
+
+% 1 1 0 0c0836d6e588908803530c4802cc04ff
+
+@ 0 5 0 178040430ee1d8510e282da67c7e31a0
++       `Port[transport]()` の背後にある型クラスである。
++       `Tcp.allocatable` と `Udp.allocatable` がそのインスタンスであり、それぞれ適切な種類の探査用ソケットをポート 0 にバインドして解放する。
++       トランスポートの幻の型をキーとしている。トランスポートは実行時には消去されるが、探査用のソケットはそれでも適切な種類でなければならないからである。
++   entry #unused   システムが少し前に空いていると報告したポート番号
+
+@ 0 1 0 084c41206e56edcb1b6946ea6c9655bb
++ entry .Service   実行中のサーバー：その停止方法と、バインドされているポート
+
+% 1 1 0 1d626b1c16ae8bef017c42039dfc67cf
+
+@ 0 6 0 131bb804325085800af80c33b989bb58
++       サーバーをコールバックで停止するプラットフォームで、`Protocolic` なサーバー（と `serve`）が返すものである。
++       `#port` は実際にバインドされたポートであり、サーバーがポート 0 を求められた場合はシステムが選んだポートである。
++       したがって、ポート 0 を求めて `port` を読むのが、空いているポートでサーバーを動かす競合のない方法である。
++   entry #cancel   サーバーを停止する
++   entry #port   サーバーがバインドされているポート
+
+@ 0 1 0 1bb9148da28b1a350729785b40ee7f69
++ entry .Protocolic   ポートでサービスを提供できるプロトコル：`serve` の背後にある型クラス
+
+% 1 1 0 1b482b895989f187097747a392af8660
+
+@ 0 7 0 1cd6f4d229f39e0f0cc1587c29782bf3
++       `protocol is Protocolic over port` は、トランスポートが一致する `port` で `protocol` のサーバーをどう開始するかを示す。
++       `scintillate` は `Http is Protocolic over (Tcp.Port of 8080)` とその仲間を提供するので、`tcp"8080".serve[Http](handler)` はウェブサーバーを開始する。
++       この型クラスは `Request` 型（リクエストは生きた接続なので、ケイパビリティである）、`Response` 型、`Server` 型を定める。
++       その `server` メソッドはハンドラを受け取り、ハンドラは各リクエストをコンテキストとして受け取って、そのリクエストをキャプチャするレスポンスを返してよい。
++       ストリームされる本文は、応える接続を正当に保持するからである。
+
+% 1 1 0 077da9ed90d992bf01ecb634d987ee68
+
+% 1 1 0 07ae7f2521a14d6c022cf28b8b6013a5
+
+@ 0 4 0 06934dcbc9d485ef16b16740b515571c
++   entry #Request   ハンドラが受け取るリクエストの型で、ケイパビリティである
++   entry #Response   ハンドラが返すレスポンスの型
++   entry #Server   実行中のサーバーの型。`Service` など
++   entry #server   各リクエストに対するハンドラを伴って、ポートでサーバーを開始する
+
+@ 0 6 0 062fee4ab9eaf4001ceee38b04a19002
++ entry .serve   `port.serve[Protocol](handler)`：ポートでプロトコルのサーバーを開始する
++     `Protocolic over` を持つ任意のポート型に対する拡張である。
++     `tcp"8080".serve[Http]: request ?=> …` は、スコープ内の `Http is Protocolic` given が記述するサーバーを、各リクエストに対して呼ばれるハンドラを伴って開始し、プロトコルの `Server`（scintillate のものでは `Service`）を返す。
++     given は自身が必要とするもの（`Tactic`、`Monitor`、ロギング）を伴うので、呼び出し側がスコープに持たなければならないのはそれらである。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 149c77db45ac644f1a74f205bbafc35a
+
+% 0 1 0 1fd1ddf7dfb5ad7a0e39279b9f8cd6df
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 1 1 0 062360b94dd462cb18e2d0c3dddc770e
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 1d5e1a4fa6f0818802d7be243df390a3
+
+% 0 1 0 144465424113a2fd0327fada211973c4
+
+% 0 1 0 1f0f52b4cf1ae7a8171c92112fe8b384
+
+% 0 1 0 126848a6f7ec053615c06d5aaf144740
+
+% 0 1 0 0d32a4a3749b6c3f11e46c42e6bd1fa5
+
+% 1 1 0 1c4297c18e007a6e08183e0ab165aabb
+
+@ 0 1 0 0c434a525ac6c3df1d2a21e8cb4b291f
++ entry .Endpoint   リモートとポートの組：接続が行われる場所
+
+% 1 1 0 089f08ea23442a9f151c4726a3a3285e
+
+@ 0 4 0 0f9ef9813a77187917df1f75b574650e
++       `Endpoint[port]` は、リモートのテキスト（描画されたホスト名または IP アドレス）と任意の型のポートを組にしたものであり、`on` 拡張で作る：`host"example.com" on tcp"80"`。
++       ソケットのライブラリは接続のためにこれを受け取り、`coaxial.dns` が DNS クエリを送る先は `Endpoint[Udp.Port]` である。
+
+% 2 1 0 1a40c6b3c6ba567e187bffa3f7a5dda3
+
+% 3 1 0 00702d827ab936980af76f537f7ca022
+
+% 0 1 0 156ea0aff08afd7b169c6dc68d5bf1ba
+
+% 0 1 0 04f8ec880abadb2114fe51a46bdcc333
+
+% 0 1 0 1b2c549b922dd12810eeb2efa35d9c0d
+
+% 1 1 0 0d0eca40fc69e74d0c4e9d367b76b28d
+
+% 0 1 0 09143826c29ebac712ec771083d3f67c
+
+% 0 1 0 0234c678526576581205a595d961d3fd
+
+@ 0 6 0 1887c2be9d2f549a0752ab1be03563a8
++   entry .showable   `Showable` なポート型について、エンドポイントを `remote:port` として描画する
++   entry .inspectable   両方の部分を検査したデバッグ用の描画：`Endpoint(t"example.com":⌗80)`
++       ポートは表示ではなく検査されるので、ポート型の `Showable` は不要であり、ポートは自身の型の印を保つ。
++   entry #remote   リモートを表すテキスト
++   entry #port   与えられたとおりの型のポート
+
+@ 0 4 0 092ff32594a58cdf04d129fea5b42581
++ entry .on   `remote on port`：`Remotable` な任意の値とポートから `Endpoint` を作る
++     `Remotable` インスタンスを持つ任意の値（`Hostname`、`Ipv4`、`Ipv6`）に対する中置の拡張であり、描画したテキストを任意の型のポートと組にする。
++     `ip"127.0.0.1" on udp"53"` は `Endpoint[Port over Udp of 53]` である。
+
+@ 0 1 0 1e97a6156b9229560f989ac83b8e269c
++ entry .Remotable   `Endpoint` のリモートになれるもの
+
+% 1 1 0 1746445a2ddfaa1a011b772a48a2e901
+
+@ 0 7 0 1e1fd7256a3b69aa0264990a15fe3139
++       値をリモートのテキストとして描画する型クラスである。
++       `Hostname`、`Ipv4`、`Ipv6` はこのコンパニオンにインスタンスを持ち、他の任意の型もインスタンスを追加すれば `on` で使えるようになる。
++   entry .ipv4   ドット区切りの四つ組の形式で、IPv4 アドレスをリモートとする
++   entry .ipv6   最短の形式（角括弧なし）で、IPv6 アドレスをリモートとする
++   entry .hostname   ドットで区切られたラベルとして、ホスト名をリモートとする
++   entry #remote   リモートのテキスト
+
+@ 0 1 0 116d8e116eedfd11192de623d331ba29
++ entry .EmailAddress   メールアドレス：ローカル部、ドメイン、および任意の表示名
+
+% 1 1 0 0cf6c199f793fe8f187f213bc49b4767
+
+@ 0 7 0 04bd653b76d9004a0a771b0ccb9fe418
++       `EmailAddress` は `email"test@example.com"` と書くか（コンパイル時に検査される）、`as[EmailAddress]` でテキストからデコードする。
++       後者はテキストが規則に反すると `EmailAddress.Error` を発生させる。
++       ローカル部は最大 64 文字で、引用符なし（英字、数字、記号 `` !#$%&'*+-/=?^_`{|}~ ``、ピリオド。ただし先頭、末尾、連続のピリオドは不可）か、引用符付き（`"john..doe"@example.org`。`\"` と `\\` のエスケープを使える）のどちらかである。
++       ドメインは `Hostname` か、角括弧で囲んだ IP アドレス（`[192.168.0.1]` または `[IPv6:2001:db8::1]`）である。
+
+% 2 1 0 0c1db1e28ad4a2911121888f017ba883
+
+% 3 1 0 1f6c06d0a5068bd0076cbf05f2b9ada5
+
+% 4 1 0 1578bd3752ef68b300d22d6a06db98d4
+
+% 0 1 0 14043b2db7dc47f21fbe03070b6da809
+
+% 0 1 0 0af4bb79f9bca6b50bff19852cd8cff9
+
+% 0 1 0 0d4bdc60bc3bda1806d911344ef53f71
+
+% 0 1 0 09a25f4cb59380131319902e4d502ee4
+
+% 1 1 0 0984fe1a7c0802c61ef5e647a662d5e6
+
+@ 0 4 0 07c935ab6196571c1f0d0e52948f622f
++       デコードされたアドレスは表示名を持たない。
++       `EmailAddress(t"Hamlet", localPart, domain)` は表示名を与え、`#text` はそれを `Hamlet <local@domain>` と描画する。
++       `emailAddressInterfaces` パッケージは、任意のメールアドレス型を受け取るライブラリのために、この型を anticipation の `EmailAddresses` 領域の代表として指定する。
+
+% 0 1 0 0f43a595939e59e5186e8350e4357b3d
+
+% 0 1 0 08bd667e652766281c933b266c160223
+
+% 1 1 0 1cda35cb832606441ed75aafb5c6cab6
+
+@ 0 8 0 1797a605ead6e53109b1b5ff485e92f3
++   entry .decodable   テキストからアドレスを読み、有効でなければ `EmailAddress.Error` を発生させる
++       `Tactic[EmailAddress.Error]` が必要であり、given はそれをキャプチャする。
++       不正なドメインは `InvalidDomain` として報告され、見つかった `Hostname.Error` または `IpAddress.Error` を包む。
++   entry .encodable   アドレスをテキストとしてエンコードする。表示名があればそれも含める
++   entry .showable   アドレスをそのテキストとして描画する
++   entry .inspectable   デバッグ用の描画で、表示形式と同じ
++   entry .parse   `.decodable` と同じく、テキストからアドレスを読む
++   entry .Error   テキストが有効なメールアドレスでないときに発生する
+
+% 1 1 0 0b4c25ad2beafb51043ec3d470b7326d
+
+@ 0 3 0 077eb270b71c4f73042e745fe9a9be9f
++         エラー `↯/s.100.4`：_the email address is not valid because `reason`_。
++         `as[EmailAddress]` によって、またコンパイルエラーとして `email"…"` によって発生する。
++     entry .Reason   メールアドレスが拒否された理由
+
+% 1 1 0 09536a0e61702a540c8b929d451de7d7
+
+@ 0 1 0 0d8936029d9651de1d0a5be10bf7c86b
++           番号付きの十二のケースからなる列挙型で、それぞれ `Reason.communicable` を通じてメッセージを持つ。
+
+% 2 1 0 038377ec8d2f124b1dbaa6ab825f0d68
+
+@ 3 4 0 1c295d85b20a9e3712d71b43e945d530
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  注記
+
+% 0 1 0 0a98a41c4ce6096f01c0199df0c9da1e
+
+@ 0 1 0 01e433bf56568ccf19c703a5fb61be7a
++           row  `InvalidDomain(error)`  2  _the domain is not a valid IP address: …_ or _the domain is not a valid hostname: …_  ドメインの `IpAddress.Error` または `Hostname.Error` を包み、そのメッセージがコロンの後に続く
+
+% 0 1 0 05d3ce4d27df5e2b1aa711e066d5ee60
+
+@ 0 4 0 0d3252e2831d2e091ce66416f17d9070
++           row  `TerminalPeriod`  4  _the local part ends in a period, which is not allowed_  引用符なしのローカル部で
++           row  `SuccessivePeriods`  5  _the local part contains two adjacent periods_  引用符なしのローカル部で
++           row  `InitialPeriod`  6  _the local part starts with a period, which is not allowed_  引用符なしのローカル部で
++           row  `UnescapedQuote`  7  _the local part contains a quote character which is not escaped_  引用符付きのローカル部で
+
+% 0 1 0 06e327c02d44a6d00a6f2ffba7c52fdc
+
+% 0 1 0 18fd5bbf9b63ca85041f065cee01768d
+
+% 0 1 0 19ce1c88197a7fbe184b09c303997042
+
+% 0 1 0 0dc4832fe1e68a1b0bcf564ea78d2096
+
+% 0 1 0 145744f16c0c68190ea088d7545fb7b0
+
+% 1 1 0 0a5c74ac0ec139ae190055517f562e9a
+
+@ 0 8 0 0e700fed420d6c7607c849978c6099c5
++       entry .communicable   各理由をメッセージとして描画する
++     entry #reason   アドレスが拒否された理由
++   entry #displayName   表示名、または `Unset`
++   entry #localPart   `@` より前の部分で、引用符付きまたは引用符なし
++   entry #domain   `@` より後の部分：ホスト名または IP アドレス
++   entry #text   テキストとしてのアドレス：`local@domain`、または表示名がある場合は `name <local@domain>`
++       引用符付きのローカル部は引用符で囲んで、IPv6 のドメインは角括弧で囲んで、アドレスが書かれたとおりに描画される。
+
+@ 0 5 0 104611e78039b6ca000ccd0a4dd3f64a
++ entry .email   `email"…"` 補間子：コンパイル時に検査されるメールアドレス
++     `email"test@example.com"` は `EmailAddress` であり、検査は `as[EmailAddress]` と同じで、失敗した箇所では `EmailAddress.Error` のメッセージを伴うコンパイルエラーになる。
++     引用符付きのローカル部には三重引用符のリテラルが必要である：`email""""test user"@example.com"""`。
++     置換は受け付けない。
++     `urticose.url` で宣言されている。
+
+@ 0 5 0 01a46fec6134342703f4549bc6ac9d5e
++ entry .LocalPart   メールアドレスの `@` より前の部分：引用符付きまたは引用符なし
++     二つのケースからなる列挙型で、それぞれ `text` を保持する。
++     `Unquoted(text)` は通常の形式であり、`Quoted(text)` は引用符付きのローカル部の引用符の間のテキスト（`"john..doe"`）で、引用符なしの部分には含められない文字を含むことができる。
++     `EmailAddress#text` は描画時に引用符を復元する。
+
+@ 0 1 0 1b1fc49461c9188e0a81f052909bc9f0
++ entry .NetworkInterface   マシンのネットワークインターフェースの一つと、そのアドレス
+
+% 1 1 0 1a271a843e0b98be1802f5a0e897d54d
+
+@ 0 5 0 1be03920e986964811b1e30b8fc6d2e1
++       `java.net.NetworkInterface` のスナップショットを値として表したものである。
++       名前と表示名、インデックス、ハードウェア（MAC）アドレス、バインドされた `InterfaceAddress`、MTU、そしてアップしているか、ループバックか、ポイントツーポイントか、マルチキャスト対応か、仮想かを持つ。
++       コンパニオンはインターフェースを列挙し、検索する。
++       プラットフォームがそれらを列挙または検査できない場合、各呼び出しは `NetworkInterface.Error` を発生させる。
+
+% 2 1 0 196f87d8f0f8c04e001d97d20d4b3215
+
+% 3 1 0 0ee39dfcb239c64b0b866a87ef82497c
+
+% 4 1 0 0ae24295884c456e1688aef3cda2c7e1
+
+% 0 1 0 1c52e7b4fd2f352b1de45685987d99b5
+
+% 0 1 0 1df1a2ab201475c21b70a8537b9c4dc7
+
+% 0 1 0 05cb229c54c0b2501c2c21d87c00e052
+
+% 1 1 0 059f079f8ea7e64a0e837eed02d41f91
+
+% 0 1 0 1a41a5c76ff61d320df3c39074588601
+
+% 0 1 0 104a7d0b4aecc50f12135065d904fb11
+
+@ 0 6 0 0446edfa5ab6e29a046700f6a566cb5b
++   entry .showable   インターフェースをその名前として描画する
++   entry .all   プラットフォームが報告するすべてのインターフェース。プラットフォームの順序で並ぶ
++   entry .byName   `eth0` のような名前のインターフェース、または `Unset`
++   entry .byIndex   プラットフォームのインデックスに対するインターフェース、または `Unset`
++   entry .byAddress   IP アドレスがバインドされているインターフェース、または `Unset`
++   entry .Error   プラットフォームがインターフェースを列挙または検査できないときに発生する
+
+% 1 1 0 138f1db285df4b881402f3d54f982167
+
+@ 0 3 0 1db7a6e96562155001b1a67cb94c4708
++         エラー `↯/s.100.6`：_the network interface could not be read because `reason`_。ソケットのエラーのメッセージを包む。
++     entry .Reason   インターフェースを読めなかった理由
+
+% 1 1 0 1c1d1cdd003c4cb4188b4b4107710206
+
+@ 0 17 0 03e1f73dc9a004790d496cbe9341303f
++           インターフェースの一覧を取得できなかった場合は `Enumeration(message)`、一つのインターフェースの詳細を読めなかった場合は `Inspection(name, message)` である。
++       entry .communicable   各理由をメッセージとして描画する
++     entry #reason   インターフェースを読めなかった理由
++   entry #name   インターフェースの名前。`eth0` や `lo0` など
++   entry #displayName   プラットフォームによるインターフェースの説明的な名前
++   entry #index   プラットフォームによるインターフェースのインデックス
++   entry #hardware   MAC アドレス。持たないインターフェースでは `Unset`
++   entry #addresses   インターフェースにバインドされたアドレス。それぞれプレフィックスとブロードキャストアドレスを伴う
++   entry #mtu   最大転送単位（バイト単位）
++   entry #up   インターフェースがアップして動作しているかどうか
++   entry #loopback   インターフェースがループバックインターフェースかどうか
++   entry #pointToPoint   インターフェースがポイントツーポイントのリンクかどうか
++   entry #multicast   インターフェースがマルチキャストに対応しているかどうか
++   entry #virtual   インターフェースが仮想（サブ）インターフェースかどうか
++   entry #ipv4   インターフェースにバインドされた IPv4 アドレス
++   entry #ipv6   インターフェースにバインドされた IPv6 アドレス
+
+@ 0 1 0 0333ec08429ddc4c08308a7e84321881
++ entry .InterfaceAddress   ネットワークインターフェースにバインドされたアドレスと、そのプレフィックス長とブロードキャストアドレス
+
+% 1 1 0 13cc3e11f56d5b7410df499ce6247b26
+
+@ 0 5 0 119f80642c4278ae1f98fe538cb1112a
++       `NetworkInterface` の `addresses` の一つである。
++       アドレス自体（IPv4 または IPv6）、そのサブネットのプレフィックスの長さ、そして IPv4 の場合はブロードキャストアドレスを持つ。
++   entry #address   アドレス。IPv4 または IPv6
++   entry #prefix   サブネットのプレフィックス長（ビット単位）
++   entry #broadcast   ブロードキャストアドレス。IPv6 アドレスでは `Unset`
+
+@ 0 1 0 1e01da636ae603af18be90a80767c9b0
++ entry .Internet   ネットワークアクセスの証拠をケイパビリティとして表したもので、ネットワークが使えないことを示す場合もある
+
+% 1 1 0 1dde47d93e8aa1cb06ac7c21fe6dc0d2
+
+@ 0 7 0 0a8e8bd478e543e51e429438cf128883
++       `Internet` は一つの事実 `#online` を保持し、ケイパビリティである。
++       接続性に依存するメソッドはこれをコンテキストとして受け取るので、その到達範囲はシグネチャと、返すもののキャプチャ集合に現れる。
++       `Online` はネットワークが使えることを主張する下位型であり、ネットワークに到達するメソッドが通常求めるのはこれである。
++       オフラインかもしれない `Internet` は、`#require`（そうでなければ `Internet.Error` を発生させる）または `#appropriate`（そうでなければ `Unset` を返す）で `Online` に変えられる。
++       `internet(online)` は `Internet` をスコープに置いてブロックを実行し、`online` はスコープ内のものからその事実を読む。
+
+% 2 1 0 075a23e51a76ec4808d735454e7f3522
+
+% 3 1 0 11765b3094df837016efd59ba5c0bf0e
+
+% 4 1 0 00dc87b40c6e220b1e2fe72a1096ecf5
+
+% 0 1 0 1b74f09a239842df0bd2cf23d3bac185
+
+% 0 1 0 07d3876f0b8de93805e1c70cf8f22a42
+
+% 0 1 0 0b155bd7fbc494b109968f9e7e4d68de
+
+% 0 1 0 1cc1e4249ecf7efc0c0e5ce5491250a3
+
+% 1 1 0 0857ff39090053f906e9bdff7fcdff3b
+
+@ 0 2 0 0b5f1235380ecc6908f21984f013e50a
++       このケイパビリティはスコープを持たず、持続する。
++       状態を持たないので、保存して、すべてのタスクから同時に使ってよい。
++       `internetAccess.online` が given になれるのもそのためである。
+
+% 0 1 0 0a0ff4b06a52d95d1bd16031fdd175e9
+
+% 0 1 0 1ef0edcfd58a8b460026ca18d21ae078
+
+% 0 1 0 0e8327949d4c137c0db90f4036f585e9
+
+@ 0 1 0 01f4b56189bec38d1884b2c3663b0e80
++   entry .Error   ネットワークアクセスが必要だったのに使えないときに発生する
+
+% 1 1 0 1d361ee4d90d5eb80170b78ee29e50a5
+
+@ 0 7 0 042e0df7cc1ef1491af5dd15d13f9008
++         エラー `↯/s.100.9`：_an Internet connection is not available_。
++         オフラインの `Internet` に対する `Internet#require` によって、また `Online` が召喚された時点で `internetAccess.offline` によって発生する。
++   entry #online   ネットワークが使えるかどうか
++   entry #require   `Online` を必要とするブロックを実行し、オフラインなら `Internet.Error` を発生させる
++       `Tactic[Internet.Error]` が必要である。
++   entry #appropriate   `Online` を必要とするブロックを実行し、オフラインなら `Unset` を返す
+
+@ 0 6 0 123842f8f9c02a3815a63402f456cf96
++ entry .Online   ネットワークが使えることを主張するケイパビリティ
++     `Online` は `online` が `true` である `Internet` である。
++     ネットワークに到達するメソッドが受け取るコンテキストパラメーター（`(using Online)`）であり、付与されない限り何もネットワークに到達できない。
++     これは `import internetAccess.online`、`Internet#require` や `Internet#appropriate`、またはそれ自体が明示的に渡すためのインスタンスであるコンパニオン `Online` によって付与される。
+
+% 2 1 0 031520116ddc41fa0299078fb6bdf140
+
+% 3 1 0 1e7edf8a85457e4c01b3d47b2ab48553
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 0 1 0 1ea562b633bdf8221e198d2771dc7029
+
+% 0 1 0 1709d120de5eb56803b08094b7b0c1d3
+
+% 1 1 0 1e0f20b11ee9509d121b4840474e204e
+
+@ 0 5 0 1d0c6ac2712f14ab0c75b64ca5a2ff14
++ entry .internet   `internet(online)(block)`：`Internet` をスコープに置いてブロックを実行する
++     `internet(true)` はオンラインの `Internet` を、`internet(false)` はオンラインでないものをブロックに付与する。
++     ブロックのコードはそこで `online` を呼ぶか、`Internet#require` や `Internet#appropriate` で `Online` を得ることができる。
++     ネットワークに到達してはならないテストは、そのコードを `internet(false)` のもとで実行する。
+
+@ 0 3 0 0cf2d7b91751f3b310d7808585d8efd0
++ entry .online   スコープ内の `Internet` が、ネットワークが使えると言っているかどうか
++     コンテキストの `Internet` から `Internet#online` を読む。
++     `internet(…)` が提供するもののように、スコープに一つ必要である。
+
+@ 0 1 0 1dcebfeae8e82c4513e6100daa511c23
++ entry .internetAccess   ネットワークアクセスの二つのポリシー。それぞれ名前でインポートする given である
+
+% 1 1 0 090712c91e348bae182f4a4fb5107f49
+
+@ 0 3 0 09828200ded475701452373cb9776ab8
++       コードがネットワークに到達してよいかどうかは、スコープに `Online` があるかどうかで決まり、その選択は意図的に決して暗黙にはならない。
++       `import soundness.*` はどちらも取り込まないので、プログラムは一つを名前でインポートする。
+
+% 2 1 0 04d004e0902f279c118f6d67493b8605
+
+% 3 1 0 086a29f014306e1f1086c56e41516453
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 1 1 0 0d89d1606c94ba231e737fda57594f4d
+
+@ 0 9 0 17a844fc723fe88f1bdba285c4dcc140
++       `online` はインポートされたあらゆる場所でケイパビリティを付与する。
++       `offline` はそれを使おうとするあらゆる試みに `Internet.Error` を発生させる。プログラム（やテスト）は、これによってあるコードパスがネットワークに到達しないことを証明する。
++   entry .online   `Online` を付与する：ネットワークが使える
++       インラインの given なので、召喚のたびに静的フィールドを共有するのではなく新しい `Online` を作る。
++   entry .offline   `Online` を拒否する：その召喚は `Internet.Error` を発生させる
++       `Tactic[Internet.Error]` が必要であり、`Online` が求められた瞬間、ネットワーク呼び出しが試みられる前にエラーが発生する。
+
+@ 0 1 0 09ccb02845e4b14607a8718d7fe2a786
++ entry .Url   URL：スキーム、任意のオーソリティ、ロケーション、任意のクエリとフラグメント
+
+% 1 1 0 117c12110a8afb7b0b5eb5625ab4a265
+
+@ 0 8 0 16609b3782b78b1f1bb3afbc0138d7b0
++       `Url[scheme]` は `url"https://example.com/path"` と書くか（コンパイル時に検査される）、`as[HttpUrl]` や `as[Url[Label]]` でテキストからデコードする。
++       後者はテキストが URL でなければ `Url.Error` を発生させる。
++       その型パラメーターはリテラル型としてのスキームである。
++       `HttpUrl` は `Url["https" | "http"]` であり、`url"ftp://…"` は `Url["ftp"]` なので、`HttpUrl` を受け取る関数に `mailto:` の URL を渡すことはできない。
++       各部分は型付きである。
++       `#scheme` は `Scheme`、`#authority` は `Authority`（ユーザー情報、`Host`、ポート）、`#location` はパスのテキストであり、`#query` と `#fragment` は `Optional[Text]` で、URL に `?` や `#` がなければ存在しない。
+
+% 2 1 0 17303a0b1a31acd7069e74629b67c163
+
+% 3 1 0 1eef51d2e476878d11a00ca7edde6b3a
+
+@ 0 1 0 13c8c92566d4517e064a9b659758dbc0
++         label 各部分から構築した URL
+
+% 1 1 0 119d8c9aee91537c0d146321b359aa17
+
+% 2 1 0 0f89452b45634c4e16ada5ed55d400c8
+
+% 3 1 0 09ef67d2c50da3561431efeeaf967cff
+
+% 5 1 0 0d3a54cfcc1a4b6e15a86c2bb418bc16
+
+% 0 1 0 12da7bcf8728b2820b8487a93054e40c
+
+% 0 1 0 0c029ee5dbf78e001e778351c8c8b258
+
+% 1 1 0 0ea7213b960c7e6908c8bd726204f4a7
+
+@ 0 1 0 1f08e1449b02a63315c9f734dc41c799
++         label クエリとフラグメントを伴うもの
+
+% 1 1 0 15830c1aa81696860d3838c0977359fd
+
+% 2 1 0 1aa7c79b5bd9ee66090f64bf4b7323cf
+
+% 3 1 0 045d966a34da3ae517e1406abe6440d9
+
+% 5 1 0 0089faf840b71ae517ae8443025717ec
+
+% 0 1 0 18e88f9523806e6a1ff26f34208df35d
+
+% 0 1 0 10c79dd5eabe82530ac5806664e053db
+
+% 1 1 0 0c5cdc78420805271bb9a057fb8ffd3c
+
+@ 0 1 0 13aeff8ba3a6152900acd10907c05291
++         label 同じ URL をリテラルとして書き、読み戻したもの
+
+% 1 1 0 19f9d40441af89590544a0c5c3a40cc9
+
+% 2 1 0 1c875af11968887b040a6884c67319e9
+
+% 3 1 0 1073d2fafde1f1ba070febc25c7663d7
+
+% 0 1 0 10da65b51b91f7f91d49b17760fffe1b
+
+% 0 1 0 0e6e3a6f809eddf215b93d0d95af34df
+
+% 0 1 0 1d4a1fccee04771e0054c720c6bbde1a
+
+% 0 1 0 154a24af8eb393ee04045dcb084943af
+
+% 0 1 0 0b8e1682c3fcaccb142a506f119eeef0
+
+% 1 1 0 158240196cf0715b0a4db908b76385d5
+
+% 2 1 0 1e1dcc5beca90adf1ae3275c074ce330
+
+@ 0 8 0 1c21b33aef05060e06aab4e94f82bc05
++       URL は `Www` プレーンの `Root` であり、そこからウェブの `/` 区切りとパーセントエンコーディングを伴う `Path on Www` が派生する。
++       オーソリティは厳密に読まれる。
++       不正なホスト名や IPv6 アドレスは `BadHostname` や `BadIpv6` の理由を持つ `Url.Error` になり、ポートは 0–65535 の数値でなければならない。
++       スキームの後に `//` がない URL（`mailto:`、`urn:`、`tel:`）はオーソリティを持たず、残り全体がロケーションになる。
++       `Abstractable across Urls` なのは `HttpUrl` だけであり、他のライブラリはこれによって「任意の URL 型」として URL を受け取る。
++       `urlInterfaces.soundnessUrl` はそれをその領域の代表として指定する。
+
+% 0 1 0 03414de803b00cec02b8b2fcad1282bf
+
+% 0 1 0 080ad9772d8dec2e03304c3b8b859928
+
+% 0 1 0 08295236594eecbb0cd92a795fa831be
+
+% 0 1 0 079feb990919859b13864ebd78739663
+
+% 0 1 0 0c2d7d437e3526d30ca06500440ee999
+
+% 0 1 0 140a054fa6ce78b71462d0f3ab0def5c
+
+@ 0 17 0 179f882e8b91f9820ec3df3a164ad561
++   entry .abstractable   `HttpUrl` を anticipation の `Urls` 領域のテキストとして表す
++   entry .showable   URL を `scheme:` に続けて `//authority`、ロケーション、`?query`、`#fragment` として描画する
++   entry .encodable   URL をそのテキストとしてエンコードする
++   entry .inspectable   デバッグ用の描画で、正規の URL テキスト
++       `Url` はケースクラスではなく普通のクラスなので、これがなければ `toString` として検査されてしまう。
++       URL テキストは型が持つすべての部分を示す。
++   entry .decodable   テキストから `Url[scheme]` を読み、URL でなければ `Url.Error` を発生させる
++       `Tactic[Url.Error]` が必要であり、given はそれをキャプチャする。
++       スキームは最初の `:` より前のすべてである（それがなければ `Expected(Colon)` が発生する）。
++       `//` が続く場合、オーソリティは次の `/`、`?`、`#` までであり、`Authority` としてデコードされる。
++       その後、ロケーション、クエリ、フラグメントが、最初の `?` とその後の最初の `#` で分割される。
++       スキームの型パラメーターはテキストに照らして検査されない。
++       `t"ftp://x".as[HttpUrl]` は成功するので、任意のスキームのテキストには `Url[Label]` を使い、重要な場面では `scheme` を確かめること。
++   entry .instantiable   anticipation の `Urls` 領域のために、テキストから `HttpUrl` を作る
++       `Tactic[Url.Error]` を必要とする `Instantiable across Urls from Text` given である。
++       `urlInterfaces.soundnessUrl` は名前で指定した同じインスタンスである。
++   entry .Error   テキストが有効な URL でないときに発生する
+
+% 1 1 0 02587b38bdecea1508cc9a85b8b1f3b8
+
+@ 0 10 0 0f9bc4e9c6a697ba151bb29f370c2ea3
++         エラー `↯/s.100.8`：_the URL `text` is not valid: `reason` at `offset`_。
++         `as[HttpUrl]`、`as[Authority]` によって、またコンパイルエラーとして `url"…"` によって発生する。
++         `#offset` は誤りが見つかったテキスト中の位置である。
++     entry .communicable   各理由をメッセージとして描画する
++     entry .Reason   URL が拒否された理由
++         あるべき場所になかった文字や部分に対する `Expected(expectation)`、不正なホストの `Hostname.Error.Reason` を包む `BadHostname(hostname, reason)`、角括弧で囲まれた不正なアドレスの `IpAddress.Error.Reason` を包む `BadIpv6(reason)` である。
++     entry .Expectation   失敗したときにパーサーが期待していたもの
+
+% 1 1 0 0bec5dc8784e92591fba536ed4c6c162
+
+@ 0 8 0 04e2a6310779c2ee10b1adfb85292849
++           `Colon`（スキームの区切りがない）、`More`（`]` のない `[` の後のように、テキストが早く終わった）、`LowerCaseLetter`、`PortRange`（0–65535 の範囲外のポート番号）、`Number`（数値でないポート）である。
++       entry .communicable   各期待を語句として描画する
++     entry #text   デコードされたテキスト
++     entry #offset   テキスト中で誤りが見つかった位置
++     entry #reason   拒否された理由
++   entry .Fragment   `url"…"` 補間子に置換される値と、その埋め込み方
+
+% 1 1 0 1ae91f23a8fa2d581b7fc6f0e2fd5269
+
+@ 0 6 0 0d9a232844e62d221775fa2f876e6485
++         `url"…"` 補間子の `Insertion` 型である。
++         リテラル中の各 `$value` は `Substitution` given によって `Fragment` に変換され、三つが提供されている。
++         `Integral(value)` は `Int` であり、`:` の後にしか置けず、ポートになる。
++         `Textual(value)` はテキストであり、埋め込まれる場所で URL エンコードされる。
++         `RawTextual(value)` はエンコードせずにそのまま埋め込まれるテキストである（提供されている置換でこれを生むものはない）。
+
+% 2 1 0 072331ab06928f81106761776aee2a3c
+
+% 3 1 0 104781e6d07f5f751d3c5fdeca95d4bd
+
+% 0 1 0 0f5489f225ee6a910d9c30162836aa89
+
+% 0 1 0 1b1a9b566a4bdfdc0279869ffb5508c8
+
+% 0 1 0 00547552ceb7a5340f87d6c41e888621
+
+% 1 1 0 121648d63cdb08cd0525274357630cfa
+
+@ 0 16 0 0a7efbb3a9ca97c6089bf6b8e39552f5
++     entry .apply   テキストを `Textual` のフラグメントとして、`Int` を `Integral` のフラグメントとして包む
++     entry .text   `Text` をエンコードして URL に置換する
++     entry .int   `Int` を `:` の後のポート番号として URL に置換する
++     entry .encodable   `Encodable in Text` な任意の値をエンコードして URL に置換する
++   entry #origin   スキームとオーソリティを合わせた `Origin`
++   entry #location   パスの部分をテキストとして表したもの。オーソリティがある場合は `/` で始まる
++   entry #query   `?` より後のテキスト、または `Unset`
++   entry #fragment   `#` より後のテキスト、または `Unset`
++   entry #Plane   URL のパスが置かれるプレーン：`Www`
++   entry #Topic   パスのルートのトピック、`Zero`
++   entry #scheme   URL のスキームパラメーターに型付けされたスキーム
++   entry #authority   オーソリティ（ユーザー情報、ホスト、ポート）。`//` のない URL では `Unset`
++   entry #requestTarget   HTTP のリクエスト行が運ぶ形での、ロケーションとクエリを合わせたもの
++   entry #host   オーソリティのホスト、または `Unset`
++   entry #path   各セグメントをパーセントデコードした `Path on Www` としてのロケーション
++       デコードは失敗しえない。ウェブのパスのルートは先頭の `/` であり、それがあってもなくてもよい。
+
+@ 0 5 0 1ca3646c6c98070e0642bcf9f7a8f627
++ entry .HttpUrl   `Url["https" | "http"]`：スキームが二つのウェブスキームのいずれかである URL
++     ウェブクライアントが受け取り、`url"https://…"` と `url"http://…"` が生成する型である。
++     `Url.abstractable` と `Url.instantiable` を持つのはこの型だけであり、したがって anticipation の `Urls` ドメインを通じて他のライブラリが「URL」と言うときに指すのはこの型である。
++     `as[HttpUrl]` でテキストをデコードしても、スキームは型と照合されない。
+
+@ 0 8 0 0f3141028b8ed1ab1699e9bbb4afc0bb
++ entry .url   `url"…"` 補間子：コンパイル時に検査され、型付きの埋め込みを持つ URL
++     `url"https://example.com/path"` は `Url["https"]`（したがって `HttpUrl`）であり、リテラルはコンパイル時にパースされるので、不正なリテラルはコンパイルエラーになる。
++     各 `$value` は `Substitution[Url.Fragment, …]` の given によって埋め込まれる。
++     `:` の後の `Int` はポートになり、`Text` や任意の `Encodable in Text` の値は URL エンコードされる（`t"Hello world!"` は `Hello+world%21` になる）。
++     リテラルはコンパイル時にプレースホルダーの値で検査され、実行時に実際の値で再びパースされる。
++     URL を不正にする実行時の値は例外を投げる。検査済みのリテラルは型付きのエラーとして報告できないからである。
+
+% 2 1 0 0b26e67463f3996b154405b32ac424b4
+
+% 3 1 0 070177833b4f2f7a15bbd820c4924967
+
+% 0 1 0 0c801c29ebe176f519a87c4f9bdd66a1
+
+% 0 1 0 1c629801f2d8b1a3137e55bf36cafced
+
+% 0 1 0 19498f80b2ca21bb178b5c5d9b470243
+
+% 1 1 0 0cfe71f951ca3881054f017f38f6be4f
+
+@ 0 2 0 18f1d52460a9f5b6033e83807427d1bf
++     結果の型は、最初の `:` より前のテキストから読み取ったスキームをリテラル型として持つ。
++     `urticose.url` で宣言されている。
+
+@ 0 1 0 02b415cbef46ef18028df36db8b109e0
++ entry .Scheme   URL スキーム。`Scheme[scheme](name)` として表し、名前はリテラル型でもある
+
+% 1 1 0 1ec8f19be953e6b50b1f8bc025b73ea0
+
+@ 0 8 0 1b677b99c6e8acb00e30c5bc1c96fe16
++       `Scheme.Http` と `Scheme.Https` は二つのウェブスキームであり、`Scheme(t"ftp")` はそれ以外の任意のスキームを作る。
++       型パラメーターはスキームの名前をリテラル型としたものであり、`Url` と `HttpUrl` はこれによってスキームを保持する。
++   entry .showable   スキームをその名前として描画する
++   entry .inspectable   URL に現れるとおりの、末尾にコロンを付けたデバッグ用の描画、`https:`
++   entry .Http   `http` スキーム、`Scheme["http"]`
++   entry .Https   `https` スキーム、`Scheme["https"]`
++   entry #name   スキームの名前、テキストとして
+
+@ 0 1 0 09703afc2389d97c00192f22f55f6423
++ entry .Authority   URL のオーソリティ：省略可能なユーザー情報、ホスト、省略可能なポート
+
+% 1 1 0 0e9b0689b480fbbb1810674b9ae6fc05
+
+@ 0 5 0 16549925efa9996d0cfdd11cf0472b47
++       URL のうち `//` とパスの間の部分であり、`Authority(host, userInfo, port)` で作るか、`as[Authority]` でテキストからデコードする。
++       後者は `Hostname.Error`、`IpAddress.Error` または `Url.Error` を発生させる。
++       `@` より前のすべてがユーザー情報であり、ホストはホスト名、IPv4 アドレス、または角括弧で囲んだ IPv6 アドレスであり、`:` の後のポートは 0–65535 の数でなければならない。
+
+% 2 1 0 003c6a88ef67ba141f081fe8f862d48e
+
+% 3 1 0 15f71fa9e91909180c80fc1225d00c8b
+
+% 4 1 0 1d49ce85fc3f3a4907cda77cf0d36fa6
+
+% 0 1 0 15c896d8fd1510980585a6c6bbf97f2a
+
+% 0 1 0 151c9b6174530d72170f6b0d8e5d3f30
+
+% 0 1 0 09ad1119ee2d02dc1a90dafa75da9da8
+
+% 0 1 0 0f153e2d516387c31d44ca0551bf4376
+
+% 1 1 0 13279cf576a8ed5e04f8d7f1f17adb40
+
+% 1 1 0 0b886395949a442011f11c6717f0f2f6
+
+% 1 1 0 1b9d49fa497d66da171cb72ed3d0199e
+
+@ 0 9 0 0a8d47934d119bf61b2887492c9138e8
++   entry .showable   オーソリティを `userInfo@host:port` として描画する。各部分は存在するときだけ現れる
++   entry .inspectable   `//` で始まるデバッグ用の描画：`//user@example.com:8080`
++       この接頭辞は、その値が URL のどの部分であるかを示し、単なるホスト名と取り違えられないようにする。
++   entry .decodable   テキストからオーソリティを読み取り、`Hostname.Error`、`IpAddress.Error` または `Url.Error` を発生させる
++       三つのそれぞれについて `Tactic` を必要とし、given はそれらをキャプチャする。
++   entry #host   ホスト：`Hostname`、`Ipv4` または `Ipv6`
++   entry #userInfo   `@` より前のテキスト、または `Unset`
++   entry #port   ポート番号、または `Unset`
+
+@ 0 1 0 04414d1796787ac006ef5931296d0694
++ entry .Origin   URL のスキームとオーソリティの組。ウェブブラウザがこの語で意味するもの
+
+% 1 1 0 131a86e1ada98a801583b5c4b6e9c435
+
+@ 0 4 0 00232d9a616a2f4b01676efd6586eb02
++       `Origin(scheme, authority)` は `Url` が最初のパラメーターとして受け取るものである。
++       スキームはそのリテラル名で型付けされ、オーソリティは `//` を持たない URL では `Unset` になる。
++   entry #scheme   スキーム
++   entry #authority   オーソリティ、または `Unset`
+
+@ 0 1 0 04d4bc3d1c3a6f3f0f8bafd6f5885d67
++ entry .Www   URL パスのプレーン：`/` 区切りで、パーセントエンコードされ、`/` を根とする
+
+% 1 1 0 13ad00d4401ae39c1b8cc015fef3738f
+
+@ 0 6 0 1f2e738dc38c74ef0dcaee5daf5368bd
++       `Path on Www` のプレーン型として使われるシールされたトレイトであり、`Url#path` はこの型を返し、`url / "segment"` はこれを延長する。
++       そのコンパニオンは、ウェブのための `Filesystem`（名前は `World Wide Web`、区切りは `/`、自身と親のセグメントは `.` と `..`、エスケープはパーセントエンコーディング）と、根の given を保持する。
++       根は `%` であり、`/` としてエンコードされる。
++       根のデコードは失敗しない。ウェブパスの先頭の `/` は、あってもなくても根として読まれるからである。
+
+% 1 1 0 0ba392ed80a52b5305354064a24d5ff0
+
+@ 0 8 0 079679c7cf1981751fd43596b3bdb01a
++   entry .submissible   `%` をウェブパスがたどる根にする
++   entry .admissible   ウェブパスに `Text` のセグメントを追加できるようにする
++   entry .admissible2   ウェブパスに `String` リテラルのセグメントを追加できるようにする
++   entry .radical   ウェブの根 `%` を `/` としてエンコードする
++   entry .eradicable   テキストからウェブの根を読み取る：先頭の `/` があればそれ、なければ何もない
++       純粋なので、`Path on Www` は戦術なしでデコードされる。
++   entry .filesystem   `Filesystem` としてのウェブ：`/` 区切りで、`.` と `..` を持ち、パーセントエンコードされる
++       根が一つだけのファイルシステムではない。ウェブ上のパスは相対であってもよい。
+
+@ 0 4 0 193c2b783ae58e7b107494b589a0f380
++ entry .UrlPalette   スタイル付きの URL に必要な色：`link` 色を持つ sRGB の `Palette`
++     `escapade` の `Palette` を細分化したもの、`Palette { type Form = Srgb; def link: Color in Srgb }` であり、`teletypeables.urlTeletype` は URL に色を付けるためにこれをコンテキストとして受け取る。
++     `urticose.ansi` で宣言されている。
+
+% 2 1 0 1c6f0b993d6338091bc8082baefaeb42
+
+% 3 1 0 12b34008d72bc5b31ba1ebda2dad033e
+
+% 0 1 0 069597896e96e4de1bdf0bcebdaf9ca8
+
+% 0 1 0 045552636ab390d117494ddfc8a2cba6
+
+% 0 1 0 0a6456c0b2fcca4b02f1660cd5dd6ab5
+
+% 0 1 0 00d17034d10f3ded0d511e6670714786
+
+% 0 1 0 196cdaa3180a0126098eddeda309ccea
+
+% 1 1 0 09c3b8860d669de918dfcc140f25bdc3
+
+@ 0 1 0 19c0e2cd0921b7930aa6a8d25676e979
++ entry .teletypeables   URL の端末向け描画。名前で import する given
+
+% 1 1 0 13649770d0bcc4cd1461cab0ddec77d6
+
+@ 0 4 0 05b9d6529c44c948021910373a5149a2
++       `Teletypeable` は、`e"…"` テレタイプ文字列の中で値をどう描画するかを定める。
++       このパッケージは urticose の唯一のインスタンス、URL 用のものを保持する。
++       `import soundness.*` はパッケージから given を一つも取り込まないので、名前で import する。
++       このパッケージは、アンブレラ内の他のすべてのライブラリの `teletypeables` パッケージとマージされる。
+
+% 2 1 0 14a2688a3fe66f7705dce678aecc95f5
+
+% 3 1 0 1eb86a40f2182d131bd29c02a7a81e70
+
+% 0 1 0 155c937194faaeb1036d7e780e4d5d55
+
+% 1 1 0 1a681ad1a890b4640ec3a3b4dabbbaca
+
+@ 0 6 0 0ca3e48eb852307716b41b40bc7b0d26
++       import がなくても、URL は escapade の任意の `Showable` 型のための代替によって `e"…"` 文字列の中で描画されるが、スタイルは付かない。
++       import を忘れても、コンパイルに失敗するのではなく、気づかれないまま劣化する。
++       `urticose.ansi` で宣言されている。
++   entry .urlTeletype   `Url` を下線付きで、パレットの `link` 色で描画する
++       色のために、スコープ内に `UrlPalette` の given を必要とする。
++       描画のプレーンテキストは URL の表示形式である。
+
+@ 0 1 0 0225ac91f200eb19108d75a4bc071413
++ entry .Dns   RFC 1035 の DNS の語彙：名前、レコード型、質問、レコード、メッセージとそのワイヤ形式
+
+% 1 1 0 10258dd6bf255832096c0ff758db8424
+
+@ 0 8 0 1e5cb244f3a5cffe029facab4f8d6d41
++       `Dns` は型付きの DNS の本拠であり、`urticose.dns` ソースセットにある。
++       `Dns.Name` は任意の UTF-8 を保持できるラベルのリストであり（ドットや空白も含む。DNS-SD のサービスインスタンス `Hamlet's Printer._ipp._tcp.local` はこれに依存する）、`dns"…"` で書くか、プレゼンテーション形式からパースし、DNS が名前を比較するのと同じく ASCII の大文字小文字を同一視して比較する。
++       `Dns.Question` はある名前の `Dns.Type` のレコードを尋ねる。
++       `Dns.Record` は名前、TTL、型付きデータを保持する。データは urticose 自身のアドレスを用いる `Dns.Rdata` のケース（`A(ipv4)`、`Aaaa(ipv6)`、`Ptr`、`Srv`、`Txt`、…）のいずれか、またはバイト列を運ぶ `Unknown` である。
++       `Dns.Message` は質問とレコードを、その `Dns.Flags` とともに運ぶ。
+
+% 2 1 0 1163b6cc620f99c20242fa0432ee9d92
+
+% 3 1 0 0140b848f5350fa205f1a1710377ac03
+
+% 4 1 0 00698d4ad6919c47153ca3ff9fbc45ea
+
+% 0 1 0 0ee01d5e348d9e761ac3e68e46edeb58
+
+% 0 1 0 044549e1d0ba61d308ef591b7ef07610
+
+% 0 1 0 10e6eab39c1b889f01a9667be7cd2664
+
+% 0 1 0 04e2447db936cd2a1575d0bf1e4c40fe
+
+% 0 1 0 0e158407a53e3b020358dd298c791d5b
+
+% 1 1 0 0e1f995d38e9377d1e9f9138cee07180
+
+@ 0 8 0 16a034e06cc098250a53fc14df669ec9
++       メッセージは `in[Data]` と `as[Dns.Message]` で `Data` へエンコードし、`Data` からデコードする。
++       書き込みは所有者名と既知の型の中の名前を圧縮し、全域的である。長さの制限は構築の時点から `Name` と `Rdata.Txt` が保持しているからである。
++       読み取りは厳格であり、圧縮ポインターは後方へのものだけをたどり、不正なものにはすべて `Dns.Error` を発生させる。
++       mDNS（RFC 6762）は二つのビットを加え、これらは `false` を既定値とする単純なフィールドとして現れる。質問の `unicast` とレコードの `flush` である。
++       ネームサーバーとメッセージをやり取りするのは `coaxial.dns` の役目であり、`Dns.resolve` はプラットフォームのリゾルバーを使う。
+
+% 0 1 0 1503b3ef14475d6200d19a6974d27214
+
+% 1 1 0 0abe6f01c23add201a4ba70f7f5a34a8
+
+% 1 1 0 02da05ddeb63d75a1d78adccdd5aa014
+
+% 1 1 0 0fe78053b4ec69370ce8d476d6c96c69
+
+@ 0 1 0 0e77b55cd593ac6802f62f65911086ed
++   entry .Name   DNS 名：任意の UTF-8 を保持できるラベルからなり、ASCII の大文字小文字を同一視して比較される
+
+% 1 1 0 195c36fded3742b61e1358ac5845c38f
+
+@ 0 7 0 0d3728297d4c400d03f40d0e8d9d91a1
++         `Name` は、`Dns.Name(t"_fury", t"_tcp", t"local")`（ラベルはそのまま受け取るので、ラベルはドットを含んでもよい）、`dns"_fury._tcp.local"`（プレゼンテーション形式で、コンパイル時に検査される）、`Hostname` から、または `as[Dns.Name]` でプレゼンテーション形式をパースして作る。
++         パースでは `\.` と `\\` がドットとバックスラッシュをエスケープし、`\DDD` は十進の文字コードであり、末尾のドットは許容される。
++         制限（ラベルは 63 オクテット、名前は 255 オクテットまで）は構築と合成の際に検査され、`Dns.Error` を発生させるので、名前のエンコードは失敗しない。
+
+% 2 1 0 1315a02dd72375f3163dff7e5eb511dd
+
+% 3 1 0 0c3a5f1bd68598651b547fe7a8dfeba5
+
+% 4 1 0 0bf0eaa370fbfd980f8bc87d9ea08c4e
+
+% 0 1 0 1247459a81d4098917fa3a05c47b9cd3
+
+% 0 1 0 08888966fbc035f9122e62ea8ab27fb4
+
+% 0 1 0 1aeb5037e2a6703117492d7fd04856fa
+
+% 0 1 0 0cc81b9d096683821eda5ac36d4576b5
+
+% 0 1 0 032f29185a69de5d1e4a8d2bc8be852d
+
+% 0 1 0 0de6ff0c4de199900b2793e26c0ba8ca
+
+% 1 1 0 1f0f328af24a6b38170fc810fb8c815c
+
+@ 0 1 0 0b121afab5fa45661d076a30ea3a8012
++         `hashCode` は `equals` と同じく大文字小文字を同一視するので、名前を `Map` のキーにできる。
+
+% 0 1 0 0ab9f646506f67be18bb88453eb41dd5
+
+% 0 1 0 1bca87e08283c64609955c0e6e40068e
+
+% 0 1 0 06ebfae6847df8880d99d69b40aa0931
+
+@ 0 26 0 1fa39a45eca7ef9617cea4550f641ed6
++     entry .Root   ラベルを持たない根の名前。`.` として表示される
++     entry .local   mDNS のドメインである名前 `local`
++     entry .apply   そのまま受け取ったラベル、または `Hostname` からの名前
++         `Dns.Name(labels*)` は、空のラベル（`EmptyLabel`）、63 オクテットを超えるラベル（`LongLabel`）、255 を超える名前（`LongName`）に対して `Dns.Error` を発生させる。
++         `Dns.Name(hostname)` は失敗しない。ホスト名のラベルはすでに制限を満たしているからである。
++     entry .toExpr   名前を組み立てるマクロのために、名前をクォートされた式に持ち上げる
++     entry .fold   DNS が比較するのと同じく、ラベルの ASCII 文字を小文字に畳み込む
++         畳み込まれるのは ASCII 文字だけであり（RFC 4343）、他の文字はすべて厳密に比較される。
++         DNS-SD が TXT のキーに適用する比較でもある。
++     entry .parse   プレゼンテーション形式から名前を読み取り、`Dns.Error` を発生させる
++         `.` または空のテキストは根である。
++         それ以外はドットで区切られたラベルであり、エスケープ `\.`、`\\`、`\DDD` を持つ。
++         不正なエスケープは `BadEscape` であり、制限が適用される。
++     entry .showable   名前をプレゼンテーション形式で描画し、ラベル内のドットとバックスラッシュを再びエスケープする
++         根は `.` として描画され、それ以外の名前は末尾のドットなしで描画される。
++     entry .inspectable   デバッグ用の描画。表示形式と同じ
++     entry .encodable   名前をそのプレゼンテーション形式としてエンコードする
++     entry .decodable   プレゼンテーション形式から名前を読み取り、`Dns.Error` を発生させる
++         `Tactic[Dns.Error]` を必要とし、given はそれをキャプチャする。
++     entry #labels   ラベル。左端が先頭で、書かれたときの大文字小文字を保つ
++     entry #+   `name + suffix`：両方のラベル。結果が 255 オクテットを超えると `Dns.Error` を発生させる
++     entry #prefix   先頭にラベルを一つ加えた名前。長すぎると `Dns.Error` を発生させる
++     entry #parent   最初のラベルを除いた名前。根では `Unset`
++     entry #endsWith   名前が別の名前のラベルで終わるかどうか。大文字小文字は同一視する
++     entry #octets   圧縮しないときのワイヤ上の長さ：各ラベルとその長さのバイト、および終端
++   entry .Type   番号によるレコード型。既知のものは値として持つ
+
+% 1 1 0 1b81465c1213d55a17d3f5b3930c2632
+
+@ 0 19 0 01e10a52a5b59c4215b641377d16a80e
++         `Dns.Type(number)` は任意の番号を包む。
++         `A`、`Ns`、`Cname`、`Soa`、`Ptr`、`Mx`、`Txt`、`Aaaa`、`Srv`、`Opt`、`Nsec`、`Any` が認識されるものである。
++         型はそのニーモニックとして、未知の番号なら `TYPE99`（RFC 3597）として表示される。
++     entry .A   型 1：IPv4 アドレス
++     entry .Ns   型 2：ネームサーバー
++     entry .Cname   型 5：正規名
++     entry .Soa   型 6：権威の開始
++     entry .Ptr   型 12：ポインター
++     entry .Mx   型 15：メール交換
++     entry .Txt   型 16：テキスト文字列
++     entry .Aaaa   型 28：IPv6 アドレス
++     entry .Srv   型 33：サービスの所在
++     entry .Opt   型 41：EDNS(0) の疑似レコード
++     entry .Nsec   型 47：mDNS が使う next secure
++     entry .Any   型 255：質問の中での任意の型
++     entry .showable   型をそのニーモニックとして、未知の番号なら `TYPE1234` として描画する
++     entry .inspectable   デバッグ用の描画。表示形式と同じ
++     entry #number   ワイヤ上の型の番号
++   entry .NetClass   レコードのクラス：`Internet`、`Any`、または任意の番号
+
+% 1 1 0 15dad3d2aea1ef651495dfb74c7fab7d
+
+@ 0 9 0 18fe1647efc80236139469a49126ecb5
++         最上位ビットを除いたクラスフィールドである。最上位ビットはワイヤ上ではクラスの一部ではなく mDNS のフラグである。
++         ただし `OPT` レコードでは、クラスフィールドは送信者の UDP ペイロードサイズ（`Record#udpPayload`）である。
++         `IN`、`ANY` または `CLASS123` として表示される。
++     entry .Internet   クラス 1、`IN`
++     entry .Any   クラス 255、質問の中で使う
++     entry .showable   クラスを `IN`、`ANY` または `CLASS123` として描画する
++     entry .inspectable   デバッグ用の描画。表示形式と同じ
++     entry #number   ワイヤ上のクラスの番号
++   entry .Opcode   メッセージの操作：`Query`、`Notify`、`Update`、または任意の番号
+
+% 1 1 0 0a4fcddccc43c8e006d7a8775e92c75b
+
+@ 0 7 0 05b5b38de45e73880ddbf571b32536e7
++         `Flags` の一部である。
++         クエリのオペコードは、別に設定しない限り `Query` であり、レスポンスはそのクエリのオペコードをそのまま返す。
++     entry .Query   オペコード 0、標準のクエリ
++     entry .Notify   オペコード 4
++     entry .Update   オペコード 5
++     entry #number   ワイヤ上のオペコードの番号
++   entry .Rcode   レスポンスコード：`NoError`、`NxDomain`、`ServFail`、…、または任意の番号
+
+% 1 1 0 1f1f7445940a3d3a1f7181e2c562149c
+
+@ 0 12 0 16e09c044f7d588b19dd98bb4101ed4c
++         レスポンスのフラグの下位 4 ビットであり、`OPT` レコードの `extendedRcode` が上位ビットを運ぶ。
++         `NOERROR`、`NXDOMAIN` などとして、未知の番号なら `RCODE12` として表示される。
++     entry .NoError   コード 0
++     entry .FormErr   コード 1：クエリを解釈できなかった
++     entry .ServFail   コード 2：サーバーが失敗した
++     entry .NxDomain   コード 3：名前が存在しない
++     entry .NotImp   コード 4：その操作はサポートされていない
++     entry .Refused   コード 5：サーバーが拒否した
++     entry .showable   コードをそのニーモニックとして、未知の番号なら `RCODE12` として描画する
++     entry #number   ワイヤ上のコードの番号
++   entry .Question   メッセージ内の質問：名前、型、クラス
+
+% 1 1 0 0809af055f76188f13824e998743f432
+
+@ 0 10 0 1ac93573bb6aba790e82746a27b1d110
++         `Dns.Question(name, rtype, netClass = NetClass.Internet, unicast = false)`。
++         `unicast` フィールドは mDNS の「QU」ビット（RFC 6762 §5.4）であり、問い合わせ側がユニキャストのレスポンスを受け付けるときに設定する。
++         ワイヤ上ではクラスの最上位ビットとして書かれ、通常の DNS ではオフである。
++     entry .showable   質問を `name class type` として描画する
++     entry #name   尋ねる名前
++     entry #rtype   求めるレコード型
++     entry #netClass   クラス。別に設定しない限り `Internet`
++     entry #unicast   ユニキャストのレスポンスを受け付けるかどうか（mDNS）
++   entry .Rdata   レコードの型付きデータ：認識される型ごとに一つのケース、または `Unknown`
+
+% 1 1 0 18a8b64c189d8a320154f3f429b5089e
+
+@ 0 4 0 13132bb7d0bbfbd019a2fdb161d7b098
++         urticose 自身のアドレスと名前を用いるシールされた族である。
++         `Srv` のポートは単なる数である。トランスポートは所有者名（`_tcp`/`_udp`）の慣習であり、データからは見えないからである。
++         オクテットを運ぶケース（`Txt`、`Opt`、`Unknown`）は、バイト列を構造的に比較する。`Data` 自体は参照で比較するからである。
+
+% 2 1 0 1683b694af8a47ba0e6a84c53a9a354c
+
+% 3 1 0 027845c1fa6bbd3d0a490802d901e7b2
+
+% 4 1 0 1b4f5826af1cb5ac14c88bd6e5362a53
+
+% 0 1 0 01d11738ed462d02196bd179c98df2e1
+
+% 0 1 0 026c265fe11d155f05c32ee8a3bb39b9
+
+% 0 1 0 0b8de30e56c56c9f07fde01a39c47cf6
+
+% 0 1 0 0c9210cce20af8d903ae8eeb0b065de7
+
+% 0 1 0 1b3d27965032281f14266c6d29605931
+
+% 0 1 0 1db3cadd532048d01d29b7f6f715f77e
+
+% 0 1 0 0b1412d8531b251b0e032cdd362539fc
+
+% 1 1 0 08b98e0f13fcd7a61087bb2a2019b183
+
+@ 0 27 0 1bb97968d82574bb123d8e7b7ff4fec8
++     entry .A   IPv4 アドレス
++       entry #address   アドレス
++     entry .Aaaa   IPv6 アドレス
++       entry #address   アドレス
++     entry .Ptr   別の名前へのポインター。逆引きや DNS-SD のサービスインスタンスとして使う
++       entry #target   指し示す名前
++     entry .Cname   別名の正規名
++       entry #target   正規名
++     entry .Ns   ゾーンのネームサーバー
++       entry #target   ネームサーバーの名前
++     entry .Mx   優先度付きのメール交換
++       entry #preference   優先度。小さいものから試される
++       entry #exchange   メールサーバーの名前
++     entry .Srv   サービスの所在：優先度、重み、ポート、ターゲットのホスト
++       entry #priority   優先度。小さいものから試される
++       entry #weight   優先度が等しいものの中から選ぶための重み
++       entry #port   ポート、単なる数として
++       entry #target   サービスを提供するホスト
++     entry .Soa   権威の開始：プライマリーサーバー、責任者のメールボックス、ゾーンのタイミング
++       entry #mname   プライマリーネームサーバーの名前
++       entry #rname   責任者のメールボックス、名前として
++       entry #serial   ゾーンのシリアル番号
++       entry #refresh   リフレッシュ間隔、秒単位
++       entry #retry   リトライ間隔、秒単位
++       entry #expire   期限切れまでの間隔、秒単位
++       entry #minimum   最小 TTL、秒単位
++     entry .Txt   それぞれ 255 オクテット以下の文字列。DNS-SD はこれを `key=value` の組として読む
+
+% 1 1 0 111bc0e97cf95e2f0a1a8c401006c212
+
+@ 0 8 0 09ad3907e95d53b81668fc8bfefbdb27
++           テキスト（UTF-8 としてエンコードされる）または `Data` のリストから `Dns.Rdata.Txt(t"a=1", t"b")` で作る。
++           どちらも 255 オクテットを超える文字列に対して `Dns.Error`（`LongString`）を発生させるので、エンコードは失敗しない。
++           空のリストは一つの空文字列としてエンコードされる。
++           バイト列を構造的に比較する。
++       entry .apply   テキスト、または `Data` のリストからの `Txt`。255 オクテットを超える文字列には `Dns.Error` を発生させる
++       entry #strings   文字列、オクテットとして
++       entry #texts   UTF-8 としてデコードした文字列
++     entry .Opt   `OPT` レコードの EDNS(0) オプション。`(code, data)` の組として
+
+% 1 1 0 083f526457090c58083a7b86ca24f2c9
+
+@ 0 4 0 0c6f2786ac427bea06bca5524b4ad224
++           `OPT` レコードでは、レコードの他のフィールドは別の意味に解釈される。`Record.opt` を参照。
++           バイト列を構造的に比較する。
++       entry #options   オプション。それぞれコードとそのデータ
++     entry .Unknown   この語彙が解釈しないレコード型。ワイヤ上のオクテットとして運ぶ
+
+% 1 1 0 1732576784631f94196161a30f74c17d
+
+@ 0 6 0 0d6af85e4c8343350f816c792bd963a6
++           どの型でも往復できる（RFC 3597）。
++           バイト列を構造的に比較する。
++       entry #rtype   レコード型
++       entry #data   データ、ワイヤ上にあったとおりに
++     entry .showable   データをゾーンファイルと同じように描画する：アドレス、名前、`pref name`、引用符付きの文字列、…
++     entry #rtype   このデータが属するレコード型
++   entry .Record   リソースレコード：名前、TTL、型付きデータ、クラス、mDNS の flush ビット
+
+% 1 1 0 0f76351054c8fcb413e85ba8dae877f4
+
+@ 0 6 0 1730da4d62e88b7b1cb054b1690f4afe
++         `Dns.Record(name, ttl, rdata, netClass = NetClass.Internet, flush = false)`。
++         レコードの型はそのデータの型である。
++         `flush` フィールドは mDNS のキャッシュフラッシュビット（RFC 6762 §10.2）である。この名前と型についての送信者のレコード集合が、受信者がキャッシュしているものを置き換える。
++         ワイヤ上ではクラスの最上位ビットとして書かれ、通常の DNS ではオフである。
++         ワイヤから読んだ TTL の最上位ビットが立っていれば、ゼロとみなす（RFC 2181 §8）。
+
+% 2 1 0 1562a83d2fdd042c1a92e2c6b4a3f432
+
+% 3 1 0 042654dd5a42c5e80f26068a6f6987e0
+
+% 4 1 0 0ca79f2e8ceea4ce0fdbbbccdaea735a
+
+% 0 1 0 0fa30e7d552fe83d09ffc4a24376f4e9
+
+% 0 1 0 005b1be5cb97606218328466ecf28a49
+
+% 0 1 0 1f2b7855a59d27381cad18768348c175
+
+% 1 1 0 007e681f8f31a42517905a4ccbcfde7e
+
+@ 0 20 0 1bc086567bc67a11050e62dd2419025a
++     entry .opt   EDNS(0) の `OPT` 疑似レコード。送信者の UDP ペイロードサイズと DO ビットを持つ
++         `Dns.Record.opt(udpPayload = 1232, dnssecOk = false, options = Nil)`：レコードの名前は根であり、クラスフィールドはペイロードサイズを、TTL フィールドは拡張 RCODE、バージョン、DO ビットを運ぶ。
++         これらは `#udpPayload`、`#extendedRcode`、`#dnssecOk` で読み戻せる。
++     entry .showable   レコードを `name ttl class type data` として描画する。ビットが立っていれば ` (flush)` を付ける
++     entry #name   所有者名
++     entry #ttl   生存時間、秒単位
++     entry #rdata   型付きデータ
++     entry #netClass   クラス。別に設定しない限り `Internet`
++     entry #flush   受信者がこの名前と型についてキャッシュをフラッシュすべきかどうか（mDNS）
++     entry #rtype   レコード型。データから取る
++     entry #key   キャッシュの中でのレコードの同一性：名前、型、データ。TTL と flush ビットは含まない
++     entry #rdataBytes   圧縮しないワイヤ形式でのデータ
++         同じ名前を同時に探査する二つのホストの間で同順位を決着させるために、RFC 6762 §8.2.1 が辞書順に比較するものである。
++     entry #udpPayload   `OPT` レコードでは送信者の UDP ペイロードサイズ。それ以外では `Unset`
++     entry #extendedRcode   `OPT` レコードではレスポンスコードの上位ビット。それ以外では `Unset`
++     entry #dnssecOk   `OPT` レコードでは DO ビット。それ以外では `Unset`
++   entry .Flags   メッセージのヘッダービット：レスポンスかクエリか、オペコード、四つのフラグ、レスポンスコード
+
+% 1 1 0 1a5c2ebcdcbf8d5a1e2c49d9863161f4
+
+@ 0 13 0 10e9af292827652c16550f55b5f06849
++         `Dns.Flags()` は単純なクエリである。すべてのフラグがオフで、オペコードは `Query`、rcode は `NoError` である。
++         `Message.query` は `recursionDesired` を設定し、`Message.response` は `response` を設定して、クエリのオペコードと再帰の要求をそのまま返す。
++     entry #response   メッセージがレスポンスかどうか（QR）
++     entry #opcode   操作
++     entry #authoritative   応答者がその名前について権威を持つかどうか（AA）
++     entry #truncated   メッセージがトランスポートに収まるよう切り詰められたかどうか（TC）
++     entry #recursionDesired   問い合わせ側が再帰を求めるかどうか（RD）
++     entry #recursionAvailable   応答者が再帰を提供するかどうか（RA）
++     entry #authentic   データが認証されたかどうか（AD）
++     entry #checkingDisabled   問い合わせ側が DNSSEC の検査を無効にしたかどうか（CD）
++     entry #rcode   レスポンスコード
++   entry .Message   DNS メッセージ：ID、フラグ、および質問、回答、権威、追加の各セクション
+
+% 1 1 0 08c1d103351a4061050007f82e7f2773
+
+@ 0 5 0 0c2dbd9364ea32c51ac7618dfd9cdea4
++         直接組み立てるか、`Message.query` と `Message.response` で組み立てる。
++         `in[Data]` で `Data` にエンコードし、`as[Dns.Message]` でデコードする。後者は不正なメッセージに対して `Dns.Error` を発生させる。
++         エンコードは全域的である。メッセージが破りうる制限は、構築の時点から `Name` と `Rdata.Txt` が保持しているからである。
++         65535 を超えるエントリーを持つセクションは 65536 を法として書かれる。どの DNS のトランスポートもそれを運べないからである。
+
+% 2 1 0 103b00ca96f95f4500bb2888e3975a45
+
+% 3 1 0 1f240de2d30d35aa179541c2d0d7999a
+
+% 4 1 0 028536fa7968604b1d9bb924d3aac002
+
+% 0 1 0 175fb005e7c61ed1092c6e946eeabdfc
+
+% 0 1 0 149eff091198fd5a05edc32a3915a98f
+
+% 0 1 0 1f6699c0da421d761b440630afa2e197
+
+% 1 1 0 02eeeba54d3508b600e0a8425a690572
+
+@ 0 25 0 07f7407435f2e6bf0e97fae6e7b5e74d
++     entry .query   クエリのメッセージ：ID、質問、および別に指定しない限り再帰を求める指定
++     entry .response   クエリへの返答：同じ ID と質問に、回答とレスポンスコードを加えたもの
++         `Dns.Message.response(query, answers, authoritative = false, rcode = Rcode.NoError, authority = Nil, additional = Nil)` は、クエリのオペコードと再帰の要求をそのまま返す。
++     entry .encodable   メッセージを RFC 1035 のワイヤ形式で書き、名前を圧縮する
++         所有者名と、RFC 1035 §4.1.4 の既知の型の中の名前は、後方へのポインターで圧縮される。
++         `SRV`、`TXT`、`OPT` および未知の型の中の名前は圧縮されない（RFC 2782、RFC 3597）。
++     entry .decodable   ワイヤ形式からメッセージを読み取り、不正なら `Dns.Error` を発生させる
++         `Tactic[Dns.Error]` を必要とする。
++         圧縮ポインターは後方へのものだけをたどる（そうでなければ `BadPointer`）。
++         途中で切れたメッセージは `Truncated`、長さの誤ったレコードデータは `BadRdata`、最後のレコードの後のバイト列は `Trailing` である。
++         圧縮された `SRV` のターゲットは、mDNS の送信者が出力するので受け付ける。
++     entry .showable   メッセージを `query|response id rcode [questions] [answers]` として描画する
++     entry #id   メッセージ ID。レスポンスはこれをそのまま返す
++     entry #flags   ヘッダーのフラグ
++     entry #questions   質問セクション
++     entry #answers   回答セクション
++     entry #authority   権威セクション
++     entry #additional   追加セクション
++   entry .resolve   プラットフォームのリゾルバーを通じて得る、名前またはホスト名のアドレス
++       `Dns.resolve(name)` または `Dns.resolve(hostname)` は、プラットフォームに（`InetAddress.getAllByName` を通じて）その名前のすべてのアドレスを尋ね、それらを `Ipv4 | Ipv6` のリストとして返す。
++       名前が解決できないときは `Unresolved` を持つ `Dns.Error` を発生させる。
++       プラットフォームのリゾルバーを通じてネットワークに到達し、`Online` は受け取らない。
+
+% 2 1 0 03fdfea5d8d63ea80a6f5e408d3ea527
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 04ea60e84068f7921bdf4ecb54884444
+
+% 0 1 0 17e094dfdcf82f56180a6688d3e9a10a
+
+% 0 1 0 00c236fccb5e1a101c1bfeb3ea4b2fe6
+
+% 1 1 0 08e624ca0d3ef78b05ff0649089879b3
+
+@ 0 1 0 1b260b80088280d9197ff76402d364bd
++   entry .Error   DNS 名やメッセージが不正なとき、または名前が解決できないときに発生する
+
+% 1 1 0 084733c051d8401f080961bffe0fa80f
+
+@ 0 4 0 0b934ae56683247b05f710a97d39f78b
++         エラー `↯/s.100.1`：_the DNS message is not valid because `reason`_。
++         名前の構築とパース、`Rdata.Txt`、`Data` からのメッセージのデコード、`Dns.resolve` によって発生し、`dns"…"` ではコンパイルエラーとして発生する。
++     entry .Reason   名前、メッセージ、または検索が失敗した理由
+
+% 1 1 0 14b3fd27112093170f29e9a915e9eeda
+
+@ 0 1 0 0bb17f1e2932d49b0c8edd51e062bee8
++           それぞれ `Reason.communicable` を通じてメッセージを持つ。
+
+% 2 1 0 101ae17950042db20f5b075753c7534a
+
+@ 0 17 0 0e5c3d28405a3ef50a459809261dfdda
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  備考
++           row  `Truncated(offset)`  1  _the message ends at offset `offset`, inside a field_  不正なメッセージ
++           row  `BadPointer(offset)`  2  _the name pointer at offset `offset` points forward_  不正なメッセージ
++           row  `BadLabel(offset, kind)`  3  _the label at offset `offset` has unsupported type `kind`_  不正なメッセージ
++           row  `LongLabel(label)`  4  _the label `label` is longer than 63 octets_  不正な名前
++           row  `LongName(name)`  5  _the name `name` is longer than 255 octets_  不正な名前
++           row  `EmptyLabel(text)`  6  _the name `text` contains an empty label_  不正な名前
++           row  `BadEscape(text)`  7  _the name `text` contains a malformed escape sequence_  不正な名前
++           row  `BadRdata(rtype, offset)`  8  _the `rtype` record data at offset `offset` is malformed_  不正なメッセージ
++           row  `LongString(length)`  9  _a character-string of `length` octets exceeds 255_  TXT の文字列
++           row  `Trailing(offset)`  10  _the message has trailing bytes from offset `offset`_  不正なメッセージ
++           row  `Unresolved(name)`  11  _the name `name` could not be resolved_  `Dns.resolve` から
++           row  `Timeout`  12  _no response arrived before the timeout_  `coaxial.dns` などのトランスポートが発生させる
++           row  `Mismatch(id)`  13  _the response with ID `id` does not answer the query_  ID の誤ったレスポンスに対してトランスポートが発生させる
+
+% 1 1 0 147569e0f8cabdc20ecd7927e142f958
+
+@ 0 2 0 1a805f6e5b6c5b610dd07c0621633141
++       entry .communicable   それぞれの理由をメッセージとして描画する
++     entry #reason   失敗した理由
+
+@ 0 5 0 076c22b4c81e63e70f23d3fe7932e896
++ entry .dns   `dns"…"` 補間子：コンパイル時に検査される、プレゼンテーション形式の DNS 名
++     `dns"_fury._tcp.local"` は `Dns.Name` であり、`Dns.Name.parse` と同じように（`\.`、`\\`、`\DDD` のエスケープと、省略可能な末尾のドットを含めて）パースされる。
++     制限を破る名前は、`Dns.Error` のメッセージを伴うコンパイルエラーになる。
++     埋め込みは受け取らない。
++     `urticose.dns` で宣言されている。
+
+% 2 1 0 11cc73c3be6303b90bb6a25a9680e2c7
+
+% 3 1 0 0ef745c407160a090c252c4d47e203a5
+
+% 0 1 0 0683171193bbc92618098c8d54c8cb76
+
+% 0 1 0 0dd7c140342040f8007a90f8b1807fc7
+
+% 1 1 0 19ad9d0e9ce9a97515c8b9d94246070f
+
+@ 0 4 0 07cfcd2972ac5e781add22ffbd93db82
++ entry .dnsName   `Dns.Name` としての `Hostname`。ラベルごとに対応する
++     `urticose.dns` にある `Hostname` の拡張メソッドであり、`host"example.com".dnsName` は `dns"example.com"` である。
++     ホスト名のラベルはすでに DNS の制限を満たしているので、失敗しない。
+
+@ 0 4 0 0ced32729e7a45a81466d5294539c9a9
++ entry .reverseName   アドレスの逆引き用 `PTR` レコードの所有者名
++     `urticose.dns` にある `Ipv4 | Ipv6` の拡張メソッドである。
++     IPv4 アドレスならそのオクテットを逆順にして `in-addr.arpa` の下に置き（RFC 1035 §3.5）、IPv6 アドレスなら 32 個のニブルを逆順にして `ip6.arpa` の下に置く（RFC 3596 §2.5）。
+
+% 2 1 0 18702b8e52df3618168eae4fac78e5eb
+
+% 3 1 0 087557458d6605d5054d400af56bea95
+
+% 0 1 0 079ae74708c275ba0de43c5a051c56e1
+
+% 0 1 0 12ccbfcef5310ee614ecdc0fa71e0b49
+
+% 1 1 0 0450d5722f50c807006b0bbdd2fa0ea2
+
+@ 0 1 0 1cc76623e463e30516bee9143eff3c64
++ entry .internal   不透明型の本拠と、中核の補間子を支えるマクロの実装
+
+% 1 1 0 1a42ac50b5b377ae16b4ea3116aaba65
+
+% 2 1 0 0e3ad6ea5e83208115ecdb3d7165823d
+
+@ 0 7 0 1e38ba6f372a1dcd0abe20c18540f2d7
++       直接使うためのものではない。
++       このオブジェクトが存在するのは、不透明型 `Ipv4`、`MacAddress`、`DnsLabel`、`Port`（`Opaques` 内）、ケースクラス `Ipv6`、`Ipv4Subnet`、`Ipv6Subnet`、およびそれらの拡張メソッドに、不透明型の表現が見える安定した本拠を与え、マクロにも本拠を与えるためである。
++       型は `urticose` パッケージにエクスポートされ、そのページはそこにある。ここで宣言された拡張メソッドは、接頭辞の暗黙のスコープを通じてそれらの型の上で解決される。
++   entry .Opaques   不透明型 `Ipv4`、`MacAddress`、`DnsLabel`、`Port` とその拡張メソッド
+
+% 1 1 0 19980b02783fadc7149cdcd1a2cd9048
+
+% 2 1 0 11d74cb157dd73d406f56c6d28d17862
+
+@ 0 3 0 0a9e1026120f072419ae97e20ff07742
++         各型の完全な説明は `urticose` パッケージの下のページにある。
++         型の拡張メソッドは、不透明型の定義と並べてここで宣言されている。
++     entry .Ipv4   `Int` の上の IPv4 アドレス。`urticose.Ipv4` を参照
+
+% 1 1 0 07fd6f90997ca3f5127001531b2761a1
+
+@ 0 20 0 0d8d35e5e21bab640ffdd3cda64d4789
++           不透明型 `Ipv4` のコンパニオンであり、型とともに `urticose` パッケージにエクスポートされる。
++       entry .underlying   汎用の仕組みのために、不透明型の表現 `Int` を宣言する
++       entry .showable   アドレスをドット区切りの四つ組の形式、`192.168.0.1` で描画する
++       entry .inspectable   デバッグ用の描画。ドット区切りの四つ組の形式
++           ドット区切りの四つ組の表記は、一目で IPv4 アドレスとわかる。
++           このインスタンスがなければ、アドレスはイレイジャ後の `Int` として検査用に表示されてしまう。
++       entry .encodable   アドレスをドット区切りの四つ組のテキストとしてエンコードする
++       entry .decodable   ドット区切りの四つ組のテキストからアドレスを読み取り、`IpAddress.Error` を発生させる
++           `Tactic[IpAddress.Error]` を必要とし、given はそれをキャプチャする。
++           ドットで区切られた四つのグループが必要であり（`Ipv4WrongNumberOfGroups`）、それぞれが範囲 0–255（`Ipv4ByteOutOfRange`）の数（`Ipv4ByteNotNumeric`）でなければならない。
++       entry .dataEncodable   アドレスをネットワークバイト順の四つのオクテットとしてエンコードする
++       entry .dataDecodable   四つのオクテットからアドレスを読み取り、そうでなければ `IpAddress.Error` を発生させる
++           長さが 4 でない任意の `Data` に対しては `Ipv4WrongNumberOfBytes`。
++       entry .Localhost   ループバックアドレス `127.0.0.1`
++       entry .apply   四つのオクテット、またはパックされた `Int` からのアドレス
++           `Ipv4(192, 168, 0, 1)` は四つのオクテットをパックする（それぞれ下位 8 ビットにマスクされる）。
++           `Ipv4(int)` は、`Ipv4#int` が生成するようなパックされた整数を再解釈する。
++       entry .parse   `.decodable` と同じように、ドット区切りの四つ組のテキストからアドレスを読み取る
++     entry .MacAddress   `Long` の上の MAC アドレス。`urticose.MacAddress` を参照
+
+% 1 1 0 146bce51f4d2deec17eb14bed8c1e623
+
+@ 0 14 0 0efef39a8272da84186cc791767c2df9
++           不透明型 `MacAddress` のコンパニオンであり、型とともに `urticose` パッケージにエクスポートされる。
++       entry .underlying   汎用の仕組みのために、不透明型の表現 `Long` を宣言する
++       entry .showable   アドレスを、`-` でつないだ小文字の十六進数の六つの組として描画する
++       entry .inspectable   デバッグ用の描画。同じダッシュ区切りの形式
++       entry .encodable   アドレスをダッシュ区切りのテキストとしてエンコードする
++       entry .decoder   ダッシュ区切りのテキストからアドレスを読み取り、`MacAddress.Error` を発生させる
++           `Tactic[MacAddress.Error]` を必要とし、given はそれをキャプチャする。
++           ライブラリの他のテキストデコーダーは `decodable` という名前だが、この given は `decoder` という名前である。
++       entry .apply   六つのバイト、またはパックされた `Long` からのアドレス
++           `MacAddress(b0, b1, b2, b3, b4, b5)` は六つのバイトをパックする。0x80 以上のバイトが符号拡張されないよう、それぞれマスクされる。
++           `MacAddress(long)` はパックされた値を再解釈する。
++       entry .parse   `.decoder` と同じように、ダッシュ区切りのテキストからアドレスを読み取る
++       entry .Error   テキストが有効な MAC アドレスでないときに発生する
+
+% 1 1 0 08961d9dd75ad0c91d5ddd50c457d629
+
+@ 0 3 0 008c610f881cbd0f14e1bc5ec88d67bd
++             エラー `↯/s.100.7`：_the MAC address is not valid because `reason`_。
++             `as[MacAddress]` によって発生し、`mac"…"` ではコンパイルエラーとして発生する。
++         entry .Reason   MAC アドレスが拒否された理由
+
+% 0 1 0 1ade9f18ff80d576106ab46722e690f6
+
+@ 0 6 0 0d63fcb1884c998f0c12907a09898b36
++               ダッシュで区切られたグループが六つでなければ `WrongGroupCount(count)`、グループが二文字でなければ `WrongGroupLength(group, length)`（グループは 0 から数える）、グループが十六進数でなければ `NotHex(group, content)` である。
++           entry .communicable   それぞれの理由をメッセージとして描画する
++         entry #reason   アドレスが拒否された理由
++     entry .DnsLabel   `Text` の上のホスト名のラベル。`urticose.DnsLabel` を参照
+
+% 1 1 0 01ef36afdd4bd58c09cd5359be9d9a82
+
+@ 0 5 0 1db5a5b8b7dae74c1caf762d55b7261d
++           不透明型 `DnsLabel` のコンパニオンであり、型とともに `urticose` パッケージにエクスポートされる。
++       entry .showable   ラベルをそのテキストとして描画する
++       entry .apply   テキストを検査せずにラベルとして包む
++     entry .Port   `Int & Port.Type` の上のポート。`urticose.Port` を参照
+
+% 1 1 0 179ba6623bdf7fb704cac98ab4e30757
+
+@ 0 25 0 0141228795f8b68b131cda412bdd7c7d
++           不透明型 `Port` のコンパニオンであり、型とともに `urticose` パッケージにエクスポートされる。
++       entry .underlying   汎用の仕組みのために、不透明型の表現 `Int` を宣言する
++       entry .showable   ポートをその番号として描画する
++       entry .encodable   ポートをその番号のテキストとしてエンコードする
++       entry .inspectable   デバッグ用の描画、`⌗8080`。どの細分化のポートにも使える
++           `Port` のすべての部分型に対してパラメーター化されている。ポートは日常的に二度以上細分化され（`Port over Tcp of 25`）、型クラスの `Self` は非変だからである。
++       entry .showableOver   トランスポートで細分化された `Port over transport` を、その番号として描画する
++           `Self` は非変なので、`.showable` と並んで必要になる。裸のインスタンスは `Port over Tcp` を扱わない。
++           さらに細分化されたポート `Port over Tcp of 25` はどちらにも扱われず、表示するとその `toString` に戻ってしまう。確実な形は `number.show` である。
++       entry .decodable   番号のテキストからポートを読み取り、`Number.Error` または `Port.Error` を発生させる
++           数でないテキストのために `Tactic[Number.Error]` を、1–65535 の範囲外のもののために `Tactic[Port.Error]` を必要とする。
++           結果は細分化されていない `Port` である。
++       entry .unsafe   範囲を検査せずに、数を `Port over transport` にキャストする
++           すでに番号を検査済みの補間子のマクロのためのものである。検査を行う形は `.apply` である。
++       entry .apply   `Port[Tcp](8080)` は検査済みのポート番号、`Port[Tcp]()` はシステムが未使用と報告するもの
++           `Port[transport](number)` は、番号が 1–65535 の範囲になければ `Port.Error` を発生させる。トランスポートは明示的に与えるか、期待される型から推論される（`val p: Udp.Port = Port(53)`）。
++           `Port[transport]()` は `transport is Allocatable`（`Tcp.allocatable` または `Udp.allocatable`。`Quic` 用のものはまだない）を必要とし、その種類の探査用ソケットをバインドしてから解放することで一時的なポートを見つける。したがって結果は直前には空いていたが、予約されてはいない。
++       entry .Error   ポート番号が 1–65535 の範囲外のときに発生する
+
+% 1 1 0 02fb0a4a6a813b001142a88a542fdf95
+
+@ 0 4 0 1eda7a6bea0b07611c9c98a82a2fe4a4
++             エラー `↯/s.100.3`：_the port is not in the valid range_。
++             `Port[transport](number)` と、テキストからのポートのデコードによって発生する。補間子 `tcp"…"` と `udp"…"` は、範囲外の番号を代わりにコンパイルエラーとして報告する。
++       entry .Type   `Port` の構造的な上限：それを細分化する型メンバー
+
+% 1 1 0 13e805f1c0b3f4ed1df0098068306395
+
+@ 0 18 0 12e02c1d4f569de014cf6634d752d97b
++             二つの型メンバーを持つシールされたトレイトであり、`Port over Tcp of 25` は `prepositional` の `over` と `of` による細分化を通じてそれらを設定する。
++         entry #Transport   プロトコル：`Tcp`、`Udp`、`Quic`、…
++         entry #Topic   コンパイル時に番号がわかっているポートの、リテラルのポート番号
++     entry .number   `Port` の番号
++     entry .privileged   `Port` が 1024 未満かどうか
++     entry .byte0   `MacAddress` の最初のバイト、または `Ipv4` の最初のオクテット
++     entry .byte1   `MacAddress` の二番目のバイト、または `Ipv4` の二番目のオクテット
++     entry .byte2   `MacAddress` の三番目のバイト、または `Ipv4` の三番目のオクテット
++     entry .byte3   `MacAddress` の四番目のバイト、または `Ipv4` の四番目のオクテット
++     entry .byte4   `MacAddress` の五番目のバイト
++     entry .byte5   `MacAddress` の六番目のバイト
++     entry .text   `DnsLabel` のテキスト、または六つのダッシュ区切りの十六進数の組としての `MacAddress`
++     entry .long   パックされた `Long` としての `MacAddress`
++     entry .subnet   `ipv4.subnet(size)`：プレフィックス長の `Ipv4Subnet`。ホストビットはマスクされる
++     entry .int   パックされた `Int` としての `Ipv4`
++   entry .subnetPrefix   サブネットのパーサーのために、テキストからサブネットのプレフィックスを読み取り、範囲を検査する
++   entry .Ipv4Subnet   IPv4 サブネット。`urticose.Ipv4Subnet` を参照
+
+% 1 1 0 0925a2e3c4b469be0fbc72f2da5345ae
+
+@ 0 12 0 16b46de20ed5e2e40834c82aa1ae8bd9
++         ケースクラス `Ipv4Subnet` とそのコンパニオンであり、`urticose` パッケージにエクスポートされる。
++     entry .showable   サブネットを `address/prefix` として描画する
++     entry .inspectable   デバッグ用の描画。表示形式と同じ
++     entry .encodable   サブネットを `address/prefix` のテキストとしてエンコードする
++     entry .decodable   `address/prefix` のテキストからサブネットを読み取り、`IpAddress.Error` を発生させる
++         `Tactic[IpAddress.Error]` を必要とする。`/` がちょうど一つでなければ `SubnetWrongFormat`、`SubnetPrefixNotNumeric`、32 を超えれば `Ipv4SubnetPrefixOutOfRange`、およびアドレス自身の理由がある。
++     entry .parse   `.decodable` と同じように、テキストからサブネットを読み取る
++     entry #ipv4   ネットワークアドレス。ホストビットはゼロにマスクされる
++     entry #size   プレフィックス長、0–32
++   entry .Ipv6   IPv6 アドレス。`urticose.Ipv6` を参照
+
+% 1 1 0 02c90a0d635026a0193e8e5fda8d0d43
+
+@ 0 33 0 0f09d5513814adad191e1b5d8a0e9f42
++         ケースクラス `Ipv6` とそのコンパニオンであり、`urticose` パッケージにエクスポートされる。
++     entry .Localhost   ループバックアドレス `::1`
++     entry .dataEncodable   アドレスをネットワークバイト順の十六個のオクテットとしてエンコードする
++         上位の八つのオクテットは `#highBits` であり、`Ipv6.apply` が最初の四つのグループをパックするとおりである。
++     entry .dataDecodable   十六個のオクテットからアドレスを読み取り、そうでなければ `IpAddress.Error` を発生させる
++         長さが 16 でない任意の `Data` に対しては `Ipv6WrongNumberOfBytes`。
++     entry .hostShowable   `Host` を描画する：ホスト名と IPv4 アドレスはそのまま、IPv6 アドレスは角括弧で囲む
++         ユニオン `Hostname | Ipv4 | Ipv6` のための `Showable` であり、ユニオンにはコンパニオンがないのでここに置かれている。
++         IPv6 アドレスは `[2001:db8::1]` として描画される。これは URL のオーソリティでの形である。
++     entry .hostDecodable   テキストから `Host` を読み取る：IPv6 アドレス、次に IPv4、次にホスト名
++         それぞれを順に試し、テキストがどれでもなければ `Hostname.Error` を発生させる。`Tactic[Hostname.Error]` を必要とする。
++     entry .decodable   コロン区切りの十六進数のテキストからアドレスを読み取り、`IpAddress.Error` を発生させる
++         `Tactic[IpAddress.Error]` を必要とする。
++         理由は次のとおりである。八つのグループを持たない完全なアドレスには `Ipv6WrongNumberOfGroups`、七つを超えるグループを持つ `::` アドレスには `Ipv6TooManyNonzeroGroups`、`Ipv6MultipleDoubleColons`、四桁を超えるグループには `Ipv6GroupWrongLength`、そして `Ipv6GroupNotHex`。
++     entry .toExpr   アドレスを組み立てるマクロのために、アドレスをクォートされた式に持ち上げる
++     entry .showable   アドレスを最短の形式で描画し、最長のゼロの連続を `::` にする
++         各グループは先頭のゼロを除いた小文字の十六進数である。二つ以上のゼロのグループの最長の連続は `::` に縮められるので、`::1`、`8::`、`::` はそれぞれループバック、最初のグループだけが設定されたアドレス、未指定のアドレスである。
++     entry .inspectable   デバッグ用の描画。同じ最短の形式
++     entry .apply   八つの 16 ビットのグループからのアドレス
++         `Ipv6(g0, g1, g2, g3, g4, g5, g6, g7)`。各グループは 16 ビットにマスクされる。
++         ケースクラスのコンストラクター `Ipv6(highBits, lowBits)` は、パックされた二つの半分を受け取る。
++     entry .parseGroup   一桁から四桁の十六進数からなる一つのグループを読み取り、`IpAddress.Error` を発生させる
++     entry .pack   16 ビットのグループのリストを、上位のグループを先にして `Long` にパックする
++     entry .parse   `.decodable` と同じように、テキストからアドレスを読み取る
++     entry #highBits   最初の四つのグループを `Long` にパックしたもの
++     entry #lowBits   最後の四つのグループを `Long` にパックしたもの
++   entry .Ipv6Subnet   IPv6 サブネット。`urticose.Ipv6Subnet` を参照
+
+% 1 1 0 1553303141c2fd4419c9ad37c94d6ba3
+
+@ 0 21 0 0dfd271d67f43d8c1f9eb21e00789c0f
++         ケースクラス `Ipv6Subnet` とそのコンパニオンであり、`urticose` パッケージにエクスポートされる。
++     entry .showable   サブネットを `address/prefix` として描画する。アドレスは最短の形式
++     entry .inspectable   デバッグ用の描画。表示形式と同じ
++     entry .encodable   サブネットを `address/prefix` のテキストとしてエンコードする
++     entry .decodable   `address/prefix` のテキストからサブネットを読み取り、`IpAddress.Error` を発生させる
++         `Tactic[IpAddress.Error]` を必要とする。`SubnetWrongFormat`、`SubnetPrefixNotNumeric`、128 を超えれば `Ipv6SubnetPrefixOutOfRange`、およびアドレス自身の理由がある。
++     entry .parse   `.decodable` と同じように、テキストからサブネットを読み取る
++     entry #ipv6   ネットワークアドレス。ホストビットはゼロにマスクされる
++     entry #size   プレフィックス長、0–128
++   entry .bytes   `Ipv4 | Ipv6` のオクテットをネットワークバイト順で、四つまたは十六個、`Data` として
++       given はユニオンを対象にできないので、ユニオンの上の一つの拡張メソッドである。したがって、どちらのアドレス単独でも、`Host` のようなユニオンでも解決される。
++   entry .subnet   `ipv6.subnet(size)`：プレフィックス長の `Ipv6Subnet`。および `subnet"…"` を支えるマクロ
++   entry .emailAddress   `email"…"` を支えるマクロ
++   entry .hostname   `host"…"` を支えるマクロ
++   entry .portService   `tcp"…"` と `udp"…"` を支えるマクロ：番号または IANA のサービス名からポートへ
++       求められたトランスポートについて、クラスパスのリソースとして同梱されたサービス名の表（リソースがなければ IANA から取得する）で名前を引く。
++   entry .ip   `ip"…"` を支えるマクロ
++   entry .mac   `mac"…"` を支えるマクロ
+
+@ 0 1 0 148ef2de2d89e65103136147b2e4677e
++ entry .protointernal   `url"…"` 補間子を支えるマクロと実行時の仕組み
+
+% 1 1 0 1026d432f08f517f06f0bf0d76655702
+
+% 2 1 0 1818919b01b074c303100fc505a3328a
+
+@ 0 8 0 053688a3bd60810519607f8c6327ebd2
++       直接使うためのものではない。
++       `refined` がマクロであり、コンパイル時にプレースホルダーの埋め込みでリテラルを検査し、実際の値でパースする実行時のコードをスプライスする。その型はリテラルが示すスキームになる。
++       `Runtime` はスプライスされたコードが呼び出す補間子の状態機械であり、`UrlInterpolatorError` は埋め込まれた値が URL を不正にしたときにそれが投げるものである。
++   entry .UrlInterpolatorError   実行時の埋め込みが URL を不正にしたときに投げられる
++     entry #detail   メッセージ
++   entry .Runtime   補間子の状態機械：パース、埋め込み、挿入、完了
+
+% 1 1 0 1f942c3d1a78851902b56b31d7ee9cbf
+
+% 2 1 0 0dbe27a02fc88e34030e533a09571be6
+
+@ 0 8 0 1dbb1349f01f1c3400214bc21ba1c3b2
++         直接使うためのものではない。`url"…"` のスプライスされたコードが呼び出すメソッドである。
++     entry .initial   空の状態
++     entry .parse   リテラルの部分を追加する
++     entry .skip   既知のプレースホルダーを持たない埋め込みの代わりになる
++     entry .substitute   コンパイル時に、埋め込みの代わりにそのプレースホルダーを置く
++     entry .insert   `Url.Fragment` をスプライスする：コロンの後のポート、またはエンコードされたテキストか生のテキスト
++     entry .complete   蓄積したテキストを `Url[Label]` としてパースする
++   entry .refined   `url"…"` を支えるマクロ

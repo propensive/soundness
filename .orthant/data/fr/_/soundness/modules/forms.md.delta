@@ -1,0 +1,170 @@
+orthant 2 language
+
+@ 0 1 0 168196334f18aeaf07cb0c1a1f564eb7
++ ## Formulaires
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 5 0 08588ae0d9ef15990daa04173dee371d
++ Un formulaire HTML est une interface utilisateur pour un type de données, et il est ici
++ généré à partir du type lui-même. Une case class produit un formulaire, avec un champ de
++ saisie étiqueté pour chaque champ, et un widget choisi selon le type du champ. Une soumission
++ est décodée en retour vers la case class, et tout échec de validation est rattaché aux champs
++ qui l'ont causé. Les case classes imbriquées deviennent des fieldsets imbriqués : le
++ formulaire reflète ainsi la structure des données.
+
+@ 0 1 0 15f16e187bbdbbea0f18b2a2bd3d617f
++ ### À propos des formulaires
+
+@ 0 4 0 082e8dfc91e0c5ff13f596c998cd5fcd
++ Dans la plupart des applications web, les formulaires sont écrits deux fois : une fois sous
++ forme de champs de saisie HTML, et une seconde fois sous forme d'analyse et de validation de
++ ce qui revient. Les deux moitiés sont maintenues cohérentes à la main. Chaque modification
++ des données, comme un nouveau champ, un champ renommé ou un type plus strict, doit être
++ faite des deux côtés, sans quoi le formulaire s'éloigne des données qu'il prétend recueillir.
+
+@ 0 5 0 0db0c9b7b69fe4100dfd3821c7be49b0
++ [Dériver][dérivation] les deux moitiés d'un seul type supprime la duplication. Le type dit
++ quels champs existent, et ce que chacun accepte. Les widgets découlent des types des champs.
++ Le décodage d'une soumission applique les mêmes types validés qui régissent le reste du
++ programme : une adresse email mal formée échoue donc au niveau du formulaire, avec un
++ message qui désigne le champ de l'email. C'est la
++ [correction](../../philosophy/correctness.md) par une source unique de vérité.
+
+@ 0 2 0 08f142c6dc6fdbb31f394564d8004d95
++ Tout provient du package `soundness`. Le dernier import permet aux exemples d'afficher leurs
++ résultats :
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1e6efd6ba2ee26271b8f1afe03e46881
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 11705d700f7701241eee627da978f20c
++ ### Rendu d'un formulaire
+
+@ 0 2 0 0e4939c0d018e7e81b9d6e44ecfff070
++ `elicit` rend le formulaire d'un type en [HTML](html.md), prêt à être servi. `edit` le rend
++ prérempli à partir d'une valeur existante :
+
+% 2 1 0 06d9a77898a98e6a0a35b6a4b819f492
+
+% 0 1 0 12c5781411ce8df600e42adec8d9409a
+
+% 0 1 0 031ae47311cf570d05242c937cd26044
+
+% 0 1 0 056f45d0b43bf51c18c4106f79ba8dce
+
+% 1 1 0 13394f7d3bb5ce75081757cd69aedbb6
+
+% 3 1 0 196e46597aed5264050269039a58f407
+
+% 4 1 0 0a3fff44615041250391fc1c43867b53
+
+% 5 1 0 06557776e30687911c0bd6de7d03a269
+
+% 0 1 0 0f763904aac3ceb60224537300dba089
+
+% 1 1 0 128014851ed987600c44f207ebd5a698
+
+@ 0 3 0 172b600f6b9547b70c1dfd1f238f3525
++ Chaque champ apparaît avec une étiquette dérivée de son nom : `leader` devient ainsi
++ « Leader ». Une case class imbriquée devient un `<fieldset>` avec une légende, de sorte que
++ la structure du formulaire s'explique d'elle-même.
+
+@ 0 1 0 10e8abd500d5355b0925b24afd5fd462
++ Le widget de chaque champ est choisi selon son type :
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 8 0 1defa8d3e435786b08920c5593302973
++ column  Type du champ
++ column  Widget
++ column  Rendu
++ row  `Boolean`  `Checkbox`  une case à cocher
++ row  une énumération  `Combobox`  un champ texte avec une `<datalist>` des cas
++ row  `Reference[entity]`  `Dropdown`  un `<select>` des entités listées
++ row  tout autre type encodable en `Text`  `Field`  un champ texte
++ row  une case class  aucun  un `<fieldset>` de ses champs
+
+% 1 1 0 17ea37663dc0fb811160659a806c506f
+
+@ 0 1 0 0c0fdb72612479f50276d42f14943021
++ ### Soumissions
+
+@ 0 2 0 093fc17af4a0d9df0ee2617e63fb5666
++ Une soumission arrive sous la forme d'une `Query` : les paires de clés et de valeurs d'un
++ envoi de formulaire, dans lesquelles les champs imbriqués sont pointés, comme dans
++ `leader.name`. `as` la décode vers le type :
+
+% 2 1 0 1e70a100b748aa0b17f03d2c62926625
+
+% 0 1 0 05b3aa41a0ab130d187cb0a15f3e4431
+
+% 1 1 0 00d57f922281f0f0184c31a573d1c23b
+
+% 3 1 0 0ddf4497666b8bd61acc490efcc640d0
+
+% 4 1 0 08c642ac7577858b00e6c5feecc7908b
+
+% 5 1 0 12c5b75ff2dca513076da2ab2543b5b5
+
+% 0 1 0 0389b82f3f45bad10a681078ab116323
+
+% 1 1 0 0742dd1918a8d4be16a5ea6fc9d7d0cb
+
+@ 0 5 0 01d7a5377e924a8617f2480d829c29b2
++ Les champs sont décodés par les mêmes types que ceux utilisés partout ailleurs. Une
++ [`EmailAddress`](network-addresses.md#email-addresses) doit pouvoir être analysée, et un
++ [`Name`](names.md) doit respecter ses règles. La validation d'un formulaire n'est donc pas un
++ ensemble de règles à part. C'est le système de types qui fait son travail habituel à la
++ frontière, et un échec porte une référence vers le champ fautif :
+
+% 2 1 0 0e48b76268981a0b1241289de9854127
+
+% 3 1 0 19cca74033a2c71419bec283d8e506dd
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 013f911a420f94a7158aa0945de503f7
+
+% 1 1 0 1da2f77fbd8f251c13e3d03b864f6422
+
+@ 0 2 0 12d7d5af045f553e0a7032812eedc801
++ [Le décodage](decoding.md#requiring-a-value) explique comment le type d'un champ détermine
++ si ce champ est obligatoire.
+
+@ 0 1 0 06721b11e346cde9170c88e0b8a8fb07
++ ### Le cycle du formulaire
+
+@ 0 3 0 14628e26c9c075c11e295da695ca7bb7
++ Un formulaire est une boucle : rendu, soumission, puis nouveau rendu avec les erreurs,
++ jusqu'à ce que la valeur soit complète. `elicit` prend la `Query` soumise et l'état de la
++ validation, de sorte que le formulaire rendu à nouveau montre ce qui a été saisi, avec les
++ fautes rattachées à leurs champs.
+
+@ 0 3 0 167ec85cb404b0960fafe02742978202
++ Un gestionnaire de [serveur](http-server.md#responses) exécute la boucle, en décodant en cas
++ de succès et en rendant à nouveau en cas d'échec. Il manipule donc des valeurs, et non des
++ requêtes. Le [client HTTP](http-client.md#posting-a-body) envoie une `Query` comme
++ soumission de formulaire.
+
+@ 0 1 0 10469fddfe7d0c78174a62c9cf8fb5f3
++ ### Personnaliser l'apparence
+
+@ 0 4 0 1b560c673a3b18ad1deeafbfb47931d7
++ La manière dont un formulaire et ses lignes sont rendus est une `Formulation` : le cadre
++ autour des widgets, et le placement des étiquettes et des messages d'erreur.
++ `postFormulation` fournit un rendu simple, sans style. Une application fournit le sien,
++ adapté à son design, sans toucher à la manière dont les champs sont dérivés. [CSS](css.md)
++ met en forme le résultat.

@@ -1,0 +1,175 @@
+orthant 2 language
+
+@ 0 1 0 0358872660e6faa409dcd901a28eaf0f
++ # Dokumentation und Erlernbarkeit
+
+@ 0 5 0 1aa4b69c31a4451302d427c9d596b1d5
++ Dokumentation gehört zur Sicherheit. Eine undokumentierte API lädt zum Raten ein, und durch
++ Raten entstehen überraschende Fehlschläge – bei Menschen und, noch deutlicher, bei KI-Agenten,
++ die selbstsicher alles ergänzen, was die Dokumentation verschweigt. Der Maßstab ist vollständige
++ Abdeckung: jedes Modul dokumentiert, jeder Fehlercode erklärt, jede neuartige Idee spezifiziert
++ und jede Meldung nach einer schriftlich festgehaltenen Konvention verfasst.
+
+@ 0 9 0 1723ba1cd99058ba0fdd50aaa077dd16
++ Die Prosa existiert heute in drei parallelen Systemen: den Themenleitfäden in `doc/en/modules/` –
++ der Richtung, in die es geht, und dem Ort, an dem das Wesentliche geschrieben wird –, den
++ veralteten modulweisen Vorlagen in `lib/*/doc/`, geerbt aus der Zeit, als jedes Modul ein
++ eigenes Repository war, und einer separaten Kopie des Philosophie-Materials unter
++ `web/res/content/`. Drei Systeme bedeuten Abweichung, und Abweichung bedeutet, dass eines von
++ ihnen lügt. Diese Spur führt sie zu einem zusammen, vervollständigt die Abdeckung und ergänzt
++ die Schicht, die Prosa nicht liefern kann: generierte, durchsuchbare API-Dokumentation –
++ Infrastruktur, auf die auch fluence und die aus der API abgeleitete Versionierung von LIRA
++ angewiesen sind. Sie endet mit dem stärksten Test der Erlernbarkeit, den es gibt: Ein Agent,
++ dem nur die Dokumentation vorliegt, baut eine funktionierende Anwendung und stellt sie bereit.
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ Die Punkte der Spur, mit ihren Horizonten und harten Abhängigkeiten; [`status.tel`](status.tel) hält fest, wo jeder steht:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 12 0 1e1723c8910fe58608679e2f10af8e11
++ column  Punkt
++ column  Titel
++ column  Horizont
++ column  Benötigt
++ row  doc-1  jeder Fehlertyp hat einen Code und eine Seite  nah
++ row  doc-2  der Standard für Meldungen ist geschrieben  nah
++ row  doc-3  die veralteten Dokumentationssysteme werden abgelöst  nah
++ row  doc-4  jedes Modul ist durch ein Thema abgedeckt  mittel
++ row  doc-5  API-Dokumentation wird generiert und veröffentlicht  mittel
++ row  doc-6  die Website leitet sich aus `doc/` ab  mittel
++ row  doc-7  neuartige Ideen sind einen Schritt entfernt  fern
++ row  doc-8  der Rundgang  fern  tool-2, tool-4
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 088d38de12cb74151b1461e9ac2f6ca0
++ ## doc-1: jeder Fehlertyp hat einen Code und eine Seite
+
+@ 0 2 0 17d7c44780401f8b1f8c498157714b45
++ Horizont: nah
++ Ausgangswert: 41 Fehlertypen tragen keinen Bolt-Code; es gibt 247 Fehlerseiten (gemessen am 2026-10-21; 40 und 241 am 2026-09-25; 39 und 233 am 2026-08-01)
+
+@ 0 3 0 1e3b6eb02bb2fb540217d4d349a13903
++ Die Bolt-Codes decken die von Makros ausgelösten Kompilierfehler ab; die übrigen Fehlertypen
++ der Laufzeit erhalten Codes und Seiten nach derselben Regel, nie etwas wiederzuverwenden, und die
++ Übereinstimmung zwischen Typen, Codes und Seiten wird zu einer CI-Prüfung, damit sie nicht
++ auseinanderdriften kann. Noch prüft nichts in `etc/` diese Übereinstimmung.
+
+@ 0 1 0 1e10bdcf95bed4aa128a9f1ce07e87ce
++ Erledigt, wenn: die Übereinstimmungsprüfung in CI läuft und
+
+% 0 1 0 1bdf33953eae45dc1c2f5b884dbb8f33
+
+@ 0 1 0 0c7a7d2a401bbbd21b0119d42a3bc1bb
++ ## doc-2: der Standard für Meldungen ist geschrieben
+
+@ 2 1 0 17ab2720867ae8111d9d599f47d28d50
++ Erledigt: #2306 (2026-10-21)
+
+@ 0 3 0 1428b21c265c30b913cda163dc81d49d
++ `doc/standards/messages.md` war nach eigener Aussage ein Platzhalter, obwohl die Konvention für
++ Meldungen in jedem Modul tragend ist. Der Standard ist nun geschrieben: Register, Aufbau,
++ Vokabular, was eine Meldung nicht enthalten darf, Komposition über `Communicable` und
++ Log-Ereignisse.
+
+@ 2 1 0 03f202f8bf010c101dd08021ad543252
++ Erledigt, wenn:
+
+% 0 1 0 0dba55afda5b5758005ab4659f4df53c
+
+@ 0 1 0 0c9927a8b037ae271c8e087c8ab10f12
++ ## doc-3: die veralteten Dokumentationssysteme werden abgelöst
+
+@ 0 5 0 1093e7c0e6b946dd05516daccac71e83
++ Erledigt: #1791 (2026-08-14)
++ Der Ausgangswert waren 92 Dateien mit modulweisem Readme-Boilerplate und 98 Verzeichnisse
++ `lib/*/doc/` (gemessen am 2026-08-01). Das Boilerplate stammte aus der Zeit vor dem Monorepo;
++ was in `lib/*/doc/` erhaltenswert war, wanderte in Themen unter `doc/modules/`, und der Rest
++ wurde gelöscht, statt weiter in die Irre zu führen. Kein Verzeichnis `lib/*/doc/` ist übrig,
++ und die Boilerplate-Phrase findet keine Treffer mehr.
+
+@ 0 1 0 0900a5ddb113209d1354b00d82edbee4
++ ## doc-4: jedes Modul ist durch ein Thema abgedeckt
+
+@ 0 2 0 197393089856cb5c0f2509c3bbcd6fd5
++ Erledigt: #2306 (2026-10-21)
++ Der Ausgangswert waren 99 Themen in `doc/modules/` und 1 von 144 Bibliotheken ohne Abdeckung (gemessen am 2026-09-25; 91 Themen und 35 ohne Abdeckung am 2026-08-01); 101 Themen decken am 2026-10-21 145 von 145 ab
+
+@ 0 5 0 10c607d670b62b8101dae541037747a8
++ Jedes veröffentlichte Modul ist durch mindestens ein Thema in `doc/modules/` abgedeckt, und ein
++ Abdeckungsskript ordnet Module Themen zu, sodass verwaiste Module sichtbar werden:
++ `etc/check-doc-coverage.py`, ausgeführt von `make build`, endet bei einem verwaisten Modul mit
++ einem Exit-Status ungleich null. Das letzte, burdock, wird durch `packaging.md` abgedeckt; der
++ Eintrag in `COVERED_BY`, der dieses Thema für ziggurat nannte (eine Bibliothek, die #1973
++ entfernt hat), nennt nun burdock.
+
+@ 2 1 0 13a1375cd0328fbe1525b12456615af8
++ Erledigt, wenn:
+
+% 0 1 0 1ba62d2089bad9d41967ba24204a3f6c
+
+@ 0 1 0 1cc798e6e2c1e8c61aa3cdb9cfd3b3f5
++ ## doc-5: API-Dokumentation wird generiert und veröffentlicht
+
+@ 0 2 0 03ba7b62e48036560475cb2eba36751b
++ Horizont: mittel
++ Ausgangswert: Jedes veröffentlichte `docJar` ist leer – `build.mill` überschreibt die Aufgabe so, dass sie ein leeres JAR schreibt (gemessen am 2026-09-25, unverändert seit 2026-08-01)
+
+@ 0 3 0 0c7f063f00f74dd013697a3434dc1109
++ Die Extraktions-Pipeline ist die gemeinsame Grundlage: fluence durchsucht sie (`tool-7`), und
++ die aus der API abgeleitete Versionierung vergleicht sie (`dist-4`). Veröffentlichte
++ API-Dokumentation ist das unmittelbare Lieferergebnis.
+
+@ 0 2 0 1d7cd2efcc0c94871a130646ff65da22
++ Erledigt, wenn: das Dokumentationsartefakt jeder veröffentlichten Komponente nicht leer ist und
++ die API-Dokumentation für jedes Release veröffentlicht wird.
+
+@ 0 1 0 02251824a373debc15f49bd28471c2b0
++ ## doc-6: die Website leitet sich aus `doc/` ab
+
+@ 2 1 0 145e5b98677ee68d1071327f412959a9
++ Horizont: mittel
+
+@ 0 3 0 0c895d7ebf2623bb11579fc074f5b2ef
++ Die Prosa unter `web/res/content/` dupliziert Philosophie-Material von Hand: zehn Seiten, zuletzt
++ in #801 angefasst, jede eine ältere und kürzere Kopie einer Seite aus `doc/philosophy/`. Die
++ Website wird aus `doc/` dargestellt – eine Quelle, keine parallelen Kopien.
+
+@ 0 1 0 1c13dd5d72371e8b1044905d160d2cb9
++ Erledigt, wenn: `web/res/content/` kein von Hand gepflegtes Duplikat einer Seite aus `doc/`
++ enthält.
+
+@ 0 1 0 05112a75a76d057a037f86af8ebaf9cb
++ ## doc-7: neuartige Ideen sind einen Schritt entfernt
+
+@ 2 1 0 1da71cc8a3d2501102512a3a7983010d
++ Horizont: fern
+
+@ 0 3 0 1c487f6f26957dc41d1705e960be1b65
++ Jede neuartige Idee in Soundness – Capture-Checking in der Praxis, durch Separation-Checking
++ geprüfte Veränderlichkeit, begrenzte Geltungsbereiche, deklarierte Fehler – hat eine
++ Philosophie-Seite, und jede API, die die Idee verkörpert, verlinkt darauf. Ein Leser ist nie
++ mehr als einen Schritt von der Erklärung entfernt.
+
+@ 0 2 0 036ddf33fefdc5fc01e4c723c46ef4d0
++ Erledigt, wenn: eine Link-Prüfung sicherstellt, dass jede Philosophie-Seite von den
++ Themenleitfäden der Module referenziert wird, die sie verkörpern, und sie im gewöhnlichen Build
++ läuft.
+
+@ 0 1 0 094c970e32420b4017ae996cd8ad2bb0
++ ## doc-8: der Rundgang
+
+@ 0 2 0 12f719b526ca670611e64c8611bfb812
++ Horizont: fern
++ Benötigt: tool-2, tool-4
+
+@ 0 3 0 011ab0612ca4077f0673854c02ada675
++ Der integrative Test der Erlernbarkeit und das letzte Kriterium des Gates: ein Tutorial ab dem
++ Nullpunkt, das ein Agent von Anfang bis Ende ausführen kann – neues Projekt, Build mit fury,
++ Tests mit fume, Bereitstellung einer Webanwendung für JVM und JavaScript –, allein mit `doc/`
++ und den Werkzeugen des Ökosystems.
+
+@ 0 2 0 087239e290d576c213d6e958e2895253
++ Erledigt, wenn: der Rundgang in CI von einem Agenten ausgeführt wird und der Lauf mit jedem
++ Release festgehalten wird.

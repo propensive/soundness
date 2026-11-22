@@ -1,0 +1,370 @@
+orthant 2 language
+
+@ 0 1 0 02ecc937dbb159b71208afd09a136979
++ ## Ambiente
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 5 0 1f4a0217595030e30da9f9c695495c16
++ Il contesto di un programma è disponibile sotto forma di [valori contestuali][valore contestuale]
++ tipizzati: le sue variabili d'ambiente, le proprietà di sistema della JVM e la directory di lavoro
++ in cui è stato avviato. Leggere una variabile restituisce un valore del tipo che essa dovrebbe
++ contenere: un `Int` dove ci si aspetta un intero, un percorso dove ci si aspetta un percorso. Una
++ variabile non impostata solleva un errore tipizzato. Non restituisce mai un `null` né una stringa
++ vuota.
+
+@ 0 3 0 015f26dff1bbb7000c829477fb8cc651
++ Ogni sorgente di input ambientale è una [capability], fornita come [given]. La dipendenza di un
++ programma dal suo ambiente è quindi visibile nelle sue firme, e un test può passargli un ambiente
++ fisso al posto di quello reale.
+
+@ 0 1 0 0cd6373e452f926a1c374fa2b2758408
++ ### Sull'ambiente
+
+@ 0 5 0 03075a674c05ac7b1d5716868a67c5b5
++ I valori che un programma eredita all'avvio sono, allo stato grezzo, un insieme di stringhe non
++ tipizzate raggiunte tramite chiamate statiche globali. `System.getenv` restituisce una `String` o
++ `null`. Una proprietà che dovrebbe essere un numero arriva come testo. Nulla registra che una
++ porzione di codice dipende dal fatto che una certa variabile sia impostata. La dipendenza è
++ invisibile, e il parsing è lasciato alla correttezza di ciascun chiamante.
+
+@ 0 6 0 03b320b4b5d134b2107de4928afb4bf1
++ Qui ogni sorgente è una capability. Un `Environment`, un `System` e una `WorkingDirectory` sono
++ valori contestuali che un metodo richiede quando legge da essi, così la dipendenza sta nel tipo,
++ come richiedono le [firme oneste](../../philosophy/honest-signatures.md). Ogni lettura è
++ decodificata nel tipo atteso, e fallisce in modo evidente quando manca un valore richiesto. E
++ poiché la capability è un given, sostituire un ambiente controllato, per un test o per isolare un
++ componente in una sandbox, è questione di un import diverso.
+
+@ 0 2 0 11a1ece0411a31510d2d668c2872ebdb
++ Tutto proviene dal package `soundness`. L'ambiente e le proprietà di sistema reali sono forniti
++ da import, e l'ultimo import permette agli esempi di stampare i loro risultati:
+
+% 2 1 0 14a3807827e8d0921cc320532bb7433e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 059ff7877f398f380499306372d8cd5d
++ ### Variabili d'ambiente
+
+@ 0 3 0 0af32cce4486a0a405e09a36f59aafb2
++ Una variabile si legge come membro di `Environment`. Il suo nome si scrive in camel case, e viene
++ tradotto nella forma convenzionale maiuscola con trattini bassi, così `Environment.editor` legge
++ `EDITOR`. Il risultato ha il tipo che la variabile notoriamente contiene, decodificato dal suo
++ testo:
+
+% 2 1 0 1622687a52eca0db15555bd26a895da6
+
+% 3 1 0 09dd93c4b093930502c88e3a5e2426fe
+
+% 4 1 0 09db27c50f51f26b13639ad956ca1963
+
+% 0 1 0 01fb7de4eedb635b1e2169faee540e72
+
+% 0 1 0 05875ba84d77f669016a0911ae2b2153
+
+% 1 1 0 1565295db44408190e6645dd8b567bc7
+
+@ 0 2 0 1a4c3cb60f40553603cec9d2753ddaef
++ Una variabile non impostata solleva un `Environment.Error`. La [strategia] nell'ambito lo
++ trasforma in un'eccezione, in un valore assente o in un fallimento gestito, a scelta del
++ chiamante:
+
+% 2 1 0 005526aacc341e93070f69f1d603de05
+
+% 3 1 0 1dd9aac1ce5b73e712aaf85c09a7e7b7
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 1dd6fbdc73f73ea20de1428bafef190e
+
+% 1 1 0 14159f5d34f7cdc30e5283652bee8098
+
+@ 0 1 0 02498f0f4c0d2bc70bd3a361d1aa1ec7
++ ### Ridefinizione per un blocco
+
+@ 0 4 0 09d4af88062f38c30497c62be36a06aa
++ L'ambiente è una capability, quindi un blocco può essere eseguito con un ambiente diverso. Un
++ `Environment` è una singola funzione, dal nome di una variabile al suo valore
++ [opzionale](optional-values.md). Uno costruito per un test, o che sovrappone delle ridefinizioni
++ all'ambiente reale, richiede poche righe, e un given in un ambito più ristretto ha la precedenza:
+
+% 2 1 0 138ea1627817115f0332fa7b7787290a
+
+% 3 1 0 147f3b0df5e7948b0ca2474de7eec801
+
+% 4 1 0 1d5f65d053b3ce62149218c65a6fdde0
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 033031f22ce2c04c131b7483cf8efa39
+
+% 0 1 0 0087b51859712c2608cc53ba6fb67a42
+
+% 1 1 0 072cb5b236d114051fc277f608e8ff1f
+
+@ 0 5 0 13ff13aa9c7d67f01032cff008ed98e2
++ Sostituire un ambiente completamente diverso rimpiazza ogni ricerca al suo interno.
++ `environments.emptyEnvironment` è uno di questi, e il codice che legge l'ambiente può allora
++ essere esercitato senza dipendere dalla macchina su cui gira. `systems.emptySystem` fa lo stesso
++ per le proprietà di sistema, così nemmeno un test deve dipendere dalla JVM che si trova a
++ eseguirlo. [Test](testing.md) tratta il resto di ciò che serve a un test.
+
+@ 0 5 0 1a79c57c68d77d881b37af5256ef852d
++ I test non sono l'unico caso. Un [demone](daemons.md) residente serve, nel corso della sua vita,
++ invocazioni provenienti da molte shell diverse, ciascuna con il proprio ambiente, e l'ambiente
++ globale della JVM appartiene alla shell che si è trovata ad avviare il demone. Ricevere l'ambiente
++ come capability è ciò che permette di servire ogni invocazione con l'ambiente da cui proviene
++ davvero.
+
+@ 0 4 0 129db9435ba56ff2015a28d047e34c3c
++ `variables` imposta una variabile per un blocco. La variabile si nomina in camel case, e viene
++ impostata nella forma convenzionale maiuscola, così `gitIndexFile` è `GIT_INDEX_FILE`. È impostata
++ sopra l'`Environment` nell'ambito, così un [sottoprocesso](processes.md) eseguito all'interno del
++ blocco la eredita:
+
+% 2 1 0 14e8550b371122631713b6c24a85df20
+
+% 3 1 0 0f67e7573e9ffbc01982fa8b21844203
+
+% 4 1 0 14d9066ba7ff653f1bbaaab438a59449
+
+% 0 1 0 12c41bd8f0a8a87c083c5d2f3853f2d0
+
+% 0 1 0 0197cf45f52c25220823cc6a42dee232
+
+% 1 1 0 0fd3e3b2e98054ab0b2ace85ab89e483
+
+@ 0 1 0 0ed839fb011403a807775b4744f0fa8a
++ ### Proprietà di sistema
+
+@ 0 2 0 09eb88b654cc44b0094ebc3776c88bf8
++ Le due sorgenti si somigliano perché portano in una JVM coppie testuali di chiavi e valori.
++ Differiscono per la loro provenienza e per il modo in cui sono nominate:
+
+% 2 1 0 13f8425e361347c91bed84ca7f8e5658
+
+@ 0 7 0 166f134acec770990b725c61ca0f3bf2
++ column  Sorgente
++ column  Proviene da
++ column  Nominate in
++ column  Per esempio
++ column  Se mancante
++ row  variabili d'ambiente  la shell che ha avviato il processo  maiuscolo  `PATH`, `XDG_CONFIG_HOME`  `Environment.Error`
++ row  proprietà di sistema  argomenti `-D` passati a `java` stesso  minuscolo a punti o camel case  `default.log.directory`  `Property.Error`
+
+% 1 1 0 1d4dcaac7ef68757140a4e8055501f85
+
+@ 0 3 0 1b040e52040c7ea30837920da41841d3
++ Entrambe arrivano come testo, in un formato che solo il programma che le legge conosce. È questo
++ l'argomento a favore della loro [decodifica](decoding.md) in tipi strutturati nel punto in cui
++ vengono lette, anziché passare stringhe verso l'interno.
+
+@ 0 2 0 052c4c47566bf506132320769f497613
++ Una proprietà di sistema si legge tramite `System.properties`. Il suo nome a punti si scrive come
++ un percorso di membri, che termina con un'applicazione. Ogni proprietà è decodificata nel suo
++ tipo naturale:
+
+% 2 1 0 0747710122f72776171fe5727905c923
+
+% 3 1 0 060e573a5d07f6dd1a1dffcb54569acc
+
+% 4 1 0 0501bfd203b798c1112f9bae18bec90d
+
+% 0 1 0 12a1e1bc491721630f04516594eeda1f
+
+% 0 1 0 137db50d2b6d4a601342a6b8ec774e03
+
+% 0 1 0 0064dafdba23f7b00b67264a4a43b6f7
+
+% 1 1 0 092aec3eb777c1fb1d15f73594568c0a
+
+@ 0 2 0 0793ace4eafa190e17b4699158e9f8cb
++ Una proprietà non definita solleva un `Property.Error`, che si gestisce come qualsiasi altro
++ errore.
+
+@ 0 1 0 182fee2537af9aac12dad11599dbe861
++ ### La directory di lavoro
+
+@ 0 4 0 0740a89be5aa137f1f20295a7dc38666
++ La directory in cui un programma è stato lanciato è una capability `WorkingDirectory`. Viene
++ richiesta dove serve, e non letta da una variabile globale. Con
++ `workingDirectories.javaBaseWorkingDirectory` nell'ambito, un metodo che risolve un
++ [percorso](paths.md) relativo rispetto alla directory di lavoro dichiara questa necessità nella
++ sua firma.
+
+@ 0 2 0 12752bb2d3e98e77070575a1ebd23cd8
++ `workingDirectory` fornisce la directory stessa, e `temporaryDirectory` ne fornisce una
++ temporanea. Ciascuna viene risolta nel tipo di percorso richiesto.
+
+@ 0 1 0 0c79b0e645bd89551392f4a70e1320bf
++ ### Directory standard
+
+@ 0 5 0 14151918d5c4235110523d5b3dcb48bd
++ La
++ [specifica XDG delle directory di base](https://specifications.freedesktop.org/basedir-spec/latest/)
++ stabilisce dove vanno i dati, la configurazione, la cache e lo stato di un programma. Rispetta
++ l'ambiente dell'utente dove questo è impostato, e ripiega sui valori predefiniti della specifica
++ dove non lo è. `Xdg` fornisce ciascuna di esse, e i percorsi di ricerca per i dati e la
++ configurazione:
+
+% 2 1 0 098de8c5715a23291d6659f73d12e37f
+
+% 3 1 0 057fd012f73d8b7c05d28005b9ab4e17
+
+% 4 1 0 11b54c9161f7ec600dc0d9e5ee21f89d
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 040e2398c7e282e71d27fecdf295b29f
+
+% 0 1 0 158bf2ea191b01f40ad32bdc36d074df
+
+% 0 1 0 1cc5de73f635c2421a290e57eec26083
+
+% 1 1 0 0918ab30f32f7a531043523f2bfd8870
+
+@ 0 3 0 16c7fadb436e4b5a11ae698a0fd51099
++ `configHome` è `~/.config`, a meno che `XDG_CONFIG_HOME` non indichi altro. Usarli, invece di un
++ `~/.myapp` scritto nel codice, fa finire i file di un programma dove gli strumenti dell'utente per
++ il backup, la sincronizzazione e la pulizia se li aspettano.
+
+@ 0 4 0 1ae741f8dc6565dd0e9082fd49c48b6e
++ Anche la struttura convenzionale di un sistema Unix è tipizzata. `Home` e `Base` sono ciascuno un
++ `BaseLayout`: un albero di oggetti annidati che nominano le directory sotto la home dell'utente e
++ sotto la radice del filesystem. Applicarne uno, con il tipo di percorso come argomento di tipo, lo
++ risolve rispetto all'`Environment` e al `System` nell'ambito:
+
+% 2 1 0 16c95cdda096b18f07ac59441a0c185c
+
+% 3 1 0 020f462c8f4d4c4e05dc6d9030fbef08
+
+% 4 1 0 02589c1a23f07d9f11d18552d5b6d7c8
+
+% 0 1 0 1b177e988e78ec5c01f37e110f6724ff
+
+% 0 1 0 18aa5d66544cfcc415815032b469bda7
+
+% 0 1 0 02711bf9ed7c1b7116c2f89e8d76e8f6
+
+% 1 1 0 0bff173fda8d7e340d87154680adaa5d
+
+@ 0 3 0 1537129b03aa494d1ae381b091fc2cea
++ Questi sono `~/.config`, `~/.local/share` e `/var/log`. Ogni struttura sa anche se è destinata a
++ essere scritta. `readOnly` è `true` per `/usr` e tutto ciò che sta sotto, tra gli altri, così un
++ programma può controllare prima di provarci:
+
+% 2 1 0 0b84e0f9201153020ad97e450efd5ab4
+
+% 3 1 0 1587fb5048df5d1c1c93530af99e12ea
+
+% 4 1 0 13c6442abd98870b1e9bcf81e27223b5
+
+% 0 1 0 01e27cf7aa410f7e1a1b5dc22f7bb01e
+
+% 0 1 0 1a5bc83eb82777e80a3ca2ac669c43a9
+
+% 1 1 0 0f03157811fde5630b7e36e4aea0bafc
+
+@ 0 2 0 1959a177ca929bde1a2651b424e44be2
++ Le strutture sono elencate per intero, con i loro valori di `readOnly`, in
++ [directory standard](filesystem.md#standard-directories).
+
+@ 0 1 0 13486d6f9a5b7b740dde3aa3ee6c18d1
++ ### La macchina
+
+@ 0 5 0 1cfcc022a80c8dbf1364fe0f6fa71664
++ `Architecture` nomina il processore su cui gira un programma. Viene analizzata dalla segnalazione
++ propria della piattaforma in un valore tipizzato, come `X86(64)`, `Arm(64)` o
++ `Ppc(64, littleEndian = true)`. Il codice che deve scegliere una libreria nativa, o un percorso nel
++ codice, in base all'architettura fa quindi pattern matching su un valore, e non su una stringa la
++ cui grafia varia da una piattaforma all'altra.
+
+@ 0 2 0 17eb266b7d8e03df0326ab3a4b615ca0
++ `Os` fa lo stesso per il sistema operativo. Viene decodificato dalle molte grafie che assume la
++ proprietà `os.name`, confrontandone l'inizio, senza distinzione tra maiuscole e minuscole:
+
+% 2 1 0 1cd02157f38cd6cb1e84b3829323f10c
+
+@ 0 3 0 001d28c96f21a41d11fedc514bba972d
++ column  Caso
++ column  Quando `os.name` inizia con
++ column  Per esempio
+
+% 0 1 0 024196069791c3ff17cd76cd7e5aacb5
+
+@ 0 1 0 0d06f25253aecfc41d8bdbfe7f7efb5e
++ row  `Os.MacOs`  `mac` o `darwin`  `Mac OS X`
+
+% 0 1 0 0fcdc034bcb2abf104e692e41060fcaa
+
+% 0 1 0 1022241faf4c037f155d24ddc90b373c
+
+% 0 1 0 140ef6718ad3c2f9083e41f3bc5d8927
+
+% 0 1 0 0fe65a713aa341341f76818171a8a466
+
+@ 0 1 0 1e44bd1021c2ff85100b5961ec34dbed
++ row  `Os.Solaris`  `sunos` o `solaris`  `SunOS`
+
+% 0 1 0 053188984e93bd3d1018cd907db7e46c
+
+@ 0 1 0 04aa89d2b7f5c79014d8911a5748ef7f
++ row  `Os.Other(name)`  qualsiasi altra cosa, conservata come `name`
+
+% 1 1 0 15f08a2f64092c5a1a6546301aaf8ca6
+
+@ 0 3 0 1d44edf3ba7b445b097c335495c5ca69
++ Entrambi si leggono dal `System` nell'ambito, così un test può eseguire lo stesso codice come se
++ fosse su un'altra piattaforma, passandogli un `System` fisso. Un programma che, per esempio, nomina
++ una release da scaricare fa pattern matching sulla coppia, e non sul testo grezzo di una proprietà:
+
+% 2 1 0 17052f3236c1cfcd06bec1fb1882caa4
+
+% 0 1 0 01aee804b461ce5e145cbaa09d16540e
+
+% 0 1 0 06064934c25a5a2b0968cff6ffacb827
+
+% 0 1 0 160922db636a257d18651f073eb95a22
+
+% 0 1 0 14f497c0d0407be51ca8861e7a488e45
+
+% 0 1 0 1674bbfce8add2730c02ae647ff8ca43
+
+% 0 1 0 1c28eeef0e96b6710c212bf3fa90d339
+
+% 1 1 0 16f735493bdba72402ae30a43ed9824e
+
+@ 0 3 0 1e7ae87f5522e3121732680ee020df69
++ Il terzo aspetto della piattaforma è la macchina virtuale stessa. `Vm` la nomina, ed è il punto in
++ cui si intercettano gli eventi che la VM solleva: il suo arresto, un'eccezione non catturata, una
++ garbage collection. [Concorrenza](concurrency.md) descrive `Vm.intercept`.
+
+@ 0 3 0 1088402f2d869fb401cbaf32c021fbc2
++ `termcaps.environmentTermcap` riporta ciò che il [terminale](terminal.md) è in grado di fare.
++ Determina la profondità di colore da `COLORTERM` dove è impostata, e altrimenti da `tput`: è così
++ che l'output con stili degrada correttamente su un terminale che non può mostrarlo.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 4 0 0b77120f3bb4482b0cac5a6b24ab3926
++ - [Interfacce a riga di comando](cli.md) legge gli argomenti di un programma nello stesso modo
++   tipizzato.
++ - [Processi](processes.md) avvia altri programmi, che ereditano l'ambiente nell'ambito.
++ - [Filesystem](filesystem.md) legge e scrive i file contenuti in queste directory.
++ - [Classpath](classpath.md) legge il classpath da una proprietà di sistema, e
++   [internazionalizzazione](internationalization.md) la localizzazione dall'ambiente.

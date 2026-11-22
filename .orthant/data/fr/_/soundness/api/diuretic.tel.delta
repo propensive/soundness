@@ -1,0 +1,397 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0f6e36f2a51eb75f17ecabade6985971
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0ecdba4b6f176732094d93641cda7721
++ info
++     les types standard de Java pour les chemins, les URL, les instants et les durées, comme
++     représentations des concepts de Soundness
+
+@ 0 10 0 114d6941e748ec3d18d53772c711028d
++ detail
++     _Diuretic_ permet aux types propres de la JVM de tenir lieu des concepts sur lesquels
++     Soundness fait abstraction. anticipation nomme chaque concept comme un domaine — `Paths`,
++     `Urls`, `Instants`, `Durations` — et une API qui produit ou accepte un chemin, une URL ou un
++     instant exige seulement un type qui soit `Instantiable` depuis la forme générique de ce
++     domaine, ou `Abstractable` vers elle : du texte pour un chemin ou une URL, un `Long` de
++     millisecondes depuis l'epoch pour un instant, et un `Long` de nanosecondes pour une durée.
++     Diuretic fournit ces instances pour `java.io.File`, `java.nio.file.Path`, `java.net.URL`,
++     `java.time.Instant`, `java.util.Date` et un simple `Long` ; un programme qui côtoie les deux
++     mondes transmet donc des valeurs de l'un à l'autre sans les convertir à la main.
+
+@ 0 8 0 05db768f3b8e110805af07679c290829
++     Chaque instance est un objet — `JavaIoFile`, `JavaNioPath`, `JavaNetUrl`,
++     `JavaTimeInstant`, `JavaUtilDate`, `JavaLongInstant`, `JavaLongDuration` — qui est à la fois
++     `Abstractable` (`.genericize`, d'une valeur Java vers sa forme générique) et `Instantiable`
++     (`.apply`, de la forme générique vers une valeur Java). Aucune n'est dans la portée
++     implicite, puisque les types Java n'ont pas de compagnons auxquels Soundness puisse ajouter
++     quelque chose : chacune est proposée comme un given dans l'un des packages de choix
++     d'anticipation, `instantInterfaces`, `durationInterfaces`, `pathInterfaces` et
++     `urlInterfaces`, et importée par son nom, car `import
++     instantInterfaces.*` n'importe pas les givens.
+
+% 2 1 0 18784b2633da657c1c7bcd5d2b02b746
+
+% 3 1 0 1db73ce7ff7743a1113551b456f1ea82
+
+% 0 1 0 0fec6cbef0d0f6741696d32ab34bc4ff
+
+% 0 1 0 1ab1db3247debc8f18db2130f5192406
+
+% 0 1 0 16673f91ad61ea77084fea8b67da137a
+
+% 0 1 0 09b61dc4a082ae69024c85c406ecdf85
+
+% 0 1 0 1de1af9f01f8115a12c8508b628e6093
+
+% 0 1 0 1e8f943973a0501019f7716091956ca4
+
+% 1 1 0 0ea7bc43f80e6c8604794d22dca04080
+
+@ 0 3 0 1be12df2f7080ddc1a056fa45b949ea0
++     Les deux instances `Long` sont délibérément asymétriques, conformément à leurs domaines :
++     un `JavaLongInstant` compte des millisecondes depuis l'epoch, et un `JavaLongDuration` des
++     nanosecondes.
+
+@ 0 5 0 07e469372689c53d1602ba67098b8c6b
++     La bibliothèque a un seul ensemble de sources, `diuretic.core`, qui nécessite les packages
++     `java.io`, `java.nio.file`, `java.net` et `java.time` de la JVM. Ses sept objets sont
++     exportés vers le package parapluie `soundness`, et les givens qu'elle ajoute aux packages de
++     choix d'anticipation y sont reflétés ; `import soundness.*` suivi d'un import par nom est
++     donc tout ce qu'un utilisateur écrit. Les givens eux-mêmes sont déclarés dans le package
++     `anticipation`, et documentés avec lui.
+
+% 0 1 0 0096fefc9cb1ad13188f4a7db63833ac
+
+% 0 1 0 17ab5b84ea3244ad108c0b15ead1e019
+
+% 0 1 0 0547ad9bbcd3dd050c64f2a99795b618
+
+% 0 1 0 0b187556d463b1df13c0df95e7bc88fb
+
+% 0 1 0 0ea153813f892a56128abb4510f5b068
+
+% 0 1 0 019b2165bca4bb8e1a80a35be8bdab0f
+
+@ 0 1 0 1a911bf6445f9f561f5dd4e8fea13a00
++ entry .JavaIoFile
++   info
++       `java.io.File` comme chemin : abstrait vers son texte absolu, instancié à partir de texte
+
+@ 0 5 0 0a85dfd85a104f7f118fbb291f76fb6b
++   detail
++       Un objet qui est `java.io.File is Abstractable across Paths to Text` et
++       `java.io.File is Instantiable across Paths from Text`. Il est proposé comme le given
++       `pathInterfaces.javaIoFile`, importé par son nom, afin que toute API produisant des chemins
++       puisse renvoyer un `File`.
+
+% 2 1 0 1eedbffb7e40308a07a5da77f0cf2c35
+
+% 3 1 0 1b1d6b9154e244bd1825f09be34ca781
+
+% 0 1 0 1937a1507552b49819a8baef9a558fd8
+
+% 0 1 0 04d110c49ef33be11057429fbb9c614d
+
+% 0 1 0 023b039de968335e078364ccf5259fe3
+
+% 1 1 0 0ee67744432ca35f164b1525c13a0cfc
+
+@ 0 3 0 0c9e8fee4f27c5541933d5d6280ae7d5
++       L'abstraction donne toujours le chemin absolu ; un `File` relatif est donc résolu par
++       rapport au répertoire de travail de la JVM. `java.io.File` est aussi un
++       `Representative of Paths` au moyen de `javaIoFileRepresentative`.
+
+% 1 1 0 00feece0a8df7bda02456a9bd0a4532d
+
+% 0 1 0 05c5d2cc555d8e2d0e8cfb728a4123a4
+
+@ 0 1 0 0d0cdf6cd31c852b14eb6a8929fca602
++   entry .apply
++     info
++         un `java.io.File` pour le texte du chemin, comme `new File(path)`
+
+@ 0 1 0 1684c0267531fa5f06440e529d631890
++   entry .genericize
++     info
++         le chemin absolu du fichier, sous forme de texte
+
+@ 0 2 0 01c8861f517ae69b1550e0d5dc0e5c8b
++     detail
++         `getAbsolutePath` : un fichier relatif est résolu par rapport au répertoire de travail, et
++         aucun lien symbolique n'est suivi.
+
+@ 0 1 0 17ebbf72bfb8d5e20ebb917bd2603cd1
++ entry .JavaNioPath
++   info
++       `java.nio.file.Path` comme chemin : abstrait vers son texte absolu, instancié à partir de
++       texte
+
+@ 0 4 0 1e3d123a7cbc0d0616b320a344fe2a50
++   detail
++       Un objet qui est `java.nio.file.Path is Abstractable across Paths to Text` et
++       `java.nio.file.Path is Instantiable across Paths from Text`. Il est proposé comme le given
++       `pathInterfaces.javaNioPath`, importé par son nom.
+
+% 2 1 0 17cc3784c613805803eafef34c1e6203
+
+% 3 1 0 0861b03e2daaf68405f0467f1a34364d
+
+% 0 1 0 1dc3da7c008fb4f117e2428d65bc9dea
+
+% 0 1 0 0e4c6cca595d2141128bbbe41ada4e8b
+
+% 0 1 0 1d273d6594c2847c05407937bf266aea
+
+% 0 1 0 05e01478bd59a9d3012096233ef0f57f
+
+% 1 1 0 17a75d09d85c8cff1347eb3ef821b6e9
+
+@ 0 4 0 1f80dab1984dd6551cf53437f627b075
++       L'instanciation passe par `Paths.get`, qui normalise les séparateurs redondants ;
++       `/tmp//example` redevient donc `/tmp/example` par abstraction. L'abstraction donne toujours
++       le chemin absolu. Un `java.nio.file.Path` est aussi un `Representative of Paths` au moyen
++       de `javaNioPathRepresentative`.
+
+% 1 1 0 151f924c637ab27305d4dd246cca81bc
+
+% 0 1 0 0ef8ccf21e9bb91d18fd16aa8394bb5a
+
+@ 0 1 0 0d8c8746d9f038d6120e283073a53c63
++   entry .apply
++     info
++         un `java.nio.file.Path` pour le texte du chemin, par `Paths.get`
+
+@ 0 1 0 1efe5d6b89bf7b17139c2db5c247e8a8
++   entry .genericize
++     info
++         la forme absolue du chemin, sous forme de texte
+
+@ 0 2 0 19f29791d5690483106eccf4acb9b908
++     detail
++         `toAbsolutePath` : un chemin relatif est résolu par rapport au répertoire de travail ; le
++         chemin n'est pas normalisé au-delà de ce qu'a fait `Paths.get`, et aucun lien symbolique
++         n'est suivi.
+
+@ 0 1 0 0ce790316f138a36138a8a54ac8ba5d0
++ entry .JavaNetUrl
++   info
++       `java.net.URL` comme URL : abstraite vers son texte, instanciée à partir de texte
+
+@ 0 4 0 0e9e525d28f813f71d926aae65c27f19
++   detail
++       Un objet qui est `java.net.URL is Abstractable across Urls to Text` et
++       `java.net.URL is Instantiable across Urls from Text`, proposé comme le given
++       `urlInterfaces.javaNetUrl`, importé par son nom.
+
+% 2 1 0 1e44fa1556f4a97f13eefc06daa55bfb
+
+% 3 1 0 14d371afd3b164330919ef547d92cd69
+
+% 0 1 0 122ec393712e0e9a1e87b53a34b21441
+
+% 0 1 0 011bfca5ce4545c312e017ea8cda522e
+
+% 0 1 0 0ff08c7d08b2b9aa0961be8c3e8239a0
+
+% 1 1 0 0fdcdaa53d891967199db65308a7cea1
+
+@ 0 1 0 133b4274cd2568281fd9a06e33201fa9
++       Les ports, les chemins et les chaînes de requête font l'aller-retour sans changement.
+
+% 0 1 0 1239d8c416dc753117c18d4544a7b78a
+
+@ 0 1 0 09aa01e143b9b822029ce555add60ee4
++   entry .apply
++     info
++         une `java.net.URL` analysée à partir de texte, au travers de `java.net.URI`
+
+@ 0 4 0 163fe4df477c555304438081599f0e27
++     detail
++         `URI(text).toURL()`, la voie non dépréciée : un texte mal formé lève
++         `URISyntaxException` ou `MalformedURLException` comme le fait l'API Java, plutôt que de
++         lever une erreur Soundness ; un texte venu de l'extérieur du programme doit donc d'abord
++         être validé, par exemple en tant que `HttpUrl`.
+
+@ 0 1 0 12afaa7b27475aef0c69911ca02d1c2e
++   entry .genericize
++     info
++         le texte de l'URL, tel que le donne `toString`
+
+@ 0 1 0 0351866a6332c6420257b83e308caca9
++ entry .JavaTimeInstant
++   info
++       `java.time.Instant` comme instant : vers et depuis un `Long` de millisecondes depuis l'epoch
+
+@ 0 5 0 1115bcc6ba2fbd910e089d928cc3f2d8
++   detail
++       Un objet qui est `java.time.Instant is Abstractable across Instants to Long` et
++       `java.time.Instant is Instantiable across Instants from Long`, proposé comme le given
++       `instantInterfaces.javaTimeInstant`, importé par son nom, afin qu'une heure lue dans un
++       fichier ou sur une horloge puisse arriver sous forme de `java.time.Instant`.
+
+% 2 1 0 1e0e867dd6ff456703a1ee12a84c24fe
+
+% 3 1 0 1c835755ea3a0b491cdbf266ec86aab8
+
+% 0 1 0 1607a2d7c848bf4d0588ca26aaa1be01
+
+% 0 1 0 0325dffe58180f32178f218872b508a1
+
+% 0 1 0 00ebc172cd543cd00f6ef7957b48f28a
+
+% 1 1 0 16d2b942a738edfd01c35884f9dff7d7
+
+@ 0 2 0 1c7171b5096750d61d71a3aac2445c93
++       La forme générique a une précision à la milliseconde ; la partie inférieure à la
++       milliseconde d'un `java.time.Instant` est donc tronquée par `.genericize`. Les instants
++       antérieurs à l'epoch sont négatifs.
+
+% 1 1 0 1f0a72396f27c60603c7b405fafaee7c
+
+% 0 1 0 1325dc7d93eb17630096bac18e675441
+
+@ 0 1 0 16b86cac0c9cceb0168b35861b0d614a
++   entry .apply
++     info
++         un `java.time.Instant` à partir de millisecondes depuis l'epoch, par
++         `Instant.ofEpochMilli`
+
+@ 0 1 0 1cfc631a0748d36b012b0aa933c67b08
++   entry .genericize
++     info
++         les millisecondes d'un instant depuis l'epoch, par `toEpochMilli`
+
+@ 0 2 0 1ac7f04bae543e910032fac097bc6736
++     detail
++         Tronque toute partie inférieure à la milliseconde ; lève `ArithmeticException`, comme
++         `toEpochMilli`, pour un instant trop éloigné de l'epoch pour tenir dans un `Long` de
++         millisecondes.
+
+@ 0 1 0 1a7a26612760279c0ef332605b51d19a
++ entry .JavaUtilDate
++   info
++       `java.util.Date` comme instant : vers et depuis un `Long` de millisecondes depuis l'epoch
+
+@ 0 5 0 0cf844374722f858098886f3dc474129
++   detail
++       Un objet qui est `java.util.Date is Abstractable across Instants to Long` et
++       `java.util.Date is Instantiable across Instants from Long`, proposé comme le given
++       `instantInterfaces.javaUtilDate`, importé par son nom, pour les anciennes API Java qui
++       prennent encore une `Date`.
+
+% 2 1 0 0925ecf4277e72180724ece1bb12a851
+
+% 3 1 0 06c4283d005ba7091dc9537a7cab610a
+
+% 0 1 0 1a78c2a507bd8470028066af681c5fd3
+
+% 0 1 0 1635c553600112cf0fab67e2c5b654b9
+
+% 1 1 0 1c1739ef139a54b218fb37d5420d41b7
+
+% 1 1 0 144b8784f96ab55f0c90a9c089645411
+
+@ 0 1 0 0e7c7c02686e9b6a0bcdc7d905af22be
++   entry .apply
++     info
++         une `java.util.Date` à partir de millisecondes depuis l'epoch
+
+@ 0 1 0 0a3568b7ff78d9941b30181fd6aeff2e
++   entry .genericize
++     info
++         les millisecondes d'une date depuis l'epoch, par `getTime`
+
+@ 0 1 0 105651d416ed3015106d38de48567ace
++ entry .JavaLongInstant
++   info
++       un simple `Long` comme instant, comptant des millisecondes depuis l'epoch
+
+@ 0 6 0 17123160c1ca131b1a1c5cecda9a419c
++   detail
++       Un objet qui est `Long is Abstractable across Instants to Long` et `Long is
++       Instantiable across Instants from Long`, tous deux l'identité, proposé comme le given
++       `instantInterfaces.javaLongInstant`, importé par son nom. C'est ce qui permet de prendre ou
++       de donner un instant sous la forme brute de `System.currentTimeMillis`. Notez l'asymétrie
++       avec `JavaLongDuration`, dont le `Long` compte des nanosecondes. Ses membres `apply` et
++       `genericize` renvoient tous deux leur argument inchangé.
+
+@ 2 1 0 0219aafb5e24b23911b6b58fc04138cb
++       ```scala
+
+@ 3 1 0 1fd254dca2384ef81b6db789d2e7aaab
++       import soundness.*
+
+@ 0 1 0 11c16afe874c18021c3200275a3db184
++       import instantInterfaces.javaLongInstant
+
+@ 0 1 0 12e4516775cfdb9812747ca946e89ff0
++       JavaLongInstant(99L) == JavaLongInstant.genericize(99L)
+
+@ 1 1 0 00c9bc0414ff6bd116b1df0e1971a519
++       ```
+
+@ 0 1 0 138eb9ef9c8c9037015f4f7ea06727ab
++ entry .JavaLongDuration
++   info
++       un simple `Long` comme durée, comptant des nanosecondes
+
+@ 0 6 0 1cb3395481ec4a8e14dd6f9411196fed
++   detail
++       Un objet qui est `Long is Abstractable … to Long` et `Long is Instantiable … from
++       Long`, tous deux l'identité, proposé comme le given `durationInterfaces.javaLongDuration`,
++       importé par son nom, afin qu'un délai d'expiration ou une pause puisse être donné sous la
++       forme d'une différence brute de `System.nanoTime`. Le `Long` est un nombre de
++       **nanosecondes**, la représentation générique de `Durations` — et non de millisecondes,
++       comme pour `JavaLongInstant`. Ses membres `apply` et `genericize` renvoient tous deux leur
++       argument inchangé.
+
+@ 2 1 0 0457acb3c52c565a074667412ae77bf9
++       ```scala
+
+@ 3 1 0 0eeca76978e40b780695d59d6da02b59
++       import soundness.*
+
+@ 0 1 0 183c7fcaeef0552905a3cc3c2399f799
++       import durationInterfaces.javaLongDuration
+
+@ 0 1 0 1da931a4bdd0b4ca0fd4204700fa73f1
++       JavaLongDuration.genericize(1_000_000_000L)   // one second, in nanoseconds
+
+@ 1 1 0 120102d56928233e0c9f023ef91ec604
++       ```
+
+@ 0 3 0 0b83addad93c1a980d8bbb515a9f3d68
++       Un simple `Long` n'a pas d'unité ; lorsqu'on veut une durée en millisecondes ou en
++       secondes, les givens par unité du package `abstractables` d'anticipation sont
++       l'alternative ; une seule instance de durée `Long` peut être dans la portée à la fois.
+
+@ 0 1 0 1ad35939e2904016167027cdb0a4e655
++ entry .javaIoFileRepresentative
++   info
++       la preuve que `java.io.File` est un `Representative of Paths`
+
+@ 0 4 0 16555f980e280b161038ab6aa0baea70
++   detail
++       Un given effacé, afin qu'on puisse demander un `java.io.File` à une méthode bornée par
++       `[path: Representative of Paths]`. C'est un given de premier niveau dans le package
++       `diuretic`, hors de tout compagnon (`java.io.File` n'en a aucun auquel Soundness puisse
++       ajouter quelque chose) ; il doit donc être importé par son nom :
++       `import diuretic.javaIoFileRepresentative`.
+
+@ 0 1 0 087456f22a25cedd12b74cb9dc14df73
++ entry .javaNioPathRepresentative
++   info
++       la preuve que `java.nio.file.Path` est un `Representative of Paths`
+
+@ 0 4 0 085be923b1599003120a42f00999b22c
++   detail
++       Un given effacé, afin qu'on puisse demander un `java.nio.file.Path` à une méthode bornée
++       par `[path: Representative of Paths]`. C'est un given de premier niveau dans le package
++       `diuretic`, hors de tout compagnon ; il doit donc être importé par son nom :
++       `import diuretic.javaNioPathRepresentative`. Étant effacé, il ne peut être invoqué que
++       dans une position effacée, comme une borne de contexte.

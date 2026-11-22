@@ -1,0 +1,441 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 015587dc09e5240f1c3b9da7d11009cd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1c84feaa32907a2a1fe8e8afd1e6cbb4
++ info   二つの値の構造的な比較：フィールドと要素への分解、そして相違の対置
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 06a482676938ebbc142192fd321d7ff0
++     _Chiaroscuro_ は、失敗したアサーションの背後にある対比である。
++     テストフレームワークなら「expected X but found Y」を二つの `toString` として印字し、読み手に目で差分を取らせるところで、Chiaroscuro は両方の値を**分解**し（ケースクラスはフィールドに、コレクションは揃えた要素に、オプショナルは存在か不在に、テキストは文字に）、二つの分解を**対置**する。そのため報告は、異なる葉に印が付いた木になる。二だけ異なる年齢、一つの要素が置換されたリスト、変わった文字に帯が付いたテキストである。
+
+% 2 1 0 12b5f1b9e578ecca18217aca2a9fced0
+
+% 3 1 0 1789a3743ce0b10d0cd595cde64af9e1
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 1793b50cb06822170a8fc5a992ff2606
+
+% 0 1 0 1d03397bdfa2a6701f08105fec460a3b
+
+% 0 1 0 1d88fb3a5acb32d7199216a6c07d94f2
+
+% 1 1 0 1ec392da29f79cb719b3da357f191860
+
+@ 0 12 0 02e802d2770cb3430bc951e6ad989278
++     三つの型クラスが仕事をする。
++     `Decomposable` は値を `Decomposition`（`Primitive` の葉、名前付きフィールドの `Product`、要素の `Sequence`、またはバリアントを包む `Sum`）に変え、任意のケースクラス、列挙型、コレクション、オプショナルに対して導出される。残りのすべての葉は `Inspectable` を通じて描画されるので、失敗は `.inspect` が示すものをちょうどそのまま示す。
++     `Contrastable` は二つの値を `Juxtaposition`（`Same`、`Different`（`+2` のような任意の差を伴う）、またはラベル付きの子の `Collation`）に変え、同様に導出される。数（符号付きの差を報告する）、集合（それぞれの側だけが持つものを報告する）、例外、テキストには手書きの土台がある。
++     シーケンスは dissonance の差分によって揃えられるので、挿入は後続のすべての要素が異なるものとしてではなく挿入として示され、変わった要素は、変わったフィールドまで分解された一つの置換として示される。
++     `Similarity` は、その細分化のための「組にするほど十分に似ている」という差し替え可能な概念である。
+
+@ 0 3 0 12dd21e70cfaf98401556c7039f669e6
++     probably テストフレームワークの診断エンジンは、ホストが求めたとき、失敗した等価性の両側に対して `contrast` を呼び、`Juxtaposition` を `Verdict.Detail.Compare` として記録し、ホストのためにそれを `TestEvent.CompareRow` に平坦化する。`Harness#capture` は `decompose` した値を記録する。
+
+@ 0 8 0 00ec618bc72d58741aadfefc3cfe6c2c
++     ライブラリには二つのコンポーネントがある。
++     `chiaroscuro.core`（JVM、Scala.js、Scala Native）は型クラスと二つの木であり、`chiaroscuro.render` は `JuxtapositionPalette` と、`Juxtaposition` を端末向けのスタイル付きの相違の表として描画する `teletypeables.juxtapositionTeletype` の given を加える。
++     すべては `soundness` アンブレラにエクスポートされる。`teletypeables` 選択パッケージはアンブレラ自身のものと併合され、その given は名前でインポートする。`import soundness.*` は given をインポートしないからである。また escapade は任意の `Showable` な値をスタイルなしで描画するので、インポートを忘れた呼び出し箇所は、コンパイルに失敗するのではなく、列挙型のテキストを印字する。
+
+% 0 1 0 126d4430e82066a01dde3a794048ac94
+
+% 0 1 0 1f42fa97c9d7c76d1df0f2012427b25b
+
+% 0 1 0 179c3dfbc1570928005eea298ec5f5b9
+
+% 0 1 0 16a2f7c83ee0afd21ee464348f8cf9b8
+
+% 0 1 0 190bcb346d1952440bc4c807d0b1fbe7
+
+@ 0 4 0 18f0580a3fd4a0311ab259cd569e01b9
++ entry .decompose   `value.decompose`：その `Decomposable` を通じた、`Decomposition` としての値
++     `Decomposable` を持つ任意の値に対する拡張であり、`Decomposable` はほとんどすべてのものに対して導出される。
++     `24.decompose` は `Decomposition.Primitive(t"Int", t"24", 24)` であり、ケースクラスはそのフィールドの `Decomposition.Product` である。
+
+% 2 1 0 1bfd96e88f98567f0bc1ae4881a64a0f
+
+% 3 1 0 0d6cbc7cb1b42088065f8462e1310302
+
+% 0 1 0 13620d89823384a20318b636c938c1ca
+
+% 0 1 0 13ab68abd3ec972d046f93df4d3756a1
+
+% 0 1 0 11d713e744499b761dbeaef323566385
+
+% 1 1 0 07850df4413837521a290d6eb00f417b
+
+@ 0 5 0 0efc1195c04da1801da03158c8d80f54
++ entry .contrast   `left.contrast(right)`：その `Contrastable` を通じて対置した二つの値
++     `Contrastable` を持つ任意の値に対する拡張であり、`Contrastable` はケースクラス、列挙型、コレクション、そして `Decomposable` または `Showable` なあらゆるものに対して導出される。
++     左の値は期待される値、右の値は観測された値であり、失敗したアサーションの描画はそのようにラベルを付ける。
++     等しい値は `Juxtaposition.Same` を与える。
+
+% 2 1 0 1895662e49632ca318ac0aed7c628892
+
+% 3 1 0 011fae6348486b630bf33a6b6270422e
+
+% 0 1 0 100106d4c74317970ea37c930a2a4d09
+
+% 0 1 0 096451e2e98252af02b846c1db830f6e
+
+% 0 1 0 1664ec68d1b3e7a40e5b7ac08256aa2c
+
+% 1 1 0 084bd78f5c5f2086036f9aa1de3955aa
+
+@ 0 1 0 08c99927e68572ef1236e92ed3470cbb
++ entry .Contrastable   ある型の二つの値を、その相違の `Juxtaposition` に対置する方法
+
+% 1 1 0 0197d54baa4fdd8500c7b6a1ce514c85
+
+@ 0 8 0 0356eab8aae182831252446f418fcd2f
++       `contrast` の背後にある型クラス。
++       その `.derived` の given は次の順に解決される。その型に対する `Contrastable.Foundation`（数、集合、例外、テキスト、そして `Decomposition` 自身に対する手書きのインスタンス）。フィールドごとに対置し、フィールド名でラベル付けした `Collation` にするケースクラスの導出。二つのバリアントの分解を対置する列挙型の導出。そしてそれ以外では、二つの値の `Decomposition` の対置であり、コレクション、オプショナル、入れ子の構造はこれを使う。
++       `Showable` しか持たない型は `Foundation.showable` に落ちる。等しければ `Same`、そうでなければ表示した二つのテキストの `Different` である。
+
+% 2 1 0 17dda7fe8e3da6bd0c5240af887505ca
+
+% 3 1 0 0554d95459b75cc81b31d9e5b40d27c9
+
+% 5 1 0 0e1822c9d2f3759c1a3a5a450a36a6a3
+
+% 0 1 0 14de558d96c494be1d01889e976c936b
+
+% 0 1 0 025192f232bc27981161de3f06a3913f
+
+% 0 1 0 148b6d6ef1bf1b0a05f46389bbb040d8
+
+% 0 1 0 15ef5f70f7dbf9c91e5db456ce6caafa
+
+% 1 1 0 1371f82e68cbe4b119f8abc7258995b1
+
+@ 0 2 0 01ddb704aee77eef14ddb6c3e8b8c8e8
++       `Contrastable` は純粋な型クラスである。`#contramap` は、この型への関数から別の型に対するものを作る。
+
+% 1 1 0 0f6a28305b1ad1e312df2dbc54b0858e
+
+% 1 1 0 052c5336ee96b4f91e68f12363bad9ed
+
+% 1 1 0 185fe01db0b7376f11786f70b351231b
+
+@ 0 3 0 0ee0e3d0aba61ce1037ec8c1c041419f
++   entry .derived   任意の型に対して `Contrastable` を導出するインラインの given。暗黙のスコープにある
++       まず土台、次に直積、次に直和、次に分解による。
++   entry .Derivation   直積型と直和型に対する `Contrastable` の wisteria による導出
+
+% 1 1 0 19ef5cc12073914c103a6371450433cf
+
+@ 0 7 0 1c96475c9a7e80b90d1f705d04dc2fdd
++         `Derivable[Contrastable]`。`conjunction` はケースクラスをフィールドごとに `Collation`（二つが等しいときは表示した値の `Same`）に対置し、`disjunction` は列挙型をそのバリアントの分解によって対置する。
++         直接呼ぶのではなく `.derived` を通じて到達する。
++     entry .conjunction   ケースクラスを、フィールドごとに
++     entry .disjunction   列挙型を、そのバリアントによって
++   entry .Foundation   手書きのインスタンス、および呼び出し側独自のインスタンスが継承するトレイト
+
+% 1 1 0 1bd6284d6fa330d11fe510d6007dc942
+
+@ 0 6 0 17d3369d292927ee143b2a1d446fdf67
++         **トレイト**としての `Contrastable.Foundation` は、一つの抽象メソッド `#juxtaposition` を持つ `Contrastable` である。`.derived` はどの導出よりも先に `Foundation` を試すので、対比が構造的であるべきでない型（同一性を持つ型や、意味のある差を持つ数）は、そのコンパニオンに一つを用意する。
++         **オブジェクト**としては標準の土台を持ち、それぞれが暗黙のスコープにあり、最も優先度の低い `showable` を `Contrastable.Protofoundation` から継承する。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 04a1a934086c0b401f08a9325263c73d
+
+% 0 1 0 07b1eb30182ba34702c408ecac6e6446
+
+% 0 1 0 14782ddf9a35854914e427c1fb97b4fd
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 21 0 10368be9c9509f0a0a2d521e1d5de3ea
++     entry .decomposition   二つの `Decomposition` を構造的に対置したもの
++     entry .int   二つの `Int`：`Same`、または符号付きの差を伴う `Different`
++     entry .short   二つの `Short`。`.int` と同様
++     entry .byte   二つの `Byte`。`.int` と同様
++     entry .long   二つの `Long`：`Same`、または `+2` や `-3` のような符号付きの差を伴う `Different`
++     entry .float   二つの `Float`。`.double` と同様
++     entry .double   二つの `Double`：有効数字四桁の符号付きの差を伴う `Different`
++         両側は区別できるだけの小数点以下の桁数で示され、差は正のときプラス記号付きで示される。
++     entry .set   `Showable` な要素の二つの `Set`：それぞれの側だけが持つもの
++         差は、右側にしかない要素について `+{4}`、左側にしかない要素について `-{1}`、両方について `-{1}╱+{4}` と読め、要素が五つを超える集合は省略される。
++     entry .exception   二つの `Exception`：クラスとメッセージが同じなら同じ
++     entry .string   二つの `String`。`.text` と同様
++     entry .text   二つの `Text` を、文字ごとに
++         文字は dissonance の差分によって揃えられるので、挿入や削除は後続のすべての文字が異なるものとしてではなく一つとして示される。結果は `Text` という名前の `Collation` で、その子は単一の文字であり、端末の描画器はそれを帯の付いた二行として示す。
++     entry #juxtaposition   二つの値の対置
++   entry .Protofoundation   `Foundation` のコンパニオンの基底。最も優先度の低い `showable` の given を持つ
+
+% 1 1 0 0f2f7d70dfef86731aba7837c69a3d70
+
+@ 0 20 0 0048d6f4f6790c650c8a0a2b4d798170
++         `Contrastable.Foundation` は `showable` をここから継承するので、すべての土台がそれより優先される。
++     entry #showable   任意の `Showable` な型：等しければ `Same`、そうでなければ表示した二つのテキストの `Different`
++   entry .nothing   すべての組を `Same` と報告し、左の値の分解を示す `Contrastable`
++       インラインであり、その型に対する `Decomposable` を必要とする。
++       `Contrastable` を要求するが比較するものが何もない位置のためのものである。
++   entry .juxtaposition   任意の形の二つの `Decomposition` を、結果の型名とともに対置する
++       等しい参照は `Same` である。二つの `Primitive` はそのテキストによって `Different` である。二つの `Sequence` は `.comparison` によって揃えられる。二つの `Product` はそのフィールド名の和集合の上の `Collation` であり、一方の側にないフィールドは空白と比較される。二つの `Sum` はそのバリアントを比較する（異なるときは両方の型を `Circle/Square` のように名指す）。そして形の異なる二つの分解は、種類によって `Different`（`<product>`/`<sequence>`）である。
++   entry .comparison   二つの分解の配列を差分によって揃え、ラベル付きの行の `Collation` にする
++       各行はそのインデックスでラベル付けされる。両側で同じインデックスにある要素は `3`、インデックスが異なるときは `³╱₂`（左が上付き添字、右が下付き添字）、挿入は ` ╱₂`、削除は `³╱ ` である。
++       置換された要素は再帰的に対置されるので、一つのフィールドが変わったレコードは、そのフィールドの差として示される。
++       差分は、ウィンドウを十とした dissonance の `rdiff` である。
++   entry #juxtaposition   その型の二つの値の対置
++   entry #contramap   別の型をこの型に写すことによる、その別の型に対する `Contrastable`
+
+@ 0 1 0 0667fdee091d968a1e40d5b793f692f2
++ entry .Decomposable   値を表示のために `Decomposition` へ分解する方法
+
+% 1 1 0 02523ca6969c1d2f0f6d10a5d658ce37
+
+@ 0 12 0 0ece32430decb2821742795c5f1cad47
++       `decompose` の背後にある型クラスであり、`Harness#capture` とアサーションのマクロが失敗の両側を描画するのに使うものである。
++       その `derived` の given は次の順に解決される。その型に対する `Decomposable.Base`（`Text`、`Int`、`String`、`Decomposition`）。名前付きフィールドの `Product` へのケースクラスの導出。`Sum` への列挙型の導出。`Any` の葉としての `Any`、`AnyRef`、`Matchable`。値の、または `∅` と示される `Unset` の葉の、`Optional` という名前の `Sum` としての `Optional`。そして残りのすべての葉は `Inspectable` を通じる。`Inspectable` 自身の導出は常に成功するので、`Char` は `'a'` と描画され、`Double` はスコープ内の `Decimalizer` によって丸められず、どちらも持たない型は `Inspectable` の印付きの `toString` に落ちる。
++       コンパニオンの `.list`、`.sequence`、`.frozenArray` はコレクションを要素ごとに分解する。
++       コンパニオンは `derived`、`primitive`、`any`、`Derivation` を `Decomposable2` から、`fallback` を `Decomposable3` から継承する。
+
+% 2 1 0 081017c8f0ea86ca0bdd21ad2c2b7663
+
+% 3 1 0 0ca5be12fc0f35ed154ba53c46604823
+
+% 5 1 0 1a3896417d5f22c9073a30173677e671
+
+% 0 1 0 0542b8184bdc1bec15d462b0eb41b8bc
+
+% 0 1 0 07824561bd64858108d74732513ecd0c
+
+% 0 1 0 020f4d6c2fe8d4e01ff3b6eb6a309b0a
+
+% 0 1 0 1d603c94b960b7651d85805b8fdc3e39
+
+% 1 1 0 0534803debaafcd6194250ac05739831
+
+@ 0 3 0 0f003d5b90e58f241b8865e57fd9f6dd
++       分解は葉を `Showable` ではなく `Inspectable` を通じて描画する。テストの失敗を読むのはプログラマーなので、それは `.inspect` が示すものを示すべきであり、`Showable` と `Inspectable` が食い違う型は後者として分解される。
+
+% 0 1 0 1e5655353a7565ec1c5e7e4df538da8b
+
+% 0 1 0 0332d6654a61f09c00ecbd613acb4263
+
+% 0 1 0 03ec24798555039b13e1fae02f0e6f64
+
+@ 0 1 0 0efb013b712c58ee1bbe6cead4c29521
++   entry .Base   手書きの葉のインスタンス、および呼び出し側独自のインスタンスが継承するトレイト
+
+% 1 1 0 04885834aa82e14b1b78eb1183a9fca0
+
+@ 0 11 0 0f258563d09c1b6d0437c730d2538aa8
++         **トレイト**としての `Decomposable.Base` は、`derived` がどの導出よりも先に試す `Decomposable` である。**オブジェクト**としては標準の葉を持つ。
++     entry .text   `Text` という名前の `Primitive` としての `Text`
++     entry .int   `Int` という名前の `Primitive` としての `Int`
++     entry .string   `String` という名前の `Primitive` としての `String`
++     entry .decomposition   それ自身としての `Decomposition`
++     entry #decomposition   値の分解
++   entry .list   分解可能な要素の任意の `List`。`List` という名前の `Sequence` として
++   entry .sequence   分解可能な要素の任意の `Sequence`。`Sequence` という名前の `Sequence` として
++   entry .frozenArray   分解可能な要素の凍結済みの `Array[element]^{}`。`Array` という名前の `Sequence` として
++   entry #decomposition   値の分解
+
+@ 0 1 0 082952b9d271d97711fa8b6137d37d63
++ entry .Decomposable2   `derived`、`primitive`、`any`、`Derivation` を持つ、`Decomposable` のコンパニオンの基底トレイト
+
+% 1 1 0 0786a7edc332de870508415256423bfa
+
+% 2 1 0 0f045a3bb88908001ecae41f6d48f1ae
+
+@ 0 13 0 090ac6401e70020b1ea274ade003bb70
++       優先度の層である。そのメンバーには `Decomposable.derived`、`Decomposable.primitive`、`Decomposable.any`、`Decomposable.Derivation` として到達し、コンパニオンはそれらをここから継承する。
++   entry #derived   任意の型に対して `Decomposable` を導出するインラインの given。暗黙のスコープにある
++       `Decomposable.derived` として到達する。
++       Base、次に直積、次に直和、次に `Any`、次に `Optional`、次に `Inspectable` である。
++   entry #primitive   すべての値を、`toString` によって、与えた型名の `Primitive` として描画する `Decomposable`
++   entry #any   すべての値を、`toString` によって、`Any` という名前の `Primitive` として描画する `Decomposable`
++       テストの結果の型に対してより良いインスタンスが導出できないときに、アサーションのマクロが使うものである。
++   entry #Derivation   直積型と直和型に対する `Decomposable` の wisteria による導出
++     entry .conjunction   ケースクラスを、そのフィールドのラベルによる `Product` として
++     entry .disjunction   列挙型を、そのバリアントの分解の `Sum` として
+
+@ 0 1 0 1083006c00e5b9731b9c2791c072eb1c
++ entry .Decomposable3   `Decomposable` のコンパニオンの最も優先度の低い層。`fallback` を持つ
+
+% 1 1 0 1b0ac97c22c4739c00aa4549f328ccfb
+
+% 2 1 0 17ad12e17de2720f03d300093fa3a237
+
+@ 0 2 0 072273ae073726910a828ffa99c5cb5c
++       `Decomposable.fallback` として到達し、コンパニオンはそれをここから継承する。
++   entry #fallback   最も優先度の低い given：任意の型に対する、`toString` による `Any` という名前の `Primitive`
+
+@ 0 1 0 0aff1b7d1fb326a913abd4f9296ca260
++ entry .Decomposition   表示のために分解された値：葉、フィールドの直積、シーケンス、または直和
+
+% 1 1 0 154ec192984b74e0015d820f6879d845
+
+@ 0 8 0 1eb0d3243d4a38c21485d9a6edc12851
++       四つのケースがある。`Primitive(typeName, value, ref)` は描画されたテキストを持つ葉である。`Product(name, values, ref)` はラベルごとのフィールドを持つケースクラスである。`Sequence(name, values, ref)` はコレクションの要素である。`Sum(name, value, ref)` はそのバリアントを包む列挙型または `Optional` である。
++       それぞれは元の値を `#ref` として保持し、`Contrastable.juxtaposition` はそれを最初に比較するので、等しい参照は走査なしで `Same` になる。
++       `#text` は木を複数行にわたってインデントして描画する。`#short` は一行の要約（シーケンスでは `[..3..]`、直積では型名）である。`.inspectable` は `inspect` を `#text` と同じにする。
+
+% 1 1 0 01148bc8b605070e1cae945243793930
+
+% 1 1 0 1d3287596afb0b4c099aa326caec57cf
+
+@ 0 11 0 05da326df0defc3701c3709f14953c52
++   entry .apply   オプショナルな分解からの `Decomposition`。不在には `Unset` の葉を使う
++   entry .inspectable   分解をその `#text` として描画する
++       導出ではなく手書きである。導出されたインスタンスの匿名クラスは Scala.js のパイプラインに拒否されるからである。
++   entry #ref   元の値
++   entry #text   複数行にわたって描画した木。各レベルは空白二つでインデントされる
++       直積のフィールドは `name:` として現れ、その値がその下に続く。シーケンスの要素はゼロから番号が振られる。直和はそのバリアントの前に `Name.` として示される。
++   entry #text2   一行の描画：`Name(field: value, …)`、`[a, b]`、`Name:value`
++   entry #short   一行の要約：葉のテキスト、シーケンスでは `[..n..]`、直積の名前
++   entry #multiline   複数行の描画を、スコープ内の `TextBuilder` にインデントを付けて追加する
+
+@ 0 1 0 15aec9304fa4aab91269bdd15f01c813
++ entry .Juxtaposition   二つの値を比較した結果：同じ、異なる、またはラベル付きの相違の照合
+
+% 1 1 0 1223b87c75a9e0b00bb6f833edcf7e5c
+
+@ 0 7 0 047c6b281ce257df1e81946ecb1bb0c4
++       `Same(value)` は両側に共通の一つのテキストである。`Different(left, right, difference)` は期待されたテキスト、観測されたテキスト、そして差の任意の要約（`+2`、`-{1}╱+{4}`）を持つ。`Collation(typeName, comparison, left, right)` は子の対置のラベル付きリスト（直積ではフィールド名、シーケンスではインデックスのラベル、テキストでは文字ごとに一つ）であり、両側のテキスト全体を伴う。
++       子がすべて単一の文字である照合はテキストの比較であり、端末の描画器はそれを表ではなく帯の付いた二行として示す。
+
+% 2 1 0 0268004a0807d4bb0ba58c5998a385bd
+
+% 3 1 0 1827d6f0b59844371179fe81c943b4a6
+
+% 0 1 0 08bde9157142745b024b85e8e9462dfc
+
+% 0 1 0 1e9930e3a81ad59f06672c69df255d30
+
+% 0 1 0 14f36b342393adfd0a7f39ac49abf293
+
+% 0 1 0 1c829767ddb8bd0904240fd1fac28125
+
+% 1 1 0 160b0c9a335ee5351f4079279e4df84c
+
+@ 0 3 0 0063aebf1fc9f3090845b25eefe700a2
++       probably フレームワークは、ホストのために、対置を深さ付きの前順で `TestEvent.CompareRow` に平坦化する。`teletypeables.juxtapositionTeletype` は端末向けにそれを描画する。
+
+% 1 1 0 1c500a0372e0b0f9151a3c4aee3e47b0
+
+% 1 1 0 14948d5aa0a125d10c21546847a228e6
+
+% 0 1 0 01c2cfadf2b8540c1dcbf66165383509
+
+@ 0 3 0 05ef101b9e5ff4b6089094e3b755f694
++   entry #singleChar   両側がそれぞれ一文字以下かどうか：テキストの比較の子の形
++   entry #leftWidth   期待される側の文字数での幅。照合の子にわたって合計したもの
++   entry #rightWidth   観測された側の文字数での幅。照合の子にわたって合計したもの
+
+@ 0 1 0 1b7dfaaa4a7857741d768fe595b62651
++ entry .Similarity   二つの値が、削除と挿入ではなく一つの置換として示されるほど十分に似ているかどうか
+
+% 1 1 0 14176038f4cc6b3a03e2cc3b2d753dd6
+
+@ 0 6 0 1eb47fa2d5173fb70b3f140b48f415e4
++       比較だけでは*同じ*か*異なる*かしか言えないので、二つのシーケンスの生の差分は、変わった要素を無関係な挿入と並んだ削除として報告する。
++       `Similarity` は、削除された要素を追加された要素と組にする細分化（同じ識別子を持ち、フィールドが一つ変わったレコード）のための型クラスであり、その二つは変わったフィールドまで分解された一つの置換として示される。
++       これは反変なので、上位型に対するインスタンスがその部分型に役立つ。`.generic` は等価性である。
+
+% 1 1 0 13098005430c736d06ef43c37255897b
+
+@ 0 2 0 1ef102bde4b77d8710708fd0ee52da20
++   entry .generic   任意の型に対する given：等しければ似ている
++   entry #similar   二つの値が似ているかどうか
+
+@ 0 1 0 028ce282952db318064fedba60332a75
++ entry .JuxtapositionPalette   描画された対置が使う色。sRGB による
+
+% 1 1 0 0ba251c740d8cfc71e1eb2705a2c71db
+
+@ 0 7 0 14cda3fc1092097e14a25076576e4f7d
++       相違の表が必要とする役割を持つ `Palette`（iridescence）である。継承された `foreground` と `background` のほかに、罫線と余白のための `#unaccented`、変わらない値のための `#informative`、強調を弱めるための `#subdued`、期待される側のための `#positive`、観測された側のための `#negative` がある。
++       構造的な細分化ではなく本物のトレイトである。構造的な選択には実行時のリフレクションが必要であり、Scala Native にはそれがないからである。
++       `teletypeables.juxtapositionTeletype` の given はこれをコンテキストパラメーターとして取る。probably フレームワークはもはや描画しないので、ホストが独自のものを用意する。
+
+% 2 1 0 02d67dbe14e1ea6803341fb1b56ba080
+
+% 3 1 0 19eb8d1aac21f6061824d3e4e2ecc24a
+
+% 2 1 0 12cbfa40ef44b7f40009bdbceccab15f
+
+% 3 1 0 01fa08153fac0e8a1e00d9d70da8091e
+
+% 4 1 0 1677048267bd74b201eb7accc38df207
+
+% 5 1 0 1156b60285bb9c8f1b19b8671c421975
+
+% 6 1 0 0cd88d540a9854920b3c72e04041c19a
+
+% 7 1 0 114e52f568addeb31f5d93f0787bfc8f
+
+% 8 1 0 15807b95465068f201a0a48c350a50ba
+
+% 9 1 0 09e5414c6e2d755010a0a279f8f6cfcb
+
+% 1 1 0 1610c22efc75b187171d332ec16e20d6
+
+% 0 1 0 06dc077bc012490f10547a2c3d729c96
+
+@ 0 6 0 026d5bcd00d66d5d13c77e84a14ee8c7
++   entry #Form   色の形式：`Srgb`
++   entry #unaccented   表の罫線、余白、境界線
++   entry #informative   両側で同じ値
++   entry #subdued   強調を弱めたテキスト
++   entry #positive   期待される側
++   entry #negative   観測された側
+
+@ 0 1 0 05c623e377e40ce81e96194f073fad3c
++ entry .teletypeables   `Juxtaposition` の端末向けの描画。名前でインポートする given
+
+% 1 1 0 07bc8316976990400c7453da5828fefb
+
+@ 0 4 0 1bdc977aa4e63fa3133b4a0c9e3f3158
++       `chiaroscuro.render` にある。
++       この given は `Juxtaposition` の暗黙のスコープにはなく、escapade は任意の `Showable` な値をスタイルなしで描画するので、それをインポートし損ねた呼び出し箇所は、コンパイルに失敗するのではなく、`Collation(Text,List(…))` を印字して黙って劣化する。
+
+% 2 1 0 1b3290796740ca260cbf87dd79a4a2b4
+
+% 3 1 0 1125c907f85303a30fb5558ef8ad73f0
+
+% 0 1 0 11ad1264a616272912da5271c03e7538
+
+% 0 1 0 1c58b5179ed796c41c6345855147b3ee
+
+% 0 1 0 1e9dd25e19f6f6dd08c050b2345e61b9
+
+% 2 1 0 0ebe17494b92cb9b088c5065b5775be9
+
+% 3 1 0 10414af9b94339f20636059841b03e0e
+
+% 4 1 0 17935d861245f6b00b46fdff58d76f4f
+
+% 5 1 0 11a23503e9f8b68900c4d1b7742db2e9
+
+% 6 1 0 1809b695ae43b1541ddd6229bcee58a8
+
+% 7 1 0 1a68a249a91130d40f08ac109b146033
+
+% 8 1 0 172affde7f97b3b10b214015e60419f4
+
+% 9 1 0 1c283fca2ba23a4518d8600c01931aaa
+
+% 0 1 0 02c03398e24afec00d296dc701242c02
+
+% 0 1 0 0de34cdf4cdfe81800941312d992a7f2
+
+% 1 1 0 1fa3895dc089e47915255db672a72aba
+
+@ 0 8 0 1c4799bef1f7929c184b07cf9f8cdf79
++   entry .juxtapositionTeletype   `Juxtaposition` をスタイル付きの端末テキストとして描画する
++       `Text is Measurable`（列の幅のため）と `JuxtapositionPalette` を必要とする。
++       `Same` は _The value `v` was expected_ として描画される。`Different` は _The result `right` did not equal `left`_ として描画される。単一の文字の `Collation` は帯の付いた二行として描画され、期待されたものが観測されたものの上にあり、異なる文字は強調され、余白には文字のオフセットがあり、110 列で折り返される。その他の `Collation` は、ラベルの木、`Expected` 列、`Observed` 列、そして各相違（または異なる二つのテキストのレーベンシュタイン距離）を持つ `Details` 列からなる表として描画される。

@@ -1,0 +1,81 @@
+orthant 2 language
+
+% 0 1 0 1a819e12af1e10420b359c15aeb280f7
+
+@ 0 1 0 0c25ae29595f689518db5f24a068e197
++ Se lanza cuando una acción WebDriver de Tarantula falla dentro del navegador.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 8 0 0b8bdd24dd42c46a079203894535a2f4
++ El WebDriver remoto devolvió una respuesta de error: un estado 4xx o 5xx cuyo cuerpo lleva el
++ objeto de error del W3C, `{"value":{"error":…,"message":…,"stacktrace":…}}`. El constructor toma
++ un `reason: Reason` (decodificado del campo `error`, uno de los códigos de error de WebDriver del
++ W3C), el `message` proporcionado por el navegador como `detail`, el `stacktrace`, dividido por
++ saltos de línea, como `browserStacktrace`, y el objeto opcional `data` de la especificación, que
++ lleva el texto del diálogo en un `unexpected alert open`. El mensaje representado es `the WebDriver action
+
+% 0 1 0 15e6179172b271ae19d91031f2164c0b
+
+@ 0 2 0 179cdf7f9c3633380ad07e33244dea7c
++ La decodificación es total: un código que la especificación haya añadido después, o uno propio de
++ un controlador, se convierte en `Other(code)` en lugar de perderse.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+@ 0 4 0 1ee1cc5e9a7963ba187c75ec16dcd4ee
++ Los subcódigos de abajo están congelados. Del `↯/s.127.1.1` al `↯/s.127.1.8` conservan los
++ significados con los que se publicaron por primera vez —incluido `Other` en el 8, que es la razón
++ de que la lista no esté en orden alfabético—, y los códigos añadidos después se agregan a partir
++ del 9.
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 34 0 1caee15ccd2fa75f13deeac82d403af0
++ column  Código
++ column  Variante
++ column  Código de transmisión
++ column  Significado
++ column  Solución
++ row  `↯/s.127.1.1`  `NoSuchElement`  `no such element`  El elemento al que se dirigía la acción no estaba presente en el DOM.  Verifica el método de localización y el objetivo; espera a que aparezca el elemento antes de actuar sobre él.
++ row  `↯/s.127.1.2`  `StaleElement`  `stale element reference`  El elemento se localizó anteriormente, pero desde entonces se ha eliminado del DOM o se ha sustituido en él.  Vuelve a localizar el elemento tras una navegación o una mutación del DOM antes de reintentar.
++ row  `↯/s.127.1.3`  `NoSuchWindow`  `no such window`  El identificador de ventana o pestaña al que hace referencia la acción no existe.  Confirma que el identificador de ventana está vigente; cambia a una ventana válida antes de actuar.
++ row  `↯/s.127.1.4`  `JavascriptError`  `javascript error`  Un script evaluado por el WebDriver lanzó una excepción.  Examina el script y el `detail` proporcionado para ver la excepción de JavaScript subyacente.
++ row  `↯/s.127.1.5`  `ScriptTimeout`  `script timeout`  Un script asíncrono no terminó dentro del tiempo de espera configurado.  Aumenta el tiempo de espera de scripts, o corrige el script para que se resuelva con prontitud.
++ row  `↯/s.127.1.6`  `Timeout`  `timeout`  La operación de WebDriver agotó el tiempo de espera antes de completarse.  Aumenta el tiempo de espera correspondiente, o corrige la página para que pueda cumplirse la condición esperada.
++ row  `↯/s.127.1.7`  `UnknownCommand`  `unknown command`  El WebDriver no reconoce la orden emitida.  Confirma que la versión del WebDriver admite la acción; actualiza el controlador si es necesario.
++ row  `↯/s.127.1.8`  `Other`  *(cualquier código no reconocido)*  El WebDriver informó de un código de error que no corresponde a ninguno de los demás casos. El código original se recoge en el parámetro `Other(code)`.  Consulta la especificación WebDriver del W3C, o la documentación del propio controlador, para el código del que se informa.
++ row  `↯/s.127.1.9`  `ElementClickIntercepted`  `element click intercepted`  Otro elemento recibiría el clic; normalmente una capa superpuesta, un modal o una cabecera fija.  Desplaza el objetivo hasta que sea visible, descarta el elemento que lo tapa, o haz clic mediante la API de acciones.
++ row  `↯/s.127.1.10`  `ElementNotInteractable`  `element not interactable`  El elemento está en el DOM, pero no puede recibir la interacción.  Espera hasta que el elemento se muestre y esté habilitado; comprueba que no tenga tamaño cero ni `pointer-events: none`.
++ row  `↯/s.127.1.11`  `InsecureCertificate`  `insecure certificate`  La navegación se bloqueó porque la página se sirvió con un certificado no fiable.  Solicita la prestación `acceptInsecureCerts` al crear la sesión.
++ row  `↯/s.127.1.12`  `InvalidArgument`  `invalid argument`  Un argumento de la orden no era del tipo ni estaba en el rango que exige la especificación.  Comprueba el argumento con la especificación de esa orden.
++ row  `↯/s.127.1.13`  `InvalidCookieDomain`  `invalid cookie domain`  Se estableció una cookie para un dominio distinto del del documento actual.  Navega al dominio de la cookie antes de establecerla.
++ row  `↯/s.127.1.14`  `InvalidElementState`  `invalid element state`  El estado del elemento prohíbe la orden; por ejemplo, borrar un elemento no editable.  Comprueba que el elemento sea editable, o usa en su lugar la ejecución de scripts.
++ row  `↯/s.127.1.15`  `InvalidSelector`  `invalid selector`  El localizador no era válido para su método.  Comprueba el selector CSS o la expresión XPath.
++ row  `↯/s.127.1.16`  `InvalidSessionId`  `invalid session id`  La sesión ya no está activa: se eliminó, o el navegador terminó.  Abre una sesión nueva; no conserves un identificador de sesión más allá de su bloque.
++ row  `↯/s.127.1.17`  `MoveTargetOutOfBounds`  `move target out of bounds`  Una acción de puntero se dirigió a coordenadas fuera del viewport.  Desplaza el objetivo hasta que sea visible, o usa orígenes de puntero relativos al elemento.
++ row  `↯/s.127.1.18`  `NoSuchAlert`  `no such alert`  Se emitió una orden de alerta sin que hubiera ningún diálogo abierto.  Comprueba si hay un diálogo abierto antes de aceptarlo, descartarlo o leerlo.
++ row  `↯/s.127.1.19`  `NoSuchCookie`  `no such cookie`  No hay ninguna cookie con ese nombre asociada al documento actual.  Comprueba el nombre, el dominio del documento y la ruta de la cookie.
++ row  `↯/s.127.1.20`  `NoSuchFrame`  `no such frame`  El identificador o índice de marco al que hace referencia la acción no existe.  Comprueba el índice o el elemento del marco; vuelve primero al contexto de nivel superior.
++ row  `↯/s.127.1.21`  `NoSuchShadowRoot`  `no such shadow root`  El elemento no aloja ninguna shadow root.  Comprueba que el elemento aloje una shadow root abierta; las raíces cerradas no son accesibles.
++ row  `↯/s.127.1.22`  `DetachedShadowRoot`  `detached shadow root`  La shadow root se localizó, pero desde entonces su anfitrión ha salido del DOM.  Vuelve a localizar el elemento anfitrión y su shadow root tras una mutación del DOM.
++ row  `↯/s.127.1.23`  `SessionNotCreated`  `session not created`  El controlador no pudo iniciar una sesión, normalmente por una discordancia de versiones entre navegador y controlador o porque falta el binario del navegador.  Comprueba que el controlador corresponda al navegador instalado; comprueba las prestaciones solicitadas.
++ row  `↯/s.127.1.24`  `UnableToSetCookie`  `unable to set cookie`  El controlador no pudo establecer la cookie.  Comprueba los atributos `secure` y `sameSite`, el dominio y la ruta de la cookie con respecto al documento actual.
++ row  `↯/s.127.1.25`  `UnableToCaptureScreen`  `unable to capture screen`  No se pudo tomar la captura de pantalla.  Comprueba que el elemento tenga un área representada no vacía, y que la ventana no esté minimizada.
++ row  `↯/s.127.1.26`  `UnexpectedAlertOpen`  `unexpected alert open`  Había un diálogo abierto cuando se emitió una orden que no requiere ninguno.  Acepta o descarta el diálogo, o establece la prestación `unhandledPromptBehavior`.
++ row  `↯/s.127.1.27`  `UnknownError`  `unknown error`  El controlador informó de un fallo que no pudo clasificar. También se lanza cuando un controlador responde con un cuerpo que no es en absoluto el objeto de error del W3C —un controlador que se ha colgado, o un proxy interpuesto—, en cuyo caso `detail` es el cuerpo en bruto.  Examina `detail` y `browserStacktrace`; consulta el registro del propio controlador.
++ row  `↯/s.127.1.28`  `UnknownMethod`  `unknown method`  La orden existe, pero no admite el método HTTP usado.  Comprueba el método de la orden con la especificación.
++ row  `↯/s.127.1.29`  `UnsupportedOperation`  `unsupported operation`  El controlador no implementa la orden.  Comprueba la conformidad del controlador; algunas órdenes, como imprimir a PDF, no son universales.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 049e889922499161174f4ee0d4df31fc
++ **Ejemplo.** `[↯/s.127.1.1] the WebDriver action failed because the requested element was not found: no such element: Unable to locate element: {"method":"css selector","selector":"#absent"}`
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 10d9373243515ac1068526c2569edd29
++ - Fuente: `lib/tarantula/src/core/tarantula.WebDriver.scala`

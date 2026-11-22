@@ -1,0 +1,38 @@
+orthant 2 language
+
+% 0 1 0 03b632ddc1ba56f7094d5672b9f0af40
+
+@ 0 1 0 1e2d6389d26b7b84114e3f81c6e5f7ea
++ Se lanza cuando falla una operación de JSON-RPC.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 05dbd7211b1fc1a509c9812aaeb2df58
++ El despachador de JSON-RPC de Obligatory lanza este error cuando no se puede procesar una
++ petición. El constructor recibe un `reason: Reason`; el mensaje representado es
++ `the JSON-RPC operation failed because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 10d385792366bd2405f1052ce7c33d38
+
+@ 0 3 0 16abf98775676a350bec2b100b07e8c1
++ El campo `method` de la petición JSON-RPC entrante no coincidía con ninguno de los métodos
++ declarados en la interfaz del despachador: la alternativa comodín del despachador generado.
+
+@ 0 1 0 047256202a3543b00d232e69bd3cee5e
++ **Ejemplo.** `[↯/s.112.7.1] the JSON-RPC operation failed because the method name was not recognised by the dispatcher`
+
+@ 0 2 0 0a63d0bb9fe9cdde10002a6fe219d3fd
++ **Solución.** Confirma que el nombre de método coincide con un método de la interfaz RPC; busca
++ erratas.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 3 0 1473b6334e16fd3a19a0036de94f5eed
++ - Código fuente: `lib/obligatory/src/json/obligatory.JsonRpc.scala`
++ - `↯/s.112.8`: fallo genérico de RPC
++ - `SN-728`: falta una `Tactic[JsonRpcError]` en tiempo de compilación

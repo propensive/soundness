@@ -1,9 +1,0 @@
-orthant 1 release
-
--       change of behaviour; `import optics.*` brings them all (or `import soundness.optics.*`,
--       where every library's optics merge). A lens assignment also needs dynamic access enabled
-+       change of behaviour; `import optics.given` brings them all (or `import soundness.optics.given`,
-+       where every library's optics merge); a wildcard import does not import givens. A lens assignment also needs dynamic access enabled
-
--       import optics.*
-+       import optics.given

@@ -1,0 +1,1479 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 104f03e30b3d2d45037e3b4668192a05
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0b581bc36db2c77001f3bd5d84c383ee
++ info   ライブラリ同士が合意するインターフェースの型クラス。各ライブラリが互いに依存せずに他方の型を受け入れられるようにする
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 05c7e78f6d38efd81b7e0f36f2194e11
++     _Anticipation_ は、Soundness のライブラリや、その外のライブラリが、互いに依存せずに値をやり取りするための小さな型クラスを保持する。
++     ファイルを開くライブラリは*何らかの*パスを、スリープするライブラリは*何らかの*継続時間を、取得するライブラリは*何らかの* URL を必要とする。そのどれもが、galilei の `Path`、`java.nio.file.Path`、`java.io.File` の間で、あるいは aviation の `Instant`、`java.time.Instant`、`Long` の間で選ばなければならないべきではない。
++     代わりに、それぞれは `Abstractable across Paths to Text` や `Instantiable across Instants from Long` である型を求め、具体的な型を所有するライブラリがインスタンスを提供する。
+
+@ 0 5 0 04bbb62b4daa1e1a062abc2eb7b22929
++     型クラスがすべての実装から離れてここにあるのは、依存関係が両側から、共通のほとんど空のモジュール*へ*向かわなければならないからである。
++     `galilei` がパスの型クラスを定義すれば、パスを受け入れるライブラリはファイルシステムのライブラリ全体に依存することになり、そのライブラリが定義すれば、`galilei` がそれに依存することになる。
++     ここではどちらも他方に依存しない。どちらも、ほとんど何にも依存しない `anticipation` に依存する。
+
+@ 0 3 0 07ebb4e65a5a7f740aa2ce0d8383f781
++     やり取りの大部分は二つの型クラスが担う。それぞれは**ドメイン**によってパラメーター化される。ドメインとは、やり取りされる概念を名指すシールされたマーカー型である（`Paths`、`Urls`、`Instants`、`Durations`、`Uuids`、`Hostnames`、`EmailAddresses`、`IpAddresses`、`HttpStreams`、…）。
+
+@ 0 6 0 0f8c77ec1e1c25810600c2d597cf2127
++     - `Abstractable across Domain to Result`：値がその**汎用**表現 `value.generic` になる。パスや URL ならテキスト、継続時間ならナノ秒、時点ならエポックからのミリ秒である。
++     - `Instantiable across Domain from Origin`：汎用表現が、呼び出し側が選んだ型の値になる。境界 `[target: Instantiable across Paths from Text]` を持つメソッドの中での `target(origin)` である。
+
+@ 0 4 0 10c34431858405da13ea6e5a5159fcee
++     したがって、あるライブラリの型の値は、それを抽象化し、その結果をインスタンス化することで、別のライブラリの型に変換される。どちらのライブラリも他方を知らない。
++     galilei のパスの汎用形式はそのテキスト `t"/home/work"` であり、そのテキストは、インポートされたパスのインターフェースに応じて `java.nio.file.Path` か `java.io.File` になる。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 168cb8cc01f481151bdc0b37a94d265a
+
+% 1 1 0 06034752de0ee1d41799e86e0ed57dcc
+
+% 2 1 0 0cb053cdb6feb551104f421e408050ad
+
+% 3 1 0 0fecd0800b17909f0b1510bbda3ee089
+
+% 0 1 0 04de6bb38568b12d1bf2c620e8f1d2a1
+
+% 2 1 0 09c53fb3c6d9ce7e0022f297a919d409
+
+% 3 1 0 0c84bd04aa7085b911fde78ba3899843
+
+% 4 1 0 1d4ae9b82077320311a485b46aa114fa
+
+% 6 1 0 0408596233c34168082c49c9140192d5
+
+% 0 1 0 1c1dca966ad30baf0cfeabbf3d92cf21
+
+% 0 1 0 03a60220cf0bf7ef0b9bebf0905fcef8
+
+% 1 1 0 14816b2a065e7998096d4e8d45b878c9
+
+% 2 1 0 1b9d637c8b98244f0b582f2682d64888
+
+% 3 1 0 1ba4dfddd23df10e13b2d60fd58bd8c9
+
+% 0 1 0 009347961a491aaa046c7a72f54131ab
+
+% 2 1 0 1a15157d635938cc10debb2f195d7131
+
+% 3 1 0 06907f182e312c4b09d4904f3ca1b164
+
+% 4 1 0 179ed5a321e56ac218230beb1c7565e2
+
+% 6 1 0 09d293e573825b2b16577b2f01399dbb
+
+% 0 1 0 07b5027d1eb81e0200cb1718da6f41ff
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 15 0 1a6cc48960a755ad1d3ff1364b4501e8
++     Soundness の型自身のインスタンスはそのコンパニオンにある（`Path.generic`、`Url.abstractable`、`Instant.generic`）ので、インポートは要らない。
++     しかし、`[target: Instantiable across Paths from Text]` という境界を持つメソッドは、コンパニオンを探せる具体的な型を何も名指さず、また Java の型には Soundness が書き込めるコンパニオンがない。そこで、表現を*選ぶ*インスタンスは、ドメインごとに一つの**選択パッケージ**で提供され、名前でインポートされる：`pathInterfaces`、`urlInterfaces`、`instantInterfaces`、`durationInterfaces`、`uuidInterfaces`、`hostnameInterfaces`、`emailAddressInterfaces`、`ipAddressInterfaces`。
++     各パッケージは、それが提供する型を所有するライブラリによって `anticipation` の中に宣言される。diuretic は Java の型（`javaNioPath`、`javaTimeInstant`、…）を、aviation はその `Instant` と `Quantity` を、galilei と serpentine はパスの代表を、inimitable は `Uuid` を、urticose はその URL とネットワークの型を提供する。
++     それらの名前はこのプロジェクトの出自を示す語に従う。Java の型はその型のパスの名前を保ち（`javaNioPath`、`javaUtilDate`）、Soundness 自身の型は `soundness…` である（`soundnessUrl`、`soundnessUuid`）。
++     `import pkg.*` は given をインポートしないので、given は名前でインポートされる：`import pathInterfaces.javaNioPath`。
+
+@ 0 3 0 14a846823285f9e00fc54aea80d67e98
++     裸の `Long` は、それがナノ秒を数えているのかミリ秒を数えているのかを示せないので、単位に依存しないインスタンスを持たない。`abstractables` と `instantiables` は単位ごとに、その単位にちなんで名付けられた given を一つずつ持ち、ファイルは継続時間の読み方をちょうど一つだけインポートする。
+
+@ 0 7 0 06949f528373a45311b36fb61a8b4a55
++     モジュールの残りは、同じ考えを他の概念に適用したものである：`Text` そのもの（すべてのライブラリが共有する不透明な文字列）、バイトのための `Data`、名前付きの形式へのエンコードのための `Encodable`、ログのランタイムなしにログを記録するための `Loggable`/`LogSink`/`Transcribable`、端末での描画のための `Printable` と `Termcap`、色のための `Chromatic`、`Chroma`、ピクセルの `Channel`、画像のための `Graphical`、ブラウザのロケーターのための `Focusable`、名前のための `Nominable`、テキストへの変換のための `Textualizable`、そしてスレッド間で共有して安全なケイパビリティのための `Durable`。
+
+@ 0 7 0 1b88ae07a86f64f61eb089a34984e131
++     ライブラリが、自分がやり取りする概念だけに依存するように、このライブラリは多くの小さなプラットフォーム非依存のコンポーネントに分かれている：`anticipation.generic`（`Abstractable`、`Instantiable`、`Representative`）、`text`、`opaque`、`codec`、`color`、`gfx`、`focus`、`http`、`log`、`net`、`path`、`print`、`time`、`url`、`uuid`。
++     すべては `soundness` アンブレラにエクスポートされるが、別のライブラリのものと衝突する `Channel` は例外で、`anticipation.Channel` として到達する。選択パッケージは、アンブレラ自身の同名のブロックと統合される。
+
+% 0 1 0 0ea153813f892a56128abb4510f5b068
+
+% 0 1 0 019b2165bca4bb8e1a80a35be8bdab0f
+
+% 0 1 0 0eae5ae19c2bddf00eeb65a4a54b248e
+
+% 0 1 0 1cb99be0c6364ae90bcaca8d0f0393d0
+
+% 0 1 0 0096fefc9cb1ad13188f4a7db63833ac
+
+% 0 1 0 17ab5b84ea3244ad108c0b15ead1e019
+
+@ 0 1 0 0d0587df130cc7b70d41a238281b7f49
++ entry .Abstractable   値をドメインの汎用表現に変える型クラス
+
+% 1 1 0 04f6e6f6dfbc837614e275e80a245190
+
+@ 0 6 0 1beaac013a01fc2b1466bca2698bc342
++       `value is Abstractable across Domain to Result` は、`value` を `Result` に還元できることを表す。`Result` は、すべてのライブラリが `Domain` について合意する表現であり、`Paths` と `Urls` には `Text`、`Durations` にはナノ秒の `Long`、`Instants` にはエポックからのミリ秒の `Long`、`HttpStreams` には `HttpStreams.Content` である。
++       パス、継続時間、URL を*消費する*ライブラリは、パラメーターをこれで境界付けて `#generic` を呼び、インスタンスを持つ任意の型を受け入れつつ、そのどれにも依存しない。
+
+% 2 1 0 0aaac7607d66e650032d0620ef2518d3
+
+% 3 1 0 0c04ad7688d57438113251aba7e398c0
+
+% 0 1 0 18e8a255184a4eb50c81631eab224793
+
+% 0 1 0 17137a92cbb1b471104a7b9b8499ef59
+
+% 1 1 0 022dabb688d7f73b01bf6f9857698759
+
+@ 0 5 0 07d40850f52f914017df9eb69f1a807f
++       インスタンスは抽象化される型のコンパニオンにある（`Path.generic`、`Url.abstractable`、`Moment.generic`）ので、インポートなしに見つかる。Java の型のインスタンスは `pathInterfaces` や `instantInterfaces` のような選択パッケージで提供される。
++       裸の `Long` の継続時間や時点は、`abstractables` に単位ごとに一つあるインスタンスしか持たず、それは名前でインポートされる。
+
+@ 0 1 0 0276ffc7e957b6350a4988f042564497
++       `Abstractable` は純粋な型クラスである。インスタンスは何も捕捉しない。
+
+% 0 1 0 0e2b0002c825fc571c88fc8893fbf3b9
+
+% 1 1 0 15d71a9310f7067e1f241b59d86eed9a
+
+@ 0 8 0 110deabe5b1001f705a2544f97e0c3fe
++   entry #genericize   値をその汎用表現に還元する
++       インスタンスが実装するメソッドである。`#generic` は呼び出し側が書く拡張メソッドである。
++   entry #generic   値の汎用表現：`value.generic`
++       抽象化される型に対する拡張メソッドである。
++       `path.generic` はテキストとしてのパス、`duration.generic` はそのナノ秒、`instant.generic` はそのエポックからのミリ秒である。
++   entry #contramap   別の型のためのインスタンス。まずそれをこの型に写すことで作る
++       `abstractable.contramap[Wrapper](_.inner)` は、`Wrapper` を同じドメインにわたって同じ結果へ抽象化する。
++       関数は純粋でなければならない。
+
+@ 0 1 0 1f325206493606650c4d04bc2e7ba9b0
++ entry .Instantiable   ドメインの汎用表現から値を組み立てる型クラス
+
+% 1 1 0 17ad1fb41d1c58900269ae4ee4eeaf84
+
+@ 0 4 0 0e6e7bcd6c3ab9ff1139c5c05df6a3a3
++       `target is Instantiable across Domain from Origin` は、`Domain` についてすべてのライブラリが合意する表現である `Origin` から `target` を作れることを表す。
++       パス、時点、URL を*生成する*ライブラリは、結果の型をこれで境界付けるので、呼び出し側が受け取る型を選ぶ。
+
+% 2 1 0 174e3ef59f501d1c1f8d9ea0753a844a
+
+% 3 1 0 0681c5ef441611531dfe27f1418efebb
+
+% 2 1 0 0496f50e3fbf8fe30e289447299b8435
+
+% 1 1 0 1fc71762b371549e1d298e6a1bf8d4da
+
+@ 0 7 0 129c34de89d92b5805478ef7c0ba1db0
++       コンテキスト境界の名前そのものがインスタンスなので、`path(text)` がそれを適用する。
++       Soundness の型のインスタンスはそのコンパニオンにある。しかし、メソッドの境界が具体的な型を何も名指さない場合、表現の選択は、`import pathInterfaces.javaNioPath` や `import urlInterfaces.soundnessUrl` のように、選択パッケージからインスタンスを名前でインポートすることで行われる。
++       パースを行うインスタンス（`Uuid`、`Hostname`、`HttpUrl`）は、そのエラーのための `Tactic` を必要としてそれを捕捉する。これが、`Instantiable` が純粋な型クラスではなく追跡される型クラスである理由である。
+
+% 0 1 0 1b31321e4b0a6b1f14931471bc33f912
+
+% 1 1 0 1e65862d9cfccc4e05662bcfb8f148ab
+
+% 1 1 0 03d1d36cc8cd558f15416b01112d29b6
+
+@ 0 6 0 042c94b414c870d91ac99fcc4ecf11ca
++   entry #apply   汎用表現から値を組み立てる
++   entry #instantiate   汎用表現から値を組み立てる：`origin.instantiate`
++       元の型に対する拡張メソッドであり、適用可能なインスタンスがスコープにちょうど一つあるところで使える。複数ある場合は、代わりにインスタンスを適用する（`#apply`）。
++   entry #map   別の型のためのインスタンス。この型が組み立てる各値を写すことで作る
++       結果はこのインスタンスと関数を捕捉する。
+
+@ 0 1 0 182a48c624b34143036274b03cbff48f
++ entry .Representative   型がドメインを代表してよいという証拠。たとえば `Paths` に対するパスの型
+
+% 1 1 0 071e0f8a5888b2bf15155b268c072022
+
+@ 0 6 0 06e65c316a5f1be003c5d2aafbe6c6e1
++       `path is Representative of Paths` は、API がまだ何も変換せずに呼び出し側の望む型を名指さなければならないところで、ある型をドメインの許容される表現として印付ける。ambience の `workingDirectory[path: Representative of Paths]` と `temporaryDirectory[path: Representative of Paths]` は、この証拠を持つ型だけを受け入れ、それを `Paths.Resolver` を通じてインスタンス化する。
++       これはシールされた、メンバーのないマーカーであり、そのインスタンスは消去され（`inline given … = !!`）、コストがかからない。
+
+% 2 1 0 1f0528eeddbc98a4056ee41375c49f5e
+
+% 3 1 0 08e4f8d78d14187b01bde6453028ece7
+
+% 4 1 0 1f42b8a6c0c685701ef2178a08957b35
+
+% 0 1 0 1cf4664307464f100bbb951c649b1048
+
+% 0 1 0 10ae369a1d08d6a100b85ddc17d77337
+
+% 0 1 0 104da591fb4564b705450a16d2e3b343
+
+% 1 1 0 0090b244b50385a40c08dc1e378e0812
+
+@ 0 4 0 0998b73a421528ac1df97a8d3e094aff
++       galilei のプラットフォームのパス（`Path on Linux`、`Path on Windows`、`Path on MacOs`、`Path on Local`、`Path on Posix`）は、その証拠をプラットフォームのコンパニオンと `pathInterfaces` に持つ。serpentine は `Text` を代表にし（`pathInterfaces.textPath`）、diuretic は `java.nio.file.Path` と `java.io.File` を代表にする。
+
+% 1 1 0 0757e7d0115a8392054028265d7bd129
+
+% 1 1 0 175820392533a57705f20165e57045b4
+
+@ 0 1 0 0098f007f68ad7b605ae460dd6ec3636
++ entry .Paths   ファイルシステムのパスのドメイン。汎用表現はテキスト
+
+% 1 1 0 16239823b8475733079e0dc25825f04a
+
+@ 0 6 0 09d1963f95d8190608a6e77b257688f1
++       パスという概念を名指すシールされたマーカーであり、`Abstractable`、`Instantiable`、`Representative` の `Domain` として使われる。
++       パスの汎用形式は、ファイルシステムが書くとおりのそのテキストである。`path is Abstractable across Paths to Text` は任意の型のパスを読み、`path is Instantiable across Paths from Text` はパスを作る。
++       二つ目の元である `Paths.Trusted` は、オペレーティングシステムから来たので検証を必要としないテキストを印付ける。
+
+% 2 1 0 14f9b1103f8a921202e2a4bc55f9b228
+
+% 3 1 0 1a8c9057a51675631f9e1b44d102ac24
+
+% 0 1 0 0a734de4ff3ca96607c69565bb660cdf
+
+% 1 1 0 0edad6a9509119c40e18530ec664554a
+
+@ 0 2 0 1ef2533a937df4811de5f67f79e7b7ce
++       インスタンス：galilei と serpentine の `Path` はそのコンパニオンに、`java.nio.file.Path` と `java.io.File` は diuretic から `pathInterfaces` にある。
+
+% 1 1 0 1615285336b60fcf05f769a6da69e922
+
+% 1 1 0 1e9a333349c2b50f059d09c29d2c6152
+
+@ 0 1 0 0f5b7e8ef5f7804f1765a1454da6c0cc
++   entry .Trusted   有効であることが分かっているパスのテキスト。たとえばオペレーティングシステムが報告したディレクトリー
+
+% 1 1 0 1c1cca5062c700e216c99f32cdb44b2e
+
+@ 0 6 0 18ff8253952e088b038eba12f30c48a8
++         普通の `Text` とは区別される `Instantiable` の元である。`Instantiable across Paths from Paths.Trusted` であるパスの型は、信頼されないテキストからのインスタンス化に必要な検証（と `Tactic`）なしに、これから作ることができる。
++         serpentine の `Path` はそのようなインスタンスを持ち、`Paths.Resolver` はそれを優先する。
++     entry #text   信頼されたパスのテキスト
++   entry .Resolver   ディレクトリーのテキストを要求されたパスの型に解決する。信頼されたインスタンス化を優先する
+
+% 1 1 0 136b5546990a182005da1feefdde9367
+
+@ 0 10 0 115f0a0432ec1d650ab891e30701f99c
++         ambience の `workingDirectory` と `temporaryDirectory` の背後にあるコンテキスト値である。オペレーティングシステムが報告したディレクトリーのテキストが与えられると、`resolver(text)` は呼び出し側が選んだパスの型を組み立てる。
++         そのコンパニオンの `.trusted` インスタンスは、`Instantiable across Paths from Trusted` を通じて、`Resolver2` から継承された代替の `fromText` インスタンスより優先される。後者は普通の `Text` からインスタンス化する。
++         選択はインラインの `summonFrom` ではなく通常の暗黙の探索によって行われるので、呼び出し側のコードがステージングされたクオートの中で展開されても機能する。
++     entry .trusted   パスの型の `Instantiable across Paths from Trusted` インスタンスを通じて解決する
++     entry #apply   ディレクトリーのテキストに対するパス
++   entry .Resolver2   `Paths.Resolver` のコンパニオンの、優先度の低い親
+
+% 0 1 0 1d67946842fbefea114a1c07674d3027
+
+% 1 1 0 02a2f799681a6c9808fd96975d2255e2
+
+@ 0 3 0 01e97701d2d9b094055942b6c8d3eb8b
++         代替のリゾルバーを保持し、両方が当てはまるところでは `Paths.Resolver` のコンパニオンにある信頼されたものが優先されるようにする。
++     entry #fromText   パスの型の `Instantiable across Paths from Text` インスタンスを通じて解決する
+
+@ 0 1 0 0a093c6867ce545e060d9ff7c79b10f6
++ entry .Nominable   値の名前をテキストとして与える型クラス。たとえばパスの最後のセグメント
+
+% 1 1 0 135e540f20d9d57a1bc628e40316936d
+
+@ 0 4 0 03d57b517eba0d430663fe1c70fc104c
++       `value is Nominable` は `#name` を提供する。serpentine の `Path` では、その下降の最後のセグメント、それがなければそのルートである。
++       名前で表示したり並べ替えたりするライブラリは、特定のパスの型ではなく `Nominable` を求める。
++       これは純粋な型クラスである。
++   entry #name   値の名前
+
+@ 0 1 0 045b44fbf8aa985d0dfec6b8a8e58f5a
++ entry .Urls   URL のドメイン。汎用表現はテキスト
+
+% 1 1 0 0ae4386d699a5e29124b3c489435ca71
+
+@ 0 5 0 0935cf876189a63311cee628e9a4bc39
++       URL という概念を名指すシールされたマーカーである。
++       `url is Abstractable across Urls to Text` は任意の型の URL をテキストとして読み、`url is Instantiable across Urls from Text` は URL を作る。
++       urticose の `HttpUrl` は両方をそのコンパニオンに持ち、インスタンス化は `urlInterfaces.soundnessUrl` として名前でも提供される。`java.net.URL` は diuretic による `urlInterfaces.javaNetUrl` である。
+
+% 0 1 0 1239d8c416dc753117c18d4544a7b78a
+
+@ 0 1 0 06bdd0f2310987701d510803b8daafd1
++ entry .Instants   時点のドメイン。汎用表現はエポックからのミリ秒
+
+% 1 1 0 099432710f55b2221cfd3a01963155d3
+
+@ 0 4 0 1c66f8bf0c748fe01d97e864a3360c44
++       時点という概念を名指すシールされたマーカーである。
++       汎用形式は Unix エポックからの**ミリ秒**の `Long` である：`instant is Abstractable across Instants to Long` と `instant is Instantiable across Instants from Long`。
++       スケジュールしたりタイムスタンプを付けたりするライブラリは、aviation の `Instant` や `java.time` ではなく、これらのどちらかを求める。
+
+% 2 1 0 10b01e1f14ce62740e73598b1888c854
+
+% 3 1 0 0982032437df38980e2a91f20185406d
+
+% 4 1 0 1147547e7b1009bd08446ea2629d498f
+
+% 0 1 0 1f985c8b19433f7c1c3a0405811ad5d0
+
+% 0 1 0 05e31293d65641a30879e316b7614dc3
+
+% 0 1 0 065fa0d1a5cfb31616ace25295cc2f05
+
+% 1 1 0 02b8abc11f7da46a19ecf214650ae97d
+
+@ 0 5 0 0b5efbcaab79f49618b7fe3201f37df0
++       インスタンス：aviation の `Instant` と `Moment` はそのコンパニオンに、また名前で `instantInterfaces` にある。`java.time.Instant`、`java.util.Date`、生の `Long` は diuretic から `instantInterfaces` にある。裸の `Long` は `abstractables` と `instantiables` に `epochMillisecondsAbstractable` と `epochMillisecondsInstantiable` としてある。
++       `Long` がナノ秒を数える `Durations` との非対称性に注意すること。
+
+% 0 1 0 1a258d977e2ca21610b0b963fb32ab23
+
+% 1 1 0 032b996083cdef5307ee12aacede193a
+
+@ 0 1 0 197662021fd5a708199c044862c7b907
++ entry .Durations   時間の長さのドメイン。汎用表現はナノ秒
+
+% 1 1 0 162c0700e347c1e2039aff0b05383726
+
+@ 0 5 0 13133c295dba1194028cc56deea87e80
++       継続時間という概念を名指すシールされたマーカーである。
++       汎用形式は**ナノ秒**の `Long` である：`duration is Abstractable across Durations to Long` と `duration is Instantiable across Durations from Long`。
++       parasite の `sleep` と `snooze`、そして Soundness のすべてのタイムアウトは、インスタンスを持つ任意の型を受け入れるので、aviation の `Timespan`、quantitative の `Quantity[Seconds[1]]`、選んだ単位での裸の `Long` のどれもが使える。
+
+% 2 1 0 066990e45a8b309b181d8934fb439135
+
+% 3 1 0 1a17b4b6ceae0e4b131ac17285ccbcf8
+
+% 4 1 0 0322828e2c965ce5022bb1f583ed807c
+
+% 0 1 0 0a63c2b8c7a8226f1ad4e7c7dd037945
+
+% 0 1 0 077382325cdd0b590fdd6daa0a96745d
+
+% 0 1 0 029b06ac264e5e27022d134ff61fe296
+
+% 1 1 0 00221f099fadd1070e10bd6ff057f3a1
+
+@ 0 5 0 035c22f359ba8b9e017b66d57ba3d5b5
++       裸の `Long` には単位がないので、インポートによってだけ、単位ごとに一つのインスタンスを持つ。三つは型を共有するので、一つのファイルにインポートできるのはちょうど一つである。
++       インスタンス：aviation の `Timespan` と `Quantity` はそのコンパニオンに、また名前で `durationInterfaces.aviationDuration` としてある。生のナノ秒の `Long` は diuretic による `durationInterfaces.javaLongDuration` である。
+
+% 1 1 0 1b3f9dfe2de9fd5011f051b80a5e9175
+
+% 0 1 0 131f1b58cc929b820db0620c4a068f03
+
+@ 0 6 0 1ba35022842cc5410b34f366c78d1b52
++   entry .ms   ナノ秒とミリ秒の間をインラインで変換する
++       二つのオーバーロードがある。`ms(long: Long): Double` は `Long` を百万倍に拡大し、`ms(double: Double): Long` は `Double` を百万分の一に縮小して切り捨てる。
++       向きは名前ではなく引数の型によって決まることに注意すること。
++   entry .ns   ナノ秒の数を `Long` と `Double` の間でインラインで変換する
++       `ns(long: Long): Double` は拡大し、`ns(double: Double): Long` は切り捨てる。
+
+@ 0 3 0 02c8d91084128666082356872fa45f65
++ entry .Dates   暦日のドメイン。`Abstractable` と `Instantiable` のためのマーカー
++     日付という概念を名指すシールされたマーカーであり、それ自身の固定された汎用表現を持たない。インスタンスがその `Result` または `Origin` の型を述べる。
+
+@ 0 3 0 07c2498af6fb5f101a2f834bc69dc659
++ entry .Times   時刻のドメイン。`Abstractable` と `Instantiable` のためのマーカー
++     時刻という概念を名指すシールされたマーカーであり、それ自身の固定された汎用表現を持たない。インスタンスがその `Result` または `Origin` の型を述べる。
+
+@ 0 5 0 1d14c56fbba9ae5d105fdd2308f335c5
++ entry .Uuids   UUID のドメイン。汎用表現はテキスト
++     UUID という概念を名指すシールされたマーカーである。
++     `uuid is Instantiable across Uuids from Text` は UUID をパースする。inimitable の `Uuid` は名前で `uuidInterfaces.soundnessUuid` として提供されるので、ライブラリは inimitable に依存せずに UUID を受け入れられる。
+
+@ 0 4 0 0900cf469f86047f024dd268bbfd35b8
++ entry .EmailAddresses   メールアドレスのドメイン。汎用表現はテキスト
++     メールアドレスという概念を名指すシールされたマーカーである。
++     urticose の `EmailAddress` は、名前でインポートされる given `emailAddressInterfaces.soundnessEmailAddress` によって `Instantiable across EmailAddresses from Text` である。
+
+@ 0 4 0 16f61d8353bfdb2c0fe95073762dd642
++ entry .Hostnames   ホスト名のドメイン。汎用表現はテキスト
++     ホスト名という概念を名指すシールされたマーカーである。
++     urticose の `Hostname` は、名前でインポートされる given `hostnameInterfaces.soundnessHostname` によって `Instantiable across Hostnames from Text` である。
+
+@ 0 5 0 03f6946566005a23186db21ac7b6dd74
++ entry .IpAddresses   IP アドレスのドメイン。汎用表現はテキスト
++     IP アドレスという概念を名指すシールされたマーカーである。
++     urticose の `Ipv4` と `Ipv6` は、名前でインポートされる given `ipAddressInterfaces.soundnessIpv4` と `ipAddressInterfaces.soundnessIpv6` によって `Instantiable across IpAddresses from Text` である。
+
+@ 0 5 0 01fc6dfea91fd67b084dcfd4232b0ca2
++ entry .HttpRequests   HTTP リクエストの本文のドメイン。`Instantiable` のためのマーカー
++     HTTP サーバーが受け取るものを名指すシールされたマーカーである。
++     telekinesis はリクエストの本文を `Instantiable across HttpRequests from Text` である任意の `content` としてデコードでき、コーデックのライブラリ（jacinta、xylophone、ypsiloid）は自身の型のためにそのようなインスタンスを提供するので、どちらの側も他方に依存しない。
+
+@ 0 1 0 04b7d305966a83491a75afe01f15f268
++ entry .HttpStreams   HTTP メッセージの本文のドメイン。そのバイトのための最小限のプルプロトコルを持つ
+
+% 1 1 0 10bcae0587e0e5f6006fc977e8d1fdaf
+
+@ 0 5 0 0bec0eff11ce18aa1acd1ec3d033397c
++       HTTP の本文として送られるものを名指すシールされたマーカーである。
++       `Abstractable across HttpStreams to HttpStreams.Content` である型は、telekinesis のクライアントで POST したり、そのサーバーで提供したりできる。`Content` は、メディアタイプと `Body` の組である。
++       jacinta の `Json`、xylophone の `Xml`、バイナリのコーデックは、自身のコンパニオンにインスタンスを提供する。
+
+% 2 1 0 04755881df680a5f13ff8f932273f94e
+
+% 3 1 0 0698a40b08bf9a001c67222f84581748
+
+% 0 1 0 0bedc855f17376461c07fc5de8e037f4
+
+% 0 1 0 17b8e6705c33e0fa17e9c86d655a64b5
+
+% 1 1 0 0cea11b6acf7cb2b0ae888133cf46d11
+
+@ 0 2 0 1910e573e995e5031b5e390c71fc7917
++       `Body` のプロトコルは、turbulence より下位のライブラリがそれを生成できるよう、意図的に依存関係を持たない。turbulence のストリームはそれとの間で相互に変換される。
+
+% 0 1 0 0fd32faa29fea94c1c22bc9290168da7
+
+@ 0 1 0 19ccce952aff16e31a8074c8e7f7ea23
++   entry .Body   要求駆動の本文のバイトの源。一度に上限付きのチャンクを一つずつ引き出す
+
+% 1 1 0 0b4fb22ee1148f4c1eb8f1facba6884b
+
+@ 0 10 0 1f6072508a0343951611f585ecf47ccc
++         `Body` には `#next(limit)` でバイトを求める。これは最大 `limit` バイトを一つのチャンクとして返すか、ストリームの終わりでは `null` を返し、入力が得られるまでブロックすることがある。
++     entry .empty   バイトを持たない本文
++     entry .apply   `Data` の値全体、チャンクのイテレーター、またはチャンクの `Chain` から作る本文
++         `Data` の値からは、バイトは最大 `limit` バイトの断片で届けられる。
++         stdlib のイテレーターや遅延的なチャンクの `Chain` からは、各呼び出しが次のチャンクを丸ごと届けるので、`limit` はそのサイズを制限しない。イテレーターから作った本文はそれを捕捉する。
++     entry #next   最大 `limit` バイトの次のチャンク。本文の終わりでは `null`
++   entry .Content   メディアタイプ付きの本文：`(Text, HttpStreams.Body)`
+
+@ 0 1 0 1c5f7d9fe5adea3b0d14bbfb507b8ffc
++ entry .abstractables   裸の `Long` を継続時間または時点として読む方法。それぞれ名前でインポートする given
+
+% 1 1 0 1c1e3d09786d63930fdfadd97c784e04
+
+@ 0 4 0 0ea3f084817b8999134692ec43669c6b
++       `Long` は、それがナノ秒、マイクロ秒、ミリ秒、あるいはエポックからのミリ秒のどれを数えているのかを示せないので、`import soundness.*` はそれに何の読み方も与えない。任意の `Abstractable across Durations` や `across Instants` を受け取るメソッドは、これらのうち一つを名前でインポートして単位を選ぶまで、裸の `Long` を拒否する。
+
+% 2 1 0 127e790fce70e4cb08d07448f50cdaec
+
+% 3 1 0 0f33f532c18c91911cdb6698dff47bf0
+
+% 4 1 0 1bab402d48e6fd8517e26b83fa4f9b38
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 147c7520afeb9607084d381f41b71a23
+
+% 1 1 0 161792fc554a8857089408a53b0b0b27
+
+@ 0 4 0 0f8fcb77e804a0c90f37a2b202856687
++       三つの継続時間の given は型を共有するので、一つのファイルにインポートできるのはちょうど一つである。継続時間の読み方と `epochMillisecondsAbstractable` を一緒にインポートすると、どちらも受け入れられるところに渡された `Long` が曖昧になる。
++       `instantiables` は四つすべてを逆向きに映したものである。
+
+% 1 1 0 01e847f219e484980e91b0e518fa1a72
+
+% 1 1 0 190e7ffe181d97341df39c133ba728c5
+
+@ 0 4 0 05d7fae2f712b5cd1829098bdddcef34
++   entry .nanosecondsAbstractable   `Long` の継続時間をナノ秒として読む。汎用表現そのもの
++   entry .microsecondsAbstractable   `Long` の継続時間をマイクロ秒として読む。千倍する
++   entry .millisecondsAbstractable   `Long` の継続時間をミリ秒として読む。百万倍する
++   entry .epochMillisecondsAbstractable   `Long` の時点をエポックからのミリ秒として読む。汎用表現そのもの
+
+@ 0 1 0 0436d2b0a4948edb1c9ab92c1a57729c
++ entry .instantiables   継続時間や時点を裸の `Long` として受け取る方法。それぞれ名前でインポートする given
+
+% 1 1 0 0b8de2dda783b03516f01081f53b41ae
+
+@ 0 3 0 00e3e87fa7dd93aa01c5ae61253fc0b6
++       `abstractables` に対応する `Instantiable` である。一つをインポートすると、任意の `Instantiable across Durations from Long`（または `across Instants`）を返すメソッドが、選んだ単位の `Long` を返せるようになる。
++       より粗い単位への変換は切り捨てる。
+
+% 2 1 0 1103feede49ba1a615b8caf0e04fd94f
+
+% 3 1 0 1b4d1974d0e31d8c0b16d0263069ef9c
+
+% 0 1 0 081d6c21fcfcb9e314a7906e99ef4149
+
+% 0 1 0 07a7617a416581690ea8cbd99e8a9e90
+
+% 0 1 0 1de7a76c5e450163079bf6076073c04c
+
+% 0 1 0 0d64e3bfe31e78f7083e47cae8e87827
+
+% 1 1 0 0c2386b841a2465c1774321d50ede244
+
+@ 0 2 0 1308c1b1bf67c41102c2a9184f263913
++       `abstractables` と同様に、三つの継続時間の given は型を共有し、スコープに置けるのは一つだけである。
+
+% 1 1 0 0c22496b3df8d36f1b43c7d60aac1321
+
+@ 0 4 0 050617bd74d6b1450565d140464a1d24
++   entry .nanosecondsInstantiable   継続時間をナノ秒の `Long` として、そのまま与える
++   entry .microsecondsInstantiable   継続時間をマイクロ秒の `Long` として与える。千で割る
++   entry .millisecondsInstantiable   継続時間をミリ秒の `Long` として与える。百万で割る
++   entry .epochMillisecondsInstantiable   時点をエポックからのミリ秒の `Long` として、そのまま与える
+
+@ 0 1 0 091e19211128e6ff1acc94068f4802ce
++ entry .pathInterfaces   パスを生成する API が返しうるパスの型。それぞれ名前でインポートする given
+
+% 1 1 0 1607bc7a9bd792b10e7c00e822934300
+
+@ 0 4 0 1737971510f7b93d12a330502fab61d0
++       `[path: Instantiable across Paths from Text]` を返すメソッドや `[path: Representative of Paths]` を求めるメソッドは、呼び出し側にパスの型を選ばせる。探すべきコンパニオンのない型については、`import pathInterfaces.*` は given をインポートしないので、これらの given のうち一つを名前でインポートすることで選択を行う。
+
+% 2 1 0 002317ab85dc6a1c1cd63335569ac61e
+
+% 3 1 0 0d617ca3b30e0a50127c28cad449376f
+
+% 0 1 0 1dc3da7c008fb4f117e2428d65bc9dea
+
+% 2 1 0 1a7191ec1956d476027634f2bfee8794
+
+% 0 1 0 1d273d6594c2847c05407937bf266aea
+
+% 1 1 0 1c8a24414e6a2efd1945ac46ee626cd0
+
+@ 0 2 0 0f932e129d4095410e3dd5eeca23385e
++       このパッケージは三つのライブラリから組み立てられる。diuretic が `javaNioPath` と `javaIoFile` を、galilei がプラットフォームのパスの代表を、serpentine が `textPath` を宣言する。
+
+% 1 1 0 1064634d2eac59d508931eec7bd96363
+
+% 1 1 0 056f7c1e24add6551c4e1c8cd4833695
+
+@ 0 21 0 0240066c0919be980a3711d5e798a92c
++   entry .javaNioPath   パスとしての `java.nio.file.Path`。そのテキストへ抽象化され、そのテキストからインスタンス化される（diuretic）
++       オブジェクト `diuretic.JavaNioPath` として、`Abstractable across Paths to Text` でも `Instantiable across Paths from Text` でもある。
++       抽象化はパスの絶対形を与える。相対的な `java.nio.file.Path` は JVM の作業ディレクトリーに対して解決される。
++       JVM のみ。
++   entry .javaIoFile   パスとしての `java.io.File`。そのテキストへ抽象化され、そのテキストからインスタンス化される（diuretic）
++       オブジェクト `diuretic.JavaIoFile` として、`Abstractable across Paths to Text` でも `Instantiable across Paths from Text` でもある。抽象化はファイルの絶対パスを与える。
++   entry .pathOnLinux   `Representative of Paths` としての `Path on Linux`（galilei）
++       消去された証拠である。同じ given が `Linux` のコンパニオンにあり、そこではインポートなしに見つかる。
++   entry .pathOnWindows   `Representative of Paths` としての `Path on Windows`（galilei）
++       消去された証拠である。同じ given が `Windows` のコンパニオンにある。
++   entry .pathOnMacOs   `Representative of Paths` としての `Path on MacOs`（galilei）
++       消去された証拠である。同じ given が `MacOs` のコンパニオンにある。
++   entry .pathOnLocal   ホストのプラットフォームのパスである `Path on Local` を `Representative of Paths` として（galilei）
++       消去された証拠である。同じ given が `Local` のコンパニオンにある。
++   entry .pathOnPosix   `Representative of Paths` としての `Path on Posix`（galilei）
++       任意の POSIX ファイルシステム上のパスのための、消去された証拠である。
++   entry .textPath   `Representative of Paths` としての `Text`。ディレクトリーを普通のテキストとして求められるようにする（serpentine）
++       これをインポートすると、`workingDirectory[Text]` は、パスの型を選ばずに作業ディレクトリーのテキストを与える。
+
+@ 0 1 0 04a93a94153a4a791bca866fb79152bd
++ entry .urlInterfaces   URL を生成する API が返しうる URL の型。それぞれ名前でインポートする given
+
+% 1 1 0 095c3f231234f9b11e9ec187c2fe63a5
+
+@ 0 2 0 155ede94d5da01cb1830a182a5c72f51
++       `[url: Instantiable across Urls from Text]` という境界を持つメソッドは具体的な URL の型を名指さないので、これらのうち一つを名前でインポートすることでインスタンスが選ばれる。
+
+% 2 1 0 1fcf4767e29f7c6f1306ae02e0d50a86
+
+% 3 1 0 02186b8230dcd2640dde513ae1438ebc
+
+% 4 1 0 13e28de9631ddf5608c57fd11b9f8494
+
+% 0 1 0 1ee8b92874a278991a9d3010d3c8cd51
+
+% 0 1 0 071773aef5c8017f1229706341233e7d
+
+% 0 1 0 14e5b809de59029802c7f453d5780425
+
+% 1 1 0 081e58a143e44de405e7450f01b61e90
+
+% 0 1 0 0fe54c60942c801012f97fe4b6157ecd
+
+@ 0 8 0 1a43e2c940d2581500cbb1272a3adf9e
++   entry .javaNetUrl   URL としての `java.net.URL`。そのテキストへ抽象化され、そのテキストからインスタンス化される（diuretic）
++       オブジェクト `diuretic.JavaNetUrl` として、`Abstractable across Urls to Text` でも `Instantiable across Urls from Text` でもある。インスタンス化は `java.net.URI` を経由するので、不正なテキストは Java の API と同じように例外を投げる。
++   entry .soundnessUrl   urticose の `HttpUrl`。テキストをパースしてインスタンス化される（urticose）
++       `HttpUrl is Instantiable across Urls from Text` であり、`HttpUrl` のコンパニオンのインスタンス `Url.instantiable` を名前で提供したものである。
++       有効な URL でないテキストに対して発生する `Tactic[Url.Error]` を必要とし、それを捕捉する。
+
+@ 0 1 0 160b0713db0689111955bae86128e3c4
++ entry .instantInterfaces   時刻を生成する API が返しうる時点の型。それぞれ名前でインポートする given
+
+% 1 1 0 035b37704998bf601d9c47ac7f4a2a91
+
+@ 0 2 0 049af7219cecf2f81fb118998f7f2059
++       `[instant: Instantiable across Instants from Long]` という境界を持つメソッドは、エポックからのミリ秒の `Long` から受け取る時点の型を、呼び出し側に選ばせる。
+
+% 2 1 0 0998e227d8d018ae0bef01e8ce224724
+
+% 3 1 0 1438ec4345484dfd120bae04d5caf089
+
+% 4 1 0 067cbac6eeeb59b21a633377201d0d77
+
+% 0 1 0 1f334b5b2b9a4e3803ab717d1b9f8c47
+
+% 0 1 0 1bf74095c505f83d1fcf41b6612b5f84
+
+% 1 1 0 08bbfc87e8e181b4147ca2308064378b
+
+@ 0 1 0 141f9fcd623f541a18047efcf00412d7
++       diuretic が Java の型を、aviation が自身の `Instant` を宣言する。
+
+% 0 1 0 1325dc7d93eb17630096bac18e675441
+
+@ 0 8 0 1c6a915f8fb1fcfe1ad9b9f877c672b1
++   entry .aviationInstant   aviation の `Instant`。両方向でエポックからのミリ秒として扱う（aviation）
++       任意の `transport` について `(Instant over transport) is Abstractable & Instantiable across Instants to Long from Long` であり、`Instant.generic` から来る。
++   entry .javaTimeInstant   `java.time.Instant`。両方向でエポックからのミリ秒として扱う（diuretic）
++       抽象化は `toEpochMilli` なので、ミリ秒未満の精度は失われる。
++   entry .javaLongInstant   エポックからのミリ秒の生の `Long`。両方向でそのまま（diuretic）
++       恒等変換である。`Long` はすでに汎用表現である。
++   entry .javaUtilDate   `java.util.Date`。両方向でエポックからのミリ秒として扱う（diuretic）
+
+@ 0 1 0 0d707945d74000b30f3e5d671bcc5c65
++ entry .durationInterfaces   時間を測る API が返しうる継続時間の型。それぞれ名前でインポートする given
+
+% 1 1 0 0c7df4692dd40f99198a76d90589ad2c
+
+@ 0 2 0 191344b6905738791eda634ef5a437c7
++       `[duration: Instantiable across Durations from Long]` という境界を持つメソッドは、ナノ秒の `Long` から受け取る継続時間の型を、呼び出し側に選ばせる。
+
+% 2 1 0 04658ffd5792415f0d63851c97b4bf80
+
+% 3 1 0 10f40fc74290daca11c2c1a9be052fbc
+
+% 0 1 0 08510d896ff9d98b1b5ddae155f38275
+
+% 0 1 0 0b5292b740b900e1005de84e3ffa5488
+
+% 0 1 0 0062b16dbb204cec1bc507e9deb68527
+
+% 0 1 0 0628e7fab893ac540de23eb798447093
+
+% 1 1 0 1b1927b7c4f11a7b0a33a5854483847d
+
+% 1 1 0 06f374565a054b720136e5783c81b0c8
+
+% 1 1 0 1b05c5112a716e0610e757875d14a635
+
+@ 0 8 0 06604edfbd6e214c05429326841568a0
++   entry .aviationDuration   時間の quantitative な `Quantity`。両方向でナノ秒として扱う（aviation）
++       秒に正規化できる任意の単位について `Quantity[units] is Abstractable & Instantiable across Durations to Long from Long` である。抽象化は秒に正規化してナノ秒に拡大し、切り捨てる。インスタンス化は `units` へ縮尺を戻す。
++   entry .javaLongDuration   ナノ秒の生の `Long`。両方向でそのまま（diuretic）
++       この `Long` は汎用表現である**ナノ秒**を数える。`Long` がエポックからのミリ秒を数える `javaLongInstant` とは異なる。
++       別の単位の `Long` には、代わりに `abstractables` や `instantiables` から読み方をインポートすること。
+
+@ 0 1 0 154774a90d96b4d40393c56ce7739d7a
++ entry .uuidInterfaces   UUID を生成する API が返しうる UUID の型。それぞれ名前でインポートする given
+
+% 1 1 0 00ac1b24c77d054e044b30b539599875
+
+@ 0 2 0 000ca289fc283bfc1fc5d437f93aff00
++       `[uuid: Instantiable across Uuids from Text]` という境界を持つメソッドは具体的な型を名指さないので、そのインスタンスは名前でインポートされる。
+
+% 2 1 0 051177afb882b0b912b808e61e5fd8a0
+
+% 3 1 0 07d454dfa168ceb014602fcbb7b04374
+
+% 4 1 0 1d77a4e5c73351d717b9440c41a3bbb6
+
+% 0 1 0 014898f361a7960013f0547ad25d6b20
+
+% 0 1 0 1602bc44a01e7d601a6519d0ea094a21
+
+% 0 1 0 0a86def87391224d0c7dbc8b07089086
+
+% 1 1 0 00084603a59976cb05fcd5f5e3ee375e
+
+% 0 1 0 0f46a053941076950957ab4ffb4ba32d
+
+@ 0 2 0 02eb41ea38e1cd070efadfb9ec9a9138
++   entry .soundnessUuid   inimitable の `Uuid`。テキストからパースされる（inimitable）
++       UUID でないテキストに対して発生する `Tactic[Uuid.Error]` を必要とし、それを捕捉する。
+
+@ 0 1 0 01f528ac6176746409db273983f57dc0
++ entry .emailAddressInterfaces   API が返しうるメールアドレスの型。それぞれ名前でインポートする given
+
+% 1 1 0 1302052331424f250ab0d95a0d8a7fdc
+
+@ 0 2 0 15212e1940a002c90f76306002d32391
++       `[email: Instantiable across EmailAddresses from Text]` という境界を持つメソッドのためのものである。そのようなメソッドは、コンパニオンがインスタンスを保持できる具体的な型を名指さない。
+
+% 0 1 0 0c9af34597e3bbc7160ce61b61ec1cba
+
+@ 0 3 0 14ed6a7efde0a1e50df8308437edae44
++   entry .soundnessEmailAddress   urticose の `EmailAddress`。テキストからパースされる（urticose）
++       有効なアドレスでないテキストに対して発生する `Tactic[EmailAddress.Error]` を必要とし、それを捕捉する。
+
+@ 0 1 0 0e926f2192ff34a61e74b9afddadf95a
++ entry .hostnameInterfaces   API が返しうるホスト名の型。それぞれ名前でインポートする given
+
+% 1 1 0 1f21a17fc22063d60e9dfad3e0b818d6
+
+@ 0 2 0 1e23d9eee4423a06104d2726c4dd92ae
++       `[hostname: Instantiable across Hostnames from Text]` という境界を持つメソッドのためのものである。そのようなメソッドは、コンパニオンがインスタンスを保持できる具体的な型を名指さない。
+
+% 0 1 0 03fb9b2bb4a5f4920bf98cb226e162be
+
+@ 0 3 0 1721dcf396d033c204201c460a70fee8
++   entry .soundnessHostname   urticose の `Hostname`。テキストからパースされる（urticose）
++       有効なホスト名でないテキストに対して発生する `Tactic[Hostname.Error]` を必要とし、それを捕捉する。
+
+@ 0 1 0 0687c2155109ea5b062e28669a6bf012
++ entry .ipAddressInterfaces   API が返しうる IP アドレスの型。それぞれ名前でインポートする given
+
+% 1 1 0 05ad81f797b275e51fd0d8f356e328c6
+
+@ 0 3 0 1dfa358df028f79e0624f5ae6d56a7c6
++       `[ip: Instantiable across IpAddresses from Text]` という境界を持つメソッドのためのものである。そのようなメソッドは、コンパニオンがインスタンスを保持できる具体的な型を名指さない。
++       二つの given は異なる型をインスタンス化するので、両方をインポートしてよい。
+
+% 0 1 0 1bdefa9b3a5a12411b8535234966565d
+
+@ 0 4 0 14ed8e1a851a802e0150dd886c0d05df
++   entry .soundnessIpv4   urticose の `Ipv4`。ドット区切りの十進のテキストからパースされる（urticose）
++       IPv4 アドレスでないテキストに対して発生する `Tactic[IpAddress.Error]` を必要とする。
++   entry .soundnessIpv6   urticose の `Ipv6`。テキストからパースされる（urticose）
++       IPv6 アドレスでないテキストに対して発生する `Tactic[IpAddress.Error]` を必要とする。
+
+@ 0 6 0 04fdfe7503fdba361235695841b82881
++ entry .Text   すべての Soundness のライブラリがテキストをやり取りするための、純粋で不透明な文字列の型
++     `Text` は不透明型 `anticipation.internal.Text` であり、ここでエクスポートされる。実行時には `String` であり、型のレベルでは `String` のメソッドを持たず、純粋なので、キャプチャ検査器はその値を何も捕捉しないものとして扱う。
++     すべての Soundness の API は `String` ではなく `Text` を受け取って返し、その操作は `java.lang.String` からではなく、gossamer とコレクションの型クラスから来る。
+
+% 2 1 0 0f0a3a67717d48231212856e506cbbd0
+
+% 3 1 0 135ea5c48974869f15c00c3b4fb32932
+
+% 0 1 0 0398c0c7b1eba5f10a3a72dae5de3020
+
+% 0 1 0 12f5c13b2b2abe310b6106d008b265f6
+
+% 0 1 0 1c447dedb946920b031793f23df0d284
+
+% 0 1 0 0256d2fefef324030fc1ab3418efd032
+
+% 1 1 0 1ee96d7a7aa9f6f3111d6744c61e3d49
+
+@ 0 6 0 0db7b24efa06d5ee0c3a23b0f023bd2f
++     `Text` が期待されるところでは `String` が暗黙に変換され（`Text.conversion`）、`tt` と `s` は明示的に変換する。
++     そのコンパニオンは、`Text` や `String` との `+`、`Int` による `*`、`Zeroic` としての空のテキスト、コレクションの型クラス（`Traversable by Char`、`Reshapable`、`Inclusive`、`Reversible`）、自身および `String` との等価性、`case text: Text` が `String` にマッチするための `Typeable`、そしてマクロのための `ToExpr` と `FromExpr` を提供する。
++     すべては暗黙のスコープにあり、どれもインポートを必要としない。
+
+@ 0 4 0 0664ee9a8b56f2e9034ea1e8eceb60ae
++     マクロの作者は、`Expr(text)` が `Text` 自身のスコープ — そこではエイリアスが透過的である — の中で型付けされたクオートを通じて持ち上げられるので、スプライスされた木が `String & caps.Pure` として型付けされることを知っておくべきである。分離検査を有効にしてコンパイルされた展開箇所では、それは `Text` として失敗する。
++     代わりに `String` を持ち上げてから変換すること：`'{${Expr(text.s)}.tt}`。
+
+@ 0 2 0 0eed214d96c22eaf1c03c2026fb97e5c
++ entry .tt   `String` を `Text` に変換する：`"…".tt`
++     明示的な変換であり、実行時には何もしない。
++     定数のテキストには `t"…"` リテラルを使うほうがよい。
+
+@ 0 2 0 1adc06d800326cea08b4392dc481efd8
++ entry .ss   `Text` のコレクションを、Java や stdlib の API のために `String` のコレクションに変換する
++     `texts.ss` はすべての要素を `Text.s` で写し、`Iterable[String]` とする。
+
+@ 0 4 0 124a4624fce80ef0132f3263667e695f
++ entry .subsumes   `Text` が別のものを部分文字列として含むかどうか
++     `text.subsumes(t"lo")` は `String.indexOf` による部分文字列の包含判定であり、走査も中間のコレクションもない。これが、汎用のコレクションの `subsumes`（`murmuration.subsumes` として今もインポートできる）とは別の拡張メソッドである理由である。
+
+% 2 1 0 141ceabb148df9b40c039096271d90ca
+
+% 3 1 0 0129f931e5ff653b04dc379f5caa8233
+
+% 0 1 0 18a43e30661feb3017aa8e23ac1273b3
+
+% 1 1 0 0373a15968c383c9088f92e134aadf9b
+
+@ 0 1 0 0032befe19c2e37e1900238a06d0d050
++ entry .Textualizable   値を `Text` に変換する型クラス。テキストとして扱えるものなら何でも受け取る API のためのもの
+
+% 1 1 0 043d238e2000d2e013b106ecaacabdec
+
+@ 0 7 0 1e8306642fb4871a1c41d357f9abc36f
++       `value is Textualizable` は拡張メソッド `#textual` を提供するので、API は、正規のテキスト形式を持つ任意の値を、それを定義するライブラリに依存せずに受け入れられる。
++       人間のために描画する `Showable` とは異なり、`Textualizable` な値は、別の姿をしたテキスト*そのもの*である。
++   entry #convert   `Text` としての値
++   entry #textual   `Text` としての値：`value.textual`
++   entry #contramap   別の型のためのインスタンス。まずそれをこの型に写すことで作る
+
+@ 0 7 0 0323b7bbfb58ea7b005798a9aa0731cb
++ entry .Durable   スレッドの境界を越えて保持してよい共有ケイパビリティの分類子
++     モニター、実行中のプロセス、接続、チャンネル、ロガー、ログのシンクのための、キャプチャ検査の分類子（`caps.SharedCapability`）である。
++     タスクの本体は別のスレッドで実行され、ワーカーに保持されるので、`->{caps.any.only[Durable]}` と型付けされる。`Durable` なケイパビリティは捕捉してよいが、たとえば `Tactic` は捕捉できない。`Tactic` は、それを設置した者のスタック上の戻り地点を保持する `caps.Control` ケイパビリティだからである。
++     タスクは自身の戦術を通じてだけエラーを発生させる。
+
+@ 0 3 0 03156880bbf2ac3b15ed78ace3c3ebad
++     ライブラリは、`Durable` を継承することで自身の長寿命のケイパビリティを宣言する。アンビエントであることを意図したものは、多相的なメソッドではなく*値*（またはオブジェクト）である given によって提供される。値は、どのレベルからも見える静的なケイパビリティだからである。
+
+@ 0 4 0 11789a2a231ea63f0786c61fa7a772ab
++ entry .Bidi   位置に基づく操作の読む向き：先頭からか末尾からか
++     ケース `Ltr`（先頭を基準にする）と `Rtl`（末尾を基準にする）を持つ列挙型である。
++     これはコレクションとテキストに対する汎用の位置に基づく操作（`keep`、`skip`、`snip`）の語彙であり、両者が一つの型を共有するためのものである。
+
+% 2 1 0 06fc493f0bdc76ea1eddd3190479c487
+
+% 3 1 0 0f5ec7563bf6145c09b6ff104b735d46
+
+% 0 1 0 1779fb2cede8b54610df664515ca31de
+
+% 1 1 0 14610b35b88dfdaa0f7512fb4d266ca6
+
+@ 0 2 0 1db8bdebdb5a0fcb0c0e6fabb81c0914
++     向きが省略可能なところでは、どこでも `Ltr` がデフォルトである。
++     アンブレラは `Bidi` を gossamer を通じてエクスポートする。
+
+@ 0 1 0 16dad94a9a5fc5b30aa28a047be96d33
++ entry .internal   不透明な `Text` 型とそのコンパニオンのインスタンスの置き場所
+
+% 1 1 0 0fb3e7ee60ed28cb1d961a52115cafbd
+
+% 2 1 0 1716059f8af3c52c10b9f8ea257baddf
+
+@ 0 3 0 09f2aae9999f4800064b07aa37c02ea0
++       直接使うためのものではない。`Text` はここから `anticipation` パッケージへエクスポートされ、そこにあるページに詳しい説明がある。
++   entry .Text   不透明な文字列の型。`anticipation.Text` を参照
+
+% 1 1 0 142732ea1b2c2d0819a16267ab8078b0
+
+@ 0 24 0 083c4b5105c76bac1a73af1ac1c41914
++         不透明型 `Text <: Matchable & caps.Pure` であり、実行時には `String` である。
++         そのコンパニオンは、これを第一級のテキストの型にするインスタンスを保持する。
++     entry .apply   `String`、文字の配列、ASCII のバイトの配列から `Text` を作る
++         バイトは US-ASCII としてデコードされる。他の文字セットにはデコーダーを使うこと。
++     entry .s   `String` としての `Text`：`text.s`
++     entry .zeroic   `Text` のゼロとしての空のテキスト
++     entry .concatenable   `text+text`。二つの `Text` を連結する
++     entry .addableString   `text+string`。`Text` に `String` を付け加える
++     entry .multiplicable   `text*n`。`Text` を `n` 回繰り返す。負の回数は空のテキストを与える
++     entry .fromString   `@main` メソッドがコマンドラインから `Text` のパラメーターを受け取れるようにする
++     entry .traversable   `Text` をその `Char` として走査する
++     entry .reshapable   `Char` の走査から `Text` を組み立て直す
++     entry .inclusive   `Text` が `Char` を含むかどうか
++     entry .convertible   `Char` の任意の走査を `Text` に集める
++     entry .reversible   サロゲートペアを壊さずに `Text` を反転する
++     entry .fromExpr   マクロの `Expr` から定数の `Text` を読む
++     entry .toExpr   `Text` をマクロの `Expr` に持ち上げる
++         持ち上げられた木は `String & caps.Pure` として型付けされる。展開箇所で分離検査が有効な場合は、代わりに `String` を持ち上げて `.tt` で変換すること。
++     entry .conversion   `Text` が期待されるところではどこでも `String` を `Text` に変換する
++     entry .canEqual   厳密な等価性のもとで、二つの `Text` の間の `==` を許可する
++     entry .canEqual2   厳密な等価性のもとで、`String` と `Text` の間の `==` を許可する
++     entry .canEqual3   厳密な等価性のもとで、`Text` と `String` の間の `==` を許可する
++     entry .typeable   パターン `case text: Text` が任意の `String` にマッチするようにする
+
+@ 0 1 0 19db0f33f2e09cf1018d2afb4ee12161
++ entry .Data   不変のバイト列：何も捕捉しない `Array[Byte]`
+
+% 1 1 0 105b71ac0cef0b09052a5db43ca1f3f1
+
+@ 0 3 0 177f3ce278bc171106dc5aa01019b550
++       `Data` は型エイリアス `Array[Byte]^{}` であり、すべての Soundness のライブラリが読み、書き、ハッシュし、エンコードするバイト列である。
++       `apply`、`.build`、`.fill` で作られ、長さがリテラルであるブロックには `Sized[n]` のブランドが付く。
+
+% 2 1 0 0614d411c79f78d50b54646fdde7d411
+
+% 3 1 0 1b46925a6483b5d20fe8e36b9f22cf0e
+
+% 0 1 0 184579c1345eb1d21562dd93e24c7468
+
+% 0 1 0 0d8a6283a3ddb5ea12d8b2b79894eb4b
+
+% 1 1 0 0c9c501f229f7272194776b2490c26d9
+
+% 0 1 0 0938c754f8aebe5607a202ce9f4b4013
+
+% 0 1 0 069830e97d8178940251f4d7b9343765
+
+@ 0 7 0 15be6c84800e5e530b8a67b5c1f9c0b4
++   entry .apply   与えられたバイトからなる `Data`
++   entry .build   与えられた長さの `Data`。新しい配列に書き込む関数によって埋められる
++       `Data.build(n)(array => …)` は `n` バイトの配列を確保し、それを埋めるために関数に渡し、凍結して返す。
++       長さがリテラルなら、結果には `Data & Sized[n]` のブランドが付く。リテラルでなければ普通の `Data` である。
++   entry .fill   与えられた長さの `Data`。各バイトはそのインデックスから計算される
++       長さがリテラルなら、結果には `Data & Sized[n]` のブランドが付く。
+
+@ 0 1 0 03846a35eb724d790f8addc5b31e3f5e
++ entry .Encodable   値を名前付きの形式にエンコードする型クラス。`value.in[Format]`
+
+% 1 1 0 1f57697eb056a0fb1a0c27be8642dc96
+
+@ 0 5 0 04f8b1fdff6d5e1215d7d0a2669eb31f
++       `value is Encodable in Form` は、`value` を `Form` としてエンコードできることを表す。`Form` は `Text`、`Data`、`Json`、`Xml`、バイナリのプロトコル、あるいはコーデックのライブラリが定義する任意のキャリアの型である。
++       エンコードは値のレベルの操作 `value.in[Json]`（`in`）であり、インスタンスが手元にあるところでは `#encode` である。
++       コーデックのライブラリは、しばしば導出されたインスタンスを、その形式のコンパニオンに提供する。
+
+% 2 1 0 123b66935d0ca1b8090c7b1367505606
+
+% 3 1 0 13071c3652515a880fe14c726b6a9821
+
+% 0 1 0 1b69ba22b3ef24d8002e5c0b8b4ee701
+
+% 1 1 0 09e96ebdba44754e1f111b188b8236dd
+
+@ 0 3 0 08aa08f0992f6bf711d9e535ef26c9cd
++       コンパニオンは、プリミティブを `Text`（その `toString`）として、`Data` をそれ自身として、`Long` をビッグエンディアンの 8 バイトとして与える。
++       `Encodable` は追跡される型クラスである。エラーを発生させるコーデックから導出されたインスタンスは、その `Tactic` を保持する。
+
+% 0 1 0 1a41471517edeba8076e51f27970b0b7
+
+% 0 1 0 05e218128c0911e81bad02c341a39cf2
+
+@ 0 16 0 10bdf086c4016a0a13c347f16f147df2
++   entry .bytes   `Data` は `Data` においてそれ自身としてエンコードされる
++   entry .sizedBytes   `Data & Sized[n]` は `Data` においてそれ自身としてエンコードされる
++   entry .longData   `Long` は `Data` においてビッグエンディアンの 8 バイトとしてエンコードされる
++   entry .int   `Int` は `Text` において十進の形式としてエンコードされる
++   entry .double   `Double` は `Text` において `toString` によってエンコードされる
++   entry .byte   `Byte` は `Text` において十進の形式としてエンコードされる
++   entry .short   `Short` は `Text` において十進の形式としてエンコードされる
++   entry .long   `Long` は `Text` において十進の形式としてエンコードされる
++   entry .float   `Float` は `Text` において `toString` によってエンコードされる
++   entry .text   `Text` は `Text` においてそれ自身としてエンコードされる
++   entry .char   `Char` は `Text` において一文字のテキストとしてエンコードされる
++   entry .string   `String` は `Text` において同じテキストとしてエンコードされる
++   entry #encoded   値をその形式にエンコードする
++   entry #encode   値をその形式にエンコードする：`value.encode`
++   entry #contramap   別の型のためのインスタンス。まずそれをこの型に写すことで作る
++       結果はこのインスタンスと関数を捕捉する。
+
+@ 0 4 0 01d94a76d71e28b400bf76c793d82c7f
++ entry .in   値を名前付きの形式にエンコードする：`value.in[Json]`
++     `value is Encodable in Format` に対応する値のレベルの操作である。
++     形式が見つかったインスタンスに暗黙に含まれる `.encode` と、`.json` のような形式ごとの省略形の両方に代わり、呼び出し箇所で対象の形式を名指す。
+
+% 2 1 0 095bee4cf0f17b9c001b214e51b2634e
+
+% 3 1 0 015e649de1970f8c0482d6bc09581937
+
+% 0 1 0 12590d28fb92f6310072091476973cfe
+
+% 0 1 0 08a23d9daefef1c217d895077fbb6665
+
+% 1 1 0 1d6f0256accd9bfe01fd504a18e6dbc9
+
+@ 0 2 0 0f3bb6a6417e24f819c26b679948136d
++ entry .bytestream   `Encodable in Data` インスタンスを通じた、バイト列としての値
++     `value.bytestream` は `value.in[Data]` である。
+
+@ 0 1 0 0aea6762b6b0451b0309326b98ba8cc9
++ entry .Schematic   選んだスキーマ表現で、値のエンコードのスキーマを与える型クラス
+
+% 1 1 0 1d110dc39dbf9ce905052cbceb13c286
+
+@ 0 6 0 16a92286ee08477e0f81d21b2a416a61
++       `value is Schematic over JsonSchema` は `#schema` を提供する。これは `Transport` の表現（jacinta では `JsonSchema`、stratiform では `Tels.Type`）での、値のエンコードのスキーマである。
++       これは `Encodable` の兄弟であり、値のエンコードとそのスキーマが同じ導出から来るよう、二つは `Encodable & Schematic in Json over JsonSchema` のようにしばしば一緒に要求される。
++       形式に固有のインスタンスは、その形式とともにある。
+
+% 0 1 0 15e855c377376efa1f2c34650fb647cd
+
+@ 0 1 0 0dbebe862e5b54a4078910a48734356c
++   entry #schema   `Transport` の表現でのスキーマ
+
+@ 0 1 0 02f358f8d45a33c11361f74884a87e37
++ entry .Schema   テキストを型付きの形式にパースするスキーマの型のための型クラス
+
+% 1 1 0 092a8bf6e97218650561edb65fb2c90d
+
+@ 0 4 0 075f0cf93fd8acca00479bce9c939135
++       `Form` が `Topic` 型メンバーを持つスキーマである。`#parse` は文書をテキストとして読み、スキーマによって型付けされた `Form of Topic` にする。
++   entry #Form   `Topic` 型メンバーで細分化された、パースされた形式
++   entry #parse   テキストの遅延的な連なりを、スキーマの型付きの形式にパースする
+
+@ 0 1 0 02789e3955d962ce133191f7eeea1e16
++ entry .Morphology   コーデックがスキーマとともに運ぶ、形式に依存しないエンコードの形
+
+% 1 1 0 001692b7075bf6f01740e7d16e225f3d
+
+@ 0 5 0 09568a19c5afe47f0aac176a0eb4619a
++       コーデック（jacinta の `Json.Encodable`、stratiform の TEL のコーデック）は、エンコードする値の形態を運ぶので、コーデックとそこから導出されたスキーマは構造上一貫する。形態はその後、下流で、`JsonSchema` や `Tels.Type` のような形式に固有のスキーマへと具体化される。
++       これは構造だけを記録する。説明、フォーマット、範囲は、各形式自身のスキーマに属する。
+
+@ 0 3 0 0a3ef6c778b3a204018667bc157e29e2
++       葉のケースは `Str`（文字列）、`Whole`（整数）、`Real`（小数を含む数）、`Bool`、`Empty`（null または unit）、`Any`（制約なし）であり、複合のケースは次のとおりである。
+
+% 2 1 0 0664accb4f857d8f06e4f06c8bef6ccf
+
+% 3 1 0 06cacd86c582ee15036c4b0c21c1ef5f
+
+% 0 1 0 09c917c1033e97f0103d7f304e9f3f49
+
+% 0 1 0 10709d087d209f771ff49d5a73859b87
+
+% 1 1 0 007a6b7d2a95bad21ccec916bfd383fd
+
+@ 0 14 0 0b864f1b3c3e366e177d711aee270e81
++   entry #optional   この形の値が存在しなくてもよいかどうか：`Opt` の場合だけ真
++       レコードのどのフィールドが必須かを計算するのに使われる。
++   entry .Opt   ある形の、オプショナルな値
++     entry #shape   存在するときの形
++   entry .Arr   同種の要素の列
++     entry #items   各要素の形
++   entry .Dict   任意のキーから値への写像
++     entry #key     キーの形
++     entry #value   値の形
++   entry .Obj   名前付きのフィールドからなるレコード。必須のものを伴う
++     entry #fields     フィールドの名前と形。順番どおり
++     entry #required   存在しなければならないフィールドの名前
++   entry .OneOf   形のタグ付きの選言
++     entry #variants   各バリアントの形
+
+@ 0 4 0 101073d9b3da272516cb95de45eacaf9
++ entry .Underlying   不透明型がプリミティブによって表現されているという、消去された証拠
++     `Underlying[Alias, Primitive]` は、不透明型のコンパニオンに消去された形で宣言され（`Chroma` が `Underlying[Chroma, Int]` を宣言するように）、エイリアスの値をコストなしにその表現として見る `underlying` を許可する。
++     これはシールされており、実行時の値を持たない。
+
+@ 0 3 0 1ce1797c145a7b350e268f84d4419ac0
++ entry .underlying   エイリアスが許す場合に、不透明な値をそのプリミティブの表現として見る
++     `value.underlying[Int]` は、消去された `Underlying[Alias, Int]` がスコープにある場合にのみコンパイルでき、実行時のコストのないキャストである。
+
+@ 0 1 0 1459d6499791256018a8bfeed25da37d
++ entry .Log   四つのレベルのいずれかでイベントをログに記録し、イベントが属し得るカテゴリーを名指す
+
+% 1 1 0 1dc990e6d908fa90151a11d87df18c7b
+
+@ 0 5 0 109415e072b8533103a19808fe62fa87
++       `Log.fine`、`Log.info`、`Log.warn`、`Log.fail` は、スコープにある `Loggable` のインスタンスを通じて値をログに記録する。そのインスタンスは、存在するすべての `LogSink` から `Loggable.fanOut` が暗黙のスコープで導出する。
++       引数は名前渡しで受け取られ、レベルが先に検査されるので、そのレベルを受け付けるシンクがないとき（シンクがまったくない場合も含む）、値は構築されない。無効になったログ文はコストがかからず、ガードも要らない。
+
+% 2 1 0 07ee760d116811d712d1b6f83ab62279
+
+% 3 1 0 1569bab5e40924e317907ddfb0e79933
+
+% 0 1 0 0bd60a5b900f06e80b4328c7ae6f8e61
+
+% 0 1 0 1930c8d5d8359b041e49b420f15808f5
+
+% 0 1 0 18fd51e70409e7670ff0f4ca4f02fbb6
+
+% 1 1 0 16793a94998ca12200e1ce8347f3a91e
+
+@ 0 2 0 04e61fef80951a98036db93dce1fd816
++       ライブラリは、メソッドが独自のイベント型をログに記録することを `logs` で宣言する。`Long logs Backup.Event` のようにである。
+
+@ 0 7 0 07e53f4b99ffb7ed1c98c7a36140a503
++       このオブジェクトは、イベントの性質を表す**カテゴリー**の拡張可能な語彙も保持する。イベント型、あるいはその列挙型のケースの一つは、一つ以上のマーカートレイト（`Log.Network`、`Log.Filesystem`、…）をミックスインし、`Log.Category` の値の集合で設定されたシンク（eucalyptus の `Logger(…, categories = Set(Log.Network))` など）は、実行時の型がそのいずれかをミックスインしているイベントだけを記録する。
++       各トレイトは同じ名前のオブジェクトと対になっており、そのオブジェクトが実行時のクラスを持つ `Category` の値である。
++       このフィルターはライブラリをまたぐので、すべてのライブラリのネットワークのイベントを一度に選べる。
+
+% 2 1 0 1dfe74bcd13224b80923e8a9ad75b66b
+
+% 3 1 0 04b0ddaa4d602a650b9a0778c6858772
+
+% 0 1 0 04c2978d70f59de113c7c3b25a8338d7
+
+% 0 1 0 1c14f15b2fb0ea75096f0df32d491f7b
+
+% 0 1 0 0936ffe62a4c4b001d8f150cdb1035d2
+
+% 1 1 0 1b3c3204af62b497149d6172c670e36e
+
+% 1 1 0 16182c854be8173e1fd30ec842df2be4
+
+% 1 1 0 06dab534789db9061e3e3b25e9afeab9
+
+% 1 1 0 03a5293239afdebe0370c796c2883d2e
+
+@ 0 5 0 023d88c2f9d8312407712c050ec88b99
++   entry .fine   値を `Log.Level.Fine` で記録する。頻度の高い詳細で、デバッグ中に役立つ
++   entry .info   値を `Log.Level.Info` で記録する。重要な操作ごとに一行
++   entry .warn   値を `Log.Level.Warn` で記録する。回復可能な、あるいは予期しないが処理された状況
++   entry .fail   値を `Log.Level.Fail` で記録する。回復不能な形で失敗した操作
++   entry .Category   ログイベントのカテゴリー。そのマーカートレイトの実行時のクラスを持つ
+
+% 1 1 0 197fa6e21cc0807f16e4238827146702
+
+@ 0 27 0 0afaa1eac3ac1fc518c2566a8f018818
++         各カテゴリーは同じ名前のマーカートレイトと対になったオブジェクトである。呼び出し箇所はイベントの一般的な型しか知らないので、シンクは `#reference` によって実行時に、イベントをカテゴリーに照らして検査する。
++     entry #reference   カテゴリーのマーカートレイトの実行時のクラス
++   entry .Memory   メモリーの使用とアロケーションについてのイベント。マーカートレイトとその `Category`
++   entry .Cpu   プロセッサーの使用についてのイベント。マーカートレイトとその `Category`
++   entry .Threading   スレッド、タスク、そのスケジューリングについてのイベント。マーカートレイトとその `Category`
++   entry .Process   オペレーティングシステムのプロセスについてのイベント。マーカートレイトとその `Category`
++   entry .Filesystem   ファイルとディレクトリーについてのイベント。マーカートレイトとその `Category`
++   entry .Disk   ストレージデバイスとボリュームについてのイベント。マーカートレイトとその `Category`
++   entry .Network   ネットワークの接続と通信についてのイベント。マーカートレイトとその `Category`
++   entry .Database   データベースへのアクセスについてのイベント。マーカートレイトとその `Category`
++   entry .Cache   キャッシュ、ヒット、追い出しについてのイベント。マーカートレイトとその `Category`
++   entry .Serialization   エンコードとデコードについてのイベント。マーカートレイトとその `Category`
++   entry .Crypto   暗号の操作についてのイベント。マーカートレイトとその `Category`
++   entry .Auth   認証と認可についてのイベント。マーカートレイトとその `Category`
++   entry .Configuration   設定の読み込みについてのイベント。マーカートレイトとその `Category`
++   entry .Dependency   依存関係の解決についてのイベント。マーカートレイトとその `Category`
++   entry .Scheduler   予定された作業や定期的な作業についてのイベント。マーカートレイトとその `Category`
++   entry .Time   時計とタイミングについてのイベント。マーカートレイトとその `Category`
++   entry .Ui   ユーザーインターフェースについてのイベント。マーカートレイトとその `Category`
++   entry .Protocol   プロトコルのメッセージとハンドシェイクについてのイベント。マーカートレイトとその `Category`
++   entry .Compiler   コンパイルについてのイベント。マーカートレイトとその `Category`
++   entry .Runtime   コードの読み込みなど、実行時環境についてのイベント。マーカートレイトとその `Category`
++   entry .Gc   ガベージコレクションについてのイベント。マーカートレイトとその `Category`
++   entry .Resource   同梱されたリソースの読み込みについてのイベント。マーカートレイトとその `Category`
++   entry .Security   セキュリティに関わる状況についてのイベント。マーカートレイトとその `Category`
+
+@ 0 1 0 07e9bef55299903e12ebb24f09ad3352
++   entry .Level   ログイベントの重大度：`Fine`、`Info`、`Warn`、`Fail`
+
+% 1 1 0 19e73b29be78ca3f1d9fe1c2802ac33c
+
+@ 0 6 0 072c91625ca0830a0fe15b0edb4ee71c
++         最も軽いものから最も重いものへと順序付けられた列挙型である。
++         `Fine` は頻度の高い詳細で、通常は無効にされる。`Info` は重要な操作ごとに一行である。`Warn` は回復可能な、あるいは予期しないが処理された状況である。`Fail` は回復不能な形で失敗した操作で、発生させるエラーと並べて記録される。
++         シンクのしきい値（`LogSink#accepts`）は、eucalyptus の `Logger(Out, level = Log.Level.Warn)` のように、選んだレベルより下のものをすべて捨てる。
++     entry .comparable   レベルを重大度で、`Fine` から `Fail` へと順序付ける
+
+@ 0 1 0 092124a07ee3d223034d34473a0114a7
++ entry .Loggable   ある型のイベントをログに記録する型クラス。スコープにあるシンクから導出される
+
+% 1 1 0 04f40bdddb01eb35004fd82c30547b43
+
+@ 0 7 0 080a740602fa58e9168eee03e41a62c6
++       `event is Loggable` は、`Log.info` とその仲間が必要とするものである。
++       手で書くことはまれである。暗黙のスコープにある `.fanOut` が、イベントを各シンクのキャリア型へ一度だけ転記し（`Transcribable`）、スコープにあるすべての `LogSink` へファンアウトすることで導出する。このため、スコープにあるいくつものシンクがそれぞれすべてのイベントを受け取り、それぞれが独自のしきい値を適用する。
++       スコープにシンクがなければ、導出されたインスタンスは何も記録しない。
++       明示的にインポートされたインスタンスは導出されたものより優先される。eucalyptus の `import logging.silentLogging` は、ファイル内のすべてのログ記録を抑止する。
+
+@ 0 3 0 002bc3abe93a0cc30fc1d8341f9c7c47
++       `Loggable` は共有されるケイパビリティ（`Durable`）である。すべてのタスクから同時に書き込まれ、ファンアウト先のシンクをキャプチャする。このため `logs` は、その証拠をキャプチャするものにする。
+
+% 1 1 0 04ef2a40688e2dbd1effb63cf18051d5
+
+% 0 1 0 0b8e7e103d78896a03550ddcb4561410
+
+% 1 1 0 1d0ef9b85bf7a41a03cde3f5592ceb06
+
+@ 0 8 0 00be14807644cadb1d08341868b632ab
++   entry .silent   何も記録しない、あるイベント型のロガー。純粋な値である
++   entry .fanOut   スコープにあるすべての `LogSink` から、イベントの `Transcribable` を通じてロガーを導出する
++       記録される各イベントについて、そのレベルを受け付けるシンクがあれば、名前渡しのイベントが一度だけ強制評価され、`Transcribable#skip` が拒否しなければ、キャリアへ遅延して転記され、しきい値とカテゴリー（`LogSink#admits`）がそれを受け付けるすべてのシンクへ渡される。
++   entry #log   イベントを、あるレベルとタイムスタンプで記録する
++   entry #contramap   各イベントをまずこの型へ写すことで得られる、別の型のロガー
++       ロガーが関数を保持するので、関数がキャプチャできるのは `Durable` なケイパビリティだけである。
+
+@ 0 1 0 189d3aeaff46ed0106ac680e83735d5a
++ entry .LogSink   あるキャリア型のログイベントの宛先。eucalyptus の `Logger` など
+
+% 1 1 0 07ac2229a58cd1df16691522022a4f48
+
+@ 0 4 0 08ce0375be15ea840659c26ee416f6d4
++       `LogSink[Event, Carrier]` は、`Carrier`（たとえば `Message`）へ転記されたイベントを記録する。
++       これは `Loggable.fanOut` がスコープから集める抽象であり、そのためこのモジュールはログ記録の実行時の仕組みを必要としない。eucalyptus の `Logger` がこれを実装する。
++       イベント型について反変なので、`LogSink[Any, Message]` はすべてのイベントを集める。
+
+@ 0 2 0 0b65d4e0fb97f58a06c35afdad44a6d8
++       シンクは `Durable` なケイパビリティである。すべてのタスクが書き込むので共有され同期されており、アンビエントで、通常はインポートされたパッケージの given である。
+
+% 1 1 0 05bbb80b43c4bfc90e6d1ee7f891567b
+
+@ 0 6 0 0163b268cc10e4ca1c0094d6bd8eea02
++   entry #accepts   シンクがあるレベルのイベントを記録するかどうか
++       イベントが強制評価される前に参照されるので、拒否されたイベントは構築されない。
++   entry #admits   シンクがこの特定のイベントを記録するかどうか。オーバーライドされない限り真
++       転記されたものではなく元のイベントを受け取るので、`Log.Category` で絞り込まれたシンクがイベントの実行時の型を検査できる。
++   entry #submit   すでに転記されたイベントを、あるレベルとタイムスタンプで記録する
+
+@ 0 1 0 15f82ef9b5ceeae5141dd50b7cad93bc
++ entry .Transcribable   イベントをシンクのキャリア型へ転記する型クラス
+
+% 1 1 0 14f098e9038084ac19a4d14926971593
+
+@ 0 3 0 0b89d80f946054aa0c87f665ad1c8eb3
++       `event is Transcribable to Carrier` はイベントを `LogSink` が記録する型へ変換するものであり、あるライブラリのイベントを別のライブラリのイベントの中に運ぶ方法である。
++       given の中では `transcribes` の方が自然に読める。
+
+% 2 1 0 1ecc3d7259b286dd074af1ba473f958a
+
+% 3 1 0 08d71d08c981067d19ffa3c01e08a911
+
+% 0 1 0 1bef97d983d63cc60c95deb13e56f493
+
+% 0 1 0 1a48be2a7f6a35cb0380e19fab8a207e
+
+% 0 1 0 0dbdcebf678d5abc18796044b6bc5740
+
+% 0 1 0 0093ad08a81d70551415bba751617868
+
+% 0 1 0 0acb785fc8cde11811db63080c640ff1
+
+% 1 1 0 09efc278eff6f47009bb1843b0767d0a
+
+@ 0 2 0 0506b43a13be23d9061800b29ef4c72f
++       メッセージの型は任意の `Communicable` なイベントから転記できる。このため `m"…"` のメッセージをログに記録するのに宣言は要らない。
+
+% 0 1 0 1665f21d4c6abddd1a38f8effef039f9
+
+@ 0 3 0 01a5414344989aff031dde4fa0a017a8
++   entry #record   イベントをキャリア型へ転記する
++   entry #skip   イベントを転記せずに捨てるかどうか。オーバーライドされない限り偽
++   entry #contramap   各イベントをまずこの型へ写すことで得られる、別の型のインスタンス
+
+@ 0 4 0 043e6bc252313ff413dfdf1fa59f701c
++ entry .logs   ある型のイベントをログに記録するコードが計算する結果の型：`Result logs Event`
++     `Long logs Backup.Event` は、キャプチャする `Backup.Event is Loggable` を必要とするコンテキスト関数なので、呼び出し側はそのイベントを自ら宣言するか、スコープにそれのためのシンクを持たなければならない。
++     宣言は連鎖できる：`Unit logs Http.Event logs Exec.Event`。
+
+% 2 1 0 12f0f0846b4622961e9e4c359dbb69de
+
+% 3 1 0 1ead999fc729988406d1f91e57dddb34
+
+% 0 1 0 01b734d1942766d5033ce57ed0addc24
+
+% 0 1 0 0ab39b983443f6231214fdf5d770603e
+
+% 0 1 0 1cc6b98563e321e80d31a8bd7c53586b
+
+% 0 1 0 1d5e5abf2490d5890354b1ee431b3423
+
+% 1 1 0 1346bd782d75bfc600b898dbbe421832
+
+@ 0 3 0 112b2d5952ea7a28090691b91664d765
++ entry .transcribes   包む方向に読んだ `Transcribable` のインスタンスの型
++     `Outer transcribes Inner` は `Inner is Transcribable to Outer` である。その given があれば、`Outer` のイベントが受け付けられる場所で、`Inner` のイベントを `Outer` として包んでログに記録できる。
+
+@ 0 1 0 0dcc56428af0e4f71f367ef347caa380
++ entry .Printable   機能が既知の端末向けに、値をテキストとして描画する型クラス
+
+% 1 1 0 0c0596ab95cfb43b18196e9c7ff979d5
+
+@ 0 4 0 1286e32e7d6023ac1099ba259f867e8d
++       `value is Printable` は `Termcap` が与えられたときに値を `Text` へ描画する。このため色やスタイルを持ち得る値（escapade の `Teletype`、`Message`）は、ANSI をサポートしない端末では素のテキストへと格下げされる。
++       turbulence の `Out.println` と `Err.println` は、スコープに `Termcap` があれば任意の `Printable` な値を受け取る。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 0c181d92ecae05bd19ca7f9254fcbf23
+
+% 0 1 0 097beb2d551a40861eb78cf8410cfc61
+
+% 0 1 0 11130178611d4045061ce2bf7fde3d82
+
+% 1 1 0 10b46765b9ab41c4011b7198a102b9f3
+
+@ 0 2 0 09deafb0029cbbc6119e379b857e6f3b
++       コンパニオンは `Text`、`String`、`Char` をそれ自身として印字可能にする。escapade は、そのスタイル付きのテキストに対するインスタンスを提供する。
+
+% 1 1 0 10d6a477e28b05f7060ad4fbca7ff1e3
+
+@ 0 7 0 1ce67ee82aa6016615f997056228f62c
++   entry .text   `Text` はどの端末でもそれ自身として印字される
++   entry .string   `String` は同じテキストとして印字される
++   entry .char   `Char` は一文字のテキストとして印字される
++   entry #print   与えられた機能を持つ端末向けに値を描画する
++   entry #contramap   各値をまず写すことで得られる、別の型のインスタンス。コンテキストに `Termcap` がある
++       関数は `Termcap` のコンテキスト関数なので、写像そのものが端末のサポートするものに依存できる。
+
+@ 0 1 0 0134cdaf89d3d21505b4dd901dc9adab
++ entry .Termcap   端末の機能：ANSI のサポート、色深度、大きさ
+
+% 1 1 0 1bc09f23c755fe680f44b8fff0dd981b
+
+@ 0 6 0 1468d884ec9894fe1326dd69240196ff
++       スコープにある `Termcap` は、`Printable` にどう描画するかを伝える。ANSI のエスケープが理解されるかどうか、何色が使えるか、そして端末の幅と高さである。幅と高さの既定は無制限（`Int.MaxValue`）なので、何も折り返されない。
++       固定のものは `termcapDefinitions` から名前でインポートする。ambience の `termcaps.environmentTermcap` は端末の機能を環境から読み取り、デーモンの呼び出しはそのクライアントのものを運ぶ。
+
+% 0 1 0 17200be02b9e761f13aaea5e1b969e5d
+
+% 0 1 0 1a6e6b9ab8284f7404fee3fb995d1df5
+
+@ 0 4 0 0196afec4c1c3e1516e3e0b5ca355ea9
++   entry #ansi    端末が ANSI のエスケープシーケンスを理解するかどうか
++   entry #color   端末が表示できる色の数
++   entry #width   端末の幅（桁数）。わかっていなければ無制限
++   entry #height   端末の高さ（行数）。わかっていなければ無制限
+
+@ 0 1 0 0d1b3ff7a42178d10836232c75eb5f32
++ entry .ColorDepth   端末が表示できる色の数。なしから 24 ビットのトゥルーカラーまで
+
+% 1 1 0 12c18da1d1fe9e7500f815c6ec13464f
+
+@ 0 3 0 01547346f1faf82c109dc2c24eb682da
++       最も能力の低いものから高いものへと並んだ列挙型である。`NoColor`、基本的な ANSI のパレットである `Indexed8` と `Indexed16`、カラーキューブを持つ 88 色と 256 色のパレットである `Cube4` と `Cube6`、そして 24 ビットカラーの `TrueColor` である。
+
+% 2 1 0 12df9d23e571fa3d1cf046844aca01b3
+
+% 3 1 0 0a169dab4ab5424404c74bf4a418e1fe
+
+% 0 1 0 168e706517284d621638c1daf770ccd4
+
+% 1 1 0 1672c4952fe5911f0294c33305a3ebf6
+
+@ 0 3 0 0f1d489d63281a4d01bbc9b4094c2311
++   entry .apply   `tput colors` が報告する端末の色数に対応する色深度
++       8 は `Indexed8`、15 か 16 は `Indexed16`、52、64、88 は `Cube4`、256 は `Cube6`、65536 か 16777216 は `TrueColor`、それ以外は `NoColor` である。
+
+@ 0 1 0 044b7607d41ffd85142539108aa62fac
++ entry .termcapDefinitions   固定の端末の機能。それぞれ名前でインポートする given である
+
+% 1 1 0 1610a311f8e9e92b173dc5be31072e4a
+
+@ 0 3 0 1317d5032be7645b125abf3bc0ec20dc
++       出力が何の上に描画されるかをわかっているプログラムや、出力がそれを実行する端末に依存してはならないテストや文書のためのものである。
++       `import termcapDefinitions.*` は given をインポートしないので、それぞれ名前でインポートする given である。
+
+% 2 1 0 15bd2b27e8edd80612079a5564441ef9
+
+% 3 1 0 1ebab7d5fedc6ec403b3426b1e244195
+
+% 2 1 0 0c565b85b2512ff8183fc9d24d189161
+
+% 1 1 0 13f6d1697358f72c0acea5010937235f
+
+@ 0 1 0 0315b74d7c3d057412827aa0c018288a
++       どれも幅や高さを報告しないので、テキストが折り返されることはない。
+
+% 1 1 0 0e98ccdf19ba68950ab5ae37a7f00e0a
+
+@ 0 3 0 026d0d2563eb26450b8d65ab5695c8f5
++   entry .basicTermcap   ANSI のサポートも色もない端末。素のテキスト
++   entry .xterm256Termcap   256 色のパレットを持つ ANSI 端末
++   entry .xtermTrueColorTermcap   24 ビットのトゥルーカラーを持つ ANSI 端末
+
+@ 0 1 0 03885e3c5e3ab5740b4842249fda9a9a
++ entry .Chromatic   任意の表現の色を、詰め込まれた 24 ビット RGB の `Chroma` へ還元する型クラス
+
+% 1 1 0 05d684ce7664315414888b8511c51516
+
+@ 0 3 0 0739f70e09184205067d4513814161b9
++       `color is Chromatic` により、描画やスタイル付けを行う API が任意のライブラリの色を受け付けられる。cataclysm の CSS、savagery の SVG、escapade の端末のスタイル付けはそれぞれ `Chromatic` な値を受け取り、iridescence の色空間とピクセルがインスタンスを提供する。
+
+% 2 1 0 0b651ce05e605f761b7cda53ef30df71
+
+% 3 1 0 114c36314cf59c811a9523ad73f94282
+
+% 0 1 0 0c3d9837ec3236620afd381b46d54a98
+
+% 0 1 0 06f3c2b2603e1ebf00c9d9202b396ca4
+
+% 1 1 0 153aa33622b7a49b1ff2f592a9ee7c79
+
+% 1 1 0 08e1dc0d3329074f105710aac8249d75
+
+@ 0 6 0 1b7e97080f5a6051063703d1eb0ce738
++   entry #convert   `Chroma` としての色
++   entry #chroma   `Chroma` としての色：`color.chroma`
++   entry #red     色の赤の成分。0 から 255
++   entry #green   色の緑の成分。0 から 255
++   entry #blue    色の青の成分。0 から 255
++   entry #contramap   まずこの型の色へ写すことで得られる、別の型のインスタンス
+
+@ 0 4 0 1390d81e50f0302e0183bb14e3e3565e
++ entry .Chroma   `Int` に詰め込まれた 24 ビット RGB の色。`Chromatic` の共通通貨
++     `Chroma` は不透明型 `anticipation.internal2.Chroma` で、ここにエクスポートされている。下位 24 ビットに赤、緑、青をそれぞれ 8 ビットずつ、上位のものから順に保持する `Int` である。
++     すべての `Chromatic` のインスタンスが変換する先の型であり、それ自身も `Chromatic` である。
+
+% 2 1 0 13e67704a7afa5c215f1fc3947643769
+
+% 3 1 0 1f9bdc50207072160c17fe7c6a87342b
+
+% 0 1 0 1b23ab95bcf0d2b91d7e3e9a02e375bd
+
+% 0 1 0 0b4328b7a03ab8540b9d72320dc9acdd
+
+% 0 1 0 10f6e01c1d0e507202af9fc68989096b
+
+% 1 1 0 11721bf18c2ae3c803d0914466c4be06
+
+@ 0 2 0 0cb305b353392bdb0313cde4af195ead
++     `red`、`green`、`blue` の拡張メソッドは成分をマスクするので、`Int` の上位 8 ビットが色の一部になることはない。`underlying` は詰め込まれた `Int` を与える。
+
+@ 0 1 0 0bf17c1bf9f3b2191592bb995a8aae59
++ entry .internal2   不透明な `Chroma` 型の置き場所
+
+% 1 1 0 032cb83370563ea416a1d3ff656db7d4
+
+% 2 1 0 0341b94ec22f22c11d02c3419a235720
+
+@ 0 3 0 02f355686443aec50f3bb766d34ffd08
++       直接使うためのものではない。`Chroma` はここから `anticipation` パッケージにエクスポートされており、そこにあるそのページに詳しい説明がある。
++   entry .Chroma   詰め込まれた 24 ビット RGB の色。`anticipation.Chroma` を参照
+
+% 1 1 0 0062faec9b64f0f80955eef41109d7dd
+
+@ 0 9 0 03dd23278ac88a33011cf6100385aad2
++         不透明型 `Chroma <: Matchable` で、実行時には `Int` である。
++     entry .apply   詰め込まれた `Int`、または赤、緑、青の成分からの `Chroma`
++         各成分は 8 ビットにマスクされる。
++     entry .chromatic   `Chroma` はそれ自身として `Chromatic` である
++     entry .underlying   `Chroma` が `Int` で表現されることの消去された証拠
++   entry .underlying   `Chroma` の詰め込まれた `Int`
++   entry .red     `Chroma` の赤の成分。0 から 255
++   entry .green   `Chroma` の緑の成分。0 から 255
++   entry .blue    `Chroma` の青の成分。0 から 255
+
+@ 0 1 0 044a562b054a60f5047ef5b7687bd9e3
++ entry .Channel   `Red[10]` のような、詰め込まれたピクセルのレイアウトの幻のチャンネル。レイアウトに対するマッチ型を持つ
+
+% 1 1 0 031a5fe5320889890b2aece8cccbfa15
+
+@ 0 6 0 014fb8fbdc93c7521967739b4c339cfd
++       チャンネルはビット深度を持つ色の成分で、インスタンス化されることはない。`Red[10]` は 10 ビットの赤である。
++       ピクセルの**レイアウト**は、`(Red[10], Green[12], Blue[10])` のように上位のものから順に並べたチャンネルのタプルであり、iridescence のピクセルの型はレイアウトによってパラメーター化される。
++       各チャンネルの系列はリテラルのラベル（`"red"`、`"cyan"`、…）を持ち、コンパニオンにあるマッチ型はそれによってレイアウトの中のチャンネルを見つける。階層は開かれているので、ライブラリは独自のラベルを持つチャンネルを加えられる。
+
+% 2 1 0 11abc28b5fa05d62052a403071098ff6
+
+% 3 1 0 00f38fb75f8776ef0f7845184bf55150
+
+% 0 1 0 1abc5330569aef8e0a216ea9f43813b0
+
+% 0 1 0 0314f65fa035323b1b4c8c1ca4aff796
+
+% 0 1 0 0b0716dd0b6dcf4b094d1b022e3b2c16
+
+% 1 1 0 0459d03d9bbd20f912476751c60e569a
+
+@ 0 3 0 0b89adb1ed3b07de146c032892c34eac
++       `Channel` は `soundness` アンブレラにはエクスポートされない。そこではこの名前は WebSocket のチャンネルのものだからである。`anticipation.Channel` としてアクセスする。
++       チャンネルの系列 `Red`、`Green`、`Blue` などはエクスポートされている。
+
+% 0 1 0 0417d93f766121a303341663266a570b
+
+@ 0 10 0 0fb0be04b4f8c9ec15405b2efd63fe65
++   entry .Label   チャンネルのリテラルのラベル：`Label[Red[8]]` は `"red"`
++   entry .Bits   チャンネルのビット深度：`Bits[Red[8]]` は `8`
++   entry .TotalBits   レイアウトの全体のビット幅
++   entry .Has   レイアウトがあるラベルのチャンネルを持つかどうか。リテラルの `Boolean` である
++   entry .Shift   レイアウト内でのラベル付きのチャンネルのビットオフセット
++       その下に詰め込まれたチャンネルの幅の合計である。
++       そのチャンネルを持たないレイアウトに対しては簡約されないので、`.red` や `.cyan` のようなアクセサーは、それを持つレイアウトに静的に限定される。
++   entry .Depth   レイアウト内でのラベル付きのチャンネルのビット深度
++   entry .Storage   レイアウトの一つのピクセルを保持する最も狭いプリミティブ：`Byte`、`Short`、`Int`、`Long`
+
+@ 0 9 0 0480a9c6e7f256971eb06068bb8ef028
++   entry .Red   あるビット深度の赤のピクセルのチャンネル。ラベルは `"red"`
++   entry .Green   あるビット深度の緑のピクセルのチャンネル。ラベルは `"green"`
++   entry .Blue   あるビット深度の青のピクセルのチャンネル。ラベルは `"blue"`
++   entry .Alpha   あるビット深度の不透明度のピクセルのチャンネル。ラベルは `"alpha"`
++   entry .Cyan   CMYK のレイアウトのためのシアンのピクセルのチャンネル。ラベルは `"cyan"`
++   entry .Magenta   CMYK のレイアウトのためのマゼンタのピクセルのチャンネル。ラベルは `"magenta"`
++   entry .Yellow   CMYK のレイアウトのためのイエローのピクセルのチャンネル。ラベルは `"yellow"`
++   entry .Key   黒（CMYK の K）のピクセルのチャンネル。ラベルは `"key"`
++   entry .Grey   モノクロのレイアウトのための灰色の強度のピクセルのチャンネル。ラベルは `"grey"`
+
+@ 0 1 0 0bd1d187bcc33f2d1b663e1d72cce8ac
++ entry .Graphical   任意の画像を `Chroma` のピクセルの格子として読む型クラス
+
+% 1 1 0 0758882cce30e3591ea019784041b487
+
+@ 0 3 0 143f7fbad767d09902cd40985c6156c6
++       `image is Graphical` は画像の寸法とピクセルを詰め込まれた RGB として公開するので、利用者は任意のライブラリの型の画像を描画できる。escapade は任意の `Graphical` な値を端末上に描画し、hallucination の `Raster` がインスタンスを提供する。
+
+% 1 1 0 05fcfc458ae1a80508065449e3c31da9
+
+@ 0 3 0 15e2ff80ded87a871347fe9ce7058c3a
++   entry #width    画像の幅（ピクセル数）
++   entry #height   画像の高さ（ピクセル数）
++   entry #pixel    ある列と行にあるピクセルの色
+
+@ 0 1 0 0c45f6ca5b7023310f770e9b4fa26aa9
++ entry .Focusable   ブラウザのドライバーの言葉で、文書中の要素の位置を特定する型クラス
+
+% 1 1 0 09ac9b39a09065bc01a1d1edd9283996
+
+@ 0 6 0 0f08f2c73bf2ad4f1800e6d583bee8ba
++       `value is Focusable` は WebDriver の位置特定方式（`#strategy`：`css selector`、`xpath`、`link text`、`tag name`）を名指し、値をその方式で描画する（`#focus`）。このため tarantula の `element` と `\` は、それらを定義するライブラリに依存せずに、セレクター、XPath、HTML のタグ、素のリンクテキストを受け付ける。
++       それらのライブラリ（cataclysm、xylophone、honeycomb、nomenclature）は自身のコンパニオンでインスタンスを提供する。ここにあるコンパニオンは、`Text` をリンクテキストとしてフォーカスさせる。
+
+% 2 1 0 068232841995a874102eef8d24ee9559
+
+% 3 1 0 011a6ce3dad953341ce463fc9bd395b5
+
+% 0 1 0 1ddab138e2cb3140073e1b1c059f36af
+
+% 0 1 0 1853c678d7166431185ef35eaf226c7b
+
+% 1 1 0 08604fc0ed6e208b195120c09f5275e6
+
+@ 0 5 0 17370b5d74bd4e4f0ee225ce2d38dd23
++       これは純粋な型クラスであり、描画の関数は何もキャプチャしてはならない。
++   entry .apply   方式の名前と純粋な描画の関数からの `Focusable`
++   entry .text   `Text` はリンクテキストとしてフォーカスする。リンクがちょうどそのテキストを持つ要素である
++   entry #strategy   WebDriver の位置特定方式。`css selector` や `xpath` など
++   entry #focus   位置特定方式の構文で描画された値

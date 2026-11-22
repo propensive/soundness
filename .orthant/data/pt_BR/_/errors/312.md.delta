@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 10f4afaf52524cd704cfea9dced19987
++ # `SN-312` — Delimitação de lambdas (aposentado)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Este erro não existe mais. A página é mantida para que o código não seja reutilizado, e para que
++ uma referência a ele vinda de uma versão mais antiga ainda possa ser resolvida.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## O que aconteceu
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ O plugin do compilador Decorum, que lançava este erro, foi extraído de Soundness e agora é o
++ [Consequent](https://github.com/propensive/consequent), um verificador independente do Consequent
++ Style. A regra sobrevive lá sob um novo identificador, em que a letra nomeia o princípio do qual
++ ela deriva:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  Antes
++ column  Agora
+
+% 0 1 0 01660637cb431c9f1e802175b71cb3fd
+
+% 0 1 0 0217caaa8b524a0310d8e9ba3c346319
+
+% 0 1 0 0936c5c0e48a83580cd54656a47c5954
+
+% 0 1 0 1055c0d73dc2bcad08d1a2f30cc44f8f
+
+% 0 1 0 1774bbed96faf60204cdff8f750c45ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

@@ -1,0 +1,86 @@
+orthant 2 language
+
+% 0 1 0 1d701c3696644d4002f5d67ef8a6e73d
+
+@ 0 1 0 1e516b665c87fb4e1d9ae32472fc0156
++ Sollevato quando la risposta a una cerimonia WebAuthn non viene accettata.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 5 0 0029c0fadad4fc761eeb3d0415bfc938
++ Una relying party invia una sfida e verifica ciò che un autenticatore, attraverso un browser,
++ rimanda indietro: una nuova credenziale in una cerimonia di registrazione, o una firma di una
++ credenziale esistente in una cerimonia di autenticazione. Questo errore copre una risposta non
++ ben formata, una che si riferisce a un'altra sfida, origine, relying party o tipo di cerimonia,
++ una a cui l'utente non ha preso parte, un'attestazione che non regge e una firma che non è
++ quella della credenziale.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Codice
++ column  Motivo
++ column  Messaggio
+
+% 0 1 0 1c8bbc501e9cb58318ee0a4b4f1a96d5
+
+% 0 1 0 077d29c2b6fae27f075f57a58fc56542
+
+% 0 1 0 11efc0310eaa4f9f11d22668a4074e78
+
+% 0 1 0 152addace3465f620f6b0df5ba4389f7
+
+% 0 1 0 1d92ef5a7c156e3814f15600ec966d44
+
+% 0 1 0 120611c421b71f3f0d40352de80c728d
+
+% 0 1 0 1735b28b5597b67918480a6c6080ddea
+
+% 0 1 0 054588132b65243202a7652c59d3e771
+
+% 0 1 0 1a88f51cc05a8cef0d18f12c23758614
+
+% 0 1 0 16425ea5df094df81edf6b877d045b4e
+
+% 0 1 0 0753ab62d06ec427105d8fad6c9086e1
+
+% 0 1 0 1a960bbdaef0405d1ca2c96c9fe0a701
+
+% 0 1 0 1ce4d1b78c58397204932c27fd26a02d
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 2 0 1e5845090386f5801227f9860c9f2627
++ Da nessuno di questi errori ci si deve riprendere all'interno della cerimonia: l'utente non
++ viene registrato, o non accede, e una nuova cerimonia comincia con una nuova sfida.
+
+@ 0 4 0 0381da65d1082a0e17ce0ea4cf43d8ed
++ `Challenge` significa il più delle volte che la sfida non è stata conservata tra l'invio delle
++ opzioni e la verifica della risposta, o che una risposta è stata presentata due volte. `Origin`
++ e `RelyingParty` significano che la pagina è stata servita da un luogo che la `RelyingParty`
++ non elenca, o che ha chiesto una credenziale sotto un altro RP ID; un'origine è uno schema, un
++ host e una porta, senza percorso.
+
+@ 0 3 0 1fa7dc6197ca6b991a3e0e127e75d237
++ `Counter` significa che il contatore delle firme dell'autenticatore non è più avanti di quello
++ memorizzato, che è l'aspetto di una credenziale clonata. Si consideri la credenziale
++ compromessa, a meno che non si sappia che il contatore memorizzato è errato.
+
+@ 0 2 0 04b6513c7dcdab5905af0fccf399bfc4
++ `Format` viene sollevato per un formato di attestazione diverso da `none` e `packed`. Una
++ relying party che non esamina l'attestazione dovrebbe chiedere `none`, che è il default.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 3 0 07a5aec997a003610d5b40308e529d2e
++ - Sorgente: `lib/chatelaine/src/core/chatelaine.WebAuthn.scala`
++ - `↯/s.105.9` — `Certificate.Path.Error`, per la catena di certificati di un'attestazione
++ - `↯/s.147.1` — `Jose.Error`, per i token

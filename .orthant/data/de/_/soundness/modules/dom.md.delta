@@ -1,0 +1,329 @@
+orthant 2 language
+
+@ 0 1 0 005d7fa09445bfe10f069ac9767876cb
++ ## Das Browser-DOM
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 4 0 074b97cf54f2228d1017f87c3fd2a3c4
++ Eine Webseite ist ein Baum lebendiger Objekte: das Dokument, seine Elemente und das Fenster
++ um sie herum. Der Browser veröffentlicht ihre Schnittstelle in
++ [WebIDL](https://en.wikipedia.org/wiki/Web_IDL), das festlegt, welche Member `Document` hat,
++ was `getElementById` nimmt und was es zurückgibt.
+
+@ 0 4 0 09bb2b19f705827e1c0236a92471a633
++ Diese Definitionen werden zur [Kompilierzeit] gelesen. Ein Ausdruck über die Seite, der ein
++ Element findet, ihm den Fokus gibt oder das Fenster scrollt, wird in Scala geschrieben. Er wird
++ Member für Member gegen die eigenen Deklarationen des Browsers geprüft und als JavaScript
++ ausgegeben, das die Seite ausführt.
+
+@ 0 5 0 17efadc0699315e31d41cdb47b0f25f8
++ Die globalen Werte der Seite, `document` und `window`, sind fremde Werte des
++ `Browser`-*Ökosystems*. Sie werden navigiert, als wären die Schnittstellen des DOM Scala-Typen,
++ und jeder Schritt liefert einen weiteren fremden Wert des deklarierten Typs. Der entstehende
++ Ausdruck lässt sich zu JavaScript-Text serialisieren oder direkt in ein Event-Handler-Attribut
++ eines [HTML](html.md)-Elements setzen, etwa `onclick`.
+
+@ 0 1 0 01adf852a6ee47a70481b1a5a8f72f5d
++ ### Über das Skripten des Browsers aus Scala
+
+@ 0 5 0 14325381f9e11b1004f9e38a108dd2d7
++ Ein Scala-Programm, das eine Seite erzeugt, läuft auf der JVM, das Verhalten aber, das es an
++ die Seite bindet, läuft in einem Browser. Der übliche Weg, die Lücke zu überbrücken, ist ein
++ String: `onclick="…"`, mit JavaScript, das der Compiler nie sieht. Eine falsch geschriebene
++ Methode, ein Argument des falschen Typs oder ein Aufruf auf etwas, das kein Element ist —
++ jedes davon übersteht die Kompilierung und schlägt fehl, still oder laut, im Browser eines
++ anderen.
+
+@ 0 3 0 080c8e6dab96e43801baaf1dce892686
++ Nichts hier führt das DOM auf der JVM aus. Eine Navigation über `document` baut einen
++ *Ausdruck* auf: einen typisierten Baum aus Referenzen, Selektionen und Anwendungen. Er selbst
++ führt nichts aus. Der Ausdruck wird zu JavaScript serialisiert und der Seite übergeben.
+
+@ 0 4 0 05c1bb138f9d1ff30aab6cb5e579b291
++ Was der Compiler prüft, ist die Konstruktion. Ein Member muss auf dem fremden Typ existieren,
++ und ein Argument muss ein Scala-Wert mit einem bekannten fremden Gegenstück sein. Der
++ Mechanismus ist der allgemeine für [fremde Schnittstellen](foreign-interop.md), mit dem Browser
++ als Ökosystem und dem WebIDL des DOM als Definitionsdatei.
+
+@ 0 2 0 0912bef352deaa6311e67b789081c2f6
++ Alles kommt aus dem Paket `soundness`. Der zweite Import lässt die Beispiele ihre Ergebnisse
++ ausgeben:
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 12e4e53cf6e0a6e815e89a2efd82eafd
++ ### Die globalen Werte der Seite
+
+@ 0 5 0 108248b68baa6735045df86f6348bb80
++ `document` und `window` sind Werte der Typen `Foreign of "Document" from Browser` und
++ `Foreign of "Window" from Browser`. Jeder ist ein fremder Wert, dessen *Topic* der Name einer
++ WebIDL-Schnittstelle ist und dessen *Herkunft* das Ökosystem `Browser`. Jeder steht für die
++ gleichnamige globale JavaScript-Variable und nichts weiter: eine Referenz, die aufgelöst wird,
++ wenn die Seite läuft.
+
+% 2 1 0 0fecee226bfa72b8067130a78fc84780
+
+% 0 1 0 189bb719b9ed07de0b3a2290d41fac0b
+
+% 0 1 0 059572b12f787fe70c067e7f7bd09f38
+
+% 1 1 0 1d8ca1de5060d65c1fc5bc332dfdf845
+
+@ 0 2 0 0713f4fc34cde3e61b8e2fa4980d27ba
++ Das Ökosystem `Browser` hat seine eigenen Schnittstellendefinitionen, sodass kein weiterer
++ Import nötig ist, um von einem der beiden Werte aus zu navigieren.
+
+@ 0 1 0 11bfb84158a274d41257ac8f3f182b31
++ ### Das DOM navigieren
+
+@ 0 5 0 093d0757a91a1f551add1f0cbebaa886
++ Die Member eines fremden Werts sind die Member, die seine WebIDL-Schnittstelle deklariert, und
++ die Auswahl eines davon liefert einen fremden Wert des deklarierten Ergebnistyps. `Document`
++ deklariert `getElementById`, das ein `HTMLElement` zurückgibt. Das Ergebnis wird daher weiter
++ navigiert, zu den Membern von `HTMLElement` wie `focus`, `click` und `blur`. Vererbung wird
++ abgeflacht, sodass ein `HTMLElement` auch alles bietet, was `Element` und `Node` deklarieren:
+
+% 2 1 0 092ec0c8e919d4a70d62734eaf40bf47
+
+% 0 1 0 11548e735f2931c70958ff45c93e124f
+
+% 0 1 0 194571ed9b4e548b0094724c99251f48
+
+% 0 1 0 1f0cc5383f98c252120d31767ef24956
+
+% 1 1 0 008d3320131677aa0a0e882bb2439fa8
+
+@ 0 3 0 109b4582561f0f561d5c846b51743b11
++ `querySelectorAll` gibt eine Sequenz zurück, und eine Sequenz wird mit einer ganzen Zahl
++ indiziert, um ein Element ihres deklarierten Typs zu liefern. `Window` deklariert ein Attribut
++ `document`, sodass dieselbe Seite auf beiden Wegen erreicht werden kann:
+
+% 2 1 0 0cc432b92e86d8ee0976f68b1287947f
+
+% 0 1 0 12af19e48d1f2f0417099fa428940385
+
+% 0 1 0 01e423a5f90f50150f930f16d0da3440
+
+% 1 1 0 16661b3cc5db2f0405125a1f51bd30cb
+
+@ 0 3 0 186e67708d38129812f54995d2da60f3
++ Ein Member, den die Schnittstelle nicht deklariert, ist ein Kompilierfehler. Es ist der Fehler,
++ den ein Browser sonst als `undefined is not a function` melden würde, abgefangen dort, wo der
++ Ausdruck geschrieben wird:
+
+% 2 1 0 030766fb5497fb250918eac65e9dc760
+
+% 3 1 0 15c58706c8c08a6418e36f9bdfc7fc42
+
+% 4 1 0 0e33c72d16c47d8e16b5db2a9d5f1349
+
+% 5 1 0 1f1b5a920d5fec7d0da4d6d0f86f21e3
+
+% 0 1 0 0c0a58052422079b10fb8980a27b0d57
+
+% 1 1 0 081802b71e030752191e33cd18f4c631
+
+@ 0 1 0 0546aa46f8fb8fee10adcd7f30efaa58
++ Ebenso ein Argument des falschen Typs:
+
+% 2 1 0 11863798d40b39440e3d7b67d02602d0
+
+% 3 1 0 1dc8d933b46e11190eb27bb2f8eed8f0
+
+% 4 1 0 0329856f89cf99b00d144f931f7254ee
+
+% 5 1 0 19519a08a6ab684e09c8316e2e6f13fc
+
+% 0 1 0 1ffe2fa8ebaa38740ae1ea4321d63818
+
+% 1 1 0 1d167dbe8b33cf2d09e562fd0e332683
+
+@ 0 1 0 08831c81a048652c18e78a48ce133b50
++ ### Werte, die die Grenze überqueren
+
+@ 0 2 0 06ac5e93440a33b40f63e369493113f1
++ Ein Scala-Wert wird nur dort als Argument übergeben, wo eine `Interoperable`-Instanz angibt,
++ welchem fremden Typ er entspricht:
+
+% 2 1 0 0ec669421c7d2d8d1fdbb739ceb23903
+
+@ 0 2 0 1082ebf8cc39d7150eeb471297135337
++ column  Scala-Typ
++ column  WebIDL-Typ
+
+% 0 1 0 1126ec99012c6af807be25ecc0f32ed9
+
+% 0 1 0 07dc4de44152fbf01f6b04d80962e18f
+
+% 0 1 0 10e507d18880d15814c070f3660ac305
+
+% 0 1 0 18ce2f012a33b4c30382e700c19b586e
+
+% 0 1 0 02b0b30713d242bf0edc6f6d029f8702
+
+% 0 1 0 0d0c02386db5d5a20fa8b440e74f1590
+
+% 0 1 0 01dd63dd599abe5d132aabc320a3b4ec
+
+% 0 1 0 004a452c7b6294fd0345f8975c79e627
+
+% 0 1 0 0ed0fc42ec3b3f4106cb215dc9cdbf28
+
+% 0 1 0 1f3a0e5d4ba1a8b01ba7c30f3cb23f6a
+
+% 0 1 0 1bbcc59ea0d9367502c81f8eccd75374
+
+% 0 1 0 060bafbbcfa44864077a1a65f16a1f6b
+
+% 0 1 0 06ace1e01976b47f11de60fb9ec11a15
+
+% 0 1 0 097e521a2a6095d71db3a353e88bf847
+
+@ 0 1 0 0d634fa96910c27e0e3f3e4585ec6bd2
++ row  `Optional[T]`  `T?`, mit `Unset` als `null`
+
+% 1 1 0 0495b2129035d5e01b41f0e3c782fda6
+
+@ 0 2 0 0b7737f7eb94111201697f9c2d127bdc
++ Die Zahlen haben eine [feste Größe](numbers.md#numeric-types), sodass ein als `long`
++ deklarierter Parameter ein `S32` nimmt und kein `Int` ohne Größenangabe:
+
+% 2 1 0 153844ded7d683a7003ad4988942e09f
+
+% 0 1 0 1d89add1113ca3730afcf506b4740a1c
+
+% 0 1 0 11e352aaed20d95f024f4a119f3d52cd
+
+% 0 1 0 0992721f4226753f11b278ca1a7ecee9
+
+% 1 1 0 17ba4efbdda109a810ab936a6a5fe6c7
+
+@ 0 3 0 16655e9245f934461c26cf9ff8135684
++ Jedes Argument wird gegen den deklarierten Typ seines Parameters geprüft, in den eigenen
++ Begriffen des fremden Typsystems. `scrollTo` will zwei Werte des fremden Typs `s32`, und ein
++ `S32` ist der Scala-Wert, der einen solchen liefert.
+
+@ 0 1 0 061543aab79d3b421ab9f676ffb1f2fb
++ ### Zu JavaScript serialisieren
+
+@ 0 2 0 0b64b1f9d664d0cb0b471dd3294e63ec
++ Das `expr` eines fremden Werts ist sein Ausdruck, ein `Foreign.Expression`, also ein kleiner
++ Baum aus diesen Knoten:
+
+% 2 1 0 16adbe11a3836520115f14e5bd0dc68e
+
+@ 0 8 0 110e475be4671e6319481ac066455902
++ column  Knoten
++ column  Steht für
++ column  Dargestellt als
++ row  `Reference(name)`  eine globale Variable  `document`
++ row  `Select(target, member, owner)`  einen Member eines Werts  `target.member`
++ row  `Apply(target, arguments)`  einen Aufruf  `target(arguments)`
++ row  `Index(target, index)`  einen Indexzugriff  `target[index]`
++ row  `Literal(value)`  eine Konstante  `'text'`, `42`
+
+% 1 1 0 1746897799a706c1138e2dfa22ab9395
+
+@ 0 1 0 1335f65964cbc8a8000268c505a978a4
++ `Javascript.serialize` schreibt den Baum als JavaScript-Quelltext:
+
+% 2 1 0 04842bd69f461128149605c5ce9b0352
+
+% 3 1 0 10481ec2f312ec0b10a9b835734694b6
+
+% 4 1 0 1c00c0d3e42a1c3706c8ace1c4c7050e
+
+% 0 1 0 1aeff8b033bbde6317de96c1e415def5
+
+% 0 1 0 0fbcf02b250e51170fdfeefd369c4fe4
+
+% 0 1 0 13296006bb9760a3147e8e72dd1d4ff7
+
+% 1 1 0 0753306c92fda43a0f3b351ac46d9023
+
+@ 0 3 0 108f2ebb5de6a375172c3d6874816275
++ String-Literale werden mit einfachen Anführungszeichen geschrieben, sodass die Ausgabe sauber
++ in die doppelten Anführungszeichen eines HTML-Attributs passt. Ein Backslash, ein
++ Anführungszeichen oder ein Zeilenumbruch im Text wird maskiert:
+
+% 2 1 0 08566c130eb30cd1069318f82721aa1e
+
+% 3 1 0 1dbc507f5a751c9b1c0e4a48e2f96cd1
+
+% 4 1 0 04ed83142694d603031e8075b9ceacae
+
+% 0 1 0 0e9e133d6f34e209160a9c9219d17e7d
+
+% 1 1 0 116cd498faa0906b1f824fc1a8671de5
+
+@ 0 4 0 1e99741084085f1114ac73aa881477e1
++ Der Ausdruck selbst sind schlichte Daten und lässt sich untersuchen oder abgleichen. Das erste
++ Beispiel oben ist ein `Apply` eines `Select` der `Reference` namens `document`, mit einem
++ einzigen `Literal`-Argument, und [Tests](testing.md) erzeugter Skripte können genau diese
++ Struktur zusichern.
+
+@ 0 1 0 150605148ec3f18405e53c45403b02f1
++ ### Skripte in HTML-Attributen
+
+@ 0 4 0 171927562969e0b503a1412bdd26766a
++ Ein Event-Handler-Attribut eines HTML-Elements, etwa `onclick` oder `onchange`, erwartet ein
++ *Skript*. Das ist eine eigene Art von Attribut, die gewöhnlicher Text nicht erfüllt. Ein fremder
++ DOM-Ausdruck erfüllt sie, und er wird zu JavaScript serialisiert, wenn die Seite angezeigt wird:
+
+% 2 1 0 1f277e16b752848511c4a01f206895c9
+
+% 0 1 0 10a015fbb549ff8011f948ce95f0e5d2
+
+% 0 1 0 052609c9df6005f31476d42073da1093
+
+% 1 1 0 04e4d53ee1034b651a88645d9ae06439
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 078de6bd1092872f1a63ab7518f04b20
+
+% 1 1 0 18e3835743be51e51e547f787d676989
+
+@ 0 3 0 14f9c93d623d92df117425fd9305eea6
++ Ein String an derselben Stelle wird abgelehnt, und das ist der Sinn der Unterscheidung. Das
++ JavaScript, das die Seite erreicht, wurde durch Navigieren der eigenen Definitionen des DOM
++ konstruiert, und kein ungeprüfter Text kann seinen Platz einnehmen:
+
+% 2 1 0 0b21f50d36ac2f2c0110c50d00cad919
+
+% 3 1 0 1e3021151723d87d1ee55db30517c6ac
+
+% 4 1 0 0bf4de4ff38f5d1a0343f67c76f969c1
+
+% 5 1 0 14eb40d0eb14a03c116e143d85fb064f
+
+% 0 1 0 08f1a5c1d6f0fac9044110bbe0a13a29
+
+% 1 1 0 13a6df30577858c618a3147047bcff3c
+
+@ 0 3 0 1d4daf4891a70cf113732bc4777d6168
++ Nur ein fremder Wert aus dem Ökosystem `Browser` wird akzeptiert. Ein fremder Ausdruck aus
++ einem anderen Ökosystem, etwa eine TypeScript-Deklaration oder eine WebAssembly-Schnittstelle,
++ hat dieselbe Gestalt, aber keine Möglichkeit, in einer Seite zu laufen. Er kann kein
++ Event-Handler sein, wie gut er auch typisiert ist.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 4 0 1a01601560f03d7b1517463f38bccfa3
++ - [HTML](html.md#attributes) baut die Elemente, an die Skripte gebunden werden.
++ - [Fremde Schnittstellen](foreign-interop.md) beschreibt den allgemeinen Mechanismus, für andere
++   Ökosysteme.
++ - [Web-Automatisierung](web-automation.md) steuert einen echten Browser von außerhalb der Seite.

@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 15961a9870d782721e20ad7b2b61b09a
++ # `↯/s.68.5` — Contrainte inaccessible
+
+@ 0 2 0 1b378299a04bdb8c137fd4ce3de41a8c
++ Levée à la compilation par la macro `parse` de Nomenclature lorsque la contrainte
++ au niveau des types n'est pas accessible.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 11ee9cbafb28383402a2a6b27d336bc9
++ Le message est volontairement générique : la macro n'a pas pu lire l'expression
++ de la contrainte à la compilation.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 01f13330c8a6e8c1004c01c3844b0936
+
+% 1 1 0 0d0810e97635e8260fba41e6889d92ce
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 2 0 0e2d35305db539bb0ad958160f564ca4
++ Cela indique en général une erreur de configuration interne ; assurez-vous que le
++ type de la contrainte est accessible depuis le site d'appel.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 0e50947c1477812413044192b1714eb2
++ - Source : `lib/nomenclature/src/core/nomenclature.protointernal.scala`

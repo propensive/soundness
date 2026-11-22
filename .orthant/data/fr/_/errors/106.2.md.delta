@@ -1,0 +1,61 @@
+orthant 2 language
+
+% 0 1 0 034521a36c271d7c1f86f106004c533d
+
+@ 0 1 0 16b7e94f7205b3f90afbfe475dbc515c
++ Levée lorsqu'un pointeur JSON ne peut pas être résolu.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 0218d972e0cd99281d6d5dfa8e653bbc
++ Jacinta résout les pointeurs JSON selon la RFC 6901. Le constructeur prend une
++ `reason: Reason` ; le message affiché est `the JSON pointer
+
+% 0 1 0 158b131027feb9391eab6e0b397ad073
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+@ 0 2 0 0ce9f3323010cab5021e70adfcef5654
++ (`↯/s.106.2.1`, `UnknownDocument`, a été retiré quand `JsonPointer` a perdu son URL de document,
++ jamais renseignée, et `JsonPointer.Registry` ; les autres numéros sont inchangés.)
+
+% 0 1 0 00dd5d5779c0f95f1477eb240a154ecb
+
+@ 0 1 0 01c29b357a79e9d80c0e5d213f43e9e8
++ Une référence JSON ne commence pas par `#`.
+
+@ 0 1 0 105e3c4dee51a790105a64c459096fa9
++ **Exemple.** `[↯/s.106.2.2] the JSON reference was not valid because a JSON reference must begin with '#'`
+
+@ 0 1 0 0e02c3730b3808551133a6b50f498754
++ **Résolution.** Commencez la référence par `#`, comme dans `#/play/title`.
+
+% 0 1 0 034c98f84dc358491b08ae76143624e5
+
+@ 0 1 0 06fbbc8ff422674809e73432ced72b39
++ Le fragment d'une référence JSON ne commence pas par `/`.
+
+@ 0 1 0 1eebdd34b53ab9cd0b440a81e81db782
++ **Exemple.** `[↯/s.106.2.3] the JSON reference was not valid because a JSON reference fragment must begin with '/'`
+
+@ 0 1 0 045bcb580c6de5281b75c7ff0313c11f
++ **Résolution.** Commencez le fragment par `/`, comme dans `#/play`. Un `#` seul, qui désigne le document entier, est aussi valide.
+
+% 0 1 0 06c60eb430a43dda148893f098ee48aa
+
+@ 0 1 0 1b3c92628749be9715451d7fbc0415f1
++ Un `~` dans une référence JSON n'est pas suivi de `0` ni de `1`.
+
+@ 0 1 0 05c7364129967dc101f1e6e394871984
++ **Exemple.** `[↯/s.106.2.4] the JSON reference was not valid because a '~' in a JSON reference must be followed by '0' or '1'`
+
+@ 0 1 0 12b5dc6f91211c980559d07428049b1b
++ **Résolution.** Échappez un `~` littéral sous la forme `~0` et un `/` littéral sous la forme `~1`. Aucun autre échappement n'est défini.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 2 0 1969b177843c517a1349e53956b6ebf8
++ - Source : `lib/jacinta/src/core/jacinta.JsonPointer.scala`
++ - `↯/s.106.1` — erreurs d'accès JSON typé

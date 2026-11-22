@@ -1,0 +1,1098 @@
+orthant 2 language
+
+@ 0 1 0 107a54599e94545c0f0fc9caf941e101
++ ## Dateisystem
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 4 0 16ba86d8262ceb9f043709b3ae2c527e
++ Dateien auf einem Datenträger werden über die typisierten [Pfade](paths.md) gelesen und
++ geschrieben, die sie bereits beschreiben. Ein `Path on Linux` hat die Operationen, die den
++ Datenträger berühren: ihn zum Lesen oder Schreiben öffnen, ihn als Datei oder Verzeichnis
++ anlegen, seine Kinder auflisten, kopieren, verschieben und löschen. Jede Operation deklariert
++ die Fehler, die sie auslösen kann.
+
+@ 0 3 0 1b8336d5f1310ff60c5f106f856a3707
++ Wie sich eine Operation in den unangenehmen Fällen verhält, entscheiden Richtlinien, die im
++ Geltungsbereich gewählt werden. Sie legen zum Beispiel fest, ob eine Kopie eine vorhandene
++ Datei überschreibt und ob ein Löschvorgang in ein Verzeichnis hinabsteigt.
+
+@ 0 4 0 171b443660e191241d5309d181341b67
++ Über einzelne Dateien hinaus sind die Standardverzeichnisse eines Systems, etwa das
++ Home-Verzeichnis, der Cache und `/usr/share`, benannte Werte. Ein Verzeichnis kann auf
++ Änderungen überwacht werden. Eine Datei kann gesperrt, in den Speicher abgebildet, mit
++ erweiterten Attributen versehen oder entlang einer Liste von Verzeichnissen gesucht werden.
+
+@ 0 1 0 16bd5223a217010d0702346fda07cfac
++ ### Über das Dateisystem
+
+@ 0 5 0 17f39d71b11217a918acc65ded4088ff
++ Die Dateisystem-API der JVM ist voller untypisierter Kanten. Ein Pfad ist ein String oder ein
++ untypisiertes Objekt. Eine fehlende Datei ist hier ein `null` und dort eine Ausnahme. Die
++ entscheidenden Fragen der Richtlinie sind in Flag-Argumenten vergraben oder durch die gewählte
++ Methode festgelegt und im Typ unsichtbar: Ersetzt diese Kopie, was bereits da ist, und leert
++ dieser Löschvorgang einen ganzen Baum? Ein Programm, das eine davon falsch beantwortet,
++ zerstört Daten.
+
+@ 0 1 0 132f4a4afe4a91c714e83c067f84d8b8
++ Hier werden sie in die Typen gehoben:
+
+@ 0 5 0 0e324b3e64584c1f144b70b2b2996ba0
++ - Ein Pfad trägt seine Plattform, sodass seine Regeln bekannt sind.
++ - Eine Operation deklariert `raises Io.Error`, und der Fehler hat einen spezifischen Grund:
++   eine fehlende Datei, eine verweigerte Berechtigung, ein Verzeichnis, das nicht leer ist.
++ - Jede Richtlinie ist ein expliziter [Kontextwert], sodass Überschreiben oder rekursives
++   Löschen eine Entscheidung ist, die der Code ausspricht, keine Vorgabe, die er erbt.
+
+@ 0 2 0 02ebf91e48de62881c3a56793d54fe88
++ Alles kommt aus dem Paket `soundness`. Die Capabilities des Systems und die Richtlinien, die
++ die Operationen brauchen, werden in den Geltungsbereich gebracht:
+
+% 2 1 0 155243e372c6dca21fef70f144ec1923
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 16dc30250898bc2409d813344f20c8e0
+
+% 0 1 0 0f5baf407fd4fe460823dbe8a72b08d0
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 196c8a597bcc2c1b0933e778d81765e3
+
+% 0 1 0 0e29fdb93f7639341f79f55d2ccb9309
+
+% 0 1 0 022401798934ffd81694ba61e697a094
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 185507d5c88995961b13dd553740b513
+
+% 1 1 0 158821a44078620408f260ca789543b2
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 9 0 14c71c6721dd8e79025b752242f8fe8c
++ column  Importe
++ column  Entscheiden
++ row  `filesystemBackends.javaBaseFilesystem`  welche Implementierung den Datenträger berührt: hier `java.nio`
++ row  `pathInterfaces.pathOnLinux`  den Typ von Pfad, als den die Standardverzeichnisse geliefert werden
++ row  die fünf aus `filesystemOptions`  die Antworten auf die Fragen der Richtlinie, beschrieben unter [Kopieren, Verschieben und Löschen](#copying-moving-and-deleting)
++ row  `charsets`, `codepages`, `textSanitizers`  wie Bytes zu Text werden und Text zu Bytes; [Zeichen](characters.md) beschreibt sie
++ row  `environments`, `systems`, `temporaryDirectories`  woher die [Umgebung](environment.md), die Systemeigenschaften und das temporäre Verzeichnis kommen
++ row  `strategies.throwUnsafely`  dass ein Fehler als Ausnahme geworfen wird; [Fehler](errors.md#choosing-a-strategy) hat die anderen Strategien
++ row  `stdios`, `termcapDefinitions`  wohin die Beispiele ihre Ergebnisse ausgeben
+
+% 1 1 0 010f87bdd4bca34e06c2ce38bdb9b9dd
+
+@ 0 1 0 09588ee4321effc6064fee07f3e3a880
++ Die Beispiele arbeiten in einem eigenen Verzeichnis unterhalb des temporären Verzeichnisses
++ des Systems:
+
+% 2 1 0 1fe92cbe96f01d1006cb96b3ae650474
+
+% 0 1 0 00e51681c5cdc9da101de8239861f825
+
+% 0 1 0 018cfc741c90bbee1241caf45f625e72
+
+% 1 1 0 022b4bfcfe363f940876d10c5d424e48
+
+@ 0 1 0 15a8e50419f71c4c162aa513d8c7bc92
++ ### Dateien und Verzeichnisse
+
+@ 0 2 0 1f1bf37b6cacbf4f0efb7507f13335e6
++ Ein Pfad benennt einen Ort. Ob er eine Datei oder ein Verzeichnis ist, hängt davon ab, was
++ dort angelegt wird. `create[Directory]` und `create[File]` bringen einen Eintrag ins Dasein:
+
+% 2 1 0 0819aff275496d480aa63a34e8194b82
+
+% 3 1 0 17aeb4abab6ffa670d2ea9d6991fbdd7
+
+% 4 1 0 0cc87f16d41faa260400780536054992
+
+% 0 1 0 1d66446f3f3d8d9503f403b1bde0146e
+
+% 0 1 0 13153155407167361247e38e150c33e1
+
+% 1 1 0 0a9631fd2720487e19a16d751eb4ade9
+
+@ 0 3 0 0dec220c4c7e35d411b66003d6100cfa
++ Standardmäßig weigert sich das Anlegen, irgendetwas zu zerstören. Etwas über einem
++ Vorhandenen anzulegen oder unter einem Elternverzeichnis, das nicht existiert, ist ein
++ `Io.Error`. Wo eines davon beabsichtigt ist, sagt es ein Flag, an der Stelle, an der es
++ geschieht, statt dass ein Import es für die ganze Datei sagt:
+
+% 2 1 0 02c29d81240d495717efcf0bce7e7d3e
+
+% 3 1 0 0b208763126b42fe153ddc145da067b9
+
+% 4 1 0 0efa4be4d7c922a90844197ea787366b
+
+% 0 1 0 00015d0db2dc5a6d166e1c1aa1aa5068
+
+% 0 1 0 1ad9e9b143f1476d0e7974db946b36d9
+
+% 0 1 0 107f536d17cfe71010e5f1cf7f252b5e
+
+% 2 1 0 1ef27c2081b7b8dd055b1ae37c4ee597
+
+% 0 1 0 1ac9de578a6a082f167cc22d8b1cd490
+
+% 1 1 0 18ba9e3d0e3f45210c94d64da2e3d871
+
+@ 0 1 0 1a1fb34b744921e8106b096086e87854
++ `Fifo` und `Sock` sind ebenfalls Einträge und werden auf dieselbe Weise angelegt.
+
+@ 0 1 0 099d8ce7b7422e080d27b5267cc3c56e
++ ### Lesen und Schreiben
+
+@ 0 1 0 0793dea3703f59561e5dbbe1ab3546b4
++ Wo eine ganze kleine Datei gewünscht ist, wirken `read` und `write` direkt auf den Pfad:
+
+% 2 1 0 0d3fa71d81c8d7e80f245d5d0aba7898
+
+% 3 1 0 0534d3b92929e4781baf4ca5e9922c43
+
+% 4 1 0 02606b8612dd3a4e03bf8ae0e2f16a2a
+
+% 5 1 0 119df1d417738b5713b10e3741e61c30
+
+% 1 1 0 18e478fc066e10451852af589c0abcaa
+
+% 2 1 0 04ce15d3b8ec3e5105e8c89284c50bfc
+
+@ 0 3 0 1e8d90859924733d17790a771316d8b0
++ `read` nimmt den Typ entgegen, als den die Datei gelesen wird. `Text` wird mit dem Charset im
++ Geltungsbereich dekodiert, und ein Typ mit einem Dekodierer für ein Format liest auf dieselbe
++ Weise, sodass `file.read[Json]` eine [JSON](json.md#parsing)-Datei parst.
+
+@ 0 3 0 1b9c9aaae0f6599c0c064c15d53aa5b0
++ Eine größere Datei wird gelesen und geschrieben, indem man sie *öffnet*. `open` nennt die
++ Form, als die der Pfad geöffnet wird, und den Modus, in dem er geöffnet wird, und führt einen
++ Block mit einem Handle aus. Innerhalb des Blocks ist `file` das offene Handle:
+
+% 2 1 0 1ae8c557c909a45a198bb21caad679dd
+
+% 3 1 0 161157260566b5c90da6569d215a5004
+
+% 4 1 0 0a6c82351b04e7c70cbe87f209e86f38
+
+% 0 1 0 08a636603522eaca1a9ebd56799b406b
+
+% 1 1 0 1c62b73cb609ed871cc43071ef9f05b3
+
+% 0 1 0 0f047750df8a5c511174f1111af5c2cc
+
+% 1 1 0 0d853a23472781151012733437e43c5d
+
+@ 0 4 0 0ba732a794ca6e5406e0aeefcb5be605
++ Das Handle existiert nur für die Dauer des Blocks, sodass der Deskriptor der Datei den
++ Geltungsbereich, dem er gehört, nicht überleben kann. Das ist die Gestalt, die unter
++ [abgegrenzte Geltungsbereiche](../../philosophy/delimited-scopes.md) beschrieben ist, und
++ [Capture-Checking](../../philosophy/capture-checking.md) erzwingt sie.
+
+@ 0 4 0 09e61ee9e1e77fcc02533875778570fb
++ Der Modus ist nicht bloß ein Flag zur Laufzeit. Er wird im Typ des Handles getragen, als eine
++ Menge von *Berechtigungen*. Das Öffnen mit dem Standardmodus `Read` liefert ein Handle, das nur
++ das Lesen erlaubt, und `Read & Write` erlaubt beides. Über ein Handle zu schreiben, das nur
++ zum Lesen geöffnet wurde, kompiliert nicht:
+
+% 2 1 0 0060c063ef913d5908b1bc56855b894f
+
+% 3 1 0 1059f0a89bfc5fc0189d4b8354fe6276
+
+% 4 1 0 0983cf144ac5f5bb0fe793270f46a5e8
+
+% 5 1 0 190c05c99bd036a2004dc1445e537684
+
+% 0 1 0 125ff7d028140bdb0054193896ed304b
+
+% 1 1 0 15dbf37f5e3a56571ff023b39d6d93f6
+
+% 1 1 0 19b1da898df6e1601937a13b126c744a
+
+@ 0 2 0 01e27183f9ebc37a028c6d8a9e469250
++ Eine ganze Klasse von Fehlern wird damit zu einem Kompilierfehler: über ein schreibgeschütztes
++ Handle zu schreiben und einen Deskriptor über seinen Geltungsbereich hinaus zu halten.
+
+@ 0 3 0 07e65451c301968e0a84848841132187
++ Einen Pfad zu öffnen, der ein Verzeichnis benennt, beschränkt, was darüber erreicht werden
++ kann. Pfade, die vom Handle abgeleitet sind, leben auf einer eigenen *frischen Ebene*. `..`
++ kompiliert auf einem solchen Pfad nicht, und ein aus einem offenen Verzeichnis gewonnener Pfad
++ kann nicht unter einem anderen geschrieben werden:
+
+% 2 1 0 0ad9cf5db43a5ffc094c98c79f238c8b
+
+% 3 1 0 1d5c5baf28595bf3179cc6ea34b73f7f
+
+% 4 1 0 13fcbead5c2151b1020943d4944b0999
+
+% 0 1 0 1537be846289719006c281a2a4af3e0f
+
+% 0 1 0 0ebd7060a305dbbb03b61023dafaf55f
+
+% 0 1 0 04a90863466cd478199ec410a137c78a
+
+% 0 1 0 04a78212446d813f05ad71a970bf67f4
+
+% 1 1 0 17a162343d2d0ac11b3f857c772501e4
+
+@ 0 1 0 1b29e799828bd4cd086005ef9a52be21
++ ### Exklusiver und geteilter Zugriff
+
+@ 0 4 0 0b485e6e8eb213ce180de6550ed7ee3f
++ `Exclusive` ist eine dritte Berechtigung neben `Read` und `Write`, und sie bedeutet, was sie
++ sagt. Kein anderer Geltungsbereich im Programm darf, solange sie besteht, einen
++ überlappenden Pfad geöffnet halten. Überlappung bemisst sich nach Enthaltensein, nicht nach
++ Gleichheit: Ein Verzeichnis und etwas darunter überlappen sich, zwei Geschwister nicht.
+
+% 2 1 0 01b1052fa02b80071faaad0aa20cd938
+
+% 3 1 0 00d8da55a086b5ba1ea14f4484e712c1
+
+% 4 1 0 121537bd2b6d5e0212c82e10699a0961
+
+% 0 1 0 07eca7b479606ca41c99d12490956cc6
+
+% 0 1 0 1747c774c9d5adf31a2f731c46f97dfa
+
+% 1 1 0 0cfadefa5a7e8046123b1bba5244e45c
+
+@ 0 4 0 198168aa54d3f54c1734c8c55f9cdda6
++ Zwei gewöhnliche Lesezugriffe können nebeneinander bestehen. Ein exklusives Öffnen steht mit
++ einem überlappenden Öffnen in beiden Richtungen in Konflikt, ob der exklusive
++ Geltungsbereich der äußere oder der innere ist. Der Konflikt ist ein `Io.Error` mit dem Grund
++ `Busy`. Er wird beim zweiten Öffnen ausgelöst und nicht erst später als Beschädigung entdeckt.
++ Der Anspruch wird freigegeben, wenn der Geltungsbereich endet, wie auch immer er endet.
+
+@ 0 6 0 168bf1fe2aaf109b0a204b6a8df2787c
++ Bei einer *Datei*, im Gegensatz zu einem Verzeichnis, nimmt `Exclusive` außerdem eine Sperre
++ des Betriebssystems, sodass die Exklusivität auch gegenüber anderen Prozessen gilt und nicht
++ bloß innerhalb dieses einen. `Shared` ist das Gegenstück für Leser. Beliebig viele geteilte
++ Inhaber können nebeneinander bestehen, und ein exklusives Öffnen wartet auf sie oder schlägt
++ sofort fehl, wenn die Sperre ohne Blockieren angefordert wird. Eine Sperre kann auch einen
++ Bytebereich statt der ganzen Datei abdecken, für die datensatzorientierten Layouts, die
++ Datenbanken verwenden.
+
+@ 0 1 0 103df564bbf22fab12184d16352faca7
++ Die vier Berechtigungen im Vergleich:
+
+% 2 1 0 0e326fa62ad68625039a0a76a0038317
+
+@ 0 7 0 1905cf0e16a6e7050459bf347e4b2727
++ column  Berechtigung
++ column  Erlaubt
++ column  Steht in Konflikt mit
++ row  `Read`  das Lesen, und ist der Standardmodus  einem überlappenden `Exclusive`-Öffnen
++ row  `Write`  das Schreiben  einem überlappenden `Exclusive`-Öffnen
++ row  `Exclusive`  kein anderes überlappendes Öffnen im Programm, und bei einer Datei eine Sperre des Betriebssystems  jedem überlappenden Öffnen, als `Busy`
++ row  `Shared`  bei einer Datei eine geteilte Sperre des Betriebssystems, gehalten neben beliebig vielen anderen  einem `Exclusive`-Öffnen, das darauf wartet
+
+% 1 1 0 129829dea30812391cd218017a7bb920
+
+@ 0 1 0 1999fc929da108e4122abcb2724a0344
++ ### Anlegen als Geltungsbereich
+
+@ 0 4 0 006681d847a91e16100d565471d67b04
++ `create` ist das Gegenstück zu `open`. Wo das Öffnen auf etwas Vorhandenes wirkt, bringt das
++ Anlegen es ins Dasein und liefert für denselben Geltungsbereich ein Handle darauf. Inhalt, der
++ innerhalb des Geltungsbereichs geschrieben wird, wird festgeschrieben, wenn der Block
++ abgeschlossen ist, und ein Geltungsbereich, der fehlschlägt, hinterlässt nichts:
+
+% 2 1 0 1df2c497320212c312b4235c2f1a6c36
+
+% 3 1 0 0e5b1c1f70a52e551f6c2e8a1ea531fc
+
+% 4 1 0 02c489edee6989c30eab2e92e1ca9899
+
+% 0 1 0 1bad568157b3051211b14e48877eb350
+
+% 0 1 0 087c1edc83a2a3111732fc261938c2f7
+
+% 0 1 0 006924ab7c02737802b6d04cdfa289dd
+
+% 0 1 0 0df3616b1683ccf306a3260893c2732e
+
+% 0 1 0 0942dbaa88699f7111a18034ce48d9be
+
+% 1 1 0 00e39ef8820566ae07c4b251f6240875
+
+@ 0 3 0 1bec28590da0734d17cf3d9e3797ec94
++ Ein *temporäres* Verzeichnis wird von seinem Geltungsbereich angelegt und entfernt, ob der
++ Geltungsbereich erfolgreich ist oder fehlschlägt. Eine temporäre *Datei* ebenso, für einen
++ Wegwerfindex oder eine Test-Fixture. Ihr Handle kennt außerdem ihren `path`, für alles, dem
++ mitgeteilt werden muss, wo die Datei ist:
+
+% 2 1 0 15cb60547c7ed1b61ca62acfbeb534eb
+
+% 3 1 0 089ddd36714716451ad7c5fa8abdc482
+
+% 4 1 0 034e2529cd55bafc17a0461fbe92f85a
+
+% 0 1 0 188735f10e3883d718658fd559155a6a
+
+% 0 1 0 053bfb1cf64cb31a158a06bf8a1b18ba
+
+% 0 1 0 1c107e116a7fdd3513b6283c3e4e99bc
+
+% 0 1 0 08038fb03d3d4b491d6bc2260c8b21a1
+
+% 0 1 0 1dc248928e9057fa0d31965169f00031
+
+% 0 1 0 05ba3f5ce1cce79b1c9eab8ba66a5274
+
+% 1 1 0 0010dba12da50d2002831156b797db2e
+
+@ 0 1 0 06e84234673e2a280e6b85dfae05b01f
++ ### Anlegemasken
+
+@ 0 4 0 072b535b04b213b41fc2ec4156752b92
++ Ein Prozess legt Dateien unter seiner *Umask* an: den Berechtigungsbits, die das
++ Betriebssystem allem vorenthält, was er anlegt. Gewöhnlich ist damit alles gesagt. Aber ein
++ Prozess, der mehrere Aufrufer zugleich bedient, etwa ein [Daemon](daemons.md), hat eine Umask
++ und viele Aufrufe, jeder mit seiner eigenen.
+
+@ 0 4 0 0d4c091071a644f503db45910cdd5340
++ Die Maske kann daher ein Kontextwert sein. Eine `Umask` im Geltungsbereich wird auf jede Datei
++ und jedes Verzeichnis angewandt, die angelegt werden, während sie gilt. Sie wird beim Anlegen
++ angefordert, sodass der Eintrag nie mit weiteren Berechtigungen existiert als angefordert. Wo
++ keine im Geltungsbereich ist, gilt `Umask.process`, die des Betriebssystems selbst, genau wie
++ zuvor:
+
+% 2 1 0 09e44a63abc8c5441a99b1bb058e5864
+
+% 0 1 0 19b62c58cce3082809a2dceee2a42f2b
+
+% 0 1 0 02aaa3e4dbc836b41056445cb8d35407
+
+% 0 1 0 09d7f0626ee6529907e5d2d07273a08b
+
+% 0 1 0 0d62db0605ae72e506114570768d4c16
+
+% 1 1 0 0ca5157507172fbb1f3f942c3c0c3e4d
+
+@ 0 5 0 13c3d547047c29c216afea79ca06db6d
++ `0x3f` ist die Maske, die oktal `077` geschrieben wird und eine Datei nur für ihren Besitzer
++ les- und schreibbar lässt. Eine Maske wird mit `Umask.parse(t"022")` aus der Oktalform geparst,
++ die `umask` ausgibt, und `octal` schreibt sie in derselben Form zurück. Das Dienst-Handle
++ eines Daemons ist ein `Umask.Provider`, sodass innerhalb eines `cli`-Blocks die Maske des
++ Aufrufs bereits im Geltungsbereich ist, ohne weitere Deklaration.
+
+@ 0 1 0 1e32e56bdad11e1206224f09b5c47937
++ ### Das Öffnungsmuster im Allgemeinen
+
+@ 0 4 0 11ba36f6a45f2c28135317e9b7f9a7b0
++ `open` ist nicht dateispezifisch. Sehr viele Dinge teilen dieselbe Gestalt. Ein Wert sagt,
++ *wo* etwas ist, ob ein Pfad, ein Puffer im Speicher oder eine URL, und an seinen Inhalt zu
++ gelangen, ist ein eigener, auf einen Geltungsbereich begrenzter Akt. Dieses Muster einmal zu
++ benennen, bedeutet, dass es sich überall gleich liest, wo es gilt.
+
+@ 0 5 0 0d6f46fae17df0d70e905616766de3dd
++ Eine `Openable`-Instanz setzt ein Ziel mit einer *Form* in Beziehung. Deshalb ist die Form ein
++ Typargument und wird nicht vom Ziel impliziert. Derselbe Pfad lässt sich als `File`, als
++ `Directory`, als `Zip`-[Archiv](archives.md), als [PDF](pdf.md) oder als [Bild](images.md)
++ öffnen, und jedes ist ein anderes Handle mit anderen Operationen. Die Form darf weggelassen
++ werden, wo ein Ziel nur eine Instanz hat. Wo es mehrere hat, wird die Mehrdeutigkeit gemeldet,
++ mit den aufgeführten Alternativen.
+
+@ 0 3 0 0d54548c16f86865129c00042952b841
++ Hinter dem Muster stehen die [Typklassen][Typklasse] `Openable`, `Creatable` und
++ `Sessional`, für `open`, `create` und `session`. Der Modus, den die ersten beiden nehmen, ist
++ eine Kombination von `Grant`s.
+
+@ 0 1 0 15d481bfc7a72c2206d5bdd3f337e83e
++ Die Formen, die diese Seite beschreibt, sind:
+
+% 2 1 0 08b9de4ee39561af10cd7c1f1777d240
+
+% 0 1 0 0879ac6fa5e78bdc18f91d73a4c3c722
+
+@ 0 7 0 15410bc4d2e66ea014f74e9c276cfaba
++ column  Das Handle liefert
++ row  `File`  den Inhalt der Datei, zum Lesen oder Schreiben, wie die Berechtigungen es erlauben
++ row  `Directory`  unterhalb des Verzeichnisses beschränkte Pfade, auf einer frischen Ebene
++ row  `Scratch`  ein Verzeichnis, das beim Ende des Geltungsbereichs entfernt wird
++ row  `Scratch.File`  eine Datei, die beim Ende des Geltungsbereichs entfernt wird, und ihren `path`
++ row  `Ram`  positionelle Lese- und Schreibzugriffe auf eine in den Speicher abgebildete Datei beliebiger Größe
++ row  `Watch`  einen Stream der Änderungen unterhalb eines Verzeichnisses
+
+% 1 1 0 08e558da0c94c3c70073b0e0ac497c74
+
+@ 0 1 0 18b021c04c45e1a415c048d726d00346
++ Drei Dinge folgen einheitlich:
+
+@ 0 7 0 14c3529c192b2421046de5b463be8655
++ - Der *Modus*, also `Read`, `Write`, `Exclusive`, `Shared` oder eine Kombination davon, wird
++   im Typ des Handles getragen, sodass die angeforderten Berechtigungen die erlaubten
++   Operationen sind.
++ - Flags nach dem Modus gehören zur Instanz. Sie sind spezifisch für die Art des geöffneten
++   Dings, und ein irrelevantes Flag besteht die Typprüfung nicht.
++ - Das Handle ist eine auf den Block beschränkte [Capability], sodass weder es noch etwas
++   daraus Abgeleitetes entkommen kann.
+
+@ 0 5 0 1a3942651f5cb5ca1f5453f9fc13f117
++ `create` ist dasselbe Muster für etwas, das noch nicht existiert. `session` ist dasselbe
++ Muster für ein Ziel, dessen Zugriff ein Gespräch mit etwas Laufendem ist, etwa einem
++ [Browser](web-automation.md) oder einem [Programm, das debuggt wird](debugging.md), und kein
++ Handle auf gespeicherte Bytes. In jedem Fall ist der Geltungsbereich die Lebensdauer, und das
++ Ende des Blocks ist das Ende des Zugriffs.
+
+@ 0 1 0 1dbadcb1c8bfbd421255124f26363cc1
++ ### Positioneller Zugriff
+
+@ 0 3 0 0ca97a47791546d009debe3e5fc962e9
++ Eine als `Ram` geöffnete Datei wird in den Speicher abgebildet und bedient Lese- und
++ Schreibzugriffe an jeder Position, ohne sie per Stream zu durchlaufen. Zum Schreiben ist, wie
++ überall sonst, die Berechtigung `Write` erforderlich:
+
+% 2 1 0 15bf34678af3b1011485a79c9a4c1ca5
+
+% 3 1 0 11780bc6eedc63b41c2f2d1b90dd301c
+
+% 4 1 0 1421ef2fb68fcaaa045d5383c778ecb4
+
+% 5 1 0 0d6543448297d6ed0ff9532a7c525cfa
+
+% 0 1 0 0d73d78456f97c030df300d3dc1f8400
+
+% 0 1 0 15a61f08869533890441913017bd506f
+
+% 0 1 0 106b4c6f25a3fc410f75ae3afd487fad
+
+% 0 1 0 0d5bfcf7bcd890f81752b3b72de17ca2
+
+% 0 1 0 05d5bfc4e02275e518f30132ab600d9e
+
+% 1 1 0 104d0d0ff424d34509b905ee6c168f87
+
+% 2 1 0 1e699f1cf022d73d1a8fc8257d7ecd6e
+
+@ 0 6 0 19fdb42ff2361a581817a3fafdd69fdd
++ `mapped` bildet eine ganze Datei zum Lesen ab und leiht für die Dauer eines Blocks eine
++ `Terrain`-Ansicht davon. Ein `Terrain` ist ein `Expanse` mit seiner `size` und seinem
++ kopierenden `read`, dessen Bytes im Speicher liegen. Nichts wird kopiert: Ganze Zahlen werden
++ an Ort und Stelle aus dem abgebildeten Speicher geladen, Little-Endian und an jedem Offset, und
++ ein `slice` ist eine schmalere Ansicht desselben Speichers. Mehrere Prozesse, die eine Datei
++ abbilden, teilen sich eine einzige Kopie davon im Seitencache des Betriebssystems, und das
++ macht eine abgebildete Datei zu einem Weg, einen großen Index zwischen Programmen zu teilen:
+
+% 2 1 0 17f44a4212157ec50dd9350241f3a657
+
+% 3 1 0 1bd272b61b50f60d094cf01a8c25841e
+
+% 4 1 0 19e2d123660b102909690a4c87e983a5
+
+% 0 1 0 0544cc4cf91707ef05783c64e2fef233
+
+% 0 1 0 039fbb41581884070a8821e08d8daf69
+
+% 0 1 0 12762121d23730de0c428c8a5e091446
+
+% 0 1 0 0e5e559749e0559916656a6c23538be0
+
+% 0 1 0 16e7122c8ad7d8ff0910be2b736a1605
+
+% 0 1 0 03b0af489a50a19211b1072ecf03c993
+
+% 0 1 0 12dd7d107b6c307e127ee0b07a8fa709
+
+% 1 1 0 1e65d1619c3a34be15a903a9f80a2627
+
+@ 0 1 0 04c506650649166a0fcb5ac8519d82fb
++ Die Ladeoperationen sind diese:
+
+% 2 1 0 0acb8d67d81895c6034e2b570072a82c
+
+@ 0 10 0 14f68d695e3656e2055aae8cd51002ab
++ column  Methode
++ column  Liefert
++ row  `u8`, `u16`  ein vorzeichenloses Byte oder eine vorzeichenlose 16-Bit-Ganzzahl, als `Int`
++ row  `u32`  eine vorzeichenlose 32-Bit-Ganzzahl, als `Long`
++ row  `i32`  dieselben 32 Bits als vorzeichenbehafteten `Int`
++ row  `u64`  eine 64-Bit-Ganzzahl, als `Long`
++ row  `slice`  eine Ansicht eines Teils des Speichers, ohne Kopie
++ row  `read`  einige der Bytes als `Data`, für einen Wert, der die Ansicht überleben muss
++ row  `same`  ob die Bytes an einem Offset die eines `Data` sind, an Ort und Stelle verglichen
++ row  `compare`  die Ordnung einiger Bytes relativ zu einem `Data`, an Ort und Stelle verglichen
+
+% 1 1 0 161bdd6fc6e4b5ac138538385f8d589a
+
+@ 0 5 0 1761fee7219394bf16381c6934889a0f
++ Die Abbildung der Datei wird aufgehoben, wenn der Block endet. Die Ansicht und jeder `slice`
++ davon ist eine auf den Block beschränkte [Capability], sodass ein Laden aus nicht mehr
++ abgebildetem Speicher nicht geschrieben werden kann. Eine Methode, die eine Ansicht empfängt,
++ deklariert sie als `Terrain^`. Dieselben Ladeoperationen gibt es auf `Data`, daneben die
++ Big-Endian-Varianten `u16be`, `i32be`, `u32be` und `u64be`, sodass ein Parser ein Format aus
++ beiden auf dieselbe Weise liest.
+
+@ 0 3 0 1667c85f6944c9b20df329866d243f83
++ Eine abgebildete Datei sollte ersetzt werden, indem man eine neue Datei auf ihren Namen
++ verschiebt, und nicht an Ort und Stelle neu geschrieben: Eine Ansicht sieht weiterhin die
++ Datei, die sie abgebildet hat, unverändert, solange sie gehalten wird. Die Abbildung ist auf
++ der JVM und auf Scala Native verfügbar; WASI hat keine Speicherabbildung und meldet
+
+% 0 1 0 11a16c7ea48f71640c5f1c2cdbb67379
+
+@ 0 6 0 0d1cba4107da607713e0ac9fbaf641a1
++ `Terrain(data)` ist eine Ansicht von Bytes, die bereits im Speicher liegen, um ein für eine
++ abgebildete Datei entworfenes Format stattdessen aus `Data` zu lesen. Ein Pfad ist
++ `Viewable`, die Typklasse eines Werts, der eine Ansicht seiner Bytes leihen kann, sodass ein
++ Format, das an Ort und Stelle gelesen wird, direkt aus seiner Datei geöffnet wird.
++ [RaTEL](tel.md#ratel) ist ein solches Format, ein TEL-Dokument, das so angelegt ist, dass sich
++ ein Datensatz finden lässt, ohne den Rest zu lesen, und `file.open[Ratel]()` bildet die Datei
++ für die Dauer seines Blocks ab.
+
+@ 0 1 0 1fe4b585f3d17acd001e373bf111851b
++ ### Versionen veröffentlichen
+
+@ 0 4 0 031ddec28e7f9b4e1e5cbac91b547e29
++ Eine abgebildete Datei ist ein Weg für ein Programm, einen großen Wert mit anderen zu teilen,
++ ohne eine Kopie in jedem. Das Programm, das den Wert erzeugt, *besitzt* seinen Namen und
++ veröffentlicht darunter eine Version nach der anderen. Die Programme, die ihn verwenden,
++ bilden die jeweils aktuelle Version ab und gehen zur nächsten über, wann sie wollen. Nichts
++ vermittelt zwischen ihnen, weil zwei Regeln eingehalten werden:
+
+@ 0 4 0 15920986ad5ca37d1215a9efb09a74c9
++ - Eine veröffentlichte Datei ändert sich nie. Jede Version wird neben den Namen geschrieben
++   und in einem Schritt darüber verschoben, sodass ein Leser, der eine Version abgebildet hat,
++   sie weiterhin vollständig sieht.
++ - Ein Name hat einen Besitzer. `claim` hält eine Sperre des Betriebssystems auf `<name>.lock`,
++   solange sein Block läuft, und ein zweiter Besitzer, in diesem oder einem anderen Prozess,
++   wird mit `Busy` abgewiesen.
+
+@ 0 2 0 173624c02e3bdf9815b2f47381d4239f
++ `claim` liefert einen `Owner`, dessen `publish` einen Wert in der Form schreibt, die seine
++ `Encodable in Data`-Instanz vorgibt, und die veröffentlichte `Edition` zurückgibt:
+
+% 2 1 0 1759d5a2dd068c4e03119f348a08f734
+
+% 3 1 0 0c572833d775f80811a4b4e8f154df61
+
+% 4 1 0 19e56ccd40be246f16fcba7c4d37f1f4
+
+% 0 1 0 06697ac96f96ed471783c5a0b41543ab
+
+% 0 1 0 0ad783375861ef45154867ee6336ecd9
+
+% 1 1 0 01a1e54fad49df5308d4757b368dd3b3
+
+% 2 1 0 092b7d49cacf080f09ea818d1db3a684
+
+@ 0 3 0 0a5728f70160bd2812968d0e7cc9eb45
++ `published` liefert einen Leser, ein `Published`. Sein `map` leiht eine `Terrain`-Ansicht der
++ Version, die er hält, und sein `refresh` bewegt ihn zu der Version, auf die der Name nun
++ verweist, und sagt, ob es eine gab:
+
+% 2 1 0 01e2ee18d23ea9d8195078bcc4ea26c1
+
+% 3 1 0 1601f6dae5cca73712006cc201b15977
+
+% 4 1 0 04fdc73f105f33031f075af35ba796b7
+
+% 0 1 0 1d03052d36507c8519260aa8c05d60e1
+
+% 0 1 0 110d73eda73d14ff1d7e803be0de569c
+
+% 0 1 0 1af210fdd09fb0901097f8864cb7ab2e
+
+% 0 1 0 1eb11ee390361773100f61b19ce02fc3
+
+% 0 1 0 0a8ab4c7e6dcd9e60fa6c5dff2cefca1
+
+% 0 1 0 1760ce088de6c44917ad1be63cf39bb8
+
+% 0 1 0 1829b4a7cc779102199176c139f4a45f
+
+% 1 1 0 1bdbda924ec5fc091a153c5e60fc7087
+
+@ 0 4 0 02bee554d8b85a30167a955e53a29444
++ Ein Leser nimmt keine Sperre, daher verzögert er den Besitzer nie, und der Besitzer verzögert
++ ihn nie. Eine Ansicht, die in Gebrauch ist, wenn ein `refresh` geschieht, auf diesem Thread
++ oder einem anderen, bleibt gültig, bis ihr Block endet. Zwei Editionen sind genau dann gleich,
++ wenn sie dieselbe Version der Datei sind; sie haben keine Ordnung.
+
+@ 0 5 0 175511a3a5db551a0a0554091375b486
++ Ein Leser hält die Version, die er abgebildet hat, am Leben, auch nachdem eine neuere sie unter
++ dem Namen ersetzt hat, daher sollte ein langlebiger Leser `refresh` aufrufen, wenn er erfährt,
++ dass es etwas Neues gibt, ob durch eine Nachricht oder durch das
++ [Überwachen](#watching-for-changes) des Namens. Die Sperre ist beratend und zwischen
++ kooperierenden Programmen auf den eigenen Dateisystemen eines Rechners verlässlich, nicht aber
++ über ein Netzwerkdateisystem.
+
+@ 0 3 0 03d4543c0c4e808e1b3766ef618f8032
++ Ein `Slice` ist ein Fenster auf einen Teil einer Datei, mit einem Offset und einer Ausdehnung.
++ Es wird wie eine eigene Datei zum Lesen oder Schreiben geöffnet. Ein Bereich einer großen
++ Datei kann daher hinein- oder herausgestreamt werden, ohne den Rest zu berühren, und ein
++ Schreibvorgang kann nicht aus seinem Fenster ausbrechen.
+
+@ 0 1 0 0d87f66a3b5d6628059867ec9487eb4b
++ ### Kopieren, Verschieben und Löschen
+
+@ 0 2 0 11f3c5bb89418d01000ff32715e96fad
++ Ein Pfad wird mit Operationen kopiert, verschoben, verlinkt oder gelöscht, die das Ziel
++ benennen oder an Ort und Stelle wirken:
+
+% 2 1 0 1458b7d801765cba0ca7ec85082623a7
+
+% 3 1 0 166ef637b28d2d1d1453b4cd9cb8d2a6
+
+% 4 1 0 0ddbdeb9e538291d1e440466f126c66b
+
+% 5 1 0 17e36aad0f2f1c011208775349ea3398
+
+% 0 1 0 1bcd392b1b302fc509ee9b90350faa9c
+
+% 0 1 0 1d581f33aec82ac5168a5367d362630e
+
+% 0 1 0 0abb1ccddaf143771a930a633dc9f91a
+
+% 2 1 0 0875e45fd1abe1f41ebf16d4e66dbe23
+
+% 1 1 0 060f72a2f3a8db010d881eb74d899934
+
+% 0 1 0 00a313ad5c1010a6067a71efc96bd180
+
+% 1 1 0 1a15f4426a20b185110e1e8741b3db62
+
+@ 0 1 0 0d3bffed9cc9e9481c24f5a41258075d
++ Jede zieht für die unangenehmen Fälle die Richtlinien im Geltungsbereich heran, und jede kann
++ einen `Io.Error` auslösen.
+
+@ 0 6 0 01af3f52be6ad1ea0b1503d818cc6c11
++ Diese Richtlinien sind keine Vorgaben, die man auf sich beruhen lassen kann. Eine Datei auf
++ einen Pfad zu verschieben, an dem bereits etwas existiert, zerstört dieses entweder oder
++ weigert sich. Keine der Antworten ist allgemein richtig, und eine stillschweigend zu wählen,
++ ließe die falschen Programme kompilieren. Daher verlangt `moveTo` entweder
++ `overwritePreexisting` oder `failOnPreexisting` im Geltungsbereich, und es ohne beide
++ aufzurufen, ist ein Kompilierfehler. Das ist lehrreich und zugleich vorsichtig: Wer nicht
++ bemerkt hatte, dass die Frage eine Antwort braucht, erfährt es.
+
+@ 0 3 0 18b5b7b107322f0c00180172142d1916
++ Die Wahl ändert auch, was behandelt werden muss. Mit `failOnPreexisting` im Geltungsbereich
++ ist eine Kollision ein Fehlschlag, mit dem umzugehen ist. Mit `overwritePreexisting` kann sie
++ nicht auftreten, und die Verpflichtung entfällt mit ihr.
+
+@ 0 3 0 0efa01bea0dafc8214ef67b37a454fd6
++ Die Richtlinien sind Kontextwerte, daher können sie für eine ganze Datei importiert oder auf
++ einen einzelnen Block eingeengt werden. Jede beantwortet eine Frage und kommt als Teil eines
++ Paars aus dem Paket `filesystemOptions`:
+
+% 2 1 0 02b674577112ad4519bbeca76d342708
+
+@ 0 8 0 13bbb775b3fd2fd210b04261c73a1fe1
++ column  Frage
++ column  Ja
++ column  Nein
++ row  Ersetzen, was bereits am Ziel liegt?  `overwritePreexisting`  `failOnPreexisting`
++ row  Ein Verzeichnis vor dem Löschen leeren?  `deleteRecursively`  `deleteOnlyEmpty`
++ row  Fehlende Elternverzeichnisse anlegen?  `createNonexistentParents`  `requireParents`
++ row  Symbolischen Links folgen?  `dereferenceSymlinks`  `preserveSymlinks`
++ row  Atomar verschieben?  `moveAtomically`  `moveNonAtomically`
+
+% 1 1 0 1fc98b4d95c3a31d05ec9ef4f6d25148
+
+@ 0 2 0 058d8eec7e7e7d370212e45ba7c7b190
++ Einen vorhandenen Eintrag zu ersetzen, löscht ihn zuerst, daher braucht
++ `overwritePreexisting` zusätzlich eine der Löschrichtlinien im Geltungsbereich.
+
+@ 0 1 0 06f975a13f0d6dd6187c4a3c71271a67
++ Jede Operation zieht die Richtlinien heran, die sie betreffen:
+
+% 2 1 0 07e296f6d47b93c40128b0fafdff2925
+
+% 0 1 0 0021474943c19599105e7f12177dec1c
+
+@ 0 9 0 08df91deb9ca605b1fc35537e6d0ebca
++ column  Wirkt auf
++ column  Herangezogene Richtlinien
++ row  `copyTo(path)`  den angegebenen Pfad  Ersetzen, Elternverzeichnisse, symbolische Links
++ row  `copyInto(directory)`  ein Kind des Verzeichnisses, unter Beibehaltung des Namens  Ersetzen, symbolische Links
++ row  `moveTo(path)`  den angegebenen Pfad  Ersetzen, Elternverzeichnisse, symbolische Links, Atomarität
++ row  `moveInto(directory)`  ein Kind des Verzeichnisses, unter Beibehaltung des Namens  Ersetzen, symbolische Links, Atomarität
++ row  `symlinkTo(path)`  einen neuen Link am angegebenen Pfad, der hierher zeigt  Ersetzen, Elternverzeichnisse
++ row  `symlinkInto(directory)`  einen neuen Link im Verzeichnis, unter Beibehaltung des Namens  Ersetzen
++ row  `delete()`, `wipe()`  den Pfad selbst  Löschen
+
+% 1 1 0 1604b534b635338a088a65cfa65ec533
+
+@ 0 3 0 0d0d1f42af9e59bb0eaeaf88df69550e
++ Die `…Into`-Formen legen fehlende Elternverzeichnisse selbst an. Ein Verzeichnis zu löschen,
++ das Kinder hat, ist ein `Io.Error` mit dem Grund `DirectoryNotEmpty`, sofern nicht
++ `deleteRecursively` im Geltungsbereich ist. Rekursives Löschen ist somit eine Richtlinie, die
++ bewusst aktiviert werden muss.
+
+@ 0 1 0 1bc8c23a7dbe2eac1a071d14b53e4837
++ ### Auflisten und untersuchen
+
+@ 0 4 0 1bab6ea393d401d21b8b88e49416de59
++ `children` liefert die unmittelbaren Kinder eines Verzeichnisses und `descendants` seinen
++ ganzen Teilbaum. Ein Pfad meldet, ob er existiert, seine Größe und welche Art von Eintrag er
++ ist. Ein `glob` wählt Kinder nach einem Pattern aus, in dem `*` innerhalb eines Namens passt
++ und ein ganzes Segment `**` Verzeichnisse überspannt:
+
+% 2 1 0 09e28a4d23d585c811d6d51f456eabbf
+
+% 3 1 0 1abeb2396ecae92801a85f2ec49a848f
+
+% 4 1 0 081e5993718f1cf603a95470f20005b1
+
+% 0 1 0 119c5c4bcce297810e2ddabef3c832e8
+
+% 1 1 0 032f113a83afb4ac074a39597f4e047a
+
+% 0 1 0 0fa93af7a6be6e791550c2bf365f2851
+
+% 0 1 0 079996f8b363fa8a05027155b0a519e6
+
+% 0 1 0 12db853da6d6e8ae1c805e9c9e679d72
+
+% 1 1 0 0285e100e457c57100dcf171a7b75457
+
+@ 0 3 0 1a65369f6cbbdbbe07433e4ae803bf49
++ Zwei Pfade können einen Eintrag benennen, über symbolische Links oder über `/tmp` und
++ `/private/tmp` unter macOS. `canonical` ist der Pfad des Eintrags, wie ihn das Dateisystem
++ selbst kennt, mit allen Links aufgelöst. Das ist der Pfad, den eine nach Pfad geschlüsselte
++ Registry speichern sollte:
+
+% 2 1 0 0ce08adb9b55095e0816d1e9eadda81a
+
+% 3 1 0 041d763014544f550fcfe20afb99569f
+
+% 4 1 0 12a756ca88f4286806bdf0a41eb80c28
+
+% 0 1 0 09b2885734d92360142bd0e795b2f0aa
+
+% 1 1 0 0daad12a38d7adc004924099688d5f06
+
+@ 0 1 0 0c4be6803c93ff0c1b7afdadebddb5db
++ [Patterns](patterns.md) beschreibt Globs.
+
+@ 0 1 0 1ce39191c0d84eb813524c2ef833b7fd
++ ### Inhaltsadressierter Speicher
+
+@ 0 4 0 0ba7c36fdb79e51708f7b18fb6c983ef
++ Ein Verzeichnis von Blobs, jeder nach dem Hashwert seiner eigenen Bytes benannt, ist
++ ein *inhaltsadressierter Speicher*. Ein Blob wird einmal geschrieben, beim Schreiben verifiziert
++ und von allem gefunden, was seinen Hashwert kennt. `Cas` ist dieser Speicher. Der
++ [Hash-Algorithmus](hashing.md) steht in seinem Typ und im Typ jedes Hashwerts, den er
++ annimmt, sodass ein SHA-256-Speicher nicht nach einem BLAKE3-Hashwert gefragt werden kann:
+
+% 2 1 0 026b22b66bd6bc7d008a5fc96bad27b5
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0e04bcf5a0cd705912c9c8e8a7b1b78b
+
+% 1 1 0 1acc47f474d1bf3d1a380d93d6104c74
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 08ae94fb12bacf46004ff9eb9163af24
+
+% 0 1 0 07fbb7aa51ab5cbf02657f07ff6c6a5b
+
+% 0 1 0 1611c86b3ac5f6730ca13020f82e24c6
+
+% 0 1 0 0f9a76c8999dfca0134524422bc3f3d9
+
+% 1 1 0 15faea8960fcb83401a8479935e61484
+
+@ 0 1 0 0771d4542fbf5a8c0c42fdb3a52a1f0c
++ Ein Speicher hat diese Operationen:
+
+% 2 1 0 0f13bb9271e3a4be153e85d142a5afc2
+
+@ 0 9 0 1ddb73204d2d54741963197c0d4f840a
++ column  Ausdruck
++ column  Bewirkt
++ row  `store() = data`  speichert die Daten unter ihrem eigenen Hashwert und gibt ihn zurück; nichts, wenn der Blob bereits vorhanden ist
++ row  `store(digest) = data`  dasselbe, nachdem geprüft wurde, dass die Daten diesen Hashwert haben, und löst andernfalls einen `Cas.Error` aus
++ row  `store(digest)`  die Bytes, oder `Unset`
++ row  `store.has(digest)`  ob der Blob gespeichert ist
++ row  `store.missing(digests)`  diejenigen einer Liste von Hashwerten, die noch nicht gespeichert sind
++ row  `store.digests`  jeden gespeicherten Hashwert
++ row  `store.prune(digests)`  löscht jeden Blob, der nicht in der Menge ist, und gibt zurück, wie viele es gelöscht hat
+
+% 1 1 0 0c813c3ec26dfcd2121253d22503b486
+
+@ 0 1 0 1e58f0a68d846cb30107919a7e1756c9
++ Mit `prune` wird ein Cache auf das gekürzt, was noch referenziert wird.
+
+@ 0 5 0 0d846e31118512491fa88bfc6d7d6af7
++ Ein Blob wird in ein Geschwister mit eindeutigem Namen geschrieben und atomar an seinen Platz
++ verschoben, sodass ein Leser nie einen unvollständigen Blob sieht. Die Wurzel des Speichers
++ ist hier ein `Path`, aber sein Typ ist der Typ dieser Wurzel, und eine `Cas.Storage`-Instanz
++ für eine andere Art von Wurzel ergibt einen Speicher darüber mit derselben Schnittstelle. Als
++ [Collection](collections.md) ist ein Speicher seine Hashwerte: `store.size`,
++ `store.has(digest)`, `store.at(digest)` und die Traversierung funktionieren alle darauf.
+
+@ 0 1 0 1488ab1cbc7f5cb70255ba665462b295
++ ### Erweiterte Attribute und Volumes
+
+@ 0 3 0 06cb1de56e0429a2122389be5fabaca0
++ Das Dateisystem, auf dem ein Pfad liegt, ist eine typisierte Tatsache über ihn. `Ext4`,
++ `Btrfs`, `Apfs`, `Ntfs` und `Dos` sind die *Achsen*, gegen die ein Pfad abgeglichen werden
++ kann. Ein Dateisystem, das erweiterte Attribute unterstützt, lässt einen Pfad benannte
++ Metadaten über seinen Inhalt hinaus tragen:
+
+% 2 1 0 0abb37d5696a6170140f85c718716403
+
+% 3 1 0 1c8495b674fc63dc1b586372cc3179a3
+
+% 4 1 0 100dcdd5caa60da105828d1ad40f15ba
+
+% 0 1 0 1b6c2226608bb38507c1d14449d766c6
+
+% 0 1 0 11ed84d5fe4e328f17314b9d64202eee
+
+% 0 1 0 004a20244568178208cef5a708664091
+
+% 0 1 0 0d7bfc9f3df4b14d14f9e98507597d3f
+
+% 1 1 0 01521e984c74ed231525b25667555bb3
+
+@ 0 2 0 056e3691bb210447100e2d31c6679ac4
++ Auf btrfs meldet `subvolume` das Subvolume, zu dem ein Pfad gehört, und `subvolumeRoot`, ob
++ er dessen oberste Ebene ist.
+
+@ 0 1 0 0c79b0e645bd89551392f4a70e1320bf
++ ### Standardverzeichnisse
+
+@ 0 3 0 047e8bf23837abe715b018d96c1d6876
++ Die konventionellen Orte eines Systems sind benannte Werte, aufgelöst gegen die
++ [Umgebung](environment.md). Das Home-Verzeichnis und die Pfade darunter sowie die
++ Systemverzeichnisse unter der Wurzel werden durch Navigieren und Anwenden erreicht:
+
+% 2 1 0 0d642b8d76d0a18e089d0388811fa0a4
+
+% 3 1 0 14e57f3a99e385e6023697e00a47ab70
+
+% 4 1 0 0e0264ad69a882dc1d487ddd1f6eabc5
+
+% 0 1 0 0df6927d912ded4a0b375700b44c291d
+
+% 0 1 0 0d48d9cb6c7a65e71cf48bb53977f8b0
+
+% 0 1 0 0ded134ade44d80d10752104828f01f8
+
+% 0 1 0 1b0ada2659bfd2cf1c50dadbe18629bc
+
+% 1 1 0 0fc16b24133b8d121d64257ec02147aa
+
+@ 0 4 0 0434475602a1e89109a4bffbab19df0b
++ Jedes Objekt ist nach dem Verzeichnis benannt, für das es steht, großgeschrieben und ohne einen
++ führenden `.`, da `.` das Trennzeichen zwischen Membern ist. So ist `$HOME/.local/bin`
++ `Home.Local.Bin` und `/var/lib` ist `Base.Var.Lib`. Einen Standardort auf diese Weise und nicht
++ als Text zu schreiben, bedeutet, dass ein falsch geschriebenes Verzeichnis nicht kompiliert:
+
+% 2 1 0 050c172cfa5cbdf1131db8aaf2a39a81
+
+% 3 1 0 19dc5279e93d36dc1e8e0438d2f3e066
+
+% 4 1 0 116471f18d9f7f260c75bb8c929fe300
+
+% 5 1 0 0e93110b08d7981a0184ae3da4575503
+
+% 0 1 0 15002ee939105aa917f53b09533850b1
+
+% 1 1 0 0b6cd6f14cece3dd1652bfa6754aedea
+
+@ 0 1 0 148bb1c45c16c73e07e10cc675cbee63
++ Dies sind die Layouts und ob `readOnly` jedes als nicht zum Beschreiben bestimmt markiert:
+
+% 2 1 0 1744c24ba328f4ba0b522af0f19e5912
+
+% 0 1 0 08ceaa0479829f7014f6b98ae0f48681
+
+@ 0 42 0 103efac5acfdab140c2a4827659e1846
++ column  Verzeichnis
++ column  Schreibgeschützt
++ row  `Home`  `~`  nein
++ row  `Home.Cache`  `~/.cache`  nein
++ row  `Home.Config`  `~/.config`  nein
++ row  `Home.Local`  `~/.local`  nein
++ row  `Home.Local.Bin`  `~/.local/bin`  nein
++ row  `Home.Local.Lib`  `~/.local/lib`  nein
++ row  `Home.Local.Share`  `~/.local/share`  nein
++ row  `Home.Local.State`  `~/.local/state`  nein
++ row  `Base`  `/`  nein
++ row  `Base.Boot`  `/boot`  ja
++ row  `Base.Dev`  `/dev`  nein
++ row  `Base.Dev.Shm`  `/dev/shm`  nein
++ row  `Base.Efi`  `/efi`  ja
++ row  `Base.Etc`  `/etc`  nein
++ row  `Base.Home`  `/home`  nein
++ row  `Base.Proc`  `/proc`  nein
++ row  `Base.Proc(pid)`  `/proc/<pid>`  ja
++ row  `Base.Proc.Sys`  `/proc/sys`  ja
++ row  `Base.Root`  `/root`  nein
++ row  `Base.Run`  `/run`  nein
++ row  `Base.Run.Log`  `/run/log`  nein
++ row  `Base.Run.User`  `/run/user`  nein
++ row  `Base.Srv`  `/srv`  nein
++ row  `Base.Sys`  `/sys`  ja
++ row  `Base.Tmp`  `/tmp`  nein
++ row  `Base.Usr`  `/usr`  ja
++ row  `Base.Usr.Bin`  `/usr/bin`  ja
++ row  `Base.Usr.Include`  `/usr/include`  ja
++ row  `Base.Usr.Lib`  `/usr/lib`  ja
++ row  `Base.Usr.Share`  `/usr/share`  ja
++ row  `Base.Usr.Share.Doc`  `/usr/share/doc`  ja
++ row  `Base.Usr.Share.Factory`  `/usr/share/factory`  ja
++ row  `Base.Usr.Share.Factory.Etc`  `/usr/share/factory/etc`  ja
++ row  `Base.Usr.Share.Factory.Var`  `/usr/share/factory/var`  ja
++ row  `Base.Var`  `/var`  nein
++ row  `Base.Var.Cache`  `/var/cache`  nein
++ row  `Base.Var.Lib`  `/var/lib`  nein
++ row  `Base.Var.Log`  `/var/log`  nein
++ row  `Base.Var.Spool`  `/var/spool`  nein
++ row  `Base.Var.Tmp`  `/var/tmp`  nein
+
+% 1 1 0 0ad97e4a9e1823901dcdf3d3e0bd427a
+
+@ 0 6 0 0aa8b6ed35ad404b12222e62dc916832
++ Ein Layout ist ein fester Ort. `Home.Config` ist immer `$HOME/.config`, und nur `$HOME` wird
++ aus der Umgebung gelesen. Die Orte, die die
++ [XDG-Spezifikation](environment.md#standard-directories) den Benutzer verlegen lässt, etwa
++ `$XDG_CONFIG_HOME`, liefert stattdessen `Xdg`. Ein Layout anzuwenden, konstruiert einen Wert
++ des jeweils angefragten Verzeichnistyps, sodass dieselben Namen einem `Path on Linux` und
++ jeder anderen Darstellung dienen.
+
+@ 0 1 0 06f7e4b65fc1fe7a15c1330ddec6fdd6
++ ### Suchpfade
+
+@ 0 5 0 1406a0e20420f6951b64396fcdc6c049
++ Viele Dateien werden nicht an einem Ort nachgeschlagen, sondern entlang einer Liste von Orten:
++ ein Icon in demjenigen der XDG-Datenverzeichnisse, das es enthält, oder eine
++ Konfigurationsdatei am ersten von mehreren Orten. Eine `Searchpaths.Stems`-Instanz benennt die
++ zu versuchenden Verzeichnisse der Reihe nach. Ein relativer Pfad auf der entsprechenden Ebene
++ wird mit `search` zum ersten davon aufgelöst, das ihn enthält, oder zu `Unset`:
+
+% 2 1 0 0962ee6a08aa0adb13d2e4810f575047
+
+% 3 1 0 06a6f77762438aa40888e80974fd11da
+
+% 4 1 0 0bbbd280c02e3b410e86c9898c28d487
+
+% 0 1 0 063e73fab05e6567189cd57bdb16da70
+
+% 0 1 0 1c96b468e4e6a34017526a156fe8b96a
+
+% 0 1 0 0d0d0aaf80ba69d7024657279d3f35dd
+
+% 0 1 0 0f2e3d299f8c337b0f09d132a7b65496
+
+% 0 1 0 18154ca5ed46bd370605212e90897b86
+
+% 0 1 0 0fe5c79dc0620bae0560ecb0735d91d1
+
+% 1 1 0 1e1a6dfc7d84e72a0d2d07c372fe0889
+
+@ 0 2 0 191d5d49db9a12230470ec9e4c6d0778
++ `dataSearch` und `configSearch` liefern die XDG-Suchpfade für Daten und Konfiguration aus der
++ Umgebung, sodass die Ressourcen eines Programms gefunden werden, wo auch immer das System des
++ Benutzers sie aufbewahrt.
+
+@ 0 1 0 1c8222528a12abf719262fe8ce446313
++ ### Auf Änderungen überwachen
+
+@ 0 3 0 1462e0528d99b34900b554bce0002fbf
++ Ein Verzeichnis wird überwacht, indem man es als `Watch` öffnet, was einen
++ [Stream](streams.md) von `Watch.Event`s liefert: eine Datei angelegt, geändert oder gelöscht,
++ oder ein Verzeichnis angelegt. Die Registrierung dauert genau so lange wie der Block:
+
+% 2 1 0 19d161bdb15f2ab4040f0b7a4b26508e
+
+% 0 1 0 0a71c18ec97e7a4a1a2787ce5c10b274
+
+% 1 1 0 1a8f9e5a263f04720f14e9da582a43c4
+
+% 0 1 0 0e2e36ec4d12885b092276730675bf2e
+
+% 0 1 0 1e9997e92109f13018d778d0a1d7375b
+
+% 0 1 0 04c1d62c55bbdd880a6b5c1fa7ddf7c7
+
+% 0 1 0 0edc0d9f2110feec1ec81979517637e6
+
+% 0 1 0 181d70b3d9c3aaad1c02e73f747e1453
+
+% 1 1 0 0f3aa9f7e2c3c2940012ece5ebede700
+
+@ 0 2 0 0d2b07e729d9e2a81fcdf631ff229031
++ Mehrere Pfade werden gemeinsam überwacht, indem man eine Liste davon öffnet, was einen Stream
++ von Ereignissen über alle hinweg liefert.
+
+@ 0 3 0 0c313d32153a41351826e1aa6c30c233
++ Editoren speichern in Schüben, und ein Neuaufbau will eine Benachrichtigung pro Schub, nicht
++ eine pro Ereignis. `batches` liefert jedes Mal einen `Watch.Batch`, wenn für die angegebene
++ Ruhezeit kein Ereignis eingetroffen ist, und sein `paths` führt jeden geänderten Pfad einmal
++ auf:
+
+% 2 1 0 00fb6dfaccd1796912dce64a2b7e6c22
+
+% 0 1 0 1126dbfc5f3af8df1e8ae3314de64858
+
+% 0 1 0 1fb582ddd5c7d5ec19dfd6ac79521eb9
+
+% 1 1 0 03d765348db66d161389623dab07335b
+
+% 0 1 0 1b4c7e5466cbe64806ad6d3edf76624f
+
+% 0 1 0 18e1437c7a5dc6b70c91a19cabb80718
+
+% 1 1 0 050f5e04c1fca6070f53c556f8140e9b
+
+@ 0 2 0 0a78b26afc65909f0b933898cb91787a
++ Der Standard-Watcher nutzt die eigenen Benachrichtigungen des Betriebssystems über
++ Dateiänderungen. Wo diese nicht verfügbar sind, prüft stattdessen `watchers.polling` in einem
++ Intervall.
+
+@ 0 1 0 0f4ef2945e9b28a90956cbc6da521484
++ ### Ein Backend wählen
+
+@ 0 3 0 0eaee3bf4629216808daf8fae9644b08
++ Nichts oben benennt die API einer Plattform. Die primitiven Operationen, die ein Dateisystem
++ bieten muss, nämlich stat, open, read, write, list, link und delete, sind für eine Ebene in
++ einem `FilesystemBackend` zusammengefasst, und alles andere ist durch sie definiert.
+
+@ 0 6 0 137d62d979cb824f02819a21fe23d501
++ Die `java.nio`-Implementierung ist `filesystemBackends.javaBaseFilesystem`. Eine
++ WASI-Implementierung über `wasi:filesystem` wird für WebAssembly-Komponenten bereitgestellt,
++ sodass derselbe Code Dateien auf der JVM und innerhalb einer Komponente liest und schreibt.
++ Eine Operation, die ein Backend nicht unterstützen kann, löst einen `Io.Error` mit dem Grund
++ `Unsupported` aus. Sie wird nie angenähert. Die Oberfläche der Plattform auf eine so kleine
++ Nahtstelle zu verengen, ist [Entkopplung](../../philosophy/decoupling.md), angewandt innerhalb
++ einer Bibliothek.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 5 0 081048ec19f6f1c40972f21e54c07ca3
++ - [Pfade](paths.md) beschreibt die Pfade, auf die diese Operationen wirken.
++ - [Streams](streams.md) liest und schreibt Dateien stückweise.
++ - [Archive](archives.md) öffnet einen Pfad als ZIP- oder tar-Archiv.
++ - [Kompression](compression.md#compressing-a-stream) schreibt eine komprimierte Datei.
++ - [Hashing](hashing.md#hashing-a-stream) berechnet die Prüfsumme einer Datei oder eines
++   Verzeichnisses.

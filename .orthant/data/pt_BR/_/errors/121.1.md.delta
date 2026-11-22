@@ -1,0 +1,66 @@
+orthant 2 language
+
+% 0 1 0 152a3268725bfdb5131eaa03ad8b46c7
+
+@ 0 2 0 108bf99c39afc7e40f5643e13fb906c3
++ Lançado quando o Superlunary não consegue mover um valor através da fronteira para dentro ou
++ para fora de um `Rig`, o classloader em que o código em estágios é compilado e executado.
+
+@ 0 4 0 13b841432bd976a70a83a480e1074d1f
++ Esta é uma falha de *marshalling*, não do próprio código em estágios: o valor não pôde ser
++ escrito no `Transport` do rig (`Json` ou `Pojo`), ou não pôde ser lido de volta dele. Uma falha
++ ao compilar a árvore em estágios é `Compiler.Error`, que `Rig.dispatch` declara junto com este.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 198fde3d70aa42411c96ae1068d62184
++ O Superlunary faz o marshalling de uma chamada para um processo remoto e lê o resultado de
++ volta. Qualquer falha ao serializar a chamada, ao desserializar o resultado ou ao transportá-lo
++ de outra forma produz este erro. A mensagem é
+
+% 0 1 0 122635e2b4492f5d087d159fc503eec6
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 01f89e7369c89ec61f48f74f524c1885
+
+@ 0 2 0 0efdb549a573c3120c5e84ab11a5a6b6
++ A saída (a chamada ou os seus argumentos) não pôde ser serializada para transmissão.
+
+@ 0 1 0 0bf25fa09f7e354e1ee74e762cf2d748
++ **Exemplo.** `[↯/s.121.1.1] failed to perform a remote operation because the output could not be serialized`
+
+@ 0 2 0 0942437eff87d59d0bf6efef8e5c8c33
++ **Resolução.** Confirme que todos os tipos de argumento têm os codificadores e decodificadores
++ necessários no escopo e que produzem bytes bem formados.
+
+% 0 1 0 10f1f306c2f11d0803287bf8a5c906f5
+
+@ 0 1 0 089ef0968e514ac8152902ce82a0fd4b
++ A resposta do processo remoto não pôde ser desserializada.
+
+@ 0 1 0 1215bb8b8f8b918d18fdff241fe5b640
++ **Exemplo.** `[↯/s.121.1.2] failed to perform a remote operation because the input could not be deserialized`
+
+@ 0 3 0 0861a241b432ed4403e6334928849b8a
++ **Resolução.** Verifique se o processo remoto está produzindo a forma de payload esperada;
++ schemas incompatíveis entre cliente e servidor são a causa típica.
+
+% 0 1 0 05c1d219e9397353126ec513210fe0e1
+
+@ 0 1 0 0d4f60eff7892e150c475ee50742dd95
++ A causa não corresponde a nenhuma das variantes mais específicas.
+
+@ 0 1 0 145e4215d51a3f0807cbfdbc858a4a56
++ **Exemplo.** `[↯/s.121.1.3] failed to perform a remote operation because of an unknown reason`
+
+@ 0 1 0 100bfd3d5cc6c54d13f45d4740eccd8b
++ **Resolução.** Inspecione os logs e qualquer cadeia de causas.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 152db8336cdf7fa0073130a8e139874f
++ - Código-fonte: `lib/superlunary/src/core/superlunary.Rig.scala`

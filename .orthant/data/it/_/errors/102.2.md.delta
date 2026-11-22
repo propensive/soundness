@@ -1,0 +1,49 @@
+orthant 2 language
+
+% 0 1 0 06ba4d3f4903a6e105e907f88cbf94a1
+
+@ 0 1 0 0754fdd637c7a80619dbf1455bfec13a
++ Sollevato quando il responder mDNS basato su socket (`syndesis`) non riesce ad avviarsi.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 0998dc7089e208571740599e65948b97
++ Il responder si unisce al gruppo multicast mDNS (`224.0.0.251:5353`) su ogni interfaccia attiva e
++ capace di multicast. Senza un'interfaccia simile, o con un'adesione che il sistema operativo rifiuta,
++ non c'è nulla attraverso cui comunicare. Il messaggio è
++ `the mDNS responder could not start because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 14cab4f5eb3b353c0023fcb9c4d9b374
+
+@ 0 2 0 19075168b3da39c50cf298a633d70642
++ Non è stato possibile unirsi al gruppo multicast: il bind della porta 5353 con riuso è fallito,
++ oppure l'adesione è stata rifiutata su ogni interfaccia.
+
+@ 0 1 0 1ee0e0f8701e12770593b89b2100b8b0
++ **Esempio.** `[↯/s.102.2.1] the mDNS responder could not start because the multicast group 224.0.0.251:5353 could not be joined`
+
+@ 0 2 0 11d2990b9522deb90cfd444489aec9c7
++ **Soluzione.** Verifica che la porta 5353 non sia occupata senza riuso da un altro programma, e che
++ le interfacce abbiano indirizzi IPv4.
+
+% 0 1 0 022debaddccf1cf0030687c3ef8d75a5
+
+@ 0 1 0 0e6180d6c2bcabaa19e7c45c895cbecb
++ Nessuna interfaccia di rete è attiva e capace di multicast (il loopback non conta).
+
+@ 0 1 0 0a19999eb228f7471d3cc818882c0d0a
++ **Esempio.** `[↯/s.102.2.2] the mDNS responder could not start because no interface is up and capable of multicast`
+
+@ 0 1 0 17ba773332c34264121e4f5838b681d1
++ **Soluzione.** mDNS ha bisogno di un collegamento; in una sandbox che ne è priva, usa il
++ `Mdns.Transport.Bus` in memoria.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 1a7ae79c01b71180108dd6cdb0df9761
++ - Sorgente: `lib/syndesis/src/core/syndesis.Mdns.scala`

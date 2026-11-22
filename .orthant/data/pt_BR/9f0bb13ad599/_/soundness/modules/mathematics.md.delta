@@ -1,0 +1,17 @@
+orthant 2 language
+
+@ 0 6 0 028183159a36bc8510d256d502a7fd76
++ Internamente, uma permutação é armazenada como sua
++ [tabela de inversões](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)) em forma
++ de base fatorial, que é um único inteiro que a identifica de modo único. Isso torna as
++ permutações compactas para armazenar e para enumerar: `Permutation.bySize(n)` dá todas as `n!`,
++ como uma [cadeia](collections.md#lazy-chains) preguiçosa. Uma permutação de *n* elementos ocupa
++ espaço O(*n* log *n*), que é o mínimo possível, já que há *n*! delas a distinguir.
+
+% 0 2 0 1509aa9fc2d59aab049a65e78d949d44
+
+@ 0 4 0 0f8b86e915c7fa4d015a05b8e723c808
++ Uma permutação deixa intacta toda posição depois da última que ela move, então `shuffle`, cujo
++ sexto índice fica no lugar, é uma permutação de cinco. Aplicá-la a uma sequência mais longa,
++ portanto, não é um erro: ela rearranja as posições iniciais que cobre e deixa o resto onde
++ estava. Um único índice é mapeado da mesma forma, com `shuffle(3)`.

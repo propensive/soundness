@@ -1,0 +1,1722 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0d2063bbe5efb5860f6f784f6c463904
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0eaca7ef4efa00ce178e5819a55a45d7
++ info   型付きの値としてのテキスト：`Text`、`t"…"` 補間子、そして任意のテキスト型に対する操作の語彙
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 0dde71729355683c0b585e9ca82bb8e5
++     _Gossamer_ はテキストのライブラリである。`Text` に対する操作と、それと同じ操作をほかのテキスト型でも使えるようにする型クラスを提供する。`Text` は JVM の `String` の不透明なエイリアスであり、Soundness はあらゆる場所で `String` の代わりにこれを使う。ほかのテキスト型とは、ANSI でスタイルを付けた `Teletype`、`Ascii` のバイト文字列、書記素クラスタの `Writing` などである。
+
+@ 0 9 0 15d1c37dd8c74a3a1c5af57b4eca052d
++     `Text` は `t"…"` 補間子で書く。これは `Showable` である任意の値を埋め込み、コンパイル時にエスケープを処理する。あるいは `txt"…"` で書く。これはさらに、ソースの複数行にわたって書いた段落を一行にまとめる。
++     その操作は素朴な動詞である。`cut` は区切り文字で分割し、`join` は組み立て直す。`keep`、`skip`、`snip`、`before`、`after`、`upto`、`from`、`segment` は個数や序数の位置で切り出す。`lower`、`upper`、`capitalize`、`trim`、`pad`、`fit`、`sub` は変換する。`starts`、`ends`、`contains`、`offsetOf`、`tally`、`pinpoint`、`search` は問いを立てる。
++     存在しないことは `-1` や `null` ではなく `Optional` で表す。位置は長さと取り違えようのない `Ordinal`（`Prim`、`Sec`、`Ter` など）である。そして `cut` は少なくとも一つの断片を返すことが証明されている。
+
+% 2 1 0 0e8e9e8def100b1b1e69c0fa8e0fe68a
+
+% 3 1 0 06ec704c9ddf0fce1c4a36c0c26cf54e
+
+% 4 1 0 0a89e89a23198e971486cdf5cd587ccc
+
+% 0 1 0 049be74cec392a8f0b2e3713feb24799
+
+% 0 1 0 13e45beaf01fc7b2046a5d81153f196c
+
+% 0 1 0 1b430b72bce17b9306dda8b27cf836b3
+
+% 0 1 0 1d721cefbd3caee01801a5542168a9a9
+
+% 0 1 0 0b6c61edd04b4f93022a858e83f45bfa
+
+% 0 1 0 0e432c84425dcf91040cea8ea9f46c59
+
+% 1 1 0 08d673d324904af716a360c37fb89de9
+
+@ 0 8 0 12ced88ca10cf91d0bbd13f14f774332
++     語彙のほとんどは `Textual` 型クラスの上に一度だけ書かれているので、`Textual` のインスタンスを持つ型、すなわち `Text`、`Ascii`、`Writing`、そして escapade の `Teletype` は、何も再定義せずにすべての操作を得る。
++     `Textual` は一般的なコレクションの型クラス（`Countable`、`Segmentable`）を継承する。そのため、個数に基づく `keep`、`skip`、`snip` と述語に基づくそれら、序数に基づく `before`/`after`/`upto`/`from`、そしてコレクションライブラリの `count`、`where`、`all`、`exists` もテキストに使える。それらはここではなく `rudiments` と `murmuration` にある。
++     ファクトリー `reversibleTextual` と `traversableTextual` を使うと、新しいテキスト型が自分のコンパニオンで `reverse` と走査を公開できる。
+
+@ 0 2 0 0d2ffddc9ec6b56e1824bbfc7f757ed5
++     テキストについての三つの事柄はポリシーであり、given を**名前で**インポートして選ぶ（`import soundness.*` は given をインポートしないからである）。
+
+@ 0 7 0 03a1f22a1f3c37271ac422ebab703d46
++     - **大文字と小文字の区別**（`caseSensitivity.caseSensitive`、`caseInsensitive`、`smartCase`）。すべての近接度の尺度がこれを参照する。
++     - **照合**（`collations.unicodeCollation` または `codepointCollation`）。これがなければ、テキストを並べ替えたり `<` で比較したりできない。`collationComparable` があれば、スコープにある `Collation` が `Text` を `Comparable` にする。
++     - **近接度**（`proximities.levenshteinProximity`、`jaroProximity` など）。`proximity`、`fuzzy`、`Lexicon` の背後にある尺度である。
+
+@ 0 3 0 162aaef74114f99517d62d922be08080
++     `Decimalizer` は `Double` を指定した有効数字の桁数または小数点以下の桁数で描画するものであり、`Double` に対する `show` が参照するものである。`decimalConverters.javaDecimalConverter` は素の `toString` による代替である。
+
+@ 0 1 0 1af03583aa97792d1ed95982f8b2b936
++     このライブラリには三つのコンポーネントがある。
+
+@ 0 10 0 171bed539baa28ed1b7b463e3ed472a8
++     - `gossamer.core`：`Text` の操作、`t"…"`、`txt"…"`、`a"…"`、`Textual`、`Builder` と `Text.build`、`Cuttable` と `Joinable`、`Writing` と `Grapheme`、`Ascii`、`Decimalizer`、`Numerous`、`CaseSensitivity`、`Collation`、`Proximity`、そして選択パッケージ `caseSensitivity`、`collations`、`proximities`、`decimalConverters`。
++     - `gossamer.codec`：`distillate` に面した半分。`Charset` を通じてバイトを `Text` にデコードする `textDecodable` と、列挙型のケースをケバブケース、スネークケース、キャメルケース、パスカルケースで名付ける `enumIdentification` パッケージ。テキストだけを必要とするモジュールが `distillate` に依存しないように分けてある。
++     - `gossamer.lexicon`：語彙に対する類似検索のための BK 木である `Lexicon` と、完全一致と接頭辞による検索のための密なトライである `Dictionary`。
+
+@ 0 3 0 124f785e9ce2fdf10cafda1bd09c874d
++     すべてが `soundness` アンブレラにエクスポートされ、選択パッケージはアンブレラ自身のものとマージされる。そのため利用者は `import soundness.*` と書き、それから各ポリシーの given を一つずつ名前でインポートする。
+
+% 0 1 0 1cb99be0c6364ae90bcaca8d0f0393d0
+
+% 0 1 0 1ae68af5c6d9ea450a530e077ffa85c6
+
+% 0 1 0 1307a59e9a82a6681d69d19c9d1b8a67
+
+% 0 1 0 0b4856cf1a0bce450d66f97c1901d65d
+
+% 0 1 0 1631f648de7531c706ecde251846f177
+
+% 0 1 0 18283946a065cb540c93cd17543f6eb1
+
+% 0 1 0 1b105736a890f215154fba55236f87d8
+
+% 0 1 0 12529380dbfed102016f60f62548f22b
+
+@ 0 1 0 088afddc33f4d8c205629ac12e14b93e
++ entry .t   `t"…"` 補間子：リテラルから作る、`Showable` の埋め込みを伴う `Text`。そして `t"…"` パターン
+
+% 1 1 0 06d7e2aefa25c8ab1139347a643f7e93
+
+@ 0 5 0 0bc3851ccd6bb87f1494d47aa3e16c56
++       `t"Hello, $name!"` は `Text` を組み立てる。
++       リテラルの各部分は、コンパイル時にエスケープが処理される（`\n`、`\t`、`→`、`\\`、`\$`。誤ったエスケープは、問題の文字の位置でのコンパイルエラーになる）。そして各埋め込みは、その型の `Showable` のインスタンスを通じて描画される。`Showable` を持たない値は、黙って `toString` されるのではなく、_a value of `T` is not Showable_ というコンパイルエラーになる。
++       結果は `Text` であり、決して `String` ではない。
+
+% 2 1 0 0f9852dd5a79b4c51289946172c68183
+
+% 3 1 0 17135b6786f4b59d025e4ad3752066c2
+
+% 0 1 0 1df4c24d9bd279f40aa9b11fba4bfc3a
+
+% 0 1 0 1a479cdf6c00c9bd1468d4644aa98c38
+
+% 0 1 0 063bbc2b9b4d305c0fe55b9e5653c006
+
+% 0 1 0 14925258b5e287290443908b26e4fdb8
+
+% 1 1 0 07b3831b3b2e07bb04194bee4b857299
+
+@ 0 3 0 0cb51fc098eccfae1d763f455714c9e7
++       同じ接頭辞はパターンでもある。`case t"quit" =>` は、`SimpleTExtractor` を通じて、リテラルと等しい `Text` に一致する。
++       パターンの形は埋め込みを取らない。
++       `fuzzy` もそのケースに `t"…"` パターンを受け付ける。
+
+% 2 1 0 075606c26a23a20a17051c3b1693ac00
+
+% 3 1 0 06463f92964e4f2316059df10cf140e4
+
+% 0 1 0 0062787c089bcf200eddb8e3a22cf715
+
+% 0 1 0 0213a18ee0b108641f61190bfb6c9129
+
+% 0 1 0 16e7dd24469a7307058807e16676d8c2
+
+% 1 1 0 1280d732bdcdc75d0d982c63dccc70fd
+
+@ 0 1 0 1b013881d26b1b180db1dc29fc65b8bc
++       `txt"…"` は複数行の文章のための変種であり、`a"…"` は `Ascii` を作る。
+
+% 0 1 0 0578a50888e209b600d8d256afc20fa8
+
+% 0 1 0 02ac02ecd19cf9ef0bfdb2fffe2487d3
+
+% 1 1 0 04ed385f6a5800c6066a4dab9f8ded0c
+
+@ 0 6 0 1a382fa76d6e538a1da4ddf14de54e21
++ entry .txt   `txt"…"` 補間子：ソースで折り返した行を一つにまとめた `Text`
++     `t"…"` と同じだが、ソースの複数行にわたって書いたリテラルの空白が正規化される。空白の連続（一つの改行とその後のインデントを含む）はすべて一つの空白になり、空行、すなわち二つの改行は一つの `\n` になる。そのため、ソースの読み手のために折り返した段落は出力の読み手のために折り返しが解かれ、空行は段落を区切る。
+
+% 2 1 0 17519fbaa49198b016caaadaae4118a0
+
+% 3 1 0 1df2baa837aec93600e959993a0691a1
+
+% 0 1 0 1ce5e21b2d2f6d041dc4a26d6bab4e4a
+
+% 0 1 0 0911935cc7c035d303c0bb6da6e38e07
+
+% 0 1 0 0e591537a973b2d81af9384c6bc3a9f7
+
+% 0 1 0 06aa6101a985e98d17c16eadaccff0f1
+
+% 0 1 0 12fe4487d3d69a9f1e097d76ddb8dfd1
+
+% 0 1 0 1940dea9d14323a21b0d7e92578989b9
+
+% 1 1 0 0e1ba0bf939270ab1de39971e1d11499
+
+@ 0 2 0 177bf424f5322c230a62a3de89abbf98
++     埋め込みは `t"…"` と同じく `Showable` を通じて描画され、テキストの残りとともに正規化される。
+
+@ 0 5 0 13b1f1c51aeec34f14e592f75817cf7b
++ entry .a   `a"…"` 補間子：コンパイル時に ASCII であることを検査される `Ascii` のバイト文字列
++     `a"hello"` は `Ascii` であり、リテラルの文字を一文字一バイトで保持する凍結済みのバイト配列である。
++     ASCII の外の文字はコンパイルエラー（番号 824、_`é` is not a valid ASCII character_）になり、リテラルの先頭ではなく、ソースの中のその文字自身の位置で報告される。
++     埋め込みはそれ自体が `Ascii` の値であり、連結される。
+
+% 2 1 0 051d6133369871aa126977ab25ddbb4b
+
+% 3 1 0 17ab86559999eaff0a8c9804c138cc62
+
+% 0 1 0 0478a6eac7ba37fc1b321257df4b7bec
+
+% 0 1 0 1f121c60238443a2009e112f730a77fb
+
+% 0 1 0 1edacc6180d2f3f80275fd30124e3bc9
+
+% 1 1 0 1448578a1728a38f19b981831a70d7dc
+
+@ 0 1 0 1eb2cc11a62ada081531296f0011d3f4
++ entry .SimpleTExtractor   `t"…"` パターンの背後にある抽出子：リテラルとの等しさ
+
+% 1 1 0 09d915d91a07f0061c9ca4464a568006
+
+@ 0 5 0 1fa88a10963723ce018e7e8116f8255b
++       `case t"quit" =>` は `SimpleTExtractor(t"quit")` に脱糖され、その `#unapply` は検査対象との等しさである。
++       これは `t"…"` を式だけでなくパターンにも書けるようにするために存在する。直接構築する理由はめったにない。
++   entry #text   パターンが一致するリテラル
++   entry #unapply   検査対象が `#text` と等しいかどうか
+
+@ 0 1 0 03192535705f45d6003f0c839b1b2815
++ entry .Textual   型をテキスト型にする型クラス：`Text`、`Ascii`、`Writing`、`Teletype`
+
+% 1 1 0 1dfc915390628d4a1c509867399c56c0
+
+@ 0 6 0 1b9ffd8b4963956c1459566925e57a8d
++       `textual is Textual` は、`textual` が長さの分かる文字の並びであり、切り出し、写像、検索、連結ができ、`Builder` で組み立てられ、素の `Text` として描画できることを述べる。
++       gossamer のすべての汎用の操作（`cut`、`join`、`words`、`lower`、`trim`、`pad`、`capitalize`、`uncamel`、`pinpoint`、`chomp` など）は `Textual` のインスタンスを持つレシーバに対する拡張なので、新しいテキスト型はコンパニオンにインスタンスを一つ用意するだけで語彙全体を得る。
+
+@ 0 7 0 0ec53a8e8baaab4f12bd664e544310c0
++       型メンバー `#Result` は要素型である。`Text` なら `Char`、`Ascii` なら `Byte`、`Writing` なら `Grapheme` である。
++       文字に作用する操作（`lower`、`upper`、`trim`、`capitalize`、`tr`、`pad`、`pinpoint` など）は `Textual { type Result = Char }` を必要とし、位置と部分文字列に作用する操作（`cut`、`words`、`starts`、`offsetOf`、`slices`、`chomp` など）は任意の `Textual` を取る。
++       `#Show[value]` は、値がこの型のビルダーに追加されるために満たさなければならない型クラスである（`Text` では `Showable`。escapade の `Teletype` は独自のものを使うので、スタイル付きの値はそのスタイルとともに追加される）。
+
+@ 0 5 0 091eb2dc6dc4a1e410c0bd13f5ab00a5
++       `Textual` は `Countable` と `Segmentable`（`Segment = Self`、`Operand = Ordinal`）を継承する。これによって、一般的なコレクションの操作（`keep`、`skip`、`snip`、`before`、`after`、`upto`、`from`、`segment`、`count`、`where`、`all`、`exists`）がテキストの値にも使える。また `Zeroic` と `Applicable` も継承するので、`textual.zero` は空の値であり、`Textual[Teletype](text)` は素のテキストを変換して取り込む。
+
+% 2 1 0 1f1c44f765ebf8881bedba09d91f1c04
+
+% 3 1 0 11711410d4afa5501994e4111df0e0f3
+
+% 0 1 0 14967e055f142249184934cf67d94a43
+
+% 0 1 0 0aad168c935482530732ae1f04e59d21
+
+% 0 1 0 0b583a965e56bbf9096ec257d8c02156
+
+% 1 1 0 0d5cd735f7fcfade142957f15a1391f5
+
+@ 0 4 0 107c88dd8331b2370d914a49cf4e037c
++       `Text` のインスタンス（`.text`）と、それぞれのコンパニオンを通じた `Ascii` と `Writing` のインスタンスは、暗黙のスコープにある。
++       `reverse` と走査を `Textual` のインスタンスを通じて行うべき型は、自分のコンパニオンで `reversibleTextual` と `traversableTextual` を公開する。包括的な given では `rudiments` から見つけられないからである。
+
+% 0 1 0 0d419ea1421c57421530ac1da4380b8d
+
+% 0 1 0 187bf92a225e2c58028f03694db327fe
+
+% 0 1 0 160617c1c45eb5e71dc1a6962087e48f
+
+% 1 1 0 0c0adbb5877dd95e0ede3da577660e3b
+
+% 0 1 0 1bb4b560495664af1099c405a55de713
+
+@ 0 39 0 166d423d43f827710ef7c70a021437d8
++   entry .apply   `Textual[textual](text)`：`Text` を任意のテキスト型に変換する
++       `#apply` の明示的な形である。`Textual[Teletype](t"plain")` は素のテキストをスタイルのないスタイル付きの値として包み、`Textual[Text](text)` は恒等写像である。
++   entry .text   `Text` 自身に対する `Textual` のインスタンス。要素は `Char`、`Show` は `Showable`
++       長さ、アクセス、`indexOf`、`segment`、`map` は下にある `String` に直接委ねられる。ビルダーは `TextBuilder` である。
++   entry .concatenable   `Textual#concat` を通じた、任意のテキスト型に対する `left + right`
++       すべてのテキスト型に `+` を与える `Concatenable` の given である。
++       `Textual` のコンパニオンの given なので、任意の `textual: Textual` に対して見つかる。
++   entry #Result   要素型：`Text` なら `Char`、`Ascii` なら `Byte`、`Writing` なら `Grapheme`
++   entry #Show   値がこの型のビルダーに追加されるために必要な型クラス
++       `Text`、`Ascii`、`Writing` では `Show[value]` は `value is Showable` である。スタイル付きの型はより豊かなものを選んでもよい。
++       `Text.build` のブロックの中の `append` は、`Text` でも `Char` でもないものに対してこれを要求する。
++   entry #Segment   このテキストの切り出しが持つ型：テキスト自身の型
++   entry #Operand   インデックスの型：`Ordinal`
++   entry #show   `#Show` を通じて、値をこのテキスト型として描画する
++   entry #apply   素の `Text` をこのテキスト型に変換する
++   entry #single   一つの `#Result` からなる一要素のテキスト
++   entry #fromChar   `Char` に対応する `#Result` の要素
++   entry #classTag   テキスト型の `ClassTag`。その配列を割り当てるためのもの
++   entry #length   要素の数：文字、バイト、または書記素
++   entry #text   値の素の `Text`。スタイルは落とされる
++   entry #map   すべての要素に関数を適用した新しいテキスト
++   entry #empty   この型の空の値
++   entry #concat   二つの値を一つにつなげたもの
++   entry #access   序数の位置にある要素。範囲内にあるかどうかは検査しない
++   entry #contains   序数がテキストの中の有効な位置であるかどうか
++   entry #indexOf   `start` 以降で部分文字列が最初に現れる位置、または `Unset`
++       `offsetOf`、`contains`、`tally` の背後にある基本操作である。
++       テキスト型が何であれ、部分文字列は常に素の `Text` である。
++   entry #lastIndexOf   部分文字列が最後に現れる位置、または `Unset`
++       デフォルトでは `#indexOf` を繰り返し呼ぶ走査である。`Text` のインスタンスは `String` の基本操作でこれを上書きする。
++       空の部分文字列は `Unset` である。
++   entry #builder   この型のための新しい `Builder`。大きさを指定することもできる
++   entry #segment   序数の `Interval` にわたるテキストの切り出し。テキストの範囲に収められる
++       末尾を越える区間は切り詰められ、末尾より後から始まる区間は空になる。どちらも失敗はしない。
++   entry #zero   `Zeroic` 型クラスが名付ける空の値
+
+@ 0 1 0 1b9ba37c66e5719313430a47e684ef95
++ entry .Builder   追加された断片からテキストの値を組み立てる、可変のアキュムレーター
+
+% 1 1 0 05dce116e571da3511551280e957ef81
+
+@ 0 5 0 04484e256fb22ffc00b75c4e421c138f
++       `Builder[textual]` は、`TextBuilder`、`AsciiBuilder`、`WritingBuilder` やほかのテキスト型のビルダーの背後にある抽象クラスであり、それぞれ `Textual#builder` から得られる。
++       断片は `#append`（その型の値、または一つの `Char`）で追加し、結果は `#apply` で読み、`#build` はブロックを実行する。そのブロックの中では、パッケージ水準の `append` と `appendln` がコンテキスト値としてのビルダーに書き込む。
+
+% 2 1 0 1bc54daada06aa9610e1cdab8ff23d4f
+
+% 3 1 0 1710c2d23a9e3c2404d1c58d052890a0
+
+% 0 1 0 147d8f5b19fc1997075583f29db9f00f
+
+% 0 1 0 1fa3cf35d41f00d40cbff25891bf0b2c
+
+% 0 1 0 0b424e3649da9c8718a714afa8303543
+
+% 0 1 0 0546b71de2ac6c011374116ba8e2e581
+
+% 1 1 0 12bc111e575a4e210cc6fe31ce10b249
+
+@ 0 2 0 1705c730f54a173a17c6809faa84144d
++       ビルダーは可変の状態であり、スレッド間で共有するのは安全ではない。テキストについては、ビルダーをブロックに閉じ込める `Text.build` を使うほうがよい。
+
+% 0 1 0 03754eda6fac3ee61b7db574d637742a
+
+% 0 1 0 0bcb8cc5e3ac9c4705e0b1ba694b1b1d
+
+% 0 1 0 032bbcdd97c5b6fe1973fc45e8b24f21
+
+@ 0 9 0 0b8a62cddb0deac01416528daf45b7fd
++   entry #append   テキスト型の値、または一つの `Char` を追加する。ビルダーを返す
++   entry #build   このビルダーをコンテキストの `builder` としてブロックを実行し、その後で結果を返す
++       ブロックの中では、`append(value)`、`appendln(value)`、`builder` はこのビルダーを指す。
++       ブロックは呼び出しより長く生きられない。ビルダーが可変であるにもかかわらず純粋なコンテキスト値として渡されるのはそのためである。
++   entry #apply   蓄積された値
++   entry #clear   それまでに追加したものをすべて捨てる。ビルダーを返す
++   entry #nil   何も追加されていないかどうか
++   entry #length   それまでに追加した要素の数
+
+@ 0 1 0 00eef8e649f60e140618cb5a066eced1
++ entry .TextBuilder   `StringBuilder` の上の、`Text` のための `Builder`
+
+% 1 1 0 1aa9f86c0b80c4190c659dc91878ea4d
+
+@ 0 4 0 1594da8117a98ecd017de28b6245279d
++       長さが分かっているときは、`TextBuilder(size)` がヒントとして下にあるバッファーの大きさを決める。
++       `Textual.text.builder` はこれを一つ返し、`Text.build` はこれを一つブロックに閉じ込める。
++   entry #put   一文字を追加する
++   entry #length   それまでに追加した文字の数
+
+@ 0 1 0 1209ed2e09be2d8d16dcf74a8e79cd23
++ entry .AsciiBuilder   バイトを蓄積する、`Ascii` のための `Builder`
+
+% 1 1 0 00794af433cf31061286edaba14fa404
+
+@ 0 4 0 07df1c22bc7e098b08c360f52c849093
++       追加した `Char` はそれぞれ下位バイトに切り詰められ、追加した `Ascii` はそのバイトを加える。
++       `Ascii` の `Textual` のインスタンスは、組み立てるすべての操作でこれを使う。
++   entry #put   一文字をバイトとして追加する
++   entry #length   それまでに追加したバイトの数
+
+@ 0 1 0 0f9bc8049ca78f7a1fecdb3fcfd0ac6a
++ entry .WritingBuilder   `Writing` のための `Builder`
+
+% 1 1 0 101c2ca409dd6add07dc90be2ed6fbcc
+
+@ 0 4 0 04b28d9ce65a8937015e9eff92709d63
++       追加した各 `Writing` のテキストを蓄積し、結果を読むときに全体の書記素の境界を計算し直す。そのため `#length` は、組み立てている間は書記素ではなく文字を数える。
++   entry #length   それまでに追加した文字の数
+
+@ 0 6 0 1f861b40fb0013c21d04b789b127364e
++ entry .append   `build` ブロックの中で、コンテキストの `Builder` に値を追加する
++     `Text.build` や `Builder#build` の中で使うためのパッケージ水準の inline メソッドであり、そこでは `Builder[textual]` がコンテキスト値 `builder` としてスコープにある。
++     `Text` はそのまま（ビルダーの型に変換して）追加され、`Char` は一つの要素として、それ以外のものはビルダーの `Textual#Show` 型クラス（`Text` では `Showable`）を通じて追加される。そのため、描画の方法を持たない値は `toString` されるのではなくコンパイルエラーになる。
+
+% 2 1 0 0077cf903fe9914d0ecf050a0e7011e0
+
+% 3 1 0 16629ae36a5067dc1b2611e7cc41ffd4
+
+% 0 1 0 1519f26f726ca36c0b38f0fbe07f017b
+
+% 0 1 0 1a8e7e04f32789fd046468bc18fb9444
+
+% 0 1 0 02d5bbd4022b283e19cceef797e17c93
+
+% 0 1 0 127a022e0b9b080e1a0fc75658fba712
+
+% 0 1 0 064f2efd1a6c438000e7ca53f7f2af7d
+
+% 1 1 0 0c67fc6310acbbaa1c63a6f111d84221
+
+@ 0 2 0 05a0758713361c0a094d5bc16e5acad1
++ entry .appendln   コンテキストの `Builder` に値を追加し、続けて改行を追加する
++     `append` と同じで、その後に `'\n'` が続く。
+
+@ 0 4 0 1042d930eb699d890ee7032cf6da9cf8
++ entry .builder   `build` ブロックの中の、値としてのコンテキストの `Builder`
++     `builder[TextBuilder]`（または `builder[Builder[Text]]`）は、`Text.build` や `Builder#build` のブロックが書き込んでいるビルダーを取り出す。`clear()` や `length` を読むことのように、`append` が扱わない操作のためのものである。
+
+@ 0 5 0 13a933d42f0037d60fbbb9ea67cf1aa9
++ entry .build   `Text.build` は `TextBuilder` をブロックに閉じ込める。`Array.build` は新しい配列を満たす
++     二つの拡張が名前を共有している。
++     `Text.build { … }` は新しい `TextBuilder` をコンテキストのビルダーとしてブロックを実行し（その中の `append`、`appendln`、`builder` はそのビルダーを指す）、組み立てたテキストを返す。そのため、多くの断片から組み立てるテキストを、目に見える可変の値なしに書ける。
+
+% 2 1 0 130e0ccc6942ea2f1802f4d705f8d169
+
+% 3 1 0 10c33df10457fbe60ef75d484d9c4266
+
+% 0 1 0 1b28bdf68583d7471f0da3e06bcd00d9
+
+% 0 1 0 1fee23c4f3b3f69100a69466c69ed6a5
+
+% 0 1 0 1f9d884b80893f6902c69409d4f2d7bb
+
+% 0 1 0 1c9d9f925a78eef800c92a8811234897
+
+% 1 1 0 14de1771a6ade58b14b10ded29cb5be4
+
+@ 0 3 0 09827f72596789ae1b9956f916ba611f
++     `Array.build[element](size) { array => … }` は `size` 個の要素を持つ可変の JVM の配列を割り当て、それをラムダに渡して満たさせ、`Array[element]^{}` として凍結して返す。`Pue.apply` と `Ascii` の連結がこれを使う。
++     ラムダの配列は外に漏れてはならない。
+
+@ 0 3 0 1ddce184ce5de4141e322f3033fbd706
++ entry .fill   `Text.fill(length)(index => char)`：インデックスごとに一文字からなる、指定した長さのテキスト
++     インデックスはゼロ始まり（`Int`）なので、`Text.fill(3)(_ => '-')` は `t"---"`、`Text.fill(3)(i => ('a' + i).toChar)` は `t"abc"` である。
+
+@ 0 4 0 02dfc6dd7f0ab638142c303e57e1542c
++ entry .ascii   `Text.ascii(bytes)` と `bytes.ascii`：`Data` を US-ASCII のテキストとしてデコードする
++     どちらの形も、各バイトを一つの ASCII 文字としてデコードする。127 を超えるバイトは置換文字になる。
++     UTF-8 には `utf8` を使う。任意の文字セットについては、`Charset` の given（`textDecodable`）のもとで `data.as[Text]` でデコードする。
+
+@ 0 3 0 1ddacbba7c8212700fa3cbdb747fb67d
++ entry .utf8   `Data` を UTF-8 のテキストとしてデコードする
++     `bytes.utf8` は、`codepages.utf8Codepage` のもとでの `text.in[Data]` の逆である。
++     不正なシーケンスは失敗せずに置換文字になる。
+
+% 2 1 0 18dd3824a46dc587135db8e446c45de2
+
+% 3 1 0 1028e943968ad61c159cb42e3e684f67
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 198cf0fc0960389c19f48140f0d4085b
+
+% 1 1 0 1cc0d41face70c1117e29b544cebfa1d
+
+@ 0 2 0 0decb6f1bda3d3490e3ba6330faf5cd7
++ entry .utf16   バイトオーダーマークに従って、`Data` を UTF-16 のテキストとしてデコードする
++     `bytes.utf16` は、マークがなければバイトをビッグエンディアンとして読む。
+
+@ 0 7 0 0c273a88f6fea5800e73170c6fb00e57
++ entry .pue   すべてのバイトが一つの印字可能な文字であるテキストとして `Data` を描画する
++     `bytes.pue` は _printable Unicode encoding_ であり、各バイトが一文字になる、バイトをテキストとして可逆に描画する方法である。どの文字も制御文字にならないように選ばれている。制御文字になってしまうバイト（下位 7 ビットが 0x20 以下、または 0x7f）は 0x100 だけ上にずらされ、それ以外のバイトはその値自身の文字になる。
++     `Pue(text)` はこれを元に戻す。
++     結果は表示用と、テキストしか通らない経路でバイトを運ぶためのものであり、標準のエンコーディングではない。
+
+@ 0 1 0 11b9dc723e9dc30105c66650c894cd86
++ entry .Pue   printable Unicode encoding のテキストをデコードしてバイトに戻す
+
+% 1 1 0 1379868abb2816151d94bf60b1909946
+
+@ 0 5 0 0c519f23beafd89405681a363d42c69d
++       `Pue(text)` は `bytes.pue` の逆である。各文字の下位バイトが結果の一バイトになるので、`pue` が制御文字を避けるために 0x100 だけ上にずらしたバイトは元に戻る。
++       `pue` から来たのではないテキストは、文句なしに文字の下位バイトにまで縮められる。
++   entry .apply   printable Unicode encoding のテキストが符号化しているバイト
+
+@ 0 6 0 0255d0f714381cde086b982a4d5ca3cc
++ entry .cut   区切り文字が現れるたびにテキストを分割し、空でないことが証明されたリストにする
++     `text.cut(delimiter)` は、`Text`、`Char`、`Regex`（`r"…"` リテラル）で分割する。その区切り文字に対する `Cuttable` のインスタンスを持つ任意のテキスト型に使える。
++     結果は `List[textual] { type Occupied = true }` である。分割は常に少なくとも一つの断片を返す（最後の区切り文字の後のテキスト、または区切り文字が一度も現れなければテキスト全体）。そのため、その `head` と `last` は全域的であり、`case List(a, b) =>` は要素型を束縛する。
+
+% 2 1 0 1a65c2fe7bf8701d0daa0b27cee1c365
+
+% 3 1 0 1fb27b55194b6db207e2b3b0551727b5
+
+% 0 1 0 00b36b221b2310410d45c04de19b6083
+
+% 0 1 0 0bb6fa1b2f86afd31335ee9ecb1ea830
+
+% 0 1 0 05104541e58fffe101842016e2046604
+
+% 0 1 0 01992267879eb6d1197a4f1b9d1ffc03
+
+% 0 1 0 0367157293212d6e170d5c85e388ba56
+
+% 1 1 0 026df1ce664e84b808e64f98caa5912e
+
+@ 0 4 0 017c973c15c817de097a106ac9a69689
++     正の `limit` は断片の数に上限を設け、最後の断片が残りを取る。ゼロ以下の上限は無制限を意味する。
++     末尾の空の断片は保たれる。`String.split` が正の上限のときに保つのと同じであり、`t"a,".cut(t",")` は `List(t"a", t"")` である。
++     `words`、`lines`、`unkebab`、`unsnake` は、それぞれ空白、改行、`-`、`_` での分割である。
+
+@ 0 1 0 0ead16ae853282ab12c558b5e239fe1d
++ entry .Cuttable   `cut` の背後にある型クラス：テキスト型をある種類の区切り文字で分割する方法
+
+% 1 1 0 084235061f6f9df710b657f0b5e4c572
+
+@ 0 21 0 1c7c50c2a232610711f4e71875549500
++       `textual is Cuttable by delimiter` にはメソッドが一つ、`#cut(text, delimiter, limit)` があり、少なくとも一つの断片を返さなければならない。
++       インスタンスは次のものがある。`Text` を `Text` で分割するもの（正規表現を使わずにリテラルの区切り文字を走査する）と `Regex` で分割するもの。`Countable` のインスタンスを持つ任意の `Textual` を `Text` または `Regex` で分割するもの（そのため、スタイル付きのテキストは `segment` を通じて分割され、スタイルを保つ）。そして、`Text` で分割できる任意の型を `Char` で分割するもの。
++       すべてコンパニオンの given であり、暗黙のスコープにある。
++   entry .textualText   任意のテキスト型をリテラルの `Text` で分割する。そして `Text` で分割できる任意の型を `Char` で分割する
++       二つの given が名前を共有している。
++       一つ目は `Countable` を持つ任意の `Textual` に使え、`Textual#indexOf` で走査して `segment` で切り出す。二つ目は型の `Cuttable by Text` のインスタンスから `Cuttable by Char` を導出するので、`cut(t",")` が使える場所ではどこでも `cut(',')` が使える。
++   entry .textualRegex   任意のテキスト型を `Regex` の一致で分割する
++       一致と一致の*間*の断片であり、最後の一致の後のテキストが最後の断片になる。
++       カーソル位置での幅ゼロの一致は分割ではないので、走査は常に進む。
++       `Text` 自身にはより直接的な `.textRegex` がある。
++   entry .textText   素朴な部分文字列の走査による、リテラルの `Text` での `Text` の分割
++       正規表現をコンパイルしないので、`.` や `|` のような区切り文字に引用は要らず、正規表現エンジンが使えない実行時でも分割できる。
++   entry .textRegex   `String.split` を通じた、`Regex` の一致での `Text` の分割
++       `limit` は（`cut` が正でない上限を無制限に置き換えた後で）そのまま `split` に渡されるので、末尾の空の断片は保たれる。
++   entry #cut   区切り文字で分割したテキストの断片。最大で `limit` 個、決してゼロ個ではない
+
+@ 0 3 0 1b0cf0ec8af0b273141cbb13ea9cccdc
++ entry .words   空白ごとに分割したテキスト
++     `text.words` は `text.cut(t" ")` である。連続する空白は空の断片を生み、ほかの空白文字は境界にならない。
++     結果は空でない。
+
+@ 0 2 0 0daaf318932618d30b5d7fe4fe332c82
++ entry .lines   改行ごとに分割したテキスト
++     `text.lines` は `text.cut(t"\n")` である。改行の前の `\r` はその行に残る。
+
+@ 0 2 0 05aaf2e7cf0633c310d99337b9b06a52
++ entry .unkebab   ケバブケースの識別子の単語：`-` ごとに分割する
++     `t"one-two-three".unkebab` は `List(t"one", t"two", t"three")` である。
++     `kebab` の逆である。
+
+@ 0 2 0 15b694cb2eaea6d71437754e6dbcf10c
++ entry .unsnake   スネークケースの識別子の単語：`_` ごとに分割する
++     `t"one_two_three".unsnake` は `List(t"one", t"two", t"three")` である。
++     `snake` の逆である。
+
+@ 0 6 0 1fc33801a0758d63025669068cf08db8
++ entry .uncamel   キャメルケースまたはパスカルケースの識別子の単語。それぞれ小文字にする
++     最初の文字より後のすべての大文字の前で区切り、各単語を小文字にする。`t"oneTwoThree".uncamel` と `t"OneTwoThree".uncamel` はどちらも `List(t"one", t"two", t"three")` である。
++     大文字の連続は一文字が一単語になる（`t"parseXML"` は `parse`、`x`、`m`、`l` になる）。
++     `kebab`、`snake`、`dotted`、`spaced`、`camel`、`pascal` は、単語を別の慣習でつなぎ直す。
+
+% 2 1 0 08e15d35dd2b6c901c98496d069f325c
+
+% 3 1 0 0d6f019df19d4171132b6be2095f68cc
+
+% 0 1 0 1e64ee57594cd69916ac4d8c185865e7
+
+% 0 1 0 121a5da0c9aea0331a55f992e2fba416
+
+% 0 1 0 16c89afb7848d38d0b135319dfe4c7c8
+
+% 0 1 0 0eb7a09a1693872f1425e7148f73dbca
+
+% 1 1 0 0621fdfed9a0220807d2cf01d09bf741
+
+@ 0 6 0 05610c6df752863f0b2fa0da2b6acd90
++ entry .join   テキストのコレクションを連結する。区切りと括弧を指定することもできる
++     要素が `Joinable` である任意の `Traversable` なコレクション（`List`、`Set`、`Chain`、`Sequence`、凍結済みの配列、または標準ライブラリの `Iterable`）に対する拡張である。要素とは、任意のテキスト型のテキスト、`Message`、またはコレクションであり、連結によってつながる。
++     結果の型は要素型なので、`List[Text]` をつなげると `Text` になり、`List[Teletype]` をつなげると `Teletype` になる。区切りもその同じ型である。
+
+% 2 1 0 14802c39942e223a0b2026646c554f0d
+
+% 3 1 0 023f87f23937f1a917ba1ff5a592bbc7
+
+% 0 1 0 06c707af01998eb81d493bb2e90b4ca3
+
+% 0 1 0 0468ffe8b013f54b01e847e09a722992
+
+% 0 1 0 1218b83ba29f246f0b3e44b9a04d558c
+
+% 0 1 0 0180f5dc3cdf5ecc1758d9a5a5988316
+
+% 0 1 0 0aeddd5f3dafd97a0a2f2cdee050ed8b
+
+% 1 1 0 1977f49ac75b1f981f25a77569f57605
+
+@ 0 3 0 15932bcb0d403bd2094129830b16144a
++     五つの形がある。区切りなし。区切りあり。左の括弧、区切り、右の括弧。区切りと、文章のために最後の要素の前に置く別の*最後から二番目の*区切り。そして四つすべてである。
++     最後から二番目の区切りを伴う二つの要素は `t"a and b"` になる。
+
+@ 0 6 0 1a1297ceb3a0cc960f180c0a4b902477
++     要素自体がつなげられないもの（`List(1, 2, 3)`）であるときは、区切りは*要素*であり、レシーバの形で組み立て直したコレクションに挟み込まれる。`List(1, 2, 3).join(0)` は `List(1, 0, 2, 0, 3)` であり、`List(List(1), List(2)).join(List(0))` は `List(1, 0, 2)` である。
++     `join` は `mkString` に相当するが、決して `toString` を呼ばない。要素につなげ方のないコレクションはコンパイルできない。
++     `Set` は走査の順序でつながり、呼び出し側はそれをつなげることでその順序を受け入れる。
+
+@ 0 1 0 0e6ffcf24695b45a1328b1297915daed
++ entry .Joinable   `join` の背後にある型クラス：値のコレクションを一つの値にする方法
+
+% 1 1 0 1fe870142c3206bd0723bb7443be5373
+
+@ 0 7 0 11e7fe4f19935bb90f6255eb55460835
++       `textual is Joinable` にはメソッドが一つ、`#join(elements)` があり、値の `Iterable` を一つに連結する。
++       コンパニオンのインスタンスは、すべての `Textual` 型（そのビルダーを通じて、全体の長さに合わせた大きさで）、`Message`、そしてネイティブのコレクションの形 `List`、`Chain`、`Sequence`（連結による）と `Set`（和集合による）を扱う。
++       `join` のレシーバの側は `Joinable.Source`（`Traversable` な任意のもの）であり、結果が何であるか、すなわちつなげた要素か、区切りを挟み込んで組み立て直したコレクションかは `Joinable.Assembly` が決める。
+
+% 0 1 0 0d18e3ab83f34825131bce2db4e77311
+
+@ 0 7 0 1ade7ba83789062e1569df723c9a5985
++   entry .textual   任意の `Textual` 型は、その `Builder` を通じて `Joinable` である
++   entry .message   `Message` は連結によってつながる
++   entry .list   `List[element]` は連結によって一つの `List` につながる
++   entry .chain   `Chain[element]` は一つの `Chain` につながる
++   entry .sequence   `Sequence[element]` は一つの `Sequence` につながる
++   entry .set   `Set[element]` は和集合によって一つの `Set` につながる
++   entry .Source   `join` のレシーバの側：要素まで走査されるコレクション
+
+% 1 1 0 0f6fe5ec6f60cfa3082ad2910ed2f290
+
+@ 0 8 0 0435a91aa45b14d814e50017430c551f
++         `self is Joinable.Source by element` は、レシーバの要素をイテレーターとして返す。
++         唯一のインスタンス `.traversable` は任意の `Traversable` なレシーバに使え、それはすべてのネイティブの形と任意の標準の `Iterable` である。
++         レシーバごとに `join` の拡張を一つずつ用意するのではなく型クラスを一つにしているのは、節の形が異なる同名の拡張があると、どのレシーバも曖昧になってしまうからである。
++     entry .traversable   任意の `Traversable` なレシーバは、その要素の `Source` である
++     entry #traverse   レシーバの要素を順に、イテレーターとして
++   entry .Assembly   `join` がレシーバの要素を組み立てる方法と、その区切りの型
+
+% 1 1 0 18953b4196608fd9048de931f996ce01
+
+@ 0 13 0 024e589703e0c0fc10115351cd336447
++         `self is Joinable.Assembly by element to result` は `join` が何を返すかを決める。
++         `#Part` は区切りと括弧の型であり、`#assemble` は部分のストリームを結果に変える。
++         二つのインスタンスが優先順に試される。要素自体が `Joinable`（テキスト、メッセージ、コレクション）であるときの `.joinable` では、結果はその一つであり、区切りも同じ型である。そうでないときの代替の `Fallback#interleaving` では、区切りは要素であり、結果は `Reshapable` を通じてレシーバの形で組み立て直したコレクションである。
++         選択は given の優先度で行われる。`List[Text]` には両方の読み方が当てはまり、オーバーロードではそれらに順位を付けられないからである。
++     entry .joinable   `Joinable` である要素は、その型の区切りを伴って、その一つにつながる
++         `List(t"a", t"b").join(t",")` は `t"a,b"` である。
++         要素はつなげられる上位型に拡大されてもよいので、`Text` の部分型のリストは `Text` としてつながる。
++     entry .Fallback   優先度の低い組み立て：区切りを要素として挟み込む
+
+% 1 1 0 06862d9416e711100ba9e1e6f2802e02
+
+@ 0 8 0 1b7d469ed01a149a1252ce0729dde160
++           `Joinable.Assembly` のコンパニオンが継承するトレイトであり、`.joinable` が当てはまらないときにだけ `#interleaving` が見つかるようにする。
++       entry #interleaving   `Joinable` でない要素は、区切りを挟み込んで組み立て直される
++           `self is Reshapable by element to result` が必要である。
++           `List(1, 2, 3).join(0)` は `List(1, 0, 2, 0, 3)` である。
++     entry #Part   区切りまたは括弧の型：つなげる型、または要素型
++     entry #assemble   要素と区切りのストリームから結果を組み立てる
++   entry #join   値の `Iterable` から作る一つの値
+
+@ 0 4 0 0914f1ac5ba16de7119b9f1cb77955e9
++ entry .pascal   パスカルケースでつなげた単語：それぞれ先頭を大文字にし、区切りなし
++     要素が `Char` であるテキスト型の任意の `Traversable` に対する拡張である。`List(t"one", t"two").pascal` は `t"OneTwo"` である。
++     各単語は小文字にしてから先頭を大文字にするので、`List(t"ONE", t"two").pascal` も `t"OneTwo"` である。
+
+@ 0 2 0 003d365f0248932a0ee973dd828aa769
++ entry .camel   キャメルケースでつなげた単語：最初の文字を小文字にしたパスカルケース
++     `List(t"one", t"two", t"three").camel` は `t"oneTwoThree"` である。
++     `uncamel` がその逆である。
+
+@ 0 3 0 03e8487b9003d187098e0b9f41d9bad8
++ entry .snake   `_` でつなげた単語
++     `List(t"one", t"two").snake` は `t"one_two"` である。単語の大文字小文字は変えない。
++     `unsnake` がその逆である。
+
+@ 0 3 0 06826d066af23d071693799633467339
++ entry .kebab   `-` でつなげた単語
++     `List(t"one", t"two").kebab` は `t"one-two"` である。単語の大文字小文字は変えない。
++     `unkebab` がその逆である。
+
+@ 0 2 0 1695b655c13bca6f1d21ed357ddbdda9
++ entry .dotted   `.` でつなげた単語
++     `List(t"one", t"two").dotted` は `t"one.two"` である。
+
+@ 0 2 0 0a0797583005508d0088d0d694d69261
++ entry .spaced   空白でつなげた単語
++     `List(t"one", t"two").spaced` は `t"one two"` であり、`words` の逆である。
+
+@ 0 3 0 1c15557013cf0af219ab2e24402858b5
++ entry .length   テキストの値の要素の数：文字、バイト、または書記素
++     `t"hello".length` は `5` である。`Writing(t"👨‍👩‍👧").length` は一つの書記素なので `1` である。
++     `Textual#length` を通じた、任意の `Textual` 型に対する inline の拡張である。
+
+@ 0 4 0 00194b9389247e9c17dd7e4ad5de2f35
++ entry .plain   任意のテキストの値の素の `Text`。スタイルは落とされる
++     拡張としての `Textual#text` である。`teletype.plain` はスタイル付きのテキストの文字だけであり、`text.plain` は `text` そのものである。
++     幅を測る操作（`pad`、`fit`、`center`）は素のテキストを測る。
+
+@ 0 3 0 1597dd865759779b10d51954ba4614c8
++ entry .init   最後の要素を除いたテキストの値
++     `t"Hello".init` は `t"Hell"` であり、空のテキストの `init` は空である。
++     `skip(1, Rtl)` と同じである。反対側の端には一般的なコレクションの操作 `tail` がある。
+
+@ 0 4 0 0542fa0c1505892f177369813da7d166
++ entry .chars   テキストの値の文字を、凍結済みの `Array[Char]` として
++     `t"Hello".chars.to[List]` は `List('H', 'e', 'l', 'l', 'o')` である。
++     テキスト型が何であれ、配列は素のテキストの文字からなる。
++     凍結済みの `Array[Char]` に対する `text` がその逆である。
+
+@ 0 3 0 0cbecc7348d766ad0f7ad0f37cc14e93
++ entry .text   凍結済みの `Array[Char]` を `Text` として。そして `StringBuilder` の中身を `Text` として
++     `chars.text` は `chars` の逆である。
++     `StringBuilder` に対しては、`builder.text` は蓄積されたテキストを読む。`add` の対となるものである。
+
+@ 0 4 0 0372405eabba5b251e0d6d743d2c05cc
++ entry .add   `StringBuilder` に `Text` または `Char` を追加する
++     生の `StringBuilder` を扱うコードのためのものである。`builder.add(t"…")` と `builder.add('x')` は呼び出し箇所で `String` に変換せずに追加し、`builder.text` は結果を読む。
++     型付きの代替は `TextBuilder` と `Text.build` である。
+
+@ 0 5 0 06081d032208485511c0de7be5be86fa
++ entry .slices   決まった大きさの断片に分けたテキストの値
++     `t"abcdefg".slices(3)` は `List(t"abc", t"def", t"g")` である。最後以外のすべての断片はちょうど `size` 個の要素を持ち、最後の断片は残りを持つ。
++     `segment` を通じて任意の `Textual` 型に使えるので、スタイル付きのテキストの断片はスタイルを保つ。
++     空のテキストは空の断片を一つ返す。
+
+@ 0 4 0 1920fe273eddaaf91c06ed68f5903a9c
++ entry .punch   テキストの値を序数の位置で分割し、そこにある要素を落とす
++     `t"key=value".punch(Quart)` は `(t"key", t"value")` である。序数より前のすべてと後のすべてであり、序数の位置にある要素自体は取り除かれる。
++     要素の間で分割してすべてを保つ `snip` と比べよ。
+
+@ 0 5 0 17a1124c5e8421250df1f370ad0a3eba
++ entry .justify   余分な空白を単語間の隙間に配分して、テキストをある幅まで広げる
++     意図は両端揃えである。`width` とテキストの長さの差が単語間の追加の空白として配分され、行がその列を埋める。
++     考慮されるのは素の文字数だけであり、表示幅ではない。
++     実装はソースの中で手直しが必要と記されており、まだ頼るべきではない。
+
+@ 0 4 0 0b55a012481838bf00e7fcedb57c5747
++ entry .contains   テキストの値が部分文字列、または文字を含むかどうか
++     `t"hello world".contains(t"ello")` と `t"hello".contains('e')` は `true` である。どのテキストも空のテキストを含む。
++     部分文字列は素の `Text` なので、スタイル付きのテキストはその文字で検索される。
++     はいかいいえではなく位置が欲しければ `offsetOf` を使う。
+
+@ 0 3 0 1286a5246c38e86317eb83259bc7779c
++ entry .starts   テキストの値が接頭辞で始まるかどうか
++     `t"hello".starts(t"he")` は `true` である。
++     素のテキストで比較する。`chomp` は接頭辞があればそれを取り除く。
+
+@ 0 3 0 1c169ba0a8bddbb81180e6f35f549466
++ entry .ends   テキストの値が接尾辞で終わるかどうか
++     `t"hello".ends(t"lo")` は `true` である。
++     素のテキストで比較する。`chomp(suffix, Rtl)` は接尾辞があればそれを取り除く。
+
+@ 0 4 0 02f1a75dc3cd39d4103d0ce36a582f3c
++ entry .chomp   テキストの値から接頭辞（`Rtl` なら接尾辞）を、あれば取り除く
++     `t"Sir Toby".chomp(t"Sir ")` は `t"Toby"` であり、`t"file.txt".chomp(t".txt", Rtl)` は `t"file"` である。接辞を持たないテキストは変更されずに返るので、`chomp` は先に `starts` や `ends` で確かめなくても安全に適用できる。
+
+@ 0 5 0 013e39ca29c46635049b3ead970cbf49
++ entry .offsetOf   部分文字列が最初に（`Rtl` なら最後に）現れる位置。`Optional` な序数として
++     `t"hello world".offsetOf(t"o")` は序数 `Quin` であり、`offsetOf(t"o", Rtl)` は最後の `o` の序数である。現れない部分文字列は `Unset` であり、決して番兵ではない。
++     結果は `Ordinal` なので、`before`、`after`、`upto`、`from`、`punch`、`segment` に直接渡せる。こうしてテキストを区切り文字の前後で分解する。
+
+% 2 1 0 08ba2e1f18b6b4d21e6a4da7a4442e09
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 1520d953bbbfd2091dbaf26a916e193e
++       label 区切りを見つける
+
+% 1 1 0 18c1e10beb27d43307238ecdd275fbfa
+
+% 2 1 0 160af94bcf403f89074156fa5345d775
+
+% 4 1 0 19892b0c902f7f2f14d5fb90ec5af2e2
+
+% 0 1 0 11274b0be484456b1caa35f3b24f8ef3
+
+% 1 1 0 04addcf0f9490aae049d9c0355cc0bcc
+
+@ 0 1 0 0298cdd3013834e30a19679b181b3249
++       label その前の名前を取る
+
+% 1 1 0 0c21cb1986fc76c80441c24b6bb02c8a
+
+% 2 1 0 1ba22028dd10d9b01ac6fd8d0312e192
+
+% 4 1 0 10607942135538db0f43015565a5ed86
+
+% 0 1 0 05ccade1c36766d51f5dc0f909ef977f
+
+% 1 1 0 1345f0d31bfd42df16f8229b2d2a7ced
+
+@ 0 1 0 03592b0a66f692e307fbb485ab6b51ae
++       label そしてその後の値を、前後の空白を除いて取る
+
+% 1 1 0 14e98ff2987171650bed5f43cdd3216b
+
+% 2 1 0 0e3951b4b3fbb6251c4631df6f5d35f1
+
+% 4 1 0 03abf736576f3f350bad42551318a159
+
+% 5 1 0 04dc1e0d90c22c8805184aedd7a56248
+
+% 0 1 0 073b68327f58c6a60992ae1ce94a9455
+
+% 1 1 0 1ab0dc5bcb04635a05fc73999b417cd0
+
+@ 0 1 0 1d8de30634b90d78153e75fcf58a88a3
++       label 次に値を最初のパラメーターで分割する
+
+% 1 1 0 157f33ed7412cb910290a33112d6fd5a
+
+% 2 1 0 04f34bad0f6533f901d74928116a5ec1
+
+% 4 1 0 0e8d9e7244f1a00f01eed2529534a54b
+
+% 5 1 0 0602c11a99bd802b09978648975fc161
+
+% 0 1 0 1ba5de609b990b841021b7147a998c98
+
+% 1 1 0 11aca008af2887b201da4b6882dbc0e0
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 3 0 06469edb3faf7dae19accf00a154286e
++     `offsetOf` は部分文字列を見つけ、`pinpoint` は述語で文字を見つけ、`search` は正規表現の一致を見つける。
++     その下にある基本操作は `Textual#indexOf` である。
++     空の部分文字列は、左からは `Prim` に見つかり、右からは `Unset` である。
+
+@ 0 5 0 139a5dc461c245b401a82868f518a5f6
++ entry .tally   重ならない部分文字列の出現の数
++     `t"banana".tally(t"an")` は `2` であり、`t"aaaa".tally(t"aa")` も `2` である。各出現は、その前の出現の終わりから数えるからである。
++     空の部分文字列の数は `0` である。
++     これは部分文字列の形である。テキストに対する `count(predicate)`（`t"banana".count(_ == 'a')`）はコレクションの操作であり、部分文字列の形に独自の名前があるのはそのためである。
+
+@ 0 5 0 191ed2bcf2bcacf20ec45c6178c10476
++ entry .search   テキストの値のうち、正規表現が一致する部分文字列
++     `t"a1b22c".search(r"[0-9]+")` は `t"1"` と `t"22"` の `Chain` であり、それぞれレシーバの切り出しである（そのため、スタイル付きのテキストの一致はスタイルを保つ）。
++     `overlap = true` を指定すると、一致はその前の一致の内側から始まってもよい。
++     スコープに `Regex.Engine` が必要であり、それは `r"…"` リテラルの形が供給する。
++     一致と一致の*間*の断片には `cut` を使う。
+
+@ 0 8 0 18553ebc914420f90e08163cc031bee2
++ entry .extract   正規表現のパターンの部分関数でテキストの値を走査し、すべての一致を集める
++     `text.extract { case r"…" => value }` は、`r"…"` パターンの部分関数をテキストに沿って `start`（デフォルトは `Prim`）から実行し、一致したケースが生成する値の `Chain` を返す。走査は各一致の終わりまで進む。
++     ケースはコンパイル時に分解され、各パターンがすべての位置で試される。その際、一致が始まった場所と終わった場所を記録する `Scanner` を使う。分解できないラムダは、各位置で部分関数全体を実行し直す方法に代替される。
++     結果の型はケースから推論される。
+
+% 2 1 0 00f4c76df71b2d38100ace2db66fab94
+
+% 3 1 0 126e0913dfdbb2ad1f425f32537a822d
+
+% 0 1 0 0556d061636198d00069be3b657a96f4
+
+% 0 1 0 04fda55ff8217f360b7ea2ccf62b53d0
+
+% 1 1 0 0417ff00aebddd800d6418da1c28c1f6
+
+@ 0 4 0 0c85a5e963bb59d01b01d8910cb7f4f0
++ entry .lower   小文字にしたテキストの値
++     `t"Hello World".lower` は `t"hello world"` であり、各文字を `Char#toLower` で写す。
++     `Char` の要素を必要とするので、`Text` では使えるが `Writing` は除外され、スタイル付きのテキストはスタイルを保つ。
+
+@ 0 3 0 1f19f3d1fe57c62d0c1ed6886635b6f6
++ entry .upper   大文字にしたテキストの値
++     `t"Hello World".upper` は `t"HELLO WORLD"` であり、各文字を `Char#toUpper` で写す。一文字の大文字を持たない文字（`ß`）はそのままにする。
+
+@ 0 3 0 049c117eca3fec5f0565bbbc9813f15a
++ entry .capitalize   最初の文字を大文字にしたテキストの値
++     `t"hello".capitalize` は `t"Hello"` であり、`t"kingLear".capitalize` は `t"KingLear"` である。残りは変わらない。
++     空のテキストは空のままである。
+
+@ 0 2 0 18a099b5aa67e6db0c17dccbea8062aa
++ entry .uncapitalize   最初の文字を小文字にしたテキストの値
++     `t"Hello".uncapitalize` は `t"hello"` である。`camel` は `pascal` の後にこれを行ったものである。
+
+@ 0 4 0 1857b040c5cd2af91fd10b446dec2dbf
++ entry .trim   先頭と末尾の空白文字を除いたテキストの値。`Bidi` を指定すれば片側だけ
++     `t"  Hello \n".trim` は `t"Hello"` であり、`trim(Ltr)` や `trim(Rtl)` は片側だけを取り除く。
++     空白文字とは `Char#isWhitespace` が言うもの、すなわち空白、タブ、改行、そしてほかの Unicode の空白区切りである。
++     すべて空白文字のテキストは、取り除くと空のテキストになる。
+
+@ 0 3 0 0dc337fd972dfbe016aa232ffc59765e
++ entry .blank   テキストの値が空か、すべて空白文字であるかどうか
++     `t"  \t".blank` と `t"".blank` は `true` である。空であるかどうかだけなら、コレクションの `nil` を使う。
+
+@ 0 8 0 144534d9364d79631609fa5805c0373b
++ entry .pinpoint   開始位置から、どちらかの方向に、述語を満たす最初の文字の序数
++     `t"oh, Hello World".pinpoint(_.isUpper)` は `H` の位置である `Quin` である。`pinpoint(_.isUpper, Sen)` は六番目の文字から検索を始めて `W` を見つける。そして `pinpoint(!_.isWhitespace, bidi = Rtl)` は末尾から走査する。
++     述語を満たす文字がなければ、結果は `Unset` である。
++     これは `trim`、`blank`、`uncamel` の下にある位置の基本操作であり、走査ではなく直接のアクセスで各文字に到達する。
++     部分文字列の位置には `offsetOf` を使う。コレクションの `where` は、開始位置も方向も持たない述語による検索である。
+
+@ 0 4 0 1cde42d6d2a3604b0dc64c6cd1cf07c4
++ entry .tr   すべての文字を写す。あるいは一つの文字を別の文字に置き換える
++     `t"ABC".tr(_.toLower)` は `t"abc"` であり、`t"one,two".tr(',', ';')` は `t"one;two"` である。
++     長さを決して変えない、一文字対一文字の字訳である。部分文字列には `sub` を使う。
+
+@ 0 2 0 1e80b5964d8f78030252d5d2c9a22e71
++ entry .erase   指定した文字の出現をすべて取り除いたテキストの値
++     `t"a-b_c".erase('-', '_')` は `t"abc"` である。
+
+@ 0 6 0 1b34c3d54da8c2410e87001cd95eeca5
++ entry .broken   隣り合う二つの文字が述語を満たす箇所に、区切りの文字を挿入する
++     `text.broken((left, right) => …)` は隣り合う各組を検査し、述語が成り立てばその二つの間に `break`（デフォルトではゼロ幅スペース）を挿入する。そのため、長い識別子に折り返しのための柔らかい区切り位置を与えられる。`t"camelCaseName".broken((a, b) => a.isLower && b.isUpper)` は各単語の境界に印を付ける。
++     二文字未満のテキストは変わらない。
+
+@ 0 6 0 10855d65429e305a05eeb2908f3adcdc
++ entry .pad   テキストの値を文字で幅まで伸ばす。右側に、`Rtl` なら左側に
++     `t"123".pad(5)` は `t"123  "` であり、`t"123".pad(5, Rtl, '0')` は `t"00123"` である。既に幅に達しているか超えているテキストは変わらず、決して切り詰められない。
++     幅はスコープにある `Text is Measurable` の given を通じて測る（`textMetrics.uniformMetric` は一文字を一桁と数え、`wideCharacterWidthMetric` は CJK と絵文字を二桁と数える）。そのため、パディングは端末が表示するとおりにテキストの列を揃える。
+
+% 2 1 0 109622438fc194330993af0c53a0f3d2
+
+% 3 1 0 0173702d378cf1d1046a1f6bc6bf8bdf
+
+% 4 1 0 0443117395fc62dd17dfd86de9232795
+
+% 0 1 0 0c78fd810adfe1ca132c46af44e98a75
+
+% 1 1 0 07b81afc0ae020fd17e9e130ac1e3f6e
+
+@ 0 3 0 0fa49ad222f606441d223ff7388c38e5
++ entry .center   テキストの値の両側を幅までパディングする
++     `t"ab".center(6)` は `t"  ab  "` であり、端数の一桁があるときは左側に置く。
++     `pad` と同じく、スコープにある `Text is Measurable` の given を通じて測る。
+
+@ 0 5 0 04a21d16fa56538b03b9e68174d34c8c
++ entry .fit   テキストの値を正確な幅にする。必要に応じてパディングするか切り詰める
++     `t"123".fit(5)` は `t"123  "`、`t"12345".fit(3)` は `t"123"` である。`Rtl` を指定するとパディングは左側に付き、切り詰めは右側を残す。`t"12345".fit(3, Rtl)` は `t"345"`、`t"123".fit(5, Rtl, '.')` は `t"..123"` である。
++     スコープにある `Text is Measurable` の given を通じて測る。
+
+@ 0 3 0 0b6f74b4b1b67ffc0d7cf3dbe74588c1
++ entry .ossify   すべての空白をノーブレークスペースに置き換える
++     `t"a b".ossify` は文字の間に U+00A0 を持つので、行を折り返すレイアウトは単語を一緒に保つ。
+
+@ 0 2 0 14153480253b8c8501ed1b8630ff51b4
++ entry .subscripts   すべての文字を下付き添字の形に置き換えたテキストの値
++     `t"2".subscripts` は `t"₂"` である。Unicode の下付き添字を持たない文字は空白になる。
+
+@ 0 2 0 08ddfbc5753fd6651cabad6558d77d12
++ entry .superscripts   すべての文字を上付き添字の形に置き換えたテキストの値
++     `t"23".superscripts` は `t"²³"` である。Unicode の上付き添字を持たない文字は空白になる。
+
+@ 0 7 0 1c6607b02110b8ef03838b8661cfc5ed
++ entry .sub   `Text` の中の部分文字列の出現、または正規表現の一致を置き換える
++     `t"naive".sub(t"i", t"ï")` は `t"naïve"` であり、`count` を指定しない限りすべての出現が置き換えられる。`t"aaa".sub(t"a", t"b", 2)` は `t"bba"` である。
++     リテラルの置換はそのまま挿入され、その中の `\` と `$` はエスケープではないので、`t"a.b".sub(t".", t"\\.")` は `a\.b` になる。
++     パターンが `Regex` のときは、置換の中の `$1` は最初のグループを指す。`t"ab".sub(r"(a)b", t"$$1c")` は `t"ac"` である。
++     一致は重ならない。`t"fofofoo".sub(t"fofo", t"momo")` は `t"momofoo"` である。
+
+@ 0 3 0 15a5d20c8decca1e14f366ad4a8206c5
++ entry .urlEncode   UTF-8 で URL のクエリーの構成要素としてパーセントエンコードした `Text`
++     `t"hello world".urlEncode` は `t"hello+world"` であり、`t"é".urlEncode` は `t"%C3%A9"` である。空白が `+` になるフォームのエンコーディングである。
++     `urlDecode` がそれを元に戻す。
+
+@ 0 2 0 0a57c1c75022d63c1cf8e106589c8602
++ entry .urlDecode   `+` を空白として、パーセントエンコードされた `Text` をデコードする
++     `t"%2B".urlDecode` は `t"+"` であり、`t"+".urlDecode` は `t" "` である。
+
+@ 0 2 0 05d5683d7034acf10b8f16ad7e89b446
++ entry .punycode   ASCII（Punycode）形式の国際化ドメイン名
++     `t"www.äpfel.com".punycode` は、`java.net.IDN` を通じて `t"www.xn--pfel-koa.com"` となる。
+
+@ 0 3 0 095763c090f190ed177570d35e8e1086
++ entry .sysData   システムのコードページによる `Text` のバイト。凍結済みの配列として
++     `t"hello".sysData` はバイト `104, 101, 108, 108, 111` である。
++     エンコーディングを選ぶには、スコープに `codepages` の given を置いて `text.in[Data]` を使う。
+
+@ 0 6 0 180a4666a7bd84d2048a558082125a8c
++ entry .proximity   スコープの `Proximity` の測度による、二つの `Text` の間の距離
++     `t"Hello world".proximity(t"Hello orld")` は、`proximities.levenshteinProximity`（と `caseSensitivity.caseSensitive`）の下で `1` である。結果の型は測度の `Operand` であり、Levenshtein と接頭辞の測度では `Int`、Jaro、Jaro–Winkler、正規化 Levenshtein では `Double` である。
++     `Proximity` と `CaseSensitivity` の両方を名前でインポートしなければならない。
+
+% 2 1 0 17ae4524e4d7faa706176e139ff4d446
+
+% 3 1 0 02ad62dda354bb27190b61b95fb5c7c1
+
+% 0 1 0 01bb34a2d0bdaad70bf21c35db82b7e2
+
+% 0 1 0 001716f4c0f290721deda3807d16c220
+
+% 0 1 0 1e7c4b1d183ff3c004413e3583df4967
+
+% 1 1 0 04ee86c83279f93b1b8dc06133da137a
+
+@ 0 8 0 10208e5ba23794661c753096e77824ad
++ entry .fuzzy   `Text` を、等価性ではなく近さによってリテラルのケースとマッチさせる
++     `text.fuzzy() { case t"hello" => … }` は、スコープの `Proximity by Double` の測度（`proximities.normalized LevenshteinProximity` または `jaroWinklerProximity`）の下で、リテラルがテキストに最も近いケースを評価する。同点の場合は前のケースが選ばれる。
++     `threshold` はケースが選ばれうる距離の上限を定める。どのリテラルからもそれより遠いテキストはワイルドカードのケースに落ちる。ワイルドカードのケースは最後になければならず、テキストを束縛してもよい。それがなければ `MatchError` を投げる。
++     ワイルドカード以外のすべてのケースは `"…"` または `t"…"` のリテラルでなければならず、コンパイル時に検査される。
+
+% 2 1 0 0c22c565b51df0bc0268778aa0a335bf
+
+% 3 1 0 07e612972dca8a3604d1818a67ecd9f9
+
+% 0 1 0 179b22b75b69454912f65511fccf9278
+
+% 0 1 0 1a389aad30b4767e0ad7f88ba7004bb9
+
+% 0 1 0 1aaf6273303a2ae60212bfcdaaf8bf00
+
+% 0 1 0 1a5def411d6fa0ae0284cd5f1b72bc6f
+
+% 0 1 0 097bfe0f63817b020796bbff7b974f8a
+
+% 0 1 0 1670a4af074c11c61a057d484da16b9d
+
+% 0 1 0 18c219d20bfef2a50e95f0725d8cc70e
+
+% 1 1 0 08181cbf977f93791fa719d79c8f084a
+
+@ 0 1 0 14f9cace7f3310491124ff447b4135fe
++ entry .Proximity   二つの `Text` の間の距離の測度。`proximity`、`fuzzy`、`Lexicon` の背後にある型クラス
+
+% 1 1 0 1a5bd1013b4743631b8e5884abaf0210
+
+@ 0 5 0 1d987aa4b8c29e2819782758ef0c37ec
++       `Proximity by operand` はメソッドを一つ、`#distance(left, right)` を持ち、その結果の型は `#Operand` である。編集や一致する文字の数なら `Int`、正規化されたスコアなら `Double` である。
++       既定はない。測度は `proximities` パッケージから名前でインポートし、どの測度も二つの文字が同じかどうかを決めるためにスコープの `CaseSensitivity` を参照するので、それもインポートする。
+
+% 2 1 0 1bd0761ed2f8044a14bbb8bdd4849c5c
+
+% 3 1 0 08c8cb24ae1f33b21f715f61c8fff921
+
+% 4 1 0 1e9dc2005401f7b31ea12ad108dcb487
+
+% 0 1 0 07325107ba6075ec0e326daf3deb0df2
+
+% 0 1 0 15b3b599e5ba8b4d1bb3e400b397604b
+
+% 1 1 0 1dfade9e7cccae1010877196502bb2b2
+
+@ 0 4 0 13e57a1526f8a5191d88209cf1ef0aeb
++       `#Triangulable` は、三角不等式に従う距離関数である測度（Levenshtein）では `true` であり、`Lexicon` が探索を枝刈りするにはこれが必要である。Jaro の測度は類似度であって距離関数ではないので、`Lexicon(terms)` はそれを受け付けない。
+
+% 1 1 0 1af513c5a74ca2f4130665957f6bd443
+
+% 0 1 0 1e69dc539d8034bb09cff705d078e9ea
+
+% 1 1 0 1100b7cb9a92b4d909c71b83662786d5
+
+% 1 1 0 19293a5e34c2772610466b77f39c170f
+
+@ 0 3 0 051e646a665ac0ee1e45b68a8aa6a958
++   entry #Operand   距離の型：`Int` または `Double`
++   entry #Triangulable   測度が三角不等式に従う距離関数であるとき `true`
++   entry #distance   二つのテキストの間の距離
+
+@ 0 1 0 0d27eafa6e5bc55d0e4eb8a3667929d1
++ entry .proximities   文字列の類似度の測度。それぞれ名前でインポートする `Proximity` の given
+
+% 1 1 0 10515cb1ebd2d52a015eeec1927a7312
+
+@ 0 3 0 0467c7d4fe3c6e150d844e080a8bb436
++       `proximity`、`fuzzy`、`Lexicon` がどのような近さの概念を使うかは選択なので、`import soundness.*` はこれらを一つも取り込まない。一つを名前でインポートし、あわせて、すべての測度が文字の比較に必要とする `CaseSensitivity` もインポートする。
+
+% 2 1 0 173c6477efb8131910139d59f56ee4dd
+
+% 3 1 0 1d7f8b51510ea6480fbcc0ab520d8847
+
+% 0 1 0 1879cb9a0ca3632602b434379def3247
+
+% 1 1 0 1289a1cae3de325f09fed6e43bf64903
+
+% 0 1 0 19db33a11c9e0707093b2b873ace6c07
+
+% 1 1 0 0acd6cf127a37a8610f0ae87d5039656
+
+@ 0 23 0 0c3c0175e6decb180e45e9da82daea72
++       Levenshtein と接頭辞の距離は `Int` で、ゼロは同一を意味する。Jaro、Jaro–Winkler、正規化 Levenshtein の測度は `Double` である。
++       Jaro と Jaro–Winkler は*類似度*（一が同一を意味する）であり、正規化 Levenshtein は*距離*（ゼロが同一を意味する）である。値が最小のケースを選ぶ `fuzzy` は距離を期待する。
++   entry .levenshteinProximity   Levenshtein の編集距離。一文字の挿入、削除、置換
++       `t"kitten".proximity(t"sitting")` は `3` である。
++       テキストと空のテキストの間の距離は、そのテキストの長さである。
++       真の距離関数（`Triangulable = true`）なので、`Lexicon` はこれの上に構築される。
++       二行の整数で計算するので、メモリーは短いほうのテキストに対して線形である。
++   entry .normalizedLevenshteinProximity   Levenshtein 距離を長いほうのテキストの長さで割ったもの。`0.0` から `1.0` まで
++       同一のテキストでは `0.0`、共通点のないテキストでは `1.0`、二つの空のテキストでは `0.0` である。
++       その閾値はテキストの長さに依存しないので、`fuzzy` とともに通常使われる測度である。
++   entry .jaroProximity   Jaro 類似度。ウィンドウ内で一致する文字から、転置を差し引いたもの
++       同一のテキストでは `1.0`、互いに長いほうの長さの半分以内に共通の文字を持たないテキストでは `0.0` である。
++       距離ではなく類似度である。
++   entry .jaroWinklerProximity   最大四文字までの共通の接頭辞で強化した Jaro 類似度
++       Jaro に、共通の接頭辞の長さ（最大四）の十分の一と、Jaro が `1.0` に足りない分との積を加えたものである。綴りの誤りがしばしばそうであるように、同じように始まるテキストを優遇する。
++   entry .prefixProximity   二つのテキストの共通の接頭辞の長さ
++       `t"interview".proximity(t"internal")` は `5` である。
++       数が大きいほど*より*似ていることを意味する。これは `fuzzy` のための距離ではなく、`jaroWinklerProximity` の構成要素である。
+
+@ 0 1 0 07b57b913f4889691df85f49385854f6
++ entry .CaseSensitivity   二つの文字が同じとみなされるかどうか。すべての近さの測度が参照するポリシー
+
+% 1 1 0 0f362d9a1e109c0c12c1e7f78ca83c67
+
+@ 0 4 0 18ae1a06e3bc1ac70140cce38962f5a4
++       `CaseSensitivity` は、二つの `Char` から、それらが一致するかどうかへの関数である。
++       `caseSensitivity` パッケージにある三つのポリシー（`caseSensitive`、`caseInsensitive`、`smartCase`）が通常の選択肢で、名前でインポートする。独自のものは、正しい形の任意のラムダである。
+
+% 0 1 0 10de0472bfcb1d4c0544b1a8fc6b2e1a
+
+@ 0 1 0 1f1912132806dfcc0f13f1f84396ba3f
++   entry #compare   このポリシーの下で二つの文字が一致するかどうか
+
+@ 0 1 0 14e77f9cd6bce0e51e168545a7293433
++ entry .caseSensitivity   大文字小文字の一致のポリシー。それぞれ名前でインポートする `CaseSensitivity` の given
+
+% 1 1 0 0eb12e77d6ede00e0f00e039089e26f3
+
+@ 0 2 0 0aeae3210365ed5e1a09c9d4bb012371
++       `import soundness.*` はこれらを一つも取り込まない。
++       どの測度も二つの文字が同じかどうかをこれに問うので、`Proximity` を使う場所では必ず一つを名前でインポートする。
+
+% 2 1 0 192b35ace8183f250c4256e429bbb83c
+
+% 0 1 0 136eece6874131450e11c79453722b45
+
+% 1 1 0 11f40f328a770b7a0385b3c047dafdc1
+
+% 2 1 0 1c987fe9be164466037e10b2f04ec4e6
+
+% 3 1 0 0ca647cafc6eda8d1fe2507826b0903f
+
+% 0 1 0 07d2afc9a9789aac10b4d532221ea5cb
+
+% 0 1 0 1f2494ad0a6cd9f6130d3519750a63f5
+
+% 0 1 0 0990dd2e1d8805a30fe26db752f812b9
+
+% 1 1 0 01f8d5e289adac7f175635014a1f63b1
+
+% 2 1 0 15545a498bca5fff1eda85f801930d54
+
+% 3 1 0 06f22cfe9e09259e16d62119994d2d61
+
+% 0 1 0 1130122ad0e28f7f0e45fcbbca6cf743
+
+% 0 1 0 1988865f09e6fcc7092575f36e3b1925
+
+% 0 1 0 1fa8140495f611be17bf901c6fb07a61
+
+% 1 1 0 1bd2a533bbea88840d6374c9d36c939b
+
+% 2 1 0 1b1b4718b06cdff900a6ebec27c412aa
+
+% 3 1 0 1f84399ecaf6517415e06e95c0e195fa
+
+% 0 1 0 0e8dbcae8b4fc5010e2fb6fcdaf93d8c
+
+% 0 1 0 111dea5d4be1402c1e67d459489d3ba8
+
+% 1 1 0 161e97cf325b049e1e86f7a222be00bd
+
+% 2 1 0 023f78848f4101760a4009b02ef32760
+
+@ 0 6 0 0f575d19463e930312107f1f24e81c39
++   entry .caseSensitive   文字は等しいときにだけ一致する
++   entry .caseInsensitive   文字は大文字の形が等しいときに一致する
++   entry .smartCase   左側の小文字はどちらの大文字小文字にも一致し、それ以外の文字はそれ自身にだけ一致する
++       Vim の `smartcase` のような検索ツールの規則である。小文字で入力した問い合わせは大文字小文字を区別せず、問い合わせ中の大文字は正確に一致しなければならない。
++       左のオペランドが問い合わせである。
+
+@ 0 1 0 15f79144967721480829164e70394a08
++ entry .Collation   `Text` の全順序。テキストのソートと比較に必要なもの
+
+% 1 1 0 187511314d9189cc17b1b57960937b90
+
+@ 0 7 0 0f83761330500fd20662c9a2917a9f3b
++       テキストには自然な順序がない。`café` が `caff` の前に来るかどうかは言語と目的によって決まる。そのため Soundness にはアンビエントな順序がない。`List[Text]` をソートしたり `t"a" < t"b"` と書いたりするにはスコープに `Collation` が必要であり、それがなければコンパイルできない。
++       照合は `collations` パッケージから名前でインポートする（辞書順なら `unicodeCollation`、高速で表を使わない順序なら `codepointCollation`）か、`.apply` で hieroglyph の `CollationTable` から構築する。`collationComparable` は、それを比較演算子とソートが探す `Text is Comparable` に変える。
+
+% 2 1 0 06fb88e3d27239b1142bf4a0d7045526
+
+% 3 1 0 138d01285a77ad770bafea0982a2ee2e
+
+% 0 1 0 1285ef31f17a40770ec6b6f0bbd813af
+
+% 0 1 0 1e5f4b9c319e82950983f04a2f5db149
+
+% 0 1 0 09bd1f97efb7692319774c2a96f513ac
+
+% 0 1 0 1a0b705e3a58d182070dadfd6ccca56a
+
+% 1 1 0 0a4a3c8edc407a1005f4242fdfe9bfff
+
+@ 0 3 0 00936ba1fc232af6057d8b49f76defa6
++       `#compare` は二つのテキストの `Comparison` を与え、`#key` はソートキーを与える。ソートキーは、要素ごとに比較すると照合と同じ順序になる整数の配列であり、多くのテキストを比較の作業を繰り返さずにソートするためのものである。
+
+% 0 1 0 14c68f3f67c0578c0e70b4fc041d16ce
+
+% 0 1 0 1c4f05048b2b06fe0566f1a18d8e8c36
+
+@ 0 3 0 07dc6a1c58d2d8c603a1a401ffb6ebb0
++   entry .apply   言語のテーラリングのような、hieroglyph の `CollationTable` 上の `Collation`
++   entry #compare   二つのテキストの `Comparison`（`Less`、`Same`、`More`）
++   entry #key   テキストのソートキー。照合と同じように比較される整数
+
+@ 0 7 0 06c83fc5e6cb1f1f062079b410a9fae3
++ entry .collationComparable   スコープに `Collation` があるとき、`Text` を `Comparable` にする
++     `<`、`>`、`least`、`sort` をはじめ、`Text` に対するすべての比較がこれを通じて解決される given である。
++     スコープに `Collation` を必要とするので、テキストはソート順が選ばれたときにちょうどソート可能になり、ソートされていない `List[Text]` に対するエラーは欠けている `Comparable` を名指す。
++     `Comparable` のコンパニオンも `Text` のコンパニオンも gossamer を参照できないので、ライブラリで修飾された名前を持つトップレベルの given であり、照合とともに名前でインポートしなければならない：`import soundness.collationComparable`。
+
+% 2 1 0 143b1ff2d6c293021469411cf6f6a0a0
+
+% 3 1 0 05e8299b64dc7e21076221524f9d921c
+
+% 0 1 0 161ba3160e460cb50c6576063980e5d8
+
+% 0 1 0 00bb9d3937e1649c0e3805cd5e749bfe
+
+% 0 1 0 074f2d88bda64d9219f64ea3eebd4777
+
+% 1 1 0 14a9c4b5095d4f8c12e2f249bae02434
+
+@ 0 1 0 0415d3c5f34169920992b62e09cb9801
++ entry .collations   テキストのソート順。それぞれ名前でインポートする `Collation` の given
+
+% 1 1 0 05014f8ee6faad691a7c34173f9c4ed1
+
+@ 0 2 0 16940fd200f758a91d76504b46fc9632
++       `import soundness.*` はこれらを一つも取り込まない。ソート順は一つをインポートして選ぶ。
++       二つの順序は、大文字小文字、アクセント、基本面の外の文字の扱いが異なる。
+
+% 2 1 0 06e22c38f4bbd7800340bb6eecfbdc00
+
+% 0 1 0 0c22ba6d0a62a47a12fbbe4c8f30d91d
+
+% 1 1 0 1b83dd50030db11c09144ea4d4ef7849
+
+% 2 1 0 18a5cc87e519fcf113869db63db84456
+
+% 0 1 0 140b8725d89050d21ae20ffce63e4f64
+
+% 1 1 0 0338fed99a5e0afa02b76c69825eb969
+
+% 0 1 0 17b40f81e1f842790280b0aa82e382cb
+
+% 0 1 0 05839c29923015ce18fd1352046d440d
+
+% 1 1 0 107a3d3e0b33af93145d8bb694909cc9
+
+% 2 1 0 0ed5e491ffd8cc3212c246bb3b1b1633
+
+% 0 1 0 0877360e20676ed600ff377f037c7fa9
+
+% 1 1 0 02c8a01cbe20fc20176e06dd185f00f0
+
+% 0 1 0 0001b5d1a6354b0c08c163a90a02c449
+
+% 1 1 0 0a22b8cf71af2b360c9bca69b0ecb28e
+
+% 2 1 0 04aa94bd2df4f4af0889f903c2586ef8
+
+@ 0 12 0 0ec9ce377f07534a18700b104079a4bd
++       ロケール固有のテーラリングは、コンテキストの `Locale` から `Collation` を導出する cosmopolite か、hieroglyph の `CollationTable` に対する `Collation(table)` から得られる。
++   entry .unicodeCollation   辞書順。Unicode 照合アルゴリズムのルートテーブル、三レベル、無視不可
++       Default Unicode Collation Element Table（UTS #10）の順序である。文字は大文字小文字やアクセントに関係なく第一の重みで、次にアクセント、次に大文字小文字で並ぶので、`cafe` < `café` < `caff`、`a` < `B` となる。
++       ソートキーは、そのテキストに対するテーブルのキーである。
++   entry .codepointCollation   生のコードポイント順。決定的で表を使わない、機械向けのソートのためのもの
++       Unicode スカラー値で並べるので、照合データのバージョンが変わっても安定しており、読み込みのコストがない。読みやすさより再現性が求められるファイルの一覧などの出力に向く。
++       `String` の順序ではない。`String` は UTF-16 のコードユニットを比較するので、補助文字（`𝓐`）を U+E000–U+FFFF より前に置くが、ここではそれらは基本面全体の後に並ぶ。
++       大文字はすべての小文字より前に並ぶ。
+
+@ 0 1 0 153cbca83488361616c600a6f33510ad
++ entry .Decimalizer   `Double` を選んだ精度で十進のテキストとして描画する。`show` が参照する `DecimalConverter` として
+
+% 1 1 0 131e8f48d69fe32e1f1e3c7f0f755589
+
+@ 0 5 0 139ad7fd5b683a2d07dd64583853cc5b
++       `Decimalizer` は `DecimalConverter` であり、`Double is Showable`（したがって `Double` に対する `t"$x"`）が探す型クラスで、何桁を表示する価値があるかを定める。`Decimalizer(3)` は有効数字三桁、`Decimalizer(decimalPlaces = 2)` は小数点以下二桁である。
++       絶対値が十の `#exponentThreshold` 乗（既定では三）に達する値は、上付きの指数による科学的記数法で書かれる。
+
+% 2 1 0 031584548f52bb0604efabde299102cf
+
+% 3 1 0 0caa0a3fd84c8e58101a65d1b42a883c
+
+% 0 1 0 1d08d79b5f5709130d2666989c77baaf
+
+% 0 1 0 02aa449918b4ba141dd797dc20482922
+
+% 0 1 0 094e28e45a14fb8d068f90eafb3edeeb
+
+% 0 1 0 13ab2d11a47c287c007962fef008d2d0
+
+% 0 1 0 1bf1187c77aaee6713bc60630ad482a2
+
+% 0 1 0 136a33f3fd0e72650fb76ccd0cb68a0c
+
+% 1 1 0 0b61cbb398676fb013724c89dd4f51fb
+
+@ 0 6 0 0cf74315ae75c92309ba67317b73653a
++       スコープに `given Decimalizer(3)` を置くと、浮動小数点数のすべての `show` が同じように描画されるので、プログラムの精度を変えるのは、書式文字列を探し回ることではなく、一つの given を変えることになる。
++       丸めは先頭の桁を越えて正しく繰り上がる。
++       特別な値は `#infinity`（`∞`、負なら `#minusSign` 付き）と `#nan`（`∉ℝ`）として描画される。
++       `decimalConverters.javaDecimalConverter` は、素の `Double#toString` による代替である。
+
+% 0 1 0 0cadd17fdce7c0d3001ae4d3513cb578
+
+% 0 1 0 0b19ef9d8df904131fb8f63308d771d3
+
+@ 0 19 0 0c8c1f781c3d97d005616feb3090c029
++   entry #significantFigures   表示する有効数字の桁数。`#decimalPlaces` を使うなら `Unset`
++       最初のパラメーターなので、`Decimalizer(3)` がこれを設定する。
++       これと `#decimalPlaces` がどちらも `Unset` のときは、有効数字三桁が使われる。
++   entry #decimalPlaces   小数点以下の桁数。`#significantFigures` が `Unset` のときに使われる
++   entry #decimalPoint   小数点の文字。既定は `.`
++       `Decimalizer(7, decimalPoint = '·').decimalize(6.626070e-34)` は `t"6·626070×10¯³⁴"` である。
++   entry #minusSign   負の数の前に書く文字。既定は `-`
++   entry #plusSign   正の数の前に書く文字。何も書かないなら `Unset`（既定）
++   entry #exponent   仮数と指数の間のテキスト。既定は `×10`
++   entry #exponentThreshold   科学的記数法が始まる、十の冪で表した大きさ。既定は `3`
++       `Unset` は科学的記数法を完全に無効にする。
++   entry #superscript   指数を上付きの数字（`10²³`、既定）で書くか、素の数字（`10-34`）で書くか
++       上付きの場合、負の指数はマクロンに似た `¯` を符号に使う。
++   entry #exponentMultiple   指数をある倍数に切り下げる。工学表記なら `3`、既定は `1`
++       `exponentMultiple = 3` のとき、`6.0221408e23` は `602.2141×10²¹` と描画される。
++   entry #infinity   無限大の値のテキスト。既定は `∞`
++   entry #nan   数でない値のテキスト。既定は `∉ℝ`
++   entry #decimalize   この Decimalizer の設定による `Double` のテキスト
++   entry #exponentScale   指数の十進の桁数。`#decimalize` の補助
+
+@ 0 1 0 0508c9d5c3d9653b0bfaeaa706548f1c
++ entry .decimalConverters   `Decimalizer` に代わる `DecimalConverter`。名前でインポートする
+
+% 1 1 0 1809323c391c4bb9122934b3a3200fb2
+
+@ 0 6 0 0467a005d4c99f290aa11f314b86ce54
++       `Double` はスコープの `DecimalConverter` を通じて表示される。
++       `Decimalizer` は精度を定める。このパッケージは精度を定めない変換器を持つ。
++   entry .javaDecimalConverter   `Double` を `Double#toString` で、Java とまったく同じように描画する
++       `3.14159` は `3.14159`、`1e21` は `1.0E21`、`0.1 + 0.2` は `0.30000000000000004` と描画される。二進の値が持つすべての桁を、精度に丸めずに書く。
+
+@ 0 1 0 0c9117d2f32e8f630e3343fa7d1388f0
++ entry .Numerous   単数と複数の語尾を持つ単語。文章の中でものを数えるためのもの
+
+% 1 1 0 116e9e43ba72363316ed2b8e6ae502f3
+
+@ 0 3 0 11354cd9e448cf701a8fe8c8592b07fd
++       `Numerous(t"item")(3)` は `t"items"`、`Numerous(t"item")(1)` は `t"item"` である。
++       語尾は既定で `s` と空であり、不規則な単語では与える：`Numerous(t"quer", t"ies", t"y")`。
++       数の代わりにコレクションを渡してもよい。
+
+% 2 1 0 1cd00686e8e03ea50d6d2e022bafccea
+
+% 3 1 0 0e28bc40ad0e369405c579277c02bd96
+
+% 0 1 0 1124e97b083af06611282880540fe23e
+
+% 0 1 0 1de33667ff1675cd0b5d91f9a1c1b587
+
+% 0 1 0 03753e8f73c4d2e815d868d72cca0004
+
+% 0 1 0 0998a9a1d645ad1101ef734bebfba7ba
+
+% 1 1 0 1165d6a04ae9f97c186a5c98da214b89
+
+@ 0 4 0 02044e881142acba1bb0f1d6ad31b378
++   entry #word   語尾が付けられる語幹
++   entry #pluralEnd   一以外の数に対する語尾。既定は `s`
++   entry #singularEnd   一に対する語尾。既定は空
++   entry #apply   数、またはコレクションの大きさに対する語尾を付けた単語
+
+@ 0 1 0 1bc0439dbf81237312307bbf5d792eca
++ entry .Range   `Range.Error` の置き場所。インデックスがテキストの範囲外のときに発生する
+
+% 1 1 0 06a794a67ee6c4190853ad119abafa82
+
+@ 0 4 0 1618ecc84532bf8a0d0197922496b35d
++       ここにあるのはエラーだけである。
++       切り出しの操作自体は失敗せずに範囲に収める（`segment` は大きすぎる区間を途中で切る）ので、このエラーは、行エディターのカーソル移動のように、インデックスを拒否しなければならない少数の操作が発生させる。
++   entry .Error   エラー `↯/s.42.1`：_the index `index` is outside the range `from`-`to`_
+
+% 1 1 0 1c82d34216796840072f8fb59c388e10
+
+@ 0 6 0 10122ebeefb82edc04f3bb34814b2528
++         範囲に収められない操作で、位置がテキストの範囲外のときに発生する。
++         `fulminate.Error` なので、`Tactic[Range.Error]` を通じて発生し、`safely` や `mend` で処理できる。
++     entry #index   求められたインデックス
++     entry #from   有効な最小のインデックス
++     entry #to   有効な最大のインデックス
+
+@ 0 5 0 055c9b9fbdc1d849128c0b460301cdc0
++ entry .Bidi   操作が働く向き：`Ltr`（先頭から）または `Rtl`（末尾から）
++     `Bidi` は anticipation の列挙型で、`import gossamer.*` が切り出しの語彙をすべて持つように、そのケースとともにここで再エクスポートされている。
++     `keep`、`skip`、`pad`、`fit`、`trim`、`chomp`、`offsetOf`、`pinpoint` はそれぞれ `Bidi` を受け取り、既定は `Ltr` で、`Rtl` にすると末尾から働く：`t"Hello".keep(2, Rtl)` は `t"lo"` である。
+
+@ 0 3 0 0796ba76d5ee223a17b684196e1fb5fd
++ entry .Ltr   左から右へ。テキストの先頭から。既定の向き
++     `Bidi.Ltr` を、修飾なしで書けるように再エクスポートしたものである：`t"123".pad(5, Ltr, '.')` は `t"123.."` である。
+
+@ 0 3 0 1e182269e0a2ce4311592304e2150ea9
++ entry .Rtl   右から左へ。テキストの末尾から
++     `Bidi.Rtl` を、修飾なしで書けるように再エクスポートしたものである：`t"123".pad(5, Rtl, '.')` は `t"..123"`、`t"Hello".skip(1, Rtl)` は `t"Hell"` である。
+
+@ 0 5 0 1eb1af350a5a4d52125e7eb4c291a64e
++ entry .reversibleTextual   任意のテキスト型のための `Reversible` インスタンス。コンパニオンが公開するためのもの
++     `reverse` は、rudiments の `Reversible` 型クラスに駆動される、コレクションにもテキストにも共通の一つの拡張である。しかし `Reversible` のコンパニオンは gossamer より下の `rudiments` にあるので、すべての `Textual` 型に対する包括的な given を暗黙の探索が見つける場所に置くことはできない。
++     そのため、各テキスト型は自身のコンパニオンでインスタンスを公開する。
+
+% 2 1 0 0140ec3b7bba7cf518b9a50aa9dee6f2
+
+% 0 1 0 06b5aa9bb0e2148116df5511cfb637db
+
+% 1 1 0 13a044c22d96d78511a97f25240fbe40
+
+% 1 1 0 149c77db45ac644f1a74f205bbafc35a
+
+% 0 1 0 1643cd7fd72c22981ec68aed5653b98c
+
+% 0 1 0 09659e236c813bd3122a82f9f71d7f97
+
+% 0 1 0 09580821ec10efc9132bdcbbfbcea5c1
+
+% 0 1 0 114d41ff69b133e9130920aabac9b6f5
+
+% 1 1 0 1e6ef8d1ccfe887d13dfa0b5d8d1f220
+
+@ 0 3 0 01127e691fcc705a0088d50d063f1a48
++     細分化は示したとおりに括弧で囲まなければならない。そうしないと、波括弧が given の本体としてパースされる。
++     反転は型の `Builder` を通じて結果を要素ごとに組み立てるので、スタイル付きのテキストはスタイルを保つ。
+
+@ 0 7 0 1965025f7cb68f5e038fbf09c9306a87
++ entry .traversableTextual   任意のテキスト型のための `Traversable` インスタンス。コンパニオンが公開するためのもの
++     走査のための `reversibleTextual` の対応物である。コンパニオンで `given traversable: (Styled is Traversable { type Operand = Char }) = traversableTextual` を宣言するテキスト型は、コレクションライブラリから `keep`、`skip`、`snip`、`count`、`where`、`all`、`exists` などの `Traversable` の操作の述語形を得る。組み立て直しは `segment` を通じて行われるので、スタイルは保たれる。
++     走査される要素は、その型の `Textual#Result` である。
+
+@ 0 1 0 164eb937ebca35fd17261f7547d2ec49
++ entry .Writing   書記素クラスタに分割したテキスト。読み手が目にする文字
+
+% 1 1 0 06afbd4aeb84087314be649a43e2ddbe
+
+@ 0 6 0 0221942b48cb92180da38838590d3778
++       `Char` は人が文字と呼ぶものではない。`é` は一つのコードポイントのことも二つのこともあり、国旗は地域指示子の組であり、家族の絵文字はいくつものコードポイントを結合したものである。
++       `Writing(text)` はテキストの書記素クラスタの `#boundaries`（Unicode UAX #29）を一度だけ計算し、それを要素が `Grapheme` である `Textual` として示すので、`length`、`keep`、`skip`、`segment`、`slices`、`reverse` は UTF-16 のコードユニットではなく、目に見えるものによって数え、切る。
+
+% 2 1 0 02c74f4d2411604712b56b82af22d47e
+
+% 3 1 0 1de6c10a3569e1d7095b8ae14317d001
+
+% 0 1 0 17cf5a2661de60a3157c36fcb6e7e50a
+
+% 0 1 0 0c58cbbef4c94eff11af9fb9cbdd2ada
+
+% 0 1 0 02833d88d77e923a1faf1c715c1a50a7
+
+% 0 1 0 03c7787e9a3b68ab1b6f51501c58d369
+
+% 0 1 0 1e520efd372bf5ff12c13f3a5469c7a1
+
+% 1 1 0 0439a3e702ed10b809fc15a409ad2d28
+
+@ 0 4 0 12cff669074ca88812a899bff80ad524
++       スコープに（`textMetrics` の given による）`Grapheme is Measurable` があれば、`.measurable` は書記素の幅の合計として Writing の表示幅を与える。これは素のテキストをコードポイントごとに測るより正確である。
++       `Writing` はそのテキストとして表示され、クラスタを `·` で区切って検査用に表示される。
+
+% 0 1 0 07a92d31bf9ef86219fe40a7bfd89acc
+
+% 0 1 0 01dee382db0e97d21c85dd9a7f91eec7
+
+@ 0 20 0 0e633bbe9ab7a2fe1729cbf1b49c62a1
++   entry .apply   書記素の境界を計算した、テキストの `Writing`
++   entry .empty   空の Writing
++   entry .showable   Writing を素のテキストとして表示する
++   entry .inspectable   Writing を、書記素の間に `·` を入れた `w"…"` として検査用に表示する
++       `Writing(t"a\r\nb").inspect` は `w"a·\r\n·b"` である。ある Writing を別のものと区別するのは分割なので、検査用の表示はそれを示す。
++   entry .concatenable   Writing に対する `left + right`。境界は計算し直される
++   entry .measurable   Writing の表示幅。書記素の幅の合計
++       スコープに `Grapheme is Measurable` が必要で、`textMetrics.wideCharacterWidthMetric` が `Grapheme.measurable` を通じてそれを提供する。
++       結合アクセントはその基底文字に何も加えず、国旗や ZWJ シーケンスは、部分の合計ではなく、一つの幅広のセルである。
++   entry .textual   要素が `Grapheme` である、`Writing` のための `Textual` インスタンス
++       長さは書記素の数であり、アクセスと `segment` は書記素単位で働き、`indexOf` は部分文字列が書記素の境界で始まるときにだけ位置を返す。
++   entry .graphemes   Writing の書記素。インデックス付きの列として
++   entry .graphemeCount   書記素クラスタの数。`length` と同じ
++   entry #text   基になる素のテキスト
++   entry #boundaries   書記素の境界の文字オフセット。`0` からテキストの長さまで
++       書記素の数より要素が一つ多い凍結済みの配列である。書記素 `i` は `boundaries(i)` と `boundaries(i + 1)` の間の文字である。
+
+@ 0 1 0 155a286f74189b03045067c921296cf6
++ entry .Grapheme   一つの書記素クラスタ。結合記号を伴う基底文字、または結合されたシーケンス
+
+% 1 1 0 0e2fd49c9777a55d1414b43a03db0fac
+
+@ 0 4 0 14686a3441f3838613ea197ed7618ebe
++       `Writing` の要素型であり、ユーザーが一文字と認識するもののコードポイントを保持する、`String` 上の不透明型である。
++       `Grapheme("é")` は一つを包む。`#text` はそれを `Text` として、`#chars` は UTF-16 単位での長さを与える。
++       構造こそが要点なので、エスケープされずにギユメの中にそのまま示されたクラスタ `‹é›` として検査用に表示される。
+
+% 2 1 0 1b2b7c95b766eaf51a85ae9dd646a16a
+
+% 3 1 0 1e86ad4772c4cf4c16418435f3a338cc
+
+% 0 1 0 00e9d5b71cf9ab080cfecb5746060983
+
+% 0 1 0 1e7e22ead531858e1c277408c3e0afc8
+
+% 0 1 0 07ee11cd059c1acc093cf1e61c617377
+
+% 0 1 0 061b7d4b94ca9bd11f3a4ec24e34c29d
+
+% 1 1 0 1256fb718a4d1e49051faf38d85d19df
+
+@ 0 3 0 0381843fba506f2e1e5c93adb3bb9023
++       そのコンパニオンのメンバー（`apply`、given の `showable`、`inspectable`、`measurable`、拡張の `text` と `chars`）は、型のエクスポート元である `internal.opaques.Grapheme` で宣言され、そこで文書化されている。
+
+% 1 1 0 118adeba898a3e3a00a32de0dfb431bd
+
+@ 0 1 0 043b853bd518cb9a1981cefb677888dc
++ entry .Ascii   `a"…"` で作る、ASCII 文字のバイト文字列
+
+% 1 1 0 025559248ee42c1a062720f5b3461bec
+
+@ 0 5 0 0252768855d7fc1712a0aa98b36131fa
++       一文字一バイトの凍結済みの `Array[Byte]` 上の不透明型で、要素が `Byte` である `Textual` インスタンスを持つので、位置と部分文字列の操作（`cut`、`keep`、`starts`、`offsetOf`、`slices`、`+`、…）がそのまま働き、`plain` は `Text` に変換する。
++       `a"…"` 補間子はコンパイル時にすべての文字が ASCII であることを検査する。`Ascii(bytes)` は手元にあるバイトを検査せずに包む。
+
+% 2 1 0 1fa62ce875bdd5ac0e2a099339e0b17a
+
+% 3 1 0 09b8bf393ec99047150c3305f66d4019
+
+% 0 1 0 139da282229722560e3ad580a1bc0358
+
+% 0 1 0 047d0b7f52284fb71a20c8e227276507
+
+% 0 1 0 1a06f0a1f74c69d00f7c0acb6f5bd238
+
+% 0 1 0 037ccd134eb215c51f1ba237a936ef70
+
+% 1 1 0 082a8cc19e47101510856a84bc9c39e5
+
+@ 0 3 0 0ad2150928e71b7918ebf759d891bac9
++       そのコンパニオンのメンバー（`apply`、given の `showable`、`inspectable`、`concatenable`、`textual`、拡張の `bytes`）は、型のエクスポート元である `internal.opaques.Ascii` で宣言され、そこで文書化されている。
+
+% 0 1 0 12e50c0f512032521e1c5cb19b0e4bae
+
+@ 0 7 0 113b37a7988e2b9315795ecff0f06565
++ entry .textDecodable   スコープの `Charset` を通じて `Data` を `Text` にデコードする。`data.as[Text]` のためのもの
++     `gossamer.codec` にある `Text` のための `Decodable in Data` の given である。`bytes.as[Text]` はスコープの `Charset`（`charsets.utf8Charset`、`asciiCharset`、…）でバイトを読み、`codepages` の given の下での `text.in[Data]` の対応物である。
++     ISO-8859-1 以外の文字セットでは、不正な入力のための `TextSanitizer` も必要である（`strictSanitizer` は `Charset.Error` を発生させる）。
++     トップレベルの given なので、名前でインポートしなければならない：`import soundness.textDecodable`。
+
+% 2 1 0 11f85c1fbdcf708211c7dd6b55599ba4
+
+% 3 1 0 0272a28ef126475315cb957f9b120862
+
+% 0 1 0 0ad93198262cba4102f10ea1980b5899
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 0d5bf406e74cd04a13d75d4030990ef7
+
+% 0 1 0 195d698c79e48182084de8e2fe1b52e0
+
+% 0 1 0 14ad7791959ecbd2182874a17e7ce744
+
+% 1 1 0 0014f482f1cb64bb11bbaa81566a8412
+
+@ 0 1 0 1d240539574aa65b1ef8a90dace08686
++ entry .enumIdentification   列挙型のケース名をテキストとしてどう書くか。それぞれ名前でインポートする `Identifiable` の given
+
+% 1 1 0 027138c0d020227809b6eaa568eeda56
+
+@ 0 5 0 165ae8e7f570a95d013ae8bab5dcf1eb
++       `Verbosity.Loud` というケースは、コマンドライン、設定ファイル、JSON ドキュメントの中で `loud`、`LOUD`、`Loud`、`loud-level` のいずれとしても現れうる。どれにするかは選択なので、列挙型のための `Identifiable` の given はここにあり、一つを名前でインポートする。
++       それぞれケースの名前をその規約にエンコードし、その規約のテキストを列挙型が宣言するパスカルケースの名前にデコードし直す。
+
+% 2 1 0 02fcc2e29c8da45c0caeafb74ef70d2b
+
+% 3 1 0 06bf63447de38b081ecda646e0429c9d
+
+% 0 1 0 0a64e7aa3d9799e41209266460234792
+
+% 0 1 0 15ef8fa0251cf9fe085a698b8dfd7893
+
+% 0 1 0 191116ac2dca1f8a1d566ff0afb51f66
+
+% 0 1 0 0760df20b28407af0b17849a073b801f
+
+% 0 1 0 11c67d2ae77b8bb41572aae89c52183f
+
+% 1 1 0 04a092ba86c0ab1e0b7ec836138c8d2c
+
+@ 0 2 0 16a32dd94bf44b970f1abb4015ad485b
++       こうすると、`Flag[Verbosity]` と型付けされた CLI のフラグは `--verbosity very-loud` を読み、JSON や TEL のコーデックはケースを `very-loud` と書く。
+
+@ 0 2 0 1ac573af4e987f96170b0df1ea43a28f
++       `pascalCaseIdentifiable` は恒等変換であり、ケースを宣言どおりに書く列挙型のためのものである。
++       `Identifiable` は distillate のものなので、これらの given は `gossamer.codec` にある。
+
+% 0 1 0 0f88e25e7dcfcc37166291640af2c899
+
+% 0 1 0 16d863ef386c4d8309adaa428b5e8ff8
+
+% 0 1 0 00704d3aa6f96e8507d8580d3fceabcd
+
+@ 0 3 0 1079e0e2c9c55681071c1e9cab516e06
++       デコードでは、大文字に戻す前に、スネークケースの given と同様に `_` を単語の境界として扱う。
++   entry .pascalCaseIdentifiable   `VeryLoud` ↔ `VeryLoud`：宣言どおりのケース名
+
+@ 0 1 0 1f9c0c43469fa4be130152411ad6f6e7
++ entry .Lexicon   語彙の上の BK 木。問い合わせから指定した距離以内にあるすべての語を見つける
+
+% 1 1 0 128a42484c21a43e0b35e6e172dba45a
+
+@ 0 5 0 11b5c6a0b2afcb821e7cff2cf08f8b97
++       問い合わせを語彙のすべての単語と比較するのは二乗の計算量であり、綴りの候補を示すにはそれを速くする必要がある。
++       `Lexicon` は、スコープの `Proximity by Int` の下で語を Burkhard–Keller 木に索引付けし、三角不等式を使って語彙の大部分を測らずに枝刈りする。測度は三角不等式に従わなければならないので、その `Triangulable` は `levenshteinProximity` のように `true` でなければならない。
+
+% 2 1 0 04f08f7e6691704d13ea9b9d27959d02
+
+% 3 1 0 07f25f1c5f66c6071236fffffedd2904
+
+% 4 1 0 0459f21502d0b8781f83492e385ddca8
+
+% 1 1 0 1118e79849ad83f30a07ef83e20bd831
+
+% 0 1 0 14bf560888b588a913941905276b49fc
+
+% 0 1 0 19839187e62cefe819dcf8b5ecee5ed5
+
+% 0 1 0 131f6e88a31b29b307e68021f450fd80
+
+% 1 1 0 0f40fda82e85b7291f788a5885e2c173
+
+@ 0 4 0 1dcbbd9b322e3e921b13790fa6cce14f
++       Lexicon は各語を値に対応させてもよく（`Lexicon(Map(t"colour" -> Colour.Blue))`）、その場合、探索は値を返す。
++       これは可変である。`#update` が語を加え（`lexicon(t"term") = value`）、構築中の構造はスレッド間で共有しても安全ではない。
+
+% 0 1 0 01cb21270777e2d6197c750f0e78a2a8
+
+% 1 1 0 1ff5d5811ce5306d01c80a6327c4a35b
+
+@ 0 6 0 06c307b8fcc1e6d600a71d64329e72a1
++   entry .apply   語のリスト、語から値へのマップ、または空の Lexicon
++       `Lexicon(terms)` は各 `Text` をキーと値の両方として索引付けし、`Lexicon(map)` はキーを索引付けして探索から値を返し、`Lexicon[element]()` は空で、`#update` で埋める。
++       最初の二つは `Triangulable` な測度を必要とする。空の形は任意の `Proximity by Int` を受け取り、呼び出し側が距離関数を選んだことに頼る。
++   entry .Node   木の一つのノード。語、その値、距離をキーとする子
+
+% 1 1 0 048e3b8a87a30fc403f17a1e9210e9da
+
+@ 0 10 0 1dc0509180ec88e7013b29483ffc3dab
++         空でない Lexicon の実装である。
++         各子の部分木は、その根とこのノードの語との距離をキーとしており、そのため探索は、キーが問い合わせの距離から半径より離れているすべての部分木を飛ばせる。
++     entry #children   子の部分木。このノードの語からの距離をキーとする
++     entry #update   語をその距離にある部分木に加える。必要なら部分木を作る
++     entry #search   この部分木の中で、問い合わせから `radius` 以内にある値
++   entry #update   語を値とともに加える：`lexicon(key) = value`
++   entry #search   問い合わせから `radius` 以内にあるすべての語の値
++       半径ゼロは正確な検索である。半径を広げるごとにより遠い候補が入る。大きな単語リストから「もしかして」の候補を作るのはこの方法による。
+
+@ 0 1 0 08c1f213d532536e050c36ddf634425c
++ entry .Dictionary   `Text` のキーから値への密なトライ。完全一致と接頭辞による検索のためのもの
+
+% 1 1 0 0cafccc78741b89c1c0a8e554c4c8706
+
+@ 0 5 0 1316e2047acc49260b20ac39ef781c79
++       `Dictionary[value]` は、平坦な配列に配置したトライを通じてテキストを値に対応させる。各ノードは `#children` の中に `alphabet.size` 個のスロットのブロックを持つので、検索のコストはキーの一文字ごとに配列の読み取り一回であり、キー全体のハッシュは計算しない。
++       ハイフネーションの表、HTML の属性名、キーワードの集合など、絶えず検索される固定の語彙に向いている。
+
+% 2 1 0 043bf89226be48e61c55086eaf8cb6ad
+
+% 3 1 0 080086e95dfe048c0aec0c11f0089f25
+
+% 0 1 0 146ef45f4625aa68120c2226f00fb80c
+
+% 0 1 0 13981b2b539e30a50bce2a46626655b3
+
+% 0 1 0 1d74aa6e18c8040403b1092af5094064
+
+% 0 1 0 129182031f5c2e7c03e6869dab2dc4d1
+
+% 1 1 0 11528d5993a898da09c1072341975990
+
+@ 0 5 0 02d053f6f0bc7311029938f21871c221
++       アルファベット（キーが含みうる文字で、それぞれにスロットが与えられる）は、`.apply` と `.empty` ではキーから導出され、`.withAlphabet` と `.aho` には与える。アルファベットの外の文字を含むキーは黙って取り除かれる。
++       `.aho` はさらに Aho–Corasick オートマトンの失敗リンクを構築するので、入力を一度走査するだけで、`#step`、`#fail`、`#dictLink` を通じて各位置で終わるすべてのキーを見つけられる。
+
+@ 0 3 0 1aa6bc5f09e346111aca931ff927c197
++       辞書は一度構築すると不変であり、その配列は凍結済みなので、自由に共有してよい。`#add`、`#+`、`#++` は、値の型を広げた新しい辞書を組み立て直す。
++       値は `AnyRef` の配列にボックス化して格納されるので、値の型は参照型であるべきである。
+
+% 1 1 0 10c23a16ae6051ee130b78160bf58da4
+
+@ 0 1 0 1f53b611320e6a210239fa26dd97be2d
++   entry .Alphabet   辞書のキーが使える文字。それぞれ密なスロットに対応する
+
+% 1 1 0 0e836df6c55c4e0515e38aeb130c8b1c
+
+@ 0 43 0 0126d6f19b345489095ee3d8ba873fbc
++         `Char` から `[0, size)` のスロットへの固定の対応で、範囲外の文字には `-1` を与える。
++         `Alphabet.of(t"abc…")` は文字列の文字を順に番号付けする。既定のビルダーはキーから自動的にアルファベットを導出するので、ほとんどの呼び出し側は自分で作ることがない。
++         アルファベットに入れられるのは 128 未満の文字だけである。
++         アルファベットは純粋であり、その上に構築されたすべての辞書で共有してよい。
++     entry .of   文字列の文字からなるアルファベット。その順で。ASCII のみ
++     entry .empty   文字を持たないアルファベット。空の辞書が使う
++     entry #slot   文字のスロット。アルファベットになければ `-1`
++     entry #char   スロットにある文字
++     entry #size   文字の数。したがって各ノードの子のブロックの幅
++   entry .empty   エントリーを持たない辞書
++       そのアルファベットは空である。`+` と `++` は、キーから導出したアルファベットで組み立て直す。
++   entry .apply   `(key -> value)` の組からなる辞書。アルファベットはキーから導出される
++       アルファベットのスロットは文字が最初に現れた順に従うので、同じ入力に対して安定している。
++   entry .withAlphabet   与えたアルファベット上の、組からなる辞書
++       アルファベットの外の文字を含むキーは取り除かれる。
++   entry .aho   アルファベット上の、組からなる辞書。Aho–Corasick の失敗リンクと辞書接尾辞リンクを持つ
++       素のビルダーが空のままにする `#depth`、`#fail`、`#dictLink` を埋めるので、`#step` で入力を走査するときに、不一致では失敗リンクをたどり、現在の位置で終わるすべてのキーを `#dictLink` を通じて報告できる。
++   entry #children   子ノードの表：`children(node * alphabet.size + slot)` が子、または `-1`
++   entry #values   各ノードの値。キーが終わらない場所では `null`。配列は非変なので `AnyRef` 型
++       型付きの値を読むには、代わりに `#value(node)` を使う。
++   entry #depth   各ノードの深さ。Aho–Corasick の辞書の場合。それ以外では空
++   entry #fail   各ノードの失敗リンク。Aho–Corasick の辞書の場合。それ以外では空
++   entry #dictLink   失敗の連鎖上で値を持つ、各ノードに最も近い祖先。`aho` で構築しなければ空
++   entry #alphabet   キーがエンコードされるアルファベット
++   entry #root   ルートノードの ID、`0`
++   entry #step   あるノードから一文字で到達するノード。その方向に続くキーがなければ `-1`
++       すべての検索の基本操作である。`#root` から始めて、一文字ごとに一回ステップを進める。
++   entry #value   ノードにある値。そこで終わるキーがなければ `null`
++   entry #apply   キーに対する値、または `Unset`。文字バッファーの一部の検索でもある
++       `dictionary(t"key")` は完全なキーの形である。`dictionary(buffer, offset, length)` は、`Text` をアロケートせずに可変の `Array[Char]` の一部の文字を検索する。すでにバッファーを持つパーサーのためのものである。
++   entry #size   格納されたキーの数
++   entry #iterator   格納された値。`Iterable` として
++   entry #entries   すべての `(key, value)` の組。アルファベット順
++   entry #add   エントリーを一つ加えた新しい辞書。キーと値を分けて渡す `#+`
++   entry #+   エントリーを加えた新しい辞書。両方を覆うアルファベットで組み立て直される
++       `dictionary + (t"key" -> value)`。
++       値の型は共通の上位型に広がる。
++   entry #++   いくつかのエントリーを加えた新しい辞書
+
+@ 0 1 0 15fb3b746a709c9a1aa241f9398a21b1
++ entry .internal   `t"…"`、`txt"…"`、`a"…"`、`extract`、`fuzzy` の背後にあるマクロの実装と、不透明型の置き場所
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 9 0 14dbb660ee9d830d145965fa883f1a47
++       直接使うためのものではない。このオブジェクトは、マクロに安定した置き場所を与え、`Ascii` と `Grapheme` を不透明にするために存在する。
++       どちらも `.opaques` から `gossamer` パッケージにエクスポートされる。
++   entry .t   `t"…"` の背後にあるマクロ。各部分のエスケープを処理し、置換を `Showable` を通じて描画する
++   entry .txt   `txt"…"` の背後にあるマクロ。`.t` と同様に処理した後、空白の連続と空行を畳む
++   entry .ascii   `a"…"` の背後にあるマクロ。リテラルの各文字が ASCII であることを検査し、その位置で報告する
++   entry .extractMacro   `extract` の背後にあるマクロ。ケースを分解し、`Scanner` でテキストを走査する
++   entry .fuzzyMacro   `fuzzy` の背後にあるマクロ。リテラルのパターンを集め、実行時に最も近いものを選ぶ
++   entry .opaques   不透明型 `Ascii` と `Grapheme` の宣言
+
+% 1 1 0 0df48bbc54dc386914b01df23956f402
+
+@ 0 3 0 09317e308a90ef8c117c86d21accd6d4
++         `gossamer` パッケージの下にある型のページに完全な説明がある。そのコンパニオンのメンバーは、宣言されたこの場所で文書化されている。
++     entry .Ascii   ASCII 文字のバイト文字列。`gossamer.Ascii` を参照
+
+% 1 1 0 0b2d638d415d00ed01f08a5b1fae262e
+
+@ 0 10 0 1890d2b0b19de9000417ba02dd4f7255
++           不透明型 `Ascii` のコンパニオンで、型とともに `gossamer` パッケージにエクスポートされる。
++       entry .apply   `Data` を、バイトを検査せずに `Ascii` として包む
++       entry .showable   `Ascii` を、そのバイトがエンコードするテキストとして表示する
++       entry .inspectable   `Ascii` を、テキストリテラルと同じように文字をエスケープした `ascii"…"` として検査用に表示する
++       entry .concatenable   `Ascii` の値に対する `left + right`
++       entry .bytes   基になるバイト。`Data` として
++       entry .textual   要素が `Byte` である、`Ascii` のための `Textual` インスタンス
++           `apply(text)` はテキストをシステムのコードページでエンコードし、`segment` と `concat` はバイトをコピーし、ビルダーは `AsciiBuilder` である。
++     entry .Grapheme   一つの書記素クラスタ。`gossamer.Grapheme` を参照
+
+% 1 1 0 0cf3a0d8c5090f14024abbc9ba49fa60
+
+@ 0 10 0 1025020f6517940a126b29fa19da6700
++           不透明型 `Grapheme` のコンパニオンで、型とともに `gossamer` パッケージにエクスポートされる。
++       entry .apply   コードポイントの文字列からの書記素。一つのクラスタであるかどうかは検査しない
++       entry .showable   書記素をそのテキストとして表示する
++       entry .inspectable   書記素を、クラスタをエスケープせずに `‹…›` として検査用に表示する
++       entry .measurable   書記素の表示幅。そのコードポイントのうち最も幅広いもの
++           スコープに `Char is Measurable`（`textMetrics` の given）が必要である。
++           合計ではなく最大なので、結合記号を伴う基底文字はその基底文字と同じ幅であり、国旗の組や ZWJ の家族は一つの幅広のセルである。
++       entry .text   書記素のコードポイント。`Text` として
++       entry .chars   書記素の UTF-16 コードユニットの数

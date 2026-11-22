@@ -1,0 +1,178 @@
+orthant 2 language
+
+@ 0 1 0 1697104509eaad480ac7b84102fc11d4
++ entry .Terrain   un `Expanse` cuyos bytes están en memoria y se leen allí donde están: un fichero proyectado, o bytes en el heap
+
+% 1 1 0 1d2d43abbc556280043457e64eb6d264
+
+@ 0 13 0 110b3ddc217ac7a50f82398a9c83af58
++       Los enteros se cargan en cualquier desplazamiento, en little-endian y sin copia, y un
++       `slice` es una vista más estrecha de la misma memoria. Un terrain pertenece a un ámbito
++       —un fichero se proyecta durante un bloque—, así que se presta como un `Terrain^`
++       rastreado, y nada carga desde una memoria que ya no está proyectada. `Terrain(data)` es
++       uno sobre bytes que ya están en el heap.
++   entry #u8   el byte sin signo en un desplazamiento, como `Int`
++   entry #u16   el entero sin signo de 16 bits en un desplazamiento, como `Int`
++   entry #u32   el entero sin signo de 32 bits en un desplazamiento, como `Long`
++   entry #u64   el entero de 64 bits en un desplazamiento, como `Long`
++   entry #i32   los 32 bits en un desplazamiento como un `Int` con signo
++   entry #slice   una vista de parte de la memoria, que la comparte junto con su tiempo de vida
++   entry #same   si los bytes en un desplazamiento son los de algún `Data`, comparados en su sitio
++   entry #compare   el orden de unos bytes respecto a algún `Data`, comparados en su sitio; un prefijo propio va primero
+
+@ 0 1 0 07161a9b0652a0aa1a17db213819117e
++ entry .Structural   la clase de tipos de un tipo con una disposición fija en bytes: un registro de enteros con tamaño, que lee `unpack` y escribe `pack`
+
+% 1 1 0 1dbdb63afee1f932156ed79702a8c661
+
+@ 0 6 0 128e315dd90f3568120e87157c8b8686
++       Una case class cuyos campos son enteros con tamaño (`B32`, `U16`, `S64`, …, o los simples
++       `Byte`, `Short`, `Int` y `Long`) *es* una disposición binaria: el tipo de cada campo
++       indica su anchura y su interpretación, y `Structural.derived` los compone en el orden de
++       declaración, calculando cada desplazamiento allí donde se declara la disposición. El
++       orden de los bytes dentro de un campo pertenece al formato, así que uno de los givens de
++       `byteOrders` debe estar en el ámbito en la derivación, y queda fijado allí.
+
+% 2 1 0 1028348aece70ff31c7aaeed6837ca1c
+
+% 3 1 0 1896b8c0fd7e20bf1ab326a30c99f925
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 145c2a0e5b655f4a01551ae66745ea11
+
+% 0 1 0 168466ec95ae64f612bc885cb2b2841d
+
+% 0 1 0 093c6418b1f1700a18f1408c98a066b3
+
+% 0 1 0 0615a36d4f727fca02926d57d58112ad
+
+% 0 1 0 189ffa41490178111b536fb9e978357e
+
+% 0 1 0 0d039d9fc0a074461f06c4c8881b3917
+
+% 0 1 0 0623aad5d5ab330b14edbda2daf2aa25
+
+% 0 1 0 1ddb200b0bd0fd091d26a860a273ba8d
+
+% 1 1 0 0d40c4a93de9c323126dc8a441ea820a
+
+@ 0 5 0 15c8c758d092fc251614546e2bfce78a
++       La derivación se expande a una carga (y un almacenamiento) por campo en su desplazamiento,
++       así que leer un registro supone una comprobación de límites y tantas cargas como campos
++       haya. Un campo de cualquier otro tipo necesita una instancia de `Structural` propia: así
++       se anidan los registros, cada uno con el orden de bytes con el que se declaró, y así se da
++       a un campo una representación que los enteros con tamaño no ofrecen.
+
+@ 0 2 0 13110f9cb023a7e71678dba20250a369
++       Está en el componente `zephyrine.layout`, que añade una dependencia de hypotenuse para los
++       enteros con tamaño, y compila para todas las plataformas.
+
+% 0 1 0 1ccfba1656f9ccc70c9054f4bd681ef1
+
+% 0 1 0 058d7a75c2bb1d1903db18c18ef15834
+
+% 0 1 0 1ef84f397a13cf410f01323e64924852
+
+@ 0 4 0 1bc592d720ca964706fd45171fed07e4
++   entry .derived   la disposición de una case class, en el orden de bytes del ámbito; no compila sin uno, ni para un campo sin disposición fija
++   entry .width   el número de bytes que ocupa un valor de un tipo, sin tener un valor a mano
++   entry .Error   se pidió un registro en un desplazamiento donde no está toda su anchura
++       Lleva el `offset`, la `width` del registro y el `size` de los datos o del expanse.
+
+% 0 1 0 1c4f3e0c99e11c4411895c65f9246c30
+
+@ 0 3 0 0ac6e16edc7a15da10ff1df8d7dd4462
++   entry #width   el número de bytes que ocupa la disposición
++   entry #load   el valor dispuesto en un desplazamiento, sin comprobar: `unpack` es el punto de entrada comprobado
++   entry #store   dispone un valor en un array de bytes en un desplazamiento, sin comprobar: `pack` es el punto de entrada comprobado
+
+@ 0 5 0 073bbbd5db87b69d1bc422484fb59138
++ entry .unpack   lee un registro de disposición fija de `Data`, o de un `Expanse`, en un desplazamiento
++     `data.unpack[T](offset)` comprueba una vez que todo el registro está ahí, lanzando
++     `Structural.Error` si no lo está, y después lo carga. `data.unpack[T](offset, count)` lee
++     una sección repetida de `count` registros como un array. Sobre un `Expanse`, como un
++     `Terrain` de memoria proyectada, el desplazamiento es un `Long`, y solo se leen los bytes
++     del propio registro.
+
+@ 0 1 0 1a8068e940a69be61d8478647b738c6b
++ entry .pack   los bytes de un valor de disposición fija: exactamente tantos como ancha es su disposición
+
+@ 0 3 0 08bb951cb83163ed1539cbb483ceb5f2
++ entry .ByteOrder   el orden de los bytes de un campo de varios bytes: `BigEndian` o `LittleEndian`
++     Lo consulta `Structural.derived` allí donde se declara una disposición, mediante un given
++     importado de `byteOrders`.
+
+@ 0 3 0 06b7ea3d72d532bf1160db93d95677f1
++ entry .byteOrders   los órdenes de bytes, cada uno un given que se importa por nombre allí donde se deriva una disposición
++   entry .bigEndianByteOrder   el byte más significativo primero, como en los formatos de red y los ficheros de fuentes
++   entry .littleEndianByteOrder   el byte menos significativo primero
+
+@ 0 1 0 0833390a9f3ea0de00a05e7c4ef60e79
++ entry .layoutInternal   la macro que hay detrás de `Structural.derived`, y los almacenamientos a los que se expande
+
+% 1 1 0 0f148338f1aac85318242f2f9b2fe261
+
+@ 0 1 0 1c20bcc328e8566b052a425d501b2b14
++ entry .Holding   un `Terrain` que se puede modificar allí donde está: se almacena en un desplazamiento, y se amplía
+
+% 1 1 0 05f75a5b3e3bdc5b121c3e8a020f114f
+
+@ 0 14 0 1fc606f03c17fca60f8681cc5ca8bb55
++       Aquello a través de lo cual se modifica un formato que se guarda y se altera en su sitio:
++       un fichero proyectado para escritura por el único proceso que es su dueño (el `hold` de
++       galilei), o bytes en el heap (`Holding(size)`, `Holding(data)`). Todo almacenamiento se
++       hace en un desplazamiento, y no se entrega ninguna dirección de su memoria, ya que
++       `expand` puede moverla; un `slice` lee a través del holding del que procede, y sigue
++       siendo válido tras una ampliación.
++   entry #set8   almacena un byte en un desplazamiento
++   entry #set16   almacena un entero de 16 bits en un desplazamiento, en little-endian
++   entry #set32   almacena un entero de 32 bits en un desplazamiento, en little-endian
++   entry #set64   almacena un entero de 64 bits en un desplazamiento, en little-endian
++   entry #write   almacena los bytes de algún `Data` a partir de un desplazamiento
++   entry #zero   almacena bytes a cero sobre un rango
++   entry #move   copia un rango a otro desplazamiento, con el que puede solaparse
++   entry #expand   hace que el holding tenga al menos un tamaño dado, con los bytes nuevos a cero; nunca encoge
++   entry #flush   hace duradero lo que se ha almacenado, allí donde hay un fichero en el que pueda serlo
+
+@ 0 1 0 0d8f4cf87083945e1a83c5e80dcf998d
++ entry .Viewable   la clase de tipos de un valor cuyos bytes se pueden prestar como un `Terrain` durante un bloque
+
+% 1 1 0 02d61088aef9e5921be1c93bfc7a44dd
+
+@ 0 8 0 0bef3200f1a8e8871cba9f72bec143a9
++       Una ruta es `Viewable`, y su fichero se proyecta durante el bloque; también lo son una
++       imagen que ya está en el heap y un terrain que ya se tiene a mano. Un formato que se lee
++       en su sitio se abre igual desde cualquiera de ellos.
++   entry #view   presta los bytes del valor como un `Terrain`
++   entry #hold   presta los bytes del valor para modificarlos, como un `Holding`, o responde `otherwise` si no se pueden modificar
++       Un fichero se proyecta para escritura bajo un bloqueo exclusivo, y un holding a mano se
++       presta tal cual; los bytes inmutables, como todo lo que no indique lo contrario,
++       responden `otherwise`.
+
+@ 0 1 0 1d63dd87fd4f5677117bdc5b51b32bce
++ entry .Surveyable   la clase de tipos de una forma que se lee en su sitio a partir de una vista de sus bytes: `Form is Surveyable by Flag to Handle`
+
+% 1 1 0 145174b3209a5d680323fbd5ec8e1ae5
+
+@ 0 4 0 16f068234f5f4b8b18a0176f5834c305
++       Es una instancia para la forma, y no para lo que presta la vista, y eso es lo que permite
++       que un prestamista que es a su vez una capacidad —un `Observer` de un nombre publicado—
++       abra la vista como la forma.
++   entry #survey   abre una vista como la forma, con indicadores, y proporciona el descriptor de forma contextual durante un bloque
+
+@ 0 8 0 17dc62c86d3ce90c1f9827154fa5f3ca
++       Un `Stream` se lee una vez; de un `Spring[medium]` se puede extraer cualquier número de
++       veces, y cada `apply()` da un flujo nuevo sobre el mismo contenido. Es un trait en lugar
++       de un tipo función porque una lambda no puede acuñar como resultado una capacidad nueva
++       con ámbito, mientras que el resultado de un método se vuelve a nivelar en cada punto de
++       llamada; y como `apply` toma una `Tactic[Truncation.Error]` (la extracción es donde se
++       notifica una fuente cortada antes de tiempo), una lambda no se convierte en uno.
++       `Spring(expression)` crea un spring que evalúa la expresión de nuevo en cada `apply()`;
++       indica el argumento de tipo, como en `Spring[Data](…)`, cuando el tipo esperado no basta
++       para fijarlo. También sirve una clase anónima.
+
+% 0 1 0 01b8dfabb485bf69089d4d5c0df0dc55
+
+@ 0 1 0 01b50f4322e8d8860d8e2d8aaf23d35c
++   entry .apply   `Spring(expression)`: un spring en el que cada extracción evalúa la expresión para obtener un flujo nuevo

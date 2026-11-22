@@ -1,0 +1,303 @@
+orthant 2 language
+
+@ 0 1 0 12bc3ecaba3ac53701a4be750faa474a
++ # Änderungen in 0.66.0
+
+@ 0 3 0 0c78c6b3ee6a1ed10f501f7875746b51
++ Diese Datei wird von einem LLM-Agenten gelesen, um Code, der Soundness-Bibliotheken verwendet,
++ von 0.65.0 auf 0.66.0 zu aktualisieren. Jeder Eintrag gibt genau an, was sich geändert hat; das
++ Format ist in `AGENTS.md` beschrieben. Die Einträge sind nach Modul gruppiert, innerhalb eines
++ Moduls der zuletzt hinzugefügte zuletzt.
+
+% 0 1 0 1a7bf0f7d29c76710289909d773d01d3
+
+@ 0 5 0 06fafacc436bdca91cae492ffce676a6
++ - Die Bibliothek `ziggurat` ist entfernt. Ihre Paketierung (`ziggurat.Packaging`,
++   `ziggurat.Packager`) und die Erzeugung polyglotter Skripte (`ziggurat.Xeq`,
++   `ziggurat.Payload`) liegen jetzt im separaten Projekt
++   [propensive/xeq](https://github.com/propensive/xeq), veröffentlicht als `xeq`-Builder-Skript
++   neben den Runner-Stubs. Bauen Sie ein verteilbares Artefakt mit `xeq build --jar <jar> --out
++   <name>` (oder `embed-all`/`download`), statt `Packager.pack` aufzurufen. (#1973)
+
+% 0 1 0 1868a4f3222d8611045fe84bfb530658
+
+@ 0 3 0 061b5473e347699202fc82a15b3cd5d3
++ - `anthology.xeq` (die Toolchain-Kanten von `Jar` zu Executable: `xeqEdges`, `xeqOptions`,
++   `XeqConfiguration`, `anthology.Xeq`) ist entfernt. Dieselbe Paketierung ist als
++   Toolchain-Format im Modul `xeq.toolchain` des `xeq`-Projekts erreichbar. (#1973)
+
+% 0 1 0 07d3f5d0de80f0000d3a20dc61ea01c4
+
+@ 0 4 0 18fb3a4c578a1c8d04823ed3a752883f
++ - `ethereal.Assembler` und `ethereal.Runners` sind entfernt, ebenso der Weg der
++   Selbstpaketierung in der JVM (`java -Dbuild.executable=… -jar app.jar`). Ein ohne Launcher
++   ausgeführtes Anwendungs-JAR gibt jetzt eine Anweisung aus, einen mit `xeq build …` zu bauen,
++   und beendet sich. Paketieren Sie mit dem `xeq`-Builder-Skript. Die Property `build.id` vom
++   Launcher zum Daemon ist unverändert. (#1973)
+
+% 0 1 0 1828e4d97834300a121cab8d2d6afc7f
+
+@ 0 4 0 07a5f74473434a131c7e315b0ff1dbf4
++ - `Specification.fields` ist jetzt `List[(Text, Member)]` (geordnet), nicht
++   `Map[Text, Member]`. Implementierungen müssen die Felder in der Reihenfolge zurückgeben, die
++   die Elemente eines benannten Tupels einnehmen sollen; eine `Map` lässt sich mit
++   `List.from(map.stdlib)` umwandeln, ihre Reihenfolge ist aber beliebig. (#1974)
++ - Der zweite Parameter von `Member.Record`, bisher `map: Map[Text, Member]`, ist jetzt
+
+% 0 1 0 0c332bb1be71da85164a7bed3c287d5a
+
+@ 0 13 0 1e86a5858a2d589e18d9a8dcf4b60034
++ - `Structural.transform` ist jetzt polymorph: `def transform[value](data: Origin, make: Origin
++   => value): constructor[value]`, bisher `def transform(data: Origin, make: Origin => Record):
++   constructor[Record]`. Eine Instanz kann nicht mehr als Lambda geschrieben werden (eine
++   polymorphe Methode ist keine SAM); schreiben Sie `new Structural[constructor]: …` mit den
++   Typ-Membern `Self`, `Origin` und `Form`, oder nehmen Sie eine polymorphe Funktion
++   `[value] => (Origin, Origin => value) =>
++   constructor[value]` entgegen, wie es `JsonBlueprint.structural` tut. (#1974)
++ - Neu: `Specification.tuple(value: Expr[Origin])`, eine Makro-Hilfsfunktion neben `build`, die
++   `Expr[NamedTuple.AnyNamedTuple]` zurückgibt. Deklarieren Sie `transparent inline def tuple(value: Origin):
++   NamedTuple.AnyNamedTuple = ${tuple('value)}` in einem Spezifikationsobjekt, um benannte
++   Tupel mit einem Element pro Feld zu erzeugen, in Feldreihenfolge, bei der Konstruktion
++   eager gelesen. Ein `Intensional`-Ergebnis der Form `success raises error` wird zu einem
++   Element vom Typ `success`, wobei an der Aufrufstelle eine `Tactic[error]` erforderlich ist.
++   (#1974)
++ - `polyvinyl.core` hängt jetzt von `contingency.core` ab. (#1974)
+
+% 0 1 0 021b852f7dba238b06ccff9a0d2bb561
+
+@ 0 3 0 08a66a71c0339eb00d86fc1b6ed0bb90
++ - `JsonBlueprint.Doc.properties` ist jetzt `Json` (das `properties`-Objekt des Schemas, in
++   Dokumentreihenfolge erhalten), nicht `Map[Text, JsonBlueprint.Property]`;
++   `JsonBlueprint.Doc.fields` gibt `List[(Text, Member)]` zurück. Verwenden Sie
++   `JsonBlueprint.entries(doc.properties)` für die dekodierte
+
+% 0 1 0 022594d9184b821e07be5324855f5f26
+
+@ 0 4 0 144495aecbcf78a3149f7c6950309517
++ - `JsonBlueprint.Property.properties` und `JsonBlueprint.Property.items` sind jetzt
++   `Optional[Json]`, nicht `Optional[Map[Text, Json]]`; `objectFields` und `arrayFields` geben
++   `List[(Text, Member)]` zurück. (#1974)
++ - Neu: `JsonBlueprint.entries(json: Json): List[(Text, JsonBlueprint.Property)]` und
+
+% 0 1 0 0f806fdab9d997a2104412b1251214d8
+
+% 0 1 0 1cf24bc3a03be25f1ce2c2425b938070
+
+@ 0 2 0 1b0307cb7eb47d3a187a54cfda206dad
++ - Die Givens `JsonBlueprint.array`, `optionalArray`, `module` und `optionalModule` behalten
++   ihre Namen und Kennungen, sind jetzt aber explizite `Structural`-Instanzen (siehe
++   polyvinyl). (#1974)
+
+% 0 1 0 0ed19456d6998e511992f280a95ea1f6
+
+@ 0 10 0 13ca84f50682d34115a1f43a93087cc4
++ - `TelBlueprint.fieldsOf` gibt `List[(Text, Member)]` in Schemareihenfolge zurück, nicht `Map[Text,
++   Member]`; ebenso `TelBlueprint.fields`. (#1974)
++ - Serialisierung von `stratiform.Tel` (`Tel.Document is Showable`, `Tel is Showable`): Ein
++   leeres Inline-Atom (ein `Tel.Atom.Inline` mit leerem Text, wie es `Tel.scalar(t"")` und der
++   `Text`-Encoder für einen leeren Text erzeugen) wird jetzt als gar kein Atom geschrieben,
++   sodass ein Compound mit Schlüsselwort und leerem Skalar als bloßes Schlüsselwort (`text`)
++   serialisiert wird, wo zuvor das Schlüsselwort gefolgt von den dem Atom vorangehenden
++   Leerzeichen (`text `) geschrieben wurde. Das Lesen ist unverändert: Das bloße Schlüsselwort
++   wird als leerer String dekodiert, während die vorherige Ausgabe als nachgestelltes
++   Leerzeichen abgelehnt wurde. Code, der serialisierte Dokumente textuell vergleicht, muss das
++   bloße Schlüsselwort erwarten. (#1977)
+
+% 0 1 0 1bec2a37c5dc1c31117dcae4a31c1d39
+
+@ 0 13 0 12c5e4eddd893ccd088354c54f5b39c8
++ - Ein `scala.NamedTuple` hat jetzt eine native `Inspectable`-Instanz,
++   `spectacular.Inspectable.namedTuple`, und wird als seine beschrifteten Elemente in der
++   Produktnotation ohne Typnamen dargestellt: `(name =
++   t"Simon", age = 72).inspect` liefert `t"(name:t\"Simon\" ╱ age:72)"`. Jedes Element wird von
++   dem `Inspectable` dargestellt, das für den statischen Typ dieses Elements herbeigerufen wird.
++   Zuvor passte keine Instanz zu einem benannten Tupel, sodass es in den `toString`-Fall von
++   `Inspectable.derived` durchfiel und als `t"“(Simon,72)”"` dargestellt wurde, wobei die
++   Beschriftungen verloren gingen und die eigenen Instanzen der Elemente umgangen wurden. Code,
++   der auf die alte Darstellung zusichert oder sie aus `Inspectable.fallbacks` herausfiltert,
++   muss aktualisiert werden. (#1975)
++ - `scala.Tuple` hat jetzt eine explizite Instanz, `spectacular.Inspectable.tuple`, anstelle
++   der wisteria-Ableitung, die ein Tupel zuvor über `Inspectable.derived` erreichte. Die
++   Darstellung eines Tupels, dessen Elementtypen statisch bekannt sind, ist unverändert
++   (`(t"Simon", 72).inspect` liefert weiterhin `t"(t\"Simon\" ╱ 72)"`, und
++   `EmptyTuple.inspect` liefert weiterhin `t"()"`). Ein Wert, dessen statischer Typ ein bloßes
++   `Tuple` ist, dessen Elementtypen nicht durchlaufen werden können, wird wie bisher als sein
++   `toString` im Marker `“…”` dargestellt. (#1975)
+
+% 0 1 0 108425be319504bd1ad2ccfb2700814e
+
+@ 0 22 0 1a9feaeeb48a482700aa98057082ee57
++ - `stenography.Imports` hat einen dritten Parameter erhalten, `aliases: scala.collection.immutable.Map[String,
++   Text] = Map()`, der den Namen eines verfeinerten Typ-Members auf den Infix-Typalias abbildet,
++   der ihn verfeinert. `Imports.resolve(designators, direct)` füllt ihn jetzt aus jedem
++   Wildcard-Geltungsbereich in `designators`; ein direkt geschriebenes
++   `Imports(designators, direct)` lässt ihn leer. Neu:
++   `Imports.infixAliases(scope: Designator)(using Context): Map[String, Text]`, die Ernte für
++   einen Geltungsbereich. (#1979)
++ - `stenography.Syntax#text(using Imports)` schreibt jetzt `Syntax.Structural(base, members, defs)`
++   als verschachtelte `Infix`-Anwendungen, wenn `defs` leer ist und jedes Member von `members`
++   ein einfacher Alias ist (keine `Syntax.Declaration`), dessen Name in `imports.aliases` steht:
++   `Foo { type Form =
++   Bar }` wird als `Foo in Bar` dargestellt, unter einem `Imports`, das gegen einen
++   Geltungsbereich aufgelöst ist, der `infix
++   type in [refined, form] = refined { type Form = form }` deklariert. Zuvor galt diese
++   Präferenz nur für eine innerhalb eines Makros gebaute `Syntax` (`Syntax.name`), und `text`
++   schrieb immer die Verfeinerung. (#1979)
++ - `stenography.Syntax#text(using Imports)` schreibt jetzt `Syntax.Application(Simple(Type(parent,
++   name)), List(a, b), infix = true)` als `a name b`, wenn `imports.hasDirect(Type(parent, name))`
++   gilt, zusätzlich zum Fall, dass `imports.has(parent)` gilt. Zuvor wurde ein solcher, nur über
++   einen `export` erreichter Alias als `parent.name[a, b]` dargestellt. (#1979)
++ - `stenography.Imports.exports(scope)` (und damit `resolve`) schließt jetzt das Ziel eines
++   polymorphen exportierten Typalias ein, dessen Rumpf eine `TypeRef` auf genau die eigenen
++   Parameter des Alias in ihrer Reihenfolge anwendet (ein `export prepositional.on`-Weiterleiter),
++   sodass dieses Ziel unter einem Wildcard-Import von `scope` mit seinem Blattnamen dargestellt
++   wird. Zuvor zählten nur monomorphe Aliase. (#1979)
+
+% 0 1 0 1bd70fbb7fb9eb1c1af80784b13c3b46
+
+@ 0 1 0 0ce0d150629679f40db30e17170ad2a6
++ - Neu: `Typeface of family` (`Typeface["Inter"]`, mit den generischen CSS-Familien als
+
+% 0 1 0 1831b664c0bf438d09a1020fcde62b23
+
+@ 0 24 0 134bb3f80ab1e24a142450e15dd42e38
++   (eine Schriftart mit `Weight`, `Slant`, `Stretch`, `Variation`s und `Face.Feature.Setting`s,
++   fluent gebaut: `Inter.bold.italic.enabling(Face.Feature.OldstyleNumerals)`), `Weight`, `Slant`,
++   `Stretch`, `Variation` mit `Variation.Axis`, `Coverage`, `Medium` und die Typklasse
++   `Typesettable` (`(Typeface of "Inter") is Typesettable in Web`, wobei `Typesettable.embedded(sfnts*)`
++   aus Schriftdateien eine Bereitstellung `in Medium` macht und `Typesettable.Source` benennt, wie
++   ein Medium eine Schrift erhält). Alle werden aus `soundness` exportiert. (#1981)
++ - Neu: `class Font(face, provision) extends Formal`, geschrieben `Font in Web`. `Font(face)`
++   paart einen Schriftschnitt mit der im Geltungsbereich befindlichen Bereitstellung für seine
++   Schriftart in dem Medium, das der erwartete Typ benennt; `Font.of[medium](face)` benennt das
++   Medium. Beide erfordern `Typeface of family is Typesettable in
++   (? >: medium)` und eine `Tactic[Font.Error]`. `Font.Error.Reason` erhält `UncoveredWeight`,
++   `UncoveredSlant`, `UncoveredStretch`, `UnknownAxis`, `AxisOutOfRange` und `MissingFeature`
++   (Nummern 5–10), und die Meldung des Fehlers lautet jetzt „the font could not be used because …“
++   (bisher „read“). (#1981)
++ - Neu: `Sfnt.fvar: Optional[FvarTable]` (die Achsen einer variablen Schrift), `Sfnt.features:
++   List[Face.Feature]` (die `GSUB`/`GPOS`-Merkmal-Tags) und `Os2Table.italic`. (#1981)
++ - `Face` hält seine Anfrage in drei Typ-Membern fest, `Weights` (ein Literal wie `700`),
++   `Slanting` (`"upright"` oder `"italic"`) und `Enabled` (eine Union von Merkmal-Tags), jeweils
++   `Face.Runtime`, wo zur Laufzeit entschieden; die fluenten Methoden geben
++   `Face.Shape[family, …]`-Verfeinerungen zurück, und `Face.Feature` ist eine `Topical`-Klasse
++   (`Feature of "onum"`) statt eines opaken `Text`. `Typesettable` ist jetzt `Locative`, und
++   `Typesettable.embedded(resource)` akzeptiert eine `Locative` streambare Quelle wie
++   `cp"/fonts/x.ttf"` und behält ihren Pfad als `Locus`. `Font(face)` und
++   `Font.of[medium](face)` sind Inline-Makros: Wo der `Locus` der Bereitstellung im Klassenpfad
++   des Compilers liegt, wird die Anfrage des Schriftschnitts zur Kompilierzeit gegen die Datei
++   geprüft, und eine Ablehnung ist ein Kompilierfehler; `Font.paired` ist die Paarung zur
++   Laufzeit, zu der sie expandieren. (#1981)
+
+% 0 1 0 02c92e6303dfc9ad1a801cd1587ac61f
+
+@ 0 9 0 1a0de8308bfe941a1deb92d277bdd23c
++ - Neu: `trait Web extends Medium`, dessen Begleitobjekt `Typesettable in Web`-Givens für die
++   generischen Familien und die Fabriken `Web.linked(url, coverage, format)`, `Web.imported(url,
++   coverage)`, `Web.local[family]()` enthält, dazu `Web.font(face): Font in Web` und `Web.sansSerifFont`. (#1981)
++ - Neu: `Css.fontFace(font)` und `Css.fontFaces(fonts*)`, die `@font-face`/`@import`-Regeln für
++   die Bereitstellung einer Schrift (eingebettete Dateien als Base-64-Data-URIs), und
++   `FontFace`; `face.style` und `font.style` stellen `font-family`, `font-weight`, `font-style`,
++   `font-stretch`, `font-variation-settings` und `font-feature-settings` eines
++   Schriftschnitts als `Css.Style` dar. Aus `soundness` exportiert als `Web`, `FontFace` und
++   `style`. (#1981)
++ - `cataclysm.core` hängt jetzt von `phoenicia.core`, `monotonous.core` und `anticipation.url` ab. (#1981)
+
+% 0 1 0 012115d2210015c8084b240aed3fed8f
+
+@ 0 17 0 16bbb70f1270f9ac0158d2cf4d60a056
++ - `Rectangle` und `Ellipse` haben nach `transforms` nachgestellte Felder
++   `style: Optional[Css.Style] = Unset` und `id: Optional[Svg.Id] = Unset` erhalten. Die
++   Konstruktion über Namen oder über die ersten drei (oder vier) positionalen Argumente ist
++   unverändert; Extraktor-Patterns müssen zwei Wildcards hinzufügen:
++   `case Rectangle(position, width, height, transforms, _, _)` und
++   `case Ellipse(center, xRadius, yRadius, angle, transforms, _, _)`. `Circle.apply` akzeptiert
++   dieselben drei optionalen Argumente. (#1980)
++ - Das Parsen eines SVG flacht `<g>`-Elemente nicht mehr in ihre Kinder ab: Jedes wird zu einer
++   `Group`-Figur. `<polyline>`-, `<polygon>`- und `<text>`-Elemente, zuvor übersprungen, werden
++   jetzt als `Polyline` (mit `closed = true` für ein Polygon) und `Lettering` geparst; die
++   Attribute `id`, `transform` und `style` werden auf jeder Figur gelesen statt nur auf
++   `<path>`. (#1980)
++ - Neue Figuren `Group`, `Polyline` und `Lettering` (mit `Lettering.Anchor` und
++   `Lettering.Baseline`), alle aus `soundness` exportiert. (#1980)
++ - `Lettering` erhält ein Feld `font: Optional[Font in Web] = Unset` zwischen `style` und
++   `transforms`; ein positionales achtes Argument, das `transforms` war, muss jetzt benannt
++   werden. Die Deklarationen der Schrift gehen in das Inline-Attribut `style` ein, und `Svg.xml`
++   schreibt ein `<defs><style>` mit `@font-face`-Regeln für die Schriftarten aller seiner
++   Beschriftungen. (#1981)
++ - Neu: `Figure.fonts: List[Font in Web]` auf jeder Figur, und `Figure.fonts(figures)`. (#1981)
+
+% 0 1 0 15cfd48f715bc4b40f8730f40768e76f
+
+@ 0 3 0 1db739b4c64e438c0a4c93fe49644db5
++ - `Chart.Style.fontFamily: Text` wird durch `font: Font in Web` ersetzt; der Parameter
++   `fontFamily = t"sans-serif"` von `Chart.Standard` ist jetzt `font = Web.sansSerifFont`. Eine
++   benannte Familie wird zu einer Bereitstellung plus einer Schrift:
++   `given (Typeface of "Menlo") is Typesettable in Web = Web.local()` und
+
+% 0 1 0 00ba69146d9cf0bf032da1181cfe2d09
+
+@ 0 5 0 03391abd63f7570301942d3b85d84a35
++ - `Chart.Style.font(color: Color in Srgb): Css.Style` wird in `fontStyle(color)` umbenannt und
++   gibt kein `font-family` mehr aus (das tut die `font` der Beschriftung). (#1981)
++ - Das vorgegebene Given von `FontMetric` ist jetzt `FontMetric.fromStyle`, abgeleitet aus der
++   Schrift des Stils: die eigenen Metriken einer eingebetteten Datei, sonst der Durchschnitt;
++   bisher `FontMetric.average`, immer der Durchschnitt. Neu: `FontMetric.of(font: Font)`. (#1981)
+
+% 0 1 0 1d07d5aa528e552a1b45fc9f19fb6b51
+
+@ 0 3 0 096f8e5d1d41d7c71b53e10aed92ee7d
++ - `each` auf einem `Interval` ist von `denominative.internal` in das Paket `denominative`
++   gewandert. Es liegt nicht mehr im impliziten Geltungsbereich des opaken Typs, daher muss eine
++   Aufrufstelle ohne Import von `denominative` (oder `soundness`) einen hinzufügen. Signatur und
++   Verhalten unverändert:
+
+% 0 1 0 13ea00791ab4456d198913edc3fae843
+
+@ 0 18 0 09085ae8abd3e68302149925ec9eaee2
++ - `thru` und `till` auf `Ordinal` sind von `denominative.internal` in das Paket
++   `denominative` gewandert, sodass sie nicht mehr im impliziten Geltungsbereich des opaken Typs
++   liegen: Eine Aufrufstelle ohne Import von `denominative` (oder `soundness`) muss einen
++   hinzufügen. Signaturen und Verhalten unverändert. `span` ist nicht verschoben. (#1985)
++ - Neue Überladungen `extension [form](ordinal: Ordinal in form) inline infix def thru(right:
++   Ordinal in form): Interval in form` und das passende `till`, ausgewählt, wenn beide Endpunkte
++   auf denselben Wert beschränkt sind. Sie sind der einzige Weg, ein markiertes Intervall zu
++   bauen, das nicht am Anfang der Collection beginnt. Beachten Sie, dass eine über
++   `Optional#let` erhaltene Ordinalzahl eine Capture-Variable trägt und nicht dazu passt;
++   verengen Sie stattdessen mit `beyond`. (#1985)
++ - Neu: `extension [form](range: Interval in form) inline def beyond(count: Int): Interval in
++   form`, das Gegenstück zu `capped` — es lässt die ersten `count` Indizes weg und bewahrt die
++   Marke, während `capped` die ersten `count` behält. Zusammen begrenzen sie ein Fenster an
++   beiden Enden. (#1985)
++ - Neue Überladung `extension [form](range: Interval in form) inline def each(inline lambda:
++   (Ordinal in form) => Unit): Unit`, ausgewählt für ein beschränktes Intervall wie
++   `value.extent` oder `value.extent.capped(n)`. Sie liefert beschränkte Ordinalzahlen
++   (`Ordinal in form`), sodass ein indizierter Lesezugriff im Lambda zum totalen `apply`
++   aufgelöst wird und ein bloßes Element liefert, kein `Optional`:
++   `xs.extent.each { ordinal => xs(ordinal) }`. Sie ersetzt `value.iterate` und
++   `value.iterate(range)`, die unverändert und weiterhin verfügbar sind. (#1985)
+
+% 0 1 0 015105b70d6115860b88f53408ae1428
+
+@ 0 1 0 0d58983d5f2753310eb233d7271c0191
++ - Neue Überladung `extension [collection](value: collection) inline def survey[result](range:
+
+% 0 1 0 06e9442d7b8b199310f4ae94a2732c98
+
+% 0 1 0 0ee6d985bf2d0403065d09e8d572c9c9
+
+@ 0 4 0 106604b453b1df42129faf3c90d7858b
++   result): result`. Der Surveyor beginnt am Anfang des Intervalls und ist an dessen Grenze
++   erschöpft, statt die ganze Collection zu überspannen, sodass ein Durchlauf, der durch etwas
++   anderes als die eigene Länge der Collection begrenzt ist, sein Fenster nicht überschreiten
++   kann. `surveyor.passed` ist die vom Anfang der Collection gezählte Position, die für einen
++   Surveyor über alles unverändert ist. (#1985)
+
+% 0 1 0 10336422395755bf1e478ba611fcc433
+
+@ 0 4 0 1cfd7c625e0f2e5b0e3ea0be5963fef3
++ - `hypotenuse.Bcd#each(action: Int => Unit): Unit` in `eachNibble` umbenannt; `each` entfernt.
++   Verhalten unverändert: Es ruft `action` mit jedem Nibble-Wert in der Reihenfolge von links
++   nach rechts (älteste zuerst) auf. Der alte Name kollidierte mit dem `each` der Collections,
++   das eine Datei, die `Bcd.*` importiert, für jeden Empfänger zur Version von `Bcd` auflösen
++   würde. (#1985)

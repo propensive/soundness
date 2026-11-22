@@ -1,0 +1,46 @@
+orthant 2 language
+
+% 0 1 0 004a189db3b8fc040486759a485ec99f
+
+@ 0 1 0 0b1e50fb8169bb1f1f7db2befe00827b
++ Sollevato quando l'audio non può essere riprodotto su un dispositivo di uscita.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 0dd58583515e43331e9883628a891426
++ Un'uscita è un'uscita audio fisica o virtuale. Questo errore copre un dispositivo non
++ disponibile, uno già in uso e uno che non accetta la frequenza di campionamento, la
++ profondità in bit o la disposizione dei canali dell'audio.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Codice
++ column  Motivo
++ column  Messaggio
+
+% 0 1 0 131917d41888c93508d3b2f020d1ab2a
+
+% 0 1 0 04373e3de0a557441ec7591974ea4594
+
+% 0 1 0 19a7267ec8af97de03b031d0bfa97411
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 3 0 0cd1f40d9e8ce3c41b797ad9abb153a1
++ Verificare che il dispositivo sia presente e non sia tenuto in esclusiva da un altro processo.
++ Dove il problema è la configurazione, convertire l'audio in un formato che il dispositivo
++ accetta, oppure interrogare l'uscita prima della riproduzione.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 1cb78eb31e7ff2be1891b6495803e5dd
++ - Sorgente: `lib/cacophony/src/core/cacophony.Outlet.scala`

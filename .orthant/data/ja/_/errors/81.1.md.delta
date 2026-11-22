@@ -1,0 +1,80 @@
+orthant 2 language
+
+% 0 1 0 158bc47a51d98c161b01fc87c9a3691e
+
+@ 0 2 0 0bdb0f6ec50389c814ddd1987e79b302
++ 値を正しいメディアタイプ（いわゆる MIME タイプ）としてパースできないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 138b61c55b856bd118eec0b53389c128
++ Gesticulate は `type/subtype[+suffix] [; parameter=value]*` という形式のメディアタイプをパースする。
++ バリアントは個々の構文上の問題を示す。
++ メッセージは `the value $value is not a valid media type; <reason>` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 01769d80039ffd051a4de49a981b1966
+
+@ 0 1 0 0b2c692d5e4823db0621ff3035351a54
++ 値の型とサブタイプの間に、ちょうど一つの `/` が含まれていなかった。
+
+@ 0 1 0 073982c0f4f528c70652dcb3d88b28e6
++ **例。** `[↯/s.81.1.1] the value text/html/extra is not a valid media type; a media type should always contain exactly one '/' character`
+
+@ 0 1 0 1c67ddbe40e48c3710c478a15db786a2
++ **解決方法。** トップレベルの型とサブタイプの間に `/` を一つ置く。
+
+% 0 1 0 026a9a4fa165e705108b66493b9d2566
+
+@ 0 2 0 0d513fdff41e38991812f5a7bbc43690
++ 値が `;` で終わっており、書かれていないパラメーターがあることを示唆している。
+
+@ 0 1 0 1858e09bb88cc0450537e49a5cbdaa14
++ **例。** `[↯/s.81.1.2] the value text/html; is not a valid media type; a terminal ';' suggests that a parameter is missing`
+
+@ 0 1 0 1e5a2058954179fa197aec61decb6760
++ **解決方法。** パラメーターを追加するか、末尾の `;` を取り除く。
+
+% 0 1 0 1fff04f937ef07ff1f8335f00ae2cc61
+
+@ 0 2 0 0c024c8ce9a4f53313049d6a6fabfc81
++ トップレベルの型が、登録されたグループ（`text`、`image`、`application` など）のいずれでもない。
+
+@ 0 1 0 05e50b11e957b4fc03fd397ea228649a
++ **例。** `[↯/s.81.1.3] the value play/scene is not a valid media type; the type must be one of: ...`
+
+@ 0 1 0 00d6d65a46ef0f0111292aaf1e00580c
++ **解決方法。** 登録されたトップレベルの型を選ぶ。
+
+% 0 1 0 1f3857cef5739d1118173eaafbbb5512
+
+@ 0 1 0 15b8cac6c0012016126d86af9ebaf84c
++ メディアタイプのトークンに許されない文字が現れた。
+
+@ 0 1 0 0c9aca850f1697bb0c569bfac66831e2
++ **例。** `[↯/s.81.1.4] the value text/ht ml is not a valid media type; the character ' ' is not allowed`
+
+@ 0 2 0 0d4783ad30e91e5b1267a28f66f5c476
++ **解決方法。** 問題のある文字を取り除く。
++ トークンには空白や特殊文字を含められない。
+
+% 0 1 0 120b87a82129a2531ad59e92e39b2403
+
+@ 0 1 0 01e4ba7d303f8fe6186ba071fbc5e86a
++ 構造化構文の接尾辞（`+` の後）が認識されない。
+
+@ 0 1 0 0a0ae5ef524d867c144f6b6a1bcfa079
++ **例。** `[↯/s.81.1.5] the value application/sonnet+xyz is not a valid media type; the suffix '+xyz' is not recognized`
+
+@ 0 2 0 1d7bd7d174759ad90cddb4e68b39aa71
++ **解決方法。** `+xml` や `+json` のような文書化された接尾辞を使うか、接尾辞を省く。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 2 0 18e98a815769672000ebbc4520510980
++ - ソース：`lib/gesticulate/src/core/gesticulate.MediaType.scala`
++ - `↯/s.81.2` — マルチパート MIME のパース

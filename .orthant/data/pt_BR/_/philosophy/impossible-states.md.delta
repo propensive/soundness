@@ -1,0 +1,193 @@
+orthant 2 language
+
+@ 0 1 0 04b154f74d17d9af0a99d0b1a3b942c4
++ # Estados impossíveis
+
+@ 0 7 0 057fa356c476647d07100999bc971884
++ A primeira das duas regras de ouro do Soundness: os tipos de um programa devem admitir apenas
++ estados válidos, de modo que um estado impossível não possa sequer ser escrito. Em vez de
++ construir um valor e depois verificar se ele é legal, o tipo torna um valor ilegal impossível de
++ construir, movendo o erro do tempo de execução para o tempo de compilação. Um tipo que só pode
++ conter valores com sentido dispensa verificações defensivas a jusante, porque o compilador já
++ descartou todo o resto. Isso faz par com a regra companheira de que as transições entre estados
++ devem ser [totais](total-transitions.md).
+
+@ 0 1 0 144276b285bc30e91c4eb0bb7e0890d3
++ ## A forma da regra
+
+@ 0 3 0 16ff8da5060d36a40f4d131c1cdfbfd7
++ A maior parte da validação é escrita do jeito errado. Um valor é construído, depois verificado, e
++ o resultado da verificação é descartado — de modo que cada função subsequente recebe um valor que
++ *pode* ser válido e precisa confiar nele ou verificá-lo de novo:
+
+% 2 1 0 191805ba7f5833b216322783cdf99d49
+
+% 3 1 0 0faa78de81a51e6f0d3e393e772dc776
+
+% 4 1 0 0ffce38145a97ad70f7f98887193c62b
+
+% 0 1 0 1dc12bbcc02813c81bdaccee5bfea47e
+
+% 0 1 0 0e13627adb69a5a608b3211956d1ebcf
+
+% 0 1 0 09eb4f9daef54cf706eb046d99971351
+
+% 1 1 0 1b7249464be726ea1cf6dd843da05b0f
+
+@ 0 2 0 05d7bdd879981aaf053ee7e26e1e7df2
++ A versão que começa pelo tipo faz da verificação a *única* forma de obter o valor, de modo que
++ possuí-lo é uma prova:
+
+% 2 1 0 19fbd3aa443f6cd60f40c43f9a3b448a
+
+% 3 1 0 1f37364980726c5619ec548496522535
+
+% 4 1 0 063f5b6a850a7ecb14f51d80a216de02
+
+% 0 1 0 00d4e23998297faa0fba2d044f768b38
+
+% 0 1 0 0641b64308c52bc50684ebe99346860a
+
+% 1 1 0 1a80ceab42c9c2940148893e9a7dc17d
+
+@ 0 1 0 15019dcff6177afc09ffd254d467ec63
++ Não se pode dar a `connect` uma porta fora do intervalo, porque esse `Port` não existe.
+
+@ 0 1 0 0ac8603f46b8728c17fd630685ee87c3
++ ## Três formas de um tipo descartar um estado
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 1a9ca093f3a6263015ec78d00da1ca47
++ column  Forma
++ column  O que o tipo carrega
++ column  Exemplo
++ row  refinamento  o intervalo permitido  `0.0 ~ 1.0`
++ row  parametrização  uma propriedade que de outro modo seria um campo  `Eur` e `Gbp`
++ row  construção  um literal já analisado contra sua gramática  `2012-Feb-30`
+
+% 1 1 0 0ebf100adb41b6b01f69a5e379e6d523
+
+@ 0 2 0 19d54a04e1bb83e715bc8a15d6914f0b
++ **Por refinamento.** Um número carrega seu intervalo permitido no tipo, de modo que o intervalo é
++ verificado onde o valor é escrito e a aritmética calcula o intervalo do resultado:
+
+% 2 1 0 1053f0644aadba5b099677fa300d3ccb
+
+% 3 1 0 0ef070af81f7629a01e96dc46346dbd3
+
+% 4 1 0 1c639d7bff278f190a5355f0af592ff7
+
+% 0 1 0 1b8a3425a999be101be4eb5a049a46fd
+
+% 0 1 0 068e94d1c49488791d8161d380acf00e
+
+% 1 1 0 067932193af882a00f32c94c05feec25
+
+@ 0 4 0 1cac5870e8e50ee01a9a1ffd555a618b
++ **Por parametrização.** Uma propriedade que de outro modo seria um campo torna-se um argumento de
++ tipo, e valores que diferem nela tornam-se tipos diferentes. Dinheiro em uma moeda não pode ser
++ somado a dinheiro em outra; um caminho em uma plataforma não pode ser usado onde se espera outra;
++ uma tarefa em uma linha do tempo não pode ser subtraída de uma tarefa em outra:
+
+% 2 1 0 168271638531ca030f795256a93aaf9c
+
+% 3 1 0 10f505261fe645c0047dbef37ee828fd
+
+% 4 1 0 057fee45f5bbe616031b78ba48730f3b
+
+% 0 1 0 0302611ebb87c84a1be0d1c0c5c27b53
+
+% 0 1 0 0ea9b59bd3b4a2141f6126ec2e74b3c1
+
+% 1 1 0 030c14bcffb0c65f0b3079fe987bd34a
+
+@ 0 2 0 16ef3cd6b1625e9a0aadc3022638cae3
++ **Por construção.** Um literal é analisado contra sua gramática enquanto o código compila, de modo
++ que um literal malformado é um erro de compilação e não um valor:
+
+% 2 1 0 1e0128334e1dc6ab1d65530e217d1b52
+
+% 3 1 0 0c99376a8333381815be87ecac917690
+
+% 4 1 0 1eaf90f45bb2f96d04af4634126af49a
+
+% 0 1 0 062dffe9cb60ae4518de186fdc14c9c3
+
+% 0 1 0 0a9548c5284756440ee5627affa2ed71
+
+% 0 1 0 1e6909687bacf87604cb5eb09129dcb2
+
+% 1 1 0 15dccd2c23d6aa920b7170348902f2eb
+
+@ 0 2 0 08b47d53203ed26a0deb3708fe86202a
++ A terceira é a [segurança por construção](safety-by-construction.md), em que consiste a maior
++ parte do trabalho prático desta regra.
+
+@ 0 1 0 009142c14d7b3e021e4e5eceb14d4453
++ ## Codificando uma máquina de estados
+
+@ 0 2 0 1c72b01c417508dd0415a6bb88bc7461
++ A regra tem mais valor onde um tipo tem *modos*. A codificação usual dá a uma única classe todos
++ os campos de que qualquer modo precisa, com as combinações inválidas excluídas por comentário:
+
+% 2 1 0 140bc5d9c0223a441d23f8e6f42ef8f9
+
+% 3 1 0 0109f94c653fe4b9030ae70cc7dffaf4
+
+% 4 1 0 078eab5333e278a718bc545c6290f632
+
+% 0 1 0 07c91e735920b5f00dec80ba60e2488d
+
+% 1 1 0 106d66c9b623a42b1d87b05f1db0d35d
+
+@ 0 3 0 06556022a076fcd00e783ef64fa6d780
++ Nada impede uma `Connection` que esteja fechada *e* contenha um socket, ou uma que não tenha nem
++ socket nem erro, e todo leitor precisa reconstruir quais combinações eram pretendidas. A forma
++ enumerada admite apenas os estados que existem:
+
+% 2 1 0 11f5c7541c4a419603f140e70743ebea
+
+% 3 1 0 05becd9e9b8a9a2a156f8456e2651c1d
+
+% 4 1 0 140e60a2df38b160037675ad380393a0
+
+% 0 1 0 09864ad343ddeaa004c9db16a60caec6
+
+% 0 1 0 1b5a8bac1ac607150d2a269f518dc8f1
+
+% 0 1 0 163cf6d6992ebb91037eeee600f8df10
+
+% 0 1 0 1b5f6ef9553d589f15987cd454b6a580
+
+% 1 1 0 0e93f6b07588ddd61a195e21b4fa1a97
+
+@ 0 2 0 125e470537a56c9c1dfdace0ff9ec330
++ As quatro combinações impossíveis agora não podem ser escritas, e — como o compilador verifica a
++ exaustividade — todo lugar que trata uma `Connection` fica sabendo quando um caso é acrescentado.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Quanto custa
+
+@ 0 1 0 1da00f19df45f58f084c53b717d172b7
++ Três custos, todos reais.
+
+@ 0 3 0 079ff9b1c439ae721592042aca6da04f
++ **Construir é falível.** Transformar texto em um `Port` pode falhar, então precisa de uma
++ estratégia de erros no escopo. A verificação não desapareceu; ela se mudou para um único lugar e
++ deixou uma prova para trás.
+
+@ 0 3 0 101f9f830509bd2d137e9faa8e5869c3
++ **Os tipos ficam mais específicos, e a inferência trabalha mais.** Um método que recebia um `Int`
++ agora recebe um `Port[Tcp]`, e quem chama precisa produzir um. Esse é o ponto — mas significa, sim,
++ que uma refatoração se propaga mais longe do que se propagaria.
+
+@ 0 4 0 0cbd859c780c863a158415f3125c4d69
++ **Nem tudo pode ser descartado.** A sintaxe de um hostname pode ser verificada; se ele resolve,
++ não. A disciplina é codificar o que é genuinamente determinado pelo valor e deixar o resto para as
++ [assinaturas honestas](honest-signatures.md) e os erros tipados, em vez de inventar um tipo que
++ promete mais do que pode provar.
+
+@ 0 2 0 051e0c9fa4be321817c48b59f16002f3
++ Veja [transições totais](total-transitions.md) para a regra companheira, e
++ [segurança por construção](safety-by-construction.md) para como a verificação é feita.

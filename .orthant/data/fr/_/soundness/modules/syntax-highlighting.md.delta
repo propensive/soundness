@@ -1,0 +1,201 @@
+orthant 2 language
+
+@ 0 1 0 02b5c4e68591d68a045bed8cc52a1334
++ ## Coloration syntaxique
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 4 0 104804ad023954de09f99a905afeae02
++ Le code source Scala est coloré par le compilateur Scala lui-même. Le langage n'est pas
++ approché par des expressions régulières. Le véritable analyseur lexical, et, sur demande, tout
++ le frontal du compilateur, est exécuté sur le code source : la coloration est donc exactement
++ celle de la lecture du compilateur.
+
+@ 0 3 0 0b3fcc52cd8e8b8f0e19d32c082bac7c
++ Le résultat est un `SourceCode` de jetons accentués, qui s'affiche sous forme de sortie de
++ [terminal](terminal.md#styled-text) stylisée, ou en [HTML](html.md). Aux niveaux plus profonds,
++ il porte les *types* de ses expressions, les diagnostics du compilateur, et même des
++ complétions.
+
+@ 0 1 0 06b65ff84c0bb4f6083b5428de27fdcc
++ ### La coloration
+
+@ 0 5 0 11ed38018675f7e61f1d251f240000d1
++ Scala résiste à la coloration superficielle. Ses mots-clés souples ne sont des mots-clés qu'à
++ certaines positions. Sa syntaxe des givens, et son indentation significative, mettent en échec
++ les grammaires fondées sur des motifs. Les fichiers de coloration des éditeurs courent après le
++ langage, version après version. Le seul programme qui découpe toujours correctement Scala en
++ jetons est le compilateur : le colorateur fiable est donc le compilateur, interrogé poliment.
+
+@ 0 2 0 042a8e7f6e47e21903c743d0c86e4156
++ Il est piloté à trois profondeurs, chacune choisie par un given du package `highlighting` :
+
+% 2 1 0 171a3ad92a0e6f5c0e912a0e23743fe9
+
+@ 0 8 0 0299c64946c1ba9e1d36b331b0d6fa05
++ column  Profondeur
++ column  Given
++ column  Exige
++ column  Donne
++ row  découpé en jetons  `tokenizedScala`, par défaut  le texte seul  des jetons classés
++ row  typé  `typecheckedScala`  un compilateur et un classpath  types et diagnostics, issus du frontal
++ row  typé  `sessionScala`  une session de compilateur déjà chaude  la même chose, au sein de la session
++ row  compilé  `compiledScala`  un compilateur et un classpath  les diagnostics que seules produisent les phases ultérieures
+
+% 1 1 0 1c5e3d1e4d3a93ab0b47e0a8f0ce9f1e
+
+@ 0 3 0 02bcc09e97520a5a1db04276f6e7cc5e
++ Un jeton coloré qui connaît son type, c'est la
++ [composabilité](../../philosophy/composability.md) entre le compilateur et ce qui affiche le
++ code.
+
+@ 0 1 0 19c6640c8bea873815109d890d75ca79
++ Tout provient du package `soundness` :
+
+% 2 1 0 128d8a54c105d7d2054418bec79c5bc7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 1 1 0 09a8f67b183dcdd50adab2731fead1e5
+
+@ 0 1 0 114e2dd9ed60151f1bd0af305ab50b7e
++ ### Coloration
+
+@ 0 2 0 012bd69f11a905690e8ca1cfd7c7524e
++ `Scala.highlight` découpe le code source en lignes de jetons accentués, comme les mots-clés, les
++ identifiants, les nombres, les chaînes et les modificateurs, prêts à l'affichage :
+
+% 2 1 0 1ed338af11b10cc91f87a202c2e33649
+
+% 0 1 0 0ee9faaf14ddabb5116b898574ab190c
+
+% 1 1 0 1d21896b22ed8da602e4ee62999c61aa
+
+@ 0 1 0 19ff25aa2684c8091cb812827eca9a5c
++ Les accents sont les catégories auxquelles une palette attribue des couleurs :
+
+% 2 1 0 0479038c5e0ecce70e4e8601a52affbc
+
+@ 0 9 0 0b6f22caf04995e51131297fe8b27722
++ column  Accent
++ column  Marque
++ row  `Keyword`  les mots-clés, autres que les modificateurs
++ row  `Modifier`  les mots-clés modificateurs
++ row  `Term`, `Typal`  les définitions
++ row  `Symbol`  les opérateurs
++ row  `Parens`  les parenthèses et crochets
++ row  `Number`, `String`  les littéraux, y compris interpolés
++ row  `Error`, `Unparsed`  les jetons qui ne sont pas sortis proprement
+
+% 1 1 0 011927ac33a7e05d0ab44dad23d328a2
+
+@ 0 2 0 1545d73b7037a8a30ad4ea6891b5f412
++ La profondeur par défaut est le découpage en jetons, qui n'exige rien d'autre que le texte.
++ `Java.highlight` fait de même pour le code source Java.
+
+@ 0 3 0 0674d25c297fcab114205f7aa16d6131
++ Une palette, sous forme de given, associe les accents à des [couleurs](colors.md), et les
++ moteurs de rendu ANSI, numérotés ou bruts, transforment un `SourceCode` en sortie de terminal.
++ Les blocs de code `scala` et `java` délimités d'un document [Markdown](markdown.md) s'affichent
++ par la même machinerie.
+
+@ 0 1 0 0911216a77e5b2e20bbf39af20c40a72
++ ### Types et diagnostics
+
+@ 0 3 0 11fc70ae788b3a2e14a10210c316aba0
++ Avec un [compilateur](compiler.md) et un [classpath](classpath.md) dans la portée,
++ `typecheckedScala` exécute le frontal, et chaque identifiant a le type que lui a donné le
++ compilateur. C'est la différence entre colorer `xs` comme un identifiant, et savoir que c'est
++ une `List[Int]` :
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 0749446bb3e8240819004b617c4e26b0
+
+% 0 1 0 1e804ef02d58fd58093e38ba542f1190
+
+% 0 1 0 044555dea3bc12de0e1d4878c46292e3
+
+% 0 1 0 1b9581162a71724f01d0cd507c8b5897
+
+% 1 1 0 0fc8b19d5946eea41efedf1cb1033119
+
+@ 0 2 0 102faf44a03408ba08799c135fa2b8f2
++ `typecheckedScala` provient du module `harlequin.typed`, la seule partie du colorateur qui
++ dépend du compilateur.
+
+@ 0 3 0 1e3028571ff7fe6b038d6ba70b5c75ee
++ Un code source mal typé ne fait pas échouer la coloration. Il est coloré *avec ses erreurs*.
++ Chaque `Diagnostic` a sa plage et son message, ce dont ont besoin les outils de documentation
++ et les éditeurs :
+
+% 2 1 0 0c6d8894d004321a000b1dc422a88993
+
+% 0 1 0 1ea951da86610c4d06bf32700bb2cf27
+
+% 1 1 0 1959c108744d9de7152c28cf1aff2e6d
+
+@ 0 1 0 12fb9d6403ad24ff1fc8a11ed4f80083
++ ### Complétions
+
+@ 0 2 0 08843279c52d270b1bcd4a43159e0fb2
++ Une position de curseur transforme la coloration en complétion. Le moteur interactif propre au
++ compilateur propose ce qui pourrait suivre, avec les natures et les signatures :
+
+% 2 1 0 089aec4ce3a538c610d827305ef2aa23
+
+% 0 1 0 1af12c2883e0ff1f061b68ae1c7dac73
+
+% 0 1 0 0c03c02c9aefe9bc08261aed1f60bc45
+
+% 1 1 0 0a2d5f1c72405fca18278c7a0e735ed6
+
+@ 0 3 0 19d72e24c4b6539b15b19d9ad85077c1
++ À une profondeur typée, les propositions sont ici `map`, `max`, `mkString` et les autres
++ membres de `List[Int]` qui commencent par `m`. Elles proviennent du même compilateur qui
++ compilera finalement le code : ce ne sont donc jamais des suppositions.
+
+@ 0 6 0 05c8b4224fe6ae510840fbd2f5af3b3a
++ Les membres après un `.` sont le cas facile. Un identifiant nu en cours de saisie est plus
++ difficile, car l'instruction qui le contient ne passe pas le typage. C'est précisément son état
++ pendant qu'on l'écrit, et une compilation par lots écarte le code. Les complétions proviennent
++ donc du pilote interactif du compilateur, qui conserve le code qui comporte des erreurs. Les
++ termes et les types dans la portée sont complétés où que soit le curseur, et à la position
++ d'un type, les propositions se limitent aux types, aux modules et aux packages.
+
+@ 0 1 0 15b083b39f1b849a043c9c43ed99a7ec
++ ### Compléter les mots-clés et les membres dynamiques
+
+@ 0 1 0 17c727c18c8c58bf0e77959ccfc6397e
++ Deux sortes de propositions que le compilateur ne peut pas faire sont fournies à côté des
++ siennes.
+
+@ 0 5 0 09c2257f91b1ff80110139b1c233383c
++ Les *mots-clés* sont grammaticaux, et non sémantiques. Ce qui peut suivre dépend des jetons qui
++ précèdent le curseur, et non d'une quelconque table des symboles. Un trie sur des contextes de
++ jetons inversés, dérivé d'un corpus de vrai code Scala, et ne regardant en arrière qu'aussi
++ loin que cela reste pertinent, indique quels mots-clés pourraient venir ensuite, et ce que la
++ grammaire attend à cet endroit. `case ` propose donc ce par quoi un cas peut commencer, et une
++ position qui doit être un type ne propose aucun mot-clé.
+
+@ 0 5 0 07595c7debf3a28f19287fba358381d4
++ Les membres *dynamiques* n'ont aucun symbole à proposer. Lorsque le curseur se trouve sur une
++ sélection dont le qualificateur dérive de `scala.Dynamic`, on demande au compagnon du type
++ quels membres admet son raffinement, s'il implémente l'interface qui permet de le dire. C'est
++ ainsi qu'une valeur [étrangère](foreign-interop.md) est complétée avec les membres que nomment
++ ses déclarations étrangères, et que tout type `Dynamic` peut offrir des complétions honnêtes,
++ au lieu d'aucune.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 4 0 154962b908d4ff2709cb81e953c43f20
++ - [Compilateur](compiler.md) décrit l'exécution du compilateur Scala depuis un programme.
++ - [LSP](lsp.md) fournit complétions et diagnostics à un éditeur.
++ - [Markdown](markdown.md) affiche des blocs de code colorés.
++ - [Terminal](terminal.md) et [HTML](html.md) sont les deux formes de sortie.

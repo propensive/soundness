@@ -1,0 +1,1798 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1d8e8b9b6df897c60b37185cecc51b16
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 16a2418f4768c50e17d260c62787f987
++ info   構造化並行性：監督されたタスク、プロミス、キャンセル、リトライ、VM イベント
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 092655dfa0becd181d9291a1362e0f48
++     _Parasite_ は、並行処理に普通のブロックの形を与える。
++     すべてのタスクは、それを所有する**監督されたスコープ**の中で生成され、スコープはそのタスクが決着するまで完了しない。タスクはそれを開始したコードより長く生きることはできず、タスクの失敗はそれを合流するコードに届き、スコープをキャンセルするとその下のすべてがキャンセルされる。
++     したがって、並行プログラムの構造はその入れ子に現れる。
+
+@ 0 7 0 17bedbf742fb03ca0119af453d9ea6b7
++     中心となる型は少ない。
++     `supervise` はスコープを開き、`Monitor` を導入する。これは、待機、スリープ、譲渡といったすべての中断が要求するケイパビリティである。
++     `async` はスコープ内のモニターの子として `Task` を生成する。`task` は名前付きの同じもので、`daemon` はスコープの終了時にキャンセルされる投げっぱなしの処理を生成する。
++     タスクの `await` はその結果を返すか、本体が発生させたエラーを型を保ったまま呼び出し側の `Tactic` を通して届ける。キャンセルやタイムアウトは `Async.Error` として届く。
++     `Promise` は、おそらく別のスレッドから後で与えられる値で、一方がそれを待ち、もう一方がそれを満たす。
+
+% 2 1 0 1c87e544bad5b93d02f97675e9f8f038
+
+% 3 1 0 0177da77819900901e2486dbef5d507e
+
+% 4 1 0 05fd99038f13bc471c414b78e51bb33d
+
+% 5 1 0 161672863c3b5cfc0eedb4f9cfc1c91d
+
+% 6 1 0 163040b3086bbfc802548054429d5a11
+
+% 0 1 0 03165a42e74b3e190211c1b579e78b99
+
+% 2 1 0 179610eb5e37e7ee1ae4b9aa17921b76
+
+% 0 1 0 101d18c042acd1c71161a4fdae7ea144
+
+% 0 1 0 1c55d1003a1cd276051d45d739f17181
+
+% 0 1 0 0487f5ec90c7438e0a08d901f8c00042
+
+% 1 1 0 19aa31b5449c726b1b8b7110d3455f79
+
+@ 0 11 0 028f078ad4b187c21eadf49b2230e5fd
++     二つの選択は given を名前でインポートすることでなされ、`import pkg.*` は given をインポートしないので、`import soundness.*` はどちらも代わりに行わない。
++     **スレッドモデル**は `threads` オブジェクトの `Threading` である。`virtualThreads` は各タスクを JVM の仮想スレッドで、`platformThreads` はプラットフォームスレッドで、`adaptiveThreads` は JVM が持つほうで、`pooledThreads` は細かいファンアウトのために再利用可能なキャリアスレッドで実行し、`javascriptThreads` はイベントループのために単一のストランドで即座に実行する。
++     `probates` パッケージの**検認**は、親の本体が完了したときにまだ実行中の子の運命を決める。`awaitProbate` はそれを待ち、`cancelProbate` はそれをキャンセルし、`failProbate` は親の合流で `Async.Error` を発生させ、`panicProbate` はパニックする。
++     すべての中断には、スコープ内に `Tactic[Async.Error]` も必要であり、`strategies.throwUnsafely` か `safely` ブロックがそれを与える。
+
+@ 0 5 0 05cc93ae0803d1521773a03246fdc9dc
++     **キャンセル**は協調的である。
++     `task.cancel()` は、タスクが*一時停止*する場所（`snooze`、`await`、`attend`）でタスクに割り込み、タスクが*譲る*場所、つまり他に一時停止しない本体の中の `relent()` 呼び出しでタスクを止める。
++     `sleep` は割り込めない一時停止で、何が起きても期限まで待ち切る。キャンセルされたタスクは、その後の次の `snooze` か `relent()` で止まる。
++     一時停止も譲りもしないタスクは、完了するまで実行される。
+
+@ 0 6 0 0a0f7af91ef2aee21e46c3c6e60d55b4
++     **エラー**は二つの方向に伝わる。
++     タスクの本体はそれ自身の `Tactic` を通してエラーを発生させ、エラーは本体が宣言した型のまま `await` に届く（`Task[Int] emits CueError`）。
++     デーモンには合流がないので、その失敗はスコープ内の `Probate` に送られるか、外側の `contain { … }.protect { … }` 領域に封じ込められるか、スレッドの捕捉されない例外のハンドラにまで上がり、そこで `Vm.intercept[Fault]` がそれを見る。
++     一時的な失敗は、`retryTenacities` パッケージの `Tenacity` のもとで `retry` によってリトライされる。
+
+@ 0 3 0 0c3f88674ab9faf71c909550d1b4eb58
++     タスク間の**共有状態**は、`rudiments` ライブラリのアトミックセルと `Mutex`（`Atomic[Int]`、`Atomic.Ref[T]`、`Mutex`）で書く。これらはそちらで説明されている。parasite 自身の `Promise` と `Timeout` はそれらの上に作られている。
+
+@ 0 4 0 1db8a1d91d9be7b206dee6b1fa176b04
++     その下では、`Supervisor` が `Strand`（JVM と Scala Native ではスレッド、イベントループでは実行キューのエントリー）をフォークしてパークし、プラットフォームの継ぎ目のすべてを担う。`Threading` の given がそれを一つ渡し、`supervise` はその上に `Monitor` の木を根付かせる。
++     ライブラリのソースセットは次のとおりである。
+
+@ 0 13 0 1d830bc28948717f00b208d1b4a70d19
++     - `parasite.core`：プラットフォームに依存しないすべて。`supervise`、`async`、`task`、`daemon`、`Task`、`Promise`、`Monitor`、`Worker`、`Probate`、`Timeout`、`Tenacity`、`retry`、`threads`、`probates`、`retryTenacities`、`supervisors`、`unsupervised` の given、`PlatformSupervisor`、`JavascriptSupervisor` と抽象クラスの `PoolingSupervisor`、そして `Vm` のインターセプトである `Shutdown` と `Fault`（発火には JVM が必要）。
++     - JVM 上の `parasite.core` は、`VirtualSupervisor`（Loom の仮想スレッド）、`AdaptiveSupervisor`（JVM が持てば仮想スレッド、そうでなければプラットフォームスレッド）、`PooledSupervisor`（仮想スレッドのキャリアのプール）を加える。
++     - Scala Native 上の `parasite.core` は、Native に Loom がないので、同じ三つの名前をプラットフォームスレッドの上で宣言する。`VirtualSupervisor` と `AdaptiveSupervisor` はプラットフォームスレッドをフォークし、`PooledSupervisor` はそれをプールする。プールが最も節約になるのはここである。
++     - `parasite.jvm`：JVM の管理 Bean の上に作られた `GarbageCollection`（`Vm.intercept[GarbageCollection]`）と `Heap`。
+
+@ 0 8 0 0c525426f66aeac80852f9675a461ebe
++     `Root`、`ThreadSupervisor`、`emits` 型エイリアスを除くすべてが `soundness` アンブレラにエクスポートされる。これらは `parasite.Root`、`parasite.ThreadSupervisor`、`parasite.emits` として参照する。`threads`、`supervisors`、`unsupervised` オブジェクトと、`probates`、`retryTenacities` パッケージはアンブレラ自身のものと統合されるので、ユーザーは `import soundness.*` と書き、それからスレッドモデルと検認を一つずつ名前でインポートする。
++     これらの given の一つを通してグローバルなスーパーバイザーに到達する公開クラスやオブジェクトは、スーパーバイザーがケイパビリティなので、`uses` 節でそれを宣言する（`object Main uses parasite.threads`）。
+
+% 0 1 0 0b30bad04a0176020515f8c74e05e076
+
+% 0 1 0 1a7472dea3a55aea1bf65f9694c58caa
+
+% 0 1 0 005785eafe647448022da931f3d403d5
+
+% 0 1 0 1f616ee6996b280f1b82ac55481111fc
+
+% 0 1 0 1f1932bf4b4524c7149be91eee5800cd
+
+% 0 1 0 1b7835fd35626fb718d015cd94812a52
+
+% 0 1 0 13e40615ec93d7231761136d66258183
+
+@ 0 1 0 02146096468c509b08e818b0671b2f02
++ entry .supervise   監督されたスコープを開く。タスクがその下で生成され合流するルートの `Monitor` である
+
+% 1 1 0 050f3828d0ed40de0135b96bc6330b1c
+
+@ 0 5 0 11b7c8956fa0dc330d6de5c0fecf2dd2
++       `supervise(block)` は、新しい `Monitor`（`Threading` の given が渡すスーパーバイザーの上の `Root`）をスコープに置いてブロックを評価し、ブロックの結果を返す。
++       モニターは `async`、`task`、`daemon`、`await`、`snooze` をはじめとするすべての中断が要求するものなので、すべてのタスクは最終的に `supervise` に由来する。スコープは木の根であり、その枝はその下で生成されたタスクで、それぞれがスコープ内の最も内側のモニターの子である。
+
+@ 0 3 0 0bc18e607440866d09f608ec0bb2c76e
++       これには `Threading`（`threads` から名前でインポートする）と `Codepoint` が必要で、その結果は `Tactic[Async.Error] ?=> result` なので、呼び出す場所のスコープに `Tactic[Async.Error]` がなければならない。`strategies.throwUnsafely` か `safely` ブロックがそれを与える。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 17123fb404c6647a1624cd5bb7e11453
++         label 何も含まないスコープ
+
+% 1 1 0 1072d1d1fd0fb0aa13816acd16a90010
+
+% 0 1 0 1808f1bc7a8d73be1e8552eecae778a7
+
+% 0 1 0 187825beab6c18ac06b9a8f2767a7289
+
+% 0 1 0 10f1b0ee07db2add00695d4d9ebf519f
+
+% 0 1 0 0798179fd46066390d73f0f2d8a2bf3e
+
+% 1 1 0 0303efffea63588502988f82044b17d7
+
+% 0 1 0 07e7100702bf8c990a7742427f66cfca
+
+% 1 1 0 01d52a165bd404831ae6430df8497f20
+
+@ 0 1 0 1e5c985b1237167a01c93190f63e7b79
++         label 合流されるタスク
+
+% 1 1 0 1b8e4167bcfa3df718482da7b544ae46
+
+% 2 1 0 1dba25fff79a96fa0a42d69b31d41cd5
+
+% 0 1 0 10149774b6e4866a08a866cb8153339d
+
+% 0 1 0 0434809cb4fe6e4d10c48759522703c1
+
+% 1 1 0 0669094f2dcb42ea0f7fe6002f264dbf
+
+@ 0 1 0 0635b852429bd229032893471b28c7d9
++         label 子の子
+
+% 1 1 0 04e81f12023b0479146082c9cdc1a0e7
+
+% 2 1 0 19c1bd2475744b0305391133b316f474
+
+% 3 1 0 1b56899b14b899d3022102583a5d8147
+
+% 0 1 0 1196e31942c3da301d90e32379512fff
+
+% 0 1 0 031576eb8236968118852ca3a67b330f
+
+% 0 1 0 1aca4ecdc3202f491be58fe331b472b9
+
+% 1 1 0 16bb20bcbc9db5d115a0cd82ec189e28
+
+@ 0 1 0 19448b1e3bbb7a4c1bc02e4af2420662
++         label 親が忘れ、検認が合流させる子
+
+% 1 1 0 098090ab95d013ec0155d28ba6781707
+
+% 2 1 0 172e8ea2be56a2e80391864fc0de96cf
+
+% 3 1 0 0af911824730d65b0322b42db5114223
+
+% 0 1 0 01ef5f69c8471c790011c46a55f30a5a
+
+% 0 1 0 19be6ad1d4e4ed7a096b0408dae92b9c
+
+% 0 1 0 0b2bb134b85073ab1dcc039ef1d6445a
+
+% 0 1 0 114d5b4418b78e120e5cdc7980964050
+
+% 0 1 0 04cf785d1d6cf951175d64b84a0d0072
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 178ee7d6586be3dc1f94436719b3fee8
++       親タスクは子が完了するまで完了しないので、最後のフレームの `await` は内側のタスクが終わってからしか返らない。`probates.awaitProbate` のもとでは親がそれを待ち、`probates.cancelProbate` のもとでは代わりにそれをキャンセルする。
++       ルート自身は独自の後始末を行わない。その子は各親が完了するときに検認によって片付けられ、`supervise` はブロックが返るときに返る。
+
+% 1 1 0 1e2b44699fe6eb8f1c92fdca8ec688ba
+
+% 1 1 0 13f8fb2ba405195a0266669581316f55
+
+% 1 1 0 10fa5b3070d031ec18c31ac4e5e57324
+
+% 1 1 0 1198d43569e32b1209456e71047d55cd
+
+@ 0 1 0 0b183906a9d467da1d3bc95535a2e28d
++ entry .async   スコープ内のモニターの子としてタスクを生成し、そのハンドルを返す
+
+% 1 1 0 0553be4b15ad8dd81735ebca7d1f387c
+
+@ 0 7 0 0990e146f5321e080da5c147c13f5b1b
++       `async(body)` は、スコープ内のスーパーバイザーの新しいストランド（`threads.virtualThreads` のもとでは仮想スレッド）で本体を開始し、すぐに `Task[result]` を返す。
++       本体はコンテキスト関数であり、`Worker`（タスク自身のモニターなので、入れ子の `async` はその子になる）と `Tactic[error]` を与えられる。ここで `error` は本体が発生させるエラー型のユニオンで、同期的な `raises` とまったく同じように推論される。
++       ハンドルの型はそのユニオンを `Task[result] emits (error | Async.Error)` として持つので、`await` は発生したエラーを型を保ったまま呼び出し側の `Tactic` を通して届ける。
+
+% 2 1 0 16b60a40480960fa0a4f8ed18d0602ff
+
+% 3 1 0 0b5314df08d7fe2603a88b037b6becfa
+
+% 4 1 0 037e23e2843ba4490d8bd7dc8b170a9b
+
+% 5 1 0 018aa8e6a44d481013d53cbaa8529f0e
+
+% 6 1 0 17fcbefe7d9e8f9918d83a0798c04b30
+
+% 8 1 0 0441da5430f56a1f1ce552f78e10d649
+
+% 10 1 0 0c36f69a857bcb991e88a6d2472b4d4e
+
+% 0 1 0 0fa341e506c4ad061fc8705205abbc20
+
+% 0 1 0 0869f69c985f88f519762e2a36e8191e
+
+% 0 1 0 0f0d7613324c05db191c9b533c10c8d8
+
+% 0 1 0 1e216b4fdcb8b19d11a272cdb0ee8633
+
+% 1 1 0 177c2db543e45bf70151cd3238ed4c05
+
+@ 0 8 0 085ef2bb6891a899065581137db2c019
++       スコープ内に `Monitor`、`Probate.Shared`、`Codepoint` が必要である。
++       本体はモニター、他のタスクのハンドル、普通の値、そして任意の `Durable` ケイパビリティ（ロガー、接続）を捕捉できるが、外側の `Tactic` や `Emit` は、それをインストールしたスタックに属するので捕捉できない。本体自身の戦術を通してエラーを発生させれば、そのエラーは `await` に届く。
++       排他的なリソース（`Producer`、状態を持つパーサー、開いたハンドル）も捕捉できない。本体の中で開くか、`transfer` で引き渡す。
++       本体の戦術は `AsyncTactic` であり、スタックに閉じ込められた境界をスレッドをまたいで破る代わりに純粋なエラーを投げる。ワーカーはそれを失敗した結果として記録する。
+
+@ 0 2 0 0185b5c4484779201f9137b75b84f594
++       本体は `async` を呼んだスレッドの `Stdio` の迂回のもとで実行されるので、ゲストを囲むホストの `Stdio.divert` は、ゲストが開始するすべてのタスクに及ぶ。
+
+% 1 1 0 13ec6c19cd61fbac1bd720da6a459e76
+
+% 1 1 0 017f7c55b650eb61080424fadb52be61
+
+% 1 1 0 05b5606c47eef5a614f85bf2dc534b29
+
+% 0 1 0 04bae107bbf62b4400fa6e06f74a5a45
+
+% 1 1 0 15e258da9a9ece0a18bd6f8f1b24d5e2
+
+@ 0 7 0 015191b34d8307301a2284d0b7eb7eba
++ entry .task   名前付きの `async`：`task(n"worker")(body)`
++     `async` と同じだが、`Name[Async]` を取り、それがタスクの `Monitor#name` となり、その `Monitor#stack` の一区画となる。
++     名前はコードのコンパイル時に `Async.Rules` に照らして検査される。名前は文字で始まり、文字、数字、`-`、`_` だけを含むので、スタックのパスを組み立てる区切り（`:`、`/`、`@`、`.`）を含むことはありえない。
++     名前付きのタスクは、実行中のプログラムを読みやすくする。モニターのダンプには、匿名のスレッド番号ではなく `virtual://server//connection-4//reader` と表示される。
+
+% 2 1 0 0e2ace4fb560cb081ef436416898ee39
+
+% 3 1 0 01122e47edb841a4095ca531c6b35cf7
+
+% 4 1 0 193af1ba499d4db20e73c554f79e26e5
+
+% 5 1 0 1c8c52bb457600cf0086c09b70645b58
+
+% 6 1 0 022734c02a8d5eb607b84916b9436e91
+
+% 0 1 0 084b6d70a9e248330db7a5da1d369080
+
+% 2 1 0 09c132595624ae5618601d8e8631109d
+
+% 0 1 0 1291d567e6b7492a1b695b1c304cdfb4
+
+% 1 1 0 0330586609ddd00f170e8e77bf65420c
+
+@ 0 1 0 176deae0d34853c2023a02931ce63e47
++ entry .daemon   スコープの終了時にキャンセルされる投げっぱなしの処理を生成する
+
+% 1 1 0 02d8aa0c0dfcb1a5018d3d43e7ab49cc
+
+@ 0 4 0 0575419718e425280880ca62be185e20
++       `daemon(body)` は、決して合流されないバックグラウンドのタスク（リスナー、ポーリングのループ）を開始する。それは終わるまで、または親が完了するまで実行され、親が完了すると、検認が普通の子に適用するポリシーにかかわらず、親の検認がそれをキャンセルする。
++       結果は `attend()` と `cancel()` を持つ `Daemon` ハンドルである。
+
+% 2 1 0 0200884bee24609b1cc07e429d0a6a58
+
+% 3 1 0 165dba99e08953f60492e75b5849a5aa
+
+% 4 1 0 177c5591b524a44d062b7d85d435c3f2
+
+% 5 1 0 1bd6aaa0af85766213210030e02c0e58
+
+% 6 1 0 1436e43a16c5afed07416ae6693bc3da
+
+% 8 1 0 1d8bfcfdfd2b53301b46c01af66a96ef
+
+% 9 1 0 01329c2e3b70c4db1ab24ce3e809b4f2
+
+% 1 1 0 0cb6a7377109d5121a849f4883689727
+
+% 0 1 0 0b0da39ca8ac65421ec796298588bf83
+
+% 1 1 0 1a9c4f33138db0b10a5c278604e360e3
+
+@ 0 7 0 10845f2a3c290491001f7a37b96c6d26
++       デーモンの本体は*衛生的*である。本体は純粋なコンテキスト関数（`?->{}`）なので、普通の値を捕捉し、自分のケイパビリティを開くことはできるが、ワーカーより先に寿命が尽きうる外側のスコープのケイパビリティ（`Tactic`、`boundary.Label`、ファイルハンドル）は捕捉できない。
++       エラーを届ける合流がないので、発生したエラーや投げられたエラーはワーカーを失敗させ、スコープ内の `Probate#trap` に送られる。`contain { … }.protect { … }` 領域がそれを受け入れることがあり、そうでなければスレッドの捕捉されない例外のハンドラにまで上がり、そこで `Vm.intercept[Fault]` がそれを観測する。
++       黙って捨てられるものはない。
+
+@ 0 1 0 1fdaaebcd94a43e21ddb10803032392d
++       スコープ内に `Monitor`、`Probate.Shared`、`Codepoint` が必要である。
+
+% 1 1 0 0cbc83d0389bf3790c6fa023af65c392
+
+% 1 1 0 1ec86bcfc7eb8d970dfeb33321702c4e
+
+% 1 1 0 065e07f7dde3eabf0fb16ed1d2908e9e
+
+@ 0 1 0 0ed1cefd1fa3947714cd0a1ad081bb5a
++ entry .transfer   呼び出し側から引き渡された排他的なリソースを所有するタスクを生成する
+
+% 1 1 0 0c06a73d0c90d65910f66d506cca186e
+
+@ 0 7 0 060e6d8f38c37b3015116758405e19b4
++       任意の `resource^` に対する拡張で、`resource.transfer(body)` と `resource.transfer(name)(body)` がある。
++       タスクの本体は共有されたケイパビリティしか捕捉できないので、排他的なリソース（供給する `Producer^`、汲み出す `Stream^`、実行するループオブジェクト）を閉じ込めることはできない。
++       代わりにそれは*消費*される。呼び出し側はもうそれを使えず、本体はそれを最初のコンテキストパラメーターとして受け取る。これは `Task.Owned[resource]` というキャリアで、その `apply()` はリソースを新しい排他的な参照として与える。
++       他の二つのコンテキストパラメーターは、`async` と同じく `Worker` と `Tactic[error]` である。
+
+% 2 1 0 1b5606150a71a46c1ff2cb1dbc717db0
+
+% 3 1 0 10fc163c6d1d35930759c1e9293acb31
+
+% 4 1 0 00ff72eef9e5f9401f6a2806b4d5dd2a
+
+% 5 1 0 10e4fe3e6173ec4d1c8fa331f7dc433f
+
+% 6 1 0 19a56be5caf50be20c9b45bf835f8013
+
+% 3 1 0 1f88d3a5d8e76f78198711b50df14fcb
+
+% 0 1 0 1dbdb52dc4e77c7d06b3a44229413f99
+
+% 0 1 0 0ca4128940e2f0fe1a360648ed340765
+
+% 0 1 0 09b08c93142ae15b17d5c984a70fefd3
+
+% 0 1 0 0f2c62d16c9f76930eb3ced4e460b932
+
+% 0 1 0 05f18dc934b199ad063116d94fa384ce
+
+% 0 1 0 00ae841ef5ea47b00eb90a6ec228180d
+
+% 1 1 0 1fe7ce47d3214642006014acf4f18800
+
+@ 0 3 0 00e4dd11db1ec7940b63bebf588a5770
++       プロデューサーを引き渡す*前に*読み取り側（`producer.iterator`）を取っておくこと。引き渡した後はそこから何も取れないからである。
++       結果の型は `async` と同じ `Task[result] emits (error | Async.Error)` である。
+
+% 1 1 0 15633445ab143c70168d3fdc41c82c17
+
+% 1 1 0 04dda7059a47ce64030d83e7c9fd79c6
+
+@ 0 5 0 034b131fe5227e091fc959a4b6ff2e95
++ entry .monitor   スコープ内の `Monitor` を値として表す：`monitor.name`、`monitor.stack`、`monitor.cancel()`
++     最も内側の `Monitor^` を transparent inline で召喚する。タスクの本体の中ではタスク自身の `Worker`（`Monitor` として型付けされる）であり、`supervise` の直下では `Root` である。
++     `monitor.name` は名前付きタスクの名前、`monitor.stack` は親をたどった完全なパスであり、`monitor.cancel()` は現在のタスクをキャンセルする。
+
+@ 0 8 0 1740bb4702d550a5015fa4a6d04ab117
++ entry .relent   他に一時停止しない本体の中のキャンセル地点
++     `relent()` は、タスクが普通に実行されている間は何もしない。タスクがキャンセルされていれば、そこで `InterruptedException` を投げるので、本体は値を生まずに止まり、ハンドルの `await` は `Async.Error(Cancelled)` を発生させる。
++     一時停止しない処理（データに対する長いループ）は、これを呼ぶことで自らキャンセル地点を設ける。普通は反復ごとに一回呼ぶ。譲りも一時停止もしない本体はキャンセルできず、完了するまで実行される。
++     スコープ内に `Worker` が必要なので、タスクの本体の中でしか呼べず、`Worker#relentlessness` にも数えられる。
+
+% 2 1 0 04cb9243826b78ee00c132482fc7cdf5
+
+% 3 1 0 0ed2ebea5545c8651a73a030bb9e481e
+
+% 4 1 0 0d6042a7bb6c9bfd1b9b623a7e6ab0c9
+
+% 5 1 0 0bdc778326533ef1198dec4e54321082
+
+% 6 1 0 1d8857f00475cb9216824dc87ff55d20
+
+% 8 1 0 005fe24846112d740af4dfc7416fc72a
+
+% 0 1 0 0ea19bb3239b87bd02f692476d15c7d4
+
+% 0 1 0 170c83660dd53373070ade442146f17e
+
+% 0 1 0 12b18b9da1057aec0e03dc68627675e1
+
+% 0 1 0 1a23f8f148464cd713b15f4f2f84d39d
+
+% 0 1 0 1880bda0730213cc0017fdf8ef03714d
+
+% 1 1 0 000ae23ef16b937b1562ab93564aac62
+
+@ 0 4 0 044feab355a9da6710aaafe28b95e369
++ entry .cancel   スコープ内のモニターをキャンセルする
++     `cancel()` は `monitor.cancel()` である。タスクの本体の中ではそのタスク自身をキャンセルし、その `await` は `Async.Error(Cancelled)` を発生させる。`Root` のもとでは何もしない。
++     自身をキャンセルしたタスクは、次の一時停止か `relent()` で止まる。
+
+@ 0 10 0 118646ca0e6d90cf02e9d7ee9a23bdf1
++ entry .snooze   一定の時間、またはある時点まで一時停止し、キャンセルされればすぐに目覚める
++     キャンセル地点である。`snooze(2.0*Second)` は二秒間一時停止し、`snooze(now() + 2.0*Second)` は今から二秒後まで一時停止する。キャンセルされたタスクはどちらからも `InterruptedException` とともにすぐに目覚め、その `await` は `Async.Error(Cancelled)` を発生させる。
++     引数は任意の `Schedulable`（`quantitative` の時間、`aviation.Timespan`、`aviation.Instant`）であり、時間の長さと時点のどちらを意味するかはその型が示す。
++     素の `Long` は、単位が名前で選ばれて初めて受け入れられる（`abstractables.millisecondsAbstractable` または `epochMillisecondsAbstractable`）。時間の長さの単位と時点としての読み方の両方がスコープにあると、曖昧として拒否される。
++     スコープ内に `Monitor` が必要である。
+
+% 2 1 0 0c343e33fbce5dfc10e38d5d16a643a6
+
+% 3 1 0 123e956de5b68e1005699da6d3ec4631
+
+% 4 1 0 04ce0c1403a3f85f0b072c2a763948f0
+
+% 5 1 0 045c8787a853d3590103383c8ff01408
+
+% 6 1 0 0f855d49c1ca983d060a0f970b7df2de
+
+% 8 1 0 1b69ab818d0a46bd033967354c2826ce
+
+% 0 1 0 0d79beab36fb8a6a16ea3186d0acc708
+
+% 0 1 0 05e4b6c3914849191efe4fe6a9421b76
+
+% 1 1 0 12f6228ef62896b911fb563854ab2b9f
+
+@ 0 3 0 0704b91ae4bad2fe18c764a97d4fb5bd
++     `JavascriptSupervisor` のもとでは snooze はすぐに完了する。イベントループを止めずに遅らせることはできないからである。
++     *snooze* は目覚まし時計のスヌーズボタンで、二度目のアラームがそれを途中で終わらせることがある。`sleep` は眠り通すものである。
+
+@ 0 6 0 08b811b6701d99b81923194e483e1cab
++ entry .sleep   一定の時間、またはある時点まで一時停止し、常に期限まで待ち切る
++     キャンセル地点ではない。早すぎる目覚め（偽の目覚め、またはキャンセルが届ける割り込み）があると、残りの時間だけ再びパークし、次のパークがそれで途中で終わらないように割り込みを消費する。
++     タスクのキャンセルされた状態は残るので、それでも次の `snooze` か `relent()` で止まる。
++     引数は `snooze` と同じく任意の `Schedulable` であり、スコープ内に `Monitor` が必要である。
+
+% 2 1 0 0fe87125f459aa1013383fd6050198a8
+
+% 3 1 0 0fd00a81d56e65730acffcee4889f3fa
+
+% 4 1 0 16e11043fa91e016031e31770d8c309f
+
+% 5 1 0 19f2f884cc08f9fc1b4e814940a2142b
+
+% 6 1 0 06499f7348ec10c812bd1f77025d15a6
+
+% 8 1 0 0ad8f0f5d05cd42b0fb1a261a7ebf817
+
+% 0 1 0 186f23d34a2943651b0a729968da3bec
+
+% 0 1 0 08725cfc8ba721281607a9cb18d6ac89
+
+% 1 1 0 1510355f9eeccb0c0f61a48cfcf300c3
+
+@ 0 2 0 182197317f3bf2820f742c982b11a881
++     二つの一時停止はただ一つの点、つまりキャンセルがそれを早く終わらせられるかどうかだけが異なる。その名前は調べるものではなく覚えるためのものである。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 0549da2c3318c5d600e74b1a34afff19
++       label 一時停止するところで割り込まれる
+
+% 1 1 0 182628244fa94a4506e0b7da0259607a
+
+% 0 1 0 119ae55bd9f4790a17bca6e4f5c3c415
+
+% 1 1 0 0d4dada8ae3b4e290aaea1a63a696c15
+
+% 2 1 0 04e0a8ffb7cc380909e2f1b2b88a683e
+
+% 0 1 0 083da325c932fbfc10ff4d7edbfef4bb
+
+% 0 1 0 02158b3edc1d7df505f95270765b90f4
+
+% 0 1 0 116f097b58d7bf3e0553257ee05a6f5d
+
+% 2 1 0 0d43be25a4b6a10d0047d40ce610a519
+
+% 1 1 0 0cc55b21c906a617129046cc43d24de7
+
+@ 0 1 0 1e681cf6e79c43a01ce12d3c45fb5c71
++       label 譲るところで止められる
+
+% 1 1 0 12944ff48551cb690432c1781d5ee4e3
+
+% 1 1 0 04ab673a4f4d477b0051fb3bc265efdb
+
+% 2 1 0 0383818c353e2f801e906a2284d01d81
+
+% 0 1 0 0a7c8792664542461bbc86df26db9a3c
+
+% 0 1 0 12cad200d87825f6065e59cfd0e4912c
+
+% 0 1 0 1ac8b9bbcc94e8451c4d4b0daf6d1018
+
+% 0 1 0 0e3a1e5970a0a94611274bcb9945e870
+
+% 0 1 0 00fc80522718cac01437241186610c1a
+
+% 2 1 0 190ba3fd8f27e8fa06a3a594cb9b385c
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 6 0 03658e3852f3a9de15d29464ac59a481
++ entry .concurrent   `Chain` の各セルをそれぞれのタスクで強制し、ブロックするソースが消費側をブロックしないようにする
++     `Chain[result]` に対する拡張である。`stream.concurrent` は同じ要素を持つチェーンで、「次のセルがあるか」という問いがタスクの中で問われて待たれるので、ライブなソースでブロックするセルの強制は、それ自身のストランドで起こる。
++     チェーンの残りも同じように遅延して包まれる。
++     `Monitor` と `Probate.Shared` が必要で、強制するタスクがキャンセルされると `Async.Error` を発生させる。
+
+@ 0 1 0 15fd54c603f364c612e27d647ec4060e
++ entry .concurrently   番号付きのジョブを上限のある数のタスクで実行し、結果をジョブの順に返す
+
+% 1 1 0 102ed8216b1589d7045719d9ea87d425
+
+@ 0 7 0 1c77acdace4b047407f15a8f52448d0d
++       `concurrently(count, parallelism)(job)` は、`job(0)` から `job(count - 1)` までを最大 `parallelism` 個のタスクで実行する。各タスクは共有のカウンターから次の番号を取り、すべてが完了すると、すべての結果をジョブで添字付けた `Array[result]` として返す。
++       これは小さなジョブの一群のための上限のあるファンアウトである。タスクはスレッドであり、その開始と合流には数マイクロ秒かかるので、生成のコストは `count` 回ではなく `parallelism` 回だけ払われる。要素の数がコアの数を上回り、それぞれが安価なときは、要素ごとに一つの `async` を使うよりもこちらを選ぶべきである。
+
+% 2 1 0 029ff94fe45712e31e3af49c4b6e8016
+
+% 3 1 0 1ec6e19bd873f00e164eb77a06a6ba6a
+
+% 4 1 0 158681ba0d0492ca1e228de09bf9a276
+
+% 5 1 0 17be6f0c429daa7412827526d0d1b02a
+
+% 6 1 0 0736f41a5ee35e77127b64db01ed7e17
+
+% 8 1 0 0a70ed584e9b739a0b450069aaba743a
+
+% 0 1 0 1f2cc576b0593fdb0fc3d155968c0e63
+
+% 1 1 0 05b92fca68a2dc6b0ed13dcbee491dbf
+
+@ 0 6 0 067728dbbf28728201443580f1cc86ee
++       どのジョブも、それより前のジョブが取られる前には実行されないので、負荷は自ずと均衡する。遅いジョブはそのタスクを占有し、他のタスクは残りを進める。
++       ジョブの例外はそれを実行したタスクを失敗させ、`await` の場合と同じく合流で現れる。
++       ジョブが零個ならタスクは開始されない。ジョブが `parallelism` より少なければ、ジョブと同じ数のタスクだけが開始される。
++       ジョブは `Int ->{caps.any.only[Durable]} result` なので、タスクの本体が捕捉できるものしか捕捉できない。
++       `Monitor`、`Probate.Shared`、`Codepoint`、`ClassTag[result]` が必要である。
+
+@ 0 1 0 076d35bbf17e6936184984a9bb068ebd
++ entry .retry   スコープ内の `Tenacity` のもとで、成功するか諦めるまでブロックを繰り返し評価する
+
+% 1 1 0 1c776061f9eb0ef31400a3bcb1ca9255
+
+@ 0 7 0 0e7d581cd971f95e16383f244fe04167
++       `retry(body)` は本体を実行し、本体には二つの操作が貸し出される。`persevere()` は `Tenacity` が定める遅延の後にもう一度試みることを求め、`surrender()` はすぐに諦める。
++       値を返せば成功である。
++       スケジュール（各試行の前にどれだけ待つか、いつやめるか）は `Tenacity` の given であり、`retryTenacities` から名前でインポートするか、`Tenacity.exponential` や `Tenacity.fixed` と `limit` で組み立てる。試行が尽きると、試行の回数を示す `Tenacity.Error` を発生させる。
++       遅延は `snooze` なので `Monitor` が必要であり、したがってキャンセルされたタスクは次の遅延で諦める。
+
+% 2 1 0 095d8d7f3c4a586b17a6212c4ca068d8
+
+% 3 1 0 18d08dde63b75635108d79ad63975117
+
+% 4 1 0 0ce815a51fa7d71b0495e9330adf7850
+
+% 5 1 0 03b6d7879a6c030d040ff83c4367e7a7
+
+% 6 1 0 1e5a8d95dfeb9e9018d42bdf28e0a58e
+
+% 0 1 0 1e584f3ed9c28922132a771abd922a74
+
+% 0 1 0 13e88d4e818157431c6c690cbc52f87e
+
+% 0 1 0 140918b45358b0fb1cc3a678e83fb535
+
+% 0 1 0 0588b1af9b78c097198d5f2636868591
+
+% 0 1 0 1a5ba632e79762a411a82b599af88a16
+
+% 2 1 0 08a66a3ade86a5510be37673ba736baa
+
+% 0 1 0 10e3362d9e0bc4d918faad165a6d7e55
+
+% 0 1 0 00f50d1897b6665d18ee2308bbb7950f
+
+% 0 1 0 146f70b4eb10b4d6136d8c433bd1d388
+
+% 1 1 0 1725c3ec3b5d3c6501d03512a1a580e0
+
+@ 0 2 0 168afedd6b76d53a0d539dc38223bf31
++       したがって本体は、リトライする価値のある失敗と決して成功しない失敗とを区別し、残りはスケジュールが決める。
+
+% 1 1 0 1215ffb905649b9904bdd1347d2e28e7
+
+% 1 1 0 033bc02c0529034b11a5b0af24dea8c8
+
+@ 0 1 0 0a7eda08355af69300c08e281cb173cd
++ entry .contain   ある領域で投げっぱなしのワーカーから逃れた例外を捕らえる：`contain { … }.protect { … }`
+
+% 1 1 0 0c5b2531ea2045f21e462d7e59a5b281
+
+@ 0 8 0 0da279bfe638b83e13525d1ad8c81fb1
++       `contain(handler)` は `Containment` を組み立てる。これは `Probate` であり、その `protect(body)` は本体の範囲にそれをインストールする。その中で生成された `daemon` や放棄されたタスクは、そこから逃れたエラーをハンドラに送る。ハンドラは `Error` から `Remedy` への部分関数である。
++       `Accept` はエラーを消費し、`Reject` はそれを外側の検認に渡し、`Escalate(other)` は代わりのものを渡す。ハンドラが一致しないエラーも外側へ行くので、封じ込めは入れ子になるとそのまま合成され、根まで至る。根では、受け入れられなかったエラーがスレッドの捕捉されない例外のハンドラに届く。
++       子の運命のポリシーは外側の検認のものであり、変わらない。
+
+% 2 1 0 187ebb673c1fa66617ffda1364b01fb7
+
+% 3 1 0 17bf1640d757e852113e093964a10bf5
+
+% 4 1 0 02a8880327f734560f93fbb352498250
+
+% 5 1 0 066b0706a92af9371e4b187a662f34dc
+
+% 6 1 0 1226639b79f0d0550507dba364b81273
+
+% 8 1 0 192a1d1729d8abb4160b26d2f7254189
+
+% 10 1 0 13706cb99b44c08b15b7c55259643b34
+
+% 0 1 0 12bd77e5ae40d35f03f814d50576717e
+
+% 0 1 0 00b061d527e1723d0ed1d80ad2e6fa3d
+
+% 0 1 0 10668dddf3dbacb90364827279b84605
+
+% 0 1 0 1ae5e6a73febdd4b0be9a1e832d582dc
+
+% 1 1 0 0bf56b97a94816e903e82a1f161213ef
+
+@ 0 4 0 19007cf81e168a091642e956ac37a7ca
++       これは `contingency` の型付きの `trap`/`handle` とは別物である。それらは呼び出し側のスタック上の、宣言された、*発せられた*エラーを扱う。デーモンはそこへ届けられないので、`contain` はデーモンが投げるものに対する包括的な受け皿である。
++       スコープ内に `Probate.Shared` が必要で、それが連鎖の外側の環となる。
+
+% 1 1 0 06288e7b91a56d41099a8ec631b2fcd5
+
+% 2 1 0 07c33cb78045374915f906091bd271c4
+
+% 1 1 0 0bba3568ab56d829018186fce06b63f7
+
+@ 0 6 0 1c95f864e1fd235808f07e2ef419917a
++ entry .intercept   対象のイベントに対する動作を登録する：`Vm.intercept[Shutdown](…)`
++     `event is Interceptable onto target` の given を持つ任意の値に対する拡張である。動作は、返された `Hook` がキャンセルされるまで、イベントが起きるたびにそのイベントをコンテキスト値として実行される。
++     parasite が提供する対象とイベントは、`Vm.intercept[Shutdown]`、`Vm.intercept[Fault]`、`Vm.intercept[GarbageCollection]`（`parasite.jvm` 内）、そして任意の参照に対する `value.intercept[Destruction]` である。
+
+% 2 1 0 1fe891952dbd7d6413e8ac9c231a8018
+
+% 3 1 0 00da62059b52a9e50653d14c2ad9d759
+
+% 0 1 0 0998ee29bc56218c0cc759bd70975346
+
+% 0 1 0 1c6ab6f9433cfd7a0c28bac0ac8d18cc
+
+% 0 1 0 154be730e6151683125166cefcb51704
+
+% 1 1 0 005caee4ee7bd97015083ae89f75fac4
+
+@ 0 7 0 1712224bfa1c396800c89925f3f45acd
++ entry .emits   `Task[result] emits error`：本体が `error` を発生させうるタスク
++     「これらのエラーを副チャンネルとして生じうる」ことを具体化する中置の型エイリアスである。
++     `Task` に対しては、`Task[result] emits error` は細分化型 `Task[result] { type Error <: error }` であり、`async` が返す型である。上限があるのでエラーは共変に保たれ、`Async.Error` でしか失敗しないタスクは `emits CueError` が期待される場所で使える。
++     それ以外のものに対しては、これは義務 `Emit[error] ?=> left` であり、`raises` のより弱い兄弟である。
++     `soundness` アンブレラにはエクスポートされない。`parasite.emits` と書くか、`async` の結果の型を推論させる。
+
+@ 0 1 0 19ad2cb68ce5aec50f8922dccfd70670
++ entry .Monitor   監督の木のノード。すべての中断が要求するケイパビリティである
+
+% 1 1 0 0282d8e552c748c80f234e77a4847014
+
+@ 0 5 0 1cff0d542a9308ff1a6fec79eab16d5f
++       `Monitor` はタスクを所有するスコープである。
++       `supervise` が `Root` を作り、すべてのタスクは `Worker` で、それ自身もモニターなので、モニターはそれらを生成したコードの入れ子を写す木をなす。
++       待機、スリープ、譲渡、生成はすべて `Monitor^` をコンテキストパラメーターとして取るので、失敗しうるメソッドが `raises` と書くように、ブロックしうるメソッドはそのことをシグネチャで示す。`monitor` は最も内側のものを召喚する。
+
+@ 0 5 0 189e7855c97d4ec21de702c71312c8df
++       モニターは `Durable`（共有された）ケイパビリティである。その下で生成されたすべてのタスクがそれを捕捉し、すべての合流がそれを再び渡すので、一つのモニターの二つの使用が分離されることはないが、タスクのハンドルもモニター自身も `supervise` ブロックから出ることはできない。
++       タスクの本体は永続的なケイパビリティしか捕捉できないので、外側のスコープの `Tactic` はその中で使えない。
+
+% 2 1 0 11eca40ec06d7c110ed0f073b7df48e6
+
+% 3 1 0 0612736d07b7aa5908ed9c5989fd9f26
+
+% 4 1 0 1898b3be2a5df9e4143af0b7dd6846ce
+
+% 5 1 0 0815f2421ed1c69e08a12b9dc9d93bd8
+
+% 6 1 0 15bc57038b9ca1ea0558185b309efdab
+
+% 1 1 0 058de2d2e5a9c2f50a146c80c92f432e
+
+% 2 1 0 0f4673baff633d0a1840696322b2c8b3
+
+% 0 1 0 1ed9b38f710fc1c2125f7d74b7f526cb
+
+% 0 1 0 19a16e1ce0a517340c40a464c5e85165
+
+% 0 1 0 0cc654e5376cd9e80f969cead06eb899
+
+% 1 1 0 16aa1cdcea52fcb31bcdf9a5204be4b8
+
+@ 0 3 0 0f06e09968e5c4a10926168b1d4c16b6
++       その `#promise` はスコープが完了したときに決着し、`#attend` はそれを待ち、`#cancel` はスコープをキャンセルする。
++       これは `Findable` かつ `Resultant` であり、その `Result` 型はスコープが生む値の型である（ルートでは `Unit`）。
+
+% 1 1 0 1a89c62baf13f85f152176be85be89b6
+
+% 0 1 0 084d438609b19e060b3eb5d55567df7c
+
+% 1 1 0 027946063c507eef07b2f741c2a9e08c
+
+% 0 1 0 05b373f3b2d0d98206da8a301830f347
+
+@ 0 27 0 0cbbac169f9647a0176959dfa20b341a
++   entry #promise   スコープが完了したときにその結果で決着するプロミス
++   entry #name   スコープの名前があればその名前。`task` の名前、またはルートではスーパーバイザーの名前
++   entry #chain   このスコープとその各祖先が生成されたコードポイント。内側のものから順に並ぶ
++       `Root` では空である。ワーカーの連鎖は、それ自身の `Codepoint` の後に親の連鎖が続く。
++   entry #stack   祖先をたどったスコープの完全なパスをテキストで表したもの
++       ルートは `virtual:`（スーパーバイザーの名前）と描画される。ワーカーは `virtual://parent-name@file:line//child-name@file:line` と描画され、各タスクの名前（名前がなければコードポイントだけ）が `//` でつながれる。
++       その計算は親の連鎖全体をたどるので、デフォルトのスーパーバイザーはスレッド名が求められない限りそれを評価しない。
++   entry #daemon   このスコープが投げっぱなしかどうか。`Daemon` と `Root` では `true`
++       検認の子の運命のポリシーは、これが `false` である子に適用される。デーモンである子は、親が完了すると常にキャンセルされる。
++   entry #attend   結果もエラーもなしに、スコープが完了するまで待つ
++       スコープ内の `Monitor` のもとで、呼び出し側のストランドを `#promise` 上でパークし、スコープが完了したか、失敗したか、キャンセルされたかにかかわらず返る。
++       その間に呼び出し側のタスクがキャンセルされると、`InterruptedException` を投げる。
++   entry #ready   スコープが完了したか、失敗したか、キャンセルされたかどうか
++   entry #cancel   スコープとその下のすべてをキャンセルする
++       `Worker` では、一時停止する場所でそのストランドに割り込み、次の `relent()` で止まるようにキャンセル済みの印を付け、ストランドが終わるのを待つ。`Root` では何もしない。
++   entry #supervisor   このスコープのタスクが実行されるストランドを持つ `Supervisor`
++       ルートから受け継がれる。`supervise` ブロックのすべてのタスクは、その `Threading` が選んだスーパーバイザーで実行される。
++       スーパーバイザーはモニターが保持するケイパビリティなので、`Supervisor^{this}` と型付けされる。
++   entry #snooze   任意の `Abstractable across Durations` 型の時間だけ、呼び出し側のストランドを一時停止する
++       パッケージレベルの `snooze` の背後にあるメソッドである。`Worker` はこれをオーバーライドし、タスクがキャンセルされていれば一時停止の前でも後でもすぐに `InterruptedException` を投げる。
+
+@ 0 1 0 16ad287389b74b4017a2f5de43e627ab
++ entry .Worker   モニターとしてのタスク。生成された本体がその下で実行される木のノード
+
+% 1 1 0 0a90f99ff0cf87400d84d8cbccaeaaea
+
+@ 0 6 0 109b0e62f72486740a5444439e2d455c
++       すべての `Task` と `Daemon` は `Worker` である。これは抽象クラスで、構築時に親のモニターの子として自身を登録し、最初に必要になったときにスーパーバイザー上でストランドをフォークし、その上で `#evaluate` を実行し、結果を `Fulfillment` として記録して `#promise` を決着させる。決着は、状態が終端に達し、検認の `cleanup` が実行された後に厳密に行われるので、返った `attend` は合流が保証するすべてを保証する。
++       タスクの本体の中では、`monitor` がワーカーである。
+
+@ 0 7 0 0463b87a145e126a176769d1e0223bea
++       失敗の経路は意図して慎重に作られている。
++       本体の失敗は、他の何かが試みられる前に保存される。`trap` が例外を投げる検認があっても、ワーカーが親のレジストリに残ったり、そのプロミスが未決着のまま残ったりすることはない。どの trap も受け入れないエラーは決着の後に再び投げられるので、消えてしまうのではなく、スレッドの捕捉されない例外のハンドラに届く。
++       その経路が必要とするすべてのクラスは最初のワーカーの誕生時にロードされるので、長く動くプロセスで遅れて失敗するクラスロード（デーモンの下で置き換えられた jar、読み込みの途中で割り込まれたストランド）が、何が起きたかの証拠を壊すことはない。
+
+@ 0 3 0 0b2d6b8694abc6da1acfe1f0f90e43f5
++       ユーザーはワーカーを構築するのではなく、`async`、`task`、`daemon` で生成する。以下のメンバーは、本体が自身のワーカーでできることと、親が子について観測できることである。
+
+% 1 1 0 00427648b0819816095113bcf83fe71d
+
+% 1 1 0 0c453391f0d5032206b23d3a54323a20
+
+% 1 1 0 1aea9ab53d8798d9149389648a61f4cd
+
+% 0 1 0 15cbf2798f1820191eb1ff5bc3da2633
+
+@ 0 45 0 0878141ff6be540019b5bec1bfff5b56
++   entry #promise   ワーカーが終わったときに本体の結果で決着するプロミス
++   entry #chain   このワーカーの生成場所と、それに続く祖先のコードポイント
++   entry #evaluate   ワーカーを引数として、ワーカーのストランド上で一度だけ実行される本体
++   entry #supervisor   親のスーパーバイザー。`Supervisor^{this}` と型付けされる
++   entry #apply   結果。ワーカーが完了していなければ `Unset`
++       `worker()` は待たずに `#promise` を読む。
++   entry #relentlessness   ワーカーの開始からの経過ミリ秒を `relent()` の呼び出し回数で割ったもの
++       本体がどれほど頻繁にキャンセル地点を設けるかの大まかなゲージである。relentlessness が高い長時間の本体は、すぐにはキャンセルできない本体である。
++   entry #delegate   生きているデーモンでない各子にポリシーを適用し、デーモンの子をキャンセルする
++       `worker.delegate(child => …)` は、`Probate#cleanup` が、完了した親が実行中のまま残した子に到達する方法である。デーモンの子はすべてキャンセルされ、ラムダが他の各子の運命を決める（`probates.awaitProbate` はそれを待ち、`probates.cancelProbate` はそれをキャンセルする）。
++   entry #stack   親をたどったワーカーのパス。`supervisor://name@site//name@site` の形をとる
++   entry #relent   キャンセル地点。すぐに返るか、ワーカーがキャンセルされていれば `InterruptedException` を投げる
++       `#relentlessness` に数えられる。ワーカーが完了または失敗した後に呼ばれるとパニックする。その時点でまだ実行中の本体があるはずはないからである。
++   entry #snooze   一定の時間だけ一時停止し、ワーカーがキャンセルされていればその前か後に `InterruptedException` を投げる
++   entry #map   このワーカーの結果に関数を適用するタスク
++       `worker.map(f)` は `async(f(worker.join()))` である。これはスコープ内のモニターの子である新しいタスクで、このワーカーと合流してその結果を変換する。
++       関数はタスクの本体が捕捉できるものしか捕捉できない。
++       `Monitor` と `Probate.Shared` が必要である。
++   entry #bind   このワーカーの結果に対してタスクを生む関数を実行し、それと合流するタスク
++       `worker.bind(f)` は `async(f(worker.join()).join())` であり、タスクに対するモナドの bind である。`Task.monad` はそれから作られた `mercator.Monad[Task]` である。
++   entry #cancel   ワーカーをキャンセルする。ストランドに割り込み、キャンセル済みの印を付け、ストランドが終わるのを待つ
++       すでに完了または失敗したワーカーは影響を受けず、キャンセル済みのワーカーをキャンセルすると、単にそれを待つ。
++       キャンセルの効果はちょうど一度だけ、キャンセル済みの状態が見えるようになった後にのみ発生するので、キャンセルで起こされた合流側が古い状態を見ることはない。
++       本体が開始される前にキャンセルされたワーカーは、本体を決して実行しない。
++   entry #result   ワーカーが完了していれば、待たずにその結果を返す
++       本体が終わっていなければ `Async.Error(Incomplete)` を、キャンセルされていれば `Async.Error(Cancelled)` を発生させ、失敗していれば元の例外を再び投げる。
++       `Tactic[Async.Error]` が必要である。
++   entry #join   生の、型のない合流。ワーカーを待ってその結果を返し、失敗はそのまま再び投げる
++       `join()` は際限なく待ち、`join(duration)` は先に期限が過ぎると `Async.Error(Timeout)` を発生させる。
++       失敗した本体の例外はそのまま再び投げられるので、静的なエラーは `Async.Error` だけである。型付きの合流は `Task#await` であり、それは `#deliver` を通る。
++       `Monitor` と `Tactic[Async.Error]` が必要である。
++   entry #deliver   型付きの合流。結果を返すか、本体が発生させたエラーを呼び出し側の戦術を通して届ける
++       `deliver[error]()` と `deliver[error](duration)` は、ワーカーを待ってから、その結果を返すか、本体が発生させたエラー（`error` として再構成される。これは本体の `AsyncTactic` を通して発生させたものについては健全である）でスコープ内の `Tactic[error | Async.Error]` を通して中断するか、`Async.Error(Cancelled)` や `Async.Error(Timeout)` を発生させるか、本当に検査されないスロー可能オブジェクトを再び投げる。
++       `Task#await` は、タスク自身の `Error` 型を使ったこれである。
+
+@ 0 1 0 1162ad5397a0a09f11b579ad1789a454
++ entry .Root   監督の木の根。`supervise` が導入するモニター
+
+% 1 1 0 05351dec8801ae1202d0d1fd4f66b87f
+
+@ 0 5 0 0b7b8f6496d3f9d211ea85daf92d9f3a
++       `Root(supervisor)` は、`Result` が `Unit` で、親がなく、`chain` が空で、`stack` がスーパーバイザーの名前で、`cancel()` が何もしない `Monitor` である。
++       その寿命は `supervise` ブロックなので、これはグローバルなケイパビリティではない。`unsupervised.orphanMonitor` は、あらゆるスコープの外でブロックするための、プロセスの寿命を持つ唯一のルートである。
++       `soundness` アンブレラにはエクスポートされない。直接構築するには `parasite.Root` と書く。
+
+% 1 1 0 154e5bdf88babf0c04fc34d8af2beb67
+
+% 1 1 0 05415526ffc61ff31355152eeda1113a
+
+@ 0 1 0 0793af0b85bfef16011d544b96751c45
++   entry #shutdown   ルートの生きているすべての子をキャンセルする
+
+@ 0 1 0 0d5d0a954dc822470ba831611628b194
++ entry .Supervisor   実行の戦略。ストランドをどのようにフォークし、パークし、スリープさせ、割り込むか
+
+% 1 1 0 027908cfd07f33b3141b6ed9176799ce
+
+@ 0 6 0 1be44091b9d971361e690d642817d379
++       ストランドが*中断*しうるあらゆる方法はそのスーパーバイザーを通るので、スーパーバイザーはプラットフォームの継ぎ目のすべてである。別の実行モデル（たとえば WASI の待機可能集合の上のイベントループ）のためのバックエンドは、`Threading` の given で選ばれる `Supervisor` の実装であり、parasite の他の部分はプラットフォームに触れない。
++       提供される実装は `PlatformSupervisor`、`VirtualSupervisor`、`AdaptiveSupervisor`、`PooledSupervisor`、`JavascriptSupervisor` で、それぞれが `threads` の given が渡す値である。
+
+@ 0 5 0 0a67e29a605d1eb6001c7cac3111ce6d
++       スーパーバイザーは `Durable` なケイパビリティである。フォークとパークは作用であり、プールは生きたスレッドを保持する。
++       グローバルなシングルトンは静的なケイパビリティなので、それに到達する公開クラスやオブジェクトは `uses parasite.threads`（または名前でそのスーパーバイザー）を宣言する。
++       独自のスーパーバイザーは `park` からの偽の目覚めを許さなければならない。`LockSupport.park` が求めるとおり、すべての呼び出し側はループの中で条件を確かめ直す。
+
+% 1 1 0 1f99ae6ffda49ce718a45d4a96e87ca4
+
+% 0 1 0 0580976b364331dd0202ebcac8a2f577
+
+% 1 1 0 04e601f336e3a0c319ba9ea917465e6d
+
+@ 0 11 0 143679bbe41df4810d20eec96abdba43
++   entry #name   スーパーバイザーの名前。その下のすべての `Monitor#stack` の最初の区画となる：`virtual`、`platform`、…
++   entry #fork   新しいストランドでブロックを開始する。必要ならストランドの名前を計算するサンクを伴う
++       名前がサンクなのは、ワーカーの `stack` の計算が親の連鎖全体をたどるからである。`VirtualSupervisor` はそれを決して評価せず、`PlatformSupervisor` はそれをスレッドの名前に設定する。
++   entry #strand   呼び出し側のストランドの識別子。後の `Strand#unpark` が解放できる待機者として表す
++   entry #park   呼び出し側のストランドを、アンパークされるまで、または期限まで中断する
++       `park(blocker)` は `unpark` を待ち、`park(blocker, deadline)` は期限（`System.nanoTime` を基準とする）が過ぎたときにも返る。
++       どちらも偽の理由で返ることがある。
++   entry #sleep   呼び出し側のストランドを、目覚めの経路なしにナノ秒単位の時間だけ中断する
++   entry #interrupted   呼び出し側のストランドのキャンセルによる割り込み状態を確認して消去する
+
+@ 0 8 0 14fd26704ec6ad2c11235ba8a2f37297
++ entry .ThreadSupervisor   JVM と Native のすべてのスーパーバイザーが共有する、スレッドに基づく中断の基本操作
++     `strand()` が現在の `Thread` を `Strand.Threaded` として包んだものであり、`park` が `LockSupport.park` と `parkNanos` であり、`interrupted()` が `Thread.interrupted()` であり、`sleep` が期限まで繰り返しパークする `Supervisor` である。繰り返すのは、`parkNanos` が早く、偽の理由で、または先の `unpark` が残した許可によって返ることがあるからで、スレッドが割り込まれたときにだけ早く止まる。
++     サブクラスに残されるのは `name` と `fork` だけである。
++     `soundness` アンブレラにはエクスポートされない。スレッドに基づく独自のスーパーバイザーは `parasite.ThreadSupervisor` を継承する。
+
+@ 0 5 0 1b9b422753328b9d165ad7a572f336a8
++ entry .PlatformSupervisor   各タスクを新しいプラットフォームスレッドで実行する
++     `PlatformSupervisor.fork` は、タスクごとにワーカーのスタックから名付けた `java.lang.Thread` を開始する。
++     名前は `platform` である。`threads.platformThreads` で選ばれ、`supervisors.globalSupervisor` と `unsupervised.orphanMonitor` の背後にあるスーパーバイザーである。
++     Scala Native では、`VirtualSupervisor` と `AdaptiveSupervisor` もこれを通してフォークする。
+
+@ 0 7 0 0574974327f8500d17067be1f7adf48d
++ entry .VirtualSupervisor   各タスクを仮想スレッド（JVM）またはプラットフォームスレッド（Native）で実行する
++     JVM では、`fork` は `Thread.ofVirtual().start(…)` である。これは大量に生成できるほど安価な Loom の仮想スレッドで、Java 21 が必要であり、それより古い JVM では実行時に `UnsupportedOperationException` で失敗する。
++     Loom のない Scala Native では、このオブジェクトは同じ名前で存在してプラットフォームスレッドをフォークするので、`threads.virtualThreads` 向けに書かれたコードはソース互換である。求められているのは安価な並行性であり、利用できる最も安価なもので応えられる。
++     名前は `virtual` である。
+
+@ 0 7 0 17a246eca9c7f99f159c329efe65c0b9
++ entry .AdaptiveSupervisor   JVM が持てば仮想スレッド、そうでなければプラットフォームスレッド
++     JVM では、何もしない仮想スレッドで一度だけ探査し、以後はそれが成功すれば `VirtualSupervisor` を通して、`UnsupportedOperationException` を投げれば `PlatformSupervisor` を通してフォークする。キャッシュされるのはその決定的な結果だけなので、一時的な失敗がプロセスをプラットフォームスレッドに固定することはない。
++     JVM を指定できないアプリケーションが、`threads.adaptiveThreads` を通して使うべきものである。
++     Scala Native では、Loom 以前の JVM とまったく同じようにプラットフォームスレッドをフォークする。
++     名前は `adaptive` である。
+
+@ 0 7 0 08066ece0f5537501b72131bbec78297
++ entry .PooledSupervisor   再利用可能なキャリアスレッドのプールでタスクを実行する
++     `threads.pooledThreads` で選ばれる `PoolingSupervisor` のインスタンスである。
++     JVM ではキャリアは仮想スレッドなので、キャリアをブロックするタスクのコストはパークした仮想スレッド一つ分にすぎない。Scala Native ではキャリアはプラットフォームスレッドであり、タスクがスレッドの開始より安くなるにはタスク間でスレッドを再利用するしかないので、節約はさらに大きく、ブロックするタスクは続行するまでプラットフォームスレッドを一つ占有する。
++     名前は `pooled` である。
+
+@ 0 1 0 0e5ec9b7d78a317e1d2a7329ee2f69a5
++ entry .PoolingSupervisor   タスクごとにスレッドを開始する代わりに、アイドル状態のキャリアスレッドにタスクを渡すスーパーバイザー
+
+% 1 1 0 0c2724a959d3dcc70c2f8b195e829e57
+
+@ 0 5 0 1533ef69dbc355ec1a568dfb23bbe99a
++       `fork` は、待機中のアイドル状態のキャリアがあればそれにタスクを渡し、なければ新しいキャリアを開始する。タスクを終えたキャリアは、次のタスクのためにアイドルリストの上で自身をパークする。
++       引き渡しのコストは数百ナノ秒であり、スレッドの開始と合流には数マイクロ秒かかるので、細かいファンアウト（要素ごとに一つのタスク、ループの中での生成と合流）はスレッドの作成に支配されなくなる。
+
+@ 0 5 0 04989591a74ef61717f250c5079ed940
++       プールは飢餓に陥らない。`park` やその他の方法（JDK の I/O、`Thread.sleep`、`synchronized` ブロック）でブロックするタスクはそのキャリアを保持し、次の `fork` は別のキャリアを開始するので、最悪の場合でもちょうどタスクごとに一つのスレッドとなり、固定のサイズも、タスクが待つキューも、補償のロジックもない。
++       `idleLimit`（デフォルトは 256）を超えるアイドル状態のキャリアは引退するので、バーストの後のプールのメモリには上限がある。
+
+@ 0 8 0 1f5e2d6330a2195808ccdd80b8ef0126
++       キャンセルはハンドシェイクである。各タスクのエントリーは小さな状態機械を実行するので、タスクに向けた割り込みは、タスクがマウントされている間に届けられるか、そのマウントまで延期され、同じキャリアで次に実行されるタスクに漏れることはない。
++       コストは、タスクが自分自身のスレッドを持たないこと（スレッドローカルはキャリアが実行するタスクをまたいで残り、スレッドダンプには、`Monitor#stack` がタスクを示すところでキャリアが表示される）と、あるタスクで設定されたスレッドのコンテキストクラスローダーが次のタスクに見えることがあることである。したがって、クラスやリソースをロードするコードは、スレッドのものではなく既知のクラスローダーから始めるべきである。
++       タスクの `Thread.currentThread` は、その実行中は安定している。
+
+@ 0 2 0 033b424e4540f95808441fe15d75fe3d
++       サブクラスは `spawn`（キャリアスレッドの開始方法）を与え、`idleLimit` をオーバーライドできる。`PooledSupervisor` は各プラットフォームのためのインスタンスである。
+
+% 0 1 0 1ee6ec36f11c35ae067f026d9cc8c97e
+
+% 1 1 0 1cf10a55eb90812c14cb4599c195f904
+
+@ 0 7 0 060a13f47748da4e0fe6bd354759b0f1
++   entry #active   現在タスクを実行しているキャリアの数
++       休止しているプールでは零である。その状態に戻らないプールには、終わらなかったタスクがある。
++   entry #idling   タスクを待ってパークしているキャリアの数
++   entry #fork   ブロックをアイドル状態のキャリアに渡すか、新しいキャリアを開始する
++   entry #strand   呼び出し側がキャリアならそのキャリアのストランド、そうでなければ現在のスレッドのストランド
++   entry #park   少しの間スピンしてから呼び出し側のキャリアをパークする。先のアンパークが残した許可を尊重する
+
+@ 0 9 0 07a8b620c233204b1855f3d7d7b43a46
++ entry .JavascriptSupervisor   JavaScript のイベントループのための、単一スレッドで即時実行のモデル
++     フォークされた各タスクは、`fork` の時点で呼び出し側のストランド上で完了まで実行されるので、そのようなタスクが決着させるすべてのプロミスは、誰かが待てるようになる前にすでに完了しており、パークは決して必要ない。
++     これは、ブロックして再開する基本操作を持たないイベントループのためのモデルだが、どのプラットフォームでも同じように動く。
++     その上限は単一スレッドの構造化並行性である。並列性も交互実行もないので、完了したどのタスクも決着させていないプロミスを待つこと（決して終わらない待機）はデッドロックせずにパニックし、`sleep` と `snooze` はすぐに完了し、`interrupted()` は常に `false` である。
++     名前は `javascript` であり、`threads.javascriptThreads` で選ばれる。
+
+% 2 1 0 1c97b132c1b7230214be0e75754632b0
+
+% 3 1 0 01489d544de4870f13a53b3222ffecf8
+
+% 0 1 0 1fc7454c929f44400c8217de0d536154
+
+% 1 1 0 041f1e87319373441ce8421e29d1d9a1
+
+% 2 1 0 02e24bb418c3cfb71a057e322b2fdb44
+
+% 4 1 0 0268aa48cf356ff8057da97ddfed2494
+
+% 0 1 0 11d69d0e3b528799007e353aacae31da
+
+% 0 1 0 063e578bd55f023600864a5dedb6a5c4
+
+% 0 1 0 1aa46a67eca0261913e3bae5482ba62d
+
+% 1 1 0 0771a650f48928860c24dacb974e9f88
+
+@ 0 1 0 1df7e649760ba2ee13bb9800ccbc6a3d
++ entry .Threading   ケイパビリティの given としてのスーパーバイザーの選択：`threads.virtualThreads`
+
+% 1 1 0 14c39ac024023020193bedb7caa03350
+
+@ 0 4 0 180248977a50cba91177a5c513553a36
++       `Threading` は、`supervise` ブロックがその木を根付かせる `Supervisor` を渡すもので、`threads` の given の一つを名前でインポートすることで選ばれる。
++       スーパーバイザーを渡すので `Durable` なケイパビリティであり、`Findable` なので `summon[Threading]` として召喚される。
++   entry #supervisor   スコープを根付かせるスーパーバイザー
+
+@ 0 1 0 00d76c90785c9b4903725f2c0614f9b0
++ entry .Strand   スーパーバイザーがフォークした実行単位のハンドル：割り込み、合流、アンパーク
+
+% 1 1 0 012924990fb597b90947208bccfbdf82
+
+@ 0 7 0 1b429c7a9a111eb715436343591d2069
++       監督（`Worker#cancel`）と目覚め（`Promise`）が必要とする最小限の面である。
++       JVM と Scala Native では、ストランドは `Thread` を包む（`.Threaded`）。即時実行のスーパーバイザーは単一の `.Eager` を使い、プールするスーパーバイザーのストランドはそのキャリアとタスクのエントリーである。
++       `unpark` が `Supervisor` ではなくここにあるのは、`Promise` の起こす側がスコープに `Monitor` のない状態で、おそらく別のストランド上で実行されるからである。ストランドは自分で起こせるものでなければならない。
++       `Promise` は待機者を `Set[Strand]` に保存するので、同じスレッドに対する二つのハンドルは等しい。
+
+% 1 1 0 0f610201fe442e4614d29f0111c08932
+
+@ 0 4 0 12cc5438bbc8097505fc52216b6c8f09
++   entry .Eager   `JavascriptSupervisor` のもとで、フォーク時に完了まで実行されたタスクのストランド
++       割り込み、合流、アンパークは何もしない。構造上、キャンセルするものも、待つものも、起こすものも実行されていないからである。
++   entry .Threaded   `java.lang.Thread` の上のストランド
+
+% 1 1 0 10f97e7cffa3533218cf8b0c9aaa2326
+
+@ 0 7 0 0bf462228d57824c00588c9df8e7376b
++         `interrupt()` は `thread.interrupt()`、`join()` は `thread.join()`、`unpark()` は `LockSupport.unpark(thread)` である。
++         二つの `Threaded` ストランドは、どのように得られたかにかかわらず、そのスレッドが等しいときに等しい。
++     entry #thread   基になるスレッド
++   entry #interrupt   ストランドのキャンセルを要求する
++   entry #join   ストランドが終了するまでブロックする
++   entry #unpark   `Supervisor#park` からストランドを解放する
+
+@ 0 1 0 170f6db8ee0fe60a08499f994262916d
++ entry .Task   生成された計算のハンドル：結果を待つか、キャンセルする
+
+% 1 1 0 1b9e31d576161c9c05fa2da0fbbcab5b
+
+@ 0 7 0 101b2685e31eaf6f0885a5de66f4a538
++       `Task[result]` は `async` と `task` が返すものであり、スコープ内のモニターのもとにある `Worker` が、スーパーバイザーのストランドの上で本体を実行する。
++       その `Error` 型メンバーは本体が発生させうるエラーのユニオンを持ち、`emits` エイリアスで細分化される。したがって `async(abort(CueError(1)))` は `Task[Nothing] emits (CueError | Async.Error)` であり、`await` は発生したエラーを、型を保ったまま呼び出し側の `Tactic[Error | Async.Error]` を通して届ける。
++       `Async.Error` は常に起こりうる（キャンセル、タイムアウト、`probates.failProbate` のもとでの未完了の子）ので、`await` の場所で加えられる。
+
+% 2 1 0 0a4e322a42173ae109300dfad1c95459
+
+% 3 1 0 1b05bd0ab0b86a0408b5aec30fb771b3
+
+% 4 1 0 1007167095e81f091cb9c489d354f8b5
+
+% 5 1 0 14658fd305a274890a7fa1cdd44337eb
+
+% 6 1 0 1e1ee148945c2acd1e7b12629cf850fb
+
+% 8 1 0 09586b28fbe26bd71a02b314f56fec29
+
+% 0 1 0 1035aa5865114ac403852cb116419df7
+
+% 0 1 0 147e8107a0d90f320893921d1674a637
+
+% 0 1 0 06d57b5f2e2d3b280306fd000c23324b
+
+% 0 1 0 1b46eb161e902ee61e108c3f55696c3c
+
+% 0 1 0 11b5ac1a66c4e81505e8a8fd7a680c80
+
+% 1 1 0 186fb8f289bd60cd1e31a6f88c64737f
+
+@ 0 5 0 1d65bce61913f55e180fc6a08664b4b8
++       タスクは合成できる。
++       `map` と `bind` はあるタスクから別のタスクを導き、`List[Task[result]]` の `sequence` はそのすべての結果を順に持つ一つのタスクであり、コレクションの `race()` は最初の結果で、残りはキャンセルされる。また `Task.monad` は `Task` を `mercator.Monad` にする。
++       タスクのハンドルはそのモニターをキャプチャする共有ケイパビリティなので、生成された `supervise` ブロックから出ることはできない。
+
+% 1 1 0 0f537d91372791730fc172b7a6021a9f
+
+% 1 1 0 0feb341967a67ca70cf0be55a760839a
+
+% 1 1 0 152301d210d8d051165518401eead9ca
+
+% 0 1 0 06118b4c5f79d25406ceb8b1edef69cf
+
+@ 0 6 0 146a792a56242338012a57c68585e68d
++   entry .apply   本体と省略可能な名前からタスクを構築する：`async` と `task` が呼ぶもの
++       `Task[result, error](body, name)` は、スコープ内の `Monitor`、`Codepoint`、`Probate.Shared` のもとで、`Error = error` としてワーカーを構築する。
++       本体は `Worker` の関数であり、`Durable` なケイパビリティだけをキャプチャできる。
++       `async` と `task` は本体の戦術も与えるので、使うべきはそちらの形である。
++   entry .Owned   `transfer` された資源がタスクの本体に届くためのキャリア
+
+% 1 1 0 1a4f5bc9135ba5660d6180345519173f
+
+@ 0 17 0 05e01440a0c154890c0f6d06e6a4eb95
++         生成側が消費した排他的な資源を包む純粋な値で、本体の最初のコンテキストパラメーターとして受け取る：`producer.transfer: (producer, _, _) ?=> producer().put(…)`。
++         これは `transfer` によってのみ構築される。
++     entry #apply   資源。アクセスのたびに新しい排他的な参照となる
++   entry .monad   `mercator.Monad[Task]`。これによりタスクは汎用のモナドのコンビネーターと合成できる
++       解決時にスコープ内に `Monitor` と `Probate.Shared` が必要である。`point` は `async`、`bind` は `Task#bind`、`apply`（map）は `Task#map` である。
++       これが生成するタスクは、同じモニターのスコープの中で束ねられ、待たれる。
++   entry .sleep   期間の後、またはある時点に完了するタスク：モナドの `snooze`
++       `Task.sleep(0.5*Second)` は `async(snooze(time))` であり、呼び出し側のストランドを中断させずに `bind`/`map` と合成するためのものである。任意の `Schedulable` を受け付ける。
++       `Monitor`、`Probate.Shared`、`Codepoint` が必要である。
++   entry .sequence   `List[Task[result]]` のすべての結果を持つ一つのタスク。リストの順に並ぶ
++       `List[Task[result]]` の拡張メソッドである。`tasks.sequence` は各タスクに順に合流し、同じ順の `List[result]` を返すタスクなので、結果の順序は完了の順序について何も語らない。タスクはすでに並行して実行されている。
++       キャンセルされたか失敗したメンバーは、シーケンスの `await` で発生する。
++       `Monitor` と `Probate.Shared` が必要である。
+
+% 2 1 0 04e5c73ed365f17900d61f4dee325d6f
+
+% 3 1 0 0bd28caa90e446630675a351cd8990b3
+
+% 4 1 0 10d4e94ac6e6114916907f0fa247ee60
+
+% 5 1 0 1b6be028c54ca1e503f86dce45c8f197
+
+% 6 1 0 0139d2f5a5f542d800ef2012cea1367e
+
+% 8 1 0 0efe9efc54d244e00ce80435ca975177
+
+% 0 1 0 167fee35c1996bfd1c1ab2c9728a8c1b
+
+% 1 1 0 14cd0d0a2c9d26b410a0942ebb46ebd9
+
+@ 0 6 0 09ea812e4248e41512c318c9e27789e9
++   entry .race   タスクのコレクションの最初の結果。他はキャンセルする
++       `Traversable by Task[result]` である任意のコレクション（`List`、`Sequence`）と `Iterable[Task[result]]` の拡張メソッドである。`tasks.race()` は、各タスクが結果を申し出るプロミスを待ち、最初に申し出られたものを返し、他の結果は不要なので `finally` ですべてのタスクをキャンセルする。
++       すでに完了しているタスクは即座に勝つ。
++       `Monitor`、`Probate.Shared`、`Tactic[Async.Error]` が必要である。
+
+% 2 1 0 19ad3dfb06afa4eb07d5317f453a8096
+
+% 3 1 0 076364713802f97311dc347c23ac26fe
+
+% 4 1 0 1937137c798ce2141fb307b04ced211a
+
+% 5 1 0 1bc22b54dd3c83290cbd6aa63ac76c67
+
+% 6 1 0 0e844db8d7484c111b52f44fc57aeec1
+
+% 8 1 0 1f578c5a187503aa1d733c1464b555b5
+
+% 0 1 0 1201097df4d35df70cdf731899b8b26a
+
+% 1 1 0 09d1cd4a0d10a630066616fb3b4a2c51
+
+@ 0 15 0 060f119602f96bae15e247c8cdc5fa08
++   entry #Error   本体が発生させうるエラーで、`await` で届けられる。最も広い場合は `Hazard`
++   entry #ready   タスクが完了したか、失敗したか、キャンセルされたか
++   entry #attend   タスクが決着するのを待つ。結果もエラーもない
++   entry #cancel   タスクをキャンセルする：一時停止する場所で割り込み、譲る場所で止める
++       すでに終了したタスクには影響しない。
++       この呼び出しはタスクのストランドが終わるまで待つので、戻ったときには本体の何もまだ実行されていない。その後、その `await` は `Async.Error(Cancelled)` を発生させる。
++   entry #await   結果を待ち、発生したエラーを呼び出し側の戦術を通して届ける
++       `task.await()` は無制限に待つ。`task.await(duration)` は、期限が過ぎたときにタスクが決着していなければ `Async.Error(Timeout)` を発生させ、その時点でタスクをキャンセルせずに見捨てる。
++       どちらも `Monitor` と `Tactic[Error | Async.Error]` が必要である。本体が発生させたエラーは本体の `Error` として型付けされて届き、キャンセルは `Async.Error(Cancelled)` として、`probates.failProbate` のもとで検認が未完了と判断した子は `Async.Error(Incomplete)` として届く。
++       タスクは何度でも待つことができ、後の合流は届けられた値を直接返す。
+
+% 2 1 0 1f7228e43fec742f07b92807c1b50a6f
+
+% 3 1 0 0ae6ddc0f8e5d4121f8a33c572e55500
+
+% 4 1 0 06ab4d89c890f1d90f9f476fb5a9de47
+
+% 5 1 0 1accfbe4c67d62c400b7ea8862208303
+
+% 6 1 0 02d23f6b07ebe3c41771a9791058ec8d
+
+% 8 1 0 160349f7a78cd7aa0ac8ec5341294101
+
+% 10 1 0 0793875fc716649b17012238b15120b0
+
+% 0 1 0 173dcfc7938355200c77bed39d21d548
+
+% 0 1 0 05f62cf736f8131b01c78c29a0a06054
+
+% 1 1 0 1defe6515c2af9ba1d57e2e4ea856edc
+
+@ 0 5 0 10887d2d8960af4a1648ac2739d7a4e6
++   entry #bind   このタスクの結果にタスクを生成する関数を適用し、それに合流するタスク
++       `task.bind(n => async(n + 4))` はスコープ内のモニターの新しい子である。関数は、タスクの本体がキャプチャできるものだけをキャプチャできる。
++       `Monitor` と `Probate.Shared` が必要である。
++   entry #map   このタスクの結果に関数を適用するタスク
++       `async(3).map(_ + 1).await()` は `4` である。
++       `Monitor` と `Probate.Shared` が必要である。
+
+@ 0 1 0 162e893ecdd219e00faed99aa7a00739
++ entry .Promise   後で与えられる値。おそらく別のスレッドから：一方が待ち、もう一方が満たす
+
+% 1 1 0 1fb0976ce16867dd1373a375f366c481
+
+@ 0 5 0 014ab5f08a5ef6420d608e5a8530a1a9
++       `Promise[value]` は未完了の状態で始まる。`fulfill` または `offer` はそれをちょうど一度だけ値で決着させ、`cancel` は値なしで決着させ、`await` はそれが決着するまで呼び出し側のストランドをパークする。
++       決着はすべての待機者を起こし、競合のもとでも何も失われない。多数の並行した `fulfill` のうちちょうど一つだけが成功し、決着済みのプロミスは compare-and-set をまったく行わない。
+
+% 2 1 0 09430f18c0e0a8ef03813e8cb246f6c7
+
+% 3 1 0 07e1e3553381ff301f94413785f31b59
+
+% 4 1 0 00fd6b140ae6a74f04e05b88c4a8b3ce
+
+% 5 1 0 1a2deab7e8e2136f05d2d956a845da8c
+
+% 6 1 0 0ee3001de48fc3491cb24544fc5bb867
+
+% 8 1 0 04d5b97b9f6242570f358fc4ceee8822
+
+% 9 1 0 0c0fbedbb3beb3a9126bb1abf7d68231
+
+% 0 1 0 1f50fd87001a99f308d6f7270c456629
+
+% 1 1 0 10a4a711ef93a68708c54ca4791b0ae9
+
+% 0 1 0 1a8d0f7ff90a869c0196e30cbaa45bc2
+
+% 0 1 0 0357353f795fb4ef1cf850053fce7aac
+
+% 0 1 0 08e2dbd29e909eb6108d0481beaf67ed
+
+% 1 1 0 1f309da82f09d20909f674c90dd29b9c
+
+@ 0 5 0 0b606d844aea5f7e107584825cb0ca4c
++       プロミスは同一性によってのみ意味を持つ（待機者はそれの上でパークする）ので、参照の等価性を持つ普通のクラスである。
++       待つ側（`await`、`attend`）は中断するので `Monitor` が必要である。決着させる側（`fulfill`、`offer`、`cancel`）は何も必要としないので、プロミスはどこからでも決着させられる。コールバック、外部のスレッド、シャットダウンフックからでもよい。
++       `Worker` の `promise` は、タスクの完了を観測する手段である。
+
+% 1 1 0 0da3666996ad3b4e07ebff9aa111c0e4
+
+% 1 1 0 0c7d31f9730ce8bd087d8844801240c0
+
+@ 0 30 0 0cd2d377d15addbc1a41e2e7850b36d2
++   entry .State   プロミスの三つの状態：待機者を持つ未完了、値を持つ完了、キャンセル
++       `Incomplete(waiting)` はプロミスの上でパークしているストランドを保持する。`Complete(value)` と `Cancelled` は終端状態である。
++   entry #cancelled   プロミスがキャンセルされたか
++   entry #apply   値。プロミスが完了していなければ `Unset`。待たない
++   entry #ready   プロミスが値またはキャンセルによって決着したか
++   entry #complete   プロミスが値を持っているか
++   entry #task   プロミスの完了を表す `Task`：モナドの `await`
++       `promise.task` は `async(promise.await())` であり、呼び出し側のストランドを中断させずに `bind`/`map` と合成するためのものである。
++       `Monitor`、`Probate.Shared`、`Codepoint` が必要である。
++   entry #fulfill   プロミスを値で決着させる。すでに決着していれば `Async.Error` を発生させる
++       値を持っていれば `Async.Error(AlreadyComplete)` を、キャンセルされていれば `Async.Error(Cancelled)` を、スコープ内の `Tactic[Async.Error]` を通して発生させる。そうでなければ値を設定し、すべての待機者を起こす。
++       名前渡しの引数はちょうど一度だけ評価される。
++   entry #offer   まだ未完了であればプロミスを値で決着させ、そうでなければ何もしない
++       `#fulfill` の寛大な形である。多数の並行した申し出のうち最初のものが勝ち、残りは無視される。キャンセルされたプロミスはキャンセルされたままで、エラーは発生しない。
++       `race` は負けたタスクのためにこれを使う。
++   entry #await   値を待つ。キャンセルやタイムアウトでは `Async.Error` を発生させる
++       `promise.await()` はプロミスが決着するまで呼び出し側のストランドをパークし、それから値を返すか `Async.Error(Cancelled)` を発生させる。`promise.await(duration)` は、先に期限が過ぎたときにも `Async.Error(Timeout)` を発生させる。
++       決着済みのプロミスは即座に戻る。
++       `Monitor` と `Tactic[Async.Error]` が必要であり、待っている間に呼び出し側のタスクがキャンセルされると `InterruptedException` を投げるので、プロミスを待つタスクはキャンセル可能である。
++   entry #attend   プロミスが値かキャンセルによって決着するのを待つ。エラーはない
++       `promise.attend()` はプロミスがどちらかで決着したときに戻る。`promise.attend(duration)` は期限が過ぎると黙って戻るので、呼び出し側が `#ready` を確かめる。
++       `Monitor` が必要である。
++   entry #cancel   プロミスを値なしで決着させ、すべての待機者を `Async.Error(Cancelled)` で起こす
++       すでに値を持つプロミスはそれを保持する。二度キャンセルしても害はない。
+
+@ 0 1 0 0226a61ea4d6f51c0ba75f3cfd594f6e
++ entry .Daemon   `daemon` が生成する投げっぱなしの処理のハンドル
+
+% 1 1 0 0074b4cd3382be2019556917dbb24bba
+
+@ 0 4 0 1ecedcdce771f92c137269c15e14451a
++       `Daemon` は `daemon` フラグが `true` である `Worker` である。合流されることがないので結果を返さず、親の検認は、普通の子にどのポリシーを適用するかにかかわらずそれをキャンセルする。
++       そのエラーはスコープ内の `Probate#trap` に送られ、どれも受け入れなければ捕捉されない例外のハンドラ（`Vm.intercept[Fault]`）に上がる。
+
+% 1 1 0 099e410dae8bffb113e3d0bea0e816f1
+
+% 1 1 0 13a4e8eb24b574d81bd6629348342265
+
+@ 0 5 0 0186529e34eefbd8039d683090dcc527
++   entry .apply   スコープ内の `Monitor`、`Codepoint`、`Probate.Shared` のもとで、本体からデーモンを構築する
++       `daemon` は本体にラベルを持たない戦術も与え、本体が衛生的であることを強制するので、使うべきはそちらの形である。
++   entry #attend   デーモンが終了するのを待つ。結果もエラーもない
++   entry #cancel   デーモンをキャンセルし、そのストランドが終わるのを待つ
+
+@ 0 1 0 1d0122efa243a7fa111f28f89ac44f60
++ entry .Async   タスクの命名のプレーンであり、`Async.Error` の置き場所
+
+% 1 1 0 17034be9cfe74e4e0030649830213558
+
+@ 0 3 0 0b5bf70196fd03d518dfdf476b459ae8
++       `Async` はシールされたマーカーである。タスクの名前は `Name[Async]` であり、スコープ内に `import Async.nominative` を置いて `n"worker"` と書き、コンパイル時に `.Rules` に照らして検査される。
++       そのコンパニオンは、あらゆる中断が発生させうる唯一のエラーである `Async.Error` を持つ。
+
+% 2 1 0 08cf67bd7fadd11e08525cac995d08b0
+
+% 3 1 0 1564d691a0ec024206a51d37c92b1260
+
+% 1 1 0 01b9e96f6f08eda00c86f6402be195ac
+
+% 0 1 0 03f9daff0809179113d2a7430083f47d
+
+% 1 1 0 09b5a9f26559894a14a4623c7876d6c6
+
+% 1 1 0 0f37d63ce6c9530c119215c0ffbfe6d4
+
+@ 0 8 0 0aca090a1ebe80221a0a6b33f876081a
++   entry .Rules   タスク名に許されるもの：一文字の英字、それに続く英字、数字、`-` と `_`
++       `MustMatch["[A-Za-z][A-Za-z0-9_-]*"]` である。合成された `Monitor#stack` が頼る区切り文字（`:`、`/`、`@`、`.`）を含まず、空白も含まず、空でもないので、名前がスタックやそこから導かれるスレッド名を壊すことは決してない。
++       `Name[Async](t"bad/name")` は `Name.Error`、_the name bad/name is not valid because it must match [A-Za-z][A-Za-z0-9_-]*_ を発生させ、`n"bad/name"` はコンパイルエラーになる。
++   entry .nominative   `Name[Async]` に `.Rules` を課す given。`n"…"` のために名前でインポートする
++   entry .Error   待機が値で終わらなかったときに発生する：キャンセル、未完了、完了済み、タイムアウト
+
+% 1 1 0 0c07d4d62368c9a61a669e995c8e4ae0
+
+@ 0 6 0 0ed945905b53dfc107e86e76aab0a171
++         すべての `await`、`fulfill`、`supervise` が必要とする `Tactic[Async.Error]` を通して発生する。
++         その `#reason` がどれであるかを示す。`Cancelled` はキャンセルされたタスクやプロミスを待ったとき、またはキャンセルされたプロミスを満たそうとしたとき、`Incomplete` は `probates.failProbate` のもとで子がまだ実行中だったときの親の `await`、または本体が終了する前の `Worker#result`、`AlreadyComplete` はプロミスを二度満たそうとしたとき、`Timeout` は期限が過ぎたときの `await(duration)` から発生する。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 1483d7674d516abb1cf447f9b7b6208e
+
+% 0 1 0 1df60d93a8a4f5a7099b4ba309ce3cad
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 0 1 0 1cd8e4ff097f1a1000f2b5f2d634402f
+
+% 0 1 0 0d59ceb3fc1b73e716b392328eaa7b72
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 2 0 0a5b1d6d8a453ce9193693e1edb1575d
++     entry #reason   待機が失敗した理由。`Async.Error.Reason` として
++     entry .Reason   四つの理由：`Cancelled`、`Incomplete`、`AlreadyComplete`、`Timeout`
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 4 0 143cbd47e45048161229702abb81982f
++           `.communicable` によって _the operation was cancelled_、_the task was not completed_、_the promise was already completed_、_the operation timed out_ と描画され、これがエラーのメッセージとなる。
++       entry .communicable   各理由をエラーのメッセージとして描画する
+
+@ 0 1 0 12cb21e1e22349350eb00b3bda1636b1
++ entry .AsyncTactic   タスクの本体がエラーを発生させる `Tactic`：境界を破る代わりにエラーを投げる
+
+% 1 1 0 1660ec49adb857e20d7fbd5d1da056f4
+
+@ 0 10 0 196c39e1b32962c7024516286c5c7b9c
++       `async`、`task`、`daemon` が本体の `Tactic[error]` として与える。
++       `contingency` の境界に基づく戦術とは異なり、ワーカーのスレッドへ渡ることのできないスタックに閉じたラベルを破ることは決してない。`record` と `abort` はどちらも純粋なエラーを投げ、ワーカーの `try`/`catch` がそれを `Fulfillment.Failed` として保存し、エラーは型を保ったまま `Task#await` または `Probate#trap` に届けられる。
++       `certify()` は何もせず、`diagnostics` はスタックトレースをキャプチャする。
++       ユーザーがこれに出会うのは、本体の戦術の型としてだけである。
++   entry #diagnostics   発生したエラーの診断情報をキャプチャする
++   entry #record   エラーを投げる
++   entry #abort   エラーを投げる
++   entry #certify   何もしない：認証すべき蓄積された状態はない
+
+@ 0 1 0 0f023e8e49c215461389fab5c30d4de0
++ entry .Probate   タスクの未完了の子と逃れたエラーについてのポリシー
+
+% 1 1 0 0b2ba136c09d5a11141a5d97f35f5504
+
+@ 0 6 0 0b03d049fd66bfbf155c01b8ef8bbc5b
++       `Probate` には二つの部分がある。
++       `cleanup(worker)` は、親の本体が完了したときにまだ実行中の子の運命を、`Worker#delegate` で何をするかによって決める。`probates` パッケージの四つは、それを待つか、キャンセルするか、`Async.Error(Incomplete)` を発生させるか、パニックする。
++       `trap` は、投げっぱなしのワーカー（`daemon`、または親に見捨てられたタスク）から逃れたエラーの運命を決め、何も取りこぼさないように既定ではそれを上へ伝える。`contain { … }.protect { … }` は、処理が生成される場所の近くでそれを上書きする。
+
+@ 0 3 0 07f7fec5ebc6fb9e084ea7e447c69178
++       検認はケイパビリティではなく普通のトレイトなので、`given … : Probate` は純粋であり、それをインポートしても何もキャプチャしない。`Shared` はワーカーが保持する、キャプチャで型付けされた形である。
++       `import soundness.*` は given をインポートしないので、検認は名前で選ぶ。
+
+% 2 1 0 1b48575a9b6cccc00e7b64ff97913701
+
+% 3 1 0 12f9b655596085320e170adf579820cc
+
+% 1 1 0 03e56afae33d2c3b1d67e08d35159064
+
+% 1 1 0 045862bfead4efd619f94274dd0fc679
+
+@ 0 4 0 1b64edda51d885d30dcdef7ea3bf3ab6
++       どれを選ぶかは子が何をするかから決まる。状態を変更する処理には、すべての子が最後まで実行されるように `awaitProbate` が適している。純粋な処理は `cancelProbate` を使える。そして、生成したすべてのタスクを待つように設計されたコードには、忘れられた `await` が黙った待機ではなくエラーになるように、`failProbate` または `panicProbate` が適している。
+
+% 0 1 0 1c79dc2f188b950015a1f3d82d171e9f
+
+% 1 1 0 10c3d091de30b0aa09cab1c539262799
+
+% 2 1 0 00f06e416ec9f376167ae3f76e20a28f
+
+@ 0 9 0 0aa158879d1a54b6166a2567d227b647
++   entry #cleanup   親が完了したときの未完了の子の運命
++       完了するワーカー自身のストランドの上で、そのプロミスが決着する前に、子を片付ける対象のワーカーを引数として呼ばれる。`worker.delegate(child => …)` は生きているデーモンでない子をそれぞれ訪れ、デーモンは無条件にキャンセルされる。
++   entry #trap   投げっぱなしのワーカーから逃れたエラーの運命。既定では `Remedy.Escalate(error)`
++       ワーカーのプロミスが決着する前に呼ばれる。
++       `Accept` はエラーを消費し、`Reject` は元のエラーを外側へ伝え、`Escalate(other)` は代わりのエラーを伝える。連鎖の終わりで受け入れられなかったエラーはワーカーのストランドの上で再び投げられ、捕捉されない例外のハンドラに届く。
+
+@ 0 6 0 12c20e7fa9c87d2c080056f00f201848
++   entry .Shared   `Durable` なケイパビリティだけをキャプチャする `Probate`
++       `Probate^{caps.any.only[anticipation.Durable]}` である。ワーカーは共有された `Monitor` なので、`Worker` が保持するものは共有されたものでなければならず、したがってすべての `(using Monitor^, Shared)` シグネチャはこの型の検認を取る。
++       `probates` の純粋な検認は自明に適合し、`Tactic` を閉じ込める `failProbate` がキャプチャを必要とする唯一のものである。排他的な資源を閉じ込める検認はタスクに渡すことができない。
+
+@ 0 1 0 1ad1fde52cb8082b1f54d66eeacc9c88
++ entry .Containment   `contain` が構築する `Probate`：逃れた例外が処理される領域
+
+% 1 1 0 1a3dcd639cea65f20d0553e318777487
+
+@ 0 4 0 077d5c65dec4a71e165208ffc60546fc
++       `cleanup` はそのまま外側の検認に委ね、`trap` をハンドラで上書きする。一致したエラーの `Remedy.Accept` は伝播を止め、`Reject` は元のエラーを外側の検認のトラップに渡し、`Escalate(other)` は代わりのエラーを渡す。一致しなかったエラーも外側のトラップに送られるので、封じ込めは入れ子にできる。
+
+% 1 1 0 04574a6cf451a70e0b65fb220b3b2a52
+
+@ 0 5 0 1fad493f9ebbcf3705b1afe90c9ad7f2
++   entry #cleanup   外側の検認の、子の運命についてのポリシー
++   entry #trap   一致したエラーにはハンドラの対処、そうでなければ外側の検認のもの
++   entry #protect   この封じ込めをスコープ内の `Probate.Shared` としてブロックを実行する
++       `contain { case … => … }.protect { daemon(…) }` のように使う。ブロックの中で生成されたデーモンと見捨てられたタスクは、逃れた例外をここに送る。
+
+@ 0 5 0 0aa57e633b9803a511d48f65d60043ae
++ entry .Remedy   トラップが逃れたエラーについて決めること：受け入れる、拒否する、別のエラーを上へ伝える
++     `Accept` はエラーを消費し（副作用として処理する、たとえばログに出す）、伝播を止める。`Reject` は元のエラーを外側のトラップに渡す。`Escalate(error)` は拒否するが、代わりに伝播させる、純粋でスレッドセーフな別のエラーで置き換える。
++     普通の `Probate#trap` は与えられたエラーを上へ伝えるので、処理されない逃避が取りこぼされることは決してない。
+
+@ 0 6 0 1752f1dfdd727eb200f9c4139cb22918
++ entry .Fulfillment   ワーカーのライフサイクル：初期化中、実行中、完了、引き渡し済み、失敗、キャンセル
++     `Initializing` はストランドが本体を開始する前、`Active(startTime)` は実行中、`Completed(duration, value)` はまだ誰も合流していない結果を持ったとき、`Delivered(duration, value)` は最初の合流の後で、後の合流が遷移を省けるようにするもの、`Failed(error)` は本体が発生させたか投げた Throwable を持つもの、そして `Cancelled` である。
++     期間はミリ秒である。
++     ワーカーは状態をこれらのいずれかとして保持し、それ以外の方法では公開されない。
+
+@ 0 4 0 1f17bd04f7da234b0cf53ec09ed60bb1
++ entry .Perseverance   一回の `retry` の試行の結果：粘る、放棄する、値を持って勝つ
++     `Persevere` は次の試行を求め、`Surrender` は `Tenacity.Error` で諦め、`Prevail(value)` は成功である。
++     `retry` は本体の選択をその境界の外へ運ぶために内部でこれを使う。
+
+@ 0 3 0 052ce8205e4bb2a01e719e9588208043
++ entry .Observation   `Fresh` または `Stale` として観測された値
++     `Fresh(observation)` と `Stale(observation)` の二つのケースからなる列挙型で、返すものが最新かどうかを伝えたい読み手のためのものである。
++     現在、parasite の中にこれを生成するものはない。
+
+@ 0 2 0 1adb23b52023d7db19cdfba742af953b
++ entry .Transgression   違反に対する三つの処置：`Dispose`、`Escalate`、`Cancel`
++     三つのケースからなる列挙型である。
++     現在、parasite の中にこれを消費するものはない。
+
+@ 0 1 0 1f196f67a02410860a3a1108c81765f6
++ entry .Tenacity   リトライのスケジュール：各試行の前にどれだけ待つか、いつやめるか
+
+% 1 1 0 13702ac8a90b49fc12c850458d4bb94e
+
+@ 0 5 0 10991bfcbc67ea170f13be4d02c6740a
++       `retry` はスコープ内の `Tenacity` のもとでブロックを実行する。
++       `delay(attempt)` は与えられた試行の前の一時停止をナノ秒で表す（`Prim` が最初の試行で、決して待たない）か、やめるために `Tenacity.Error` を発生させる。
++       `Tenacity.exponential` と `Tenacity.fixed` は二つの一般的な形を作り、`limit` は試行の回数を制限する。`retryTenacities` パッケージには、名前でインポートできるものが六つ用意されている。
++       tenacity は純粋であり、ケイパビリティを何も保持しない。
+
+% 2 1 0 14d346edf209efe011f1301cf762220b
+
+% 3 1 0 0cf6b3cac8647725075ac57cb4af9526
+
+% 0 1 0 01c14d9711455ebc112e2e9650365bab
+
+% 1 1 0 046869506c22092614d8e2f106a4d72a
+
+% 1 1 0 1545f497c0954cc30fac24b54647f946
+
+% 1 1 0 1a041ac99aacea2d18d7999d7b3b4030
+
+@ 0 8 0 0b8c55fba2b0190300341ba8e4d7699c
++   entry .exponential   幾何級数的なバックオフ：遅延なし、次に `initial`、次に `initial*base`、`initial*base²`、…
++       任意の `Abstractable across Durations` の初期遅延に対する `Tenacity.exponential(initial, base)` である。最初の試行は即座に行われ、二回目は `initial` だけ待ち、その後の各試行は前の `base` 倍だけ待つ。
++       `limit` で制限されるまで無制限である。
++   entry .fixed   最初の試行の後、すべての試行の前に同じ遅延を置く
++       `Tenacity.fixed(duration)` である。`Tenacity.fixed(0L)` は即座にリトライし、`fixedNoDelay…` の given はこれである。
++   entry .Error   `retry` が試行を使い果たしたとき、または本体が放棄したときに発生する
+
+% 1 1 0 033c07b563e6489a1a5f3534b74a6518
+
+@ 0 7 0 0f14bf9ad0fdb64a08f7de74df5fbae7
++         エラー `↯/s.69.1`：_aborted repeated evaluation after `count` attempts_。
++         `limit` に達したとき、または本体が `surrender()` を呼んだときに、`retry` が必要とする `Tactic[Tenacity.Error]` を通して発生する。
++     entry #count   行われた試行の回数
++   entry #delay   試行の前の一時停止（ナノ秒）、またはやめるために発生させる `Tenacity.Error`
++   entry #limit   同じスケジュールで、`n` 回の試行の後に諦めるもの
++       `tenacity.limit(5)` は六回目の試行で `Tenacity.Error` を発生させる。
+
+@ 0 1 0 181eca8b07b0594217854a9c78dfc7aa
++ entry .Schedulable   `snooze` と `sleep` が共有する境界：期間または時点を、現在からのナノ秒として
+
+% 1 1 0 031437c5e8b7f6a1166f23865066dad5
+
+@ 0 6 0 1ca4cfe0e527394405f3888a0253dae2
++       `nanoseconds(value)` が、`Self` で表された一時停止がどれだけ続くべきかを示す型クラスである。
++       二つのコンパニオンの given が、任意の `Abstractable across Durations to Long` の型（`.duration`：汎用の形がすでにナノ秒数である）と、任意の `Abstractable across Instants to Long` の型（`.instant`：起床するエポックミリ秒）を扱うので、`quantitative` の時間、`aviation.Timespan`、`aviation.Instant` は変換なしで受け付けられる。
+
+@ 0 7 0 0ba2b858afe68f8a1dafd2175aafb548
++       裸の `Long` は、単位が名前で選ばれるまでどちらでもない。期間には `abstractables.millisecondsAbstractable`、`nanosecondsAbstractable`、`microsecondsAbstractable`、時点には `epochMillisecondsAbstractable` を選ぶ。
++       期間の単位と時点の解釈の両方がスコープ内にあると、両方の given を満たすので曖昧として拒否される。これが狙いである。呼び出し側の何も、どちらが意図されたかを示せず、ナノ秒の解釈のもとでの修飾なしの `snooze(200L)` はほとんど即座に戻ってしまうからである。
+
+% 2 1 0 0be5aa725a478b4d06b88c118787f34e
+
+% 3 1 0 10c5b9e8733f398b0e37fc1685b5b68f
+
+% 4 1 0 070f895fd4dde19707711b575dafa202
+
+% 5 1 0 09ff93ef3d5b27030af5d628798deadb
+
+% 6 1 0 130b74f7b492a4061e296777f415593e
+
+% 0 1 0 0b78a915063968591f7338f44c86803a
+
+% 2 1 0 0e4572dffd0e818d02ef17ca7ae2128d
+
+% 0 1 0 07984f1cc990dd5b1d63a5d6ae3a466c
+
+% 1 1 0 1502f46d5bcfc657176e448800629038
+
+@ 0 4 0 0c64b64dfe70792d122cdaa0998f660b
++   entry .duration   任意の `Abstractable across Durations to Long` の型は、期間として `Schedulable` である
++   entry .instant   任意の `Abstractable across Instants to Long` の型は、起床の時点として `Schedulable` である
++   entry #nanoseconds   この値の一時停止が、現在から何ナノ秒続くべきか
++   entry #remaining   拡張メソッド `value.remaining`：その `nanoseconds`
+
+@ 0 1 0 0a337c3cadccf74314048c24d96ae5a7
++ entry .Timeout   期限が過ぎたときに、先に突かれていなければ動作を実行する見張り
+
+% 1 1 0 1d7d21bc2f68c8830f2ff45ec956da5a
+
+@ 0 6 0 0a39785e73cb0a821e0f3bed4380a186
++       `Timeout(duration)(action)` は、期限まで眠り、それから動作を一度だけ実行する、監督された見張りのタスクを開始する。
++       `nudge()` は期限を現在からその期間だけ先へ延ばすので、活動の兆候（たとえば接続上の各リクエスト）のたびに突かれるタイムアウトは、その長さの沈黙の後にだけ発火する。`alive` はまだ発火していないかを示し、`reset()` は発火したタイムアウトを再開する。
++       これは、活動を見たどのタスクからでも突かれる `Durable` なケイパビリティであり、アトミックな期限を持つ。
+
+% 2 1 0 0b19655895374c431a8b817db10b5d4b
+
+% 3 1 0 0c9c543f7de36dfc1af0984e6481dfe4
+
+% 4 1 0 1675d0dffa0333d214aac01045961f8b
+
+% 5 1 0 1a494c10a4933faa17de49daeabe6a19
+
+% 6 1 0 183b4327b9a141421994f4c38dc40a7d
+
+% 8 1 0 145fe9b901badb811d5cf7b5f1022e07
+
+% 0 1 0 1f0ef4965b58096602a62547096ae02d
+
+% 0 1 0 06d3d8277228a5281c0bb8378ea1fd7d
+
+% 0 1 0 0fbaa495789dac9300d4e6063954f46e
+
+% 0 1 0 0f67f27a954774a9091bb0a02089712f
+
+% 0 1 0 0b7aecd6eb59485b0e42baa02d87f794
+
+% 0 1 0 18b7301b84b484331395ce9f4bc986e9
+
+% 1 1 0 1855a99be3b957390dd74d336f980acf
+
+@ 0 7 0 08768651db0b261d0ffc31248324666d
++       動作は見張りのタスクの上で実行されるので、他のタスクの本体と同様に、`Durable` なケイパビリティだけをキャプチャできる。
++       構築には `Monitor` と `Probate.Shared` が必要である。見張りはそのモニターの子で、名前は `timeout` である。
++   entry .apply   ある期間のタイムアウトを、発火したときに実行する動作とともに開始する
++   entry #alive   タイムアウトがまだ発火していないか
++   entry #nudge   タイムアウトがまだ生きていれば、期限を現在からその期間後まで延ばす
++   entry #reset   発火したタイムアウトを、新しい期限と見張りで再開する
+
+@ 0 1 0 0e9cec37ee2aa46202c941a6f2cc35a9
++ entry .Interceptable   `intercept` の背後にある型クラス：対象のイベントに動作をどう登録するか
+
+% 1 1 0 08e8699d075ae68515eec17f874b6338
+
+@ 0 5 0 0b07d3c7891a7e62171cc5c0f6caf5bf
++       `event is Interceptable onto target` は、`target.intercept[event](action)` が動作をどう登録し、後でどう取り除くかを示す。`register` は、結果の `Hook` が呼ぶ登録解除の関数を返す。
++       インスタンスは `Shutdown.interceptable`、`Fault.interceptable`、`GarbageCollection.interceptable`（いずれも `Vm` に対するもの）と、任意の値に対する `Destruction.interceptable` である。
+
+% 0 1 0 146e320bab2e8d62136cc17e92d809f8
+
+% 0 1 0 1cfb32b57b4ce56302f3fa083f0fd5ce
+
+@ 0 1 0 1dfb865a34740f051af5d994b94b977d
++   entry #register   対象のイベントに動作を登録し、その登録を解除する関数を返す
+
+@ 0 1 0 07069f0f18b975270ac89f529896907c
++ entry .Hook   登録されたインターセプト。キャンセルすると止まる
+
+% 1 1 0 12140ea839f34b74190cec19a33ac6b1
+
+@ 0 3 0 0dffcb11ab5b0b871727ddb62cdd4904
++       `intercept` は `Hook` を返す。`hook.cancel()` は動作の登録を解除し、その後はイベントがそれを実行しなくなる。
++       `Hook(unregister)` は任意の登録解除の関数を包む。
++   entry #cancel   動作の登録を解除する
+
+@ 0 1 0 06400591c240199c10f62b0aee303958
++ entry .Shutdown   VM のシャットダウン：`Vm.intercept[Shutdown](action)` は終了時に動作を一度実行する
+
+% 1 1 0 1983995e67ce14c81ab1c1c0d0a33e46
+
+@ 0 5 0 1c45a9db7fe482e31090cdae53900909
++       JVM のシャットダウンフックである。動作は `System.exit` のとき、最後のデーモンでないスレッドが終わったとき、または `SIGINT`/`SIGTERM` のときに実行される。サーバーが待ち受けていたソケットファイルを取り除くのはここであり、古いファイルが次のプロセスを出迎えることは決してない。
++       フックはそれぞれ専用のスレッドの上で、並行して、定められていない順序で実行され、動作が投げた例外は握りつぶされるので、あるフックが他のフックの実行を妨げることは決してない。
++       `Hook#cancel` はそれを取り除く。
+
+% 2 1 0 1a5977990d86f64f176db3ba8fa7c356
+
+% 3 1 0 11989804a0a3dbeb1ea4785c6fa8f5ad
+
+% 0 1 0 13543761c23cbb3e0fad13c7007e8fc5
+
+% 0 1 0 02d41cb9632ba548005120aafedff247
+
+% 2 1 0 170832a4f94d25e1125fb029a2f65dbb
+
+% 3 1 0 193b128efd4f8af90960948041e220dd
+
+@ 0 1 0 1f4a002f1c0257f7079e4be54a63b3a0
++   entry .interceptable   `Shutdown is Interceptable onto Vm.type`：JVM のシャットダウンフックを登録する
+
+@ 0 1 0 03155629fd40952906605c0bd19c8a0f
++ entry .Fault   誰も所有しないスレッドから逃れた例外：死んだデーモン、上へ伝えられたトラップ
+
+% 1 1 0 07e7f2ad5f2db32a026f253f36a09165
+
+@ 0 6 0 1a5c977d7961176006f7a40f278658cc
++       `Vm.intercept[Fault](action)` は動作を JVM の既定の捕捉されない例外のハンドラ（動作のレジストリを持つ一つの共有ハンドラ）として設定するので、スレッドを終わらせるすべての例外に対して実行される。どの `Probate#trap` も受け入れなかった `daemon` のエラー、親に見捨てられたタスク、parasite の外にある任意のスレッドが対象である。
++       デーモンのエラーがそれを生成したコードのハンドラに届かない場合（生成したコードはすでに先へ進んでいる）、プログラムが予期しないものを処理するのはここである。
+
+% 2 1 0 1fdc284a594e804202902bf9a465412d
+
+% 3 1 0 0fc584626fab930b15db1a7b3a9a4353
+
+% 0 1 0 1e302db2d5fd33b411c1eb0d39ffff7e
+
+% 0 1 0 1cf64f50ad1d56b80dd92b74f2886df8
+
+% 0 1 0 0c5f038b58c0135a14b26c2f956a4f71
+
+% 2 1 0 17e1d8ebefdf0dae1f90179c0249483a
+
+% 3 1 0 1adc58df7caca7410912647f429d2a45
+
+% 1 1 0 1daba01e42037bf505aa6f596fe4ac36
+
+% 1 1 0 1c92155a014ade620818c50587de015c
+
+@ 0 3 0 152e6c873acb30a11c5805e5e9bea0f0
++   entry .interceptable   `Fault is Interceptable onto Vm.type`：捕捉されない例外のレジストリに動作を加える
++   entry #thread   死んだスレッド
++   entry #error   `fulminate.Error` として包まれた例外
+
+@ 0 1 0 1481477be18184bf102e3a4561dbd027
++ entry .Destruction   値が到達不能になること：`value.intercept[Destruction](action)` はコレクターがそれを回収したときに実行される
+
+% 1 1 0 03b9019cb12f125b0cb68d529e95f70a
+
+@ 0 5 0 1a5ee5b2b420eaf60d1a40af52bb4221
++       動作を `java.lang.ref.Cleaner` に登録するので、値がファントム到達可能になった後に実行される。ファイナライザーと同様だが、値を復活させることはない。
++       動作は値を参照してはならない。参照すると値は決して回収されない。
++       `Hook` をキャンセルすると、動作を実行せずに登録を片付ける。
++   entry .interceptable   `Destruction is Interceptable onto any value`：クリーナーの動作を登録する
+
+@ 0 1 0 038e0e849c7a33040eba62124ffbf422
++ entry .GarbageCollection   JVM のコレクターの一回の実行：`Vm.intercept[GarbageCollection](action)` はそれぞれを観測する
+
+% 1 1 0 02014cc2d41d57bc076be07e6f839b91
+
+@ 0 3 0 03bd6361a3854dd5196518e275246770
++       `parasite.jvm` にある。
++       動作は、JVM のコレクター Bean が通知するすべてのコレクションについて `GarbageCollection` を受け取る。どの `Collector` が実行されたか、どの `Cause` がそれを引き起こしたか、そしてすべてのメモリプールの前後の使用バイト数である。
+
+% 2 1 0 0de9aba83f593ca91acdb767492758e5
+
+% 3 1 0 120de4f8157f56291c92d913a1f81e3a
+
+% 0 1 0 0776b1f2f26985ed0e7c8f07274f8913
+
+% 0 1 0 1ff242ee9f4ccede02a59717bb6a4c6d
+
+% 0 1 0 1a621c3d779a7e3616f100fd76482972
+
+% 2 1 0 039d1e0cd22d8b8a0884a966dba3a26c
+
+% 3 1 0 030d58ca6d4d964f167533aa21b80e41
+
+@ 0 2 0 1b0a110b9de938fc1da68e46d5665df7
++   entry .interceptable   `GarbageCollection is Interceptable onto Vm.type`：すべてのコレクター Bean を待ち受ける
++   entry .Collector   実行されたコレクター：G1、Parallel、CMS、Serial の世代、または `Other(name)`
+
+% 1 1 0 1debd8bc2b0fd9631d2713af988b192f
+
+@ 0 5 0 126a8fec62795a54092f66ce8151c33f
++         `G1YoungGeneration`、`G1OldGeneration`、`G1Concurrent`、`PsScavenge`、`PsMarkSweep`、`ParNew`、`ConcurrentMarkSweep`、`Copy`、`MarkSweepCompact`、そして列挙型が知らないコレクター名に対する `Other(name)`。
++     entry .unapply   JVM での名前でコレクターに一致する。未知のものは `Other(name)`
++   entry .Cause   コレクションが実行された理由：アロケーションの失敗、`System.gc()`、エルゴノミクス、…、または `Other(cause)`
+
+% 1 1 0 1ff51a1b4571984c153a349bec4a34dc
+
+@ 0 11 0 1d9274f700d918ae19b9dac5ff697469
++         `AllocationFailure`、`SystemGc`、`GcLocker`、`Metadata`、`Ergonomics`、`CmsInitialMark`、`CmsFinalRemark`、`FullGc`、`HeapInspection`、`NoGc`、`G1EvacuationPause`、`G1HumongousAllocation`、そして列挙型が知らない原因に対する `Other(cause)`。
++     entry .unapply   JVM でのテキストで原因に一致する。未知のものは `Other(cause)`
++   entry #run   コレクションの通し番号。`Ordinal` として
++   entry #collector   どのコレクターが実行されたか
++   entry #cause   何がコレクションを引き起こしたか
++   entry #bytes   各メモリプールの前後の使用バイト数。プールの名前ごと
++   entry #before   コレクション前のすべてのプールの使用バイト数の合計
++   entry #after   コレクション後のすべてのプールの使用バイト数の合計
++   entry #reduction   コレクションが解放したバイト数：`before - after`
+
+@ 0 1 0 1f5890285a8ab6d913a266dd88c37ac5
++ entry .Heap   JVM のヒープ。使用中のバイト数として
+
+% 1 1 0 0c8516c0650cc113125dbe0b12da87b5
+
+@ 0 3 0 0e4b1fcaf9fd7ad50e105a7a0d604fb5
++       `parasite.jvm` にある。
++       `Heap.used` は、JVM の管理 Bean が報告するすべてのヒープメモリプールの使用バイト数を合計する。
++   entry .used   ヒープのメモリプール全体で現在使用中のバイト数
+
+@ 0 1 0 14131b9460436a5013995f085186a28c
++ entry .threads   スレッドモデル。それぞれ名前でインポートする `Threading` の given
+
+% 1 1 0 11551e000e0227e912cf52b5220c8377
+
+@ 0 6 0 1ea5e8341c9cb9e612e7e661c343f656
++       `supervise` ブロックがどのスーパーバイザーの上に木を根付かせるかは、スコープ内の `Threading` の given によって決まり、その選択が暗黙に行われることは決してない。`import soundness.*` はこれらのどれも持ち込まず、一つを名前でインポートする。
++       `threads` はパッケージではなくオブジェクトである。その given はケイパビリティであり、ケイパビリティ型のフィールドはそれ自体がケイパビリティであるオブジェクトの中に置かなければならないからである。それらの一つに到達する公開クラスやオブジェクトは `uses parasite.threads` を宣言する。
+
+% 2 1 0 07ce85fddc58e08b08ce81aa20462a98
+
+% 3 1 0 0b152e90a3f1813b03a6555a4b59726e
+
+% 4 1 0 1d099fe20a509304100e05a6e1d5b01d
+
+% 1 1 0 0007b448e87440ac1f614f0cade11615
+
+@ 0 3 0 0d1372f1805487430604c094b5c31a3d
++       `virtualThreads` は Java 21 があると分かっている JVM アプリケーションに、`adaptiveThreads` は JVM を指定できないアプリケーションに、`pooledThreads` は細かいファンアウトに、`platformThreads` はタスクごとにプラットフォームスレッドを必要とするコードに、`javascriptThreads` はイベントループに適している。
+
+% 1 1 0 116b740a3ef057671b4f6fddd938b25a
+
+% 1 1 0 1d4a65add82a12030b4f7289114238b2
+
+@ 0 11 0 094a779777b6704e0a2c66c1068d1713
++   entry .platformThreads   各タスクを新しいプラットフォームスレッドで実行する：`PlatformSupervisor`
++   entry .virtualThreads   各タスクを仮想スレッドで実行する：`VirtualSupervisor`
++       Java 21 が必要で、それより古い JVM では実行時に失敗する。Loom のない Scala Native ではプラットフォームスレッドをフォークする。
++   entry .adaptiveThreads   JVM が持っていれば仮想スレッド、そうでなければプラットフォームスレッド：`AdaptiveSupervisor`
++   entry .pooledThreads   再利用可能なキャリアスレッドの上のタスク：`PooledSupervisor`
++       タスクごとのスレッドの開始が支配的になるような、細かいファンアウトのためのものである。タスクは自分のスレッドを持たないので、スレッドローカルはキャリアが実行するタスクをまたいで持続する。
++   entry .javascriptThreads   フォークの時点で一つのストランドの上で即座に実行されるタスク：`JavascriptSupervisor`
++       Scala.js のためのモデルで、単一のストランドの制限を持つ。インターリーブはなく、スリープは即座に終わり、完了したどのタスクも終わらせることのできない待機ではパニックする。
+
+@ 0 1 0 018db5cb4c97eeac152d1ce672a12593
++ entry .supervisors   グローバルなスーパーバイザー。given として
+
+% 1 1 0 0580f10a363140d90e880dc4a4fe848f
+
+@ 0 4 0 1483b3125d8c2ffc149639115a0b8d67
++       `globalSupervisor` を持つオブジェクトである。これは、`Threading` ではなくスーパーバイザーの値を直接必要とするコードのための `Supervisor` の given である。
++       その given はケイパビリティなので、それに到達する公開の定義は `uses parasite.supervisors` を宣言する。
++   entry .globalSupervisor   `Supervisor` の given としての `PlatformSupervisor`
+
+@ 0 1 0 10a4f3507023ff1707b3c62f09ef9e45
++ entry .unsupervised   どの `supervise` スコープの外でもブロックするための、プロセスの寿命を持つモニター
+
+% 1 1 0 0167c28cf676c9b01c9d16b0bbfca4af
+
+@ 0 4 0 119f1a434489ef361df33d883e125db1
++       監督のスコープが存在しえない呼び出し箇所（デーモンのライフサイクル、プロセスの寿命にわたる待機）のための、意図的で明示的にインポートする逃げ道である。`orphanMonitor` は `PlatformSupervisor` の上の `Root` で、呼び出し側のプラットフォームスレッドをパークし、何も監督しない。
++       ブロックする領域がすでにスコープを持つところでは、`supervise` を優先する。
+
+% 2 1 0 0c39b2a175e82d0c00dcad50ff1a5ca0
+
+% 3 1 0 05c523be4a157c0f022b0040e3b50543
+
+% 0 1 0 0a8f4f91ba957db61a44a74663fb2e30
+
+% 1 1 0 17cbeeb759e786f4049b40aa5f9e5b77
+
+% 0 1 0 14aa5b64b27ad33e0e60020c088ac000
+
+% 0 1 0 044f5d4d8463b8e40e5e85232f336888
+
+% 0 1 0 16cc184cc40174da1fdca1e677aed5a5
+
+% 1 1 0 11faefc942d7632004fd3ba776c6f02f
+
+% 1 1 0 0c117eae24267a0b0522a3ddc740a434
+
+@ 0 1 0 1e4f9d2950b8ba8a155a9c12903e3c77
++   entry .orphanMonitor   スコープを持たないルートの `Monitor`。`PlatformSupervisor` の上にある
+
+@ 0 1 0 107ac79c188cb83408f298e7dfbafcf7
++ entry .probates   四つの完了ポリシー。それぞれ名前でインポートする `Probate` の given
+
+% 1 1 0 0223b62fa5d2502801120b7dc506e9a1
+
+@ 0 4 0 03c020fa6efb8b3112f9bdb02b6b34ad
++       検認は、親の本体が完了したときにまだ実行中の子を親がどう扱うかを決める。すべての `async`、`task`、`daemon` にはスコープ内に検認が一つ必要であり、`import soundness.*` はどれも持ち込まない。
++       デーモンの子はどのポリシーのもとでもキャンセルされる。ポリシーが異なるのは普通の子についてである。
+
+% 2 1 0 0dca3bcb980f8c6a0db50229c0f6597a
+
+% 3 1 0 1eb0ea445078ee4d047dae6114e0561d
+
+% 4 1 0 1face8857bf4090202ce709c6f2aee98
+
+% 5 1 0 07a66bbec9f461a70139af7fd03a1f69
+
+% 6 1 0 11fc3ca310fcf81f054544a2b744412a
+
+% 0 1 0 1d10db6a57f937290b6d625048e8095a
+
+% 2 1 0 0634fa2f00d27c9c16f2af0478a0a821
+
+% 0 1 0 189f085fae4a522019413f0ecfe89ff3
+
+% 0 1 0 00f32367fa4ed0af03489a430aa117ca
+
+% 0 1 0 0e102d37a0c29e41175dd3aede87d43f
+
+% 0 1 0 0340382fa4eeb3ef11291fbdc28cc8c6
+
+% 0 1 0 023bc31516e84ffa020658361d02e57c
+
+% 0 1 0 04a09b8e5a323be61aa971e1923599e4
+
+% 0 1 0 1b1eb071fd47f1290829f8a0f60f221f
+
+% 1 1 0 1b60e700bf3b8d830c03b253bf5a4ff0
+
+@ 0 4 0 0baf7773bc0d027703f4dcd43cccde19
++       状態を変更する処理には、すべての子が最後まで実行されるように `awaitProbate` が適している。純粋な処理は `cancelProbate` を使い、どこにいてもその場で止まってよい。そして、生成したすべてのタスクを待つように設計されたコードには、忘れられた `await` が黙った待機ではなくエラー（検査されるものか、検査されないもの）になるように、`failProbate` または `panicProbate` が適している。
+
+% 1 1 0 13d7e8d3c3cdcf5500e186cf53d26663
+
+@ 0 10 0 10a7c1c69143d50f19b0411e25768825
++   entry .awaitProbate   親は完了する前に、未完了の子をそれぞれ待つ
++       子は完了するワーカー自身のストランドの上で待たれる。親の `await` は、すべての子が決着してはじめて戻る。
++   entry .cancelProbate   親は未完了の子をそれぞれキャンセルする
++       子は一時停止する場所で割り込まれ、譲る場所で止まる。親の結果には影響しない。
++   entry .panicProbate   未完了の子はパニックになる：_asynchronous child task did not complete_
++   entry .failProbate   未完了の子は、スコープ内の `Tactic` を通して `Async.Error(Incomplete)` を発生させる
++       何かをキャプチャする唯一の検認であり（アンビエントな `Tactic[Async.Error]`）、インポートする場所のスコープ内にそれが必要である。エラーは親の `await` で表に出る。
+
+@ 0 1 0 0925414e7041adc9197eca8f35ed8c49
++ entry .retryTenacities   六つのリトライのスケジュール。それぞれ名前でインポートする `Tenacity` の given
+
+% 1 1 0 04d396aef614fe5808709a270baa6955
+
+@ 0 4 0 16e7e757d8f4b4d7120fc7b47d0bb5d6
++       `retry` はスコープ内に `Tenacity` を必要とし、`import soundness.*` はそれを与えない。
++       指数的なスケジュールは 10 ミリ秒から始まり、試行ごとに 1.2 倍に増える。`fixedNoDelay` のスケジュールは即座にリトライする。
++       それぞれ無制限のもの（`…Forever`）と、5 回または 10 回の試行に制限されたものがあり、制限に達すると `retry` は `Tenacity.Error` を発生させる。
+
+% 2 1 0 09b14ae46ad1e12f179bafed58f3db7a
+
+% 3 1 0 0d4002e647dd38dc11f697d627ebbee5
+
+% 0 1 0 168808e166e2bb5404e25cccd9984669
+
+% 1 1 0 19b99099e2a92d0a0b68ab677fcddcf1
+
+% 1 1 0 1357450fdefb48a302cee704afc68e5e
+
+% 1 1 0 1d080d28a9f2fffa144a27574d0e56be
+
+@ 0 6 0 118c8b7586d406de0bd478af7da7b711
++   entry .exponentialForeverTenacity   10 ミリ秒から、試行ごとに 1.2 倍に増える。無制限
++   entry .exponentialFiveTimesTenacity   10 ミリ秒から、試行ごとに 1.2 倍に増える。最大 5 回の試行
++   entry .exponentialTenTimesTenacity   10 ミリ秒から、試行ごとに 1.2 倍に増える。最大 10 回の試行
++   entry .fixedNoDelayForeverTenacity   即座にリトライする。無制限
++   entry .fixedNoDelayFiveTimesTenacity   即座にリトライする。最大 5 回の試行
++   entry .fixedNoDelayTenTimesTenacity   即座にリトライする。最大 10 回の試行

@@ -1,0 +1,284 @@
+orthant 2 language
+
+@ 0 1 0 0ac964c6ea79e8611c0676681001fa4d
++ ## Chimie
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 4 0 0d6d3d0c7212c75f07e61e8bc3781f96
++ Le [tableau périodique](https://en.wikipedia.org/wiki/Periodic_table), les formules chimiques et
++ les équations chimiques sont modélisés comme des valeurs. Les 118 éléments sont tous disponibles
++ par leur symbole. Les éléments se combinent en molécules, et les molécules en formules, avec des
++ opérateurs ordinaires. Une équation joint deux formules par une flèche de réaction typée, et
++ peut dire si elle est équilibrée.
+
+@ 0 1 0 06df82e45ad74d22094a21e8e7777be3
++ ### La notation chimique
+
+@ 0 4 0 1c5be5334a53791617cf24ac131ba94f
++ La notation chimique est un petit langage formel. Une molécule est une collection d'atomes, dans
++ laquelle un atome peut apparaître plus d'une fois, avec une charge éventuelle. Une formule est
++ une somme de molécules avec des coefficients. Une équation affirme une relation entre deux
++ formules, qui est orientée, réversible, ou à l'équilibre.
+
+@ 0 2 0 18a374182acd489709bfc978dec6c7eb
++ Écrite sous forme de chaînes, aucune de ces structures n'est disponible. `2H₂ + O₂` n'est qu'une
++ suite de caractères, et savoir si une équation est équilibrée n'est pas une question à laquelle
++ une chaîne peut répondre.
+
+@ 0 3 0 133dcd40a38c780c133b45fcc84490a4
++ Ici, la structure est construite à partir de parties typées. Les formules sont assemblées par
++ des opérateurs, et non analysées à partir d'un texte. Elles s'écrivent avec des indices et des
++ exposants corrects. Et on peut les interroger : les deux membres d'une équation sont comparés
++ atome par atome.
+
+@ 0 2 0 0912bef352deaa6311e67b789081c2f6
++ Tout provient du package `soundness`. Le deuxième import permet aux exemples d'afficher leurs
++ résultats :
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 199f7818b30dec3505fd828eed336e39
++ ### Éléments
+
+@ 0 2 0 02eba028e408729d1859f68d8df8279f
++ Chaque élément est une valeur de `PeriodicTable`, avec son numéro atomique, son symbole et son
++ nom. Les éléments sont aussi accessibles par numéro, ou par symbole, [à l'exécution][exécution] :
+
+% 2 1 0 069520c723dbcc7c14a9e1a23c4f48c9
+
+% 0 1 0 0050335d536ba0410201356cb03d0027
+
+% 1 1 0 10b4341d76a9de4e081c8134e5cda6b2
+
+% 3 1 0 038d541531dbef29139c466e39dcd0b7
+
+% 4 1 0 1f256957eac7a65306076e7789775c6c
+
+% 5 1 0 166e178eb336ead51364f3a4ada1dd49
+
+% 0 1 0 0226a2183c3315020a62e6badc93746f
+
+% 0 1 0 0a8a749e85583e0e0927ab8a8a4f7efd
+
+% 0 1 0 111f9f23fb2c622801527bed1700ae5b
+
+% 0 1 0 18390ab9d6937bfe027dbc5298ab1e56
+
+% 1 1 0 169841c8894871710f69b01fd95fc7ab
+
+@ 0 2 0 19b13e0bd7bb4cc219b6cc7bff86505e
++ Chercher un élément par numéro donne une valeur [optionnelle](optional-values.md), puisqu'un
++ numéro peut ne correspondre à aucun élément.
+
+@ 0 1 0 150972dd9d531cb814b08f0fd3c01eb7
++ ### Molécules
+
+@ 0 2 0 1c2364abb74cd983015fb2f6ab2f4ffc
++ Les atomes se lient en une molécule avec `*`, et un atome répété prend son nombre comme argument
++ de type. Une molécule s'écrit avec des indices corrects :
+
+% 2 1 0 17a54e1f140a727c011fb293f010f273
+
+% 0 1 0 10227188158730550ebc7db127336f2a
+
+% 1 1 0 10f23883c919c25c15e0d83a19c9808f
+
+% 3 1 0 1468a4d043c6e6110f1be52cc45c01bd
+
+% 4 1 0 1d596266d81f154a09597c4321b6d159
+
+% 5 1 0 0ff47897b3816ebd05cf5f13ade98a17
+
+% 0 1 0 00236d29977178c21c37a85c4f21f907
+
+% 0 1 0 11da4bdc321a2a9a0b8ce7441feaa1e2
+
+% 0 1 0 1131eb54ffb0c6671e674ee7ff98501b
+
+% 1 1 0 1cb99c852dab4f8c0da17d9d029a4256
+
+@ 0 1 0 02811e2b72f4a1ec052241c1448970ca
++ ### Formules et équations
+
+@ 0 2 0 054bc3a547548aff0e8067643e5a1caf
++ Une molécule dotée d'un coefficient est un terme d'une formule. Les termes s'additionnent avec
++ `+`, et deux formules se joignent en une équation par une flèche de réaction :
+
+% 2 1 0 01c45b49d610ba2c064f9e923bd09c09
+
+% 0 1 0 0f05a959f60f50951880b6a39474dbfc
+
+% 1 1 0 0acd5e28ee608f6111d847c90c9246af
+
+% 3 1 0 15b4cc4a68fe75fa060fa505ec5254b6
+
+% 4 1 0 1fd1d3e67137bf1e01721b37635e9577
+
+% 5 1 0 107fd8a3878da25d057e70732483f6fb
+
+% 0 1 0 136c54e5e5b7f878073e7029d71efe37
+
+% 1 1 0 0703738eacdd801c00a4652352daec19
+
+@ 0 1 0 19759cf1b34c347617cfdb5e21ffb61f
++ Une équation sait si ses deux membres contiennent les mêmes atomes :
+
+% 2 1 0 0876aff16e9af0511f32f4c623657c7a
+
+% 3 1 0 1f7f02c5f1a8a5d70e2e10be719c099f
+
+% 4 1 0 1d7f3b7645e0f4910c4e8495f3529ea3
+
+% 0 1 0 189001fb3ca2ccb41e296a0a974550f5
+
+% 0 1 0 154a24df551756b1077964c8666b697f
+
+% 1 1 0 1a51de16e7ec2d7310f165164887db88
+
+@ 0 5 0 0eb19a0c3658eede054d95bc8475f98a
++ Chaque membre est une collection typée d'atomes, et non du texte : l'équilibre est donc une
++ vraie vérification, calculée à partir de la structure. `atoms` donne cette collection pour
++ l'un ou l'autre membre. Une formule indique ainsi sa propre composition, sous forme du nombre de
++ chaque élément à travers toutes les molécules et tous les coefficients qu'elle contient. C'est
++ ce dont a besoin le calcul d'une masse molaire, ou la vérification d'une réaction proposée.
+
+@ 0 1 0 0d90904979fb31f80e75c3e977867cef
++ ### Les flèches de réaction
+
+@ 0 1 0 193584fa0b64c5531c5baa9907c861d2
++ Cinq flèches sont disponibles. Elles signifient des choses différentes, et ne sont pas des
++ variantes de style :
+
+% 2 1 0 090e58a6b4cc1fde10059d3db2d59162
+
+@ 0 8 0 176ffdb14088ab2b0144efbc4eeffac9
++ column  Flèche
++ column  Réaction
++ column  Rendu
++ row  `-->`  `Reaction.NetForward`, une réaction nette dans le sens direct  `→`
++ row  `<=>`  `Reaction.BothDirections`, une réaction qui se déroule dans les deux sens  `⇄`
++ row  `<~>`  `Reaction.Equilibrium`, une réaction à l'équilibre  `⇋`
++ row  `<->`  `Reaction.Resonance`  `=`
++ row  `===`  `Reaction.Stoichiometric`  `↔`
+
+% 1 1 0 0d2b11008b7bc96a0d976d8f4a470757
+
+@ 0 1 0 1330deefb97a31511cfa0a6c0fec14c9
++ La flèche qu'écrit un chimiste porte de l'information, et l'équation la conserve.
+
+@ 0 1 0 05c8dc345b1ef01312daa0e12244c86b
++ ### Charge et état
+
+@ 0 3 0 0b6d973f68a50a3419c8726e2124e114
++ Un ion porte sa charge comme partie de la molécule. Une espèce chargée est donc une valeur
++ distincte de son homologue neutre, et les deux ne peuvent pas être confondues lors de
++ l'équilibrage. Une charge unitaire est un préfixe `+` ou `-`, et toute autre charge provient
++ d'`ion` :
+
+% 2 1 0 0e0276c195e469a4054ebb311a25f17d
+
+% 3 1 0 0e9be5660a3b87e7074651255534452e
+
+% 4 1 0 071b10a197d8ebd8051902beb6a1b55a
+
+% 0 1 0 1476e53fed7e7d1a00111da3f2ccdec5
+
+% 0 1 0 0fa3fd2d5de48f28199d8ab8457595ad
+
+% 0 1 0 191653c05768413113c5e5a910ef3fa9
+
+% 1 1 0 0d562f1d1b8c0d281a03fe4d02e2fd0a
+
+@ 0 3 0 143c71faea2874bc1414bd2f63e6b84f
++ Ce sont le cation sodium, l'acétate, et le fer(III). Les charges s'additionnent quand les
++ espèces se combinent : `+Na*(-Cl)` est donc neutre. C'est ce qui permet à un composé ionique
++ d'être correct, sans que sa charge soit indiquée séparément.
+
+@ 0 2 0 1ec2c2523696f7c9118b0d47e946bc71
++ Une molécule peut aussi noter son état physique. Il y a quatre états, chacun écrit en suffixe :
+
+% 2 1 0 1cbf5920cb625d3813f00634dec7d62f
+
+@ 0 7 0 1ef8bf8f36c71cb61dc786757747d501
++ column  État
++ column  Cas
++ column  Rendu
++ row  solide  `PhysicalState.Solid`  `(s)`
++ row  liquide  `PhysicalState.Liquid`  `(l)`
++ row  gaz  `PhysicalState.Gas`  `(g)`
++ row  aqueux  `PhysicalState.Aqueous`  `(aq)`
+
+% 1 1 0 1ef4a6c54c787b0c18a7bc32c1f24fdd
+
+@ 0 3 0 0e96ff57282c2c261e0dcd949204c37d
++ L'état physique est une annotation, et ne fait pas partie de l'identité. Il influe sur la façon
++ dont une espèce s'écrit, non sur ce qu'elle est : `H₂O(aq)` et `H₂O(l)` décrivent donc la même
++ substance dans des conditions différentes. `inState` applique un état, et les parenthèses
++ comptent :
+
+% 2 1 0 1d0f9954de680b94019327f191730185
+
+% 3 1 0 1d3b48ee5bc5148c0e4a0fcd2037aeab
+
+% 4 1 0 04109bc986172cf41e1bc4abf715e295
+
+% 0 1 0 128d45a247924e530f1d56f03dd89f9f
+
+% 0 1 0 1274d11eee9e6e5715512c7c6845e657
+
+% 0 1 0 1aceb9ad34badde10522c9d91f6f746b
+
+% 1 1 0 15e1e2540ec93f751fc380f9936e7f90
+
+@ 0 4 0 0c1dcd12525d183e07b61cdb54b11c24
++ Combiner deux molécules laisse l'état du résultat non défini, car l'état d'une combinaison ne
++ peut pas se déduire des états de ses parties. Un état appliqué avant la formation d'une liaison
++ est donc écarté par la liaison, comme le montre la dernière ligne, et un état doit être appliqué
++ à l'espèce achevée.
+
+@ 0 1 0 0c4223193c188e1514066e1f62323267
++ ### Briques de base
+
+@ 0 2 0 15c6f0b1eb74dd3d151bb9ec3dc028cf
++ `Molecular` et `Formulable` sont les deux [classes de types][classe de types] sur lesquelles sont
++ définis les opérateurs :
+
+% 2 1 0 17e2a492536323180bb0ad53f2c35c7f
+
+@ 0 11 0 13e491c8b991b8df0d3df5cab9b11a43
++ column  Opération
++ column  Définie sur
++ column  Donne
++ row  `a*b`  `Molecular`  une molécule qui lie les atomes des deux
++ row  `a*n`  `Molecular`  un terme de formule de coefficient `n`
++ row  `a**n`  `Molecular`  une molécule dont chaque atome et la charge sont multipliés par `n`
++ row  `+a`, `-a`  `Molecular`  la molécule avec sa charge augmentée ou diminuée de un
++ row  `a.ion(n)`  `Molecular`  la molécule de charge `n`
++ row  `a.inState(state)`  `Molecular`  la molécule dans un état physique
++ row  `a + b`  `Formulable`  une formule qui contient les deux
++ row  `a --> b`, et les autres flèches  `Formulable`  une équation
+
+% 1 1 0 1045429ededd829d02fb70ade4ac02fe
+
+@ 0 3 0 0f4273818593e7eb086b74f9a75adcbe
++ Un élément est moléculaire, une molécule est moléculaire, et les deux sont formulables. C'est
++ pourquoi un élément, une molécule et une formule complète peuvent tous apparaître dans l'un ou
++ l'autre membre d'une équation, sans conversion.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 5 0 0b4cf9fa29e66d450a03b6c9e5293a90
++ - [Grandeurs](quantities.md) décrit les unités, comme les moles et les grammes, dans lesquelles
++   se mesurent les quantités chimiques.
++ - [Balisage mathématique](mathematical-markup.md) compose des formules d'une autre sorte.
++ - [Nombres](numbers.md#overloading-the-operators) explique comment `*` et `+` sont définis pour
++   des types qui ne sont pas des nombres.

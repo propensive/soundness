@@ -1,0 +1,49 @@
+orthant 2 language
+
+% 0 1 0 06ba4d3f4903a6e105e907f88cbf94a1
+
+@ 0 1 0 0754fdd637c7a80619dbf1455bfec13a
++ Wird ausgelöst, wenn der socketbasierte mDNS-Responder (`syndesis`) nicht starten kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 0998dc7089e208571740599e65948b97
++ Der Responder tritt der mDNS-Multicast-Gruppe (`224.0.0.251:5353`) auf jeder Schnittstelle bei,
++ die aktiv und multicastfähig ist. Gibt es keine solche Schnittstelle oder verweigert das
++ Betriebssystem den Beitritt, gibt es nichts, worüber er sprechen könnte. Die Meldung lautet
++ `the mDNS responder could not start because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 14cab4f5eb3b353c0023fcb9c4d9b374
+
+@ 0 2 0 19075168b3da39c50cf298a633d70642
++ Der Multicast-Gruppe konnte nicht beigetreten werden: Das Binden von Port 5353 mit Wiederverwendung
++ schlug fehl, oder der Beitritt wurde auf jeder Schnittstelle verweigert.
+
+@ 0 1 0 1ee0e0f8701e12770593b89b2100b8b0
++ **Beispiel.** `[↯/s.102.2.1] the mDNS responder could not start because the multicast group 224.0.0.251:5353 could not be joined`
+
+@ 0 2 0 11d2990b9522deb90cfd444489aec9c7
++ **Behebung.** Prüfen Sie, ob Port 5353 nicht von einem anderen Programm ohne Wiederverwendung
++ belegt ist und ob die Schnittstellen IPv4-Adressen haben.
+
+% 0 1 0 022debaddccf1cf0030687c3ef8d75a5
+
+@ 0 1 0 0e6180d6c2bcabaa19e7c45c895cbecb
++ Keine Netzwerkschnittstelle ist aktiv und multicastfähig (Loopback zählt nicht).
+
+@ 0 1 0 0a19999eb228f7471d3cc818882c0d0a
++ **Beispiel.** `[↯/s.102.2.2] the mDNS responder could not start because no interface is up and capable of multicast`
+
+@ 0 1 0 17ba773332c34264121e4f5838b681d1
++ **Behebung.** mDNS braucht eine Verbindung; verwenden Sie in einer Sandbox ohne eine solche den
++ `Mdns.Transport.Bus` im Arbeitsspeicher.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 1a7ae79c01b71180108dd6cdb0df9761
++ - Quelle: `lib/syndesis/src/core/syndesis.Mdns.scala`

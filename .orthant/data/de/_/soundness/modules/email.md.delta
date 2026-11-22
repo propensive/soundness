@@ -1,0 +1,186 @@
+orthant 2 language
+
+@ 0 1 0 011c6101039b634310095b5f484ec04c
++ ## E-Mail
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 2 0 1a7bc833e267278b0edbdba7bd282716
++ Eine E-Mail wird aus typisierten Teilen zusammengesetzt: einem Body in Text oder HTML oder beidem,
++ mit eingebetteten Inhalten und Anhängen. Sie wird über einen austauschbaren *Kurier* versendet.
+
+@ 0 5 0 08ab75863187e2321f4b8390098f4bd4
++ Die Adressen der Empfänger sind die validierten
++ [E-Mail-Adressen](network-addresses.md#email-addresses), die überall sonst verwendet werden,
++ sodass eine fehlerhafte Adresse den Schritt des Versendens nicht erreichen kann. Die MIME-Struktur
++ folgt aus dem, was die Nachricht enthält. Der Transport ist ein [Kontextwert], sodass derselbe Code
++ eine Nachricht zusammensetzt, gleich welcher Zustelldienst im Geltungsbereich ist.
+
+@ 0 1 0 008c38e63040707e175701e7e635d314
++ ### Über E-Mail
+
+@ 0 5 0 104bc2268eeda51c0d620ed5ae77ec23
++ Eine E-Mail korrekt zusammenzusetzen heißt, MIME zusammenzusetzen. Alternative Bodies, eingebettete
++ Bilder und Anhänge verlangen jeweils einen anderen Multipart-Typ, und diese verschachteln sich.
++ Eine API, die diese Struktur direkt offenlegt, lässt den häufigen Fall, etwas Text zu senden,
++ vielleicht mit einem Anhang, dieses ganze Gewicht tragen. Eine API, die sie ganz verbirgt, macht
++ die strukturierten Fälle unmöglich.
+
+@ 0 5 0 10a0cbd96703f63806b2810fd8eadf8d
++ Hier wird die Struktur aus dem Inhalt abgeleitet. Eine Nachricht gibt an, was sie *ist*: Text, HTML
++ oder beides, mit Anhängen oder ohne. Ihr Content-Type folgt daraus. Sie zu senden ist eine einzige
++ Methode, deren Argumente die Empfänger und den Betreff nennen. Eine Nachricht, die aus typisierten
++ Teilen zusammengesetzt ist und deren Adressen beim Kompilieren des Codes validiert werden, ist
++ [Sicherheit durch Konstruktion](../../philosophy/safety-by-construction.md) für Post.
+
+@ 0 1 0 08688e26cf73ba0d137e00ee06fca155
++ Alles stammt aus dem Paket `soundness`. Ein Kurier und ein Absender sind im Geltungsbereich:
+
+% 2 1 0 0a53411b793e3496037c96c01cb75503
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 0fda265cdec309801b24510e090255cd
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 1d751342b8760f371c23175323805004
+
+% 0 1 0 0c0e88252487d14007ce9ac6d8ef8eb2
+
+% 1 1 0 191430717887dd680875080031ea8567
+
+@ 0 1 0 0cfc49f9de6acaa3110c477fcb41c4a6
++ Die Beispiele auf dieser Seite würden echte Post versenden, daher werden sie kompiliert, aber
++ nicht ausgeführt.
+
+@ 0 1 0 034f157b0a8085f203df7fa9f9646444
++ ### Versenden
+
+@ 0 2 0 16449e20c16442b0015f34950f8f2b26
++ Alles *Versendbare* wird mit `send` versendet: Text, ein [HTML](html.md)-Dokument oder eine
++ vollständig zusammengesetzte `Email`. `send` nimmt die Felder des Umschlags als Parameter:
+
+% 2 1 0 0c94b05a5411b6910af887aa2571a9cf
+
+% 0 1 0 0e135d4b9e9b8a7407f82db8f076a4f9
+
+@ 0 7 0 0beaa3d0576b63ab179d03887a9042f6
++ column  Nimmt
++ column  Wenn weggelassen
++ row  `subject`  `Text`  erforderlich
++ row  `to`  eine `EmailAddress` oder eine Liste  erforderlich
++ row  `cc`  eine `EmailAddress` oder eine Liste  keine
++ row  `bcc`  eine `EmailAddress` oder eine Liste  keine
++ row  `replyTo`  eine `EmailAddress` oder eine Liste  keine
+
+% 1 1 0 0180582b18e94672118a15e705120d7d
+
+@ 0 1 0 01c052f11590bb851510f2145a07d00f
++ Eine Nachricht an einen Empfänger:
+
+% 2 1 0 06a672c6797a75370a9edc85fe86ef28
+
+% 0 1 0 1632c468f47ebf2d091cbfa2a53c0989
+
+% 0 1 0 033bb96b9ed7c34113523b27ac39652f
+
+% 0 1 0 0f62ff7440a7163d13a29c3984d939bb
+
+% 0 1 0 06e01736b754bb8d064264b055d5f258
+
+% 1 1 0 0ead749374465bf30f6cfc1272b26045
+
+@ 0 2 0 00aaff53f305850a0dd25e9d1a7cf7aa
++ Ein HTML-Dokument wird auf dieselbe Weise als HTML-Nachricht versendet. Ein Fehlschlag der
++ Zustellung löst einen `Courier.Error` aus, der den Absender, den Empfänger und den Betreff nennt,
++ um die es geht.
+
+@ 0 1 0 12932b36addf7e140734b12b2800584f
++ Eine Adresse, die nicht gültig ist, kommt nie so weit, da sie nicht kompiliert:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 1eed3c4482b46dc71b2aca9a82d13ca7
+
+% 1 1 0 175bc5e9d28f6f0e0cebbea092f6b91d
+
+@ 0 1 0 0d9e6726a3070ab21e1586fc0e7d84fe
++ ### Zusammensetzen
+
+@ 0 4 0 19fb854081f64a740a322fd26657a286
++ Eine reichhaltigere Nachricht wird als `Email` gebaut. Ihr Body ist Text, HTML oder beides. Die
++ Form mit beidem wird als `multipart/alternative` zugestellt, sodass fähige Clients das HTML zeigen
++ und andere den Text. Anhänge werden mit `attach` hinzugefügt. Ein `Asset` ist eine benannte,
++ typisierte Quelle von Bytes, die ihren Dateinamen und ihren [Medientyp](media-types.md) trägt:
+
+% 2 1 0 093091541cc7ea9d1afc961fb7192d92
+
+% 0 1 0 13d16c635559ceda094765877253c5af
+
+% 0 1 0 10096adfb190ed650bfb36fd24a20a15
+
+% 0 1 0 1be925014a346b0e0d14f2b3dd814e18
+
+% 0 1 0 0719e3af691a6a400fc7728c7a6f5734
+
+% 0 1 0 18b195f72bf214ed056ce76f59a6f723
+
+% 0 1 0 19d3afde02e5b33601af6c03b8b02d05
+
+% 0 1 0 0ab6b68fd70721fa1387962a2e06fbd8
+
+% 1 1 0 0a679fc112720333198a5cf04c573cf2
+
+@ 0 2 0 0935cff28e7a5c26109111f71548c1a6
++ Der Content-Type der Nachricht folgt aus dem, was sie enthält, wobei jede Schicht die darin
++ liegende umhüllt:
+
+% 2 1 0 1406b91926118fd7015636f825bafb67
+
+@ 0 7 0 0474df8284cfea741e9bfd78a6140ac5
++ column  Die Nachricht hat
++ column  Content-Type
++ row  nur einen Text-Body  `text/plain`
++ row  nur einen HTML-Body  `text/html`
++ row  sowohl einen Text- als auch einen HTML-Body  `multipart/alternative`
++ row  eingebettete Inhalte  `multipart/related`, um den Body
++ row  Anhänge  `multipart/mixed`, um den Rest
+
+% 1 1 0 0bf9c0692ff020e21309ab01862ac4cb
+
+@ 0 3 0 13785c2c2dee2229155588565e531c7e
++ Reiner Text ist selbst versendbar, sodass `Email(t"hello")` die Form in einer Zeile ist. Eine
++ E-Mail gibt ihre `text`, `html`, `attachments` und `inlines` zurück, sodass eine zusammengesetzte
++ Nachricht untersucht werden kann, bevor sie abgeht.
+
+@ 0 1 0 094c7ce5e5dc26541020e14f3dbf3e87
++ ### Kuriere
+
+@ 0 5 0 14120a60d10c92860a642da18c058e1b
++ Der Kurier ist der Mechanismus der Zustellung und wird als [Given][given] geliefert. Der
++ mitgelieferte Kurier stellt über die HTTP-API von [Resend](https://resend.com/) zu und gibt eine
++ Quittung mit der ID des Anbieters für die Nachricht zurück. Ein anderer Zustelldienst wird
++ eingesteckt, indem man den Trait `Courier` implementiert, der eine Methode hat, ohne Code
++ anzurühren, der Nachrichten zusammensetzt.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 3 0 0e213cd4ce9273f51dbea40a4be19f60
++ - [Netzwerkadressen](network-addresses.md#email-addresses) validiert die Adressen.
++ - [HTML](html.md) schreibt den Body einer HTML-Nachricht.
++ - [HTTP-Client](http-client.md) trägt den Request zum Zustelldienst.

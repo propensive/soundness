@@ -1,0 +1,47 @@
+orthant 2 language
+
+% 0 1 0 08ea410a6337439a014ceccc3fd8ac68
+
+@ 0 1 0 053e3c86e0888b100d5c954568600e10
++ Levée lorsqu'un fichier de classe JVM ne peut pas être lu ou que son bytecode ne peut pas être
++ extrait.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 02d460b37fdc7374130de89c0f3774df
++ Mandible analyse les fichiers de classe pour exposer les méthodes et leurs instructions. Cette
++ erreur couvre un fichier de classe absent du classpath et un fichier de classe dont la structure
++ ne peut pas être analysée.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 1 0 067cb1f1318b02481e3bbc36bb1f7f3d
++ column  Raison
+
+% 0 1 0 0249aa51fd8056d51a0c1dba7eb0290e
+
+% 0 1 0 0f88545b8d549738105535e784528a93
+
+% 0 1 0 08575ae3d8386d270d99d1fa24c10f84
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 3 0 05583725aecb091e143081f14bcfbd97
++ Un fichier de classe manquant signifie généralement que le classpath transmis au lecteur diffère
++ de celui avec lequel le code a été compilé. Un échec d'analyse signifie que le fichier est
++ tronqué, ou qu'il utilise une version du format de fichier de classe au-delà de ce que modélise
++ l'analyseur.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 083e73f1292a4d2b181a17157491b496
++ - Source : `lib/mandible/src/core/mandible_core.scala`

@@ -1,0 +1,2704 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 18dbedbffd0608e41131c56a64aade5b
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09bb07969539992115f498a5ac10ee09
++ info   il kernel di streaming: cursori per i parser, endpoint pull e push, duct, producer e la politica di buffering
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 00df25393621e96d046476702bd5a409
++     _Zephyrine_ è lo strato su cui poggia ogni parser e serializzatore di Soundness. Fornisce
++     tre cose: un **`Cursor`**, la vista un elemento alla volta attraverso cui legge un parser,
++     su un unico buffer contiguo che si riempie di nuovo dalla sua sorgente comunque la sorgente
++     sia stata suddivisa in chunk; il **kernel di streaming** (uno `Stream` è un endpoint pull,
++     un `Intake` un endpoint push, un `Duct` una trasformazione sincrona collegabile a
++     entrambi, e un `Conduit` l'unico punto in cui i dati passano da un thread all'altro), con
++     la domanda (`Credit`) come messaggio di contropressione; e un **`Producer`**, il sink in
++     cui scrive un serializzatore, che lo stesso codice di scrittura guida in modo sincrono
++     (`Producer.collect`) oppure come stream di blocchi (`Producer.apply`, `Producer.sink`,
++     `Producer.utf8`).
+
+@ 0 8 0 0e1f5334f58691850281c77e5c0beed8
++     Le librerie di formato analizzano su un `Cursor`: il parser JSON di jacinta, il parser TEL
++     di stratiform, il parser Protobuf di locomotion, il parser CBOR di breviloquence,
++     xylophone, ypsiloid e honeycomb estendono ciascuno `Cursor.Snapshot`, tenendo il buffer, la
++     posizione di lettura e l'estremo di scrittura del cursore in campi propri per cicli
++     critici residenti nei registri, e si risincronizzano con il cursore a ogni refill, mark ed
++     errore. Un parser di protocollo (il parser dell'intestazione delle richieste di
++     telekinesis) usa il cursore direttamente, attraverso `peek`, `expect`, `seek`, `hold`,
++     `mark` e `grab`. Sul lato della scrittura, quegli stessi formati producono il loro output
++     attraverso un `Producer[Text]` o un `Producer[Data]`, così che `show`, `emit` e `lend`
++     condividano un unico scrittore.
+
+% 2 1 0 0f80be650e46d8ac00e141a266e1d8b6
+
+% 3 1 0 1ed13503f06ab03d070bc2101881a854
+
+% 0 1 0 1a361e006e56d2a017a44f7643e1c822
+
+% 0 1 0 0bcca23d01aba20200e1ef0cfd962dec
+
+% 0 1 0 1b41216440506a06118b0d1053185fcc
+
+% 0 1 0 061d1a993b1606d905d93e750ea6ab13
+
+% 0 1 0 0d4c8c83be44b6c30388cb707ef5e5de
+
+% 0 1 0 0b6385aad408743f1681326d939b8235
+
+% 0 1 0 11c38e6a2dd6133112472d5948d2ddce
+
+% 0 1 0 0b3a2051513e306915f98cd2d62abe6b
+
+% 1 1 0 101712720c2fc0460c7a4de45607bbae
+
+@ 0 9 0 0268b620fec4c8bf0d260ec1f343a1a7
++     Un `Cursor` si costruisce su un valore intero (`Cursor(data)`, senza copia per `Data`), un
++     `Iterator` di chunk, una `Chain` di chunk, uno `Stream` o un thunk di caricamento, e il suo
++     mezzo è qualsiasi cosa `Addressable`: `Data` (cursori di byte), `Text` (cursori di
++     caratteri) o un array congelato di record. Il **rischio del lookahead bloccante** riguarda
++     ogni parser su una connessione attiva: `more`, `finished`, `peek` e `next()` si riforniscono
++     dalla sorgente una volta svuotato il buffer, e un refill si blocca finché la sorgente non
++     produce; un parser che si ferma al confine di un messaggio, senza fine dello stream tra un
++     messaggio e l'altro, deve consumare il delimitatore finale con `peek` (o `expect`) e poi
++     `advance()`, che non esegue mai un refill, e limitare le sue letture con `available`,
++     `take` o una lunghezza esplicita.
+
+@ 0 6 0 0ad07e99bc0a85801099a9ea8d210990
++     Gli stream si compongono sul thread del consumatore senza code: `stream.via(stage)`
++     collega qualsiasi valore con un'istanza di `Ductile` (un `Charset`, un `Codepage`, uno
++     schema di compressione, una modalità di cifratura), e un'operazione terminale (`memoize`,
++     `drain`, `gather`, `chunks`, `records`) lo svuota e lo chiude. Uno `Stream` è una
++     capability esclusiva: viene letto una sola volta da un solo proprietario, e i moduli che
++     lo usano compilano con il capture checking e il controllo di separazione, quindi creare un
++     alias di uno stream o leggerlo dopo un'operazione che lo consuma è un errore di
++     compilazione.
+
+% 2 1 0 1b7dbbd35afd48db00eca600ed9d7545
+
+% 3 1 0 029b5ab2fcd24a9e047bdfb400aab76e
+
+% 4 1 0 034690b84adb4c4c08c5427c009a93e7
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 0fa7d1ff594903310b01de83c23aa37e
+
+% 0 1 0 1898f01a23411eee051dbf8517cf14ae
+
+% 0 1 0 11215e13a8ca98f71ec999d65bf577c9
+
+% 1 1 0 17c6de075f876b340a413706b1dce7b7
+
+@ 0 3 0 0f0a38f1033cc4971f105366098ff8e3
++     Ogni stadio dimensiona i suoi buffer attraverso il given `Buffering` nell'ambito
++     (`Buffering.standard`, se non ne è fornito un altro): 4096 byte, 2048 caratteri o 256
++     record per blocco di staging, sedici blocchi di staging per trasferimento asincrono, e una
++     profondità del conduit pari a sedici.
+
+@ 0 8 0 1638e9e6f784cddb19d79650dadb4fb5
++     La libreria è un'unica componente, `zephyrine.core`, per la JVM, Scala.js e Scala Native,
++     con la lettura SWAR di parole dietro `Words.load` fornita per piattaforma: `core-jvm` legge
++     una parola attraverso un `VarHandle` su array di byte, `core-portable` con shift e or.
++     Tutto ciò che è nell'elenco delle esportazioni si trova nel modulo ombrello `soundness`, e
++     i package di scelta `lineation` e `parsing` si fondono con quelli propri dell'ombrello.
++     `Region` e `Slate` deliberatamente *non* sono esportati (le loro estensioni inline con
++     tipi dipendenti non sopravvivono ai forwarder delle esportazioni), né lo sono gli interni
++     del kernel `Utf8`, `Words`, `WordLoad`, `Blockpool`, `Handoff` e `Freelist`: questi si
++     raggiungono come `zephyrine.Region`, `zephyrine.Utf8` e così via.
+
+@ 0 5 0 18c457fa3a6c6b37150cf8216c3d56ab
++     Given importati per nome, poiché `import soundness.*` non ne importa nessuno: una
++     `Lineation` che tiene traccia di riga e colonna (`import lineation.linefeedChar` o
++     `linefeedByte`; i predefiniti dell'oggetto compagno `Lineation.untrackedChars`/`untrackedData`
++     non tengono traccia di nulla), e `import parsing.trackPositions`, che fa registrare ai
++     parser consapevoli delle posizioni le posizioni nel sorgente per `locate`.
+
+@ 0 8 0 12c3395bc766b2771b73e158db46d06b
++     Disciplina di indicizzazione: il buffer di un `Cursor` si legge attraverso `lend`, che
++     presta una `Region` con un `Interval in region.type` con marchio, così che ogni indice
++     che un consumatore può formare sia nell'intervallo, oppure (per un ciclo critico fidato che
++     copia il buffer in campi) attraverso la terna `unsafeBuffer`/`unsafePos`/`unsafeWriteEnd`
++     dietro un token `Unsafe`, il cui riferimento è valido solo fino alla prossima operazione che
++     possa riempire di nuovo, compattare o ingrandire il buffer. Le letture `readUnchecked` e
++     `charAt` all'interno del kernel sono ciascuna giustificate da un commento che nomina
++     l'invariante che mantiene l'indice nell'intervallo; il codice consumatore dovrebbe
++     preferire i combinatori con marchio.
+
+% 0 1 0 153247f8b348ebd40e705f58039e9471
+
+% 0 1 0 1726f3cf462785a00f14ad44bc115d1e
+
+% 0 1 0 0a7dc94a9bd824db1aa26e7cc17841dd
+
+% 0 1 0 10fdcd9d80aa2ed3020efe4ad0a8404b
+
+% 0 1 0 0bc492e6ab3c47c20a2e976c24e82bee
+
+% 0 1 0 091e05a08d5d57fa1d1abf41a15c5c71
+
+% 0 1 0 002a6679fa9b5dbf08b628e42b43f3ce
+
+@ 0 1 0 127c1d5291f2714503c3467c2cfec076
++ entry .Cursor   una posizione su una sequenza bufferizzata di byte, caratteri o record, che si rifornisce dalla sorgente man mano che avanza
+
+% 1 1 0 0040035dcff8e09c03082b7e76fb8628
+
+@ 0 7 0 0673ff06876ab7dd1442e6451071d53e
++       Un `Cursor[data, cap]` legge un elemento alla volta da un unico buffer contiguo, che
++       riempie di nuovo dalla sua sorgente quando la posizione di lettura supera la fine, così
++       che un parser veda un'unica sequenza ininterrotta di elementi comunque la sorgente sia
++       stata suddivisa in chunk. `data` è il mezzo (`Data`, `Text` o un `Array[record]^{}`
++       congelato) e `cap^` è l'insieme di cattura del caricatore: `{}` per un cursore su un
++       valore, un iteratore, una chain o uno stream, oppure le capability da cui attinge un
++       caricatore in streaming, così che un cursore su un caricatore che legge un file non possa
++       uscire dall'ambito del file.
+
+@ 0 6 0 12e070a41e5913ba1a6407b649e0c430
++       Un cursore è una capability con stato: un riferimento `Cursor` nudo può solo interrogare
++       `position`, `line`, `column` e `available`, mentre il `Cursor[…]^` esclusivo che le
++       factory restituiscono è necessario per ogni metodo di navigazione (`advance`, `next`,
++       `more`, `seek`, `hold`, `mark`, `cue`, `take`…). È `caps.Mutable`, quindi un
++       consumatore può tenerne uno in un campo (come fa un parser in pool); un cursore costruito
++       su un iteratore o su uno stream si usa al meglio inline, come argomento `consume`,
++       anziché legato e riutilizzato.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 02d60e86e434af1a01b6b31bd404094c
++         label Un cursore su due chunk di testo
+
+% 1 1 0 1eee380d333c907b0b7c4ffb90d86de4
+
+% 2 1 0 1198519f745b1d141bb1c0ee3a8f04a4
+
+% 4 1 0 09f175e27742be040b22c99efbe0b6af
+
+% 0 1 0 1fb976375fbe706c019d3dc38286852b
+
+% 1 1 0 06629bbd6a2cd2ad03a36308ee7de194
+
+@ 0 1 0 136f0c51afbd1f881159704368e0fa57
++         label Avanzare fino al delimitatore, materializzando la chiave
+
+% 1 1 0 0e0a680150b0671f0338c6b2f27b865f
+
+% 2 1 0 18fbe4006ea7e7db0640636e84505fc6
+
+% 4 1 0 02b1cefc679a12381caa27e2acf9dc14
+
+% 6 1 0 1e4353086b79a20010b7153a92d60aab
+
+% 7 1 0 0fad1fda4c6c9b3c1777c33b6f5ff936
+
+% 8 1 0 067d46182ced17ac1742c37e2c581ed0
+
+% 9 1 0 1714ca0bee3581d106705ebd6c0de8d2
+
+% 1 1 0 1cc5a40788a937511420f0706ce92370
+
+@ 0 1 0 0570a98e949f59aa1b7faddb6280c298
++         label Prendere un'istantanea, guardare avanti e ripristinarla
+
+% 1 1 0 1c1e892fdb28e09518ce0c13abf0aadd
+
+% 2 1 0 114492c6be3eb70502318985b1a0e9c3
+
+% 4 1 0 1f0a7f5df0af92de0c4c4f4d898248e0
+
+% 6 1 0 18d5fc49a088138602149710a20220ff
+
+% 7 1 0 14028cd2c20d13a009d2ff5922eb0044
+
+% 8 1 0 049eeaf61424c9c30a79f9a460d6aa26
+
+% 9 1 0 15c1188fbcfae9540740de3045b164bd
+
+% 11 1 0 0c1084d4073b23fb09d8e101ce56b67d
+
+% 0 1 0 1c96db370f86f81a1eb2baba343f6440
+
+% 1 1 0 1b97c1e937eeb34618b0f25f891c7238
+
+@ 0 1 0 06d7a061eb6b7635176d849fd8982d27
++         label Consumare il separatore e il valore, attraverso il confine tra chunk
+
+% 1 1 0 15999a96f54097f80708d5038c79b74f
+
+% 2 1 0 0abaf8246e1922e717f8591cb5bc2d69
+
+% 4 1 0 149e9d09d0470f3a0404848511607e4e
+
+% 6 1 0 014488ed3ecee3ee04806d37ec45a414
+
+% 7 1 0 18663d8f50cbd5b808cce5195ef80d95
+
+% 8 1 0 059c921162fc65ef161d55d881da2eea
+
+% 9 1 0 0ae3f49379269c371ad4aae001bcff13
+
+% 11 1 0 109902ddc68856c7115c8f46a43bfcf1
+
+% 0 1 0 06423604434873721d64050c09a528d9
+
+% 0 1 0 169ef4a47ca0be3a142009e8c89cc619
+
+% 0 1 0 0579a9332b05c64116fe5d893634e205
+
+% 0 1 0 1ea641e4b6b290f703fd17a9e062e8d4
+
+% 0 1 0 17a747f24527600119568592d51f9f76
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 04a898bd49965ba61855e86b20048e7b
++       I mark si possono prendere solo all'interno di `#hold`, che fissa il buffer dall'inizio
++       dell'hold così che la compattazione non possa scartare una regione marcata; fuori da un
++       hold il cursore è libero di lasciar cadere ciò che ha superato. `#grab` materializza gli
++       elementi tra due mark come un unico valore, `#clone` li copia in un builder, `#slice`
++       presta la memoria sottostante, e `#cue` torna a un mark.
+
+@ 0 9 0 0563083b7d528e5a01edbb39dcec2fc1
++       **Rischio del lookahead bloccante.** Ogni operazione che chiede se un elemento esiste
++       (`#more`, `#finished`, `.peek` e `#next`, il cui `more` finale viene eseguito dopo il
++       consumo) si rifornisce dalla sorgente una volta svuotato il buffer, e un refill si blocca
++       finché la sorgente non produce dati o termina. Su un input finito ciò è immediato e
++       innocuo; su una connessione attiva senza fine dello stream tra un messaggio e l'altro
++       (HTTP keep-alive, qualsiasi protocollo richiesta/risposta), un parser non deve mai
++       guardare oltre l'elemento finale di un messaggio, poiché il peer non invia nient'altro
++       finché non riceve risposta. Si consuma il delimitatore finale con `.peek` e poi
++       `#advance` (come fanno `.expect` e `#take`), e si limitano le letture con `#available`,
++       `#take` o una lunghezza esplicita.
+
+@ 0 6 0 0efe04e20f0ea0a6150e4b74c2f9143d
++       Riga e colonna sono tracciate solo quando la `Lineation` nell'ambito è attiva:
++       `import lineation.linefeedChar` (o `linefeedByte`) conta le righe a `\n`; i predefiniti
++       dell'oggetto compagno `Lineation.untrackedChars` e `untrackedData` non tengono traccia di
++       nulla e non costano nulla a ogni avanzamento. Un parser che esegue una scansione in blocco
++       e riporta indietro la posizione in un solo passo (`#unsafeAdvanceBy`) è responsabile dei
++       propri aggiornamenti di riga e colonna (`#unsafeBumpLine`, `#unsafeBumpColumn`,
++       `#unsafeSetColumn`).
+
+% 0 1 0 0e43ff4645197ca60e9485bf71ddb137
+
+% 0 1 0 0c0c39b9fc77a47c00fdc646841c8b22
+
+% 1 1 0 16d5cf3ed43b3ef9142f469d2e21f634
+
+% 0 1 0 0722f80cc97e2c5503d8f18ae5e70d87
+
+% 1 1 0 09a43d63ac6a493919002e859082e6d4
+
+@ 0 4 0 0bc823017c1495140dc17c3731a9d65a
++   entry .apply   un cursore su un valore, un iteratore o una chain di chunk, uno stream o un thunk di caricamento
++       Cinque factory, ciascuna delle quali richiede l'`Addressable` del mezzo (nell'ambito
++       implicito per `Data`, `Text` e gli array di record) e una `Lineation` per il suo tipo di
++       elemento (il predefinito senza tracciamento si risolve a meno che non se ne importi per
++       nome uno con tracciamento):
+
+@ 0 18 0 187ecf837a438faa18002625cc115e61
++       - `Cursor(value)`: un cursore precaricato su un valore intero. Un mezzo che espone la
++         propria memoria sottostante (`Data`) è preso in prestito sul posto senza copia, e il
++         cursore è *statico*: non scrive mai nel suo buffer, non estrae mai dati, e gli si può
++         applicare `#repoint`. Qualsiasi altro mezzo viene copiato una volta.
++       - `Cursor(iterator)`: su un `murmuration.Iterator` di chunk, estratti uno per refill.
++         I membri `Operand` e `Target` del cursore sono astratti in questa forma, quindi un
++         `clone` o un `seek` diretto converte il suo argomento
++         (`' '.toByte.asInstanceOf[cursor.addressable.Operand]`); le estensioni per mezzo
++         `peek`, `expect` e i buffer tipati non ne sono toccati.
++       - `Cursor(chain)`: su una `Chain` pigra di chunk, forzando al più una cella per refill.
++       - `Cursor(stream)`: su uno `Stream[data] over Credit` consumato (richiede un
++         `Buffering`). Quando nulla di proprio è vivo, il cursore legge sul posto la regione
++         successiva dello stream, senza copia, con un credito pari alla `window` del
++         `Buffering`; mentre un hold attraversa un refill, trasferisce la regione nel proprio
++         buffer con una sola copia. Il credito limita ciò che qualsiasi stadio a monte
++         produce per ogni riempimento, così che la memoria resti limitata durante il parsing
++         di un input arbitrariamente grande.
++       - `Cursor(load)`: una factory transparent inline su un thunk `() ->{cap} Optional[data]`,
++         che produce ogni chunk e `Unset` alla fine; l'insieme di cattura del thunk diventa il
++         `cap` del cursore.
+
+% 2 1 0 0761b8f9f014e7ae1f97cb5ff6395263
+
+% 3 1 0 15e01bc1b240d8de18a47b72823cc84a
+
+% 4 1 0 0aa61e9371bbe1da154d1456e1351533
+
+% 0 1 0 1b4ac8db708a882610cac2dd8fe21569
+
+% 0 1 0 083cc20347ede2eb1415f4b7fb3c701e
+
+% 0 1 0 0615560c593bea2313725ffdd5427a40
+
+% 0 1 0 1e043af386b2abca11cc54bcc136b913
+
+% 1 1 0 17e1351176515b490dbdc0deee42a20f
+
+@ 0 3 0 167f425bf069fc7f03c4270350350f3c
++       Ogni cursore precarica il suo primo chunk non vuoto, quindi `unsafeDatum` e `peek` sono
++       validi prima di qualsiasi `next()`.
++   entry .Mark   una posizione assoluta nello stream, presa all'interno di un hold, a cui tornare o da cui copiare
+
+% 1 1 0 140a489c668316aa0c707f9468199172
+
+@ 0 10 0 13cc49125bcf5f1a177c63198e58f971
++         Un `Long` opaco: l'offset assoluto nello stream al quale è stato chiamato
++         `Cursor#mark`. I mark sopravvivono alla compattazione, poiché sono posizioni nello
++         stream e non indici nel buffer, ma un mark si può prendere solo all'interno di
++         `Cursor#hold`, che mantiene la sua regione nel buffer. Due mark delimitano un `grab`, un
++         `clone` o uno `slice`, e `cue` torna a uno di essi. `Mark.Initial` è la posizione zero;
++         `Mark(absolute)` ne crea uno da un offset. I mark si confrontano per offset. `Mark` è
++         esportato anche a livello di package, come `zephyrine.Mark`.
++     entry .Initial   il mark all'inizio dello stream: offset zero
++     entry .apply   un mark a un offset assoluto nello stream
++     entry .comparable   i mark si confrontano e si ordinano per il loro offset assoluto
++   entry .Offset   una riga e una colonna impacchettate in un unico `Long`, registrate per ogni mark quando la lineazione è attiva
+
+% 1 1 0 0d5a9315dfab9e8d1c2edd87b094d603
+
+@ 0 16 0 05499e1bb8987f520aa836b5813f12e6
++         `Offset(line, column)` impacchetta due ordinali in un `Long`; `Cursor#offset(mark)`
++         recupera l'offset registrato quando è stato preso un mark, così che `cue` ripristini la
++         riga e la colonna insieme alla posizione. Gli offset si confrontano per il loro valore
++         impacchettato. `Offset` è esportato anche a livello di package, come
++         `zephyrine.Offset`.
++     entry .apply   un offset da una riga e una colonna, entrambe ordinali
++     entry .comparable   gli offset si confrontano per il loro valore impacchettato
++   entry .absolute   l'offset assoluto nello stream di un `Mark`, come `Long`
++   entry .line   la riga di un `Offset`, come ordinale
++   entry .column   la colonna di un `Offset`, come ordinale
++   entry .Held   la prova che un hold è aperto, richiesta da `mark`
++       Un token senza stato: `Cursor#mark` prende un `using Cursor.Held`, che solo
++       `Cursor#hold` (e `.lookahead`) forniscono, quindi un mark si può prendere solo dove la
++       compattazione non può scartare la regione marcata. Un'unica istanza condivisa,
++       `.shared`, serve ogni hold.
++   entry .shared   l'unica istanza di `Cursor.Held` che ogni hold fornisce
++   entry .Loader   il tipo del thunk di caricamento: `() => Optional[data]`, un chunk per chiamata e `Unset` alla fine
++   entry .Filler   una strategia di refill che scrive direttamente nel buffer del cursore, scavalcando il protocollo a chunk
+
+% 1 1 0 1377ddaa311f9cde01d72750185b718f
+
+@ 0 9 0 1c36bcfe35c134f91caace4d51d41686
++         `fill(storage, offset, space)` scrive fino a `space` elementi nel buffer del cursore a
++         `offset` e restituisce il numero di elementi scritti, `0` quando non è stato concesso
++         nulla (il cursore riprova) oppure `-1` alla fine dello stream, così che la regione di un
++         endpoint pull sia trasferita nel cursore con una sola copia anziché materializzata come
++         chunk e copiata di nuovo. `block` è il suggerimento di crescita: il cursore ingrandisce
++         il suo buffer verso `writeEnd + block` prima di ogni riempimento. La factory di stream
++         `Cursor(stream)` ne installa uno.
++     entry #block   il suggerimento di crescita: quanto spazio crea il cursore prima di ogni riempimento
++     entry #fill   scrive fino a `space` elementi a `offset`, restituendo il numero, `0` o `-1`
++   entry .Lender   un filler la cui sorgente può anche prestare una regione da leggere sul posto, senza copia
+
+% 1 1 0 1320dc7b0bf6b0a60eb1e18552ff4d15
+
+@ 0 9 0 017708ddadd01ab606065d2a197a6042
++         `borrow()` espone la regione successiva della sorgente (`lentStorage`, `lentStart` e il
++         numero restituito: `0` se non è stato concesso nulla, `-1` alla fine), che il cursore
++         legge sul posto ogni volta che nulla nel suo buffer è vivo. La regione resta valida fino
++         al successivo `borrow` o `fill`, così che una sorgente che ricicla i suoi blocchi non
++         sovrascriva mai uno che il cursore sta ancora leggendo.
++     entry #borrow   presta la regione successiva della sorgente, restituendo il suo numero, `0` o `-1`
++     entry #lentStorage   la memoria della regione prestata per ultima
++     entry #lentStart   l'inizio della regione prestata per ultima, all'interno della sua memoria
++   entry .Delimiter   una sequenza di byte da cercare in blocco, con la sua tabella di salto di Horspool calcolata una volta
+
+% 1 1 0 02d3ebec915d1eec1b93b95286bcdf30
+
+@ 0 6 0 1e6dabe96957fdf518161e9c3f79daea
++         Un confine multipart, una firma di archivio, un terminatore di riga:
++         `Cursor.Delimiter(bytes)` costruisce la tabella di spostamento una volta, e `#find`
++         esamina l'ultimo byte di ogni finestra candidata, spostandosi secondo la tabella, così
++         che su dati diversi dal delimitatore visiti circa un byte ogni `length` anziché ogni
++         byte. Un `Cursor[Data]` ne cerca uno nel suo buffer con `.distance`, e
++         `streamOf(cursor, delimiter)` presta come stream tutto ciò che precede l'occorrenza
++         successiva.
+
+% 2 1 0 0527a54c79af99331e6f5d96f163155a
+
+% 3 1 0 1db9b791cecd8fa2156fd80a1babf94b
+
+% 0 1 0 1549dce1def0d2b3146a423ec9cc1b2e
+
+% 0 1 0 1146535748ba383f1db426cab6ec2def
+
+% 0 1 0 03ee34e908d10c3b07d8bad4b3e003d7
+
+% 0 1 0 02a4108514ac612e0f4a2d2c516e6d9c
+
+% 1 1 0 189aeb3a6c0540140fde980cdc7198e0
+
+@ 0 5 0 15dd5c2b8ac8ba3f0cd8232201ae0f36
++     entry .apply   un delimitatore su una sequenza di byte, che costruisce la sua tabella di salto
++     entry #bytes   i byte del delimitatore
++     entry #length   la lunghezza del delimitatore in byte
++     entry #find   l'indice al quale il delimitatore inizia per la prima volta interamente tra `from` e `end`, oppure `-1`
++   entry .Snapshot   la copia locale al parser del buffer, della posizione e dell'estremo di scrittura di un cursore, come inline trait
+
+% 1 1 0 1fbbfd74aa5f127209f9f512e574bdb7
+
+@ 0 10 0 11fee544a326e29f18f1a2288e025550
++         Un parser veloce non legge ogni elemento attraverso il cursore: tiene una propria copia
++         del riferimento al buffer (`cells`, un vero `byte[]` o `char[]`), della posizione di
++         lettura (`pos`) e dell'estremo di scrittura (`bufEnd`) in semplici campi che il JIT
++         tiene nei registri, e si sincronizza con il cursore solo nei punti di refill, mark,
++         slice ed errore. `Snapshot[medium, operand]` è quel protocollo come inline trait: il suo
++         corpo è copiato in ogni parser con `operand` sostituito, quindi `Snapshot[Data, Byte]`
++         dà un campo `byte[]` e `Snapshot[Text, Char]` uno `char[]`, una specializzazione che un
++         trait ordinario non può esprimere. Il parser è il ricevente (`this` è il parser), non
++         richiede alcun flag di linguaggio, e il cursore è tenuto come `AnyRef` neutro
++         (`cursor0`) con un accessor a vista esclusiva, così che un parser in pool possa
++         ripuntarlo a ogni reset.
+
+@ 0 12 0 1ad9b34f9fe279fc14c16be0733ffdb8
++         Il protocollo protetto che un parser segue: assegnare `cursor0` e chiamare `syncFrom()`
++         per iniziare; leggere con `peek` e `advance()` finché vale `more`; chiamare `syncTo()`
++         prima di qualsiasi operazione sul cursore che consulti la posizione e `syncFrom()` dopo
++         qualsiasi operazione che possa compattare, ingrandire o adottare un buffer. Due hook
++         sono astratti e **devono** essere implementati: `reconcile()` (chiamato prima di ogni
++         refill, dove un parser che traccia le posizioni aggiorna la lineazione del cursore con
++         `reconcileLineation()`, `reconcileUtf8()` o `reconcileUtf16()`; altrimenti `()`) e
++         `resynced()` (chiamato dopo ogni `syncFrom()`, per un parser che deriva qualcosa dalla
++         scala del buffer; altrimenti `()`). Sono astratti deliberatamente: le chiamate del corpo
++         copiato a un membro che il ricevente *sovrascrive* si legano alla copia propria del
++         trait, non alla sovrascrittura, quindi un hook con un corpo predefinito non
++         raggiungerebbe mai la versione del parser. Per lo stesso motivo, sovrascrivere un
++         qualsiasi membro concreto del trait produce in silenzio un comportamento errato.
+
+% 2 1 0 17b8d1219efadb020ff9921e4b0e1741
+
+% 3 1 0 126edc8a61d27e5417aa0fe0be6ddae3
+
+% 0 1 0 16d0b8d93ebde3f70d610bfd5afa9856
+
+% 0 1 0 0af6916fbc1d22970789a0dcf4e6c574
+
+% 0 1 0 1295ee07e53232691913609221edf1d2
+
+% 0 1 0 1e78f0d3ab3f305110ddc04b3e5d5213
+
+% 0 1 0 182512513b894d7d0ecda81752a03302
+
+% 0 1 0 090d902d0c69365e101aeb65f7dab874
+
+% 0 1 0 0c46ffd0de5cd32605f4f2fb6f89bfef
+
+% 0 1 0 07d79b22a652cdd41a01ec534d7074bb
+
+% 0 1 0 10d438ce3180769004a593df6ad2c34a
+
+% 0 1 0 0ea79135712f96aa068c8eab109c3d90
+
+% 0 1 0 1b297eb480de8fab0c9b2082fa8bbf1e
+
+% 0 1 0 10a4a6aa7d401586113f0ee7cba440c3
+
+% 1 1 0 00bafd71a563e782109ae4ec1b6ee081
+
+@ 0 18 0 021f1c1bf3b16ccd00a716c44c32ce8c
++         Uno snapshot può stare su un intero input senza alcun cursore (`cells` l'array proprio
++         dell'input, `cursor0` null); allora l'input termina a `bufEnd`. jacinta, xylophone,
++         stratiform, ypsiloid, honeycomb, locomotion e breviloquence lo estendono ciascuno.
++     entry #position   l'offset assoluto nello stream dell'elemento successivo: ciò che riporta ogni errore
++         `base + pos`, dove `base` è riancorato da ogni `syncFrom()`, così che la posizione
++         sopravviva alla compattazione. Pubblico, come lo è `#more`: il driver di un parser
++         chiede entrambi a un parsing terminato.
++     entry #more   se è disponibile un altro elemento, riempiendo di nuovo dalla sorgente se il buffer è esaurito
++         `pos < bufEnd || moreSlow()`: il percorso lento si sincronizza con il cursore, chiama
++         l'hook `reconcile()`, chiede altri dati al cursore e si risincronizza, così che il JIT
++         mantenga il percorso veloce come un unico confronto tra registri. Soggetto al rischio del
++         lookahead bloccante descritto per `Cursor`.
++   entry .peek   l'elemento corrente come `Datum`, oppure `Datum.End` quando il cursore ha finito
++       Un'estensione su `Cursor[data, cap]` per cursori di byte e di caratteri (qualsiasi altro
++       mezzo è un errore di compilazione). Senza allocazioni: un byte è sollevato senza segno
++       (`0..255`) e un carattere tramite il suo codice, quindi il risultato si confronta
++       direttamente con un letterale `Char` o `Byte` e il confronto compila in un solo
++       `int == int`. Può bloccarsi per recuperare l'elemento esaminato (quell'elemento deve
++       esistere perché ci sia una corrispondenza) ma non legge mai oltre.
+
+% 2 1 0 0a01207cec9dc98e064f41bcf9a09f15
+
+% 3 1 0 0bccbbd57d28df751dfc71d83f1e99fb
+
+% 0 1 0 0444ed26c5433cf81bb38909ee743192
+
+% 0 1 0 10497d7e8165cf701fce30f631816da2
+
+% 1 1 0 0e8cbb6aa406fe5b0d3edaebcb9c1f9d
+
+% 1 1 0 0f02dce95f3efa5500b7f5c800a29698
+
+% 0 1 0 005827d1cba5a0a71130d4585bfd1b61
+
+% 1 1 0 1d5bbf7d0f13ede9101a816ee3dbb7de
+
+@ 0 7 0 087f9213c7c9d14c0cfe0bd5e4822689
++   entry .expect   confronta l'elemento corrente con un carattere, avanzando oltre o sollevando l'errore dato
++       Un'estensione su cursori di byte e di caratteri. `cursor.expect('H')(Mismatch())`
++       solleva `failure` attraverso la `Tactic[error]` nell'ambito in caso di mancata
++       corrispondenza o alla fine dello stream, e altrimenti consuma l'elemento con `advance()`,
++       mai con `next()`, così che consumare il delimitatore finale di un messaggio su uno stream
++       keep-alive non forzi un refill bloccante per il byte successivo. Il bersaglio è un `Char`
++       per entrambi i mezzi, quindi un `Cursor[Data]` non richiede `.toByte`.
+
+% 2 1 0 05cf6eb1911db1380fa9ae3428c81351
+
+% 3 1 0 018b8aa7defb93131d0774aab3a2e672
+
+% 4 1 0 1b1edd67ef1d62cb06757fd8f4701de8
+
+% 1 1 0 08a97ad9339449050a755c2ce70902c5
+
+% 0 1 0 07f2ea9c28761f2a111da12946df9139
+
+% 0 1 0 0245d0794ea30c5807e391d6064030a2
+
+% 0 1 0 02324d0db4831b830abd00ccdb319023
+
+% 0 1 0 16ccbfe5ef38be4e0c18f6b734f1d37a
+
+% 0 1 0 00913ac6438b1d0d0c690ed090f92ce8
+
+% 1 1 0 1cb431e2018b20aa17264f3debe70cd3
+
+@ 0 5 0 0bcd86867152240c029e8879c6999cd3
++   entry .lookahead   esegue un'azione all'interno di un hold e riporta il cursore dov'era all'ingresso
++       Un'estensione su qualsiasi cursore: un lookahead che non consuma. I mark presi
++       all'interno dell'azione sono disponibili attraverso il `Cursor.Held` implicito, e il
++       cursore è riportato indietro all'uscita qualunque sia il risultato, così che il parsing
++       successivo veda gli stessi elementi. All'interno di un hold esterno, i mark esterni sono
++       preservati.
+
+% 2 1 0 1205aaa834a49dbf020d894eaa95b19d
+
+% 3 1 0 1768e321bafb04d0137d300de0b99564
+
+% 0 1 0 1a54513798c566c9110629848a01d1f7
+
+% 0 1 0 190a741a68588d331d851fe7534b522e
+
+% 0 1 0 099963c6acb35bdf0dcb79b8115f38bb
+
+% 1 1 0 0ee33f8e4e20a410133a179ddb921a25
+
+@ 0 73 0 057bcfc0d8010c981085315efd2d24a9
++   entry .unsafeDataBuffer   la memoria sottostante corrente di un `Cursor[Data]`, come `scala.Array[Byte]`
++       La forma tipata di `#unsafeBuffer`, dietro un token `Unsafe`: il riferimento è valido
++       solo fino alla prossima operazione sul cursore che possa compattare o ingrandire il
++       buffer, e il chiamante si assume la responsabilità di indicizzarlo tra `unsafePos` e
++       `unsafeWriteEnd`.
++   entry .distance   quanto avanti rispetto a un `Cursor[Data]` inizia per la prima volta un `Cursor.Delimiter` all'interno del buffer, oppure `-1`
++       Cerca in blocco nella regione bufferizzata; il cursore non si sposta e non avviene alcun
++       refill, quindi, a differenza di `#seek`, non può bloccarsi su uno stream attivo. Una
++       scansione che non trova nulla dovrebbe consumare tutti i byte bufferizzati tranne gli
++       ultimi `delimiter.length - 1` (un possibile prefisso di un delimitatore a cavallo del
++       refill) e cercare di nuovo una volta arrivati altri dati, che è ciò che fa
++       `streamOf(cursor, delimiter)`.
++   entry .unsafeTextBuffer   la memoria sottostante corrente di un `Cursor[Text]`, come `scala.Array[Char]`
++       Come `.unsafeDataBuffer`, per cursori di caratteri.
++   entry #addressable   l'istanza `Addressable` del mezzo, un valore tracciato che nomina il suo `Storage`, `Operand` e `Target`
++   entry #lineation   la `Lineation` con cui è stato costruito il cursore
++   entry #repoint   ripunta un cursore statico su un'altra regione presa in prestito, azzerando ogni posizione
++       Solo un cursore costruito con `Cursor(value)` su un mezzo con una memoria sottostante
++       esposta (`Data`) può essere ripuntato; qualsiasi altro va in panico. È l'idioma di un
++       cursore per connessione: un server analizza l'intestazione di ogni richiesta
++       direttamente dal suo accumulatore senza allocare un cursore né copiarne fuori
++       l'intestazione. La memoria è lo stesso portatore neutro che prende la factory
++       (`storage: AnyRef`, uno `scala.Array[Byte]` per `Data`), e la regione deve restare non
++       scritta finché il parsing che la legge non è terminato.
++   entry #advance   consuma l'elemento corrente senza toccare la sorgente
++       Incrementa la posizione (e la riga o la colonna, quando la lineazione è attiva). Non è
++       verificato: la posizione può trovarsi uno oltre la fine del buffer, poiché il successivo
++       `more`, `peek` o `next()` forza un refill prima che il buffer venga letto. È quindi la
++       primitiva sicura ai confini: l'unico modo di consumare un elemento *senza* un possibile
++       refill, che è ciò che deve usare per il delimitatore finale un parser che si ferma al
++       confine di un messaggio su uno stream attivo (come fanno `.expect` e `#take`).
++   entry #unsafeAdvanceWith   avanza oltre un elemento già letto, riutilizzandolo per il tracciamento della lineazione
++       Per un ciclo di scansione che ha appena letto l'elemento corrente da `#unsafeBuffer`:
++       l'operando fornito alimenta il tracciamento di riga e colonna invece di essere ricaricato.
++   entry #unsafeBumpPos   fa avanzare la posizione di `by` elementi senza aggiornare la lineazione
++       Una primitiva di avanzamento in blocco per cicli di scansione residenti nei registri: il
++       chiamante tiene traccia da sé dei ritorni a capo e riconcilia la lineazione in un solo
++       passo con `#unsafeBumpLine`, `#unsafeBumpColumn` e `#unsafeSetColumn`.
++   entry #unsafeBumpLine   aumenta il contatore delle righe di `by`, lasciando invariata la colonna
++   entry #unsafeBumpColumn   aumenta il contatore delle colonne di `by`; non va chiamato attraverso un ritorno a capo
++   entry #unsafeSetColumn   imposta direttamente la colonna, dopo un avanzamento in blocco su un intervallo che contiene un ritorno a capo
++   entry #next   avanza e indica se resta altro: `advance(); more`
++       Restituisce `true` finché restano elementi e `false` una volta esaurita la sorgente. Il
++       suo `more` finale si blocca su un refill una volta svuotato il buffer, quindi non deve
++       mai consumare l'ultimo elemento di un messaggio su uno stream attivo; lì si usano `peek`
++       e poi `advance()`.
++   entry #more   se un elemento è disponibile alla posizione corrente, riempiendo di nuovo il buffer se si è svuotato
++       Il percorso critico è un solo confronto, `pos < writeEnd`; solo quando il buffer è
++       svuotato il percorso lento, fuori linea, esegue il refill. Si blocca finché la sorgente
++       non produce dati o termina.
++   entry #finished   se la sorgente è esaurita: `!more`
++   entry #position   la posizione assoluta nello stream dell'elemento successivo, come ordinale
++   entry #available   quanti elementi sono bufferizzati oltre la posizione corrente, senza refill
++       Il limite entro cui legge un parser su uno stream attivo, poiché leggere oltre
++       causerebbe un refill.
++   entry #line   la riga corrente, come ordinale, quando la `Lineation` tiene traccia delle righe; altrimenti `Prim`
++   entry #column   la colonna corrente, come ordinale, quando la `Lineation` tiene traccia delle righe; altrimenti `Prim`
++   entry #lineActive   se la `Lineation` configurata è attiva, memorizzato alla costruzione
++       I chiamanti nei cicli critici verificano questo anziché `lineation.active`, che
++       comporterebbe uno smistamento di interfaccia per ogni elemento.
++   entry #remainder   una `Chain` pigra di tutto ciò che non è stato consumato dalla posizione corrente in poi
++       Prima la coda bufferizzata, come un unico chunk, poi i chunk del caricatore man mano che
++       vengono estratti. Guidata dal chiamante: la costruzione non estrae nulla, quindi un
++       protocollo che trattiene i dati finché non riceve una risposta (un upgrade WebSocket)
++       non va in deadlock costruendo la chain. La posizione del cursore si sposta alla fine del
++       suo buffer.
++   entry #unsafeBuffer   la memoria sottostante grezza, dietro `Unsafe`
++       L'`addressable.Storage` che il cursore sta leggendo, che può essere il suo buffer o una
++       regione prestata dalla sua sorgente. Valida solo fino alla prossima operazione che possa
++       riempire di nuovo, compattare o ingrandire. Un parser che la copia in un campo la converte
++       una volta nel tipo di array concreto (lo fa `Cursor.Snapshot`), così che il JIT tenga il
++       riferimento in un registro; leggere invece attraverso `addressable.storageAddress` costa
++       una chiamata di interfaccia e un unboxing per elemento. Le forme tipate sono
++       `.unsafeDataBuffer` e `.unsafeTextBuffer`.
++   entry #unsafePos   l'indice di lettura nel buffer, dietro `Unsafe`
++   entry #unsafeWriteEnd   il numero di elementi validi nel buffer, dietro `Unsafe`
++   entry #lend   presta a una lambda la regione leggibile, con un intervallo con marchio
++       La vista sicura rispetto ai limiti degli elementi `pos until writeEnd`: la lambda riceve
++       una `Region[data]` e un `Interval in region.type`, così che ogni indice che può formare
++       sia nell'intervallo, senza `Unsafe`. Valida solo per la durata della chiamata. Il confine
++       preferito per un ciclo di scansione che non mette in cache il buffer tra un'operazione
++       sul cursore e l'altra.
+
+% 2 1 0 0db25a50303fad74132cf466b82749f9
+
+% 3 1 0 18d0e2939156e99a0e774d1f0a451ebe
+
+% 0 1 0 05bebe825de5b534074fb77797c3da14
+
+% 0 1 0 1361aa329a62d9460225b89adcc0e3f9
+
+% 0 1 0 0da4a454f4783db61bc354934833a939
+
+% 1 1 0 07dea33af408330a10bd8db2c835ba4b
+
+@ 0 17 0 07366bf5b1bad56d100353ca61ead952
++   entry #unsafeAdvanceBy   fa avanzare la posizione di `n` elementi senza tracciamento della lineazione
++       Per un parser che mantiene una propria copia della posizione: la riporta al cursore nei
++       punti di refill, mark o slice. Il chiamante è responsabile degli aggiornamenti di riga e
++       colonna quando vale `#lineActive`.
++   entry #unsafeDatum   l'elemento corrente, letto attraverso l'istanza `Addressable`, dietro `Unsafe`
++       Valido solo quando il cursore non è `finished`; leggere alla fine vede una memoria
++       obsoleta. `peek` è la forma sicura.
++   entry #lay   la lambda applicata all'elemento corrente, oppure `otherwise` quando il cursore ha finito
++   entry #let   esegue una lambda sull'elemento corrente, se ce n'è uno
++   entry #process   esegue una lambda sull'elemento corrente, se ce n'è uno, scartandone il risultato
++   entry #seek   avanza fino al prossimo elemento uguale al bersaglio, indicando se è stato trovato
++       Si ferma *sulla* corrispondenza, senza consumarla, e non esegue alcun refill dopo
++       averla trovata. Il bersaglio è l'`Operand` del mezzo (quindi un chiamante che ha un
++       cursore dalla factory a iteratore scrive
++       `' '.toByte.asInstanceOf[cursor.addressable.Operand]`); viene estratto dal boxing una
++       volta e confrontato al tipo primitivo, e un byte corrisponde al carattere ASCII con lo
++       stesso valore. Su uno stream attivo, una ricerca che non trova il suo bersaglio esegue
++       refill finché la sorgente non termina.
+
+% 2 1 0 1fea7dac174b8e45001f96402a557322
+
+% 3 1 0 09ae73c7cbc802700634290e7e366bab
+
+% 4 1 0 18ab0c0fdc8497e90abc48ee2c22c556
+
+% 0 1 0 11989e62a2df63e21bf4005a4f832a30
+
+% 0 1 0 1858fa87a12934a90b17c1602d2a841a
+
+% 0 1 0 02243260e5db3f420e7b8169d7677fc0
+
+% 1 1 0 10bb93eccc678dd304bf3e9c99e0452e
+
+@ 0 19 0 12c785e8e91c44a118a618b0b288b398
++   entry #consume   confronta una stringa letterale elemento per elemento, eseguendo `otherwise` alla prima mancata corrispondenza
++       Una macro: `cursor.consume(fail())("--")` si espande in un `next()` e un confronto per
++       ogni carattere del letterale, che deve essere una costante. Ogni carattere è confrontato
++       *dopo* un `next()`, quindi il cursore deve trovarsi sull'elemento che precede il
++       letterale quando la si chiama, e si trova sull'ultimo carattere del letterale dopo. Ogni
++       passo usa `next()`, quindi non è sicura per i byte finali di un messaggio su uno stream
++       attivo.
++   entry #mark   la posizione corrente come `Cursor.Mark`, presa all'interno di un hold
++       Richiede un `Cursor.Held`, che solo `#hold` e `.lookahead` forniscono. Quando la
++       lineazione è attiva, la riga e la colonna sono registrate accanto al mark, in array
++       paralleli senza boxing, così che `#cue` possa ripristinarle.
++   entry #offset   la riga e la colonna registrate quando è stato preso un mark
++   entry #cue   riporta il cursore a un mark, ripristinandone la riga e la colonna
++       Il mark deve trovarsi all'interno dell'hold corrente, poiché solo una regione trattenuta
++       è garantita essere ancora nel buffer.
++   entry #hold   esegue un'azione con il buffer fissato dalla posizione corrente, così che si possano prendere mark
++       Dall'inizio dell'hold più esterno fino alla sua fine, la compattazione non può scartare
++       nulla dopo l'inizio dell'hold, quindi ogni mark preso al suo interno è ancora nel buffer;
++       gli hold annidati condividono il fissaggio esterno. Gli hold sono chiusi, e i mark
++       rilasciati, quando quello più esterno ritorna. Un hold che si estende su una regione
++       molto lunga la tiene tutta in memoria.
+
+% 2 1 0 0c48be4092731f6000debc11acfc3d0d
+
+% 3 1 0 0b0979899640366c0f5d9ddd97031bec
+
+% 0 1 0 126f32416c53c0a207baf119ae5a7e0c
+
+% 0 1 0 0998547a8d7401f100f30c508b01dc94
+
+% 0 1 0 0e46b2ce119920e7019b86e365947431
+
+% 0 1 0 0575ef83f2f765eb07228b018bccc031
+
+% 0 1 0 1ac897f5df117e691f4a214b4741d1e6
+
+% 1 1 0 0fafaad054550f6d0d8d78de629f5656
+
+@ 0 12 0 17ac0f7905e501b914d9bbb07a576bc0
++   entry #grab   gli elementi tra due mark, materializzati come un unico valore del mezzo
++       Un valore vuoto quando i mark coincidono o sono invertiti. Entrambi i mark devono
++       trovarsi nell'hold corrente.
++   entry #slice   presta a una lambda la memoria, l'offset e la lunghezza tra due mark, senza copia
++       La lambda non deve trattenere il riferimento alla memoria, che la compattazione può
++       invalidare dopo la chiamata.
++   entry #clone   copia gli elementi tra due mark in un builder del tipo `Target` del mezzo
++       Per `Text` il bersaglio è un `java.lang.StringBuilder`, per `Data` un
++       `ByteArrayOutputStream`.
++   entry #take   i successivi `length` elementi come un unico valore, oppure `otherwise` se la sorgente termina prima
++       Rende presente ogni elemento prima di consumarlo e non esegue mai un refill dopo
++       l'ultimo, quindi è sicuro per i byte finali di un messaggio su uno stream attivo (la
++       maschera e poi il payload di un frame WebSocket, che arrivano un byte per chunk). Se lo
++       stream termina in anticipo, produce `otherwise`.
+
+% 2 1 0 1edd031546d76c22145e169c9b159303
+
+% 3 1 0 18f4bc235974bf5b06b95215af4cfadb
+
+% 0 1 0 0629f2130df3c5a70af5c335efbd9a06
+
+% 0 1 0 1d4429040fd7bcde03c86de4f6ce09cb
+
+% 1 1 0 16e45596e57b532c181210b06c0fd462
+
+@ 0 1 0 02496442c420a4e91780ca02dfe48155
++ entry .Datum   un byte o un carattere letto da `peek`, oppure `Datum.End`, che si confronta direttamente con un letterale `Char` o `Byte`
+
+% 1 1 0 0cfdeb10af4341fa02c95829211d8c57
+
+@ 0 5 0 0178302b588333bc1f818781b34d4a85
++       Un `Int` opaco, esportato da `internal`: un byte senza segno (`0..255`), il codice di un
++       carattere, o il segnaposto `Datum.End` (`-1`) per un cursore esaurito, l'unico datum non
++       derivabile da un byte o da un carattere. È distinto da un `Int` grezzo così che
++       l'aritmetica o la confusione tra byte e caratteri non possano avvenire in silenzio; il
++       confronto con un letterale passa per i given `CanEqual` dedicati e compila comunque in un
++       solo `int == int`.
+
+% 2 1 0 0f66a77e15ab97c91466361948c3384d
+
+% 3 1 0 0c20e5f8931a66f91646401882f6539a
+
+% 0 1 0 11463cbf7b94676b18aeb50c0c00fddf
+
+% 0 1 0 1829b243a84bb9150de5ff040607445b
+
+% 0 1 0 0f4cab95d5e3ff6a1510b6e8fb718688
+
+% 0 1 0 117f670a057f22bd0c4a3c41c275f8de
+
+% 1 1 0 05d0941fd10e7ae90f62f5eb397ee1bf
+
+% 0 1 0 044f074a4ef7b1151e0cdc621e822040
+
+@ 0 1 0 0c1a29f569b77d281011eee00c720fc3
++ entry .Credit   domanda di contropressione a grana fine: quanti altri elementi un consumatore può accettare
+
+% 1 1 0 17ba2c3f42d873211b7ad0b73217db65
+
+@ 0 6 0 179c24062fbcc4f40afd861859306b1f
++       Un `Long` opaco (`<: Long`, così che il capture checking lo tratti come un valore non
++       tracciato), esportato da `internal`: un numero di elementi del tipo `Operand` del mezzo
++       (byte, caratteri o record), non un numero di byte, quindi il suo significato cambia
++       attraverso un `Duct` che cambia mezzo, e `Duct#translate` esegue quella conversione.
++       `Credit(Long.MaxValue)` è una domanda illimitata. È il `Transport` di ogni endpoint che
++       costruiscono le factory del kernel (`Stream[Data] over Credit`), e `Regulation.credit` è
++       la sua aritmetica.
+
+% 2 1 0 0f7be773163bef4e067abb54809240b5
+
+% 3 1 0 12e59f97355384880b37a4b5469e65a6
+
+% 0 1 0 1b215ced3d9f2a3d05a03f694e467934
+
+% 0 1 0 1114ffe4ae11ff4c0a033b465101fd15
+
+% 1 1 0 0727000874e27ccf0252fc8cb163f4c3
+
+% 0 1 0 020d8ce913c36163144e3d42c2ac5aa6
+
+% 0 1 0 07ba1173fb1267f51c858c97add79fb6
+
+@ 0 3 0 044627c2f82382e708158afdda360843
++ entry .Mark   `Cursor.Mark`, esportato a livello di package
++     Il tipo opaco del mark è esportato con `export` dall'oggetto compagno di `Cursor`, quindi
++     è raggiungibile come `zephyrine.Mark` oltre che come `Cursor.Mark`; vedi `Cursor.Mark`.
+
+@ 0 3 0 1637184c88790eee1d2e2510071bf6e1
++ entry .Offset   `Cursor.Offset`, esportato a livello di package
++     Il tipo che impacchetta riga e colonna è esportato con `export` dall'oggetto compagno di
++     `Cursor`, quindi è raggiungibile come `zephyrine.Offset` oltre che come `Cursor.Offset`;
++     vedi `Cursor.Offset`.
+
+@ 0 1 0 158e8bda3751b38e1f6d79b1292a5383
++ entry .Addressable   la typeclass di un mezzo di streaming: il suo elemento, la sua memoria, il suo builder e le copie tra essi
+
+% 1 1 0 0c38b618d939d781143819e7564e4b9e
+
+@ 0 11 0 1f62278d266f6be8181259d73855e64e
++       `medium is Addressable` è ciò che permette a un `Cursor`, uno `Stream`, un `Intake`, un
++       `Duct` o un `Producer` di essere generici su `Data`, `Text` e chunk di record. Nomina tre
++       tipi (`Operand`, l'elemento: `Byte`, `Char` o il tipo del record; `Storage`, il buffer
++       mutabile: `scala.Array[Byte]`, `scala.Array[Char]` o uno `scala.Array[AnyRef]`
++       cancellato; e `Target`, il builder: `ByteArrayOutputStream`, `StringBuilder`,
++       `ArrayBuffer`) e le primitive che spostano elementi tra un valore, la sua memoria e un
++       builder. Le istanze si trovano nell'oggetto compagno, quindi si risolvono senza import:
++       `.bytes` per `Data`, `.text` per `Text`, `.texts` per `Array[Text]^{}`, `.frames` per
++       `Array[Data]^{}` e `.boxed` per qualsiasi altro `Array[record]^{}` con un `ClassTag`. Le
++       istanze per `Data` e `Text` sono `inline given`, quindi un punto di chiamata critico che
++       ne risolve una a tempo di compilazione si riduce a un accesso diretto all'array.
+
+@ 0 2 0 1379f9e352e3afa90930f37cf63e3aca
++       Un mezzo nomina il suo tipo esattamente: un `Data & Sized[16]` con marchio non è un
++       mezzo, quindi a un valore destinato a `Cursor(…)`, `Stream(…)` o `stream` si ascrive
++       `: Data`.
+
+@ 0 4 0 001bc50602f749f31e0d748f8dd94aeb
++       Il protocollo della memoria è tipato con le catture: `allocate` conia un buffer esclusivo
++       nuovo, gli scrittori lo prendono come `Storage^` e i lettori come vista in sola lettura.
++       Un consumatore del kernel chiama raramente queste primitive direttamente (`Region`,
++       `Slate` e gli endpoint le avvolgono), ma un'implementazione di uno `Stream`, di un
++       `Intake` o di un `Duct` lo fa.
+
+% 1 1 0 1b99ee04296f319216bc36cd8645607c
+
+% 1 1 0 1b4985ac8c0c651c1fcf0ca36b71f3f1
+
+@ 0 41 0 1918b991a06b94080d1081b2350b0496
++   entry .bytes   `Data is Addressable`: byte in uno `scala.Array[Byte]`, costruiti da un `ByteArrayOutputStream`
++       Espone il suo array sottostante (`#backing`), quindi un chunk `Data` è prestato a un
++       cursore, a uno stream o a un conduit per riferimento, mai copiato, e `assemble` unisce i
++       pezzi con una sola copia.
++   entry .text   `Text is Addressable`: caratteri in uno `scala.Array[Char]`, costruiti da un `java.lang.StringBuilder`
++       Una `String` non è un `char[]`, quindi un chunk di testo non ha una memoria sottostante
++       esponibile e viene copiato in un buffer; `assemble` unisce i pezzi attraverso
++       `String.join`, dimensionando esattamente il risultato.
++   entry .boxed   `Array[element]^{} is Addressable` per qualsiasi tipo di elemento riferimento con un `ClassTag`
++       Il mezzo dei record: un chunk è un array congelato di record, la memoria di lavoro uno
++       `scala.Array[AnyRef]` cancellato, e il credito conta i record (`Substrate.Boxes`).
++       L'elemento deve cancellarsi in un tipo riferimento, e il `ClassTag` rende i chunk
++       materializzati veri `element[]`. Gli elementi `Text` e `Data`, che non sono `<: AnyRef`,
++       hanno le istanze dedicate `.texts` e `.frames`.
++   entry .texts   `Array[Text]^{} is Addressable`: chunk di record di testo (righe, token)
++   entry .frames   `Array[Data]^{} is Addressable`: chunk di record di byte (frame, messaggi)
++   entry #Storage   il tipo del buffer mutabile: `scala.Array[Byte]`, `scala.Array[Char]` o `scala.Array[AnyRef]`
++   entry #empty   il valore vuoto del mezzo
++   entry #substrate   come la memoria è rappresentata fisicamente, perché `Buffering` dimensioni i buffer
++   entry #blank   un builder nuovo, dimensionato secondo un suggerimento
++   entry #build   il valore che contiene un builder
++   entry #length   il numero di elementi in un valore
++   entry #address   l'elemento a un ordinale di un valore
++   entry #clone   copia in un builder gli elementi di un valore tra due ordinali, inclusi
++   entry #grab   gli elementi di un valore tra due ordinali, come nuovo valore
++   entry #allocate   conia un buffer nuovo ed esclusivo di `size` elementi
++   entry #storageSize   la capacità di un buffer
++   entry #storageAddress   l'elemento a un indice di un buffer
++       Si cancella in una chiamata di interfaccia che restituisce `Object` più un unboxing quando
++       l'istanza non è risolta a tempo di compilazione, ed è per questo che i cicli critici
++       convertono invece il buffer una sola volta.
++   entry #storageUpdate   scrive un elemento in un buffer esclusivo a un indice
++   entry #append   aggiunge un elemento a un builder
++   entry #copyChunk   copia `len` elementi di un valore, da un offset, in un buffer a un offset
++   entry #transfer   copia `len` elementi da un buffer a un altro
++   entry #materialize   un nuovo valore di `len` elementi copiati da un buffer a un offset
++   entry #cloneStorage   copia in un builder `len` elementi di un buffer a un offset
++   entry #assemble   unisce pezzi di dimensione esatta, in ordine, in un unico valore della loro lunghezza totale
++       L'operazione terminale di `memoize`: il predefinito copia attraverso una memoria nuova e
++       `materialize`; `Data` e `Text` lo sovrascrivono per copiare una sola volta.
++   entry #backing   la memoria propria del valore, quando il mezzo è immutabile e la sua rappresentazione è il suo `Storage`
++       `Data` restituisce il suo array; `Text` restituisce `Unset`, e i chiamanti copiano. Una
++       memoria sottostante esposta non deve mai essere scritta: un cursore costruito su di essa
++       è statico, e uno stream che ne presta una riporta `regionStable`.
+
+@ 0 5 0 15dffed321deef4a16355deb20c52dd4
++ entry .Substrate   come è rappresentato fisicamente un buffer: `Bytes`, `Chars` o `Boxes`
++     `Bytes` e `Chars` hanno un ingombro deterministico; i `Boxes` (buffer di record sullo
++     heap) sono contati in riferimenti, quindi il loro uso di memoria non è limitato in modo
++     deterministico, e `Buffering.standard` li dimensiona più piccoli (256 per blocco di staging
++     contro 4096 byte o 2048 caratteri). Un'istanza di `Addressable` nomina il suo substrato.
+
+@ 0 1 0 1d6e1174e66ed72a1dee531fbbe086bd
++ entry .Buffering   la politica di dimensionamento contestuale che ogni stadio consulta quando alloca un buffer
+
+% 1 1 0 0ea95d31498abbc30016d9017a63e057
+
+@ 0 10 0 145592ba13cfebc10fc134fe0f882f9f
++       Un `Buffering` è pura politica di dimensionamento (non cattura nulla), consultata una
++       volta per stadio alla costruzione, così che un'istanza adattiva veda ogni nuovo stadio ma
++       non ridimensioni mai uno attivo. `.standard` si trova nell'ambito implicito; una pipeline
++       si riconfigura legandone un altro come given locale. I suoi membri:
++       `#capacity(substrate)`, il blocco di staging (residente in cache: 4096 byte, 2048
++       caratteri, 256 record); `#transfer(substrate)`, un blocco che attraversa un confine
++       asincrono (sedici blocchi di staging, poiché ciascuno costa un passaggio di consegne
++       sincronizzato); `#depth`, i blocchi di trasferimento di margine che un `Conduit` mantiene
++       tra scrittore e lettore (16); `#window(substrate)`, il credito che un cursore chiede a uno
++       stream che legge sul posto (un blocco di staging); e `#recycle`, se i blocchi svuotati di
++       un conduit tornano al suo scrittore (attivo).
+
+% 2 1 0 04cb73c31d700277130320a15a88d677
+
+% 3 1 0 1c722302c25757e91604e0b4bcab9051
+
+% 0 1 0 024902c67eb3f2481356eb44773a021e
+
+% 0 1 0 025260768bd965100012c31f580fa4c0
+
+% 0 1 0 17b05650567989c80dc6102662e099b1
+
+% 0 1 0 137c39f2935db98705daa689782d0326
+
+% 1 1 0 02a99b69a5ac436303e344b863ff163d
+
+@ 0 4 0 12b2bce03a81b23318fb9f148083da3b
++       I dati in transito in un conduit sono limitati a circa `2*depth + 1` blocchi di
++       trasferimento; il throughput dei passaggi di consegne crolla a profondità molto basse e si
++       stabilizza intorno al predefinito per un producer e un consumatore che procedono di pari
++       passo, quindi una pipeline con molti picchi sovrascrive `depth` con la dimensione dei suoi
++       picchi in blocchi di trasferimento.
+
+% 1 1 0 0b84a37af9d7e6d31d4ec3bc311c5c39
+
+% 1 1 0 122ffc7f0d2e90c5099d4ab71f9b9951
+
+@ 0 10 0 1a009d95629a1d3a13edf882d181d598
++   entry .standard   la politica predefinita: 4096 byte, 2048 caratteri o 256 record per blocco, profondità 16
++   entry #capacity   la dimensione del blocco di staging per un substrato: ciò che uno stadio alloca per il proprio buffer
++   entry #depth   il numero di blocchi di trasferimento che un `Conduit` tiene tra il suo scrittore e il suo lettore
++   entry #transfer   la dimensione di un blocco che attraversa un confine asincrono; sedici blocchi di staging per impostazione predefinita
++   entry #window   il credito che un cursore chiede a uno stream che legge sul posto; un blocco di staging per impostazione predefinita
++       Una regione presa in prestito non costa alcun buffer, quindi una finestra più grande
++       significa solo meno riempimenti e scansioni in blocco più lunghe tra l'uno e l'altro,
++       limitate da ciò che il credito permette di produrre a uno stadio a monte.
++   entry #recycle   se un `Conduit` ricicla i blocchi di trasferimento svuotati verso il suo scrittore; attivo per impostazione predefinita
++       Disattivato, ripristina un'allocazione rigorosamente per blocco, o isola l'effetto del
++       pool in una misurazione.
+
+@ 0 1 0 034a7382e59275a50242929229ac66ba
++ entry .Lineation   la politica che decide quale elemento termina una riga, perché un cursore possa tenere traccia di riga e colonna
+
+% 1 1 0 0d78daa0a0cb41dd1832faa97d89248b
+
+@ 0 5 0 064a545dadd521361d1caa109bc70490
++       `Lineation by Operand` ha `active`, che dice se il tracciamento è attivo, e `track(datum)`,
++       che dice se l'elemento termina una riga. Un `Cursor` legge `active` una sola volta alla
++       costruzione, quindi una lineazione inattiva non costa nulla a ogni avanzamento. I
++       `.untrackedChars` e `.untrackedData` dell'oggetto compagno sono i default nell'ambito
++       implicito, e non tracciano nulla; le politiche che tracciano si trovano nel
++       package di scelta `lineation` e si importano per nome.
+
+% 2 1 0 00c15a6cc755fcc31b02d51e4b8f8feb
+
+% 3 1 0 106fd24e8bf0be4a0c41e07a9c70c16d
+
+% 0 1 0 01abe52853067b410f9ac12aec26ffcf
+
+% 0 1 0 1dad14e2d4dfa6cb18065a1f3095df63
+
+% 0 1 0 0a6ead42316ff2dc1ea9949c49847696
+
+% 0 1 0 05c049afdb015b5d0810b4ac3e76e507
+
+% 1 1 0 0def2ee77eb328f51f9ea1dfce784c24
+
+% 0 1 0 03c1b3395f867e3b142c7381a7e754c8
+
+@ 0 4 0 02ad7679fc052414103504bf9cbc9dbe
++   entry .untrackedChars   il default per i cursori di caratteri: nessun tracciamento di riga o colonna
++   entry .untrackedData   il default per i cursori di byte: nessun tracciamento di riga o colonna
++   entry #active   se questa politica tiene traccia delle righe
++   entry #track   se un elemento termina una riga
+
+@ 0 1 0 1f7155e55039b1760347c33a08427c8e
++ entry .lineation   le politiche di tracciamento delle righe, ciascuna un given da importare per nome
+
+% 1 1 0 1dcc49d3fe0b657b0fa1cdbe58ed1f7c
+
+@ 0 3 0 0cd56b2e4f0a342815c6c49e5db77674
++       `import soundness.*` non ne porta nessuna: si risolvono i default non tracciati
++       dell'oggetto compagno, a meno che se ne importi una per nome, e un given importato
++       lessicalmente prevale su quello dell'oggetto compagno. Ognuna è un `inline given`, quindi il
++       test per ogni elemento viene reso inline nell'`advance` del cursore.
+
+% 2 1 0 12d034253277223e0a9ef89c087b027e
+
+% 3 1 0 1113cea576f9ef82042b16146d71c921
+
+% 4 1 0 188fda242bb52ade0f6cb89d163c9e66
+
+% 0 1 0 167bad68329d48bc193ddf4de7681a1e
+
+% 0 1 0 10afb423d6c84f7e11e0b81f2642e0a9
+
+% 0 1 0 0f536cf9882d3acf00f4bd5e9233f451
+
+% 0 1 0 04d164c2a3fe74c200a2caad78cf9cfc
+
+% 1 1 0 0c797ae017ae344c19b0968d1983729d
+
+@ 0 4 0 1d8cbdb088f121b809070d3d0853556a
++   entry .linefeedChar   la riga di un cursore di caratteri termina a `\n`
++   entry .carriageReturnChar   la riga di un cursore di caratteri termina a `\r`
++   entry .linefeedByte   la riga di un cursore di byte termina al byte 10
++   entry .carriageReturnByte   la riga di un cursore di byte termina al byte 13
+
+@ 0 1 0 07f9adb6c75f89190d5d2e9d80d00fdd
++ entry .PositionTracking   l'interruttore, condiviso da ogni parser sensibile alle posizioni, per registrare le posizioni nel sorgente
+
+% 1 1 0 14885fab8221db06128841481136ddd0
+
+@ 0 6 0 1682c7b203e46b790e549a6f81e463b5
++       `On` oppure `Off`. Il `.default` dell'oggetto compagno è `Off`, quindi i punti d'ingresso
++       generici `read`/`load` di jacinta, stratiform, xylophone, ypsiloid e honeycomb analizzano
++       senza tracciamento e non pagano alcun costo; `import parsing.trackPositions` lo sostituisce
++       con `On`, e la stessa `read` produce allora un valore che `locate` può risolvere in una
++       posizione nel sorgente. (Si chiama `PositionTracking` e non `Tracking` per non entrare in
++       conflitto con il `Tracking` di contingency sotto `import soundness.*`.)
+
+% 0 1 0 0dddc834632989ef133b2b864e2c3216
+
+% 0 1 0 0fae750822f8307d1f2ef21f1f1d9cf1
+
+@ 0 1 0 168f07c171e3b50c193ba0ae5f518f43
++   entry .default   il default dell'oggetto compagno: `Off`
+
+@ 0 1 0 19eb4e885bf1ab3b07c5da7c3fe6c912
++ entry .parsing   il given che attiva il tracciamento delle posizioni, importato per nome
+
+% 1 1 0 0bef2dac4588a34407890ee0fb438cc9
+
+% 1 1 0 129f526836097231016708ddcda3f573
+
+% 2 1 0 0bc97b6e16268c230d2159d6da92bed9
+
+% 0 1 0 1cdc57769a14db061e8c86d90120bb16
+
+% 0 1 0 0cbd6cb6c2cd1b8d020d1f35618e7660
+
+% 1 1 0 09653e6b0c1b8fcc052b68788d4d391d
+
+@ 0 1 0 0e0a79665822a85913e444d5c668ffb1
++   entry .trackPositions   `PositionTracking.On`: i parser sensibili alle posizioni registrano le posizioni nel sorgente
+
+@ 0 1 0 0d90c73d4a2193b10d10947cd3bfb63a
++ entry .Positionable   collega un valore analizzato al tipo di percorso che ne indirizza i nodi e alla posizione in cui ciascuno si risolve
+
+% 1 1 0 00cf4de232e2825a166831655d8e33f9
+
+@ 0 8 0 065c9db5203022ca0ad3594c4425bcc4
++       Per esempio `Json is Positionable by JsonPointer to Json.Ast.Position`: `Operand` è il
++       tipo di percorso, `Result` la `Format.Position` concreta. Le estensioni uniformi `locate`
++       e `locateKey` passano attraverso di esso, quindi ogni formato che supporta il tracciamento
++       espone la ricerca delle posizioni allo stesso modo. Un valore analizzato senza
++       `parsing.trackPositions` nell'ambito non porta posizioni, e ogni ricerca dà `Unset`.
++   entry #Result   il tipo di posizione in cui si risolve il formato, una `Format.Position`
++   entry #locate   la posizione del nodo indirizzato da un percorso, oppure `Unset`
++   entry #locateKey   la posizione della chiave che corrisponde all'ultimo segmento del percorso, oppure `Unset`
+
+@ 0 4 0 0f27f1fd55b15305156560c57b0e888c
++ entry .locate   la posizione nel sorgente del nodo che un percorso indirizza in un valore analizzato, oppure `Unset`
++     Un'estensione su qualsiasi valore con un'istanza di `Positionable`; il tipo di percorso è
++     fissato da quell'istanza (un `Json` si localizza con un `JsonPointer`). Dà `Unset` quando il
++     percorso non si risolve, o quando il valore è stato analizzato senza tracciamento delle
++     posizioni.
+
+% 2 1 0 00a024433d47710b0573b43dfbea91cb
+
+% 3 1 0 1a39726494b63d55076de6ebe6531c6d
+
+% 0 1 0 13f9e480a6c9c27310d328742295d6da
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 1 1 0 1ed7e4e174629fc20d371ebb8c7095ec
+
+% 0 1 0 0805a5b706e5d2bd03813f5b40795c70
+
+% 0 1 0 03c287662b1545331db4b9ac12e03a10
+
+% 1 1 0 14c268f9ce1517101cd971d43398b628
+
+@ 0 2 0 008194125c221b8509b9de847c66fc5c
++ entry .locateKey   la posizione nel sorgente della chiave di oggetto o di mappatura nominata dall'ultimo segmento di un percorso, oppure `Unset`
++     Come `locate`, ma per la chiave anziché per il suo valore.
+
+@ 0 1 0 1fd084e7b11911fd0b9d8716f8a7292d
++ entry .Format   il nome di un formato analizzato e i tipi di posizione e di problema che portano i suoi errori di parsing
+
+% 1 1 0 12b33cba8485bede1a2454234ce2b1cb
+
+@ 0 3 0 057d004c2cece05c1a96ad7e71ca9e31
++       Ogni oggetto formato (il `Json` di jacinta, il `Tel` di stratiform, …) è un `Format`, che
++       nomina i suoi tipi `Position` (dove nel sorgente) e `Issue` (che cosa non andava) perché
++       `Parse.Error` possa riportare `the JSON was not valid at line 3, column 7 because …` in modo
++       uniforme.
+
+% 0 1 0 042d0ae504c0c6270f1c89b10840ccad
+
+@ 0 1 0 1e41c8018a6ad29017292f11b0d8bd9a
++   entry .Position   dove nel sorgente è stato trovato un errore
+
+% 1 1 0 1eb14a5775f72c7a097edabb7a6a87e9
+
+@ 0 12 0 1507aceb0a19adb402293324ae556163
++         `describe` rende la posizione; `offset` e `length`, entrambi `Unset` per default, danno
++         un intervallo di caratteri; e `span` è lo `Span` uniforme esposto dall'API pubblica degli
++         errori, costruito da offset e lunghezza a meno che un'implementazione che tiene traccia
++         delle righe non lo ridefinisca.
++     entry #describe   la posizione, resa come testo
++     entry #offset   l'offset in caratteri, se noto
++     entry #length   la lunghezza dell'intervallo interessato, se nota
++     entry #span   la posizione come `Span`
++   entry .Issue   che cosa non andava nell'input
++     entry #describe   il problema, come messaggio
++   entry #name   il nome del formato, come appare in un messaggio di errore
++   entry #Position   il tipo di posizione del formato
++   entry #Issue   il tipo di problema del formato
+
+@ 0 1 0 07cf99f6122476491b4d466f0b65d63d
++ entry .Parse   l'errore che solleva ogni parser di formato
+
+% 1 1 0 1b8e1c7c800172841523b8a2519e3643
+
+@ 0 9 0 0e711355b5a5a062017e3b92d0265999
++       `Parse.Error(format, position, issue)` è l'errore `↯/s.60.2`, _the `name` was not valid at
++       `position` because `issue`_, con i tipi di posizione e di problema propri del formato;
++       `#span` espone la posizione come `Span`. Viene sollevato attraverso una
++       `Tactic[Parse.Error]` da ogni parser costruito sul kernel.
++   entry .Error   errore `↯/s.60.2`: _the `format` was not valid at `position` because `issue`_
++     entry #format   il formato che ha rifiutato l'input
++     entry #position   dove l'input è stato rifiutato
++     entry #issue   perché è stato rifiutato
++     entry #span   la posizione come `Span` uniforme
+
+@ 0 4 0 0d22a781d489f7e21cbb1eb8d17fceac
++ entry .Formatting   il trait marcatore della configurazione di formattazione dell'output di un serializzatore
++     Indentazione, ritorno a capo delle righe, a capo finali e simili. Ogni formato definisce il
++     proprio sottotipo con i parametri che gli si addicono (YAML vieta l'indentazione con
++     tabulazioni; in HTML gli spazi bianchi sono strutturali) ed espone istanze importabili nel
++     suo namespace `formatting`.
+
+@ 0 1 0 02b3e577fdd588e5026d6984c193e18f
++ entry .Truncation   uno stream che è terminato prima di aver consegnato tutto
+
+% 1 1 0 1c5dbc85f96387071d77ed6f57d6954a
+
+@ 0 6 0 1c5ef2dde2ec18b81bd7f1b947f272f0
++       Prende il nome dallo stato dei dati e non da chi lo solleva: lo riportano il pull di uno
++       `Spring` e gli `Streamable`, `Writable` e `Sink` di turbulence, quindi sta accanto a
++       `Stream` e `Spring`. turbulence lo riesporta, quindi `Truncation` si risolve sia con
++       `import soundness.*` sia con `import turbulence.*`.
++   entry .Error   errore `↯/s.60.1`: _the stream was cut prematurely after `total`_
++     entry #total   quanto era stato consegnato quando lo stream è stato interrotto
+
+@ 0 1 0 0221e497196125c801fd2c36b5346b4b
++ entry .Expanse   una vista ad accesso casuale su un'estensione di byte, per i formati il cui accesso è posizionale
+
+% 1 1 0 061285e266a03f2213d916db1f882985
+
+@ 0 8 0 133f06f3c368a04b0ec8123f770fdef0
++       Le directory centrali ZIP, le tabelle di riferimenti incrociati PDF e i file mappati in
++       memoria si leggono per offset, non in sequenza; un `Expanse` è `size` e
++       `read(offset, length)` su qualsiasi mezzo capace di servire letture per intervalli — un
++       canale di file, un buffer in memoria, una risorsa HTTP che accetta richieste `Range`.
++       Un'implementazione dichiara la propria disciplina di durata (tenere una risorsa aperta per
++       un ambito, o riacquisirla a ogni lettura). Una che rappresenta una risorsa aperta viene
++       prestata come `Expanse^` tracciato. `streamOf(expanse, offset, length)` ne legge un
++       intervallo come stream, un blocco di trasferimento alla volta.
+
+% 0 1 0 118fa1efcd363acb0d47825882e44b5d
+
+% 1 1 0 0b1cd4f040a58a33093ee503f640f668
+
+@ 0 2 0 198ef93c5b508f0c0c47f2adb186f4b9
++   entry #size   la lunghezza dell'estensione in byte
++   entry #read   `length` byte a partire da `offset`, come `Data`
+
+@ 0 1 0 0f123abb5eef47bd018ff94920bf28d2
++ entry .Malleable   un `Expanse` i cui byte si possono anche sostituire sul posto, come quelli di un file mappato in memoria
+
+% 1 1 0 150d4afb9c9b5c5b1c49b72fa5836e0a
+
+@ 0 2 0 054ba14542ea1c5c0856db4c15115364
++       La regione è fissa: `write` non può estendersi oltre `size`.
++   entry #write   sostituisce i byte a `offset` con `data`
+
+@ 0 1 0 1c77d82579912cf11ff143118ab1e7b4
++ entry .Spring   una sorgente di stream rimaterializzabile: ogni pull conia un endpoint nuovo ed esclusivo sullo stesso contenuto
+
+% 1 1 0 02115936965a0b930121c676ab4811ac
+
+@ 0 6 0 02071cebebe3086a02c2f77d9d00b932
++       Uno `Stream` si legge una volta; uno `Spring[medium]` si può tirare un numero qualsiasi di
++       volte, e ogni `apply()` dà un nuovo stream sullo stesso contenuto. È un trait e non un tipo
++       funzione perché una lambda non può coniare come risultato una capability con ambito
++       nuova, mentre il risultato di un metodo viene ridefinito di livello a ogni punto di
++       chiamata; e poiché `apply` prende una `Tactic[Truncation.Error]` (il pull è il punto in cui
++       si riporta una sorgente interrotta), non è un singolo metodo astratto, quindi uno spring si
++       scrive come classe anonima.
+
+% 2 1 0 19b1263e7b7df9d71a6c27850597ffa1
+
+% 3 1 0 0be701dcc4b1b2f40dd64cf1b1681da6
+
+% 4 1 0 07468e4087cbab570c6f4930bd98e186
+
+% 0 1 0 181c89a3a3c9eff71379d302524ae8b3
+
+% 0 1 0 01695849077b5cc30440a2ef48c02fbe
+
+% 0 1 0 11f896df7461384f0b65ce24a38b5dad
+
+% 1 1 0 17b175ebad885ace0f6da2c3ce0ea8b5
+
+@ 0 1 0 15de867e149d64bb0eece21b2f630b82
++   entry #apply   un nuovo stream sul contenuto, che solleva `Truncation.Error` se viene interrotto
+
+@ 0 1 0 013119bf19f8054f0ba3487acd7aab57
++ entry .Stream   l'endpoint di pull di una pipeline: un buffer la cui regione leggibile viene prestata senza copia a un solo consumatore
+
+% 1 1 0 041abf34c52003ef1dac8a85d4dcec1d
+
+@ 0 6 0 1d8a70897e9e8c7a1c7db42e2f1e30cc
++       Uno `Stream[medium] over transport` si legge chiamando `#refill(demand)` con la quantità
++       che il consumatore è disposto a prendere, leggendo la regione che riporta (`#lend`, oppure
++       `#unsafeStorage` da `#start` a `#limit`), e saltando con `#skip` ciò che ha letto. Nulla
++       viene copiato e nulla viene trattenuto; un consumatore che non ricarica non chiede nulla, ed
++       è questo che fa della contropressione l'assenza di una chiamata. Il `transport` è il tipo di
++       domanda, `Credit` per tutto ciò che costruiscono le factory del kernel.
+
+@ 0 9 0 15092141a7af154c0649dcfc10c7f6cb
++       Uno stream è una capability esclusiva: lo `Stream[…]^` che una factory restituisce è
++       necessario per ricaricare, saltare o chiudere, viene passato ai combinatori come argomento
++       `consume`, e usarlo dopo `via`, `pump`, `memoize` o qualsiasi altra operazione che lo
++       consuma è un errore di compilazione. Gli stream si costruiscono con `.apply` su un valore,
++       una catena o un iteratore di chunk, con l'estensione `stream`, con `Conduit`, con
++       `streamOf` su un cursore o un'estensione, e con le istanze `Streamable` di turbulence; si
++       trasformano con `via`/`viaDuct`, si limitano con `truncate`/`discard`, si collegano a un
++       intake con `pump`, e si svuotano con un'operazione terminale — `memoize`, `drain`,
++       `gather`, `chunks`, `chain`, `records` — che li chiude.
+
+% 2 1 0 1b3a7c95bb3f5ccc09a865319ee87c5f
+
+% 3 1 0 028dc691747421761e7b180d2e9c1ca6
+
+% 0 1 0 0118432fc424a220047be4bef12e3f73
+
+% 0 1 0 0de9305be7d8f5be1ef586db4d80b999
+
+% 0 1 0 114d27d8ffad0a4d18276c55ed13cc4e
+
+% 0 1 0 1a65f575378e5dd90314af00771028ac
+
+% 0 1 0 0b222ef96d8a1f301fd292d18a3463db
+
+% 0 1 0 025e640c913cf9d0057353815a2ecccd
+
+% 1 1 0 0667119edf779d7811554fdff348f722
+
+@ 0 8 0 14184198831ca91e0101086b8f2a5a5c
++       Per implementarne uno: si forniscono `storage0` (il buffer, come `AnyRef`), `start`,
++       `limit`, `skip` e `refill`, e si ridefinisce `close` per rilasciare la sorgente; il
++       `Recorder` della suite di test, che avvolge un altro stream e registra le domande che vede,
++       è la forma più piccola. Uno `Stream` estende `ExclusiveCapability, Stateful` anziché
++       `Mutable` perché un'implementazione possa catturare la propria sorgente (un iteratore, una
++       coda, un socket); il prezzo è che uno stream tenuto in un campo esclusivo è di sola
++       lettura, quindi un wrapper tiene il proprio stream a monte attraverso un portatore neutro
++       `AnyRef` e ne riafferma la proprietà in un accessor.
+
+% 1 1 0 0f76380d67c0d9d80dd2a54d715f0f60
+
+% 1 1 0 16df8353429aa48b1a926d479b63dec2
+
+% 1 1 0 072e7ec5845e07b705c7f3c6324b3fe6
+
+% 0 1 0 171d7620a4c610b00930843ef35c4564
+
+% 1 1 0 1ed0753ff5c250f103c4b303be64b37b
+
+@ 0 30 0 14d0bd302ccc73b80cc05b727f595faa
++   entry .apply   uno stream su un singolo valore, su una catena pigra di chunk, o su un iteratore di chunk
++       `Stream(value)` è uno stream in memoria a regione singola: un `Data` è condiviso per
++       riferimento (i suoi intervalli di regione sono stabili, quindi un fan-out può
++       condividerli), e qualsiasi altro mezzo viene copiato una volta al primo refill.
++       `Stream(chain)` forza al più una cella per refill, quindi la domanda guida la produzione
++       esattamente fin dove lo consente la pigrizia della catena. `Stream(iterator)` adatta un
++       `murmuration.Iterator` di chunk, esponendo ogni chunk a ogni refill nella misura concessa
++       dalla domanda; la produzione propria dell'iteratore è fuori dal controllo dello stream, e
++       le sue catture sono trattenute insieme a quelle dello stream.
++   entry #addressable   l'istanza `Addressable` del mezzo
++   entry #Transport   il tipo di domanda: `Credit` per tutto ciò che costruisce il kernel
++   entry #refill   garantisce che almeno un elemento sia leggibile, senza produrne più di quanto `demand` consenta, e restituisce quanti
++       Si blocca se necessario. Restituisce `0` solo quando `demand` non concede nulla, `Unset` a
++       fine stream, e altrimenti `limit - start`. Gli elementi ancora non consumati nella regione
++       vengono riportati senza produrne altri: una regione non saltata viene riportata, non
++       estesa.
++   entry #lend   presta a una lambda la regione leggibile e il suo intervallo marchiato, senza copia
++       La lambda riceve una `Region[medium]` e un `Interval in region.type` che copre
++       `start until limit`, quindi ogni indice che può formare è nell'intervallo. Valido solo fino
++       al `refill` o al `close` successivo.
++   entry #unsafeStorage   lo storage grezzo sottostante, dietro `Unsafe`
++       Per l'infrastruttura di fan-out che condivide intervalli di regione per riferimento, e per i
++       kernel la cui aritmetica degli indici va oltre i combinatori di regione. Il cast dallo
++       `storage0` non tipizzato è corretto perché le istanze di `Addressable` sono uniche per mezzo.
++   entry #start   l'indice del primo elemento leggibile nello storage
++   entry #limit   l'indice successivo all'ultimo elemento leggibile
++   entry #skip   consuma `count` elementi della regione senza materializzarli
++   entry #regionStable   se gli intervalli di regione precedenti restano validi dopo i refill successivi; `false` salvo ridefinizione
++       Vero per un singolo buffer fisso che `refill` si limita a estendere e `skip` si limita a far
++       avanzare (`Stream(value)`, `streamOf(expanse, …)`), così che un fan-out possa condividere
++       gli intervalli per riferimento anziché copiarli. Uno stream che riutilizza il proprio buffer
++       non deve mai dichiararlo.
++   entry #close   rilascia le risorse dello stream, propagando a monte lungo tutta la catena
+
+@ 0 4 0 161d5b40e0219c3f1146a7da0bb7c877
++ entry .stream   `value.stream` o `iterator.stream`: uno stream di pull in memoria, in stile fluente
++     Due estensioni: su qualsiasi valore `Addressable`, `Stream(value)`; su un
++     `murmuration.Iterator` di chunk, `Stream(iterator)`. Il tipo del valore deve nominare
++     esattamente il mezzo (`: Data`, non un `Data & Sized[n]` marchiato).
+
+% 2 1 0 080df36b773f75c118ae971d896610c4
+
+% 3 1 0 1aab7df39d965c56192e16bae9bcee1a
+
+% 4 1 0 06716235d73e93f912bacb99ac4669e9
+
+% 0 1 0 1c5b97c24680db870d73755175ce873a
+
+% 0 1 0 1c0d3157fe8c901b15b930f050a3db64
+
+% 0 1 0 0841063399fbdbef1fd9c23daa375f84
+
+% 1 1 0 02efd1c148d839d807ded3b798308a84
+
+@ 0 1 0 0174011a768130b2019b52a6b20885b6
++ entry .Intake   l'endpoint di push di una pipeline: un buffer la cui regione scrivibile viene prestata senza copia a un solo produttore
+
+% 1 1 0 1a8882a2dcee1ba401c29fea91a8cf1f
+
+@ 0 8 0 16eb301caa98f9d704b2e545122352d1
++       Un `Intake[medium] over transport` riporta la sua `#demand` corrente — quanto può
++       accettare — e si scrive attraverso il protocollo primitivo `#reserve`/`#unsafeBuffer`/
++       `#mark`/`#commit`: uno scrittore riserva spazio contiguo, scrive direttamente nello storage
++       a `mark`, poi esegue il commit. `#put`, `#push` e `#absorb` sono cicli finali su quel
++       protocollo, e poiché `Intake` estende `Producer`, il codice di serializzazione scritto
++       contro `put`/`push` guida una pipeline senza modifiche. `#finish` termina lo stream (una
++       sola volta), `#flush` propaga i dati nel buffer senza terminarlo, e `#fail` interrompe,
++       propagando l'errore al lettore al successivo confine asincrono.
+
+@ 0 4 0 0e800e99a1dadb2c0af67961c8e743e0
++       Un intake si trasforma in uno di tipo diverso con `accepting`/`acceptingDuct`, si alimenta
++       con un intero stream tramite `pump` (che lo consuma) o `ingest` (che lo restituisce), e si
++       costruisce con `Conduit` per il thread che scrive in una pipeline tra thread. Implementarne
++       uno significa fornire `demand`, `buffer0`, `mark`, `reserve`, `commit` e `finish`.
+
+% 2 1 0 0f1485e9907a7a6e16049abface3ad23
+
+% 3 1 0 09356ea711311e0d09bd119221b15075
+
+% 4 1 0 019b4ecdd9039b8f0581e14212016243
+
+% 6 1 0 08343c66237c808d12a99eb9af295aee
+
+% 7 1 0 1730aa11dbabd5ea13600468a2304827
+
+% 0 1 0 14a1c9e9619c69440d1984add2658069
+
+% 0 1 0 160c77780c7d0f5d02f5d34110df5c7e
+
+% 0 1 0 00360ed7642d03d6057868baa5f3c03c
+
+% 1 1 0 1517187fe4c83cd00aeeba99b99c3299
+
+% 1 1 0 18454649d59a46751d276d3449da6f0d
+
+% 0 1 0 127f5cd70a2338820e5b52260ff146be
+
+% 1 1 0 09082623fdce1b9d027c95c91225f7bb
+
+% 1 1 0 13c9893028fd84d1173ec38bb351ad3e
+
+@ 0 21 0 07ea99d7b1703b5916b461f3728661ff
++   entry #addressable   l'istanza `Addressable` del mezzo
++   entry #Operand   il tipo degli elementi: `addressable.Operand`
++   entry #Transport   il tipo di domanda
++   entry #demand   la domanda che questo intake riporta al momento: indicativa, per limitare la produzione a monte
++       Calcolata su richiesta e mai memorizzata; è `reserve` a bloccare davvero.
++   entry #reserve   garantisce uno spazio scrivibile contiguo di almeno un elemento, bloccando se necessario, e restituisce quanto
++       `min` è una richiesta: un'implementazione può restituire meno (gli scrittori ciclano su
++       `reserve`/`commit`), ma può anche prendere una richiesta grande come indicazione di
++       dimensione — un `Conduit` conia un blocco di trasferimento corrispondentemente più grande.
++   entry #unsafeBuffer   lo storage, scrivibile da `mark` fino allo spazio riservato, dietro `Unsafe`
++       Valido solo fino al `commit`, `flush` o `finish` successivo.
++   entry #mark   l'indice in cui si scrive il prossimo elemento
++   entry #commit   dichiara scritti `count` elementi a `mark`; può propagarli in modo sincrono a valle
++   entry #flush   propaga subito a valle i dati nel buffer, senza terminare lo stream
++   entry #finish   termina lo stream: svuota il buffer, emette l'eventuale stato terminale degli stadi, rilascia ciò che sta a valle; si chiama una volta
++   entry #fail   interrompe: propaga l'errore a valle perché gli stadi rilascino le risorse; viene rilanciato al lettore
++   entry #absorb   copia `count` elementi di uno storage, da un offset, attraverso il ciclo reserve/commit
++   entry #put   scrive un valore intero, o `size` suoi elementi a partire da un ordinale, attraverso il ciclo reserve/commit
++       Ridefinibile: un confine asincrono fa invece passare per riferimento un chunk immutabile
++       grande, come fa l'intake di `Conduit`.
++   entry #push   scrive un elemento
+
+@ 0 1 0 03cb2a2c7baf72df17ae21fae04f9912
++ entry .Conduit   il confine asincrono: un intake per il thread che scrive e uno stream per il thread che legge
+
+% 1 1 0 0bbb2854115f380b0ae329598c949189
+
+@ 0 10 0 1b4f123df29133830c6a743678ee3b59
++       `Conduit[medium]()` produce `(intake, stream)`, e ciascuno è toccato da un solo thread.
++       I dati attraversano a blocchi un anello lock-free limitato (`Handoff`), quindi uno
++       scrittore che supera il proprio lettore si parcheggia in `reserve` —
++       contropressione tra thread — e la capacità libera è il credito che l'intake riporta come
++       `demand`. È l'unico componente sincronizzato di una pipeline; ogni altro stadio è stato con
++       un solo proprietario da una parte o dall'altra. Un chunk lungo almeno un blocco, il cui
++       mezzo espone ciò che lo sostiene (`Data`), attraversa per riferimento, senza copia; le
++       scritture più piccole si accorpano in blocchi di trasferimento, che il lettore restituisce
++       allo scrittore per il riuso (`Buffering#recycle`), e poi al `Blockpool` condiviso quando il
++       conduit termina. Il `fail(error)` di un produttore viene rilanciato al lettore al suo
++       `refill` successivo.
+
+% 2 1 0 05ceec52fe58e8a90783362e47c574e7
+
+% 3 1 0 16e5dbf21b41b09217329db0b4cf93f4
+
+% 4 1 0 1ebeed6afb039ae6159cbbf0ef8675bf
+
+% 1 1 0 1b051369c5ecbac71bdde5a6a0bc2e5c
+
+% 2 1 0 1bdd9fb62bf462340ada7ef468fb9356
+
+% 3 1 0 1e7029d19d6382601cc98005572697f5
+
+% 4 1 0 1621fdb544ca12340c9a0205debabc5f
+
+% 0 1 0 0a35f0aba06068c009b25aa85100c0b5
+
+% 2 1 0 0097b737bcb26f45139a48f6bd537338
+
+% 0 1 0 1014eb47d89cb9701d8a7cc648fa5273
+
+% 0 1 0 088ca3711ac5f64312b2b56dc4d5f95e
+
+% 0 1 0 08e718551e4d10830720237ab3b03a41
+
+% 0 1 0 06e787397d846135173236ca01d345f1
+
+% 0 1 0 01f8e1c7f64be372050f199b48580669
+
+% 0 1 0 03645c946ce2c81613dc507925cabfcf
+
+% 1 1 0 081dbae6d269ab2f0364ac1e4365a248
+
+@ 0 6 0 1fc754e9fb5a923510c93315c18a5b84
++       Il threading decide il throughput a questo confine: poche pipeline su core inattivi sono
++       più veloci su thread di piattaforma, il cui budget di attesa attiva intercetta la maggior
++       parte degli scambi senza una transizione nel kernel, mentre sotto carico elevato — più
++       pipeline che core — entrambi gli endpoint dovrebbero girare su thread virtuali, così che
++       ogni parcheggio sospenda alla maniera delle fiber sul pool di carrier. Richiede un
++       `Buffering` (per la dimensione dei blocchi, il tetto di trasferimento, la profondità e la
++       politica di riciclo).
+
+% 0 1 0 09f373a5d6d577ab1f4fabf973c3f2ee
+
+% 1 1 0 0ddc2d922006915314ae3b7df0cde4c8
+
+% 1 1 0 0f84c267b216b8e20ff4a243abc0951d
+
+@ 0 1 0 1375fc3156be0cf312c7e849211621af
++   entry .apply   un nuovo intake di scrittura e un nuovo stream di lettura su un anello condiviso, come coppia
+
+@ 0 1 0 1c6d121ca1c27d1e1b11bda0f233690d
++ entry .Duct   uno stadio di trasformazione sincrono, collegabile a uno stream con `viaDuct` o a un intake con `acceptingDuct`
+
+% 1 1 0 0504bf4efc305ea416497795a3151921
+
+@ 0 6 0 1cfec6a3ced28a75097d0d20ca03d3e0
++       Un `Duct[operand, result]` è un kernel da buffer a buffer: `#step` trasforma l'intervallo
++       leggibile di una `Region` sorgente nello spazio scrivibile di uno `Slate` di destinazione,
++       restituendo quanto ha consumato e prodotto; `#flush` emette lo stato terminale una volta
++       terminato il flusso a monte; `#translate` converte la domanda a valle (in elementi
++       `result`) nella domanda da presentare a monte (in elementi `operand`). La stessa istanza
++       serve entrambe le direzioni di collegamento, poiché la domanda viene tradotta in qualunque
++       verso sia riportata.
+
+@ 0 11 0 0f3f77ccfa5f0d710d313fd9b99b019d
++       Il contratto che `step` deve rispettare: dati almeno un elemento di input e almeno
++       `#quantum` elementi di spazio di output, consuma o produce almeno un elemento; l'input che
++       non può ancora trasformare (un atomo parziale alla fine dell'input offerto) viene consumato
++       e conservato nello stato proprio del duct, mai lasciato non consumato tra un passo e
++       l'altro. Un duct il cui stato può trattenere output oltre lo spazio di un passo (un
++       decompressore) deve ridefinire `flush`, che viene chiamato ripetutamente finché non
++       restituisce `0`. `translate` non deve affamare — ogni volta che `demand` concede almeno
++       `quantum`, la traduzione concede almeno uno — e deve gestire credito illimitato senza
++       overflow (divisioni arrotondate per eccesso come `n - n/2`). Le conversioni sono limiti
++       conservativi, non aritmetica esatta: l'eccedenza viene trattenuta per il trasferimento
++       successivo, ed è questo che rende possibili i duct con rapporti inconoscibili (la
++       compressione).
+
+% 2 1 0 053082ae6cfc105307d2e49cde396556
+
+% 3 1 0 1ab7d8d4ec8caedf117bdfd01c3a448c
+
+% 4 1 0 07efc7abb207dfef1945730625cc208f
+
+% 0 1 0 01f6a2c49c4b045e18ac643bf17811d9
+
+% 0 1 0 1c728c49341b2d1d0cbeb2b48394bf93
+
+% 0 1 0 0e2dad5c39a34f901f36c8983471e7a1
+
+% 0 1 0 14bc6bedb7885a681b37758bea8ea258
+
+% 0 1 0 14cafdbd19f0023401353183999d0db5
+
+% 0 1 0 07640f76279679a617989a8016a95069
+
+% 0 1 0 18e710159cc938ec17ec014be8c22df2
+
+% 0 1 0 1939a9b894808cd81fc093de087c60e4
+
+% 0 1 0 09dd9d277bc506f51231b7cd352025b6
+
+% 0 1 0 12da11f99b1b0b4d0ef7ef14c7b28411
+
+% 0 1 0 0d5d962fcf227a8e0f1a5ee9411b7163
+
+% 0 1 0 119ae55bd9f4790a17bca6e4f5c3c415
+
+% 0 1 0 1ce8d976c1db239c1d064033c11e3615
+
+% 0 1 0 0434a4af7b627d0d178628d5144cbbad
+
+% 0 1 0 0ab5a3f91c5a37b01a5ce611d10222aa
+
+% 0 1 0 017f60c1650511761007ab72aad18b10
+
+% 0 1 0 1b0fe2e377d583190829e49e3dbc3e91
+
+% 0 1 0 1b5ac14e7d368d3501cc97b68b527625
+
+% 0 1 0 0d4ecb7453aeec8d1241f2caba64fdae
+
+% 0 1 0 029581c67bfd27e70ec6b4a2d60cbb47
+
+% 1 1 0 0f627e00fc372399054a061ff5af5709
+
+@ 0 8 0 0aafc09aa709a8fd06f10d8f0f114e23
++       Un duct è stato mutabile con un solo proprietario (compressori, atomi parziali), quindi è
++       una capability con stato: `step`, `flush` e `close` sono metodi `update` che richiedono un
++       riferimento esclusivo, mentre `translate`, `quantum` e `regulation` sono interrogazioni
++       pure. Le sue due istanze `Addressable` sono membri semplici, `#input` e `#output`, non
++       given, così che un duct con lo stesso mezzo non veda due istanze ambigue. Un kernel che
++       avvolge un'API JDK basata su offset (un codificatore di charset, un cifrario, un
++       compressore) riallarga gli intervalli marchiati a offset al suo confine tramite
++       `Region.borrow`/`Slate.borrow`, o `unsafeRaw` dietro `Unsafe`.
+
+% 1 1 0 1a548c2f47b23fda0a3ef9c1b855cac6
+
+% 1 1 0 128a045a0d0ac4b80ae6d7722faa3fb8
+
+% 1 1 0 0ce428425c81860b1efb459f82f67195
+
+% 1 1 0 09c492df64c71d91095003df81debc56
+
+@ 0 1 0 09fae5abf46a14551d413a0c1e4fb1f9
++   entry .Progress   la coppia non boxed (consumati, prodotti) che `step` restituisce
+
+% 1 1 0 1740da87cab6165a121c37e39f7157cd
+
+@ 0 30 0 036d7c23be285ff5064243007eb419a9
++         Un `Long` opaco che impacchetta due `Int`, così che un passo non allochi nulla:
++         `Duct.Progress(consumed, produced)` ne costruisce uno, `consumed` e `produced` lo
++         rileggono.
++     entry .apply   un progresso di `consumed` elementi di input e `produced` elementi di output
++     entry .consumed   quanti elementi di input il passo ha consumato
++     entry .produced   quanti elementi di output il passo ha prodotto
++   entry .feed   guida un duct su un intero valore, come se fosse l'unica regione di uno stream
++       `Duct.feed(value, duct)` esegue `step` sullo storage del valore (direttamente su ciò che lo
++       sostiene, quando il mezzo lo espone, altrimenti su una copia) finché l'input non è
++       consumato, accumulando l'output nel builder del mezzo, poi esegue `flush` e `close` — la
++       controparte per un valore intero di `stream.viaDuct(duct)`, senza endpoint, senza
++       contabilità del credito e senza ciclo di refill. Richiede un `Buffering`, per la finestra
++       di output. È così che `compress[Gzip]` e `encode[Base64]` eseguono un kernel di streaming
++       su un valore a disposizione.
++   entry #input   l'istanza `Addressable` del mezzo operando
++   entry #output   l'istanza `Addressable` del mezzo risultato
++   entry #Transport   il tipo di domanda a valle
++   entry #Upstream   il tipo di domanda presentato a monte
++   entry #regulation   la `Regulation` del tipo di domanda a valle
++   entry #translate   converte la domanda a valle nella domanda che questo duct presenta a monte
++   entry #quantum   lo spazio di output minimo di cui `step` ha bisogno per garantire il progresso; `1` per default
++       `2` per un duct il cui atomo di output più piccolo è di due elementi (un codificatore
++       esadecimale, un decodificatore UTF-8 che emette una coppia surrogata).
++   entry #sizing   la finestra di output che un driver di streaming alloca per questo duct; per default il blocco di staging
++       Un duct il cui kernel paga un costo fisso elevato a ogni chiamata (un passaggio JNI) ed
++       espande il proprio input (la decompressione) lo ridefinisce al blocco di trasferimento,
++       così che il costo fisso sia ammortizzato su sedici volte l'output.
++   entry #step   trasforma l'intervallo leggibile di una regione sorgente nello spazio scrivibile di uno slate di destinazione
++   entry #flush   emette lo stato terminale dopo la fine del flusso a monte; viene chiamato ripetutamente finché non restituisce `0`
++       Il default restituisce `0`. Un duct che può trattenere output non consegnato oltre un passo
++       (un decompressore) deve ridefinirlo: il primo `0` viene preso come la fine dello stream.
++   entry #close   rilascia le risorse del duct, quando la pipeline ha finito di usarlo
+
+@ 0 1 0 0b10b102f989d80a14910dbe10fa4bd0
++ entry .Ductile   rende un descrittore di stadio — un charset, una codepage, uno schema di compressione — collegabile come duct
+
+% 1 1 0 14f88a6a043e39bb075fb3b1dec1b7f3
+
+@ 0 9 0 1e39da691eccc94b055580f0ff97d69f
++       `stage is Ductile by in to out over transport` dice che il valore descrive uno stadio, e
++       `duct(stage)` costruisce il `Duct` corrispondente, con `Upstream` (il tipo di domanda
++       presentato a monte, `Credit` in quasi tutti i casi) come ulteriore membro.
++       `stream.via(stage)` e `intake.accepting(stage)` lo evocano, quindi un `Charset`, una
++       `Codepage`, un `Gzip` o una modalità di cifrario si collegano direttamente, mentre un
++       `Duct` stesso — già uno stadio, non la descrizione di uno — si collega con
++       `viaDuct`/`acceptingDuct` e non ha istanza. L'oggetto compagno contiene `.charset` (da byte
++       a testo) e `.codepage` (da testo a byte); le librerie di compressione e di crittografia
++       forniscono le proprie. Un'istanza non è `Typeclass.Pure`: può catturare ciò attraverso cui
++       i suoi duct sollevano errori, quindi viene passata come prova che cattura.
+
+% 2 1 0 1df60f1a4c506e5b0a9ee458c7579de5
+
+% 3 1 0 180ce050582c4a57164a3b0f60cda93d
+
+% 1 1 0 0d1f8497cbba54791224f580b43e14fc
+
+% 1 1 0 1e8df8b21f74db690d88e65730c9e5bf
+
+% 0 1 0 08c3da08f4303f1b0452fc3d476e3bbe
+
+% 0 1 0 010aff897097917d0eea9c233a07b5c3
+
+% 0 1 0 10ef8daf6c4f66480a2c906decd99ed7
+
+% 1 1 0 08c81535a2f6536b1b009a782fd472f6
+
+% 1 1 0 00da09e238104c7815d8dc8328bb94fa
+
+% 1 1 0 00122de11fcabae40fe2cf4c45bbf4d1
+
+% 1 1 0 1aa717014bd9b944096917c69d60cdb7
+
+@ 0 15 0 1223f23c0f2a4b0e0580f1d4a3252d54
++   entry .Instance   il tipo d'istanza completamente determinato, che nomina tutti e cinque i membri: `Instance[stage, in, out, transport, upstream]`
++   entry .charset   la decodifica dei caratteri come stadio: `Charset is Ductile by Data to Text over Credit`
++       I byte vengono messi da parte internamente, così che un carattere multibyte diviso tra due
++       refill venga conservato, e l'input malformato viene sostituito attraverso il
++       `TextSanitizer` del charset, esattamente come fa la decodifica di un valore intero. UTF-8
++       usa un kernel scritto a mano — le sequenze ASCII si allargano otto byte alla volta, le
++       sequenze multibyte si decodificano inline con validità rigorosa — e ripiega sul
++       decodificatore del JDK solo per l'input malformato. Un carattere astrale emette una coppia
++       surrogata, quindi il quantum del duct è `2`.
++   entry .codepage   la codifica dei caratteri come stadio: `Codepage is Ductile by Text to Data over Credit`
++       Una coppia surrogata spezzata a fine stream e un carattere non mappabile vengono
++       sostituiti, come nella codifica di un valore intero. La domanda si traduce in base ai byte
++       per carattere del caso peggiore del codificatore, con un minimo di uno.
++   entry #Transport   il tipo di domanda a valle del duct costruito
++   entry #Upstream   il tipo di domanda che il duct presenta a monte
++   entry #duct   costruisce il duct per uno stadio, consumando lo stadio; richiede un `Buffering`
+
+@ 0 1 0 066c6e1dfe900c0c13de129c00243d33
++ entry .Regulation   l'aritmetica di un tipo di domanda: quanto concede, come si spende, come si impacchetta in un `Long`
+
+% 1 1 0 07f9f3130f13b5ff07fcb3e837b93a7b
+
+@ 0 13 0 125c1cf2cf2155bd10d03f5bfb3ca7ce
++       I valori di domanda non viaggiano come messaggi: uno stadio calcola la propria domanda su
++       richiesta convertendo quella del suo valle (`Duct#translate`), fino ad arrivare a uno stato
++       condiviso in corrispondenza di un confine asincrono. `encode`/`decode` impacchettano ogni
++       tipo di domanda in un `Long`, così che lo stato condiviso sia un unico valore atomico
++       qualunque sia il tipo. L'oggetto compagno contiene `.credit` e `.pace`.
++   entry .credit   `Credit is Regulation`: illimitato all'inizio, concede il conteggio limitato a `0..Int.MaxValue`
++   entry .pace   `Pace is Regulation`: `Halted` non concede nulla, gli altri tutto; `Measured` chiede alla pompa di regolare il proprio ritmo
++   entry #initial   la domanda prima che ne venga riportata una
++   entry #grant   quanti elementi concede una domanda, come `Int`
++   entry #spend   la domanda dopo che `count` elementi sono stati prodotti a suo carico
++   entry #measured   se la domanda chiede alla pompa di regolare il proprio ritmo tra un blocco e l'altro
++   entry #encode   la domanda impacchettata in un `Long`
++   entry #decode   una domanda spacchettata da un `Long`
+
+@ 0 4 0 041fa0d67bddc4361d1770eec3d9a53f
++ entry .Pace   una domanda di contropressione grossolana: `Free`, `Measured` o `Halted`
++     Per un sink che non può contare utilmente gli elementi: `Free` chiede al flusso a monte di
++     inviare liberamente, `Measured` di regolare il proprio ritmo tra un blocco e l'altro, e
++     `Halted` di smettere di produrre finché la domanda non viene di nuovo interrogata.
++     `Regulation.pace` è la sua aritmetica.
+
+@ 0 8 0 0897470f1deaad9b1ccd39c6d916fe01
++ entry .Records   uno stream di record analizzati: `Stream[Array[record]^{}] over Credit`
++     Ogni regione è un chunk di record in forma di array congelato, quindi il credito conta i
++     record e `Buffering` dimensiona i buffer in numero di riferimenti. I record sono valori
++     immutabili che attraversano per riferimento i confini tra stadi e tra thread (un record non
++     deve contenere a sua volta un endpoint vivo); il tipo del record deve cancellarsi in un tipo
++     riferimento, e il given `Addressable` che lo ammette (`Addressable.boxed`, `texts` o
++     `frames`) decide alla costruzione dello stream. `records` itera i record di un tale stream,
++     e `memoize` li materializza in un unico array congelato.
+
+% 2 1 0 092affa8483ef9fb0efa93531f4c5154
+
+% 3 1 0 1de60199d07bcdf607ea501ce73c8443
+
+% 5 1 0 0ecc8c96325182ae0f984e9112941dac
+
+% 0 1 0 1dcb51ed6c17a2b60a742515079b522e
+
+% 0 1 0 0748e31aab97c69d1934a64fb55e865a
+
+% 1 1 0 19fb5f86cc60fb52156efe81e2eac2e5
+
+@ 0 1 0 0035b3c95f71826f15e639f5eee552e1
++ entry .via   `stream.via(stage)`: uno stream di tipo diverso che tira attraverso uno stadio con un'istanza di `Ductile`
+
+% 1 1 0 1e57636bec6a2eef1c0e435beb595901
+
+@ 0 6 0 1d0fe19e3fd93447180bf67b8cac8d20
++       Composizione di pull: i refill del risultato traducono la domanda attraverso lo stadio e
++       tirano dal flusso a monte consumato, interamente sul thread del consumatore. Lo stadio può
++       essere qualsiasi valore con un'istanza `stage is Ductile by in` il cui `Upstream` sia il
++       trasporto dello stream: un `Charset`, una `Codepage`, uno schema di compressione, una
++       modalità di cifrario. Richiede un `Buffering`. Uno stadio che traduce una domanda
++       produttiva in una che non concede nulla viola il contratto e va in panico anziché finire
++       in livelock.
+
+% 2 1 0 1a9a1e11a0bff7420ddfde2ea94fd10d
+
+% 3 1 0 14ceef6df6b8a52c084a47ba42d9a481
+
+% 4 1 0 056187e4436c19871c86decdacd5d005
+
+% 1 1 0 0db1633309bd6df21d41fe4371fccf12
+
+% 0 1 0 0c1d2768b51d4005161e6ff04bdafd6e
+
+% 0 1 0 1f162c84acc472110d23ef9d598b0166
+
+% 1 1 0 144f2ba1f196f6ee18378f237fcf6292
+
+@ 0 3 0 0fcbbb8b806ba9d8068b5edab64e112e
++       Il forwarder nel modulo ombrello `soundness` è scritto a mano, perché un forwarder di export
++       sintetizzato perde il raffinamento dipendente `ductile.Result` sotto capture checking; si
++       comporta in modo identico.
+
+% 1 1 0 1e9d80c0d9b3d91a1841dd221db54cc6
+
+% 1 1 0 181b7211140ee50815451ac1c7868a0a
+
+@ 0 1 0 0f05192ad32249eb1d605444270fce7a
++ entry .viaDuct   `stream.viaDuct(duct)`: uno stream di tipo diverso che tira direttamente attraverso un `Duct`
+
+% 1 1 0 0aa763f0f7274bca146feb4ba20a452e
+
+@ 0 6 0 1c825539a97d0c3a019d6c7d7e84ded9
++       Un `Duct` è uno stadio, non la descrizione di uno, quindi non ha bisogno di un'istanza di
++       `Ductile`: il tipo del duct dichiara già l'operando, il risultato ed entrambi i trasporti.
++       Il duct e lo stream vengono entrambi consumati; chiudere il risultato chiude entrambi.
++       Passare per `Ductile` significherebbe invece istanziarlo al tipo stesso del duct, cosa che
++       il capture checking non può esprimere. Con un `Duct[Data, Data]` chiamato `Doubler`,
++       `bytes.stream.viaDuct(Doubler()).memoize` dà i byte raddoppiati.
+
+% 1 1 0 189b6babec88c20f09f4a721f8d1c4a0
+
+@ 0 1 0 189e8896ea5c042b1d2143a6351764eb
++ entry .pump   `stream.pump(intake)`: svuota una catena di pull in una catena di push sul thread chiamante
+
+% 1 1 0 1d5ef6506c4282e11a26360b1b42ee6e
+
+@ 0 6 0 11ba0722df02d5d20a108e6f196d2c68
++       Il ciclo della pompa interroga la domanda dell'intake, ricarica lo stream con essa, e
++       trasferisce la regione nell'intake; è l'unico punto in cui i dati passano dal lato pull al
++       lato push di una pipeline. Entrambi gli endpoint vengono consumati, e lo stream viene
++       chiuso quando la pompa termina, quindi ciò che l'intake ha raccolto va letto in qualche
++       altro modo — oppure tramite `ingest`, che restituisce l'intake. Una pompa verso un
++       `Conduit` pieno resta parcheggiata finché il lettore non lo svuota.
+
+% 2 1 0 012b7eb830824dc21853870ed2200c34
+
+% 3 1 0 14ed1730740411c81670165e43767cef
+
+% 4 1 0 00a150835584b1f0085692408bf07260
+
+% 6 1 0 161e50faf6efb6ad125fa5036a7d6ae9
+
+% 7 1 0 03a41cc157a1425e0224bf3dc3d2a51f
+
+% 0 1 0 0cdc50a213e5d7160e08ba61cc8e935c
+
+% 0 1 0 1cda2817fb1139d60b1c4761314aa7f9
+
+% 1 1 0 0a452dcca35dacbd1811203cae330de3
+
+% 0 1 0 0cd6b4122744d80e0ab4f3edf09ee5a9
+
+@ 0 1 0 1341722eb23b43d40faa5e63bab0036a
++ entry .ingest   `intake.ingest(stream)`: accoglie un intero stream e restituisce l'intake, tipizzato come la classe propria del chiamante
+
+% 1 1 0 1691f1cd32608f65067b842df60f5518
+
+@ 0 4 0 16dc1801a7395a9d1c707c0b6ff67fd0
++       Come `stream.pump(intake)`, ma l'intake viene restituito una volta esaurito lo stream e
++       terminato l'intake, così che ciò che ha raccolto si possa leggere attraverso l'unico
++       riferimento restituito — `Gather().ingest(bytes.stream).data` — senza che esista mai un
++       secondo riferimento. Lo stream viene consumato e chiuso.
+
+@ 0 1 0 16fc237c48d7c0f41190e46be9a19fe4
++ entry .accepting   `intake.accepting(stage)`: un intake di tipo diverso che spinge attraverso uno stadio con un'istanza di `Ductile`
+
+% 1 1 0 09417d5d9e7d2fa90dd6346fec30c745
+
+@ 0 4 0 17be4762823202c508344be7ddfd33c9
++       Composizione di push: il risultato riporta la domanda tradotta, e i suoi commit passano in
++       modo sincrono attraverso lo stadio nella regione scrivibile dell'intake consumato. Lo
++       stesso valore di stadio serve `via` e `accepting`; cambia solo il collegamento. Richiede un
++       `Buffering`. Il forwarder del modulo ombrello è scritto a mano per la stessa ragione di
++       quello di `via`.
+
+% 2 1 0 055dab4120e2055518f71093f6318d2e
+
+% 3 1 0 0d5520df907d0d220f3884f95fb73d55
+
+% 4 1 0 0a97a5bdb93e87ea0e62dc17cbbceb6f
+
+% 6 1 0 1f019140dc4faccb0745a2109e89df86
+
+% 7 1 0 0d7dc2fdbc29778108a1d6b6eef152be
+
+% 0 1 0 1928a6cf2760935d14fc223ebc6396b1
+
+% 0 1 0 0d4c1a22efd3ed870d53d4b33f389bc6
+
+% 0 1 0 09030135f338f3160c7123c2ac5b4c39
+
+% 0 1 0 0ec798575009b76f14c460baa23e1976
+
+% 1 1 0 1ab2d96abb2c454f1766eb5edd1350d3
+
+% 1 1 0 17184e48c8a653c30b056ce0fe6b7a8c
+
+% 0 1 0 04abc9ad8ebd1d4d1378659c9d3f964d
+
+@ 0 1 0 0c160f2c913badfa06e3ca2414002865
++ entry .acceptingDuct   `intake.acceptingDuct(duct)`: un intake di tipo diverso che spinge direttamente attraverso un `Duct`
+
+% 1 1 0 077795e7c938ac0e1b2af817de9bf426
+
+@ 0 2 0 095daeb31a0604a610307a17a5a04498
++       Come `accepting`, per un `Duct` a disposizione anziché un descrittore. Il `flush` del duct
++       viene eseguito quando il risultato viene terminato, e il suo `close` alla terminazione o
++       al fallimento.
+
+@ 0 1 0 0a3fc23996d9c5850ee1e58097d3c609
++ entry .drain   `stream.drain(operation)`: un'operazione terminale che applica un'operazione a ogni regione successiva e al suo intervallo marchiato
+
+% 1 1 0 036894de7e2110cf1884e81ac7114626
+
+@ 0 4 0 00ee2ac2684866f0086fb27fab6804cd
++       Svuota e chiude lo stream, prestando ogni regione a `operation` come `Region[medium]` con
++       un `Interval in region.type`; l'operazione non deve trattenere la regione oltre la
++       chiamata. Ogni refill chiede un blocco di trasferimento di credito, così che una regione
++       più grande non venga spezzata in molti refill parziali. Richiede un `Buffering`.
+
+% 2 1 0 0309abd42e17d07d064b8fb8e0e76c3e
+
+% 3 1 0 07571f813da9f544049f18575492fb75
+
+% 0 1 0 0ad9be060c40f7b017c05c257f106424
+
+% 0 1 0 108f2fe17546d2751eafdcb27c12aa2e
+
+% 0 1 0 1ee3fea9fd48edb918046136d122d84f
+
+% 0 1 0 184559d96310fc730648529c3e0e054f
+
+% 1 1 0 0426730cfa55f24b047f5d2a93b32317
+
+% 0 1 0 15d6a6418ec1ae420c1cfd5a0f3cf4d8
+
+% 1 1 0 173a5d9d4487f16f034b3af58978b737
+
+@ 0 1 0 0e70c1ddbeb2c98e1fbc4ea9a0c35df6
++ entry .memoize   `stream.memoize`: svuota lo stream in un unico valore immutabile del suo mezzo
+
+% 1 1 0 0a0a0d96fed9ec56020716d8b6487c34
+
+@ 0 6 0 14fa176b8cf7cbfc1dd5e90b3b2cf42b
++       Il sostituto esplicito e limitato del caching implicito di una lista pigra: lo stream viene
++       svuotato una volta e chiuso, e il risultato è congelato e liberamente condivisibile. Ogni
++       regione viene copiata una volta alla sua dimensione esatta, e i pezzi vengono uniti una
++       volta alla fine (`Addressable#assemble`), quindi un valore consegnato in una sola regione
++       viene copiato una volta, e qualsiasi altro due. Uno stream vuoto produce l'`empty` del
++       mezzo. Per uno stream di record il risultato è un unico array congelato con tutti i
++       record. Richiede un `Buffering`.
+
+% 2 1 0 0e4de8826b860a361657b5a9e96ad287
+
+% 3 1 0 08a57ea6053431c40b8b6e372d86d242
+
+% 0 1 0 083fd92bea86153711677ae6375e552f
+
+% 1 1 0 05d771059d39452908536cfeb12d2f52
+
+@ 0 1 0 1d79e58a8c3f06421be40f52b470ab0d
++ entry .gather   `stream.gather(initial)(operation)`: un'operazione terminale che fa passare un accumulatore attraverso ogni regione
+
+% 1 1 0 04ab26780e33db740790ce5b751ddb79
+
+@ 0 4 0 01a79a39dbd1f60c01ab2e0b2d729843
++       La controparte cumulativa di `drain`: l'operazione riceve lo stato corrente insieme a ogni
++       regione e al suo intervallo marchiato, e lo stato finale viene restituito una volta che lo
++       stream è stato svuotato e chiuso. A differenza di un fold elemento per elemento su una
++       collezione, espone l'intera regione, quindi una riduzione di byte gira sull'array senza
++       boxing per elemento.
+
+% 2 1 0 1881bc5a0849a4cf1310d33bc1e1c089
+
+% 3 1 0 09c9ff5c7a0c31aa17a41d42141301de
+
+% 0 1 0 0b26c023580ed19d17b371cd8db71042
+
+% 0 1 0 0ed59ec2279dc7c612414dfd7a4757a1
+
+% 0 1 0 1d61665714eeb666089651b3ccc6bc8a
+
+% 0 1 0 08105365b7c6eee512da4e8b940360e9
+
+% 0 1 0 169c63e23b3fd31a145aca275b0e3e8f
+
+% 0 1 0 11d8c8d29b9310740fb17e44304efeb5
+
+% 1 1 0 07e5b38de320879f1990165002de4303
+
+@ 0 5 0 09c28a9c06b161fa0b54a6018be05212
++ entry .truncate   `stream.truncate(count)`: i primi `count` elementi, poi la fine dello stream
++     Il resto del flusso a monte viene rilasciato senza essere letto al `close`. Conta elementi
++     del mezzo — byte, caratteri o record — non elementi di collezione, ed è per questo che non
++     prende in prestito il nome `take`. Si compone con `discard` in una fetta, e con `via` in una
++     pipeline limitata.
+
+% 2 1 0 1101933133fa517011859fb0d59a0626
+
+% 3 1 0 1063ca69bf7343100543951e9b3ef1b0
+
+% 0 1 0 19b0ccb0d7efe6220da1e50fc1fa4669
+
+% 0 1 0 02ca7f1429c144d00d7da298da2fef1d
+
+% 1 1 0 07a6af35deaefdeb0bd6cf97c818b851
+
+@ 0 3 0 047eea0183bdf8e20f684f1a7b388097
++ entry .discard   `stream.discard(count)`: salta i primi `count` elementi, poi lascia passare il resto invariato
++     Gli elementi saltati vengono tirati e scartati al primo `refill`. Conta elementi del mezzo,
++     non elementi di collezione, ed è per questo che non si chiama `drop`.
+
+@ 0 6 0 0f0dcd526720771614d4bef3122079fa
++ entry .chunks   `stream.chunks`: un iteratore a consumatore singolo di chunk materializzati, uno per refill
++     Il ponte attraverso cui il contenuto di uno stream si alterna ad altri valori (i payload di
++     un archivio tra le intestazioni, le parti tra i delimitatori) senza materializzare l'intero
++     stream. L'iteratore possiede l'endpoint: chiude lo stream quando segnala l'esaurimento,
++     quindi un consumatore deve svuotarlo, o chiudere lo stream in altro modo, per rilasciare il
++     flusso a monte. Richiede un `Buffering`.
+
+@ 0 6 0 0efe136dcda116641269f05d6173946e
++ entry .chain   `stream.chain`: una `Chain` pigra con un chunk materializzato per refill, guidata rigorosamente dalla domanda
++     La costruzione non tira nulla e ogni cella forzata tira al più un refill. È il ponte
++     verificato per i consumatori non ancora convertiti al kernel: una `Chain` è pura, quindi non
++     può portare la capability dell'endpoint su cui si chiudono le sue celle, e oltre questo
++     punto la disciplina della proprietà è sospesa e ogni chunk forzato viene trattenuto. Sono da
++     preferire le operazioni terminali del kernel (`memoize`, `drain`, `gather`, `chunks`).
+
+@ 0 4 0 1cdc423088e08cac100e16d1d43b62db
++ entry .records   `stream.records`: un iteratore sui record di uno stream `Records[record]`, in ordine
++     Accesso elemento per elemento a uno stream di record, attraverso le sue regioni.
++     L'iteratore possiede l'endpoint e chiude lo stream quando segnala l'esaurimento. I
++     combinatori per record vengono dall'interfaccia `Iterator`; l'accesso a livello di regione
++     per i cicli critici è `drain`/`gather`.
+
+% 2 1 0 02e98f23d1f6552c0196b99264dbc03c
+
+% 3 1 0 0735fae2e3bc9af402c0b02e08735d95
+
+% 5 1 0 0d098ca9ad0c6373054f672e3ad38faa
+
+% 0 1 0 0575bc7e3b034d3610a8165c7a58210d
+
+% 1 1 0 1bb5c81e222bff0016366e64047c0471
+
+@ 0 1 0 192fe115e953cca31b39d72a11817303
++ entry .streamOf   uno stream che presta parte di un cursore — per lunghezza o fino a un delimitatore — o un intervallo di un `Expanse`
+
+% 1 1 0 102a6c2d771c5cb60d76dd73251166f3
+
+@ 0 1 0 1e9c696e8554c2ac058902f7377d979b
++       Tre factory, ciascuna delle quali produce uno `Stream[…] over Credit`:
+
+@ 0 18 0 08b3bd2abbcfa4c7092d7b369774e93a
++       - `streamOf(cursor, length)` — i prossimi `length` elementi di un cursore (o tutti i
++         rimanenti, se `Unset`), esposti senza copia dal buffer proprio del cursore; saltare
++         nello stream fa avanzare il cursore. Il cursore viene **prestato**, non consumato:
++         chiudere lo stream lo lascia aperto, posizionato sul confine, perché il chiamante
++         riprenda. È la forma di un payload delimitato dentro un parsing più lungo — un corpo
++         HTTP prima della successiva richiesta in pipeline, una voce di archivio prima della
++         successiva intestazione. Finché lo stream prestato è vivo il chiamante non deve toccare
++         il cursore, e i salti in blocco aggirano la lineazione, quindi si prestano solo cursori
++         la cui lineazione è inattiva.
++       - `streamOf(cursor, delimiter)` — i byte di un `Cursor[Data]` prima della successiva
++         occorrenza di un `Cursor.Delimiter`, trovata in blocco con `distance`. I byte che
++         potrebbero iniziare un delimitatore a cavallo del riempimento successivo vengono
++         conservati in un'area temporanea privata e cercati uniti alla regione successiva. A
++         fine stream il cursore si trova dopo il delimitatore, oppure è esaurito se l'input è
++         finito prima; il chiamante distingue i due casi con `finished`.
++       - `streamOf(expanse, offset, length)` — un intervallo di un `Expanse`, letto un blocco di
++         trasferimento alla volta via via che il consumatore lo chiede, così che un payload non
++         consumato non costi nulla e uno di qualsiasi lunghezza scorra in memoria limitata. Le
++         sue regioni sono stabili (ogni refill installa un nuovo chunk immutabile). Richiede un
++         `Buffering`.
+
+% 2 1 0 0e32f7033ebef72406c9948b813a0658
+
+% 3 1 0 1c1d5fb5b9e095d31266a5935c788e0a
+
+% 0 1 0 084c27bd53c3e7e30103a10d05f55364
+
+% 0 1 0 0e395b278a2aae19131520815ce68b77
+
+% 0 1 0 19dfaf4082522fc91307592b916c50eb
+
+% 1 1 0 1b0fd0da36faf9f21d2260276235c55f
+
+% 0 1 0 1c2aa085c77d996000a32eeb0335fd73
+
+% 0 1 0 06612eacd74232070366e417a603cace
+
+@ 0 1 0 09cfd3a4f74fa71212c296fec8fcf7c7
++ entry .Producer   il sink in cui un serializzatore scrive, a pezzi: guidato in modo sincrono, come canale di blocchi, o come sink di push
+
+% 1 1 0 1ad5c29212e602160c9508556b4599d1
+
+@ 0 12 0 08cf82727e4da472103b62286825ec1f
++       Un `Producer[medium]` accetta `#put(value)`, `#put(value, offset, size)` e
++       `#push(element)`, dove `Operand` è `Char` per `Producer[Text]` e `Byte` per
++       `Producer[Data]`. Lo stesso codice di produzione gira in tre modi senza duplicazioni:
++       `.collect` lo esegue in modo sincrono in un builder e restituisce il valore intero (`show` e
++       `encode`); `.apply` crea un `Channel` che mette i blocchi in una coda limitata svuotata
++       tramite `Channel#iterator` da un'altra fiber (un corpo HTTP in streaming); e `.sink`
++       consegna ogni blocco a un consumatore inline sul thread chiamante (un file, un socket, un
++       `OutputStream`). `.utf8` e `.lendUtf8` sono producer di testo i cui blocchi vengono
++       consegnati come byte UTF-8, codificati man mano che arrivano i caratteri, e `.Emission`
++       sceglie tra `sink` e `utf8` in base al mezzo richiesto alla forma push di un formato.
++       Nessuno di essi alloca per ogni `put` lungo una sequenza contigua. Un `Intake` è un
++       `Producer`, quindi il codice scritto contro l'uno guida una pipeline senza modifiche.
+
+% 2 1 0 02ebb0b6de9512ad1c1c0b4d1549fd1f
+
+% 3 1 0 13c3ab3787471e971eca795c39fb4090
+
+% 4 1 0 1ca01cf3b6f054d8020c6ea55dabfe42
+
+% 0 1 0 1be0ae514c3a41d905625d8a07c6d115
+
+% 0 1 0 03839f6bb68318350dc9cce65f20c976
+
+% 0 1 0 1608fcf438bec9970a964d82fd2aa277
+
+% 0 1 0 0095432741e90cfd128848fbe08f8456
+
+% 0 1 0 0243e68486416607057c6935c24c0938
+
+% 0 1 0 1e70307c74f8603400b061b84ec15963
+
+% 0 1 0 0852be1a59f30ce9051dfddd5147cedc
+
+% 1 1 0 12def620b083a10a0cd1ab11ce36602d
+
+@ 0 5 0 11c218bef339a1751431286a972f9399
++       Un producer è una capability con stato: scrivere richiede il `Producer[…]^` esclusivo che
++       le factory consegnano al corpo, e i metodi di scrittura sono metodi `update`. Il
++       `.Utf8Writer` a livello di byte è lo scrittore di livello più basso che la forma push di un
++       formato testuale usa per codificare ed effettuare l'escape direttamente in blocchi di byte
++       presi in leasing, così che un documento non venga mai costruito come `Text` e poi
++       codificato di nuovo.
+
+% 1 1 0 13f8298ac4e15bc700fb7aad8cf0f68e
+
+% 1 1 0 1452d2448fc1ea7c10dea4fdb47b549d
+
+% 1 1 0 1c78c1d3cfa17d271cec52fa1e94c5a5
+
+@ 0 8 0 0989da1096a90b190a5bb073854b5f45
++   entry .Bytes   `Producer[Data]` con l'elemento fissato a `Byte`: la forma in cui scrivono i codificatori binari
++   entry .apply   un producer in streaming: i blocchi vengono accodati con contropressione e svuotati tramite il suo iteratore
++       `Producer[medium](block, depth)` crea un `Channel`: `put`/`push` riempiono un blocco di
++       staging di `block` elementi (per default la capacità del `Buffering` per il mezzo), ogni
++       blocco pieno viene accodato, e `Channel#iterator` svuota la coda. `put` si blocca quando la
++       coda contiene `depth` blocchi (2 per default), quindi il codice di produzione deve girare
++       su una fiber diversa da quella del consumatore; `finish()` svuota l'ultimo blocco parziale
++       e termina l'iteratore.
+
+% 2 1 0 19dfd6303a2eeff50b7d3bfa57d5d59b
+
+% 3 1 0 089e2688d7c9e21e1ef357af44d5e478
+
+% 1 1 0 1a7334ce87e9a14e10c0dce3e2fd7446
+
+% 2 1 0 0713c7c819b4c67b1899770234e7e064
+
+% 3 1 0 03af42a65b6268e5186962f534ba1396
+
+% 4 1 0 154b9abf56e78dfc025d4cac26298b6a
+
+% 2 1 0 1a85a57fbeeb07860ed416a422b9f47d
+
+% 0 1 0 0029f9fa7fc7c0581f751f98d5c9c62e
+
+% 0 1 0 1fb917b526d33adc0483b00f51f927ed
+
+% 0 1 0 09b08c93142ae15b17d5c984a70fefd3
+
+% 0 1 0 18a9aa70c31566a1091d1240f1befc79
+
+% 0 1 0 05f18dc934b199ad063116d94fa384ce
+
+% 0 1 0 032f2740c0d8d1841218ae445525f448
+
+% 1 1 0 0dbc8aecd04775f01184ea3f6c9a6b3f
+
+@ 0 5 0 1ca6707347ad1df70be3c84075cca187
++   entry .collect   esegue un corpo contro un producer in modo sincrono e restituisce il valore intero
++       `Producer.collect[Text](hint)(body)`: nessuna concorrenza, nessun buffer di chunk, nessuno
++       dei rischi di deadlock a thread singolo del percorso di streaming. L'indicazione
++       dimensiona il builder iniziale, 256 per default, poiché il builder raddoppia man mano che
++       si riempie e un inizio grande viene pagato per intero da ogni output piccolo.
+
+% 2 1 0 03ff2b3762d16f7407dae4a0988bd40e
+
+% 3 1 0 1c7b3267c5d3b33a0ccfb0988f65dc41
+
+% 0 1 0 12709bb12042415215aa0ac9f4fde739
+
+% 0 1 0 08de0925e3f87d0401ed5d81d39a581e
+
+% 1 1 0 04f21a59b7b17c6e148028fc8222bd09
+
+@ 0 7 0 15f31910c8b4ee740066d22d607c4f92
++   entry .sink   esegue un corpo contro un producer che consegna ogni blocco riempito a un consumatore, inline
++       `Producer.sink[medium](deliver, block)(body)`: la forma di streaming sincrona, il modello di
++       un generatore che scrive su un `OutputStream`. Ogni blocco di staging viene consegnato a
++       `deliver` sul thread chiamante non appena si riempie, così che il consumatore veda l'output
++       a pezzi prima che sia completo, senza fiber e senza coda; l'ultimo blocco parziale viene
++       svuotato quando `body` ritorna. Un consumatore di pull (un iteratore, un corpo HTTP) ha
++       invece bisogno del canale di `.apply`. Richiede un `Buffering`.
+
+% 2 1 0 1bb35cc4aa750dac0a1ada70a588c014
+
+% 3 1 0 04e4d0c2c68641ba1c6c6ba3774ed428
+
+% 0 1 0 1c6acd8db6275ce10039d903d27d8670
+
+% 0 1 0 0f19fb1fb4ad1933129603b4d07fe4b8
+
+% 0 1 0 1294604e285400fd11ec24a0248dde08
+
+% 0 1 0 0c4a08acd7536ef5156b8018d4dded4f
+
+% 1 1 0 074d99231a530fa81461a62b61e10286
+
+@ 0 1 0 08deb1726435f67c1a4b1265534b54e4
++   entry .Staged   lo staging condiviso dai producer in streaming: un blocco di elementi, pubblicato quando è pieno
+
+% 1 1 0 044636c7eedb585b1ba7176b7b09ad34
+
+@ 0 10 0 184cc9b8ddb605850fcdca96ae78ed99
++         Una classe astratta sopra `Channel` e `Sink`: le scritture riempiono un blocco di
++         `block` elementi, e ogni blocco pieno (e, a `finish`, l'ultimo parziale) viene
++         materializzato e consegnato al `publishChunk` protetto, che una sottoclasse implementa
++         come inserimento in coda o come chiamata a un consumatore. Di norma non viene esteso
++         dagli utenti; `.apply` e `.sink` costruiscono le due sottoclassi.
++     entry #addressable   l'istanza `Addressable` del mezzo
++     entry #put   scrive un valore, o `size` suoi elementi a partire da un ordinale, attraverso il blocco di staging
++     entry #push   scrive un elemento
++     entry #finish   pubblica l'ultimo blocco parziale
++   entry .Channel   il producer in streaming che costruisce `Producer.apply`: blocchi accodati per un iteratore su un'altra fiber
+
+% 1 1 0 0574e174285073ed030e96a23221b59e
+
+@ 0 23 0 160dce6361138d3d066fc5c271533ba7
++         `Channel[medium, operand]` accoda ogni blocco pieno in una `ArrayBlockingQueue`
++         limitata a `depth` blocchi, parcheggiando il producer quando è piena; `#iterator` è la
++         vista del lettore, un nuovo iteratore a ogni chiamata sulla sola coda, quindi sopravvive
++         al trasferimento del producer alla sua fiber. `#finish` accoda il marcatore di fine.
++     entry #iterator   la vista dal lato del lettore: un iteratore dei blocchi accodati, che termina dopo `finish`
++         Un `def`, che conia un nuovo iteratore sulla coda ogni volta che viene chiamato; è
++         posseduto dal thread consumatore e prende i blocchi man mano che vengono pubblicati,
++         parcheggiandosi finché non ne arriva uno o il producer non termina.
++     entry #finish   pubblica l'ultimo blocco parziale e termina l'iteratore
++   entry .Sink   il producer di push che costruisce `Producer.sink`: ogni blocco pieno consegnato inline a un consumatore
++   entry .Lending   il tipo di un consumatore a cui viene prestato un blocco riempito: `(region: Region[medium]) => (Interval in region.type) => Unit`
++       Lo storage del blocco viene prestato come `Region` con la sua estensione marchiata, valida
++       solo per la durata della chiamata (la disciplina di `Stream#lend`), quindi nulla viene
++       copiato; un consumatore che deve conservare i byte li materializza da sé con
++       `region.materialize(range)`.
++   entry .lendUtf8   un producer di testo i cui blocchi vengono prestati come regioni di byte UTF-8, codificati man mano che arrivano i caratteri
++       `Producer.lendUtf8(lending, block)(body)`: i caratteri vengono codificati direttamente in
++       un blocco di `block` byte (per default la capacità in byte del `Buffering`), e ogni blocco
++       pieno viene prestato inline a `lending`, così che un serializzatore di testo scriva byte su
++       un socket senza materializzare un `Text` per blocco e codificarlo di nuovo, e senza copiare
++       il blocco. Un surrogato isolato si codifica come U+FFFD, come farebbe `String.getBytes`. Il
++       blocco di byte e l'area temporanea di caratteri vengono presi in leasing dal `Blockpool` e
++       restituiti quando il corpo termina.
++   entry .utf8   un producer di testo i cui blocchi vengono consegnati come nuovi `Data` UTF-8 che il consumatore può conservare
++       La forma proprietaria di `.lendUtf8`: ogni blocco viene materializzato e passato a
++       `deliver`.
+
+% 2 1 0 02050f6632da72ea1a24a498a56c4d64
+
+% 3 1 0 0b30a5cbcd47d06d1a9e3e4fefd42cb2
+
+% 0 1 0 1c67461e74b010b90053b626c86e69cd
+
+% 0 1 0 064377d05ceb92a41b617865faf51022
+
+% 0 1 0 0d032be5b12c1a9b1497630ffc093c88
+
+% 0 1 0 0e6c0d81c348fad108a1653c9b8e3315
+
+% 1 1 0 081cb956b3fecea61810e45522c99c68
+
+@ 0 1 0 165c17e84866ba5a1068c8774856c23e
++   entry .Utf8Sink   il producer dietro `lendUtf8` e `utf8`: un `Producer[Text]` che codifica in un blocco di byte preso in leasing
+
+% 1 1 0 155eb420489f34e11cf408f5d3584b81
+
+@ 0 8 0 09e656f55175a2481831f3a7a9efdd26
++         La codifica passa attraverso il `CharsetEncoder` UTF-8 del JDK, il cui percorso ASCII è
++         vettorizzato: i caratteri vengono espansi in un'area temporanea riutilizzata e codificati
++         nel blocco di byte, che viene pubblicato attraverso il `Lending` quando è pieno. Un
++         surrogato alto finale viene conservato tra una chiamata e l'altra, e una coppia malformata
++         si codifica come U+FFFD.
++     entry #put   scrive un testo, o `size` suoi caratteri a partire da un ordinale
++     entry #push   scrive un carattere
++     entry #finish   codifica la coda in sospeso, pubblica l'ultimo blocco e restituisce i buffer al pool
++   entry .Utf8Writer   uno scrittore a livello di byte per la forma push di un formato testuale: UTF-8 ed escape in un solo passaggio in blocchi presi in leasing
+
+% 1 1 0 0d1116325a817e1011110df205d0ccea
+
+@ 0 6 0 1dc3668120ca75110f120716e4361bf7
++         `Utf8Writer(lending, block)` codifica UTF-8 direttamente in un blocco di byte preso in
++         leasing dal `Blockpool`, effettuando l'escape di ogni stringa con la tabella del formato
++         man mano, e presta ogni blocco riempito a `lending` come fa `lendUtf8`. Un serializzatore
++         che scrive attraverso di esso non costruisce mai un `Text` per il proprio output, quindi
++         nulla viene codificato due volte; è il modello dietro gli scrittori di byte di JSON, XML e
++         TEL, condiviso perché ogni formato fornisca solo i propri escape. Si scrive con `.lend`,
++         che svuota il buffer quando il corpo ritorna.
+
+@ 0 7 0 1efc56cd993bfdc303eaf7d8671f3ebe
++         I suoi metodi, tutti metodi `update`: `#ascii` per testo che si sa essere ASCII (markup);
++         `#name` per i nomi ripetuti di un documento, attraverso una cache di nomi codificati
++         confrontati per identità o uguaglianza; `#text` per testo senza escape; `#escaped` per
++         testo in cui ogni carattere ASCII nominato in una tabella `Escapes` viene sostituito dalla
++         sua entità; `#bytes` per byte già codificati; `#byte` per un byte; `#long` per un intero
++         decimale; e `#finish`. Un surrogato isolato si codifica come U+FFFD, tranne che in un
++         `name`, dove `String.getBytes` scrive `?` (nessun nome ben formato ne contiene uno).
+
+% 2 1 0 1cd755b065789a2718ffc71456102bbd
+
+% 3 1 0 1087154c5e95b1270145882b53492464
+
+% 0 1 0 186a1163c1e4f0a306875f1bbfb28817
+
+% 0 1 0 0e1078e26fe505bb07bf75439e0e9d8d
+
+% 0 1 0 07cf68bfa1638ab3104712a3056f33f5
+
+% 0 1 0 163ea8536e2057bd1db29a18b46d3fd3
+
+% 0 1 0 0b9bc8bea61407290d73b61813d91ada
+
+% 0 1 0 0ff24f426449ea9f17c19a63e3b417d9
+
+% 0 1 0 12bd722714fd5b171e951408c887e519
+
+% 1 1 0 0f3a63c306baf55a077f1b8e3693b3f8
+
+@ 0 2 0 1189383ce67012a20cb244b0bdc5023e
++     entry .NameSlots   il numero di posizioni nella cache dei nomi dello scrittore: 256
++     entry .Escapes   una tabella di escape: per ogni carattere ASCII, l'entità che lo sostituisce, se c'è
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 19 0 0cb079722df70226059bf433367dd62f
++           Costruita da `.escapes`: `codes` contiene, per ogni carattere ASCII, zero quando si
++           scrive così com'è oppure il numero, a partire da uno, della sua entità; `offsets` e
++           `data` contengono i byte delle entità. Pura e piatta, così che il ciclo di codifica
++           controlli un byte per carattere.
++       entry #codes   per ogni carattere ASCII, zero o il numero dell'entità a partire da uno
++       entry #offsets   i confini delle entità all'interno di `data`
++       entry #data   i byte delle entità, concatenati
++     entry .escapes   una tabella di escape che sostituisce ogni carattere ASCII elencato con la sua entità
++     entry .lend   scrive con un corpo attraverso uno scrittore che presta ogni blocco, poi svuota il buffer
++         `Producer.Utf8Writer.lend(lending, block)(body)`; la dimensione del blocco è per default
++         la capacità in byte del `Buffering`.
++     entry #byte   scrive un byte
++     entry #ascii   scrive testo che si sa essere ASCII, un byte per carattere
++     entry #bytes   scrive `source(from until end)`, byte già codificati in UTF-8
++     entry #text   scrive testo in UTF-8 senza escape
++     entry #name   scrive un nome in UTF-8, attraverso la cache dei nomi scritti di recente
++     entry #escaped   scrive testo in UTF-8 con i caratteri nominati in una tabella `Escapes` sostituiti dalle loro entità
++     entry #long   scrive un intero decimale
++     entry #finish   svuota l'ultimo blocco e restituisce i buffer al pool; lo scrittore è esaurito
++   entry .Emission   i mezzi in cui si può consegnare la forma push di un serializzatore di testo: blocchi `Text` o blocchi `Data` UTF-8
+
+% 1 1 0 18e89a2bd3f7ab841e01058769e75b79
+
+@ 0 9 0 1b474fc0c756b437001ea9b92d060e2b
++         L'`emit[medium](value, deliver)` di un formato evoca `medium is Emission`, quindi il
++         serializzatore si scrive una sola volta contro `Producer[Text]`: `.text` lo esegue
++         attraverso `.sink`, `.data` attraverso `.utf8`.
++     entry .text   consegna blocchi `Text`, attraverso `Producer.sink`
++     entry .data   consegna blocchi `Data` UTF-8, attraverso `Producer.utf8`
++     entry #run   esegue un corpo contro un producer di testo, consegnando blocchi del mezzo; richiede un `Buffering`
++   entry #Operand   il tipo degli elementi: `Char` per `Producer[Text]`, `Byte` per `Producer[Data]`
++   entry #put   scrive un valore intero, o `size` suoi elementi a partire da un ordinale
++   entry #push   scrive un singolo elemento
+
+@ 0 1 0 009970c27e46b24619d179c96b3ee21f
++ entry .Region   un frammento della memoria di un mezzo, sicuro rispetto ai limiti: un riferimento opaco la cui estensione viaggia come intervallo con marchio
+
+% 1 1 0 1099deb72c6bff83162740f748b64735
+
+@ 0 8 0 1cb6350a147f51e7035af2066ca918ba
++       Una `Region[medium]` non concede alcun accesso diretto — nessuna lunghezza, nessuna
++       lettura indicizzata grezza. La sua estensione valida le viene prestata accanto come
++       `Interval in region.type`, e gli unici produttori di ordinali con marchio sono i
++       combinatori fidati qui definiti, quindi `apply` è totale: nessun controllo dei limiti,
++       nessun `Optional`. Una regione più la sua estensione sono un riferimento e un `Long`, senza
++       allocazioni, e sostituiscono le triple `(storage, offset, length)` che il kernel un tempo
++       faceva passare attraverso stream e duct. La validità è temporale — fino al successivo
++       refill o riuso da parte di chi presta — cosa che il marchio non può esprimere; ciò resta
++       compito della disciplina a proprietario unico di `Stream#lend` e `Cursor#lend`. `Slate` è
++       la controparte scrivibile.
+
+@ 0 5 0 132055082efba6ab1afe939893c59a34
++       `Region` non è esportata nel modulo ombrello `soundness` (le sue estensioni inline con
++       tipi dipendenti non sopravvivono ai forwarder di export): si scrive
++       `import zephyrine.Region`, o `import zephyrine.*`, dove la si nomina. Gli accessor sono
++       metodi di estensione nell'oggetto compagno, trovati tramite l'ambito implicito, quindi
++       `region(index)`, `region.visit(range)` e `region.materialize(range)` si leggono come
++       metodi d'istanza.
+
+% 2 1 0 0c33c39d8c3be3381d9a73506ac96211
+
+% 3 1 0 08db894386602548033d182f9db52281
+
+% 0 1 0 1df0f05853ba78f70161207f33f1ca57
+
+% 0 1 0 1b652508ccbaf18c09f30d88b07b9e9b
+
+% 0 1 0 0302243a9440da621c9a3d4b95d5a0c9
+
+% 0 1 0 0792e1beadfa35cc0cda6220c272630f
+
+% 0 1 0 1bab2ae3d0b34bd310b6392fa5ca4782
+
+% 0 1 0 1c2da7794ade2edc18f6044231ce0fe5
+
+% 1 1 0 10a8c9b33d9e3bf707c25d83a5fd9587
+
+@ 0 3 0 0c33b8a619fb3a361817d72a9340db0b
++       All'interno di un kernel, il marchio viene eliminato allargando il tipo
++       (`val interval: Interval = range`) prima che si applichino le operazioni inline proprie
++       dell'intervallo, poiché l'inliner non vede attraverso il raffinamento.
+
+% 1 1 0 0c680235f99088a30612c1f4d33752e9
+
+% 1 1 0 00d118ec3800dbe70005c47ac8a84c67
+
+@ 0 21 0 0b5dc797580f50b5153a86dc5c818905
++   entry .over   il costruttore fidato: presta una regione su una memoria, con l'estensione limitata all'estensione reale della memoria
++       `Region.over[medium, result](storage, offset, limit)(lambda)`, che richiede
++       l'`Addressable` del mezzo: la regione viene legata a un nome stabile e la lambda la riceve
++       con il suo intervallo con marchio, `offset until limit` limitato entro la memoria, così
++       l'invariante di totalità è stabilita per costruzione.
++   entry .apply   l'elemento a un ordinale con marchio: totale, senza controllo dei limiti
++   entry .visit   esegue una lambda su ciascun ordinale con marchio di un intervallo, in ordine
++   entry .visit8   esegue una lambda su otto ordinali consecutivi alla volta, con una seconda per la coda
++       La risposta a indice derivato per i cicli critici srotolati: l'aritmetica da `+1` a `+7`
++       viene dimostrata una volta qui, e il codice utente vede sempre e solo ordinali con
++       marchio.
++   entry .materialize   un nuovo valore del mezzo copiato da un intervallo
++   entry .cloneTo   copia un intervallo in un builder del tipo `Target` del mezzo
++   entry .transfer   copia quanto di un intervallo entra nello spazio di uno slate, restituendone il conteggio
++   entry .unsafeRaw   la memoria grezza, dietro `Unsafe`, per i kernel la cui aritmetica degli indici va oltre i combinatori
++       Riferimenti all'indietro dei compressori e simili: il chiamante si riprende la
++       responsabilità dei limiti.
++   entry .borrow   presta l'array grezzo di una regione di byte con l'offset e la lunghezza dell'intervallo, per le API `(array, offset, length)`
++       Un'estensione su `Region[Data]`: `OutputStream.write`, `ByteBuffer.wrap`,
++       `Deflater.setInput` e l'`update` di un digest prendono una tripla che è nei limiti per
++       costruzione, quindi non serve `Unsafe`; l'array è visibile solo per la durata della
++       chiamata, che non deve né trattenerlo né indicizzare al di fuori della tripla.
+
+@ 0 1 0 08f4c2b5c7d7967e0a0eedc6ff4481c9
++ entry .Slate   la controparte scrivibile di `Region`: la memoria di output di un duct, scritta tramite ordinali con marchio
+
+% 1 1 0 108f4d08958a59470d78a1e0281941df
+
+@ 0 6 0 1713e466eb23eff80cd8a5e176920963
++       `Slate[medium]` ha `update` al posto di `apply`, con la stessa disciplina del marchio:
++       `slate(index) = element` scrive a un ordinale con marchio, `visit` scorre un intervallo, e
++       `borrow` presta l'array di byte grezzo con l'offset e la lunghezza di un intervallo per le
++       API che riempiono una tripla (`Deflater.deflate`, `InputStream.read`). `Slate.over` ne
++       presta uno su una memoria esclusiva. Come `Region`, non è esportato nel modulo ombrello:
++       `import zephyrine.Slate`.
+
+% 2 1 0 0f2c870cec1e68c01f156dd8e92dbe3c
+
+% 3 1 0 045de9dae6f305630f8d6aa36d945d12
+
+% 0 1 0 02d1f364f37b02bc186d7c872472a6ec
+
+% 0 1 0 1cb5235d0a3db3b41c4465ae630b3aec
+
+% 0 1 0 031b59592320e74a0dcfd0a4f7c382e1
+
+% 0 1 0 0a149f0063d0750012c68e2c9a78e92f
+
+% 0 1 0 070876b5bd4168e302499e641950bdb8
+
+% 1 1 0 126c2be984a36c0803bc09d1faff1814
+
+% 1 1 0 1ba75285fb5c67cf1c1369496b3494aa
+
+% 1 1 0 107206c8b3d3c9c018684c604e973d0c
+
+@ 0 5 0 0f32f5333c45088f098f342e0426d43c
++   entry .over   presta uno slate su una memoria esclusiva, con l'estensione limitata all'estensione reale della memoria
++   entry .update   scrive un elemento a un ordinale con marchio
++   entry .visit   esegue una lambda su ciascun ordinale con marchio di un intervallo, in ordine
++   entry .unsafeRaw   la memoria esclusiva grezza, dietro `Unsafe`
++   entry .borrow   presta in esclusiva l'array grezzo di uno slate di byte, con l'offset e la lunghezza dello spazio
+
+@ 0 1 0 138bd8aa65b773dc0bf5313bcef0d759
++ entry .Utf8   UTF-8 rigoroso su un buffer di byte, per i parser che scorrono byte e materializzano testo solo per le porzioni che conservano
+
+% 1 1 0 1887c4cbb57141cb0d6ff0a0ffe9438e
+
+@ 0 5 0 0e7ca348e4e33a9f06676b4fe17ee76c
++       La decodifica è rigorosa, come quella del kernel di `Ductile.charset`: le forme
++       sovralunghe, i surrogati codificati e i valori sopra U+10FFFF sono malformati, mai
++       sostituiti, così un parser può rifiutare un input errato anziché portare silenziosamente
++       U+FFFD in un documento. Una porzione interamente ASCII costa una copia di array, tramite il
++       costruttore Latin-1 di `String` del JDK. Non esportato nel modulo ombrello: lo si
++       raggiunge come `zephyrine.Utf8`.
+
+% 2 1 0 03985dcb7bad7471182ec71e09f85a26
+
+% 3 1 0 0cc15b401b34de8803e96b95578470d1
+
+% 0 1 0 06fb58b5fa7e90950891f445924ba6da
+
+% 0 1 0 00cf5ea19209fe4b04b295a6e887a4f2
+
+% 0 1 0 0d3989befcc3a7531bf0a22f707f4c73
+
+% 0 1 0 06e192147399102a1100dc98e9ecdd84
+
+% 1 1 0 0dccaba506c76798049d9c4dc540a89a
+
+% 0 1 0 15083a8c8fb269db0652695c16f8deb3
+
+@ 0 12 0 1623612443cab11b06c86f8fe57626db
++   entry .Malformed   il risultato di `point` per una sequenza non valida: `-1`
++   entry .Incomplete   il risultato di `point` per un prefisso valido troncato dalla fine: `-2`
++       Un chiamante che attende altro input esegue il refill e riprova.
++   entry .width   il numero di byte nella sequenza che un byte iniziale apre: da 1 a 4, o 0 per un byte che non può essere iniziale
++       Un byte di continuazione, i byte iniziali sovralunghi C0 e C1, e da F5 a FF non possono
++       aprire una sequenza.
++   entry .continuation   se un byte è un byte di continuazione, `10xxxxxx`
++       Contare i byte che *non* sono di continuazione conta i code point in un intervallo.
++   entry .point   il code point della sequenza che inizia a un offset e si trova interamente prima di `end`, oppure `Malformed` o `Incomplete`
++   entry .asciiEnd   l'offset del primo byte non ASCII in un intervallo, o la sua fine se non ce n'è, scorrendo otto byte per passo
++   entry .ascii   il testo di un intervallo che il chiamante sa essere ASCII: una copia, nessuna validazione
++   entry .decode   il testo di un intervallo di byte, o `Unset` se non è UTF-8 valido
++   entry .append   accoda il testo di un intervallo di byte a uno `StringBuilder`, oppure non accoda nulla e restituisce `false` se non è valido
+
+@ 0 1 0 039eb356eeeab7e104349eb218e22465
++ entry .Words   primitive SWAR su un buffer di byte: otto byte letti come una parola e classificati corsia per corsia
+
+% 1 1 0 1cb1c9571ae4ae43127457a24ff00840
+
+@ 0 8 0 0f48a5a1e9dfc58904a4137b0fae29a2
++       `load` legge otto byte come un `Long` little-endian (tramite il `WordLoad` della
++       piattaforma), e le maschere classificano ciascuna corsia con la classica aritmetica del
++       «contiene un byte zero», così una scansione alla ricerca di un byte di arresto avanza di
++       otto byte per passo. Ogni maschera ha il bit alto impostato in ogni corsia che soddisfa il
++       test; il prestito di una corsia segnalata può riversarsi nelle corsie sopra di essa,
++       quindi solo la corsia segnalata *più bassa* è esatta — quella che riporta `first`, e
++       l'unica di cui una scansione ha bisogno. I test sono validi per le corsie ASCII: una
++       corsia con il proprio bit alto impostato viene segnalata da `nonAscii` e deve essere
++       gestita a parte da una scansione che se ne cura. Non esportato nel modulo ombrello: lo si
++       raggiunge come `zephyrine.Words`.
+
+% 2 1 0 04a78af3b455f7ae12c4516a63e0f503
+
+% 3 1 0 0226e654180d41b21e19ac5accacf155
+
+% 0 1 0 14b3fc831dad771d1e34007d6c826509
+
+% 0 1 0 1863f385c60c483313702480ae8b1753
+
+% 0 1 0 0945a251802226bc05468440365c0375
+
+% 0 1 0 02db0b51040520df0b89a42b46778271
+
+% 1 1 0 044f9c965e4729de087bb56277435cde
+
+% 0 1 0 076001865b6fef7e09b6e419d189177a
+
+% 0 1 0 19955bd8c72b65c91ec204255c62bd24
+
+@ 0 9 0 02aee1792d09b6d804496e454bb2b88b
++   entry .HighBits   il bit alto di ogni corsia: `0x8080808080808080L`
++   entry .EveryByte   un uno in ogni corsia: `0x0101010101010101L`
++   entry .load   otto byte a partire da un indice, come `Long` little-endian
++   entry .replicate   un valore di byte replicato in tutte e otto le corsie, il termine di confronto per `matches` e `below`
++   entry .zeroes   le corsie di una parola che sono zero
++   entry .matches   le corsie di una parola uguali a un byte replicato
++   entry .below   le corsie di una parola minori di un byte replicato, entrambi ASCII
++   entry .nonAscii   le corsie di una parola che contengono un byte non ASCII
++   entry .first   l'offset all'interno della parola della corsia segnalata più bassa di una maschera non nulla
+
+@ 0 1 0 00c44fbc43ef66b4038a198f7269bb17
++ entry .WordLoad   la lettura little-endian a 64 bit della piattaforma su un buffer di byte, dietro `Words.load`
+
+% 1 1 0 1daa0fffe1481b231a7e722904df0d2d
+
+@ 0 6 0 1314ce79b147738c1f97b2019d8e20bc
++       Little-endian indipendentemente dalla piattaforma, quindi `Words.first(mask)` è
++       `numberOfTrailingZeros(mask) >> 3` ovunque. La variante JVM (`core-jvm`) legge la parola
++       tramite un `VarHandle` di vista su array di byte; la variante Scala.js e Scala Native
++       (`core-portable`) la assembla con shift e or, poiché nessuna delle due ha
++       `java.lang.invoke`. Non esportato nel modulo ombrello.
++   entry .get   otto byte a partire da un indice, come `Long` little-endian
+
+@ 0 1 0 17c490d06d11996214590a7158dd3a96
++ entry .Blockpool   un pool limitato, a livello di processo, di blocchi di trasferimento esauriti, condiviso tra conduit e scrittori
+
+% 1 1 0 1515464603b99c5210577bbbca7e6d68
+
+@ 0 9 0 178e6f6f058c7f6d1acd36b020501137
++       La cache di secondo livello dietro la `Freelist` di ciascun `Conduit`: la freelist ricicla
++       i blocchi tra uno scrittore e un lettore per la durata di vita di un conduit, e questo pool
++       li porta *attraverso* più durate di vita, così un conduit, un `Utf8Sink` o un `Utf8Writer`
++       di breve durata ottiene i propri blocchi da quelli dei predecessori anziché allocarne di
++       nuovi. I blocchi sono raggruppati per classe di memoria e dimensione fisica esatta, e ogni
++       classe è limitata a circa 16 MiB trattenuti (con un minimo di quattro blocchi e un massimo
++       di 256). Multi-producer e multi-consumatore, entrambe le operazioni non bloccanti e
++       senza garanzie: un `poll` a vuoto significa che il chiamante alloca, un `offer` oltre il
++       limite scarta. Il contenuto non viene mai letto — un blocco riusato viene sovrascritto
++       prima della pubblicazione. Non esportato nel modulo ombrello.
+
+% 1 1 0 064819271936cce91be5f2b161072e22
+
+% 0 1 0 18c754ef829de52511696a710495f40b
+
+@ 0 3 0 0adba4a814d2870d10ce8631fa09f8fe
++   entry .offer   mette in cache un blocco esaurito di una classe e dimensione fisica esatta, o lo scarta se la classe è al limite
++       Il blocco deve essere interamente ceduto da chi lo offre.
++   entry .poll   un blocco del pool esattamente di questa classe e dimensione fisica, oppure `null`, nel qual caso il chiamante alloca
+
+@ 0 1 0 021d3a7987e27fa3195cc6b6fbb28fbe
++ entry .Handoff   un anello di passaggio limitato a un solo producer e un solo consumatore: lo scambio dietro `Conduit`
+
+% 1 1 0 06963f381ac1dc7c1464d0a7f33b714b
+
+@ 0 7 0 1dce8018e5faecb912d2683c21089494
++       Esattamente un thread chiama le operazioni del producer (`offer`, `finish`) ed esattamente
++       uno quelle del consumatore (`take`, `drain`, `close`). Entrambi i lati girano brevemente a
++       vuoto prima di parcheggiarsi, così un producer e un consumatore che procedono di pari
++       passo si scambiano elementi senza transizioni nel kernel; l'handshake di unpark è il
++       pattern di Dekker, quindi un risveglio non va mai perso. L'interruzione è cancellazione:
++       un lato parcheggiato solleva `InterruptedException`, come farebbe quello di una coda
++       bloccante. Le sue garanzie derivano dall'ordine di pubblicazione volatile, non da
++       un'analisi degli alias. Non esportato nel modulo ombrello; anche le code di parasite si
++       basano su di esso.
+
+% 1 1 0 11ba1634f54d7d3a05e96398df5f631b
+
+@ 0 11 0 0dd3de458555885d0a28649aefc16776
++   entry #width   il numero di slot dell'anello: la raffica più grande che un `drain` può spostare
++   entry #size   l'occupazione approssimativa, per calcoli indicativi della domanda; mai per la sincronizzazione
++   entry #free   il numero approssimativo di slot liberi
++   entry #offer   lato producer: gira a vuoto e poi si parcheggia finché uno slot si libera, a meno che il consumatore abbia chiuso, nel qual caso l'elemento viene scartato
++   entry #finish   lato producer: non verranno offerti altri elementi; idempotente
++   entry #drain   lato consumatore: adotta in un solo passo ogni elemento nel buffer in un array di proprietà del chiamante, bloccandosi finché non ne arriva almeno uno
++       Restituisce il numero di elementi spostati: zero solo quando il producer ha terminato e
++       l'anello è svuotato. Una pubblicazione di `head` e un unpark del producer per raffica,
++       dove un ciclo di `take` paga uno di ciascuno per elemento.
++   entry #take   lato consumatore: l'elemento successivo, oppure `null` quando il producer ha terminato e l'anello è svuotato
++   entry #close   lato consumatore: smette di accettare, svuota gli elementi nel buffer (liberando un producer parcheggiato) e scarta le offerte successive
+
+@ 0 1 0 12b9ca3d61f9a03319998c779c99cb17
++ entry .Freelist   un pool limitato a un solo producer e un solo consumatore di blocchi esauriti: il percorso di ritorno di un conduit
+
+% 1 1 0 133be1f0a61ad5c818abcb4a159fde8f
+
+@ 0 6 0 012d53b7e16107e30add4cf0548a3534
++       Permette al lettore di un `Conduit` di restituire un blocco svuotato al suo scrittore per
++       il riuso, anziché lasciarlo al garbage collector mentre lo scrittore ne crea uno nuovo.
++       Esattamente un thread offre (il lettore) e uno interroga (lo scrittore), e nessuno dei due
++       si blocca mai: è una cache senza garanzie, non un punto d'incontro, quindi lo scrittore
++       non può mai bloccarsi su un pool vuoto — cosa che andrebbe in deadlock con un lettore
++       parcheggiato in attesa di quello stesso scrittore. Non esportato nel modulo ombrello.
+
+% 1 1 0 00564f65e64a85a71d6a17b5d4b4989b
+
+@ 0 2 0 15a25002047bbd1e051158f3d45aba7b
++   entry #offer   mette in cache un blocco esaurito, restituendo se è stato accettato; un pool pieno lo rifiuta
++   entry #poll   un blocco in cache da riusare, oppure `null` se il pool è vuoto
+
+@ 0 1 0 19e0016da50ee0a80d6e189b8a3cb7d6
++ entry .internal   la sede dei tipi opachi `Credit` e `Datum` e della macro `consume`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 16 0 116ce23e42a07f260e3e1f35f4eac33b
++       Non destinato all'uso diretto: `Credit` e `Datum` vengono esportati da qui nel package
++       `zephyrine`, e `consume` è la macro dietro `Cursor#consume`.
++   entry .Credit   il tipo della domanda; vedi `zephyrine.Credit`
++     entry .apply   un credito di `count` elementi
++     entry .count   il numero di elementi che il credito concede, come `Long`
++   entry .Datum   il tipo dell'elemento osservato in anticipo; vedi `zephyrine.Datum`
++     entry .End   il segnaposto per un cursore esaurito
++     entry .apply   solleva un byte senza segno, o un char, in un `Datum`
++     entry .datumByte   confronto `Datum == Byte`
++     entry .byteDatum   confronto `Byte == Datum`
++     entry .datumChar   confronto `Datum == Char`
++     entry .charDatum   confronto `Char == Datum`
++     entry .datumDatum   confronto `Datum == Datum`
++     entry .asInt   l'`Int` sottostante; ovunque trapeli, la distinzione va persa
++     entry .isEnd   se il cursore che ha prodotto questo datum era esaurito
++   entry .consume   la macro dietro `Cursor#consume`: un `next()` e un confronto per ogni carattere del letterale

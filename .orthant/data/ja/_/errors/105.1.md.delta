@@ -1,0 +1,69 @@
+orthant 2 language
+
+% 0 1 0 0f9b8e16d80f9aa112829dcd02a024b4
+
+@ 0 1 0 0fc4d38365ca5a2f08937ad8a4304b92
++ Enigmatic が PEM でエンコードされた内容をパースできないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 0fec2d849eebec07037f3a077853b701
++ PEM の内容は、`-----BEGIN <label>-----`、Base64 の本体、`-----END <label>-----` という形をとる。
++ このエラーは、本体がデコードされる前の構造上の問題を示す。
++ メッセージは `could not parse PEM content because $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 09a674ed40d1b4a01afb465572597d79
+
+@ 0 1 0 002d17e99b40a32e0bf6ff99e8e39255
++ 開始の `-----BEGIN <label>-----` 行が見つからなかった。
+
+@ 0 1 0 186a35d35484d3e606ea72437be96355
++ **例。** `[↯/s.105.1.1] could not parse PEM content because the BEGIN line could not be found`
+
+@ 0 2 0 029ceca4d9cc5431021568d058a8d66f
++ **解決方法。** 入力が PEM でエンコードされていることを確かめる。
++ BEGIN と END の行を取り除いてしまう入手元もあり、その場合は包み直す必要がある。
+
+% 0 1 0 13fec6f2cf49c5a81a5f3af99423ff6d
+
+@ 0 1 0 111a5ecb3386232f0f150c4b30f5ed8a
++ 終了の `-----END <label>-----` 行が見つからなかった。
+
+@ 0 1 0 09eb641ca7d2fcbc0852e68ce5a22883
++ **例。** `[↯/s.105.1.2] could not parse PEM content because the END line could not be found`
+
+@ 0 1 0 00b61b3b3dc2774d1ffbecc7eba9e7e4
++ **解決方法。** 入力が完全で、途中で切れていないことを確かめる。
+
+% 0 1 0 1715e06f3cf25e39063822a8b46b743e
+
+@ 0 1 0 1a14073c09175300096e6966e7fdf6e4
++ BEGIN と END の間の本体を Base64 としてデコードできなかった。
+
+@ 0 1 0 07709bf6592162b8073eaf331417ac18
++ **例。** `[↯/s.105.1.3] could not parse PEM content because could not parse the BASE-64 PEM message`
+
+@ 0 2 0 043dc2d86ce83fe70e90d93d1bfeaafc
++ **解決方法。** 本体に不正な文字や改行コードがないか調べる。
++ Base64 の内容を壊してしまうパイプラインもある。
+
+% 0 1 0 0b02b61cde0f0ffd0e2de4a69967999a
+
+@ 0 1 0 08b9a9f19c3d111906c30703d65b3232
++ 入力が空だった。
+
+@ 0 1 0 1f806947dbc17aad1d8ac07c1ac4aaca
++ **例。** `[↯/s.105.1.4] could not parse PEM content because the file was empty`
+
+@ 0 1 0 170757ae11b8745913c5af7c49a4d54f
++ **解決方法。** 空でない PEM ファイルを与える。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 019387d13e74d0bd1f3e3a7a1058f429
++ - ソース：`lib/enigmatic/src/core/enigmatic.Pem.scala`

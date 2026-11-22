@@ -1,0 +1,10 @@
+orthant 2 language
+
+@ 0 6 0 1889c953ce024d7f0440aab3316da853
++       Un *plano* es el espacio en el que vive un valor: un sistema de ficheros para una ruta
++       (`Path on Linux`, `Path on Classpath`), el espacio de búsqueda de un cargador de clases
++       o los nodos sobre los que se dibuja un grafo. Una clase de tipos o un tipo de valor
++       extiende `Planar` para que `on` pueda nombrar el plano, y las políticas de sistema de
++       ficheros de galilei (`CreateParents`, `DeleteRecursively`) son `Planar`
++       para que se elija una política por sistema de ficheros.
++   entry #Plane   el espacio, como un sistema de ficheros o un classpath, en el que se sitúa un valor

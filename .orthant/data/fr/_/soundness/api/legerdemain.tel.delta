@@ -1,0 +1,1054 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1816f82651a7183f14e7dc026cc98f4e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09d5bcdaf6c5b0f100ed108c644f2b17
++ info
++     des formulaires HTML dérivés des types de données, et la `Query` encodée en formulaire à
++     partir de laquelle leurs soumissions se décodent
+
+@ 0 6 0 089f6662d7624a5a029362b08ee9603b
++ detail
++     _Legerdemain_ traite un formulaire HTML comme une interface utilisateur vers un type de
++     données. Une case class donne un formulaire — un widget étiqueté par champ, choisi d'après le
++     type du champ, les case classes imbriquées devenant des fieldsets imbriqués — et une
++     soumission, une `Query` de paires clé–valeur, se décode de nouveau en case class, tout échec
++     désignant le champ qui l'a causé. Le type est l'unique source de vérité pour les deux moitiés,
++     de sorte que le formulaire ne peut pas diverger des données qu'il recueille.
+
+% 2 1 0 05b97a4d2cfe536903470dafd9efe6e9
+
+% 3 1 0 0598b18039e5119003c2d993600ea147
+
+% 4 1 0 14c481c12c396a1f04bafc8515d89bee
+
+% 5 1 0 0f3f6e9b438a253d06ca8feff9e1a7f7
+
+% 0 1 0 099357e06907479a1fc8c3c025a7630c
+
+% 0 1 0 1be073e19c57569a0da176bcb0474da3
+
+% 0 1 0 1f193ff683528bd5130d83fb33cdd69e
+
+% 0 1 0 16b627110ecefc2b1ceb0fbb68afc42c
+
+% 0 1 0 1ba668cb1ff8be4f10f36656f6c1a547
+
+% 1 1 0 02adf972541e2302098b7ef83e527069
+
+@ 0 7 0 0649e728f52f17800aea6c4ec87ab40d
++     Les pièces s'assemblent par trois classes de types. `Elicitable` indique avec quel `Widget` se
++     modifie le type d'un champ — un `Field` pour tout ce qui s'encode en texte, une `Checkbox`
++     pour un `Boolean`, une `Combobox` pour une énumération, un `Dropdown` pour une `Reference`
++     stockée. `Formulaic` est dérivé pour un type produit à partir des `Elicitable`s de ses champs
++     et produit les lignes du formulaire. `Formulation` décide de la façon dont le formulaire et
++     chaque ligne sont encadrés en HTML ; le seul choix standard est
++     `formulations.postFormulation`, importé par son nom, puisque `import soundness.*` n'importe
++     pas les givens.
+
+@ 0 6 0 0bc30018822ad9ee1442fe1bec1c5eeb
++     La bibliothèque a deux ensembles de sources. `legerdemain.query` contient `Query` et
++     `Parametric` : la structure clé–valeur encodée en formulaire, sans HTML, qu'utilisent le
++     client et le serveur HTTP pour les chaînes de requête des URL et les envois de formulaires.
++     `legerdemain.core` ajoute les widgets, les classes de types, `elicit`, `edit` et le package
++     `formulations`, et dépend du HTML de honeycomb. Tout est exporté vers le package parapluie
++     `soundness`. Telekinesis construit sur ces éléments le cycle de formulaire — rendu,
++     soumission, nouveau rendu avec les erreurs — sous le nom `orchestrate`.
+
+% 0 1 0 070e6e8be6a8f9610ec1f5ab60ce86d1
+
+% 0 1 0 1dc3224e54923d0a1218577fb61cf5e6
+
+% 0 1 0 169399e3e1ecc60f01686c3e992b7b35
+
+% 0 1 0 03350034340ac5a2108cf9d4c98d2f7d
+
+% 0 1 0 16a78fc871728de60b1963a5fc0890ea
+
+@ 0 1 0 0b5d7485bb2e054904f23413ed33472f
++ entry .elicit
++   info
++       rend le formulaire d'un type, éventuellement rempli à partir d'une `Query` soumise, avec ses
++       messages de validation
+
+@ 0 5 0 0d4d25429a11683000d39fba9cffca20
++   detail
++       `elicit[Value](query, validation, submit)` rend le formulaire complet de `Value`, qui doit
++       être `Formulaic`, par le given `Formulation` dans la portée. `query` est ce qui a été
++       soumis, pour réafficher les saisies de l'utilisateur (`Unset` pour un formulaire vierge) ;
++       `validation` contient les messages à associer aux champs, indexés par le `Pointer` de chaque
++       champ (`Validation()` pour aucun) ; et `submit` est l'étiquette du bouton de soumission, ou
++       `Unset` pour celle par défaut de la formulation.
+
+@ 2 1 0 0d13ad250e4390271e55e2b8f7b09475
++       ```scala
+
+@ 3 1 0 15dd599ba608c15c1abc964d3930585e
++       import soundness.*
+
+@ 4 1 0 097f7701f318ac1d1d9df6661eea5b1c
++       import formulations.postFormulation
+
+@ 5 1 0 0bc5d2bd7794a32418780fcb9ce5cd2e
++       import strategies.throwUnsafely
+
+@ 2 1 0 15369c286d01570f1ab9509943fb7583
++       case class Person(name: Text, email: Text)
+
+@ 0 1 0 07a95ab6c9d9b4430b2fa306fa272985
++       val blank = elicit[Person](validation = Validation(), submit = t"Register")
+
+@ 0 1 0 0a2cbbf91e2154de0f70ab1858e945d3
++       val submitted = t"name=Hamlet".as[Query]
+
+@ 0 1 0 0ae20a52d6fbf87e1d51697ad280eb65
++       val again = elicit[Person](submitted, Validation(), t"Register")
+
+@ 1 1 0 055802dc285765ff05482d5f9b4e0850
++       ```
+
+@ 0 4 0 0f679f9f7bd890e715ff6f8f87ea5afe
++       Chaque champ est étiqueté d'après son nom, découpé à ses majuscules et capitalisé
++       (`firstName` devient _First name_), et une case class imbriquée devient un `<fieldset>` dont
++       la légende est l'étiquette du champ. Le widget d'un champ est nommé par son chemin pointé,
++       `speaker.name`, qui est la clé sous laquelle il est soumis.
+
+@ 0 1 0 0482e5ae0c6ce5be1210b8bde82619a4
++ entry .edit
++   info
++       rend le formulaire d'une valeur, rempli avec les champs de cette valeur
+
+@ 0 4 0 09ede5d76b4c52c70d56d2bc5d89ee7c
++   detail
++       Une extension sur toute valeur à la fois `Formulaic` et `Encodable in Query` :
++       `value.edit(validation, submit)` est le formulaire que rend `elicit`, rempli avec les
++       propres champs de la valeur encodés en `Query`, pour modifier un enregistrement existant.
++       Elle requiert une `Formulation` dans la portée.
+
+@ 2 1 0 0bc5fde39d0172a705e5b04f2e8c621f
++       ```scala
+
+@ 3 1 0 08847ded56ac6ac6076a871273c5adaa
++       import soundness.*
+
+@ 4 1 0 111e442fab2d0b9a030e84d984b2956d
++       import formulations.postFormulation
+
+@ 2 1 0 150f0eee9d896de31dea105f150d413d
++       case class Person(name: Text, email: Text)
+
+@ 0 1 0 1c27a48ee6ceffbf017c4b15fbfcf9a8
++       Person(t"Bottom", t"bottom@example.com").edit(Validation(), t"Update")
+
+@ 1 1 0 15554eb473c2a5e9076f21b85b3e7326
++       ```
+
+@ 0 1 0 12ca44f0eafb14781e19a3058ab74c8e
++ entry .formulations
++   info
++       les façons standard d'encadrer un formulaire en HTML, chacune un given à importer par son
++       nom
+
+@ 0 4 0 19f8906df9107f291a90604608e8b186
++   detail
++       La façon dont un formulaire et ses lignes sont rendus est une `Formulation` dans la portée,
++       et `import soundness.*` n'en apporte aucune : on en importe une par son nom, ou une
++       application définit la sienne pour l'accorder à son design.
+
+% 2 1 0 165647207bcadcb101799250713e4873
+
+% 3 1 0 08daf9406e36c21a1b7d685235444e3a
+
+% 0 1 0 11e571ee7c39219108c83c7a1daefdd7
+
+% 1 1 0 15abc6b9bab8db7000bbae132f1cf76f
+
+@ 0 1 0 0154e8e2b1a9063f0a50c9fb0d3a867e
++   entry .postFormulation
++     info
++         un formulaire simple, sans style, qui renvoie vers sa propre URL
+
+@ 0 6 0 0b1677fdf7efc4350c65d4b7c0decbe1
++     detail
++         Le formulaire est un `<form action="." method="post">` contenant les lignes et un bouton
++         de soumission étiqueté avec le texte `submit`, ou _Submit_ s'il vaut `Unset`. Chaque ligne
++         est une `<div>` contenant un `<p class="alert">` avec le message de validation du champ,
++         s'il y en a un, un `<label>` autour de la légende et du widget, et un
++         `<span class="required">*</span>`, de sorte qu'une feuille de style peut styliser l'alerte
++         et le marqueur. Le marqueur est actuellement affiché sur chaque ligne, que le champ soit
++         requis ou non.
+
+@ 0 1 0 05c503e6c3a368e40b17779b2132147d
++ entry .Formulation
++   info
++       la façon dont un formulaire, et chacune de ses lignes étiquetées, est encadré en HTML
+
+@ 0 6 0 0c206a7ce483db84023777b1de107514
++   detail
++       Une `Formulation` est la présentation d'un formulaire, distincte de la façon dont ses champs
++       sont dérivés : `#form` enveloppe les lignes et le bouton de soumission, et `#element`
++       encadre un widget avec sa légende et son message de validation. `elicit` et `edit` en
++       prennent une comme valeur contextuelle ; `formulations.postFormulation` est la formulation
++       standard, et une application définit la sienne pour son propre balisage :
+
+% 2 1 0 0ad6a71e0796600e0f568897f53e5695
+
+% 3 1 0 03fb70bd85af054f019ad547f16c16ea
+
+% 0 1 0 1da6d46e0f216dc51283ca7212c8124f
+
+% 0 1 0 0d8e888e819df8f814afe8969b6f167d
+
+% 0 1 0 0b0a8ef604f9f4a40a0ed28dd987a3a7
+
+% 0 1 0 10f2f08127a2b95a06de001a69d8dd56
+
+% 0 1 0 1e81af7ffeb068ce0cb4d44bf5ebc5f8
+
+% 0 1 0 0b6b75ba305165e70c42b455889c228c
+
+% 0 1 0 1fa500fbe95b054100263919a5314f59
+
+% 0 1 0 0e34cc68eb25a2981e153e8dbc7a33d0
+
+% 1 1 0 10b0051310137f7117bd851c31b64056
+
+@ 0 1 0 122d221d1cd604c003120e241aa0dd7b
++       Une `Formulation` fait l'objet d'un suivi des captures (`Findable`), de sorte qu'elle peut
++       capturer une capacité.
+
+% 0 1 0 15c23bf2061bb1600928dd660875b8de
+
+@ 0 1 0 086cb447911b72930347b5128906ec61
++   entry #form
++     info
++         enveloppe les lignes d'un formulaire et son bouton de soumission, étiqueté avec le texte
++         ou une valeur par défaut
+
+@ 0 1 0 01e18a13e36ca30e14953c2341f62119
++   entry #element
++     info
++         encadre un widget avec sa légende, son message de validation, et l'indication qu'il est
++         requis ou non
+
+@ 0 1 0 1f1ac04e489e9e31112bb344858906db
++ entry .Formulaic
++   info
++       un type qui peut être présenté sous forme de lignes de formulaire : dérivé pour les case
++       classes, champ par champ
+
+@ 0 6 0 112405a7598044c60c9723a889234367
++   detail
++       `Formulaic` est la classe de types dont ont besoin `elicit` et `edit`. Elle est dérivée pour
++       un type produit à partir de ses champs — chaque champ devant lui-même être `Formulaic` — et
++       fournie pour toute valeur isolée qui est `Elicitable` et dont le widget est `Renderable` en
++       HTML de phrasé. Un produit dérivé se rend sous forme de `<fieldset>` avec une `<legend>`, de
++       sorte que l'imbrication dans les données est l'imbrication dans le formulaire.
+
+@ 0 3 0 152ed909f6ff51eb041e5f6869530ee2
++       `#fields` reçoit le `Pointer` de la valeur dans le formulaire complet, sa légende, la partie
++       de la `Query` soumise sous ce pointeur, la `Validation` et la `Formulation` ; un champ isolé
++       cherche son propre message dans la validation d'après son pointeur.
+
+% 0 1 0 17efcd80442d96ac1c3da3efbf099571
+
+% 1 1 0 115498ebfd5488df1ebbf0a6bb3d3fa9
+
+@ 0 1 0 0322f75a7a0f666719327536a6b892c8
++   entry .elicitable
++     info
++         la ligne d'un champ isolé : son widget `Elicitable`, rendu et encadré avec son message
+
+@ 0 2 0 0dfd9d6bea74a2ed02b47ec2059e30ba
++     detail
++         Crée le widget de la valeur avec le nom pointé, la légende et la valeur soumise du champ,
++         le rend, et l'encadre avec l'`element` de la formulation.
+
+@ 0 1 0 1b50f07edcd6e4c2093871192ac93d2f
++   entry .conjunction
++     info
++         dérive les lignes d'une case class : un fieldset des lignes de chaque champ
+
+@ 0 3 0 0f94381f075b151f00ff0ab7d0c539f2
++     detail
++         La dérivation qu'utilise `Formulaic` pour les produits. La légende de chaque champ est son
++         nom découpé aux majuscules et capitalisé, et son pointeur étend celui du parent avec le
++         nom du champ.
+
+@ 0 1 0 08731f2788f043380ec5356679292162
++   entry #fields
++     info
++         les lignes de formulaire d'une valeur, d'après son pointeur, sa légende, la requête
++         soumise, la validation et la formulation
+
+@ 0 1 0 18f839fa05ebcad70a3f9527a36f7502
++ entry .Elicitable
++   info
++       quel widget modifie un type, et comment une valeur de ce type est saisie sous forme de texte
+
+@ 0 4 0 1b0f0cdf3d582f660d5ad10d177c135c
++   detail
++       `value is Elicitable` indique à quoi ressemble un champ de formulaire de type `value` : son
++       `Operand` est un type `Widget`, `#widget` en crée un avec le nom, la légende et la valeur
++       courante d'un champ, et `#input` donne le texte sous lequel une valeur est soumise. Les
++       givens de l'objet compagnon choisissent :
+
+@ 0 6 0 049737dcc05651f41bb7d86fc5c734b1
++       - toute valeur `Encodable in Text` — `Text`, nombres, types validés comme `EmailAddress` —
++         est un `Field` texte (`decodable`, dans `Elicitable2`, avec une priorité inférieure) ;
++       - un `Boolean` est une `Checkbox`, soumise comme `on` quand elle est cochée (`boolean`) ;
++       - un type `Enumerable` est une `Combobox` qui propose le nom de chaque valeur
++         (`enumerable`) ;
++       - une `Reference[Entity]` vers une entité stockée est un `Dropdown` de toutes les entités
++         stockées, affichées par leur rendu `Showable` (`reference`).
+
+@ 0 1 0 01dbf0b07d7acde516b1aa85eb1ca2ef
++       Un type personnel obtient un autre widget avec un given qui lui est propre.
+
+% 0 1 0 138d9437b8bcaa5719360097d57a553a
+
+% 0 1 0 1a90924ff14ae77008f767372188e94e
+
+@ 0 1 0 03989c5beff2f0ad168f0e5b57c25479
++   entry .boolean
++     info
++         modifie un `Boolean` avec une `Checkbox`, saisi comme `on` quand il est vrai et vide quand
++         il est faux
+
+@ 0 1 0 1192ca9d5fba040315efaccdbf63d69c
++   entry .enumerable
++     info
++         modifie un type `Enumerable` avec une `Combobox` des noms de ses valeurs
+
+@ 0 2 0 13c3fd0f43f86d841c755d932e0f4bd5
++     detail
++         Chaque valeur est saisie par son nom, tel que `Enumerable` la nomme, et la liste de la
++         combobox les propose toutes.
+
+@ 0 1 0 0d0c887d71bda96a144c691b54bf5dc0
++   entry .reference
++     info
++         modifie une `Reference` vers une entité stockée avec un `Dropdown` de toutes les entités
++         de ce genre
+
+@ 0 3 0 1cf3802c50cfef5307700c431a8e386c
++     detail
++         Requiert que l'entité soit `Listable`, `Showable` et `Referenceable`, et que l'opérande de
++         sa référence soit `Encodable in Text` : toutes les entités stockées sont énumérées, chaque
++         option ayant pour clé sa référence encodée et pour étiquette le `show` de l'entité.
+
+@ 0 1 0 0f24c6e8542c6ade0c445bdb78bfd9b7
++   entry #input
++     info
++         le texte sous lequel une valeur de ce type est saisie ou soumise
+
+@ 0 1 0 05d5ddc301c2ef3c01fe68ace41f4f1b
++   entry #widget
++     info
++         le widget d'un champ, d'après son nom, sa légende et son texte courant
+
+@ 0 1 0 1a0e0576f25699e71928579331e08e0a
++ entry .Elicitable2
++   info
++       le given `Elicitable` de priorité inférieure, pour tout type encodable en texte
+
+@ 0 2 0 04e14a302ac6549e051ff152a8a6a65c
++   detail
++       Incorporé à l'objet compagnon d'`Elicitable` afin que les givens plus spécifiques qui s'y
++       trouvent l'emportent.
+
+@ 0 1 0 00979d49c2c45e9a0b311c18bff5c42b
++   entry #decodable
++     info
++         modifie toute valeur `Encodable in Text` avec un `Field` texte, saisie sous forme de son
++         encodage
+
+@ 0 2 0 17374f1dcf5b24600e6e9e7adce60eb3
++     detail
++         Malgré son nom, il requiert seulement que le type soit `Encodable in Text` : le champ
++         affiche l'encodage de la valeur, et la soumission est décodée séparément, par `Query`.
+
+@ 0 1 0 02f61cb5f53f7a33047b5a6fddd9d3bf
++ entry .Widget
++   info
++       un contrôle de formulaire, avec le nom sous lequel il est soumis et sa valeur courante
+
+@ 0 4 0 0fdc7fdcd5c2ada71fef07ef5bf364ab
++   detail
++       La forme commune de `Field`, `Checkbox`, `Combobox`, `Dropdown` et `RadioGroup` : chacun est
++       une case class avec un `#name`, le chemin pointé du champ dans le formulaire, et une
++       `#value`, le texte qu'il contient, et chaque objet compagnon a un given `Renderable` qui le
++       rend en HTML de phrasé.
+
+@ 0 1 0 03c8c4536ff7263a0851b1ab53da1fb0
++   entry #name
++     info
++         le nom sous lequel le contrôle est soumis : le chemin pointé du champ dans le formulaire
+
+@ 0 1 0 122b6e90b22bcca20c37b99caa71e684
++   entry #value
++     info
++         le texte que contient le contrôle, tiré de la requête soumise ou de la valeur en cours de
++         modification
+
+@ 0 1 0 0e7c195511e6b9631aad2f1dcb1f023c
++ entry .Field
++   info
++       une saisie de texte, le widget de toute valeur encodable en texte
+
+@ 0 3 0 1d1e549039f065420c3581310e434159
++   detail
++       Se rend sous forme d'`<input type="text">` avec le nom et la valeur du widget ; l'étiquette
++       est rendue par la `Formulation` qui l'entoure.
+
+@ 0 1 0 1bc8d829949cac26183147c5d0decd0f
++   entry .renderable
++     info
++         rend un champ sous forme d'`<input type="text">`
+
+@ 0 1 0 1689c397e2a91bb4194761160f5dec1f
++   entry #label
++     info
++         la légende du champ
+
+@ 0 1 0 0986edd89c0add67066daf06d6ef1ed9
++   entry #name
++     info
++         le nom sous lequel le champ est soumis : son chemin pointé dans le formulaire
+
+@ 0 1 0 0188caf1013412381fc05fd3e2026c97
++   entry #value
++     info
++         le texte du champ
+
+@ 0 1 0 1a35a8e65b9cc31c07449c79fd1325bd
++ entry .Checkbox
++   info
++       une case à cocher, le widget d'un `Boolean`
+
+@ 0 4 0 0b9a12d9b2234502115443f7311d4df5
++   detail
++       Se rend sous forme d'`<input type="checkbox">`, cochée quand sa valeur n'est pas vide. Une
++       case cochée est soumise comme `on` et une case non cochée pas du tout, c'est pourquoi un
++       `Boolean` se décode à partir d'une `Query` selon que sa clé est présente ou non.
+
+@ 0 1 0 0362093694f274d51a5fd7365b0cf130
++   entry .renderable
++     info
++         rend une case à cocher, cochée si sa valeur n'est pas vide
+
+@ 0 1 0 1db10763a8ea4b4e1ad869a9a3ccc4c2
++   entry #name
++     info
++         le nom sous lequel la case est soumise : son chemin pointé dans le formulaire
+
+@ 0 1 0 02789128bb9043921727def4f87aad9d
++   entry #value
++     info
++         `on` quand elle est cochée, et vide sinon
+
+@ 0 1 0 1bf23067b5c39c551fe5af29d7b0ca58
++ entry .Combobox
++   info
++       une saisie de texte avec une liste de suggestions, le widget d'une énumération
+
+@ 0 6 0 1306a6043d45b5ab149aae435561e545
++   detail
++       Se rend sous forme d'un `<input>` lié par son attribut `list` à une `<datalist>` des
++       options, de sorte qu'un navigateur suggère les valeurs tout en acceptant du texte saisi, qui
++       doit ensuite se décoder. L'id de la datalist est le nom du widget ; le nom doit donc être un
++       id DOM valide : un champ dont le nom contient des espaces, ou une énumération isolée à la
++       racine d'un formulaire (dont le nom est vide), ne peut pas être rendu.
+
+@ 0 1 0 04e372824bc6808603b2c741cce2adbe
++   entry .renderable
++     info
++         rend une combobox sous forme d'un `<input>` et de sa `<datalist>`
+
+@ 0 1 0 1f5f110c805767b206de0011b09206f1
++   entry #name
++     info
++         le nom sous lequel la saisie est soumise, et l'id de sa datalist
+
+@ 0 1 0 1ff6d62d1b3e9d3519402ba1830d3221
++   entry #options
++     info
++         les valeurs suggérées
+
+@ 0 1 0 069b28a5910b3279137e8b70b0bc7d06
++   entry #value
++     info
++         le texte de la saisie
+
+@ 0 1 0 064a473e89d5fabc117448668aacebaf
++ entry .Dropdown
++   info
++       une sélection dans une liste fixe d'options étiquetées, le widget d'une référence stockée
+
+@ 0 2 0 0e1b0d5731284e9012f627a0712666d6
++   detail
++       Se rend sous forme d'un `<select>` d'`<option>`s, chacune soumettant sa `key` et affichant
++       sa `value`.
+
+@ 0 1 0 105b788609cf3dfa14a1813de31c8d75
++   entry .renderable
++     info
++         rend une liste déroulante sous forme d'un `<select>` de ses options
+
+@ 0 1 0 0d419003ddc211fa1e22523150d40549
++   entry #name
++     info
++         le nom sous lequel la sélection est soumise
+
+@ 0 1 0 11c9b63ead2ff56e0c1de9589610015a
++   entry #options
++     info
++         les options, chacune une clé soumise et une étiquette affichée
+
+@ 0 1 0 05ae23ae361f8f4d1c70b7ae9683dc90
++   entry #value
++     info
++         la clé actuellement sélectionnée
+
+@ 0 1 0 10bbf692c1710aac101133d3b4ede78c
++ entry .RadioGroup
++   info
++       un ensemble de boutons radio partageant un même nom, dont l'un est choisi
+
+@ 0 4 0 156ba02832c3a8a311419db6db264dec
++   detail
++       Se rend sous forme d'un `<label>` par option autour d'un `<input type="radio">`. Aucun
++       `Elicitable` standard n'en produit ; un type qui doit être choisi par des boutons radio
++       requiert un given `Elicitable` dont l'`Operand` est `RadioGroup`.
+
+@ 0 1 0 087f8494fa99b96d1fc9adcc581cefdd
++   entry .renderable
++     info
++         rend un groupe radio sous forme d'un bouton radio étiqueté par option
+
+@ 0 1 0 174655890bf3dec402889b3f08aef00b
++   entry #name
++     info
++         le nom sous lequel chaque bouton du groupe est soumis
+
+@ 0 1 0 13cfeaa322dd582c1337c54b00f75410
++   entry #options
++     info
++         les options, chacune avec une clé, une valeur soumise et une étiquette
+
+@ 0 1 0 15cf70419645600e15f6ac0533d7e296
++   entry #value
++     info
++         la valeur actuellement choisie
+
+@ 0 1 0 0c22e949889dde441aa8281e2a2f1259
++ entry .Query
++   info
++       des paires clé–valeur encodées en formulaire : une chaîne de requête d'URL ou une soumission
++       de formulaire, et leurs codecs
+
+@ 0 6 0 19bf15c9108ad9e212a7772b81d4944c
++   detail
++       Une `Query` est une liste ordonnée de paires `(key, value)` de `Text`, telles qu'une chaîne
++       de requête `a=1&b=2` ou un corps `application/x-www-form-urlencoded` les contient. Les
++       données imbriquées sont aplaties en clés pointées — `speaker.name` — de sorte qu'une case
++       class s'encode en `Query` champ par champ et s'en décode de même, ce qui est la façon dont
++       les soumissions de formulaires et les paramètres de requête deviennent des valeurs typées.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 1b09dd2943dee7711572a7bfadc804cc
+
+% 1 1 0 16c9d472591ea8dd02f8aafdc192b6df
+
+% 2 1 0 12a2456f9b36a6011006ff90bbaa3d83
+
+% 3 1 0 08dcf1ae0320a69e16e79e656dc6d046
+
+% 0 1 0 0f6604aca456157c076ffbd6576104a6
+
+% 0 1 0 06905ce725fd03b80b21ad458f2bd17d
+
+% 1 1 0 0419a33130f082510faea32938bf8826
+
+% 0 1 0 1528526bb45882680d954d07c66c22b9
+
+% 1 1 0 143fe1041fa84df80b2aaad07bc9bdcb
+
+% 2 1 0 165199b7c45c17540e84612d7c0c3ec4
+
+% 3 1 0 0e00f8ecc5cdab511d014cdddcfd3933
+
+% 0 1 0 17ce139a6ee8b48a1716c7e365bbfe1a
+
+% 0 1 0 1835039ffdbda110081cb4a34823baf3
+
+% 1 1 0 1978244a25d24cce0dd2323876784140
+
+% 0 1 0 12c5315c9eb94bed047d8758b71b5ec3
+
+% 1 1 0 0ddbfb79563f1af508bd058b9dfea02a
+
+% 2 1 0 1fb7d47f45e5b99601954302a67039fd
+
+% 3 1 0 0540e3a41eb11a7f19f93b2ad3dd83be
+
+% 0 1 0 16e6c69df601f7f208549ccc75d9df9f
+
+% 0 1 0 03ca07f99a6c8fef0d1db700890b7b36
+
+% 1 1 0 08e169406b5acbae1948685ed2832135
+
+% 0 1 0 019f83119e5d231c1dff88b42fd02f91
+
+% 1 1 0 1a903d77f0414b921fd6e74b67c65d73
+
+% 2 1 0 10a72e118fe3b0dc0e97a905edc3763e
+
+% 3 1 0 10f60762e5b3dd350f509f57c39d445c
+
+% 0 1 0 1b053025a27ea06517187934ed192b18
+
+% 0 1 0 028cbf1bc02f01461e50fd4b7924dcb1
+
+% 0 1 0 0284c59024acf3610df830e8efe4ff56
+
+% 0 1 0 0928d04a94c6473509a82e8d8f61b8a6
+
+% 0 1 0 0af8ff365f39d1e7101a708b64c80cf3
+
+% 0 1 0 181c7dd74e919bda06473d8ad93d2483
+
+% 0 1 0 0b4df2833d5769ca08c6dad0b50d4848
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 6 0 0cdf9675725c8adc164a3ed13d28823a
++       Un texte se décode en `Query` avec `as[Query]` et une `Query` s'encode, ou s'affiche
++       (`show`), sous forme de chaîne encodée pour URL. Tout type `Encodable in Text` s'encode en
++       une `Query` d'une valeur sans nom, et toute case class dont les champs s'encodent le fait
++       champ par champ ; le décodage reflète les deux, en levant `Query.Error` pour un paramètre
++       manquant. Sous une stratégie cumulative (`validate`), chaque champ manquant ou invalide
++       d'une case class est signalé, chacun avec son `Pointer` pointé, et le constructeur de la
++       case class ne s'exécute que si chaque champ s'est décodé.
+
+@ 0 2 0 0bcbe581d6c3478f1289be879fddac1d
++       Les paramètres nommés se lisent et s'écrivent dynamiquement — `query.name`,
++       `query.name = value`, `Query.make(name = value)` — quand un given `Parametric` type le nom.
+
+% 0 1 0 0d44f2f2eef4167a1888e88c0fedc130
+
+% 1 1 0 01776fce97be213013ba7803b719b32c
+
+@ 0 1 0 06fffa8b25bc10c700bf3d33340949dd
++   entry .apply
++     info
++         une requête vide, une requête d'une valeur sans nom, ou une requête des paires données,
++         dans l'ordre
+
+@ 0 3 0 1d6977cbfa2bb09015c67f3500747673
++     detail
++         `Query()` est vide, `Query(text)` contient la seule valeur `text` avec une clé vide — la
++         forme vers laquelle s'encode une valeur `Encodable in Text` — et `Query(pairs)` contient
++         une liste de paires `(key, value)` telles quelles.
+
+@ 0 1 0 04bee18ea29def2d0fef64e8d96f7f54
++   entry .encodable
++     info
++         encode une `Query` en texte encodé pour URL ; et toute valeur encodable ou case class en
++         `Query`
+
+@ 0 4 0 12399d41c4535f280328edfa482a2959
++     detail
++         Deux givens partagent ce nom. L'un rend une `Query` sous forme de paires `key=value`
++         jointes par `&`, chaque clé et chaque valeur étant encodées pour URL. L'autre, un given
++         inline, rend tout type `Encodable in Query` : un type `Encodable in Text` devient une
++         requête d'une valeur sans nom, et une case class encode chaque champ sous son nom, les
++         champs imbriqués sous des clés pointées.
+
+@ 2 1 0 05a97a552f8f10420569d682a98ae57b
++         ```scala
+
+@ 3 1 0 051ce768152bc62e1e53c5145e59b13c
++         import soundness.*
+
+@ 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
++         case class Person(name: Text, age: Int)
+
+@ 0 1 0 08659b3d3fcf27d70c388bc3af27a2a8
++         summon[Person is Encodable in Query].encoded(Person(t"Juliet", 13)).show   // t"name=Juliet&age=13"
+
+@ 1 1 0 0583592f11ffca320ad3c6ce0a4eb204
++         ```
+
+@ 0 1 0 0f0c6936a6e257de1a1e744482066f0b
++   entry .decodable
++     info
++         décode un texte encodé pour URL en `Query` ; et une `Query` en toute valeur décodable ou
++         case class
+
+@ 0 5 0 17928bc42f2159c90481c1d304155ca6
++     detail
++         Deux givens partagent ce nom. L'un découpe le texte sur `&` et chaque partie à son premier
++         `=`, en décodant les deux côtés pour URL ; une partie sans `=` est une clé avec une valeur
++         vide. L'autre, un given inline, rend tout type `Decodable in Query` : un type
++         `Decodable in Text` est décodé à partir de la valeur sans nom de la requête, et une case
++         class champ par champ à partir des paramètres situés sous les noms de ses champs.
+
+@ 0 5 0 02f19e1f145824811722ae4d1388e55e
++         Une valeur manquante lève `Query.Error` avec la raison `Missing`, à moins que le type
++         n'ait un `Default`, qui est utilisé après que l'erreur a été levée. Sous une stratégie
++         cumulative, chaque champ manquant d'une case class est levé, chacun ciblé sur son
++         `Pointer` pointé, et le constructeur ne s'exécute pas sur des valeurs de repli — de sorte
++         que le constructeur d'un type raffiné ne signale jamais d'erreurs fantômes pour des champs
++         que l'utilisateur n'a pas remplis.
+
+@ 2 1 0 1244ea5d9101d6f21fb0973f792b728c
++         ```scala
+
+@ 3 1 0 1b25642fd9ea393b094c76707529bf5b
++         import soundness.*
+
+@ 4 1 0 0cf38464b4c02c1218a4411950e73613
++         import strategies.throwUnsafely
+
+@ 0 1 0 0a65634d34e41fa013d1a661b1826922
++         case class Person(name: Text, email: Text)
+
+@ 0 1 0 01b2b051011e6cec09418ebf69486153
++         t"name=Hamlet&email=a%40b.c".as[Query].as[Person]   // Person(t"Hamlet", t"a@b.c")
+
+@ 1 1 0 1af07ce2b7769e0c11cd91cda6fa9a01
++         ```
+
+@ 0 1 0 0fd106d2d9e88a0707bd22a6179b3c89
++   entry .EncodableDerivation
++     info
++         la dérivation de produits de `Encodable in Query` : chaque champ encodé sous son nom
+
+@ 0 2 0 04f0626a097fa0c31e0d424568edaa7b
++     detail
++         Utilisée par le given inline `encodable` pour les case classes ; on ne la nomme
++         normalement pas directement.
+
+@ 0 1 0 1ac79ac503ceab75016156217a6e41f4
++     entry .conjunction
++       info
++           encode un produit comme l'union des requêtes de ses champs, chacune préfixée par le nom
++           du champ
+
+@ 0 1 0 1f2b4320e09d403902abf08ab3a243e4
++   entry .DecodableDerivation
++     info
++         la dérivation de produits de `Decodable in Query` : chaque champ décodé à partir de ses
++         paramètres
+
+@ 0 5 0 10b22f3fe4f295d91e7b7791cbfbe428
++     detail
++         Utilisée par le given inline `decodable` pour les case classes ; on ne la nomme
++         normalement pas directement. Elle décode les champs en un seul parcours, cible les erreurs
++         de chaque champ sur son `Pointer` (l'erreur d'un enregistrement imbriqué atterrit en
++         `outer.inner`), et ne construit le produit que si chaque champ s'est décodé sans erreur.
+
+@ 0 1 0 111359911d8e49fa0f9077cdfd7facc8
++     entry .conjunction
++       info
++           décode un produit champ par champ, en ne le construisant que si chaque champ s'est
++           décodé
+
+@ 0 1 0 0b2a88a0245eba841aaa3a48d9f4380e
++   entry .booleanEncodable
++     info
++         encode un `Boolean` comme le fait une case à cocher : `on` quand il est vrai, et rien
++         quand il est faux
+
+@ 0 1 0 108fa0e40cd30614147586bc6ced239b
++   entry .booleanDecodable
++     info
++         décode un `Boolean` comme la soumission d'une case à cocher : vrai si la valeur est
++         présente, quelle qu'elle soit
+
+@ 0 2 0 131b90afc73bb60909d89be264b108cf
++     detail
++         Une case non cochée n'est pas soumise, de sorte qu'un champ `Boolean` ne manque jamais :
++         son absence vaut `false`.
+
+@ 0 1 0 0a50b077883357c11bcb8c873007998b
++   entry .showable
++     info
++         affiche une `Query` sous forme de sa chaîne de requête encodée pour URL, telle que la
++         donne `#queryString`
+
+@ 0 1 0 1ef536ce2a06d60a1e2e2b3c31891d77
++   entry .inspectable
++     info
++         un rendu de débogage d'une `Query` : des paires `key = "value"`, séparées par des
++         virgules, non encodées pour URL
+
+@ 0 1 0 097d2094bb07df5f15edbde2827bb8d6
++   entry .applyDynamicNamed
++     info
++         `Query.make(name = value, …)` : une requête à partir de paramètres nommés et typés
+
+@ 0 5 0 173ea0878f98902c15af0717a9ee6b7a
++     detail
++         Chaque nom de paramètre doit avoir dans la portée un given `Parametric` indiquant le type
++         de sa valeur, et chaque valeur doit être `Encodable in Query` ; les deux sont vérifiés
++         pendant la compilation du code. Une valeur du mauvais type est une erreur de compilation,
++         _the parameter `name` takes values of `T` but the provided value had type `U`_ ; un nom
++         sans `Parametric` en est une autre (erreur `↯/s.87.4`), et une valeur sans encodage une
++         troisième (erreur `↯/s.87.3`).
+
+@ 2 1 0 0826fa908f9a8284081e876f583ab2e4
++         ```scala
+
+@ 3 1 0 0708f5e69e07063a1d5b3ddf7b78ade8
++         import soundness.*
+
+@ 0 1 0 07ed1395cacb9602103c25c3f2b48e17
++         inline given ("key" is Parametric to Text) = !!
+
+@ 0 1 0 0f58a88339cd075f1d52467860846253
++         inline given ("count" is Parametric to Int) = !!
+
+@ 0 1 0 1990392abd9337a20f2b72c048e42865
++         Query.make(key = t"hello world", count = 24).show   // t"key=hello+world&count=24"
+
+@ 1 1 0 13cf69521ce6c47e0a359fcdc9e5631e
++         ```
+
+@ 0 2 0 1ffb19f801176e3f01d2bca87d5a8b4f
++         Le `queryParameters.arbitraryQueryParameter` de Telekinesis, importé par son nom, accepte
++         n'importe quel nom avec n'importe quelle valeur.
+
+@ 0 1 0 05d6633671178b280d2dd16c562f424e
++   entry .addable
++     info
++         `query + query` : les paires des deux, celles de gauche d'abord
+
+@ 0 1 0 146d1327f1b85d8f1f811937ea711bb6
++   entry .Error
++     info
++         levée quand un paramètre dont une valeur a besoin manque dans une requête
+
+@ 0 5 0 03bad5cd3f6e25ee19dfe1c4686ccda1
++     detail
++         Erreur `↯/s.87.2` : _the query parameter could not be read because the parameter was not
++         present in the query string_. Levée par les givens `Decodable in Query` quand une valeur
++         requise n'a pas de paramètre, et ciblée sur le `Pointer` de ce champ lors du décodage
++         d'une case class, de sorte qu'une stratégie cumulative signale chaque champ manquant d'un
++         formulaire.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 109b642e3654197f1a7d7f072c241117
+
+% 0 1 0 189f17deb544cc2610dffbeffc3157b9
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 1 0 1f4fe7028e1915fc06bec5182b9af9ce
++     entry .Reason
++       info
++           la raison pour laquelle un paramètre de requête n'a pas pu être lu : `Missing`, la seule
++           raison
+
+@ 0 2 0 1296f029c84df1a9174f3f4dae8b03bf
++       detail
++           `Missing` (1) : le paramètre n'était pas présent dans la chaîne de requête.
+
+@ 0 1 0 19fbfbc86aa9381710a0c3d14b4f7e73
++       entry #number
++         info
++             le numéro de la raison, la seconde partie du code de l'erreur
+
+@ 0 1 0 0f242ca4ce374d3f0c4ea61d2da0622a
++     entry .communicable
++       info
++           rend une raison sous forme de message : _the parameter was not present in the query
++           string_
+
+@ 0 1 0 108ddb12732cb4a50327411fe40bd613
++     entry #reason
++       info
++           la `Query.Error.Reason`
+
+@ 0 1 0 17ecbfcaf1e727f113ab9ab2d804c404
++   entry #values
++     info
++         les paires `(key, value)` de la requête, dans l'ordre, avec des clés pointées pour les
++         champs imbriqués
+
+@ 0 1 0 11e24ee936950fd808bd9880044785af
++   entry #append
++     info
++         une requête avec les paires d'une autre après celles de celle-ci
+
+@ 0 1 0 111f4c93fe14331a0b2766ae3bed58c6
++   entry #nil
++     info
++         si la requête ne contient aucune paire
+
+@ 0 1 0 16cabf2f9b14fa600615d92e35ed8c60
++   entry #++
++     info
++         une requête avec les paires d'une autre après celles de celle-ci, comme `#append`
+
+@ 0 1 0 04f1e0641e4dd7f3124340d4fca9d4db
++   entry #selectDynamic
++     info
++         `query.name` : le paramètre `name`, décodé dans le type que nomme son `Parametric`
+
+@ 0 3 0 129170017c5cd0d910c5818420f3cfde
++     detail
++         Requiert `"name" is Parametric to Result` et `Result is Decodable in Query` ; la partie de
++         la requête sous `name` (sa propre valeur et tout enfant pointé) est décodée, en levant
++         `Query.Error` si elle manque.
+
+@ 0 1 0 1e52c512aa9504200d59a8c2fb944152
++   entry #updateDynamic
++     info
++         `query.name = value` : une requête à laquelle est ajouté le paramètre `name`, encodé à
++         partir d'une valeur typée
+
+@ 0 3 0 19a28084a939d5590408d15ba0028867
++     detail
++         Requiert `"name" is Parametric to Result` et que la valeur soit `Encodable in Query`. Une
++         valeur qui s'encode en une valeur sans nom est ajoutée sous `name` ; une valeur structurée
++         est ajoutée sous `name.` et chacune de ses propres clés. Le receveur est inchangé.
+
+@ 0 1 0 1f2fe7c202d841d00b4df9c24b595413
++   entry #at
++     info
++         la valeur sous une clé, décodée à partir d'un texte, ou `Unset` s'il n'y en a aucune
+
+@ 0 2 0 13441ed8981116d5051f6c867ddc79cb
++     detail
++         `query.at[Int](t"page")` est la valeur du paramètre `page` sous forme d'`Int`, ou `Unset`
++         quand aucun paramètre `page` n'a de valeur propre. Elle requiert une `Tactic` pour le
++         décodage.
+
+@ 0 1 0 1e97b286b22029bf0146b52a489e010e
++   entry #as
++     info
++         la requête entière décodée en valeur, avec les erreurs ciblées sur leurs `Pointer`s
+
+@ 0 2 0 046d63313cd70663001df016a3c890ba
++     detail
++         `query.as[Person]` décode par `Person is Decodable in Query`, de sorte qu'un champ
++         manquant lève `Query.Error` ciblée sur le pointeur pointé de ce champ.
+
+@ 0 1 0 03552d8d54adea000751038fb269a998
++   entry #apply
++     info
++         la valeur sans nom de la requête, ou `Unset` ; ou la partie de la requête sous une clé
+
+@ 0 3 0 05c59a791ef22664002f3b732355da33
++     detail
++         `query()` est la valeur d'une requête qui contient exactement une paire à clé vide, et
++         `Unset` sinon. `query(t"speaker")` est la sous-requête sous `speaker` : la paire de clé
++         `speaker` devient la valeur sans nom et chaque clé commençant par `speaker.` perd ce
++         préfixe.
+
+@ 2 1 0 0543e539d56086811457cf05068a8073
++         ```scala
+
+@ 3 1 0 1f74ba6ae2c54ec71774573220d0575a
++         import soundness.*
+
+@ 4 1 0 0c471cd2b6595fc00ad723d08c0df6c5
++         import strategies.throwUnsafely
+
+@ 0 1 0 1a27cfe8169c39d60dbe764489b9c0c4
++         val query = t"speaker.name=Hamlet&speaker.email=a%40b.c&place=Elsinore".as[Query]
+
+@ 0 1 0 1c27f2f20d8314d01b25b94ed8a06ff4
++         query(t"speaker")             // the query name=Hamlet&email=a%40b.c
+
+@ 0 1 0 0987d6ed079bf941164d877fb0a0e14b
++         query(t"speaker")(t"name")()  // t"Hamlet"
+
+@ 1 1 0 13cefe27880b8eda11ec728e4fb4679e
++         ```
+
+@ 0 1 0 031da4413d8234e718a785bf2fad6748
++   entry #prefix
++     info
++         la requête avec chaque clé placée sous un préfixe : `name` devient `prefix.name`
+
+@ 0 2 0 007750ebc162ba241bf83069ee814a9e
++     detail
++         La clé d'une valeur sans nom devient le préfixe lui-même, de sorte qu'une valeur encodée
++         seule puis préfixée est un paramètre nommé.
+
+@ 0 1 0 166d13cfe1385ba81bca7f696a6dbfbf
++   entry #queryString
++     info
++         la requête sous forme de texte encodé pour URL, une valeur sans nom étant écrite seule,
++         sans `=`
+
+@ 0 2 0 1e924fa85091459e06e658ec8b8ecb02
++     detail
++         Chaque paire est `key=value`, encodée pour URL, jointe par `&` ; une paire à clé vide
++         s'écrit par sa seule valeur.
+
+@ 0 1 0 1accb5ab4afe0dea06f3fbc6a1169948
++ entry .Parametric
++   info
++       le type que prend un paramètre de requête nommé, pour `query.name` et `Query.make(name = …)`
+
+@ 0 6 0 0949430c88c29ece0f40be085cbd542e
++   detail
++       `"name" is Parametric to Result` déclare que le paramètre de requête `name` contient des
++       valeurs de type `Result`. C'est la preuve dont ont besoin les accesseurs dynamiques de
++       `Query` — `query.name`, `query.name = value` et `Query.make(name = value)` — de sorte qu'un
++       paramètre est lu et écrit dans un type fixe, vérifié pendant la compilation du code. Il ne
++       porte aucun comportement ; un given s'écrit donc comme un substitut effacé :
+
+% 2 1 0 0c7793b1a9d1f74319b636dd65e852f6
+
+% 3 1 0 12c07bb37ddf1b0a12d3265e38fce1f5
+
+% 0 1 0 1b7378daaa5d8a721f6f4802d08e4df0
+
+% 1 1 0 155dc05194c3d7bb1ca3e0d29e1a8dac
+
+@ 0 2 0 0466e96d12a2535b00317b1422b8ddca
++       Le `queryParameters.arbitraryQueryParameter` de Telekinesis donne à chaque nom chaque type,
++       pour le code qui veut l'accès dynamique sans déclarer chaque paramètre.
+
+% 0 1 0 081014bdc9d21eaa0b93d3b5f9647b1e
+
+@ 0 1 0 0695963a36d8411219de4a069f83369a
++   entry #Self
++     info
++         le nom du paramètre, sous forme de type `Label` littéral
+
+@ 0 1 0 0a9a8278e381b2ae17a0188c9c9e0b1e
++ entry .internal
++   info
++       la macro derrière `Query.make`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+@ 0 2 0 03d9beba6312a63a17905238a19640a2
++   detail
++       Pas destiné à un usage direct : l'objet existe pour que la macro ait un emplacement stable.
+
+@ 0 1 0 08229a39f937a7f41656c1519d709dde
++   entry .query
++     info
++         la macro derrière `Query.make(name = value, …)` : vérifie le `Parametric` de chaque nom et
++         encode chaque valeur

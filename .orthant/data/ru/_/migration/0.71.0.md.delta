@@ -1,0 +1,685 @@
+orthant 2 language
+
+@ 0 1 0 0b763b48a45ecea8051cb862888668b3
++ # Изменения с версии 0.70.0
+
+@ 0 3 0 1927253d08deb58b176f4d393c6c49f6
++ Этот файл читает LLM-агент, чтобы обновить код, использующий библиотеки Soundness, с версии
++ 0.70.0 до следующего релиза. Каждая запись точно указывает, что изменилось; формат описан в
++ `AGENTS.md`. Записи сгруппированы по модулям, внутри модуля последними идут самые новые.
+
+% 0 1 0 0815a537589592e21b251a53558048d3
+
+@ 0 9 0 19dcf51e4108b6111da6e25c85bcff1c
++ - `ambience.temporaryDirectories.environmentTemporaryDirectory` (а также
++   `soundness.temporaryDirectories.environmentTemporaryDirectory`) теперь читает `TMPDIR`, `TMP` и
++   `TEMP` из given-экземпляра `ambience.Environment`; раньше он игнорировал этот given и читал
++   `java.lang.System.getenv`. Его тип не изменился. Код, который призывает его с `Environment`,
++   отличным от `javaBaseEnvironment`, теперь получает временный каталог этого окружения. (#2180)
++ - `ambience.environments.javaBaseEnvironment`, как и прежде, читает собственное окружение JVM; в
++   демоне, запущенном лаунчером xek 1.2.0, это окружение очищено (см. `## ethereal`), поэтому
++   код демона, читающий через него переменную приложения, должен использовать окружение вызова
++   или `environments.daemonEnvironment`. (#2180)
+
+% 0 1 0 1868a4f3222d8611045fe84bfb530658
+
+@ 0 14 0 0adcfd612455b75d077822950d289152
++ - `anthology.Format` получает абстрактный член `kind: anthology.Format.Kind` (новое перечисление:
++   `Source`, `Ir`, `Application`), реализованный как `final def` в `Format.Source`, `Format.Ir` и
++   `Format.Application`, а также определения `equals` и `hashCode` с `final override`: два формата
++   равны, когда равны их `kind` и `id`. Класс, расширяющий `Format` не через один из трёх трейтов
++   уровня, должен определить `kind`; класс, переопределяющий `equals` или `hashCode`, больше не
++   компилируется; а у case-класса, расширяющего `Format`, больше нет синтезированного структурного
++   `equals`. Два формата одного вида с одинаковым `id` теперь равны, даже если остальные их члены
++   различаются, поэтому формат, параметры которого различают узлы, должен кодировать их в своём
++   `id` (все встроенные форматы уже так делают). (#2166)
++ - `anthology.WasiToolchain.apply()` и `anthology.nativeEdges.apply(triples*)` (компонент
++   `nir`) теперь принимают `(using WorkingDirectory, Environment)` и ищут свои инструменты
++   в этом окружении. Передайте `Environment`, которое должны унаследовать процессы: в инструменте —
++   окружение вызова (`environments.daemonClientEnvironment` или `Environment.provided` из `Cli`),
++   а для прежнего поведения — `environments.javaBaseEnvironment`. (#2180)
+
+% 0 1 0 0f65516622e01f5401b594a2ce4c1b1b
+
+@ 0 4 0 178b08acf1f899110016b0710d37f321
++ - `apoplexy.OpenApi.json(yaml: Yaml): Json` удалён. Преобразование теперь выполняет given
++   верхнего уровня `apoplexy.yamlEncodableInJson: Yaml is Encodable in Json` (не экспортируется
++   из `soundness`), поэтому вместо `OpenApi.json(yaml)` пишите `yaml.in[Json]`, имея в области
++   видимости `import apoplexy.yamlEncodableInJson`. Результат не изменился. (#2176)
+
+% 0 1 0 07409a9b4226d59e0356189f39895ad5
+
+@ 0 18 0 0b8b595e3f4ac02c17014289847000d2
++ - `archimedes.Ergo.Error.Reason.BadOpener(char: Text)`, `Unclosed(expected: Text)` и
++   `MissingBody(char: Text)` теперь принимают `Char` вместо односимвольного `Text`:
++   `BadOpener(char: Char)`, `Unclosed(expected: Char)`, `MissingBody(char: Char)`. Отображаемые
++   сообщения не изменились. Образцы, которые связывают поле и сравнивают его с `Text`, теперь
++   сравнивают его с `Char`. (#2167)
++ - `archimedes.Mathml#htmlAttributes: List[(Text, Optional[Text])]` удалён. Используйте
++   `attributes`, чей `List[(Text, Text)]` подходит везде, где ожидаются пары
++   `(Text, Optional[Text])` (например, `honeycomb.Attributes(node.attributes*)`). (#2167)
++ - `archimedes.Math#xml: Xml` и `archimedes.Mathml#xml: Xml` удалены в пользу given-экземпляров
++   `Math.encodableInXml: Math is Encodable in Xml` и `Mathml.encodable: [node <: Mathml] => node is Encodable in Xml`.
++   Пишите `math.in[Xml]` вместо `math.xml` и `element.in[Xml]` вместо `element.xml`; для `Math`
++   используйте `in[Xml]`, а не `encode`, поскольку у него есть и `Encodable in Math`. Результат
++   не изменился. (#2176)
++ - `archimedes.Math#html: Html of "math"` и `archimedes.Mathml#html: Html of "#foreign"`
++   удалены. `math.html` и `element.html` по-прежнему компилируются без изменений через
++   расширение `html` из honeycomb (доступное в области видимости при `import soundness.*` или
++   `import honeycomb.*`), которое разрешается через существующий `Math.renderable` и новый
++   `Mathml.renderable: [node <: Mathml] => node is Renderable { type Form = "#foreign" }`. (#2176)
+
+% 0 1 0 0517ef2589655f410a0f4a460ea9ee15
+
+@ 0 7 0 1de4bd501f4a67ad059a54c7740082b5
++ - `aviation.Calendar#Mensual` теперь имеет ограничение контекста `Showable`
++   (`type Mensual: Showable`), а `Calendar#monthName(month: Mensual): Text` теперь отображает
++   `month.show` там, где отображал `month.toString.tt`. Для календаря, определённого вне aviation,
++   в месте определения календаря должен быть в области видимости `Showable` для типа его месяцев;
++   у месяца-`enum` он уже есть через `spectacular.Showable.enumeration`, который, как и прежде,
++   отображает имя кейса. (#2173)
++ - `aviation.AlexandrianCalendar` изменён с `abstract class AlexandrianCalendar()` на
++   `trait AlexandrianCalendar`. Перепишите `extends AlexandrianCalendar()` как
+
+% 0 1 0 1581d00956f0bc8d07eae4102795b6b0
+
+@ 0 5 0 1855781fa923c63705c56aa064feca98
++ - Given-экземпляры `aviation.CopticMonth.showable`, `aviation.EthiopianMonth.showable`,
++   `aviation.FrenchRepublicanMonth.showable`, `aviation.IndianMonth.showable` и
++   `aviation.PersianMonth.showable` удалены; вместо них разрешается
++   `spectacular.Showable.enumeration` с тем же результатом, поэтому изменить нужно только код,
++   явно называющий один из этих given-экземпляров. (#2173)
+
+% 0 1 0 1370790ba805908e18fbb957e25dfabd
+
+@ 0 8 0 021d455e3be5d10c1f2e099d5f7fc861
++ - Плагин компилятора (`beneficence-plugin`) записывает новый каталог ресурсов,
++   `META-INF/probably/tests`, в результат каждой компиляции, у которой в пути классов есть
++   `probably.Suite` и `probably.Testable`: по одному файлу на каждый исходный файл, объявляющий
++   набор тестов или тест, с именем `<source file name>-<12 hex digits of the SHA-256 of its path>`.
++   Формат описан в `beneficence.TestsIndex`. `META-INF/services/probably.Suite` не изменился.
++   Сборка, которая упаковывает результат компиляции по явному списку путей ресурсов, должна
++   включить новый каталог, чтобы хост (fume) мог перечислить её тесты, не запуская их; правило
++   слияния не нужно, поскольку никакие два модуля не записывают одну и ту же запись. (#2169)
+
+% 0 1 0 1281cf5693caddee047e57c2960f2348
+
+@ 0 5 0 0e79b09e63b1c66412b7513a95fbf05f
++ - `bitumen.UnixMode#bytes: Data`, `bitumen.UnixUser#bytes: Data` и
++   `bitumen.UnixGroup#bytes: Data` удалены. Они создавали поле заголовка USTAR (семь восьмеричных
++   цифр ASCII, дополненных нулями) — формат tar, а не этих типов, — и теперь являются приватными
++   для `Tar.Header`. Код, которому нужно это поле, пишет `value.octal.pad(7, Rtl, '0').in[Data]`
++   из `mode.int`, `user.value` или `group.value`. (#2176)
+
+% 0 1 0 0f922ec341ccae34075ef751ece930db
+
+@ 0 8 0 11bc7393f68ced2403546e9e64c4b38f
++ - Soundness компилируется с Proscala `3.9.1-dev-p17` (было `3.9.0-p16`); ветка 3.9 этого форка
++   теперь следует ветке `lts-3.9` репозитория scala/scala3. Значения по умолчанию в `build.mill`
++   для `SOUNDNESS_SCALA_RELEASE` (загружаемый тег релиза proscala) и `SOUNDNESS_SCALA_VERSION`
++   (версия координаты) обе равны `3.9.1-dev-p17`, и каждая зависимость `org.scala-lang`
++   принудительно приводится к этой координате. Потребитель компилирует с той же версией форка.
++   (#2175)
++ - Инструменты в `etc/tools`: flare 0.5.0 (плагин компилятора, с которым компилируется Soundness),
++   fume 0.6.0 (раннер тестов, читающий события, которые наборы тестов порождают начиная с 0.70.0)
++   и flame 0.5.0; проекту, запускающему наборы тестов Soundness, нужен fume 0.6.0 или новее.
++   (#2158)
+
+% 0 1 0 1b963d061ec457af154e1006b71b17d4
+
+@ 0 31 0 00a53c6e37080835155a7a5ca68b638f
++ - `coaxial.Socket.Error.Reason` получает `Timeout` (5), порождаемый, когда истекает приём на
++   датаграммном сокете, настроенном с `Socket.Option.Timeout`; исчерпывающее сопоставление по
++   причинам получает ещё один кейс. (#2178)
++ - `coaxial.Socket.Option` получает `MulticastLoop` (`IP_MULTICAST_LOOP`), `MulticastHops(count)`
++   (`IP_MULTICAST_TTL`) и `DatagramSize(bytes)` (буфер приёма на одну датаграмму, а значит,
++   наибольшая датаграмма, принимаемая целиком; 1472, если не задано), с
++   `socketOptions.multicastLoopSocketOption`, `multicastHops(n)` и `datagramSize(n)`.
++   Исчерпывающее сопоставление по `Socket.Option` получает три кейса. (#2178)
++ - `coaxial.Socket.Backend` получает абстрактный член `exchangeUdp(endpoint, interface, options, data): Packet`
++   — одна датаграмма уходит с эфемерного порта, один ответ приходит, с ограничением
++   `Option.Timeout`, — а его тип дескриптора `DatagramSocket` в бэкендах JVM и Scala Native
++   теперь является приватной привязкой, а не `java.net.DatagramSocket`. Сторонний бэкенд должен
++   реализовать `exchangeUdp`; код, полагавшийся на то, что дескриптор является `DatagramSocket`,
++   должен действовать через операции бэкенда. (#2178)
++ - Добавлен `coaxial.Multicast(group: Ipv4 | Ipv6, port: Udp.Port)`, а с ним `Multicast.Reply`
++   (`Ignore`/`Group(data)`/`Unicast(data)`), `Multicast.Subscription` (`Socket.Service`, который
++   может также выполнять `send` в группу или одному адресату), класс типов `coaxial.Subscribable`
++   с given-экземпляром для `Multicast` (и given-экземпляром `Bindable` поверх него, так что
++   `listen` работает с группой) и одалживание `multicast.subscribe(handler)(block)`.
++   `Multicast.interfaces(interface: Optional[MacAddress])`
++   перечисляет интерфейсы, на которых подписка присоединяется к группе. `Socket.Backend` получает
++   абстрактные члены `MulticastSocket`, `joinMulticast`, `receiveMulticast`, `sendGroup`, `sendTo`
++   и `leaveMulticast`, реализованные на JVM (`DatagramChannel`, присоединённый на каждом
++   интерфейсе) и порождающие `Socket.Error` на Scala Native и WASI; сторонний бэкенд должен их
++   реализовать. (#2178)
++ - Новый компонент `coaxial.dns` (в наборе `soundness-web`): `endpoint.query(message: Dns.Message)`
++   и `endpoint.lookup(name, rtype)` на `Endpoint[Udp.Port]`, обменивающиеся сообщениями DNS с
++   сервером имён по UDP; изменение только добавляет новое. (#2178)
++ - `listenUdp` в бэкендах JVM и Scala Native теперь настраивает сокет *до* его привязки, так что
++   `Socket.Option.ReuseAddress` и `ReusePort` действуют для слушателей UDP (раньше они молча не
++   действовали). (#2178)
+
+% 0 1 0 09df00b428737c7f1cf98680616b6f7e
+
+@ 0 3 0 1dfa60000ff174271606f282fe94ac93
++ - `enigmatic.Cose#bytes: Data` удалён в пользу given-экземпляра
++   `Cose.encodable: [cose <: Cose] => cose is Encodable in Data`. Пишите `cose.in[Data]` вместо
++   `cose.bytes`; форма передачи не изменилась. (#2176)
+
+% 0 1 0 10d5740d33bd672200a59ac24b495f6e
+
+@ 0 6 0 115d1bcb049169af1ea121c9e3729a36
++ - `espionage.Acp.connect` получает using-параметр типа `ambience.Environment` после
++   `WorkingDirectory`: `(using Monitor^{capture}, Probate, Diagnostics, WorkingDirectory, Environment, Tactic[Acp.Error])`.
++   `Agent.Process` запускается с этим окружением. Передайте `Environment`, которое должны
++   унаследовать процессы: в инструменте — окружение вызова (`environments.daemonClientEnvironment`
++   или `Environment.provided` из `Cli`), а для прежнего поведения —
++   `environments.javaBaseEnvironment`. (#2180)
+
+% 0 1 0 07d3f5d0de80f0000d3a20dc61ea01c4
+
+@ 0 9 0 1c53257db8e18b540ea626dbf1c00fc0
++ - `ethereal.DaemonService` переименован в `ethereal.Resident` (экспортируется также как
++   `soundness.Resident`), а его параметр типа заменён членом-типом:
++   `case class DaemonService[bus <: Matchable](…)` теперь `abstract class Resident(…)` с
++   `type Transport <: Matchable` — типом сообщений, которыми обмениваются его клиенты. Пишите
++   `DaemonService[X]` как `Resident over X` (`prepositional.over`), а `DaemonService[?]` — как
++   `Resident`. Конструктор больше не принимает `deliver: bus => Unit` или `bus: Chain[bus]`;
++   `bus: Chain[Transport]` и `broadcast(message: Transport): Unit` — абстрактные члены, которые
++   реализует демон. Поскольку это больше не case-класс, у него нет `copy`, `unapply` и
++   структурных `equals`/`hashCode`; остальные параметры его конструктора остаются публичными
++   `val` с теми же именами. (#2163)
+
+% 0 1 0 1df3de93746f1b0f1312c6894db3192b
+
+@ 0 40 0 0268a99acd85a7b4038a2647943a95ca
++   (также `soundness.service`) переименован в
++   `ethereal.resident[bus <: Matchable](using Resident over bus): (Resident over bus)^{resident}`
++   (также `soundness.resident`); `service` удалён. Перепишите каждое `service.…` внутри блока
++   `cli` как `resident.…`. Контекстная функция, которую принимает `ethereal.cli[bus]`, теперь
++   предоставляет `Resident over bus` вместо `DaemonService[bus]`. (#2163)
++ - `ethereal.Upgrade.apply[source](source: source): Nothing raises Upgrade.Error` и
++   `Upgrade.applyBytes(bytes: Data): Nothing raises Upgrade.Error` удалены; используйте
++   `Upgrade.stage[source](source: source): Unit raises Upgrade.Error`, который принимает тот же
++   источник `Readable to Data`. Он записывает кандидата как `<data>/<name>/.pending` и
++   *возвращает управление*: он больше не запускает лаунчер и не завершает JVM, а лаунчер
++   применяет обновление в начале следующего вызова команды. Код, полагавшийся на то, что
++   `Upgrade(…)` не возвращает управление (например, как последнее выражение метода типа
++   `Nothing`), теперь должен завершаться обычным образом и должен сообщать пользователю, что
++   обновление вступит в силу при следующем запуске команды. (#2171)
++ - `ethereal.Upgrade.Error.Reason.CannotRespawnLauncher` удалён, а
++   `Upgrade.Error.Reason.CannotResolveLauncher` переименован в `CannotResolveName` (по-прежнему
++   `SN-631.3`, порождается, когда демон не получил своё имя от лаунчера). Сопоставления с любым из
++   них нужно обновить соответственно. (#2171)
++ - `ethereal.Upgrade` получает `pending: Boolean` (ожидает ли следующего вызова подготовленное
++   обновление), `outcome: Optional[Upgrade.Outcome]` (что лаунчер в последний раз сделал с ним;
++   читается из `<data>/<name>/.upgrade-result`), `acknowledge(): Unit` (сбрасывает этот исход) и
++   `enabled: Boolean` (из свойства `ethereal.upgradable`; false для исполняемого файла, собранного
++   без ключа релиза и идентификатора приложения).
++   `Upgrade.Outcome(result: Outcome.Result, candidate: Long, previous: Long, time: Long)` имеет
++   `when[instant]`, `Instant` через `Instantiable`; `Outcome.Result` — перечисление из `Applied`,
++   `Disabled`, `NoRecord`, `WrongApplication`, `BadSignature`, `NotNewer` и `SwapFailed`.
++   Изменение только добавляет новое. (#2171)
++ - `ethereal.Resident` получает `buildId: Long`, идентификатор сборки работающего исполняемого
++   файла (свойство `build.id` или ноль). Демон теперь читает `build.id` и заменяющий его ресурс
++   пути классов `build.id` как 64-битный `Long`, а не `Int`. Изменение только добавляет новое.
++   (#2171)
++ - Rust-крейт `ethereal-sign` (`lib/ethereal/Cargo.toml`, `src/sign`) удалён: он подписывал формат
++   записей (`ETHRCFG` v2), который не читает ни один текущий лаунчер. Подписывайте с помощью `xek`
++   1.1.0 или новее (`xek keygen --out <prefix>`,
++   `xek sign --key <seed> --in <binary> --out <signed>`; Java 24 или новее). Чтобы исполняемые
++   файлы можно было обновлять, нужен xek 1.1.0 или новее (`ETHRCFG` v4), и они собираются с
++   `--app-id <identifier>`, а также с `--public-key`. Начиная с xek 1.1.0 каждая командная строка
++   `xek` начинается с подкоманды: пишите `xek build [options] <app.jar> [<output>]` там, где
++   писалось `xek [options] <app.jar> [<output>]`, в том числе в строке использования, которую
++   демон печатает, когда его запускают без лаунчера. (#2171)
++ - Демон, запущенный лаунчером xek 1.2.0, работает в `/` (корне системного диска в Windows), с
++   umask `077`, без унаследованных дескрипторов выше 2 и с очищенным окружением JVM, в котором
++   есть только `PATH`, `HOME`, `USER`, `LOGNAME`, `SHELL`, `LANG`, `LC_*`, `TZ`, `TMPDIR`, базовые
++   каталоги `XDG_*`, `JAVA_TOOL_OPTIONS`, `JDK_JAVA_OPTIONS`, `_JAVA_OPTIONS` и `ETHEREAL_DEBUG`
++   (`spec/launcher.md` из xek, *The daemon process*). Код демона, читающий
+
+% 0 1 0 06d45f8c8d284d4011f9733372fe2cc2
+
+@ 0 7 0 1e27e3f006db9a3e02cbcf098ddd3034
++   или `System.getenv`, теперь видит это состояние, а не состояние первого вызова; он должен
++   использовать состояние вызова (`daemonClientWorkingDirectory`, `daemonClientEnvironment`), а
++   для окружения, с которым был запущен демон, — новый `ethereal.DaemonEnvironment` (given
++   `environments.daemonEnvironment`, также `soundness.environments.daemonEnvironment`). Он хранит
++   окружение, которое лаунчер передаёт на стандартный ввод демона (о чём сообщает
++   `-Dethereal.environment=stdin`), читается при запуске демона и в запасном варианте берёт
++   окружение JVM. Стандартным вводом демона больше не является нулевое устройство. (#2180)
+
+% 0 1 0 0f2fae5b9c5fe06518c74765d22a1341
+
+@ 0 7 0 0a95f573ec4bb93302216c16d4cb7c02
++ - Конструктор `exegesis.LspSessional` получает using-параметр `ambience.Environment` после
++   `WorkingDirectory`; given `exegesis.Lsp.Server.sessional` получает `environment: Environment`
++   после `working`; `exegesis.Lsp.proxy` и `exegesis.Lsp.Proxy.run` получают `Environment` после
++   `WorkingDirectory`. `Lsp.Server.Process` запускается с этим окружением. Передайте
++   `Environment`, которое должны унаследовать процессы: в инструменте — окружение вызова
++   (`environments.daemonClientEnvironment` или `Environment.provided` из `Cli`), а для прежнего
++   поведения — `environments.javaBaseEnvironment`. (#2180)
+
+% 0 1 0 0dcece4e80bf175c0e1cc8af95d96f6e
+
+@ 0 22 0 00c351ad01c509901522e7d6bf768d92
++ - `exoskeleton.Enclave` (`exoskeleton-rig`) теперь ищет построитель, с которым он упаковывает, в
++   переменной окружения `$XEK` вместо `$XEQ` и по умолчанию использует `dist/xek` вместо
++   `dist/xeq`. Тестовое окружение, которое задавало `$XEQ` или загружало построитель в
++   `dist/xeq`, теперь задаёт `$XEK` или загружает его в `dist/xek`; `$XEQ` больше не читается.
++   (#2157)
++ - Параметр `buildId` у `exoskeleton.Enclave` теперь `Optional[Long]` (было `Optional[Int]`);
++   аргумент `Int` компилятор расширяет. `Enclave` также принимает
++   `releaseKey: Optional[Path on Linux]`, `recoveryKey: Optional[Path on Linux]` и
++   `appId: Optional[Text]`, все по умолчанию `Unset`, передаваемые в `xek` как `--public-key`,
++   `--recovery-key` и `--app-id`; позиционные аргументы после `buildId` не затронуты, поскольку
++   эти параметры следуют за ним. `Enclave.keygen(prefix)` и
++   `Enclave.Launcher#sign(seed, out, foreign = false)` запускают `xek keygen` и `xek sign` (Java 24
++   или новее). `Enclave` теперь запускает `xek build`, поэтому ему нужен построитель из xek 1.1.0
++   или новее в `$XEK` или `dist/xek`. Если `xek` не удаётся упаковать
++   исполняемый файл, теперь вызывается паника с сообщением, тогда как раньше порождалась
++   `NotImplementedError`. (#2171)
++ - `Subcommand` с `hidden = true` не изменился в сопоставлении, автодополнении и справке, но там,
++   где скрыт *каждый* кандидат-подкоманда в позиции, автодополнение теперь предлагает также флаги,
++   а не (в bash, fish и PowerShell) ничего. (#2171)
++ - `exoskeleton.Enclave.Tool#completions` теперь принимает `(using Monitor, Environment)`, а
++   `exoskeleton.Enclave.Launcher#sandbox` принимает `Environment` первым using-параметром;
++   `exoskeleton.Tmux` получает поле `environment: Environment` после `workingDirectory`, а
++   `exoskeleton.tmux`, `Tmux.resize`, `Tmux.screenshot`, `Tmux.attend`, `Tmux.completions` и
++   `Tmux.progress` принимают `Environment` после `WorkingDirectory`. Команды инструмента и tmux
++   выполняются с этим окружением. (#2180)
+
+% 0 1 0 1cc5e70970ad42a51e424017e29c8c25
+
+@ 0 3 0 02e8e19402a8eb1d078af0e575261111
++ - `facsimile.Print.baseFont(standard: Pdf.Font.Standard): Text` удалён. Имя PostScript теперь
++   является полем перечисления, `facsimile.Pdf.Font.Standard#baseFont: Text`, поэтому пишите
++   `standard.baseFont` вместо `Print.baseFont(standard)`; имена не изменились. (#2173)
+
+% 0 1 0 1aa1711c33dc078f11fd7629dab81114
+
+@ 0 12 0 10c71e483996dda60826e3ce539a7393
++ - Когда в области видимости находится `frontier.context.explainMissingContext` или
++   `soundness.explainMissingContext` (последний подключается через `import soundness.*`),
++   `scala.util.NotGiven[X]` раньше разрешался независимо от того, был ли доступен экземпляр `X`;
++   теперь он разрешается тогда и только тогда, когда поиск `X` завершается неудачей, как и
++   предписано спецификацией. Универсальный перехватчик, когда его пробуют как кандидата для цели
++   `NotGiven[X]`, теперь возвращает `scala.util.NotGiven.value` вместо прерывания, и
++   покандидатное отрицание компилятора превращает это в неудачу, так что решают собственные
++   экземпляры `NotGiven`. Последствия для существующего кода, компилируемого под зонтичным
++   модулем: given, защищённый `NotGiven`, субъект которого присутствует, больше не подходит,
++   поэтому поиски, которые сообщали о двух неоднозначных альтернативах (одной защищённой, одной
++   нет), теперь выбирают незащищённую, например `aviation.Timespan.dateMonths` вместо
++   `dateRegular` для `date + n*Month` при `Calendar`, а `escapade.Teletype.add` больше не
++   применяется там, где в области видимости есть `Teletype is Textual`; код, который
++   компилировался лишь потому, что такая защита обходилась (например,
++   `summon[NotGiven[Ordering[Int]]]`), теперь завершается ошибкой об отсутствующем given.
++   (#2123, #1955)
+
+% 0 1 0 1566b19ab23a3dd01b479ed03ce8f585
+
+@ 0 1 0 1416a97516c2a87a19cb51cdcfb9519d
++ - `graffiti.Archetype#html: Html of "html"` (`final def`) удалён в пользу given-экземпляра
+
+% 0 1 0 054a7ba98ed890480d1eb9945f205fbe
+
+@ 0 3 0 02f4a0376ad2c46c1f66244218d16dfc
++   компилируется без изменений через расширение `html` из honeycomb (доступное в области
++   видимости при `import soundness.*` или `import honeycomb.*`), а `Archetype#document` не
++   изменился. Страница, определяющая собственный член `html`, теперь затеняла бы расширение,
++   а не проваливала компиляцию. (#2176)
+
+% 0 1 0 052d6af0cb62d1bd1fbc477fa1ee3ea7
+
+@ 0 2 0 1a1bc636dae3259d1f1c03a498d1ee85
++ - `guillotine.Executable#fork[result]()` (а значит, и `Command#fork` и `Pipeline#fork`) теперь
++   принимает `(using working: WorkingDirectory, environment: ambience.Environment)`;
+
+% 0 1 0 187bddd382bfaf931b1c551d67d520df
+
+@ 0 13 0 12215cb4e7903bff0ecdfa343f4ea3e0
++   принимает
++   `(using computable: (result is Computable)^, working: WorkingDirectory, environment: Environment)`;
++   встраиваемый `Executable#apply()` принимает `environment: Environment` после `working`.
++   Место вызова без `Environment` в области видимости больше не компилируется. Передайте
++   `Environment`, которое должны унаследовать процессы: в инструменте — окружение вызова
++   (`environments.daemonClientEnvironment` или `Environment.provided` из `Cli`), а для прежнего
++   поведения — `environments.javaBaseEnvironment`. (#2180)
++ - Семантика: когда новый член `entries` given-экземпляра `Environment` не равен `Unset`,
++   процесс запускается ровно с этими переменными, а не с переменными JVM, и команда, имя которой
++   не содержит `/`, сначала ищется в `PATH` этого окружения, и её абсолютный путь заменяет имя в
++   `argv[0]`; имя, которое там не найдено, оставляется JDK. Когда `entries` равен `Unset`
++   (например, у `Environment`, записанного как лямбда), окружение JVM наследуется, как и прежде.
++   `environments.javaBaseEnvironment` определяет `entries`, поэтому процесс, запущенный под ним,
++   получает окружение JVM, как и прежде. (#2180)
+
+% 0 1 0 165131e53f5576cf05d71a204ac48013
+
+@ 0 18 0 137f9e8050b3dfad1c325dd57fdf1d0d
++ - `honeycomb.Node`, `honeycomb.Element`, `honeycomb.Comment`, `honeycomb.Doctype` и
++   `honeycomb.Fragment` перенесены в компаньон `Html` вместе со своими объектами-компаньонами:
++   теперь это `honeycomb.Html.Node`, `honeycomb.Html.Element`, `honeycomb.Html.Comment`,
++   `honeycomb.Html.Doctype` и `honeycomb.Html.Fragment` (так что `Element.foreign` теперь
++   `Html.Element.foreign`). Каждый из них убран из экспорта зонтичного модуля `soundness`, поэтому
++   голые имена `Node`, `Element`, `Comment`, `Doctype` и `Fragment` больше не разрешаются через
++   `import soundness.*` или `import honeycomb.*`; пишите `Html.Element`, `Html.Fragment` и так
++   далее в типах, вызовах конструкторов и образцах
++   (`case Html.Element(label, attributes, children, _)`). Поведение не изменилось. (#2167)
++ - `honeycomb.TextNode` переименован в `honeycomb.Html.Text`, а `TextNode.foreign` — в
++   `Html.Text.foreign`; `TextNode` удалён, в том числе из экспорта зонтичного модуля `soundness`.
++   Поведение не изменилось. В области видимости, импортирующей `Html.*`, голое имя `Text` теперь
++   означает этот тип узла, а не `anticipation.Text`; такие импорты следует заменить
++   квалифицированными ссылками. (#2167)
++ - `honeycomb.Honeycomb` (экспортировавшийся также как `soundness.Honeycomb`) удалён. Его члены,
++   `extractor`, `interpolator` и `attributes`, были неиспользуемыми дубликатами реализаций
++   макросов в `honeycomb.internal`, которые вызывают интерполятор `h""` и применение тегов;
++   замена не нужна. (#2173)
+
+% 0 1 0 17f94539b937dacb1c8f57fb7f04ec71
+
+@ 0 8 0 1288fd6d8e9adc76070722edfedde1c0
++ - `hyperbole.StackResolver` теперь принимает
++   `(using classloader: Classloader, working: ambience.WorkingDirectory)`; given
++   `hyperbole.stackResolutions.tastyStackResolution` (также
++   `soundness.stackResolutions.tastyStackResolution`) имеет тип
++   `(Classloader, WorkingDirectory) => StackTrace.Resolver`, а был
++   `Classloader => StackTrace.Resolver`; и расширение
++   `StackTrace#resolved` принимает `(using Classloader, WorkingDirectory)`. Путь к исходнику, который TASTy
++   записывает относительно `-sourceroot`, теперь разрешается относительно given
++   `WorkingDirectory`, тогда как раньше он разрешался относительно
++   `workingDirectories.javaBaseWorkingDirectory` (`user.dir`). Передайте каталог, в котором
++   компилировался код. (#2180)
+
+% 0 1 0 14802db87637bb240c0e50c6611271aa
+
+@ 0 3 0 0bbe004bac5e1292086453d15f57c355
++ - `inimitable.Uuid#bytes: Data` удалён в пользу given-экземпляра
++   `Uuid.encodableInData: Uuid is Encodable in Data`. Пишите `uuid.in[Data]` вместо `uuid.bytes`;
++   используйте `in[Data]`, а не `encode`, поскольку у `Uuid` есть и `Encodable in Text`.
++   Шестнадцать байтов не изменились. (#2176)
+
+% 0 1 0 1596bb652e5891230b44b58e4458fbe5
+
+@ 0 2 0 1efbe9c5c9294adc019682a3bcacb63b
++ - `iridescence.Rgb12#hex: Text` (расширение) удалён. `rgb12.inspect` отображает тот же текст в
++   стиле `#0f8`, как и раньше. (#2176)
+
+% 0 1 0 021b852f7dba238b06ccff9a0d2bb561
+
+@ 0 6 0 178bfc03155cd9b00326f1b93280f67b
++ - `jacinta.Json.apply` получает перегрузки `apply(value: Int)`, `apply(value: Short)`,
++   `apply(value: Byte)`, `apply(value: Float)`, `apply(value: Long)` и `apply(value: Double)`
++   рядом с `apply(value: Any)`. `Json(i)` для `Int`, `Short` или `Byte` теперь хранит это целое
++   число (как `Long`), тогда как раньше хранил `Int` как есть, а AST читает его как упакованное
++   малое десятичное число, так что прочитанное обратно значение было неверным (обычно `0`);
++   `Float` хранится как `Double`. Значение со статическим типом `Any` по-прежнему без изменений
++   попадает в `apply(value: Any)`. (#2162)
+
+% 0 1 0 15ea6feaac12c1f31aef1231a48de2e8
+
+@ 0 3 0 1804c58fcbe4fabd048865be94c54285
++ - `metamorphose.Permutation#bytes: Data` удалён в пользу given-экземпляра
++   `Permutation.encodable: Permutation is Encodable in Data`. Пишите `permutation.in[Data]` вместо
++   `permutation.bytes`; байты не изменились. (#2176)
+
+% 0 1 0 05984bb5afb584fc059e170ac7d22325
+
+@ 0 3 0 1a41229453930ac41f56d5cf08bfaf69
++ - Каждая операция `octogenarian`, запускающая `git`, теперь принимает using-параметр типа
++   `ambience.Environment` сразу после своего `WorkingDirectory` и запускает `git` с этим
++   окружением: `Git.init`, `Git.initBare`, `Git.cloneCommit`, `Git.clone`, `Git.cloneBare`,
+
+% 0 1 0 16db9b9401df87ab1bb3ae170a4c5dfc
+
+% 0 1 0 050c4e4b31dfb1fe1529de5ca66461b4
+
+% 0 1 0 1558672d22d4e84917e86979cbb608b1
+
+% 0 1 0 0ceed3289978156f1394edd25026d102
+
+@ 0 1 0 095b7f403f46092602e0440e85e6f7c2
++   `addWorktree`, `removeWorktree`, `pruneWorktrees`; `Worktree#checkout` (все три перегрузки),
+
+% 0 1 0 0b12f9cb72ebe63d004172ad1edf9bb2
+
+@ 0 7 0 03c07fb62f2b079506dc5ace235f9f87
++   `diff`, `merge`, `cherryPick`, `revert`, `lock`, `unlock`, `move`, `remove`, `status`;
++   расширение `NoteRef#content`; и given `octogenarian.gitCommands.searchpathGitCommand`,
++   контекст которого теперь
++   `(WorkingDirectory, Environment, Git.Event is Loggable, Tactic[Name.Error], Tactic[Path.Error], Tactic[Io.Error], Tactic[Exec.Error])`.
++   Передайте `Environment`, которое должны унаследовать процессы: в инструменте — окружение
++   вызова (`environments.daemonClientEnvironment` или `Environment.provided` из `Cli`), а для
++   прежнего поведения — `environments.javaBaseEnvironment`. (#2180)
+
+% 0 1 0 180f3ce4211ce4c80f4c87efbb23bc3f
+
+@ 0 46 0 1d37cf41041d364607998b6bfd1a4ff7
++ - `probably.Suite` получил параметр типа и второй конструктор:
++   `abstract class Suite(suiteName: fulminate.Message)` теперь
++   `abstract class Suite[topic <: Label]` с `type Topic = topic` и публичными конструкторами
++   `Suite(title: Message)(using Suite.Derivation[topic])` и `Suite(id: topic, title: Message)`.
++   `object Tests extends Suite(m"Parser tests")` компилируется без изменений, причём `topic`
++   выводится как `probably.Derived` (новый, непрозрачный `Label`); для
++   `Suite("parser", m"Parser tests")` выводится литеральный тип `"parser"`. Тип `Suite` сам по
++   себе больше не компилируется; пишите `Suite[?]`. (#2169)
++ - У каждого набора тестов есть идентификатор (`Testable#key: Optional[Text]`, новый;
++   `Test.Id#key`, новый, финальное поле case-класса, по умолчанию `Unset`): строка, переданная в
++   `Suite(id, title)`, или `Suite.derive(title.text)` — буквы и цифры заголовка в нижнем
++   регистре, каждая серия прочих символов заменяется одним `-`, без ведущих и завершающих,
++   `suite`, если результат пуст (`m"Honeycomb Tests"` даёт `honeycomb-tests`). С плагином
++   beneficence заданный идентификатор, не соответствующий `[A-Za-z_][A-Za-z0-9_-]*`, является
++   ошибкой компиляции. Наблюдаемые последствия: `TestEvent.Ref#path` набора тестов и всего, что в
++   нём находится, теперь начинается с идентификатора набора, тогда как раньше начинался с его
++   заголовка; `TestEvent.Ref#moniker` набора тестов — его идентификатор, тогда как раньше был
++   `Unset`; терм выборки, равный идентификатору набора тестов, или glob-шаблон, ему
++   соответствующий, допускает всё содержимое набора, а glob-шаблон пути должен начинаться с
++   идентификатора (`honeycomb-tests/**`), хотя glob-шаблон, соответствующий только заголовку
++   (`'Honeycomb Tests'`), по-прежнему допускает набор. (#2169)
++ - `probably.Testable` получил абстрактный член-тип `type Topic`, а контекстное значение,
++   которое принимают объявления, — это `Testable of topic` (`prepositional.of`), тема которого
++   является `Label`: литеральный идентификатор `Suite`, к которому он принадлежит,
++   `probably.Derived` для набора тестов без заданного идентификатора или `probably.Impromptu`
++   (новый, непрозрачный `Label`). `Suite#testable` теперь
++   `given testable: Testable of topic`. `given`- или `using`-параметр
++   голого типа `Testable` больше не удовлетворяет `test`, `suite` или объявлениям sedentary и
++   завершается ошибкой "a test must be declared for a Suite …". Метод, объявляющий тесты для
++   набора, должен принимать `(using Testable of "<that suite's id>")` вместо
++   `(using Testable)`, а набору для этой цели даётся идентификатор (`Suite("<id>", title)`); метод,
++   общий для нескольких наборов или объявляющий тесты для набора с выведенным идентификатором,
++   принимает параметр типа `[topic <: Label](using Testable of topic)`. (#2169)
++ - Метод с `using`-параметром голого типа `Testable`, скомпилированный с плагином beneficence
++   при наличии `probably.Suite` в пути классов, теперь является ошибкой компиляции ("this
++   Testable has no topic …"), объявляет он тест или нет. Без плагина такой метод компилируется,
++   если там, где объявляются его тесты, в области видимости есть другой `Testable` с темой
++   (обычно — объемлющего `Suite`), и тогда его тесты объявляются в ТОЙ позиции — в корне набора
++   тестов, — а не там, откуда вызывался метод, как раньше. Каждый `(using Testable)` нужно
++   проверить. (#2169)
++ - `probably.test` (обе перегрузки): неиспользуемый параметр типа `report` заменён на
++   `topic <: Label`, а параметр `suite: Testable` теперь `suite: Testable of topic`.
++   `probably.suite` (обе перегрузки) теперь
++   `suite[topic <: Label, report](name)(using suite: Testable of topic, runner: Runner[report], codepoint: Codepoint)(block: (Testable of topic) ?=> Unit)`:
++   он получает параметр типа `topic` перед `report` и параметр `Codepoint`, а его блок получает
++   `Testable of topic`. `TestEvent.Ref` группы (`SuiteStarted`, `SuiteEnded`) теперь несёт файл
++   и строку вызова `suite(…)`, тогда как раньше нёс позицию внутри собственного исходного кода
++   Probably. (#2169)
++ - `probably.Runner#suite(suite: Testable, block: Testable ?=> Unit): Unit` теперь
+
+% 0 1 0 073f05d313f3fed30670e5e2bca05efc
+
+@ 0 21 0 10939b424595b6cd1d3ce35477d73553
++   Реализации `Runner` должны изменить сигнатуру соответственно. (#2169)
++ - Конструктор `probably.Testable` теперь `private[probably]`, а его второй параметр —
++   `parents: List[Testable]` (не член), тогда как раньше был `val parent: Optional[Testable]`;
++   `Testable#parent: Optional[Testable]` остаётся, как метод. Создавайте его через
++   `Testable.of[topic](name: Message, parent: Optional[Testable] = Unset, moniker: Optional[Name[Probing]] = Unset, key: Optional[Text] = Unset)(using Codepoint): Testable of topic`
++   (новый). (#2169)
++ - Тест, объявленный там, где контекстный `Testable` принадлежит набору тестов, но не являющийся
++   одним из тестов этого набора, — например, фикстура, объявленная внутри тела другого теста,
++   чтобы проверить собственный `Runner` или `Selection` программы, — по-прежнему компилируется,
++   но теперь записывается в индекс тестов, который пишет плагин beneficence. Оборачивайте такие
++   объявления в `probably.impromptu`
++   (новый: `impromptu[result](using parent: Testable = Testable.detached)(block: (Testable of Impromptu) ?=> result): result`,
++   также `soundness.impromptu`), который сохраняет тест в той же позиции иерархии и исключает его
++   из индекса. (#2169)
++ - `probably.Test.Id#id`, шесть шестнадцатеричных цифр, по которым известен тест или набор тестов
++   (и `TestEvent.Ref#id`, который их несёт), вычисляется иначе, поэтому меняется КАЖДЫЙ
++   идентификатор: теперь это младшие 24 бита `h ^ name.text.s.hashCode`, где `h` — сумма
++   `name.text.s.hashCode` по наборам тестов, внутри которых находится тест, а `Testable#hashCode`
++   — эта сумма вместе с его собственным именем. Раньше он вычислялся из `Message#hashCode`,
++   который зависит от структуры сообщения, а не только от его текста. Сохранённые идентификаторы
++   (в выборках, скриптах, диаграммах с ключом по идентификатору) больше не совпадают; моникеры и
++   имена не затронуты. (#2169)
+
+% 0 1 0 012115d2210015c8084b240aed3fed8f
+
+@ 0 8 0 04c7e5190b9aabfe1feea95959f9c4a5
++ - `savagery.Figure#xml: Xml` (у `Rectangle`, `Outline`, `Ellipse`, `Group`, `Polyline` и
++   `Lettering`), `savagery.Stop#xml`, `savagery.Svg.Def#xml` (у `LinearGradient`) и
++   `savagery.Svg#xml` удалены в пользу given-экземпляров `Encodable in Xml`:
++   `Figure.encodable: [figure <: Figure] => figure is Encodable in Xml`,
++   `Stop.encodable: [color, stop <: Stop[color]] => stop is Encodable in Xml`,
++   `Svg.Def.encodable: [definition <: Svg.Def] => definition is Encodable in Xml` и
++   `Svg.encodable: Svg is Encodable in Xml`. Пишите `figure.in[Xml]` вместо `figure.xml` и так же
++   для остальных; `figure.xml.show` становится `figure.in[Xml].show`. XML не изменился. (#2176)
+
+% 0 1 0 0297adaaf208f36b050fef6919e7a155
+
+@ 0 5 0 06940743fb98dc35065b95947a6d57ed
++ - `sedentary.Bench.Plan#apply`, каждая перегрузка `sedentary.Bench.Plan#over`,
++   `sedentary.Stress#apply` и `sedentary.Profile#apply` получают последний параметр типа
++   `topic <: Label`, а их параметр `suite: Testable` теперь `suite: Testable of topic`. Вызовы
++   без явных аргументов типа не затронуты при наличии контекстного `Testable` с темой (см.
++   probably). (#2169)
+
+% 0 1 0 108425be319504bd1ad2ccfb2700814e
+
+@ 0 4 0 0f89324a1796020b08d412db2390e37e
++ - `stenography.Designator.fromUrl(text: Text): Designator` и
++   `stenography.Designator#url: Text` удалены без замены: ни один не использовался, и они не были
++   взаимно обратными (`fromUrl` заменял `~` на `#` без URL-декодирования). `Designator(text)`
++   разбирает форму с разделителем `#`. (#2176)
+
+% 0 1 0 0ed19456d6998e511992f280a95ea1f6
+
+@ 0 27 0 084970dd3362adb31ae0901ecde4e631
++ - `stratiform.layer` (`case class layer(name: Text) extends StaticAnnotation`, экспортировавшийся
++   также как `soundness.layer`) удалён. Его замена — `stratiform.assign`
++   (`final class assign(layer: Tel.Layer[?]) extends StaticAnnotation`; `soundness.assign` —
++   псевдоним этого типа, а терм `soundness.assign` остаётся за anamnesis), которая называет слой
++   синглтон-объектом, а не текстом. Перепишите `@layer(t"foo")` на поле как `@assign(foo)`,
++   объявив один раз, на верхнем уровне или в объекте, `object foo extends Tel.Layer("foo")` (с тем
++   же именем); поля с общим именем слоя используют один объект. Выведенная схема не изменилась.
++   Аргумент `@assign` должен быть ссылкой на такой объект, имя которого — строковый литерал;
++   всё остальное теперь является ошибкой компиляции на аннотации. (#2165)
++ - Новый `stratiform.Tel.Layer[name <: String & Singleton](val name: name)` — открытый класс,
++   который расширяет объект слоя, и `stratiform.Tel.Name[layer <: Tel.Layer[?]]` — тип-сопоставление,
++   дающий имя слоя по его типу. Новая аннотация `stratiform.retract`
++   (`final class retract(layer: Tel.Layer[?]) extends StaticAnnotation`, также
++   `soundness.retract`) — для кейса суммы. Существующему коду не требуется. (#2165)
++ - Составление слоёв (`Tels.Layers.compose`, `Tels.Layers.composeComponents`, а также
++   обслуживание и чтение допуска) больше не отвергает `exclude` слоя для варианта, который
++   объявлен в базовом `select`, но уже исключён более ранним слоем: такой `exclude` ничего не
++   делает. Раньше это порождало `Tel.Error` с причиной `ExcludeMissingVariant` (E211). `exclude`
++   варианта, которого базовый `select` никогда не объявлял, по-прежнему её порождает. (#2165)
++ - `fulfil(acceptance, codecs)` для значения исключает из своего составления любой предложенный
++   слой, `select` которого исключает ключевое слово варианта, используемое где-либо в
++   закодированном документе значения, тогда как раньше предлагал каждый слой (и не мог обслужить
++   такое значение). Поэтому обслуженный `Tel.Acceptance.Served#hashes` может не содержать таких
++   слоёв. (#2165)
++ - `stratiform.Tels.Reconstructor.fromTel(tel: Tel): Tels raises Tel.Error` удалён в пользу
++   given-экземпляра `Tel.telsDecodable: Tels is Tel.Decodable`. Пишите `tel.as[Tels]` вместо
++   `Tels.Reconstructor.fromTel(tel)`; он, как и прежде, порождает `Tel.Error`.
++   `Tels.Reconstructor` остаётся для `equivalent`. (#2176)
+
+% 0 1 0 1dc422cfc872a08b0003ae71d498138e
+
+@ 0 4 0 08695507bb9665760dfe7a9451c68f97
++   удалён в пользу given-экземпляра `Tels.elementDecodable: Tels is Decodable in Tel.Element`.
++   Пишите `element.as[Tels]` вместо `Tels.SemanticReconstructor.fromElement(element)`; значение
++   с типом подтипа `Tel.Element.Node` нужно привести с помощью аскрипции,
++   `(node: Tel.Element).as[Tels]`, поскольку форма `Decodable` точная. (#2176)
+
+% 0 1 0 19751db48a45fac8054f045dab5ba311
+
+@ 0 5 0 132e19cc02d619301a9cd8376b5617db
++ - Конструктор `tarantula.WebDriver.Local.Sessional` и given `sessional` рядом с ним получают
++   `environment: ambience.Environment` после `working: WorkingDirectory`. Процесс драйвера
++   запускается с этим окружением. Передайте `Environment`, которое должны унаследовать процессы:
++   в инструменте — окружение вызова (`environments.daemonClientEnvironment` или
++   `Environment.provided` из `Cli`), а для прежнего поведения — `environments.javaBaseEnvironment`.
++   (#2180)
+
+% 0 1 0 15cfd48f715bc4b40f8730f40768e76f
+
+@ 0 7 0 02530b00bed80f871047336c86f37b4b
++ - `tasseomancy.Chart#svg(using style, ChartPalette, FontMetric, Arranger): Svg` и
++   `tasseomancy.Chart.Drawing#svg: Svg` удалены в пользу given-экземпляров
++   `Chart.encodable: [data, form, fit, style <: Chart.Style] => (style, ChartPalette, FontMetric, Arranger) => Chart[data, form, fit, style] is Encodable in Svg`
++   и `Chart.Drawing.encodable: Drawing is Encodable in Svg`. Пишите `chart.in[Svg]` вместо
++   `chart.svg` (с теми же контекстными значениями в области видимости) и `drawing.in[Svg]` вместо
++   `drawing.svg`; `chart.svg.xml.show` становится `chart.in[Svg].in[Xml].show`. Результат не
++   изменился. (#2176)
+
+% 0 1 0 09d3188b2c45560007c7207681d04236
+
+@ 0 2 0 1de0e560a701a15e155460a24fb27000
++ - `telekinesis.Http2.SettingId.fromId(id: Int): Optional[SettingId]` удалён; он не
++   использовался. Вместо него сопоставляйте по полю `id` перечисления. (#2176)
+
+% 0 1 0 01a924463d4d2ade199e4991ad39d095
+
+@ 0 14 0 0615fce5547e70ce06cff95ab41e4570
++ - Новый компонент `urticose.dns` (в наборе `soundness-web`): типизированный словарь DNS
++   (`Dns.Name`, `Dns.Question`, `Dns.Record` с семейством `Rdata`, `Dns.Message`), его кодек
++   формата передачи (`Encodable`/`Decodable in Data`), интерполятор `dns"…"`, `Dns.resolve` и
++   расширения `Hostname#dnsName` и `reverseName` на `Ipv4 | Ipv6`; изменение только добавляет
++   новое. (#2178)
++ - `urticose.Ipv4` и `urticose.Ipv6` получают given-экземпляры `Encodable in Data` и
++   `Decodable in Data` (`ip.in[Data]`, `data.as[Ipv4]`) над их октетами в сетевом порядке, а
++   также расширение `bytes: Data` на `Ipv4 | Ipv6`. Декодирование порождает `IpAddress.Error` с
++   новыми причинами `Ipv4WrongNumberOfBytes(count)` (13) и `Ipv6WrongNumberOfBytes(count)` (14),
++   если данные не состоят ровно из четырёх или шестнадцати байтов; исчерпывающее сопоставление по
++   `IpAddress.Error.Reason` получает два кейса. Код, выполняющий преобразование через
++   `java.net.InetAddress#getAddress`, `Ipv4(b0, b1, b2, b3)` на отдельных байтах или вручную
++   упакованные значения long `Ipv6(highBits, lowBits)`, может использовать их вместо этого.
++   (#2178)
++ - `urticose.MacAddress.apply(byte0: Byte, …, byte5: Byte)` больше не расширяет со знаком байт
++   `0x80` или больше в старшие октеты; `NetworkInterface#hardware`, адрес которого содержал такой
++   байт, раньше отображался и сравнивался неверно. (#2178)
+
+% 0 1 0 0daabac2e02218c20d4f9d914c51325b
+
+@ 0 6 0 0557a2fdfd6c1749093779949ee036fe
++ - Конструктор `vivisection.Debuggee.Sessional` и given `vivisection.Debuggee.sessional`
++   получают `environment: ambience.Environment` после `working: WorkingDirectory`, а
++   `vivisection.Dap.listen` получает `environment: Environment` после `working`. Отлаживаемая
++   программа запускается с этим окружением. Передайте `Environment`, которое должны унаследовать
++   процессы: в инструменте — окружение вызова (`environments.daemonClientEnvironment` или
++   `Environment.provided` из `Cli`), а для прежнего поведения — `environments.javaBaseEnvironment`.
++   (#2180)
+
+% 0 1 0 1e9899a0d30c19b70ffd7df14fc9c9a9
+
+@ 0 4 0 17de90382b17f8220aae0503fa5ded89
++ - Расширение `xylophone.Attributes#toList: scala.collection.immutable.List[(Text, Text)]`
++   удалено. `Attributes` теперь `Traversable by (Text, Text)` в порядке документа, поэтому пишите
++   `attributes.to[List]`, что даёт `proscenium.List[(Text, Text)]`. Там, где по-прежнему нужен
++   `List` стандартной библиотеки, пишите `attributes.iterator.toList`. (#2167)
+
+% 0 1 0 00a8c0638eb30ace16fca3cbe76bdf4d
+
+@ 0 10 0 16febfeaf6c1c47901a58420bd002dea
++   `xylophone.Cdata`, `xylophone.ProcessingInstruction`, `xylophone.Header` и
++   `xylophone.Fragment` перенесены в компаньон `Xml` вместе со своими объектами-компаньонами:
++   теперь это `xylophone.Xml.Node`, `xylophone.Xml.Element`, `xylophone.Xml.Comment`,
++   `xylophone.Xml.Doctype`, `xylophone.Xml.Cdata`, `xylophone.Xml.ProcessingInstruction`,
++   `xylophone.Xml.Header` и `xylophone.Xml.Fragment`. Голые имена больше не разрешаются через
++   `import xylophone.*`; пишите `Xml.Element`, `Xml.Fragment` и так далее в типах, вызовах
++   конструкторов и образцах (`case Xml.Element(label, attributes, children)`). Поведение не
++   изменилось. (#2167)
++ - `xylophone.TextNode` переименован в `xylophone.Xml.Text`; `TextNode` удалён. Поведение не
++   изменилось. В области видимости, импортирующей `Xml.*`, голое имя `Text` теперь означает этот
++   тип узла, а не `anticipation.Text`; такие импорты следует заменить квалифицированными
++   ссылками. (#2167)

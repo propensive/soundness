@@ -1,0 +1,145 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0e19b7240e172a6e1463acb32379e7ac
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 063a3596783b20131d69b01224a6e921
++ info   um pressionamento de tecla como valor: um caractere, uma tecla nomeada, ou qualquer um deles mantido com modificadores
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0efe6de3f1f70f371af3ddfbeb67db53
++     _Clavichord_ é o vocabulário de teclas compartilhado por tudo em Soundness que lê ou produz
++     um pressionamento de tecla. Terminais e navegadores concordam sobre o que um pressionamento de
++     tecla *é* e discordam apenas sobre como ele é codificado, por isso o modelo fica aqui, separado
++     de ambos: profanity decodifica as sequências de escape de um terminal em valores `Keypress`, e
++     tarantula os renderiza como as ações de tecla definidas pelo protocolo WebDriver, sem que um
++     saiba do outro.
+
+@ 0 4 0 0ea79d899386dc941817dbf5c87a79db
++     Um `Keypress` é um caractere comum, uma tecla de função, uma das teclas de edição nomeadas,
++     uma sequência de escape sem outro nome, ou um desses envolvido nos modificadores mantidos junto
++     com ele. Um modificador aceita apenas o que pode ser modificado de forma significativa, então o
++     tipo exclui pressionamentos de tecla que nenhum teclado consegue produzir.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 15d368505870e3a012812d963994c34f
+
+% 0 1 0 169a12b3996d22b0179b7a905e7e6d82
+
+% 0 1 0 19bf92dcb243647102e720d640f1e9a4
+
+% 0 1 0 0b529f0937e59b90116797642b8bff06
+
+% 0 1 0 1fbd72a8ddff10a310486df01b93ba27
+
+% 0 1 0 031a60e29e1b9e9d11d4498a3d7ad264
+
+% 0 1 0 00a9c40e90ef63420dc566ed2819459e
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 2 0 0988c78676b29c9616fc770106d48833
++     A biblioteca tem um único source set, `clavichord.core`, para todas as plataformas, e tudo é
++     exportado para o guarda-chuva `soundness`.
+
+% 0 1 0 1797ecdbacccb8871a70287d860932f0
+
+@ 0 1 0 01ef4a600c61beaf0db47951246721ff
++ entry .Keypress   uma tecla tal como pressionada: um caractere, uma tecla nomeada ou de função, ou uma mantida com modificadores
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 1 0 1a3edbe14cc6ae741f850ab21f80c425
++       Um enum cujos casos são:
+
+@ 0 2 0 164ff5b4798d5ad01ed5a77a37e7f4f0
++       - as teclas de edição nomeadas, `Tab`, `Enter`, `Backspace`, `Delete`, `Escape`, `Insert`,
++         `Home`, `End`, `PageUp`, `PageDown`, `Left`, `Right`, `Up` e `Down`, cada uma também um
+
+% 0 1 0 0c023f29c103ce7915204d8d2c7a5a22
+
+@ 0 9 0 048c1278fbb3e30907f1874e107d9609
++       - `CharKey(char)`, um caractere comum, com qualquer shift já aplicado (um `a` com shift é
++         `CharKey('A')`);
++       - `FunctionKey(number)`, de `F1` a `F12` e além;
++       - `EscapeSeq(id, content*)`, uma sequência de escape sem outro nome, identificada por seu
++         caractere final de identificação e por seus parâmetros;
++       - e os modificadores, que se aninham para fora em uma ordem fixa: `Shift` de uma tecla de
++         edição ou de função; `Alt` dessas ou de um `Shift`; `Ctrl` dessas, de um `Alt`, ou de um
++         dos caracteres que um código de controle pode carregar (`'A'` a `'Z'`, `'['`, `'\\'`,
++         `']'`, `'^'`, `'_'` e `'@'`); e `Meta` de qualquer um dos outros modificadores ou teclas.
+
+@ 0 3 0 0657a17d75c0e35919d9a6890a72b74b
++       Os tipos dos parâmetros dos modificadores seguem essa ordem, então `Shift(CharKey('a'))` e
++       `Alt(Ctrl('C'))` não compilam: `Ctrl(Alt(Left))` é a única forma de escrever essa
++       combinação, e um casamento de padrões precisa considerar apenas uma.
+
+% 2 1 0 0d8b1e8e210b2d1508ab325110f737a3
+
+% 3 1 0 041f8e6f552a761003d54f0f1074e4bb
+
+% 0 1 0 1f7168d7f274c1161a30132b4f38702f
+
+% 0 1 0 0a196065917af3f7001103e8390ad348
+
+% 0 1 0 1ddd345b3dbcedbb039244e6b992d4c0
+
+% 0 1 0 068952870237f92419293fde76cf245e
+
+% 1 1 0 0ebd7dddb460b16415faa26ac9806383
+
+@ 0 2 0 1195a3af426db294001d85d0d1be812f
++       Um pressionamento de tecla é exibido (`.showable`) com um símbolo Unicode entre colchetes
++       para cada tecla e modificador, unido ao que modifica por `+`.
+
+% 0 1 0 1c9d1c65cabd3eb50d6a5eb7ea530f12
+
+@ 0 1 0 078b40196188994018974d296aff8a3b
++   entry .Editing   o trait marcador das catorze teclas de edição nomeadas
+
+% 0 1 0 19f0e0850734ee0607af1e6b11e19e4c
+
+@ 0 6 0 16c530073929bb3810a7ef935b69b3ae
++       `Escape`, `Left`, `Right`, `Up` e `Down` estendem cada um esse trait. Ele é um marcador
++       nominal, e não uma união dos tipos singleton dos casos, para que continue a admiti-los quando
++       são alcançados pelos encaminhadores de exportação do guarda-chuva, como
++       `soundness.Keypress.Enter`.
++   entry .EditKey   qualquer uma das teclas de edição nomeadas: `Keypress & Keypress.Editing`
++       O tipo de uma tecla que `Shift`, `Alt`, `Ctrl` e `Meta` podem envolver além das teclas de
++       função, e o tipo a usar em um método que trata apenas teclas de edição.
+
+% 2 1 0 16e50cf5e9d5283e1c6596040a22ec65
+
+% 3 1 0 18d471cf1506c5160340b77345b659db
+
+% 0 1 0 01c15004a9254e4705dd1d962ebd8f4e
+
+% 1 1 0 144cc6a51f545b640b7e21ec44708d2d
+
+@ 0 6 0 06a94eb15b160eb41e5cd8dc29505f20
++   entry .showable   exibe um pressionamento de tecla com um símbolo Unicode entre colchetes por tecla e modificador
++       Shift é `[⇧]`, Alt `[⌥]`, Ctrl `[⌃]` e Meta `[⌘]`, cada um unido ao que modifica por `+`.
++       As teclas de edição são `[⇥]`, `[↵]`, `[⌫]`, `[⌦]`, `[⎋]`, `[⎀]`, as setas `[↑]` `[↓]`
++       `[←]` `[→]`, `[↖]` para Home, `[↘]` para End, e `[⇞]` `[⇟]` para as teclas de página. Um
++       caractere aparece entre colchetes como ele mesmo, exceto o espaço, `[␣]`; uma tecla de função
++       é `[F5]`; e uma sequência de escape é `[⎋R]`, que mostra seu identificador mas não seu
++       conteúdo.
+
+% 2 1 0 12a877f071a1d453010a6a5da1882093
+
+% 3 1 0 0f7718bab312c784163a8750f172c866
+
+% 0 1 0 17193a38b9c9f04b0d3beb8a79d0b32b
+
+% 0 1 0 13f3e03f02164f42177e61987e191e1d
+
+% 0 1 0 1f35362f0be6a3900e1e704277629d69
+
+% 1 1 0 1f47777353954f371d878b4fa9e4d53d

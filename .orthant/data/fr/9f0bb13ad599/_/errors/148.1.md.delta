@@ -1,0 +1,88 @@
+orthant 2 language
+
+% 0 1 0 1d701c3696644d4002f5d67ef8a6e73d
+
+@ 0 1 0 1e516b665c87fb4e1d9ae32472fc0156
++ Levée lorsque la réponse à une cérémonie WebAuthn n'est pas acceptée.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 5 0 0029c0fadad4fc761eeb3d0415bfc938
++ Une partie de confiance envoie un défi et vérifie ce qu'un authentificateur, par
++ l'intermédiaire d'un navigateur, renvoie : un nouveau justificatif lors d'une cérémonie
++ d'enregistrement, ou une signature par un justificatif existant lors d'une cérémonie
++ d'authentification. Cette erreur couvre une réponse mal formée, une réponse destinée à un autre
++ défi, une autre origine, une autre partie de confiance ou un autre type de cérémonie, une
++ réponse à laquelle l'utilisateur n'a pas pris part, une attestation qui ne tient pas, et une
++ signature qui n'est pas celle du justificatif.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 1 0 067cb1f1318b02481e3bbc36bb1f7f3d
++ column  Raison
+
+% 0 1 0 0249aa51fd8056d51a0c1dba7eb0290e
+
+% 0 1 0 1c8bbc501e9cb58318ee0a4b4f1a96d5
+
+% 0 1 0 077d29c2b6fae27f075f57a58fc56542
+
+% 0 1 0 11efc0310eaa4f9f11d22668a4074e78
+
+% 0 1 0 152addace3465f620f6b0df5ba4389f7
+
+% 0 1 0 1d92ef5a7c156e3814f15600ec966d44
+
+% 0 1 0 120611c421b71f3f0d40352de80c728d
+
+% 0 1 0 1735b28b5597b67918480a6c6080ddea
+
+% 0 1 0 054588132b65243202a7652c59d3e771
+
+% 0 1 0 1a88f51cc05a8cef0d18f12c23758614
+
+% 0 1 0 16425ea5df094df81edf6b877d045b4e
+
+% 0 1 0 0753ab62d06ec427105d8fad6c9086e1
+
+% 0 1 0 1a960bbdaef0405d1ca2c96c9fe0a701
+
+% 0 1 0 1ce4d1b78c58397204932c27fd26a02d
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 2 0 1e5845090386f5801227f9860c9f2627
++ Aucune de ces erreurs ne se rattrape au sein de la cérémonie : l'utilisateur n'est pas
++ enregistré, ou pas connecté, et une nouvelle cérémonie commence avec un nouveau défi.
+
+@ 0 4 0 0381da65d1082a0e17ce0ea4cf43d8ed
++ `Challenge` signifie le plus souvent que le défi n'a pas été conservé entre l'envoi des options
++ et la vérification de la réponse, ou qu'une réponse a été présentée deux fois. `Origin` et
++ `RelyingParty` signifient que la page a été servie depuis un endroit que la `RelyingParty` ne
++ liste pas, ou qu'elle a demandé un justificatif sous un autre RP ID ; une origine est un schéma,
++ un hôte et un port, sans chemin.
+
+@ 0 3 0 1fa7dc6197ca6b991a3e0e127e75d237
++ `Counter` signifie que le compteur de signatures de l'authentificateur n'est pas en avance sur
++ celui qui est stocké, ce qui est l'apparence d'un justificatif cloné. Considérez le justificatif
++ comme compromis, sauf si l'on sait que le compteur stocké est faux.
+
+@ 0 2 0 04b6513c7dcdab5905af0fccf399bfc4
++ `Format` est levée pour un format d'attestation autre que `none` et `packed`. Une partie de
++ confiance qui n'examine pas l'attestation doit demander `none`, qui est la valeur par défaut.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 3 0 07a5aec997a003610d5b40308e529d2e
++ - Source : `lib/chatelaine/src/core/chatelaine.WebAuthn.scala`
++ - `↯/s.105.9` — `Certificate.Path.Error`, pour la chaîne de certificats d'une attestation
++ - `↯/s.147.1` — `Jose.Error`, pour les jetons

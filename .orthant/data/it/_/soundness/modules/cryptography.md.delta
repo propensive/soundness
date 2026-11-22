@@ -1,0 +1,746 @@
+orthant 2 language
+
+@ 0 1 0 0a7c4fb0e6a0100703b832c69e602091
++ ## Crittografia
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 7 0 0ff7050fd4076cac063f178df1d50ef3
++ Cifratura, firma e autenticazione dei messaggi sono operazioni tipizzate. Anche le loro *scelte*
++ sono tipi: l'algoritmo, la dimensione della chiave, la modalità di un cifrario a blocchi e il suo
++ padding sono tutti verificati dove si scrive il codice. Cifrare con AES-256, in modalità CBC, con
++ padding PKCS7, nomina tutte e quattro le decisioni. Una combinazione che gli algoritmi non
++ consentono, come una modalità a flusso con un padding, non compila. Gli algoritmi deboli, cioè
++ DES, le chiavi RSA piccole e le modalità non autenticate, richiedono un'abilitazione esplicita
++ nell'ambito prima di poter essere usati.
+
+@ 0 4 0 10e4576ae1ccc45915cc82e1dd1009aa
++ Una chiave è tipizzata dal suo cifrario. I byte di una chiave privata si possono raggiungere solo
++ dentro un blocco `uncloak`, quindi i punti in cui si usa materiale segreto sono visibili nella
++ struttura del codice. Anche *dove* quel materiale viene conservato, quando non è in uso, è una
++ scelta esplicita.
+
+@ 0 1 0 1cdf043dbe2ddb2e1f083e3c9aa66afd
++ ### Sulla crittografia
+
+@ 0 5 0 03caa940f038c9780506b60e49d0a4e3
++ Le API crittografiche ricevono tradizionalmente i loro parametri come stringhe, come in
++ `Cipher.getInstance("AES/CBC/PKCS5Padding")`. Un algoritmo scritto male, o una combinazione non
++ supportata, si scopre allora solo a [runtime]. Peggio ancora, un'API del genere è neutrale
++ rispetto alla robustezza. DES e AES sono ugualmente facili da raggiungere, e nulla contrassegna
++ il codice che usa in silenzio una primitiva compromessa.
+
+@ 0 1 0 1bd7364677bdd0241f6b7fac9e2dffc8
++ Qui le scelte sono tipizzate, e quelle pericolose sono subordinate a un cancello:
+
+@ 0 4 0 10aa7fe9aa42f016134e63a84fd716e1
++ - Modalità e padding sono tipi, e compilano solo le loro combinazioni lecite.
++ - Un algoritmo debole esige un'*autorizzazione*, quindi l'accettazione della crittografia legacy
++   da parte di una codebase è un solo import, che si può cercare.
++ - Il materiale segreto è una [capability], prestata a un blocco.
+
+@ 0 2 0 0f35561681878cf80c7ea779b1b350fc
++ Tutto proviene dal package `soundness`. Nell'ambito c'è un provider di algoritmi, e l'ultimo
++ import permette agli esempi di stampare i loro risultati:
+
+% 2 1 0 0900e6fa73f434a20f66ec0bd0fee7c1
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0290bb9f4cf1a2c50caef4d05d7d4943
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 0e420dc0f15b9ffe1bcc5f9461b53f86
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0b21de5890a84d8d05926f25583daec4
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0709c900f408ec1f0d90ecae5fa8ab44
++ ### Dove si conservano i segreti
+
+@ 0 4 0 17bd725ca197befc0b82b3aa17ba2892
++ Di proposito non esiste un `Cloak` predefinito. Costruire un qualsiasi valore segreto, che sia una
++ password, una chiave simmetrica o una chiave privata, ne richiede uno nell'ambito, quindi la
++ decisione sulla conservazione è sempre scritta. Il package `cloaks` ne offre quattro. Differiscono
++ per dove il materiale riposa tra un uso e l'altro, e per se vi riposa cifrato:
+
+% 2 1 0 0b28fd1a322ffcc5183b724fbc0fe01d
+
+% 0 1 0 0c7d60ec5871c9ed02ad33d5068b0d97
+
+@ 0 6 0 0cc0956e8141259d077e2fbe42b167d7
++ column  A riposo, il segreto è
++ column  Chiave effimera
++ row  `heapCloak`  in chiaro, in un array di byte privato sullo heap
++ row  `offHeapCloak`  in chiaro, fuori dallo heap Java
++ row  `veiledHeapCloak`  cifrato, sullo heap  fuori dallo heap
++ row  `veiledOffHeapCloak`  cifrato, fuori dallo heap Java  sullo heap
+
+% 1 1 0 185274087963960d0fcf4ce66e66fc07
+
+@ 0 3 0 00752d57371852741761a3556d99eb37
++ Su Scala.js e Scala Native è disponibile solo `heapCloak`. Nessun cloak protegge da un debugger
++ nello stesso processo. Ciò che quelli più robusti riducono è la finestra durante la quale il
++ testo in chiaro si può raggiungere da un dump dello heap o da un file core.
+
+@ 0 1 0 1127bdd2b112f5f318d5d69fb748c095
++ ### Cifratura simmetrica
+
+@ 0 5 0 1bb31ed1d7eae9001a972d815d8b11a5
++ Una chiave simmetrica si genera per il suo cifrario. L'algoritmo e la dimensione della chiave
++ stanno nel tipo, e così, facoltativamente, la modalità e il padding. La cifratura avviene dentro
++ il blocco `uncloak` della chiave, e il
++ [vettore di inizializzazione](https://en.wikipedia.org/wiki/Initialization_vector) è fornito
++ esplicitamente:
+
+% 2 1 0 0710286efa77ee4d154ac27dd530c1fe
+
+% 0 1 0 0068b79b9ce45da510075553bfcf64bf
+
+% 0 1 0 1e70ecb7f67326b11cb7047c548de44d
+
+% 0 1 0 193868489d7b7f1e0ec6104e7113cad6
+
+% 0 1 0 140a351f8f1feb4e05861a7144543603
+
+% 0 1 0 0be375061eb3c2530134bc5af0648250
+
+% 0 1 0 1ed1bd904def568018b2775f634e6ae5
+
+% 1 1 0 029ce7110081b51702585b287f75ed4a
+
+% 3 1 0 05e004967f26bde01daa4893d9272ae8
+
+% 4 1 0 0daf0c76b9940a2a1657321bc8b3f151
+
+% 5 1 0 07142a213d6d9ad11da6fc37f556eaf6
+
+% 0 1 0 103c329e311f2eaf154523c021f2d82a
+
+% 1 1 0 0dfb8867ef3dbf5210a4fc4247669901
+
+@ 0 5 0 04c33ab087fd6b2302ef9c613b305c4c
++ `uncloak` è un [ambito delimitato](../../philosophy/delimited-scopes.md). Presta la chiave al suo
++ blocco, come capability `Encryptor` e `Decryptor`, e il capture checking le confina entrambe. Né
++ la capability, né una closure che la userebbe in seguito, possono sfuggire al blocco. È il
++ compilatore, non una convenzione, a mantenere l'uso della chiave dentro il suo ambito. Fuori dal
++ blocco non c'è nulla con cui cifrare:
+
+% 2 1 0 18b540d34e4c7c5116ae89d2be6c49ba
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 0f0e2efe3d0fb0db14d7bb88148484f4
+
+% 1 1 0 0148ba55c4a2c2d10616a588ccd185ca
+
+@ 0 2 0 056c7a1cb03767fd191ae9707a1c0f0d
++ Uno [stream](streams.md) si cifra un chunk alla volta, quindi i dati di grandi dimensioni non
++ vengono mai assemblati in memoria. Uno stream cifrato a pezzi si decifra come valore intero, e
++ viceversa:
+
+% 2 1 0 19e491430629c1bf0db7493e30987892
+
+% 0 1 0 0e94ac597357e8a7022ddbbf393fa501
+
+% 0 1 0 1fab86a5e7c742f404d6a23e9414d23c
+
+% 1 1 0 07b1cc540df502e310076dbe12db0814
+
+@ 0 4 0 06dd75fc6f4ad62514865e42090b0d42
++ Decifrare con la chiave sbagliata solleva un `Crypto.Error` che nomina il fallimento. Anche la
++ modalità e il padding di AES si possono fissare nel tipo della chiave, come in
++ `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`, e un abbinamento che la specifica
++ vieta non compila.
+
+@ 0 1 0 004d63609b3d00661179dcb8a0b7222e
++ ### Password
+
+@ 0 3 0 17a26ebaf25ca4ba057e1bbf8b274ed2
++ Una `Password` è un segreto protetto da un cloak, come una chiave, ma senza alcun cifrario
++ associato. Il suo testo in chiaro si può raggiungere solo dentro `uncloak`, come capability
++ `Cleartext`, e la sua forma `show` non lo rivela mai:
+
+% 2 1 0 0e1b8072bbbf299f1f811b1dce8d8ece
+
+% 0 1 0 16a4debc30f7ac1a08c0ed87a7139149
+
+% 1 1 0 0c56b0b474c68405191da19a8783c319
+
+% 3 1 0 1b8694aee21ec1ed1a4ab7d582322f99
+
+% 4 1 0 0e9b6c7961788d07050ae45c1e8041b9
+
+% 5 1 0 0ae917c30a811f940fcfd861f9a06a41
+
+% 0 1 0 16e7297f23cda92114c03f2a1a742e5f
+
+% 0 1 0 03ff9d425c2408111b0ef72f6271f622
+
+% 1 1 0 1c1f4eb1f48aefc11cfdd7ed5aeee02f
+
+@ 0 1 0 0f2722dd3ab8bd7e092a95790d0100a0
++ ### Cifratura a chiave pubblica
+
+@ 0 1 0 100960943aa657000d107bc3f565b949
++ Una coppia di chiavi RSA cifra verso la chiave pubblica e decifra con la chiave privata:
+
+% 2 1 0 06285b042b7b7c3212a08808bf91296d
+
+% 0 1 0 14fb24018f47261b0da2aa65bd3eb9d2
+
+% 0 1 0 01a4672e32d5825116db4440d2cc618a
+
+% 0 1 0 01d633567b12279305ee6afd3ba05931
+
+% 1 1 0 1277447dff23bcf21feee7c8d96c743a
+
+% 3 1 0 1b08a4e3e4ade70118501540fa4ab74c
+
+% 4 1 0 007bab475c704d3a1f863df5b6a339c3
+
+% 5 1 0 0f37bebbad5dd8780e3af01d5c52f94f
+
+% 0 1 0 14cbb97d7697889c03414b061c9affab
+
+% 1 1 0 0dc650f71b5f5dd30e8aefe920234275
+
+@ 0 1 0 0190f8e9a4d6a7e80657f8973ed184d5
++ ### Firma
+
+@ 0 4 0 11b1bcb923baa3d30b85638468ee7138
++ La firma procede nel verso opposto. La chiave privata firma, e chiunque possieda la chiave
++ pubblica verifica. RSA, DSA, ECDSA e ML-DSA firmano tutti allo stesso modo. ML-DSA è lo schema
++ basato su reticoli standardizzato come FIPS 204, per una firma che resiste ai computer
++ quantistici. Il digest su cui si calcola una firma RSA o ECDSA si sceglie dal package
+
+% 0 1 0 1044d3aa44cfe31c06958ccfb717c7c5
+
+% 2 1 0 1721577b070a61b01e2472569f88290f
+
+% 0 1 0 04942961d5f600a300058cb61ea96461
+
+% 0 1 0 1a7bf8301e0935ee0b72c9548dc22a45
+
+% 0 1 0 070b8a5eda148cd813f6d263c7a1f63a
+
+% 0 1 0 0b703798de0fe816196c8b34479d88d2
+
+% 1 1 0 1b22cce7d22797420e9a14f497ea6b85
+
+% 3 1 0 183d4aa248b3b88c0b1b60d0ccf503c5
+
+% 4 1 0 1665d85fb702dbec14628abddac6136e
+
+% 5 1 0 1e733f5162b73dfb1df28deba1a9fcc8
+
+% 0 1 0 04da3e7dedbf538f0409123c067a7f96
+
+% 0 1 0 09b10d167bdeeb23009ba1a95be63843
+
+% 1 1 0 1d5e52d1fb49dc0419178a1b927d1e29
+
+% 0 1 0 0546f55afd85cecb0c06589d14e21aa8
+
+@ 0 3 0 1c5b2db4a840a4b61d716c814a9260f5
++ `hmac` autentica un messaggio con un segreto condiviso, su uno qualsiasi degli
++ [algoritmi di hash](hashing.md#hashing-a-value). Il risultato si scrive attraverso le consuete
++ [codifiche in base](base-encoding.md):
+
+% 2 1 0 124b5c37316c6ad8030ea1a42e34436d
+
+% 0 1 0 03a79f64699b862a19ec5c4822ab4658
+
+% 1 1 0 04a22d9698594f2d1aa4d5605c97d03a
+
+% 3 1 0 105cd34efdcaa7210ed9f6242e4f855b
+
+% 4 1 0 0cee0cbd1680b23403b94c273a4eb65c
+
+% 5 1 0 1659a2be53ee2a1919e3f958fa79ff8b
+
+% 0 1 0 0e96b550244d5fd01f53a01a0119ab5e
+
+% 1 1 0 1bd7cd61cbdc33840b2dcc91d1aa5137
+
+@ 0 1 0 1f75f48911fca42a1037695f40007533
++ ### Accordo di chiavi e cifratura autenticata
+
+@ 0 3 0 11de8d40e1179cd50ad12cc60177a6cd
++ Due parti che possiedono ciascuna la chiave pubblica dell'altra possono accordarsi su un segreto
++ condiviso, con X25519 o ECDH. Il segreto è prestato a un blocco e azzerato in seguito, poiché un
++ protocollo non fa altro che ricavarne, tramite hash, delle chiavi di sessione:
+
+% 2 1 0 0d7e62db2a476b53036e4693a1b4b62d
+
+% 0 1 0 1d22fe1a39751d16189fdf9ff4ca28ae
+
+% 0 1 0 1e23f82f8fba46b21e7ad02ece007422
+
+% 1 1 0 18434d79108345ca0ec1a7a31e3c82e4
+
+% 3 1 0 0088faf0128464841b3c7a9676aaec6c
+
+% 4 1 0 025678089dba668112fd4e836667c6ae
+
+% 5 1 0 12c54a229a3ae9231279d88c6d7e44d3
+
+% 0 1 0 1a6e66e7cefa845112654096ed5d1e81
+
+% 1 1 0 14a14d6ef500941f0aa784c3e7b0c696
+
+@ 0 4 0 1050c5c56a8cd6ab08e6f3251f8ecbb2
++ Ciò che l'accordo di chiavi produce si usa poi con un cifrario autenticato. AES-GCM sigilla un
++ messaggio con un *nonce*, che non deve mai ripetersi con la stessa chiave, insieme a dati
++ associati che sono autenticati ma non cifrati. Si rifiuta di aprire qualsiasi cosa sia stata
++ manomessa:
+
+% 2 1 0 1fa0e5e545fb05841647aa47d3d561c6
+
+% 0 1 0 0e16ff60949a18b60b49aa1c5499d9eb
+
+% 0 1 0 08edf1945c58c7fc00deea3e6f989ff0
+
+% 0 1 0 02790edfb0daa4ec19aa1f71916bf051
+
+% 1 1 0 02e6130cc0ac01b10950420f6eaec4fa
+
+% 3 1 0 1c545865b9f1f1da1f415f30bdf57abc
+
+% 4 1 0 0f587868bb018258016cee38bc31e789
+
+% 5 1 0 10964a703c43ae5606e2c9878d9992bb
+
+% 0 1 0 02ee80190936362703234509060a71ba
+
+% 1 1 0 09d29882bf35016a16418462a5bfa500
+
+% 3 1 0 0c0057fef7e0156d0310bf8eda01ac1f
+
+% 4 1 0 1da1c194e040a01606a373e0abc0c21c
+
+% 4 1 0 1a9f83f12eec02ae09166b7e3f404843
+
+% 5 1 0 057f515273fa81610fd007f7e6cca82c
+
+% 0 1 0 13dab917ac1789f21d2dd1d352ac6f3d
+
+% 1 1 0 1b6dd528161eefe31b88361dd59b1454
+
+% 0 1 0 19fabf5764b32bdf1d8f618ddf8c24e7
+
+@ 0 4 0 12757fdc9abca13d0d6b1d66ac1540c6
++ Le chiavi viaggiano in forma [PEM](https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail). Una
++ chiave pubblica si esporta liberamente. Esportare una chiave *privata* esige il marcatore
++ `Divulgence`, che è un altro punto in cui il trattamento del materiale segreto è deliberato. Un
++ valore `Pem` ha un'etichetta e i suoi byte, e si serializza nel familiare testo con armatura
++ ASCII:
+
+% 2 1 0 0336737beb5c42a1017bb3ca9519d60f
+
+% 0 1 0 1893b0fc8a3e8b1c0784777a8d034cae
+
+% 0 1 0 191a6703c971a6e301d33aea3c9653a5
+
+% 1 1 0 0b3e09163a7ccb5114a061797ff3f70b
+
+% 3 1 0 1c96c58aa491edda05859b0f363a4f1b
+
+% 4 1 0 141e68d155db36f5149b11b4333e4f50
+
+% 5 1 0 04be2328393e17cd124937d48ee5afba
+
+% 0 1 0 13f89ed9d55d050d0c2e21cb988a909c
+
+% 0 1 0 02f52b9b0075fd0b152600613152388e
+
+% 1 1 0 0462bb8a126c192a070089acdecda3af
+
+@ 0 2 0 075a7002670018f91b7209fbd5493d2b
++ Il PEM si analizza in modo incrementale. Una sorgente che contiene molti blocchi, come una catena
++ di certificati o un insieme di chiavi, li fornisce uno alla volta, in modo lazy, e non come un
++ unico documento analizzato:
+
+% 2 1 0 05942a43dab64941025818b3972b8cf3
+
+% 0 1 0 01c2e4eed1255301060e397e9fb9755d
+
+% 1 1 0 0313a5d95121db2114227b53707fe877
+
+% 3 1 0 14dad7c031f3a94108ac43a75d42e98e
+
+% 4 1 0 0f6f9ea37cf8fa65032b9b47439015d0
+
+% 5 1 0 0ade69688cc5c0860878a3f3ad7c773d
+
+% 0 1 0 12a882ced44e0c1c064c897001b2a28c
+
+% 1 1 0 037a57f13e0b6bb019a751c8540bba61
+
+@ 0 3 0 0509d05d46d091430b224f6d27a92159
++ Il testo che non fa parte di un blocco, come le righe `subject=…` che OpenSSL scrive tra i
++ certificati, viene saltato. Una sorgente senza alcun blocco si legge come sequenza vuota, non
++ come errore.
+
+@ 0 1 0 156b2c57ed59da481e443b182741ae2c
++ ### Leggere le chiavi
+
+@ 0 2 0 04425ddbe1de94e61a9d0b5011a9c6e7
++ Una chiave che esiste già, in `~/.ssh` o scritta da `openssl`, si legge in una `PrivateKey` del
++ cifrario indicato, da una qualsiasi delle forme che un file di chiave assume:
+
+% 2 1 0 1e082e2a36e509460eede12651e421b3
+
+@ 0 3 0 1951730c047783991f1b9abe12b3963d
++ column  Forma
++ column  Etichetta PEM
++ column  Valore dell'etichetta
+
+% 0 1 0 154257588de53d86081c6a487094a22b
+
+% 0 1 0 05c7b35b3ba0c3eb078e03ac49bf78e2
+
+% 0 1 0 0663349c8b3bc688090e0d3bfce1b3d2
+
+@ 0 1 0 1d5042817eaf1ab911fa44b2c3eba23d
++ row  il contenitore proprio di OpenSSH  `OPENSSH PRIVATE KEY`  `Pem.Label.OpensshPrivateKey`
+
+% 1 1 0 09abfc06a852ad121659aaa25b4f9c8f
+
+@ 0 1 0 12044f98d756d82213b88394e0cee55b
++ Come per qualsiasi segreto, nell'ambito deve esserci un `Cloak`:
+
+% 2 1 0 0d6b88463f068feb10389d6443b7d90b
+
+% 0 1 0 077262f52d69662e16e8b4183e07ade7
+
+% 1 1 0 0c4179a34cb8d256086caa5d4787fdcd
+
+% 0 1 0 038c3d35b4fcc369182b2b8b320b7e34
+
+% 0 1 0 01f2e7da0b3469db0184d2f34ec1cc87
+
+% 0 1 0 16b8c027fc29d4421f4fc9f767eda0b7
+
+% 0 1 0 058caa7d0913d8cb04a0affc61aedcc3
+
+% 0 1 0 10777f9493d64121114baa5f1bd5fee6
+
+% 0 1 0 1f079f67299b9963159a6142306bda76
+
+% 0 1 0 1218a0ec339d4be513372b978ae2f193
+
+% 0 1 0 09a983d270293fa50e81eca40cc1fb84
+
+% 1 1 0 13c21cedabbcacf504c94b12632a5a9d
+
+% 3 1 0 0261cc9f72ed63b31e5ca974514c89b4
+
+% 4 1 0 0fa7e8bc5e2ba907076beaeb14dade68
+
+% 5 1 0 0af6182b52e7cdbb1208f085a85051fb
+
+% 0 1 0 03760eefbfe7c67c1d6ddd9927205bfe
+
+% 1 1 0 072184883bcef4b205aeffc16ddd00b6
+
+@ 0 4 0 0836a69b89688832014048baf63920e4
++ Il tipo viene verificato rispetto al documento, e non viene presunto da esso. L'identificatore
++ dell'algoritmo, la curva e, per RSA, la dimensione del modulo devono essere quelli del cifrario
++ indicato, quindi una chiave a 4096 bit non può mai essere letta come `PrivateKey[Rsa[2048]]`. Una
++ chiave che non corrisponde è un `PrivateKey.Error`, il cui motivo, `Mismatch`, nomina ciò che è
++ stato trovato:
+
+% 2 1 0 0948da6e3923f9d511c2cabb1aeb04ec
+
+% 3 1 0 0a5bcdf5fff19fd41fd2007035e94d00
+
+% 4 1 0 1b002f023b73c399121f33f6b7c6cfaa
+
+% 5 1 0 1feb513ae4170dbd1cd351bf7337c9e4
+
+% 0 1 0 1090028824ccb54709c6012e7ccb16de
+
+% 1 1 0 051513c9d0fbc2cd196d6bc6e0e8e3f0
+
+@ 0 2 0 0d7c05ea6ba95e08094e6018fb970861
++ Una chiave protetta da una passphrase viene segnalata come `Encrypted`. Leggerne una non è ancora
++ supportato.
+
+@ 0 3 0 18f377366deee4a81b3598b3b2ed900f
++ Le chiavi pubbliche si leggono allo stesso modo dai blocchi `PUBLIC KEY`. Si leggono anche dalla
++ forma su una sola riga che OpenSSH conserva in `id_*.pub`, `authorized_keys` e `known_hosts`, e
++ `OpenSsh.line` riscrive quella forma:
+
+% 2 1 0 059d3886519e8fec18c595566e43ec68
+
+% 0 1 0 1ae73414513fff17151f6fc23a22642f
+
+% 1 1 0 10df75a4b0b0b694136fd939b4f5aeab
+
+% 0 1 0 03ca76a5c1e8788f1ce68d6226122ee2
+
+% 0 1 0 1265bc0710b557861d86bb655d621109
+
+% 1 1 0 1daf706be4743cdb089d8c561b8085e6
+
+% 3 1 0 1b564eccee0232490aaab5a03b6f3936
+
+% 4 1 0 0a9229fe8404c4d513dc07bf6f1b1bb2
+
+% 5 1 0 1672a0f008648bcf1a919e05cc876416
+
+% 0 1 0 1587b7274fcbf52b0095db00cd9ae0ab
+
+% 1 1 0 002da3594a16da210e1061c5e1689c0a
+
+@ 0 1 0 17db5b33c1b25a15100c12395e24f504
++ [SSH](ssh.md) usa queste chiavi per autenticare una connessione.
+
+@ 0 1 0 1fa447c47e68aeb5073069bf07005cb6
++ ### ASN.1 e DER
+
+@ 0 5 0 186b92f1ef9b013e129d56802b9c51a7
++ Le strutture sottostanti a certificati, chiavi e firme sono valori
++ [ASN.1](https://en.wikipedia.org/wiki/ASN.1), trasportati in
++ [DER](https://en.wikipedia.org/wiki/X.690#DER_encoding). Un valore `Asn1` modella direttamente
++ quella struttura, come enumerazione dei tipi universali che usano i certificati, e `Der` è la
++ forma codificata:
+
+% 2 1 0 1774f3eb393a27aa11a592dd9c4e3c58
+
+% 0 1 0 0cccbb0df63bf4061f23cd6a92ff3307
+
+% 0 1 0 052a8dd54abaf59b18dbb575aaa8feb0
+
+% 1 1 0 1088b20dc0a4e3140bcdc3a0dd256652
+
+% 3 1 0 02f261f9e47e053e0d02054f3ae503de
+
+% 4 1 0 03955d71da4a8f4f05a794660fcb6f0b
+
+% 5 1 0 12513c36d0333e580f3020e9cfaad928
+
+% 0 1 0 0613fdb6a3bfb812177c7d5528a28e2e
+
+% 1 1 0 004e1554f42728490cfde2db2c79a672
+
+@ 0 3 0 1da833f8ca0b56c216749ce17d8854d2
++ DER è canonico, quindi un documento ha esattamente una codifica valida, e il codec lo fa
++ rispettare in entrambe le direzioni. Ogni deviazione solleva un `Asn1.Error`, il cui motivo
++ nomina il difetto, insieme all'offset del byte in cui è stato trovato. Tra questi:
+
+% 2 1 0 02c90a3fe61d956e069104fa4c70f895
+
+@ 0 7 0 0712dc85d08241bd12a6822f2dd03db9
++ column  Difetto
++ column  Motivo
++ row  una lunghezza sovradimensionata  `NonMinimalLength`
++ row  un intero non minimale  `NonMinimalInteger`
++ row  un `SET` non ordinato  `UnsortedSet`
++ row  una lunghezza indefinita  `IndefiniteLength`
++ row  byte in coda  `Trailing`
+
+% 1 1 0 0d31b6d2be8960ca070420dd5231ef30
+
+@ 0 6 0 0add69e1959b576f07bfb7fdeb0d6a89
++ La decodifica non fallisce mai per mancanza di un tipo. Un tag che questo strato non modella,
++ come `T61String`, `BMPString`, `ENUMERATED` o un valore con tag implicito, si decodifica in
++ `Asn1.Unknown`, che conserva alla lettera i byte del suo contenuto. Decodificare e codificare di
++ nuovo riproduce quindi esattamente i byte originali. Verificare una firma sul `TBSCertificate` di
++ un certificato dipende da questa proprietà: una struttura si può smontare, ispezionare e
++ rimontare senza alterare i byte che la firma copre.
+
+@ 0 1 0 13df62260a88df43132fe3a51da9c72a
++ ### Certificati
+
+@ 0 5 0 083e73ca2112aa8207f597c0dadafccc
++ Un certificato [X.509](https://en.wikipedia.org/wiki/X.509) lega una chiave pubblica a un *nome
++ distinto*, per un periodo di validità, ed è firmato dal suo issuer. Un certificato autofirmato è
++ il tipo che serve a un server di sviluppo, o a un'autorità di certificazione privata. Si genera
++ da un soggetto, una chiave privata, un [periodo](time.md) di validità e un numero di serie, con le
++ alternative `dNSName` che un client TLS verificherà:
+
+% 2 1 0 009a7ed3ff41f9b608a7419684760630
+
+% 0 1 0 066af33ea28da16407b361b7f58d7b83
+
+% 0 1 0 03bfe0633d05d8ae1794e3e989cd2f10
+
+% 0 1 0 16df8176de66768e0ee695f631882d2d
+
+% 0 1 0 19cd89ebf0447168118ade4c965754df
+
+% 0 1 0 0b6a960d8d89df5e16cae3e4e6168a53
+
+% 1 1 0 0b09486721571f0b1b3c7c5dfbb92c04
+
+% 3 1 0 17d32ed5f46052871c2a48ee97d1f772
+
+% 4 1 0 17d4645e94aebe7e1dfb39fd74415dfb
+
+% 5 1 0 1f913e5cb71ea0de0941d02a0218b075
+
+% 0 1 0 12539b6e2352809503f9580462740bef
+
+% 0 1 0 023afe074d38fe71128d4144a27e403c
+
+% 1 1 0 12a65ac71a04a9dc0681c542271516f2
+
+@ 0 4 0 0dbc56043208e961158c230ef42e1f13
++ Un certificato è, al di sotto, un valore `Asn1`, quindi i suoi campi si possono leggere
++ attraverso la stessa struttura. `authority = true` contrassegna un certificato come uno che può
++ firmarne altri. `verify` verifica la firma rispetto alla chiave pubblica dell'issuer, che per un
++ certificato autofirmato è la sua stessa.
+
+@ 0 6 0 1f67f9e2c857316f0f9fa5310e251b09
++ Una chiave ML-DSA firma un certificato allo stesso modo, con gli identificatori di algoritmo di
++ FIPS 204. Ma un'implementazione TLS potrebbe non essere in grado di completare un handshake con
++ una chiave post-quantistica, e quella del JDK non lo è. Un servizio la cui identità è una chiave
++ ML-DSA fa quindi *emettere* a quella chiave un certificato su una chiave classica che il servizio
++ può presentare. Presenta quel certificato insieme al certificato autofirmato della chiave ML-DSA
++ stessa, e un peer che conosce la chiave ML-DSA verifica la foglia rispetto a esso:
+
+% 2 1 0 1ef39e74c5b55ded1d18dfbfeb089283
+
+% 0 1 0 1c7769c6cd2fcbc91058c46554730aaf
+
+% 0 1 0 0acdb9071510f92812f30007aff3b6fd
+
+% 0 1 0 093cb1ad424706df0679227f7baaf81f
+
+% 0 1 0 0390975cfe94e4bb1f1efdf7da57bb2d
+
+% 0 1 0 15476cfc3ed20c5302d546bf21a25b29
+
+% 0 1 0 14042cdcbf206fa619717cc548c387e3
+
+% 1 1 0 007ef98ea8c54a9b151b387fd7a1096a
+
+% 3 1 0 08aaa2ab01a1b9371e3caf6a7e2c6fe5
+
+% 4 1 0 1fedb1efe74651a10bb564a88f93a38c
+
+% 5 1 0 1907599ebb887dfc1d5f9fbc6c269366
+
+% 0 1 0 1690b2ec427139dd005ed25c3545a049
+
+% 0 1 0 090ad9ff0cabedf800b4de38d000e698
+
+% 0 1 0 142618e0363fff5d119913c0efd45eea
+
+% 1 1 0 018ad65f5faf7c6e11ea806313ad6211
+
+@ 0 3 0 18127482adc01fd506020a2ea0f5fbed
++ Un certificato emesso porta un identificatore della chiave dell'autorità, che nomina la chiave che
++ lo ha firmato. È così che un verificatore trova la radice in una catena. Un
++ [server HTTP](http-server.md) presenta un certificato del genere su TLS.
+
+@ 0 1 0 06680b555ea224311025070d23910744
++ ### Keystore
+
+@ 0 4 0 1693004e0a39ea460f5631d93dbd7896
++ Un keystore [PKCS#12](https://en.wikipedia.org/wiki/PKCS_12) si apre per la durata di un ambito.
++ La password è fornita come `Password` opaca, quindi il suo testo in chiaro si raggiunge solo
++ attraverso la capability `Cleartext` confinata nell'ambito, e l'array di caratteri di cui la
++ piattaforma ha bisogno viene azzerato non appena lo store è caricato. Dentro l'ambito, `keystore`
++ è lo store aperto:
+
+% 2 1 0 0b3d594e816032051cd1f012c0042cbc
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 149ad3677949008008fa20b1ece28568
+
+% 0 1 0 03c0c15b66e82f231df0501b79244776
+
+% 0 1 0 07432707c9b53edd008478b1e8cbd4c2
+
+% 0 1 0 15351d0bc84911ed19db1daf026b1a11
+
+% 0 1 0 0d220bab49adfc92016be3a5236a8d22
+
+% 1 1 0 17f05ae60e6fd4df04c147394e98d8a4
+
+@ 0 3 0 1a0ba58e426b880517d0785a800bfe6b
++ Un alias che lo store non contiene produce `Unset`. Una password sbagliata e uno store corrotto
++ sono di proposito indistinguibili: entrambi sono `Unreadable` nel `Keystore.Error`. Distinguerli
++ direbbe a chi sta tirando a indovinare quale dei due sia andato storto.
+
+@ 0 1 0 06795db86f0750de1579506f6f70a11f
++ ### Algoritmi deboli
+
+@ 0 5 0 0f598bfe24946edf0f51328a01bbe147
++ Cifrare con DES, RC2, RSA a 1024 bit, la modalità ECB o qualsiasi cifrario a blocchi non
++ autenticato richiede nell'ambito un'abilitazione dal package `cryptoPermits`. Sono le stesse
++ [autorizzazioni](hashing.md#weak-algorithms) che subordinano MD5 e SHA-1. Accettare la
++ crittografia legacy è quindi una decisione esplicita che si può verificare, non un'impostazione
++ predefinita. Le autorizzazioni sono annidate, e `permitDisallowedCrypto` include tutte le altre:
+
+% 2 1 0 13178dee866b35c61efbdbd597f1e077
+
+@ 0 5 0 028717cb30de1c2a03ee0c1b37bb49dc
++ column  Algoritmo
++ column  Autorizzato da
++ row  qualsiasi cifrario a blocchi, che non è autenticato  `permitUnauthenticatedCrypto`
++ row  Triple-DES  `permitDeprecatedCrypto`; solo per decifrare o verificare, `permitLegacyCrypto`
++ row  DSA  `permitDisallowedCrypto`; solo per verificare, `permitLegacyCrypto`
+
+% 0 1 0 03600c59a3711af3179214a0ec904524
+
+@ 0 2 0 18e68ab9ce689d1b1d08f2eafebcf564
++ row  RSA a 1024 bit  `permitDisallowedCrypto`
++ row  modalità ECB  `permitDisallowedCrypto`
+
+% 1 1 0 0e2d1b81e14b1cfd0d9d1d520aae8b9d
+
+@ 0 1 0 0d786580e8469b0601989ae6d1930c36
++ Per l'insieme degli algoritmi, queste sono le operazioni che ciascuno supporta, e l'autorizzazione
++ di cui ha bisogno:
+
+% 2 1 0 1a95c5f33d4ac68c18dc190192a5261b
+
+@ 0 12 0 010e52f7cca6e9db1b1dcc1836cb222a
++ column  Algoritmo
++ column  Operazioni
++ column  Autorizzazione
++ row  `Aes[128 | 192 | 256]`  cifrare, decifrare  `permitUnauthenticatedCrypto`
++ row  `TripleDes[112 | 168]`  cifrare, decifrare  `permitDeprecatedCrypto`
++ row  `Des`, `Rc2[40 | 64 | 128]`, `Blowfish[128 | 256 | 448]`  cifrare, decifrare  `permitDisallowedCrypto`
++ row  `AesGcm[128 | 256]`, `ChaCha20Poly1305`  sigillare, aprire
++ row  `Rsa[2048 | 3072 | 4096]`  cifrare, decifrare, firmare, verificare
++ row  `Rsa[1024]`  cifrare, decifrare, firmare, verificare  `permitDisallowedCrypto`
++ row  `Dsa[512 | 1024 | 2048 | 3072]`  firmare, verificare  `permitDisallowedCrypto`
++ row  `Ecdsa[256 | 384 | 521]`, `Ed25519`, `MlDsa[44 | 65 | 87]`  firmare, verificare
++ row  `X25519`, `Ecdh[256 | 384 | 521]`  accordarsi
+
+% 1 1 0 05aa3e5948515cc40f0671c36bfcc7a6
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 1 0 018131d01b42f3aa1055d485c3b1b735
++ - [Demoni](daemons.md), [Git](git.md), [OAuth](oauth.md), [PDF](pdf.md),
++   [casualità](randomness.md) e [socket](sockets.md) firmano, cifrano e proteggono con queste
++   chiavi.

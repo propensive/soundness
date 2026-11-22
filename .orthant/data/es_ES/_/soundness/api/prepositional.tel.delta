@@ -1,0 +1,479 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1b6bde0239bc4951097da3e3730ac427
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 010f293732436540014ce82cfad94cc5
++ info   las preposiciones que refinan los miembros de tipo de una clase de tipos, para que un tipo se lea como una frase
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 0e1c4fc317507b6d0092cc2d2074138c
++     _Prepositional_ proporciona el vocabulario que permite escribir un tipo de Soundness como
++     una frase —`Path on Linux`, `Text is Decodable in Json`, `Quantity is Multiplicable by
++     Duration`— en lugar de como un constructor de tipos aplicado a argumentos posicionales.
++     Cada preposición es un alias de tipo infijo que refina exactamente un miembro de tipo
++     abstracto del tipo a su izquierda: `in` fija `Form`, `on` fija `Plane`, `by` fija
++     `Operand`, `to` fija `Result`, y así sucesivamente. Como cada una refina un miembro
++     *distinto*, las preposiciones se aplican una tras otra sin anidarse, en cualquier orden,
++     y solo hace falta mencionar los miembros que importan a una signatura:
++     `Text is Decodable` es un tipo completo, que `in Json` restringe.
+
+@ 0 10 0 059821c19b3f73ca0a124103764cc0da
++     La biblioteca tiene dos mitades. Doce **traits** de un solo miembro declaran los miembros
++     que refinan las preposiciones: `Formal` (`Form`), `Planar` (`Plane`), `Operable`
++     (`Operand`), `Resultant` (`Result`), `Topical` (`Topic`), `Original` (`Origin`),
++     `Domainal` (`Domain`), `Transportive` (`Transport`), `Targetable` (`Target`),
++     `Contrastive` (`Contrast`), `Limited` (`Limit`) y `Locative` (`Locus`). Una clase de
++     tipos incorpora los que necesita. Después, doce **preposiciones** los refinan: `in`,
++     `on`, `by`, `to`, `of`, `from`, `across`, `over`, `onto`, `against`, `under` y `at`.
++     Cada una está acotada para que solo se aplique a un tipo que declare el miembro, así que
++     una preposición no puede unirse a un tipo que no tenga sitio para ella; las dos
++     excepciones son `in`, cuya forma puede ser un constructor de tipos de cualquier género, y
++     `over`, que no llevan cota y se unen a cualquier tipo.
+
+@ 0 4 0 1ba4a00f5459723c1510d34f678b38a4
++     La tercera pieza es `Typeclass`, la base de toda clase de tipos de Soundness. Declara
++     `Self`, el tipo *para* el que es la instancia, que refina el `is` del preludio:
++     `Text is Decodable` es `Decodable { type Self = Text }`. `Typeclass.Pure` es el
++     subconjunto cuyas instancias el compilador ha verificado que no contienen ninguna
++     capacidad.
+
+% 2 1 0 12e111a7995e727012dff9e23a8dfc47
+
+% 3 1 0 06b61271454d5603124549fe4fbbaae3
+
+% 0 1 0 12741c6c8b2002b71f03569e1086213c
+
+% 0 1 0 09ebefb62083b2fa17915bbde0bfe0c4
+
+% 0 1 0 0b6136de51c8879a160cfd0d84ce7e12
+
+% 0 1 0 0529aaba4f77957702cce82b9e25f91c
+
+% 0 1 0 189f1f6bfc8e4414001094222353b888
+
+% 0 1 0 1f9a1276a4ff7e840667624fe65b787d
+
+% 1 1 0 114514f45c21fe45123ed309aa8559cc
+
+@ 0 5 0 027ddb21761224ac0a3339f2a8bf37e9
++     `is`, `Self` y los nombres de las preposiciones son todo lo que ve el usuario de una
++     clase de tipos; los traits importan a su autor, que elige qué miembros declarar. La
++     *definición* de una clase de tipos incorpora los traits; sus *usos* se leen como prosa.
++     Sin embargo, el compilador notifica la forma desazucarada —una discrepancia se describe
++     como `{ type Form = Json }` y no como `in Json`—, que es el único lugar donde la
++     traducción va en sentido contrario.
+
+@ 0 3 0 0865eb73f6c365e11d3596b213683a4b
++     Un tipo se construye cláusula a cláusula, y cada cláusula es un refinamiento que el tipo
++     anterior ya admite. En cada paso se encuentra el mismo given; lo que cambia es cuánto
++     sabe de él quien llama:
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 18f5fae12e4c842d017a6bb9474b7c9a
++       label La clase de tipos desnuda: una instancia, con todos los miembros aún abstractos
+
+% 1 1 0 10f32c74842e95fd17356aa69115c386
+
+% 0 1 0 0db032160c4d309d0b4881fa8a57aa61
+
+% 1 1 0 1044b435f8b46e7c01903e52c2952406
+
+@ 0 1 0 117b7b9483787ee604f08d5dea8728ae
++       label `is` fija el sujeto: una instancia para `Int`
+
+% 1 1 0 15535005bf3c95330c37f0a4edb4981e
+
+% 0 1 0 13c176a64ef02e4a0dda846634710447
+
+% 1 1 0 1dadf51596446294112a6b7c48e1e1cc
+
+@ 0 1 0 1235e8506348aaaf1f41041d0bfaa4dc
++       label `in` fija la forma: una instancia para `Int`, en JSON
+
+% 1 1 0 0c8643cfe9b863921f482d71a6419422
+
+% 0 1 0 05f56f2e4fadf5ed12ea3e9076d1d9e8
+
+% 1 1 0 0aee77b3bb75bd551d87cced67b89558
+
+@ 0 1 0 146bf1b15b81c0a31e314ecb914b7b33
++       label `to` fija el resultado, y la frase está completa
+
+% 1 1 0 157270bceadac5fe0621a6bdcca691e0
+
+% 0 1 0 11356368476315fd18493dfa638e897e
+
+% 0 1 0 00064eef15ae4f6d1d9a867767870d4b
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 2 0 129e8cbf07d8a4d90392c0fcaa18f353
++     Solo en el último marco se sabe que el resultado de `serialise` es un `Text`: a través de
++     `anySerialiser`, es el `Result` abstracto.
+
+@ 0 5 0 1a82ede6380cf909020beacac67a9cf9
++     La biblioteca es un único conjunto de fuentes, `prepositional.core`, sin más
++     dependencias que `beneficence` (por `Findable`) y sin partes específicas de una
++     plataforma; compila para la JVM, Scala.js y Scala Native. Todo se exporta al paraguas
++     `soundness` y, como todos los módulos de Soundness compilan con
++     `-Yimports:java.lang,proscenium`, el `is` que une un sujeto a su clase de tipos siempre
++     está en el ámbito sin necesidad de importarlo.
+
+% 0 1 0 0d4692314cf8d55d0c2d50e831c56de5
+
+% 0 1 0 11f8511efb713a5c1b01341ea3c0f63e
+
+% 0 1 0 0b74d0521d436f4f0d9a7132b863a9da
+
+% 0 1 0 143c676353fbfca1154e6cdc8badcf69
+
+% 0 1 0 00b1e4fcb9729b700d1a2418c995ea32
+
+@ 0 1 0 0e5ce4a49d46c5291d1ed48524f24401
++ entry .Typeclass   la base de toda clase de tipos de Soundness: una instancia para un tipo `Self`
+
+% 1 1 0 12da22310dec40e408c4f696fad0f6e1
+
+@ 0 6 0 025b14facb2bf6f415d00ca2f56c3b52
++       Una `Typeclass` declara un miembro de tipo abstracto, `#Self`, el tipo *para* el que es
++       su instancia. El `is` infijo del preludio lo refina, así que `Text is Decodable` es el
++       tipo `Decodable { type Self = Text }`, y una cota de contexto
++       `[value: Decodable in Json]` pide una instancia cuyo `Self` sea `value` y cuyo `Form`
++       sea `Json`. Toda clase de tipos de Soundness —`Showable`, `Encodable`, `Comparable`,
++       `Traversable`— la extiende, junto con los traits preposicionales de los demás miembros
++       que necesite.
+
+% 2 1 0 077a2281d64e40610fea7310319f362c
+
+% 3 1 0 0e830e0ffabdcc77191fc829ea31d46b
+
+% 0 1 0 1f93daea9fdf15580b76a4d67ec9862b
+
+% 0 1 0 060ecd15f4861d0e0a115ee4451e8ce3
+
+% 0 1 0 14f10a94036b9a6c033e3a9c8600f921
+
+% 0 1 0 08cc9cdb38fbc82a05e90ee3b2eefdf7
+
+% 0 1 0 11bab719318291b118e3e3100f3af2d4
+
+% 0 1 0 187e56c23294864b13bb83cc68448e52
+
+% 1 1 0 06f0326c2a995a131fa4f7aba6287a13
+
+@ 0 6 0 09e1b789091659ea1d200dbe13352a8f
++       Una `Typeclass` *no* es un tipo puro: muchas instancias se construyen a partir de
++       capacidades —una `Tactic` para lanzar errores, un codificador, un backend— y las
++       retienen, así que sus capturas se rastrean en lugar de darse por inexistentes. Una
++       instancia que solo contiene datos y lógica debe extender `.Pure` en su lugar, lo que
++       verifica el compilador. Tampoco es una clase de capacidad, así que guardar una instancia
++       en un objeto compañero o en un `given` no convierte en capacidad a quien la guarda.
+
+@ 0 4 0 0634f28f45e4001f1a1faaf270532724
++       `Typeclass` extiende `Findable`, el trait marcador de beneficence para un tipo cuyos
++       valores se proporcionan como valores contextuales (`System`, `Environment` y `Calendar`
++       también lo llevan), así que una instancia de una clase de tipos se reconoce como algo
++       que hay que encontrar y no construir.
+
+% 0 1 0 1460ee10f8b4d41914ff0d7de9307554
+
+@ 0 10 0 04df7ad56a2a205503b64998d28ee042
++   entry .Pure   las clases de tipos cuyas instancias el compilador ha verificado que no contienen ninguna capacidad
++       `Typeclass.Pure` extiende `Typeclass` y `scala.caps.Pure`, así que una instancia cuyo
++       cuerpo haga referencia a una capacidad se rechaza donde se define: aquí la pureza es un
++       hecho comprobado, no una afirmación. Las clases de tipos de comparación, aritmética,
++       hashing y recorrido de colecciones —todo lo que calcula con su argumento y nada más—
++       la extienden; una clase de tipos cuyas instancias puedan retener legítimamente una
++       `Tactic`, un sistema de ficheros o un codificador se queda en la `Typeclass` simple.
++       Una instancia pura que, aun así, deba contener una capacidad limitada al ámbito de la
++       resolución la nombra en un único campo marcado con
++       `@caps.unsafe.untrackedCaptures`, lo que es más acotado y más fácil de buscar con grep
++       que renunciar a la pureza de toda la instancia.
+
+% 2 1 0 0d8f5a5f1ec3d56d0ce9932ee5653d1a
+
+% 3 1 0 18e575d6d9c5524e04a229b9d84a7f11
+
+% 0 1 0 0c04ab70c8041c9d1752e02edc13afe8
+
+% 0 1 0 1a89ef00fdda4f3d06e688b8595a8c82
+
+% 0 1 0 04931ba785cdcc71017bb643e7645ebd
+
+% 1 1 0 18096b0b86ca39960d5ff298feb6dcb8
+
+@ 0 1 0 0555fa31860099da1be2079f5f9fba46
++   entry #Self   el tipo para el que es la instancia de la clase de tipos; lo refina `is`
+
+@ 0 1 0 0301bbc19cf1fbf513a5b47d7e0a8e1f
++ entry .Formal   declara el miembro `Form`, que refina `in`
+
+% 1 1 0 0a61ea3abc2924dd0b023f4fa0f6fe7e
+
+@ 0 6 0 16223df6cb8ba0e30e9f849c2d7ff54e
++       Una clase de tipos extiende `Formal` cuando sus instancias son específicas de una
++       *forma* —un formato, una representación o una figura— elegida con `in`:
++       `Text is Decodable in Json`, `Int is Encodable in Tel`, `Ordinal in xs.type`. El miembro
++       puede declararse `<: AnyKind`, en cuyo caso `in` puede aplicar un constructor de tipos
++       sin aplicar (`self is Convertible in Map`).
++   entry #Form   la forma, el formato o la representación de la que es específica una instancia
+
+@ 0 1 0 013b8ae48e009d311822735f49f5cb32
++ entry .Planar   declara el miembro `Plane`, que refina `on`
+
+% 1 1 0 1b6837ad0abcbaba02f53d9dfbea5bc7
+
+@ 0 6 0 0a2b1c739ee465cb1acfd9eb0fec7f9d
++       Un *plano* es el espacio en el que vive un valor: un sistema de ficheros para una ruta
++       (`Path on Linux`, `Path on Classpath`), el espacio de búsqueda de un cargador de clases
++       o los nodos sobre los que se dibuja un grafo. Una clase de tipos o un tipo de valor
++       extiende `Planar` para que `on` pueda nombrar el plano, y las políticas de sistema de
++       ficheros de galilei (`CreateNonexistentParents`, `DeleteRecursively`) son `Planar`
++       para que se elija una política por sistema de ficheros.
++   entry #Plane   el espacio, como un sistema de ficheros o un classpath, en el que se sitúa un valor
+
+@ 0 1 0 1f328689769672fa065f200ee842ea53
++ entry .Operable   declara el miembro `Operand`, que refina `by`
+
+% 1 1 0 056e90a944768668074cdf756a8aff34
+
+@ 0 5 0 00914b316193eacc1f5ef3a595feb29d
++       El *operando* es el otro tipo que toma una operación: el lado derecho de un operador
++       binario (`Quantity is Multiplicable by Duration`), el tipo de los elementos de una
++       colección (`List[Int] is Traversable by Int`) o el argumento de una búsqueda. Es el más
++       usado de los miembros: lo extienden más de cuarenta clases de tipos.
++   entry #Operand   el otro tipo que toma una operación: un operando derecho, un elemento, un argumento
+
+@ 0 1 0 095d16d66c7d80f90e341a70e7f1fff0
++ entry .Resultant   declara el miembro `Result`, que refina `to`
+
+% 1 1 0 0bc6f19533fca9d00ac06a582c95f49b
+
+@ 0 5 0 0590aaad3e4090ee17e3e8dbcd25d80b
++       El *resultado* es lo que produce una operación: `Quantity is Multiplicable by Duration
++       to Quantity`, `self is Mandatable to result`, `Text is Decodable in Json to Record`.
++       Una clase de tipos cuya operación devuelve un tipo que depende de la instancia declara
++       `Result`, y quien llama lo selecciona o lo lee con `to`.
++   entry #Result   el tipo que produce una operación
+
+@ 0 1 0 1aa564916058a7a20f6f53481ddca0d5
++ entry .Topical   declara el miembro `Topic`, que refina `of`
+
+% 1 1 0 1b418f4692cdc5bb1c992107361befdc
+
+@ 0 5 0 00b8c9f466aefb2b1af5754941362c82
++       El *tema* es aquello *sobre* lo que trata un valor o *de* lo que es: la etiqueta de un
++       elemento HTML (`Html of "br"`), la propiedad que lee una instancia de
++       `ambience.Property`, el evento que describe un `Recurrent`, el campo en el que se
++       encontró una instancia de `Annotated`. Es el miembro para un tipo literal o fantasma que
++       clasifica un valor sin estar contenido en él.
++   entry #Topic   aquello sobre lo que trata un valor: una etiqueta, un nombre, una clasificación
+
+@ 0 1 0 181ced6e330af6f608f837ad8b6381fe
++ entry .Original   declara el miembro `Origin`, que refina `from`
+
+% 1 1 0 032391ea31b342be1ac451c660cbea9c
+
+@ 0 4 0 177072582ecc4a9817c2ea41bd4a4106
++       El *origen* es de donde procede un valor o una prueba: `self is Distinct from (Int |
++       String)` (vacuous), un `Record` de polyvinyl construido a partir de una
++       `Specification`, un registro `Intensional` cuyos campos derivan de otro tipo.
++   entry #Origin   el tipo del que deriva un valor o una prueba
+
+@ 0 1 0 08cfa2d3f007e9341451e8ad0dd567d2
++ entry .Domainal   declara el miembro `Domain`, que refina `across`
+
+% 1 1 0 0759fbfaafc057eb1b9b280ff7db8980
+
+@ 0 5 0 1ebc77250215505d109a4a5d52eec4a9
++       El *dominio* es todo el espacio que recorre un valor: `Abstractable across Paths to
++       Text` hace que cualquier tipo de ruta sea abstracto en toda la familia de rutas, y
++       `Pcm` y `Recording` de cacophony son `Domainal` en el dominio de la señal. La
++       preposición se lee como «a lo largo del dominio de».
++   entry #Domain   la familia o el espacio que recorre un valor
+
+@ 0 1 0 1978a4eeada5c0c615770fd6b8930f8b
++ entry .Transportive   declara el miembro `Transport`, que refina `over`
+
+% 1 1 0 15675af8b815f4831f0ac5ce71f38d2a
+
+@ 0 6 0 155f619366d18d110b6efb64760589d7
++       El *transporte* es aquello por lo que se lleva un valor o contra lo que se mide: el
++       crédito de un flujo (`Streamable by Data over Credit`), una línea temporal
++       (`Instant over Unix`), el formato sobre el que lee un `Parsable`, la etapa que cruza un
++       valor `Stageable` de superlunary. `over` es, con `in`, una de las dos preposiciones sin
++       cota sobre el tipo que refinan, así que se une a cualquier tipo; un tipo pensado para
++       usarse con ella extiende `Transportive`.
++   entry #Transport   aquello sobre lo que se lleva un valor: un crédito, una línea temporal, un formato
+
+@ 0 1 0 0b6128cd8104327c084d3b9f5b1ed134
++ entry .Targetable   declara el miembro `Target`, que refina `onto`
+
+% 1 1 0 0bd979ad1b354c250a3573f09926c521
+
+@ 0 5 0 079b8d155728fc2b044cecdf21c424fa
++       El *destino* es aquello sobre lo que recae una operación: el destino de host y ruta al
++       que se resuelve una URL `Fetchable` de telekinesis, el registro hacia el que se encamina
++       una señal `Interceptable` de parasite, la respuesta a la que se asocia una sesión
++       `Associable` de obligatory. Se diferencia de `Result` en que es un destino y no un
++       producto.
++   entry #Target   el destino sobre el que recae una operación
+
+@ 0 1 0 047babc0896f0ed41f8c6c511f563db3
++ entry .Contrastive   declara el miembro `Contrast`, que refina `against`
+
+% 1 1 0 025d92d396a0fef8183ec139541e6d37
+
+@ 0 4 0 0fe388e9418bf1c00d4eb7c1fd6f77c0
++       El *contraste* es aquello con lo que se compara un valor: el `Commensurable` de
++       hypotenuse tiene `Int is Commensurable against Double`, la clase de tipos de comparar dos
++       tipos numéricos distintos.
++   entry #Contrast   el tipo con el que se compara un valor
+
+@ 0 1 0 14a5c395e1b4a0fb076d62471dc9f26b
++ entry .Limited   declara el miembro `Limit`, que refina `under`
+
+% 1 1 0 1e649a08efd8c17e15002c4b4d94940f
+
+@ 0 4 0 1d61f86c77339e65152f89f27943b59a
++       El *límite* es una cota bajo la que se mantiene un valor: el `Nominative` de
++       nomenclature nombra un valor bajo un conjunto de reglas
++       (`plane is Nominative under Rules`), y un campo `Annotated` de adversaria se encuentra
++       bajo su tipo envolvente.
++   entry #Limit   una cota, un conjunto de reglas o un recinto bajo el que se mantiene un valor
+
+@ 0 1 0 17483894e95a034b1b45fe9feac63d27
++ entry .Locative   declara el miembro `Locus`, que refina `at`
+
+% 1 1 0 040555bc9330a2dc1f8b999195382ba2
+
+@ 0 4 0 1d81c1bcb732379501dfb2ba3ef25eea
++       El *lugar* es donde está un valor: la ruta en la que se sirve una `Api` de apoplexy
++       (`Api at "/"`), la ubicación en la que decodifica una instancia `Decodable` de
++       distillate, la posición en la que se compone un texto `Typesettable` de phoenicia.
++   entry #Locus   el lugar, la posición o la dirección en la que está un valor
+
+@ 0 8 0 06d9641288c1928a1e620795db886955
++ entry .in   `refined in form`: refina el miembro `Form`
++     `refined in form` es `refined { type Form = form }`, la preposición para un formato o una
++     representación: `Text is Decodable in Json`, `value is Encodable in Tel`, `Ordinal in
++     xs.type` (el índice confinado de denominative). No está acotada a propósito, y su
++     parámetro `form` admite cualquier género, así que un `Form` declarado `<: AnyKind` puede
++     refinarse con un constructor de tipos sin aplicar, `self is Convertible in Map`. Como no
++     está acotada, también se une a un tipo sin miembro `Form` y produce un refinamiento que
++     nada lee: una clase de tipos que pretenda usarse con `in` extiende `Formal`.
+
+% 2 1 0 013db7d6f0d3c4911bf482b6bf61d04c
+
+% 3 1 0 06b0e4f10b690642113b278f9c581439
+
+% 0 1 0 07887918dfb308061e8fcc6deefb9046
+
+% 1 1 0 0b3c4d754ba337431c527a9b9a35418d
+
+@ 0 5 0 1c0ac36284bc5ba4028dc068d48d9fc3
++ entry .on   `refined on plane`: refina el miembro `Plane`
++     `refined on plane` es `refined { type Plane = plane }`, para un tipo que extiende
++     `Planar`: `Path on Linux`, `Path on Classpath`, `Classloader` como `Findable on
++     Classpath`. La cota se impone, así que `on` no puede unirse a un tipo sin `Plane`.
+
+% 2 1 0 0402ac012ff307371afccb1712ebfe67
+
+% 3 1 0 0cb72841df98175e113bc169c1f5d3b8
+
+% 0 1 0 17682f4fbd49c80a1acba083740efbea
+
+% 1 1 0 129c89e7a3b460ba1c340051a876ba32
+
+@ 0 2 0 1e0aafef0c63950109444c0c3eb5c41c
++ entry .by   `refined by operand`: refina el miembro `Operand`
++     `refined by operand` es `refined { type Operand = operand }`, para un tipo que extiende
+
+% 0 1 0 104e5dccef8e649602818a4c6fa4eaa3
+
+@ 0 1 0 00d18d9da3337a9f1bc3ab1f993cfa2a
++     `Data is Streamable by Data`. El operando es el *otro* tipo que toma una operación.
+
+@ 0 4 0 087e9ccb1076c46103981c6e07e96f78
++ entry .to   `refined to result`: refina el miembro `Result`
++     `refined to result` es `refined { type Result = result }`, para un tipo que extiende
++     `Resultant`: `Int is Addable by Int to Int`, `Optional[Text] is Mandatable to Text`. Por
++     convención se escribe al final de una frase, ya que nombra lo que sale.
+
+% 2 1 0 0ca2fa888e1357b214b582ea6aefacfd
+
+% 3 1 0 0574a096f9752c9202329c1914482f19
+
+% 0 1 0 01aa86944a0fec90009b99e85349847b
+
+% 1 1 0 119cecb016b796af0fb73b887846d297
+
+@ 0 4 0 1617dd0a5dd9aa9a0e0414e76d190175
++ entry .of   `refined of topic`: refina el miembro `Topic`
++     `refined of topic` es `refined { type Topic = topic }`, para un tipo que extiende
++     `Topical`: `Html of "br"`, `Property of "java.home"`, `Typeface of "sans-serif"`. El
++     tema suele ser un tipo literal que clasifica el valor.
+
+@ 0 4 0 01183b3e7603df9e15dee311d46b74fa
++ entry .from   `refined from origin`: refina el miembro `Origin`
++     `refined from origin` es `refined { type Origin = origin }`, para un tipo que extiende
++     `Original`: `Int is Distinct from String` (la prueba de vacuous de que un tipo no es
++     miembro de una unión), `Record from Specification` (polyvinyl).
+
+@ 0 2 0 114758db0d6cd6451204beae73f33161
++ entry .across   `refined across domain`: refina el miembro `Domain`
++     `refined across domain` es `refined { type Domain = domain }`, para un tipo que extiende
+
+% 0 1 0 1d3d127236d509b71d1e2530afba4e8d
+
+@ 0 1 0 0223f21e824617500df7a7882b912652
++     El dominio es una familia de tipos que la instancia cubre en su conjunto.
+
+@ 0 5 0 12c6f39c80e7cde90e3126e6aec4a4e6
++ entry .over   `refined over transport`: refina el miembro `Transport`
++     `refined over transport` es `refined { type Transport = transport }`: `Streamable by
++     Data over Credit`, `Instant over Unix`, `Html.Element of "ul" over "li"`. Como `in`, no
++     está acotada, así que se une a cualquier tipo; un tipo que pretenda usarse con ella
++     extiende `Transportive`.
+
+@ 0 4 0 0ff9c8512828831d0efa2f64f301f4eb
++ entry .onto   `refined onto target`: refina el miembro `Target`
++     `refined onto target` es `refined { type Target = target }`, para un tipo que extiende
++     `Targetable`: una URL `Fetchable` de telekinesis `onto` su destino, una señal
++     `Interceptable` de parasite `onto` su registro.
+
+@ 0 3 0 07d16f342d4760f90395faf38d35cdd9
++ entry .against   `refined against contrast`: refina el miembro `Contrast`
++     `refined against contrast` es `refined { type Contrast = contrast }`, para un tipo que
++     extiende `Contrastive`: `Int is Commensurable against Double`.
+
+@ 0 2 0 0cd48bd2c8342ebf1d9425d6af5ba0ba
++ entry .under   `refined under limit`: refina el miembro `Limit`
++     `refined under limit` es `refined { type Limit = limit }`, para un tipo que extiende
+
+% 0 1 0 1a85f7810dbccbc10d05ac6ab77a1bdf
+
+@ 0 2 0 0e6b909988514e4a06148a11e6f25971
++     under Dot.Identifier["a valid DOT identifier"]` (acyclicity), un campo `Annotated` de
++     adversaria bajo su tipo envolvente.
+
+@ 0 4 0 0c28950cf6ae1e7d1340f726a33d7cae
++ entry .at   `refined at locus`: refina el miembro `Locus`
++     `refined at locus` es `refined { type Locus = locus }`, para un tipo que extiende
++     `Locative`: `Api at "/"` (apoplexy), una instancia `Decodable` de distillate `at` la
++     ubicación que decodifica.
+
+@ 0 3 0 1bd7d7c97c4e74c70b23f8382ef31c83
++ entry .Prepositional   el objeto marcador de la biblioteca; no tiene miembros
++     Un objeto vacío que existe para que el paquete `prepositional` tenga un término estable
++     y con nombre al que remitir. No se usa en el código.

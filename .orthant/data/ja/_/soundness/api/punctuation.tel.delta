@@ -1,0 +1,1246 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 163e2256c62e436a130065bf0aabf169
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0d2e51cd5d32e15215fd3e547ae3cbc3
++ info   HTML、端末、Markdown ソースへの描画を備えた、型付きの構文木としての CommonMark Markdown
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1d1caf39c7678e6d08bfc5d499dc8c0b
++     _Punctuation_ は、[CommonMark](https://commonmark.org/) Markdown（readme、コメント、ドキュメントに使われるプレーンテキストの文章の形式）を型付きの構文木へと解析し、その木を三通りに描画する。
++     honeycomb を通した HTML、Markdown ソースへの書き戻し、そして escapade を通した端末向けのスタイル付きテキストである。
++     パーサーは CommonMark 仕様のすべての例に合格する。テキスト全体に対しても、同じテキストが一文字ずつストリームとして届く場合にも合格する。
+
+@ 0 8 0 196d8f035a7b432115cbe6b531a9883c
++     木は Markdown の二つのレベルを型の上で区別する。
++     **ブロック**構造（見出し、段落、リスト、引用ブロック、コードブロック、区切り線、生の HTML ブロック）は `Layout` 列挙型であり、**インライン**構造（テキスト、強調、強い強調、コードスパン、リンク、画像、改行、インライン HTML）は `Prose` 列挙型である。
++     `Markdown` の値は、どちらを保持しているかを `Topic` として記録する。
++     `Markdown of Layout` は文書全体であり、`Markdown of Prose` はインラインの内容の連なりであって、この二つを取り違えることはない。
++     それぞれ、その位置で妥当な種類の HTML に描画される。
++     文書はフローコンテンツに、文章はフレージングコンテンツになる。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1cfd4d01eab56c010506e2970721145a
+
+% 0 1 0 014d7960b58e42670a590831d6739cc9
+
+% 0 1 0 1b6facd8afdb8834045e991450da4068
+
+% 0 1 0 0cdd779ece1c6f0905454deef6180f13
+
+% 0 1 0 10c1d7dd9c7e4c100ebd8d5fde93a249
+
+% 0 1 0 006a5b215609fb6c1cec890af24a6f38
+
+% 1 1 0 1fb7d2d0ecb29ffb0e06dae9bbafa158
+
+@ 0 5 0 11da16ddb043baf818585ea96d7f4fa8
++     入り口は `Parser.parse` であり、`Text`、`Chain[Text]`、チャンクの `Iterator[Text]`、または zephyrine の `Stream[Text]` から解析する。
++     また、`Markdown of Layout` は `Aggregable by Text` なので、文書は任意の源から `read[Markdown of Layout]` で直接読むこともできる。
++     解析は全域的である。
++     どんなテキストも何らかの Markdown 文書であり、Markdown 文書には構文エラーという概念がないので、解析エラーは存在しない。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 133c778a98e02623005b8062066358c5
+
+% 1 1 0 1356362cd67f75301892394897711388
+
+% 2 1 0 010f59c0289ac35b0475c68764d71583
+
+% 3 1 0 11ba2fcd656ad67814416ef7130fd28b
+
+% 5 1 0 11c8141074f6ece81f007fdd32edcad0
+
+% 6 1 0 01a58a7507073b751257e95557211f5a
+
+% 0 1 0 0b58d060709c6819145c01a2c7a7ac78
+
+% 0 1 0 1d1e4ef816a233e0180edbfac1d1d6eb
+
+% 0 1 0 0e80fa514942fa0c0f10e272624f1666
+
+% 0 1 0 05cfc9819dc0b08e02f355ca084885c5
+
+% 0 1 0 1eb9bfbccae4270f11693c7478645a38
+
+% 0 1 0 139de6d904f3bd7117766ccaeaa80b80
+
+% 1 1 0 07505e52e43166c706f3433165e48624
+
+% 2 1 0 1d192ed7910a01600fd268a5ab01362e
+
+% 3 1 0 0ed21f15dc3debba11ad67ea99026eb2
+
+% 5 1 0 143fa81993e538f90bf123c05b32ad9e
+
+% 6 1 0 1af46bb26884824817213ce741b5a780
+
+% 0 1 0 13c52e49abd80da604e4ebf74a2d76cf
+
+% 0 1 0 0793583a3df15cde0dc7bda0b3947f67
+
+% 0 1 0 0f6c217ddc16a30918decfcde53010ed
+
+% 0 1 0 1fe7aa168209db4513e35b9ab8cf584f
+
+% 0 1 0 16a791a15c88fc570d2381fbdbe26c4d
+
+% 0 1 0 10526702cb02284c16e3f9b45890d138
+
+% 0 1 0 1baab1c5f74a74b80dfb597d14c855d5
+
+% 0 1 0 14721c54896d45ee0afe785f83e16217
+
+% 1 1 0 006671ce5024abe100b846203ca4dea7
+
+% 2 1 0 192d46ea14d5797f00d31430c6ec2fdb
+
+% 3 1 0 1a41c8dd85dd2b0c021e5c06295db740
+
+% 0 1 0 15d0d3ab74c4e4a80e144675765b1e80
+
+% 2 1 0 0002b31e18584b1201c4729854f4f672
+
+% 3 1 0 171f5a23ad05768a047ee9d90f72f199
+
+% 0 1 0 06c7d239df96ff0a0f58a4e7872ffcbf
+
+% 0 1 0 1dcfb0b61070de6d0078ee90ed5398ff
+
+% 0 1 0 0c4c94039d93a33703371c50808fb6e6
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 1 0 087fd13eaa7cbd931588927c1a85c2f3
++     ライブラリは、それぞれが何に依存するかによってコンポーネントに分かれている。
+
+@ 0 13 0 1a8356864e7f993606cb5610fde699f9
++     - `punctuation.core`：`Markdown`、`Layout`、`Prose`、`Parser`、`Formattable`、`Translator`、HTML の `Renderable` given、Markdown ソースを書き戻す `Showable` given、ストリームから文書を読む `Aggregable` given、そして `formatting` と `construables` の選択パッケージ。honeycomb に依存し、プラットフォームに依存しない。
++     - `punctuation.ansi`：端末向けの描画器である `Renderer`、`MarkdownPalette`、`TeletypeFormattable`、`terminal` 拡張、`markdownPrintable` given、そして `teletypeFormattables` 選択パッケージ。escapade、polysyllabic（折り返し位置でのハイフネーションのため）、tessellate（幅を考慮した折り返しのため）、harlequin（構文ハイライトされたコードブロックのため）に依存するので、JVM 専用である。
++     - harlequin ライブラリの一部である `harlequin.md` は、このパッケージに `formattables` パッケージを提供する。`scalaFormattable` と `javaFormattable` は、文書を HTML に描画するときに、`scala` と `java` のフェンス付きコードブロックを構文ハイライトする。
+
+@ 0 5 0 0c2680c0beda68601f5120bc551e5e28
++     すべては `soundness` アンブレラにエクスポートされる。
++     選択パッケージ（`formatting`、`construables`、`teletypeFormattables`、`formattables`）は名前でインポートする given を保持する。`import soundness.*` は（他のワイルドカードインポートと同じく）given をインポートしないからである。
++     `Markdown.Formatting.unbounded` や `MarkdownPalette.default` のように、読み手がインポートなしで必要とする given はコンパニオンにあり、暗黙のスコープを通して解決される。
+
+@ 0 5 0 1ead496357f1edec1d3576b91766d253
++     文書を HTML に描画する（`html`）にはインポートは要らない。
++     ソースとして書き戻す（`show`）ときは、スコープ内の `Markdown.Formatting` の幅で段落を折り返す。これは `Markdown.Formatting.bounded(columns)` が与えられない限り無制限である。
++     端末向けに描画する（`terminal`）ときは、スコープ内の `Hyphenation` によって行末で単語をハイフネーションする。これは `hyphenations.englishHyphenation` のようなものがインポートされない限り、何もハイフネーションしない。
+
+% 0 1 0 125075ad1466b9bb03be953d478df68b
+
+% 0 1 0 1881a547a0c70ca31d082c924d8e5e96
+
+% 0 1 0 0604450104c2f7a50a4b9b8bdaad96ff
+
+% 0 1 0 1e4f8e15698691601125ff3a2c6afd09
+
+% 0 1 0 048c1865be468d2f095d1b4258f0708b
+
+% 0 1 0 16aefb07b432163d12c25be790a16380
+
+% 0 1 0 1ace33d1615ce6db0e2bbb5380b8da2f
+
+@ 0 1 0 0821979f77af5db714468a68e01d56fe
++ entry .Markdown   解析された Markdown 文書、またはインラインの内容の連なり：ノードのリストとリンク参照
+
+% 1 1 0 172e16d54a4210770b01668fb470ff25
+
+@ 0 6 0 0e9594254fc47b4f1fa6511bd731dcb2
++       `Markdown` の値は、それぞれが `Markdown.Node` である `#children` のリストと、`#linkRefs` からなる。後者は入力全体から集めた `[label]: destination "title"` の定義で、パーサーはそれを使っていたリンクへとすでに解決している。
++       その `#Topic` 型メンバーは、保持しているノードの種類を示し、二種類の Markdown はこれによって区別される。
++       `Markdown of Layout` は子がブロックである文書全体であり、`Markdown of Prose` はインラインの内容の連なりである。
+
+@ 0 3 0 1fe422a985e157d905abdc90a2be3574
++       文書は、`Parser.parse` から、任意のストリーム可能な源に対する `read[Markdown of Layout]`（`.aggregable`）から、または手で組み立てたノードに対する `.apply` から得られる。
++       インラインの連なりは `Markdown(prose*)` から得られる。
+
+% 2 1 0 18290a653716e5ee1587982aa559cdc8
+
+% 3 1 0 0ea7bba2f66afc4104eef6850b436288
+
+% 4 1 0 1f0cd60f58a41bf512d3e5d3988fa721
+
+% 0 1 0 1892fca24b7a22c203ef3243ce16a523
+
+% 0 1 0 1eed2b1ac2a33bca1c559dfdb37572c5
+
+% 0 1 0 190cf8023fbb63b217c5d40fd6120664
+
+% 0 1 0 1e9b8fbaffe7f4930529f9a8656a4fb6
+
+% 0 1 0 021e74f18b05205f16c5882318cdff12
+
+% 0 1 0 1646bfebe31b49c91bb23a15d1cead1b
+
+% 1 1 0 17e0c87320a63d150d76e9dff60667dc
+
+@ 0 7 0 170a337cd00593751ae6dd6851e17b63
++       どの `Markdown` にも三つの描画がある。
++       `html`（`.layout` と `.prose` を通した honeycomb の `Renderable`）は、文書には `Html of Flow` を、文章には `Html of Phrasing` を与えるので、それぞれがその位置で整形式になる。
++       `show`（`.layoutShowable` と `.proseShowable`）は、再解析すると等しい木になる CommonMark ソースを、スコープ内の `Markdown.Formatting` の幅で折り返して書き出す。
++       `inspect`（`.inspectable`）は木そのものを、ノードごとに、各ブロックがどの行から来たかとともに示す。
++       `punctuation.ansi` では、`terminal` が文書を端末向けに描画する。
+
+@ 0 2 0 05fcd2d75ba52b1a0e8f427bb45e9014
++       二つの `Markdown` の値は、子が等しいときに等しい。
++       リンク参照はすでに木の中へ解決されているので、比較には関わらない。
+
+% 1 1 0 15ef6641842cde991c988e3e7fddbdbb
+
+% 1 1 0 0219881f917597520ab5f5cd33db728d
+
+% 0 1 0 050a5805c86d82211552b9f4177417d9
+
+% 1 1 0 0d7eb9ae4133c16b03f248f12675553f
+
+@ 0 1 0 046dc419bbe3f60704fc16f3415a6207
++   entry .Formatting   文書をソースとして書き戻す方法：段落を折り返す桁
+
+% 1 1 0 0a67acc44161e04b179dc403a5e630a7
+
+@ 0 7 0 0a04af1511b4f64f057d1eb9119ce63b
++         `Markdown` に対する `show` が参照するコンテキスト値。
++         設定は `#width` の一つだけで、段落のテキストを単語単位で折り返す桁、または各段落を一行のままにする `Unset` である。
++         コンパニオンの `.unbounded` given がデフォルトで、暗黙のスコープにあるので、`show` はインポートなしで動く。
++         制限付きのフォーマット `Markdown.Formatting.bounded(columns)` は、折り返した出力がほしい箇所でローカルな given として束縛する。
++         同じデフォルトは `formatting.unboundedMarkdownFormatting` でもあり、外側のスコープにある制限付きのものを上書きするために名前でインポートする。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 0c873eaf7edd697d1e942ce792459d64
+
+% 0 1 0 02171808f66c8b19130ea33dd020f46a
+
+% 0 1 0 1bac8baa5acbe6d305ff0039830c895b
+
+% 0 1 0 160a4b682efe8d69167c47b3e27be515
+
+% 0 1 0 154a3a151942b7391720ab81cbadd5ed
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 16 0 107bedf61c2d78641c86e1974e7548e3
++         折り返しが変えるのは単語の間の空白だけである（ソフト改行は、どちらにしてもパーサーにとっては空白である）。したがって、折り返した文書は、折り返していない元のソースと同じ木に解析される。
++         `Markdown.Formatting` は zephyrine の `Formatting` なので、他のシリアライザーのフォーマットの値と並ぶ。
++     entry .apply   指定した幅のフォーマット、または折り返しなしの `Unset`
++     entry .bounded   段落をある桁で折り返すフォーマット：`Markdown.Formatting.bounded(80)`
++     entry .unbounded   デフォルトのフォーマットの given：段落は一行のままである
++         コンパニオンを通して暗黙のスコープにあるので、`markdown.show` にインポートは要らない。
++         同じ値は `formatting.unboundedMarkdownFormatting` でもあり、外側のスコープにある制限付きのフォーマットを上書きするために名前でインポートする。
++     entry #width   折り返しの桁、または折り返しなしの `Unset`
++   entry .Node   `Layout` と `Prose` の共通の上位型
++       二つの列挙型が継承する開いたトレイトで、`Markdown` の `Topic` の上限である。
++       `Markdown` は通常 `Markdown of Layout` か `Markdown of Prose` である。どちらでもないノードは、引用符で囲んだ `toString` として表示される。
++   entry .LinkRef   リンク参照の定義：`[label]: destination "title"`
+
+% 1 1 0 1c11433350cbb87513cf1e57be01f797
+
+@ 0 14 0 0a27023d6ffecb1d0cd8974a110d5ae6
++         パーサーが入力から集めた、参照形式のリンクの定義。
++         文書が宣言する定義は、それを参照していたリンクが解決された後も `Markdown#linkRefs` に保たれ、`show` はそれらを文書の末尾に書き戻す。
++         参照は定義より前に現れてもよく、そのためストリームとして読む文書は入力の終わりで初めて完成する。
++     entry #label   参照を引くためのラベル。書かれたとおりのもの
++     entry #title   リンクのタイトル。定義が与えていなければ `Unset`
++     entry #destination   ラベルが表す URL
++   entry .aggregable   任意のテキストのストリームから `Markdown of Layout` を読む
++       文書をファイル、リソース、その他の任意のストリーム可能な源から `read[Markdown of Layout]` で読めるようにする `Aggregable by Text` given であり、`construables.markdownConstruable` はこれを基にしている。
++       解析は全域的なので無条件であり、ストリーミングの経路はチャンクが届くそばから解析して、木と各開いた段落のテキストだけを保持するので、長い文書全体を抱えることはない。
+
+% 2 1 0 1f102ade59f1841d0a68badf69e10357
+
+% 3 1 0 19a422430451992a13bebade372fe8d7
+
+% 4 1 0 0feef228da931bd61c179a9c24470472
+
+% 5 1 0 170155e6af927390116715c84fc2907e
+
+% 0 1 0 108e06a0979d85d607629d1580942cb9
+
+% 0 1 0 07a0b4a530b94bc9134e57c3cb874ea6
+
+% 1 1 0 04e7e4847406203509f6db2b92519555
+
+@ 0 16 0 1c828b68e4cc4aa3141291606cad72a3
++   entry .layoutShowable   文書を CommonMark ソースとして書き戻し、`Markdown.Formatting` に従って折り返す
++       `Markdown of Layout` の `Showable` given。
++       出力はパーサーが読んだテキストそのものではなく、木から再生成したものである。インラインやブロックの構文を開きうる文字の前には、控えめにバックスラッシュのエスケープを置く。それでも、解析し直せば等しい木になる。
++       段落のテキストはスコープ内の `Markdown.Formatting` の `#width`（デフォルトでは無制限）で折り返され、リンク参照はブロックの後に書かれる。
++       コンパニオンを通して暗黙のスコープにある。
++   entry .proseShowable   インラインの内容の連なりを CommonMark ソースとして書き戻す
++       `Markdown of Prose` の `Showable` given。
++       インラインの内容だけを対象とする点を除いて `.layoutShowable` と同じであり、`Markdown(Prose.Strong(Prose.Textual(t"x"))).show` は `t"**x**"` になる。
++   entry .inspectable   `Markdown` を木として、ノードごとに、各ブロックの行とともに示す
++       任意の `Markdown` に対する `Inspectable` given。
++       `show` はソースを再び与えるだけで、それがどう解析されたかについては何も語らない。一方、`inspect` は木を直積の形で与える。これは、パーサーが入力をどう解釈したかを見るためにプログラマーが見るものである。
++       各ノードはケース名で示され、フィールドは `╱` で区切られ、存在しない `Optional` は `○` となり、各ブロックはそれが始まった `Ordinal` の行を伴う。
+
+% 2 1 0 0661d2f5d661e60c19dc2505ba347b65
+
+% 3 1 0 1d50e0127fcb7f9a0e489d1f9589fc74
+
+% 0 1 0 1a0d5d5a15c5bf7c15127fc87e7f06cb
+
+% 0 1 0 12e9051621ffa531176f92a3afa7cc0f
+
+% 1 1 0 08d3e7797a1839d71acaa5e951c70b82
+
+@ 0 13 0 0719020a4deef33d00ddf9baa208003e
++   entry .prose   `Markdown of Prose` を HTML のフレージングコンテンツとして描画する
++       `prose.html` を `Html of Phrasing` として与える `Renderable` given。
++       テキストはテキストノードに、`Emphasis` は `em` に、`Strong` は `strong` に、`Code` は `code` に、`Link` は `href`（と、あれば `title`）を持つ `a` に、`Image` は `src`、`alt`（内容のプレーンテキスト）、`title` を持つ `img` に、`Linebreak` は `br` に、`Softbreak` は改行になり、`HtmlInline` は書かれたとおりにそのまま通される。
++       リンクの宛先は、CommonMark 仕様が求めるとおりパーセントエンコードされる。
++   entry .layout   `Markdown of Layout` を HTML のフローコンテンツとして描画し、コードブロックはスコープ内の `Formattable` で整形する
++       `document.html` を `Html of Flow` として与える `Renderable` given。
++       見出しは `h1` から `h6` に、段落は `p` に、引用ブロックは `blockquote` に、リストは `ul` または `ol`（リストが 1 から始まらないときは `start` 属性付き）に、区切り線は `hr` になり、HTML ブロックはそのまま通される。
++       仕様のとおり、詰まったリストの項目は `p` 要素なしで段落のフレージングコンテンツを直接保持し、ゆるいリストの項目は `p` 要素を保つ。
+
+@ 0 6 0 002a6e89796d492f1d751907b05598d9
++       コードブロックは、呼び出し箇所から見えるすべての `Formattable` given（`Every[Formattable]` としてまとめて召喚される）に順に差し出され、どれかがその情報文字列を受け入れるまで続く。
++       一つもないか、受け入れるものがなければ、情報文字列の最初の単語から作った `language-…` クラスを持つ `pre` と `code` になる。
++       `formattables.scalaFormattable` と `formattables.javaFormattable`（`harlequin.md` から）が標準のもので、名前でインポートする。
+
+% 2 1 0 11f857dcf67b31d80aafde46cb6da17a
+
+% 3 1 0 0e50ee3938277fe61475e90b065dd7da
+
+% 0 1 0 1e0628804613fc050acf27853468e6a3
+
+% 0 1 0 0c86e896cba480360250fe8439b61ed7
+
+% 1 1 0 17ea3943420ae0491481305e3a2d1c60
+
+@ 0 6 0 143ca59efb61c8a31410adc4addd2a9f
++   entry .apply   リンク参照とブロックからの文書、または文章からのインラインの連なり
++       `Markdown(linkRefs, layout*)` は、`Markdown.LinkRef` のリストと任意の数の `Layout` ブロックから `Markdown of Layout` を組み立てる。
++       `Markdown(prose*)` は、インラインのノードから、リンク参照なしの `Markdown of Prose` を組み立てる。
++       これらは木を手で構築する方法であり、`show` で Markdown を生成するときや、解析した文書をその `#children` から組み立て直す変換に使う。
+
+% 2 1 0 1005bd00244aa29c07ce8d2367c0b933
+
+% 3 1 0 199b7a7fc753f23d03fcfb59fa006b0c
+
+% 0 1 0 1eace010e3e75aa919cd33fd65720ac5
+
+% 0 1 0 17f127cc04ba1587112bda79530f2bb5
+
+% 1 1 0 0f5acc5107ebaaf31b9913f73a437ab2
+
+@ 0 5 0 0356a124c4a00817087ba0ecc30df756
++   entry .sections   文書を区切り線で分割して文書のリストにする
++       `Markdown of Layout` に対する拡張。
++       ある `Layout.ThematicBreak` と次のものの間のブロックが、区切り線を除いて、それぞれ一つの文書になる。結果はセクションごとに一つの文書を持ち、どれも自分のリンク参照を持たない。
++       区切り線のない文書は一つのセクションである。
+
+% 2 1 0 182d9366a78d33c013ad0c8dc2f9c451
+
+% 3 1 0 1896f7989dedd0510b775dd6a2ff8f09
+
+% 0 1 0 072838831ece8513061deec45499cdce
+
+% 1 1 0 141d625cde8339781842cdc450724471
+
+@ 0 9 0 13d9f7367a92decc12f3091577a3f049
++   entry #Topic   これが保持するノードの種類：文書では `Layout`、インラインの内容では `Prose`
++       `Markdown of Layout` と `Markdown of Prose` が細分化する型メンバー。
++       上限は `Markdown.Node` である。
++   entry #Domain   パーサーが細分化しない、ラベルの型メンバー
++   entry #linkRefs   文書で宣言されたリンク参照の定義
++       パーサーが集めた `[label]: destination "title"` の定義で、それを使っていたリンクへとすでに解決されている。
++       `show` はそれらを文書の末尾に書き戻す。
++       `Markdown of Prose` には一つもない。
++   entry #children   ノードを順に並べたもの：文書では `Layout` のブロック、インラインの内容では `Prose`
+
+@ 0 1 0 070977b51e5ef0650586b8439516a8fb
++ entry .Layout   文書のブロックレベルのノード：見出し、段落、リスト、引用、コード、区切り線、HTML
+
+% 1 1 0 05ff2948a412ffcc1ef554ef7558b7bc
+
+@ 0 4 0 10451648436740f413b23808d754bca4
++       CommonMark のブロック構造の列挙型。
++       `Markdown of Layout` の子は `Layout` であり、各ケースはそれが始まった入力の `Ordinal` の `#line` を持つので、ツールは問題のあるブロックの位置を報告できる。
++       ブロックがインラインの内容を保持するときは `Prose` のノードとして、他のブロックを保持するときは `Layout` として保持する。
+
+% 2 1 0 0614544f2f667a440b9db2e53ff1f8d3
+
+@ 0 11 0 077550037e168c361050e13470c81bc3
++       column  ケース
++       column  ブロック
++       column  備考
++       row  `BlockQuote(line, layout*)`  `>` による引用  ブロックを保持する
++       row  `OrderedList(line, start, tight, delimiter, items*)`  番号付きリスト  `start` は最初の項目の番号、`tight` は項目が段落のラッパーなしで描画されるか（項目の間に空行がないか）、`delimiter` は各番号の後の `.` または `)`、各項目はブロックの `List[Layout]` である
++       row  `BulletList(line, tight, items*)`  `-`、`*`、`+` によるリスト  項目は `OrderedList` と同じ
++       row  `CodeBlock(line, info, content)`  フェンス付きまたはインデントされたコードブロック  `info` はフェンスの情報文字列を空白で区切ったもの（`scala` のフェンスでは `List(t"scala")`、インデントされたブロックでは `Nil`）、`content` は末尾の改行を含む生のコード
++       row  `Paragraph(line, prose*)`  インラインの内容の段落
++       row  `Heading(line, level, prose*)`  ATX または setext の見出し  `level` は `1 | 2 | 3 | 4 | 5 | 6` として型付けされる
++       row  `ThematicBreak(line)`  `---`、`***`、`___` による区切り線
++       row  `HtmlBlock(line, html)`  生の HTML のブロック  書かれたとおりに保たれる
+
+% 1 1 0 004a64aa95ddbd2f0b5db69c78eb471d
+
+% 3 1 0 0b5f5e60e225ea76047a108f6a639b24
+
+% 4 1 0 10bb3f51eb2e53ef165e559b12ac594c
+
+% 0 1 0 06c60a3ad9cd56ab1fc89af16fc6882d
+
+% 0 1 0 0a93959bf9bfa3a1179825f518772f5c
+
+% 0 1 0 1e3cb54be9f113951b32d3bfd500b248
+
+% 1 1 0 01227ac98ca263100b9265518a8e97b6
+
+@ 0 2 0 0a44d33a5352af650b4bfb3bdb5edac9
++       `Layout` は `Markdown of Layout` の一部として（`Markdown.layout` を通して）HTML のフローコンテンツに描画される。文書の中では、ケース名とフィールドとして表示される。
+
+% 1 1 0 0365c25a00defcb509acbab1cbe337d9
+
+% 1 1 0 154916bdd9da75011929a562ea4aa420
+
+@ 0 8 0 1da316b6796f5b000f274dbaefee0d64
++   entry #line   このブロックが始まった入力の行。`Ordinal` として
++       最初の行は `Prim` である。
++       行は `\n` だけで数え、その前の `\r` は行の一部として保たれる。
++       行だけが異なる二つの木は等しい。それらを保持する `Markdown` は子を値で比較するからである。
++   entry #children   段落、見出し、引用ブロックのインラインの内容。他のブロックでは `Nil`
++       `Paragraph` と `Heading` は自分の `Prose` を与え、`BlockQuote` は保持するブロックのインラインの内容を平坦にして与える。
++       リスト、コードブロック、区切り線、HTML ブロックは `Nil` を与える。その内容はブロックであるか、そもそも文章ではないからである。
+
+@ 0 1 0 03827b57afcc1dfc1f419ea2ad761b49
++ entry .Prose   Markdown のインラインのノード：テキスト、強調、コードスパン、リンク、画像、改行、HTML
+
+% 1 1 0 059d3cac8c8b59920780b0a28cc35534
+
+@ 0 2 0 0d7de7166ed5c0bd130163f81de1a58d
++       CommonMark のインライン構造の列挙型で、`Layout.Paragraph` や `Layout.Heading` が保持し、`Markdown of Prose` が並べるもの。
++       ケースは次のとおりである。
+
+% 2 1 0 1e71c18a17296cb41eeb3b8657b8aee6
+
+@ 0 12 0 0f9179526252136018616afb23acdf76
++       column  ケース
++       column  インライン
++       column  備考
++       row  `Textual(text)`  プレーンテキスト  エスケープと実体参照はすでにデコードされているので、`\*` は `*`、`&amp;` は `&` である
++       row  `Softbreak`  段落の中の行末  HTML では改行として、端末では空白として描画される
++       row  `Linebreak`  ハード改行：末尾の二つの空白、または行末の前のバックスラッシュ  `br` として描画される
++       row  `Code(code)`  バッククォートによるコードスパン
++       row  `Emphasis(prose*)`  `*text*` または `_text_`
++       row  `Strong(prose*)`  `**text**` または `__text__`
++       row  `Link(destination, title, prose*)`  インライン、参照、自動のリンク  参照はすでに宛先とオプショナルなタイトルへと解決されている
++       row  `Image(destination, title, prose*)`  `![alt](src "title")`  その内容が代替テキストである
++       row  `HtmlInline(html)`  生のインライン HTML タグ  書かれたとおりに保たれる
+
+% 1 1 0 00f3794d0050f8cf15a1e497291511ec
+
+% 3 1 0 1b0a8df79ced085409b27c4b8dc83ddb
+
+% 4 1 0 06381a0e6bd9210013d6027663752284
+
+% 0 1 0 0db3f4bd5dc4c2b11a625272e9287a7e
+
+% 0 1 0 1aca8ee6b7e0f063103c5bd318126b4a
+
+% 0 1 0 0e95a8206f713130052d41910c6cea66
+
+% 0 1 0 122d208d308d74a40582fd00c15bce90
+
+% 1 1 0 04dcc4deb839c0840ca72d119c82d948
+
+@ 0 2 0 0409ceb4ac5a915609d71ae425822852
++       `Prose` の連なりは、`Markdown of Prose` として（`Markdown.prose` を通して）HTML のフレージングコンテンツに描画され、`show` でソースに描画される。
+
+% 1 1 0 0c3c8de278e8c6cc051d831908e7fb15
+
+% 2 1 0 15bc901c2eed33641329ab536f6efc82
+
+@ 0 3 0 14823812223bbb751efd9696f8f84712
++   entry #children   リンクまたは画像の内容。他のすべてのノードでは `Nil`
++       ここで内容を公開するのは `Link` と `Image` だけである。
++       `Emphasis` と `Strong` は内容を可変長引数のフィールドとして保持し、`Prose.Emphasis(prose*)` としてマッチする。
+
+@ 0 1 0 025f74728648dc640220fcc66e4880b2
++ entry .Parser   CommonMark のパーサー：テキスト、チェーン、イテレーター、ストリームからの `Parser.parse`
+
+% 1 1 0 00964c9c8488fc2e1ec7b193531a1e62
+
+@ 0 4 0 167f7c9fcf0c25c90ba2fd1b09fe95f7
++       解析の入り口。
++       `Parser.parse` は `Text` 全体、またはチャンクに分かれた入力として `Chain[Text]`、`Iterator[Text]`、zephyrine の `Stream[Text] over Credit`（こちらはさらに `Buffering` を必要とする）を受け取り、`Markdown of Layout` を返す。
++       解析は全域的であり（どんなテキストも何らかの文書である）、何も発生させないので、`Tactic` は要らない。
+
+% 2 1 0 0f7f3afe063030230ff470fa61d8edc1
+
+% 3 1 0 046cdf2f004e36861bbc6e472a172a49
+
+% 4 1 0 10a6954db0415f7618336edb17b2dc15
+
+% 5 1 0 0d30b557e7198eb31c54452fb4144859
+
+% 0 1 0 01d71f8508e54188026a1e7c0017d4e5
+
+% 0 1 0 161d62f2ad2f10da09dd0898bb343896
+
+% 1 1 0 10ce28879aafd64b0e96d676633c81a5
+
+@ 0 8 0 11b2f17aadf9821a0c6e566e1a725522
++       チャンクの形は入力を一行ずつ逐次的に消費し、木と各開いた段落のテキストだけを保持するので、長い文書を全体として抱えることなく解析できる。
++       それでも結果は木全体である。
++       リンク参照は、それを使うリンクの後で定義されてもよいので、入力が終わるまでどのブロックも確定しない。
++       CommonMark の適合性テストスイート全体が、ストリーミングの入り口を一チャンク一文字で通して合格するので、どこで分割された文書も、テキスト全体と同じように解析される。
++       `read[Markdown of Layout]`（`Markdown.aggregable`）で源から直接文書を読むときも、同じストリーミングパーサーを使う。
+
+@ 0 2 0 1e4d412a22b096ed1fd358ff2a3ca476
++       行は `\n` だけで分割され、その前の `\r` は行に残る。
++       インデントについては、仕様のとおり、タブは次の四桁の境界まで進むものとして数える。
+
+% 1 1 0 0424cdca566f39da031d43af3b8002e8
+
+% 2 1 0 01a807ce5cdc72430bfe5dfc71926691
+
+@ 0 6 0 0e521a40d6f21f500418e93bac050e73
++   entry .parse   テキストまたはチャンクから、Markdown を `Markdown of Layout` へと解析する
++       オーバーロードは四つある。`parse(text: Text)`、`parse(chain: Chain[Text])`、`parse(iterator: Iterator[Text])`、そして `parse(stream: Stream[Text] over Credit)(using Buffering)` であり、最後のものはストリームを消費する。
++       テキストの形は JVM のベクトル化された行検索で走査し、すでにメモリ上にあるテキストに対して最も速い。他の形は逐次的に読む。
++       四つとも、同じ入力に対して同じ木を作る。
+
+@ 0 1 0 00d0ee77698e59df1f22cd5722a09568
++ entry .Formattable   知っている言語について、フェンス付きコードブロックを HTML に描画する
+
+% 1 1 0 1e61f81cf644ef0303ba92ffdfc4e8d7
+
+@ 0 7 0 14b75fe82e944a4a1c120f325e3c0ec7
++       HTML 描画器のコードブロックのための型クラス。
++       `Markdown of Layout` が描画されるとき（`Markdown.layout`）、呼び出し箇所から見えるすべての `Formattable` given が `Every[Formattable]` に集められ、各 `Layout.CodeBlock` が順にそれらに差し出される。
++       `#format` はブロックの情報文字列（空白で区切ったもの）と内容を受け取り、使う HTML か、断るための `Unset` を返す。断られた場合は次のものに尋ね、最後にはブロックは単なる `pre` と `code` になる。
++       `Self` は言語のラベルの型なので、given は `"scala" is Formattable` と読める。
+
+@ 0 4 0 18545ba0fa930d3910c09d2c139b5803
++       標準のインスタンスは `harlequin.md` が提供する `formattables` パッケージにある。
++       `scalaFormattable` と `javaFormattable` は harlequin のトークナイザを通して Scala と Java をハイライトし、名前でインポートする。
++       他の言語のための `Formattable` は、`html` を呼ぶ箇所のスコープにある、このトレイトの given である。
+
+% 2 1 0 079e83c6531907df13928ae15b2fb801
+
+% 3 1 0 0e3ad2dd00dbf79215f9230b44c6e79e
+
+% 0 1 0 021a74b94d26ea1b106ad53969623773
+
+% 0 1 0 0105e740c7c7d39d193d13d608755a48
+
+% 0 1 0 1ed9b93ad6fa3f2f05d351571bcb609e
+
+% 1 1 0 111161250b6aa10d1e601566619c3f3b
+
+@ 0 1 0 066a3e06a5965428171f51bfb689d192
++       端末描画器における対応物は、`punctuation.ansi` にある `TeletypeFormattable` である。
+
+% 0 1 0 0a5f72de21bf013213391b46f04b22d7
+
+% 1 1 0 1e400b5c5a333a7e11da512a43f04cb2
+
+@ 0 6 0 1eefe6a94b7864b112e971719ff2dd12
++   entry #Self   この formattable が扱う言語のラベルの型
++   entry #format   この情報文字列と内容を持つコードブロックの HTML、または断るための `Unset`
++       `language` は情報文字列を空白で区切ったものなので、` ```scala title ` で開いたブロックは `List(t"scala", t"title")` を、インデントされたブロックは `Nil` を与える。
++       `content` は末尾の改行を含むコードである。
++       実装は最初の単語を調べ、扱わない言語に対しては `Unset` を返す。
+
+@ 0 1 0 12ec20c97f69e21b1448dc6a6215b572
++ entry .Translator   独自の描画器のための、`Markdown` のノードを HTML に変換する方式
+
+% 1 1 0 18f222d44d4ebbcb17ac71bb2ff7d8e6
+
+@ 0 7 0 13785cc1467d27470717ae434bed699e
++       `Markdown` の値のリストを HTML のフローコンテンツに（`#translate`）、インラインの内容の連なりをフレージングコンテンツに（`#phrasing`）対応づける描画器のためのインターフェース。
++       ライブラリの中にこれを呼ぶものはない。
++       標準の HTML 描画は `Renderable` given の `Markdown.layout` と `Markdown.prose` であり、このトレイトは、プログラム独自の変換が実装して、その呼び出し側が差し替えられるようにするための契約である。
++   entry #translate   `Markdown` の値のリストに対する HTML のフローコンテンツ
++   entry #phrasing   `Markdown of Prose` に対する HTML のフレージングコンテンツ
+
+@ 0 1 0 010edcf63f720ecc087829350a2e6088
++ entry .formatting   Markdown をソースとして書き戻すために名前でインポートする `Markdown.Formatting`
+
+% 1 1 0 049105a43b00d5fa02bf8a1014c06356
+
+@ 0 7 0 0d4195363da466351c16d8b9033acde9
++       `Markdown` に対する `show` のための選択パッケージ。
++       その唯一のメンバーは、デフォルト（折り返しなし）を名前付きの given として述べ直したもので、外側のスコープが設定した制限付きのフォーマットの上からインポートするためのものである。
++       制限付きの幅はパッケージのメンバーではない。パラメーターを取るので、`given Markdown.Formatting = Markdown.Formatting.bounded(80)` としてローカルに束縛する。
++   entry .unboundedMarkdownFormatting   段落は、どれほど長くてもそれぞれ一行に書かれる
++       すでに暗黙のスコープにある `Markdown.Formatting.unbounded` と同じ値である。
++       この名前は、そうしなければ制限付きのフォーマットが見つかってしまう箇所でインポートするためにある。
+
+@ 0 1 0 13b38d1346703afd0b733ae0cf3e5fbc
++ entry .construables   `text/markdown` のレスポンスを `Markdown of Layout` にするメディアタイプの対応づけ
+
+% 1 1 0 13bb440d1fe087d61f64b3cf0ca600d4
+
+@ 0 5 0 1ce50ada772719411d8aec2f80a6d9d2
++       apoplexy の OpenAPI クライアントのための選択パッケージ。そのクライアントの生成された操作は、スコープ内の `Construable` given を通して、レスポンスの本文をメディアタイプによってデコードする。
++       `markdownConstruable` を名前でインポートすると、`text/markdown` が文書に対応づけられ、`Markdown.aggregable` を通して読まれる。
++   entry .markdownConstruable   `text/markdown` は `Markdown of Layout` として解釈される
+
+@ 0 1 0 1cda17469f8c60e80e2bd4835527c88f
++ entry .Renderer   文書をスタイル付きの端末テキストとして描画する：`Renderer.render(markdown, width)`
+
+% 1 1 0 131c21c29a3e7fbd1987e6644f6489e6
+
+@ 0 13 0 1596ada80342d0131bbc33cb0e45e7f7
++       `punctuation.ansi` にある端末描画器で、`terminal` 拡張と `markdownPrintable` given がこれを駆動する。
++       `Markdown of Layout` を、指定した桁幅の escapade の `Teletype` に変える。
++       見出しは太字で色が付き、レベル 1 の見出しの下には `━` の罫線が、レベル 2 の見出しの下には `─` の罫線が引かれ、それ以外には控えめな `###` の接頭辞が付く。
++       段落はその幅で折り返され、全角の文字は二セルとして測り、長い単語はスコープ内の `Hyphenation` によって行末でハイフネーションされる。
++       強調はイタリック、強い強調は太字になる。
++       コードスパンは背景付きで色が付く。
++       リンクは下線が引かれ、色が付き、宛先への OSC 8 ハイパーリンクで包まれる。画像も同様で、角括弧で囲んだ代替テキストとして示される。
++       引用ブロックは `▎` のバーの後ろにインデントされる。
++       リストの項目は `•` または番号からぶら下がる。
++       区切り線は全幅の `─` の罫線になる。
++       コードブロックは二桁インデントされ、その言語を受け入れるスコープ内の最初の `TeletypeFormattable` によって構文ハイライトされ、受け入れるものがなければ控えめに表示される。
++       ブロックは空行で区切られるが、詰まったリストの項目は区切られない。
+
+% 2 1 0 1a88e928a5ab6dd8120acd2cb581bee6
+
+% 3 1 0 1b4382a9850635c50ab71640c41c4c39
+
+% 4 1 0 1fad8e40a257203c11ecd5ae1c0458a6
+
+% 0 1 0 15255cea8bdc7495133393d528ae15ae
+
+% 0 1 0 18d9492a361ec7c316e12c9168e0f11b
+
+% 1 1 0 1458d16819feaa6118d4ba6374be4cd2
+
+@ 0 6 0 1cf93d630124c095031f7babc4fe5a07
++       色はスコープ内の `MarkdownPalette` から来る。そのコンパニオンのデフォルトは、明るい背景にも暗い背景にも合う、トゥルーカラーの端末向けである。
++       `Hyphenation` は必須であり、コンパニオンのフォールバックは何もハイフネーションしないので、英語のテキストには `hyphenations.englishHyphenation` をインポートする。
++       `TeletypeFormattable` は呼び出し箇所から見えるものが使われ、`teletypeFormattables.scalaTeletypeFormattable` と `teletypeFormattables.javaTeletypeFormattable` の二つが標準のものである。
+
+% 1 1 0 093e18c2c40d219b1a0b480e986b0ea8
+
+% 1 1 0 1f636b737b305a5a1b47e315b3773f26
+
+% 0 1 0 1175179f3a379bba0841a98adb6ebf8b
+
+% 1 1 0 16b766c2fe22b7e10ea070e1ba789be5
+
+@ 0 6 0 168a4940dd832c18175cb9eb141f5db1
++   entry .render   スコープ内のパレット、ハイフネーション、formattable を使った、指定した幅の `Teletype` としての文書
++       `Renderer.render(markdown, width)(using Hyphenation, Every[TeletypeFormattable], MarkdownPalette)`。
++       幅は端末の桁数である。
++       引用ブロックやリストの項目の内容は、そのバーやマーカーの後に残る幅で折り返される。
++       結果は `Teletype` であり、その `plain` はスタイルなしのテキスト、`render(termcap)` は端末が理解するエスケープを含むテキストである。
+
+@ 0 1 0 13c0d0c57edaf5af073b876076a19eb0
++ entry .terminal   文書を端末向けに描画する：`markdown.terminal(width = 80)`
+
+% 1 1 0 0e78ebc470b090a1183b87ea2cee97fc
+
+@ 0 5 0 1c092ab47db5f7f203e6e9d32108a6e6
++       `punctuation.ansi` にある `Markdown of Layout` に対する拡張で、コンソールで文書を示す通常の方法である。幅のデフォルトを 80 桁とした `Renderer.render` にあたる。
++       `Hyphenation`（コンパニオンのフォールバックは何もハイフネーションしない。英語には `hyphenations.englishHyphenation` をインポートする）、`MarkdownPalette`（コンパニオンがデフォルトを与える）、そしてコードブロックのためのスコープ内の `TeletypeFormattable` を必要とする。
+
+% 2 1 0 16d1a101b6237c5c184a2529215b1b90
+
+% 3 1 0 1a48b6842a9acb2403c2f267728c6ce2
+
+% 4 1 0 06c629a591d955ba0dcdac38136c3fe9
+
+% 2 1 0 0e180f801c389b92008e87b949c0bda3
+
+% 0 1 0 0a55c2087e3bdd1e009c5ca6ae741001
+
+% 0 1 0 0d3325e1510458cc1566db13c41c9f4a
+
+% 0 1 0 0bb62fce2de1c3eb09ac1c2807aac532
+
+% 1 1 0 1d4cc6c4a9daedb2107ea9d7c9a64516
+
+@ 0 2 0 1787774d7ec2e6b01f8db7f2406d9906
++       端末の `Termcap` から読んだ幅で、文書を直接端末に出力するのは `markdownPrintable` の役目である。
+
+% 1 1 0 109754ec814619c812648c44a7da04c3
+
+% 1 1 0 083ab43067bd83b00202a5170951a8a5
+
+@ 0 1 0 0f767605befe82150cec68a6e117530e
++ entry .markdownPrintable   文書を、その `Termcap` が報告する幅で端末に出力する
+
+% 1 1 0 16587193b37e0d2912e6349ceca8daa0
+
+@ 0 7 0 07697856cca0e64807a9897d42d7fd73
++       `punctuation.ansi` にある `Markdown of Layout` の `Printable` given。文書を端末の `Out` に直接書けるようにするもので、スコープ内の `Termcap` の幅で `Renderer` が描画し、escapade の `Teletype is Printable` が ANSI エスケープに変換する。
++       自分の幅を知らない termcap（組み込みの `termcapDefinitions` は `Int.MaxValue` を報告する）では、整数の幅の罫線を描く代わりに 80 桁で描画する。
++       `terminal` と同じ `Hyphenation`、`MarkdownPalette`、`TeletypeFormattable` を必要とする。
+
+@ 0 3 0 1b8a8a60a476786208fc09ab7f943088
++       主題である `Printable` もそのトピックもよそに属するので、これはコンパニオンのメンバーではなくトップレベルの given であり、名前でインポートする：`import soundness.markdownPrintable`。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 1e68eb373a2ffd470f28c08befbade08
+
+% 1 1 0 18455b578085f0e10295d0b7709162b5
+
+% 2 1 0 01c22748c565f76c0e0ba9a16e1c709c
+
+% 0 1 0 0cdfa7ed1df6857e0042f95ab0f97fad
+
+% 1 1 0 16111dfdef9124f2069d50c81b4d0f35
+
+% 2 1 0 1a13062825d58b710ec4ea52e2563f6b
+
+% 1 1 0 06d4dbf99c41c231049bfe888092bdde
+
+@ 0 1 0 12c23ca9cdb0c6bc1e448ca91575eec1
++ entry .MarkdownPalette   端末描画器が使う色。デフォルトを持つケースクラスとして
+
+% 1 1 0 0429fd81a698dac01e08540f1dd76f2f
+
+@ 0 2 0 14e67aea1a08e90e11d70f7be34bef36
++       七つの 24 ビットの `Chroma` の色で、それぞれがフィールドであり、トゥルーカラーの端末で明るい背景にも暗い背景にも読めるように選んだデフォルトを持つ。
+
+% 2 1 0 1351be2af8304db8029739b882c0a95f
+
+@ 0 10 0 117d2fdd84ed4ea01154da504b22647e
++       column  フィールド
++       column  色を付けるもの
++       column  デフォルト
++       row  `#heading`  見出しのテキストと、レベル 1 とレベル 2 の見出しの下の罫線  `Chroma(0x82, 0xaa, 0xff)`
++       row  `#link`  リンクのテキスト  `Chroma(0x80, 0xcb, 0xc4)`
++       row  `#code`  コードスパンの前景  `Chroma(0xff, 0xcb, 0x6b)`
++       row  `#codeBg`  コードスパンの背景  `Chroma(0x2a, 0x2a, 0x2a)`
++       row  `#quoteBar`  引用ブロックの横の `▎`  `Chroma(0x82, 0xaa, 0xff)`
++       row  `#rule`  区切り線  `Chroma(0x60, 0x60, 0x60)`
++       row  `#subdued`  リストのマーカー、見出しの接頭辞、画像のラベル、インラインとブロックの HTML、ハイライトされないコードブロック  `Chroma(0x80, 0x80, 0x80)`
+
+% 1 1 0 0097279934781ad51581082cb52c5d5d
+
+@ 0 3 0 0fc0580e5e1fd05b1fb418de0aeeb11d
++       コンパニオンの `.default` given は暗黙のスコープにあるので、`terminal` にパレットのインポートは要らない。
++       別のものはローカルな given として束縛する。通常はデフォルトをコピーして一つのフィールドを変える。
+
+% 2 1 0 0c0ee11b086020541389e5db8ae919e8
+
+% 3 1 0 0580030e0af28eba172151036db19634
+
+% 4 1 0 0c02d9077e3e164e045f86bc2827b4fd
+
+% 0 1 0 1ee2ae236684dd0814d3bdac88ad6e00
+
+% 0 1 0 0930f99c70c3258612192ff5ea4e657c
+
+% 1 1 0 1aed59b251a50b29080617ee89109d0f
+
+% 2 1 0 02bbb2f46005a72510eccd6d82e62ea1
+
+@ 0 8 0 01d9f19c92a67b4e0eeecb5724742b1d
++   entry .default   暗黙のスコープにある標準のパレット
++   entry #heading   見出しのテキストと、レベル 1 とレベル 2 の見出しの下の罫線
++   entry #link   リンクのテキスト
++   entry #code   コードスパンのテキスト
++   entry #codeBg   コードスパンの背景
++   entry #quoteBar   引用ブロックの横の `▎` のバー
++   entry #rule   区切り線
++   entry #subdued   リストのマーカー、見出しの接頭辞、画像のラベル、生の HTML、ハイライトされないコード
+
+@ 0 1 0 1220608f41646d6d1dac884c0e009e5d
++ entry .TeletypeFormattable   知っている言語について、フェンス付きコードブロックをスタイル付きの端末テキストとして描画する
+
+% 1 1 0 1b0826b8c56b51f603560fa1f387140b
+
+@ 0 6 0 1659219afdc5c8201392db0a80881b01
++       `Formattable` の端末における対応物。
++       `Renderer` が `Layout.CodeBlock` に出会うと、呼び出し箇所から見えるすべての `TeletypeFormattable` given が `Every[TeletypeFormattable]` に集められ、それぞれに順にブロックの情報文字列と内容が差し出される。
++       `#format` は表示する `Teletype` か、断るための `Unset` を返し、どの formattable も受け入れないブロックはパレットの控えめな色で表示される。
++       `Self` は言語のラベルの型なので、given は `"scala" is TeletypeFormattable` と読める。
+
+@ 0 3 0 01d533dbbc36fa6b1c18fe08b047cc2d
++       標準のインスタンスは `teletypeFormattables.scalaTeletypeFormattable` と `teletypeFormattables.javaTeletypeFormattable` で、harlequin を通してハイライトし、スコープ内に `ScalaSyntaxPalette` を必要とする。
++       これらは名前でインポートする。
+
+% 2 1 0 1f82f9d11bdc905d0805865ab2e51fb9
+
+% 3 1 0 1491f0035da1c2650087ebd1e48aa51a
+
+% 0 1 0 0a00cc129f570cee0457acec12124cd8
+
+% 0 1 0 05acaa93776c216c184028fa6110f7fe
+
+% 0 1 0 15a061065a82fced1ea81a383369951a
+
+% 1 1 0 0c3e32e4cc3d51b81d2b7e9726230034
+
+% 0 1 0 02b365f9c5bccd2902211791e36204a7
+
+% 1 1 0 03634a76777141a00ce0bccfda83a007
+
+@ 0 5 0 081f57c27772f8a6012e9e484dd11b51
++   entry #Self   この formattable が扱う言語のラベルの型
++   entry #format   この情報文字列と内容を持つコードブロックのスタイル付きテキスト、または断るための `Unset`
++       `language` はフェンスの情報文字列を空白で区切ったもの（インデントされたブロックでは `Nil`）であり、`content` は末尾の改行を含むコードである。
++       実装は最初の単語を調べ、他の言語は `Unset` で断る。
+
+@ 0 1 0 00335077824c8b7e00517b621d272612
++ entry .teletypeFormattables   端末出力における `scala` と `java` のコードブロックの構文ハイライト。名前でインポートする
+
+% 1 1 0 13b9eef5d767b3be0d451123dae3079f
+
+@ 0 6 0 113d4b755af7538112c3a4c4a168421b
++       `Renderer` と `terminal` のための `TeletypeFormattable` given の選択パッケージ。
++       それぞれがフェンスの情報文字列の最初の単語によって一つの言語を引き受け、ブロックを harlequin のトークナイザに通し、スコープ内の `ScalaSyntaxPalette` given によってトークンに色を付ける。これは各アクセント（`scalaKeyword`、`scalaString`、`scalaType`、…）に色を持つ iridescence の `Palette` であり、したがってインポートと並んでパレットを提供しなければならない。
++       インポートがなければ、コードブロックはハイライトされずに控えめな色で表示される。
+
+% 2 1 0 09104c12ea13f54f14c9d0c2e5728f61
+
+% 3 1 0 1826dc50ae74f8a715c9a96f0ce8b5a0
+
+% 0 1 0 1981d85b6a484e5607212536c2cd1a77
+
+% 1 1 0 00f67a14966813b71b5977b472017c7c
+
+% 0 1 0 17a455bb0bde96af017a8be93f37dd11
+
+% 0 1 0 0b4daaf07ee83e5d097c1d72c83a34a8
+
+% 0 1 0 00c5712aa18ba3dc0e69dbe2536603bb
+
+% 0 1 0 0a5e92d2040ff4b81adb7ecc5d5e3f30
+
+% 0 1 0 1e3251f4c4a879a6036b1016234457f4
+
+% 0 1 0 156ff9da83bc0f6e0d2c121c6b0fb1a5
+
+% 0 1 0 1c02d66c88d9b0771810f1d2033182c2
+
+% 0 1 0 002eef6ee655e8771eb95f6029d5cac6
+
+% 0 1 0 00f87acfc708bd381a6f978612e2d22c
+
+% 0 1 0 154737504811550e0353498ee66c6997
+
+% 0 1 0 05b0b608b5b09384010d06a0d6e12141
+
+% 0 1 0 0e19de08a7db278019bbdb5875a3e34f
+
+% 0 1 0 0facccb3415a5bbb035655786976986c
+
+% 0 1 0 0f38ed28169accd0106d5f76d55c646a
+
+% 0 1 0 0153d6849f43bbb0023795b5530ea905
+
+% 0 1 0 0ac423ec5c85a7681be2d1ce520dae2f
+
+% 0 1 0 1151b4c3c8ef02ad1ebae31831cfb370
+
+% 0 1 0 19056e698e8cab351aaa2049f98ccc10
+
+% 1 1 0 023a70fe56ccbdbd08a6965077c1a6bf
+
+@ 0 2 0 0c7ee2048bd63e630c3dd11595ae63c6
++       ライブラリには標準の `ScalaSyntaxPalette` given は含まれていないので、パレットは常に呼び出し側が用意する。
+
+% 1 1 0 04018cea5e24327412dd75d77ef80878
+
+% 1 1 0 19d5804dcb5486f9184e100cd749a4be
+
+@ 0 6 0 1d8e32b593fc9a6417dd108001184b9f
++   entry .scalaTeletypeFormattable   `scala` のコードブロックを harlequin でハイライトし、スコープ内の `ScalaSyntaxPalette` で色を付ける
++       情報文字列が `scala` で始まるブロックを受け入れ、それ以外は断る。
++       `ScalaSyntaxPalette` given を必要とする。
++   entry .javaTeletypeFormattable   `java` のコードブロックを harlequin でハイライトし、スコープ内の `ScalaSyntaxPalette` で色を付ける
++       情報文字列が `java` で始まるブロックを受け入れ、それ以外は断る。
++       `ScalaSyntaxPalette` given を必要とする。
+
+@ 0 1 0 00b0edf1519dd95e13d7a85356a900e1
++ entry .formattables   HTML 出力における `scala` と `java` のコードブロックの構文ハイライト。名前でインポートする
+
+% 1 1 0 048f2b34f55b3141108463b05e850595
+
+@ 0 9 0 1cc926efdf0b3f99068397cf04dc5b40
++       `Markdown of Layout` に対する `html` のための `Formattable` given の選択パッケージで、harlequin ライブラリの `harlequin.md` コンポーネントがこのパッケージに提供する。
++       それぞれがフェンスの情報文字列の最初の単語によって一つの言語を引き受け、ブロックを harlequin でトークン化し、クラス `amok` の `div` を出力する。その中の `pre` は一行ごとに一つの `span.line` を持ち、各トークンは `code` 要素で、そのクラスがアクセント（`keyword`、`string`、`type`、…）と、項や型の場合はその役割（`binding` または `usage`）を名指しするので、色はスタイルシートが決める。
++       どちらも、そのような HTML の formattable のための harlequin の基底である `CommonFormattable` である。
++       インポートがなければ、コードブロックは `language-scala` クラスを持つ単なる `pre` と `code` として描画される。
+
+% 2 1 0 0d8011a435673c431470bc582ae1936b
+
+% 3 1 0 19ce5d3108cc60cb028f9736dccd0a2d
+
+% 0 1 0 140d3025188fe23c1673327f094c0280
+
+% 0 1 0 1bd5a9fed498d08d13bb343f54211fed
+
+% 0 1 0 060f2e9fb1a183830ed4efcdfe3f0cbd
+
+% 1 1 0 0d9ea6265143042112b7c55a97486228
+
+% 1 1 0 13b822186d00d62e19bca0b9f0cbfe69
+
+@ 0 4 0 125d6a32994c8eee02c73dbd1ffb72de
++   entry .scalaFormattable   `scala` のコードブロックを、クラス付きの `code` 要素としてハイライトする
++       情報文字列が `scala` で始まるブロックを受け入れ、それ以外は断る。
++   entry .javaFormattable   `java` のコードブロックを、クラス付きの `code` 要素としてハイライトする
++       情報文字列が `java` で始まるブロックを受け入れ、それ以外は断る。
+
+@ 0 1 0 1e0230b6478b6673039d9d2f4ddf0f77
++ entry .LeafBuilder   テキストを保持するブロック（段落またはコードブロック）のための、パーサー内部のビルダー
+
+% 1 1 0 049f6a728d69fd3c095f0e5c6b8c7d0c
+
+% 2 1 0 17432b352b2dba1a1e6c18d0b2fe0801
+
+@ 0 4 0 0f637888a792c1f51378f01a0e57d6dc
++       直接使うものではない。
++       ブロックパーサーの作業状態の一部で、リーフブロックの行を蓄積し、最後に `Layout` にする。
++       その `finish` は、それまでに見たリンク参照に照らしてブロックを解決する。
++       `ParagraphBuilder`、`FencedCodeBlockBuilder`、`IndentedCodeBlockBuilder` がそのケースである。
+
+@ 0 1 0 1f6f94f1750d210c12d582950d320768
++ entry .ContainerBuilder   他のブロックを保持するブロックのための、パーサー内部のビルダー
+
+% 1 1 0 18568ed14d62370d0d0768592320aff6
+
+% 2 1 0 0811cfc3a842e9da0e69a0adf4f54a08
+
+@ 0 4 0 094b3e9dd209e6491a324572904e4381
++       直接使うものではない。
++       文書、引用ブロック、リスト、リストの項目のための、ブロックパーサーの作業状態である。
++       完成した `children` のバッファーを保持し、`tryContinue` は行がコンテナーを続けるかを決めてその接頭辞を取り除き、`finish` は `Layout` を作り、`closesOnBlank` は空行がそれを終わらせるかを示す。
+
+@ 0 1 0 0924c3d8f7a3980a191eff6fc1fde062
++ entry .DocumentBuilder   入力の終わりまで開いている、パーサー内部のルートコンテナー
+
+% 1 1 0 055cc6e0313344c70dcb1252ca6f359a
+
+% 2 1 0 1f8001ae56f60f2c1bedd21c8e02d31c
+
+@ 0 2 0 1f196833796b02b61235dce8d5f558fb
++       直接使うものではない。
++       どの行でも続き、最後には何も作らない。
++       その子が文書である。
+
+@ 0 1 0 1ff4b1fd544b6d86013f9a04908dd064
++ entry .BlockQuoteBuilder   `Layout.BlockQuote` を組み立てるパーサー内部のビルダー
+
+% 1 1 0 0f89b251ce990dfb1051c3f7131f2cb9
+
+% 2 1 0 1a7ac161e516a40f1c0af1585c7c74a4
+
+@ 0 3 0 18a9d8d8b77e977500cda224af61d219
++       直接使うものではない。
++       最大三つの空白と `>` で始まる行で続き、マーカーとその後の空白一つを取り除き、最後にその子からなる `Layout.BlockQuote` になる。
+
+@ 0 1 0 08ba52be2b70ba4618add5c1f633bae3
++ entry .ListItemBuilder   リストの一つの項目を組み立てるパーサー内部のビルダー
+
+% 1 1 0 09ac06128a0f433c0b40c639638eaa53
+
+% 2 1 0 0f05f345c6beeb5a107db26d8d06392e
+
+@ 0 4 0 1aa558242c3b3db6043d62d1b47db70c
++       直接使うものではない。
++       少なくとも項目の内容の桁（`indent`）までインデントされた行、または空行で続く。
++       `hadBlank` は、その後で空の項目が閉じる空行を記録する。
++       その `finish` は仮置きのものである。
++       項目の子は、それを囲むリストのビルダーが自分で集める。
+
+@ 0 1 0 166ac8929b5071730e35e9b3bf862585
++ entry .BulletListBuilder   `Layout.BulletList` を組み立てるパーサー内部のビルダー
+
+% 1 1 0 168ce8b95911492c0e40efc4edc9b0bd
+
+% 2 1 0 148309ae60b61701182d195f5042e211
+
+@ 0 4 0 03ce5d19736dd317185adc9e0d80165a
++       直接使うものではない。
++       一つの `marker` 文字（`-`、`*`、`+`）によるリストのために、それぞれがブロックのリストである `items` を集める。
++       `loose` は空行が項目を隔てるときに設定され、`pendingBlank` はそれを判定している間に設定される。
++       最後に、ゆるくなければ詰まった `Layout.BulletList` になる。
+
+@ 0 1 0 1bb5c2779b7996d50260236e9bd66f36
++ entry .OrderedListBuilder   `Layout.OrderedList` を組み立てるパーサー内部のビルダー
+
+% 1 1 0 1e4fc4fc08cf43971da797a75ba70ba0
+
+% 2 1 0 0b4f99c3c6c53695001fec0dfd20d0ef
+
+@ 0 2 0 14f096d3c188b4210bde337611c696d7
++       直接使うものではない。
++       `BulletListBuilder` と同じだが、`start` の番号と `.` または `)` の `delimiter` を持つ番号付きリストのためのものである。
++       最後に `Layout.OrderedList` になる。
+
+@ 0 1 0 064cab8a42f8170117c6e8545b6d11dd
++ entry .ParagraphBuilder   `Layout.Paragraph` または setext の見出しを組み立てるパーサー内部のビルダー
+
+% 1 1 0 14a258291c01df020b19e6fb9562277f
+
+% 2 1 0 1de76b3dede09b771249a6735d30f70e
+
+@ 0 7 0 1b800c905ce010e019b32fa719b54695
++       直接使うものではない。
++       `addLine` で行を蓄積し、先頭の空白を取り除く。
++       `isEmpty` は行が一つもないかどうかである。
++       `finish` では、まずテキストの先頭からリンク参照の定義を取り出して文書の参照に加え、残りのテキストからなる `Layout.Paragraph` を作る。段落が定義だけであった場合は何も作らない。
++       `toHeading(level, refs)` は setext の下線に対して同じことを行い、`Layout.Heading` を作る。
++       段落のテキストは、参照が出そろった後で、インラインの内容として解析される。
+
+@ 0 1 0 05a2501224674fc40a1d310220df65bc
++ entry .FencedCodeBlockBuilder   フェンス付きの `Layout.CodeBlock` を組み立てるパーサー内部のビルダー
+
+% 1 1 0 122b924478cea5030144bf0a54cf3319
+
+% 2 1 0 129d42ccf15b8f8e188fe70f5044f232
+
+@ 0 3 0 0a181cb6fe1616951d3dd82f25e786e5
++       直接使うものではない。
++       フェンスの文字、長さ、インデントと、空白で区切った情報文字列を覚え、`addLine` で行を集め、最後に、各行の後に改行を置いて連結したものを内容とする `Layout.CodeBlock` になる。
+
+@ 0 1 0 0b47d69bd56341c508c78cca523b9698
++ entry .IndentedCodeBlockBuilder   インデントされた `Layout.CodeBlock` を組み立てるパーサー内部のビルダー
+
+% 1 1 0 196c30aab5f5cf930b4cd523df4d41ba
+
+% 2 1 0 07381a89c773e3da084b9259c170073c
+
+@ 0 2 0 116037408d0b2ace0562415b605fbd03
++       直接使うものではない。
++       `addLine` で行を集め、`finish` で末尾の空行を落とし、空の情報文字列を持つ `Layout.CodeBlock` を作る。
+
+@ 0 1 0 1c64e7b384e2530b18d32d908513394b
++ entry .InlineData   インラインパーサーの作業リストにあるノードの、パーサー内部のペイロード
+
+% 1 1 0 0a6721d177a3799919cba330d345054b
+
+% 2 1 0 1dee7f5cba0a356601cabf6378762649
+
+@ 0 7 0 13205e4bc4ff02fa08342b855661c562
++       直接使うものではない。
++       インラインパーサーの中間形式のシールされたトレイトである。
++       インラインパーサーは段落を `InlineNode` の双方向連結リストにトークン化する。各ノードは `InlineData`（テキスト、コードスパン、インライン HTML、改行、リンクまたは画像、角括弧のマーカー、区切り文字の連なり）を保持する。
++       その後、CommonMark の区切り文字のアルゴリズムで強調を解決し、リストを `Prose` に変換する。
++       `TextData`、`CodeData`、`HtmlInlineData`、`SoftbreakData`、`LinebreakData`、`LinkData`、`ImageData`、`EmphasisData`、`StrongData`、`BracketData`、`DelimData` がそのケースである。
+
+@ 0 1 0 00d95a814f22aedf005b41cc6f9f2c57
++ entry .TextData   パーサー内部：インラインのリストにある文字どおりのテキストの連なり
+
+% 1 1 0 0dcfea5a7e24ded604fa5915c0e31f95
+
+% 2 1 0 1f814b23f77e38de08d9cf15b564823f
+
+@ 0 1 0 1457a1077f621c130322e168c3a7afb5
++       直接使うものではない。
++       `Prose.Textual` になる。
+
+@ 0 1 0 1fce4bd07b0f322f1e5059dd16149c00
++ entry .CodeData   パーサー内部：インラインのリストにあるコードスパン
+
+% 1 1 0 1913c4ff48b2922e069ed238e94f31ce
+
+% 2 1 0 09d7c76602a6230617936d19c0b08551
+
+@ 0 1 0 05327157d186a41207475908e1b95775
++       直接使うものではない。
++       `Prose.Code` になる。
+
+@ 0 1 0 1dd58aa4095343c800fb3ca9f2b6a8f6
++ entry .HtmlInlineData   パーサー内部：インラインのリストにある生のインライン HTML タグ
+
+% 1 1 0 1430b6f706c320021f24d2f63113c420
+
+% 2 1 0 1b0beb091b31e3bb0c0b3700bd045d62
+
+@ 0 1 0 15bd0cf48d986d60072de3bcb6d1ce00
++       直接使うものではない。
++       `Prose.HtmlInline` になる。
+
+@ 0 1 0 08599711858959891433c27b369063f0
++ entry .SoftbreakData   パーサー内部：インラインのリストにあるソフト改行
+
+% 1 1 0 1fc500690d2a8c0b08dd9ef2e94cbd9c
+
+% 2 1 0 119425d66b824bec0ae05e1f5cccd7f5
+
+@ 0 1 0 189d36dbdd0246cb166a2ca2dfb21ef3
++       直接使うものではない。
++       `Prose.Softbreak` になる。
+
+@ 0 1 0 0ea037f85c9e225d15ffd9ea533c9339
++ entry .LinebreakData   パーサー内部：インラインのリストにあるハード改行
+
+% 1 1 0 02b58459e0c207c41f3f88381e500f31
+
+% 2 1 0 19bcb7a3e4ffe65701c7e58edeeb0fb4
+
+@ 0 1 0 0c8e3686d97ebc6301f1c71a66899a43
++       直接使うものではない。
++       `Prose.Linebreak` になる。
+
+@ 0 1 0 052a1a20ff9402e71dccb6d0e171d49c
++ entry .LinkData   パーサー内部：宛先、タイトル、内容のノードを持つ、解決済みのリンク
+
+% 1 1 0 09cc2903c9fe739d1dad9baed406072a
+
+% 2 1 0 0ead3b5771e4c95707211f701b2e598c
+
+@ 0 1 0 1ac7f5c1227ebd171a7be85b6061461e
++       直接使うものではない。
++       `Prose.Link` になる。
+
+@ 0 1 0 0d91dbd2a3aaa79f1f64b978aa6ac1e2
++ entry .ImageData   パーサー内部：宛先、タイトル、内容のノードを持つ、解決済みの画像
+
+% 1 1 0 055a98c672cfe8c4140a1c102eaa155e
+
+% 2 1 0 03fe4f15feb6e3d9142bf150949828e7
+
+@ 0 1 0 1d270e4694be1a3e0eaf8aac45b5442f
++       直接使うものではない。
++       `Prose.Image` になる。
+
+@ 0 1 0 07df411491eda7330b67be2a933fb550
++ entry .EmphasisData   パーサー内部：インラインのノードのリストを包む強調
+
+% 1 1 0 00048d946170103e154d4d167c343077
+
+% 2 1 0 0195201de8f6252b087def08a87befeb
+
+@ 0 2 0 18c6d39e08f5f2c30f3fc291cb1521ba
++       直接使うものではない。
++       強調のアルゴリズムが、対になった区切り文字の連なりの代わりに挿入するもので、`Prose.Emphasis` になる。
+
+@ 0 1 0 140cfd017f61cb661d94d30107d23fad
++ entry .StrongData   パーサー内部：インラインのノードのリストを包む強い強調
+
+% 1 1 0 1500dcf4b30704201c8376cf35e91c13
+
+% 2 1 0 0ca85185133af0e308f1ecf3bbae7dd6
+
+@ 0 1 0 188fb6d1904e792814e4206244121144
++       直接使うものではない。
++       `Prose.Strong` になる。
+
+@ 0 1 0 1011d0b8f3aeaa3c156f036cff8b90f8
++ entry .BracketData   パーサー内部：閉じ角括弧を待つ `[` または `![` のマーカー
+
+% 1 1 0 15fe67f741a3b8f816c956fb22e45d6e
+
+% 2 1 0 15c9ac4c07d0decb06a7fce91ec99d48
+
+@ 0 3 0 1a2ec64808f1a8ee065cd092b293adba
++       直接使うものではない。
++       `isImage` は、その角括弧が画像を開いたかどうかである。
++       閉じ角括弧が見つかると、マーカーはリンクか画像に置き換えられるか、文字どおりのテキストとして残されるか、それを含むリンクが無効にしていた場合は飛ばされる。
+
+@ 0 1 0 13db23491bb9e0f20a08e7de085805a7
++ entry .DelimData   パーサー内部：`*` または `_` の区切り文字の連なりと、その左右の隣接関係
+
+% 1 1 0 1aa7153daa20741407f15c046f0d9905
+
+% 2 1 0 1b8935ee30bcd90c1840e0b6ea3b52c6
+
+@ 0 3 0 129859f4b3a8d43a1864872d1fa97dfd
++       直接使うものではない。
++       区切り文字の `char`、連なりの残りの `length`（強調のアルゴリズムが消費するにつれて減る）、そして左隣接と右隣接の規則によって、その連なりが強調を開けるか（`canOpen`）、閉じられるか（`canClose`）を保持する。
+
+@ 0 1 0 19675bf800290d7c11edcbcfd33f08f3
++ entry .InlineNode   パーサー内部：インラインパーサーの双方向連結リストのノード
+
+% 1 1 0 0cb386d46cd4be9c1861206697df0112
+
+% 2 1 0 027a58e4a48dca2318f06a635bfac66c
+
+@ 0 2 0 1f964a2914992a900fed0a9d0a0b28f4
++       直接使うものではない。
++       可変の `data`、`prev`、`next` を保持し、強調のアルゴリズムがそれらをその場で書き換える。
+
+@ 0 1 0 07aced0a4fd9ae0d1e776c5ae8716161
++ entry .InlineList   パーサー内部：インラインパーサーのノードの双方向連結リスト
+
+% 1 1 0 1e92513cd5f9920416e6541b346caea8
+
+% 2 1 0 11f8d0b40536c480119a4529213bc8b9
+
+@ 0 3 0 163dd1a8171b62060f5b28eb45bc9f7d
++       直接使うものではない。
++       `first` と `last` がその両端である。
++       `append` は何らかの `InlineData` を保持するノードを加え、`insertAfter` と `remove` はリストをつなぎ替え、`iterator` は最初のノードからリストをたどる。
+
+@ 0 1 0 01f82dd88a5e6bef0af97de0dc0e314b
++ entry .BulletMarker   パーサー内部：行の中で認識された箇条書きリストのマーカー
+
+% 1 1 0 0df8782086ccf24d0a80dea97c9947f0
+
+% 2 1 0 1ec26a6b15de333713954f1c81462ae2
+
+@ 0 2 0 060673e7d6c048a60bfa49aaed02d88d
++       直接使うものではない。
++       マーカーの `char`、項目の内容が始まる桁（`contentIndent`）、そしてマーカーの後の行の残り（`rest`）である。
+
+@ 0 1 0 1ff7ce3e4a43381913cd8ee3b389e85a
++ entry .OrderedMarker   パーサー内部：行の中で認識された番号付きリストのマーカー
+
+% 1 1 0 089afe79f7c8ae9209dc31aeb8f7e3d8
+
+% 2 1 0 078a0d79b5636eb201ad93ae269f1a39
+
+@ 0 2 0 039b4d978084f4d508084502cc7fe82d
++       直接使うものではない。
++       `start` の番号、`.` または `)` の `delimiter`、項目の内容が始まる桁（`contentIndent`）、そして行の残り（`rest`）である。
+
+@ 0 1 0 17580ed67b314a150ab2a58bec2a6720
++ entry .EntityMatch   パーサー内部：デコードされた HTML の実体参照または数値文字参照
+
+% 1 1 0 15dc2fba3f2f6f721bd2089ac295da46
+
+% 2 1 0 08adc2922e9e3a9d1e7f4a72d6c9b547
+
+@ 0 1 0 09ab7336038313f00090b288830cff49
++       直接使うものではない。
++       デコードされたテキスト（`decoded`）と、参照の後のオフセット（`end`）である。
+
+@ 0 1 0 1d3eecce990e7d261705e7284a444377
++ entry .CodeSpanMatch   パーサー内部：認識されたバッククォートのコードスパン
+
+% 1 1 0 16b40fe40d2d6f720bc352401d42b3a0
+
+% 2 1 0 01c7bdf01f40081c0e9e202e01ab57e6
+
+@ 0 2 0 05b6b499f524e9b31a808142c508e4b0
++       直接使うものではない。
++       仕様による前後の空白一つの除去を適用した、スパンの `content` と、閉じバッククォートの後のオフセット（`end`）である。
+
+@ 0 1 0 1e5b266793867bf91cbabf0bdfc22066
++ entry .AutolinkMatch   パーサー内部：認識された `<…>` の自動リンク
+
+% 1 1 0 1006c5937d0fe81d12aa9ca933f24cf5
+
+% 2 1 0 0a488cda5a0864610bc214757de7e983
+
+@ 0 2 0 043b03e7dc51bd5609a511c7dba31943
++       直接使うものではない。
++       URL またはメールアドレスに対する `Prose.Link` と、閉じ `>` の後のオフセット（`end`）である。

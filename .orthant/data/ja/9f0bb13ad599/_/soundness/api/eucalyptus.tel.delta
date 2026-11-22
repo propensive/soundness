@@ -1,0 +1,41 @@
+orthant 2 language
+
+@ 0 9 0 1a241fe6c66dbd9507172f836d70279f
++       キューと書き込みのデーモンは**呼び出し箇所**と出力先に属する。
++       同じソース位置で等しい出力先に対して作られたすべての `Logger` は 1 つを共有するので、召喚のたびに再評価される given が毎回新しいスレッドを始めることはなく、1 行から異なるパスに対して `Logger(path)` を作るヘルパーはパスごとにキューを得る。
++   entry #accepts   ロガーがあるレベルのイベントを記録するかどうか。閾値以上なら記録する
++   entry #submit   転記されたイベントを、レベルとタイムスタンプとともに、整形と書き込みのためにキューに入れる
++       `#accepts` と `admits` を通った後に `Loggable.fanOut` が呼ぶ。イベントは呼び出し側のスレッドで整形され、そのレコードが書き込みのデーモンのためにキューに入れられる。
++       通常は直接呼ばない。
+
+@ 0 4 0 1f408433dcd1404302e9905c86c98c22
++ entry .dateFormat   タイムスタンプ付きの形式の日付と時刻のパターン：`2026-Nov-04 09:30:00.250`
++     JVM の既定のタイムゾーンにおける `yyyy-MMM-dd HH:mm:ss.SSS` の `java.time.format.DateTimeFormatter` であり、`timestampedLogFormat` と `ansiTimestampedLogFormat` が使う。
++     これは不変なので、複数のスレッドから使っても安全である。
+
+@ 0 18 0 04ccd8bc38e978cb08d9b89461024798
++       `timestampedLogFormat` と `untimestampedLogFormat` は任意の `Communicable` な値を整形し、`ansiTimestampedLogFormat` と `googleCloudPlatformLogFormat` は `Message` だけを整形する。`Logger[…, Message]` はすべてのイベントを `Message` に転記する。
++       `Log.Level` を描画する `textLevelLogFormat` と `teletypeableLogFormat` は、ほかの形式が使うものである。
++   entry .timestampedLogFormat   1 行のテキスト：日付と時刻、角括弧の中のレベル、そしてメッセージ
++       `2026-Nov-04 09:30:00.250 [INFO] server listening on 8080` のように改行で終わり、任意の `Communicable` なイベントに使える。タイムスタンプは `dateFormat` で整形される。
++   entry .untimestampedLogFormat   1 行のテキスト：角括弧の中のレベル、そしてメッセージ
++       `[INFO] server listening on 8080` のように改行で終わり、任意の `Communicable` なイベントに使える。
++       `Syslog` のように自らタイムスタンプを付ける出力先に適している。
++   entry .textLevelLogFormat   `Log.Level` を `FINE`、`INFO`、`WARN`、`FAIL` として描画する
++       テキスト形式が埋め込む、`Log.Level` の `Showable` である。
++   entry .ansiTimestampedLogFormat   テレタイプ：薄暗い日付と時刻、色付きの地の上のレベル、`>`、そしてメッセージ
++       端末向けの `Message is Inscribable in Teletype` であり、`eucalyptus.ansi` にある。
++       色のために `LogPalette` がスコープに必要である。
++       メッセージは最大 76 文字の行に切られ、各継続行は最初の行のメッセージの下に揃うように字下げされる。
++       出力先が `Out` の場合は、`writables.outTeletypeWritable` と `Stdio` も必要である。
+
+@ 0 11 0 190478ab175d462714e45d0774375a5a
++       各レコードは改行で終わる。
++   entry .teletypeableLogFormat   `Log.Level` を、そのレベルの `LogPalette` の色の上の太字のラベルとして描画する
++       `ansiTimestampedLogFormat` が使う `Log.Level` の `Teletypeable` であり、`eucalyptus.ansi` にある。
++       `LogPalette` が必要である。
++   entry .googleCloudPlatformLogFormat   イベントごとに 1 つのコンパクトな JSON オブジェクト。`severity` と `message` を持つ
++       `eucalyptus.gcp` にある `Message is Inscribable in Text` であり、`{"severity":"WARNING","message":"…"}` を書く。これは Google Cloud のロギングエージェントがコンテナーの標準出力から読む構造化された形である。
++       レベルは `DEBUG`、`INFO`、`WARNING`、`ERROR` に対応する。メッセージはスタイルのない平文のテキストである。
++       エージェントが自らタイムスタンプを記録するので、タイムスタンプは書かれない。
++       各レコードは改行で終わる：1 行に 1 つのオブジェクトである。

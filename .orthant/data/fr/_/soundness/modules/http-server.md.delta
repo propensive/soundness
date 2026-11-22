@@ -1,0 +1,366 @@
+orthant 2 language
+
+@ 0 1 0 14f7a4b0968f752d1374b9050643bbef
++ ## Serveur HTTP
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 4 0 1717cb4fe121a05b1342ee527d6e1d13
++ Un serveur HTTP est un gestionnaire : une fonction d'une requête vers une réponse, servie sur un
++ port. On en lance un avec une seule expression. Le gestionnaire lit la requête qui est dans la
++ portée, filtre sur sa méthode et son chemin, et renvoie une réponse typée, dont le
++ `Content-Type` découle de la valeur qu'elle transporte.
+
+@ 0 3 0 03a230637c800a8d0f7ed167f18ab653
++ Le serveur parle un HTTP/1.1 moderne, avec keep-alive, pipelining, corps découpés en morceaux,
++ TLS, `100-continue` et changements de protocole, sur un thread virtuel par connexion. Il parle
++ HTTP/2 sur toute connexion dont la poignée de main TLS le négocie.
+
+@ 0 4 0 1820331f53d4d8ac06db3e97fe12512b
++ Deux protocoles voisins se placent au-dessus de HTTP/1.1. Les
++ [WebSockets](https://en.wikipedia.org/wiki/WebSocket) transforment une requête en un flux de
++ messages, traité comme une machine à états. HTTP/2 transporte de nombreuses requêtes sur une
++ seule connexion, pour les navigateurs et pour les protocoles dans le style de gRPC qui
++ l'exigent.
+
+@ 0 1 0 184d8a81202afda80bbc70d25fd52f3b
++ ### Servir du HTTP
+
+@ 0 5 0 04a2fb9f54ba16cd012eacc955545b2c
++ Les frameworks serveur se présentent généralement sous forme d'inversion de contrôle : des DSL
++ de routage, des classes contrôleurs, des processeurs d'annotations, et un environnement
++ d'exécution qui appelle l'application, au lieu de l'inverse. Le protocole sous-jacent est plus
++ simple que ne le laissent entendre les frameworks. Une requête arrive, et une réponse est
++ calculée. Un langage typé peut l'exprimer directement, le routage étant un simple filtrage par
++ motif, et la négociation de contenu des [classes de types][classe de types].
+
+@ 0 4 0 0e9a7292010422211759160c57bd2138
++ Ici, un gestionnaire est un bloc de code, et tout le reste est fait de valeurs. Un gestionnaire
++ qui indique ce dont il a besoin, et ce avec quoi il peut échouer, a une
++ [signature honnête](../../philosophy/honest-signatures.md), et c'est pourquoi un serveur peut
++ être testé sans socket.
+
+@ 0 2 0 1389fd265fd7fdf9122e0ac2e854dcf3
++ Tout vient du package `soundness`. Le contexte de [concurrence](concurrency.md) sous lequel
++ s'exécute un serveur est dans la portée :
+
+% 2 1 0 195f42fac2b49d891b636c5e9a854c2e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1a5f0810171768050438e8ec953a7a2e
+
+% 1 1 0 19860bffbad0a9f915356f72c7757ae8
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 8 0 0dd2c1bcb90148381293b6a220ac82f7
++ column  Import
++ column  Détermine
++ row  `threads.virtualThreads`, `probates.awaitProbate`  comment s'exécutent les tâches du serveur, et ce qu'il advient d'elles quand leur portée se termine
++ row  `webserverErrorPages.minimalErrorPage`  ce qui est envoyé à un client quand un gestionnaire échoue
++ row  `logging.silentLogging`  que les requêtes ne sont pas journalisées ; [Journalisation](logging.md) présente les alternatives
++ row  `formatting.compactJsonFormatting`  comment un corps JSON est écrit
++ row  `charsets`, `codepages`, `textSanitizers`  comment les octets deviennent du texte, et le texte des octets
++ row  `strategies.throwUnsafely`  qu'une erreur est levée sous forme d'exception
+
+% 1 1 0 00d220a17931d83c1076bb5625270c62
+
+@ 0 1 0 04167019274a50a00e83c769460d6a6e
++ Les exemples de cette page lient un port : ils sont donc compilés mais pas exécutés.
+
+@ 0 1 0 1cdad8bb6b5449a80fc9901b4aec3ec2
++ ### Un serveur
+
+@ 0 4 0 1e889bdc876034311b3f40977ec45146
++ `SocketServer` écoute sur un port, et exécute le gestionnaire pour chaque requête. Le port est
++ lié quand `handle` est appelé, et le service que renvoie `handle` arrête le serveur quand il est
++ annulé. Le service s'exécute sur des tâches du `supervise` englobant : le bloc dure donc aussi
++ longtemps que le serveur.
+
+@ 0 2 0 131e13cbbc77fba911132c9921e204e7
++ Dans le gestionnaire, `request` est la requête courante, avec sa méthode, sa cible, ses
++ en-têtes, ses cookies et son corps. Le routage est donc un `match` :
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 1 1 0 0d625f7e41cde2400b295dd6c23b3d7b
+
+% 0 1 0 049eb9e542367fe1100ef7c9cf0df22f
+
+% 1 1 0 1a2ddd127c29551918e47c210cf89608
+
+% 0 1 0 05ed98063c4897ff0a93b9f6f6b9a784
+
+% 0 1 0 05db821c52f6f83a0a1923d471246c79
+
+% 0 1 0 189e4987f95bff151c6c460029b5ef35
+
+% 1 1 0 009972d2b60c78ab0c86863f0cbe07c3
+
+% 0 1 0 0d1ca09b261aaff30fccd459cc73172e
+
+% 1 1 0 0ea0b9701425725e17f4ca75cad0b14d
+
+% 0 1 0 008f68c508fcdda61e77a5f26460212b
+
+% 0 1 0 00a718fa45aed9860374b8b3eb93ad5f
+
+% 0 1 0 0e423d575fca47920401920097bdb49e
+
+% 0 1 0 0d932cfd06edad330f1f7777e2e1c685
+
+% 0 1 0 06d1c0ece2192af2083df7281d2197a3
+
+% 0 1 0 11240013a30c41e307ff93afe3a66b01
+
+% 0 1 0 00cf5d679d3c93b71aa0caa28d796236
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 1 0 0bb40ce3a12105b00388708edd706b55
++ ### Réponses
+
+@ 0 3 0 12d1c36ea3f078a1152acf04586526e0
++ `Http.Response` prend un statut, des en-têtes sous forme d'arguments nommés, et un corps. Le
++ corps peut être de n'importe quel type ayant une instance de `Servable`, comme du texte, des
++ octets, du [HTML](html.md) ou du [JSON](json.md). L'instance fournit le type de média : ce qui
++ est servi, et la façon dont c'est étiqueté, ne peuvent donc pas être en désaccord :
+
+% 2 1 0 036404a69675ac3e1722b354c3164475
+
+% 0 1 0 0d81ff7b5bbd096f1990571f08454930
+
+% 0 1 0 159c4580549f96b5148d048430bd0977
+
+% 1 1 0 107e75f55f5d17a41a274413b97cf36b
+
+@ 0 2 0 1169e89d408c6f6316e97ccddb06a78f
++ Les en-têtes sont vérifiés comme ils le sont pour une [requête](http-client.md#headers) : la
++ valeur d'un en-tête doit avoir le type que cet en-tête prend.
+
+@ 0 1 0 0cb4171ec9d3b1c91da3b3faf2dc80e2
++ Voici le `Content-Type` avec lequel chaque sorte de corps est servie :
+
+% 2 1 0 02dd469dd79e2e6304ccf02818b772b3
+
+@ 0 13 0 18453350cb903dd910e4e2eb4cdf9909
++ column  Corps
++ column  `Content-Type`
++ row  `Text`  `text/plain`
++ row  `Data`  `application/octet-stream`
++ row  `Document[Html]`  `text/html; charset=UTF-8`
++ row  `Json`  `application/json; charset=UTF-8`
++ row  `Xml`  `application/xml; charset=UTF-8`
++ row  `Yaml`  `application/yaml; charset=UTF-8`
++ row  `Tel`  `application/vnd.tel`
++ row  `Cbor`  `application/cbor`
++ row  `Protobuf`  `application/protobuf`
++ row  `Chain[Sse]`  `text/event-stream`
++ row  tout autre type ayant une instance de `Media`  le type de média qu'il déclare
+
+% 1 1 0 06ff51f5838a3d2b1da4d1f945d67913
+
+@ 0 3 0 1964fcf613c51fc10483fbf9a435a598
++ Les instances pour les types de formats se trouvent dans le package `servables`.
++ [Types de médias](media-types.md#types-that-know-their-media-type) décrit comment un type que
++ l'on définit soi-même déclare un type de média.
+
+@ 0 5 0 1fe3a5699dfd48e90abc0353ebe4d350
++ `Redirect`, `NotFound` et `NoCache` enveloppent un contenu dans les formes courantes de réponse.
++ Le corps d'une requête se lit comme une valeur typée avec `as`, qu'il s'agisse d'un envoi
++ [multipart](media-types.md#multipart) ou d'une [soumission de formulaire](forms.md#submissions).
++ `basicAuth` protège une réponse derrière des identifiants, et
++ [OAuth](oauth.md#in-a-web-application) derrière un jeton.
+
+@ 0 1 0 184e4e38a8923a1e03a88491eb60916a
++ ### Corps des requêtes et des réponses
+
+@ 0 3 0 0a0105dd164ccd6a172fdbeb6a4f0f5d
++ Le corps d'une requête est un [flux](streams.md), et non un bloc d'octets qui devrait arriver
++ avant l'exécution du gestionnaire. Un envoi volumineux est consommé au fur et à mesure de sa
++ réception, et le corps d'une réponse est découpé en trames depuis son flux un bloc à la fois :
++ ni l'un ni l'autre n'est donc conservé en mémoire.
+
+@ 0 3 0 145eec82bd3942e0032b205762de4772
++ Le corps appartient à la portée du gestionnaire. Il appartient à la connexion, et la connexion
++ se termine. Un gestionnaire qui veut conserver un corps au-delà de sa réponse le lit donc
++ explicitement en mémoire, avec `memoize`.
+
+% 0 1 0 11b702a92a07c8941d391a6571d0a215
+
+@ 0 4 0 08d1715ef62d17e81893237536dccd01
++ Une requête est transformée en WebSocket en renvoyant un gestionnaire `webSocket`, qui traite la
++ connexion comme une machine à états. Chaque message entrant produit une réponse, un changement
++ d'état, ou la fin de la conversation. Les messages sont typés : trames brutes, texte, ou
++ n'importe quel type transporté en JSON.
+
+% 2 1 0 1acf9449bc301b360156870b56bdc9b6
+
+% 0 1 0 010b5d7f53d462de03a95bbdce7075c0
+
+% 0 1 0 0ac1e8c71a692db810c1b3a76f2a44e4
+
+% 1 1 0 177cb01156ffd05a112e6bbe962f1a79
+
+% 0 1 0 07f9d8e79e2cc5ed14638af9b2260e82
+
+% 0 1 0 13f167f743d0e6300a6a4ce5830310d7
+
+% 1 1 0 1a7d4f64fbfc2fe91b0c40d1c1826c25
+
+@ 0 1 0 1e919b398d70ad1d073366adf9efbbe0
++ Un gestionnaire répond à chaque message par un `Control` :
+
+% 2 1 0 0f35e073ced9e1321369c3b61fe4be81
+
+@ 0 7 0 0a6bb327088c2d9b0a7d54cc8cdc0ea6
++ column  Réponse
++ column  Envoie un message
++ column  Ensuite
++ row  `Control.Reply(message, state)`  oui  continue
++ row  `Control.Continue(state)`  non  continue
++ row  `Control.Conclude(message, state)`  oui  ferme
++ row  `Control.Terminate`  non  ferme immédiatement
+
+% 1 1 0 10964ec1206eb3c61fa47cfdcb39ba22
+
+@ 0 2 0 1f4a6227c767a78e010ba064769c5664
++ L'état du gestionnaire, qui vaut `()` ici, est transmis d'un message au suivant. Quand un état
++ est optionnel, et omis, le précédent est conservé.
+
+@ 0 3 0 003008adfc616df40b4a43fb1f79e318
++ L'implémentation gère les aspérités du protocole : masquage, fragmentation, ping et pong,
++ validation de l'UTF-8, et codes de fermeture. Elle est conforme à la suite de tests
++ [Autobahn](https://github.com/crossbario/autobahn-testsuite).
+
+% 0 1 0 037f66e0ef500ad31c647fe59b3467b6
+
+@ 0 2 0 1ca59c731b5df50106ae9fc3f9fb574f
++ Un socket d'écoute avec TLS propose `h2`, puis `http/1.1`, par ALPN. Le protocole que parle une
++ connexion découle de la façon dont elle arrive :
+
+% 2 1 0 02c685511a472b5c1a56be3e3100e1cc
+
+@ 0 6 0 0d35f20d56a7e14009056f35fd935fb5
++ column  Connexion
++ column  Protocole
++ row  en clair, vers un `SocketServer`  HTTP/1.1
++ row  TLS, négociant `h2`  HTTP/2
++ row  TLS, négociant `http/1.1` ou rien  HTTP/1.1
++ row  h2c en clair avec connaissance préalable, sur un `Http2.Endpoint`  HTTP/2
+
+% 1 1 0 0ce8f591b55f6b920e4194466cc6b61d
+
+@ 0 2 0 062f166fd0fc245e04c1358018576208
++ Le contrat du gestionnaire est inchangé : une application existante sert donc HTTP/2 sans
++ aucune modification :
+
+% 2 1 0 1920c4649d69ecd3199d8c7a2ac943b9
+
+% 0 1 0 015d6da35936d6511d5becfe4dcb697f
+
+% 0 1 0 0c590f8110bc40f30701b0ae64390238
+
+% 0 1 0 011cd343e1779fc11a84f6c90e839f2b
+
+% 1 1 0 179923f119b1ee021775079cd1bf7ab9
+
+@ 0 7 0 08a177da851ad9d509b86ccbf98ab5f7
++ Chaque flux qu'initie un client est traité sur son propre thread virtuel : les requêtes qui
++ partagent une connexion s'exécutent donc de façon concurrente. Le moteur implémente le contrôle
++ de flux, les trailers, et la compression complète des en-têtes
++ [HPACK](https://datatracker.ietf.org/doc/html/rfc7541). Il tolère les types de trames sur
++ lesquels il n'agit pas, tels que `PRIORITY`, `PUSH_PROMISE` et les extensions, sans faire
++ échouer la connexion. [Flux](streams.md#tuning-backpressure) décrit comment son contrôle de flux
++ applique la contre-pression.
+
+@ 0 3 0 066e3a20059edbd70099f0f12eb45edd
++ Le h2c en clair avec connaissance préalable est la variante utilisée entre services. Il est
++ parlé sur un `Http2.Endpoint`, qui est aussi un transport pour le
++ [client HTTP](http-client.md), et qui porte la prise en charge de [gRPC](rpc.md) construite
++ par-dessus.
+
+@ 0 1 0 0494b666dd79d8be1ac0fd4b2327e12e
++ ### Frontaux
+
+@ 0 2 0 18f975cd7a965f3a0e4ed6db02cdf982
++ Les connexions HTTP/1.1 en clair sont servies par l'un de deux frontaux. Le choix se fait par un
++ given `Frontend`, dans la portée au moment de l'appel à `handle` :
+
+% 2 1 0 037d6d3a9cd37681038ab691bd946774
+
+@ 0 5 0 1bc219304e7e21a903f6c02e1514e2d9
++ column  Frontal
++ column  Exécute un gestionnaire
++ column  Un gestionnaire bloquant bloque
++ row  `frontends.threadPerConnectionFrontend`, par défaut  sur le thread virtuel de sa connexion  uniquement sa propre connexion
++ row  `frontends.reactiveFrontend`  directement sur l'un d'un ensemble fixe de threads sélecteurs  toutes les connexions de cette boucle
+
+% 1 1 0 0944fce97e8373c2103c90a229d6dfd1
+
+@ 0 3 0 08600e34fdc581e716cb610dd91185fc
++ Avec le frontal par défaut, un gestionnaire peut bloquer : sur une
++ [base de données](database.md), sur un fichier, ou sur un autre service. Le frontal réactif est
++ une boucle d'événements, dans laquelle chaque thread sélecteur sert un lot de connexions prêtes
++ à chaque réveil :
+
+% 2 1 0 028938bb7b8001610a5647bc03208622
+
+% 0 1 0 1c5fa89f3bd3476205a02f1c1fc315bf
+
+% 0 1 0 0238cfddcc431ab11af03ce3bc4ecb8a
+
+% 1 1 0 165d80476a5367860b151e51e87858aa
+
+% 0 1 0 19dd4242bda50d0f137c7dc8eb4d78ad
+
+% 1 1 0 0b8ee5a75411e6d21c31396178a40533
+
+@ 0 3 0 1b68691cc01517b00379552849917a70
++ Le frontal réactif sert les petites requêtes à environ une fois et demie le débit du frontal
++ par défaut, et alloue moins pour chaque requête, car rien n'est planifié pour chaque requête.
++ Sur un benchmark en boucle locale, il fait jeu égal avec Netty et Undertow.
+
+@ 0 6 0 1db08eebb6271abe1831ce6fd3944249
++ Le prix à payer est son contrat. Un gestionnaire qui bloque bloque toutes les connexions de
++ cette boucle. Le frontal réactif convient donc aux gestionnaires qui calculent leur réponse à
++ partir de ce qu'ils ont déjà, ou qui délèguent à d'autres tâches et répondent depuis la mémoire.
++ Les requêtes que la boucle ne peut pas servir directement sont confiées à un thread virtuel, et
++ servies par le chemin par défaut : corps découpés en morceaux ou surdimensionnés,
++ `Expect: 100-continue`, et changements de protocole. Un gestionnaire WebSocket fonctionne donc
++ avec l'un ou l'autre frontal.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 7 0 1f108b6a2619ed081933c0b95227a35c
++ - [Client HTTP](http-client.md) effectue des requêtes avec le même vocabulaire de méthodes, de
++   statuts et d'en-têtes.
++ - [HTML](html.md) et [JSON](json.md#json-over-http) décrivent les corps les plus souvent servis.
++ - [Formulaires](forms.md) rend un formulaire HTML et lit sa soumission.
++ - [Sockets](sockets.md) est la couche inférieure.
++ - [Démons](daemons.md) maintient un serveur en fonctionnement en tant que service.
++ - [MCP](mcp.md), [pages web](pages.md), [motifs](patterns.md) et
++   [cryptographie](cryptography.md) décrivent ce qu'un serveur héberge, reconnaît et sécurise.

@@ -1,0 +1,43 @@
+orthant 2 language
+
+@ 0 1 0 064e8938f32c16450d6458fad84c0ca4
++ # `SN-473` — Disposition des quotes et des splices (retirée)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Cette erreur n'existe plus. La page est conservée pour que le code ne soit pas réutilisé, et
++ pour qu'une référence à celui-ci depuis une version plus ancienne puisse toujours être résolue.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Ce qu'il est devenu
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ Le plugin du compilateur Decorum, qui levait cette erreur, a été extrait de Soundness et est
++ désormais [Consequent](https://github.com/propensive/consequent), un vérificateur autonome du
++ Consequent Style. La règle y subsiste sous un nouvel identifiant, dont la lettre nomme le
++ principe dont elle dérive :
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  Avant
++ column  Désormais
+
+% 0 1 0 0dfeb6b43f011c2606e47d77f7789fa9
+
+% 0 1 0 06a3c2ed637513cc161099f951178336
+
+% 0 1 0 0dc2be03bcad4d21120cf695b95f7971
+
+% 0 1 0 14e1b91a15e586760e09533221a76fac
+
+% 0 1 0 1c00b4306f1dbfcb0a05afce89ef65e7
+
+% 0 1 0 031faf46c855f92106020c6af2375c22
+
+% 0 1 0 0a3eaa5d218e327601fe69075a7f525d
+
+% 0 1 0 0765d151c69213100a854e86924a45a8
+
+% 0 1 0 12e47287c1d9c9801d67217ef0a5a4b8
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

@@ -1,0 +1,48 @@
+orthant 2 language
+
+% 0 1 0 01de337765580144046008203d876e31
+
+@ 0 1 0 0a11d4f659e111b0097090de9b28fec8
++ Levée lorsqu'un contenu SVG ne peut pas être lu sous la forme des figures typées que modélise
++ Savagery.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 3 0 15a91bb4336aaa55067170a777d849e6
++ Savagery analyse le SVG en formes, chemins, dégradés et transformations typés. Un contenu qui
++ est du XML bien formé, mais pas du SVG que modélise cet analyseur — un élément inconnu, ou un
++ attribut qui n'est pas un nombre là où un nombre est requis — est signalé ici.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 1 0 067cb1f1318b02481e3bbc36bb1f7f3d
++ column  Raison
+
+% 0 1 0 0249aa51fd8056d51a0c1dba7eb0290e
+
+% 0 1 0 14d1b00db49ab1a80648a4bb40376b59
+
+% 0 1 0 0cd794c468f984d91124ffb2da81bb5a
+
+% 0 1 0 11a543a13c1b25a70cb48a06b88c274f
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 3 0 0347bb6872ff3d9a1f5881a5fe444b7b
++ Vérifiez que l'élément et ses attributs font partie de ceux que modélise Savagery. Un SVG
++ produit par un logiciel de dessin peut contenir des constructions hors de ce sous-ensemble ; le
++ lire comme du [XML](../en/modules/xml.md) ordinaire est la solution de repli.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 1d467f3ddbee61b91a1f13228b8b2289
++ - Source : `lib/savagery/src/core/savagery.Svg.scala`

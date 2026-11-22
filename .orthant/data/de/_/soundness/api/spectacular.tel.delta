@@ -1,0 +1,542 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 004a1f01fc0dff17145fbd3f35b0816d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09d3d8daeea3f67a102196a137ebbdd2
++ info   zwei Darstellungen eines Werts als Text: `show` für die Menschen, die ein Programm benutzen, `inspect` für seine Programmierer
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 13b7d55ec18e5adc07acf3146bda6acb
++     _Spectacular_ trennt die beiden Gründe, aus denen ein Wert zu Text wird. `show` stellt ihn
++     für einen **Menschen** dar — die Form, die in eine Meldung, eine Logzeile oder auf einen
++     Bildschirm gehört — über eine `Showable`-Instanz und ist für einen Typ ohne eine solche ein
++     Kompilierfehler, sodass ein Wert, der nie einen Benutzer erreichen soll, einfach keine
++     Instanz hat. `inspect` stellt ihn für einen **Programmierer** dar — eine eindeutige,
++     einzeilige, quelltextähnliche Form für Debugging und Testausgaben — über eine
++     `Inspectable`-Instanz und gelingt immer, indem es eine strukturelle Darstellung ableitet oder,
++     als letzter Ausweg, eine geliehene markiert.
+
+% 2 1 0 1c5307a8d3f241100045ece9f798b311
+
+% 3 1 0 022ea62af8dd535e0765103bc914457e
+
+% 0 1 0 111ba3b0152c0d27148d3e15fb767da5
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 07798669b2774c5309d45356d7768cd1
+
+% 0 1 0 1bb4cafea7927d1c1dab712eccf8cf72
+
+% 0 1 0 0f4b9db8cbe7051f1986899076d2c414
+
+% 0 1 0 1c265419279a7ef207d00fba71437906
+
+% 1 1 0 02c11d8990e62a2416311f0ac8f6a6e8
+
+@ 0 2 0 0d6b9d2c3781a8750246c510b3508d00
++     Dieselben `Showable`-Instanzen treiben die Interpolation mit `t"…"` an, sodass ein
++     eingesetzter Wert gezeigt wird, und ein `Showable` ist auch `Communicable`, sodass es in eine
++     `m"…"`-Meldung eingesetzt werden kann.
+
+@ 0 3 0 14dff66d5a7c29b90b12738ca7208928
++     Ein `Boolean` hat keine einzige naheliegende Darstellung, daher braucht das Zeigen eines
++     solchen eine `Affirmation` im Geltungsbereich, gewählt durch namentlichen Import eines der
++     Givens aus dem Paket `affirmations`: `import
++     soundness.*` importiert keine Givens, und es gibt absichtlich keine Vorgabe.
+
+@ 0 2 0 1e132612e159141f18c162501f008922
++     Die Darstellungen von `Inspectable` folgen über alle Soundness-Typen hinweg einer Notation,
++     sodass zwei Typen nie gleich dargestellt werden:
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 14 0 10a28f10b2551a33190308cf373d137f
++     column  Wert
++     column  Darstellung
++     row  eine `List`  `[a, b]`
++     row  ein `Set`  `{a, b}`
++     row  eine `Map`  `{k → v}`
++     row  ein `Ledger`  `⟦k → v⟧`
++     row  eine `Sequence`  `⟨ a b ⟩`
++     row  ein Produkt  `Name(field:value ╱ …)`
++     row  ein vorhandenes `Optional`  `｢value｣`
++     row  ein abwesendes `Optional`  `○`
++     row  Text  `t"…"`
++     row  ein Zeichen  `'x'`
++     row  eine Zahl mit fester Größe  ein hochgestelltes Suffix, `42ᵘ⁸`
++     row  eine Ordinalzahl  ein hochgestelltes Suffix, `1ˢᵗ`
+
+% 1 1 0 1de1fa85c90e932302db9c7d8f344aa7
+
+@ 0 3 0 038cf486417fa730022f2a47284a5334
++     Eine Darstellung, die *nicht* nativ war, trägt einen Marker: `“…”` für ein `toString`, `⸢…⸣`
++     für eine geliehene `Showable`-Form und `⸤…⸥` für eine geliehene `Encodable in Text`-Form, die
++     `Inspectable.fallbacks` findet.
+
+@ 0 3 0 1f51589fab749e030ea649ba67cbb254
++     Die Bibliothek hat ein Source-Set, `spectacular.core`, das für jede Plattform kompiliert.
++     Alles wird in das `soundness`-Umbrella exportiert, und das Auswahlpaket `affirmations`
++     verschmilzt mit dem des Umbrellas.
+
+% 0 1 0 129c0b8b64cee0420c8e0ea5ad9fcae1
+
+% 0 1 0 0108f75647c456f308c7a66a5d157d69
+
+% 0 1 0 1e51b6b85bca5f8e04623ce95d392494
+
+% 0 1 0 006a2e098fbd5de0107280f0eefa5ac2
+
+% 0 1 0 017db0d687bd1b801350d05a078eccd5
+
+@ 0 5 0 19a4a9bb533c34fc036a607edee8a965
++ entry .show   stellt einen Wert als Text dar, den ein Mensch lesen soll, über seine `Showable`-Instanz
++     Eine Erweiterung auf jedem Wert, dessen Typ ein `Showable` hat: `value.show` ist
++     `Showable.text(value)`. Ein Typ ohne Instanz kann nicht gezeigt werden, und danach zu fragen
++     ist ein Kompilierfehler statt eines stillen Rückfalls auf `toString`, sodass das Fehlen einer
++     Instanz die Art ist, wie ein Typ sagt, dass er nicht zur Anzeige gedacht ist.
+
+% 2 1 0 16ace8abc1fc40741064f3342bdd6f07
+
+% 3 1 0 0f37e0ffd67a6d1f142348b1d166df71
+
+% 0 1 0 1a0bd77440a1afcd05a73c67b59e9098
+
+% 0 1 0 1cd80bc7e5a20a6d1c5cff274bfcc198
+
+% 1 1 0 0032e268fd318a4f05cbb1ff5c16465c
+
+@ 0 2 0 13ff6595eb35d10d0dd87272a60f1f6e
++     Das Interpolieren eines Werts in `t"…"` zeigt ihn auf dieselbe Weise. Für eine
++     Debugging-Form, die immer gelingt, verwenden Sie `inspect`.
+
+@ 0 5 0 1dde755339a597ef1c41be5de73f16cc
++ entry .inspect   stellt einen Wert als eindeutigen Text für einen Programmierer dar, über sein `Inspectable`
++     Eine Erweiterung auf jedem Wert: `value.inspect` ist `Inspectable.text(value)`, und da
++     `Inspectable.derived` jeden Typ abdeckt, scheitert es nie am Kompilieren. Die Darstellung ist
++     kompakt, einzeilig, ähnelt gültigem Quelltext, wo das wenig kostet, und zeigt jedes Stück
++     Zustand, das beim *statischen* Typ des Werts relevant ist.
+
+% 2 1 0 119dd9d57f4d10de14d355d80cdd53cf
+
+% 3 1 0 16ccddd5d6ba37f9009aeafb974de351
+
+% 0 1 0 03fa5901efb65de71e683184e9d8c495
+
+% 0 1 0 0653ee11dfccbfd516a531cd598c5291
+
+% 0 1 0 105a22e9676c91e516b8b81a043ca0e3
+
+% 1 1 0 08190b77954f25040abb8f5e3f389def
+
+@ 0 2 0 114588057a63ad3115ba291f0d5076d0
++     Die Darstellung hängt vom statischen Typ ab: Ein als `Any` typisierter Wert fällt auf
++     `toString` zurück, markiert als `“…”`. Notation und Rückfallkette beschreibt `Inspectable`.
+
+@ 0 1 0 06349c54a2554f4b1227467330725e1f
++ entry .Showable   die Typklasse der Werte, die einem Menschen angezeigt werden dürfen, als `value is Showable`
+
+% 1 1 0 1fbaf02aa5793e3d0fa2c57da4cc73ca
+
+@ 0 3 0 0abfad0d29408e650f3398a0571837e1
++       Eine Typklasse mit einer Methode, `text(value: Self): Text`, sodass eine Instanz als
++       Funktion vom Wert auf seinen Text geschrieben wird. Sie erweitert `Communicable`, sodass ein
++       zeigbarer Wert auch in eine `m"…"`-Meldung eingesetzt werden kann, als `Message` seines
++       Texts.
+
+% 2 1 0 1f4bb862fc855677140227f827c58266
+
+% 3 1 0 0e5f4a725071df2e105f97e04da8e047
+
+% 0 1 0 1841ca150a515c480de45042492abd6c
+
+% 0 1 0 19067f76d063d6950b5af7a09323234a
+
+% 0 1 0 1a513ea61155c70f1495dca709b281f6
+
+% 1 1 0 18d7e4237ef2bf97124ff506250319e2
+
+@ 0 6 0 1201d9bed979d90d1618001b2894dc35
++       `Showable` ist absichtlich anspruchsvoll: Es gibt keine Ableitung und keinen Rückfall,
++       sodass ein Typ nur gezeigt wird, wenn jemand entschieden hat, wie er aussehen soll. Das
++       Begleitobjekt hält Instanzen für die primitiven Typen, `Text`, `String`, `Message`,
++       `Memory`, jedes Scala-`enum`, jeden `Textualizable`-Typ und die Soundness-Collections. Ein
++       `Double` braucht einen `DecimalConverter` im Geltungsbereich und ein `Boolean` eine
++       `Affirmation`, da keines von beiden eine einzige kontextfreie Form hat.
+
+@ 0 3 0 077a8dd82832cf5d0d8b2b95373a23c7
++       Eine Instanz für einen verfeinerten Typ (eine markierte Liste, einen Literaltyp) sollte über
++       die Subtypen ihres Gegenstands geschrieben werden (`[self <: Play] => self is Showable`), da
++       `Self` invariant ist und eine Instanz für `Play` kein `Play` mit Verfeinerung abdeckt.
+
+% 0 1 0 054a0f456fff0d1b16950c7c5cd08d95
+
+% 0 1 0 03ec24798555039b13e1fae02f0e6f64
+
+% 0 1 0 0460ddf9c54dc8281e6b24cfd987bed0
+
+@ 0 19 0 0af697bd3d4a2ce016ad7713dbc5ff9f
++   entry #text   stellt einen Wert als Text dar
++   entry #message   stellt einen Wert als `Message` dar, für die Interpolation mit `m"…"`
++       `Message(text(value))`: der Member, der jedes `Showable` zu einem `Communicable` macht.
++   entry .showable   zeigt jeden `Textualizable`-Wert über seine Textualisierung
++   entry .text   zeigt `Text` und jeden Subtyp davon wortgetreu
++   entry .string   zeigt einen `String` als seinen Text
++   entry .char   zeigt ein `Char` als Text aus einem Zeichen
++   entry .long   zeigt ein `Long` dezimal, ohne Suffix
++   entry .int   zeigt ein `Int` dezimal
++   entry .short   zeigt ein `Short` dezimal
++   entry .byte   zeigt ein `Byte` dezimal
++   entry .message   zeigt eine `Message` als ihren Text
++   entry .double   zeigt ein `Double` über den `DecimalConverter` im Geltungsbereich
++       Braucht einen `DecimalConverter`, der über die Anzahl der Ziffern, die Notation und die
++       Rundung entscheidet; ohne einen wird ein `Double` überhaupt nicht gezeigt.
++   entry .boolean   zeigt ein `Boolean` über die `Affirmation` im Geltungsbereich
++       Braucht eine `Affirmation`, namentlich aus dem Paket `affirmations` importiert oder lokal
++       definiert; ohne eine wird ein `Boolean` überhaupt nicht gezeigt, da die Annahme von `true`
++       und `false` eine Annahme über den Kontext wäre.
+
+% 2 1 0 0966de77a20430741086d785b4e99957
+
+% 3 1 0 01b6ab3065e045d41aee90c4efe68236
+
+% 0 1 0 04e290179737ee7d1db4efe334260f63
+
+% 0 1 0 0c22667d13e53e261853f5c8672cf960
+
+% 1 1 0 0c7be37ba5e295a70f524c826e7de5b0
+
+@ 0 17 0 1dfd5e1328ddf9cf1a74d7f271ce246a
++   entry .option   zeigt eine Scala-`Option`: ihren Wert oder `none`
++   entry .memory   zeigt eine `Memory`-Größe über ihre eigene `text`-Darstellung
++   entry .enumeration   zeigt einen Fall eines beliebigen Scala-`enum` über seinen Namen
++       Jedes `reflect.Enum` wird als sein `toString` gezeigt, der Name des Falls, sodass ein Enum
++       keine eigene Instanz braucht, sofern keine andere Form gewünscht ist; ein parametrisierter
++       Fall wird mit seinen Argumenten, aber ohne Beschriftungen gezeigt.
++   entry .set   zeigt ein `Set` als `{a, b}`, jedes Element gezeigt
++   entry .list   zeigt eine `List` als `[a, b]`, jedes Element gezeigt
++       Über die Subtypen von `List[element]` geschrieben, sodass auch eine markierte Liste (eine
++       `List`, die bekanntermaßen gefüllt ist) gezeigt wird.
++   entry .sequence   zeigt eine `Sequence` als `[ a b ]`, jedes Element gezeigt
++   entry .none   zeigt `None` als `none`
++   entry .specializable   zeigt einen `Specializable`-Marker über seinen kleingeschriebenen Namen
++   entry .zerary   zeigt eine `Ordinal` in ihrer nullbasierten Form, `3.₀`
++   entry .typeRepr   zeigt die `TypeRepr` eines Makros als ihren Quelltextnamen, innerhalb eines Makros
++       Braucht ein `Quotes`; der Name wird so dargestellt, wie Stenography einen Typ darstellt.
++   entry .meta   zeigt den `Type[T]` eines Makros als seinen Quelltextnamen, innerhalb eines Makros
+
+@ 0 1 0 1170b2b48d2e95311042291b2f4b510b
++ entry .Inspectable   die Typklasse der Debug-Darstellungen, die jeder Wert hat, als `value is Inspectable`
+
+% 1 1 0 09ab7b24ba2ec69305bb3b8ceef5505a
+
+@ 0 4 0 0ddff45bb7141f170ac0cef04dac2533
++       Eine Typklasse mit einer Methode, `text(value: Self): Text`, die einen Wert so darstellt,
++       dass ein Programmierer ihn in einem Debugger oder in einer Testausgabe lesen kann. Anders
++       als `Showable` ist sie total: Wenn ein Typ keine eigene Instanz hat, liefert `derived`
++       (geerbt von `Inspectable2`) eine und versucht der Reihe nach
+
+@ 0 6 0 1fb818e5fa78f5b413605197cb234ac1
++       1. ein `Encodable in Text`, geliehen und als `⸤…⸥` markiert;
++       2. ein `Showable`, geliehen und als `⸢…⸣` markiert;
++       3. einen `Optional`-Typ (`Mandatable`), als `｢value｣` oder `○`;
++       4. eine strukturelle Darstellung über `Derivation`, für jede Case-Klasse, jedes Enum und
++           jede versiegelte Hierarchie;
++       5. das `toString` des Werts, als `“…”` markiert.
+
+@ 0 3 0 108bf24c180c100b1fa76ac4dec30250
++       Eine native Instanz im Begleitobjekt des Typs oder hier hat Vorrang vor allen davon. Die
++       Markierungen sind gewollt: Eine geliehene Darstellung ist eine Übertragungsform oder eine
++       menschliche Form, keine Debug-Form, und ein Leser sollte auf einen Blick sehen, dass einem
++       Typ eine Instanz fehlt.
+
+% 2 1 0 070380bf901687a108c3159f1d566bc0
+
+% 3 1 0 01a167ade2b612fa1059c935cb7d746f
+
+% 0 1 0 038481e8483316b510f11c01e67fb2d5
+
+% 0 1 0 1475fadc6b8c1dc11297158ef4566fe2
+
+% 0 1 0 04a0c3e0d6dd71a30a5c2663899a1e3b
+
+% 0 1 0 1c7de876e001e2d30178b0071e0f869c
+
+% 0 1 0 120c0a0b7482f9760b1f695d7a0c41b4
+
+% 0 1 0 0c472f89b5ecfde5140bd594c5feba5a
+
+% 1 1 0 0a5b6c611d6d0b8f0da3f1ddca05a4f6
+
+@ 0 10 0 10ab48c31d52ca761acb54ebf94c8948
++       Da eine fehlende Instanz nie ein Kompilierfehler ist, kann die Abdeckung unbemerkt
++       zurückgehen: Ein Typ erhält eine Verfeinerung, und seine Darstellung fällt auf `toString`
++       zurück. `.fallbacks` ist das, worauf die Tests einer Bibliothek zusichern, um das zu
++       verhindern. Eine Instanz sollte über die Subtypen ihres Gegenstands geschrieben werden
++       (`[self <: Port] => self is Inspectable`), denn `Self` ist invariant, und eine Instanz für
++       `Port` deckt `Port over Tcp` nicht ab; bei einem parametrisierten Gegenstand binden Sie den
++       Parameter mit einer Wildcard (`[self <: Cookie[?]]`) statt mit einem zweiten Typparameter,
++       der unbemerkt nicht aufgelöst werden kann. Die opaken Collections `List`, `Set`, `Map` und
++       `Chain` sind die Ausnahmen und behalten ein exaktes `Self`. Eine Instanz gehört in das
++       Begleitobjekt ihres Gegenstands, nicht auf die oberste Ebene, damit sie ohne Import gefunden
++       wird.
+
+@ 0 1 0 14c0d25300a6ac3210d3be7e8aff6281
++       Die verwendete Notation, nach Kategorie:
+
+@ 0 9 0 0581782c39906d280135a921ac1b6073
++       - Container: `[a, b]` Liste, `{a, b}` Menge, `{k → v}` Map, `⟦k → v⟧` Ledger, `⟨ a b ⟩`
++         Sequenz, `⦋…⦌` Array, `⁅…⁆` eingefrorenes Array, `a ⋰ b ⋰ ..?` eine lazy Chain
++       - Produkte: `Name(field:value ╱ field2:value)`, `(a ╱ b)` Tupel, `(name:value ╱ …)`
++         benanntes Tupel
++       - Optionalität: `｢value｣` vorhanden, `○` abwesend
++       - Text: `t"…"` mit Escapes, `'x'` ein Zeichen
++       - Zahlen: `3`, `3L`, `3.1F`, `3.toByte`, `BigInt(42)`; `42ᵘ⁸`, `-7ˢ³²`, `2Fᵇ⁸`,
++         `3.14ᶠ⁶⁴` für die Zahlen mit fester Größe
++       - Positionen: `1ˢᵗ` Ordinalzahl, `1ˢᵗ‥5ᵗʰ` Intervall, `⟪4:8+5⟫` Spanne
+
+% 0 1 0 028c9fa119d499711832636bca3efefc
+
+% 0 1 0 0c7de4a9cef4e99c108787751c26e02d
+
+% 0 1 0 1ec09ea5f9520b9317bc0800d08a225d
+
+@ 0 9 0 1c45a5bcb66a916515cb3ec319ace763
++   entry #text   stellt einen Wert so dar, dass ein Programmierer ihn lesen kann
++   entry #contramap   eine Instanz für einen anderen Typ, die ihn über eine Umwandlung in diesen darstellt
++       `inspectable.contramap[Celsius](_.degrees)` stellt ein `Celsius` so dar, wie seine Grade
++       dargestellt würden. Das Lambda muss rein sein.
++   entry .fallbacks   diejenigen einiger Darstellungen, die nicht nativ waren: mit `“…”`, `⸢…⸣` oder `⸤…⸥`
++       Liefert der Reihe nach die Darstellungen, die einen der drei Marker einer geliehenen oder
++       `toString`-Darstellung enthalten. Die Tests einer Bibliothek sichern zu, dass ihre eigenen
++       Typen alle nativ inspiziert werden, und sollten dies mit einem Fall paaren, der zusichert,
++       dass ein nicht abgedeckter Typ *tatsächlich* gemeldet wird, damit die Prüfung nicht
++       inhaltslos bestehen kann.
+
+% 2 1 0 1bebacdbbe0026080227a512d07915b9
+
+% 3 1 0 1b812eff558d441f19b36d79cf4e60be
+
+% 0 1 0 1d71d747992e8e1e1ba35accae1a5a78
+
+% 1 1 0 1de19ba0e6b6d4600d09671c9c712d39
+
+@ 0 7 0 0995a3a29476b0ec13312c3ef7495be4
++   entry .marker   ob ein Zeichen einer der Rückfallmarker `“`, `⸢` oder `⸤` ist
++   entry .escape   maskiert ein Zeichen so, wie es in einem Scala-Literal geschrieben würde
++       Zeilenumbrüche, Tabulatoren, Wagenrückläufe, Backslashes, Anführungszeichen, Apostrophe,
++       Rückschritte und Seitenvorschübe erhalten ihre Backslash-Escapes; jedes andere Zeichen
++       außerhalb des druckbaren ASCII wird zu `\uXXXX`. Mit dem zweiten Parameter `true` wird das
++       Escape-Zeichen als `\e` geschrieben, wie in einem `t"…"`-Literal.
++   entry .Derivation   die strukturelle Ableitung von `Inspectable` für Produkte und Summen
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 80 0 0569e24877c6fe891be71a3762c98b58
++         Ein `Derivable[Inspectable]` aus Wisteria. Ein Produkt wird als `Name(field:value ╱ …)`
++         dargestellt, wobei jedes Feld durch die Instanz für seinen statischen Typ dargestellt
++         wird, und ein Case-Objekt ohne Felder als sein bloßer Name; ein Tupel lässt Name und
++         Beschriftungen weg. Eine Summe stellt die Variante dar, die der Wert ist. `derived`
++         erreicht sie für jeden Typ mit einer `Reflection`, und `Inspectable.enumeration`
++         für jedes Scala-`enum`.
++     entry .conjunction   die Darstellung eines Produkts: sein Name und seine beschrifteten Felder
++     entry .disjunction   die Darstellung einer Summe: die Darstellung ihrer Variante
++   entry .char   stellt ein `Char` als quotiertes, maskiertes Literal dar, `'x'`
++   entry .int   stellt ein `Int` dezimal dar
++   entry .long   stellt ein `Long` mit seinem Suffix `L` dar, `3L`
++   entry .byte   stellt ein `Byte` als `3.toByte` dar
++   entry .short   stellt ein `Short` als `3.toShort` dar
++   entry .string   stellt einen `String` als maskiertes String-Literal dar, `"…"`
++   entry .text   stellt einen `Text` als maskiertes `t"…"`-Literal dar
++       Jedes Steuerzeichen und Anführungszeichen wird so maskiert, wie Scala es maskieren würde,
++       und das Escape-Zeichen als `\e`, sodass ein Text mit einem Zeilenumbruch von einem mit `\`
++       und `n` unterscheidbar ist und die Darstellung wieder in Code eingefügt werden könnte.
++   entry .float   stellt ein `Float` mit seinem Suffix `F` dar, und seine Unendlichkeiten und NaN beim Namen
++   entry .double   stellt ein `Double` dar, und seine Unendlichkeiten und NaN beim Namen (`Double.NaN`)
++   entry .boolean   stellt ein `Boolean` als `true` oder `false` dar, ohne dass eine `Affirmation` nötig ist
++   entry .unit   stellt `()` dar
++   entry .bigInt   stellt ein `BigInt` als `BigInt(42)` dar
++   entry .bigDecimal   stellt ein `BigDecimal` als `BigDecimal(1.5)` dar
++   entry .unset   stellt `Unset` als `○` dar
++   entry .reflectEnum   stellt einen statisch als `reflect.Enum` typisierten Wert über sein `toString` dar
++       Nur für einen Wert, der als `reflect.Enum` selbst typisiert ist und für den keine
++       Reflexion verfügbar ist; ein Wert eines bekannten Enum-Typs wird von `.enumeration`
++       strukturell dargestellt.
++   entry .enumeration   leitet die Darstellung eines beliebigen Scala-`enum` ab, mit Feldbeschriftungen: `Circle(radius:5)`
++       Hat Vorrang vor der geliehenen `Showable`-Darstellung, die jedes Enum hat (und die die
++       Beschriftungen verlieren würde), weicht aber einem Enum, das eine eigene Instanz definiert.
++   entry .tuple   stellt ein Tupel als `(a ╱ b)` dar, jedes Element durch die Instanz seines statischen Typs
++       Inline, da sie die Elementtypen durchläuft, die an der Stelle bekannt sind, an der sie
++       herbeigerufen wird. Ein Wert, der als bloßes `Tuple` typisiert ist und dessen Elemente
++       unbekannt sind, wird als sein `toString` dargestellt, als `“…”` markiert.
++   entry .namedTuple   stellt ein benanntes Tupel als `(name:a ╱ age:b)` dar
++       Ein benanntes Tupel ist ein opaker Alias, in den `Derivation` nicht hineinsehen kann, daher
++       hat es diese eigene Instanz. Ein Element ohne native Instanz wird für sich allein
++       herabgestuft.
++   entry .u8   stellt ein `U8` mit dem Suffix `ᵘ⁸` dar: `200ᵘ⁸`
++   entry .u16   stellt ein `U16` mit dem Suffix `ᵘ¹⁶` dar
++   entry .u32   stellt ein `U32` mit dem Suffix `ᵘ³²` dar
++   entry .u64   stellt ein `U64` mit dem Suffix `ᵘ⁶⁴` dar
++   entry .s8   stellt ein `S8` mit dem Suffix `ˢ⁸` dar
++   entry .s16   stellt ein `S16` mit dem Suffix `ˢ¹⁶` dar
++   entry .s32   stellt ein `S32` mit dem Suffix `ˢ³²` dar: `-7ˢ³²`
++   entry .s64   stellt ein `S64` mit dem Suffix `ˢ⁶⁴` dar
++   entry .b8   stellt ein `B8` als zwei hexadezimale Großbuchstabenziffern mit dem Suffix `ᵇ⁸` dar: `2Fᵇ⁸`
++   entry .b16   stellt ein `B16` als vier mit Nullen aufgefüllte Hexadezimalziffern mit dem Suffix `ᵇ¹⁶` dar
++   entry .b32   stellt ein `B32` als acht mit Nullen aufgefüllte Hexadezimalziffern mit dem Suffix `ᵇ³²` dar
++   entry .b64   stellt ein `B64` als sechzehn Hexadezimalziffern mit dem Suffix `ᵇ⁶⁴` dar
++   entry .f32   stellt ein `F32` mit dem Suffix `ᶠ³²` dar, und seine Unendlichkeiten als `∞` und `-∞`
++   entry .f64   stellt ein `F64` mit dem Suffix `ᶠ⁶⁴` dar: `3.5ᶠ⁶⁴`
++   entry .q32   stellt eine rationale Zahl `Q32` als Bruch mit dem Suffix `ʳ³²` dar: `3/4ʳ³²`
++   entry .q64   stellt eine rationale Zahl `Q64` als Bruch mit dem Suffix `ʳ⁶⁴` dar
++   entry .bcd   stellt eine Dezimalzahl `Bcd` mit dem Suffix `ᵇᶜᵈ` dar
++   entry .decimal   stellt ein `Decimal` mit dem Suffix `ᵈ` dar: `3.14ᵈ`
++   entry .ordinal   stellt eine `Ordinal` einsbasiert dar, mit ihrem englischen Suffix: `1ˢᵗ`, `3ʳᵈ`, `11ᵗʰ`
++       Die einsbasierte Zahl ist die, mit der ein Programmierer zählt; die nullbasierte Form ist
++       ein Implementierungsdetail, und sie zu zeigen, würde jede Darstellung um eins verschieben.
++   entry .interval   stellt ein `Interval` als `1ˢᵗ‥5ᵗʰ` dar, oder als `∅`, wenn es leer ist
++   entry .span   stellt eine `Span` nach ihrer Gestalt dar: `⟪∅⟫`, `⟪@4+5⟫`, `⟪4:8+5⟫`, `⟪4‥8⟫` oder `⟪4:8‥6:2⟫`
++       Eine `Span` packt einen von fünf Bereichen in ein `Long`: leer, ein Offset und eine Länge,
++       eine Zeile, eine Spalte und eine Länge, ein Bereich ganzer Zeilen oder eine Fläche. Die
++       Zahlen sind einsbasiert.
++   entry .memory   stellt eine `Memory`-Größe exakt dar, als `4194304B`, nie gerundet
++   entry .digit   stellt eine `Digit` mit dem Suffix `ᵈᵍ` dar
++   entry .message   stellt eine `Message` als `m"…"` dar
++   entry .set   stellt ein `Set` als `{a, b}` dar
++   entry .map   stellt eine `Map` als `{k → v, …}` dar, deren Einträge keine bedeutsame Reihenfolge haben
++   entry .ledger   stellt ein `Ledger` als `⟦k → v, …⟧` dar, in Einfügereihenfolge
++       Anders geklammert als eine `Map`, weil die Reihenfolge eines `Ledger` bedeutsam ist und die
++       einer `Map` nicht, und die Darstellung muss sagen, was ein Wert ist.
++   entry .sequence   stellt eine `Sequence` als `⟨ 1 2 3 ⟩` dar
++   entry .list   stellt eine `List` als `[a, b]` dar
++   entry .array   stellt ein Scala-Array als `⦋…⦌` dar, mit seiner Elementart und tiefgestellten Indizes
++       Das Präfix benennt den JVM-Elementtyp (`🅸` für `Int`, `🅻` für Objekte, …) und die
++       Dimension, und jedem Element geht sein Index in tiefgestellten Ziffern voraus.
++   entry .arraySeq   stellt eine veränderliche `ArraySeq` als Array dar, mit `⦌ₛ` geschlossen
++   entry .stream   stellt eine `Chain` lazy dar: `1 ⋰ 2 ⋰ 3 ⋰ ..?`, ohne sie je zu erzwingen
++       Zeigt höchstens drei erzwungene Elemente; ein nicht erzwungener Rest ist `∿∿∿`, und das Ende
++       ist `⯁`.
++   entry .frozenArray   stellt ein eingefrorenes `Array[element]^{}` als `⁅…⁆` dar, mit tiefgestellten Indizes
++   entry .option   stellt eine Scala-`Option` als `Some(3)` oder `None` dar
++   entry .none   stellt `None` dar
+
+@ 0 1 0 0b7f9fd99975fa261dfdc16d8d3e0e2e
++ entry .Inspectable2   der Ort niedrigerer Priorität für `Inspectable.derived`, den totalen Rückfall
+
+% 1 1 0 099878106ac570f207b86fa846b538bb
+
+@ 0 8 0 1421eb500c42c89607032f3b70a8c30b
++       Ein Trait, den das Begleitobjekt von `Inspectable` erweitert, sodass `derived` unter jeder
++       Instanz rangiert, die im Begleitobjekt geschrieben ist. Wird nicht direkt verwendet; sein
++       `derived` wird über das Begleitobjekt gefunden.
++   entry #derived   die Instanz für jeden Typ ohne eigene: geliehen, abgeleitet oder `toString`
++       Versucht ein `Encodable in Text` (als `⸤…⸥` markiert), ein `Showable` (als `⸢…⸣` markiert),
++       einen `Optional`-Typ (`｢value｣` oder `○`), eine `Reflection` (strukturell, über
++       `Inspectable.Derivation`) und schließlich das `toString` des Werts (als `“…”` markiert). Ein
++       Typ, dessen kodierte Form maskiert oder kodiert ist, muss eine eigene Instanz definieren,
++       da die geliehene Form irreführen würde.
+
+% 2 1 0 07bd94bab987c04e0c039f20e487ab02
+
+% 3 1 0 10e26d299070d6281cc722d222d5c873
+
+% 0 1 0 11da9e1c35c709420b6404557d3f081e
+
+% 0 1 0 035881435be41cc403fe04226e3aef5e
+
+% 1 1 0 013e7d731d62d9a91a45be4bb9072a4f
+
+@ 0 1 0 15e01e2786c03ac61f5d7ebaa136afb8
++ entry .Affirmation   das Wortpaar, als das ein `Boolean` gezeigt wird: `yes`/`no`, `on`/`off`, …
+
+% 1 1 0 0681e9a5657a6b65043d2ea736938da4
+
+@ 0 3 0 0a7e0b3da22e475a03c39528a002e595
++       Eine Case-Klasse aus zwei Texten, als Kontextwert gewählt: `Showable.boolean` braucht
++       einen, sodass ein `Boolean` erst gezeigt wird, wenn der Kontext gesagt hat, wie. Das Paket
++       `affirmations` hat vier, jede namentlich importiert; jedes andere Paar ist ein einzeiliges
++       Given.
+
+% 2 1 0 1980f91307a0d8bc087bd93315cf6d0a
+
+% 3 1 0 0ffc3b9fc5bcb5361b36f287b3b0c329
+
+% 0 1 0 17ce223a7128eaab1b6a378e3d2ca72b
+
+% 0 1 0 119c1ee8696ed6cf1ec4696b95885c03
+
+% 1 1 0 1f58794f81ee33161442b4ef6ff32cfc
+
+% 0 1 0 05bb0eed180a403f12eb0b5154ea815e
+
+@ 0 3 0 05143ffeca4595da16346ce5396ece6e
++   entry #yes   der Text für `true`
++   entry #no   der Text für `false`
++   entry #apply   der Text für einen booleschen Wert: `yes`, wenn er `true` ist, sonst `no`
+
+@ 0 1 0 0e15c824007761fc011d54b2f97afaf9
++ entry .affirmations   die Standardarten, ein `Boolean` zu zeigen, jede ein Given, das namentlich importiert wird
+
+% 1 1 0 0dc4c3f64feb2f40053104edef3668a9
+
+@ 0 3 0 08380eadc990ddac1bdea571efc8a23c
++       Ein `Boolean` zu zeigen braucht eine `Affirmation`, und standardmäßig ist keine im
++       Geltungsbereich: `import soundness.*` bringt keine davon herein, da `import pkg.*` keine
++       Givens importiert, und eine wird namentlich importiert.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0f02a63ef8e836b3160cacc04880deba
+
+% 1 1 0 1244e4fbd22b53f61fd25b7dd79e396f
+
+% 2 1 0 1efa81a507656bcc03ecbdc43a65a48f
+
+% 0 1 0 12a13ba3fc421d8200a8972225dcb95b
+
+% 0 1 0 0b45b0bec2b48f970b162d49ca17450a
+
+% 0 1 0 1263596568bf177c1877298821855e71
+
+% 1 1 0 071d924aa51010a3034c6cf34eb42582
+
+% 2 1 0 0c42cc5aed56f36514dd7fed76baa321
+
+% 0 1 0 0a674cd65b2ae611035354988ed7a030
+
+% 0 1 0 1d794d1c13653bee10212b344721eab9
+
+% 0 1 0 0dcada4ae6d2ad8d1b106189afd89927
+
+% 1 1 0 1c0eee80ec20787610b8dbf997cf49dc
+
+% 2 1 0 160f060b8acc1f760743271a89e4010a
+
+% 0 1 0 030eb204fe92383e07beb8d93516f75e
+
+% 0 1 0 08148be00d3bedb1126f4e778f34fe7b
+
+% 0 1 0 04edd3c03071d7dc1e30dde0fe9183c7
+
+% 1 1 0 02ea007cb2fc96c30d34f5d1067fb27e
+
+% 2 1 0 061e993975773ca5156469d02a9000b2
+
+% 0 1 0 1d0f0467c40618f819b4512bc40c636c
+
+% 0 1 0 0c81ff4a29a91fb91ccb297b2c9152d8
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 03ae70631e152b740eafc0592947c617
++   entry .yesNoAffirmation   zeigt `true` als `yes` und `false` als `no`
++   entry .onOffAffirmation   zeigt `true` als `on` und `false` als `off`
++   entry .trueFalseAffirmation   zeigt `true` als `true` und `false` als `false`
++   entry .oneZeroAffirmation   zeigt `true` als `1` und `false` als `0`

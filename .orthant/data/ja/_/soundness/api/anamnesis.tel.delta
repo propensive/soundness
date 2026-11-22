@@ -1,0 +1,394 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 173a69bcaca401270896697d1732abc0
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 05f655824adb1808171ecd12095a7139
++ info   インターン化された値と型付きの関係を保持するインメモリーのストア。そのスキーマはデータベースの型である
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0e7e557ecd0be4780632fc5b5aea3ccf
++     _Anamnesis_ は、プログラムの作業データのためのインメモリーデータベースである。
++     値は一度だけ格納され、型付きの参照によって識別される。データベースが扱う関係はその型の中で `A -< B` の組（「`A` は `B` を持ちうる」）のタプルとして宣言されるので、スキーマがつないでいない二つの値を関係づけることは、黙ったデータの破損ではなくコンパイルエラーになる。
+
+% 2 1 0 09b99983a9c3867c108c6ddebbdbb2c8
+
+% 3 1 0 1607aaca2f9284e90f94f5deda09d4b5
+
+% 4 1 0 07c25a43934a5b74020e7fe5267531a2
+
+% 0 1 0 08d3ce257fc5476103a66cb0f2f4dd63
+
+% 1 1 0 1137c88ab018ad6113f529f4c649a1f0
+
+% 2 1 0 122f051aed08cb7814427c5c5e326c34
+
+% 0 1 0 1ac433ac6e8b61120355a636411e30f0
+
+% 2 1 0 0e9955499e6efe2a07838eee4d598bde
+
+% 3 1 0 0645dbdbfe12e6d20ebca4a10cfc68db
+
+% 1 1 0 00bffd138a88850d16195d8d8c9e284a
+
+% 0 1 0 171ebf761203b6521edc24b79cb72efa
+
+% 0 1 0 104cb34c5c8134781263ae42ccebf4bf
+
+% 1 1 0 04fee055964afdc402ec4a94f573bab1
+
+@ 0 7 0 07be55869e3d6769173cc8696fbbb121
++     `Database` は通常 given である。拡張メソッドの `store`、`reference`、`assign`、`unassign`、`lookup` がそれをコンテキストから見つけるからである。
++     格納された値の参照は `Ref of Box in db.type` である。値とデータベースの両方で型付けされるので、別の型への参照と取り違えることも、別のデータベースに対して使うこともできず、適用によって参照を解決する（`box()`）。
++     格納することは *インターン化* である。等しい値を二度格納すると同じ参照が得られるので、データベースにおける同一性は値によって決まる。`reference()` はすでに格納された値の参照を見つけ、格納されていなければ `Database.Error` を発生させる。
+
+@ 0 2 0 1035cbc752cd13f21d8805de59fc8212
++     クエリは `lookup` が返す参照に対する普通の Scala の述語なので、プログラムの他の部分と同じようにコンパイラによって検査される。
+
+@ 0 4 0 1553ba01cbc3b0081862abb1af140122
++     このライブラリにはソースセットがひとつ、`anamnesis.core` があり、すべてのプラットフォーム向けにコンパイルされる。
++     `Database`、関係の演算子 `-<` と `>-`、`Entity`、`Listable`、`Referenceable`、`enumerate`、そして五つの拡張メソッドは `soundness` アンブレラにエクスポートされる。`Ref` と `Reference` は `anamnesis.internal` から `anamnesis` パッケージにエクスポートされる。
+
+% 0 1 0 0f99f8aa80857e0812cce17c5d96784f
+
+% 0 1 0 1681f54abda60b9800c415dbccbe362b
+
+% 0 1 0 18adccb27099ba8c0a1e30beb30347b7
+
+% 0 1 0 009d87d3cdc993d416734d1d9257db1c
+
+% 0 1 0 067041910b3e1456054eba2e23747ac6
+
+% 0 1 0 16d8a0e57ec465d61441770e338898b6
+
+@ 0 1 0 1c376424694dc3c10664414c1bbf3120
++ entry .Database   インターン化された値と、それらの間の型付きの関係を保持するインメモリーのストア
+
+% 1 1 0 048c6513a17c719a0ff347a0356c59e7
+
+@ 0 4 0 0fb01ead06e84d820cb132add84bb9c3
++       `Database of relations` は値を保持し、その `relations` タプルにある各 `A -< B` について、`A` から `B` への一対多の関係を保持する。
++       このタプルがデータベースの `#Topic` であり、関係づけるすべての操作はその関係がそこに含まれるという証拠（`#Has`）を要求するので、スキーマはコードのコンパイル時に検査される。
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 0 1 0 03e156f9b4684ee71e065e8ff9f301d3
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0fb4d460c19256c40dd82bf9fae114ef
+
+% 0 1 0 1c801a52c0ae2ac31925c76c3ddc5ab4
+
+% 0 1 0 15bf7531acc310d61cb113e85f09729e
+
+% 0 1 0 184e590cf19c2d65094f9238a250a7d3
+
+% 0 1 0 1209c6996f34498f0c295bbb48ac02a1
+
+% 0 1 0 0142642a3bf77309017e015aa3a66193
+
+% 0 1 0 0294f1838225497b01999d100672835a
+
+% 0 1 0 04a03d5b03dc482901050f08508ef078
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 4 0 1a601935f459683c101f3a1d188911c9
++       データベースのメソッドは `in this.type` で型付けされた参照を受け取るので、データベースを given として、パッケージの拡張メソッド（`store`、`reference`、`assign`、`unassign`、`lookup`）を通じて呼ぶのが最も簡単である。
++       参照は、それを割り当てたデータベースにとってのみ意味を持つ。
+
+@ 0 3 0 13908924f3e656f30b822f643543833f
++       `#store` はミューテックスで保護されているので、並行する格納も一貫してインターン化される。関係づけるメソッドはそうではなく、複数のスレッドから関係が変更されるデータベースには独自の同期が必要である。
+
+% 0 1 0 04165fec4bcc6ffe0e4ae1f53680cd2b
+
+% 0 1 0 0d68e2ad632421f60cf305e4695eb7c5
+
+% 0 1 0 0c8b0839625871121e3810db82109d69
+
+@ 0 8 0 1c5f7b410c73c72e169d5e800cb0ed00
++   entry .Relation   データベースのスキーマの要素としての、ひとつの関係 `left -< right` の型
++       シールされたマーカートレイトであり、インスタンス化されることはない。`left -< right` と `right >- left` がどちらも表すのは `Database.Relation[left, right]` であり、データベースの `#Topic` はそれらのタプルである。
++   entry .apply   期待される型が宣言する関係を持つ、新しい空のデータベース
++       `Database()` は transparent であり、付けられた型から関係を取る：`given db: Database of (Cabinet -< Shelf, Shelf -< Box) = Database()`。
++       タプルの各要素につきひとつの関係テーブルを割り当てる。
++   entry .Error   格納されていない値の参照を求めたときに発生する
+
+% 1 1 0 15b4f5570eefab950d56a60d64d8350e
+
+@ 0 3 0 07508e9d770db2670374ad2d952b78f3
++         エラー `↯/s.26.1`：_the database operation failed because the value has not been stored in the database_。
++         値が一度も `store` に渡されていないときに `Database#ref` と `reference` 拡張が発生させる。スコープに `Tactic[Database.Error]` が必要である。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 03a17dc00326ee161d26751b9ac78943
+
+% 0 1 0 02e33c38d413e5d30009c585eb0ea1e2
+
+% 0 1 0 16a5a288d7f65593181b2583b5ae8f43
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 1 0 07771e3e230a81e60cdc4e9aaf06b01d
++     entry .Reason   データベース操作が失敗した理由
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 39 0 1fcc943bd76e63b016e3cb9d877b05e2
++           唯一のケース `UnknownReference`（番号 1）を持つ列挙型である。値がデータベースに格納されていない。
++       entry #number   理由の番号。エラーのコードの二番目の部分
++     entry .communicable   `Database.Error.Reason` をメッセージとして記述する
++     entry #reason   操作が失敗した理由、`Database.Error.Reason` として
++   entry #Topic   データベースの関係を、`Database.Relation` のタプルとして
++       データベースが作られるときの型によって決まる。`Database of (A -< B, B -< C)` では `(A -< B, B -< C)` である。
++   entry #AllRelations   データベースの関係の合併、`Tuple.Union[Topic]`
++   entry #Has   関係がデータベースのスキーマにあるという証拠：`relation <:< AllRelations`
++       `assign`、`unassign`、`lookup` が要求するコンテキスト上の証拠 `db.Has[left -< right]` である。それが見つからないなら、その関係はスキーマになく、呼び出しはコンパイルされない。
++   entry #allocate   まだどの値にも結びついていない、ある型の新しい参照
++       データベースのカウンターを増やし、`Ref of ref in this.type` で型付けされた次の参照を返す。
++       `#store` がこれを使う。直接割り当てた参照には、解決先となる値がない。
++   entry #dereference   参照が指す値
++       `ref()` は、データベースを given として `Ref` の拡張を通じた同じものである。
++       割り当てられたが一度も格納されなかった参照は、内部のマップからの例外で失敗する。
++   entry #store   値をインターン化し、その参照を返す：新しい参照、またはすでに持っている参照
++       等しい値はひとつの参照を共有するので、値を二度格納しても害はなく、同一性は値によって決まる。
++       `store()` 拡張は、スコープにあるデータベースでこれを呼ぶ。
++   entry #ref   すでに格納された値の参照。格納されていなければ `Database.Error` を発生させる
++       `Tactic[Database.Error]` が必要である。
++       `reference()` 拡張は、スコープにあるデータベースでこれを呼ぶ。別の場所から届いた値を、再び格納するのではなく、データベースがすでに保持しているものと照合する方法である。
++   entry #assign   スキーマの関係のひとつによって、二つの参照を関係づける
++       `db.assign(left, right)` は、`left -< right` によって `left` に関係づけられた `right` の集合に `right` を加える。データベースの `#Topic` はこの関係を含まなければならない。
++       通常は `assign` 拡張で書く。
++   entry #unassign   二つの参照の間の関係を取り除く
++       `#assign` の逆である。`right` は `left` に関係づけられた集合から取り除かれ、関係の逆引きインデックスもそれを忘れる。
++       一度も作られていない関係を取り除いても、データベースは元のままである。
++   entry #lookup   ひとつの関係によってある参照に関係づけられたすべての参照を、`Set` として
++       `db.lookup[Shelf, Box](shelf)` は `shelf` に割り当てられたすべての `Box` である。何もない参照では空集合になる。
++       `lookup` 拡張は左の型を参照から推論する。
+
+@ 0 4 0 072e3d466b7e12311938181983a8f8fa
++ entry .-<   スキーマの関係：`left -< right` は `left` が `right` を持ちうることを意味する
++     `Database.Relation[left, right]` の中置の別名である。
++     データベースの型はこれのタプルである。`Database of (Cabinet -< Shelf, Shelf -< Box)` では、キャビネットは棚を、棚は箱を持つことができ、それ以外は許されないので、そこでは `box.assign(shelf)` はコンパイルされない。
+
+% 2 1 0 0cfd8fc04749264a1eeb467a69f37026
+
+% 3 1 0 019d4bc23ec8d22c0f3c87475779de79
+
+% 2 1 0 0616ed6dec18e2fb07f7da6ff924c53f
+
+% 3 1 0 180e473c12b11e7a044b9a10d33ec344
+
+% 0 1 0 1deec4d78c5bb6531a3ee79162967a81
+
+% 1 1 0 13fdd3de8676e0ff1a132036d8ab1c43
+
+@ 0 4 0 1e4bc7b82e07730b16dcd4a49c899e93
++ entry .>-   右から左へ書く関係：`left >- right` は `right` が `left` を持ちうることを意味する
++     `Database.Relation[right, left]` の中置の別名であり、`-<` の鏡像である。所有される側から読むほうが読みやすいスキーマのためのものである。`Text >- Box` は `Box -< Text` と同じ関係なので、箱はテキストのラベルを持つことができる。
+
+@ 0 3 0 02c18be752e2e80015b51a1801a66409
++ entry .store   スコープにあるデータベースに値をインターン化し、その型付きの参照を返す
++     任意の値に対する inline の拡張であり、`Database` の given が必要である。
++     `Ref of value in db.type` を返す。すでに格納された等しい値があれば、その値がすでに持っている参照が得られる。
+
+% 2 1 0 0e7add17634712f207d5d32b35bde0ad
+
+% 3 1 0 05662256fe2771371e4a8501174d54c4
+
+% 5 1 0 08b485897506959b1a053810d5be445a
+
+% 6 1 0 026f6e03382c764b168ae9d1b21297ea
+
+% 0 1 0 12f8dffd07c17d0c020913da1172bb30
+
+% 0 1 0 15213a992e7a61280c067b7a79b29091
+
+% 1 1 0 0d9439649055b6611c104a9bac428984
+
+@ 0 5 0 15a5cce95dcc483315338650bab7ead2
++ entry .reference   スコープにあるデータベースにすでに格納された値の参照
++     任意の値に対する inline の拡張であり、`Database` の given と `Tactic[Database.Error]` が必要である。値が一度も格納されていなければ、これが発生する（`Database.Error.Reason.UnknownReference`）。
++     `store()` なら新しい値をインターン化するところで、`reference()` は既存のものを見つけるだけである。
+
+% 2 1 0 01bb89eac71e79df004afddf7a669735
+
+% 3 1 0 0f287361d495727e062a48e7c6ce1356
+
+% 4 1 0 142294f509e503221e30ac595770601a
+
+% 2 1 0 035f7f611be6037203624c1e00f0bae8
+
+% 3 1 0 1f6d960cf6bb1b0d031cfb9d3eb3c219
+
+% 0 1 0 1b627ba2857c734a1b432b1c5660a1d1
+
+% 0 1 0 0b944b3b6c38db5805054079f125ab52
+
+% 1 1 0 0a6b01f7e496dcd508d3c4ab318517b9
+
+@ 0 4 0 1fe59f18b9fd70dd0e3f7a81cf4246ff
++ entry .assign   データベースの型が宣言する関係によって、ある参照を別の参照に関係づける
++     `Ref of left in db.type` に対する inline の拡張であり、`Database` の given と `db.Has[left -< right]` が必要である。`shelf.assign(box)` は、`Shelf -< Box` がスキーマにある場合にのみコンパイルされる。
++     同じ組を二度割り当てても、関係はひとつである。
+
+% 2 1 0 19a8ed2f071b86310d6925b9cfca2713
+
+% 3 1 0 19e0944276bae0460a3689961e14f053
+
+% 4 1 0 03e36d9928190e0305fe0b7c24861b33
+
+% 6 1 0 003b14b26707323600849586e7323f36
+
+% 7 1 0 057c11bdd843e3100c9039b14cbc4090
+
+% 8 1 0 06efd536ef2cd7231ce209afb0b7668c
+
+% 10 1 0 0eebe84a1e64e439123f6085328f83cd
+
+% 3 1 0 0fbc3020753cf01e17344b5e6a12a351
+
+% 1 1 0 199be1fb2f7877c509453f9b165ff7fc
+
+% 0 1 0 18d73f31d9b32cbf1faa698e025f4853
+
+% 1 1 0 0572836c0dd703681f102ee9313ef51f
+
+@ 0 4 0 09c3f30f4ffe0f82106638291cf37ce8
++ entry .unassign   ある参照と別の参照の間の関係を取り除く
++     `Ref of left in db.type` に対する inline の拡張であり、`Database` の given と `db.Has[left -< right]` が必要である。`assign` の逆である。
++     `left` に関係づけられた他の参照は影響を受けない。
+
+@ 0 5 0 024aec2f206bc8fd165d35de25235287
++ entry .lookup   ひとつの関係によってある参照に関係づけられた参照を、`Set` として
++     `Ref of left in db.type` に対する inline の拡張であり、`Database` の given と `db.Has[left -< right]` が必要である。`shelf.lookup[Box]` は棚に割り当てられたすべての箱である。
++     各結果は適用によって参照を解決する `Ref` なので、クエリは値に対する述語である。
+
+% 2 1 0 12f26b1b00286ebc14da93154cd1345b
+
+% 3 1 0 15c35a03564697850d2ebc1d3743e0e5
+
+% 4 1 0 17ec84de9eac1046184ed9d7f4bb931b
+
+% 6 1 0 19cfa6fe2fb2e8a1174d4168dce036eb
+
+% 7 1 0 0e1b26bf1eb32944075837f3b2fe5f29
+
+% 8 1 0 1655c77c0e7ad0d80ef925be48787c5c
+
+% 10 1 0 14b42fc38411f8571681e3412fed3d55
+
+% 0 1 0 0b7553f64845c6a90dedabf579d6b9cf
+
+% 0 1 0 0c8f70da1fbd577e154e08e8108aad15
+
+% 1 1 0 1935248c46a06ae01fb9bf48feb6bde1
+
+@ 0 3 0 08ae45b3ea358b541863fd5515c0740c
++ entry .enumerate   あるエンティティ型へのすべての参照を、その `Listable` インスタンスが列挙するとおりに
++     `enumerate[entity]` には、`entity` が `Listable` インスタンスを持つ `Entity` であることが必要であり、すべてを受け入れる述語を与えたそのインスタンスの `list` である。
+
+@ 0 6 0 0167e303a610bd4a023c028612780a6b
++ entry .Ref   格納された値への参照。値と、それを保持するデータベースによって型付けされる
++     不透明型 `anamnesis.internal.Ref` であり、ここにエクスポートされる。
++     `store` からの参照は `Ref of value in db.type` という型を持つ。`of` は値の型を、`in` はそのデータベースを示すので、`Box` への参照を `Shelf` への参照が求められる場所に渡すことも、別のデータベースに対して解決することもできない。
++     内部は `Int` なので、参照は保持するのも、比較するのも、キーとして使うのも安価である。
+
+@ 0 1 0 0a3e51848863cb9f1cd0fe20f2961851
++     参照は、そのデータベースを given として、適用 `ref()` によって解決する。
+
+% 2 1 0 175f41e74ec2e3ce05ae361b2ffa1d22
+
+% 3 1 0 051ae75a80f0cbbf0be99178231729bd
+
+% 5 1 0 119f3f8fb7c439541a94dced7a37e37f
+
+% 6 1 0 18f6b85c742315600e3cd11eac4cd23d
+
+% 1 1 0 05a5323c7d1c942b01bbb756c8ca6f65
+
+% 0 1 0 151c27d960aee7bd1172f36c601ffbdd
+
+% 1 1 0 0b6eb352b66b16d806a29e0920ec71ed
+
+@ 0 5 0 0900c26b7405854708f2e9d9d85d9511
++ entry .Reference   エンティティのキーによる、`Entity` への参照
++     不透明型 `anamnesis.internal.Reference` であり、ここにエクスポートされる。
++     `Ref` がデータベースによって割り当てられるのに対し、`Reference[entity]` はエンティティ自身のキー（その `Operand`）であり、参照する対象によって型付けされる。`Referenceable` であるエンティティ型はキーからエンティティを解決し、参照はキー自身のコーデックを通じてテキストとしてエンコード・デコードされる。
+
+@ 0 1 0 06b5e193955fa984091cb98d0c96d4fe
++ entry .Entity   独自のキーを持ち、`Reference` によって参照できる値
+
+% 1 1 0 19379d2e5ed3fbc411dd691becf68273
+
+@ 0 3 0 1815476f353a16b60e629bc3ea0e3f76
++       `Entity` は `Operable` である。その `Operand` 型メンバーはキーの型であり、`#ref` はキーそのものである。
++       コンパニオンの `Referenceable` インスタンスはキーによってエンティティを探し、`Listable` インスタンスはそれらを列挙する。`enumerate` は後者を使う。
+
+% 0 1 0 1c752d312f285b38156e84d6cb6e6a6c
+
+% 0 1 0 129423d3027747140717c0641bbf7764
+
+@ 0 2 0 1bbd08cc560fe3950906d48100f4c9e7
++   entry #ref         エンティティのキー、その `Operand` 型の
++   entry #reference   キーによる、このエンティティへの `Reference`
+
+@ 0 1 0 1f85b61f7e7d8c370f97b55be52c4b46
++ entry .Listable   ある型のすべてのエンティティへの参照を列挙する型クラス
+
+% 1 1 0 1bfa0daa6d372129057201fec38cd8d2
+
+@ 0 4 0 048e3d2290ee41d010ccfdee3e52d290
++       `Entity` 型のインスタンスは、述語が受け入れるそのエンティティへの参照を列挙する。`enumerate[entity]` はそれらをすべて列挙する。
++   entry #Self   インスタンスが列挙するエンティティ型
++   entry #list   述語が受け入れるエンティティへの参照
+
+@ 0 1 0 11a5367e6991faba09594574125d681e
++ entry .Referenceable   キーからエンティティを解決する型クラス
+
+% 1 1 0 097d13223d7b7dcc0064a72d21eb3374
+
+@ 0 5 0 0895a58b71ee360d1eaadb5ae857c4d3
++       `Operand` がキーの型である `Entity` 型のインスタンスは、キーが指すエンティティを見つける。`Reference[entity]` を `()` で適用すると、このインスタンスを通じて解決される。
++       また、キーの型自身のコーデックを通じて、`Reference` にテキストのコーデックを与える。
++   entry #Self     `Operand` がインスタンスのキーの型であるエンティティ型
++   entry #lookup   キーが指すエンティティ
+
+@ 0 1 0 1fc32e6eaf8e1075068bfa2e8bef11ed
++ entry .internal   不透明型 `Ref` と `Reference`、そのコンパニオンと拡張
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 5 0 10e1f80c287accfe0a6d2f159cb029bb
++       直接使うものではない。このオブジェクトは `Ref` と `Reference` の不透明な定義を保持し、それらは `anamnesis` パッケージにエクスポートされ、そこで説明されている。
++   entry .Dereferenceable   `Ref` の上限：その `Form` が属するデータベースである値
++     entry #Form   参照が属するデータベースの型
++   entry .Ref   格納された値への参照。`anamnesis.Ref` を参照
+
+% 1 1 0 1d189c18d3455e8c0a40928fb23d6dd2
+
+@ 0 3 0 0592f3b4a19be56510ca86acca1c3956
++         不透明型 `Ref <: Dereferenceable` であり、内部は `Int` である。
++     entry .apply   `Database#allocate` と同様に、データベースに新しい参照を割り当てる
++   entry .Reference   キーによるエンティティへの参照。`anamnesis.Reference` を参照
+
+% 1 1 0 02b1e566ada5e72f14435e1a6e237a81
+
+@ 0 9 0 0fe03cfee3eaf2af14861d448538c21c
++         不透明型 `Reference[+entity <: Entity]` であり、内部はキーである。
++     entry .apply        キーによる、エンティティへの参照
++     entry .encodable    `Referenceable` なエンティティについて、参照をそのキーのテキストとしてエンコードする
++     entry .decodable    `Referenceable` なエンティティについて、参照をそのキーのテキストからデコードする
++   entry .expose   `Reference` が保持するキーを、その `Referenceable` インスタンスの `Operand` として
++   entry .apply   `Ref` をそのデータベースに対して解決する、または `Reference` をそのエンティティに解決する
++       名前を共有する二つの拡張である。`Ref of value in database` に対する `ref()` は、データベースを given として値を与える。`Reference[entity]` に対する `reference()` は、その `Referenceable` インスタンスを通じてエンティティを探す。

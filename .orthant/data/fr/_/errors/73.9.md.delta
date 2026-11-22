@@ -1,0 +1,60 @@
+orthant 2 language
+
+% 0 1 0 113a51a0265b242f149c7b4fbd75d0cf
+
+@ 0 1 0 022d53b9c0ce7a0b0463cdcb67b66d38
++ Levée lorsque Aviation ne peut pas analyser une chaîne d'horodatage.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 4 0 04fc51cf560781d500e9d3ccd09ac65a
++ L'analyseur d'horodatages d'Aviation attend un horodatage de style ISO-8601. Le constructeur
++ enregistre la `value` fautive et une `reason: Reason` indiquant l'étape de l'analyse qui a échoué ;
++ le message affiché est `the time $value could not be parsed because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 15942d5a1f413b541d517eb81a1a1b5f
+
+@ 0 2 0 00eeefdae2a273b401010a4cc6a76a0f
++ L'entrée ne correspondait pas du tout au motif d'horodatage ISO-8601 attendu.
+
+@ 0 1 0 0a39f76c0f9849071dde88c38d8e251c
++ **Exemple.** `[↯/s.73.9.1] the time not-a-timestamp could not be parsed because the input did not match the expected timestamp format`
+
+@ 0 2 0 102997522e79412919f3e89f4ed2eb39
++ **Résolution.** Fournissez l'horodatage sous forme ISO-8601 (`YYYY-MM-DD[T ]HH:MM:SS`) ;
++ prétraitez les entrées non standard.
+
+% 0 1 0 03e608574f3232ae0a4be5b002480ea7
+
+@ 0 3 0 1f16de59956dbc531d6e9a121dcb8675
++ L'entrée correspondait au motif d'horodatage, mais l'une de ses composantes numériques n'a pas pu
++ être analysée comme un entier (une `Number.Error` a été levée en interne).
+
+@ 0 1 0 0d349958f19f48470f87428053c963b0
++ **Exemple.** `[↯/s.73.9.2] the time 2024-XX-15T14:30:59 could not be parsed because a numeric component could not be parsed as an integer`
+
+@ 0 2 0 166d3c58c7d41b871ff4db7f31acc6dc
++ **Résolution.** Vérifiez que chaque composante (année, mois, jour, heure, minute, seconde) est un
++ simple entier décimal.
+
+% 0 1 0 178c1d9c25626ddb13c59acae65983b8
+
+@ 0 2 0 127e2439b0a3012e0c433e5699c5c650
++ Une composante de date ou d'heure était hors de son intervalle valide — par exemple le mois 13,
++ le jour 32 ou l'heure 25 (une `Moment.Error` a été levée en interne).
+
+@ 0 1 0 00a751945fa005620c40389aff728de8
++ **Exemple.** `[↯/s.73.9.3] the time 2024-13-15T14:30:59 could not be parsed because a date or time component was outside the valid range`
+
+@ 0 3 0 0ed982eef14ef72d1392930c827c0497
++ **Résolution.** Validez les valeurs des composantes avant le formatage, ou calculez-les à partir
++ d'un calendrier qui les contraint aux intervalles autorisés.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 1b685d9cf86d9fb51dd03ae5247b6c58
++ - Source : `lib/embarcadero/src/containerd/embarcadero.Timestamp.scala`

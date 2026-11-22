@@ -1,0 +1,381 @@
+orthant 2 language
+
+@ 0 328 0 161a34d1898cfdc619a013fd26414ab6
++   entry .globalAttribute   すべての要素で有効な属性の given を作る
++       `globalAttribute["title", Textual]()` は、要素の集合をもたず `global` が真である `"title" is Attribute of Textual in Whatwg` を構築する。したがって、これはすべての要素を `targets` する。
++       仕様のグローバル属性（`id`、`class`、`style`、`title`、`lang`、`dir`、`hidden`、`tabindex`、`accesskey` など）は、すべてこれで定義されている。
++   entry .AccessKeys   `accesskey` の値のマーカー。キーラベルの順序付き集合
++   entry .Affirmation   `translate` の値のマーカー。`yes` または `no`
++   entry .Autocapitalization   `autocapitalize` の値のマーカー。`off`、`none`、`on`、`sentences`、`words`、`characters` のいずれか
++   entry .ButtonType   `<button>` の `type` の値のマーカー。`submit`、`reset`、`button` のいずれか
++   entry .Closedby   `<dialog>` の `closedby` の値のマーカー。`any`、`closerequest`、`none` のいずれか
++   entry .Color   `<link color>` が取る、CSS の色の値のマーカー
++   entry .Colorspace   `<input type="color">` の `colorspace` の値のマーカー
++   entry .Command   `<button>` の `command` の値のマーカー。組み込みのコマンド名か、独自の `--name`
++   entry .ContentEditable   `contenteditable` の値のマーカー。`true`、`false`、`plaintext-only`、空のいずれか
++   entry .Coords   `<area>` の `coords` の値のマーカー。カンマ区切りの数のリスト
++   entry .Crossorigin   `crossorigin` の値のマーカー。`anonymous` または `use-credentials`
++       これはマーカーにすぎない。`honeycomb.Crossorigin` の enum が二つの値をもつが、独自の `Attributive` をもたないので、`attributives.textAttributive` をスコープに入れて `.show` として渡す。
++   entry .CustomElementName   `is` の値のマーカー。ハイフンを含むカスタム要素名
++   entry .Css   `style` の値のマーカー。インラインの CSS 宣言
++       `Attributive.style` が `Text` を受け付ける。
++   entry .CssClassList   `class` の値のマーカー。空白区切りの CSS クラス名
++       `Name[CssClass]`、`List[Name[CssClass]]`、`ClassList` を受け付ける（`Attributive.cssClass`、`.cssClassList`、`.classList`）。空のリストでは属性そのものが省かれる。
++   entry .Datetime   `<del>` または `<ins>` の `datetime` の値のマーカー。日付、または日付と時刻
++   entry .Decimal   浮動小数点数の属性の値のマーカー。`step`、`min`、`max`、`<meter>` の `value`、`high`、`low`、`optimum`
++       `Attributive.double` が `Double` を受け付ける。
++   entry .Decoding   `<img>` の `decoding` の値のマーカー。`sync`、`async`、`auto` のいずれか
++   entry .Dir   `dir` の値のマーカー。`ltr`、`rtl`、`auto` のいずれか
++       `HDir` はその値の enum であり、独自の `Attributive` をもつ。したがって `Body(dir = HDir.Rtl)` は、ほかに何もインポートせずにコンパイルできる。
++   entry .Enctype   `enctype` と `formenctype` の値のマーカー。フォームのエンコーディングの MIME タイプ
++   entry .EnterKeyHint   `enterkeyhint` の値のマーカー。`enter`、`done`、`go`、`next`、`previous`、`search`、`send` のいずれか
++   entry .FetchPriority   `fetchpriority` の値のマーカー。`high`、`low`、`auto` のいずれか
++   entry .HashName   `usemap` の値のマーカー。`<map>` の名前への、`#` を前に付けた参照
++   entry .Hidden   `hidden` の値のマーカー。存在するか、`until-found`
++   entry .HttpEquiv   `<meta>` の `http-equiv` の値のマーカー。プラグマ指令の名前
++       `honeycomb.HttpEquiv` の enum が四つの指令をもち、`.show` として渡す。
++   entry .Id   `id` の値のマーカー。一つの要素を id で名指す属性の値のマーカーでもある
++       `for`、`form`、`list`、`commandfor`、`popovertarget` は、どれも `Id` を取る。
++       `Attributive.domId` が `Name[DomId]` を受け付ける。
++   entry .Ids   空白区切りの id のリストの値のマーカー。`headers`、`itemref`、`<output>` の `for`
++       `Attributive.domIds` が `List[Name[DomId]]` を受け付け、リストが空なら属性を省く。
++   entry .ImageSizes   `<link>` の `imagesizes` の値のマーカー。プリロードする画像のソースサイズのリスト
++   entry .ImageSrcSet   `<link>` の `imagesrcset` の値のマーカー。プリロードする画像の srcset
++   entry .InputMode   `inputmode` の値のマーカー。`none`、`text`、`tel`、`url`、`email`、`numeric`、`decimal`、`search` のいずれか
++   entry .InputType   `<input>` の `type` の値のマーカー
++       `#Input` オブジェクトが各タイプをプリセットのタグ（`Input.Email`、`Input.Checkbox`、…）として提供するので、この属性を直接書くことはまれである。
++   entry .InputValue   `<input>` の `value` の値のマーカー。その形は入力のタイプによって決まる
++   entry .Integral   符号付き整数の属性の値のマーカー。`tabindex`、`start`、`<li>` の `value`
++       `Attributive.int` が `Int` を受け付ける。
++   entry .ItemProp   `itemprop` の値のマーカー。マイクロデータのプロパティ名
++   entry .Kind   `<track>` の `kind` の値のマーカー。`subtitles`、`captions`、`descriptions`、`chapters`、`metadata` のいずれか
++       `#Track` オブジェクトが各種類をプリセットのタグとして提供する。値は `honeycomb.Kind` の enum がもつ。
++   entry .Language   `lang`、`hreflang`、`srclang` の値のマーカー。BCP 47 の言語タグ
++   entry .Laziness   `loading` の値のマーカー。`lazy` または `eager`
++   entry .MediaQueryList   `media` の値のマーカー。CSS のメディアクエリのリスト
++   entry .Method   `method` と `formmethod` の値のマーカー。`get`、`post`、`dialog` のいずれか
++       `honeycomb.Method` の enum が三つの値をもち、`.show` として渡す。
++   entry .Minmax   `<input>` の `min` と `max` の値のマーカー。その形は入力のタイプによって決まる
++   entry .MimeList   `accept` の値のマーカー。MIME タイプと拡張子のカンマ区切りのリスト
++   entry .Mime   単一の MIME タイプの値のマーカー。`<a>`、`<link>`、`<embed>`、`<object>`、`<source>` の `type`
++   entry .Name   `name` の値のマーカー。フォームコントロール、フォーム、マップ、メタ、スロットの名前
++   entry .OlType   `<ol>` の `type` の値のマーカー。`1`、`a`、`A`、`i`、`I` のいずれか
++   entry .Openness   `<template>` の `shadowrootmode` の値のマーカー。`open` または `closed`
++   entry .PermissionsPolicy   `<iframe>` の `allow` の値のマーカー。パーミッションポリシー
++   entry .Popover   `popover` の値のマーカー。`auto`、`manual`、`hint` のいずれか
++   entry .PopoverAction   `popovertargetaction` の値のマーカー。`toggle`、`show`、`hide` のいずれか
++   entry .PositiveInt   非負整数の属性の値のマーカー。`width`、`height`、`rows`、`cols`、`colspan`、`span`、`size`、…
++       `Attributive.posInt` が `Int` を受け付ける。値の符号は検査されない。
++   entry .Presence   真偽値属性の値のマーカー。値をもたず、存在するか存在しないかだけを表す
++       `disabled`、`checked`、`hidden` の素の形、`required`、`autofocus`、`controls`、`open`、そして存在すること自体が意味であるほかのすべての属性である。
++       `Attributive.boolean` が `Boolean` を受け付け、`true` は属性名だけを書き（`<input disabled>`）、`false` は属性を省く。
++   entry .Preload   `preload` の値のマーカー。`none`、`metadata`、`auto` のいずれか
++       `honeycomb.Preload` の enum が値をもち、`.show` として渡す。
++   entry .ReferrerPolicy   `referrerpolicy` の値のマーカー。リファラーポリシーの名前
++   entry .Regex   `<input>` の `pattern` の値のマーカー。JavaScript の正規表現
++   entry .Sandbox   `<iframe>` の `sandbox` の値のマーカー。空白区切りの `allow-…` トークン
++       `honeycomb.Sandbox` の enum がトークンをもち、`.show` として渡す。
++   entry .ScriptType   `<script>` の `type` の値のマーカー。`module`、`importmap`、MIME タイプ、データブロックのタイプのいずれか
++   entry .Scripting   イベントハンドラ属性の値のマーカー。テキストではなくスクリプトを取る
++       これに対する `Text` の `Attributive` は、意図して存在しない。ハンドラは、querencia の外部 DOM 式のような、型付けされたスクリプトの値として与え、そのスクリプトライブラリが `Attributive to Whatwg.Scripting` を提供する。
++       WHATWG の語彙自体は `on…` 属性の given を宣言しない。`Html4Transitional` は宣言する。
++   entry .Shape   `<area>` の `shape` の値のマーカー。`circle`、`default`、`poly`、`rect` のいずれか
++   entry .Sizes   `<link rel="icon">` の `sizes` の値のマーカー。`any` または `WxH` のトークン
++   entry .Softness   `<textarea>` の `wrap` の値のマーカー。`soft` または `hard`
++       `honeycomb.Wrap` の enum が二つの値をもち、`.show` として渡す。
++   entry .SourceSizeList   `<img>` または `<source>` の `sizes` の値のマーカー
++   entry .Srcdoc   `<iframe>` の `srcdoc` の値のマーカー。テキストとしての HTML 文書全体
++   entry .SrcSet   `srcset` の値のマーカー。記述子を伴う画像ソースの候補
++   entry .Switch   `autocomplete` の値のマーカー。`on` または `off`
++       `Attributive.switch` が `Boolean` を受け付け、`on` または `off` として書く。
++       `honeycomb.Autocomplete` の enum も同じ二つの値をもつ。
++   entry .Target   `target` と `formtarget` の値のマーカー。ブラウジングコンテキストの名前またはキーワード
++       `honeycomb.Target` の enum が `_self`、`_blank`、`_parent`、`_top` と名前付きのコンテキストをもち、`.show` として渡す。
++   entry .Temporal   `<time>` の `datetime` の値のマーカー。仕様が定める日付、時刻、期間のどの形でもよい
++   entry .Textual   任意のテキストを取る属性の値のマーカー
++       `alt`、`title`、`placeholder`、`content`、`label`、`slot`、`nonce`、`integrity` などである。
++       `Attributive.textTextual` と `.stringTextual` が、インポートなしで `Text` または `String` を受け付ける。選択の given `attributives.textAttributive` は、同じ受け付けをほかのすべてのマーカーに広げる。
++   entry .ThScope   `<th>` の `scope` の値のマーカー。`row`、`col`、`rowgroup`、`colgroup` のいずれか
++   entry .Tokens   空白区切りのトークンリストの値のマーカー。`rel`、`blocking`
++       `honeycomb.Rel` の enum がリンクタイプをもち、`.show` として渡す。
++   entry .Truth   `true` または `false` と書く属性の値のマーカー。`draggable`、`spellcheck`、`writingsuggestions`
++       `Attributive.truth` が `Boolean` を受け付け、単語 `true` または `false` として書く。書くか省くかで表す `Presence` の属性とは異なる。
++   entry .Upto8   `headingoffset` の値のマーカー。0 から 8 までの整数
++   entry .Url   URL を値とする属性の値のマーカー。`href`、`src`、`action`、`cite`、`poster`、`data`、`itemid`、…
++       `Attributive.url` は `Abstractable across Urls to Text` であるどんな値（`HttpUrl` や任意の型付き URL）も受け付け、`attributives.textAttributive` がスコープ内にあれば `Text` も受け付ける。
++   entry .Urls   空白区切りの URL のリストの値のマーカー。`ping`、`itemtype`
++   entry .Utf8   `charset` と `accept-charset` の値のマーカー。有効な値は `utf-8` だけである
++   entry .abbr   `<th>` の `abbr`。省略したヘッダー。`Textual` として
++   entry .accept   `<input>` の `accept`。受け付けるファイルの種類。`MimeList` として
++   entry .acceptCharset   `<form>` の `accept-charset`。フォームが受け付けるエンコーディング。`Utf8` として
++       この given の名前は `acceptCharset` であり、これが登録する属性は `accept-charset` である。
++   entry .accesskey   すべての要素の `accesskey`。キーボードショートカットのラベル。`AccessKeys` として
++   entry .action   `<form>` の `action`。フォームの送信先の URL。`Url` として
++   entry .allow   `<iframe>` の `allow`。フレームのパーミッションポリシー。`PermissionsPolicy` として
++   entry .allowfullscreen   `<iframe>` の `allowfullscreen`。`Presence`
++   entry .alpha   `<input>` の `alpha`。色の入力がアルファチャンネルをもつかどうか。`Presence` として
++   entry .alt   `<area>`、`<img>`、`<input>` の `alt`。代替テキスト。`Textual` として
++   entry .as   `<link>` の `as`。プリロードの宛先の種類。`Textual` として
++   entry .async   `<script>` の `async`。`Presence`
++   entry .autocapitalize   すべての要素の `autocapitalize`。`Autocapitalization` として
++   entry .autocomplete   `<form>` の `autocomplete`。`on` または `off`。`Switch` として
++   entry .autocomplete2   `<input>`、`<select>`、`<textarea>` の `autocomplete`。`Switch` として
++   entry .autocorrect   すべての要素の `autocorrect`。`Textual` として
++   entry .autofocus   すべての要素の `autofocus`。`Presence`
++   entry .autoplay   `<audio>` と `<video>` の `autoplay`。`Presence`
++   entry .blocking   `<link>`、`<script>`、`<style>` の `blocking`。描画をブロックするトークン。`Tokens` として
++   entry .charset   `<meta>` の `charset`。文書のエンコーディング。`Utf8` として
++   entry .checked   `<input>` の `checked`。`Presence`
++   entry .cite   `<blockquote>`、`<del>`、`<ins>`、`<q>` の `cite`。出典の URL。`Url` として
++   entry .class   すべての要素の `class`。CSS クラス名。`CssClassList` として
++       `class` はキーワードなので `` `class` = … `` と書く。通常の書き方は `Tag.name(children)` の形（`Div.panel(…)`）であり、スコープ内の `Attribution` がこれを許す。
++   entry .closedby   `<dialog>` の `closedby`。`Closedby` として
++   entry .color   `<link>` の `color`。マスクアイコンの色。`Color` として
++   entry .colorspace   `<input>` の `colorspace`。`Colorspace` として
++   entry .cols   `<textarea>` の `cols`。文字数で表す表示幅。`PositiveInt` として
++   entry .colspan   `<td>` と `<th>` の `colspan`。`PositiveInt` として
++   entry .command   `<button>` の `command`。呼び出すコマンド。`Command` として
++   entry .commandfor   `<button>` の `commandfor`。対象の要素の id。`Id` として
++   entry .content   `<meta>` の `content`。メタデータの値。`Textual` として
++   entry .contenteditable   すべての要素の `contenteditable`。`ContentEditable` として
++   entry .controls   `<audio>` と `<video>` の `controls`。`Presence`
++   entry .coords   `<area>` の `coords`。`Coords` として
++   entry .crossorigin   `<audio>`、`<img>`、`<link>`、`<script>`、`<video>` の `crossorigin`。`Crossorigin` として
++   entry .data   `<object>` の `data`。リソースの URL。`Url` として
++   entry .datetime   `<del>` と `<ins>` の `datetime`。変更が行われた日時。`Datetime` として
++   entry .datetime2   `<time>` の `datetime`。機械可読な形。`Temporal` として
++   entry .decoding   `<img>` の `decoding`。`Decoding` として
++   entry .default   `<track>` の `default`。`Presence`
++   entry .defer   `<script>` の `defer`。`Presence`
++   entry .dir   すべての要素の `dir`。テキストの方向。`Dir` として
++       `Body(dir = HDir.Rtl)` は、`HDir.attributive` によって、インポートなしでコンパイルできる。
++   entry .dirname   `<input>` と `<textarea>` の `dirname`。方向を送るフィールドの名前。`Textual` として
++   entry .disabled   `<button>`、`<input>`、`<optgroup>`、`<option>`、`<select>`、`<textarea>` の `disabled`。`Presence`
++   entry .disabled2   `<fieldset>` の `disabled`。`Presence`
++   entry .disabled3   `<link>` の `disabled`。`Presence`
++   entry .download4   `<a>` と `<area>` の `download`。推奨するファイル名。`Textual` として
++   entry .draggable   すべての要素の `draggable`。`true` または `false`。`Truth` として
++   entry .enctype   `<form>` の `enctype`。`Enctype` として
++   entry .enterkeyhint   すべての要素の `enterkeyhint`。`EnterKeyHint` として
++   entry .fetchpriority   `<img>`、`<link>`、`<script>` の `fetchpriority`。`FetchPriority` として
++   entry .for   `<label>` の `for`。ラベルが付くコントロールの id。`Id` として
++       `for` はキーワードなので `` `for` = … `` と書く。
++   entry .for2   `<output>` の `for`。計算に寄与するコントロールの id。`Ids` として
++   entry .form   フォームコントロールの `form`。それが属するフォームの id。`Id` として
++       `<button>`、`<fieldset>`、`<input>`、`<object>`、`<output>`、`<select>`、`<textarea>` にある。
++   entry .formaction   `<input>` と `<button>` の `formaction`。`Url` として
++   entry .formenctype   `<input>` と `<button>` の `formenctype`。`Enctype` として
++   entry .formmethod   `<input>` と `<button>` の `formmethod`。`Method` として
++   entry .formnovalidate   `<input>` と `<button>` の `formnovalidate`。`Presence`
++   entry .formtarget   `<input>` と `<button>` の `formtarget`。`Target` として
++   entry .headers   `<td>` と `<th>` の `headers`。そのセルのヘッダーセルの id。`Ids` として
++   entry .headingoffset   すべての要素の `headingoffset`。0 から 8。`Upto8` として
++   entry .headingreset   すべての要素の `headingreset`。`Presence` として
++   entry .height   `<canvas>`、`<embed>`、`<iframe>`、`<img>`、`<input>`、`<object>`、`<video>`、`<svg>` の `height`。`PositiveInt` として
++   entry .hidden   すべての要素の `hidden`。存在するか、`until-found`。`Hidden` として
++       マーカーは `Presence` ではなく `Hidden` なので、`hidden = true` には `Boolean` から `Hidden` への given が必要だが、ライブラリはそれを提供しない。`attributives.textAttributive` がスコープ内にあれば、`hidden = t""` が属性名だけを書く。
++   entry .high   `<meter>` の `high`。`Decimal` として
++   entry .href   `<a>` と `<area>` の `href`。リンク先。`Url` として
++   entry .href2   `<base>` の `href`。文書のベース URL。`Url` として
++   entry .href3   `<link>` の `href`。リンクされるリソース。`Url` として
++   entry .hreflang   `<a>` と `<link>` の `hreflang`。`Language` として
++   entry .httpEquiv   `<meta>` の `http-equiv`。プラグマ指令。`HttpEquiv` として
++       `httpEquiv = …` と書く。属性は `http-equiv` としてシリアライズされる。
++   entry .id   すべての要素の `id`。`Id` として
++       `Attributive.domId` によって `Name[DomId]` を取り、`attributives.textAttributive` があれば `Text` を取る。
++   entry .imagesizes   `<link>` の `imagesizes`。`ImageSizes` として
++   entry .imagesrcset   `<link>` の `imagesrcset`。`ImageSrcSet` として
++   entry .inert   すべての要素の `inert`。`Presence`
++   entry .inputmode   すべての要素の `inputmode`。`InputMode` として
++   entry .integrity   `<link>` と `<script>` の `integrity`。サブリソース完全性のハッシュ。`Textual` として
++   entry .is   すべての要素の `is`。カスタム要素名。`CustomElementName` として
++   entry .ismap   `<img>` の `ismap`。`Presence`
++   entry .itemid   すべての要素の `itemid`。マイクロデータのアイテムの大域的な識別子。`Url` として
++   entry .itemprop   すべての要素の `itemprop`。`ItemProp` として
++   entry .itemref   すべての要素の `itemref`。`Ids` として
++   entry .itemscope   すべての要素の `itemscope`。`Presence`
++   entry .itemtype   すべての要素の `itemtype`。`Urls` として
++   entry .kind   `<track>` の `kind`。`Kind` として
++   entry .label   `<optgroup>`、`<option>`、`<track>` の `label`。ユーザーに見えるラベル。`Textual` として
++       `label` という名前の given はほかの Soundness ライブラリもエクスポートしている。そのため `soundness` アンブレラでは、素の参照があいまいになる場所で、この名前に `Whatwg.label` を通して到達する。属性の解決そのものがこの名前を必要とすることはない。
++   entry .lang   すべての要素の `lang`。`Language` として
++   entry .list   `<input>` の `list`。`<datalist>` の id。`Id` として
++   entry .loading   `<img>` と `<iframe>` の `loading`。`lazy` または `eager`。`Laziness` として
++   entry .loop   `<audio>` と `<video>` の `loop`。`Presence`
++   entry .low   `<meter>` の `low`。`Decimal` として
++   entry .max   `<input>` の `max`。`Minmax` として
++   entry .max2   `<meter>` と `<progress>` の `max`。`Decimal` として
++   entry .maxlength   `<input>` と `<textarea>` の `maxlength`。`PositiveInt` として
++   entry .media   `<a>`、`<area>`、`<link>`、`<source>`、`<style>` の `media`。`MediaQueryList` として
++   entry .method   `<form>` の `method`。`get`、`post`、`dialog` のいずれか。`Method` として
++   entry .min   `<input>` の `min`。`Minmax` として
++   entry .min2   `<meter>` の `min`。`Decimal` として
++   entry .minlength   `<input>` と `<textarea>` の `minlength`。`PositiveInt` として
++   entry .multiple   `<input>` と `<select>` の `multiple`。`Presence`
++   entry .muted   `<audio>` と `<video>` の `muted`。`Presence`
++   entry .name   `<button>`、`<fieldset>`、`<input>`、`<output>`、`<select>`、`<textarea>` の `name`。`Name` として
++   entry .name2   `<details>` の `name`。排他的なアコーディオンのグループ。`Name` として
++   entry .name3   `<form>` の `name`。`Name` として
++   entry .name4   `<iframe>` と `<object>` の `name`。ブラウジングコンテキストの名前。`Target` として
++   entry .name5   `<map>` の `name`。`Name` として
++   entry .name6   `<meta>` の `name`。メタデータの名前。`Name` として
++       `#Meta` オブジェクトが標準の名前をプリセットのタグ（`Meta.Viewport`、`Meta.Description`、…）として提供する。
++   entry .name7   `<slot>` の `name`。`Name` として
++   entry .nomodule   `<script>` の `nomodule`。`Presence`
++   entry .nonce   すべての要素の `nonce`。暗号学的なノンス。`Textual` として
++   entry .novalidate   `<form>` の `novalidate`。`Presence`
++   entry .open   `<details>` と `<dialog>` の `open`。`Presence`
++   entry .optimum   `<meter>` の `optimum`。`Decimal` として
++   entry .pattern   `<input>` の `pattern`。`Regex` として
++   entry .ping   `<a>` と `<area>` の `ping`。通知先の URL。`Urls` として
++   entry .placeholder   `<input>` と `<textarea>` の `placeholder`。`Textual` として
++   entry .playsinline   `<video>` の `playsinline`。`Presence`
++   entry .popover   すべての要素の `popover`。`Popover` として
++   entry .popovertarget   `<button>` と `<input>` の `popovertarget`。ポップオーバーの id。`Id` として
++   entry .pta   `<button>` と `<input>` の `popovertargetaction`。`PopoverAction` として
++   entry .poster   `<video>` の `poster`。プレースホルダーの画像。`Url` として
++   entry .preload   `<audio>` と `<video>` の `preload`。`Preload` として
++   entry .readonly   `<input>` と `<textarea>` の `readonly`。`Presence`
++   entry .referrerpolicy   `<a>`、`<area>`、`<iframe>`、`<img>`、`<link>`、`<script>` の `referrerpolicy`。`ReferrerPolicy` として
++   entry .rel   `<a>` と `<area>` の `rel`。リンクタイプ。`Tokens` として
++   entry .rel2   `<link>` の `rel`。リンクタイプ。`Tokens` として
++       `#Link` オブジェクトが各リンクタイプをプリセットのタグ（`Link.Stylesheet`、`Link.Icon`、…）として提供する。
++   entry .required   `<input>`、`<select>`、`<textarea>` の `required`。`Presence`
++   entry .reversed   `<ol>` の `reversed`。`Presence`
++   entry .rows   `<textarea>` の `rows`。`PositiveInt` として
++   entry .rowspan   `<td>` と `<th>` の `rowspan`。`PositiveInt` として
++   entry .sandbox   `<iframe>` の `sandbox`。`Sandbox` として
++   entry .scope   `<th>` の `scope`。`ThScope` として
++   entry .selected   `<option>` の `selected`。`Presence`
++   entry .shadowrootclonable   `<template>` の `shadowrootclonable`。`Presence`
++   entry .srcer   `<template>` の `shadowrootcustomelementregistry`。`Presence`
++   entry .srdf   `<template>` の `shadowrootdelegatesfocus`。`Presence`
++   entry .shadowrootmode   `<template>` の `shadowrootmode`。`open` または `closed`。`Openness` として
++   entry .shadowrootserializable   `<template>` の `shadowrootserializable`。`Presence`
++   entry .shape   `<area>` の `shape`。`Shape` として
++   entry .size   `<input>` と `<select>` の `size`。`PositiveInt` として
++   entry .sizes   `<img>` と `<source>` の `sizes`。`SourceSizeList` として
++   entry .sizes2   `<link>` の `sizes`。アイコンのサイズ。`Sizes` として
++   entry .slot   すべての要素の `slot`。シャドウツリーのスロット名。`Textual` として
++   entry .span   `<col>` と `<colgroup>` の `span`。`PositiveInt` として
++   entry .spellcheck   すべての要素の `spellcheck`。`true` または `false`。`Truth` として
++   entry .src   `<audio>`、`<embed>`、`<iframe>`、`<img>`、`<input>`、`<script>`、`<source>`、`<track>`、`<video>` の `src`。`Url` として
++   entry .srcdoc   `<iframe>` の `srcdoc`。インラインの文書。`Srcdoc` として
++   entry .srclang   `<track>` の `srclang`。`Language` として
++   entry .srcset   `<img>` と `<source>` の `srcset`。`SrcSet` として
++   entry .start   `<ol>` の `start`。最初の項目の番号。`Integral` として
++   entry .step   `<input>` の `step`。`Decimal` として
++   entry .style   すべての要素の `style`。インラインの CSS。`Css` として
++   entry .tabindex   すべての要素の `tabindex`。`Integral` として
++   entry .target   `<a>` と `<area>` の `target`。`Target` として
++   entry .target2   `<base>` の `target`。デフォルトのブラウジングコンテキスト。`Target` として
++   entry .target3   `<form>` の `target`。`Target` として
++   entry .title   すべての要素の `title`。補足のテキスト。`Textual` として
++   entry .translate   すべての要素の `translate`。`yes` または `no`。`Affirmation` として
++   entry .type   `<a>` と `<link>` の `type`。リンクされるリソースの MIME タイプ。`Mime` として
++       `type` はキーワードなので `` `type` = … `` と書く。
++   entry .type2   `<button>` の `type`。`submit`、`reset`、`button` のいずれか。`ButtonType` として
++   entry .type3   `<embed>`、`<object>`、`<source>` の `type`。`Mime` として
++   entry .type4   `<input>` の `type`。`InputType` として
++       書くことはまれである。`#Input` がタイプごとにプリセットのタグ（`Input.Email`、`Input.Range`、…）をもつ。
++   entry .type5   `<ol>` の `type`。番号付けのスタイル。`OlType` として
++   entry .type6   `<script>` の `type`。`ScriptType` として
++   entry .usemap   `<img>`、`<input>`、`<object>` の `usemap`。イメージマップの参照。`HashName` として
++   entry .value   `<button>` と `<option>` の `value`。`Textual` として
++   entry .value2   `<data>` の `value`。機械可読な値。`Textual` として
++   entry .value3   `<input>` の `value`。`InputValue` として
++   entry .value4   `<li>` の `value`。項目の序数。`Integral` として
++   entry .value5   `<meter>` と `<progress>` の `value`。`Decimal` として
++   entry .width   `<canvas>`、`<embed>`、`<iframe>`、`<img>`、`<input>`、`<object>`、`<video>`、`<svg>` の `width`。`PositiveInt` として
++   entry .wrap   `<textarea>` の `wrap`。`soft` または `hard`。`Softness` として
++   entry .writingsuggestions   すべての要素の `writingsuggestions`。`true` または `false`。`Truth` として
++   entry #doctype   この方言の `Document[Html]` がもつ `<!doctype html>` の doctype
++   entry #Interactive   インタラクティブコンテンツのカテゴリ。タグ名のユニオンとして
++       `<a>`、`<audio>`、`<button>`、`<details>`、`<embed>`、`<iframe>`、`<img>`、`<input>`、`<label>`、`<select>`、`<textarea>`、`<video>` である。
++       カテゴリは型なので、`Html of Interactive` は任意のインタラクティブな要素である。
++   entry #Flow   フローコンテンツのカテゴリ。`<body>`、`<div>`、`<li>` に入れられるすべてのもの
++       すべての見出し、すべてのフレージング要素、セクショニング要素、そしてブロックレベルの要素（`<address>`、`<blockquote>`、`<details>`、`<dialog>`、`<div>`、`<dl>`、`<fieldset>`、`<figure>`、`<footer>`、`<form>`、`<header>`、`<hr>`、`<main>`、`<menu>`、`<ol>`、`<p>`、`<pre>`、`<table>`、`<ul>`、`<search>`）である。
++       `Html of Flow` は、ページの内容の一片としてたいていのコードが求める型であり、複数なら `List[Html of Flow]` である。
+
+@ 0 7 0 181c3465c6090587095e9838c9b441ba
++         `Topic` が `"area"` である `Tag.Void` であり、`alt`、`coords`、`shape`、`href`、`target`、`download`、`ping`、`rel`、`referrerpolicy` を取る。
++         四つのメンバーは `shape` 属性をプリセットするので、`Area.Rect` は `<area shape="rect">` としてシリアライズされる。
++     entry .Default   `shape="default"` の領域。画像全体
++     entry .Rect   `shape="rect"` の領域。`coords` は左、上、右、下
++     entry .Circle   `shape="circle"` の領域。`coords` は中心の x、中心の y、半径
++     entry .Poly   `shape="poly"` の領域。`coords` は頂点の組のリスト
+
+@ 0 77 0 1c84463243d10d141ee48b48c9cf2901
++   entry #Article   `<article>`。それだけで完結した構成物。フローコンテンツをもつ
++   entry #Aside   `<aside>`。本筋から外れた内容。フローコンテンツをもつ
++   entry #Audio   `<audio>`。音声。透過的で、加えて `<source>` と `<track>` の子をもつ
++       `src`、`crossorigin`、`preload`、`autoplay`、`loop`、`muted`、`controls` を取る。
++       子が `src` の有無によって決まるという仕様の規則は型になっていないので、どちらの形もコンパイルできる。
++   entry #B   `<b>`。重要性を加えずに注意を引くテキスト。フレージングコンテンツをもつ
++   entry #Base   `<base>`。文書のベース URL とデフォルトのリンク先。空要素で、`<head>` の中に置く
++       `href` と `target` を取る。仕様は少なくとも一つを要求するが、これは強制されない。
++   entry #Bdi   `<bdi>`。双方向の整形から切り離したテキスト。フレージングコンテンツをもつ
++   entry #Bdo   `<bdo>`。方向を明示したテキスト。フレージングコンテンツをもつ。`dir` は必須である
++   entry #Blockquote   `<blockquote>`。引用された節。フローコンテンツをもつ。`cite` が出典を与える
++   entry #Body   `<body>`。文書の内容。フローコンテンツをもつ
++       自動で閉じ、挿入可能である。文書全体として読んだ内容の周りにはパーサーがこれを補い、入力の終わりで閉じる。
++   entry #Br   `<br>`。改行。空要素
++   entry #Button   `<button>`。ボタン。フレージングコンテンツをもつ
++       境界タグである。外で開かれた書式要素が中まで続くことを、パーサーは許さない。
++       `type`、`disabled`、`form`、`formaction`、`formenctype`、`formmethod`、`formnovalidate`、`formtarget`、`name`、`value`、`command`、`commandfor`、`popovertarget`、`popovertargetaction` を取る。
++   entry #Canvas   `<canvas>`。スクリプトで描けるビットマップ。透過的なので、代替コンテンツをもつ
++       `width` と `height` を取る。
++   entry #Caption   `<caption>`。表の題。フローコンテンツをもつ。`<table>` の最初の子
++   entry #Cite   `<cite>`。作品の題。フレージングコンテンツをもつ
++   entry #Code   `<code>`。コンピューターのコードの断片。フレージングコンテンツをもつ
++   entry #Col   `<col>`。表の列。空要素で、`<colgroup>` の中に置く。`span` で複数の列にまたがる
++   entry #Colgroup   `<colgroup>`。列のグループ。`<col>` 要素をもつ
++       子の間には空白しか置けず（`Html.Mode.Whitespace`）、挿入可能なので、`<table>` の中で直接出会った `<col>` にはこれが補われる。
++   entry #Data   `<data>`。機械可読な `value` を伴う内容。フレージングコンテンツをもつ
++   entry #Datalist   `<datalist>`。`<input list=…>` のための定義済みの選択肢。フレージングコンテンツと `<option>` をもつ
++   entry #Dd   `<dd>`。`<dl>` の中の説明。フローコンテンツをもつ。自動で閉じる
++   entry #Del   `<del>`。削除されたテキスト。透過的で、`cite` と `datetime` をもつ
++   entry #Details   `<details>`。開閉ウィジェット。`<summary>` に続いてフローコンテンツをもつ
++       `open` と `name` を取る。後者は、複数の details をまとめて排他的なアコーディオンにする。
++   entry #Dfn   `<dfn>`。用語を定義している箇所。フレージングコンテンツをもつ
++   entry #Dialog   `<dialog>`。ダイアログボックス。フローコンテンツをもつ。`open` と `closedby` を取る
++   entry #Div   `<div>`。汎用のコンテナ。フローコンテンツをもつ
++   entry #Dl   `<dl>`。説明リスト。`<dt>`、`<dd>`、`<div>` のグループをもつ
++       子の間には空白しか置けず、自動で閉じる。
++   entry #Dt   `<dt>`。`<dl>` の中の用語。フローコンテンツをもつ。自動で閉じる
++   entry #Em   `<em>`。強勢の強調。フレージングコンテンツをもつ
++   entry #Embed   `<embed>`。外部のアプリケーションまたはインタラクティブな内容。空要素
++       `src`、`type`、`width`、`height` を取る。
++   entry #Fieldset   `<fieldset>`。フォームコントロールのグループ。省略可能な `<legend>` に続いてフローコンテンツをもつ
++       `disabled`、`form`、`name` を取る。
++   entry #Figcaption   `<figcaption>`。図のキャプション。フローコンテンツをもつ
++   entry #Figure   `<figure>`。省略可能な `<figcaption>` を伴う、それだけで完結した内容。フローコンテンツをもつ
++   entry #Footer   `<footer>`。最も近い祖先のセクションのフッター。フローコンテンツをもつ
++   entry #Form   `<form>`。フォーム。フローコンテンツをもつ
++       `action`、`method`、`enctype`、`accept-charset`（`acceptCharset` として）、`autocomplete`、`name`、`novalidate`、`target` を取る。
++   entry #H1   `<h1>`。第一階層の見出し。フレージングコンテンツをもつ
++   entry #H2   `<h2>`。第二階層の見出し。フレージングコンテンツをもつ
++   entry #H3   `<h3>`。第三階層の見出し。フレージングコンテンツをもつ
++   entry #H4   `<h4>`。第四階層の見出し。フレージングコンテンツをもつ
++   entry #H5   `<h5>`。第五階層の見出し。フレージングコンテンツをもつ
++   entry #H6   `<h6>`。第六階層の見出し。フレージングコンテンツをもつ
++   entry #Head   `<head>`。文書のメタデータ。`#Metadata` のコンテンツをもつ
++       子の間には空白しか置けない。自動で閉じ、挿入可能なので、文書の先頭で出会った `<title>` の周りには `<head>` が補われる。
++   entry #Header   `<header>`。最も近い祖先のセクションの導入部。フローコンテンツをもつ。自動で閉じる
++   entry #Hgroup   `<hgroup>`。見出しとその副見出し。`<p>` と `<h1>` から `<h6>` をもつ
++   entry #Hr   `<hr>`。主題の区切り。空要素
++   entry #I   `<i>`。別の声で語られるテキスト。フレージングコンテンツをもつ
++   entry #Iframe   `<iframe>`。入れ子のブラウジングコンテキスト。内容をもたない
++       `src`、`srcdoc`、`name`、`sandbox`、`allow`、`allowfullscreen`、`width`、`height`、`referrerpolicy`、`loading` を取る。
++       子を受け付けないが、空要素ではない。仕様が要求する終了タグを伴って `<iframe …></iframe>` としてシリアライズされる。
++   entry #Img   `<img>`。画像。空要素
++       `src`、`alt`、`srcset`、`sizes`、`crossorigin`、`usemap`、`ismap`、`width`、`height`、`referrerpolicy`、`decoding`、`loading`、`fetchpriority` を取る。
++       `Unattributive` によって、`alt` は `img.alt` で、`width` は `img.width`（`Optional[Int]`）で読み戻せる。
+
+@ 0 6 0 05d1a780c5a956330487759043b38ec8
++   entry #Ins   `<ins>`。挿入されたテキスト。透過的で、`cite` と `datetime` をもつ
++   entry #Kbd   `<kbd>`。ユーザーの入力。フレージングコンテンツをもつ
++   entry #Label   `<label>`。フォームコントロールのキャプション。フレージングコンテンツをもつ。`for` がコントロールを名指す
++   entry #Legend   `<legend>`。`<fieldset>` のキャプション。フレージングコンテンツと見出しをもつ
++   entry #Li   `<li>`。リストの項目。フローコンテンツをもつ。自動で閉じる。`value` は `<ol>` の中での序数を設定する
++   entry #Link   `<link>`。外部リソースへのリンク。`rel` ごとにプリセットをもつ空要素のタグ

@@ -1,0 +1,42 @@
+orthant 2 language
+
+@ 0 1 0 166f5d14550c32b801e370eea947bae8
++ # `SN-947` — `BoundsError` (ritirato)
+
+@ 0 4 0 0c1b1660dac2cb6a00d5dbfd1fdfd895
++ **Questo codice non viene più sollevato, e il tipo non esiste più.** `BoundsError` duplicava il
++ motivo `IntOutOfRange` di `Json.Provider.Error` (allora `JsonBlueprint.Error`) — lo stesso
++ fallimento, con gli stessi tre campi, sollevato dallo stesso oggetto — quindi il blueprint
++ `"integer!"` ora solleva invece `↯/s.106.3.3`. Era dichiarato in gossamer, che non lo usava mai.
+
+@ 0 1 0 12bed0aabaa306d918a8a3e4ce13e416
++ Veniva sollevato quando un valore numerico cadeva fuori da un intervallo ammesso.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 135627bef3c459d8020e7712ef1dfc88
++ Gossamer usa `BoundsError` per segnalare che un valore non rientra nei limiti minimo e massimo
++ dichiarati.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Messaggio di esempio
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 08279c6035a06cbf1b3f9116353e18db
+
+% 1 1 0 1b01ef7fc8e3fb160efdb542f450ccb7
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 2 0 1be94dded5a1e37b12d931ba21a3567c
++ Vincolare il valore all'intervallo documentato, o allentare i limiti se l'intervallo più ampio è
++ intenzionale.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 01a1eb5f08348d4f1d4334394c4c8022
++ - Sostituito da: `↯/s.106.3.3` (`Json.Provider.Error`, `IntOutOfRange`)

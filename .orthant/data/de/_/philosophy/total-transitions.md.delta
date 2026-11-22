@@ -1,0 +1,201 @@
+orthant 2 language
+
+@ 0 1 0 051c393d42566eba119e5b64aae230ef
++ # Totale Übergänge
+
+@ 0 8 0 0380acc2c1c669c409574d5022c7634e
++ Die zweite goldene Regel, das Gegenstück dazu,
++ [unmögliche Zustände nicht darstellbar zu machen](impossible-states.md): Jede Operation, die einen
++ Wert von einem Zustand in einen anderen überführt, sollte total sein – definiert für jede
++ Eingabe, die sie erhalten kann. Wenn alle Ausgangszustände gültig sind und jeder Übergang
++ zwischen ihnen total ist, kann ein Programm, das in einem korrekten Zustand beginnt, ihn nie
++ verlassen. Partialität – eine Operation, die für einige ihrer Eingaben undefiniert ist – ist die
++ Lücke, durch die sich ungültige Zustände wieder einschleichen; deshalb schließt Soundness sie
++ schon im Entwurf aus, typischerweise, indem es einer Operation einen Rückgabetyp gibt, der
++ ausdrucksstark genug ist, die Fälle auszudrücken, die sie sonst nicht behandeln kann.
+
+@ 0 10 0 17b6a214eb78b1121d83281f08d87667
++ Der Compiler überwacht die Totalität, wo immer man es ihm erlaubt, und man sollte es ihm
++ erlauben. Ein Musterabgleich, dem ein Fall fehlt, ist Partialität in ihrer schlichtesten Form,
++ und Scala meldet sie – daher sollten die Warnungen, die erschöpfende Musterabgleiche verlangen,
++ eingeschaltet und als Fehler behandelt werden, nie als Rauschen unterdrückt. Unter diesem Regime
++ erzeugt das Hinzufügen eines Falls zu einer Aufzählung einen Kompilierfehler an jedem
++ Musterabgleich, der ihn nicht berücksichtigt hat: Der Compiler verfolgt die Folgen einer Änderung
++ durch die Codebasis, und das ist genau die Analyse, die ein Programmierer sonst aus dem Gedächtnis
++ durchführen würde. Ein bewusst partieller Musterabgleich bleibt ausdrückbar – `.absolve` markiert
++ die Zusicherung, sichtbar und durchsuchbar –, sodass die Disziplin nichts kostet außer
++ versehentlicher Partialität, und das ist die Art, die zum Bug wird.
+
+@ 0 1 0 186faf91eec86756167ff2234ad6a710
++ ## Eine Operation total machen
+
+@ 0 2 0 0f7c1a813497e6b91921a8778bd6ae18
++ Eine Operation ist partiell, wenn sie für einige ihrer Eingaben nichts zurückzugeben hat. Es gibt
++ drei ehrliche Wege, sie total zu machen, und einen unehrlichen:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 11cd34bf00dada860d9ffa3b4ec1da02
++ column  Technik
++ column  Eine undefinierte Eingabe wird zu
++ row  den Rückgabetyp so erweitern, dass er Abwesenheit zulässt  einem `Optional`, das `Unset` ist
++ row  ihn so erweitern, dass er Fehlschläge zulässt  einem typisierten Fehler, der an der Aufrufstelle behandelt wird
++ row  den Eingabetyp verengen  etwas, das sich nicht übergeben lässt
++ row  einen plausiblen Wert zurückgeben (unehrlich)  einer falschen Antwort, die sich fortpflanzt
+
+% 1 1 0 04ebc07666a7d03b1e4e8030f5006fde
+
+@ 0 2 0 0a7cc2ca1f937e5b1074f693cfade978
++ **Den Rückgabetyp so erweitern, dass er Abwesenheit zulässt.** Ein Nachschlagen, das vielleicht
++ nichts findet, gibt ein `Optional` zurück, sodass „nicht gefunden“ ein Wert ist statt einer
++ Exception oder eines `null`:
+
+% 2 1 0 1e27a3ad23b450a70d81455f0902d3d5
+
+% 3 1 0 136eeee06391e94e12124bd2eb8ef163
+
+% 4 1 0 1eb1be12215045940fcda55cb020b4dc
+
+% 0 1 0 13cadbf6701c1381057c99c4597df9f2
+
+% 0 1 0 1041d81669629afb19bb312d88368372
+
+% 1 1 0 053d737a756613dd089df0355f3b9721
+
+@ 0 2 0 094467dcacc3351001fd37b460f5a1e5
++ **Ihn so erweitern, dass er Fehlschläge zulässt.** Wo der Aufrufer wissen sollte, *warum*, löst
++ die Operation einen typisierten Fehler aus, und die Reaktion wird an der Aufrufstelle gewählt:
+
+% 2 1 0 149addf7893fb50616946595535e0105
+
+% 3 1 0 1a49b0f846ace2590d31f4cbdc308030
+
+% 4 1 0 0e1b30dbf9d8615b1dae164149c5e9b4
+
+% 0 1 0 0ff2b3869304cefd13b88a89eb9fe0b9
+
+% 1 1 0 1f38698bdca933121d90644d046bac97
+
+@ 0 3 0 02fd346296fe672b0d8854089ae69d7a
++ **Den Eingabetyp verengen.** Am besten von allem, wo es möglich ist: Wenn die Operation für
++ einige Eingaben undefiniert ist, nehmen Sie einen Eingabetyp, der sie ausschließt. `Port`
++ existiert genau dafür, dass `connect` nicht partiell sein muss.
+
+@ 0 3 0 0c3bf664d8bc3615033821d673880749
++ Der unehrliche Weg besteht darin, für die undefinierten Fälle einen plausiblen Wert
++ zurückzugeben – null, leer, das erste Element –, was einen erkennbaren Fehlschlag in eine falsche
++ Antwort verwandelt, die sich fortpflanzt.
+
+@ 0 1 0 0716201a1bf874d10e84359af437c926
++ ## Erschöpfende Prüfung als Werkzeug zur Verbreitung von Änderungen
+
+@ 0 2 0 1645cd0a953290680cc933ec113cded0
++ Die wertvollste Folge davon, Warnungen zur erschöpfenden Prüfung als Fehler zu behandeln, ist
++ nicht, dass die heutigen Musterabgleiche vollständig sind. Es ist das, was morgen geschieht, wenn
++ ein Fall hinzukommt:
+
+% 2 1 0 087ced948740690d0f183b286ae69c26
+
+% 3 1 0 1054819e68b5b56e1cfab6f4be9cfd9d
+
+% 1 1 0 11fbab526cc88d1908b66312e2428bc1
+
+@ 0 1 0 144162adf60bb3700126e9667e75e75a
++   label Gestern
+
+% 1 1 0 1db238813c8893741523d4496e78e115
+
+% 2 1 0 004f6f8d30db98ea1247d8117561101f
+
+% 3 1 0 181540b3ff133c87049bb162330d846a
+
+% 4 1 0 058dacf6b053bbac10e3c9f6064029b3
+
+% 5 1 0 1399081ad157e076174a865f1c60abba
+
+% 1 1 0 0f013ec79b1a40eb11d8f298b69ee2e1
+
+@ 0 1 0 08c3e991d4ce67670566e27a10373c7e
++   label Heute
+
+% 1 1 0 053be94268513bd70c46f588298eb381
+
+% 2 1 0 1ce289895036543c0d4665ba07d3fc38
+
+% 3 1 0 00b4108b1257bd860cfa120697949318
+
+% 4 1 0 025eae1bb700b67c04dc83b5044a9c09
+
+% 5 1 0 0d72eb09c042ef7d0261ee30083b3a9c
+
+% 0 1 0 0a3988a6d690a31d06d4156ed49e0ec5
+
+% 1 1 0 170184d4a6fd7d170d5258ed1c64e5d1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 4 0 036eb75aa121e08d153665434b4a227e
++ Jeder Musterabgleich auf `Connection`, der `Draining` nicht berücksichtigt hat, lässt sich nun
++ nicht mehr kompilieren, und der Compiler listet sie auf. Das ist genau die Analyse, die ein
++ sorgfältiger Programmierer sonst aus dem Gedächtnis durchführen würde, über eine Codebasis
++ hinweg, die er vielleicht nicht geschrieben hat – erschöpfend erledigt, in Sekunden, bei jedem
++ Build.
+
+@ 0 3 0 13078e2cfa3a6f0211b88f48a041071f
++ Deshalb muss die Warnung ein *Fehler* sein. Als Warnung ist sie nur eine Empfehlung, und
++ empfehlende Diagnosen häufen sich an, bis niemand sie mehr liest; als Fehler ist sie ein
++ Werkzeug, das das Hinzufügen eines Falls sicher macht.
+
+@ 0 1 0 1cb57f5bd90078ae093730dcd833cd57
++ ## Bewusste Partialität, markiert
+
+@ 0 3 0 0d24177b9eb217831bfa352a93c93db5
++ Manche Musterabgleiche können tatsächlich nicht erschöpfend sein, meist weil der Compiler eine
++ Invariante nicht sehen kann, die der Code bereits hergestellt hat. Die Warnung zu unterdrücken
++ würde die versehentlichen Fälle zusammen mit dem bewussten verbergen, daher wird stattdessen die
++ Zusicherung markiert:
+
+% 2 1 0 17d758177996e19210f1dbf908b4d30d
+
+% 3 1 0 04c84cbef5319ab9055d474e429d73ef
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 1 1 0 05fa8d9217c170b60ac90a2b81c4d78c
+
+% 0 1 0 08e467dfc24261961ce28df90932e912
+
+% 0 1 0 0f6feb0aa11db938020f77d8a4c8d410
+
+% 1 1 0 086b0f9fb7d0dbc811f203fd42690c7a
+
+@ 0 4 0 0ef90bbf3427df011fdb039237ae6e8c
++ `absolve` ist Scalas `runtimeChecked` unter einem Namen, der sich so liest, wie er gemeint ist.
++ Es markiert einen Ausdruck, sodass nichts anderes zum Schweigen gebracht wird; es ist
++ durchsuchbar, sodass jede solche Zusicherung gefunden und überprüft werden kann; und es ist eine
++ Behauptung, die der Schreibende aufstellt, und das ist genau der Status, den eine solche
++ Zusicherung haben sollte.
+
+@ 0 1 0 0844dd3733d39264191e394839efcefa
++ ## Wo Totalität nicht erreichbar ist
+
+@ 0 1 0 11d85fc892e5c591034216e058970788
++ Zwei Grenzen, die es wert sind, genannt zu werden.
+
+@ 0 4 0 1bf77ec00b45c5171c5bb437cb8f07c1
++ **Die Welt ist partiell.** Das Öffnen einer Datei, die existiert, kann dennoch fehlschlagen – die
++ Festplatte, die Berechtigungen, ein Wettlauf mit einem anderen Prozess. Kein Rückgabetyp macht
++ das total; die ehrliche Antwort ist ein typisierter Fehler, und das ist Totalität der *Signatur*
++ statt der Operation.
+
+@ 0 5 0 13b6475dcaf768c70af1931bf991c978
++ **Manche Invarianten übersteigen das Typsystem.** Ob ein Hostname aufgelöst wird, ob zwei
++ unabhängig validierte Werte miteinander konsistent sind, ob ein Schema und ein Dokument, die
++ beide geparst wurden, tatsächlich übereinstimmen – das lässt sich prüfen, aber nicht durch
++ Konstruktion. Die Disziplin besteht darin, die Prüfung einen Wert erzeugen zu lassen, der ihr
++ Ergebnis trägt, sodass nachgelagerter Code die Garantie erbt, statt die Prüfung zu wiederholen.
+
+@ 0 3 0 0f9d9d7ac71c5adc12251665926de193
++ Siehe [unmögliche Zustände](impossible-states.md) für die Gegenstückregel – die beiden sind
++ getrennt nutzlos, da totale Übergänge zwischen bedeutungslosen Zuständen nichts bewahren, was
++ bewahrenswert wäre.

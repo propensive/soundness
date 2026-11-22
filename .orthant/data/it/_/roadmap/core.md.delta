@@ -1,0 +1,167 @@
+orthant 2 language
+
+@ 0 1 0 140e4416644c115e14c1279b02c5c1fc
++ # Lo smaltimento della libreria standard
+
+@ 0 6 0 1e47e992fff4fcae03a08ae9a36b5319
++ Soundness promette che il codice non può fallire a runtime in modo sorprendente. Le librerie
++ standard di Java e di Scala non fanno una simile promessa: le loro collezioni lanciano eccezioni su
++ teste vuote e chiavi mancanti, il loro I/O lancia eccezioni non controllate, i loro tipi sono
++ ambigui riguardo a null. Ogni punto in cui un modulo di Soundness oltrepassa le proprie astrazioni
++ per raggiungere la libreria standard è un punto da cui quella parzialità rientra, e una sola falla
++ mina la promessa ovunque, perché un utente non sa distinguere una superficie sigillata da una
++ porosa.
+
+@ 0 9 0 038bbf1a8a8942731de12d956a9b8b6f
++ La risposta è già al suo posto: proscenium è il confine opaco. Le sue collezioni avvolgono le
++ strutture dati della libreria standard dietro API totali, il suo `Array` sottopone la mutazione al
++ controllo di separazione, e il preludio `-Yimports:java.lang,proscenium` rende ambiente la superficie
++ curata lasciando tutto il resto deliberatamente fuori portata. Ciò che resta è lo smaltimento: gli
++ shim di migrazione in `proscenium.compat` esistevano proprio perché i punti di chiamata potessero
++ compilare invariati fin dal primo giorno, e ciascuno di essi era un forwarder eliminabile in modo
++ indipendente. Il ciclo di smaltimento era deprecare → correggere i punti di chiamata → eliminare; il
++ file compat ora non c'è più. Questo filone è completo quando la libreria standard è invisibile, nelle
++ firme, negli stack trace, nei valori resi, ovunque tranne che dentro proscenium stesso.
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ Le voci del filone, con i loro orizzonti e le dipendenze rigide; [`status.tel`](status.tel) registra a che punto è ciascuna:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 10 0 0fd0b3e4fac88696116bb76512e70b97
++ column  Voce
++ column  Titolo
++ column  Orizzonte
++ column  Richiede
++ row  core-1  le collezioni ordinate hanno equivalenti in Soundness  breve
++ row  core-2  `proscenium.compat` è vuoto  breve → medio  core-1
++ row  core-3  nessun import diretto di `scala.collection`  breve → medio  core-1
++ row  core-4  l'accesso per indice è totale per costruzione  medio
++ row  core-5  niente in stile Java in fase di debug  medio → lungo
++ row  core-6  la verifica della totalità  lungo
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0c4c19e16c10c64210f8ec0c02dca8d7
++ ## core-1: le collezioni ordinate hanno equivalenti in Soundness
+
+@ 0 2 0 1d5d786df4501e040c61da8843687597
++ Orizzonte: breve
++ Linea di base: 31 file (misurati il 2026-10-21; 32 il 2026-09-25; 16 il 2026-08-01)
+
+@ 0 5 0 10a3c58f53428642106dc61821f34160
++ I file che usano `TreeMap`, `TreeSet`, `TrieMap`, `SortedMap` o `SortedSet` non hanno un tipo opaco
++ verso cui essere smaltiti; gli equivalenti devono esistere prima che lo smaltimento possa
++ raggiungerli. Il conteggio è raddoppiato in sette settimane perché nuovi moduli (vivisection,
++ praxinoscope, mandible, sedentary) sono stati scritti sui tipi ordinati della stdlib in mancanza di
++ un'alternativa, il che dimostra che gli equivalenti devono esistere prima.
+
+@ 2 1 0 1db30e5434e1de2712146ed80b50842f
++ Fatto quando:
+
+% 0 1 0 0305f5e9bb7a10231ca736737990fb60
+
+@ 0 1 0 1b4d397e3e91c7f802f5a08eafd68da7
++ ## core-2: `proscenium.compat` è vuoto
+
+@ 0 7 0 0f804b35a13c0b621a4fb9e8a6a84bad
++ Fatto: #1848 (2026-08-24)
++ La linea di base era di 475 file importatori e un file compat di 551 righe (misurati il
++ 2026-08-01). Il file e il suo ratchet (`etc/check-compat-ratchet.py`, `etc/compat-baseline.txt`)
++ sono stati eliminati; ora a fare da guardia è il compilatore. Gli ultimi punti hanno portato le
++ loro prove attraverso il sistema dei tipi (letterali con marchio, `prim`/`unique`, scansioni con
++ marchio) oppure, nei due punti in cui una prova non può seguire il programma, cioè i confini delle
++ quotazioni e l'aritmetica degli indici, attraverso `attested` e `readUnchecked` con commenti che
++ ne spiegano la costruzione.
+
+@ 0 1 0 1df8de5c62c23f7213e387103ebb7ef0
++ ## core-3: nessun import diretto di `scala.collection`
+
+@ 0 3 0 10b2e6c50a105a3d0ed28194fb09e169
++ Orizzonte: breve → medio
++ Richiede: core-1
++ Linea di base: 239 file, di cui 115 importano `scala.collection.mutable` (misurati il 2026-10-21; 228 e 106 il 2026-09-25; 219 e 170 il 2026-08-01)
+
+@ 0 3 0 1370fc5d83a525f30be39808bae671f4
++ Importare `scala.collection` aggira del tutto la curatela del preludio. Gli import mutabili sono la
++ quota maggiore, e il loro sostituto non è l'immutabilità ma la mutabilità *sicura*: strutture
++ sottoposte al controllo di separazione nello stile di `proscenium.Array`.
+
+@ 0 5 0 17ef2ae784ad7c01147988bb6dcfb981
++ Indicatore: la colonna `collectionImport` di `etc/check-escape-count.py` (eseguito da `make build`)
++ fa da ratchet sulle righe di import per file, nei sorgenti principali come in quelli di test, così
++ che un file smaltito non possa riacquistarne una; `--totals` stampa il conteggio. Il ponte
++ `xs.stdlib`, l'altro modo di raggiungere l'API della stdlib da una collezione nativa, è soggetto a
++ ratchet e letto per forma (`--stdlib`) dallo stesso script (`safety-7`).
+
+@ 2 1 0 0942fd38fe9a365a0eda6632cc1cda62
++ Fatto quando:
+
+% 0 1 0 0ee067afb466e7061f9713b96c868fdd
+
+@ 0 1 0 16c1b0f6ca199b8c1e465999944ee90f
++ ## core-4: l'accesso per indice è totale per costruzione
+
+@ 0 6 0 18f958a14ff8a1b01793df6154bf959e
++ Orizzonte: medio
++ Linea di base: 1669 cicli `while`, 993 `readUnchecked` e 514 `.charAt(` in `lib/*/src/core`
++ (esclusi commenti e stringhe, misurati il 2026-10-21; 1606, 476 e 507 il 2026-09-25). Il
++ conteggio di `readUnchecked` è raddoppiato quando #2274 ha rimosso l'`IArray` della stdlib e ogni
++ lettura di array congelati è passata per l'unico accessor; è una popolazione diversa da quella del
++ dato di settembre, non una regressione della stessa
+
+@ 0 8 0 04dfa62773204c3108277fe82583bf8d
++ Lo schema `var i = 0; while i < length` è al massimo efficiente e al massimo insicuro: l'indice è
++ solo un `Int`, non vincolato dalla collezione che indicizza. Il design in
++ [#1666](https://github.com/propensive/soundness/issues/1666) rende l'indicizzazione totale per
++ costruzione: un indice di tipo `Ordinal in collection.type` può esistere solo entro l'intervallo,
++ quindi l'`apply` `inline` che lo accetta è totale a costo zero, mentre un `Ordinal` non qualificato
++ raggiunge solo l'`apply` di ripiego che restituisce `Optional`. L'iterazione passa allora per
++ combinatori inline che forniscono ordinali con tipi dipendenti, e compila nello stesso bytecode dei
++ cicli che sostituisce.
+
+@ 0 4 0 0a264f4f923151dd1f90f9971723cda7
++ Fatto quando: nessuna collezione in `lib/` espone un `apply` per indice parziale, e ogni `while` che
++ resta è una delle tre forme che [`doc/standards/loops.md`](../standards/loops.md) ammette, con il
++ commento che nomina il suo invariante. Lo zero letterale non è l'obiettivo: l'aritmetica degli
++ indici derivata dai dati, e i meccanismi interni dei combinatori stessi, restano cicli.
+
+@ 0 4 0 15ebe6da972bb5321dcdd3ddb7e31c40
++ Lo smaltimento è limitato da quali riceventi possono portare un marchio, non da quanti cicli ci
++ sono. Un ciclo su uno `scala.Array` mutabile, su una `Seq` di varargs o su un `IndexedSeq` che
++ porta capability non ha alcuna forma confinata, quindi il corpus raggiungibile è più piccolo di
++ quanto il conteggio suggerisca. Indicatore provvisorio, soggetto a ratchet per file da `make build`:
+
+% 0 1 0 19cc3aef7c45b8351be0e19f09ec7abf
+
+@ 0 1 0 13fea1ce9268fa841aedd5cd25dc727c
++ ## core-5: niente in stile Java in fase di debug
+
+@ 0 1 0 0315e8ae4f26388c058da978ec42a29d
++ Orizzonte: medio → lungo
+
+@ 0 6 0 093bb74a29104b320ed0f5b4580ca65d
++ Uno stack trace, un valore reso o il nome di un tipo riportato non espone mai una codifica Java:
++ digression rende le tracce nei termini di Soundness, e i valori mostrati sono i tipi opachi, non le
++ loro rappresentazioni sottostanti. È questo che fa sentire il debug nativo anziché ospitato.
++ digression esegue già il demangling dei nomi e, da #2063, rende la posizione di ogni frame come
++ un'unica colonna contigua, allineata sui due punti; ciò che manca è la suite che verifichi l'assenza
++ di codifiche anziché la presenza di rese particolari.
+
+@ 0 2 0 06c929fe2969e4170cf16c959d7a1b0f
++ Fatto quando: una suite di test verifica che la resa di stack trace, valori e nomi di tipo
++ rappresentativi non contenga codifiche Java, e gira nella suite ordinaria.
+
+@ 0 1 0 0185c5684f4d7e9211af2cd3046b0916
++ ## core-6: la verifica della totalità
+
+@ 0 1 0 1bb46aa264c11d1404ac4c98f85b6bf8
++ Orizzonte: lungo
+
+@ 0 3 0 1e17d1ad1ed4cabc122018cb45abeb75
++ L'affermazione «nessuna API parziale» diventa verificata anziché asserita: una verifica
++ automatica, nello stile di larceny o a livello di bytecode, controlla che nessuna operazione
++ esportata lanci un'eccezione non dichiarata o restituisca null.
+
+@ 0 1 0 1e7305e26b6e86281962aa9e9a771079
++ Fatto quando: la verifica gira in CI e riporta zero violazioni.

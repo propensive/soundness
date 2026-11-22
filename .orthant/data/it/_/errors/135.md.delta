@@ -1,0 +1,27 @@
+orthant 2 language
+
+@ 0 1 0 11386e1dfdcb23fc0b1a47f64ccff89f
++ # `SN-135` — Caratteri di tabulazione (ritirato)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Questo errore non esiste più. La pagina è conservata perché il codice non venga riusato, e
++ perché un riferimento a esso da una release precedente si possa ancora risolvere.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Che fine ha fatto
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ Il plugin del compilatore Decorum, che sollevava questo errore, è stato estratto da Soundness ed
++ è ora [Consequent](https://github.com/propensive/consequent), un controllore autonomo per il
++ Consequent Style. La regola sopravvive lì con un nuovo identificatore, in cui la lettera indica
++ il principio da cui deriva:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  Prima
++ column  Ora
+
+% 0 1 0 19728e106e1e2b7d066331c4c68bd941
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

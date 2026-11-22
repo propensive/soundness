@@ -1,0 +1,1056 @@
+orthant 2 language
+
+% 0 1 0 1d8aeb4141623ee61ee99583352b6778
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 3 0 0ef05610a297f902006ea1790c444a56
++ [TEL](https://github.com/propensive/tel), el Typed Element Language, es un lenguaje de datos
++ con estructura de árbol, escrito mediante sangría, que tiene esquemas. Soundness es su
++ implementación de referencia.
+
+@ 0 5 0 0690bc8da162173e0d8e83747774f051
++ Un documento TEL se analiza en un valor `Tel`, que conserva su presentación: los comentarios, la
++ disposición y las líneas en blanco sobreviven a la lectura y la escritura. Se decodifica en case
++ classes con códecs [derivados][derivación]. Un esquema, que puede escribirse a su vez en TEL,
++ asigna tipos a un documento y lo valida, y un documento tipado por un esquema se recorre con el
++ compilador comprobando cada campo.
+
+@ 0 3 0 10b678cb7e10b19312ec8f69fb96b38c
++ Junto a la forma textual está BinTEL, una codificación binaria compacta de los mismos datos.
++ Está guiada por el esquema, se escribe como bytes para el almacenamiento y la transmisión, y
++ tiene un hash de contenido para la integridad.
+
+@ 0 1 0 093432adbdabb28c0d215e46ea2d2793
++ ### Sobre TEL
+
+@ 0 3 0 133973d3c61725db1c761414e0db4912
++ Los lenguajes de configuración obligan a elegir. YAML es amable con las personas, y ambiguo.
++ JSON es riguroso, y ruidoso. A cualquiera de los dos se le puede añadir después un lenguaje de
++ esquemas. TEL está diseñado para ser las tres cosas a la vez:
+
+@ 0 4 0 1eb8c510194699b60fbed45bbe050e5a
++ - estructurado por sangría, para las personas;
++ - tipado por un esquema, para las máquinas;
++ - conservador de la presentación, para que un programa que modifica un fichero de configuración
++   no destruya sus comentarios ni su formato.
+
+@ 0 5 0 16ac86ea9dff459312ffecfffec35cc2
++ Un documento TEL es un árbol de *compuestos*. Un compuesto es una palabra clave, sus *átomos*,
++ separados por espacios, y sus hijos, sangrados por debajo de él. El esquema asigna a cada
++ compuesto un tipo, y ese tipado se traslada a Scala. Tipar un documento contra su esquema en
++ [tiempo de compilación] es la
++ [seguridad por construcción](../../philosophy/safety-by-construction.md) aplicada a la
++ configuración.
+
+@ 0 2 0 08f142c6dc6fdbb31f394564d8004d95
++ Todo procede del paquete `soundness`. La última importación permite que los ejemplos impriman
++ sus resultados:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1a7131acea708dd606879e0668483aa5
++ ### El lenguaje
+
+@ 0 2 0 0161efd853234521058b4369c2a7fc8f
++ Cada línea es un compuesto: una palabra clave y después sus átomos. La sangría anida un
++ compuesto dentro de otro:
+
+% 2 1 0 0fdd11612c75935e0fa848722d3390eb
+
+% 0 1 0 1b87fcb2b4d384df0a128a2822a8a80f
+
+% 0 1 0 16ee8170e6fc6c9d0539c0ef1a94dfb6
+
+% 0 1 0 199a9e0ad62900f8011caa3484ffcaae
+
+% 0 1 0 1cbceb9039e9916d19f762f7dfab48a9
+
+% 0 1 0 10345a0958ee1b8800f6b7ec981f8e39
+
+% 1 1 0 10ffdf077632fb6d1d84979017507801
+
+@ 0 1 0 1b7d339cdfb21c4305d099dcef66f4fa
++ ### Análisis y decodificación
+
+@ 0 3 0 1ac4b37b78784e4303deb129583087ad
++ `read[Tel]` analiza un texto en un `Tel`, y `as` lo decodifica a una case class. Cada campo se
++ lee del compuesto hijo con la palabra clave correspondiente. `read[Person in Tel]` hace los dos
++ pasos a la vez:
+
+% 2 1 0 0a331763968d5b5c15cd81518ba3e8fd
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 193d5cad1ff964ae0594507e2a4281bb
+
+% 0 1 0 0c1783bfaa32c2ac05f3b33c8a2b6481
+
+% 1 1 0 0f3b69cbdfc6149110eb94e8c94bb0d7
+
+% 3 1 0 0adb5af98cb5c93d013d1d6b0bbfbf1d
+
+% 4 1 0 0c813bc7e8feb49f1b80b0df475feeb8
+
+% 5 1 0 0458d937cfbdf2920816713569ec2d6e
+
+% 0 1 0 02d90a7699600a3f1ff9373d77403406
+
+% 0 1 0 1a8b049430f69fb817d4bbd64b2d14ff
+
+% 1 1 0 0bee6bda6e440c261952c24c0973a99b
+
+@ 0 1 0 11d23b0c82325fb61387d716b3572503
++ Un documento al que le falta un campo, o que contiene un valor del tipo equivocado, no se
++ decodifica:
+
+% 2 1 0 058a2dbcae5598a3146ddd13cab742d0
+
+% 3 1 0 06fa7bf7e6a420f4078e2c1f4ada951d
+
+% 4 1 0 1603cff56c29b3cf1597d01a1cfaadd7
+
+% 5 1 0 1c7fc32ed3f370ee010f9251d1f54e22
+
+% 0 1 0 044d3719c4fc5c4f1fb895fbb244ccf7
+
+% 1 1 0 0f93d6751eb32304150b85bda0b00377
+
+% 3 1 0 0f17648bc7c4c6120d62902f17e62f2c
+
+% 4 1 0 0fb7fa7f776a726418f3547a90d4030a
+
+% 4 1 0 1a9f83f12eec02ae09166b7e3f404843
+
+% 5 1 0 057f515273fa81610fd007f7e6cca82c
+
+% 0 1 0 183c37ab1678565212777ad32b9b75b7
+
+% 1 1 0 0af50ed2ad108edf1e9db6096287287d
+
+@ 0 1 0 1433ffa1e8c582cc0f30878f4480a7b8
++ Una misma fuente puede contener varios documentos seguidos, y se lee como una lista de ellos con
+
+% 0 1 0 1fd0f3f680ffdaf0030c6638532e9d5a
+
+@ 0 1 0 196677f70196bdf61933b52d135abadd
++ ### Codificación
+
+@ 0 2 0 19400389b716c45d11ca0eee9e37293a
++ `in[Tel]` produce un `Tel` a partir de un valor, con un compuesto por cada campo, listo para
++ escribirse o para incrustarse en un documento mayor. `show` escribe un `Tel` como texto:
+
+% 2 1 0 0fad52a0f717682a0b7cc9feb9312dfc
+
+% 3 1 0 0f31ca31dd116da31596552fbdd6360d
+
+% 4 1 0 1f64b8fd667959d50c5c8a5fed5049f7
+
+% 0 1 0 0bdd731465bf7e651c280378c4cf48b3
+
+% 1 1 0 09c230c5771166f211fee104230b0f04
+
+@ 0 2 0 00f0e7146c3db9d515fc9d513ad3f1bb
++ `in[Text over Tel]` codifica un valor directamente a su texto TEL, e `in[Data over Tel]` escribe
++ el mismo texto como bytes, en el `Codepage` del ámbito.
+
+@ 0 2 0 11f57afaec707f671b9a862f56467185
++ `show` representa un `Tel` en un único `Text`. Un documento grande no tiene por qué mantenerse en
++ memoria antes de enviarse:
+
+% 2 1 0 13c7a46ec3bc8bfb1f9ab4e9e124a633
+
+@ 0 9 0 0021d33af9cf07ad0f6ec8a97f4cd4ff
++ column  Forma
++ column  Serializa en
++ column  Entrega
++ row  `show`  el hilo de quien llama  un único `Text`
++ row  `Tel.emit[Text](document, f)`  el hilo de quien llama  cada bloque de texto a `f`, según se llena
++ row  `Tel.emit[Data](document, f)`  el hilo de quien llama  cada bloque como bytes UTF-8 a `f`, según se llena
++ row  `Tel.lend(document)`  el hilo de quien llama  cada bloque prestado a una función, sin copiarlo
++ row  `Tel.emit(document)`  una fibra  el texto, mediante un iterador
++ row  `Streamable` por `Text`  una fibra  el texto, como un flujo
+
+% 1 1 0 10fc163bf25042ca180f490b21ed1584
+
+@ 0 2 0 0a89f7860ec2ad9406e47de161b07246
++ Las formas de inserción sirven para escribir en un fichero, un [socket](sockets.md) o un
++ `OutputStream`. Las formas de extracción sirven para un consumidor que pide cada bloque:
+
+% 2 1 0 05146cc7f5f2aabe07847e8824c25b30
+
+% 3 1 0 18737639091156a81064e151167a613d
+
+% 4 1 0 0e7c1960bf7d85bf0cd67b39a3a0cfa7
+
+% 0 1 0 161e68b1f117a22a0b4b7f185305da70
+
+% 0 1 0 032f2baa9fd765180aab3302ed269f58
+
+% 0 1 0 1a5f50297b0a0eaf1177a331f6085295
+
+% 0 1 0 0843972498d619731599e85f1663a4e7
+
+% 0 1 0 0b6c56309af1e6a11860107c4b30ec55
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 008ca3685947f232030a49a085efed66
+
+% 1 1 0 0cba7f94cb78b58412cc6bf1fc61884d
+
+@ 0 1 0 1ea00140b10943be01a94bbac1f10206
++ [JSON](json.md#formatting) describe cada una de estas formas.
+
+@ 0 1 0 144fe1e096ebc90c106331620bc1b49e
++ ### Campos opcionales
+
+@ 0 2 0 08ec15832e33b6551329441e1c29a448
++ Un campo `Optional` tiene dos políticas, del paquete `optionalityOptions`, como describe
++ [Decodificación](decoding.md#policies-for-optional-fields):
+
+% 2 1 0 1ff5e61f994af8121ff43395e4a39323
+
+@ 0 5 0 0d7e2083698b7e1e1b9c93ed0a7fd983
++ column  Un campo cuya palabra clave está
++ column  Se lee como
++ column  Salvo que
++ row  ausente, o presente sin átomo ni hijo  `Unset`  `strictTelAbsence` lo convierte en un error
++ row  presente pero rechazada por el decodificador interno  un error  `lenientTelFaults` lo lee como `Unset`
+
+% 1 1 0 1c5737ae6f004b3f0fb08eff3a37e67f
+
+@ 0 3 0 03a2c2f6a9f3baaf1b9360029be6ac5b
++ Una palabra clave ausente y una vacía son las dos grafías de la ausencia en TEL. Con
++ `strictTelAbsence`, la ausencia es un `Tel.Error.Reason.Absent`, y el campo se marca como
++ obligatorio en el esquema derivado. El analizador directo aplica la política solo para la
++ ausencia.
+
+% 2 1 0 0779547338de975a0f72cc759c9b3ffc
+
+% 0 1 0 11836b8be127e5421d1f4a2cd54a038c
+
+% 0 1 0 07ff2c9f0b0eaff2022a98b58d693ac6
+
+% 0 1 0 052bd3f4b4002f2f0f7ac98d3f9bc180
+
+% 0 1 0 0dbf4aaf7738277b0aae4a247038a29e
+
+% 1 1 0 0ba844d28da52a8e0c1d438f60765f81
+
+% 3 1 0 13abe8c14bb349af0de37dda9160fce0
+
+% 4 1 0 0ca07da1de938cb104b7f91d2cf604ad
+
+% 5 1 0 15bc03fe83d2ad49126931bb7a416cb0
+
+% 0 1 0 141aa914cc85d2ba18f3063adf07bb9c
+
+% 1 1 0 025a8f2a135c61c505e514d4fa7786b8
+
+@ 0 1 0 1468c629a427451c17872e284fab4318
++ ### Escribir TEL literalmente
+
+@ 0 2 0 0dfbb44b55c0bd081065421c18ffbc02
++ El [interpolador] `tel"…"` escribe un documento literal. Se analiza en tiempo de compilación, y
++ cada sustitución se codifica según su propio tipo estático:
+
+% 2 1 0 119113b9b49aa3390b9db9eac216b7a2
+
+% 0 1 0 1a8b5d78ec8ed14c1c6038f705c9cca6
+
+% 0 1 0 0812b0d5da63d39b0c4ccca6d41e6733
+
+% 1 1 0 038eda34f022d5200e689a5953a60cd9
+
+@ 0 1 0 1313b8a546c187b1060dc010776e98fd
++ La misma sintaxis es un patrón, que liga los valores que nombra:
+
+% 2 1 0 1ba2ac676db3f08702e554124a54bb31
+
+% 0 1 0 043952487ae594100fdd546a987e45f6
+
+% 0 1 0 1df86eec0f69864108283f90e9b07014
+
+% 0 1 0 0408f4aff4be66930fe17a1274b4111e
+
+% 1 1 0 0bb4fdd9afaba89a02e88596ab653c8d
+
+% 3 1 0 0e012556744a420f1fb5e23b080786bb
+
+% 4 1 0 0ba9a97e2ea46e080ad88bc016761b74
+
+% 5 1 0 10b614d295ec265a00389f12242bc2af
+
+% 0 1 0 06d5032e6dc4431416a447e71dd51efd
+
+% 0 1 0 030174999c9895e1153aa8cb8a343ab7
+
+% 1 1 0 0b09f358a8ae94460b2391b6b2b7b94a
+
+@ 0 2 0 02d5e0ae494cad72134c676066d8fe4d
++ Un literal mal formado es un error de compilación, situado en la parte del literal que lo
++ provoca, no al principio de la cadena.
+
+@ 0 1 0 1dddff6b12a467fa1dca7f061c0d0153
++ ### Navegación verificada
+
+@ 0 2 0 0c1ea62ab9b46363143ad4ac8da7e8e3
++ `verify` comprueba un documento contra la forma de un tipo, y le da ese tipo. Después sus campos
++ se recorren con comprobación completa en tiempo de compilación:
+
+% 2 1 0 1db62b1de42221330426baf3001ef567
+
+% 0 1 0 068a411408288d6e119c76e6e5b38442
+
+% 0 1 0 11bb8b69d7a4854d06f982589cb4394a
+
+% 0 1 0 1a38bc6443ace7460a5c8e556de4e1e4
+
+% 1 1 0 1e4d994c13f2d1ba187b8839cfa89084
+
+% 3 1 0 1ad573ec4d088b230c49af2e0b69cd55
+
+% 4 1 0 16909a505daef3010f921f4b14bac56d
+
+% 5 1 0 1b2304ae138f37e5033d67d5c0eb5d52
+
+% 0 1 0 0f3cadbea74be02310069d38daadc42e
+
+% 1 1 0 07bc0ec2c3273c360f5b3c1ed9370524
+
+@ 0 1 0 0ce2215832f69a17187d814095e02c13
++ Un campo mal escrito, o un campo que el tipo no tiene, no compila:
+
+% 2 1 0 183d8793e29082880276b02018803bc9
+
+% 3 1 0 0541b4d940e0f6eb0956a9e328c01b08
+
+% 4 1 0 0989ce4ecd974cca0eecb210bffb6e38
+
+% 5 1 0 1e70f8f40ebe2786124549892aa786f7
+
+% 0 1 0 16c12d5727c18962035f4eec914e28a8
+
+% 1 1 0 08ea8935b613410511f20d1b28c21659
+
+@ 0 4 0 1364415ae5468dfb1b80faa6ae5fe876
++ El acceso dinámico, no verificado, llega al interior de un documento cuya forma solo se conoce
++ de manera informal. Se habilita con `import dynamicAccess.dynamicTel` o, para un solo bloque, con
++ `dynamically[Tel]:`, de modo que los estilos comprobado y no comprobado se distinguen a simple
++ vista, como ocurre en [JSON](json.md#fields-as-members).
+
+@ 0 2 0 0ae6ae22e65b28c906c615d6ef75ece9
++ Una palabra clave puede repetirse legítimamente, lo que no puede expresar un accesor de un único
++ valor. `fields` da todos los hijos que coinciden, en el orden del documento:
+
+% 2 1 0 12c5b403f74f694114e4d6280d9fd894
+
+% 3 1 0 030b1625db4b23850fd9926e5a8fba48
+
+% 4 1 0 069b882d52efc0a80c28057e53088336
+
+% 0 1 0 14c235dc18fed0920a8fd8ae48bcf999
+
+% 1 1 0 03bd0f170a41e2840a25a526ecd64ebb
+
+@ 0 1 0 00dd982bdef617b71d8e4d97bca17853
++ ### Rutas
+
+@ 0 4 0 09ed601d8dc39abe1a83b23ff9ad3270
++ Una posición en un documento es un `Telp`, una ruta TEL. Su primer carácter elige el
++ delimitador. Cada componente posterior nombra una palabra clave, o selecciona una aparición de
++ una palabra clave repetible por un valor de clave o un índice. Un literal `telp"…"` se comprueba
++ en tiempo de compilación, y una ruta es la misma ruta sea cual sea el delimitador con que se
++ escriba:
+
+% 2 1 0 15b92236db36e6b508b391d5741ddf0d
+
+% 3 1 0 1aab4dcf579206ca05c05c4adcaa02de
+
+% 4 1 0 1224d9b98475fbcd0dcf668383a51c47
+
+% 0 1 0 067e5534721a89bf1788282bed3e117b
+
+% 1 1 0 07b41095cf577585046652b7a0de6bb4
+
+@ 0 1 0 05e3404b59c8dedc1e041bf9660015af
++ Un literal que no es una ruta no compila:
+
+% 2 1 0 1a4091d5d65f42f810556f856b1294b9
+
+% 3 1 0 0b7238dffa15643d17b323b165c3b3fc
+
+% 4 1 0 1f9b182fd4ba74ee1be81800366ad8f2
+
+% 5 1 0 0808dc0200e44a2d051393f5063116a9
+
+% 0 1 0 04b714a36d226c25123a91d863dd39c4
+
+% 1 1 0 1c84fc475b03fe9a01f686635aba33cd
+
+@ 0 1 0 04f637cc5a05930510c0c5118bf19e1d
++ La ruta con la que se etiqueta un error de decodificación, como `/castle/city`, es a su vez un
++ `Telp`.
+
+@ 0 1 0 1ad4a485705c462e065c8f021d1911e8
++ ### Editar sin destruir el fichero
+
+@ 0 2 0 0208ae933982cc6d0d8c6fe2863115d4
++ Un documento TEL conserva sus comentarios, sus líneas en blanco y su disposición para que un
++ programa pueda cambiar un valor y volver a escribir el fichero sin reformatear todo lo que
++ escribió una persona.
+
+@ 0 1 0 07f00b7d43c41870105f23dc8e5b9009
++ `modify` sustituye el compuesto de un campo, o lo añade al final cuando el campo está ausente:
+
+% 2 1 0 07c489e191033cf7161f963cc7869072
+
+% 0 1 0 0ca637a07bf8d67907971cebac242fc8
+
+% 0 1 0 1ec0822985c5a80c05eefb643eb49b0b
+
+% 0 1 0 0becba1054bd6d390e6ebe0563a63ca6
+
+% 1 1 0 11f0369bcb0929550dd646c878eae494
+
+% 3 1 0 11ba55ee8dbf8a230bd99dfbd987a46e
+
+% 4 1 0 117e05ae05c23ea71d3785caac89c8dd
+
+% 5 1 0 07fc3c63dfb812a400b4fb2844d66425
+
+% 0 1 0 08eaeb78f04cf5d40055a72cb1f5d828
+
+% 1 1 0 00d3f161ed92ccbd0dd33279cb0b6781
+
+@ 0 3 0 0dcc53ef5dadbd7e06f66c52f4b4763f
++ Las ediciones más finas son *mutaciones*, dirigidas por un puntero. Una mutación cambia
++ exactamente lo que nombra, y deja intacta la presentación circundante. Puede reescribir un solo
++ átomo de una línea, adjuntar una observación a un compuesto, o insertar o eliminar un hijo:
+
+% 2 1 0 191fa4014d2d84231a6d9590cfdfd75b
+
+% 0 1 0 1367b5e8305a15321f141f2f709ebd71
+
+% 0 1 0 0b315229ead1a6030ea4d4831c9def89
+
+% 1 1 0 0dd43ca075db54a211b3c84a0f43a984
+
+% 3 1 0 1608cb2bdf7600e41e54f1613300fadc
+
+% 4 1 0 0e6407658b3449881ab3bb9982512486
+
+% 5 1 0 0f986cf68adb04a01e94c6edef4242c1
+
+% 0 1 0 0cae66c60829594214b2054d0473acdf
+
+% 1 1 0 0052c8ff4c0701551764556cd96e35e1
+
+@ 0 2 0 01feaca8a3fe06ea09af4d4730717343
++ El resultado es un documento, no una cadena, así que una sucesión de ediciones se compone, y el
++ fichero se escribe una sola vez al final.
+
+@ 0 1 0 0d9a5e075d8807bf118982c0deeb065a
++ ### Esquemas
+
+@ 0 3 0 189d08cdd94e5a0c19e356ecf15db1e9
++ Un `Tels` es un esquema TEL: la estructura que debe tener un documento, con definiciones con
++ nombre de registros, escalares y selecciones, que se componen en capas. Un esquema se deriva de
++ un tipo de Scala, o se lee a su vez de un documento TEL, ya que el lenguaje de esquemas es TEL:
+
+% 2 1 0 18d6de46da0bf0a50cdc4d2d4125ed8f
+
+% 0 1 0 1dfd5f62b4479dc715613448309ead13
+
+% 1 1 0 08d09252fa68f1021b753d91d8b09985
+
+@ 0 5 0 02ca755e4cee6938128f7b38a5e05daa
++ Cada registro o selección de un esquema derivado recibe el nombre simple de su tipo. Cuando dos
++ tipos distintos alcanzados desde la raíz comparten nombre simple, como `Phrase.Code` y
++ `Element.Code`, cada uno se cualifica con su tipo contenedor, como `PhraseCode` y `ElementCode`.
++ Un esquema derivado cuyos nombres no se puedan distinguir se rechaza (E210), igual que uno
++ escrito a mano con dos definiciones de un mismo nombre.
+
+@ 0 4 0 15c305a73b54c6d0009550d2d5241aef
++ `Tel.Type.assign` tipa un documento contra un esquema. Valida el documento, y notifica los fallos
++ como errores tipados, cada uno con una ruta al elemento que lo provoca. Con una estrategia que
++ [acumula los fallos](errors.md#accumulating-failures), todos los fallos de un documento se
++ recogen y se notifican juntos.
+
+@ 0 3 0 0b0ca473ea0333790410ef4e31f2634f
++ Un esquema se construye en *capas*: una estructura base, y superposiciones que añaden o refinan
++ campos. Así es como uno de los programas que comparten un esquema lo amplía sin bifurcarlo, y
++ como los campos de una funcionalidad opcional aparecen solo donde esa funcionalidad se usa.
+
+@ 0 5 0 032479de42a149a31938eece381db66f
++ Los valores de los campos se comprueban con *validadores* con nombre. El registro integrado
++ cubre las clases que necesita un lenguaje de configuración: `string`, que acepta cualquier
++ cosa, `identifier`, que acepta nombres en kebab-case y rechaza un guion inicial, y las clases
++ numéricas y enumeradas. Un esquema puede nombrar validadores propios, de modo que una
++ restricción del dominio vive en el esquema, no en cada programa que lo lee.
+
+@ 0 2 0 0e3399dccddbdadc11778ed42e9c0b80
++ Un escalar también puede restringirse con uno o más *patrones* RE2, que deben coincidir con el
++ valor entero y que se combinan por intersección:
+
+% 2 1 0 1f98532770d542d91d7173f5fc0aa706
+
+% 0 1 0 00e807cc694c693d178f872d68ae4817
+
+% 0 1 0 1c0c1c0fc3c50b360af102c09a3b37d4
+
+% 1 1 0 011fcd64bb21ae140307835d1d59ad6b
+
+@ 0 7 0 0727b25bc1bfcc7b146b78d3ad3a2097
++ Los patrones son la única restricción cuyo significado puede inspeccionar un esquema. Un
++ validador es solo un nombre, así que una capa solo puede añadir validadores. Pero RE2 excluye
++ las retrorreferencias y las aserciones de anticipación y retrospección, lo que hace decidible
++ si el lenguaje de un patrón contiene el de otro. Por eso una capa puede *sustituir* los patrones
++ de un escalar, siempre que el nuevo lenguaje esté contenido en el antiguo. Ampliarlo se
++ rechaza, y también una contención que el análisis no puede demostrar dentro de su presupuesto.
++ La comprobación falla de forma cerrada, así que una capa nunca puede relajar lo que aceptaba la
++ base. [Patrones](patterns.md) describe el motor RE2.
+
+@ 0 1 0 183e0223561f77550dbbff98dcbcbcee
++ ### Recuperación de errores
+
+@ 0 5 0 035c735a3ed0019408061e9542badd4d
++ En un lenguaje estructurado por sangría es fácil equivocarse un poco, y un analizador que se
++ rinde ante el primer error no ayuda a quien edita un fichero. Por eso el análisis se recupera, y
++ el esquema orienta la recuperación. Una línea con una sangría ambigua se adjunta al candidato
++ que admite el esquema. Una palabra clave `child` que es válida dentro de `parent`, pero no en la
++ raíz, se recupera en la posición más profunda.
+
+@ 0 3 0 1052cf0613ba708801e1a8a928b5bf58
++ Los errores se notifican con su línea y su columna. Un documento cuyos fallos se recuperaron
++ sigue produciendo un árbol, que es lo que necesita un editor, un
++ [servidor de lenguaje](lsp.md) o una herramienta que notifica varios problemas a la vez.
+
+@ 0 1 0 08e5448c553e5f2d023b016fe75469b6
++ ### Registros tipados a partir de un esquema
+
+@ 0 3 0 0eb81544000cad921eb5633b545436d9
++ Cuando el esquema manda, un `Tel.Provider` lo lee en tiempo de compilación y produce registros
++ tipados a partir de los documentos que coinciden con él. El proveedor es un objeto, declarado en
++ un fichero propio, que contiene el esquema. Cada campo se lee tal como lo declara el esquema:
+
+% 2 1 0 048474272d60975d0fdc9244ae74a9e1
+
+@ 0 9 0 0c6995e404c8f5b4143e52a032804b73
++ column  El esquema declara
++ column  El campo se lee como
++ row  un escalar  el tipo que nombra su validador
++ row  un campo opcional  un `Optional`, ausente cuando el documento lo omite
++ row  un campo obligatorio  su valor, que falla con un `Tel.Provider.Error` cuando falta
++ row  un campo repetible  una `List` de todas sus apariciones
++ row  una estructura, o una referencia a una definición de registro  un registro anidado
++ row  una selección  un campo opcional por variante
++ row  un *indicador*, una palabra clave sin valor  un `Boolean`: `true` donde está presente, `false` donde no
+
+% 1 1 0 06b8235a903810a018df25f492191d4e
+
+@ 0 2 0 15225b3b11d6636615f0521e05d45180
++ Un campo obligatorio que falta falla a través de la [táctica] del código que lo lee. Se
++ proporcionan los escalares integrados:
+
+% 2 1 0 170cabbe4553de9c0dc5db8cf8710798
+
+@ 0 3 0 1dcec6f4769c1a4f13e72f101c6f7df1
++ column  Escalar
++ column  Validador
++ column  Se lee como
+
+% 0 1 0 109e21761f16cb3f156c8a4ff7238a29
+
+% 0 1 0 17d9b24e571f0b63171ad7f7f1915320
+
+% 0 1 0 086eca1a1193cbf400c0fbd5083bb291
+
+@ 0 1 0 02c7dbb0d35a03250309be9d8bece51a
++ row  `Sigil`  `sigil`  `Char`, que falla con un átomo de más de un carácter
+
+% 1 1 0 121d43a5c948319e18ea84a17eb24f4c
+
+@ 0 2 0 0add619b680fc6c5013b2d3f7bf1df2c
++ Un validador propio se lee a través de un given con el mismo rótulo, en el ámbito donde se
++ llama a `record`, como
+
+% 0 1 0 0db8431d999bdae814e8f2b19ed14787
+
+@ 0 1 0 1787b6e8064e13941ae27f6167d5ef6f
++ Un proveedor, y un registro leído a través de él:
+
+% 2 1 0 0125fe7f4408534e02fbd95e03869655
+
+% 3 1 0 0849dbefd33d161b01dfeccf0df4629e
+
+% 4 1 0 19c1075c1b8fa8e10a8fa4204e074b79
+
+% 0 1 0 11917e198f038b201fccc6889ad3e394
+
+% 1 1 0 0b156805c88c71e61eeda0b3331dfa8c
+
+% 3 1 0 163a17be4d9b265c18e681106fb19a6a
+
+% 3 1 0 1ba4ca4d3f4f3c581e95b14aed4cf220
+
+% 4 1 0 1ef3f9c56b399d0f1fcb7e5a6eea1603
+
+% 0 1 0 04aa87756d3b3c7f055f70ad482ea934
+
+% 0 1 0 04b9a60aa0fc58b71b791bb01aa969c3
+
+% 0 1 0 13264a8036b595be04e327195ab92f5b
+
+% 1 1 0 0371d3f76b1011e810aba28c617346c8
+
+@ 0 5 0 06f99128cded619d0a5c225db1cf6739
++ Un campo que el esquema no describe es un error de compilación. La forma de los datos se toma
++ del esquema y la comprueba el compilador, sin que ningún tipo de Scala la repita.
++ [JSON](json.md#typed-records-from-a-schema) y
++ [XML](xml.md#typed-records-from-an-xml-schema) tienen la misma facilidad, y
++ [Registros](records.md) describe los registros en sí.
+
+% 0 1 0 1de48d8c925ffec61baa7aa22f19b885
+
+@ 0 2 0 1e47faff8b7caacc18d48d197dd5b737
++ Un documento tipado se codifica a BinTEL, una forma binaria compacta guiada por el esquema, y se
++ decodifica de vuelta. Un *hash de valor* toma la huella digital del contenido, para las
++ comprobaciones de integridad:
+
+% 2 1 0 157067c9740ba1e112ce12eef3d391ab
+
+% 0 1 0 02eaf7d677cbeff20f842180f8242f2e
+
+% 0 1 0 16b3e6df5889a8be192678a2d68e7c8a
+
+% 1 1 0 0ab5501ac7ba45b714caf140d27a457f
+
+@ 0 4 0 127667c45466fd9b11bdc159e775a23e
++ El hash de valor se calcula sobre el contenido del documento, no sobre sus bytes. Dos documentos
++ que solo difieren en los comentarios, el espacio en blanco o el orden de las claves tienen el
++ mismo hash, mientras que uno cuyos valores difieren no. Por eso sirve como clave de caché, o
++ para detectar un cambio, donde el hash del fichero indicaría un cambio cada vez que alguien lo
++ reajustara.
+
+@ 0 2 0 088524b082247e75142da23888a41adf
++ Una trama BinTEL *autocontenida* lleva consigo su esquema, de modo que un documento puede viajar
++ hasta un lector que nunca ha visto su esquema y aun así decodificarse:
+
+% 2 1 0 00105ba95d4ec9cc1dbec752b22927d8
+
+% 0 1 0 0e25ccc79ce5ad380221c8ac714111d6
+
+% 0 1 0 1638ca5a1d7659b21b84f47b50628beb
+
+% 0 1 0 1711f7e3b1b1c960141f615a0a3d64d4
+
+% 1 1 0 0895689873c3ed1e1c58cb152b2dde86
+
+@ 0 4 0 1cf4c71d46709302062a7d2bc3cb7b1a
++ La alternativa es enviar solo los datos e identificar el esquema por su *signatura*. Una
++ signatura es una huella digital corta calculada a partir del propio esquema, de modo que un
++ lector puede confirmar que tiene el esquema correcto antes de decodificar un solo byte de datos.
++ Un esquema sin capas tiene una signatura de treinta y tres bytes.
+
+@ 0 5 0 182bf02904313966152ad2e2e9dcf936
++ Los números en BinTEL se codifican con un número variable de bytes, y los valores los tipa el
++ esquema en lugar de etiquetarse en el flujo, que es de donde viene la compacidad. Todo documento
++ con entramado declara además su propia longitud, justo después del número mágico. Por eso un
++ lector puede delimitar, saltar o reenviar documentos sin tener su esquema, y varios documentos
++ pueden compartir un flujo:
+
+% 2 1 0 01a3c7c3e447bf5d134b7e51649c2d1d
+
+@ 0 5 0 0ae6d252810670620d608230c5a841b3
++ column  Método
++ column  Lee
++ row  `Bintel.decodeStream`  todos los documentos, en orden
++ row  `Bintel.decodeDocument`  un documento, indicando dónde empieza su continuación
++ row  `Bintel.decodeWholeDocument`  un documento, exigiendo que no le siga nada
+
+% 1 1 0 017bc68910dd83ef1d1929913a7b2770
+
+% 0 1 0 028b49e6b0f289de01cc95688700fe2f
+
+@ 0 5 0 182d2e8cff0ad4330d0e911ff67ebbad
++ BinTEL se lee de principio a fin. *RaTEL*, la codificación de acceso aleatorio, se lee in situ:
++ dispone un documento como tablas de filas de anchura fija, una tabla por cada tipo de registro,
++ con índices ordenados junto a ellas. Un programa que
++ [proyecta el fichero en memoria](filesystem.md#positional-access) encuentra un registro tocando
++ ese registro y nada más, y varios programas que lo proyectan comparten una sola copia. Es la
++ forma para un documento grande que un programa escribe y otros consultan.
+
+@ 0 4 0 04a275514140cfc600b0e6ec92ea8409
++ Un esquema dice cómo se encuentran sus registros. El campo `key` de un registro da a los
++ registros de un campo repetible un *índice primario*, y un `index` bajo el campo declara otro,
++ sobre una o más rutas dentro de cada registro. Un escalar con una codificación estándar, como
++ `u32`, se almacena en su fila con una anchura fija, y uno marcado como `intern` almacena cada
++ valor distinto una sola vez:
+
+% 2 1 0 1e66e0b760cd52641a9a1bbcd374689f
+
+% 0 1 0 00f8d07624ddd1970693e97286596e3b
+
+% 0 1 0 09923df7ca9ae4651b3f7a2499e369b2
+
+% 0 1 0 1a2af9114be4f45201f8cca0d0c2df85
+
+% 0 1 0 0c43e59a9dc63cd81605a98612006634
+
+% 0 1 0 112f1bcfb793872100342729684419a1
+
+% 0 1 0 17d3dd570bd4558413eee53415582f29
+
+% 0 1 0 020c0698120c597f175506321432d622
+
+% 0 1 0 1238b55a0e4eb6180557f19ae17665ba
+
+% 0 1 0 00e7f90e08c72c2b1bcca054b6c60afe
+
+% 0 1 0 03e9881fff6295bc0fc31ac1a8db32b5
+
+% 0 1 0 13467528078626be002d52468916b326
+
+% 0 1 0 1f41f046558e4131179e5e9b2843d619
+
+% 0 1 0 19d4cac468084ed41233e676aef3872f
+
+% 0 1 0 152e648cfce77d7c1217107a0a8c85e8
+
+% 1 1 0 0bf277b9a32e3a7e062c29ba4b4ec70d
+
+@ 0 3 0 18f565ad7df4042b17fd98ee1f4bf86e
++ `ratel` codifica un documento con su esquema como un `Ratel`, una imagen que lleva consigo el
++ esquema. Una imagen es `Encodable in Data`, así que se
++ [publica](filesystem.md#publishing-versions) como cualquier otro valor:
+
+% 2 1 0 12831dd01788fce3170164ab64385ecb
+
+% 0 1 0 1fb3088b398df5cd076a7fbb507cbf1e
+
+% 0 1 0 05961d2ac06c12e10569e96c5a216fa5
+
+% 1 1 0 13babde9580a0eed1d9f781a4338b553
+
+@ 0 6 0 0bbb78bdce56e4b90fc068801819577e
++ Un fichero se abre como `Ratel`, igual que un fichero en cualquier otra forma. Se proyecta en
++ memoria durante el bloque, y el bloque recibe un lector, `ratel`. Al abrirlo solo se comprueba
++ lo que decide cómo se lee el resto: la cabecera, el esquema y su signatura, y los directorios de
++ tablas e índices. Después los registros se leen según se piden. `/` da los registros de un campo
++ repetible, `find` busca uno por su clave con una búsqueda binaria en el índice primario, y
++ `where` da los que tienen un valor en una ruta indexada:
+
+% 2 1 0 0666080dc4abec95147ad1cbca0813ef
+
+% 1 1 0 1ca103a39ef80962149b14b86418bbd2
+
+% 0 1 0 1cb96a8130e61b30026c1c050bbd385c
+
+% 0 1 0 08ae9c7b929fcfd81875252bc309f230
+
+% 0 1 0 1b9640f16c9b646112b557c88a59517c
+
+% 0 1 0 0fb78c1db69394a31711dbaba4373e45
+
+% 1 1 0 162f5f8f776e16d80046539b12febb33
+
+@ 0 3 0 1caffb373265fe8405a1adab21c33535
++ Una imagen en memoria, y una vista `Terrain` que ya se tiene a mano, como la que presta un
++ lector [publicado](filesystem.md#publishing-versions), se abren de la misma manera, como
++ `image.open[Ratel]()` y `view.open[Ratel]()`.
+
+@ 0 1 0 1df82f45e4d9cd0c183bbd60526b8b3b
++ Un `Ratel.Row` lee sus miembros por palabra clave:
+
+% 2 1 0 19f836bcd0b4bc0c081e2e60f0f4201c
+
+@ 0 10 0 1fdd91066ff94a060f88654b76037e38
++ column  Método
++ column  Lee
++ row  `text`  un escalar, como su texto, o `Unset` si está ausente
++ row  `data`  un escalar, como los bytes almacenados
++ row  `texts`  los valores de un escalar repetible
++ row  `flag`, `count`  si un indicador está presente, y cuántas veces
++ row  `record`  una estructura que no es repetible, como otra fila
++ row  `/`  los registros de una estructura repetible, como un `Ratel.Rows`
++ row  `has`  si un miembro opcional está presente
++ row  `as`  el registro entero, decodificado como valor
+
+% 1 1 0 12c2867cbf29951e1e361b82e91fe42d
+
+@ 0 8 0 0bfbe01c1dffb8600ac2ff56959e2d62
++ Un `Ratel.Rows` tiene un `size`, se lee por posición o con `each`, y tiene `find`, `where` y
++ `sorted`, que da sus registros en el orden de sus claves. Una fila es un valor simple que dice
++ dónde está un registro, y se lee a través del lector que recibe su bloque, así que solo se lee
++ mientras su imagen está abierta. Su tipo, `Ratel.Row of brand`, lleva la marca de ese lector.
++ Cada accesor pide el lector con esa marca, así que cuando hay varias imágenes abiertas una fila
++ se lee a través del suyo, y una fila que se lleva a donde su lector no está en el ámbito no
++ compila allí. `as` decodifica un registro, y todo lo que contenga, mediante las mismas clases de
++ tipos que un documento TEL:
+
+% 2 1 0 0030a1ce230c6faa1ecc14255481e9fd
+
+% 0 1 0 168f58a887287a931ec201aabb67f8af
+
+% 0 1 0 0ceea8214ff18e0707b706fc6dc96909
+
+% 0 1 0 16402d39563c9c540ab3c381c65ced6d
+
+% 1 1 0 00f07f508281546203e64228128abbf7
+
+@ 0 4 0 1eea4d2376cbad89004c6b0d47ed119d
++ Un objeto que extiende `Ratel.Provider` con un esquema lee los registros de una imagen sin una
++ case class para cada uno. Da la raíz de una imagen abierta como un registro cuyos miembros son
++ los del documento del esquema, cada uno tipado como lo tipa el esquema, y cada uno leído in situ
++ cuando se selecciona:
+
+% 0 1 0 0647b574ba405a220c6097163df25100
+
+% 1 1 0 03859fbd5cc820c2149d6a6c21aedfeb
+
+% 0 1 0 1851142d13b4fda8051fa590f8d509ac
+
+% 1 1 0 1c956439d9c8074e0b6f73017dd73528
+
+% 0 1 0 0301b170003ff0531f7d7ae3bc1e5383
+
+% 0 1 0 053657d66d08d87a11876cf0f4e0b4b1
+
+% 0 1 0 138f3bcf332820171a835753f758c301
+
+% 0 1 0 0610fe83ac81da451b153152f74db989
+
+% 0 1 0 01dce0da2aeeb70b05135817f6a9584d
+
+% 1 1 0 00f526aa6722cda00e932432320936db
+
+@ 0 17 0 1eb83a61fcdf026b178cbb3b3dd70b17
++ Un `Ratel.Provider` es una [especificación](records.md#defining-a-specification), como lo es
++ `Tel.Provider`, cuyos registros se leen en el contexto de una imagen abierta. Un escalar se lee a
++ través de la instancia de `Intensional` que nombra su codificación, o su primer validador si no
++ la tiene: como `Text`, o como `Int`, `Long` o `Double` si su codificación es un códec estándar
++ cuyos valores caben todos exactamente en uno de ellos, como los de `u32` en `Long`, o como un
++ tipo propio, mediante una instancia propia. Un indicador es un `Boolean`, y un indicador
++ repetible el número `Long` de veces que aparece. Una estructura es un registro anidado, un
++ escalar repetible una `List`, y una estructura repetible una `Ratel.Table`, que tiene el `size`,
++ el `each` y el `sorted` de un `Ratel.Rows`, y se aplica a una clave o a una posición. Su `where`
++ encuentra registros por un índice secundario, y nombra el escalar indexado como una
++ [lente](optics.md) nombra lo que actualiza, mediante una ruta que termina en una asignación,
++ como `_.play = t"Twelfth Night"` o `_.author.born = 1564L`: la ruta se comprueba contra el
++ registro, y el valor contra el tipo como el que se lee su miembro. Cada variante de una selección es un miembro que está ausente salvo
++ que sea la elegida, y un miembro opcional es un `Optional`. Un miembro que el esquema no declara
++ no es miembro del registro, y no compila. El objeto del proveedor debe compilarse antes que el
++ código que lo usa, así que se escribe en un fichero propio. Abrir una imagen que se escribió con
++ otro esquema lanza un `Ratel.Error`, de `Mismatched`.
+
+@ 0 7 0 121b2adb28726d511ce7af431c505e6a
++ Un lector que abre un fichero que no escribió no se fía de nada de lo que contiene: cada
++ desplazamiento se comprueba antes de seguirlo, y un fallo se lanza como `Ratel.Error` en el
++ acceso que lo encuentra, mientras los demás registros siguen siendo legibles. El `verify` del
++ lector comprueba la imagen entera de una vez (sus resúmenes, sus índices contra sus filas y su
++ hash de valor), y abrirla con `Ratel.Flag.Verify` lo hace antes de que se ejecute el bloque.
++ `materialise` devuelve el documento entero como el modelo a partir del cual se escribió, de modo
++ que las tres codificaciones se convierten unas en otras sin pérdida. Una codificación propia de
++ la aplicación se liga a su códec con `Ratel.Flag.Codecs`.
+
+@ 0 1 0 1ed422bda8f6242a00492fd77015cef5
++ ### Aceptaciones
+
+@ 0 5 0 1764c6f9c1493c5a1d35bcce475d2346
++ Dos interlocutores pueden tener bibliotecas de esquemas distintas. Entonces un lector le dice a
++ un escritor qué puede consumir, con una *aceptación*. Una aceptación es un pequeño documento TEL
++ que enumera, por orden de preferencia, las composiciones que acepta el lector, cada una como una
++ signatura de esquema. Junto a cada una enumera las capas o los átomos adicionales que el lector
++ puede resolver y que querría que se incluyeran si el escritor los tiene, nombrados por un
++ prefijo de su hash.
+
+@ 0 1 0 0708bd8be5d9a95707355d5ad92ea17f
++ El mensaje es a su vez TEL, así que viaja en tres formas:
+
+% 2 1 0 06f0e20a83b51fe213f74539db6452e3
+
+@ 0 6 0 029c11c8a17b7951087b88dc687cb52c
++ column  Forma
++ column  Lo escribe
++ column  Lo vuelve a leer
++ row  texto TEL  `acceptance.encode`  `as[Tel.Acceptance]` sobre el texto
++ row  BinTEL con entramado  `acceptance.framed`  `Tel.Acceptance(framed)`
++ row  una palabra BASE-256  `acceptance.text`  `Tel.Acceptance(text)`
+
+% 1 1 0 0f4cd57efe724c6f0b1981e30f4fba37
+
+@ 0 2 0 16bf7de2c7bf86a60d13f3a35165aa7f
++ La forma BinTEL también puede ser la raíz desnuda del documento, para una incrustación que ya
++ sabe lo que transporta. Completo:
+
+% 2 1 0 10c65e4e0baccc700aac23fd8017b44a
+
+% 3 1 0 0baba25d9817f2dd01e1e6b6b78f7ddd
+
+% 4 1 0 137c88845f25e81a0002fbd083f78b4d
+
+% 0 1 0 014ed349982ecd5d15e0597e2501530d
+
+% 0 1 0 14d223f9b90a806b19e04856389626ef
+
+% 0 1 0 1fab50c6684644ce107ecf63eb507820
+
+% 0 1 0 04da5230fe495c690ebf9c8d29e3bd39
+
+% 0 1 0 17122318d026963b01280aef2d784fdc
+
+% 0 1 0 13982b1ea7988aad0bfb439bfd461c86
+
+% 0 1 0 11428f3502533ce50eb1b3131f3464e7
+
+% 0 1 0 00da5708d4f166c5123a98cd88d271c2
+
+% 0 1 0 01cace8d279a468613d66fcd3fe7bd42
+
+% 0 1 0 1eed961c7806be5601f0c4634af2bc4b
+
+% 0 1 0 1c09d5fe30ad791905b75ff99da6a042
+
+% 1 1 0 124756a76b9fef731b38dc297e2917a0
+
+@ 0 3 0 1a1ac9dda8be01ae10046856d23b3d97
++ Aquí `contact` es un `SchemaSignature.Lineage`: un esquema base, con sus capas y sus átomos y
++ los hashes de estos. A partir de él se calcula una signatura para cualquier selección de capas,
++ y un escritor decodifica contra él las signaturas que le envía un lector.
+
+@ 0 3 0 13faaa4d08dde9e31cf3eab1aa3deffb
++ Un escritor que tiene un valor bajo cierta composición sirve la primera alternativa que puede,
++ con la composición más rica que permite esa alternativa. El lector toma la primera alternativa
++ de cuyo esquema es subtipo el esquema del documento que llega:
+
+% 2 1 0 075b5e3cc6a5ff451013db581d48a13e
+
+% 3 1 0 0f7491b4690c83d11fef1600f3a06fdb
+
+% 4 1 0 143065a3e8f23a1c06b7ad0eda3e41cc
+
+% 0 1 0 0c375ea94bc452a50adac43f2fe0cba4
+
+% 0 1 0 16f060d0a2d567e1182d72fb4eeb9648
+
+% 0 1 0 12ada75eb1a62da504cb3fa866b15ca5
+
+% 1 1 0 02513f8e02c3759e13b69a805f2baafb
+
+@ 0 1 0 004d96c4a72cc1a8169f12128408f678
++ La compatibilidad es la relación de subtipado entre esquemas compuestos:
+
+% 2 1 0 03ec1eac585833330893eb00fc006005
+
+@ 0 5 0 1c026907376651071cd3725f5e12fbfc
++ column  Definición
++ column  Un subtipo
++ row  registro  la extiende
++ row  selección  la restringe
++ row  escalar  lo endurece
+
+% 1 1 0 1193e8b74c8a0a1f0f327558f160d3f2
+
+@ 0 2 0 08afc631ebbdbbd01595aeb807afcb18
++ `Tels.Subtyping.subtype` lo decide, y `check` notifica la primera premisa que falla.
++ `Tels.Projection` restringe un documento a lo que puede abordar un supertipo.
+
+@ 0 1 0 19c89901fd4c267c17a0f70bb873adff
++ #### Aceptaciones a partir de tipos de Scala
+
+@ 0 4 0 05241bb575c7e3091f84dacc1da525ab
++ Cuando los formatos son tipos de Scala, la aceptación y su lectura se derivan. Los campos
++ obligatorios de cada tipo forman la base que exige un lector. Sus campos opcionales se ofrecen
++ como átomos, así que dos tipos que coinciden en sus campos obligatorios interoperan, por mucho
++ que difieran sus campos opcionales.
+
+@ 0 2 0 184a43ed7974bd881f4d831af9ea38f9
++ Un campo puede, en cambio, ofrecerse como parte de una capa con nombre. Una capa se declara una
++ vez, como un objeto cuyo nombre forma parte de su tipo, y se le asigna un campo con `@assign`:
+
+% 2 1 0 139491589749da2c070bf298d67c0225
+
+% 3 1 0 0be29504fb267aa110f3e5383f07874b
+
+% 4 1 0 14f36a70e8709fdd0a76685fc3da3ba6
+
+% 0 1 0 084d09b25184903616bc96d00a4c84b8
+
+% 0 1 0 18c349753b8093a90b1d93949bf369d4
+
+% 0 1 0 0f076f441773c53a18483ad79b83c32c
+
+% 1 1 0 058ca00534122ee006ef90e6852b7170
+
+@ 0 2 0 1098219b7a6c994a1790941e8961ba2a
++ Una tupla nombra los tipos aceptados, por orden de preferencia, y lo que llega se decodifica a
++ su unión:
+
+% 2 1 0 08d8151ea9a682df06bf7e9e929ec168
+
+% 3 1 0 1e12b66f9747486213ab0b1ca0929e43
+
+% 4 1 0 121dff861d1ef965183d938fa742ba01
+
+% 0 1 0 03b35757c6b8982f080b8ad7b6129932
+
+% 0 1 0 1bf9cdf6836466df1ca88f0e28fea984
+
+% 0 1 0 12223cf5bb2ad7f40a38e7abd711de44
+
+% 0 1 0 040b178af9dfb4190f7ccae1b52f2860
+
+% 0 1 0 17b4f314ed8197b51ccf27987e3449c9
+
+% 1 1 0 010be8cd49ccad0b08691174582b6060
+
+@ 0 5 0 162e00cb5c9946f80010569530f461b6
++ Una capa nunca puede añadir un caso a una suma, pero sí puede quitarle casos. Un caso de un
++ `enum`, o de un sealed trait, anotado con `@retract` sigue siendo una variante de la base, y la
++ capa nombrada lo excluye. Un lector que acepta esa capa dice con ello que nunca recibirá ese
++ caso. Un caso puede retirarse de varias capas, aunque una capa no puede retirar todos los casos
++ de una suma:
+
+% 2 1 0 01291aee2238337c02f5bd739dd00099
+
+% 3 1 0 02b813be6ea6c9801938ba381722243c
+
+% 4 1 0 115476f9aa920a110cd0974b0b9ba061
+
+% 0 1 0 037865c45400ae4918872cc86c1b8e50
+
+% 0 1 0 12237101889b9ee105128f22794b39d9
+
+% 0 1 0 18ad061070f0b1b90a563a364a3f992f
+
+% 0 1 0 0c8743a19daadfb71b89397384e663f1
+
+% 0 1 0 1cc1dcd1f2e852421acc96f18feb733c
+
+% 1 1 0 1a967f8824b7669a16dcce4d6d0f3e2d
+
+@ 0 3 0 1daf4b30cf139e0510105fb7e32dc7d2
++ Un escritor responde a partir de un valor con `contact.fulfil(accepting.acceptance)`. Omite
++ cualquier capa que retire un caso que usa el valor, de modo que lo que sirve es siempre válido
++ bajo las capas que nombra.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 1 0 1a4405e7247b4ae6172920b0f8f6e187
++ - [Demonios](daemons.md) y [RPC](rpc.md) transportan mensajes BinTEL, y [óptica](optics.md) actualiza un documento TEL.

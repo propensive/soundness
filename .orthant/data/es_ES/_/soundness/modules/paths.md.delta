@@ -1,0 +1,315 @@
+orthant 2 language
+
+@ 0 1 0 0cab0599b62cbb9407305b622261282a
++ ## Rutas
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 2 0 044c314f47dcadf51c019b0843081924
++ Una ruta es una secuencia de nombres que recorre una jerarquía, y los hechos sobre una ruta se
++ guardan en su tipo:
+
+@ 0 5 0 09852067f793da1e06b78bdfa8fcb205
++ - Una ruta absoluta es un `Path`, con raíz en algún valor.
++ - Una ruta relativa es un `Relative`: un número de pasos hacia arriba, seguido de un descenso.
++ - Ambas se tipan según la *plataforma* a la que pertenecen, así que un `Path on Linux` y un
++   `Path on Windows` son tipos distintos. La cláusula `on` es uno de los
++   [tipos infijos](../../philosophy/infix-types.md) que se usan por todas partes.
+
+@ 0 3 0 0e9f7537438fd210120ce56c815aef25
++ El compilador conoce los elementos de una ruta construida en el código fuente. Por eso la
++ aritmética sobre rutas, como descender, ascender y encontrar el camino de una ruta a otra, se
++ comprueba en [tiempo de compilación].
+
+@ 0 3 0 0c2041aa987ae4911c5dcd7801b9e530
++ Son rutas abstractas. Tratan de la *forma* de una ruta, no de un fichero en un disco. La misma
++ maquinaria subyace a las rutas del sistema de ficheros, a las URL y a cualquier otra jerarquía.
++ Leer y escribir ficheros reales es asunto del [sistema de ficheros](filesystem.md).
+
+@ 0 1 0 0c1add7ee2d1c8cf0e7e01eac0483af2
++ ### Sobre las rutas
+
+@ 0 5 0 16f33f3fc514857d1a9787336f8e7600
++ Una ruta plantea tres preguntas: ¿es absoluta o relativa?, ¿para qué plataforma es?, ¿y este
++ `..` sube por encima de la raíz? En la mayoría de las bibliotecas, ninguna de las respuestas está
++ en el tipo. Una ruta es una cadena, o una clase que borra las distinciones. Un error, como unir
++ dos rutas absolutas, tomar el padre de una raíz o mezclar una ruta de Windows en una POSIX, se
++ descubre en [tiempo de ejecución], si es que se descubre.
+
+@ 0 5 0 150e8a4db9c499aa183cde3a97f5712f
++ Aquí cada distinción queda registrada en el tipo. Las rutas absolutas y las relativas son tipos
++ distintos, así que no puede confundirse una con otra. La plataforma es un parámetro de tipo, así
++ que sus separadores y sus reglas viajan con la ruta. Y donde se conocen los elementos de una ruta,
++ los conoce el compilador, que calcula estáticamente el resultado de unir dos rutas o de encontrar
++ el camino entre ellas.
+
+@ 0 2 0 1c2fee29596c6422194462ee7c65dca2
++ Todo procede del paquete `soundness`. Los ejemplos lanzan cualquier error como una excepción, y la
++ última importación les permite imprimir sus resultados:
+
+% 2 1 0 0683c532939f05bd1bf8f090f2826090
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0ca311dd6ee9b785071c5ebecc8400ee
++ ### Construir una ruta
+
+@ 0 1 0 0027806d2dfc3c0914a9adc3b422b055
++ Una ruta se escribe con un puñado de símbolos, cada uno descrito más abajo:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 9 0 0c1f31c7b50f82e80ec9498cb8a36031
++ column  Símbolo
++ column  Significa
++ row  `%`  la raíz del sistema de ficheros POSIX
++ row  `Drive('C')`  la raíz de una unidad de Windows
++ row  `/`  un paso hacia abajo, a un hijo con nombre
++ row  `?`  la ubicación actual, desde la que parte una ruta relativa
++ row  `^`  un paso hacia arriba
++ row  `+`  una ruta relativa aplicada a una absoluta
++ row  `/:`  en un patrón, un nombre extraído del principio
+
+% 1 1 0 1095677304c52d7005e9d969ec459047
+
+@ 0 2 0 0bb942646780f7300d5a5469fc9ce908
++ Una ruta absoluta desciende desde una raíz con `/`. La raíz `%` es la raíz de un sistema de
++ ficheros POSIX, y una ruta de Windows desciende desde un `Drive`:
+
+% 2 1 0 0eb8eaab9ee2ef2618032f6b93b7aa34
+
+% 0 1 0 0de1807a9a1e7527090f79e12be50b18
+
+% 0 1 0 16c9455d69a0d82d0f00a5fb716e8a69
+
+% 1 1 0 128fd283295a92950781fbf761f03a09
+
+% 3 1 0 107cfbd5c2a75e9407da54d3061badf5
+
+% 4 1 0 1c8cf7fd4c2373410fd4013a71aff046
+
+% 5 1 0 113e4b6a04d095030ae8d66597997d87
+
+% 0 1 0 1fe52c0b86c933d90e36f87f27967872
+
+% 0 1 0 166efb651ecc8b7b195b76460227643b
+
+% 1 1 0 109235695c9a0ff41ef7ba71cd36b10c
+
+@ 0 2 0 01450cfdc11b64e808e585f64d48f72d
++ El [interpolador] `p"…"` escribe una ruta de forma literal, y la comprueba en tiempo de
++ compilación. Resuelve el literal como una ruta POSIX o de Windows, según su forma:
+
+% 2 1 0 152ecddcf84d1b6617abec6e33ba1ee4
+
+% 0 1 0 131f4d7dbec44f551ef6e0c40fa52540
+
+% 0 1 0 11351b84c9c9b096145541eef4536fed
+
+% 1 1 0 12c735323f5c831013913a9027e061d6
+
+@ 0 3 0 1cdc031b407b7ee712e0eeb40354c468
++ Los elementos de un literal forman parte de su tipo, con el último elemento primero: `data` es un
++ `Path of ("data.csv", "user", "home") on Posix`. Una ruta construida con `/` también lleva cada
++ elemento que recibió.
+
+@ 0 1 0 1b31b79dc4d90aab021602fa6c2f4133
++ ### Rutas relativas
+
+@ 0 3 0 10717d312582460408b1e6a907d9f8e3
++ Una ruta relativa se construye a partir de `?`, la ubicación actual, y de `^`, un paso hacia
++ arriba, seguidos de un descenso. Sumar una ruta relativa a una absoluta aplica el ascenso y
++ después el descenso, y da una nueva ruta absoluta:
+
+% 2 1 0 0d5a82aaba55c4851f51af7d28f0cf48
+
+% 0 1 0 0f24623910b1ebcb1c98de76d342de63
+
+% 1 1 0 1b722a838524a3c0140dd33698b08119
+
+% 3 1 0 159d95c2a1e8e69d172477e608145496
+
+% 4 1 0 17cd1e4498370890161bc34605ff5c74
+
+% 5 1 0 0c9930f7d5e6dda71a19493f4aafa054
+
+% 0 1 0 0307b52fd166f9861a1bb5fdb3ae40a9
+
+% 1 1 0 0c3e256e4a7963b309a7346c51db696e
+
+@ 0 1 0 1d98967b0583d68718e403705487d8f9
++ ### Plataformas
+
+@ 0 3 0 1aef316055da8d2c11ae62fe3a33f871
++ Una ruta construida con `/` es, en principio, neutral entre plataformas. `on` la vincula a una
++ plataforma, y comprueba cada elemento contra las reglas de esa plataforma, que rechazan un nombre
++ que contiene una barra, o un nombre reservado:
+
+% 2 1 0 0bc77b46a5b227b71a6a55fe10b72423
+
+% 0 1 0 015bcc35d5ac39a11806d0c625a8bf1c
+
+% 1 1 0 105a3298c177eab60a43db4ef48c0ec6
+
+@ 0 3 0 1b29e7b45c24e7180191b1dd3a3d94d0
++ `Linux`, `Posix`, `MacOs` y `Windows` son las plataformas, y `Local` es la que use la máquina en
++ la que se ejecuta el programa. [Nombres](names.md) describe cómo se enuncian y se comprueban las
++ reglas de cada plataforma para un elemento.
+
+@ 0 1 0 1b980a5d948f5e1d1600243e9c7066df
++ ### Entre dos rutas
+
+@ 0 2 0 0c2641421afba9fa1c72908228106636
++ `toward` calcula la ruta relativa de una ubicación a otra, y `conjunction` encuentra su ancestro
++ común más cercano:
+
+% 2 1 0 03b76a47d6d3b793114a4a850c5f7cc4
+
+% 0 1 0 0bacf8eb8e29e09b07be8911fe2c0ae9
+
+% 0 1 0 10ab6059c7e82262007595f05dcf4c68
+
+% 1 1 0 1c12fa0b46ab059d01db09af2125a291
+
+% 3 1 0 11ddad2ead83fe6807e390d62e1260e9
+
+% 4 1 0 03ca5fc03fe94cd518faf359be0daca6
+
+% 5 1 0 1a12d2aa5f0ee55a1c0a10c4c6b943a4
+
+% 0 1 0 069bab418ac7cce907ba7a738427c991
+
+% 0 1 0 121fa03056389e0400c373e84c99242a
+
+% 1 1 0 10690023ce990c041053b98081a4008a
+
+@ 0 1 0 0638c922b56f1a611f03c9718596f37c
++ ### Texto y rutas
+
+@ 0 2 0 198efdacfe4f85df09fc00d896571535
++ `encode` escribe una ruta como texto. `as` analiza un texto para obtener una ruta, nombrando la
++ plataforma cuyas reglas se aplican:
+
+% 2 1 0 14a9e292c07049dc00bdc64862806de7
+
+% 3 1 0 1b6f3bf32bf215d60346faf8525a87ea
+
+% 4 1 0 06c0d25de061d0031166d25cec825015
+
+% 0 1 0 07f10ee41cc7a640122c3f261b6b234d
+
+% 0 1 0 081a42279c0c53cf1dff238c4386cb29
+
+% 1 1 0 1c923223db77cc6502723ad357f96a53
+
+@ 0 2 0 19c273f02614a2590ee4155d09c1ac6f
++ Un texto que incumple las reglas de la plataforma no es una ruta, y no se
++ [decodifica](decoding.md#decoding-a-value):
+
+% 2 1 0 15f4090fbf3a49af1ed888288de7344e
+
+% 3 1 0 16dbcda91fe84b820cae8c4df497976a
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 06d940afebd04dbf1b7bbdef6fadc932
+
+% 1 1 0 11e43b1e60a433590a632bf84bcf4a83
+
+@ 0 1 0 16f357d0c6c4606a1f498163a254cc64
++ ### Descomponer
+
+@ 0 2 0 15b3704e1e7ef55814b35d021c0a65e5
++ Una ruta se hace coincidir en un patrón con el extractor `/:`, que extrae nombres del principio.
++ Por eso una ruta puede descomponerse con la misma facilidad con que se construye:
+
+% 2 1 0 18b9ff0780d4d8861ec8689d161be818
+
+% 0 1 0 1a6196eb3ccd03f8087ee01f57fd9a76
+
+% 0 1 0 15c4fe46b7f83df7101070de39e7054f
+
+% 0 1 0 15d2043574d855d002de10af4ace8697
+
+% 0 1 0 11ae466717248d9a17d6a268e67c0649
+
+% 1 1 0 02fe79814cb2290c09431d232d0b9edf
+
+% 3 1 0 0675ad8e575be00a017307dd430c8c92
+
+% 4 1 0 02442b828a93343a1a5d075d871403d5
+
+% 5 1 0 0434c2de8f1b72170025aea27c5daa8f
+
+% 0 1 0 194af130d84c36ad19a6b18ee6d3a4f4
+
+% 1 1 0 051990666e3595450e0e022fb5b3ca32
+
+@ 0 3 0 19e81d1876dd86e015e64ede0906c05f
++ También se hace coincidir la raíz. Eso importa donde una plataforma tiene más de una raíz, como
++ una letra de unidad de Windows o un recurso compartido UNC, ya que la raíz forma parte de lo que
++ una ruta *es*, y no es un prefijo de su texto.
+
+@ 0 1 0 08a91067c942c0740c9657d5c4723221
++ ### Rutas en el tipo
+
+@ 0 2 0 1edb555fccf573c8009645204a946188
++ Los nombres de los elementos de una ruta pueden ir en su tipo, de modo que una ruta que se conoce
++ en tiempo de compilación se conoce con precisión:
+
+% 2 1 0 0bc2c1b8596e3f9c1c02422853939deb
+
+% 0 1 0 1e80d6e06f9013471aa236cc42924eae
+
+% 1 1 0 127ad5f66e81a08814c4a849ff104282
+
+@ 0 5 0 1f8dedb446bbff0706b2351ab9e52fe4
++ Los nombres aparecen del más interno al más externo, lo que coincide con cómo se construye la
++ ruta. Por eso una ruta construida enteramente a partir de literales tiene un tipo que describe
++ exactamente adónde apunta. Eso es lo que permite comprobar mientras se compila el código un
++ recurso del [classpath](classpath.md), o un fichero relativo a un proyecto. Una ruta cuyos
++ elementos no coinciden con el tipo que se le da no compila:
+
+% 2 1 0 0060c063ef913d5908b1bc56855b894f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 023d885c1a314cf016c66bef87ada367
+
+% 1 1 0 194d949838ef1e5e183c94b581685878
+
+@ 0 3 0 1df11a63d89725861ace22d3ddda6bc6
++ Donde no se conocen los elementos, como en una ruta construida a partir de texto en tiempo de
++ ejecución, o leída de un listado del [sistema de ficheros](filesystem.md), el tipo simplemente
++ dice `Path on Linux`, y las operaciones son las mismas.
+
+@ 0 1 0 1110cff8cf3c30f707248eef29cd369e
++ ### Lo que sabe una ruta relativa
+
+@ 0 4 0 1ac298d57eaf7a99013b7f2131e37083
++ Una ruta relativa también lleva su plataforma, así que un `Relative on Linux` no puede aplicarse a
++ una ruta de Windows. También lleva, en su `Relation`, hasta dónde llega hacia arriba. Por eso una
++ ruta relativa que ascendería por encima de una raíz puede rechazarse donde se escribe, en lugar de
++ resolverse a ninguna parte en tiempo de ejecución.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 5 0 0e9ca6e998e2f03705ed0a34c6ec4677
++ - [Sistema de ficheros](filesystem.md) lee, escribe y lista los ficheros que nombran las rutas.
++ - [Direcciones de red](network-addresses.md#urls) describe las URL, que tienen sus propias rutas.
++ - [Classpath](classpath.md) nombra recursos por su ruta.
++ - [Nombres](names.md) comprueba los elementos de una ruta contra las reglas de una plataforma.

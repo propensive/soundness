@@ -1,9 +1,0 @@
-orthant 1 release
-
-- - The changes since the last release accumulate in `doc/migration/<version>.md`, named from
--   the start after the release they will be part of (for example `doc/migration/0.71.0.md`
-+ - The changes since the last release accumulate in `doc/work/migration/<version>.md`, named from
-+   the start after the release they will be part of (for example `doc/work/migration/0.71.0.md`
-
-- `doc/migration/<v>.md` with `A < v <= B`, in ascending version order, and to apply the changes
-+ `doc/work/migration/<v>.md` with `A < v <= B`, in ascending version order, and to apply the changes

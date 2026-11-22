@@ -1,0 +1,41 @@
+orthant 2 language
+
+% 0 1 0 1b1d6a757d000fcc1dfa76818cb26777
+
+@ 0 2 0 1de5bcf5e64369040a0732f5ab5c333b
++ Lançado quando o Austronesian não consegue desserializar um valor a partir de sua representação
++ “Pojo”, neutra em relação a classloaders.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 7 0 1e4b23b2b6122f390c37a9e09ca24fe4
++ O Austronesian codifica valores Scala em uma representação construída apenas com tipos padrão do
++ JDK — primitivos em caixa, `String` e `Array[Object]` — para que possam atravessar fronteiras de
++ classloaders ou de processos. Este erro é lançado durante a decodificação, quando um valor Pojo
++ não corresponde à forma que o tipo de destino espera: um escalar onde se esperava um array de
++ campos, um array do comprimento errado, ou um valor de soma que não é um par `(label, payload)`.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0c1cf7585d5b46f21825f7394302ce6d
+
+% 1 1 0 0619e4d2b8f18a5f1e4e204afcf3226c
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 4 0 06e0bb50b55bf5530508721f2da71e2f
++ Confirme que o valor foi codificado a partir do mesmo tipo para o qual está sendo decodificado, e
++ que os dois lados concordam sobre a definição do tipo — a ordem dos campos e os nomes das
++ variantes fazem parte da codificação. Motivos mais específicos podem ser acrescentados à medida
++ que o módulo evolui.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 10391fc3129dbc2209245896adaec4bd
++ - Código-fonte: `lib/austronesian/src/core/austronesian.internal.scala`

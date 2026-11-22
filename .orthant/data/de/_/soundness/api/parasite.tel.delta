@@ -1,0 +1,2218 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1d8e8b9b6df897c60b37185cecc51b16
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 16a2418f4768c50e17d260c62787f987
++ info   strukturierte Nebenläufigkeit: überwachte Aufgaben, Promises, Abbruch, Wiederholungen und VM-Ereignisse
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 092655dfa0becd181d9291a1362e0f48
++     _Parasite_ gibt nebenläufiger Arbeit die Gestalt gewöhnlicher Blöcke. Jede Aufgabe wird
++     in einem **überwachten Geltungsbereich** gestartet, dem sie gehört, und der
++     Geltungsbereich endet erst, wenn seine Aufgaben abgeschlossen sind: Eine Aufgabe kann den
++     Code, der sie gestartet hat, nicht überleben, ein Fehler in einer Aufgabe erreicht den
++     Code, der auf sie wartet, und der Abbruch eines Geltungsbereichs bricht alles darunter
++     ab. Die Struktur eines nebenläufigen Programms ist daher an seiner Verschachtelung
++     abzulesen.
+
+@ 0 7 0 17bedbf742fb03ca0119af453d9ea6b7
++     Die zentralen Typen sind wenige. `supervise` öffnet einen Geltungsbereich und führt einen
++     `Monitor` ein, die Capability, die jedes Anhalten — Warten, Schlafen, Abgeben — verlangt.
++     `async` startet einen `Task` als Kind des Monitors im Geltungsbereich; `task` ist dasselbe
++     mit einem Namen, und `daemon` startet Fire-and-Forget-Arbeit, die der Geltungsbereich
++     abbricht, wenn er endet. Das `await` einer Aufgabe gibt ihr Ergebnis zurück oder liefert
++     den Fehler, den ihr Rumpf ausgelöst hat, weiterhin typisiert, über die `Tactic` des
++     Aufrufers; ein Abbruch oder ein Timeout kommt als `Async.Error` an. Ein `Promise` ist ein
++     später gelieferter Wert, vielleicht von einem anderen Thread, auf den die eine Seite
++     wartet und den die andere erfüllt.
+
+% 2 1 0 1c87e544bad5b93d02f97675e9f8f038
+
+% 3 1 0 0177da77819900901e2486dbef5d507e
+
+% 4 1 0 05fd99038f13bc471c414b78e51bb33d
+
+% 5 1 0 161672863c3b5cfc0eedb4f9cfc1c91d
+
+% 6 1 0 163040b3086bbfc802548054429d5a11
+
+% 0 1 0 03165a42e74b3e190211c1b579e78b99
+
+% 2 1 0 179610eb5e37e7ee1ae4b9aa17921b76
+
+% 0 1 0 101d18c042acd1c71161a4fdae7ea144
+
+% 0 1 0 1c55d1003a1cd276051d45d739f17181
+
+% 0 1 0 0487f5ec90c7438e0a08d901f8c00042
+
+% 1 1 0 19aa31b5449c726b1b8b7110d3455f79
+
+@ 0 11 0 028f078ad4b187c21eadf49b2230e5fd
++     Zwei Entscheidungen werden durch den namentlichen Import eines Givens getroffen, und
++     `import soundness.*` trifft keine davon für Sie, da `import pkg.*` nie Givens importiert.
++     Das **Threading-Modell** ist ein `Threading` aus dem Objekt `threads`: `virtualThreads`
++     führt jede Aufgabe auf einem virtuellen JVM-Thread aus, `platformThreads` auf einem
++     Plattform-Thread, `adaptiveThreads` auf dem, den die JVM hat, `pooledThreads` auf
++     wiederverwendbaren Trägerthreads für feingranulare Auffächerung, und `javascriptThreads`
++     eager auf einem einzigen Strang für die Event-Loop. Die **Nachlassregelung**, aus dem
++     Paket `probates`, entscheidet über das Schicksal eines Kindes, das noch läuft, wenn der
++     Rumpf seiner Elternaufgabe endet: `awaitProbate` wartet darauf, `cancelProbate` bricht es
++     ab, `failProbate` löst beim Warten der Elternaufgabe `Async.Error` aus, und
++     `panicProbate` löst eine Panic aus. Jedes Anhalten braucht außerdem eine
++     `Tactic[Async.Error]` im Geltungsbereich, die `strategies.throwUnsafely` oder ein
++     `safely`-Block liefert.
+
+@ 0 5 0 05cc93ae0803d1521773a03246fdc9dc
++     **Abbruch** ist kooperativ. `task.cancel()` unterbricht eine Aufgabe dort, wo sie
++     *pausiert* — bei einem `snooze`, einem `await`, einem `attend` — und hält sie dort an,
++     wo sie *nachgibt*: bei einem `relent()`-Aufruf in einem Rumpf, der sonst nicht pausiert.
++     `sleep` ist die nicht unterbrechbare Pause, die ihre ganze Frist abwartet, was auch
++     geschieht; die abgebrochene Aufgabe hält dann bei ihrem nächsten `snooze` oder `relent()`
++     an. Eine Aufgabe, die weder pausiert noch nachgibt, läuft bis zum Ende.
+
+@ 0 6 0 0a0f7af91ef2aee21e46c3c6e60d55b4
++     **Fehler** wandern in zwei Richtungen. Ein Aufgabenrumpf löst über seine eigene `Tactic`
++     aus, und der Fehler kommt bei `await` so typisiert an, wie der Rumpf ihn deklariert hat
++     (`Task[Int] emits CueError`); ein Daemon hat kein Warten auf ihn, daher geht sein
++     Scheitern an die `Probate` im Geltungsbereich, wird von einem umgebenden Bereich
++     `contain { … }.protect { … }` aufgefangen oder eskaliert zum Handler für nicht
++     abgefangene Ausnahmen des Threads, wo `Vm.intercept[Fault]` es sieht. Vorübergehende
++     Fehler werden mit `retry` unter einer `Tenacity` aus dem Paket `retryTenacities`
++     wiederholt.
+
+@ 0 3 0 0c3f88674ab9faf71c909550d1b4eb58
++     **Geteilter Zustand** zwischen Aufgaben wird mit den atomaren Zellen und dem `Mutex` der
++     Bibliothek `rudiments` geschrieben (`Atomic[Int]`, `Atomic.Ref[T]`, `Mutex`), die dort
++     dokumentiert sind; parasites eigene `Promise` und `Timeout` bauen darauf auf.
+
+@ 0 4 0 1db8a1d91d9be7b206dee6b1fa176b04
++     Darunter forkt und parkt ein `Supervisor` `Strand`s — Threads auf der JVM und unter Scala
++     Native, Einträge einer Run-Queue in einer Event-Loop — und ist die ganze Nahtstelle zur
++     Plattform; ein `Threading`-Given gibt einen heraus, und `supervise` wurzelt darauf einen
++     Baum von `Monitor`s. Die Source-Sets der Bibliothek sind:
+
+@ 0 13 0 1d830bc28948717f00b208d1b4a70d19
++     - `parasite.core` — alles Plattformneutrale: `supervise`, `async`, `task`, `daemon`,
++       `Task`, `Promise`, `Monitor`, `Worker`, `Probate`, `Timeout`, `Tenacity`, `retry`, die
++       Givens `threads`, `probates`, `retryTenacities`, `supervisors` und `unsupervised`, der
++       `PlatformSupervisor`, der `JavascriptSupervisor` und der abstrakte `PoolingSupervisor`
++       sowie die `Vm`-Abfangpunkte `Shutdown` und `Fault` (die eine JVM brauchen, um
++       auszulösen).
++     - `parasite.core` auf der JVM fügt `VirtualSupervisor` (virtuelle Threads von Loom),
++       `AdaptiveSupervisor` (virtuell, wo die JVM sie hat, sonst Plattform) und
++       `PooledSupervisor` (ein Pool von Trägern auf virtuellen Threads) hinzu.
++     - `parasite.core` unter Scala Native deklariert dieselben drei Namen über
++       Plattform-Threads, da Native kein Loom hat: `VirtualSupervisor` und
++       `AdaptiveSupervisor` forken Plattform-Threads, und `PooledSupervisor` hält sie in einem
++       Pool, wo Pooling am meisten spart.
++     - `parasite.jvm` — `GarbageCollection` (`Vm.intercept[GarbageCollection]`) und `Heap`,
++       über den Management-Beans der JVM.
+
+@ 0 8 0 0c525426f66aeac80852f9675a461ebe
++     Alles wird in das `soundness`-Umbrella exportiert, außer `Root`, `ThreadSupervisor` und
++     dem Typalias `emits`, die als `parasite.Root`, `parasite.ThreadSupervisor` und
++     `parasite.emits` erreicht werden; die Objekte `threads`, `supervisors` und
++     `unsupervised` und die Pakete `probates` und `retryTenacities` verschmelzen mit denen des
++     Umbrellas, sodass man `import soundness.*` schreibt und dann ein Threading und eine
++     Nachlassregelung namentlich importiert. Eine öffentliche Klasse oder ein öffentliches
++     Objekt, das über eines dieser Givens einen globalen Supervisor erreicht, deklariert das
++     mit einer `uses`-Klausel, `object Main uses parasite.threads`, da ein Supervisor eine
++     Capability ist.
+
+% 0 1 0 0b30bad04a0176020515f8c74e05e076
+
+% 0 1 0 1a7472dea3a55aea1bf65f9694c58caa
+
+% 0 1 0 005785eafe647448022da931f3d403d5
+
+% 0 1 0 1f616ee6996b280f1b82ac55481111fc
+
+% 0 1 0 1f1932bf4b4524c7149be91eee5800cd
+
+% 0 1 0 1b7835fd35626fb718d015cd94812a52
+
+% 0 1 0 13e40615ec93d7231761136d66258183
+
+@ 0 1 0 02146096468c509b08e818b0671b2f02
++ entry .supervise   öffnet einen überwachten Geltungsbereich: einen Wurzel-`Monitor`, unter dem Aufgaben gestartet und erwartet werden
+
+% 1 1 0 050f3828d0ed40de0135b96bc6330b1c
+
+@ 0 5 0 11b7c8956fa0dc330d6de5c0fecf2dd2
++       `supervise(block)` wertet den Block mit einem frischen `Monitor` im Geltungsbereich aus —
++       einem `Root` über dem Supervisor, den das `Threading`-Given herausgibt — und gibt das
++       Ergebnis des Blocks zurück. Der Monitor ist das, was `async`, `task`, `daemon`, `await`,
++       `snooze` und jedes andere Anhalten verlangen, daher stammt jede Aufgabe letztlich aus
++       einem `supervise`; der Geltungsbereich ist die Wurzel eines Baums, dessen Zweige die
++       darunter gestarteten Aufgaben sind, jede ein Kind des innersten Monitors im
++       Geltungsbereich.
+
+@ 0 3 0 0bc18e607440866d09f608ec0bb2c76e
++       Es braucht ein `Threading` (namentlich aus `threads` importiert) und einen `Codepoint`,
++       und sein Ergebnis ist ein `Tactic[Async.Error] ?=> result`, daher muss dort, wo es
++       aufgerufen wird, eine `Tactic[Async.Error]` im Geltungsbereich sein, die
++       `strategies.throwUnsafely` oder ein `safely`-Block liefert.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 17123fb404c6647a1624cd5bb7e11453
++         label Ein Geltungsbereich, in dem nichts ist
+
+% 1 1 0 1072d1d1fd0fb0aa13816acd16a90010
+
+% 0 1 0 1808f1bc7a8d73be1e8552eecae778a7
+
+% 0 1 0 187825beab6c18ac06b9a8f2767a7289
+
+% 0 1 0 10f1b0ee07db2add00695d4d9ebf519f
+
+% 0 1 0 0798179fd46066390d73f0f2d8a2bf3e
+
+% 1 1 0 0303efffea63588502988f82044b17d7
+
+% 0 1 0 07e7100702bf8c990a7742427f66cfca
+
+% 1 1 0 01d52a165bd404831ae6430df8497f20
+
+@ 0 1 0 1e5c985b1237167a01c93190f63e7b79
++         label Eine Aufgabe, erwartet
+
+% 1 1 0 1b8e4167bcfa3df718482da7b544ae46
+
+% 2 1 0 1dba25fff79a96fa0a42d69b31d41cd5
+
+% 0 1 0 10149774b6e4866a08a866cb8153339d
+
+% 0 1 0 0434809cb4fe6e4d10c48759522703c1
+
+% 1 1 0 0669094f2dcb42ea0f7fe6002f264dbf
+
+@ 0 1 0 0635b852429bd229032893471b28c7d9
++         label Ein Kind eines Kindes
+
+% 1 1 0 04e81f12023b0479146082c9cdc1a0e7
+
+% 2 1 0 19c1bd2475744b0305391133b316f474
+
+% 3 1 0 1b56899b14b899d3022102583a5d8147
+
+% 0 1 0 1196e31942c3da301d90e32379512fff
+
+% 0 1 0 031576eb8236968118852ca3a67b330f
+
+% 0 1 0 1aca4ecdc3202f491be58fe331b472b9
+
+% 1 1 0 16bb20bcbc9db5d115a0cd82ec189e28
+
+@ 0 1 0 19448b1e3bbb7a4c1bc02e4af2420662
++         label Ein Kind, das die Elternaufgabe vergisst und auf das die Nachlassregelung wartet
+
+% 1 1 0 098090ab95d013ec0155d28ba6781707
+
+% 2 1 0 172e8ea2be56a2e80391864fc0de96cf
+
+% 3 1 0 0af911824730d65b0322b42db5114223
+
+% 0 1 0 01ef5f69c8471c790011c46a55f30a5a
+
+% 0 1 0 19be6ad1d4e4ed7a096b0408dae92b9c
+
+% 0 1 0 0b2bb134b85073ab1dcc039ef1d6445a
+
+% 0 1 0 114d5b4418b78e120e5cdc7980964050
+
+% 0 1 0 04cf785d1d6cf951175d64b84a0d0072
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 178ee7d6586be3dc1f94436719b3fee8
++       Eine Elternaufgabe endet erst, wenn ihre Kinder geendet haben, daher kehrt das `await`
++       des letzten Frames erst zurück, wenn die innere Aufgabe fertig ist; unter
++       `probates.awaitProbate` wartet die Elternaufgabe auf sie, und unter
++       `probates.cancelProbate` würde sie sie stattdessen abbrechen. Die Wurzel selbst räumt
++       nichts auf: Ihre Kinder werden von der Nachlassregelung aufgeräumt, wenn jede
++       Elternaufgabe endet, und `supervise` kehrt zurück, wenn der Block es tut.
+
+% 1 1 0 1e2b44699fe6eb8f1c92fdca8ec688ba
+
+% 1 1 0 13f8fb2ba405195a0266669581316f55
+
+% 1 1 0 10fa5b3070d031ec18c31ac4e5e57324
+
+% 1 1 0 1198d43569e32b1209456e71047d55cd
+
+@ 0 1 0 0b183906a9d467da1d3bc95535a2e28d
++ entry .async   startet eine Aufgabe als Kind des Monitors im Geltungsbereich und gibt ihr Handle zurück
+
+% 1 1 0 0553be4b15ad8dd81735ebca7d1f387c
+
+@ 0 7 0 0990e146f5321e080da5c147c13f5b1b
++       `async(body)` startet den Rumpf auf einem neuen Strang des Supervisors im
++       Geltungsbereich — einem virtuellen Thread unter `threads.virtualThreads` — und gibt
++       sofort einen `Task[result]` zurück. Der Rumpf ist eine Kontextfunktion, die einen
++       `Worker` (den eigenen Monitor der Aufgabe, sodass ein verschachteltes `async` ihr Kind
++       wird) und eine `Tactic[error]` erhält, wobei `error` die Union der Fehlertypen ist, die
++       der Rumpf auslöst, genau wie bei einem synchronen `raises` inferiert. Der Typ des Handles
++       trägt diese Union als `Task[result] emits (error | Async.Error)`, sodass `await` einen
++       ausgelösten Fehler weiterhin typisiert über die `Tactic` des Aufrufers liefert.
+
+% 2 1 0 16b60a40480960fa0a4f8ed18d0602ff
+
+% 3 1 0 0b5314df08d7fe2603a88b037b6becfa
+
+% 4 1 0 037e23e2843ba4490d8bd7dc8b170a9b
+
+% 5 1 0 018aa8e6a44d481013d53cbaa8529f0e
+
+% 6 1 0 17fcbefe7d9e8f9918d83a0798c04b30
+
+% 8 1 0 0441da5430f56a1f1ce552f78e10d649
+
+% 10 1 0 0c36f69a857bcb991e88a6d2472b4d4e
+
+% 0 1 0 0fa341e506c4ad061fc8705205abbc20
+
+% 0 1 0 0869f69c985f88f519762e2a36e8191e
+
+% 0 1 0 0f0d7613324c05db191c9b533c10c8d8
+
+% 0 1 0 1e216b4fdcb8b19d11a272cdb0ee8633
+
+% 1 1 0 177c2db543e45bf70151cd3238ed4c05
+
+@ 0 8 0 085ef2bb6891a899065581137db2c019
++       Es braucht einen `Monitor`, eine `Probate.Shared` und einen `Codepoint` im
++       Geltungsbereich. Der Rumpf darf den Monitor, andere Aufgaben-Handles, einfache Werte und
++       jede `Durable`-Capability (einen Logger, eine Verbindung) einfangen, aber keine
++       umgebende `Tactic` oder `Emit`, die zu dem Stack gehört, der sie installiert hat: Lösen
++       Sie über die eigene Taktik des Rumpfs aus, und der Fehler kommt bei `await` an. Eine
++       exklusive Ressource — ein `Producer`, ein zustandsbehafteter Parser, ein offenes Handle —
++       kann ebenfalls nicht eingefangen werden; öffnen Sie sie im Rumpf oder übergeben Sie sie
++       mit `transfer`. Die Taktik des Rumpfs ist eine `AsyncTactic`, die den reinen Fehler wirft,
++       statt eine an den Stack gebundene Grenze über Threads hinweg zu durchbrechen; der Worker
++       zeichnet ihn als sein gescheitertes Ergebnis auf.
+
+@ 0 2 0 0185b5c4484779201f9137b75b84f594
++       Der Rumpf läuft unter der `Stdio`-Umleitung des Threads, der `async` aufgerufen hat,
++       sodass ein `Stdio.divert` eines Hosts um einen Gast jede Aufgabe abdeckt, die der Gast
++       startet.
+
+% 1 1 0 13ec6c19cd61fbac1bd720da6a459e76
+
+% 1 1 0 017f7c55b650eb61080424fadb52be61
+
+% 1 1 0 05b5606c47eef5a614f85bf2dc534b29
+
+% 0 1 0 04bae107bbf62b4400fa6e06f74a5a45
+
+% 1 1 0 15e258da9a9ece0a18bd6f8f1b24d5e2
+
+@ 0 7 0 015191b34d8307301a2284d0b7eb7eba
++ entry .task   `async` mit einem Namen: `task(n"worker")(body)`
++     Wie `async`, mit einem `Name[Async]`, der zum `Monitor#name` der Aufgabe und zu einem
++     Segment ihres `Monitor#stack` wird. Ein Name wird beim Kompilieren gegen `Async.Rules`
++     geprüft: Er beginnt mit einem Buchstaben und enthält nur Buchstaben, Ziffern, `-` und `_`,
++     kann also nie die Trennzeichen (`:`, `/`, `@`, `.`) tragen, aus denen der Stack-Pfad
++     gebaut wird. Benannte Aufgaben machen ein laufendes Programm lesbar: Ein Monitor-Dump zeigt
++     `virtual://server//connection-4//reader` statt einer anonymen Threadnummer.
+
+% 2 1 0 0e2ace4fb560cb081ef436416898ee39
+
+% 3 1 0 01122e47edb841a4095ca531c6b35cf7
+
+% 4 1 0 193af1ba499d4db20e73c554f79e26e5
+
+% 5 1 0 1c8c52bb457600cf0086c09b70645b58
+
+% 6 1 0 022734c02a8d5eb607b84916b9436e91
+
+% 0 1 0 084b6d70a9e248330db7a5da1d369080
+
+% 2 1 0 09c132595624ae5618601d8e8631109d
+
+% 0 1 0 1291d567e6b7492a1b695b1c304cdfb4
+
+% 1 1 0 0330586609ddd00f170e8e77bf65420c
+
+@ 0 1 0 176deae0d34853c2023a02931ce63e47
++ entry .daemon   startet Fire-and-Forget-Arbeit, die der Geltungsbereich abbricht, wenn er endet
+
+% 1 1 0 02d8aa0c0dfcb1a5018d3d43e7ab49cc
+
+@ 0 4 0 0575419718e425280880ca62be185e20
++       `daemon(body)` startet eine Hintergrundaufgabe — einen Listener, eine Polling-Schleife —,
++       auf die nie gewartet wird: Sie läuft, bis sie fertig ist oder bis ihre Elternaufgabe
++       endet, worauf die Nachlassregelung der Elternaufgabe sie abbricht, welche Richtlinie die
++       Nachlassregelung auch auf gewöhnliche Kinder anwendet. Das Ergebnis ist ein
++       `Daemon`-Handle mit `attend()` und `cancel()`.
+
+% 2 1 0 0200884bee24609b1cc07e429d0a6a58
+
+% 3 1 0 165dba99e08953f60492e75b5849a5aa
+
+% 4 1 0 177c5591b524a44d062b7d85d435c3f2
+
+% 5 1 0 1bd6aaa0af85766213210030e02c0e58
+
+% 6 1 0 1436e43a16c5afed07416ae6693bc3da
+
+% 8 1 0 1d8bfcfdfd2b53301b46c01af66a96ef
+
+% 9 1 0 01329c2e3b70c4db1ab24ce3e809b4f2
+
+% 1 1 0 0cb6a7377109d5121a849f4883689727
+
+% 0 1 0 0b0da39ca8ac65421ec796298588bf83
+
+% 1 1 0 1a9c4f33138db0b10a5c278604e360e3
+
+@ 0 7 0 10845f2a3c290491001f7a37b96c6d26
++       Der Rumpf eines Daemons ist *hygienisch*: Er ist eine reine Kontextfunktion (`?->{}`),
++       darf also einfache Werte einfangen und seine eigenen Capabilities öffnen, aber keine
++       Capability aus einem umgebenden Geltungsbereich — eine `Tactic`, ein `boundary.Label`,
++       ein Datei-Handle —, deren Lebensdauer enden könnte, bevor der Worker endet. Da es kein
++       Warten gibt, bei dem ein Fehler geliefert werden könnte, lässt ein ausgelöster oder
++       geworfener Fehler den Worker scheitern und geht an die `Probate#trap` im
++       Geltungsbereich: Ein Bereich `contain { … }.protect { … }` kann ihn annehmen, andernfalls
++       eskaliert er zum Handler für nicht abgefangene Ausnahmen des Threads, wo
++       `Vm.intercept[Fault]` ihn beobachtet. Nichts wird stillschweigend verworfen.
+
+@ 0 1 0 1fdaaebcd94a43e21ddb10803032392d
++       Es braucht einen `Monitor`, eine `Probate.Shared` und einen `Codepoint` im
++       Geltungsbereich.
+
+% 1 1 0 0cbc83d0389bf3790c6fa023af65c392
+
+% 1 1 0 1ec86bcfc7eb8d970dfeb33321702c4e
+
+% 1 1 0 065e07f7dde3eabf0fb16ed1d2908e9e
+
+@ 0 1 0 0ed1cefd1fa3947714cd0a1ad081bb5a
++ entry .transfer   startet eine Aufgabe, die eine exklusive Ressource besitzt, vom Aufrufer übergeben
+
+% 1 1 0 0c06a73d0c90d65910f66d506cca186e
+
+@ 0 7 0 060e6d8f38c37b3015116758405e19b4
++       Eine Erweiterung auf jeder `resource^`: `resource.transfer(body)` und
++       `resource.transfer(name)(body)`. Ein Aufgabenrumpf darf nur geteilte Capabilities
++       einfangen, daher kann eine exklusive Ressource — ein zu speisender `Producer^`, ein zu
++       pumpender `Stream^`, ein auszuführendes Schleifenobjekt — nicht eingeschlossen werden.
++       Sie wird stattdessen *verbraucht*: Der Aufrufer kann sie nicht mehr verwenden, und der
++       Rumpf erhält sie als seinen ersten Kontextparameter, einen `Task.Owned[resource]`-Träger,
++       dessen `apply()` die Ressource als frische exklusive Referenz liefert. Die anderen beiden
++       Kontextparameter sind der `Worker` und die `Tactic[error]`, wie bei `async`.
+
+% 2 1 0 1b5606150a71a46c1ff2cb1dbc717db0
+
+% 3 1 0 10fc163c6d1d35930759c1e9293acb31
+
+% 4 1 0 00ff72eef9e5f9401f6a2806b4d5dd2a
+
+% 5 1 0 10e4fe3e6173ec4d1c8fa331f7dc433f
+
+% 6 1 0 19a56be5caf50be20c9b45bf835f8013
+
+% 3 1 0 1f88d3a5d8e76f78198711b50df14fcb
+
+% 0 1 0 1dbdb52dc4e77c7d06b3a44229413f99
+
+% 0 1 0 0ca4128940e2f0fe1a360648ed340765
+
+% 0 1 0 09b08c93142ae15b17d5c984a70fefd3
+
+% 0 1 0 0f2c62d16c9f76930eb3ced4e460b932
+
+% 0 1 0 05f18dc934b199ad063116d94fa384ce
+
+% 0 1 0 00ae841ef5ea47b00eb90a6ec228180d
+
+% 1 1 0 1fe7ce47d3214642006014acf4f18800
+
+@ 0 3 0 00e4dd11db1ec7940b63bebf588a5770
++       Nehmen Sie die Leseseite (`producer.iterator`), *bevor* Sie den Produzenten übergeben,
++       da sich danach nichts mehr von ihm nehmen lässt. Der Ergebnistyp ist derselbe wie bei
++       `async`, `Task[result] emits (error | Async.Error)`.
+
+% 1 1 0 15633445ab143c70168d3fdc41c82c17
+
+% 1 1 0 04dda7059a47ce64030d83e7c9fd79c6
+
+@ 0 5 0 034b131fe5227e091fc959a4b6ff2e95
++ entry .monitor   der `Monitor` im Geltungsbereich, als Wert: `monitor.name`, `monitor.stack`, `monitor.cancel()`
++     Ein transparentes Inline-Herbeirufen des innersten `Monitor^`: In einem Aufgabenrumpf ist
++     es der eigene `Worker` der Aufgabe (als `Monitor` typisiert), und direkt unter `supervise`
++     der `Root`. `monitor.name` ist der Name einer benannten Aufgabe, `monitor.stack` ihr
++     voller Pfad durch ihre Eltern, und `monitor.cancel()` bricht die aktuelle Aufgabe ab.
+
+@ 0 8 0 1740bb4702d550a5015fa4a6d04ab117
++ entry .relent   ein Abbruchpunkt in einem Rumpf, der sonst nicht pausiert
++     `relent()` tut nichts, solange die Aufgabe normal läuft; wurde die Aufgabe abgebrochen,
++     wirft es dort eine `InterruptedException`, sodass der Rumpf anhält, ohne einen Wert zu
++     erzeugen, und das `await` des Handles `Async.Error(Cancelled)` auslöst. Arbeit, die nie
++     pausiert — eine lange Schleife über Daten —, bietet ihre Abbruchpunkte an, indem sie es
++     aufruft, typischerweise einmal pro Iteration; ein Rumpf, der weder nachgibt noch
++     pausiert, kann nicht abgebrochen werden und läuft bis zum Ende. Es braucht einen
++     `Worker` im Geltungsbereich, ist also nur in einem Aufgabenrumpf aufrufbar, und es zählt
++     auch für `Worker#relentlessness`.
+
+% 2 1 0 04cb9243826b78ee00c132482fc7cdf5
+
+% 3 1 0 0ed2ebea5545c8651a73a030bb9e481e
+
+% 4 1 0 0d6042a7bb6c9bfd1b9b623a7e6ab0c9
+
+% 5 1 0 0bdc778326533ef1198dec4e54321082
+
+% 6 1 0 1d8857f00475cb9216824dc87ff55d20
+
+% 8 1 0 005fe24846112d740af4dfc7416fc72a
+
+% 0 1 0 0ea19bb3239b87bd02f692476d15c7d4
+
+% 0 1 0 170c83660dd53373070ade442146f17e
+
+% 0 1 0 12b18b9da1057aec0e03dc68627675e1
+
+% 0 1 0 1a23f8f148464cd713b15f4f2f84d39d
+
+% 0 1 0 1880bda0730213cc0017fdf8ef03714d
+
+% 1 1 0 000ae23ef16b937b1562ab93564aac62
+
+@ 0 4 0 044feab355a9da6710aaafe28b95e369
++ entry .cancel   bricht den Monitor im Geltungsbereich ab
++     `cancel()` ist `monitor.cancel()`: In einem Aufgabenrumpf bricht es die Aufgabe selbst ab,
++     deren `await` dann `Async.Error(Cancelled)` auslöst; unter einem `Root` tut es nichts.
++     Eine Aufgabe, die sich selbst abbricht, hält bei ihrer nächsten Pause oder ihrem nächsten
++     `relent()` an.
+
+@ 0 10 0 118646ca0e6d90cf02e9d7ee9a23bdf1
++ entry .snooze   pausiert für eine Dauer oder bis zu einem Zeitpunkt und wacht bei einem Abbruch sofort auf
++     Ein Abbruchpunkt: `snooze(2.0*Second)` pausiert zwei Sekunden und
++     `snooze(now() + 2.0*Second)` bis zwei Sekunden von jetzt an, und eine abgebrochene Aufgabe
++     wacht aus beidem sofort mit einer `InterruptedException` auf, die ihr `await`
++     `Async.Error(Cancelled)` auslösen lässt. Das Argument ist ein beliebiges `Schedulable` —
++     eine `quantitative`-Zeit, eine `aviation.Timespan` oder ein `aviation.Instant` —, und der
++     Typ einer Dauer oder eines Zeitpunkts sagt, was gemeint ist. Ein bloßer `Long` wird erst
++     akzeptiert, wenn eine Einheit namentlich gewählt ist
++     (`abstractables.millisecondsAbstractable` oder `epochMillisecondsAbstractable`); sind
++     sowohl eine Einheit für Dauern als auch die Lesart als Zeitpunkt im Geltungsbereich, wird
++     er als mehrdeutig zurückgewiesen. Es braucht einen `Monitor` im Geltungsbereich.
+
+% 2 1 0 0c343e33fbce5dfc10e38d5d16a643a6
+
+% 3 1 0 123e956de5b68e1005699da6d3ec4631
+
+% 4 1 0 04ce0c1403a3f85f0b072c2a763948f0
+
+% 5 1 0 045c8787a853d3590103383c8ff01408
+
+% 6 1 0 0f855d49c1ca983d060a0f970b7df2de
+
+% 8 1 0 1b69ab818d0a46bd033967354c2826ce
+
+% 0 1 0 0d79beab36fb8a6a16ea3186d0acc708
+
+% 0 1 0 05e4b6c3914849191efe4fe6a9421b76
+
+% 1 1 0 12f6228ef62896b911fb563854ab2b9f
+
+@ 0 3 0 0704b91ae4bad2fe18c764a97d4fb5bd
++     Unter `JavascriptSupervisor` endet ein Snooze sofort, da Verzögern, ohne die Event-Loop zu
++     blockieren, unmöglich ist. Ein *Snooze* ist die Schlummertaste des Weckers, die ein
++     zweiter Alarm abkürzen kann; einen `sleep` schläft man durch.
+
+@ 0 6 0 08b811b6701d99b81923194e483e1cab
++ entry .sleep   pausiert für eine Dauer oder bis zu einem Zeitpunkt und wartet immer die ganze Frist ab
++     Kein Abbruchpunkt: Ein frühes Aufwachen — ein unechtes oder die Unterbrechung, die ein
++     Abbruch zustellt — parkt erneut für die verbleibende Zeit und verbraucht die
++     Unterbrechung, damit das nächste Parken nicht durch sie abgekürzt wird. Der abgebrochene
++     Zustand der Aufgabe bleibt bestehen, sodass sie dennoch bei ihrem nächsten `snooze` oder
++     `relent()` anhält. Das Argument ist ein beliebiges `Schedulable`, wie bei `snooze`, und
++     es braucht einen `Monitor` im Geltungsbereich.
+
+% 2 1 0 0fe87125f459aa1013383fd6050198a8
+
+% 3 1 0 0fd00a81d56e65730acffcee4889f3fa
+
+% 4 1 0 16e11043fa91e016031e31770d8c309f
+
+% 5 1 0 19f2f884cc08f9fc1b4e814940a2142b
+
+% 6 1 0 06499f7348ec10c812bd1f77025d15a6
+
+% 8 1 0 0ad8f0f5d05cd42b0fb1a261a7ebf817
+
+% 0 1 0 186f23d34a2943651b0a729968da3bec
+
+% 0 1 0 08725cfc8ba721281607a9cb18d6ac89
+
+% 1 1 0 1510355f9eeccb0c0f61a48cfcf300c3
+
+@ 0 2 0 182197317f3bf2820f742c982b11a881
++     Die beiden Pausen unterscheiden sich in genau einer Hinsicht — ob ein Abbruch sie früher
++     beenden kann —, und ihre Namen sollen eingeprägt statt nachgeschlagen werden.
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 0549da2c3318c5d600e74b1a34afff19
++       label Unterbrochen, wo sie pausiert
+
+% 1 1 0 182628244fa94a4506e0b7da0259607a
+
+% 0 1 0 119ae55bd9f4790a17bca6e4f5c3c415
+
+% 1 1 0 0d4dada8ae3b4e290aaea1a63a696c15
+
+% 2 1 0 04e0a8ffb7cc380909e2f1b2b88a683e
+
+% 0 1 0 083da325c932fbfc10ff4d7edbfef4bb
+
+% 0 1 0 02158b3edc1d7df505f95270765b90f4
+
+% 0 1 0 116f097b58d7bf3e0553257ee05a6f5d
+
+% 2 1 0 0d43be25a4b6a10d0047d40ce610a519
+
+% 1 1 0 0cc55b21c906a617129046cc43d24de7
+
+@ 0 1 0 1e681cf6e79c43a01ce12d3c45fb5c71
++       label Angehalten, wo sie nachgibt
+
+% 1 1 0 12944ff48551cb690432c1781d5ee4e3
+
+% 1 1 0 04ab673a4f4d477b0051fb3bc265efdb
+
+% 2 1 0 0383818c353e2f801e906a2284d01d81
+
+% 0 1 0 0a7c8792664542461bbc86df26db9a3c
+
+% 0 1 0 12cad200d87825f6065e59cfd0e4912c
+
+% 0 1 0 1ac8b9bbcc94e8451c4d4b0daf6d1018
+
+% 0 1 0 0e3a1e5970a0a94611274bcb9945e870
+
+% 0 1 0 00fc80522718cac01437241186610c1a
+
+% 2 1 0 190ba3fd8f27e8fa06a3a594cb9b385c
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 6 0 03658e3852f3a9de15d29464ac59a481
++ entry .concurrent   erzwingt jede Zelle einer `Chain` in einer eigenen Aufgabe, damit eine blockierende Quelle den Verbraucher nicht blockiert
++     Eine Erweiterung auf `Chain[result]`: `stream.concurrent` ist eine Kette mit denselben
++     Elementen, bei der die Frage „Gibt es eine nächste Zelle?“ in einer Aufgabe gestellt und
++     erwartet wird, sodass das Erzwingen einer Zelle, die auf einer lebenden Quelle blockiert,
++     auf einem eigenen Strang geschieht. Der Rest der Kette wird ebenso umhüllt, lazy. Es
++     braucht einen `Monitor` und eine `Probate.Shared` und löst `Async.Error` aus, wenn die
++     erzwingende Aufgabe abgebrochen wird.
+
+@ 0 1 0 15fd54c603f364c612e27d647ec4060e
++ entry .concurrently   führt nummerierte Jobs auf einer begrenzten Anzahl von Aufgaben aus und gibt die Ergebnisse in Job-Reihenfolge zurück
+
+% 1 1 0 102ed8216b1589d7045719d9ea87d425
+
+@ 0 7 0 1c77acdace4b047407f15a8f52448d0d
++       `concurrently(count, parallelism)(job)` führt `job(0)` bis `job(count - 1)` auf
++       höchstens `parallelism` Aufgaben aus, von denen jede den nächsten Index von einem
++       geteilten Zähler nimmt, und gibt jedes Ergebnis als `Array[result]`, nach Job
++       indiziert, zurück, sobald alle geendet haben. Das ist die begrenzte Auffächerung für
++       einen Stapel kleiner Jobs: Eine Aufgabe ist ein Thread, dessen Start und Warten einige
++       Mikrosekunden kosten, daher werden die Startkosten `parallelism`-mal statt `count`-mal
++       bezahlt — die Form, die einem `async` pro Element vorzuziehen ist, wann immer die
++       Elemente die Kerne zahlenmäßig übertreffen und jedes billig ist.
+
+% 2 1 0 029ff94fe45712e31e3af49c4b6e8016
+
+% 3 1 0 1ec6e19bd873f00e164eb77a06a6ba6a
+
+% 4 1 0 158681ba0d0492ca1e228de09bf9a276
+
+% 5 1 0 17be6f0c429daa7412827526d0d1b02a
+
+% 6 1 0 0736f41a5ee35e77127b64db01ed7e17
+
+% 8 1 0 0a70ed584e9b739a0b450069aaba743a
+
+% 0 1 0 1f2cc576b0593fdb0fc3d155968c0e63
+
+% 1 1 0 05b92fca68a2dc6b0ed13dcbee491dbf
+
+@ 0 6 0 067728dbbf28728201443580f1cc86ee
++       Kein Job läuft, bevor ein früherer übernommen wurde, daher gleicht sich die Last selbst
++       aus: Ein langsamer Job hält seine Aufgabe, während die anderen den Rest abarbeiten. Die
++       Ausnahme eines Jobs lässt die Aufgabe scheitern, auf der er lief, und zeigt sich beim
++       Warten, wie sie es bei einem `await` täte. Null Jobs starten keine Aufgabe; weniger Jobs
++       als `parallelism` starten nur so viele Aufgaben wie Jobs. Der Job ist
++       `Int ->{caps.any.only[Durable]} result`, darf also nur einfangen, was ein Aufgabenrumpf
++       einfangen darf. Es braucht einen `Monitor`, eine `Probate.Shared`, einen `Codepoint` und
++       ein `ClassTag[result]`.
+
+@ 0 1 0 076d35bbf17e6936184984a9bb068ebd
++ entry .retry   wertet einen Block wiederholt unter der `Tenacity` im Geltungsbereich aus, bis er sich durchsetzt oder aufgibt
+
+% 1 1 0 1c776061f9eb0ef31400a3bcb1ca9255
+
+@ 0 7 0 0e7d581cd971f95e16383f244fe04167
++       `retry(body)` führt den Rumpf aus, dem zwei Operationen geliehen werden: `persevere()`
++       bittet um einen weiteren Versuch nach der Verzögerung, die die `Tenacity` vorschreibt,
++       und `surrender()` gibt sofort auf. Die Rückgabe eines Werts setzt sich durch. Der
++       Zeitplan — wie lange vor jedem Versuch gewartet wird und wann aufgehört wird — ist ein
++       `Tenacity`-Given, namentlich aus `retryTenacities` importiert oder mit
++       `Tenacity.exponential` oder `Tenacity.fixed` und `limit` gebaut; gehen die Versuche aus,
++       wird `Tenacity.Error` ausgelöst, der nennt, wie viele unternommen wurden. Es braucht
++       einen `Monitor`, da die Verzögerung ein `snooze` ist, und so gibt eine abgebrochene
++       Aufgabe bei ihrer nächsten Verzögerung auf.
+
+% 2 1 0 095d8d7f3c4a586b17a6212c4ca068d8
+
+% 3 1 0 18d08dde63b75635108d79ad63975117
+
+% 4 1 0 0ce815a51fa7d71b0495e9330adf7850
+
+% 5 1 0 03b6d7879a6c030d040ff83c4367e7a7
+
+% 6 1 0 1e5a8d95dfeb9e9018d42bdf28e0a58e
+
+% 0 1 0 1e584f3ed9c28922132a771abd922a74
+
+% 0 1 0 13e88d4e818157431c6c690cbc52f87e
+
+% 0 1 0 140918b45358b0fb1cc3a678e83fb535
+
+% 0 1 0 0588b1af9b78c097198d5f2636868591
+
+% 0 1 0 1a5ba632e79762a411a82b599af88a16
+
+% 2 1 0 08a66a3ade86a5510be37673ba736baa
+
+% 0 1 0 10e3362d9e0bc4d918faad165a6d7e55
+
+% 0 1 0 00f50d1897b6665d18ee2308bbb7950f
+
+% 0 1 0 146f70b4eb10b4d6136d8c433bd1d388
+
+% 1 1 0 1725c3ec3b5d3c6501d03512a1a580e0
+
+@ 0 2 0 168afedd6b76d53a0d539dc38223bf31
++       Ein Rumpf unterscheidet daher ein Scheitern, das eine Wiederholung lohnt, von einem, das
++       nie gelingen wird, und der Zeitplan entscheidet den Rest.
+
+% 1 1 0 1215ffb905649b9904bdd1347d2e28e7
+
+% 1 1 0 033bc02c0529034b11a5b0af24dea8c8
+
+@ 0 1 0 0a7eda08355af69300c08e281cb173cd
++ entry .contain   fängt Ausnahmen ab, die Fire-and-Forget-Workern in einem Bereich entkommen: `contain { … }.protect { … }`
+
+% 1 1 0 0c5b2531ea2045f21e462d7e59a5b281
+
+@ 0 8 0 0da279bfe638b83e13525d1ad8c81fb1
++       `contain(handler)` baut ein `Containment`, eine `Probate`, deren `protect(body)` sie für
++       die Dauer des Rumpfs installiert: Ein darin gestarteter `daemon` oder eine darin
++       gestartete verlassene Aufgabe leitet einen ihr entkommenen Fehler an den Handler, eine
++       partielle Funktion von `Error` auf ein `Remedy`. `Accept` verbraucht den Fehler, `Reject`
++       reicht ihn an die umgebende Nachlassregelung weiter, und `Escalate(other)` reicht
++       stattdessen einen Ersatz weiter; ein Fehler, auf den der Handler nicht passt, geht
++       ebenfalls nach außen, sodass sich Containments beim Verschachteln zusammensetzen, bis zur
++       Wurzel, wo ein nicht angenommener Fehler den Handler für nicht abgefangene Ausnahmen des
++       Threads erreicht. Die Richtlinie für das Schicksal der Kinder ist unverändert die der
++       umgebenden Nachlassregelung.
+
+% 2 1 0 187ebb673c1fa66617ffda1364b01fb7
+
+% 3 1 0 17bf1640d757e852113e093964a10bf5
+
+% 4 1 0 02a8880327f734560f93fbb352498250
+
+% 5 1 0 066b0706a92af9371e4b187a662f34dc
+
+% 6 1 0 1226639b79f0d0550507dba364b81273
+
+% 8 1 0 192a1d1729d8abb4160b26d2f7254189
+
+% 10 1 0 13706cb99b44c08b15b7c55259643b34
+
+% 0 1 0 12bd77e5ae40d35f03f814d50576717e
+
+% 0 1 0 00b061d527e1723d0ed1d80ad2e6fa3d
+
+% 0 1 0 10668dddf3dbacb90364827279b84605
+
+% 0 1 0 1ae5e6a73febdd4b0be9a1e832d582dc
+
+% 1 1 0 0bf56b97a94816e903e82a1f161213ef
+
+@ 0 4 0 19007cf81e168a091642e956ac37a7ca
++       Das unterscheidet sich vom typisierten `trap`/`handle` aus `contingency`, die
++       deklarierte, *emittierte* Fehler auf dem aufrufenden Stack behandeln: Ein Daemon kann an
++       diese nicht liefern, und `contain` ist das Auffangbecken für das, was er wirft. Es
++       braucht eine `Probate.Shared` im Geltungsbereich, die zum äußeren Glied der Kette wird.
+
+% 1 1 0 06288e7b91a56d41099a8ec631b2fcd5
+
+% 2 1 0 07c33cb78045374915f906091bd271c4
+
+% 1 1 0 0bba3568ab56d829018186fce06b63f7
+
+@ 0 6 0 1c95f864e1fd235808f07e2ef419917a
++ entry .intercept   registriert eine Aktion für ein Ereignis auf seinem Ziel: `Vm.intercept[Shutdown](…)`
++     Eine Erweiterung auf jedem Wert mit einem Given `event is Interceptable onto target`: Die
++     Aktion läuft jedes Mal, wenn das Ereignis eintritt, mit dem Ereignis als Kontextwert, bis
++     der zurückgegebene `Hook` abgebrochen wird. Die Ziele und Ereignisse, die parasite
++     bereitstellt, sind `Vm.intercept[Shutdown]`, `Vm.intercept[Fault]`,
++     `Vm.intercept[GarbageCollection]` (in `parasite.jvm`) und `value.intercept[Destruction]`
++     für jede Referenz.
+
+% 2 1 0 1fe891952dbd7d6413e8ac9c231a8018
+
+% 3 1 0 00da62059b52a9e50653d14c2ad9d759
+
+% 0 1 0 0998ee29bc56218c0cc759bd70975346
+
+% 0 1 0 1c6ab6f9433cfd7a0c28bac0ac8d18cc
+
+% 0 1 0 154be730e6151683125166cefcb51704
+
+% 1 1 0 005caee4ee7bd97015083ae89f75fac4
+
+@ 0 7 0 1712224bfa1c396800c89925f3f45acd
++ entry .emits   `Task[result] emits error`: eine Aufgabe, deren Rumpf `error` auslösen kann
++     Ein Infix-Typalias, der „kann diese Fehler als Seitenkanal erzeugen“ verdinglicht. Für
++     einen `Task` ist `Task[result] emits error` die Verfeinerung
++     `Task[result] { type Error <: error }`, der Typ, den `async` zurückgibt; die Schranke
++     hält den Fehler kovariant, sodass eine Aufgabe, die nur mit `Async.Error` scheitert, dort
++     verwendbar ist, wo `emits CueError` erwartet wird. Für alles andere ist es die
++     Verpflichtung `Emit[error] ?=> left`, das schwächere Geschwister von `raises`. Nicht in
++     das `soundness`-Umbrella exportiert: Schreiben Sie `parasite.emits` oder lassen Sie den
++     Ergebnistyp von `async` inferieren.
+
+@ 0 1 0 19ad2cb68ce5aec50f8922dccfd70670
++ entry .Monitor   ein Knoten des Überwachungsbaums: die Capability, die jedes Anhalten verlangt
+
+% 1 1 0 0282d8e552c748c80f234e77a4847014
+
+@ 0 5 0 1cff0d542a9308ff1a6fec79eab16d5f
++       Ein `Monitor` ist ein Geltungsbereich, dem Aufgaben gehören. `supervise` erzeugt den
++       `Root`, und jede Aufgabe ist ein `Worker`, selbst ein Monitor, sodass die Monitore einen
++       Baum bilden, der die Verschachtelung des Codes spiegelt, der sie gestartet hat. Warten,
++       Schlafen, Abgeben und Starten nehmen alle einen `Monitor^` als Kontextparameter, sodass
++       eine Methode, die blockieren kann, das in ihrer Signatur sagt, so wie eine Methode, die
++       scheitern kann, `raises` sagt; `monitor` ruft den innersten herbei.
+
+@ 0 5 0 189e7855c97d4ec21de702c71312c8df
++       Ein Monitor ist eine `Durable` (geteilte) Capability: Jede darunter gestartete Aufgabe
++       fängt ihn ein, und jedes Warten übergibt ihn erneut, sodass zwei Verwendungen eines
++       Monitors nie getrennt sind; aber weder ein Aufgaben-Handle noch der Monitor selbst kann
++       den `supervise`-Block verlassen. Ein Aufgabenrumpf darf nur dauerhafte Capabilities
++       einfangen, weshalb eine `Tactic` aus einem umgebenden Geltungsbereich darin nicht
++       verwendet werden kann.
+
+% 2 1 0 11eca40ec06d7c110ed0f073b7df48e6
+
+% 3 1 0 0612736d07b7aa5908ed9c5989fd9f26
+
+% 4 1 0 1898b3be2a5df9e4143af0b7dd6846ce
+
+% 5 1 0 0815f2421ed1c69e08a12b9dc9d93bd8
+
+% 6 1 0 15bc57038b9ca1ea0558185b309efdab
+
+% 1 1 0 058de2d2e5a9c2f50a146c80c92f432e
+
+% 2 1 0 0f4673baff633d0a1840696322b2c8b3
+
+% 0 1 0 1ed9b38f710fc1c2125f7d74b7f526cb
+
+% 0 1 0 19a16e1ce0a517340c40a464c5e85165
+
+% 0 1 0 0cc654e5376cd9e80f969cead06eb899
+
+% 1 1 0 16aa1cdcea52fcb31bcdf9a5204be4b8
+
+@ 0 3 0 0f06e09968e5c4a10926168b1d4c16b6
++       Sein `#promise` wird erfüllt, wenn der Geltungsbereich endet, `#attend` wartet darauf,
++       und `#cancel` bricht ihn ab. Er ist `Findable` und `Resultant`: Sein `Result`-Typ ist
++       das, was der Geltungsbereich liefert (`Unit` für eine Wurzel).
+
+% 1 1 0 1a89c62baf13f85f152176be85be89b6
+
+% 0 1 0 084d438609b19e060b3eb5d55567df7c
+
+% 1 1 0 027946063c507eef07b2f741c2a9e08c
+
+% 0 1 0 05b373f3b2d0d98206da8a301830f347
+
+@ 0 27 0 0cbbac169f9647a0176959dfa20b341a
++   entry #promise   das Promise, das mit dem Ergebnis des Geltungsbereichs erfüllt wird, wenn er endet
++   entry #name   der Name des Geltungsbereichs, falls er einen hat: der Name eines `task` oder der des Supervisors für eine Wurzel
++   entry #chain   die Codepoints, an denen dieser Geltungsbereich und jeder seiner Vorfahren gestartet wurden, der innerste zuerst
++       Leer für einen `Root`; die Kette eines Workers ist sein eigener `Codepoint`, gefolgt von
++       der seiner Elternaufgabe.
++   entry #stack   der volle Pfad des Geltungsbereichs durch seine Vorfahren, als Text
++       Eine Wurzel wird als `virtual:` gerendert (der Name ihres Supervisors); ein Worker als
++       `virtual://parent-name@file:line//child-name@file:line`, wobei der Name jeder Aufgabe
++       (oder nur ihr Codepoint, wenn sie unbenannt ist) mit `//` verbunden wird. Seine
++       Berechnung durchläuft die ganze Elternkette, und die Standard-Supervisoren werten ihn
++       nur aus, wenn ein Threadname gewünscht ist.
++   entry #daemon   ob dieser Geltungsbereich Fire-and-Forget ist: `true` für einen `Daemon` und für einen `Root`
++       Die Richtlinie einer Nachlassregelung für das Schicksal der Kinder gilt für die Kinder,
++       für die dies `false` ist; ein Daemon-Kind wird immer abgebrochen, wenn seine
++       Elternaufgabe endet.
++   entry #attend   wartet, bis der Geltungsbereich geendet hat, ohne Ergebnis und ohne Fehler
++       Parkt den aufrufenden Strang auf `#promise`, unter dem `Monitor` im Geltungsbereich, und
++       kehrt zurück, ob der Geltungsbereich geendet hat, gescheitert ist oder abgebrochen wurde.
++       Es wirft `InterruptedException`, wenn die aufrufende Aufgabe währenddessen abgebrochen
++       wird.
++   entry #ready   ob der Geltungsbereich geendet hat, gescheitert ist oder abgebrochen wurde
++   entry #cancel   bricht den Geltungsbereich und alles darunter ab
++       Für einen `Worker` unterbricht dies seinen Strang dort, wo er pausiert, markiert ihn als
++       abgebrochen, sodass sein nächstes `relent()` ihn anhält, und wartet, bis der Strang
++       endet; für einen `Root` tut es nichts.
++   entry #supervisor   der `Supervisor`, auf dessen Strängen die Aufgaben dieses Geltungsbereichs laufen
++       Von der Wurzel geerbt: Jede Aufgabe eines `supervise`-Blocks läuft auf dem Supervisor,
++       den sein `Threading` gewählt hat. Als `Supervisor^{this}` typisiert, da ein Supervisor
++       eine Capability ist, die der Monitor behält.
++   entry #snooze   pausiert den aufrufenden Strang für eine Dauer, in einem beliebigen `Abstractable across Durations`-Typ
++       Die Methode hinter dem `snooze` auf Paketebene; ein `Worker` überschreibt sie, um sofort
++       `InterruptedException` zu werfen, wenn die Aufgabe abgebrochen ist, vor oder nach der
++       Pause.
+
+@ 0 1 0 16ad287389b74b4017a2f5de43e627ab
++ entry .Worker   eine Aufgabe als Monitor: der Knoten des Baums, unter dem ein gestarteter Rumpf läuft
+
+% 1 1 0 0a90f99ff0cf87400d84d8cbccaeaaea
+
+@ 0 6 0 109b0e62f72486740a5444439e2d455c
++       Jeder `Task` und jeder `Daemon` ist ein `Worker`: eine abstrakte Klasse, die sich bei
++       der Konstruktion als Kind ihres Eltern-Monitors registriert, bei erstem Bedarf einen
++       Strang auf dem Supervisor forkt, `#evaluate` darauf ausführt, das Ergebnis als
++       `Fulfillment` aufzeichnet und `#promise` erfüllt — streng nachdem ihr Zustand endgültig
++       ist und das `cleanup` der Nachlassregelung gelaufen ist, sodass ein `attend`, das
++       zurückkehrt, alles garantiert, was ein Warten garantieren würde. In einem Aufgabenrumpf
++       ist `monitor` der Worker.
+
+@ 0 7 0 0463b87a145e126a176769d1e0223bea
++       Der Fehlerpfad ist bewusst sorgfältig. Das Scheitern eines Rumpfs wird festgehalten,
++       bevor irgendetwas anderes versucht wird; eine Nachlassregelung, deren `trap` wirft, kann
++       den Worker nicht in der Registry seiner Elternaufgabe oder sein Promise unerfüllt
++       zurücklassen; und ein Fehler, den keine Falle annimmt, wird nach der Erfüllung erneut
++       geworfen, sodass er den Handler für nicht abgefangene Ausnahmen des Threads erreicht,
++       statt zu verschwinden. Jede Klasse, die dieser Pfad braucht, wird bei der Geburt des
++       ersten Workers geladen, damit ein Klassenladen, das spät in einem langlebigen Prozess
++       scheitert — ein unter einem Daemon ersetztes JAR, ein mitten im Lesen unterbrochener
++       Strang —, die Beweise dafür, was schiefging, nicht vernichten kann.
+
+@ 0 3 0 0b2d6b8694abc6da1acfe1f0f90e43f5
++       Benutzer starten Worker mit `async`, `task` und `daemon`, statt einen zu konstruieren;
++       die Member unten sind das, was ein Rumpf mit seinem eigenen Worker tun kann und was eine
++       Elternaufgabe an einem Kind beobachten kann.
+
+% 1 1 0 00427648b0819816095113bcf83fe71d
+
+% 1 1 0 0c453391f0d5032206b23d3a54323a20
+
+% 1 1 0 1aea9ab53d8798d9149389648a61f4cd
+
+% 0 1 0 15cbf2798f1820191eb1ff5bc3da2633
+
+@ 0 33 0 0f0671f3a4b96df9086a4bd95d74efdd
++   entry #promise   das Promise, das mit dem Ergebnis des Rumpfs erfüllt wird, wenn der Worker endet
++   entry #chain   die Startstelle dieses Workers, gefolgt von den Codepoints seiner Vorfahren
++   entry #evaluate   der Rumpf, einmal auf dem Strang des Workers mit dem Worker als Argument ausgeführt
++   entry #supervisor   der Supervisor der Elternaufgabe, als `Supervisor^{this}` typisiert
++   entry #apply   das Ergebnis oder `Unset`, wenn der Worker nicht geendet hat
++       `worker()` liest `#promise`, ohne zu warten.
++   entry #relentlessness   seit dem Start des Workers vergangene Millisekunden, geteilt durch die Anzahl der `relent()`-Aufrufe
++       Ein grobes Maß dafür, wie oft ein Rumpf einen Abbruchpunkt anbietet: Ein lang laufender
++       Rumpf mit hoher Unnachgiebigkeit ist einer, der sich nicht zügig abbrechen lässt.
++   entry #delegate   wendet eine Richtlinie auf jedes lebende Nicht-Daemon-Kind an und bricht die Daemon-Kinder ab
++       `worker.delegate(child => …)` ist der Weg, auf dem ein `Probate#cleanup` die Kinder
++       erreicht, die eine beendete Elternaufgabe laufend zurückgelassen hat: Jedes Daemon-Kind
++       wird abgebrochen, und das Lambda entscheidet über das Schicksal jedes anderen
++       (`probates.awaitProbate` wartet darauf, `probates.cancelProbate` bricht es ab).
++   entry #stack   der Pfad des Workers durch seine Eltern, als `supervisor://name@site//name@site`
++   entry #relent   ein Abbruchpunkt: kehrt sofort zurück oder wirft `InterruptedException`, wenn der Worker abgebrochen ist
++       Zählt für `#relentlessness`; löst eine Panic aus, wenn es aufgerufen wird, nachdem der
++       Worker geendet hat oder gescheitert ist, da dann kein Rumpf mehr laufen sollte.
++   entry #snooze   pausiert für eine Dauer und wirft davor oder danach `InterruptedException`, wenn der Worker abgebrochen ist
++   entry #map   eine Aufgabe, die eine Funktion auf das Ergebnis dieses Workers anwendet
++       `worker.map(f)` ist `async(f(worker.join()))`: eine neue Aufgabe, ein Kind des Monitors
++       im Geltungsbereich, die auf diese wartet und ihr Ergebnis transformiert. Die Funktion
++       darf nur einfangen, was ein Aufgabenrumpf darf. Braucht einen `Monitor` und eine
++       `Probate.Shared`.
++   entry #bind   eine Aufgabe, die eine aufgabenerzeugende Funktion auf das Ergebnis dieses Workers anwendet und auf sie wartet
++       `worker.bind(f)` ist `async(f(worker.join()).join())`, das monadische Bind über Aufgaben;
++       `Task.monad` ist die daraus gebaute `mercator.Monad[Task]`.
++   entry #cancel   bricht den Worker ab: unterbricht seinen Strang, markiert ihn als abgebrochen und wartet, bis der Strang endet
++       Ein Worker, der bereits geendet hat oder gescheitert ist, bleibt unberührt, und das
++       Abbrechen eines abgebrochenen Workers wartet einfach auf ihn. Die Wirkungen des Abbruchs
++       treten genau einmal ein, und erst nachdem der abgebrochene Zustand sichtbar ist, sodass
++       ein Wartender, den der Abbruch weckt, nie einen veralteten Zustand sieht. Ein Worker, der
++       abgebrochen wird, bevor sein Rumpf begonnen hat, führt ihn nie aus.
++   entry #result   das Ergebnis, wenn der Worker geendet hat, ohne zu warten
++       Löst `Async.Error(Incomplete)` aus, wenn der Rumpf nicht fertig ist,
++       `Async.Error(Cancelled)`, wenn er abgebrochen wurde, und wirft die ursprüngliche Ausnahme
++       erneut, wenn er gescheitert ist. Braucht eine `Tactic[Async.Error]`.
++   entry #join   das rohe, untypisierte Warten: wartet auf den Worker und gibt sein Ergebnis zurück, wobei ein Scheitern unverändert erneut geworfen wird
++       `join()` wartet unbegrenzt; `join(duration)` löst `Async.Error(Timeout)` aus, wenn die
++       Frist zuerst abläuft. Die Ausnahme eines gescheiterten Rumpfs wird so erneut geworfen, wie
++       sie war, daher ist der statische Fehler nur `Async.Error`; das typisierte Warten ist
++       `Task#await`, das über `#deliver` geht. Braucht einen `Monitor` und eine
+
+% 0 1 0 1174baf4bedd78fd0e26a4d244337ff5
+
+@ 0 11 0 0460fcb4a04d999f0014c56267b1e6a8
++   entry #deliver   das typisierte Warten: das Ergebnis oder der vom Rumpf ausgelöste Fehler über die Taktik des Aufrufers
++       `deliver[error]()` und `deliver[error](duration)` warten auf den Worker und geben dann
++       sein Ergebnis zurück, brechen über die `Tactic[error | Async.Error]` im Geltungsbereich
++       mit dem Fehler ab, den der Rumpf ausgelöst hat (als `error` rekonstruiert, was für alles
++       korrekt ist, was über die `AsyncTactic` des Rumpfs ausgelöst wurde), lösen
++       `Async.Error(Cancelled)` oder `Async.Error(Timeout)` aus oder werfen ein wirklich
++       ungeprüftes Throwable erneut. `Task#await` ist dies mit dem eigenen `Error`-Typ der
++       Aufgabe.
+
+@ 0 1 0 1162ad5397a0a09f11b579ad1789a454
++ entry .Root   die Wurzel eines Überwachungsbaums: der Monitor, den `supervise` einführt
+
+% 1 1 0 05351dec8801ae1202d0d1fd4f66b87f
+
+@ 0 5 0 0b7b8f6496d3f9d211ea85daf92d9f3a
++       `Root(supervisor)` ist ein `Monitor` mit `Unit` als `Result`, ohne Elternaufgabe, mit
++       leerer `chain`, einem `stack` aus dem Namen des Supervisors und einem `cancel()`, das
++       nichts tut. Seine Lebensdauer ist der `supervise`-Block, daher ist er keine globale
++       Capability; `unsupervised.orphanMonitor` ist die eine Wurzel mit Prozesslebensdauer, für
++       das Blockieren außerhalb jedes Geltungsbereichs. Nicht in das `soundness`-Umbrella
++       exportiert: Schreiben Sie `parasite.Root`, um einen direkt zu konstruieren.
+
+% 1 1 0 154e5bdf88babf0c04fc34d8af2beb67
+
+% 1 1 0 05415526ffc61ff31355152eeda1113a
+
+@ 0 1 0 0793af0b85bfef16011d544b96751c45
++   entry #shutdown   bricht jedes lebende Kind der Wurzel ab
+
+@ 0 1 0 0d5d0a954dc822470ba831611628b194
++ entry .Supervisor   die Ausführungsstrategie: wie Stränge geforkt, geparkt, schlafen gelegt und unterbrochen werden
+
+% 1 1 0 027908cfd07f33b3141b6ed9176799ce
+
+@ 0 6 0 1be44091b9d971361e690d642817d379
++       Jede Art, auf die ein Strang *anhalten* kann, läuft über seinen Supervisor, daher ist ein
++       Supervisor die ganze Nahtstelle zur Plattform: Ein Backend für ein anderes
++       Ausführungsmodell — etwa eine Event-Loop über WASI-Waitable-Sets — ist eine
++       `Supervisor`-Implementierung, die durch ein `Threading`-Given gewählt wird, und nichts
++       sonst in parasite berührt die Plattform. Die bereitgestellten Implementierungen sind
++       `PlatformSupervisor`, `VirtualSupervisor`, `AdaptiveSupervisor`, `PooledSupervisor` und
++       `JavascriptSupervisor`, jede der Wert, den ein `threads`-Given herausgibt.
+
+@ 0 5 0 0a67e29a605d1eb6001c7cac3111ce6d
++       Ein Supervisor ist eine `Durable`-Capability: Forken und Parken sind Effekte, und ein
++       Pool hält lebende Threads. Die globalen Singletons sind statische Capabilities, daher
++       deklariert eine öffentliche Klasse oder ein öffentliches Objekt, das einen davon
++       erreicht, `uses parasite.threads` (oder den Supervisor namentlich). Ein eigener
++       Supervisor muss unechtes Aufwachen aus `park` zulassen: Jeder Aufrufer prüft seine
++       Bedingung in einer Schleife erneut, wie `LockSupport.park` es verlangt.
+
+% 1 1 0 1f99ae6ffda49ce718a45d4a96e87ca4
+
+% 0 1 0 0580976b364331dd0202ebcac8a2f577
+
+% 1 1 0 04e601f336e3a0c319ba9ea917465e6d
+
+@ 0 11 0 143679bbe41df4810d20eec96abdba43
++   entry #name   der Name des Supervisors, das erste Segment jedes `Monitor#stack` darunter: `virtual`, `platform`, …
++   entry #fork   startet einen Block auf einem neuen Strang, mit einem Thunk, der bei Bedarf den Namen des Strangs berechnet
++       Der Name ist ein Thunk, weil die Berechnung des `stack` eines Workers die ganze
++       Elternkette durchläuft, und `VirtualSupervisor` wertet ihn nie aus;
++       `PlatformSupervisor` setzt ihn als Namen des Threads.
++   entry #strand   die Identität des aufrufenden Strangs, als Wartender, den ein späteres `Strand#unpark` freigeben kann
++   entry #park   hält den aufrufenden Strang an, bis er freigegeben wird oder eine Frist abläuft
++       `park(blocker)` wartet auf ein `unpark`; `park(blocker, deadline)` kehrt auch zurück,
++       wenn die Frist (auf Basis von `System.nanoTime`) abläuft. Beide können unecht
++       zurückkehren.
++   entry #sleep   hält den aufrufenden Strang für eine Anzahl von Nanosekunden an, ohne Weckkanal
++   entry #interrupted   prüft und löscht den Abbruch-Unterbrechungsstatus des aufrufenden Strangs
+
+@ 0 8 0 14fd26704ec6ad2c11235ba8a2f37297
++ entry .ThreadSupervisor   die threadbasierten Anhalte-Primitive, die jeder JVM- und Native-Supervisor teilt
++     Ein `Supervisor`, dessen `strand()` der aktuelle `Thread`, als `Strand.Threaded` umhüllt,
++     ist, dessen `park` `LockSupport.park` und `parkNanos` ist, dessen `interrupted()`
++     `Thread.interrupted()` ist und dessen `sleep` wiederholt bis zu seiner Frist parkt — da
++     `parkNanos` früh zurückkehren kann, unecht oder wegen einer Erlaubnis, die ein früheres
++     `unpark` hinterlassen hat — und nur dann früher aufhört, wenn der Thread unterbrochen
++     wird. Nur `name` und `fork` bleiben einer Unterklasse überlassen. Nicht in das
++     `soundness`-Umbrella exportiert: Ein eigener threadbasierter Supervisor erweitert
++     `parasite.ThreadSupervisor`.
+
+@ 0 5 0 1b9b422753328b9d165ad7a572f336a8
++ entry .PlatformSupervisor   führt jede Aufgabe auf einem neuen Plattform-Thread aus
++     `PlatformSupervisor.fork` startet einen `java.lang.Thread` pro Aufgabe, benannt nach dem
++     Stack des Workers. Heißt `platform`; gewählt durch `threads.platformThreads`, und der
++     Supervisor hinter `supervisors.globalSupervisor` und `unsupervised.orphanMonitor`. Unter
++     Scala Native forken auch `VirtualSupervisor` und `AdaptiveSupervisor` über ihn.
+
+@ 0 7 0 0574974327f8500d17067be1f7adf48d
++ entry .VirtualSupervisor   führt jede Aufgabe auf einem virtuellen Thread (JVM) oder einem Plattform-Thread (Native) aus
++     Auf der JVM ist `fork` `Thread.ofVirtual().start(…)`: ein virtueller Thread von Loom,
++     billig genug, um in großer Zahl gestartet zu werden, der Java 21 braucht und auf einer
++     älteren JVM zur Laufzeit mit `UnsupportedOperationException` scheitert. Unter Scala
++     Native, wo es kein Loom gibt, existiert das Objekt unter demselben Namen und forkt einen
++     Plattform-Thread, sodass für `threads.virtualThreads` geschriebener Code
++     quelltextkompatibel ist: Die Anforderung lautet auf billige Nebenläufigkeit und wird mit
++     der billigsten verfügbaren erfüllt. Heißt `virtual`.
+
+@ 0 7 0 17a246eca9c7f99f159c329efe65c0b9
++ entry .AdaptiveSupervisor   virtuelle Threads, wo die JVM sie hat, sonst Plattform-Threads
++     Prüft auf der JVM einmal mit einem virtuellen Thread, der nichts tut, und forkt danach über
++     `VirtualSupervisor`, wenn das gelang, und über `PlatformSupervisor`, wenn es
++     `UnsupportedOperationException` warf; nur dieses deterministische Ergebnis wird
++     zwischengespeichert, sodass ein vorübergehendes Scheitern den Prozess nicht auf
++     Plattform-Threads festlegen kann. Das, was eine Anwendung, die ihre JVM nicht vorgeben
++     kann, über `threads.adaptiveThreads` verwenden sollte. Unter Scala Native forkt er
++     Plattform-Threads, genau wie es eine JVM vor Loom täte. Heißt `adaptive`.
+
+@ 0 6 0 05c59b2aa5d663961b90cda40dfa5004
++ entry .PooledSupervisor   führt Aufgaben auf einem Pool wiederverwendbarer Trägerthreads aus
++     Die `PoolingSupervisor`-Instanz, gewählt durch `threads.pooledThreads`. Auf der JVM sind
++     seine Träger virtuelle Threads, sodass eine Aufgabe, die ihren Träger blockiert, nicht mehr
++     kostet als ein geparkter virtueller Thread; unter Scala Native sind es Plattform-Threads,
++     wo die Wiederverwendung eines Threads über Aufgaben hinweg der einzige Weg ist, wie eine
++     Aufgabe weniger kosten kann als ein Threadstart, sodass die Ersparnis noch größer ist, und
++     eine Aufgabe, die blockiert, hält einen Plattform-Thread, bis sie fortfährt. Heißt
+
+% 0 1 0 0b767549762fc18418cbb692f794611b
+
+@ 0 1 0 0e5ec9b7d78a317e1d2a7329ee2f69a5
++ entry .PoolingSupervisor   ein Supervisor, der Aufgaben an untätige Trägerthreads übergibt, statt pro Aufgabe einen zu starten
+
+% 1 1 0 0c2724a959d3dcc70c2f8b195e829e57
+
+@ 0 5 0 1533ef69dbc355ec1a568dfb23bbe99a
++       `fork` übergibt die Aufgabe an einen untätigen Träger, wenn einer wartet, und startet nur
++       dann einen frischen Träger, wenn keiner wartet; ein Träger, der eine Aufgabe beendet,
++       parkt sich für die nächste auf der Liste der Untätigen. Die Übergabe kostet einige hundert
++       Nanosekunden, wo ein Threadstart und das Warten darauf einige Mikrosekunden kosten, sodass
++       feingranulare Auffächerung — eine Aufgabe pro Element, ein Starten und Warten in einer
++       Schleife — nicht länger von der Threaderzeugung beherrscht wird.
+
+@ 0 5 0 04989591a74ef61717f250c5079ed940
++       Der Pool verhungert nie: Eine Aufgabe, die blockiert, durch `park` oder auf jede andere
++       Weise (JDK-I/O, `Thread.sleep`, ein `synchronized`-Block), behält ihren Träger, und das
++       nächste `fork` startet einen weiteren, sodass der schlimmste Fall genau ein Thread pro
++       Aufgabe ist, ohne feste Größe, ohne Warteschlange, in der Aufgaben warten, und ohne
++       Ausgleichslogik. Untätige Träger über `idleLimit` (standardmäßig 256) treten in den
++       Ruhestand, was den Speicher des Pools nach einem Schub begrenzt.
+
+@ 0 8 0 1f5e2d6330a2195808ccdd80b8ef0126
++       Abbruch ist ein Handshake: Jeder Aufgabeneintrag führt eine kleine Zustandsmaschine aus,
++       sodass eine auf eine Aufgabe gerichtete Unterbrechung zugestellt wird, während sie
++       eingehängt ist, oder bis zu ihrem Einhängen aufgeschoben wird, und nie an die Aufgabe
++       durchsickert, die als nächste auf demselben Träger läuft. Die Kosten sind, dass eine
++       Aufgabe keinen eigenen Thread hat — Thread-Locals bleiben über die Aufgaben bestehen, die
++       ein Träger ausführt, und ein Thread-Dump zeigt Träger, wo `Monitor#stack` Aufgaben zeigt —
++       und dass ein auf einer Aufgabe gesetzter Thread-Kontext-Classloader von der nächsten
++       gesehen werden kann, daher sollte Code, der Klassen oder Ressourcen lädt, von einem
++       bekannten Classloader statt von dem des Threads ausgehen. `Thread.currentThread` einer
++       Aufgabe ist für ihre Dauer stabil.
+
+@ 0 2 0 033b424e4540f95808441fe15d75fe3d
++       Unterklassen liefern `spawn` (wie ein Trägerthread gestartet wird) und können
++       `idleLimit` überschreiben; `PooledSupervisor` ist die Instanz für jede Plattform.
+
+% 0 1 0 1ee6ec36f11c35ae067f026d9cc8c97e
+
+% 1 1 0 1cf10a55eb90812c14cb4599c195f904
+
+@ 0 7 0 060a13f47748da4e0fe6bd354759b0f1
++   entry #active   die Anzahl der Träger, die gerade eine Aufgabe ausführen
++       Ein ruhender Pool hat keinen; einer, der nicht in diesen Zustand zurückkehrt, hat eine
++       Aufgabe, die nie geendet hat.
++   entry #idling   die Anzahl der Träger, die geparkt auf eine Aufgabe warten
++   entry #fork   übergibt den Block an einen untätigen Träger oder startet einen neuen
++   entry #strand   der Strang des aufrufenden Trägers, wenn der Aufrufer ein Träger ist, sonst der des aktuellen Threads
++   entry #park   wartet kurz aktiv und parkt dann den aufrufenden Träger, unter Beachtung einer Erlaubnis, die ein früheres Unpark hinterlassen hat
+
+@ 0 9 0 07a8b620c233204b1855f3d7d7b43a46
++ entry .JavascriptSupervisor   das einthreadige, eager Modell für die Event-Loop von JavaScript
++     Jede geforkte Aufgabe läuft zur `fork`-Zeit bis zum Ende, auf dem aufrufenden Strang,
++     sodass jedes Promise, das eine solche Aufgabe erfüllt, bereits vollständig ist, bevor
++     jemand darauf warten kann, und Parken nie nötig ist. Das ist das Modell für eine
++     Event-Loop, die kein Primitiv zum Blockieren und Fortsetzen hat, obwohl es auf jeder
++     Plattform gleich läuft. Seine Grenze ist einthreadige strukturierte Nebenläufigkeit: keine
++     Parallelität und keine Verschränkung, daher löst das Warten auf ein Promise, das keine
++     beendete Aufgabe erfüllt hat — ein Warten, das nie enden könnte —, eine Panic aus, statt zu
++     verklemmen, `sleep` und `snooze` enden sofort, und `interrupted()` ist immer `false`.
++     Heißt `javascript`; gewählt durch `threads.javascriptThreads`.
+
+% 2 1 0 1c97b132c1b7230214be0e75754632b0
+
+% 3 1 0 01489d544de4870f13a53b3222ffecf8
+
+% 0 1 0 1fc7454c929f44400c8217de0d536154
+
+% 1 1 0 041f1e87319373441ce8421e29d1d9a1
+
+% 2 1 0 02e24bb418c3cfb71a057e322b2fdb44
+
+% 4 1 0 0268aa48cf356ff8057da97ddfed2494
+
+% 0 1 0 11d69d0e3b528799007e353aacae31da
+
+% 0 1 0 063e578bd55f023600864a5dedb6a5c4
+
+% 0 1 0 1aa46a67eca0261913e3bae5482ba62d
+
+% 1 1 0 0771a650f48928860c24dacb974e9f88
+
+@ 0 1 0 1df7e649760ba2ee13bb9800ccbc6a3d
++ entry .Threading   die Wahl des Supervisors, als Capability-Given: `threads.virtualThreads`
+
+% 1 1 0 14c39ac024023020193bedb7caa03350
+
+@ 0 4 0 180248977a50cba91177a5c513553a36
++       Ein `Threading` gibt den `Supervisor` heraus, auf dem ein `supervise`-Block seinen Baum
++       wurzelt, und wird gewählt, indem eines der `threads`-Givens namentlich importiert wird.
++       Es ist eine `Durable`-Capability, da es eine herausgibt, und `Findable`, sodass es als
++       `summon[Threading]` herbeigerufen wird.
++   entry #supervisor   der Supervisor, auf dem ein Geltungsbereich gewurzelt wird
+
+@ 0 1 0 00d76c90785c9b4903725f2c0614f9b0
++ entry .Strand   das Handle auf eine Ausführungseinheit, die ein Supervisor geforkt hat: unterbrechen, warten, freigeben
+
+% 1 1 0 012924990fb597b90947208bccfbdf82
+
+@ 0 7 0 1b429c7a9a111eb715436343591d2069
++       Die minimale Oberfläche, die Überwachung (`Worker#cancel`) und Aufwecken (`Promise`)
++       brauchen. Auf der JVM und unter Scala Native umhüllt ein Strang einen `Thread`
++       (`.Threaded`); ein eager Supervisor verwendet das einzige `.Eager`; und die Stränge des
++       Pool-Supervisors sind seine Träger und Aufgabeneinträge. `unpark` liegt hier statt auf
++       `Supervisor`, weil die Weckseite eines `Promise` ohne `Monitor` im Geltungsbereich läuft,
++       möglicherweise auf einem fremden Strang: Ein Strang muss sich selbst wecken lassen.
++       `Promise` speichert seine Wartenden in einem `Set[Strand]`, sodass zwei Handles auf
++       denselben Thread gleich sind.
+
+% 1 1 0 0f610201fe442e4614d29f0111c08932
+
+@ 0 4 0 12cc5438bbc8097505fc52216b6c8f09
++   entry .Eager   der Strang einer Aufgabe, die bei ihrem Fork bis zum Ende lief, unter `JavascriptSupervisor`
++       Unterbrechen, Warten und Freigeben tun nichts: Durch Konstruktion läuft nichts, das
++       abgebrochen, erwartet oder geweckt werden könnte.
++   entry .Threaded   ein Strang über einem `java.lang.Thread`
+
+% 1 1 0 10f97e7cffa3533218cf8b0c9aaa2326
+
+@ 0 7 0 0bf462228d57824c00588c9df8e7376b
++         `interrupt()` ist `thread.interrupt()`, `join()` ist `thread.join()`, und `unpark()`
++         ist `LockSupport.unpark(thread)`. Zwei `Threaded`-Stränge sind gleich, wenn ihre
++         Threads es sind, wie auch immer sie erlangt wurden.
++     entry #thread   der zugrunde liegende Thread
++   entry #interrupt   fordert den Abbruch des Strangs an
++   entry #join   blockiert, bis der Strang beendet ist
++   entry #unpark   gibt den Strang aus einem `Supervisor#park` frei
+
+@ 0 1 0 170f6db8ee0fe60a08499f994262916d
++ entry .Task   das Handle auf eine gestartete Berechnung: auf ihr Ergebnis wird gewartet, oder sie wird abgebrochen
+
+% 1 1 0 1b9e31d576161c9c05fa2da0fbbcab5b
+
+@ 0 7 0 101b2685e31eaf6f0885a5de66f4a538
++       Ein `Task[result]` ist das, was `async` und `task` zurückgeben: ein `Worker` unter dem
++       Monitor im Geltungsbereich, der seinen Rumpf auf einem Strang des Supervisors ausführt. Sein
++       Typ-Member `Error` trägt die Union der Fehler, die der Rumpf auslösen kann, verfeinert durch
++       den Alias `emits`; so ist `async(abort(CueError(1)))` ein `Task[Nothing] emits (CueError |
++       Async.Error)`, und `await` liefert einen ausgelösten Fehler über die `Tactic[Error |
++       Async.Error]` des Aufrufers, noch immer typisiert. `Async.Error` ist immer möglich (ein
++       Abbruch, ein Timeout, ein unvollständiges Kind unter `probates.failProbate`), daher wird
++       es an der Stelle des `await` hinzugefügt.
+
+% 2 1 0 0a4e322a42173ae109300dfad1c95459
+
+% 3 1 0 1b05bd0ab0b86a0408b5aec30fb771b3
+
+% 4 1 0 1007167095e81f091cb9c489d354f8b5
+
+% 5 1 0 14658fd305a274890a7fa1cdd44337eb
+
+% 6 1 0 1e1ee148945c2acd1e7b12629cf850fb
+
+% 8 1 0 09586b28fbe26bd71a02b314f56fec29
+
+% 0 1 0 1035aa5865114ac403852cb116419df7
+
+% 0 1 0 147e8107a0d90f320893921d1674a637
+
+% 0 1 0 06d57b5f2e2d3b280306fd000c23324b
+
+% 0 1 0 1b46eb161e902ee61e108c3f55696c3c
+
+% 0 1 0 11b5ac1a66c4e81505e8a8fd7a680c80
+
+% 1 1 0 186fb8f289bd60cd1e31a6f88c64737f
+
+@ 0 5 0 1d65bce61913f55e180fc6a08664b4b8
++       Aufgaben lassen sich zusammensetzen: `map` und `bind` leiten eine Aufgabe aus einer anderen
++       ab, `sequence` einer `List[Task[result]]` ist eine Aufgabe mit allen ihren Ergebnissen in
++       Reihenfolge, `race()` einer Collection ist das erste Ergebnis, wobei der Rest abgebrochen
++       wird, und `Task.monad` macht `Task` zu einer `mercator.Monad`. Ein Aufgaben-Handle ist eine
++       geteilte Capability, die ihren Monitor einfängt, daher kann es den `supervise`-Block, in dem
++       es gestartet wurde, nicht verlassen.
+
+% 1 1 0 0f537d91372791730fc172b7a6021a9f
+
+% 1 1 0 0feb341967a67ca70cf0be55a760839a
+
+% 1 1 0 152301d210d8d051165518401eead9ca
+
+% 0 1 0 06118b4c5f79d25406ceb8b1edef69cf
+
+@ 0 6 0 146a792a56242338012a57c68585e68d
++   entry .apply   konstruiert eine Aufgabe aus einem Rumpf und einem optionalen Namen: das, was `async` und `task` aufrufen
++       `Task[result, error](body, name)` baut den Worker unter dem `Monitor`, dem `Codepoint` und
++       der `Probate.Shared` im Geltungsbereich, mit `Error = error`. Der Rumpf ist eine Funktion
++       des `Worker`, die nur `Durable`-Capabilities einfangen darf. Zu verwenden sind `async` und
++       `task`, da sie auch die Taktik des Rumpfes liefern.
++   entry .Owned   der Träger, über den eine mit `transfer` übergebene Ressource den Rumpf ihrer Aufgabe erreicht
+
+% 1 1 0 1a4f5bc9135ba5660d6180345519173f
+
+@ 0 17 0 05e01440a0c154890c0f6d06e6a4eb95
++         Ein reiner Wert, der die exklusive Ressource umhüllt, die der startende Code verbraucht
++         hat, empfangen als erster Kontextparameter des Rumpfes: `producer.transfer: (producer,
++         _, _) ?=> producer().put(…)`. Er wird nur von `transfer` konstruiert.
++     entry #apply   die Ressource, bei jedem Zugriff als frische exklusive Referenz
++   entry .monad   die `mercator.Monad[Task]`, sodass sich Aufgaben mit den generischen monadischen Kombinatoren zusammensetzen lassen
++       Braucht beim Auflösen einen `Monitor` und eine `Probate.Shared` im Geltungsbereich: `point`
++       ist `async`, `bind` ist `Task#bind` und `apply` (map) ist `Task#map`. Die erzeugten Aufgaben
++       werden im selben Monitor-Geltungsbereich gebunden und erwartet.
++   entry .sleep   eine Aufgabe, die nach einer Dauer oder zu einem Zeitpunkt abschließt: das monadische `snooze`
++       `Task.sleep(0.5*Second)` ist `async(snooze(time))`, zum Zusammensetzen mit `bind`/`map`,
++       ohne den aufrufenden Strang anzuhalten; jedes `Schedulable` wird akzeptiert. Braucht einen
++       `Monitor`, eine `Probate.Shared` und einen `Codepoint`.
++   entry .sequence   eine Aufgabe mit jedem Ergebnis einer `List[Task[result]]`, in Listenreihenfolge
++       Eine Erweiterung auf `List[Task[result]]`: `tasks.sequence` ist eine Aufgabe, die
++       nacheinander auf jede wartet und eine `List[result]` in derselben Reihenfolge liefert; die
++       Reihenfolge der Ergebnisse sagt also nichts über die Reihenfolge des Abschlusses aus, denn
++       die Aufgaben laufen bereits parallel. Ein abgebrochenes oder gescheitertes Element löst beim
++       `await` der Sequenz aus. Braucht einen `Monitor` und eine `Probate.Shared`.
+
+% 2 1 0 04e5c73ed365f17900d61f4dee325d6f
+
+% 3 1 0 0bd28caa90e446630675a351cd8990b3
+
+% 4 1 0 10d4e94ac6e6114916907f0fa247ee60
+
+% 5 1 0 1b6be028c54ca1e503f86dce45c8f197
+
+% 6 1 0 0139d2f5a5f542d800ef2012cea1367e
+
+% 8 1 0 0efe9efc54d244e00ce80435ca975177
+
+% 0 1 0 167fee35c1996bfd1c1ab2c9728a8c1b
+
+% 1 1 0 14cd0d0a2c9d26b410a0942ebb46ebd9
+
+@ 0 6 0 09ea812e4248e41512c318c9e27789e9
++   entry .race   das erste Ergebnis einer Collection von Aufgaben, wobei die anderen abgebrochen werden
++       Eine Erweiterung auf jede Collection, die `Traversable by Task[result]` ist (eine `List`,
++       eine `Sequence`), und auf ein `Iterable[Task[result]]`: `tasks.race()` wartet auf ein
++       Promise, dem jede Aufgabe ihr Ergebnis anbietet, gibt das erste angebotene zurück und bricht
++       in einem `finally` jede Aufgabe ab, da die anderen Ergebnisse nicht gebraucht wurden. Eine
++       bereits abgeschlossene Aufgabe gewinnt sofort. Braucht einen `Monitor`, eine
++       `Probate.Shared` und eine `Tactic[Async.Error]`.
+
+% 2 1 0 19ad3dfb06afa4eb07d5317f453a8096
+
+% 3 1 0 076364713802f97311dc347c23ac26fe
+
+% 4 1 0 1937137c798ce2141fb307b04ced211a
+
+% 5 1 0 1bc22b54dd3c83290cbd6aa63ac76c67
+
+% 6 1 0 0e844db8d7484c111b52f44fc57aeec1
+
+% 8 1 0 1f578c5a187503aa1d733c1464b555b5
+
+% 0 1 0 1201097df4d35df70cdf731899b8b26a
+
+% 1 1 0 09d1cd4a0d10a630066616fb3b4a2c51
+
+@ 0 15 0 060f119602f96bae15e247c8cdc5fa08
++   entry #Error   die Fehler, die der Rumpf auslösen kann, geliefert bei `await`; im weitesten Fall `Hazard`
++   entry #ready   ob die Aufgabe abgeschlossen, gescheitert oder abgebrochen ist
++   entry #attend   wartet, bis die Aufgabe zur Ruhe kommt, ohne Ergebnis und ohne Fehler
++   entry #cancel   bricht die Aufgabe ab: unterbricht sie, wo sie pausiert, hält sie an, wo sie nachgibt
++       Eine beendete Aufgabe bleibt unberührt. Der Aufruf wartet, bis der Strang der Aufgabe endet,
++       sodass bei der Rückkehr nichts vom Rumpf mehr läuft; ihr `await` löst dann
++       `Async.Error(Cancelled)` aus.
++   entry #await   wartet auf das Ergebnis und liefert einen ausgelösten Fehler über die Taktik des Aufrufers
++       `task.await()` wartet unbegrenzt; `task.await(duration)` löst `Async.Error(Timeout)` aus,
++       wenn die Aufgabe beim Ablauf der Frist nicht zur Ruhe gekommen ist, und gibt sie an diesem
++       Punkt auf, ohne sie abzubrechen. Beide brauchen einen `Monitor` und eine `Tactic[Error |
++       Async.Error]`: Ein vom Rumpf ausgelöster Fehler kommt als `Error` des Rumpfes typisiert an,
++       ein Abbruch als `Async.Error(Cancelled)` und ein Kind, das die Nachlassregelung unter
++       `probates.failProbate` unvollständig vorfand, als `Async.Error(Incomplete)`. Auf eine
++       Aufgabe kann beliebig oft gewartet werden; spätere Wartevorgänge geben den gelieferten Wert
++       direkt zurück.
+
+% 2 1 0 1f7228e43fec742f07b92807c1b50a6f
+
+% 3 1 0 0ae6ddc0f8e5d4121f8a33c572e55500
+
+% 4 1 0 06ab4d89c890f1d90f9f476fb5a9de47
+
+% 5 1 0 1accfbe4c67d62c400b7ea8862208303
+
+% 6 1 0 02d23f6b07ebe3c41771a9791058ec8d
+
+% 8 1 0 160349f7a78cd7aa0ac8ec5341294101
+
+% 10 1 0 0793875fc716649b17012238b15120b0
+
+% 0 1 0 173dcfc7938355200c77bed39d21d548
+
+% 0 1 0 05f62cf736f8131b01c78c29a0a06054
+
+% 1 1 0 1defe6515c2af9ba1d57e2e4ea856edc
+
+@ 0 5 0 10887d2d8960af4a1648ac2739d7a4e6
++   entry #bind   eine Aufgabe, die eine aufgabenerzeugende Funktion auf das Ergebnis dieser anwendet und auf sie wartet
++       `task.bind(n => async(n + 4))` ist ein neues Kind des Monitors im Geltungsbereich; die
++       Funktion darf nur einfangen, was ein Aufgabenrumpf einfangen darf. Braucht einen `Monitor`
++       und eine `Probate.Shared`.
++   entry #map   eine Aufgabe, die eine Funktion auf das Ergebnis dieser anwendet
++       `async(3).map(_ + 1).await()` ist `4`. Braucht einen `Monitor` und eine `Probate.Shared`.
+
+@ 0 1 0 162e893ecdd219e00faed99aa7a00739
++ entry .Promise   ein später gelieferter Wert, vielleicht aus einem anderen Thread: eine Seite wartet, die andere erfüllt
+
+% 1 1 0 1fb0976ce16867dd1373a375f366c481
+
+@ 0 5 0 014ab5f08a5ef6420d608e5a8530a1a9
++       Ein `Promise[value]` beginnt unvollständig; `fulfill` oder `offer` erledigt es genau einmal
++       mit einem Wert, `cancel` erledigt es ohne Wert, und `await` parkt den aufrufenden Strang,
++       bis es erledigt ist. Die Erledigung weckt jeden Wartenden, und unter Konkurrenz geht nichts
++       verloren: Von vielen gleichzeitigen `fulfill`s gelingt genau eines, und ein erledigtes
++       Promise braucht überhaupt kein Compare-and-Set.
+
+% 2 1 0 09430f18c0e0a8ef03813e8cb246f6c7
+
+% 3 1 0 07e1e3553381ff301f94413785f31b59
+
+% 4 1 0 00fd6b140ae6a74f04e05b88c4a8b3ce
+
+% 5 1 0 1a2deab7e8e2136f05d2d956a845da8c
+
+% 6 1 0 0ee3001de48fc3491cb24544fc5bb867
+
+% 8 1 0 04d5b97b9f6242570f358fc4ceee8822
+
+% 9 1 0 0c0fbedbb3beb3a9126bb1abf7d68231
+
+% 0 1 0 1f50fd87001a99f308d6f7270c456629
+
+% 1 1 0 10a4a711ef93a68708c54ca4791b0ae9
+
+% 0 1 0 1a8d0f7ff90a869c0196e30cbaa45bc2
+
+% 0 1 0 0357353f795fb4ef1cf850053fce7aac
+
+% 0 1 0 08e2dbd29e909eb6108d0481beaf67ed
+
+% 1 1 0 1f309da82f09d20909f674c90dd29b9c
+
+@ 0 5 0 0b606d844aea5f7e107584825cb0ca4c
++       Ein Promise hat nur durch seine Identität Bedeutung (ein Wartender parkt darauf), daher ist
++       es eine einfache Klasse mit Referenzgleichheit. Die wartende Seite (`await`, `attend`)
++       braucht einen `Monitor`, da sie anhält; die erledigende Seite (`fulfill`, `offer`,
++       `cancel`) braucht keinen, sodass ein Promise von überall erledigt wird: von einem Callback,
++       einem fremden Thread, einem Shutdown-Hook. Über das `promise` eines `Worker` wird der
++       Abschluss einer Aufgabe beobachtet.
+
+% 1 1 0 0da3666996ad3b4e07ebff9aa111c0e4
+
+% 1 1 0 0c7d31f9730ce8bd087d8844801240c0
+
+@ 0 30 0 0cd2d377d15addbc1a41e2e7850b36d2
++   entry .State   die drei Zustände eines Promise: unvollständig mit seinen Wartenden, vollständig mit einem Wert, oder abgebrochen
++       `Incomplete(waiting)` enthält die Stränge, die auf dem Promise geparkt sind;
++       `Complete(value)` und `Cancelled` sind Endzustände.
++   entry #cancelled   ob das Promise abgebrochen wurde
++   entry #apply   der Wert, oder `Unset`, wenn das Promise nicht vollständig ist, ohne zu warten
++   entry #ready   ob das Promise erledigt ist, durch einen Wert oder durch Abbruch
++   entry #complete   ob das Promise einen Wert enthält
++   entry #task   der Abschluss des Promise als `Task`: das monadische `await`
++       `promise.task` ist `async(promise.await())`, zum Zusammensetzen mit `bind`/`map`, ohne den
++       aufrufenden Strang anzuhalten. Braucht einen `Monitor`, eine `Probate.Shared` und einen
++       `Codepoint`.
++   entry #fulfill   erledigt das Promise mit einem Wert und löst `Async.Error` aus, wenn es bereits erledigt ist
++       Löst über die `Tactic[Async.Error]` im Geltungsbereich `Async.Error(AlreadyComplete)` aus,
++       wenn es einen Wert enthält, und `Async.Error(Cancelled)`, wenn es abgebrochen wurde; sonst
++       setzt es den Wert ein und weckt jeden Wartenden. Das By-Name-Argument wird genau einmal
++       ausgewertet.
++   entry #offer   erledigt das Promise mit einem Wert, wenn es noch unvollständig ist, und tut sonst nichts
++       Die nachsichtige Form von `#fulfill`: Das erste von vielen gleichzeitigen Angeboten gewinnt,
++       der Rest wird ignoriert, ein abgebrochenes Promise bleibt abgebrochen, und es wird kein
++       Fehler ausgelöst. `race` verwendet es für die Aufgaben, die verlieren.
++   entry #await   wartet auf den Wert und löst bei einem Abbruch oder Timeout `Async.Error` aus
++       `promise.await()` parkt den aufrufenden Strang, bis das Promise erledigt ist, und gibt dann
++       den Wert zurück oder löst `Async.Error(Cancelled)` aus; `promise.await(duration)` löst
++       zusätzlich `Async.Error(Timeout)` aus, wenn zuerst die Frist abläuft. Ein erledigtes Promise
++       kehrt sofort zurück. Braucht einen `Monitor` und eine `Tactic[Async.Error]` und wirft
++       `InterruptedException`, wenn die aufrufende Aufgabe während des Wartens abgebrochen wird,
++       sodass eine Aufgabe, die auf ein Promise wartet, abbrechbar ist.
++   entry #attend   wartet, bis das Promise erledigt ist, durch Wert oder Abbruch, ohne Fehler
++       `promise.attend()` kehrt zurück, sobald das Promise auf die eine oder andere Weise erledigt
++       ist; `promise.attend(duration)` kehrt stillschweigend zurück, wenn die Frist abläuft, sodass
++       der Aufrufer `#ready` prüft. Braucht einen `Monitor`.
++   entry #cancel   erledigt das Promise ohne Wert und weckt jeden Wartenden mit `Async.Error(Cancelled)`
++       Ein Promise, das bereits einen Wert enthält, behält ihn; zweimaliges Abbrechen schadet nicht.
+
+@ 0 1 0 0226a61ea4d6f51c0ba75f3cfd594f6e
++ entry .Daemon   das Handle auf Fire-and-Forget-Arbeit, die mit `daemon` gestartet wurde
+
+% 1 1 0 0074b4cd3382be2019556917dbb24bba
+
+@ 0 4 0 1ecedcdce771f92c137269c15e14451a
++       Ein `Daemon` ist ein `Worker`, dessen Flag `daemon` `true` ist: Auf ihn wird nie gewartet,
++       daher liefert er kein Ergebnis, und die Nachlassregelung seiner Elternaufgabe bricht ihn ab,
++       gleich welche Richtlinie sie auf gewöhnliche Kinder anwendet. Seine Fehler gehen an den
++       `Probate#trap` im Geltungsbereich und eskalieren an den Handler für nicht abgefangene
++       Ausnahmen (`Vm.intercept[Fault]`), wenn keiner sie annimmt.
+
+% 1 1 0 099e410dae8bffb113e3d0bea0e816f1
+
+% 1 1 0 13a4e8eb24b574d81bd6629348342265
+
+@ 0 5 0 0186529e34eefbd8039d683090dcc527
++   entry .apply   konstruiert einen Daemon aus einem Rumpf unter dem `Monitor`, dem `Codepoint` und der `Probate.Shared` im Geltungsbereich
++       Zu verwenden ist `daemon`, da es auch die labelfreie Taktik des Rumpfes liefert und
++       erzwingt, dass der Rumpf hygienisch ist.
++   entry #attend   wartet, bis der Daemon endet, ohne Ergebnis und ohne Fehler
++   entry #cancel   bricht den Daemon ab und wartet, bis sein Strang endet
+
+@ 0 1 0 1d0122efa243a7fa111f28f89ac44f60
++ entry .Async   die Namensebene für Aufgaben und die Heimat von `Async.Error`
+
+% 1 1 0 17034be9cfe74e4e0030649830213558
+
+@ 0 3 0 0b5bf70196fd03d518dfdf476b459ae8
++       `Async` ist ein versiegelter Marker: Der Name einer Aufgabe ist ein `Name[Async]`,
++       geschrieben `n"worker"` mit `import Async.nominative` im Geltungsbereich und beim
++       Kompilieren des Codes gegen `.Rules` geprüft. Sein Begleitobjekt enthält `Async.Error`,
++       den einen Fehler, den jedes Anhalten auslösen kann.
+
+% 2 1 0 08cf67bd7fadd11e08525cac995d08b0
+
+% 3 1 0 1564d691a0ec024206a51d37c92b1260
+
+% 1 1 0 01b9e96f6f08eda00c86f6402be195ac
+
+% 0 1 0 03f9daff0809179113d2a7430083f47d
+
+% 1 1 0 09b5a9f26559894a14a4623c7876d6c6
+
+% 1 1 0 0f37d63ce6c9530c119215c0ffbfe6d4
+
+@ 0 8 0 0aca090a1ebe80221a0a6b33f876081a
++   entry .Rules   was ein Aufgabenname sein darf: ein Buchstabe, dann Buchstaben, Ziffern, `-` und `_`
++       `MustMatch["[A-Za-z][A-Za-z0-9_-]*"]`: kein Trennzeichen, auf das sich der zusammengesetzte
++       `Monitor#stack` stützt (`:`, `/`, `@`, `.`), kein Leerraum und nicht leer, sodass ein Name
++       niemals den Stack oder einen daraus abgeleiteten Thread-Namen verderben kann.
++       `Name[Async](t"bad/name")` löst `Name.Error` aus, _the name bad/name is not valid because
++       it must match [A-Za-z][A-Za-z0-9_-]*_, und `n"bad/name"` ist ein Kompilierfehler.
++   entry .nominative   das Given, das `Name[Async]` an `.Rules` bindet; für `n"…"` namentlich importieren
++   entry .Error   ausgelöst, wenn ein Warten nicht mit einem Wert endet: abgebrochen, unvollständig, bereits vollständig, Zeit abgelaufen
+
+% 1 1 0 0c07d4d62368c9a61a669e995c8e4ae0
+
+@ 0 6 0 0ed945905b53dfc107e86e76aab0a171
++         Ausgelöst über die `Tactic[Async.Error]`, die jedes `await`, `fulfill` und `supervise`
++         braucht. Sein `#reason` sagt, welcher Fall vorliegt: `Cancelled` beim Warten auf eine
++         abgebrochene Aufgabe oder ein abgebrochenes Promise oder beim Erfüllen eines
++         abgebrochenen Promise; `Incomplete` beim `await` einer Elternaufgabe unter
++         `probates.failProbate`, wenn ein Kind noch lief, oder bei `Worker#result`, bevor der Rumpf
++         beendet war; `AlreadyComplete` beim zweimaligen Erfüllen eines Promise; und `Timeout` bei
++         `await(duration)`, wenn die Frist abgelaufen ist.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 1483d7674d516abb1cf447f9b7b6208e
+
+% 0 1 0 1df60d93a8a4f5a7099b4ba309ce3cad
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 0 1 0 1cd8e4ff097f1a1000f2b5f2d634402f
+
+% 0 1 0 0d59ceb3fc1b73e716b392328eaa7b72
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 2 0 0a5b1d6d8a453ce9193693e1edb1575d
++     entry #reason   warum das Warten scheiterte, als `Async.Error.Reason`
++     entry .Reason   die vier Gründe: `Cancelled`, `Incomplete`, `AlreadyComplete`, `Timeout`
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 4 0 143cbd47e45048161229702abb81982f
++           Von `.communicable` dargestellt als _the operation was cancelled_, _the task was not
++           completed_, _the promise was already completed_ und _the operation timed out_; das ist
++           die Meldung des Fehlers.
++       entry .communicable   stellt jeden Grund als Meldung des Fehlers dar
+
+@ 0 1 0 12cb21e1e22349350eb00b3bda1636b1
++ entry .AsyncTactic   die `Tactic`, über die ein Aufgabenrumpf auslöst: Sie wirft den Fehler, statt eine Grenze zu durchbrechen
+
+% 1 1 0 1660ec49adb857e20d7fbd5d1da056f4
+
+@ 0 10 0 196c39e1b32962c7024516286c5c7b9c
++       Von `async`, `task` und `daemon` als `Tactic[error]` des Rumpfes geliefert. Anders als die
++       grenzbasierten Taktiken von `contingency` durchbricht sie nie ein an den Stack gebundenes
++       Label, das nicht in den Thread des Workers hinüberreichen könnte: `record` und `abort`
++       werfen beide den reinen Fehler, das `try`/`catch` des Workers speichert ihn als
++       `Fulfillment.Failed`, und er wird, noch immer typisiert, bei `Task#await` oder an den
++       `Probate#trap` geliefert. `certify()` tut nichts, und `diagnostics` erfasst einen
++       Stacktrace. Benutzer begegnen ihr nur als Typ der Taktik des Rumpfes.
++   entry #diagnostics   erfasst die Diagnosen für einen ausgelösten Fehler
++   entry #record   wirft den Fehler
++   entry #abort   wirft den Fehler
++   entry #certify   tut nichts: Es gibt keinen angesammelten Zustand zu bestätigen
+
+@ 0 1 0 0f023e8e49c215461389fab5c30d4de0
++ entry .Probate   die Richtlinie für die unbeendeten Kinder einer Aufgabe und entkommene Fehler
+
+% 1 1 0 0b2ba136c09d5a11141a5d97f35f5504
+
+@ 0 6 0 0b03d049fd66bfbf155c01b8ef8bbc5b
++       Eine `Probate` hat zwei Teile. `cleanup(worker)` entscheidet über das Schicksal eines
++       Kindes, das noch läuft, wenn der Rumpf seiner Elternaufgabe abschließt, durch das, was es
++       mit `Worker#delegate` tut: Die vier des Pakets `probates` warten darauf, brechen es ab,
++       lösen `Async.Error(Incomplete)` aus oder lösen eine Panic aus. `trap` entscheidet über das
++       Schicksal eines Fehlers, der einem Fire-and-Forget-Worker entkommen ist (einem `daemon` oder
++       einer Aufgabe, die ihre Elternaufgabe aufgegeben hat), und eskaliert ihn standardmäßig,
++       sodass nichts verloren geht; `contain { … }.protect { … }` überschreibt ihn nahe der Stelle,
++       an der Arbeit gestartet wird.
+
+@ 0 3 0 07f7fec5ebc6fb9e084ea7e447c69178
++       Eine Nachlassregelung ist ein gewöhnlicher Trait, keine Capability, daher ist ein `given …
++       : Probate` rein, und sein Import fängt nichts ein; `Shared` ist die capture-typisierte
++       Form, die ein Worker behält. Eine wird namentlich gewählt, da `import soundness.*` keine
++       Givens importiert:
+
+% 2 1 0 1b48575a9b6cccc00e7b64ff97913701
+
+% 3 1 0 12f9b655596085320e170adf579820cc
+
+% 1 1 0 03e56afae33d2c3b1d67e08d35159064
+
+% 1 1 0 045862bfead4efd619f94274dd0fc679
+
+@ 0 4 0 1b64edda51d885d30dcdef7ea3bf3ab6
++       Welche zu wählen ist, ergibt sich aus dem, was die Kinder tun: Arbeit, die Zustand
++       verändert, will `awaitProbate`, damit jedes Kind bis zu seinem Ende läuft; reine Arbeit
++       kann `cancelProbate` nehmen; und Code, dessen Design vorsieht, auf jede gestartete Aufgabe
++       zu warten, will `failProbate` oder `panicProbate`, damit ein vergessenes `await` ein Fehler
++       ist und kein stilles Warten.
+
+% 0 1 0 1c79dc2f188b950015a1f3d82d171e9f
+
+% 1 1 0 10c3d091de30b0aa09cab1c539262799
+
+% 2 1 0 00f06e416ec9f376167ae3f76e20a28f
+
+@ 0 9 0 0aa158879d1a54b6166a2567d227b647
++   entry #cleanup   das Schicksal eines unbeendeten Kindes, wenn seine Elternaufgabe abschließt
++       Aufgerufen auf dem eigenen Strang des abschließenden Workers, bevor sein Promise erledigt
++       ist, mit dem Worker, dessen Kinder aufzuräumen sind; `worker.delegate(child => …)` besucht
++       jedes lebende Kind, das kein Daemon ist, während die Daemons bedingungslos abgebrochen
++       werden.
++   entry #trap   das Schicksal eines Fehlers, der einem Fire-and-Forget-Worker entkommen ist; standardmäßig `Remedy.Escalate(error)`
++       Aufgerufen, bevor das Promise des Workers erledigt ist. `Accept` verbraucht den Fehler,
++       `Reject` lässt das Original nach außen weiterlaufen, und `Escalate(other)` lässt einen
++       Ersatz weiterlaufen; am Ende der Kette wird ein nicht angenommener Fehler auf dem Strang des
++       Workers erneut geworfen und erreicht den Handler für nicht abgefangene Ausnahmen.
+
+@ 0 6 0 12c20e7fa9c87d2c080056f00f201848
++   entry .Shared   eine `Probate`, die nur `Durable`-Capabilities einfängt
++       `Probate^{caps.any.only[anticipation.Durable]}`: Was ein `Worker` behält, muss geteilt
++       sein, da ein Worker ein geteilter `Monitor` ist, daher nimmt jede Signatur `(using
++       Monitor^, Shared)` eine Nachlassregelung dieses Typs. Die reinen Nachlassregelungen von
++       `probates` sind trivial konform, und `failProbate`, das eine `Tactic` umschließt, ist die
++       eine, die das Einfangen braucht; eine Nachlassregelung, die eine exklusive Ressource
++       umschließt, kann keiner Aufgabe übergeben werden.
+
+@ 0 1 0 1ad1fde52cb8082b1f54d66eeacc9c88
++ entry .Containment   die `Probate`, die `contain` baut: ein Bereich, dessen entkommene Ausnahmen behandelt werden
+
+% 1 1 0 1a3dcd639cea65f20d0553e318777487
+
+@ 0 4 0 077d5c65dec4a71e165208ffc60546fc
++       Delegiert `cleanup` unverändert an die umgebende Nachlassregelung und überschreibt `trap`
++       mit dem Handler: Das `Remedy.Accept` eines passenden Fehlers stoppt die Weitergabe,
++       `Reject` reicht das Original an den Trap der umgebenden Nachlassregelung weiter,
++       `Escalate(other)` reicht den Ersatz weiter, und ein nicht passender Fehler geht ebenfalls
++       an den umgebenden Trap, sodass sich Containments verschachteln lassen.
+
+% 1 1 0 04574a6cf451a70e0b65fb220b3b2a52
+
+@ 0 5 0 1fad493f9ebbcf3705b1afe90c9ad7f2
++   entry #cleanup   die Richtlinie der umgebenden Nachlassregelung für das Schicksal der Kinder
++   entry #trap   die Abhilfe des Handlers für einen Fehler, der passt, sonst die der umgebenden Nachlassregelung
++   entry #protect   führt einen Block mit dieser Containment als `Probate.Shared` im Geltungsbereich aus
++       `contain { case … => … }.protect { daemon(…) }`: Daemons und aufgegebene Aufgaben, die im
++       Block gestartet werden, leiten ihre entkommenen Ausnahmen hierher.
+
+@ 0 5 0 0aa57e633b9803a511d48f65d60043ae
++ entry .Remedy   was ein Trap für einen entkommenen Fehler entscheidet: ihn annehmen, ihn ablehnen oder einen anderen eskalieren
++     `Accept` verbraucht den Fehler (als Nebenwirkung behandelt, etwa protokolliert) und stoppt
++     die Weitergabe; `Reject` reicht den ursprünglichen Fehler an den umgebenden Trap weiter;
++     `Escalate(error)` lehnt ab, setzt aber einen anderen, reinen und threadsicheren Fehler ein,
++     der an seiner Stelle weitergegeben wird. Ein einfacher `Probate#trap` eskaliert den Fehler,
++     den er erhalten hat, sodass ein unbehandeltes Entkommen nie verloren geht.
+
+@ 0 6 0 1752f1dfdd727eb200f9c4139cb22918
++ entry .Fulfillment   der Lebenszyklus eines Workers: initialisierend, aktiv, abgeschlossen, geliefert, gescheitert oder abgebrochen
++     `Initializing`, bevor der Strang den Rumpf gestartet hat; `Active(startTime)`, während er
++     läuft; `Completed(duration, value)`, sobald er ein Ergebnis hat, auf das noch niemand
++     gewartet hat; `Delivered(duration, value)` nach dem ersten Warten, sodass spätere
++     Wartevorgänge den Übergang überspringen; `Failed(error)` mit dem Throwable, das der Rumpf
++     ausgelöst oder geworfen hat; und `Cancelled`. Die Dauern sind Millisekunden. Worker halten
++     ihren Zustand in einem dieser Fälle; anderweitig wird er nicht offengelegt.
+
+@ 0 4 0 1f17bd04f7da234b0cf53ec09ed60bb1
++ entry .Perseverance   das Ergebnis eines `retry`-Versuchs: durchhalten, aufgeben oder sich mit einem Wert durchsetzen
++     `Persevere` verlangt einen weiteren Versuch, `Surrender` gibt mit `Tenacity.Error` auf, und
++     `Prevail(value)` ist der Erfolg. `retry` verwendet es intern, um die Wahl des Rumpfes aus
++     dessen Grenze herauszutragen.
+
+@ 0 3 0 052ce8205e4bb2a01e719e9588208043
++ entry .Observation   ein Wert, beobachtet als `Fresh` oder `Stale`
++     Eine Aufzählung mit zwei Fällen, `Fresh(observation)` und `Stale(observation)`, für einen
++     Leser, der sagen will, ob das, was er zurückgibt, aktuell ist. Nichts in parasite erzeugt
++     derzeit eine.
+
+@ 0 2 0 1adb23b52023d7db19cdfba742af953b
++ entry .Transgression   drei Verfügungen für einen Verstoß: `Dispose`, `Escalate`, `Cancel`
++     Eine Aufzählung mit drei Fällen. Nichts in parasite verbraucht derzeit eine.
+
+@ 0 1 0 1f196f67a02410860a3a1108c81765f6
++ entry .Tenacity   ein Wiederholungsplan: wie lange vor jedem Versuch zu warten ist und wann aufzuhören ist
+
+% 1 1 0 13702ac8a90b49fc12c850458d4bb94e
+
+@ 0 5 0 10991bfcbc67ea170f13be4d02c6740a
++       `retry` führt seinen Block unter der `Tenacity` im Geltungsbereich aus. `delay(attempt)` ist
++       die Pause in Nanosekunden vor dem gegebenen Versuch (`Prim` ist der erste, der nie wartet),
++       oder es löst `Tenacity.Error` aus, um aufzuhören. `Tenacity.exponential` und
++       `Tenacity.fixed` bauen die beiden üblichen Gestalten, `limit` begrenzt die Zahl der
++       Versuche, und das Paket `retryTenacities` hält sechs bereit, die namentlich importiert
++       werden. Eine Tenacity ist rein: Sie hält keine Capabilities.
+
+% 2 1 0 14d346edf209efe011f1301cf762220b
+
+% 3 1 0 0cf6b3cac8647725075ac57cb4af9526
+
+% 0 1 0 01c14d9711455ebc112e2e9650365bab
+
+% 1 1 0 046869506c22092614d8e2f106a4d72a
+
+% 1 1 0 1545f497c0954cc30fac24b54647f946
+
+% 1 1 0 1a041ac99aacea2d18d7999d7b3b4030
+
+@ 0 8 0 0b8c55fba2b0190300341ba8e4d7699c
++   entry .exponential   ein geometrischer Backoff: keine Verzögerung, dann `initial`, dann `initial*base`, `initial*base²`, …
++       `Tenacity.exponential(initial, base)` für jede anfängliche Verzögerung, die `Abstractable
++       across Durations` ist: Der erste Versuch erfolgt sofort, der zweite wartet `initial`, und
++       jeder spätere `base`-mal so lange wie der vorige. Unbegrenzt, bis mit `limit` begrenzt.
++   entry .fixed   dieselbe Verzögerung vor jedem Versuch nach dem ersten
++       `Tenacity.fixed(duration)`; `Tenacity.fixed(0L)` wiederholt sofort, und das sind die
++       Givens `fixedNoDelay…`.
++   entry .Error   ausgelöst, wenn ein `retry` keine Versuche mehr hat oder sein Rumpf aufgibt
+
+% 1 1 0 033c07b563e6489a1a5f3534b74a6518
+
+@ 0 7 0 0f14bf9ad0fdb64a08f7de74df5fbae7
++         Fehler `↯/s.69.1`: _aborted repeated evaluation after `count` attempts_. Ausgelöst über
++         die `Tactic[Tenacity.Error]`, die `retry` braucht, wenn `limit` erreicht ist oder der
++         Rumpf `surrender()` aufgerufen hat.
++     entry #count   wie viele Versuche unternommen wurden
++   entry #delay   die Pause vor einem Versuch, in Nanosekunden, oder ein ausgelöster `Tenacity.Error`, um aufzuhören
++   entry #limit   derselbe Plan, der nach `n` Versuchen aufgibt
++       `tenacity.limit(5)` löst beim sechsten Versuch `Tenacity.Error` aus.
+
+@ 0 1 0 181eca8b07b0594217854a9c78dfc7aa
++ entry .Schedulable   die Schranke, die `snooze` und `sleep` teilen: eine Dauer oder ein Zeitpunkt, als Nanosekunden ab jetzt
+
+% 1 1 0 031437c5e8b7f6a1166f23865066dad5
+
+@ 0 6 0 1ca4cfe0e527394405f3888a0253dae2
++       Eine Typklasse, deren `nanoseconds(value)` angibt, wie lange eine als `Self` ausgedrückte
++       Pause dauern soll. Ihre beiden Givens im Begleitobjekt decken jeden Typ ab, der
++       `Abstractable across Durations to Long` ist (`.duration`: Die generische Form ist bereits
++       eine Anzahl von Nanosekunden), und jeden Typ, der `Abstractable across Instants to Long`
++       ist (`.instant`: die Epochen-Millisekunden, zu denen aufgewacht werden soll), sodass eine
++       Zeit aus `quantitative`, eine `aviation.Timespan` und ein `aviation.Instant` ohne
++       Umwandlung akzeptiert werden.
+
+@ 0 7 0 0ba2b858afe68f8a1dafd2175aafb548
++       Ein bloßer `Long` ist keines von beiden, bis eine Einheit namentlich gewählt wird:
++       `abstractables.millisecondsAbstractable`, `nanosecondsAbstractable` oder
++       `microsecondsAbstractable` für eine Dauer, `epochMillisecondsAbstractable` für einen
++       Zeitpunkt. Mit einer Dauereinheit und der Lesart als Zeitpunkt zugleich im
++       Geltungsbereich erfüllt er beide Givens und wird als mehrdeutig zurückgewiesen, und genau
++       darum geht es: Nichts an der Aufrufstelle könnte sagen, was gemeint war, und ein
++       unqualifiziertes `snooze(200L)` unter der Lesart in Nanosekunden würde fast sofort
++       zurückkehren.
+
+% 2 1 0 0be5aa725a478b4d06b88c118787f34e
+
+% 3 1 0 10c5b9e8733f398b0e37fc1685b5b68f
+
+% 4 1 0 070f895fd4dde19707711b575dafa202
+
+% 5 1 0 09ff93ef3d5b27030af5d628798deadb
+
+% 6 1 0 130b74f7b492a4061e296777f415593e
+
+% 0 1 0 0b78a915063968591f7338f44c86803a
+
+% 2 1 0 0e4572dffd0e818d02ef17ca7ae2128d
+
+% 0 1 0 07984f1cc990dd5b1d63a5d6ae3a466c
+
+% 1 1 0 1502f46d5bcfc657176e448800629038
+
+@ 0 4 0 0c64b64dfe70792d122cdaa0998f660b
++   entry .duration   jeder Typ, der `Abstractable across Durations to Long` ist, ist `Schedulable`, als Dauer
++   entry .instant   jeder Typ, der `Abstractable across Instants to Long` ist, ist `Schedulable`, als Zeitpunkt zum Aufwachen
++   entry #nanoseconds   wie lange, in Nanosekunden ab jetzt, eine Pause mit diesem Wert dauern soll
++   entry #remaining   die Erweiterung `value.remaining`: ihre `nanoseconds`
+
+@ 0 1 0 0a337c3cadccf74314048c24d96ae5a7
++ entry .Timeout   ein Watchdog, der eine Aktion ausführt, wenn eine Frist abläuft, sofern er nicht vorher angestoßen wird
+
+% 1 1 0 1d7d21bc2f68c8830f2ff45ec956da5a
+
+@ 0 6 0 0a39785e73cb0a821e0f3bed4380a186
++       `Timeout(duration)(action)` startet eine überwachte Watchdog-Aufgabe, die bis zur Frist
++       schlummert und dann die Aktion einmal ausführt. `nudge()` schiebt die Frist um die Dauer ab
++       jetzt hinaus, sodass ein Timeout, der bei jedem Anzeichen von Aktivität angestoßen wird
++       (etwa bei jedem Request auf einer Verbindung), erst nach einer so langen Stille auslöst;
++       `alive` sagt, ob er noch auslösen wird, und `reset()` startet einen ausgelösten Timeout neu.
++       Er ist eine `Durable`-Capability, angestoßen von der Aufgabe, die gerade Aktivität sieht,
++       mit einer atomaren Frist.
+
+% 2 1 0 0b19655895374c431a8b817db10b5d4b
+
+% 3 1 0 0c9c543f7de36dfc1af0984e6481dfe4
+
+% 4 1 0 1675d0dffa0333d214aac01045961f8b
+
+% 5 1 0 1a494c10a4933faa17de49daeabe6a19
+
+% 6 1 0 183b4327b9a141421994f4c38dc40a7d
+
+% 8 1 0 145fe9b901badb811d5cf7b5f1022e07
+
+% 0 1 0 1f0ef4965b58096602a62547096ae02d
+
+% 0 1 0 06d3d8277228a5281c0bb8378ea1fd7d
+
+% 0 1 0 0fbaa495789dac9300d4e6063954f46e
+
+% 0 1 0 0f67f27a954774a9091bb0a02089712f
+
+% 0 1 0 0b7aecd6eb59485b0e42baa02d87f794
+
+% 0 1 0 18b7301b84b484331395ce9f4bc986e9
+
+% 1 1 0 1855a99be3b957390dd74d336f980acf
+
+@ 0 7 0 08768651db0b261d0ffc31248324666d
++       Die Aktion läuft auf der Watchdog-Aufgabe und darf daher, wie jeder Aufgabenrumpf, nur
++       `Durable`-Capabilities einfangen. Die Konstruktion braucht einen `Monitor` und eine
++       `Probate.Shared`; der Watchdog ist ein Kind dieses Monitors mit dem Namen `timeout`.
++   entry .apply   startet einen Timeout mit einer Dauer und der Aktion, die beim Auslösen ausgeführt wird
++   entry #alive   ob der Timeout noch auslösen wird
++   entry #nudge   verlängert die Frist auf die Dauer ab jetzt, wenn der Timeout noch lebt
++   entry #reset   startet einen ausgelösten Timeout neu, mit frischer Frist und frischem Watchdog
+
+@ 0 1 0 0e9cec37ee2aa46202c941a6f2cc35a9
++ entry .Interceptable   die Typklasse hinter `intercept`: wie eine Aktion für ein Ereignis auf einem Ziel registriert wird
+
+% 1 1 0 08e8699d075ae68515eec17f874b6338
+
+@ 0 5 0 0b07d3c7891a7e62171cc5c0f6caf5bf
++       `event is Interceptable onto target` gibt an, wie `target.intercept[event](action)` die
++       Aktion registriert und wie sie später entfernt wird: `register` gibt die
++       Abmeldefunktion zurück, die der resultierende `Hook` aufruft. Die Instanzen sind
++       `Shutdown.interceptable`, `Fault.interceptable` und `GarbageCollection.interceptable`, alle
++       auf `Vm`, und `Destruction.interceptable`, auf einem beliebigen Wert.
+
+% 0 1 0 146e320bab2e8d62136cc17e92d809f8
+
+% 0 1 0 1cfb32b57b4ce56302f3fa083f0fd5ce
+
+@ 0 1 0 1dfb865a34740f051af5d994b94b977d
++   entry #register   registriert eine Aktion für das Ereignis auf einem Ziel und gibt die Funktion zurück, die sie abmeldet
+
+@ 0 1 0 07069f0f18b975270ac89f529896907c
++ entry .Hook   eine registrierte Interception, die zum Beenden abgebrochen wird
+
+% 1 1 0 12140ea839f34b74190cec19a33ac6b1
+
+@ 0 3 0 0dffcb11ab5b0b871727ddb62cdd4904
++       `intercept` gibt einen `Hook` zurück; `hook.cancel()` meldet die Aktion ab, danach führt das
++       Ereignis sie nicht mehr aus. `Hook(unregister)` umhüllt eine beliebige Abmeldefunktion.
++   entry #cancel   meldet die Aktion ab
+
+@ 0 1 0 06400591c240199c10f62b0aee303958
++ entry .Shutdown   das Herunterfahren der VM: `Vm.intercept[Shutdown](action)` führt die Aktion einmal aus, beim Beenden
+
+% 1 1 0 1983995e67ce14c81ab1c1c0d0a33e46
+
+@ 0 5 0 1c45a9db7fe482e31090cdae53900909
++       Ein Shutdown-Hook der JVM: Die Aktion läuft bei `System.exit`, wenn der letzte Thread endet,
++       der kein Daemon ist, oder bei `SIGINT`/`SIGTERM`. Dort entfernt ein Server die
++       Socket-Datei, auf der er gelauscht hat, damit eine veraltete nie den nächsten Prozess
++       empfängt. Hooks laufen auf eigenen Threads, gleichzeitig und in keiner festgelegten
++       Reihenfolge, und eine von der Aktion geworfene Ausnahme wird verschluckt, sodass ein Hook
++       die anderen nie am Laufen hindert. `Hook#cancel` entfernt ihn.
+
+% 2 1 0 1a5977990d86f64f176db3ba8fa7c356
+
+% 3 1 0 11989804a0a3dbeb1ea4785c6fa8f5ad
+
+% 0 1 0 13543761c23cbb3e0fad13c7007e8fc5
+
+% 0 1 0 02d41cb9632ba548005120aafedff247
+
+% 2 1 0 170832a4f94d25e1125fb029a2f65dbb
+
+% 3 1 0 193b128efd4f8af90960948041e220dd
+
+@ 0 1 0 1f4a002f1c0257f7079e4be54a63b3a0
++   entry .interceptable   `Shutdown is Interceptable onto Vm.type`: registriert einen Shutdown-Hook der JVM
+
+@ 0 1 0 03155629fd40952906605c0bd19c8a0f
++ entry .Fault   eine Ausnahme, die einem Thread entkommen ist, der niemandem gehört: ein toter Daemon, ein eskalierter Trap
+
+% 1 1 0 07e7f2ad5f2db32a026f253f36a09165
+
+@ 0 6 0 1a5c977d7961176006f7a40f278658cc
++       `Vm.intercept[Fault](action)` installiert die Aktion als Standard-Handler der JVM für nicht
++       abgefangene Ausnahmen (ein gemeinsamer Handler mit einer Registry von Aktionen), sodass sie
++       für jede Ausnahme läuft, die einen Thread beendet: einen `daemon`, dessen Fehler kein
++       `Probate#trap` angenommen hat, eine von ihrer Elternaufgabe aufgegebene Aufgabe oder einen
++       beliebigen Thread außerhalb von parasite. Wo der Fehler eines Daemons den Handler des Codes,
++       der ihn gestartet hat, nicht erreichen kann (der startende Code ist weitergegangen), ist dies
++       die Stelle, an der ein Programm das Unerwartete behandelt.
+
+% 2 1 0 1fdc284a594e804202902bf9a465412d
+
+% 3 1 0 0fc584626fab930b15db1a7b3a9a4353
+
+% 0 1 0 1e302db2d5fd33b411c1eb0d39ffff7e
+
+% 0 1 0 1cf64f50ad1d56b80dd92b74f2886df8
+
+% 0 1 0 0c5f038b58c0135a14b26c2f956a4f71
+
+% 2 1 0 17e1d8ebefdf0dae1f90179c0249483a
+
+% 3 1 0 1adc58df7caca7410912647f429d2a45
+
+% 1 1 0 1daba01e42037bf505aa6f596fe4ac36
+
+% 1 1 0 1c92155a014ade620818c50587de015c
+
+@ 0 3 0 152e6c873acb30a11c5805e5e9bea0f0
++   entry .interceptable   `Fault is Interceptable onto Vm.type`: fügt die Aktion der Registry für nicht abgefangene Ausnahmen hinzu
++   entry #thread   der Thread, der gestorben ist
++   entry #error   die Ausnahme, umhüllt als `fulminate.Error`
+
+@ 0 1 0 1481477be18184bf102e3a4561dbd027
++ entry .Destruction   ein Wert wird unerreichbar: `value.intercept[Destruction](action)` läuft, wenn der Collector ihn zurückfordert
+
+% 1 1 0 03b9019cb12f125b0cb68d529e95f70a
+
+@ 0 5 0 1a5ee5b2b420eaf60d1a40af52bb4221
++       Registriert die Aktion bei einem `java.lang.ref.Cleaner`, sodass sie läuft, nachdem der
++       Wert phantom-erreichbar geworden ist, wie es ein Finalizer täte, aber ohne den Wert
++       wiederzubeleben. Die Aktion darf den Wert nicht referenzieren, sonst wird er nie
++       eingesammelt. Das Abbrechen des `Hook` räumt die Registrierung auf, ohne die Aktion
++       auszuführen.
++   entry .interceptable   `Destruction is Interceptable onto any value`: registriert eine Cleaner-Aktion
+
+@ 0 1 0 038e0e849c7a33040eba62124ffbf422
++ entry .GarbageCollection   ein Lauf des Collectors der JVM: `Vm.intercept[GarbageCollection](action)` beobachtet jeden
+
+% 1 1 0 02014cc2d41d57bc076be07e6f839b91
+
+@ 0 3 0 03bd6361a3854dd5196518e275246770
++       In `parasite.jvm`. Die Aktion erhält eine `GarbageCollection` für jede Sammlung, die die
++       Collector-Beans der JVM melden: welcher `Collector` lief, welche `Cause` ihn ausgelöst hat
++       und die belegten Bytes jedes Speicherpools davor und danach.
+
+% 2 1 0 0de9aba83f593ca91acdb767492758e5
+
+% 3 1 0 120de4f8157f56291c92d913a1f81e3a
+
+% 0 1 0 0776b1f2f26985ed0e7c8f07274f8913
+
+% 0 1 0 1ff242ee9f4ccede02a59717bb6a4c6d
+
+% 0 1 0 1a621c3d779a7e3616f100fd76482972
+
+% 2 1 0 039d1e0cd22d8b8a0884a966dba3a26c
+
+% 3 1 0 030d58ca6d4d964f167533aa21b80e41
+
+@ 0 2 0 1b0a110b9de938fc1da68e46d5665df7
++   entry .interceptable   `GarbageCollection is Interceptable onto Vm.type`: lauscht auf jeder Collector-Bean
++   entry .Collector   der Collector, der lief: eine G1-, Parallel-, CMS- oder Serial-Generation, oder `Other(name)`
+
+% 1 1 0 1debd8bc2b0fd9631d2713af988b192f
+
+% 0 1 0 0166198277ee432c0d70eb0cef5204cd
+
+@ 0 4 0 1acf80912a3f3d621e1d0bad7b442069
++         `ParNew`, `ConcurrentMarkSweep`, `Copy`, `MarkSweepCompact` und `Other(name)` für einen
++         Collector-Namen, den die Aufzählung nicht kennt.
++     entry .unapply   erkennt einen Collector an dem Namen, den die JVM für ihn hat, `Other(name)` für einen unbekannten
++   entry .Cause   warum die Sammlung lief: Allokationsfehler, `System.gc()`, Ergonomie, … oder `Other(cause)`
+
+% 1 1 0 1ff51a1b4571984c153a349bec4a34dc
+
+% 0 1 0 16e4c9b01f94e8a8097b730086f0b1c1
+
+% 0 1 0 13e1f54b19450747090689ac39812df1
+
+@ 0 9 0 09f66029033ef61e142fd68cfb2e96ac
++         `G1HumongousAllocation` und `Other(cause)` für eine Ursache, die die Aufzählung nicht
++         kennt.
++     entry .unapply   erkennt eine Ursache an dem Text, den die JVM für sie hat, `Other(cause)` für eine unbekannte
++   entry #run   die laufende Nummer der Sammlung, als `Ordinal`
++   entry #collector   welcher Collector lief
++   entry #cause   was die Sammlung ausgelöst hat
++   entry #bytes   die belegten Bytes jedes Speicherpools davor und danach, nach dem Namen des Pools
++   entry #before   die belegten Bytes aller Pools vor der Sammlung, aufsummiert
++   entry #after   die belegten Bytes aller Pools nach der Sammlung, aufsummiert
++   entry #reduction   wie viele Bytes die Sammlung freigegeben hat: `before - after`
+
+@ 0 1 0 1f5890285a8ab6d913a266dd88c37ac5
++ entry .Heap   der Heap der JVM, als belegte Bytes
+
+% 1 1 0 0c8516c0650cc113125dbe0b12da87b5
+
+@ 0 3 0 0e4b1fcaf9fd7ad50e105a7a0d604fb5
++       In `parasite.jvm`. `Heap.used` summiert die belegten Bytes jedes Heap-Speicherpools, den die
++       Management-Beans der JVM melden.
++   entry .used   die derzeit belegten Bytes über die Speicherpools des Heaps
+
+@ 0 1 0 14131b9460436a5013995f085186a28c
++ entry .threads   die Threading-Modelle, jedes ein `Threading`-Given, das namentlich importiert wird
+
+% 1 1 0 11551e000e0227e912cf52b5220c8377
+
+@ 0 6 0 1ea5e8341c9cb9e612e7e661c343f656
++       Auf welchem Supervisor ein `supervise`-Block seinen Baum verwurzelt, entscheidet das
++       `Threading`-Given im Geltungsbereich, und die Wahl ist nie implizit: `import soundness.*`
++       bringt keines davon mit, und eines wird namentlich importiert. `threads` ist ein Objekt und
++       kein Paket, weil seine Givens Capabilities sind und ein Feld von Capability-Typ in einem
++       Objekt liegen muss, das selbst eine ist; eine öffentliche Klasse oder ein öffentliches
++       Objekt, das eines davon erreicht, deklariert `uses parasite.threads`.
+
+% 2 1 0 07ce85fddc58e08b08ce81aa20462a98
+
+% 3 1 0 0b152e90a3f1813b03a6555a4b59726e
+
+% 4 1 0 1d099fe20a509304100e05a6e1d5b01d
+
+% 1 1 0 0007b448e87440ac1f614f0cade11615
+
+@ 0 3 0 0d1372f1805487430604c094b5c31a3d
++       `virtualThreads` eignet sich für eine JVM-Anwendung, die weiß, dass sie Java 21 hat;
++       `adaptiveThreads` für eine, die ihre JVM nicht vorgeben kann; `pooledThreads` für
++       feingranulare Auffächerung; `platformThreads` für Code, der pro Aufgabe einen
++       Plattform-Thread braucht; und `javascriptThreads` für die Event-Loop.
+
+% 1 1 0 116b740a3ef057671b4f6fddd938b25a
+
+% 1 1 0 1d4a65add82a12030b4f7289114238b2
+
+@ 0 11 0 094a779777b6704e0a2c66c1068d1713
++   entry .platformThreads   jede Aufgabe auf einem neuen Plattform-Thread: `PlatformSupervisor`
++   entry .virtualThreads   jede Aufgabe auf einem virtuellen Thread: `VirtualSupervisor`
++       Braucht Java 21 und scheitert auf einer älteren JVM zur Laufzeit; forkt auf Scala Native,
++       wo es kein Loom gibt, Plattform-Threads.
++   entry .adaptiveThreads   virtuelle Threads, wo die JVM sie hat, sonst Plattform-Threads: `AdaptiveSupervisor`
++   entry .pooledThreads   Aufgaben auf wiederverwendbaren Trägerthreads: `PooledSupervisor`
++       Für feingranulare Auffächerung, bei der ein Thread-Start pro Aufgabe dominieren würde; eine
++       Aufgabe hat keinen eigenen Thread, daher bleiben Thread-Locals über die Aufgaben hinweg
++       bestehen, die ein Träger ausführt.
++   entry .javascriptThreads   Aufgaben laufen eager bei ihrem Fork, auf einem Strang: `JavascriptSupervisor`
++       Das Modell für Scala.js, mit den Grenzen eines einzigen Strangs: keine Verschränkung,
++       sofortiges Schlafen und eine Panic bei einem Warten, das keine abgeschlossene Aufgabe je
++       beenden könnte.
+
+@ 0 1 0 018db5cb4c97eeac152d1ce672a12593
++ entry .supervisors   der globale Supervisor, als Given
+
+% 1 1 0 0580f10a363140d90e880dc4a4fe848f
+
+@ 0 4 0 1483b3125d8c2ffc149639115a0b8d67
++       Ein Objekt, das `globalSupervisor` enthält, ein `Supervisor`-Given für Code, der direkt
++       einen Supervisor-Wert statt eines `Threading` braucht. Seine Givens sind Capabilities,
++       daher deklariert eine öffentliche Definition, die eines erreicht, `uses
++       parasite.supervisors`.
++   entry .globalSupervisor   `PlatformSupervisor`, als `Supervisor`-Given
+
+@ 0 1 0 10a4f3507023ff1707b3c62f09ef9e45
++ entry .unsupervised   ein Monitor für die Lebensdauer des Prozesses, zum Blockieren außerhalb jedes `supervise`-Geltungsbereichs
+
+% 1 1 0 0167c28cf676c9b01c9d16b0bbfca4af
+
+@ 0 4 0 119f1a434489ef361df33d883e125db1
++       Ein bewusster, explizit importierter Notausgang für Aufrufstellen (Daemon-Lebenszyklen,
++       Wartevorgänge über die Lebensdauer des Prozesses), an denen kein
++       Überwachungs-Geltungsbereich existieren kann: `orphanMonitor` ist ein `Root` über
++       `PlatformSupervisor`, der den aufrufenden Plattform-Thread parkt und nichts überwacht.
++       Bevorzugen Sie `supervise` überall, wo der blockierende Bereich bereits abgegrenzt ist.
+
+% 2 1 0 0c39b2a175e82d0c00dcad50ff1a5ca0
+
+% 3 1 0 05c523be4a157c0f022b0040e3b50543
+
+% 0 1 0 0a8f4f91ba957db61a44a74663fb2e30
+
+% 1 1 0 17cbeeb759e786f4049b40aa5f9e5b77
+
+% 0 1 0 14aa5b64b27ad33e0e60020c088ac000
+
+% 0 1 0 044f5d4d8463b8e40e5e85232f336888
+
+% 0 1 0 16cc184cc40174da1fdca1e677aed5a5
+
+% 1 1 0 11faefc942d7632004fd3ba776c6f02f
+
+% 1 1 0 0c117eae24267a0b0522a3ddc740a434
+
+@ 0 1 0 1e4f9d2950b8ba8a155a9c12903e3c77
++   entry .orphanMonitor   ein Wurzel-`Monitor` ohne Geltungsbereich, über `PlatformSupervisor`
+
+@ 0 1 0 107ac79c188cb83408f298e7dfbafcf7
++ entry .probates   die vier Abschlussrichtlinien, jede ein `Probate`-Given, das namentlich importiert wird
+
+% 1 1 0 0223b62fa5d2502801120b7dc506e9a1
+
+@ 0 4 0 03c020fa6efb8b3112f9bdb02b6b34ad
++       Eine Nachlassregelung entscheidet, was eine Elternaufgabe mit einem Kind tut, das noch
++       läuft, wenn der Rumpf der Elternaufgabe abschließt, und für jedes `async`, `task` und
++       `daemon` muss eine im Geltungsbereich sein; `import soundness.*` bringt keine mit. Ein
++       Daemon-Kind wird unter jeder Richtlinie abgebrochen; die Richtlinien unterscheiden sich bei
++       gewöhnlichen Kindern.
+
+% 2 1 0 0dca3bcb980f8c6a0db50229c0f6597a
+
+% 3 1 0 1eb0ea445078ee4d047dae6114e0561d
+
+% 4 1 0 1face8857bf4090202ce709c6f2aee98
+
+% 5 1 0 07a66bbec9f461a70139af7fd03a1f69
+
+% 6 1 0 11fc3ca310fcf81f054544a2b744412a
+
+% 0 1 0 1d10db6a57f937290b6d625048e8095a
+
+% 2 1 0 0634fa2f00d27c9c16f2af0478a0a821
+
+% 0 1 0 189f085fae4a522019413f0ecfe89ff3
+
+% 0 1 0 00f32367fa4ed0af03489a430aa117ca
+
+% 0 1 0 0e102d37a0c29e41175dd3aede87d43f
+
+% 0 1 0 0340382fa4eeb3ef11291fbdc28cc8c6
+
+% 0 1 0 023bc31516e84ffa020658361d02e57c
+
+% 0 1 0 04a09b8e5a323be61aa971e1923599e4
+
+% 0 1 0 1b1eb071fd47f1290829f8a0f60f221f
+
+% 1 1 0 1b60e700bf3b8d830c03b253bf5a4ff0
+
+@ 0 4 0 0baf7773bc0d027703f4dcd43cccde19
++       Arbeit, die Zustand verändert, will `awaitProbate`, damit jedes Kind bis zu seinem Ende
++       läuft; reine Arbeit kann `cancelProbate` nehmen und anhalten, wo immer sie gerade ist; und
++       Code, dessen Design vorsieht, auf jede gestartete Aufgabe zu warten, will `failProbate` oder
++       `panicProbate`, damit ein vergessenes `await` ein Fehler ist (geprüft oder ungeprüft) und
++       kein stilles Warten.
+
+% 1 1 0 13d7e8d3c3cdcf5500e186cf53d26663
+
+@ 0 10 0 10a7c1c69143d50f19b0411e25768825
++   entry .awaitProbate   die Elternaufgabe wartet vor dem Abschluss auf jedes unbeendete Kind
++       Auf das Kind wird auf dem eigenen Strang des abschließenden Workers gewartet; das `await`
++       der Elternaufgabe kehrt erst zurück, wenn jedes Kind zur Ruhe gekommen ist.
++   entry .cancelProbate   die Elternaufgabe bricht jedes unbeendete Kind ab
++       Das Kind wird unterbrochen, wo es pausiert, und hält an, wo es nachgibt; das Ergebnis der
++       Elternaufgabe bleibt unberührt.
++   entry .panicProbate   ein unbeendetes Kind ist eine Panic: _asynchronous child task did not complete_
++   entry .failProbate   ein unbeendetes Kind löst `Async.Error(Incomplete)` über die `Tactic` im Geltungsbereich aus
++       Die einzige Nachlassregelung, die etwas einfängt (die ambiente `Tactic[Async.Error]`), daher
++       braucht sie dort, wo sie importiert wird, eine im Geltungsbereich; der Fehler tritt beim
++       `await` der Elternaufgabe zutage.
+
+@ 0 1 0 0925414e7041adc9197eca8f35ed8c49
++ entry .retryTenacities   sechs Wiederholungspläne, jeder ein `Tenacity`-Given, das namentlich importiert wird
+
+% 1 1 0 04d396aef614fe5808709a270baa6955
+
+@ 0 4 0 16e7e757d8f4b4d7120fc7b47d0bb5d6
++       `retry` braucht eine `Tenacity` im Geltungsbereich, und `import soundness.*` liefert keine.
++       Die exponentiellen Pläne beginnen bei zehn Millisekunden und wachsen pro Versuch um den
++       Faktor 1.2; die `fixedNoDelay`-Pläne wiederholen sofort. Jeder ist unbegrenzt (`…Forever`)
++       oder auf fünf oder zehn Versuche begrenzt, nach denen `retry` `Tenacity.Error` auslöst.
+
+% 2 1 0 09b14ae46ad1e12f179bafed58f3db7a
+
+% 3 1 0 0d4002e647dd38dc11f697d627ebbee5
+
+% 0 1 0 168808e166e2bb5404e25cccd9984669
+
+% 1 1 0 19b99099e2a92d0a0b68ab677fcddcf1
+
+% 1 1 0 1357450fdefb48a302cee704afc68e5e
+
+% 1 1 0 1d080d28a9f2fffa144a27574d0e56be
+
+@ 0 6 0 118c8b7586d406de0bd478af7da7b711
++   entry .exponentialForeverTenacity   zehn Millisekunden, wachsend um 1.2 pro Versuch, ohne Grenze
++   entry .exponentialFiveTimesTenacity   zehn Millisekunden, wachsend um 1.2 pro Versuch, für höchstens fünf Versuche
++   entry .exponentialTenTimesTenacity   zehn Millisekunden, wachsend um 1.2 pro Versuch, für höchstens zehn Versuche
++   entry .fixedNoDelayForeverTenacity   wiederholt sofort, ohne Grenze
++   entry .fixedNoDelayFiveTimesTenacity   wiederholt sofort, für höchstens fünf Versuche
++   entry .fixedNoDelayTenTimesTenacity   wiederholt sofort, für höchstens zehn Versuche

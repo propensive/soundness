@@ -1,4 +1,0 @@
-orthant 1 language
-
--       val path = % / "verona" / "capulet"   // a `Path of ("capulet", "verona")`
-+       val path = % / "verona" / "capulet"   // a `Path of ("capulet", "verona")`

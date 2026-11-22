@@ -1,0 +1,12 @@
+orthant 2 language
+
+% 0 1 0 04edaa4762b37e2b0e385af5f0551258
+
+@ 0 1 0 1ac5cb23e93a044c173a5d922a49a802
++ Todos os charsets usam o sanitizador no escopo.
+
+@ 0 4 0 02e014dd225711831e5e0dc01eba7d8d
++ A codificação tem o problema oposto: um caractere para o qual a codificação não tem bytes, como `é`
++ em ASCII. Por padrão, um `Codepage` escreve no seu lugar o substituto da codificação, `?`. Com
++ `encodingSanitizers.strictEncodingSanitizer` importado, ele lança em vez disso um `Codepage.Error`
++ que nomeia o caractere.

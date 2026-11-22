@@ -1,0 +1,268 @@
+orthant 2 language
+
+@ 0 1 0 18967b6efd75bc2c1d60c408646b615d
++ ## Bases de données
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 4 0 140fdeea2cfa79541fb369f465c03ddb
++ Une `Database` est un stockage en mémoire pour des entités typées et les relations entre elles.
++ Une valeur est stockée une seule fois, et identifiée par une référence typée. Les relations
++ qu'admet une base de données sont déclarées *dans son type* : relier deux entités que le schéma
++ ne connecte pas est donc une erreur de compilation.
+
+@ 0 2 0 184c99bcd8afe9620bac67ef5da7a1d4
++ Elle a la forme d'une base de données relationnelle, avec des entités, des clés étrangères et des
++ jointures, pour les nombreux programmes dont les données de travail tiennent en mémoire et dont
++ le schéma devrait être vérifié par le compilateur.
+
+@ 0 1 0 0dc5d803f13483f11e1d807cb28f3c0b
++ ### Le stockage typé
+
+@ 0 5 0 1e24a89bd25703b71f34ae1f6fce2aff
++ Les modèles de données en mémoire dérivent vers des maps de maps : des entités indexées par
++ identifiant, des relations sous forme de `Map[Id, Set[Id]]`, et le schéma, qui dit quels types
++ de choses peuvent être reliés à quels autres, n'existant que par convention. Le compilateur
++ connaît les types de tout le reste, et ne sait rien des relations censées exister. Ainsi, une
++ boîte attribuée à une personne, dans un domaine où les boîtes appartiennent à des étagères, est
++ une surprise [à l'exécution][exécution], ou une corruption silencieuse.
+
+@ 0 4 0 044a784cc381f3ca1328784d8122039d
++ Ici, les relations sont un type. Une base de données est créée à partir de son tuple de
++ relations, et chaque affectation, suppression et recherche est vérifiée par rapport à lui. Une
++ opération que le schéma n'autorise pas ne peut pas être écrite, ce qui est la
++ [sûreté par construction](../../philosophy/safety-by-construction.md) pour un modèle de données.
+
+@ 0 3 0 08aa286919641a121102266c73c6718f
++ Tout provient du package `soundness`. Le deuxième import choisit une
++ [stratégie](errors.md#choosing-a-strategy) pour les erreurs, et le troisième permet aux
++ exemples d'afficher leurs résultats :
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 19457510374c1569056d9ed2ced73c99
++ ### Déclarer une base de données
+
+@ 0 1 0 1130b81dad0ea38705f197185df557cf
++ Les relations forment le type de la base de données. `A -< B` se lit « un `A` peut avoir des
++ `B` » :
+
+% 2 1 0 073243d8c0176ba007886d9152cf74c4
+
+% 0 1 0 008b582ca68a2fe50d6452dfb866ce0d
+
+% 0 1 0 062420b0159c36820671d1defd520112
+
+% 0 1 0 0dec36f4c2ada2820a9221a57a4e1dea
+
+% 0 1 0 01959242600251151c00cbc1d8f8cd6c
+
+% 1 1 0 09d0ff4c64095caf1bd2bff97d072c84
+
+@ 0 1 0 0140a54dfe3cded40f30be6425793ae3
++ ### Stocker et référencer
+
+@ 0 3 0 038a2ab02357eded1bdaf39c85e101ba
++ `store` interne une valeur, et renvoie sa référence typée. La référence est un
++ `Ref of Box in db.type` : elle ne peut donc pas être confondue avec une référence issue d'une
++ autre base de données, ou vers un autre type :
+
+% 2 1 0 14a7711c35c2147618aba4905c1b770d
+
+% 0 1 0 0b40270a665a9c341dbd4bd3bce93134
+
+% 0 1 0 0c29a88754b108fe09cb052c52b2d5f5
+
+% 1 1 0 0e60321081f6bd6412ada9a605125ebd
+
+@ 0 1 0 0b569b894e117c3c05b8b84da2a66ceb
++ Une référence se déréférence en l'appliquant, ce qui rend la valeur :
+
+% 2 1 0 094e52ea372286b6083db4758d515b36
+
+% 3 1 0 0e1792809bc986a9065d30b679c8b5b7
+
+% 4 1 0 0de1865a38ce09b30904dcce819dc0dd
+
+% 0 1 0 0ce42b5ace7737ef164241bbead23c71
+
+% 1 1 0 09f5d1e6896ab5170a39008146e677f2
+
+@ 0 1 0 15050fb8a25563aa00680f8f85234061
++ ### Références par clé
+
+@ 0 4 0 019264e28983e5cf0cc4f6e095b56d90
++ Une référence n'a pas à provenir d'un stockage. Lorsqu'une entité porte sa propre clé, comme une
++ adresse email ou un code produit, une `Reference` vers elle est cette clé, typée par ce à quoi
++ elle fait référence. Une instance de `Resolvable` dit comment une clé trouve son entité. Celle-ci
++ est construite à partir d'un ensemble de valeurs, et les parcourt d'après le champ marqué
++ `@primary` :
+
+% 2 1 0 0a23ebd56876a8b20260b2ec41267ce8
+
+% 0 1 0 08b9bc67268c95300da76963aa47c11f
+
+% 0 1 0 105f3cb122006dd717a92d5486945bc2
+
+% 0 1 0 04043e95f61aa8e90a7195c6e6b42f2c
+
+% 0 1 0 01d0074750383f5f0057f398305571bb
+
+% 1 1 0 1e2b0f3ecf08721f1db367c7c9e9ee1b
+
+@ 0 2 0 1612facf44d3588019e3b1d202e4e452
++ Avec cela dans la portée, `ref` prend la référence d'une valeur, qui ne contient rien d'autre
++ que sa clé. Appliquer la référence la résout en retour :
+
+% 2 1 0 1fb15cb142be746c02e49e9d3184f5cb
+
+% 3 1 0 03d902e285e83d6108edfe7e8cbc0f02
+
+% 4 1 0 1818a6fab4b1099d0d93bb8f072503d7
+
+% 0 1 0 0cd13a7c06e8e22701f59b08046feb5c
+
+% 0 1 0 1fef0199fad8443e143e8e0f02d63b26
+
+% 0 1 0 15989f53ceca089c084fc38b5bf9c6c5
+
+% 1 1 0 034ecba0cb2c4bed13d2fa586ece26a8
+
+@ 0 2 0 067c848e98c704b10213a67c0ddeed49
++ Une référence construite à partir d'une clé qui ne correspond à rien lève une `Reference.Error`
++ lorsqu'elle est appliquée, et non lorsqu'elle est construite :
+
+% 2 1 0 0333c70242ea595512cc06e25124777f
+
+% 3 1 0 01ff7f9764776ee207c0a122432aa86f
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 05a3a48c08da48f61aabb34f9da39133
+
+% 1 1 0 14de7a8a35c0d99f0b772b9c0191e610
+
+@ 0 1 0 011acc11e285e5c81b310b456eb87cd0
++ ### Relier
+
+@ 0 2 0 1de8c7b2d4ae25991a4e96ad5256dae3
++ Les références se relient avec `assign`, se délient avec `unassign`, et se parcourent avec
++ `lookup`. Chacune de ces opérations n'est valide que pour une relation que déclare le type de la
++ base de données :
+
+% 2 1 0 07d6a3bca15e839e091e2edd098e5239
+
+% 3 1 0 19480f3da8da3fb50c6168bb766192bf
+
+% 4 1 0 053256ee676e9d2d0ee1c450618ba614
+
+% 5 1 0 1a11f4c211e9a6771e2c29672515ad75
+
+% 1 1 0 03a43799137b5c610cb485d59c5c4f26
+
+% 0 1 0 1979f98dfa7927a409826f12b08e20c9
+
+% 1 1 0 04417edcee1cd59a160d5ba2a06bc283
+
+% 1 1 0 05ecc50aad7a2df217622478403af213
+
+@ 0 1 0 10f92ddaf8f00d4a0141528c243cd0a6
++ Il n'y a pas de relation `Box -< Shelf` : on ne peut donc pas attribuer une étagère à une
++ boîte :
+
+% 2 1 0 1213394458eecd441d07ed8b5940500e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 1b1781970f9f0eb30b07f880e970c0a9
+
+% 1 1 0 19fd2ca0aaa5841b1650c4c349864b8b
+
+@ 0 2 0 0a1ac4e5974a44bb1703bab934938db6
++ C'est tout l'intérêt. Le schéma n'est pas de la documentation mais un type, et une opération qui
++ en sort ne s'exécute jamais, parce qu'elle ne compile jamais.
+
+@ 0 3 0 16cda9bce8f32dff0d5893d8c9144255
++ `ref` trouve la référence d'une valeur déjà stockée, et lève une `Database.Error` lorsqu'elle ne
++ l'est pas. C'est ainsi qu'une valeur qui arrive d'ailleurs est rapprochée de ce que la base de
++ données contient déjà, plutôt que d'être stockée une seconde fois.
+
+@ 0 1 0 1bb0030fd9b341c51b202d80cfbde761
++ ### Internement
+
+@ 0 2 0 1a32f8c353d3a80e018cbdf59fab645e
++ `store` *interne*. Stocker deux fois une valeur égale donne la même référence : l'identité dans
++ la base de données se fait donc par valeur, et non par allocation :
+
+% 2 1 0 08270d900433d35f172b0c8e7bf6cb3c
+
+% 3 1 0 0f9801327b2768ac0eaab4141ac8d879
+
+% 4 1 0 0adf70204248b7fd0fe08064a719240b
+
+% 0 1 0 109f80e8cb91e34c1e8e6742477fa834
+
+% 1 1 0 1c0994003ed63a9c008b824ab707d84b
+
+@ 0 2 0 168b94a2319135b81c79be1e2bb06887
++ C'est ce qui permet sans risque de comparer une référence, de l'utiliser comme clé, et de la
++ conserver à la place de la valeur qu'elle nomme.
+
+@ 0 3 0 066ce4678e33a29d1497d7ab5aa25dee
++ Une référence est une poignée opaque, et non un pointeur ou un indice dans une table que
++ l'appelant peut voir. Une référence issue d'une base de données ne peut pas être déréférencée
++ auprès d'une autre. Le type dit à quelle base de données elle appartient, et il n'existe aucun
++ moyen d'en construire une qui mente.
+
+@ 0 1 0 08738ff9214c82e812358f7e33270b16
++ ### Requêtes
+
+@ 0 2 0 0315304e089359561d2da4c47ff7ac1f
++ `lookup` suit une relation, et donne chaque référence du type demandé. Une requête qui doit
++ sélectionner plutôt que parcourir est un prédicat sur les valeurs de ces références :
+
+% 2 1 0 0880ee68cc36f9141b817a522fa1e97c
+
+% 3 1 0 1367daa5ffc081e60c3cef4853f66e68
+
+% 4 1 0 00ba3885a8ee3768028b13777b20838e
+
+% 5 1 0 0548678e53d3e125041be6a1e8718549
+
+% 0 1 0 15880bda0b69364209186f5c2b658d8d
+
+% 0 1 0 048e1a4544020cdf1d1cefad4ad04717
+
+% 1 1 0 119cad234a7c7a0e0b7c8678ac2b3a35
+
+@ 0 3 0 19c73b58418d76140ca6f55ddae6acf8
++ Le prédicat est une fonction ordinaire sur le type stocké : une requête s'écrit donc en Scala,
++ et non dans un langage de requêtes enfoui dans des chaînes. Le compilateur la vérifie comme le
++ reste du programme.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 6 0 0f34e6307294ae410730705a07addfa0
++ - [Annotations](annotations.md#finding-the-annotated-field) décrit `@primary`, qui marque la clé
++   d'après laquelle cherche un `Resolvable`.
++ - [Collections](collections.md) décrit les opérations sur `Set` qu'admet une recherche.
++ - [Erreurs](errors.md) décrit `safely` et les stratégies qui traitent une `Reference.Error`.
++ - [Enregistrements](records.md) type des données dont le schéma provient d'une vraie base de
++   données.
++ - [Serveur HTTP](http-server.md) sert les données que contient une base de données.

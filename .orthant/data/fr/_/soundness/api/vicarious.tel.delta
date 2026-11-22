@@ -1,0 +1,622 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 14c573472161d1591a0ab821784a0dbd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1c512d48a8f747e81db84ebb3f7b85c8
++ info
++     des valeurs indexées par les chemins de champs d'un type, adressées par un proxy vérifié à la
++     compilation
+
+@ 0 7 0 1eed8b89c46cbe9e13e6f9eb2a7761c6
++ detail
++     _Vicarious_ traite la structure d'une case class — chaque champ accessible depuis elle, à
++     n'importe quelle profondeur, et la valeur entière elle-même — comme un ensemble fixe de
++     **chemins**, `opponent.name` plutôt que `name`, et permet au code de nommer ces chemins par un
++     **proxy** : une valeur de substitution du type, sans champs propres, sur laquelle chaque
++     sélection est résolue, à la compilation du code, en l'indice du chemin qu'elle nomme. Un
++     chemin que le type ne possède pas est une erreur de compilation ; aucun chemin n'est donc
++     jamais écrit sous forme de texte.
+
+@ 0 6 0 0d0f3feabc53640b06c3f7f07eb53459
++     Deux structures sont construites sur le proxy. Un `Catalog[Key, Value]` contient une `Value`
++     pour chaque chemin de `Key`, calculée par une même fonction à partir d'une valeur de `Key`,
++     lue par chemin, transformée avec `map` et combinée entrée par entrée avec `braid`. Un
++     `Specific` associe certains chemins d'un type à des instances de classes de types, pour qu'une
++     dérivation (celle de `wisteria`, et donc celles de `jacinta`, de `stratiform` et des autres
++     codecs) les utilise exactement à ces chemins à la place de l'instance du type du champ.
+
+% 2 1 0 1630ecd701d1902615b8979173abf571
+
+% 3 1 0 0c533d0ca0adb7e81427ebb98cb3c6db
+
+% 5 1 0 047ba6561d06fc3210c636a9856fb595
+
+% 6 1 0 0a449e935ff23efa0cb0634c4c83f0c4
+
+% 8 1 0 10b102ee5e4686091d0fa183f8334a41
+
+% 9 1 0 02ec097a1894293103015980210e56e7
+
+% 0 1 0 1f98fc376d93d26407b211694cd470ef
+
+% 0 1 0 1cde67ede7001b021ed1a5446cab1794
+
+% 1 1 0 1a308ac5173f5d601eb177d3087611bf
+
+@ 0 4 0 1f597724a09d4f661173e2eee129a9cb
++     Les chemins sont aplatis en profondeur d'abord, la racine en premier : pour `Duel`, ce sont le
++     `Duel` entier, `challenger`, `challenger.name`, `challenger.age`, `opponent`, `opponent.name`
++     et `opponent.age` ; un catalogue sur `Duel` a donc sept entrées, et deux catalogues sur la
++     même clé s'alignent position par position.
+
+@ 0 3 0 0a68eb7b1e05921207e39ce3a09baf88
++     La bibliothèque a un seul ensemble de sources, `vicarious.core`. `Catalog`, `catalog`,
++     `Proxy`, `Specific`, `root` et `specifically` sont exportés vers le package parapluie
++     `soundness` ; le given `Proxy` est dans son compagnon, dans la portée implicite ; rien n'est
++     donc importé par son nom.
+
+% 0 1 0 16736c53b26096c207f0082614094673
+
+% 0 1 0 15cd18d3b7919aa80115166de491bebc
+
+% 0 1 0 16ef5f905f86975c0f40c8ed9c1f6402
+
+% 0 1 0 1ed6710e6599bce30402f78dacf05b60
+
+% 0 1 0 0f8b59d3fb7a104900a03684ad28f8bf
+
+@ 0 1 0 0782f420d34c2a3105a451aeac5edc10
++ entry .catalog
++   info
++       construit un `Catalog` en appliquant une même fonction polymorphe à une valeur et à chacun
++       de ses champs
+
+@ 0 6 0 08f2396f75b3548a0dc9c6b94ae12c40
++   detail
++       `catalog(value)(lambda)` est une macro qui parcourt la structure de case class du type de
++       `value` à la compilation du code, et applique `lambda` — une fonction polymorphe pure
++       `[field] => (field: field) -> result` — à la valeur entière puis à chaque champ, en
++       profondeur d'abord, dans l'ordre de déclaration. La fonction doit accepter un champ de
++       n'importe quel type ; elle ne peut donc en faire que ce que toute valeur permet. Un
++       `ClassTag` pour le type du résultat est nécessaire, puisque les entrées sont conservées dans
++       un tableau.
+
+@ 2 1 0 1d6f55d230d8ef4d0009f57724ac1919
++       ```scala
+
+@ 3 1 0 00bf0f847813c1a10603df9f8863a003
++       import soundness.*
+
+@ 5 1 0 1b28e8913075260f04967776bf2ec2ac
++       case class Person(name: Text, age: Int)
+
+@ 6 1 0 16f08b8f114259901d79c58d31358e24
++       case class Duel(challenger: Person, opponent: Person)
+
+@ 8 1 0 11459718a47ea6f618f5b7020f8ca339
++       val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+
+@ 9 1 0 0e911233e342b37205980a5266957913
++       val labels: Catalog[Duel, Text] = catalog(duel)([field] => (field: field) => field.toString.tt)
+
+@ 0 1 0 045154aee157ecd10e8e88020155681d
++       labels.size   // 7: the whole Duel, challenger, challenger.name, challenger.age,
+
+@ 0 1 0 0bda1787e6dfd4d40d817764375dee42
++                     //    opponent, opponent.name, opponent.age
+
+@ 1 1 0 08859f5cc6e75c9f1aa6e1c0a30529b7
++       ```
+
+@ 0 1 0 01331c7d4920278d0e058a0e42ff0e24
++ entry .Catalog
++   info
++       une valeur pour chaque chemin de champ d'un type clé, lue par un chemin vérifié à la
++       compilation du code
+
+@ 0 7 0 1ba25060a6df98b10a0e06895b2dbd7f
++   detail
++       Un `Catalog[Key, Value]` contient une `Value` à chaque position de la structure aplatie de
++       `Key` — la valeur entière d'abord, puis chaque champ en profondeur d'abord — dans `#values`.
++       Il se construit avec `catalog`, se lit avec `#apply` et un chemin écrit au moyen d'un proxy,
++       se transforme avec `#map`, se redéfinit à des chemins nommés avec `.brush`, et se combine
++       avec un autre catalogue sur la même clé avec `#braid`. Le type clé est ce qui rend deux
++       catalogues combinables et ce qui vérifie chaque chemin utilisé pour en lire un.
+
+% 2 1 0 02514956fb2369b305f17caf77c73c29
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 01f65e0e42f642a612e72164231a5895
+
+% 1 1 0 19749c2033ff89da1a0e3513dfc0fade
+
+% 2 1 0 0af6169059bf084006f7be94d1b94a84
+
+% 4 1 0 1d9c2f63627e4ed6023b2aa8c8463ba4
+
+% 5 1 0 149a8328f5268ee102d4a7f0c2c1f621
+
+% 7 1 0 19364089144447960bf7a51143444db7
+
+% 8 1 0 13d82c5ae2ef7a8f0d9fe21623024396
+
+% 0 1 0 16087901fc7780a11caff7f97772c4dc
+
+% 1 1 0 05d27781c35ce76e04a550841a2a475d
+
+% 0 1 0 1d2255833216fb750fb13b636f50456c
+
+% 1 1 0 0cf1f647db68b9df1a5727278b75182d
+
+% 2 1 0 18944a177445cae10c3f27f59a925efe
+
+% 4 1 0 1dde0ab126d2c8db0e4d5c942a74a121
+
+% 5 1 0 1af3a7fc27c031c41c0ff56878f590a6
+
+% 7 1 0 14eb899416168e8e1e399b40eedb113f
+
+% 8 1 0 06e08923ff95329f1f103645e783a646
+
+% 9 1 0 13ae7673a36f262017eff493aafa53ab
+
+% 0 1 0 042c74f71a7d57df151dadb04e7d860d
+
+% 1 1 0 101f2f084c6fbf2517e300659acc48ba
+
+% 0 1 0 1b080daada2ad15d1f06a552a3772b6a
+
+% 1 1 0 18b50400be569d0d1df5fa33c0257fa5
+
+% 2 1 0 0240e032b4884c3111d79186ebde3f29
+
+% 4 1 0 12b37d55f6738bbd070ee18cbda3c900
+
+% 5 1 0 1b74d67c513c71801c4c7ec166a46725
+
+% 7 1 0 1b50283bd7682527055d079cae4a5092
+
+% 8 1 0 191d93e739f1476f1b9dcd00bb0459fd
+
+% 9 1 0 0a55b7e6a509d2ab091f478dae893b65
+
+% 0 1 0 1edf6d73f92a6077057be7b0d93a3c6f
+
+% 0 1 0 1a4eeee82407baca06928eeea9720351
+
+% 1 1 0 0750e4fddf46d29d1e7ac716d5ec8b60
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 09b6a9da700cbea610e83d01e07a0ea2
++       C'est ainsi que l'on assemble une table de réglages par champ : des catalogues d'étiquettes,
++       de largeurs et de tout ce qui compte, construits séparément et tressés ensemble, chacun
++       adressé par les mêmes chemins. Un `Catalog` est `Findable`.
+
+% 0 1 0 16cebf059ababff11de6f4787d27b308
+
+% 0 1 0 02dcdff5f415749b17058cab8bd8264f
+
+@ 0 1 0 16004f8a0ba13d3100176c999fce9b6d
++   entry .brush
++     info
++         une copie d'un catalogue dont les entrées à certains chemins sont remplacées, par une
++         fonction partielle de chemins
+
+@ 0 4 0 079d75552d561cd9173706622ec02f7d
++     detail
++         Une extension sur n'importe quel `Catalog`, qui requiert le `Proxy` dérivé pour le type
++         clé. L'argument est une fonction contextuelle du proxy vers une fonction partielle sur les
++         proxys : chaque `case` nomme un chemin, sous forme de motif sur le proxy, et donne sa
++         nouvelle valeur ; tout chemin non filtré conserve son entrée.
+
+@ 2 1 0 1816e5301ac89296087e83d67698707c
++         ```scala
+
+@ 3 1 0 16889a812e3598660ad60b7a765bb229
++         import soundness.*
+
+@ 5 1 0 0198c7b370a12e201da6faa80e5c7f45
++         case class Person(name: Text, age: Int)
+
+@ 6 1 0 0886091d12e30edc09bdb937e0f6a3f1
++         case class Duel(challenger: Person, opponent: Person)
+
+@ 8 1 0 1cc36380dc457f95125461057d939016
++         val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+
+@ 9 1 0 1d65bcffa7b00c400a72088e4b7f3c22
++         val labels = catalog(duel)([field] => (field: field) => field.toString.tt)
+
+@ 0 1 0 194a622562029f0c1f041e159addef5f
++         val redacted = labels.brush(proxy ?=> { case proxy.opponent.name() => t"(withheld)" })
+
+@ 1 1 0 1506c446973f9402169a4369348fcadf
++         ```
+
+@ 0 1 0 1beb01b48efd17940cf1ce662f422b70
++   entry #values
++     info
++         les entrées, une par chemin, la valeur entière d'abord puis chaque champ en profondeur
++         d'abord
+
+@ 0 1 0 08178cb1ef26331919da9b3408f6002f
++   entry #size
++     info
++         le nombre d'entrées : une pour la valeur entière et une pour chaque champ à toute
++         profondeur
+
+@ 0 1 0 018a7749dcdff06c173901dd8aecb409
++   entry #apply
++     info
++         l'entrée à un chemin, écrit sous forme de sélections sur un proxy du type clé
+
+@ 0 4 0 1227a378e9aeb8710b7bfac5f98fd95a
++     detail
++         `catalog(proxy ?=> proxy.opponent.name)` résout le chemin, à la compilation du code, en
++         l'indice de son entrée ; `proxy ?=> proxy` est l'entrée de la valeur entière, et un champ
++         que le type ne possède pas est une erreur de compilation. `challenger.name` et
++         `opponent.name` sont des entrées différentes, puisqu'un chemin est une position, et non un
++         nom.
+
+@ 0 1 0 0f7ff316e85921ed0a01929bc6318a3c
++   entry #map
++     info
++         un catalogue sur la même clé avec une fonction appliquée à chaque entrée
+
+@ 0 2 0 1e2e3254b0d96186046fda067ba19baf
++     detail
++         Les chemins sont inchangés ; tout chemin valide sur ce catalogue l'est donc sur le
++         résultat. Un `ClassTag` pour le nouveau type de valeur est nécessaire.
+
+@ 0 1 0 1eff50849e5e4f1116d55c6da6f2da24
++   entry #braid
++     info
++         combine deux catalogues sur la même clé, entrée par entrée, avec une fonction des deux
++         valeurs
+
+@ 0 2 0 096563dca0e92e8e180560ce96007bfa
++     detail
++         `left.braid(right)(lambda)` n'exige aucune correspondance de noms : des catalogues sur la
++         même clé s'alignent position par position. Un `ClassTag` pour le type du résultat est
++         nécessaire.
+
+@ 0 1 0 009ab1cf4c3febe701b6674e8cc75997
++   entry #tie
++     info
++         évalue un bloc avec ce catalogue et le proxy de sa clé dans le contexte, de sorte qu'un
++         chemin lit son entrée
+
+@ 0 3 0 14a38e5b864d57e71081a4fae5a0ae0c
++     detail
++         Dans le bloc, le catalogue est une valeur contextuelle ; `proxy.opponent.name()` — un
++         chemin suivi de `()`, c'est-à-dire `Proxy#apply` — lit donc directement l'entrée de ce
++         chemin ; plusieurs chemins peuvent être lus dans une même expression.
+
+@ 2 1 0 1f8a808e7079e1371b9a995e6d45c567
++         ```scala
+
+@ 3 1 0 13ddc6a91efaeb301fbcdd56c863a75e
++         import soundness.*
+
+@ 5 1 0 13b0a936b9b1eadb1ee3282321dec80a
++         case class Person(name: Text, age: Int)
+
+@ 6 1 0 13b29fdec15dcd3613c07b9c407db629
++         case class Duel(challenger: Person, opponent: Person)
+
+@ 8 1 0 0cf513a96ce8d84f018942a901d89466
++         val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+
+@ 9 1 0 067ec14707ea069d0bf6f24860b9c952
++         val labels = catalog(duel)([field] => (field: field) => field.toString.tt)
+
+@ 0 1 0 1f78210f9cdbb88b01dd795ff6dadf70
++         labels.tie((catalog, proxy) ?=> t"${proxy.challenger.name()} and ${proxy.opponent.name()}")
+
+@ 1 1 0 034bb435c26063d3111d607891a707a6
++         ```
+
+@ 0 1 0 1b3dcb699e0f413815fca62bb9aa6c8b
++ entry .Proxy
++   info
++       une valeur de substitution d'un type clé, dont les sélections de champs sont résolues en
++       indices de chemin à la compilation du code
+
+@ 0 6 0 0d118c87aa00230401c2fc1b99af5886
++   detail
++       Un `Proxy[Key, Value, Ordinal]` se tient à un chemin de `Key` : `Ordinal` est l'indice de ce
++       chemin sous forme de type littéral (`0` pour la racine), et `#id` le même indice à
++       l'exécution. Sélectionner un champ sur un proxy (`proxy.opponent.name`) est une macro
++       `selectDynamic` qui recherche le chemin prolongé dans la structure aplatie de `Key` et donne
++       le proxy correspondant ; un champ que le type ne possède pas est donc une erreur de
++       compilation, _vicarious: `opponent.title` is not a valid field path_.
+
+@ 0 5 0 084a9c54e63322d30d71a65562252595
++       Le proxy racine d'un type clé est `.derived`, dans la portée implicite ; `Catalog#apply` et
++       `Catalog#tie` le fournissent, et `specifically` en fournit un sous le nom `root`. Un proxy
++       s'utilise de trois façons : comme adresse (`Catalog#apply`), pour lire une entrée d'un
++       catalogue du contexte (`#apply`), et comme extracteur dans un motif (`#unapply`), ce qui
++       permet à `specifically` et `.brush` de nommer des chemins dans leurs `case`. Un `Proxy` est
++       `Findable`.
+
+% 0 1 0 177512859589bc0b04c1e630ac9f3ac0
+
+% 1 1 0 172eeb380c8468d01a3e69e3884cb7d5
+
+@ 0 1 0 0475e82d84e4b78b1cd9eab9aaf4a1d3
++   entry .derived
++     info
++         le proxy racine d'un type clé, raffiné avec les proxys de ses champs pour que les
++         sélections soient bien typées
+
+@ 0 3 0 0d7cc7a829c3d0bf0d0f82d792741fe2
++     detail
++         Une macro `transparent inline given`, dans la portée implicite : son type est
++         `Proxy[Key, Value, 0]` raffiné avec un membre pour chaque champ, récursivement, chacun un
++         proxy dont l'`Ordinal` est l'indice de chemin de ce champ.
+
+@ 0 1 0 0488fe69a0d3095d05579784cfa2ecc3
++   entry #selectDynamic
++     info
++         le proxy d'un champ du chemin de ce proxy, ou une erreur de compilation s'il n'y en a pas
+
+@ 0 1 0 00360b568a327c0715affb5745a86290
++     detail
++         Appelée par une sélection comme `proxy.opponent` ; ne s'écrit pas directement.
+
+@ 0 1 0 1fb6f6447509ac12081ca39c76c0a942
++   entry #id
++     info
++         l'indice du chemin de ce proxy dans la structure aplatie de son type clé, la racine étant
++         `0`
+
+@ 0 1 0 15b84b7a366a3b121f6bd494485d4e27
++   entry #apply
++     info
++         l'entrée au chemin de ce proxy dans le `Catalog` du contexte
+
+@ 0 2 0 0d5704cdb80e82e4167d26ab94ba9c09
++     detail
++         `proxy.opponent.name()` requiert un `Catalog[Key, Value]` comme valeur contextuelle, tel
++         que le fournit `Catalog#tie`.
+
+@ 0 1 0 0b8cb56bca33c7660339e70037ab934b
++   entry #unapply
++     info
++         filtre un proxy du même chemin, de sorte qu'un chemin peut être un motif de `case`
+
+@ 0 2 0 1cb08592d3a5a25c10b2405e4ddceeb3
++     detail
++         `case root.opponent.name() =>` filtre exactement le proxy dont l'`#id` est celui de
++         `opponent.name`.
+
+@ 0 1 0 175d0a7a3cc3ba8e0f595aababa4588e
++ entry .Specific
++   info
++       des instances de classes de types pour des chemins de champs nommés d'un type, qu'une
++       dérivation utilise à ces endroits
+
+@ 0 7 0 13fc8e87cc91ed4101615355706cd01a
++   detail
++       `Key is Specific over Typeclass` enregistre des exceptions à une dérivation générique : pour
++       certains chemins de champs de `Key`, l'instance à utiliser à ce chemin exact plutôt que
++       celle vers laquelle se résoudrait le type du champ. Un given dans la portée modifie tous les
++       champs d'un type à la fois ; un `Specific` modifie un chemin et nulle part ailleurs. Il se
++       construit avec `specifically`, qui vérifie chaque chemin et le type de chaque instance à la
++       compilation du code, et il est consulté par les dérivations de `wisteria`, et donc par les
++       codecs dérivés par leur intermédiaire.
+
+% 2 1 0 16dcfe704a624d5d1539c37572924830
+
+% 3 1 0 18ed564fa589e9ea0b349e7d4aed2b1b
+
+% 0 1 0 1ae279738df7173f06e307f4ba453ed1
+
+% 2 1 0 1b57ab72b70c598c0e3d02af8b5ce210
+
+% 3 1 0 1911432e92d095001c2d66a70d44489c
+
+% 0 1 0 0fe48aac32b3e04c02475eea17911527
+
+% 0 1 0 1043da8253ec428f0d7a20fdf4e6c4ad
+
+% 0 1 0 180753d80529814408db5e20955928be
+
+% 0 1 0 094437e7d319e44611be777f4c838517
+
+% 0 1 0 0e9de0781ffa769b0ba933873ba65e95
+
+% 0 1 0 17cff6e98f731a190567f40115fa37b6
+
+% 1 1 0 0f48e23c19780e950c09f1c4395a96a7
+
+@ 0 1 0 167532bb7f68b6950969d96373770082
++       Un `Specific` dont le `#Transport` concerne une autre classe de types est ignoré par une
++       dérivation.
+
+% 1 1 0 1e89910a68f3cbdd1cca2de0b92519ac
+
+% 0 1 0 1bdfa24802e8a5be0630be87c36ed944
+
+@ 0 1 0 0a15941d6cc6429a07740590654f58ab
++   entry .Cases
++     info
++         la fonction partielle de cas de chemins de champs que lit `specifically` : des motifs de
++         proxy vers des instances
+
+@ 0 2 0 10936a667014ac410bdcb3f7b28c6c35
++     detail
++         `Specific.Cases[Key]` est `PartialFunction[Proxy[Key, Any, Nat], Any]`. `specifically` lit
++         ses `case` dans l'arbre à la compilation du code ; la fonction elle-même n'est jamais
++         exécutée.
+
+@ 0 1 0 007f754dee89fcec06f6b5101aa6dfb1
++   entry #Self
++     info
++         le type clé dont les chemins de champs sont redéfinis
+
+@ 0 1 0 0ee694c3ba76282c11ea20a408324a1e
++   entry #Transport
++     info
++         la classe de types à laquelle se rapportent les instances de remplacement, comme
++         `Json.Encodable`
+
+@ 0 1 0 110bf4ae6337c8a202b14c9ca34dfae6
++   entry #instances
++     info
++         chaque chemin pointé redéfini (`"opponent.name"`), avec son instance, au type effacé
+
+@ 0 1 0 04fb6f2e7382091f1a708c39a3c2e994
++     detail
++         La dérivation lit une instance dans cette map et la retype au champ qu'elle visite.
+
+@ 2 1 0 001562dbab8c3b4a05f31745c3ba28c1
++         ```scala fuel
+
+@ 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
++         typecheck
+
+@ 1 1 0 10f090fe19e7ee750458b0e6da583f6b
++         ##
+
+@ 0 1 0 0d3e1e96a9a341711c002cb5d6088f65
++         duelSpecific.instances.keys   // Set("opponent.name", "challenger.name")
+
+@ 1 1 0 0fd96e306876e4020cea7891021a7aba
++         ```
+
+@ 0 1 0 0ce7a8786f88870e0f34a15b4f079d06
++ entry .specifically
++   info
++       construit un `Specific` à partir de motifs `case` qui nomment des chemins de champs au moyen
++       de `root`
+
+@ 0 5 0 033d7a61ecf1c25903d1c286d5a81efd
++   detail
++       `specifically { case root.opponent.name() => instance; … }` est une macro dont `Key` et
++       `Typeclass` proviennent du type attendu (`Duel is Specific over Json.Encodable`). Pour
++       chaque `case`, le motif de proxy donne le chemin, et l'instance doit être une `Typeclass`
++       pour le type à ce chemin, faute de quoi la définition ne compile pas, _vicarious: the
++       instance for this path is not a …_ ; un chemin inconnu est de même une erreur de
++       compilation.
+
+@ 2 1 0 189fd1d56a5e0e070306a294b77561b5
++       ```scala fuel
+
+@ 3 1 0 0612b0405f94b9170c4cded9eb39c851
++       typecheck
+
+@ 4 1 0 07789afcd770f35a076f31477f8e0362
++       ##
+
+@ 0 1 0 04f32810549cd2d3141ed7609699624c
++       val custom: Duel is Specific over (Codec in Json) =
+
+@ 1 1 0 120ab930fd90d071122b8e8a23a38e0d
++         specifically:
+
+@ 0 1 0 1ef1291d32a376d00522b4014c5dbb9b
++           case root.opponent.name() => nameCodec
+
+@ 0 1 0 13e889e5f84f0847194bec61163fc3d4
++           case root.challenger.age()  => ageCodec
+
+@ 1 1 0 11734e336822b41409c5941a4864298c
++       ```
+
+@ 0 2 0 1a1c2044b410b8350e56c81d5cef7488
++       Un chemin qui aboutit à une collection prend une instance pour la collection ; la redériver
++       à cet endroit sous un given local réencode donc ses éléments à ce seul endroit :
+
+@ 2 1 0 0ed6d9df7cec1804016fef740e2e904f
++       ```scala fuel
+
+@ 3 1 0 0c4326b9bd003c8713ce6bed06a6532e
++       typecheck
+
+@ 4 1 0 079d2279ce330baf1211d8a891d35512
++       ##
+
+@ 0 1 0 010b4076bdea45d907086e626f0712a1
++       given (Troupe is Specific over Json.Encodable) =
+
+@ 1 1 0 00ed6eda6f6c4d7a063819533c09ab94
++         specifically:
+
+@ 0 1 0 1e170b060d00f03d18ba58a1bc7f05f4
++           case root.players() =>
+
+@ 0 1 0 0f93724d09df2c631d72c766449826e4
++             given Person is Json.Encodable = nameOnly
+
+@ 0 1 0 0e6ce2e262378341143b95407ab52c0b
++             summon[List[Person] is Json.Encodable]
+
+@ 1 1 0 099fea93b547e29212041b9bc67e602f
++       ```
+
+@ 0 1 0 0e5d903954b177af10b15da1f11d487e
++ entry .root
++   info
++       le proxy racine dans les cas de `specifically`, à partir duquel chaque chemin est
++       sélectionné
+
+@ 0 3 0 14d76d80aaa5f6601f9c91a951a9cf9e
++   detail
++       Se résout en le proxy que `specifically` fournit comme valeur contextuelle taguée
++       `"root"` ; `case root.opponent.name() =>` n'a donc besoin d'aucun lieur. Hors d'un bloc
++       `specifically`, il n'existe pas de telle valeur, et `root` ne compile pas.
+
+@ 0 1 0 1b76f4823a87212019fe7505839e6ab9
++ entry .internal
++   info
++       les macros derrière `catalog`, `Proxy` et `specifically`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+@ 0 4 0 0c7c0efaa92493ea128fcba73fae95fd
++   detail
++       Pas pour un usage direct : `catalog`, `Proxy.derived`, `Proxy#selectDynamic` et
++       `specifically` les insèrent par splice. Les utilitaires de chemins aplatissent les champs
++       d'une case class en profondeur d'abord avec la racine, `""`, à l'indice 0.
+
+@ 0 1 0 03d8431e5e41e8191c9ae3a7d82363e3
++   entry .catalog
++     info
++         construit un `Catalog` à partir d'une valeur et d'une fonction polymorphe
+
+@ 0 1 0 0da82945b23270cd16e47fdb1c3a57c0
++   entry .fieldNames
++     info
++         les chemins pointés des champs d'un produit, en profondeur d'abord, sous un préfixe
+
+@ 0 1 0 10f75aab359026f206d35f2857c9b240
++   entry .paths
++     info
++         chaque chemin aplati d'un produit, le chemin racine `""` en premier
+
+@ 0 1 0 13bec41f84b200f21040817fda6dfa1c
++   entry .fieldReprs
++     info
++         le type à chaque chemin aplati d'un produit, aligné sur `.paths`
+
+@ 0 1 0 19646bf7188533700cc2643d74de1b4f
++   entry .dereference
++     info
++         résout une sélection de champ sur un proxy en le proxy du chemin prolongé
+
+@ 0 1 0 1911c54cea711dd20d02a4583c16b6b2
++   entry .specific
++     info
++         construit un `Specific` à partir des `case` d'une fonction partielle de chemins
+
+@ 0 1 0 14df22dccf81568d13698d35fddd1bf2
++   entry .proxy
++     info
++         construit le proxy racine raffiné d'un type clé

@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 002bf0afd87c965417aa4b2d731b5317
++ # `↯/s.112.1` — Um método RPC deve ter uma lista de parâmetros
+
+@ 0 2 0 01946c4728b9c9571205b5d5335132df
++ Lançado em tempo de compilação pela macro `rpc` do Obligatory quando a assinatura de um
++ método tem mais de uma lista de parâmetros (ou nenhuma).
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 008b31d6eeedddbb17772a961250d849
++ Métodos JSON-RPC são mapeados para métodos Scala com exatamente uma
++ lista de parâmetros — a que carrega os campos da requisição.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1c442894b392df861af75049e0b79301
+
+% 1 1 0 10a7177c1acd834804fa3829290e6254
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 1 0 03ce521fcf5976b909465d408cf61e19
++ Reestruture o método para que receba exatamente uma lista de parâmetros.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 1b26732fe62cfa1207b80e721b9a052d
++ - Código-fonte: `lib/obligatory/src/json/obligatory.internal.scala`

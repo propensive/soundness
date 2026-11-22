@@ -1,0 +1,165 @@
+orthant 2 language
+
+@ 0 1 0 1aa94afa9fe43dba1fa81c13c4a66c91
++ # Costo zero
+
+@ 0 6 0 12893373d05452180d6a62cc944063cb
++ Soundness paga la sua sicurezza a tempo di compilazione, non a runtime. Tipi opachi, inlining e
++ calcolo a livello di tipi fanno sì che le garanzie portate da un tipo (le unità di misura di una
++ grandezza, un nome validato, un percorso verificato) di solito si compilino nel valore nudo che
++ avvolgono, senza allocare alcun oggetto wrapper e senza lasciare alcun controllo da eseguire. La
++ sicurezza non è quindi una tassa sulle prestazioni: proprio il codice dimostrabilmente corretto è
++ anche veloce quanto la versione non verificata che un programmatore distratto avrebbe scritto a
++ mano.
+
+@ 0 1 0 194920cf413d32d4001e2196365ee4ca
++ ## Quanto costano i tipi a runtime
+
+@ 0 2 0 0ff9c1638664d9511d91931db00f1917
++ Niente, nel caso comune, perché non ci sono. Un tipo opaco è la sua rappresentazione sottostante,
++ con un nome diverso solo ai fini del compilatore:
+
+% 2 1 0 0e8a9d57a4981e4000bba9188a14e854
+
+% 3 1 0 04d19b78fbdfc2781233f534cea3d073
+
+% 4 1 0 0f8c669b140c78161993b1ce4cec5ceb
+
+% 0 1 0 1f29fe33329d0fdb1a6090b6cee52a0c
+
+% 0 1 0 0cbf92c0ff406f531cc93de9b5ec3e77
+
+% 0 1 0 08936ef72555ceae0c5ed79641b70f5d
+
+% 0 1 0 0871db3e46b29de50e4201cc59a2dd4e
+
+% 0 1 0 0e41f304801724c80e46ac8bad49f6fa
+
+% 1 1 0 141180964439b00b020d5e0dd52e0f92
+
+@ 0 2 0 0fb25d821c8101f205e033d7206d3c1d
++ `Optional[value]` è quindi semplicemente `Unset | value`, un'unione con un segnaposto basato su
++ null, così che un valore assente costa un riferimento null e uno presente costa esattamente il
++ valore.
+
+@ 0 3 0 06bfd94728a9f3bd0731f4eb7c31b642
++ Un `Quantity[Metres[1]]` è un `Double`. Un milione di essi in un array sono un milione di double,
++ non un milione di oggetti. Le unità esistono mentre il codice viene sottoposto al controllo dei
++ tipi, e sono scomparse quando viene eseguito.
+
+@ 0 3 0 04c82918342d0ae200bb9ca8e67134ca
++ Lo stesso ragionamento vale per le operazioni. Sono `inline`, quindi un calcolo dimensionale
++ diventa le istruzioni aritmetiche che avrebbe prodotto il codice equivalente su `Double` nudi:
++ nessun wrapper da allocare, nessun metodo di typeclass verso cui smistare la chiamata:
+
+% 2 1 0 08fbda1cc4cab6e51ab710dc243d7d68
+
+% 3 1 0 0741bc480694b87e13266e659dc2976b
+
+% 4 1 0 0a9c06621d301e4c1ba8f4a0a3626f9d
+
+% 0 1 0 08587b413de912fb1740e01b0fa905db
+
+% 0 1 0 0bd72fd524f01ded0f3e6a25a450609c
+
+% 0 1 0 12dcaa370104ae7e14b6f895080175d7
+
+% 0 1 0 192c7b6a32bb589010fb608001ab5eb5
+
+% 0 1 0 0cdae38f35fcf74316d1a9e7c74d8b1f
+
+% 0 1 0 0315ed95e1726869115c6f6ac3045972
+
+% 1 1 0 04507a954e90e7bd1c16d5945eb9c06b
+
+@ 0 2 0 1082be9e8a8180ad04aab144fe31bdf8
++ Ogni dimensione in quella firma viene verificata durante la compilazione. Nulla di essa sopravvive
++ nel bytecode.
+
+@ 0 1 0 198723e6d9bc0c7402a7e7b58b70d50f
++ ## L'affermazione è verificata, non asserita
+
+@ 0 3 0 018213ed332a73db0124328834cc119f
++ Un'affermazione sulle prestazioni che viene solo enunciata tende a smettere di essere vera: si
++ rimuove un'annotazione inline, un metodo di typeclass non viene più specializzato, e la garanzia
++ scompare in silenzio mentre la documentazione la promette ancora.
+
+@ 0 4 0 095c36707e40b5c6179fd00ed88024bf
++ Per questo la suite di test legge il bytecode compilato e fallisce se la garanzia è venuta meno.
++ Analizza il classfile, percorre le istruzioni di calcoli rappresentativi, e verifica che non
++ sopravviva alcuno smistamento virtuale o di interfaccia verso un'operazione di typeclass e che non
++ compaia alcun boxing:
+
+% 2 1 0 1f07b2bbe1b2a97a014c1cb3cea23749
+
+% 3 1 0 0daff0e084b9ec7b17f59080400b2c21
+
+% 4 1 0 002721501da8d99508deac8e171bb198
+
+% 0 1 0 06d451209c19eed41a0f9d0083ad909e
+
+% 0 1 0 1b200465c57fdf6e12fbf8f61cd071bb
+
+% 0 1 0 13ffe0cd979a979a1d56260556b68786
+
+% 0 1 0 01c6ccda5a9ba44e13a992cc72333823
+
+% 0 1 0 0a563bb6f7acae8019de746f7e6b7887
+
+% 0 1 0 0b2b94bd5874194c152b360f8eebf1fd
+
+% 0 1 0 11f9afa54a68157d02f7e84f4514dee2
+
+% 1 1 0 0af6c2974a25a2430f6222499baa4dbd
+
+@ 0 3 0 191e8dd69be4f3670579c1cd3249123a
++ Il modulo di [metaprogrammazione](../en/modules/metaprogramming.md) esiste in parte per rendere
++ possibile questo: se vale la pena fare un'affermazione su ciò che il compilatore ha emesso, vale la
++ pena verificarla a ogni build.
+
+@ 0 1 0 079f5d730989cb5508161ade7244a6e5
++ ## Dove il costo non è zero
+
+@ 0 1 0 0ef41bf0dda30b821c768df6a2862db6
++ Essere onesti su questo conta più dell'affermazione stessa.
+
+@ 0 3 0 046b02c97c26023504fc6408c9a22f9c
++ **L'aritmetica verificata costa quanto verifica.** Importare `arithmeticOptions.checkedOverflow`
++ aggiunge un vero test a ogni addizione. Il comportamento predefinito è non verificato, quindi il
++ costo si paga solo dove lo si chiede; ma dove lo si chiede, si paga.
+
+@ 0 2 0 1b20f45cafddcab80affdf4f4f229c09
++ **La validazione costa una volta, alla costruzione.** Trasformare un testo in un `Port` lo analizza
++ e ne verifica l'intervallo. Il risparmio sta nel fatto che niente a valle verifica di nuovo, non nel
++ fatto che il primo controllo sia gratuito.
+
+@ 0 4 0 0079351502704df71e7ad9cef55dbae5
++ **Una parte della sicurezza è davvero strutturale.** La disciplina di proprietà unica di uno
++ `Stream` è fatta rispettare dal sistema dei tipi senza alcun costo a runtime, ma il buffering e la
++ gestione delle finestre che lo rendono zero-copy sono un meccanismo reale. Il capture checking
++ dimostra che il meccanismo è sicuro; non lo fa scomparire.
+
+@ 0 4 0 1f53d1108d1028361bdfc556a306293b
++ **Il conto è il tempo di compilazione.** Il calcolo a livello di tipi, l'inlining e l'espansione
++ delle macro sono lavoro fatto a ogni build per evitare lavoro a ogni esecuzione. Un progetto
++ Soundness compila più lentamente di un equivalente debolmente tipizzato, e `-Xmax-inlines` è
++ un'impostazione che talvolta va alzata. Questo è lo scambio, enunciato nella direzione in cui va
++ davvero.
+
+@ 0 1 0 12784414e4b65cbc1a6691e34e408af0
++ ## Perché questo principio è portante
+
+@ 0 3 0 14545fee662b7ba60dcb16e547e28029
++ Senza di esso, ogni altro principio di questa collezione diventa una trattativa. Un team convinto
++ che la sicurezza costi prestazioni ricorrerà al tipo non verificato nel ciclo più interno, e il
++ ciclo più interno è proprio il punto in cui un errore costa di più.
+
+@ 0 4 0 04b4898a50cc61171253e9d20b7a15a5
++ Se la versione sicura è anche quella veloce, la questione non si pone mai. Per questo il «costo
++ zero» viene trattato come un vincolo di design sulle nuove astrazioni anziché come una felice
++ osservazione su quelle esistenti: un'astrazione che non si riesce a far scomparire viene
++ riconsiderata prima di essere aggiunta.
+
+@ 0 2 0 0c493f1cfe6d1dcb0d639adeb54a223d
++ Vedi [correttezza](correctness.md) per ciò che compra il conto del tempo di compilazione, e
++ [opzionalità](optionality.md) per il caso più diffuso di wrapper eliminato.

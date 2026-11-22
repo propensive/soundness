@@ -1,0 +1,263 @@
+orthant 2 language
+
+@ 0 1 0 19de227b7f07aa5d086c7bd906014f5a
++ ## Kompression
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 2 0 19ac36b27db7f8b208acfd02360e1b5b
++ Eine Handvoll Formate trägt den Großteil der komprimierten Bytes der Welt:
++ [DEFLATE](https://en.wikipedia.org/wiki/Deflate) und seine Hüllen `gzip` und `zlib`,
+
+% 0 1 0 0e3ded34b74d6f02180aa258cf1f6805
+
+@ 0 4 0 151cfe7c681253f208574c62d7d5e0c9
++ und rohes LZMA2 sowie [LZW](https://en.wikipedia.org/wiki/Lempel–Ziv–Welch). Sie alle
++ komprimieren und dekomprimieren Daten über ein einziges Methodenpaar. Das Format ist ein Typ, und
++ `compress` und `decompress` bedienen jedes Format, über einen ganzen Wert oder als Stufe eines
++ [Streams](streams.md).
+
+@ 0 3 0 18de4c758be2f83e006dba5a076111d2
++ Jedes Format ist in reinem Scala implementiert und funktioniert daher auf jeder Plattform. Auf der
++ JVM werden DEFLATE und seine Hüllen außerdem von der nativen zlib der Plattform bedient. Diese
++ Wahl wird beim Build des Codes getroffen, nicht bei jeder Verwendung, sodass die JVM für die
++ Portabilität nichts bezahlt.
+
+@ 0 1 0 1563a753ee7b471f0568c2119cd2298c
++ ### Über Kompression
+
+@ 0 4 0 085981c466c6c1470d7dee3a9bfcb77c
++ Eine Kompressionsbibliothek bietet gewöhnlich einen Codec, der konstruiert, gefüttert und
++ abgeschlossen werden muss: ein Objekt mit einem Puffer, einem `setInput`, einem `deflate` und
++ einem `finish`, und darum eine Schleife, die man leicht falsch schreibt. Das Format ist ein String
++ oder eine Ganzzahl, die Rahmung ist ein Flag, und ob ein bestimmter Aufruf alles erzeugt hat, was
++ er erzeugen wird, ist eine Frage, die der Aufrufer beantworten muss.
+
+@ 0 5 0 1de48da3a49b95370a144710fd3a7355
++ Hier ist das Format ein Typ, etwa `Gzip`, `Brotli` oder `Xz`, und die Operation ist eine Methode
++ auf den Daten. Dieselbe Instanz beschreibt sowohl die Form für ganze Werte als auch die
++ Streaming-Form, sodass beide Byte für Byte übereinstimmen und ein auf die eine Weise komprimierter
++ Wert sich auf die andere dekomprimieren lässt. Ein Kompressionsverfahren ist eine Stufe einer
++ Pipeline, keine Hülle um einen Stream, und das ist
++ [Komponierbarkeit](../../philosophy/composability.md) in ihrer wörtlichsten Form.
+
+@ 0 2 0 08f142c6dc6fdbb31f394564d8004d95
++ Alles stammt aus dem Paket `soundness`. Der letzte Import erlaubt den Beispielen, ihre Ergebnisse
++ auszugeben:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 16890713b8323e3b0973e66d1f3222b2
++ ### Einen Wert komprimieren
+
+@ 0 1 0 0b672af546cc98291a704ba7e70ee19b
++ Ein Block von Bytes wird komprimiert und dekomprimiert, indem man das Format nennt:
+
+% 2 1 0 1660b8ca48acbfd00bcbf091e4643bdf
+
+% 0 1 0 1a4504bd7f6df758079ba66a71070bbe
+
+% 0 1 0 1247b372d87d7d7700817404422a587b
+
+% 0 1 0 1a3098c6eb0a964506bc64b52108f06f
+
+% 1 1 0 12a27ec58f97cfba082c76e7f40b5ccc
+
+% 3 1 0 1352e3463f6f40590d9f96e95902150e
+
+% 4 1 0 0eb6b0cd3a539a6c1ef2dd81b4cfab1b
+
+% 5 1 0 1b89bd67302681b30c61571101b077cc
+
+% 0 1 0 0fe98423cb2f5794196311ad0660d50b
+
+% 0 1 0 0e8f9fd8a44497fc1869f8d5f7890e8a
+
+% 0 1 0 0d52d5bf7cd962770acdd59e29d31901
+
+% 1 1 0 0820ec1bd83bc9850b2c3e2a2a035848
+
+@ 0 1 0 19a03ea96cbef7b91c16287ec7c9454d
++ ### Einen Stream komprimieren
+
+@ 0 2 0 1b56fcbaf0e7f26610e7b13f059b5e41
++ Dieselben Namen lassen sich an einen Stream anhängen, wo sie zu Stufen einer Pipeline werden. Die
++ Daten werden beim Durchfließen transformiert, und es wird nichts gehalten, was größer ist als die
++ Puffer der Pipeline.
+
+@ 0 3 0 0540c12b3e4b78651b78ac4e19dc039a
++ Eine komprimierte [Datei](filesystem.md) zu schreiben und wieder zu lesen heißt, den Kompressor
++ und den Dekompressor zu beiden Seiten des Datenträgers zu platzieren. `pump` liefert den
++ komprimierten Stream in den Intake der Datei:
+
+% 2 1 0 02014a0c71a18574151fd444390d4959
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 145ca9036ac1a43609990c2bf5c3072f
+
+% 0 1 0 13a2f81b0658bac80352dd964173bef9
+
+% 0 1 0 01b5504ec94587e508889ab2a808484a
+
+% 0 1 0 145d57756963287c19f15dc5e3b82724
+
+% 1 1 0 0f0bd8aa513b0ead1412591f721568ea
+
+@ 0 2 0 029898b61fbf36fc139400d817c68cce
++ Die Form für ganze Werte und die Streaming-Form arbeiten frei zusammen. Ein Wert, der als Ganzes
++ komprimiert wurde, lässt sich über einen Stream dekomprimieren, und die Ausgabe eines Streams
++ lässt sich als Wert dekomprimieren.
+
+@ 0 1 0 16111c0ac1876f6509202b458643a3bf
++ ### Die Formate
+
+@ 0 1 0 1dff2d64fa35601a05f4f9bda04a58f6
++ Sieben Formate werden bereitgestellt, in vier Familien:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 1f44cd52edfe79f606866f1b941ba69c
+
+@ 0 10 0 08ce360871ab359f168c97544be64278
++ column  Algorithmus
++ column  Rahmung
++ column  Getragen von
++ row  `Deflate`  DEFLATE  keine  ZIP-Einträgen
++ row  `Zlib`  DEFLATE  ein Zwei-Byte-Header und eine Prüfsumme  PNG-Blöcken, HTTP-Kodierung `deflate`
++ row  `Gzip`  DEFLATE  ein Header, ein Zeitstempel und eine CRC  `*.gz`-Dateien, HTTP-Content-Encoding
++ row  `Brotli`  Brotli  das Brotli-Streamformat  HTTP-Content-Encoding
++ row  `Xz`  LZMA2  der `*.xz`-Container, mit einer CRC-64-Prüfung  `*.xz`-Dateien
++ row  `Lzma2`  LZMA2  keine
++ row  `Lzw`  LZW  keine  TIFF- und PDF-Streams
+
+% 1 1 0 161d17b1aa5416500607ddf9d9f2bd05
+
+% 0 1 0 1e565ffb9f3c318500965a1da2d880f7
+
+@ 0 3 0 084a6b73c9e604111943a53a912d8c0f
++ `Deflate` ist der rohe Algorithmus. `Zlib` fügt einen Zwei-Byte-Header und eine Prüfsumme hinzu.
++ `Gzip` fügt den Header, den Zeitstempel und die CRC hinzu, die `*.gz`-Dateien tragen. Dies sind
++ die Formate des HTTP-Content-Encodings, der ZIP-Einträge und der PNG-Blöcke, und sie sind die
++ schnellsten der Reihe.
+
+% 0 1 0 16193c4295c427191b505a1574cc9e5e
+
+@ 0 5 0 1c697806f61cb3511308b91857a9cb0f
++ `Brotli` komprimiert bei vergleichbarer Geschwindigkeit auf eine geringere Größe als DEFLATE und
++ ist das Content-Encoding des modernen Webs. Beide Richtungen brauchen den ganzen Wert, bevor sie
++ eine Ausgabe erzeugen. Der Decoder braucht ihn, weil Rückverweise über das gesamte Fenster reichen
++ können, und der Encoder, weil er seine Rahmung anhand der Gesamtlänge wählt. Eine Brotli-Stufe
++ puffert daher, wo eine DEFLATE-Stufe es nicht tut.
+
+@ 0 5 0 03c1b8b5c048656c1b7237832e26d931
++ Brotli kann einen Wert auch *relativ zu* einem anderen kodieren, den der Empfänger bereits hält.
++ Eine `continuation` ist das Ende eines Brotli-Streams, dessen Fenster vorher mit einer Basis
++ geladen wurde. Sie trägt nur die Blöcke des neuen Wertes und keinen Stream-Header, und ihre
++ Rückverweise reichen in die Basis hinein. Ein Nachfolger, der sich von seinem Vorgänger durch
++ wenige Bearbeitungen unterscheidet, kostet daher wenige Bytes:
+
+% 2 1 0 0b3359bc4f28079e13480ee47c0270c0
+
+% 0 1 0 0a673c2e4fbcf08a1645d6c96583a61f
+
+% 0 1 0 04d5e069b01b429e1b8033570cba56b9
+
+% 0 1 0 109278265456b8c91a3001a5d6a35aa3
+
+% 1 1 0 0b1fc35f066c1be109b9fbec8aa61e82
+
+@ 0 3 0 175594fc752f5dcc0a43ddeeabc159f8
++ Der Empfänger baut das Fenster mit `prefix` aus seiner eigenen Kopie der Basis wieder auf und
++ dekodiert das Präfix und die Fortsetzung als einen Stream. Heraus kommt die Basis, gefolgt vom
++ Nachfolger:
+
+% 2 1 0 1836599219ca0e851489015fe7809a3a
+
+% 0 1 0 1de798bb9044bd68114a9a49df2b0b78
+
+% 1 1 0 1cb5052fa2b91480187326dc49d6b1f0
+
+% 3 1 0 0c58f57f64c327a91eacbebaa82fd617
+
+% 4 1 0 164806e88a7748a11035818f52a23350
+
+% 5 1 0 15917ef2de0d57151baab37f115c34da
+
+% 0 1 0 1970669b1b42641f0232eefcad6d4140
+
+% 0 1 0 191bfac8225dc5e807aa8463d712da90
+
+% 0 1 0 00373caad3e2c1d00fce5b7fc1f26aa4
+
+% 1 1 0 0f170e00e72e921500cb690bc491cf96
+
+@ 0 4 0 158d130cbf1a79de0027c074bf2087ef
++ Die Bytes eines `prefix` sind durch RFC 7932 festgelegt, zusammen mit den Fenster- und
++ Blockparametern. Beide Methoden nehmen die Fenstergröße als WBITS, von 10 bis 24, und `prefix`
++ nimmt die maximale Länge eines unkomprimierten Blocks. Ihre Vorgaben sind `Brotli.Window` und
++ `Brotli.Block`, die größten Werte, die das Format erlaubt. Beide Seiten müssen dieselben Werte
++ verwenden.
+
+@ 0 1 0 097ec8db0789a6ea03e09e73e71f43d5
++ #### XZ und LZMA2
+
+@ 0 3 0 0cdad6cdefacff6308884546a26c4d4d
++ `Xz` ist der Codec mit der höchsten Kompressionsrate. Es ist LZMA2 im `*.xz`-Container, mit einer
++ CRC-64-Prüfung, und entspricht dem, was das Kommandozeilenwerkzeug `xz` erzeugt. `Lzma2` ist
++ derselbe Codec ohne die Rahmung des Containers und verhält sich zu `Xz` wie `Deflate` zu `Gzip`.
+
+@ 0 2 0 185198bcb7d2395b1a6ac31f8820d2b1
++ Beide verwenden standardmäßig die Voreinstellung 6. Die Voreinstellungen 0 bis 3 bevorzugen
++ Geschwindigkeit, 4 bis 9 die Kompressionsrate. Eine ausdrückliche Voreinstellung wird mit
++ `Xz.compress(stream, preset)` oder `Xz.compressor(preset)` gewählt.
+
+% 0 1 0 1efd613d9971cf001db9e157f03766a4
+
+@ 0 5 0 0f1acac01931f94a01ea4543f5ec22a1
++ `Lzw` ist die Kompression von TIFF- und PDF-Streams. Das JDK bietet überhaupt keine
++ Implementierung davon, daher ist diese aus der Spezifikation geschrieben. Ihr Parameter
++ `earlyChange` lässt beide Seiten ihre Codes einen Tabelleneintrag früher verbreitern. Er ist
++ standardmäßig eingeschaltet, und das ist es, was TIFF, PDF und jeder bekannte Encoder erzeugen.
++ Die parametrisierten `Lzw.compressor` und `Lzw.decompressor` bedienen Formate, die ihn ausdrücklich
++ angeben.
+
+@ 0 1 0 1f2c2bee72c28670092908578d50e503
++ ### Wo Kompression vorkommt
+
+@ 0 1 0 18bc3c2a7bb001221b556541c48a321d
++ Kompression wird selten allein verwendet:
+
+@ 0 5 0 0d069861d0b43aaf1fbb6129729a5fad
++ - [Archive](archives.md) speichern ihre Einträge komprimiert, und Tar-Archive reisen komprimiert.
++ - [HTTP](http-client.md)-Bodies werden damit bei der Übertragung kodiert.
++ - Die Layer von [Container](docker.md)-Images sind komprimiert und werden über ihren
++   [Hashwert](hashing.md#hashing-a-stream) adressiert.
++ - Die Content-Streams von [PDF](pdf.md) werden komprimiert gespeichert.
+
+@ 0 2 0 183088f9737a68c514993cbe99e2b6a3
++ In jedem Fall ist das Format einer der hier genannten Typen, sodass sich ein Layer, ein Eintrag
++ oder ein Body mit der oben beschriebenen Operation dekomprimieren lässt.

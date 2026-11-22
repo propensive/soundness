@@ -1,0 +1,323 @@
+orthant 2 language
+
+@ 0 1 0 0cab0599b62cbb9407305b622261282a
++ ## Chemins
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 2 0 044c314f47dcadf51c019b0843081924
++ Un chemin est une suite de noms qui mène à travers une hiérarchie, et ce que l'on sait d'un
++ chemin est conservé dans son type :
+
+@ 0 5 0 09852067f793da1e06b78bdfa8fcb205
++ - Un chemin absolu est un `Path`, enraciné sur une certaine valeur.
++ - Un chemin relatif est un `Relative` : un certain nombre de pas vers le haut, suivis d'une
++   descente.
++ - Les deux sont typés par la *plateforme* à laquelle ils appartiennent : un `Path on Linux` et
++   un `Path on Windows` sont donc des types distincts. La clause `on` est l'un des
++   [types infixes](../../philosophy/infix-types.md) employés partout.
+
+@ 0 3 0 0e9f7537438fd210120ce56c815aef25
++ Les éléments d'un chemin construit dans le code source sont connus du compilateur.
++ L'arithmétique sur les chemins, comme descendre, remonter, et trouver le trajet d'un chemin à
++ un autre, est donc vérifiée [à la compilation][compilation].
+
+@ 0 3 0 0c2041aa987ae4911c5dcd7801b9e530
++ Ce sont des chemins abstraits. Ils portent sur la *forme* d'un chemin, non sur un fichier sur
++ un disque. Le même mécanisme sous-tend les chemins du système de fichiers, les URL et toute
++ autre hiérarchie. Lire et écrire de vrais fichiers est l'affaire du
++ [système de fichiers](filesystem.md).
+
+@ 0 1 0 0c1add7ee2d1c8cf0e7e01eac0483af2
++ ### Les chemins
+
+@ 0 5 0 16f33f3fc514857d1a9787336f8e7600
++ Un chemin soulève trois questions : est-il absolu ou relatif, à quelle plateforme est-il
++ destiné, et ce `..` remonte-t-il au-dessus de la racine ? Dans la plupart des bibliothèques,
++ aucune des réponses ne figure dans le type. Un chemin est une chaîne, ou une classe qui efface
++ ces distinctions. Une erreur, comme joindre deux chemins absolus, prendre le parent d'une
++ racine, ou mêler un chemin Windows à un chemin POSIX, est découverte
++ [à l'exécution][exécution], si elle l'est.
+
+@ 0 5 0 150e8a4db9c499aa183cde3a97f5712f
++ Ici, chaque distinction est enregistrée dans le type. Les chemins absolus et relatifs sont des
++ types différents : l'un ne peut donc être pris pour l'autre. La plateforme est un paramètre de
++ type : ses séparateurs et ses règles voyagent donc avec le chemin. Et lorsque les éléments
++ d'un chemin sont connus, ils le sont du compilateur, qui calcule statiquement le résultat de
++ la jonction de deux chemins, ou du trajet entre eux.
+
+@ 0 2 0 1c2fee29596c6422194462ee7c65dca2
++ Tout provient du package `soundness`. Les exemples lèvent toute erreur sous forme d'exception,
++ et le dernier import leur permet d'afficher leurs résultats :
+
+% 2 1 0 0683c532939f05bd1bf8f090f2826090
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0ca311dd6ee9b785071c5ebecc8400ee
++ ### Construire un chemin
+
+@ 0 1 0 0027806d2dfc3c0914a9adc3b422b055
++ Un chemin s'écrit avec une poignée de symboles, chacun décrit ci-dessous :
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 9 0 0c1f31c7b50f82e80ec9498cb8a36031
++ column  Symbole
++ column  Signification
++ row  `%`  la racine du système de fichiers POSIX
++ row  `Drive('C')`  la racine d'un lecteur Windows
++ row  `/`  un pas vers le bas, vers un enfant nommé
++ row  `?`  l'emplacement courant, d'où part un chemin relatif
++ row  `^`  un pas vers le haut
++ row  `+`  un chemin relatif appliqué à un chemin absolu
++ row  `/:`  dans un motif, un nom détaché en tête
+
+% 1 1 0 1095677304c52d7005e9d969ec459047
+
+@ 0 2 0 0bb942646780f7300d5a5469fc9ce908
++ Un chemin absolu descend d'une racine avec `/`. La racine `%` est celle d'un système de
++ fichiers POSIX, et un chemin Windows descend d'un `Drive` :
+
+% 2 1 0 0eb8eaab9ee2ef2618032f6b93b7aa34
+
+% 0 1 0 0de1807a9a1e7527090f79e12be50b18
+
+% 0 1 0 16c9455d69a0d82d0f00a5fb716e8a69
+
+% 1 1 0 128fd283295a92950781fbf761f03a09
+
+% 3 1 0 107cfbd5c2a75e9407da54d3061badf5
+
+% 4 1 0 1c8cf7fd4c2373410fd4013a71aff046
+
+% 5 1 0 113e4b6a04d095030ae8d66597997d87
+
+% 0 1 0 1fe52c0b86c933d90e36f87f27967872
+
+% 0 1 0 166efb651ecc8b7b195b76460227643b
+
+% 1 1 0 109235695c9a0ff41ef7ba71cd36b10c
+
+@ 0 2 0 01450cfdc11b64e808e585f64d48f72d
++ L'[interpolateur] `p"…"` écrit un chemin littéralement, et le vérifie à la compilation. Il
++ interprète le littéral comme un chemin POSIX ou Windows, selon sa forme :
+
+% 2 1 0 152ecddcf84d1b6617abec6e33ba1ee4
+
+% 0 1 0 131f4d7dbec44f551ef6e0c40fa52540
+
+% 0 1 0 11351b84c9c9b096145541eef4536fed
+
+% 1 1 0 12c735323f5c831013913a9027e061d6
+
+@ 0 3 0 1cdc031b407b7ee712e0eeb40354c468
++ Les éléments d'un littéral font partie de son type, le dernier élément en premier :
++ `data` est un `Path of ("data.csv", "user", "home") on Posix`. Un chemin construit avec `/`
++ porte de même chacun des éléments qu'on lui a donnés.
+
+@ 0 1 0 1b31b79dc4d90aab021602fa6c2f4133
++ ### Chemins relatifs
+
+@ 0 3 0 10717d312582460408b1e6a907d9f8e3
++ Un chemin relatif se construit à partir de `?`, l'emplacement courant, et de `^`, un pas vers
++ le haut, suivis d'une descente. Ajouter un chemin relatif à un chemin absolu applique la
++ remontée, puis la descente, pour donner un nouveau chemin absolu :
+
+% 2 1 0 0d5a82aaba55c4851f51af7d28f0cf48
+
+% 0 1 0 0f24623910b1ebcb1c98de76d342de63
+
+% 1 1 0 1b722a838524a3c0140dd33698b08119
+
+% 3 1 0 159d95c2a1e8e69d172477e608145496
+
+% 4 1 0 17cd1e4498370890161bc34605ff5c74
+
+% 5 1 0 0c9930f7d5e6dda71a19493f4aafa054
+
+% 0 1 0 0307b52fd166f9861a1bb5fdb3ae40a9
+
+% 1 1 0 0c3e256e4a7963b309a7346c51db696e
+
+@ 0 1 0 1d98967b0583d68718e403705487d8f9
++ ### Plateformes
+
+@ 0 3 0 1aef316055da8d2c11ae62fe3a33f871
++ Un chemin construit avec `/` est d'abord neutre vis-à-vis des plateformes. `on` le lie à une
++ plateforme, et vérifie chaque élément selon les règles de cette plateforme, qui rejettent un
++ nom contenant une barre oblique, ou un nom réservé :
+
+% 2 1 0 0bc77b46a5b227b71a6a55fe10b72423
+
+% 0 1 0 015bcc35d5ac39a11806d0c625a8bf1c
+
+% 1 1 0 105a3298c177eab60a43db4ef48c0ec6
+
+@ 0 6 0 197ddfd7d976c3090927fb7db5492691
++ `Linux`, `Posix`, `MacOs` et `Windows` sont les plateformes de systèmes particuliers. `Local`
++ est la plateforme de la machine sur laquelle le programme s'exécute, quelle qu'elle soit : une
++ plateforme à part entière, dont la racine est `%` ou un `Drive`, dont le séparateur est celui
++ du système en cours d'exécution, et dont les règles pour un nom sont les plus strictes de
++ toutes, de sorte qu'un `Path on Local` est valide partout où le programme s'exécute. Le code
++ qui doit fonctionner sur tout système type ses chemins `on Local`. [Noms](names.md) décrit
++ comment les règles de chaque plateforme pour un élément sont énoncées et vérifiées.
+
+@ 0 1 0 1b980a5d948f5e1d1600243e9c7066df
++ ### Entre deux chemins
+
+@ 0 2 0 0c2641421afba9fa1c72908228106636
++ `toward` calcule le chemin relatif d'un emplacement à un autre, et `conjunction` trouve leur
++ plus proche ancêtre commun :
+
+% 2 1 0 03b76a47d6d3b793114a4a850c5f7cc4
+
+% 0 1 0 0bacf8eb8e29e09b07be8911fe2c0ae9
+
+% 0 1 0 10ab6059c7e82262007595f05dcf4c68
+
+% 1 1 0 1c12fa0b46ab059d01db09af2125a291
+
+% 3 1 0 11ddad2ead83fe6807e390d62e1260e9
+
+% 4 1 0 03ca5fc03fe94cd518faf359be0daca6
+
+% 5 1 0 1a12d2aa5f0ee55a1c0a10c4c6b943a4
+
+% 0 1 0 069bab418ac7cce907ba7a738427c991
+
+% 0 1 0 121fa03056389e0400c373e84c99242a
+
+% 1 1 0 10690023ce990c041053b98081a4008a
+
+@ 0 1 0 0638c922b56f1a611f03c9718596f37c
++ ### Texte et chemins
+
+@ 0 2 0 198efdacfe4f85df09fc00d896571535
++ `encode` écrit un chemin sous forme de texte. `as` analyse un texte en chemin, en nommant la
++ plateforme dont les règles s'appliquent :
+
+% 2 1 0 14a9e292c07049dc00bdc64862806de7
+
+% 3 1 0 1b6f3bf32bf215d60346faf8525a87ea
+
+% 4 1 0 06c0d25de061d0031166d25cec825015
+
+% 0 1 0 07f10ee41cc7a640122c3f261b6b234d
+
+% 0 1 0 081a42279c0c53cf1dff238c4386cb29
+
+% 1 1 0 1c923223db77cc6502723ad357f96a53
+
+@ 0 2 0 19c273f02614a2590ee4155d09c1ac6f
++ Un texte qui enfreint les règles de la plateforme n'est pas un chemin, et ne se
++ [décode](decoding.md#decoding-a-value) pas :
+
+% 2 1 0 15f4090fbf3a49af1ed888288de7344e
+
+% 3 1 0 16dbcda91fe84b820cae8c4df497976a
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 06d940afebd04dbf1b7bbdef6fadc932
+
+% 1 1 0 11e43b1e60a433590a632bf84bcf4a83
+
+@ 0 1 0 16f357d0c6c4606a1f498163a254cc64
++ ### Déconstruction
+
+@ 0 2 0 15b3704e1e7ef55814b35d021c0a65e5
++ Un chemin se filtre dans un motif avec l'extracteur `/:`, qui détache les noms en tête. Un
++ chemin se décompose donc aussi facilement qu'il se construit :
+
+% 2 1 0 18b9ff0780d4d8861ec8689d161be818
+
+% 0 1 0 1a6196eb3ccd03f8087ee01f57fd9a76
+
+% 0 1 0 15c4fe46b7f83df7101070de39e7054f
+
+% 0 1 0 15d2043574d855d002de10af4ace8697
+
+% 0 1 0 11ae466717248d9a17d6a268e67c0649
+
+% 1 1 0 02fe79814cb2290c09431d232d0b9edf
+
+% 3 1 0 0675ad8e575be00a017307dd430c8c92
+
+% 4 1 0 02442b828a93343a1a5d075d871403d5
+
+% 5 1 0 0434c2de8f1b72170025aea27c5daa8f
+
+% 0 1 0 194af130d84c36ad19a6b18ee6d3a4f4
+
+% 1 1 0 051990666e3595450e0e022fb5b3ca32
+
+@ 0 3 0 19e81d1876dd86e015e64ede0906c05f
++ La racine est filtrée elle aussi. Cela compte lorsqu'une plateforme a plus d'une racine, comme
++ une lettre de lecteur Windows ou un partage UNC, puisque la racine fait partie de ce qu'*est*
++ un chemin, et non d'un préfixe de son texte.
+
+@ 0 1 0 08a91067c942c0740c9657d5c4723221
++ ### Les chemins dans le type
+
+@ 0 2 0 1edb555fccf573c8009645204a946188
++ Les noms des éléments d'un chemin peuvent être portés dans son type, de sorte qu'un chemin
++ connu à la compilation est connu précisément :
+
+% 2 1 0 0bc2c1b8596e3f9c1c02422853939deb
+
+% 0 1 0 1e80d6e06f9013471aa236cc42924eae
+
+% 1 1 0 127ad5f66e81a08814c4a849ff104282
+
+@ 0 5 0 1f8dedb446bbff0706b2351ab9e52fe4
++ Les noms apparaissent du plus intérieur au plus extérieur, ce qui correspond à la façon dont
++ le chemin est construit. Un chemin construit entièrement à partir de littéraux a donc un type
++ qui décrit exactement où il pointe. C'est ce qui permet de vérifier, pendant la compilation du
++ code, une ressource du [classpath](classpath.md), ou un fichier relatif à un projet. Un chemin
++ dont les éléments ne correspondent pas au type qu'on lui donne ne compile pas :
+
+% 2 1 0 0060c063ef913d5908b1bc56855b894f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 023d885c1a314cf016c66bef87ada367
+
+% 1 1 0 194d949838ef1e5e183c94b581685878
+
+@ 0 3 0 1df11a63d89725861ace22d3ddda6bc6
++ Lorsque les éléments ne sont pas connus, comme pour un chemin construit à partir d'un texte à
++ l'exécution, ou lu dans un listing du [système de fichiers](filesystem.md), le type dit
++ simplement `Path on Linux`, et les opérations sont les mêmes.
+
+@ 0 1 0 1110cff8cf3c30f707248eef29cd369e
++ ### Ce que sait un chemin relatif
+
+@ 0 4 0 1ac298d57eaf7a99013b7f2131e37083
++ Un chemin relatif porte lui aussi sa plateforme : un `Relative on Linux` ne peut donc pas être
++ appliqué à un chemin Windows. Il porte aussi la hauteur jusqu'à laquelle il remonte, dans sa
++ `Relation`. Un chemin relatif qui remonterait au-dessus d'une racine peut donc être rejeté là
++ où il est écrit, au lieu de ne mener nulle part à l'exécution.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 5 0 0e9ca6e998e2f03705ed0a34c6ec4677
++ - [Système de fichiers](filesystem.md) lit, écrit et liste les fichiers que nomment les
++   chemins.
++ - [Adresses réseau](network-addresses.md#urls) décrit les URL, qui ont leurs propres chemins.
++ - [Classpath](classpath.md) nomme les ressources par leur chemin.
++ - [Noms](names.md) vérifie les éléments d'un chemin selon les règles d'une plateforme.

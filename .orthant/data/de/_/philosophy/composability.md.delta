@@ -1,0 +1,171 @@
+orthant 2 language
+
+@ 0 1 0 1de27bad34d972de17dc2bcdab4816dd
++ # Komponierbarkeit
+
+@ 0 6 0 0116ef1a43b7e51b06166f6f4e8b3b7f
++ Soundness ist darauf gebaut, sich komponieren zu lassen: Kleine Teile verbinden sich ohne
++ Sonderfälle zu größeren, und die Verbindung verhält sich so, wie die Teile es erwarten lassen.
++ APIs sind so entworfen, dass das Ergebnis einer Operation die Eingabe der nächsten ist, Typen sich
++ zu reicheren Typen verbinden und Capabilities in Capabilities verschachtelt werden. Komponierbarkeit
++ lässt eine kleine, einheitliche Menge von Teilen einen enormen Anwendungsbereich abdecken, und sie
++ wird als bewusste Entwurfsbeschränkung behandelt, nicht als Eigenschaft, die man sich im
++ Nachhinein erhofft.
+
+@ 0 1 0 18cebf8a9e35614406a25d325571a6d0
++ ## Werte lassen sich komponieren
+
+@ 0 3 0 13a4af7241051ec719a8700c906c7907
++ Eine [Stream](../en/modules/streams.md)-Pipeline ist der deutlichste Fall. Jede Stufe nimmt einen
++ Stream und liefert einen Stream, sodass sich Stufen ohne Adapter verketten lassen, in jeder
++ Reihenfolge, die sinnvoll ist:
+
+% 2 1 0 1611a49bc250748e04e1e70396e66cfb
+
+% 3 1 0 0e0a1a44677596cf013ccfa1cab9b4bc
+
+% 4 1 0 16dd2002c90898621dc5b16a9e18da8c
+
+% 0 1 0 0a58e03c0d3e074e1d36fca856358544
+
+% 1 1 0 1424e83528131ff910d7b60056eb7e6f
+
+@ 0 4 0 1514909cebb9bc761ac0e370c2b1947f
++ Nichts in dieser Zeile ist für seine Nachbarn als Sonderfall behandelt. Die Dekompression weiß
++ nicht, dass sie aus einer Datei liest; der Decoder weiß nicht, dass seine Eingabe komprimiert war.
++ Weil jede Stufe ein Wert ist, lässt sich die Kette zur Laufzeit zusammensetzen, in einer Variablen
++ halten oder von einer Funktion bauen, die entscheidet, welche Stufen eine bestimmte Aufgabe
++ braucht.
+
+@ 0 1 0 10cf03ab70ba272c0de3cf43634f63a6
++ ## Typen lassen sich komponieren
+
+@ 0 2 0 0cbb72e2c69cbe510876d3ed39eac3c5
++ Ein [Infix-Typ](infix-types.md) fügt eine Klausel hinzu, ohne eine Klammer zu verschachteln,
++ sodass ein präziser Typ so aufgebaut wird wie eine englische Beschreibung:
+
+% 2 1 0 11db83543d66241c0bc20617cf575713
+
+% 3 1 0 00b9b163d0eae97c1233d1829e8dd03b
+
+% 4 1 0 0bed26b97b5c7c92127ba1e0a449519b
+
+% 0 1 0 108ef8f08033a2c207c2d54517555e93
+
+% 0 1 0 021d8035f62dd30a0018939b0d7afd8f
+
+% 0 1 0 0fb6a82d35c6d65e08ba5ec18939021e
+
+% 0 1 0 0a2a2f80e83aef561494cc52ab2ef156
+
+% 1 1 0 11d2afd3e28e6048128c0d794dce417b
+
+@ 0 3 0 0abd92290243cba30b4efe943dfc3748
++ Jede Präposition bedeutet überall, wo sie erscheint, dasselbe, sodass ein Leser, der einen
++ solchen Typ verstanden hat, den nächsten per Analogie liest. Die Alternative —
++ `Element["ul", "li", Whatwg]` — trägt dieselbe Information und sagt dem Leser nichts darüber,
++ welcher Parameter welcher ist.
+
+@ 0 1 0 0798ad02949405f80320bf7a813e61f7
++ ## Capabilities lassen sich komponieren
+
+@ 0 3 0 0d82d6bb25fda5f712e3f1d8f930e2b1
++ Zwei Capabilities im Geltungsbereich sind zwei Capabilities; es gibt keinen kombinierten Typ zu
++ konstruieren und keine Reihenfolge zu wählen. Fehlbarer, asynchroner und protokollierender Code
++ komponiert sich, indem er nebeneinander geschrieben wird:
+
+% 2 1 0 10ebe8f493a2f7fd00f6103de8a72d54
+
+% 3 1 0 071d65707a90e86319d47bce20506d23
+
+% 4 1 0 182a81d7ee98442e1a5aa7fc3136be92
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 13d5befb2d1178cb1ef63455361dd122
+
+% 0 1 0 048b8df7a8940f68003ffcbe2eec68df
+
+% 0 1 0 04b68f13292630100c24d6460f2a1679
+
+% 0 1 0 0211f41b10ea266300ebe5131a2a8e16
+
+% 1 1 0 04c70ecc44c049e41e7cbbdfc95bb262
+
+@ 0 4 0 024cb75c444e978b0c79de3e0fa31fa7
++ Das ist die Eigenschaft, um deren Bewahrung willen es den [direkten Stil](direct-style.md) gibt.
++ Unter einer monadischen Kodierung verlangt dieselbe Kombination einen Transformer-Stack, und die
++ Reihenfolge, in der die Effekte gestapelt werden, wird zu einer Entscheidung mit Folgen. Hier ist
++ sie überhaupt keine Entscheidung.
+
+@ 0 1 0 1cbb2aa8f0fd5619131f3aea11f28ea7
++ ## Geltungsbereiche lassen sich komponieren
+
+@ 0 1 0 1c862c93455cc58f142d23073e368aa4
++ Weil eine Capability durch einen Block eingeführt wird und Blöcke sich verschachteln,
++ verschachteln sich auch die Lebensdauern von Ressourcen:
+
+% 2 1 0 1d27a5510ab52ce003f29162a8686a31
+
+% 3 1 0 08b6ae170b5f6f5e1c0f223856e34316
+
+% 4 1 0 1c3de31e5c288daa1ef8c9792d952ee0
+
+% 0 1 0 04dde33d8f9c709c10a2a6b498ca3c6a
+
+% 0 1 0 0abd480ba69540d51c51797f268e484c
+
+% 0 1 0 066a960f97d387a31fe0c6d71d1b355d
+
+% 1 1 0 0856de1f119eda410c225195ec6f2815
+
+@ 0 4 0 199d9445f2a0233505fef2a05d32743b
++ Der innere Geltungsbereich sieht beide Capabilities; jede wird an ihrer eigenen Grenze
++ zurückgezogen, in der richtigen Reihenfolge, ob der Block abschließt oder fehlschlägt. Eine dritte
++ Ressource hinzuzufügen, fügt eine Zeile hinzu, statt die anderen beiden umzustrukturieren — und
++ [Capture-Checking](capture-checking.md) beweist, dass nichts nach außen entweicht.
+
+@ 0 1 0 1db1141b7511f2cb0193dfe73eebab7a
++ ## Die Beschränkung, die dies dem Entwurf auferlegt
+
+@ 0 4 0 0f2d7e342e0b31cd1f5fdec8f3bd0dfc
++ Komponierbarkeit ist leicht zu beschreiben und schwer zu bewahren, denn der Druck gegen sie ist
++ immer lokal. Jeder Sonderfall, jede „bequeme“ Überladung, die das Paar statt der Teile nimmt,
++ jede Operation, die nur funktioniert, wenn sie zuerst aufgerufen wird — jede ist eine kleine
++ Bequemlichkeit, die eine Kombination beseitigt, die jemand anderes brauchte.
+
+@ 0 2 0 111d8b0f4825949f0c83b2258ab9898d
++ Drei Regeln folgen daraus, und sie sind der Grund, warum manche Soundness-APIs strenger aussehen,
++ als sie könnten:
+
+@ 0 2 0 0ecf189696ccdf4101dd7b1a0c1bbbe1
++ **Geben Sie den Typ zurück, den Sie annehmen.** Eine Operation, die einen Stream nimmt, gibt einen
++ Stream zurück, sodass sie in der Mitte einer Kette stehen kann statt nur an ihrem Ende.
+
+@ 0 3 0 1ac8f0df3bf6b24916a30be974124898
++ **Verschmelzen Sie nicht, was der Aufrufer kombinieren kann.** Es gibt kein `readAndDecompress`,
++ weil `stream.decompress[Gzip].read[Text]` bereits existiert und die verschmolzene Version für
++ jedes Paar wiederholt werden müsste.
+
+@ 0 3 0 094be0a39832e9a3014e763c01f97248
++ **Machen Sie den allgemeinen Fall zum einzigen Fall.** Funktioniert eine Operation für `List`,
++ aber nicht für einen Stream, ist die Abstraktion falsch — weshalb die Operationen über
++ Typklassen definiert sind statt über konkrete Typen.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Was es kostet
+
+@ 0 3 0 1d3ff4e10d2198c012b445aca35d9d95
++ Eine komponierbare API ist weniger unmittelbar bequem als eine verschmolzene.
++ `dir.archive[Tar]().gzip` sind zwei Aufrufe, wo `tarGzip(dir)` einer wäre, und ein Leser, der
++ genau die verschmolzene Operation wollte, zahlt eine kleine Steuer für die Allgemeinheit, die er
++ nicht brauchte.
+
+@ 0 3 0 1b32dba5e99140281b7a410573b80a37
++ Diese Steuer wird in Kauf genommen, weil sie begrenzt ist und die Alternative nicht:
++ Verschmolzene Operationen vervielfachen sich kombinatorisch, und jede hinzugefügte ist eine
++ Stelle, an der der allgemeine Pfad und die Abkürzung auseinanderdriften können.
+
+@ 0 2 0 0393bebcbd23aef718458531895bac8f
++ Siehe [kleine APIs](small-apis.md) für das Vokabular, das dies klein hält, und
++ [Entkopplung](decoupling.md) dafür, wie unabhängige Module sich überhaupt komponieren lassen.

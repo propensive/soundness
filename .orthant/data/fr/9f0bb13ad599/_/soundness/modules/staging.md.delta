@@ -1,0 +1,12 @@
+orthant 2 language
+
+% 0 1 0 064ababe6a63dda410fe6ab94b2902cf
+
+@ 0 6 0 0151eecb9f22598d1b6186f02898689d
++ Le code qui s'exécute ailleurs peut échouer, mais une erreur levée dans le bloc mis en étapes
++ n'est pas ramenée telle quelle de l'autre côté de la frontière. `dispatch` ne lève qu'une
++ `Compiler.Error`, si le code mis en étapes ne compile pas, ou une `Rig.Error`, pour un échec du
++ rig. Avec le rig `Jvm`, un code mis en étapes qui lance une exception fait sortir son
++ sous-processus en échec, ce qui est signalé comme une `Rig.Error` dont la raison est
++ `Invocation` : la même erreur que pour un sous-processus qui ne démarre pas. Un code mis en
++ étapes susceptible d'échouer doit donc renvoyer son échec sous forme de valeur.

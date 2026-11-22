@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 3 0 148a30337b22668a138439c53376660b
++ # Машиночитаемый указатель пунктов дорожной карты. Одна запись `item` на каждый пункт во
++ # всех девяти файлах направлений в doc/work/roadmap/. Этот файл — единственный источник статуса:
++ # прозаические файлы никогда не заявляют о завершении; они ссылаются сюда.
+
+@ 0 2 0 1150a678e12de40b1108079fd587f3ad
++   baseline  1669 циклов while, 993 readUnchecked, 514 charAt в core-исходниках lib (2026-10-21, после того как #2274 сделал замороженный Array единственным неизменяемым массивом; 1606, 476, 507 на 2026-09-25)
++   criterion  ни одна коллекция не предоставляет частичного индексного apply (issue #1666); каждый оставшийся while имеет форму, которую допускает doc/work/standards/loops.md, и снабжён комментарием, называющим его инвариант
+
+@ 0 1 0 00b880a91082413204e9196c41d2f096
++   criterion  doc/work/standards/capabilities.md существует, определяет каждый тег, который распознаёт перепись, и разделы с рецептами в rep/DECISIONS.md ссылаются на него
+
+@ 0 2 0 0dc0dcbd00f7c47016ed4ce89be1e923
++   baseline  104 из 145 строк собираются для JavaScript, 108 для Native, 34 исключения для JavaScript с причинами; etc/check-compatibility.py регенерирует и проверяет файл в make build (2026-10-21; 101 из 144 на 2026-09-25; 94 из 132 на 2026-08-01)
++   criterion  CI регенерирует etc/compatibility.tsv, завершается ошибкой при расхождении, и ни одно исключение не лишено причины
+
+@ 0 1 0 1d5dac460d0144ed0e9ce85ab7f751a9
++   criterion  каждая причина исключения в etc/compatibility.tsv присуща самой платформе; проверка словаря причин обеспечивает это в CI
+
+@ 0 2 0 173a4b08b8f1520e09515e59d4878c6f
++   baseline  4 переименованных имени всё ещё на верхнем уровне; перечислено 61 семейство префиксов с 210 именами плюс 216 одиночных (2026-09-25)
++   criterion  таблица переименований в etc/api-nesting-proposal.md применена полностью, а раздел 'Remaining names by prefix family' в etc/api-reduction-candidates.md не перечисляет ни одного имени вне 'Reviewed items which should not be moved'
+
+@ 0 2 0 0675b33ae36d6a561117a05e02987c2d
++   baseline  перечислены 3 сокращения C2 (2026-09-25)
++   criterion  раздел C2 в etc/api-reduction-candidates.md пуст (C3 и C3b заменены etc/api-nesting-proposal.md и закрыты вместе с ним)
+
+@ 0 1 0 06c6c31327182c871e92b37f5e2c26af
++   criterion  etc/api-reduction-candidates.md больше не существует
+
+@ 0 2 0 0051b6e0c43f7f740580661bc8f6c07d
++   baseline  0 имён, экспортируемых двумя библиотеками; выполнено 19 из 22 строк R8 с высокой уверенностью; Tag/Renderable всё ещё @unexported (2026-11-12, позже; ранее в тот же день — 6 имён, 2 омонима @unexported, ~110 кандидатов R8)
++   criterion  ни одно имя не экспортируется более чем одной библиотекой, ни один @unexported не обходит конфликт, и каждая строка таблиц R8 в etc/api-nesting-proposal.md применена или рассмотрена и оставлена
+
+% 0 1 0 131794d631e522870773aff16ae8aac7
+
+@ 0 2 0 07a6b381d30a92cb023b924906e9d974
++   baseline  101 тема в doc/work/soundness/modules/; охвачено 145 из 145 библиотек (2026-10-21; 1 из 144 не охвачена на 2026-09-25; 91 тема и 35 не охвачено на 2026-08-01)
++   criterion  python3 etc/check-doc-coverage.py сообщает, что охвачена каждая библиотека, и завершается с кодом 0
+
+@ 0 2 0 1154d170629482bb139ba48e21c12602
++   baseline  скриптовый набор тестов DAP останавливается, выполняет шаги и инспектирует значения через их экземпляры Inspectable; тема doc/work/soundness/modules/debugging.md (2026-10-21; на 2026-09-25 объекты инспектировались как имена классов JVM и темы не было)
++   criterion  скриптовая сессия DAP (точка останова, шаг, инспекция со значениями, отображёнными Soundness) проходит против запущенного приложения в CI
+
+@ 0 2 0 07448ba163d12a581789fe21f1724c6c
++   baseline  существуют doc/work/migration.md и 0.65.0.md–0.73.0.md; директива migration в etc/release блокирует релиз; проверки pull request нет (2026-10-21; заметки до 0.68.0 на 2026-09-25)
++   criterion  doc/work/migration.md существует; релиз (директива migration в etc/release) отказывается ставить тег без doc/work/migration/<version>.md; проверка CI проваливает любой pull request, который меняет lib/**/src, не затрагивая невыпущенный doc/work/migration/<version>.md
+
+@ 0 2 0 196b66a1e2f12f001fec8234a42c1ee3
++   baseline  lib/reliquary (7387 строк) плюс anthology.lira, degustation.lira, mandible.lira, xenophile.lira и их тесты (2026-09-25)
++   criterion  lib/reliquary отсутствует, не осталось ни одного каталога lib/*/src/lira, а build.mill, etc/ и doc/work/soundness/modules не упоминают reliquary
+
+@ 0 3 0 1022043b4940d100089e5ec885e64e12
++   status done
++   done  #2530 (2026-11-20)
++   baseline  lib/sigillate: Jws, Jwe, Jwk и Jwt с компонентами `http` и `server`; 95 тестов, берущих векторы из RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 и RFC 8037; `↯/s.147.1`; doc/work/soundness/modules/jose.md (2026-11-20)
+
+@ 0 1 0 0b21a7d8349a92fd16fa9db438708eef
++   baseline  lib/chatelaine: WebAuthn.registration/register и authentication/authenticate, аттестация `none` и `packed`, с компонентом `server`; церемонии регистрации и аутентификации из тестовых векторов спецификации W3C (§16.2–16.11) проходят, как и скриптовые церемонии против программного аутентификатора из тестовых исходников; виртуальный аутентификатор браузера ещё не задействовался; `↯/s.148.1`; doc/work/soundness/modules/webauthn.md (2026-11-20)

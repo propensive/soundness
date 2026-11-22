@@ -1,0 +1,1279 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0891d2e1337ca82f081ff30029930b5d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1707d965dc0205e5096e83fedd21dd99
++ info   le typeclass delle collezioni, le operazioni costruite su di esse e l'`Iterator` one-shot
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 07471364d7c8990d0d23b9d5ec4f334f
++     _Murmuration_ è il vocabolario delle collezioni di Soundness: le typeclass che dicono che
++     cosa una collezione *sa fare* (essere attraversata, essere ricostruita nella propria forma,
++     essere mappata, essere invertita, essere convertita in un'altra forma, essere interrogata
++     sull'appartenenza) e le operazioni scritte una sola volta su quelle typeclass, così che
++     `map`, `filter`, `bind`, `fold`, `group`, `sweep` e le altre si leggono allo stesso modo
++     che il ricevente sia una `List`, un `Set`, una `Map`, una `Chain`, un `Array` congelato,
++     un `Text` (che si attraversa come i suoi caratteri) o una collezione Java. I *tipi* delle
++     collezioni stessi (`List`, `Sequence`, `Set`, `Map`, `Ledger`, la `Chain` lazy e l'array
++     congelato `Array[element]^{}`, con `Data` come `Array[Byte]^{}`) sono i wrapper opachi di
++     proscenium sulle strutture della libreria standard; murmuration fornisce le istanze che
++     danno a ciascuno di essi il vocabolario, e il vocabolario stesso.
+
+@ 0 11 0 1b02f0491494335e1c0b0f1d09ff017c
++     Il design ha tre strati. `Traversable` produce un `Iterator` fresco e one-shot sugli
++     elementi di un valore, ed è l'unica cosa di cui un'operazione ha bisogno per *leggere* una
++     collezione. `Reshapable` è la relazione di ricostruzione: da una forma di origine e un nuovo
++     tipo di elemento seleziona la forma di risultato naturale e la costruisce, quindi `filter`
++     su un `Set` dà un `Set`, `remap` su una `Map` dà una `Map` quando i risultati sono coppie e
++     una `List` quando non lo sono, e `filter` su un `Text` dà un `Text`. Il suo sotto-trait
++     `Reshapable.Stable` marca le forme che preservano l'ordine, e le operazioni sensibili
++     all'ordine (`sort`, `order`, `distinct`, `zip`, `excerpt`, `span`, `batched`, `trace`) lo
++     richiedono, quindi sono onestamente *assenti* da `Set` e `Map` invece di essere definite per
++     fare qualcosa di arbitrario. `Mappable` è il terzo: `map` è guidato da esso e non da
++     `Traversable` perché una `Map` mappi i suoi *valori* e conservi le sue chiavi, mentre
++     `remap` è la forma a coppie.
+
+% 2 1 0 192638d7db14765119e6de67f849760e
+
+% 3 1 0 1f9e4c20b5acab5700d15337dcb7c9de
+
+% 0 1 0 1be519899da4252c095f41fc1efce63f
+
+% 0 1 0 0088be0e17ed730304eb277b1216f6bc
+
+% 0 1 0 1f41e4b7f38ec3c80be56d3090332f6f
+
+% 0 1 0 087b331951ae1551061929a4aa74a6ab
+
+% 0 1 0 034e345c2e53cf401f223cdae09b4462
+
+% 0 1 0 0472e440aa8b064207deeb48f847df61
+
+% 0 1 0 0b1e8e6199587cee1740bc485c411bb8
+
+% 0 1 0 014cbb0209f74ae40d58f53608f54d0d
+
+% 0 1 0 1388e03c75def0b7100390a5efc42703
+
+% 0 1 0 0b098e941c0f51b002f089ca74b1ebad
+
+% 0 1 0 10b9d2d10750ef77168f00c92fab9aea
+
+% 0 1 0 1ef85ef4642802ff1f98923cf82fa517
+
+% 1 1 0 14d99f67fe4c02dd181aab9a1a251c86
+
+@ 0 1 0 1c213780242f712a10fda9b18eac3e34
++     Alcune regole del vocabolario vale la pena conoscerle prima della prima sorpresa:
+
+@ 0 37 0 04e8b566d9caae5301013189c8c49419
++     - **Nomi.** `bind` è il bind monadico; `flatMap` è la stessa operazione ed esiste solo
++       perché le `for`-comprehension si traducono in essa. `each` (in rudiments) è il ciclo,
++       `foreach` esiste per la stessa ragione di traduzione. `fold` è il `foldLeft` della
++       stdlib, `trace` il suo `scanLeft`, `sweep` il suo `collect`, `group` il suo `groupBy`,
++       `batched` il suo `grouped`, `excerpt` il suo `slice`, `deduplicate` il suo `distinctBy`,
++       `has` il suo `contains`, `flat` il suo `flatten`, `keep`/`skip` (rudiments) i suoi
++       `take`/`drop`, `order` il suo `sortBy`, ed `except` il suo `diff`. Non esiste
++       `filterNot`: si scrive `filter(!predicate(_))`.
++     - **Overload per valore e per predicato.** Dove un metodo potrebbe prendere un valore da
++       confrontare oppure un predicato da applicare, si offrono entrambi sotto un solo nome
++       ovunque il tipo di elemento lo permetta. `count` e `where` sono l'eccezione: con un tipo
++       di elemento dipendente dal percorso, un overload per valore è ambiguo con ogni lambda,
++       quindi `count(_ == value)` è l'idioma per contare un elemento.
++     - **Il costo si riconosce, non si nasconde.** Le operazioni il cui costo è peggiore di
++       quanto suggerisca il nome (`size` e `last` su una `List`, `size` su una `Chain`, `at`
++       posizionale su una `List`) sono subordinate a un given con nome del package
++       `dysasymptotics` di denominative (`import dysasymptotics.linearSize`, `linearAccess`,
++       `unboundedSize`), importato *per nome* nel file o nel blocco che accetta il costo. `nil`
++       (il test di vuotezza) è O(1) ovunque e mai subordinato. Non si aggiri un cancello con
++       `.stdlib`: lo si apra dove il costo è giusto.
++     - **La conversione** è `xs.to[List]`, `xs.to[Set]`, `pairs.to[Map]`, `chars.to[Text]`,
++       `xs.to[Array]` (il `to` di rudiments, su `Convertible`): la forma *con le parentesi
++       quadre*, che nomina la forma come tipo. Lo `xs.to(List)` con le parentesi tonde della
++       libreria standard sopravvive solo sui riceventi della stdlib, che hanno un proprio membro
++       `to`. (Un precedente `transmute[T]` era questa operazione sotto un nome provvisorio; ora è
++       `to[T]`.)
++     - **L'ordinamento nomina il suo algoritmo.** `sort` e `order` (rudiments) richiedono un
++       given `SortAlgorithm` nell'ambito, scelto importando per nome uno di `sortingAlgorithms`
++       (non c'è un default, e due import sono un'ambiguità) e un `Comparable` per l'elemento o
++       la chiave.
++     - **La libreria standard è un confine.** `xs.stdlib` su qualsiasi collezione opaca espone
++       la struttura sottostante senza copiarla, e `List.from(…)`, `Set.from(…)`, … riportano
++       indietro. Ogni attraversamento del genere si può trovare con grep, ed è questo che
++       permette al resto di un programma di restare dentro il vocabolario totale. Esiste anche
++       un'istanza di `Traversable` per `java.lang.Iterable`, `java.util.Iterator`,
++       `java.util.Map` e `java.util.Enumeration`, quindi `javaList.to[List]` non richiede alcuna
++       conversione.
++     - **Gli array non sono collezioni.** L'`Array[e]^{}` congelato è `Traversable`,
++       `Reshapable` e `Convertible`, quindi si può leggere, mappare e convertire, ma si modifica
++       per copia (`define`, `omit`, `Array.concat`, `Array.thaw`/`Array.freeze`, in proscenium e
++       denominative), non attraverso una superficie simile a quella di `List`; l'`Array[e]^`
++       mutabile si ordina sul posto con `sort()`.
+
+@ 0 6 0 0be15dda3f703cf3017485c41a3440ac
++     L'unico tipo concreto della libreria è `Iterator[element]`: un'estrazione one-shot, senza
++     allocazioni e verificata per separazione su una sorgente, che sostituisce `scala.Iterator`
++     in tutto Soundness. `Traversable.traverse` ne produce uno e ogni operazione ne consuma uno,
++     quindi è per lo più moneta interna, ma è anche il tipo onesto per qualsiasi cosa letta dal
++     mondo esterno esattamente una volta (i frame di un socket, le righe di un processo, le
++     pressioni di tasto di un terminale), e il nome `Iterator` in Soundness ora indica questo
++     tipo.
+
+@ 0 8 0 0b6681cd297da5f41f9b9b1164dafc04
++     `murmuration.core` è un unico insieme di sorgenti, compilato per la JVM, Scala.js e Scala
++     Native. Sta *sotto* denominative e vacuous, quindi qui nulla sa di `Ordinal` o di
++     `Optional`: le operazioni che restituiscono un `Optional` (`head`, `last`, `find`, `where`,
++     `reap`) o prendono un `Ordinal` (`each`, `at`, `indexed`) sono definite in rudiments su
++     queste stesse typeclass. Tutto è esportato nell'ombrello `soundness`, e anche rudiments lo
++     riesporta, quindi `import soundness.*` (o `import rudiments.*`, mai entrambi: le
++     riesportazioni renderebbero ambigua ogni operazione) è tutto ciò che un utente scrive; il
++     package di scelta `sortingAlgorithms` si fonde con quello dell'ombrello.
+
+% 0 1 0 1a285f1b9a4e3b5202fb08c6f0de9c2d
+
+% 0 1 0 04635bc9908a882d0a77f6aee5a58e98
+
+% 0 1 0 035c1ee2fff408c606c92bda1485d739
+
+% 0 1 0 1f3e71f7021938cd19b3669605c54189
+
+% 0 1 0 1a5a16a134e12dd803ff7dd0e5e0e554
+
+% 0 1 0 1937552efbee812107700684c6af4a56
+
+@ 0 1 0 09547eaeb1fd9a5b19819a7873df94df
++ entry .Traversable   un tipo i cui elementi si possono visitare in ordine, come `Self is Traversable by Operand`
+
+% 1 1 0 0f221ec0d0dc3c5916e090ef680863c2
+
+@ 0 8 0 112b1e229349039a1850ba03f991dcee
++       `Traversable` è l'unica cosa di cui un'operazione ha bisogno per *leggere* una collezione.
++       Un'istanza dice quali sono gli elementi (il suo `Operand`, legato con `by`: `List[Int] is
++       Traversable by Int`, `Map[k, v] is Traversable by (k, v)`, `Text is Traversable by Char`)
++       e come produrre un `Iterator` fresco e one-shot su di essi (`#traverse`). Ogni operazione
++       di murmuration e di rudiments che si limita a leggere (`exists`, `fold`, `count`, `has`
++       tramite `Inclusive`, `head`, `find`, `each`, e il lato di input di `map`, `filter`,
++       `bind`, `group` e `sort`) la prende come prova, e una nuova forma ottiene l'intero
++       vocabolario fornendo una sola istanza.
+
+% 2 1 0 1d0f6b9051d8f0f000221592202f2d82
+
+% 3 1 0 0f5cbcdd1d17514705678c49458307bf
+
+% 5 1 0 1ffe28fe05f5cb77110c0f94b24d7c88
+
+% 7 1 0 14d69e59fc5738631d20b4bbb8cd483b
+
+% 0 1 0 091947093952925610fe32c2b041640b
+
+% 0 1 0 156fa35b54dd806e1a8d9e46fcfbf0c4
+
+% 0 1 0 19fae3e75e893c3f1078993a867c5a3e
+
+% 1 1 0 055905dab405d65503209117054a2594
+
+@ 0 7 0 00d963c90e27957701c8c40fa0e9c1dd
++       Esistono istanze per le opache `List`, `Chain`, `Sequence`, `Set`, `Map` (come coppie) e
++       `Ledger` (come coppie), per l'array congelato `Array[e]^{refs}` e la sua forma `Sized`,
++       per qualsiasi `scala.Iterable` (`.iterable`, con priorità più bassa), e per `Iterable`,
++       `Iterator`, `Map` ed `Enumeration` di Java. Vivono tutte in questo oggetto compagno,
++       quindi si risolvono senza import. Le istanze per le collezioni sono *parametriche nel
++       sottotipo* (`list <: List[element]`), quindi un ricevente di tipo `List[e] & Populated`
++       (un letterale `List(a, b)`, un risultato di `occupied`) vi corrisponde come uno semplice.
+
+@ 0 4 0 1cc36b2cd399c0cb0f054deb96a1e6bd
++       Poiché `Text` è `Traversable`, ogni operazione generica si applica al testo, e
++       un'estensione solo testuale con lo stesso nome sarebbe ambigua nell'ombrello: per questo
++       gossamer contribuisce *istanze* (attraverso `traversableTextual`, `reversibleTextual`)
++       invece di estensioni in concorrenza.
+
+@ 0 4 0 13958ceb5766f45b07271b49247453ad
++       L'iteratore che `traverse` restituisce è esclusivo (`Iterator[Operand]^`): un
++       attraversamento prende in prestito, ed è consumato esattamente da un'operazione. Un
++       `Iterator` quindi *non* è deliberatamente `Traversable` a sua volta (non si può
++       attraversare due volte) e si svuota con il proprio membro `to[List]`.
+
+% 1 1 0 10ab2975acb3b6441182c41eb7887ac7
+
+% 0 1 0 0b630511969c641f04e15ff128af9906
+
+% 0 1 0 00ca6c0b3b952d2f12aa01b08c98bdfd
+
+@ 0 31 0 1a18e2aa2c9cda001eb99f239771db71
++   entry #traverse   un `Iterator` fresco e one-shot sugli elementi del valore, in ordine
++       L'iteratore è esclusivo (`Iterator[Operand]^`) e consumato dall'operazione che l'ha
++       chiesto; è moneta interna, che lo `xs.iterator` di rudiments espone quando un chiamante
++       vuole estrarre a mano.
++   entry .list   la `List` opaca, elemento per elemento; corrisponde anche a `List[e] & Populated`
++   entry .chain   la `Chain` lazy, che estrae gli elementi su richiesta man mano che l'iteratore avanza
++   entry .sequence   la `Sequence` indicizzata, elemento per elemento
++   entry .set   il `Set` opaco, nel suo ordine di iterazione (non ordinato)
++   entry .map   la `Map` opaca, attraversata come le sue coppie `(key, value)`
++       La coppia è l'`Operand`, quindi `map.fold`, `map.filter`, `map.remap` e `map.count` vedono
++       le voci; `map.map` vede i valori, attraverso `Mappable`.
++   entry .ledger   il `Ledger` ordinato per inserimento, come coppie `(key, value)` in ordine di inserimento
++   entry .frozenArray   l'array congelato, letto attraverso qualsiasi riferimento in sola lettura
++       `(Array[element]^{refs}) is Traversable by element`, polimorfo nella cattura in `refs`
++       così che un `Array[e]^{}` staticamente congelato, una variabile di cattura in box e un
++       riferimento `any.rd` corrispondano tutti. Leggere attraverso un riferimento condiviso è
++       corretto sotto il controllo di separazione, che esclude uno scrittore vivo ovunque un
++       lettore ne sia un alias.
++   entry .sizedFrozenArray   un array congelato `Sized[length]`, con un'istanza propria
++       `(Array[element]^{refs} & Sized[length]) is Traversable by element`. Un'istanza separata
++       anziché un allargamento di `.frozenArray`, perché una variabile di tipo limitata da un
++       tipo con cattura viene elaborata come `array^{any.rd}` e farebbe allora fallire la prova
++       dichiarata per l'array puro; scrivere il marchio nel `Self` mantiene esatta la forma.
++   entry .javaIterable   qualsiasi `java.lang.Iterable`: `java.util.List`, `Set`, `Collection`, …
++       Parametrica nel sottotipo, quindi un `java.util.ArrayList[Int]` o un `jar.Attributes` si
++       risolvono. `javaList.to[List]` e `javaList.each(…)` non richiedono `asScala`.
++   entry .javaIterator   un `java.util.Iterator`, preso in carico per i suoi elementi rimanenti
++   entry .javaMap   una `java.util.Map`, attraversata come coppie `(key, value)`
++       Invariante in entrambi i parametri (a differenza di `.javaIterable`): un'istanza
++       parametrica nel sottotipo con due parametri lasciava che il compilatore trattasse in modo
++       speculativo tipi opachi non correlati come mappe Java. Un sottotipo come `jar.Attributes`
++       si ascrive prima a `java.util.Map[Object, Object]`.
++   entry .javaEnumeration   una `java.util.Enumeration`, presa in carico per i suoi elementi rimanenti
+
+@ 0 1 0 13126ddf3ba59c621c0bc91b6011db22
++ entry .Traversable2   il trait genitore che contiene l'istanza `Iterable` a priorità più bassa
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 0f5ae8cb78bfbb0916f71cbdc8505649
++       Non è per l'uso diretto: `object Traversable` lo estende così che l'istanza generale per
++       `scala.Iterable` abbia rango inferiore alle istanze per alias nell'oggetto compagno, che
++       altrimenti il compilatore segnalerebbe come ambigue per un ricevente alias.
++   entry #iterable   qualsiasi `scala.Iterable[element]` è `Traversable by element`
++       Il ripiego per le collezioni grezze della libreria standard (`Vector`, `Range`,
++       `IndexedSeq`, …), attraverso il loro `iterator`. Priorità più bassa di ogni istanza
++       nell'oggetto compagno di `Traversable`.
+
+@ 0 1 0 1aa2138d9e41b40e18c66dc3209f53d7
++ entry .Reshapable   come una forma di origine si ricostruisce da nuovi elementi, come `Self is Reshapable by Operand to Result`
+
+% 1 1 0 1e19a6116bfa1ca116924088298b4db8
+
+@ 0 9 0 0c8ceba3f91aaa4a19562ad0eb8e894c
++       `Reshapable` è la relazione di ricostruzione dietro ogni operazione di trasformazione:
++       `remap`, `bind`, `filter`, `sweep`, `group`, `partition`, `flat` e le altre leggono la loro
++       origine attraverso `Traversable` e passano l'iteratore risultante a `#reshape`, che
++       costruisce il risultato. L'istanza si seleziona per *(forma di origine, nuovo tipo di
++       elemento)*, il che permette risultati più precisi di quanto consenta una gerarchia di
++       classi: una `List` di qualsiasi cosa è una `List`; un `Set` di qualsiasi cosa un `Set`; una
++       `Map` ricostruita da coppie è una `Map` (`.map`), da qualsiasi altra cosa una `List`
++       (`.mapToList`), e, quando un'operazione sensibile all'ordine chiede un risultato `Stable`,
++       un `Ledger` (`.mapToLedger`); `Text` si ricostruisce dai propri caratteri, e da
++       nient'altro.
+
+% 2 1 0 0c91ccd0d51be41b102f93e6501bc4db
+
+% 3 1 0 0484998a788fa574062018b3aaac3d9f
+
+% 0 1 0 121e215f69f8c9c004d253050505088a
+
+% 0 1 0 03d3762e3d8e731c0c524998940e9e26
+
+% 0 1 0 15b4a0f15a22e5b1086071cc6bb0abb9
+
+% 0 1 0 0e1dc7b3cc72b16511d1c52a8ddf8fbd
+
+% 1 1 0 0857b5468d40dbd21ea41c567851a659
+
+@ 0 6 0 197b89ee19f47fcd185935affa20e1a3
++       `.Stable` marca le istanze la cui forma preserva l'ordine. Le operazioni il cui significato
++       dipende dall'ordine (`sort` e `order`, `distinct`, `deduplicate`, `zip`, `excerpt`,
++       `span`, `trace`, `batched`, l'`indexed` di rudiments) richiedono `Reshapable.Stable`,
++       quindi non esistono su `Set` o `Map`: un set ordinato perderebbe di nuovo il suo ordine
++       all'uscita, e il compilatore lo dice invece. `partition` e `sweep` deliberatamente *non*
++       sono `Stable`, perché raccogliere da una forma non ordinata ha senso.
+
+@ 0 4 0 095260220e2cc21a1beccb2a04f0afb2
++       `reshape` prende un iteratore *con cattura* (`Iterator[Operand]^`), perché gli iteratori
++       che le operazioni producono catturano la lambda del chiamante. Ogni istanza tranne `.chain`
++       lo svuota in modo eager, quindi nulla sfugge; la chain è l'eccezione deliberata e conserva
++       la natura lazy dell'origine. Un'istanza rigorosa tutta tua si scrive in una riga con
++       `.build`:
+
+% 2 1 0 1421f6a0872817ec095c6543113b3e77
+
+% 3 1 0 056caa0c350d94171376dc74d5188940
+
+% 5 1 0 060c521468933d9a120802f99a90349c
+
+% 7 1 0 18ae2c7776f6e70609b262c4f23f3b64
+
+% 0 1 0 15a3bdb578956ba217983677ad54c0c1
+
+% 0 1 0 1534c12fe50da5591ab15e5c407956f6
+
+% 1 1 0 1331f49d409a03e61f171ed914913705
+
+% 1 1 0 1731862c531cfb4309f54d9951093716
+
+% 0 1 0 0f80b1fd9477341711f7253537702eb5
+
+@ 0 30 0 0cf25efa5730535f1476509f60e2f163
++   entry #reshape   costruisce il `Result` da un iteratore di nuovi elementi
++       L'iteratore è esclusivo e può catturare la lambda che ne ha prodotto gli elementi;
++       un'istanza rigorosa lo consuma completamente all'interno della chiamata.
++   entry .Stable   il sotto-trait delle istanze la cui forma preserva l'ordine degli elementi
++       Esteso dalle istanze per `List`, `Sequence`, `IndexedSeq`, `Chain`, array congelato,
++       `Ledger` e (verso un `Ledger` o una `List`) `Map`, e non da `.set` né da `.map`.
++       Un'operazione che richiede `self is Reshapable.Stable by e to r` è quindi non disponibile
++       su un ricevente non ordinato, ed è così che `Set(3, 1, 2).sort` non compila invece di
++       restituire un set in nessun ordine particolare. Il nome riguarda una *forma* che conserva
++       l'ordine, non un algoritmo di ordinamento stabile; per quest'ultimo vedi `SortAlgorithm`.
++   entry .list   una `List` si ricostruisce come una `List` del nuovo tipo di elemento (stabile)
++       Parametrica nel sottotipo nell'origine (`list <: List[element]`), quindi anche un
++       ricevente `List[e] & Populated` si rimodella; il risultato è una semplice
++       `List[element2]`, perché una trasformazione può svuotarla.
++   entry .set   un `Set` si ricostruisce come un `Set` (non ordinato, non stabile)
++   entry .sequence   una `Sequence` si ricostruisce come una `Sequence` (stabile)
++   entry .indexedSeq   un `IndexedSeq` della stdlib si ricostruisce come un `IndexedSeq` (stabile)
++   entry .chain   una `Chain` si ricostruisce in modo lazy come una `Chain`, estraendo dall'iteratore man mano che la si forza
++       L'unica istanza non rigorosa: l'iteratore sfugge nella chain, che memoizza ciò che ha
++       estratto. `naturals.filter(_%2 == 0)` su una chain infinita va quindi bene.
++   entry .frozenArray   un `Array[e]^{}` congelato si ricostruisce come un nuovo `Array[e2]^{}` congelato
++       Richiede un `ClassTag` per il nuovo tipo di elemento. L'array ricostruito è fresco, quindi
++       il suo congelamento è garantito dalla costruzione.
++   entry .map   una `Map` ricostruita da coppie `(key2, value2)` è una `Map[key2, value2]`
++       L'istanza per `Map` con la priorità più alta: `remap` e il `bind` a coppie con risultati
++       coppia restano una `Map`. Non `Stable`; una ricostruzione stabile a coppie ricade sul
++       `mapToLedger` di `.Fallback`.
++   entry .ledger   un `Ledger` ricostruito da coppie è un `Ledger`, e legittimamente stabile
++       L'ordine di inserimento è l'identità di un `Ledger`, quindi porta l'intera superficie
++       sensibile all'ordine: `ledger.order(…)`, `distinct`, `trace`, `zip`.
++   entry .Fallback   il gradino intermedio della scala di priorità `Map`/`Ledger`
+
+% 1 1 0 1c74e22dd7ad454019852514d7a026a4
+
+@ 0 11 0 1ab86cf37532b49f1468ffb423299696
++         Un trait genitore dell'oggetto compagno di `Reshapable`, quindi le sue istanze hanno
++         rango inferiore a quelle dichiarate nell'oggetto compagno stesso e superiore a quelle di
++         `.Fallback2`. La scala decide in che cosa si rimodella una `Map` o un `Ledger` quando il
++         risultato della lambda non è una coppia, o quando si richiede un risultato stabile,
++         senza ambiguità.
++     entry #mapToLedger   una ricostruzione stabile a coppie di una `Map` produce un `Ledger`
++         `Map[k, v] is Reshapable.Stable by (k2, v2) to Ledger[k2, v2]`: una `Map` non ordinata
++         non può onestamente ricevere un risultato sensibile all'ordine, ma il `Ledger` ordinato
++         per inserimento sì, quindi `ages.order(_(1))` è un `Ledger` che itera in ordine
++         ordinato. Priorità più bassa di `.map`, quindi un semplice `filter` o `remap` ricostruisce
++         ancora la `Map`, più economica.
++     entry #ledgerToList   un `Ledger` ricostruito da elementi che non sono coppie è una `List`, con l'ordine preservato
++   entry .Fallback2   il gradino più basso: una `Map` ricostruita da elementi che non sono coppie è una `List`
+
+% 1 1 0 1fe4966112bc98f71131490e53edef12
+
+@ 0 9 0 15a6b9f428f5a69e1b5957f552becc55
++         Il genitore di `.Fallback`, che contiene l'istanza che deve perdere contro ogni altra
++         istanza per `Map`.
++     entry #mapToList   una `Map` ricostruita da elementi che non sono coppie è una `List` (stabile)
++         `ages.remap { (name, age) => name }` è una `List[Text]`: un risultato più preciso
++         dell'`Iterable` della libreria standard.
++   entry .build   svuota un iteratore in un `Builder` della stdlib e restituisce ciò che ha costruito
++       La ricostruzione rigorosa, per scrivere un'istanza tua su un builder della libreria
++       standard: `Reshapable.build(elements, sci.Vector.newBuilder[e])`. Pubblica solo perché le
++       istanze nell'oggetto compagno sono lambda; è l'unico punto in cui lo strato incontra un
++       builder.
+
+@ 0 1 0 1e5b029f0227e9d018db5f1fe8b3bb4c
++ entry .Mappable   il `map` che preserva la forma: un contenitore, ciò che vede la sua lambda e il contenitore mappato
+
+% 1 1 0 1b8ae71a21e2b40302835fbd62e0b9bd
+
+@ 0 7 0 13f414dfa45acd96177bbee953db9922
++       `map` è guidato da `Mappable` e non da `Traversable` più `Reshapable`, per una ragione:
++       una `Map` deve mappare i suoi *valori* e conservare le sue chiavi, mentre un
++       attraversamento passerebbe alla lambda coppie `(key, value)`. Un'istanza fissa, dal solo
++       contenitore, ciò che la lambda riceve (`Operand`: l'elemento, o il valore per una `Map`) e
++       il costruttore del contenitore mappato (`Result[_]`, di kind `* -> *`, ed è per questo che
++       non è una typeclass `Resultant`). Entrambi si decidono prima che la lambda venga
++       elaborata, quindi `xs.map(_.field)` inferisce il tipo dell'elemento.
+
+% 2 1 0 0a4318a35f6d8b260dd4db208e6df901
+
+% 3 1 0 0a7b944d7147457d18c87dcd8db2d4e2
+
+% 0 1 0 0c7f051a6bc3a71919dd5fbade694774
+
+% 0 1 0 19d74ea84c7637c003d6e1ba8c56e7f1
+
+% 0 1 0 1ced897bb1fc7daa157579b3b2585dd0
+
+% 0 1 0 0a03ceedc35f551c1532fea910e1d203
+
+% 1 1 0 0c544889e9675e0f0ec03a4240605288
+
+@ 0 7 0 0cc3b2e03aed85d00ca3e4edfddc0c52
++       Le istanze sono parametriche nel sottotipo (`container <: List[element]`), ed è questo
++       che fa corrispondere un ricevente `List[e] & Populated` e gli alias di riesportazione
++       dell'ombrello; una collezione grezza della stdlib ricade sull'`iterable` di `.Fallback` e
++       si mappa in una `List`. Ne segue una trappola: una `scala.collection.immutable.Map` della
++       stdlib raggiunta attraverso il ripiego mappa le sue *voci*, non i suoi valori, quindi un
++       file che intende la `Map` di Soundness deve assicurarsi che il nome si risolva in
++       `proscenium.Map` (lo fa sotto `import soundness.*` a meno che un import di una `Map`
++       della stdlib non lo oscuri).
+
+@ 0 2 0 177abcd663b6598f050d21d1e700be44
++       L'estensione `map` è un semplice `def` e non `inline`: un'estensione inline inferisce di
++       nuovo il risultato a ogni punto di chiamata sotto il capture checking e lascia sfuggire
++       capability fresche.
+
+% 0 1 0 08f0c9a68a026667118de2d07994ea57
+
+% 0 1 0 11614d68039f3171099550c133e4dcb7
+
+% 1 1 0 11d99a0a366baf45040de3fea49d6063
+
+@ 0 9 0 0c5845e0054824960c12ad9f7dff0d70
++   entry #Result   il costruttore del contenitore mappato, applicato al nuovo tipo di elemento
++   entry #map   mappa ogni `Operand` attraverso la lambda in `Result[element2]`
++   entry .list   una `List` si mappa in una `List` dei risultati della lambda
++   entry .set   un `Set` si mappa in un `Set` (attraverso la primitiva `Set.map`, il cui risultato è puro)
++   entry .sequence   una `Sequence` si mappa in una `Sequence`
++   entry .chain   una `Chain` si mappa in modo lazy in una `Chain`
++   entry .map   una `Map` mappa i suoi valori, conservando le sue chiavi: `Operand` è il valore, `Result[v2] = Map[key, v2]`
++   entry .ledger   un `Ledger` mappa i suoi valori in ordine di inserimento, conservando le sue chiavi
++   entry .Fallback   l'istanza a priorità più bassa per le collezioni grezze della libreria standard
+
+% 1 1 0 168900d215f9820e19113f5751af2ee9
+
+@ 0 5 0 192e86ab2ef5f3431668a27399b238ca
++         Un trait genitore dell'oggetto compagno di `Mappable`, quindi la sua unica istanza perde
++         contro ogni istanza per alias dichiarata nell'oggetto compagno.
++     entry #iterable   qualsiasi `scala.Iterable[element]` si mappa in una `List[element2]`
++         Fa funzionare `.map` su range, vector e altre collezioni grezze, come faceva il vecchio
++         `map` generico. Una `Map` della stdlib raggiunta in questo modo ha `(key, value)` come
++         operando.
+
+@ 0 1 0 06341c7aa52f30c119e718810af67172
++ entry .Convertible   la conversione verso una forma richiesta, `Self is Convertible in Form to Result`
+
+% 1 1 0 0452b19383b814a913c2395ec0e299da
+
+@ 0 5 0 01ee5a4a8134c22b1e960fe3593173c4
++       `Convertible` è ciò che risolve lo `xs.to[Form]` di rudiments: `Form` nomina la
++       destinazione (un costruttore non applicato come `List`, `Set`, `Map`, `Sequence`, `Chain`,
++       `Array`, `java.util.List`, o un tipo proprio come `Text`) e `Result` è il risultato
++       pienamente applicato che la ricerca implicita ne deriva. `Form` è dichiarato
++       `<: AnyKind`, quindi un solo `to` serve entrambi i kind, a differenza del `to(List)` della
++       libreria standard, che prende una `Factory`.
+
+% 2 1 0 1a96fbf38667cca71958484d212bc9d4
+
+% 3 1 0 015602978ad9ecba0e8638922ca54992
+
+% 0 1 0 171fd8391c198d24091110fc3e6d0e4e
+
+% 0 1 0 0ab17e324dc05b401056b402f6407e02
+
+% 0 1 0 134bc0cbfd154e37148e046e3143e85c
+
+% 0 1 0 12bdc99007053e6c1f3500ae40fffcfb
+
+% 0 1 0 084b7d0def00ae42027152b359671d3b
+
+% 0 1 0 197af6e21c1f81cc0d3759234f8648a8
+
+% 1 1 0 063433958fde02f3075dddebe6afefc6
+
+@ 0 4 0 040f220342af675c1539185a70c7612e
++       Ogni istanza qui deriva da `Traversable`, quindi qualsiasi cosa attraversabile (una
++       collezione di Soundness, un `Text`, una collezione Java, un valore con una propria istanza
++       di `Traversable`) si converte in ciascuna di queste forme senza ulteriori istanze. La
++       conversione *verso* un tipo come `Text` è fornita da quel tipo (gossamer), nel suo oggetto
++       compagno.
+
+@ 0 7 0 17fa132c64feccef006cf17289b05f2a
++       Grafia: `xs.to[List]` (con le parentesi quadre) è la forma normale. Uno `xs.to(List)` con
++       le parentesi tonde sopravvive solo dove vince il membro `to` proprio di un ricevente della
++       stdlib; su un ricevente `Set`, `Array` o `Data` la forma con le parentesi tonde può persino
++       essere ambigua, e la forma con le parentesi quadre è la soluzione. Un `Iterator` non è
++       `Traversable` e quindi non è `Convertible`: si svuota con il proprio membro
++       `iterator.to[List]`. L'estensione `to` è `transparent inline`, quindi dove nulla fissa il
++       tipo atteso (`xs.to[List] == List(1, 2)` in un'asserzione) il confronto può richiedere
++       prima di legare il ricevente a un `val` tipizzato.
+
+% 1 1 0 130acd2536eab34609632c133810a017
+
+@ 0 16 0 19999a8c3c682cfe10e45f8c8c1e6e26
++   entry #Form   la forma richiesta: un costruttore di tipo (`List`, `Map`) o un tipo proprio (`Text`)
++   entry #convert   costruisce il `Result` dal valore
++   entry .list   qualsiasi `Traversable` verso una `List` dei suoi elementi
++   entry .set   qualsiasi `Traversable` verso un `Set` dei suoi elementi
++   entry .sequence   qualsiasi `Traversable` verso una `Sequence`
++   entry .indexedSeq   qualsiasi `Traversable` verso un `IndexedSeq` della stdlib
++   entry .chain   qualsiasi `Traversable` verso una `Chain`, estratta in modo lazy dall'attraversamento
++   entry .map   qualsiasi `Traversable` di coppie `(key, value)` verso una `Map`
++   entry .ledger   qualsiasi `Traversable` di coppie `(key, value)` verso un `Ledger` ordinato per inserimento
++   entry .javaList   qualsiasi `Traversable` verso un nuovo `java.util.ArrayList` mutabile
++       Il confine con Java: `xs.to[java.util.List]` costruisce la collezione della piattaforma
++       direttamente dall'attraversamento, senza alcun ponte verso la stdlib nel punto di
++       chiamata, e l'API che la riceve possiede il risultato senza riserve.
++   entry .frozenArray   qualsiasi `Traversable` verso un `Array[element]^{}` congelato
++       Richiede un `ClassTag` per l'elemento. L'array costruito è fresco, quindi nessuno
++       scrittore sopravvive alla sua costruzione e il risultato è puro.
+
+@ 0 1 0 0a055b3eec914279176bde8cb0a2215a
++ entry .Inclusive   un tipo i cui valori si possono interrogare sull'appartenenza di un valore, come `Self is Inclusive by Operand`
+
+% 1 1 0 058a294b33544b791a6a6ea95a678537
+
+@ 0 7 0 1f816abbd046a4e41234ae7e763ca89d
++       Sostiene `collection.has(value)`. Il tipo interrogato è l'`Operand` dell'istanza, fissato
++       al tipo di elemento *esatto* della collezione, quindi `list.has(wrongType)` è un errore di
++       compilazione, e lo è anche `map.has(key)`: l'elemento di una `Map` è una coppia
++       `(key, value)`, e la presenza di una *chiave* si verifica con il `defines` di
++       `Applicable` (rudiments), non con l'appartenenza. Esistono istanze per `List` (un unico
++       passaggio lineare, quindi non subordinato), `Set`, `Sequence`, l'array congelato, l'array
++       JVM nudo, qualsiasi `scala.Iterable` (`.Fallback`) e, in gossamer, `Text` by `Char`; il
++       contenimento di una sottostringa è invece `subsumes`.
+
+% 2 1 0 0e0bfab39f2a6ca7116bd49c8d287ae0
+
+% 3 1 0 0db292a94c898f1718fdc316fae734f6
+
+% 0 1 0 0ccfc7ec384f76081a6699fed8829efc
+
+% 0 1 0 018739793ebe523f012aef02aac16261
+
+% 0 1 0 14c8dd3af96b41f8132d056fa206c14b
+
+% 1 1 0 12467a4778f2fc9910bdd19bd55f1aa8
+
+% 0 1 0 1766782e2edaa124148105c8d14dedfd
+
+@ 0 6 0 06c592deac17c2ef198334d0ff226bc3
++   entry #has   se `value` compare tra gli elementi
++   entry .Element   il tipo di elemento esatto di uno `scala.Iterable`, come match type
++       `Element[collection]` riduce `Iterable[element]` a `element`, ed è così che l'istanza di
++       `.Fallback` fissa esattamente il tipo interrogato invece di allargarlo a `Matchable`
++       attraverso la covarianza.
++   entry .Fallback   il genitore a priorità più bassa che contiene l'istanza per `scala.Iterable`
+
+% 1 1 0 1a9189a503caa34002de5658b054849f
+
+@ 0 8 0 0830e21a54a359350630239c69f2121f
++         Un genitore dell'oggetto compagno di `Inclusive`, così che un'interrogazione non
++         raffinata `X is Inclusive` su una collezione opaca non venga segnalata come ambigua
++         rispetto alle istanze per alias.
++     entry #iterable   qualsiasi `scala.Iterable` è `Inclusive by` il suo elemento esatto, attraverso `exists`
++   entry .frozenArray   un `Array[element]^{}` congelato è `Inclusive by element`, con una scansione lineare
++   entry .sequence   una `Sequence` è `Inclusive by` il suo elemento
++   entry .set   un `Set` è `Inclusive by` il suo elemento, tramite hashing
++   entry .list   una `List` è `Inclusive by` il suo elemento, con un passaggio lineare (non subordinato)
++   entry .array   uno `scala.Array[element]` nudo è `Inclusive by element`
+
+@ 0 1 0 1120171a024521df1797a5f0330e800a
++ entry .Intersectable   l'algebra degli insiemi su un ricevente astratto: `intersect` ed `except`
+
+% 1 1 0 1b0162f5f04f82330eff0cdd4e8ed23e
+
+@ 0 4 0 07acda36a63cee5406c8e6927480205d
++       `left.intersect(right)` conserva gli elementi presenti in entrambi e `left.except(right)`
++       rimuove gli elementi di `right` (il `diff` della libreria standard). L'unione non è qui:
++       per una forma non ordinata a elementi unici è semplice concatenazione, che il
++       `Concatenable` di symbolism fornisce già come `left + right`, e un singolo elemento si
++       aggiunge con `:+`.
+
+% 2 1 0 0fc2ec50ff2731dc098084332023c15f
+
+% 3 1 0 097e412e404593530e591b4004912bce
+
+% 0 1 0 0edade6d66df18b11d9120d6f4b4e61b
+
+% 0 1 0 1fbcc088a2d8aa16170e5d7ff49b261d
+
+% 0 1 0 13453fe2f09839171c05094c9333420a
+
+% 0 1 0 1d2751bfaeb84df60f0114d1d3aee03c
+
+% 1 1 0 069fde203ebdaa1001b034f6610ead9b
+
+@ 0 2 0 03d534063c4d8f050eb29e0b7bc96d16
++       L'unica istanza, `.set`, deliberatamente non è parametrica nel sottotipo: un'intersezione
++       può svuotare un ricevente non vuoto, quindi un marchio `& Populated` non deve
++       sopravviverle.
+
+% 0 1 0 1ddbbfbe492ef9250cf8d12186d3cde4
+
+% 0 1 0 1637b10357a1f34114f405893b9f7c89
+
+@ 0 3 0 1e37ad30dafffcd21844dbca1d71a12f
++   entry #intersect   gli elementi presenti sia in `left` sia in `right`
++   entry #except   `left` senza gli elementi di `right`
++   entry .set   `Set[element] is Intersectable` con un altro `Set[element]` come suo `Operand`
+
+@ 0 3 0 1d5dae510fbcce350f35d6360b0c151d
++ entry .intersect   `left.intersect(right)`: gli elementi presenti in entrambi, per qualsiasi `Intersectable`
++     Un'estensione su `self is Intersectable by operand`; su un `Set`, `right` è un altro `Set`
++     dello stesso tipo di elemento e il risultato è un `Set`.
+
+@ 0 3 0 005d4144f37ded2c17b7d055ec9f361d
++ entry .except   `left.except(right)`: `left` senza gli elementi di `right`, per qualsiasi `Intersectable`
++     Il `diff` della libreria standard, sotto un nome che si legge come una frase. Su un `Set`,
++     `right` è un altro `Set` dello stesso tipo di elemento.
+
+@ 0 1 0 16e2dc045f5c11970a1d85dfdda3b3d8
++ entry .Keyed   la superficie dei contenitori con chiave: `keys` e `values`, tipizzati dal contenitore
+
+% 1 1 0 1718d2c5feb31d0f182422818c135a25
+
+@ 0 5 0 1363e2b5aedf6d1419fd241e3d7a3f51
++       Tipizzati meglio dei risultati `Iterable` della libreria standard: le chiavi di una `Map`
++       sono un `Set` (uniche e non ordinate), quelle di un `Ledger` una `List` (l'ordine di
++       inserimento è la sua identità), e i valori di entrambi i contenitori sono una `List`. I
++       tipi dei risultati sono dichiarati come raffinamenti sulle istanze
++       (`type Keys = Set[key]`), così che le estensioni possano legarli come parametri di tipo e
++       il forwarder di esportazione dell'ombrello li riproduca.
+
+% 2 1 0 1f5c4f85fba4421e049b1d3c165c32d1
+
+% 3 1 0 0ce91d829c5453d80d63fc89e1931e56
+
+% 0 1 0 0e8a216ad2d662781cbead46d96c033b
+
+% 0 1 0 10b3eee46c536de2157744e5399d00a8
+
+% 0 1 0 160a2a226c66382714a95d11688ca684
+
+% 1 1 0 1b365f0f893b5f380187eb2ce38075bf
+
+% 0 1 0 10a990ba0ead939b1c3ef58b749999a6
+
+% 0 1 0 1496c32569592f0b18813a5d8d596cc9
+
+@ 0 6 0 05306075db6ea60e0a74fecb36324d4a
++   entry #Keys   il tipo restituito da `keys`: `Set[key]` per una `Map`, `List[key]` per un `Ledger`
++   entry #Values   il tipo restituito da `values`: `List[value]` per entrambi
++   entry #keys   le chiavi del contenitore, come `Keys`
++   entry #values   i valori del contenitore, come `Values`
++   entry .map   `Map[key, value] is Keyed` con `Keys = Set[key]` e `Values = List[value]`
++   entry .ledger   `Ledger[key, value] is Keyed` con `Keys = List[key]` e `Values = List[value]`, entrambi in ordine di inserimento
+
+@ 0 2 0 18655f1f5f24fa1b0d0f7238bc127c77
++ entry .keys   `container.keys`: le chiavi di qualsiasi contenitore `Keyed`, come il suo tipo `Keys`
++     Un `Set[key]` per una `Map`, una `List[key]` in ordine di inserimento per un `Ledger`.
+
+@ 0 1 0 0de325d3bad9cd02026bdb873ea74545
++ entry .values   `container.values`: i valori di qualsiasi contenitore `Keyed`, come `List`
+
+@ 0 1 0 01a2a7a033269f681a52df5a141c8a23
++ entry .Reversible   l'inversione dell'ordine, `Self is Reversible to Result`, unificata su collezioni e testo
+
+% 1 1 0 0132785018fc478c0a882ec789712a8b
+
+@ 0 5 0 10cba66ac6dde6b01391fa390db4a537
++       Un'unica estensione `reverse` serve `List`, `Sequence` e ogni tipo testuale, perché
++       gossamer contribuisce un'*istanza* di `Reversible` (`reversibleTextual`, pubblicata
++       nell'oggetto compagno di ogni tipo testuale) invece di un'estensione solo testuale in
++       concorrenza, che sarebbe entrata in conflitto con questa nell'ombrello. `Set` e `Map` non
++       hanno un'istanza: invertire una forma non ordinata non significa nulla, quindi
++       `set.reverse` non compila.
+
+% 2 1 0 0c0a9750ac15119f149c09a514ba36c4
+
+% 3 1 0 0cdfe47ffe9183511d8a585caba22588
+
+% 0 1 0 1a24080da4443ef31548595df69afc57
+
+% 0 1 0 035b86af272009890495558b55e7517e
+
+% 1 1 0 19ea45c89e2ee9560d3647a81348fd41
+
+@ 0 3 0 14fa3f8e9c91a1af1c186f762350ad28
++       Le istanze sono parametriche nel sottotipo, quindi anche una `List[e] & Populated` si
++       inverte, e il `Result` è legato come normale parametro di tipo nell'estensione così che il
++       forwarder dell'ombrello possa riprodurlo.
+
+% 0 1 0 13d3f41e9879d785037a12fac7db19b2
+
+@ 0 3 0 190e13673dd7da821b2a022b0b53b069
++   entry #reverse   il valore con i suoi elementi in ordine opposto
++   entry .list   una `List` si inverte in una `List`
++   entry .sequence   una `Sequence` si inverte in una `Sequence`
+
+@ 0 3 0 1f0f11ba36921b81151a50ea74f9aadf
++ entry .reverse   `value.reverse`: gli elementi in ordine inverso, per qualsiasi valore `Reversible`
++     Liste e sequenze si invertono nella propria forma; un `Text` (o qualsiasi tipo testuale,
++     attraverso l'istanza di gossamer) si inverte come i suoi caratteri. Assente su `Set` e
++     `Map`.
+
+@ 0 1 0 1312eaacd86ca11d1b12050625f804ff
++ entry .SortAlgorithm   un algoritmo di ordinamento: mette in ordine un array temporaneo secondo un comparatore
+
+% 1 1 0 1dcd1b8f581f810713a06232025a0b9f
+
+@ 0 7 0 1278890f9f48db220e7c9c0d66ea29ea
++       Un algoritmo non è altro che un modo di ordinare un array di elementi secondo un
++       `java.util.Comparator`, ed è tutto ciò che il trait è. Ogni operazione che ordina (il
++       `sort` e l'`order` di rudiments su una collezione, e `sort()` su un array mutabile) è
++       questo più le disposizioni per far entrare gli elementi in un array e farli uscire,
++       quindi l'algoritmo non è parametrizzato dalla collezione che serve. (Un tempo lo era; ogni
++       implementazione svuotava comunque il suo ricevente in un array, e quella che non lo
++       faceva era da cinque a sette volte più lenta.)
+
+@ 0 3 0 0552cdbdaa5af2791a7718b93955fad7
++       Quale algoritmo ordina è il given `SortAlgorithm` nell'ambito, scelto importando per nome
++       uno di `sortingAlgorithms`. Deliberatamente non c'è un default: senza alcuno nell'ambito
++       un `sort` non compila, e con due è ambiguo. I sei sono:
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 11 0 0f62a81cc6f4f6e30e6af1432f65d2f8
++       column  Algoritmo
++       column  Stabile
++       column  Sul posto
++       column  Adattivo
++       column  Note
++       row  `timsort`  sì  no  sì  il `Arrays.sort` del JDK stesso per gli oggetti, dietro il `sorted` della libreria standard
++       row  `powersort`  sì  no  sì  la politica di fusione di Timsort sostituita da un albero di fusione binario quasi ottimale (Munro e Wild, 2018), con fusioni a galoppo; quello per dati parzialmente ordinati
++       row  `quicksort`  no  sì  no  pivot mediana di tre con partizionamento di Hoare, insertion sort sotto i dodici elementi, ricorsione limitata a log₂(n) frame
++       row  `heapsort`  no  sì  no  nessun caso peggiore quadratico
++       row  `insertionSort`  sì  sì  sì  conveniente solo per input minuscoli
++       row  `bubbleSort`  sì  sì  sì  conveniente solo per input minuscoli; si ferma dopo un passaggio senza scambi
+
+% 1 1 0 10d385cc7010deb509ec03d48cf72f47
+
+@ 0 4 0 1dbe0b33841e7c880ba3f39e852a9a0a
++       La stabilità (se gli elementi uguali conservano il loro ordine di origine) è una
++       proprietà dell'algoritmo, non dei tipi: `pairs.order(_(0))` con `timsort` lascia le
++       coppie a pari merito nel loro ordine originale, con `quicksort` potrebbe non farlo. Non va
++       confusa con `Reshapable.Stable`, che riguarda una *forma* che preserva l'ordine.
+
+@ 0 4 0 18a37f322bd3d39e10643a1b868f451a
++       Gli algoritmi sono metodi ordinari, deliberatamente non `inline`: un unico ciclo compatto
++       e condiviso viene reso inline dal JIT meglio di una copia per ogni punto di chiamata, che
++       è risultata più lenta alla misurazione (6,68 ms contro 5,59 ms per centomila elementi). Un
++       algoritmo personalizzato è qualsiasi valore di questo tipo, legato come given locale.
+
+% 0 1 0 09dc3cccb0117b5107733e5440e728af
+
+@ 0 1 0 050b7b719b4472fc1712417adb2202e3
++   entry #sort   ordina `array` sul posto, come dice `comparator`
+
+@ 0 1 0 0c328a13d444c85d0c56efaf523131c6
++ entry .sortingAlgorithms   i sei algoritmi di ordinamento, ciascuno un given da importare per nome
+
+% 1 1 0 0ffa8e3bac106388107c0a9d86934936
+
+@ 0 5 0 055efd024c4acd9105126835a1dfbaa7
++       Ogni ordinamento in Soundness (`sort`, `order` e il `sort()` sul posto) prende un
++       `SortAlgorithm`, e la scelta non è mai implicita: `import soundness.*` non ne porta
++       nessuno, e se ne importa per nome esattamente uno nel file o nel blocco che ordina. Due
++       nell'ambito rendono ambiguo ogni ordinamento, ed è il modo voluto per dire che un
++       programma ordina con un solo algoritmo, a meno che non dica altrimenti nel punto di
++       chiamata.
+
+% 2 1 0 1d950552daf21c31020acfaf20a48fd7
+
+% 3 1 0 000fac4c4473ff8006aa1349c353f8a5
+
+@ 0 1 0 1ab60bd163dc97ce197400bb39afd0ec
++         label Nessun algoritmo scelto
+
+% 1 1 0 14a99d0470363c3d189863fb94372535
+
+% 2 1 0 1cabd36d423cd2cc1ac7edeb81237746
+
+% 1 1 0 1df7488ae340999510cac7bf3d905c73
+
+% 1 1 0 1c6df09a68dadf9b16cc1ab4f0fd1555
+
+@ 0 1 0 1876dc4be7e5cbaf0219ab712b0b4acf
++         label Timsort, quello del JDK stesso
+
+% 1 1 0 07aa7f16b61b8406175e8e224ac7d316
+
+% 2 1 0 07c901f53fa4981d0a88876d374d2c0b
+
+% 0 1 0 0e0a6fe1e0aaead2044fcde6d6bcaf4f
+
+% 0 1 0 162a0f8b732c42e818a567b8066baa94
+
+% 1 1 0 11555639494f8500182507c5aafe4cd5
+
+@ 0 1 0 0e03382901a7ab6f1da5149c93d3c3b1
++         label Powersort, per un ordinamento stabile di dati parzialmente ordinati
+
+% 1 1 0 0fddc1096968e95a01e6a7adedc2f41c
+
+% 2 1 0 14f167f8794d5e6417e240574a70d165
+
+% 0 1 0 19a17354efe9b465082a15b7c81a8a73
+
+% 0 1 0 17ccf2e82fa2503a032e6d50dc3d22db
+
+% 1 1 0 1ea95117c06d8009169d3fe6b9b1e4e6
+
+@ 0 1 0 0390263352d8d68616664b60602e880f
++         label Due import sono un'ambiguità
+
+% 1 1 0 13cacc83f2a8dc4505258fdd9a7b26d2
+
+% 2 1 0 14371aa04e6331b20cad638c524e4ecd
+
+% 0 1 0 1022ce49e5cc631c007407ba48b3dcf6
+
+% 1 1 0 1f53216e80140db00a287ce4c6af1ae5
+
+% 1 1 0 13f71e1f478ff30e17f947e07fd6584f
+
+% 2 1 0 19df307d5af04ff109a1a03c3ed2e522
+
+@ 0 5 0 078ed96dc810f7e8056278ef099b0d92
++       L'import con ambito di blocco è l'idioma quando una parte di un programma ha bisogno di un
++       algoritmo diverso dal resto. L'ordinamento stesso richiede anche un `Comparable` per
++       l'elemento (o per la chiave, con `order`): numeri e caratteri ne hanno uno, un `Text`
++       richiede la scelta di una collazione, e un tipo il cui ordine è ancora un `Ordering` della
++       stdlib si ordina attraverso il ponte nell'oggetto compagno di `Comparable`.
+
+% 0 1 0 00bf30526ba7bede10e5660e4f742dd8
+
+@ 0 10 0 08e60d913d5b6c0a1e0b275046668e0c
++   entry .timsort   il `Arrays.sort` del JDK per gli oggetti: adattivo, stabile, il `sorted` della stdlib
++   entry .powersort   Powersort: le run di Timsort fuse in ordine quasi ottimale, con galoppo; stabile
++       L'algoritmo di Munro e Wild del 2018. Un input già in ordine è un'unica run e viene
++       ordinato dalla scansione che l'ha scoperto, senza allocare alcun buffer di fusione.
++   entry .quicksort   quicksort con mediana di tre, sul posto; non stabile
++       Partizionamento di Hoare, insertion sort sotto i dodici elementi, ricorsione nel lato più
++       piccolo così che la profondità sia limitata a log₂(n).
++   entry .heapsort   heapsort, sul posto, senza caso peggiore quadratico; non stabile
++   entry .bubbleSort   bubble sort, stabile; un solo passaggio su un input già ordinato
++   entry .insertionSort   insertion sort, stabile; la scelta giusta solo per input minuscoli
+
+@ 0 4 0 1f9b1bc6f99d9bd11404bf121d496c78
++ entry .has   `collection.has(value)`: se un valore è tra gli elementi
++     Un'estensione su qualsiasi ricevente `Inclusive`. Il tipo interrogato è il tipo di
++     elemento esatto, quindi a una `Map` non si può chiedere `has(key)`: una chiave non è un
++     elemento; quello è `defines` (rudiments). `List(1, 2, 3).has(2)`, `Set(t"a").has(t"b")`,
++     `t"hello".has('e')`.
+
+@ 0 6 0 151ff11e90e930b504a34ed5becc75e5
++ entry .map   `xs.map(lambda)`: il map che preserva la forma, che su una `Map` mappa i valori
++     Guidato da `Mappable`, evocato nell'estensione così che il parametro della lambda sia il
++     tipo di elemento concreto prima che la lambda venga elaborata (`xs.map(_.field)` inferisce).
++     Una `List` si mappa in una `List`, un `Set` in un `Set`, una `Chain` in modo lazy in una
++     `Chain`, una `Map` in una `Map` con le stesse chiavi e i valori mappati, un `Ledger`
++     allo stesso modo in ordine, e qualsiasi `scala.Iterable` grezzo in una `List`. Per le voci
++     di una `Map` come coppie, si usi `remap`.
+
+% 2 1 0 154e7abbaae8d8c4032db567cca25a4f
+
+% 3 1 0 0f04b0c624a3d00a1db04f71559980de
+
+% 0 1 0 0d22450aed04275c06e9b84a3f2c47b0
+
+% 0 1 0 1aee958ce2b24ae91577dbffe3481763
+
+% 1 1 0 1f2442ff6559596007089423eaa97f5d
+
+@ 0 5 0 1bace0d32c10ca370fff3e41e12d18b3
++ entry .remap   `xs.remap(lambda)`: il map a coppie, ricostruito attraverso `Reshapable`
++     La lambda riceve ogni elemento attraversato (la coppia `(key, value)` di una `Map`) e il
++     risultato assume la forma che `Reshapable` deriva per l'origine e il nuovo elemento: una
++     `Map` i cui risultati sono coppie resta una `Map`, una i cui risultati non lo sono diventa
++     una `List`, e su una `List` `remap` è semplicemente `map`.
+
+% 2 1 0 0c823e7191e848651f6e35a69ba114ca
+
+% 3 1 0 1f67e248d0a10d6d16f3c6f6c30737d4
+
+% 0 1 0 1ee540adf156cfc415b80041f2bd6fb9
+
+% 0 1 0 0176b61a84618b2c179b4226cc6391e7
+
+% 1 1 0 1d502dbcd82cec031c0ca82a9e7b3b04
+
+@ 0 6 0 0a793260a1620577061fd9fb6b30f855
++ entry .subsumes   `xs.subsumes(ys)`: se `ys` compare come sequenza contigua dentro `xs`
++     Un test di sottostringa per `Text` (dove l'overload di gossamer prende la scorciatoia di
++     `indexOf`), e la stessa domanda per qualsiasi `Traversable`:
++     `List(1, 2, 3, 4).subsumes(List(2, 3))` è vero, `List(1, 2, 3, 4).subsumes(List(2, 4))`
++     falso, e la sottosequenza vuota è sempre presente. Entrambi i lati devono avere lo stesso
++     tipo; a un ricevente letterale di tipo `& Populated` non si può chiedere di `List.empty`
++     senza prima legarlo a una semplice `List`.
+
+@ 0 5 0 0a7444b2852be8aa1069a3e56b6d658b
++ entry .bind   `xs.bind(lambda)`: il bind monadico, che appiattisce una lambda a valori di collezione
++     Il nome preferito per ciò che la libreria standard chiama `flatMap`. La lambda può
++     restituire qualsiasi `Traversable` (una forma diversa va bene: `List(1, 2).bind(n => Set(n))`
++     è una `List`) e il risultato viene ricostruito nella forma del ricevente. `flatMap` è la
++     stessa operazione sotto il nome in cui si traducono le `for`-comprehension.
+
+% 2 1 0 07b7f4ff665362ca038cb46a9adc5dfd
+
+% 3 1 0 010b5fdd6e2f1dab007aae8ae90c8f4b
+
+% 0 1 0 0d54c5109887e7df03910ab398cab456
+
+% 1 1 0 17d3bd1f0a8c0c8b12349b563dcd3d28
+
+@ 0 3 0 0fe9078b2bda8bc51467ac475455a398
++ entry .flatMap   la stessa operazione di `bind`, sotto il nome che richiedono le `for`-comprehension
++     Mantenuto solo perché `for a <- xs; b <- f(a) yield …` si possa tradurre; in un punto di
++     chiamata esplicito si scriva `bind`.
+
+@ 0 3 0 13cc18a23e4206ed106182a13ca05ebe
++ entry .filter   `xs.filter(predicate)`: gli elementi che soddisfano il predicato, nella forma dell'origine
++     Non esiste `filterNot`: si scrive `filter(!predicate(_))`. Un `Set` si filtra in un `Set`,
++     una `Chain` in modo lazy in una `Chain`, una `Map` (per le sue coppie) in una `Map`, e un
++     `Text` in un `Text`.
+
+@ 0 4 0 0750aeaa53ccf32d070e06f8d31513d5
++ entry .withFilter   il `filter` in cui si traducono le guardie delle `for`-comprehension; rigoroso
++     Deliberatamente rigoroso, a differenza del contenitore lazy `WithFilter` della libreria
++     standard: altrimenti un predicato catturato dovrebbe attraversare ogni stadio tradotto sotto
++     il capture checking. `for n <- xs if n > 1 yield n` funziona come previsto; nient'altro
++     dovrebbe chiamarlo.
+
+@ 0 3 0 1f5c3a47db33b2270da2ae39c121b998
++ entry .foreach   `xs.foreach(lambda)`: visita ogni elemento; esiste per i cicli `for`
++     Il nome in cui si traduce un ciclo `for (x <- xs) do …`. In un punto di chiamata esplicito
++     il ciclo è l'`each` di rudiments, che offre anche l'ordinale dell'elemento come valore
++     contestuale.
+
+@ 0 1 0 069d824f1191c36001a6ebf9bec47c9f
++ entry .exists   `xs.exists(predicate)`: se qualche elemento soddisfa il predicato, fermandosi al primo
+
+@ 0 5 0 0ffccb966480d24a136ebda55306047e
++ entry .fold   `xs.fold(initial)(lambda)`: accumula uno stato sugli elementi, da sinistra a destra
++     Il `foldLeft` della libreria standard, con il tipo dello stato fissato da `initial`
++     (l'allargamento a un supertipo del `fold` della stdlib non è offerto).
++     `List(1, 2, 3).fold(0)(_ + _)` è `6`; su un ricevente vuoto è `initial`. Una `Map` esegue
++     il fold sulle sue coppie `(key, value)`, quindi la lambda si scrive
++     `{ case (acc, (k, v)) => … }` o con un pattern a due parametri.
+
+@ 0 4 0 19247e50fc8041701428f062626c71d9
++ entry .count   `xs.count(predicate)`: quanti elementi soddisfano il predicato
++     Solo la forma con predicato: un overload che prende un valore sarebbe ambiguo con essa per
++     ogni argomento lambda, perché il tipo di elemento dipende dal percorso, quindi contare un
++     elemento si scrive `xs.count(_ == value)`.
+
+@ 0 4 0 015c148456ebde1611cc3c1f6f39e596
++ entry .flat   `xss.flat`: un livello di annidamento rimosso, nella forma dell'origine esterna
++     I valori interni possono essere qualsiasi `Traversable`, quindi una `List[Set[e]]` si
++     appiattisce in una `List[e]` e `List(List(1, 2), List(3)).flat` è `List(1, 2, 3)`. Il
++     `flatten` della libreria standard.
+
+@ 0 4 0 0fc4350d79b17a2211986029eb136f06
++ entry .trace   `xs.trace(initial)(lambda)`: ogni stato intermedio di un fold, a partire dallo stato iniziale
++     Lo `scanLeft` della libreria standard, nella forma propria dell'origine:
++     `List(1, 2, 3).trace(0)(_ + _)` è `List(0, 1, 3, 6)`. Sensibile all'ordine, quindi richiede
++     `Reshapable.Stable` ed è assente su `Set` e `Map`.
+
+@ 0 6 0 03620b53d3f663a60b1eff930cbb47bb
++ entry .excerpt   `xs.excerpt(from, until)`: la sequenza di elementi per posizione, con fine esclusa e totale
++     Lo `slice` della libreria standard, per posizioni `Int`:
++     `List(1, 2, 3, 4, 5).excerpt(1, 3)` è `List(2, 3)`. I limiti fuori dall'origine vengono
++     ricondotti nell'intervallo invece di fallire: `List(1, 2).excerpt(5, 9)` è vuoto,
++     `List(1, 2, 3).excerpt(2, 99)` è `List(3)`. Richiede `Reshapable.Stable`. I segmenti
++     posizionali per ordinale (`before`, `upto`, `from`, `after`, `keep`, `skip`) sono il
++     vocabolario `Segmentable` di rudiments.
+
+@ 0 4 0 1f391054285c37bf1dda9a285fd474ba
++ entry .zip   `xs.zip(ys)`: gli elementi accoppiati per posizione, fermandosi al lato più corto
++     `ys` può essere qualsiasi `Traversable`; le coppie si ricostruiscono nella forma di `xs`,
++     che deve essere `Reshapable.Stable`. `List(1, 2, 3).zip(List(t"a"))` è `List((1, t"a"))`.
++     L'accoppiamento con le posizioni è l'`indexed` di rudiments.
+
+@ 0 4 0 12bde49ab2a95789106826ced557cc2e
++ entry .group   `xs.group(lambda)`: gli elementi indicizzati da una funzione, in una `Map` di gruppi nella forma dell'origine
++     Il `groupBy` della libreria standard: `List(1, 2, 3, 4).group(_%2)` è
++     `Map(1 -> List(1, 3), 0 -> List(2, 4))`. Ogni gruppo si ricostruisce nella forma propria
++     del ricevente, quindi raggruppare un `Set` dà una `Map` di `Set`.
+
+@ 0 3 0 0ed3bb634b9f3bf40e81f7c5c9717165
++ entry .distinct   `xs.distinct`: elementi ripetuti eliminati, conservando la prima occorrenza di ciascuno
++     Quale occorrenza sopravvive dipende dalla posizione, quindi richiede `Reshapable.Stable` ed
++     è onestamente non disponibile su un `Set` (che non ha ripetizioni) o su una `Map`.
+
+@ 0 3 0 0021219d71f2fb221037d25f4b3bd0d4
++ entry .deduplicate   `xs.deduplicate(key)`: il primo elemento per ogni valore di `key`, in ordine di prima occorrenza
++     Il `distinctBy` della libreria standard: `List(10, 43, 22, 71, 52).deduplicate(_%10)` è
++     `List(10, 43, 22, 71)`. Come `distinct`, dipende dalla posizione ed è quindi subordinato a
++     `Stable`.
+
+@ 0 4 0 0d350fc7bf36acf0193c7ecdaaaf3949
++ entry .span   `xs.span(predicate)`: la serie iniziale più lunga che soddisfa il predicato, e il resto
++     `List(1, 2, 3, 1).span(_ < 3)` è `(List(1, 2), List(3, 1))`. I due lati vengono attraversati
++     indipendentemente, poiché un iteratore non può essere consumato due volte. Dipende
++     dall'ordine, quindi è subordinato a `Stable`. Per una divisione che ignora la posizione,
++     vedi `partition`.
+
+@ 0 4 0 191bbcbfe81d4a0f0d7451ee979276cb
++ entry .partition   `xs.partition(predicate)`: gli elementi che soddisfano il predicato, e quelli che non lo soddisfano
++     A differenza di `span`, l'appartenenza ignora la posizione, quindi un `Set` o una `Map` si
++     partizionano in modo sensato: `Set(1, 2, 3, 4).partition(_%2 == 0)` è
++     `(Set(2, 4), Set(1, 3))`; su una `List` entrambi i lati conservano il loro ordine.
+
+@ 0 6 0 17ef383ec07742c51df9b1b999f39db2
++ entry .sweep   `xs.sweep { case … }`: filtro e mappatura in un solo passaggio, tramite una funzione parziale
++     Il `collect` della libreria standard: `List(1, 2, 3, 4).sweep { case n if n%2 == 0 => n*10 }`
++     è `List(20, 40)`. Non è subordinato a `Stable` — raccogliere da un `Set` ha senso. La
++     funzione parziale ha annotazioni di capability, quindi un corpo di caso che solleva
++     tramite una `Tactic` è accettato; viene applicata subito e non trattiene nulla. La sua
++     sorella a risultato singolo è `reap` di rudiments.
+
+@ 0 5 0 1e09b53c89f65eaa02c9f46b3e9b870d
++ entry .batched   `xs.batched(size)`: batch consecutivi di al massimo `size` elementi, come `List` della forma della sorgente
++     Il `grouped` della libreria standard: `List(1, 2, 3, 4, 5).batched(2)` è
++     `List(List(1, 2), List(3, 4), List(5))`, e l'ultimo batch può essere più corto. I confini
++     dei batch dipendono dall'ordine, quindi è subordinato a `Stable`. Si chiama `batched`
++     anziché `chunked`, che è l'operazione di turbulence sugli stream di byte.
+
+@ 0 1 0 01b62bd34b0b38541597fa76ac81d9c8
++ entry .Iterator   una lettura one-shot, con controllo di separazione, su una sorgente di elementi; l'`Iterator` di Soundness
+
+% 1 1 0 1609825cd81c41460b8656b59ddf0a29
+
+@ 0 6 0 1ae0c4ffe7ccc5e61429ef456d43ff40
++       `Iterator[element]` è la moneta interna dello strato delle collezioni —
++       `Traversable.traverse` ne produce uno e ogni operazione ne consuma uno — e il tipo onesto
++       di qualsiasi cosa letta dal mondo esterno esattamente una volta: i frame di un socket, le
++       righe di output di un processo, le pressioni di tasto di un terminale, le voci di un
++       archivio man mano che ogni payload si apre. Sostituisce `scala.Iterator` in tutto
++       Soundness: sotto `import soundness.*` (o `import rudiments.*`) il nome nudo `Iterator` è
++       questo tipo, e un iteratore della stdlib si scrive `scala.collection.Iterator`.
+
+@ 0 5 0 141e9e0beadae4dc023fb3a350d7e3d7
++       A differenza di quello della libreria standard, è sottoposto a capture checking e a
++       controllo di separazione, e non ha alcun modo di chiedere un elemento che non c'è. Estende
++       `caps.Stateful`, quindi un valore di tipo `Iterator[e]^` è esclusivo: un metodo che lo fa
++       avanzare è un `update def`, un combinatore che lo prende in carico è un `consume def`, e
++       un secondo uso di un iteratore consumato non compila. Non esiste la coppia
++       `hasNext`/`next()`. I tre modi onesti di leggerne uno sono:
+
+@ 0 10 0 1fddbad34ca44d2f1b2fb58c7df94d49
++       - un'**operazione terminale** — `#each`, `#fold`, `#exists`, `#all`, `#count`, `#size`,
++         `#seek`, `#chain`, `#to` — che svuota l'iteratore sul posto; `each` è il ciclo;
++       - **`#next`**, per un consumatore con stato che tiene l'iteratore in un campo (una
++         sorgente di `Stream`, una pompa di eventi): una chiamata avanza e produce
++         `element | Iterator.Exhausted`, e il chiamante confronta con `.Exhausted` prima di avere
++         un elemento;
++       - lo **stile mobile**, `#pull`, per un ciclo scritto a mano che ha bisogno dell'elemento e
++         del diritto di fermarsi tra un elemento e l'altro: consuma l'iteratore e produce
++         `.Exhausted` oppure un `.Cursor` che lo possiede; `cursor.value` legge l'elemento e
++         `cursor.pull` consuma il cursore per avanzare. Nulla viene allocato: il cursore è il
++         riferimento all'iteratore e il segnaposto è un `null`.
+
+% 2 1 0 0ae402df9f893ccf0f78ec63e65e1583
+
+% 3 1 0 114f8a43ec6912a40aa39794b5ed826f
+
+% 0 1 0 1709ea217859561f070ccd0be4079829
+
+% 0 1 0 1195191c56d033171f3b44b002c51a41
+
+% 0 1 0 05becf99cdad422a0419ddec6a8a892c
+
+% 0 1 0 1edbd9ab68dcb67906cabdf96b309f02
+
+% 0 1 0 194c9226093233d100c57e17576fc8f5
+
+% 0 1 0 055b6cd883364d4f1969058438b5bab8
+
+% 1 1 0 1c51d53e5da44d8c0ab875429461eedf
+
+@ 0 3 0 1ea8d12f765ad03d12446f9ccd1230a2
++       Si legge `value` prima di `pull` nella stessa espressione, si dirama con un pattern
++       tipizzato, e si rilega l'handle a ogni passo; riusare un cursore già avanzato, o leggere
++       `value` senza un cursore, viene rifiutato dal compilatore.
+
+@ 0 6 0 09f52fbf69a805371b3e692274e736ac
++       I combinatori lazy — `#map`, `#filter`, `#sweep`, `#keep`, `#skip`, `#zip`, `#indexed`,
++       `#trace`, `#excerpt`, `#batched`, `#deduplicate`, `#distinct`, `#concat` e `#flatMap` —
++       consumano l'iteratore che trasformano e *condividono* la lambda che ricevono, quindi
++       l'insieme di cattura del risultato nomina la lambda (`Iterator[e2]^{lambda, caps.any}`):
++       una lambda resta utilizzabile in seguito, e una lambda che cattura un valore esclusivo
++       rende esclusivo anche il risultato. Una pipeline cresce uno stadio consumante alla volta:
+
+% 2 1 0 085c42ac5caea65a1e0425dbcc4cdbf2
+
+% 3 1 0 0b1589019964adca1190721d6004a77b
+
+@ 0 1 0 145cbc791c6eb15c062a16c20e621fd3
++         label Una sorgente
+
+% 1 1 0 1ed3bf238f3e8bcc04fde1cb5cdac1df
+
+% 0 1 0 15046cef68c11b6e0eed6d5865ec295d
+
+% 1 1 0 13bec071edaeffa613b48f17523156c6
+
+@ 0 1 0 02bc193ff75532be02b6165d881ce0fd
++         label Trasformata in modo lazy
+
+% 1 1 0 16c587019b34de0c1d86275f68705641
+
+% 0 1 0 1f895b7ddf66a69c1dcb9bc590d4787f
+
+% 1 1 0 03463ec896b16083102240f59dc635d9
+
+@ 0 1 0 0bfd837f81d1117c14ed6ed72cede13b
++         label Filtrata, sempre in modo lazy
+
+% 1 1 0 16ecdae5ca2696880599fb0d0bf83691
+
+% 0 1 0 068180f8b38ca72d196d34b9a3c6b418
+
+% 1 1 0 0271a8b53c7d31e20c5ff17ba508e050
+
+@ 0 1 0 0b15aa5f981c206400a5cb329ace2fc8
++         label Passata al vaglio di una funzione parziale
+
+% 1 1 0 0a02b01ded68a784096ae41a6b80b487
+
+% 0 1 0 0db20e410275b9d30dddb1d5c4f8ca53
+
+% 1 1 0 11428f488bea1303119f04c6274d3611
+
+@ 0 1 0 1e778057112990f318d41083e66994d4
++         label Svuotata in una forma
+
+% 1 1 0 026d48fcaf0665c6032d5b564d9b4371
+
+% 0 1 0 180b8df27f2cf2fb08f8b8b363f19fb6
+
+% 1 1 0 17b6c66f7ecca8e213e7252a13b284a6
+
+% 2 1 0 0a3de3bd82442bad12a0e3fa543321e8
+
+@ 0 7 0 1324e48e7a667955067d173b915fa632
++       Un'implementazione scrive `new Iterator[e]:` con due membri ed eredita il resto:
++       `update def advance(): Boolean`, che si sposta all'elemento successivo e lo materializza
++       in una `var`, e `def current: e`, una semplice lettura senza boxing. Entrambi sono
++       riservati a questo package e agli implementatori, quindi un chiamante non può leggere
++       `current` senza aver avanzato. Una classe non può tenere un iteratore fresco in una `val`
++       ("hides enclosing instance"): lo si crea in una factory e si cattura la variabile locale,
++       lo si ricrea a ogni accesso su uno stato condiviso, oppure lo si prende come parametro
++       del costruttore.
+
+@ 0 5 0 1ff87c8384d484c0101e8965b1179685
++       Un `Iterator` deliberatamente *non* è `Traversable`: un attraversamento prende in
++       prestito, e prendere in prestito un iteratore esclusivo in un risultato che sopravvive
++       alla chiamata è proprio ciò che il controllo di separazione proibisce. Quindi si svuota
++       con il proprio membro `#to` anziché con il `to` generico, e la lambda di `#flatMap`
++       restituisce una *collezione* (qualsiasi cosa `Traversable`), mai un iteratore — una
++       lambda non può restituire una capability appena creata attraverso un tipo funzione.
+
+@ 0 3 0 0b418698304f9d0407f78d17fab67638
++       La libreria standard e Java si raggiungono solo a un confine: `.from` avvolge in entrata
++       uno `scala.collection.Iterator`, un `java.util.Iterator` o una `java.util.Enumeration`, e
++       `#stdlib` ne consegna uno a un'API che lo pretende.
+
+% 1 1 0 1ae3f8f6254437bd0ee01f0f14ae70fe
+
+% 1 1 0 024da96a1531c097141c4f797c1e2637
+
+@ 0 10 0 171095cc2b11484e16a4d327a0c3cf17
++   entry .Exhausted   il segnaposto per «nessun altro elemento», sia come tipo sia come valore
++       Un tipo opaco `<: Matchable & caps.Pure`, sostenuto da `null` così che non costi nulla, e
++       il valore di quel tipo. Scritto come vacuous scrive `Unset` (che questo modulo, posto
++       sotto vacuous, non può nominare): un'unione `element | Iterator.Exhausted` è pura ogni
++       volta che lo è `element`, e `.nn` non la rimuove. Va confrontato per primo —
++       `case Iterator.Exhausted =>` — in un ciclo con `#next` o in un match su `#pull`; le
++       istanze `CanEqual` permettono di confrontarlo con `==` con qualsiasi valore.
++   entry .exhaustedEquality   `CanEqual[value, Exhausted]`, così `next() == Iterator.Exhausted` supera il controllo dei tipi
++   entry .equalityExhausted   `CanEqual[Exhausted, value]`, lo stesso confronto nell'altro verso
++   entry .Cursor   il token lineare su un elemento presente, che possiede l'iteratore da cui proviene
+
+% 1 1 0 1ef25d731ffdd798187651677835e89d
+
+@ 0 84 0 13c587ce9936193f083c75c9c24ae996
++         `Cursor[element]^` è il riferimento all'iteratore stesso, opaco così che non lo si possa
++         falsificare e limitato da `Stateful` così che un `match` possa distinguerlo da
++         `.Exhausted` (`case cursor: Iterator.Cursor[Int]`; nel pattern un parametro di tipo
++         della classe va tra backtick). `.value` legge l'elemento e `.pull` consuma il cursore
++         per avanzare, producendo il `.Pull` successivo. Il controllo di separazione rifiuta un
++         cursore usato dopo che è stato avanzato.
++     entry .apply   avvolge un iteratore consumato come cursore; ciò che `Iterator#pull` restituisce in caso di successo
++     entry .value   l'elemento sotto il cursore, letto senza avanzare
++     entry .pull   consuma il cursore e avanza: il cursore successivo, o `Exhausted`
++   entry .Pull   `Exhausted | Cursor[element]^`: ciò che `pull` produce
++   entry .array   un iteratore su un array JVM che nessuno scrittore raggiunge mentre è in esecuzione
++       `Iterator.array(array)` su uno `scala.Array[e]^{caps.any.rd}`, che usano le istanze
++       `Traversable` dell'array congelato. Un elemento primitivo subisce il boxing come lo
++       subisce nell'iteratore di array della libreria standard.
++   entry .empty   un iteratore senza elementi
++   entry .apply   `Iterator(a, b, c)`: un iteratore sugli elementi dati
++   entry .range   `Iterator.range(start, end)` o `(start, end, step)`: gli interi da `start` fino a `end`, escluso
++       Con uno `step` negativo l'intervallo conta all'indietro: `Iterator.range(10, 0, -3)`
++       produce `10, 7, 4, 1`.
++   entry .fill   `Iterator.fill(n)(element)`: `element` valutato da capo `n` volte
++   entry .tabulate   `Iterator.tabulate(n)(lambda)`: da `lambda(0)` a `lambda(n - 1)`
++   entry .continually   `Iterator.continually(element)`: `element` valutato da capo senza fine
++   entry .iterate   `Iterator.iterate(initial)(lambda)`: `initial`, poi `lambda` applicata più e più volte
++   entry .from   avvolge un `Iterator` della stdlib, un `java.util.Iterator` o una `java.util.Enumeration`
++       Il confine d'ingresso dalla libreria standard e da Java: gli elementi rimanenti della
++       sorgente one-shot vengono presi in carico da questo iteratore. L'overload per la stdlib
++       consuma il suo argomento.
++   entry #pull   consuma l'iteratore: un `Cursor` sul suo primo elemento, o `Exhausted`
++       Lo stile mobile. Un `consume def`, quindi dopo la chiamata l'iteratore non c'è più e
++       rimane solo il cursore (se c'è); `cursor.value` legge, `cursor.pull` avanza.
++   entry #next   avanza e produce l'elemento successivo, o `Exhausted` una volta esaurita la sorgente
++       Per un consumatore con stato che tiene l'iteratore in un campo, dove un token lineare non
++       può vivere. Non esiste `next` senza `hasNext` perché sono la stessa chiamata: si confronta
++       con `case Iterator.Exhausted => … case value: Int => …`. Dopo l'esaurimento ogni chiamata
++       produce di nuovo `Exhausted`. Un tipo di elemento opaco come `Text` non può essere
++       verificato nel match; lì si usa `#option` o `#seek`.
++   entry #each   visita ogni elemento rimanente, svuotando l'iteratore
++   entry #fold   accumula uno stato sugli elementi rimanenti, svuotando l'iteratore
++   entry #exists   se qualche elemento rimanente soddisfa il predicato, fermandosi lì
++       Si ferma alla prima corrispondenza, quindi gli elementi successivi restano.
++   entry #all   se ogni elemento rimanente soddisfa il predicato, fermandosi al primo che non lo soddisfa
++   entry #count   quanti elementi rimanenti soddisfano il predicato, svuotando l'iteratore
++   entry #seek   il primo elemento che soddisfa un predicato, consegnato a una continuazione; il resto non viene consumato
++       `iterator.seek(predicate)(absent)(present)`: due continuazioni anziché un risultato
++       `Optional`, così l'elemento raggiunge il chiamante al suo tipo senza verifiche né cast
++       (questo modulo non può nominare `Optional`; il `find` di rudiments è
++       `seek(p)(Unset)(identity(_))`). Gli elementi dopo la corrispondenza restano:
++       `Iterator(1, 2, 3, 4).seek(_ > 1)(-1)(identity(_))` è `2`, e lascia `3, 4`.
++   entry #option   l'elemento successivo come `Option` della stdlib, per le forme lazy della stdlib che leggono tramite una closure
++   entry #chain   gli elementi rimanenti come `Chain` lazy, letta una cella alla volta man mano che viene forzata
++       L'unica forma che permette a un iteratore di sopravvivere al suo proprietario: la catena
++       memorizza ciò che ha letto, e nulla registra l'iteratore da cui legge, poiché una `Chain`
++       è pura.
++   entry #to   `iterator.to[List]`, `to[Set]`, …: svuota in una collezione della forma data
++       Tramite `Reshapable`, con la forma nominata come costruttore di tipo. Un membro anziché il
++       `to` generico perché un iteratore non è `Traversable` (un attraversamento prende in
++       prestito, cosa che uno esclusivo non può consentire), e un membro anziché un'estensione
++       nell'oggetto compagno perché il `to` generico di rudiments, con ambito lessicale,
++       prevarrebbe su un'estensione.
++   entry #size   quanti elementi restano, svuotandoli
++   entry #map   ogni elemento rimanente attraverso la lambda, in modo lazy; consuma il ricevente
++   entry #filter   gli elementi rimanenti che soddisfano il predicato, in modo lazy; consuma il ricevente
++   entry #sweep   filtro e mappatura in un solo passaggio tramite una funzione parziale, in modo lazy
++   entry #flatMap   ogni elemento in una *collezione*, i cui elementi vengono prodotti a turno
++       La lambda restituisce qualsiasi cosa `Traversable` — una `List`, un `Set`, un `Text` — mai
++       un iteratore, poiché una lambda non può restituire una capability appena creata
++       attraverso un tipo funzione; l'attraversamento interno viene aperto qui man mano che il
++       risultato avanza. `Iterator(1, 2, 3).flatMap(n => List.fill(n)(n)).to[List]` è
++       `List(1, 2, 2, 3, 3, 3)`.
++   entry #zip   gli elementi di questo iteratore accoppiati con quelli di un altro, fermandosi al più corto; consuma entrambi
++   entry #indexed   ogni elemento accoppiato con la sua posizione a partire da zero, come `Int`
++       Un `Int`, non un `Ordinal`, perché denominative sta sopra questo modulo; l'`indexed` di
++       rudiments su una collezione converte in ordinali.
++   entry #keep   i primi `n` elementi, o la serie iniziale più lunga che soddisfa un predicato; in modo lazy
++       `keep(3)` è il `take` della libreria standard, `keep(_ < 7)` il suo `takeWhile`.
++   entry #skip   tutto ciò che segue i primi `n` elementi, o la serie iniziale che soddisfa un predicato
++       `skip(2)` è il `drop` della libreria standard, `skip(_ < 2)` il suo `dropWhile`.
++   entry #trace   ogni stato intermedio di un fold, a partire da quello iniziale; lo `scanLeft` della stdlib
++   entry #excerpt   gli elementi dalla posizione `from` (inclusa) a `until` (esclusa)
++   entry #deduplicate   la prima occorrenza di ciascuna chiave, in ordine di prima occorrenza
++   entry #distinct   la prima occorrenza di ciascun elemento, in ordine di prima occorrenza
++   entry #batched   batch consecutivi di al massimo `n` elementi, ciascuno una `List`; l'ultimo può essere più corto
++   entry #concat   gli elementi di questo iteratore, poi quelli di un altro; consuma entrambi
++       Il `++` della libreria standard.
++   entry #stdlib   uno `scala.collection.Iterator` che svuota questo; il confine verso la stdlib e Java
++       Consuma questo iteratore: da qui in poi la vista della stdlib lo possiede. La vista è
++       tipizzata come pura, come ogni iteratore della stdlib, così la si può passare alle
++       factory di `IterableOnce` e alle API del JDK. Un ponte etichettato, come ogni `.stdlib`;
++       si preferisce una forma nativa (`#to`, `#each`, `#chain`) dovunque ne esista una.

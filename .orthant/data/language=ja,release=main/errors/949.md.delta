@@ -1,7 +1,0 @@
-orthant 1 language
-
-- The `cellulose` module, which implemented CoDL, has been removed. Its role is filled by
-- [TEL](/doc/soundness/modules/tel.md), which is a schema-typed, indentation-based data language of the
-- same kind.
-+ CoDL を実装していた `cellulose` モジュールは削除された。
-+ その役割は、同じ種類の、スキーマで型付けされたインデントに基づくデータ言語である [TEL](/doc/soundness/modules/tel.md) が担っている。

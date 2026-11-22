@@ -1,0 +1,77 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 19dea67b4c87ab0e04fdc5517c4d3b95
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 04e0ac29f41b3f8f1385ae2a3f122ac2
++ info   リライングパーティーのための WebAuthn：パスキーとセキュリティキーの登録と認証のセレモニー
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 16ce0d66850388b2041144da57208490
++     _Chatelaine_ は [Web Authentication](https://www.w3.org/TR/webauthn-2/) のリライングパーティー側を実装する。
++     これは、認証器が一つのサイトのために作り、決して外に出さない鍵ペアによる、パスワードのないサインインである。
++     すべては `WebAuthn` のメンバーである。
+
+@ 0 2 0 154aec462c907320098f4b31f2a8c8b3
++     二つのセレモニーはそれぞれ、ページがブラウザーに渡すオプションを作る一回の呼び出しと、ページが送り返す応答を検査する一回の呼び出しからなる。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 09583daf6313cc2613f1f3df627c02f3
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 11a8761d091bcae20a857a0acb9e6de5
+
+% 0 1 0 084f3fa5c4af7bbc16235483c676569f
+
+% 0 1 0 01f6e077d6d404f8141c693ce5983582
+
+% 0 1 0 019ca73842e72b51096abb17ce03ad5d
+
+% 0 1 0 1606e2b0880ee61e1d66b2105c9ba64f
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 3 0 0406be96df43adb8171399cd2404808a
++     `WebAuthn.register` と `WebAuthn.authenticate` は、標準がリライングパーティーに要求するすべての検査（§7.1 と §7.2）を行い、そのいずれかに通らない応答に対しては `WebAuthn.Error` を発生させる。
++     `none` と `packed` のアテステーション形式を理解する。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     このライブラリには二つのソースセットがある。
+
+@ 0 4 0 112b51161014ea551dea708d1e24e822
++     - `chatelaine.core` — `WebAuthn`。オプション、応答の検査、そしてリライングパーティーが保存する `WebAuthn.Credential` である。
++     - `chatelaine.server` — `Ceremonies`。セレモニーの二つのリクエストの間、各セッションのチャレンジを保持する。
+
+@ 0 3 0 19e4102d4c39c43408eb14f858e81152
++     どちらも `soundness` のアンブレラにエクスポートされる。
++     独自の選択パッケージはない。
++     セレモニーには `Crypto` プロバイダー（`providers.javaBaseProvider`）が必要であり、登録には `Clock` も必要である。
+
+% 0 1 0 17e566a8b38b5ad51b4fedd56dc9f310
+
+% 0 1 0 0ffee6fb81b3698701c31b1ed8ce0e44
+
+@ 0 1 0 01a0f226b16b1ff609f4591746ae6258
++ entry .WebAuthn   Web Authentication のリライングパーティー側：オプションと応答の検査
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 4 0 10eea03e630598f712531afa7cd06380
++       `WebAuthn.registration` と `WebAuthn.authentication` はセレモニーのオプションを JSON として作る。
++       `WebAuthn.register` と `WebAuthn.authenticate` はその応答を検査し、前者は保存すべき `WebAuthn.Credential` を与え、後者は署名カウンターを進めたその資格情報を与える。

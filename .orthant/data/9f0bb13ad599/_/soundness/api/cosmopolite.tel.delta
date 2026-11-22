@@ -1,0 +1,5 @@
+orthant 2 release
+
+@ 0 2 0 1af62d03f3b132fe15c04a2a61814db6
++       their languages, in any case and with any region subtag ignored, so `t"FR"`, `t"fr-CA"`
++       and `t"fr_CA"` are all French. Any other text is silently `en`.

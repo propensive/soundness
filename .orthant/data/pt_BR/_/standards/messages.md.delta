@@ -1,0 +1,166 @@
+orthant 2 language
+
+@ 0 1 0 040d3839eadabb860ed437b47e76c5de
++ # Padrões de mensagens do Soundness
+
+@ 0 7 0 1157aed8e8bbd5f11ba5f6a4f1937a96
++ Este documento define o estilo da casa para mensagens legíveis por humanos escritas com o
++ interpolador `m"…"`: o texto dos erros de `fulminate`, a `Message` levada por um evento de log
++ de `eucalyptus` e os diagnósticos que uma macro relata. Os três compartilham um único estilo,
++ porque o leitor os encontra nos mesmos lugares — um terminal, um log, um erro do compilador — e
++ não deveria conseguir saber pela prosa qual módulo a escreveu. Ele complementa `logging.md`
++ (quando e o que registrar em log) e `naming.md` (como os tipos de erro são nomeados). Os
++ exemplos foram tirados de `lib/*/src/core/*.scala`.
+
+@ 0 1 0 1a916e1fddcfa8c50e66201e1e56795e
++ ## 1. Registro
+
+@ 0 2 0 0a441a9021ca74b90efb97dd772c5173
++ Uma mensagem declara um fato sobre o mundo no momento em que foi escrita, como um colega bem
++ informado o diria em voz alta: com calma, de forma específica e breve.
+
+@ 0 9 0 1fcd5ac3387d0d7708ceb4cd0d155916
++ - **Minúsculas.** Uma mensagem começa com minúscula, a menos que sua primeira palavra seja um
++   nome próprio ou um identificador (`Burdock can only repackage a JAR file, not a directory`).
++ - **Sem ponto final.** Uma mensagem é um fragmento que a renderização ao redor pontua; ela é
++   embutida em um stack trace, prefixada com um código ou listada como um item, e um ponto final
++   estaria errado em cada caso.
++ - **Presente do indicativo.** Declare o que *é*, não o que *aconteceu* nem o que *deveria* ser:
++   `the JAR has no manifest`, e não `the JAR did not have a manifest` nem `the JAR should
++   have a manifest`. A exceção é uma operação que falhou como um todo, que fica no passado
++   porque a falha é o fato: `could not list the releases of $repository (HTTP
+
+% 0 1 0 1a6382f5c53c04ca1a8b2b6c5d0eb683
+
+@ 0 7 0 083b3f6b0f6c23c50e0fca0f61803e1d
++ - **Concisão.** Diga a única coisa de que o leitor precisa para agir. Nada de desculpas
++   (`sorry`), nada de alarme (`fatal`, `!`), nenhum conselho a menos que o remédio seja ao mesmo
++   tempo certo e curto, e nenhuma repetição do que o nome do tipo de erro já diz.
++ - **Nenhum jargão da implementação.** Uma mensagem nomeia as coisas nos termos do leitor — uma
++   porta, um caminho, um cabeçalho, um campo —, nunca uma classe, um método ou uma variável da
++   biblioteca que a lançou. `unknown variables reference` se dirige a um cliente DAP; `null
++   frameRef in scopes()` não se dirigiria.
+
+@ 0 1 0 0061313c865e5a150c82da9f02a2b1b8
++ ## 2. Estrutura
+
+@ 0 2 0 04afbb509a01dc520079381480bbc896
++ Uma mensagem tem um sujeito, que é a coisa específica em falta, e um predicado, que é o que há
++ de errado com ela. Comece pelo sujeito quando ele é o que o leitor vai procurar:
+
+% 0 1 0 1d7c7855fd07bfa012c75794e827bf90
+
+% 0 1 0 09b5fa9fdb683198093442a904f2e1fa
+
+% 0 1 0 0f22a4e1f16aab361d157fcc315c0608
+
+@ 0 5 0 067fd17856774e3f06ef5b7ebcc3dc87
++ Interpole o contexto; não o descreva. Uma mensagem que diz `the file could not be read` obriga
++ o leitor a encontrar o arquivo; `${path} could not be read` não. Nomeie o recurso específico em
++ falta — um caminho, uma porta, uma URL, um identificador, um nome de cabeçalho, uma linha e uma
++ coluna — e quantifique sempre que o número já estiver à mão: `${items.size} CBOR issues`, e não `some CBOR issues`.
+
+@ 0 2 0 11a4fb64ca443bec16c53b658fb3f9e1
++ Quando a causa é conhecida e distinta do sintoma, acrescente-a entre parênteses ou depois de
++ dois-pontos, nessa ordem de preferência:
+
+% 0 1 0 165c774a6a8e0b341b80d7bc5dbcd66d
+
+% 0 1 0 11318639235892601a6666bc7cbf0da0
+
+@ 0 2 0 190ce2e9f97341cd02befd39671c66b0
++ Uma mensagem que agrega outras diz quantas são, e deixa a instância de `Communicable` para
++ `List[Message]` renderizá-las como itens abaixo dela:
+
+% 0 1 0 1f95f053fe4aeabe10e7c0f5ad8e99dc
+
+@ 0 1 0 04697c2f9668183b11ddfb09fd94b4d1
++ ## 3. Vocabulário
+
+@ 0 1 0 060086407914c9690ec020fde74a7b18
++ Cada situação recorrente tem uma única frase:
+
+% 2 1 0 102bb8a92c02849f1046d94665e0b49b
+
+@ 0 10 0 073bb44515ed9bcd0d12d4e59adc43e5
++ column  Frase
++ column  Para
++ column  Exemplo
++ row  *is not a valid X*  um valor que não pode ser analisado como X  `the value $value is not a valid ISO 8601 repeating interval`
++ row  *is not a known X*  um valor que é analisado mas não está no conjunto
++ row  *could not* + verbo  uma operação que falhou no ambiente (rede, sistema de arquivos, processo)  `could not list the releases of $repository`
++ row  *cannot* + verbo  um pedido que a biblioteca recusa por construção  `a command cannot end with an escape character`
++ row  *has no X*  uma parte ausente  `the JAR has no manifest`
++ row  *already has X*  uma parte conflitante
++ row  *must*  apenas uma regra que o leitor pode satisfazer mudando sua entrada  `a port number must be specified after a colon`
+
+% 1 1 0 00c76919e9eefe48191d87bac4d9a8b0
+
+@ 0 5 0 1ed03f945cc5a5cb05569802eabdaea5
++ - Prefira o substantivo singular e concreto (`the manifest`, `this JAR`, `the document`) a uma
++   categoria (`input`, `data`, `object`), e o artigo definido quando há uma única coisa desse
++   tipo no contexto.
++ - Nunca *invalid*, *illegal*, *bad* ou *error* como predicado inteiro: eles nomeiam o fato de
++   que uma mensagem existe, e não seu conteúdo.
+
+@ 0 1 0 15aefff1dd791f3906d891ee81e2f0b9
++ ## 4. O que uma mensagem não pode conter
+
+% 2 1 0 1886ff37e4f5826f11f7cee32eba1491
+
+@ 0 6 0 1c7b9222dbe5d0f30faea783c7c494f3
++ column  Nunca
++ column  Em vez disso
++ row  um segredo: token, senha, material de chave, cookie ou valor de `Authorization`, nem mesmo em parte  a *origem* da credencial, se ajudar (`the GITHUB_TOKEN environment variable`)
++ row  um payload: corpo de requisição ou de resposta, conteúdo de arquivo, documento serializado  o *fragmento* culpado (uma linha, um token, um campo) e sua posição
++ row  um stack trace ou o texto de uma exceção  a causa reformulada nos termos do §3, com a original anexada como causa do erro
++ row  formatação: escapes ANSI, Markdown, espaços de alinhamento  nada; uma `Message` é estruturada, e o renderizador decide sua aparência
+
+% 1 1 0 064c95d6aab1dbf20ad37031b4943f55
+
+@ 0 1 0 0cd39488b492804a1e929b54f96bad9f
++ ## 5. Composição por meio de `Communicable`
+
+@ 0 3 0 17218340da6f11590577468a6a8db6a7
++ Uma `Message` não é uma string. O interpolador `m"…"` mantém cada valor interpolado como uma
++ parte `Message`, convertida pela instância de `Communicable` do valor, de modo que a formatação
++ fica em um único lugar por tipo, e não em cada mensagem. Consequências:
+
+@ 0 13 0 01f2eb64620692c5048fbfc08f651825
++ - Interpole o valor tipado, não sua renderização: `m"…$path…"`, e não `m"…${path.show}…"`.
++   A instância para `Path` decide como um caminho é lido na prosa, e todas as mensagens sobre
++   caminhos concordam.
++ - Dê a um tipo que aparece em mensagens uma instância de `Communicable` em seu objeto
++   companheiro, geralmente derivada de sua instância de `Textualizable` ou de `Showable`; não
++   renderize à mão no ponto de chamada.
++ - Texto que pode estar vazio ou com preenchimento é posto entre aspas pela instância para
++   `Text` (`“ ”`), de modo que um valor ausente ou só de espaços fica visível; nunca acrescente
++   aspas suas em volta de um `Text` interpolado.
++ - Uma lista de mensagens é uma lista, não uma string unida: `List[Message]` é renderizada como
++   itens, um por linha. Não una mensagens com vírgulas usando `join`.
++ - Os diagnósticos de tempo de compilação lançados por uma macro trazem seu código bolt no
++   prefixo padrão (`m"${bolt.label} $message"`); o corpo da mensagem segue este padrão sem
++   alterações.
+
+@ 0 1 0 1f19b20982c8aa011c3cc1048e9e114f
++ ## 6. Eventos de log
+
+@ 0 5 0 124b19d4644c3db50691b1e5d6f7d157
++ Um evento de log é um valor do tipo `Event` de um módulo, e sua instância de `Communicable`
++ renderiza a mensagem. Vale o mesmo registro, com um acréscimo: um evento nomeia a operação e
++ seu sujeito (`resolved $hash to $url`, `listening on $port`), no passado quando ela foi
++ concluída e no gerúndio quando está começando. Os níveis são escolhidos conforme `logging.md`;
++ a mensagem não repete o nível (`warning:` não faz parte de uma mensagem).
+
+% 0 1 0 1e7de92576a275d310f2a572e2294fa0
+
+@ 0 2 0 02bbabe8605fc958162d9fab8269d7a5
++ Antes de acrescentar uma mensagem, leia-a como ela vai aparecer — depois de `[↯/s.…]`, em uma
++ lista de doze, ou no fim de um stack trace — e verifique:
+
+@ 0 5 0 0d19267b8db329d30ee8839805621a76
++ 1. primeira letra minúscula, sem ponto final, no presente;
++ 2. o recurso específico em falta está interpolado, como um valor tipado;
++ 3. um número é dado quando é conhecido;
++ 4. nada secreto, nenhum payload, nenhum nome da implementação;
++ 5. o nome do tipo de erro e a mensagem não dizem a mesma coisa.

@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 1 0 13dbfbcad5228fdc18c72755039015eb
++ # `SN-520` — No se puede hacer coincidir con una declaración doctype (retirado)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Este error ya no existe. La página se conserva para que el código no se reutilice, y para que una
++ referencia a él desde una versión anterior pueda seguir resolviéndose.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Qué fue de ello
+
+@ 0 2 0 120530ebcba650a7040f736124472bc2
++ La coincidencia de patrones sobre HTML de Honeycomb ya no lanza este error: nada en el código
++ fuente lo notificaba cuando Soundness adoptó los códigos bolt, así que no se le asignó ninguno.

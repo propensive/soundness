@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 1 0 098846f338813e320125925b2770c292
++   entry .Notice   一つの診断。重要度、ファイル、メッセージ、スパン、意味的なマークアップ、bolt コード
+
+@ 0 15 0 0b65f9c3c06d5523049be85ac6e89686
++         `#markup` は、`scalacOptions.semanticDiagnostics` の下で `Scalac` だけが設定する。コンパイラの帯域内の意味マーカー（U+E000 とその仲間）を保持した生のメッセージであり、delicious ライブラリがこれをスタイル付きのスパン、プレースホルダー、ピクルされた型からなる `SemanticMessage` にパースする。そのため、「found `A`, required `B`」というメッセージは、再びパースすべきテキストではなく、描画して比較できる二つの型として届く。
++
++         `#code` は、`scalacOptions.boltCodes` の下で `Scalac` だけが、エラーと警告についてだけ設定する。Proscala が診断に与える bolt コードを `fulminate.Bolt` として表したものであり、たとえば型の不一致では `↯/p.1.7`（上流の `E007`）である。
++         Proscala はコードをメッセージではなく自身のレポートの見出しに書くので、ここでは診断そのものから読み取られる。
++     entry #importance   通知が情報、警告、エラーのどれであるか
++     entry #file   コンパイル時にソースに与えられた名前
++     entry #message   診断のテキスト。意味マーカーは取り除かれている
++     entry #span   通知が対象とするソースの領域、または `Unset`
++     entry #markup   `-Zsemantic-diagnostics` の下では意味マーカー付きの生のメッセージ、それ以外では `Unset`
+
+@ 0 1 0 19f81d9a56aafe8907b940c614df3aa6
++     entry #code   `-Zbolt-codes` の下では診断の bolt コード、それ以外では `Unset`
+
+% 0 1 0 02f7b4a8848ac2c90775a84663260c35
+
+@ 0 12 0 19a020521e8b60771553bf4728b8eafe
++   entry .newSyntax   `-new-syntax`, at every version
++   entry .sourceFuture   `-source future`, at every version
++   entry .experimental   `-experimental`, at 3.4 to 3.8
++   entry .semanticDiagnostics   `-Zsemantic-diagnostics`, at 3.9: keeps each notice's semantic markup
++       Under this option the compiler marks each interpolated argument of a message in band,
++       with pickled TASTy for the types among them, and a `Compiler.Notice` keeps that marked-up form
++       as its `markup` alongside the plain `message`, for the delicious library to parse into
++       a `SemanticMessage`.
++   entry .boltCodes   `-Zbolt-codes`。3.9 で：エラーと警告の各通知にその bolt コードを与える
++       このオプションの下では、Proscala はすべてのエラーと警告に `↯/p.1.7` のような bolt コードを与え、`Compiler.Notice` はそれを `code` として持つ。
++   entry .warnings   the warning options: `-feature`, `-deprecation`, `-W…` flags and `-Wunused`
+
+% 0 14 0 1f29d5baa9189f7014f1ba412f2e145c
+
+% 0 1 0 0c92f782c6a0e4370f60a51b43f10e20
+
+% 0 1 0 1cdc0887147d0a161f643c74fe9afcdf
+
+% 0 9 0 0acc7982d1d8f6b409efdb3eb05be046
+
+% 0 3 0 1be80a3bd3c2432c1add120cf4a0a395
+
+% 0 2 0 10bfac5a00c34fac1a83b094ddcc7099
+
+% 0 24 0 1a81a70536ef4abe127e200abadd176d

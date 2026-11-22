@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 3 0 01c7894b220ea59c04e5126527e7ba9f
++   entry .TemperatureGradient   расстояние⁻¹·температура
++   entry .temperatureGradient   `temperature gradient`
++   entry .ThermalConductance   расстояние²·масса·время⁻³·температура⁻¹
+
+@ 0 20 0 069e277113fbebb615d983279506721d
++ entry .Dyne   дина, единица силы СГС, `MetricUnit`
++ entry .Erg   эрг, единица энергии СГС, `MetricUnit`
++ entry .Barye   бар (barye), десятая доля паскаля: единица давления СГС, `MetricUnit`
++ entry .Poise   пуаз, десятая доля паскаль-секунды: единица динамической вязкости СГС, `MetricUnit`
++     Определён как десятая доля `Pascal`, поэтому по размерности это давление, а не вязкость.
++ entry .Galileo   гал, сантиметр на секунду в квадрате: единица ускорения СГС, `MetricUnit`
++ entry .Stokes   стокс, единица кинематической вязкости СГС, `MetricUnit`
++ entry .Gauss   гаусс, единица магнитной индукции СГС, `MetricUnit`
++ entry .Maxwell   максвелл, единица магнитного потока СГС, `MetricUnit`
++ entry .Oersted   эрстед, 79,577 ампера на метр: единица напряжённости магнитного поля СГС, `MetricUnit`
++ entry .Gilbert   гильберт, 0,796 ампера: единица магнитодвижущей силы СГС, `MetricUnit`
++ entry .Biot   био, десять ампер: единица тока СГС, `MetricUnit`
++ entry .Emu   электромагнитная единица намагниченности, амперы на квадратный метр, `MetricUnit`
++ entry .Franklin   франклин, 3,34×10⁻¹⁰ кулона: единица заряда СГС, `MetricUnit`
++ entry .Debye   дебай, 3,335×10⁻³⁰ кулон-метра: единица электрического дипольного момента, `MetricUnit`
++ entry .Lambert   ламберт, единица яркости СГС, `MetricUnit`
++ entry .Phot   фот, единица освещённости СГС, `MetricUnit`
++ entry .Langley   ленгли, 41840 джоулей на квадратный метр, `MetricUnit`
++ entry .Kayser   кайзер, волновое число, равное единице на сантиметр, `MetricUnit`
++ entry .Darcy   дарси, 0,987×10⁻¹² квадратного метра: единица проницаемости, `MetricUnit`
+
+@ 0 4 0 13e80c08f09d576b1abfa53ee4e4e537
++       86400 секунд. Их значение-единица — `SolarDay`.
++   entry .designation   обозначение `d`
++   entry .ratio   `Ratio[Seconds[1] & Days[-1], 86400.0]`: сутки равны 86400 секундам
++ entry .SiderealDays   звёздные сутки, единица `Time`: `SiderealDays[power]`
+
+@ 0 9 0 08d7fb1f4be11445048859086ffc46dd
++   entry .SpeedOfLightInVacuum   c, 299792458 м·с⁻¹
++   entry .MagneticConstant   μ₀, магнитная проницаемость вакуума, в Н·А⁻²
++   entry .ElectricConstant   ε₀, диэлектрическая проницаемость вакуума, 8,854×10⁻¹² Ф·м⁻¹
++   entry .CharacteristicImpedanceOfVacuum   Z₀, 376,73 Ом
++   entry .PlanckConstant   h, 6,626×10⁻³⁴ м²·кг·с⁻¹
++   entry .GravitationalConstant   G, 6,674×10⁻¹¹ Н·м²·кг⁻²
++   entry .ElementaryCharge   e, 1,602×10⁻¹⁹ Кл
++   entry .AvogadroConstant   N_A, 6,022×10²³ моль⁻¹
++   entry .BoltzmannConstant   k, постоянная Больцмана, в Дж·К⁻¹

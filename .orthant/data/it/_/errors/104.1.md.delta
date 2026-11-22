@@ -1,0 +1,62 @@
+orthant 2 language
+
+% 0 1 0 174d0a5efbeae1591701194230984d44
+
+@ 0 1 0 0f35717ade36c42e0a8cc5ad2f9f3a4b
++ Sollevato quando dei dati CBOR non possono essere decodificati.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 0f18380bcddef5691200fa72e5330408
++ Breviloquence decodifica il CBOR in modo rigoroso, segnalando l'offset in byte in cui è stato
++ trovato un difetto. Questo errore copre l'input troncato, i byte in eccesso dopo un valore
++ completo, i byte di testa riservati e i valori che non rientrano nel tipo richiesto.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Codice
++ column  Motivo
++ column  Messaggio
+
+% 0 1 0 092765c3be3a4d54188e96612a0bb693
+
+% 0 1 0 0c4193dbd70a69e1012387beaf4f9e98
+
+% 0 1 0 08b058e1609d1c6e03acb240dfbd5132
+
+% 0 1 0 027d10a33557d8170ae04f3462d330a3
+
+% 0 1 0 01c3997e4735ef77103654bdd2de4401
+
+% 0 1 0 1ac3265248523ced18151a7a62fac789
+
+% 0 1 0 1065d8ef9bcdd9c81de0682b7bd8f634
+
+% 0 1 0 09642d5163b6e58319518dd3b888a386
+
+% 0 1 0 140db2dd76dac04d0355730be021b003
+
+% 0 1 0 01bf5ee6c161c60f0e8c3542f4363882
+
+% 0 1 0 123274c83da47ebf1b5620c1437d1911
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 2 0 092fcfa1c065cb9610ac30fd41f42812
++ Per un formato binario l'offset è la maggior parte della diagnosi: rendere il documento nella
++ notazione diagnostica di RFC 8949 con `show` per vedere che cosa significano i byte che lo
++ circondano.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 0c18feda886dc5aa062683ffca179b80
++ - Sorgente: `lib/breviloquence/src/core/breviloquence.Cbor.scala`

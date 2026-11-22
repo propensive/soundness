@@ -1,0 +1,660 @@
+orthant 2 language
+
+@ 0 1 0 1a2c8f93c3f141d40bc9939db7fa2f5c
++ ## Dekodierung
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 4 0 13efbc5e269a16a9049b6a350c6cd37b
++ Ein laufendes Programm erhält viele seiner Daten als loser, untypisierter Text:
++ Kommandozeilenargumente, Umgebungsvariablen, Konfigurationsdateien, die von einem regulären
++ Ausdruck erfassten Gruppen, eine an einer Eingabeaufforderung getippte Zeile. Die Dekodierung
++ verwandelt diesen Text in typisierte Werte, etwa ein `Int`, eine `Uuid` oder eine
++ E-Mail-Adresse.
+
+@ 0 3 0 0e433c09a84cf05d052463a8f3e63988
++ Alle diese Umwandlungen teilen eine Tatsache: Sie gelingen womöglich nicht. Die Typen sagen das.
++ Eine Umwandlung gibt für eine Eingabe, die sie nicht lesen konnte, nie einen plausiblen Wert
++ zurück; genau das verlangen [totale Übergänge](../../philosophy/total-transitions.md).
+
+@ 0 1 0 1ef232a1f415df7e0d476c7094821fa7
++ ### Über Umwandlung
+
+@ 0 2 0 1e55c93d9d6910a806e6842e074525d0
++ Eine Umwandlung von einer Darstellung in eine andere kann auf mehr als eine Weise
++ fehlschlagen, und die Unterschiede zählen:
+
+@ 0 3 0 03a906ac62cae61f1354b315b441de61
++ - Eine Ganzzahl aus beliebigem Text zu lesen, kann fehlschlagen, weil der Text vielleicht keine
++   Zahl ist.
++ - Ein `Long` zu einem `Int` zu verengen, kann fehlschlagen, weil der Wert vielleicht nicht
++   hineinpasst.
++ - Ein `Byte` zu einem `Int` zu erweitern, kann nie fehlschlagen.
+
+@ 0 3 0 10afbc8403edd3d701944da1047f1606
++ Diese Fälle gleich zu behandeln, indem man `null` zurückgibt, aus einem Getter wirft oder
++ stillschweigend abschneidet, ist der Anfang von Fehlern. Hier hat jeder Fall seine eigene
++ [Typklasse], sodass die Art, wie eine Umwandlung fehlschlagen kann, im aufrufenden Code
++ sichtbar ist:
+
+% 2 1 0 17150ffed795d70b1c80b7c9cdb37a17
+
+@ 0 7 0 1f98a5604bba3b8912341c284bcb7900
++ column  Typklasse
++ column  Geschrieben
++ column  Wenn die Umwandlung fehlschlägt
++ row  `Decodable`  `Int is Decodable in Text`  löst einen typisierten Fehler aus
++ row  `Extractable`  `Text is Extractable to Int`  liefert `Unset`
++ row  `Irrefutable`  `Byte is Irrefutable to Int`  kann nicht fehlschlagen
++ row  `Identifiable`  `Identifiable[Column]`  kann nicht fehlschlagen; bildet einen Namen in beide Richtungen ab
+
+% 1 1 0 1236ff8d9f90327c1f66d5457ff71672
+
+@ 0 4 0 1245edd8f0a0d73e19f0537336c7c8e3
++ Die Namen lesen sich wie Englisch und geben die Richtung der Umwandlung an. Ein Wert, der
++ `is Decodable in Text`, wird *aus* Text gelesen. Text, der `is Extractable to Int`, wird *hin
++ zu* einer Ganzzahl gelesen. Ein `Extractable` liefert kein Ergebnis, statt einen Fehler
++ auszulösen; genau das will der Musterabgleich.
+
+@ 0 2 0 02f641d2eb384b6716de3ac104c94946
++ Die alltägliche Oberfläche ist klein: die Methode `as` und der Extraktor `As`. Die folgenden
++ Abschnitte beginnen dort und wenden sich dann den darunterliegenden Typklassen und dem
++ Schreiben von Instanzen für neue Typen zu.
+
+@ 0 3 0 107ef68f88dae1de187b1d2f56f9e1dc
++ Alles stammt aus dem Paket `soundness`. Dekodierung kann fehlschlagen, daher braucht sie eine
++ [Strategie] im Geltungsbereich, und `throwUnsafely` wirft eine Exception, wenn eine Dekodierung
++ fehlschlägt. Der letzte Import lässt die Beispiele ihre Ergebnisse ausgeben:
+
+% 2 1 0 164eded5831e67d30b3191fcb4c42d7d
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0956a203781874a0099e07650d1ae897
++ ### Einen Wert dekodieren
+
+@ 0 2 0 0ce904e67e9fb106125b237621fdab5f
++ Die Methode `as` liest einen typisierten Wert aus Text. Der Zieltyp wird benannt, und eine
++ `Decodable`-Instanz für ihn verrichtet die Arbeit:
+
+% 2 1 0 178ee28ff8e092b11acb72f33ec18a56
+
+% 3 1 0 098174ab5bbddebc0f948c22ea002f77
+
+% 4 1 0 1f4d97390d56b9f4156506ed1c5a5f03
+
+% 0 1 0 0c925d634d948a9305fb9bf39652747a
+
+% 1 1 0 1267470ca86c498915d8ba4168db6150
+
+@ 0 1 0 0d02ebe52b6e99dd07c2893055f59397
++ Text, der keine Zahl ist, löst einen `Number.Error` aus:
+
+% 2 1 0 02c8808275441ed306660ad61f8fd467
+
+% 3 1 0 1d87aaca57ea4d820c697f17d579cf64
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 00c5e4223e4d750d0ba1b02c36bd04f8
+
+% 1 1 0 0edb4d8226519a6a01db34c01b4e3964
+
+@ 0 2 0 03e86995d174d67a14bacd253cad9b3b
++ Ein `Number.Error` hat einen Grund. Text, der überhaupt keine Zahl ist, ist *nicht parsebar*,
++ während eine Zahl außerhalb des Wertebereichs des Zieltyps *außerhalb des Bereichs* liegt. Die
++ Dekodierung zu einem `Byte` zeigt beides:
+
+% 2 1 0 199ac4556b57a6381582f9bf12ad9c64
+
+% 3 1 0 1e6e0d2c0f4d78f20d1863a69b08a832
+
+% 4 1 0 06c38d8838314e061d1847f076f74068
+
+% 0 1 0 1e619a17218a132e0f181bfc55c70422
+
+% 0 1 0 0fd6cf19664f04671ea5041d6da39dc2
+
+% 1 1 0 0a1ecc6b12328d131b70edb65f322186
+
+@ 0 3 0 1d4a4f5b743dc46303c38adc00a5a8a3
++ Die Strategie, die eine fehlgeschlagene Dekodierung behandelt, wählt der Aufrufer; der Decoder
++ legt sie nicht fest. [`safely`](errors.md#choosing-a-strategy) verwandelt einen Fehlschlag in
++ `Unset`, sodass der Rückfall auf eine Vorgabe nur ein weiterer Methodenaufruf ist:
+
+% 2 1 0 188ba9ec9d413f701bf987a314e42be4
+
+% 3 1 0 0b615a3a5e54d4c31718d1069777bfac
+
+% 4 1 0 1bbefff63d08eddc1eca810366f603f0
+
+% 0 1 0 1a353242765af5860bf98577f95aada0
+
+% 1 1 0 0797b222632a22a605ed9def6bb12cb5
+
+@ 0 1 0 1c123963fb0d288f042575c77b1fb84c
++ Ein Typ ohne `Decodable`-Instanz kann nicht angefordert werden, und der Compiler sagt das:
+
+% 2 1 0 003b14a0bb4f1af11e3e35be6bf57078
+
+% 0 1 0 1d0aaa60a3e31639034264e9ca77da5b
+
+% 1 1 0 06f225f39115d43102066b95fb7d8835
+
+% 3 1 0 0b08f5e5f39d2c0505ed5d73a07c0df5
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 03f6102d609e800518a9951a92986317
+
+% 1 1 0 0e1f28cc8f1fa0b61608c1b3b0b5507e
+
+@ 0 4 0 1b49271aa159443a02e0da277f81e8e7
++ Instanzen sind eingebaut für die primitiven Zahlentypen, für `Char` und für Typen, die
++ anderswo in Soundness definiert sind, etwa `Uuid` und `Fqcn`. Andere Teile von Soundness fügen
++ ihre eigenen hinzu; deshalb liest dasselbe `as` ein [Datum](time.md), einen
++ [Hostnamen oder eine URL](network-addresses.md#parsing-at-runtime):
+
+% 2 1 0 173dd72bce5e1fd00a9c84f72a7f7e88
+
+% 0 1 0 09019423da9159690f01286cb54c4449
+
+% 0 1 0 0794174db7ba06750417ca7a79947497
+
+% 1 1 0 0a60ccee7ed8df050d2f4717622ce153
+
+@ 0 1 0 0e86d1c04fafb89a194fc73828db3860
++ #### Boolesche Werte
+
+@ 0 3 0 1fd8ddde491fa21d04d1ade06e30f336
++ Ein `Boolean` wird aus `true` oder `false` dekodiert, in beliebiger Groß-/Kleinschreibung, mit
++ oder ohne umgebende Leerzeichen. Alles andere löst einen `Truth.Error` aus. Die anderen
++ Schreibweisen, die ein Werkzeug akzeptieren könnte, sind jeweils ein `Truth` im Paket
++ `truths`:
+
+% 2 1 0 0260de69ab1339691b6519384b5a2bef
+
+% 0 1 0 1ca77613e7a1c24100f8bf0c68a101b5
+
+@ 0 2 0 056e9eedfe33901b0b0967fcc8059ede
++ column  Wahr
++ column  Falsch
+
+% 0 1 0 012d39ae9e6f9ff105319e3a836fef5c
+
+% 0 1 0 1cad884359669d58026267dd7de383fe
+
+% 0 1 0 0d0bc5ad6c59d8501dd5ee58f24edf0c
+
+% 1 1 0 05e2e4458acf5f831a67c26099f92bc4
+
+@ 0 2 0 1331c09efaab395e0cf16da332470785
++ Jedes `Truth` im Geltungsbereich wird neben der Vorgabe akzeptiert. Der Import eines solchen
++ fügt Schreibweisen hinzu und nimmt keine weg:
+
+% 2 1 0 13882d3b0e96307e0aff96dafeec810d
+
+% 0 1 0 13e78d8bf1b763a81bfae199cc4f626c
+
+% 1 1 0 0424e587699b1f5a04e875b7b4df8cad
+
+% 3 1 0 092ee1beef283f9c1773daf46ece38e0
+
+% 4 1 0 00c0741180e55ee51028a1a8e1f92866
+
+% 5 1 0 0562661e774c5f921f29364420d38655
+
+% 0 1 0 0644cf1c7e5da408049caf9cfe41f197
+
+% 0 1 0 1a3fb296bf6acb7810114b6bd59c08cd
+
+% 1 1 0 1f27afe877e9528b027cd2c1f01bb358
+
+@ 0 1 0 1e1433e4704f7c0a06f92f4d2e0b724b
++ ### Richtlinien für optionale Felder
+
+@ 0 4 0 058096556e3f93b202236d2acc35481b
++ Jedes Datenformat, das ein `Optional`-Feld dekodiert, beantwortet dieselben drei Fragen und
++ beantwortet sie standardmäßig auf dieselbe Weise. Das umfasst
++ [JSON](json.md#optional-fields-and-defaults), [CBOR](cbor.md), [YAML](yaml.md), [XML](xml.md),
++ [TEL](tel.md) und [Text mit Trennzeichen](csv.md). Am Beispiel von JSON:
+
+% 2 1 0 1eacdd7a1a61c55b162d4634f3d82486
+
+@ 0 6 0 17e93ecfced3b2711b8c76322058cdaf
++ column  Ein Feld, das
++ column  Gelesen als
++ column  Außer
++ row  im Dokument weggelassen ist  `Unset`  `strictJsonAbsence` macht es zu einem Fehler
++ row  ein explizites null ist  `Unset`  `strictJsonNulls` reicht es an den inneren Decoder weiter
++ row  vorhanden ist, aber vom inneren Decoder abgelehnt wird  ein Fehler  `lenientJsonFaults` liest es als `Unset`
+
+% 1 1 0 040099b345b9fcae1f4d7f9218190f85
+
+@ 0 1 0 0fd4b6fefe5ada6d109c1a1aa4e26b5f
++ Jede Antwort ist eine Richtlinie, nach dem Format indiziert, mit einer Vorgabe in ihrem
++ Begleitobjekt:
+
+% 2 1 0 1d72c2d8668915c605637b2cc59eb9b5
+
+% 3 1 0 14aad468b1249e391173b241120b0c9c
+
+% 4 1 0 07da47abf90eb1970b8956113dab922f
+
+% 0 1 0 19d1a993e9252b821a988b618142c67f
+
+% 0 1 0 120e79609cfffb160dc1452a15e6b170
+
+% 0 1 0 0d48707a3ab4453a1f1141c27352c619
+
+% 1 1 0 0236d1afb186ca0e0e0755f452f6be1f
+
+@ 0 4 0 097efb378baf73ea1b96cba6d140a7e9
++ Das Paket `optionalityOptions` eines Formats bietet zu jeder Frage die andere Antwort an,
++ benannt nach dem Format. Eine Antwort lässt sich daher ändern, ohne die anderen anzurühren,
++ und JSON kann strikt sein, während CSV im selben Geltungsbereich nachsichtig bleibt. Dies sind
++ die Givens, die eine Vorgabe ändern. Ein Format ohne null hat keine Richtlinie für Nullwerte:
+
+% 2 1 0 1026fa32456630b50f357a235c242716
+
+% 0 1 0 1f44cd52edfe79f606866f1b941ba69c
+
+@ 0 3 0 07af4baf140e072108ed042872f5456e
++ column  Weggelassen ist ein Fehler
++ column  Null geht an den Decoder
++ column  Abgelehnt ist `Unset`
+
+% 0 1 0 1c5f5b0848a1090e03a74684ce84bcef
+
+% 0 1 0 1640d22a3f94ba5819950b5699eb362c
+
+% 0 1 0 071b337c8c57c64e1bd8676a94ab37a2
+
+% 0 1 0 1f851e8678686c4702109818e6ccd04b
+
+% 0 1 0 1bbb01bda4f2adad01d21bc16f1fb81d
+
+% 1 1 0 071db5e3b958d4d30c2cc5c1d235c643
+
+% 0 1 0 1b7da4aa9fb0545b04cccff812a43dd6
+
+% 0 1 0 1c5580c48806ea4b1880cd8f22893453
+
+% 0 1 0 1126f19ee59729c91fa2a3514c29dec0
+
+% 1 1 0 04a145d2844880ff003cbd9fe26e5327
+
+% 0 1 0 1fd54059856f423b0eacc6fd4adc7053
+
+@ 0 1 0 168a0bac9110d5e303d5bab223150461
++ row  Text mit Trennzeichen
+
+% 0 1 0 14a400f1b3ff1af310499935b05cab96
+
+% 1 1 0 1b234593de4d50250601dbc83b5af9ef
+
+% 0 1 0 1ea9d112c5f58d9402bead46e2289277
+
+% 1 1 0 0db8ec51e2bcf10501e3864feae47166
+
+@ 0 2 0 0de70fa6277875770ad3af65dd7d7230
++ Jedes Paket benennt auch die Vorgabeantworten, `lenientJsonAbsence`, `strictJsonFaults` und so
++ weiter, für einen Geltungsbereich, der eine davon wiederherstellen muss.
+
+@ 0 4 0 1c12548bbab8c69d0a999562c782122b
++ Ein nachsichtiger *Fehler* dekodiert den Wert unter dem
++ [`tolerate`](errors.md#tolerating-a-failure) der ambienten Taktik, sodass er nichts
++ verzeichnet, selbst wo Fehler gesammelt werden. `Option`-Felder folgen denselben Richtlinien
++ und liefern `None`. Das Tutorial jedes Formats zeigt die Richtlinien im Einsatz.
+
+@ 0 1 0 0a825ad07312174708e4e4c3c196630c
++ ### Extrahieren in Patterns
+
+@ 0 3 0 0b9e247378ed84e80d6c95f2a06585f3
++ Der Musterabgleich braucht eine Umwandlung, die den Abgleich ablehnt, statt einen Fehler
++ auszulösen. Das ist der Extraktor `As`. `As[Int]` gelingt, wenn der abgeglichene Wert ein `Int`
++ liefert, und fällt zum nächsten Fall durch, wenn nicht:
+
+% 2 1 0 02919461a4ecb8f511ca0951fa667710
+
+% 0 1 0 0874590c0736e1681135b9361262c086
+
+% 0 1 0 0acb22d4038ab9fe03591bb63df01675
+
+% 0 1 0 1608317f82b82fd20b320b1c72d1b4ef
+
+% 1 1 0 190ee95bdc68c5520f73bcaac72679db
+
+% 3 1 0 0a1c4701cbd97ff006ed22c7eb8b0a1b
+
+% 4 1 0 1492d83c6b6f51081c9b44c915a5e511
+
+% 5 1 0 00bc96734f77b8b1097f07716a0a7ab1
+
+% 0 1 0 1eb94f195f543ed70d1078bc73bb2678
+
+% 0 1 0 1c778bbe453c5a2c15cf08129693d8ee
+
+% 1 1 0 02bb504ae26008ed191a0b3e3805962b
+
+@ 0 3 0 0ca16c4651cdfb801e27331a0e1a371a
++ `As` ist ein gewöhnlicher [Extraktor](https://docs.scala-lang.org/tour/extractor-objects.html)
++ und lässt sich daher mit jedem Pattern kombinieren, das Scala bietet. Er bindet die Gruppen
++ eines [regulären Ausdrucks](patterns.md) und verwandelt erfassten Text in einem Schritt in
++ typisierte Werte:
+
+% 2 1 0 000374ced5ac58dd0443f43012f2996e
+
+% 0 1 0 10dc0ab1fe9ed5d810fb95b0e68bca6a
+
+% 0 1 0 0a27296dbc29ed9c17effe7dbd5527e9
+
+% 0 1 0 18ed425c0d142e4a0d5ddf44de917eae
+
+% 0 1 0 1c143008eeed50fb081dfa03f3b6051f
+
+% 0 1 0 12272cf7a31a61620e73b5d291c5cb3f
+
+% 1 1 0 129de68da1e4ca8a0b8ff23460bfa820
+
+@ 0 2 0 13593385a25c4ae503f23473c711048c
++ Ebenso frei lässt er sich in größere Patterns verschachteln. Dieser Abgleich zerlegt eine
++ Liste und dekodiert jedes Element zugleich:
+
+% 2 1 0 01ed320ee06a2c3714e88d50b3e5fd03
+
+% 0 1 0 13a3f15ec4e3bf2b1558fc2fbad4ff0e
+
+% 0 1 0 0339045eb655645709562bf25dd23bd6
+
+% 0 1 0 16b5ede2eee65da81a7790b23b9fd553
+
+% 1 1 0 021f67e483424c8c14a94f81d9bf0e7d
+
+% 3 1 0 1a8b66106325cd150eac6ebbf800b91e
+
+% 4 1 0 097b06ac5bfbd4fb152c334536905be3
+
+% 5 1 0 10fe28c50ce630eb16ea252a58fbcd78
+
+% 0 1 0 190214dfb244f1f80f45abcb62bc6d0f
+
+% 0 1 0 0b04093b5bb2ce3916ac3cab59a42a5d
+
+% 1 1 0 1d8fedb220125c33176b6f22ba4f45f6
+
+@ 0 3 0 1626a943e9ada0931fe8210a2573908d
++ Der Extraktor funktioniert für jeden Typ mit einer passenden Instanz, nicht nur für Zahlen.
++ Eine E-Mail-Adresse wird extrahiert, wenn sie wohlgeformt ist, und sonst abgelehnt, sodass ein
++ einziger Abgleich zugleich validiert und umwandelt:
+
+% 2 1 0 1e6b4e1af8c4ebc6170ac3cda032be9e
+
+% 0 1 0 070c38e354358b800a4c8a5284c5a1d7
+
+% 0 1 0 108a279c5eb82bb90fbf2f54736e560b
+
+% 0 1 0 1652b0f3baffbb04001378588103b957
+
+% 1 1 0 0aecf252cc88e95b09672d20bd66f00c
+
+% 3 1 0 184c627252cc56f91296acaf59117912
+
+% 4 1 0 01d003cda9985c85198b9b4545868909
+
+% 5 1 0 1eef1408411b19e303dc8416c525d786
+
+% 0 1 0 1ac99dce96f8bf78021df6b335fbbcf8
+
+% 0 1 0 013163c77f9b27b20f178fd2c5e6c58e
+
+% 1 1 0 1ffb06fc96e80ddb19b7a70fdb8b2fec
+
+@ 0 1 0 0fc56c18abc7ba970ac80326742ff3e7
++ ### Verengung und Erweiterung
+
+@ 0 3 0 07f8fa31b304ff5f1dbfbd8f954e22e0
++ Zahlen werden zwischen Breiten umgewandelt, und die Richtung entscheidet, ob die Umwandlung
++ fehlschlagen kann. Erweiterung gelingt immer: Jedes `Byte` ist ein `Int`. Verengung gelingt
++ nur, wenn der Wert hineinpasst; sie gehört daher zu `As`, das einfach ablehnt, wenn er es
++ nicht tut:
+
+% 2 1 0 06c34078dbdf85eb142c3a23ac1c510f
+
+% 0 1 0 162895b9cc3343ff1f3973b60d05fafc
+
+% 0 1 0 11bb2ab544176486078ccfe3f7509b79
+
+% 0 1 0 1e89e4d8ad9fdcf615575ff7de7787e5
+
+% 1 1 0 0a00fc3e035176ae14981ae7605dd517
+
+% 3 1 0 0949f8a9417aa3920be597d1e4e932db
+
+% 4 1 0 1956c0bbe5f9c5970957ffec3ca71e8f
+
+% 5 1 0 16bacca7ec7b660100b31b21aedbfdca
+
+% 0 1 0 1c7ebda15bd8f16d0eb29a4b5d93e283
+
+% 0 1 0 0716b4133bf75e211d98258f216ff2d9
+
+% 1 1 0 05ac652e82de05580e572b67dd3e9650
+
+@ 0 2 0 0453f2d683e0b4640618f59f9d0a4b86
++ Eine [Aufzählung] wird über den Namen ihrer Fälle extrahiert. Es ist keine Instanz zu
++ schreiben, da die Fälle aus dem Typ gelesen werden:
+
+% 2 1 0 0ddcce8e7401055208ee84a63f502819
+
+% 0 1 0 01d1b3116c5025861699b60be1ce85f3
+
+% 0 1 0 02d3bc4c1260516d01ad66e698840be5
+
+% 0 1 0 1a2fabef37546c5200edcb68d90715c9
+
+% 0 1 0 1368acd42ba30f2b0fff78214c75e8a2
+
+% 0 1 0 0a3ae8f66e995a8813e5c73b593244ec
+
+% 1 1 0 022dba7ce81a1bb3186dee51d25d6ca9
+
+% 3 1 0 1bc60b836b30aed804605822d1725b85
+
+% 4 1 0 005f88d247f48f4a1ea760df88787d38
+
+% 5 1 0 1754861f4395429103ad1df265dd2f9f
+
+% 0 1 0 1dfef221d600a17c1a38bdc0c516eeba
+
+% 0 1 0 0a3d157adf4d6a2904e9d66a542be135
+
+% 1 1 0 16c4a79452f3b9e819cd8e1a07a66890
+
+@ 0 1 0 186bc7cb3e176027005f2fa9e77d633f
++ ### Einen Wert verlangen
+
+@ 0 4 0 036f4dadec46f1c50eb246e515f6b31b
++ Manche Typen akzeptieren eine leere Eingabe und manche nicht, und ein Formular oder eine
++ Konfiguration muss oft wissen, welche, bevor es nach einem Wert fragt. Ein Typ ist
++ *erforderlich*, wenn eine leere Eingabe keinen Wert hervorbringen kann. Das folgt aus dem
++ Decoder des Typs, sodass keine gesonderte Deklaration nötig ist. Der Decoder wird einfach auf
++ den leeren Text angewendet, und ob er gelingt, ist die Antwort:
+
+% 2 1 0 1feb52b4b1a2363f041f5050f76bc146
+
+% 3 1 0 0d041cdfaf568d5b1faf688d06a37849
+
+% 4 1 0 160df6955d7bcafb0367ad334aa475be
+
+% 0 1 0 1504cb991fa92b40181c2dccd9a559b3
+
+% 0 1 0 17133c23823c82bc063a0966e3131964
+
+% 1 1 0 02eab852b2e6f88d16db5203c32a8430
+
+@ 0 3 0 1978b7bdfc6b45b810b5471d943c9851
++ Ein `Int` ist erforderlich, da der leere Text keine Zahl ist. Ein `Text` ist es nicht, da der
++ leere Text ein `Text` ist. Ein [Formular](forms.md) kennzeichnet seine Pflichtfelder auf diese
++ Weise, ohne eine zweite Deklaration, die dem Decoder widersprechen könnte.
+
+@ 0 1 0 06c626f7123028760759b28d917c1780
++ ### Aufzählungen nach Name und Position
+
+@ 0 5 0 14258beb02d68b1403aa5e1e7116fd29
++ Die Fälle einer Aufzählung sind dem Compiler bekannt, daher wird ihre `Enumerable`-Instanz aus
++ dem Typ [abgeleitet][Ableitung], nicht geschrieben. Die Instanz liefert die Fälle der
++ Aufzählung in der Reihenfolge ihrer Deklaration und schlägt einen Fall nach Name oder nach
++ [Ordinalzahl](numbers.md#ordinals) nach. Jedes Nachschlagen liefert ein `Optional`, da weder
++ ein Name noch eine Position garantiert einem Fall entspricht:
+
+% 2 1 0 11f8d892a74c9519183dbb613dbc04c7
+
+% 0 1 0 19ad6a133392c9ec01116ffb175ddbb1
+
+% 1 1 0 1c4cdc0cac9c6ab6136b6de4252de000
+
+% 3 1 0 0606afff8174dc5e01bc42cbfa14cf46
+
+% 4 1 0 0afed9edd63787ec0657c57518c27ca5
+
+% 5 1 0 1384374070c4086708d6bbec03a8562d
+
+% 0 1 0 005fd49c712d9bb1032c8d8eeb53e4f9
+
+% 0 1 0 0f6577db177f13930bd5922aea784d2c
+
+% 0 1 0 1e9c2eabee1dc09f18c9e6bada804562
+
+% 0 1 0 19d866a01138008218f0f398a4622a36
+
+% 0 1 0 18b0908dbfc6042c05319fa24a621d58
+
+% 0 1 0 1b1292c7004f29bd1459a32027be3ddd
+
+% 1 1 0 173f2a69807fd8c31cf5e53409dcd737
+
+@ 0 3 0 0f128b9c6a40007f0cbda7b38a8dd9d1
++ Das ist die Mechanik unter `As[Direction]`, unter [Bit-Flags](flags.md) und unter der
++ Behandlung von Aufzählungen in den abgeleiteten Codecs jedes Formats, sodass sich alle darüber
++ einig sind, wie ein Fall heißt.
+
+@ 0 1 0 16b0d8bd2e38764a0cf9670095cc3f67
++ ### Ein Bezeichner auf dem Hin- und Rückweg
+
+@ 0 4 0 110e02c2d1a17c370e0323b4ab865de5
++ Manche Umwandlungen führen gar nicht zu einem Scala-Typ, sondern von einer Textform in eine
++ andere: eine Datenbankspalte namens `first_name` und ein Feld namens `firstName`, oder ein
++ Header, der als `Content-Type` geschrieben und als `contentType` gelesen wird. Ein
++ `Identifiable` gibt beide Richtungen einer solchen Abbildung an, als Paar von Funktionen auf
++ Text:
+
+% 2 1 0 051771678e5c1e800d17d99c43728bef
+
+% 0 1 0 12150cbb2a74bb9b021fb0779e209e3b
+
+% 0 1 0 18dd9fa969357b5102367eafa5e1e39a
+
+% 1 1 0 0b78f7111860d61a0320ca6a94b4d52d
+
+@ 0 2 0 1bba7c42331d52491c337221faf4d2af
++ Die beiden Funktionen wandeln einen Namen in die Konvention um und zurück, mithilfe der
++ [Schreibkonventionen](text.md#case-conventions) für Text.
+
+@ 0 3 0 1a34fce54b14aa4614ca69e2827e885b
++ `Identifiable` ist ein `Typeclass.Pure`, sodass der Compiler weiß, dass die Umwandlung nichts
++ erfasst. Sie kann frei geteilt und überall angewendet werden, wo die Namenskonvention gebraucht
++ wird, ohne als Argument weitergereicht zu werden.
+
+@ 0 1 0 0510f990ec428688108ec9762e4dc796
++ ### Eigene definieren
+
+@ 0 2 0 0f9af63d62b99c081403cbdb130e1870
++ Die vier Typklassen sind der Ort, an dem die Dekodierung erweitert wird. Eine Instanz zu
++ schreiben heißt, die eine Umwandlungsfunktion zu schreiben. Die Methode `as`, der Extraktor
++ `As` und der Rest folgen daraus.
+
+@ 0 2 0 079833f41c28e76f1cdbaac6cc1a09d1
++ Eine `Decodable`-Instanz bildet jede Form von Eingabe, die sie erkennt, auf einen Wert ab.
++ Diese hier liest eine Kompassrichtung aus einem Wort:
+
+% 2 1 0 1e5095d97ae2fb7d0581ac81ed09a54a
+
+% 0 1 0 02ba1eba56fef4d209047d4d2712a9fd
+
+% 0 1 0 16318e06459208911842eb9ecdfd0674
+
+% 0 1 0 011015092ab468a80ac3e3072aefb505
+
+% 0 1 0 0da97754dcb58c060d4ae0cf53255726
+
+% 0 1 0 15c73abe47c89adc047072eddb4c5141
+
+% 0 1 0 054537eaa60ede311bc1383dfe7cb690
+
+% 0 1 0 15da373e3ddd05f11c51412ec01ec174
+
+% 0 1 0 1cc08795deda694a0422eef9e50b6a01
+
+% 1 1 0 0322b3f3f3cdd54e1fca0d86271644b2
+
+% 3 1 0 0e42fdf44547d23900aaabdfe4fcab85
+
+% 4 1 0 1ed5ebebf13a0e041aae0dec4fc9f4fa
+
+% 5 1 0 18de4fa760098d32110f5805e29c5266
+
+% 0 1 0 1ccef16b6273f3dd08f1ce55a3e726b6
+
+% 1 1 0 1aac44159d7a9cb515229765882d174f
+
+@ 0 3 0 13250081d1862d8c07e529062bce14f3
++ Eine `Extractable`-Instanz liefert ein `Optional`-Ergebnis, das für die abgelehnten Eingaben
++ `Unset` ist. Sie kann auf einer bestehenden Instanz aufbauen. Dieser beschränkte Typ leiht sich
++ den Extraktor für `Int` und behält nur die Werte in seinem Bereich:
+
+% 2 1 0 10bce3d330319fe206230059916fefc0
+
+% 0 1 0 096760fc385d5b6c176e3acd0c7d59a8
+
+% 0 1 0 024bf75c559a3a7903a60558ea3d5920
+
+% 0 1 0 0b2863bbbb2138f304799b91151dd346
+
+% 0 1 0 1e86dfc2e6220b0301104ca12761a644
+
+% 1 1 0 1beb35d013cb16d21dbf7c31568e4f2b
+
+@ 0 3 0 00d5c566f0f231b80324fe7e44e42fb4
++ Die in Soundness eingebauten Umwandlungen folgen denselben Formen. Ein so definierter Typ wird
++ mit `as` dekodiert, mit `As` abgeglichen und in die Patterns jedes anderen Typs eingefügt, ohne
++ weitere Verdrahtung. Die Umwandlung wird einmal benannt, und ihre Fehlbarkeit steckt in ihrem
++ Typ.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 7 0 0b09eb0bbea887a51ef9eee89dd9e4b6
++ - [JSON](json.md#case-classes-and-enumerations) und die anderen Formate dekodieren ein ganzes
++   Dokument in eine Case-Klasse, mit einer `Decodable`-Instanz für jedes Textfeld.
++ - [Kommandozeilenparameter](cli.md) und [Umgebungsvariablen](environment.md) werden mit `as`
++   dekodiert.
++ - [Patterns](patterns.md) erfasst die Gruppen, die `As` umwandelt.
++ - [Fehler](errors.md) behandelt die Strategien, die entscheiden, was eine fehlgeschlagene
++   Dekodierung tut.
++ - [Internationalisierung](internationalization.md), [Interpolation](interpolation.md), [Pfade](paths.md), [Sockets](sockets.md), [UUIDs](uuid.md) und [Versionierung](versioning.md) dekodieren ihre Werte aus Text.

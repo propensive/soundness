@@ -1,0 +1,33 @@
+orthant 2 language
+
+@ 0 1 0 1c51db050052a0810b4040cb1c832152
++ # `SN-616` — Continuation par un opérateur infixe symbolique (retirée)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Cette erreur n'existe plus. La page est conservée pour que le code ne soit pas réutilisé, et
++ pour qu'une référence à celui-ci depuis une version plus ancienne puisse toujours être résolue.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Ce qu'il est devenu
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ Le plugin du compilateur Decorum, qui levait cette erreur, a été extrait de Soundness et est
++ désormais [Consequent](https://github.com/propensive/consequent), un vérificateur autonome du
++ Consequent Style. La règle y subsiste sous un nouvel identifiant, dont la lettre nomme le
++ principe dont elle dérive :
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  Avant
++ column  Désormais
+
+% 0 1 0 11d21bb4a00630ef0b784d694d8308c2
+
+% 0 1 0 02a9839cbcf0dfde1a5362c83df80a03
+
+% 0 1 0 09c87eb316291933164fbf64a640003e
+
+% 0 1 0 10e779c96f615288124c1c010e87f679
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

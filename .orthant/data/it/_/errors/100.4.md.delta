@@ -1,0 +1,48 @@
+orthant 2 language
+
+% 0 1 0 1dd2bb7feeed61801477839a742c257c
+
+@ 0 1 0 02607d2ebeb108410436155d8eca4869
++ Sollevato quando un valore non può essere analizzato come un indirizzo email valido.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 14c5458202433ee60ff4bff9ad8a583d
++ Urticose valida gli indirizzi email rispetto alle regole sintattiche di RFC 5321 / 5322 (con
++ alcuni allentamenti pratici). Il messaggio è
++ `the email address is not valid because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 17 0 168bdc38eea7e66504b996bfce9ba948
++ column  Codice
++ column  Motivo
++ column  Significato
++ column  Messaggio
++ column  Soluzione
++ row  `↯/s.100.4.1`  `Empty`  Il valore è vuoto.  `[↯/s.100.4.1] the email address is not valid because it is empty`  Fornire un indirizzo non vuoto.
++ row  `↯/s.100.4.2`  `InvalidDomain`  La parte di dominio non è né un hostname valido né un letterale IP valido.  `[↯/s.100.4.2] the email address is not valid because the domain is not a valid hostname: the character _ is not allowed in a hostname`  Correggere la sintassi del dominio; per i dettagli, consultare la variante interna di `HostnameError`/`IpAddress.Error`.
++ row  `↯/s.100.4.3`  `LongLocalPart`  La parte locale supera i 64 caratteri.  `[↯/s.100.4.3] the email address is not valid because the local part is more than 64 characters long`  Accorciare la parte locale ad al più 64 caratteri.
++ row  `↯/s.100.4.4`  `TerminalPeriod`  La parte locale termina con un punto.  `[↯/s.100.4.4] the email address is not valid because the local part ends in a period, which is not allowed`  Rimuovere il punto finale.
++ row  `↯/s.100.4.5`  `SuccessivePeriods`  La parte locale contiene due punti adiacenti.  `[↯/s.100.4.5] the email address is not valid because the local part contains two adjacent periods`  Rimuovere uno dei punti, oppure mettere tra virgolette la parte locale se i punti consecutivi sono necessari.
++ row  `↯/s.100.4.6`  `InitialPeriod`  La parte locale inizia con un punto.  `[↯/s.100.4.6] the email address is not valid because the local part starts with a period, which is not allowed`  Rimuovere il punto iniziale.
++ row  `↯/s.100.4.7`  `UnescapedQuote`  Una virgoletta doppia nella parte locale non è stata preceduta da un carattere di escape.  `[↯/s.100.4.7] the email address is not valid because the local part contains a quote character which is not escaped`  Far precedere la virgoletta da una barra rovesciata, oppure usare una parte locale correttamente racchiusa tra virgolette.
++ row  `↯/s.100.4.8`  `UnclosedQuote`  La parte locale tra virgolette non ha una virgoletta di chiusura.  `[↯/s.100.4.8] the email address is not valid because the quoted local part has no closing quote`  Aggiungere il `"` mancante.
++ row  `↯/s.100.4.9`  `MissingDomain`  L'indirizzo non ha una parte di dominio.  `[↯/s.100.4.9] the email address is not valid because the domain is missing`  Aggiungere `@` seguito dal dominio.
++ row  `↯/s.100.4.10`  `MissingAtSymbol`  L'indirizzo non contiene alcuna `@`.  `[↯/s.100.4.10] the email address is not valid because the at-symbol is missing`  Inserire `@` tra la parte locale e il dominio.
++ row  `↯/s.100.4.11`  `UnclosedIpAddress`  Il dominio inizia con `[` ma non termina con `]`.  `[↯/s.100.4.11] the email address is not valid because the domain begins with [ but does not end with ]`  Chiudere il letterale IP con `]`.
++ row  `↯/s.100.4.12`  `InvalidChar`  La parte locale contiene un carattere non ammesso.  `[↯/s.100.4.12] the email address is not valid because the local part contains the character > which is not allowed`  Rimuovere il carattere incriminato, oppure mettere tra virgolette la parte locale per ammetterlo.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 3 0 080ee2477f0e9ce21a2538138076467e
++ - Sorgente: `lib/urticose/src/core/urticose.EmailAddress.scala`
++ - `↯/s.100.10` — validazione degli hostname
++ - `↯/s.100.2` — validazione degli indirizzi IP

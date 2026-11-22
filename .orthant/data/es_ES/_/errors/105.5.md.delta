@@ -1,0 +1,76 @@
+orthant 2 language
+
+% 0 1 0 09fbcbdae03a5ca4160f26a8aac8c980
+
+@ 0 1 0 140a0843629ce8ad000b7aca0f860cda
++ Se lanza cuando Enigmatic no puede construir un certificado X.509.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 6 0 13cca1974cfbe8bf07752ba0d0dd89a0
++ La generación de certificados rechaza las entradas que producirían un certificado
++ estructuralmente válido que ningún verificador aceptaría: un número de serie fuera del rango que
++ permite X.509, un periodo de validez que nunca empieza, una clave cuya codificación no es un
++ `SubjectPublicKeyInfo`, o un cifrado y un resumen sin un identificador de objeto asignado al par.
++ El mensaje es `could not build the certificate because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 13f2fc8bb3f129f51b3286c1a6a6888a
+
+@ 0 3 0 16ca40573160779407d7a418b13715f1
++ El cifrado y el `SignatureDigest` ambiental no tienen entre ambos un identificador de objeto de
++ algoritmo de firma. RSA y ECDSA tienen identificadores asignados solo para SHA-256, SHA-384 y
++ SHA-512.
+
+@ 0 1 0 1e3541f31b0b2cea07832466a53fc17f
++ **Ejemplo.** `[↯/s.105.5.1] could not build the certificate because no signature algorithm is assigned to SHA1`
+
+@ 0 2 0 0e6d79dc6137c72a1917c733f541f398
++ **Solución.** Elige uno de los resúmenes que tienen identificador; el predeterminado, SHA-256, es
++ el que exigen todos los perfiles de certificado actuales.
+
+% 0 1 0 0e3b55bc87972f5619c65cd151e06819
+
+@ 0 2 0 013b4903dd15e17c1d7a70a431d43ee7
++ La mitad pública de la clave no era un `SubjectPublicKeyInfo` DER, así que no puede incrustarse en
++ un certificado.
+
+@ 0 1 0 145083d0aa97c2e71805504b23f997cb
++ **Ejemplo.** `[↯/s.105.5.2] could not build the certificate because the public key was not a SubjectPublicKeyInfo`
+
+@ 0 2 0 1a6125439d32eb8d05d83319ac57335b
++ **Solución.** Esto indica un proveedor que no sigue las codificaciones de claves del contrato de
++ `Crypto`; comprueba qué proveedor hay en el ámbito.
+
+% 0 1 0 0687947107d0cfa20c8c5b10dee7df02
+
+@ 0 2 0 04f2172e95419ae81cb809723a4a2bc9
++ El número de serie era cero o negativo. La RFC 5280 exige un entero positivo.
+
+@ 0 1 0 128703b3715221d419087741274c5711
++ **Ejemplo.** `[↯/s.105.5.3] could not build the certificate because the serial number was negative or zero`
+
+@ 0 2 0 0c4d9ea341a3aa5b01fce545c3e21ae9
++ **Solución.** Usa un número de serie positivo; para una autoridad de certificación, también debe
++ ser único entre los certificados que ha emitido.
+
+% 0 1 0 0ca4125e71421fb70cbaf68a43c535e9
+
+@ 0 1 0 0bd7218162cbd6d70ddfb404c25a5a7b
++ El final del periodo de validez no era posterior a su inicio.
+
+@ 0 1 0 1b374f263443b1431f1e13e6248298c6
++ **Ejemplo.** `[↯/s.105.5.4] could not build the certificate because the validity period ended before it began`
+
+@ 0 2 0 197a038feb19064d16a947f0dbfa3777
++ **Solución.** Construye el periodo con el instante anterior primero, como `notBefore ~ notAfter`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 3 0 1cfce0c752685a200ce00f0c359faa8f
++ - Código fuente: `lib/enigmatic/src/x509/enigmatic.Certificate.scala`
++ - `↯/s.105.4` — `Asn1Error`, que se lanza cuando no puede volver a leerse el DER del certificado

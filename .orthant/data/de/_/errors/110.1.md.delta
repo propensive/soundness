@@ -1,0 +1,80 @@
+orthant 2 language
+
+% 0 1 0 02d8ded7e3176a0c05cef76299368954
+
+@ 0 1 0 088054c2c69b0646117f63a41d736c48
++ Wird ausgelöst, wenn ein PDF-Dokument nicht gelesen werden kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 06c64b62587db9871b34efe8a1ae595e
++ Facsimile parst die COS-Objektschicht von PDF direkt. Dieser Fehler umfasst ein fehlerhaftes
++ Objekt, eine Querverweistabelle, der nicht zu trauen ist, einen nicht unterstützten
++ Verschlüsselungs-Handler und ein Passwort, das das Dokument nicht öffnet.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 2 0 1db5f3bb22f47958123f6ac253b017e2
++ column  Grund
++ column  Meldung
+
+% 0 1 0 17be01d6a7468def1a7df9147eb89754
+
+% 0 1 0 0c6fa4b8f7cc0fdf1f7104c27462f4d8
+
+% 0 1 0 1278bd2c6cbef5c90df9fb44e7ac617f
+
+% 0 1 0 05fbb5ded95af0211408c32d7cc709e6
+
+% 0 1 0 052e698eb317becf1175f9810d9e0933
+
+% 0 1 0 0e73794463f1deb90ae44ec106daa034
+
+% 0 1 0 01bd0049af37829c0852ce56c6032c4b
+
+% 0 1 0 1645e89c8e622e7900fb688d19a4eb2c
+
+% 0 1 0 1a6277caece047cb1298dc7f6450a6a6
+
+% 0 1 0 08b06d4ae3c9ff8318932fc833aaa966
+
+% 0 1 0 095c4eb7b41de8471b5261e1157bd8d1
+
+% 0 1 0 1e96293714ddbf3b1973804b8bf08ed1
+
+% 0 1 0 0ee5d47639c0b93715e4ceaf4d7106e2
+
+% 0 1 0 18b27a2f0b2248e700da6c393a7ec4bf
+
+% 0 1 0 02db9fee9aa265e60c7c5098cc122009
+
+% 0 1 0 065cc7414b4d880500cfc0f46dd9410f
+
+% 0 1 0 036538bb4db8496c1513afdd665ed3bd
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 4 0 1e6fc1f644faf48c0cf49da48dfc4931
++ Liegt der Fehler bei der Querverweistabelle, baut der Reader sie neu auf, indem er nach
++ Objekt-Headern sucht; ein Dokument, das jeder konforme Reader öffnen würde, sollte sich daher auch
++ hier öffnen lassen. Ein trotzdem gemeldeter Fehler bedeutet, dass die Datei über diese
++ Wiederherstellung hinaus beschädigt ist. Ein falsches Passwort wird beim Öffnen des Dokuments
++ gemeldet, nicht erst, wenn ein String zum ersten Mal entschlüsselt wird.
+
+@ 0 1 0 197b947aa8ddf60b1a9b4aa151cb5c69
++ > Dieser Fehler verwendete früher den Code `SN-728`, der mit einem Makrofehler von Obligatory kollidierte.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 07e0bae17a14ceb40b51a960c19bc848
++ - Quelle: `lib/facsimile/src/core/facsimile.Pdf.scala`

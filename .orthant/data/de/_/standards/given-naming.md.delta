@@ -1,0 +1,232 @@
+orthant 2 language
+
+@ 0 1 0 07a548547464ca600d35aef5aeaaa6a0
++ # Standards für die Benennung von Kontextwerten
+
+@ 0 8 0 1ef4fa18394e7f2716140265dc3a2349
++ Dieser Standard legt fest, wie importierbare `given`-Werte benannt und gruppiert werden. Er
++ betrifft die *verwaisten* Kontextwerte: jene, die ein Benutzer namentlich in den
++ Geltungsbereich holt, entweder aus einem Auswahlpaket (`import strategies.throwUnsafely`) oder,
++ für die wenigen, die sich nicht an ein Begleitobjekt binden lassen, von der obersten Ebene einer
++ Bibliothek (`import bitumen.tarPathOpenable`). Wo ein Given *liegt*, entscheiden die
++ Platzierungsregeln in `.claude/CLAUDE.md`; dieses Dokument entscheidet, wie es *heißt*. Warum
++ der Name überhaupt zählt, erläutern
++ [deklarativer Kontext](../philosophy/declarative-context.md) und
++ [Benennung](../philosophy/naming.md).
+
+@ 0 2 0 15645943122e4b9a1b1327518ee67571
++ Givens in Begleitobjekten (`Tui.Block.Anchoring.default`, `Buffering.standard`) fallen nicht
++ unter diesen Standard: Sie werden über den Typ aufgelöst und nie an einer Importstelle
++ geschrieben.
+
+@ 0 1 0 0fbdab94d49e82a80a6eb1224785e7ff
++ ## Die Probe
+
+@ 0 5 0 1e60420e02642bd11e88f7fcc8cef509
++ Ein Leser, der alles kennt, was Soundness kann, aber nichts darüber, wie es die Dinge nennt,
++ sollte allein aus dem Namen, ohne das Paket, sagen können, was ein Given tut.
++ `throwUnsafely` besteht: Es ist eine Strategie, und es wirft. `enabled` und `native` fallen
++ durch: aktiviert *was*, und nativ *wofür*? Der Name ist das Einzige, was in der Importzeile
++ sichtbar ist, und oft das Einzige, was überhaupt irgendwo sichtbar ist, also trägt er die ganze
++ Bedeutung.
+
+@ 0 1 0 0de87de1a87905fa110cb8b248d3e561
++ ## Regeln
+
+@ 0 1 0 0f4b042a6d42ee7c16ab1e4978c5d7eb
++ ### 1. Die Familie ist die Rolle, als Paket
+
+@ 0 6 0 1bee6eff7d22e55e07145a3d0832c899
++ Ein Auswahlpaket wird nach der Rolle benannt, die seine Member ausfüllen: ein zählbares
++ Substantiv im Plural (`strategies`, `stdios`, `filesystemBackends`, `probates`) oder ein
++ Massennomen (`formatting`, `threading`, `logging`). Nie ein zählbares Substantiv im Singular:
++ `blockCipherModes`, nicht `blockCipherMode`. Familiennamen sind global — gleichnamige Blöcke
++ aus verschiedenen Bibliotheken verschmelzen im Umbrella `soundness` —, also muss eine Familie
++ überall dieselbe Rolle bedeuten.
+
+@ 0 5 0 0a8137c7a4bd2d811f4682875640e690
++ Familien werden nie verschachtelt. Eine Bibliothek deklariert jede Familie als einen
++ `package <family>:`-Block auf oberster Ebene, und das Umbrella spiegelt ihn unter demselben
++ Namen, sodass `import aviation.monthFormats.englishMonths` und
++ `import soundness.monthFormats.englishMonths` derselbe Pfad sind. Eine Familie, die natürlich
++ innerhalb einer anderen säße, nimmt stattdessen das Wort ihrer Elternfamilie als Präfix
++ (`dateSeparators`, `timeSeparators`, `randomSizes`, `pathInterfaces`).
+
+@ 0 1 0 1c37b1ac4b8889eb075a6efc3ba53810
++ ### 2. Der Name ist die Wahl, dann die Rolle
+
+@ 0 2 0 19cc64c0ba168d90067e1d0c96c34ee8
++ Das Wahlwort kommt zuerst, und der Singular der Rolle wird angehängt, sofern die Wahl ihn
++ nicht bereits impliziert:
+
+% 2 1 0 1506cd82fa98740a12deb7c4bd6dbbb6
+
+% 0 1 0 1bf570676b9440b3071af989a2ca102c
+
+% 0 1 0 0764277469c043000d5aa018959677d6
+
+% 0 1 0 1856c23de59d15e217bdb8ad6263667c
+
+% 0 1 0 0e63de87faf4ee840460673274f85e76
+
+% 0 1 0 051c46980e4aa3a91dd122afe5b378a5
+
+% 1 1 0 1939f1afc1b4857b1001bcba900d726f
+
+@ 0 2 0 193bf0ff34c9b1311db3300eb079efb5
++ Das Suffix ist das eigene Wort der Rolle (`…Probate`, `…Stdio`, `…Formatting`), kein
++ Synonym dafür, sodass jedes Member einer Familie gleich endet.
+
+@ 0 1 0 063ee01d01bee40f1e950864a7ce7ce7
++ ### 3. Eindeutig ohne das Paket
+
+@ 0 3 0 1abed31c3438c84400e2dda97ceb76a3
++ Jedes verwaiste Given ist in ganz Soundness eindeutig, beurteilt, als gäbe es das Paket nicht.
++ Alle werden nach `soundness` exportiert, und je zwei davon müssen womöglich in einem
++ Geltungsbereich nebeneinander bestehen, sodass `import x.enabled` und `import y.enabled` nicht
++ beide existieren können.
+
+@ 0 2 0 112593cb81ec4fcc08b0487fd4fd2a53
++ Daraus folgt, dass es keine Umschalt-Member gibt. Ein Schalter wird auf beiden Seiten nach dem
++ Verhalten benannt, das er auswählt:
+
+% 2 1 0 066a624f25953eee0518f70d156f1bdc
+
+% 0 1 0 1d973ea894f06ea405a4df0983f6e8e7
+
+% 0 1 0 0f49116ac9427e4b02d11d8883b1fd89
+
+% 0 1 0 06ebb99e9fd46a2014724d2a241d7890
+
+% 0 1 0 08313dddbc1df0070d67bb38330b71b0
+
+% 1 1 0 112b34bc27b8b8d919ffb350879d5a10
+
+@ 0 1 0 07b3925c8c4876211456174832465e14
++ ### 4. Nur vorhandenes Vokabular
+
+@ 0 4 0 148463d6936ddb4809333963efda160a
++ Ein Name verwendet den Typ oder Begriff wieder, den er auswählt, sodass sich der Import und
++ die Deklaration, die er ermöglicht, mit denselben Worten lesen: `cancelProbate` wählt ein
++ `Probate`; `taiChronometry` wählt die Zeitskala `Tai`; `offHeapCloak` ist das `OffHeapCloak`.
++ Ein Name prägt nie einen Begriff, der sonst nirgends in Soundness vorkommt.
+
+@ 0 6 0 1d01aa31e48507ce03a8405d7839ef3b
++ `default`, `standard`, `basic` und `simple` sind keine Wahlwörter: Sie sagen, dass eine Wahl
++ üblich ist, nicht, was sie ist. `indentedCssFormatting`, `thickTableStyle` und
++ `timestampedLogFormat` sagen jeweils, was sie tun; `standardCssFormatting` sagte nur, dass
++ jemand es bevorzugte. Die Ausnahme ist, wenn ein solches Wort der eigene Name des Typs *ist*
++ (`standardKeyboard` wählt `Keyboard.Standard`; die Alphabete aus RFC 4648 heißen in ihrer
++ Spezifikation „standard“).
+
+@ 0 2 0 17d57bd88271cf7113e589021c0b09e0
++ Ziffern gehören nur dann in einen Namen, wenn sie Teil der Wahl sind (`sha256Signature`,
++ `xterm256Termcap`, `iso8601DateFormat`), nie, um zwei Givens zu unterscheiden
+
+% 0 1 0 1b5fc591e555a98f0fae4e5fc13752aa
+
+@ 0 1 0 1222d32e4eafb4390a22acdc9405b0f5
++ ### 5. Herkunftswörter für Backends
+
+@ 0 2 0 01cf2ca4b294bd9f0bb9fafbcc4d9b6b
++ Wenn die Wahl lautet, *welche Implementierung*, benennt das Wahlwort, woher die
++ Implementierung kommt. Ein Wort je Quelle, überall gleich verwendet:
+
+% 2 1 0 0e78d680688a73f21d8eb2294144d910
+
+@ 0 6 0 09aaa2d07b69dbc00e1f44fcc9a6c2fc
++ column  Quelle
++ column  Wort
++ column  Beispiele
++ row  Ein Java-Modul  der Name des Moduls  `javaBaseFilesystem`, `javaBaseSockets`, `javaNetHttp`, `jdkHttpserver`
++ row  Eine WASI-Schnittstelle  `wasi` + die Schnittstelle  `wasiFilesystem` (`wasi:filesystem`), `wasiHttp`, `wasiSockets`
++ row  Scala Native, über libc/POSIX  `scalaNative`  `scalaNativeFilesystem`, `scalaNativeSockets`
+
+% 0 1 0 11ff93a2626c5475196a1ec38fb9a402
+
+@ 0 2 0 147eb58ae6b3d21f16ec165eb76e051d
++ row  Der eigene reine Scala-Code von Soundness  `soundness`  `soundnessHttp`, `soundnessHttpd`, `soundnessProvider`
++ row  Ein Drittanbieter  sein eigener Name  `opensslProvider`, `re2`, `resendCourier`
+
+% 1 1 0 18e70806ffec447e0648d309f51e03fa
+
+@ 0 7 0 012bc4a5855a31ed1bdfdf174c45ec9e
++ Java-Module werden benannt, weil eine `requires`-Klausel genau das benennt: Soundness
++ beabsichtigt, je Modul zu deklarieren, von welchen Java-Modulen es abhängt, und das Given, das
++ eine Java-gestützte Implementierung auswählt, sollte sagen, aus welchem Modul es schöpft.
++ `java.base` liefert die meisten davon, daher ist `javaBase…` der übliche Fall; wo sich zwei
++ Wahlmöglichkeiten aus `java.base` unterscheiden, sagt der Name, wie (`fileDescriptorStdio`
++ umhüllt die Dateideskriptoren des Prozesses; `javaLangSystemStdio` umhüllt die umleitbaren
++ Streams von `java.lang.System`).
+
+@ 0 6 0 0da981de98dd37100aea8eb67ae8735e
++ Zwei Dinge sehen wie Herkunft aus und sind es nicht. Ein Java-*Typ*, der als Repräsentant
++ übernommen wird, behält den Typpfad-Namen, den er anderswo in Soundness bereits hat
++ (`javaNioPath`, `javaUtilDate`, `javaNetUrl`): Die Wahl ist dort der Typ, nicht das Modul. Und
++ Javas eigene Begriffswörter bleiben Javas, wo sie den Begriff benennen statt die Quelle:
++ `platformThreads` und `virtualThreads` sind Plattform- und virtuelle Threads;
++ `systemClassloader` und `platformClassloader` sind die Namen des JDK für diese Loader.
+
+@ 0 2 0 0284a2480e82b21705b86d0184c54b07
++ `native` erscheint nie allein. Es hat zu verschiedenen Zeiten Scala Native, den `WatchService`
++ des JDK und den eigenen HTTP-Stack von Soundness bedeutet, was drei Bedeutungen zu viel sind.
+
+@ 0 1 0 16ed697ccf8f543712f5321b4b87ea0d
++ ### 6. Verwaiste Givens auf oberster Ebene werden nach ihrer Bibliothek benannt
+
+@ 0 5 0 1ec5581f3b49bc84166c7364961f1863
++ Ein Given, das nicht in einem Begleitobjekt liegen kann (sein Gegenstand gehört anderswohin,
++ ist eine Union oder ein Alias, oder die Bibliothek ist eine Plattformkomponente eines
++ plattformneutralen Typs), bleibt auf der obersten Ebene der Bibliothek, mit einem Namen, der
++ durch seinen Zweck qualifiziert ist: `tarPathOpenable`, `terminalStdio`, `collationComparable`.
++ Es ist nie anonym, da sich ein unbenennbares Given weder selektiv importieren noch eindeutig
++ machen lässt, und nie ein bloßes generisches Wort.
+
+@ 0 1 0 0e16d20ec40e4f520f7723d987bab54f
++ ## Ohne Suffix zugelassen
+
+@ 0 2 0 0531d653b29a96ff00cf534943d010d5
++ Diese bestehen Regel 2, weil die Wahl die Rolle bereits benennt, und sind aufgeführt, damit
++ niemand sie erneut verhandelt:
+
+% 2 1 0 07774e4b6ccf388e0403c5af7d9bbb95
+
+@ 0 4 0 093e8fede7284d1311fe26aa6dc5546a
++ column  Familie
++ column  Zugelassene Member
++ row  `sortingAlgorithms`  alle
++ row  `alphabets`  alle
+
+% 0 1 0 0df41455002774cb0dbef724a949e8fe
+
+% 0 1 0 0befcb494045d6a505622c4e02a4fb09
+
+% 0 1 0 13b7dac1ada084b515f4a2ac1ca9933c
+
+% 0 1 0 089be0668036df01187f0f05e02fa8b9
+
+@ 0 1 0 09fcc98a30b78b9314ea16d43c6a0119
++ row  `endianness`  alle
+
+% 0 1 0 155393a15a33208a15d5762e6b004d05
+
+@ 0 6 0 1b664aad9e5215701279428942ad0070
++ row  `currencies`  `Usd`… (ISO-Codes, als Terme verwendet)
++ row  `strategies`  alle
++ row  `calendars`  alle
++ row  `highlighting`  alle
++ row  `caseSensitivity`  alle
++ row  `dysasymptotics`  alle
+
+% 0 1 0 0eb34f125b24256b1b953c1f063028a8
+
+% 1 1 0 09221ec3b58b232b106041b1a37e86ee
+
+@ 0 1 0 1c16794117f821210e2672db11bd501e
++ ## Prüfung
+
+@ 0 4 0 057e2082369756c409f09ad69e2ce33a
++ `make build` führt `etc/check-given-uniqueness.py` aus, das jedes Auswahlpaket in den
++ Bibliotheken und ihren `soundness_*`-Exportspiegeln liest und bei einem doppelten Namen oder
++ einer ungespiegelten Familie fehlschlägt. Ein neues verwaistes Given wird beim Hinzufügen gegen
++ den gesamten Namensraum geprüft, nicht erst, wenn ein Benutzer auf die Kollision stößt.

@@ -1,0 +1,235 @@
+orthant 2 language
+
+@ 0 1 0 0122525de495157400daf57bf5e47678
++ # Distribuzione e release
+
+@ 0 7 0 12d70c9037649d1210f46bbf2f2a72b5
++ La fiducia in una piattaforma è fiducia nelle sue release: che arrivino in modo prevedibile, che
++ dicano che cosa è cambiato, che i cambiamenti incompatibili portino con sé una via d'uscita, e che
++ ciò che scarichi sia ciò che è stato costruito. Soundness ha già la più rara di queste: ogni
++ release è attestata da una nota firmata e verificabile che registra esattamente che cosa è stato
++ costruito e testato. Il resto della storia però è più esile: le note di rilascio vivono solo nel
++ corpo delle pull request, e non esiste una convenzione pubblicata per migrare attraverso i
++ cambiamenti incompatibili, anche se una migrazione economica è l'intera risposta della
++ piattaforma alla stabilità delle API.
+
+@ 0 13 0 0fa8e171bc927f9e098251a038e3b627
++ La stabilità fondata sulla migrazione è la chiave di volta. Le API cambiano ogni volta che esiste
++ un design migliore o più sicuro; ciò che lo rende sostenibile è che ogni cambiamento incompatibile
++ sia distribuito con istruzioni abbastanza precise perché un agente le esegua su una codebase a
++ valle. Oltre a essa c'è la distribuzione stessa: LIRA, un file per ogni release di una libreria
++ che porta ogni rappresentazione compilata, con un manifest TEL, un versionamento derivato dalle
++ API e firme verificabili, sostituisce Maven Central. La sua implementazione è iniziata qui come
++ libreria reliquary, ma LIRA è un formato e uno strumento a pieno titolo, come fury; ora vive nel
++ repository `lira` (`dist-10`), e questa roadmap traccia solo ciò che Soundness deve fare per
++ essere pubblicato attraverso di esso. La pubblicazione su Maven Central è già stata disattivata:
++ ogni versione con tag è pubblicata come release GitHub i cui asset sono i singoli jar dei
++ componenti, un canale provvisorio finché LIRA non sarà operativo. Ogni jar rilasciato incorpora il
++ suo POM e il suo ivy.xml, e `make sync-releases` installa una release in `~/.ivy2/local`, da cui
++ Mill risolve i componenti per versione senza alcuna configurazione di repository. Il traguardo
++ richiede che la pubblicazione LIRA attestata sia operativa.
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ Le voci del filone, con i loro orizzonti e le loro dipendenze rigide; [`status.tel`](status.tel) registra a che punto è ciascuna:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 14 0 159e27f5968044ad01c2b0c30977f489
++ column  Voce
++ column  Titolo
++ column  Orizzonte
++ column  Richiede
++ row  dist-1  le release hanno un changelog  breve
++ row  dist-2  la convenzione di migrazione  breve
++ row  dist-3  LIRA esiste  breve → medio
++ row  dist-4  versionamento derivato dalle API  medio  doc-5
++ row  dist-5  fury pubblica LIRA  medio  tool-4
++ row  dist-6  l'infrastruttura di fiducia  medio → lungo
++ row  dist-7  pubblicazione LIRA, attestata  medio  dist-3
++ row  dist-8  Maven Central dismesso  lungo  dist-5, dist-6, dist-7
++ row  dist-9  la fiducia è verificabile da esterni  lungo
++ row  dist-10  l'implementazione di LIRA lascia questo repository  breve
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 08d7680cb99acf9e1394ac98fa6939a8
++ ## dist-1: le release hanno un changelog
+
+@ 0 2 0 04dd90fd236e2dfb0abcbb88b730334c
++ Orizzonte: breve
++ Linea di base: non esiste alcun changelog; le note di rilascio vivono nel corpo delle pull request (misurato il 2026-08-01)
+
+@ 0 4 0 0c372c00fe33d868162d4db24dec3b14
++ Le note di rilascio già scritte per ogni pull request si accumulano in un changelog, e la release
++ si rifiuta di partire senza. Una release ora si crea facendo il push di un tag firmato (#2040):
++ `.github/workflows/release.yml` passa il controllo allo `scala-release.yml` condiviso in
++ propensive/.github, configurato da `etc/release`.
+
+@ 0 4 0 1b8ac9a2cdfc69c0004f9430aafd260b
++ Fatto quando: esiste un file di changelog, e la release fallisce quando la versione rilasciata non
++ ha una voce. In parte fatto: `release_notes.py` (propensive/.github) assembla la sezione
++ **Changes** di ogni release dal corpo di ciascuna pull request integrata dopo il tag precedente,
++ così il changelog viene costruito anziché mantenuto; nulla però *rifiuta* ancora una release per
++ una sezione vuota.
+
+@ 0 1 0 03d3c33d950fccf41f5617d8793c7646
++ ## dist-2: la convenzione di migrazione
+
+@ 2 1 0 086ad677d6e91ece184f11f53c69fee0
++ Orizzonte: breve
+
+@ 0 5 0 12b07005b19fd9f4086b961ca82bf6ed
++ La voce chiave di volta: `doc/migration.md` definisce il formato delle istruzioni di migrazione
++ eseguibili da un agente, cioè che cosa è cambiato, come individuare il codice interessato, la
++ riscrittura esatta e come verificarla, e la CI impone che le pull request etichettate come
++ incompatibili portino istruzioni in quel formato. Diversi filoni terminano qui: è ciò attraverso
++ cui passa `api-6` e ciò che `tool-5` serve agli agenti.
+
+@ 0 8 0 193338df9b9d6e260a1d606e3672a277
++ Fatto quando: `doc/migration.md` definisce la convenzione, la release si rifiuta di partire senza
++ `doc/migration/<version>.md`, e un controllo della CI fa fallire qualsiasi pull request che
++ modifica `lib/**/src` senza toccare le note di migrazione non rilasciate. Le prime due condizioni
++ valgono: la convenzione è scritta, esistono i file da `0.65.0.md` in poi, e la direttiva
++ `migration` in `etc/release` rifiuta un tag finché mancano le note della versione o quelle di
++ un'altra versione non sono rilasciate. Resta il controllo sulle pull request: `main.yml` verifica
++ l'attestazione e nient'altro. La convenzione non si basa sulle etichette: ogni cambiamento
++ sostanziale si registra nel `doc/migration/<version>.md` della release successiva, chiamato fin
++ dall'inizio come quella release.
+
+@ 0 1 0 1f4d5b3fde26985607bcf2a216639771
++ ## dist-3: LIRA esiste
+
+@ 0 2 0 0eaa4072dbb35307110c1ecf34866e67
++ Orizzonte: breve → medio
++ Linea di base: l'implementazione del formato LIRA (allora reliquary) legge e assembla file `*.lira`, con andate e ritorno unitarie di alberi, atomi, delta e manifest; non esiste un'andata e ritorno di una release intera (misurato il 2026-09-25)
+
+@ 0 6 0 1baab3bfb59c67381461b49077ef7a3a
++ La specifica ottiene la sua implementazione di riferimento: un reader e un writer per file
++ `*.lira` che portano classfile, TASTy, IR di Scala.js e IR di Native con un manifest TEL, e che
++ fanno l'andata e ritorno degli artefatti attuali di Soundness. I moduli di formato del repository
++ `lira` (`Lira`, `LiraAssembler`, e le discipline su anthology, degustation, mandible e xenophile)
++ sono quell'implementazione; ciò che il criterio richiede ancora è il test automatizzato su una
++ release reale, eseguito con essa.
+
+@ 0 2 0 11c5cec345744519068110c50d24a729
++ Fatto quando: l'implementazione di riferimento fa l'andata e ritorno di una release di Soundness,
++ con ogni componente pubblicato impacchettato in file `*.lira` e spacchettato identico byte per
++ byte, in un test automatizzato.
+
+@ 0 1 0 046d427ae35763d611a8271421b86c80
++ ## dist-4: versionamento derivato dalle API
+
+@ 0 2 0 06ab1430e3efcb971bc38b6799146a7c
++ Orizzonte: medio
++ Richiede: doc-5
+
+@ 0 2 0 0ccefb5cf8b9491c1423164bca7c2ba0
++ I numeri di versione diventano affermazioni sulla compatibilità, calcolate dalla superficie delle
++ API attraverso la pipeline di estrazione, anziché dichiarazioni di intenti.
+
+@ 0 3 0 1dce9cee051aeebe11d239eeb1d1048e
++ Fatto quando: la pipeline di rilascio calcola la versione di ogni componente dalla sua superficie
++ di API estratta, e un test automatizzato dimostra che un cambiamento incompatibile impone la
++ versione che deve.
+
+@ 0 1 0 0132b5ecc59267e31b8f56a656b45d4a
++ ## dist-5: fury pubblica LIRA
+
+@ 0 2 0 1b9b06cdfe4fbe0209b7889e06b5ffa4
++ Orizzonte: medio
++ Richiede: tool-4
+
+@ 0 2 0 064732993cc27e290fbe8be75ac24ba8
++ La pubblicazione è una questione dello strumento di build: fury impacchetta, firma e pubblica file
++ `*.lira` come parte del suo normale flusso di rilascio.
+
+@ 0 1 0 1f78c95bb53248f1028c12327c20d513
++ Fatto quando: `fury publish` produce e pubblica file `*.lira` firmati per una release reale.
+
+@ 0 1 0 0ecffdbc89b54dea0e171baeab35e650
++ ## dist-6: l'infrastruttura di fiducia
+
+@ 0 1 0 0315e8ae4f26388c058da978ec42a29d
++ Orizzonte: medio → lungo
+
+@ 0 2 0 1eeb3e2018ea0440104440f9b4adbde1
++ Il resto del design di distribuzione di LIRA: firme resistenti ai computer quantistici, namespace
++ verificati tramite DNS e un registro di trasparenza, su scala minima praticabile.
+
+@ 0 2 0 0f2ed1556147faa31bdcfa1c3ffba3dc
++ Fatto quando: la firma, il namespace e l'inclusione nel registro di trasparenza di un file
++ `*.lira` sono tutti verificati da un unico comando distribuito con gli strumenti.
+
+@ 0 1 0 106d9c4a23383aae09a51279ed4a73d6
++ ## dist-7: pubblicazione LIRA, attestata
+
+@ 0 2 0 00236ff2e98d13600da2fc9e3a175f21
++ Orizzonte: medio
++ Richiede: dist-3
+
+@ 0 3 0 1d76df3f59a577bd17cb4edd8c551d64
++ Ogni release è pubblicata come file `*.lira`, attestati con la stessa disciplina delle git note
++ della build stessa. Questo è il requisito del traguardo: il canale che sostituisce Maven Central,
++ operativo e verificabile.
+
+@ 0 2 0 119eca31266c4e810c859b4f82ea79e5
++ Fatto quando: una release viene distribuita su LIRA, attestata, e `make verify-attest` copre gli
++ artefatti pubblicati.
+
+@ 0 1 0 1879521f70cdf4d208c6136742c0e3eb
++ ## dist-8: Maven Central dismesso
+
+@ 0 2 0 179a0fa429a95cc61227af902ddac131
++ Orizzonte: lungo
++ Richiede: dist-5, dist-6, dist-7
+
+@ 0 2 0 0813beefa66a097c0245e39cc549790a
++ Oltre il traguardo: fury risolve le dipendenze da LIRA, un progetto nuovo si costruisce senza
++ alcuna risoluzione Maven, e la pipeline di rilascio non pubblica più affatto su Maven Central.
+
+@ 0 2 0 06c526a0250cb6f61e7c2b4268d55069
++ Fatto quando: lo script di rilascio non contiene alcun passo di pubblicazione su Maven Central, e
++ un progetto fury nuovo si costruisce e si esegue con il resolver Maven disattivato.
+
+@ 0 1 0 0a795ddfac7869a000af7041642956c5
++ ## dist-9: la fiducia è verificabile da esterni
+
+@ 2 1 0 176d452a000040f21b61580999f492d1
++ Orizzonte: lungo
+
+@ 0 2 0 104c5290e4ad3e41099ac78f53ec11a1
++ Il processo di rilascio è documentato da capo a fondo, così che una terza parte, non un
++ maintainer, possa verificare l'attestazione di qualsiasi release a partire dalle sole
++ informazioni pubbliche.
+
+@ 0 2 0 1d7df400e60021d201e9b8fb70b58d38
++ Fatto quando: le istruzioni di verifica sono pubblicate, e una verifica automatizzata da parte di
++ terzi (senza credenziali di maintainer, solo dati pubblici) passa per l'ultima release.
+
+@ 0 1 0 1587bb27432f3b2c045e83aecb5feee4
++ ## dist-10: l'implementazione di LIRA lascia questo repository
+
+@ 0 2 0 06d4692f4a08f9761822a686cfb7d47f
++ Fatto: #2111 (2026-09-30)
++ La linea di base era `lib/reliquary` (7.387 righe in `core`, `derive` e `test`) più i quattro componenti adattatori `lira`, cioè `anthology.lira`, `degustation.lira`, `mandible.lira`, `xenophile.lira`, e i loro test (misurato il 2026-09-25)
+
+@ 0 9 0 0654c2e39d08b32f1b492fb609c6ea0d
++ reliquary è stato scritto qui (#1700) perché le librerie di cui aveva bisogno erano qui, ma nulla
++ in Soundness dipende da esso: i suoi unici consumatori nell'albero sono i quattro componenti
++ adattatori che innestano l'atomizzatore e la disciplina di ciascun linguaggio nella sua SPI, il
++ bundle `soundness.tool` che li elenca, e le suite di degustation e mandible che mettono alla prova
++ quegli adattatori. Sviluppare LIRA non è lavoro su Soundness, non più di quanto lo sia sviluppare
++ fury. reliquary e i quattro adattatori si spostano nel repository `lira`, che fissa Soundness come
++ un consumatore ordinario; il topic `library-archives`, l'esportazione nell'ombrello, la riga di
++ compatibilità e la voce di copertura della documentazione vanno con loro. Vi sono arrivati in
++ propensive/lira#26 come suoi moduli `format`, `derive`, `tasty`, `classfile`, `foreign` e
++ `bundle`, tutti nel package `lira`, con le loro suite.
+
+@ 0 1 0 157f55259fa9405e02329e0c993f9b8e
++ Fatto quando:
+
+% 0 1 0 00b9091f4514ddb90c48fdb9b42aae3f
+
+% 0 1 0 0848d2dda93556c3184c0c8693b0eaae
+
+% 0 1 0 1aa70d1cbe9b6170158adeb862d93e5c

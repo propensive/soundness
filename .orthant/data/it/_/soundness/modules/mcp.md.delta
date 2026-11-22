@@ -1,0 +1,279 @@
+orthant 2 language
+
+% 0 1 0 16173dbae9b14c491cd7b21c75e71fa4
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 2 0 1dde37be31282804188b92fffaf1c322
++ Il [Model Context Protocol](https://modelcontextprotocol.io/) è il modo in cui un assistente AI
++ raggiunge ciò che sta fuori di sé, chiamando strumenti, leggendo risorse e usando prompt forniti
++ da un server.
+
+@ 0 5 0 01b6afea7ff009ae1b5a25126ed9ae56
++ Qui un server MCP è un oggetto con metodi annotati. Un metodo marcato con `@tool` diventa uno
++ strumento chiamabile, e i suoi parametri e il suo risultato sono descritti al client da
++ [schemi JSON](json.md#schemas) derivati dai loro tipi. `@resource` espone contenuti a un URI.
++ `@prompt` fornisce un modello di conversazione. Il protocollo stesso, cioè JSON-RPC su HTTP in
++ streaming, con sessioni ed elenchi, è generato da queste definizioni.
+
+@ 0 1 0 01c0852765fabfef0b0f7ae02ae8dfbf
++ ### Su MCP
+
+@ 0 5 0 092474d7db2b205415deeb0d1a59ac38
++ Un server MCP descrive sé stesso. Gli strumenti sono pubblicizzati con nomi, descrizioni e schemi
++ di input, e il client, che è l'harness di un modello linguistico, decide che cosa chiamare in
++ base a queste descrizioni. Scrivere a mano questa autodescrizione duplica il codice che descrive,
++ e i due divergono. Lo schema dice una cosa e l'implementazione un'altra, e le chiamate agli
++ strumenti del modello falliscono in modi che il modello non può vedere.
+
+@ 0 4 0 02c64a8b42f1152a1c1172bd40f9671f
++ Derivare la descrizione dall'implementazione elimina lo scarto. Il metodo *è* lo strumento. Il suo
++ nome, i tipi dei suoi parametri e il tipo del suo risultato generano l'elenco, e lo smistamento va
++ dritto al metodo. Lo schema non può contraddire il codice: è
++ [correttezza](../../philosophy/correctness.md) per costruzione.
+
+@ 0 1 0 19c6640c8bea873815109d890d75ca79
++ Tutto proviene dal package `soundness`:
+
+% 2 1 0 128d8a54c105d7d2054418bec79c5bc7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1a5f0810171768050438e8ec953a7a2e
+
+% 1 1 0 19860bffbad0a9f915356f72c7757ae8
+
+@ 0 1 0 1f46aef0ea1ec67513849a3803995ca9
++ Gli esempi di questa pagina servono un protocollo su HTTP, quindi sono compilati ma non eseguiti.
+
+@ 0 1 0 1cdad8bb6b5449a80fc9901b4aec3ec2
++ ### Un server
+
+@ 0 3 0 0c76c23bc38c2d311418c6d750fdb92e
++ Un server estende `Mcp.Server`, dichiara il proprio nome e definisce le proprie funzionalità come
++ metodi annotati. Ogni client connesso riceve una `Session`, creata da `initialize`, in cui il
++ server può conservare uno stato per quel client:
+
+% 2 1 0 025bde52f0eab96b12a54de7dd628879
+
+% 0 1 0 1db96b1298d98c4412b8b51f4d5bd69b
+
+% 0 1 0 1e8fde57f4d18c2711f4afa6881a3df5
+
+% 1 1 0 03fa2374fed941a10ef59790472da038
+
+% 2 1 0 06e2f8bfbaacb62b0d04b5b4b3b822c6
+
+% 0 1 0 0f7586809b4e6261179d0ac24bebade0
+
+% 0 1 0 1b9750b4a15842fe17d432c7aaa2a0e5
+
+% 1 1 0 1a8b888d80d466560803fc0adab55479
+
+% 2 1 0 05c72cec714709ec0813032c7c27d487
+
+% 4 1 0 025e1de725c152ed02f89d4692e77092
+
+% 0 1 0 10a93b023f71129b1da2caf1989f2eff
+
+% 0 1 0 0403a521d238685207213c90fd15e553
+
+% 1 1 0 1ca796b5349501890cf7937df721d53d
+
+@ 0 3 0 1991bdc6c4a5ff4a07ee81b055e2aa41
++ Lo schema di input dello strumento, un `name` di tipo stringa, e il suo schema del risultato sono
++ derivati dalla firma. `@about` fornisce la descrizione che il modello legge quando decide se
++ chiamare lo strumento. Queste sono le annotazioni che i metodi di un server possono portare:
+
+% 2 1 0 02e98584958149c218e703e6e358dfcf
+
+@ 0 9 0 023d1722652367b5177468321dcff662
++ column  Annotazione
++ column  Su
++ column  Lo rende
++ row  `@tool`  un metodo  uno strumento chiamabile
++ row  `@resource(uri)`  un metodo  contenuto servito all'URI
++ row  `@prompt`  un metodo  un modello di conversazione
++ row  `@about(text)`  un metodo o un parametro  descritto, per il modello
++ row  `@title(text)`  un metodo  dotato di titolo, per la visualizzazione
++ row  `@ui(uri)`  uno strumento  uno strumento la cui interfaccia utente è la risorsa all'URI
+
+% 1 1 0 0459a6efa94f0daa1254f22b83e73ba3
+
+@ 0 1 0 015be890373ff2d81eec51f2bb837438
++ ### Rispondere al client
+
+@ 0 3 0 0102f346d3a40fe712d497861fb6ccd2
++ Uno strumento che prende un `using Mcp.Client` può parlare al client mentre è in esecuzione. `log`
++ invia in streaming notifiche di avanzamento. `elicit` chiede all'utente un input strutturato nel
++ mezzo di una chiamata, con il modulo descritto da uno schema derivato:
+
+% 2 1 0 090ae33b8a788e0d1945896ba7ed27ec
+
+% 0 1 0 02593ef928e29aa50b641aee3f5d3489
+
+% 1 1 0 14dc1b465cf45b7d1b1cfb6c66edb037
+
+% 2 1 0 1a25db3602a9e57c0b26f557115245ab
+
+% 0 1 0 195e3325e1fcae1f02f21595627a06f7
+
+% 0 1 0 106c7813d783dddc0b916ce4365289d9
+
+% 1 1 0 0c24eeeead2f687704eac20026b54149
+
+% 2 1 0 175d9c4b866bab6d07b0664206d995c9
+
+% 4 1 0 0bb73c632b1c53781d74aa826bcf1466
+
+% 0 1 0 1b3f8be980d7d24313a2f9a1249b891c
+
+% 0 1 0 1d734085aede7c1e061516aea584b04a
+
+% 0 1 0 03695cfb27c2daf705449c34a3d0e7dc
+
+% 0 1 0 00a36c86a3a470820d3953eb10b5cae4
+
+% 0 1 0 03568817f2bdad18146b733ec4592459
+
+% 1 1 0 0b23427d7da94a7f175833220dfd9b49
+
+@ 0 3 0 0e59b1945fedb0541c2189eaf086b294
++ Un parametro è obbligatorio a meno che il suo tipo sia un [`Optional`](optional-values.md), o che
++ abbia un argomento predefinito. Un client può ometterli, e lo strumento vede `Unset` o il valore
++ predefinito. Un `@about` su un parametro lo descrive nello schema di input dello strumento:
+
+% 2 1 0 104b647901e528ee1dd94c769b96121e
+
+% 0 1 0 1fd03a9d44cb443f19415cf4d96449e1
+
+% 0 1 0 138a9360dd16e1d7165ca0900ecf62e2
+
+% 0 1 0 05c0099fd5bfb7ff1c21135936fea61e
+
+% 0 1 0 182283f8c6679ac914a5389db2d92610
+
+% 0 1 0 168ff1353284c2861d2ab1fc03b0184d
+
+% 1 1 0 1fb462298dfda5170627da7e4dd24325
+
+@ 0 1 0 143b1ef350f7c0371a3745e7f6e58e65
++ Un fallimento dentro uno strumento è qualcosa che il modello può leggere e su cui può agire. Una
++ chiamata malformata no:
+
+% 2 1 0 05e825bc60a216d01d9428b17a6c28a8
+
+@ 0 5 0 17d691474df44ccf15dc8da8ebc16596
++ column  Quando
++ column  Il client riceve
++ row  uno strumento lancia un'eccezione  un risultato marcato `isError`, con il messaggio dell'eccezione
++ row  viene chiamato uno strumento sconosciuto  un errore JSON-RPC
++ row  viene omesso un parametro obbligatorio  un errore JSON-RPC
+
+% 1 1 0 1cd004260d128a9401c426f58c91e6e6
+
+@ 0 1 0 08785eb1c77adaff1997ef6f069a804d
++ ### Risorse e prompt
+
+@ 0 4 0 1fbd65ab76f188ce16814f39e857cb09
++ `@resource` serve contenuti a un URI. Il contenuto è qualunque cosa sia trasmissibile in streaming
++ come testo o come byte. `@prompt` restituisce una conversazione, scritta con gli interpolatori
++ `human` e `agent` descritti in [LLM](llm.md). Il tipo MIME di una risorsa può essere indicato con
++ il `mimeType` dell'annotazione, e altrimenti viene scelto automaticamente:
+
+% 2 1 0 1cb147699afcca031ab6be7a97782a92
+
+@ 0 5 0 1b87da089e34114e071c73883380a768
++ column  Una risorsa
++ column  Ha il tipo MIME
++ row  indicata dall'`@ui` di uno strumento  `text/html;profile=mcp-app`
++ row  trasmissibile in streaming come testo  `text/plain`
++ row  trasmissibile in streaming solo come byte  `application/octet-stream`
+
+% 1 1 0 13a79bc4fd4456f20b2954dc7da0e337
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 0e37be0e8d9f1e180fc5a1bba5890c7d
+
+% 1 1 0 15b70fa1cf8da73a0ed5a3f74d64036a
+
+% 2 1 0 1da6a584038574af1262655ba7c2ae93
+
+% 0 1 0 046fe3d7d7ee1275168b4b298efaa612
+
+% 0 1 0 1438bbf5fa4baec4173d2f8970eb21b7
+
+% 1 1 0 08ff194bf754c83e0619326a92f550ca
+
+% 2 1 0 0b108a6649113cdd03d805654894b744
+
+% 0 1 0 186a51743d3cc10b144b9b3c85452363
+
+% 0 1 0 1def50b92b094b260f0acda1827af64c
+
+% 0 1 0 113b93220b91fdd41c7b3df08531d7b1
+
+% 0 1 0 1dc2a48dfa538de114a83154de06a8b3
+
+% 0 1 0 1b53b2f45f2ec3da04bfb2e24c3b1823
+
+% 0 1 0 0ce41969445b172b06e7014f45a8a87d
+
+% 1 1 0 1c897d33d5e25c2a04e78d3545421d93
+
+@ 0 1 0 181964f461c030d701b6371a110e0b0c
++ ### Servire
+
+@ 0 3 0 11cce075c65dc35f092c59ee2024e08c
++ Il server parla il trasporto HTTP in streaming di MCP: richieste JSON-RPC via POST, uno stream di
++ eventi via GET e sessioni tracciate da un'intestazione. Si monta dentro un normale handler di un
++ [server HTTP](http-server.md):
+
+% 2 1 0 0967838c2efa266017892a8c9683b0ca
+
+% 0 1 0 0401c5e2ac56902409a0991ea8a86098
+
+% 0 1 0 04b189a6b3d427501c9b37e59a2ea0c0
+
+% 0 1 0 059e65f6c6e0367218be8af962dc603c
+
+% 0 1 0 0c444dbd6701afeb0ca7c72296a8b157
+
+% 0 1 0 0b0732482d1f4cf50b893c72fdf84dc0
+
+% 1 1 0 183b89e3903defbc055ec3c224487725
+
+@ 0 2 0 146b5889e71d0bf4058ad157c71f02ff
++ Un client configurato con quell'endpoint scopre gli strumenti, le risorse e i prompt. Tutto ciò
++ che vede è stato derivato dai metodi che chiamerà.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 7 0 0bc4e43939cc256501211f762d48dbd8
++ - [ACP](acp.md) è il protocollo gemello, con cui un editor pilota un agente.
++ - [LLM](llm.md) descrive gli interpolatori `human` e `agent`, e i modelli che chiamano questi
++   strumenti.
++ - [RPC](rpc.md) descrive JSON-RPC e i server-sent event che il trasporto usa.
++ - [Server HTTP](http-server.md) ospita l'endpoint.
++ - [JSON](json.md#schemas) descrive gli schemi che descrivono ogni strumento.
++ - [Annotazioni](annotations.md) descrive come le annotazioni vengono lette a tempo di
++   compilazione.

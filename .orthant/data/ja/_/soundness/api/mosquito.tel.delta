@@ -1,0 +1,534 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1215aba0f96e415a1fcddaa063eb1a68
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1b54bc16cb4f36f9141571ab3411c8fb
++ info   次元を型に持つベクトルと行列。算術を持つ任意の要素に対して汎用的である
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 191dc8e953fab6d71c6370de25c11f0d
++     _Mosquito_ は、形状がコンパイル時に検査される線形代数である。
++     `Vector[element, size]` は決まった数の成分であり、`Matrix[element, rows, columns]` は格子である。どちらも次元を型引数として持つ。
++     大きさの異なる二つのベクトルは足せず、行列の積は内側の次元が一致する場合にのみ定義され、`determinant`、`inverse`、`trace` は正方行列にのみ存在する。いずれも実行時の形状検査ではなくコンパイルエラーになる。
++     要素型は、演算が必要とする算術を持つものなら何でもよく、それは symbolism の型クラスを通じて解決される。
++     したがって `Int` のベクトルも、`Double` のベクトルも、厳密な有理数のベクトルも、型付きの量のベクトルもすべて動き、長さどうしの内積は単位も掛け合わされるので面積になる。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 009e5eda30a6d17907732460496aec47
+
+% 0 1 0 144376e231de1cd509285f5eee297eb3
+
+% 0 1 0 090efb631fff0c141965602265691b93
+
+% 0 1 0 1418b23960e501a117609c038c8aacad
+
+% 0 1 0 19c53883930f326d1f1328a71f29f348
+
+% 0 1 0 1d53db87e28b4aa7030d21a5e1e00655
+
+% 0 1 0 0770af2cb597b87f16ad23ef8e237d36
+
+% 0 1 0 168239551f36d8bc1e239869a99fc0b9
+
+% 0 1 0 0f2a396a71fd035a006155b7c916eded
+
+% 0 1 0 00b6c8a2ea8c7ec502ddaba0ec33f117
+
+% 0 1 0 0ffd2706393d28c30b8676f5156f4da2
+
+% 0 1 0 1600c795e2349e0d1933c4db73278b7a
+
+% 0 1 0 15a7ef9394ccd37701e62d8d0b0cc7c4
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 8 0 0717971b4ba7da7c140455312310a480
++     どれもボックス化しない。
++     `Vector[Double, n]` は `double[]` を格納し（不透明な `Double` である量のベクトルも同じである）、算術のインスタンスとアクセサーは `inline` であって要素自身の演算を展開位置で解決する。そして二つの `Vector[Double, 3]` の和は `daload`、`dadd`、`dastore` のループにコンパイルされる。
++     その代償は、形状がリテラル型であることだ。
++     `Vector[Int, 3]` は三つの要素のタプルから、`Matrix[2, 3]` は三つの要素を持つ二つの行から作られ、実行時にしか分からない大きさはリストからの `Vector.take` であって、引数のシングルトン型が示す大きさの `Optional` なベクトルを与える。
+
+@ 0 1 0 1e1e3f50c7e0b95b192252a13b76d1ec
++     三つの型があり、すべて JVM、Scala.js、Scala Native 向けの `mosquito.core` にある。
+
+@ 0 10 0 0c9392923775ff0d0ae7361744751880
++     - `Vector` — 構築、要素へのアクセス、`map`、`norm`、`unitary`、`dot`、`cross`（三次元と七次元）、そして算術の `+`、`-`、単項の `-`、スカラーによる、または同じ大きさのベクトルによる要素ごとの `*` と `/`。
++     - `Matrix` — 行ごとの構築、`identity`、`zero`、要素・行・列へのアクセス、`transpose`、`submatrix`、算術の `+`、`-`、単項の `-`、スカラーによる `*` と `/`、行列どうしの積と行列とベクトルの積、そして正方行列では `determinant`、`trace`、`minor`、`cofactor`、`adjugate`、`inverse`、`solve`、`rank`、`frobeniusNorm`、（`Double` の要素では）`eigenvalues`。
++     - `Affine` — 3×3 行列としての二次元アフィン変換。SVG と PDF の六つの数の順序に従い、`transform` と `andThen` を持つ。
+
+@ 0 7 0 0cf5cbbbe94daf5f1ca2bf2b914f42b9
++     すべては `soundness` アンブレラにエクスポートされる。
++     素の数とベクトルや行列との間の算術はコンパイラの `into` 変換に頼るので、`import soundness.*` と並べて `import scala.language.experimental.into` を書く。
++     ベクトルや行列を括弧で囲んだ格子として表示するには `Text is Measurable` の given が要る（`import textMetrics.uniformMetric`）。
++     そして `Affine` の `transform` と `andThen` は `import mosquito.Affine.{andThen, transform}` と名前でインポートしなければならない。`import soundness.*` のもとでは、他のライブラリの同名の汎用的な拡張がそれらより優先されるからである。
+
+% 0 1 0 1c0c8cc43e28abb1053adafdbf621ff9
+
+% 0 1 0 0ef17cb65501016f0af8a3634ba205b6
+
+% 0 1 0 13e5aa826c9111650d2e8e26906d3e2e
+
+@ 0 1 0 1692a6c528ed6cc311fe90ea4a405d08
++ entry .Vector   決まった数の成分。大きさは型にある：`Vector[Int, 3]`
+
+% 1 1 0 1f838cf4b02ff36c1c6a1d11d7725311
+
+@ 0 7 0 1a10743817993e9c1d5466212b5d8ac1
++       `Vector` はここにエクスポートされたクラス `mosquito.internal.Vector` であり、大きさが静的に分かる `Tuple` と、要素が型を共有するコレクションとの混成である。
++       タプルから作られ、その長さが大きさに、その共通の要素型が要素型になる。`Vector(1, 2, 3)` は `Vector[Int, 3]`、`Vector(1.0*Metre, 2.0*Metre)` は `Vector[Quantity[Metres[1]], 2]` であり、一成分のベクトルは `Vector(Mono(42))` である。
++       成分は要素自身のクラスの `Array[element]^{}` である `#data` に格納されるので、`Double` のベクトルや量のベクトルは `double[]` である。
+
+% 2 1 0 14f4359a817a18800ebc94b4b99c4f49
+
+% 3 1 0 18fa41311df8ddc31ef9fd4f5cd54b4a
+
+% 4 1 0 05acb37d318f56cb03aeeec9e8dba7a3
+
+% 5 1 0 1897662628631e8702498a10f157a60f
+
+% 0 1 0 022946d814015f3c09aada6565bab986
+
+% 0 1 0 015bfe0b0226126d1c6f82b13cd6cfb6
+
+% 0 1 0 1d1900a455fba56012a316194f5847f4
+
+% 0 1 0 017cbd42bff680f7144cf82977aa9b76
+
+% 0 1 0 0edde86379bfb22f1049d1af91cb6aaf
+
+% 0 1 0 1971e90724d527eb1fc02320f2c3555a
+
+% 0 1 0 102ebcee2a9eef6801c4b22a8ae89799
+
+% 0 1 0 1a03dc209c006193034228dbf7d863f6
+
+% 0 1 0 1136682c4c96b9940175109c3a212c79
+
+% 0 1 0 069d4a6b4966bc8517f10b201debd18e
+
+% 0 1 0 1e977043db95f7a815e8590f810e1a13
+
+% 0 1 0 0fcfd79278c579510518a5978b0d79c5
+
+% 0 1 0 0b9d53f058052275190ae54053856824
+
+% 1 1 0 01341e6250f846421abe894278cefde2
+
+@ 0 12 0 0f765946e308cbc6138ca359b7d43666
++       算術は型クラスのインスタンスによる。それぞれ `inline` で大きさをキーとするので、不一致はコンパイルされない。
++       同じ大きさの二つのベクトルの間の `+` と `-`（`.addable`、`.subtractable`）、単項の `-`（`.negatable`）、スカラーによる `*` と `/`（`.scalarMultiplicable`、`.scalarDivisible`）、または同じ大きさの別のベクトルによる要素ごとの `*` と `/`（`.vectorMultiplicable`、`.vectorDivisible`）である。
++       二つのベクトルのスカラー積は `*` ではなく `dot` である。スカラーは右に置く（`2*v` ではなく `v*2`）。そして要素が結果を決めるので、フィートのベクトルにメートルのベクトルを足すとメートルになり、メートルの二つのベクトルの要素ごとの積は平方メートルのベクトルになる。
++       インスタンスでない演算、すなわち `element`、`apply`、`list`、`iarray`、`size`、`norm`、`map`、`unitary`、`dot`、`cross` は `mosquito.internal` で宣言された拡張メソッドであり、`import soundness.*` で使え、それぞれそこにページがある。
+
+@ 0 2 0 01324a22a4c5a42f1f7a714984c8dea9
++       二つのベクトルは、宣言された要素型にかかわらず、成分が等しければ等しい。`hashCode` もそれと一致する。
++       `toString` は `Vector(1, 2, 3)` である。
+
+@ 0 2 0 00f434c0cd868f101f6169473baeda1d
++       コンパニオンのコンストラクターとインスタンス、そしてクラスの `data` は `mosquito.internal.Vector` で宣言されており、それぞれそこにページがある。
+
+% 1 1 0 038544fe5003b799140e8793cf091530
+
+% 0 1 0 0a98c7eac7e184f210978c1cc04892e2
+
+% 0 1 0 134d7649a363840e1501725ec369b335
+
+@ 0 1 0 1d593762e68ab1131f8459c45d5b9cee
++ entry .Matrix   行数と列数を型に持つ格子：`Matrix[Int, 2, 3]`
+
+% 1 1 0 155d8b7734a99313092b64081ed062ac
+
+@ 0 6 0 1142aa69fcea63ac0a428c72794c955c
++       `Matrix[element, rows, columns]` は `#rows` 行 `#columns` 列の要素であり、`Array[element]^{}` である `#elements` に行優先で格納される。
++       形状を型引数として、行をタプルとして `Matrix[2, 3]((1, 2, 3), (4, 5, 6))` と書き、要素型は行から推論される。`Matrix.identity[Double, 3]` と `Matrix.zero[Double, 2, 3]` は定数の行列である。
++       積は形状が一致する場合にのみ定義され、結果の形状は型の中で計算される。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0f56b93f75e7c6ba0eace23a0c9e4689
++         label 2×3 行列。行ごとに
+
+% 1 1 0 1d4641a0c2803065162837e05c9a25da
+
+% 0 1 0 1386ffb620a70aab000a6ad84acab8e7
+
+% 1 1 0 0ea218c9bfb71c450e6e77a15f33a0b6
+
+@ 0 1 0 002dfd4b4f9c334d08ed24e0bdf91332
++         label 3×2 行列
+
+% 1 1 0 06660a5b4ecec1ea1fa02299c77b540b
+
+% 2 1 0 00e70f05379df0a01d2415769148373e
+
+% 0 1 0 1f9d122d9141fd911232c1c7013dfc07
+
+% 1 1 0 10a487ca401c933210016444289303a0
+
+@ 0 1 0 191b068cc2c906b51de41d67117b86d5
++         label その積：内側の次元が一致するので、結果は 2×2 になる
+
+% 1 1 0 0cdb70a3a28f80fa1595de2d7c3d5725
+
+% 2 1 0 16f94e638aacaf9000bfa2af7063cde7
+
+% 3 1 0 0f0913edf661429210d11c641b7879f7
+
+% 0 1 0 0c30b73114ff2df31f9de43ce1f2a4e2
+
+% 1 1 0 132d1f35bccb5d2706e42e97160b8ef8
+
+@ 0 1 0 025c19c6d5813f7a1119c96486ce4c5a
++         label 逆の順序では 3×3
+
+% 1 1 0 1d6b85e32e56e7fa11e9b093c53a1412
+
+% 2 1 0 1010f259ff9065920d06cc707f9eaee6
+
+% 3 1 0 0aad1d6bcd784c320f0540c8a6d29a60
+
+% 0 1 0 12c5be79da91bcf71c653f828065b5db
+
+% 1 1 0 05378bfcc18bfea30c2e1a68d48f0696
+
+@ 0 1 0 0df2fd59684bf2eb014ff4ba80ab3191
++         label 行列と正しい長さのベクトルの積
+
+% 1 1 0 05baddee8cc83c3306911753c13aafe0
+
+% 2 1 0 0e1036e09bbcb6cf0965ff194b861800
+
+% 0 1 0 0a539ff246d6902d05e67fd29faef369
+
+% 1 1 0 16f63992782c10651218e192e341b250
+
+@ 0 1 0 02509338b2f06439137cd5094b1af2ce
++         label そして形状の不一致はコンパイルされない
+
+% 1 1 0 08fe87edf43bccc604834839f0cc4b92
+
+% 2 1 0 0c54bda7c1015f531095ce39da6a0383
+
+% 0 1 0 08dc6b39878556b71b262deac4c47b47
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 10 0 1f1ea67d77365bc516df76def10bb59c
++       算術はインラインの型クラスのインスタンスによる。
++       同じ形状の行列の間の `+` と `-`（`.addable`、`.subtractable`）、単項の `-`（`.negatable`）、スカラーによる `*` と `/`（`.scalarMultiplicable`、`.scalarDivisible`）、行列の積（`.matrixMultiplicable`）、行列とベクトルの積（`.vectorMultiplicable`）である。
++       二つの行列の間の `*` は常に行列の積であり、要素ごとの積になることはない。
++       正方行列はさらに `Matrix[element, n, n]` への拡張として `determinant`、`trace`、`minor`、`cofactor`、`adjugate`、`inverse`、`solve` を持ち、`Double` の正方行列は `eigensystem`、`eigenvalues`、`eigenvectors` を持つ。
++       どの演算も要素の算術を解決するので、量の行列は足し算ができ、`Q32` の有理数の行列は厳密に掛け算ができる。
+
+% 2 1 0 02353ecd1d21984c1a4c2a13a8351b19
+
+% 3 1 0 1df33e4167bbde830ccd89fece6db9f9
+
+% 4 1 0 1cc921f5ea12f54208d131f109ceaa78
+
+% 5 1 0 009c3bd4562e08ff0ae3d745d742138a
+
+% 0 1 0 06b21ab1711cd7cb0fd1b6eafff6a708
+
+% 0 1 0 1b097172f6a6987406241e4fdd7fcd67
+
+% 0 1 0 02a4ca99c9dce70811acb1eb55b11344
+
+% 0 1 0 04e7ae1ad18c59ce146cc3b41def4616
+
+% 0 1 0 0c8715c658fcf962101ad4e614f85682
+
+% 0 1 0 06a4d228d9842f53098896943ee02bb8
+
+% 0 1 0 19ead65254a29f2e1c34bd703dc449a4
+
+% 0 1 0 1edf8d945d4f6a840809da822fb4f71f
+
+% 0 1 0 0af32bc81fc93e7313cc41aafb64b369
+
+% 0 1 0 059c03961e872a9d040d44605a583f82
+
+% 0 1 0 10296640812fa6f01be93934d350692d
+
+% 0 1 0 18f14c2699971b4112d5c6654e277be9
+
+% 0 1 0 1533d4359668d0e71ec6312469f7c992
+
+% 0 1 0 0b3895c3ac21d2c10094a678fdb0e329
+
+% 0 1 0 1dfc4d5056cc0f820791823dfce5c270
+
+% 1 1 0 0493b37faa19eb441705d41996785471
+
+@ 0 2 0 162375aab2f6f5411efd13c477d208ed
++       二つの行列は、宣言された要素型にかかわらず、要素が等しければ等しい。
++       `toString` は平らな要素のリスト `[1, 2, 3, 4, 5, 6]` である。
+
+% 0 1 0 07fa0d29d2b788f00cff9ebbaf1ae246
+
+% 0 1 0 1fd32ae8011feea314f351e48026007b
+
+@ 0 65 0 15a72d62d09cc2a702bb666d4b98f421
++   entry .apply   `Matrix[2, 3]((1, 2, 3), (4, 5, 6))`：行から作る行列。形状は型引数として与える
++       トランスペアレントインラインである。行数と列数は型引数として与えられ、行のタプルのタプルに対して検査される。行の数は `Rows` でなければならず、どの行も `Columns` 個の要素を持たねばならず、すべての要素は一つの型を持たねばならず、その型が要素型になる。
++       一行の行列は `Tuple1` を使って `Matrix[1, 2](Tuple1((4, 6)))` と書く。
++       要素の `ClassTag` は呼び出し位置で見つけられる。
++   entry .identity   `Matrix.identity[Double, 3]`：ある大きさの単位行列
++       要素の `Unital` と `Zeroic` のインスタンスによって、対角に一、それ以外に零を置く。大きさは `ValueOf` を持つ型引数である。
++       インラインなので、格納は型付きの配列への書き込みになる。
++   entry .zero   `Matrix.zero[Double, 2, 3]`：ある形状の零行列
++       すべての要素が `Zeroic` の零である。形状は `ValueOf` を持つ二つの型引数である。
++   entry .addable   同じ形状の二つの行列の間の `m + n`：要素どうしを足す
++       要素型に対する `a is Addable by b to result` と `ClassTag[result]` を必要とするインラインのインスタンスである。二つの `Matrix[Double, 2, 2]` は `dadd` のループで足され、量の二つの行列は単位を検査する和で足される。
++       形状が異なればコンパイルされない。
++   entry .subtractable   同じ形状の二つの行列の間の `m - n`：要素どうしを引く
++   entry .negatable   `-m`：すべての要素の符号を反転する
++       `-Matrix[2, 2]((1, -2), (3, 4))` は `Matrix[2, 2]((-1, 2), (-3, -4))` であり、`m*(-1)` に等しい。
++   entry .scalarMultiplicable   `m*scalar`：すべての要素にスカラーを掛ける
++       `Matrix[2, 3]((1, 2, 3), (4, 5, 6))*10` は `Matrix[2, 3]((10, 20, 30), (40, 50, 60))` である。
++       スカラーは右にのみ置ける。
++       `Matrix` のオペランドは代わりに `.matrixMultiplicable` に、`Vector` のオペランドは `.vectorMultiplicable` に至る。
++   entry .scalarDivisible   `m/scalar`：すべての要素をスカラーで割る
++       `Matrix[2, 3]((1, 2, 3), (4, 5, 6))/2` は `Matrix[2, 3]((0, 1, 1), (2, 2, 3))` である。要素はその型の割り方で割られる。
++   entry .matrixMultiplicable   `m*n`：行列の積。内側の次元が一致する場合にのみ定義される
++       `Matrix[a, rows, columns]` と `Matrix[b, columns, rightColumns]` の積は `Matrix[result, rows, rightColumns]` であり、`a is Multiplicable by b to result` と `result is Addable by result to result` を必要とする。列数は `ValueOf` でなければならない。
++       内側の次元が異なる積はコンパイルされない。
++       要素ごとの積になることはない。
++   entry .vectorMultiplicable   `m*v`：行列と長さ `columns` の列ベクトルの積。長さ `rows` のベクトルになる
++       `Matrix[2, 3]((1, 2, 3), (4, 5, 6))*Vector(7, 8, 9)` は `Vector(50, 122)` であり、`Matrix.identity[Int, 3]*v` は `v` である。
++       長さの合わないベクトルはコンパイルされない。
++   entry .inspectable   デバッグ用の一行の表示：`⌈1 ∣ 2 ⫽ 3 ∣ 4⌋`
++       行は `⫽` で、行の中の要素は `∣` で区切られ、`show` が使う背の高い括弧の代わりとなる角括弧で囲まれる。要素が `Inspectable` である任意の行列で使える。
++   entry .showable   行列を背の高い括弧で囲んだ格子として描画する。列は右揃えになる
++       各行が一行になり、上端は `⎡ 1 2 ⎤`、下端は `⎣ 3 4 ⎦`、その間は `⎪ … ⎪` である。
++       要素が `Showable` であること、そして列の幅を測るためにスコープ内に `Text is Measurable` があること（`import textMetrics.uniformMetric`）を必要とする。
++   entry .determinant   正方行列の行列式。ラプラス展開による
++       `Matrix[element, n, n]` への拡張であり、要素自身の型での `Multiplicable`、`Addable`、`Subtractable` を必要とする。`Matrix[3, 3]((2, -3, 1), (2, 0, -1), (1, 4, 5)).determinant` は 49 である。
++       正方でない行列で呼び出すとコンパイルされない。
++       展開は `n` に対して指数的であり、形状を型に書くような小さな行列に向いている。
++   entry .trace   正方行列の対角成分の和
++       インラインであり、加算は呼び出し位置で解決される。
++       `Matrix.identity[Int, 4].trace` は 4 である。
++   entry .minor   `m.minor(row, column)`：その行と列を取り除いた行列の行列式
++   entry .cofactor   `m.cofactor(row, column)`：小行列式。行と列の添字の和が奇数のところでは符号を反転する
++       符号の反転のために要素の `Zeroic` を必要とする。
++   entry .adjugate   余因子行列の転置。任意の環の上で定義される
++       `Matrix[2, 2]((1, 2), (3, 4)).adjugate` は `Matrix[2, 2]((4, -2), (-3, 1))` であり、`m*m.adjugate` は行列式と単位行列の積である。
++       除算を必要としないので、整数の行列は逆行列を持たない場合でも余因子行列を持つ。
++   entry .inverse   正方行列の逆行列。特異なら `Unset`
++       余因子行列を行列式で割ったものであり、要素の環の演算に加えて `Divisible` を必要とする。`Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).inverse` は `Matrix[2, 2]((-2.0, 1.0), (1.5, -0.5))` であり、行列式が要素の零である行列は `Unset` を与える。
++       正方でなければコンパイルされない。
+
+% 2 1 0 1a03c0b479efaa421ce440b0ec255f9b
+
+% 3 1 0 1d1c969e10c6566711dda4f6a7d30621
+
+% 0 1 0 08555ff1d50b527c0265026b6994bbed
+
+% 0 1 0 045e4ae917a4433806522a04c48bad53
+
+% 1 1 0 1cafef948d5be81f0fe2bcb14ad4f3d3
+
+@ 0 39 0 1f80b51814969242047ae8821dbc79e5
++   entry .solve   `m.solve(b)`：`m*x == b` となる `x`。ガウスの消去法による。特異なら `Unset`
++       正方の `Matrix[element, n, n]` への拡張で、`Vector[element, n]` を取る。部分ピボット選択を行い（零のピボットは行を入れ替える）、要素の `Zeroic`、`Subtractable`、`Multiplicable`、`Divisible` を必要とする。`Matrix[2, 2]((2.0, 1.0), (1.0, 3.0)).solve(Vector(3.0, 4.0))` は `Vector(1.0, 1.0)` である。
++   entry .eigensystem   対称な `Double` 行列の固有値と固有ベクトル。または `Unset`
++       `Matrix[Double, n, n]` への拡張であり、ヤコビ回転による。これは対称行列でしか収束しない。
++       結果は、対称でない（許容誤差 10⁻¹² で）か収束しない行列では `Unset` であり、それ以外では、`Vector[Double, n]` としての固有値と、`Matrix[Double, n, n]` の列としての固有ベクトルの組である。固有ベクトルはそれぞれ単位ベクトルである。
++   entry .eigenvalues   対称な `Double` 行列の固有値。または `Unset`
++       `Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues` は 1.0 と 3.0 を持つ。`eigensystem` の前半である。
++   entry .eigenvectors   対称な `Double` 行列の固有ベクトルを列としたもの。または `Unset`
++       `eigensystem` の後半である。
++   entry #rows   行数。値として
++   entry #columns   列数。値として
++   entry #elements   行優先の要素。凍結済みの `Array[element]^{}` として
++   entry #apply   `m(row, column)`：一つの要素。添字は零から始まる
++       インラインなので、`Matrix[Double, m, n]` からの読み出しは `daload` になる。
++       行列でもある `Affine` では、二つの数への適用はこのアクセサーであり、そのため点の変換は `transform` という名前である。
++   entry #row   `m.row(i)`：一つの行を `Vector[element, columns]` として
++       インラインである。要素の `ClassTag` が呼び出し位置にあれば型付きの配列アクセスで、なければリフレクションでコピーするので、呼び出し側にそれを求めることはない。
++   entry #column   `m.column(j)`：一つの列を `Vector[element, rows]` として
++   entry #transpose   転置。`Matrix[element, columns, rows]`
++       要素の `ClassTag` を必要とする。`m.transpose.transpose == m` である。
++   entry #submatrix   `m.submatrix(row, column)`：その行と列を取り除いた、各次元が一つ小さい行列
++       型は `Matrix[element, rows - 1, columns - 1]` である。`Matrix[2, 3](…).submatrix(0, 1)` は `Matrix[Int, 1, 2]` である。
++   entry #frobeniusNorm   要素の二乗の和の平方根
++       インラインであり、要素の `Multiplicable`、`Addable`、`Rootable[2]` を必要とする。
++       `Matrix[2, 2]((3.0, 0.0), (0.0, 4.0)).frobeniusNorm` は 5.0 である。
++   entry #rank   階数。ガウスの消去法による
++       線形独立な行の数であり、要素の `Zeroic`、`Subtractable`、`Multiplicable`、`Divisible` を必要とする。任意の形状で定義される。
++       `Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).rank` は 1 である。
+
+@ 0 1 0 044d376f39c83a6901d7c0eae8715f66
++ entry .Affine   二次元アフィン変換：SVG と PDF の六つの数から作る 3×3 行列
+
+% 1 1 0 1db0d5be80fd5da30c163ac94d22e9da
+
+@ 0 3 0 1977e8589f4f181a17ffebd022b81e50
++       `Affine[element]` は `Matrix[element, 3, 3]` の不透明な部分型であり、二次元アフィン変換の同次行列を保持する。SVG の `matrix(a, b, c, d, e, f)` と PDF の `a b c d e f cm` が共有する順序で、六つの可変な成分から作られる。
+
+% 0 1 0 0d2523ced4fb8ce31bd4b9e3b3275137
+
+% 0 1 0 10560dcb6382d41e0af4817d9bfc9334
+
+% 0 1 0 1fa6ddc7f7b9de800aa94e1d45a580f7
+
+@ 0 4 0 145251692c72567f103c9476efa9094d
++       これは列ベクトルに作用する。
++       `transform` はそれを点に適用し、`andThen` は二つを合成する。一般の行列の積の二十七回ではなく、それぞれ六回と十二回の乗算で行い、要素の算術はインライン化される。
++       合成の順序は SVG と PDF の慣習が分かれる唯一の点なので、`*` ではなく名前のある演算になっている。
+
+% 2 1 0 1437b632e627b1d507e45bed1438736c
+
+% 3 1 0 02b46cb78d69e0f1008c75bf86c5d613
+
+% 0 1 0 1d8767710e1c95ab06e950ff91f6a026
+
+% 0 1 0 1dc100e003bf2f7b16777ab637bdf2d9
+
+% 0 1 0 124c89b507bd28dd05ba071f1d51e1d2
+
+% 0 1 0 1e840ebd672669f1040a86a9cf979e94
+
+% 0 1 0 1f78056ce8ead34f0dc73ffedef988da
+
+% 1 1 0 0dcc2ec929c6b2f41b28bce59c6bf31c
+
+@ 0 6 0 0f7b9bbbe15588531517972506a412ea
++       `import soundness.*` のもとでは、`transform` と `andThen` は名前でインポートしなければならない。
++       そこではアンブレラの汎用的な `transform`（savagery のもの）と `andThen`（関数に対するもの）がレキシカルにスコープにあり、レキシカルな拡張はコンパニオンのものより優先され、ほかへ回らずに自分の失敗を報告するからである。
++       `Affine` は `Matrix` なので、`apply(row, column)` を含むすべての行列の演算も持つ。そのため点の変換は `apply` ではない。
+
+% 1 1 0 068e4ecebed125c604d561af502913a2
+
+@ 0 19 0 19b0cb2f7aa2e4fb02065bf61cc3414e
++   entry .apply   `Affine[Double](a, b, c, d, e, f)`：六つの成分から作る変換
++       固定された最下行のために要素の `Zeroic` と `Unital` を、そして `ClassTag` を必要とする。
++       `Matrix` のコンストラクターと違ってインラインではない。これは結果が呼び出し位置で `Affine` として見えるようにするためである。
++   entry .identity   `Affine.identity[Double]`：恒等変換
++   entry .a   第一の成分：x の拡大率
++   entry .b   第二の成分：y のせん断
++   entry .c   第三の成分：x のせん断
++   entry .d   第四の成分：y の拡大率
++   entry .e   第五の成分：x の平行移動
++   entry .f   第六の成分：y の平行移動
++   entry .transform   `affine.transform(x, y)`：点 `(a·x + c·y + e, b·x + d·y + f)`
++       インラインであり、要素自身の型での `Multiplicable` と `Addable` を必要とする。`Affine[Double]` は六回の `dmul` と四回の `dadd` で点を変換する。
++       名前でインポートする：`import mosquito.Affine.transform`。
++   entry .andThen   `first.andThen(next)`：`first` を適用してから `next` を適用する変換
++       列ベクトルでの積 `next*first` であり、これは PDF の行ベクトルでの `first*next` にあたる。六つの可変な成分に特化している。
++       要素の `Multiplicable`、`Addable`、`Zeroic`、`Unital` と `ClassTag` を必要とする。
++       名前でインポートする：`import mosquito.Affine.andThen`。
+
+@ 0 5 0 118bca2c7278738e074b3c6f9d0c6725
++ entry .slide   `list.slide(n)`：リストのスライディングウィンドウを、大きさ `n` の `Vector` の遅延 `Chain` として
++     `List[element]` への拡張である（`ClassTag` を必要とする）。
++     `List(1, 2, 3, 4).slide(2)` は `Vector(1, 2)`、`Vector(2, 3)`、`Vector(3, 4)` のチェーンであり、それぞれ引数によって型付けされた `Vector[element, n.type]` である。`Vector.take` で作られ、残りの要素が `n` 個より少なくなると止まる。
+
+@ 0 1 0 131caaa5fe0272d8026e53c2561d7d65
++ entry .internal   `Vector` クラス、その拡張メソッド、インラインの要素の算術の置き場所
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 15 0 0383c7df731c4e6b013df1479f34d62c
++       直接使うためのものではない。
++       このオブジェクトは、`Vector` のインラインのインスタンスが要素自身の演算を展開位置で解決できるようにするために存在する。
++       `Vector` はここから `mosquito` パッケージにエクスポートされ、詳しい説明はそちらのページにある。そのコンストラクターとインスタンスはこの `Vector` のエントリーで説明する。
++       ここで宣言されたベクトルへの拡張メソッド、すなわち `element`、`apply`、`list`、`iarray`、`size`、`norm`、`map`、`unitary`、`dot`、二つの `cross` の積は、`import soundness.*` で使える。
++   entry .Vector   ベクトルのクラスとコンパニオン。`mosquito.Vector` を参照
++     entry .apply   `Vector(1, 2, 3)`：タプルから作るベクトル。大きさと要素型は推論される
++         任意のタプルに対するトランスペアレントインラインのコンストラクターである。大きさはタプルのものであり、要素型はその成分の型で、成分はすべて同じ型でなければならない。`Vector(1, 2.0)` は `AnyVal` のベクトルではなく、コンパイルエラー _Cannot prove that Int | Double =:= Int_ になる。
++         一成分のベクトルは `Vector(Mono(42))` である。`Vector(42)` では 42 そのものをタプルとして取ってしまうからである。
++         格納先は要素のクラスの配列であり、呼び出し位置の `ClassTag` を通じて見つけられるので、`Vector(2.0, 4.0)` はボックス化なしに読み、計算する。
+
+% 2 1 0 0c4609ce8d51b2ea02f8495b4dfabbc5
+
+% 3 1 0 0f13bab761920b900c2015056e8aa3a0
+
+% 0 1 0 1084ce22168fe358156691d11e979518
+
+% 0 1 0 1259869ebaf041ba07e511bbb577b9f9
+
+% 0 1 0 1a2f2f1fe7e0f3c612b9831bce67bf27
+
+% 1 1 0 1fd8e905092441e90267920889b591c7
+
+@ 0 5 0 0493f46ec9901dcf07dc3056ff155362
++     entry .take   `Vector.take(list, n)`：リストの最初の `n` 個の要素をベクトルとして。足りなければ `Unset`
++         実行時にしか分からない大きさのためのコンストラクターである。結果は引数のシングルトン型で型付けされた `Vector[element, n.type]` であり、リストが短すぎれば `Unset` である。
++         `Vector.take(Nil, 0)` は空のベクトルである。
++         要素の `ClassTag` を必要とする。
+
+% 2 1 0 1465d2f9b11e86d711bbfbbf862b0edd
+
+% 3 1 0 10dac79786bfa60a005fdf784327db74
+
+% 0 1 0 06d0acb42eac51a71a85fc969a4f1c06
+
+% 0 1 0 0c9e66012e2841c0015043e6a40b310c
+
+% 1 1 0 007db9d3fdfab0fa1621780808ada384
+
+@ 0 65 0 0cb21e6c903104ab09b5089d4e2ca758
++     entry .addable   同じ大きさの二つのベクトルの間の `v + w`：要素どうしを足す
++         二つの要素型に対する `value is Addable by value2 to result` と `ClassTag[result]` を必要とするインラインのインスタンスであり、結果は `Vector[result, size]` である。
++         要素の加算は展開位置で解決されるので、二つの `Vector[Double, n]` は `dadd` のループで足され、量の二つのベクトルは quantitative の単位を検査する和で足される。`Vector(1.0*Foot, 1.0*Foot) + Vector(3.0*Metre, 4.0*Metre)` はメートルになる。
++         大きさが異なればコンパイルされない。
++     entry .subtractable   同じ大きさの二つのベクトルの間の `v - w`：要素どうしを引く
++         `.addable` と同様であり、`value is Subtractable by value2 to result` を必要とする。
++     entry .negatable   `-v`：すべての要素の符号を反転する
++         `value is Negatable to result` を必要とする。`-Vector(1, -2, 3)` は `Vector(-1, 2, -3)` である。
++     entry .scalarMultiplicable   `v*scalar`：すべての要素にスカラーを掛ける
++         `value is Multiplicable by scalar to result` を必要とする。`Vector(1, 2, 3)*2` は `Vector(2, 4, 6)` であり、`Vector(1.0*Metre, 2.0*Metre)*2.0` はメートルのベクトルである。
++         スカラーは右にのみ置ける。`2*v` は定義されていない。
++         `Vector` のオペランドは代わりに `.vectorMultiplicable` に至る。ベクトルを掛けられる要素はないからである。
++     entry .scalarDivisible   `v/scalar`：すべての要素をスカラーで割る
++         `value is Divisible by scalar to result` を必要とする。`Vector(2.0, 4.0)/2.0` は `Vector(1.0, 2.0)` であり、`Vector(7, 8, 9)/2` は `Vector(3, 4, 4)` である。要素の割り方どおりの整数除算である。
++     entry .vectorMultiplicable   同じ大きさの二つのベクトルの間の `v*w`：要素どうしを掛ける
++         アダマール積であり、`value is Multiplicable by value2 to result` を必要とする。
++         `Vector(1, 2, 3)*Vector(4, 5, 6)` は `Vector(4, 10, 18)` であり、メートルの二つのベクトルを掛けると平方メートルのベクトルになる。
++         スカラー積は `dot` である。
++         大きさが異なればコンパイルされない。
++     entry .vectorDivisible   同じ大きさの二つのベクトルの間の `v/w`：要素どうしを割る
++         `Vector(8, 9)/Vector(2, 3)` は `Vector(4, 3)` である。
++     entry .inspectable   デバッグ用の一行の表示：`⟨1 ∣ 2 ∣ 3⟩`
++         要素が `Inspectable` である任意のベクトルで使える。区切りの `∣` は、`Matrix` が行の中の要素の間に使うものと同じである。
++     entry .showable   ベクトルを背の高い括弧で囲んだ列として描画する
++         `Vector(1, 3, 6).show` は `⎛ 1 ⎞`、`⎜ 3 ⎟`、`⎝ 6 ⎠` の三行であり、要素は最も幅の広いものに合わせて右揃えになる。二成分のベクトルには中間の行がなく、一成分のベクトルは `( 42 )` である。
++         要素が `Showable` であること、大きさが `ValueOf` であること、そして要素の幅を測るためにスコープ内に `Text is Measurable` があること（`import textMetrics.uniformMetric`）を必要とする。
++     entry #data   成分。要素自身のクラスの凍結済みの `Array[element]^{}` として
++   entry .element   `v.element(i)`：一つの成分。添字は零から始まる
++       インラインなので、`Vector[Double, n]` からの読み出しは `daload` になる。範囲の証明は要らず、範囲外の添字は例外を投げる。
++   entry .apply   `v(i)`：一つの成分。添字は零から始まる。`element` と同じ
++   entry .list   成分を `List[element]` として
++   entry .iarray   成分を、それが格納されている凍結済みの `Array[element]^{}` として
++   entry .size   成分の数。型の中の大きさから得た値として
++   entry .norm   ユークリッド長：成分の二乗の和の平方根
++       インラインであり、要素に戻る `Multiplicable`、`Addable`、`Rootable[2]` を必要とする。`Vector(3.0, 4.0).norm` は 5.0 であり、メートルのベクトルのノルムはメートルである。
++   entry .map   `v.map(f)`：各成分に `f` を適用した同じ大きさのベクトル
++       関数はインラインであり、`Function1` を通さずにループ本体の中で適用されるので、プリミティブの要素は途中でボックス化されない。結果の `ClassTag` があれば、要素型を変えてもよい（`Vector(1, 2, 3).map(_.toString)`）。
++       `Vector(1.0*Metre, 2.0*Metre).map(_*Metre)` は平方メートルのベクトルである。
++   entry .unitary   同じ向きの単位ベクトル。`Vector[Double, size]`
++       各成分を `norm` で割る。`Vector(3.0, 4.0).unitary` は `Vector(0.6, 0.8)` である。
++   entry .dot   `v.dot(w)`：同じ大きさの二つのベクトルのスカラー積
++       要素どうしの積の和であり、型は要素の `Multiplicable` が与えるものになる。`Vector(1, 2, 3).dot(Vector(4, 3, 7))` は 31 であり、`Vector(5*Inch, 2*Inch, Inch).dot(Vector(2*Inch, 3*Inch, 6*Inch))` は 22 平方インチである。
++       インラインであり、要素の算術は呼び出し位置で解決される。
++       大きさが異なればコンパイルされない。
++   entry .cross   `v.cross(w)`：ベクトル積。三次元または七次元
++       `Vector[left, 3]` と `Vector[left, 7]` に対する二つのオーバーロードがあり（ベクトル積が存在するのはこの次元だけである）、それぞれ要素の `Multiplicable`、`Addable`、`Subtractable` を必要とする。`Vector(1, 2, 3).cross(Vector(4, 3, 7))` は `Vector(5, 5, -5)` であり、反可換で、両方のオペランドに直交する。
++       七次元の積はファノ平面の添字の三つ組に従う。
++       それ以外の大きさはコンパイルされない。

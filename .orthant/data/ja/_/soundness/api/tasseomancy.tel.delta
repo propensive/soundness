@@ -1,0 +1,1511 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1a2dc959a78da7991269234e99fd4ba3
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0662400cfd60738804910cc9930ead94
++ info   型付きのデータから描く SVG のチャート：棒、折れ線、散布図、円、ヒストグラム、箱ひげ図、ドーナツ
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 3 0 14ed8dab4fb7b56a1fd148363610777d
++     _Tasseomancy_ は、型付きのデータからチャートを savagery の `Svg` 値として描く。
++     チャートのライブラリがたいてい一つの呼び出しに絡め合わせてしまう四つの決定を、別々に保つ：データの**形**、チャートの**種類**、一方の他方への**適合**、そして**スタイル**である。
+
+@ 0 16 0 1c873cab3d3ff4d21796856ddeedca8b
++     - 形は型にある。`Series[x, y]` は名前の付いた点の並びであり、その横軸の型が軸を決める：`Text`、列挙型、`Chart.Category` は `Categorical` であり、数値、`Duration`、`Instant`、任意の `Quantity` は `Continuous` である。`Samples[y]` は生の測定値、`Chart.Estimate` は区間を伴う値、`Noted` は注記を伴う値であり、`Weighted` かつ `Progressive` なノードの `Dag` は依存グラフである。
++     - 種類は値である（`Bars()`、`StackedBars()`、`Lines()`、`Scatter()`、`Pie()`、`Histogram()`、`Boxes()`、`Doughnut()`）。`data.chart(kind)` は、その種類がデータの形を描けると `Plottable` インスタンスが述べる場合にのみコンパイルされる：三つの系列の円グラフや、カテゴリーのラベルを通る折れ線はコンパイルエラーである。
++     - 適合（各軸の範囲、変換、刻み）は、軸の値の型をキーとする `Calibration` が選び、スコープの given、`calibrations` からのインポート、または種類への引数で上書きされる。結果は `Scale` か `Bands` である。これは単なるデータであり、それゆえチャートは新しいデータがまだ軸に収まるかどうかを判断できる。
++     - スタイルは `Chart.Style` 値（デフォルトは `Chart.Standard`）であり、描かれるすべての構成要素に対応するメソッドと、役割で名付けられた色の `ChartPalette`、そしてレイアウトのためにテキストを測る `FontMetric` を持つ。
+
+% 2 1 0 0d97ab7c7bdbbf1f117c86b433c7e35c
+
+% 3 1 0 1cea506bb70126bc0ca75c0437446604
+
+% 0 1 0 14462da5a85425bc0b4ac880c81f4154
+
+% 0 1 0 02684955f0ddc4f20eb484681970b0be
+
+% 0 1 0 05b195e408ad09af1a312fb44f594630
+
+% 0 1 0 031880aa881fa0bd1cc799bb7f721575
+
+% 0 1 0 08bdb550fcd4966f0dcc9aaf9db89493
+
+% 0 1 0 0b1091844bcede1c1221a840a8a7c5b2
+
+% 1 1 0 074495742f8d22101c22bfd6408d0f55
+
+@ 0 4 0 1682ae5052e98e451b16e365c4dd14a4
++     `Chart` は不変である。
++     `revise` は新しいデータを受け取り、次のチャートを `Chart.Revision` のリストとともに返す：適合がまだデータを収められるなら、軸は動かず、変化した識別済みの部分（`series-0`、`legend`、`rank-1`、…）だけが置き換えられる。そうでなければチャート全体が描き直される。
++     SVG を保持するページに必要なのは、この二つの操作だけである。
+
+@ 0 8 0 11d1b1f2c09103a40546504d7829d174
++     描画は `chart.in[Svg]` であり、その種類自身のスタイル（棒グラフなら `Bars.Style`）、`ChartPalette`、`FontMetric`、cartouche の `Arranger` がスコープに必要である。どれにもコンパニオンのデフォルトがあるので、何もインポートする必要はない。
++     選択パッケージ `calibrations`、`palettes`、`fontMetrics` はそれぞれ、**名前で**インポートする given を保持する（`import palettes.solarizedDarkChartPalette`）。`import tasseomancy.*` は given を持ち込まず、レキシカルスコープの given はどのコンパニオンのデフォルトよりも優先されるからである。
++     ラベルの配置は cartouche が担う：`import arrangers.annealingArranger` は、混み合ったチャートのために焼きなまし法を選ぶ。
+
+@ 0 4 0 1aca54ade100190a101716409820a8b0
++     このライブラリは一つのソースセット `tasseomancy.core` であり、savagery、cartouche、cataclysm（`Css.Style` と `Font in Web` のため）、phoenicia、iridescence、quantitative、aviation、acyclicity に依存する。
++     すべては `soundness` アンブレラにエクスポートされ、三つの選択パッケージはアンブレラ自身のものと統合される。
+
+% 0 1 0 1c51fcc60d3527300683d1046d655ae0
+
+% 0 1 0 08506477e88a5f34149f56f40da428a9
+
+% 0 1 0 0b91a53e5a36caeb0eb68375ddb23129
+
+% 0 1 0 172120c4b9a4c28308207867e35705df
+
+% 0 1 0 153a06cbfff3a9f50e9f986bf1c35e76
+
+% 0 1 0 12d688908203c235122f0674a400804e
+
+@ 0 7 0 13280913a9d6a118027512e45b74b5c7
++ entry .chart   データをチャートの種類と組み合わせ、互換性をコードのコンパイル時に検査する
++     任意の値に対する拡張である：`data.chart(form)` には `data is Plottable in form to fit by style` インスタンスが必要であり、それはその種類がデータの形を描ける場合にのみ存在する。そして、インスタンスの `fit` ですでにデータに適合させた `Chart[data, form, fit, style]` を返す。
++     適合の型はその種類自身のもの（`abscissa` と `ordinate` のスケールを持つ `Lines.Fit`）なので、軸が結果に見える。スタイルの型もその種類自身のものなので、描画はその種類が描く構成要素だけをちょうど求める。
+
+% 2 1 0 041a195d467689d51c7edda0621c02d1
+
+% 3 1 0 19168c6421af0cf61ec0dd5cd3ca8051
+
+% 0 1 0 05d786b9e085b47703b890e9ee042146
+
+% 0 1 0 01752b179938c64717596e1f958d430a
+
+% 0 1 0 058fd4b979c6254019d8fa246262f02d
+
+% 1 1 0 0ee62ac232d0d093011546b3a6697080
+
+@ 0 3 0 08423c9e281a8d6e16af956fde02595b
++     互換でない組み合わせはコンパイルされない：カテゴリーの系列は `Lines()` にできず、系列のコレクションは `Pie()` にできず、`Samples` は `Bars()` にできず、ノードに `Weighted` または `Progressive` がない `Dag` は `Doughnut()` にできない。
+
+% 2 1 0 002e7872a4d081ed17f210fa4aef3d5b
+
+% 3 1 0 18ca8559d2ec058a095095c525cf548c
+
+% 0 1 0 1aaa84c886127fc81f1d4fb2127d5bd6
+
+% 1 1 0 19fc26db7253fc6814cca05413084b0b
+
+@ 0 1 0 1847d0c5bfa9bc0c15947b18505511cb
++ entry .Chart   データ、チャートの種類、そして一方の他方への適合。データが届くにつれて改訂できる
+
+% 1 1 0 026434d5e2ec8ba816d74b1f27fb9127
+
+@ 0 6 0 13590d21578d926712c570a57065bad7
++       `Chart[data, form, fit, style]` は、その `#data`、種類（`#form`）、種類がデータから計算した `#fit`、そしてそれらを組み合わせる `Plottable` インスタンスを保持する。
++       直接作るのではなく、`chart` 拡張で作る。
++       適合の型はその種類自身のもの（`bands` と `ordinate` を持つ `Bars.Fit`、二つのスケールを持つ `Lines.Fit`、帯を持つ `Doughnut.Fit[node]`）であり、スタイルの型はその種類のスタイルのトレイトである。したがって棒グラフは `Bars.Style` に対して、円グラフは `Pie.Style` に対して描画される。`Chart.Standard` はそのすべてを実装する。
+
+% 2 1 0 1097a0f6b32238f207281d7a46e40d04
+
+% 3 1 0 1267511819911f571833bbd851e34625
+
+% 5 1 0 1efe32d35a8ee0a812cc5f4e67332018
+
+% 6 1 0 0c54c86cf18e62b214d6158b422ee2f2
+
+% 7 1 0 099604cacc7f76ee155833d65e90acff
+
+% 8 1 0 0ca824881368f1ec1fa322f8f7b44a8c
+
+% 10 1 0 07a1fb193f204fc7195ce546829510da
+
+% 0 1 0 0933ec3359cf9925184e800a119fad40
+
+% 0 1 0 13529350a31cb6ee1485c850fcc08692
+
+% 1 1 0 1d4485e8b5ad8e410fd0b7f7ae56ab69
+
+@ 0 5 0 00a1862f524117b50af1c1cbaab8b6be
++       `chart.in[Svg]`（`.encodable` given）や `#drawing` としての描画には、その種類のスタイル、`ChartPalette`、`FontMetric`、`Arranger` がスコープに必要であり、それぞれにコンパニオンのデフォルトがある：`Chart.Style.standard`、`ChartPalette.slate`、`FontMetric.fromStyle`、そして cartouche の逐次的なアレンジャーである。
++       レキシカルスコープにある given の `Chart.Standard` は、すべての種類のデフォルトのスタイルを一度に置き換える。
+
+@ 0 3 0 04c4d85f5d35f2a305fc92f554a1b1db
++       チャートは不変である。
++       `#revise` は、チャートが新しいデータに追従する方法である。適合がまだデータを収められる間はそれを保って軸を動かさず、ページ上で変化したものを返す。
+
+% 2 1 0 0645695c8440deba118374bce10de09c
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 172cdb63f3ad73ba1ff98da6dbb26bf4
++         label 二つの点に適合させた折れ線グラフ
+
+% 1 1 0 0cafc2127fab506910b6cd2d002432e4
+
+% 2 1 0 15068a7a803edb641a1a8780b7054489
+
+% 0 1 0 0b6ab95a2488df040de0f5d9389ef943
+
+% 1 1 0 043bb3e8d804b1701f5d639ce8ff84a2
+
+@ 0 1 0 1f8238795759c387169a5f7e40031d91
++         label 軸の内側の点は一つの部分を置き換える
+
+% 1 1 0 17b57fd1ff2e1ff31296258db0de6eed
+
+% 2 1 0 0a6227f5434207a903982b0d7f18be94
+
+% 0 1 0 125f95ca2ead049b1170ffa529a209ac
+
+% 0 1 0 18f84bdd6d0939f806b49bec441a4108
+
+% 0 1 0 129b41f1d308da1617013f0f79ba67aa
+
+% 1 1 0 0f6d03f9edaabb5416063096919f98bc
+
+@ 0 1 0 1e4303f19433f68b115e6be66e67bab5
++         label 軸の外側の点はチャートを描き直す
+
+% 1 1 0 07d8f6dad86f25e5159369b486d77008
+
+% 2 1 0 19b7813d6489e6f309837f8ae2e3da79
+
+% 0 1 0 0b21aa058ec0029b055b2f125f11b8b6
+
+% 0 1 0 0934d918c2ebc4e116ef7af3eeb134a1
+
+% 0 1 0 060bc6ac1599b17317df04a51d7dbcb8
+
+% 1 1 0 0b2a9e945f3c12f81994172429a4cd23
+
+% 2 1 0 0ac7925c5533d1180b409c7c3a5b57f4
+
+% 1 1 0 0794c028232287e91cea642fdc867041
+
+% 0 1 0 0f8e9daa6994ec4c16457e6e660f9f42
+
+% 0 1 0 1193c20375e9153817c5c8e8565cb8ce
+
+% 1 1 0 17b8ee1cf9112a0b1f8c9a7765981805
+
+% 1 1 0 1e863b77ad5ad7af14bb7d27c28f423d
+
+@ 0 9 0 011f45bf779e3c7c1da98d171d7729f5
++   entry .Legend   凡例を置く場所：`Hidden`、`Right`、`Bottom`
++       `Chart.Style#legend` がその一つを選ぶ。
++       `Right` は系列ごとの色見本と名前をプロットの横に積み重ね、`Bottom` はそれらを下端に沿って一行に流し、`Hidden` は凡例を描かず、そのための場所も確保しない。
++       ドーナツは、設定にかかわらず凡例を持たない。
++   entry .Axis   直交座標系のスタイルのフックがどの軸を描いているか：`Abscissa` または `Ordinate`
++       `Chart.Cartesian` の `axisLine`、`tick`、`tickLabel`、`gridLine`、`axisTitle`、`arrowhead`、`axisBreak`、`labelRoom` に渡されるので、一つのオーバーライドで横軸を縦軸と異なるように扱える。
++   entry .Anchoring   配置が決めた、テキストの並びを組む場所：点と揃え
+
+% 1 1 0 11484e627334b7f005e79b645e1eee2a
+
+@ 0 15 0 0e114d9ac2ce61770c34d1142af355ed
++         ラベルのアンカーの `#point` と、テキストをその正しい側に置く `Lettering.Anchor` と `Lettering.Baseline` である。
++         `Chart.Cartesian#tickLabel`、`#pointLabel`、`Pie.Style#wedgeLabel` はこれを受け取る。位置を選ぶのは cartouche である。ラベルは衝突を避けるために、その点の別の側へ、あるいは引き出し線を伴って点から離れた所へ移されているかもしれないからである。スタイルはテキストを `at.point` に `at.anchor` と `at.baseline` で描き、点には自身の変換を適用する。
++     entry .of   配置済みの cartouche の `Caption.Position` に対するアンカー
++         点の東にあるテキストはそこから始まり、垂直方向はそこを中心とする。西にあるテキストはそこで終わる。北にあるテキストはその上に乗り（アルファベットのベースライン）、南にあるテキストはそこから垂れ下がる。斜めの取り付けは両者を組み合わせ、`Center` は水平も垂直も中央である。
++     entry #point   アンカーの点。描画の座標で表す
++     entry #anchor   `text-anchor`：点がテキストの始まり、中央、終わりのどれであるか
++     entry #baseline   `dominant-baseline`：グリフのどの線が点の上にあるか
++   entry .Style   すべてのチャートの種類が共有するもの：キャンバス、フォント、凡例、共通の構成要素の描き方
+
+% 1 1 0 12cb7aedbd69f8b00df301085c58537f
+
+@ 0 6 0 08009728091e87cd1d44b27ca0a1c242
++         スタイルの階層の根である。
++         チャートの種類は幾何（ラベルがどこにあるか、棒の高さはどれだけか）を計算し、構成要素ごとにスタイルのメソッドを呼び出す。メソッドは描くべき `Figure` を返す。スタイルは、描き方を変えたいメソッドをオーバーライドし、残りを継承する。
++         `Chart.Cartesian` は軸を加え、各種類は自身のトレイト（`Bars.Style`、`Lines.Style`、`Pie.Style`、…）を加える。`Chart.Standard` はそのすべてを実装し、コンパニオンのデフォルトであるので、スコープにスタイルがなくてもチャートは描画される。
+
+@ 0 3 0 099577af4de1680800eb195b33f314a7
++         `#font` は `Font in Web` である：フェイスとその書体のためのプロビジョンを組にしたものなので、チャートは、SVG が `@font-face` を持つ書体か、総称ファミリーでしか組めない。
++         名前付きのファミリーは、プロビジョンとフォントの組である：
+
+% 2 1 0 0b3c80addaa7bba50d8a56e751e0a128
+
+% 3 1 0 0df070fa9b4e23b20b426f01b16680b8
+
+% 0 1 0 020998cd3ec9f4781ef2dbe8f889db11
+
+% 0 1 0 17cb0b7ac4f879e014204e15e017078c
+
+% 0 1 0 13259973c904f6050a813d0ea6df3855
+
+% 0 1 0 13097b1ed1151f9d044ede2195ae9814
+
+% 1 1 0 089bba1bc9f01d9c1e022b08e2917b6d
+
+% 0 1 0 156f52f2e51a39ee0c82893b1bf4ee30
+
+% 0 1 0 033cf4c7711e0a3a1f3188052bfcec8e
+
+@ 0 31 0 1045ddff635d5cb31757e03525ed6e66
++     entry .standard   インポート不要のデフォルトのスタイル：`Chart.Standard()`
++         コンパニオンの given なので、レキシカルスコープにある任意の `Chart.Standard`（または他のスタイル）の given がこれより優先される。
++     entry #width   描画の幅。ピクセル単位
++     entry #height   描画の高さ。ピクセル単位
++     entry #inset   描画の端と描かれるものとの間の余白。ピクセル単位
++     entry #font   すべてのテキストの並びを組むフォント。`Font in Web` である
++     entry #fontSize   文字の大きさ。ピクセル単位で、構成要素の間隔はここから導かれる
++     entry #legend   凡例を置く場所。`Chart.Legend` である
++     entry #gap   構成要素の間の間隔の単位：フォントサイズの 10 分の 4
++     entry #fontStyle   ある色のテキストの並びのための CSS：`font-size` と `fill`
++         フェイスそのものはここにはなく、レタリングの `font` にある。
++         オーバーライドでは、字間や太さなどのプロパティを加えられる。
++     entry #lettering   テキストの並びを点に組む：すべてのラベル、タイトル、凡例の項目はここを通る
++         その位置に、アンカー、ベースライン、その色の `#fontStyle`、スタイルの `#font`、任意の変換を伴う savagery の `Lettering` を作る。
++         これをオーバーライドすると、チャートのテキストすべてのスタイルが一度に変わる。より具体的なフック（`tickLabel`、`legendLabel`、…）はこれを呼び出す。
++     entry #backdrop   すべての背後にある図形：パレットの背景色の矩形
++         暗いパレットのレタリングがページの白の上に組まれないように、`backdrop` 部分として最初に描かれる。
++         透明なチャートにするには、`Nil` を返すようにオーバーライドする。
++     entry #legendLineHeight   凡例の一項目の高さ：フォントサイズの 1.6 倍
++     entry #swatchSize   凡例の色見本の一辺：フォントサイズ
++     entry #swatch   凡例の項目の名前の横にある色の見本：デフォルトでは塗りつぶした正方形
++         色見本の左上の角、系列の色とそのインデックスを受け取るので、スタイルはある系列には線の見本を、別の系列には箱を描ける。
++     entry #legendLabel   凡例の項目の名前。色見本の右に組まれる
++     entry #leader   点から離れざるを得なかったラベルからその点へ戻る線
++         デフォルトでは 1 ピクセルの線を引いた折れ線である。
++         点の注記や円グラフの扇形の百分率は、その点のどの側も埋まっているときに引き出し線を伴って移される。線のスタイルを変えたり線を消したりするには、これをオーバーライドする。
++   entry .Cartesian   横軸と縦軸を持つすべてのチャートが共有するもの：軸、グリッド、タイトル、マーカー
+
+% 1 1 0 0b6e1b86cbbb637811f7d61cb350a882
+
+@ 0 5 0 12587498fd3223011f423056ffd28784
++         `Chart.Style` を、軸の構成要素とそのレイアウトのパラメーターで拡張する。
++         位置は描画の座標で与えられる。スタイルは形、線、そしてラベルが目盛りに対してどこにあるかを決める。
++         `Bars.Style`、`Lines.Style`、`Scatter.Style`、`Boxes.Style`、そして（`Bars.Style` を通して）`StackedBars.Style` と `Histogram.Style` がこれを拡張する。`Pie.Style` と `Doughnut.Style` は軸を持たないので拡張しない。
+
+% 2 1 0 02a7f7521cd2f0b10304eca90dc2f1ff
+
+% 3 1 0 0f42ed084f210f2908895958ad264cf8
+
+% 0 1 0 158c27c070fb9ed41129c25e8d727069
+
+% 0 1 0 11feca8183cf473717a5471a0e5acc31
+
+% 0 1 0 055c735797be81fb0b9ffdf7d7334532
+
+% 1 1 0 0c34d914475470e71ea1fa0a6737756a
+
+@ 0 41 0 1e369dca35c1070506662ba30fa16bdc
++     entry #pitch   一つの刻みが軸に沿って必要とする幅。ピクセル単位で、軸がいくつの目盛りを得るかを決める
++         長さ `L` の軸には `L / pitch` 個の刻みの予算が与えられる。ルーラーはその範囲内で切りのよい間隔を選び、それでもラベルが重なってしまう横軸にはより少ない刻みが与えられる。
++     entry #tickLength   目盛りが軸の線を越えて伸びる長さ。ピクセル単位
++     entry #grid   主な刻みにグリッド線を描くかどうか
++     entry #abscissaTitle   横軸のタイトル。型が与えるものを使うなら `Unset`
++         量の軸には、型からその次元と単位によるタイトル `distance / m` が付く。ここで与えたタイトルは名前を置き換えるが、単位は保つ：`tide height / m`。
++     entry #ordinateTitle   縦軸のタイトル。型が与えるものを使うなら `Unset`
++     entry #strokeWidth   系列の線と箱ひげ図の中央値の線の幅。ピクセル単位
++     entry #markerRadius   点のマーカーの半径。ピクセル単位
++     entry #axisLine   軸の線。一方の端から他方の端まで
++     entry #arrowhead   軸の遠い端にある印。デフォルトでは何もない
++     entry #axisBreak   範囲が零を含まない線形の軸の原点側の端にある印。デフォルトでは何もない
++         零より上から始まるか零より下で終わる線形のスケールに対してのみ呼ばれる。そうした所では、読み手は軸が零から始まると思い込みかねないからである。
++     entry #gridLine   主な刻みでプロットを横切るグリッド線。`#grid` が設定されている場合
++     entry #tick   刻みに置く目盛り：横軸からは下向き、縦軸からは左向き
++         対数軸の `2`–`9` の倍数のような、ラベルのない副刻みでは `major` は偽である。
++     entry #tickLabel   刻みのラベル。配置が選んだアンカーに置かれる
++         目盛りの先に `tickLength + gap` だけ離して組まれる：横軸では下に、縦軸では横に置く。
++         隣と重なってしまうラベルは、描かれずに隠される。
++         ラベルを回転させたり移動させたりするオーバーライドは、レイアウトが正しい場所を確保するように `#labelRoom` もオーバーライドしなければならない。
++     entry #labelRoom   軸の目盛りとラベルが線の先に占める場所。レイアウトがこれを確保する
++         横軸では、目盛り、間隔、テキスト一行分である。縦軸では、目盛り、間隔、そしてスコープにある `FontMetric` が測った最も幅の広いラベルである。
++     entry #titleRoom   軸のタイトルが占める場所：フォントサイズの 1.6 倍
++     entry #axisTitle   軸のタイトル：横軸の中央の下、または縦軸の横に縦向きで置く
++         縦軸のタイトルは描画の左端に組まれ、そのアンカーを中心に反時計回りに 90 度回転される。
++     entry #marker   点の印：半径 `#markerRadius` の塗りつぶした円
++         系列のインデックスを受け取るので、マーカーは系列ごとに変えられる。
++     entry #errorBar   値の下限から上限までの棒。両端に横線がある
++         `Estimate` に対して描かれる：`top` と `bottom` の間の縦線と、両端にある半幅 `cap` の横線であり、パレットの軸の色で描く。
++     entry #pointLabel   `Noted` 値が持つ注記。マーカーの横に組まれる
++         デフォルトでは右に、あるいは配置が他のラベル、マーカー、線と重ならないと判断した側に、与えられた `Chart.Anchoring` で置く。
++   entry .Standard   すべてのチャートの種類のデフォルトのスタイル。名前付きパラメーターのケースクラスである
+
+% 1 1 0 0e7ebd328e0f877f11572f1a2f1ecd57
+
+@ 0 8 0 06c5184a0ddec22206449145ce248609
++         `Bars.Style`、`StackedBars.Style`、`Histogram.Style`、`Lines.Style`、`Scatter.Style`、`Boxes.Style`、`Pie.Style`、`Doughnut.Style` を一度に実装するので、スコープにある一つの値でどのチャートにもスタイルが付く。
++         すべてのパラメーターにデフォルトがある：`width = 640.0`、`height = 400.0`、`inset = 12.0`、`font = Web.sansSerifFont`、`fontSize = 12.0`、`legend = Legend.Right`、`pitch = 60.0`、`tickLength = 5.0`、`grid = true`、未設定の `abscissaTitle` と `ordinateTitle`、`strokeWidth = 2.0`、`markerRadius = 3.5`、`markers = false`、`smoothing = 0.0`、`barGap = 0.25`、`boxGap = 0.25`、`hole = 0.0`、`sectorGap = 2.0`、`bandGap = 2.0` である。
++         どの構成要素の描画も、無名サブクラスでのオーバーライドで変えられる：
+
+% 2 1 0 09e94c627ac075ec146753b1a7992297
+
+% 3 1 0 148368bd555188380e7ddb8267260bc1
+
+% 0 1 0 13b979f59851759d05f6871637606e61
+
+% 0 1 0 1a9b1cc29b111162162eb8ee61ec0e12
+
+% 0 1 0 182636f369313bc51716f08043d1d2e8
+
+% 0 1 0 1804a805c4eacc0d0f5bfba4c7ecd029
+
+% 0 1 0 0a91a4fa4775ff6d1367c89c146c4545
+
+% 0 1 0 0e1c32bb8248e9180cd414ec357797a0
+
+% 1 1 0 1d50d7ae3cfe717813b036befc8fd6a7
+
+@ 0 3 0 10c3baa4b9a2e622191ad31a5fe24c40
++         チャートを描画するヘルパーは、スタイルを `using` パラメーターとして受け取るべきである。そうしないヘルパーは、黙ってコンパニオンのデフォルトで描画する。
++   entry .Drawing   描画済みのチャートを部分に分けたもの。それぞれ安定した識別子の下に、描画順に並ぶ
+
+% 1 1 0 18bfb5f87905721613f46387712c3d3c
+
+@ 0 15 0 142eeb3dc6545b801b03ef6f93ad2bbc
++         `Chart#drawing` の結果である：キャンバスの大きさ、任意の SVG 定義、そして `Svg.Id` から `Figure` への `Ledger` であり、`backdrop`、続いて（直交座標系のチャートなら）`grid`、`abscissa`、`ordinate`、`series-0`、`series-1`、…、`legend` を保持する。円グラフは `wedges` と `legend` を、ドーナツは `rank-0`、`rank-1`、… を持つ。
++         識別子は `Chart.Revision.Replace` が指定するものであり、それぞれが SVG の `<g>` の `id` になる。
++     entry .encodable   描画全体を一つの `Svg` として：`drawing.in[Svg]`
++     entry #width   キャンバスの幅。スタイルから
++     entry #height   キャンバスの高さ。スタイルから
++     entry #defs   描画が必要とする SVG 定義。標準の種類にはない
++     entry #parts   識別子ごとの部分。描画順
++   entry .encodable   チャートを `Svg` として：`chart.in[Svg]`。チャートが求める構成要素を伴う
++       チャート自身のスタイルの型（棒グラフなら `Bars.Style`。`Chart.Standard` はすべての種類を満たす）、`ChartPalette`、`FontMetric`、`Arranger` がスコープに必要であり、そのすべてにコンパニオンのデフォルトがある。
++       `chart.in[Svg].in[Xml].show` が SVG のテキストである。
++   entry .Revision   チャートのある描画と次の描画の間で変化したもの
+
+% 1 1 0 07ad483271aa46ae1f8f560dbabc7360
+
+@ 0 22 0 10822a6e2ca5092f00d50d3d6b7bbd70
++         `Chart#revise` が返す。
++         `Redraw(svg)` は新しい描画全体を運ぶ。新しいデータに合わせて軸が動いたからである。`Replace(id, figure)` は、描画が異なる一つの部分（`series-0`、`legend`、`rank-1`）を指定し、それを置き換える図形を伴う。
++         SVG を保持するページは、要素をその識別子で置き換えるか、要素全体を置き換えるだけでよいので、改訂を一つずつ送ればチャートを WebSocket 越しに最新に保てる。
++         データが変わらなければ空のリストになる。
++   entry #data   チャートを作ったデータ
++   entry #form   チャートの種類：`Bars()`、`Lines()`、… の値。明示的な較正を伴うこともある
++   entry #fit   データの種類への適合：その種類自身の適合の型であり、軸が見える
++       折れ線グラフでは `chart.fit.ordinate.transform`、棒グラフでは `chart.fit.bands.categories`、ヒストグラムでは `chart.fit.edges`、円グラフでは `chart.fit.total` である。
++   entry #plottable   データを種類と組み合わせる `Plottable` インスタンス
++   entry #drawing   チャートを `Chart.Drawing` として描画する：識別子の下にある部分
++       `.encodable` と同じく、その種類のスタイル、`ChartPalette`、`FontMetric`、`Arranger` が必要である。
++       描画は呼び出しのたびに新たに計算される。
++   entry #revise   新しいデータに対する次のチャートと、ページ上で変化したもののリスト
++       現在の適合がまだ新しいデータを収められると `Plottable` の `accommodates` が述べるなら、適合は保たれ（軸は動かない）、描画が異なる部分はそれぞれ `Chart.Revision.Replace` になる。そうでなければデータは適合し直され、唯一の改訂は新しい SVG の `Chart.Revision.Redraw` になる。
++       新しいデータは同じ型でなければならない：`Series[Double, Double]` のチャートは、別のそうした系列で改訂する。典型的には `chart.data.add(point)` である。
+
+% 2 1 0 02f21a017b2da1850b243d7b3da23b3a
+
+% 3 1 0 1ca7392376646af81428d2b379bbc256
+
+% 5 1 0 17be7ba3a900f7720ee69c4438e383cd
+
+% 0 1 0 1544820c19792a050942136371be1fb8
+
+% 0 1 0 1911b915f448ad2a1308feeb566509e0
+
+% 0 1 0 0524ebbf6d0082b711301e563e7679a3
+
+% 0 1 0 1a3c476a0e344e0d04e431e60d598126
+
+% 1 1 0 13b711664109011d1fbc28eed35560ac
+
+@ 0 1 0 156ab2d2112773bd125263f27bc77854
++   entry .Category   独自の型を持たないカテゴリー：表示可能な任意の値をラベルとして包んだもの
+
+% 1 1 0 07c0b3dba06b12fe08b49a842a99ba7c
+
+@ 0 10 0 198495c6cd0604ba1eb7f66bb7f4a301
++         `Series#categorical` が数値の横軸から作るもの、あるいは手で包んだ任意のものである：`Category(42)` のラベルは `t"42"` である。
++         `Category` は、その `#label` によって `Categorical` である。
++     entry .apply   `Category(value)`：表示可能な任意の値でラベルを付けたカテゴリー
++     entry #label   ラベル。テキストで表す
++   entry .Estimate   値があると考えられる区間を伴う値。誤差棒か帯で描かれる
++       `Estimate(value, lower, upper)`：信頼区間を伴う平均や、四分位数を伴う中央値である。
++       その `value` によって `Continuous` であり、`bounds` は `(lower, upper)` なので、散布図や棒グラフではそれぞれに誤差棒が描かれ（`Chart.Cartesian#errorBar`）、折れ線グラフでは境界の間に半透明の帯が塗られる（`Lines.Style#band`）。境界も軸の範囲に算入されるので、区間全体が軸に収まる。
+
+% 2 1 0 07ebf43b7c50ebe308d481d0b860457d
+
+% 3 1 0 0386191390f9d0fe19d23dbcddcc2aaa
+
+% 0 1 0 100bf2409e9294bd064826bee7d1373f
+
+% 0 1 0 07994014e5a161a70615dfd5f114168f
+
+% 1 1 0 184c9f5219bf376d0b98439090a949f8
+
+@ 0 1 0 1844bc0d0f85efd5082ba8eb1b1342c4
++ entry .Plottable   データの形とチャートの種類との互換性、そしてそれを描くのに必要なもの
+
+% 1 1 0 12a45856f513da0508453329ef105e35
+
+@ 0 9 0 1d5eaa9f9152db3d0bd8070e46a6597a
++       `data is Plottable in form to fit by style` は、その種類がデータを描ける場合にのみ存在する：円グラフには一つのカテゴリーの系列が、折れ線には数値の軸が、ドーナツには重み付きで進捗を持つノードの `Dag` が必要である。
++       種類は `Form`、適合は `Result`（したがってチャートの適合はその種類自身のものであり、軸が見える）、スタイルは `Operand` であり、`Chart.Style` を上限とする。
++       標準のインスタンスは各種類のコンパニオン（`Bars.series`、`Bars.traversable`、`Lines.series`、`Histogram.samples`、`Doughnut.dag`、…）にあるので、インポートなしで見つかる。`traversable` インスタンスは、系列や標本の任意のコレクション（`List`、`Set`、`Sequence`）を扱い、その走査の証拠は要素の型の型クラスより先に解決される。
+
+@ 0 3 0 169e240487b4d1361b0f5b63a714220f
++       新しい種類のチャートは、それが描ける形のためのインスタンスを伴う新しい値である。他には何も変わらない。
++       インスタンスの `#draw` は、その種類のスタイル、`ChartPalette`、`FontMetric`、`Arranger` を受け取る。
+
+% 1 1 0 106a327457545ac61a66a5b445b8df36
+
+% 0 1 0 1d53a2f7f05e4c790355af0f05fb4f2d
+
+@ 0 8 0 00a98c3506df028f0dcfe048eed0f889
++   entry #fit   データから軸を選ぶ：`Lines.Fit` のような `Result`
++   entry #accommodates   適合がまだ新しいデータを収められるかどうか。改訂が一つの部分を置き換えられるようにするため
++       直交座標系の種類では、すべての位置と区間がスケールの内側にあり、すべてのカテゴリーが既知の帯であること。円グラフでは、カテゴリーが変わらないこと。ドーナツでは、グラフの形と重みが変わらないこと。
++   entry #draw   適合に対してデータを `Chart.Drawing` として描画する
++       スタイル（`Operand`）、`ChartPalette`、`FontMetric`、`Arranger` をコンテキスト値として受け取る。
+
+@ 0 1 0 08c53c1861536a7a0011fac29e2396e8
++ entry .Series   名前の付いた一つの点の並び：チャートの種類が互換となるデータの単位
+
+% 1 1 0 1ca73e551bd82bcd19cdb4d0f96c431c
+
+@ 0 7 0 1e1495a4373651d60efd59a1659f0b36
++       `Series[x, y]` は、名前と `(x, y)` の組の `Sequence` である。
++       横軸の型が軸を決める：`Text`、列挙型、`Chart.Category` は `Categorical` であり、`Bars`、`StackedBars`、`Pie` に合う。数値、`Duration`、`Instant`、`Quantity` は `Continuous` であり、`Lines` と `Scatter` に合う。
++       縦軸は常に `Continuous` であり、`Chart.Estimate`（誤差棒か帯で描かれる）や `Noted` 値（マーカーの横にラベルが付く）であってもよい。
++       複数の系列は、それらの任意のコレクション（`List`、`Set`、`Sequence`）である。各種類の `traversable` インスタンスが、系列で走査できるものすべてを扱うからである。
+
+% 2 1 0 00cd76dca603b8711cbbdceb1ca1fad3
+
+% 3 1 0 051dfbf063159f390e2cf6a0ea54fd6b
+
+% 0 1 0 0524363d7d2fbd431328c627da92bb81
+
+% 0 1 0 14e27bc9cac8ec140405cc9de284bb92
+
+% 0 1 0 16bda0e817e60d1f0e70bbe772ff9097
+
+% 0 1 0 11d0aef0cd4dc28f1db31d754cbab5c1
+
+% 0 1 0 04c619a1b880e46f0c29d74cd64ea15f
+
+% 1 1 0 0d960448bc4200fa1379205e782ff413
+
+@ 0 2 0 0701b7fe8a7e0d2f0e846dd4eaff58f5
++       系列は不変である。`#add` は償却定数時間で点を追加する。これは、一度に一つの測定値を与えられるチャートが必要とするものである。
+
+% 1 1 0 1aee860016b30072004d17f64102e8b7
+
+% 1 1 0 09c0cb16fd32d78b1d5c8e13578885f2
+
+@ 0 11 0 11d82b4e8c71fd841a6753177ddaa71b
++   entry .apply   `Series(name)(points*)`：表示可能な任意の値で名付けた、点を伴う系列
++       名前は構築時に一度だけ表示される：`Series(t"north")(…)`、`Series(2024)(…)`、`Series(Quarter.Q1)(…)` はいずれも `Text` の名前を与える。
++   entry #name   系列の名前。テキストで表し、凡例の項目になる
++   entry #points   点。与えられた順に並ぶ
++       折れ線グラフは描画の前にそれらを横軸で並べ替える。散布図と棒グラフは順序を保ち、棒グラフではそれがカテゴリーが最初に現れる順になる。
++   entry #add   点を一つ加えた系列。償却定数時間で追加する
++   entry #categorical   各横軸の値を `Category` にした同じ点。数値の軸に対する棒グラフのため
++       `x is Showable` が必要である。
++       入力サイズに対する系列は、サイズに対する折れ線ではなく、サイズごとの棒になる：`timings.categorical.chart(Bars())`。
+
+@ 0 1 0 177c5f15b2367c0319ddcb3bfb6541c2
++ entry .Samples   何らかの要約の前の、一つの名前の下の生の測定値：ヒストグラムが区分し、箱ひげ図が要約するもの
+
+% 1 1 0 1a1a315cd4181a911461952c3527e5b8
+
+@ 0 3 0 15c92eeef7ed9d170f371ff1608b75cb
++       `Samples[y]` は、名前と `Continuous` 型の値の `Sequence` である。
++       `Histogram` はその範囲を階級に分けて数え、`Boxes` はそれを四分位数と両極値として要約する。
++       標本の集合のコレクションは、集合ごとに一つの系列として描かれる。
+
+% 2 1 0 00949a9bce0a3e0e1a37cb6ce8e5bb74
+
+% 3 1 0 0a7b704d7e16da660899f2286bfe5a07
+
+% 0 1 0 1c4752a743fbf33b1f5a08841cf052ee
+
+% 0 1 0 19534f8bc72e439703fcbe033a036320
+
+% 0 1 0 0aebcf41cf45518a14fd0b2db441e907
+
+% 1 1 0 16beb5dd9148ce61006104f593367e0f
+
+% 1 1 0 16edd45b5cbe1bcf10031a9249b9199f
+
+% 1 1 0 1f2c7963698cebc50471794a2c1b355c
+
+@ 0 4 0 1ef2a50779f633461c3926965939c82f
++   entry .apply   `Samples(name)(values*)`：表示可能な任意の値で名付けた標本の集合
++   entry #name   集合の名前。テキストで表す
++   entry #values   測定値。与えられた順に並ぶ
++   entry #add   測定値を一つ追加した集合
+
+@ 0 5 0 0e903b903c4cab0a0b0b1b7b9295ab23
++ entry .Noted   注記を付けた値。散布図や折れ線グラフはそれをマーカーの横に組む
++     `Noted(value, note)`：値は `value` によって `Continuous` であり、その `annotation` は注記である。`Chart.Cartesian#pointLabel` は、cartouche の配置が場所を見つけたとおりに、それをマーカーの右に、別の側に、あるいは引き出し線を伴って離れた所に組む。
++     点のどちらの座標も `Noted` であってよい。両方がそうなら、横軸の注記が優先される。
+
+% 2 1 0 0a34a6567f9bd1d115201315938d1b3b
+
+% 3 1 0 13ea04c58c5bd00c0104bb3985b0fadb
+
+% 0 1 0 1e21cee40e15a9db0f53ccf23ca8fa78
+
+% 0 1 0 1a2115b59177209708d8da34dfa6f586
+
+% 1 1 0 1fdcc5e74d6d19c51a4d1d930e9377b7
+
+@ 0 2 0 121806109873ec2b1c3a473d0c83d7e8
++     この名前は 0.72.0 までは `Annotated` であった。アンブレラで adversaria の `Annotated` 型クラスと衝突したのである。
+
+@ 0 1 0 1884e75a74ed70dd0e1cb982a6f7d6a7
++ entry .Categorical   軸上のカテゴリーを名指す値：互いに異なるラベルであり、算術はない
+
+% 1 1 0 1ea9e18bff91982900dcd5400152b31d
+
+@ 0 4 0 134c5a89d4de5c7c0c9e2d16c7c33d16
++       棒グラフや円グラフの横軸の型クラスである。
++       カテゴリーは、すべての系列を通して最初に現れた順に並ぶ互いに異なるラベルであり、その間に位置はない。
++       `Text`、`Chart.Category`、そして `Enumerable` インスタンスを持つ任意の `scala.reflect.Enum` は、コンパニオンを通して `Categorical` である。独自の型には一行が必要である：
+
+% 2 1 0 1d649a2300058fd90cf91c83a8dae8d4
+
+% 3 1 0 0c67cbda0af1901819e8064a273d863c
+
+% 0 1 0 0db719af00f9e7a11f2eb2fac0a7fd77
+
+% 0 1 0 108f3191611979e0138697fd00e70702
+
+% 1 1 0 09d296360660a9431d418eafa27e1a7b
+
+@ 0 4 0 1312c3dc050321d416cb41836a6ac8fd
++   entry .text   テキストはそれ自身がラベルである
++   entry .category   `Category` をそのラベルで
++   entry .enumerable   列挙型のケースをその名前で。`Enumerable` インスタンスを通す
++   entry #label   値が軸に与えるラベル
+
+@ 0 1 0 0668e3c176f8b94d05567c7ce9560ee6
++ entry .Continuous   数値の軸上の位置を持ち、任意でその周りの区間を持つ値
+
+% 1 1 0 1584270540c6546b06695034a9d81e8e
+
+@ 0 6 0 007c6c126285b3e014b1654e047db36c
++       すべての数値の軸の型クラスである。
++       `#position` は描画の元となる数値、`#bounds` は任意の区間（`Chart.Estimate` が持つ）、`#annotation` は任意の注記（`Noted` 値が持つ）であり、`#notation` はこの型の軸の刻み方、書き方、タイトルの付け方を述べる。秒は個数とは異なる読み方をされ、量は単位で測られるからである。
++       コンパニオンは `Int`、`Long`、`Double`、`Float`、`F64`、すべての `Quantity`、`Duration`、`Instant`、`Chart.Estimate`、`Noted` を扱う。独自の型に必要なのは位置だけである：
+
+% 2 1 0 11ccdcf54d27211505616948eaaaca6a
+
+% 3 1 0 04c0bae71cb4e07b139f5fa5517f7086
+
+% 0 1 0 1492c8943eddfea80efc84194ae9c8dc
+
+% 0 1 0 0bb5d9f8ab4632bf0cd89a7bd2d6faa5
+
+% 1 1 0 001b2fc0236618fd075a19d1c8db1cbb
+
+% 0 1 0 0b0b2f7a6d374f171f3200ec42ce7f70
+
+% 1 1 0 0f921ecf1dfdb11b141d06cac7207a27
+
+@ 0 28 0 04bed7c339dea1b500ed39ddd73b29d6
++   entry .int   `Int` をその値で
++   entry .long   `Long` をその値で
++   entry .double   `Double` をそれ自身で
++   entry .float   `Float` をその値で
++   entry .f64   hypotenuse の `F64` をその値で
++   entry .quantity   任意の `Quantity` を、それ自身の単位での大きさで。単位が軸の名前とタイトルになる
++       インライン given である：単位と量の次元は、チャートを作る場所で型から読み取られるので、`Quantity[Metres[1]]` の軸のタイトルは `distance / m` に、`Metre/Second` の値の軸のタイトルは `velocity / m·s¯¹` になり、単位は Soundness のどこでも書かれるとおりに書かれる。
++       スタイルの `abscissaTitle` や `ordinateTitle` は名前を置き換え、単位は保つ。
++       秒については、より具体的な `.duration` が優先される。
++   entry .QuantityContinuous   `.quantity` の背後にあるクラス：一つの `Quantity` 型とその表記のための `Continuous`
++       無名ではなく名前付きである。そうしないと、インライン given が展開される場所ごとにクラスを複製してしまうからである。
++       通常、ユーザーが書くものではない。
++   entry .duration   aviation の `Duration` をその秒数で。時計の刻みの軸で、タイトルは `time`
++       その表記は `Spacing.Sexagesimal` と `Labelling.Interval` である：刻みは秒、半分、分、時に置かれ、`250ms`、`1m30s` のように自身の単位を伴う。
++   entry .instant   aviation の `Instant` をエポックからの秒数で。一日の時刻としてラベルが付く
++       その時刻系の分解能にかかわらない。
++       表記は `Labelling.Clock` を伴う六十進法なので、刻みは UTC で `01:01:01` のように読める。
++   entry .estimate   `Estimate` をその値で。区間を境界とする
++   entry .noted   `Noted` 値をその値で。注記を注釈とする
++   entry #position   値が軸上のどこにあるか。数値で表す
++   entry #bounds   値の周りの区間、または `Unset`
++       誤差棒か帯として描かれ、軸の範囲に含まれる。
++   entry #annotation   値のマーカーの横に組む注記、または `Unset`
++   entry #notation   この型の軸の間隔、ラベル、名前、単位の付け方：`Scale.Notation`
++       オーバーライドされない限り、十進の間隔で、数値のみであり、名前も単位もない。
+
+@ 0 4 0 063c52ce352d72b41fb2515f40ebc777
++ entry .Weighted   ドーナツのノードの大きさ：その段の角度と帯の太さに占める割合
++     `node is Weighted` は `weight(node): Double` を与える。
++     `Doughnut` では、ノードの扇形は、その重みが段の合計に占める割合だけ帯の一周を掃き、帯の太さは、その段がグラフ全体の重みに占める割合になる。
++     負の重みは零として数える。
+
+% 2 1 0 09f6f0fafff940f5104eeab3bf308de8
+
+% 3 1 0 1bbfb229d4f6b5891b5c7f08aef97951
+
+% 5 1 0 0faa37b2ef4e05e909a8877ea332a029
+
+% 0 1 0 14765987a6d68ca5062825d9d712e8c8
+
+% 1 1 0 161d15a2c90045d716d3db6696d578a3
+
+@ 0 1 0 0d8ac9df205cedb00b767a43e80b2c9d
++     この名前は 0.74.0 までは `Sized` であった。そのとき、この名前は proscenium の長さの証明に移った。
+
+@ 0 5 0 0b28b5de1b2b1f6309bae93c9202e149
++ entry .Progressive   ドーナツのノードがどこまで進んだか。0（未着手）から 1（完了）まで
++     `node is Progressive` は `completion(node): Double` を与え、描画時には `[0, 1]` に切り詰められる。
++     ノードは自身の進捗を持つので、ドーナツは他のチャートと同じく、ノードがより進んだ同じ形の新しい `Dag` で改訂され、扇形がより満たされた帯だけが置き換えられる。
+
+% 2 1 0 1e3f5b96841857901b8756005d3b925b
+
+% 3 1 0 04d2ec98ccf5e67a1d48133f128f255d
+
+% 5 1 0 1445935240d6b891007e7bee4ce3a869
+
+% 0 1 0 1c7876fd9b0c950311c6a46d9206567c
+
+% 1 1 0 152a2ced14cec5e00062e3fa58dd78d7
+
+@ 0 1 0 08991e79fe3137e619995ca7d0fc19e9
++ entry .Bars   カテゴリーごとにまとめた棒：各カテゴリーの帯に系列ごとに一本の棒があり、零から伸びる
+
+% 1 1 0 070f28426296906d1874f6430f70a31e
+
+@ 0 5 0 11774c979e08074a1873d2108296615c
++       一つの `Series[x, y]` またはその任意のコレクションのためのチャートの種類であり、`x` は `Categorical`、`y` は `Calibration` を伴う `Continuous` である。
++       各カテゴリーは横軸の帯であり、すべての系列を通して最初に現れた順に並ぶ。その中では系列ごとに一本の棒が零から値まで伸び（あるいは下がり）、値が `Chart.Estimate` であるところには誤差棒が付く。
++       縦軸は零に固定される。棒の長さこそがその意味だからである。
+
+% 2 1 0 0ad75910a4b1e283098881be8684c4b3
+
+% 3 1 0 13c273e5cbb29595146547a914773781
+
+% 5 1 0 0b01f2e72c4ed9271ac8cca1e46c1c26
+
+% 6 1 0 0fd8279483e4bbae1c76a8d34bb6b6e6
+
+% 7 1 0 1dca004f364c195c16930070f5a502ec
+
+% 8 1 0 17584896893760fc19af98df12e2c827
+
+% 10 1 0 06a0c01116233c9c01998f2d5747bef4
+
+% 0 1 0 13cce59d482e2b4f16f69a374a3ce8d2
+
+% 0 1 0 01704f539e44204900836e8cdf376be6
+
+% 1 1 0 1eb69e5584f83eed1a3ac88d4ac92fb1
+
+@ 0 3 0 1cc99213be13032f1aff4e9f44578a1c
++       `Bars(ordinate = calibrations.logarithmicCalibration)` は、このチャートだけの縦軸の較正を固定する。そうでなければ、`y` に対して与えられた `Calibration` が適用される。
++       描画の部分は `backdrop`、`grid`、`abscissa`、`ordinate`、`series-0`、…、`legend` である。
+
+% 0 1 0 01dfee91768e074101fa8a47b0b7d63a
+
+% 1 1 0 01f2ead4defea218043159e2d1b4bead
+
+@ 0 4 0 1292b696c6bc0c3919ab6764bf6c5392
++   entry .Fit   棒グラフの適合：`#bands` としてのカテゴリーと、縦軸の `Scale`
++     entry #bands   横軸の `Bands`：カテゴリーごとに一つ、最初に現れた順
++     entry #ordinate   縦軸の `Scale`。零に固定される
++   entry .Style   軸以外の棒グラフの構成要素：棒と、帯の中の間隔
+
+% 1 1 0 06ab66ecd7d5f24219a02c8ffad48201
+
+@ 0 12 0 1a9bd99133af3e6c08a68d614502e5cd
++         `Chart.Cartesian` を拡張する。
++         `StackedBars.Style` と `Histogram.Style` がさらにこれを拡張するので、`bar` のオーバーライドは三つの種類すべてに適用される。
++     entry #barGap   カテゴリーの帯のうち、棒のまとまりの周りに空けておく割合
++         `Chart.Standard` では `0.25` であり、まとまりは帯の 4 分の 3 を占める。
++     entry #bar   一本の棒。左上の角と幅と高さで表し、系列の色で描く
++         デフォルトでは塗りつぶした `Rectangle` である。
++         角は、正の棒では上端、負の棒では零の線なので、矩形は常に下へ伸びる。
++   entry .series   一つのカテゴリーの系列は棒として描ける
++       `x is Categorical`、`y is Continuous`、`y is Calibration` が必要である。
++   entry .traversable   カテゴリーの系列で走査できる任意のコレクションは棒として描ける
++       走査の証拠が先に解決される。それが `x` と `y` を決めるからである。
++   entry #ordinate   縦軸の較正、または値の型に対して与えられたものを使うなら `Unset`
+
+@ 0 1 0 0b1f52b63d37e74309bab7a9983a6401
++ entry .StackedBars   カテゴリーごとに積み上げた棒：各系列の値は、それより前の系列の合計の上に乗る
+
+% 1 1 0 0f727b907574d8c718840439aef3adb7
+
+@ 0 4 0 05e7e2562118012d0d6a3b654f9208fe
++       `Bars` と同様だが、カテゴリーごとに棒は一本であり、その全体の高さはカテゴリーの合計である：各系列の値はそれより前の系列の累計の上に積み上げられ、正の値と負の値は零から反対の方向に別々に積み上げられる。
++       縦軸は最大の合計までを覆い、零に固定される。
+
+% 2 1 0 080d7d7445f21f071e9ef9a85e81cff4
+
+% 3 1 0 037a67b74b36e9d002adec68eadb48ad
+
+% 5 1 0 09ac9a6aaf0a65c60e471b050d3afc46
+
+% 6 1 0 1046122d3602c732043720f9ab786ad2
+
+% 7 1 0 1c918b7edaff03d61e270d34670e7b07
+
+% 8 1 0 0845dc14c53ac880121a7b8ecf70cf55
+
+% 0 1 0 1a43980f55808b731840daa9236ad347
+
+% 1 1 0 15501c416b6b6f340aac0c3e2ed2d8fa
+
+@ 0 2 0 00a1e8262bba4b2f0563f2afea5dad75
++       積み上げ棒グラフとして描けるのは系列のコレクションだけである：単一の系列には積み上げるものがないので、`Bars` として描かれる。
+
+% 0 1 0 0ed8a7946e3f21be152ded19fc4bf560
+
+@ 0 6 0 1ba94939f1557a7709126efd497b50fb
++   entry .Fit   積み上げ棒グラフの適合：`#bands` としてのカテゴリーと、縦軸の `Scale`
++     entry #bands   横軸の `Bands`。カテゴリーごとに一つ
++     entry #ordinate   縦軸の `Scale`。零に固定され、最大の合計までを覆う
++   entry .Style   `Bars.Style` と同じ構成要素：積み上げ棒グラフは、まとめた棒グラフと同じものを描く
++   entry .traversable   カテゴリーの系列で走査できる任意のコレクションは積み上げ棒として描ける
++   entry #ordinate   縦軸の較正、または値の型に対して与えられたものを使うなら `Unset`
+
+@ 0 1 0 1b76575bbb7a2def05b62079f4668133
++ entry .Histogram   標本の分布：範囲を等しい階級に区切り、各階級に系列ごとの棒を置く
+
+% 1 1 0 146a903ce3d4508d0364e0cc4e0de62e
+
+@ 0 6 0 1ebdb998c7ba4454187c6500aa675465
++       `Samples[y]` または標本の集合の任意のコレクションのためのチャートの種類であり、`y` は `Calibration` を伴う `Continuous` である。
++       すべての標本の範囲は等しい階級に区切られる。与えられれば `#bins` 個、そうでなければスタージェスの公式により、標本数の 2 を底とする対数に 1 を足した数であり、境界は値の型の表記で切りのよい所に置かれる。各階級では、系列ごとの棒がそこに入る標本を数える。
++       縦軸は零からの線形の個数であり、タイトルは `count` である。
+
+% 2 1 0 0a3666cb28d5ba490e71fc08c1232b32
+
+% 3 1 0 1a77ca32984617d607cf62ef73363cfe
+
+% 0 1 0 011b3945348229a61b5fffee924f7681
+
+% 0 1 0 1f88eb9b895587e70147daee2a4ab07e
+
+% 0 1 0 09ba341666bac8961b3a3b0a7a1f2950
+
+% 1 1 0 1af319c2d1e1c7d405d8f06185711d05
+
+% 2 1 0 05ee3cb31d26b3290e1687c2d162ac1c
+
+% 1 1 0 0b075393ccf34b9c19e17f4c1266675b
+
+@ 0 9 0 0e91a86ae52033961f7cc02e0098f0e8
++   entry .Fit   ヒストグラムの適合：階級の `#edges`、それを覆う横軸、個数の縦軸
++     entry #edges   階級の境界。階級の数より一つ多く、切りのよい間隔で置かれる
++     entry #abscissa   最初の境界から最後の境界までの線形の `Scale`
++     entry #ordinate   個数の `Scale`。零から最も多く数えた階級までで、切りのよい間隔までパディングされる
++   entry .Style   `Bars.Style` と同じ構成要素：ヒストグラムは棒を描く
++   entry .samples   一つの標本の集合はヒストグラムとして描ける
++   entry .traversable   標本の集合で走査できる任意のコレクションはヒストグラムとして描ける
++   entry #bins   階級の数、またはスタージェスの公式を使うなら `Unset`
++   entry #ordinate   個数の縦軸の較正、または線形にするなら `Unset`
+
+@ 0 1 0 1a4750f272627dea04d0c6ebfe2fb4bf
++ entry .Lines   系列ごとに、横軸の順に点を通る一本の線。区間には帯を伴う
+
+% 1 1 0 1de8520852509f550d5f32cee3d5cdce
+
+@ 0 6 0 19c89a4760258c7201c02fb16a04398c
++       一つの `Series[x, y]` またはその任意のコレクションのためのチャートの種類であり、`x` と `y` はどちらも `Calibration` を伴う `Continuous` である。
++       各系列は、横軸で並べ替えた点を通る折れ線である。値が `Chart.Estimate` であるところでは、その境界の間に半透明の帯が塗られる。スタイルの `markers` が設定されていれば点にマーカーが描かれ、`Noted` 値の注記はマーカーの横に組まれる。
++       どちらの軸も零には固定されない：線が示すのは大きさではなく変化だからである。
++       適合は `Scatter` と同じである。
+
+% 2 1 0 1659cfa7faad0b8f18a3597bedc80f11
+
+% 3 1 0 0a6f1a2f038210770b02f9446a166548
+
+% 5 1 0 0a9add4b32c4de001623754afa48386f
+
+% 0 1 0 0d8c5ff3552f8c7a178d6e79c5e1679d
+
+% 0 1 0 1659b07c4926f3780ee7d49ae64995f7
+
+% 1 1 0 1f2b557e9edeb1351a6805fe94d7a37b
+
+@ 0 2 0 11a7bcc2218af331170f9e783f44ec30
++       `smoothing > 0.0` のスタイルは、代わりに各線を点のカルマン平滑化した値に通して描き、マーカーは測定した点に留まる：
+
+% 2 1 0 1ba151f7b45c371b0354cc0082e20829
+
+% 3 1 0 0c1c7d8745a539121facfbc56f73de2f
+
+% 0 1 0 04689634d7fca6df0cfd3fead34f3cfd
+
+% 0 1 0 0fa24e2fdb5b6e9002a5d5a53a815a52
+
+% 0 1 0 059d9ec3702b6a561f4ffbb401383d09
+
+% 1 1 0 16b3859a7b6ac45a0766a730c0af3479
+
+@ 0 2 0 19734e5fbe5e14ed1fd76c0e999dd648
++       `Lines(abscissa = …, ordinate = …)` は、このチャートだけについてどちらかの軸の較正を固定する。同じ型の二つの軸を異なるように較正するには、こうする。
+
+% 0 1 0 16e5abffcd8e40c31b5a3537f7d38dc9
+
+% 0 1 0 0a5c057e1edd78c90d9899c56a12ec42
+
+@ 0 4 0 1c1e665ac13cf0951e8f6ff6b1b40bb6
++   entry .Fit   折れ線グラフの適合：`#abscissa` と `#ordinate` のスケール
++     entry #abscissa   横軸の `Scale`。位置の範囲を覆う
++     entry #ordinate   縦軸の `Scale`。位置とその区間の範囲を覆う
++   entry .Style   軸以外の折れ線グラフの構成要素：線、帯、マーカー
+
+% 1 1 0 00e7cf06413de9020eccef79c746b2d4
+
+@ 0 14 0 1682395eac59bdac0e59e9b09805fe2c
++         `Chart.Cartesian` を、パラメーターとしての `#markers` と `#smoothing`、そして三つのフックで拡張する。
++         それぞれには系列の色とインデックスが渡されるので、線は系列ごとに変えられる。
++     entry #markers   各点にマーカーを描くかどうか
++     entry #smoothing   線をどれだけ平滑化するか：カルマンの測定ノイズとプロセスノイズの比
++         零なら線は点を通って描かれる。比が大きいほど各測定値を信頼せず、より平滑化する。
++         `Kalman.smooth` を参照。
++     entry #line   系列の点を通る線：`strokeWidth` で線を引いた折れ線
++     entry #band   系列の上限と下限の間の領域：不透明度 20% で塗りつぶした閉じた折れ線
++         点は上限に沿って進み、下限に沿って戻る。
++     entry #lineMarker   `#markers` が設定されている場合の、点のマーカー：デフォルトでは `marker`
++   entry .series   連続的な軸を持つ一つの系列は折れ線として描ける
++   entry .traversable   そうした系列で走査できる任意のコレクションは折れ線として描ける
++   entry #abscissa   横軸の較正、またはその型に対して与えられたものを使うなら `Unset`
++   entry #ordinate   縦軸の較正、またはその型に対して与えられたものを使うなら `Unset`
+
+@ 0 1 0 1443c0d9416dfbb703f18f6dcc577070
++ entry .Scatter   点ごとのマーカー。区間には誤差棒、注記にはラベルを伴う
+
+% 1 1 0 06703a24611211ba0291e9e5f8165a6c
+
+@ 0 5 0 1cb4f5d271d85d65066c58ef5015d63a
++       一つの `Series[x, y]` またはその任意のコレクションのためのチャートの種類であり、`x` と `y` はどちらも `Calibration` を伴う `Continuous` である。
++       すべての点はマーカー（`Chart.Cartesian#marker`）になり、`Chart.Estimate` は誤差棒を加え、`Noted` 値はマーカーの横にラベルを加える。ラベルは cartouche が配置するので、同じ点の注記は異なる側に組まれる。
++       適合は折れ線グラフのものとまったく同じであり、描き方だけが異なる。
+
+% 2 1 0 1789693a6d8612c0094aa54703fbb675
+
+% 3 1 0 131ff7463f110eec090aeeffa9c4d2b8
+
+% 0 1 0 022daa0dbb079e920407bdf73ec663d4
+
+% 1 1 0 167f15c37d7ac9610dac5395d9697be8
+
+% 0 1 0 040ed19acbe30bb617a735c03ecb2514
+
+% 1 1 0 14b88f3e686230aa00e926d7e1cd257a
+
+% 0 1 0 05c5e4a819260ecf18f3d385455ffc63
+
+@ 0 8 0 06acc3381b6c591508a9f3284cb94939
++   entry .Fit   散布図の適合：`#abscissa` と `#ordinate` のスケール
++     entry #abscissa   横軸の `Scale`
++     entry #ordinate   区間を含む、縦軸の `Scale`
++   entry .Style   散布図の構成要素は、すべての直交座標のチャートが共有するもの：`Chart.Cartesian`
++   entry .series   連続的な軸を持つ一つの系列は、散布図として描ける
++   entry .traversable   そのような系列でたどれる任意のコレクションは、散布図として描ける
++   entry #abscissa   横軸の較正。その型に与えられたものを使うなら `Unset`
++   entry #ordinate   縦軸の較正。その型に与えられたものを使うなら `Unset`
+
+@ 0 1 0 0d6de676472bdcc90f5f847f3ad932a6
++ entry .Boxes   標本の集合ごとの箱：四分位数、中央値、極値までのひげ
+
+% 1 1 0 098cf2c1ba337bbe0e5106521be490b3
+
+@ 0 5 0 1d61d6a704c9520d1338c3a73bcaeb04
++       `Samples[y]` または標本の集合の任意のコレクションのためのチャートの種類であり、`y` は `Calibration` を伴う `Continuous` である。
++       各集合は横軸上のカテゴリーであり、下側四分位数から上側四分位数までの箱として描かれ、中央値がそれを横切り、最小と最大の標本まで端の横線付きのひげが伸びる。
++       縦軸はすべての極値にわたり、零に固定されない。
+
+% 2 1 0 070094c8c3164f1f1223d7c37efc5340
+
+% 3 1 0 1002c62005e12e62121e22e77e3d2b70
+
+% 0 1 0 16d024ce46a48d640f3623015d0b2697
+
+% 0 1 0 1248eaa575077fb409978f01a22d2adb
+
+% 1 1 0 035e2aa8c528a80613bc5bcfd04c7ac3
+
+% 2 1 0 052dbb864871f0ba0e3709f83b95a804
+
+% 1 1 0 0c657dbd62e8055f14df8f22b46705e5
+
+@ 0 1 0 08f08ddf825b8f910f83b9fac6582ed2
++   entry .Summary   一つの標本の集合の五数要約
+
+% 1 1 0 0fce1e910805501905bae1fea5ba50b6
+
+@ 0 3 0 190c5f3178fcb27505ccb25a8384777f
++         `Summary(minimum, lowerQuartile, median, upperQuartile, maximum)` であり、`.of` が計算する。四分位数は両側の順序統計量の間で線形に補間されるので、`1, 2, 3, 4` の下側四分位数は `1.75` である。
+
+% 2 1 0 07ffce28443ba10800f7fd8982f621ef
+
+% 3 1 0 0448af53706050de1af990c4601ecdc1
+
+% 0 1 0 0dd7dc2c9cbf17f017b72e81bd6342ca
+
+% 1 1 0 0f3660b9f6d323ac084a0fc16c9dbd03
+
+@ 0 11 0 0601f36fb61efb7c185dce7c4f2c1d0d
++     entry .of   値の並びの要約。並べ替えて補間する
++     entry #minimum   最小の値
++     entry #lowerQuartile   並べ替えた値の四分の一の位置にある値
++     entry #median   中央の値
++     entry #upperQuartile   四分の三の位置にある値
++     entry #maximum   最大の値
++   entry .Fit   箱ひげ図の適合：`#bands` としての集合、縦軸の `Scale`、各集合の `#summaries`
++     entry #bands   横軸の `Bands`。名前による、標本の集合ごとに一つの帯
++     entry #ordinate   すべての集合の極値にわたる、縦軸の `Scale`
++     entry #summaries   集合の順に、集合ごとに一つの `Boxes.Summary`
++   entry .Style   軸以外の箱ひげ図の構成要素：箱、ひげ、端の横線、中央値
+
+% 1 1 0 162c54bcaacc02b01e69af5ba3d111ec
+
+@ 0 10 0 0bb450dcec51f24608fbf0de5692beae
++         `Chart.Cartesian` を拡張する。
++         ひげ、端の横線、中央値はパレットの軸の色で、箱は系列の色で描かれる。
++     entry #boxGap   集合の帯のうち、箱の周りに空けておく割合：既定では `0.25`
++     entry #box   四分位数の間の箱：塗りつぶした長方形
++     entry #whisker   四分位数から極値までの線
++     entry #whiskerCap   極値にある短い横線
++     entry #median   中央値で箱を横切る線。`strokeWidth` で引かれる
++   entry .samples   一つの標本の集合は、箱ひげ図として描ける
++   entry .traversable   標本の集合でたどれる任意のコレクションは、箱ひげ図として描ける
++   entry #ordinate   縦軸の較正。値の型に与えられたものを使うなら `Unset`
+
+@ 0 1 0 08e660224073c5f114695e1d251776c1
++ entry .Pie   全体の部分：一つの系列で、各カテゴリーがその値に比例した扇形になる
+
+% 1 1 0 0fd989a9f6aabc0704128a75b5dd13d4
+
+@ 0 6 0 1bf4be8dd1e218ca025fbde45306259b
++       ちょうど一つの `Series[x, y]` のためのチャートの種類であり、`x` は `Categorical`、`y` は `Continuous` である。系列のコレクションは円グラフとして描けない。
++       扇形は上から時計回りに並び、それぞれが非負の値の合計に対する自身の割合だけの角度を占める。割合がスタイルの `labelThreshold` 以上であれば、その百分率が内側に組まれる（隣のラベルが邪魔になる場所では、引き出し線を付けて外側へ移される）。
++       円グラフには軸がなく、`Calibration` を必要としない。
+
+% 2 1 0 1b0d2b16f008467e1e34dd9b4d77596c
+
+% 3 1 0 19e083432feb9d970bdc3c3a578a7719
+
+% 0 1 0 1c1c3f3fd32d8ae8099e2213f3483a9f
+
+% 0 1 0 06c26eb208d058020e14fece7c9cc750
+
+% 0 1 0 1956c5dd96b597940bbf13d9493b7c60
+
+% 1 1 0 10f3c3169cd529410932db119d1874b9
+
+@ 0 4 0 1c39ab32512e7ef2103f8ddd78972257
++       `Chart.Standard(hole = 0.3)` は中心を半径の十分の三までくり抜く。
++       描画の部品は `backdrop`、`wedges`、`legend` である。
++       円グラフには固定しておく軸がないので、改訂はカテゴリーが同じである間は適合を保ち（`wedges` だけを置き換え）、そうでなければ描き直す。
+
+% 0 1 0 1ada7501bdc182470f947ff9d8dab475
+
+@ 0 4 0 0c90ad492a63d8641bf0aa866cdc1ac6
++   entry .Fit   円グラフの適合：順に並んだカテゴリーの `#labels` と、それらが分け合う `#total`
++     entry #labels   系列の順に並んだカテゴリー
++     entry #total   非負の値の合計
++   entry .Style   円グラフの構成要素：扇形とその百分率のラベル
+
+% 1 1 0 1f405f73c11631ba099d8731f1879536
+
+@ 0 11 0 011cedd28686787012e6824818081c4c
++         `Chart.Style` を拡張する（`Chart.Cartesian` ではない）。
++         `Chart.Standard` が `hole` を供給する。
++     entry #hole   中心からくり抜く半径の割合：完全な円グラフなら `0.0`
++         `[0, 0.95]` に切り詰められる。
++         くり抜いた円グラフの扇形は、偶奇規則で切り取った環である。
++     entry #labelThreshold   扇形の百分率が組まれるために必要な、全体に対する最小の割合：`0.04`
++     entry #wedge   輪郭のパス操作からなる、系列の色の一つの扇形
++         `fill-rule: evenodd` で塗りつぶされる `Outline` なので、くり抜いた扇形は穴を保つ。
++         操作は `Outline` が保持するとおり、最後から最初へ並ぶ。
++     entry #wedgeLabel   配置が選んだ位置に置かれる、扇形の百分率
++         他のラベルと重ならなければ扇形の中央に置かれ、重なるなら引き出し線を付けて外側へ移される。
++   entry .series   カテゴリーの系列一つは、円グラフとして描ける
+
+@ 0 1 0 041dace7d1bebfc5194f5d80208f0911
++ entry .Doughnut   同心の帯としての依存グラフ：段ごとに一つの帯で、各ノードは完了した分だけ塗られた扇形になる
+
+% 1 1 0 1fe9117d70afe6751a6282292ffa2090
+
+@ 0 10 0 0d250b76971a7bee0388ad480aaa961d
++       ノードが `Weighted` かつ `Progressive` である acyclicity の `Dag[node]` のためのチャートの種類であり、スコープ内に `Ranking` が必要である（acyclicity のコンパニオンの既定。`import rankings.balancedRanking` は各ノードを依存元にできるだけ近く描く）。
++       何にも依存しないノードが最も内側の帯をなし、その先の各帯は一段ずつ外側のノードからなるので、ビルドは中心から外へ向かって埋まっていく。
++       ノードの扇形は、その段の中での重みに比例した角度を占め、引き寄せられた依存先の上に来るように並べられる。帯の太さは、その段が全体の重みに占める割合に等しい。
++       扇形はノードが完了した分だけ時計回りに塗られ、残りは控えめな色合いになる。色はパレットの最初の色を、扇形の位置によって陰影付けしたものである。
++       ドーナツにはラベルも軸も凡例もない。
+
+% 2 1 0 0c8a750aee7706ab051ed503026c6934
+
+% 3 1 0 059ee9c6bdbaad85024cc8c24d8b1582
+
+% 0 1 0 057e7d0874306dbf134af4bb3b90a33d
+
+% 0 1 0 03f87fb32206da1e099be65d32192c23
+
+% 0 1 0 07d3420e1cdfe24e160d6f9a1d3d4d65
+
+% 0 1 0 03d1bbe1abc9fdfe0c4b0d960e1e1a7d
+
+% 0 1 0 1bf8d24f024577fc0b4a9ae871ccc09b
+
+% 0 1 0 0d77b35f57b82d5905a265e796d67474
+
+% 0 1 0 11087d398620abb30856d5322e81b857
+
+% 0 1 0 1781ad8db97ef6ea0029850cc28f53c4
+
+% 0 1 0 0d9f6e2cfcf97ed807fd02b40ce0565e
+
+% 0 1 0 0308e5568c234c0606f55f232f0059cd
+
+% 1 1 0 0a5f3b6d3a54b5f60ed646c0927a13d8
+
+@ 0 4 0 1c3a815166634d4800e869f59b1c371d
++       描画の部品は `backdrop` と `rank-0`、`rank-1`、… であり、それぞれ `sector-N` と `sector-N-rest` のパスのグループである。
++       適合はグラフの形と重みだけに依存するので、ノードが進んだだけの同じ形のグラフに対しては保たれ、改訂は扇形がさらに塗られた帯だけを置き換える。
+
+% 0 1 0 09057f493744f3ca15b5783e77f36ba3
+
+% 0 1 0 0d35f43519de754a091436f96b5b50a7
+
+% 0 1 0 13f3ad1f7b7c310d0193c0317122c28e
+
+@ 0 1 0 11991396243f136c0ff694dda99d0195
++   entry .Sector   帯の中でのノードの位置：扇形の始まりと終わりの角度、およびその重み
+
+% 1 1 0 1b88aec0ad0d010010055fae1bc7b3b6
+
+@ 0 6 0 187b87b21df75db81776367ead6a960a
++         角度はラジアン単位で、北から時計回りである。
++     entry #node   ノード
++     entry #start   扇形が始まる角度
++     entry #end   扇形が終わる角度
++     entry #size   扇形の配置に使われた重み
++   entry .Band   中心から外へ数えた段の帯。その縁と扇形を伴う
+
+% 1 1 0 0ab48d6ba0a2757c1e157848e3f9fe84
+
+@ 0 6 0 0a574bbe88c008fe0844ab8cdb6ca00c
++         `#inner` と `#outer` は、穴と外周の間の距離に対する割合である。
++     entry #rank   中心を `0` とする段
++     entry #inner   使用できる半径に対する割合としての、内側の縁
++     entry #outer   使用できる半径に対する割合としての、外側の縁
++     entry #sectors   描画順に並んだ、その段の扇形
++   entry .Fit   改訂をまたいで固定されるすべて：`#bands`
+
+% 1 1 0 05d971e1cda029ed1b479a4f71046850
+
+@ 0 3 0 104c9dbd1965473d07ef47a5754c9c3f
++         完了度はここにはない。描画のたびにノードから読まれる。
++     entry #bands   内側から順に並んだ帯
++   entry .Style   ドーナツの構成要素：各扇形の完了した部分と残り、および目地
+
+% 1 1 0 054855447853bb371dfba8412ab27f00
+
+@ 0 11 0 116a5ee6d9823ffc09a8bd07a39d8983
++         `Chart.Style` を拡張する。
++         `Chart.Standard` が `hole`、`sectorGap`、`bandGap` を供給する。
++     entry #hole   中心からくり抜く半径の割合。`Pie.Style` と共有される
++     entry #sectorGap   隣り合う扇形の間の目地の幅（ピクセル単位）
++     entry #bandGap   隣り合う帯の間の目地の幅（ピクセル単位）
++     entry #shade   パレットの最初の色から、その位置によって決まる扇形の色
++         `x` と `y` はドーナツの左端または下端の -1 から、右端または上端の 1 までの値を取る：色相は左から右へ三十度回り、下から上へは五分の一暗い色から、純粋な色相を経て、五分の一明るい色へ移る。
++     entry #sector   パス操作からなる、ノードの扇形の完了した部分：`sector-N`
++     entry #remainder   控えめな色合いの、未完了の部分：`sector-N-rest`
++   entry .dag   `Ranking` が与えられれば、重み付きで進捗を持つノードの `Dag` はドーナツとして描ける
+
+@ 0 1 0 1bb99619b7fff6d0102ab31e3d725b67
++ entry .Ruler   軸の対応付け：数値の範囲の上の `Scale`、またはカテゴリーの範囲の `Bands`
+
+% 1 1 0 11288d4cd34ff1cc152ead496048f3b7
+
+@ 0 5 0 1ccecfff7ea5f2b502d0cfb5452d2774
++       ルーラーは、軸にいくつの刻みを置く余地があるかが与えられたとき、刻みがどこに来るかを、軸の長さに対する割合として示す。
++       `Scale` と `Bands` が二つのルーラーである。適合は軸ごとに一つを保持し、レイアウトは目盛り、ラベル、グリッド線を描くために、それぞれに `gradations(budget)` を求める。
++   entry #gradations   およそその数を予算とした刻み。それぞれ位置とラベルを伴う
+
+@ 0 1 0 127db07e98b1daba1b702d78e6481df2
++ entry .Gradation   軸上の一つの刻み：軸の長さに対する割合としての位置と、そのラベル
+
+% 1 1 0 11baa997d3ce3eac170312c488c8539e
+
+@ 0 6 0 1b3d2629762295c40a20a53258b04983
++       `Gradation(position, label, major = true)`。
++       副刻み（対数軸の十倍ごとの区切りの間にある `2`–`9` の倍数）はラベルが空であり、ラベルなしの目盛りとして描かれ、グリッド線を持たない。
++   entry #position   軸の始まりの `0.0` から終わりの `1.0` までの、刻みの位置
++   entry #label   ラベルのテキスト。副刻みでは空
++   entry #major   刻みにラベルとグリッド線が付くかどうか
+
+@ 0 1 0 1c4474fef69311ab1e1202c4461c3f01
++ entry .Bands   `Scale` に対応するカテゴリーの側のもの：軸をカテゴリーごとに一つの、等しい帯に分ける
+
+% 1 1 0 193cf229869d4cfc16835f1e90a31cfa
+
+@ 0 4 0 16e0bd408247c7ff127b2f3e14d569bf
++       最初に現れた順に並んだカテゴリーのラベルの `Sequence` の上の `Ruler`。
++       軸は幅 `#width` の等しい `#count` 個の帯に分けられ、値はその帯の `#centre` に置かれる。`#index` はラベルの帯を見つけ、適合が一度も見なかったカテゴリーには `Unset` を返す。新しいカテゴリーが来たときに棒グラフが改訂ではなく描き直しになるのはこのためである。
+
+% 2 1 0 0800c10b9994f52119724d4d412596a1
+
+% 3 1 0 09d1d4562459cbe31d416d3509c5a89d
+
+% 0 1 0 0f64bd1159b4bbfa0ed870be8874c41c
+
+% 0 1 0 0d0e9b66b067653612a051138020f2c0
+
+% 0 1 0 1fb4c4e83c757e95191d1875378186b6
+
+% 0 1 0 18fc8980d42ac9151d876481d3d895b0
+
+% 1 1 0 173250ca86462cf60b7b85d18e1c0b9f
+
+% 1 1 0 1061a6eb5e5ae287075166d3188afbb1
+
+@ 0 8 0 0d42719385b3808c042ef282e30755f2
++   entry #categories   最初に現れた順に並んだカテゴリーのラベル
++   entry #count   帯の数
++   entry #width   一つの帯が軸に占める割合：`1.0/count`、帯がなければ `1.0`
++   entry #centre   インデックスから求めた、帯の中央の位置
++   entry #index   ラベルの帯。ラベルがカテゴリーでなければ `Unset`
++   entry #gradations   カテゴリーごとに一つ、その中央に置かれ、そのラベルが付く主刻み
++       予算は無視される：すべてのカテゴリーに刻みが付く。
++       隣と重なるラベルは、レイアウトが隠す。
+
+@ 0 1 0 0328fe603621d5951a19e03fefb96ece
++ entry .Scale   適合済みの数値の軸：その範囲、変換、刻みとラベルの付け方
+
+% 1 1 0 0bad0fdf94520cc818085f1ff8efbb3e
+
+@ 0 6 0 08ed0b7fee80f62f1ef363829c540524
++       `Scale(lower, upper, transform, notation)` は単純なデータであり、そのおかげでチャートは、新しい点が描画に使った軸にまだ収まるかどうかを判断できる（`#accommodates`）。
++       `Calibration` はデータの範囲からこれを作り、`#unit` は値をその上に置き、`#gradations` は予算に応じて切りのよい刻み幅を選ぶ：十進表記では各桁にわたる 1、2、5 の倍数、六十進では時計の刻み（秒、三十秒、時間、日）、対数スケールでは十の累乗とその倍数の副刻みである。
+
+% 2 1 0 1f6a5b7fd5ff610a106ad6c045e036ec
+
+% 3 1 0 11f062beb561a9e71e2a49d82a56d541
+
+% 0 1 0 13b306be4b6541ce03a14aa2406cc39f
+
+% 0 1 0 12de2ca8abf5b8181f443921f752a7a2
+
+% 0 1 0 1bc641b2b5ac8e5a1f19e491ccbeac41
+
+% 0 1 0 03f50c758e4cd6ce0f5c9bd5e98782f2
+
+% 0 1 0 04b204bc0069772109ba90e6bce612ef
+
+% 1 1 0 1d55dd967a3a3a6f17c3e8b86b5f2612
+
+@ 0 3 0 0b7fefeeba2774a804acbc281de29377
++       コンパニオンは、ラベルが使う数値の書式（`.step`、`.format`、`.interval`、`.clock`）を保持する。刻みのラベルは既知の刻み幅の倍数なので、これは `DecimalConverter` ではなく、刻み幅から決まる固定の小数桁数である。
+
+% 1 1 0 1b89cde3198a095604865edc37e970fe
+
+% 1 1 0 0e5124ee838957cd0bf18692e5af5f17
+
+% 0 1 0 068fbba8552b5e8b1a73daf6b73e0324
+
+@ 0 15 0 098b361ccaadf0bb0b1b4963e0a32c01
++   entry .Transform   値から位置がどう決まるか：`Linear`、`Logarithmic`、`Exponential(curvature)`
++       線形は値に比例し、対数はその対数に比例する。対数では零以下の値は位置を持たず、軸の始まりに切り詰められる。指数はその指数関数に比例し、範囲の上端を広げるので、大きな値の間の小さな差が見える。
++       指数の軸でも、刻みは線形の軸と同じく値の一定の間隔に来る。広がるのはその間隔のほうである。
++       `curvature` は軸にわたる指数の範囲である：上端は下端の `e^curvature` 倍引き伸ばされる。
++   entry .Spacing   線形スケール上での刻みの間隔：`Decimal` または `Sexagesimal`
++       十進の刻み幅は、数を読むとおり、十の累乗の 1、2、5 倍である。六十進の刻み幅は時計の時刻のもので、一ミリ秒から一日まであり、それを超えると日の十進の倍数になる。
++   entry .Labelling   刻みの値をどう書くか：`Number(suffix)`、`Interval`、`Clock` の時刻
++       `Number(t"")` は `250` と書き、`Interval` は秒を `250ms`、`2m30s`、`1h05m` と書き、`Clock` はエポックからの秒を UTC の `HH:MM:SS` として書く。
++   entry .Notation   ある型の軸をどう読むか：間隔、ラベルの付け方、名前、単位
+
+% 1 1 0 0ac5b7adf4a28a381d93770d45ab0da2
+
+@ 0 44 0 10d2fe7af1865bfc04ee5712f18edc23
++         `Notation(spacing = Decimal, labelling = Number(t""), name = Unset, unit = Unset)` は、`Continuous` のインスタンスから `Calibration#scale` を通じて `Scale` に渡る。
++         名前と単位は軸のタイトル（`distance / m`）になる。ただしスタイルがタイトルを与える場合は、単位はそのタイトルの後に付け加えられる。
++     entry #spacing   十進または六十進の刻み幅
++     entry #labelling   各刻みをどう書くか
++     entry #name   量の呼び名（`distance`、`time`）、または `Unset`
++     entry #unit   値の単位（`m`、`kg·s¯²`）、または `Unset`
++     entry #title   軸のタイトル：与えられたタイトルか名前に、単位があれば ` / unit` を付け加えたもの
++         数そのもののように、タイトルも名前も単位もなければ `Unset` である。
++   entry .step   生の刻み幅以上の、十の累乗の 1、2、5 倍のうち最小のもの
++       `Scale.step(1.9)` は `2.0`、`Scale.step(0.3)` は `0.5` である。零以下の生の刻み幅は `1.0` を与える。
++   entry .sexagesimalStep   生の刻み幅以上の、秒単位の時計の刻み幅のうち最小のもの
++       一ミリ秒から、秒、十五秒と三十秒、分、時間、半日を経て一日まで。一日を超えると、日の十進の倍数である。
++       一ミリ秒未満では `.step` である。
++   entry .decimals   刻み幅の倍数を正確に書くのに必要な小数桁数
++       `1.0` 以上の刻み幅では `0`、`0.5` では `1`、`0.05` では `2` である。
++   entry .format   数を固定の小数桁数で書く：`format(2.5, 1)` は `2.5`
++       整数には小数点がなく（`format(1000.0, 0)` は `1000`）、小さな負の数は先頭の零を保ち（`-0.05`）、零は `0` である。
++   entry .interval   秒を短い間隔として書く：`250ms`、`1.5µs`、`41s`、`1m30s`、`1h01m`、`3d02h`
++       一秒未満では、単位は数を短く保つように選ばれ、末尾の零は削られる。一分以上では、大きいほうから二つの単位を組にし、小さいほうは零で埋め、丸めて無になるときは省く（`2m00s` ではなく `2m`）。
++   entry .clock   エポックからの秒を、UTC の時刻 `HH:MM:SS` として書く
++   entry #lower   軸の始まりの値
++   entry #upper   軸の終わりの値
++   entry #transform   線形、対数、指数のいずれかの位置
++   entry #notation   軸の刻みとタイトルに使う `Scale.Notation`
++   entry #spacing   表記の間隔
++   entry #labelling   表記のラベルの付け方
++   entry #unit   値が軸上のどこにあるかを、軸の長さに対する割合で表したもの
++       範囲が空ならどこでも `0.5` である。対数スケールでは、零以下の値に対して `0.0` である。
++   entry #accommodates   値が `[lower, upper]` の中にあるかどうか
++   entry #label   与えられた刻み幅に対する値のラベル。スケールのラベルの付け方による
++   entry #gradations   予算に応じた切りのよい刻み：およそその数になる最大の刻み幅
++       線形または指数のスケールは、`lower` 以上の最初の倍数から、その間隔に従って十進または六十進で刻む。対数スケールは十の累乗に刻みを付け（予算より桁が多いときは `stride` 桁ごと）、予算が一桁に二つの刻みを許すときは、`2`–`9` の倍数を副刻みとする。
++       `lower` が正でない対数スケールは、線形に刻まれる。
+
+@ 0 1 0 0f647774a9a798371e50323703fa59f2
++ entry .Calibration   データの範囲がどのように軸の範囲になるか
+
+% 1 1 0 13f4c5af9f0de5ee115b06622190aca8
+
+@ 0 7 0 1cc0a2e3da2b2d1b1a0cf3814e76e37e
++       `value is Calibration` は `scale(lower, upper, anchored, notation): Scale` を与える：位置が線形、対数、指数のいずれか、範囲が刻み幅の整数倍まで広げられるかデータにぴったり合わせるか、そして（棒グラフのようにチャートの種類が求める場合は）零を含まなければならないかを決める。
++       これは軸上の値の型をキーとするので、ある型に対するスコープ付きの given はその型のすべての軸を変える。メソッドは決して `Self` に言及しないので、多相的な `calibrations.*` の given は、一つの軸だけのためにチャートの種類に渡す明示的な `Optional[Calibration]` 引数としても使える。
+
+% 2 1 0 19d3630eccdc3d310fdc7df25ff4568b
+
+% 3 1 0 0b35e0725ecf04fc0f160b2af365c81d
+
+% 0 1 0 0b045b9d1d8b40181c2c9441c56953db
+
+% 0 1 0 05663f082c29982e1b96c8c8a270e5d2
+
+% 0 1 0 019cadeb49e8c41a065ad6ba8505f56d
+
+% 0 1 0 002245ae8c88d9a20452b48eee03e4e8
+
+% 0 1 0 0a9030e42c981d72171ba1d454d16e76
+
+% 0 1 0 1532157ba4f33e611a74ca54acc442da
+
+% 1 1 0 0230a3d4ef5e3520137ffe339dda5c93
+
+@ 0 2 0 1d4df4659e2210df013d6c3cb97632de
++       インポートなしの既定である `.linear` は、線形で範囲を広げる。
++       零や負の数を含む範囲に対する対数の較正は、失敗するのではなく線形に戻る。
+
+% 0 1 0 125b2977340775fc083b6a7dad753a4c
+
+% 1 1 0 0e952bd2eb9a413506a929fbacd64ac0
+
+@ 0 12 0 08fddcf2bbf766f80e12a7cbad774786
++   entry .linear   すべての値の型に対するインポートなしの既定：線形で、刻み幅の整数倍まで広げる
++       コンパニオンの given であり、どの `import calibrations.…` やスコープ付きの given もこれに優先する。
++   entry .Policy   較正が行う選択：`Linear`、`Logarithmic`、`Adaptive`、`Tight`、`Exponential(curvature)`
++       `Linear` は刻み幅の整数倍まで外側へ広げる。`Tight` はデータの範囲ちょうどにわたって線形である。`Logarithmic` は桁全体にわたり、対数が定義されない場所では線形に戻る。`Adaptive` は範囲の比が千以上なら対数、そうでなければ線形であり、入力サイズにわたるベンチマークの計時にはこれが望ましい。`Exponential` は線形スケールの範囲と刻みを持ち、位置が指数的に広がる。その曲率の既定は `Calibration.curvature` である。
++   entry .curvature   ポリシーが与えない場合の指数の軸の曲率：`3.0`
++       軸の上端は下端のおよそ二十倍引き伸ばされる。
++   entry .apply   `Calibration[value](policy)`：ポリシーから作った、一つの型に対する較正
+
+% 1 1 0 14d357c44269a10c12d4ab88749e3df5
+
+% 2 1 0 1e3bd015213d6e370e9600a60c122774
+
+% 0 1 0 13827b6558db844a054f3f6a72accac2
+
+% 0 1 0 05b8e90d77b9237c0a1f7c123d5ad0da
+
+% 0 1 0 0bcc7bb5967ef5091a6cab73cf93cf4f
+
+% 1 1 0 021cca347267438b0d1e1f19433e6ce1
+
+@ 0 3 0 069beaefd86d403200772bbd78a3041c
++   entry #scale   データの範囲に対する `Scale`：`scale(lower, upper, anchored, notation)`
++       `anchored` は零を含めることを求める。棒グラフ、積み上げ棒グラフ、ヒストグラムはそうし、折れ線グラフはしない。
++       表記はスケールに引き継がれる。
+
+@ 0 1 0 17fe315a9c116de201bdc91131e6bc74
++ entry .Kalman   順に並んだ測定値の連なりのためのカルマン平滑化。平滑化した折れ線グラフが使う
+
+% 1 1 0 0ff9d12429f75048140f9a094f709e89
+
+@ 0 8 0 07fde16d9951c4981e1eefa19e2b442e
++       モデルは等速度である：各値は直前の値にその変化率を加えたもので、どちらも分散 1 のプロセスノイズで乱され、分散 `ratio` の測定ノイズを伴って観測される。したがって、比が大きいほど各測定値を信頼せず、より強く平滑化する。
++       前向きのフィルターの後に Rauch–Tung–Striebel の後ろ向きのパスが続くので、各点での推定は前の点だけでなく後の点も用いる：平滑化した線は上昇に遅れずに追従し、平坦な部分では行き過ぎずに落ち着く。
++       `Lines.Style#smoothing` が、折れ線グラフが渡す比である。
++   entry .smooth   ノイズの比に対する、リストの平滑化した値を順に並べたもの
+
+% 1 1 0 024a6d3cdf18e55e1fd0b1d7f2265a5b
+
+% 2 1 0 13df496c4626dd610a432de844ec5bfc
+
+% 0 1 0 118d3cb8a53a592a1adb34c2034c455f
+
+% 0 1 0 19a25a4de2c6a3681146b4b16d7f68fe
+
+% 1 1 0 030b50db582a6a650d219928b2d847a5
+
+@ 0 1 0 19b2a075705bf71c0adfde78d9344cc4
++       結果は入力と同じ長さと順序を持つ。空のリストを平滑化すると、それ自身になる。
+
+@ 0 1 0 1c2124a8858f23e9167598d626a7b540
++ entry .FontMetric   チャートの書体が組むときの、テキストの連なりの幅（em 単位）
+
+% 1 1 0 1a02d5cbdcb1264d1538a964836fe998
+
+@ 0 6 0 1dcf0bd8d05019381349d0001aeb7aac
++       スタイルのフォントサイズを掛けると、軸のラベルや凡例にどれだけの余地が必要か、また横軸のラベルが重なるかどうかが決まる。
++       インポートなしの既定である `.fromStyle` はスタイルのフォントに従う：埋め込まれたフォントファイルがあればそのグリフ自身の送り幅を使うので、測るフェイスと描画するフェイスが同じになり、余白がぴったり合う。手元にファイルのないフォントには平均の幅を使う。
++       `fontMetrics.averageFontMetric` と `fontMetrics.tabularFontMetric` は、インポートによってそれを上書きする。
+
+% 2 1 0 03f298f821fd08170834a65eeb5387dc
+
+% 3 1 0 0a8252df4274b36e0226df7ec9bae91b
+
+% 0 1 0 12067c1bdc31b95e064a10c21e79a492
+
+% 1 1 0 047652b0e4ecb1760b8c2199d34f2047
+
+% 0 1 0 0f6beec759f88d6e03934b5c7aa6374a
+
+% 0 1 0 17453b14629417180ed5ebc47910ee9f
+
+@ 0 9 0 154d190406c8c5e9090fb7e346e89ed9
++   entry .fromStyle   インポートなしの既定：スタイルのフォントの、埋め込まれたものか平均の測定値
++       スコープ内に `Chart.Style` が必要である。
++       どの `import fontMetrics.…` もこれに優先する。
++   entry .of   `Sfnt` フォントのグリフ自身の送り幅、または `Font` の最初の埋め込みファイルによる測定値
++       `FontMetric.of(sfnt)` はテキストのグリフの送り幅を合計する。フェイスにない文字はエラーを発生させるので、そのような文字を含むテキストには平均の幅が代わりに使われる。
++       `FontMetric.of(font)` は、フォントのプロビジョンのソースのうち最初の `Typesettable.Source.Embedded` を使い、それがなければ（`Web.local()` や汎用ファミリーなら）平均の測定値を使う。
++   entry #width   `Quantity[Ems[1]]` としての、テキストの幅
+
+@ 0 1 0 02f143f2f7f520f701ead0266cdac262
++ entry .ChartPalette   チャートが描画に使う色。色相ではなく、それぞれが果たす役割によって名付けられる
+
+% 1 1 0 0fe0532d2d0e3e481573ba4620d1f72c
+
+@ 0 6 0 06ced52378bfe7a30f54243edcb28053
++       系列の色の並び（色より系列が多ければ循環する）、軸とその刻み、グリッド、文字、そして `Palette` としての背景色と前景色。
++       一つのスタイルはどのパレットのもとでも描画される。
++       インポートなしの既定は `.slate` で、区別しやすい八つの色相を持つ明るいパレットである。`palettes.solarizedDarkChartPalette` と `palettes.solarizedLightChartPalette` はインポートで選ばれ、`.of` は iridescence の `Theme` からパレットを作る。
+
+% 2 1 0 143e3d13e155e88200c6d46f0713f1be
+
+% 3 1 0 0df869c4a78e5a3a0ca95db830af6e45
+
+% 0 1 0 1f486d2872145f980724aa7b52c75622
+
+% 2 1 0 10323cc6286c49741a41022e6af77098
+
+% 0 1 0 0fdd2e91acf5de42064898dd7bac4cc5
+
+% 1 1 0 0e88f049d1cda9121deee83554debcb7
+
+% 0 1 0 012043d64f0b39df0367c943b4c0b59f
+
+@ 0 10 0 19a723a5d59efd3d167f2adcc55d0bfb
++   entry .slate   インポートなしの既定：八つの色相からなるカテゴリーの色の並びを持つ明るいパレット
++       コンパニオンの given であり、どの `import palettes.…` もこれに優先する。
++   entry .of   `Srgb` の `Theme` から作るパレット：その色を系列に、その前景色を軸とテキストに使う
++       軸の色は前景色を背景色の方へ十分の三混ぜたもので、グリッドの色は 85% 混ぜたものである。
++   entry #series   系列の色を順に並べたもの
++   entry #axis   軸線、目盛り、ひげ、誤差棒の色
++   entry #grid   グリッド線の色
++   entry #text   すべての文字の色
++   entry #color   インデックスによる系列の色。`#series` を循環し、それがなければ前景色
+
+@ 0 1 0 168ac72811fbe8e70e4ba72235abefc5
++ entry .calibrations   標準の較正。それぞれ名前でインポートするか、チャートの種類に渡す given である
+
+% 1 1 0 186a3c5e594c5388134b07fba32cc196
+
+@ 0 5 0 08afc90194307778000b7be5b4e84119
++       それぞれ値の型について多相的なので、一つのインポートであらゆる型のすべての軸が変わる。一方、スコープ付きの `given Int is Calibration = calibrations.logarithmicCalibration` は一つの型のすべての軸を変え、`Lines(ordinate = calibrations.tightCalibration)` は一つのチャートの一つの軸を変える。
++       `import tasseomancy.*` はこれらのどれも取り込まず、一つがインポートされるまではコンパニオンの既定 `Calibration.linear` が適用される。
+
+% 2 1 0 1439253f726cd7a00866c4c7e69569ce
+
+% 0 1 0 184d48e7399fe047179e0899a9dba6bf
+
+% 1 1 0 0dc5c595e538b6cd19dfdb1c478872c5
+
+% 1 1 0 1333ac336876c2e2186e8a18dc01cea5
+
+% 2 1 0 14240517e7d592a012ea6046bfa8295d
+
+% 0 1 0 1cbc8d2b02b25baf11018e616232ee1a
+
+% 0 1 0 1917627a7d5651b20cd458ea7a76265c
+
+% 1 1 0 0915f94f8804f360068fbff924007580
+
+% 0 1 0 1d70db53af50bf140d0a10534e202297
+
+% 1 1 0 1176309dbd3ee8be1c001fbf18bef2af
+
+% 2 1 0 1a87a383edfba5330fcf434a5c4b4265
+
+% 0 1 0 0c13b4338e15cd9415a0743b2f92c0b0
+
+% 0 1 0 1513ae1e566d280b17b4cabd4763c2bf
+
+% 1 1 0 09a199b1a84f70281836b1dbbd3c60de
+
+% 0 1 0 07d04d05a41271a512cb438a1236f0e6
+
+% 1 1 0 0df738e87e9885a607fe777325f7c8aa
+
+% 2 1 0 014ad60e8a2cae9f1daaf6b48828de5f
+
+% 0 1 0 1445946f943ef3cc00ca4d0dd9364cb2
+
+% 0 1 0 089ad75bba0a38320e34393be575bf0a
+
+% 1 1 0 1a9ddc3f6c830d971f6def4a920c5392
+
+% 0 1 0 0bc6ce1fdad0ae630fe8a814e64d2d96
+
+% 1 1 0 14be3038be02032c0c4ffb3bd97ad1b6
+
+% 2 1 0 0f523993b0a62f1f0b6c762cc8ca496f
+
+% 0 1 0 18d36bbf1da845a31f9c19684fcae250
+
+% 1 1 0 117e4579ab0baba2002e62d507c2ac33
+
+% 2 1 0 14fd23a074d2ea50045c4de97fca39ce
+
+% 1 1 0 142a47d5727382740f1abd3a4381a0c8
+
+@ 0 8 0 09e6f8e724bf677c15ac95a57540b8d3
++   entry .linearCalibration   刻み幅の整数倍まで外側へ広げた線形の位置：既定と同じ
++   entry .logarithmicCalibration   桁全体にわたる対数の位置。範囲が零以下に及ぶ場所では線形
++   entry .adaptiveCalibration   範囲の比が千以上なら対数、そうでなければ線形
++   entry .exponentialCalibration   線形スケールの範囲にわたる、既定の曲率 `3.0` の指数の位置
++       `soundness` アンブレラの `calibrations` パッケージには反映されていないので、`import tasseomancy.calibrations.exponentialCalibration` としてインポートする。`Calibration[Double] (Calibration.Policy.Exponential(2.0))` は別の曲率のものを作る。
++   entry .tightCalibration   データの範囲ちょうどにわたる、広げない線形の位置
+
+@ 0 1 0 1bee1c908d85f30b026090dbabea0f7a
++ entry .palettes   標準のチャートのパレット。それぞれ名前でインポートする given である
+
+% 1 1 0 0aa5a81ce0991f760becf6e76a67b9aa
+
+@ 0 2 0 174236baa989404f188731c23758235e
++       `import tasseomancy.*` はどれも取り込まない。コンパニオンの既定は `ChartPalette.slate` であり、`slateChartPalette` はそれを繰り返したものである。
++       レキシカルスコープのインポートは既定に優先する：
+
+% 2 1 0 1860d3fa52eb08c218e97e8d51627246
+
+% 3 1 0 01e85adff4dbe3761f736bcde2698968
+
+% 0 1 0 03c971a8c0bbebab1abd27f30ac40905
+
+% 1 1 0 033eab93423144f911d17f66b8cef134
+
+% 1 1 0 0cdd716a8cff077d0ccaf86ab73e407d
+
+@ 0 3 0 13fe24dde406d66c00b9e91a03716388
++   entry .slateChartPalette   明るいパレット：白の背景、濃い灰色のテキストと軸、八つの異なる色相
++   entry .solarizedDarkChartPalette   Solarized のダークテーマ：深い青黒の背景、Solarized の八つのアクセント色
++   entry .solarizedLightChartPalette   Solarized のライトテーマ：クリーム色の背景、同じ八つのアクセント色
+
+@ 0 1 0 0b804b977ebe85691995e84bff693423
++ entry .fontMetrics   スタイルのフォントに決めさせたくないときに、名前でインポートするテキストの測定値
+
+% 1 1 0 03219e290950a2960b2702681e9e9b81
+
+@ 0 3 0 0e0c78b961a2d8aa1fe4874ed39c085d
++       コンパニオンの既定である `FontMetric.fromStyle` は、スタイルのフォントに埋め込みファイルがあればそれ自身の送り幅で測り、なければ平均で測る。この二つは、それに関わらず測定値を固定する。
++       `import tasseomancy.*` はどちらも取り込まない。
+
+% 2 1 0 157827805b0190b81b323b90340dc8f0
+
+% 3 1 0 136773a9a4da3f9e1373d0b6344db1ea
+
+% 0 1 0 08ee3b4f82ab15aa12f8349f5931e2b0
+
+% 1 1 0 18ed9fe5f5bd71661218b9927cf19045
+
+% 1 1 0 0dfa1f2683016e2415c4cbcce09f9e03
+
+@ 0 2 0 0adef3b2434d45d90d0092809813ae70
++   entry .averageFontMetric   一文字あたり十分の六 em：平均的なプロポーショナルフェイスの幅
++   entry .tabularFontMetric   一文字あたり半 em：等幅のフェイス

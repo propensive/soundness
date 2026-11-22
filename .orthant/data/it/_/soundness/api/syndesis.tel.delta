@@ -1,0 +1,1101 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1ca57b5058029eb4115e6b4867572abc
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 03671aae59460671072982dd0037258e
++ info   service discovery basato su DNS tramite DNS multicast: pubblicizzare un servizio, cercarne altri, risolvere un'istanza
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0be0ccf166bc47200d535ca6ecb06ec2
++     _Syndesis_ permette a un programma che serve qualcosa sulla rete locale — un demone di
++     build, una stampante, un gioco — di essere trovato senza che nessuno debba conoscerne
++     l'indirizzo. Implementa il **service discovery basato su DNS** (RFC 6763), che dà un nome a
++     un *tipo* di servizio (`_fury._tcp`) e alle sue *istanze* (`Elsinore._fury._tcp.local`),
++     trasportato su **DNS multicast** (RFC 6762), dove ogni host risponde per i propri nomi e
++     non è coinvolto alcun nameserver.
+
+@ 0 7 0 167de9b91751db65152698aea9988470
++     Il vocabolario si trova in `Discovery`: un `Discovery.Service` e un `Discovery.Instance`,
++     che calcolano i propri nomi DNS-SD quando vengono costruiti, sotto validazione; un record
++     `Discovery.Txt` di coppie `key=value`; un `Discovery.Description` di ciò che un'istanza
++     pubblicizza; e un `Discovery.Resolution` di dove si trova un'istanza. Le tre operazioni sono
++     estensioni — `advertise` e `browse` su un servizio, `resolve` su un'istanza — e ciascuna
++     delega al `Discovery.Backend` nell'ambito. L'unico backend fornito è `Mdns.Responder`, il
++     responder mDNS basato su socket, scelto importando `discoveryBackends.mdnsSockets`.
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 191a0fd4f8a251131c9d7a016bb964e6
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 0c44ace5259c806107272f7f90d26d9b
+
+% 0 1 0 14a68bffa6b708411ac2ce37360b6c83
+
+% 0 1 0 199c7c076a0f56c811ae30cb9a52e493
+
+% 0 1 0 1e152566832e284b017a7dfa27ba7f40
+
+% 0 1 0 15a5703c748dbbcc1d640d6df188c5a8
+
+% 0 1 0 02c573240d33b38616e69334fc6d9971
+
+% 0 1 0 14f10650e0542084091105931798b636
+
+% 1 1 0 0dd6b273ca7e96c3010b223871a561fd
+
+% 2 1 0 026745aeddf3df9805dd3464f86cbcf6
+
+% 0 1 0 07f43037edf68c06122a2bf42259b28f
+
+% 1 1 0 0f05c1906928159906167dd3071cbab1
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 5 0 081da35ad6ef2e7303dc6d5802d4a886
++     Una pubblicizzazione e un'esplorazione sono **prestiti**: ciascuno dura quanto il suo blocco
++     e termina con esso — o con il `Monitor` sotto cui gira, la cui cancellazione disfa il
++     blocco. Entrambi richiedono nell'ambito un `Monitor^`, un `Probate.Shared`, una
++     `Tactic[Discovery.Error]` e un `Discovery.Activity is Loggable`, oltre al backend. Il
++     backend è una clausola `using` esplicita a sé stante, così si può indicare un responder
++     diverso da quello given: `fury.browse(using other)`.
+
+@ 0 5 0 00ea69a8bd040193158ddfaf71b40f58
++     La libreria ha un unico source set, `syndesis.core`, per la JVM. `Mdns` è sia il responder
++     sia le sue parti — la giuntura `Mdns.Transport` attraverso cui parla, la `Mdns.Cache` di ciò
++     che ha sentito, e `Mdns.Tiebreak` — tra cui `Mdns.Transport.Bus`, un collegamento in
++     memoria, è quella che serve a un programma sotto test: i responder uniti a uno stesso bus
++     si sentono l'un l'altro e nient'altro, così il protocollo gira in modo deterministico senza
++     una rete.
+
+@ 0 3 0 1b0b7d07d37795a21c4f9002e8ec7b1c
++     Tutto è esportato nel modulo ombrello `soundness`, e il package di scelta
++     `discoveryBackends` si fonde con quello dell'ombrello stesso; `import soundness.*` non porta
++     alcun backend, quindi `mdnsSockets` si importa per nome.
+
+% 0 1 0 19197508ee31d01117c7ae2afa3fa30f
+
+% 0 1 0 0163e0d24c4589860a38857537d8750c
+
+% 0 1 0 0a3b2e3662ca1ed61a59a9fa54aeac40
+
+% 0 1 0 1c16eaf5f82a59970951eea689cfaa50
+
+% 0 1 0 14007b20503df5d3126c244dbac87f8a
+
+@ 0 1 0 0d27c661087121f80140e14f5798e0c6
++ entry .Discovery   il vocabolario di DNS-SD: servizi, istanze, record TXT e la giuntura del backend
+
+% 1 1 0 0d24929ed3173abe1cfb34558755adf4
+
+@ 0 6 0 162cca24e377ddcd1a8a2c3d04225dd4
++       `Discovery` contiene tutto ciò che un programma dice e sente sui servizi,
++       indipendentemente da come viaggiano i nomi. Un `Service` è un tipo come `_fury._tcp`; un
++       `Instance` è un fornitore con nome di quel tipo; un record `Txt` è ciò che un'istanza dice
++       di sé; una `Description` è ciò che un'istanza pubblicizza; una `Resolution` è dove si è
++       scoperto trovarsi un'istanza trovata. Il trait `Backend` è la giuntura che un trasporto
++       implementa, e `Advertisement` e `Browser` sono gli handle che prestano i prestiti
++       `advertise` e `browse`.
+
+% 2 1 0 1713dfbe26a1fd1c0aed20fa715a519e
+
+% 3 1 0 06eb56c5e6da31d60c288daa10e5b311
+
+% 4 1 0 11a2a5bf2defcc86085f5d35e67ed55a
+
+% 2 1 0 17d18dc9092a4a50084470788c07ef98
+
+% 3 1 0 1a06b74aac94ef7113b4e4c343657033
+
+% 0 1 0 1fc14f74f4b9dfe30816386636911428
+
+% 0 1 0 045a9c2f960ec40504315181aa532f30
+
+% 0 1 0 0eec8b59e65073660a1044cc30593faf
+
+% 1 1 0 0a1f1c252842294b1489525b8b15d230
+
+@ 0 3 0 0bc8964a736a0f0c000bab80270faf6d
++       Ogni nome viene calcolato quando il suo valore è costruito, sotto validazione, così un nome
++       oltre i limiti DNS è un `Discovery.Error` alla costruzione anziché un fallimento sulla
++       connessione, e ogni uso successivo del nome è totale.
+
+% 0 1 0 0e5addb935c55aef00be7420ffe12a99
+
+% 1 1 0 103f2c1d0d69768a0a1e89cff3824947
+
+% 1 1 0 1181ae662deda2ee15de93f9faf39efb
+
+% 0 1 0 0938a317ff3cfafd18628c8306c545fd
+
+@ 0 2 0 1ec853e4201cbfa008596c1258bf3e6a
++   entry .local   il dominio `local`, `dns"local"`, sotto cui si trova ogni nome mDNS
++   entry .Service   un tipo di servizio, come `_fury._tcp`: un nome registrato e un trasporto
+
+% 1 1 0 09d301483d0e28710159fdb00c2847b3
+
+@ 0 6 0 14ed164de95fbe8a10d9dfa41cf12e27
++         Un tipo di servizio è un nome registrato di al massimo quindici caratteri (RFC 6763
++         §7), senza il trattino basso iniziale, e un protocollo che è `Tcp` o `Udp`. Il suo
++         `#dnsName` è `_name._tcp.local` (o `_udp`), calcolato e validato alla costruzione. Un
++         elenco facoltativo di `#subtypes` dà nome a varietà più ristrette del servizio,
++         ciascuna esplorata sotto `_subtype._sub._name._tcp.local` (`#subtypeName`), e ogni
++         istanza pubblicizzata viene elencata sotto ogni sottotipo del suo servizio.
+
+% 2 1 0 089b051e873dd8f411bbb1e206f2cc08
+
+% 3 1 0 1580148159fc49bc09588226e84bda67
+
+% 4 1 0 1e305c80a5f45df61fe24ec219c99a38
+
+% 6 1 0 032716694bc368600a9ff565d1442580
+
+% 0 1 0 11a7c244220cfdbf023518bb44dadc53
+
+% 0 1 0 1ded7585b872d7ef1daaeb8981d41531
+
+% 0 1 0 0e5d8eb01e7c4cfa19563d24d77e27e5
+
+% 0 1 0 07c15fc5030694570a426535ef8f2529
+
+% 1 1 0 06b9ee93b8d20e551fc6543c5364668e
+
+@ 0 25 0 043ecddd46e5191305cce1fe7d519aa1
++         Un nome vuoto, più lungo di quindici caratteri o che inizia con `_` viene rifiutato con
++         `Discovery.Error` di motivo `InvalidService`. Il costruttore è privato: un servizio si
++         crea con `Service.apply` o si rilegge da un nome DNS con `Service.parse`.
++     entry .enumeration   il nome di meta-query sotto cui è elencato ogni tipo di servizio sul collegamento
++         `dns"_services._dns-sd._udp.local"` (RFC 6763 §9): il responder pubblicizza un PTR da
++         questo nome verso ogni tipo di servizio di cui ha un'istanza, così un browser può
++         enumerare i tipi presenti sul collegamento prima di sceglierne uno.
++     entry .apply   un tipo di servizio validato a partire da nome, protocollo e sottotipi facoltativi
++         `Discovery.Service(name, Tcp | Udp, subtypes = Nil)`. Richiede una
++         `Tactic[Discovery.Error]`; solleva il motivo `InvalidService` per un nome vuoto, uno
++         oltre i quindici caratteri, o uno che inizia con `_`, e `InvalidName` se il nome DNS
++         risultante viola un limite DNS.
++     entry .parse   il tipo di servizio denotato da un nome DNS come `_fury._tcp.local`, o `Unset`
++         L'inverso di `#dnsName`. Il nome deve avere esattamente tre etichette, l'ultima
++         `local`, la seconda `_tcp` o `_udp`, e la prima che inizia con `_`; qualsiasi altra
++         cosa è `Unset`. Un servizio analizzato non ha sottotipi.
++     entry .showable   rende un tipo di servizio nella sua forma registrata, `_fury._tcp`
++     entry #name   il nome registrato del servizio, senza il trattino basso iniziale
++     entry #protocol   il trasporto, `Tcp` o `Udp`
++     entry #subtypes   i sottotipi sotto cui è elencata anche un'istanza di questo servizio
++     entry #dnsName   il nome DNS-SD del tipo di servizio: `_fury._tcp.local`
++     entry #subtypeName   il nome sotto cui si esplorano le istanze di un sottotipo
++         `_printer._sub._fury._tcp.local` per il sottotipo `printer`. Richiede una
++         `Tactic[Discovery.Error]`, e solleva `InvalidName` se l'etichetta viola un limite DNS.
++   entry .Instance   un fornitore con nome di un servizio: un'etichetta UTF-8 sotto il tipo di servizio
+
+% 1 1 0 15c67ffb0f53938211afe626a3588815
+
+@ 0 5 0 1fd21780088d287016ce0982993bd4af
++         Un'istanza è una singola etichetta DNS in UTF-8 (RFC 6763 §4.1.1) — spazi e punti
++         inclusi, senza escape, fino a 63 byte — anteposta al nome del suo servizio, così
++         `Instance(t"Hamlet's Printer. Upstairs", fury)` ha le etichette `Hamlet's Printer. Upstairs`,
++         `_fury`, `_tcp`, `local`. Si mostra nella forma di presentazione del §4.3, con i punti
++         dell'etichetta preceduti da escape: `Hamlet\.Printer._fury._tcp.local`.
+
+% 2 1 0 1e7294b3e162593e0834f75203ed6588
+
+% 3 1 0 1297a00ab6255fa200227cc18090123f
+
+% 4 1 0 04112c4857f4939a14aafd1b572fb608
+
+% 6 1 0 1cc5189876b38a1e1193f934c494c226
+
+% 7 1 0 166fc72b1e1f10570c2b9e5aea3ba258
+
+% 0 1 0 0ba70c1a2b05f2a4007899a78764b54b
+
+% 0 1 0 0b615cf8996f766e08427d162aab533a
+
+% 1 1 0 18f6d9b19fb6e4cf00f8bbc31b673e1b
+
+@ 0 20 0 142132a545e105bb1d84839cd4d2b87c
++         Un'istanza è il valore che un browser riporta come trovato o perso, e quello su cui si
++         chiama `resolve`. Il costruttore è privato: un'istanza si crea con `Instance.apply` o si
++         rilegge dal target di un record PTR con `Instance.parse`.
++     entry .apply   un'istanza validata a partire dalla sua etichetta e dal suo servizio
++         Richiede una `Tactic[Discovery.Error]`; un'etichetta vuota, o oltre i 63 byte, solleva
++         il motivo `InvalidName` che nomina l'etichetta.
++     entry .parse   l'istanza denotata da un nome come `Elsinore._fury._tcp.local`, o `Unset`
++         La prima etichetta è l'etichetta dell'istanza, conservata esattamente come è scritta, e
++         il resto deve essere analizzabile come `Service`; un nome senza etichette, o il cui
++         genitore non è un tipo di servizio (come il nome stesso del tipo di servizio), è
++         `Unset`.
++     entry .showable   rende un'istanza come il suo nome DNS, con i punti dell'etichetta preceduti da escape
++     entry #label   il nome proprio dell'istanza, un'etichetta in UTF-8
++     entry #service   il tipo di servizio che l'istanza fornisce
++     entry #dnsName   il nome DNS-SD completo: l'etichetta, poi il nome del servizio
++     entry #renamed   il prossimo nome da provare dopo un conflitto: `Elsinore` → `Elsinore (2)` → `Elsinore (3)`
++         La rinomina del §9 di RFC 6762: si aggiunge un contatore tra parentesi, o lo si
++         incrementa se l'etichetta ne termina già con uno. Richiede una
++         `Tactic[Discovery.Error]`, poiché la nuova etichetta viene validata come ogni altra. Il
++         responder rinomina così un'istanza pubblicizzata quando un altro host ne detiene, o ne
++         vince, il nome.
++   entry .Txt   il record TXT di un'istanza: coppie `key=value`, lette senza distinzione di maiuscole, con prevalenza della prima occorrenza
+
+% 1 1 0 0ce4552a1fd51aa10f55d761934e48b0
+
+@ 0 5 0 04e1e76755f350e90c5d801db45b96aa
++         Un record TXT è un elenco di voci, ciascuna una chiave con un valore facoltativo (RFC
++         6763 §6). Le chiavi sono ASCII stampabile senza `=`, e ogni stringa `key=value` deve
++         stare nella character-string di 255 ottetti. Le chiavi duplicate vengono conservate come
++         scritte, ma `#apply` e `#has` leggono la prima occorrenza di una chiave, confrontando le
++         chiavi senza distinguere le maiuscole ASCII, come il §6.4 dice che dovrebbe fare un
++         ricevente.
+
+% 2 1 0 0dd1e7a7410548610b94c3c7d1090598
+
+% 3 1 0 187aa43e8d4316c60416210d5aab8558
+
+% 4 1 0 1cfd25d88d32d22b1dbf23483ba8c9de
+
+% 0 1 0 04a136fd734508f005063911c5635408
+
+% 0 1 0 0437b32e4656a5781afaf9688004f4e6
+
+% 0 1 0 0bfa778fecfda68704a183e28cfa60f1
+
+% 0 1 0 06581fc1fe1cc3081c1f07c18fd1ffa7
+
+% 0 1 0 0c2723a674d9ff79093a52f0c3daf316
+
+% 1 1 0 026b7257b67df70111d01e2f99fe7aed
+
+@ 0 19 0 0d4088d0db84412f12552cc3af13836f
++         Un `Txt` viaggia in una `Description` quando si pubblicizza e torna in una
++         `Resolution`.
++     entry .empty   il record TXT senza voci, che sulla connessione viaggia come un'unica stringa vuota
++     entry .apply   un record TXT validato a partire da coppie `key -> value`, dove un valore è `Optional[Text]`
++         Richiede una `Tactic[Discovery.Error]`; una chiave vuota, che contiene `=` o un
++         carattere non stampabile, o la cui stringa `key=value` supera i 255 byte di UTF-8,
++         solleva il motivo `InvalidTxt` che nomina la chiave.
++     entry .parse   un record TXT dalle stringhe di un record ricevuto
++         Ogni stringa è `key=value`, o `key` da sola per una chiave senza valore (`Unset`); il
++         primo `=` divide, quindi `eq=a=b` è la chiave `eq` con il valore `a=b`. La stringa
++         vuota che rappresenta un record vuoto viene saltata. Non viene validato nulla.
++     entry .showable   rende il record come le sue stringhe, ciascuna tra virgolette doppie, separate da spazi
++     entry #entries   le voci in ordine, ciascuna una chiave e un valore facoltativo, duplicati inclusi
++     entry #apply   il valore di una chiave, o `Unset` se la chiave è assente o non ha valore
++         `txt(key)` trova la prima voce la cui chiave corrisponde senza distinguere le maiuscole
++         ASCII. Una chiave presente senza valore e una chiave assente danno entrambe `Unset`;
++         `#has` le distingue.
++     entry #has   se una chiave è presente, con o senza valore
++     entry #strings   le stringhe di trasmissione del record: una per voce, o un'unica stringa vuota se non ce ne sono
++   entry .Description   ciò che un'istanza pubblicizza: nome, porta, record TXT, host, priorità e peso
+
+% 1 1 0 111ab578ded024dd0e368177a003bee3
+
+@ 0 5 0 1c36d36719e1691c1c01da598868c97a
++         L'input di `advertise`: l'etichetta che l'istanza richiede (che un conflitto può
++         rinominare), la porta su cui serve (un `Port`, quindi `tcp"8443"` o `udp"5004"`), il suo
++         record `Txt`, e facoltativamente il nome host sotto cui sono pubblicati i suoi record di
++         indirizzo — per impostazione predefinita il nome di questo host — e la `priority` e il
++         `weight` del record SRV, per un servizio con più istanze.
+
+% 2 1 0 08d8a6fe67740db918d30684140002d0
+
+% 3 1 0 0a374497d98da4e41b0967e2dd0214eb
+
+% 4 1 0 0bddc12102bc2c2606eaf1b03d478d87
+
+% 0 1 0 1be7db598c357721075cf13403b532d5
+
+% 0 1 0 1130917ffbf8d8830819f1256cb763bc
+
+% 1 1 0 1469d769c52f9bf4045fe95c89d3f22f
+
+@ 0 7 0 05831fce8716256d193529c7c80611dd
++     entry #instance   l'etichetta richiesta; il nome rivendicato può essere diverso dopo un conflitto
++     entry #port   la porta su cui serve l'istanza
++     entry #txt   il record TXT da pubblicare; `Txt.empty` per impostazione predefinita
++     entry #host   il nome host sotto cui pubblicare i record di indirizzo, o `Unset` per quello di questo host
++     entry #priority   la priorità del record SRV, `0` per impostazione predefinita
++     entry #weight   il peso del record SRV, `0` per impostazione predefinita
++   entry .Resolution   dove si trova un'istanza trovata e cosa dice: host, porta, TXT e indirizzi
+
+% 1 1 0 0bd2ee3ddd9c6d6706a7fc1e5b6b2d7c
+
+@ 0 3 0 1a2f8dbe9b70a00a1a26de05245bd1a9
++         Il risultato di `resolve`: l'istanza, il nome DNS dell'host che la serve, la porta
++         (tipizzata secondo il trasporto del servizio), il suo record `Txt`, e gli indirizzi IPv4
++         e IPv6 dell'host. `#endpoints` accoppia ogni indirizzo con la porta, pronto per
++         connettersi a turno.
+
+% 2 1 0 199d302188409f390262ec936cda6483
+
+% 3 1 0 0fd5459a52b691ae12303d1fdb132677
+
+% 4 1 0 076bdbeacd903529099fcadab0b49642
+
+% 6 1 0 1e581aeb71f0b5aa125d3b5abf23a520
+
+% 7 1 0 14dfa0a3662a6c7411f47b9a946d973d
+
+% 0 1 0 0a4750f323b6a1ec059800bf86ed10b4
+
+% 0 1 0 1f13ae40262843091df6f6543e6557e6
+
+% 0 1 0 15d79d79cef5ba360bb9aa95bfeb74d9
+
+% 0 1 0 0607d9d3c46b38c01d563e573acd0e19
+
+% 1 1 0 084b476bb6d6ef8010bf391c9d138e9e
+
+@ 0 7 0 026de4fa80766c6a1840dc35e74c59aa
++     entry #instance   l'istanza che è stata risolta
++     entry #host   il nome DNS dell'host che serve l'istanza, dal suo record SRV
++     entry #port   la porta, dal record SRV
++     entry #txt   il record TXT dell'istanza
++     entry #addresses   gli indirizzi dell'host, prima IPv4 poi IPv6, come valori `Ipv4 | Ipv6`
++     entry #endpoints   ogni indirizzo accoppiato con la porta, come `Endpoint[Port]`
++   entry .Event   ciò che vede un browser: un'istanza trovata sul collegamento, o persa da esso
+
+% 1 1 0 06f66dcaab83055a01f83a8bdeaffe61
+
+@ 0 6 0 04d34884cb0b774c18cbfcfa434d9d22
++         `Found(instance)` è un'istanza che compare — il suo record PTR che arriva nella cache —
++         e `Lost(instance)` è un'istanza che se ne va, con un saluto di congedo o per la scadenza
++         dei suoi record. Una modifica ai dettagli di un'istanza (la sua porta o il suo record
++         TXT) non è un evento: risolvila di nuovo. Un `Browser` consegna questi eventi tramite
++         `#events`.
++     entry .showable   rende un evento come `found Elsinore._fury._tcp.local` o `lost …`
++   entry .Activity   ciò che un backend riporta mentre lavora, registrato tramite il `Loggable` di ogni prestito
+
+% 1 1 0 1ce770ac12dff8ba0c9ea0803750a96a
+
+@ 0 8 0 06ba678da7b9903d0e3c47c86ccf99f6
++         Ogni prestito — una pubblicizzazione, un'esplorazione, una risoluzione — prende un
++         `Discovery.Activity is Loggable`, a cui il backend riporta ciò che fa per quel prestito:
++         `Probing(name)` e `Yielded(name)` al livello `fine` e `Conflicted(name)` mentre un nome
++         viene rivendicato; `Claimed(instance)` e `Withdrawn(instance)` quando una
++         pubblicizzazione inizia e finisce; `Browsing(service)` e `Resolved(instance)`. Tutti
++         hanno il tag `Log.Network`, e quelli di sondaggio anche `Log.Protocol`. Un backend non
++         ha un logger proprio, quindi il suo lavoro in background tra un prestito e l'altro —
++         difendere un nome, risondare dopo un conflitto — non viene riportato;
++         `logging.silentLogging` soddisfa il requisito quando non si vuole nulla.
+
+% 2 1 0 082a592e9d98c91b1e5d211ae46e38a5
+
+% 3 1 0 1c8b20065534736a0ef4fec0ff208c09
+
+% 0 1 0 166dd43e99dbd0c613b16d5d1073253f
+
+% 1 1 0 111bc3e6d1c8f92717b38d2f716067af
+
+@ 0 3 0 1dd189d6d1ca58c514c7501285a574d0
++     entry .silent   un `Loggable` che scarta ogni attività, per il lavoro in background di un backend
++     entry .communicable   rende ogni attività come un messaggio: _probing for the name `…`_, _claimed and announced `…`_, …
++   entry .Backend   ciò che un trasporto fa per il discovery: pubblicizzare, ritirare, esplorare, congedare, risolvere
+
+% 1 1 0 15647110ef5744480e0f40dbbe637a7c
+
+@ 0 7 0 02c6bed4f5d9c328172cbd450351a34d
++         La giuntura dietro `advertise`, `browse` e `resolve`: ogni prestito chiama un avvio e,
++         in un `finally`, l'arresto corrispondente. Ogni avvio prende il `Monitor^` sotto cui il
++         backend esegue i suoi task in background (così cancellare il monitor li termina), un
++         `Probate.Shared`, una `Tactic[Discovery.Error]` e il `Loggable` a cui va l'`Activity`
++         del prestito. Un backend non detiene capability proprie, ed è questo che permette ai
++         prestiti di annidarsi — un'esplorazione dentro una pubblicizzazione. `Mdns.Responder` è
++         l'implementazione fornita; il given `discoveryBackends.mdnsSockets` ne costruisce uno
++         sopra il `Socket.Backend` nell'ambito.
+
+@ 0 14 0 07ca481fc8327b0e17d9875fe7eb0f16
++         L'intento è un backend per programma: legalo una volta come `given` anziché evocarlo di
++         nuovo a ogni uso, il che aprirebbe un socket per ogni evocazione.
++     entry #advertise   rivendica un nome per l'istanza e lo annuncia, producendo l'`Advertising` in corso
++         Sonda il nome, rinomina in caso di conflitto, e annuncia; l'`Advertising` restituito
++         legge l'istanza attualmente rivendicata, che un conflitto successivo può rinominare di
++         nuovo. Solleva `Discovery.Error` con motivo `Conflict` se non si può rivendicare alcun
++         nome, `InvalidTxt` se il record TXT non può essere codificato, e `Unavailable` se il
++         trasporto non può essere aperto.
++     entry #withdraw   termina una pubblicizzazione: invia il suo saluto di congedo e rilascia il prestito del backend
++     entry #browse   avvia un'esplorazione di un tipo di servizio, producendo il `Browsing` il cui relay trasporta gli eventi
++     entry #dismiss   termina un'esplorazione: ferma il suo ciclo di re-interrogazione e il suo relay
++     entry #resolve   risolve un'istanza entro un timeout, altrimenti solleva `Discovery.Error` con motivo `Timeout`
++         Il timeout è una durata qualsiasi `Abstractable across Durations to Long`, in
++         millisecondi (un semplice `5000L` con `abstractables.millisecondsAbstractable`
++         importato).
++   entry .Browsing   un'esplorazione come la consegna un backend: il suo relay di eventi e un'istantanea delle sue istanze
+
+% 1 1 0 11a19dd6f0df1ded0340d5e20b32d8d4
+
+@ 0 5 0 0068b9447ef6c8fe0d1679b3fbebbc32
++         Un valore semplice, costruito dal `browse` di un backend, che il prestito `browse`
++         avvolge nel `Browser` che presta. Un programma usa `Browser`; chi scrive un backend
++         costruisce questo.
++     entry #relay   il `Relay[Event]` su cui il backend mette gli eventi di istanze trovate e perse
++     entry #instances   le istanze che il backend conosce attualmente, come `Set`
++   entry .Advertising   una pubblicizzazione come la consegna un backend: l'istanza attualmente rivendicata
+
+% 1 1 0 1fbaa128b8c42dd30956222f3a48a1e6
+
+@ 0 5 0 119d3e1b4470858c003f7b8ea8d2e049
++         Il trait che l'`advertise` di un backend restituisce e che il suo `withdraw` riprende,
++         avvolto dal prestito nell'`Advertisement` che presta. `#instance` viene letto dal vivo:
++         un conflitto dopo l'insediamento può rinominarla.
++     entry #instance   l'istanza attualmente rivendicata, dopo un'eventuale rinomina
++   entry .Advertisement   l'handle che presta un prestito `advertise`: l'istanza come è attualmente rivendicata
+
+% 1 1 0 18a7e5c395faade6071beab2831fa0b2
+
+@ 0 6 0 0130885abaa829631bbc13d3ba763bb0
++         Disponibile dentro un blocco `advertise` come `summon[Discovery.Advertisement]`. Il suo
++         `#instance` viene letto dal vivo anziché copiato, perché un host che si presenta più
++         tardi affermando lo stesso nome fa sì che il responder sondi di nuovo e, se il sondaggio
++         riceve risposta, rinomini: `Elsinore` può diventare `Elsinore (2)` durante il blocco.
++         L'handle è un valore semplice, non una capability — il socket e i task in background
++         appartengono al `Monitor` — ed è questo che gli permette di passare attraverso un
++         prestito annidato.
+
+% 2 1 0 088f14aa09725fbe0b939a6d0042a5db
+
+% 3 1 0 032e5a78a709d805033430320e8e508b
+
+% 4 1 0 024fc963dc79f28f082af53cc6f66461
+
+% 5 1 0 1ce47980537e6976146cccfab022e3f5
+
+% 6 1 0 081b9cdba2341af2176c81ae92596cd1
+
+% 7 1 0 126f5595560cb8271af83513e63a0032
+
+% 8 1 0 0d2785852ba8023f1c06e5691e7c6af2
+
+% 9 1 0 180ff1c9590e983d065b116ec798850b
+
+% 10 1 0 1e902eb253e110ef1373eb746fe4aec0
+
+% 12 1 0 165de71088d3c2531ea9349ad259e4b1
+
+% 14 1 0 1b95c6e71cb839af1a94da5bda950de5
+
+% 0 1 0 0aeb6921226730d20c2c744293404c89
+
+% 0 1 0 0873a78dd310ad401978882d531366ba
+
+% 1 1 0 116e49197ff13eeb041e0d21c62a21aa
+
+@ 0 2 0 08daa3ad87af651b18d8f43242f4896c
++     entry #instance   l'istanza attualmente rivendicata, che un conflitto può aver rinominato
++   entry .Browser   l'handle che presta un prestito `browse`: gli eventi man mano che accadono, e le istanze note
+
+% 1 1 0 102b73113f99d7e6072f21b0572ad41e
+
+@ 0 4 0 1b3844803db2925014505e7675270699
++         Disponibile dentro un blocco `browse` come `summon[Discovery.Browser]`. `#events` è una
++         `Chain` di `Event`, consegnati man mano che le istanze compaiono e se ne vanno — le
++         istanze già note all'inizio dell'esplorazione vengono riportate per prime, come `Found`
++         — e `#instances` è l'insieme attualmente noto. La catena termina quando termina il
++         prestito.
+
+% 2 1 0 02c8c20255a4dd550549278cc55f41bd
+
+% 3 1 0 1a06c415f95e66751081f4f590e1a569
+
+% 4 1 0 1c777051d3054c8e1b286d740f7cd4d7
+
+% 5 1 0 01cd52c40f57d1ff0832befde07b8683
+
+% 6 1 0 102dbff0e0db375701c18841faf85594
+
+% 7 1 0 00170a3beaf6799d19c35d0fa22bc6f8
+
+% 8 1 0 0c814bc77dd4f3d406840b79985dda30
+
+% 9 1 0 1346acb016c6a27d04e4a6adec328c5d
+
+% 10 1 0 0ed5564b64bcb31b0bfd3fb00905a1da
+
+% 12 1 0 1e7687c0edd72b0402ea4036766327d5
+
+% 14 1 0 0a661d7e3afabb770f9688de1feafd71
+
+% 0 1 0 13c82fd748ec195b0f4a90f9c8c74561
+
+% 0 1 0 076bec1faf60d6890a02239b66e32be1
+
+% 1 1 0 1643c7771151d34b0c1517302a58be68
+
+@ 0 3 0 1329e33fa33a63aa1be926653f2e2f4a
++     entry #events   la `Chain[Event]` delle istanze trovate e perse, man mano che accade
++     entry #instances   le istanze attualmente note, come `Set[Instance]`
++   entry .Error   sollevato quando un nome non è valido, non può essere rivendicato, non si risolve, o nessun backend si avvia
+
+% 1 1 0 182d7507bd8a9c4c1805ddcbd1176db2
+
+@ 0 2 0 0079108fd97b1d551f1642053e444bea
++         Errore `↯/s.102.1`: _service discovery failed because `reason`_. Il `#reason` è uno dei
++         casi di `Discovery.Error.Reason`, numerati da 1 a 6:
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 5 0 0043a8e0488bb16016253b05f61e9fcb
++         column  Caso
++         column  Codice
++         column  Messaggio
++         column  Nota
++         row  `Conflict(name)`  1  _the name `name` could not be claimed after repeated conflicts_  dopo cento rinomine
+
+% 0 1 0 0c5439a6c2aa4831058e429216e1af07
+
+@ 0 4 0 00d3a1e84c2d491c01209a317080af3e
++         row  `InvalidName(text)`  3  _the name `text` is not a valid DNS-SD name_  un'etichetta o un nome è vuoto, oltre i 63 byte, o oltre un limite DNS
++         row  `InvalidTxt(key)`  4  _the TXT entry `key` is not valid_  la sua chiave è vuota, contiene `=` o un carattere non stampabile, o la voce supera i 255 byte
++         row  `InvalidService(name)`  5  _the service name `name` is not valid_  vuoto, oltre i quindici caratteri, o che inizia con `_`
++         row  `Unavailable`  6  _no service discovery backend could be started_  il trasporto non ha potuto essere aperto; la causa è il `Mdns.Error` del responder stesso
+
+% 1 1 0 093b15ad157abe080ce73978c710093e
+
+% 2 1 0 08a1aaa27a33b3d600c40a4777139099
+
+% 3 1 0 15ed7097a93bde601582783fd7b9ecca
+
+% 0 1 0 07e5d5fb6ffe0dde1f8297aa5027dc2b
+
+% 0 1 0 15716e7eed6188fc19f683a95a0c2e53
+
+% 1 1 0 19b82472033f5c2c001991eb6ced8d1c
+
+@ 0 1 0 1213a117fb7686e40e8105e4489eb00b
++     entry .Reason   perché il discovery è fallito: `Conflict`, `Timeout`, `InvalidName`, `InvalidTxt`, `InvalidService` o `Unavailable`
+
+% 1 1 0 098b1f3b2b99e1da1db944d02524979b
+
+@ 0 2 0 17865dad545ccc82011176bc17779941
++           Un enum, con ogni caso numerato, e una resa `Communicable` come _the name
++           `Elsinore._fury._tcp.local` could not be claimed after repeated conflicts_ o _the
+
+% 0 1 0 0b450acb26ac2bbd19f0e498e683262c
+
+@ 0 3 0 04745520c996d4500b7d5317189b394e
++       entry .communicable   rende ogni motivo come un messaggio
++       entry #number   il numero del motivo, da `1` a `6`, la seconda parte del codice dell'errore
++     entry #reason   perché il discovery è fallito
+
+@ 0 1 0 00829139f07683fb076f4a57452c7bc4
++ entry .advertise   `service.advertise(description) { … }`: pubblicizza un'istanza per la durata del blocco
+
+% 1 1 0 1c48406a4718e5c80fc7f7da678b753c
+
+@ 0 5 0 11b0f1d67f54a6b4028a4cb9221cee65
++       Un'estensione su `Discovery.Service`. L'istanza viene sondata, rivendicata — rinominata
++       `Elsinore (2)` se un altro host detiene il nome, o se questo responder la pubblicizza già
++       — e annunciata; resta pubblicizzata per tutto il blocco, e viene inviato un saluto di
++       congedo quando il blocco termina, normalmente o per un'eccezione, o quando il `Monitor`
++       viene cancellato. Il blocco riceve un `Discovery.Advertisement`, da cui si legge il nome
++       effettivamente rivendicato.
+
+% 2 1 0 15c18814b77c029e04aa26acf7c89fc7
+
+% 3 1 0 0fd358d3dea83dd90dd5de9d00909c89
+
+% 4 1 0 01aaea02d2234db60c43df856143c9ba
+
+% 5 1 0 163e2947a959a6cf06c1c68816479330
+
+% 6 1 0 1f2a81dbdba939a20c240d4f6c907ddf
+
+% 7 1 0 0198c4fc393b469e091d7b1ee7ec94cf
+
+% 8 1 0 1e2d5e69f4de091e1bd416cedc9ee57c
+
+% 1 1 0 1dda18d6a1a8619a1b2556c528e7a445
+
+% 2 1 0 0aa97d0ac3eeab2704d5ded625aca98f
+
+% 4 1 0 06ccd8ac5448e68304146a8d9f66c1d4
+
+% 0 1 0 1c459a0d87214e861294f3a169b040b9
+
+% 2 1 0 12021193c7279da11e531dbebe618862
+
+% 0 1 0 1cba6f6bfdc3ffcc16412cda869a71d7
+
+% 0 1 0 0a82915bd87a953c09a586b2891678fe
+
+% 1 1 0 1f1f4e4a07df095b1f9c1f398ca40ba2
+
+@ 0 7 0 129c7ee7218d34910c89e84a552a2c5d
++       Il backend è una clausola `using` a sé stante, prima del blocco, così se ne può indicare
++       uno diverso da quello given: `fury.advertise(description)(using responder) { … }`. Il
++       blocco richiede anche un `Monitor^` (da `supervise`), un `Probate.Shared`, una
++       `Tactic[Discovery.Error]` e un `Discovery.Activity is Loggable`. Solleva
++       `Discovery.Error` per un'etichetta o un record TXT non validi, per un nome che non può
++       essere rivendicato dopo ripetuti conflitti, o per un trasporto che non può essere aperto.
++       I prestiti si annidano: un'esplorazione può girare dentro una pubblicizzazione.
+
+% 0 1 0 15ab2377aadf59f40f508ab3123c63cb
+
+% 0 1 0 01462bb1f584e9841fd71ffb51d50024
+
+% 0 1 0 08046b5b8cb936d61116b26479886c9d
+
+@ 0 1 0 0cf8effada2011ca1d32e0d8373030dd
++ entry .browse   `service.browse { … }`: osserva le istanze di un tipo di servizio per la durata del blocco
+
+% 1 1 0 1d38f26406d495371c73db1a54fad1f9
+
+@ 0 6 0 106e8af90afdc0f906492c0945ca2b13
++       Un'estensione su `Discovery.Service`. Il blocco riceve un `Discovery.Browser`, i cui
++       `events` sono le istanze che compaiono sul collegamento e lo lasciano, man mano che
++       accade, e le cui `instances` sono quelle attualmente note. Le istanze già nella cache
++       vengono riportate subito come `Found`; poi il tipo di servizio viene interrogato, e
++       interrogato di nuovo a intervalli che raddoppiano da un secondo a un'ora, e ogni
++       interrogazione dice agli altri responder ciò che è già noto. L'esplorazione termina con
++       il blocco, o con il `Monitor`.
+
+% 2 1 0 17b89415ad59e9010eb0ec51c4808339
+
+% 3 1 0 056b3af6fb9701bc1e1fd93aaa0a800a
+
+% 4 1 0 13073d9fb9b070ef03bef96a3768baa5
+
+% 5 1 0 10713cd40d3e070c18f347efc3e47c63
+
+% 6 1 0 1e65b809836dc63c0194f2193e5ff396
+
+% 7 1 0 0d7abf50e4063f200e4790d1239d6bdc
+
+% 8 1 0 0c06aab7e0e307cd1c809696219e0476
+
+% 9 1 0 165ec75261d0283d1332ef7fe5dee015
+
+% 10 1 0 1c0c05ea0aeda7020e5f7b064a439ec6
+
+% 11 1 0 0f54fe6cde4b15ac160033eea3ef9f33
+
+% 13 1 0 1f3463fcd2ce94930e08a7d6da095cca
+
+% 2 1 0 07a503edd40098c805a5f5ca4dfec272
+
+% 1 1 0 0f02d31a7b0044430e4d2103d255ecb5
+
+% 2 1 0 0b20ffc7da84f6aa1584955623fa1842
+
+% 0 1 0 1d6fdaa64415c4ef19211b7eeb72653a
+
+% 1 1 0 00f103eb19858a06149e4f18a6620ad2
+
+% 1 1 0 18ee4439eb6352470601ed2487c6506e
+
+@ 0 3 0 17ded278962ea46203eb5bb303e7f66c
++       Il backend è una clausola `using` a sé stante (`fury.browse(using responder) { … }`), e
++       il blocco richiede un `Monitor^`, un `Probate.Shared`, una `Tactic[Discovery.Error]` e un
++       `Discovery.Activity is Loggable`. L'esplorazione registra `Discovery.Activity.Browsing`.
+
+% 0 1 0 083179a3d6eb95f910d477713d3c1a6c
+
+% 0 1 0 157f3843925ad4b409df0ec656bf79a5
+
+% 0 1 0 1af8d3ad6472a35f049ef3e0ba5fe88c
+
+@ 0 1 0 018245cc2771de5c0c8cf8bccebcfffe
++ entry .resolve   `instance.resolve(timeout)`: host, porta, record TXT e indirizzi dell'istanza
+
+% 1 1 0 09e9d47357d91a9b12a85aec28eda5f9
+
+@ 0 6 0 02eeab34b9b03f4f14c5f0a7a05c9061
++       Un'estensione su `Discovery.Instance`, che dà una `Discovery.Resolution`. Se la cache
++       contiene già i record SRV e TXT dell'istanza e i record di indirizzo del suo host, la
++       risoluzione è immediata; altrimenti quei record vengono interrogati e la chiamata attende
++       fino al timeout che arrivino. Il timeout è un valore qualsiasi `Abstractable across
++       Durations to Long`, in millisecondi — un `5000L` con
++       `abstractables.millisecondsAbstractable` importato, o una durata di aviation.
+
+% 2 1 0 055767cb394a2dfb1c41b874e27796fe
+
+% 3 1 0 05a0cba11d2d00a815ef0c8dda6329f5
+
+% 4 1 0 044b7721c4540a1b07e9290f188233fc
+
+% 5 1 0 1646ea0a48ae227b11b2129556ded4ff
+
+% 6 1 0 04e50539bd21c8bd0878d169e9e27ace
+
+% 7 1 0 1ea77a98bbd357d30480c05f2d570321
+
+% 8 1 0 168070a0c03827f1073a28333e58cc99
+
+% 9 1 0 1a84e170eb408ea50d7d4170ffe84625
+
+% 10 1 0 147dc350c1ce1e210ed811187158b71e
+
+% 11 1 0 1616b7e774f26d1a19a2c1cd97dd5c8f
+
+% 13 1 0 0c9c5d6a8e74d274016723775659daec
+
+% 3 1 0 10a304c151fcbfee17bf12a9406da9dd
+
+% 2 1 0 13b1910f7ef090a700d53a4279da9551
+
+% 0 1 0 09276033d4ebbd111e80a75d4a28e4bd
+
+% 0 1 0 1f5501622c01ef021c12a18ee028756e
+
+% 1 1 0 1f0da1df10f097f916c5266c088fd9ed
+
+@ 0 5 0 1ccbe030931cf37e0c0198c898706b9a
++       Solleva `Discovery.Error` con motivo `Timeout` se i record non arrivano in tempo,
++       nominando l'istanza. La chiamata è un prestito sul backend come gli altri — prende il
++       backend come propria clausola `using`, e richiede un `Monitor^`, un `Probate.Shared`, una
++       `Tactic[Discovery.Error]` e un `Discovery.Activity is Loggable` — e in caso di successo
++       registra `Discovery.Activity.Resolved`.
+
+% 0 1 0 1f7d2cbc370bcd04159d790fbbb6f46a
+
+% 1 1 0 0886fd31b88abe7a005d895dade16020
+
+@ 0 1 0 06c84a896bc065891b493989903e9928
++ entry .discoveryBackends   i backend di discovery, ciascuno un given da importare per nome
+
+% 1 1 0 1072fa3d30cac5f80f5a7ff742acd524
+
+@ 0 3 0 16aba76c67a80fe31eaed763f817b21e
++       Quale backend pubblicizza, esplora e risolve lo decide il given `Discovery.Backend`
++       nell'ambito. `import soundness.*` non ne porta nessuno: se ne importa uno per nome, e
++       l'intento è un backend per programma, legato una volta.
+
+% 2 1 0 0d26d8addd8f5e361485de02f2d67f41
+
+% 3 1 0 0298360905a11c7302a5c880e9106430
+
+% 1 1 0 1b15c02f92fc99140d99b5a2333abf3e
+
+% 2 1 0 195092bc95929e3c10f6086f899346f3
+
+% 1 1 0 1ac07a60658e25a50ae10668aa518575
+
+@ 0 13 0 08033e811eb0f12d17fb13f117e241d5
++       Per un programma sotto test, un `Mdns.Responder` sopra un `Mdns.Transport.Bus` si può
++       legare come given locale, o passare esplicitamente come `(using responder)`, al posto di
++       quello basato su socket.
++   entry .mdnsSockets   il responder mDNS sopra i socket multicast del `Socket.Backend` nell'ambito
++       Un `Mdns.Responder` il cui trasporto è `Mdns.Transport.sockets` sopra il `Socket.Backend`
++       given (come `socketBackends.javaBaseSockets`), con loopback multicast, un limite di hop
++       multicast di 255, una dimensione dei datagrammi di 9000 byte, e tutti i
++       `Socket.Option.Udp` presenti nell'ambito come `Every`. Si unisce a `224.0.0.251:5353` e
++       `[ff02::fb]:5353` su ogni interfaccia attiva, capace di multicast e dotata di un
++       indirizzo della famiglia del gruppo, con riuso di indirizzo e porta, così gira accanto al
++       responder proprio del sistema. I socket vengono aperti al primo prestito e chiusi dopo
++       l'ultimo; un host senza alcuna interfaccia capace di multicast fa fallire il primo
++       prestito con `Discovery.Error` di motivo `Unavailable`.
+
+@ 0 3 0 126bd394c7b068f202919d3767deb910
++       Il given viene calcolato ogni volta che viene evocato, quindi legalo una volta — `given
++       backend: Discovery.Backend = discoveryBackends.mdnsSockets` — anziché evocarlo a ogni
++       uso, il che aprirebbe un socket per ogni evocazione.
+
+@ 0 1 0 17e4cbf8d3f051bb054b8f9e7b991a6d
++ entry .Mdns   il responder DNS multicast (RFC 6762) e le sue parti: trasporto, cache, spareggio
+
+% 1 1 0 1236a7253467ae680702f8d485cbb983
+
+@ 0 6 0 168485f3cf6e68020727af157a351fcb
++       `Mdns` è l'unico `Discovery.Backend` fornito: `Mdns.Responder`, un responder che parla
++       attraverso un `Mdns.Transport` — i socket, o un `Mdns.Transport.Bus` in memoria —
++       conserva ciò che sente in una `Mdns.Cache`, e risolve i sondaggi simultanei con
++       `Mdns.Tiebreak`. Il trasporto è una giuntura a sé stante, sotto quella di `Discovery`,
++       così il protocollo gira in modo identico sulla rete e su un bus, ed è così che lo si
++       testa senza toccare la rete dell'host.
+
+% 2 1 0 1badb445e2f7985a0879c8c13b8370aa
+
+% 3 1 0 1e246b4683b4334e18696d8e28ba92e1
+
+% 4 1 0 075c87320163d8b3167b2234a8d7c623
+
+% 3 1 0 1a09d937a9b6f9f91978a27fc59b5a5e
+
+% 4 1 0 11cdc3161958451905ad706a602377ba
+
+% 5 1 0 1abdc5962742a7011295abf0f9a52b21
+
+% 2 1 0 0b915b29474dc4571c5f719ee4300da7
+
+% 0 1 0 14d3b445a998c93d1a91d5ad7269a859
+
+% 2 1 0 08d50c74f88a2da914c14d7162af294c
+
+% 0 1 0 0a9ceb608930e5701ecb3aeee763137b
+
+% 0 1 0 15005cac27bb58b6131e827f5141f0c3
+
+% 0 1 0 139ee145b2743376045d83e20588b182
+
+% 0 1 0 1b5c1ea7ceb4954316ba2c27bea89e48
+
+% 0 1 0 0cf47d2ac413da4218e02c37db729f9d
+
+% 0 1 0 0cdc53169938c1e002379a0d10dec047
+
+% 1 1 0 0713538c70dc07410a73e6ade36a8bd6
+
+@ 0 3 0 1dc81acbd6da0b7f06289415803ec6e7
++       Il mancato avvio del responder stesso — nessuna interfaccia capace di multicast, o un
++       gruppo a cui non riesce a unirsi — è un `Mdns.Error`, che il prestito riporta come
++       `Discovery.Error` di motivo `Unavailable`.
+
+% 0 1 0 094c17ce3df891db04e9906bd4076027
+
+% 0 1 0 10ba5df1dbae124506cc24ebef680bfc
+
+% 1 1 0 05c92d486430816d1ba2c577be5d1e3e
+
+@ 0 4 0 12a31e18b4e1a2df1723743232654b6b
++   entry .group4   il gruppo mDNS IPv4, `224.0.0.251` sulla porta 5353
++   entry .group6   il gruppo mDNS IPv6, `ff02::fb` sulla porta 5353
++   entry .port   la porta mDNS, `udp"mdns"` (5353), sorgente e destinazione di ogni messaggio
++   entry .Transport   ciò che serve al responder dalla rete: nome e indirizzi di questo host, invio, risposta, ricezione, chiusura
+
+% 1 1 0 006839e115b4f0ed024ae3aaac16ff6a
+
+@ 0 7 0 1ca98e05cf50f7b4165b1f1e106fea3d
++         La giuntura tra il protocollo e il collegamento. Un trasporto pubblica il nome `#host`
++         e gli `#addresses` di questo host (ciò che dicono i suoi record di indirizzo), invia un
++         messaggio al gruppo, invia una risposta unicast, offre degli `#inlets` da cui ricevere, e
++         si chiude. Due implementazioni: `Transport.sockets`, sopra un `Socket.Backend`, e
++         `Transport.Bus`, un collegamento in memoria per i test. `Mdns.Responder` prende una
++         funzione che ne apre uno, così il trasporto viene aperto al primo prestito e chiuso dopo
++         l'ultimo.
++     entry .Inlet   una sorgente di pacchetti, ricevuti uno alla volta con una chiamata bloccante
+
+% 1 1 0 084d8028fc729af91e939bba2cfcd952
+
+@ 0 14 0 009b0edbff42c99f1f257e9c7be09eb9
++           In pratica, un socket unito a un gruppo: un trasporto su entrambi i gruppi ne ha due,
++           e il responder li legge ciascuno in un proprio ciclo. Un membro di un `Bus` è il
++           proprio unico inlet, da cui un test può ricevere direttamente.
++       entry #receive   il pacchetto successivo, bloccando finché non ne arriva uno; solleva `Socket.Error` una volta chiuso
++     entry .sockets   un trasporto sopra i socket multicast di un `Socket.Backend`
++         `Mdns.Transport.sockets(backend, options)` si unisce al gruppo IPv4 su ogni interfaccia
++         adatta con un indirizzo IPv4 e al gruppo IPv6 su ogni interfaccia con un indirizzo IPv6
++         — il gruppo IPv6 viene tralasciato su un host solo IPv4 — e fallisce con `Mdns.Error`
++         di motivo `NoInterface` se nessuna interfaccia è attiva e capace di multicast, o di
++         motivo `Join` se non ci si può unire a nessuno dei due gruppi. Il nome di questo host è
++         la prima etichetta del suo hostname sotto `.local` (o `soundness.local` se non ne ha
++         uno), e i suoi indirizzi sono quelli delle interfacce unite. Una risposta unicast esce
++         dal socket della famiglia della destinazione. `discoveryBackends.mdnsSockets` costruisce
++         un responder sopra questo trasporto.
++     entry .Bus   un collegamento in memoria: ogni membro riceve ciò che chiunque invia, se stesso incluso
+
+% 1 1 0 08c7d77cb2418a01014851f91c32f84d
+
+@ 0 6 0 18e05d807a2926b511b84e4638a077a8
++           Un `Bus` sostituisce la rete sotto test. Ogni `#join` aggiunge un membro con un nome
++           host e degli indirizzi; il `send` di un membro viene consegnato alla coda di ogni
++           membro, mittente incluso (come fa il loopback multicast), e un `reply` raggiunge il
++           membro i cui indirizzi includono la destinazione. Un membro è sia un `Transport` sia
++           il proprio `Inlet`, così un test può fare `receive()` da esso direttamente per
++           osservare i pacchetti che un responder emette, e `close()` fa fallire con
++           `Socket.Error` una ricezione in sospeso.
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 1 1 0 1a00ee9334a3648a0b4100b45ee876ee
+
+% 0 1 0 1c23597d24bad4f609970bd7e037b0f3
+
+% 0 1 0 1c3488c673c2b2ee0855be6fa6559e06
+
+% 0 1 0 1c5157dd475ce11115374def5f5c7687
+
+% 0 1 0 0e109647ea1ef6111ca1db55890043b4
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 8 0 1eb1707f875469f01a2368e921fea96b
++       entry #join   aggiunge un membro con un nome host e degli indirizzi, come `Transport & Transport.Inlet`
++     entry #host   il nome di questo host, come lo pubblicano i suoi record di indirizzo
++     entry #addresses   gli indirizzi di questo host, che portano i suoi record A e AAAA
++     entry #send   invia in multicast un messaggio al gruppo; solleva `Socket.Error`
++     entry #reply   invia una risposta unicast a un indirizzo e una porta; solleva `Socket.Error`
++     entry #inlets   gli inlet da cui ricevere, uno per ogni socket unito
++     entry #close   chiude il trasporto, facendo fallire qualsiasi ricezione in sospeso
++   entry .Cache   i record sentiti sul collegamento, per nome, tipo e dati, nel rispetto dei loro TTL
+
+% 1 1 0 0011b120d7abc0a10a5a1f20b221a9f3
+
+@ 0 6 0 1eb93ceb9323db5e0dfc33add956e6ab
++         La memoria del responder di ciò che gli altri host hanno detto, indicizzata
++         dall'identità di un record (nome, tipo e dati) e tenuta nei nanosecondi monotoni di
++         `System.nanoTime`. Applica il §10 di RFC 6762: un record sentito di nuovo viene
++         rinnovato; un saluto di congedo (TTL 0) scade un secondo dopo; un record con il bit
++         cache-flush ritira gli altri record con lo stesso nome e tipo che hanno più di un
++         secondo. Ciò che l'assorbimento o la pulizia hanno cambiato torna come
++         `Cache.Transition`, che il responder trasforma in eventi di esplorazione.
+
+% 2 1 0 0934581dccc63c210bcd77491ed7d94d
+
+% 3 1 0 1c1cc256f7266c10136a13d9037e4853
+
+% 0 1 0 029730ee09d38dc104299156b671b2ab
+
+% 0 1 0 03400fe1a57b193a183a9c64e16687d2
+
+% 0 1 0 003c4707c37509a217a2814a0d6c2834
+
+% 0 1 0 1608c7f4f52371b113eb3795fcf3cae1
+
+% 0 1 0 0ada59d89aa4363e15cd9eaf39332920
+
+% 1 1 0 143354bf6f05911212f63666a36f3852
+
+@ 0 5 0 13af99e734d21489190557a3e30820df
++     entry .Entry   ciò che la cache conserva per un record: quando è arrivato e quando scade
++       entry #record   il record
++       entry #received   quando è stato sentito l'ultima volta, in nanosecondi di `System.nanoTime`
++       entry #expiry   quando scade, sullo stesso orologio
++     entry .Transition   ciò che l'assorbimento o la pulizia hanno cambiato: `Added`, `Refreshed` o `Removed`, ciascuno con il suo record
+
+% 1 1 0 1c94d047c100cf2012ece51bacf0cb53
+
+@ 0 13 0 1a40d6996980aef2153039ec984e2b1c
++           `Added(record)` è un record non posseduto in precedenza, `Refreshed(record)` uno
++           sentito di nuovo, e `Removed(record)` uno che `#sweep` ha trovato scaduto. Un record
++           PTR di un tipo di servizio esplorato aggiunto o rimosso è un'istanza trovata o persa.
++       entry #record   il record a cui si riferisce la transizione
++     entry #absorb   accoglie i record ricevuti in un dato istante, riportando ciò che è stato aggiunto o rinnovato
++     entry #sweep   scarta ogni record scaduto entro l'istante dato, riportando ciascuno come `Removed`
++     entry #lookup   i record non scaduti di un nome e di un tipo all'istante dato
++     entry #knownAnswers   i record di un nome e di un tipo con più di metà del loro TTL rimanente, con il TTL residuo
++         Ciò che un'interrogazione dice agli altri responder di sapere già (RFC 6762 §7.1), così
++         non devono rispondere di nuovo.
++     entry #earliestExpiry   quando scade il primo record di un nome e di un tipo, o `Unset` se non ce n'è nessuno
++     entry #size   quanti record contiene la cache
++   entry .Tiebreak   l'ordine in cui si confrontano i sondaggi simultanei di due host per uno stesso nome
+
+% 1 1 0 0de4d03b2ec2fcab1e7e87496c60d63e
+
+@ 0 6 0 020ef85569bb28041129d9bc78bf906b
++         RFC 6762 §8.2.1: quando due host sondano lo stesso nome contemporaneamente, ciascuno
++         confronta i record che propone con quelli dell'altro, e cede quello i cui record sono
++         lessicograficamente minori. Un record si ordina per classe, poi per tipo, poi per i suoi
++         dati non compressi come byte senza segno, con un prefisso che si colloca prima di ciò
++         che lo estende. Due insiemi di record vengono ordinati e confrontati a coppie: decide la
++         prima differenza, un insieme che si esaurisce per primo perde, e insiemi identici sono
++         `Comparison.Same` — nessun conflitto.
+
+% 2 1 0 06b1f9cb5f3150cd03c20bdbede877b0
+
+% 3 1 0 1ddcc9322836b8a407dffd5afa415a70
+
+% 0 1 0 15e3757d11b051c90374b49bede8165a
+
+% 0 1 0 1671297137e790f2138591ca35aff269
+
+% 0 1 0 0798a61b8c75ec181c92193f11864174
+
+% 0 1 0 04946f41298ec8ab0de7c309f3bf3ff1
+
+% 1 1 0 088bd0aee4a0da6008e68448a0a3baa9
+
+@ 0 2 0 07d5d9e1c46d59081aed34aee24b8af0
++     entry .compare   confronta due record, o due liste di record proposti, come `Comparison`
++   entry .Responder   il responder mDNS: uno per programma, che serve ogni prestito attraverso un unico trasporto
+
+% 1 1 0 173b62490c855d9011f1a4d36bc25e84
+
+@ 0 6 0 03b8f8f6882a2b7e088104d15f694b51
++         `Mdns.Responder(open)` prende una funzione che apre un `Mdns.Transport`; il trasporto
++         viene aperto al primo prestito e chiuso quando termina l'ultimo, e i suoi cicli di
++         ricezione e il suo pulitore della cache girano come task sotto il `Monitor` fornito dal
++         prestito, così cancellare quel monitor termina anche loro. È un `Discovery.Backend`,
++         quindi è ciò che chiamano `advertise`, `browse` e `resolve`;
++         `discoveryBackends.mdnsSockets` ne è uno sopra i socket, e uno sopra un
++         `Mdns.Transport.Bus` è il modo in cui si testa un programma.
+
+@ 0 8 0 10f8bc0b4e2838a51e5a47d18c7342cc
++         Di RFC 6762 fa questo: sondaggio tre volte a 250 ms, con rinomina in caso di conflitto
++         e spareggio tra sondaggi simultanei; annuncio due volte, a un secondo di distanza;
++         difesa di un nome stabilito, e nuovo sondaggio (con rinomina se il sondaggio riceve
++         risposta) quando una risposta successiva entra in conflitto con esso; risposta alle
++         interrogazioni, con soppressione delle risposte note, un ritardo casuale di 20–120 ms
++         per i record condivisi, aggregazione in un unico messaggio delle risposte che scadono
++         insieme, e risposte unicast legacy per un interrogante non sulla porta 5353; saluti di
++         congedo; esplorazione rispettosa dei TTL con re-interrogazione esponenziale; e
++         risoluzione. I propri echi li riconosce dall'ID del messaggio.
+
+% 2 1 0 112c2ac60957f9e61754339114156f85
+
+% 3 1 0 1ac7a6b5f674f8430c3b2d54fab1a835
+
+% 4 1 0 04ade9b37b637b4c0f951475bc035693
+
+% 3 1 0 0bb5655c6f72b2ce1bf01b1cb4a83f80
+
+% 4 1 0 083932b080b002cd164466eb8209989b
+
+% 2 1 0 0efc7319935b8f6e128b569b77bf09e9
+
+% 0 1 0 1c1be2e08acebb5f07c7cfcccc4543b2
+
+% 2 1 0 1d9b8b3a94bbbda500acb93456cd95ca
+
+% 1 1 0 1014a449ad0cb6d20e0751e8d96aa6eb
+
+% 0 1 0 07b463fe6d763d9003ff3af28043950f
+
+% 0 1 0 0cfc4a3e6770531b04e91d32a6df1639
+
+% 0 1 0 0b814da99c78e8931e8f3211bec67a90
+
+% 0 1 0 0226b4ecbc08cebc0c1dc28d3e48f5fd
+
+% 1 1 0 0e92e3ba2d3c172b118dfd6393a20a79
+
+% 0 1 0 02fdcbc882f3cc4c152423062e219790
+
+% 0 1 0 1d4a3c8ee72f530e08d47e189aa654a6
+
+@ 0 10 0 0fd4c9dcc9d781f90bb00a531ede3048
++     entry #advertise   sonda, rivendica e annuncia un'istanza, come `Discovery.Backend#advertise`
++         Pubblica il PTR dal tipo di servizio (e dal meta-tipo di enumerazione, e da ogni
++         sottotipo), i record SRV e TXT, e i record di indirizzo dell'host; gli ultimi tre sono
++         unici per l'istanza, quindi portano il bit cache-flush. I PTR vivono 75 minuti, il
++         resto due minuti. Un nome che questo responder detiene già viene rinominato senza
++         sondaggio.
++     entry #withdraw   invia il saluto di congedo per una pubblicizzazione e rilascia il prestito
++     entry #browse   avvia un'esplorazione, riportando subito le istanze note e re-interrogando a intervalli che raddoppiano
++     entry #dismiss   ferma il ciclo di re-interrogazione di un'esplorazione e il suo relay, e rilascia il prestito
++     entry #resolve   risolve un'istanza dalla cache, o ne interroga i record e attende fino al timeout
++   entry .Error   sollevato quando il responder non riesce ad avviarsi: nessuna interfaccia, o un gruppo a cui non riesce a unirsi
+
+% 1 1 0 1a69fb935b1b9b430c1a092e3934d678
+
+@ 0 7 0 15dc2b63b70eb33902df34a357f4c7f6
++         Errore `↯/s.102.2`: _the mDNS responder could not start because `reason`_. Il motivo
++         `NoInterface` (2) è _no interface is up and capable of multicast_; il motivo
++         `Join(group)` (1) è _the multicast group `224.0.0.251:5353` could not be joined_,
++         sollevato quando non ci si è potuti unire a nessuno dei due gruppi. Sollevato da
++         `Mdns.Transport.sockets`; un prestito che lo incontra riporta invece `Discovery.Error`
++         di motivo `Unavailable`, con questo errore come sua diagnostica.
++     entry .Reason   perché il responder non è riuscito ad avviarsi: `Join(group)` o `NoInterface`
+
+% 1 1 0 1aea84c24deba96e0210bbba453068bf
+
+@ 0 4 0 0528166500290a0e11f94347474c4346
++           Un enum di due casi numerati, con un `Communicable` che li rende ciascuno.
++       entry .communicable   rende ogni motivo come un messaggio
++       entry #number   il numero del motivo, `1` o `2`, la seconda parte del codice dell'errore
++     entry #reason   perché il responder non è riuscito ad avviarsi

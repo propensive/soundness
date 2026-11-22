@@ -1,0 +1,124 @@
+orthant 2 language
+
+@ 0 1 0 043e132ec4408f70196d003879c52f48
++ # Códigos de erro do Soundness
+
+@ 0 3 0 109a9d8d80a6b07a0257350788513443
++ Todo erro que o Soundness numera carrega um identificador estável, seu
++ [código bolt](https://github.com/propensive/bolt), da forma `↯/s.m.n` ou `↯/s.m.n.v`, em que:
+
+@ 0 9 0 1340546497bd0ec60b5f307728ba5d5d
++ - `s` é a letra pela qual os códigos bolt nomeiam o Soundness;
++ - `m` é o número do módulo em que o erro está, conforme dado pela
++   [lista de módulos](modules.md) e pelo `s.tel` do registro `bolt`: os módulos são numerados em
++   uma ordem em que cada um vem depois daqueles de que depende, tal como estavam quando cada um foi
++   numerado, e um novo módulo recebe o próximo número;
++ - `n` é o número do erro dentro de seu módulo, o próximo livre quando o erro é escrito;
++ - `v`, quando presente, identifica uma variante específica do erro (tipicamente o caso de um enum
++   `Reason`).
+
+@ 0 3 0 16f734a4f7e758ae1dd4a38cae637301
++ Um erro que é informado por causa de um erro de outro projeto carrega o código desse erro depois
++ do seu: o `Tel.Error` do Stratiform para um documento que a Especificação TEL rejeita com
++ `↯/t.1.7` é `↯/s.118.1/t.1.7`.
+
+@ 0 4 0 08eee926cbcbbf28154c566af45e2a34
++ O prefixo renderizado aparece na saída de compilação como `[↯/s.m.n.v]`, colorido se a
++ configuração `-color` do compilador estiver ativada. No código-fonte, os números são os primeiros
++ argumentos de `fulminate.Error` e de `halt`: `Error(118, 1, reason.number)`.
+
+@ 0 9 0 16eb3d0022cb1df91ca7960fbc6b9275
++ Cada erro é documentado em um arquivo markdown em `<m>.<n>.md`. Quando um erro tem variantes,
++ todo `↯/s.m.n.v` é documentado no mesmo arquivo, sob `## Variants`: como uma linha de uma tabela
++ `tabular`, com as colunas `Code`, `Reason` e as que suas variantes tiverem entre `Meaning`,
++ `Message` (um exemplo), `Resolution` e `Wire code`; ou, quando há cinco ou menos e cada uma
++ precisa de uma explicação e de uma resolução próprias, como uma subseção `### ↯/s.m.n.v`, com
++ parágrafos `**Example.**` e `**Resolution.**`. Uma variante descrita apenas por sua mensagem de
++ exemplo é sempre uma linha.
+
+@ 0 6 0 02a212945de3d5ab1ca0ecd163c9a15c
++ Um código nunca é reutilizado. Quando um erro é removido, sua página permanece, marcada como
++ `(retired)`, dizendo o que aconteceu com ele, e seu número é marcado como aposentado em `s.tel`:
++ uma referência ao código vinda de uma versão mais antiga ainda é resolvida, e o número não pode
++ ser alocado de novo por acidente. Uma página aposentada diz o que substituiu o código em uma
++ tabela `Was` e `Now`, com uma linha para o código e para cada uma de suas variantes que tenha um
++ sucessor, mesmo quando há apenas um.
+
+@ 0 3 0 1588a91022d79cfe160d724e3964cc49
++ Toda página nomeia o arquivo-fonte de onde seu erro é lançado. Ela não dá um número de linha, já
++ que um número de linha é invalidado por qualquer edição acima dele e nada verifica se ele ainda
++ está certo.
+
+@ 0 1 0 156273eb49ed3f3709601b4c0ecd6d0a
++ ## Os códigos `SN-`
+
+@ 0 6 0 125c70dfb296065c0385eafac046c9ec
++ Até o Soundness adotar os códigos bolt, um erro era `SN-ddd`, um número de três dígitos único em
++ todos os módulos. [`sn.md`](sn.md) dá o código bolt de cada código `SN-` que estava ativo então.
++ As páginas nomeadas com três dígitos (`013.md`) são as dos códigos `SN-` aposentados antes disso,
++ que nunca tiveram um código bolt; elas são mantidas para que uma referência vinda de uma versão
++ mais antiga ainda seja resolvida.
+
+@ 0 1 0 1d17a77f5501227a014c1ee515a48664
++ ## Famílias
+
+@ 0 2 0 187f268abb248f4d01ab187cda3fdd60
++ Alguns erros são lançados por uma mesma verificação contra limites diferentes, então cada um tem
++ uma página própria, mas eles são mais fáceis de comparar juntos.
+
+@ 0 2 0 146c5aeab28c3e6c10f791bc03eecb0d
++ Os literais inteiros do Hypotenuse são verificados contra o intervalo de seu tipo:
+
+% 2 1 0 1c0a8c689c7dd0f41c8cbac804b1d9a6
+
+@ 0 5 0 080de99adb0731280b2c0a6fce66744c
++ column  Tipo
++ column  Mínimo
++ column  Máximo
++ column  Abaixo do intervalo
++ column  Acima do intervalo
+
+% 0 1 0 174f0198bc8f572e1956d26e84dcb2eb
+
+% 0 1 0 10a0ad3ca73adc8d08dbf760f6a8c0da
+
+% 0 1 0 07f0c65a054fe6110e3ef5b4b8b871a2
+
+% 0 1 0 0117980cd105f86b164dcd4cf47dd6d0
+
+% 1 1 0 1474605591279813121c680bc2404422
+
+@ 0 1 0 020d9450322308f71e6de091ebf0aac9
++ Os literais binários e hexadecimais do Hypotenuse:
+
+% 2 1 0 1c270a0b9adb220c18d17aac384a387c
+
+@ 3 1 0 0b62d2f6a79534f007f7da2b0b28f889
++ column  Código
+
+% 0 1 0 08c5f69ed0b829790107c24d232ac002
+
+@ 0 5 0 16e0b5f6fe50e061061c0ec99c1ea7c5
++ column  Rejeita
++ row  [`↯/s.27.2`](27.2.md)  `bin"…"`  um caractere diferente de `0` ou `1`
++ row  [`↯/s.27.5`](27.5.md)  `bin"…"`  uma largura diferente de 8, 16, 32 ou 64 bits
++ row  [`↯/s.27.3`](27.3.md)  `hex"…"`  um número ímpar de dígitos
++ row  [`↯/s.27.4`](27.4.md)  `hex"…"`  um caractere que não é um dígito hexadecimal
+
+% 1 1 0 045f2b7b908606db16da7efaf7949756
+
+@ 0 1 0 092ee5fd2df09a8f1fa02399ef6da8bd
++ Os literais de hora verificados pela macro `validTime` do Aviation:
+
+% 2 1 0 10b7d95cd45f5e701b2ef0e4cb952781
+
+@ 0 7 0 07a820cd14de0a061c087b688cee4154
++ column  Código
++ column  Rejeita
++ row  [`↯/s.73.8`](73.8.md)  um argumento que não é um `Double` literal
++ row  [`↯/s.73.11`](73.11.md)  uma hora negativa
++ row  [`↯/s.73.1`](73.1.md)  uma hora acima de 12
++ row  [`↯/s.73.2`](73.2.md)  um valor de minutos acima de 59
++ row  [`↯/s.73.7`](73.7.md)  minutos não escritos com exatamente dois dígitos
+
+% 1 1 0 15c6421e3e308b040084b90f368dbfb1

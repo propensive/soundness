@@ -1,0 +1,516 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 125ae7665200e2a914e74bc72a026102
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 19bd1eba853dc933140a1c8ccc0bfa14
++ info   Scala com quote compilado em tempo de execução e executado em outro lugar: numa JVM nova ou num classloader isolado
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0033f9887f745b8e007b1159d1f1ece8
++     _Superlunary_ generaliza a execução em estágios do Scala para que código com quote — `'{…}`
++     — seja executado num *ambiente* diferente, e não na fase seguinte do mesmo programa. Um
++     `Rig` diz como o código compilado é implantado e invocado; o seu método `dispatch` recebe
++     um bloco com quote, insere por splice valores do escopo envolvente, compila o bloco em
++     tempo de execução (uma vez por ponto de chamada e por árvore), o despacha, o executa e
++     traz de volta a sua resposta. Os valores que cruzam a fronteira são codificados por um
++     `Stageable`: como JSON para o rig `Jvm`, como árvores `Pojo` para `Isolation`.
+
+@ 0 4 0 1c9cd72aad2f58500197974053e8f717
++     Como os dois lados são compilados juntos e delimitados por quotes e splices, o contrato
++     entre eles é verificado pelo compilador: uma referência a um objeto do heap local não pode
++     ser escrita dentro do quote, e um valor inserido por splice sem forma transportável é
++     rejeitado quando o bloco compila.
+
+% 2 1 0 1913e625ebd53a2f1d102a8246667744
+
+% 3 1 0 0ff65ad39b01043b1773b11b319e14f0
+
+% 4 1 0 1464cac3a345ee091a7e01358cccaae1
+
+% 5 1 0 194600c3334a259f1c9ba1b579bcc5b9
+
+% 6 1 0 023d84276c4c28670c95be47f7536faf
+
+% 7 1 0 18d3e8ee9f44fae70648771c6533c3b8
+
+% 8 1 0 11ea57d6e53cf5c21c27c0f70493a8f8
+
+% 9 1 0 0c6820158125e44c069dfeb9a4724fdf
+
+% 10 1 0 1dc3c4cb44c83a4e0661b50241fe15c6
+
+% 0 1 0 136d50fc521554bf050295dc2bf1207c
+
+% 0 1 0 19b4303499d6d81403007fa6014b71c3
+
+% 1 1 0 0cdf2688d6f8db8806a476ff16550453
+
+% 0 1 0 07d5757425de94a81d22699652c85a0e
+
+% 0 1 0 0aacfa1522acc28e10baaffb7a6614a4
+
+% 1 1 0 0ee6c6e9a406b648185051b09b5d1d56
+
+% 2 1 0 0357517b82309d5602c0b6692d2b14e9
+
+@ 0 1 0 02f7326984c26cff173274037ccb5bb3
++     Levar uma computação para outro lugar muda onde ela é executada, não como é chamada:
+
+% 2 1 0 06f87dd4b6c72fcd00af539ce073e543
+
+% 0 1 0 1429c53f065a172715abc2fb1a8fe7cf
+
+% 1 1 0 08ca38ad23f20c410d3fb806e0b26784
+
+% 0 1 0 071bd5a78d7864ab1529cdac2455dbfa
+
+% 0 1 0 002ab7643f35c462052f5ca1ea68f2be
+
+% 0 1 0 1fa81f55d6c0988d1a44ce6c01e5e918
+
+% 0 1 0 0ba4f458a1b963d306bdfe10934076d3
+
+% 1 1 0 0814e81fb6bb2ea81021658399b884a3
+
+% 0 1 0 13e415a11a2dcf490b9c189a1faf3d15
+
+% 1 1 0 05a55bc5ab65f0c30c2a1c016789c1e2
+
+% 2 1 0 1c0459c96e34f0900dc7d8d03fa045da
+
+% 3 1 0 05590843598303260a951f4dd7c4a9a6
+
+% 4 1 0 1a8b0418ac4e523b0f4b472a3fbd8480
+
+% 0 1 0 015178b95712df0b0fadac82b208a90e
+
+% 1 1 0 1b34251ce332c39119f2500abd1a522d
+
+% 0 1 0 1b366cd3d3bfd07618de59c1bda7514b
+
+% 1 1 0 189df5411b454a6d1bef487e145c91be
+
+% 2 1 0 1c9c9288e488b30d0418f4fab82d9a2d
+
+% 3 1 0 00e5113240e30e1104a550c6b1447a72
+
+% 4 1 0 04502acb2621179a0b175c4db70eef0c
+
+% 1 1 0 0df187667d535dbf000c6f5ae5734546
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 5 0 1fd38d6064e36b85177151cd25d587db
++     Um valor inserido com `${…}` é convertido num `Expr` por `embeddings.automaticEmbedding`,
++     que é importado por nome: `import soundness.*` não importa givens. Um despacho também
++     precisa de um `System` e de um `TemporaryDirectory` no escopo, e lança `Compiler.Error` (o
++     código em estágios não compilou) e `Rig.Error` (não foi possível fazer o marshalling dele,
++     prepará-lo em estágios ou invocá-lo).
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     A biblioteca tem dois source sets:
+
+@ 0 4 0 1d522d731028692b141ad0c926ccd325
++     - `superlunary.core` — `Rig`, `Stage`, `Stageable`, `References` e o pacote `embeddings`:
++       o maquinário a partir do qual qualquer rig é construído.
++     - `superlunary.jvm` — os dois rigs fornecidos, `Jvm` e `Isolation`, e `Executor`, o ponto
++       de entrada que um subprocesso de `Jvm` executa.
+
+@ 0 3 0 037ec3ef33f416d808852c7117881aca
++     Tudo é exportado para o guarda-chuva `soundness`, e o pacote de escolhas `embeddings` se
++     funde com o do próprio guarda-chuva. `apoplexy.Executor` deliberadamente não é exportado,
++     já que colidiria ali com `superlunary.Executor`; o `Executor` do guarda-chuva é este.
+
+% 0 1 0 1a1be6ac033dcd7b0624cab3102429d4
+
+% 0 1 0 1baa33a70778d164032906fcfc68708e
+
+% 0 1 0 02128ec949f9b7be0f354d34e7651c11
+
+% 0 1 0 1a11f24e31e6bda30ff320361a2feaf7
+
+% 0 1 0 1833065ab0e64951054da38ca6bd7e02
+
+@ 0 1 0 1f249867105a2b921d174b47e27cd26c
++ entry .Rig   um ambiente para o qual código com quote pode ser compilado e no qual pode ser executado, com `dispatch` para executar um bloco ali
+
+% 1 1 0 1f815aacf229fa271579486f49c74c1e
+
+@ 0 5 0 1f009051f0aadcd71f4ee2d8726da00d
++       Um rig é o *onde* de uma computação em estágios, como um valor. `dispatch` faz as partes
++       difíceis antes que o rig veja qualquer coisa — compilar o bloco com quote se ele ainda não
++       estiver compilado, capturar as suas entradas inseridas por splice e codificá-las numa
++       única `Form` transportável — deixando ao rig uma tarefa estreita: tornar a saída
++       compilada disponível para o seu ambiente (`#stage`) e executá-la ali com a entrada
++       codificada, trazendo de volta a saída codificada (`#invoke`).
+
+@ 0 7 0 043c16b3fad40bf91dbdcd6561889d92
++       Uma implementação declara o seu tipo `#Result` (a saída pura, ou um `Optional`, ou uma
++       `Task`, conforme convier ao ambiente), o seu `#Transport` e a sua `Form`, o seu `Target`
++       (o que quer que `#stage` produza, como um `LocalClasspath` ou um `Classloader`), o
++       `scalac` com que compilar e os dois métodos. Ela é construída com o `Classloader` contra
++       cujo classpath o código em estágios é compilado e com o qual é linkado — normalmente o do
++       próprio rig, `Classloader[MyRig.type]`, já que, sob um host que executa testes, o loader
++       de contexto da thread pode ser o do host.
+
+% 2 1 0 0f9236785be5a5111ec808a4bac4833e
+
+% 3 1 0 12ce2dcc1470f49604270588a8aa2e4a
+
+% 0 1 0 07b750cd940b39ca13b1331c684c2c28
+
+% 1 1 0 0c350a5776ffba69126c55b22df55c94
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 1c10ae8ea0d413f20cfb67313bfbbbad
+
+% 0 1 0 13ddf368f52a986116efc3ff52f323bf
+
+% 0 1 0 0a3debdd4cc4e6020d1451ce690219e7
+
+% 0 1 0 0e013a6e59e2b96201a7e91544db7d84
+
+% 0 1 0 0bafaa11c49c79f401de2e36d8b245ab
+
+% 0 1 0 159c65501156777809a8452c9d07c5aa
+
+% 0 1 0 1651fbdfe04be88f0b8494344c0ae8b7
+
+% 0 1 0 13ff6a086bea7b8213651543f0eeddfd
+
+% 0 1 0 0986994199ee963f01c67683b01391a2
+
+% 0 1 0 0ea6833ee74b6bdf13f7c9b256042b06
+
+% 0 1 0 05f514d4043c49a714d5ba091b16d8bb
+
+% 0 1 0 14836629a989b53501b6ac6b0ab6a80f
+
+% 1 1 0 02dc927f3c4079d012837fe4e9986ff3
+
+@ 0 1 0 1d2ba59ee7af444a00bc4c01cc5cbd2c
++       `Jvm` e `Isolation` são os dois rigs fornecidos.
+
+% 0 1 0 0ac42fdbdcee73cc1df57ee22a5a4e4e
+
+% 0 1 0 1e0eeaba4144df0417821b2ea28d5910
+
+% 0 1 0 0797b40c9c07aea30aedcabaec2132db
+
+% 0 1 0 060f87355957d91f16c4482d6fc28a2a
+
+@ 0 7 0 153035ce633a3cb30cddf0e0756ec280
++   entry #dispatch   compila um bloco com quote, executa-o no ambiente deste rig e retorna o seu resultado
++       `rig.dispatch('{ … })` recebe um bloco que, dados as `References` em que os splices
++       alocam e um `Quotes`, constrói um `Expr[output]`. Ele precisa de um `Codepoint`
++       (fornecido automaticamente para o ponto de chamada), de um `System`, de um
++       `TemporaryDirectory` (onde as classes de cada compilação são escritas, apagadas no
++       encerramento) e de um `Stageable` correspondente ao `Transport` e à `Form` do rig
++       (encontrado no objeto companheiro de `Stageable`), e lança `Compiler.Error` e
++       `Rig.Error`.
+
+@ 0 6 0 0365a9214c5dfe890795ce5c9a7e26a9
++       As compilações são guardadas em cache pelo ponto de chamada *e* por uma impressão digital
++       da estrutura da árvore em estágios: um ponto de chamada inline pode se expandir numa
++       árvore diferente a cada uso, e cada árvore distinta compila uma vez, enquanto chamadas que
++       diferem apenas nos dados que inserem por splice compartilham uma compilação. Um valor
++       inserido com `${…}` é avaliado uma vez por despacho e desserializado uma vez por slot, por
++       mais vezes que o código em estágios o leia — mesmo dentro de um laço crítico — de modo
++       que a instância extraída é compartilhada entre avaliações.
+
+% 2 1 0 1b2823796027b4f41baf2210edb8d70d
+
+% 3 1 0 0cfd0246ee1617c319cf2cd99f95848e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 0 1 0 19cc96edc586318316b31ec0030d2a58
+
+% 1 1 0 18d2e44f5ae6e0a902f514d7402244b5
+
+% 2 1 0 11a49945cdcaa667008a1719ef796cf1
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 1cf4664307464f100bbb951c649b1048
+
+% 0 1 0 1f3918a79623b6a81645e18b9fd2c5e4
+
+% 0 1 0 120063d0c1700d1100425aa1b548a6d8
+
+% 0 1 0 00c0cd05c50528e917c7a3eb2930eb29
+
+% 1 1 0 1f16d72baf61f1521193ddef082f7594
+
+@ 0 18 0 17f59580061d1db611bb8d6c040013fb
++       Os nomes usados dentro do quote são resolvidos contra os imports fora dele, mas só os
++       prefixos estáticos: todo o resto precisa atravessar por um splice.
++   entry #stage   torna as classes compiladas num diretório disponíveis para o ambiente, como um `Target`
++       Chamado uma vez por compilação nova, com o diretório em que as suas classes foram
++       escritas. Um rig local pode apenas nomear o diretório (`#classpath`); um realmente remoto
++       precisa implantá-lo. Uma falha é um `Rig.Error`.
++   entry #classpath   o classpath do diretório de saída compilada e as entradas do classloader do próprio rig
++       `classpath(out)` coloca o diretório primeiro, seguido das entradas do classloader que
++       carregou o próprio `Rig`, de modo que o código em estágios é linkado contra as mesmas
++       bibliotecas que o código que o despachou.
++   entry #Result   o que `dispatch` retorna para um tipo de saída: a própria saída, ou um invólucro dela
++   entry #Transport   o tipo em que cada valor inserido por splice e o resultado são codificados: `Json`, `Pojo`, …
++   entry #settings2   as configurações do compilador de estágios, a partir dos argumentos de linha de comando de `scalac`
++       Usadas na compilação de sondagem que calcula a impressão digital de uma árvore em
++       estágios; normalmente não são necessárias para quem chama.
++   entry #compiler2   o compilador de estágios usado para calcular a impressão digital de árvores em estágios, sobre o classloader do rig
++       Normalmente não é necessário para quem chama.
++   entry .Error   lançado quando um valor não consegue atravessar a fronteira de um rig, ou o código em estágios não pode ser executado
+
+% 1 1 0 0d0b4eb54570f6a91209a004679e93bc
+
+@ 0 7 0 1909d3c7e5847cef0b5800d9b5833c0e
++         Erro `↯/s.121.1`: _failed to perform a remote operation because `reason`_. Trata-se de
++         uma falha do marshalling e da implantação em torno do código em estágios, não do próprio
++         código; um bloco em estágios que não compila lança `Compiler.Error` em vez disso. O
++         motivo é um dos casos de `Rig.Error.Reason`.
++     entry #reason   por que a operação remota falhou
++     entry .Reason   por que uma operação remota falhou: serialização, desserialização, preparação em estágios ou invocação
++         Um enum, cada caso com um número que completa o código de erro:
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 4 0 0f05ca2e342788f71a13a5a1ab147c4e
++         column  Caso
++         column  Código
++         column  Mensagem
++         column  Observação
+
+% 0 1 0 08a349de1f5a8dfc19573bdb9f4cdb42
+
+% 0 1 0 07949be926908a641545f1d60c1bbef1
+
+@ 0 1 0 087060fd9f944ecd1ffa63e519d8b646
++         row  `Unknown`  3  _of an unknown reason_  lançado quando um resultado não é decodificado
+
+% 0 1 0 05efc6b0b89aad241637613bed735114
+
+@ 0 1 0 06acc338bcba120512fa891a0584e886
++         row  `Invocation`  5  _the staged code could not be invoked_  como quando o subprocesso do rig `Jvm` falha
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 7 0 1b3e06d5b8f02ffa09e95dc25abd7d99
++ entry .Jvm   o rig que executa o código despachado num subprocesso novo da JVM
++     Um `Rig` cujo `Target` é um `LocalClasspath` e cujos valores atravessam como texto JSON: as
++     classes em estágios são compiladas num diretório temporário, e cada despacho inicia `java
++     -classpath … superlunary.Executor` com a entrada codificada como argumento e lê o resultado
++     codificado da sua saída padrão. Ele oferece isolamento total ao custo do tempo de
++     inicialização de uma JVM por chamada. Um subprocesso que falha lança `Rig.Error` com o
++     motivo `Invocation`.
+
+% 2 1 0 10d9656e8d58a3241cf1dfebcbf5cca9
+
+% 3 1 0 13c1e2be20887dc713aab62b35b99fb9
+
+% 4 1 0 0dce0bf6bf41734805c600e7fc533183
+
+% 5 1 0 196f28c3d08492be005a77b5ede5eb50
+
+% 6 1 0 11a39c7c9dad62760843caefc49dbf4b
+
+% 7 1 0 04576b0c69ea6c0f12efddb3ef53f4be
+
+% 8 1 0 012d70567ca831790bd4be47a2c7d635
+
+% 9 1 0 15bc32c6d79170df0d69959819a79539
+
+% 10 1 0 0c03d29a6f39a86e1e140eb30f28ad2b
+
+% 0 1 0 18de35fb2c79ea020b03e2a41b8e5a43
+
+% 0 1 0 1b67abe90669cd140d01b93503a50586
+
+% 1 1 0 1227a1599bfb6e250c670d4fcb8f5874
+
+% 0 1 0 0a97428dfa31e4281abc2ed688b6b30a
+
+% 0 1 0 1793afec63ff31bb10d4ed032a08912b
+
+% 1 1 0 10caa98a5112035b14ba0323ac218158
+
+% 2 1 0 1ea6eac6d2ee4fbe1867dd7cc08b2cff
+
+@ 0 3 0 1830bd394d6ce56e04bf8f92570beb8f
++     Os valores inseridos por splice e o resultado precisam de instâncias `Encodable in Json` e
++     `Decodable in Json` (derivadas para case classes). Ele prepara os estágios com Scala 3.6 e
++     `-experimental`, contra o classpath do classloader que o carregou.
+
+@ 0 5 0 1aabe4c6599d3063165bff063cd1bf18
++ entry .Isolation   o rig que executa o código despachado neste processo, sob um classloader isolado
++     Um `Rig` cujo `Target` é um `Classloader` e cujos valores atravessam como árvores `Pojo`: as
++     classes em estágios são carregadas por um classloader filho primeiro
++     (`Classloader.Delegation.Preferential`) sobre o diretório de saída e o classpath do próprio
++     rig, e invocadas diretamente. Barato e contido, sem inicialização de processo, mas o código
++     em estágios compartilha a JVM, o seu heap e as suas threads.
+
+% 2 1 0 156343929089fa99094a2d6193c9ffd5
+
+% 3 1 0 038ae74f50b147370a8ceed58dff0890
+
+% 4 1 0 1644b347a2da04e41fea74ba7c1343b6
+
+% 5 1 0 19391cfb355247f3064b58eab87e6ae3
+
+% 6 1 0 10d10991bb46f2531b19241a1ad899cc
+
+% 7 1 0 1583f59b8a3618381771ac29f3cfdf49
+
+% 8 1 0 0245f0ccd8fda8c1173db157dc017d50
+
+% 9 1 0 0fa53c3ccfa841b41c01aa0cc18f5690
+
+% 10 1 0 149a88e2e974830e1a343a7c3be30b24
+
+% 0 1 0 1372ea20a082415f11748ee9d7f9baa1
+
+% 0 1 0 115c35964ad1b73705fe7fe17d7ebf55
+
+% 1 1 0 14c32fd694ced42f1f1dd16eacf2d127
+
+@ 0 1 0 017cde8f3f0c4c2e183677bfed526976
++     Os valores inseridos por splice e o resultado precisam de instâncias `Encodable in Pojo` e
++     `Decodable in Pojo`.
+
+@ 0 1 0 0e36c1ce1f42426516f4e13a764bdb1e
++ entry .Stage   uma computação em estágios compilada e implantada, tal como o `invoke` de um rig a recebe
+
+% 1 1 0 07aebaadafbc813e0852245e7dd4d355
+
+@ 0 5 0 1ea832d3a7db40080e4719c6b19b2d34
++       Uma case class do `#target` que `stage` produziu e de `#remote`, que o rig chama com uma
++       função da entrada codificada para a saída codificada — a parte que de fato executa o
++       código no ambiente — e que faz a codificação e a decodificação de cada lado dela.
++   entry #target   onde o código compilado foi preparado: um classpath, um classloader, uma implantação
++   entry #remote   executa a computação, dada a função que leva a entrada codificada à saída codificada
+
+@ 0 1 0 0f69250917c6126e0dce387e4a7a91bd
++ entry .Stageable   como os valores atravessam a fronteira de um rig: o seu `Transport` e a `Form` enviada
+
+% 1 1 0 0486583738a3c58e1206c6c19d6b3566
+
+@ 0 5 0 02f98b8050d647d01a6d8ec78e84a98a
++       Uma classe de tipos de quatro operações inline: `#embed` codifica um valor inserido por
++       splice como um valor `Transport`, `#serialize` transforma um array deles na única `Form`
++       enviada, `#deserialize` lê uma de volta, e `#extract` decodifica um valor `Transport` para
++       o seu tipo. `dispatch` precisa da instância cujos `Transport` e `Form` correspondem aos do
++       seu rig; as duas instâncias fornecidas estão no objeto companheiro, de modo que não
++       precisam de import.
+
+% 0 1 0 0609671197ccaaba0de98e70ffdcec21
+
+% 0 1 0 197b441283a152171671e3d669be8289
+
+@ 0 12 0 0ae94cc3bd5d510d18b9e19757088edf
++   entry #Transport   a forma codificada de um valor: `Json` ou `Pojo`
++   entry #embed   codifica um valor como um `Transport`, por meio da sua instância `Encodable`
++   entry #serialize   junta um array de valores transportados na única `Form` enviada
++   entry #deserialize   divide uma `Form` recebida de volta num array de valores transportados
++   entry #extract   decodifica um valor transportado para o seu tipo, por meio da sua instância `Decodable`
++   entry .json   transporta valores como JSON, enviados como um único array JSON em `Text`: a forma do rig `Jvm`
++       Um array malformado lança `Rig.Error` com o motivo `Deserialization`, e um valor que não
++       é decodificado, com o motivo `Unknown`. Cada valor precisa de um `Encodable in Json` e de
++       um `Decodable in Json`.
++   entry .pojo   transporta valores como árvores `Pojo`, enviadas como um array delas: a forma do rig `Isolation`
++       Cada valor precisa de um `Encodable in Pojo` e de um `Decodable in Pojo`; o array é
++       passado como está, sem texto no meio.
+
+@ 0 1 0 114d33d8313527e7180b72578b9fbe37
++ entry .References   os valores inseridos por splice de um bloco em estágios, alocados num array à medida que são incorporados
+
+% 1 1 0 054cfa2a09452e6d157e64ede93722c0
+
+@ 0 5 0 16e54dc1c63909b3099fd0cdee6f1a69
++       Dentro do corpo de um `dispatch`, cada valor inserido por splice é incorporado por
++       `embeddings.automaticEmbedding` nas `References` do escopo, que lhe atribuem um slot; o
++       código em estágios lê o slot do array que o rig vincula como `#array`. É maquinário de um
++       rig, normalmente não usado diretamente.
++   entry .apply   um conjunto novo e vazio de referências sobre um tipo de transporte
++   entry .Boxed   um valor transportado já extraído, memoizado no seu slot do array
+
+% 1 1 0 07a9b34bf71928aa1a2a74479a05ed93
+
+@ 0 10 0 1d525118323d4b8d1ae81b79de1728dc
++         No primeiro uso, o valor transportado bruto de um slot é substituído por um `Boxed` do
++         seu valor decodificado, de modo que um splice lido num laço é decodificado uma vez por
++         JVM, e não a cada iteração.
++     entry #value   o valor decodificado
++   entry #Transport   o tipo de transporte dos valores guardados
++   entry #update   vincula o array com quote do qual o código em estágios lê os seus valores
++   entry #array   o array com quote de valores transportados, vinculado antes que qualquer valor seja inserido por splice
++       Falha com um pânico se for lido antes que o rig o tenha vinculado; o rig sempre o vincula
++       primeiro.
++   entry #current   o número de valores alocados até agora
++   entry #allocate   adiciona um valor transportado, retornando o número do seu slot
++   entry #apply   os valores alocados, como um array na ordem dos slots
+
+@ 0 1 0 11878462eece726310ffffdec8338dc1
++ entry .embeddings   a conversão que leva um valor inserido por splice ao código em estágios, um given a importar por nome
+
+% 1 1 0 01aca7a7d604241c108eb1ea4cc28f93
+
+@ 0 3 0 00007546bddd808a0a85aecb03d21e2c
++       Um splice `${value}` dentro de um bloco `dispatch` precisa que `value` se torne um
++       `Expr`, e essa conversão é `automaticEmbedding`. `import soundness.*` não importa givens,
++       de modo que ela é importada por nome.
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 1 1 0 06e1f9e27e2e381a09e64b718299b319
+
+% 2 1 0 1760ad5d3beaa6f203656ffc6c6791f0
+
+% 1 1 0 108291f25d73a97603917c9afdae70ca
+
+@ 0 5 0 0afbeb0aab46779e1d3ae4fce5b15f14
++   entry .automaticEmbedding   converte um valor inserido por splice num `Expr` que lê o seu slot transportado
++       Uma `Conversion[value, Expr[value]]` inline, que precisa das `References` e do
++       `Stageable` que o corpo de um `dispatch` fornece e de um `Quotes`. Ela incorpora o valor
++       por meio do `Stageable`, aloca-lhe um slot e retorna código que lê o slot e o decodifica
++       no primeiro uso, memoizando o valor decodificado como um `References.Boxed`.
+
+@ 0 4 0 086e4078846c15f705b3b125323fca41
++ entry .deleteOnShutdown   enfileira um diretório para ser apagado, com o seu conteúdo, quando a JVM termina
++     Os rigs o usam para o diretório de saída de cada compilação. Um único shutdown hook esgota
++     a fila sequencialmente, em vez de um hook por diretório, de modo que uma execução com
++     muitos despachos não pode esgotar o limite de descritores de arquivo enquanto faz a
++     limpeza. Erros durante a remoção são ignorados.
+
+@ 0 1 0 1ac364c161fc46d0090d20622783815c
++ entry .Executor   o ponto de entrada que o subprocesso de um rig `Jvm` executa: invoca o código em estágios sobre o seu argumento
+
+% 1 1 0 019faf128d64c14408eebf208eb2352b
+
+% 2 1 0 1213a7cdc0e436300eb6cb8db84f337f
+
+@ 0 7 0 1ca1b576ee0b17070e3cbdb702519d38
++       Em `superlunary.jvm`; não se destina a uso direto. `main` carrega a classe compilada
++       `Generated$Code$From$Quoted`, aplica-a ao seu primeiro argumento e imprime o resultado,
++       suprimindo qualquer outra saída padrão para que só o resultado chegue ao processo pai.
++       Este é o `Executor` do guarda-chuva `soundness`; `apoplexy.Executor` não é exportado, para
++       evitar a colisão.
++   entry .run   aplica o código em estágios a uma entrada codificada, retornando a saída codificada
++   entry .main   executa o código em estágios sobre o primeiro argumento, imprimindo apenas o seu resultado
+
+@ 0 1 0 1b2c27cd69f1f0b619546602fd424093
++ entry .Executor2   um ponto de entrada alternativo para o subprocesso, que lê a sua entrada de `INPUT_PARAMETERS`
+
+% 1 1 0 12c0d74587eb52421488cac3488f77e6
+
+% 2 1 0 002d201bc93f8a0a17180f37958661fa
+
+@ 0 3 0 03d47ef02d404eaf105caf3758cf6e85
++       Não se destina a uso direto. Como `Executor`, mas recebe a entrada codificada da variável
++       de ambiente `INPUT_PARAMETERS` em vez de um argumento, e não imprime nada.
++   entry .main   executa o código em estágios sobre a entrada em `INPUT_PARAMETERS`

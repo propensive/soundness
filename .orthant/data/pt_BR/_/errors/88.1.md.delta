@@ -1,0 +1,38 @@
+orthant 2 language
+
+@ 0 1 0 1f308a04c1c559dc08ab1a98952f9d89
++ # `↯/s.88.1` — Lambda não suportada
+
+@ 0 2 0 0c78993f69ce4d2e1c277faab88b6f65
++ Lançado em tempo de compilação pela macro `disassemble` do Mandible quando a
++ forma da AST da expressão lambda não é reconhecida.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 0d6a805f93ef1214059623b7d09f7251
++ A macro faz casamento de padrões sobre expressões lambda para extrair sua
++ entrada de classfile subjacente. Algumas formas de lambda — tipicamente as
++ que usam classes internas anônimas ou desaçucaramentos incomuns — não são
++ reconhecidas.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 16597d9e0954bb3119f9aab6e42b228d
+
+% 1 1 0 16dbd307ceb1a8ee197b44da72ff3c4c
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 1 0 1ef2e39bb42a00c114697d444df45338
++ Reescreva a lambda numa forma mais simples (por exemplo, `(x: Int) => x + 1`).
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 1ba645a119fe3f8f0808dbb78cadc0b9
++ - Código-fonte: `lib/mandible/src/core/mandible.internal.scala`

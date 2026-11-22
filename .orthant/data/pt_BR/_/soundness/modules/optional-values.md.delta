@@ -1,0 +1,448 @@
+orthant 2 language
+
+@ 0 1 0 18c9d4dca80275e81481edd795632eb1
++ ## Valores opcionais
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 2 0 0c5f523455f4d4931414afd5b9d7e779
++ Um valor que pode estar ausente tem o tipo `Optional`. Um `Optional[Text]` é ou um `Text`, ou o
++ valor único `Unset`, que representa a ausência.
+
+@ 0 3 0 059b3f9dc1ad244e1e7994025db2e2a2
++ Ao contrário de um `Option`, um `Optional` não acrescenta nenhum invólucro. Um valor presente é
++ armazenado como ele mesmo, e escrito como ele mesmo, de modo que o caso comum de um valor que está
++ lá não custa nada e não exige cerimônia.
+
+@ 0 3 0 0d46f15c7b0e1f550f67d1ee53deefa0
++ A opcionalidade também é plana. `Optional[Optional[Int]]` é o mesmo tipo que `Optional[Int]`, de
++ modo que o estado ambíguo que `Option` permite, uma “ausência presente” como `Some(None)`, nem
++ sequer pode ser representado.
+
+@ 0 1 0 08644ed57345ae19145d47f4127f4c2f
++ ### Sobre a ausência
+
+@ 0 1 0 0071c0677ddffe3c1c954b81ee333e29
++ Três formas de dizer “nenhum valor” são de uso comum:
+
+% 2 1 0 1bbb688a1d043e1301d75713b0fd9904
+
+@ 0 7 0 1f2b2c4b3ad0a28f075c9d43722ea660
++ column  Ausência como
++ column  Visível no tipo
++ column  Um valor presente é
++ column  Aninha
++ row  `null`  não, então só falha ao ser desreferenciado  ele mesmo  não
++ row  `Option`  sim  embrulhado em um `Some`  sim: `Option[Option[T]]` tem dois vazios distintos
++ row  `Optional`  sim  ele mesmo  não
+
+% 1 1 0 00a6b9171441fec60600eb4868429639
+
+@ 0 2 0 1495dda1fa09117411e66df1f80a972a
++ `null` é invisível para o compilador. `Option` é visível, mas faz todo valor presente pagar por um
++ invólucro, e o código que encontra um `Option` aninhado precisa atravessar as duas camadas.
+
+@ 0 7 0 0d6a272c0e4452791e9e2dd6327b3ab9
++ Um `Optional` mantém a segurança de `Option`: a ausência está no tipo, e o compilador garante que
++ ela seja tratada. Ele se comporta como o próprio valor quando o valor está presente. Ele se apoia
++ nos [tipos união](https://docs.scala-lang.org/scala3/reference/new-types/union-types.html) do
++ Scala: `Optional[value]` é exatamente a união `Unset | value`. Uma união não precisa de invólucro,
++ e a união de um tipo com ele mesmo é esse mesmo tipo, e é por isso que a opcionalidade nunca se
++ aninha. [Opcionalidade](../../philosophy/optionality.md) descreve o princípio. Tudo vem do pacote
++ `soundness`, e o segundo import permite que os exemplos imprimam seus resultados:
+
+% 2 1 0 0887cb7828043385119c696f8369671e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 10110e21cd5dc9ad0dfe1f41473a15c3
++ ### Representando a ausência
+
+@ 0 2 0 004af38e56f7881c01c0b59bde6179ae
++ Um valor opcional tem o tipo `Optional[…]`. Um valor presente é atribuído exatamente como um valor
++ simples seria, e um ausente é `Unset`:
+
+% 2 1 0 1499a01ca82b3f7b05ee903eb964062d
+
+% 0 1 0 05faea5212ffc84708020e0c4d5a5f22
+
+% 0 1 0 06b1dd90d5e6bd411d00dead97e3f69f
+
+% 1 1 0 100601fd16f660e705f50b42edf79b9d
+
+@ 0 2 0 0e3ab4dd7ceaba4200c876e15e7afae6
++ Um valor opcional não pode ser usado onde se precisa de um valor simples até que o caso ausente
++ tenha sido tratado. O compilador insiste nisso:
+
+% 2 1 0 02d52ea526a1e37c1e8a8a0584f55949
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 045e47079e6cb1b0029dfccfa939ffa0
+
+% 1 1 0 160e0e8ffeb99f9e156c00ab634aa40b
+
+@ 0 1 0 0d78a9cc21da4ef41f224ec56f06d296
++ As operações que o tratam, cada uma descrita abaixo, são:
+
+% 2 1 0 069bdf888aebf5fa075ab245ed82652b
+
+@ 0 16 0 100f1c0dfe4cc697190e1bd528cfd378
++ column  Operação
++ column  Dá
++ row  `or`  o valor, ou um fallback avaliado só quando necessário
++ row  `let`  o resultado de uma função para um valor presente, com `Unset` repassado
++ row  `lay`  um fallback para a ausência, ou o resultado de uma função para a presença, como valor simples
++ row  `present`, `absent`  em qual caso um valor está
++ row  `mask`  `Unset` no lugar de um valor presente que satisfaz um predicado
++ row  `assume`  o valor, ou um `Optional.Error` lançado como exceção
++ row  `presume`  o valor, ou o `Default` do tipo
++ row  `compact`  os valores presentes de uma coleção
++ row  `unless`  `Unset` no lugar de qualquer valor que satisfaz um predicado
++ row  `puncture`  `Unset` no lugar de um valor específico
++ row  `only`  o resultado de uma função parcial, ou `Unset` onde ela não é definida
++ row  `option`  um `Option`
++ row  `optional`  um `Optional`, a partir de um `Option`
++ row  `default[T]`  o valor `Default` do tipo `T`
+
+% 1 1 0 0f48685aa7dfd760101042219640a518
+
+@ 0 1 0 1d400c6942d9798607ea4c312e2bdf72
++ ### Fornecendo um fallback
+
+@ 0 1 0 0d5a411f1bcb7eb51f88e16ea3da2981
++ `or` dá o valor, se ele estiver presente, e um fallback caso contrário. O resultado é um valor
++ simples:
+
+% 2 1 0 116d4d32da2c62b802bc644a5cc33adc
+
+% 3 1 0 1eec8a98486ee24a06dbbd821938b38d
+
+% 4 1 0 188c33d43e442904021fff3708222a28
+
+% 0 1 0 1442ce5025fb0617099598184c5e33e3
+
+% 0 1 0 0c3469084366b7f61a8eb3e2d421eef2
+
+% 1 1 0 15657c79be905eba16267348aa194488
+
+@ 0 1 0 1eb81cdfe96a3be6098c595042fea0f7
++ O fallback só é avaliado quando é necessário, então pode ser caro, ou pode ele mesmo falhar.
+
+@ 0 1 0 184e7137d957cc821fa3901d305490bb
++ ### Transformando
+
+@ 0 1 0 0429a8a086f3b5181f6361f5dbd956b3
++ `let` aplica uma função a um valor presente, e repassa `Unset` intacto:
+
+% 2 1 0 0fd60250fb670ace0a08e56e88810503
+
+% 3 1 0 0ed54401acb1bfaf039a5b146018c6fa
+
+% 4 1 0 0678f47498af7edb17490d3499db82a7
+
+% 0 1 0 0f6403ae5a7fdf01078d5306b12afca9
+
+% 0 1 0 0a8bef2890a7016b098d2033c087d8d8
+
+% 1 1 0 1320bc3655d323b7027ea931cff72e26
+
+@ 0 1 0 0627ae7a51e1c49209fc45b31eb109f5
++ `inspect` exibe um valor opcional presente entre colchetes de canto, e um ausente como `○`.
+
+@ 0 3 0 12684a48c2faa9d200851a51c5358f82
++ Como a opcionalidade é plana, `let` faz o trabalho tanto de `map` quanto de `flatMap` em um
++ `Option`. Uma função que ela mesma devolve um `Optional` não acrescenta uma camada, então as
++ chamadas a `let` se encadeiam sem aninhamento:
+
+% 2 1 0 175c6ea92c853ec40c54093f72a80ca4
+
+% 0 1 0 02933dbf6350a1e50172cf6dfbbc046f
+
+% 1 1 0 1770153b68d07a1b094300981febafa7
+
+% 3 1 0 078c7ad72102417c08c52b26796a53b3
+
+% 4 1 0 0d25d450e8c8d61018938e71fe0c62da
+
+% 5 1 0 1a8c2ae1f3b7dbe01cee212d3f2d02bf
+
+% 0 1 0 0f1cf62d58e31bf000b9b9cb4ac96b5a
+
+% 0 1 0 0a44e1a78f0a3e5a02b986f85a264789
+
+% 1 1 0 124e60109496d1c31c5b1caee6c45746
+
+@ 0 2 0 0efe8f574672b56e082169318a8f8507
++ `lay` trata os dois casos de uma vez. Recebe um fallback para a ausência e uma função para a
++ presença, então seu resultado é um valor simples, não um `Optional`:
+
+% 2 1 0 002091643539bdc31e9b968bfe4b0a2b
+
+% 3 1 0 03c3020eb91cb05213d2b1da65c9f6cd
+
+% 4 1 0 1548da3e07e25d98059874a36388129b
+
+% 0 1 0 0917a401ae7d6f861eaa6925e30aa385
+
+% 0 1 0 0fc8eb6ff62275ba0ad656f8a141a50e
+
+% 1 1 0 0fd70a518152ec0606b5f54c8a571ac4
+
+@ 0 1 0 065261aaa953522902bc3aedf000ba26
++ ### Testando a presença
+
+@ 0 1 0 01be7628692d7c75023ff79619a1a35f
++ `present` e `absent` dizem em qual caso um valor está:
+
+% 2 1 0 0dea5477f84542a80399cd4f250a7c09
+
+% 3 1 0 17ef369dc1c4bf780c00ef60be0c7fe1
+
+% 4 1 0 08ffe35b486d8924118f49e6cecf0bd3
+
+% 0 1 0 11da053a45951ab60f0a59180f563f3d
+
+% 0 1 0 10128c74903f220f19fccbcdedde1a66
+
+% 1 1 0 028dd397e0580ae0185f82ff89765f91
+
+@ 0 2 0 0d34518168be2b7f06b02f2e415a59b3
++ `mask` descarta um valor presente que satisfaz um predicado, e deixa qualquer outro valor como
++ estava:
+
+% 2 1 0 1ddde6d8baa98dd308dcf9547d6a229c
+
+% 3 1 0 0a5ee54403918ca113d7d44833eac1bb
+
+% 4 1 0 00c78cfccd3450131ac376e2ec18e44a
+
+% 0 1 0 01db72eab73b1284188f29d1830e7d30
+
+% 0 1 0 0d3513bc36da8cd7047cda3b11723cb2
+
+% 1 1 0 0a5b3f7cb6f47a8e0ca5b59c4d59ddbc
+
+@ 0 1 0 186bc7cb3e176027005f2fa9e77d633f
++ ### Exigindo um valor
+
+@ 0 3 0 1fecba28f0ca4318144695397068da97
++ Às vezes se sabe que um valor está presente, embora seu tipo não possa dizê-lo. `assume` afirma
++ isso e dá o valor simples. A afirmação não é verificada, então `assume` precisa da capacidade de
++ lançar exceções, e lança um `Optional.Error` se estiver errada:
+
+% 2 1 0 1b52c620752410d81bba0ab512cfa099
+
+% 0 1 0 0d80f7d9124305940ecada80e1458f51
+
+% 1 1 0 0cb611a221181a0800ba667fe5c8f397
+
+% 3 1 0 1574acad1930ddba09b80c743399059b
+
+% 4 1 0 044a3ace66475bf51c510077bfedc837
+
+% 5 1 0 00ce8ad0b9deaa9a10634b82f8ed7447
+
+% 0 1 0 04a0d54667f4ff270249ecb956294c07
+
+% 1 1 0 1ae55cf99b0aa4120763b8bf1ab4ce9c
+
+% 3 1 0 18c17ed330cecb55117cf5c95e717230
+
+% 4 1 0 1c303eab0aaf40e809e0fbdda1b568a3
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 0ae842888b9ed4210d9a96f2aa9f5a72
+
+% 1 1 0 1d5bdb181a6360ee16ff66f970afadc0
+
+@ 0 2 0 0b58fe779562f9870be9d7b471c797b2
++ `presume`, em vez disso, recorre ao padrão do tipo: um texto vazio, um zero, uma lista vazia. Está
++ disponível para os tipos que [declaram um padrão](#defaults):
+
+% 2 1 0 16ab6c204d4afa891a7afa362999c6ca
+
+% 3 1 0 1883ad2a204682e210a7a83027a4286a
+
+% 4 1 0 1f6a6c0e92591b2f07ba0aa83478f892
+
+% 0 1 0 1d0b3a10f5f4b84911d32711b6e1da1f
+
+% 1 1 0 12ea89134745d0431129c1d67255df2f
+
+@ 0 1 0 0f124e670fdbf58315cd53936baf9202
++ ### A ausência em coleções
+
+@ 0 2 0 0653f4f13953a49d1a7dd4419a29c811
++ `compact` reduz uma coleção de valores opcionais aos valores que estão presentes, em uma coleção
++ da mesma espécie:
+
+% 2 1 0 08e9a13020f2d4291bdacf3979d314c8
+
+% 3 1 0 09badfe317a6ce2c1bf3a6c078ef86ed
+
+% 4 1 0 0477ee50cf15cf7b132e0968c68c523a
+
+% 0 1 0 1c6cca6218d64973128a46b516f71708
+
+% 1 1 0 1be698fe7d020def19020085938e226f
+
+@ 0 3 0 082e7e4d612c188416f696bcac5eb785
++ Valores opcionais também *saem* de [coleções](collections.md#positions-and-access). Buscar uma
++ chave em um mapa, ou o primeiro elemento de uma lista, dá um `Optional`, já que pode não haver
++ nada lá.
+
+@ 0 1 0 112636385a9eb8f6039be426c144be24
++ ### Construindo um opcional
+
+@ 0 3 0 0e0ff1fdd2d5214b0759defe855e6247
++ Uma condição transforma qualquer valor em um valor opcional. `unless` descarta o valor quando um
++ predicado vale, `puncture` descarta um valor específico, e `only` mantém um valor onde uma função
++ parcial é definida:
+
+% 2 1 0 14b265477cabd85109a08543c9776182
+
+% 0 1 0 18a68d0aae8b598805d8069fc93b18de
+
+% 0 1 0 1cce8e16cfc7d62b176e22640bccc0a4
+
+% 0 1 0 15b8bb80e447ac3a0b0f570a97051757
+
+% 1 1 0 0a48215e1da8d371001b5a8a9a97c6e8
+
+% 3 1 0 034c19e7109ac789010e1ac09fc80286
+
+% 4 1 0 180ebb5ea44cf2cd1d51a171bcc5eec5
+
+% 5 1 0 066b9136a43dd83012a866acbab8418c
+
+% 0 1 0 081ecf1136c1d0b30351b451a6df00bf
+
+% 0 1 0 1e3d936551bd406117c1d101935baf4c
+
+% 0 1 0 131075cfe343c20018e6f76b5279545e
+
+% 1 1 0 07fdc602bc8204900dda8fae76fd994a
+
+@ 0 2 0 1dfd7a602d487c060bb83bcc5a98f388
++ `safely` constrói um a partir de uma operação que pode falhar: dá o resultado, ou `Unset` se a
++ operação lançou um erro. [Erros](errors.md#choosing-a-strategy) o descreve.
+
+@ 0 1 0 0ed4028e2304454c116d3e257aa6ad66
++ ### Trabalhando com `Option`
+
+@ 0 2 0 09bc9dbe24e9932f0b80de6505526555
++ Um `Option` às vezes é inevitável, na fronteira com outra biblioteca. Os dois se convertem nas
++ duas direções:
+
+% 2 1 0 13075950974a67100d353cb412114077
+
+% 3 1 0 0865e3a1e54674c51481995d4eebedbd
+
+% 4 1 0 086e5d172b9b9d8b1c49a53233001ad1
+
+% 0 1 0 1b46c3f4b24655320aa33520f422d2d6
+
+% 0 1 0 0881205215e677d0192b8fb734187365
+
+% 1 1 0 19816dc46101f6d504084f7e51790aee
+
+@ 0 1 0 162cf2f73a2529a818ca6a388845a9c6
++ ### Campos opcionais em dados
+
+@ 0 4 0 099ee2730c897d7b1fe08742a9e13ba3
++ Um campo de case class tipado como `Optional` é entendido pelos formatos de dados. Um campo
++ ausente é deixado de fora da saída, e um campo que falta em um documento é lido como `Unset`.
++ [JSON](json.md#optional-fields-and-defaults) mostra isso, junto com os imports que fazem de um
++ campo faltante um erro; os outros formatos se comportam da mesma forma.
+
+@ 0 1 0 0b4b8939d616b6b70091afcf131e210c
++ ### Quanto custa
+
+@ 0 4 0 0b2dda6c07ceba0d0e95f2637f3de011
++ Um `Optional[Text]` *é* um `Text`. Não há invólucro, então um valor presente não custa nada para
++ ser guardado, nada para ser passado e nada para ser lido. `Option`, em contraste, aloca um `Some`
++ para cada valor presente. Em uma estrutura de dados de um milhão de registros, são um milhão de
++ objetos que existem só para dizer “sim, há um”.
+
+@ 0 3 0 08f6e6f056705299048c18a4a6411abf
++ As operações também são expandidas inline, e `or` é otimizado em [tempo de compilação]. Uma
++ cadeia de fallbacks se reduz sem construir opcionais intermediários, e um fallback que é uma
++ constante se torna uma constante. [Custo zero](../../philosophy/zero-cost.md) explica por que
++ isso importa para o design.
+
+@ 0 3 0 14f0a2d4b9abbeb213cce2523244f214
++ O preço da representação é que `Optional[Optional[T]]` não pode existir. A ausência tem uma única
++ representação, então não pode se aninhar. Isso é verificado em tempo de compilação: um tipo que
++ não poderia se tornar opcional sem ambiguidade é rejeitado onde é escrito.
+
+@ 0 1 0 0043da299b2786fd1a66cbe7a406d1ba
++ ### Exigindo um tipo sem ambiguidade
+
+@ 0 1 0 02544a1d2ae6845e0d95232a8e8a56b8
++ Três [classes de tipos][classe de tipos] dão suporte a essa verificação, e às vezes são úteis
++ diretamente:
+
+% 2 1 0 1771f1220daa22f907d1ac9a96f287d5
+
+@ 0 5 0 1c66b5a1052bb2e6003c4afda176d1de
++ column  Classe de tipos
++ column  Atesta
++ row  `Concrete`  que um tipo é um tipo definido, não um abstrato
++ row  `Distinct`  que um tipo não é membro de uma dada união
++ row  `Mandatable`  o tipo sem a sua opcionalidade: o tipo que um valor presente tem
+
+% 1 1 0 020eab2af998b0f6066f996d6cb08ede
+
+@ 0 2 0 1843ab430959d0801ea9120fdeaf6e91
++ `Concrete` importa porque um tipo abstrato pode mais tarde ser instanciado para algo que já é
++ opcional. `Distinct` é a verificação que mantém `Unset` fora do tipo do valor.
+
+@ 0 3 0 03d0fc43c8f2963d147317d07ff5079c
++ Um método genérico que recebe um `Optional[value]`, para um `value` abstrato, exige portanto a
++ evidência de que `value` é concreto. A exigência aparece na assinatura do método, uma
++ [assinatura honesta], e não como uma falha em alguma chamada distante.
+
+@ 0 1 0 1798d9d46b5420fc001198b3c5449607
++ ### Padrões
+
+@ 0 3 0 1581e1765894d853106e54e034e260ab
++ `presume` e `default` recorrem a uma instância de `Default`, que fornece o valor ao qual um tipo
++ recorre. Existem instâncias para os tipos com um zero óbvio: texto vazio, zero, uma coleção vazia.
++ Um tipo declara o seu definindo um:
+
+% 2 1 0 01010da79d054dc51e39902dc52b3881
+
+% 0 1 0 036718b4d8617585120ec5b07e7a0aeb
+
+% 0 1 0 0d7df193a2c1890903da9604dbec0acb
+
+% 0 1 0 0760fcd58b2a150b12c207a942d8817e
+
+% 1 1 0 1c55dd95b59a026b002926ae67e9288a
+
+% 3 1 0 03e870555e78e633057ad304d1e7b8b7
+
+% 4 1 0 06ddfc30092447311ce938cd12c5c8a0
+
+% 5 1 0 09d4776bf73c299407a78436b9975017
+
+% 0 1 0 068bb0aeb64ecff9179ff5d7cb6af5d5
+
+% 1 1 0 054739ae9489df0c10f0896a09d0a0c4
+
+@ 0 2 0 0a0bce2257c1fb2409aa47132940e632
++ Um `Default` é calculado cada vez que é pedido, não armazenado, de modo que um padrão caro de
++ calcular só é calculado onde é usado.

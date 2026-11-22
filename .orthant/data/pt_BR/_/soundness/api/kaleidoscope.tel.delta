@@ -1,0 +1,1024 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 112a52ea087cdd310b80e7eaa4d3fa16
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1d131d08c08d348f1b8f4c1e1abe9db2
++ info   expressões regulares e globs como extratores de padrões, verificados e tipados enquanto o código compila
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 0df642b341fc1a20064fe8d448f10d7f
++     _Kaleidoscope_ escreve uma expressão regular como `r"…"` e um glob como `g"…"`, e faz de cada
++     um deles um **padrão**: em um `match`, `case r"hello $name(.*)"` testa o texto e vincula `name`
++     ao que o grupo casou. A expressão é analisada enquanto o código compila, de modo que um
++     colchete desbalanceado, uma repetição `{2,1}` ou uma captura sem nenhum grupo depois dela é um
++     erro de compilação no caractere culpado, e cada `$name` é tipado a partir do padrão diante do
++     qual está: um grupo simples vincula um `Text`, uma única classe de caracteres ou abreviação
++     (`[aeiou]`, `\d`, `.`) vincula um `Char`, um grupo repetido (`+`, `*`, `{n,m}`) vincula uma
++     `List`, e um grupo opcional (`?`) vincula um `Optional`.
+
+% 2 1 0 0740b5cd6300e49e0c5366ef3057ab08
+
+% 3 1 0 0e4dc20d534d29ca00fe68aa9123cef2
+
+% 0 1 0 0ecc4953966f81501c2b0249deb801e2
+
+% 0 1 0 1624d49cc1e714ae0a2366aec686f4b6
+
+% 0 1 0 00994f60eedb7110164110a6a2acaa1c
+
+% 0 1 0 016f85ffa75a13c91da3b2049bcee144
+
+% 0 1 0 0ef1062c04c503fb1aa44ffd85cc76df
+
+% 0 1 0 0e50104f908996870c5ebc4b32c7fb32
+
+% 1 1 0 01b1dfe3195b12d210b8469325302ad2
+
+@ 0 7 0 030b1e3963158d2e1c185ba546707495
++     Fora de um padrão, os mesmos interpoladores são expressões cujo valor é um `Regex`: seu
++     `pattern` de origem, a posição e a natureza de cada `Regex.Group`, e os métodos de casamento
++     `matches`, `seek` e `search`. `Regex` é o tipo que o Soundness usa sempre que se quer dizer
++     uma expressão regular, e `Text` nunca é usado para isso, de modo que uma assinatura como o
++     `sub(from: Regex, to: Text)` do gossamer diz qual de seus argumentos é um padrão. Um `Glob` é a
++     sintaxe de curingas dos caminhos de arquivo — `*` dentro de um segmento, `**` através de
++     segmentos, `?` para um caractere, `[a-z]` e `[!a-z]` — traduzida para uma expressão regular.
+
+@ 0 10 0 1132d1eaaeecceed1a931ce35b0cbb18
++     Uma regex é marcada com seu **motor** como o `Form` de um `Regex in JavaBaseRegex` ou de um
++     `Regex in Re2`, e a classe de tipos `Regex.Engine` para essa forma faz o casamento. O padrão é
++     `JavaBaseRegex`, o `java.util.regex` da plataforma, cujo backtracking aceita todas as
++     construções de sua sintaxe, mas pode levar tempo exponencial com um padrão e uma entrada
++     patológicos. `Re2` é o motor de autômatos do praxinoscope, que casa em tempo linear na entrada
++     e rejeita, em tempo de compilação para um literal, as construções que um autômato não consegue
++     exprimir (referências retroativas, lookaround, quantificadores possessivos, grupos atômicos). O
++     motor de um literal é escolhido importando pelo nome um given `Regex.Backend` do pacote
++     `regexBackends`, já que `import soundness.*` não importa givens; um `Regex` construído em tempo
++     de execução é remarcado com `Regex#re2`.
+
+% 2 1 0 107657fa7ea419f70eea47d445488840
+
+% 3 1 0 0600603c594f8095077d640f15c12a59
+
+% 0 1 0 141f233fcd26b6930e8e815f40388dc8
+
+% 0 1 0 0a0cbbca0af04b0401bd4aa835fef718
+
+% 0 1 0 1d71470c2cb9668600fa91557473a800
+
+% 0 1 0 02a8c43d509152ba05146947c6ea97fa
+
+% 1 1 0 1324f687c62ca2c1082c91617b7cfdbe
+
+@ 0 7 0 1f27503bf5bf59540fc9196ca3d03301
++     A biblioteca é um único source set, `kaleidoscope.core`, que compila para a JVM, o Scala.js e
++     o Scala Native, usando `java.util.regex` ou a emulação dele na plataforma. Um casamento com
++     estado — o `extract` do gossamer, que percorre casamentos sucessivos em um texto — conduz os
++     extratores por meio de um `Scanner`, um cursor mutável mantido com exclusividade. Tudo é
++     exportado para o guarda-chuva `soundness`, e `regexBackends` se funde ao pacote de mesmo nome
++     do próprio guarda-chuva, de modo que um programa escreve `import soundness.*` e então, se
++     quiser o motor de tempo linear, `import regexBackends.re2`.
+
+% 0 1 0 06ff01176f41801e04d884f364d24005
+
+% 0 1 0 06b6530622ebb8fa156ad426515811ca
+
+% 0 1 0 18d696af2e36d6691597594330848341
+
+% 0 1 0 18d696af2e36d65e1597594330848336
+
+% 0 1 0 1d6f5ed891f1ceca1083ed4c7ae25a4e
+
+% 0 1 0 0943afc710b4907404c244469294b459
+
+@ 0 6 0 16d446ccced6db4814645da640a92789
++ entry .r   o interpolador `r"…"`: uma expressão regular como padrão, ou como valor `Regex`
++     `r"…"` é uma extensão transparent inline sobre `StringContext` que analisa a expressão
++     regular enquanto o código compila. Em um `case`, é um extrator: o padrão deve casar com o
++     texto inteiro (por meio do given `Scanner` no escopo; veja `Scanner`), e cada `$name` vincula
++     o grupo de captura escrito imediatamente depois dele. Em posição de expressão, é um
++     `Regex in JavaBaseRegex`, ou um `Regex in Re2` quando `regexBackends.re2` está importado.
+
+@ 0 3 0 1d841400ec8ef4fd109a30170d7632ff
++     Um `$name` deve estar logo antes de um grupo, de uma classe de caracteres, de `.` ou de uma
++     das abreviações `\d`, `\D`, `\w`, `\W`, `\s`, `\S`; o tipo do vínculo decorre do que ele
++     precede e do quantificador depois dele.
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 16ec39b953935e6106bdbd3e4f23b815
++       label Um padrão literal, casado ou não
+
+% 1 1 0 1ffba79aaa398f35044fe2440510b662
+
+% 2 1 0 097fafc6c642375f1d7f530aebd79bfd
+
+% 0 1 0 050ffdbbab250cb8071fb5a205f3fe4c
+
+% 0 1 0 136a45ae3c4991b813c41d691fc19574
+
+% 0 1 0 0e34962ae847be3d1664017d8985d145
+
+% 1 1 0 142046773d9b5aa21f6bf8c2c9159d08
+
+@ 0 1 0 0a04c0e6ef54785d0bb777360aa45bfa
++       label Uma abreviação vinculada a `digit`: um `Char`
+
+% 1 1 0 1e9ece328abe8587039951a2b4a16884
+
+% 2 1 0 0bfc8264aa42dc710d4709179b6a6803
+
+% 0 1 0 0580bebc650468560e9c45eb3a3ec3f5
+
+% 0 1 0 047c2548818acf5816cb11108be8db15
+
+% 0 1 0 195aa2afc5ce1b270e98a0811a527669
+
+% 1 1 0 173d7b0dbfcac373007e45147140a380
+
+@ 0 1 0 110aaf0aeec0f1640018c3ae25121e92
++       label Repetido com `+`: uma `List[Char]`
+
+% 1 1 0 074c91c67aa0269c126e642122cebcf7
+
+% 2 1 0 1dbd4c6d470199501c0578b647703015
+
+% 0 1 0 0807d2282446121504a5d8cc05e02b78
+
+% 0 1 0 06c988300c7fee6e00df240b767fce6e
+
+% 0 1 0 1651e315c2ea707a0f6b4da4ac9d3173
+
+% 1 1 0 044d96eb6c794e260104188b1657ff1f
+
+@ 0 1 0 010d3546af8d11341e1477ef3c34b248
++       label Tornado opcional com `?`: um `Optional[Char]`
+
+% 1 1 0 1465f12ad6736d841e7c9f2f00acfe84
+
+% 0 1 0 059bcec3dd475959122f01418f65edd2
+
+% 0 1 0 05c239538da8d2ae0dfb94be3d9028d2
+
+% 0 1 0 0ab325f580c9f8c0070c6a60734b9bf1
+
+% 0 1 0 10d1ab54ff070f640e1c45e3b8495342
+
+% 1 1 0 1d73fe6de3d3797d0a8053ef04b4e330
+
+@ 0 1 0 0d588d7fbf0edcfb128365854a6afbe0
++       label Um segundo grupo, entre parênteses: um `Text`, e os dois se vinculam como um par
+
+% 1 1 0 07c984f6a3eef67d1d5c556473fb1872
+
+% 2 1 0 1c3ff8fcac4239ed170d92cf7f1c55d5
+
+% 0 1 0 0de791ab4e7689770abbdc5f98ee8dfb
+
+% 0 1 0 1a6c4f06bc058190181f3d3fdc7f8e7c
+
+% 0 1 0 160f47ea84541a5e03d601ce9c524edc
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 5 0 0ae814561c2cb89a182992435a03cf55
++     Um grupo sem `$name` é casado, mas não vinculado, de modo que `r"(hello) $second(world)"`
++     exige a primeira palavra e vincula apenas a segunda. Grupos se aninham, como faz
++     `r"(($first(hello)) world)"`. Uma captura dentro de um grupo que se repete é proibida
++     (`Regex.Error.Reason.Uncapturable`), já que não consegue vincular um conjunto fixo de
++     variáveis. À esquerda de um `val`, um padrão afirma que a extração tem sucesso e vincula todas
++     as suas capturas de uma só vez:
+
+% 2 1 0 04a07c8944511a1001dea66fad45aee8
+
+% 3 1 0 07f53a8561a46601004d9862d4a83f8c
+
+% 0 1 0 061e322c7076d2671379591def1ec4a5
+
+% 0 1 0 0a6fbc162859b47b1fcfac374795d8dd
+
+% 0 1 0 1d23e94eadf3bf341031491145c479ce
+
+% 1 1 0 017748f0c563fb9608357ea748de747d
+
+@ 0 8 0 1c0cf9c2ece3b753110c4fad03b71c17
++     Dentro de `r"…"` uma barra invertida é uma barra invertida — só se aplica o escape da própria
++     expressão regular, de modo que um parêntese literal é `r"\("` — e `$` se escreve `$$` para
++     significar a si mesmo. Um padrão que não pode ser analisado é um erro de compilação que nomeia
++     o motivo e aponta para o caractere culpado, _[↯/s.34.1.1] the regular expression could not be
++     parsed because a capturing group was not closed at 11_; um `$name` sem grupo depois dele é
++     _[↯/s.34.1.2] … a capturing group was expected immediately following an extractor_. Sob
++     `regexBackends.re2`, o padrão também é verificado contra o subconjunto RE2, de modo que uma
++     referência retroativa ou um lookaround é rejeitado em tempo de compilação, e não em seu
++     primeiro uso.
+
+% 2 1 0 1169456c3818781c048f9738c98f2a70
+
+% 3 1 0 14a22011d5e60e441b520096992e3452
+
+% 0 1 0 08d286c0775214da0e5e1d417d1a5521
+
+% 1 1 0 07efd3709c55d4b5050734a109f59376
+
+@ 0 3 0 0e1857cec76249cb1e343309d3a7041e
++     Um valor `Regex` usado em um padrão (`case ipAddress() =>`) casa como um todo e não vincula
++     nenhum grupo; as capturas só estão disponíveis onde o padrão é escrito literalmente, já que é
++     ali que o compilador consegue vê-las.
+
+@ 0 7 0 0a20cdd19e45106e09f553d56cdb10ba
++ entry .g   o interpolador `g"…"`: um glob como padrão, ou como valor `Regex`
++     `g"…"` escreve um glob — a sintaxe de curingas dos caminhos de arquivo — e, no mais, é
++     `r"…"`: um padrão em um `case`, um `Regex` em posição de expressão, e compilado sob o motor
++     que `regexBackends` seleciona. `*` casa com qualquer sequência de caracteres diferentes de `/`
++     e `\`, `**` casa através de segmentos, `?` casa com exatamente um caractere que não seja
++     separador, `[a-z]` é um intervalo e `[!a-z]` sua negação, e todo outro caractere é ele mesmo.
++     Um `$name` vincula um segmento do caminho (tudo até o próximo separador), por isso não precisa
++     de grupo depois dele.
+
+% 2 1 0 1c0e8a406da76afe07e4bca5b7477564
+
+% 3 1 0 0edf3f333b2ccb98195446258039f204
+
+% 2 1 0 069458a8f83d8cd605dd223d65c34067
+
+% 0 1 0 1f188349c6805bc40aad0243c62befbf
+
+% 0 1 0 043d096dccabcc270d9ff8c3dbff8eb9
+
+% 2 1 0 1807604aef535039079d800b5c209bdf
+
+% 0 1 0 03a358009e2c5e551054660721f06878
+
+% 0 1 0 1233c02affd258971818212af7c54ecb
+
+% 0 1 0 1cb78bc62e9e3ea9172de72c8c260414
+
+% 0 1 0 0f99bf88258441bd0bd9e16ef060f525
+
+% 0 1 0 064eeed5823e59b319f43f0db5a4ab59
+
+% 1 1 0 02827bcf279936230a56a0a777dcd61e
+
+@ 0 3 0 053dd26a6a7b4c971e76896db013ef7d
++     Um glob e uma expressão regular que se traduzem no mesmo padrão são iguais —
++     `g".local/*" == r"\.local/[^/\\]*"` — e `Glob.parse(text).regex` mostra a tradução. Um glob é
++     total: todo texto é um glob, de modo que `g"…"` nunca deixa de compilar.
+
+@ 0 1 0 05b7c05d5d17a4d91acb085a0452ab40
++ entry .regexBackends   os dois motores de casamento, cada um um given a importar pelo nome
+
+% 1 1 0 05f7aeccaa80ea16035de5faa9b78e5e
+
+@ 0 3 0 02d2051c12471f3805fb26369aada640
++       O motor para o qual um padrão literal compila é decidido enquanto o código compila, pelo
++       given `Regex.Backend` no escopo, e `import soundness.*` não traz nenhum dos dois: o padrão,
++       sem importação, é `java.util.regex`, e o motor de tempo linear é escolhido pelo nome.
+
+% 2 1 0 0f57bc01a075f85c04f58ef00b607dd2
+
+% 3 1 0 1906755da4a2ed1b1e8801764f48dbff
+
+% 4 1 0 12416cb3e62194c71bf73ece6a862cbe
+
+% 0 1 0 15871343f55672100057bd03c9c11cb3
+
+% 0 1 0 1f7ac37378826a661c1bcffecd22f498
+
+% 0 1 0 06d5017a3df7ac7d10ea2a9bb14f4236
+
+% 1 1 0 1737d735f59432b31ac0cc95dc778512
+
+@ 0 7 0 066ff33687cc240c0a3503401d993f4d
++       Os dois motores concordam sobre quais entradas casam, onde um casamento começa e termina, e o
++       que cada grupo de captura vincula, para todo padrão que ambos aceitam. Diferem no que aceitam:
++       `java.util.regex` aceita referências retroativas, lookaround, quantificadores possessivos e
++       grupos atômicos, e pode levar tempo exponencial com um padrão patológico; o RE2 rejeita essas
++       construções em tempo de compilação e é linear na entrada, e oferece além disso as análises
++       `subsumes` e `intersects` sobre um `Regex in Re2`. A importação tem escopo como qualquer
++       outra, de modo que um bloco de um arquivo pode usar RE2 enquanto o resto mantém o padrão.
+
+@ 0 1 0 1126d74a677c353f04a3728a5a16bc83
++       O mesmo literal dá a mesma resposta sob qualquer dos motores, e tem um tipo diferente:
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 11d29d4f917bacb710bba6d022b0e964
+
+% 1 1 0 012b8bff74c75256170debd6de725eb5
+
+% 0 1 0 056eb600675706c017f0c516973ecb26
+
+% 0 1 0 1526f217f1b7d00f0f28393db71508ea
+
+% 0 1 0 1862f90b75ae5600150162c4f07045e0
+
+% 0 1 0 1ad2707a5825ac3112104209d8e2c3eb
+
+% 1 1 0 00b81c9da980240417f7803c595d104e
+
+% 0 1 0 06f28554ec9c28420ade3c85047cd029
+
+% 0 1 0 11d33bc7084c29401d8548e523c8a06f
+
+% 0 1 0 1717e8c4628bfbc11f5c84336cdefee6
+
+% 0 1 0 07be10c945f7090607a463ada9266a5f
+
+% 0 1 0 0a0324a20e6a13d8033053cfd8a6bdd1
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 1 0 090581f7fb9635bd0a3324a77da85042
++       Uma construção que o RE2 não consegue exprimir é um erro de compilação, não uma surpresa em
++       tempo de execução:
+
+% 2 1 0 094957d093841b14058fd04f7cbc52a1
+
+% 0 1 0 007382f27533bf6f1f4528acb2cf6a0e
+
+% 0 1 0 168e738336a4138311f42dcae0dc7316
+
+% 0 1 0 07f4e26568ec4f9319237b4963dc4220
+
+% 1 1 0 03313d8b24ad892108c581a610ca328f
+
+@ 0 13 0 12a9ec48d439e44f05952d95bc057654
++   entry .javaBaseRegex   o motor `java.util.regex` da plataforma: o padrão, por isso a importação raramente é necessária
++       `Regex.Backend[JavaBaseRegex]`, o motor para o qual um literal compila quando nada é
++       importado. Existe para que o padrão possa ser nomeado — em um escopo que importou `re2` e quer
++       um literal sob o motor de backtracking, por exemplo — e como padrão de `Glob#matches`.
++   entry .re2   o motor RE2 do praxinoscope: casamento em tempo linear, o subconjunto RE2, verificado enquanto o código compila
++       `Regex.Backend[Re2]`. Com ele importado, todo `r"…"` e `g"…"` no escopo é analisado para seu
++       `Motif` do praxinoscope enquanto o código compila, rejeitado ali se usar uma referência
++       retroativa, lookaround, um quantificador possessivo ou um grupo atômico, e embutido no extrator
++       por execução em estágios, de modo que nenhuma análise ou compilação aconteça em tempo de execução. Um literal sem
++       capturas é ainda compilado para um autômato finito estático (`Fsa`), um teste da entrada
++       inteira sem alocação, quando seu número de estados fica dentro do orçamento do gerador. Um
++       literal em posição de expressão é um `Regex in Re2`, sobre o qual `subsumes` e `intersects`
++       estão disponíveis.
+
+@ 0 1 0 159823f238cd66721dfa0491523606ef
++ entry .Regex   uma expressão regular analisada: seu padrão, seus grupos e o casamento por meio de seu motor
+
+% 1 1 0 14db756bf5eccc9b175b49a9327ca961
+
+@ 0 6 0 19992e5dd1326c650fd71b849cc9879c
++       Um `Regex` é o `#pattern` de origem como `Text` e a árvore de seus `#groups`, cada um um
++       `Regex.Group` que registra os offsets de um grupo entre parênteses, de uma classe de
++       caracteres ou de um token de um só caractere, seu quantificador e sua gula, e se ele é
++       capturado por um `$name`. É o valor de um `r"…"` ou `g"…"` em posição de expressão, e é
++       construído em tempo de execução a partir de texto com `.apply` ou `.parse`, que lançam
++       `Regex.Error` na posição e pelo motivo pelos quais um padrão não pode ser analisado.
+
+@ 0 7 0 15db6285a7019284096f441f42392aa6
++       Uma regex é `Formal`: seu membro de tipo `Form` nomeia o motor que a casa, e as operações
++       `#matches`, `#seek` e `#search` recebem um `Form is Regex.Engine` que é resolvido a partir
++       dessa marcação. Um `Regex in JavaBaseRegex` — o tipo de `.apply`, de `.parse` e de todo literal
++       compilado sem `regexBackends.re2` — despacha para `java.util.regex`; um `Regex in Re2`
++       despacha para o praxinoscope, e é feito a partir de um literal sob
++       `import regexBackends.re2` ou de qualquer regex com `#re2`, que verifica o padrão contra o
++       subconjunto RE2 ao remarcá-lo. Um `Regex` puro não tem motor e não pode casar.
+
+% 2 1 0 0bfd149e9ca6e5381425f06d9a408b7c
+
+% 3 1 0 08d8426c946e913c0753c09944935285
+
+% 4 1 0 1ef6bdd7fa4c660916ea00cabf3d405f
+
+% 0 1 0 0d3ce2d6c7e1bdab08c9dc795faf0bc3
+
+% 0 1 0 10d43b460d00f31f09a2c17bf440b3be
+
+% 0 1 0 1ff7c0e76382896e1d222049d6e38276
+
+% 0 1 0 19e7d31883a0e0bc0f3c0976f58efe32
+
+% 0 1 0 0390418bf53f8be0169f36f57d40c5c3
+
+% 0 1 0 1e13efc3c8fbedc004326cbaaf156580
+
+% 1 1 0 0c076fd4254dd5170fdbd9e0c4cfe3c6
+
+@ 0 5 0 1ebc36fb58ccd26b0f2a9e79d8d3e24a
++       As operações de casamento são métodos, e não extensões, para que nunca possam ser
++       sombreadas pelas extensões genéricas de coleções de mesmo nome, `seek` e `search`, que o
++       pacote `soundness` também exporta. Duas regexes são iguais quando seus padrões e suas árvores
++       de grupos são, de modo que `g".local/*" == r"\.local/[^/\\]*"` vale, mas `r"[xy]"` e
++       `r"[yx]"` são diferentes, embora casem com as mesmas entradas.
+
+@ 0 3 0 19090262b3748e5a09c1ffc3eb56c74d
++       `Regex` é usado em todo o Soundness sempre que se quer dizer um padrão: `sub`, `cut` e
++       `search` do gossamer sobre `Text` recebem um, e os blueprints JSON do jacinta tipam seus
++       acessores `regex` como `Regex in JavaBaseRegex`.
+
+% 0 1 0 0e8cd9066a5ee0c50d81471efa662f03
+
+% 1 1 0 1d1853336d5a5778178e37d48bcbd0f0
+
+% 0 1 0 17b1880b547d8167005689e599bd9f52
+
+% 0 1 0 003a49549f542e691c9f230fac20cb04
+
+% 0 1 0 0ffe79b76f9b813408eeff007d9dcf29
+
+@ 0 5 0 0970ae2d9239ef4005a9f21dc75e0d68
++   entry .apply   analisa um texto como expressão regular para o motor `java.util.regex`
++       `Regex(text)` é `Regex.parse(List(text))`: um `Regex in JavaBaseRegex` sem grupos capturados,
++       ou `Regex.Error` lançado por meio de uma `Tactic[Regex.Error]` quando o texto não pode ser
++       analisado. Para um padrão conhecido quando o código é escrito, `r"…"` o verifica em tempo de
++       compilação.
+
+% 2 1 0 0608bf27035d6742039af8e20c7555e2
+
+% 3 1 0 1b6b2692681b0ecf00629f20e3088276
+
+% 4 1 0 0743fe464c5ede660313f5db8c0dd8c9
+
+% 0 1 0 073574ef4456bde20c8514190794a035
+
+% 1 1 0 046accfa9a9c41ec1c8df8e43c31bbc5
+
+@ 0 6 0 16f1dc4d1f7c80d51ea020d48d95dbd2
++   entry .parse   analisa as partes de um padrão interpolado, cada fronteira marcando um grupo capturado
++       `Regex.parse(parts)` é o parser por trás de `r"…"`, disponível em tempo de execução. As
++       partes são os pedaços do padrão entre suas substituições `$name`, de modo que cada parte
++       depois da primeira deve começar com um grupo, uma classe de caracteres, `.` ou uma abreviação
++       no estilo de `\d` (caso contrário, `Regex.Error.Reason.ExpectedGroup`), e esse elemento é
++       marcado como capturado. O resultado é um `Regex in JavaBaseRegex` e precisa de uma
++       `Tactic[Regex.Error]`.
+
+% 2 1 0 08e6a0a32e698c090f99de182208795d
+
+% 3 1 0 1de2c82db5fd129b020ad6666a68b98c
+
+% 4 1 0 08a9639eb8fb32d01ab37ef19759a6cc
+
+% 0 1 0 0a65b73118d532890b6c8b350dc5fc52
+
+% 0 1 0 1f868526aebb535703423ea43fe10269
+
+% 1 1 0 17135acc2ca19f6f0c48d3dd03126485
+
+@ 0 17 0 0bf9a5aec20fec54192a7208dc813d86
++       O parser rejeita um grupo não fechado, um `)` solto, uma classe de caracteres vazia `[]`,
++       uma repetição `{n,m}` malformada, um máximo abaixo do mínimo ou igual a zero, e um grupo
++       capturado dentro de um grupo que se repete (`Uncapturable`), que não consegue vincular um
++       conjunto fixo de variáveis. Depois verifica o todo com `java.util.regex.Pattern`, relatando
++       qualquer outra rejeição como `InvalidPattern`.
++   entry .unsafeFrom   constrói uma regex a partir de partes que já se sabe que podem ser analisadas, sem canal de erro
++       `Regex.unsafeFrom(parts)(using Unsafe)` é `parse` com seu `Regex.Error` descartado, para
++       partes que uma macro já validou: os extratores `r"…"` o chamam a cada casamento. O token
++       apagado `Unsafe` marca que quem chama, e não o sistema de tipos, afirma que as partes são
++       válidas; uma parte que não pode ser analisada lança uma exceção.
++   entry .makePattern   renderiza uma árvore de grupos de volta para texto de padrão, nomeando seus grupos ou pondo-os simplesmente entre parênteses
++       O renderizador por trás de `#capturePattern`: percorre `todo` (os grupos de `pattern` do
++       offset `last` até `end`), envolvendo cada um em parênteses — nomeados `(?<gN>…)`, com `index`
++       contando para cima, quando `named` é verdadeiro, simples `(…)` quando é falso — e um grupo
++       quantificado em um segundo par interno. Devolve o próximo índice de grupo e o texto
++       renderizado. É público para uso dos motores; um programa lê `#capturePattern`.
++   entry .Engine   a classe de tipos que casa um `Regex` de um dado `Form`: `java.util.regex` ou RE2
+
+% 1 1 0 1976ab400e671c0d1ebffae40b6bbfa9
+
+@ 0 7 0 1936375cd4f467531b4ab0d9d5516ed2
++         `form is Regex.Engine` é como um `Regex in form` casa. A instância para `JavaBaseRegex` é
++         `JavaBaseRegex.engine`, no objeto companheiro desse tipo; a instância para `Re2` é `.re2`,
++         neste companheiro, já que o `Re2` do praxinoscope fica abaixo desta biblioteca e não
++         consegue nomear `Regex`. Ambas estão no escopo implícito, de modo que um `Regex in Re2`
++         nunca recorre a `java.util.regex` e nenhuma das duas precisa de importação. Cada motor
++         implementa `#matches` sobre a entrada inteira e conduzido por scanner, `#seek` mais à
++         esquerda e `#search` repetido, e a extração de grupos de captura que os extratores `r"…"`
++         usam.
+
+@ 0 23 0 1f7ae8342d950757198eb6ae64df2acf
++         Um motor é acessado pelos métodos de `Regex` (`regex.matches(text)`), e não chamado
++         diretamente; o trait é público para que `Regex.Engine.re2` e `JavaBaseRegex.engine` possam
++         ser nomeados.
++     entry .re2   a instância de motor para `Regex in Re2`, fazendo a ponte para o `Motif` do praxinoscope
++         `Re2 is Regex.Engine`. Procura o `Motif` do praxinoscope da regex pelo seu padrão,
++         renderizado de novo com um parêntese simples em volta de cada grupo, em um cache no qual
++         todo `Regex in Re2` foi admitido ao ser feito — pela expansão de `r"…"` sob
++         `regexBackends.re2`, que embute o motif no extrator em estágios, ou por `Regex#re2`, que o
++         analisa nesse momento. Um `Regex in Re2` que nunca foi admitido é um defeito e entra em
++         pânico em vez de lançar um erro. Os grupos de captura são mapeados para os números de grupo
++         do praxinoscope, ordenados por parênteses; as iterações de um grupo que se repete são
++         recuperadas varrendo de novo seu trecho com o corpo do grupo. O `search` sem sobreposição
++         recomeça uma posição depois do fim de cada casamento, como faz o motor `JavaBaseRegex`, de
++         modo que casamentos imediatamente adjacentes são pulados da mesma forma.
++     entry #Self   a forma que este motor casa: `JavaBaseRegex` ou `Re2`
++     entry #matches   se uma regex casa com o texto inteiro, ou o próximo casamento a partir da posição de um `Scanner`
++         Com o `nextStart` do given `Scanner` não definido, um casamento da entrada inteira. Com ele
++         definido como uma posição, o próximo casamento encontrado nela ou depois dela, registrando
++         seu início mais um em `nextStart` e seu fim em `matchEnd`, que é como o `extract` do
++         gossamer percorre um texto.
++     entry #seek   o intervalo do casamento mais à esquerda em `start` ou depois dele, ou `Unset`
++     entry #search   todo casamento a partir de `start` como uma `Chain` preguiçosa de intervalos, com sobreposição ou não
++         Com `overlap` falso, cada busca recomeça uma posição depois do fim do casamento anterior;
++         com ele verdadeiro, uma posição depois do início do casamento anterior, de modo que os
++         casamentos podem compartilhar texto.
++   entry .Greed   como um grupo quantificado disputa a entrada: guloso, relutante ou possessivo
+
+% 1 1 0 0b8f263e3ea432ac0c5f6ea87c0eff5d
+
+@ 0 6 0 094719f88ef495b402b5d5d951756432
++         O sufixo depois de um quantificador: nenhum para `Greedy` (o máximo possível), `?` para
++         `Reluctant` (o mínimo possível), `+` para `Possessive` (o máximo possível, sem nunca
++         devolver nada). `Regex.Group#greed` o registra, e `#serialize` o renderiza. O motor RE2
++         rejeita um quantificador possessivo, que um autômato não consegue exprimir.
++     entry #serialize   o sufixo: vazio, `?` ou `+`
++   entry .Quantifier   quantas vezes um grupo se repete: exatamente, pelo menos, ou entre duas contagens
+
+% 1 1 0 19427ccd2ecc62a703b6325dd2169bf0
+
+@ 0 1 0 0000e091ea1a07c411a68e2a2cffdfac
++         Como cada quantificador é escrito, e o tipo de uma captura que ele quantifica:
+
+% 2 1 0 12dc3366efe7a14311a42a3fb0ad1cd9
+
+@ 0 4 0 1742f2ca6a389d9102bc99f62941cc59
++         column  Quantificador
++         column  Escrita
++         column  Tipo da captura
++         row  `Exactly(1)`  nada: um grupo não quantificado  `Text` ou `Char`
+
+% 0 1 0 1c6b17fcf1c9b3d7095f4e2e2642345d
+
+% 0 1 0 13ebe7d84e055beb171e3f5795f9b1ff
+
+% 0 1 0 1f5b4a3efa53be231a892b60825f602b
+
+% 0 1 0 170465de6b90b1ae1cc2e3ef3704a6b6
+
+@ 0 1 0 14fad307a2b69b830208b779f67d9198
++         row  `Between(0, 1)`  `?`  um `Optional` de `Text` ou `Char`
+
+% 0 1 0 160943650f5fa17618e37a6cc94825a8
+
+% 1 1 0 18ad113afdcc57f0133ec618b27d98cc
+
+@ 0 3 0 1b25fdd08f54172b0c0ff64712593260
++     entry #serialize   o quantificador como escrito: vazio para `Exactly(1)`, `*`, `+`, `?` ou uma forma `{…}`
++     entry #unitary   se este é `Exactly(1)`, o quantificador de um grupo não repetido
++   entry .Group   um grupo de um padrão: seus offsets, seu quantificador e se ele é capturado
+
+% 1 1 0 03491d6652fac1650ffd4282c8de69a4
+
+@ 0 6 0 0205e227b210ad540f3f84b12e20481d
++         Um `Group` registra um grupo entre parênteses, uma classe de caracteres ou — quando
++         capturado por um `$name` — um token de um só caractere (`.`, `\d`, `\w`, …) pelos offsets de
++         seu conteúdo no padrão: `#start` e `#end` delimitam o conteúdo, `#outerEnd` é o offset
++         depois do delimitador de fechamento e de qualquer quantificador, e `#outerStart` o offset do
++         de abertura. Grupos aninhados são `#groups`. A macro `r"…"` lê a árvore para tipar cada
++         captura, e os motores a leem para reconstruir o padrão e extrair grupos.
+
+% 2 1 0 066f0523fc874e8919b09f29267f27fc
+
+% 3 1 0 045ed673f860e83b114a4aa55790fef6
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 079e25c818306727045494f4eb061df4
+
+% 0 1 0 17f266ba25fa86f008746bbae2f66217
+
+% 1 1 0 14a1c430ad2185ed094bb26aeb0e4690
+
+@ 0 21 0 1e5131b41d5c3577049e0d3a56a8b2d3
++     entry #start   o offset do primeiro caractere de conteúdo do grupo
++     entry #end   o offset depois do último caractere de conteúdo do grupo
++     entry #outerEnd   o offset depois do delimitador de fechamento e do quantificador do grupo
++     entry #outerStart   o offset do delimitador de abertura do grupo, ou do próprio token no caso de uma abreviação isolada
++     entry #groups   os grupos aninhados diretamente dentro deste
++     entry #quantifier   quantas vezes o grupo se repete, `Exactly(1)` quando não quantificado
++     entry #greed   se a repetição é gulosa, relutante ou possessiva
++     entry #capture   se um `$name` captura este grupo
++     entry #charClass   se este grupo é uma classe de caracteres `[…]`, e não um grupo entre parênteses
++     entry #singleChar   se este grupo é um token de um só caractere: `.` ou uma abreviação no estilo de `\d`
++     entry #charMatcher   se o grupo casa um caractere de cada vez: uma classe ou um token de um só caractere
++         Um grupo que casa caracteres vincula um `Char` (ou uma `List[Char]`, ou um
++         `Optional[Char]`) onde um grupo entre parênteses vincula `Text`.
++     entry #allGroups   todo grupo aninhado em qualquer profundidade, na ordem do padrão
++     entry #captureGroups   todo grupo capturado aninhado em qualquer profundidade, na ordem do padrão
++     entry #serialize   renderiza este grupo como texto de padrão, com um parêntese de captura nomeado ou simples
++         Dado o padrão inteiro, o próximo índice de captura e se o grupo deve ser nomeado
++         `(?<gN>…)`, devolve o índice depois deste grupo e seu texto; um grupo entre parênteses
++         quantificado ganha um `(…)` interno para que o nome envolva a repetição inteira. Usado por
++         `Regex.makePattern`.
++   entry .Error   lançado quando um padrão não pode ser analisado: a posição e o motivo
+
+% 1 1 0 073ff64345c3927101d9118a3bdc0571
+
+@ 0 6 0 14d68d01cc6308800c4bf6c54ff8a679
++         Erro `↯/s.34.1`: _the regular expression could not be parsed because `reason` at `index`_,
++         com o número do motivo como subnúmero do erro, de modo que um grupo não fechado é
++         `↯/s.34.1.1`. Lançado por `Regex.apply` e `Regex.parse` por meio de uma
++         `Tactic[Regex.Error]`, e relatado por `r"…"` como erro de compilação, apontando para o
++         caractere culpado. O índice conta caracteres das partes unidas, sem nada no lugar das
++         substituições `$name`.
+
+% 2 1 0 105b4478ca0e9e9d15c7df63e5c0b671
+
+% 3 1 0 1e793ffc3d5c44c4171c12689906dbc5
+
+% 0 1 0 0e408515afba552216b90328af10e8a0
+
+% 1 1 0 12f1857bb8f9a68c06e575ecced2021d
+
+@ 0 1 0 0c94adc74f29465e1e1db4b8ad05f1c0
++     entry .Reason   por que um padrão foi rejeitado, como um de onze casos numerados
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 1 0 0792c14fa31fe6b90908fc9dcde67bb9
++           O `number` de cada caso é o subnúmero do erro:
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  Caso
++           column  Código
++           column  Mensagem
++           column  Observação
+
+% 0 1 0 0a2bdd86c5c716eb0f0a27542c58cf7a
+
+@ 0 1 0 16b9d842f713542911461c89ea2d7c9a
++           row  `ExpectedGroup`  2  _a capturing group was expected immediately following an extractor_  um `$name` sem grupo depois dele
+
+% 0 1 0 13cc4c70a6b15c1a1bc211d8c584566c
+
+% 0 1 0 0c93d642139f98ca1a308e46c7393b7b
+
+% 0 1 0 0c588c7b5b2c635b1004875120b93b05
+
+% 0 1 0 106143f138bbd71e0f282c75676fb743
+
+% 0 1 0 05fb41f4bc4f2a5d164e0a7b5a8fd98e
+
+@ 0 1 0 078fc7a5c4ec82b01784ad3851112772
++           row  `InvalidPattern`  8  _the pattern was invalid_  qualquer coisa que `java.util.regex` rejeite e o parser não
+
+% 0 1 0 12713f9146e9f9741ec546a00faf7941
+
+% 0 1 0 07ad72cce40c0cd20723df593b80a53f
+
+% 0 1 0 1ced95513fc05a27078fa6ca52cfcf59
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 12 0 0c6ce58c24a1f2f4075bd36c6018ac89
++       entry .communicable   renderiza cada motivo como a mensagem citada em `Regex.Error.Reason`
++       entry #number   o número do motivo, de 1 a 11, que é o subnúmero de seu `Regex.Error`
++     entry #index   o offset no padrão em que o erro foi encontrado
++     entry #reason   o `Regex.Error.Reason`
++   entry #pattern   o padrão como escrito, com seus `$name` removidos
++   entry #groups   os grupos de nível superior do padrão, cada um um `Regex.Group` com seus próprios grupos aninhados
++   entry #re2   esta regex remarcada para o motor RE2, verificada agora contra o subconjunto RE2
++       Analisa o padrão para seu `Motif` do praxinoscope (lançando `Motif.Error` por meio de uma
++       `Tactic[Motif.Error]` para uma referência retroativa, um lookaround, um quantificador
++       possessivo, um grupo atômico ou qualquer outra coisa fora da sintaxe RE2), admite-o no cache
++       do motor e devolve a mesma regex como um `Regex in Re2`. Todo `Regex in Re2` é, portanto, um
++       padrão verificado, e seu primeiro casamento nunca falha por um motivo de sintaxe.
+
+% 2 1 0 00b22a10fe5df7300e5d52384ce148d7
+
+% 3 1 0 0f4f9b621046caa919e1dbc48a985d8e
+
+% 4 1 0 0230cf009416fa330c4ae3ebc1548077
+
+% 0 1 0 10a7460156fc7bb4009eed525b4255bd
+
+% 0 1 0 0655b5bc656146091f0ce5db59f9d368
+
+% 0 1 0 074c25af511d5ea80e6f287bb6a96275
+
+% 1 1 0 1c88718216e49a8214e8298abea86266
+
+@ 0 8 0 0473e344feb9c7131c3487c4b8bcf9d6
++   entry #unapply   um valor `Regex` como padrão: `case regex() =>` casa com o texto inteiro
++       Casa sem scanner, de modo que o texto inteiro deve casar, e não vincula nada: os grupos de um
++       valor não são visíveis para o compilador, por isso só um `r"…"` literal pode vincular
++       capturas.
++   entry #matches   se o texto casa, inteiro ou a partir da posição do `Scanner`
++       Precisa do `Form is Regex.Engine` para o motor desta regex (no escopo implícito para ambas as
++       formas) e de um `Scanner^`, cujo given padrão é um scanner novo sem posição, de modo que uma
++       chamada simples é um casamento da entrada inteira. Um scanner com `nextStart` definido
++       encontra o próximo casamento a partir dessa posição e registra onde ele foi.
+
+% 2 1 0 132c08c86ad4699c134b9f58edfbaaeb
+
+% 3 1 0 032462efc9e96e6206b4e2fa87444cb6
+
+% 4 1 0 1c68b8ef110215250991ae01224fecc6
+
+% 0 1 0 19a5a71d8cbd81ac016e5674cd0a9981
+
+% 0 1 0 1452a714ed0873a30f3b29ead7b08199
+
+% 1 1 0 00f1c677622c5d651e4e420e8bb1ff1f
+
+@ 0 3 0 1cfd34f42e8e40d313eff80984c535ad
++   entry #seek   o intervalo do casamento mais à esquerda em `start` ou depois dele, ou `Unset` se não houver nenhum
++       `start` é um `Ordinal`, `Prim` por padrão. O `Interval` é baseado em zero sobre as unidades
++       UTF-16 do texto, como o `segment` do gossamer o recebe.
+
+% 2 1 0 098bc383758d35b41b8efe0dfc96086a
+
+% 3 1 0 175eb5fd9ff274c8153c37e540dcf7c3
+
+% 4 1 0 1d4d8396c22ff2521c2bdb626c7abb47
+
+% 0 1 0 1cfed3a637ae2f9806b012e90b5aac73
+
+% 0 1 0 1fb9b021500c1fd30b628261c04ca0c5
+
+% 1 1 0 1b391dd3beedcaaf07693aceda809341
+
+@ 0 5 0 1dbc0b213255fd420e31c5c633c7beff
++   entry #search   todo casamento em `start` ou depois dele, como uma `Chain` de intervalos construída de forma preguiçosa
++       Com `overlap` falso (o padrão), a busca recomeça uma posição depois do fim de cada
++       casamento; com ele verdadeiro, uma posição depois do início, de modo que um casamento pode
++       começar dentro do anterior. A `Chain` é construída à medida que é lida, de modo que uma busca
++       em um texto longo custa só o que é consumido. O `text.search(regex)` do gossamer mapeia os
++       intervalos para os segmentos casados.
+
+% 2 1 0 0ad462eb5b664b231b12bb67ffe25e16
+
+% 3 1 0 0ed037024c1d856918daf5bb7af83d39
+
+% 4 1 0 06a2372c5e71328b073425f2e2a9feca
+
+% 0 1 0 10a2a41368dfe5130a9651bfb9976faa
+
+% 0 1 0 17890b4b30f5961a10b42fa945c9845a
+
+% 1 1 0 0c8615a002720044169bcd1b2aeb9414
+
+@ 0 10 0 042ef07b83a0b62202f80506f6446bd1
++   entry #capturePattern   o padrão renderizado com todo grupo entre parênteses e cada captura nomeada `g0`, `g1`, …
++       O texto entregue a `java.util.regex`: um grupo capturado se torna `(?<gN>…)`, numerado na
++       ordem do padrão, e um grupo capturado quantificado é envolvido para que o nome cubra a
++       repetição inteira, como `a(?<g0>(bc)*)` para `a$xs(bc)*`.
++   entry #subsumes   se esta regex casa com toda entrada com que a outra casa; só formas RE2
++       `L(that) ⊆ L(this)`, decidido pela `Subsumption` do praxinoscope sobre os dois programas
++       compilados. Ambas as regexes devem ser `Regex in Re2` — a questão só é decidível sem
++       referências retroativas e lookaround — e a análise lança `Motif.Error` para um padrão que
++       ela não consegue verificar (um com fronteira de palavra ou de linha, `Unverifiable`) ou para
++       um par que esgota seu orçamento de estados (`BudgetExceeded`).
+
+% 2 1 0 02f6633000c8d366073649c167e5598c
+
+% 3 1 0 0fdecf27a735bafe08869168a5750ced
+
+% 4 1 0 06778fa4aa09f62a045c51529a7c27a8
+
+% 5 1 0 0041381f0c77ede71722f9b044c10dc0
+
+% 0 1 0 1e63eaef3661c1851a3c72c00d5c6d65
+
+% 0 1 0 015d39caaeffa85917587a25c895b8a7
+
+% 0 1 0 1ca485e248cc72b30adb8a4cfcbd3651
+
+% 1 1 0 1cca800fed1e5d6407d2e8518ca16796
+
+@ 0 4 0 16543cd6f9e3cf420af3fb6bb2203097
++   entry #intersects   se alguma entrada casa tanto com esta regex quanto com a outra; só formas RE2
++       Alcançabilidade, no produto dos dois autômatos, de um ponto em que ambos aceitam; uma questão
++       polinomial, enquanto `#subsumes` é exponencial no pior caso. Ambas as regexes devem ser
++       `Regex in Re2`, e uma fronteira de palavra ou de linha em qualquer delas lança `Motif.Error`.
+
+% 2 1 0 1217a62abeef9d2a1c12ae28d0fd2d89
+
+% 3 1 0 01fdb9fbd29a5c31092e934573f89740
+
+% 4 1 0 1aee7821532cd94f04facd9ad8fe8172
+
+% 5 1 0 0b15a2250f48d42a1b8e48e421bfdd2e
+
+% 0 1 0 1bfaa06c542a1eb91050d5bf62ac3cdd
+
+% 0 1 0 12411910f69d35f5135dec6a78aaeb89
+
+% 1 1 0 0c755c2b1960a04d14921fb5b0676813
+
+@ 0 2 0 01636095f51b84330ae048fd4ef339f8
++   entry #allGroups   todo grupo em qualquer profundidade, na ordem do padrão
++   entry #captureGroups   todo grupo capturado em qualquer profundidade, na ordem do padrão: os grupos que `r"…"` vincula
+
+@ 0 7 0 038b799dbd19fba5114dffd0f765c26a
++   entry .Backend   o marcador que um given de `regexBackends` carrega, lido por `r"…"` e `g"…"` ao se expandirem
++       `Backend[form]` é um trait fantasma selado sem membros. As macros `r"…"` e `g"…"` convocam
++       um `Backend[Re2]` enquanto se expandem: quando `regexBackends.re2` está importado, o literal
++       é compilado para o motor do praxinoscope, verificado contra o subconjunto RE2 e marcado
++       `Regex in Re2`; caso contrário, é marcado `Regex in JavaBaseRegex`. `Glob#matches` recebe o
++       mesmo given, com `regexBackends.javaBaseRegex` como padrão. Nada mais o lê, e um programa
++       nunca o implementa.
+
+@ 0 1 0 0cc8dda843cdd7741cf0b0ee35994df8
++ entry .JavaBaseRegex   o marcador do motor `java.util.regex`: o `Form` padrão de todo `Regex`
+
+% 1 1 0 0e8f188a5809a57d01aca1f1e2544048
+
+@ 0 5 0 14ce34ad5a18e9ca102e774ae5a35cc3
++       Um trait fantasma selado sem membros, que nomeia o `java.util.regex` da plataforma (ou, no
++       Scala.js e no Scala Native, a emulação dele na plataforma) como o motor de um
++       `Regex in JavaBaseRegex`. É a forma de `Regex.apply`, de `Regex.parse` e de todo `r"…"` e
++       `g"…"` compilado sem `regexBackends.re2`. Sua instância de motor `.engine` fica aqui, no
++       companheiro do sujeito, de modo que nenhuma importação é necessária.
+
+@ 0 5 0 196863f3a3055fb516c530da8cf5315d
++       O motor compila cada `Regex#capturePattern` distinto uma vez para um
++       `java.util.regex.Pattern` em cache, de modo que casar muitos textos com uma regex custa uma
++       compilação. Seu backtracking aceita todas as construções da sintaxe Java, incluindo
++       referências retroativas e lookaround, ao custo de tempo exponencial com um padrão e uma
++       entrada patológicos; `regexBackends.re2` é a alternativa de tempo linear.
+
+% 1 1 0 174dd154543e2e5f13ee01fecfcd3be6
+
+% 1 1 0 00d87776994983b30923d7912187eb01
+
+@ 0 6 0 1be555726828fb891d3b53fdec3177f6
++   entry .engine   a instância `Regex.Engine` que casa um `Regex in JavaBaseRegex`
++       `JavaBaseRegex is Regex.Engine`, no escopo implícito. O `matches` da entrada inteira é
++       `Matcher#matches`; um casamento conduzido por scanner é `Matcher#find(position)`; `seek` e
++       `search` são `find` a partir da posição inicial, recomeçando uma posição depois do fim de cada
++       casamento (ou do início, com sobreposição). As iterações de um grupo capturado que se repete
++       são recuperadas casando de novo o corpo do grupo sobre seu trecho.
+
+@ 0 1 0 04054da1238ad81a0cc05d68df64bf17
++ entry .Scanner   um cursor mutável em um texto, que uma sequência de casamentos faz avançar
+
+% 1 1 0 147a5ebc4e8ed5b11b2c8ec5508b4f19
+
+@ 0 6 0 12464b78b47092ac0c3b468960525544
++       Um `Scanner` guarda a posição em que o próximo casamento deve começar (`#nextStart`) e onde
++       o último casamento terminou (`#matchEnd`). Os extratores `r"…"` e `g"…"` e `Regex#matches`
++       recebem um como `(using Scanner^)`: com `nextStart` não definido, o casamento é da entrada
++       inteira, que é o que um `case r"…"` em código comum faz; com ele definido, o motor encontra o
++       próximo casamento nessa posição ou depois dela e avança o scanner para uma posição depois de
++       seu início, que é como o `extract` do gossamer percorre cada casamento em um texto.
+
+@ 0 5 0 17c54009232233261165920bc5300d03
++       A classe é `caps.Mutable`, já que um casamento muda seu estado, de modo que só uma
++       referência exclusiva pode conduzi-la: um given escrito à mão é declarado `given (Scanner^) =
++       Scanner(Unset)`, e um `given Scanner = …` puro é somente leitura e é rejeitado onde um
++       casamento precisa dele. O given padrão `.default` cria um scanner novo sem posição a cada uso.
+
+% 1 1 0 1a5b6c60fab482941709931e1e95a852
+
+@ 0 7 0 155783b05f24f4df0736049f24cfcc51
++   entry .default   um scanner novo sem posição, de modo que um casamento sem qualificação é da entrada inteira
++       Tipado `Scanner^` e construído de novo a cada convocação (por meio de um `DummyImplicit`
++       apagado), de modo que dois casamentos nunca compartilham um cursor, a menos que um programa
++       vincule um deliberadamente.
++   entry #nextStart   a posição a partir da qual o próximo casamento busca, ou `Unset` para um casamento da entrada inteira
++       Depois de um casamento conduzido por scanner, uma posição depois do início do casamento, de
++       modo que um casamento repetido encontra a próxima ocorrência; um texto sem outro casamento o
++       deixa inalterado.
++   entry #matchEnd   onde terminou o último casamento conduzido por scanner, ou `Unset` antes de qualquer um
+
+@ 0 1 0 1cc25123045e06f81c4b97ab82fb4c9c
++ entry .Glob   um glob — curingas `*`, `**`, `?`, `[a-z]` — como tokens, traduzido para uma expressão regular
+
+% 1 1 0 059f147177c54aed19d7052e824e3366
+
+@ 0 7 0 1359e1f6c3f7b3c405b6bf4b362351a8
++       Um `Glob` é uma sequência de `Glob.Token` analisada a partir da sintaxe de curingas dos
++       caminhos de arquivo, e `#regex` é sua tradução para uma expressão regular: `*` se torna
++       `[^/\\]*` (qualquer sequência que não atravesse um separador), `**` se torna `.*`, `?` se
++       torna `[^/\\]`, um intervalo ou conjunto é transposto com `!` como negação, e todo outro
++       caractere é ele mesmo, com escape se a sintaxe de expressões regulares o lesse de outra
++       forma. O interpolador `g"…"` é o glob como padrão; `.parse` lê um a partir de texto em tempo
++       de execução, e `.decodable` permite que uma flag ou um valor de configuração cujo valor é um
++       glob seja lido com `as[Glob]`.
+
+% 2 1 0 193734460bafbb010a86695909134a14
+
+% 3 1 0 1993d7a520b1fce90df96d0f101506dd
+
+% 0 1 0 024d3c6757a7d99404c178afffbffd14
+
+% 0 1 0 04f4e64f98c9037b0d264642efddbb56
+
+% 0 1 0 10e934628a0c58de0fca484a792e6d19
+
+% 0 1 0 19d536079cad70a01975bdfde05e1a58
+
+% 0 1 0 0d33936b7d2a91ba0f885c5f83089e16
+
+% 1 1 0 10cd71c2b29c5df41515a40d919985e8
+
+@ 0 2 0 103763f5e8584f2d14ebf32bf0858c62
++       A análise é total: todo texto é um glob, já que qualquer caractere fora da sintaxe de
++       curingas é um token `Exact`.
+
+% 0 1 0 0e8cd9066a5ee0ba0d81471efa662ef8
+
+% 1 1 0 19dbf27d9d411248120a17f3dc7af902
+
+@ 0 8 0 1d8e6e2938ed528f0e49609c6bbedcb9
++   entry .parse   lê um glob a partir de texto; nunca falha
++       `*` é `Star`, e um segundo `*` logo depois dele faz do par um `Globstar`; `?` é `OneChar`;
++       `[…]` é um `Range` para a forma `a-z` de três caracteres ou um conjunto `Specific` caso
++       contrário, cada um `inverse` quando seu conteúdo começa com `!`; qualquer outra coisa é
++       `Exact`.
++   entry .decodable   lê um glob com `as[Glob]`: o given `Decodable in Text`, no escopo implícito
++       `Glob.parse`, como codec, de modo que um glob chega de uma flag de linha de comando ou de um
++       arquivo de configuração como qualquer outro valor decodificável, sem erro a tratar.
++   entry .Token   um elemento de um glob: um curinga, uma classe de caracteres ou um caractere literal
+
+% 1 1 0 1c2799120e6dd57b1766352a81a93d8c
+
+@ 0 2 0 11e3fc0a8d002f550ddca07aa2dd07da
++         Cada token, a sintaxe de glob de onde vem e sua tradução para expressão regular, como
++         `#regex` a dá:
+
+% 2 1 0 0e401f5e21d24d8406e487506a1e768a
+
+% 0 1 0 038836df8ba252b107a7440045acf6da
+
+% 0 1 0 0ca2cfa75f3f3f8b14189da93f5c58a2
+
+@ 0 1 0 0ef4af45dc4c814203e6ec638764c01a
++         column  Casa com
+
+% 0 1 0 105f65e0ef3f003413dd57e0ca968bd8
+
+@ 0 6 0 10245e07248d7f3c1d8fcd9de95fef71
++         row  `Star`  `*`  qualquer sequência de caracteres dentro de um segmento  `[^/\\]*`
++         row  `Globstar`  `**`  qualquer sequência de caracteres através de segmentos  `.*`
++         row  `OneChar`  `?`  um caractere dentro de um segmento  `[^/\\]`
++         row  `Exact(char)`  qualquer outro caractere  esse caractere  ele mesmo, precedido de `\` se for um metacaractere de expressão regular
++         row  `Range(start, end, inverse)`  `[a-z]` ou `[!a-z]`  um caractere no intervalo, ou fora dele  `[a-z]` ou `[^a-z]`
++         row  `Specific(chars, inverse)`  `[aeiou]` ou `[!aeiou]`  um caractere no conjunto, ou fora dele  `[aeiou]` ou `[^aeiou]`
+
+% 1 1 0 05930b07d1604e33108b18ffd97c0f0b
+
+@ 0 10 0 0024744f59d3837a0545a32062cfed9f
++     entry #regex   o token como texto de expressão regular, com um literal escapado onde precisa ser
++         As traduções estão tabeladas em `Glob.Token`. As extremidades de um intervalo e os membros
++         de um conjunto são escapados como um caractere `Exact` é.
++   entry #tokens   os tokens do glob, em ordem
++   entry #regex   o glob traduzido para uma expressão regular, como `Text`
++   entry #matches   se o texto inteiro casa com o glob, no motor que `regexBackends` seleciona
++       Recebe um `Regex.Backend[form]` (com `regexBackends.javaBaseRegex` como padrão, de modo que
++       um `import regexBackends.re2` o troca, como faz com os interpoladores) e o `Regex.Engine`
++       dessa forma. Os motores guardam a compilação em cache pelo padrão renderizado, de modo que
++       casar muitos candidatos com um glob o compila uma vez.
+
+@ 0 1 0 0d4397a75bd37e560e5ba07a7b94af2b
++ entry .internal   as macros por trás de `r"…"` e `g"…"`, e as classes extratoras para as quais elas se expandem
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 19 0 1542a3bbdc7c401d1f091124a89f7b99
++       Não é para uso direto: o objeto abriga a expansão dos interpoladores e as duas classes para
++       as quais um padrão se expande. `expandRegexJvm`, `expandRegexRe2`, `expandGlobJvm` e
++       `expandGlobRe2` são os pontos de entrada transparent inline para os quais `r` e `g`
++       despacham, conforme haja ou não um `Regex.Backend[Re2]` no escopo; `regexJvm`, `regexRe2`,
++       `globJvm` e `globRe2` são suas implementações de macro. Cada uma analisa as partes com
++       `Regex.parse`, relatando um `Regex.Error` como erro de compilação posicionado no caractere
++       culpado, calcula os tipos das capturas a partir dos quantificadores dos grupos e insere um
++       `NoExtraction` ou um `RExtractor`; sob RE2, também analisa o padrão para um `Motif` do
++       praxinoscope, rejeitando qualquer coisa fora do subconjunto RE2, e embute o motif — e, para
++       um padrão sem capturas, um casador `Fsa` estático — no extrator, por execução em estágios.
++   entry .expandRegexJvm   expande `r"…"` para o motor `java.util.regex`
++   entry .expandRegexRe2   expande `r"…"` para o motor RE2
++   entry .expandGlobJvm   expande `g"…"` para o motor `java.util.regex`
++   entry .expandGlobRe2   expande `g"…"` para o motor RE2
++   entry .regexJvm   a macro por trás de `expandRegexJvm`
++   entry .regexRe2   a macro por trás de `expandRegexRe2`
++   entry .globJvm   a macro por trás de `expandGlobJvm`: traduz cada parte com `Glob.parse` primeiro
++   entry .globRe2   a macro por trás de `expandGlobRe2`
++   entry .NoExtraction   o extrator para o qual se expande um padrão sem capturas
+
+% 1 1 0 0cd1940cb0dac42f198c5a1cf5cf509b
+
+@ 0 6 0 0749630ce2d55353074460f5c36e6bbe
++         Guarda o texto do padrão, o `Motif` embutido em estágios (instalado no cache do motor RE2
++         quando o extrator é construído) e, quando foi possível gerá-lo, o `Fsa` estático que
++         responde a um casamento da entrada inteira sem o motor.
++     entry #apply   o padrão como um `Regex in form`, para um literal em posição de expressão
++     entry #unapply   se o texto casa: pelo `Fsa`, quando há um e nenhuma posição de scanner está definida
++   entry .RExtractor   o extrator para o qual se expande um padrão com capturas, tipado por suas capturas
+
+% 1 1 0 0f48c3de9d4b6ca71a49abda57583cc7
+
+@ 0 4 0 1005fc41fd3a90c31026f3bd348af01d
++         `RExtractor[result, form]` guarda as partes do padrão e o `Motif` embutido em estágios;
++         `result` é `Option[T]` para uma captura do tipo `T`, ou `Option[(T1, …, Tn)]` para
++         várias.
++     entry #unapply   as capturas de um casamento como o resultado tipado, ou `None`

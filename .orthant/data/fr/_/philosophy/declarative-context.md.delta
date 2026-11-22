@@ -1,0 +1,124 @@
+orthant 2 language
+
+@ 0 1 0 1bfc33e2edf2fc8f121308653215d922
++ # Contexte déclaratif
+
+@ 0 7 0 1d92e83ec686989c182a8572fbb330ee
++ Soundness configure le comportement de manière déclarative, par des valeurs contextuelles
++ présentes dans la portée, plutôt que par des arguments transmis à la main ou des indicateurs
++ consultés à l'exécution. Choisir un format de sortie, une stratégie d'erreur, un encodage de
++ caractères ou une implémentation particulière revient à mettre le bon `given` dans la portée,
++ après quoi le choix s'applique automatiquement à tout ce qui se trouve dans cette portée. Comme
++ la configuration est déclarative, elle est indépendante du flot de contrôle et facile à
++ comprendre : ce qui est dans la portée détermine ce qui se passe, où que s'exécute le code
++ concerné.
+
+@ 0 5 0 0ccd789078bba8931f8edef54dab7236
++ La force de cette approche tient à ce que la portée est un instrument précis. Un given importé
++ en tête d'un fichier configure le fichier ; un given déclaré dans un bloc ne configure que ce
++ bloc, en prenant le pas sur tout choix plus large ; et un bloc `locally` confine une exception à
++ quelques lignes. [Les portées délimitées](delimited-scopes.md#scope-is-a-precise-instrument)
++ montrent les trois dans un même exemple.
+
+@ 0 4 0 1df4daca083094a405998d73f5729c9a
++ La configuration se compose comme le code qu'elle configure. Un projet définit une fois ses
++ choix maison et les partage avec `export`, si bien que `import myproject.conventions.*` dote
++ n'importe quel fichier de la stratégie d'erreur, des encodages et des formats de l'équipe — la
++ configuration comme bibliothèque, versionnée et relue comme telle.
+
+@ 0 8 0 15130699107ff7ce07eb333f08b1a870
++ Deux outils gardent l'approche honnête. Les valeurs contextuelles qui représentent des capacités
++ ou de la configuration étendent le marqueur `Findable`, dont le plugin de compilateur de Soundness
++ se sert pour distinguer le contexte *trouvable* — ce que l'utilisateur est censé fournir ou
++ importer — de la mécanique interne. Et lorsqu'un given requis manque, importer
++ `explainMissingContext` transforme le laconique « no implicit found » du compilateur en
++ diagnostic : il cherche dans le classpath les instances qui *satisferaient* la recherche et nomme
++ les imports qui les fournissent, si bien que la réponse à un contexte manquant est un import d'une
++ ligne, et non une séance d'archéologie.
+
+@ 0 1 0 1f2cfe28048ef52a014414f319348b48
++ ## Ce qui va dans la portée
+
+@ 0 3 0 08ab6e64349664401a049f51916e12fc
++ Il vaut la peine de voir l'éventail d'un seul coup d'œil, car c'est l'uniformité qui compte. Un
++ mécanisme unique porte des choix que d'autres conceptions répartiraient entre arguments de
++ constructeur, réglages globaux, méthodes de builder et indicateurs à l'exécution :
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 1 0 0d44811bd8d018c410e4192246a748b7
++ column  Choix
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 10 0 02cd44ba0a872ef0186f15a0a71e663f
++ row  ce que fait un échec  `strategies.throwUnsafely`
++ row  comment le texte devient des octets  `codepages.utf8Codepage`
++ row  comment le JSON est rendu  `formatting.compactJsonFormatting`
++ row  comment les dates sont affichées  `dateFormats.iso8601DateFormat`
++ row  comment un booléen est affiché  `affirmations.yesNoAffirmation`
++ row  sur quoi s'exécute une tâche  `threads.virtualThreads`
++ row  ce qu'il advient des tâches inachevées  `probates.cancelProbate`
++ row  quel transport HTTP est utilisé  `httpBackends.soundnessHttp`
++ row  quelle implémentation de système de fichiers  `filesystemBackends.javaBaseFilesystem`
++ row  quel calendrier désigne un littéral de date  `calendars.gregorianCalendar`
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0f4325e2e28fd8fe0eb6619c2d9e23bf
++ Un seul idiome à apprendre, et le même raisonnement — « ce qui est dans la portée détermine ce
++ qui se passe » — s'applique à tous.
+
+@ 0 1 0 051ff2ba1d0a5e911e96d25d468d9ce8
++ ## Le nommage rend le choix lisible
+
+@ 0 3 0 0338cae7de17808a12f362eb0e0255c4
++ Un given est nommé d'après ce qu'il *sélectionne*, et non d'après son type, car la ligne
++ d'import est ce que voit le lecteur. `import strategies.throwUnsafely` dit quelque chose du code
++ qui suit ; `import strategies.given` ne le dirait pas.
+
+@ 0 4 0 1f2308d40559540504acf589b86bbe3d
++ C'est pourquoi la convention compte plus ici qu'ailleurs : une valeur contextuelle est invoquée
++ sans être écrite au site d'appel, si bien que l'import est le seul endroit où son choix est
++ visible. Un given mal nommé rend la configuration contextuelle exactement aussi opaque que ses
++ détracteurs le prétendent.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ce que cela coûte
+
+@ 0 2 0 021c580bb192a4c90d3cf4ac02f1998f
++ L'objection honnête à la configuration contextuelle est l'action à distance, et elle n'est pas
++ fausse.
+
+@ 0 5 0 08a8364f101114b81d9f5e65f3c4db5c
++ **L'effet n'est pas local au site d'appel.** Un `json.show` s'affiche différemment selon un
++ import situé peut-être cent lignes plus haut, et rien au site d'appel ne le signale. Le lecteur
++ doit savoir où regarder. La parade est la précision de la portée — plus la portée est étroite,
++ plus le given est proche de ce qu'il affecte —, mais la tension est réelle, et un given importé
++ pour tout un fichier est réellement une action à distance.
+
+@ 0 4 0 0bf53ac56528f89c034b002070df71e2
++ **L'ambiguïté est une erreur de compilation, et une erreur déroutante.** Deux givens du même type
++ dans la portée rendent le code ambigu, ce qui est sûr, mais signalé en termes de résolution
++ implicite plutôt que par « vous avez choisi deux formats JSON ». Importer deux lots de
++ conventions qui se contredisent produit exactement cela.
+
+@ 0 4 0 12e85f801961fb31108ba097de7fe655
++ **Une refactorisation peut changer silencieusement le comportement.** Déplacer une fonction dans
++ un autre fichier la fait sortir d'un ensemble d'imports pour entrer dans un autre. Les types
++ passent toujours ; le comportement peut différer. C'est le tranchant le plus vif de l'approche,
++ et la raison pour laquelle il vaut mieux rassembler les conventions d'un projet dans un objet
++ partagé unique que les assembler au cas par cas dans chaque fichier.
+
+@ 0 5 0 1e2bd1a98a0147f819f7a3476225b5bf
++ **Il n'y a pas de surcharge à l'exécution.** Comme la configuration est résolue pendant la
++ compilation du code, elle ne peut pas être modifiée par une option de ligne
++ de commande ou un fichier de configuration sans transmettre explicitement la décision. Là où la
++ configurabilité à l'exécution est réellement souhaitée, la valeur doit être un paramètre
++ ordinaire — et reconnaître lequel des deux un choix donné exige est une décision de conception,
++ et non une décision automatique.
+
+@ 0 3 0 1f04c87e82ebf96301e4edea8825ca01
++ Voir les [portées délimitées](delimited-scopes.md) pour la façon dont la portée est établie, et
++ les [signatures honnêtes](honest-signatures.md) pour comprendre pourquoi c'est la présence des
++ exigences dans la signature qui rend tout cela lisible.

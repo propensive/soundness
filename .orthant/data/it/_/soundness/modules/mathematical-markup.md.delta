@@ -1,0 +1,334 @@
+orthant 2 language
+
+@ 0 1 0 1a6950842f0215bf01e8cfc4ee7f95bb
++ ## Markup matematico
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 5 0 1c42e11eb1e8852d15e8e2cf661e51a1
++ La matematica in una pagina web è [MathML](https://www.w3.org/TR/MathML-Core/): un albero di
++ presentazione fatto di righe, frazioni, indici ed esponenti e radici, che i browser rendono
++ nativamente. Qui quell'albero è modellato come valori tipizzati, riletto dall'XML e incorporato
++ nell'[HTML](html.md). Scrivere MathML a mano è insopportabile, quindi viene fornito anche *Ergo*:
++ un'abbreviazione su una riga che si analizza nello stesso albero, e da esso si serializza di nuovo.
+
+@ 0 1 0 1d95da685f40fffa1842050fa634640c
++ ### Sullo scrivere matematica
+
+@ 0 5 0 06a08d98c21cb7d7039b429e802dc6fd
++ Un'equazione è un albero, e MathML lo dice onestamente. Ma lo dice con forse dieci volte i
++ caratteri dell'equazione stessa. `x²` è `<msup><mi>x</mi><mn>2</mn></msup>`, e la formula
++ quadratica occupa diverse righe che nessuno riesce a leggere come matematica. Le alternative sono
++ peggiori in un altro modo. TeX è compatto ed espressivo, ma richiede un renderer grande e produce
++ qualcosa che il browser non può ispezionare. Un'immagine perde del tutto il contenuto.
+
+@ 0 5 0 1d1b8e9ea7f000140643b51ceff318ba
++ Ergo sceglie la via di mezzo. È una notazione lineare compatta, con un glifo per ogni ruolo
++ strutturale, che si analizza in MathML e si serializza di nuovo. Il sorgente resta leggibile,
++ l'output è un vero albero di documento, e l'andata e ritorno è esatta. Un markup costruito da
++ valori tipizzati, e non da stringhe, è [sicurezza per costruzione](../../philosophy/safety-by-construction.md)
++ per una notazione in cui è facile sbagliare in modo sottile.
+
+@ 0 2 0 0b06ec799f702f4d092e1ad9c9b5f2f1
++ Tutto viene dal package `soundness`. Gli altri import scelgono una [strategia] per gli errori e uno
++ [schema XML](xml.md) per la lettura, e permettono agli esempi di stampare i risultati:
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0b36b930fa0746280e96aefd2dd1cfb2
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0d2427c27ad8baeb0c18f94adb6d4425
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 12cfafeaa19a318617db5fe18bd28001
++ ### L'albero MathML
+
+@ 0 2 0 0e0c00f5042f85b21198ee11a3affea3
++ Gli elementi sono valori che prendono il nome dai tag, e `Math` è la radice. Questi sono quelli che
++ scrive Ergo:
+
+% 2 1 0 018fdc78be47a2690c1b4cd0dc56e563
+
+@ 0 17 0 154495c04ce9f0e9172e8945bd22abe0
++ column  Valore
++ column  Elemento
++ column  Significato
++ row  `Mi`  `<mi>`  identificatore
++ row  `Mn`  `<mn>`  numero
++ row  `Mo`  `<mo>`  operatore
++ row  `Mrow`  `<mrow>`  gruppo
++ row  `Mfrac`  `<mfrac>`  frazione
++ row  `Msqrt`  `<msqrt>`  radice quadrata
++ row  `Mroot`  `<mroot>`  radice n-esima
++ row  `Msup`  `<msup>`  apice
++ row  `Msub`  `<msub>`  pedice
++ row  `Msubsup`  `<msubsup>`  pedice e apice
++ row  `Mover`  `<mover>`  sovrascritto
++ row  `Munder`  `<munder>`  sottoscritto
++ row  `Munderover`  `<munderover>`  sottoscritto e sovrascritto
++ row  `Mtable`, `Mtr`, `Mtd`  `<mtable>`, `<mtr>`, `<mtd>`  tabella, riga, cella
+
+% 1 1 0 077ff183c21bc32017dbb989ecb48a09
+
+@ 0 2 0 05bab62880037cdc0940ab14025913d5
++ Gli altri elementi, come `Mtext`, `Mspace`, `Mstyle` e `Mpadded`, sono modellati allo stesso modo.
++ `in[Xml]` rende un `Math`:
+
+% 2 1 0 027c2c85248fbe1a009c2623fa77cdae
+
+% 3 1 0 0f85fbf15d243daa02dbe00502a19fce
+
+% 4 1 0 1f11228101bc9401077d739a6405a576
+
+% 0 1 0 01caeecd15b326dc196c43fc8ed3fa45
+
+% 1 1 0 0d688f377aded3330cdbf16bc4eff672
+
+@ 0 2 0 0b0f7ae5d67af730105042c6a625a66e
++ Il testo MathML si rilegge con `read[Math]`, e un documento fa l'andata e ritorno invariato. Un
++ attributo che il modello non interpreta viene conservato, non scartato:
+
+% 2 1 0 02f36abb6b3ec49512dd3fdcc9c526e7
+
+% 3 1 0 0b64a8c87941fced07eeca0152809c7e
+
+% 4 1 0 12cdaba7d6d544ea15eb1a21e4923acb
+
+% 0 1 0 1d18f15d9cbaa28304529fbf1cf95ad9
+
+% 0 1 0 1fb3b0fd35758877002846816de76e2c
+
+% 1 1 0 140efc8bd34c959912738f9a8c8ca715
+
+@ 0 2 0 0fc0381729555101158bb117c86672ab
++ Un elemento radice che non è `<math>` solleva un `Mathml.Error`, che nomina ciò che è stato trovato
++ al suo posto:
+
+% 2 1 0 18b9d9760ad6163d1e1736aa485987bb
+
+% 3 1 0 0ee5602eb38c197e18ff68aa3ec5a7fb
+
+% 4 1 0 1a6cfb64533166e51848c6b401c5d898
+
+% 5 1 0 12ac04a499b50492135b863844f7a3c3
+
+% 0 1 0 128a397b23219ac2155e97b29e39d950
+
+% 1 1 0 079a066dc0fff24c1fc3f510be93c4e8
+
+@ 0 2 0 1c574b477b96d5471aa72a420091d546
++ `html` incorpora un'espressione come elemento estraneo in un albero HTML, e `Mathml.Reader.read`
++ la estrae di nuovo.
+
+@ 0 2 0 15483eb552c8f3c11c5171ea23263a89
++ Un `Math` ha anche un `display`, che è a blocco o inline. Decide se il browser compone
++ l'espressione come equazione in evidenza, o all'interno del testo continuo.
+
+% 0 1 0 1517b50e185acdef064cd38654861934
+
+@ 0 4 0 0e3de43cf9ebcc781e2f151a0e9bd238
++ Un'espressione Ergo è delimitata da una coppia di parentesi, e il **primo carattere** sceglie quale
++ coppia, `(`, `[`, `{` o `⟨`, funge da raggruppamento in tutta l'espressione. Ogni *altra* parentesi
++ è allora un operatore letterale. Una sequenza raggruppata è un `<mrow>`, e gli operandi di un
++ operatore sono uniformemente «un atomo o un'unità raggruppata». Questa è la formula quadratica:
+
+% 2 1 0 1d0f20efee9d8185066116dfd4510e2b
+
+% 3 1 0 171518f04ee91baa16c8acc8507cfc60
+
+% 4 1 0 1a9fbbe28cbd7d1c10db5d74c9d034ed
+
+% 0 1 0 1416f399b5f33e390097a61e2acf877e
+
+% 0 1 0 04fd0abd3e8d786e0df85b5462d370c2
+
+% 1 1 0 038c85687c7ce3d602cc37ac9333dc64
+
+@ 0 1 0 16f1cad30d3ab248081df6fa58fd599d
++ I token seguono tre regole, e uno spazio è un separatore che non viene reso:
+
+% 2 1 0 08f5025503d304a01d81308ea32f9ce3
+
+@ 0 6 0 038bb4234351caaa111d253b6e98735d
++ column  Una sequenza di
++ column  Diventa
++ column  Esempio
++ row  lettere  un identificatore, `<mi>`  `sin` è `<mi>sin</mi>`; `x y` significa *x·y*
++ row  cifre, con un `.` interno ammesso  un numero, `<mn>`  `3.14`
++ row  qualsiasi altro carattere  un operatore, `<mo>`  `=`
+
+% 1 1 0 17de0128f1db391f1d9f187f6a97e81b
+
+@ 0 1 0 0e697105f570fcdf008b2d21dd7afe06
++ ### Glifi strutturali
+
+@ 0 4 0 0f467312d238f42905927d78bd108482
++ Indici, esponenti e limiti si attaccano all'atomo alla loro sinistra, e una frazione lega meno
++ strettamente di indici ed esponenti. Un atomo indice immediatamente prima di `√`, senza spazio,
++ produce una radice n-esima. I tre introduttori di tabella sono ciascuno autodelimitato, e il loro
++ corpo è un gruppo i cui figli sono gli elementi.
+
+% 2 1 0 1718f7036e4fd3b21e70304139b2f928
+
+@ 0 16 0 1f229d46959dea831b254bab0e341874
++ column  Glifo
++ column  Ruolo
++ column  Elemento
++ column  Esempio
++ row  `↗`  apice  `<msup>`  `x↗2` è *x²*
++ row  `↘`  pedice  `<msub>`  `x↘i` è *xᵢ*
++ row  `↘` e `↗`  entrambi, su una sola base  `<msubsup>`  `x↘i↗2` è *xᵢ²*
++ row  `↑`  sovrascritto o limite superiore  `<mover>`
++ row  `↓`  sottoscritto o limite inferiore  `<munder>`
++ row  `↓` e `↑`  entrambi, su una sola base  `<munderover>`  `∑↓(i = 1)↑n`
++ row  `/`  frazione  `<mfrac>`  `a/b`
++ row  `√`  radice quadrata  `<msqrt>`  `√x`
++ row  `√` dopo un indice  radice n-esima  `<mroot>`  `3√x` è *∛x*
++ row  `⋱`  matrice  `<mtable>`  `⋱(((1)(2))((3)(4)))` è una matrice 2×2
++ row  `⋯`  vettore riga  un `<mtable>` di una sola riga
++ row  `⋮`  vettore colonna  un `<mtable>` di una sola colonna
+
+% 1 1 0 10d049ccb04b03f30e9be7dd168c61b7
+
+@ 0 2 0 1366b934e4811a5103e875e89f357fab
++ I grandi operatori non richiedono una sintassi speciale. `∑` è un operatore ordinario, e
++ `∑↓(i = 1)↑n` gli dà limiti sotto e sopra:
+
+% 2 1 0 02120c9c880a8f29004f91d5ecf6713e
+
+% 3 1 0 002aa72dbc234ba211cc5deb631c691d
+
+% 4 1 0 140eef1ae32d2b1011f356aacc442cfd
+
+% 0 1 0 1369b6a541357e1b02f81439e8bcaa0f
+
+% 1 1 0 1abb8005f6300731047dcc4680033638
+
+@ 0 2 0 0840f33e3105708c07561fc21a2469e5
++ Un glifo operatore privo di un operando degrada a operatore letterale, quindi `(↗)` scrive un ↗
++ letterale anziché fallire.
+
+@ 0 1 0 0fb5b24b8663f89c1372289c1d8868c9
++ ### Direttive di attributo
+
+@ 0 3 0 1dd5230525dd37a01697cef66412f3bc
++ Ogni attributo di presentazione di MathML Core ha un glifo direttiva. Le direttive sono *postfisse*,
++ e si legano all'atomo o al gruppo tra parentesi immediatamente alla loro sinistra. Più direttive si
++ giustappongono semplicemente: `=◆⇿` imposta sia `largeop` sia `stretchy` sull'`=`.
+
+@ 0 5 0 07fb4820bb160c05085278c02ada4f4d
++ Gli attributi enumerati e booleani hanno un glifo nudo per ogni valore, e non prendono parametri. Un
++ booleano è `⇿` per vero e `↮` per falso. Poiché non prendono mai un gruppo, `=◆(a)` è `=` con
++ `largeop="true"`, *moltiplicato per* `(a)`. Gli attributi a valore aperto, cioè lunghezze, colori e
++ interi, prendono il loro valore nella parentesi di raggruppamento attiva, letto testualmente. Con il
++ raggruppamento `(`, `x●(red)` imposta `mathcolor="red"`.
+
+@ 0 2 0 1b5470ab4995d54f120ad1008a5ebc15
++ Il raggruppamento decide a che cosa si applica una direttiva. `(x↗2)●(red)` colora l'intero apice,
++ mentre `x↗2●(red)` colora solo il `2`:
+
+% 2 1 0 17c183485bcad13316655b410e373f58
+
+% 3 1 0 192568db444deeda1bcbdc165c222bd7
+
+% 4 1 0 1df161c6ae86249b0f20fb89384f0c43
+
+% 0 1 0 0f5fa05b0cce901912e04aeab1ffba06
+
+% 0 1 0 0709a94492d80ee502cecbd6d2d6470c
+
+% 1 1 0 03f5b5af88e5939d1d6aec0d885114e6
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 27 0 1038cd3bbd50b6d20c85ac54f655f0b1
++ column  Glifi
++ column  Attributo
++ column  Significato
++ row  `⧆` / `⧄`  `displaystyle`  stile in evidenza, o stile inline/testo
++ row  `⌄[±n]`  `scriptlevel`  dimensione relativa di indici ed esponenti; `+n` rimpicciolisce
++ row  `◻` / `▭`  `display`  a blocco o inline, sulla radice
++ row  `●[colour]`  `mathcolor`  colore di primo piano
++ row  `▨[colour]`  `mathbackground`  colore di sfondo
++ row  `⟑[length]`  `mathsize`  dimensione del font
++ row  `⦱`  `mathvariant`  tondo, annulla il corsivo automatico
++ row  `⊩` / `⫣`  `dir`  da sinistra a destra o da destra a sinistra
++ row  `⊰` / `⊹` / `⊱`  `form`  operatore prefisso, infisso o postfisso
++ row  `∥` / `∤`  `fence`  marca come delimitatore
++ row  `▮` / `▯`  `separator`  marca come separatore
++ row  `⇿` / `↮`  `stretchy`  consente l'allungamento fino al contenuto circostante
++ row  `⋈` / `⋊`  `symmetric`  allunga simmetricamente rispetto all'asse
++ row  `◆` / `◇`  `largeop`  tratta come grande operatore nello stile in evidenza
++ row  `⧳` / `⧯`  `movablelimits`  limiti sopra/sotto in evidenza, indici ed esponenti inline
++ row  `⧔[length]` / `⧕[length]`  `lspace` / `rspace`  spazio ai due lati di un operatore
++ row  `⟰[length]` / `⟱[length]`  `maxsize` / `minsize`  limiti di allungamento
++ row  `↔[length]`  `width`  larghezza di avanzamento di un riquadro
++ row  `⍏[length]` / `⍖[length]`  `height` / `depth`  estensione sopra e sotto la linea di base
++ row  `↕[length]`  `voffset`  spostamento verticale del contenuto con padding
++ row  `═[length]`  `linethickness`  spessore della linea di frazione; `0` per nessuna
++ row  `◠` / `⌢`  `accent`  tratta un sovrascritto come accento stretto
++ row  `◡` / `⌣`  `accentunder`  tratta un sottoscritto come accento stretto
++ row  `⚙[type]`  `actiontype`  obsoleto; non definito in Core
+
+% 1 1 0 0ef87af5b6d3ce8c0f0c810b17d19b5f
+
+@ 0 4 0 11bac2dcdfc5fea61e0cba954bb6e4e9
++ L'ambito è MathML Core, quindi le famiglie di MathML 3 che ha abbandonato non hanno glifi: gli
++ attributi di tabella, come `columnalign`, `rowspan` e `frame`, poiché Core mantiene gli *elementi*
++ di tabella ma non ne definisce nessuno; `<menclose>` e le sue notazioni; gli attributi di
++ virgolettatura di `<ms>`; e gli elementi della matematica elementare `<mstack>`, `<mlongdiv>` e gli
++ altri.
+
+@ 0 1 0 1439c50a39c9c0240a4e0f7a83d88384
++ ### Serializzare di nuovo
+
+@ 0 2 0 0f68cf9e33ff98c912e9812a24cf7b03
++ `Ergo.serialize` riconverte un albero MathML in Ergo. I due sono l'uno l'inverso dell'altro sul
++ sottoinsieme Ergo: un'espressione analizzata si serializza e si analizza di nuovo nello stesso
++ albero:
+
+% 2 1 0 0fb811d37afef5350072caf6f9ed5a1b
+
+% 3 1 0 0b054f58a8cbb34512868b3066384e75
+
+% 4 1 0 099a9fadc7782164171b10ba8b1f80c0
+
+% 0 1 0 00fecea8341d12f5063b273b691c0b77
+
+% 1 1 0 1cdc512a62e8092d1b7b998f4b43451a
+
+@ 0 2 0 09739c35774104fc0b2f252debfcccbf
++ Un elemento al di fuori di quel sottoinsieme, come `<mtext>`, viene rifiutato con un `Ergo.Error`,
++ e non viene serializzato in modo approssimato, quindi l'andata e ritorno è una garanzia e non una
++ speranza:
+
+% 2 1 0 1e5c0acba46d064810186c79fa842254
+
+% 3 1 0 0f899872a93a5b7e0c0f59ea91508e93
+
+% 4 1 0 14d7aec7ad04375c06f39002c3c315dc
+
+% 5 1 0 04dfc9531b032fae047d1350c7b8dc4a
+
+% 0 1 0 1a75fde9ad80e83f1b702dc334713718
+
+% 1 1 0 149460b0aed94c6d0bf75fb5b2d61281
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 4 0 0600b75cd647e61004f8094012dc8b5c
++ - [HTML](html.md) descrive i documenti in cui si incorpora un `Math`.
++ - [XML](xml.md) descrive l'`Xml` in cui MathML si rende e da cui si legge.
++ - [Chimica](chemistry.md) compone formule di un altro tipo.
++ - [Matematica](mathematics.md) calcola con le grandezze che il markup visualizza.

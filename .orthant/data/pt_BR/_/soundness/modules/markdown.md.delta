@@ -1,0 +1,232 @@
+orthant 2 language
+
+% 0 1 0 121adec7a26d9f3d10815d07b23a4dd6
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 6 0 0960451d2f76a9bd1e0adf405cc809cf
++ O [Markdown](https://commonmark.org/) é o formato de texto puro para a prosa de readmes,
++ comentários e documentação. Ele é analisado, segundo a especificação CommonMark, em uma árvore
++ tipada. A árvore mantém o conteúdo em nível de blocos, como títulos, parágrafos e listas,
++ separado do conteúdo inline dentro deles, como ênfase, links e trechos de código. A partir dessa
++ árvore, produz-se HTML, escreve-se o Markdown de volta, ou produz-se saída com estilo para um
++ terminal.
+
+@ 0 4 0 045052ea0634f6bf0e553c4076fcca31
++ Conteúdo de bloco e conteúdo inline são tipos diferentes. Um `Markdown of Layout`, que é um
++ documento inteiro, e um `Markdown of Prose`, que é uma sequência de conteúdo inline, não podem
++ ser confundidos. Cada um se torna a categoria de [HTML](html.md#precise-types) que é válida no
++ seu lugar: conteúdo de fluxo para um, e conteúdo fraseado para o outro.
+
+@ 0 1 0 13d1699102fd2c7306462b4e03ea938d
++ ### Sobre o Markdown
+
+@ 0 4 0 053f7b5f4b64578308941c5342c8f097
++ O Markdown tem dois níveis, que uma única árvore sem tipos tende a borrar. Um parágrafo e a
++ ênfase dentro dele não são intercambiáveis. Um título pode conter um link, mas um link não pode
++ conter um título. Uma representação que trata todos os nós da mesma forma permite construir
++ esse tipo de absurdo, e deixa a verificação para quem quer que consuma a árvore.
+
+@ 0 6 0 128a8e5d5f4886551efb4ec37bb87726
++ Aqui os níveis são mantidos separados nos tipos. A estrutura dos blocos é a enumeração `Layout`,
++ a estrutura do conteúdo inline é a enumeração `Prose`, e o tipo de um documento registra qual
++ delas ele contém. A análise dá uma árvore CommonMark completa, e convertê-la em HTML dá
++ exatamente o conteúdo que cada nó pode ser. Um documento analisado em uma árvore tipada, e não
++ convertido diretamente em HTML, é o que o torna
++ [componível](../../philosophy/composability.md) com o resto de um programa.
+
+@ 0 2 0 08f142c6dc6fdbb31f394564d8004d95
++ Tudo vem do pacote `soundness`. O último import permite que os exemplos imprimam seus
++ resultados:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0be7689b9275055a16fd7074497e2d45
++ ### Análise
+
+@ 0 1 0 19879ba9c10873e91f498fd5c198e2f0
++ `Parser.parse` lê texto Markdown em um documento, que é um `Markdown of Layout`:
+
+% 2 1 0 131eac3ae1c1a63b0937c380254d4f97
+
+% 0 1 0 07bf5768721fa0c1000c40e87e7cbeb1
+
+% 1 1 0 052e9db5a24f0c8608f145e8d59bb230
+
+@ 0 4 0 120ab08a55d4f2d01029402888b0b2c2
++ O Markdown também é analisado de forma incremental, a partir de um [stream](streams.md), lendo
++ as linhas à medida que chegam, sem reter a origem. Só a árvore é retida, e o texto cru de cada
++ parágrafo, que é analisado depois. Um documento longo é, portanto, analisado sem nunca ser
++ mantido inteiro:
+
+% 2 1 0 073c08102dbe95401504a8660e829b7f
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 126a721a4597547b0489551d32bbd3c6
+
+% 1 1 0 1fb9dfad5653f9c5059747488a9ce605
+
+% 3 1 0 1a463f1444e48ac519e1719b4c0c470d
+
+% 4 1 0 1d60d27680d7668b1e8e97334e7eaab4
+
+% 5 1 0 17bcc6e276ba870611c052f3120b8822
+
+% 0 1 0 0feac51c8c25f55f02db7c0d27452235
+
+% 0 1 0 0fa1a30ef9d87e201733a7b4a399c5d3
+
+% 1 1 0 020199d086c5586f110ac215bd7df73c
+
+@ 0 2 0 156f6836137174640acb8d2d4b419a3f
++ Toda a suíte de conformidade do CommonMark passa pela entrada de streaming, um caractere por
++ vez, de modo que um documento dividido em qualquer ponto é analisado na mesma árvore que o texto
++ inteiro.
+
+@ 0 1 0 177ca136a9954dab03a7ff23ee26afb8
++ ### Renderização em HTML
+
+@ 0 3 0 03493252d9d8f3e10dc91ff0e8e7808b
++ `html` converte um documento analisado em HTML, e `show` escreve o resultado como texto. Um
++ documento de blocos se torna conteúdo de fluxo, e o conteúdo inline dentro dele se torna
++ conteúdo fraseado, de modo que a saída é bem formada por construção:
+
+% 2 1 0 0f36e330bd43acdb1c3e63c6f1583fef
+
+% 3 1 0 02bdd7e53cde8b131d842fb974f95e5b
+
+% 4 1 0 0b9bde4fcb563e800fea0228a7555f9c
+
+% 0 1 0 0383308cd0976089062c22d03e77a39b
+
+% 1 1 0 1cf156ca4925e96011081e9ae96f5a7f
+
+@ 0 1 0 010d0274d9018d681573e1ed4586a65c
++ ### A árvore sintática
+
+@ 0 2 0 01e85471250a775a1958033941841f21
++ Os `children` de um documento são nós `Layout`, e cada um tem seu conteúdo inline como `Prose`.
++ Um documento pode, portanto, ser inspecionado, ou transformado, por casamento sobre a árvore:
+
+% 2 1 0 17c5225d771dd8e9022023cedeb55d71
+
+% 0 1 0 1ec99e4b8eb0766a0a399d55715af9d1
+
+% 0 1 0 197a4abc5b21014e04147d340fc2d578
+
+% 0 1 0 00a9b69795495f8c0fa17e2908945246
+
+% 1 1 0 1842809274dbb321137f694997aced7a
+
+% 3 1 0 0765a3cb13b8dc1c0d74a77bf3cf129e
+
+% 4 1 0 1d7f6d569b4615f00780ec174718e5fd
+
+% 5 1 0 194de6747f002e32009515db9bbcee5c
+
+% 0 1 0 1e923147c02ee26b01950df9e2c4f162
+
+% 1 1 0 0fa4253a8869c55b05fade47ccdc5077
+
+@ 0 1 0 19229a6546c8178c1577dad09bef9ea8
++ Os nós de bloco são os casos de `Layout`, e cada um tem a linha em que começa:
+
+% 2 1 0 07b009aeb41a055e13fb7ac7108bfe4f
+
+% 0 1 0 08ceaa0479829f7014f6b98ae0f48681
+
+@ 0 9 0 1b275a7b79a34cca05480391a526b880
++ column  É
++ row  `Heading`  um título, com seu nível de 1 a 6
++ row  `Paragraph`  um parágrafo
++ row  `BlockQuote`  uma citação em bloco
++ row  `OrderedList`  uma lista ordenada
++ row  `BulletList`  uma lista com marcadores
++ row  `CodeBlock`  um bloco de código, com sua info string
++ row  `ThematicBreak`  uma quebra temática
++ row  `HtmlBlock`  um bloco de HTML cru
+
+% 1 1 0 08e84ca56cd4354b17584df5ee32dd96
+
+@ 0 1 0 1185f84b31e13331027513b93b8a64dd
++ Os nós inline são os casos de `Prose`:
+
+% 2 1 0 0eebceb8cde8399f0859fcdf2d8e1d80
+
+% 0 1 0 011588892de68b051fea6548dc0c53c9
+
+@ 0 10 0 177b3b757a4f30a215b1113bfe1f4a52
++ column  É
++ row  `Textual`  texto simples
++ row  `Emphasis`  ênfase
++ row  `Strong`  ênfase forte
++ row  `Code`  um trecho de código
++ row  `Link`  um link, com seu destino e título opcional
++ row  `Image`  uma imagem, com seu destino e título opcional
++ row  `Softbreak`  uma quebra de linha suave
++ row  `Linebreak`  uma quebra de linha forçada
++ row  `HtmlInline`  HTML cru inline
+
+% 1 1 0 021be9cf3777151907fe39933defc871
+
+@ 0 1 0 011b2f9bf2397efd1325437ee408ef94
++ ### Escrevendo o Markdown de volta
+
+@ 0 2 0 10d034adeee2a01404959aad4291639f
++ `show` escreve um documento de volta como texto CommonMark. Uma escolha de formatação no escopo
++ pode quebrar a saída em uma largura em colunas, para gerar Markdown legível:
+
+% 2 1 0 001b0a4a036b7cf20de076acade732aa
+
+% 3 1 0 0e3e3b851464a7ce18e49dc429a19ca8
+
+% 4 1 0 16e8d4e8548f0d3a1423107067452167
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 05302161360d736a192f24c0aca7d78f
+
+% 0 1 0 1c993aa8b97831d21798685fe5eafa84
+
+% 1 1 0 14c9495ae3e825c80b23163480949f4d
+
+@ 0 1 0 18e986a95104097718f6f7c9455827b3
++ ### Saída no terminal
+
+@ 0 2 0 012dcf8a9ce3c5a9069573122049c4e0
++ `terminal` converte um documento em [texto de terminal com estilo](terminal.md#styled-text).
++ Títulos, ênfase e código viram estilos ANSI, para exibição em um console com uma largura dada:
+
+% 2 1 0 17215905a3e3255403da61edfadf5f64
+
+% 3 1 0 1ebf2afcdaf8f05c11a1430b3e1ee9d1
+
+% 4 1 0 0e56faf57128e94f149f9b64fa555792
+
+% 0 1 0 0b609662b73531fa0d60a657b52d115d
+
+% 1 1 0 0bd90217454f9e651bf1689fe690f4e4
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 4 0 05c2068c2466149a0e10bede323bab41
++ - [HTML](html.md) descreve o HTML em que um documento é convertido.
++ - [Terminal](terminal.md) descreve o texto com estilo da forma para terminal.
++ - [Realce de sintaxe](syntax-highlighting.md) colore o código em um bloco de código.
++ - [Erros](errors.md#defining-an-error) descreve as mensagens, que podem ser escritas em
+
+% 0 1 0 05fd99007aad89540d7a4f02add2c0eb
+
+@ 0 1 0 16d30ae39ed22c03020dcfa9c4ef127c
++ - [Páginas web](pages.md) contêm Markdown renderizado como seu conteúdo.

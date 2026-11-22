@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 0d6d6d025a4c26c218abe8bfc5ac466a
++ # Sintaxe e formatação
+
+@ 0 3 0 05d86f7334209ede177626cace9c4378
++ Este padrão mudou de lugar. As convenções sintáticas e de espaçamento que o Soundness
++ segue agora são o **Consequent Style**, mantido em seu próprio repositório
++ junto com o plugin do compilador que as verifica:
+
+@ 0 2 0 0715c40fcada2461199996ad2bb2c166
++ - [O padrão](https://github.com/propensive/consequent/blob/main/doc/consequent-style.md)
++ - [Referência das regras](https://github.com/propensive/consequent/tree/main/doc/rules)
+
+@ 0 7 0 0d1229575730595100548598dd909b37
++ Nada nas convenções mudou com a mudança; o documento foi
++ generalizado para reger qualquer projeto que o adote, e não
++ especificamente o Soundness. Um projeto fixa dois parâmetros — o texto exato do
++ seu cabeçalho de licença (e, portanto, seu comprimento em linhas) e, opcionalmente, o nome
++ do seu pacote guarda-chuva de reexportação — e todas as outras convenções se aplicam
++ sem alteração. Ambos são fornecidos ao verificador como opções; veja o
++ [README do Consequent](https://github.com/propensive/consequent#options).
+
+@ 0 1 0 1e9bcf4f25048f74149e03fed04fcd99
++ ## Identificadores de regras
+
+@ 0 4 0 0ca40c7b8515a84e1f8b375c03e15400
++ As regras foram renumeradas ao mesmo tempo. Onde a documentação e o histórico deste projeto
++ se referem a uma regra como `SN-nnn`, a regra equivalente do Consequent tem um identificador
++ da forma `<principle><number>` — a letra que nomeia o princípio do qual ela deriva,
++ seguida de seu número dentro desse princípio:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 0645384643181aec081f2c5a748380df
++ column  Antes
++ column  Agora
++ row  `SN-799`  `F1` — comentário de bloco do cabeçalho de licença
++ row  `SN-230`  `F4` — comprimento de linha
++ row  `SN-302`  `L1` — regras de import de nível superior
++ row  `SN-742`  `L4` — reexportações do guarda-chuva
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 0e3c7c7dfb4f85750ea21880445a76ea
++ A tabela completa está na
++ [referência das regras](https://github.com/propensive/consequent/blob/main/doc/rules/README.md#migrating-from-the-sn--identifiers).
++ Cada página `SN-nnn` aposentada em [`doc/errors/`](../errors/) também nomeia sua
++ substituta, de modo que uma referência antiga ainda se resolve.
+
+@ 0 1 0 1103950f2a90e826114007849099bb96
++ ## O verificador
+
+@ 0 3 0 1a3d97f69f2c8039198c2fbacf5b70b3
++ O plugin que aplica este padrão era `lib/decorum` neste repositório.
++ Agora ele é publicado separadamente como `dev.propensive:consequent_<scala-version>`
++ e aplicado por meio de `consequentToolchain` em `build.mill`.

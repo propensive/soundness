@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 146ad1db75495fc517085d5baa807395
++ # `↯/s.24.13` — Joker dans l'extraction du type d'un motif
+
+@ 0 2 0 04b73a29c6466a2d15e3ad292fed8230
++ Levée par l'extracteur de types de motifs de Contingency lorsqu'il rencontre un motif joker là où
++ un type concret était nécessaire.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 04369063991278711da9c0b160b176e3
++ Un motif joker `_` ne porte aucune information de type que l'extracteur puisse utiliser pour
++ enregistrer un cas récupéré.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1877d711837f56d308a424ab862c0784
+
+% 1 1 0 1897d193cc025b2f142040ec780656d5
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 1 0 1895e4f6ca23154d1d4a02f9d9a8b8db
++ Remplacez le joker par un motif typé (par exemple `error: SomeError`).
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 0a577f73475efca20b96d2f17614deed
++ - Source : `lib/contingency/src/core/contingency.internal.scala`

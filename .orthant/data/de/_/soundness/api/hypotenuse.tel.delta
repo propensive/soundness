@@ -1,0 +1,2723 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 19d04e78f026516a15e11da4741944e7
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1f981af7af0a61fb1a37e844dc0e04e2
++ info   Ganzzahlen fester Breite, Bitmuster, Gleitkommazahlen, rationale Zahlen und Dezimalzahlen, mit optional geprüfter Arithmetik
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 2 0 1a1bfe91c626d6b818f07a68244da6dd
++     _Hypotenuse_ ersetzt das Sammelsurium an Zahlen der JVM durch einen regelmäßigen Satz von
++     Typen, von denen jeder in seinem Namen angibt, wie breit er ist und wie seine Bits zu lesen
++     sind:
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 8 0 10125f241502ba640f0f0ba62af09aa0
++     column  Typen
++     column  Werte
++     row  `U8`, `U16`, `U32`, `U64`  vorzeichenlose Ganzzahlen
++     row  `S8`, `S16`, `S32`, `S64`  vorzeichenbehaftete Ganzzahlen im Zweierkomplement
++     row  `F32`, `F64`  IEEE-Gleitkommazahlen
++     row  `B8`, `B16`, `B32`, `B64`  rohe Bitmuster, mit Shifts, Rotationen und Masken, aber ganz ohne Arithmetik
++     row  `Decimal`  eine Dezimalzahl beliebiger Genauigkeit
++     row  `Q64`, `Q32`  exakte rationale Zahlen, gepackt in einen einzigen `Long` oder `Int`
+
+% 1 1 0 0f6a763b0e5eb2560b9448802c941150
+
+@ 0 2 0 1dcf95b6f4b686e81729040dd56ef318
++     Jeder davon ist ein opaker Typ über einem JVM-Primitiv (oder, bei `Decimal`, über einem
++     eingefrorenen Array), sodass keine der Unterscheidungen bis zur Laufzeit erhalten bleibt.
+
+@ 0 10 0 16d342855da7cde10c4bbd8a1c2178aa
++     Die arithmetischen Operatoren sind keine Methoden dieser Typen: `+`, `-`, `*`, `/` und das
++     Präfix-`-` sind die generischen Operatoren von Symbolism, aufgelöst über Instanzen von
++     `Addable`, `Subtractable`, `Multiplicable`, `Divisible` und `Negatable` im Begleitobjekt
++     jedes Typs. Für die Ganzzahltypen stammen diese Instanzen aus einer **Richtlinie**, die per
++     Import gewählt wird: `+`, `-` und `*` nehmen das `CheckOverflow`-given im Geltungsbereich,
++     `/` das `DivisionByZero`-given, und das Paket `arithmeticOptions` bietet jede in einer
++     geprüften und einer ungeprüften Form an. Unter `uncheckedOverflow` läuft eine Summe über,
++     wie es die Hardware tut; unter `checkedOverflow` wird ihr Typ zu
++     `S32 raises Arithmetic.Error`, und ein Überlauf ist ein behandelter Fehlschlag statt eines
++     stillen Umbruchs. Ist keine Richtlinie importiert, kompiliert der Operator überhaupt nicht:
++     Die Wahl wird immer getroffen, und zwar sichtbar.
+
+% 2 1 0 0181a14fff87ed4f071989b476941607
+
+% 3 1 0 06a74985228f65bd0565c0e895a58672
+
+% 0 1 0 1d74f9905b0b53f814c4c0d7f771a290
+
+% 0 1 0 17e6ec739583a34c116a6814bedea14d
+
+% 0 1 0 12140bb3acf0dd15104075622603f2df
+
+% 0 1 0 08852040d7ff64450bed1c4b41bd87b3
+
+% 0 1 0 1cf896c67738ca1e01d5c62f400fc295
+
+% 0 1 0 101d31a96536407f06b5b2ca798a5e4a
+
+% 0 1 0 19382d195068043d1a88a822d96bffac
+
+% 0 1 0 09428b3bfee513de1dcbaabf67b55ad0
+
+% 0 1 0 1c2485f011b348c116fb386fabb80d65
+
+% 0 1 0 138e8fea70e0c789058325fea0378b01
+
+% 0 1 0 1bd4f7e7562f3af80c46a8e963a01253
+
+% 0 1 0 13bd9831f7a1cf5e0908cd44c74a53e2
+
+% 1 1 0 03b85c963a3f5a2d0e9e375b61ae7cb3
+
+@ 0 7 0 1fd587e7f1ccadd71b252d5c39fa1a74
++     Die Instanzen jeder Richtlinie sind Singleton-Objekte, benannt durch ihre Singleton-Typen,
++     damit der Inliner die Proxys entfernen kann, die er für sie einführt: Ein ungeprüftes
++     `a + b` auf einem `S32` kompiliert zu der einen `iadd`-Instruktion, die die Hardware hat,
++     ohne jede Allokation, und ein geprüftes ist dieselbe Instruktion, gefolgt von dem Test.
++     Dasselbe Muster gibt `F64` und `F32` ihre gemischte Arithmetik: Ein Operand vom Typ
++     `Double`, `Int` oder `U8` wird über ein `Widening`-Objekt konvertiert, das die Instanzen für
++     diesen Operandentyp trägt, sodass `ratio*2` eine Konvertierung und eine Multiplikation
++     kostet und nicht mehr.
+
+@ 0 6 0 12d6a6ca8531c074024a588352a416c1
++     Der Vergleich ist eine Typklasse zur Kompilierzeit, `Commensurable`, deren `<`, `<=`, `>`
++     und `>=` inline sind und sich wie in der Mathematik verketten: `1.2 < x < 1.4` ist ein
++     einziger Bereichstest. Die mathematischen Funktionen, die Java über `java.lang.Math`
++     verstreut, sind Erweiterungsmethoden auf jedem numerischen Typ (`abs`, `floor`, `round`,
++     `**`, der Floor-Modulus `%%`, `gcd`), die trigonometrischen und logarithmischen Funktionen
++     sind gewöhnliche Funktionen über `F64`, und `median`, `minimum` und `maximum` reduzieren
++     Collections.
+
+@ 0 1 0 16707b0243a5c7ae0b09cc91aab78a2f
++     Die Bibliothek hat zwei Source-Sets, beide für die JVM, Scala.js und Scala Native
++     kompiliert:
+
+@ 0 6 0 0ac3d28a4fb9b6491cd964d51bf6e9a1
++     - `hypotenuse.core` — alle obigen Typen, die Richtlinien, die Literale `bin"…"` und
++       `hex"…"`, die Erweiterungsmethoden, die mathematischen Funktionen und das Paket
++       `arithmeticOptions`.
++     - `hypotenuse.check` — die Typklasse `Checkable` hinter den Operatoren `===` und `!==`,
++       und `Tolerance`, gebildet mit `+/-` (oder `±`), um Werte innerhalb einer Toleranz zu
++       vergleichen. Damit vergleichen die Zusicherungen von Probably.
+
+@ 0 4 0 03794873db494a481f64e33612a11c89
++     Alles wird in das Umbrella `soundness` exportiert, und `arithmeticOptions` verschmilzt mit
++     dem gleichnamigen Paket des Umbrellas, sodass man `import soundness.*` schreibt und dann
++     eine Richtlinie per Name importiert: `import p.*` importiert keine givens, weshalb
++     `arithmeticOptions.*` allein keine Richtlinie in den Geltungsbereich bringt.
+
+% 0 1 0 1140cf7c7210fcd1028be3837c8187bd
+
+% 0 1 0 171808e5efe4c6a00a6d52f66213c8fb
+
+% 0 1 0 1ca1db136099ad000b654c6c83ac92a6
+
+% 0 1 0 150e8d7fed2a5b1a1474c9dc59226ef2
+
+% 0 1 0 0ba3734075498434119b2fae91191348
+
+% 0 1 0 031c020006bdac5611fb53d948a8a00e
+
+% 0 1 0 15d03df12c0d858c1d0d6f133c71b670
+
+% 0 1 0 166bc1828f8ac56604e7ff7d5c48bdd9
+
+% 0 1 0 1a43dcdf69f9fe1e07e90d1b67e3707d
+
+% 0 1 0 0ba4d2423efd3a050b02a1b582ca3223
+
+@ 0 1 0 037d1b5360dcfdfc18e0f456a060fedb
++ entry .U64   eine vorzeichenlose 64-Bit-Ganzzahl, von `0` bis `18446744073709551615`
+
+% 1 1 0 1bca25decc48b5d7070030fd15a9083d
+
+@ 0 4 0 16e02892da58a97c0435d72604bc10d2
++       `U64` ist ein opaker Typ über `Long`, dessen Bits als vorzeichenlose Ganzzahl gelesen
++       werden. Er wird aus einem Bitmuster gebildet, `U64(42L.bits)`, oder, wo
++       `genericNumberLiterals` aktiviert ist, aus einem Literal, `val count: U64 = 123`, das der
++       Compiler mit `Long.parseUnsignedLong` parst und zur Kompilierzeit zurückweist, wenn es
++       außerhalb des Wertebereichs liegt.
+
+% 2 1 0 0a12f988d94a36180c7d6c0d673d55c8
+
+% 3 1 0 1ba8d4e62590495f1d4ec8ecd61f96a9
+
+% 4 1 0 1ecc16fd733b4b29060e641e54878ad0
+
+% 1 1 0 0c790efc6148b78e1d323c30b9aa447b
+
+% 2 1 0 193902590a6e55ca0aa93c5657a8c281
+
+% 0 1 0 0813b3da7187493f10a3f03635efe5da
+
+% 0 1 0 0208cf1f8940096d048211204788ca0d
+
+% 0 1 0 1d4aaef7ee8ae77218d2214aa81fef6b
+
+% 0 1 0 1e24a1a015bd49410fa3e478d9aade03
+
+% 1 1 0 04ff3b6fdbacd80d1c3293b0ec888d57
+
+@ 0 7 0 001ea190866acf521cf2f9ce3e4ddd41
++       `+`, `-` und `*` werden über `.addable`, `.subtractable` und `.multiplicable` aufgelöst,
++       jeweils die Instanz der `CheckOverflow`-Richtlinie im Geltungsbereich, und `/` über
++       `.divisible`, aus der `DivisionByZero`-Richtlinie; ist keine Richtlinie aus
++       `arithmeticOptions` importiert, kompiliert der Operator nicht. Ein ganzzahliger
++       Literal-Operand nimmt nicht den Typ des Empfängers an, da der Operand des generischen
++       Operators ein Typparameter ist; er wird daher mit einer Typangabe versehen:
++       `count + (1: U64)`. Der Rest `%`, der nicht überlaufen kann, ist eine stets verfügbare
++       Erweiterungsmethode und wird vorzeichenlos berechnet.
+
+@ 0 5 0 0b0138185a5a499f041bbaf84a14a494
++       Die Erweiterungsmethoden auf einem `U64` sind `bits` (das Muster als `B64`), `text`,
++       `base32`, `hex`, `octal` und `binary` (der vorzeichenlose Wert in der jeweiligen Basis,
++       ohne Auffüllung), `%` und `gcd`. Der Vergleich mit `<`, `<=`, `>`, `>=`, `min` und `max`
++       ist vorzeichenlos (`.orderable`), und `==` ist nur mit einem anderen `U64` erlaubt. Es gibt
++       keine Konvertierung nach `F64`, da sie ungenau wäre.
+
+@ 0 2 0 15a4b4297e668ba30d83ecac3c8845a1
++       Die Member seines Begleitobjekts sind in `internal.U64` deklariert, aus dem der Typ
++       exportiert wird, und dort dokumentiert.
+
+% 2 1 0 1b355bf6f8afc26a1f4287a531d3a130
+
+% 2 1 0 06bf00f4f99287251f828bbf254fbaa2
+
+% 1 1 0 08f161a394c44ee5112df82aaaf30539
+
+@ 0 1 0 03a98f13d6642f251c06c6ca6f974d43
++ entry .U32   eine vorzeichenlose 32-Bit-Ganzzahl, von `0` bis `4294967295`
+
+% 1 1 0 0697c94cdad80fef15a41097a7d35f74
+
+@ 0 5 0 0c961431e444e46d1e2a5c4ec6f9e7b0
++       `U32` ist ein opaker Typ über `Int`, vorzeichenlos gelesen. Er wird aus einem Bitmuster
++       gebildet, `U32(0x80000000.bits)`, oder unter `genericNumberLiterals` aus einem
++       Ganzzahlliteral, das zur Kompilierzeit auf den Wertebereich geprüft wird. `+`, `-` und
++       `*` nehmen die `CheckOverflow`-Richtlinie im Geltungsbereich und `/` die
++       `DivisionByZero`-Richtlinie, wie bei jedem Ganzzahltyp; `/` dividiert vorzeichenlos.
+
+% 2 1 0 1926e3dfb1cfb94c17def2180be427ef
+
+% 3 1 0 05795a1727ceeb6f0a45eaa0f2e1dfa5
+
+% 1 1 0 0b302b6adca810041d4e878be5da792a
+
+% 2 1 0 06d23b9640412f170ba7584f670b8602
+
+% 0 1 0 021e7e19d45ad89118b0c8cedafae529
+
+% 0 1 0 0633844cb143f8d102506cef0e9ea520
+
+% 1 1 0 1fed63ddec7d7f8f1dec741d7438dcff
+
+@ 0 4 0 0cec171a598915ff14d6022b33343bff
++       Die Erweiterungsmethoden auf einem `U32` sind `bits`, `text`, `base32`, `hex`, `octal`,
++       `binary`, `long` (der vorzeichenlose Wert als `Long`), der vorzeichenlose Rest `%`, `s64`
++       und `u64` (exakte Erweiterungen) und `gcd`. Ein `U32` konvertiert implizit und exakt nach
++       `F64`, über `F64.u32Conversion`, sodass `F64(1.0) + u32` und `f64*u32` keinen Cast
++       brauchen.
+
+@ 0 2 0 09c4f047d104ef8800f80ad656db6bc5
++       Die Member seines Begleitobjekts sind in `internal.U32` deklariert, aus dem der Typ
++       exportiert wird, und dort dokumentiert.
+
+% 2 1 0 0769a8f49198f6061219855c450eb01d
+
+% 3 1 0 02fbfea3b02759850944a61f9961989e
+
+@ 0 1 0 0f70ce6964a8d2d81aa787709c75a353
++ entry .U16   eine vorzeichenlose 16-Bit-Ganzzahl, von `0` bis `65535`
+
+% 1 1 0 1d3b2c48b0d2d1800984cd883c99c6fa
+
+@ 0 4 0 00b49252c74e63d81168e6daf05c48d7
++       `U16` ist ein opaker Typ über `Short`, vorzeichenlos gelesen. Er wird aus einem Bitmuster
++       gebildet, `U16(256.toShort.bits)`, oder unter `genericNumberLiterals` aus einem
++       Ganzzahlliteral, das unter `0` oder über `65535` ein Kompilierfehler ist. `+`, `-` und
++       `*` nehmen die `CheckOverflow`-Richtlinie im Geltungsbereich und `/` die
++       `DivisionByZero`-Richtlinie.
+
+@ 0 4 0 0e24804ee422e0350673f3814b9f0a51
++       Die Erweiterungsmethoden auf einem `U16` sind `bits`, `text`, `base32`, `hex`, `octal`,
++       `binary`, `int` und `long` (der vorzeichenlose Wert), der vorzeichenlose Rest `%`, die
++       exakten Erweiterungen `s32`, `s64`, `u32` und `u64` sowie `gcd`. Ein `U16` konvertiert
++       implizit und exakt nach `F64` und `F32`, über `F64.u16Conversion` und
++       `F32.u16Conversion`.
+
+@ 0 2 0 0cdd11270aa9e5151807ee820faa422d
++       Die Member seines Begleitobjekts sind in `internal.U16` deklariert, aus dem der Typ
++       exportiert wird, und dort dokumentiert.
+
+% 2 1 0 0827ae30bf602b8d0f1e7d032f656437
+
+@ 0 1 0 01743fa5e8931e0f0feeb08b1c01de78
++ entry .U8   eine vorzeichenlose 8-Bit-Ganzzahl, von `0` bis `255`
+
+% 1 1 0 1327a328bee1e40d18866a5832ce3cb4
+
+@ 0 4 0 1b205e5f18f05dbb0994af9613d03c68
++       `U8` ist ein opaker Typ über `Byte`, vorzeichenlos gelesen, sodass `U8(200.toByte.bits)`
++       den Wert `200` hat, nicht `-56`. Er wird aus einem Bitmuster oder unter
++       `genericNumberLiterals` aus einem Ganzzahlliteral gebildet. `+`, `-` und `*` nehmen die
++       `CheckOverflow`-Richtlinie im Geltungsbereich und `/` die `DivisionByZero`-Richtlinie.
+
+% 2 1 0 018254c3f97936340d203190fa212bf3
+
+% 3 1 0 16a561b99fa5215b038f9108f84d90dd
+
+% 4 1 0 1c74c4eafa5af0650ae494834aa7d765
+
+% 0 1 0 1482461767f08a961ee7d5ed53423944
+
+% 0 1 0 1e09dbb018ccae3b169e9ca4f722aa0e
+
+% 0 1 0 06f0065947551a9403b4106c8566d570
+
+% 1 1 0 01715454281dfe7313b8606264f844eb
+
+@ 0 5 0 144b53182c519aff0404ee4dbfd66dbc
++       Die Erweiterungsmethoden auf einem `U8` sind `bits`, `text`, `base32`, `hex`, `octal`,
++       `binary`, `byte` (das rohe Byte), `short`, `int` und `long` (der vorzeichenlose Wert),
++       der vorzeichenlose Rest `%`, die exakten Erweiterungen `s16`, `s32`, `s64`, `u16`, `u32`
++       und `u64` sowie `gcd`. Ein `U8` konvertiert implizit nach `F64` und `F32`, über
++       `F64.u8Conversion` und `F32.u8Conversion`, wobei ein Wert über 127 seinen
++       vorzeichenlosen Wert erhält.
+
+@ 0 2 0 1fe907ebd8b2d4b40db0f7c603e0e343
++       Die Member seines Begleitobjekts sind in `internal.U8` deklariert, aus dem der Typ
++       exportiert wird, und dort dokumentiert.
+
+% 2 1 0 11efd6326db10b23076217f2c6fbcbc7
+
+@ 0 1 0 073a6fbe879a64d0048e61f3eb1f76e9
++ entry .S64   eine vorzeichenbehaftete 64-Bit-Ganzzahl im Zweierkomplement, von `S64.Min` bis `S64.Max`
+
+% 1 1 0 1c1b6af7cd43cc9217890c469b5efcd3
+
+@ 0 5 0 067c954f108850930300f2e5d7690a9b
++       `S64` ist ein opaker Typ über `Long`, und genau das bedeutet er auch: Der Typ existiert,
++       damit eine vorzeichenbehaftete 64-Bit-Größe von einem Bitmuster (`B64`) und von einer
++       vorzeichenlosen (`U64`) unterschieden wird und damit ihre Arithmetik über eine Richtlinie
++       läuft. Er wird aus einem Bitmuster gebildet, `S64(5L.bits)`, oder unter
++       `genericNumberLiterals` aus einem Ganzzahlliteral, und `long` gibt den `Long` zurück.
+
+% 2 1 0 0f5f3c1942754d7e13562865031f3e64
+
+% 3 1 0 0afe417b98924b391638fbb9dc11b78e
+
+% 4 1 0 11d42a2e737732911f431a253c299680
+
+% 0 1 0 1fe29c91c3c0e65f160e747bd6c997eb
+
+% 0 1 0 01ecb959d6a90897042602f7f0d79e73
+
+% 0 1 0 1a955d36c30d249f1115e7571cfbf4fa
+
+% 0 1 0 1f42ab9e2ec7bf3c0b1e6199e8ef24a9
+
+% 1 1 0 034ede12041a6e4715e31f44edcc5259
+
+@ 0 6 0 0f07e61f4002881d0f13ee59688cedeb
++       `+`, `-` und `*` nehmen die `CheckOverflow`-Richtlinie im Geltungsbereich und `/` die
++       `DivisionByZero`-Richtlinie. Die geprüfte Erkennung ist exakt: Eine Summe läuft über, wenn
++       beide Operanden das Vorzeichen haben, das der Summe fehlt, eine Differenz, wenn die
++       Operanden verschiedene Vorzeichen haben und das Ergebnis im Vorzeichen vom Minuenden
++       abweicht, und ein Produkt, wenn `Math.multiplyHigh` nicht die Vorzeichenerweiterung des
++       unteren Worts ist; so wird `S64.Min + S64(-1)` abgefangen, während gewöhnliche Arithmetik
++       mit negativen Zahlen ungestört bleibt.
+
+@ 0 6 0 00e39fde20f8cb48058604eb191761e0
++       Die Erweiterungsmethoden auf einem `S64` sind `abs`, `long`, `octal`, `hex`, `base32` und
++       `binary` (so, wie `java.lang.Long` sie darstellt: im Zweierkomplement für negative Werte),
++       `%%` (Floor-Modulus, bei positivem Divisor nie negativ), `/-` (abgerundete Division), `%`
++       (abschneidender Rest), `**` (Potenz, als `Double`), `bits` und `gcd`. Ein `S64` darf mit
++       `==` mit jedem vorzeichenbehafteten oder Gleitkommatyp verglichen werden, hat aber keine
++       implizite Konvertierung nach `F64`, da sie ungenau wäre.
+
+@ 0 2 0 1fba74ed714a810318f44f2cbd0e0f5b
++       Die Member seines Begleitobjekts sind in `internal.S64` deklariert, aus dem der Typ
++       exportiert wird, und dort dokumentiert.
+
+% 2 1 0 13fb1133458913380a60418fbde5ee23
+
+% 3 1 0 14768573064994750f135b379e0aa982
+
+@ 0 1 0 1c3c5aeb2b27f4a10f48fdc026c52d6e
++ entry .S32   eine vorzeichenbehaftete 32-Bit-Ganzzahl im Zweierkomplement, von `S32.Min` bis `S32.Max`
+
+% 1 1 0 07db680b16894e60039e2eacd3dd1634
+
+@ 0 5 0 1d8b8ae6099df0070b4f5a4ebf051cb7
++       `S32` ist ein opaker Typ über `Int`. Er wird aus einem Bitmuster gebildet,
++       `S32(42.bits)`, oder unter `genericNumberLiterals` aus einem Ganzzahlliteral, und `int`
++       und `long` geben das Primitiv zurück. `+`, `-` und `*` nehmen die
++       `CheckOverflow`-Richtlinie im Geltungsbereich und `/` die `DivisionByZero`-Richtlinie; die
++       ungeprüfte Summe kompiliert zu einem einzigen `iadd`, die geprüfte zu derselben
++       Instruktion, gefolgt von einem exakten Überlauftest.
+
+% 2 1 0 0d6654b22541fe08183beef22290b080
+
+% 3 1 0 12271a7523c07c071403ab3159f56522
+
+% 4 1 0 1f6b17b7d5f2c20b08abfd8aaba8560c
+
+% 1 1 0 09f71b3d5056d1a0153c1b1cce849dab
+
+% 1 1 0 13538521ec6d59a008137f6696ce2e56
+
+% 0 1 0 0b684d64159010ed170770c113b679ae
+
+% 0 1 0 00e9a8765b08969f0a32126ea6bcb66a
+
+% 0 1 0 1251b42006c1cedc0d5c13fb77ea7432
+
+% 0 1 0 075bdc600dd780281a2e556b32b6fcb1
+
+% 0 1 0 0fc204f3844aa06c0000d1329b97063e
+
+% 0 1 0 19fc2433e15ef36c0227b969756e99a2
+
+% 1 1 0 192eba82bb68a1c2000cc65058e84f8a
+
+@ 0 4 0 1fa9db4d4ca0f0de0e0a841e65ba2034
++       Die Erweiterungsmethoden auf einem `S32` sind `int`, `long`, `abs`, `**`, `octal`, `hex`,
++       `base32`, `binary`, `%%`, `/-`, `%`, `bits` und `gcd`. Ein `S32` konvertiert implizit und
++       exakt nach `F64`, über `F64.s32Conversion`, und darf mit `==` mit jedem
++       vorzeichenbehafteten oder Gleitkommatyp verglichen werden.
+
+@ 0 2 0 13dab10bc3e8e4e80c686d56d761357f
++       Die Member seines Begleitobjekts sind in `internal.S32` deklariert, aus dem der Typ
++       exportiert wird, und dort dokumentiert.
+
+% 2 1 0 002f5e30de7246d41d373f46d120fd0f
+
+% 3 1 0 00f0c032af86a7fd15896832114ec55e
+
+@ 0 1 0 041e2a7cb4fe52d51e9b73c7953f0be8
++ entry .S16   eine vorzeichenbehaftete 16-Bit-Ganzzahl im Zweierkomplement, von `-32768` bis `32767`
+
+% 1 1 0 126404f5f0ffeef11a1cd5f5975a4a1f
+
+@ 0 5 0 04e142fb51e57db816fc661b89155b0a
++       `S16` ist ein opaker Typ über `Short`, gebildet aus einem Bitmuster,
++       `S16((1: Short).bits)`, oder unter `genericNumberLiterals` aus einem Ganzzahlliteral, das
++       außerhalb des 16-Bit-Bereichs ein Kompilierfehler ist. `+`, `-` und `*` nehmen die
++       `CheckOverflow`-Richtlinie im Geltungsbereich und `/` die `DivisionByZero`-Richtlinie;
++       jede Operation wird in einem `Int` berechnet und, wie die Richtlinie es vorgibt,
++       eingeengt oder geprüft.
+
+@ 0 3 0 029651b176a233290ee6c9cede8fd5b7
++       Die Erweiterungsmethoden auf einem `S16` sind `short`, `int`, `long`, `abs`, `**`,
++       `octal`, `hex`, `base32`, `binary`, `%%`, `/-`, `%`, `bits` und `gcd`. Ein `S16`
++       konvertiert implizit nach `F64` und `F32`, über `F64.s16Conversion` und
++       `F32.s16Conversion`.
+
+@ 0 2 0 16f2d1eafd8dda750378510290300be8
++       Die Member seines Begleitobjekts sind in `internal.S16` deklariert, aus dem der Typ
++       exportiert wird, und dort dokumentiert.
+
+% 2 1 0 00ed636d0c397c5b1a3c36edbb77b129
+
+@ 0 1 0 0fe1cc62d47c8bf604f1850e0f75c6fa
++ entry .S8   eine vorzeichenbehaftete 8-Bit-Ganzzahl im Zweierkomplement, von `-128` bis `127`
+
+% 1 1 0 0f3508c9ac2136cf1373ff1de32ddfe9
+
+@ 0 5 0 0dcbea836733a57206a36c3f456f8fc2
++       `S8` ist ein opaker Typ über `Byte`, gebildet aus einem Bitmuster, `S8((-1: Byte).bits)`,
++       oder unter `genericNumberLiterals` aus einem Ganzzahlliteral, das außerhalb des
++       8-Bit-Bereichs ein Kompilierfehler ist. `+`, `-` und `*` nehmen die
++       `CheckOverflow`-Richtlinie im Geltungsbereich und `/` die `DivisionByZero`-Richtlinie;
++       unter `checkedOverflow` löst `S8.Min*S8(-1)` einen `Arithmetic.Error` aus, da `128` nicht
++       hineinpasst.
+
+@ 0 3 0 0a62f230f78d4bbe1717e16b0f456115
++       Die Erweiterungsmethoden auf einem `S8` sind `byte`, `short`, `int`, `long`, `abs`, `**`,
++       `octal`, `hex`, `base32`, `binary`, `%%`, `/-`, `%`, `bits` und `gcd`. Ein `S8`
++       konvertiert implizit nach `F64` und `F32`, über `F64.s8Conversion` und
+
+% 0 1 0 1a34dbfaaede3ee41aab7052019ddbff
+
+@ 0 2 0 12bf2e32d06b440a0d2effc5ff3e2bef
++       Die Member seines Begleitobjekts sind in `internal.S8` deklariert, aus dem der Typ
++       exportiert wird, und dort dokumentiert.
+
+% 2 1 0 00397e0045977253000ed4b80b2f0044
+
+@ 0 1 0 1d52291fa2ae6ab119d39e56396724dc
++ entry .F64   eine 64-Bit-IEEE-Gleitkommazahl, mit gemischter Arithmetik gegen alles, was sich zu ihr erweitern lässt
+
+% 1 1 0 0027fae8b374f71a0eb6e395afbb9f26
+
+@ 0 8 0 1cbae52b350f0b181bd8997f7e412c4c
++       `F64` ist ein opaker Typ über `Double`. Er wird mit `F64(1.5)` gebildet, aus seinem
++       Bitmuster mit `F64(bits: B64)`, aus Vorzeichen, Exponent und Mantisse oder unter
++       `genericNumberLiterals` aus einem Literal; `double` gibt den `Double` zurück. Seine `+`,
++       `-`, `*`, `/` und das Präfix-`-` sind die Operatoren von Symbolism, aufgelöst über die
++       Instanzen in diesem Begleitobjekt, und sie nehmen nicht nur ein weiteres `F64`, sondern
++       jeden Operanden mit einer `Widening`-Konvertierung: `Double`, `Float`, `Int`, `Short`,
++       `Byte`, `U32`, `S32`, `U16`, `S16`, `U8` und `S8`. Der Operand wird konvertiert, und die
++       Operation ist die primitive, sodass `ratio*2` eine Konvertierung und eine Multiplikation
++       kostet und nichts alloziert.
+
+% 2 1 0 01d1a670df2d5c6507944a13927716fb
+
+% 3 1 0 16f126bf07b62e8a16cfa45e19ab7dca
+
+% 4 1 0 003a27bd52cbc377186b4cbcc227da84
+
+% 0 1 0 16d7fb99c41d313f0ae26d846493791a
+
+% 0 1 0 169c688196e3fff6147135a9a1d30f63
+
+% 0 1 0 08d6553ff63867d9129a2932543bff07
+
+% 0 1 0 0683e94f355a27531eb102cdba980eff
+
+% 0 1 0 070402f7f100b18109e733c10de535ec
+
+% 0 1 0 07aa442d8610efc70ac48cdec4746025
+
+% 0 1 0 00e381f020707cd414b62f67edc93990
+
+% 1 1 0 040197025299b9621a0dba3c02d49d8d
+
+@ 0 9 0 1aa32f3383885e7d184ca95906244c47
++       `Long`, `S64` und `U64` haben keine Erweiterung, da die Konvertierung ungenau wäre; ein
++       Wert eines dieser Typen wird explizit konvertiert. Die Erweiterungsmethoden auf einem
++       `F64` sind `double`, `**` (Potenz, mit jedem erweiterbaren Operanden), `mantissa` (die
++       unteren 52 Bits als `B64`), `exponent` (als `B16`), `abs`, `sqrt`, `cbrt`, `ceiling`,
++       `floor`, `increment` und `successor` (der nächste darstellbare Wert darüber), `decrement`
++       und `predecessor`, `round` (zu einem `Long`), `scalb`, `signum`, `ulp`, `bits` und
++       `rawBits` (das IEEE-Muster, mit und ohne kanonisiertes `NaN`) sowie die Tests `finite`,
++       `infinite` und `nan`. Die trigonometrischen und logarithmischen Funktionen `sin`, `cos`,
++       `exp`, `ln` und die übrigen sind gewöhnliche Funktionen über `F64`.
+
+@ 0 2 0 0147d9e71c143bf6034ecf700073ae97
++       Die Member seines Begleitobjekts sind in `internal.F64` deklariert, aus dem der Typ
++       exportiert wird, und dort dokumentiert.
+
+% 0 1 0 0599ddd10bd89ce10a029bbe433ce498
+
+% 0 1 0 16ff7b24085bc06412e333b37b33a0a1
+
+@ 0 1 0 1fc95932f111ab2f0ac94f61e6d9b654
++ entry .F32   eine 32-Bit-IEEE-Gleitkommazahl, mit gemischter Arithmetik gegen alles, was sich zu ihr erweitern lässt
+
+% 1 1 0 00c60e29c4e7c6cb1c24ededcd436186
+
+@ 0 7 0 16c8a610b092e9a9017a2df20f26f04c
++       `F32` ist ein opaker Typ über `Float`, das Gegenstück einfacher Genauigkeit zu `F64`. Er
++       wird mit `F32(1.5f)` gebildet, aus einem Bitmuster mit `F32(bits: B32)` oder aus
++       Vorzeichen, Exponent und Mantisse, und `float` und `double` geben die Primitive zurück.
++       Seine `+`, `-`, `*`, `/` und das Präfix-`-` werden über die Instanzen in diesem
++       Begleitobjekt aufgelöst und akzeptieren über ein `Widening` einen Operanden vom Typ
++       `Float`, `Short`, `Byte`, `U16`, `S16`, `U8` oder `S8`; `Double`, `Int`, `U32` und `S32`
++       haben keine Erweiterung nach `F32`, da sie ungenau wäre.
+
+% 2 1 0 1aaaa567ac91113a0dfa68136c66e37a
+
+% 3 1 0 1ba7fa403fc78c750585779fbceadf60
+
+% 0 1 0 08ca2fddbd89fa7c0233abceaf9547e2
+
+% 0 1 0 1399566348e8992300a7b7aacc6d7533
+
+% 0 1 0 03284e185a0fddd8015855a9d663e361
+
+% 1 1 0 03027ea0cefd301c1bc07e64dde5b92b
+
+@ 0 4 0 0c4e3693092340320255ee35ddb75db9
++       Die Erweiterungsmethoden auf einem `F32` sind `float`, `double`, `**`, `abs`, `sqrt`,
++       `cbrt`, `ceiling`, `floor`, `exponent` (als `Int`), `increment`, `decrement`,
++       `successor`, `predecessor`, `round`, `scalb`, `signum`, `ulp`, `bits`, `rawBits`,
++       `finite`, `infinite` und `nan`.
+
+@ 0 2 0 156816056eb29fda16c2ed9a1ac6d4ba
++       Die Member seines Begleitobjekts sind in `internal.F32` deklariert, aus dem der Typ
++       exportiert wird, und dort dokumentiert.
+
+% 0 1 0 12581d6a9cc1b75c034f3a484d8e3e68
+
+@ 0 1 0 1408e2c4464101101acfe47c80869a9a
++ entry .B64   ein 64-Bit-Muster: Shifts, Rotationen, Masken und Bitadressierung, aber keine Arithmetik
+
+% 1 1 0 08235109eb09efcf189938ea0f8f1591
+
+@ 0 5 0 0b8c3fb20b94eb320e1a97436256e5d7
++       `B64` ist ein opaker Typ über `Long`, gelesen als eine Menge von Bits. Er hat kein `+`:
++       Ein `B64` ist das, wonach eine Zahl aussieht, bevor sie interpretiert wird, und `s64` und
++       `u64` deuten ihn kostenlos als vorzeichenbehaftete oder vorzeichenlose Ganzzahl um, wie
++       `F64(bits)` es für eine Gleitkommazahl tut. Ein Muster wird aus jeder Ganzzahl mit `.bits`
++       gebildet (`0xf0L.bits`), mit `B64(long)` und seinen schmaleren Überladungen oder aus acht
++       Big-Endian-Bytes mit `B64(bytes, offset)`.
+
+@ 0 3 0 0f5b59155652401b1aa0e99bbf4fb7ec
++       Bits werden per Ordinalzahl adressiert, `Prim` für das niedrigstwertige Bit, sodass ein
++       Index nicht mit der eigenen Zählkonvention einer Spezifikation verwechselt werden kann,
++       und eine Folge von Bits ist ein `Interval`:
+
+% 2 1 0 058bd5966e10a72e0bb30d797d2c2206
+
+% 3 1 0 05890b400723ed660070a822fad90977
+
+% 0 1 0 070a3dc62a8adf101368a4b90aba173d
+
+% 0 1 0 00a7670a49f3a4621d8dc1f93fee1052
+
+% 0 1 0 129118c197716ed210d9a44cea972fb0
+
+% 0 1 0 064bb3fd3c6127e912834da2cff39b15
+
+% 0 1 0 02894505526ef7a415c1ab7da2d142ae
+
+% 0 1 0 172ac9ea31da287413a65cb5c925e3b5
+
+% 1 1 0 1cd0cc03f1dd27cd0732b8c3582beea1
+
+@ 0 8 0 184831bcfda7ff27020ed0ad5261a421
++       Die Erweiterungsmethoden auf einem `B64` sind `apply(interval)` (die Bits einer Folge,
++       nach unten verschoben), `apply(bit: Int)` (ein Bit nach nullbasierter Position), `bit`,
++       `set`, `clear` und `flip` (jeweils nach einem `Ordinal` oder einem `Interval`), die
++       Shifts `<<` und `>>` (Letzterer logisch, nie mit Vorzeichenerweiterung), die Rotationen
++       `<<<` und `>>>`, `&`, `|`, `^` und das Präfix-`~`, `leadingZeros`, `trailingZeros`,
++       `ones` und `zeros` (Populationszählungen), `reverse`, `bytes` (acht Big-Endian-Bytes),
++       `hex` und `octal` (mit Nullen auf die volle Breite des Typs aufgefüllt, 16 und 22
++       Zeichen), `binary` und die Umdeutungen `s64` und `u64`. Ein `B64` darf mit `==` nur mit
++       einem anderen `B64` verglichen werden.
+
+@ 0 2 0 15735b6f01dc26b61a2f9471017f420b
++       Die Member seines Begleitobjekts sind in `internal.B64` deklariert, aus dem der Typ
++       exportiert wird, und dort dokumentiert.
+
+% 0 1 0 0ac4cfd7295265760c5eb7b823041ab4
+
+% 0 1 0 04978c25a901bf1b1fb6fbc281e7eaba
+
+@ 0 1 0 1520032befc971930d6b51ca54ebb100
++ entry .B32   ein 32-Bit-Muster: Shifts, Rotationen, Masken und Bitadressierung, aber keine Arithmetik
+
+% 1 1 0 1024705758d70ea214338f0d147a61a3
+
+@ 0 5 0 12355ce780f06ff31bd1ed0ae57430ff
++       `B32` ist ein opaker Typ über `Int`, gelesen als eine Menge von Bits, mit denselben
++       Operationen wie `B64` bei 32 Bits: `apply` nach Intervall oder nach Position, `bit`,
++       `set`, `clear`, `flip`, `<<`, `>>`, `<<<`, `>>>`, `&`, `|`, `^`, `~`, `leadingZeros`,
++       `trailingZeros`, `ones`, `zeros`, `reverse`, `bytes` (vier Big-Endian-Bytes), `hex` (acht
++       Zeichen), `octal` (elf), `binary` und die Umdeutungen `s32` und `u32`.
+
+% 2 1 0 0e4b791e0f3d8fb21b7b14ea156b3354
+
+% 3 1 0 122a66a5c99537da12ae4a173a61b368
+
+% 0 1 0 0a699dc795a76808100d16e145583b97
+
+% 0 1 0 1ecac4b5d17385e019f44805a006debf
+
+% 0 1 0 11bc6561c1e4599805a7395140f3ff27
+
+% 0 1 0 1829fdced77b6f541e53083a03efad08
+
+% 0 1 0 1308306de5969d6c06b62a95437a9c47
+
+% 0 1 0 1d4fff25c9e06f3e0cd055a187877f1b
+
+% 1 1 0 0bcae47f146bf88d154cb5d4c91a1d6c
+
+@ 0 2 0 09269ddaac12d4db0f1c1c0b6e3e66f2
++       Die Darstellung füllt auf die Breite des Typs auf, statt führende Nullen wegzulassen,
++       sodass die Zahl der Zeichen verrät, welcher Typ sie erzeugt hat.
+
+@ 0 2 0 0993978d547a8a9b0da3b29b1bd2682f
++       Die Member seines Begleitobjekts sind in `internal.B32` deklariert, aus dem der Typ
++       exportiert wird, und dort dokumentiert.
+
+% 2 1 0 15ffdd968864f51a1d2281d77ec67eca
+
+@ 0 1 0 1dcb6e1d8b9dba6919cde8992663dd58
++ entry .B16   ein 16-Bit-Muster: Shifts, Rotationen, Masken und Bitadressierung, aber keine Arithmetik
+
+% 1 1 0 13a6c5329e2ac2fa1e5738426aebf1f5
+
+@ 0 5 0 0d2d04ffef8375f6135d0e451cd1e572
++       `B16` ist ein opaker Typ über `Short`, gelesen als eine Menge von Bits, mit den
++       Operationen von `B64` bei 16 Bits, wobei `bytes` zwei Big-Endian-Bytes ergibt, `hex` vier
++       Zeichen und `octal` sechs, sowie den Umdeutungen `s16` und `u16`. Er wird mit
++       `(0x1234: Short).bits`, `B16(short)`, `B16(byte)` oder `B16(bytes, offset)` gebildet, und
++       `Short(bits: B16)` macht daraus wieder ein Primitiv.
+
+@ 0 2 0 0cabb86c8e1f802804b39646d4a13e98
++       Die Member seines Begleitobjekts sind in `internal.B16` deklariert, aus dem der Typ
++       exportiert wird, und dort dokumentiert.
+
+% 2 1 0 16bde2d2b62c2aa11a27797e691d32e4
+
+@ 0 1 0 026734759eccfa4e1bfe6b51360063fc
++ entry .B8   ein 8-Bit-Muster: Shifts, Rotationen, Masken und Bitadressierung, aber keine Arithmetik
+
+% 1 1 0 00ce6cfac42bfff7165f521864c8c85e
+
+@ 0 4 0 198fcbb5cffc3b6f0d21d1c4ac634d58
++       `B8` ist ein opaker Typ über `Byte`, gelesen als eine Menge von Bits, mit den Operationen
++       von `B64` bei 8 Bits: `hex` hat zwei Zeichen und `octal` drei, und `s8` und `u8` deuten
++       das Byte als vorzeichenbehaftete oder vorzeichenlose Ganzzahl um. Er wird mit
++       `(0xf0.toByte).bits` oder `B8(byte)` gebildet, und das Literal `bin"…"` aus acht Ziffern
++       liefert einen `Byte`, aus dem sich einer bilden lässt.
+
+% 2 1 0 1d9a547cd072623f03779b6166892cc2
+
+% 3 1 0 1afb4f531dc5501803b0551ee8a516f9
+
+% 0 1 0 19bd2028a4ded58e1b8d6db21355a1f1
+
+% 0 1 0 13bd95d0bf037cd502a7b4532be43ab0
+
+% 0 1 0 01474ae8b7e175e20ed22052eabff012
+
+% 0 1 0 0047e7d5eebcca770857e77b6062919f
+
+% 1 1 0 12a00f984d5199a30b66ed6d7c24cd82
+
+@ 0 2 0 02db738e0a0af66208de43c5d7d715a5
++       Die Member seines Begleitobjekts sind in `internal.B8` deklariert, aus dem der Typ
++       exportiert wird, und dort dokumentiert.
+
+% 2 1 0 1ceb8b3b0d795ed71339af8bd5ec3217
+
+% 0 1 0 06cdb8726de7fd9200e0fd9dde82ba88
+
+@ 0 1 0 1b713aff978c635909f7d27f9a491f08
++ entry .arithmeticOptions   die Richtlinien für Überlauf, Division durch null und rationale Division, jede ein per Name zu importierendes given
+
+% 1 1 0 15ae1f6be03125f00659611909b000ad
+
+@ 0 5 0 01e968c7a8511c361792717b3b4a4023
++       Arithmetik auf den Ganzzahltypen braucht ein `CheckOverflow`-given im Geltungsbereich für
++       `+`, `-` und `*` und ein `DivisionByZero`-given für `/`, und `import soundness.*` bringt
++       keines von beiden: Die Wahl wird getroffen, indem man je ein given jeder Art per Name
++       importiert, und ein Operator, der ohne Richtlinie im Geltungsbereich verwendet wird,
++       kompiliert nicht. Die beiden Prüfungen sind unabhängig, sodass ein Programm, das nicht
++       überlaufen darf, seinen Divisoren aber vertraut, nur `checkedOverflow` importiert.
+
+% 2 1 0 14fed254df79e5270b98cb570a68d733
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1e20de3a96f23cfb091d633b531fe879
++         label Keine Richtlinie: Der Operator wird nicht aufgelöst
+
+% 1 1 0 1e45057bcc7fa7631afd4504800fa5ca
+
+% 2 1 0 09acc9e7017b5e8308ff3e98a4c96971
+
+% 2 1 0 1297857aa6a7a30e098eb11c931bf241
+
+% 0 1 0 15b7b7f999ec72d41570510f7f73edbb
+
+% 1 1 0 0189afa2aeb88c9d0e1347208dc11b0b
+
+@ 0 1 0 03e537e42740f67a040189b346451100
++         label Ungeprüft: Die Summe läuft über, wie es die Hardware tut
+
+% 1 1 0 1c94f7c2affc2d43129a3c3364ea0569
+
+% 2 1 0 14f3ba61cd8312b61701541637d4c724
+
+% 0 1 0 065e74b0947a0cbe095504f19b23a40e
+
+% 2 1 0 06892ad813e2ba7405a94dfe87a17c45
+
+% 0 1 0 092c8f2a279c63fd05494b441bb6e1b0
+
+% 1 1 0 067cfd4e801316d512b757ef61f08072
+
+@ 0 1 0 185bf0d9674a37611d26149a2099f6c3
++         label Geprüft: Der Ergebnistyp kann einen Fehler auslösen, und `safely` fängt den Fehlschlag auf
+
+% 1 1 0 0c27548314d0ea0b079fa576d98ac344
+
+% 2 1 0 19c6fede75e2ba040cc4aa892bcc9bb6
+
+% 3 1 0 159ac016469c713e085f2a4c2fea2a32
+
+% 5 1 0 044f252cbcf3a500038cc0529bb99a9a
+
+% 0 1 0 005192d2bed59926102422b89dff4038
+
+% 1 1 0 0abe6c0e53ba1a7708d3cba63af0095e
+
+@ 0 1 0 1219ac884b9184761af68c727ca23e4b
++         label Geprüft und behandelt: Der Fehlschlag ist ein `Arithmetic.Error`, und ein Standardwert ersetzt ihn
+
+% 1 1 0 0eb33e91712a1c911c28eccf57fc7420
+
+% 2 1 0 04e5cd9399684c360cdcd68ad03843ba
+
+% 3 1 0 023d03f3e9dfb3c006b0991870686538
+
+% 5 1 0 140e1b7da28de87a0130471a3b539ed5
+
+% 0 1 0 16d4fddcd9a233f21a8ac6321f18c1be
+
+% 1 1 0 032903b6556ee75e024d41e892544eec
+
+% 2 1 0 1b254f5bafb282e20dda84cf188f1bdc
+
+@ 0 7 0 16680ad1ce1329021a5cd827593257dd
++       Jede Richtlinie ist ein Singleton-Objekt, und ihr given ist mit dem Singleton-Typ des
++       Objekts typisiert, sodass ein darunter geinlinter Operator auf einen reinen Pfad verweist,
++       den der Inliner entfernt, statt auf eine Instanz, die er allozieren müsste: Ein
++       ungeprüftes `a + b` auf einem `S32` ist ein einziges `iadd`, und ein geprüftes ist
++       dieselbe Instruktion, gefolgt vom Überlauftest. Die geprüften givens ändern den
++       Ergebnistyp des Operators zu `Tactic[Arithmetic.Error]^
++       ?->{} result`, einer reinen Kontextfunktion, die ein Subtyp von `result raises
++       Arithmetic.Error` ist, sodass `safely`, `recover` und ein `raises`-Rückgabetyp sie alle
++       akzeptieren.
+
+@ 0 4 0 004347effd32356d177c46b8b4f48fb3
++       Die beiden rationalen givens sind anderer Art: Der Import von `q64RationalDivision` lässt
++       `/` auf zwei `Q64` in diesem Geltungsbereich einen `Double` liefern und hat Vorrang vor der
++       exakten Division des Begleitobjekts; deshalb lässt sich `std` (dessen Varianz zu einem
++       `Double` dividieren muss) für eine Collection rationaler Zahlen auflösen.
+
+% 1 1 0 031557a59d517a0a0f2a3848f8235d07
+
+% 2 1 0 01036437bafe25520fe5bf095f9ec7c8
+
+% 2 1 0 10405821c1b2045509f06691b14ecb74
+
+@ 0 17 0 16aeac11dfd8419319929d01bcbfa126
++   entry .uncheckedOverflow   `+`, `-` und `*` auf den Ganzzahltypen laufen über, wie es die Hardware tut
++       `CheckOverflow.Unchecked`, über seinen Singleton-Typ. Das Ergebnis jedes Operators ist
++       der bloße Typ, und die Operation wird zu der einen Instruktion dafür geinlinet.
++   entry .checkedOverflow   `+`, `-` und `*` auf den Ganzzahltypen lösen `Arithmetic.Error` aus, wo das Ergebnis nicht passt
++       `CheckOverflow.Checked`, über seinen Singleton-Typ. Das Ergebnis jedes Operators wird zu
++       `T raises Arithmetic.Error` (Grund `Overflow`), sodass er innerhalb von `safely`,
++       `recover`, `unsafely` oder einer Methode verwendet wird, die selbst einen Fehler auslöst.
++       Die Erkennung ist exakt.
++   entry .uncheckedDivision   `/` auf den Ganzzahltypen dividiert wie die Hardware und wirft bei einem Divisor null
++       `DivisionByZero.Unchecked`, über seinen Singleton-Typ: Ein Divisor null wirft
++       `java.lang.ArithmeticException`, ohne Geltungsbereich.
++   entry .checkedDivision   `/` auf den Ganzzahltypen löst bei einem Divisor null `Arithmetic.Error` aus
++       `DivisionByZero.Checked`, über seinen Singleton-Typ. Das Ergebnis wird zu `T raises
++       Arithmetic.Error` (Grund `DivisionByZero`).
++   entry .q64RationalDivision   `/` auf zwei `Q64` liefert ihren Quotienten als `Double`, in diesem Geltungsbereich
++       Lexikalisch importiert, hat es Vorrang vor `Q64.divisible` im Begleitobjekt, sodass
++       `List[Q64]#std` aufgelöst wird; die exakte Division ist wieder `Q64.divisible`, sobald der
++       Import außerhalb des Geltungsbereichs ist.
++   entry .q32RationalDivision   `/` auf zwei `Q32` liefert ihren Quotienten als `Double`, in diesem Geltungsbereich
+
+@ 0 1 0 16693d9f5bd07fee173123042aa62836
++ entry .CheckOverflow   eine Richtlinie für `+`, `-` und `*` auf den Ganzzahlen fester Breite: überlaufen oder Fehler auslösen
+
+% 1 1 0 1b4195b95992b7c71151432498f55238
+
+@ 0 6 0 0033fef4026d67b11107fefd18d7e46f
++       Ein `CheckOverflow` liefert die Instanzen von `Addable`, `Subtractable` und
++       `Multiplicable` für jeden `U*`- und `S*`-Typ, und `#Wrap` ist das, was es aus jedem
++       Ergebnis macht: den bloßen Typ für `.Unchecked` oder `Tactic[Arithmetic.Error]^ ?->{} result`
++       für `.Checked`, eine reine Kontextfunktion, die `result raises Arithmetic.Error` erfüllt.
++       Die givens der Begleitobjekte (`S32.addable` ist `overflow.addS32`) leiten an die
++       Richtlinie im Geltungsbereich weiter, die per Name aus `arithmeticOptions` importiert wird.
+
+@ 0 7 0 11c525a61503359204f455f2e8e1e406
++       Jede Instanz ist ein `object`, das von seinem given über einen stabilen Pfad erreicht
++       wird, sodass die Proxys, die der Inliner für sie einführt, reine Pfade sind, die er
++       entfernt: `a + b` kompiliert zu der einen Instruktion, die die Hardware dafür hat. Eine
++       mit `new` konstruierte Instanz, ob anonym oder final, würde das Inlining als eine
++       Allokation pro Operation überleben. Eine eigene Richtlinie — protokollierend, sättigend —
++       ist ein Objekt, das diesen Trait erweitert und dessen 24 Member Objekte sind, die
++       `Arithmetic.Addition[S32, Wrap]` und seine Geschwister erweitern, mit einem given vom
++       Singleton-Typ der Richtlinie.
+
+% 2 1 0 074c689f3ddb30441cb6a5d90fe19458
+
+% 3 1 0 1ac749779f41605614795309ca5cb71d
+
+% 4 1 0 162de86f8e974c291be8326ce4fd65e4
+
+% 0 1 0 14d875d08df1b6a41ab2550112334189
+
+% 0 1 0 065bafedb46c27eb194b6a0d416d1bb1
+
+% 1 1 0 1900104676380837095ef30d9e67bbdf
+
+% 2 1 0 137d17395069fb841f1575c11faea76d
+
+% 1 1 0 0c47588bf62d362413ede99e6f15b944
+
+% 2 1 0 0c700ecc4cb00d5b160a5359d2e6ebd3
+
+@ 0 10 0 11106c50d908a87618eba38c72fd9e30
++   entry .Unchecked   die Richtlinie, die überläuft, wie es die Hardware tut
++       `Wrap[result] = result`; jede Operation ist die primitive, auf die Breite des Typs
++       eingeengt. `arithmeticOptions.uncheckedOverflow` ist dieses Objekt.
++   entry .Checked   die Richtlinie, die `Arithmetic.Error` auslöst, wo das Ergebnis nicht passt
++       `Wrap[result] = Tactic[Arithmetic.Error]^ ?->{} result`. Eine vorzeichenbehaftete Summe
++       läuft über, wenn beide Operanden das Vorzeichen haben, das der Summe fehlt; eine
++       vorzeichenlose Summe, wenn sie kleiner als einer der Operanden herauskommt; ein Produkt,
++       wenn sein oberes Wort nicht die Vorzeichenerweiterung seines unteren Worts ist, oder, bei
++       den schmaleren Breiten, wenn das in einem breiteren Typ berechnete Produkt außerhalb des
++       Wertebereichs liegt. `arithmeticOptions.checkedOverflow` ist dieses Objekt.
++   entry #Wrap   was die Richtlinie aus einem Ergebnis macht: den bloßen Typ oder einen, der einen Fehler auslösen kann
+
+% 0 1 0 0bc0aff6c66e1f3b0df8a8f6d8ccbaf0
+
+% 0 1 0 1362171921760f8806706899a73a275e
+
+% 0 1 0 07324a9655b498d61591cf9faa827c76
+
+% 0 1 0 0ed3b1b8b0bc89230e098f4278efe8e4
+
+% 0 1 0 05d78f57035e69ce1f6cf9cadc42811e
+
+% 0 1 0 0d78f6795e665a1b17e4b96daaafed8c
+
+% 0 1 0 0b1744355d2fcf921a8717e9d259ffcf
+
+% 0 1 0 1e790e94707e963103d58078a3753cc7
+
+% 0 1 0 07fa7c3b6f2fa869048ad6b3250e7c31
+
+% 0 1 0 1497f7821ec9285d12e2a247d5de8fd8
+
+% 0 1 0 02deda055fbaa80c18ec51b3740a1510
+
+% 0 1 0 0f7c554c0f54280007441d4824da28b8
+
+% 0 1 0 0cb80f83d88d379b112b24fc8d0d8860
+
+% 0 1 0 19558aca8826b78f1f82f0913ddd9c07
+
+% 0 1 0 00e8aecb264b104f075cbf09f6a2435d
+
+% 0 1 0 078d553e3066c26807546e379461e00f
+
+% 0 1 0 18bb135e4acf241405f9b265b23d914f
+
+% 0 1 0 174cf2d61db9acce15e906faa16a6c62
+
+% 0 1 0 06581315a1dc94411ec13c2ddc48773c
+
+% 0 1 0 04e9f28d74c71cfb0eb090c2cb755250
+
+% 0 1 0 0e001c83cc9a09e60cc7a0542cb92b48
+
+% 0 1 0 0c91fbfb9f8492a01cb6f4e91be6065b
+
+% 0 1 0 0f45cb367fa8f6fc09f5de3e00584df4
+
+% 0 1 0 1c7daa0eba9f20e61af4e39afe671d21
+
+@ 0 1 0 1bf068666ecc4af403650305ff42b1e4
++ entry .DivisionByZero   eine Richtlinie für `/` auf den Ganzzahlen fester Breite: bei null werfen oder Fehler auslösen
+
+% 1 1 0 01b653dd62c5269d0fbd9348e7e190da
+
+@ 0 6 0 0a06d90ac14654c81f9082d528502115
++       Das Gegenstück zu `CheckOverflow` für die Division: Ein `DivisionByZero` liefert die
++       `Divisible`-Instanz für jeden `U*`- und `S*`-Typ, und `#Wrap` ist das, was es aus dem
++       Quotienten macht. Die givens der Begleitobjekte (`U64.divisible` ist
++       `division.divideU64`) leiten an die Richtlinie im Geltungsbereich weiter, die per Name als
++       `arithmeticOptions.uncheckedDivision` oder `checkedDivision` importiert wird.
++       Vorzeichenlose Typen dividieren unter beiden Richtlinien vorzeichenlos, und
++       vorzeichenbehaftete schneiden in Richtung null ab, wie es die Hardware tut; `/-` ist die
++       abrundende Division.
+
+% 2 1 0 1abb283c87d03938021583b21812e06c
+
+% 3 1 0 1a8143a35c5c33340bdcdff6a41eafa7
+
+% 1 1 0 0238da460ba4709c1520f057cf6a17ba
+
+% 0 1 0 0ffb79b719b77abe00bc197de4646f2d
+
+% 0 1 0 15ef34d31d8ce5a407e72a201fbc85d2
+
+% 1 1 0 16f0158273446bae1cb84a475c64abd7
+
+% 2 1 0 1f9ea05eed6e19ca0d77f91a820bc7fa
+
+% 1 1 0 06f5a864a7c434081192ea822f3fafc9
+
+@ 0 10 0 1875b3d88f0997a417fd65ed65175fb2
++   entry .Unchecked   dividiert wie die Hardware, sodass ein Divisor null `ArithmeticException` wirft
++       `Wrap[result] = result`. `arithmeticOptions.uncheckedDivision` ist dieses Objekt.
++   entry .Checked   löst bei einem Divisor null `Arithmetic.Error` aus
++       `Wrap[result] = Tactic[Arithmetic.Error]^ ?->{} result`, mit dem Grund
++       `DivisionByZero`. `arithmeticOptions.checkedDivision` ist dieses Objekt.
++   entry #Wrap   was die Richtlinie aus einem Quotienten macht: den bloßen Typ oder einen, der einen Fehler auslösen kann
++   entry #divideU64   `U64 is Divisible by U64 to Wrap[U64]`, vorzeichenlos
++   entry #divideS64   `S64 is Divisible by S64 to Wrap[S64]`, abschneidend
++   entry #divideU32   `U32 is Divisible by U32 to Wrap[U32]`, vorzeichenlos
++   entry #divideS32   `S32 is Divisible by S32 to Wrap[S32]`, abschneidend
+
+% 0 1 0 0ab84b36d2094c820871c817282df6e2
+
+% 0 1 0 0befb2c38ce020fc112abfb17075a007
+
+% 0 1 0 11a372979eec17f811426c1ecd4213eb
+
+% 0 1 0 00a6e1aeb77ff4d1194bc23c5fabadbd
+
+@ 0 1 0 1dddf096e43e9f24059f44cad85804de
++ entry .Arithmetic   der Fehlschlag einer arithmetischen Operation und die Gestalt der Instanzen der Richtlinien
+
+% 1 1 0 143670cbc51d7f0a07f2dc455bb335a2
+
+@ 0 7 0 09f96a099633c3640fc9975c0164279f
++       `Arithmetic.Error` wird ausgelöst, wenn eine Operation kein darstellbares Ergebnis hat:
++       eine Division durch null unter `arithmeticOptions.checkedDivision`, ein Überlauf unter
++       `checkedOverflow` oder ein `Decimal`, das mit `divide` durch null geteilt wird. Beides ist
++       ein einziger Fehlertyp mit zwei `Reason`s statt zweier Typen, da es ein einziges Konzept
++       ist, während die Prüfungen, die sie erkennen, unabhängige Importe bleiben. Die vier Traits
++       `Addition`, `Subtraction`, `Multiplication` und `Division` sind die Gestalt, die die
++       Instanzen einer `CheckOverflow`- oder `DivisionByZero`-Richtlinie annehmen: eine Zahl mit
++       sich selbst, zu einem Ergebnis, das die Richtlinie verpackt.
+
+% 2 1 0 0f0160ae8399e35516dd53493df7f70c
+
+% 3 1 0 1004f607547412761b899d5b7d1e78c1
+
+% 4 1 0 010f8c302e55c743001517cbc4a159f8
+
+% 0 1 0 1a7dcfada89e1abd14742255b1bef207
+
+% 1 1 0 02ce85aa0339fa1c1ba41d7cd86b5a9f
+
+% 1 1 0 1e690e7918be13c8001cb057b47d29c3
+
+% 2 1 0 040aaaa1c397bb7d160d3e7e5eb65041
+
+@ 0 1 0 0c4e55c230d4f6911a074f786c460a5d
++   entry .Error   ausgelöst, wenn eine Operation kein darstellbares Ergebnis hat: ein Divisor null oder ein Überlauf
+
+% 1 1 0 0d13184e43c2389d05c1267e5fa756f2
+
+@ 0 17 0 1585edd90b0a068514b572ebeb8e6c32
++         Fehler `↯/s.27.15`, _the arithmetic operation could not be completed because `reason`_,
++         wobei der Grund `Reason.DivisionByZero` (_the divisor was zero_) oder `Reason.Overflow`
++         (_the result exceeded the range of its type_) ist; die Nummer des Grunds (1 oder 2) ist
++         die Detailnummer des Fehlers. Ausgelöst von den geprüften Richtlinien über eine
++         `Tactic[Arithmetic.Error]`, die `safely`, `recover`, `unsafely` oder eine
++         `raises`-Signatur bereitstellt.
++     entry .Reason   warum die Operation fehlschlug: `DivisionByZero` oder `Overflow`
++         Ein Enum mit einer `number` (1 für `DivisionByZero`, 2 für `Overflow`) und einem
++         `communicable`-given, das jeden als seine Meldung darstellt.
++     entry .communicable   stellt einen `Reason` als seine Meldung dar
++     entry #reason   welcher der beiden Fehlschläge eintrat
++   entry .Addition   die Gestalt der `+`-Instanz einer Richtlinie: `number is Addable by number to wrap[number]`
++       Ein Trait, der `Self`, `Operand` und `Result` festlegt und `add` dem Objekt der Richtlinie
++       überlässt; `F64.Addition` und `CheckOverflow.Unchecked.addS32` sind Instanzen.
++   entry .Subtraction   die Gestalt der `-`-Instanz einer Richtlinie: `number is Subtractable by number to wrap[number]`
++   entry .Multiplication   die Gestalt der `*`-Instanz einer Richtlinie: `number is Multiplicable by number to wrap[number]`
++   entry .Division   die Gestalt der `/`-Instanz einer Richtlinie: `number is Divisible by number to wrap[number]`
+
+@ 0 1 0 1bce4239c166644b0e1759df79e43aac
++ entry .Commensurable   die Vergleichs-Typklasse zur Kompilierzeit hinter `<`, `<=`, `>` und `>=`
+
+% 1 1 0 0d30d516715bb9181f4ae54f56dddcdc
+
+@ 0 7 0 022268bfd300eeb91f2b4d8d8dc0ff6c
++       Ein `left is Commensurable against right` sagt, wie ein `left` sich mit einem `right`
++       vergleicht, über eine einzige Inline-Methode, `#compare`, deren Flags `strict` und
++       `greaterThan` Inline-Konstanten sind, sodass jeder der vier Operatoren sich zur
++       Kompilierzeit auf den einen primitiven Vergleich reduziert, den er bedeutet. Die
++       Operatoren `<`, `<=`, `>` und `>=` sind Erweiterungsmethoden auf jedem Wert, für den eine
++       solche Instanz im Geltungsbereich ist; `Orderable` ist der Sonderfall eines Typs, der mit
++       sich selbst verglichen wird, den `min` und `max` sowie die Collection-Reduktionen
++       `minimum` und `maximum` brauchen.
+
+@ 0 4 0 16181862478cf38504c1890ac92b675c
++       Vergleiche verketten sich wie in der Mathematik. `1.2 < x < 1.4` wird als `(1.2 < x) <
++       1.4` geparst, ein `Boolean`, verglichen mit einem `Double`, den das `.numeric`-given
++       behandelt: Ein Makro liest den linken Vergleich aus dem `Boolean`-Ausdruck zurück und
++       schreibt das Ganze in einen einzigen Bereichstest um, `1.2 < x && x < 1.4`.
+
+% 2 1 0 1e7e5323bed22e970dd5799c88e0d643
+
+% 3 1 0 0a74b503922a731c02c3ca7ef691c581
+
+% 0 1 0 18324ade38fdca4c14d77360d5e9e199
+
+% 0 1 0 1e3aac79b0560bf81ecdd3ba6e04fb3d
+
+% 0 1 0 1d583f575cc6acfc080cad43f16b0ffe
+
+% 1 1 0 19de746b01c54a7004d7f9721a33fe34
+
+@ 0 5 0 0edddebd099f1d6d19f1abd91f19b9cf
++       Die Kette muss links mit einer Schranke beginnen: `1.4 > x > 1.2` ist der Fehler
++       `↯/s.27.16`, _this cannot be written as a range expression_. Jeder numerische Typ dieser
++       Bibliothek hat ein `Orderable` in seinem Begleitobjekt, `F64` vergleicht sich zusätzlich
++       mit einem `Int` und einem `Double`, und jeder Typ mit einem `Comparable` von Symbolism
++       (oder einem `Ordering` der Standardbibliothek, über die Brücke von `Comparable`) ist über
++       `.orderable` `Orderable`.
+
+% 0 1 0 1bb15d1e1b5fb0c71556a10c68bcffa0
+
+% 0 1 0 0fe7fde55d9d79da16eb2f94b33afa87
+
+% 0 1 0 00979ee19cd915f81a63b0aeb71ee5ba
+
+@ 0 1 0 009805e4d523e31f11893f92b8dcf8bc
++   entry .numeric   `(a < x) < b`: ein verketteter Vergleich auf den Primitiven, in einen einzigen Bereichstest umgeschrieben
+
+% 0 1 0 1b5a5cfb1a81d90203401f924b882ef3
+
+@ 0 3 0 0cca3e8a34d58da7155e498b10b8fe33
++       Sein `compare` ist ein Makro, das den `Boolean` auf einen Vergleich desselben primitiven
++       Typs untersucht und mit dem Fehler `↯/s.27.16` abbricht, wenn der Ausdruck keiner ist.
++   entry .memory   `Memory is Orderable`: Speichergrößen vergleichen sich nach ihrer Byte-Anzahl
+
+% 0 1 0 0c6fa32e7bad15e402cb6ea26c32ce75
+
+@ 0 7 0 10b4625a0d929b0e08b1a588b5f3a5d8
++   entry .orderable   jeder `Comparable`-Typ ist `Orderable`, sodass `<` und `max` auf ihm funktionieren
++       `[value: Comparable] => value is Orderable`: Das dreiwertige `compare` zur Laufzeit
++       verleiht die vier Operatoren zur Kompilierzeit. Typen, deren Ordnung noch ein `Ordering`
++       der Standardbibliothek ist, erreichen dies über die eigene niedrig priorisierte Brücke von
++       `Comparable`, sodass die eine Instanz beides abdeckt.
++   entry #compare   `compare(left, right, strict, greaterThan)`: der eine Vergleich, auf den sich die vier Operatoren reduzieren
++       `strict` unterscheidet `<` von `<=` und `greaterThan` die `>`-Familie von der
++       `<`-Familie; beide sind inline, sodass eine Implementierung zur Kompilierzeit nach ihnen
++       verzweigt.
+
+@ 0 1 0 0bd6197dfb512d4c0b1c960d54046f65
++ entry .Orderable   ein Typ, der mit sich selbst verglichen wird: `Commensurable` mit `Contrast = Self`
+
+% 1 1 0 1496a9db2feb95d20ea07f5de62b1bb9
+
+@ 0 4 0 10e616c8a4c6b49d1a0d1c4fa47d6eaf
++       Ein `Orderable` ist die Instanz, die jeder numerische Typ in seinem Begleitobjekt hält
++       (`S32.orderable`, `Q64.orderable`, `Decimal.orderable`, `F64.orderable`), und das, was
++       `min`, `max`, `minimum`, `maximum`, `median` und `Checkable.commensurable` verlangen. Ein
++       Typ, dessen Ordnung eine Funktion der Ordnung eines anderen ist, erhält eines mit
++       `#contramap`:
+
+% 2 1 0 015343c38549de9b132debbb2c26f255
+
+% 3 1 0 0a68b2add9bc000b18bc5f3b4c6d6f64
+
+% 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
+
+% 0 1 0 07abc21c17c93ab812192bad302b437f
+
+% 0 1 0 13459642b920470e1d7a69a140e47abb
+
+% 1 1 0 1547fffd39294e2c0f80212b6de1fc09
+
+% 0 1 0 1b6aef6b00bc52481a2a793d45865143
+
+@ 0 3 0 0dd67134b34793e51da44b985beb7f7b
++   entry #Contrast   der Typ, mit dem verglichen wird: der Typ selbst
++   entry #contramap   ein `Orderable` für einen anderen Typ, indem dieser auf diesen hier abgebildet wird
++       `orderable.contramap(f)` vergleicht zwei Werte, indem es `f` von jedem vergleicht.
+
+@ 0 1 0 14f0a46de10c4ae21c50c72d58ca7151
++ entry .Rational   der Fehler, der ausgelöst wird, wenn ein Text keine rationale Zahl ist
+
+% 1 1 0 1a48cd6c4a26130214b033c6b8d0a162
+
+@ 0 2 0 0d4aa2736e400f92160ab4fb9a1a37f8
++       `Q64.parse` und `Q32.parse` lösen `Rational.Error` für einen Text aus, der weder eine
++       Ganzzahl noch ein Bruch `numerator/denominator` noch `NaR` ist.
+
+% 1 1 0 0023048d103c141f0c2e3c0dcb41dc9a
+
+@ 0 1 0 1d549f3a365d7ebb168def68ce57c798
++   entry .Error   Fehler `↯/s.27.11`: _`text` is not a representable rational number_
+
+% 1 1 0 1e3806e208ae5d3c0ff6eab18c5bf43a
+
+@ 0 2 0 1ba253109efd61320be2f7608f6f1b60
++         Ausgelöst von `Q64.parse(text)` und `Q32.parse(text)` über eine
++         `Tactic[Rational.Error]`.
++     entry #text   der Text, der nicht geparst werden konnte
+
+@ 0 1 0 045cb4b16bf3c4dc17d5294c605c4139
++ entry .Decimal   eine Dezimalzahl beliebiger Genauigkeit: Vorzeichen, Betrag und Skala, exakt und kanonisch
+
+% 1 1 0 0184e8bdaeeb7f4e06830d242307efc6
+
+@ 0 6 0 0a0428052c6268d81309a57bbe204559
++       Ein `Decimal` ist ein Vorzeichen, ein beliebiger Betrag und eine dezimale Skala, sodass er
++       eine Geldsumme, eine aus einem Dokument gelesene Koordinate oder jede Zahl, die nichts
++       über ihre Größe versprochen hat, exakt hält. Er ist reines Scala statt eines Wrappers um
++       das `BigDecimal` der JVM, sodass er auf jeder Plattform funktioniert, und nichts in ihm
++       braucht native 64-Bit-Arithmetik: Der Betrag wird in Limbs zur Basis 10⁹ gehalten, sodass
++       jedes Zwischenprodukt in einen `Long` passt.
+
+% 2 1 0 12277d39866035680a35172746221c7e
+
+% 3 1 0 1796f92906150e5402275dae630c1eab
+
+% 4 1 0 1d8a6937d009648a0047a1aa50f45320
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0e71121de4c184a402e29571779563e4
+
+% 0 1 0 086abf9d6282bee80f03746d17641072
+
+% 0 1 0 157008aca365654d0d062aec18d66524
+
+% 0 1 0 00fb7939126f15ee1a1ea8858381ac6a
+
+% 0 1 0 10e743c138cdef21048b15ba0411f5d1
+
+% 0 1 0 01e9adbbc8c54d5912f2d8b7ed0e1a64
+
+% 1 1 0 0a892471cde17bb30fbe75957ed2cf10
+
+@ 0 9 0 17adf3f69545cc001943300f3bfeadab
++       Jeder Wert ist kanonisch: Nachgestellte Nullen werden beim Bilden eines Werts in die Skala
++       aufgenommen, und null hat eine einzige Darstellung, sodass zwei numerisch gleiche
++       Dezimalzahlen derselbe Wert sind und es kein Gegenstück zur Uneinigkeit von `BigDecimal`
++       zwischen `equals` und `compareTo` gibt. `+`, `-`, `*` und das Präfix-`-` sind die
++       Operatoren von Symbolism über die givens in diesem Begleitobjekt, exakt und ohne Bedarf
++       an einer Richtlinie. Die Division kann nicht immer exakt sein, daher ist sie nicht `/`:
++       `.divide` nimmt die Skala des Ergebnisses und eine `Rounding` und löst bei einem Divisor
++       null `Arithmetic.Error` aus. Ein Achtel auf zwei Stellen ist ein Gleichstand: `HalfUp`
++       rundet ihn auf und `HalfEven` zur geraden Ziffer, bei zehn Stellen ist keine Rundung
++       nötig, und die nachgestellten Nullen werden nie behalten:
+
+% 2 1 0 0962298c2ffafbf40309b282eb3cccdb
+
+% 0 1 0 116130dfd63928ac09e2bfec1af21bdc
+
+% 1 1 0 14b5d9385ff1ad911cc2c70a0cc784de
+
+% 2 1 0 0884fdb13354e6231d0882c6b796674b
+
+% 3 1 0 0268e9b8a8be8f84090bac9e109ec249
+
+% 0 1 0 0b20c6da2855604708f581dc242d3a64
+
+% 0 1 0 186774a156de1a291d344c60e9a17bdf
+
+% 1 1 0 0c917a572eb0344e0e278e1930f69c4e
+
+% 2 1 0 087310f06d8b82b51726e7d8cb983e8f
+
+% 3 1 0 10c006dce95eb39c05ee5e04fcafefda
+
+% 0 1 0 09d073204a7da1e6023a1c96dc2ecf55
+
+% 0 1 0 13dc356a730fb29a1e759ba71583ed66
+
+% 1 1 0 1e1650542ff295300f481e80fad583b4
+
+% 2 1 0 00d7ba58801b9b9b0b29c417b96ab8b8
+
+% 3 1 0 1d493526912d708f075cf66775fe9c6a
+
+% 0 1 0 0c88f678df2bc2851663c00576dd5c0c
+
+% 0 1 0 0ff5871666839ed611e3c6486123fbc9
+
+% 1 1 0 1dc4e5ed1f29b12f1dbde21fd601fda1
+
+% 2 1 0 1cfe2e37036a048d08ecc2ab777658a0
+
+% 3 1 0 065dd866f28393e708811ec540d53bfa
+
+% 0 1 0 1d8e19a5f1b674de064230eba2edbcdf
+
+% 1 1 0 18ab9a5bf6822e8d18fb8e4cb82ca508
+
+% 2 1 0 073fccab8e414b9e0e21f58f9bd3c9e3
+
+@ 0 4 0 0c9dc4b9ca3319aa06d757198b112e8c
++       Die Rundungsmodi stimmen mit denen von `java.math.RoundingMode` überein, und `text` stellt
++       in einfacher Notation ohne Exponent dar, wie es
++       `BigDecimal#stripTrailingZeros.toPlainString` täte. `Decimal` ist `Orderable`, wird über
++       `Textualizable` dargestellt und ist ein reiner Wert, sodass eine Collection von
++       Dezimalzahlen nichts zusätzlich boxt.
+
+@ 0 2 0 0b6a69591bddf859109266cc6c1bfd97
++       Die Member seines Begleitobjekts sind in `decimalInternal.Decimal` deklariert, aus dem der
++       Typ exportiert wird, und dort dokumentiert.
+
+% 1 1 0 0329ef8fc551b2ce1ada1ef5470fba98
+
+% 1 1 0 1e0e58d76732d622180e83b451bd9102
+
+@ 0 1 0 01d149ff4f2ea9f7016a2ecbc9b5e36d
++ entry .decimalInternal   der opake Geltungsbereich von `Decimal`
+
+% 1 1 0 0dd96ff2a6176f56014ec580ccd4e959
+
+% 2 1 0 040b03a7657a49441e46732de66ab4da
+
+@ 0 5 0 02f94410f46a42340c9bde89c373476b
++       Nicht zur direkten Verwendung: Das Objekt existiert, damit die Darstellung von `Decimal`
++       (ein eingefrorenes `Array[Int]^{}`: Signum, Skala, dann Limbs zur Basis 10⁹) selbst vor
++       dem Rest des Pakets verborgen ist, wodurch die Auflösung von givens im Geltungsbereich des
++       Begleitobjekts überall außerhalb intakt bleibt. Der Typ und sein Begleitobjekt werden als
++       `Decimal` nach `hypotenuse` exportiert.
++   entry .Decimal   die Dezimalzahl beliebiger Genauigkeit; siehe `hypotenuse.Decimal`
+
+% 1 1 0 1fd5b2de866864ee1af6ce58806eef0a
+
+@ 0 45 0 13dde1cb4e002507182168613ec8483a
++         Das Begleitobjekt des opaken Typs `Decimal`, zusammen mit ihm in das Paket `hypotenuse`
++         exportiert.
++     entry .Zero   die eine Darstellung von null
++     entry .Rounding   wie ein Quotient auf seine Skala gerundet wird: `Up`, `Down`, `Ceiling`, `Floor`, `HalfUp`, `HalfDown` oder `HalfEven`
++         `Up` rundet von null weg und `Down` zu null hin; `Ceiling` in Richtung plus unendlich
++         und `Floor` in Richtung minus unendlich; die drei `Half`-Modi runden zum nächsten Wert
++         und lösen einen Gleichstand von null weg, zu null hin oder zum geraden Nachbarn auf.
++         Jeder stimmt mit dem gleichnamigen `java.math.RoundingMode` überein.
++     entry .apply   ein `Decimal` aus einem `Int`, einem `Long`, einem unskalierten `Long` und einer Skala oder einem `Double`
++         `Decimal(unscaled, scale)` ist `unscaled × 10⁻ˢᶜᵃˡᵉ`, sodass `Decimal(-1234567, 4)`
++         gleich `-123.4567` und `Decimal(42, -3)` gleich `42000` ist. `Decimal(double)`
++         konvertiert einen endlichen `Double` über seine kürzeste verlustfrei umkehrbare
++         Dezimaldarstellung, sodass `Decimal(0.1)` exakt `0.1` ist statt der 55-stelligen binären
++         Entwicklung, die der `Double`-Konstruktor von `java.math.BigDecimal` liefert; für `NaN`
++         oder einen unendlichen Wert löst es `Decimal.Error` aus.
++     entry .parse   ein `Decimal` aus einem Text wie `-12.34e+2`, oder `Decimal.Error`
++         Die Grammatik ist ein optionales Vorzeichen, Ziffern mit einem optionalen Punkt (Ziffern
++         auf mindestens einer Seite davon) und ein optionaler Exponent mit eigenem Vorzeichen.
++         Alles andere — `1.2.3`, eine leere Zeichenkette, ein bloßer Exponent — löst
++         `Decimal.Error` aus.
++     entry .comparison   der vorzeichenbehaftete dreiwertige Vergleich: `-1`, `0` oder `1`
++         Entscheidet zuerst nach dem Vorzeichen, dann nach der Anzahl der Ziffern vor dem Punkt,
++         und richtet die Beträge nur aus, wenn diese übereinstimmen, sodass pathologische
++         Unterschiede der Skala nie ausmultipliziert werden.
++     entry .orderable   `<`, `<=`, `>`, `>=`, `min` und `max` auf Dezimalzahlen, nach `Decimal.comparison`
++     entry .fromDigits   ein `Decimal` aus einem numerischen Literal, unter `genericNumberLiterals`
++         `val price: Decimal = 12.99`. Die Ziffern eines Literals werden vom Compiler geprüft,
++         sodass das Parsen für sie nicht fehlschlagen kann.
++     entry .negation   der Wert mit umgekehrtem Vorzeichen; null bleibt unverändert
++     entry .sum   die exakte Summe zweier Dezimalzahlen, auf die größere Skala ausgerichtet
++     entry .product   das exakte Produkt zweier Dezimalzahlen, mit addierten Skalen
++     entry .addable   `Decimal + Decimal`, exakt
++     entry .subtractable   `Decimal - Decimal`, exakt
++     entry .multiplicable   `Decimal * Decimal`, exakt
++     entry .negatable   Präfix-`-` auf einem `Decimal`
++     entry .textualizable   stellt eine Dezimalzahl in einfacher Notation dar, wie es `.text` tut
++     entry .signum   eine Erweiterung auf `Decimal`: `-1`, `0` oder `1`
++     entry .scale   eine Erweiterung auf `Decimal`: die Zehnerpotenz, durch die der Betrag geteilt wird
++         Negativ für einen Wert mit nachgestellten Nullen, da die kanonische Form sie aufnimmt:
++         `Decimal(42000).scale` ist `-3`.
++     entry .abs   eine Erweiterung auf `Decimal`: der Absolutbetrag
++     entry .divide   eine Erweiterung auf `Decimal`: der Quotient, mit angegebener Skala und Rundung
++         `left.divide(right, scale, rounding)` berechnet den Quotienten auf `scale`
++         Dezimalstellen und rundet den Rest, wie die `Rounding` es vorgibt, mit Knuths
++         Algorithmus D zur Basis 10⁹. Ist der Divisor null, löst es über eine
++         `Tactic[Arithmetic.Error]` `Arithmetic.Error` (Grund `DivisionByZero`) aus. Das Ergebnis
++         ist kanonisch, sodass ein Quotient, der weniger Stellen als `scale` braucht, weniger
++         hat.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 12b36630ba4606cc1e0225eb20246c2a
+
+% 0 1 0 1a973841f2b80cb516aca1b50e9a7595
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 6 0 09700a4050669ccc02c526cf09b0c025
++     entry .text   eine Erweiterung auf `Decimal`: einfache Dezimalnotation, ohne Exponent und ohne nachgestellte Nullen
++         `Decimal(7, 5).text` ist `0.00007` und `Decimal(1100, 2).text` ist `11`; der Text wird
++         wieder zum selben Wert geparst.
++     entry .double   eine Erweiterung auf `Decimal`: der nächstgelegene `Double`, korrekt gerundet
++     entry .whole   eine Erweiterung auf `Decimal`: ob der Wert eine Ganzzahl ist
++     entry .Error   Fehler `↯/s.27.10`: _`text` is not a representable decimal number_
+
+% 1 1 0 1d0038d69569ce75162c86c1c33d01f5
+
+@ 0 3 0 1de534a5ddf7c3c40bcf87ebcac2c52a
++           Ausgelöst von `Decimal.parse` für einen Text außerhalb der Grammatik und von
++           `Decimal(double)` für einen `NaN`- oder unendlichen `Double`, über eine
++           `Tactic[Decimal.Error]`.
++       entry #text   der Text oder die Darstellung des `Double`, der zurückgewiesen wurde
+
+@ 0 1 0 1ce735205f5b8eda1f33359f06180e4c
++ entry .Q64   eine exakte rationale Zahl in einem `Long`: kanonisch, unter Division total, mit `NaR` für das Undefinierte
+
+% 1 1 0 1b8612150522d4e61814c8d0647bc4a7
+
+@ 0 7 0 09fd8acc12e5343202dfa39112953620
++       Ein `Q64` ist eine rationale Zahl, die in ein einziges Maschinenwort gepackt ist; eine
++       Sammlung davon ist also ein primitives `long[]`, und ihre Arithmetik alloziert nichts.
++       Der Betrag ist der Kettenbruch des Werts, Elias-Gamma-kodiert, was jeder rationalen Zahl
++       genau eine Kodierung gibt, bereits vollständig gekürzt: Bitgleichheit ist Wertgleichheit,
++       und eine ggT-Normalisierung gibt es nirgends. Das Vorzeichen ist das oberste Bit, und der
++       Betrag aus lauter Nullen mit gesetztem Vorzeichen ist `NaR`, „not a rational“, das
++       Ergebnis einer Division durch null, das sich durch die Arithmetik fortpflanzt und wie
++       `Double.NaN` als ungeordnet verglichen wird.
+
+% 2 1 0 0aa5d967ce205c8c02ce16d8c3d2dcdf
+
+% 3 1 0 1789c5c900da6f861434a7611d9a475b
+
+% 4 1 0 10bbd5c61c685829094d393b7992af67
+
+% 0 1 0 06cb8ba8bdcbbeb107ff22085f154492
+
+% 0 1 0 0ea907518411489b0bcd94b16fb0b677
+
+% 0 1 0 1c9008599f0f1e5d05fd73c970d25767
+
+% 0 1 0 17002a92750417c4125ae3fc277316d6
+
+% 0 1 0 003f2af69b97e9061da786eee7862345
+
+% 0 1 0 14624c233c51807d1cb9042d76490764
+
+% 0 1 0 029dd97150f898fe06824c825cc2bde9
+
+% 0 1 0 0aa69a5add03dcde0c05edc668261ce8
+
+% 0 1 0 09cb4cd54c77746d0ff8f20d1602029d
+
+% 0 1 0 1dc2d8504a226f3d0c9c92320a2b386f
+
+% 1 1 0 0965f8ab9d0f988110d9a8097eaedfe9
+
+@ 0 6 0 09ac83b569a68024006357ec4ea7dbe3
++       Ganze Zahlen reichen bis `2³¹−2` (`Q64.Max`) und Stammbrüche bis `1/(2³¹−1)`, und jede
++       rationale Zahl, deren Zähler und Nenner höchstens `2²⁴` betragen, ist exakt darstellbar.
++       Braucht ein exaktes Ergebnis mehr als die 62 Nutzbits, behält der Encoder das längste
++       Präfix seines Kettenbruchs, das hineinpasst; das Ergebnis ist also ein Näherungsbruch
++       oder Nebennäherungsbruch des exakten Werts: die beste Approximation unter den rationalen
++       Zahlen mit keinem größeren Nenner, statt eines Überlaufs oder einer Exception.
++       `Q64(Long.MaxValue)` sättigt zu `Q64.Max`.
+
+@ 0 7 0 01ea50821ad2fd4d1a5ffa72f5ae2d42
++       `+`, `-`, `*`, `/`, das Präfix `-` und `sqrt` sind die Operatoren von Symbolism, über die
++       Inline-Givens in diesem Begleitobjekt, ohne dass eine Richtlinie importiert werden muss;
++       `*` und `/` nehmen auch einen `Int`-, `Long`- oder `Double`-Operanden. Die statistischen
++       Reduktionen `mean`, `median` und `variance` sind über rationalen Zahlen exakt, und `std`
++       wird unter `import
++       arithmeticOptions.q64RationalDivision` aufgelöst, womit `/` einen `Double` liefert. Die
++       Erweiterungsmethoden sind `numerator`, `denominator`, `signum`, `nar`, `abs`, `whole`,
++       `reciprocal`, `floor`, `ceiling`, `round`, `double`, `text` und `q32`.
+
+@ 0 2 0 0141c0be7761a9980188b76fffcfcc38
++       Die Member seines Begleitobjekts sind in `rationalInternal.Q64` deklariert, von wo der
++       Typ exportiert wird, und dort dokumentiert.
+
+% 0 1 0 1f63c4403ac9b54603854ecf1bd90fcb
+
+% 0 1 0 0fe7fde55d9d79fa16eb2f94b33afaa7
+
+% 0 1 0 02796616cbf494c11462d00ea587a853
+
+% 1 1 0 016bab2feb536d6715cb93f52868a3bc
+
+@ 0 1 0 15b2121d760cab7403fa75b9dc75c72d
++ entry .Q32   eine exakte rationale Zahl in einem `Int`: das 32-Bit-Gegenstück zu `Q64`
+
+% 1 1 0 08c24b21e413d5ee03367977d1992257
+
+@ 0 6 0 114792eac9cd0d9b024bc7285d787fcd
++       Ein `Q32` packt eine rationale Zahl in einen `Int`, mit der Kodierung von `Q64` bei 30
++       Nutzbits: Ganze Zahlen reichen bis `±32766`, Stammbrüche bis `1/32767`, und jede
++       rationale Zahl, deren Zähler und Nenner höchstens `2¹¹` betragen, ist exakt. Seine
++       Arithmetik ist dieselbe wie die von `Q64` — `+`, `-`, `*`, `/`, das Präfix `-` und `sqrt`
++       über Inline-Givens, `*` und `/` mit einem `Int`, `Long` oder `Double`, `Nar` für einen
++       Divisor null, Rundung auf die beste Approximation jenseits des Budgets —, und ein `Q32`
++       wird mit `q64` oder implizit exakt zu `Q64` erweitert.
+
+% 2 1 0 03234a4f44b76a3d118ae0cad892c83e
+
+% 3 1 0 1b27b64950280e3f13f775d4a3020f6c
+
+% 0 1 0 11c8f0b6bee4670e102d9be461b73cde
+
+% 0 1 0 184a50e33d0ba79606ed4f6c1f0fb38d
+
+% 0 1 0 1642e546b5291a481ce949e4ed82a35e
+
+% 0 1 0 154184d3b5c50461113e7773a8242511
+
+% 1 1 0 1a9d3ff820e8875209029d4a662e1a88
+
+@ 0 2 0 01cbe05f81c0a3720033dfbffd98bc98
++       Arrays von `Q32` sind primitive `int[]`s, und das ist der Grund, weshalb es den Typ neben
++       `Q64` gibt: doppelt so viele rationale Zahlen im selben Speicher, für die Brüche, die
++       hineinpassen.
+
+@ 0 2 0 040450ad84da8d7912c7e542ddb4d5cd
++       Die Member seines Begleitobjekts sind in `rationalInternal.Q32` deklariert, von wo der
++       Typ exportiert wird, und dort dokumentiert.
+
+% 1 1 0 18336cabbb45881517cc5428a1077f75
+
+@ 0 1 0 1d576212bf40338007e4419e1b4484a7
++ entry .rationalInternal   der opake Geltungsbereich von `Q64` und `Q32`
+
+% 1 1 0 1c220f4faca37284180e4de57f4b3d3b
+
+% 2 1 0 1c167878a5063df9081e2b7f86b1ee55
+
+@ 0 5 0 02918418a6fbb8d10ce1ea653a6be06e
++       Nicht zur direkten Verwendung: Das Objekt kapselt die Darstellung der rationalen Zahlen
++       (eine Position im Stern-Brocot-Baum, als gamma-kodierter Kettenbruch in einem `Long` oder
++       einem `Int`), sodass sie selbst vor dem Rest des Pakets verborgen ist. Die beiden Typen
++       und ihre Begleitobjekte werden als `Q64` und `Q32` nach `hypotenuse` exportiert.
++   entry .Q64   die 64-Bit-rationale Zahl; siehe `hypotenuse.Q64`
+
+% 1 1 0 1a45518e895bb70f001460acd75b9d17
+
+@ 0 5 0 0a9c39185996eac71d28672523db748a
++         Das Begleitobjekt des opaken Typs `Q64`, mit ihm in das Paket `hypotenuse` exportiert.
++     entry .Zero   null, das Wort aus lauter Nullen
++     entry .One   eins
++     entry .Nar   keine rationale Zahl: das Ergebnis einer Division durch null, das sich fortpflanzt und als ungeordnet verglichen wird
++     entry .Max   die größte ganze Zahl, `2147483646`
+
+% 0 1 0 0ab01c6c094358ff1cb56fe2733900b9
+
+@ 0 21 0 05dc4b621dc001c918144f51ecad5514
++     entry .underlying   der Nachweis, dass ein `Q64` darunter ein `Long` ist
++     entry .canEqual   ein `Q64` darf mit `==` nur mit einem anderen `Q64` verglichen werden
++     entry .classTag   ein `ClassTag`, der ein `Array[Q64]` zu einem primitiven `long[]` macht
++     entry .apply   ein `Q64` aus einem `Int` oder `Long`, aus Zähler und Nenner oder aus einem `Double`
++         `Q64(numerator, denominator)` kürzt vollständig und verschiebt ein negatives Vorzeichen
++         in den Zähler; ein Nenner null ergibt `Nar`, und ein Wert jenseits des Budgets wird auf
++         seine beste Approximation gerundet. `Q64(double)` ist die beste darstellbare
++         Approximation eines endlichen `Double` (`Q64(0.375)` ist genau `3/8`) und `Nar` für
++         `NaN` oder eine Unendlichkeit.
++     entry .parse   ein `Q64` aus `7`, `-5/3` oder `NaR`, oder `Rational.Error`
++     entry .comparison   der vorzeichenbehaftete Dreiwegevergleich, mit `NaR` unter allem
++         Die Vergleichsoperatoren selbst behandeln `NaR` als ungeordnet; dies ist die totale
++         Ordnung, die eine Sortierung braucht.
++     entry .orderable   `<`, `<=`, `>`, `>=`, `min` und `max` auf rationalen Zahlen; jeder Vergleich mit `NaR` ist falsch
++     entry .fromDigits   ein `Q64` aus einem ganzzahligen oder dezimalen Literal, unter `genericNumberLiterals`
++         `val ratio: Q64 = 0.35` ist genau `7/20`; ein dezimales Literal wird exakt konvertiert,
++         wann immer der Bruch in die Nutzbits passt.
++     entry .textualizable   stellt eine rationale Zahl als `7`, `-5/3` oder `NaR` dar
++     entry .addable   `Q64 + Q64`, exakt oder mit der besten Approximation, die hineinpasst
++         Inline, mit einem inline `add`, sodass eine Verwendung am Typ selbst die
++         `Long`-Arithmetik ohne Instanzaufruf und ohne Boxing ausführt; als `[self <: Q64]`
++         typisiert, damit ein skolemisierter Elementtyp, wie ihn die statistischen Reduktionen
++         erzeugen, es trotzdem findet.
+
+% 0 1 0 0b23483a54f1bc8e0137a21771403d3e
+
+% 0 1 0 153a36adc83e6f291dfcb4a1b2bd387b
+
+@ 0 36 0 136915f80e55836f1b29d39bac798288
++     entry .divisible   `Q64 / Q64`: total, mit `Nar` für einen Divisor null
++     entry .negatable   das Präfix `-` auf einem `Q64`; `-Nar` ist `Nar`
++     entry .zeroic   `Q64.Zero` als additives neutrales Element, für `total` und `mean`
++     entry .unital   `Q64.One` als multiplikatives neutrales Element
++     entry .rootable   `sqrt` auf einem `Q64`: exakt für das Quadrat einer darstellbaren rationalen Zahl, sonst die beste Approximation
++         `Q64(2).sqrt` nähert √2 bis zur vollen Tiefe der Kodierung an; ein negativer Operand
++         ergibt `Nar`.
++     entry .divisibleDouble   `Q64 / Double`, wobei der Divisor zuerst in eine rationale Zahl konvertiert wird
++         Sammlungsgrößen und exakte Hälften werden exakt konvertiert, und das hält `mean` und
++         `median` exakt.
++     entry .multiplicableDouble   `Q64 * Double`, wobei der Multiplikator zuerst in eine rationale Zahl konvertiert wird
++     entry .multiplicableInt   `Q64 * Int`, exakt für jeden `Int` außer den beiden Extremen, die begrenzt werden
++     entry .multiplicableLong   `Q64 * Long`, exakt innerhalb von `±(2³¹−2)`; größere Multiplikatoren werden begrenzt
++     entry .divisibleInt   `Q64 / Int`; eine Division durch null ergibt `Nar`
++     entry .divisibleLong   `Q64 / Long`; eine Division durch null ergibt `Nar`
++     entry .quotient   zerlegt ein `Q64` als `case numerator /: denominator`; `NaR` passt nicht
++     entry .intConversion   ein `Int` wird implizit in `Q64` konvertiert, exakt außer für `Int.MaxValue` und `Int.MinValue`
++         Die beiden Extreme werden um eins auf `±(2³¹−2)` gerundet. Eine Konvertierung aus
++         `Long` gibt es nicht, ebenso wenig wie nach `F64`, da sie nicht exakt wäre.
++     entry .shortConversion   ein `Short` wird implizit in `Q64` konvertiert
++     entry .byteConversion   ein `Byte` wird implizit in `Q64` konvertiert
++     entry .q32Conversion   ein `Q32` wird implizit in `Q64` konvertiert, immer exakt
++     entry .numerator   eine Erweiterung auf `Q64`: der vorzeichenbehaftete Zähler in gekürzter Form; `0` für null und `NaR`
++     entry .denominator   eine Erweiterung auf `Q64`: der Nenner in gekürzter Form; `1` für null, `0` allein für `NaR`
++     entry .signum   eine Erweiterung auf `Q64`: `-1`, `0` oder `1`, mit `0` für `NaR`
++     entry .nar   eine Erweiterung auf `Q64`: ob der Wert `NaR` ist
++     entry .abs   eine Erweiterung auf `Q64`: der Absolutbetrag
++     entry .whole   eine Erweiterung auf `Q64`: ob der Nenner eins ist
++     entry .reciprocal   eine Erweiterung auf `Q64`: `1/q`, mit `Nar` für null
++     entry .floor   eine Erweiterung auf `Q64`: die größte ganze Zahl nicht über dem Wert, als `Q64`
++     entry .ceiling   eine Erweiterung auf `Q64`: die kleinste ganze Zahl nicht unter dem Wert, als `Q64`
++     entry .round   eine Erweiterung auf `Q64`: die nächste ganze Zahl als `Long`, bei der Hälfte aufgerundet, wie `math.round` auf einem `Double`
++     entry .double   eine Erweiterung auf `Q64`: der korrekt gerundete `Double`; `NaN` für `NaR`
++     entry .text   eine Erweiterung auf `Q64`: `7`, `-5/3`, `0` oder `NaR`, was `Q64.parse` zurückliest
++     entry .q32   eine Erweiterung auf `Q64`: die beste `Q32`-Approximation, exakt, wann immer der Wert hineinpasst
++   entry .Q32   die 32-Bit-rationale Zahl; siehe `hypotenuse.Q32`
+
+% 1 1 0 05c13f84414dcf7d118cf9080dc6869e
+
+@ 0 5 0 1ed25c0035b762c012a3bf1bdd38dd7b
++         Das Begleitobjekt des opaken Typs `Q32`, mit ihm in das Paket `hypotenuse` exportiert.
++     entry .Zero   null
++     entry .One   eins
++     entry .Nar   keine rationale Zahl: das Ergebnis einer Division durch null
++     entry .Max   die größte ganze Zahl, `32766`
+
+% 0 1 0 19af62d74f44bc8517113c9788793bc0
+
+@ 0 10 0 06b4e3cc51241116170af94ae8be8a18
++     entry .underlying   der Nachweis, dass ein `Q32` darunter ein `Int` ist
++     entry .canEqual   ein `Q32` darf mit `==` nur mit einem anderen `Q32` verglichen werden
++     entry .classTag   ein `ClassTag`, der ein `Array[Q32]` zu einem primitiven `int[]` macht
++     entry .apply   ein `Q32` aus einem `Int` oder `Long`, aus Zähler und Nenner oder aus einem `Double`
++     entry .parse   ein `Q32` aus `7`, `-5/3` oder `NaR`, oder `Rational.Error`
++     entry .comparison   der vorzeichenbehaftete Dreiwegevergleich, mit `NaR` unter allem
++     entry .orderable   `<`, `<=`, `>`, `>=`, `min` und `max` auf `Q32`s; jeder Vergleich mit `NaR` ist falsch
++     entry .fromDigits   ein `Q32` aus einem ganzzahligen oder dezimalen Literal, unter `genericNumberLiterals`
++     entry .textualizable   stellt ein `Q32` als `7`, `-5/3` oder `NaR` dar
++     entry .addable   `Q32 + Q32`, inline und allokationsfrei
+
+% 0 1 0 055ae450f6fed4441ea9786ab15093c6
+
+% 0 1 0 0f71d2c46a4b86df1b6e8af4f2cd8f04
+
+@ 0 5 0 051775dd10858d500ea06f376cb14d53
++     entry .divisible   `Q32 / Q32`: total, mit `Nar` für einen Divisor null
++     entry .negatable   das Präfix `-` auf einem `Q32`
++     entry .zeroic   `Q32.Zero` als additives neutrales Element
++     entry .unital   `Q32.One` als multiplikatives neutrales Element
++     entry .rootable   `sqrt` auf einem `Q32`, exakt für das Quadrat einer darstellbaren rationalen Zahl
+
+% 0 1 0 0bd87688548051c2166f79e77b652b06
+
+% 0 1 0 11fdbe238594ed77175bd202e9622903
+
+@ 0 2 0 18f7713aed3ecb60168c3f6e8ac7e5e5
++     entry .multiplicableInt   `Q32 * Int`, exakt innerhalb von `±32766`
++     entry .multiplicableLong   `Q32 * Long`, exakt innerhalb von `±32766`
+
+% 0 1 0 01bbe77167115c8b0b206bff12299147
+
+% 0 1 0 17de5bf399e3635c1e3c95a779798814
+
+@ 0 16 0 14d47e764de88168125f69351ffc6988
++     entry .quotient   zerlegt ein `Q32` als `case numerator /: denominator`
++     entry .shortConversion   ein `Short` wird implizit in `Q32` konvertiert, exakt außer für die beiden Extreme
++     entry .byteConversion   ein `Byte` wird implizit in `Q32` konvertiert
++     entry .numerator   eine Erweiterung auf `Q32`: der vorzeichenbehaftete Zähler in gekürzter Form
++     entry .denominator   eine Erweiterung auf `Q32`: der Nenner in gekürzter Form; `0` für `NaR`
++     entry .signum   eine Erweiterung auf `Q32`: `-1`, `0` oder `1`
++     entry .nar   eine Erweiterung auf `Q32`: ob der Wert `NaR` ist
++     entry .abs   eine Erweiterung auf `Q32`: der Absolutbetrag
++     entry .whole   eine Erweiterung auf `Q32`: ob der Nenner eins ist
++     entry .reciprocal   eine Erweiterung auf `Q32`: `1/q`, mit `Nar` für null
++     entry .floor   eine Erweiterung auf `Q32`: die größte ganze Zahl nicht über dem Wert
++     entry .ceiling   eine Erweiterung auf `Q32`: die kleinste ganze Zahl nicht unter dem Wert
++     entry .round   eine Erweiterung auf `Q32`: die nächste ganze Zahl als `Long`, bei der Hälfte aufgerundet
++     entry .double   eine Erweiterung auf `Q32`: der korrekt gerundete `Double`
++     entry .text   eine Erweiterung auf `Q32`: `7`, `-5/3`, `0` oder `NaR`
++     entry .q64   eine Erweiterung auf `Q32`: derselbe Wert als `Q64`, immer exakt
+
+@ 0 1 0 045e03a50b49bb2c0eac247701bcccf8
++ entry .Bcd   eine gepackte binär kodierte Dezimalzahl, wie ein JSON- oder YAML-Parser sie aufbaut
+
+% 1 1 0 10a2cbe458986c9f110d6ac75c3a8b43
+
+@ 0 6 0 05d8d7a00720146e17afbe9c4414da2d
++       Ein `Bcd` hält die Ziffern einer Zahl so, wie sie geschrieben wurde — Ziffern, einen
++       Punkt, einen Exponenten und dessen Vorzeichen, je ein Nibble —, in einem eingefrorenen
++       `Array[Double]^{}`, dessen erstes Wort ein Header ist (Vorzeichen und Anzahl der Nibbles)
++       und dessen übrige Wörter je sechzehn Nibbles tragen.
++       Es ist die Zahlendarstellung des JSON-Parsers von Jacinta, hierher verschoben, damit eine
++       YAML-Bibliothek nicht von einer JSON-Bibliothek abhängen muss, und es bewahrt den exakten
++       Text einer Zahl, ohne sich auf einen `Double`, einen `Long` oder ein `BigDecimal`
++       festzulegen, bevor einer davon verlangt wird.
+
+@ 0 5 0 0c90936dc4c00c7e1584b40163e3114b
++       Die Nibbles sind `0x0`–`0x9` für Ziffern, `0xA` für `.`, `0xB` für `e` und `0xC` für
++       `e-`. Eine führende `0` vor einem Punkt wird beim Speichern weggelassen und beim
++       Darstellen wieder eingefügt. Neben der Array-Form gibt es zwei kompakte Packungen für
++       kleine Zahlen, sodass ein Parser einen Wert in einem einzigen `Long` (bis zu 14 Nibbles)
++       oder `Int` (bis zu 7) halten kann und erst dann ein `Bcd` baut, wenn er sie überläuft;
++       die Familie um `packBcdLong` liest und schreibt diese.
+
+% 2 1 0 0485459b530ecbad18200a6da7db0488
+
+% 3 1 0 106e6ff9463922e212cc314ff8eb7fa6
+
+% 0 1 0 1c3393a2d692af78123a2aedf5bd6909
+
+% 0 1 0 023ab207fe552a2d1e7e22bf1da37e50
+
+% 0 1 0 1fa0d8da8d2ede3d0b8cd43e75938e70
+
+% 0 1 0 0735eb69782bdc0f1ef36af6c2da6ecb
+
+% 0 1 0 0571c0dc8506a6321eb6593db69b88bb
+
+% 1 1 0 046da2919424d8da0c8717f79edd00ec
+
+@ 0 27 0 0a6a8782fdce296a02a2f7b829eb316d
++   entry .adopt   umhüllt ein frisch gebautes `Array[Double]` als `Bcd` und löst die Capability des Arrays einmalig ab
++   entry .NibblesPerDouble   sechzehn: die Nibbles, die ein Datenwort hält
++   entry .MaxBcdLongNibbles   vierzehn: die meisten Nibbles, die die Packung in einem einzigen `Long` hält
++   entry .packBcdLong   packt einen aufgebauten `content`, seine Anzahl an Nibbles und ein Vorzeichen in die Form mit einem einzigen `Long`
++       Bit 63 ist das Vorzeichen, die Bits 56–62 die Anzahl und die Bits 0–55 die Nibbles, das
++       neueste in den unteren vier Bits. Der Aufrufer prüft, dass die Anzahl höchstens
++       `MaxBcdLongNibbles` beträgt; `0L` ist für einen nicht initialisierten Platz reserviert,
++       da ein gültiger Wert mindestens ein Nibble hat.
++   entry .bcdLongNibbleCount   die Anzahl der Nibbles eines Werts in einem einzigen `Long`
++   entry .bcdLongNegative   das Vorzeichen eines Werts in einem einzigen `Long`
++   entry .bcdLongText   der kanonische JSON-Zahlentext eines Werts in einem einzigen `Long`
++   entry .bcdLongToDouble   ein Wert in einem einzigen `Long` als `Double`, auf dem Weg über seinen Text
++   entry .MaxBcdIntNibbles   sieben: die meisten Nibbles, die die Packung in einem einzigen `Int` hält
++   entry .packBcdInt   packt einen aufgebauten `content`, seine Anzahl an Nibbles und ein Vorzeichen in die Form mit einem einzigen `Int`
++       Bit 31 ist das Vorzeichen, die Bits 28–30 die Anzahl und die Bits 0–27 die Nibbles.
++   entry .bcdIntNibbleCount   die Anzahl der Nibbles eines Werts in einem einzigen `Int`
++   entry .bcdIntNegative   das Vorzeichen eines Werts in einem einzigen `Int`
++   entry .bcdIntText   der kanonische JSON-Zahlentext eines Werts in einem einzigen `Int`
++   entry .bcdIntToDouble   ein Wert in einem einzigen `Int` als `Double`, auf dem Weg über seinen Text
++   entry .repackBcdIntAsLong   die Form mit einem einzigen `Int`, neu kodiert als die Form mit einem einzigen `Long`
++   entry .packBcdIntFromLong   die Form mit einem einzigen `Long`, neu kodiert als die Form mit einem einzigen `Int`, für einen Wert von höchstens sieben Nibbles
++   entry .fromContent15   ein `Bcd` aus genau fünfzehn Nibbles, direkt aus dem `Long`-Akkumulator eines Parsers
++   entry .apply   `Bcd(bigDecimal)`: die Ziffern der einfachen Zeichenkettendarstellung eines `BigDecimal`
++   entry .fromString   ein `Bcd` aus einer Zahlenzeichenkette mit positivem Betrag und einem Vorzeichen-Flag
++       Der Text darf Ziffern, einen `.` und einen Exponenten `e`/`E` mit optionalem Vorzeichen
++       enthalten; der Aufrufer entfernt ein führendes `-` und übergibt es als `negative`. Ein
++       führendes `0.` wird ohne die Null gespeichert, wie es der Parser tut.
++   entry .Builder   setzt ein `Bcd` Nibble für Nibble zusammen, so wie ein Parser sie liest
+
+% 1 1 0 1438a191b803da8b0eb2449e16184d53
+
+@ 0 21 0 188ed2c3579457be09202ebcd158443a
++         Ein veränderlicher Akkumulator: `#add` hängt ein Nibble an und schreibt alle sechzehn
++         ein Datenwort fest, `#overwriteLast` überschreibt das letzte (ein `e` wird zu `e-`, wenn
++         ein `-` folgt), `#seedFromLong` kopiert den `Long`-Akkumulator eines Parsers hinein,
++         wenn dieser überläuft, und `#finish` friert das Ergebnis mit seinem Vorzeichen ein.
++     entry #add   hängt ein Nibble an, `0x0`–`0xC`
++     entry #overwriteLast   ersetzt das zuletzt hinzugefügte Nibble
++     entry #seedFromLong   hängt die `count` Nibbles an, die ein Akkumulator in einem einzigen `Long` hält
++     entry #nibbleCount   wie viele Nibbles hinzugefügt wurden
++     entry #finish   das fertige `Bcd`, mit dem angegebenen Vorzeichen
++   entry .negative   eine Erweiterung auf `Bcd`: ob die Zahl negativ ist
++   entry .nibbleCount   eine Erweiterung auf `Bcd`: wie viele Nibbles die Zahl hat
++   entry .eachNibble   eine Erweiterung auf `Bcd`: besucht jedes Nibble, das älteste zuerst
++       `eachNibble` statt `each` genannt, da ein `Bcd` eine Zahl und keine Sammlung ist und das
++       `each` der Sammlungen sonst für jeden Empfänger in einer Datei verdeckt würde, die
++       `Bcd.*` importiert.
++   entry .text   eine Erweiterung auf `Bcd`: die Zahl, wie sie geschrieben wurde, in kanonischer JSON-Form
++       Ziffern, ein optionaler Punkt mit Nachkommastellen und ein optionaler Exponent
++       `e[-]digits`, mit einem vorangestellten `-`, wenn negativ, und einer `0`, die vor einem
++       führenden Punkt wieder eingefügt wird.
++   entry .toBigDecimal   eine Erweiterung auf `Bcd`: der exakte Wert als `BigDecimal`
++   entry .toDouble   eine Erweiterung auf `Bcd`: der nächstgelegene `Double`
++   entry .toLong   eine Erweiterung auf `Bcd`: der Wert als `Long`, oder `Unset`, wenn er keine ganze Zahl ist, die hineinpasst
+
+@ 0 7 0 01f3212b18a24bfb11fa2bbf6fa99036
++ entry .bin   das Literal `bin"…"`: ein `Byte`, `Short`, `Int` oder `Long` aus 8, 16, 32 oder 64 Binärziffern
++     `bin"00001111"` ist der `Byte` `15`, geprüft, während der Code kompiliert: Die Ziffern
++     dürfen zur besseren Lesbarkeit durch Leerzeichen getrennt sein, und der Typ des Ergebnisses
++     richtet sich nach ihrer Anzahl, sodass `bin"1111 0000 1111 0000"` ein `Short` ist. Ein
++     anderes Zeichen als `0`, `1` oder ein Leerzeichen ist der Fehler `↯/s.27.2`, _a binary
++     value can only contain characters '0' or '1'_, und eine andere Anzahl als 8, 16, 32 oder
++     64 ist der Fehler `↯/s.27.5`. Das Ergebnis ist ein primitiver Wert; `bits` macht daraus
++     einen `B8`, `B16`, `B32` oder `B64`.
+
+% 2 1 0 0e623ab6dc9b882b1341418eb156a9d1
+
+% 3 1 0 04a28a8aba2cca1b0423473298d5dfce
+
+% 0 1 0 02871b2c072f30651fae55d57d909739
+
+% 0 1 0 0ada551a194f9cbd16cd2237d6708189
+
+% 1 1 0 1e061f3393d5257c0b5383f8f858ca01
+
+@ 0 6 0 1d2cb3b0ccc1856204a2155e11284f87
++ entry .hex   das Literal `hex"…"`, ein eingefrorenes Byte-Array; und die hexadezimale Darstellung jeder ganzen Zahl
++     `hex"cafe babe"` ist ein `Array[Byte]^{}` aus den Bytes, die die Ziffern ausdrücken,
++     gebaut, während der Code kompiliert: Leerzeichen und Zeilenumbrüche zwischen den Ziffern
++     werden ignoriert, sodass eine lange Konstante in Zeilen angeordnet werden kann, und die
++     Ziffern dürfen in beliebiger Schreibweise stehen. Ein Zeichen, das keine Hexziffer ist,
++     ist der Fehler `↯/s.27.4`, und eine ungerade Anzahl an Ziffern ist der Fehler `↯/s.27.3`,
++     _a hexadecimal value must have an even number of digits_.
+
+% 2 1 0 1d8eb03b4980fde606c402e796cf077d
+
+% 3 1 0 07a839ffcdc69aa917f7123948b72294
+
+% 0 1 0 1bd5cba59df652aa18453fe6d77fbffc
+
+% 0 1 0 1721913b3bade5c5189a0489e5384e66
+
+% 1 1 0 04d2a81c02e2b11608f144466f4f6293
+
+@ 0 5 0 19d44d68fafb2b15070e0e7930904c7f
++     Als Erweiterungsmethode stellt `hex` einen `Byte`, `Short`, `Int` oder `Long` hexadezimal
++     dar, wie es `java.lang.Integer.toHexString` tut — einen `Byte` oder `Short` als sein
++     vorzeichenloses Bitmuster (`(-1: Byte).hex` ist `t"ff"`), einen `Int` oder `Long` im
++     Zweierkomplement —, ohne Auffüllung mit Nullen. Das `hex` eines `B8`…`B64` füllt auf die
++     Breite des Typs auf, und das `hex` eines `U*` oder `S*` ist sein vorzeichenloser bzw.
++     vorzeichenbehafteter Wert zur Basis 16.
+
+@ 0 4 0 07140f9554ea065815398e4a474182db
++ entry .minimum   das kleinste Element einer Sammlung, oder `Unset`, wenn sie leer ist
++     Eine Erweiterung auf jeder `Traversable`-Sammlung und auf jedem `Iterable`, für Elemente mit
++     einem `Orderable` (genau genommen einem `Commensurable against` sich selbst). Ein einziger
++     Durchlauf; von mehreren gleichen kleinsten Elementen gewinnt das erste.
+
+% 2 1 0 18a3320da57e1f3f1ea9363739dac3ba
+
+% 3 1 0 0df9b04467581c6405b557629142b95e
+
+% 0 1 0 1c772a86d178c19b110fc0b87c142dc9
+
+% 0 1 0 1bbf34a94c762ff911d7082997f609b0
+
+% 1 1 0 0a7a46cceaabe31a1aadbe35e8da783b
+
+@ 0 3 0 13b18c2b580b5f8d0427759635a4ef36
++ entry .maximum   das größte Element einer Sammlung, oder `Unset`, wenn sie leer ist
++     Eine Erweiterung auf jeder `Traversable`-Sammlung und auf jedem `Iterable`, für Elemente mit
++     einem `Orderable`, wie bei `minimum`.
+
+@ 0 8 0 0965bbeb5b699c4604871bfa794a5aa7
++ entry .median   der mittlere Wert einer Sammlung, oder der Mittelwert der beiden mittleren Werte, oder `Unset`
++     Eine Erweiterung auf jeder `Traversable`-Sammlung und auf jedem `Iterable`. Der Median wird
++     durch Quickselect gefunden — eine Auswahl, keine Sortierung, sodass die Sammlung nie als
++     Ganzes geordnet wird —, und bei gerader Anzahl werden die beiden mittleren Werte gemittelt;
++     deshalb braucht der Elementtyp nicht nur ein `Orderable`, sondern muss mit sich selbst
++     `Subtractable` sein, seine Differenz durch einen `Double` `Divisible` und das Ergebnis
++     zurück auf das Element `Addable`. Zahlen, Größen und rationale Zahlen erfüllen das alle,
++     und der Ergebnistyp ist das, was diese Addition liefert.
+
+% 2 1 0 062435de85287adc05afa4dda395151f
+
+% 3 1 0 0def476fff35aacd1ae0a425394f6012
+
+% 0 1 0 1cb236a30814cc9c086f020c6f281acd
+
+% 0 1 0 140724088a6b3a360c2b2133dda447ac
+
+% 0 1 0 11b09a050df8a8f015808f2376df1920
+
+% 1 1 0 1232a6867d04b462097d75d4e7ee2b85
+
+@ 0 4 0 1d08f9fae514d5830a6094e0690da981
++ entry .abs   der Absolutbetrag eines `Float`, `Double`, `Byte`, `Short`, `Int` oder `Long`
++     Eine Erweiterung auf jedem primitiven Typ, wie `math.abs`; die vorzeichenbehafteten Typen
++     `S8`…`S64`, `F32`, `F64`, `Q64`, `Q32` und `Decimal` haben ein eigenes `abs`.
++     `Byte.MinValue.abs` ist `Byte.MinValue`, wie in Java.
+
+@ 0 2 0 16c5cd7ffc39cd410e540511c32042e7
++ entry .ceiling   der kleinste ganzzahlige Wert nicht unter einem `Float` oder `Double`
++     `math.ceil`, als Erweiterung; auch auf `F32` und `F64` sowie auf `Q64` und `Q32`.
+
+@ 0 3 0 0cce89173a5616401a3f5bfa36e0cb4a
++ entry .floor   der größte ganzzahlige Wert nicht über einem `Float` oder `Double`
++     `math.floor`, als Erweiterung; auch auf `F32`, `F64`, `Q64` und `Q32`. Die abrundende
++     Division ganzer Zahlen ist `/-`.
+
+@ 0 2 0 06ff00c36c4114b30045662fbfff59b5
++ entry .exponent   der unverschobene binäre Exponent eines `Float` (als `Int`) oder eines `Double` (als `B16`)
++     `math.getExponent`, als Erweiterung; auch auf `F32` und `F64`.
+
+@ 0 2 0 0d00d4f08cf558db15a1b99a127a1dfa
++ entry .increment   der nächste darstellbare `Float` oder `Double` über diesem
++     `math.nextUp`, als Erweiterung; `successor` ist dasselbe. Auch auf `F32` und `F64`.
+
+@ 0 2 0 0186af7643ffc0a404c54918576cf893
++ entry .decrement   der nächste darstellbare `Float` oder `Double` unter diesem
++     `math.nextDown`, als Erweiterung; `predecessor` ist dasselbe. Auch auf `F32` und `F64`.
+
+@ 0 1 0 04aff6b1945c42d41a126ed664ae2925
++ entry .successor   der nächste darstellbare `Float` oder `Double` über diesem, wie `increment`
+
+@ 0 1 0 0e4161f1ca4d2402101d5dcc9a62639d
++ entry .predecessor   der nächste darstellbare `Float` oder `Double` unter diesem, wie `decrement`
+
+@ 0 2 0 00ba13341762fea80d5f07400cd54eb3
++ entry .round   ein `Float` oder `Double`, gerundet auf den nächsten `Long`, bei der Hälfte aufgerundet
++     `math.round`, als Erweiterung; auch auf `F32`, `F64`, `Q64` und `Q32`.
+
+@ 0 2 0 1493507e1832d00a03461ac0fb749ec4
++ entry .scalb   ein `Float` oder `Double`, multipliziert mit einer Zweierpotenz: `value.scalb(n)` ist `value × 2ⁿ`
++     `math.scalb`, als Erweiterung, exakt für jedes Ergebnis im Wertebereich; auch auf `F32` und
++     `F64`.
+
+@ 0 3 0 04267a54596170490267efa84e2643c3
++ entry .signum   das Vorzeichen eines `Float` oder `Double`, typisiert als `-1.0 | 0.0 | 1.0`
++     `math.signum`, als Erweiterung, wobei das Ergebnis als die Union der drei Werte typisiert
++     ist, die es annehmen kann; auch auf `F32` und `F64`. `Q64`, `Q32` und `Decimal` haben ein
++     ganzzahliges `signum`.
+
+@ 0 2 0 12749d03a64634261d572ac1a267a6f0
++ entry .ulp   die Einheit an der letzten Stelle eines `Float` oder `Double`: der Abstand zum nächsten Wert
++     `math.ulp`, als Erweiterung; auch auf `F32` und `F64`.
+
+@ 0 6 0 1b783857993e79a31c507b1223aeaf5d
++ entry .bits   das Bitmuster eines primitiven Werts als `B8`, `B16`, `B32` oder `B64` seiner Breite
++     `(0xf0: Byte).bits` ist ein `B8`, `0xf0.bits` ein `B32`, `0xf0L.bits` ein `B64`, ohne
++     Kosten, und die Umkehrung ist `Short(bits)`, `Int(bits)` und `Long(bits)`. Für einen
++     `Float` und einen `Double` ist es das IEEE-Muster (`floatToIntBits`, `doubleToLongBits`,
++     mit kanonisiertem `NaN`), beim `Double` als `B64`. Die Typen `U*` und `S*` haben je ein
++     `bits`, das ihr Muster liefert, und das von `F64` und `F32` liefert das IEEE-Muster.
+
+% 2 1 0 17046065214043f70fc7bf064846eb74
+
+% 3 1 0 140ada37b2b706551fc705da59ca6a6c
+
+% 0 1 0 084b5411bad606ac171fff0332d40ee6
+
+% 0 1 0 0397f04c09f3b556079c858e22033bc9
+
+% 0 1 0 1c0bfa6fda682548158f99ec7252867b
+
+% 0 1 0 014fb2e5084016b9054faece4a98d0bb
+
+% 1 1 0 04ec562dd174735d07359650672c775e
+
+@ 0 3 0 1ff61d2faa4c9d160f45bf25e37a782d
++ entry .rawBits   das IEEE-Muster eines `Float` oder `Double`, mit erhaltenen `NaN`-Nutzdaten
++     `floatToRawIntBits` und `doubleToRawLongBits`, als Erweiterungen; `bits` kanonisiert jedes
++     `NaN` zu einem einzigen Muster. Auch auf `F32` und `F64`.
+
+@ 0 2 0 0365fefe412f4f631c06eb12da94f956
++ entry .finite   ob ein `Float` oder `Double` weder unendlich noch `NaN` ist
++     Auch auf `F32` und `F64`.
+
+@ 0 2 0 07cc07176d1abfc719f4a18ffe0b14c4
++ entry .infinite   ob ein `Float` oder `Double` positiv oder negativ unendlich ist
++     Auch auf `F32` und `F64`.
+
+@ 0 2 0 03b5ad2d0b6836e10562c54ea2b7f5de
++ entry .nan   ob ein `Float` oder `Double` `NaN` ist
++     Auch auf `F32` und `F64`; der undefinierte Wert einer rationalen Zahl wird stattdessen mit
++     `nar` geprüft.
+
+@ 0 2 0 14d15a1e759666581144629663455781
++ entry .mantissa   die unteren 52 Bits des IEEE-Musters eines `Double`, als `B64`
++     Eine Erweiterung auf `Double` und auf `F64`.
+
+@ 0 6 0 02a4758536c52af204da27f60024da45
++ entry .**   erhebt eine Zahl in eine Potenz: `base ** exponent`, mit einem `Double`-Exponenten
++     Eine Erweiterung auf `Float` (zu einem `Float`) und auf `Double`, `Byte`, `Short`, `Int`
++     und `Long` (zu einem `Double`), wie `math.pow`: Die ganzzahligen Formen werden erweitert
++     statt abgeschnitten, sodass `(200: Short) ** 2.0` gleich `40000.0` und `2 ** 0.5` gleich
++     `√2` ist. `F64 ** x` und `F32 ** x` nehmen jeden Operanden, der sich zu ihnen erweitern
++     lässt, und liefern ihren eigenen Typ, und die Typen `S*` liefern einen `Double`.
+
+@ 0 5 0 065be12481b058451ec2af2d1c8abd02
++ entry .%%   der Floor-Modulus: ein Rest mit dem Vorzeichen des Divisors, bei einem positiven Divisor nie negativ
++     Eine Erweiterung auf `Float`, `Double`, `Byte`, `Short`, `Int` und `Long` sowie auf
++     `S8`…`S64`. Anders als bei `%`, das das Vorzeichen des Dividenden annimmt, ist `-7 %% 3`
++     gleich `2` und `7 %% -3` gleich `-2`; ein Wert wird also so in einen Bereich gebracht wie
++     die Stunde einer Uhr. `/-` ist die passende Division.
+
+% 2 1 0 07180cc7484066b60f6a91d6646165f1
+
+% 3 1 0 198e3698c372b74509df9432819ade7a
+
+% 0 1 0 0ce9056e152d176c017beab31fcc26e5
+
+% 0 1 0 11aaf2a26771f6a707a02e51eb6754b0
+
+% 0 1 0 10f874cb8ea2a5fc03c6b3848745e421
+
+% 1 1 0 049c8b6df93359dc11fea8dca90179e8
+
+@ 0 4 0 04210322b4decfb0086f27c2d8fd8803
++ entry ./-   die abrundende Division: der Quotient, gerundet in Richtung negativ unendlich
++     Eine Erweiterung auf `Byte`, `Short`, `Int` und `Long` sowie auf `S8`…`S64`, wie
++     `math.floorDiv`: `-7 /- 2` ist `-4`, wo `/` `-3` ergibt. Sie bildet ein Paar mit `%%`,
++     sodass `(a /- b)*b + (a %% b) == a` gilt.
+
+@ 0 3 0 0681f3c4464997370757101290ce74d6
++ entry .long   ein `Byte`, `Short` oder `Int`, erweitert zu einem `Long`
++     Eine Erweiterung auf jedem davon; die Typen `S*` haben ebenfalls `long`, und das `long`
++     der Typen `U*` ist ihr vorzeichenloser Wert.
+
+@ 0 2 0 0c53c4a59b626aad149735290b3e69b8
++ entry .int   ein erweiterter `Byte`; und der `Int`-Wert eines `S8`, `S16`, `S32`, `U8` oder `U16`
++     Die Erweiterung auf `Byte` ist als `Long` typisiert, wie auch `short`.
+
+@ 0 1 0 13c508271ecbfee81dd687e22f321560
++ entry .short   ein erweiterter `Byte`; und der `Short`-Wert eines `S8`, `S16` oder `U8`
+
+@ 0 4 0 1430cc32a0c69e7212a20f36f2a34e36
++ entry .octal   ein `Byte`, `Short`, `Int` oder `Long` in Oktaldarstellung
++     Wie `toOctalString`, ein `Byte` oder `Short` über sein vorzeichenloses Muster, ohne
++     Auffüllung: `(-1:
++     Byte).octal` ist `t"377"`. Die Typen `B*` füllen auf ihre Breite auf, und die Typen `U*`
++     und `S*` stellen ihren Wert zur Basis 8 dar.
+
+@ 0 2 0 17faf11420e7333712d9406f56906743
++ entry .base32   ein `Byte`, `Short`, `Int` oder `Long` zur Basis 32, mit den Ziffern `0`–`9` und `a`–`v`
++     Wie `java.lang.Integer.toString(value, 32)`, vorzeichenbehaftet; auch auf den Typen `U*`
++     und `S*`.
+
+@ 0 4 0 04012a19bceca6e413d7e429f29086e2
++ entry .binary   ein `Byte`, `Short`, `Int` oder `Long` in Binärdarstellung
++     Wie `toBinaryString`, ein `Byte` oder `Short` über sein vorzeichenloses Muster, sodass
++     `(-1: Byte).binary` acht `1`en ist. Die Typen `B*` füllen auf ihre Breite auf, und die
++     Typen `U*` und `S*` stellen ihren Wert zur Basis 2 dar.
+
+@ 0 3 0 0d2e66b867e5b676082ad1264a5d609e
++ entry .gcd   der größte gemeinsame Teiler zweier ganzer Zahlen, nach dem euklidischen Algorithmus
++     Eine Erweiterung auf `Byte`, `Short`, `Int` und `Long` sowie auf jedem Typ `U*` und `S*`,
++     jeweils mit einem Operanden des eigenen Typs. `gcd(0)` ist der Empfänger.
+
+@ 0 2 0 12527f00fa4268b00f0b9867a03f0c13
++ entry .lcm   das kleinste gemeinsame Vielfache zweier `Byte`s, `Short`s, `Int`s oder `Long`s
++     `a*b/a.gcd(b)`, in der Breite des Empfängers, sodass ein Produkt darüber hinaus überläuft.
+
+@ 0 5 0 1c61eff9bc8ca62e0ed63e914d4b6654
++ entry .\   `numerator \ denominator`: eine exakte rationale Zahl, als `Q64`
++     Eine Erweiterung auf `Int` und auf `Long`. `\` steht in der höchsten Präzedenzstufe und
++     bindet stärker als `*`, `/`, `+` und `-`, sodass `1 \ 3 + 1 \ 6` die Summe zweier Brüche
++     und `2 \ 3*3 \ 4` ihr Produkt ist, ohne Klammern. Ein Nenner null ergibt `Q64.Nar`, und
++     ein negativer Zähler oder Nenner verschiebt das Vorzeichen: `-5 \ 3` ist `Q64(-5, 3)`.
+
+% 2 1 0 0b5bd010af4599340b376de4e74a67db
+
+% 3 1 0 05c8b7f43d69773e11a2db7f85413bd0
+
+% 0 1 0 1733dcb37bf3000616b31caf141bf660
+
+% 0 1 0 05b07b38e58de798048857eab66d9bd3
+
+% 0 1 0 14fa7f061f8782280e2c9118c0d71843
+
+% 1 1 0 026afce1587beec5101d0f370b430563
+
+@ 0 6 0 0fbc190dd449586e1bdf4226484247fc
++ entry .apply   `Short(bits)`, `Int(bits)`, `Long(bits)`, `Double(long)` und die Big-Endian-Lesevorgänge `Short(bytes)`, `Int(bytes)`, `Long(bytes)`
++     Erweiterungen auf den Begleitobjekten der primitiven Typen. `Short(bits: B16)`,
++     `Int(bits: B32)` und `Long(bits: B64)` deuten ein Muster ohne Kosten als den primitiven
++     Wert um; `Double(long)` ist `Double.longBitsToDouble`; und `Short(bytes)`, `Int(bytes)`
++     und `Long(bytes)` lesen die ersten 2, 4 oder 8 Bytes eines eingefrorenen
++     `Array[Byte]^{}` als Big-Endian-Ganzzahl. Sie werden nicht in das Umbrella-Paket
++     `soundness` exportiert und brauchen daher `import hypotenuse.*`.
+
+@ 0 3 0 0e2e3f4e17ae50201f037811fa857a3e
++ entry .erf   die Gaußsche Fehlerfunktion, `erf(x)`, auf etwa sieben Dezimalstellen
++     Die rationale Approximation nach Abramowitz und Stegun (Formel 7.1.26), deren absoluter
++     Fehler überall unter `1.5 × 10⁻⁷` liegt. `erf(0.0)` ist `0.0`, und `erf(x)` strebt gegen
++     `±1`.
+
+@ 0 1 0 18304d28887a6e7f1bcf094b03bdab04
++ entry .π   das Verhältnis des Umfangs eines Kreises zu seinem Durchmesser, `math.Pi`
+
+@ 0 1 0 06f2d07196901e6e11607e3b19763f77
++ entry .pi   `π`, für eine Tastatur ohne dieses Zeichen
+
+@ 0 1 0 02814a7eeb4ada1b042538e318d4be53
++ entry .euler   die Eulersche Zahl, `math.E`
+
+@ 0 1 0 0d2a2d7c8ce6dfd512501e5218856895
++ entry .φ   der Goldene Schnitt, `(1 + √5)/2`
+
+@ 0 1 0 00b58d9fe7bb6dc010ebdbdbdba97b44
++ entry .goldenRatio   `φ`, für eine Tastatur ohne dieses Zeichen
+
+@ 0 4 0 182fba8c5a3b38760d0b0aa24364dd8e
++ entry .cos   der Kosinus eines Winkels im Bogenmaß, als `F64`
++     Jede trigonometrische und logarithmische Funktion nimmt alles, was sich in `F64`
++     konvertieren lässt — einen `Double`, einen `Int`, einen `F64`, einen `U8` —, und liefert
++     einen `F64`, sodass sich die Funktionen ohne Casts verketten lassen: `cos(π/3)`,
++     `ln(exp(2))`.
+
+% 2 1 0 0b4566c7e0e577fe157be0184bdca4ce
+
+% 3 1 0 09359d7bdbf6a9471174c9cd6f6b6908
+
+% 0 1 0 0e6c5483b8fa6d520f12f68bc82102ef
+
+% 0 1 0 0924d8ded15ccb740f93b5b4cba1a433
+
+% 0 1 0 06140d36234328730750bf0f6e6a61e4
+
+% 1 1 0 19df789265ee9fc717924f968b7d325d
+
+@ 0 1 0 12ca7cbf65de804e157a5fda0f3b2b19
++ entry .acos   der Arkuskosinus, im Bogenmaß, als `F64`
+
+@ 0 1 0 12174d23caae1c8c179c8feabaa2c6c4
++ entry .cosh   der Kosinus hyperbolicus, als `F64`
+
+@ 0 1 0 0a6db7534895a2ed1ef220fc8dbb3762
++ entry .sin   der Sinus eines Winkels im Bogenmaß, als `F64`
+
+@ 0 1 0 02b99eddca078a7d01bba13e91985cf6
++ entry .asin   der Arkussinus, im Bogenmaß, als `F64`
+
+@ 0 1 0 145f80c71cfd64281e4ed9834b3027f7
++ entry .sinh   der Sinus hyperbolicus, als `F64`
+
+@ 0 1 0 18b828bb35a741e40851c64f1f7d759c
++ entry .tan   der Tangens eines Winkels im Bogenmaß, als `F64`
+
+@ 0 1 0 149e6a882a4eff2110edc6dc3d56950c
++ entry .atan   der Arkustangens, im Bogenmaß, als `F64`
+
+@ 0 3 0 1592d7808fbc83bd06a9fde43ceac8ae
++ entry .hyp   `hyp(a, b)`: die Hypotenuse, `√(a² + b²)`, ohne Überlauf in Zwischenergebnissen
++     `math.hypot`; das erste Argument darf alles sein, was sich in `F64` konvertieren lässt,
++     das zweite ist ein `F64`.
+
+@ 0 1 0 0db2ac14f62f056517b462334e3bba47
++ entry .exp   `e` hoch einer Potenz, als `F64`
+
+@ 0 1 0 1ad84b7e28b895721bf33f5b114a23eb
++ entry .expm1   `exp(x) - 1`, genau für kleine `x`
+
+@ 0 1 0 04793f0bfd2b6087096a7f309edeab48
++ entry .ln   der natürliche Logarithmus, als `F64`
+
+@ 0 1 0 15072399d52743340b212982f69552f3
++ entry .log10   der Logarithmus zur Basis 10, als `F64`
+
+@ 0 1 0 029e683fcc4d397102b87dd61e56c82a
++ entry .log1p   `ln(1 + x)`, genau für kleine `x`
+
+@ 0 5 0 1a82c0167e6571771984f2a51db08c0c
++ entry .<   `left < right`, für jedes `left is Commensurable against right`
++     Eine Inline-Erweiterung auf jedem Wert. Sie nimmt das `Commensurable`-given im
++     Geltungsbereich — das `Orderable` im Begleitobjekt jedes numerischen Typs, die Vergleiche
++     von `F64` mit `Int` und `Double`, jeden `Comparable`-Typ über `Commensurable.orderable` —
++     und lässt sich verketten: `a < x < b` ist ein einziger Bereichstest, umgeschrieben durch
++     `Commensurable.numeric`.
+
+@ 0 1 0 1af27982775365a411eb334797767839
++ entry .<=   `left <= right`, für jedes `left is Commensurable against right`; verkettet sich wie `<`
+
+@ 0 1 0 1afda7b4c5db02aa1af5ea1918b240ea
++ entry .>   `left > right`, für jedes `left is Commensurable against right`
+
+@ 0 1 0 092149d9fe4d94ae00829c2d43e1627a
++ entry .>=   `left >= right`, für jedes `left is Commensurable against right`
+
+@ 0 3 0 09be044cb94027db05a15832d2eb84db
++ entry .min   `left min right`: der kleinere von zwei Werten eines `Orderable`-Typs
++     Der Typ des Empfängers ist der des Operanden, sodass sowohl `S32.Max min S32(1.bits)` als
++     auch `1.5 min 2.0` aufgelöst werden; `minimum` ist die Form für Sammlungen.
+
+@ 0 1 0 10eacadd9e40b22c062aa0adf31b9b23
++ entry .max   `left max right`: der größere von zwei Werten eines `Orderable`-Typs
+
+@ 0 1 0 0267e916d879b4340c9cd62b405a41f5
++ entry .internal   der opake Geltungsbereich der Typen fester Breite und ihrer Erweiterungsmethoden
+
+% 1 1 0 07b631fa97e68eb513b255f885e65c35
+
+% 2 1 0 132551408c5c3b2c0e5aac666ffd4b6c
+
+@ 0 7 0 19abac9648e48aad1c545b0c7979cfc1
++       Nicht zur direkten Verwendung: `U8`…`U64`, `S8`…`S64`, `F32`, `F64` und `B8`…`B64` sind
++       hier deklarierte opake Typen, damit ihre Darstellungen selbst vor dem Rest des Pakets
++       verborgen sind, und werden unter ihren eigenen Namen nach `hypotenuse` exportiert, wo
++       jeder seine eigene Seite hat. Auch die Erweiterungsmethoden auf ihnen sind hier deklariert
++       und als dessen Einträge nach Namen aufgeführt; die Seite jedes Typs sagt, welche er hat.
++   entry .Bits   `Bits[8 | 16 | 32 | 64]`: der `B*`-Typ einer gegebenen Breite, als Match-Typ
++   entry .U64   eine vorzeichenlose 64-Bit-Ganzzahl, von `0` bis `18446744073709551615`; siehe `hypotenuse.U64`
+
+% 1 1 0 0abd34581c3fb3f61258656ac92b10fc
+
+@ 0 29 0 13ec7f6afe9db97a085a3dc12a84a2bb
++         Das Begleitobjekt des opaken Typs `U64`, mit ihm in das Paket `hypotenuse` exportiert.
++     entry .Min   null
++     entry .Max   `18446744073709551615`, alle Bits gesetzt
++     entry .underlying   der Nachweis, dass ein `U64` darunter ein `Long` ist, für die Mechanik opaker Typen
++     entry .addable   `U64 + U64`, wie es die `CheckOverflow`-Richtlinie im Geltungsbereich festlegt
++         Die Instanz ist `overflow.addU64` für das `CheckOverflow`-given im Geltungsbereich,
++         über ihren Singleton-Typ typisiert, sodass die Addition unter
++         `arithmeticOptions.uncheckedOverflow` zu einem einzigen `ladd` geinlinet wird. Unter
++         `checkedOverflow` ist das Ergebnis `U64
++         raises Arithmetic.Error`, ausgelöst, wenn die Summe kleiner als einer der Operanden
++         ausfällt.
++     entry .subtractable   `U64 - U64`, wie es die `CheckOverflow`-Richtlinie im Geltungsbereich festlegt
++         `overflow.subtractU64`: mit Überlauf unter `uncheckedOverflow`; unter
++         `checkedOverflow` wird `Arithmetic.Error` ausgelöst, wenn der Subtrahend der größere
++         ist.
++     entry .multiplicable   `U64 * U64`, wie es die `CheckOverflow`-Richtlinie im Geltungsbereich festlegt
++         `overflow.multiplyU64`: unter `checkedOverflow` wird `Arithmetic.Error` ausgelöst,
++         wenn das obere Wort des Produkts ungleich null ist (`Math.unsignedMultiplyHigh`).
++     entry .divisible   `U64 / U64`, vorzeichenlos, wie es die `DivisionByZero`-Richtlinie im Geltungsbereich festlegt
++         `division.divideU64`, dividiert mit `Long.divideUnsigned`. Unter
++         `arithmeticOptions.uncheckedDivision` wirft ein Divisor null die `ArithmeticException`
++         der JVM; unter `checkedDivision` löst er `Arithmetic.Error` aus.
++     entry .canEqual   ein `U64` darf mit `==` nur mit einem anderen `U64` verglichen werden
++     entry .fromDigits   ein `U64` aus einem ganzzahligen Literal, unter `genericNumberLiterals`
++         Vorzeichenlos geparst; ein Literal, das keine gültige vorzeichenlose 64-Bit-Ganzzahl
++         ist, scheitert zur Kompilierzeit.
++     entry .textualizable   stellt den vorzeichenlosen Dezimalwert als `Text` dar
++     entry .apply   `U64(bits: B64)`: liest ein Bitmuster als vorzeichenlose Ganzzahl
++         Ohne Kosten: Das Muster ist der Wert. `U64(Long.MinValue.bits)` ist
++         `9223372036854775808`.
++     entry .orderable   vorzeichenloser Vergleich für `<`, `<=`, `>`, `>=`, `min` und `max`
++         Über das Begleitobjekt im impliziten Geltungsbereich; vergleicht mit
++         `Long.compareUnsigned`.
++   entry .U32   eine vorzeichenlose 32-Bit-Ganzzahl, von `0` bis `4294967295`; siehe `hypotenuse.U32`
+
+% 1 1 0 11858a657fd3a8c115605f88556cd5f4
+
+@ 0 22 0 142b4cee4b3904b20b9f8189a8aa9f38
++         Das Begleitobjekt des opaken Typs `U32`, mit ihm in das Paket `hypotenuse` exportiert.
++     entry .Min   null
++     entry .Max   `4294967295`, alle Bits gesetzt
++     entry .underlying   der Nachweis, dass ein `U32` darunter ein `Int` ist
++     entry .addable   `U32 + U32`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++         `overflow.addU32`; unter `checkedOverflow` wird `Arithmetic.Error` ausgelöst, wenn die
++         Summe `4294967295` übersteigt.
++     entry .subtractable   `U32 - U32`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++         `overflow.subtractU32`; unter `checkedOverflow` wird `Arithmetic.Error` ausgelöst, wenn
++         das Ergebnis negativ wäre.
++     entry .multiplicable   `U32 * U32`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++         `overflow.multiplyU32`; das Produkt wird in einem `Long` berechnet und unter
++         `checkedOverflow` gegen den 32-Bit-Bereich geprüft.
++     entry .divisible   `U32 / U32`, vorzeichenlos, aus der `DivisionByZero`-Richtlinie im Geltungsbereich
++         `division.divideU32`, mit `Integer.divideUnsigned`; ein Divisor null löst unter
++         `checkedDivision` `Arithmetic.Error` aus und wirft unter `uncheckedDivision`.
++     entry .canEqual   ein `U32` darf mit `==` nur mit einem anderen `U32` verglichen werden
++     entry .fromDigits   ein `U32` aus einem ganzzahligen Literal, unter `genericNumberLiterals`
++     entry .textualizable   stellt den vorzeichenlosen Dezimalwert als `Text` dar
++     entry .apply   `U32(bits: B32)`: liest ein Bitmuster als vorzeichenlose Ganzzahl
++     entry .orderable   vorzeichenloser Vergleich für `<`, `<=`, `>`, `>=`, `min` und `max`
++   entry .U16   eine vorzeichenlose 16-Bit-Ganzzahl, von `0` bis `65535`; siehe `hypotenuse.U16`
+
+% 1 1 0 010d0aa6308df82918b50d6ee8fd92a7
+
+@ 0 21 0 1e7ab61061bb4c3a11358b5ec0a1dfec
++         Das Begleitobjekt des opaken Typs `U16`, mit ihm in das Paket `hypotenuse` exportiert.
++     entry .Min   null
++     entry .Max   `65535`, alle Bits gesetzt
++     entry .underlying   der Nachweis, dass ein `U16` darunter ein `Short` ist
++     entry .addable   `U16 + U16`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++         `overflow.addU16`; in einem `Int` berechnet und unter `checkedOverflow` gegen `65535`
++         geprüft.
++     entry .subtractable   `U16 - U16`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++         `overflow.subtractU16`; unter `checkedOverflow` löst ein negatives Ergebnis
++         `Arithmetic.Error` aus.
++     entry .multiplicable   `U16 * U16`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++         `overflow.multiplyU16`; `U16(256) * U16(256)` läuft unter `checkedOverflow` über.
++     entry .divisible   `U16 / U16`, aus der `DivisionByZero`-Richtlinie im Geltungsbereich
++     entry .canEqual   ein `U16` darf mit `==` nur mit einem anderen `U16` verglichen werden
++     entry .fromDigits   ein `U16` aus einem ganzzahligen Literal, unter `genericNumberLiterals`
++         Der Fehler `↯/s.27.12`, _a U16 may not be less than 0_, und der Fehler `↯/s.27.14`,
++         _a U16 may not be greater than 65535_, werden für ein Literal außerhalb des Bereichs
++         zur Kompilierzeit gemeldet.
++     entry .textualizable   stellt den vorzeichenlosen Dezimalwert als `Text` dar
++     entry .apply   `U16(bits: B16)`: liest ein Bitmuster als vorzeichenlose Ganzzahl
++     entry .orderable   vorzeichenloser Vergleich für `<`, `<=`, `>`, `>=`, `min` und `max`
++   entry .U8   eine vorzeichenlose 8-Bit-Ganzzahl, von `0` bis `255`; siehe `hypotenuse.U8`
+
+% 1 1 0 163d6b95c112f3fe1a6b02f5582f73eb
+
+@ 0 18 0 1e45ec8f4c68ddd3163ba33ff54bbacd
++         Das Begleitobjekt des opaken Typs `U8`, mit ihm in das Paket `hypotenuse` exportiert.
++     entry .Min   null
++     entry .Max   `255`, alle Bits gesetzt
++     entry .underlying   der Nachweis, dass ein `U8` darunter ein `Byte` ist
++     entry .addable   `U8 + U8`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++         `overflow.addU8`; unter `checkedOverflow` löst eine Summe über `255`
++         `Arithmetic.Error` aus.
++     entry .subtractable   `U8 - U8`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++     entry .multiplicable   `U8 * U8`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++     entry .divisible   `U8 / U8`, aus der `DivisionByZero`-Richtlinie im Geltungsbereich
++     entry .canEqual   ein `U8` darf mit `==` nur mit einem anderen `U8` verglichen werden
++     entry .fromDigits   ein `U8` aus einem ganzzahligen Literal, unter `genericNumberLiterals`
++         Der Fehler `↯/s.27.8`, _a U8 may not be less than 0_, und der Fehler `↯/s.27.9` für
++         ein Literal über der oberen Grenze werden zur Kompilierzeit gemeldet.
++     entry .textualizable   stellt den vorzeichenlosen Dezimalwert als `Text` dar
++     entry .apply   `U8(bits: B8)`: liest ein Bitmuster als vorzeichenlose Ganzzahl
++     entry .orderable   vorzeichenloser Vergleich für `<`, `<=`, `>`, `>=`, `min` und `max`
++   entry .S64   eine vorzeichenbehaftete 64-Bit-Ganzzahl im Zweierkomplement, von `S64.Min` bis `S64.Max`; siehe `hypotenuse.S64`
+
+% 1 1 0 1250d42b01ce231306f984b7eca33eca
+
+@ 0 1 0 0c94f89bf0c548871a0378ea90524f3b
++         Das Begleitobjekt des opaken Typs `S64`, mit ihm in das Paket `hypotenuse` exportiert.
+
+% 0 1 0 0d3d5b378d78bd210e05d0fe2cace16c
+
+% 0 1 0 0f5292f3fc39cf321601525f2b95b064
+
+@ 0 15 0 1c5c83678ae8358118af390986b6b6b2
++     entry .underlying   der Nachweis, dass ein `S64` darunter ein `Long` ist
++     entry .addable   `S64 + S64`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++         `overflow.addS64`: ein einziges `ladd` unter `uncheckedOverflow`; unter
++         `checkedOverflow` ist das Ergebnis `S64 raises Arithmetic.Error`, ausgelöst, wenn
++         beide Operanden das Vorzeichen haben, das der Summe fehlt.
++     entry .subtractable   `S64 - S64`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++     entry .multiplicable   `S64 * S64`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++         Unter `checkedOverflow` löst `S64.Min*S64(-1)` `Arithmetic.Error` aus, ebenso jedes
++         Produkt, dessen oberes Wort (`Math.multiplyHigh`) nicht die Vorzeichenerweiterung
++         seines unteren Worts ist.
++     entry .divisible   `S64 / S64`, abschneidend, aus der `DivisionByZero`-Richtlinie im Geltungsbereich
++         `S64((-7L).bits)/S64(2L.bits)` ist `-3`, da die `Long`-Division in Richtung null
++         abschneidet; `/-` ist die abrundende Division.
++     entry .canEqual   ein `S64` darf mit `==` mit jedem vorzeichenbehafteten, Gleitkomma- oder primitiven numerischen Typ verglichen werden
++         `F64`, `F32`, `S64`, `S32`, `S16`, `S8`, `Float`, `Double`, `Long`, `Int`, `Short` und
+
+% 0 1 0 01c3fc9b357b842c0945fba2924e2483
+
+@ 0 5 0 19cf0adc739d4d2b1930eb8ee8f9c7a7
++     entry .fromDigits   ein `S64` aus einem ganzzahligen Literal, unter `genericNumberLiterals`
++     entry .textualizable   stellt den vorzeichenbehafteten Dezimalwert als `Text` dar
++     entry .apply   `S64(bits: B64)`: liest ein Bitmuster als vorzeichenbehaftete Ganzzahl
++     entry .orderable   vorzeichenbehafteter Vergleich für `<`, `<=`, `>`, `>=`, `min` und `max`
++   entry .S32   eine vorzeichenbehaftete 32-Bit-Ganzzahl im Zweierkomplement, von `S32.Min` bis `S32.Max`; siehe `hypotenuse.S32`
+
+% 1 1 0 1beefd60ac2e361803ec57db41bdf96c
+
+@ 0 1 0 10e03a21d4befb80025635fa7d4cb97a
++         Das Begleitobjekt des opaken Typs `S32`, mit ihm in das Paket `hypotenuse` exportiert.
+
+% 0 1 0 132ef17d14896aa502e8843e7a19e743
+
+% 0 1 0 15c7f2e5072e7df619efc21f483bb4c4
+
+@ 0 15 0 07ee031a03501aca03984c41534287d2
++     entry .underlying   der Nachweis, dass ein `S32` darunter ein `Int` ist
++     entry .addable   `S32 + S32`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++         `overflow.addS32`; unter `checkedOverflow` lösen `S32.Max + S32(1)` und `S32.Min +
++         S32(-1)` `Arithmetic.Error` aus.
++     entry .subtractable   `S32 - S32`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++     entry .multiplicable   `S32 * S32`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++         Das Produkt wird in einem `Long` berechnet und unter `checkedOverflow` darauf geprüft,
++         dass es in einen `Int` passt.
++     entry .divisible   `S32 / S32`, abschneidend, aus der `DivisionByZero`-Richtlinie im Geltungsbereich
++     entry .canEqual   ein `S32` darf mit `==` mit jedem vorzeichenbehafteten, Gleitkomma- oder primitiven numerischen Typ verglichen werden
++     entry .fromDigits   ein `S32` aus einem ganzzahligen Literal, unter `genericNumberLiterals`
++     entry .textualizable   stellt den vorzeichenbehafteten Dezimalwert als `Text` dar
++     entry .apply   `S32(bits: B32)`: liest ein Bitmuster als vorzeichenbehaftete Ganzzahl
++     entry .orderable   vorzeichenbehafteter Vergleich für `<`, `<=`, `>`, `>=`, `min` und `max`
++   entry .S16   eine vorzeichenbehaftete 16-Bit-Ganzzahl im Zweierkomplement, von `-32768` bis `32767`; siehe `hypotenuse.S16`
+
+% 1 1 0 05c5206ef886573a0d160243020e8d0f
+
+@ 0 1 0 1d2a8d64b12c8f37187aee5cb33b885e
++         Das Begleitobjekt des opaken Typs `S16`, mit ihm in das Paket `hypotenuse` exportiert.
+
+% 0 1 0 022e37e85a8ace2c1d4450f38f5a2249
+
+% 0 1 0 0efd97cbf50699d718ad9e2f4d7483f2
+
+@ 0 13 0 0787fd43d677aac00c4e2c2677f52d20
++     entry .underlying   der Nachweis, dass ein `S16` darunter ein `Short` ist
++     entry .addable   `S16 + S16`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++     entry .subtractable   `S16 - S16`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++     entry .multiplicable   `S16 * S16`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++     entry .divisible   `S16 / S16`, abschneidend, aus der `DivisionByZero`-Richtlinie im Geltungsbereich
++     entry .canEqual   ein `S16` darf mit `==` mit jedem vorzeichenbehafteten, Gleitkomma- oder primitiven numerischen Typ verglichen werden
++     entry .fromDigits   ein `S16` aus einem ganzzahligen Literal, unter `genericNumberLiterals`
++         Der Fehler `↯/s.27.1`, _an S16 may not be less than -32768_, und der Fehler
++         `↯/s.27.7`, _an S16 may not be greater than 32767_, werden zur Kompilierzeit gemeldet.
++     entry .textualizable   stellt den vorzeichenbehafteten Dezimalwert als `Text` dar
++     entry .apply   `S16(bits: B16)`: liest ein Bitmuster als vorzeichenbehaftete Ganzzahl
++     entry .orderable   vorzeichenbehafteter Vergleich für `<`, `<=`, `>`, `>=`, `min` und `max`
++   entry .S8   eine vorzeichenbehaftete 8-Bit-Ganzzahl im Zweierkomplement, von `-128` bis `127`; siehe `hypotenuse.S8`
+
+% 1 1 0 1022fa8fc8d9dfcb1257b7290c0c58fd
+
+@ 0 1 0 19ade10f68d5662405819bbaa029eb03
++         Das Begleitobjekt des opaken Typs `S8`, mit ihm in das Paket `hypotenuse` exportiert.
+
+% 0 1 0 0561972a06975f5c10db68b2b7896cb3
+
+% 0 1 0 1363ae282b7bc2e413f7313f1482ad25
+
+@ 0 16 0 1041ec27029104861cf017f9cc9acfd0
++     entry .underlying   der Nachweis, dass ein `S8` darunter ein `Byte` ist
++     entry .addable   `S8 + S8`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++     entry .subtractable   `S8 - S8`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++     entry .multiplicable   `S8 * S8`, aus der `CheckOverflow`-Richtlinie im Geltungsbereich
++     entry .divisible   `S8 / S8`, abschneidend, aus der `DivisionByZero`-Richtlinie im Geltungsbereich
++     entry .canEqual   ein `S8` darf mit `==` mit jedem vorzeichenbehafteten, Gleitkomma- oder primitiven numerischen Typ verglichen werden
++     entry .fromDigits   ein `S8` aus einem ganzzahligen Literal, unter `genericNumberLiterals`
++         Der Fehler `↯/s.27.6`, _an S8 may not be less than -128_, und der Fehler `↯/s.27.13`,
++         _an S8 may not be greater than 127_, werden zur Kompilierzeit gemeldet.
++     entry .textualizable   stellt den vorzeichenbehafteten Dezimalwert als `Text` dar
++     entry .apply   `S8(bits: B8)`: liest ein Bitmuster als vorzeichenbehaftete Ganzzahl
++     entry .inquality   vorzeichenbehafteter Vergleich für `<`, `<=`, `>`, `>=`, `min` und `max`
++         Das given `S8 is Orderable`, über das Begleitobjekt im impliziten Geltungsbereich; es
++         ist das Gegenstück zum given `orderable` jedes anderen numerischen Typs, unter einem
++         anderen Namen.
++   entry .F64   eine 64-Bit-IEEE-Gleitkommazahl, mit gemischter Arithmetik gegen alles, was sich zu ihr erweitern lässt; siehe `hypotenuse.F64`
+
+% 1 1 0 1db69c1ebdadfe050649128b05862b84
+
+@ 0 2 0 0a29581d83528ccb063cf418c1d8b586
++         Das Begleitobjekt des opaken Typs `F64`, mit ihm in das Paket `hypotenuse` exportiert.
++     entry .Min   `Double.MinValue`, der negativste endliche Wert
+
+% 0 1 0 159826ad3fbbb7f10f0cef64a05f2a8f
+
+@ 0 14 0 117f2f022c23ba07040144aec082d3a5
++     entry .underlying   der Nachweis, dass ein `F64` darunter ein `Double` ist
++     entry .Addition   die Instanz für `F64 + F64`, ein Singleton-Objekt, damit `add` zu `dadd` geinlinet wird
++     entry .Subtraction   die Instanz für `F64 - F64`, ein Singleton-Objekt
++     entry .Multiplication   die Instanz für `F64 * F64`, ein Singleton-Objekt
++     entry .Division   die Instanz für `F64 / F64`, ein Singleton-Objekt
++     entry .Negation   die Instanz für das Präfix `-` auf `F64`, ein Singleton-Objekt
++     entry .addable   `F64 + F64`, das Objekt `Addition` über seinen Singleton-Typ
++         Über das Begleitobjekt im impliziten Geltungsbereich, sodass `F64` eine generische
++         Schranke `[n: Addable by n to n]` ohne Import erfüllt.
++     entry .subtractable   `F64 - F64`, das Objekt `Subtraction` über seinen Singleton-Typ
++     entry .multiplicable   `F64 * F64`, das Objekt `Multiplication` über seinen Singleton-Typ
++     entry .divisible   `F64 / F64`, das Objekt `Division` über seinen Singleton-Typ
++     entry .negatable   das Präfix `-` auf einem `F64`, das Objekt `Negation` über seinen Singleton-Typ
++     entry .Widening   eine Konvertierung nach `F64`, die auch die Arithmetik eines `F64` mit diesem Operanden mitbringt
+
+% 1 1 0 110ff93c2d63bdef1b85095213cf2a5f
+
+@ 0 10 0 118ff2cdbc3f69081ee5ee7d7f3b31fa
++           `Widening[right]` erweitert `Conversion[right, F64]` und hält vier Singleton-Objekte,
++           `Addition`, `Subtraction`, `Multiplication` und `Division`, jedes eine Instanz der
++           entsprechenden Typklasse von Symbolism für einen `F64` links und einen `right`
++           rechts: Der rechte Operand wird konvertiert, und die Operation ist die primitive.
++           Jedes Konvertierungsobjekt in diesem Begleitobjekt (`DoubleConversion`,
++           `IntConversion`, `U8Conversion`, …) erweitert es, und die Familie der givens um
++           `addableWidening` findet die Instanzen darüber; so werden `F64(1.5)*2` und
++           `F64(0.5) + u8` aufgelöst. Eine Bibliothek, die einen neuen Operandentyp für die
++           `F64`-Arithmetik hinzufügt, stellt ein Objekt bereit, das `Widening[T]` erweitert,
++           und ein given seines Singleton-Typs.
++       entry #Addition   `F64 + right`, wobei zuerst der rechte Operand konvertiert wird
+
+% 0 1 0 10ba01e83859a7ab0fec1d28837965c4
+
+% 0 1 0 1d1d8e347a43b86908388702dc310ee8
+
+% 0 1 0 18d1279f50f1cc1f0738ce25626b8ff8
+
+@ 0 38 0 1ebb0171638e7de010786589bc12ccd8
++     entry .addableWidening   `F64 + right` für jedes `right` mit einem `Widening`, als `F64 is Addable by right to F64`
++         Transparent, mit einem einfachen Verfeinerungstyp statt eines abhängigen, damit die
++         Suche `right` aus dem erwarteten Operanden festlegt, bevor sie nach dem `Widening`
++         sucht; die herbeigerufene Instanz hat trotzdem den Singleton-Typ des Objekts, über den
++         `add` geinlinet wird.
++     entry .subtractableWidening   `F64 - right` für jedes `right` mit einem `Widening`
++     entry .multiplicableWidening   `F64 * right` für jedes `right` mit einem `Widening`
++     entry .divisibleWidening   `F64 / right` für jedes `right` mit einem `Widening`
++     entry .canEqual   ein `F64` darf mit `==` mit `F64`, den vorzeichenbehafteten Ganzzahlen, `Double`, `Long`, `Int`, `Short` und `Byte` verglichen werden
++     entry .apply   `F64(double)`, `F64(bits: B64)` oder `F64(sign, exponent: B16, mantissa: B64)`
++         `F64(bits)` ist `Double.longBitsToDouble`; die Form mit drei Argumenten setzt das
++         IEEE-Muster aus seinem Vorzeichenbit, dem verschobenen Exponenten und der
++         52-Bit-Mantisse zusammen.
++     entry .orderable   Vergleich zweier `F64`s für `<`, `<=`, `>`, `>=`, `min` und `max`
++         IEEE-Vergleich, sodass jeder Vergleich mit `NaN` falsch ist.
++     entry .commensurableInt   `f64 < 2`: Vergleich eines `F64` mit einem `Int`
++     entry .commensurable   `f64 < 2.5`: Vergleich eines `F64` mit einem `Double`
++     entry .DoubleConversion   das `Widening[Double]`: ein `Double` ist bereits ein `F64`
++     entry .doubleConversion   das given, mit dem ein `Double` stehen kann, wo ein `F64` erwartet wird, und Operand eines solchen sein kann
++     entry .FloatConversion   das `Widening[Float]`
++     entry .floatConversion   das given, das einen `Float` in `F64` konvertiert
++     entry .IntConversion   das `Widening[Int]`
++     entry .intConversion   das given, das einen `Int` exakt in `F64` konvertiert
++     entry .ShortConversion   das `Widening[Short]`
++     entry .shortConversion   das given, das einen `Short` in `F64` konvertiert
++     entry .ByteConversion   das `Widening[Byte]`
++     entry .byteConversion   das given, das einen `Byte` in `F64` konvertiert
++     entry .U32Conversion   das `Widening[U32]`, über den vorzeichenlosen Wert
++     entry .u32Conversion   das given, das einen `U32` exakt in `F64` konvertiert
++     entry .S32Conversion   das `Widening[S32]`
++     entry .s32Conversion   das given, das einen `S32` exakt in `F64` konvertiert
++     entry .U16Conversion   das `Widening[U16]`, über den vorzeichenlosen Wert
++     entry .u16Conversion   das given, das einen `U16` in `F64` konvertiert
++     entry .U8Conversion   das `Widening[U8]`, über den vorzeichenlosen Wert, sodass `U8(200)` gleich `200.0` ist
++     entry .u8Conversion   das given, das einen `U8` in `F64` konvertiert
++     entry .S16Conversion   das `Widening[S16]`
++     entry .s16Conversion   das given, das einen `S16` in `F64` konvertiert
++     entry .S8Conversion   das `Widening[S8]`
++     entry .s8Conversion   das given, das einen `S8` in `F64` konvertiert
++   entry .F32   eine 32-Bit-IEEE-Gleitkommazahl, mit gemischter Arithmetik gegen alles, was sich zu ihr erweitern lässt; siehe `hypotenuse.F32`
+
+% 1 1 0 067bc2e5c82af3911bd8dfad2f3711cc
+
+@ 0 2 0 1dad68f2be320135066cfb8db577a976
++         Das Begleitobjekt des opaken Typs `F32`, mit ihm in das Paket `hypotenuse` exportiert.
++     entry .Min   `Float.MinValue`, der negativste endliche Wert
+
+% 0 1 0 112464be7767770f175c41e4676bfec7
+
+@ 0 12 0 1f65d25ba0cdd69f1fa14c0e2e4a65de
++     entry .underlying   der Nachweis, dass ein `F32` darunter ein `Float` ist
++     entry .Addition   die Instanz für `F32 + F32`, ein Singleton-Objekt, damit `add` zu `fadd` geinlinet wird
++     entry .Subtraction   die Instanz für `F32 - F32`, ein Singleton-Objekt
++     entry .Multiplication   die Instanz für `F32 * F32`, ein Singleton-Objekt
++     entry .Division   die Instanz für `F32 / F32`, ein Singleton-Objekt
++     entry .Negation   die Instanz für das Präfix `-` auf `F32`, ein Singleton-Objekt
++     entry .addable   `F32 + F32`, das Objekt `Addition` über seinen Singleton-Typ
++     entry .subtractable   `F32 - F32`, das Objekt `Subtraction` über seinen Singleton-Typ
++     entry .multiplicable   `F32 * F32`, das Objekt `Multiplication` über seinen Singleton-Typ
++     entry .divisible   `F32 / F32`, das Objekt `Division` über seinen Singleton-Typ
++     entry .negatable   das Präfix `-` auf einem `F32`, das Objekt `Negation` über seinen Singleton-Typ
++     entry .Widening   eine Konvertierung nach `F32`, die auch die Arithmetik eines `F32` mit diesem Operanden mitbringt
+
+% 1 1 0 11604bbd493e27820f0b1edd3c92ed6d
+
+@ 0 5 0 17f721dcde7a0fed1fa8ffc6b5b3b5a9
++           `Widening[right]` erweitert `Conversion[right, F32]` und hält die Instanzen
++           `Addition`, `Subtraction`, `Multiplication` und `Division` für einen `F32` links und
++           einen `right` rechts, so wie `F64.Widening` es für `F64` tut. Die
++           Konvertierungsobjekte `FloatConversion` … `S8Conversion` erweitern es.
++       entry #Addition   `F32 + right`, wobei zuerst der rechte Operand konvertiert wird
+
+% 0 1 0 0dd8fae3081b23fd0f5ace042569e976
+
+% 0 1 0 1a3c872f4a0534bb07a737de7e21929a
+
+% 0 1 0 15f0209a20b3487106a77f01045c13aa
+
+@ 0 22 0 0605263a22c710e116a24bd1c3bcfeff
++     entry .addableWidening   `F32 + right` für jedes `right` mit einem `Widening`
++     entry .subtractableWidening   `F32 - right` für jedes `right` mit einem `Widening`
++     entry .multiplicableWidening   `F32 * right` für jedes `right` mit einem `Widening`
++     entry .divisibleWidening   `F32 / right` für jedes `right` mit einem `Widening`
++     entry .canEqual   ein `F32` darf mit `==` mit `F32`, den vorzeichenbehafteten Ganzzahlen, `Float`, `Long`, `Int`, `Short` und `Byte` verglichen werden
++     entry .orderable   IEEE-Vergleich zweier `F32`s für `<`, `<=`, `>`, `>=`, `min` und `max`
++     entry .apply   `F32(float)`, `F32(bits: B32)` oder `F32(sign, exponent: B16, mantissa: B32)`
++     entry .FloatConversion   das `Widening[Float]`: ein `Float` ist bereits ein `F32`
++     entry .floatConversion   das given, mit dem ein `Float` stehen kann, wo ein `F32` erwartet wird, und Operand eines solchen sein kann
++     entry .ShortConversion   das `Widening[Short]`
++     entry .shortConversion   das given, das einen `Short` exakt in `F32` konvertiert
++     entry .ByteConversion   das `Widening[Byte]`
++     entry .byteConversion   das given, das einen `Byte` in `F32` konvertiert
++     entry .U16Conversion   das `Widening[U16]`, über den vorzeichenlosen Wert
++     entry .u16Conversion   das given, das einen `U16` in `F32` konvertiert
++     entry .U8Conversion   das `Widening[U8]`, über den vorzeichenlosen Wert
++     entry .u8Conversion   das given, das einen `U8` in `F32` konvertiert
++     entry .S16Conversion   das `Widening[S16]`
++     entry .s16Conversion   das given, das einen `S16` in `F32` konvertiert
++     entry .S8Conversion   das `Widening[S8]`
++     entry .s8Conversion   das given, das einen `S8` in `F32` konvertiert
++   entry .B64   ein 64-Bit-Muster: Shifts, Rotationen, Masken und Bitadressierung, aber keine Arithmetik; siehe `hypotenuse.B64`
+
+% 1 1 0 181e8091b0cb16951e6be102882a59c4
+
+@ 0 9 0 0775573a68b185cc17d1cacce608f7d2
++         Das Begleitobjekt des opaken Typs `B64`, mit ihm in das Paket `hypotenuse` exportiert.
++     entry .underlying   der Nachweis, dass ein `B64` darunter ein `Long` ist
++     entry .block   `B64.block(n)`: die untersten `n` Bits gesetzt
++     entry .set   eine Maske mit einem gesetzten Bit, nach Ordinalzahl, oder einer Folge gesetzter Bits, nach Intervall
++         `B64.set(Ter)` ist `0b100`; `B64.set(Prim thru Ter)` ist `0b111`.
++     entry .apply   ein `B64` aus einem `Long`, `Int`, `Short` oder `Byte` oder aus acht Big-Endian-Bytes
++         `B64(bytes, offset = 0)` liest `bytes(offset)` als das höchstwertige Byte. Die
++         schmaleren primitiven Typen werden vorzeichenerweitert, wie es `toLong` tut.
++   entry .B32   ein 32-Bit-Muster: Shifts, Rotationen, Masken und Bitadressierung, aber keine Arithmetik; siehe `hypotenuse.B32`
+
+% 1 1 0 1dc87c101dbab8fd0978f36f422f3224
+
+@ 0 6 0 05307900efcf7ac0014f4fb2471a61ad
++         Das Begleitobjekt des opaken Typs `B32`, mit ihm in das Paket `hypotenuse` exportiert.
++     entry .underlying   der Nachweis, dass ein `B32` darunter ein `Int` ist
++     entry .block   `B32.block(n)`: die untersten `n` Bits gesetzt
++     entry .set   eine Maske mit einem gesetzten Bit, nach Ordinalzahl, oder einer Folge gesetzter Bits, nach Intervall
++     entry .apply   ein `B32` aus einem `Int`, `Short` oder `Byte` oder aus vier Big-Endian-Bytes ab einem Offset
++   entry .B16   ein 16-Bit-Muster: Shifts, Rotationen, Masken und Bitadressierung, aber keine Arithmetik; siehe `hypotenuse.B16`
+
+% 1 1 0 14e237175a2bdac701d31c521d7bb958
+
+@ 0 6 0 0ad9ba7841448f3e0dea21e19048606a
++         Das Begleitobjekt des opaken Typs `B16`, mit ihm in das Paket `hypotenuse` exportiert.
++     entry .underlying   der Nachweis, dass ein `B16` darunter ein `Short` ist
++     entry .block   `B16.block(n)`: die untersten `n` Bits gesetzt
++     entry .set   eine Maske mit einem gesetzten Bit, nach Ordinalzahl, oder einer Folge gesetzter Bits, nach Intervall
++     entry .apply   ein `B16` aus einem `Short` oder `Byte` oder aus zwei Big-Endian-Bytes ab einem Offset
++   entry .B8   ein 8-Bit-Muster: Shifts, Rotationen, Masken und Bitadressierung, aber keine Arithmetik; siehe `hypotenuse.B8`
+
+% 1 1 0 146ec9c66f2baef101e81e2616d79ac6
+
+@ 0 68 0 0c7e1f153a881e93028ea4fb83aa5051
++         Das Begleitobjekt des opaken Typs `B8`, mit ihm in das Paket `hypotenuse` exportiert.
++     entry .underlying   der Nachweis, dass ein `B8` darunter ein `Byte` ist
++     entry .block   `B8.block(n)`: die untersten `n` Bits gesetzt
++     entry .set   eine Maske mit einem gesetzten Bit, nach Ordinalzahl, oder einer Folge gesetzter Bits, nach Intervall
++     entry .apply   `B8(byte)`: ein Muster aus einem `Byte`
++   entry .abs   Absolutbetrag: `S8`…`S64`, `F32`, `F64`
++   entry .long   der Wert als `Long`: `S8`…`S64` und der vorzeichenlose Wert von `U8`…`U32`
++   entry .int   der Wert als `Int`: `S8`, `S16`, `S32` und der vorzeichenlose Wert von `U8` und `U16`
++   entry .short   der Wert als `Short`: `S8`, `S16` und der vorzeichenlose Wert von `U8`
++   entry .byte   das rohe Byte eines `S8` oder `U8`
++   entry .octal   der Wert zur Basis 8: jeder Typ `U*` und `S*`; auf `B8`…`B64` auf die Breite aufgefüllt
++   entry .hex   der Wert zur Basis 16: jeder Typ `U*` und `S*`; auf `B8`…`B64` auf die Breite aufgefüllt
++   entry .base32   der Wert zur Basis 32: jeder Typ `U*` und `S*`
++   entry .binary   der Wert zur Basis 2: jeder Typ `U*` und `S*`; auf `B8`…`B64` auf die Breite aufgefüllt
++   entry .text   der vorzeichenlose Dezimalwert eines `U8`…`U64`, als `Text`
++   entry .%%   Floor-Modulus auf `S8`…`S64`
++   entry ./-   abrundende Division auf `S8`…`S64`
++   entry .%   abschneidender Rest auf `S8`…`S64` und vorzeichenloser Rest auf `U8`…`U64`
++   entry .**   Potenz, zu einem `Double` auf `S8`…`S64` und zum selben Typ auf `F32` und `F64`
++   entry .bits   das Bitmuster jedes `U*`-, `S*`- oder `F*`-Werts als der `B*` seiner Breite
++   entry .gcd   größter gemeinsamer Teiler auf jedem Typ `U*` und `S*`
++   entry .s8   ein `B8`, als vorzeichenbehaftet umgedeutet
++   entry .u8   ein `B8`, als vorzeichenlos umgedeutet
++   entry .s16   ein `B16`, als vorzeichenbehaftet umgedeutet, oder ein erweiterter `U8`
++   entry .u16   ein `B16`, als vorzeichenlos umgedeutet, oder ein erweiterter `U8`
++   entry .s32   ein `B32`, als vorzeichenbehaftet umgedeutet, oder ein erweiterter `U8` oder `U16`
++   entry .u32   ein `B32`, als vorzeichenlos umgedeutet, oder ein erweiterter `U8` oder `U16`
++   entry .s64   ein `B64`, als vorzeichenbehaftet umgedeutet, oder ein erweiterter `U8`, `U16` oder `U32`
++   entry .u64   ein `B64`, als vorzeichenlos umgedeutet, oder ein erweiterter `U8`, `U16` oder `U32`
++   entry .apply   auf einem `B*`: die Bits eines `Interval`, nach unten verschoben, oder ein Bit nach nullbasierter Position
++   entry .set   auf einem `B*`: das Muster mit einem gesetzten Bit oder einer gesetzten Folge von Bits
++   entry .clear   auf einem `B*`: das Muster mit einem gelöschten Bit oder einer gelöschten Folge von Bits
++   entry .flip   auf einem `B*`: das Muster mit einem invertierten Bit oder einer invertierten Folge von Bits
++   entry .bit   auf einem `B*`: ob das Bit an einer Ordinalzahl gesetzt ist; `Prim` ist das niedrigstwertige
++   entry .<<<   auf einem `B*`: Rotation nach links um eine Anzahl von Bits
++   entry .>>>   auf einem `B*`: Rotation nach rechts um eine Anzahl von Bits
++   entry .<<   auf einem `B*`: Shift nach links
++   entry .>>   auf einem `B*`: logischer Shift nach rechts, nie vorzeichenerweiternd
++   entry .&   auf einem `B*`: bitweises Und, mit jedem Operanden, der sich in den Mustertyp konvertieren lässt
++   entry .|   auf einem `B*`: bitweises Oder
++   entry .^   auf einem `B*`: bitweises exklusives Oder
++   entry .unary_~   auf einem `B*`: bitweise Inversion, als Präfix `~`
++   entry .leadingZeros   auf einem `B*`: die Anzahl der Nullbits über dem höchsten gesetzten Bit
++   entry .trailingZeros   auf einem `B*`: die Anzahl der Nullbits unter dem niedrigsten gesetzten Bit
++   entry .ones   auf einem `B*`: die Anzahl gesetzter Bits, als `S32`
++   entry .zeros   auf einem `B*`: die Breite abzüglich der Anzahl gesetzter Bits, als `S32`
++   entry .reverse   auf einem `B*`: das Muster mit seinen Bits in umgekehrter Reihenfolge
++   entry .bytes   auf einem `B16`, `B32` oder `B64`: das Muster als Big-Endian-Bytes
++   entry .double   der `Double` eines `F64` oder `F32`
++   entry .float   der `Float` eines `F32`
++   entry .mantissa   die unteren 52 Bits des Musters eines `F64`, als `B64`
++   entry .exponent   der unverschobene Exponent eines `F64` (als `B16`) oder eines `F32` (als `Int`)
++   entry .sqrt   die Quadratwurzel eines `F64` oder `F32`
++   entry .cbrt   die Kubikwurzel eines `F64` oder `F32`
++   entry .ceiling   die Aufrundung eines `F64` oder `F32`
++   entry .floor   die Abrundung eines `F64` oder `F32`
++   entry .increment   der nächste `F64` oder `F32` darüber
++   entry .decrement   der nächste `F64` oder `F32` darunter
++   entry .successor   der nächste `F64` oder `F32` darüber, wie `increment`
++   entry .predecessor   der nächste `F64` oder `F32` darunter, wie `decrement`
++   entry .round   ein `F64` oder `F32`, gerundet auf den nächsten `Long`
++   entry .scalb   ein `F64` oder `F32`, multipliziert mit einer Zweierpotenz
++   entry .signum   das Vorzeichen eines `F64` oder `F32`, als `-1.0 | 0.0 | 1.0`
++   entry .ulp   die Einheit an der letzten Stelle eines `F64` oder `F32`
++   entry .rawBits   das IEEE-Muster eines `F64` oder `F32`, mit erhaltenen `NaN`-Nutzdaten
++   entry .finite   ob ein `F64` oder `F32` endlich ist
++   entry .infinite   ob ein `F64` oder `F32` unendlich ist
++   entry .nan   ob ein `F64` oder `F32` `NaN` ist
+
+@ 0 1 0 0f09cbf14874477f0beb94c116a3c864
++ entry .protointernal   die Makroimplementierungen hinter `bin"…"`, `hex"…"`, den typisierten Literalen und dem verketteten Vergleich
+
+% 1 1 0 13ffd91eed20f64609258037d09d79ea
+
+% 2 1 0 0b41955e154e125a028841ee72825ccc
+
+@ 0 12 0 070de7423e6b3d6e04371e41da5d9c0b
++       Nicht zur direkten Verwendung: Das Objekt existiert, damit die Makros ein stabiles Zuhause
++       haben.
++   entry .bin   das Makro hinter `bin"…"`: validiert die Ziffern und spleißt ein `Byte`, `Short`, `Int` oder `Long` ein
++   entry .hex   das Makro hinter `hex"…"`: validiert die Ziffern und spleißt ein eingefrorenes Byte-Array ein
++   entry .parseU64   parst die Ziffern eines `U64`-Literals zur Kompilierzeit, über `FromDigits`
++   entry .parseS64   parst die Ziffern eines `S64`-Literals
++   entry .parseU32   parst die Ziffern eines `U32`-Literals
++   entry .parseS32   parst die Ziffern eines `S32`-Literals
++   entry .parseU16   parst die Ziffern eines `U16`-Literals und bricht ab, wenn sie außerhalb des Bereichs liegen
++   entry .parseS16   parst die Ziffern eines `S16`-Literals und bricht ab, wenn sie außerhalb des Bereichs liegen
++   entry .parseU8   parst die Ziffern eines `U8`-Literals und bricht ab, wenn sie außerhalb des Bereichs liegen
++   entry .parseS8   parst die Ziffern eines `S8`-Literals und bricht ab, wenn sie außerhalb des Bereichs liegen
++   entry .commensurable   das Makro hinter `Commensurable.numeric`: schreibt `(a < x) < b` in `a < x && x < b` um
+
+@ 0 1 0 1b5ef8f16c91692703c3b32e6e496b12
++ entry .Checkable   die Typklasse hinter `===` und `!==`: ob ein Wert gegen einen anderen, womöglich eines anderen Typs, besteht
+
+% 1 1 0 0cb0619322e21bb81a9804e2d73b391a
+
+@ 0 6 0 1aac2c39965cbf8c04015743b8a314f1
++       Ein `left is Checkable against right` entscheidet, ob ein `left` zu einem `right` passt,
++       und ist das, was `===` befragt. Es ist bewusst lockerer als `==`: Die beiden Seiten dürfen
++       sich im Typ unterscheiden, sodass ein Wert gegen eine `Tolerance` geprüft werden kann
++       (`x === 1.0 ± 0.01`), ein eingefrorenes Array gegen ein anderes anhand seines Inhalts oder
++       eine `Chain` gegen eine `Chain` Element für Element, und eine mit `===` geschriebene
++       Testzusicherung liest sich als der Vergleich, den sie meint. Es ist der Vergleich, den die
++       Zusicherungen von probably verwenden, und liegt in `hypotenuse.check`.
+
+% 2 1 0 1693f65ad7b622ad1bcf5c105d372cf7
+
+% 3 1 0 09ed7cbdc1b0a8040beb6271df1aa547
+
+% 0 1 0 18e69f60ed34507a1458127c33bbe0f3
+
+% 0 1 0 0bfac7570776361d1110321f71d6a5de
+
+% 0 1 0 16bc40d84af16d410aff81e68afd59e1
+
+% 0 1 0 116a719c7032233b1d8ef6c1ce6b9009
+
+% 0 1 0 08fbba636d59e5e20aebe5ad5b4d0166
+
+% 1 1 0 11ea0d224c249fe91d271b2397df89cd
+
+@ 0 2 0 043d300b49cfda560655dd75ca471b69
++       Eine Instanz wird über `.apply` als Lambda geschrieben, und `#contramap` leitet eine für
++       einen Typ her, indem es ihn auf das Subjekt abbildet.
+
+% 0 1 0 080cac64f0e17d4809ce4035aed741d8
+
+% 0 1 0 03b4a7b40688f87b0e51407c9d219f10
+
+@ 0 10 0 0810a770ecfcf2210a200f2f75ba3883
++   entry .frozenArray   zwei eingefrorene Arrays gelten als gleich, wenn ihre Elemente es tun, gleich welcher Elementtypen
++   entry .stream   zwei `Chain`s gelten Element für Element als gleich, wenn ihre Elemente `Checkable` sind
++       Die Längen müssen übereinstimmen: Eine kürzere Kette ist kein Präfix-Treffer.
++   entry .tolerance2   ein Wert besteht gegen eine `Tolerance` seines Typs, wenn die Toleranz ihn abdeckt
++   entry .commensurable   jeder mit sich selbst vergleichbare Typ gilt als gleich, wenn keiner kleiner als der andere ist
++       `left <= right && right <= left`, über das `Commensurable` im Geltungsbereich, sodass
++       jeder numerische Typ ohne eigene Instanz gegen sich selbst `Checkable` ist.
++   entry .apply   `Checkable((left, right) => …)`: eine Instanz aus einem Prädikat
++   entry #check   ob `left` zu `right` passt
++   entry #contramap   eine Instanz für einen anderen Typ, indem dieser vor der Prüfung auf diesen abgebildet wird
+
+@ 0 1 0 163c7ab0fd684e0a1e1338badc76acf7
++ entry .Tolerance   ein Wert mit einem Toleranzbereich zu beiden Seiten, gegen den `===` einen Wert abgleicht
+
+% 1 1 0 009e1bbb0eff7c1304f249c429ce35fb
+
+@ 0 3 0 1f8059ed029d8d440c7250c211e1bbfc
++       `Tolerance(base, tolerance)` deckt jeden Wert von `base - tolerance` bis
++       `base + tolerance` ab, Grenzen eingeschlossen. Eine wird mit `+/-` oder `±` auf jedem Typ
++       mit einem `Orderable`, einem `Addable` und einem `Subtractable` durch sich selbst erzeugt
++       und mit `===` geprüft:
+
+% 2 1 0 0cf24ed3b7924d37056cee1dffd2843b
+
+% 3 1 0 1ea0a9621ef29cb404ddcc381c391e38
+
+% 0 1 0 113d856c6e720a46119af05e4169799d
+
+% 0 1 0 0350d30819b260aa0b7901201de7c480
+
+% 0 1 0 1470c00a635281f11689f1f82f7738e6
+
+% 0 1 0 0781c7f5d8946cd70c878119958af75a
+
+% 1 1 0 0643ecefd18ab5b108e562409e85a406
+
+% 0 1 0 17c9655cd380655616309b10a5b4899f
+
+% 0 1 0 1aa4b8b636cbe89501c80ddebc045fe1
+
+@ 0 3 0 0be9cc8fba2cbf6315b2c5814f3d2686
++   entry #base   die Mitte des Bereichs
++   entry #tolerance   die halbe Breite des Bereichs
++   entry #covers   ob ein Wert innerhalb des Bereichs liegt, Grenzen eingeschlossen
+
+@ 0 5 0 10ee6e3716b89b7403ccb05b18ab6b70
++ entry .===   `left === right`: ob `left` gegen `right` besteht, über ein `Checkable`
++     Eine Erweiterung auf jedem Wert, in `hypotenuse.check`, die das `left is Checkable against
++     right` im Geltungsbereich nimmt. Anders als bei `==` dürfen die beiden Seiten
++     verschiedene Typen haben, sodass eine Zahl gegen eine `Tolerance` verglichen und der
++     Äquivalenzbegriff eines Typs für Tests angegeben werden kann, ohne sein `equals` anzurühren.
+
+@ 0 1 0 02c8272964e7c78f0307185fe22185c4
++ entry .!==   `left !== right`: die Negation von `===`
+
+@ 0 5 0 08dfab0c3f2553c00eea09feaa82ab8b
++ entry .+/-   `base +/- tolerance`: eine `Tolerance`, gegen die `===` abgleicht
++     Eine Erweiterung auf jedem Wert, dessen Typ gegen sich selbst `Commensurable`, durch sich
++     selbst zu sich selbst `Addable` und durch sich selbst zu sich selbst `Subtractable` ist:
++     die Primitive, die typisierten Zahlen, Größen. `10 +/- 2` deckt jeden Wert von `8` bis `12`
++     ab, Grenzen eingeschlossen, über das `>=` des `Commensurable` des Typs.
+
+@ 0 1 0 0268aca0f56ef4e31b3ce690bc98b4c2
++ entry .±   `base ± tolerance`: dieselbe `Tolerance` wie `+/-`, für eine Tastatur mit dem Symbol

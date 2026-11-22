@@ -1,0 +1,43 @@
+orthant 2 language
+
+% 0 1 0 08ea410a6337439a014ceccc3fd8ac68
+
+@ 0 1 0 053e3c86e0888b100d5c954568600e10
++ Lançado quando um classfile da JVM não pode ser lido ou seu bytecode não pode ser extraído.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 02d460b37fdc7374130de89c0f3774df
++ O Mandible analisa classfiles para expor métodos e suas instruções. Este erro cobre um classfile
++ que não está presente no classpath e um cuja estrutura não pode ser analisada.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Código
++ column  Motivo
++ column  Mensagem
+
+% 0 1 0 0f88545b8d549738105535e784528a93
+
+% 0 1 0 08575ae3d8386d270d99d1fa24c10f84
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 3 0 05583725aecb091e143081f14bcfbd97
++ Um classfile ausente em geral significa que o classpath passado ao leitor difere daquele contra o
++ qual o código foi compilado. Uma falha de análise significa que o arquivo está truncado, ou usa
++ uma versão de classfile além do que o parser modela.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 083e73f1292a4d2b181a17157491b496
++ - Código-fonte: `lib/mandible/src/core/mandible_core.scala`

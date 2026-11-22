@@ -1,0 +1,14 @@
+orthant 2 language
+
+% 0 2 0 13cb20562ad12b90122b786e4aeea2b0
+
+@ 0 9 0 08fae36999e3381915e6efdc9645d2ff
++   entry .sha2_224   `0x1013`, `sha2-224`: ein Zwei-Byte-Varint im Umschlag
++   entry .blake3   `0x1e`, `blake3`: ein Entwurfseintrag in der Tabelle, aber eindeutig und weit verbreitet implementiert
++   entry .md5   `0xd5`, `md5`: ein Entwurfseintrag in der Tabelle
++   entry .name   der registrierte Name eines Codes, den diese Bibliothek kennt, oder `Unset`
++       `Multicodec.name(0x12)` ist `t"sha2-256"`; `0x00` ist `identity`. Ein Code außerhalb der obigen
++       Menge ist zulässig und in einem `Multihash` darstellbar, hat hier aber keinen Namen.
++   entry .apply   `Multicodec[algorithm](code, name)`: eine Instanz für einen eigenen Algorithmus
++   entry #code   der Multicodec-Code des Algorithmus, wie in der Multiformats-Tabelle registriert
++   entry #name   der registrierte Multicodec-Name des Algorithmus, etwa `sha2-256`

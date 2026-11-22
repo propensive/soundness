@@ -1,0 +1,637 @@
+orthant 2 language
+
+@ 0 1 0 054b0dfa99aa4b250eea7e68995a6f6d
++ ## Test
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 3 0 068d3dd73fdc22350ecfd544b80a16c4
++ Un test è un valore. Nomina ciò che verifica e produce un valore, e un'asserzione dichiara ciò
++ che deve valere per quel valore. Attorno a questo nucleo stanno due capacità che alla maggior
++ parte dei framework mancano.
+
+@ 0 3 0 0f5235f33e9db48a1763b2433f865b95
++ Quando un'asserzione di uguaglianza fallisce, il resoconto non è fatto di due `toString`. È un
++ *contrasto* strutturale: un diff tra il valore atteso e quello osservato, allineato campo per
++ campo ed elemento per elemento, con le differenze effettive evidenziate.
+
+@ 0 4 0 16bb629289acaff600252b733a8404ce
++ E i test possono asserire che del codice *non compila*. Così tanti controlli avvengono a
++ [tempo di compilazione] che questo conta: un blocco che dovrebbe essere rifiutato viene
++ catturato, e i suoi errori di compilazione diventano valori da ispezionare. Verificare che
++ qualcosa sia impossibile è ciò che più di tutto deve fare una libreria costruita sulla
++ [correttezza](../../philosophy/correctness.md).
+
+@ 0 1 0 10843a9f29dc8aba14c96b352c90d891
++ ### Sui test
+
+@ 0 2 0 1bf640b15f6ec5c10e9eb15d26d866c8
++ Il vero prodotto di un framework di test è il suo output in caso di fallimento. «Expected X but
++ found Y», stampato come due lunghe stringhe, lascia a chi legge il compito di trovare la
++ differenza a occhio.
+
+@ 0 3 0 0b8243dbe9069c351eaec5b8c0190c21
++ E in una base di codice le cui invarianti vivono nel sistema dei tipi, metà di ciò che va
++ verificato è proprio che certo codice non si può scrivere. Un test ordinario non può esprimerlo
++ affatto, poiché dovrebbe prima compilare.
+
+@ 0 2 0 075f946654c196f11d6ee1990a7ddeeb
++ Qui si affrontano entrambe le cose. I fallimenti si mostrano come confronti strutturati, e gli
++ errori di compilazione sono a pieno titolo oggetto di test. Tutto proviene dal package
++ `soundness`:
+
+% 2 1 0 1bb0648d0432983507f82d5274dceedf
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 2 0 13df8692c655857a18f1aabd0569e588
++ Gli esempi di questa pagina dichiarano test, che un runner di test eseguirebbe, quindi qui
++ vengono compilati ma non eseguiti.
+
+@ 0 1 0 031a6f646f190b7405d86ad531625910
++ ### Suite e test
+
+@ 0 2 0 1050246d7f4275c91cd7d7a33c0fa261
++ Una suite implementa `run()`. Un test avvolge l'espressione in esame e fa asserzioni sul suo
++ valore, e `suite` raggruppa test correlati:
+
+% 2 1 0 071bc2dc742d18b9160a395869749436
+
+% 0 1 0 02960b3889d25267088229b73a633bb9
+
+% 0 1 0 07c972ede95ca1f20f3b89f978cb2ef1
+
+% 0 1 0 04164ed437dfb55119c214d188dea4ee
+
+% 0 1 0 1c0affbd98d8be040709a42bd7fe1a20
+
+% 0 1 0 1096a64c01a3bb53107923eca3ef1dbb
+
+% 0 1 0 11b11764a6b3b8b21577e28a4449bf10
+
+% 1 1 0 1f0c3bf25e2c7c9d1bff9f03e3987096
+
+@ 0 1 0 0b898df13494188209b620f31c1ceb22
++ Un test termina con una di tre asserzioni:
+
+% 2 1 0 17103548346d567811231dd6cf673a7b
+
+@ 0 6 0 1fc282eae73e0ade0510082d94183066
++ column  Asserzione
++ column  Asserisce
++ column  Restituisce
++ row  `assert`  un predicato vale per il valore  niente
++ row  `check`  un predicato vale per il valore  il valore, per proseguire il lavoro su di esso
++ row  `matches`  il valore corrisponde a un pattern  niente
+
+% 1 1 0 1f059ae58b4ffd9f04fe7ab2201b7a23
+
+@ 0 3 0 1f3bb45fe150f69b01c2e84395c70186
++ Un test che *dovrebbe* passare, ma che si sa non passare ancora, si scrive come ogni altro,
++ dentro un blocco `aspirationally`. Ogni asserzione al suo interno viene registrata come
++ aspirazione. Non fa fallire la build, né viene dimenticata, ed è segnalata a parte appena
++ comincia a passare.
+
+% 2 1 0 02e06008fdbf444404efde30f56ecba9
+
+% 0 1 0 092cb0422a225fcf050c85d6e64ff526
+
+% 0 1 0 1005b761ebf4130f14f34b91b3b9c216
+
+% 0 1 0 078a2cd2aebf32c9171810b26f678622
+
+% 0 1 0 0edca99c6ca6c51601842ec3b7f07b29
+
+% 1 1 0 1cedbbf0c20e74df1cef7a1624e0498d
+
+@ 0 1 0 14382d5e6f84ec0518511fd782d2977a
++ Il confronto approssimato è integrato, per i casi numerici in cui l'uguaglianza esatta è
++ sbagliata:
+
+% 2 1 0 1022639edcbc2fa7122a2feb718f735d
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 11b2467694dae1710cb685eef0622de1
+
+% 0 1 0 12a8597dd839db811476073015213d28
+
+% 0 1 0 1d22717ac18389b01dbc77ffcf88bdef
+
+% 0 1 0 00dc4015f835a51d1139ebd8fb2c223e
+
+% 1 1 0 19b305169aae541105cc530c968a3454
+
+@ 0 3 0 0c6371914fbadb8c094633d22aa35643
++ Un test può anche avere un *moniker*: un identificatore, verificato a tempo di compilazione, che
++ lo nomina in modo stabile. Una selezione, o un grafico, possono allora riferirsi al test anche
++ dopo che la sua descrizione è stata riformulata:
+
+% 2 1 0 04b5b07b4288e94b157910507857144d
+
+% 0 1 0 1c6d89ab7031ac191aa8d2f7567708f6
+
+% 0 1 0 040e178506172a3806ae0a2658880561
+
+% 1 1 0 1b0cca802640bc011b52ebe9762b9286
+
+@ 0 1 0 0773e0aa35d3de19052386ce871d2207
++ ### Dove sta un test
+
+@ 0 4 0 14313f50e9f4911b08dcb94acdd371dd
++ Una suite ha un titolo e un *id*. L'id è ciò con cui una selezione, e un percorso, conoscono la
++ suite. O viene dato, come letterale stringa prima del titolo, o viene derivato dal titolo, come
++ le sue lettere e cifre in minuscolo, con un `-` per ogni serie di qualunque altra cosa. La prima
++ di queste suite si esegue con `fume run parser`, e la seconda con `fume run parser-tests`:
+
+% 2 1 0 1b0e488bbe08a34817814d1b33074ee7
+
+% 3 1 0 09140baa45ec49771db578a0f1ab7e24
+
+% 4 1 0 1f2c3b46db08211e0d7fa6252455b261
+
+% 0 1 0 0f8ce00025dd344c1c3c17382c5ad387
+
+% 0 1 0 154e1de62c60320f0aa3edfd5be8c853
+
+% 1 1 0 19e916feef5cca9510fc27bacc1436ad
+
+@ 0 2 0 152ae69d1f5b845114a77496a768c7a1
++ Le suite di Soundness danno sempre un id, che nomina lo scopo della libreria, e non la libreria
++ stessa, come stabilisce [lo standard sui test](../../standards/testing.md).
+
+@ 0 5 0 0481a74e6f8bed7e0fbde79e9b688cbb
++ Un id dato è anche un *tipo*. Nel corpo di `Suite("parser", m"Parser tests")`, il
++ [valore contestuale] che `test` e `suite` prendono è un `Testable of "parser"`, e ogni blocco
++ `suite` trasmette lo stesso tipo. Il compilatore sa quindi, di ogni test che compila, per quale
++ suite è dichiarato, e rifiuta un `test` dichiarato per nessuna.
+
+@ 0 2 0 11bab6f19208f15208af64b72dbf6fc4
++ I test scritti in un metodo a sé nominano la suite, tramite il suo id, nella firma del metodo,
++ come mostra la seconda versione:
+
+% 2 1 0 1ec25051c131c4740a1011a88ea012cd
+
+% 0 1 0 081300dfc87960c503c491571d55f687
+
+% 1 1 0 0ddedbcb04a5d07b02bf6328d85111ec
+
+% 0 1 0 0157127dc589446d1171f1ee78cbb241
+
+% 1 1 0 0cdc7fbf7b94e14d0f3a2f4062e61eec
+
+% 0 1 0 1dee046c3f7e7eee1b4f98799669803c
+
+% 0 1 0 005b58f2c611d8f71d8eb69bf426213c
+
+% 0 1 0 1fa83e7b0372f96b1ccfa8300782788f
+
+% 0 1 0 18d2279a23523aed01989e084081c5b1
+
+% 0 1 0 019217b26f08dbb505da495488000af7
+
+% 1 1 0 1592fdb1d165c91711230d7ba3042970
+
+% 0 1 0 0a5c938f35c8bffc1d74ba6d6956a906
+
+% 1 1 0 0478911e3903bb830fb1a9a5a04bd82f
+
+% 0 1 0 1457ee408fccd7500ff8a0626c5c90f9
+
+% 0 1 0 194f80834031ff480e8a3f0c4ed07071
+
+% 0 1 0 0505914d45a7d63910e10da63e9d8742
+
+% 0 1 0 1d85cce3795bbdda150fc5b52c3dd455
+
+% 0 1 0 14d52f2e13f4198c1a09a30fb8245797
+
+% 1 1 0 07884a265bb977720afe09914cd2cf65
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 2 0 0ba661eccfd641c5158ec75433fb9dce
++ Una suite il cui id è derivato non ha un letterale con cui nominarla. I suoi test si scrivono
++ nel suo corpo, o in un metodo generico nella suite, con
+
+% 0 1 0 163d2e424cc69f8e06c676b07b80340a
+
+@ 0 6 0 03a16370831bcb6d18e0ab5316bda40c
++ Un plugin del compilatore legge queste informazioni dal codice tipizzato, e scrive un indice dei
++ test accanto all'indice delle suite, in `META-INF/probably/tests`: il posto di ogni test nella
++ gerarchia, il suo tipo, il suo moniker, i suoi tag e il punto in cui è dichiarato. Uno strumento
++ può quindi elencare i test su un classpath, completarne i nomi e ordinarli in suite, senza
++ eseguire nulla. Un elenco ottenuto eseguendo una suite, al contrario, esegue ogni istruzione
++ attorno ai suoi test.
+
+@ 0 5 0 0abf6ab1b61082af1597be04c21b9501
++ Alcuni test non si possono conoscere in quel modo: uno per ogni file di un corpus, per esempio,
++ o test eseguiti su un `Runner` del programma stesso, che non appartengono ad alcuna suite. Si
++ dichiarano dentro un blocco `impromptu`. Questo ammette `test` e `suite` come fa una `Suite`,
++ nella posizione della suite circostante, se ce n'è una, ma li lascia fuori dall'indice. Uno
++ strumento li scopre mentre vengono eseguiti.
+
+% 2 1 0 0135c506667a9f1f1b94a721fba5db74
+
+% 0 1 0 14c504fa3f8d2dde02d7ef76d4f7fd5e
+
+% 0 1 0 144ceeefae5fa16f02d3fdfe9494999f
+
+% 0 1 0 1538783083dbe30b179784ba58f6ff41
+
+% 1 1 0 15c7b9d4affec4521df6b52d39a40645
+
+@ 0 2 0 18ea8f832c7ea3371450a9421104bf1a
++ Un test con un nome calcolato che *non* si trova in un blocco `impromptu` viene comunque
++ indicizzato, in base alle parti fisse del suo nome.
+
+@ 0 1 0 0de98f342d74898b1ca5793e5b9f54d4
++ ### Distribuire un test su assi
+
+@ 0 3 0 03f2f29c058d12a3094dbffe2cbcfd91
++ Un test è un nome, e zero o più *assi*. Dato un asse, il corpo viene eseguito una volta per ogni
++ valore, e ogni verdetto viene registrato in quella coordinata. Un solo test copre quindi una
++ famiglia di casi, senza diventare un ciclo i cui fallimenti riportano tutti lo stesso nome:
+
+% 2 1 0 05bee991e0be496c1586c4253491641a
+
+% 0 1 0 03e7e76713f3558a037d4d9ef3172c1b
+
+% 0 1 0 019d296b639751ae1700d0da2cca0951
+
+% 0 1 0 09229a96a0526e63005ec53fca4482c7
+
+% 1 1 0 075f6cd36a29c18011872f84f59fc314
+
+@ 0 1 0 0291517cbc5f0c1c1e0a57e5e01e82e5
++ L'oggetto compagno di un'[enumerazione] è un asse a pieno titolo, e non richiede un elenco di
++ valori:
+
+% 2 1 0 071bfdf267f6853a143d9d79bb3e1716
+
+% 0 1 0 123d505f90ee85a608de09bdeae6409a
+
+% 0 1 0 10c358af3eeb75c709c7448494fbbe6f
+
+% 0 1 0 11ccb5523572f3ae03c23251512ca338
+
+% 0 1 0 04a7c38fd39230d10c4f7d695c9b0e93
+
+% 0 1 0 0f92c45ebd75bcbc02c6907f553d0819
+
+% 1 1 0 183a2d5aafb663030165ed51d498d631
+
+@ 0 3 0 18349a94680961651b707a217cd740d2
++ Due assi distribuiscono un test su una griglia, mostrata come una tabella con un asse lungo
++ ciascun lato. Un corpo parziale lascia dei vuoti, che appaiono come posizioni vuote, non come
++ fallimenti. È un modo onesto di dire che una combinazione non si applica:
+
+% 2 1 0 1ea0e4b7147062bf15f2416e8540eaa2
+
+% 0 1 0 15d05158cd4761360b61750f6d665ab5
+
+% 0 1 0 06477f17734255181e19bae73366414a
+
+% 0 1 0 02e7ff853bec117e05640e4de5edaaf2
+
+% 1 1 0 1470ccd0e0cd24480ea62304d550f71a
+
+@ 0 2 0 13488bf34753b768050006337cb097b5
++ L'asserzione vede i valori degli assi accanto al risultato, quindi un predicato può dipendere
++ dalla sua posizione nella griglia.
+
+@ 0 1 0 03dc4c3d24ecd16d1587cabab95cecea
++ ### Il fallimento come contrasto
+
+@ 0 6 0 053a1c5e85c51589047bd919b7a42fee
++ Quando un'asserzione di uguaglianza fallisce, i due valori vengono *scomposti*, con le case
++ class divise in campi e le collezioni in elementi allineati, e messi fianco a fianco. Il
++ resoconto mostra l'albero, con le foglie diverse marcate: un'età che differisce di due, una
++ lista con un elemento sostituito, un testo con i caratteri cambiati evidenziati. Le sequenze
++ vengono allineate tramite lo stesso [diffing](diffing.md) usato altrove, quindi un inserimento
++ appare come un inserimento, e non come se ogni elemento successivo fosse «diverso».
+
+@ 0 7 0 1a52a33aacabd77d0ccb43444f68e1be
++ Il confronto da solo sa dire soltanto *uguale* o *diverso*. Un diff grezzo di due sequenze
++ segnala quindi un elemento cambiato come una cancellazione accanto a un inserimento non
++ correlato, e si ferma lì. Il resoconto va oltre. All'interno di ogni regione di differenze,
++ chiede se un elemento rimosso e un elemento aggiunto siano *simili*: un membro del consiglio con
++ lo stesso ruolo ma un nome diverso, o un record con lo stesso identificatore e un campo
++ cambiato. Dove lo sono, i due vengono mostrati come un'unica sostituzione, scomposta fino al
++ campo cambiato, e non come due voci non correlate che chi legge deve accoppiare.
+
+@ 0 1 0 175cd89ad86073981e04725268fc5289
++ ### Diagnosticare un fallimento
+
+@ 0 4 0 07b3568d88740490032f0cc4b6f94880
++ Nulla di come verrà mostrato un fallimento si decide quando un test viene compilato. La maggior
++ parte delle asserzioni passa, quindi stabilire come rendere il valore di ciascuna, a ogni
++ compilazione, si pagherebbe migliaia di volte per servire le poche che falliscono.
++ Un'asserzione registra soltanto dove è scritto il suo predicato.
+
+@ 0 4 0 11aa65c3c8bc2ba40bfd7986168d3914
++ Quando un predicato fallisce, il runner lo rilegge dalla suite compilata, e lo valuta ancora una
++ volta sul valore che ha fallito, registrando lungo il percorso ogni valore intermedio. Il corpo
++ del test non viene eseguito di nuovo. Per un predicato come `x => x*2 < 9 && x*y > 4`, con `x`
++ e `y` entrambi pari a 2, il resoconto è l'albero delle sue sottoespressioni:
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1e023046e4bebd131967debc3001184b
+
+% 0 1 0 05825c5d3f80a9ab1e5e81abb79f459f
+
+% 0 1 0 0d5beb20397e25f10d32448719b9b12a
+
+% 0 1 0 1d4e67c8e083ad2718f7d33d2f65e072
+
+% 0 1 0 12aa59dae794c17e03bc415db0db20b5
+
+% 0 1 0 1b8326c8892c21d8105bdbd4794bf47c
+
+% 0 1 0 19f1ddfb274cde8e1f77e20b5a6edc9b
+
+% 0 1 0 13817058a4e6b59a14dc5c6ffac5ee6c
+
+% 1 1 0 1b1729baf5e5b72e16c60a34e6ff21d2
+
+@ 0 3 0 0e0acd4a10c6777a1717f533abf8c2e9
++ È questo che rende leggibile una proprietà che fallisce: il controesempio viene mostrato insieme
++ a tutto ciò che è stato calcolato a partire da esso. Un predicato che è un'uguaglianza viene
++ anche mostrato come contrasto tra i suoi due lati.
+
+@ 0 5 0 0849cb358ce4cab3051158fed6287450
++ Ogni valore viene reso dall'istanza che in quel momento si trova per il suo tipo, un
++ `Inspectable` o uno `Showable`. Una suite ne fornisce una nell'oggetto compagno del tipo,
++ tramite un import sopra l'asserzione, o come given dell'oggetto in cui la suite è scritta, e non
++ ha bisogno di sapere se un runner la chiederà. A una suite si chiede una diagnosi con il termine
++ di selezione `--diagnose=dissect,contrast,inspect`.
+
+@ 0 1 0 1c4c8f5ac6cf8b7d13091d159a8c8882
++ ### Asserire che del codice non compila
+
+@ 0 2 0 1206e18511e9e0c712116d84358364e7
++ `demilitarize` compila il codice che racchiude e, anziché far fallire la build, consegna gli
++ errori di compilazione come valori:
+
+% 2 1 0 132c5cc55a08a06e091c5f202916a4c3
+
+% 3 1 0 01ded11372c5bf4a0272c63be8d7845a
+
+% 4 1 0 1e618455b70bcae91b8f2d989eb2b689
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 1b6667015802392c0c6c61f590bf4b90
+
+% 0 1 0 1b6dd9a87f66bfd21e9aeff4a62d64ab
+
+% 0 1 0 07e0211992565f311bd41f2ab1ce634e
+
+% 0 1 0 0e2384aa7a3eeafc1c31bd906ecc3cc0
+
+% 0 1 0 133c39845045cbc614edf156db5bb8cd
+
+% 1 1 0 1aeb7aabd796602a06680758d1707e21
+
+@ 0 4 0 17043f58e743a6ef1d9e1ee6e02b313f
++ È così che si verificano le garanzie di Soundness stessa: che sommare importi nella
++ [valuta](money.md#arithmetic) sbagliata, un letterale non valido o una relazione non dichiarata
++ non compilino davvero. Ogni progetto che incorpora invarianti nei tipi ha bisogno della stessa
++ cosa. L'*impossibilità* è la funzionalità, e questo la rende verificabile.
+
+@ 0 8 0 070ec030b937d2240be8b274f02a17cb
++ Funziona tramite un plugin del compilatore, e sapere a grandi linee come è utile quando si
++ comporta male. Il plugin viene eseguito dopo il parsing, ma prima del controllo dei tipi. Quando
++ trova un blocco `demilitarize` nel codice non tipizzato, avvia una compilazione *separata* dello
++ stesso file, sullo stesso classpath, ma senza il plugin, e si aspetta che fallisca. Gli errori
++ che cadono dentro il blocco vengono catturati. Nella compilazione principale, vengono sostituiti
++ da codice che costruisce i corrispondenti valori `CompileError`. Il controllo dei tipi vede
++ allora soltanto quelle costruzioni, e mai il codice errato, quindi la build riesce, purché nulla
++ fuori da un blocco `demilitarize` sia sbagliato.
+
+@ 0 5 0 168b0c94e73d6e101525c750a85771da
++ Una conseguenza merita di essere conosciuta. Un errore in una fase iniziale del compilatore può
++ impedire l'esecuzione delle fasi successive, quindi gli errori che sarebbero venuti da quelle
++ fasi non vengono catturati al primo passaggio. Il plugin esegue di nuovo la compilazione tutte
++ le volte necessarie, rimuovendo ogni volta una parte maggiore del codice incriminato, finché non
++ si raggiungono le fasi successive. Per questo un file con diversi blocchi `demilitarize` compila
++ più lentamente di quanto suggeriscano le sue dimensioni.
+
+@ 0 1 0 1cb0903d4d41644d05a158e456dd589c
++ ### Misurare, non soltanto asserire
+
+@ 0 1 0 0262c0dfff43037613c6c7c281d3b67c
++ Un test non deve per forza terminare con un verdetto. Altri tre tipi registrano misurazioni:
+
+% 2 1 0 0fe433abf95138eb1358cf88ea64c467
+
+@ 0 6 0 0f826b64faa0aac7076833602ce4bd67
++ column  Tipo
++ column  Registra
++ row  `test`  un verdetto
++ row  `Bench`  la velocità
++ row  `Stress`  l'allocazione per operazione, il picco di heap e l'insieme vivo sotto concorrenza sostenuta
++ row  `Profile`  i metodi più caldi per tempo proprio, dai campioni di esecuzione di JFR
+
+% 1 1 0 09128d2f32a7f6600a32a65d988fed55
+
+@ 0 3 0 1c23f072950c619213a5cd0bf37273c2
++ Tutti e quattro finiscono nello stesso resoconto: un nome, i suoi assi e una mappa sparsa di
++ celle, le cui cifre provengono da un unico insieme chiuso. Ogni tipo viene quindi mostrato allo
++ stesso modo, e rappresentato in grafico allo stesso modo.
+
+@ 0 3 0 0b09373d38faf5db1cefb442b10bfe3c
++ Ogni misurazione viene compilata ed eseguita su un `BenchmarkDevice`, che qui è la macchina
++ locale. Richiede un sistema, una directory temporanea in cui lavorare e un embedding per i
++ valori che trasporta, tutti nell'ambito. Un `Decimalizer` formatta le sue dimensioni e i suoi
++ ritmi:
+
+% 2 1 0 1c66551dd2bf37cd0f549e221d592632
+
+% 0 1 0 1b084ed53cb66d2b0640671c5773c02d
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 03c9874b4d17338b1cba21d2250ea99e
+
+% 0 1 0 0f0fd91a54fdcd91130ed7071e80a4d3
+
+% 0 1 0 1bb5042532ccf1e91d229398d577556f
+
+% 1 1 0 04a4829b95f56abc1042c3a689448bcf
+
+@ 0 3 0 0dd3f95d065721a30ea58485ca2af08a
++ Un `Bench` misura la velocità. Il suo corpo è un'espressione quotata, che viene portata in
++ [staging](staging.md), e smistata in una JVM a sé, così che la misurazione non sia distorta dal
++ resto della suite:
+
+% 2 1 0 0a9e0778a0f8c61e09ebfc76b947ee62
+
+% 3 1 0 11da982dd9133356172bf1d08e915e8e
+
+% 4 1 0 1df36663a196af08013118159f3bd9f0
+
+% 0 1 0 0f51e7c3b5c1f079199ec044f2afe393
+
+% 0 1 0 10b4a4eb86fd97240bef8145071dc16c
+
+% 0 1 0 15a9a795ed95b849190a58eae7e8be3b
+
+% 1 1 0 124c3bce15d2e83115d587138d284a6d
+
+@ 0 3 0 192606a5e78516c9044d1afd524657ba
++ Uno `Stress` misura ciò che una cifra di throughput nasconde. Viene eseguito per un tempo
++ trascorso prefissato, con una concorrenza dichiarata, e gli si può dare uno heap limitato, o un
++ limite sulla CPU, così da mostrare che un design regge dove conta:
+
+% 2 1 0 0f3398e9bf6f46310ee63886a0caaa4e
+
+% 3 1 0 045a7fd78db235430f83c4e67c1034c6
+
+% 4 1 0 1ab6f4a3c3682149197a3172942c223c
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 06f278d369ee408a0ea555eb386b768f
+
+% 0 1 0 17aa8aaef613e6ef02f1425efd65db43
+
+% 0 1 0 0944fa855f0e87851b25d7af7cfc9012
+
+% 0 1 0 1c05717931787f4003f587a6fdc45509
+
+% 1 1 0 13ac032d6413bd71162489dc90736e9f
+
+@ 0 2 0 0685e994e6cef0e8007c34abf8658275
++ Un `Profile` risponde alla domanda su dove sia finito il tempo. Fornisce un istogramma dei
++ metodi più caldi, colorati per package:
+
+% 2 1 0 026b0dbad7be5ed115e2c435ba03d937
+
+% 3 1 0 0d6fb87ac19f0e9c1b9d93ed2aec439d
+
+% 4 1 0 1ac0ffe5b29820cd12bdefcc725ebbf1
+
+% 0 1 0 0e3ee617259260c91e4547e95f2f5bdd
+
+% 0 1 0 13ba1ebde15be0fa106481f370961178
+
+% 0 1 0 0f17798480c4d28e176a7f805d55d2e7
+
+% 1 1 0 130ed80c16fe514206cd76288405092e
+
+@ 0 5 0 1f50f1cc233ac65005ae591d2216bfd1
++ I benchmark si distribuiscono su assi come i test. Viene portato in staging un programma per
++ ogni implementazione distinta, e ogni cella viene smistata in una JVM a sé. Una linea di base
++ ancora un valore di un asse, e gli altri vengono mostrati in relazione a esso. Una *scansione*
++ di stress registra i suoi passi come coordinate su un asse di un unico test, non come una
++ famiglia di test con nomi diversi. [Grafici](charts.md) disegna i risultati.
+
+@ 0 1 0 0aff83aefa8669f906339e6ed1b766d2
++ ### Esecuzione e selezione
+
+@ 0 7 0 15582adb839184730f7437683ea45999
++ Una `Suite` non è una main class. Un plugin del compilatore registra ogni oggetto `Suite`
++ nell'indice `META-INF/services/probably.Suite` del jar che compila. Il runner,
++ [fume](https://github.com/propensive/fume), scopre le suite da quell'indice su un classpath
++ compilato, esegue ciascuna nel proprio processo, e mostra lo stream di `TestEvent` che una suite
++ emette: l'avanzamento dal vivo su un terminale, output semplice in CI, ogni fallimento con il
++ suo contrasto, e uno stato di uscita diverso da zero se un qualunque test è fallito. È tutto ciò
++ su cui una build ha bisogno di basarsi.
+
+@ 0 3 0 19bac9d2522d2c900659f0f9a4a403cb
++ Un progetto nomina il suo classpath una volta sola, in `.pyrocosm/fume/config.tel`, quindi un
++ semplice `fume run` esegue tutto. `fume list`, e il completamento dei nomi dei test in una
++ shell, leggono l'indice dei test, e quindi non eseguono nulla.
+
+@ 0 1 0 1492c97c1ebc0a10170c56b999d81f90
++ fume accetta anche termini di selezione, così che si possa eseguire un sottoinsieme senza
++ modificare il codice:
+
+% 2 1 0 0e68683e7a03abb0059d32a7dbeb77fd
+
+@ 0 8 0 13f087ac1081eecb0631729bb9fd2471
++ column  Termine
++ column  Seleziona
++ column  Si combina per
++ row  un hash  il test con quell'hash  unione
++ row  un moniker, come `square`  il test con quel moniker  unione
++ row  un glob sui nomi, come `'parser*'`  i test i cui nomi corrispondono  unione
++ row  `--test`, `--bench`, `--stress`, `--profile`  i test di quel tipo  intersezione
++ row  un vincolo su un asse, come `parser=jacinta` o `'N<32'`  le celle che vi corrispondono  intersezione
+
+% 1 1 0 0285a86486ad08ff0e51414fbe53ed0d
+
+@ 0 2 0 15e4a17e40f1dff50116513995d91e1d
++ I termini che identificano test si uniscono tra loro, e gli altri si intersecano con quell'unione:
+
+% 0 1 0 15a5f1f7e49cceab1ba03bc009fa86b5
+
+% 0 1 0 0579c14281b8babf0d538a4aeb109188
+
+% 0 1 0 1c0bda95762d216d0da537835990a57d
+
+% 0 1 0 01c751a5ad19f164068f0d7e15883e4d
+
+% 0 1 0 0eee9f3e5369b9480a023c385b285c78
+
+% 1 1 0 02207b5e11a960c507a6091269f561f3
+
+@ 0 5 0 0c5f2c8ac74ea6381ecf546deba1dd69
++ Il primo seleziona per moniker e poi con un glob sui nomi, il secondo esegue soltanto i
++ benchmark, il terzo esegue soltanto le celle che corrispondono ai vincoli sugli assi, e l'ultimo
++ elenca ciò che corrisponde, senza eseguire nulla. Le asserzioni non selezionate non vengono mai
++ eseguite, e le celle di benchmark non selezionate vengono saltate, quindi una selezione costa
++ soltanto ciò che esegue.
+
+@ 0 4 0 1fdce4ec790b75bb188fbff6fbdffb3d
++ Una suite non è una main class, ma un punto di ingresso per `java` semplice, per la CI, o per un
++ host troppo vecchio per leggere lo schema degli eventi del jar, occupa una riga.
++ `Suite.main(arguments, Tests)` esegue le suite indicate, stampa una riga per ogni test
++ completato, i suoi dettagli e un riepilogo, ed esce con il loro stato:
+
+% 2 1 0 108e2743e76ab7ab1ec5e1df08984d52
+
+@ 0 5 0 1cc6f4c04a3cacc317ec7548502322df
++ column  Stato
++ column  Significa
++ row  `0`  ogni test è passato
++ row  `1`  un test è fallito
++ row  `2`  una suite ha lanciato un'eccezione
+
+% 1 1 0 069090adfa0605a00e7a2567e8b22f08
+
+@ 0 1 0 1ef75b2ed3f2156d1d0737d38df5645b
++ `Suite.run` è lo stesso, senza uscire, per un host proprio.
+
+% 0 1 0 0647b574ba405a220c6097163df25100
+
+% 1 1 0 03859fbd5cc820c2149d6a6c21aedfeb
+
+% 0 1 0 0d90ec476464df0208c553caed8a709b
+
+% 0 1 0 1dc530dd1a86228d18ed74f36ab935ce
+
+% 0 1 0 0398121f872a86f0157d553c10653580
+
+% 1 1 0 0c05ed608d2926890fbb9aff071469f6
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 7 0 16a406363dff101400e85a66b26112af
++ - [Errori](errors.md#inspecting-a-failure-directly) descrive `capture`, che un test usa per
++   asserire che del codice fallisce nel modo giusto.
++ - [Diffing](diffing.md) calcola le differenze che un contrasto mostra.
++ - [Casualità](randomness.md#reproducing-a-run) genera dati di test riproducibili.
++ - [Emulazione di terminale](terminal-emulator.md) verifica ciò che mostra un programma da terminale.
++ - [Ambiente](environment.md#overriding-for-a-block) dà a un test un ambiente fisso.
++ - [DOM del browser](dom.md), [automazione web](web-automation.md), [tempo](time.md) e [stack trace](stack-traces.md) descrivono ciò che i test guidano, controllano e riportano.

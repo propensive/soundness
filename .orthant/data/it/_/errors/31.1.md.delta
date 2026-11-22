@@ -1,0 +1,36 @@
+orthant 2 language
+
+% 0 1 0 10d3212dbae3745504f416304a655074
+
+@ 0 1 0 03923a1d19442abf1fc6a67b4d1b5a98
++ Sollevato da Gnossienne quando un riferimento non può essere risolto.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 5 0 1f5d6c34efb1ce5908532091923ee911
++ Un token di riferimento (di solito incorporato in Markdown o in un altro documento strutturato) non
++ è stato risolto in un bersaglio. Il costruttore accetta il testo `reference` incriminato insieme a
++ un `reason: Reason`; il messaggio reso è
++ `the reference $reference could not be resolved because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 0f53c8152d7a3a4500198fa24411812b
+
+@ 0 2 0 14db448dfc373e860b8ac1dc9bbc3c49
++ Nessun bersaglio con il riferimento dato era presente nel deposito del resolver.
+
+@ 0 1 0 1ac995d0f6dd1ef90b752501d8c9be50
++ **Esempio.** `[↯/s.31.1.1] the reference hamlet.md could not be resolved because no target with that reference was found in the store`
+
+@ 0 2 0 18d1bf9a88eb5e7e0dda30e090516f86
++ **Soluzione.** Verificare che il bersaglio esista e che il testo del riferimento gli corrisponda
++ esattamente (maiuscole e minuscole, ancore, ecc.).
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 159aae50ba6af4261786590c9bbc8f03
++ - Sorgente: `lib/gnossienne/src/core/gnossienne.Reference.scala`

@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 4 0 10958a209821f8571ce41776e3eadba8
++ Die erste: wenn sich eine Operation wirklich unterscheidet. `read` und `load` sind zwei Verben
++ für [XML](/doc/soundness/modules/xml.md), weil Lesen den Inhalt liefert und Laden das Dokument mit seinem
++ Header — eine echte Unterscheidung, keine Variante. Sie zusammenzulegen würde ein Flag-Argument
++ erzwingen, was ein schlechterer Weg ist, dasselbe zu sagen.

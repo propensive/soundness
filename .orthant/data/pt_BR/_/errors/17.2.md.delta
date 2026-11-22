@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 148ed1b44ffbcd650182de6de6a02fe1
++ # `↯/s.17.2` — O tipo tem vários métodos `map`
+
+@ 0 3 0 1e7a96851b6a8d56017b5a5e3c41f8b3
++ Lançado em tempo de compilação pela macro `functor` do Mercator quando o
++ tipo de destino tem mais de uma sobrecarga de `map`, e a macro não consegue
++ escolher entre elas.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 1 0 15d50046020dd59317a1e38e84bd2ca3
++ Várias sobrecargas de `map` são ambíguas para fins de derivação.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 085774148780ac681354a7d5d68cdf72
+
+% 1 1 0 12f2ef58f7c015ae08c88498c07ba531
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 1 0 17f7b7d09a25583f09795c958b9072bf
++ Remova ou renomeie as sobrecargas, ou forneça uma instância de `Functor` manualmente.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 1cb104d057b8971f1427e232956fe585
++ - Código-fonte: `lib/mercator/src/core/mercator.internal.scala`

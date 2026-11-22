@@ -1,0 +1,416 @@
+orthant 2 language
+
+@ 0 1 0 098808a389a42a8814133f871316a033
++ # Cómo escribir la documentación de Soundness
+
+@ 0 4 0 1efeb7ce6cc01e4b0190590f69778b60
++ Los documentos de `doc/modules/` son tutoriales, y cada uno presenta una funcionalidad de
++ Soundness —una capacidad que puede abarcar varios módulos internos— a un lector que se
++ encuentra con ella por primera vez. Esta guía expone cómo escribirlos: a quién se dirigen,
++ qué voz usan y qué convenciones siguen.
+
+@ 0 1 0 155d0ba08f3554271c10aab11f4227ad
++ ## Público y alcance
+
+@ 0 2 0 13c3571862ed43300024cfe4cc12cca4
++ Supón un lector con conocimientos básicos de Scala y del tema en cuestión, pero marca el ritmo
++ de la prosa para alguien que se encuentra por primera vez con el tratamiento que Soundness da
++ a ese tema.
+
+@ 0 5 0 0e861c5752b85e8716c64da44b1de54c
++ Explica a fondo las implementaciones propias de Soundness. Los conceptos sobre los que se
++ construye Soundness —JSON, expresiones regulares, zonas horarias— no hace falta enseñarlos
++ desde cero, pero da de cada uno lo suficiente para motivar el diseño que sigue. Enlaza los
++ antecedentes complejos o esotéricos a un recurso externo, como Wikipedia, en lugar de
++ explicarlos en el propio texto.
+
+@ 0 1 0 01d73cb3cc5d6a4b02e44f0de75c6609
++ Limita los términos y las expresiones a los que conocen tanto los lectores británicos como los
++ estadounidenses.
+
+@ 0 5 0 120e8ed86b7bc0c30279a38ef4f8daca
++ Antes de escribir, decide quién abre la página y por qué. Un lector acude a un tutorial para
++ hacer algo —leer un fichero de configuración, llamar a un servicio, entender un error— y lee
++ con preguntas que la página debe responder en el orden en que surgen: qué es lo mínimo que
++ funciona, qué ocurre cuando falla, cuánto cuesta, cómo encaja con lo que ya se usa. Pon primero
++ la tarea más común y responde a la preocupación antes de que el lector tenga que ir a buscarla.
+
+@ 0 2 0 190ac18e4e508a781a318804f63ed63d
++ Prefiere frases cortas que expresen una sola idea cada una. Una frase que necesita dos puntos y
++ coma, o un paréntesis dentro de un inciso entre rayas, son dos o tres frases.
+
+@ 0 1 0 0b995a892b43e6dc00e4e7f9124c66b6
++ ## Voz: el estilo clásico
+
+@ 0 5 0 1c6f95e12feafe4709af1bcaef2a584d
++ Escribe en estilo clásico, tal como lo describe Steven Pinker: quien escribe muestra al lector
++ algo verdadero o interesante del mundo y le ayuda a verlo con claridad, como en una
++ conversación entre iguales. El lector es inteligente y capaz. La verdad puede percibirse y
++ describirse con sencillez, y el éxito se mide por si el lector capta la idea sin esfuerzo.
+
+@ 0 21 0 003db5aa8e65cd0206f65aa414478280
++ - **Muestra, no anuncies.** Presenta la idea misma, no tu intención de presentarla. Evita los
++   carraspeos («En esta sección…», «Es importante señalar que…») y las señales de tráfico
++   («En primer lugar…», «En conclusión…»).
++ - **Mantente fuera de la vista.** Evita los pronombres de primera persona y la metadiscusión
++   sobre la escritura, el documento o su estructura. No te refieras al documento por su género:
++   nunca justifiques una elección como algo que «conviene a un tutorial» o que se hace «para
++   esta guía». Expón la elección directamente: escribe «la estrategia `throwUnsafely` lanza una
++   excepción cuando hay un fallo», no «lanzar una excepción conviene a un tutorial».
++ - **Sé sencillo y directo.** Prefiere una formulación directa a una redacción recargada,
++   hinchada o innecesariamente técnica. Elimina el relleno, las vacilaciones y los matices
++   innecesarios.
++ - **Transmite seguridad.** Afirma las cosas con sencillez en lugar de vacilar o disculparte;
++   evita el exceso de matices académicos.
++ - **Aterriza lo abstracto.** Recurre a imágenes y ejemplos concretos para anclar las ideas
++   abstractas.
++ - **Guía la mirada del lector.** Estructura cada frase de modo que la atención recaiga de forma
++   natural en lo más importante.
++ - **Suena como alguien que conoce el tema.** La voz es tranquila, entendida y relajada; la
++   prosa parece no costar esfuerzo aunque se haya revisado mucho.
++ - **Evita los recursos que dependen de un contexto compartido.** Expón la idea directamente en
++   lugar de hacerlo mediante preguntas retóricas o alusiones. Evita la prosa burocrática, el
++   abuso de la voz pasiva y la dicción pretenciosa.
+
+@ 0 1 0 1dc4f0668f26612d05fca3c4b258429e
++ ## Énfasis
+
+@ 0 4 0 0b13d9f1e2e3618c16a3fa441542b499
++ Llama la atención sobre la seguridad de tipos y las comprobaciones en tiempo de compilación que
++ realiza Soundness, y explica las ideas de diseño que hay detrás de cada API, sobre todo las que
++ puedan resultar poco convencionales. De vez en cuando, relaciónalas con la filosofía general de
++ diseño de Soundness, para que el lector vea no solo cómo funciona una funcionalidad, sino por
++ qué tiene la forma que tiene.
+
+@ 0 1 0 1b73b691c1b10b8b1c0c9a350d9d581e
++ ## Lengua y ortografía
+
+@ 0 2 0 1caf2ac94c759b00118530fa0e72e53a
++ Usa la ortografía del inglés estadounidense. Escribe siempre "runtime" y "compiletime" como
++ palabras únicas, nunca como "run time", "run-time", "compile time" o "compile-time".
+
+@ 0 1 0 160cce29ae547a03052fee8223f69a04
++ ## Estructura del documento
+
+@ 0 4 0 173232c52a4140e91f320983cc4402b1
++ Empieza con un `## Title` y, a continuación, hasta tres párrafos introductorios que den una
++ visión general del alcance del tema. Dentro de ellos, una sección `### About` da la visión
++ general y una sección `### On <topic>` motiva el diseño. Después de la introducción, trata cada
++ tema en su propia sección `###`.
+
+@ 0 2 0 1b096cedea8904770697d38df72fcf5f
++ Da prioridad a los detalles fundamentales y a las funcionalidades más usadas; relega los
++ detalles de implementación y las funcionalidades esotéricas.
+
+@ 0 6 0 0b162a62b6f897eb1c414741d7cb04a6
++ El lector ya sabe que el tema es Soundness, así que no conviertas «Soundness» en el sujeto
++ reflejo de cada frase, y menos aún de la primera. Empieza por la capacidad o por la cosa misma
++ —«Las expresiones regulares se comprueban mientras se compila el código», no «Soundness
++ comprueba las expresiones regulares mientras se compila el código»—. Nombra el proyecto donde
++ marque de verdad un contraste —lo que hace Soundness frente a lo que hacen otras bibliotecas— y,
++ cuando lo nombres, llámalo «Soundness», nunca por el nombre de un módulo interno.
+
+@ 0 1 0 1815fd0fef95cebf0803711cf6c7e6da
++ ## Ejemplos de código
+
+@ 0 3 0 1142d4ad1ee6c8ee0c937a1ab9899b52
++ Escribe el código en Scala idiomático de Soundness, con el formato que indica `syntax.md`. Usa
++ comillas invertidas en línea para el código y para los nombres concretos de términos y tipos;
++ usa bloques de triple comilla invertida para los ejemplos a nivel de bloque.
+
+@ 0 4 0 1cd72d7adf635f1d11983558820c6911
++ Los ejemplos deben estar completos —incluidas las importaciones cuando hagan falta, aunque las
++ importaciones con comodín están bien— y deben seguir unos a otros: un término con un nombre
++ dado significa lo mismo en todo un documento, y a un mismo identificador nunca se le asigna un
++ valor más de una vez.
+
+@ 0 2 0 1b8e5bc722d723520e8f57aec0449609
++ Cada ejemplo se comprueba mecánicamente, por partida doble, y ambos comprobadores siguen los
++ bloques de código en orden como una única sesión:
+
+% 2 1 0 0ff552bdb251b9a50bb62a937a35214e
+
+@ 0 5 0 0a0bca91bc8fe3bf030a854ced26ca94
++ column  Orden
++ column  Comprueba
++ row  `make fuelcheck`  compila cada tutorial con fuel contra el propio ensamblado de pruebas de `main` (`.pyrocosm/fuel/config.tel`)
++ row  `make doccheck`  evalúa cada bloque de código mediante el REPL de flame (`etc/doccheck.py`) contra la última versión publicada, y comprueba los nombres usados contra el código fuente (`etc/doccheck-names.py`)
++ row  `make doccheck DOC=json`  lo mismo, para un solo tutorial
+
+% 1 1 0 05a43a7c853d5117087237b44ced9239
+
+@ 0 1 0 0a285a0d3c46b6ec1cdecc219e258ec6
++ Unas pocas convenciones lo hacen posible:
+
+@ 0 10 0 13a4d65622258b1e0d0aa7b1af0a82ae
++ - Un ejemplo debe introducir cada nombre que usa, en un bloque de código del mismo tutorial, de modo que
++   los bloques formen una sesión continua. Cuando un tutorial necesita un valor que no puede
++   construir razonablemente en la prosa —una ruta que debe existir, un servicio en marcha—, pon
++   la ligadura en `doc/fixtures/<tutorial>.scala`, que ambos comprobadores compilan antes del
++   primer bloque.
++ - Una línea que no debe compilar lleva al final un comentario `// does not compile` (con una
++   explicación opcional tras dos puntos). Ambos comprobadores la compilan por separado e informan
++   de ella si al final compila; fuel muestra su error como una nota en la línea. Los ejemplos
++   nuevos usan en su lugar un bloque `errors show`, por la razón que se da en «Mostrar, no
++   contar».
++ - Un bloque de código que dice más que su código lo hace en un preámbulo TEL: se abre con
++   ` ```scala fuel `, y el preámbulo termina en una línea que contiene `##`. Sus directivas
++   están a continuación.
+
+@ 0 1 0 030fb08f3d7d7a3210258fccc30281a7
++ Las directivas del preámbulo:
+
+% 2 1 0 1c086764955fdac11a7d2dd22a257b6c
+
+@ 0 16 0 041da133697a2f270e148a16357b7787
++ column  Directiva
++ column  Se usa para
++ column  Significado
++ row  `typecheck`  un bloque que no puede ejecutarse en una sesión de REPL: uno que abre un navegador, liga un socket, lee un terminal o despacha una JVM  fuel lo compila, y el comprobador del REPL no lo toca
++ row  `errors show`  un bloque cuyo sentido es su error  el error se representa debajo de él
++ row  `run`  un bloque cuyo sentido es lo que imprime, o el error que lanza  fuel lo compila y lo ejecuta, y muestra su salida debajo; el comprobador del REPL no la toca
++ row  `highlight`  la parte de un bloque de la que trata la prosa  el rango se subraya, con una leyenda al lado
++ row  `error`, `caution`  una parte de un bloque que es incorrecta, o arriesgada, a propósito  el rango se marca como lo marcaría el compilador, con la leyenda dada
++ row  `parse`  un esbozo que no está pensado para compilar en absoluto  solo se analiza
++ row  `feature experimental.captureChecking`  el primer bloque que necesita una funcionalidad del lenguaje  la funcionalidad queda activada a partir de ahí
++ row  `restart`  un bloque que no debe seguir a los anteriores  la sesión empieza de nuevo
++ row  `frame`  una animación  cada `frame` tiene su `code` (y quizá un `label`); los bloques posteriores siguen a la última
++ row  `alternative`  versiones del mismo código, una en cada pestaña  cada una tiene su `code` (o sus `frame`); los bloques posteriores siguen a la primera
++ row  `substitute`  código que debe estar ahí para compilar pero que para el lector es ruido  el rango se muestra como `...`, o como el texto dado
++ row  `focus`  una región de un fragmento largo, o de una trama, de la que trata la prosa  todo lo demás del bloque se atenúa
++ row  `path`  un bloque que contiene el contenido de un fichero  el nombre del fichero se muestra encima, y un bloque `run` puede leerlo
+
+% 1 1 0 1eedfd435d6a3f5e059160f0c0243572
+
+@ 0 7 0 03e355b4655fe6880614304955c3459f
++ Usa una animación solo cuando ver cambiar el código de una trama a la siguiente enseñe algo que
++ dos bloques uno junto a otro no enseñarían: cada trama se construye sobre la anterior. Cuando
++ las versiones son, en cambio, elecciones hechas en el mismo punto —el mismo programa con otra
++ importación de política, otro backend u otro calendario, o lo mismo escrito de dos maneras—,
++ conviértelas en alternativas, con un título de pestaña de una o dos palabras (`Julian`, `RE2`,
++ `Imported`). Solo la primera alternativa se une a la sesión, así que pon primero la que usa el
++ resto del tutorial, y nada después de un `##` en un bloque así. `etc/doccheck.py` también
++ ejecuta la primera alternativa.
+
+@ 0 4 0 0711decf518873681033b2f4fe490372
++ Un `substitute` nombra su rango como lo hace una marca —un literal, o `start..end`, precisado
++ con `line` y `occurrence`— y sirve para un `???` que representa algo que se proporciona, una
++ clave o un literal largos cuyo contenido no es lo importante, o una preparación repetida en
++ cada trama. No sustituyas código del que trata la prosa.
+
+@ 0 1 0 14a3c09806bc78f2070fdbfa9d214d33
++ ### Mostrar, no contar
+
+@ 0 3 0 14e8490ee60975d10ef017063a22b586
++ Un ejemplo muestra lo que hace el código; no lo describe. Un comentario en un ejemplo es quien
++ escribe hablando por encima del código, así que un ejemplo no tiene ninguno. Cada cosa
++ que antes decía un comentario tiene un sitio mejor:
+
+% 2 1 0 0bccf011f82a8d6d097b0eb36aec221c
+
+@ 0 7 0 0af5f6c1db619a0f1d1eb5188bcf551e
++ column  En lugar de un comentario que diga
++ column  Escribe
++ row  a qué se evalúa una expresión  un bloque `run` que la imprima, para que la salida real aparezca debajo
++ row  para qué sirve una línea  un `highlight` con una leyenda, o una frase antes del bloque
++ row  por qué el código no compila  un bloque `errors show`, para que se muestre el propio mensaje del compilador
++ row  qué lanza un programa  un bloque `run` con `errors show`
++ row  que algo es arriesgado o desaconsejable  una marca `caution`, o una frase antes del bloque
+
+% 1 1 0 024d4baec5b55a421e5d6d885e050700
+
+@ 0 2 0 0a316a8ea8bd73bd0e6c3392fec16964
++ Un bloque que imprime necesita un `Stdio` en el ámbito, así que un tutorial con bloques `run`
++ importa uno una sola vez, con sus primeras importaciones, y dice en una oración para qué sirve
++ la línea:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 4 0 17448826c862a78d16ad603e768997a7
++ Un bloque `run` imprime con `Out.println`. Imprime un valor con `show` cuando tiene una
++ instancia `Showable`, ya que esa es la forma que mostraría un usuario, y con `inspect` en caso
++ contrario: un `Boolean`, una case class, una estructura anidada. Imprime los valores que un
++ lector querría ver y nada más: un bloque con tres líneas de salida enseña más que tres bloques
++ con una.
+
+@ 0 4 0 187747f5f6d9de291544c15960a8dfff
++ Prefiere las palabras del compilador a una paráfrasis de ellas. Un lector que se encuentra con
++ un error en su propio código busca su texto, así que un ejemplo que falla muestra el mensaje
++ que verá. Un mensaje de una línea aparece como nota en la línea; uno más largo aparece como una
++ tarjeta debajo del bloque. Un ejemplo que falla es un bloque propio, que contiene solo el
++ código que falla:
+
+% 2 1 0 1c8a925dc051ea1b094fb941d1b7be8d
+
+@ 0 4 0 1cc4217694b1ae4f07e53e5c1bd88289
++ column  Forma
++ column  Úsala cuando
++ row  `compile` y `errors show`  el código no compila
++ row  `run` y `errors show`  el código compila, y falla al ejecutarse
+
+% 1 1 0 187d6cce0b3c8cf80edaf1fa0a4b929b
+
+@ 0 5 0 01e960871bb679bd0a9a890b7c9d0ac1
++ Mantén mínima una expresión que falla: la única llamada que es incorrecta, sin las llamadas que
++ la seguirían. Evita el marcador `// does not compile` en los ejemplos nuevos. Un bloque que
++ contiene uno nunca se une a la sesión, y cada línea con marcador y cada bloque `run` posterior
++ fallan entonces por falta de ese bloque, algo que fuel cuenta como el fallo que se le dijo que
++ esperara; así, una línea que compila perfectamente puede pasar por una que no compila.
+
+@ 0 3 0 0b9f63aba9aa57fb096525c47fa833ec
++ Comprueba lo que muestra un ejemplo además de que pasa. Lee la salida capturada y cada mensaje
++ de error en la página representada: un ejemplo puede compilar, ejecutarse y aun así imprimir
++ algo distinto de lo que dice la prosa que lo rodea.
+
+@ 0 1 0 0e35e341796e5e3319a270ff601fe35d
++ La sesión tiene unas pocas reglas propias, que los bloques de un tutorial deben respetar:
+
+@ 0 14 0 1984b4e698cd82200aaf0c5aef21a93e
++ - Una definición que usan bloques posteriores va en un bloque sencillo, y un bloque `run` solo
++   imprime. El comprobador del REPL se salta todos los bloques que nombran un modo, así que una
++   definición dentro de uno se pierde para él.
++ - Un nombre definido en un tutorial —los casos de una enumeración, los miembros de un objeto
++   compañero— no pasa a un bloque posterior mediante un `import` de él. Escribe `Color.Red` en
++   los bloques posteriores, o repite la importación en el bloque que la necesita.
++ - Pon nombre a un given cuyo tipo empieza por un tipo definido en el tutorial:
++   `given personParsable: (Person is Json.Parsable)`. Un `given Person is …` anónimo oculta
++   `Person` a todos los bloques posteriores.
++ - Un given que debe encontrarse mientras se deriva otro se declara en el bloque que lo usa,
++   dentro de un bloque `locally`, como se hace con la importación de una política distinta.
++ - Un bloque cuyo código depende de que se expanda una macro o un given inline necesita
++   `compile`, ya que `typecheck`, el modo predeterminado, se detiene antes de la expansión.
++ - Una importación que no se puede resolver rompe todos los bloques posteriores, porque un
++   bloque fallido sigue dejando tras de sí sus importaciones. Corrige el primer error de un
++   tutorial antes de leer los demás.
+
+@ 0 3 0 01c432df6112554f0f79c843aac5225d
++ `inspect` escribe un valor opcional presente entre corchetes de esquina y uno ausente como `○`,
++ y un número en coma flotante no tiene `show` sin un `Decimalizer` en el ámbito, así que también
++ se imprime con `inspect`. Explica qué significa la notación donde un tutorial la muestre por
++ primera vez.
+
+@ 0 8 0 1106b8fcb681b311104573bb7a5b0435
++ Un bloque `run` que toca el mundo exterior al programa —el disco, un subproceso— crea dentro
++ de sí mismo lo que necesita, y no depende de lo que haya dejado un bloque `run` anterior. Fuel
++ vuelve a ejecutar un bloque solo cuando cambia, así que en una reconstrucción parcial los
++ efectos de un bloque anterior pueden faltar, o pertenecer a otro directorio temporal. Da a un
++ tutorial así una única ubicación de trabajo fija, escribe en ella con opciones que sustituyan
++ lo que haya, e imprime resultados, nunca rutas: una ruta absoluta en la salida capturada, o en
++ un mensaje de error capturado, es la ruta en la máquina que haya construido la documentación.
++ Por la misma razón, no hagas `run` de un bloque que imprima el entorno real, el nombre de
++ usuario o el nombre de host; dale en su lugar un entorno fijo.
+
+@ 0 3 0 02590160a70fc54d0c164ce6b38377e9
++ Un bloque que no puede ejecutarse donde se construye la documentación —uno que necesita la
++ red, un terminal, un navegador o un servicio en marcha— se queda en `typecheck`, y la prosa
++ dice lo que haría. Nunca escribas a mano la salida de un bloque así como si se hubiera
++ capturado.
+
+@ 0 1 0 069b26148e45eb300225ee54eb98923b
++ ## Enlaces
+
+@ 0 2 0 0701af5105aaac470be3a385ab33c1a9
++ Un tutorial rara vez se lee solo. El lector llega con algo que hacer, y lo siguiente que
++ necesita suele estar en otra página, así que enlázalo en el punto en que lo querría:
+
+@ 0 9 0 0e6c539b2394aa901e0a8b46e930709c
++ - un concepto que enseña otro tutorial, en su primer uso en cada sección, con el ancla de la
++   sección cuando el destino es una sección de una página larga:
++   `[strategy](errors.md#choosing-a-strategy)`;
++ - una combinación de dos funcionalidades, desde ambas páginas. Cuando una instancia une el
++   tipo de un módulo con la clase de tipos de otro —una fecha que se codifica en JSON, una
++   magnitud que se muestra en una tabla, una ruta que es un parámetro de línea de comandos—,
++   cada tutorial dedica a la combinación una sección breve o una frase, con un ejemplo, y
++   enlaza con el otro;
++ - una idea de diseño, a su ensayo en `doc/philosophy/`, una vez, donde se explica el diseño;
++ - una entidad de la API, nombrándola en código en línea con su sigilo (`` `#Json` `` para un
++   tipo, `` `.fetch` `` para un término), que fuel resuelve y enlaza.
+
+@ 0 2 0 01123fdf70e4cec200e9e49041bf430b
++ El texto del enlace es el nombre de aquello a lo que se enlaza, nunca «aquí» ni «esta página».
++ `fuel compile` comprueba que cada enlace tenga destino.
+
+@ 0 1 0 06f3d4564772e7ab18fb1b62403fb361
++ ## Glosario
+
+@ 0 4 0 1639d66f42495a041361dfcac1c10305
++ Una palabra con un significado preciso en Soundness —*táctica*, *estrategia*, *capacidad*,
++ *paquete de elección*— se define en `doc/en/glossary.tel`, y se escribe entre corchetes donde
++ el lector quizá aún no la conozca: `[tactic]`, o `[strategies][strategy]` para una forma
++ flexionada. Fuel muestra la definición cuando se señala el término, y lo enlaza con la página
++ indicada en su entrada.
+
+@ 0 10 0 0b1093167b75c14310ab49ce1a27c346
++ - Marca un término en su primer uso en una sección, no en cada uso.
++ - Una definición son de una a tres frases sencillas que tendrían sentido para un lector que no
++   ha leído nada más, y nombra como su `link` la página que explica el término por completo.
++ - Añade un término cuando un tutorial se apoya en una palabra cuyo significado corriente
++   induciría a error, o que Soundness usa de forma más restringida que Scala. El vocabulario
++   ordinario de Scala que se supone que el lector conoce —*trait*, *case class*— no se define.
++   También se define un término cuando su traducción debe ser la misma en todas partes, para que
++   todas las lenguas lo traduzcan igual, aunque sea vocabulario ordinario.
++ - Fuel no informa de un término entre corchetes sin definición; se muestra como texto sin más
++   entre corchetes, así que busca en el tutorial las palabras entre corchetes antes de hacer
++   commit.
+
+@ 0 1 0 1efcb8c25d685ce8066dccc4dd9aacb8
++ ## Tablas
+
+@ 0 6 0 16a091c615a961c41435c459a2c86ff4
++ Fuel no admite las tablas de Markdown con barras verticales. Una tabla es un bloque de código
++ marcado `tabular`, escrito en TEL: una línea `column` por columna (con un `title` y un `align`
++ sangrados donde haga falta), una línea `row` por fila y un `caption` opcional. Los campos se
++ separan con dos espacios, así que una celda puede contener espacios sueltos pero nunca dos
++ seguidos. Una fila con una celda vacía usa la forma larga: `row` sola, con una línea `cell`
++ sangrada por celda y un `cell` desnudo para la vacía. Las celdas son texto de Markdown en
++ línea, y el código que contiene una comilla invertida necesita un tramo con doble comilla
++ invertida.
+
+% 2 1 0 15f5bb940663c3351a7d002b6f3a8265
+
+@ 0 4 0 0d6ba04b8e1ef6cb1fc45b7861c0c224
++ column  Glifo
++ column  Significado
++ column  Ejemplo
++ row  `↗`  superíndice  `x↗2` es *x²*
+
+% 0 1 0 1c1dc6ca4e4a1e000f1cbb8c8302a19d
+
+@ 0 1 0 020e6a911e2a3cb50b14125b92e34c57
++   cell  subíndice
+
+% 0 1 0 0ed568419db6988e15566084b5954923
+
+% 1 1 0 1a8eadecc0663acd1b08d1b94578a18d
+
+@ 0 4 0 1cbce7bce4fcfa5e111a6b1171c2f900
++ Usa una tabla cuando los elementos comparten atributos: una enumeración, una correspondencia,
++ una comparación, los motivos que puede llevar un error, las elecciones que hace una
++ importación. La explicación —el porqué, los compromisos, las salvedades— se queda en la prosa.
++ Introduce una tabla con una frase, como se introduce un ejemplo, y limita cada celda a una
++ expresión breve. `fuel compile` valida cada tabla.
+
+@ 0 1 0 0edd1fa7bfe3f84a1d9d00601362ff74
++ Las páginas de formatos comparten tres disposiciones, para que todos los formatos se lean
++ igual:
+
+% 2 1 0 1eee394f16579ec81c3363133d30a62f
+
+@ 0 5 0 125e51a5d91475ee13fbdf8589848630
++ column  Disposición
++ column  Columnas
++ row  Políticas de campos opcionales  *Un campo que es* · *Se lee como* · *A menos que*
++ row  Modos de códec  *Importación* · *Para un registro* · *Para cualquier otro tipo*
++ row  Formas de salida  *Forma* · *Se serializa sobre* · *Entrega*
+
+% 1 1 0 069a2b2b8d994ffd0db39001fa88bd09

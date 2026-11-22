@@ -1,0 +1,30 @@
+orthant 2 language
+
+% 0 1 0 0f026212a2b772471c4fb8468bb5c5ff
+
+% 0 1 0 1751e012accd74720c57d65fd8292233
+
+@ 0 18 0 0392750bc2a343160e360fff43d2cf1b
++         `Exec(event)` оборачивает `guillotine.Exec.Event` с тегом `Log.Process`; `.execEvent`
++         переписывает в него события guillotine, так что `Commandline.Event is Loggable` в
++         области видимости — всё, что нужно бэкенду. `logging.silentLogging` их отбрасывает.
++     entry .execEvent   переписывает `Exec.Event` из guillotine в `Commandline.Event`
++     entry .communicable   отображает событие как _git: `event`_
++   entry .Outcome   что дал один вызов `git`: его код завершения, стандартный вывод и стандартный поток ошибок
++     entry #exit   код завершения
++     entry #stdout   стандартный вывод, как текст
++     entry #stderr   стандартный поток ошибок, как текст
++     entry #ok   был ли код завершения нулевым
++     entry #lines   стандартный вывод в виде непустых строк
++   entry .reason   читает стандартный поток ошибок git как `Git.Error.Reason`
++       Сопоставляет сообщения git — достаточно стабильные для сопоставления — для
++       `NoRepository`, `Moved`, `RefExists`, `Locked`, `NoSuchRef`, `Unmerged`, `NoSuchObject`,
++       `NothingToCommit`, `Detached`, `Dirty`, `NotFastForward`, `LeaseFailed`,
++       `OutsideWorktree`, `Untracked`, `NoOperationInProgress`, `NoSuchRemote`, `RemoteExists`,
++       `Unauthorized`, `Unreachable`, `RemoteRejected`, `InvalidConfig`, `NoteExists`,
++       `BadSignature`, `SigningFailed`, `NoSuchWorktree` и `Conflict`; всё остальное — это
++       `Unexpected`.
+
+% 7 1 0 1629a76aa3214d6912f2ede136ce4616
+
+% 7 1 0 07f206a66839aca11ebfcd26c08e27a7

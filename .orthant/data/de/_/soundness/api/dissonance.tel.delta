@@ -1,0 +1,804 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 135f99229467d8821f05735b5e5994a2
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 05772917a1ce118015eec2e617a18b5c
++ info   minimale Editierskripte zwischen Sequenzen, als Werte, die sich anwenden, umkehren, ausrichten, serialisieren und als Redraft fassen lassen
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 0481dc3f9421873606e2a603c7c67c07
++     _Dissonance_ berechnet den Unterschied zwischen zwei Sequenzen als unveränderlichen Wert.
++     `diff` führt den Algorithmus von Myers über zwei beliebige `Sequence`s aus, mit Gleichheit
++     oder einem Vergleich nach Wahl des Aufrufers, und gibt einen `Diff` zurück: ein
++     Editierskript aus Einfügungen (`Diff.Ins`), Löschungen (`Diff.Del`) und unveränderten
++     Elementen (`Diff.Par`), jeweils mit ihren Positionen in den beiden Sequenzen.
+
+@ 0 6 0 0e15268e4561d8fc068e763f88b13d5b
++     Ein `Diff` lässt sich als Patch auf das Original anwenden, mit `flip` umkehren, in geänderte
++     und unveränderte Abschnitte gruppieren, mit `rdiff` zu einem `RDiff` verfeinern, der
++     Löschungen mit den Einfügungen, die sie ersetzt haben, zu Ersetzungen (`Diff.Sub`) paart,
++     im Unix-`diff`-Format serialisieren und daraus wieder einlesen. Ein `Redraft` ist die
++     nachsichtige Form eines Patches, die nur die zu entfernenden und hinzuzufügenden Zeilen
++     nennt und selbst findet, wohin sie gehören, und eine `Evolution` verfolgt jedes Element
++     durch viele Versionen statt durch zwei.
+
+% 2 1 0 1859e7f790d94e9102a00caf8d46e178
+
+% 3 1 0 0489071a72bc29770b0fb909dd603e7a
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1223ae28266dd8440738ca5b9e458b59
+
+% 0 1 0 1053e055a687c8e21576ea606c53ac16
+
+% 0 1 0 080da6aab21a4f8f0bba6bcffa750f5a
+
+% 0 1 0 0533c12dadfb997b096ac099f7618e80
+
+% 1 1 0 1f6f3ed8ffd7bccc178197cb96972248
+
+@ 0 4 0 080d2c676c520acb060ac71435344e9b
++     Ein von `diff` berechneter oder aus einem Redraft aufgelöster Diff trägt jedes Element in
++     seinen Edits und sagt das in seinem Typ: Er ist ein `Diff[element] & Retained`, auf dem
++     `kept` den Wert eines Edits liest, ohne Fehlen behandeln zu müssen. Ein aus dem Unix-Format
++     gelesener Diff hat keine Werte für seine unveränderten Zeilen, daher ist er ein einfacher
++     `Diff` und kann nicht als Redraft dargestellt werden.
+
+@ 0 2 0 040d03a1d2ec7b831f32fcdc6a9a6565
++     Die Bibliothek ist das einzelne Source-Set `dissonance.core`, das für die JVM, Scala.js und
++     Scala Native kompiliert. Alles wird in das Umbrella `soundness` exportiert.
+
+% 0 1 0 1c05bf4ee47dd1e500b737adf58b91cc
+
+% 0 1 0 1e32564d1cd51cc71961ab841471d954
+
+% 0 1 0 04d03e334547df2214a04d51c9d81383
+
+% 0 1 0 0d4474326c2fc7bf1a3daa864ff9a18b
+
+@ 0 6 0 1726112647e0258b112b71948c6c6827
++ entry .diff   das minimale Editierskript, das eine Sequenz in eine andere überführt, nach dem Algorithmus von Myers
++     `diff(left, right)` vergleicht zwei `Sequence`s und gibt die wenigsten Einfügungen und
++     Löschungen, die `left` in `right` überführen, verschränkt mit den unveränderten Elementen,
++     als `Diff` zurück. Ein drittes Argument ersetzt `==` durch einen beliebigen Vergleich, etwa
++     einen, der Groß-/Kleinschreibung ignoriert; ein Element von `right`, das mit einem gleichen
++     Element von `left` gepaart wird, wird als `Diff.Par` gemeldet, das das Element aus `left`
++     hält.
+
+% 2 1 0 12ef142ef7282ac011bed5e237b4f34c
+
+% 3 1 0 109a57299457cbad08b1addd099559eb
+
+% 0 1 0 1880788b16cd7de21203ffe4e6f10b81
+
+% 0 1 0 0c815ea58c5674420a79d538ece9a53e
+
+% 0 1 0 1cd07cbc74e1280a00fc828ccb176a7d
+
+% 1 1 0 0de3df4512f1fdf81f9abc7bd21d0992
+
+@ 0 3 0 1ce03669ed2fff69108d06aa849a8a9d
++     Jeder Edit, den der Algorithmus erzeugt, hält sein Element, daher ist das Ergebnis ein
++     `Diff[element] & Retained`: Es lässt sich als `Redraft` darstellen, und `kept` liest die
++     Werte seiner Edits direkt. Die Elemente können von beliebigem Typ sein.
+
+@ 0 1 0 167be5d967b7133711914750c9984af9
++ entry .Diff   ein Editierskript: die Einfügungen, Löschungen und unveränderten Elemente zwischen zwei Sequenzen
+
+% 1 1 0 1afd950f9e931e351b458209bb397e06
+
+@ 0 4 0 12d9588af899b4ac0e1c61c8ceb156ad
++       Ein `Diff` ist eine Folge von `#edits`, jeweils ein `Ins`, ein `Del` oder ein `Par`, in der
++       Reihenfolge ihrer Anwendung. Jeder trägt seine Position in der linken Sequenz, der rechten
++       Sequenz oder beiden und optional sein Element. Gewöhnlich wird er von `diff` erzeugt, kann
++       aber auch von Hand gebaut oder aus dem Unix-Format gelesen werden.
+
+% 2 1 0 18daf4a0ba7db46211a82b86e5a9c574
+
+% 3 1 0 1308c0009e852b9e09318a2c1b075c22
+
+% 0 1 0 153130800463f6e50c69e69ccb42888c
+
+% 0 1 0 1a75875f9c803a90166b020aaecca6cc
+
+% 0 1 0 15e90832dd50cd650de92af09720d277
+
+% 0 1 0 02d7899b3ccb9b6d1a86f889b60254ed
+
+% 0 1 0 1a07454f2cfd4cd41b2cda67b1616e35
+
+% 1 1 0 05e034fce9b8a91707069873c7a90911
+
+@ 0 3 0 0a865e56399142590c10d0675d2f0907
++       Ein Diff aus `Text`-Zeilen serialisiert mit `.serialize` in das Unix-`diff`-Format, und
++       dieses Format wird mit `read[Diff[Text]]` über `.aggregable` wieder eingelesen. Ein
++       beibehaltener Diff aus `Text` lässt sich mit `.redraft` als `Redraft` darstellen.
+
+% 0 1 0 07f33fb4790caf24087bfb6be5445419
+
+% 0 1 0 0bc896c0597c8cae06d31ce4c96f7c85
+
+% 0 1 0 13ff3e22cb16b87f1e6a65403b02bc5b
+
+@ 0 5 0 0d1a57cc1a67d9b102769ab49b524886
++   entry .aggregable   liest einen `Diff[Text]` aus den Zeilen eines Diffs im Unix-Format, als `read[Diff[Text]]`
++       Das Given, das `Diff[Text]` aus einem Stream von `Text`-Zeilen im Standardformat (`diff`
++       ohne Optionen) lesbar macht: Befehlszeilen wie `2c2,3`, `3d2` und `0a1`, gelöschte Zeilen
++       mit dem Präfix `< `, eingefügte Zeilen mit dem Präfix `> ` und `---` dazwischen. Es braucht
++       eine `Tactic[Diff.Error]`, die für eine Zeile ausgelöst wird, die es nicht lesen kann.
+
+% 2 1 0 02ce28f225f691a31ae04d1693c8fd72
+
+% 3 1 0 1d639a1fdd0eb2cb15e6cebd6bb81059
+
+% 4 1 0 042d246d3d6524bf0fb185c85af398ce
+
+% 0 1 0 1633ab8ab31e00a5089b6a52a1eeba09
+
+% 0 1 0 05e7af60d4356f970e082066cf210c13
+
+% 1 1 0 14a324be9fda49af17867208f4f35a1f
+
+@ 0 9 0 04cbe879ecd43c661851a101d72a1631
++       Das Format wiederholt die unveränderten Zeilen nicht, daher tragen die `Par`s eines
++       geparsten Diffs keine Werte: Er patcht das Original einwandfrei, ist aber ein einfacher
++       `Diff`, kein `Retained`-Diff, und kann daher nicht mit `.redraft` dargestellt werden.
++   entry .serialize   ein Diff von Text als die Zeilen eines Diffs im Unix-Format
++       Eine Erweiterung auf `Diff[Text]`, die eine `Chain[Text]` zurückgibt: für jeden geänderten
++       Bereich eine Befehlszeile (`<left>a<right>`, `<left>d<right>` oder `<left>c<right>`, mit
++       als `start,end` geschriebenen Bereichen), dann jede gelöschte Zeile mit dem Präfix `< `,
++       eine Zeile `---`, wenn der Bereich sowohl löscht als auch einfügt, und jede eingefügte
++       Zeile mit dem Präfix `> `. Unveränderte Zeilen werden nicht geschrieben. Die Zeilen werden
++       mit `read[Diff[Text]]` wieder eingelesen.
+
+% 2 1 0 10972ea5debea5a40ff52a37acc717be
+
+% 3 1 0 06c06b8d7435d54c01e5fe8e09d3b3fd
+
+% 0 1 0 1157a3f882021e8c11ddb0107f9b95df
+
+% 0 1 0 19597f3633580e4d07f7213b62bc6fe9
+
+% 1 1 0 0fd133825339f0630848e6c7c3dd9304
+
+@ 0 6 0 135a8cff43ca197707a98b280d94d41c
++   entry .redraft   stellt einen beibehaltenen Diff von Text als `Redraft` dar, mit so viel Kontext wie verlangt
++       Eine Erweiterung auf `Diff[Text] & Retained`, etwa dem Ergebnis von `diff`. Der Kontext ist
++       ein `Redraft.Context`: `Minimal` (die Vorgabe) behält nur die unveränderten Zeilen, die
++       nötig sind, um jede Änderung eindeutig zu platzieren, `Full` behält alle, und `Fixed(n)`
++       behält die innerhalb von `n` Zeilen um eine Änderung. Ein aus einem Diff dargestellter
++       Redraft lässt sich stets auf das Original anwenden und ergibt das Ziel des Diffs.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0dac36ff7bea52e6153f98fe1f80f62d
+
+% 1 1 0 135ec5837037683c18323f3429d93d17
+
+% 2 1 0 016ce39a1bb73ec4039d98b9d00c86ed
+
+% 3 1 0 16971d1a36d8cea81c7ab0b771a25c0b
+
+% 0 1 0 18241eb46aa6a3d114544c9db11d03f2
+
+% 0 1 0 0da7f9964ef259901510193a0f963478
+
+% 0 1 0 1356bed9bedcf11e08812d64996f01f6
+
+% 1 1 0 0eba94037a76d104003b77cb1d050b37
+
+% 2 1 0 1b7f80d078af7bb00783cc3355ed37e2
+
+% 3 1 0 0d574ef8528062cd0613089c1cbc3b83
+
+% 0 1 0 09027bc403eb958d180d2dd0364814cc
+
+% 0 1 0 07c83c46cd00c6ec133a6e9150aac30b
+
+% 0 1 0 1e828c75e032975d1d8ad6a90aea92c1
+
+% 1 1 0 19597f0e39f86ac50fe7ede9ad7cbc9d
+
+% 2 1 0 11eccba92d3c670815c75442ebb1f260
+
+% 3 1 0 160fb7ce6fdf019b19a6039a7902b6e4
+
+% 0 1 0 002c6629684c0d1b0a4a573c1400d262
+
+% 0 1 0 0d4a518880fd56ca09ecd25251a82940
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 0c485717e066e47014d89fe4a442ecfa
++       Ein geparster Diff, dessen unveränderte Zeilen keine Werte haben, ist nicht `Retained` und
++       hat daher kein `redraft`: Der Typ schließt eine Darstellung aus, die das Original nicht
++       reproduzieren könnte.
++   entry .Error   ausgelöst, wenn eine Zeile eines Diffs im Unix-Format nicht gelesen werden kann
+
+% 1 1 0 1938449aaa6b1005073a5fdf583315b3
+
+@ 0 19 0 111f25c69251e0ab14c77a182dff06f7
++         Fehler `↯/s.78.1`: _could not read the diff at line `lineNo`: `line`_. Ausgelöst von
++         `Diff.aggregable` (`read[Diff[Text]]`) für eine Befehlszeile, deren Bereiche keine Zahlen
++         sind oder die gar kein Befehl ist. Ein fehlerhafter Bereich bricht das Lesen ab; eine
++         nicht erkannte Befehlszeile wird ausgelöst und dann übersprungen, sodass unter einer
++         Taktik, die sich erholt, der Rest des Diffs dennoch gelesen wird.
++     entry #lineNo   die Zeilennummer, ab 1 gezählt, der Zeile, die nicht gelesen werden konnte
++     entry #line     der Text der Zeile, die nicht gelesen werden konnte
++   entry #edits     die Edits, in der Reihenfolge ihrer Anwendung
++   entry #size      die Anzahl der Einfügungen und Löschungen, ohne unveränderte Elemente
++       Genau dann null, wenn die beiden Sequenzen gleich waren.
++   entry #flip      der umgekehrte Diff, der die rechte Sequenz zurück in die linke überführt
++       Jedes `Ins` wird zu einem `Del` und jedes `Del` zu einem `Ins`, und die Positionen jedes
++       `Par` werden vertauscht. Der Elementtyp wird zu `Optional[element]`, da eine umgekehrte
++       Einfügung eine Löschung ist, deren Wert vorhanden, aber als optional typisiert ist.
++   entry #map       wendet eine Funktion auf das Element jedes Edits an
++       Positionen bleiben erhalten; ein Edit ohne Wert bleibt ohne Wert. Das Ergebnis ist ein
++       einfacher `Diff`, kein `Retained`-Diff: Markieren Sie ihn mit `retained` erneut, wenn jeder
++       Edit seinen Wert noch trägt.
++   entry #patch     wendet den Diff auf die Originalsequenz an und ergibt das Ziel
+
+% 1 1 0 0ae45443f90e7f6e07140d84b1e93eb6
+
+@ 0 5 0 1d695b7fccd747cb06a462fa2f60bb95
++         `diff.patch(original)` durchläuft die Edits über einer `List` der Originalelemente:
++         Einfügungen werden dem Diff entnommen, Löschungen überspringen ein Element, und
++         unveränderte Elemente bleiben erhalten. Es gibt eine `Chain` zurück. Für ein `Par` mit
++         Wert wählt ein optionales zweites Argument `update(fromDiff, fromOriginal)`, was
++         ausgegeben wird; standardmäßig ist es der eigene Wert des Diffs, und für ein `Par` ohne
++         Wert, wie in einem geparsten Diff, der des Originals.
+
+% 2 1 0 0ccf2e34139ec9a316cb5de00e1cf915
+
+% 3 1 0 1fd1470f7ee70b2f03f693619d4bd4ab
+
+% 0 1 0 0669755daec78d2b002efab7cc78043d
+
+% 0 1 0 1d822d19dad5342d0d0fc152e28ad96a
+
+% 0 1 0 1454096cde6592e6123d6528364b1d3b
+
+% 1 1 0 0caa6a38ee414bfa133daead38d7a252
+
+@ 0 3 0 190b11afbaa50eff080d8968de8f0279
++         Ein Diff, der über das Ende der Sequenz hinaus löscht oder behält, auf die er angewendet
++         wird, löst eine Panic aus: Er wurde gegen ein anderes Original berechnet.
++   entry #rdiff     paart jede Löschung mit einer ähnlichen Einfügung zu einer Ersetzung und ergibt einen `RDiff`
+
+% 1 1 0 0de5d415e45dfb26028a4355f4d497c3
+
+@ 0 5 0 151880463e43e53c01b1c50e726f83c9
++         `diff.rdiff(similar)` betrachtet jeden geänderten Bereich des Diffs (jeden
++         `Tract.Changed`) und paart dort, wo er sowohl löscht als auch einfügt, Löschungen mit
++         Einfügungen zu `Sub`s. Innerhalb eines Bereichs ist die Paarung selbst ein Diff der
++         gelöschten Elemente gegen die eingefügten, mit `similar` als Vergleich, sodass so viele
++         ähnliche Paare wie möglich der Reihe nach gefunden werden; die übrigen bleiben einfache
++         `Del`s und `Ins`s.
+
+% 2 1 0 14d9d16977951cd91858986a5182d53a
+
+% 3 1 0 0bb3268ff8655ee30e02198f52323677
+
+% 0 1 0 04ba46e26096c45a0a90f16d843bce57
+
+% 0 1 0 0911a8846dc1a8a607c50cfae3b62f43
+
+% 0 1 0 08e77f8c287716e10b0d0694875e2dbb
+
+% 0 1 0 14d712934fa769a610dcf35446d302ba
+
+% 0 1 0 0f0c337d33695c310b66336cc0070075
+
+% 0 1 0 072be6f4abfad85011f9c70a616bc2b3
+
+% 0 1 0 19cce9433e426b310961547c2b5ec1f1
+
+% 1 1 0 0f310b179036088008e677ff0e44cd2e
+
+@ 0 13 0 15d9e7cacd35b262197c24346e7b2db7
++         Der zweite Parameter, `subSize` (Vorgabe `1`), paart einen Bereich ohne Rückgriff auf
++         `similar` unmittelbar, wenn er gleich viele Löschungen und Einfügungen hat und von jeder
++         Art nicht mehr als `subSize`: Bei dieser Größe ist die Entsprechung offensichtlich, auch
++         wenn die Werte nichts gemeinsam haben. Ein Edit ohne Wert, wie in einem geparsten Diff,
++         ist nie zu etwas ähnlich.
++   entry #collate   die Edits, gruppiert in abwechselnde Abschnitte unveränderter und geänderter Elemente
++       Eine `List` von `Tract`s: Jeder maximale Abschnitt aus `Par`s ist ein `Tract.Unchanged`,
++       und jeder Abschnitt aus Löschungen und Einfügungen dazwischen ein `Tract.Changed`, der
++       seine Löschungen und seine Einfügungen getrennt hält.
++   entry #chunks    die geänderten Bereiche, jeweils mit ihren Positionen und ihren Löschungen und Einfügungen
++       Eine `Chain` von `Chunk`s, einer für jeden geänderten Bereich, wie das Unix-Format sie
++       schreibt; die unveränderten Elemente dazwischen werden nicht dargestellt. `Diff.serialize`
++       ist darüber geschrieben.
+
+@ 0 1 0 019c93a94fac73411b6ac42033c5d138
++   entry .Change   ein Schritt eines `RDiff`: ein Edit oder die Ersetzung eines Elements durch ein anderes
+
+% 1 1 0 09b70e29016e1ac61ffec7bbcabfa68a
+
+@ 0 3 0 0fc7fdb4a786ba3b163f6eaacb08274f
++         Der versiegelte Obertyp von `Edit` (also von `Ins`, `Del` und `Par`) und von `Sub`, der
++         Ersetzung, die `Diff#rdiff` aus einer ähnlichen Löschung und Einfügung bildet. Ein
++         Musterabgleich über die `#changes` eines `RDiff` hat vier Fälle.
+
+% 2 1 0 1e5a24c6c24bd3741bb64eb089ab6b2f
+
+% 3 1 0 08b05827b53dc7211ea5758bd4d076cd
+
+% 0 1 0 17051ab99b5a6f820fbb734c2a7b9bfa
+
+% 0 1 0 0fe17d39ee4c6408024830ff17515742
+
+% 0 1 0 18ae0a5805f5a99907a4f90d34e1d84c
+
+% 0 1 0 1d4b8c212081ce5012338461a2e1e8d2
+
+% 0 1 0 056e4e0a175918f61af4d4d0005513b9
+
+% 1 1 0 0f43ed8ba8a9542e016405a702420b46
+
+% 0 1 0 12348145daba71b511f9ff9ac57c2011
+
+% 0 1 0 128360b0b8637d6e0affd79eb4789755
+
+@ 0 2 0 1eb4d03c544356b3007aec5bb181d02e
++     entry #map   wendet eine Funktion auf das Element oder die Elemente der Änderung an und behält ihre Positionen
++   entry .Chunk   ein geänderter Bereich eines Diffs: wo er liegt, was er löscht und was er einfügt
+
+% 1 1 0 15ac7c2662c48f06055c0a72054765d1
+
+@ 0 7 0 03e22e424c2404ae04c8b152ac3db7ff
++         Die Einheit des Unix-`diff`-Formats, geliefert von `Diff#chunks`: die Startpositionen des
++         Bereichs in der linken und der rechten Sequenz, dann seine Löschungen und seine
++         Einfügungen.
++     entry #position        die Startposition des Bereichs in der linken Sequenz
++     entry #rightPosition   die Startposition des Bereichs in der rechten Sequenz
++     entry #dels            die Löschungen des Bereichs, der Reihe nach
++     entry #inss            die Einfügungen des Bereichs, der Reihe nach
++   entry .Edit   ein Schritt eines `Diff`: eine Einfügung, eine Löschung oder ein unverändertes Element
+
+% 1 1 0 18705ee6a4031dcc0803c35b98cb908b
+
+@ 0 2 0 106cdcd355fb32410281fa99a20f9b3d
++         Der versiegelte Obertyp von `Ins`, `Del` und `Par`, den drei Edits, aus denen ein `Diff`
++         besteht. Ein `Edit` ist auch eine `Change`, der weitere Typ der Schritte eines `RDiff`,
++         der `Sub` hinzufügt.
+
+@ 0 3 0 1453d6695b7ac6ad09bc26104ab7b298
++         Jeder Edit hat einen `#value`, der `Optional` ist: Ein `Ins` hat stets einen, ein `Del`
++         oder ein `Par` dagegen möglicherweise nicht, wie in einem aus dem Unix-Format gelesenen
++         Diff. Auf einem Edit, dessen Typ `Retained` ist, liest `kept` den Wert als bloßes Element.
+
+% 0 1 0 1fec29d8fa8be0651fc27f2097791143
+
+% 0 1 0 03c87158145bb8ed189b8d3a6d7b627d
+
+@ 0 5 0 17a2b4cd7a319ecb107a8ce9136d8a47
++     entry #value   das Element, das der Edit betrifft, sofern es mitgeführt wird
++     entry #map     wendet eine Funktion auf das Element des Edits an und behält seine Positionen
++         Das Ergebnis ist ein `Edit` derselben Art; die Markierung `Retained` bleibt nicht
++         erhalten und lässt sich mit `retained` wiederherstellen.
++   entry .Del   eine Löschung: ein Element der linken Sequenz, das nicht in der rechten ist
+
+% 1 1 0 04301b65aff75468087ef97827de9dad
+
+@ 0 6 0 160955f4fcf33a6f129c7f08dbe550f6
++         `Del(left, value)`: Das Element an Position `left` der linken Sequenz wird entfernt. Der
++         Wert ist `Optional` und hat die Vorgabe `Unset`, da ein Patch nur die Position braucht;
++         ein Diff aus `diff` hält ihn stets fest, und ein aus dem Unix-Format gelesener ebenfalls.
++     entry #left    die Position des gelöschten Elements in der linken Sequenz, ab null
++     entry #value   das gelöschte Element, sofern es mitgeführt wird
++   entry .Ins   eine Einfügung: ein Element der rechten Sequenz, das nicht in der linken ist
+
+% 1 1 0 06a21cd56bc4faef01dcf3cba3db280f
+
+@ 0 5 0 0ef98a4584b3a1140ff17e452c47f672
++         `Ins(right, value)`: `value` wird an Position `right` der rechten Sequenz eingefügt. Eine
++         Einfügung trägt stets ihren Wert, da ein Patch ihn sonst nicht erzeugen könnte.
++     entry #right   die Position des eingefügten Elements in der rechten Sequenz, ab null
++     entry #value   das eingefügte Element
++   entry .Par   ein unverändertes Element, an je einer Position in beiden Sequenzen vorhanden
+
+% 1 1 0 14d0268197a20af50ed4422b92f94a16
+
+@ 0 7 0 0c8164645a4e52d9075da221ecb3f6e6
++         `Par(left, right, value)`: Das Element an Position `left` der linken Sequenz ist das an
++         `right` der rechten. Der Wert hat die Vorgabe `Unset`: Ein aus dem Unix-Format gelesener
++         Diff, der unveränderte Zeilen nicht wiederholt, hat keinen.
++     entry #left    die Position des Elements in der linken Sequenz, ab null
++     entry #right   die Position des Elements in der rechten Sequenz, ab null
++     entry #value   das Element, sofern es mitgeführt wird
++   entry .Sub   eine Ersetzung: ein Element der linken Sequenz, ersetzt durch ein ähnliches in der rechten
+
+% 1 1 0 1100e2a9a8b2eb621499c3174aefe256
+
+@ 0 8 0 032a5ee7223a92d016a98a5f3b409a7b
++         Nur von `Diff#rdiff` erzeugt, aus einer Löschung und einer Einfügung, die es als
++         einander entsprechend beurteilt hat. `Sub(left, right, leftValue, rightValue)` besagt,
++         dass das Element an `left`, `leftValue`, zum Element an `right`, `rightValue`, wurde.
++         Beide Werte sind `Optional`, da die Löschungen eines geparsten Diffs keine haben können.
++         `RDiff#flip` vertauscht die beiden Seiten.
++     entry #left         die Position des ersetzten Elements in der linken Sequenz
++     entry #right        die Position des ersetzenden Elements in der rechten Sequenz
++     entry #leftValue    das Element, das ersetzt wurde, sofern es mitgeführt wird
++     entry #rightValue   das Element, das es ersetzt hat, sofern es mitgeführt wird
+
+@ 0 1 0 092e813e2074b6b30eb355362a0da949
++ entry .RDiff   ein ausgerichteter Diff, in dem eine ähnliche Löschung und Einfügung zu einem `Sub` gepaart sind
+
+% 1 1 0 13a0900412ca60e31699baaa0530da05
+
+@ 0 4 0 0360aa1d68a9c1d70cc0a1a1d31d5ca5
++       Das Ergebnis von `Diff#rdiff`: dieselben Schritte wie in einem `Diff`, nur dass eine
++       Löschung und eine Einfügung, die einander entsprechen, ein einziges `Diff.Sub` sind. Das
++       eignet sich für die Anzeige — eine geänderte Zeile erscheint als Modifikation der alten,
++       statt als Entfernung und eine unabhängige Hinzufügung — und für den Vergleich
++       strukturierter Datensätze, bei dem ein geänderter Datensatz derselbe Datensatz ist.
+
+% 2 1 0 1c45aace9e7522991bf8da2b3d680585
+
+% 3 1 0 09f4c355d4dae355003a68ae46084c7d
+
+% 0 1 0 1789e65888ca03ad1329a9d152760838
+
+% 0 1 0 162ad885e2395f9e0d6992f615faef7f
+
+% 1 1 0 0aaa7de91007991e12af9aa37f609b62
+
+% 1 1 0 0445d0a02ca20d4f1d065f9e925c448f
+
+% 0 1 0 1ec5174d63c98c3b0d8112feb9d6307d
+
+@ 0 5 0 0fe050d5592ecf3d0f31dabafbf2befa
++   entry #changes   die Schritte, der Reihe nach: `Par`, `Del`, `Ins` und `Sub`
++   entry #flip      der umgekehrte ausgerichtete Diff, von der rechten Sequenz zurück zur linken
++       Einfügungen und Löschungen tauschen die Plätze, und bei jedem `Diff.Par` und `Diff.Sub`
++       werden die beiden Positionen (und bei einem `Diff.Sub` die beiden Werte) vertauscht.
++   entry #map       wendet eine Funktion auf das Element oder die Elemente jedes Schritts an
+
+@ 0 1 0 150a022fd3691ced17c6c1e9bc1bf6a7
++ entry .Tract   ein Abschnitt eines Diffs: entweder ein geänderter Bereich oder eine Strecke unveränderter Elemente
+
+% 1 1 0 01ca002c4d999fd51678420bb94a2b0d
+
+@ 0 3 0 0937287770bd8dc50dbf6f3c5f04a72d
++       `Diff#collate` teilt einen Diff in abwechselnde `Tract`s. Ein `Changed`-Abschnitt hält die
++       Löschungen und Einfügungen eines Bereichs getrennt, und genau diese paart `Diff#rdiff`;
++       ein `Unchanged`-Abschnitt hält die `Diff.Par`s zwischen den Bereichen.
+
+% 2 1 0 177df52756b815101374a1d1d0e0de21
+
+% 3 1 0 100c35a56a4074630b8a4352f5c5f474
+
+% 0 1 0 0aa08982e6043d3600fbec3d80733683
+
+% 0 1 0 052bbd09f733caa30df3b2c155cc702e
+
+% 0 1 0 1fcd19a9c4be0d2e031a60a70bcb5a37
+
+% 1 1 0 1865d56d66d14c5219ff7c050b7b0014
+
+@ 0 5 0 09daf727ab98f56c04e113aeb6184938
++   entry .Changed   ein geänderter Bereich: seine Löschungen und seine Einfügungen
++     entry #deletions    die Löschungen des Bereichs, der Reihe nach
++     entry #insertions   die Einfügungen des Bereichs, der Reihe nach
++   entry .Unchanged   ein Abschnitt unveränderter Elemente
++     entry #retentions   die `Par`s des Abschnitts, der Reihe nach
+
+@ 0 6 0 0a6b67309365b4cd1d1721328fe628e0
++ entry .Retained   der Nachweis auf Typebene, dass jeder Edit eines Diffs sein Element trägt
++     `Retained` ist eine Verfeinerung, `Any { type Retain = true }`, die einen `Diff.Edit` oder
++     einen `Diff` markiert, dessen Werte bekanntermaßen vorhanden sind. `diff` und
++     `Redraft#resolve` geben einen `Diff[element] & Retained` zurück; ein aus dem Unix-Format
++     gelesener oder von Hand gebauter Diff nicht. Da die Markierung eine Verfeinerung und kein
++     Trait ist, kostet sie zur Laufzeit nichts: Ein `Diff.Edit[Text] & Retained` ist ein
++     `Diff.Edit` wie jeder andere.
+
+@ 0 3 0 1cb8a1d91522cb6d03a1eeff454d4e58
++     Zwei Operationen brauchen den Nachweis. `kept` liest den Wert eines Edits als bloßes
++     Element statt als `Optional`, und `Diff.redraft` stellt einen Diff als `Redraft` dar, der
++     jede behaltene und gelöschte Zeile reproduzieren muss.
+
+% 2 1 0 1ca7027e5cd54a3a066acc277b18636f
+
+% 3 1 0 09a6b3789ef41e1701c903dd21563814
+
+% 0 1 0 1c30bbd6fa7a25d20e904a805505e003
+
+% 0 1 0 15cb6620c8ab183e1248f76642a3719a
+
+% 1 1 0 1577b50d1ae2071705019453182e30e4
+
+@ 0 2 0 17f3ff53566adb99108b9b216ccedee9
++     `retained` markiert einen Wert als beibehalten, für einen Diff oder Edit, der seine Werte
++     bekanntermaßen aufgrund seiner Konstruktion trägt, und `retentions` liefert die Edits eines
++     beibehaltenen Diffs mit der Markierung.
+
+@ 0 5 0 16ffb69c5e3adbcc14ef1d54dbcf6764
++ entry .retained   markiert einen Edit oder einen Diff als `Retained`, wenn jeder Wert bekanntermaßen vorhanden ist
++     Eine Erweiterung auf `Diff.Edit` und auf `Diff`, die den Empfänger als `& Retained`
++     typisiert zurückgibt. Sie prüft nichts: Sie ist die Stelle, an der Code, der gerade jeden
++     Wert geliefert hat, diese Tatsache festhält, wie es `diff` und `Redraft#resolve` tun. Einen
++     Diff zu markieren, dessen Edits Werte fehlen, lässt `kept` fehlende Werte zurückgeben, als
++     wären sie Elemente, und macht einen dargestellten Redraft falsch.
+
+% 2 1 0 10b9a1927d164a770ba0bdf4625ac9b6
+
+% 3 1 0 053883b54c0cf29200aebb8eaccbe98a
+
+% 0 1 0 11b123dbddfc274d14daaf929028113a
+
+% 0 1 0 0b6e7fd04a0d389c14e65e6a44501669
+
+% 1 1 0 11bd81eeb17cd13014c8421d2821296f
+
+@ 0 2 0 1cbeb1293df5b4990d61e5f210c90e62
++     `Diff.Edit#map` und `Diff#map` verwerfen die Markierung, die mit `retained` erneut angebracht
++     werden muss, wenn die abgebildeten Werte noch alle vorhanden sind.
+
+@ 0 5 0 145744e2a6c6832e00f50d7ca22a74f1
++ entry .kept   der Wert eines Edits: ein bloßes Element auf einem `Retained`-Edit, sonst `Optional`
++     Eine Erweiterung auf jedem `Diff.Edit`. Auf einem Edit, dessen statischer Typ `Retained`
++     ist, ist sie ein `transparent inline`-Accessor, der das Element selbst zurückgibt, sodass
++     kein Fehlen behandelt werden muss; auf jedem anderen Edit, oder wo der Typ nicht bekannt
++     ist, ist sie `#value`, ein `Optional[element]`.
+
+% 2 1 0 1cc1d9c65040905103473c07037dab3c
+
+% 3 1 0 1cbd7b12c5dfe67f0d157110939f4b6e
+
+% 0 1 0 176ed9826aaf0da001ff6fb5ffc151cf
+
+% 0 1 0 03b00ce7ad32f5be05f4e483a09c78e7
+
+% 1 1 0 0d03c3a570ece5da174c7ae31ac46488
+
+@ 0 3 0 011e14053c4cf27c1dac9bc2ed8a474c
++ entry .retentions   die Edits eines beibehaltenen Diffs, jeweils als `Retained` typisiert
++     Eine Erweiterung auf `Diff[element] & Retained`, die dessen `#edits` als
++     `List[Edit[element] & Retained]` liefert, sodass sich `kept` auf jeden anwenden lässt, um
++     ein bloßes Element zu lesen.
+
+@ 0 1 0 008a82923608c8cb0d63f17082435f44
++ entry .Redraft   ein nachsichtiger Patch von Textzeilen: nur die Änderungen, durch Suchen im Original verortet
+
+% 1 1 0 18b18466b2a7b4cc067dbcef64dc8c8d
+
+@ 0 5 0 163f5cbd47d07e710bc41643d417882f
++       Das Unix-`diff`-Format gibt die Position jeder Änderung exakt an und lässt sich nicht auf
++       einen Text anwenden, der sich verschoben hat. Ein `Redraft` gibt nur die zu entfernenden
++       und die hinzuzufügenden Zeilen an, mit so wenigen unveränderten Zeilen, wie nötig sind, um
++       sie zu platzieren, und findet durch Suchen im Original, wohin sie gehören. Es ist die Form,
++       in der ein Mensch oder ein Sprachmodell eine Änderung an einem Text vorschlagen kann, den
++       er nur gelesen hat.
+
+@ 0 2 0 107815e0c500f10f144da6c0f65aa251
++       Ein Redraft ist eine Folge von `Redraft.Directive`s, gewöhnlich mit `Redraft.parse` aus
++       Textzeilen geparst:
+
+@ 0 5 0 1022eb7a55063e37040624acdf6aa8ea
++       - `- line` entfernt `line`, und `+ line` fügt `line` ein;
++       - `< line` und `> line` entfernen und fügen bedingungslos ein;
++       - jede andere Zeile ist Kontext, der zu einer Zeile des Originals passen muss;
++       - eine Zeile, die mit `\` beginnt, ist Kontext ohne das `\`, für eine Kontextzeile, die
++         selbst mit einem Marker beginnt.
+
+% 2 1 0 12624fc76c3391ec1383277f3c32dc4c
+
+% 3 1 0 1c9a6254f46917f41c1dddf84edaee83
+
+% 4 1 0 0932fae0e310f5e511b6ae1d7efb20c5
+
+% 0 1 0 06bf6c1fc80760bf04c6639ac8036e72
+
+% 0 1 0 0ab5dd85835952a80c47350d189e4ead
+
+% 0 1 0 0108b2fcb07c6d0312453abac90b8b1c
+
+% 1 1 0 064818c1f48b593f134cffec183327a0
+
+@ 0 7 0 009c7622a9672e7815ac07404626778a
++       Kontext- und entfernte Zeilen werden der Reihe nach abgeglichen, jede gegen die erste
++       passende Zeile nach der vorherigen, sodass unveränderte Zeilen dazwischen nicht
++       geschrieben werden müssen; eine Einfügung kommt hinter die zuletzt abgeglichene Zeile. Eine
++       Zeile `- x` oder `+ x` ist mehrdeutig, wenn das Original auch die wörtliche Zeile `- x`
++       oder `+ x` enthält, für die sie Kontext sein könnte: Die Mehrdeutigkeit wird gemeldet, und
++       die bedingungslosen Schreibweisen `<`/`>` lösen sie auf. Eine Änderung, die auch weiter
++       unten passen würde — `- a` gegen `a`, `b`, `a` —, ist unzureichend verankert und wird
++       gemeldet, statt auf Verdacht angewendet zu werden; eine weitere Kontextzeile verankert sie.
+
+@ 0 3 0 005120896ab87af00be47dbb8d0390b8
++       `#patch` wendet einen Redraft an, `#resolve` macht daraus den `Diff`, den er beschreibt,
++       und `#verify` listet seine Probleme auf, ohne etwas auszulösen. `Diff.redraft` stellt einen
++       Diff als Redraft dar, und `#serialize` schreibt einen wieder als Zeilen.
+
+% 1 1 0 05596dd78d926b0b1d0bb216a6c89219
+
+% 0 1 0 09e1d38840383d7001529b3722f7813d
+
+@ 0 6 0 012d884e3cd2967708c5a8ed6551df31
++   entry .parse   liest einen Redraft aus Textzeilen
++       Jede Zeile wird zu einer `Redraft.Directive`: `+ ` und `- ` (oder ein bloßes `+` oder `-`)
++       zu einem `Mark`, der den Rest der Zeile einfügt oder entfernt, `> ` und `< ` zu einem
++       bedingungslosen `Add` oder `Cut`, eine mit `\` beginnende Zeile zu einem `Keep` des Rests
++       und jede andere Zeile zu einem `Keep` ihrer selbst. Das Parsen scheitert nie; ob der
++       Redraft anwendbar ist, wird durch `Redraft#resolve`, `Redraft#patch` oder
++       `Redraft#verify` gegen ein Original geprüft.
+
+% 2 1 0 0d64da100682189419fc6aaa2595877c
+
+% 3 1 0 161a90c0fc3e4894139d5292d2156be2
+
+% 0 1 0 1288798be4d5098f02e2e125c204520c
+
+% 0 1 0 0a9ff90c83d16cd00bfffd5d23c5eb62
+
+% 1 1 0 0ef0692e4a9227ac171e1e349d561e74
+
+@ 0 7 0 180d898bf9907886155a26ea15262b4c
++   entry .render   stellt einen beibehaltenen Diff von Text mit dem angegebenen Kontext als Redraft dar
++       Die Implementierung von `Diff.redraft`, über das sie gewöhnlich aufgerufen wird.
++       `Minimal`-Kontext wird gierig ermittelt: Kontextzeilen werden, die von einer Änderung am
++       weitesten entfernten zuerst, so lange weggelassen, wie der Redraft noch ohne Mehrdeutigkeit
++       auf das Original anwendbar ist und dasselbe Ergebnis liefert. Eine Einfügung oder
++       Entfernung, die als `+` oder `-` mehrdeutig wäre, wird als `>` oder `<` geschrieben.
++   entry .Directive   eine Zeile eines Redrafts: Kontext, eine Einfügung, eine Entfernung oder eine mehrdeutige Markierung
+
+% 1 1 0 0f11b9c3b2c637691172de24a5a6a42a
+
+@ 0 17 0 14b98061910bc23f07a02bff7421aadb
++         Was `Redraft.parse` aus jeder Zeile macht und was `Redraft#serialize` zurückschreibt.
++         `Mark` ist die gewöhnliche Form `+`/`-`, die als Einfügung oder Entfernung gelesen wird,
++         sofern das Original die wörtliche markierte Zeile nicht als Kontext hat; `Add` und `Cut`
++         sind die bedingungslosen Formen `>`/`<`.
++     entry .Keep   eine Kontextzeile, die zu einer Zeile des Originals passen muss
++       entry #line   der Text der Zeile
++     entry .Add    eine bedingungslose Einfügung, geschrieben `> line`
++       entry #line   die einzufügende Zeile
++     entry .Cut    eine bedingungslose Entfernung, geschrieben `< line`, einer Zeile, die im Original stehen muss
++       entry #line   die zu entfernende Zeile
++     entry .Mark   eine Einfügung oder Entfernung, geschrieben `+ line` oder `- line`
++       entry #line     die einzufügende oder zu entfernende Zeile, ohne ihren Marker
++       entry #insert   `true` für eine Einfügung (`+`), `false` für eine Entfernung (`-`)
++   entry .Anomaly   ein beim Anwenden eines Redrafts gefundenes Problem: wo, was und warum
++       Von `Redraft#verify` zurückgegeben und der Kern eines `Redraft.Error`. `line` ist der
++       Index, ab null, der fehlerhaften Direktive, `text` die Zeile, die sie nannte, und `reason`
++       ein `Redraft.Error.Reason`.
+
+% 2 1 0 0d140fa7d914641810b510043b1e14f9
+
+% 3 1 0 074a1953731af6f904d2e13ab72d31a6
+
+% 0 1 0 1d4866d6e9b23c391577f37fb3750f4a
+
+% 0 1 0 012f2d32eb2aec390d0daa63488d523d
+
+% 1 1 0 01efba5656bf286a12ab3cc7c8ae937c
+
+@ 0 1 0 11788a8fb6d59ce4004853bedd329079
++   entry .Context   wie viel unveränderten Kontext ein dargestellter Redraft behält
+
+% 1 1 0 1f9fad89c7318e4d03c4090fecef68f5
+
+@ 0 6 0 0007e60e020028000c10e7fb07300b22
++         An `Diff.redraft` übergeben. `Minimal` behält nur die Kontextzeilen, ohne die der Redraft
++         mehrdeutig wäre oder an anderer Stelle angewendet würde; `Full` behält jede unveränderte
++         Zeile; `Fixed(lines)` behält die innerhalb von `lines` um eine Änderung, wie es ein
++         Unified Diff tut.
++     entry .Fixed   die unveränderten Zeilen innerhalb eines festen Abstands von einer Änderung
++       entry #lines   wie viele Kontextzeilen zu beiden Seiten jeder Änderung behalten werden
++   entry .Error   ausgelöst, wenn ein Redraft nicht auf das Original angewendet werden kann
+
+% 1 1 0 1c5321af5aed8ad5101e4a8c31f96af5
+
+@ 0 3 0 0d9f7d7efc88bc4013a9d30360a7ed32
++         Fehler `↯/s.78.2`: _the redraft could not be applied at line `line` (`text`) because `reason`_.
++         Ausgelöst von `Redraft#resolve` und `Redraft#patch` für die erste gefundene Anomalie;
++         verwenden Sie `Redraft#verify`, um alle aufzulisten.
+
+% 2 1 0 11e5dab5b088f875197688d9ee7230c0
+
+% 3 1 0 1f42ab1c5b3b29721f01a8417845be54
+
+% 0 1 0 199d7e5ac508520317122dd2f84a380b
+
+% 0 1 0 0a37570b5a960a8a12e3d1e2ca4d241b
+
+% 0 1 0 1b2fb71bc79ff8fe1c9a54ea50495033
+
+% 1 1 0 062f775054c5f364092508e54b8c8625
+
+@ 0 1 0 0d86d72f6ff3352c1d7062c04c1780d8
++     entry .Reason   warum eine Direktive eines Redrafts nicht angewendet werden konnte
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 24 0 019d3fabddd7f9ac06f76cb03ba1d7a7
++           `NoMatch` (_no matching line could be found in the original_): Eine Kontext- oder
++           entfernte Zeile steht im Original nicht hinter den zuvor abgeglichenen Zeilen.
++           `Ambiguous` (_the change could be interpreted in more than one way_): Eine Zeile
++           `+`/`-` könnte entweder eine Änderung oder eine Kontextzeile für die wörtliche
++           markierte Zeile sein; schreiben Sie sie mit `>`/`<`, oder maskieren Sie den Kontext mit
++           `\`. `Unanchored` (_there is not enough context to locate the change unambiguously_):
++           Die Zeile würde auch weiter hinten passen; fügen Sie eine Kontextzeile hinzu.
++       entry .communicable   beschreibt jeden Grund als Meldung
++       entry #number   die Nummer des Grundes, der zweite Teil des Fehlercodes
++     entry #line     der Index, ab null, der Direktive, die nicht angewendet werden konnte
++     entry #text     die Textzeile, die die Direktive nannte
++     entry #reason   warum sie nicht angewendet werden konnte, als `Redraft.Error.Reason`
++   entry #directives   die Direktiven des Redrafts, der Reihe nach
++   entry #serialize    der Redraft als Textzeilen, die `Redraft.parse` wieder einliest
++       `Mark`s werden als `+ ` und `- ` geschrieben, `Add` und `Cut` als `> ` und `< `, und eine
++       Kontextzeile, die mit einem Marker oder einem `\` beginnt, wird mit einem `\` maskiert.
++   entry #resolve      der `Diff`, den der Redraft gegen ein Original beschreibt, oder ein `Redraft.Error`
++       Gleicht die Direktiven des Redrafts mit `==` oder dem angegebenen Vergleich gegen
++       `original` ab und gibt einen `Diff[Text] & Retained` über jede Zeile des Originals zurück.
++       Für die erste Anomalie löst es einen `Redraft.Error` aus und braucht daher eine
++       `Tactic[Redraft.Error]`.
++   entry #verify       jede Anomalie, die der Redraft gegen ein Original hat, ohne etwas auszulösen
++       Eine leere `List` bedeutet, dass der Redraft sauber anwendbar ist.
++   entry #patch        wendet den Redraft auf ein Original an und ergibt die bearbeiteten Zeilen
++       `#resolve`, gefolgt von `Diff#patch`: eine `Chain[Text]` oder ein `Redraft.Error`,
++       ausgelöst über die `Tactic[Redraft.Error]` im Geltungsbereich.
+
+% 2 1 0 149c7015a4d86f3905d9fd77c4c00580
+
+% 3 1 0 15f6551646d0f175105ddcca44447744
+
+% 4 1 0 0bb5b8bfbabf8b47178f1c828c1dc3f8
+
+% 0 1 0 069df5c5321100b81ec997af24be4295
+
+% 1 1 0 14bc7d916b43e14210911858a0aa51e0
+
+@ 0 7 0 0598dfe5c90d2a3f0889aedfcf413871
++ entry .evolve   verfolgt Elemente durch eine Reihe von Versionen und identifiziert jedes über alle hinweg
++     `evolve(versions)` vergleicht jede Version mit der nächsten und führt die Ergebnisse zu einer
++     einzigen `Evolution` zusammen: einer einzigen Folge von Atomen, jedes ein Element mit der
++     Menge der Versionen, in denen es vorhanden ist. Ein Element, das verschwindet und später
++     zurückkehrt, wird als dasselbe Atom erkannt, wo die Diffs es zulassen. Der optionale
++     Vergleich `similar` macht jeden Schritt zu einem ausgerichteten Diff (`Diff#rdiff`), sodass
++     ein geändertes Element sein Atom fortsetzt, statt ein neues zu beginnen. Der Elementtyp
++     braucht einen `ClassTag`.
+
+% 2 1 0 1bfe916e08595b33004e4aad30ebf326
+
+% 3 1 0 1466de2f5c5184a31f8c82869387fb97
+
+% 0 1 0 1c48a4b0b0a44b2609396fa6f0a2024d
+
+% 0 1 0 0f5507654fabb6dc08ce627f0ace4470
+
+% 0 1 0 11d6e4e68912594408d6dca05181a7bd
+
+% 1 1 0 1f5bd808cf89d75615b90e5f00dc96e5
+
+@ 0 1 0 12dcdd5d77af3cfc138a9506e82016ec
++ entry .Evolution   eine Historie vieler Versionen, als eine Folge von Elementen, die mit ihren Versionen markiert sind
+
+% 1 1 0 0e4c5943892a97d904130a4fdf4b6058
+
+@ 0 5 0 1ff184e988dd000e01022817b0694592
++       Von `evolve` erzeugt. Ihre `#sequence` verschränkt jedes Element jeder Version in einer
++       Reihenfolge, die mit jeder Version vereinbar ist, und jedes `Evolution.Atom` hält die
++       Versionen, nach `Ordinal`, fest, in denen es vorkommt. Auf eine Ordinalzahl angewendet,
++       rekonstruiert sie genau diese Version, und das ist die Struktur, die eine
++       Dokumenthistorie, ein Undo-Stapel oder eine Reihe von Entwürfen braucht.
+
+% 0 1 0 15b660f675beea740331433608e2096c
+
+@ 0 7 0 044f18260b2844341a50f06a4265e621
++   entry .Atom   ein Element einer Evolution, mit den Versionen, in denen es vorhanden ist
++     entry #value      das Element
++     entry #presence   die Ordinalzahlen der Versionen, in denen das Element vorkommt
++     entry #add        dasselbe Atom, zusätzlich in einer weiteren Version vorhanden
++     entry #has        ob das Element in einer Version vorhanden ist
++   entry #sequence   jedes Element jeder Version, der Reihe nach, jeweils mit seinen Versionen
++   entry #apply      rekonstruiert eine Version anhand ihrer Ordinalzahl (`Prim` für die erste)

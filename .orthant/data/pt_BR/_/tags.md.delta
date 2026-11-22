@@ -1,0 +1,151 @@
+orthant 2 language
+
+@ 0 55 0 17521d657c5f055e03f5fc37482dfb2c
++ abacist: unidades-compostas base-mista decomposição-de-tempo grandezas
++ acyclicity: grafo dag grafo-dirigido poset graphviz dot subgrafo
++ adversaria: anotações metadados reflexão reflexão-em-tempo-de-compilação
++ ambience: variável-de-ambiente propriedades-do-sistema configuração xdg diretórios ambiente
++ anamnesis: banco-de-dados entidade persistência armazenamento acesso-a-dados
++ anthology: compilador-scala compilação compilador-programático diagnósticos
++ anticipation: integração pontes-entre-classes-de-tipos classes-de-tipos-abstratas entre-módulos
++ aperture: abrir criar recurso-com-escopo handle capability concessão modo
++ apoplexy: openapi swagger especificação-de-api rest schema
++ archimedes: mathml equações notação-matemática renderização
++ austronesian: pojo interoperabilidade-com-java serialização isolamento-de-classloaders
++ aviation: tempo data calendário fuso-horário iso8601 rfc1123 feriados segundos-bissextos tzdb
++ baroque: números-complexos matemática imaginários álgebra
++ beneficence: plugin-de-build publicação artefatos distribuição
++ bitumen: tar arquivo pax tarball permissões-unix
++ breviloquence: cbor json-binário binário-conciso serialização
++ burdock: bootstrap instalador autoinstalador
++ cacophony: áudio som aiff wav reprodução gravação estéreo forma-de-onda
++ caduceus: e-mail smtp mime remetente anexo envelope
++ caesura: csv tsv dsv planilha folha valores-delimitados
++ camouflage: cache cache-lru memoização
++ capricious: aleatório gerador-de-números-aleatórios probabilidade gaussiana gama distribuição amostragem semente
++ cardinality: tipos-refinados intervalo-numérico números-limitados intervalos
++ cartouche: posicionamento-de-rótulos legendas obstáculos arranjador prevenção-de-colisões rótulos-de-gráficos
++ cataclysm: css folha-de-estilo seletores keyframes media-queries fontes css-com-tipagem-segura
++ charisma: química tabela-periódica equação-química molécula fórmula-química
++ chiaroscuro: diff comparação contraste similaridade asserções-de-teste decomposição
++ clavichord: teclado pressionamento-de-tecla teclas modificadores entrada
++ coaxial: socket tcp udp multicast dns redes socket-de-domínio vinculável conexão
++ concordance: coleções concatenação anexável prefixável junção
++ contextual: interpolação-de-strings interpolador interpolação-com-tipagem-segura interpoladores-personalizados
++ contingency: tratamento-de-erros exceções táticas recuperação validação efeitos
++ corpuscular: checksum crc32 crc64 adler32 hash-não-criptográfico integridade
++ cosmopolite: i18n internacionalização locale idioma poliglota l10n
++ degustation: tasty superfície-de-api átomos-de-api inspeção identidade-de-bibliotecas
++ delicious: diagnósticos-semânticos erros-do-compilador explicações diagnósticos
++ dendrology: diagrama-de-árvore diagrama-de-dag árvore-ascii visualização renderização-de-árvores
++ denominative: ordinal indexação base-zero base-um intervalo
++ digression: stack-trace codepoint fqcn introspecção depuração
++ dissonance: diff diff-de-myers diff-de-texto distância-de-edição detecção-de-mudanças
++ distillate: decodificador codificador classe-de-tipos conversão extração
++ diuretic: interoperabilidade-com-java adaptadores java-legado compatibilidade tipos-java
++ embarcadero: docker contêiner runtime-de-contêineres
++ enigmatic: criptografia aes rsa hmac cifragem assinatura pem chave-pública
++ escapade: escapes-ansi estilo-de-terminal cores estilo-de-texto hiperlink faixa teletipo
++ escritoire: tabela tabulação grade desenho-de-caixas tabelas-de-terminal alinhamento-de-colunas
++ espionage: acp agent-client-protocol agente-de-programação integração-com-ide json-rpc
++ ethereal: daemon ipc processo-em-segundo-plano instalador-de-serviços cliente-servidor
++ eucalyptus: logging logs domínio logger logging-estruturado
++ exegesis: lsp language-server-protocol integração-com-ide
++ exoskeleton: cli linha-de-comando framework-de-aplicações ponto-de-entrada conclusão-no-shell
++ facsimile: pdf cos documento árvore-de-páginas extração-de-texto anotações marcadores
++ frontier: implícitos busca-de-givens reflexão-em-tempo-de-compilação enumeração
++ fulminate: mensagens-de-erro diagnósticos falha-rápida mensagens-estruturadas internacionalização-de-mensagens
++ galilei: sistema-de-arquivos e/s arquivos diretórios links-simbólicos volumes posix
+
+% 0 1 0 1153fbdbbe88e26b07f0a752ff73bae6
+
+@ 0 89 0 038d9e40a67c345b04b603486c725eea
++ geodesy: geolocalização bússola coordenadas direções geografia ponto-cardeal
++ gesticulate: mime tipos-de-mídia multipart content-type recursos
++ gigantism: macros metaprogramação tempo-de-compilação internos-do-compilador-scala
++ gnossienne: referência chave-estrangeira referência-a-entidade resolvível
++ gossamer: texto strings utilitários-de-texto formatação-decimal bidi unicode junção
++ graffiti: página arquétipo página-html banner-de-destaque masthead trilha-de-navegação colofão favicon painel
++ guillotine: shell processo subprocesso execução-de-comandos posix sh
++ hallucination: imagem png jpeg gif bmp raster e/s-de-imagens
++ harlequin: realce-de-sintaxe código-fonte tokenização parser-de-scala
++ hellenism: classpath classloader jvm recursos jar
++ hieroglyph: unicode codificação codificação-de-caracteres utf8 grafema codificação-de-texto
++ honeycomb: html html5 dom html-com-tipagem-segura tags atributos
++ hyperbole: tasty compilador-scala introspecção ast depuração-de-macros
++ hypotenuse: numérico overflow divisão aritmética-inteira ordenado
++ imperial: estrutura-de-diretórios diretório-home diretório-base estrutura-do-sistema-de-arquivos xdg
++ inimitable: uuid identificador guid
++ iridescence: cor espaços-de-cor rgb cielab hsl srgb paleta tema colorimetria
++ jacinta: json parser serialização json-pointer json-schema validação-de-schema acesso-dinâmico
++ kaleidoscope: regex glob casamento-de-padrões scanner expressões-regulares
++ larceny: plugin-do-compilador erro-de-compilação testes testes-em-tempo-de-compilação
++ legerdemain: formulários widgets formulários-html entrada campos
++ locomotion: protobuf protocol-buffers formato-de-transmissão serialização-binária
++ mandible: bytecode jvm classfile arquivo-de-classe
++ mercator: functor mônada aplicativo classe-de-tipos programação-funcional
++ metamorphose: permutações combinatória fatorádico lehmer
++ monotonous: base64 base32 hex codificação-binária codificação-em-base serialização
++ mosquito: matriz álgebra-linear matemática vetor
++ murmuration: coleções classes-de-tipos percorrível dobrável mapeável filtrável
++ nomenclature: validação-de-nomes nível-de-tipos restrições tipos-refinados tipos-literais-de-string
++ obligatory: rpc json-rpc sse server-sent-events enquadramento prefixo-de-comprimento protocolo
++ octogenarian: git controle-de-versão repositório-git commit url-ssh
++ orthodoxy: oauth autenticação autorização oauth2 escopo
++ panopticon: lente óticas componível case-class acessor
++ parasite: assíncrono threads concorrência tarefas promessa daemon supervisão
++ perihelion: websocket quadro protocolo-ws
++ phoenicia: fontes tipografia ttf truetype métricas-de-fonte opentype
++ plutocrat: moeda dinheiro preço finanças luhn isin ponto-fixo
++ pneumatic: compressão deflate gzip zlib brotli xz lzma2 lzw
++ polaris: serialização-binária buffer empacotar desempacotar buffer-de-bytes
++ polysyllabic: hifenização algoritmo-de-liang quebra-de-linhas composição-tipográfica
++ polyvinyl: tipos-estruturais registros registros-anônimos provedores-de-tipos
++ praxinoscope: regex re2 autômato tempo-linear motor-de-regex redos
++ prepositional: classe-de-tipos infraestrutura-de-tipos tipos-refinados tipos-abstratos
++ prescience: execução-em-estágios classe-de-tipos-macro geração-de-código tempo-de-expansão
++ probably: testes executor-de-testes testes-de-propriedades benchmark asserções
++ profanity: terminal tui teclado editor-de-linha interativo console
++ prophesy: sugestões-de-conclusão tipos-dinâmicos conclusão-com-tab sugestões-da-ide
++ proscenium: reexportações biblioteca-padrão utilitários redução-de-boilerplate
++ punctuation: markdown commonmark prosa formatação-de-texto
++ quantitative: unidades grandezas análise-dimensional unidades-si medidas física
++ querencia: dom navegador dom-tipado interface-web lado-do-cliente
++ revolution: manifesto-jar semver versionamento
++ rudiments: utilitários biblioteca-central bijeção laços indexável
++ savagery: svg gráficos-vetoriais gráficos-2d caminho formas
++ scintillate: servidor-http servlet framework-web roteamento-http
++ sedentary: benchmarking testes-de-desempenho microbenchmark
++ serpentine: caminho caminhos-do-sistema-de-arquivos posix windows linux caminho-relativo caminho-absoluto
++ sibylline: llm anthropic openai gemini chat-completions uso-de-ferramentas saída-estruturada streaming
++ spectacular: show impressão-legível exibição inspect
++ stenography: nome-de-tipo nomes-qualificados importações renderização-de-símbolos tipos-scala
++ stratiform: tel linguagem-de-configuração registros schema tel-binário
++ superlunary: execução-em-estágios execução-remota programação-multiestágio computação-distribuída
++ surveillance: observador-de-arquivos sistema-de-arquivos eventos-de-arquivos monitoramento-de-diretórios nio
++ susurration: ssh cliente-ssh known-hosts identidade transporte sessão comandos-remotos
++ symbolism: operadores aritmética classe-de-tipos sobrecarga-de-operadores álgebra
++ syndesis: mdns dns-sd zeroconf bonjour descoberta-de-serviços multicast
++ synesthesia: mcp model-context-protocol llm protocolo-de-ia
++ tarantula: webdriver automação-de-navegador chrome firefox safari edge selenium headless
++ tasseomancy: gráficos diagramas plotagem visualização-de-dados svg benchmarks gráfico-de-barras gráfico-de-linhas gráfico-de-pizza histograma
++ telekinesis: http cliente-http cookies autenticação cliente-rest requisições-web
++ tessellate: layout desenho-de-caixas reorganização alinhamento flex layout-de-texto
++ turbulence: streams e/s stdio streaming reativo separação-de-linhas
++ typonym: nível-de-tipos lista-de-tipos mapa-de-tipos heterogêneo reflexão
++ ultimatum: layout-de-terminal painéis barra-de-progresso spinner indicador sparkline tui
++ ulysses: filtro-de-bloom estruturas-de-dados-probabilísticas palimpsesto
++ umbrageous: plugin-do-compilador shading isolamento-de-espaços-de-nomes
++ urticose: hostname endereço-de-e-mail endereço-ip endereço-mac porta identificadores-de-rede endpoint dns
++ vacuous: opcional segurança-contra-null option maybe anulável
++ vexillology: flags-de-bits flags enumeração campo-de-bits
++ vicarious: catálogo proxy indexado-por-tipo registros
++ virility: roff manpage página-de-manual troff documentação ajuda-de-cli
++ vivisection: depuração jdi breakpoints execução-passo-a-passo dap adaptador-de-depuração variáveis
++ wisteria: derivação tipos-produto tipos-soma case-class derivação-de-classes-de-tipos magnolia
++ xenophile: ffi interoperabilidade-estrangeira wit webidl typescript kotlin wasm nativo
++ xylophone: xml xml-schema xml-com-tipagem-segura xml-dinâmico
++ yossarian: pty emulador-de-terminal escapes-ansi buffer-de-tela vt100 cursor
++ ypsiloid: yaml parser serialização ast-de-yaml âncoras
++ zephyrine: parser parsing cursor emissor formato-esparso
++ zeppelin: zip arquivo arquivo-zip compressão

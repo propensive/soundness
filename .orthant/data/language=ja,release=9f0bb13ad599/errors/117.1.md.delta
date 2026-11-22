@@ -1,6 +1,0 @@
-orthant 1 language
-
-- row  `↯/s.117.1.7`  `Misconfigured`  The issuer lacks something the operation needs, such as an authorization endpoint or a redirect URI.  `[↯/s.117.1.7] OAuth failed because the issuer is not configured for this: the flow needs a redirect URI`  Give the `Issuer` the endpoint or URI the message names.
-- row  `↯/s.117.1.8`  `Identity`  An OpenID Connect ID token was absent, did not verify, or was not issued by the provider for this client and this request.  `[↯/s.117.1.8] OAuth failed because the ID token was not acceptable: it does not answer this client's request`  Do not treat the user as identified. Check that the issuer, the client identifier and the nonce passed to `Oidc.identify` are those of the authorization request, and that the keys are the provider's current ones.
-+ row  `↯/s.117.1.7`  `Misconfigured`  イシュアーに、認可エンドポイントやリダイレクト URI など、操作に必要なものが欠けている。  `[↯/s.117.1.7] OAuth failed because the issuer is not configured for this: the flow needs a redirect URI`  メッセージが示すエンドポイントまたは URI を `Issuer` に与える。
-+ row  `↯/s.117.1.8`  `Identity`  OpenID Connect の ID トークンが存在しなかったか、検証できなかったか、このクライアントとこのリクエストに対してプロバイダーが発行したものではなかった。  `[↯/s.117.1.8] OAuth failed because the ID token was not acceptable: it does not answer this client's request`  ユーザーを識別済みとして扱わない。`Oidc.identify` に渡したイシュアー、クライアント識別子、ノンスが認可リクエストのものであること、そして鍵がプロバイダーの現在のものであることを確かめる。

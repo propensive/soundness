@@ -1,0 +1,48 @@
+orthant 2 language
+
+% 0 1 0 0c21520be20ec02f153aaebf19bbf61b
+
+@ 0 2 0 01de378e79b9e6e20786ca882372489d
++ Wird ausgelöst, wenn ein JSON-Wert dem Schema, gegen das er validiert
++ wird, nicht genügt.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 1310eee41604e97910f45e846dc7ff45
++ Der `Json.Provider` von Jacinta validiert JSON-Werte gegen ein Schema, während die Felder eines
++ Datensatzes gelesen werden, und meldet jede Abweichung über diesen Fehler, durch die `Tactic` des
++ Codes, der das Feld liest, sodass ein validierender Leser sie alle sammeln kann. Die Meldung lautet
++ `the
+
+% 0 1 0 1c0c44395d7e070f0a78ce626bf7a325
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 13 0 1ee8ef470116bb4f1840beed92e7d729
++ column  Grund
++ column  Bedeutung
++ column  Meldung
++ column  Behebung
++ row  `↯/s.106.3.1`  `JsonType`  Der Typ des Werts entspricht nicht dem, was das Schema verlangt.  `[↯/s.106.3.1] the JSON was not valid according to the schema because expected JSON type number, but found string`  Geben Sie einen Wert des Typs an, den das Schema verlangt, oder lockern Sie das Schema, wenn der Typ wirklich flexibel ist.
++ row  `↯/s.106.3.2`  `MissingValue`  Ein verlangter Wert fehlt im JSON. Der Grund nennt das fehlende Feld, wo es bekannt ist.  `[↯/s.106.3.2] the JSON was not valid according to the schema because the value of locality was missing`  Ergänzen Sie das fehlende Feld, oder markieren Sie es im Schema als optional.
++ row  `↯/s.106.3.3`  `IntOutOfRange`  Ein ganzzahliger Wert liegt außerhalb des vom Schema erlaubten `minimum`/`maximum`. Ausgelöst vom Provider-Typ `"integer!"`; eine fehlende Schranke ist `Unset` statt eines Sentinels.  `[↯/s.106.3.3] the JSON was not valid according to the schema because the value was not between 1 and 99`  Beschränken Sie den Wert auf den vom Schema erlaubten Bereich.
++ row  `↯/s.106.3.4`  `PatternMismatch`  Ein String-Wert passt nicht auf den regulären Ausdruck im `pattern` des Schemas.  `[↯/s.106.3.4] the JSON was not valid according to the schema because the value did not conform to the regular expression [a-z]+`  Passen Sie den Wert an das Pattern des Schemas an, oder lockern Sie das Pattern.
++ row  `↯/s.106.3.5`  `NumberOutOfRange`  Eine Zahl liegt außerhalb des `minimum`/`maximum` (oder der exklusiven Schranken), das das Schema deklariert. Ausgelöst vom Provider-Typ `"number!"`.  `[↯/s.106.3.5] the JSON was not valid according to the schema because the number was not between -90.0 and 90.0`  Beschränken Sie den Wert auf den vom Schema erlaubten Bereich.
++ row  `↯/s.106.3.6`  `LengthOutOfRange`  Die Länge eines Strings liegt außerhalb von `minLength`/`maxLength` des Schemas. Ausgelöst vom Provider-Typ `"string!"`.  `[↯/s.106.3.6] the JSON was not valid according to the schema because the string's length was not between 1 and 214`  Kürzen oder verlängern Sie den Wert, damit er zum Schema passt.
++ row  `↯/s.106.3.7`  `NotPermitted`  Ein String ist keiner der `enum`-Werte des Schemas (oder sein `const`). Ausgelöst vom Provider-Typ `"enum"`.  `[↯/s.106.3.7] the JSON was not valid according to the schema because the value Polygon was not one of Point`  Verwenden Sie einen der aufgeführten Werte, oder erweitern Sie das `enum` des Schemas.
++ row  `↯/s.106.3.8`  `UnexpectedKind`  Ein Wert ist von einer JSON-Art, die keine der Alternativen seiner Union (`anyOf`, `oneOf` oder ein `type`, das mehrere nennt) akzeptiert.  `[↯/s.106.3.8] the JSON was not valid according to the schema because the value was a JSON boolean, which is not one of string, number`  Geben Sie einen Wert einer der Arten an, die das Schema aufführt.
++ row  `↯/s.106.3.9`  `Unparsable`  Der Text eines Strings ist für sein `format` nicht gültig: ein `json-pointer` oder ein `regex`, der sich nicht parsen lässt.  `[↯/s.106.3.9] the JSON was not valid according to the schema because the value a[ is not a valid regex`  Korrigieren Sie den Wert, sodass er sich in seinem Format parsen lässt.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 1eacee630aefe77708d9951599b52b0f
++ - Quelle: `lib/jacinta/src/core/jacinta.Json4.scala`

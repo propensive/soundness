@@ -1,0 +1,38 @@
+orthant 2 language
+
+% 0 1 0 12a8e7c89d2e651614ec9bb179024033
+
+@ 0 1 0 0f1b3438a45e7b96144bfba3a840b96d
++ Se lanza cuando hay que notificar varios errores juntos, identificados por nombre.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 0c6ae8d835068e7816878b662738dff9
++ `Errors` agrega varias instancias de `Error` en una sola excepción, cada una marcada con una clave
++ `Text`. Se usa en lugares donde la validación recoge todos los problemas antes de fallar; por
++ ejemplo, la validación de formularios con varios campos.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensaje de ejemplo
+
+@ 0 2 0 0252b2245c3753a2116643da078427c7
++ El mensaje se compone con el contenido formateado del mapa de errores subyacente, por ejemplo:
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0fb9cb6a8bad4bff180b2813bb4177d4
+
+% 1 1 0 14bcbee47ffb7697091a27353cfea2b5
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 2 0 0cee5ae88b8364491ea82efe6074e051
++ Inspecciona el mapa subyacente (`Errors.errorMap`) para tratar cada error por separado.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 0b5798f9ffbfa5411d8c34ab28eaab0b
++ - Código fuente: `lib/contingency/src/core/contingency.Errors.scala`

@@ -1,0 +1,61 @@
+orthant 2 language
+
+% 0 1 0 03b39a17f3fb9a0409fcda5d5b61298a
+
+@ 0 3 0 145ee454bd282db10fb8ef5b2ec42a32
++ Sollevato quando un'operazione del Language Server Protocol fallisce, oppure da un handler per
++ rispondere a una richiesta con una risposta di errore JSON-RPC. Ogni motivo porta il codice di
++ trasmissione standard JSON-RPC/LSP, che `Lsp.listen` colloca nel membro `error.code` della risposta
++ di errore.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 01362123253bc53314617c0e9eae6c37
++ Exegesis implementa il protocollo di trasmissione LSP. Questo errore copre un messaggio malformato,
++ una richiesta che il server non può soddisfare, e qualsiasi guasto che un handler scelga di
++ sollevare: un `LspError` sollevato prende il posto del risultato dello handler, e diventa una
++ risposta di errore per una richiesta, oppure altrimenti una notifica `window/logMessage`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 4 0 071dbd18e15a9f5b10fd3d592f1bc703
++ column  Codice
++ column  Motivo
++ column  Codice di trasmissione
++ column  Messaggio
+
+% 0 1 0 09c51f069fd08f310c9ef8301e2bec58
+
+% 0 1 0 0502f21b65d619b81ddd0a1abe46b659
+
+% 0 1 0 1e2b3edf5f1dee891a614925cde4f4fa
+
+% 0 1 0 14c7451d016421a51fb01f3ba499ddb9
+
+% 0 1 0 1c106cc65cc5d9790e80aae5fb5e7e53
+
+% 0 1 0 11ef8ee6bef543240ed41d8039d49041
+
+% 0 1 0 111b3a20ccd636a21112d2c6935d1b0d
+
+% 0 1 0 1449dc8d64df26ca1cde9e0a910b817b
+
+% 0 1 0 0641aac9691363dc0fad88d61d8c754b
+
+% 0 1 0 04a55e9baca7418603d7596922ef73db
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 5 0 1e00c1aa9db7a5c611a9b35fc5b7868a
++ Il motivo distingue un guasto di protocollo da una richiesta ben formata che non è stato possibile
++ servire. Un guasto di protocollo di solito significa che client e server non concordano sulla
++ versione del protocollo o sul framing dei messaggi; un motivo sollevato da un handler, come
++ `RequestFailed`, descrive il rifiuto del server stesso, e i suoi dettagli vengono inoltrati al
++ client nel messaggio della risposta di errore.

@@ -1,0 +1,62 @@
+orthant 2 language
+
+% 0 1 0 034521a36c271d7c1f86f106004c533d
+
+@ 0 1 0 16b7e94f7205b3f90afbfe475dbc515c
++ Порождается, когда JSON-указатель невозможно разрешить.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Причина
+
+@ 0 2 0 0218d972e0cd99281d6d5dfa8e653bbc
++ Jacinta разрешает JSON-указатели согласно RFC 6901. Конструктор
++ принимает `reason: Reason`; отображаемое сообщение — `the JSON pointer
+
+% 0 1 0 158b131027feb9391eab6e0b397ad073
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Варианты
+
+@ 0 2 0 0ce9f3323010cab5021e70adfcef5654
++ (`↯/s.106.2.1`, `UnknownDocument`, выведен из употребления, когда `JsonPointer` лишился URL
++ документа, который никогда не заполнялся, и `JsonPointer.Registry`; остальные номера не изменились.)
+
+% 0 1 0 00dd5d5779c0f95f1477eb240a154ecb
+
+@ 0 1 0 01c29b357a79e9d80c0e5d213f43e9e8
++ JSON-ссылка не начинается с `#`.
+
+@ 0 1 0 105e3c4dee51a790105a64c459096fa9
++ **Пример.** `[↯/s.106.2.2] the JSON reference was not valid because a JSON reference must begin with '#'`
+
+@ 0 1 0 0e02c3730b3808551133a6b50f498754
++ **Решение.** Начните ссылку с `#`, как в `#/play/title`.
+
+% 0 1 0 034c98f84dc358491b08ae76143624e5
+
+@ 0 1 0 06fbbc8ff422674809e73432ced72b39
++ Фрагмент JSON-ссылки не начинается с `/`.
+
+@ 0 1 0 1eebdd34b53ab9cd0b440a81e81db782
++ **Пример.** `[↯/s.106.2.3] the JSON reference was not valid because a JSON reference fragment must begin with '/'`
+
+@ 0 1 0 045bcb580c6de5281b75c7ff0313c11f
++ **Решение.** Начните фрагмент с `/`, как в `#/play`. Голый `#`, адресующий весь документ, тоже допустим.
+
+% 0 1 0 06c60eb430a43dda148893f098ee48aa
+
+@ 0 1 0 1b3c92628749be9715451d7fbc0415f1
++ За `~` в JSON-ссылке не следует `0` или `1`.
+
+@ 0 1 0 05c7364129967dc101f1e6e394871984
++ **Пример.** `[↯/s.106.2.4] the JSON reference was not valid because a '~' in a JSON reference must be followed by '0' or '1'`
+
+@ 0 1 0 12b5dc6f91211c980559d07428049b1b
++ **Решение.** Экранируйте буквальный `~` как `~0`, а буквальный `/` — как `~1`. Других экранирований не определено.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## См. также
+
+@ 0 2 0 1969b177843c517a1349e53956b6ebf8
++ - Исходник: `lib/jacinta/src/core/jacinta.JsonPointer.scala`
++ - `↯/s.106.1` — ошибки типизированного доступа к JSON

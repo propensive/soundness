@@ -1,0 +1,131 @@
+orthant 2 language
+
+@ 0 1 0 14283ee1d8cf6c9f0a4520bf5e7cfb14
++ # Corrección
+
+@ 0 7 0 0c5ec7bd955b5ff00f3ff6c626261577
++ La corrección es el fin al que sirven los demás principios de Soundness: un programa debe estar
++ obligado a comportarse correctamente, y el lenguaje debe ayudar a garantizar que lo hace. Donde
++ la mayoría de las bibliotecas se limitan a hacer posible la corrección, Soundness intenta hacer
++ imposible la incorrección —trasladando comprobaciones al tiempo de compilación, descartando los
++ estados no válidos y haciendo visible el fallo en los tipos—, de modo que de un programa que
++ compila ya se sabe que acierta en muchísimas cosas. Esto es lo que significa «sólido por
++ defecto»: la seguridad es el punto de partida, no un añadido que se atornilla después.
+
+@ 0 1 0 05b69dece367ec5008326498a5fd66f6
++ ## A qué equivale «muchísimas cosas»
+
+@ 0 3 0 1048e5bd278380e011062c350d898e18
++ Conviene concretar la afirmación. En un programa construido sobre Soundness —con los nombres del
++ módulo correspondiente en el ámbito en cada una de las líneas siguientes—, lo que sigue son
++ errores de compilación y no posibilidades:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 1c1ac2fe50f70bed0195f80fd5715f3e
+
+% 0 1 0 04ddada148f7825306a00e220fb30ab0
+
+% 0 1 0 13379b40670a9e4a0cc8954e52c26716
+
+% 0 1 0 09183272e3c853e009185c563172228d
+
+% 0 1 0 0cefb7b60337643418b46bfd243def63
+
+% 0 1 0 15844555d046587e02525e422bca14ed
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 05c79083f48833f50898f18e8d989ee6
++ Y lo siguiente es *visible en una signatura*, así que quien llama no puede dejar de saberlo: que
++ una operación podría fallar y cómo; que podría bloquearse; que necesita la red, el sistema de
++ ficheros o una fuente aleatoria; que escribe en el log, y qué escribe.
+
+@ 0 2 0 0aba391197bd369517d17de8b38c7e0c
++ Nada de esto es exótico. Cada uno es un error corriente que cometen los programas corrientes,
++ detectado por construcción y no por revisión.
+
+@ 0 1 0 1bbdb574387374ca0c8279e482824b13
++ ## Dónde se hace la comprobación
+
+@ 0 2 0 09766765c0d3d95118b266162813ed2d
++ Tres mecanismos soportan la mayor parte del peso, y se describen por sí mismos en otros lugares.
+
+@ 0 2 0 0d13a777184eeb041cba8588c7d40383
++ Los valores se comprueban **al construirse**, así que poseer uno es la prueba de que está bien
++ formado: el tema de la [seguridad por construcción](safety-by-construction.md).
+
+@ 0 3 0 0d4600042babf2d403e30e677f216ece
++ Los tipos se diseñan de modo que **los estados no válidos no tengan representación**, y cada
++ transición entre estados es **total**: las dos reglas de oro, en
++ [estados imposibles](impossible-states.md) y [transiciones totales](total-transitions.md).
+
+@ 0 2 0 0355becbf8d65c180f978799d5e9a20d
++ Los requisitos se declaran **honestamente en las signaturas**, así que nada de lo que necesita
++ una operación está oculto y nada de lo que declara queda sin usar:
++ [signaturas honestas](honest-signatures.md).
+
+@ 0 1 0 1f9f6722a070f80d0c2a2601d465fdc7
++ ## La convicción de fondo
+
+@ 0 2 0 1e5e04936ba198cd0f53adcd189b677b
++ Cualquier análisis estático que pueda hacer un programador, el compilador puede hacerlo mejor; y
++ cualquier análisis que pueda hacer el compilador, debe hacerlo.
+
+@ 0 5 0 187668fe8bfac9b0093edbf3a06ba28f
++ Un programador que comprueba a ojo que cada `match` cubre todos los casos hace el trabajo del
++ compilador, con menos fiabilidad, y lo vuelve a hacer tras cada cambio. El compilador lo hace en
++ cada compilación, de forma exhaustiva, e informa de cada punto afectado al añadir un caso a una
++ enumeración. Por tanto, la pregunta nunca es *si* hacer el análisis sino *quién* lo hace, y la
++ respuesta es siempre la misma.
+
+@ 0 4 0 1a5688aa6892d7c303c82ea5fc0d85f9
++ Por eso las advertencias de exhaustividad se tratan como errores y no como ruido, por eso
++ `-Wunused` está activado, y por eso una coincidencia parcial deliberada debe decirlo con
++ `.absolve` en lugar de permitirse en silencio. La disciplina no cuesta nada salvo la parcialidad
++ accidental, que es la que acaba convirtiéndose en un error.
+
+@ 0 1 0 18261a5df1330e7217e28b9aa96cce01
++ ## Lo que no es la corrección
+
+@ 0 4 0 091d3e724139e37d08f7a741cbad5d66
++ **No es verificación.** Soundness no demuestra que un programa calcule la respuesta correcta.
++ Descarta clases amplias y bien conocidas de errores —valores mal formados, estados imposibles,
++ fallos no gestionados, recursos que escapan— y deja la lógica del dominio al programador y a las
++ pruebas.
+
+@ 0 4 0 0855caa53baee4431c105249cd26f675
++ **No es una garantía sobre el mundo exterior.** Un `Hostname` es sintácticamente válido; que se
++ resuelva no es una cuestión estática. La disciplina consiste en codificar lo que realmente
++ determina el valor e informar del resto como fallos tipados, en lugar de inventar un tipo que
++ promete más de lo que puede cumplir.
+
+@ 0 4 0 0c7d70df3d7592d51c3afefc3cc0e6b2
++ **No está libre de criterio.** Cada comprobación que se traslada al tiempo de compilación es una
++ restricción sobre lo que se puede escribir, y una restricción que descarta más errores que
++ programas legítimos es una buena restricción. Ese equilibrio se decide caso por caso, y es
++ posible equivocarse en ambas direcciones.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Lo que cuesta
+
+@ 0 3 0 04c789ca2bedfa3b0cf927bf4c159014
++ Tiempo de compilación, sobre todo. El cálculo a nivel de tipos, el inlining y la expansión de
++ macros son trabajo que el compilador hace en cada compilación para que la máquina no tenga que
++ hacerlo en cada ejecución, y un proyecto Soundness compila más despacio que uno equivalente
++ escrito sin tanto rigor.
+
+@ 0 5 0 14c623f97401975e149d63da59736eb9
++ El segundo coste es un comienzo más empinado. Una biblioteca que acepta `String` en todas partes
++ es más fácil de empezar a usar que una que quiere un `Path on Linux`, un `Port` y un
++ `MediaType`; la recompensa llega en el momento en que la versión laxa estaría depurando un
++ incidente en producción. Es un intercambio real, y vale la pena hacerlo a sabiendas y no por
++ suposición.
+
+@ 0 1 0 0701c4247139d34c1dbf2c33b4c54ea1
++ Véase [coste cero](zero-cost.md) para saber por qué la factura en tiempo de ejecución, al menos,
++ es casi nula.

@@ -1,0 +1,118 @@
+orthant 2 language
+
+@ 0 3 0 1aa6be138ca04a670f8b3625685973eb
++ Un mapa con muchas entradas se llena más deprisa in situ que haciéndolo crecer con un `define`
++ cada vez. `Map.build` presta a un bloque un builder en el que escribir, y devuelve un `Map`
++ corriente cuando el bloque termina:
+
+% 2 1 0 0f98b697e6c41d691bb88b1b15af1bfb
+
+% 3 1 0 07210ced258f4a681c1a04dd0d9bea40
+
+% 4 1 0 0d69f8365596a1830d7c84a6bcd8f3a8
+
+% 0 1 0 036e3d18961ea15012c1a11ed7c15bb9
+
+% 0 1 0 11e84dd3395ae40706ff932a92a6dd4f
+
+% 0 1 0 0242fd058a6ed51b174516bb8f02d8b9
+
+% 0 1 0 08ee33db6bc61a321dd907dc77496e1e
+
+% 0 1 0 17c0b84e775bac0d0047726f658b7a14
+
+% 0 1 0 1c4653a8e2d1eb351efbe3d964434828
+
+% 1 1 0 0fd88135493d95c50c914b1d988a84c0
+
+@ 0 3 0 01ac194f5482a86b0a11734124578b6b
++ Solo el builder puede escribir en el mapa, y el builder no puede salir de su bloque: guardar una
++ referencia a él para más tarde es un error de compilación. Así, el mapa es inmutable desde el
++ momento en que `build` retorna, e igual a cualquier otro mapa con las mismas entradas, se haya
++ construido como se haya construido.
+
+@ 0 1 0 199601f3bfcba9c507aa093efec6ff55
++ ### Mapas con claves conocidas de antemano
+
+@ 0 4 0 13e0adbddd341ec901dcc789a05df28c
++ Un mapa cuyas claves se escriben todas donde se crea puede leerse más deprisa todavía. `Map.fixed`
++ encuentra un *hash perfecto* de sus claves mientras se compila el código: un pequeño cálculo que
++ envía cada clave a una posición propia. Una lectura es entonces ese cálculo y una comparación,
++ esté o no la clave:
+
+% 2 1 0 087d99a1146b4a120074b733ad2eec14
+
+% 3 1 0 0295ddd70273dc130d30f791d69f1730
+
+% 4 1 0 0e9a5281fc94b60300a1bffeb4ccf05b
+
+% 0 1 0 0212d6dc582056b60e017ac7daa53118
+
+% 0 1 0 18d82ad5e2e495a211dac03a105a842f
+
+% 0 1 0 00bb1a6629af5b5a011556794353cd16
+
+% 0 1 0 09db8af589296320103e7dda7df82ea0
+
+% 1 1 0 02b41ba3e5ee2b70047bd0310ed1d6d2
+
+@ 0 3 0 12787f9e6defdedf1680e71ffb271af2
++ Las claves deben ser literales: textos, `Int`s, `Long`s o `Char`s, todas de la misma clase, y
++ cada una dada una sola vez. Los valores pueden ser expresiones cualesquiera. Un mapa fijo es un
++ `Map` corriente para todo lo que lo usa, y `define` y `omit` funcionan con él como con cualquier
++ otro.
+
+@ 0 2 0 13533a7a726ab1810af6b285f02bc3c4
++ Un mapa que no puede fijarse no compila, así que un mapa creado con `fixed` nunca es uno más
++ lento disfrazado. Dar una clave dos veces es uno de esos errores:
+
+% 2 1 0 0b4191fc662394ae12f8e1a875135793
+
+% 3 1 0 11b7ede8dde8e9ed0bcd121cc5364a26
+
+% 4 1 0 08380a6a5b80b4590a41e3b6670e3495
+
+% 5 1 0 0bde0a401c1b839d0eadffcdb9b0a167
+
+% 0 1 0 0f8847ef63d9ab7b14f2f5b4674154b9
+
+% 1 1 0 059646d391c2806d076974b592879e40
+
+@ 0 3 0 142a051211e5b3501c00f762f66054a1
++ Una clave que no es un literal es otro, como lo son las claves de clases distintas, y dos textos
++ que resultan compartir un código hash. Un mapa de más de 1.024 entradas es demasiado grande para
++ escribirlo así, y es mejor llenarlo con `Map.build`.
+
+@ 0 2 0 18f11cf72a29f23517d76a53d5c3e0b7
++ Cuando las claves solo se conocen una vez que el programa está en marcha, `optimize` da el mismo
++ tratamiento a un mapa existente. Encuentra el hash en ese momento, y lo compila con el
++ compilador de Scala:
+
+% 2 1 0 15f6cfbb7d4140f70665625d30a3dc7a
+
+% 0 1 0 019a107168ace25503917c671eca070e
+
+% 1 1 0 02e614f0cb1a9bfa0cdde1bde3957e71
+
+% 3 1 0 0fc97e7e53a573fe08a3879b090c103c
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 1f2e2a07b132f63810601e0081043cbc
+
+% 1 1 0 12f37c45d2c674e61a6eea86ee029486
+
+@ 0 4 0 173934e42cc66606075c8a2aef795972
++ Por tanto, el compilador debe estar en el classpath cuando se ejecuta el programa, y por eso
++ `optimize` procede de un módulo propio, en la agrupación `staged`, y solo en la JVM. Compilar
++ lleva alrededor de una décima de segundo por mapa, y varios segundos el primero, así que conviene
++ a un mapa que se crea una vez y se lee muchísimas veces.
+
+@ 0 5 0 1abf0a14a67db8a608f3f4bf3425bcac
++ Donde más ayuda es en un mapa con claves numéricas, que se lee unas dos veces más deprisa. Un mapa
++ con claves de texto se lee más deprisa cuando sus claves suelen encontrarse, y más despacio cuando
++ no suelen encontrarse, ya que un texto ausente debe compararse aun así con el que ocupa su posición.
++ Un mapa de cuatro entradas o menos, o uno cuyas claves no son todas textos, todas `Int`s, todas
++ `Long`s o todas `Char`s, se devuelve tal como estaba.

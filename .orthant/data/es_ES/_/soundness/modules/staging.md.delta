@@ -1,0 +1,317 @@
+orthant 2 language
+
+@ 0 1 0 1edcb2d5c07e1ae6037ab4f8a299dfa9
++ ## Ejecución por etapas
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 3 0 1f8a7808387c6ad10b2f9ac6a6cb4771
++ El código citado de Scala, `'{…}`, se ejecuta normalmente en la siguiente etapa del *mismo*
++ programa. Aquí la idea se generaliza, de modo que el código citado se ejecuta en un *entorno*
++ distinto: una JVM nueva, un cargador de clases aislado o, en principio, cualquier máquina que
++ pueda recibir código compilado.
+
+@ 0 4 0 1e7295b5bfe74b2410dc4a47051ff54c
++ Un bloque `dispatch` cita Scala corriente, inserta valores del ámbito que lo rodea y devuelve el
++ resultado. El código se compila, se envía y se ejecuta en otra parte, y su respuesta se trae de
++ vuelta. Los valores cruzan la frontera como
++ [datos neutros respecto al cargador de clases](generic-data.md) o como [JSON](json.md).
+
+@ 0 1 0 15ec42317f52d46d10b7510789f8a364
++ ### Sobre los programas multietapa
+
+@ 0 5 0 133ca4adf6cb4efe19a4590b535784b5
++ El código que se compila junto se ejecuta normalmente junto, en un solo entorno: una única JVM,
++ o un navegador con Scala.js. Una aplicación distribuida rompe esa suposición por su propia
++ naturaleza. El código de cada entorno se compila por separado, y sigue separado durante todo el
++ camino desde el código fuente hasta la ejecución, en JVMs distintas, en un navegador o en
++ máquinas distintas. Entre dos cualesquiera de esos entornos hay un contrato.
+
+@ 0 3 0 0bb3a5bd3158b3ec1dd309a8034c34a2
++ El compilador no hace cumplir ese contrato. Otras herramientas pueden comprobarlo, pero lo
++ comprueban desde fuera, y rara vez con las garantías que da Scala dentro de una sola
++ compilación. Así que el contrato se puede romper, y la rotura aparece en [tiempo de ejecución].
+
+@ 0 9 0 0b4f3f51e3dde9580aba3a00956fbbb7
++ Ejecutar código en otra parte suele significar construir un artefacto, organizar su ejecución e
++ inventar una frontera de serialización: un proyecto entero de infraestructura para lo que, en
++ concepto, es una sola expresión. La maquinaria de ejecución por etapas de Scala ya sabe compilar
++ una expresión citada en tiempo de ejecución, y cómo insertar valores en ella. Lo que fija es
++ *dónde* se ejecuta el resultado. Compilar ambos lados *juntos*, y delimitarlos con citas e
++ inserciones, devuelve el contrato al control del compilador. El código remoto se escribe al
++ lado del código local que lo llama, se comprueba con él, se serializa para él y se mantiene
++ sincronizado con él. Esto es [seguridad por construcción](../../philosophy/safety-by-construction.md),
++ extendida a través de la frontera de un proceso.
+
+@ 0 1 0 04ec28bd31c53c7d1d7ee85757fef6b7
++ ### Citas, inserciones y fases
+
+@ 0 1 0 0d12a98f5ffe9a2a1a02f5c87ca92691
++ La sintaxis es la del propio Scala, y vale la pena repetir lo que significa. En una macro:
+
+% 2 1 0 0ac0018ad133dfa00dfbafff5f516fdf
+
+% 3 1 0 0c5cca4b37c27bef1b9cddbc6d7d8ed7
+
+% 4 1 0 03946c7073eaa232122b3943195908cb
+
+% 1 1 0 0772349862ed8139164b2b8fd1c6e1ac
+
+% 0 1 0 0f17e5e9fe72c960196cf0d7d9d154d1
+
+% 0 1 0 1ebebd54a285ba6912d9e202e7018d50
+
+% 0 1 0 18572c2f7276dbba03372aa0b0387049
+
+% 1 1 0 1041d490406608a31679808b48a9b53a
+
+@ 0 5 0 0e83d639abff968e07873da2cfd95454
++ `'{…}` y `${…}` marcan *cambios de fase*. El código dentro de las citas se ejecuta una fase más
++ tarde que el código que lo rodea, y el código dentro de una inserción se ejecuta una fase antes.
++ Arriba, la definición y el uso de `name` están en la misma fase, como exige el *principio de
++ coherencia de fases*. `Out.println` y el literal de cadena pertenecen a la siguiente fase. Un
++ `Expr[String]` es la noción abstracta de una expresión que será un `String` en esa siguiente
++ fase.
+
+@ 0 5 0 08c5a91a5665b7351c82dd91671b3abf
++ Para una macro, «la siguiente fase» es una compilación posterior. Nada de las citas exige esa
++ lectura. La siguiente fase puede ser cualquier lugar donde el código se ejecuta *en otra parte*:
++ otra JVM, una máquina en la nube, un navegador. Las citas y las inserciones se anidan y se
++ entrelazan con la granularidad de una expresión, y el compilador comprueba la coherencia *entre*
++ las fases. Poner el código remoto en otro fichero no da ninguna de las dos cosas.
+
+@ 0 3 0 0bc4e2ac03bdac56138a59d74fc06d9b
++ Aquí el «dónde» es un valor. Un `Rig` dice cómo se despliega e invoca el código, y `dispatch`
++ hace el resto: la compilación, la caché para cada punto de llamada y la serialización de los
++ valores capturados que entran y de los resultados que salen. Todo viene del paquete
++ `soundness`:
+
+% 2 1 0 1ff422443eeea8a8028b5d03eb4e03d2
+
+% 1 1 0 0ecfd64ab286274f1bb736cc7209c2b7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 1b084ed53cb66d2b0640671c5773c02d
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 03c9874b4d17338b1cba21d2250ea99e
+
+% 1 1 0 012f68f2e0aabca9159afbbdcd5eb282
+
+@ 0 2 0 1f91087725dabbff123c4be5fed03a5e
++ Los ejemplos de esta página compilan y ejecutan código en otros procesos, así que se compilan
++ pero no se ejecutan.
+
+@ 0 1 0 03ce9ea26997f2b70448fab292f58d00
++ ### Despachar código
+
+@ 0 2 0 11e9c6037ca8b6d4088bc5928f40274e
++ `dispatch` sobre un montaje recibe un bloque citado. Los valores del ámbito que lo rodea se insertan
++ con `${…}`, y se llevan automáticamente a través de la frontera:
+
+% 2 1 0 093bc78e13f401be1b020ff1775c3b7a
+
+% 0 1 0 0c11aab6ad1eeeae1a3ed658d1057ea9
+
+% 0 1 0 102f6aaafc625364055ecca7d3b89ed7
+
+% 0 1 0 13085cec4432a5720715e8ee43890b08
+
+% 0 1 0 02399dc61fbc21f3109458acb81aaf33
+
+% 0 1 0 11cc7ecb80e5caac07c8d76bba729c2b
+
+% 0 1 0 154c73309cbd67ae016321ac2b75e42a
+
+% 1 1 0 1acf0bc33592c4670cf29777a0ad1637
+
+@ 0 3 0 0fd6a46c737bcac91a266796255a0337
++ El bloque se compila una vez por cada punto de llamada, y se guarda en caché. Cada llamada
++ serializa a la entrada sus valores insertados y a la salida su resultado. Para quien llama,
++ `runElsewhere` es una función corriente. Resulta que su cuerpo se ejecuta en otra JVM.
+
+@ 0 6 0 0689170c3f357ab114d880a3fdc4e604
++ Los nombres usados dentro de una cita se resuelven contra las importaciones de fuera, pero solo
++ lo hacen los *prefijos estáticos*: nombres que el compilador puede resolver sin un valor. Esa
++ restricción no es un inconveniente que haya que sortear. Es la propiedad de seguridad. Una
++ referencia a un objeto del heap de la JVM local no tiene significado en la remota, y la
++ coherencia de fases es exactamente lo que impide siquiera escribir una referencia así. Todo lo
++ que cruza lo hace a través de una inserción, de forma deliberada y visible.
+
+@ 0 6 0 1a41cc4a7425de560743cd04d0a4b808
++ Tres papeles usan esta maquinaria, y suelen ser tres personas distintas. Quien implementa un
++ `Rig` sabe empaquetar, desplegar y ejecutar código en algún entorno, como un navegador, un
++ contenedor o una máquina virtual en la nube, y no sabe nada de lo que se va a ejecutar. Quien
++ escribe un bloque `dispatch` sabe qué debe ejecutarse de forma remota, lo escribe con citas e
++ inserciones, y lo presenta a quienes lo llaman como un método corriente. Quienes lo llaman nunca
++ saben que interviene nada de esto. Solo los dos primeros papeles llegan a ver una cita.
+
+@ 0 1 0 0dd6384493c95ad71996d3698f78c5e7
++ ### Montajes
+
+@ 0 3 0 035932f1d22b9c8b1282294c0f9dcd58
++ Se proporcionan dos montajes. `Jvm` compila el bloque y lo ejecuta en un subproceso de JVM nuevo,
++ con aislamiento total, a costa de arrancar un proceso. `Isolation` lo ejecuta en el mismo
++ proceso con un cargador de clases aislado, lo que es barato y contenido:
+
+% 2 1 0 15b5121c703bcf820c8b21eda127146d
+
+% 3 1 0 0c6b41a18ef44ec1106c7c87f5478224
+
+% 4 1 0 12e3cef723a5946103f1bf8acb348afd
+
+% 0 1 0 109e7c5866754dc31d80db234ba076b9
+
+% 0 1 0 156b40a5f53e5ca71279e54d23698718
+
+% 1 1 0 17b3f400516532a60d31486b1f5d987a
+
+@ 0 3 0 0983e813722ced1003ef1178c787d158
++ Un entorno nuevo se conecta implementando `Rig`, que dice cómo se *prepara* el código compilado
++ en su destino y cómo se *invoca* allí. Las herramientas de estas bibliotecas aportan más
++ ejemplos:
+
+% 2 1 0 1caa0c0a715f616e00abc07c86e85da3
+
+@ 0 1 0 092815eba281283e0e28228bbef6bdfb
++ column  Montaje
+
+@ 0 6 0 0260283263c1d1b61457a73dff79ed8f
++ column  Ejecuta el bloque
++ column  Un dispatch devuelve
++ row  `Jvm`  en un subproceso de JVM nuevo  la salida
++ row  `Isolation`  en el mismo proceso, con un cargador de clases aislado  la salida
++ row  `Enclave`  empaquetado como ejecutable independiente, para pruebas  un `Enclave.Launcher`
++ row  `Bench`, `Stress`, `Profile`  en una JVM controlada, medido como [benchmark](../../standards/benchmarking.md)  la salida
+
+% 1 1 0 0d4402299cc7e2e50ad20c40f032859f
+
+@ 0 1 0 07254426e278795417e3b50bfabd4279
++ ### Escribir un montaje
+
+@ 0 4 0 04a49b896fb4822516ecb4a892592c90
++ `dispatch` hace las partes difíciles antes de que un montaje vea nada. Extrae el classpath del
++ cargador de clases en ejecución, compila el código citado si no está ya compilado, captura las
++ entradas insertadas y las codifica en un único valor transportable. Al montaje le queda un trabajo
++ acotado: ejecutar algo de código en alguna parte, dado ese valor, y traer de vuelta el valor que
++ produjo.
+
+@ 0 1 0 0cbb6b17a2c7ae9f0b94eec3f4e1d16c
++ Por tanto, un montaje declara un puñado de miembros:
+
+% 2 1 0 010f3b67d25ab7510e15a6e018aa88aa
+
+@ 0 10 0 0f7aec8c89db32181c33f4f7435c93d4
++ column  Miembro
++ column  Declara
++ column  En `Jvm`
++ row  `Result[output]`  lo que devuelve un dispatch: la salida desnuda, un `Optional`, una `Task`…  `output`
++ row  `Form`  la forma codificada de la entrada y la salida  `Text`
++ row  `Target`  lo que produce la preparación  `LocalClasspath`
++ row  `Transport`  la forma en que viajan los valores insertados  `Json`
++ row  `scalac`  el compilador con el que preparar  `Scalac[3.6]`
++ row  `stage`  cómo se *prepara* la salida compilada en su destino  el classpath de la salida
++ row  `invoke`  cómo se *invoca* allí  un subproceso `java`
+
+% 1 1 0 01ccee9aa0474c8203830f3c145a54c4
+
+@ 0 1 0 1e54096a8f062286082541c755843a0b
++ El montaje `Jvm` es todo esto:
+
+% 2 1 0 10fbe94192b393dd15873842c2455c83
+
+% 0 1 0 0cf73b34cada60b00abad23d96a1d321
+
+% 0 1 0 19ec4aac20ba8be31941eb1142c4e0a9
+
+% 0 1 0 0226bdbf213578a91ecae3291c0b7faf
+
+% 0 1 0 140f91b18572ace403fa102734ad3a6e
+
+% 0 1 0 048e99dc47fdf7b915bd72b8dc7a3f0a
+
+% 0 1 0 13afa3fc7054ff171b336e7a10d1d16b
+
+% 0 1 0 01fed1543f5d90f00b0829b119e5607f
+
+% 0 1 0 0be53963959ef25515a0211055ac4b77
+
+% 0 1 0 17613176063bc1650642144257889bf1
+
+% 0 1 0 1f87f60295f9961a0acd097649e05466
+
+% 0 1 0 1c92b56aa2b919bb1ce7466b6cd3aa69
+
+% 1 1 0 15515b6b834e2e680a55f8c227ece3de
+
+@ 0 5 0 0add9716b8eeafe718a3b49a15953be2
++ `stage.remote` es el meollo. Recibe una función de la entrada codificada a la salida
++ codificada, y se ocupa de todo lo que hay a ambos lados. Aquí esa función recurre a la shell con
++ un [proceso](processes.md) para arrancar una JVM, y captura su salida estándar. Un montaje para un
++ navegador o un contenedor solo difiere en esa función, y en `stage`, que para un entorno
++ verdaderamente remoto debe hacer que las clases compiladas estén *disponibles* allí, y no
++ limitarse a nombrar sus rutas locales.
+
+@ 0 1 0 00f746f0ca5df2040bf06c8f26293b88
++ ### La frontera
+
+@ 0 4 0 1bc514ffe7c2b4c9139fd292feca319d
++ Lo que cruza la frontera debe ser serializable, y el transporte es un `Stageable`. Las instancias
++ proporcionadas llevan los valores como árboles [Pojo](generic-data.md) o como JSON. Un valor
++ capturado sin forma transportable se rechaza cuando se compila el bloque. La frontera está en
++ los tipos, y no se descubre a distancia.
+
+@ 0 1 0 0852ae2a80b5b5710fd6590b3a4fa0f3
++ ### Qué se guarda en caché, y cuándo no
+
+@ 0 2 0 1b35112ecc0b95f105a39520eef6e474
++ Compilar un bloque es caro, así que el resultado se guarda en caché. La clave de la caché
++ importa. Es la *huella del árbol preparado* junto con el punto de llamada, y no el punto de
++ llamada solo.
+
+@ 0 5 0 0cd5be61b7b2d6bb089564fb9f830383
++ Esa distinción tiene peso. Un mismo punto de llamada dentro de un método inline puede expandirse
++ a un árbol distinto en cada uso. Usar como clave solo el punto de llamada volvería a ejecutar en
++ silencio la primera expansión para cada una de las siguientes. Usar como clave el árbol
++ significa que varias expansiones distintas de un mismo punto se compilan una vez cada una,
++ mientras que las llamadas que solo difieren en los datos que transportan comparten una única
++ compilación. Eso es lo que hace seguro despachar desde un contexto genérico o inline.
+
+@ 0 2 0 00bb67f349bca02a156e5cb9e572a97a
++ Un valor insertado se evalúa una vez por cada despacho, no una vez por cada aparición.
++ `${job.name}` usado dos veces en un bloque se refiere al mismo valor serializado, y `job.name`
++ no se evalúa dos veces.
+
+@ 0 1 0 0859c72de186e15b0673d53af260b405
++ ### Errores a través de la frontera
+
+@ 0 5 0 0e31ec5086c776e11e2e6adab70c3c3b
++ El código que se ejecuta en otra parte puede fallar, y el fallo tiene que volver. Un error
++ lanzado en el bloque preparado se lleva a través de la frontera y se vuelve a lanzar en el punto
++ de llamada. Así, `dispatch` informa del fallo del cálculo remoto, y no de que no se pudiera
++ llegar al cálculo remoto. Un fallo del propio montaje, como un subproceso que no quiso arrancar o un
++ cargador de clases que no se pudo construir, es distinto, ya que ambos piden respuestas
++ distintas.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 6 0 05cb058f449e73bc0302f943e3f1dcbf
++ - [Metaprogramación](metaprogramming.md) describe las herramientas de tiempo de compilación en
++   las que se apoyan las citas.
++ - [Compilador](compiler.md) describe el `Scalac` con el que un montaje prepara el código.
++ - [Procesos](processes.md) describe la orden `sh"…"` que lanza el montaje `Jvm`.
++ - [Datos genéricos](generic-data.md) y [JSON](json.md) describen las formas en que los valores
++   cruzan la frontera.
++ - [Pruebas](testing.md) usa el montaje `Enclave` para empaquetar un programa bajo prueba.

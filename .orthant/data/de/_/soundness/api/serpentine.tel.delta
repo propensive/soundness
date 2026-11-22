@@ -1,0 +1,906 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0a5003698bdf947015429cf31614beab
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1854dc56a4f524d40e1e78ade0b23865
++ info   Pfade als typisierte Werte: absolut und relativ, an eine Plattform gebunden, mit `/` zusammengesetzt und beim Kompilieren geprüft
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0012544f100419ad06cecc93181ccc08
++     _Serpentine_ ist die Pfadalgebra, die sich alle Hierarchien in Soundness teilen:
++     Dateisystempfade, der Klassenpfad, URL-Pfade, JSON-Pointer, Git-Refs und Archiveinträge sind
++     allesamt ein `Path` oder ein `Relative` auf einer **Ebene**. Es geht um die *Gestalt* eines
++     Pfads, nicht um eine Datei auf der Festplatte; das Lesen und Schreiben von Dateien ist Sache
++     von galilei, und auch die Plattformebenen selbst (`Linux`, `MacOs`, `Posix`, `Windows`,
++     `Local`) und der Interpolator `p"…"` liegen dort.
+
+@ 0 3 0 1b94ad61501188d513c95edc88bfbc14
++     Ein absoluter Pfad ist ein `Path`: eine Wurzel, die schlichter Text in der eigenen Notation
++     der Ebene ist, und ein Abstieg von Namen, gespeichert mit dem Blatt zuerst. Ein relativer
++     Pfad ist ein `Relative`: eine Anzahl von Schritten nach oben und dann ein Abstieg. Beide
++     tragen drei Typ-Member, die jeweils über einen Infix-Alias gelesen werden:
+
+@ 0 6 0 120805e84ba915bc00ce3482478ee1ce
++     - `on` — die `Plane`, das Dateisystem oder die Hierarchie, deren Regeln der Pfad befolgt, sodass ein `Path
++       on Linux` und ein `Path on Windows` verschiedene Typen sind;
++     - `of` — das `Topic`, das Tupel der Namen des Pfads, wenn der Compiler sie kennt, das
++       innerste zuerst: `% / "home" / "work"` ist ein `Path of ("work", "home")`;
++     - `under` — das `Limit`: bei einem `Path` der Typ seiner Wurzel (`%.type`, `Drive`); bei
++       einem `Relative`, wie viele Schritte er nach oben steigt.
+
+% 2 1 0 182d4eda5d2fa20a1f5cedb10b046ae6
+
+% 3 1 0 0989b38e45c59c02134c3c742a212bdf
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 15972a4c8eefcbd70a48607212199108
+
+% 0 1 0 1b810bbdc91eab500838686c6ac0a5fa
+
+% 0 1 0 06079cf28a213a810f7c27348a037b8e
+
+% 0 1 0 139079f3da8a99f009e278a040c963a1
+
+% 0 1 0 19a17d8121a71f71084b3a53a77fae6f
+
+% 0 1 0 0815b4f4e433ff7e0553305b6d540cec
+
+% 1 1 0 135e6eeda54bf8ed098522a97622f78e
+
+@ 0 5 0 1f5418f77a39533b04a7e84e62297886
++     Ein mit `/` gebauter Pfad ist plattformneutral, bis `on` ihn bindet und dabei jeden Namen
++     prüft; ein Pfad, der auf einem Wert gebaut wird, der bereits eine Ebene hat (`Drive('C') /
++     "Windows"`), bleibt auf ihr, und jeder hinzugefügte Name wird beim Hinzufügen geprüft. Sind
++     die Namen Literale, finden die Prüfung und die Arithmetik von `+`, `toward` und
++     `conjunction` beim Kompilieren statt; sind sie Text zur Laufzeit, muss ein
++     `Tactic[Name.Error]` im Geltungsbereich sein.
+
+@ 0 6 0 12b59574cb76d420098c4c53ae6042f5
++     Die Typklassen beschreiben, was eine Ebene bereitstellt: `Filesystem` (ihr Trennzeichen und
++     ihre Namen für das Selbst und das Elternverzeichnis), `Radical` und `Eradicable` (wie ein
++     Wurzeltyp als Text geschrieben und zurückgelesen wird), `Admissible` und `Navigable` (welche
++     Werte auf ihr ein Name sein dürfen, und wie) sowie `Submissible` und `Compliant` (welche
++     Wurzeln und welche relativen Pfade anderer Ebenen sie akzeptiert). Eine neue Hierarchie ist
++     ein Typ mit diesen Givens in seinem Begleitobjekt und ein Wurzelobjekt, das `Root` erweitert.
+
+@ 0 2 0 0d5c110762f1196403d565b2b10b682e
++     Es gibt ein einziges Source-Set, `serpentine.core`, das für jede Plattform kompiliert. Alles
++     wird in das `soundness`-Umbrella exportiert, einschließlich `%`, `^` und `?`.
+
+% 0 1 0 0e8047d521777b99077effbf694a3175
+
+% 0 1 0 04f853940c55340d0d029d2ffa440b1e
+
+% 0 1 0 09ec07978e4baafd17c1d82eecad0757
+
+% 0 1 0 0c650e8452c62e1a0accbe229bf5d402
+
+% 0 1 0 048b35d7d8b9d360036b37a4f35dfdd8
+
+% 0 1 0 1045fc9e5fdb85dd195c6103114cbefa
+
+@ 0 6 0 04bf831483bf1d1a02b06b6f50f4ea24
++ entry .%   die Wurzel eines POSIX-Pfads, von der ein absoluter Pfad mit `/` absteigt
++     Das Objekt `Path.%`, in das Paket exportiert: `% / "home" / "work"` ist ein absoluter Pfad,
++     plattformneutral, bis `on` ihn bindet (`(% / "home").on[Linux]`). Sein Typ dient als
++     `Limit` eines Pfads mit der Wurzel `/`, sodass `Path on Linux under %.type` ein Linux-Pfad
++     ist, von dem bekannt ist, dass er an der Wurzel beginnt. Die galilei-Ebenen `Linux`, `MacOs`
++     und `Posix` geben `%.type` seine `Radical`- und `Eradicable`-Instanzen, sodass es als `/`
++     gelesen und geschrieben wird.
+
+@ 0 4 0 0213e61908c68ce808bec20b68b1eaa2
++ entry .^   ein Schritt nach oben in einem relativen Pfad: `? / ^ / "sibling"`
++     Das Objekt `Relative.^`, in das Paket exportiert. Es ist immer nur ein Kind von `?` oder
++     eines anderen Aufstiegs: `? / ^ / ^` steigt zwei Ebenen hoch, als `Ascent under 2`, und ein
++     Name danach beginnt den Abstieg.
+
+@ 0 4 0 09d44dc0c60faa4b1f026dc082faec98
++ entry .?   der aktuelle Ort: der selbstrelative Pfad, von dem aus ein relativer Pfad gebaut wird
++     Das Objekt `Relative.?`, in das Paket exportiert: der `Relative` ohne Aufstieg und ohne
++     Abstieg, der als der Selbstname des Dateisystems (`.`) kodiert wird. Ein relativer Pfad wird
++     daraus mit `/` gebaut, durch Schritte nach oben (`^`) und dann Namen: `? / ^ / "more"`.
+
+@ 0 1 0 07aef0d81400b65c0efdd2609a2c63de
++ entry .Path   ein absoluter Pfad: eine Wurzel und ein Abstieg von Namen, typisiert nach Ebene, Namen und Wurzel
+
+% 1 1 0 033cf08166ff8b2310dc7229109c91bf
+
+@ 0 6 0 0daba183bfd552d70cf60d244eb68656
++       Ein `Path` ist eine Case-Klasse aus einer `#root` — der Wurzel als Text in der eigenen
++       Notation der Ebene, `/` oder `C:\` — und einem `#descent` von Namen, gespeichert **mit dem
++       Blatt zuerst**, sodass `% / "home" / "work"` gleich `Path(t"/", t"work", t"home")` ist.
++       Seine Typ-Member sagen, was über ihn bekannt ist: die `Plane`, auf der er liegt
++       (`Path on Linux`), das `#Topic`-Tupel seiner Namen, das innerste zuerst
++       (`Path of ("work", "home")`), und das `Limit`, den Typ seiner Wurzel (`Path under
++       %.type`). Jedes davon ist optional: Ein bloßer `Path` ist trotzdem ein Pfad.
+
+% 2 1 0 162491459b66211311abc271dbd19c75
+
+% 3 1 0 14c711d04a6676651f19b5b2dedaa7a9
+
+% 4 1 0 06c3bed29f04c9fc1153d6306a5f0e25
+
+% 0 1 0 017834ebf6b357cf19e89c331f252c03
+
+% 0 1 0 1893a5989b9dfa60107ffc4c361b4c5b
+
+% 0 1 0 1b3f24b98336a75904398fdc378f363a
+
+% 0 1 0 0397928f1d07d808096c9480f024df79
+
+% 0 1 0 1955fec886f91ca70263f4a65f33106b
+
+% 0 1 0 13637f235f7491d4035e6d17e713ba4e
+
+% 1 1 0 05da08b4b260bf0a0536343a6832bc30
+
+@ 0 6 0 08f0baba2976c6710f875371e3e88456
++       Ein `Path of …` mit bekanntem `Topic` wird implizit in denselben Pfad auf einer Ebene
++       umgewandelt (`.convert`), wobei seine Namen geprüft werden, sodass ein literaler Pfad
++       übergeben werden kann, wo ein `Path on
++       Linux` erwartet wird. Text wird nur dann zu einem Pfad dekodiert, wenn die Ebene benannt
++       ist (`as[Path on
++       Linux]`), denn die Ebene bestimmt das Trennzeichen und die Regeln; die Wurzel wird vom
++       `Eradicable` der Ebene gelesen, das `Path.Error` mit dem Grund `InvalidRoot` über den
++       `Tactic[Path.Error]` im Geltungsbereich auslöst. Ein nachgestelltes Trennzeichen wird
++       ignoriert.
+
+@ 0 2 0 0c8d9dfc63f3c67b0371a0ad5281d23f
++       Ein Pfad wird mit dem Extraktor `/:` abgeglichen, der die Wurzel und dann jeden Namen von
++       oben abschält (`.quotient`):
+
+% 2 1 0 19a8a1968cd2726a1cc6386cc6bce161
+
+% 3 1 0 0ad277ff346653c71f4b79ea8491acd0
+
+% 4 1 0 14cc75a1d693f6a7053867aa89918470
+
+% 0 1 0 034a10215028ed5a15a2276bb8d00269
+
+% 0 1 0 13e9657dcec56fb11cc571028181b027
+
+% 0 1 0 1f955b49403cbe55005f80413066151b
+
+% 0 1 0 0a7b48a393e0b0fa0651957d5d47ad02
+
+% 1 1 0 122806593bb734ac0d388993ab0387e5
+
+@ 0 5 0 0066766d1082b17f1eca9a91fa356685
++       Eine Falle: Ein Name, dessen Typ an der Aufrufstelle verfeinert wird — `dir / t"$name.txt"`
++       oder ein Pfad, der von einem Lambda-Parameter aus gebaut wird —, ergibt ein `Topic`, auf
++       das manche Givens über einem schlichten `Path on
++       Linux` nicht passen. Binden Sie den Pfad an einen `val` mit der Typangabe `Path on Linux`,
++       rufen Sie `on[Linux]` direkt nach dem Zusammensetzen von einem stabilen Wert aus auf, oder
++       bauen Sie ihn aus Text: `t"${dir.encode}/$name".as[Path on Linux]`.
+
+% 0 1 0 071ac52b966c6f9e14c27faad588af58
+
+% 0 1 0 0de900039da9cc5e1f50d327750a7570
+
+% 1 1 0 0e40812e568acdac1741b4841a0df671
+
+% 1 1 0 0396be11179880af07444a35117520e3
+
+@ 0 10 0 02864fce25dc5879061d678bc706db64
++   entry .%   die Wurzel eines POSIX-Pfads, in das Paket als `%` exportiert
++       Ein Objekt, das `Path(t"/")` mit einem leeren `Topic` erweitert und dessen `Limit` sein
++       eigener Typ ist. `% / "name"` ist der Anfang jedes POSIX-Pfads; es wird nach `serpentine`
++       und in das `soundness`-Umbrella exportiert und daher ohne Präfix geschrieben.
++   entry .apply   ein Pfad aus seinem Wurzeltext und seinen Namen, Blatt zuerst, mit gewählter Ebene und gewählten Typen
++       `Path(t"/", t"capulet", t"verona")` ist der Konstruktor der Case-Klasse, erst der
++       Wurzeltext, dann die Namen, der tiefste zuerst, und ist das, was
++       `% / "verona" / "capulet"` gleicht. Die Überladung `Path[filesystem, root, topic](root, descent: List[Text])` erzeugt einen Pfad mit allen
++       drei gesetzten Typ-Membern, ohne irgendetwas zu prüfen: Sie ist der Baustein der
++       Operationen und der eigenen Dekodierer einer Ebene.
+
+% 2 1 0 1666dc8148a7abf211481248089fd804
+
+% 3 1 0 1acf4f887b9c7f2c0c34147976532266
+
+% 0 1 0 179589beb967c3d208bcebdb3af0cbf8
+
+% 1 1 0 1a20deb1836ccd4c1f83ce4a9b56e8c6
+
+@ 0 37 0 02e613732ede5d6610ea9011d80e81e3
++   entry .unplatformed   ein Pfad mit bekanntem Topic und bekannter Wurzel, aber ohne Ebene, ungeprüft
++       `Path.unplatformed[root, topic](root, descent*)`: das, was `/` baut, wenn das Kind auf der
++       Ebene des Elternpfads nicht zulässig ist, sodass das Ergebnis keine `Plane` hat, bis `on`
++       eine bindet.
++   entry .decodable   liest einen `Path on filesystem` aus Text, mit dem Trennzeichen und der Wurzel der Ebene
++       Benötigt das `Filesystem` der Ebene sowie ein `Radical` und ein `Eradicable` für ihren
++       Wurzeltyp. Die Wurzel wird vom `Eradicable` gelesen, der Rest am Trennzeichen
++       aufgeteilt, ein nachgestellter leerer Name verworfen und jeder Name entmaskiert. Die
++       Instanz behält das `Eradicable` und damit jeden `Tactic[Path.Error]`, den es genommen hat:
++       Eine Ebene, deren Wurzel nicht fehlerhaft sein kann (ein Zip-Archiv, das Web), ergibt
++       einen Dekodierer, der keine Taktik braucht.
++   entry .decodable2   liest einen `Path on filesystem under root` aus Text und behält den Wurzeltyp
++       Wie `.decodable`, für einen Zieltyp, der auch die Wurzel benennt, etwa `Path on Linux
++       under %.type`, den ein Musterabgleich mit `/:` braucht.
++   entry .instantiable   erzeugt einen `Path on filesystem` aus Text, für APIs, die jeden Pfadtyp annehmen
++       Das Given `Instantiable across Paths from Text`: Eine Bibliothek, die Pfade eines vom
++       Aufrufer gewählten Typs zurückgibt (`entry[Path on Linux]()`), dekodiert sie hierüber,
++       mit denselben Anforderungen wie `.decodable`.
++   entry .trustedInstantiable   erzeugt einen `Path on filesystem` aus Pfadtext, der bereits als gültig bekannt ist
++       Das Given `Instantiable across Paths from Paths.Trusted`: Pfaddaten, die vom Dateisystem
++       selbst stammen, können nicht fehlerhaft sein, daher läuft die Dekodierung unter einem
++       eigenen `unsafely`, und der Aufrufer braucht keinen `Tactic[Path.Error]`. Es benötigt das
++       `Filesystem` der Ebene, das `Radical` ihrer Wurzel und ein `Eradicable`, das eine Taktik
++       nimmt.
++   entry .encodable   stellt einen Pfad als Text in der Notation seiner Ebene dar: die Wurzel, dann die mit ihrem Trennzeichen verbundenen Namen
++       Benötigt das `Filesystem` der Ebene; jeder Name wird von `Filesystem#escape` maskiert. Ein
++       Windows-Pfad `Drive('D') / "Globe"` wird als `D:\Globe` kodiert.
++   entry .showable   zeigt einen Pfad als seinen kodierten Text, für jeden Pfad auf einer Ebene mit einem `Filesystem`
++   entry .communicable   stellt einen Pfad als Meldung dar, als seinen kodierten Text
++   entry .inspectable   eine Debug-Darstellung jedes Pfads, mit oder ohne Ebene: `/verona/capulet`
++       Immer verfügbar, da es kein `Filesystem` braucht: Die Wurzel wird so gezeigt, wie sie
++       gespeichert ist, was bereits die Notation der Ebene trägt, und die Namen werden mit `/`
++       verbunden, nicht entmaskiert. `(% / "verona" / "capulet").inspect` ist
++       `t"/verona/capulet"`.
++   entry .nominable   der Name eines Pfads, für APIs, die Dinge benennen: sein Blatt, oder sein Wurzeltext, wenn er keines hat
++   entry .generic   jeder Pfad auf einer Ebene mit einem `Filesystem` als `Abstractable across Paths to Text`
++       Das, was erlaubt, einen serpentine-Pfad an jede API zu übergeben, die einen Pfad beliebigen
++       Typs annimmt (wie es `Classpath.Directory(path)` tut): Er abstrahiert zu seinem kodierten
++       Text.
++   entry .convert   die implizite Umwandlung eines Pfads mit bekannten Namen in denselben Pfad auf einer Ebene
++       `Conversion[Path of topic under root, Path of topic on filesystem under root]`, über
++       `#on`, sodass die Namen beim Kompilieren gegen die Zielebene geprüft werden:
+
+% 2 1 0 0e98e0ae8125504c005f6f8b8da67ead
+
+% 3 1 0 1733164bf221aece15012639b5bde178
+
+% 0 1 0 0205218d689aefb307ba246f5bc362d0
+
+% 0 1 0 06f0e42cf9696c780a98f320307abbf7
+
+% 1 1 0 043ccd697bd514be11440521f345e897
+
+@ 0 11 0 06edcb8f5cedf3f8067d0c099bb5ab76
++   entry .quotient   der Extraktor `/:` für einen Pfad: seine Wurzel, dann der Rest als Name oder als `Relative`
++       Ein Pfad ohne Namen passt nicht. Ein Pfad mit einem Namen passt als `root /: name`, einer
++       mit mehreren als `root /: relative`, wobei der `Relative` erneut mit `/:` passt und dabei
++       jedes Mal den obersten Namen abschält. Die Wurzel wird mit dem `Eradicable` der Ebene
++       dekodiert, daher muss für einen Abgleich das `Limit` des Pfads bekannt sein
++       (`Path on Linux under %.type`) und, bei einer Wurzel, die fehlerhaft sein kann, ein
++       `Tactic[Path.Error]` vorhanden sein.
++   entry .conjunction   der tiefste gemeinsame Vorfahre zweier Pfade, beim Kompilieren berechnet, wo das möglich ist
++       Eine Erweiterung auf jedem `Path`. Sind die Namen beider Pfade bekannt und teilen sie eine
++       Wurzel, stehen die Namen des Ergebnisses in seinem Typ: `(% / "home" / "work" / "data").conjunction(% / "home"
++       / "more")` ist ein `Path of Mono["home"]`. Andernfalls wird es zur Laufzeit berechnet. Das
++       Ergebnis ist `Optional`, für zwei Pfade mit verschiedenen Wurzeln.
+
+% 2 1 0 1dd92d00062dc77311a7be2d1c9d6fd0
+
+% 3 1 0 127877e45d4e6f3215b566420ba83b8c
+
+% 0 1 0 1582d143c71aa41512a6f6e3697877c5
+
+% 0 1 0 1a8138b200d8e5dc0b5e03c1c91bb944
+
+% 0 1 0 03a3b4ed3dd62281166ccb2687dab3ae
+
+% 1 1 0 0a03ab30893b7d39060c82cd0c2543d0
+
+@ 0 5 0 074be9867a69a7f80ee36591819c3cd9
++   entry .toward   der relative Pfad von einem Pfad zu einem anderen, beim Kompilieren berechnet, wo das möglich ist
++       Eine Erweiterung auf jedem `Path`: `a.toward(b)` ist der `Relative`, der zu `a` addiert
++       `b` ergibt — von `a` hinauf zur `conjunction` der beiden Pfade, dann hinab zu `b`. Der
++       relative Pfad behält die Ebene des Ziels, und wo jeder Name bekannt ist, stehen sein
++       Aufstieg und seine Namen in seinem Typ. Das Ergebnis ist `Optional`.
+
+% 2 1 0 148400eb402567e40f2ee253a49aec00
+
+% 3 1 0 1ffe07c69905eedf0929e2696cce25bf
+
+% 0 1 0 1aa802faa144fc9e13b7030c681c8c4a
+
+% 0 1 0 0506e70fa1956c641b71ed9887ded4a3
+
+% 0 1 0 1ee2812664dba7d403f85307dceaaa5a
+
+% 0 1 0 05434dc40b7abc400d152f114cc800ec
+
+% 1 1 0 11b3ab24124c3c60087894b876cbe3b9
+
+@ 0 1 0 131508bf83ae8cc404de0d3aabe73989
++   entry .Error   ausgelöst, wenn ein Pfad nicht gelesen oder aufgelöst werden kann: eine ungültige Wurzel oder ein ungültiger Name, oder verschiedene Wurzeln
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 2 0 06175fbfefd0e0c60b48222a6301a77f
++         Fehler `↯/s.70.1`: _the path `path` was invalid because `reason`_, wobei der Pfad
++         genannt wird, wenn er bekannt ist. Der `#reason` ist ein `Path.Error.Reason`:
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 1 0 0c1c263a0de533d10a1161cb385ec376
++         column  Fall
+
+% 0 1 0 0a4e9924d22d7168034fe72e758ec50f
+
+@ 0 2 0 181473b62bc80c971eb19bd166535b1f
++         column  Meldung
++         column  Anmerkung
+
+% 0 1 0 09285e4f9fa3eb9707218ee7b2310512
+
+@ 0 1 0 1b4febce0b03d89f01c6f47edad49109
++         row  `InvalidRoot`  2  _the root is not valid_  Text, der nicht so beginnt wie die Wurzel der Ebene, etwa `C:` unter Linux
+
+% 0 1 0 085b7ba5ac8ecda71e4fbe96bfc0fc5d
+
+% 0 1 0 0ea275c53574e9e41d111261dadf9c42
+
+% 1 1 0 11362977fd60dd600121d0d6fcc71418
+
+@ 0 3 0 120b355e3952e5940467114212e795d9
++         Er wird vom `Eradicable` einer Ebene ausgelöst, wenn Text als Pfad dekodiert wird, und
++         von `Path#resolve`. Ein Name, der die Regeln einer Ebene verletzt, wenn er einem Pfad
++         *hinzugefügt* wird, ist ein `Name.Error`, nicht dieser.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 13db34982658c5cd18dfa07704806b28
+
+% 1 1 0 0fa776a024c8f3851138a5a062382aec
+
+@ 0 5 0 070d4d887def551d0230d9fbee493f1c
++     entry .apply   ein Pfadfehler aus einem Grund, gewählt als `_.InvalidRoot`, und dem Text des Pfads, falls bekannt
++         `Path.Error(_.InvalidRoot, t"C:")`: Der Grund ist eine Funktion des Begleitobjekts
++         `Reason`, sodass das `Eradicable` einer Ebene `abort(Path.Error(_.InvalidRoot))`
++         schreibt. Benötigt ein `Diagnostics` im Geltungsbereich, wie es die Konstruktion jedes
++         Fehlers tut.
++     entry .Reason   warum ein Pfad ungültig war: `RootParent`, `InvalidRoot`, `DifferentRoots` oder `InvalidName`
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 14 0 19732c7c10ca72ba193fedc9e7339f53
++           Ein Enum aus vier nummerierten Fällen, die den zweiten Teil des Fehlercodes bilden.
++           Sein Begleitobjekt hat ein anonymes `Communicable`-Given, das jeden Fall als Meldung
++           darstellt, etwa _the root is not valid_.
++       entry #number   die Nummer des Grunds, `1` bis `4`
++     entry #reason   warum der Pfad ungültig war
++     entry #path   der Text des Pfads, oder `Unset`, wenn er nicht bekannt ist
++   entry #root   die Wurzel als Text in der Notation der Ebene: `/`, `C:\`, `refs/`
++   entry #descent   die Namen des Pfads, Blatt zuerst
++       `(% / "home" / "work").descent` ist `t"work"`, `t"home"`; `encode` kehrt sie um. Ein Pfad,
++       der aus Namen in der Reihenfolge von oben nach unten neu aufgebaut wird, muss sie zuerst
++       umkehren.
++   entry #Topic   das Tupel der Namen des Pfads, das innerste zuerst, wo der Compiler sie kennt
++       `% / "verona" / "capulet"` ist ein `Path of ("capulet", "verona")`, gelesen über den
++       Infix-Alias `of`. Ein Name aus Laufzeittext trägt seinen Singleton-Typ bei, und ein Pfad,
++       dessen Namen überhaupt nicht bekannt sind, hat die Schranke `Tuple`.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0ba42635d19052360a77709b3c79c215
++         label Die Wurzel
+
+% 1 1 0 118520bcf90aceb41666ddc798e91b32
+
+% 2 1 0 0fe9a3ef9c80762d1c9747c9c0348d58
+
+% 0 1 0 127bf120d1aefef616eabe54ca77d355
+
+% 1 1 0 027a109f9f0798e6158aee07311ba9f5
+
+@ 0 1 0 1eaecc6822ae1b220456280983061c4a
++         label Ein Name
+
+% 1 1 0 08d512572a7ec6db1ffe6ef4d61293b7
+
+% 2 1 0 12c2b9143670b41f02c956cc440ec7a3
+
+% 0 1 0 134930ed3dc2ee7407fdefa0b1dac378
+
+% 1 1 0 0a4b9afbb718adf90bc5b099a6106aeb
+
+@ 0 1 0 04a50461923f19371d32f796df2e808f
++         label Zwei Namen, der innerste zuerst
+
+% 1 1 0 00ae6c77bec5a84f00691433f3359478
+
+% 2 1 0 0e5fc590f1fc5b581fc8c319553f585d
+
+% 0 1 0 11f5159d171faab80e8488bd36c424a6
+
+% 1 1 0 057be8d89673bb181f0527cf35e8f990
+
+@ 0 1 0 033153c46653db8d05edadb6a95efd8c
++         label An eine Ebene gebunden
+
+% 1 1 0 1255a1a32eac1b141b9a0e6c271962c3
+
+% 2 1 0 072c0497a66b27f61aaa1715861566e0
+
+% 0 1 0 15bb5fff20544bcf0d2ba9d211d71ee3
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 14 0 0a143f9e22933dcc0df8bf5729e1b8e7
++   entry #name  der Blattname des Pfads, oder sein Wurzeltext, wenn er keine Namen hat
++   entry #nil   ob der Pfad keine Namen hat: die Wurzel allein
++   entry #knownElementTypes   ob das `Topic` ein bekanntes Tupel ist, auch wenn einige seiner Namen Laufzeitwerte sind
++   entry #knownElements   ob jeder Name im `Topic` ein dem Compiler bekanntes Literal ist
++       `(% / "verona" / "capulet").knownElements` ist `true`; ein Pfad mit einem Namen aus einer
++       Variable oder einer mit der Typangabe `Path on Linux` ist `false`.
++   entry #depth   wie viele Namen der Pfad hat, aus dem `Topic` berechnet, wo es bekannt ist
++   entry #on   dieser Pfad, an eine Ebene gebunden, wobei jeder Name gegen ihre Regeln geprüft wird
++       `path.on[Linux]` prüft jeden Namen mit seiner Instanz von `Admissible on Linux` — beim
++       Kompilieren für ein Literal und über einen `Tactic[Name.Error]` für Laufzeittext — und
++       prüft die Wurzel: dass ihr Typ auf der Ebene `Submissible` ist, oder dass sie sich mit dem
++       `Eradicable` der Ebene dekodieren lässt, oder dass die Ebene eine eindeutige Wurzel hat.
++       Ein Pfad, der bereits auf der Ebene liegt, wird unverändert zurückgegeben. Eine Wurzel
++       einer anderen Ebene ist ein Kompilierfehler, sodass `(Drive('C') /
++       "verona").on[Linux]` nicht kompiliert, und ein Pfad unter Linux wird frei in `MacOs`
++       umgewandelt.
+
+% 2 1 0 14e67ab9d72005021f9f9aa73f7f9e03
+
+% 3 1 0 04914ced739f290e05e2c2eddcfcd3c2
+
+% 0 1 0 17be1d44694286c31a369282acd671a7
+
+% 0 1 0 059f86de68af76010ba06097b67caba0
+
+% 1 1 0 0954f73d4e03ab511833589a7c50a050
+
+@ 0 6 0 13bfbf0f04ae72461856ca01246a1d01
++   entry #/   ein Kind dieses Pfads: ein weiterer Name, gegen die Ebene geprüft, falls der Pfad eine hat
++       Das Kind kann ein String-Literal sein, `Text`, ein `Name` oder jeder Wert mit einer
++       `Navigable`-Instanz (eine `Uuid`, ein `Ordinal` auf einem JSON-Pointer). Ist das Kind auf
++       der Ebene des Pfads `Admissible`, bleibt das Ergebnis auf der Ebene, und der Name wird
++       geprüft — beim Kompilieren für ein Literal, über einen `Tactic[Name.Error]` für
++       Laufzeittext. Andernfalls ist das Ergebnis plattformneutral, und der Singleton-Typ des
++       Kinds wird dem `Topic` hinzugefügt.
+
+% 2 1 0 03e5461c96dbcea311c89cab79ddd088
+
+% 3 1 0 1f1e8f6c7a0df7770b670f21083e8cf1
+
+% 4 1 0 1ff31e64731cc6f3054abd7332d33681
+
+% 6 1 0 0577569b3b6fcb420092ea11ad7a7b15
+
+% 0 1 0 0424ffc58a2f0e160c5379b408aca939
+
+% 0 1 0 1f6ecdb00049cc9904e9b6d80ad96e2f
+
+% 1 1 0 0fcb98e38e070ddd1f42818ecdc8358f
+
+@ 0 11 0 175c7756ef5d307d0af042d9d8bf5161
++   entry #peer   ein Geschwister dieses Pfads: sein Blatt durch einen anderen Namen ersetzt
++       `path.peer("montague")` auf `% / "verona" / "capulet"` ist `% / "verona" / "montague"`.
++       Der Name muss auf der Ebene des Pfads `Admissible` sein. Es liest das `Topic`, daher
++       degeneriert es auf einem Pfad, dessen `Topic` abstrakt ist; bauen Sie dort das
++       Geschwister von `#parent` aus.
++   entry #parent   der Pfad eine Ebene höher, oder `Unset` für eine Wurzel
++       Aus dem `Topic` typisiert, wo es bekannt ist, sodass der Elternpfad eines
++       `Path of ("capulet", "verona")` ein `Path of Mono["verona"]` ist und der Elternpfad einer
++       Wurzel statisch `Unset`.
++   entry #ancestors   jeder Vorfahre dieses Pfads, der nächste zuerst, bis zur Wurzel
++   entry #+   dieser Pfad mit einem angewendeten relativen Pfad: erst dessen Aufstieg hinauf, dann dessen Namen hinab
++       `(% / "home" / "work" / "data") + (? / ^ / "more")` ist `% / "home" / "work" / "more"`,
++       wobei das `Topic` des Ergebnisses aus beiden berechnet wird.
+
+% 2 1 0 1d5dd983dc8910150e5800ef85c2ce9d
+
+% 3 1 0 1c2627eab91bc248191f5149bb34b055
+
+% 0 1 0 1e6a56925ebe53ea028bf7f980051074
+
+% 0 1 0 02bbc7493a0ad1f213e0bd4704dd0b4b
+
+% 1 1 0 1fd80a816bb9ff9814e5a0e232b372b8
+
+@ 0 4 0 145413de8a3c337b11d86f6a185d9bf2
++   entry #resolve   Text, gegen diesen Pfad aufgelöst: ein absoluter Pfad als er selbst, ein relativer von hier aus
++       `base.resolve(text)` dekodiert den Text als `Path on Plane` und, falls das scheitert, als
++       `Relative on Plane`, der zu diesem Pfad addiert wird; Text, der keines von beiden ist,
++       löst `Path.Error` mit dem Grund `InvalidRoot` aus. Benötigt die Dekodierer der Ebene für
++       Pfade und relative Pfade sowie einen `Tactic[Path.Error]`.
+
+% 2 1 0 0bf999b7b9ff58e8105d6d26560aacb5
+
+% 3 1 0 1c0806ebdcb166d41ac6b20e97a53bb8
+
+% 4 1 0 046075a6bd4ce3b40c20183f312959e2
+
+% 0 1 0 05058a38821ae5300350ee5efb2f5cf0
+
+% 0 1 0 0f433df0d351b3b60db5cf9aee461859
+
+% 0 1 0 0f9fd5cb3e73e7071362f3f50ecba0bb
+
+% 1 1 0 1b4ee5fcc4c4cb85186d382c01491f40
+
+@ 0 11 0 1d84c598dc048c9d06879f1d0a903fc4
++   entry #precedes   ob dieser Pfad ein Vorfahre eines anderen ist, oder derselbe Pfad
++       `(% / "verona" / "capulet").precedes(% / "verona" / "capulet" / "juliet")` ist `true`;
++       die Wurzeln müssen dieselben sein.
++   entry #relative   die Namen dieses Pfads als `Relative` ohne Aufstieg, als ginge er von seiner Wurzel aus
++   entry #shift   dieser Pfad ohne seine obersten Namen: `(% / "a" / "b" / "c").shift(1)` ist `% / "b" / "c"`
++   entry #graft   dieselben Namen auf einer anderen Wurzel
++       `path.graft(root)` benötigt das `Radical` der neuen Wurzel auf der Ebene des Pfads, das
++       die Wurzel als Text schreibt; das `Limit` des Ergebnisses ist der Singleton-Typ der neuen
++       Wurzel.
++   entry #sameRoot   ob zwei Pfade eine Wurzel teilen, statisch `true` auf einer Ebene mit eindeutiger Wurzel
++   entry #rename   dieser Pfad mit seinem Blatt, umbenannt durch eine Funktion seines alten Namens, oder `Unset` für eine Wurzel
++       Der Block erhält den alten Namen als kontextuellen `Text aka "prior"`, den `prior` liest:
+
+% 2 1 0 12a7cace3c039248081c922decfb95cc
+
+% 3 1 0 0f16f780e7fc737115d752213ad787e7
+
+% 4 1 0 168ea6f7e197f3670b1fc1cd5a399635
+
+% 0 1 0 108c51767bb087c3132519c45bf4ac49
+
+% 0 1 0 1d738162ee6e2b5006bc59454db927fe
+
+% 1 1 0 040436392959c9001865f44683af1057
+
+@ 0 5 0 0e7764a11065a2871b75a4143e7651fc
++   entry #unsafeChild   ein Kind aus Laufzeittext ganz ohne Prüfung, für einen bereits validierten Namen
++       `path.unsafeChild(name)(using Unsafe)` fügt den Namen hinzu, ohne die Regeln der Ebene zu
++       befragen; das gelöschte `Unsafe`-Token markiert die Aufrufstelle. Verwenden Sie es, wo der
++       Name als gültig bekannt ist — ein aus einer Verzeichnisauflistung gelesener Name — und die
++       Kosten oder die Taktik einer Prüfung nicht erwünscht sind, oder wo `/` nicht verwendet
++       werden kann, weil das `Topic` des Pfads abstrakt ist.
+
+@ 0 1 0 1c9fe17da192af1207d3b38f24e25a90
++ entry .Relative   ein relativer Pfad: eine Anzahl von Schritten nach oben, dann ein Abstieg von Namen, typisiert nach Ebene
+
+% 1 1 0 1464745c5ddecee60b7adac75a2298c0
+
+@ 0 5 0 1aec97924d9755321ee826001eaf9871
++       Ein `Relative` ist eine Case-Klasse aus einem `#ascent`, der Anzahl der Schritte nach
++       oben, und einem `#descent` von Namen, gespeichert mit dem Blatt zuerst. Er wird aus `?`
++       mit `/` gebaut, durch `^` für jeden Schritt nach oben und dann Namen, und sein Typ trägt
++       die Ebene (`on`), das `#Topic` seiner Namen (`of`) und seinen Aufstieg als literales
++       `#Limit` (`under`), sodass `? / ^ / "more"` ein `Relative of
++       Mono["more"] under 1` ist.
+
+% 2 1 0 18c69ab67e5560880ca6440306f512ce
+
+% 3 1 0 16cca5a3c2d4701215289081a668298f
+
+% 0 1 0 0855b38cb7e53a161332214f53cc8bb9
+
+% 0 1 0 0f636bc802dc9829139a40feea5febd5
+
+% 0 1 0 1d1286e56a9090e006df6c25114fbc75
+
+% 0 1 0 190211cdc2daaac0056236958c1ef5f4
+
+% 1 1 0 0c8746b5537c062d09f01ca9f1d74b5c
+
+@ 0 4 0 0b6db716d5aac47a07bf8a0ff9263fe7
++       Ein relativer Pfad wird von `Path#toward` erzeugt, mit `Path#+` angewendet und mit den
++       Namen seiner Ebene für das Selbst, das Elternverzeichnis und das Trennzeichen kodiert und
++       dekodiert, sodass `? / ^ / "verona"` unter Linux `../verona` und unter Windows
++       `..\verona` ist. Wie ein Pfad wird er nur dann aus Text dekodiert, wenn seine Ebene
++       benannt ist.
+
+% 0 1 0 1a6dc83ab60658d70f43c37d5902f3c2
+
+% 0 1 0 034ff7979ce68ea00c325f774e1fea26
+
+% 0 1 0 1f8d9024e45c82d8073ae035cb7af1e0
+
+@ 0 42 0 1464fd9c93cbb4bc0fa1176dfad19130
++   entry .^   ein Schritt nach oben, geschrieben nach `?` oder einem anderen Schritt: `? / ^ / ^`
++       In das Paket als `^` exportiert. Es trägt keinen eigenen Wert: `Ascent#/` nimmt es und
++       erhöht den Aufstieg um eins.
++   entry .?   der aktuelle Ort, der leere `Relative`, von dem aus relative Pfade gebaut werden
++       In das Paket als `?` exportiert. Ein `Ascent` von null, sodass `?` als Selbstname der
++       Ebene, `.`, kodiert wird und `? / ^` eine Ebene hinaufsteigt.
++   entry .apply   ein relativer Pfad aus seinem Aufstieg und seinen Namen, Blatt zuerst, mit gewählter Ebene und gewählten Typen
++       `Relative(1, List(t"verona"))` ist der Konstruktor der Case-Klasse und gleicht
++       `? / ^ / "verona"`. Die Überladung `Relative[filesystem, topic, limit](ascent, descent*)`
++       setzt die drei Typ-Member, ohne irgendetwas zu prüfen.
++   entry .decodable   liest einen `Relative on filesystem` aus Text, mit den Namen der Ebene für Selbst, Elternverzeichnis und Trennzeichen
++       Text, der dem Selbstnamen gleicht, ist `?`; andernfalls wird er am Trennzeichen
++       aufgeteilt, ein nachgestellter leerer Name und ein führender Selbstname werden verworfen,
++       die führenden Elternnamen als Aufstieg gezählt und der Rest als Abstieg genommen. Es löst
++       nichts aus.
++   entry .encodable   stellt einen relativen Pfad in der Notation seiner Ebene dar: `../verona` unter Linux, `..\verona` unter Windows
++       Der selbstrelative Pfad ist der Selbstname (`.`), und ein Pfad mit einem Aufstieg und ohne
++       Namen ist der wiederholte Elternname (`../..`).
++   entry .showable   zeigt einen relativen Pfad als seinen kodierten Text, für einen auf einer Ebene mit einem `Filesystem`
++   entry .inspectable   eine Debug-Darstellung jedes relativen Pfads in POSIX-Notation: `../../verona` oder `.`
++       Immer verfügbar, mit oder ohne Ebene: Jeder Schritt nach oben ist `..`, Namen werden mit
++       `/` verbunden, und der selbstrelative Pfad ist `.`.
++   entry .conversion   die implizite Umwandlung eines relativen Pfads mit bekannten Namen in denselben Pfad auf einer Ebene
++       Über `#on`, sodass die Namen gegen die Zielebene geprüft werden.
++   entry .quotient   der Extraktor `/:` für einen relativen Pfad: sein oberster Name, dann der Rest
++       Ein relativer Pfad mit zwei Namen passt als `name /: name`, einer mit mehreren als `name /:
++       relative`, sodass ein mit `/:` abgeglichener Pfad Name für Name zerlegt werden kann. Ein
++       relativer Pfad mit weniger als zwei Namen passt nicht.
++   entry #ascent   wie viele Schritte der Pfad hinaufsteigt, bevor er absteigt
++   entry #descent   die Namen des Pfads, Blatt zuerst
++   entry #Topic   das Tupel der Namen des Pfads, das innerste zuerst, wo der Compiler sie kennt
++   entry #Limit   der Aufstieg des Pfads, als literaler Typ, wo er bekannt ist
++   entry #delta   die Tiefenänderung des Pfads: seine Namen abzüglich seines Aufstiegs
++   entry #name   der Blattname, oder `Unset`, wenn der Pfad keine Namen hat
++   entry #self   ob dies der selbstrelative Pfad ist, ohne Aufstieg und ohne Namen
++   entry #rename   dieser Pfad mit seinem Blatt, umbenannt durch eine Funktion seines alten Namens, gelesen als `prior`
++   entry #on   dieser relative Pfad, an eine Ebene gebunden, wobei jeder Name gegen ihre Regeln geprüft wird
++       Ein relativer Pfad, der bereits auf einer Ebene liegt, die auf dem Ziel `Compliant` ist
++       (ein Linux-Pfad innerhalb eines Tar-Archivs), wird ohne Prüfungen umgewandelt; andernfalls
++       wird jeder Name von seiner `Admissible`-Instanz auf der Zielebene geprüft.
++   entry #unqualified   dieser relative Pfad, ohne seine Ebene
++   entry #parent   der Pfad eine Ebene höher: sein Blatt verworfen, oder ein Schritt mehr Aufstieg, wenn er keine Namen hat
++   entry #/   ein Kind dieses relativen Pfads: ein weiterer Name, gegen die Ebene geprüft, falls er eine hat
+
+@ 0 1 0 0288eae16d540bb00d4072b4c7fd1438
++ entry .Ascent   ein relativer Pfad nur aus Schritten nach oben, der `^` als Kind annimmt
+
+% 1 1 0 1f5a2e4ed5792f2811e4ce5e0bc542b2
+
+@ 0 6 0 1d79f6c4ff76f7d009e868c4b4bedee7
++       `?` ist ein `Ascent` von null und `? / ^ / ^` ein `Ascent under 2`: ein `Relative` ohne
++       Namen, dessen `/` sowohl `^` als auch einen Namen annimmt. Sein Typ trägt den Aufstieg als
++       Literal, sodass ein relativer Pfad, der über eine Wurzel hinaufsteigt, dort abgefangen
++       werden kann, wo er geschrieben wird.
++   entry #ascent0   die Anzahl der Schritte nach oben, wie der Konstruktor sie erhalten hat
++   entry #Topic   immer `EmptyTuple`: Ein Aufstieg hat keine Namen
++   entry #/   ein weiterer Schritt nach oben, geschrieben `/ ^`
+
+@ 0 5 0 0a545f98b6984556095f6e2b97707711
++ entry .Root   die Basisklasse eines Wurzelobjekts: ein `Path` ohne Namen und mit festem Wurzeltext
++     `abstract class Root(name: Text)`: Erweitern Sie sie, um einer neuen Hierarchie ihre Wurzel
++     zu geben, wie es `Classpath` (`Root(t"")`), `JsonPointer` und galileis `Drive`
++     (`Root(t"C:\")`) tun. Zwei Wurzeln sind gleich, wenn ihre Wurzeltexte es sind, und das
++     `Topic` einer Wurzel ist `EmptyTuple`, sodass `/` auf ihr einen Pfad beginnt.
+
+% 2 1 0 1a863a7b4c4f08b81712c306195ad2a3
+
+% 3 1 0 0b2efdb8b70b1de21130c30004b92a9d
+
+% 0 1 0 0ca6af8d139f097a1de91963129f4af0
+
+% 0 1 0 185f7336e8b56bce16d2a927196031bd
+
+% 1 1 0 042cf9e15d7ded6e0b8dd6719a0f268e
+
+@ 0 1 0 1195abd46d0b8d5219191844fc93123e
++ entry .Filesystem   die Notation einer Ebene: ihr Name, ihr Trennzeichen, ihre Namen für Selbst und Elternverzeichnis und ihre Maskierung
+
+% 1 1 0 1fd9430c3718d84d1c54c7c19b7da81d
+
+@ 0 4 0 1a52e7c8249c238e084d63348340a5ec
++       Die Typklasse, die einen Typ zu einer Ebene macht, auf der Pfade geschrieben werden
++       können. Ihre Instanz liegt im Begleitobjekt der Ebene und wird daher ohne Import gefunden:
++       `Linux` hat `/`, `.` und `..`; `Windows` hat `\`; der Klassenpfad, ein Tar-Archiv und ein
++       Git-Baum haben ihre eigenen. Jede Kodierung und Dekodierung eines `Path` oder eines
++       `Relative` benötigt sie.
+
+% 2 1 0 1517ed41080488f114ef1316063d1e02
+
+% 3 1 0 07193c7dfc5500f009c963d4d6725c1e
+
+% 0 1 0 0835eddf6596999c09e89bde128d395f
+
+% 0 1 0 1092830e37aaeff319769be6845aab46
+
+% 1 1 0 0dd582a1ed0b206b037f7ba6006b245c
+
+@ 0 10 0 0e250eaf1d0d5b890fbd582ceb7c25e5
++       `#UniqueRoot` gibt an, ob die Ebene eine einzige Wurzel hat (`Linux`) oder mehrere
++       (`Windows`, mit einer Wurzel pro Laufwerk): Auf einer Ebene mit eindeutiger Wurzel teilen
++       zwei Pfade immer eine Wurzel, sodass `Path#sameRoot` statisch `true` ist und `on` keine
++       Prüfung der Wurzel braucht.
++   entry #UniqueRoot   `true`, wenn jeder Pfad auf der Ebene dieselbe Wurzel hat, als literaler Typ
++   entry #name   der Name der Ebene, für Meldungen: `Linux`, `Windows`, `Java classpath`
++   entry #separator   der Text zwischen Namen: `/` oder `\`
++   entry #self   der Name des aktuellen Orts in einem relativen Pfad: `.`
++   entry #parent   der Name eines Schritts nach oben in einem relativen Pfad: `..`
++   entry #escape   maskiert einen Namen für die Kodierung und lässt ihn standardmäßig unverändert
++   entry #unescape   kehrt `#escape` an einem dekodierten Namen um und lässt ihn standardmäßig unverändert
+
+@ 0 1 0 098ca898042866f00bf5630eafa24a47
++ entry .Radical   wie ein Wurzeltyp als Text geschrieben wird: die reine Hälfte der Pfadalgebra einer Wurzel
+
+% 1 1 0 0e90919c2b8854d202505358655d1dc0
+
+@ 0 4 0 036d501c5dce82081bdf8aa994b45599
++       `root is Radical on plane` kodiert einen Wurzelwert als den Text, den die `#root` eines
++       `Path` hält: `%` als `/` unter Linux, ein `Drive` als `C:\` unter Windows. Es kann nicht
++       fehlschlagen und nimmt daher keine Taktik. Seine lesende Hälfte ist `Eradicable`; der
++       Wurzeltyp einer Ebene hat beide, im Begleitobjekt der Ebene, und `Path.decodable`
++       benötigt das Paar.
+
+% 2 1 0 18cd9151906aa68b1076df7712d3610a
+
+% 3 1 0 021e2ac0723f17420dd410b562fad29f
+
+% 0 1 0 095247fc632352960956554e3cded602
+
+% 1 1 0 119c0583ab58690e0a02bef511c50bd8
+
+% 1 1 0 02ae28316356080a06da22fa09ed14df
+
+@ 0 1 0 0868b01a5bdcda8e1e3ec4fba8081921
++   entry #encode   die Wurzel als Text, in der Notation der Ebene
+
+@ 0 1 0 002b5dabe8fc53770949756fbf0671ed
++ entry .Eradicable   wie eine Wurzel aus Text gelesen wird und wie viel des Texts sie einnimmt
+
+% 1 1 0 02a0a5d3525a163f0126dfefb9d69829
+
+@ 0 6 0 1f0b12a0f6e9de0f02511646e5d4e307
++       `root is Eradicable on plane` liest die Wurzel am Anfang des Texts eines Pfads — `/` unter
++       Linux, `C:\` unter Windows — und gibt an, wie viele Zeichen sie belegt hat, sodass der Rest
++       in Namen aufgeteilt werden kann. Keine der beiden Methoden deklariert einen Fehler: Eine
++       Wurzel, die fehlerhaft sein kann, hat eine Instanz, die einen `Tactic[Path.Error]` in der
++       Signatur ihres Givens nimmt und ihn einfängt, um den Grund `InvalidRoot` auszulösen,
++       während eine Wurzel, die es nicht sein kann (ein Zip-Archiv, ein Suchpfad, das Web), eine
++       reine Instanz hat, sodass ein gegen sie dekodierter Pfad keine Taktik braucht.
+
+% 2 1 0 145eead4859f5e670ef6a3d0ffa5a91d
+
+% 3 1 0 0b5a22ca5eb59a1003072d890dfc38d5
+
+% 4 1 0 0b37816d25ef51b40319f35b788d843c
+
+% 0 1 0 14fdd1fdee5c8a35082cb15781445137
+
+% 0 1 0 01584d94b28d0f8205c976a8cbc1d1ea
+
+% 0 1 0 126ceb660b072a6e1900bd180a464d88
+
+% 1 1 0 1642a726d8c1c5960712d17764ca6263
+
+@ 0 2 0 05e384dfa9ac85cb1e55c43b02bb5fc8
++       Es ist die lesende Hälfte von `Radical` und davon abgetrennt, damit die reine Darstellung
++       nie eine Capability trägt.
+
+% 1 1 0 0e41d01bdc3e246603d0df265d2964fd
+
+@ 0 2 0 0a9d87d500692ca8062ce82235ac0436
++   entry #decode   die Wurzel am Anfang des Texts, oder der `Path.Error` der Ebene, über ihre Taktik ausgelöst
++   entry #length   wie viele Zeichen des Texts die Wurzel einnimmt
+
+@ 0 1 0 0cb4aa65ca76945507003f27fb9df919
++ entry .Submissible   welche Wurzeltypen eine Ebene akzeptiert, geprüft, wenn ein Pfad mit `on` an sie gebunden wird
+
+% 1 1 0 183e24033ce71339105c4548f6a5744b
+
+@ 0 4 0 0da3b61b837f7d851fc8d1ebf324f922
++       `root is Submissible on plane` erlaubt, einen Pfad mit der Wurzel `root` nach einer
++       Prüfung seines Wurzeltexts mit `Path#on` an `plane` zu binden: `%.type` ist auf `Linux`
++       und `MacOs` zulässig und `Drive` auf `Windows`, sodass `(% / "verona").on[Windows]` nicht
++       kompiliert.
++   entry #check   prüft den Text einer Wurzel und löst über die Taktik aus, die die Instanz eingefangen hat
+
+@ 0 5 0 0d3bcb8d73210d760e113f8fd34a8b3b
++ entry .Compliant   dass die relativen Pfade einer Ebene auf einer anderen gültig sind und daher ohne Prüfungen umgewandelt werden
++     `source is Compliant on target` erlaubt `Relative#on[target]`, einen relativen Pfad auf
++     `source` unverändert zu übernehmen, ohne seine Namen zu prüfen: Ein `Relative on Linux`
++     benennt gültige Einträge in einem Tar-Archiv, also gilt `Linux is Compliant on Tar`. Die
++     Typklasse hat keine Methoden: Ihr Vorhandensein ist der Beweis.
+
+@ 0 1 0 0decd7c4707d6f9309379fb6b1e31944
++ entry .Admissible   welche Werte auf einer Ebene ein Name sein dürfen, und die Prüfung, die jeder bestehen muss
+
+% 1 1 0 072663e8bffd833412fe99e6d0ca8731
+
+@ 0 5 0 131845a8071e9a6d0d7f7a27e48432c7
++       `value is Admissible on plane` prüft Text, der gerade zu einem Namen in einem Pfad auf
++       `plane` werden soll, wenn `Path#/`, `Path#peer` und `on` ihn hinzufügen. Ein
++       String-Literal wird beim Kompilieren gegen die `Nominative`-Regeln der Ebene geprüft
++       (`.admissible`), sodass `% / "fo/o"` unter Linux nicht kompiliert; `Text` zur Laufzeit wird
++       beim Hinzufügen geprüft und löst `Name.Error` über den `Tactic[Name.Error]` im
++       Geltungsbereich aus (`.text`), sofern er nicht bereits ein `Name` der Ebene ist.
+
+% 2 1 0 0fbde207e578f044038c3df99a00e128
+
+% 3 1 0 001373361393c5c10cbd9691536d597c
+
+% 4 1 0 17e7d171749c9baf181d6e56cebd265f
+
+% 6 1 0 1b844dc1a3a20ccb025047d0a153f4c9
+
+% 0 1 0 07979b4fe825cf8d0f7648298daeeb2a
+
+% 0 1 0 019596169fcdedca06e63922d5ad235d
+
+% 1 1 0 04b7ad4a1c0e7f2e07894b1a7bbe63c9
+
+@ 0 3 0 063814da22c4d38f1fb1edb8e581bb60
++       Eine neue Art von Name erhält eine Instanz in ihrem eigenen Begleitobjekt, erzeugt mit
++       `.apply` oder, für einen Typ, dessen Werte alle gültig sind, mit `.unchecked` (wie es
++       galilei für eine `Uuid` auf jeder Betriebssystemebene tut).
+
+% 0 1 0 074867e18dfde7241dccaaacc1662542
+
+@ 0 7 0 0b61aca69875c28c08228d0bdda4aced
++   entry .unchecked   eine Instanz, die jeden Wert akzeptiert, für einen Namenstyp, der nicht ungültig sein kann
++   entry .apply   eine Instanz aus einer Prüffunktion, die auslöst, wenn der Text kein gültiger Name ist
++   entry .text   prüft `Text` zur Laufzeit gegen die Regeln der Ebene, über einen `Tactic[Name.Error]`
++       Ein `Name` der Ebene braucht keine Prüfung und keine Taktik; jeder andere Text wird beim
++       Hinzufügen zu einem Pfad als `Name` geprüft und löst `Name.Error` aus, wenn er eine Regel
++       verletzt.
++   entry .admissible   prüft ein String-Literal beim Kompilieren gegen die `Nominative`-Regeln der Ebene
++   entry #check   prüft den Text eines Namens und löst aus, wenn er nicht zulässig ist
+
+@ 0 1 0 00dca6e9ec60f6ae00b98fe524ffbbf9
++ entry .Navigable   wie ein Wert zu einem Namen in einem Pfad wird: sein Text
+
+% 1 1 0 1dd7520adcd3b2460b6095d65d5dd31a
+
+@ 0 3 0 0d0a2af2f33a45a70e83464e369621d6
++       `value is Navigable on plane` verwandelt das Kind eines Pfads in den Text seines Namens.
++       String-Literale, `Text` und `Name`s sind auf jeder Ebene navigierbar; andere Bibliotheken
++       fügen ihre eigenen hinzu, etwa ein `Ordinal` auf einem JSON-Pointer oder eine `Uuid` auf
++       jeder Betriebssystemebene.
+
+% 2 1 0 187a24c30cc49d810cf3d9120e85c1d0
+
+% 3 1 0 1f896b41ccd3cd630a5d10827e0c114d
+
+% 4 1 0 19052c4e2c82a5db115e5b6862de49d3
+
+% 0 1 0 1d2e309ce03d18e91684d6243e7b1a80
+
+% 0 1 0 17ac0523a3834e9d0e5e499ed6cbeaa2
+
+% 1 1 0 1259eeb17809a92f15bdd330c9164f1b
+
+@ 0 4 0 0ed4cfb16a025cc100554049d1b0c559
++   entry .label   ein String-Literal ist der Name, den es buchstabiert
++   entry .text   `Text` ist der Name, den er hält
++   entry .name   ein `Name` der Ebene ist der Name, den er hält
++   entry #follow   der Text des Namens, für den ein Kindwert steht
+
+@ 0 1 0 092af76f285077ea0d74f6560544c901
++ entry .Case   wie ein Dateisystem die Groß-/Kleinschreibung von Namen behandelt: unterscheidend, in Klein- oder Großbuchstaben gefaltet, oder bewahrend
+
+% 1 1 0 0a784cd97f505a3602711b5d3f128aa5
+
+@ 0 4 0 13a3ec13d63d49251a3f3776879e3f5b
++       Ein Enum aus vier Fällen. `Sensitive` vergleicht Namen exakt und behält sie wie
++       geschrieben; `Preserving` behält sie wie geschrieben, vergleicht sie aber ohne Rücksicht
++       auf Groß-/Kleinschreibung, wie es macOS und Windows tun; `Lower` und `Upper` falten jeden
++       Namen in eine Schreibweise und vergleichen ohne Rücksicht auf Groß-/Kleinschreibung.
+
+% 2 1 0 04b356f194f451e710edc5f6ba56ff07
+
+% 3 1 0 12370bdddf71cfb30a08edd750830219
+
+% 0 1 0 1d43b40e8211def914a9a540b06c28b7
+
+% 0 1 0 0e087d98f79e8142021d7fb3a564dd4a
+
+% 1 1 0 05287531f85648df198471f6e855dbc8
+
+@ 0 3 0 1bcf30fd17d83f9c0fbb33fbfe8dbf8b
++   entry #apply   ein Name, wie das Dateisystem ihn speichert: gefaltet bei `Lower` und `Upper`, sonst unverändert
++   entry #equal   ob zwei Namen, oder zwei Listen von Namen, unter dieser Regel der Groß-/Kleinschreibung gleich sind
++   entry #hash   ein Hash eines Abstiegs von Namen, konsistent mit `#equal`
+
+@ 0 1 0 0e60a349eb746eca1ed001b437f22490
++ entry .internal   die Makros hinter `Path.toward` und `Path.conjunction`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 02fb6661123bb12a19d473fecda7fff7
++       Nicht zur direkten Verwendung: Das Objekt enthält die Pfadarithmetik zur Kompilierzeit,
++       die die Erweiterungen `toward` und `conjunction` im Begleitobjekt von `Path` einfügen.
++   entry .toward   das Makro hinter `Path.toward`: der relative Pfad zwischen zwei Pfaden, statisch, wo es möglich ist
++   entry .conjunction   das Makro hinter `Path.conjunction`: der gemeinsame Vorfahre zweier Pfade, statisch, wo es möglich ist

@@ -1,0 +1,12 @@
+orthant 2 release
+
+@ 1 0 0 104699d72376c26302ff522bb2b79068
++ chatelaine: webauthn passkey fido2 authentication passwordless security-key attestation
+
+@ 0 1 0 0029fe3318c383761515f1513877ebeb
+
+@ 1 0 0 05ac6a2198936a1b06d7957fc363e4ce
++ sigillate: jose jwt jws jwe jwk token bearer authentication signing encryption
+
+@ 0 1 0 0a53237119896ce30b44a6df430a463a
++ zephyrine: parser parsing cursor emitter sparse-format binary-layout pack unpack

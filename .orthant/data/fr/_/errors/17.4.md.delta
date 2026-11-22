@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 06be36c62ba8a0c61c042479e464f946
++ # `↯/s.17.4` — Le compagnon n'a aucune méthode `apply` candidate
+
+@ 0 2 0 0a91d9ed8591419317c40cc0cfbf8635
++ Levée à la compilation par la macro `identity` de Mercator lorsque l'objet compagnon du type
++ cible n'a aucune méthode `apply` utilisable.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 2 0 0a2e1552e69fa6e319234f1fd9eed497
++ Mercator dérive les instances d'`Identity` en appelant l'`apply` d'un compagnon. S'il n'en existe
++ aucune, la dérivation ne peut pas se poursuivre.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0eec04bc2b63ef1d0fbe17d449707afe
+
+% 1 1 0 14aea934b2c694af192dcb91e657aa2d
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 2 0 1ce437ed6374ac02037040d1c290c5ef
++ Définissez sur l'objet compagnon un `apply` qui construit une valeur du type, ou fournissez
++ manuellement une instance d'`Identity`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 1cb104d057b8971f1427e232956fe585
++ - Source : `lib/mercator/src/core/mercator.internal.scala`

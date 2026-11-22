@@ -1,0 +1,616 @@
+orthant 2 language
+
+% 0 1 0 16f943528d924ef614569aed5c605b3a
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 5 0 090cf2523ccfa5401692495e227ee3fc
++ [CSV](https://en.wikipedia.org/wiki/Comma-separated_values), il suo cugino TSV separato da
++ tabulazioni e gli altri formati delimitati si leggono e si scrivono in un unico modo. Il testo viene
++ analizzato in un `Sheet`, che è una serie di righe. Ogni riga, un `Dsv`, si decodifica in una case
++ class i cui campi prendono le colonne nell'ordine. Una case class si codifica di nuovo in una riga
++ allo stesso modo. Encoder e decoder sono [derivati][derivazione] dal tipo, quindi non c'è nulla da
++ scrivere a mano.
+
+@ 0 4 0 06269dbdafd365b60df63a7e7de472c2
++ Il delimitatore, le virgolette e la presenza di una riga di intestazione sono fissati da un formato,
++ scelto nell'ambito, così gli stessi dati si leggono come CSV o TSV cambiando un import. Le case
++ class annidate si distribuiscono su più colonne, i campi opzionali sono supportati, e a una colonna
++ ci si può riferire tramite la sua intestazione anziché la sua posizione.
+
+@ 0 1 0 19a95ca82805771c1edeb1f6a2076039
++ ### Sui dati delimitati
+
+@ 0 1 0 1d18a8b03908081b01386e6cb65d5b9d
++ Il CSV sembra banale, e non lo è:
+
+@ 0 4 0 0e149e8fc78170d30be19aecb4f9519e
++ - Un campo può contenere il delimitatore, se è tra virgolette.
++ - Una virgoletta dentro un campo tra virgolette viene raddoppiata.
++ - Un file può cominciare o no con una riga di intestazione.
++ - Un file «CSV» ha la stessa probabilità di essere separato da tabulazioni o punti e virgola che
++   da virgole.
+
+@ 0 2 0 03934205491ab33f0e25631518835d50
++ Il codice che divide sulle virgole non gestisce niente di tutto questo. E la corrispondenza tra le
++ colonne e i tipi propri di un programma di solito si scrive a mano, e la si tiene allineata con la
++ disciplina.
+
+@ 0 5 0 0e378b1a0724bfdf17ad85e0a0921e24
++ Qui quella corrispondenza è derivata dalla case class che i dati devono diventare. Il parsing
++ rispetta virgolette ed escape. Il formato è un valore esplicito, non un'ipotesi. Decodificare una
++ riga in un tipo, o un tipo in una riga, è un'unica operazione derivata, attraverso la stessa
++ derivazione di ogni altro formato, quindi la forma dei dati viene verificata una volta sola, come
++ preferisce la [correttezza](../../philosophy/correctness.md).
+
+@ 0 2 0 1c75a5a8816e40eb00b3f31238b50dac
++ Tutto viene dal package `soundness`. Un formato e una [strategia] di errore sono nell'ambito, e
++ l'ultimo import permette agli esempi di stampare i loro risultati:
+
+% 2 1 0 0f8dc632a664d4731acc384146b8c787
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 191938421d588de210e90bb5d023d320
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0187392ffc103acc14c597749a2c60b7
++ ### Leggere le righe
+
+@ 0 2 0 04dbd4f4f2eddea212744c0db241d12d
++ `read[Sheet]` analizza il testo in un `Sheet`. Le sue `rows` sono valori `Dsv`, uno per riga, divisi
++ in celle secondo il formato:
+
+% 2 1 0 151bf2467938cc2e067fdeda91f6cbd3
+
+% 3 1 0 1a68e776b9a0410602b0983f98ac87e0
+
+% 4 1 0 02f965b359c5f3d11284d4b9216f07e6
+
+% 0 1 0 1794f0b61af2d47707268eb6293b34d7
+
+% 1 1 0 171aa9c4059e049b0a058b674a85c0b6
+
+@ 0 1 0 083c741623b90f2619ca2d1580ea631a
++ Il delimitatore dentro una cella tra virgolette fa parte della cella, quindi questa riga ha tre
++ celle, non quattro:
+
+% 2 1 0 0b31e140849946a3197e0b8fe6ca75d5
+
+% 3 1 0 168f31867f7cacd903f050c509044f71
+
+% 4 1 0 1189efdac30157e30d11e1da2827687c
+
+% 0 1 0 0a8f559917582d8003bbf73b0e1a8d36
+
+% 1 1 0 07df6a1844a4308e12a9c126e58b2d70
+
+@ 0 5 0 002aec2bbf3ba9860dee207619f42f41
++ Uno `Sheet` tiene tutte le sue righe in memoria, in un array, così si possono rileggere, indicizzare
++ e confrontare a basso costo. Un file troppo grande per essere tenuto in memoria non ha bisogno di
++ alcuno sheet. `rows` su uno [stream](streams.md) di caratteri fornisce le righe una alla volta,
++ analizzate dallo stesso reader, quindi una cella tra virgolette che attraversa il confine tra due
++ chunk, o tra due righe, viene gestita esattamente come in uno sheet:
+
+% 2 1 0 1a0125917c0a28f31e84b38024f8f3f8
+
+% 0 1 0 1f68a9968f590330194d55712fefaeff
+
+% 0 1 0 0a6a401cf5c3b1af1e3cdd6f09ad3e4a
+
+% 1 1 0 07fbb8a1943149d60aea915065e9da72
+
+@ 0 1 0 1a736aaff562091a067accd98cc981cc
++ ### Decodificare in una case class
+
+@ 0 2 0 1bae19cbd6a8676712cf27383dabf501
++ `as` decodifica una riga in una case class, prendendo le celle nell'ordine. Una case class annidata
++ consuma semplicemente tante colonne quanti sono i suoi campi:
+
+% 2 1 0 1365686368a8551c0e8fcce92fa89442
+
+% 0 1 0 143215878e338d1506428a80c7ded090
+
+% 0 1 0 08a9e2697ed575071afa517a48dcddb2
+
+% 0 1 0 0fc3d74f45cc42450ae6d2bda9f2ae67
+
+% 1 1 0 0c7f08b560e326e9000bd9f409465d3c
+
+% 3 1 0 13680a34428eec210a96b57dc78d75b3
+
+% 4 1 0 1a811f7d5b32b0c30b3cdc3867c3b231
+
+% 5 1 0 14eb3af1657d4b9800cc77f7e1366d0c
+
+% 0 1 0 09b7c76c0813865513b9fea18be1216d
+
+% 1 1 0 18c8ff9044a4f94d02870a1d216caadb
+
+@ 0 2 0 07f0c7a3274a4cee0b8f0a7cdd6c8b32
++ `rows(Prim)` fornisce una riga [opzionale](optional-values.md), poiché lo sheet può essere vuoto,
++ quindi `let` decodifica la riga se ce n'è una.
+
+@ 0 1 0 0d6416b20fab507d1881481f737e6fde
++ Leggere direttamente in un tipo unisce i due passaggi, e decodifica un singolo record dal testo:
+
+% 2 1 0 16a140895e3ad6ed1f48ec929a6e928a
+
+% 3 1 0 06742af2bafbc9f90058ec30d03da14a
+
+% 4 1 0 086b785ed6706c9d1927757161cd69e2
+
+% 0 1 0 06c46a7452df822c131a926e4a4954cc
+
+% 1 1 0 18c161f4c9b286a0166d176d668e56bb
+
+@ 0 1 0 188f0bb1d996be3413f1af4494020c0c
++ Una cella che non si può decodificare come il tipo del suo campo è un errore:
+
+% 2 1 0 18b6995bdac43db10d4d75045d5ddf9c
+
+% 3 1 0 145bc5654e9f716810b001c33947bed0
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 03ebc4f59728c8a300bb56e1356046e9
+
+% 1 1 0 0a3f4c0b90048fa502a6c7dab78362a2
+
+@ 0 1 0 196677f70196bdf61933b52d135abadd
++ ### Codifica
+
+@ 0 2 0 1c71fc2de9cd4f9013b487f3755fc0bd
++ `dsv` codifica una case class come una riga, e una sequenza di esse come uno `Sheet`. `show`
++ scrive il risultato come testo delimitato:
+
+% 2 1 0 046fad25e9bced340435e52747129d60
+
+% 3 1 0 06e2e95b1f3d4d0217ff6a6372667a5c
+
+% 4 1 0 147941f486ac08fc02ee3a49f17559a3
+
+% 0 1 0 179e23ef6607370e06bc7028a78406a4
+
+% 0 1 0 1988603298ae7a8a0179c123db0dad6b
+
+% 1 1 0 15db6c794cb054551f089c0c31832659
+
+@ 0 2 0 16e74e9ec287bbf51400cd0f9eb1a05a
++ `in[Text over Dsv]` codifica un valore come singolo record in un solo passaggio, e
++ `in[Data over Dsv]` scrive lo stesso testo come byte, nel `Codepage` nell'ambito:
+
+% 2 1 0 09b5d447f3f8658c06ad84022928c96f
+
+% 0 1 0 1f5baa85984b2d43128af2fce696cae1
+
+% 1 1 0 1e63d949dd8d57b508c7d9e6c84da37b
+
+% 3 1 0 1427f3baf2a2f6b117b6a145a0ca3ffa
+
+% 4 1 0 131d525f0a624de609b1449564703bcc
+
+% 5 1 0 18cb1f8f07c1443b04ab7f1c0686b74e
+
+% 0 1 0 120ddd7744c70050033420e57cb2ceed
+
+% 1 1 0 000bc63f0e587d180cc100a3c784e7a0
+
+@ 0 2 0 1e26a2789dc51ed81119aca83b939b54
++ Una cella viene messa tra virgolette solo quando contiene il delimitatore, una virgoletta o un a
++ capo, e una virgoletta dentro una cella viene raddoppiata:
+
+% 2 1 0 0cc03f8136cdf556176781e8622a799b
+
+% 0 1 0 0baed302752a5b6517ab3c30b37e9ff9
+
+% 1 1 0 1e13dc78a82d8b800ffe9741346062af
+
+% 3 1 0 0fe058c3a238098f0f706fe9416dd1f1
+
+% 4 1 0 17fae31d218da80e1b2dccef920949a1
+
+% 5 1 0 08cb440ff57aa4a40a7a8680991c42cd
+
+% 0 1 0 0a68e19b00c8f80514149bbbf76631b8
+
+% 1 1 0 0ff0bae7c655094b14f3c702f69da48b
+
+@ 0 1 0 0325d804222f183917eb978379da2555
++ ### Intestazioni
+
+@ 0 2 0 1c49979a1f7980201fb0055755ef7e14
++ Spesso i dati cominciano con una riga di intestazione. Un formato che se ne aspetta una fa
++ corrispondere ogni colonna al campo con lo stesso nome, quindi l'ordine delle colonne non deve
++ per forza coincidere con l'ordine dei campi:
+
+% 2 1 0 04e04bcb708401360fa1074ad02f9048
+
+% 3 1 0 0b1763095853726306f879b56d548e7d
+
+% 4 1 0 06cf6d68385e1fe61593643926fa9aae
+
+% 5 1 0 1add3892ce8d8e880ed2e22a029b5cc4
+
+% 1 1 0 030b8f802cdc77db016db602a4f3b219
+
+% 0 1 0 07569edf6486822207edf74c263708c7
+
+% 1 1 0 17cc6c64104da69f0f983be72eb32809
+
+@ 0 1 0 11f24a6ad67b7fd71071c354be7e252f
++ ### Formati
+
+@ 0 2 0 0c33e3c729a74dd804a6760a4ee6f7d2
++ Il formato nell'ambito decide il delimitatore e le virgolette. Ogni delimitatore ha un formato
++ semplice e una variante con intestazione, nel package `dsvFormats`, e tutti usano `"` come
++ virgolette:
+
+% 2 1 0 137e61f7223724c11b543cd81262326e
+
+@ 0 6 0 12f72545c40f35ac051d9a360c12783a
++ column  Formato
++ column  Con intestazione
++ column  Delimitatore
++ row  `csvFormat`  `csvWithHeaderFormat`  virgola
++ row  `tsvFormat`  `tsvWithHeaderFormat`  tabulazione
++ row  `ssvFormat`  `ssvWithHeaderFormat`  spazio
+
+% 1 1 0 03e078133b1a50f0033e058a46b24dc6
+
+@ 0 1 0 1a8070e0280a0da21da65d8b144fe1b5
++ Importare un altro formato in un ambito interno cambia il delimitatore:
+
+% 2 1 0 11e4a20974cafb91058d1e3b9d4b20e0
+
+% 3 1 0 055bcd57f7dfd44502c0c33e780d7c4a
+
+% 4 1 0 1368c42f0bdc0335083593a3e71eb59c
+
+% 5 1 0 0a3b91c29fefdf9a0a5c74cfb969fca0
+
+% 0 1 0 014a841ddc6b1ac6122463b96f916714
+
+% 0 1 0 090cb315c3b779731c11d0c9486a42cd
+
+% 1 1 0 094a094e4dfb6bbe0d7ee6958cfe22a3
+
+@ 0 1 0 03d12966e37c78c90699277b5331c655
++ ### Estensioni delle colonne
+
+@ 0 4 0 1a88e2393953788e1f0c0a1dc903f5f5
++ Una case class annidata occupa tante colonne quanti sono i suoi campi. Quel numero è calcolato dal
++ tipo, non scoperto durante il parsing. L'*estensione* di ogni campo dice quante colonne consuma,
++ così un decoder sa dove finisce un campo e comincia il successivo, anche quando molti sono
++ annidati. `Person` si estende in tutto su quattro colonne:
+
+% 2 1 0 0b694c98bb4b28b1045507443be27762
+
+% 3 1 0 0346d4990fa52731144272e4805508bd
+
+% 4 1 0 195fe728ae9e4d6e13b6ebfa29fbf959
+
+% 0 1 0 0ef2753895caca4603e6729752cb8245
+
+% 1 1 0 19ce510101c6e5df13ffc673e2c626ed
+
+@ 0 4 0 1c82aef9ed858e06119217029f3db17f
++ La decodifica per posizione è fragile per natura. Aggiungere un campo a una case class annidata
++ sposta ogni colonna successiva, e nulla nel file lo dice. È così che si comportano i dati
++ posizionali, e nessun decoder può cambiarlo. Per questo vale la pena di usare un formato con
++ intestazioni quando si può scegliere, e per questo alle celle ci si può
++ [riferire per nome](#addressing-cells-by-name).
+
+@ 0 1 0 05034cb934a33abb1941be82816becd0
++ ### Colonne opzionali
+
+@ 0 2 0 05ac43b954809ab51061812cc48a4c78
++ Un campo `Optional` si estende su una colonna. Una riga che si ferma prima lo decodifica come
++ `Unset`, che è ciò che significa una colonna opzionale finale in un vero foglio di calcolo:
+
+% 2 1 0 1793212bf577f6ac03f72620309f6a28
+
+% 0 1 0 1456d8921f953395104d84c618ba59ce
+
+% 1 1 0 02718b50556755e905a277a2e235dc63
+
+% 3 1 0 0886041a48330a170b87081cc4e4c86a
+
+% 4 1 0 171662713c7b8aff14711f2b3ff9690f
+
+% 5 1 0 1ba7aebd69c8bb97020a17d7d92263c9
+
+% 0 1 0 026ebcc43e4f8fd41020e23031a09efb
+
+% 0 1 0 04f540d505af91af0ffff514765bfbc2
+
+% 1 1 0 1691c1376d5312b30397c4b5192c66b5
+
+@ 0 3 0 14d728eef30f6b5e005995be0e983a78
++ La lettura di un campo `Optional` segue le politiche descritte in
++ [Decodifica](decoding.md#policies-for-optional-fields), ciascuna modificabile con un given nel
++ package `optionalityOptions`. Il testo delimitato non ha null:
+
+% 2 1 0 077135260271c81e08360c5f6b949018
+
+@ 0 5 0 01dec2081e59dcad06ef0cc71d5d0396
++ column  Un campo che è
++ column  Si legge come
++ column  A meno che
++ row  in una colonna che manca alla riga  `Unset`  `strictDsvAbsence` lo renda un errore
++ row  presente ma rifiutato dal decoder interno  un errore  `lenientDsvFaults` lo legga come `Unset`
+
+% 1 1 0 06c49ab09406a831189d6ed8bd04877c
+
+@ 0 3 0 1dd5a5ace5b595580513f2a45df0f03e
++ Una colonna che manca alla riga è una colonna oltre la fine di una riga corta, o una colonna di
++ intestazione che la riga non ha. L'errore sollevato in tal caso con `strictDsvAbsence` ha il
++ motivo `Dsv.Error.Reason.Absent`. Una cella vuota è un valore presente, non un null.
+
+% 2 1 0 06091d345fd766b21e84bf69746feedc
+
+% 0 1 0 1528c823dd1f27e7140501dbf09796f6
+
+% 0 1 0 07ff2c9f0b0eaff2022a98b58d693ac6
+
+% 0 1 0 1704affb859f1d3f0256f7d346b34548
+
+% 0 1 0 0c8ea8c4dbc9703d08e249584714582d
+
+% 1 1 0 1b6d371a171f07e80a7686a4a5ecedd6
+
+% 3 1 0 061dea348523f433045adc99da006969
+
+% 4 1 0 097e4f88005d6b1d10a18cb6b3c097a6
+
+% 5 1 0 1f59e9eab05f2b7b0d5014c4b381e07d
+
+% 0 1 0 141aa914cc85d2ba18f3063adf07bb9c
+
+% 1 1 0 025a8f2a135c61c505e514d4fa7786b8
+
+@ 0 1 0 05dc60ec41354b140fd2bfd91786fcc7
++ ### Riferirsi alle celle per nome
+
+@ 0 3 0 0fbbee0ed1b7dbe10a86f930f1e2cf49
++ Con l'accesso dinamico abilitato, una cella di una riga che ha un'intestazione si legge come un
++ membro con nome, e si decodifica nel tipo richiesto. Una *ridesignazione* nell'ambito dice come il
++ nome di un membro diventa un'intestazione. `unchangedRedesignation` usa il nome così com'è:
+
+% 2 1 0 0deac79546734d8f0e60fc5bbd3b2e50
+
+% 0 1 0 1cc9d33040ca74631c6d1b575b675602
+
+% 0 1 0 13280a4d3f6fa08d17c3b0fe2186374f
+
+% 1 1 0 17f15212be063e6f1cca8b912a970a1c
+
+% 0 1 0 01a9d11531a355801aea02e2245f3cd8
+
+% 0 1 0 1a4b1af0cfcc365708c75c7c3b009aca
+
+% 1 1 0 0e1ee6ca2231f24d07770ba888d37bbb
+
+@ 0 2 0 1c778b687f095be7113d3b7dabcffa7f
++ I nomi delle colonne in un file raramente somigliano ai nomi di Scala. Un'altra ridesignazione fa
++ da ponte tra le due convenzioni, così il membro `targetPerson` legge la colonna intitolata
++ `Target Person`:
+
+% 2 1 0 01f21e64c5fc94620b6a56857807d6f4
+
+% 0 1 0 08829e589763b2fa03a4555fdd5a8dda
+
+% 1 1 0 16f10a73063690160eb6788e5c38dca7
+
+% 0 1 0 1c3ae67c4375d3120b992eea5601743b
+
+% 0 1 0 08bd95f71d0e0a3111fb196a1a1d06bb
+
+% 1 1 0 0181ab3ffd27db720bf592033770a72a
+
+% 3 1 0 130076c48e0b91ee010a7186f5399724
+
+% 4 1 0 0fd1991b3cf699590220155ff84af85c
+
+% 5 1 0 1a9f8b602c686d871c0a921bffdab794
+
+% 0 1 0 1f7ae5af0e4335d00927553ae86ec3d8
+
+% 0 1 0 1f404ba1fdd32d24092293c052e19147
+
+% 1 1 0 06d1c761332d23de0130c2e559d0c6c3
+
+@ 0 2 0 1dc88d36729addd90ec2365cd358be88
++ Ogni ridesignazione nel package `dsvRedesignations` dà al membro `targetPerson` questa
++ intestazione:
+
+% 2 1 0 1323c6e426bcc6890bd559acbd167766
+
+@ 0 2 0 0ec413af15aff00919c0e905344e25c8
++ column  Ridesignazione
++ column  Intestazione
+
+% 0 1 0 03748be03d5e81591e650b306710113c
+
+% 0 1 0 02da12893b8df09d067ea010d545aab8
+
+% 0 1 0 126a7eb8b8c0b17d08165a52e7fb115d
+
+% 0 1 0 1951601e7857fb5015d136cb759713d4
+
+% 0 1 0 04a4b50357ec812713e5d579e2c2ef18
+
+% 1 1 0 09f5c00c08d6188f04533c8b6dd19dad
+
+@ 0 1 0 0a6e888821ec6d8311a17ed49f54c531
++ Senza una ridesignazione nell'ambito, una cella non si può leggere per nome:
+
+% 2 1 0 18e368a62a713b941990343d3d1c6ab8
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 1a7943dd627c3c3518a2025aebdffb13
+
+% 1 1 0 015fe53f42fcfd0d182ff88c1f13f196
+
+@ 0 4 0 0df7b898ea2170c1195f43dc4e03047c
++ L'import di `dynamicDsv` concede l'abilitazione `Dsv is Dynamical` al resto del suo ambito.
++ `dynamically[Dsv]:` la concede invece a un singolo blocco, come descrive
++ [JSON](json.md#fields-as-members). Un campo di una case class il cui nome differisce dalla sua
++ intestazione si rinomina con [`@name`](json.md#renaming-fields).
+
+@ 0 1 0 1ef7b8023aacb1780627fa021478ab84
++ ### Segnalare ogni cella errata
+
+@ 0 5 0 1f150d871f4446551ec81fdf1cc9132a
++ Un foglio di calcolo esportato da altrove raramente è sbagliato in un solo punto, e un decoder che
++ si ferma alla prima cella errata rende la correzione una serie di tentativi. Con una strategia che
++ [accumula i fallimenti](errors.md#accumulating-failures), ogni cella che fallisce viene segnalata,
++ le celle mancanti e quelle non analizzabili insieme. Ciascuna è identificata dalla sua colonna,
++ quindi un solo passaggio su un file fornisce l'intero elenco di ciò che va corretto.
+
+@ 0 3 0 0211b09b88636cf8130cff7fc9f8fa72
++ L'accumulo è un valore scelto dal chiamante, qui un errore che raccoglie ogni difetto con la
++ colonna in cui è stato trovato. `Validate` dice come ogni difetto vi si unisce, ed è focalizzato
++ sul `CellRef` che il decoder stava leggendo:
+
+% 2 1 0 154c8e75825f779114ddabb26339efa3
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 163375f111fa9a6812c559a4dfa968e3
+
+% 0 1 0 01f8e8ff0b2ce07d1e598d2b9bdfb45c
+
+% 0 1 0 1d3a59e65fcbdf140fa0a72dc1f0c9fd
+
+% 0 1 0 0965f99efea16faf1f803bfe3ab3fdd8
+
+% 0 1 0 033c48d8fe3380f21cf0cf4cb9eca2b6
+
+% 1 1 0 075a94b94442c6e602b102440c7c1150
+
+% 0 1 0 0dfe854eaee6ff300ce52bc585f547f1
+
+% 0 1 0 1274ef776a68ec3e09ff6526edf9bdb9
+
+% 0 1 0 1b7856209f71157f0292ee57c80137ba
+
+% 0 1 0 1c9d6fd014872435089b50dfe962343a
+
+% 0 1 0 02a42cb4274e0f040dfa9e47606ae606
+
+% 0 1 0 19515b4e6e73adb11045115917c906a8
+
+% 0 1 0 01a60fd9533fe87e022fd5e71a9c9a65
+
+% 1 1 0 0af70766c985a44018b4a04cbe0d202d
+
+% 3 1 0 1b2c594c88b742ab15b41ef0a08a3a21
+
+% 4 1 0 1893869b0af0de75140199519c5c9d55
+
+% 5 1 0 0a760e76562031111f2a20236d30dc73
+
+% 0 1 0 1c1a7f182eec9327094a0c8b889127ac
+
+% 0 1 0 08e5a6c24ba00b5c173cf82f0d0c05ac
+
+% 1 1 0 1c1b2078c9d7e8ce11ac20631a43382b
+
+@ 0 1 0 1e17a01edd469f4d1c982026e3272de9
++ ### Parsing diretto in un tipo
+
+@ 0 3 0 0f60cae25f1399ba00b64de2f9254ea9
++ Costruire un `Dsv` per ogni riga, solo per decodificarlo e buttarlo via, è lavoro sprecato. Un
++ tipo con un'istanza di `Dsv.Parsable` viene analizzato direttamente dalla sorgente. Le sue celle si
++ leggono sul posto, dal buffer del parser, e nessun valore di riga viene costruito:
+
+% 2 1 0 0b9a7d158553954804b1551e7eaa4f5b
+
+% 0 1 0 059786a217ad99d3090f5e656be728f4
+
+% 0 1 0 1e7afeeb7c69e8a40e6a06a2cf5a5d82
+
+% 1 1 0 03304c8a5fa5e97f0fc4917ebb31169f
+
+% 3 1 0 1a7d859251ba9753174bf12288b868f0
+
+% 4 1 0 07522de2fcc887631ee9b15fc8be34d2
+
+% 5 1 0 0096d91469d60ca80fe2851d37cd46b0
+
+% 0 1 0 01a486e2f3c3c32a112a1e760546064c
+
+% 0 1 0 0652a3d4cb9cc4b60f812260c3f14574
+
+% 1 1 0 1a09716028166b970c119d852a4b87cf
+
+@ 0 1 0 1bb93b9496107af70b1504dd6b4507e6
++ Uno stream fornisce i record allo stesso modo, tramite `rowsOf`:
+
+% 2 1 0 0125f5a2820e99ad077ee75dde3f58da
+
+% 3 1 0 050f8db97618e54419677581b836439a
+
+% 4 1 0 0b45b1ab76521b360b47e1f08bde9664
+
+% 0 1 0 116ce2b3acbf019714ded8f41209e97d
+
+% 1 1 0 110e482bcd7b3fae12ee77bfafd5e000
+
+@ 0 2 0 1a6b07b9a011928a1891c14812bc4cb0
++ I campi si fanno corrispondere per nome di intestazione dove il formato ha un'intestazione, e per
++ posizione dove non ce l'ha. Un campo `Optional` che la riga non raggiunge è `Unset`, non un errore.
+
+@ 0 2 0 03ea0f1e002e86e30a6f3168a54cdb5a
++ L'import di `codecs` che seleziona il percorso per ogni altro formato lo seleziona anche per il
++ testo delimitato:
+
+% 2 1 0 126717d0af8fede31b43148594b04c9d
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 5 0 1c627a6097cbe028108fef9b340ed622
++ column  Per un prodotto
++ column  Per qualsiasi altro tipo
++ row  `codecs.direct`  analizzato direttamente, senza istanza dichiarata  il decodificatore di righe, a meno che abbia un `Dsv.Parsable`
++ row  `codecs.derived`  il decodificatore di righe, anche dove un `Dsv.Parsable` è nell'ambito  il decodificatore di righe
++ row  `codecs.strict`  analizzato direttamente, senza istanza dichiarata  un errore di compilazione che nomina il tipo, a meno che abbia un `Dsv.Parsable`
+
+% 1 1 0 13d199c84d68d92007fe730848f98c36
+
+@ 0 2 0 107a98555161205d03b365cd18fb8db6
++ Le modalità sono alternative, quindi se ne importa una alla volta. Leggere una `List[Play] in Dsv`
++ è diretto in ogni modalità, poiché il decodificatore di righe non ha un corrispettivo per un intero
++ sheet.
+
+@ 0 4 0 1fcfc44ce8b2102b1f057d6dbe6c71b4
++ Ogni campo di un prodotto analizzato direttamente legge una cella tramite la sua istanza di
++ `Decodable in Text`, oppure è a sua volta un prodotto di tali campi. Un campo che ha solo
++ un'istanza di `Decodable in Dsv` mantiene il suo tipo sul decodificatore di righe: non si dichiara
++ alcun `Dsv.Parsable` per il tipo, e non si importa alcuna modalità.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 5 0 18774b3c18ad653212b11d2266efe7d1
++ - [Tabelle](tables.md) dispone righe di dati da visualizzare in un terminale.
++ - [Decodifica](decoding.md) descrive le istanze di `Decodable in Text` che leggono ogni cella.
++ - [JSON](json.md) e [YAML](yaml.md) decodificano documenti annidati con la stessa derivazione.
++ - [Stream](streams.md) tratta le sorgenti da cui leggono `rows` e `rowsOf`.
++ - [Derivazione](derivation.md) spiega come una riga si decodifica in una case class senza un'istanza scritta a mano.

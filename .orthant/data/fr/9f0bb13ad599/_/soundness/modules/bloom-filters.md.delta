@@ -1,0 +1,8 @@
+orthant 2 language
+
+@ 0 4 0 0d12584f3176092d189938948043cdd6
++ Toute valeur [hachable](hashing.md#hashing-your-own-types) peut être ajoutée, et
++ l'algorithme de hachage se choisit comme un type. Un filtre peut être rempli sur place tant
++ qu'il est neuf, puis il est gelé. Un filtre gelé est [immuable] : `+` et `++` donnent un nouveau
++ filtre et laissent l'ancien inchangé ; les filtres gelés se partagent et s'accumulent donc aussi
++ sûrement que n'importe quelle autre valeur.

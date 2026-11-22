@@ -1,0 +1,1627 @@
+orthant 2 language
+
+@ 0 1 0 0331bbf45b2df7d50929d40d79ef2eb7
++ # Mudanças desde 0.68.0
+
+@ 0 3 0 11d8496c469f225c1506c69312aac5ae
++ Este arquivo é lido por um agente LLM para atualizar, de 0.68.0 para a próxima release, o código
++ que consome bibliotecas Soundness. Cada entrada declara com precisão o que mudou; veja
++ `AGENTS.md` para o formato. As entradas são agrupadas por módulo, com as acrescentadas mais
++ recentemente por último dentro de cada módulo.
+
+% 0 1 0 1eecc11d4eed23d30cc8cf10b4de468a
+
+@ 0 17 0 1e400e6d965a7de114b68b9f0f1b5344
++ - `anticipation.Termcap` ganhou `def height: Int = Int.MaxValue` ao lado de `width`, com o
++   mesmo significado para linhas que `width` tem para colunas: `Int.MaxValue` quando a altura é
++   desconhecida ou ilimitada. Uma implementação que já declara um membro chamado `height` deve
++   marcá-lo como `override`. (#2064)
++ - O módulo `anticipation.html` foi removido, junto com `anticipation.GenericHtmlAttribute[-value]`
++   (membros `type Self <: String & Singleton`, `def name: Text`,
++   `def serialize(value: value): Text`) e seu export `soundness.GenericHtmlAttribute`. Nada
++   consumia a classe de tipos; o `Attribute` do honeycomb é a classe de tipos de atributos HTML.
++   (#2082)
++ - Mudança de comportamento: o given `anticipation.Checkable.stream` (`Chain[left] is Checkable against
++   Chain[right]`) agora exige que as duas chains tenham o mesmo comprimento; antes, ele comparava
++   elemento a elemento ao longo da chain mais curta, de modo que `Chain(1, 2) === Chain(1)` era
++   `true` e agora é `false`. `anticipation.check` não depende mais de `rudiments.core`. (#2082)
++ - `tarantula.Focusable` foi movido para `anticipation.Focusable` (novo módulo
++   `anticipation.focus`, no bundle `base`; `soundness.Focusable` agora vem do anticipation). Os
++   membros não mudaram (`def strategy: Text`, `def focus(value: Self): Text`, a factory
++   `Focusable(strategy, focus)`), e agora ele é um `Typeclass.Pure`. Suas instâncias foram
++   movidas para os objetos companheiros dos tipos sujeitos: `Text` (`Focusable.text`),
++   `honeycomb.Tag.focusable: [tag <: Tag] => tag is Focusable`,
+
+% 0 1 0 01880fb451459e7e092065ba875b6918
+
+% 0 1 0 1479b12863a0870a02950ecd8beb09dc
+
+@ 0 5 0 0910bf59bc395eb906b534f093028842
++   e `xylophone.XPath.focusable`; `tarantula.Focusable.{text, tag, domId, cssClass, selector,
++   xpath}` não existem mais. Os critérios de seleção e as renderizações não mudaram. (#2082)
++ - Novos módulos `anticipation.net` (`anticipation.EmailAddresses`, `anticipation.Hostnames`,
++   `anticipation.IpAddresses`, marcadores de domínio selados como `anticipation.Urls`) e
++   `anticipation.uuid` (`anticipation.Uuids`), ambos no bundle `base` e exportados a partir de
+
+% 0 1 0 087883ceb2e434ec11661c38f286ee39
+
+% 0 1 0 0f65516622e01f5401b594a2ce4c1b1b
+
+@ 0 1 0 1843429c793823d602e4c1dc84f3da96
++ - Os givens `apoplexy.OpenApi.Parameter.decodableYaml: (Tactic[Yaml.Error],
+
+% 0 1 0 1dbbc8c95053ad5a025028b1754d8e45
+
+@ 0 1 0 002277c419e1691f01f6ec252f89d879
++   `apoplexy.OpenApi.Operation.decodableYaml` (idem, para `Operation`) e
+
+% 0 1 0 01b293fdffd4ce351d30e602432dad35
+
+@ 0 4 0 031741a214e84205077c0d1806a5afc9
++   JsonSchema is Decodable in Yaml` foram removidos. Um documento YAML é lido traduzindo-o para
++   JSON com o novo `apoplexy.OpenApi.json(yaml: Yaml): Json` e decodificando o resultado; em
++   consequência, os valores `enum` de um schema em um documento YAML agora são mantidos (antes
++   eram descartados). (#2091)
++ - `apoplexy.OpenApi.Operation.parameters: List[OpenApi.Parameter]` passou a ser
+
+% 0 1 0 1d7f5702daee7e1b1d69c6a152b032f1
+
+@ 0 11 0 067b98680c24cf7606958dab1d23a2a2
++   passou a ser `Optional[Referable[RequestBody]]`, `Operation.responses: Map[Text, Response]`
++   passou a ser `Map[Text, Referable[Response]]`, e `OpenApi.PathItem.parameters: List[Parameter]`
++   passou a ser `List[Referable[Parameter]]`, em que `type Referable[value] = value | OpenApi.Ref`
++   e `case class Ref(pointer: JsonPointer)` é um `$ref` deixado sem resolver. A extensão
++   `Operation#response(status: Http.Status)` agora retorna `Optional[Referable[Response]]`. Uma
++   nova extensão `[value <: Parameter | Response | RequestBody: OpenApi.Componental]
++   (referable: Referable[value]) def apply()(using OpenApi): value raises OpenApi.Error` resolve
++   uma referência para `#/components/{parameters,responses,requestBodies}/…` (lançando
++   `Reason.UnresolvableRef` ou `Reason.UnsupportedRef` caso contrário). Antes, um parâmetro `$ref`
++   falhava ao ser decodificado, e uma resposta ou um corpo de requisição `$ref` era decodificado
++   como um objeto vazio. (#2091)
++ - `apoplexy.OpenApi.Components(schemas: Map[Text, JsonSchema])` ganhou os campos finais
+
+% 0 1 0 11f8d72c30a0066a04624b31ee54edd9
+
+% 0 1 0 033a3aba8263501b18f2da2228eb8051
+
+@ 0 31 0 11594867eee806cc1c85e34895c1a49a
++   `OpenApi.Server(url, description)` ganhou `variables: Map[Text, OpenApi.ServerVariable] =
++   Map()` (nova `case class ServerVariable(default: Text, enum: Optional[List[Text]] = Unset,
++   description: Optional[Text] = Unset)`) e um método `resolved: Text` (a URL com cada
++   `{variable}` em seu valor padrão); `apoplexy.Api.Request(method, base, path, substitutions, query,
++   body)` ganhou um `headers: List[(Text, Text)] = Nil` final. Os padrões posicionais ganham
++   elementos. (#2091)
++ - Mudança de comportamento nas macros de `apoplexy.Api`: os próprios `parameters` de um item de
++   caminho agora se aplicam a todas as operações sobre ele (antes eram ignorados, de modo que um
++   parâmetro de caminho no nível do caminho era tipado como `Text` e um parâmetro de query no
++   nível do caminho era rejeitado como desconhecido); um argumento nomeado pode preencher um
++   parâmetro `in: header`, que é enviado como cabeçalho da requisição (antes era rejeitado);
++   `head`, `options` e `trace` são verbos navegáveis como `get`; entre várias respostas 2xx,
++   `200` é preferida, depois `201`, depois a menor (antes, a menor em ordem lexicográfica); um
++   schema de parâmetro ou de resposta com `type: integer` e `format: int64` é tipado como `Long`
++   (um argumento `Int` ainda é aceito; `call[T]()` aceita campos `Long` ou `Int` para qualquer
++   schema inteiro, e `Float` ou `Double` para um número); a primeira URL de `servers` da
++   especificação tem suas `{variables}` substituídas por seus valores padrão. Novo
++   `Api(resource, base: Text)`: `base` é prefixado a uma URL de servidor relativa (`/api/v3`) e
++   substitui uma absoluta. (#2091)
++ - `apoplexy.Api.Body.Json(value: jacinta.Json)` e `Api.Body.Xml(value: xylophone.Xml)` foram
++   removidos; `Api.Body` agora é `Empty | Content(mediaType: Text, spring: Spring[Data])`,
++   construído por
++   `Api.Body.content[carrier](mediaType: Text, value: carrier)(using carrier is Postable)`. O
++   formato do corpo da requisição vem do tipo de mídia que a especificação declara, por meio do
++   `gesticulate.Construable` no escopo para ele (veja abaixo), e seus bytes vêm do
++   `telekinesis.Postable` desse portador, que deve estar no escopo onde a chamada é escrita
++   (`import
++   postables.jsonPostable` para JSON, com o `Codepage` e o `Json.Formatting` de que ele
++   precisa; `postables.xmlPostable`, novo no módulo `xylophone.http`, para XML). Antes, os corpos
++   JSON e XML eram serializados com padrões embutidos e sem imports. (#2091)
++ - `apoplexy.Api.send(request: Api.Request, accept: Text)(…)` passou a ser
++   `send(request: Api.Request)(…)`; o cabeçalho `accept` vem do novo campo
++   `Api.Request.accept: Optional[Text] = Unset` (um campo final; os padrões posicionais ganham um
++   elemento), que a macro `invoke` define como o tipo de mídia como o qual a resposta é
++   interpretada. (#2091)
++ - Os givens `apoplexy.Conformant.json: (Json is Conformant) over Json`, `Conformant.xml: (Xml is
+
+% 0 1 0 02644309f7d0e87b09026e2bb4ee33a4
+
+@ 0 2 0 14fecce0a2ea318801429fd66215c047
++   (value is Conformant) over Json` e `LowPriorityConformant.xmlDecodable` foram removidos, e com
++   eles o trait `apoplexy.LowPriorityConformant`. Substitutos, genéricos no portador:
+
+% 0 1 0 08d237a2136dd5691cb96786d05350aa
+
+% 0 1 0 12b81090c2c8e25f004124a5b9dac819
+
+% 0 1 0 12ef39663e792dc81a741b03fdce1891
+
+@ 0 26 0 1a9a872fdcfe52a30ff3707dcae99bd7
++   carrier) => (value is Conformant) over carrier` e `Conformant3.decodableText` (o gêmeo
++   `by Text`). Um corpo malformado agora lança o próprio erro de análise do portador (por
++   exemplo, `zephyrine.Parse.Error` ou `jacinta.Json.Error`), em vez de
++   `Api.Error(Reason.Malformed)`. (#2091)
++ - Mudança de comportamento: `apoplexy.Api.Response#call()` sem argumento de tipo antes sempre
++   retornava `Unit`; agora retorna o `Transport` da resposta: o tipo portador como o qual o tipo
++   de mídia da resposta na especificação é interpretado (`Json` para `application/json`,
++   `Raster in Png` para `image/png`, …), `Unit` quando a resposta de sucesso da operação não
++   declara conteúdo, ou o `Http.Response` bruto (com um aviso em tempo de compilação) quando nada
++   no escopo interpreta o tipo de mídia. Seu parâmetro de contexto `value is Defaulting to Unit`
++   passou a ser `value is Defaulting to
++   Transport`. O membro `Transport` de `Api.Response` agora é esse tipo portador, e não apenas
++   `Json` ou `Xml`; `Api over Json`/`over Xml` nos tipos de navegação não mudaram. (#2091)
++ - As macros de `apoplexy.Api` agora decidem o tipo de mídia de uma operação de acordo com os
++   givens `gesticulate.Construable` que estão no escopo: para cada tipo de mídia que a
++   especificação oferece (`application/json` primeiro, depois por nome; um sufixo de sintaxe
++   estruturada como `application/problem+json` recai em `application/json`), a macro procura um
++   given `(<media> is Construable)`. Por isso, código que chama uma API JSON deve fazer `import
++   construables.jsonConstruable` (módulo `jacinta.http`), e uma API XML,
++   `construables.xmlConstruable` ou `textXmlConstruable` (módulo `xylophone.http`); sem um deles,
++   uma resposta é lida como o `Http.Response` bruto e um corpo de requisição é um erro de
++   compilação. Antes, `application/json`, `application/xml` e `text/xml` eram reconhecidos
++   incondicionalmente e todos os outros tipos de mídia eram tratados como JSON. (#2091)
++ - O módulo `apoplexy.core` agora depende de `xylophone.http` e `ypsiloid.http` (módulos novos,
++   ambos no bundle `web`) em vez de `xylophone.core` e `ypsiloid.core`. (#2091)
++ - O módulo `apoplexy.core` agora também depende de `polyvinyl.core`; os novos
++   `apoplexy.Api.Records` (um `Json.Provider.Primitives`) e
++   `Api.jsonOf(response: Http.Response)(using Tactic[Parse.Error]):
++   Json` dão suporte aos novos `Api.Response#record()` e `#tuple()`. (#2091)
+
+% 0 1 0 03e8006b1ba2628e11be9d5cc79b64e2
+
+% 0 1 0 08ad58cba52e302113a5dd5469a87314
+
+@ 0 1 0 00961a81dceac46a048f0e3751fc496b
++   passou a ser `Request(method: Http.Method, base: HttpUrl, path: Text, substitutions: Map[Text, Text] =
+
+% 0 1 0 15edbf2879635c4505e73eb94966caa4
+
+% 0 1 0 050dd1bf5ca38017192569817817f342
+
+@ 0 2 0 1adf6a07bce5512d055963ebe4b08013
++   Text, spring)` passou a ser `Content(mediaType: MediaType, spring)` e `Api.Body.content` recebe
++   um `MediaType`; `Api(resource, base: Text)` passou a ser `Api(resource, base: HttpUrl)`;
++   `Api.send(request)
+
+% 0 1 0 091e4f7465de3a8d161545029994ae01
+
+@ 0 28 0 07c8122d22517ea604e51a19a6040787
++   perdeu seu `Tactic[Url.Error]` (a URL é construída, não analisada). Novo
++   `Api.extend(base: HttpUrl,
++   server: Text): HttpUrl`. Comportamento: uma especificação cuja primeira URL de servidor está
++   ausente, é relativa ou não é uma URL válida agora é um erro de compilação em `Api(resource)`,
++   a menos que `base` seja fornecido (antes, a base era o texto bruto e falhava no momento do
++   envio); uma substituição de caminho agora é codificada com percent-encoding (um espaço como
++   `%20`). (#2091)
++ - `apoplexy.Api.Error(reason: Api.Error.Reason)`, com `Reason.Status(code: Int)` e
++   `Reason.Malformed`, foi substituído por uma hierarquia selada:
++   `sealed abstract class Api.Error[+payload]
++   (val status: Http.Status, val payload: payload)(using Diagnostics)` (`SN-914.1`), com uma case
++   class por status que o telekinesis nomeia fora do intervalo 2xx —
++   `Api.BadRequest[+payload](payload)`, `Api.NotFound[+payload](payload)`, …
++   `Api.NetworkAuthenticationRequired[+payload](payload)`, cada uma fixando `status` —, além de
++   `Api.Informational[+payload](status, payload)`, `Api.Redirection`, `Api.ClientError`,
++   `Api.ServerError` (as chaves de intervalo `1XX`–`5XX`, e um status numerado que o telekinesis
++   não nomeia) e `Api.OtherError[+payload](status, payload)` (`default`); o payload é covariante
++   para que a verificação de exaustividade do compilador cubra uma união deles; e
++   `case class Api.Violation(status: Http.Status, body: Data)(using Diagnostics)` (`SN-914.2`)
++   para um status que a operação não declara. `Api.Response` ganhou os membros de tipo `Locus`,
++   `Verb` e `Failure <: Hazard`, este último definido por operação pelas macros como a união dos
++   tipos de erro que suas respostas de erro declaradas lançam (`Nothing` quando não declara
++   nenhuma); o payload de cada um é um `Record` do polyvinyl tipado pelo schema de erro
++   (referências seguidas até dois níveis de profundidade; membros restritos relaxados para seus
++   tipos simples) para um objeto JSON ou um array de objetos; senão, o portador do tipo de mídia;
++   senão, `Text`; ou `Unit` para uma resposta sem corpo. `call()`, `record()` e `tuple()`
++   convocam, onde são escritos, uma `Tactic` para cada membro de `Failure` e uma
++   `Tactic[Api.Violation]`, além de um `Diagnostics`, e lançam o erro correspondente ao status da
++   resposta (primeiro o status exato, depois o intervalo, depois `default`, senão `Violation`);
++   uma `Tactic` ausente é um erro de compilação que nomeia o tipo de erro. Novos
++   `Api.Response#attempt[value]()`, um `Attempt[value, Failure]` sobre os erros declarados, e
++   `Api.Response#ensure(response)`. Os givens `Conformant` (`carrier`, `carrierText`,
++   `decodable`, `decodableText`, `unit`) não recebem mais uma `Tactic[Api.Error]` e não verificam
++   mais o status; `Conformant.successful` foi removido.
+
+% 0 1 0 17091bc64ba8401f0ccf2e436f356315
+
+@ 0 16 0 1b061077cd86a53d12faeb060cec4b8c
++ - `apoplexy.OpenApi.Components` ganhou `securitySchemes: Map[Text, OpenApi.SecurityScheme] =
++   Map()`, `OpenApi.Operation` ganhou `security: Optional[List[OpenApi.Requirement]] = Unset` e
++   `OpenApi` ganhou `security: List[OpenApi.Requirement] = Nil`, em que `type Requirement =
++   Map[Text, List[Text]]` e `case class SecurityScheme(type: Text, description, name, in,
++   scheme, bearerFormat, flows: Optional[SecurityScheme.Flows], openIdConnectUrl)`, com `def kind:
++   SecurityScheme.Kind` (`ApiKey | Http | OAuth2 | OpenIdConnect | MutualTls | Unknown`). Os
++   padrões posicionais ganham elementos. Mudança de comportamento nas macros de `Api`: uma
++   operação com requisitos de segurança (os seus próprios, senão os do documento) agora precisa,
++   onde é invocada, de um given `orthodoxy.Credential` nomeado para cada esquema de uma
++   alternativa — `("name" is Credential
++   to Text)` para um esquema `apiKey`, `to Auth` para `http`, `to Authorization` (ou `Auth`) para
++   `oauth2`/`openIdConnect` —, senão não compila; a credencial é apresentada como o esquema
++   determina (cabeçalho, parâmetro de query, cookie ou o cabeçalho `authorization`), e um token é
++   verificado contra os escopos do requisito à medida que a requisição é construída, lançando
++   `OAuth.Error` (o que exige uma `Tactic[OAuth.Error]` no local da chamada para um requisito
++   com escopos). Antes, a segurança era ignorada. Novos `Api.apiKey`, `Api.cookieKey`,
++   `Api.httpAuth`, `Api.tokenAuth`. O módulo `apoplexy.core` agora depende de `orthodoxy.core`.
++   (#2091)
+
+% 0 1 0 0a4cdd5273865dd7126f966067eddb4e
+
+@ 0 2 0 031f56cb3cb1891205673253834e33d0
++ - O given `caduceus.Sendable.htmlDoc: (dom: Dom, monitor: Monitor, probate: Probate) =>
++   (Document[Html] is Sendable)^{monitor}` foi substituído por `Sendable.document: [document: Media] =>
+
+% 0 1 0 02c875ecbfc6e21e0efbc4a99873ef22
+
+@ 0 6 0 1dbd952b422f6add159abe84abb9e54c
++   que envia um documento `text/html` como `Email.Body.HtmlOnly` e qualquer outro como
++   `Email.Body(text)`. `Document[Html]` ainda é resolvido por meio de `Html.media` e
++   `Html.streamable` do honeycomb (este último precisando de um `Monitor` e de uma `Probate` no
++   local de uso, como antes); um `Dom` não é mais exigido. `caduceus.core` agora depende de
++   `gesticulate.core` e `turbulence.core` em vez de `honeycomb.core`, de modo que um consumidor
++   que alcançava o honeycomb (ou o parasite) apenas por meio do caduceus deve declará-lo. (#2082)
+
+% 0 1 0 0a2330b2780f03b71aba65d339a6e0e3
+
+@ 0 2 0 15d2130d5f27172d1a957fa3e34baf4f
++ - `cartouche.core` não declara mais uma dependência de `hypotenuse.core` (ela ainda chega de
++   forma transitiva por meio de `capricious.core`). (#2082)
+
+% 0 1 0 02c92e6303dfc9ad1a801cd1587ac61f
+
+@ 0 2 0 0e469750118b16c106bee7e6510accae
++ - Os givens `cataclysm.Css.Convertible.srgb: Srgb is Css.Convertible of "color"` e
++   `Css.Convertible.chroma: Chroma is Css.Convertible of "color"` foram substituídos por um único
+
+% 0 1 0 0ef62efb5c09ffa00f79b172311d6e33
+
+@ 0 21 0 0f40d717b9c291980b466652263892ac
++   "color"`, que apresenta qualquer cor com uma instância de `Chromatic` para ela ou para um
++   supertipo (toda forma de cor do iridescence, por meio de `Color.chromatic`, e o próprio
++   `Chroma`) como um trio no estilo `#00ff88`. Os valores `Srgb` são renderizados de forma
++   idêntica. `cataclysm.core` depende de `anticipation.color` e não mais de `iridescence.core`;
++   um consumidor que alcançava o iridescence apenas por meio do cataclysm deve declará-lo.
++   (#2082)
++ - `cataclysm.core` não distribui nem lê mais os recursos de classpath
++   `/cataclysm/properties.json` e `/cataclysm/syntaxes.json`: as tabelas de propriedades e de
++   sintaxe do MDN são compiladas em tabelas de strings (`cataclysm.CssData`, privada) em tempo de
++   build a partir de `lib/cataclysm/data`. O comportamento de `PropertyDef` e `SyntaxMatcher` não
++   mudou. `cataclysm.core` não depende mais de `jacinta.core` nem de `hellenism.core` e não é mais
++   marcado como exclusivo de JVM/JS; `cataclysm.html` (que lê folhas de estilo com `cp"…"`)
++   declara ele próprio `hellenism.core`. Um consumidor que alcançava o jacinta ou o hellenism
++   apenas por meio de `cataclysm.core` deve declará-lo. (#2082)
++ - O novo módulo `cataclysm.fonts` (no bundle `web`; dependências `cataclysm.core`,
++   `phoenicia.core`, `monotonous.core`, `anticipation.url`) agora contém a metade de fontes do
++   cataclysm: `cataclysm.Web` (com seus givens `Typesettable` de famílias genéricas),
++   `cataclysm.FontFace`, as extensões `style` sobre `phoenicia.Face` e `Font`, e
++   `Css.fontFace(font)`/`Css.fontFaces(fonts*)`, que agora são extensões sobre `Css.type`
++   definidas nesse módulo, e não métodos de `object Css` (os locais de chamada não mudam, dado
++   `import cataclysm.*` ou `import soundness.*`). O pacote e os nomes não mudaram; os exports de
++   `soundness` de `Web`, `FontFace` e `style` foram movidos para `soundness_cataclysm_fonts`.
++   `cataclysm.core` não depende mais de `phoenicia.core`, `monotonous.core` nem
++   `anticipation.url`; um consumidor que use qualquer um deles, ou a API de fontes, por meio de
++   `cataclysm.core` deve declarar `cataclysm.fonts` (o savagery e o tasseomancy agora o fazem).
++   (#2082)
+
+% 0 1 0 1281cf5693caddee047e57c2960f2348
+
+@ 0 11 0 056494f674ba36410f11c1d898c8e6b0
++ - `bitumen.Tar.Body` (a classe, `Tar.Body.apply(chunks: Data*)` e `Tar.Body.empty`) foi
++   renomeado para `bitumen.Archive.Body`, exportado a partir de `soundness` como `Archive`;
++   `Tar.Body` não existe mais. `Tar.Entry.File#data`, `Tar.Entry.Sparse#data` e o argumento
++   `data` de `Tar.Entry.apply` agora são tipados como `Archive.Body`. O comportamento não mudou.
++   (#2080)
++ - `bitumen.TarHeader` (a case class e seu objeto companheiro, com `blockSize`,
++   `checksumOffset`, `checksumLength`, `parse`, `verifyChecksum`, `decodeOctal`, `decodeNulText`
++   e `isZeroBlock`) foi renomeado para `bitumen.Tar.Header`; o nome de nível superior e seu
++   export em `soundness` foram removidos. As assinaturas e o comportamento não mudaram. (#2080)
++ - `bitumen.TarDataOpenable` foi renomeado para `bitumen.Tar.DataOpenable`; o nome de nível
++   superior e seu export em `soundness` foram removidos. O given `Tar.dataOpenable` agora produz
++   `Tar.DataOpenable^{tarTactic, streamTactic}`. As assinaturas e o comportamento não mudaram.
++   (#2080)
+
+% 0 1 0 1b963d061ec457af154e1006b71b17d4
+
+@ 0 9 0 043132e0c4585e0f1cde9b8a10150fb7
++ - `coaxial.Connection` ganhou um terceiro parâmetro de construtor, `peer: Optional[Text] = Unset`:
++   o nome principal do usuário que se conecta, tal como o kernel o informa (`SO_PEERCRED`), ou
++   `Unset` onde a plataforma ou o transporte não oferece nenhum. `Connection(in, out)` ainda
++   compila; os casamentos de padrões sobre `Connection(in, out)` devem vincular o terceiro
++   campo. (#2064)
++ - A extensão `DomainSocket#listenConnections` da JVM ganhou um segundo parâmetro em sua lista
++   de handlers, `ownerOnly: Boolean = false`: `listenConnections(handler, ownerOnly = true)`
++   define o modo do arquivo do socket como `0600` imediatamente após o bind (em um sistema de
++   arquivos com permissões POSIX), enquanto antes o socket vinculado sempre recebia a umask do
++   processo. As chamadas existentes `listenConnections(handler)` não mudaram. (#2064)
+
+@ 0 6 0 1a8aad1edaf57115012c4d00d5e6548c
++ - `coaxial.Trust` ganhou um quinto parâmetro de construtor, `pinned: Optional[Data] = Unset`: o
++   digest SHA-256 do único certificado de par que uma conexão aceita (veja
++   `TlsAcceptance#pinning`). `Trust(expired, selfSigned, hostname, anchors)` ainda compila; os
++   casamentos de padrões sobre `Trust(expired, selfSigned, hostname, anchors)` devem vincular o
++   quinto campo. `coaxial.Socket.Error.Reason` ganhou uma variante `Handshake` (número 4); os
++   casamentos exaustivos sobre `Reason` devem tratá-la. (#2092)
+
+% 0 1 0 0fbbcccf924d26c213f6a4fc8ac4c96d
+
+@ 0 6 0 194cdeaa846fa19502f3c212430008c2
++ - `corpuscular.Crc64.table: Array[Long]^{}` mudou de forma: agora contém oito tabelas de
++   slicing achatadas uma após a outra (2048 entradas, indexadas por `k*256 + n` para a fatia `k`
++   em `0 until 8`), enquanto antes era a única tabela byte a byte de 256 entradas. As primeiras
++   256 entradas são a mesma tabela byte a byte de antes, de modo que o código que a indexa por um
++   valor de byte não é afetado; o código que dependia de `table.length == 256` ou que iterava
++   sobre a tabela inteira deve usar `table.readable.take(256)`. Os resultados de
++   `Crc64.Accumulator` não mudaram.
+
+% 0 1 0 145763af4f1ed07f04ae07081edacae4
+
+@ 0 3 0 06a4b025c9c4405d074f1ba43ab2ba70
++ - A extensão `delicious.semantic` sobre `anthology.Notice` (`def semantic:
++   Optional[SemanticMessage]`, exportada como `soundness.semantic`) foi removida; escreva
++   `notice.markup.let(SemanticMessage.parse(_))`. `delicious.scala` não depende mais de
+
+% 0 1 0 1b7827e1e7df37481325231cdc78753b
+
+% 0 1 0 15965c13323b4da117df6152721cd841
+
+@ 0 2 0 0d61770a9659e89016cdda6fdf54dce4
++ - `dendrology.dag` não depende mais de `tessellate.core`; um consumidor de `dendrology.dag` que
++   usava nomes do tessellate sem depender de `tessellate.core` ou de `dendrology.tree` deve
++   declará-lo. (#2082)
+
+% 0 1 0 027a003138628fc617497a87b3252999
+
+@ 0 8 0 15d497b24ae276f7102bcb1adb1b5d52
++ - Mudança de comportamento: `digression.teletypeables.stackTraceTeletype` (e
++   `exceptionTeletype`, que delega a ele) agora renderiza a classe, o separador e o método de
++   cada stack frame como uma palavra contígua, e seu arquivo, os dois-pontos e a linha como
++   outra (`pkg.Tests.run()  Tests.scala:42`), enquanto antes cada um era uma coluna de tabela
++   separada, com uma célula em branco entre elas (`pkg.Tests . run()  Tests.scala : 42`). As
++   linhas continuam alinhadas no separador e nos dois-pontos: a classe e o arquivo recebem
++   preenchimento à direita até o mais largo do stack trace, e o método e a linha são alinhados à
++   esquerda. Um stack frame sem número de linha não renderiza dois-pontos. O código que casava
++   com o texto renderizado (por exemplo, `Tests.scala : 42`) deve esperar a forma contígua.
++   (#2052)
+
+% 0 1 0 1c4d783a18693f681e38c16afefeb132
+
+@ 0 6 0 1751711e848facc115a83fc40edd176e
++ - `distillate.Decodable.enumeration` (o given `enumeration is Decodable in Text` para subtipos de
++   `reflect.Enum`) agora lança `distillate.Enumerable.Error(inputLabel: Text, sum: Text,
++   validVariants: List[Text])` (`SN-900`), enquanto antes lançava `wisteria.Variant.Error` com os
++   mesmos três campos; seu requisito de `Tactic` mudou de acordo. `distillate.core` agora depende
++   de `contingency.core` em vez de `wisteria.core`, de modo que um consumidor que alcançava o
++   wisteria (ou o vicarious) apenas por meio do distillate deve declará-lo. (#2082)
+
+% 0 1 0 09df00b428737c7f1cf98680616b6f7e
+
+@ 0 5 0 0aa8d5a9cdbbbfe51558e8226001f735
++ - Aditivo, mas muda quais chamadas compilam: o given `enigmatic.SignatureAlgorithm.mlDsa:
++   [level <: 44 | 65 | 87: ValueOf] => MlDsa[level] is SignatureAlgorithm` faz
++   `Certificate.selfSigned` aceitar uma `PrivateKey[MlDsa[level]]` (antes, um erro de given
++   ausente). Ele escreve `id-ml-dsa-44/65/87` (`2.16.840.1.101.3.4.3.17/18/19`, sem parâmetros) e
++   ignora o `Signature.Digest` no escopo. Também é novo: `enigmatic.Certificate.issued[holder <: Cipher,
+
+% 0 1 0 0e10ded6fda84cb107e897dcdbe39c52
+
+% 0 1 0 15ccbfb80d87707f103f3a5699cfe1ea
+
+% 0 1 0 0c7bb42b54f05e6b0fd1302f16f8fac6
+
+% 0 1 0 153a1acbc449a1a61d94dafe27963ebb
+
+@ 0 2 0 01b14e5dafaf3b0e14864cbe2ef9eed2
++   Tactic[Certificate.Error], Tactic[Asn1.Error], Diagnostics): Certificate` (acrescenta uma
++   extensão `AuthorityKeyIdentifier`; a saída de `selfSigned` não mudou) e
+
+% 0 1 0 14018542333358701f71304f5d44a39d
+
+% 0 1 0 04daa58ccea9dafe1d5c6d33a68099d0
+
+@ 0 9 0 1965fdf73be6570c03621a3cafffbd95
++ - Mudança de comportamento: `enigmatic.PublicKey#verify` por meio do provedor do JDK
++   (`JavaBaseCrypto`: RSA, ECDSA, DSA e ML-DSA) agora retorna `false` para uma assinatura que o
++   JDK não consegue decodificar (comprimento errado, DER malformado, hints de ML-DSA fora do
++   intervalo), enquanto antes escapava uma `java.security.SignatureException`. (#2073)
++ - `enigmatic.Pem` (com `Pem.Label`, `Pem.Error`, `SN-389` e seus givens
++   `Decodable`/`Aggregable`) foi movido do módulo `enigmatic.core` para `enigmatic.asn1`; o
++   pacote e os nomes não mudaram, e `enigmatic.core` ainda o reexporta de forma transitiva por
++   meio de sua dependência de `enigmatic.asn1`. O export de `Pem` em `soundness` foi movido de
++   `soundness_enigmatic_core` para `soundness_enigmatic_asn1` (mesmo nome, `soundness.Pem`).
++   (#2082)
+
+% 0 1 0 1a0385b3986cc2ff1f54b94e98cd03bd
+
+@ 0 3 0 14b81c3a38a71f8d12114650e2bdb1ee
++   signature: Data, publicKey: Data): Boolean`) foi movido para `gastronomy.Signing` (módulo
++   `gastronomy.core`), e seu export em `soundness` foi movido junto (continua
++   `soundness.Signing`). `Rsa`, `Dsa`, `Ecdsa`, `MlDsa` e `HmacCipher` ainda o estendem. (#2082)
+
+% 0 1 0 154e8c2a4c3287e30895275cffbeafd7
+
+@ 0 2 0 0a9f919c049547d201f9ebe8a9d1fbf6
++ - `escapade.core` não depende mais de `mercator.core` nem de `zephyrine.core`; um consumidor que
++   alcançava qualquer um deles apenas por meio do escapade deve declará-lo. (#2082)
+
+% 0 1 0 07d3f5d0de80f0000d3a20dc61ea01c4
+
+@ 0 6 0 19a5d8797678e7a201215ff3a9aab1f2
++ - `ethereal.Stdin` foi renomeado para `ethereal.Terminus`, com seus casos `Terminal` e `Pipe` e
++   seus givens `Terminus is Decodable in Text` / `Terminus is Encodable in Text` inalterados. O
++   módulo guarda-chuva `soundness` exporta `Terminus` no lugar de `Stdin`. (#2046)
++ - O parâmetro `cliInput` de `ethereal.DaemonService` agora é tipado como `ethereal.Terminus` em
++   vez de `ethereal.Stdin`, e dois parâmetros foram inseridos depois dele, de modo que o
++   construtor agora é `DaemonService[bus <: Matchable](pid: Pid, shutdown: () => Unit, cliInput: Terminus,
+
+% 2 1 0 150ca5ee78b48e321c4145b3b6ebab5d
+
+% 0 1 0 158997de097ab0581ded1bd101f5380b
+
+@ 0 5 0 17044f6211012126012e2bc4e5945c98
++   setMode: Tty => Unit)`. `cliInput` ainda informa se o stdin do cliente é um terminal;
++   `cliOutput` e `cliError` informam o mesmo para seu stdout e seu stderr, o que um daemon não
++   consegue determinar por si mesmo. `DaemonService#cooked` ainda se baseia apenas em
++   `cliInput`. (#2046)
++ - O parâmetro `tty: Boolean` de `ethereal.Launcher.Message.Init` foi substituído por
++   `stdinTty: Boolean`, `stdoutTty: Boolean` e `stderrTty: Boolean` na mesma posição, de modo
++   que o caso agora é
+
+% 0 1 0 06b48e3b87f50e43081cd30210693f8c
+
+% 0 1 0 05b565a3705bc8c612dc36e915d12a35
+
+% 0 1 0 1abbdef88cafa6f90f420421d820a70f
+
+@ 0 16 0 1b6cbcdf2ed4d71310569eb010d1d492
++ - O schema de transmissão `ethereal-launcher` mudou de forma correspondente: o campo `tty` de
++   `record Init` passou a ser `stdin-tty`, `stdout-tty` e `stderr-tty`, e seus campos `argument`
++   e `environment` foram movidos dos índices 6 e 7 para 8 e 9. Por isso,
++   `ethereal.Launcher.signature` agora é
++   `eeced165c15f73119cf7710812671924aa558722927d29f37538e7b3953296c2ce`, antes
++   `4701ec19cd0fd3ecfc0e1b8a6525b4edc3a3b1deda370f681986db9aa39c1da692`. O launcher e o daemon
++   comparam as assinaturas em todo documento e recusam uma divergência, de modo que um daemon
++   construído contra esta release não se comunicará de forma alguma com um launcher do XEQ 0.6
++   ou anterior: todo executável empacotado com um `xeq` mais antigo deve ser reempacotado com o
++   `xeq` 0.7 ou posterior. (#2046)
++ - `ethereal.DaemonLogEvent.Failure`, antes um caso sem parâmetros, agora é
++   `case Failure(error: Text)`, carregando o `toString` do throwable que fez a invocação falhar.
++   Sua renderização `Communicable` mudou de "the connection handler failed" para
++   "the invocation failed: <error>". Os casamentos de padrões sobre `DaemonLogEvent.Failure`
++   devem vincular ou ignorar o parâmetro. Mudança de comportamento: uma invocação que lança um
++   `java.lang.Throwable` que não é uma `Exception` agora resolve o status de saída do cliente
++   por meio do `Backstop` (`Exit(2)` para todo backstop fornecido), enquanto antes deixava o
++   cliente esperando indefinidamente. (#2033)
+
+@ 0 11 0 0b4d7a99bc33087513fbef0f3dd77e8a
++ - O schema de transmissão `ethereal-launcher` é o do XEQ 0.8: `record Init` ganha `invoked-as`,
++   `umask`, `columns`, `rows`, `input-codepage` e `output-codepage` (índices 10–15; os campos
++   existentes mantêm os seus); `record Signal` ganha `columns`, `rows` e `deadline` (índices
++   2–4); `select Message` ganha as variantes `closed` (10) e `shutdown` (11); e `uid` é o
++   identificador de usuário da plataforma, um SID no Windows. Por isso,
++   `ethereal.Launcher.signature` agora é
++   `e50b7e82c11b06783dafa8a2ecc4e35f7ba31044ecd38fc5d9fe9e47a7c11e59e5`, antes
++   `eeced165c15f73119cf7710812671924aa558722927d29f37538e7b3953296c2ce`, de modo que um daemon
++   construído contra esta release só se comunica com um launcher do XEQ 0.8 ou posterior: todo
++   executável empacotado com um `xeq` mais antigo deve ser reempacotado. A fixação de `xeq` em
++   `etc/xeq.tsv` é 0.8. (#2064)
++ - `ethereal.Launcher.Message.Init` agora é `Init(pid: Int, uid: Text, username: Text, script:
+
+% 0 1 0 04a439564f94037405a06e9b60d3e0f7
+
+% 0 1 0 0c5dba3a78d1db7c1cfc4878f414f99b
+
+% 0 1 0 1585eee0c3a544d6147ccbc96746c0ce
+
+@ 0 2 0 04c74cac72be845d185de7e4a5f16f56
++   Optional[Int] = Unset, outputCodepage: Optional[Int] = Unset)`: `uid` era `Int`, e seis
++   parâmetros opcionais foram acrescentados. `Message.Signal` agora é `Signal(pid: Int, name: Text,
+
+% 0 1 0 1e6a69a83ec5c2c00cf389ca2bbf4475
+
+@ 0 4 0 0305bd6d6cb5c9600d5fe277b2ca3f12
++   Unset)`, antes `Signal(pid: Int, name: Text)`. Os casamentos de padrões sobre qualquer um dos
++   dois casos devem vincular ou ignorar os novos campos. Foram acrescentados os novos casos
++   `Message.Closed(pid: Int, stream: Text)` e `Message.Shutdown`; um casamento exaustivo sobre
++   `Message` deve tratá-los. (#2064)
++ - `ethereal.DaemonService` ganhou três parâmetros de construtor finais, de modo que agora é
+
+% 1 1 0 076672777554f3f21bff08991be3fec5
+
+% 2 1 0 13011da174fca8f212aec714ef08be0f
+
+% 0 1 0 0d96db12f7e6c47201c5a570c78be21f
+
+% 0 1 0 10fd1725cfa6c9d317f8e1617396c55f
+
+@ 0 21 0 056283cfa74e1264190729422be6d685
++   Optional[Umask])`. Ele agora também estende `galilei.Umask.Provider`, de modo que um
++   `DaemonService` no escopo torna convocável a `Umask` da invocação, e sobrescreve
++   `Entrypoint#retire()`. Seu thunk `shutdown` agora *esvazia* o daemon — nenhuma outra invocação
++   é atendida, as que estão em andamento terminam, e então o processo sai —, enquanto antes ele
++   saía assim que a invocação chamadora terminava, interrompendo qualquer outra em andamento.
++   (#2064)
++ - O daemon agora define seu socket com o modo `0600` e recusa uma conexão cujo usuário par,
++   tal como o kernel o informa, não seja o dono do socket, ou cujo documento `init` alegue um
++   `uid` diferente do próprio `ethereal.user.id` do daemon (lido como texto, antes como `Int`);
++   uma invocação recusada sai com status 2. Um daemon que responde a `verify` com um veredito de
++   desatualização agora se esvazia como no caso de `shutdown`, em vez de sair imediatamente,
++   por no máximo 30 segundos. (#2064)
++ - Mudança de comportamento: depois que o launcher informa que o stdout ou o stderr do cliente
++   perdeu seu leitor (`closed`), a próxima escrita da invocação nesse stream lança o novo
++   `ethereal.Outlet.Error(stream: Text)`, e uma invocação que o deixa escapar termina com status
++   de saída 141 sem consultar o `Backstop`; antes, essas escritas eram descartadas
++   silenciosamente e a invocação continuava. (#2064)
++ - `ethereal.DaemonLogEvent` ganhou os casos `PeerRefused(user: Text)`, `Draining`,
++   `Refused(pid: Pid)` e `Closed(pid: Pid, stream: Text)`; um casamento exaustivo deve tratá-los.
++   (#2064)
++ - O módulo guarda-chuva `soundness` exporta, além disso, `ethereal.Outlet` e
++   `ethereal.Transcoder`. (#2064)
++ - `ethereal.core` não depende mais de `telekinesis.jvm` nem de `urticose.url`; um consumidor que
++   alcançava o telekinesis, o urticose ou `legerdemain.query` apenas por meio do ethereal deve
++   declará-lo. (#2082)
+
+% 0 1 0 0dcece4e80bf175c0e1cc8af95d96f6e
+
+@ 0 11 0 01b7aef2293913a90764c6c94eda07bf
++ - `exoskeleton.Enclave.Launcher#sandbox` exige mais uma evidência, de modo que sua lista de
++   parâmetros de contexto agora é `(using Tactic[Enclave.Error], Tactic[Exec.Error], Tactic[Number.Error],
++   Tactic[Path.Error])`. O novo `exoskeleton.Enclave.Error(tool: Path on Linux)` é lançado quando
++   o daemon da ferramenta isolada responde à requisição `{admin} pid` sem saída; antes, esse caso
++   aparecia como um `distillate.Number.Error` vindo da decodificação da string vazia. (#2046)
++ - `exoskeleton.Enclave.Launcher#sandbox` agora mata o daemon e apaga os scripts de conclusão
++   instalados em toda saída do bloco, incluindo um aborto ou uma exceção lançada; antes, a
++   desmontagem só rodava quando o bloco retornava normalmente, deixando um processo daemon vivo
++   após uma falha. (#2046)
++ - `exoskeleton.Manpages.install(page: Roff, force: Boolean = false)` ganhou os givens
++   obrigatórios `ambience.Environment` e `ambience.System`, na segunda cláusula `using`:
+
+% 0 1 0 15b816e8f47eaec70bce361c6bf4c177
+
+@ 0 12 0 0e5d6202488884ee169e8b290bd09003
++   is Loggable)^)(using Tactic[Install.Error])`. Ele não importa mais por conta própria
++   `environments.javaBaseEnvironment` nem `systems.javaBaseSystem`. Os diretórios XDG agora são
++   resolvidos a partir do `Environment` dado, e não do da JVM. Um `exoskeleton.Cli` no escopo
++   fornece o `Environment` (por meio de `Environment.Provider`); `systems.javaBaseSystem` fornece
++   o `System`. (#2034)
++ - `exoskeleton.Completions.ensure(force: Boolean = false)` ganhou os givens obrigatórios
++   `ambience.Environment` e `ambience.System`: `(using Entrypoint^, Environment, System,
++   WorkingDirectory, Diagnostics)(using (CliEvent is Loggable)^)`, antes
++   `(using Entrypoint^, WorkingDirectory, Diagnostics)(using (CliEvent is Loggable)^)`. A mesma
++   resolução e a mesma semântica de `Manpages.install`. (#2034)
++ - `exoskeleton.Completions.install(force: Boolean = false)` ganhou os givens obrigatórios
++   `ambience.Environment` e `ambience.System`: `(using entrypoint: Entrypoint^)(using erased
+
+% 0 1 0 02e5aa35adefe0fb087ccd2f11f89120
+
+@ 0 3 0 08519d708324f983133cf29946da1284
++   is Loggable)^)(using Tactic[Install.Error])`, antes sem `Environment, System`. A sobrecarga
++   `install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on
++   Linux])` não mudou. (#2034)
+
+% 0 1 0 14677f68e8b76206071a9753df428d63
+
+@ 0 31 0 10e87e807d3d312718b1135dfc23862b
++   Optional[Int] = Unset, tab: Optional[Ordinal] = Unset)` mudou de semântica: o `Argument` no
++   índice `focus` agora tem `cursor = position.or(text.length)`, enquanto antes tinha
++   `cursor = position`, de modo que um argumento em foco sempre carrega um cursor (no fim da
++   palavra quando `position` é `Unset`). Os argumentos em outros índices, e todos os argumentos
++   quando `focus` é `Unset`, não mudaram. (#1964)
++ - `exoskeleton.Interpreter#focus` para `interpreters.posixInterpreter` e
++   `interpreters.posixClusteringInterpreter` mudou de semântica: o foco agora é derivado do
++   argumento que carrega o cursor — o próprio pedaço desse argumento quando ele é uma flag, caso
++   contrário a flag que o precede — e é `Unset` quando nenhum argumento carrega um cursor. Antes,
++   ele sempre era derivado da última flag na linha de comando. Em consequência, um
++   `Discoverable` para o operando de uma flag agora é consultado onde quer que a flag esteja, e
++   não apenas quando ela é a última. (#1964)
++ - `exoskeleton.Completion#serialize` mudou de semântica: quando o texto sendo completado começa
++   com `-`, as sugestões de cursor cujo `core` não começa com `-` são descartadas e, se não
++   restar nenhuma, a lista de flags é oferecida, enquanto antes qualquer sugestão de cursor
++   suprimia a lista de flags; e as sugestões são envolvidas pelo formato do argumento em foco
++   apenas quando o foco é o argumento sendo completado, e não quando é a flag que o precede.
++   Uma aplicação não precisa mais de um braço de casamento que trate primeiro as flags antes de
++   seus padrões `Subcommand` para que `--fl<TAB>` ofereça flags. (#2035)
++ - `exoskeleton.Flag` ganhou `def present(using Cli, Interpreter, Topic is Interpretable, (? <:
++   Topic) is Discoverable): Boolean` e `def value(using Cli, Interpreter, Topic is
++   Interpretable, (? <: Topic) is Discoverable)(using erased Effectful): Optional[Topic]`,
++   leitores simples (não inline) que registram a flag como `apply()` faz. O código que lê
++   `flag().present` dentro de uma `inline def` deve usar `flag.present` em vez disso: ali, o
++   `apply()` transparente não é expandido e `.present` é resolvido contra `Prospective[Topic] |
++   Optional[Topic]` por meio da extensão `Optional` do vacuous, respondendo `true`
++   incondicionalmente. (#2032)
++ - `exoskeleton.Login.id` agora é `Optional[UserId]`, antes `Optional[Int]`: o novo tipo opaco
++   `exoskeleton.UserId` (no módulo `args`, exportado por `soundness`) envolve o identificador de
++   usuário da plataforma como texto — um uid numérico no Unix, um SID no Windows —, com `text`,
++   `unix:
++   Optional[Int]` e `sid: Optional[Text]`. O código que lê `login.id` como um `Int` deve usar
++   `login.id.let(_.unix)`; o código que constrói um `Login` com um id numérico deve envolvê-lo,
+
+% 0 1 0 13b9f551481d19ea0690affb742e0315
+
+@ 0 5 0 1a1a0a375f221860100e3635c8643301
++ - `exoskeleton.Cli#trap` e o `exoskeleton.trap` de nível superior agora recebem
++   `PartialFunction[Signal, SignalResponse]`, antes `PartialFunction[UnixSignal |
++   WindowsSignal, SignalResponse]`, e `Cli#dispatchSignal` recebe um `profanity.Signal` em vez
++   de um `UnixSignal | WindowsSignal`. Um handler `case Interrupt.Int => …` passa a ser `case
++   Signal(Interrupt.Int, _, _, _) => …`, e `case _: UnixSignal => …` passa a ser `case Signal(_:
+
+% 0 1 0 1ad53b51c9acafb418301a296ca397cc
+
+@ 0 4 0 0c1c0bf29768764a00b98f2433ab3fca
++ - `exoskeleton.Entrypoint` ganhou `def retire(): Unit = ()`, e o subcomando `{admin}` do
++   executivo de conclusões ganhou `shutdown`, que o chama. (#2064)
++ - `exoskeleton.core` depende de `galilei.core` em vez de `galilei.jvm`; um consumidor que
++   alcançava `galilei.jvm` ou `guillotine.core` apenas por meio do exoskeleton deve declará-lo.
++   (#2082)
+
+% 0 1 0 1d90f9f17b0aa66b0d7b52e54244edf6
+
+@ 0 1 0 0c4ada8948de4def0c98b8c94d4a95b7
++ - As primitivas de criação de `galilei.FilesystemBackend` recebem um modo:
++   `createDirectory(path, mode:
+
+% 0 1 0 092dfb1b99de5c980dbd2574b15e1679
+
+@ 0 13 0 170c90755d9da8281149517a183cc463
++   Optional[Int])` e `open(path, flags, mode: Optional[Int])(lambda)`, em que `mode` são os bits
++   de permissão POSIX exatos com que criar, ou `Unset` para deixar que a umask do processo se
++   aplique. Toda implementação de `FilesystemBackend` deve acrescentar o parâmetro (e pode
++   ignorá-lo onde a plataforma não tem bits de permissão, como faz o backend WASI); toda chamada
++   direta deve passá-lo. (#2064)
++ - `galilei.Creation.DirectoryCreatable`, `FileCreatable` e `FifoCreatable`, e
++   `galilei.FileOpenable`, recebem mais um parâmetro de contexto, `umask: Umask`, assim como os
++   givens `Platform.directoryCreatable`, `fileCreatable`, `fifoCreatable` e `File.openable` que
++   os constroem. O novo tipo opaco `galilei.Umask` (exportado por `soundness`) tem um given no
++   objeto companheiro, `inherited: Umask`, igual a `Umask.process`, de modo que o código que não
++   convoca nenhum não muda de comportamento; um given `Umask`, ou um `Umask.Provider` no escopo,
++   é aplicado a todo arquivo e diretório criado por meio de `create[File]`,
++   `create[Directory]`, `create[Fifo]` e `open[File](…, OpenFlag.Create)`. (#2064)
+
+% 0 1 0 1d7b060e181b78a20cef9763b93c99f0
+
+% 0 1 0 15eaf360c55a6e980afc6b7de8a25cbb
+
+@ 0 14 0 03e9a9cdc6eb7bb21efb9cf4cfd3bab7
++   WorkingDirectory, guillotine.Exec.Event is Loggable): Path on plane raises Io.Error` perdeu
++   seus dois últimos parâmetros `using`: agora ele executa `mknod` por meio de um
++   `ProcessBuilder` bruto no diretório de trabalho da JVM e não registra mais o comando, e uma
++   falha ao iniciar o processo lança
++   `Io.Error(path, Operation.Create, Reason.PermissionDenied)`, enquanto antes lançava
++   `Reason.Unsupported`. `galilei.jvm` não depende mais de `guillotine.core`; um consumidor que
++   alcançava o guillotine apenas por meio de `galilei.jvm` (ou por meio de `hellenism.jvm`,
++   `zeppelin.core`, `exoskeleton.core`, `octogenarian.core`, `bitumen.jvm`, `facsimile.file`,
++   `hyperbole.stacks`, `reliquary.derive`) deve declará-lo. (#2082)
++ - O given `serpentine.Navigable.uuid: [plane, uuid <: Uuid] => uuid is Navigable on plane`
++   foi movido para `galilei.Platform.uuidNavigable: [uuid <: Uuid, filesystem <: Platform] => uuid is
++   Navigable on filesystem`: um `Uuid` ainda é um segmento de caminho em todo plano de sistema
++   de arquivos de sistema operacional (`Local`, `Linux`, `MacOs`, `Posix`, `Windows`), mas não
++   mais em outros planos (URLs, ponteiros JSON, caminhos YAML, classpaths). `serpentine.core`
++   não depende mais de `inimitable.core`, e `galilei.core` agora depende. (#2082)
+
+% 0 1 0 0fa8f427fcee06bf094db708d8d4518a
+
+@ 0 23 0 0ad2e3019fe58f7c0a1ce211e5e0de62
++ - Os givens `gesticulate.MediaType.formenctype`, `MediaType.media`, `MediaType.enctype` e
++   `MediaType.htype` (cada um `("…" is GenericHtmlAttribute[MediaType])`) foram removidos junto
++   com `anticipation.GenericHtmlAttribute`. `gesticulate.core` não depende mais de
++   `anticipation.html`. (#2082)
++ - `gesticulate.core` não distribui nem lê mais o recurso de classpath
++   `/gesticulate/media.types`: o registro da IANA é compilado em uma tabela de strings
++   (`gesticulate.MediaTypeData`, privada) em tempo de build a partir de `lib/gesticulate/data`.
++   A verificação de tipos não registrados da macro `media"…"` não mudou. (#2082)
++ - `gesticulate.Part#body` agora é uma `zephyrine.Spring[Data]` (chame `body()` para obter um
++   `Stream[Data] over Credit` novo) em vez de uma `Chain[Data]`, e `Multipart.parse` não
++   materializa mais os corpos: o corpo de cada parte é emprestado sem cópia da entrada sendo
++   analisada, e só pode ser lido enquanto essa parte for a atual. Forçar a próxima parte de
++   `Multipart#parts` (ou `Multipart#at`, que força todas as partes antes da correspondência) pula
++   o que restar do corpo anterior, que depois disso é lido como vazio. Leia um corpo antes de
++   avançar: `part.read[Data]` e `Part is Streamable` não mudaram; o código que guardava
++   `part.body` como valor e o lia depois, ou iterava sobre seus blocos, deve ler por meio de
++   `part.body()` (um stream) enquanto a parte for a atual.
++   `Part(disposition, headers, name, filename, body)` recebe uma `Spring[Data]` na última
++   posição. (#2098)
++ - Um `zephyrine.Cursor` sobre um stream, ou sobre uma chain de chunks `Data`, agora lê no lugar
++   uma região que sua origem empresta sempre que nada de seu próprio estiver vivo, em vez de
++   copiar toda região para seu buffer; enquanto uma retenção abrange um preenchimento, ele copia
++   como antes. O buffer que um parser observa por meio de `unsafeBuffer`/`unsafeDataBuffer` pode,
++   portanto, ser um array diferente após qualquer recarga, e não apenas um array aumentado — o
++   que o contrato existente de "válido apenas até a próxima operação do cursor" já exigia que os
++   chamadores presumissem. (#2098)
+
+% 0 1 0 0f8801d07578e6311608c798ab4d808f
+
+@ 0 4 0 0334d033159f6b5c00ed05ca98884da0
++ - Os métodos de extensão `join` (`join`, `join(separator)`, `join(left, separator, right)`,
++   `join(separator, penultimate)` e `join(left, separator, penultimate, right)`) não exigem mais
++   que o tipo unido seja `gossamer.Textual`, apenas `gossamer.Joinable`. Os parâmetros de tipo da
++   extensão mudaram de `[self, element, textual >: element]`, com
+
+% 0 1 0 10187167abc171a01adba546ade7a5ce
+
+@ 0 7 0 10e0e17e599541bd170cbfe590b94e93
++   textual0: textual is Textual)` e tipo de resultado `textual`, para `[self, element, result]`,
++   com `(using source: self is Joinable.Source by element)(using assembly: self is
++   Joinable.Assembly by element to result)` e tipo de resultado `result`; todo parâmetro de
++   separador, prefixo e sufixo agora é tipado como `assembly.Part` em vez de `textual`. Para
++   elementos textuais e `Message`, os tipos de resultado e de separador não mudaram. O código que
++   passava explicitamente os argumentos de tipo de `join` deve ser reescrito. (#2057)
++ - Novos givens de `gossamer.Joinable`: `Joinable.list: [element] => List[element] is Joinable`,
+
+% 0 1 0 008fa29ebfb717c90766d03e3ff32ee7
+
+@ 0 11 0 037221dcd471a7e71d5859c69a736596
++   Sequence[element] is Joinable` e `Joinable.set: [element] => Set[element] is Joinable`
++   (as formas do `proscenium`), que unem por concatenação (união, para `Set`), de modo que `join`
++   sobre uma coleção dessas coleções, com uma coleção separadora opcional, agora compila:
++   `List(List(1), List(2)).join(List(0))` é `List(1, 0, 2)`. (#2057)
++ - Nova classe de tipos `gossamer.Joinable.Assembly` (`self is Joinable.Assembly by element to result
++   { type Part >: element }`), com os givens `Assembly.joinable` (elementos que são `Joinable`;
++   `Part` e `Result` são esse tipo) e, com prioridade menor, `Assembly.interleaving`
++   (`self is Reshapable by element to result`; `Part = element`). Este último dá a `join` um
++   segundo significado sobre coleções cujos elementos não são `Joinable`: os separadores são
++   elementos, intercalados em uma coleção reconstruída com a forma do receptor, de modo que
++   `List(1, 2, 3).join(0)` é `List(1, 0, 2, 0, 3)`, enquanto antes isso não compilava.
+
+% 0 1 0 15b08cff8af43da701c48751639f4ccd
+
+% 0 1 0 0aebba901602cb461334bf128bd66cd1
+
+@ 0 19 0 12f561769742ad3b171c793ab28d24ec
++ - `harlequin.Fragment.infixBase` agora rejeita toda palavra-chave de Scala 3, forte ou fraca,
++   como receptor infixo, usando o novo `prophesy.ScalaKeywords.all` no lugar de sua própria lista
++   privada, à qual faltavam `erased`, `macro`, `throws` e `tracked`. Um fragmento como
++   `erased x ma` (com o cursor no fim) produz, portanto, `(Unset, t"ma")`, enquanto antes
++   produzia `(t"x.", t"ma")`. Nada mais em seu resultado mudou.
++ - `harlequin.Highlight` mudou de forma: `def scalac: Optional[Scalac[?, ?]]` e `def classpath:
++   Optional[LocalClasspath]` foram substituídos por `def compilation: Optional[Highlight.Compilation]`,
++   em que o novo trait `Highlight.Compilation` tem `def arguments: List[Text]`,
++   `def classpath: Text` e `def compiler(): dotty.tools.dotc.Compiler`.
++   `harlequin.highlighting` agora é um pacote (era um objeto): `highlighting.tokenizedScala`
++   permanece em `harlequin.core`; `highlighting.typecheckedScala` e
++   `highlighting.compiledScala` (cada um `(using Scalac[?, ?], LocalClasspath): Highlight`, com
++   as assinaturas inalteradas) foram movidos para o novo módulo `harlequin.typed` (no bundle
++   `tool`; dependências `harlequin.core`, `anthology.scala`, `hellenism.jvm`).
++   `import highlighting.typecheckedScala` e `harlequin.highlighting.typecheckedScala` ainda são
++   resolvidos, dado esse módulo. (#2082)
++ - `harlequin.Diagnostic#importance` agora é tipado como `harlequin.Diagnostic.Importance` (um
++   novo enum com os mesmos casos `Info`, `Warning`, `Error`) em vez de `anthology.Importance`.
++   (#2082)
++ - `harlequin.core` não depende mais de `anthology.scala` nem de `hellenism.jvm` (nem, por meio
++   deles, de `anthology.core`, `hellenism.core`, `galilei`, `ambience`, `guillotine`, `aperture`);
++   um consumidor que alcançava qualquer um deles apenas por meio de `harlequin.core` deve
++   declará-lo, ou declarar `harlequin.typed`. (#2082)
+
+% 0 1 0 1158a6567f5d98ee0a180931c96339da
+
+@ 0 19 0 0a24b78ff57bed0f112ba8adcbe21a7c
++ - `hieroglyph.CharDecoder` foi renomeado para `hieroglyph.Charset` (de bytes para texto) e
++   `hieroglyph.CharEncoder`, para `hieroglyph.Codepage` (de texto para bytes); os exports
++   `soundness.CharDecoder` e `soundness.CharEncoder` agora são `soundness.Charset` e
++   `soundness.Codepage`. Os membros não mudaram, então os tipos aninhados e as factories
++   acompanham: `CharDecoder.Error` → `Charset.Error`, `CharDecoder.Focus` → `Charset.Focus`,
++   `CharDecoder.system` → `Charset.system`, `CharDecoder.unapply` → `Charset.unapply`,
++   `CharEncoder.Error` → `Codepage.Error`, `CharEncoder.system` → `Codepage.system`,
++   `CharEncoder.unapply` → `Codepage.unapply`. Os arquivos-fonte agora são
++   `hieroglyph.Charset.scala` e `hieroglyph.Codepage.scala`.
++ - Os pacotes de família `hieroglyph.charDecoders` e `hieroglyph.charEncoders` (e seus espelhos
++   `soundness.charDecoders`/`soundness.charEncoders`) foram renomeados para `charsets` e
++   `codepages`, e todo membro recebe o novo sufixo de papel: `charDecoders.utf8Decoder` →
++   `charsets.utf8Charset`, `utf16Decoder` → `utf16Charset`, `utf16LeDecoder` →
++   `utf16LeCharset`, `utf16BeDecoder` → `utf16BeCharset`, `asciiDecoder` → `asciiCharset`,
++   `iso88591Decoder` → `iso88591Charset`; `charEncoders.utf8Encoder` →
++   `codepages.utf8Codepage`, `utf16Encoder` → `utf16Codepage`, `utf16LeEncoder` →
++   `utf16LeCodepage`, `utf16BeEncoder` → `utf16BeCodepage`, `asciiEncoder` → `asciiCodepage`,
++   `iso88591Encoder` → `iso88591Codepage`. Substitua `import charEncoders.utf8Encoder` por
++   `import codepages.utf8Codepage` e `import charDecoders.utf8Decoder` por
++   `import charsets.utf8Charset`. Como antes, os membros ISO-8859-1 estão apenas nos pacotes de
++   `hieroglyph`, não nos espelhos de `soundness`.
+
+% 0 1 0 165131e53f5576cf05d71a204ac48013
+
+@ 0 6 0 1762458ff3a0b4940190442410695402
++ - `honeycomb.core` não distribui nem lê mais os recursos de classpath
++   `/honeycomb/entities-html4.tsv` e `/honeycomb/entities-extra.tsv`: as tabelas de referências a
++   caracteres nomeados são compiladas em tabelas de strings (`honeycomb.EntityData`, privada) em
++   tempo de build a partir de `lib/honeycomb/data`. `Html4Transitional.entities` e
++   `Whatwg.entities` não mudaram. `honeycomb.core` não depende mais de `hellenism.core` e não é
++   mais marcado como exclusivo de JVM/JS; um consumidor que alcançava o hellenism apenas por meio
++   do honeycomb deve declará-lo. (#2082)
+
+% 0 1 0 10336422395755bf1e478ba611fcc433
+
+@ 0 6 0 0d3ae8ddab3c80540277efd118d7a8f9
++ - O módulo `anticipation.check` foi movido para `hypotenuse.check`, e seu pacote, de
++   `anticipation` para `hypotenuse`: `anticipation.Checkable`, `anticipation.Tolerance` e as
++   extensões `===`, `!==`, `+/-` e `±` agora são `hypotenuse.Checkable`, `hypotenuse.Tolerance`,
++   `hypotenuse.===` etc. Os exports de `soundness` e os reexports do probably
++   (`import probably.*`) não mudaram; o código que os importava por meio de
++   `import anticipation.*` precisa de `import hypotenuse.*` em vez disso. Os membros, as
++   assinaturas e o comportamento não mudaram. (#2082)
+
+% 0 1 0 14802db87637bb240c0e50c6611271aa
+
+@ 0 3 0 0bf27116eac3b86405e27b4b2c90af22
++ - `inimitable.core` agora depende de `anticipation.uuid`. Novo pacote de escolhas
++   `uuidInterfaces`, com `given soundnessUuid: (tactic: Tactic[Uuid.Error]) => ((Uuid is
++   Instantiable across Uuids from Text)^{tactic})`, espelhado em `soundness`. (#2089)
+
+% 0 1 0 1596bb652e5891230b44b58e4458fbe5
+
+@ 0 2 0 1a6ad13588ff2aa61a76116f40640d8a
++ - `iridescence.core` não depende mais de `contextual.core`; um consumidor que alcançava o
++   contextual apenas por meio do iridescence deve declará-lo. (#2082)
+
+% 0 1 0 021b852f7dba238b06ccff9a0d2bb561
+
+% 0 1 0 0278dc028bda4f33029390c3a401e196
+
+@ 0 7 0 15199feecbd8ea7f14bc3d451b816c51
++   passou a ser `JsonPointer(path: Path on JsonPointer = JsonPointer)`: o campo `url`, que nenhum
++   caminho de código jamais definia (o decodificador rejeita qualquer referência que não comece
++   com `#`), deixou de existir. Os casamentos de padrões `JsonPointer(url, path)` passam a ser
++   `JsonPointer(path)`; `pointer.url` não existe mais. Por isso, `JsonPointer is Encodable in Text`
++   sempre renderiza `#` ou `#/…`, como na prática sempre fez. (#2082)
++ - `jacinta.JsonPointer.Registry` (um `beneficence.Findable` com `update(url: HttpUrl, document:
++   Json): Unit`, `apply(url: HttpUrl): Optional[Json]` e `protected def lookup(url: HttpUrl):
+
+% 0 1 0 0496955c8f875fd00e7ea445225d3167
+
+@ 0 13 0 18c80caab3ca2cb608b703c931978507
++   Tactic[JsonPointer.Error]): Json` (que sempre retornava `document`) e os givens
++   `jacinta.jsonPointerRegistries.standaloneRegistry` e `jsonPointerRegistries.fetchingRegistry`
++   (módulo `jacinta.schema`, também exportados como `soundness.jsonPointerRegistries.*`) foram
++   removidos. Não há substituto: `JsonPointer` endereça apenas o documento atual. (#2082)
++ - `jacinta.JsonPointer.Error.Reason.UnknownDocument` (`SN-415.1`) foi removido; `ExpectedHash`,
++   `ExpectedSlash` e `BadEscape` mantêm os números 2, 3 e 4. (#2082)
++ - `jacinta.core` depende diretamente de `serpentine.core` e não mais de `urticose.url`; um
++   consumidor que alcançava o urticose apenas por meio do jacinta deve declará-lo. (#2082)
++ - O parâmetro de construtor de `jacinta.Json.Provider` é `into[Json.Provider.Schema]`, com as
++   conversões given `Json.Provider.Schema.json: Conversion[Json, Schema]` e `Schema.readable:
++   [source] => (source is Readable to Json) => Conversion[source, Schema]`, de modo que um
++   provedor pode ser declarado sobre JSON analisado, um recurso de classpath
++   (`Json.Provider(cp"/schema.json")`, com um given `Classloader` no escopo), um arquivo ou texto
++   JSON. `Provider#schema: Json` não mudou.
+
+% 1 1 0 0966e10dfc4820be1db96a0472a7388a
+
+@ 0 12 0 0e1f5cc161f4c87b161a695dd93c68b9
++ - `jacinta.JsonBlueprint` (módulo `jacinta.records`) foi movido para `jacinta.Json.Provider`
++   (módulo `jacinta.core`, que agora depende de `polyvinyl.core`, `anticipation.url`,
++   `anticipation.time`, `anticipation.net` e `anticipation.uuid`); o módulo `jacinta.records` e
++   seu export `soundness.JsonBlueprint` foram removidos. O construtor agora recebe o próprio
++   documento de schema: `abstract class Json.Provider(val schema: Json)` (era `JsonBlueprint(val doc:
++   JsonBlueprint.Doc)`), de modo que
++   `object X extends JsonBlueprint(text.read[Json].as[JsonBlueprint.Doc])` passa a ser
++   `object X extends Json.Provider(text.read[Json])`. `JsonBlueprint.Doc`,
++   `JsonBlueprint.Property` e `JsonBlueprint.entries` foram removidos; o percurso do schema é
++   `Json.Provider.fieldsOf(schema: Json): List[(Text, Member)]`. `JsonBlueprint.Error` e
++   `JsonBlueprint.Error.Reason` são `Json.Provider.Error` (ainda `SN-624`) e
++   `Json.Provider.Error.Reason`. `JsonBlueprint.intensional`, `JsonBlueprint.structural` e
++   `JsonBlueprint.record` foram removidos: use `polyvinyl.Intensional(accessor)` e
+
+% 0 1 0 102741af473477a0012ee907f8839ea0
+
+@ 0 1 0 059347252d56294319efc742b1a3ecc4
++ - Os givens opcionais de `Json.Provider` `optionalBoolean` (`"boolean?"`), `optionalText`
+
+% 0 1 0 1ecf218c378411d306c84b5bcecc7b8a
+
+% 0 1 0 0a0c0a4d29311c4c05481775f7ff17a0
+
+% 0 1 0 0730378e83a0942b19bf3fb70c34ae93
+
+% 0 1 0 156e3b3c35ad559a0e3ee5065a5c009f
+
+@ 0 41 0 0ff702b1dd0c44ea0315368151e01a88
++   `optionalJsonPointer`, `optionalRegex`, `optionalPattern`, e os givens `Structural`
++   `array`, `optionalArray`, `module` (`"object"`) e `optionalModule` (`"object?"`) foram
++   removidos: a opcionalidade e a repetição são aplicadas pela macro do polyvinyl a partir da
++   `Multiplicity` do membro. Uma propriedade não nomeada em `required` ainda é lida como
++   `Optional[T]`; uma propriedade cujo `type` inclui `"null"`, cujo `enum` inclui `null`, ou com
++   uma alternativa `anyOf`/`oneOf` do tipo `null`, agora é lida como `Optional[T]` mesmo quando
++   obrigatória, e um valor `null` é lido como `Unset`. (#2089)
++ - `Json.Provider` lê os `items` de uma propriedade `array` como um schema
++   (`{"type": "string"}`, `{"type": "object", "properties": {…}}`), sendo o campo lido como
++   `List[T]` do tipo do item, e um array ausente como `List()` (antes, `items` era lido como um
++   mapa de propriedades, o campo como `List[Record]`, e um array não obrigatório como
++   `Optional[List[…]]`). Um array sem schema `items`, com uma lista `items` em forma de tupla,
++   ou cujos itens são arrays, é lido como `List[Json]`. (#2089)
++ - `Json.Provider` agora segue um `$ref` local (`#`, `#/definitions/…`, `#/$defs/…`, qualquer
++   ponteiro JSON), funde um `allOf` de objetos, lê um `enum`/`const` (inferindo o tipo a partir
++   dos valores quando `type` está ausente, e unificando alternativas `anyOf`/`oneOf` que sejam
++   todas strings), e respeita `minLength`, `maxLength`, `exclusiveMinimum` e `exclusiveMaximum`
++   (booleanos ou numéricos), além de `pattern`, `minimum` e `maximum`. Um `type` que nomeia
++   vários tipos, ou alternativas `anyOf`/`oneOf` de categorias JSON distintas (string, número,
++   booleano, objeto, array), é lido como uma união Scala dos tipos das alternativas
++   (`Text | Record {…}`, `Text | List[Text]`), escolhida pela categoria do valor; um objeto com
++   `additionalProperties` contendo um schema, ou com `patternProperties` todas de um mesmo tipo,
++   e sem `properties`, é lido como `Map[Text, T]` (vazio quando ausente). Onde ele não consegue
++   se decidir por um tipo — alternativas da mesma categoria ou de nenhuma categoria única, `not`,
++   um objeto sem `properties` nem schema de valor, uma referência a outro documento, uma
++   referência recursiva —, o campo é lido como `Json` (novo rótulo `"json"`, given
++   `Json.Provider.json`). Antes, qualquer um desses casos era decodificado como seu rótulo
++   `type` literal ou falhava. (#2089)
++ - `Json.Provider.fieldsOf` (e, portanto, a expansão do `record` de um provedor) agora falha com
++   `fulminate.Panic("the schema's root does not describe an object with properties…")` para um
++   schema cuja raiz é um array, um escalar ou só é alcançável por meio de uma referência a outro
++   documento, e lê a alternativa de objeto de um `anyOf`/`oneOf` na raiz. Antes, uma raiz assim
++   falhava ao decodificar `JsonBlueprint.Doc`. (#2089)
++ - Uma propriedade obrigatória que está ausente agora lança
++   `Json.Error(Json.Error.Reason.Absent)` assim que o campo é lido, inclusive para uma
++   propriedade `object` (antes, um objeto obrigatório ausente produzia um registro com todos os
++   campos ausentes). (#2089)
++ - Os givens `email`, `idnEmail`, `hostname`, `ipv4`, `ipv6` e `uuid` de `Json.Provider` agora
++   são polimórficos sobre os domínios do anticipation (`[email: Instantiable across EmailAddresses from
++   Text] => ("email" is Intensional in Json.Provider from Json to email)`, e da mesma forma
++   `Hostnames`, `IpAddresses`, `Uuids`), de modo que o campo de um registro tem o tipo que o
++   representa, sem cláusula `raises` (a `Tactic` é capturada onde o registro é construído), e a
++   instância deve estar no escopo no local da chamada:
++   `import emailAddressInterfaces.soundnessEmailAddress`,
+
+% 0 1 0 0f9c905fef9a279b15b315a9b63bba41
+
+@ 0 4 0 09c0991af10104090a8b41602504bc5b
++   `uuidInterfaces.soundnessUuid`, `urlInterfaces.soundnessUrl`. Antes, os tipos de resultado
++   eram `EmailAddress raises EmailAddress.Error`, `Hostname raises Hostname.Error`, `Ipv4 raises
++   IpAddress.Error`, `Ipv6 raises IpAddress.Error` e `Uuid raises Uuid.Error`. Um `format` que o
++   provedor não conhece agora é lido como `Text` (antes, falhava ao procurar uma instância).
+
+% 1 1 0 097c93ddb900c97a1545656a963cf931
+
+@ 0 7 0 153504c7fdd33142142c26859317050c
++ - Os givens `boundedInteger` (`"integer!"`) e `pattern` de `Json.Provider` agora são as classes
++   `Json.Provider.BoundedInteger` e `Json.Provider.Pattern`, instâncias de
++   `polyvinyl.Intensional.Fallible` com `Result = Int` / `Text` e `Error = Json.Provider.Error`; o
++   campo de um registro ainda é lido como `Int raises Json.Provider.Error` / `Text raises …`. Os
++   parâmetros de `BoundedInteger` agora são quatro (`minimum`, `maximum`, `exclusiveMinimum`,
++   `exclusiveMaximum`, cada um possivelmente vazio), em vez de dois. Novas classes falíveis e
++   givens `BoundedNumber` (`"number!"`), `BoundedString` (`"string!"`) e `Enumeration`
++   (`"enum"`), com os novos motivos
+
+% 0 1 0 0ac9434404bafc340c9467a76854dc53
+
+% 0 1 0 0ccd153191f676ac16ca6f72274e0adc
+
+@ 0 3 0 1086ac789228cd11159a8f2bc13c1b73
++   Optional[Int], maximum: Optional[Int])` (`SN-624.6`) e `NotPermitted(value: Text,
++   permitted: List[Text])` (`SN-624.7`). Uma propriedade inteira limitada não nomeada em
++   `required` agora é lida como `Optional[Int] raises Json.Provider.Error` (antes, sempre
++   `Int raises …`).
+
+% 1 1 0 1d823251b42f4d7005b889a5a31d9fcd
+
+@ 0 7 0 0481b06fbfeab16916fa0f8b5e813a2a
++ - `Json.Provider.duration` (`"duration"`) agora é declarado `from Json`, como todas as outras
++   instâncias (antes, apenas `to duration`). (#2089)
++ - `jacinta.JsonSchema.Format` ganhou os casos `Int32, Int64, Float, Double, Byte, Binary, Password`
++   e `Other(name: Text)`; o enum não é mais uma enumeração pura, de modo que `Format.values` e
++   `Format.valueOf` não existem mais, e um `match` sobre `Format` precisa de um caso `Other`.
++   `Format is Decodable in Text` agora é total: um nome fora do enum é decodificado como
++   `Other(name)` (antes, lançava `IllegalArgumentException`); `Other(name)` é codificado como
++   `name`. (#2091)
+
+% 0 1 0 1a6f2928a76cc2df0f40f5ff63ab9825
+
+@ 0 1 0 1de56e85c7e8e5470c3ffa6487e8a9e2
++   exclusiveMinimum: Optional[Int], exclusiveMaximum: Optional[Int], optional)` passou a ser
+
+% 0 1 0 1ab5b5d00e5034880aab46b14fa65d72
+
+% 0 1 0 183aadd892c8af6b1843d74a72b4a457
+
+@ 0 3 0 19ea71ccd93c59fe1bea23c6f729ee28
++   = Unset)`: os quatro limites são `Long`, e um sétimo campo, `format` (lido da palavra-chave
++   `format` do schema), é acrescentado. Os padrões posicionais ganham um elemento. (#2091)
++ - `jacinta.JsonSchema.Object` ganhou cinco campos finais, todos com `Unset` como padrão:
+
+% 0 1 0 09b692c8d3d0617e11bf53a076ed40fa
+
+@ 0 22 0 09c9ca9bb4f051330297fce67c09cda3
++   `anyOf: Optional[List[JsonSchema]]`, `not: Optional[JsonSchema]`, `const: Optional[Json]`. Os
++   padrões posicionais ganham cinco elementos. `additionalProperties: Boolean` agora também é
++   `true` quando o valor da palavra-chave é um schema, que `additionalSchema` então carrega
++   (antes, um `additionalProperties` com valor de schema falhava ao ser decodificado). (#2091)
++ - Mudança de comportamento: `jacinta.JsonSchema is Json.Decodable` é total sobre qualquer
++   documento JSON Schema. Um `type` dado como array lê sua primeira entrada diferente de
++   `"null"`; uma entrada `"null"`, ou o `nullable: true` do OpenAPI 3.0, define o `optional` do
++   schema como `true`; um schema booleano `true`/`false` é lido como
++   `Object(additionalProperties = true/false)`; um `exclusiveMinimum`/`exclusiveMaximum`
++   booleano (draft 4 e OpenAPI 3.0) move `minimum`/`maximum` para
++   `exclusiveMinimum`/`exclusiveMaximum`; uma palavra-chave de um tipo JSON inesperado é
++   ignorada, em vez de lançar `Json.Error`. Um tipo `"null"` é lido como `Null(description, optional =
++   true)` (antes, `optional = false`). (#2091)
++ - `jacinta.Json.Provider` agora estende o novo `Json.Provider.Primitives` (uma `polyvinyl.
++   Specification` com `Origin = Json`, `Form = Json.Provider` e as primitivas de leitura
++   `access`, `absent`, `required`, `kind`, `elements`, `pairs`, `entries`, `repeated`, mas sem
++   schema); o próprio `Provider` mantém `schema` e `fields`. Mudança de comportamento no percurso
++   do schema: uma propriedade com `type: integer`, `format: int64` e sem limites agora é lida por
++   meio da nova instância `Json.Provider.long` (`"long"`, para `Long`) em vez de `integer` (para
++   `Int`); um int64 limitado ainda é lido como `"integer!"`. O novo `Json.Provider.memberOf(document: Json, node:
++   Json, limit: Int = Int.MaxValue): polyvinyl.Member` percorre um nó de schema dentro de um
++   documento maior, seguindo referências até no máximo `limit` níveis de profundidade (uma
++   referência além disso é lida como `Json` bruto) e memoizando cada referência seguida. (#2091)
+
+% 0 1 0 05984bb5afb584fc059e170ac7d22325
+
+@ 0 3 0 0e7c9a4b3d4e638f16f29a25fdc0ce31
++ - `octogenarian.core` depende de `enigmatic.asn1` em vez de `enigmatic.core`; um consumidor que
++   alcançava `enigmatic.core` (ou `gastronomy.core`, `aperture.core`) apenas por meio do
++   octogenarian deve declará-lo. (#2082)
+
+% 0 1 0 162fdd68f08c465a12122d34e6c4d9a3
+
+@ 0 19 0 0341c8f4c319d9d7014f3f3fee6bba0a
++ - `hellenism.Classpath#classloader` agora recebe um primeiro parâmetro obrigatório, `delegation:
++   Classloader.Delegation`, antes de `parent: Classloader = classloaders.platformClassloader`.
++   `Classloader.Delegation` é um novo enum com os casos `Deferential` (primeiro o pai, a ordem
++   padrão da JVM) e `Preferential` (primeiro o filho). O antigo `classpath.classloader()`
++   (primeiro o filho, sobre o pai fornecido ou o da plataforma) passa a ser
++   `classpath.classloader(Classloader.Delegation.Preferential)`, mantendo seu argumento `parent`
++   se passava um; o antigo `classpath.classloader` sem parâmetros (primeiro o pai, sobre o loader
++   da plataforma) foi removido e passa a ser
++   `classpath.classloader(Classloader.Delegation.Deferential)`. Mudança de comportamento: uma
++   entrada `Classpath.Entry.JavaRuntime` não é mais passada ao loader como uma URL `jrt:/` em
++   nenhum dos modos (o pai da plataforma fornece o JDK), como a forma sem parâmetros já a
++   omitia. (#2070)
++ - `hellenism.Classloader#apply(path: Text)` agora é `inline` e recebe seu contexto de logging
++   como uma cláusula `using`, `(using (Classpath.Event is Loggable)^)`, no lugar do açúcar `logs
++   Classpath.Event`; seu resultado continua sendo `Optional[Data]`, e uma chamada com um
++   `Loggable` no escopo não muda. O resultado agora não retém nenhuma capability, então quem chama
++   e fazia cast dele para `Optional[scala.IArray[Byte]]`, ou lia o recurso pelo
++   `java.lang.ClassLoader` bruto para obter um valor puro, pode chamar `apply` diretamente,
++   inclusive dentro de `safely`. O novo `Classloader#resource(path: Text): Optional[Data]` é a
++   mesma leitura sem logging. Ambos fecham o stream do recurso depois da leitura. (#2071)
+
+% 0 1 0 12a5154887295d701791e765afcca89e
+
+@ 0 5 0 10906c96bac049f1107aa6ddf264d591
++ - O módulo `orthodoxy.core` não depende mais de `scintillate.server` nem de `telekinesis.jvm`; o
++   middleware do scintillate foi movido para o novo módulo `orthodoxy.server` (no pacote de
++   distribuição `web`, exportado como `soundness.{Authorizations, oauth, require}`).
++   `orthodoxy.Issuer#oauth(…)` e `Issuer#require(…)` agora são métodos de extensão em
++   `orthodoxy.server` com os mesmos parâmetros, exceto que `require` recebe também
++   `(using Tactic[OAuth.Error])`. (#2091)
+
+% 0 1 0 0094c107e5a77a891e000c31da6371b2
+
+@ 0 22 0 17aab8233cfa315317c3cc95bdd56c7c
++   Optional[Text] = Unset)` passou a ser `Issuer(exchange: HttpUrl, client: Text, secret:
++   Optional[Text] = Unset, init: Optional[HttpUrl] = Unset, redirect: Optional[HttpUrl] = Unset)`,
++   com seus campos agora `val`s públicos; novas concessões do lado do cliente
++   `grant(parameters: Query)`, `clientCredentials(scopes: Text*)`, `refresh(token: Text)`,
++   `refresh(authorization: Authorization)`, `exchangeCode(code: Text, pkce: Optional[Pkce] =
++   Unset)`, cada uma `(using Online, (Http.Event is Loggable)^, Http.Client onto Origin["http" |
++   "https"])(using Tactic[OAuth.Error]): Authorization`, e `authorizationUrl(scopes: List[Text],
++   state: Text, pkce: Optional[Pkce] = Unset)(using Tactic[OAuth.Error]): HttpUrl`. As concessões
++   usam o `Http.Client` no escopo em vez de um backend `javaNetHttp` embutido. (#2091)
++ - `orthodoxy.OAuth` (a classe, um armazenamento por `Session` com `update`/`apply`) foi
++   renomeado para `orthodoxy.Authorizations` (módulo `orthodoxy.server`), apoiado em um
++   `ConcurrentHashMap`; `orthodoxy.OAuth.State(redirect, uuid, access, refresh, expiry)` passou a
++   ser `Authorizations.State(redirect: Path on Www, uuid: Uuid = Uuid(), access:
++   Optional[Authorization] = Unset)`, com seu `expired` agora lendo a expiração da autorização (os
++   antigos campos `refresh`/`expiry` nunca eram definidos). `OAuth.Error.Reason` ganhou
++   `Misconfigured(detail: Text)` (`SN-840.7`). (#2091)
++ - `orthodoxy.Authorization` ganhou `bearer: Auth`, `expired: Boolean`, `grants(required:
++   List[Text]): Boolean` e, no objeto companheiro, `Authorization.parse(json: Json)(using
++   Tactic[OAuth.Error]): Authorization` (RFC 6749 §5.1; `scope`, `expires_in` e `refresh_token`
++   opcionais — antes, uma resposta de token sem `scope` era `InvalidJsonResponse`). Novo
++   `orthodoxy.Pkce(verifier: Text)` com `challenge` (S256) e `Pkce()`; nova classe de tipos
++   `orthodoxy.Credential` (`type Self <: Label; type Result; def value: Result`, construtor
+
+% 0 1 0 0f51609187580b9e1ad7bc58875c06b1
+
+% 0 1 0 046683a3b9afdfab0fd015fb2638c92b
+
+@ 0 13 0 1922a31e978487481dbb790accb7d243
++ - Novos `pneumatic.Brotli.continuation(base: Data, next: Data, window: Int = Brotli.Window):
++   Data` e `pneumatic.Brotli.prefix(base: Data, window: Int = Brotli.Window, block: Int =
++   Brotli.Block): Data`, com as constantes `Brotli.Window = 24` e `Brotli.Block = 1 << 24`.
++   `continuation` codifica `next` contra uma janela LZ77 pré-carregada com `base`, produzindo o(s)
++   meta-bloco(s) apenas para `next`, sem cabeçalho de stream, terminando com ISLAST = 1; `prefix`
++   constrói o stream de preparação fixado pela RFC 7932 (cabeçalho WBITS, `base` como meta-blocos
++   não comprimidos de no máximo `block` bytes, depois o meta-bloco de metadados vazio `0x06`), de
++   modo que `(prefix(base, w, b) ++ continuation(base, next, w)).decompress[Brotli]` é
++   `base ++ next`. O código que carrega seu próprio port do codificador para esse fim
++   (`lira.Priming`) deve chamar estes em seu lugar. A saída existente de `compress[Brotli]` não
++   muda em nenhum byte. (#2047)
++ - `pneumatic.core` não depende mais de `turbulence.stdio`; um consumidor de qualquer módulo do
++   pneumatic que usava nomes do turbulence sem depender do turbulence deve declarar
++   `turbulence.core` ou `turbulence.stdio`. (#2082)
+
+% 0 1 0 1828e4d97834300a121cab8d2d6afc7f
+
+@ 0 57 0 18a0dcd5e7524c551a1867388b98a790
++ - `polyvinyl.Member.Value(fieldType: Text, params: Text*)` agora é `Member.Value(fieldType:
++   Text, params: List[Text] = Nil, multiplicity: Multiplicity = Multiplicity.One)`, e
++   `Member.Record(fieldType: Text, fields: List[(Text, Member)])` é `Member.Record(fields:
++   List[(Text, Member)], multiplicity: Multiplicity = Multiplicity.One)`: um registro aninhado não
++   é mais indexado por um rótulo. Novos `enum polyvinyl.Multiplicity { One, Optional, Many }` e
++   `Member#multiplicity`, `Member#of(multiplicity)`, `Member#optional`, `Member#many`. A macro lê
++   um membro `Optional` como `Optional[T]` (`Unset` onde o `absent` da especificação vale) e um
++   membro `Many` como `List[T]`; um `T = S raises E` falível passa a ser `Optional[S] raises E` /
++   `List[S] raises E`. A convenção de rótulo `"…?"` não existe mais. (#2089)
++ - `polyvinyl.Specification` agora declara `transparent inline def record(inline value: Origin):
++   Record` e `transparent inline def tuple(inline value: Origin): NamedTuple.AnyNamedTuple`,
++   herdados por todo objeto de especificação, então as declarações por objeto `transparent inline
++   def record(…) = ${build('…)}` e `tuple` não são mais necessárias e devem ser removidas (agora
++   colidem com os membros herdados). `Specification#build(value: Expr[Origin])` e
++   `#tuple(value: Expr[Origin])` (as metades de macro) foram removidos; as macros são
++   `Specification.record[self, origin, form]` e `Specification.tuple[self, origin, form]`.
++   `build(data: Origin, transform: Text -> Origin -> Any): Record` continua existindo. O objeto de
++   especificação agora é carregado por reflexão em tempo de expansão (pelo seu nome binário, por
++   meio do classloader da macro), então ainda deve ser compilado antes de seus locais de chamada,
++   e deve ser um `object`. (#2089)
++ - `polyvinyl.Structural[constructor[_]]` foi removido, com sua exportação `soundness.Structural`.
++   Registros aninhados são `Member.Record`; a repetição é `Multiplicity.Many`. (#2089)
++ - Novos `polyvinyl.Multiplicity.Keyed` (um campo lido como `Map[Text, T]`) e `polyvinyl.Member.Union(alternatives:
++   List[(Text, Member)], multiplicity: Multiplicity = One)` (um campo lido como a união dos tipos
++   de suas alternativas, com a alternativa escolhida pelo `kind` do valor segundo a especificação;
++   uma união de uma única alternativa aninha a multiplicidade de sua alternativa). Adicionado
++   `Member#keyed`. `polyvinyl.Specification` ganhou os ganchos `def entries(name: Text, value:
++   Origin): List[(Text, Origin)]`, `def kind(value: Origin): Text`, `def elements(value: Origin):
++   List[Origin]` e `def pairs(value: Origin): List[(Text, Origin)]`, cada um com um padrão que
++   entra em pânico; uma especificação que usa membros `Keyed` ou `Union` deve sobrepô-los. (#2089)
++ - Novo `polyvinyl.Intensional.Fallible` (`type Self <: Label; type Error <: Hazard; def
++   transform(data: Origin, params: List[Text])(using Tactic[Error]): Result`): a macro convoca
++   primeiro `label is Intensional in Form from Origin`, depois `label is Intensional.Fallible …`,
++   e lê um campo falível como `Result raises Error`. Um `Intensional` cujo `Result` é ele mesmo
++   `S raises E` continua sendo lido como antes. (#2089)
++ - `polyvinyl.Specification` ganhou os membros abstratos `def absent(value: Origin): Boolean` e
++   `def repeated(name: Text, value: Origin): List[Origin]`; `def build(data: Origin, transform:
++   Text -> Origin -> Any): Record` agora tem um padrão (`Record(data, transform)`). (#2089)
++ - Os membros `val data: Origin` e `def access: Text => Origin => Any` de `polyvinyl.Record`
++   agora são `val recordData: Origin` e `def recordAccess: Text -> Origin -> Any`, para que uma
++   especificação possa declarar um campo chamado `data` ou `access`; `record.data` continua
++   disponível como extensão (`Record.data`) em qualquer registro. `Record#selectDynamic(name)`
++   agora decodifica um nome codificado pela JVM (`street$$minusaddress`) antes de despachar, de
++   modo que um campo nomeado com símbolos (`street-address`, `+to`, `$$schema`) é selecionado por
++   meio de um nome entre crases; um nome não declarado agora falha com
++   `fulminate.Panic("the record has no field named …")` (antes, `NotImplementedError`). Novas
++   fábricas `polyvinyl.Record(data, access)`, `polyvinyl.Intensional[name <: Label, form, origin,
++   value](accessor: origin => value): (name is Intensional in form from origin to
++   value)^{accessor}` e `Intensional.parametric(accessor: (origin, List[Text]) => value)`. (#2089)
++ - O tipo refinado de um registro agora fixa `Origin` (`Record { type Origin = Json; … }`), de
++   modo que `record.data` tem o tipo da origem em vez de um `record.Origin` abstrato. (#2089)
++ - `polyvinyl.Specification` ganhou `def required(name: Text, value: Origin): Origin = value`,
++   aplicado pela macro a todo campo lido sob `Multiplicity.One` antes de seu `Intensional`; uma
++   especificação o sobrepõe para falhar diante de um valor ausente. (#2089)
++ - O erro de macro `could not find a Structural instance for the field …` não ocorre mais; um
++   rótulo desconhecido é sempre `could not find an Intensional instance …`. (#2089)
+
+% 0 1 0 110b77734cfed03a118adecece7f9e5b
+
+@ 0 2 0 0ea872fe32cc5ef4004d7a66e14d2cfe
++ - `praxinoscope.core` não depende mais de `contextual.core`; um consumidor que alcançava o
++   contextual apenas por meio do praxinoscope deve declará-lo. (#2082)
+
+% 0 1 0 0172194e0cc326ed063fbc1a966cec9f
+
+@ 0 5 0 03b17181c5735e3a08f65dc60005d7d8
++ - Novo `profanity.Signal(interrupt: UnixSignal | WindowsSignal, columns: Optional[Int] = Unset,
++   rows: Optional[Int] = Unset, deadline: Optional[Quantity[Seconds[1]]] = Unset)`, exportado por
++   `soundness`, é o que os handlers de `Console#trap` agora recebem: `Console#trap` recebe
++   `PartialFunction[Signal, SignalResponse]`, antes `PartialFunction[UnixSignal |
++   WindowsSignal, SignalResponse]`. Veja a entrada do `exoskeleton` para a reescrita de um handler.
+
+% 0 1 0 1fa790e472acb10807e0e1c8e15c2578
+
+@ 0 9 0 132eb0259416d10d00c311cd9316b9af
++ - Os casos `Close`, `Logoff` e `Shutdown` de `profanity.WindowsSignal` agora têm os nomes curtos
++   `CTRL_CLOSE`, `CTRL_LOGOFF` e `CTRL_SHUTDOWN`, antes `CLOSE`, `LOGOFF` e `SHUTDOWN`, e seu given
++   `Decodable in Text` decodifica pelo nome curto (`CTRL_C`, `CTRL_BREAK`, …), onde antes exigia o
++   nome do caso (`Ctrlc`) e por isso não conseguia decodificar nenhum deles. (#2064)
++ - `profanity.Terminal` toma seu tamanho inicial do `Termcap` do stdio (`width`/`height`) quando
++   ele carrega um, antes de `LINES`/`COLUMNS`, e, em um `WINCH` ou `CONT` que carrega um tamanho,
++   registra o tamanho e emite `Terminal.Info.WindowSize` diretamente, enviando apenas a consulta
++   de âncora em vez da sondagem de tamanho por posição do cursor; a sondagem ainda é enviada quando
++   o sinal não carrega tamanho. (#2064)
+
+% 0 1 0 1e700bdc822d8d6600877dea2cb39769
+
+@ 0 17 0 0be7357ac09a6e4709da71813cc743ff
++ - `reliquary.core` depende do `Signing` de `gastronomy.core` (nome inalterado, veja enigmatic) e
++   de `revolution.semver` em vez de `enigmatic.core` e `revolution.core`; um consumidor que
++   alcançava `enigmatic.core`, `aperture.core`, os tipos de manifesto de `revolution.core` ou o
++   `turbulence` apenas por meio do reliquary deve declará-los. (#2082)
++ - `reliquary.Lira.Hash`, antes apenas um objeto, agora também é `case class Hash private(bytes:
++   Data)`, com igualdade por conteúdo (`Blob.compare(bytes, that.bytes) == 0`) e um `hashCode`
++   correspondente. O objeto companheiro mantém `epoch`, `size`, `Domain`, `text(hash: Data): Text`
++   e `emptyBlob`, e ganha `text(hash: Lira.Hash): Text`. `Lira.Hash.apply(domain: Lira.Hash.Domain,
++   content: Data)` devolve `Lira.Hash` em vez de `Data`; os bytes que ele devolvia são
++   `Lira.Hash(domain, content).bytes`. Um `Lira.Hash` não é um `Data`: passe `hash.bytes` onde bytes
++   são exigidos (consultas ao armazenamento de blobs, `Blob.compare`, `Atom#valueHash`,
++   `TreeEntry#blob`, `Blob#hash`, `serialize`). Campos com o tipo mudado de `Data` para `Lira.Hash`
++   (com `Optional[Data]` → `Optional[Lira.Hash]` e `List[Data]` → `List[Lira.Hash]`):
++   `Lira.Manifest#lineage`, `Lira.Manifest#delta`, `Lira.Manifest.Api#atoms`,
++   `Lira.Manifest.Dependency#api`, `Lira.Manifest.Dependency#build`,
++   `Lira.Manifest.Dependency#uses`, `Lira.Manifest.Dependency#spans`, `Lira.Manifest.Requires#api`,
++   `Lira.Manifest.Requires#uses`, `Lira.Manifest.Payload#hash`, `Lira.Manifest.Signature#key`,
++   `reliquary.Section#tree`, `Section#derivative`. Tipos de resultado mudados de `Data` para
++   `Lira.Hash`: `reliquary.Snapshot.apply(atomizations: List[Atomization])`,
+
+% 0 1 0 174bf0c9f507db8b16d7c45e2f236447
+
+@ 0 3 0 06e13ee18daf27ce0910a42f6f480308
++   Data)`, `reliquary.Derivative.hash(tree: Lira.Tree, store: Blobstore)`. Parâmetros com o tipo
++   mudado de `Data` para `Lira.Hash`: `reliquary.Lira.Payload.decompress(compressed: Data, length:
++   Long, declaredHash: Lira.Hash)`, `reliquary.Lineage.check(lineage: List[Lira.Hash], snapshot:
+
+% 0 1 0 1e4d8bb554b5a2df116dc7e09a49ccc1
+
+% 0 1 0 1155348148b66fca1938a34434344036
+
+% 0 1 0 14a34619bc4d608d0f6fed480994553a
+
+% 0 1 0 12040e774b1742720a5ef0185e8df332
+
+@ 0 13 0 1a68b369f8cc3e20158c69b551762af2
++   e o `lineage: List[Lira.Hash] = List()` de `reliquary.LiraAssembler.assemble`. Inalterados:
++   `reliquary.Lira.Delta`, `reliquary.Lira.Tree`, `TreeEntry`, `Atom` e `Blob` ainda carregam seus
++   hashes como `Data`, e o `used: Data => …` de `Buildpath#hostRequirements` ainda recebe bytes.
++   (#2098)
++ - `reliquary.Lira.Manifest.decode(tel: Tel): Lira.Manifest raises Lira.Error` agora é derivado das
++   case classes do manifesto pelo `Tel.Decodable` do stratiform. O resultado para um manifesto
++   válido não muda. Para um inválido, o texto de detalhe de `Lira.Error.Reason.InvalidManifest(detail)`
++   mudou: é a renderização do `stratiform.Tel.Error.Reason` subjacente (por exemplo, `Absent` para
++   um campo obrigatório ausente, `NotScalar(value, expected)` para um hash, caminho de árvore,
++   garantia ou modo de recurso que não pode ser analisado) ou `bad version <text>` para uma versão
++   que `revolution.Semver` rejeita, onde antes era prosa como `the payload record is missing or
++   repeated` ou `a hash is malformed`. Um campo não repetível que aparece duas vezes não é mais
++   rejeitado pelo próprio `decode` (a primeira ocorrência é lida); `Lira.read` ainda o rejeita por
++   meio da validação de schema antes de decodificar. (#2098)
+
+% 0 1 0 1ef5846a9736da7d16e61c9efa496965
+
+@ 0 6 0 1d88c2042da5e0440bfb0d8827e9b323
++ - O novo módulo `revolution.semver` (no pacote de distribuição `tool`; dependências
++   `gossamer.core`, `distillate.core`, multiplataforma) contém `revolution.Semver`,
++   `revolution.Compatibility`, o interpolador `v"…"` e `revolution.internal.semver`;
++   `revolution.core` depende dele e mantém `Manifest`, `EncodableManifest`, `DecodableManifest` e
++   `manifestAttributes`. O pacote e os nomes não mudaram. As exportações de `Semver`,
++   `Compatibility` e `v` em `soundness` foram movidas para `soundness_revolution_semver`. (#2082)
+
+% 0 1 0 012115d2210015c8084b240aed3fed8f
+
+@ 0 2 0 1ff11dc061fe2fb60eaf924155e04395
++ - `savagery.core` depende de `geodesy.angle` em vez de `geodesy.core`; um consumidor que usava
++   `Geolocation`, `Compass` ou os outros tipos de `geodesy.core` por meio do savagery deve declarar
+
+% 0 1 0 1c60b81cea8b1be80e1cef1420dc54f4
+
+% 0 1 0 101a8988acb4345d0341a393aab67281
+
+@ 0 17 0 01913037a251bd5719b15624bfcd740f
++ - `sibylline.Llm.Reply#id` e `sibylline.Llm.Event.Started#id` agora são
++   `Optional[Llm.Id[Llm.Reply]]` em vez de `Optional[Text]`. `Llm.Id` é um tipo opaco sobre
++   `Text`, tipado pelo que identifica; leia o texto com `id.text`, ou compare com
++   `reply.id.let(_.text) == t"msg_1"`. Ele é `Showable`, `Inspectable`, e codificável e
++   decodificável em `Text` e, portanto, em JSON. (#2092)
++ - `sibylline.Llm.Exchange` ganhou um quinto parâmetro, `format: Optional[JsonSchema] = Unset`; a
++   construção posicional com quatro argumentos não é afetada, mas um padrão
++   `Exchange(system, history, tools, settings)` não casa mais. `Llm.Dialect` ganhou
++   `def structured: Boolean = false`; um dialeto o sobrepõe com `true` quando seu protocolo de
++   transmissão respeita `format`. (#2092)
++ - `session.elicit[value](prompt)` agora envia o schema derivado como o `format` da resposta em um
++   dialeto estruturado (Anthropic), decodificando o texto da resposta, e mantém o caminho de
++   ferramenta forçada nos outros. O comportamento é o mesmo para quem chama; um dialeto de teste
++   `Scripted` deve devolver o documento JSON como texto da resposta se sobrepuser `structured` com
++   `true`. (#2092)
++ - Novos: `sibylline.Llm.Request(id: Llm.Id[Llm.Request], prompt: Text)`,
++   `sibylline.Llm.Outcome[value](id, result: value | Llm.Error)`, `Llm.Id.request(text)` (lança
++   `Llm.Error` com o motivo `Invalid` para um identificador fora de `[A-Za-z0-9_-]{1,64}`),
+
+% 0 1 0 1b455941881607e51659fc9646b0573a
+
+@ 0 5 0 1b00d2aa970acc890fc818a6820bf995
++   `Anthropic.Batch[value]` com `id`, `status`, `counts`, `refresh()`, `await(seconds = 30)` e
++   `outcomes()`, `Anthropic.Batch.Status` e `Anthropic.Batch.Counts`, e `Anthropic#caching` (um
++   breakpoint de cache de prompt no prompt de sistema). Aditivo. (#2092)
++ - O construtor privado de `sibylline.Anthropic` ganhou um `cached: Boolean` no final; só
++   `Anthropic.apply` o chama. (#2092)
+
+% 0 1 0 0ed19456d6998e511992f280a95ea1f6
+
+@ 0 12 0 14d052733b66360d12085a9da913512a
++ - `stratiform.Tel.Error.Reason.UnconstrainedScalar` (E224) foi removido: `Tels.Validation` não
++   rejeita mais um `scalar` que não declara nem `validate` nem `pattern`, então tal schema agora é
++   validado onde antes lançava `Tel.Error(Reason.UnconstrainedScalar)`. O código que faz match
++   sobre o caso deve eliminar esse ramo; o número de erro 224 continua reservado e não é
++   reutilizado. (#2048)
++ - `stratiform.SchemaResolver.resolve` agora responde pelo schema embutido `acceptance` (BinTEL
++   §8.4) no passo 1 da resolução, como faz com `tels`: um pragma cuja referência é
++   `specification.tel/acceptance` (sem seletor, ou com `:1.0.0`) ou cuja assinatura é
++   `SchemaResolver.acceptanceSignature` é resolvido para `Tels.Axiom.acceptance` com
++   `Resolved.step == Tels.Resolution.Step.Builtin` e `Resolved.document == Unset`, onde antes
++   passava adiante para os armazenamentos, a biblioteca e o delegado; um armazenamento ou delegado
++   que servia essa coordenada ou assinatura não é mais consultado para ela. (#2051)
++ - O módulo `stratiform.binary` foi removido; tudo o que ele fornecia — `stratiform.Bintel`,
+
+% 0 1 0 0a06d334e06f0f6a1b972f7b1834bfae
+
+@ 0 21 0 0843eb079a64503a0a40fa5b653155b4
++   `stratiform.SchemaSignature`, `stratiform.SchemaResolver` e os métodos de extensão `bintel`,
++   `bintelDocument` e `valueHash` sobre valores `Tel`, `Tel.Element` e `Tel.Encodable` — agora
++   está em `stratiform.core` (artefato `stratiform-core`), sem mudança de pacote nem de assinatura.
++   As definições de build que dependem de `stratiform.binary` devem depender de `stratiform.core`
++   em seu lugar; `stratiform.binaryStaged` agora depende de `stratiform.core`. `ulysses.core` e
++   `stratiform.core` não mudaram para a JVM; `ulysses.core` agora também publica artefatos
++   Scala.js e Scala Native, e `stratiform.core` agora depende de `gastronomy.core` e
++   `ulysses.core`. (#2051)
++ - `stratiform.Tels.tels[T](name)` deriva um schema de forma diferente. Um campo cujo tipo é uma
++   case class era `Tels.Field(_, _, keyword, Tels.Struct(members, validators), _)`; agora é
++   `Tels.Field(_, _, keyword, Tels.Reference(typeName), _)`, com `Tels.RecordDefinition(typeName,
++   members, Array.empty)` registrado em `Tels#records` (`typeName` é o nome simples da case
++   class; o próprio registro de um tipo raiz só é registrado quando um membro o referencia). Uma
++   variante de um tipo selado cujo caso é um produto também carrega `Tels.Reference(caseName)`. Um
++   campo com tipo soma aninhado dentro de um produto agora registra sua `Tels.SelectDefinition` em
++   `Tels#selects` (antes, uma `Reference` que não podia ser resolvida). A polaridade `required` de
++   um campo obrigatório agora é `Tels.Polarity.Implicit` onde era `Tels.Polarity.Tight`, e os
++   membros `key`/`value` de um campo `Map` são `Implicit` onde eram `Tight`. A forma de
++   transmissão BinTEL de um valor não mudou. Os registros `stratiform.TelBlueprint` construídos
++   sobre um schema derivado expõem, portanto, um campo case class como um `Record` aninhado (antes,
++   um `Tel`). (#2056)
++ - `stratiform.TelSchematic` ganhou membros com padrões — `fieldType: Tels.Type`,
+
+% 0 1 0 17a044a2d1ca7eaa1a876a5b0a343a20
+
+% 0 1 0 110c40ea8c8417710ef73c78cec8c1bb
+
+@ 0 46 0 033447792c7e16b20c1bc1d24d198591
++   `rootLayers: List[Tels.Layer]` — e o padrão de seu `polarity` mudou de `Tels.Polarity.Tight` para
++   `Tels.Polarity.Implicit`; uma instância que sobrepõe `polarity` não é afetada, e uma que depende
++   do padrão agora deriva polaridade implícita. (#2056)
++ - `stratiform.Tel.Error.Reason.ValidatorRejected` (E310), antes um caso sem parâmetros, agora é
++   `case ValidatorRejected(message: Text)`, carregando a mensagem do `Tel.Validator.Diagnostic`
++   com que o validador respondeu. Sua renderização `Communicable` mudou de "a scalar value or
++   struct failed a named validator" para "a scalar value or struct failed a named validator:
++   <message>". Os casamentos de padrões e os testes de igualdade contra `Reason.ValidatorRejected`
++   devem vincular ou ignorar o parâmetro (`case Reason.ValidatorRejected(_) =>`). (#2067)
++ - `stratiform.Tel.Type.assign(tel, schema, validators)` e `assign(tel, schema, validators,
++   codecs)` agora executam as verificações do §21 (validadores nomeados, padrões, codificações)
++   *durante* o percurso de atribuição, e não depois dele, de modo que, sob uma fronteira
++   `validate[Tel.Focus]`, um E310, E312, E313 ou E315 é acumulado com o `Tel.Focus` do composto
++   que fornece o valor — um ponteiro, e um trecho quando o documento foi analisado sob
++   `parsing.trackPositions` —, onde antes era acumulado sem foco (`prior == Unset`). Os erros
++   acumulados ficam, por consequência, intercalados com os estruturais (E301–E311, E314) na ordem
++   do documento, em vez de virem todos depois deles; o conjunto de erros não mudou. Um valor que a
++   linha pai atribuiu posicionalmente tem como foco o composto pai; um valor fornecido por um
++   composto filho tem como foco esse filho. (#2067)
++ - O ponteiro `Tel.Focus` acumulado por `Tel.Type.assign` para um filho de um membro *repetível*
++   agora carrega, depois da palavra-chave, o índice de ocorrência do filho, a partir de zero, entre
++   seus irmãos de mesma palavra-chave — `/module/1/source` onde era `/module/source` —, para que
++   seja um TELP resolvível (telp.md §5) e localize o composto certo; membros não repetíveis e
++   palavras-chave desconhecidas não mudaram. Correspondentemente, `Tel#locate(path)` e
++   `Tel#locateKey(path)` (o given `Tel is Positionable by Telp`) aceitam um componente só de
++   dígitos depois de uma palavra-chave como esse seletor de ocorrência, onde antes ele não casava
++   com nenhum filho; uma palavra-chave sem ele ainda seleciona o primeiro. O código que compara
++   ponteiros acumulados com caminhos literais deve acrescentar o índice para membros repetíveis.
++   (#2068)
++ - `stratiform.TelBlueprint` (módulo `stratiform.records`) foi movido para `stratiform.Tel.Provider`
++   (módulo `stratiform.core`, que agora depende de `polyvinyl.core`); o módulo
++   `stratiform.records` e sua exportação `soundness.TelBlueprint` foram removidos.
++   `TelBlueprint.fieldsOf` é `Tel.Provider.fieldsOf`; `TelBlueprint.intensional` e
++   `TelBlueprint.record` foram removidos (use `polyvinyl.Intensional(accessor)` e
++   `polyvinyl.Record(data, access)`); os givens `optionalString`, `optionalIdentifier`,
++   `optionalTypeName` e `optionalSigil` foram removidos (a opcionalidade é aplicada pela macro).
++   (#2089)
++ - Mudança de comportamento: o campo de um registro `Tel.Provider` cujo tipo no schema é uma
++   `Tels.Reference` para uma definição de registro agora é lido como um `Record` aninhado (antes,
++   a macro falhava com `could not find a Structural instance`), e um campo com polaridade
++   `repeatable` `Loose` é lido como `List[T]` de todas as ocorrências (antes, apenas a primeira
++   ocorrência). `Tel.Provider` ganhou `absent(tel: Tel): Boolean` e `repeated(name: Text, tel:
++   Tel): List[Tel]`. (#2089)
++ - Mudança de comportamento: o campo de um registro `Tel.Provider` cujo tipo é uma `Tels.Struct`
++   inline agora é lido como um `Record` aninhado (antes, como o `Tel` bruto, rótulo `"tel"`); um
++   membro `Tels.SelectRef` agora contribui com um campo por variante de sua
++   `Tels.SelectDefinition`, cada um `Optional` (ou `List` quando o select é repetível; uma
++   variante `Flag` é lida como `Boolean`), onde antes os membros select eram ignorados; e um campo
++   obrigatório ausente agora lança `Tel.Error(Tel.Error.Reason.Absent)` ao ser lido (antes, um
++   campo `String` era lido como `t""`). (#2089)
+
+% 0 1 0 1b8a4df21a24e9b507d1dd74e6543c8d
+
+@ 0 5 0 1a5ba8d3ad86f91a0df30b0309a6b930
++ - `surveillance.Watch.Event#path[directory: Instantiable across Paths from Text]: directory`
++   agora é `path[directory](using (directory is Instantiable across Paths from Text)^): directory`:
++   a evidência de caminho pode capturar (como a de `Path on Local` faz, por meio de seu sistema de
++   arquivos). Os locais de chamada não mudam; um argumento `using` explícito que antes era
++   rejeitado por capturar agora é aceito. (#2076)
+
+@ 0 2 0 0d59fd176314d2e51b726149d1a3094a
++ - `surveillance.core` não declara mais uma dependência de `gossamer.core` (ele ainda chega
++   transitivamente por meio de `turbulence.core`). (#2082)
+
+% 0 1 0 19751db48a45fac8054f045dab5ba311
+
+@ 0 3 0 04aea5b5f4f63e86150b6ad901916384
++ - `tarantula.core` não depende mais de `cataclysm.core` nem de `xylophone.core` (veja
++   anticipation: `Focusable` e suas instâncias saíram do tarantula); um consumidor que usava
++   qualquer um deles (ou jacinta, hellenism, phoenicia, quantitative por meio do cataclysm) apenas
++   por meio do tarantula deve declará-lo. (#2082)
+
+% 0 1 0 09d3188b2c45560007c7207681d04236
+
+@ 0 8 0 0fbc89895554a591025cfff0b4835783
++ - Os givens `telekinesis.Http.Method.formmethod` e `Http.Method.method` (cada um
++   `("…" is GenericHtmlAttribute[Method])`) foram removidos junto com
++   `anticipation.GenericHtmlAttribute`. (#2082)
++ - `telekinesis.Auth.showable: Auth is Showable` passou a ser `[auth <: Auth] => auth is
++   Showable`, de modo que um valor tipado como um caso (`Auth.Bearer`) é renderizado como o valor
++   de seu cabeçalho; antes, ele caía na instância genérica de `reflect.Enum` e era renderizado como
++   `Bearer(…)`. `Auth is Decodable in Text` agora decodifica corretamente credenciais `Basic`: o
++   único texto base64 é decodificado e dividido no primeiro dois-pontos (antes, o texto codificado
++   era dividido em um dois-pontos antes da decodificação, então nenhum cabeçalho `Basic` real era
++   decodificado; uma senha agora pode conter dois-pontos). (#2091)
+
+% 0 1 0 174231ea3a507bbb0da3030ca3b5bc65
+
+@ 0 10 0 12600137185d8e1f163b5762589709d4
++ - `turbulence.shred(mean: Double, variance: Double)(using Random): Chain[Data]` (sobre
++   `Chain[Data]`) passou a ser `shred(chunkSize: => Int): Chain[Data]`: quem chama agora fornece o
++   tamanho de cada chunk (avaliado de novo para cada chunk, com mínimo de 1) em vez dos parâmetros
++   de uma distribuição gama. O comportamento antigo é `given Distribution =
++   Gamma.approximate(mean, variance)` seguido de `stream.shred(arbitrary[Double]().toInt)` sob um
++   `Random`. `turbulence.core` não depende mais de `capricious.core`, então um consumidor que
++   alcançava o capricious (ou wisteria, hypotenuse) apenas por meio do turbulence deve declará-lo.
++   (#2082)
++ - O novo módulo `turbulence.async` (no pacote de distribuição `base`; dependências
++   `turbulence.core`, `parasite.core`) contém `turbulence.Confluence`, `turbulence.Divergence` e a
++   bomba desacoplada, e `turbulence.core` não depende mais de `parasite.core`. A extensão de bomba
+
+% 0 1 0 05d02bd0ee9d73fd1813ca6e379d076a
+
+@ 0 8 0 08b531b754a4f80715928969d5d125e8
++   Probate): Task[Unit]` foi renomeada para `convey` (o auxiliar de padrão de `Chain`
++   `flow[result](termination) (proceed)` mantém seu nome); as exportações de `Confluence`,
++   `Divergence` e `convey` em `soundness` vêm de `soundness_turbulence_async`. Um consumidor de
++   `Confluence`, `Divergence` ou `convey` deve declarar `turbulence.async`; um consumidor que
++   alcançava o parasite (ou digression, mercator, nomenclature, spectacular, hypotenuse,
++   anticipation.time) apenas por meio de `turbulence.core` deve declará-lo — dentro deste
++   repositório, isso valia para anthology, cataclysm, coaxial, ethereal, eucalyptus,
++   exoskeleton.args, graffiti, guillotine, honeycomb, locomotion, mandible, profanity, revolution,
++   surveillance, ultimatum e xylophone. (#2082)
+
+% 0 1 0 01a924463d4d2ade199e4991ad39d095
+
+@ 0 1 0 042736283ee017ed129dea02a6680a56
++ - `urticose.core` agora depende de `anticipation.net`. Novos pacotes de escolhas, espelhados em
+
+% 0 1 0 0c739c00dae017d40bc210dd7ea59d28
+
+% 0 1 0 1f83ff44b63d06751343f77a7e935cd8
+
+% 0 1 0 09dbdcedfb055d2804a718e47c2812bb
+
+@ 0 3 0 06b664f3802b729e110c550f1577a31e
++   `ipAddressInterfaces.soundnessIpv4` e `soundnessIpv6` (`IpAddresses`, `IpAddress.Error`), e, em
++   `urticose.url`, `urlInterfaces.soundnessUrl` (`HttpUrl is Instantiable across Urls from
++   Text`, a mesma instância que `Url.instantiable`). (#2089)
+
+% 0 1 0 0daabac2e02218c20d4f9d914c51325b
+
+@ 0 6 0 13b93da9b1cb25dd00dd29fce2540e48
++ - `vivisection.Jdwp.Capabilities` ganha dois campos: `canGetBytecodes: Boolean`, inserido como
++   terceiro parâmetro (depois de `canWatchFieldAccess`), e `canGetConstantPool: Boolean`,
++   acrescentado por último, de modo que o construtor agora é
++   `Capabilities(canWatchFieldModification, canWatchFieldAccess, canGetBytecodes,
++   canGetSyntheticAttribute, canPopFrames, canGetSourceDebugExtension, canUseSourceNameFilters,
++   canGetConstantPool)`. A construção posicional e o casamento de padrões devem acrescentar os
++   dois. (#2059)
+
+% 0 1 0 020ff7e92e5a6e570f64b628bc5ba1ee
+
+@ 0 10 0 108cf093cacb6cd8180552d45cb1c221
++   (o passo lógico) não executa mais `handler` para uma parada em um método bridge, um método
++   sintético que não seja um corpo de lambda (nome contendo `$anonfun$`), o acessor de um lazy
++   val, um getter, setter ou encaminhador de mesmo nome triviais, ou qualquer classe cujo nome case
++   com `java.*`, `javax.*`, `jdk.*`, `sun.*`, `com.sun.*` ou `scala.runtime.*`; em vez disso, ele
++   avança de novo (`Into` para um passo para dentro, `Out` nos demais casos) até uma parada fora
++   desses, ou até o limite existente de 64 iterações. Suas requisições agora também carregam
++   modificadores `ClassExclude` para esses seis padrões. O código que depende de um passo lógico
++   parar dentro de classes do JDK ou de métodos gerados deve usar o primitivo
++   `Debug#step(thread, depth, size): Int` e `Debug#events`, que não mudaram. (#2059)
++ - `vivisection.dap` depende de `harlequin.typed` em vez de `harlequin.core`. (#2082)
+
+% 0 1 0 1e9899a0d30c19b70ffd7df14fc9c9a9
+
+@ 0 51 0 1a52b268399b52751c3026f105d5e590
++ - `xylophone.core` agora depende de `anticipation.focus` (aditivo: `XPath.focusable`). (#2082)
++ - `xylophone.Element` não é mais uma `case class`: é `class Element(val label: Text, val
++   attributes: Attributes, val children: Array[Node]^{}, val scope: Xml.Scope = Xml.Scope.empty)`,
++   com um `apply(label, attributes, children, scope = Xml.Scope.empty)` no objeto companheiro e um
++   `unapply` que produz `(Text, Attributes, Array[Node]^{})`. A construção e os padrões de três
++   campos não mudaram; `copy`, `productArity`, `productIterator`, `productElement` e
++   `Element.tupled` não existem mais. `equals`/`hashCode` ignoram `scope`. (#2089)
++ - O parser de XML agora resolve prefixos de namespace. Um nome de elemento ou atributo cujo
++   prefixo (exceto `xml` e `xmlns`) não tem declaração `xmlns:prefix` no escopo agora falha com um
++   `Parse.Error` cujo problema é o novo `Xml.Issue.UnboundPrefix(prefix: Text)`, onde antes era
++   analisado. Importe `xylophone.namespaceOptions.lenientNamespaces` (também sob
++   `soundness.namespaceOptions`) para o comportamento anterior; `strictNamespaces` é o padrão. As
++   declarações continuam sendo atributos, e a serialização de um documento analisado não mudou.
++   (#2089)
++ - Os givens de parsing `Xml.aggregable`, `Xml.aggregable2`, `Xml.instantiable`, `Xml.loadable`,
++   `Xml.aggregableParsed`, `Xml.readableParsed` e `Xml2.aggregableIn` recebem mais dois parâmetros
++   de contexto, `(scope: Xml.Scope, namespacing: Xml.Namespacing)`, ao lado de `schema: XmlSchema`;
++   ambos têm padrões no objeto companheiro (`Xml.Scope.xml`, `Xml.Namespacing.Strict`), então os
++   locais de chamada não precisam mudar, a menos que nomeiem os tipos desses givens.
++   `Xml.XmlParser.from*` também recebem `(using XmlSchema, Xml.Scope, Xml.Namespacing)`. (#2089)
++ - `Xml#selectDynamic(name)` e `Xml#applyDynamic(name)(ordinal)` ganham um parâmetro de contexto
++   `scope: Xml.Scope` ao lado do `DynamicXmlEnabler` apagado, e um `name` prefixado cujo prefixo
++   está vinculado (no escopo, ou no elemento pai) agora casa com os filhos pelo namespace resolvido
++   e pelo nome local, em vez de pelo rótulo bruto; um prefixo não vinculado ainda casa com o rótulo
++   bruto. `optics.xmlLens` ganha o mesmo parâmetro de contexto `scope: Xml.Scope`. (#2089)
++ - `xylophone.XPath` ganha um segundo parâmetro, `scope: Xml.Scope = Xml.Scope.xml`; um
++   `NodeTest.Name(prefix, local)` ou `NodeTest.PrefixWildcard(prefix)` cujo prefixo o escopo
++   vincula casa pelo nome resolvido, e `namespace-uri()` devolve a URI resolvida em vez da string
++   vazia. O interpolador `xp""` vincula os prefixos que seu caminho usa por meio de givens
++   `Namespace` no escopo. `XPathEngine.evaluate` recebe um quarto parâmetro
++   `scope: Xml.Scope = Xml.Scope.xml`. (#2089)
++ - `Xml.xmlDiscriminable.discriminate` agora devolve o nome local do elemento em vez de seu
++   rótulo, de modo que um elemento prefixado como `<s:Book>` seleciona a variante `Book`. (#2089)
++ - O interpolador `x""` agora falha na compilação quando um literal usa um prefixo que nem um
++   ancestral dentro do literal declara nem um given `Namespace` no escopo vincula (a menos que
++   `namespaceOptions.lenientNamespaces` esteja no escopo), e dá a cada `Element` elevado o escopo
++   que esses vínculos e declarações implicam. (#2089)
++ - A serialização (`Xml#show`, `Xml.writeXml`) agora escreve uma declaração `xmlns`/`xmlns:prefix`
++   para um elemento cujo `scope` vincula um prefixo que ele ou seus atributos usam, ou seu namespace
++   padrão, de forma diferente do que a saída declarou acima dele e que seus próprios atributos não
++   declaram. Documentos analisados, e elementos construídos com o escopo vazio padrão, são escritos
++   como antes. (#2089)
++ - `Encodable in Xml`/`Decodable in Xml` derivados respeitam as novas anotações `Xml.xmlns(uri:
++   Text, qualified: Boolean = true)` e `Xml.unqualified()` e a nova classe de tipos
++   `Xml.Namespaced` (`given T is Xml.Namespaced = Xml.Namespaced(uri, qualified = true)`); um
++   decodificador derivado para um tipo sem anotação agora também casa com um elemento filho pelo
++   nome local quando nenhum filho tem o rótulo bruto. (#2089)
++ - `adversaria`: anotações escritas com um argumento nomeado (`@xmlns("u", qualified = false)`)
++   agora são relatadas por `Annotated`; antes eram descartadas silenciosamente. (#2089)
++ - `xylophone.core` agora depende de `polyvinyl.core`, `anticipation.time` e `anticipation.url`
++   (aditivo: `Xsd` e `Xml.Provider`); `xylophone.Xml3` agora estende o novo `xylophone.Xml4`, que
++   contém `Xml.Provider`. (#2089)
+
+% 0 1 0 1f752abdd12c4f920aa1fc7c0aca23a0
+
+@ 0 11 0 16726f1550ea17e21c3333b4f3196b87
++ - `ypsiloid.YamlPath(url: Optional[HttpUrl] = Unset, path: Path on YamlPath = YamlPath)` passou a
++   ser `YamlPath(path: Path on YamlPath = YamlPath)`: o campo `url`, que nenhum caminho de código
++   jamais definia, não existe mais. Os casamentos de padrões `YamlPath(url, path)` passam a ser
++   `YamlPath(path)`; `path.url` não existe mais. `YamlPath is Encodable in Text` sempre renderiza
++   `#…`, como sempre fez na prática. (#2082)
++ - `ypsiloid.YamlPath.Registry` (um `beneficence.Findable` com `update`, `apply` e `protected def
++   lookup`, todos indexados por `HttpUrl`) e `YamlPath#apply(using registry: YamlPath.Registry)(document:
++   Yaml): Yaml raises YamlPath.Error` (que sempre devolvia `document`) foram removidos. Sem
++   substituto. (#2082)
++ - `ypsiloid.YamlPath.Error.Reason.UnknownDocument` (`SN-546.1`) foi removido; `ExpectedHash`,
++   `ExpectedSlash` e `BadEscape` mantêm os números 2, 3 e 4. (#2082)
++ - `ypsiloid.core` não depende mais de `urticose.url`; um consumidor que alcançava o urticose
++   apenas por meio do ypsiloid deve declará-lo. (#2082)
+
+% 0 1 0 00f35d5d7c41def71e715ddeb1b22857
+
+@ 0 1 0 118d45fe7ef786ba1448f164c05b9ae1
++ - `zeppelin.Zip.Entry` ganhou nove parâmetros no final, depois de `alignment: Int = 1`:
+
+% 0 1 0 01d98651302e315405b712dbbf47a5f4
+
+% 0 1 0 111ed87a2ea54e910290805cc1ed3841
+
+% 0 1 0 061825fdbad9dd4a066a65650218fb21
+
+@ 0 15 0 00fa4af8da38f217106414602e4b4bba
++   `localExtra: Optional[Data] = Unset`, `centralExtra: Optional[Data] = Unset` e
++   `localSizes: Boolean = true`. A construção por nome ou com os seis primeiros parâmetros
++   posicionais não é afetada; `Zip.Entry.unapply` agora produz vinte campos em vez de onze, então
++   um padrão `Zip.Entry(a, b, c, d, e, f, g, h, i, j, k)` não casa mais. (#2045)
++ - `zeppelin.Zipfile.read` e `zeppelin.Zipfile.parse` (e, portanto, `path.open[Zip]()`) agora
++   preenchem esses nove campos a partir dos cabeçalhos do arquivo zip, e `zeppelin.Zipfile#serialize`
++   escreve literalmente um campo definido onde antes derivava o valor: as flags de uso geral eram
++   `0x800` para um nome não ASCII e `0` nos demais casos, os dois campos de versão `20` (`45` para
++   ZIP64), os dois campos de atributos `0` (externo `0x10` para um diretório), os campos extras
++   vazios. Uma entrada lida de um arquivo zip e escrita de volta reproduz, portanto, os valores de
++   cabeçalho do original e, quando o bit 3 de `flags` está definido, um descritor de dados depois
++   de seu payload, em vez de ser normalizada para os padrões do zeppelin. O código que dependia
++   dessa normalização deve redefinir os campos (com `Zip.Entry#withHeaders`, para `Unset` e
++   `localSizes = true`) antes de escrever. `Zipfile.read` agora também lê o cabeçalho local de toda
++   entrada de forma antecipada, onde antes adiava essa leitura até o conteúdo da entrada. (#2045)
+
+% 0 1 0 1c4ce86cb0fa16570db4798767364955
+
+@ 0 3 0 0250c147ac046c2601f8557fe9a13a74
++ - Os givens de estágio de duct `zephyrine.Ductile.charDecoder: Instance[CharDecoder, Data, Text,
++   Credit, Credit]` e `zephyrine.Ductile.charEncoder: Instance[CharEncoder, Text, Data, Credit,
++   Credit]` foram renomeados para `Ductile.charset` e `Ductile.codepage`, seguindo as renomeações do
++   hieroglyph acima.

@@ -1,0 +1,64 @@
+orthant 2 language
+
+% 0 1 0 0d732cd604759eeb102c3ca6b11f2975
+
+@ 0 1 0 034a4cd50136bf7802cdbe48e8865c6a
++ Sollevato quando l'identificazione dello schema di un documento TEL non si risolve in uno schema.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 6 0 03df0f80b32d8b3e185364ef3e788594
++ La risoluzione dello schema (TEL §8.2) trasforma l'identificazione del pragma — un riferimento
++ LIRA, selezioni di strati e/o una firma BASE-256 — in uno schema composto, attraverso i passi
++ embedded, integrato, deposito, libreria e LIRA. I suoi fallimenti sono errori di risoluzione a
++ runtime, al di fuori della tassonomia E1xx–E3xx del documento (l'unica eccezione è E124, selezioni
++ di strati fuori ordine, che è un `Tel.Error` sollevato durante la risoluzione perché richiede
++ l'ordine di dichiarazione dello schema).
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Codice
++ column  Motivo
++ column  Messaggio
+
+% 0 1 0 031a42b18eac33591cfc45d15ce59c1c
+
+% 0 1 0 16e2fd676f9cd22516d0f50bbf147a64
+
+% 0 1 0 05aad12f2ea0b5c6190140f88cf89c6c
+
+% 0 1 0 1dfb78821acdbc840c49553a2faa5789
+
+% 0 1 0 0dafdee2e17d4e671b90b889d3a70acf
+
+% 0 1 0 05c39885c454dedd0dc302e25edb1dbd
+
+% 0 1 0 041dd0be0b2ed2680cb6a82c363fca81
+
+% 0 1 0 0a1cfd06b887110c11b307c88982b702
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 6 0 01a43e698ca05aee1bb9bfcbf2ba5031
++ Una firma è autorevole: quando è preceduta da selezioni di strati, deve scomporsi esattamente
++ nell'hash di base più gli hash degli strati selezionati, in ordine. Un riferimento nudo (senza
++ selettore, senza firma) si risolve solo rispetto allo stato locale, per scelta progettuale; si
++ rende portabile un documento aggiungendo una firma oppure pubblicando lo schema e usando un
++ selettore `:version` o `:tag`. Un resolver senza rete risponde `Unresolved` al passo LIRA per
++ qualunque cosa assente dai depositi locali.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 06065de40406aced00c4fb04a10a524e
++ - Sorgente: `lib/stratiform/src/core/stratiform.Tels.scala` (`Tels.Resolution`), motore in
+
+% 0 1 0 1a3eba93cac717a91d321f22c5bed132

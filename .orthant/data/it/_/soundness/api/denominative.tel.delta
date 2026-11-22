@@ -1,0 +1,1277 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0e6a18700ede5e9c11fb68d4cd364ecc
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 00df30d91596154d01a0c47f5cdf92d9
++ info   ordinali, intervalli e indici confinati: contare e indicizzare tramite prove anziché tramite interi
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 010b0999f812869310c3b52ae4d039e7
++     _Denominative_ è il modo in cui Soundness conta e indicizza. Il suo tipo centrale è `Ordinal`,
++     una posizione (primo, secondo, terzo) che è un tipo del tutto diverso da `Int`, quindi un
++     errore di uno è un errore di tipo: non esiste un ordinale zero, il primo è `Prim`, poi
++     `Sec`, `Ter`, `Quat`, `Quin`, `Sen` e `Sept`, e un numero diventa un ordinale solo dicendo da
++     quale convenzione proviene (`0.z` legge un indice a base zero, `1.u` un conteggio a base uno;
++     entrambi sono `Prim`). Un intervallo di ordinali è un `Interval` (`Ter thru Sen`, `Ter till
++     Sen`, `Ter span 3`), e un intervallo localizzato di caratteri in un sorgente è uno `Span`.
+
+@ 0 7 0 071e39193d913dcf09655bfdf33a7226
++     La seconda idea è l'ordinale *confinato*, `Ordinal in xs.type`: un ordinale il cui tipo
++     registra la collezione che si è dimostrato capace di indicizzare. Solo un combinatore che ha
++     già stabilito il limite può coniarne uno: `xs.extent` (l'intero intervallo, con marchio),
++     `ordinal .within(xs)`, `xs.spot(p)`, `xs.prefix(p)`, `confine` e `pick` di rudiments; e la
++     lettura con uno di essi passa per un `apply` totale che restituisce un elemento nudo, mentre
++     un indice non dimostrato restituisce un `Optional`. Un ciclo di conteggio si scrive quindi
++     senza un contatore e senza una verifica dei limiti da nessuna delle due parti:
+
+% 2 1 0 14e6afde004b59000aa8994881f7d3e7
+
+% 3 1 0 120c4e6fcafd5a270af171c92f905608
+
+% 0 1 0 0b2de6d833d1760f0f6091831ca20116
+
+% 1 1 0 03f7be57838835f00bf129ea0b35af3d
+
+% 0 1 0 0ab76ac32925e6c7060738753e0f5fc5
+
+% 1 1 0 1754da86067bea880adfcb28706059f8
+
+@ 0 8 0 15d4d9b82939d7ae1735cec1cdda1fea
++     Le typeclass che rendono un valore contabile e indicizzabile vivono qui: `Countable` (la sua
++     `size`, e gli ordinali derivati da essa: `gamut`, `extent`, `limit`, `ult`, `pen`, `ant`),
++     `Vacuiscible` (la sola vuotezza, `nil`, O(1) ovunque), `Applicable` (`contains` e `access`
++     tramite un indice o una chiave, dietro `apply`, `at`, `defines`, `confine` e `pick` di
++     rudiments), `Definable` e `Omissible` (i `define` e `omit` con copia in scrittura), e
++     `Terminable` e `Truncable` (`last` e `lead`). Le loro istanze coprono l'`Array[e]^{}`
++     congelato e `Data`, `Sequence`, `Text`, `Set`, `Map`, `Ledger`, l'`IndexedSeq` della
++     libreria standard e alcuni buffer mutabili e, dietro un riconoscimento esplicito, `List` e
++     `Chain`.
+
+@ 0 10 0 14f9198757ea9a1d06159c03db4824be
++     Quel riconoscimento è la terza idea. Un'operazione è *disasintotica* quando il suo costo
++     cresce con dati esterni al suo soggetto: `size` è gratuita su una `Sequence` ma è un
++     attraversamento su una `List`, `last` su una `List` cammina fino alla fine, `at` su una
++     `List` cammina dalla testa, e `size` su una `Chain` forza l'intero stream e potrebbe non
++     tornare mai. Tali istanze prendono un semplice tipo marcatore in posizione `using`
++     (`Dysasymptotic.LinearSize`, `LinearAccess`, `UnboundedSize`, `LinearScan`) e un file vi
++     aderisce importando *per nome* il given corrispondente dal package `dysasymptotics`
++     (`import dysasymptotics.linearSize`; un import con wildcard non porta i given in ambito),
++     idealmente nel blocco che accetta il costo, con un commento che dice perché è accettabile.
++     Ogni riconoscimento si trova con grep, e `nil` non è mai subordinato. Un `.stdlib.length`
++     che aggira il cancello nasconde il costo; si apra invece il cancello.
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 13c815945e7d47ba0eab1f4334a845be
++       label La dimensione di una lista è un attraversamento, quindi non è semplicemente disponibile
+
+% 1 1 0 1f567df21a737c880037aadc4a8edc8d
+
+% 2 1 0 0ad6aba74b02c0cb160437a87ba3640e
+
+% 1 1 0 163100e11903eb2f1a9a0adb30e5978c
+
+% 0 1 0 0a563b4c95824e4b18938395ae2933c8
+
+% 1 1 0 0e06259b50475e25162c1172c0066835
+
+@ 0 1 0 05a70fbda2bf94aa0065a2ce0c0c563d
++       label Si riconosce il costo lineare, per nome
+
+% 1 1 0 123e2e1d1e90d58a0616015e9e6bff11
+
+% 2 1 0 0cf7be5a412d713c1bbe818cdb5d9d4e
+
+% 0 1 0 115309b089989daa1e3a1b6760047f5a
+
+% 1 1 0 0d308c06a0a59f8f08d17af79ae3dc63
+
+% 0 1 0 0715c1ef4eb2e72d1927295d3d9d956b
+
+% 1 1 0 02913bf12330089c020fe23815a19145
+
+@ 0 1 0 0869aa5ac88d46871759bd909a82e306
++       label L'accesso posizionale è un riconoscimento diverso
+
+% 1 1 0 1bf46486b3da58a5027bb42eedda2b98
+
+% 2 1 0 17888d0a1d94aadf128941fe49fe1b81
+
+% 0 1 0 052f7c2ab1a2b2de0c688803ab7c55ed
+
+% 1 1 0 1fc5ac85e053ca471b3b6a662e53d0af
+
+% 0 1 0 191b56b0552c67981c67631645a4fb6d
+
+% 0 1 0 1488521b886b63050ef83ac3b04a3954
+
+% 0 1 0 07395a684bb81f3a002df3ecff1d0f89
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 11 0 178365be5c54a48411737795995c0fe4
++     La libreria è un unico insieme di sorgenti, `denominative.core`, compilato per la JVM,
++     Scala.js e Scala Native, posto appena sopra vacuous e prepositional e sotto rudiments: le
++     letture che restituiscono `Optional` (`at`, `apply`, `pick`, `confine`, `head`, `last`) sono
++     estensioni di rudiments e di concordance su queste typeclass. Tutto è esportato
++     nell'ombrello `soundness`, dove i package di scelta `dysasymptotics` e
++     `ordinalTextualizables` si fondono con quelli dell'ombrello stesso; `thru`, `till` e
++     `tabulate` vi sono ridichiarati (ed `each` nel file ombrello di rudiments) anziché
++     esportati, poiché un export inoltra solo un overload di un'estensione e devono essere
++     raggiungibili sia l'overload semplice sia quello confinato. Un file che
++     importa direttamente `denominative.*` non deve importare anche `rudiments.*` per intero per
++     gli stessi nomi.
+
+% 0 1 0 0d543012a96a5b79082b13071e349205
+
+% 0 1 0 19ceb655aa5e355a0260a4bb658a8f06
+
+% 0 1 0 0020385201e25d0101bf57ffd069e1e3
+
+% 0 1 0 1e652ce139c6bbfc0d8a31b5d83b32e9
+
+% 0 1 0 1937552efbee812107700684c6af4a56
+
+@ 0 5 0 1db78b33ec9e1db719a5566ad12f99f0
++ entry .Prim   il primo ordinale
++     `Ordinal.zerary(0)`, anche `0.z` e `1.u`. Da «primary». I sette ordinali con nome sono
++     `Prim`, `Sec`, `Ter`, `Quat`, `Quin`, `Sen` e `Sept`; oltre questi un ordinale si scrive
++     `7.z` (l'ottavo) o `8.u`. Sono valori stabili, non definizioni inline, quindi si possono
++     usare come pattern: `case Prim => …`.
+
+@ 0 8 0 1733466253f6bb8800b938318c278ac1
++ entry .Sec   il secondo ordinale, `1.z`
++ entry .Ter   il terzo ordinale, `2.z`
++ entry .Quat   il quarto ordinale, `3.z`
++ entry .Quin   il quinto ordinale, `4.z`
++ entry .Sen   il sesto ordinale, `5.z`
++ entry .Sept   il settimo ordinale, `6.z`
++     L'ultimo degli ordinali con nome; l'ottavo è `7.z`. Si noti che `7.z` è l'*ottava*
++     posizione (indice 7), mentre `Sept` è la settima (indice 6).
+
+@ 0 3 0 1d4e4c77fc40934112cb9264917d128a
++ entry .z   `n.z`: l'ordinale all'indice a base zero `n`, quindi `0.z` è `Prim`
++     Un'estensione inline su `Int`, che registra che il numero proviene da una convenzione a base
++     zero (un protocollo di trasmissione, un indice di array della JVM) nel punto in cui entra.
++     `n.z.n0` è di nuovo `n`.
+
+@ 0 3 0 140187907f339caa084b680938d726c4
++ entry .u   `n.u`: l'ordinale al conteggio a base uno `n`, quindi `1.u` è `Prim`
++     La controparte di `z` per una convenzione a base uno: il «3° campo» di una specifica, un
++     numero di riga. `n.u.n1` è di nuovo `n`.
+
+@ 0 5 0 08c606b4774cb5a901413ba135f6e0b3
++ entry .nil   `xs.nil`: se un valore è vuoto, in O(1) per ogni forma
++     Su `Vacuiscible`, che ogni `Countable` estende: `List`, `Chain`, `Set`, `Map`, `Text`,
++     l'array congelato, `Option`, uno `StringBuilder`, … Mai subordinato: la vuotezza di una
++     `List` è un solo test di puntatore, quindi `list.nil` non richiede alcun riconoscimento dove
++     `list.size` lo richiede, e `!xs.nil` è l'idioma in cui si trasforma il `nonEmpty` della
++     libreria standard.
+
+@ 0 6 0 0d6d378eb8d2da270442395d28235f96
++ entry .size   `xs.size`: il numero di elementi di qualunque valore `Countable`
++     O(1) su `Sequence`, `Set`, `Map`, `Ledger`, `Text`, l'array congelato e l'`IndexedSeq` della
++     libreria standard; su una `List` è un attraversamento e si risolve solo sotto `import
++     dysasymptotics.linearSize`, e su una `Chain` forza l'intero stream e si risolve solo sotto
++     `unboundedSize`. Un `Int` conta sé stesso (`5.size` è `5`), e un `Option` ha dimensione zero
++     o uno.
+
+@ 0 4 0 1faf34f890a73cc10f52596c83d4809b
++ entry .gamut   `xs.gamut`: l'intero intervallo di un valore contabile come `Interval`, a partire da `Prim`
++     `Interval.initial(xs.size)`: gli ordinali da `Prim` fino a `xs.limit` escluso. Un intervallo
++     senza marchio; `extent` è lo stesso intervallo confinato al valore, che è ciò che vuole un
++     ciclo. Subordinato come `size` su una `List` o una `Chain`.
+
+@ 0 8 0 0770b03d95b24a82049352ad69886b40
++ entry .extent   `xs.extent`: l'intero intervallo di un valore come intervallo confinato a esso, `Interval in xs.type`
++     Il `gamut` con marchio. Iterarlo (`xs.extent.each`, `xs.extent.tabulate`, `xs.extent.all`)
++     passa alla lambda ordinali di tipo `Ordinal in xs.type`, e `xs(ordinal)` su un tale ordinale
++     è totale: un elemento nudo, nessuna verifica dei limiti, nessun `Optional`. `capped(n)`,
++     `beyond(n)`, e `start thru end` a partire da due ordinali confinati lo restringono senza
++     perdere il marchio. È corretto per un ricevente immutabile su un percorso stabile (una
++     `val`); un contabile mutabile che si restringe dopo che il marchio è stato coniato lo
++     invalida, e un ricevente che è un'espressione anziché una `val` non ha alcun percorso
++     stabile da marchiare.
+
+% 2 1 0 1bc5a71b6f2ad390056c761835f2cfbe
+
+% 3 1 0 06dd3acb941babf60e5f38ebd2fa78ab
+
+% 0 1 0 0b296445d076e13d0ec3a9f2035b4461
+
+% 0 1 0 0c9f20bb747c390f0da236c540a56c00
+
+% 0 1 0 0b3faaf702e39f0613c9780da68932e5
+
+% 0 1 0 16c195155da9b68f1b0e22040a9852a1
+
+% 0 1 0 1275e2316f74c31717fb48e06af39866
+
+% 1 1 0 0427188cd9aa4cea0bc816545ce56f0a
+
+@ 0 5 0 1dfa57916717d9881fd61744e2a229e3
++ entry .iterate   `xs.iterate { i => … }`: visita ogni ordinale confinato di un valore, o di un sotto-intervallo confinato
++     La grafia più vecchia di `xs.extent.each`, che marchia tramite il ricevente anziché tramite
++     l'intervallo; equivalente, e `xs.iterate(range)` prende un `Interval in xs.type` (da
++     `extent.capped`, `prefix`, `thru`) per visitarne una parte. L'ordinale della lambda è
++     `Ordinal in xs.type`, quindi `xs(i)` al suo interno è totale. Compila in un ciclo intero
++     stretto.
+
+@ 0 8 0 0c63076a1febf61818212a8d152eac69
++ entry .tabulate   `xs.tabulate { i => … }` o `range.tabulate { i => … }`: un elemento per ordinale, come `Sequence`
++     La controparte collettrice di `iterate` ed `each`: costruisce una `Sequence` con un elemento
++     per posizione, in ordine, con l'ordinale della lambda confinato al valore (o al valore
++     dell'intervallo con marchio) così che le letture al suo interno siano nude. `array.tabulate
++     { i => array(i) + i.n0 }` su `Array(10, 20, 30)` è `Sequence(10, 21, 32)`;
++     `Interval.initial(3).tabulate (_.n1)` è `Sequence(1, 2, 3)`. Sostituisce `zipWithIndex`
++     (un `Int` grezzo) e un builder mutabile. Tre overload: su un `Countable`, su un `Interval`
++     semplice, e su un `Interval in form`.
+
+@ 0 6 0 1c9cae470cfa632b0f5e930f9fffbf8d
++ entry .spot   `xs.spot(p)`: il primo ordinale confinato che soddisfa un predicato, oppure `Unset`
++     La forma sicura di una scansione in avanti con guardia il cui chiamante consuma l'indice di
++     arresto: il predicato vede `Ordinal in xs.type` e il risultato è
++     `Optional[Ordinal in xs.type]`, quindi una lettura dentro `let` è totale.
++     `xs.spot(after)(p)` riprende la scansione dal limite di un intervallo con marchio già
++     scandito: la seconda fase di una scansione in due fasi. Un `Ordinal in xs.type` memorizzato
++     da `spot(…).or(…)` conserva il proprio marchio, quindi `xs(index)` resta totale.
+
+@ 0 6 0 1f63998ec5b2f01e02ce770186ab6abc
++ entry .prefix   `xs.prefix(p)`: la più lunga sequenza iniziale di indici che soddisfano un predicato, come intervallo confinato
++     Il `limit` del risultato è l'indice di arresto, quindi `xs.prefix(p)` sostituisce i cicli
++     `while i < size && p(i) do i += 1` i cui chiamanti poi tagliano o riprendono da `i`. La
++     forma a due argomenti `xs.prefix(after)(p)` *estende* `after` con la sequenza successiva, in
++     modo cumulativo, così che una sequenza vuota non possa perdere il proprio ancoraggio (ogni
++     `Interval` vuoto si normalizza alla posizione zero) e il limite sia sempre il punto di
++     ripresa. Una scansione a più fasi si legge come fasi consecutive:
+
+% 2 1 0 13319c558f233a5e1ba7d80921a56f78
+
+% 3 1 0 0060fb36f29897041d4eb858a447bc23
+
+% 0 1 0 14025024d404c8ab1cb89da7cb029776
+
+% 0 1 0 158ee10b450971b817c5fed1ef5cbf6d
+
+% 0 1 0 15fb443ff731c335150779f83102a566
+
+% 0 1 0 181e160eeb8db6a913011172c69fba7d
+
+% 1 1 0 079fa4dec8e1868419f3a055f064c922
+
+@ 0 1 0 09836af96632632d15ffbb4af56383f2
++     Si chiama `prefix` anziché `lead`, che è il complemento di `last`.
+
+@ 0 4 0 0b4a2e00c4b33ca61addd033f034aba5
++ entry .pare   `xs.pare(floor)(p)`: l'intervallo che resta dopo aver tolto una sequenza finale, mai sotto `floor` elementi
++     La forma di rifilatura in coda: `while count > 1 && xs(count - 1) == 0 do count -= 1` diventa
++     `xs.pare(1)(xs(_) == 0)`, un `Interval in xs.type` confinato da `Prim` alla lunghezza
++     rifilata.
+
+@ 0 1 0 1e45556610cf9f871eb9e7e602112af2
++ entry .retrace   `xs.retrace { i => … }`: `iterate` al contrario, dall'ultimo ordinale confinato fino al primo
+
+@ 0 9 0 05b25086fccde4d908278bfbbac960bf
++ entry .each   `interval.each { i => … }`: visita ogni ordinale di un intervallo, in ordine
++     Due overload: su un `Interval` semplice, la lambda riceve un `Ordinal` semplice; su un
++     `Interval in form` confinato (da `extent`, `capped`, `beyond`, `prefix`, o `thru`/`till` su
++     estremi confinati) riceve `Ordinal in form`, quindi una lettura al suo interno è totale e
++     restituisce un elemento nudo. Questo è il combinatore che sostituisce `var i = 0; while i <
++     xs.length do … i += 1`, e compila nello stesso ciclo stretto. Un `each` omonimo su un tipo
++     non correlato, raggiunto tramite un oggetto compagno che il file importa, può prevalere
++     sull'overload confinato e togliere silenziosamente il marchio (la lettura torna a essere
++     `Optional` senza alcun errore), ed è per questo che quel nome è tenuto lontano da altri
++     riceventi.
+
+@ 0 3 0 0746fe2a4b443ca9165930c577c85b4c
++ entry .all   `interval.all(p)`: se ogni ordinale soddisfa il predicato, fermandosi al primo che non lo fa
++     Con gli stessi due overload di `each`, quindi `xs.extent.all { i => xs(i) ==
++     ys.readUnchecked (i.n0) }` legge in modo totale. Il sostituto di
++     `xs.stdlib.indices.forall`.
+
+@ 0 6 0 10206d02eda87617075f6937cf24e00a
++ entry .thru   `start thru end`: l'intervallo da un ordinale a un altro, estremo finale incluso
++     `Ter thru Sen` è `Ter, Quat, Quin, Sen`. Due ordinali confinati allo stesso valore delimitano
++     un intervallo confinato a esso (ogni ordinale tra due indici validi è esso stesso valido), ed
++     è l'unico modo di costruire un intervallo confinato che non inizi da `Prim`. Entrambi gli
++     overload sono a livello di package, così che nessuno dei due prevalga sull'altro tramite
++     l'ambito implicito del tipo opaco.
+
+@ 0 3 0 0c22989d8a108fef0372254d2dda017b
++ entry .till   `start till end`: l'intervallo da un ordinale a un altro, estremo finale escluso
++     `Ter till Sen` è `Ter, Quat, Quin`; `Sec till Sec` è vuoto. Estremi confinati danno un
++     intervallo confinato, come con `thru`.
+
+@ 0 4 0 0f84b88d376747f41deba701ca5ee74a
++ entry .capped   `range.capped(n)`: al più i primi `n` ordinali di un intervallo confinato, marchio preservato
++     Un sotto-intervallo di un'estensione valida è esso stesso valido, quindi limitarlo conserva
++     la prova: `array.extent.capped(2).each { i => … array(i) … }` legge le prime due posizioni
++     in modo totale. Un `n` negativo è trattato come zero.
+
+@ 0 4 0 0a808624751b978e027cb78abeba01c9
++ entry .beyond   `range.beyond(n)`: un intervallo confinato senza i suoi primi `n` ordinali, marchio preservato
++     Il complemento di `capped`; insieme delimitano una finestra a entrambi gli estremi senza un
++     `Optional` di mezzo. Si chiama `beyond` perché `skip`, `keep` e `after` sono il vocabolario
++     dei segmenti di rudiments e un nome di primo livello nell'ombrello può appartenere a un solo
++     modulo.
+
+@ 0 3 0 1960c6458179a9cb0ea36780eb041f9e
++ entry .limit   `xs.limit`: il limite superiore esclusivo di un valore contabile, l'ordinale successivo al suo ultimo elemento
++     `xs.size.z`. Subordinato come `size` su una `List` o una `Chain`. Non è confinato: non è un
++     indice valido, anche se è un punto sicuro da cui una scansione può *iniziare*.
+
+@ 0 6 0 0a79089402a557dd0e216b3d7cd59f4c
++ entry .ult   `xs.ult`: l'ordinale dell'ultimo elemento («ultimo»), confinato al valore, oppure `Unset`
++     `Optional[Ordinal in xs.type]`, quindi `xs.ult.let(xs(_))` legge l'ultimo elemento in modo
++     totale. Su un ricevente di tipo `& Populated` (un letterale `List(a, b)`, un risultato di
++     `occupied`) si adatta e restituisce il nudo `Ordinal in xs.type`, quindi `xs(xs.ult)` non
++     richiede alcun `let`. Un ordinale anziché un elemento: l'elemento è il `last` di rudiments.
++     Subordinato come `size` su una `List` o una `Chain`.
+
+@ 0 1 0 090432a4172ad91c06376838eb006433
++ entry .pen   `xs.pen`: l'ordinale del penultimo elemento, confinato, oppure `Unset` se ce ne sono meno di due
+
+@ 0 1 0 057c43137645545b1f4271d527f52af2
++ entry .ant   `xs.ant`: l'ordinale del terzultimo elemento, confinato, oppure `Unset` se ce ne sono meno di tre
+
+@ 0 6 0 0a00e793f086409c08762ef6bfdff4f5
++ entry .coextent   `xs.coextent(ys)`: un token `Coextent` se i due valori hanno la stessa dimensione, altrimenti `Unset`
++     Un marchio non può servire due riceventi (`Ordinal in xs.type & Ordinal in ys.type` non è un
++     sottotipo di nessuno dei due), quindi una lettura in parallelo passa invece per il token, che
++     porta l'unica verifica della dimensione e trasferisce un ordinale tra i marchi:
++     `shared(i)` trasforma un `Ordinal in xs.type` in un `Ordinal in ys.type`, e
++     `shared.each { (i, j) => … }` itera con un indice dimostrato rispetto a entrambi.
+
+% 2 1 0 1eae585346817fdb125ff587edf79389
+
+% 3 1 0 1b38bf784add09c31bf26521726e45b5
+
+% 5 1 0 02881b7187d161ac175c5c1a0ba3c26f
+
+% 6 1 0 16a4f2af078fa0f4088869f03be3eb0d
+
+% 7 1 0 106f6ce3067d4f2d09e259b58bad223f
+
+% 9 1 0 18910db3ec7f5ebc088d276521b583ba
+
+% 0 1 0 1f1198080af868730b24ff6af063b127
+
+% 1 1 0 1526c5cac34673d20175f764190f627d
+
+@ 0 6 0 0835e8d67813a8961c5bf385f33b1ea5
++ entry .aka   `value.aka["label"]`: un valore contrassegnato con un tipo etichetta, per parametri contestuali con nome
++     Il tipo infisso `subject aka "label"` e l'estensione che ne crea uno. Una lambda scritta
++     `(state aka "state", next aka "next") ?=> …` riceve i propri argomenti come valori
++     contestuali che i nomi `state` e `next` selezionano, ed è così che `Interval#fuse` e `fuse`
++     ed `each` di rudiments offrono `state`, `next` e `ordinal` senza una lista di parametri. Si
++     estrae con `()`.
+
+@ 0 8 0 0b495a3e578784cb03d14f2e01b5300f
++ entry .Ordinal   una posizione (primo, secondo, terzo) come tipo distinto da `Int`, senza uno zeresimo
++     `Ordinal` è il tipo opaco `denominative.internal.Ordinal`, esportato qui, rappresentato come
++     l'`Int` a base zero che rappresenta ma mai intercambiabile con esso. Un `Int` diventa un
++     ordinale solo nominando la propria convenzione (`n.z` per un indice a base zero, `n.u` per
++     un conteggio a base uno, oppure `Ordinal.zerary(n)` e `Ordinal.uniary(n)`) e un ordinale
++     torna a essere un `Int` solo tramite `n0` o `n1`, quindi la convenzione è scritta a entrambi
++     gli attraversamenti e un errore di uno non ha dove nascondersi. I primi sette hanno un nome:
++     `Prim`, `Sec`, `Ter`, `Quat`, `Quin`, `Sen` e `Sept`.
+
+% 2 1 0 0d52d03299645b091b0f1c8ca12f541f
+
+% 3 1 0 00476eb079d326710723a162fab644e3
+
+% 0 1 0 021cf0238c36bb4b1dae2ab7a1a60d8e
+
+% 0 1 0 0224c7338109200e1db39d4dc3621daf
+
+% 0 1 0 000291893b38fdd307a5bf76ad2a6453
+
+% 0 1 0 0e2bd832391db2a6170d38fd11a791b3
+
+% 0 1 0 10b40a14c75705ea1457c8a1dd12414e
+
+% 0 1 0 0f29eeebe4e02df81fe9bd476b4ac534
+
+% 0 1 0 1049bdc376f84bc70bd62a3578489e51
+
+% 1 1 0 037fb0d1a78b14e90a90e539f37e6fcf
+
+@ 0 5 0 046423fc6dfaa854038ea9f15efb6e5d
++     L'aritmetica passa per `+` e `-` di symbolism: aggiungere o sottrarre un `Int` dà un
++     `Ordinal`, sottrarre un ordinale da un altro dà la distanza `Int`, e gli ordinali si
++     confrontano con `<`, `<=` e gli altri tramite `Comparable` (oppure, senza typeclass di mezzo,
++     con gli inline `le`, `lt`, `ge` e `gt`). Tutti questi vivono nell'ambito implicito del tipo
++     opaco stesso, quindi non richiedono alcun import.
+
+@ 0 5 0 09464e6f2f2408b80de5249431611648
++     Un ordinale *confinato*, `Ordinal in xs.type`, è un `Ordinal` il cui tipo registra che si è
++     dimostrato capace di indicizzare `xs`: `extent`, `spot`, `prefix`, `ult`, `within` e
++     `confine` di rudiments li coniano, e leggere `xs` in uno di essi è totale. L'aritmetica su
++     un ordinale confinato è ammessa (anche i suoi `+` e `-` con marchio stanno nell'oggetto
++     compagno), ma il risultato è un `Ordinal` semplice, poiché potrebbe aver lasciato
++     l'intervallo dimostrato; `within` lo confina di nuovo.
+
+@ 0 3 0 045983dc392443e60ff1d54cda50829c
++     Un ordinale si rende come testo solo tramite un `Textualizable` scelto per nome dal package
++     `ordinalTextualizables`, poiché nessuna resa (`3rd`, `ter`, `2♯`) è giusta ovunque.
+
+@ 0 7 0 187a8644dbd840641e240782a3ee2acf
++ entry .Interval   un intervallo contiguo di ordinali, da un ordinale iniziale per un certo numero di posizioni
++     `Interval` è il tipo opaco `denominative.internal.Interval`, esportato qui: un `Ordinal`
++     iniziale e una dimensione impacchettati in un unico `Long`, quindi un intervallo non costa
++     alcuna allocazione. Si scrive `Ter thru Sen` (estremo finale incluso), `Ter till Sen`
++     (estremo finale escluso) o `Ter span 3` (un inizio e una dimensione), oppure si costruisce da
++     interi con `Interval.zerary(start, end)`, `Interval.sized(start, count)` e
++     `Interval.initial(size)`. Un intervallo vuoto si normalizza alla posizione zero con
++     dimensione zero, qualunque inizio gli sia stato chiesto.
+
+% 2 1 0 11486eeb13fb4ccc177053eb99dab545
+
+% 3 1 0 14b9a0471ef2210a0d3bddb2874eabc2
+
+% 0 1 0 12dcfe4e337d785417f3f2c5a6973025
+
+% 0 1 0 187383ccaeb0ffdd1408b584bbbd92c3
+
+% 0 1 0 02fc6c62808fab1801ba8bc3ed73fca5
+
+% 0 1 0 0cc9b510e1238cc706d546afc70aa785
+
+% 0 1 0 0130edd2163366831ac40b3660d37eb3
+
+% 0 1 0 027d640bce5d85271bcc4fa2b66d0973
+
+% 1 1 0 02f874359a36fdda17d23a2d95713d7b
+
+% 0 1 0 196cff232d04662c10581b3569d9847c
+
+% 1 1 0 1457c5b44195281c0a23c85041dee704
+
+@ 0 5 0 03971a41da1836c51e9fe7b3facdd861
++     Un intervallo può essere *confinato*, `Interval in xs.type`, quando ogni suo ordinale è un
++     indice valido di `xs`: `xs.extent`, `xs.prefix(…)`, `xs.pare(…)(…)`, `capped`, `beyond`, e
++     `thru` o `till` tra due ordinali confinati ne producono uno. Iterare un intervallo confinato
++     con `each`, `all` o `tabulate` passa alla lambda ordinali confinati, quindi ogni lettura al
++     suo interno è totale. Il semplice `xs.gamut` è lo stesso intervallo senza marchio.
+
+@ 0 8 0 11fe6f7321e226bc086ef35a0127d891
++ entry .Span   un intervallo localizzato di caratteri in un sorgente (un offset, una riga, delle righe o un'area) in un unico `Long`
++     `Span` è il tipo opaco `denominative.internal.Span`, esportato qui: una posizione in un testo
++     sorgente, impacchettata in un unico `Long` contrassegnato da uno `Span.Mode` nei suoi tre
++     bit più alti, così che un parser possa registrare una posizione su ogni nodo che costruisce
++     senza costi di allocazione. Le cinque modalità sono `Empty` (nessuna posizione:
++     `Span.empty`, tutto zero, quindi uno span assente non richiede alcun `Optional`), `Offset`
++     (un offset di caratteri e una lunghezza, per sorgenti senza righe), `Line` (una riga, una
++     colonna e una lunghezza all'interno di quella riga), `Lines` (righe intere) e `Area` (da una
++     riga e una colonna iniziali a una riga e una colonna finali).
+
+% 2 1 0 0dfe2020b8004e06045b084f0131bd96
+
+% 3 1 0 0a6929be63be90770ff6c1cf59023789
+
+% 0 1 0 0ce99909bc69a1e71aa90153da020b6f
+
+% 0 1 0 1fc0976654b579b818c98baac3176691
+
+% 0 1 0 0c25b762362fa2ee05cfec6ad75e1fae
+
+% 0 1 0 0e7dce8d4b052ca10e0fe216721f9b3b
+
+% 0 1 0 172b386e1a1352f0156b0f2e852209d8
+
+% 0 1 0 0ceda8ec65ddf4041f290e7907a65bc1
+
+% 1 1 0 1a66f61780ed253108b2991d256856da
+
+@ 0 4 0 1c6c73935332911b0bd2bfc700de7a50
++     Ogni accessore che una modalità non porta restituisce `Unset`. Righe, colonne e offset sono
++     ordinali a base zero; le larghezze dei campi limitano uno span `Offset` a offset sotto 2³¹,
++     uno span `Line` a 2²³ righe e 2¹⁹ colonne, e un'`Area` a 2²² righe, 2¹⁴ colonne e 2¹¹ righe
++     di estensione. I parser di XML, TEL, YAML e codice sorgente registrano le posizioni dei loro
++     nodi come span.
+
+@ 0 9 0 0b0a689d0d346ba0135e4454d1ab6ac0
++ entry .Coextent   la prova che due valori hanno la stessa dimensione, che trasferisce un ordinale confinato tra di essi
++     `Coextent[form1, form2]` è il tipo opaco `denominative.internal.Coextent`, esportato qui, e
++     rappresentato dalla dimensione condivisa. È coniato solo da `xs.coextent(ys)`, che esegue
++     l'unica verifica della dimensione e restituisce `Unset` quando le dimensioni differiscono.
++     Un ordinale confinato può portare il marchio di un solo valore
++     (`Ordinal in xs.type & Ordinal in ys.type` non è un sottotipo di nessuno dei due), quindi
++     una lettura in parallelo di due valori passa per il token: applicarlo a un
++     `Ordinal in xs.type` dà un `Ordinal in ys.type`, `invert` dà il token nel verso opposto, e
++     il suo `each` itera sull'estensione condivisa con un ordinale dimostrato rispetto a ciascun
++     valore.
+
+% 2 1 0 19caaf096b47292d1da4313cd89cba33
+
+% 3 1 0 106b1e81d41f39520554fc15296a1f25
+
+% 5 1 0 1954d2891d40ac7d1ff478d4ed933c67
+
+% 6 1 0 03f8acc4b900e23f07577d116da4d821
+
+% 7 1 0 0494484a1330d6131c1cebcd1c72a6b5
+
+% 9 1 0 166866b05a0a0b321a9cd901e1e2cb23
+
+% 0 1 0 1b84ed22db5e798117fa07d754798485
+
+% 1 1 0 1f828e4cc99cd1cb07db35c4c5dbddb2
+
+@ 0 1 0 0719b6cbd643bcd413bdf6be0cd26ebc
++ entry .internal   le rappresentazioni opache di `Ordinal`, `Interval`, `Span` e `Coextent`, e le loro operazioni
+
+% 1 1 0 06da1c18ae2b967f037f9774e28bd82d
+
+@ 0 5 0 0a417b2deb1bf15318643a6aab837573
++       L'oggetto che definisce i quattro tipi opachi, così che le loro rappresentazioni (`Int`,
++       `Long`, `Long` e `Int`) siano visibili solo qui. I tipi sono esportati nel package
++       `denominative`, e le loro operazioni sono metodi di estensione in questo oggetto, che fa
++       parte dell'ambito implicito di ciascun tipo opaco: un utente non nomina mai `internal`, e
++       `ordinal.n0`, `interval.size` o `span.mode` si risolvono senza alcun import.
+
+@ 0 4 0 17906f7664c6487f021f6c08c8addb89
++       Le estensioni con marchio (che prendono `Ordinal in form` o `Interval in form`)
++       deliberatamente *non* stanno qui: all'interno di questo oggetto un tipo opaco è la sua
++       rappresentazione, quindi un suo raffinamento collasserebbe. `thru`, `till`, `capped`,
++       `beyond`, `each`, `all` e `tabulate` stanno a livello di package in `denominative` per
++       questo motivo.
+
+% 0 1 0 1978c32d3ded86ca13590c62411ee981
+
+% 0 1 0 1dcbaec1b9bc56bb09ef9fb3ede7fd1f
+
+% 0 1 0 1fa09e9f459adf540bd607037afd43e8
+
+% 0 1 0 00387bfea269910112522000c9329338
+
+@ 0 1 0 12fde04fa7e7232c0335eea98b97f2d0
++   entry .Ordinal   l'ordinale opaco, rappresentato dal suo indice a base zero
+
+% 1 1 0 139e4f7900add711112a98a5d6ac98a6
+
+@ 0 18 0 0b22d6178d808a5e0a46a2e2529dcf42
++         Il tipo che `denominative.Ordinal` esporta, con il suo oggetto compagno: i costruttori da
++         interi e le istanze di aritmetica e di ordinamento, tutti nell'ambito implicito.
++     entry .zerary   `Ordinal.zerary(n)`: l'ordinale all'indice a base zero `n`, come lo scrive `n.z`
++     entry .uniary   `Ordinal.uniary(n)`: l'ordinale al conteggio a base uno `n`, come lo scrive `n.u`
++     entry .addable   `ordinal + n`: un `Ordinal` spostato in avanti di un numero `Int` di posizioni
++     entry .subtractable   `ordinal - other`: la distanza `Int` da un ordinale a un altro
++     entry .subtractable2   `ordinal - n`: un `Ordinal` spostato indietro di un numero `Int` di posizioni
++         Il risultato non è limitato: `Prim - 1` è un ordinale prima del primo, che nessuna
++         collezione accetterà come indice. `previous` invece si ferma a `Prim`.
++     entry .comparable   gli ordinali si confrontano per posizione, come i loro indici a base zero
++         Rende disponibili per gli ordinali `<`, `<=`, `>`, `>=`, `max`, `min` e l'ordinamento.
++     entry .brandedAddable   `ordinal + n` su un `Ordinal in form` confinato, che dà un `Ordinal` semplice
++         Il `Self` di una typeclass è esatto, quindi l'`.addable` senza marchio non viene trovato
++         per un ricevente confinato; questo gemello sì, e lascia cadere il marchio, poiché
++         l'aritmetica può uscire dall'intervallo dimostrato. Si confini di nuovo il risultato con
++         `within`.
++     entry .brandedSubtractable   `ordinal - other` tra ordinali confinati, che dà la distanza `Int`
++     entry .brandedSubtractable2   `ordinal - n` su un `Ordinal in form` confinato, che dà un `Ordinal` semplice
++   entry .Interval   l'intervallo opaco, un inizio e una dimensione impacchettati in un `Long`
+
+% 1 1 0 1a64cf30ef80158f0d6bef8c4db5b396
+
+@ 0 7 0 16dfa358b6b640a91e4a0871db9e9523
++         Il tipo che `denominative.Interval` esporta, con il suo oggetto compagno di costruttori.
++     entry .sized   `Interval.sized(start, count)`: `count` posizioni dallo `start` a base zero; vuoto se `count` ≤ 0
++     entry .initial   `Interval.initial(size)`: le prime `size` posizioni, da `Prim` in poi
++         L'intervallo di tutti gli indici validi di un valore di quella dimensione, ed è così che si
++         costruisce `gamut`.
++     entry .apply   `Interval(start, end)` da due ordinali, estremo finale incluso; `Interval()` è vuoto
++     entry .zerary   `Interval.zerary(start, end)`: dallo `start` a base zero all'`end` a base zero, estremo finale escluso
++   entry .Span   lo span di sorgente opaco, una modalità e i suoi campi impacchettati in un `Long`
+
+% 1 1 0 0292bc7fc0ed5d0017bf3102b3705aa7
+
+@ 0 16 0 1fd1804df83a5bc7149a3101365103e0
++         Il tipo che `denominative.Span` esporta, con il suo oggetto compagno di costruttori. Ogni
++         costruttore maschera i propri campi alle loro larghezze, quindi una riga o una colonna
++         fuori intervallo viene troncata anziché rifiutata.
++     entry .Mode   quali campi porta uno `Span`: `Empty`, `Offset`, `Line`, `Lines` o `Area`
++         Un'enum, confrontabile con `==`. `Empty` è l'assenza; `Offset` è un offset di caratteri e
++         una lunghezza; `Line` una riga, una colonna e una lunghezza; `Lines` una riga iniziale e
++         un numero di righe; `Area` una riga e una colonna iniziali e una riga e una colonna
++         finali.
++     entry .equality   `CanEqual[Span, Span]`, così che due span si confrontino con `==`
++     entry .empty   lo span che non registra alcuna posizione, con tutti i bit a zero
++     entry .offset   `Span.offset(start, length)`: `length` caratteri dall'offset `start`, per un sorgente senza righe
++     entry .line   `Span.line(line, column, length)`: `length` caratteri all'interno di una riga
++     entry .lines   `Span.lines(startLine, lineCount)`: una sequenza di righe intere
++     entry .area   `Span.area(startLine, startColumn, endLine, endColumn)`: una regione su più righe
++         La riga finale è memorizzata come differenza rispetto all'inizio, quindi una riga finale
++         precedente all'inizio è trattata come la riga iniziale.
++   entry .Coextent   il token opaco di uguale dimensione, rappresentato dalla dimensione condivisa
+
+% 1 1 0 090f35c658a671d8062873febf750c1c
+
+@ 0 33 0 19240578858f24030454740ee6a7646d
++         Il tipo che `denominative.Coextent` esporta. Le sue operazioni sono estensioni nel suo
++         oggetto compagno anziché a livello di package, perché `each` e `size` sono già nomi a
++         livello di package in `denominative`.
++     entry .apply   `shared(ordinal)`: un `Ordinal in form1` trasferito a un `Ordinal in form2`
++     entry .invert   lo stesso token con i due marchi scambiati, per trasferire nel verso opposto
++     entry .size   la dimensione che i due valori condividono
++     entry .each   `shared.each { (i, j) => … }`: ogni posizione condivisa, dimostrata rispetto a entrambi i valori
++         Un ciclo intero stretto; la lambda riceve la stessa posizione tipizzata una volta per
++         ciascun valore, quindi `left(i)` e `right(j)` sono entrambi totali.
++   entry .span   `start span size`: l'intervallo di `size` posizioni che inizia a `start`
++       `Ter span 3` è `Ter thru Quin`. Infisso.
++   entry .le   se questo ordinale è uguale a un altro o lo precede, senza typeclass
++   entry .lt   se questo ordinale precede strettamente un altro, senza typeclass
++   entry .ge   se questo ordinale è uguale a un altro o lo segue, senza typeclass
++   entry .gt   se questo ordinale segue strettamente un altro, senza typeclass
++       I quattro confronti sono estensioni inline che compilano in un solo confronto tra interi, e
++       che funzionano su un ordinale confinato così come su uno semplice.
++   entry .next   l'ordinale successivo a questo; su un intervallo, l'ordinale dopo la sua fine (il suo `limit`)
++   entry .previous   l'ordinale precedente a questo, limitato a `Prim`; su un intervallo, quello prima del suo inizio
++   entry .n0   l'ordinale come indice `Int` a base zero: `Prim.n0` è `0`
++       Il ritorno agli interi per un'API che conta da zero: un array della JVM, un offset di
++       `String`, un formato di trasmissione. `n.z.n0 == n`.
++   entry .n1   l'ordinale come conteggio `Int` a base uno: `Prim.n1` è `1`
++       Il ritorno agli interi per un numero rivolto alle persone: un numero di riga, «il 3° campo».
++       `n.u.n1 == n`.
++   entry .subsequent   l'intervallo di `size` posizioni immediatamente dopo un ordinale, o dopo la fine di un intervallo
++       `Prim.subsequent(3)` è `Sec thru Quat`.
++   entry .preceding   l'intervallo di al più `size` posizioni immediatamente prima di un ordinale o di un intervallo
++       Limitato a `Prim`: `Sec.preceding(5)` è soltanto `Prim`.
++   entry .within   `ordinal.within(xs)`: l'ordinale confinato a `xs` se lo indicizza, altrimenti `Unset`
++       L'unica verifica dei limiti che trasforma un `Ordinal` semplice in un `Ordinal in xs.type`,
++       dopo la quale le letture di `xs` in esso sono totali. `xs` richiede un'istanza di
++       `Countable` e un percorso stabile (una `val`). Su un ordinale confinato lo confina di nuovo
++       a un altro valore.
+
+% 2 1 0 0a7fb44eb5e88b0d04888f6a8dba2efe
+
+% 3 1 0 15416e0bb3cb2d1c0ff7a2e62efb8274
+
+% 0 1 0 141059ce271c8ea21d19efe7fb2ce552
+
+% 0 1 0 1915086738f909d407c7e0d7b2c9318c
+
+% 0 1 0 000a6a0ead29da11182bbe452adaff9c
+
+% 1 1 0 0d9c78661a919fdc1cf1494e39eb64ed
+
+@ 0 25 0 150a5573b1b070321f538c3cab0e0f11
++   entry .start   il primo ordinale di un intervallo
++   entry .size   il numero di ordinali in un intervallo
++   entry .end   l'ultimo ordinale di un intervallo, incluso
++       Per un intervallo vuoto è l'ordinale prima di `Prim`; si verifichi prima `nil`.
++   entry .limit   l'ordinale successivo alla fine di un intervallo, escluso
++   entry .contains   se un ordinale si trova all'interno di un intervallo
++   entry .fuse   `interval.fuse(initial)(…)`: un fold su un intervallo con `state` e `next` come nomi contestuali
++       La lambda è una funzione di contesto di `state` (il valore accumulato) e `next` (l'ordinale
++       corrente), ciascuno contrassegnato con `aka` così che i nomi li selezionino senza una lista
++       di parametri: `(Sec span 3).fuse(0)(state + next.n0)` è `1 + 2 + 3`, cioè `6`.
++   entry .nil   se un intervallo è vuoto
++   entry .bits   la codifica `Long` grezza di uno span, per memorizzarlo o trasmetterlo
++   entry .vacant   se uno span è `Span.empty`, cioè non registra alcuna posizione
++   entry .exists   se uno span registra una posizione di qualunque modalità
++   entry .mode   in quale delle cinque `Span.Mode` si trova uno span
++   entry .startLine   la riga a base zero su cui inizia uno span, oppure `Unset` per uno span `Offset` o `Empty`
++   entry .startColumn   la colonna a base zero da cui inizia uno span, oppure `Unset` a meno che non sia uno span `Line` o `Area`
++   entry .endLine   la riga a base zero su cui finisce uno span, inclusa, oppure `Unset` per uno span `Offset` o `Empty`
++   entry .endColumn   la colonna in cui finisce uno span, oppure `Unset` a meno che non sia uno span `Line` o `Area`
++       Per uno span `Line` è la colonna iniziale più la lunghezza, quindi la colonna subito dopo
++       l'ultimo carattere.
++   entry .length   la lunghezza di uno span in caratteri, oppure `Unset` a meno che non sia uno span `Offset` o `Line`
++   entry .offset   l'offset di caratteri a base zero di uno span, oppure `Unset` a meno che non sia uno span `Offset`
++   entry .lineCount   quante righe copre uno span, oppure `Unset` per uno span `Offset` o `Empty`
++   entry .singleLine   se uno span si trova su una sola riga: uno span `Line`, o un'`Area` all'interno di una riga
+
+@ 0 1 0 005ddd47620431bb1a9411d3b8e32b07
++ entry .protointernal   il tipo opaco `Tagged` dietro `aka`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 0c4f9fa5d54c7c720f21f13328531929
++       Non per uso diretto: `subject aka label` è un alias di `Tagged[subject, label]`, e un
++       valore contrassegnato si crea con `value.aka["label"]` e si estrae con `()`.
++   entry .Tagged   un valore contrassegnato a livello di tipo con un'etichetta, la rappresentazione di `aka`
+
+% 1 1 0 104bc4658e5b6e3219ed00eb59c4df93
+
+@ 0 3 0 06bce9e857ab773d0be71530688161a1
++         Un alias opaco del tipo stesso del valore, quindi contrassegnare non costa nulla a runtime.
++     entry .apply   incapsula un valore come `Tagged` con l'etichetta data; è ciò che chiama `aka`
++   entry .apply   `tagged()`: il valore dentro un `Tagged`, con la sua purezza ripristinata
+
+@ 0 1 0 17ec7173ed18c62f1104ad3a608cb8db
++ entry .Zerary   un pattern che corrisponde a un `Int` e lo lega come `Ordinal` a base zero
+
+% 1 1 0 0683940ca321d3790642e8c0470c76b8
+
+@ 0 4 0 05c9216a7f2b6d7d1ee07e9e801a035b
++       `case Zerary(ordinal) =>` corrisponde a qualunque `Int` e lega `ordinal` come `int.z`, ed è
++       così che un match su un risultato intero (un indice restituito da una ricerca, per esempio)
++       passa agli ordinali nel pattern anziché nel corpo del caso. Il match riesce sempre, quindi
++       è più utile come un caso accanto a `Unset` in un match su un `Optional[Int]`.
+
+% 2 1 0 18af995aede6dc1f0f8fcc88771c5fd6
+
+% 3 1 0 1380280204bbb7e51685879c19973695
+
+% 0 1 0 0eb8a4f59348e7050e9967323008c433
+
+% 0 1 0 04b8da1954f5ffb114f357a74e3c41b6
+
+% 0 1 0 0151b68f415deaec08039dac1e05db4c
+
+% 0 1 0 02b915bcfcb1b72a132b4783a927c859
+
+% 1 1 0 0904eba7aa49ff711d5faa2cfdc5c446
+
+@ 0 1 0 13218d978bbf2b5d02f3fcc6b5c592c8
++   entry .Match   il risultato di `Zerary.unapply`, che riesce sempre e non alloca
+
+% 1 1 0 1a23476db73c48460367ab632dbbc879
+
+@ 0 5 0 0cfff91224adf0160472548105dae173
++         Una value class, quindi un match riuscito non alloca nulla.
++     entry #int   l'intero corrispondente
++     entry #isEmpty   sempre `false`: il match non fallisce mai
++     entry #get   l'intero corrispondente come `Ordinal` a base zero
++   entry .unapply   corrisponde a un `Int`, restituendolo come `Ordinal` a base zero
+
+@ 0 1 0 17f72b7e237e0307196fd7727ac47376
++ entry .Dysasymptotic   i tipi marcatore che subordinano un'operazione il cui costo cresce con dati esterni al suo soggetto
+
+% 1 1 0 0e3f5f6a02e20cd21202d967bd1026e0
+
+@ 0 8 0 00e3e1cc072358060bba77be2f5bb168
++       Un'operazione su una struttura dati è *disasintotica* quando il suo costo cresce (più che
++       logaritmicamente) con dati che non sono il suo soggetto (la dimensione della struttura che
++       lo contiene, o la distanza del soggetto dal punto di accesso) mentre il soggetto stesso
++       resta limitato. `size` su una `List` (il soggetto è un numero, il costo è l'intera lista),
++       `at(n)` su una `List` (un elemento, un cammino di `n`), `size` su una `Chain` (un numero,
++       uno stream forzato fino alla fine) sono disasintotiche; `fold` su una `List` non lo è,
++       poiché il suo costo segue il suo soggetto, per quanto grande. È una proprietà
++       dell'operazione su una *rappresentazione*: `size` è gratuita su una `Sequence`.
+
+@ 0 5 0 0b66946d5f1568561cb3670c0a7c5125
++       Quindi l'istanza di typeclass di una tale operazione prende uno di questi tipi marcatore
++       come parametro `using`, e un programma vi aderisce importando per nome il given
++       corrispondente dal package `dysasymptotics`. Sono semplici marcatori, non capability: non
++       portano alcuna autorità e non vincolano altro che la risoluzione, quindi ogni
++       riconoscimento di un costo nascosto è un import che si trova con grep, idealmente limitato
++       a un blocco e commentato.
+
+% 2 1 0 0b4433b324515b8302bd99bc7b80dfbf
+
+% 3 1 0 0a1ecd78eae7fb3607ac63eb283adda6
+
+% 0 1 0 0dda7cf4052c4d9b0a8306bf742a9dcb
+
+% 0 1 0 03bd7cd25f1d86291b40d00fdbf26901
+
+% 0 1 0 1b08bc52fcaa9e0119e6f4a198a6359f
+
+% 1 1 0 13f57a8309334e5c1ad380d80e6c7211
+
+% 0 1 0 0219c824ef3999b5152964e9a53a2e92
+
+@ 0 5 0 01ff4c3cf37ac1fa0d21cfe6b6eedccc
++   entry .LinearSize   il costo della lunghezza di una struttura concatenata stretta, o di un'intera ricostruzione per una modifica limitata
++       Subordina `size` su una `List` e tutto ciò che ne deriva (`gamut`, `limit`, `ult`, `pen`,
++       `ant`, `extent`, `iterate`, `retrace`), `last` e `lead` su una `List`, e le modifiche con
++       copia in scrittura di un array congelato (`define`, `omit`, `lead`, e l'aggiunta di un
++       elemento in coda o in testa), ognuna delle quali copia l'intero array. Abilitato da
+
+% 0 1 0 071e431aad2a59a81f620b8ec416dc98
+
+@ 0 10 0 0bb663aeef1e36811e13888b41c97088
++   entry .LinearAccess   il costo di raggiungere una posizione in una struttura concatenata stretta camminando dalla sua testa
++       Subordina le letture posizionali di una `List` (`at`, `apply` e `confine` con un ordinale)
++       e `define` su una `List`, che ne ricostruisce il prefisso. La testa è gratuita: leggerla è
++       un cammino limitato. Abilitato da `dysasymptotics.linearAccess`.
++   entry .UnboundedSize   il costo di forzare una struttura pigra fino alla fine, che non torna mai su una infinita
++       Subordina `size`, `last` e `lead` su una `Chain`. Abilitato da
++       `dysasymptotics.unboundedSize`. La vuotezza (`nil`) forza solo la prima cella e non è mai
++       subordinata.
++   entry .LinearScan   il costo di trovare un soggetto scandendo una struttura che non tiene alcun indice per esso
++       Per esempio i predecessori di un nodo in un grafo che memorizza solo i successori: lineare
++       nell'intero grafo, per quanto pochi siano i predecessori. Abilitato da
+
+% 0 1 0 002b61e7047361520bc612370729c435
+
+@ 0 1 0 16291bbac70fd3280263d044383a63bc
++ entry .dysasymptotics   i quattro riconoscimenti di un costo nascosto, ciascuno un given da importare per nome
+
+% 1 1 0 057db32dfc51137615761f01a15065ec
+
+@ 0 7 0 03d814a8f52568c918114c1af043f4c0
++       Importare uno di questi given apre ogni operazione subordinata al suo marcatore
++       `Dysasymptotic` nell'ambito dell'import. Vanno importati per nome (`import
++       dysasymptotics.linearSize`) perché un import con wildcard `import dysasymptotics.*` non
++       porta i given in ambito. Il package si fonde con quello dell'ombrello stesso, quindi
++       `import soundness.*` seguito dall'import per nome è tutto ciò che serve. Si limiti l'import
++       al blocco che accetta il costo, con un commento che dice perché è accettabile; e non si
++       aggiri un cancello con `.stdlib.length` o simili, che nasconde lo stesso costo dove nessuno
++       può trovarlo.
+
+% 2 1 0 1c4b6d0038fe7cc9149645224c02f467
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 18820354cd6bd0b217ed8692da71eb0d
++         label Non subordinata: la vuotezza è O(1) su ogni forma
+
+% 1 1 0 047da9c8193b0465164bc9394aef80b4
+
+% 2 1 0 18c891f5180a72231aca9824859532e6
+
+% 3 1 0 133057d4e3e2514f1db30d95d0960665
+
+% 0 1 0 1d5b3e32dba17a731bbc5af3cb53a329
+
+% 1 1 0 0170f0ad25e89cde09d3a221a8a35ead
+
+@ 0 1 0 076dbd4fc515f9f21f2767e4ff01d526
++         label Subordinata: la dimensione di una lista è un attraversamento
+
+% 1 1 0 05dfe879bb6290711a76523b1a2974a3
+
+% 2 1 0 166375cd8f8f4fa8019439ff22e8c5e2
+
+% 3 1 0 02b69917f4d96c651386a36872bf074f
+
+% 0 1 0 078b7a0b4f5f43b40e29ca31bc676861
+
+% 1 1 0 11d2f838eef484200f5d31e738752a21
+
+@ 0 1 0 1d2f9fee97401b7f01e9a02ebbbfa0eb
++         label Riconosciuta nel blocco che ne paga il costo
+
+% 1 1 0 05b885091770902d0c37063bd34386fd
+
+% 2 1 0 1686a4bed667b65e066f573618be1891
+
+% 0 1 0 15c8012edc25dc9f1dd358885bb6076e
+
+% 1 1 0 15384b54c774c2ab1a9f4877c752f51a
+
+% 0 1 0 13a5a08c5a3427f61b2f8289e8dbde15
+
+% 1 1 0 06e9769b55dfc9c70ffc582b7584f70d
+
+% 2 1 0 017d05e4d1d9de9d1a45a446d628db7f
+
+% 0 1 0 14c5992ad5b24cc2093a41162fd31f46
+
+@ 0 4 0 1858080fca084f7f0f6f30753b9712e3
++   entry .linearSize   apre `size` e le operazioni derivate dalla dimensione su una `List`, e le modifiche con copia di un array congelato
++   entry .linearAccess   apre l'accesso posizionale in una `List`: `at`, un `apply` con ordinale, e `define`
++   entry .unboundedSize   apre `size`, `last` e `lead` su una `Chain`, che non tornano mai su una infinita
++   entry .linearScan   apre le operazioni che trovano il loro soggetto scandendo una struttura non indicizzata
+
+@ 0 1 0 154d5f75b068cf1b0836e80a2bad3090
++ entry .ordinalTextualizables   le rese di un `Ordinal` come testo, ciascuna un given da importare per nome
+
+% 1 1 0 00bf97c2f9724d0113f95553d99a9b70
+
+@ 0 5 0 0a9ba704e4d0aec7069e606eb97457ec
++       Un `Ordinal` non ha alcuna resa nell'ambito implicito, perché nessuna è giusta ovunque: un
++       messaggio rivolto all'utente vuole `3rd`, una traccia di debug vuole entrambi gli indici,
++       un protocollo vuole un numero nudo. Si importi per nome esattamente uno di questi given
++       (`import ordinalTextualizables.englishOrdinal`) e `ordinal.textual` lo usa; un import con
++       wildcard non porta i given in ambito.
+
+% 2 1 0 169c63687e8a0f0a1b844c8747a9433f
+
+% 0 1 0 044f508a5d3d64370ba73cf12cf7d38a
+
+% 1 1 0 029c113f1d5f4f02124d4849f93a72f7
+
+% 2 1 0 064c4ffa113ba0a51d0e9c306c2b8528
+
+% 0 1 0 0c7d67f168bb9bcc02b63498a9f1050c
+
+% 0 1 0 0504d1f24970953613a1a045c254cb55
+
+% 0 1 0 148c1246d51b5ad60688008c722d9e76
+
+% 1 1 0 1b605b955660ddd9196bc50d9703cea5
+
+% 2 1 0 00d48b49779ca51d003e09639b5f5221
+
+% 0 1 0 19895ab56945a75d117e7a92720cdc3c
+
+% 0 1 0 12dda54915b58c8b0c984e6b1afec7a3
+
+% 0 1 0 01afd7c27d606e8106492957d97f7f32
+
+% 1 1 0 071a1cb0585bc4f01606552f968c3158
+
+% 2 1 0 17ef20536cc24d3c025a29d4f76ce6b3
+
+% 0 1 0 1d07644dc58c93040a004a7ed0b336d4
+
+% 0 1 0 01995c974e9741dc0e07ccb0079570e4
+
+% 0 1 0 0b86c627a465fabd1dd2cf634be1d98a
+
+% 1 1 0 1233beba25a7813d1e2116c75c07aa56
+
+% 2 1 0 04198cf183d19f930dd243aac1dd0691
+
+% 0 1 0 03c2b1c90530108d123e63954924f03a
+
+% 0 1 0 061adc2cbd86a9cb140a4eec62fb739f
+
+% 1 1 0 0f3d19ee18df295101a55b788eedf6f8
+
+% 2 1 0 010e4e3f1c809f7b00da1e3040cf1398
+
+@ 0 12 0 1298d52c9a30c4591394a93b6f3f33af
++   entry .nominalOrdinal   il nome dell'ordinale (`prim`, `sec`, … `sept`) e `7.z` oltre il settimo
++   entry .uniaryOrdinal   il conteggio a base uno marcato con `♭`: `Prim` è `1♭`
++   entry .zeraryOrdinal   l'indice a base zero marcato con `♯`: `Prim` è `0♯`
++   entry .unmarkedUniaryOrdinal   il conteggio a base uno nudo: `Prim` è `1`
++   entry .unmarkedZeraryOrdinal   l'indice a base zero nudo: `Prim` è `0`
++   entry .intermediateOrdinal   entrambi gli indici insieme, a base zero e poi a base uno: `Prim` è `⌞0⌟|⌞1⌟`
++   entry .englishOrdinal   il suffisso ordinale inglese: `1st`, `2nd`, `3rd`, `4th`, `11th`, `21st`
++   entry .englishSuperscriptOrdinal   il suffisso inglese in apice: `1ˢᵗ`, `2ⁿᵈ`, `3ʳᵈ`, `4ᵗʰ`
++   entry .frenchOrdinal   la forma francese: `1ᵉʳ`, poi `2ᵉ`, `3ᵉ`, …
++   entry .italianOrdinal   la forma italiana: `1ᵒ`, `2ᵒ`, …
++   entry .spanishOrdinal   la forma spagnola: `1.ᵒ`, `2.ᵒ`, …
++   entry .russianOrdinal   la forma russa: `1-й`, `2-й`, …
+
+@ 0 1 0 0f6b6c2937d39ef908927d323d3aa403
++ entry .Countable   un valore con una dimensione, e quindi un intervallo di ordinali: `Self is Countable`
+
+% 1 1 0 1d81b8626cd3078e0fc914b9bcfa541c
+
+@ 0 5 0 17b7f79d9ada976c1a35ed04cf74e2e7
++       `Countable` è la typeclass dietro `size`, e tramite essa dietro ogni operazione che deriva
++       ordinali da una dimensione: `gamut`, `extent`, `limit`, `ult`, `pen`, `ant`, `iterate`,
++       `retrace`, `tabulate`, `spot`, `prefix`, `pare`, `coextent` e `within`, e le operazioni sui
++       segmenti di rudiments. Estende `Vacuiscible`, quindi un valore contabile si può anche
++       verificare per vuotezza, per default come `size == 0`.
+
+% 2 1 0 059eb91216265dc20f564bc02e72c858
+
+% 3 1 0 182e6c276cb3418a0a12ef03d78c10c6
+
+% 0 1 0 04bf20f433268a170a93629761fc256b
+
+% 0 1 0 0afce615c85537e30842024b1bc93118
+
+% 0 1 0 10f377474aa4a9de1d161ae16570e097
+
+% 1 1 0 19fcf93025cf30eb081948455fc745aa
+
+@ 0 7 0 12e00522fb1943de080d5b1317bcc875
++       Esistono istanze, non subordinate, per l'array congelato (e la sua forma `Sized`),
++       `Sequence`, `Set`, `Map`, `Ledger`, `Text`, l'`IndexedSeq` e l'`Iterable` della libreria
++       standard, `Option` (zero o uno), `Int` (che conta sé stesso), e i mutabili `ArrayBuffer`,
++       `HashMap`, `TrieMap` e `StringBuilder`. La dimensione di una `List` è un attraversamento,
++       quindi `.list` richiede `import dysasymptotics.linearSize`; quella di una `Chain` forza
++       l'intero stream, quindi `.chain` richiede `import dysasymptotics.unboundedSize`. Nessuno
++       dei due cancelli si applica a `nil`, a cui `Vacuiscible` risponde in O(1) per entrambe.
+
+@ 0 3 0 19a98e6d59ed075c0ef900057a7edef2
++       Un ordinale confinato coniato su un contabile mutabile (`ArrayBuffer`, `StringBuilder`) è
++       valido solo finché il valore non si restringe; i marchi sono corretti per valori immutabili
++       tenuti in una `val`.
+
+% 0 1 0 17304e2133633ca20f7c3be60665f325
+
+% 0 1 0 08b09680cdc4900d14cb42a0f9aedcba
+
+% 0 1 0 03ab6f91417113c70fee45085ebf0057
+
+@ 0 29 0 03ad7a5f06405e3c175286a920cbf87a
++   entry #size   il numero di elementi nel valore
++   entry #nil   se il valore è vuoto; per default, se la sua dimensione è zero
++   entry .frozenArray   un `Array[e]^{}` congelato conta la propria lunghezza, in O(1)
++   entry .sizedFrozenArray   un array congelato `Sized[length]`, con la propria istanza
++       Un'istanza separata anziché un allargamento di `.frozenArray`: una variabile di tipo
++       limitata da un tipo con cattura verrebbe elaborata come `array^{any.rd}` e non
++       soddisferebbe la prova dichiarata per l'array puro.
++   entry .int   un `Int` conta sé stesso, quindi `5.extent` sono i primi cinque ordinali
++   entry .arrayBuffer   un `ArrayBuffer` mutabile conta la propria lunghezza corrente
++   entry .option   un `Option` ha dimensione zero o uno
++   entry .list   la dimensione di una `List`, per attraversamento; richiede `dysasymptotics.linearSize` in ambito
++       Prende un `Dysasymptotic.LinearSize` come parametro `using`, quindi `list.size`,
++       `list.gamut`, `list.extent` e gli altri non si risolvono finché `import
++       dysasymptotics.linearSize` non è in ambito. Parametrico nel sottotipo, quindi una
++       `List[e] & Populated` corrisponde.
++   entry .iterable   qualunque `Iterable` della libreria standard conta la propria dimensione, a qualunque costo abbia il suo `size`
++   entry .map   una `Map` conta le proprie voci, in O(1)
++   entry .ledger   un `Ledger` conta le proprie voci, in O(1)
++   entry .trieMap   una `TrieMap` concorrente conta le proprie voci
++   entry .hashMap   una `HashMap` mutabile conta le proprie voci
++   entry .chain   la dimensione di una `Chain`, forzando l'intero stream; richiede `dysasymptotics.unboundedSize` in ambito
++       Su una chain infinita non torna mai, ed è per questo che il cancello è il più forte
++       `Dysasymptotic.UnboundedSize` anziché `LinearSize`.
++   entry .stringBuilder   uno `StringBuilder` conta la propria lunghezza corrente
++   entry .set   un `Set` conta i propri elementi, in O(1)
++   entry .indexedSeq   un `IndexedSeq` della libreria standard conta la propria lunghezza, in O(1)
++   entry .sequence   una `Sequence` conta i propri elementi, in O(1)
++   entry .text   un `Text` conta le proprie unità di codice UTF-16, in O(1)
++       Lo stesso conteggio di `String#length`: un carattere fuori dal Basic Multilingual Plane
++       conta come due.
+
+@ 0 1 0 07605388b7e80c17110736e7680ba4d3
++ entry .Vacuiscible   un valore che si può verificare per vuotezza, in O(1) per ogni forma: `Self is Vacuiscible`
+
+% 1 1 0 1c3a2954fb75bbb71bb1d11c65685de8
+
+@ 0 5 0 1e1e63f96e3708ca1a9208463b30ef09
++       La sola vuotezza, separata da `Countable` così che una forma la cui dimensione è costosa
++       (una `List`, una `Chain`) possa comunque rispondere a `nil` a basso costo e senza
++       subordinazione. Un'operazione che ha bisogno solo di sapere se un valore è vuoto dovrebbe
++       richiedere `Vacuiscible`, non `Countable`. Ogni `Countable` è `Vacuiscible` tramite
++       `.countable`; `List` e `Chain` hanno le proprie istanze, che prevalgono su quelle
++       subordinate.
+
+% 2 1 0 1072245cb3b4726511d73c87faa26f8e
+
+% 3 1 0 1a8d6eff997b9b5315b225f6545a75c2
+
+% 0 1 0 05f269bbc6ee4889048099094e5b9313
+
+% 0 1 0 0a57f57867b08e930e257a8f74b67ce0
+
+% 0 1 0 1ed7ee74a5609eca1d1866fc76c499a3
+
+% 1 1 0 1fb7a83c987434a1123c11b0921a228c
+
+% 0 1 0 0cb729766ae573260a115f7052d606d3
+
+% 1 1 0 066f1eb6c70f31781144d4cde7c7cfc0
+
+@ 0 7 0 15f9c8c56f6e59430aeb438a3843caf5
++   entry #nil   se il valore non ha elementi
++   entry .countable   ogni `Countable` è `Vacuiscible`, e risponde a `nil` tramite la propria istanza
++       Serve perché la ricerca implicita di `X is Vacuiscible` consulta gli oggetti compagni di
++       `Vacuiscible` e dei suoi genitori, mai quelli dei suoi sottotipi, quindi altrimenti le
++       istanze di `Countable` non verrebbero trovate.
++   entry .list   la vuotezza di una `List`, un solo test di puntatore; non subordinata, a differenza della sua dimensione
++   entry .chain   la vuotezza di una `Chain`, che forza solo la sua prima cella; non subordinata, a differenza della sua dimensione
+
+@ 0 1 0 1bee944c74b9f3d51cf15f73f3107339
++ entry .Applicable   un valore che si può leggere a un indice o a una chiave: `Self is Applicable by Operand to Result`
+
+% 1 1 0 1bdc2f64823e9c4c15e1c95176f19ce3
+
+@ 0 6 0 1e41e4c7171f33e11177067eb887399e
++       `Applicable` è il lato di lettura dell'indicizzazione: `#contains` dice se un indice è
++       valido e `#access` legge a uno valido. È ciò che risolvono `xs(index)`, `xs.at(index)`,
++       `xs.defines(key)`, `xs.confine(index)` e `xs.pick(index)` di rudiments, ed è il motivo per
++       cui quelle letture possono essere totali per un ordinale confinato e `Optional` per
++       qualunque altro: `access` stesso viene chiamato soltanto dietro `contains` o dietro una
++       prova. L'`Operand` è un `Ordinal` per le forme posizionali e il tipo della chiave per
++       quelle con chiave.
+
+% 2 1 0 0b5310cb9ff690cd0c0dc10e117a745e
+
+% 3 1 0 03bb85ec446cf6141b8cdb4b316492d0
+
+% 0 1 0 1051055c947de84100c8ac71ad59d4ff
+
+% 0 1 0 05517cde37325f791a2a72919be8fe0a
+
+% 0 1 0 08532d3db73736e41743997af45b0f16
+
+% 0 1 0 1241ffdc2a352dd6168cf10cf2976832
+
+% 0 1 0 1378d42d2ecf777d15f99674c4ca32e3
+
+% 0 1 0 095e40ca3f15bd581da1268736d9e303
+
+% 1 1 0 0c6b22d9dcd0a02d17418bc02117fb56
+
+@ 0 4 0 0e3c6eae40f67a44029e9ed8cf18f457
++       Istanze: l'array congelato e la sua forma `Sized`, `Sequence`, l'`IndexedSeq` della
++       libreria standard e `Text` (per `Char`), per ordinale; `Map`, `Ledger` e la `HashMap`
++       mutabile, per chiave; e `List`, per ordinale, dietro `import dysasymptotics.linearAccess`,
++       poiché raggiungere una posizione richiede di camminare dalla testa.
+
+% 1 1 0 13e5cf15e820111f007992f454067070
+
+% 1 1 0 124bca232a08373c04fe4fb108ca5476
+
+@ 0 15 0 07e393f1720889c0003e28f90939da9f
++   entry #contains   se l'indice è valido per il valore: nell'intervallo, o una chiave presente
++   entry #access   l'elemento a un indice già noto come valido
++       Non verificato: chiamato su un indice non valido può lanciare un'eccezione. Lo si
++       raggiunge tramite `apply`, `at` o `pick` di rudiments, che prima verificano o dimostrano
++       l'indice.
++   entry .frozenArray   un `Array[e]^{}` congelato letto a un ordinale, con una verifica dei limiti e una lettura non verificata
++   entry .sizedFrozenArray   un array congelato `Sized[length]` letto a un ordinale variabile
++       Un indice letterale in un array `Sized` viene verificato in tempo di compilazione e non
++       raggiunge mai questa istanza; un ordinale variabile resta una lettura `Optional` con
++       verifica dei limiti.
++   entry .indexedSeq   un `IndexedSeq` della libreria standard letto a un ordinale
++   entry .sequence   una `Sequence` letta a un ordinale, in tempo di fatto costante
++   entry .list   una `List` letta a un ordinale camminando dalla sua testa; richiede `dysasymptotics.linearAccess`
++   entry .text   un `Text` letto a un ordinale, che dà un `Char` (un'unità di codice UTF-16)
++   entry .map   una `Map` letta a una chiave, che ne dà il valore
++   entry .ledger   un `Ledger` letto a una chiave, che ne dà il valore
++   entry .hashMap   una `HashMap` mutabile letta a una chiave, che ne dà il valore
+
+@ 0 1 0 1a616da724bfbb910e8f754faa78f402
++ entry .Definable   aggiornamento con copia in scrittura a un indice o a una chiave: `Self is Definable by Operand to Result`
+
+% 1 1 0 142af51097d32ec306fb8f43e69a1929
+
+@ 0 3 0 1427ef8e6e7f9e171b5e77446ee38c3e
++       Il gemello in scrittura di `Applicable`, dietro `xs.define(index, value)` di rudiments: una
++       copia del valore in cui la lettura a `index` dà `value`. È totale: un ordinale fuori
++       intervallo restituisce il valore invariato, e una chiave assente aggiunge una voce.
+
+% 2 1 0 15c24e314b6d5b8c19581b6dd28af51e
+
+% 3 1 0 13a2023b9e9deabc0b0db342f3526972
+
+% 0 1 0 1f55967e841a567c1da032b42b7b7a82
+
+% 0 1 0 0923fa53ce8698e71b912ec68dcfd6ad
+
+% 0 1 0 02abf72de2fd00bb0be7aff61231917b
+
+% 1 1 0 1db2a0aa9ba7bf2c006fea5ded3bd8c9
+
+@ 0 4 0 00f3d2d1aa0048b11d5446ca4a6ae304
++       Esistono istanze per `Sequence`, l'`IndexedSeq` della libreria standard, `Map` e `Ledger`,
++       non subordinate; per `List` dietro `dysasymptotics.linearAccess`, poiché ne ricostruisce il
++       prefisso; e per l'array congelato dietro `dysasymptotics.linearSize`, poiché ogni modifica
++       copia l'intero array.
+
+% 0 1 0 01485a04775768a518a4862baa3424e4
+
+% 0 1 0 0a6eacc9f9812c55023d04a86bea2511
+
+@ 0 8 0 01b4fb3bcdfe9ce40b1357fedeff6f7a
++   entry #define   il valore con `result` a `index`
++   entry .sequence   una `Sequence` con una posizione sostituita; invariata se l'ordinale è fuori intervallo
++   entry .frozenArray   un nuovo array congelato con una posizione sostituita; richiede `dysasymptotics.linearSize`
++       Richiede un `ClassTag` per l'elemento. La copia è nuova, quindi congelarla non richiede
++       alcuna prova.
++   entry .list   una `List` con una posizione sostituita, ricostruendone il prefisso; richiede `dysasymptotics.linearAccess`
++   entry .indexedSeq   un `IndexedSeq` della libreria standard con una posizione sostituita
++   entry .map   una `Map` con una chiave impostata a un valore, aggiunta se assente
++   entry .ledger   un `Ledger` con una chiave impostata a un valore; una nuova chiave va in fondo all'ordine
+
+@ 0 1 0 09b1733f577df5e013cddd2c3e19dec0
++ entry .Omissible   rimozione con copia in scrittura a un indice o a una chiave: `Self is Omissible by Operand`
+
+% 1 1 0 109ad659ebde880d12c3bf92853203cf
+
+@ 0 7 0 003364045204c8790862cb7e7a1bf7ab
++       L'inverso di `define`, dietro `xs.omit(index)` di rudiments. È una typeclass a sé perché
++       le forme concatenate e sequenziali non possono offrirla onestamente: rimuovere una
++       posizione sposta ogni indice successivo, quindi `List` e `Sequence` non hanno alcuna
++       istanza, e `omit` su di esse non compila. L'array congelato è l'eccezione, poiché ogni sua
++       modifica copia comunque l'intero array, quindi rimuovere uno slot costa quanto `define`; è
++       subordinato allo stesso `dysasymptotics.linearSize`. Un ordinale fuori intervallo, o una
++       chiave assente, restituisce il valore invariato.
+
+% 2 1 0 192b8e8f56ac0d7d04fcd39a125cb749
+
+% 3 1 0 03d5d2df901069c61ee651b7cc191408
+
+% 0 1 0 02df009b8cf2873d1a4e4512a194500d
+
+% 1 1 0 01ede67bf1b4b89801c6ff1cb56778f4
+
+% 1 1 0 12c2a55abd022c9615989858803446ff
+
+@ 0 4 0 049d1e27814128241c236939b83e915a
++   entry #omit   il valore senza l'elemento a `index`
++   entry .frozenArray   un nuovo array congelato più corto di uno slot; richiede `dysasymptotics.linearSize` e un `ClassTag`
++   entry .map   una `Map` senza una chiave
++   entry .ledger   un `Ledger` senza una chiave, con l'ordine restante conservato
+
+@ 0 1 0 1ebc03d75389507711d806873ced8b28
++ entry .Terminable   un valore di cui si può leggere l'ultimo elemento: `Self is Terminable by Operand`
+
+% 1 1 0 17ea37a6f21a29530a86a38cd049dd07
+
+@ 0 4 0 14b98afa9ede53040ef606b906912dde
++       La parte finale di un valore, dietro `xs.last` di rudiments (che restituisce `Unset` su un
++       valore vuoto, e un elemento nudo su uno di tipo `& Populated`). Una typeclass separata da
++       `Truncable` perché i due costi differiscono: l'ultimo elemento di un array è una sola
++       lettura, mentre toglierlo copia l'array. `last` è subordinato ovunque non sia una semplice
++       occhiata.
+
+% 2 1 0 0781c3b645adfa2904085848a7a0ef8a
+
+% 3 1 0 135bf61a7d38483a19b6b39b51a901ba
+
+% 0 1 0 022d64aa09c2d11b1697422e0549bd52
+
+% 0 1 0 0a7c92c53206b3ff115b10a5892ac91b
+
+% 1 1 0 007ca953fe9d1eae138ccd627871c947
+
+@ 0 4 0 164efab1e722e9311962933231d123d8
++       Istanze: `Sequence`, l'array congelato e la sua forma `Sized`, `Text` (per `Char`) e
++       l'`IndexedSeq` della libreria standard, in O(1); `List` dietro
++       `dysasymptotics.linearSize`, poiché cammina fino alla fine; e `Chain` dietro
++       `dysasymptotics.unboundedSize`, poiché forza l'intero stream.
+
+% 0 1 0 0246b2f72ae5a40e1d2c6df7e219bbaf
+
+@ 0 8 0 096464723a11ad681730838c839addbe
++   entry #last   l'ultimo elemento di un valore non vuoto
++   entry .sequence   l'ultimo elemento di una `Sequence`, in O(1)
++   entry .frozenArray   l'ultimo slot di un array congelato, in O(1)
++   entry .sizedFrozenArray   l'ultimo slot di un array congelato `Sized[length]`, con la propria istanza
++   entry .text   l'ultimo `Char` di un `Text`
++   entry .indexedSeq   l'ultimo elemento di un `IndexedSeq` della libreria standard
++   entry .list   l'ultimo elemento di una `List`, camminando fino alla fine; richiede `dysasymptotics.linearSize`
++   entry .chain   l'ultimo elemento di una `Chain`, forzandola fino alla fine; richiede `dysasymptotics.unboundedSize`
+
+@ 0 1 0 0dd865f278fb29521fe23852c9e9040d
++ entry .Truncable   un valore che può togliere il proprio ultimo elemento: `Self is Truncable to Result`
+
+% 1 1 0 1fbd01058c5220321b16840c809e0f4a
+
+@ 0 4 0 006c0e96adb8f3541e830a6cf1c6216b
++       Il complemento di `last`, dietro `xs.lead` di rudiments: tutto tranne l'ultimo elemento,
++       così che `lead` seguito da `last` sia l'intero valore. Il `Result` è un tipo semplice
++       anziché `Self`, perché togliere un elemento può svuotare il valore e un marchio
++       `& Populated` non deve sopravvivere.
+
+% 2 1 0 174271e1b1f712031548881cf4184ed0
+
+% 3 1 0 022339e09c5443961f53818fe34db71f
+
+% 0 1 0 11834529ba72d02e13e9e21ca51ef1bc
+
+% 0 1 0 043bf8b3cc9ae57b16682c1b008f2887
+
+% 1 1 0 1389b6d2508c0b33067bc78db91c5086
+
+@ 0 3 0 1fdb20d4a7cfb74e04b8d937118744b0
++       Istanze: `Sequence` (O(1) ammortizzato), `Text` e l'`IndexedSeq` della libreria standard,
++       non subordinate; `List` e l'array congelato dietro `dysasymptotics.linearSize`, poiché
++       ciascuno copia l'intera propria struttura; e `Chain` dietro
++       `dysasymptotics.unboundedSize`.
+
+% 0 1 0 0a14733a9edca07804241eb55245d180
+
+@ 0 8 0 09c53a65c2aeaa6006019970eee8e07d
++   entry #lead   il valore senza il suo ultimo elemento
++   entry .sequence   una `Sequence` senza il suo ultimo elemento, in O(1) ammortizzato
++   entry .text   un `Text` senza il suo ultimo `Char`
++   entry .indexedSeq   un `IndexedSeq` della libreria standard senza il suo ultimo elemento
++   entry .list   una `List` senza il suo ultimo elemento, copiandone la spina; richiede `dysasymptotics.linearSize`
++   entry .frozenArray   un nuovo array congelato più corto di uno slot; richiede `dysasymptotics.linearSize` e un `ClassTag`
++       Un array vuoto si tronca in un array vuoto.
++   entry .chain   una `Chain` senza il suo ultimo elemento; richiede `dysasymptotics.unboundedSize`

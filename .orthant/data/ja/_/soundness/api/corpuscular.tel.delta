@@ -1,0 +1,318 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1419c199c87f09a716d897571d592da1
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 06384c8e740db55d1a8c16c732c4e35d
++ info   CRC-32、CRC-64、Adler-32 のチェックサムと、すべてのハッシュが通る逐次的な `Digestion`
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 009013e270241754031f8c05ea33ffb6
++     _Corpuscular_ は、圧縮形式とコンテナー形式が必要とする三つの非暗号学的なチェックサム、`Crc32`（gzip、PNG、ZIP、XZ）、`Crc64`（XZ が使う ECMA-182 の形）、`Adler32`（zlib）を持つ。
++     また、暗号学的かどうかにかかわらず、Soundness のすべてのハッシュを逐次的に計算するためのインターフェース `Digestion` も持つ。
+
+@ 0 6 0 014017e83f55804407f905f816d3082e
++     各チェックサムには二つの名前の使い方がある。
++     **型**としては、`Crc32` は `Algorithm` であり、型の位置でチェックサムを示す印である。そのため、値のチェックサムは、`digest[Sha2[256]]` でハッシュを取るのと同じ `digest[Crc32]` で、gastronomy を通じて計算される。
++     **オブジェクト**としては、`Crc32` は実行中の `Crc32.Accumulator` を作る。これは可変の `Digestion` であり、バイトが流れてくるにつれてそれを与え、コンテナー形式がトレーラーに書き込む整数としてチェックサムを読むコードのためのものである。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1a94ea18d9ba3afe12b51cc7d574e969
+
+% 0 1 0 1c9738c047469a341d2a96b1813d4d1e
+
+% 0 1 0 09583daf6313cc2613f1f3df627c02f3
+
+% 0 1 0 1e404fe2bff6e6610c0b85f4b2228256
+
+% 0 1 0 074261751fe351b51cb0c863efdcf261
+
+% 0 1 0 03cbb34af1e02d35150e3cd7c88679bb
+
+% 0 1 0 1e20b38aecfb172e09776a80bb680410
+
+% 0 1 0 18c45e59b0925c4f0185d317380b948b
+
+% 1 1 0 1c5416bc9626d17a1e6147ba927123cc
+
+@ 0 7 0 1b670c0418c3da2c121a4dcd9cd43217
++     チェックサムは偶発的な破損を検出するだけで、何に対しても防御しない。
++     そのため、チェックサムを使う `digest` は、gastronomy の許可 `cryptoPermits.permitNonCryptographicHashes` の背後に置かれている。この許可は、脅威モデルに敵対者がいないことを認めるものである。
++     JDK のプロバイダー `providers.javaBaseProvider` は CRC-32 と Adler-32 を提供する。
++     CRC-64 には JDK の実装がなく、三つすべてにこのライブラリの実装を使う `providers.soundnessProvider` だけが提供する。
++     同じ入力は、それぞれのもとで公表されている検査値を与える。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 0a1936722edc2a0c11f64770a6628716
+
+% 1 1 0 02749d0fdf58669b04220e45c8933bc1
+
+% 2 1 0 0bec4a69dc7ba1a40e9e00b2dc0d1855
+
+% 3 1 0 03f9754a510f68991e20292fa1cfd6e6
+
+% 0 1 0 0ae38e960889630b076b85581dec183b
+
+% 0 1 0 08a8a5c5d348a581106f022baeba1933
+
+% 1 1 0 11ef13e9e3362e4f13b32cbe85df577e
+
+% 2 1 0 0a9f2c60d4bdde8113a6424914493c78
+
+% 3 1 0 066f89fbfb17449219664c64c2ae2ae4
+
+% 0 1 0 000d1240738cdbce0b563161f3a18a3a
+
+% 0 1 0 16d7760bbfc544870b42e5fab0b3e0e6
+
+% 1 1 0 1879e4bcff85d1ca04430ae1b76f5d05
+
+% 2 1 0 0a8571ed587de19b07fd469bcf9fb116
+
+% 3 1 0 1c4c60dbdd13270f12537837ac0c31df
+
+% 0 1 0 0c1cb6fc07e9e90b1e4935aab37ceaeb
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 4 0 00e7dd4867b01ed01a490fcc384568e9
++     このライブラリのソースセットは `corpuscular.core` の一つだけで、移植可能な Scala で書かれているので、チェックサムは JVM、Scala.js、Scala Native、WebAssembly で同じ値を計算する。
++     `Adler32`、`Algorithm`、`Crc32`、`Crc64`、`Digestion` は `soundness` アンブレラにエクスポートされる。
+
+% 0 1 0 1b8683a9c12fec06023fb43c7afe81ed
+
+% 0 1 0 0844c343521906821b8c52c6854fdbbc
+
+% 0 1 0 089129042379844f0d7666f7f28dceaa
+
+% 0 1 0 075bce279f516beb039a97ab9f26acec
+
+% 0 1 0 18be7dab9dfafae60f304bb88a4a8a6a
+
+@ 0 6 0 1e20083b5441c4b919f62512ca0463ab
++ entry .Algorithm   ハッシュまたはチェックサムのアルゴリズムの印となる型。`digest[Crc32]` のように型の位置で示す
++     メンバーを持たないトレイトである。
++     Soundness がダイジェストを計算できるすべてのアルゴリズムは、これを拡張する型である。ここにあるチェックサム `Crc32`、`Crc64`、`Adler32` と、gastronomy の `Sha2[256]`、`Sha1`、`Md5`、`Blake3`、`Murmur3` がそうである。
++     アルゴリズムがインスタンス化されることはない。
++     `Digest in Crc32` はそのアルゴリズムを型に持つので、異なるアルゴリズムのダイジェストが混同されることはない。
+
+@ 0 1 0 1d152179b90a163618e28e502a45678e
++ entry .Digestion   逐次的なハッシュまたはチェックサムの計算：バイトを追加し、それからダイジェストを読む
+
+% 1 1 0 0efac0ea4bf7acd11ffed2f16b5ea09f
+
+@ 0 5 0 0dcd1c83106da6bb1643ac0ad34468c1
++       `Digestion` は、進行中の一つのハッシュの可変の状態である。
++       これは正直に可変であり、`append` と `digest` が `update` メソッドである `caps.Mutable` なので、新しいものは排他的な `Digestion^` であり、計算ごとにそれ自身のものが必要である。
++       チェックサムのアキュムレーター（`Crc32.Accumulator`、`Crc64.Accumulator`、`Adler32.Accumulator`）はこれを直接実装し、gastronomy の `Hashing` プロバイダーは各暗号学的ハッシュに対してこれを一つ提供する。
+
+% 2 1 0 045f1bf3e8523a63008c7aa3a8a86df6
+
+% 3 1 0 03edc219c82d75ac1c0526f1e64cafd8
+
+% 0 1 0 1d23ee73391c3a9513f1f8d7e177e00a
+
+% 0 1 0 10b2afa1f14f9d4c1fba33a7a4e898c5
+
+% 0 1 0 017b73e31da16858143f81c739c10076
+
+% 0 1 0 1db1956b4e4ec50306c19599b0bd3233
+
+% 1 1 0 119f02a7c21aa6ff1789e415ffb4bb39
+
+@ 0 3 0 12199b63d5a29aff0e51868bd8e5d4b9
++       再利用可能なウィンドウに読み込むストリーミングの消費者は、それをスナップショットにせず、ウィンドウを取る `#append` で与える。
++       ハッシュ計算は入力を同期的に消費し、決して保持しない。
+
+% 0 1 0 0255169508086e3015145186898d53c0
+
+@ 0 10 0 1b3dd2a817deec621fc85367f0ee6b5d
++   entry #append   計算にバイトを与える：`Data` の全体、または可変の配列の一部の範囲
++       `append(bytes)` は不変の `Data` の全体のハッシュを取る。
++       `append(array, start, count)` は可変の配列の `start` から `count` バイトのハッシュを取り、それには配列への読み取りアクセスだけが必要である。
++       既定の実装はその範囲を複製するが、チェックサムのアキュムレーターはこれをオーバーライドし、アロケーションなしで配列をその場で読む。
++   entry #digest   それまでの結果をバイトとして返す
++       チェックサムでは、チェックサムの値をビッグエンディアンのバイトとして返す。`Crc32` と `Adler32` では四バイト、`Crc64` では八バイトである。
++       その後さらに追加してよいかどうかは実装による。
++       チェックサムのアキュムレーターはそれを許し、そのときの結果は追加されたすべてのバイトにわたる。
+
+@ 0 1 0 1a29ddcd1322b7981fed4d97b3d32479
++ entry .Crc32   gzip、PNG、ZIP、XZ が使う標準の CRC-32 チェックサム
+
+% 1 1 0 07b93f4bb33efb8d0ab8a18c7e2b0492
+
+@ 0 5 0 1807e1f085d2cc4c14a29810e4868bee
++       多項式 `0xedb88320` による反転 CRC-32 であり、`123456789` に対する検査値は `0xcbf43926` である。
++       型としては `Algorithm` なので、`digest[Crc32]` は gastronomy を通じて（`cryptoPermits.permitNonCryptographicHashes` の背後で）ダイジェスト可能な任意の値のチェックサムを計算する。
++       オブジェクトとしては、複数の断片にわたるワンショットの `.checksum` と、実行中の `.Accumulator` を提供する。
+
+% 3 1 0 12b33af144aeab2805914a41616ec2a2
+
+% 4 1 0 1f0a50f10146b1a41836bf094365eacf
+
+% 0 1 0 09730c1324e280861b3abc366113ccb8
+
+% 0 1 0 132fe1dab4722ef304758c21df95b4af
+
+% 1 1 0 1eb818675efbec2511628e369b557482
+
+% 0 1 0 1e1e6b686953f98f04ad5fdba3943de7
+
+% 1 1 0 13b344d28194409a0aefd03e96de9463
+
+@ 0 2 0 0df8b77009221b340580259811c4a9f7
++       `.checksum` は CRC を、形式が書き込むビットとして、符号付きの `Int` で返す。
++       `Accumulator#value` は符号なしの `Long` で返す。
+
+% 0 1 0 0946697535422bcb185e30d11de5d009
+
+% 0 1 0 0ab39a9bad90bfe015364972cdd272e4
+
+@ 0 9 0 14625cdd5e9ecce606eb16e611250435
++   entry .table   バイト単位の CRC-32 アルゴリズムの 256 項目の参照表
++       一度だけ計算される凍結済みの `Array[Int]` であり、実行中の CRC の下位バイトと次の入力バイトの排他的論理和で添字を付ける。
++   entry .checksum   バイトの断片の列を一つのストリームとして扱った CRC-32 を `Int` として返す
++       PNG のチャンクや ZIP のエントリーが必要とするものである。
++       `Crc32.checksum(a, b)` は、`a` の後に `b` が続くもののチェックサムに等しい。
++       断片がないか、空の断片なら、結果は 0 である。
++   entry .apply   新しい実行中の CRC-32、つまり `Crc32.Accumulator`
++       排他的な `Accumulator^` を返す。
++       チェックサムごとにそれ自身のものが必要である。
++   entry .Accumulator   逐次的に与えられる CRC-32 の実行中の状態。`Digestion` として
+
+% 1 1 0 0d7ce50902b9316916bd111deebc9f37
+
+@ 0 5 0 0b647ca6240562e1029db3bee2189194
++         可変の `Digestion` であり、`Data` の全体であれ可変の配列の一部の範囲であれ、その `append` はどちらも複製なしに配列をその場で読むネイティブのループを実行する。
++         `#update` は、生の `scala.Array[Byte]` をすでに持っているコードのための、それに対する同じループである。
++         `#value` は CRC を符号なしの数として、`#digest` は四つのビッグエンディアンのバイトとして読む。
++         どちらもいつでも読むことができ、その後も追加を続けられる。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 1431880c979b543c01476a2c782ba8fc
+
+% 0 1 0 1c96497c2f8de588007aa9a3fb11dc0b
+
+% 0 1 0 16854cac5b767d3a1aa48968f4f92ba7
+
+% 0 1 0 18703ec35eec9b6c1da7fdd3fe5b5513
+
+% 0 1 0 0f14f047d495f70f10791e8f366f213a
+
+% 0 1 0 1fe558f0ac62820c017131c2b26fa031
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 6 0 048dc8c5ac001fc51e76ea03c08b2707
++     entry #update   生の `scala.Array[Byte]` の `index` から `length` バイトを与える
++         `append` メソッドが委譲するプリミティブなループであり、配列をその場で読む。
++     entry #reset    アキュムレーターを初期状態、つまりバイトなしの CRC に戻す
++     entry #value    それまでの CRC-32 を、0 から 0xffffffff の符号なしの `Long` として返す
++     entry #digest   それまでの CRC-32 を、四つのビッグエンディアンのバイトとして返す
++   entry #Bits   チェックサムの幅：`32`
+
+@ 0 1 0 0997ce01faafb32b163c0420c41da0ad
++ entry .Crc64   XZ が使う ECMA-182 の形の CRC-64 チェックサム
+
+% 1 1 0 1fcd78db7cb07ebc0103beb8b3be1209
+
+@ 0 6 0 02890777ba4e4794143527f1b50baaec
++       多項式 `0xc96c5795d7870f42` による反転 CRC-64 であり、`123456789` に対する検査値は `0x995dc9bbdf1939fa` である。
++       型としては `Algorithm` なので、`digest[Crc64]` はダイジェスト可能な任意の値のチェックサムを計算する。ただし、JDK には CRC-64 がなく `providers.javaBaseProvider` はそれを提供しないので、`providers.soundnessProvider` のもとでだけである。
++       オブジェクトとしては、実行中の `.Accumulator` を作る。
+
+% 3 1 0 00585802d121cf6b0813689bf933f063
+
+% 4 1 0 146aca2d224db582053f14ac59ebff88
+
+% 0 1 0 1a663aafd06d1ba308f78348dccc82ec
+
+% 1 1 0 1deb6f14c17dfdc7049313dc3c1b5fc2
+
+% 0 1 0 03d96fb11737d5041f0f22ee7ce8299a
+
+% 1 1 0 0c87b46af899038c0e8eaa0e19622097
+
+@ 0 3 0 1ff6645938e8678c05654a064ee0ea40
++       アキュムレーターは slicing-by-eight を使い、八つの独立した表の参照によって一段階に八バイトを消費する。これはバイト単位のループより三倍から四倍速く、xz-java の実装と同じくらい速い。
+
+% 1 1 0 12b7169b875944181536ea3272b01e90
+
+@ 0 7 0 0d7028a3fe1b69800fb4944b03181624
++   entry .table   CRC-64 の八つの 256 項目のスライシング表を、一つの配列に平坦化したもの
++       2048 項目の凍結済みの `Array[Long]` である。
++       256 未満の `n` に対する `table(n)` は古典的なバイト単位の表であり、`table(k*256 + n)` は八バイトの語の中で `k` 位置先にあるバイトを畳み込む。
++   entry .apply   新しい実行中の CRC-64、つまり `Crc64.Accumulator`
++       排他的な `Accumulator^` を返す。
++       チェックサムごとにそれ自身のものが必要である。
++   entry .Accumulator   逐次的に与えられる CRC-64 の実行中の状態。`Digestion` として
+
+% 1 1 0 1e8acaf1cb74a7761d65985061011dca
+
+@ 0 10 0 02973516c349fb140672c7380fd709cc
++         可変の `Digestion` であり、その `append` は入力をその場で、一度に八バイトずつ、末尾はバイト単位で読む。そのため、断片に分かれた入力は、どの境界の位置でも、全体と同じチェックサムを与える。
++         `#value` は CRC を `Long` として、`#digest` は八つのビッグエンディアンのバイトとして読む。
++         どちらもいつでも読むことができ、追加を続けられる。
++     entry #update   生の `scala.Array[Byte]` の `index` から `length` バイトを与える
++         `append` メソッドが委譲するプリミティブなループであり、配列をその場で読む。
++     entry #reset    アキュムレーターを初期状態、つまりバイトなしの CRC に戻す
++     entry #value    それまでの CRC-64 を `Long` として返す：バイトなしなら 0
++     entry #digest   それまでの CRC-64 を、八つのビッグエンディアンのバイトとして返す
++   entry #Bits   チェックサムの幅：`64`
+
+@ 0 1 0 1b9a549dc18fc3b517bf919da1878f72
++ entry .Adler32   zlib のラッパーが使う Adler-32 チェックサム
+
+% 1 1 0 17b8f3c34ff6c08b021f85a5d676359a
+
+@ 0 6 0 19960a06886d01d808497af66cc5cbc7
++       Adler-32 は、65536 未満の最大の素数である 65521 を法とする二つの累計を、`s2 << 16 | s1` として組み合わせたものである。
++       `123456789` に対する検査値は `0x091e01de` であり、バイトなしのチェックサムは 1 である。
++       型としては `Algorithm` なので、`digest[Adler32]` は gastronomy を通じて（`cryptoPermits.permitNonCryptographicHashes` の背後で）ダイジェスト可能な任意の値のチェックサムを計算する。
++       オブジェクトとしては、実行中の `.Accumulator` を作る。
+
+% 3 1 0 1403026d068616640395620618269d9f
+
+% 4 1 0 004bb23588b3052202c8d2cc683283a9
+
+% 0 1 0 1f4590c678ffa99907a0a6f65946af74
+
+% 0 1 0 026e5e79dff0956f16ec2c8dc1ef3659
+
+% 0 1 0 0ad9c65688b790041a8983dbed64f764
+
+% 1 1 0 15139e0de5fcb0d9043170fe09213cfe
+
+% 1 1 0 16ae23c91f9724981af182a3a1c61f27
+
+@ 0 3 0 1ad5f8667c5c001611f0f9d8227df1b2
++   entry .apply   新しい実行中の Adler-32、つまり `Adler32.Accumulator`
++       排他的な `Accumulator^` を返す。
++       チェックサムごとにそれ自身のものが必要である。
++   entry .Accumulator   逐次的に与えられる Adler-32 の実行中の状態。`Digestion` として
+
+% 1 1 0 179b795297c49c4e067c1025155d5db1
+
+@ 0 9 0 0d3706fe4d0975801924ed44755057b0
++         可変の `Digestion` であり、その `append` は入力をその場で読む。
++         `#value` はチェックサムを `Long` として、`#digest` は四つのビッグエンディアンのバイトとして読む。
++         どちらもいつでも読むことができ、追加を続けられる。
++     entry #update   生の `scala.Array[Byte]` の `index` から `length` バイトを与える
++         `append` メソッドが委譲するプリミティブなループであり、配列をその場で読む。
++     entry #reset    アキュムレーターを、値が 1 である初期状態に戻す
++     entry #value    それまでの Adler-32 を `Long` として返す：バイトなしなら 1
++     entry #digest   それまでの Adler-32 を、四つのビッグエンディアンのバイトとして返す
++   entry #Bits   チェックサムの幅：`32`

@@ -1,0 +1,4 @@
+orthant 2 release
+
+@ 1 0 0 1eca767bea4f841e0eefaf1d7ce92723
++ row  `↯/s.89.1.11`  `TruncatedTable`  A table of fixed layout, identified by `tag`, is shorter than that layout.  `[↯/s.89.1.11] the font could not be used because the table head is shorter than its layout`  The file is truncated or its table directory is wrong; obtain an intact copy of the font.

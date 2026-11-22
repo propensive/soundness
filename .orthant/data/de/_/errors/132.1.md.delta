@@ -1,0 +1,48 @@
+orthant 2 language
+
+% 0 1 0 153de41bd09c25380541ca71f38329fb
+
+@ 0 3 0 0c8b9690abaf8f6f1b9ee08f139b6ecd
++ Wird ausgelöst, wenn Yossarian in einem PTY-Stream auf einen
++ ANSI-Escape-Code stößt, den es nicht behandeln kann. Jede Variante
++ benennt die genaue Art der fehlerhaften Escape-Sequenz.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 058914b76fd4fad60012d9c9f198bd94
++ Yossarian dekodiert Terminal-Escape-Sequenzen, während es einen
++ PTY-Stream verarbeitet. Wenn eine Sequenz fehlerhaft ist oder auf einen
++ Parameter außerhalb des unterstützten Bereichs verweist, bricht das
++ Parsen mit diesem Fehler ab. Die Meldung lautet
+
+% 0 1 0 13d9f3c468a4875a01f899a4ad42da3f
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 12 0 0840eaf98237526e19ebc2bce8e2150a
++ column  Grund
++ column  Bedeutung
++ column  Meldung
++ column  Behebung
++ row  `↯/s.132.1.1`  `BadSgrParameters`  Eine SGR-Parameterfolge (Select Graphic Rendition) ist nicht gültig.  `[↯/s.132.1.1] an ANSI escape code could not be handled because [38;9 is not a valid SGR parameter sequence`  Prüfen Sie, was die Escape-Sequenz erzeugt: SGR-Parameter sind durch Semikolons getrennte Ganzzahlen in den dokumentierten Bereichen.
++ row  `↯/s.132.1.2`  `BadCsiParameter`  Ein CSI-Befehl erhielt einen Parameter außerhalb der Werte, die er akzeptiert.  `[↯/s.132.1.2] an ANSI escape code could not be handled because 99 is not a valid CSI parameter for the H command`  Beschränken Sie den Parameter auf den für diesen Befehl erlaubten Bereich.
++ row  `↯/s.132.1.3`  `NonintegerSgrParameter`  Ein SGR-Parameter, der eine Zahl sein sollte, war nicht numerisch.  `[↯/s.132.1.3] an ANSI escape code could not be handled because abc is not a numerical SGR parameter`  Geben Sie in SGR-Sequenzen zwischen den Trennzeichen `;` nur Parameter aus Ziffern aus.
++ row  `↯/s.132.1.4`  `BadColor`  Ein Parameter für 256 Farben oder die Palette verwies auf einen Farbindex außerhalb des gültigen Bereichs.  `[↯/s.132.1.4] an ANSI escape code could not be handled because 300 is not a valid color number`  Verwenden Sie einen Farbindex zwischen 0 und 255 (oder 0 und 15 für die Grundpalette).
++ row  `↯/s.132.1.5`  `BadOscParameter`  Ein OSC (Operating System Command) verwendete einen Parameter, der nicht erkannt wird.  `[↯/s.132.1.5] an ANSI escape code could not be handled because 999 is not a recognized OSC parameter`  Verwenden Sie einen OSC-Parameter aus der dokumentierten Menge.
++ row  `↯/s.132.1.6`  `BadCsiCommand`  Das abschließende Zeichen einer CSI-Sequenz ist für die gegebenen Parameter kein erkannter CSI-Befehl.  `[↯/s.132.1.6] an ANSI escape code could not be handled because Z (with parameter 1) is not a valid CSI command`  Verwenden Sie für die betreffende Parametermenge ein dokumentiertes CSI-Endbyte.
++ row  `↯/s.132.1.7`  `BadCsiEscape`  In einer CSI-Sequenz erschien ein Zeichen, das dort nicht erlaubt ist.  `[↯/s.132.1.7] an ANSI escape code could not be handled because @ is not valid in a CSI escape sequence`  CSI-Sequenzen erlauben nur die dokumentierten Zwischen- und Parameterbytes; prüfen Sie, was die Sequenz erzeugt.
++ row  `↯/s.132.1.8`  `BadFeEscape`  Das Zeichen nach `ESC` ist keine gültige Fe-Escape-Sequenz (C1).  `[↯/s.132.1.8] an ANSI escape code could not be handled because Q is not a valid Fe escape`  Verwenden Sie nach `ESC` ein dokumentiertes C1-Einleitungszeichen (`[`, `]`, `P` usw.).
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 0e13a7f6aae749ab160e79bdf2b666bc
++ - Quelle: `lib/yossarian/src/core/yossarian.Pty.scala`

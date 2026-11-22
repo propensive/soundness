@@ -1,0 +1,57 @@
+orthant 2 language
+
+% 0 1 0 1237f89b8efdb19516a5f5c145fb6286
+
+@ 0 1 0 11d8242c08695a7f13ba48b0626d5891
++ 値を有効な URL としてパースできないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 5 0 0f3b64d26e07b12616641de5652f4539
++ Urticose は、期待する構成要素に照らして URL の構文を検証する。スキーム、オプショナルなオーソリティ（ホスト名とポートを含む）、パス、クエリ、フラグメントである。
++ 各バリアントは、パースがどこで失敗したかを正確に示す。
++ メッセージには、不正な入力と失敗のオフセットが含まれる。`the URL $text is not valid: $reason at $offset` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 1758ee91a5dd424a1b775e08fcbdd9a2
+
+@ 0 3 0 12252119d39c31320939a0661421ee82
++ そのオフセットで特定のトークンが期待されたが、別のものが現れた。
++ 期待されるものは `Colon`、`More`、`LowerCaseLetter`、`PortRange`、`Number` のいずれかである。
+
+@ 0 1 0 15d56e3436df08a006e85f6fe6df6abe
++ **例。** `[↯/s.100.8.1] the URL https://example is not valid: a colon was expected at 14`
+
+@ 0 2 0 10c3272aa1562c8915d0c9eaac21931a
++ **解決方法。** 示されたオフセットに期待されるトークンが来るよう、URL を修正する。
+
+% 0 1 0 18a057767bd575e715da027b50f507ed
+
+@ 0 1 0 00c1c9e14db511f506652c6b0bd2356c
++ URL のホスト名の構成要素が、有効な DNS のホスト名ではない。
+
+@ 0 1 0 0d722ce365183acb04821b7eefdda81b
++ **例。** `[↯/s.100.8.2] the URL http://exa_mple/ is not valid: exa_mple was not valid because the character _ is not allowed in a hostname at 7`
+
+@ 0 2 0 02efea0dff2882eb0a8c5c774661f6fe
++ **解決方法。** ホスト名を構文的に有効なものに置き換える。ホスト名の規則については `↯/s.100.10` を参照する。
+
+% 0 1 0 164c8733ff5d5a2e03de63b52c9f6e7e
+
+@ 0 1 0 1f771bdefda4ce0103a9ab999546ad37
++ ホストの構成要素にある角括弧で囲まれた IPv6 リテラルが有効ではない。
+
+@ 0 1 0 0f3989a06481f3a118d88f6dc9e49b92
++ **例。** `[↯/s.100.8.3] the URL http://[::1::]/ is not valid: the IPv6 address is not valid because :: appears more than once at 7`
+
+@ 0 2 0 18b529b604e8db46137bab70f0eb14cd
++ **解決方法。** 有効な IPv6 リテラルを与える。IPv6 の規則については `↯/s.100.2` を参照する。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 03ed9d7974daf175016501a1a7064a9d
++ - ソース：`lib/urticose/src/url/urticose.Url.scala`

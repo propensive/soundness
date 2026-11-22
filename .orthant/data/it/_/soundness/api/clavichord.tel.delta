@@ -1,0 +1,144 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0e19b7240e172a6e1463acb32379e7ac
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 063a3596783b20131d69b01224a6e921
++ info   una pressione di tasto come valore: un carattere, un tasto con nome, o uno dei due tenuto premuto con dei modificatori
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0efe6de3f1f70f371af3ddfbeb67db53
++     _Clavichord_ è il vocabolario dei tasti condiviso da tutto ciò che in Soundness legge o
++     produce una pressione di tasto. Terminali e browser concordano su che cosa *sia* una
++     pressione di tasto e differiscono solo nel modo in cui la codificano, quindi il modello
++     vive qui, separato da entrambi: profanity decodifica le sequenze di escape di un terminale
++     in valori `Keypress`, e tarantula li rende come le azioni sui tasti definite dal protocollo
++     WebDriver, senza che l'uno sappia nulla dell'altro.
+
+@ 0 4 0 0ea79d899386dc941817dbf5c87a79db
++     Un `Keypress` è un carattere ordinario, un tasto funzione, uno dei tasti di modifica con
++     nome, una sequenza di escape altrimenti priva di nome, oppure uno di questi avvolto nei
++     modificatori tenuti premuti insieme a esso. Un modificatore accetta solo ciò che può
++     essere modificato in modo sensato, quindi il tipo esclude le pressioni di tasto che nessuna
++     tastiera può produrre.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 15d368505870e3a012812d963994c34f
+
+% 0 1 0 169a12b3996d22b0179b7a905e7e6d82
+
+% 0 1 0 19bf92dcb243647102e720d640f1e9a4
+
+% 0 1 0 0b529f0937e59b90116797642b8bff06
+
+% 0 1 0 1fbd72a8ddff10a310486df01b93ba27
+
+% 0 1 0 031a60e29e1b9e9d11d4498a3d7ad264
+
+% 0 1 0 00a9c40e90ef63420dc566ed2819459e
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 2 0 0988c78676b29c9616fc770106d48833
++     La libreria ha un unico insieme di sorgenti, `clavichord.core`, per ogni piattaforma, e
++     tutto è esportato nel modulo ombrello `soundness`.
+
+% 0 1 0 1797ecdbacccb8871a70287d860932f0
+
+@ 0 1 0 01ef4a600c61beaf0db47951246721ff
++ entry .Keypress   un tasto così come è premuto: un carattere, un tasto con nome o un tasto funzione, oppure uno di essi tenuto premuto con dei modificatori
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 1 0 1a3edbe14cc6ae741f850ab21f80c425
++       Un enum i cui casi sono:
+
+@ 0 12 0 197f4c1e7fe6fbd40e510d2185344002
++       - i tasti di modifica con nome, `Tab`, `Enter`, `Backspace`, `Delete`, `Escape`,
++         `Insert`, `Home`, `End`, `PageUp`, `PageDown`, `Left`, `Right`, `Up` e `Down`,
++         ciascuno anche un `Keypress.Editing`;
++       - `CharKey(char)`, un carattere ordinario, con l'eventuale shift già applicato (una `a`
++         con shift è `CharKey('A')`);
++       - `FunctionKey(number)`, da `F1` a `F12` e oltre;
++       - `EscapeSeq(id, content*)`, una sequenza di escape senza altro nome, identificata dal
++         suo carattere identificativo finale e dai suoi parametri;
++       - e i modificatori, che si annidano verso l'esterno in un ordine fisso: `Shift` di un
++         tasto di modifica o di un tasto funzione; `Alt` di questi o di uno `Shift`; `Ctrl` di
++         questi, di un `Alt`, o di uno dei caratteri che un codice di controllo può portare
++         (da `'A'` a `'Z'`, `'['`, `'\\'`, `']'`, `'^'`, `'_'` e `'@'`); e `Meta` di
++         qualunque altro modificatore o tasto.
+
+@ 0 3 0 0657a17d75c0e35919d9a6890a72b74b
++       I tipi dei parametri dei modificatori seguono quell'ordine, quindi
++       `Shift(CharKey('a'))` e `Alt(Ctrl('C'))` non compilano: `Ctrl(Alt(Left))` è l'unico modo
++       di scrivere quella combinazione, e un match deve considerarne solo una.
+
+% 2 1 0 0d8b1e8e210b2d1508ab325110f737a3
+
+% 3 1 0 041f8e6f552a761003d54f0f1074e4bb
+
+% 0 1 0 1f7168d7f274c1161a30132b4f38702f
+
+% 0 1 0 0a196065917af3f7001103e8390ad348
+
+% 0 1 0 1ddd345b3dbcedbb039244e6b992d4c0
+
+% 0 1 0 068952870237f92419293fde76cf245e
+
+% 1 1 0 0ebd7dddb460b16415faa26ac9806383
+
+@ 0 2 0 1195a3af426db294001d85d0d1be812f
++       Una pressione di tasto si mostra (`.showable`) con un simbolo Unicode tra parentesi
++       quadre per ogni tasto e modificatore, unito con `+` a ciò che modifica.
+
+% 0 1 0 1c9d1c65cabd3eb50d6a5eb7ea530f12
+
+@ 0 1 0 078b40196188994018974d296aff8a3b
++   entry .Editing   il trait marcatore dei quattordici tasti di modifica con nome
+
+% 0 1 0 19f0e0850734ee0607af1e6b11e19e4c
+
+@ 0 6 0 16c530073929bb3810a7ef935b69b3ae
++       `Escape`, `Left`, `Right`, `Up` e `Down` lo estendono ciascuno. È un marcatore
++       nominale anziché un'unione dei tipi singleton dei casi, così da ammetterli anche quando
++       vi si arriva attraverso i forwarder di esportazione del modulo ombrello, come
++       `soundness.Keypress.Enter`.
++   entry .EditKey   uno qualsiasi dei tasti di modifica con nome: `Keypress & Keypress.Editing`
++       Il tipo di un tasto che `Shift`, `Alt`, `Ctrl` e `Meta` possono avvolgere oltre ai tasti
++       funzione, e il tipo da usare per un metodo che gestisce solo i tasti di modifica.
+
+% 2 1 0 16e50cf5e9d5283e1c6596040a22ec65
+
+% 3 1 0 18d471cf1506c5160340b77345b659db
+
+% 0 1 0 01c15004a9254e4705dd1d962ebd8f4e
+
+% 1 1 0 144cc6a51f545b640b7e21ec44708d2d
+
+@ 0 6 0 06a94eb15b160eb41e5cd8dc29505f20
++   entry .showable   mostra una pressione di tasto con un simbolo Unicode tra parentesi quadre per ogni tasto e modificatore
++       Shift è `[⇧]`, Alt `[⌥]`, Ctrl `[⌃]` e Meta `[⌘]`, ciascuno unito con `+` a ciò che
++       modifica. I tasti di modifica sono `[⇥]`, `[↵]`, `[⌫]`, `[⌦]`, `[⎋]`, `[⎀]`, le
++       frecce `[↑]` `[↓]` `[←]` `[→]`, `[↖]` per Home, `[↘]` per End, e `[⇞]` `[⇟]` per i
++       tasti di pagina. Un carattere è racchiuso tra parentesi così com'è, tranne lo spazio,
++       `[␣]`; un tasto funzione è `[F5]`; e una sequenza di escape è `[⎋R]`, che mostra il suo
++       identificatore ma non il suo contenuto.
+
+% 2 1 0 12a877f071a1d453010a6a5da1882093
+
+% 3 1 0 0f7718bab312c784163a8750f172c866
+
+% 0 1 0 17193a38b9c9f04b0d3beb8a79d0b32b
+
+% 0 1 0 13f3e03f02164f42177e61987e191e1d
+
+% 0 1 0 1f35362f0be6a3900e1e704277629d69
+
+% 1 1 0 1f47777353954f371d878b4fa9e4d53d

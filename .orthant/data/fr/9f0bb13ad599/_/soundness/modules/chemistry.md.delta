@@ -1,0 +1,11 @@
+orthant 2 language
+
+@ 0 8 0 1aeab0368c4dfce017413885b432aa6f
++ column  Flèche
++ column  Réaction
++ column  Rendu
++ row  `-->`  `Reaction.NetForward`, une réaction nette dans le sens direct  `→`
++ row  `<=>`  `Reaction.BothDirections`, une réaction qui se déroule dans les deux sens  `⇄`
++ row  `<~>`  `Reaction.Equilibrium`, une réaction à l'équilibre  `⇋`
++ row  `<->`  `Reaction.Resonance`  `↔`
++ row  `===`  `Reaction.Stoichiometric`  `=`

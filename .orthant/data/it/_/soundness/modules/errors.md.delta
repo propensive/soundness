@@ -1,0 +1,759 @@
+orthant 2 language
+
+@ 0 1 0 0e1372ab7e92c10a1e5dbc1b258f082a
++ ## Errori
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 3 0 12cc61eaf5e8f50d0923abb1a352ffc5
++ Un errore è un valore con un messaggio strutturato, e la possibilità di fallire è scritta nel tipo
++ di un metodo. Un metodo che può fallire dichiara l'errore con `raises`, e il chiamante non può
++ ignorare la dichiarazione: il suo codice deve gestire il fallimento oppure dichiararlo a sua volta.
+
+@ 0 2 0 0cd7c7cc5a540c86008d9563236e650a
++ *Come* un fallimento viene gestito si sceglie dove il metodo è chiamato, non dove fallisce. Il
++ chiamante può farlo lanciare, sostituirlo con un ripiego, raccoglierlo insieme ad altri, oppure
++ riprendersi da esso.
+
+@ 0 3 0 18275a490aeddbb40b17a4476b8f848f
++ Così il fallimento ha la visibilità delle eccezioni controllate senza la loro rigidità. La stessa
++ operazione fallibile può essere eseguita senza cura in un prototipo e resa del tutto sicura in
++ seguito, cambiando la [strategia] nell'ambito, senza riscrivere l'operazione.
+
+@ 0 1 0 19ba0d914b7eb40107f540a90af1ec02
++ ### Sugli errori
+
+@ 0 1 0 072dccd5fbad113913f6c130c1396360
++ Esistono due tradizioni nella gestione del fallimento, e ciascuna rinuncia a qualcosa:
+
+% 2 1 0 1dc55e23cd24e4f802e1c5b3e3047f6c
+
+@ 0 5 0 1d9b476cc7f58b520c44559d4b5ddaae
++ column  Tradizione
++ column  Un fallimento è
++ column  Che cosa si perde
++ row  eccezioni non controllate  invisibile nel tipo di un metodo  il chiamante viene a sapere di un fallimento solo quando avviene
++ row  eccezioni controllate di Java  visibile in ogni firma lungo la catena di chiamate  la flessibilità: c'è un'unica risposta fissa, lanciare
+
+% 1 1 0 0a206e30de38cd171f77ffbd0c7ddf98
+
+@ 0 2 0 024acd6a26f2ad1c0b860f5ed40ca688
++ In entrambe, l'errore viene spesso ridotto a una stringa, che perde la struttura che
++ permetterebbe a un programma di esaminarlo o di reagire a esso.
+
+@ 0 1 0 1cfa4eac808772ff02f4e615f4bd37a0
++ Qui il fallimento resta nel tipo, e il dettaglio resta nel valore:
+
+@ 0 5 0 1ac7586c514bda3413c7109a082d4304
++ - Un errore è un valore che porta un [messaggio](../../philosophy/expressive-errors.md) tipizzato.
++ - Un metodo dichiara nel suo tipo di ritorno gli errori che può sollevare, e ciò dà una
++   [firma onesta].
++ - La decisione su che cosa fare spetta al chiamante, ed è espressa come un
++   [valore contestuale] chiamato strategia.
+
+@ 0 3 0 02bcda2d4f01aae71ffa526e6c060014
++ Poiché la strategia è un normale [given], un solo corpo di codice fallibile serve ogni risposta.
++ È questo l'intero principio della [gestione degli errori](../../philosophy/error-handling.md), ed
++ è per questo che le chiamate fallibili si leggono ancora come normale codice in
++ [stile diretto](../../philosophy/direct-style.md).
+
+@ 0 2 0 15676824953ad1bd17726e46d3f68078
++ Tutto proviene dal package `soundness`. Un'altra scelta decide se un errore registra uno stack
++ trace, e l'ultimo import permette agli esempi di stampare i loro risultati:
+
+% 2 1 0 06b63818f06980c80741256bbbd0cbad
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 2 0 16792659af4c74c708beb71edae48886
++ Gli esempi ruotano attorno a un'unica operazione fallibile: connettersi a una porta, cosa che
++ fallisce quando la porta non è disponibile. Essa sta per qualsiasi operazione che possa fallire:
+
+% 2 1 0 0c85f612719459a11385dc6b085df5ae
+
+% 0 1 0 19c8b63ed98c55dd0c4a2625bf560289
+
+% 0 1 0 01d8243586cda5a40a20d0dc75250dbf
+
+% 1 1 0 0ba2b08777f5f00a16a0187c9266a630
+
+@ 0 1 0 179455d63e7ad2d30de7bae3be9c4b6e
++ ### Definire un errore
+
+@ 0 2 0 002064e378c213b2119daa8a469caf20
++ Un errore è una case class che estende `Error`. Il suo messaggio si scrive con
++ l'[interpolatore] `m"…"`, e i valori che spiegano il fallimento sono conservati come campi
++ tipizzati:
+
+% 2 1 0 05f14329d16ae3381a8d7933a3bd5e9b
+
+% 0 1 0 17a0381b5b09eccd1adccbdc8654e517
+
+% 0 1 0 0991d3ca7e96a4b2012e24b5f042d440
+
+% 1 1 0 174653431f4341581450b685b018710f
+
+@ 0 3 0 19f3f9dd6c0a21501fcfb1a203d5130b
++ L'interpolatore `m"…"` costruisce un `Message`, che è un valore strutturato e non una `String`.
++ Le sue sostituzioni sono tipizzate: si può sostituire solo un valore che sa come comparire in un
++ messaggio.
+
+@ 0 5 0 036f3b091ab59502019810c90bdf018e
++ Un `Message` conserva il confine tra le sue parole fisse e i suoi valori sostituiti. Un messaggio
++ può incorporare altri messaggi, e ogni incorporazione resta identificabile invece di essere
++ appiattita nel testo circostante. Lo stesso messaggio può quindi essere reso come
++ [Markdown](markdown.md), [HTML](html.md) o [testo stilizzato per terminale](terminal.md), con i
++ valori sostituiti distinti dalle parole che li circondano. `text` lo appiattisce in testo semplice
++ dove non serve altro.
+
+@ 0 3 0 01e3285237696f3b0bc17710ae1caa78
++ Si può incorporare qualsiasi cosa abbia un'istanza di `Communicable`. Ciò comprende i tipi
++ primitivi, `Text` e qualsiasi tipo con un'istanza di `Showable`. Un tipo contribuisce più
++ struttura della sua resa semplice se ha un'istanza di `Communicable` scritta apposta.
+
+@ 0 3 0 0db070fb8cdeca1f0bdba4b130da29d0
++ Un errore che non è fatto per essere catturato è un `Panic`. Prende un messaggio che spiega
++ perché la situazione era ritenuta impossibile. Raggiungere un panic significa che la comprensione
++ di un programmatore era sbagliata, quindi non è un fallimento da gestire, e non compare in alcuna
++ clausola `raises`.
+
+@ 0 1 0 07dcaf497dfdb7b20eba154e3386ce3d
++ ### Dichiarare che il codice può fallire
+
+@ 0 2 0 02232a3b885f72f50b3828e42518085e
++ Un metodo che può fallire lo dice con [`raises`][raises], nominando l'errore nel suo tipo di
++ ritorno. All'interno di un tale metodo, `raise` segnala un errore, e `abort` ne segnala uno e si
++ ferma:
+
+% 2 1 0 150a16771022a6a70b2054c0dfd00385
+
+% 0 1 0 1be83d7068e224e700cb72bc3e326d35
+
+% 0 1 0 185877a09d5a095d1a386407de50c23e
+
+% 1 1 0 16cab094aa8ca8110ca936e7dae76f5f
+
+@ 0 2 0 1bed8881353eba281b2eae58e1cd1705
++ Il requisito si propaga. Il codice che chiama `connect` deve dichiarare a sua volta
++ `raises PortError`, oppure gestire il fallimento. Il codice che non fa né l'una né l'altra cosa
++ non compila:
+
+% 2 1 0 0947cfbd536cdb740d37a7d2b8b8625c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 1b13ba5043355a780d03ff08e610ed99
+
+% 1 1 0 1a8680a06f6389d811e33e4dd0c3c241
+
+@ 0 1 0 0c99aa18195024ba19a053f2301004d4
++ Un metodo che può fallire in più di un modo nomina ciascun errore con un proprio `raises`.
+
+@ 0 4 0 11f1c69b8d7eb43e1c32b663995b3201
++ `raises` è solo un alias. `Connection raises PortError` *è* il tipo di funzione contestuale
++ `Tactic[PortError] ?=> Connection`, che a sua volta equivale a un parametro
++ `(using Tactic[PortError])`. Quindi un metodo che dichiara `raises` è un metodo che prende come
++ argomento il modo in cui i suoi errori vengono gestiti, la [tattica], e `abort` è ciò che la
++ chiama.
+
+@ 0 3 0 1f88e440f9e925fb053c5e1670f93dbd
++ Questo è l'intero meccanismo, e spiega la forma di tutto ciò che segue. Un metodo fallibile non
++ decide come viene gestito il fallimento. Restituisce quella decisione a chiunque lo abbia
++ chiamato, e così una sola implementazione serve ogni strategia contemporaneamente.
+
+@ 0 1 0 0f25a792de078e6c0b9d5e7bba4d6ff1
++ ### Scegliere una strategia
+
+@ 0 2 0 13e7bf63e9d88bbb0147d5ac649ce500
++ Dove si usa un'operazione fallibile, una *strategia* nell'ambito decide che cosa fa un
++ fallimento. La strategia `throwUnsafely` lancia l'errore come una normale eccezione:
+
+% 2 1 0 1b5aa849d704e9a210fec8d093b4381a
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+% 3 1 0 042e73bdc0550b5d19298413dd7d0b7b
+
+% 4 1 0 19c9b9965081e8b50118a06e4b3ee733
+
+% 5 1 0 025e7ee7206dd45e16ff93ea93595efb
+
+% 0 1 0 0c96f295194789c41ce6917eba45c026
+
+% 1 1 0 0c8e6704fe964bed1dd55b82ccfe4c1f
+
+% 3 1 0 0862e271d4dc4b971a348b1821b0936a
+
+% 4 1 0 014b88c8f3d6bc121fafdd2e9112f169
+
+% 4 1 0 1a9f83f12eec02ae09166b7e3f404843
+
+% 5 1 0 057f515273fa81610fd007f7e6cca82c
+
+% 0 1 0 02de29ccabc9eacd02693c644734d0db
+
+% 1 1 0 0099bcce6c4729f106bb70a35486d540
+
+@ 0 4 0 12d1d1579c5afc9f02b112ba634dadae
++ Una strategia si applica a tutto ciò che è nel suo ambito. Altri modi di gestire un fallimento si
++ applicano a un solo blocco. `safely` esegue un blocco e trasforma qualsiasi fallimento in `Unset`,
++ dando un valore [opzionale](optional-values.md). `capture` dà l'errore stesso, ed è ciò che serve
++ a un test per verificare che venga prodotto il fallimento giusto:
+
+% 2 1 0 19514ba8859256db1dce109f73837eab
+
+% 3 1 0 029472d9fc118d0c1d699b1c4dfb1a6a
+
+% 4 1 0 11350c469286c3a71083683b9171c4de
+
+% 0 1 0 039ba1ab784a1fb714d235b0e95d6757
+
+% 0 1 0 1cae13051b07902f056f0b067b6fc8d2
+
+% 0 1 0 01547b7d8c0028bb176eed06cc90b21c
+
+% 0 1 0 1ac273b1405ffab3106394b35d31f37e
+
+% 1 1 0 1680b09df2e788130650f97d0ab9e75f
+
+@ 0 2 0 03e973c83ee2a1170495de7dfe15650f
++ Questi sono tre dei modi per eseguire codice fallibile. Tutti, compresi quelli descritti nelle
++ sezioni seguenti, si confrontano così:
+
+% 2 1 0 0a1104d4638f8acf1b105ebedfc84ca5
+
+@ 0 11 0 128a6923b92e7e6405e3bdead5d1c706
++ column  Nome
++ column  Usato come
++ column  Un fallimento
++ row  `throwUnsafely`  una strategia, importata da `strategies`  viene lanciato, senza alcuna capability richiesta
++ row  `throwSafely`  una strategia, importata da `strategies`  viene lanciato, data una capability `CanThrow`
++ row  `safely`  un blocco  diventa `Unset`
++ row  `unsafely`  un blocco  viene lanciato, e il blocco afferma che non ne avverrà nessuno
++ row  `capture`  un blocco  viene restituito; un successo è un `Expectation.Error`
++ row  `attempt`  un blocco  viene restituito in un `Attempt`, accanto a un successo
++ row  `amalgamate`  un blocco  viene restituito al posto del valore, come unione
++ row  `tolerate`  un metodo della tattica dell'ambiente  diventa `Unset`, e ciò che era stato registrato viene annullato
+
+% 1 1 0 1228f120b91c50f2077b6b6073ed616a
+
+@ 0 5 0 0bf3e81a80f15e200379672931daecad
++ *Tattica* e *strategia* sono lo stesso tipo, `Tactic`. Si distinguono solo per l'ambito a cui
++ sono destinate. Una tattica è locale: il blocco `protect` di un `recover` o di un `mitigate`,
++ oppure un blocco `safely` o `unsafely`. Una strategia si importa una volta e si applica in modo
++ ampio, come fa `throwUnsafely`. La differenza è d'intenzione, non d'implementazione, ma entrambe
++ le parole compaiono in tutta la documentazione, e il nome del package `strategies` è voluto.
+
+@ 0 1 0 141a930171f349760f95813c03129280
++ #### Errori non controllati e fatali
+
+@ 0 3 0 127df2252ea404d8156c576f6e4d4575
++ Due ulteriori dichiarazioni cambiano ciò che un errore esige, ovunque venga sollevato. Un errore
++ marcato `Unchecked` può essere lanciato senza essere gestito. `Unchecked` è una [typeclass] senza
++ membri, quindi il suo given può essere `erased`:
+
+% 2 1 0 1e5896ff35de3e5901e240e16bcf5b30
+
+% 3 1 0 02ae13a89ab0eefb1f8a5a46dca311d4
+
+% 4 1 0 018cd16b12ec64900019b3eb51983170
+
+% 0 1 0 11fbc07854e256531a6998864449a951
+
+% 0 1 0 16b3f93bca9bd19414e5274fe272b7be
+
+% 0 1 0 17b928118d0e4121184d023d7542ae48
+
+% 1 1 0 0b9a98463ace51f90d5fc0ab8f89f3d8
+
+@ 0 2 0 07712c5b24093ae817ecb321e6e5de8c
++ Un errore dichiarato `Fatal` termina il processo, e dice con quale stato di uscita. Ciò si addice
++ a un fallimento durante l'inizializzazione, quando non c'è un modo sensato di proseguire:
+
+% 2 1 0 1860dfdfb2154116037107e4562a602c
+
+% 0 1 0 1d4d5477b3e018f81f51c596d84d7a81
+
+% 0 1 0 08a9755d4c77a7e7138f506891e56d03
+
+% 0 1 0 18ebb440ca4a3f531bf692992c392264
+
+% 1 1 0 0d2289d46bc97b3b0251b2364ccc418d
+
+@ 0 2 0 01bbd759fb2f070910cae46677984f0b
++ I quattro tipi di fallimento differiscono nel dover essere gestiti o meno, e in ciò che accade
++ quando se ne verifica uno:
+
+% 2 1 0 073bdc997d400e7a1db9588da2c30854
+
+@ 0 7 0 00a3abacdd46a1df16bc12bf19bac482
++ column  Un fallimento che è
++ column  Deve essere gestito
++ column  Quando avviene
++ row  un `Error`  sì, oppure dichiarato con `raises`  decide la tattica nell'ambito
++ row  un `Panic`  no  non è fatto per essere catturato
++ row  un `Error` con un given `Unchecked`  no  viene lanciato, sotto `strategies.uncheckedErrors`
++ row  un `Error` con un given `Fatal`  no  il processo termina con lo stato del given, sotto `strategies.fatalErrors`
+
+% 1 1 0 132027a03ff757a11bf19cd5b9607ff0
+
+@ 0 1 0 0b1596ec4aa36f3e08f7bdfc4d6c6b1c
++ ### Riprendersi da un errore
+
+@ 0 1 0 0fc0f76a27c3e8771b5c0ad944ccc93d
++ `recover` gestisce gli errori scelti fornendo un valore sostitutivo. Si applica a un blocco con
+
+% 0 1 0 128d5668270e7f2c1a6c0008d1d1a1fb
+
+% 2 1 0 18702c995ed811941a57ec43588a00be
+
+% 0 1 0 1db6867cff0dc8891d541236499f4110
+
+% 0 1 0 13d5befb2d1178cb1ef63455361dd122
+
+% 0 1 0 140386e5d222420c09f5926d93236928
+
+% 1 1 0 17bcc16f99d5212314d16a13a9f1b056
+
+% 0 1 0 175758115b5972fe1640f6bdc49c881c
+
+% 1 1 0 18da5b767f03fd9f07f716a7673b7236
+
+% 3 1 0 03cfedba1942a6d909c07959601c2d04
+
+% 4 1 0 1431479a84fdf58500dc861e844ed5e0
+
+% 5 1 0 1797b0267fe169f507993415991505a6
+
+% 0 1 0 1bd59f303e09f6161b22fb706aa2d8bd
+
+% 1 1 0 1e15dc0c60edae3c030e26766c579d62
+
+@ 0 2 0 070e8d2c81609f600354152e0ae28f41
++ Un handler che corrisponde a un'unione di tipi di errore gestisce ciascun membro, così un solo
++ `recover` può rispondere a più tipi di fallimento.
+
+@ 0 2 0 0145a74bb05440321f972621ba34e8cb
++ `mitigate` sostituisce un errore con un altro. Traduce un fallimento di basso livello nell'errore
++ che il chiamante si aspetta, prima che il fallimento si propaghi:
+
+% 2 1 0 03d7d70e8836512516c2bd8aa34dd4fe
+
+% 0 1 0 038b3c0dea38131114e535294231ba28
+
+% 0 1 0 1544eb4389dfe9ff0a0c2d3cf2d76ae7
+
+% 0 1 0 18c510a79cde88e90f3c16eadf78bda4
+
+% 0 1 0 025e1d230715eb9515dd94b9b5664c31
+
+% 0 1 0 1d295fb3b3e20a0618b9052cce7ad5c2
+
+% 1 1 0 062bdb0faed89315043494e69c0f9845
+
+% 2 1 0 04854f190821354811d54c7fd5b32447
+
+% 3 1 0 022e28936be2be5607f03728d87e0320
+
+% 3 1 0 19c156505ebe1d90103295d0e6775d6e
+
+% 4 1 0 0b623e75bcb3fbb00c556fbf7542c524
+
+% 5 1 0 16a0c7db6fd8e82304adf63293270b13
+
+% 0 1 0 194438f7b497428b15756fcbd6495b33
+
+% 1 1 0 1389142bf73d959203624304f88ab1a1
+
+@ 0 2 0 1e507395bc649e4705bb1c838fc048bc
++ I due si compongono. Un `mitigate` all'interno di un `recover` trasforma un errore in un altro, e
++ poi lo gestisce.
+
+@ 0 1 0 03db7dd42549dd050ab578e766e648e8
++ #### All'interno di un metodo inline
+
+@ 0 3 0 1fcfb45982ec25ba0f1185dc139ff9d0
++ `recover` non può essere usato nel corpo di un `inline def`. Mentre un tale corpo viene
++ tipizzato, nessuna chiamata inline viene espansa, quindi i tipi di errore dello handler non sono
++ ancora noti nel punto in cui il blocco di `protect` ne ha bisogno. Lì, `deferRecover` nomina i
++ tipi di errore come argomento di tipo, e per il resto è identico:
+
+% 2 1 0 16e6aed3f74fcaf9080aceeafa6af89e
+
+% 3 1 0 0157c9ba7d41140b1d05617209042789
+
+% 4 1 0 06543a0c569fd8ac00c07ab8b6cbbc47
+
+% 0 1 0 070fb2971aa0c47a0fcad60d32c31878
+
+% 0 1 0 09dd6d5a4f6bf95116645f6c6c4afad8
+
+% 0 1 0 11ab3fec5354d90e13d28cacfec8189e
+
+% 1 1 0 10af76823b0311a9030fd8e118ab4ef6
+
+% 2 1 0 12a91034f215a9c21f6c544eef68bdbf
+
+% 3 1 0 0e048fb8a5fd44f00498076178e0582a
+
+@ 0 1 0 05435156aaa184631e8b7fe51cb84b00
++ `deferMitigate`, `deferHandle` e `deferAccrue` fanno lo stesso per `mitigate`, `handle` e
+
+% 0 1 0 0bdc22b40142dc1b0473205e82430c1f
+
+@ 0 1 0 10798250a352ba1a1349a22e36f1d861
++ ### Accumulare i fallimenti
+
+@ 0 3 0 059cb2f580b570c70c9309879eb19bb5
++ Per impostazione predefinita il primo errore ferma il lavoro. Alcuni compiti dovrebbero invece
++ raccogliere ogni fallimento e segnalarli tutti insieme: validare un modulo, o analizzare un
++ documento. `raise`, a differenza di `abort`, registra un errore e prosegue, e `accrue` incorpora
++ gli errori registrati in uno solo:
+
+% 2 1 0 0111d8cddaf5ce1c1408f4d40046bd8c
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 1ec60f6a9972d5fb124c5ca724c55338
+
+% 0 1 0 0610f91b27060ff619e693b5e74b3776
+
+% 0 1 0 08c7f520f78a028c140c3358d10b7d6a
+
+% 0 1 0 0eae06b56aa902761540d565c17e2e3e
+
+% 0 1 0 18e3c62796f938f41afa0b32af94ad7e
+
+% 0 1 0 0366ce6f7b40944e0747ed94a579c231
+
+% 0 1 0 177312db14e9d4fc1840ecea1b413f44
+
+% 0 1 0 055874be1870943907e3b85c22383aa3
+
+% 0 1 0 0f5b3a507084fda908640ecf61691350
+
+% 0 1 0 124ee03711ceb5ea08354b81b717f049
+
+% 0 1 0 1cf7ff16ce23ffbf0c3174c2dd1908cb
+
+% 0 1 0 1f63bb8b5a64b6d8197d679fd9e730e9
+
+% 0 1 0 041522a56e77e5b417c9014ec03499a5
+
+% 0 1 0 117d0327f6db4b1f12d5b53809812181
+
+% 0 1 0 15501eb557a5f9571bf81fd0ab88655e
+
+% 0 1 0 0532d5cc03ca428d15b7265909f99e7c
+
+% 0 1 0 058b801d984aa9d217448225d4131b9f
+
+% 1 1 0 0b7ec5484194aafb0de481a65cb94df1
+
+@ 0 2 0 068058546bcdb57706ad8e11ff63893b
++ Entrambi i campi vengono controllati, benché il primo sia già fallito, e l'unico `Invalid` porta
++ ogni problema:
+
+% 2 1 0 0b7289b12011a84a16499780626328c1
+
+% 3 1 0 186d1a0c209ce2cb0818f8afda2c4131
+
+% 4 1 0 00f80cce89a659b31364aac72e899319
+
+% 0 1 0 1be9f93957df092c1562fa5ffe511d8b
+
+% 1 1 0 02e6d6d2b0725be80233e283b2e9b7b9
+
+@ 0 3 0 1737b3ccd77163f7030bc9a5cb33eaec
++ I due validatori sollevano `PortError` solo per limitare l'esempio a un unico tipo di errore. Un
++ modulo reale avrebbe un errore proprio. Nella chiamata ad `accrue`, la funzione `collect`
++ incorpora ogni errore sollevato nell'accumulo, e il blocco finale dice quali errori vengono
++ gestiti.
+
+@ 0 5 0 1e4c5f23f6181f1906b3f598856ebae4
++ `abort` e `raise` differiscono nei tipi di ritorno. `abort` restituisce `Nothing`: non ha alcun
++ valore da restituire, quindi esce. `raise` restituisce un valore, detto valore *ersatz*, un
++ sostituto che permette all'esecuzione di proseguire localmente mentre l'errore viene registrato
++ presso la tattica. Una volta che qualcosa è stato sollevato, il risultato finale dell'ambito che
++ lo racchiude viene scartato, qualunque esso sia, e al suo posto vengono prodotti gli errori
++ accumulati.
+
+@ 0 5 0 10ca2f577674d8ce12ac75cbd304f418
++ Scartare il risultato è ciò che rende sicuri i valori ersatz, ma riguarda solo il risultato, non
++ gli effetti collaterali. Un valore ersatz dovrebbe essere *irrilevante*: nulla a valle dovrebbe
++ dipendere da esso, e soprattutto non dovrebbe provocare ulteriori errori propri. Un segnaposto che
++ finisce in un costruttore che valida produce una lamentela su un valore che nessuno ha mai
++ fornito, il che è peggio di nessuna segnalazione.
+
+@ 0 1 0 1ae290de7a1bb49e082820f1bcd77787
++ ### Venture e guardie
+
+@ 0 1 0 0c1d76fd2b1e9d5200665e26c3617d8c
++ `venture` e `guard` eliminano quel rischio, rendendo esplicito quali calcoli dipendono da quali.
+
+@ 0 5 0 143aedcf8aaca712154487eba2e50d2b
++ `venture(…)` valuta subito il suo blocco, sotto la tattica dell'ambiente, così ogni errore che
++ solleva si accumula esattamente come farebbe all'esterno. Il suo risultato è un
++ `Venture[Value]`: il valore calcolato se il blocco non ha registrato nulla, oppure il marcatore
++ `Failed` se lo ha fatto. Un `abort` all'interno di una venture è *delimitato*. Registra il suo
++ errore e abbandona solo quella venture, non l'intero ambito, così le venture sorelle contribuiscono
++ ciascuna con tutti i propri errori in modo indipendente:
+
+% 2 1 0 122a5ab8a870c50e05ebe8e79c2bc2d1
+
+% 0 1 0 17df6bc4998523f51d396de7b8f9e1cb
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 0a5a850ca3e5033916ad5e0a00715c5b
+
+% 0 1 0 058c0768f5a1e28405a2648e414870f7
+
+% 0 1 0 03388c440075d9ea000a2d231bc1f271
+
+% 0 1 0 0ea101bd1b1b4b7d1af59a20e0cdcec7
+
+% 0 1 0 18c03ebcb9926b910cc25512194bc59d
+
+% 0 1 0 01e3b2391a94e06019150aa5233121b4
+
+% 0 1 0 069e893d58e51796066d294472d24a05
+
+% 1 1 0 18d2c2d9dd64d61f0dac11ed25bfbd15
+
+@ 0 6 0 17385546a0b7dc861b28dbaa2bb4d7ae
++ `name()` *forza* una venture, e ciò ne dà il valore. Forzare è permesso solo all'interno di una
++ `venture` o di una `guard` che la racchiuda, detta *ambito di salto*. Forzare una venture fallita
++ fa uscire verso quell'ambito, e non registra nient'altro, poiché gli errori della venture sono già
++ stati registrati. Nell'esempio, se `name` è fallita allora il controllo di coerenza viene saltato
++ del tutto, mentre `age`, che è stata valutata alla sua dichiarazione, ha comunque contribuito con i
++ suoi errori. Forzare una venture fuori da qualsiasi ambito di salto è un errore a tempo di
++ compilazione, perché non ci sarebbe alcun punto ben definito verso cui saltare.
+
+@ 0 3 0 1a89ccf658f8126e0c6b9a35646306c3
++ `guard` esegue il suo blocco solo se la tattica dell'ambiente è *pulita*, senza nulla registrato
++ finora. Se è stato registrato qualcosa, il blocco viene saltato, e l'ambito si arrende in favore
++ degli errori già raccolti.
+
+@ 0 3 0 0c1626a64d691b4b06057fa9562ffe7a
++ Nulla di tutto ciò costa qualcosa quando gli errori non vengono accumulati. Sotto una tattica che
++ si ferma al primo errore, qualsiasi errore è già uscito, così `guard` esegue semplicemente il suo
++ blocco e `venture` valuta semplicemente il proprio.
+
+@ 0 2 0 1c17d659a1d94fa11767da113efe58fe
++ [JSON](json.md#collecting-every-error) usa questo meccanismo per segnalare tutti insieme i difetti
++ di un documento.
+
+@ 0 1 0 0b98aaf85acb403a0475bd81dce308ba
++ ### Tollerare un fallimento
+
+@ 0 4 0 104b1ec654f81272109089935f77bec2
++ Una tattica può anche eseguire un blocco e scartare qualsiasi cosa esso sollevi. `tolerate` dà il
++ valore del blocco, oppure `Unset` se il blocco ha registrato un errore o è stato interrotto. A
++ differenza di `safely`, lavora *all'interno* della tattica dell'ambiente invece di installarne una
++ nuova, così una tattica che accumula annulla ciò che il blocco ha registrato:
+
+% 2 1 0 0f3975e66b7f92500d0bfcdc001e4042
+
+% 3 1 0 14d085d0bd52056e11e1fe402985ddfc
+
+% 4 1 0 187f3a582b1b660000be45d9af5af55c
+
+% 0 1 0 059ccf06d28cbe9c0f0699191d544f35
+
+% 0 1 0 1ff2c25dc1b5442c0f50d7840cb7f7ac
+
+% 1 1 0 19f960dd22da9b151083f093e22643a9
+
+@ 0 3 0 04a5f9710f180dbf1d2d10d9ee96b2ab
++ È così che un codec decodifica un campo opzionale in modo permissivo. Il decodificatore del campo
++ è stato legato alla tattica dell'ambiente quando è stato risolto, quindi la tattica stessa è
++ l'unico punto in cui un difetto al suo interno può essere intercettato.
+
+@ 0 2 0 1ab191ebf08a6756018d1bb0315b06b4
++ Insieme, queste sono le operazioni per segnalare e contenere un fallimento mentre gli errori
++ vengono accumulati:
+
+% 2 1 0 194ad14b915eafdb1866af67edcad527
+
+@ 0 8 0 087f0b93e41be1270fb96314ea1df9e1
++ column  Operazione
++ column  Produce
++ column  Dopo un errore
++ row  `abort(error)`  `Nothing`  esce dall'ambito, o solo dalla venture in cui si trova
++ row  `raise(error)`  un valore ersatz  prosegue, con l'errore registrato
++ row  `venture(…)`  un `Venture[Value]`, `Failed` se il blocco ha registrato qualcosa  le sue sorelle vengono comunque eseguite
++ row  `guard(…)`  il valore del blocco  il blocco viene saltato se qualcosa è stato registrato prima di esso
++ row  `tactic.tolerate(…)`  un valore `Optional`, `Unset` in caso di fallimento  ciò che il blocco ha registrato viene annullato
+
+% 1 1 0 0834c0bea8dd857b1c240cbda9d9f5f9
+
+@ 0 1 0 077b7658ede44275134305c140367d8d
++ ### Dire dove si è verificato un fallimento
+
+@ 0 4 0 12338fe86996e3d313599495f66ea581
++ Un elenco di errori accumulati è utile solo se ciascuno dice da dove proviene. Un *focus* è la
++ posizione, all'interno di una struttura, su cui il codice sta lavorando in quel momento, e `track`
++ lo mantiene mentre un attraversamento scende. Sotto `validate`, un errore registrato è abbinato al
++ focus del momento in cui è stato sollevato:
+
+% 2 1 0 191af0fb83bb689f1248e990b8bd76ef
+
+% 3 1 0 158479524cf950721c25a2f400e8d363
+
+% 4 1 0 19a66cd77c84f1f31b52694aa86f7869
+
+% 0 1 0 1afcb32f34d396850e22825df57f2359
+
+% 1 1 0 0b36b51ce25e2d6f0b7a65ecbb496534
+
+@ 0 2 0 1bdbe677a5103ef21f4038b68192abe0
++ Il tipo del puntatore è scelto dalla struttura attraversata, così una posizione viene segnalata nel
++ vocabolario dei dati, non come indice in qualcosa di interno:
+
+% 2 1 0 17e26af0e93c9a88190fa441ab51757e
+
+@ 0 1 0 1f44cd52edfe79f606866f1b941ba69c
++ column  Formato
+
+% 0 1 0 1e40e6cf8d8838f102394af13e8c7dde
+
+@ 0 6 0 106594cf10ff2a5c0a67b227584c5e2a
++ column  Localizza per
++ row  [JSON](json.md)  `Json.Focus`  un `JsonPointer`
++ row  [XML](xml.md)  `Xml.Focus`  un `XPath`
++ row  [YAML](yaml.md)  `Yaml.Focus`  un `YamlPath`
++ row  [TEL](tel.md)  `Tel.Focus`  un `Telp`
++ row  [CSV](csv.md)  `CellRef`  una riga e un nome di colonna
+
+% 1 1 0 02de1caf7c217af20e0dd87bedc2a392
+
+@ 0 1 0 0f96d2d9adb9aa840e3d5d8c0b6c4b01
++ È questo il meccanismo sotto ogni segnalazione di «quale campo è fallito» nei formati di dati.
+
+@ 0 1 0 1ef35e6e8a754f420189d72b091732dc
++ ### Esaminare direttamente un fallimento
+
+@ 0 1 0 0c9ff748c6c16ef6128b3ce66b2e2af5
++ Tre operazioni correlate trasformano un fallimento in un valore.
+
+@ 0 2 0 055bbf3ffd4fff411aa87ca6188fcc85
++ `capture` esegue un blocco che ci si aspetta fallisca, e dà l'errore. Un blocco che riesce è esso
++ stesso un errore, un `Expectation.Error`, poiché il codice stava controllando la cosa sbagliata:
+
+% 2 1 0 16d161d9afff179c064863dbba4ee4f9
+
+% 3 1 0 1e4ec461c500ecfe064b9f470db927c4
+
+% 4 1 0 06f96cdc2f03cb09145f720376f31be3
+
+% 5 1 0 1ccf812857dae27a130f4651401a230f
+
+% 0 1 0 09dc9eae3a04c8a40fd934d5eecf5a65
+
+% 1 1 0 095ff5624d51a57105e90648e1a2f8ad
+
+@ 0 2 0 06d7e627970542ed04e705d9790394af
++ `attempt` non fa una tale richiesta. Dà un `Attempt`, che è o un successo che porta il valore o un
++ fallimento che porta l'errore, per il codice che deve ramificarsi su entrambi:
+
+% 2 1 0 13d3bf564c53158e19c1fa0e077b8ff5
+
+% 0 1 0 135c3a6e35fe49b51725d5fdd31c2c82
+
+% 0 1 0 1c0cc4e67560abc7156f423c42356789
+
+% 0 1 0 1bf36c597d75835812db8f4aed55d39f
+
+% 1 1 0 04dd051eeeb84bb31609ef0046523b97
+
+% 3 1 0 029e4b344f9fa553167cf456f1633662
+
+% 4 1 0 078637a7837ea4e214463ea04cef8ebc
+
+% 5 1 0 0b817f74fb16f5b311f686514bd2f4ca
+
+% 0 1 0 13363f564c4dad2f12bcdbe1a7b0f6db
+
+% 0 1 0 180e544ca01b82c310a9453b418dd52b
+
+% 1 1 0 11deb13f3015d407081ad1c0be6eb3b3
+
+@ 0 2 0 0ddc0f9e38284bf8015710a2e35335f9
++ `amalgamate` dà o il valore del blocco o il primo errore che solleva, tipizzato come l'unione dei
++ due.
+
+@ 0 1 0 180386034d97dd8f0980b0d44d773ff4
++ [I test](testing.md) usano `capture` per asserire che il codice fallisce nel modo in cui dovrebbe.
+
+@ 0 1 0 19fc3f7b198b3cdb10270b1f0c5d04d5
++ ### Tradurre e far risalire
+
+@ 0 4 0 0b9fe9e865caa0661488a72242e50209
++ `Mitigable` è la typeclass dietro `mitigate`. Un'istanza dice come un tipo di errore diventa un
++ altro, e importare `strategies.mitigation` la applica automaticamente ovunque un chiamante si
++ aspetti il tipo esterno. Un fallimento di basso livello raggiunge quindi il confine di un'API già
++ tradotto nel vocabolario di quell'API, senza che ogni chiamata ripeta la traduzione.
+
+@ 0 4 0 005b837504ebdb47168dd446d3b672bc
++ Due strategie stanno agli estremi della gamma. `throwUnsafely` lancia, senza alcuna capability
++ richiesta, cosa che si addice a prototipi e script. Anche `throwSafely` lancia, ma esige una
++ [capability] `CanThrow`, così la possibilità resta visibile nei tipi. Tra di esse stanno le forme
++ che si riprendono, che accumulano e opzionali, e la scelta spetta sempre al chiamante.
+
+@ 0 1 0 0674e77e628738a014a64309f1219fc3
++ ### Diagnostica
+
+@ 0 1 0 173a755d609e769c0a0545a011dab571
++ Un `Error` può registrare uno stack trace oppure ometterlo. Decide il given `Diagnostics`
++ nell'ambito:
+
+% 2 1 0 1fc30d5bac9dc30304994c8f82e45b24
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 3 0 0f1132a5115ae1da149b8e6646e5c231
++ column  Un errore
++ row  `errorDiagnostics.stackTracesDiagnostics`  registra uno stack trace, per il debug
++ row  `errorDiagnostics.emptyDiagnostics`  non ne registra nessuno, il che costa meno dove un errore è atteso e gestito
+
+% 1 1 0 15d9a0aecb5d983511580c23493aa56b
+
+@ 0 5 0 09a1c9fc0d3ea5091e71bb3ee7b57344
++ La scelta esiste perché nulla di tutto ciò è costruito sul lancio. `abort` e `raise` usano
++ `boundary` e `break` di Scala, così uscire da un calcolo con un errore non costruisce alcuno stack
++ trace a meno che non sia stato richiesto, e un errore non costa di più da costruire di qualsiasi
++ altro valore immutabile. Il fallimento è una parte normale del comportamento di un programma,
++ quindi non dovrebbe costare più del successo. [Gli stack trace](stack-traces.md) descrivono come una
++ traccia registrata viene letta e mostrata.
+
+@ 0 1 0 0f92e8c0792eb8331ff15005f8e86470
++ ### Quando manca un valore contestuale
+
+@ 0 5 0 02dcb840f788882801f81fbf870fe5c5
++ Gran parte di quanto sopra si basa sulla presenza di un given nell'ambito. La normale
++ segnalazione del compilatore quando ne manca uno, "No given instance of type … was found", dice
++ solo che la ricerca è fallita, non dove. Con `import soundness.*`, è nell'ambito un hook
++ diagnostico che invece spiega il fallimento. Il suo messaggio nomina il valore da risolvere e le
++ istanze candidate che sono state considerate, e mostra come albero il requisito annidato che
++ ciascuna di esse non ha potuto soddisfare.
+
+@ 0 4 0 19d265be5cdc06051bf8c2a97d615a25
++ Un decodificatore che non può essere [derivato](derivation.md#when-derivation-fails) perché il
++ tipo di un campo non ha alcuna istanza viene quindi segnalato in corrispondenza di quel campo. Una
++ strategia che manca in una chiamata fallibile viene nominata come strategia, insieme ai package di
++ scelta che ne forniscono una. Lo hook non fa nulla quando la risoluzione riesce, quindi non costa
++ nulla in un programma che compila.

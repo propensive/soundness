@@ -1,0 +1,338 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 010905da1477091f0db56699e618fd88
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0329b2c55c70e46b0a0b10c74d123fbc
++ info   Typklassen `Identity`, `Functor` und `Monad`, abgeleitet für jeden Typ mit `apply`, `map` und `flatMap`
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0787ca7d4ad789d507f85a30c36d75ed
++     _Mercator_ abstrahiert über Container — `Option`, `Try`, die Standard-Collections, `Either`,
++     eine `Task` aus `parasite` —, deren `map` und `flatMap` zwar gleich heißen, aber keinen
++     gemeinsamen Typ haben, sodass sich eine Operation einmal für alle schreiben lässt. Seine drei
++     Typklassen bilden eine Leiter: `Identity` hebt einen Wert in den Container (`point`),
++     `Functor` fügt das Abbilden hinzu, und `Monad` fügt `bind` hinzu, also `flatMap` unter einem
++     Namen, den der Container noch nicht hat.
+
+@ 0 5 0 08377c7b58530562029d62df329caa37
++     Instanzen müssen nicht geschrieben werden. Jedes Begleitobjekt enthält ein Makro als
++     `inline given`, das die Instanz aus den Methoden konstruiert, die der Typ bereits hat:
++     `Identity` aus dem einzigen `apply` des Begleitobjekts, das ein Element nimmt, `Functor` aus
++     dem einzigen `map` des Typs und `Monad` aus seinem einzigen `flatMap`. Ein Container, der ohne
++     all dies im Sinn geschrieben wurde, nimmt trotzdem teil, und einer, dessen Methoden mehrdeutig
++     sind oder fehlen, ist ein Kompilierfehler, der das Problem benennt.
+
+% 2 1 0 1cdffce75cf5874a0b0d0f8509d1f164
+
+% 3 1 0 0f574b73e25dc7de1521fe65f49b0de7
+
+% 0 1 0 0c3addb2e68ed914050f5a7b26961781
+
+% 0 1 0 101cd9d02075e4dd12ac6cb12b44b3e4
+
+% 0 1 0 039ca6d38ca819471ac2a41ae52e233d
+
+% 0 1 0 155a4e2337cbd55f121fb1cd91eb41e3
+
+% 1 1 0 071f04b996090774173dae4e27191ef0
+
+@ 0 5 0 0958b1db91530b9e12d300d7ad0b70b0
++     Zwei Operationen folgen sofort, und sie sind der Grund für die Typklassen: `sequence` stülpt
++     eine Collection von Containern um, und `traverse` bildet eine fehlbare Funktion über eine
++     Collection ab und sammelt die Ergebnisse in einem Container — „parse all das, und schlag fehl,
++     wenn irgendetwas fehlschlägt“. Beide arbeiten über die `Iterable`-Collections der
++     Standardbibliothek; Soundness' eigene opake `List`, `Set` und `Vector` sind keine `Iterable`s
++     und nehmen nicht teil.
+
+@ 0 6 0 0c05ac3c51093bd70a02da7430053a01
++     Die Bibliothek hat ein einziges Source-Set, `mercator.core`. `Cofunctor`, `Functor`,
++     `Identity`, `Monad`, `sequence` und `traverse` werden in das Umbrella `soundness` exportiert.
++     Die Erweiterungsmethoden `map` und `bind` werden es **nicht**: Diese Namen gehören unter
++     `import soundness.*` zu den Collection-Methoden von `murmuration` und `rudiments`, daher werden
++     die von mercator mit `import mercator.bind` oder `import mercator.map` (oder
++     `import mercator.*`) erreicht, und Code, der sowohl `mercator.*` als auch `rudiments.*`
++     importiert, kann `bind` auf `Text` mehrdeutig finden.
+
+% 0 1 0 1333a5488dbeb95f0f9e021360aadb7e
+
+% 0 1 0 0a546e2b412981ae16dbbb9374cea0f0
+
+% 0 1 0 166e11564a4f840203565ec83faf3a46
+
+% 0 1 0 10bdd5bcc5ab17021210916d7bd357a5
+
+% 0 1 0 05ad3b82e73aa0951c88d6a925c5000a
+
+@ 0 1 0 16b17bd1d1f7e9300f0023f7ded5efc8
++ entry .Identity   eine Typklasse, die einen einzelnen Wert in einen Container hebt: `point`
+
+% 1 1 0 0bbd01075daa631e07435475f2cab70a
+
+@ 0 3 0 03914bd95cf7e54817a4e2fa0cc627c9
++       `Identity[F]` hat eine Methode, `#point`, die ein `F[value]` erzeugt, das genau `value`
++       enthält: `Some(value)`, `List(value)`, `Success(value)`, `Right(value)`. Sie ist die Basis
++       von `Functor` und `Monad`, deren Ableitungen nach einer suchen.
+
+% 2 1 0 1566c89a73b118fc030869f8b07433d2
+
+% 3 1 0 16ca9199ec991c3116c9494b8bd9c55c
+
+% 0 1 0 0a177b037469942b062ea48feac4acfb
+
+% 0 1 0 10d91935265140c009786b7fa94855fc
+
+% 1 1 0 07554c8398de676605309b4b40d1793a
+
+@ 0 2 0 00e50fe79020ecc81be4ff15eef256fe
++       Für jeden Typkonstruktor außer `Either` wird die Instanz von `.ident` aus dem `apply` des
++       Begleitobjekts abgeleitet.
+
+% 1 1 0 145b135857b4435e1e0555d82534f9c1
+
+@ 0 11 0 02fd09a11378b5cf1e0b9e40178dc074
++   entry .either   `Identity` für `Either[?, value]`, dessen `point` `Right(value)` ist
++       Im impliziten Geltungsbereich. Das Begleitobjekt von `Either` hat kein `apply`, daher kann
++       das abgeleitete `.ident` es nicht bedienen; diese Instanz liefert das rechtsorientierte
++       `point`.
++   entry .ident   leitet `Identity[F]` für jeden Typkonstruktor ab, dessen Begleitobjekt ein passendes `apply` hat
++       Ein Makro als `inline given`, im impliziten Geltungsbereich. Es sucht im Begleitobjekt von
++       `F` nach `apply`-Methoden mit einem einzigen Typparameter, die einen Wert dieses Typs nehmen
++       — direkt, als By-Name-Parameter oder als variadischen Parameter, wie es
++       `List.apply(elements*)` tut —, und baut `#point` als Aufruf davon. Kein Kandidat ist ein
++       Kompilierfehler, _the companion object `Play` has no candidate apply methods_ (↯/s.17.4),
++       und mehr als einer ist ein anderer, _the companion object `Play` has more than one
++       candidate apply method_ (↯/s.17.6).
++   entry #point   hebt einen einzelnen Wert in den Container
+
+@ 0 1 0 176ece65009c41920e080569489fcad9
++ entry .Functor   eine Typklasse, die eine Funktion über den Inhalt eines Containers abbildet, mit `point` aus `Identity`
+
+% 1 1 0 06f39ca708d42baa08425c6e80714bd2
+
+@ 0 3 0 09cf8fd51a6fa5790fae258c5b59141a
++       `Functor[F]` stellt `#apply` bereit, das eine Funktion über ein `F[value]` abbildet und ein
++       `F[value2]` liefert, die Erweiterung `#map`, die es aufruft, und `#point`, das einen Wert
++       hebt. Er wird von `.general` für jeden Typ mit einer einzigen `map`-Methode und einer
++       `Identity` abgeleitet.
+
+% 2 1 0 044defb5776903b407c835a41c9747fd
+
+% 3 1 0 068bab6e0a19020010bbc647baf4b897
+
+% 0 1 0 0d37872680ccebb5073762dcc540eb6a
+
+% 0 1 0 1ee3e590ebd0c07108bd9bb26ba9b81e
+
+% 1 1 0 02b6103df5b2f08201c98294a00f1348
+
+@ 0 1 0 075291e509fe74bf16418512ca669fed
++       Ein `Functor` ist `Findable`.
+
+% 0 1 0 176fb7882d78a94b00283cd2d8452e93
+
+% 0 1 0 08e9e79fc9e6c3bb0787efef2a8c8740
+
+@ 0 12 0 112593fa9932a16506aabbd941fdd6c0
++   entry .general   leitet `Functor[F]` für jeden Typ mit einer einzigen `map`-Methode und einer `Identity[F]` ab
++       Ein Makro als `inline given`, im impliziten Geltungsbereich. `#apply` ruft das eigene `map`
++       des Typs auf und `#point` die gefundene `Identity`. Eine fehlende `Identity` ist ein
++       Kompilierfehler, _could not find Identity value for `Play`_ (↯/s.17.8); ein Typ ohne `map`
++       ist ein anderer, _the type `Play` has no map methods_ (↯/s.17.7), und einer mit mehreren
++       Überladungen von `map` ein dritter, _the type `Play` has more than one possible map
++       method_ (↯/s.17.2).
++   entry #point   hebt einen einzelnen Wert in den Container
++   entry #apply   bildet eine Funktion über den Inhalt eines Containers ab: `functor(value)(lambda)`
++   entry #map   die Erweiterungsform von `#apply`, auf jedem Wert des Containertyps
++       Verwendbar auf einem `F[value]`, wo immer dieser `Functor[F]` als Wert im lexikalischen
++       Geltungsbereich ist, wie in `functor.map(Some(1))(_ + 1)`; die Erweiterung `map` auf
++       Paketebene findet den `Functor` stattdessen durch kontextuelle Suche.
+
+@ 0 1 0 1961c52c529dc9011aa8d71b42dd3cb1
++ entry .Monad   eine Typklasse, die Berechnungen in einem Container verkettet: `bind`, mit `map` und `point`
+
+% 1 1 0 0880a64770cab7f20767d4a9d4f4eaed
+
+@ 0 4 0 17b6b27e56ef4d880647bc9f39f49519
++       `Monad[F]` erweitert `Functor[F]` um `#bind`, das eine Funktion, die einen Container
++       zurückgibt, auf den Inhalt eines Containers anwendet und das Ergebnis abflacht: `flatMap`,
++       unter einem Namen, der nicht mit der eigenen Methode des Containers kollidiert. Sie wird
++       von `.monad` für jeden Typ mit einer einzigen `flatMap`-Methode und einem `Functor`
++       abgeleitet.
+
+% 2 1 0 1c64416317827d9e12fd95f04cee7700
+
+% 3 1 0 121be44fa44b1e390dc831b582993026
+
+% 0 1 0 0ac8bd034c6b3311187c8f6fd1b665bc
+
+% 0 1 0 12213dc5001d5daf1c1dd1f190c7b508
+
+% 1 1 0 142d0356c1acd2e50e6950dcef0b0910
+
+@ 0 4 0 05fa4df9010b08f304e62272dd309a7a
++       Instanzen, die sich nicht ableiten lassen, werden von Hand geschrieben: Die `Task` von
++       `parasite` hat eine `Monad[Task]` in ihrem Begleitobjekt, die einen `Monitor` und eine
++       Nachlassregelung im Geltungsbereich braucht. Eine `Monad` ist `Findable`. `sequence` und
++       `traverse` sind die Operationen, die jede `Monad` über einer Collection verfügbar macht.
+
+% 1 1 0 09481d65fd132de815e2d8227dc93e89
+
+% 0 1 0 11bf7beea8d43c4b0ee26f7814694bf2
+
+% 0 1 0 06aee1b4ca63c5de195ab4b3be5af457
+
+% 0 1 0 083a41283f6948fc08759b995d532a33
+
+@ 0 10 0 1082459dafd028a01a83673c3f619e13
++   entry .monad   leitet `Monad[F]` für jeden Typ mit einer einzigen `flatMap`-Methode und einem `Functor[F]` ab
++       Ein Makro als `inline given`, im impliziten Geltungsbereich. `#bind` ruft das eigene
++       `flatMap` des Typs auf, und `point` sowie das Abbilden stammen aus dem gefundenen
++       `Functor`. Ein fehlender `Functor` ist ein Kompilierfehler, _could not find Functor value
++       for `Play`_ (↯/s.17.5); ein Typ ohne `flatMap` ist ein anderer, _the type `Play` has no
++       flatMap methods_ (↯/s.17.1), und einer mit mehreren Überladungen von `flatMap` ein dritter,
++       _the type `Play` has more than one possible flatMap method_ (↯/s.17.3).
++   entry #bind   wendet eine Container zurückgebende Funktion auf den Inhalt eines Containers an und flacht ab
++       `monad.bind(value)(lambda)`: `flatMap` unter anderem Namen.
++   entry #flatMap   die Erweiterungsform von `#bind`, damit `for`-Comprehensions über eine `Monad` funktionieren
++       Verwendbar auf einem `F[value]`, wo immer diese `Monad[F]` als Wert im lexikalischen
++       Geltungsbereich ist.
+
+@ 0 1 0 1ce3e5b226ca5faf02c5b2d2a057258c
++ entry .Cofunctor   eine Typklasse, die eine Funktion rückwärts in einen kontravarianten Container abbildet: `contramap`
+
+% 1 1 0 1ffff66129d4a1e41e9be86a1c544094
+
+@ 0 4 0 05ed846778e056ba13bfb841ff71deb6
++       `Cofunctor[F]` ist das Duale von `Functor` für ein kontravariantes `F[-value]`, etwa einen
++       Konsumenten, einen Encoder oder eine Ordnung: Aus einer Funktion `value2 => value` macht er
++       ein `F[value]` zu einem `F[value2]`, indem er dessen Eingabe anpasst. Anders als die
++       anderen drei Typklassen hat er keine Ableitung: Eine Instanz wird von Hand geschrieben.
+
+% 2 1 0 129e782b2498b8270c6fdacd4b5c2d00
+
+% 3 1 0 019495cfae8e9fca1e11f2ad0dc10af8
+
+% 0 1 0 13ba4045ecdc2f9c1a0d292b08a1191e
+
+% 0 1 0 1eddedf25eb0de030e9754fba25d2ad0
+
+% 0 1 0 0b9d855f19becac0016e7de8fb5d6432
+
+% 0 1 0 16843c72f957b63c0dfc474ca7f912fa
+
+% 0 1 0 05416f1c4396d3bc11b08a2422037c1a
+
+% 1 1 0 079200dd9bd0b94f0b65baeaf77660f2
+
+% 1 1 0 0b72c0a5d09c428304ee7b830297b2e0
+
+@ 0 2 0 124ea8035cd546110ab265744dfb03ee
++   entry #apply   passt einen kontravarianten Container an, damit er einen anderen Typ annimmt: `cofunctor(value)(lambda)`
++   entry #contramap   die Erweiterungsform von `#apply`, auf jedem Wert des kontravarianten Typs
+
+@ 0 5 0 03130f414d2c0c0c0d3cac61f17e95d9
++ entry .map   bildet eine Funktion über jeden Container mit einem `Functor` ab, als Erweiterungsmethode
++     `value.map(lambda)` für jedes `F[value]` mit einem `Functor[F]` im Geltungsbereich. Sie wird
++     nicht in das Umbrella `soundness` exportiert, wo `map` die Collection-Methode von
++     `murmuration` ist; importieren Sie sie als `import mercator.map`. Da die meisten Container
++     eine eigene `map`-Methode haben und eine Methode immer Vorrang vor einer Erweiterung hat, ist
++     das nur für generischen Code über ein abstraktes `F` von Belang:
+
+% 2 1 0 0bd4909af16ab63601f69eebb8a63105
+
+% 3 1 0 139e2ac4ad5f3eff03d80b73f00701bd
+
+% 0 1 0 184afd2639e61e6000d1be90dc055f42
+
+% 0 1 0 1cc275c18822f32f00b11c0046cf64c8
+
+% 1 1 0 18dcf97a79e8fd4b104b72790775c4c3
+
+@ 0 4 0 02962a52b0b6360d1cfb7123c6e7fa6c
++ entry .bind   monadisches `bind` über jeden Container mit einer `Monad` und zeichenweises `bind` über `Text`
++     Zwei Erweiterungsmethoden teilen sich den Namen. Für jedes `F[value]` mit einer `Monad[F]` im
++     Geltungsbereich ist `value.bind(lambda)` gleich `flatMap`. Auf `Text` wendet
++     `text.bind(lambda)` eine Funktion `Char => Text` auf jedes Zeichen an und fügt die Ergebnisse
++     zusammen.
+
+@ 0 3 0 118a7803b1ed3c670de73dcd09d052e2
++     Keine von beiden wird in das Umbrella `soundness` exportiert, wo `bind` die Collection-Methode
++     von `rudiments` ist; importieren Sie sie als `import mercator.bind`. Eine Datei, die sowohl
++     `mercator.*` als auch `rudiments.*` importiert, findet `bind` auf `Text` mehrdeutig.
+
+% 2 1 0 111ba48d7ea8358f0d26faeb89e45ad1
+
+% 3 1 0 09462907812825591b9ed05d6b3567e1
+
+% 0 1 0 107bdb06ed74138b06fba784b60f9b40
+
+% 0 1 0 00ffbab96d536a63195d7b5df14e21ba
+
+% 0 1 0 1cf826147fb8f1090a2e0248e0ba8b6f
+
+% 0 1 0 0b33f1ef93e84ea30baf24b4649c8470
+
+% 1 1 0 0f67406abb4b0fa905f8c64cbef9a581
+
+@ 0 4 0 04e33664d6bdd74b1a5db0b37191af5e
++ entry .sequence   stülpt eine Collection von Containern um: `List[Try[Int]]` zu `Try[List[Int]]`
++     Eine Erweiterung auf jeder Collection von `F[element]` mit einer `Monad[F]` im
++     Geltungsbereich, die die Container der Reihe nach kombiniert und eine Collection derselben
++     Art innerhalb eines Containers neu aufbaut: `Success` aller Werte, wenn alle gelingen, sonst
++     das erste `Failure`; bei `Option` `None`, wenn irgendeiner `None` ist; bei Collections jede
++     Kombination.
+
+% 2 1 0 13fd94d8dc5decac15da97e625f503ae
+
+% 3 1 0 073bdde1461892f916ee37de45c90702
+
+% 0 1 0 032e6924f2bc0ecc1087bdd394507218
+
+% 0 1 0 1631d151f148e899139aaf01a3bff156
+
+% 1 1 0 000635253f5604a013d80d35d19083e5
+
+@ 0 2 0 1b240ac34eca10701b8d1aeef2f6fd9d
++     Die Collection wird über ihre `Reshapable`-Instanz neu aufgebaut, sodass eine `List` zu
++     einer `List` und ein `Set` zu einem `Set` wird.
+
+@ 0 4 0 0f1a8c09acdb1e170a65be7c63f3b1b6
++ entry .traverse   bildet eine Container zurückgebende Funktion über eine Collection ab und sammelt die Ergebnisse in einem Container
++     `elements.traverse(lambda)` ist `elements.map(lambda).sequence` in einem einzigen Durchgang:
++     eine Erweiterung auf jeder Collection, für eine Funktion `element => F[element2]` mit einer
++     `Monad[F]` im Geltungsbereich. Es ist die Gestalt von „parse all das, und schlag fehl, wenn
++     irgendetwas fehlschlägt“.
+
+% 2 1 0 1aa713afb75a9c3e1bfe63ba0ab00c13
+
+% 3 1 0 03aee40741366b300c7761f339bf54c7
+
+% 0 1 0 173789601aa630c81bdff4173885e6a8
+
+% 0 1 0 0b560fe3eadfa6fe063ed64dafac82d2
+
+% 0 1 0 17dd7eaffc1f9924018d0e9050245659
+
+% 1 1 0 1d11fa97caabffa50f6f73b445828adf
+
+@ 0 1 0 10e595172ca92af30e88c622e0e3723f
++     Wie bei `sequence` hat das Ergebnis die eigene Gestalt der Collection.
+
+@ 0 1 0 001895162809ff311ea63f4f9edba40b
++ entry .internal   die Makros, die Instanzen von `Identity`, `Functor` und `Monad` ableiten
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 5 0 1848382e17be8abb07c2d2b0642adfc7
++       Nicht zur direkten Verwendung: Die Givens `Identity.ident`, `Functor.general` und
++       `Monad.monad` spleißen diese ein.
++   entry .point   leitet eine `Identity` aus dem `apply` eines Begleitobjekts ab
++   entry .functor   leitet einen `Functor` aus dem `map` eines Typs ab
++   entry .monad   leitet eine `Monad` aus dem `flatMap` eines Typs ab

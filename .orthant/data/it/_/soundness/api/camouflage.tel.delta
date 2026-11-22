@@ -1,0 +1,166 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1043d4992944c3a107bdcffdfc6eb13b
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 04ebf6e0cf019db21fb412f8f8051a21
++ info   cache: una mappa limitata con politica least-recently-used, e un singolo valore memoizzato con una durata di vita
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 3 0 15a45f13b8c5a7890dc599b80f856dd4
++     _Camouflage_ fornisce le due forme che una cache assume di solito, così che le decisioni che
++     ogni cache fatta a mano prende implicitamente (quando espellere, che cosa fare quando due
++     thread vogliono lo stesso valore mancante, e quando un valore in cache è troppo vecchio per
++     fidarsene) vengano prese dal tipo.
+
+@ 0 4 0 135ad60909c56beb176ff8cc696d1af2
++     Una `LruCache` conserva fino a un numero fisso di voci con chiave, espellendo quella usata meno
++     di recente. Una `Cache` memoizza un valore, eventualmente per una durata di vita limitata, e lo
++     calcola sotto un lock, così i chiamanti concorrenti condividono un unico risultato anziché
++     precipitarsi tutti insieme. In entrambe, il calcolo è passato per nome e viene eseguito solo in
++     caso di mancanza.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0b1bcecab61ce42205c7944547b54ddd
+
+% 0 1 0 05c9123cea43a11b148cba3ceb338234
+
+% 0 1 0 15e14f970c8613db0a76e47b59908ea7
+
+% 0 1 0 03019a6eba90a1a50e8e057bbf7e6477
+
+% 0 1 0 08eaff9f81cfc4b00e678aaafd94b8f5
+
+% 0 1 0 19415459bd1338f71254dc0166fc2e51
+
+% 0 1 0 0f55897c2d40313b173edc0ec8d0c08e
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 2 0 04fea183e416f67d1e624bdbef706e73
++     La libreria ha un unico insieme di sorgenti, `camouflage.core`, e tutto è esportato nel modulo
++     ombrello `soundness`.
+
+% 0 1 0 0abc09b7e5376fc11d7cd5c2c8de0bce
+
+% 0 1 0 12075e465b2185ce01c91cbd8de9605f
+
+@ 0 1 0 14ab21f2bc201eb71bdfb44c1d4a2f24
++ entry .LruCache   una cache limitata con chiavi che, quando è piena, espelle la voce usata meno di recente
+
+% 1 1 0 05dc6b7ebe4c80b21fc18e9d2d0a5353
+
+@ 0 4 0 199aaaa24236d70d12886378ec608c95
++       `LruCache[Key, Value](maxSize)` contiene fino a `maxSize` voci. Applicarla con una chiave e
++       un calcolo, `cache(key)(computation)`, restituisce il valore in cache se la chiave è
++       presente, e altrimenti valuta il calcolo, ne memorizza il risultato, ed espelle le voci
++       usate meno di recente finché la cache non rientra di nuovo nella sua dimensione.
+
+@ 0 2 0 0a14e8cdb02d44651f84a3fc70b32a3e
++       Leggere o scrivere una voce la segna come recente, così le voci che sopravvivono sono
++       quelle a cui il programma continua a tornare:
+
+% 2 1 0 0f22a2a9c1fd3e71133ef626ec3daae8
+
+% 3 1 0 09d5bdf4697176a9145561e9cd012bfd
+
+% 5 1 0 1718b2b3e359c21d053be8f65a4d1634
+
+% 6 1 0 16b597839e28f1d4050c19a8bf96f08c
+
+% 0 1 0 1343d58e753d753c0c8419675046645f
+
+% 0 1 0 0ccc0c5b4eb7de6714adc5dbedc385f4
+
+% 0 1 0 0ddb556550837b5405d7ceab812d8825
+
+% 0 1 0 010cc26b34174e6e1088da07ce8c91c8
+
+% 0 1 0 00db33f551dfa7000e6e8121b5d7a594
+
+% 0 1 0 0dfe8aaf5a22e78f15c4ba792e6c3ac5
+
+% 1 1 0 04ecf1da413589ec041b0dee7d077d1e
+
+@ 0 2 0 0c007944816c71e307309ec89593b835
++       Una `LruCache` non tiene alcun lock: è pensata per essere usata da un thread alla volta, o
++       dietro un lock del chiamante.
+
+% 0 1 0 18ffb6d36f56335a13fbec508d80c960
+
+@ 0 9 0 12502bb08f88ca170360f80443ef9a85
++   entry #apply   il valore per una chiave: quello in cache, o il risultato del calcolo, memorizzato
++       Il calcolo è passato per nome e valutato solo in caso di mancanza. Un successo segna la
++       voce come la più recente; una mancanza la aggiunge come la più recente ed espelle le voci
++       meno recenti oltre la dimensione della cache.
++   entry #contains   se la cache contiene un valore per una chiave
++       Chiede senza calcolare nulla e senza segnare la voce come recente.
++   entry #remove   elimina la voce di una chiave, se è presente
++       Per l'invalidazione, quando i dati sottostanti sono cambiati e il valore in cache è
++       notoriamente stantio. Rimuovere una chiave assente non fa nulla.
+
+% 2 1 0 0c5c617f6fb898f11515c2e352e45cfe
+
+% 3 1 0 12a60ae89d02a8d70c01006debea0684
+
+% 5 1 0 178211d04fb85cc0048e11a0c8189522
+
+% 6 1 0 09b640c51156f11e1bb024771eefdf59
+
+% 0 1 0 13516c29434a5f491f00dda5be29953c
+
+% 0 1 0 1b6ef3033cb3f8af0ed4e0d2bcbe729b
+
+% 1 1 0 1e71eab2c1a0f5981e7081f72b32b6ba
+
+@ 0 1 0 03624add4049ec54165e98a0e7879731
++ entry .Cache   un singolo valore memoizzato, calcolato una volta sotto un lock e con scadenza facoltativa
+
+% 1 1 0 0133e663e05692c51743de0b7621e5e4
+
+@ 0 5 0 0c43912d86a6666c156e704da96f3f27
++       Una `Cache[Value]` contiene al più un valore. `#establish` lo restituisce, calcolandolo solo
++       quando non ne è contenuto alcuno o quello contenuto è scaduto. Il calcolo viene eseguito
++       sotto un lock, così quando diversi thread chiedono contemporaneamente un valore mancante o
++       scaduto, uno lo calcola e gli altri ne ricevono il risultato: è la corsa alla cache che un
++       semplice `lazy val` con un timestamp non può impedire.
+
+% 2 1 0 1efcf7cb06c6b45d10ad996fe6286038
+
+% 3 1 0 150d695d01cf40201431bd509c1746d5
+
+% 0 1 0 08510d896ff9d98b1b5ddae155f38275
+
+% 0 1 0 1f07e039d02bb42316e17c4109e83204
+
+% 0 1 0 19ca7c5ed6c9f62c12efb642dadff1af
+
+% 0 1 0 0b018111d960f244111fcfe32f9c955f
+
+% 0 1 0 07bad33630ca28e412523298c75c28a4
+
+% 1 1 0 139dca28ecfb44ce070cc48df05e05c8
+
+@ 0 1 0 08601f10595b1e9916315697a724a018
++       Il tipo del valore si indica come tipo atteso, o come argomento di tipo,
+
+% 0 1 0 149a250b048ba7af1f686ece39cb2812
+
+% 0 1 0 0cde7b4f6f4eab52053cb83da422b009
+
+@ 0 8 0 1e26a8372843ac18151fbf541562add3
++   entry .apply   una cache con una durata di vita, o senza, `Cache[Value]()`, che conserva il suo valore per sempre
++       La durata di vita è una qualsiasi durata che sia `Abstractable across Durations to Long`,
++       per esempio una `Quantity` di secondi di aviation, con `durationInterfaces.aviationDuration`
++       importato, letta con precisione al millisecondo. La durata di vita si misura dal momento in
++       cui il valore è stato calcolato l'ultima volta, non da quando è stato letto l'ultima volta.
++   entry #establish   il valore in cache, calcolato dal blocco dato se non ce n'è alcuno o se è scaduto
++       Il blocco è passato per nome e valutato solo quando serve, mentre il lock della cache è
++       tenuto; gli altri chiamanti lo attendono e ricevono lo stesso valore.

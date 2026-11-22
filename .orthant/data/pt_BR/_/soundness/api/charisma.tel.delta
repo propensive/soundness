@@ -1,0 +1,575 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 156c0042ea075de716dcd091500586e5
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 103629cd6cdabfbe1a2d06180576bdf5
++ info   a tabela periódica, moléculas, fórmulas e equações químicas como valores tipados
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 163bd43c71dd86ee06f3fcdad7e99da5
++     _Charisma_ modela a notação química como estrutura em vez de texto. Os 118 elementos são
++     valores em `PeriodicTable`; os elementos se ligam em uma `Molecule` com `*`, que pode carregar
++     uma carga e um estado físico; moléculas com coeficientes se somam em uma `Chemical.Formula`
++     com `+`; e duas fórmulas se unem, com uma de cinco setas de reação tipadas, em uma
++     `Chemical.Equation`, que sabe dizer se está balanceada.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1a7e25f2ee091fad1e8e94495e464ada
+
+% 0 1 0 114147192ce1f0220ad31cc37492a060
+
+% 0 1 0 0e5cb0ce3a9e5f4d1473d79a002fb3a5
+
+% 0 1 0 1012ba5281a966e01246e89a8478e66e
+
+% 0 1 0 1faab479dc315f50055bdd6e3dc14f38
+
+% 0 1 0 059d8d04765b34801b9939b3fc9f84ef
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 4 0 03316eaea154698c0a4825b2ba7ff5a9
++     Os operadores são definidos em dois traits: `Molecular`, que um elemento e uma molécula
++     estendem, tem a ligação `*`, o coeficiente `*` e os operadores de carga; `Formulable`, que todo
++     valor molecular e toda fórmula estendem, tem `+` e as setas de reação. Assim, um elemento, uma
++     molécula e uma fórmula podem todos ficar de qualquer lado de uma equação.
+
+@ 0 4 0 0b02f2ec81907e990a81ff3de5f350ee
++     Cada valor é renderizado com `show` na notação convencional — contagens em subscrito, cargas em
++     sobrescrito, a ordem de Hill com carbono e hidrogênio primeiro — e é inspecionado de forma
++     distinta, de modo que um elemento, uma molécula e uma fórmula de um termo nunca se confundem na
++     falha de um teste.
+
+@ 0 2 0 1a15cd6622cbd41609137a3e65e7a9f8
++     A biblioteca é um único source set, `charisma.core`, que é neutro quanto à plataforma, e tudo é
++     exportado para o guarda-chuva `soundness`. Não há givens a importar.
+
+% 0 1 0 0eec00f5382711ff1472fbe828f8ef2f
+
+% 0 1 0 098fa0d92269751b19c86629687019d4
+
+% 0 1 0 01a59ab4267dbf1404f2279078ad0f74
+
+% 0 1 0 13ba45690287a76b111f880282b5d119
+
+% 0 1 0 12ac5f266e89c3e819f797ab2885a785
+
+@ 0 1 0 01378691848364bd0c1742170214fc0a
++ entry .Chemical   um espaço de nomes para o vocabulário da química: elementos, fórmulas e equações
+
+% 1 1 0 04297b7914bf33d91dd7afaac6083ff2
+
+@ 0 3 0 04a30196041a52d20363a4761b23bab3
++       Não há um tipo `Chemical`: o objeto contém `Element`, `Formula` e `Equation`, as três
++       espécies de coisa química cujos nomes seriam, de outra forma, gerais demais para o
++       guarda-chuva. As moléculas são `Molecule`, no nível superior do pacote.
+
+% 1 1 0 089dce62e63601a7054c213f69120113
+
+% 1 1 0 0816248f4e0f5a6a17684c30f30b6387
+
+@ 0 1 0 15280788efa6e7fe01d962a7f4219bf2
++   entry .Element   um elemento químico: o seu número atômico, símbolo e nome
+
+% 1 1 0 1e9f63d226eacbb900203f3f8c73ce69
+
+@ 0 2 0 1cb708e16a6d6c500ab5eb339dfb569e
++         Um elemento é um valor, geralmente tirado de `PeriodicTable`, e é `Molecular`: sozinho, é
++         uma molécula de um átomo, se liga com `*`, e um argumento de tipo o repete.
+
+% 2 1 0 11699786aed31c42129bd572020eac4b
+
+% 3 1 0 03cad26679fb0123177a651a87f203ac
+
+% 0 1 0 0096caa091644153111ed891aed90540
+
+% 0 1 0 0adc88edff1ea2960c26e1e718ef8d41
+
+% 0 1 0 02afd1e76f78712a184b6496ab3b2b8c
+
+% 0 1 0 19df082991b2d1c316c8b1e3533d013f
+
+% 0 1 0 1f85c15cd92f731f05f58a5332c6b463
+
+% 1 1 0 15c294af6ab7f216055d63c7883a9833
+
+@ 0 12 0 075d3928f014d4471d2719d0d1d023c3
++         Um elemento aparece como o seu símbolo puro, e é inspecionado com um sinal de átomo e o seu
++         número atômico, o que o distingue de qualquer outro texto curto.
++     entry .showable   mostra um elemento como o seu símbolo, `Fe`
++     entry .inspectable   inspeciona um elemento com um sinal de átomo e o seu número, `⚛Fe(26)`
++     entry #number   o número atômico
++     entry #symbol   o símbolo químico, `Fe`
++     entry #name   o nome em inglês, `Iron`
++     entry #apply   uma molécula deste elemento repetido, com a contagem como argumento de tipo, `O[2]`
++         `O[2]` é a molécula de dois átomos de oxigênio: a contagem é um tipo literal de número
++         natural, então precisa ser conhecida enquanto o código compila. Para uma contagem conhecida
++         apenas em tempo de execução, use `O ** n`.
++     entry #molecule   este elemento como uma molécula de um átomo
+
+@ 0 1 0 0077ef00fcb0f3680ffcfc506fc0a4f1
++   entry .Formula   uma soma de moléculas, cada uma com um coeficiente: `2H₂ + O₂`
+
+% 1 1 0 1272e01e968dc3dd07f2db09511e03c8
+
+@ 0 3 0 042704868b197ab71e4e71dd3b9ad73b
++         Uma fórmula é um `Ledger` de cada `Molecule` para o seu coeficiente. Ela é criada a partir
++         de um valor molecular com um coeficiente (`H[2]*2`) ou com `.apply`, e cresce com `+`, que
++         soma os coeficientes de uma molécula que aparece nos dois termos.
+
+% 2 1 0 1769c7c84d8bedf4189f8bb584e34a10
+
+% 3 1 0 12ca4fb91296658b18c9199f8c0c139c
+
+% 4 1 0 13f1e469ce15e1c40b26c549ff2023b0
+
+% 0 1 0 19ad8c51345cc3450a0ce64afef48876
+
+% 0 1 0 07e382595117bb4910c2106daa7e8255
+
+% 0 1 0 06fa04dfcbe9bcbd0b38b5982ec53f2d
+
+% 0 1 0 0a493f9b96054150086122d8a0ac74dd
+
+% 1 1 0 0f841ca3789a71fa142d772e265bd38e
+
+@ 0 10 0 19ab90aeb0c93bb31f3a0866d6f14e5b
++         Um coeficiente 1 fica implícito em `show`, mas é escrito por `inspect`, de modo que uma
++         fórmula de um termo nunca é inspecionada da mesma forma que a molécula que contém.
++     entry .apply   uma fórmula de uma única molécula com coeficiente 1
++     entry .showable   mostra uma fórmula como os seus termos unidos por ` + `, omitindo os coeficientes 1
++     entry .inspectable   inspeciona uma fórmula com todos os coeficientes escritos, ou `∅` se estiver vazia
++     entry #molecules   cada molécula da fórmula, com o seu coeficiente
++     entry #formula   a própria fórmula, como `Formulable` exige
++     entry #atoms   o número de átomos de cada elemento em todos os termos, contando os coeficientes
++         O multiconjunto de átomos de um lado de uma equação: os átomos de cada molécula
++         multiplicados pelo seu coeficiente, somados. Dois lados se balanceiam quando os seus `atoms`
++         são iguais.
+
+@ 0 1 0 194a8438e2a9c3b70a4461cd53f44389
++   entry .Equation   duas fórmulas unidas por uma seta de reação: `2H₂ + O₂ → 2H₂O`
+
+% 1 1 0 182deb5e124895120ac60687384d4422
+
+@ 0 2 0 07fd50d897fb637c0a8c4e995c72be4d
++         Uma equação é criada a partir de dois valores formuláveis com uma das setas de
++         `Formulable`, `-->`, `<->`, `<=>`, `<~>` ou `===`, cada uma dando uma `Reaction` diferente.
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 0b6a79d6518c7cd31c35d380a8d87779
+
+% 1 1 0 0ac0f6686f027f880a8532a051d5d81c
+
+% 2 1 0 1124775b40b143831f70f2e8107f006b
+
+% 3 1 0 16fe0e1d451b3f270c74906a0ab4bd97
+
+% 0 1 0 0feaff12a952ea2d1d4e380a15a55960
+
+% 0 1 0 1b3ffd6b576a53be15442b32343077f0
+
+% 1 1 0 08a6c54cf8b769771d0e7d7c2c64f884
+
+% 2 1 0 04cc48c803e42c4d1505a33be8fc5353
+
+% 3 1 0 1178f24c8c38c4cf08ef75352cfa29b9
+
+% 0 1 0 0afe359ff97567560a618265bb732998
+
+% 0 1 0 1a30953c37a0de5817c11df8a4b4e32e
+
+% 1 1 0 14acf53d0be933de05a998f6bb5672f5
+
+% 2 1 0 1e35bb5c8115c5d70e02b24de0e4f7d0
+
+% 3 1 0 03963f30aca3773e0a2acfc803c08a7e
+
+% 0 1 0 169f763e838c5384154f8d0ae0f2ddcf
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 12 0 04673803ee0dd1c8014fef67403ae88d
++         `#balanced` compara os átomos dos dois lados; nada mais é verificado, então uma equação não
++         balanceada é um valor válido.
++     entry .showable   mostra uma equação como os seus dois lados com a seta da reação entre eles
++     entry .inspectable   inspeciona uma equação com as suas partes e a reação nomeada, não desenhada
++         `Equation(2H₂ + 1O₂ ╱ NetForward ╱ 2H₂O)`, de modo que a sua inspeção nunca é a notação que
++         `show` produz.
++     entry #lhs   a fórmula à esquerda da seta
++     entry #reaction   a espécie de reação que a seta denota
++     entry #rhs   a fórmula à direita da seta
++     entry #balanced   se os dois lados têm o mesmo número de átomos de cada elemento
++         Compara `lhs.atoms` com `rhs.atoms`. A carga não é comparada, então uma equação cujos lados
++         diferem apenas na carga conta como balanceada.
+
+% 2 1 0 0c094415c82b92411d3a819b9ddc5f06
+
+% 3 1 0 065730463cdf797402532ddecd4e0576
+
+% 4 1 0 1084f693e06ddf6b06c900d0b94e789b
+
+% 0 1 0 093947e4d98b46460b97a37c5a91a5c7
+
+% 0 1 0 08434e7dd6145fb203157befad794b98
+
+% 1 1 0 0c29dda3e34fde8b08ab075db97195ef
+
+@ 0 1 0 061c2f7b6bdae24f0977b7658719df52
++ entry .Molecule   átomos ligados entre si, com uma carga elétrica e um estado físico opcional
+
+% 1 1 0 1171cca64a2a4a561fa02602f2dc48dc
+
+@ 0 3 0 057f831ccb9ad2281310ce59b76b50cc
++       Uma molécula é um `Map` de cada elemento para a sua contagem, uma carga e um `PhysicalState`
++       opcional. Geralmente ela é construída a partir de elementos com os operadores de `Molecular`,
++       em vez de construída diretamente.
+
+% 2 1 0 1efaedfebf415a400482e5e7844b615e
+
+% 3 1 0 17bf00c6e47c25e41573d4c87717fcff
+
+% 0 1 0 1be9af58c81138fa0f9c01122e57d8da
+
+% 0 1 0 0e6f22dab54a5e1e019a6cc08a161f43
+
+% 0 1 0 17a2f104107ba83106e7e8431c34a9f4
+
+% 0 1 0 026740018ae032c3143abff95f1e2e6f
+
+% 1 1 0 0184b3434265f1fa1f4ce6d73983582c
+
+@ 0 6 0 1eaad6d717391a1e1331d3b754b964d4
++       Ela aparece na ordem de Hill: primeiro o carbono e depois o hidrogênio, quando a molécula tem
++       carbono, e todos os outros elementos (inclusive o hidrogênio, em uma molécula sem carbono) em
++       ordem alfabética pelo símbolo. As contagens são subscritos, uma carga é uma magnitude em
++       sobrescrito (omitida para ±1) seguida de `⁺` ou `⁻`, e o estado vem depois, entre parênteses.
++       Ligar duas moléculas soma os seus átomos e cargas e deixa o estado indefinido, então um estado
++       precisa ser aplicado à molécula pronta.
+
+% 0 1 0 1a750f59616e982b154c42bc6dbeebe9
+
+% 1 1 0 1b31ebf85c8a86cc0f31d46c7adbb38f
+
+@ 0 7 0 09c5da15e3ef67420c4d1b305fb14a4d
++   entry .apply   uma molécula vazia e sem carga, ou uma de um único átomo de um elemento
++   entry .showable   mostra uma molécula na ordem de Hill, com contagens em subscrito, carga e estado: `O₄S²⁻(aq)`
++   entry .inspectable   inspeciona uma molécula como a fórmula que `show` dá, `H₂O`
++   entry #elements   cada elemento da molécula, com o seu número de átomos
++   entry #charge   a carga elétrica, em unidades da carga elementar
++   entry #state   o estado físico, ou `Unset` se nenhum foi dado
++   entry #molecule   a própria molécula, como `Molecular` exige
+
+@ 0 1 0 0da2972d9e5737d804a9a556c3da284b
++ entry .Molecular   qualquer coisa que seja uma molécula: liga-se com `*`, escala, e carrega uma carga e um estado
+
+% 1 1 0 083fba2ddb236a651e2df312d2fd217e
+
+@ 0 2 0 17bfc81dc38a48c31be174f46e093700
++       Um trait estendido por `Chemical.Element` e `Molecule`. Cada operador trabalha sobre a
++       `#molecule` do valor.
+
+% 2 1 0 098f7220f814690211fc5f4b2bd37913
+
+% 3 1 0 0b70cc632c2fa46b136753117011eda9
+
+% 0 1 0 0b38a06ea3a181070caecea128802ddb
+
+% 0 1 0 099cc170dddeb36316411e71b74b4f37
+
+% 0 1 0 01b054fdcb6b58fa10b1f7253648005e
+
+% 0 1 0 0681b0d6ddccc517094d98b7013c9453
+
+% 0 1 0 1d11e3bc931e973417f148daf0336f3c
+
+% 0 1 0 1dd67adc018989370874e069516867b2
+
+% 1 1 0 0bc9d1ab28b6c5380494699ee1e197a8
+
+@ 0 3 0 130621a1f012e7a6185c1335c4da7a7b
++       Há duas multiplicações, ambas grafadas `*`: por outro valor molecular, ela os liga em uma
++       única `Molecule`, e por um `Int`, ela dá uma `Chemical.Formula` com esse coeficiente. `**`, em
++       vez disso, multiplica os átomos dentro da molécula.
+
+% 1 1 0 1a4965b24bdfa4d0175fb4f55c921636
+
+% 0 1 0 14ced0bdf8a0ff7901b77a2603ca4bc0
+
+@ 0 12 0 097182029a6ec3760fd03df2ff9bd53a
++   entry #molecule   este valor como uma `Molecule`
++   entry #formula   este valor como uma fórmula de uma molécula com coeficiente 1
++   entry #*   liga-se a outra molécula, ou dá uma fórmula com um coeficiente `Int`
++       `H[2]*O` é uma molécula com os átomos e as cargas de ambas; `water*2` é a fórmula `2H₂O`. A
++       ligação deixa o estado físico indefinido.
++   entry #**   a molécula com cada contagem de átomos e a sua carga multiplicadas
++       `(H[2]*O) ** 3` é `H₆O₃`, uma única molécula; compare com `*` com um `Int`, que dá um
++       coeficiente.
++   entry #unary_-   a molécula com a carga diminuída em um: `-Cl` é o íon cloreto
++   entry #unary_+   a molécula com a carga aumentada em um: `+Na` é o íon sódio
++   entry #ion   a molécula com a carga substituída: `Fe.ion(3)`
++   entry #inState   a molécula com o estado físico substituído, ou removido com `Unset`
+
+% 1 1 0 15bd0166f7899cee0cf9f9879770e211
+
+% 2 1 0 1106c3b1fc862df21e28b03fbb570482
+
+% 0 1 0 0973230b615ea8b1139d782f38e5c8b7
+
+% 0 1 0 17618ec681b98a25189d4cf481196a35
+
+% 1 1 0 1ee8e69699eabe34179a2e0977eab669
+
+@ 0 2 0 022b063e6d4ed1df10b776d0d7313221
++       Atenção à precedência: `Na*Cl.inState(…)` define o estado apenas no cloro, e a ligação então
++       o descarta.
+
+@ 0 1 0 0eac964146e5769010bb15a4eafbe3fc
++ entry .Formulable   qualquer coisa que possa ser um lado de uma equação: soma-se com `+` e aceita uma seta de reação
+
+% 1 1 0 129c56c341f42db404fd69753e9e2344
+
+@ 0 2 0 1096f692aaa2f356076ca5d215ca1bf2
++       Um trait estendido pelos valores `Molecular` e por `Chemical.Formula`. Os seus operadores
++       trabalham sobre a `#formula` do valor, de modo que elementos, moléculas e fórmulas se misturam
++       livremente.
+
+% 2 1 0 1fc93bec26c6983f19bbd1bebae9ec51
+
+% 3 1 0 17a36e365651b0e10d40d3a8df386ab6
+
+% 0 1 0 10786b38141cebb218e31b1534ee1ed1
+
+% 0 1 0 1eb5b0ac1072c0be1e28f48133c9e8a8
+
+% 0 1 0 08a39b1c2298ea2518f1fcd895c28ad3
+
+% 0 1 0 0d812ea3a471517b036599f4bdb7d5f7
+
+% 1 1 0 03e681f2f7db20fc05f65c8e9f13cac3
+
+@ 0 3 0 1f0e81482fe61fa41a3e58d426dc7ae9
++       `-->` começa com `-`, então tem exatamente a mesma precedência que `+` e associa à esquerda:
++       uma soma à sua direita precisa estar entre parênteses, senão o `+` se aplica à equação e a
++       linha não compila. As outras setas têm precedência menor que `+`.
+
+@ 0 3 0 14b6406d7847411d07f45bf9ea21743f
++       Cada seta cria uma `Chemical.Equation` com uma `Reaction` diferente: `-->`, uma reação
++       líquida direta, `<=>`, uma que procede nos dois sentidos, `<~>`, uma em equilíbrio, `<->`, uma
++       ressonância, e `===`, uma relação estequiométrica.
+
+% 0 1 0 0dc1772b1c87e5df122940ec0a3c85cb
+
+% 0 1 0 144a5504c36ee2bd1eca19311c5501f6
+
+@ 0 5 0 0ca1e40ce4d245ba1d9e0aacc9e88725
++   entry #formula   este valor como uma `Chemical.Formula`
++   entry #+   a soma de duas fórmulas, somando os coeficientes de uma molécula presente em ambas
++   entry #-->   uma equação com uma reação líquida direta, `→`
++       `lhs --> rhs`. Tem a mesma precedência que `+` e associa à esquerda, então uma soma à direita
++       precisa de parênteses: `CH₄ + 2O₂ → CO₂ + 2H₂O` é
+
+% 0 1 0 0416aacada3c1ddf0b05179d546e48ab
+
+@ 0 4 0 1c536b2ee6dcca8e1c4c776659fb1167
++   entry #<->   uma equação com uma ressonância, `Reaction.Resonance`
++   entry #<=>   uma equação que procede nos dois sentidos, `⇄`
++   entry #<~>   uma equação em equilíbrio, `⇋`
++   entry #===   uma equação com uma relação estequiométrica, `Reaction.Stoichiometric`
+
+@ 0 1 0 0996117b8cd57ad900cb4f7c5be984e1
++ entry .PhysicalState   o estado da matéria de uma molécula: sólido, líquido, gasoso ou aquoso
+
+% 1 1 0 1408c0187a5d0c701b1c8d12aca4154e
+
+@ 0 5 0 0dc504a4604e3a73040659a61d8fd4dd
++       Uma enumeração de `Solid`, `Liquid`, `Gas` e `Aqueous`, mostrados como `(s)`, `(l)`, `(g)` e
++       `(aq)` depois de uma molécula. Um estado é aplicado com `Molecular#inState` e é uma anotação,
++       não parte da identidade da substância para a ligação: ligar duas moléculas deixa o estado do
++       resultado indefinido.
++   entry .showable   mostra um estado como `(s)`, `(l)`, `(g)` ou `(aq)`
+
+@ 0 1 0 06a978e891636c0409d10cae95bb2061
++ entry .Reaction   a relação que uma equação química afirma entre os seus dois lados
+
+% 1 1 0 0ac93b4b92993c9f0738d8c3e70d5330
+
+@ 0 5 0 1873ab0c7ba5917117a8dfb71699998a
++       Uma enumeração de `NetForward` (mostrada como `→`, de `-->`), `BothDirections` (`⇄`, de
++       `<=>`), `Equilibrium` (`⇋`, de `<~>`), `Stoichiometric` (`↔`, de `===`) e `Resonance` (`=`, de
++       `<->`). A seta que um químico escreve carrega significado, e uma equação a preserva.
++   entry .showable   mostra uma reação como a sua seta
+
+@ 0 1 0 1b744dbb3f1c51c20d2f00aac13d326c
++ entry .PeriodicTable   os 118 elementos químicos, por símbolo, número atômico ou nome
+
+% 1 1 0 021c67b693c55e71180fda499144d818
+
+@ 0 2 0 113a849ad24c43e71b0247c764ee1587
++       Cada elemento é um `val` nomeado pelo seu símbolo, então eles são importados individualmente
++       ou todos de uma vez; e um elemento pode ser encontrado em tempo de execução pelo seu número ou
++       pelo seu símbolo.
+
+% 2 1 0 035098e25528a19613fe44df9d7d1d90
+
+% 3 1 0 104694ccee4e9d6b1d9dfcd8ba909f38
+
+% 0 1 0 05ad2a909b4f448c1fddacb0931dcb41
+
+% 0 1 0 0ff1d406afbb5dab0852f3745a0c7d11
+
+% 0 1 0 05ec797a958ea4890258076c8c822f67
+
+% 0 1 0 151de6032a494c7118a0c15c2c1f6755
+
+% 0 1 0 18c268f064998c6c1f9b9fe008babfc9
+
+% 0 1 0 0aab1fdad10e5b5e027e4495f8151c07
+
+% 1 1 0 10344f8ee16d43900585870247520a2e
+
+@ 0 1 0 04b7971097e31a3b1441b3df4bd2a19f
++       Além do oganessônio, `.element` dá o elemento sistemático da IUPAC para qualquer número
++       atômico.
+
+% 0 1 0 07ff5912b246d3cf14720c8e16c084b0
+
+@ 0 129 0 10f3e29466f9954d1a3d0d0eefd3eece
++   entry .apply   o elemento com um número atômico ou um símbolo, ou `Unset` se não houver nenhum
++       `PeriodicTable(26)` e `PeriodicTable(t"Fe")` são ambos o ferro; um número fora de 1 a 118 ou
++       um símbolo desconhecido é `Unset`. A busca por símbolo diferencia maiúsculas de minúsculas.
++   entry .elements   todos os elementos, em ordem de número atômico
++   entry .symbols   todos os elementos, indexados pelo seu símbolo
++   entry .element   o elemento com um número atômico, com o seu nome e símbolo sistemáticos da IUPAC
++       Constrói o nome provisório a partir dos dígitos do número — `nil`, `un`, `bi`, `tri`,
++       `quad`, `pent`, `hex`, `sept`, `oct`, `enn` — e `ium`, com um `i` duplicado abreviado:
++       119 é `Ununennium` (`Uue`), 120 `Unbinilium` (`Ubn`) e 122 `Unbibium` (`Ubb`). Ele dá um
++       elemento sistemático para todo número, inclusive os que têm um nome real na tabela.
++   entry .H   hidrogênio, elemento 1
++   entry .He   hélio, elemento 2
++   entry .Li   lítio, elemento 3
++   entry .Be   berílio, elemento 4
++   entry .B   boro, elemento 5
++   entry .C   carbono, elemento 6
++   entry .N   nitrogênio, elemento 7
++   entry .O   oxigênio, elemento 8
++   entry .F   flúor, elemento 9
++   entry .Ne   neônio, elemento 10
++   entry .Na   sódio, elemento 11
++   entry .Mg   magnésio, elemento 12
++   entry .Al   alumínio, elemento 13
++   entry .Si   silício, elemento 14
++   entry .P   fósforo, elemento 15
++   entry .S   enxofre, elemento 16
++   entry .Cl   cloro, elemento 17
++   entry .Ar   argônio, elemento 18
++   entry .K   potássio, elemento 19
++   entry .Ca   cálcio, elemento 20
++   entry .Sc   escândio, elemento 21
++   entry .Ti   titânio, elemento 22
++   entry .V   vanádio, elemento 23
++   entry .Cr   cromo, elemento 24
++   entry .Mn   manganês, elemento 25
++   entry .Fe   ferro, elemento 26
++   entry .Co   cobalto, elemento 27
++   entry .Ni   níquel, elemento 28
++   entry .Cu   cobre, elemento 29
++   entry .Zn   zinco, elemento 30
++   entry .Ga   gálio, elemento 31
++   entry .Ge   germânio, elemento 32
++   entry .As   arsênio, elemento 33
++   entry .Se   selênio, elemento 34
++   entry .Br   bromo, elemento 35
++   entry .Kr   criptônio, elemento 36
++   entry .Rb   rubídio, elemento 37
++   entry .Sr   estrôncio, elemento 38
++   entry .Y   ítrio, elemento 39
++   entry .Zr   zircônio, elemento 40
++   entry .Nb   nióbio, elemento 41
++   entry .Mo   molibdênio, elemento 42
++   entry .Tc   tecnécio, elemento 43
++   entry .Ru   rutênio, elemento 44
++   entry .Rh   ródio, elemento 45
++   entry .Pd   paládio, elemento 46
++   entry .Ag   prata, elemento 47
++   entry .Cd   cádmio, elemento 48
++   entry .In   índio, elemento 49
++   entry .Sn   estanho, elemento 50
++   entry .Sb   antimônio, elemento 51
++   entry .Te   telúrio, elemento 52
++   entry .I   iodo, elemento 53
++   entry .Xe   xenônio, elemento 54
++   entry .Cs   césio, elemento 55
++   entry .Ba   bário, elemento 56
++   entry .La   lantânio, elemento 57
++   entry .Ce   cério, elemento 58
++   entry .Pr   praseodímio, elemento 59
++   entry .Nd   neodímio, elemento 60
++   entry .Pm   promécio, elemento 61
++   entry .Sm   samário, elemento 62
++   entry .Eu   európio, elemento 63
++   entry .Gd   gadolínio, elemento 64
++   entry .Tb   térbio, elemento 65
++   entry .Dy   disprósio, elemento 66
++   entry .Ho   hólmio, elemento 67
++   entry .Er   érbio, elemento 68
++   entry .Tm   túlio, elemento 69
++   entry .Yb   itérbio, elemento 70
++   entry .Lu   lutécio, elemento 71
++   entry .Hf   háfnio, elemento 72
++   entry .Ta   tântalo, elemento 73
++   entry .W   tungstênio, elemento 74
++   entry .Re   rênio, elemento 75
++   entry .Os   ósmio, elemento 76
++   entry .Ir   irídio, elemento 77
++   entry .Pt   platina, elemento 78
++   entry .Au   ouro, elemento 79
++   entry .Hg   mercúrio, elemento 80
++   entry .Tl   tálio, elemento 81
++   entry .Pb   chumbo, elemento 82
++   entry .Bi   bismuto, elemento 83
++   entry .Po   polônio, elemento 84
++   entry .At   astato, elemento 85
++   entry .Rn   radônio, elemento 86
++   entry .Fr   frâncio, elemento 87
++   entry .Ra   rádio, elemento 88
++   entry .Ac   actínio, elemento 89
++   entry .Th   tório, elemento 90
++   entry .Pa   protactínio, elemento 91
++   entry .U   urânio, elemento 92
++   entry .Np   netúnio, elemento 93
++   entry .Pu   plutônio, elemento 94
++   entry .Am   amerício, elemento 95
++   entry .Cm   cúrio, elemento 96
++   entry .Bk   berquélio, elemento 97
++   entry .Cf   califórnio, elemento 98
++   entry .Es   einstênio, elemento 99
++   entry .Fm   férmio, elemento 100
++   entry .Md   mendelévio, elemento 101
++   entry .No   nobélio, elemento 102
++   entry .Lr   laurêncio, elemento 103
++   entry .Rf   rutherfórdio, elemento 104
++   entry .Db   dúbnio, elemento 105
++   entry .Sg   seabórgio, elemento 106
++   entry .Bh   bóhrio, elemento 107
++   entry .Hs   hássio, elemento 108
++   entry .Mt   meitnério, elemento 109
++   entry .Ds   darmstádtio, elemento 110
++   entry .Rg   roentgênio, elemento 111
++   entry .Cn   copernício, elemento 112
++   entry .Nh   nihônio, elemento 113
++   entry .Fl   fleróvio, elemento 114
++   entry .Mc   moscóvio, elemento 115
++   entry .Lv   livermório, elemento 116
++   entry .Ts   tenessino, elemento 117
++   entry .Og   oganessônio, elemento 118

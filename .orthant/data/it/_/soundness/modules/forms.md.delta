@@ -1,0 +1,167 @@
+orthant 2 language
+
+@ 0 1 0 168196334f18aeaf07cb0c1a1f564eb7
++ ## Moduli
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 5 0 08588ae0d9ef15990daa04173dee371d
++ Un modulo HTML è un'interfaccia utente verso un tipo di dato, e qui viene generato dal tipo stesso.
++ Una case class produce un modulo, con un input dotato di etichetta per ogni campo e un widget scelto
++ in base al tipo del campo. Un invio viene decodificato di nuovo nella case class, e ogni errore di
++ validazione viene associato ai campi che lo hanno causato. Le case class annidate diventano fieldset
++ annidati, così il modulo rispecchia la struttura dei dati.
+
+@ 0 1 0 15f16e187bbdbbea0f18b2a2bd3d617f
++ ### Sui moduli
+
+@ 0 4 0 082e8dfc91e0c5ff13f596c998cd5fcd
++ Nella maggior parte delle applicazioni web i moduli si scrivono due volte: una volta come input
++ HTML, e di nuovo come parsing e validazione di ciò che ritorna. Le due metà vengono mantenute
++ coerenti a mano. Ogni modifica ai dati, come un nuovo campo, un campo rinominato o un tipo più
++ rigoroso, va fatta in entrambe, altrimenti il modulo si allontana dai dati che dichiara di
++ raccogliere.
+
+@ 0 5 0 0db0c9b7b69fe4100dfd3821c7be49b0
++ [Derivare][derivazione] entrambe le metà da un solo tipo elimina la duplicazione. Il tipo dice quali
++ campi esistono, e che cosa accetta ciascuno. I widget discendono dai tipi dei campi. La decodifica
++ di un invio applica gli stessi tipi validati che governano il resto del programma, quindi un
++ indirizzo email malformato fallisce nel modulo, con un messaggio che indica il campo dell'email.
++ Questa è [correttezza](../../philosophy/correctness.md) attraverso un'unica fonte di verità.
+
+@ 0 2 0 08f142c6dc6fdbb31f394564d8004d95
++ Tutto proviene dal package `soundness`. L'ultimo import permette agli esempi di stampare i loro
++ risultati:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1e6efd6ba2ee26271b8f1afe03e46881
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 11705d700f7701241eee627da978f20c
++ ### Rendere un modulo
+
+@ 0 2 0 0e4939c0d018e7e81b9d6e44ecfff070
++ `elicit` rende il modulo di un tipo come [HTML](html.md), pronto per essere servito. `edit` lo rende
++ compilato a partire da un valore esistente:
+
+% 2 1 0 06d9a77898a98e6a0a35b6a4b819f492
+
+% 0 1 0 12c5781411ce8df600e42adec8d9409a
+
+% 0 1 0 031ae47311cf570d05242c937cd26044
+
+% 0 1 0 056f45d0b43bf51c18c4106f79ba8dce
+
+% 1 1 0 13394f7d3bb5ce75081757cd69aedbb6
+
+% 3 1 0 196e46597aed5264050269039a58f407
+
+% 4 1 0 0a3fff44615041250391fc1c43867b53
+
+% 5 1 0 06557776e30687911c0bd6de7d03a269
+
+% 0 1 0 0f763904aac3ceb60224537300dba089
+
+% 1 1 0 128014851ed987600c44f207ebd5a698
+
+@ 0 3 0 172b600f6b9547b70c1dfd1f238f3525
++ Ogni campo compare con un'etichetta derivata dal suo nome, quindi `leader` diventa "Leader". Una case
++ class annidata diventa un `<fieldset>` con una legenda, così la struttura del modulo si spiega da
++ sola.
+
+@ 0 1 0 10e8abd500d5355b0925b24afd5fd462
++ Il widget di ogni campo è scelto in base al suo tipo:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 1 0 0ecc7117ed09dd040d364770f02a7295
++ column  Tipo del campo
+
+% 0 1 0 07e5c7d8a05f0c7c150fe24a94d90cbb
+
+@ 0 6 0 001aa5d9a509581a152fc862ff42560c
++ column  Reso come
++ row  `Boolean`  `Checkbox`  una casella di spunta
++ row  un'enumerazione  `Combobox`  un input di testo con una `<datalist>` dei casi
++ row  `Reference[entity]`  `Dropdown`  una `<select>` delle entità elencate
++ row  qualsiasi altro tipo codificabile come `Text`  `Field`  un input di testo
++ row  una case class  nessuno  un `<fieldset>` dei suoi campi
+
+% 1 1 0 17ea37663dc0fb811160659a806c506f
+
+@ 0 1 0 0c0fdb72612479f50276d42f14943021
++ ### Invii
+
+@ 0 2 0 093fc17af4a0d9df0ee2617e63fb5666
++ Un invio arriva come `Query`: le coppie di chiavi e valori di un post di modulo, in cui i campi
++ annidati sono a punti, come in `leader.name`. `as` lo decodifica nel tipo:
+
+% 2 1 0 1e70a100b748aa0b17f03d2c62926625
+
+% 0 1 0 05b3aa41a0ab130d187cb0a15f3e4431
+
+% 1 1 0 00d57f922281f0f0184c31a573d1c23b
+
+% 3 1 0 0ddf4497666b8bd61acc490efcc640d0
+
+% 4 1 0 08c642ac7577858b00e6c5feecc7908b
+
+% 5 1 0 12c5b75ff2dca513076da2ab2543b5b5
+
+% 0 1 0 0389b82f3f45bad10a681078ab116323
+
+% 1 1 0 0742dd1918a8d4be16a5ea6fc9d7d0cb
+
+@ 0 5 0 01d7a5377e924a8617f2480d829c29b2
++ I campi vengono decodificati attraverso gli stessi tipi usati ovunque. Un
++ [`EmailAddress`](network-addresses.md#email-addresses) deve superare il parsing, e un
++ [`Name`](names.md) deve soddisfare le sue regole. La validazione di un modulo non è quindi un insieme
++ separato di regole. È il sistema di tipi che fa il suo solito lavoro al confine, e un fallimento
++ porta con sé un puntatore al campo responsabile:
+
+% 2 1 0 0e48b76268981a0b1241289de9854127
+
+% 3 1 0 19cca74033a2c71419bec283d8e506dd
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 013f911a420f94a7158aa0945de503f7
+
+% 1 1 0 1da2f77fbd8f251c13e3d03b864f6422
+
+@ 0 2 0 12d7d5af045f553e0a7032812eedc801
++ [La decodifica](decoding.md#requiring-a-value) spiega come il tipo di un campo decide se il campo è
++ obbligatorio.
+
+@ 0 1 0 06721b11e346cde9170c88e0b8a8fb07
++ ### Il ciclo del modulo
+
+@ 0 3 0 14628e26c9c075c11e295da695ca7bb7
++ Un modulo è un ciclo: rendere, inviare e rendere di nuovo con gli errori, finché il valore non è
++ completo. `elicit` prende la `Query` inviata e lo stato della validazione, così il modulo reso di
++ nuovo mostra ciò che è stato inserito, con gli errori associati ai rispettivi campi.
+
+@ 0 3 0 167ec85cb404b0960fafe02742978202
++ Un handler del [server](http-server.md#responses) esegue il ciclo, decodificando in caso di successo
++ e rendendo di nuovo in caso di fallimento. Tratta quindi valori, non richieste. Il
++ [client HTTP](http-client.md#posting-a-body) invia una `Query` come invio di modulo.
+
+@ 0 1 0 10469fddfe7d0c78174a62c9cf8fb5f3
++ ### Personalizzare l'aspetto
+
+@ 0 4 0 1b560c673a3b18ad1deeafbfb47931d7
++ Il modo in cui un modulo e le sue righe vengono resi è una `Formulation`: la cornice attorno ai
++ widget e la collocazione di etichette e messaggi di errore. `postFormulation` fornisce una resa
++ semplice, senza stile. Un'applicazione fornisce la propria, adatta al suo design, senza toccare il
++ modo in cui i campi vengono derivati. [CSS](css.md) dà stile al risultato.

@@ -1,0 +1,2252 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 095928856a7b87c9003c19e125c116bf
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0ab9b4e793d8620f0360221cd123c3d0
++ info
++     tableaux pour le terminal : colonnes qui s'enroulent, se tronquent ou disparaissent pour tenir
++     dans une largeur, dans un style choisi
+
+@ 0 7 0 1159630253f2ce6b1f699892c40d4f36
++ detail
++     _Escritoire_ rend des données tabulaires sous forme de texte, pour un terminal ou un journal,
++     en prenant au sérieux ce qu'une chaîne de format ne sait pas faire : faire tenir des colonnes
++     au contenu inégal dans une largeur fixe. Chaque colonne déclare une **stratégie de
++     dimensionnement** — s'enrouler comme un paragraphe, se tronquer avec des points de suspension,
++     garder une largeur fixe ou disparaître entièrement quand la place manque — et le moteur de
++     mise en page négocie la largeur entre elles, en enroulant avec césure là où l'enroulement est
++     permis, et dessine le résultat avec des caractères de boîte dans un `Table.Style` choisi dans
++     la portée.
+
+@ 0 7 0 099bf17699c0603d09f9f104b8a0ed99
++     Trois types mènent un tableau de sa définition au texte. Un `Scaffold` dit comment un type de
++     ligne est réparti en `Column`s — titres, contenu, alignement, dimensionnement — et ne contient
++     aucune donnée. Une `Tabulation` est un ensemble de données disposées par un scaffold : le
++     texte des cellules, qui ne fait plus référence au type de ligne. Une `Grid` est une tabulation
++     ajustée à une largeur donnée, c'est-à-dire là où une colonne peut rétrécir ou disparaître, et
++     `Grid#render` en donne les lignes. L'extension `tabulation` dérive le scaffold d'une case
++     class — une colonne par champ, intitulée d'après les noms des champs — et l'applique en une
++     seule étape :
+
+% 2 1 0 1c3c8d7641c3f563143392f9774375fb
+
+% 3 1 0 1be9bf7f82fa416300ecb43cb486e17e
+
+% 4 1 0 1daa686917ff022c1dd36492ec2edf93
+
+% 5 1 0 000ef79821b8cd6d058181be67717b10
+
+% 6 1 0 16990b46201f130f04b8a7638afe083f
+
+% 8 1 0 174949716ea3a4a902ea3a36cf56fd16
+
+% 0 1 0 0a933c99969146971adbeaff0d952e13
+
+% 0 1 0 0bdd87296f72401b14056af9e197f6cc
+
+% 0 1 0 0cb201a1a7e5888c1061dc4977756647
+
+% 0 1 0 0d4cc19e4ed8877a19cc6bbd56648ba5
+
+% 0 1 0 1928acc9c6f2122d1df7445f4aca7428
+
+% 0 1 0 10f6c0240f02f2a705538c8d31fbf9f0
+
+% 0 1 0 1ae9ecd62d2a9feb09e794a025b4d9d1
+
+% 0 1 0 1a08a429a3ab57f71dbcd27abb2979ad
+
+% 1 1 0 18afac828d31cd7a0795ddb0031c5988
+
+@ 0 2 0 1bc6747350bd78f7192800a52cfc8d77
++     La mise en page d'un tableau requiert quatre valeurs contextuelles, dont trois se choisissent
++     en important un given par son nom, puisque `import soundness.*` n'importe aucun given :
+
+@ 0 8 0 0d4c11a38e758cb0180f62cb2bc77f82
++     - un `Table.Style`, du package `tableStyles` — les filets, les coins et le remplissage ;
++     - une `Attenuation`, de `columnAttenuation` — ce qui se passe quand aucune disposition des
++       colonnes ne tient dans la largeur : `ignoreAttenuation` rend quand même, `failAttenuation`
++       lève une `Table.Error` ;
++     - un `Text is Measurable`, du `textMetrics` de hieroglyph — la largeur d'un caractère, de
++       sorte que `wideCharacterWidthMetric` dimensionne le texte CJK selon ses glyphes de deux
++       cellules ;
++     - une `Hyphenation`, de polysyllabic, qui se replie sur l'absence de césure à moins que
++       `hyphenations.englishHyphenation` ne soit importé.
+
+@ 0 4 0 06088f054990026607cb291e9ac59484
++     Le type des cellules est n'importe quel `Textual` dont les éléments sont des `Char` : `Text`,
++     ou le `Teletype` d'escapade pour la couleur et le style, auquel cas la largeur d'une cellule
++     est sa largeur visible, et non la longueur de ses codes d'échappement. Un tableau est
++     `Printable`, de sorte que `Out.println(table)` le met en page à la largeur même du terminal.
+
+@ 0 7 0 035a5b3d3f75435310fe574fa344dfe5
++     La bibliothèque forme un seul ensemble de sources, `escritoire.core`, construit pour la JVM,
++     Scala.js et Scala Native. Tout est exporté vers le package parapluie `soundness`, sauf
++     `Layout` et `Cells`, qui constituent le vocabulaire propre du moteur de mise en page
++     incrémentale et se nomment `escritoire.Layout` et `escritoire.Cells` ; les trois packages de
++     choix `tableStyles`, `columnAttenuation` et `columnar` fusionnent avec les packages homonymes
++     du parapluie (le `columnar` du parapluie reprend toutes les stratégies sauf
++     `ParagraphOrBreak`, qui se nomme `escritoire.columnar.ParagraphOrBreak`).
+
+% 0 1 0 1533ba9a29e0837e05db9d84f90e1060
+
+% 0 1 0 0654786614c3936a0ed4b258ec28fe33
+
+% 0 1 0 0714919cbb0535390fb3f75ed5409dac
+
+% 0 1 0 0e190ac85cab1872158b6732c0e5e9f3
+
+% 0 1 0 08aac7f4e8505b5d0a1d38fd36dec3fa
+
+% 0 1 0 0acadc7925c00f6b05e7fb5c71f5da09
+
+% 0 1 0 1fb4685c37dd819d126e4427ef269fc0
+
+@ 0 1 0 186f893db4258575159952949d4cdcb1
++ entry .Scaffold
++   info
++       la façon dont un type de ligne est réparti en colonnes : une définition de tableau qui ne
++       contient aucune donnée
+
+@ 0 6 0 1e3cfa2ec096108105715f55f66bf048
++   detail
++       Un `Scaffold[row, text]` est une liste ordonnée de `Column[row, text]`s, construite avec
++       `Scaffold[row](columns*)` : le type de ligne est donné, et le type de texte — `Text` ou
++       `Teletype` — est inféré à partir des titres. C'est l'étape qui précède les données :
++       `#tabulate` l'applique à une `List[row]` pour produire une `Tabulation`, et `#layout`
++       calcule les largeurs des colonnes à partir des seuls titres, pour un tableau qui admet ses
++       lignes une à une.
+
+% 2 1 0 0f4149b848f5baf200f30e6d4c9a750f
+
+% 3 1 0 032480b63252201705113db01b1201db
+
+% 4 1 0 1e5bc76c94dbc19a09b80c5279a9497e
+
+% 5 1 0 0a25cac0393d3a9113c6c0e30b8270c7
+
+% 6 1 0 156f791df8f1b80514f9ab3f3d06e044
+
+% 8 1 0 0f7b5df121917c241731d1da2bacc239
+
+% 0 1 0 05dd48c5e8f0a3a2163bdecd6d8b193c
+
+% 0 1 0 09bc0e714a96f3f2010eaac0ef5ae138
+
+% 1 1 0 1f99f7c6115c03371a96a563695153e3
+
+% 0 1 0 13fdd414253f330913c545a2056fb514
+
+% 0 1 0 1597df9ff60f7ac817ffe0247a785546
+
+% 1 1 0 1cc41f59339d113612c4955002f54d81
+
+@ 0 4 0 0803097aa840cfce17637153262cb5e8
++       Une instance de `Tabulable` pour un type est une fonction qui renvoie son scaffold ; un type
++       dont les colonnes ne sont pas ses champs — un enregistrement lu d'après un schéma, ou des
++       colonnes d'affichage calculées — se tabule donc en en fournissant une. L'instance dérivée
++       pour une case class construit un scaffold avec une colonne par champ.
+
+% 1 1 0 032a86194560c7860e1141455ac2f106
+
+% 1 1 0 150cf24210914690152e681b3e9aad8e
+
+% 1 1 0 02aadae0a18d7bad17a9a03bf5e40f31
+
+@ 0 1 0 18e9f45672134a1d05947310790084d0
++   entry .apply
++     info
++         `Scaffold[row](columns*)` : un scaffold des colonnes données, dans l'ordre
+
+@ 0 5 0 08270e4c530d5a9f1bf0120629d35cd2
++     detail
++         Le type de ligne est le seul argument de type explicite ; le type de texte est inféré à
++         partir des colonnes, qui le partagent toutes. Un titre écrit `t"…"` produit un
++         `Scaffold[row, Text]` ; un titre écrit `e"…"` produit un `Scaffold[row, Teletype]`. La
++         méthode prend un paramètre `Void` effacé entre ses deux listes de paramètres de type,
++         uniquement pour que le type de ligne puisse être donné sans le type de texte.
+
+@ 0 1 0 1b63492c09fc691a1485b724a68bbdf1
++   entry #columns0
++     info
++         les colonnes, telles que données au constructeur
+
+@ 0 2 0 0c45b7ba96e3420c048a80c1d74926d0
++     detail
++         Le paramètre répété à partir duquel le scaffold a été construit ; `#columns` contient les
++         mêmes colonnes sous forme de tableau, ce que lit le moteur de mise en page.
+
+@ 0 1 0 1dd7761c0ba351db004e1ccaafed3e91
++   entry #columns
++     info
++         les colonnes, sous forme de tableau, dans l'ordre
+
+@ 0 1 0 14841db7261985e802e86d7c79e3b08f
++   entry #titles
++     info
++         les cellules de titre, sur une ligne, chaque titre découpé en ses lignes
+
+@ 0 2 0 13c2bf6905760b9d14b823114bf262ed
++     detail
++         Un titre peut contenir `\n`, ce qui donne un titre sur plusieurs lignes ; les titres sont
++         conservés sous forme de liste à un seul élément afin de pouvoir être mesurés et rendus
++         comme n'importe quelle ligne.
+
+@ 0 1 0 0dae99e951573505174b0cd3ca4b24d8
++   entry #cells
++     info
++         une ligne exprimée à travers les colonnes, avant toute mise en page
+
+@ 0 4 0 1991e3a76440c2db001a6e028a329b58
++     detail
++         `scaffold.cells(row)` lit le contenu de chaque colonne dans la ligne, découpe chacun en
++         lignes et en mesure les largeurs, ce qui donne un `Cells[text]`. Les cellules sont
++         indépendantes de toute largeur : on peut donc les confronter à un `Layout` avec
++         `Layout#accommodates`, les admettre avec `Layout#extend`, et les rendre plus tard selon
++         lui. Requiert un `Text is Measurable`.
+
+@ 0 1 0 13cfe6d71541716a0402c73ab5b6ef1a
++   entry #layout
++     info
++         la mise en page des seuls titres, à une largeur donnée
+
+@ 0 5 0 0102029cca2982e118570359ff1a0707
++     detail
++         `scaffold.layout(width)` calcule les largeurs des colonnes à partir des seules
++         revendications des titres, pour un tableau construit de façon incrémentale : chaque ligne
++         est ensuite exprimée avec `#cells` et admise avec `Layout#extend`, qui ne recalcule les
++         largeurs que lorsque les cellules de la ligne dépassent ce que la mise en page a déjà vu.
++         Requiert un `Table.Style`, un `Text is Measurable` et une `Attenuation` dans la portée.
+
+@ 2 1 0 0a4e0130f39777230b9a5b284669ba00
++         ```scala
+
+@ 3 1 0 1f9c6d572d99634716a7200b6589a799
++         import soundness.*
+
+@ 4 1 0 0ac1f2f5bcaa87321a6cee6aad92ff60
++         import tableStyles.thinRoundedTableStyle
+
+@ 5 1 0 019cdfdc7944953d1875ac2f3bdf29b3
++         import textMetrics.uniformMetric
+
+@ 6 1 0 0fd0126b046b38b10ee4d1385de47f61
++         import columnAttenuation.ignoreAttenuation
+
+@ 8 1 0 178d970dc95073b110e79ec24a6354ac
++         case class Person(name: Text, age: Int)
+
+@ 9 1 0 12567b76eecab5b31ff61933855e6e54
++         val scaffold = Scaffold[Person](Column(t"Name")(_.name), Column(t"Age")(_.age))
+
+@ 0 1 0 1aabe5dc8dd9c08d08e78dbc28afdf0a
++         val titles = scaffold.layout(40)
+
+@ 0 1 0 065fc42d5e73752e10e305f0a46eb3b1
++         val row = scaffold.cells(Person(t"Cleopatra", 38))
+
+@ 0 1 0 14443d6e4b917b4e0687c7d4091e91b4
++         titles.accommodates(row)           // false: the name is wider than the title
+
+@ 0 1 0 0bc9a9e06b8026e317e42d57188c9208
++         val layout = titles.extend(row)    // re-solved with the wider claim
+
+@ 0 1 0 1c603a6e5fb78e4c159b91a58652087e
++         layout.lines(row, Nil)             // the row's lines at the settled widths
+
+@ 1 1 0 1b256aedaec410cd1bf1d49fc63afe41
++         ```
+
+@ 0 1 0 10290b3ed1cb72eb159f74ef6d7ad899
++   entry #tabulate
++     info
++         le scaffold appliqué aux données : une `Tabulation`
+
+@ 0 3 0 0857d3485128be850c97a999c8996c62
++     detail
++         `scaffold.tabulate(rows)` lit en une fois chaque colonne de chaque ligne sous forme de
++         texte, et enregistre les décorations des cellules de chaque ligne, de sorte que le
++         résultat ne fait plus référence au type de ligne que par son membre de type `Row`. Le
++         nombre de lignes est compté une seule fois, à la construction de la tabulation.
+
+@ 0 1 0 16e5c43b2c514e561bc0330455edda74
++ entry .Column
++   info
++       une colonne d'un tableau : son titre, la façon dont elle lit une cellule dans une ligne, et
++       la façon dont elle est dimensionnée
+
+@ 0 5 0 1977300bbf002eae0eb7df660210fb5b
++   detail
++       Une `Column[row, text]` est un titre, une fonction `#get` de la ligne vers le texte de la
++       cellule, un alignement horizontal et un alignement vertical, une stratégie de
++       dimensionnement `Columnar`, et un `#decorate` optionnel par ligne appliqué à toute la
++       cellule rendue. La fabrique `Column.apply` est la façon habituelle d'en créer une ; le
++       constructeur de la case class prend chaque champ explicitement.
+
+% 2 1 0 11b1789dad1e720319df90e33df20d3b
+
+% 3 1 0 1e23ffd19478818811fe238001204a40
+
+% 5 1 0 09f467296f15370c14474a4b406b41d6
+
+% 0 1 0 0735403db3d8866212fc89930ee2a1b5
+
+% 0 1 0 0c190945140937950b5334aebd736637
+
+% 0 1 0 085e11c0e92c2c061131cebbc2031e39
+
+% 0 1 0 1d5583d6e492b43e1c71df13ab47ca38
+
+% 0 1 0 1b5878396222e05e048afc64dec266e4
+
+% 1 1 0 03dabe431fce24d207cdad5e7b9d94c1
+
+@ 0 4 0 1fbb6521811ddeb519b3875b4f4b47ef
++       Le résultat de la lambda n'a pas besoin d'être du texte : le titre fixe le type de texte, et
++       la valeur est affichée par le `Show` de ce type, de sorte que `_.age` donne une colonne
++       d'`Int`s affichés sous forme de texte. L'alignement par défaut provient de
++       `Column.Alignment[cell]` — les nombres à droite, le texte à gauche — à moins que `textAlign`
++       ou `verticalAlign` ne soit donné.
+
+% 1 1 0 0f5ad073c14a9b9112a1cdcf37372a23
+
+% 1 1 0 096d0ba24084c2ef0a29bfce5f8c59ea
+
+% 1 1 0 0cda5ed0e31c2ccd1e7fe3527d953176
+
+@ 0 1 0 0752519cbeb2c2c20aa06aa2da6fd232
++   entry .apply
++     info
++         `Column(title, textAlign, verticalAlign, sizing, decorate)(get)` : crée une colonne
+
+@ 0 5 0 13fa14770e46cac81b70e4934ab60924
++     detail
++         La première liste de paramètres contient le titre et quatre réglages optionnels ; la
++         seconde est la fonction de la ligne vers la valeur de la cellule, qui est affichée par le
++         `Show` du type `Textual` du titre. `textAlign` et `verticalAlign` valent par défaut le
++         `Column.Alignment` donné pour le type de cellule (`topLeft` s'il n'y en a aucun) ;
++         `sizing` vaut par défaut `columnar.Paragraph` ; `decorate` vaut par défaut l'absence de
++         décoration.
+
+@ 0 3 0 19b3bf3f887550b61ef40c173df847ef
++         `decorate` est une fonction de la ligne vers une transformation optionnelle de la cellule
++         rendue — contenu et remplissage ensemble, après alignement — de sorte qu'un tableau
++         `Teletype` peut peindre le fond d'une cellule entière selon la ligne, remplissage
++         compris :
+
+@ 2 1 0 059beb5c4ddb65ba1087e86b2a4c6622
++         ```scala
+
+@ 3 1 0 130d093f823229c80fe45e4dfa4ff64d
++         import soundness.*
+
+@ 5 1 0 184f6f4f0e8e74fe098a646fc42b0bcb
++         case class Person(name: Text, age: Int)
+
+@ 0 1 0 0cac9ec5634d4f46112fc40f2df5f30c
++         val highlighted: Column[Person, Teletype] =
+
+@ 0 1 0 1c94a3eebac7e4091da800c020dd43b0
++           Column
+
+@ 0 1 0 0db6d05ecd08f0650dfe3ea2d3d6f6ef
++             ( e"Name",
+
+@ 0 1 0 1c7e2b6baf7058fc19c7b67bed0c7a2e
++               decorate = person => if person.age > 18 then (line: Teletype) => e"$Bold($line)" else Unset )
+
+@ 0 1 0 1a370630b445212719da4ea3b65218a2
++             ( _.name )
+
+@ 1 1 0 0c42fea1f322cf541a4d8bdb3f4c7d2f
++         ```
+
+@ 0 3 0 109b311c81129a8911c5f1c90d92f2fb
++         Le type de ligne est inféré à partir de la lambda ou donné explicitement, comme dans
++         `Column[Person, Text, Text](t"Name")(_.name)`, dont les trois arguments de type sont la
++         ligne, la valeur de la cellule et le type de texte.
+
+@ 0 1 0 16d633d08c58acf91d5b2e3528278e12
++   entry .Alignment
++     info
++         l'alignement horizontal et vertical par défaut pour un type de cellule
+
+@ 0 7 0 14fcee51f8ea6e520bed7bc65eaa8f1f
++     detail
++         `Column.Alignment[cell]` est l'alignement que prend une colonne de valeurs `cell` quand
++         `Column.apply` ne reçoit ni `textAlign` ni `verticalAlign` : `Byte`, `Short`, `Int` et
++         `Long` sont alignés à droite, `Text` à gauche, tous en haut. Les givens se trouvent dans
++         l'objet compagnon, de sorte qu'une colonne d'`Int`s est alignée à droite sans import ;
++         `topLeft` est la valeur par défaut pour tout autre type. Il est contravariant dans le type
++         de cellule, si bien qu'un alignement pour `Any` sert pour tous les types.
+
+% 2 1 0 1ec2d955ba95b00312f4e19a44156de4
+
+% 3 1 0 12053bc4cb4aa54d080c5da5a2c09b9d
+
+% 2 1 0 154bbffdbd406e7e08281b5343c93cce
+
+% 0 1 0 09d91827be7882e51c6b831e0a3b9838
+
+% 0 1 0 01db5c232c2b009a01bf2ee72d19b9d3
+
+% 1 1 0 1058f95304f4d6df1336876734d6f75f
+
+@ 0 1 0 17d6481c620c98dc1eb88309d1e8abfa
++     entry .topLeft
++       info
++           aligné à gauche, en haut : la valeur par défaut pour un type sans alignement propre
+
+@ 0 1 0 18cd6a364458567514217ccad8e383e0
++     entry .byte
++       info
++           les cellules `Byte` s'alignent à droite
+
+@ 0 1 0 0f253e689fc3b5091fd3147392d6e990
++     entry .short
++       info
++           les cellules `Short` s'alignent à droite
+
+@ 0 1 0 1e9b420d2cafbe97164d2c1edf35a4ef
++     entry .int
++       info
++           les cellules `Int` s'alignent à droite
+
+@ 0 1 0 088bf5e7a5f9558101163bf14f093530
++     entry .long
++       info
++           les cellules `Long` s'alignent à droite
+
+@ 0 1 0 019d967bb8b16e3a0eaae35e5096ba4d
++     entry .text
++       info
++           les cellules `Text` s'alignent à gauche
+
+@ 0 1 0 06c704bd121066c71474460535880f36
++     entry #text
++       info
++           l'alignement horizontal : `Left`, `Right`, `Center` ou `Justify`
+
+@ 0 1 0 0461dab8bc821d6612e6f782a276ce49
++     entry #vertical
++       info
++           l'alignement vertical : `Top`, `Middle` ou `Bottom`
+
+@ 0 1 0 1253d6bb03744bb202f6ae8138c81a07
++   entry #title
++     info
++         l'en-tête de la colonne, dans le type de texte du tableau
+
+@ 0 1 0 13d83d27cebcd49f19baa79383fa33b0
++   entry #get
++     info
++         le texte de la cellule pour une ligne
+
+@ 0 2 0 1e1082f9f9aa18d41291b98b2be71dd0
++     detail
++         La fonction de la ligne vers la cellule, déjà affichée sous forme de texte. Dans une
++         colonne créée avec `Column.apply`, c'est la lambda composée avec le `Show` du type de
++         cellule.
+
+@ 0 1 0 14f25c7919e646cc08fa3f4b3d68ec99
++   entry #textAlign
++     info
++         la façon dont les lignes d'une cellule se placent dans la largeur de la colonne
+
+@ 0 1 0 157a0545c2edbc920f4eff85eb421bbb
++   entry #verticalAlign
++     info
++         l'endroit où se place une cellule courte dans une ligne que d'autres cellules ont rendue
++         plus haute
+
+@ 0 1 0 01734f31ad24f1bf17ce59a7ebc4d832
++   entry #sizing
++     info
++         la stratégie `Columnar` qui décide de la revendication de la colonne sur la largeur
+
+@ 0 1 0 196ba2eff17fe5c718f9e6b35cb0748d
++   entry #decorate
++     info
++         une transformation par ligne de la cellule rendue, ou `Unset` pour aucune
+
+@ 0 4 0 19b3e00e555b8ab511ab2c31207521f4
++     detail
++         Appliquée par le moteur de rendu après l'alignement et le remplissage, à toute la cellule
++         y compris sa gouttière, de sorte qu'un fond peint ici couvre la cellule d'un bord à
++         l'autre tandis que les filets restent sans décoration. Le moteur de rendu ignore tout du
++         style : la fonction est dans le type de texte propre au tableau.
+
+@ 0 1 0 0216e1513a245db216bfdd21d5653989
++   entry #contramap
++     info
++         la même colonne, lisant depuis un autre type de ligne
+
+@ 0 4 0 1ec4d3c26e3e81da1230488cfdc2413e
++     detail
++         `column.contramap(lambda)` adapte une colonne définie pour un type de ligne à tout type à
++         partir duquel `lambda` peut produire cette ligne, en conservant le titre, l'alignement, le
++         dimensionnement et la décoration. C'est ainsi qu'une colonne définie une seule fois sert
++         pour tous les types capables de fournir sa valeur :
+
+@ 2 1 0 1716170d519c666d00426226fd43c0e4
++         ```scala
+
+@ 3 1 0 118137077992d9750ff3221bc17777da
++         import soundness.*
+
+@ 5 1 0 0424ba4d38d02fb817ae0e1d3c184a65
++         case class Person(name: Text, age: Int)
+
+@ 0 1 0 1710987aa763233a12f8ea48d417f67a
++         val nameColumn: Column[Text, Text] = Column[Text, Text, Text](t"Name")(identity)
+
+@ 0 1 0 02df3ca5f32b5bd8155d22148c4f3680
++         val personName: Column[Person, Text] = nameColumn.contramap[Person](_.name)
+
+@ 1 1 0 09f2700158de481f005d7dc115d9bb1c
++         ```
+
+@ 0 1 0 0bf08c84e12ff65c17b7b826f674fa67
++   entry #retitle
++     info
++         la même colonne avec un autre titre
+
+@ 0 2 0 0ee4469d4eb2f0d41c3796d0d49901c5
++     detail
++         Pour une définition de tableau partagée dont un appelant veut un autre en-tête. Le
++         `Tabulable` dérivé pour une case class s'en sert pour intituler la colonne de chaque
++         champ.
+
+@ 0 1 0 097cf5f8e7936e9410e5dda4d4d62fc3
++ entry .Columnar
++   info
++       une stratégie de dimensionnement de colonne : la façon dont une colonne revendique de la
++       largeur, et dont une cellule y est ajustée
+
+@ 0 6 0 1cd9df595988940a09e6c6aa295e076d
++   detail
++       Un `Columnar` répond à deux questions. `#flex` décrit la revendication de la colonne sur la
++       largeur du tableau — ses largeurs minimale et naturelle, son appétit pour l'espace
++       disponible, et si elle peut disparaître entièrement — à partir des `Metrics` agrégées de
++       toutes les lignes que la colonne affichera. `#fit` dispose ensuite les lignes d'une cellule
++       dans la largeur retenue pour le tableau : en les enroulant, en les coupant, en les
++       raccourcissant avec des points de suspension, ou en les laissant telles quelles.
+
+@ 0 7 0 0514a8fe66de1a5905d6084bb09739bb
++       La revendication est fonction des seules métriques agrégées, qui sont le maximum de celles
++       de chaque ligne ; une mise en page peut donc conserver l'agrégat, admettre une nouvelle
++       ligne en y intégrant ses cellules, et savoir — grâce à `#accommodates` — quand une ligne ne
++       peut en rien modifier la colonne. Les stratégies fournies se trouvent dans le package
++       `columnar` : `Paragraph`, `ParagraphOrBreak`, `Fixed`, `Shortened` et `Collapsible`. Le
++       concept est ouvert : une stratégie personnelle est un objet ou une classe étendant
++       `Columnar` qui implémente `flex(metrics, maxWidth)` et `fit`.
+
+@ 0 3 0 1e413edd5687623a06499fd664254f18
++       Les largeurs sont calculées par le `Flex.solve` de tessellate : tant que les minima des
++       colonnes ne tiennent pas dans la largeur, la colonne repliable de rang le plus bas est
++       supprimée ; les colonnes restantes se partagent ensuite la largeur au prorata de leur poids,
++       dans leurs limites.
+
+% 1 1 0 03716a0d61bc0e910a6bfb4b2119572d
+
+% 1 1 0 1cda5137271126701c8af3b62e016f5c
+
+@ 0 1 0 0e5fab4bad4f56c5148a296c7bbeba02
++   entry .metrics
++     info
++         les largeurs intrinsèques agrégées de quelques lignes
+
+@ 0 3 0 08d8171584e3cd791d3db5d17d5bdf83
++     detail
++         `Columnar.metrics(lines)` est le maximum des `Flow.metrics` de chaque ligne : une
++         `Metrics` dont le `min` est le mot insécable le plus large et dont le `natural` est la
++         ligne la plus large. La revendication de chaque stratégie en découle. Requiert un
++         `Text is Measurable`.
+
+@ 0 1 0 1d66311d5ece722616ef75cfd94d5281
++   entry #flex
++     info
++         la revendication de la colonne sur la largeur, d'après les métriques de son contenu
+
+@ 0 4 0 1ade505959540332186bb1770c1711cb
++     detail
++         La forme abstraite, `flex(metrics, maxWidth)`, renvoie un `Flex` de tessellate : les
++         largeurs minimale et naturelle de la colonne, son poids lors du partage de l'espace
++         disponible, un maximum optionnel, et si elle est repliable, avec un rang qui indique avec
++         quelle facilité. La surcharge qui prend un tableau de lignes les mesure d'abord avec
++         `Columnar.metrics`.
+
+@ 0 1 0 0b601daf758282db15663c65218a5920
++   entry #accommodates
++     info
++         si une cellule tient déjà dans la revendication agrégée de la colonne
+
+@ 0 4 0 0059c46a15c41c6318c09c1759603f9f
++     detail
++         `accommodates(aggregate, cell)` est vrai quand l'admission d'une cellule de largeurs
++         intrinsèques `cell` laisse la revendication — et donc les largeurs calculées — inchangée :
++         par défaut, quand ses largeurs minimale et naturelle sont toutes deux dans celles de
++         l'agrégat. Une stratégie dont la revendication ignore son contenu le redéfinit à `true`,
++         comme le fait `columnar.Fixed`.
+
+@ 0 1 0 0810814fc9c122910bbe32ebd4c12b01
++   entry #fit
++     info
++         les lignes d'une cellule disposées dans la largeur retenue pour la colonne
+
+@ 0 3 0 0aa91b6cca9e57aa1fb84b40f72a0103
++     detail
++         `fit(lines, width, textAlign)` donne les lignes qu'une cellule affiche à la largeur
++         `width` : enroulées, coupées, raccourcies ou inchangées, selon la stratégie. Requiert un
++         `Text is Measurable` et une `Hyphenation`, que les stratégies d'enroulement utilisent aux
++         coupures conditionnelles.
+
+@ 0 1 0 0a4015177a533e4608d86863f262e1e9
++ entry .columnar
++   info
++       les stratégies de dimensionnement, chacune un `Columnar` à nommer dans le `sizing` d'une
++       `Column`
+
+@ 0 5 0 051a4eded740fee40abe28ff114d502a
++   detail
++       Les stratégies qu'on peut donner à une colonne, sous la forme `sizing = columnar.Paragraph`.
++       Ce sont des objets et des case classes, et non des givens, si bien que `columnar.Paragraph`
++       se nomme au niveau de la colonne ; le package sert à regrouper les cinq noms. Toute `Column`
++       utilise `Paragraph` par défaut.
+
+@ 0 5 0 1fd7e0ca8fee1f150d7ff8a6df87ae62
++       Quelle colonne cède en premier quand le tableau est trop étroit, cela se décide entre les
++       stratégies : une colonne `Collapsible` est supprimée avant que quoi que ce soit d'autre ne
++       soit comprimé, en commençant par le seuil le plus élevé ; une colonne `Paragraph` rétrécit
++       jusqu'à son mot le plus long ; une colonne `Fixed` ne bouge jamais. En dessous de la largeur
++       à laquelle les minima tiennent, l'`Attenuation` dans la portée décide de ce qui se passe.
+
+% 2 1 0 054026c74a041d8f0594813067e0b13f
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 0507dbfb6e78679212b4d09427049036
+
+% 1 1 0 1f16c9492479bbfc1d8bb797f4d28dfa
+
+% 0 1 0 1808f1bc7a8d73be1e8552eecae778a7
+
+% 0 1 0 005e222dbd25f2d2051a12a129516222
+
+% 0 1 0 10ae11b7cd79fc430a817a2c431e17fa
+
+% 0 1 0 01ab3e628e2569af1d53b50b294be591
+
+% 0 1 0 1d32d0a653503b0617ccfc7fdc17876c
+
+% 0 1 0 0b720ddcee37421b1f6b71fad8964cad
+
+% 0 1 0 1158d1ee4590c91002c1cf394d8458dc
+
+% 0 1 0 0ca047fc40646cfc0d671c109389e25b
+
+% 0 1 0 095d49149687c8840e8dacd9ed2f5b31
+
+% 0 1 0 1e6a62d8ab955360047302060286fee1
+
+% 0 1 0 1c708dddfaa5c7f41fb6619975d05f80
+
+% 0 1 0 1ee50527a28a9b861406f328bfb27e52
+
+% 0 1 0 11d29021897434ea15b2a22261487afb
+
+% 0 1 0 128748c668ca2bd71f3948b5ff2c89b2
+
+% 1 1 0 07dbc942c065af100461933a737fc0c1
+
+% 0 1 0 0a09a81f3dcbd9e9035b0ec0e04da198
+
+% 1 1 0 1ada8590e5d9ce951f38b8798cc3f879
+
+% 0 1 0 1934c501c05d223100702cf5011292c2
+
+% 1 1 0 0ce406f58ae96a31126e7a9299eb6212
+
+% 0 1 0 1f08d76234bb391509ce642a3ace22a1
+
+% 1 1 0 0a2ea88228bcbe0714159f25cb8837aa
+
+% 0 1 0 14c8357ec235a03c073f4ad4f70fb4bd
+
+% 1 1 0 044e78c215e9b0a71f3553355a1f1fa3
+
+% 0 1 0 1e90a930e0e8e46d0d82deb6b3bf12a4
+
+% 1 1 0 1236c97b55ce37a11c976ce308d9abff
+
+% 0 1 0 0338ff5ac3b993b91242835383eba058
+
+% 1 1 0 1bf991069964165518af02c262661706
+
+% 2 1 0 1e077409cb89f9890611e67c37cb31fa
+
+% 1 1 0 044ea6d591bc7a141c88b52f6d5a9f9b
+
+% 1 1 0 0eec5046767cbe731ba2298f19e0086f
+
+@ 0 1 0 0d30c683a847ec9f12c6fdb13c15143b
++   entry .Paragraph
++     info
++         s'enroule aux limites des mots ; peut rétrécir jusqu'à son mot le plus long, ne dépasse
++         jamais sa ligne la plus longue
+
+@ 0 5 0 09168d731e3e0cde0d1946c004443785
++     detail
++         La valeur par défaut. Sa revendication est `Flex.content` : un minimum égal au mot
++         insécable le plus large, une largeur naturelle égale à la ligne la plus large, et un poids
++         égal à leur différence, de sorte qu'une colonne qui a plus à absorber prend une plus
++         grande part de la largeur disponible. Une cellule est ajustée avec `Flow.wrap`, qui coupe
++         aux espaces et aux coupures conditionnelles de la `Hyphenation` dans la portée, et jamais
++         en dessous du minimum : un mot plus long que la largeur déborde au lieu d'être coupé.
+
+@ 0 1 0 15707ef94d7a7ddf17711b28090835df
++   entry .ParagraphOrBreak
++     info
++         s'enroule aux limites des mots quand c'est possible, et coupe au milieu d'un mot plutôt
++         que de déborder
+
+@ 0 6 0 0517b4429ed9ddba1ec34d1c20330499
++     detail
++         Élastique entre une seule cellule et sa largeur naturelle, elle n'a donc pas de plancher
++         fixé par le mot le plus long : sous une pression suffisante, une cellule plus étroite que
++         son mot le plus large est ajustée avec `Flow.chop`, qui coupe les lignes à la largeur, là
++         où `Paragraph` déborderait. Pour des colonnes d'identifiants, d'URL ou de hachages qui
++         s'enroulent mal mais ne doivent pas déborder. Elle n'est pas reprise dans le package
++         `columnar` du parapluie ; elle se nomme donc en entier
++         `escritoire.columnar.ParagraphOrBreak`.
+
+@ 0 1 0 02c423a408950dd2126427fd5727707b
++   entry .Fixed
++     info
++         une colonne de exactement `fixedWidth` de large, quel que soit son contenu, raccourcie
++         avec des points de suspension
+
+@ 0 4 0 141d7fd3f6b06f820f4fcbb2c5c54497
++     detail
++         La revendication de la colonne est rigide, à `fixedWidth`, et elle accepte toute cellule,
++         puisque sa largeur ne doit rien à son contenu ; une cellule plus longue que la largeur est
++         raccourcie avec `Flow.shorten` et se termine par `ellipsis` (`…` à moins qu'un autre ne
++         soit donné).
+
+% 2 1 0 0a5c25c6509bc736150b967d5614e2e8
+
+% 3 1 0 1443911d7ee360661b7e130f8c6b6ee4
+
+% 4 1 0 04a9949514b7f4dc101169577292b593
+
+% 5 1 0 1a274662a76c000a11a3cb650316931c
+
+% 6 1 0 07ba6fc13d8b4723176a7ac9cb4be9d3
+
+% 0 1 0 1f34de467f7a85a71bb142beaf713df3
+
+% 0 1 0 1877e07315af70d41f8890f954653e03
+
+% 1 1 0 17e7b11b56fccf401348b255c9462f0e
+
+@ 0 1 0 0e9455574ebc7d65104154fe938bb562
++     entry #fixedWidth
++       info
++           la largeur, en cellules
+
+@ 1 1 0 11513722ba6b233f05a4b995abe9e909
++     entry #ellipsis
++       info
++           le texte qui termine une cellule raccourcie : `…` par défaut
+
+@ 0 1 0 0f89fede16aa81201727967337b56430
++   entry .Shortened
++     info
++         élastique entre une cellule et sa largeur naturelle ; ce qui dépasse la largeur retenue
++         est coupé avec des points de suspension
+
+@ 0 5 0 037bfec28d310f611752e66fd6f45a5d
++     detail
++         Comme avec `Fixed`, une cellule qui ne tient pas est raccourcie avec des points de
++         suspension, mais la largeur est négociée plutôt que fixée : la colonne revendique sa
++         largeur naturelle, peut rétrécir jusqu'à une seule cellule, et prend de la largeur
++         disponible au prorata de la différence. `fixedWidth` nomme le champ mais ne borne pas la
++         revendication.
+
+@ 0 1 0 103d99ef57c03c2d1bb4a18b7b08ee53
++     entry #fixedWidth
++       info
++           le champ avec lequel la stratégie a été construite
+
+@ 1 1 0 1e51f8ed9521837b052ae6f0aa13f27e
++     entry #ellipsis
++       info
++           le texte qui termine une cellule raccourcie : `…` par défaut
+
+@ 0 1 0 0ca8c69e3e582814181818f43c3daba9
++   entry .Collapsible
++     info
++         rigide à sa largeur naturelle, mais supprimée entièrement du tableau quand la place manque
+
+@ 0 6 0 0ff9e38f6a196d2702c23f64cb121006
++     detail
++         La colonne revendique exactement sa largeur naturelle et ne s'enroule jamais ; quand les
++         minima des colonnes ne tiennent pas dans la largeur du tableau, les colonnes repliables
++         sont supprimées une à une, celles dont le `threshold` est le plus élevé en premier,
++         jusqu'à ce que les autres tiennent. Une colonne supprimée ne coûte ni remplissage ni
++         filet. Les seuils n'ont de sens que les uns par rapport aux autres ; ils servent donc à
++         classer les colonnes repliables d'un tableau :
+
+% 2 1 0 07210a736482574011441052ffb53ea0
+
+% 3 1 0 0fc4c770ec58ca5f0b77a4ac41b94548
+
+% 4 1 0 095ae08837b61744066543167d71f33e
+
+% 5 1 0 09e2ca62c93c29721ba166d81205a9cb
+
+% 6 1 0 0f280dc4db892a3104a69afd2a203c88
+
+% 8 1 0 1819a4da142194c404845b49d46fd620
+
+% 0 1 0 0eee517777d7d4a80ca270d7320ce348
+
+% 1 1 0 082d8a8a18f888e3160c41afb3f89601
+
+% 0 1 0 160cd6177b032e08161b934045eaec10
+
+% 0 1 0 185172cd372f257405ccbaa6fd04a960
+
+% 0 1 0 1320f329659aa52c0d72d83eebf33fc5
+
+% 0 1 0 124ba8310c717c161af266b571b68b2c
+
+% 1 1 0 1d7d4e797b9a8b1d0140e64645386b75
+
+@ 0 1 0 08b23285abf54b7e148b5af9c64a1f43
++     entry #threshold
++       info
++           entre `0` et `1` : avec quelle facilité la colonne se replie, les plus élevés d'abord
+
+@ 0 1 0 1f6137fa530e9ef606d5d2a9341795dd
++ entry .Tabulation
++   info
++       des données disposées par un scaffold : le texte des cellules, prêt à être mis en page à
++       n'importe quelle largeur
+
+@ 0 6 0 1b9aa7f2f7c7dbfa1965515f73100974
++   detail
++       Une `Tabulation[text]` est ce que `Scaffold#tabulate` (ou l'extension `tabulation`) produit
++       à partir d'une liste de lignes : chaque cellule déjà lue sous forme de texte et découpée en
++       lignes, les titres de même, et les décorations de chaque ligne, le type de ligne ne
++       subsistant que sous la forme du membre de type `#Row`. Elle est indépendante de toute
++       largeur : `#grid` l'ajuste à une largeur, et `#layout` calcule les largeurs sans rendre.
+
+% 2 1 0 1ecbcdbdc6db018811d8f46ec2e36f97
+
+% 3 1 0 1ca7b69f0bfced04035f1ca0bca69935
+
+% 4 1 0 0dd4820d7cb0fde10b7cd1e59cd6b5ae
+
+% 5 1 0 0ef23bac71bcfcb110640da5c6ab0747
+
+% 6 1 0 1c15b595355a9c0b169d0e5220d257ee
+
+% 8 1 0 00515848cfda9fad1292156fed00b111
+
+% 5 1 0 1f9bd3aaf70f887e0c99225205c32eda
+
+% 0 1 0 1b67d5af736278e513743a77366ff6e0
+
+% 0 1 0 1746775bdd709a191a15be972bb7fea3
+
+% 0 1 0 0bbdabd5b5efcf790eb431c6289c98b0
+
+% 1 1 0 13fa4905c4d736b61189f141d8ab70b5
+
+@ 0 3 0 10d8b4da85e699ae14eae9a58f819416
++       Une tabulation est `Printable` grâce à `.printable`, de sorte que `Out.println(tabulation)`
++       la met en page à la largeur du terminal avec le style, la métrique, l'atténuation et la
++       césure dans la portée.
+
+% 1 1 0 00714b1e281bb8db17c2ced00d3bcd3d
+
+% 0 1 0 1a068b2df139f5b01d502af0b09eac40
+
+% 1 1 0 0536447c4a20415b14970f03d53a54f4
+
+@ 0 1 0 0b8e267fa59495350b99f4756cfd4ce1
++   entry .printable
++     info
++         affiche une tabulation à la largeur du terminal
+
+@ 0 4 0 0450742962d1001a0c8eb6246f9ea6ed
++     detail
++         Le given `Printable`, qui met le tableau en page à `termcap.width` et affiche chaque ligne
++         par le `Printable` propre au type de texte. Il requiert un `Table.Style`, un
++         `Text is Measurable`, une `Attenuation` et une `Hyphenation` dans la portée, ainsi que le
++         `Printable` du type de texte.
+
+@ 0 1 0 0a94e8e2c7545be119cf15369f822d1f
++   entry #Row
++     info
++         le type de ligne à partir duquel la tabulation a été créée
+
+@ 0 1 0 12089876b71917270834f1f1efc60845
++   entry #columns
++     info
++         les colonnes du scaffold
+
+@ 0 1 0 1a6f455533c4e9051c606d58e435f96e
++   entry #titles
++     info
++         la ligne de titres : les lignes de chaque titre
+
+@ 0 1 0 0874f8700b139fc808099031f14a18e6
++   entry #rows
++     info
++         chaque ligne de données : les lignes de chaque cellule
+
+@ 0 1 0 13168a9c250ac76211272dda0b38040d
++   entry #dataLength
++     info
++         le nombre de lignes, compté une seule fois à la construction de la tabulation
+
+@ 0 1 0 0b12fe1e1d60607d03a9f4475bf14d35
++   entry #decorations
++     info
++         les décorations par colonne de chaque ligne, alignées sur `#rows` ; vide s'il n'y en a
++         aucune
+
+@ 0 1 0 19e0b800d92c616007454fe7af92a749
++     detail
++         Évaluées à la construction de la tabulation, dernier moment où les valeurs des lignes
++         existent.
+
+@ 0 1 0 06afd2686470d4ae0cea32f142868a76
++   entry #layout
++     info
++         les largeurs de colonnes calculées à une largeur donnée, d'après les revendications des
++         titres et de chaque ligne
+
+@ 0 3 0 0b3c327896d608fa0e7bec2b6e63717c
++     detail
++         `tabulation.layout(width)` intègre les cellules de chaque ligne aux revendications
++         agrégées des colonnes et calcule les largeurs une seule fois, ce qui donne un `Layout`.
++         Ses `widths` sont les largeurs avec lesquelles `#grid` rend. Requiert un `Table.Style`, un
++         `Text is Measurable` et une `Attenuation`.
+
+@ 0 1 0 1e36ad791343ab680e55904572d1025d
++   entry #grid
++     info
++         la tabulation ajustée à une largeur : une `Grid` dont le `render` donne les lignes
+
+@ 0 6 0 00736e8fa9a8c6d9131647ffa69845d1
++     detail
++         `tabulation.grid(width)` calcule la mise en page comme le fait `#layout`, ajuste chaque
++         cellule à la largeur de sa colonne, et construit une `Grid` de deux sections — les titres
++         et les lignes — qui partagent les mêmes largeurs. Si les minima des colonnes dépassent
++         `width` même après la suppression de toutes les colonnes repliables, l'`Attenuation` dans
++         la portée en est avertie : `columnAttenuation.failAttenuation` lève une `Table.Error` et
++         `ignoreAttenuation` laisse le tableau déborder. Requiert un `Table.Style`, un
++         `Text is Measurable`, une `Attenuation` et une `Hyphenation`.
+
+@ 0 1 0 0e22b3ea3c15208c18048050e9a7f69a
++ entry .Grid
++   info
++       un tableau ajusté à une largeur : des sections de lignes à des largeurs de colonnes fixées,
++       dans un style
+
+@ 0 6 0 1a85056ada9978f714111760d56d4b33
++   detail
++       La dernière étape avant le texte. Une `Grid[text]` est une liste de `Table.Section`s —
++       chacune une suite de `Table.Row`s avec les largeurs de colonnes qu'elles partagent — et le
++       `Table.Style` dans lequel les dessiner. `Tabulation#grid` en crée une avec deux sections,
++       les titres et les données ; `#render` la dessine sous forme d'une `Chain` de lignes, avec un
++       filet entre les sections et les lignes du haut et du bas du style autour d'elles.
+
+% 2 1 0 092b3d09d4cc014007c1cb4025b904fe
+
+% 3 1 0 09a7ddf98732fe9803281bbb30cd2609
+
+% 4 1 0 11403dd6ee13d8e601440286f6ae596d
+
+% 5 1 0 115841f681753e9f0023da675d56d13a
+
+% 6 1 0 0943881071d320691f3ee1eb4aa52b8a
+
+% 8 1 0 0ad60f9609fa8c4f07acfc6d02603abd
+
+% 0 1 0 1dee97abd17142e21f28c06cb952d17a
+
+% 0 1 0 10c11ccd5a8dea4a062bb23c21c5dfb3
+
+% 0 1 0 0d9e0785fd10999d15ac727c40f55ebb
+
+% 1 1 0 03c5423c9a472566137d46c0232732e1
+
+@ 0 1 0 0cda048cd1c5789b09c450ea6eea8091
++       Une grille est `Printable` grâce à `.printable`, et peut donc être affichée directement.
+
+% 1 1 0 11d0fb94e45637fc0a7a7b93d109b719
+
+% 1 1 0 0e9a7ab812d3c8ab126136cb51e2eb9f
+
+% 1 1 0 13a100aa32ae45951227d185f42c9046
+
+@ 0 1 0 1bb29d1f57ce435f04a82aa726328d90
++   entry .printable
++     info
++         affiche une grille, une ligne rendue par ligne de terminal
+
+@ 0 3 0 1e3b7d689b2af3721d984345650de001
++     detail
++         Le given `Printable` : `render` joint par des sauts de ligne, chaque ligne étant affichée
++         par le `Printable` propre au type de texte. Requiert un `Text is Measurable` et le
++         `Printable` du type de texte.
+
+@ 0 1 0 0c8b3049f2768e650f85e5c11384f2aa
++   entry .rowLines
++     info
++         les lignes visuelles d'une ligne du tableau selon les largeurs de ses colonnes
+
+@ 0 5 0 12ec0692668cf393183665e1995301d4
++     detail
++         `Grid.rowLines(style, widths, row)` donne `row.height` lignes : chaque cellule complétée à
++         la largeur de sa colonne et alignée verticalement, entourée du remplissage du style,
++         décorée si la cellule a une décoration, et jointe par les glyphes de bord du style. Le
++         remplissage de gouttière appartient à la cellule, de sorte qu'une décoration couvre la
++         cellule d'un bord à l'autre tandis que les filets restent nus. Utilisé par `Grid#render`
++         et `Layout#lines`.
+
+@ 0 1 0 0daeff2a400c1d0110a27e29cf94104d
++   entry .rule
++     info
++         un filet horizontal à travers des colonnes des largeurs données
+
+@ 0 5 0 158861585edfdcb21567033a55bcbb2f
++     detail
++         `Grid.rule(style, widths, above, below)` dessine un filet de la largeur des colonnes et de
++         leur habillage, avec un glyphe de jonction partout où un bord de colonne le rencontre ;
++         `above` et `below` indiquent de quels côtés des colonnes sont adjacentes, de sorte qu'un
++         filet du haut n'a que des jambages descendants, un filet du bas que des jambages montants,
++         et le filet sous les titres les deux. L'épaisseur du trait est le `topLine`, le
++         `bottomLine` ou le `titleLine` du style, selon le cas.
+
+@ 0 1 0 1d8c7983b9e881330397696f67dc40cd
++   entry #sections
++     info
++         les sections, dans l'ordre, chacune avec ses lignes et leurs largeurs communes
+
+@ 0 1 0 195b0bc03939ce57191cff9c3a8ad87a
++   entry #style
++     info
++         le style dans lequel la grille est dessinée
+
+@ 0 1 0 1a862d37100dae1d10b491a2a0c33039
++   entry #render
++     info
++         la grille sous forme de lignes de texte
+
+@ 0 2 0 166756ce4a6aaf4c15a04b3c0b2e88fe
++     detail
++         Une `Chain[text]` : la ligne du haut du style (s'il en a une), les lignes de chaque
++         section avec un filet entre les sections, et la ligne du bas (s'il y en a une). Requiert
++         un `Text is Measurable`.
+
+@ 0 1 0 0031ca1d6b9043fd0fd4891f26225cf5
++ entry .Layout
++   info
++       les largeurs de colonnes retenues pour un tableau, et les revendications à partir desquelles
++       elles ont été calculées
+
+@ 0 9 0 0b73cb2a529e2fad0498fbfbf964a035
++   detail
++       Un `Layout[row, text]` est la valeur intermédiaire entre la mesure d'un tableau et son
++       rendu : quelles colonnes ont survécu (`#survivors`, avec leurs largeurs), les revendications
++       agrégées à partir desquelles elles ont été calculées, et la largeur et le style pour
++       lesquels elles l'ont été. Il est immuable et incrémental : une ligne exprimée sous forme de
++       `Cells` est testée avec `#accommodates` — si elle reste dans l'agrégat de chaque colonne,
++       elle ne peut déplacer aucune colonne — et admise avec `#extend`, qui donne la même mise en
++       page quand rien ne bouge et une mise en page recalculée sinon. Les lignes sont ensuite
++       rendues une à une avec `#lines`, et la hauteur d'une ligne se connaît grâce à `#height` sans
++       la rendre quand aucune de ses cellules ne s'enroule.
+
+@ 0 5 0 16d4adca32d96d9d145ae6f80bd552be
++       C'est le moteur qui se trouve derrière `Tabulation#grid`, exposé pour un tableau construit
++       ou affiché ligne par ligne — un journal qui s'allonge, un écran qui se redessine — où
++       remettre en page tout le tableau à chaque ligne serait du gaspillage. `Scaffold#layout` crée
++       la première mise en page à partir des seuls titres. `Layout` n'est pas exporté vers le
++       package parapluie `soundness` ; le type se nomme donc `escritoire.Layout` là où il faut
++       l'écrire.
+
+% 2 1 0 0da178ca35c6642d100af13cd380b491
+
+% 3 1 0 0cf69e3a2bfe2408081352c8499c1f15
+
+% 4 1 0 1b19f9ee650f318d12bdf92f08e0acae
+
+% 5 1 0 17c616517b28026d1bc8c08c90bc8451
+
+% 6 1 0 1e44d93c4ef8c1f908c7c250fc60b916
+
+% 8 1 0 0ec55c6d3955d1d203f48ac622b4c47b
+
+% 9 1 0 1b00b63163bf2c8d1d75c37ad66a958f
+
+% 1 1 0 1e44b10e0876b88909392ddcb68bc7de
+
+% 0 1 0 15435f1a707d242708708f2f1db47140
+
+% 0 1 0 096a0f437ab1fe9f021fdd15d6476d5c
+
+% 0 1 0 1f0350717c5fc7840c9101e3e14ca4cb
+
+% 0 1 0 11ec26587e55e3660a7470d55042df43
+
+% 1 1 0 028ac0f034713aa9062abaf1495b1f0a
+
+% 1 1 0 117c261f2f35d258097b705c62845d88
+
+% 0 1 0 07561285f8f13f5e0b4d73a7c5c109e5
+
+% 1 1 0 19c256660f1ee591183e4b390f66793e
+
+@ 0 1 0 19863d655906ef9d18143228fb928964
++   entry .nothing
++     info
++         des agrégats vides, un par colonne, pour une mise en page qui n'a encore rien admis
+
+@ 0 1 0 1a5ec9acca78adae0565fa60b4d8b925
++   entry .aggregate
++     info
++         les agrégats élargis par les cellules d'une ligne, colonne par colonne
+
+@ 0 2 0 1f8cb356a19aabfb0c953dd4e6d564a0
++     detail
++         `Layout.aggregate(aggregates, cells)` est le `Metrics.max` élément par élément des deux,
++         de sorte que le résultat revendique au moins autant que l'un ou l'autre.
+
+@ 0 1 0 10ca181b851a8cd2177808f784acb429
++   entry .solve
++     info
++         calcule les largeurs des colonnes à une largeur donnée d'après les revendications agrégées
+
+@ 0 7 0 1ccf335f9ac68504032f28a659c06683
++     detail
++         `Layout.solve(columns, titles, aggregates, width, style)` demande à chaque `Columnar` de
++         colonne son `Flex` d'après son agrégat, supprime toute colonne qui ne peut occuper aucune
++         largeur (une colonne `Paragraph` dont toutes les cellules sont vides, par exemple), déduit
++         l'habillage du style, et laisse le `Flex.solve` de tessellate replier et répartir le
++         reste. Si les minima des colonnes restantes dépassent encore la largeur, l'`Attenuation`
++         dans la portée est appelée avec le minimum dont le tableau avait besoin et la largeur dont
++         il disposait. Requiert un `Text is Measurable` et une `Attenuation`.
+
+@ 0 1 0 186be48be3b53deb15fc508ac07d2648
++   entry #columns
++     info
++         les colonnes pour lesquelles la mise en page a été calculée
+
+@ 0 1 0 0697909adc486d361a62b4ee20eb5b3c
++   entry #titles
++     info
++         les cellules des lignes de titres
+
+@ 0 1 0 11a0995f146f46251758b4001937f4e6
++   entry #aggregates
++     info
++         les revendications agrégées par colonne à partir desquelles les largeurs ont été calculées
+
+@ 0 1 0 05b1af62e76e97581e8fd78deb08a9f3
++   entry #width
++     info
++         la largeur à laquelle la mise en page a été calculée
+
+@ 0 1 0 1bbc5b6fc70fb2f304a339ede94ca307
++   entry #survivors
++     info
++         les colonnes qui ont survécu, sous forme de paires `(index, width)` dans l'ordre
+
+@ 0 1 0 0af3aec347381dc40b5e8209043cc60c
++     detail
++         Une colonne supprimée par repli est absente ; `#widths` est le second élément de chaque
++         paire.
+
+@ 0 1 0 1156e54716b45a3103230f85e8ccd64b
++   entry #style
++     info
++         le style, d'après le remplissage et les filets duquel le coût de l'habillage a été calculé
+
+@ 0 1 0 1a6106445ece771c1cbac2ed5c50c2a1
++   entry #widths
++     info
++         les largeurs des colonnes restantes, dans l'ordre
+
+@ 0 1 0 12095df353ddedff100890074e8580cb
++   entry #cells
++     info
++         une ligne exprimée à travers les colonnes de la mise en page
+
+@ 0 2 0 0f29fc906158f6af05c9974321378503
++     detail
++         Identique à `Scaffold#cells` : le contenu de chaque colonne pour la ligne, découpé en
++         lignes et mesuré.
+
+@ 0 1 0 0be0fd5d3948e04f031a986d313627a8
++   entry #accommodates
++     info
++         si les cellules d'une ligne sont dans la revendication agrégée de chaque colonne
+
+@ 0 2 0 08d53269b8f06076157ff9c50a4fd105
++     detail
++         Vrai quand l'admission de la ligne ne peut modifier la revendication d'aucune colonne,
++         selon le `Columnar#accommodates` de chaque colonne ; `#extend` renvoie alors cette même
++         mise en page.
+
+@ 0 1 0 1cf9d93e11ab56c9152bb09347d005cb
++   entry #extend
++     info
++         cette mise en page, ou une mise en page recalculée en y intégrant les cellules de la ligne
+
+@ 0 5 0 14d09feaf797daf4034514673d2b363f
++     detail
++         `layout.extend(cells)` est `layout` lui-même si `#accommodates` est vérifié, et sinon
++         `Layout.solve` sur les agrégats élargis par les cellules, à la même largeur. Le nouveau
++         calcul peut laisser toutes les largeurs telles quelles — une revendication plus large sur
++         une colonne déjà bloquée par la largeur ne change rien — ce que `#stable` détecte.
++         Requiert un `Text is Measurable` et une `Attenuation`.
+
+@ 0 1 0 1eaa3032883ce28a03a93a97e6f0c092
++   entry #resize
++     info
++         les mêmes revendications calculées à une autre largeur
+
+@ 0 1 0 1edb418bd3a0d4300ef4f78c75e70f36
++   entry #stable
++     info
++         si deux mises en page montrent les mêmes colonnes aux mêmes largeurs
+
+@ 0 2 0 180e88b7bc041ae414c7982370466518
++     detail
++         Compare les `#survivors` : un redessin peut sauter les lignes déjà dessinées quand une
++         mise en page étendue par une nouvelle ligne est stable par rapport à celle avec laquelle
++         elles ont été dessinées.
+
+@ 0 1 0 0f39f8285e8cb04d0a66662309d28214
++   entry #tableRow
++     info
++         les cellules d'une ligne ajustées aux largeurs des colonnes restantes, sous forme de
++         `TableRow`
+
+@ 0 4 0 12ac9ed98207ecc301ca5055d00debfa
++     detail
++         `layout.tableRow(cells, decorations)` ajuste les lignes de chaque colonne restante avec
++         son `Columnar#fit`, associe chacune à sa décoration (lue dans `decorations` selon la
++         position de la colonne, `Unset` au-delà de sa fin), et mesure la hauteur de la ligne.
++         Requiert un `Text is Measurable` et une `Hyphenation`.
+
+@ 0 1 0 19d260d4bacf42c20b177b8b7a7e1128
++   entry #lines
++     info
++         une ligne rendue selon la mise en page : ses lignes de texte
+
+@ 0 2 0 099031daaa791d480f059fea5de350f8
++     detail
++         `layout.lines(cells, decorations)` est `Grid.rowLines` appliqué à `#tableRow` : les lignes
++         visuelles de la ligne, avec les bords du style, sous forme de `List`. Passez `Nil` pour
++         aucune décoration.
+
+@ 0 1 0 1c9aea1deb66d25e0d712e557b922225
++   entry #height
++     info
++         la hauteur d'une ligne en lignes de texte, sans la rendre quand c'est possible
+
+@ 0 3 0 0a8f9e83520a235f11cfbda46680fee0
++     detail
++         Une cellule dont la largeur naturelle tient dans sa colonne n'est pas enroulée ; elle
++         occupe donc autant de lignes qu'elle en a ; seule une cellule qui doit s'enrouler est
++         ajustée pour le savoir. La hauteur de la ligne est celle de la cellule la plus haute.
+
+@ 0 1 0 10c84d2424a64d7e014ca7553017176b
++   entry #titleLines
++     info
++         les lignes de titres rendues selon la mise en page
+
+@ 0 1 0 05cee49321d6b8c90d9eda31df730b3d
++   entry #topRule
++     info
++         le filet au-dessus des titres, ou `Unset` si le style n'a pas de ligne du haut
+
+@ 0 1 0 10a4dadf30d1987205531b388036eb03
++   entry #titleRule
++     info
++         le filet entre les titres et les lignes
+
+@ 0 1 0 0511df19fa3befda1b098201cc146b7e
++   entry #bottomRule
++     info
++         le filet sous la dernière ligne, ou `Unset` si le style n'a pas de ligne du bas
+
+@ 0 1 0 0ec157371fdc31dc1ffa4bf99ff75457
++ entry .Cells
++   info
++       les cellules d'une ligne sous forme des lignes que chacune affichera, avec les largeurs
++       intrinsèques de chaque cellule
+
+@ 0 6 0 14ce692ccee66c980de2cfe71d613665
++   detail
++       `Cells[text]` est une ligne exprimée une fois pour toutes à partir de sa valeur — le contenu
++       de chaque colonne découpé en lignes, et les `Metrics` de chaque cellule (son mot le plus
++       long et sa ligne la plus longue) — et indépendante de toute largeur, de sorte qu'une mise en
++       page peut la tester avec `Layout#accommodates`, l'admettre avec `Layout#extend`, et la
++       rendre aux largeurs qu'elle retient. `Scaffold#cells` et `Layout#cells` en créent une à
++       partir d'une ligne ; `Cells.of` à partir de lignes déjà découpées.
+
+@ 0 2 0 01e9484c8b6675831a02c35485539dfc
++       `Cells` n'est pas exporté vers le package parapluie `soundness` : c'est le vocabulaire
++       propre du moteur de mise en page, accessible sous le nom `escritoire.Cells` là où un
++       programme pilote directement un `Layout`.
+
+% 1 1 0 1bf2745827140ca11637086fa357772b
+
+@ 0 1 0 1f99eca6c12942a2127b4546701b84a5
++   entry .of
++     info
++         des cellules à partir de lignes déjà découpées, ou à partir d'une ligne via ses colonnes
+
+@ 0 2 0 166ca05948bdef0f1786541dd95ebcd4
++     detail
++         `Cells.of(lines)` mesure les lignes de chaque cellule ; `Cells.of(columns, row)` lit
++         d'abord le contenu de chaque colonne dans la ligne. Les deux requièrent un
++         `Text is Measurable`.
+
+@ 0 1 0 1bf3dc25b61ed3b00b153f0c8ed8a2ab
++   entry #lines
++     info
++         les lignes de chaque cellule, par colonne
+
+@ 0 1 0 14025523620e46f3006b1df2ae53577c
++   entry #metrics
++     info
++         les largeurs intrinsèques de chaque cellule, par colonne
+
+@ 0 1 0 1afb71c47d68fc9313a5774f964970ce
++ entry .Columnation
++   info
++       une liste plate disposée en colonnes, comme `ls` liste un répertoire
+
+@ 0 6 0 0de2ef5cf5094ed5085316f82bf043b8
++   detail
++       Toute disposition de texte en colonnes n'est pas un tableau. Une liste d'éléments courts —
++       des noms de fichiers, les entrées d'une légende — se lit mieux disposée comme `ls` affiche
++       un répertoire : autant de colonnes que la largeur le permet, chaque élément dans une
++       cellule, sans filets ni titres. `Columnation.layout` fait cela pour une liste de valeurs
++       textuelles ; l'extension `columnate` est la même opération sous forme de méthode sur la
++       liste.
+
+% 2 1 0 085520feec2df4f81a42503ded675462
+
+% 3 1 0 0ffad1b447eaae590d2bf6580fddfb43
+
+% 4 1 0 03376ea00520011906e1ac5250b25b94
+
+% 0 1 0 0101b07e86b55daa086adea1b4471053
+
+% 0 1 0 0adb5616908bde7b066482567bcb10df
+
+% 1 1 0 05edaf3adca1c7bd0cd142f38b58f1d7
+
+% 0 1 0 1446c8f20319f7a90544060b25fb8aa3
+
+@ 0 1 0 1bbe4525c4d749e40361260ee90fa79e
++   entry .layout
++     info
++         les éléments répartis en autant de colonnes que la largeur le permet, une ligne par rangée
+
+@ 0 11 0 19f6586832903d1c0f84d3758920658c
++     detail
++         `Columnation.layout(items, width, gap, uniform, downward, align)` choisit le plus grand
++         nombre de colonnes pour lequel le contenu de chaque colonne tient à côté des autres, avec
++         `gap` cellules (deux par défaut) entre voisines. Les colonnes de largeur égale — chacune
++         aussi large que l'élément le plus large — sont préférées, mais une disposition avec une
++         colonne de plus est admise quand les éléments qui tombent dans une colonne se trouvent
++         être plus étroits ; la largeur disponible est alors redistribuée vers l'égalité, aucune
++         colonne ne dépassant l'élément le plus large. `uniform = true` ne considère que les
++         dispositions à largeurs égales ; `downward = true` lit les éléments en descendant chaque
++         colonne plutôt qu'en parcourant chaque rangée ; `align` complète chaque cellule dans sa
++         colonne, et une rangée alignée à gauche ne porte aucun remplissage après son dernier
++         élément. Un élément plus large que la largeur occupe tout de même une seule colonne, et
++         l'absence d'éléments ne produit aucune ligne. Requiert un `Text is Measurable`.
+
+@ 0 1 0 0f79624f0e95d4c91d7d7875aebca267
++ entry .columnate
++   info
++       `items.columnate(width)` : une liste de texte en autant de colonnes que possible, une ligne
++       par rangée
+
+@ 0 3 0 177333d85a05bf8a117215ddc220f61d
++   detail
++       Une extension sur `List[text]` pour tout texte `Textual` aux éléments `Char`, qui appelle
++       `Columnation.layout` avec les mêmes paramètres : `gap` (2 par défaut), `uniform`, `downward`
++       et `align` (`TextAlignment.Left` par défaut). Requiert un `Text is Measurable`.
+
+@ 2 1 0 0e7d00ae53db530a1a47ade535d07ded
++       ```scala
+
+@ 3 1 0 19c8239f1edf0c0c0111a20072503359
++       import soundness.*
+
+@ 4 1 0 1b017a3ce5fadea618929e83cf1bf835
++       import textMetrics.uniformMetric
+
+@ 0 1 0 190a5b6e9007f2e617c1fae1d3b3a2fb
++       List(t"a", t"bb", t"c", t"dd", t"e").columnate(11)                       // List(t"a   bb  c", t"dd  e")
+
+@ 0 1 0 1390c8fe0c491cd4046960afb18070e6
++       List(t"aaaa", t"b", t"c", t"d").columnate(12, uniform = true)           // List(t"aaaa  b", t"c     d")
+
+@ 0 1 0 01a3af942173c13d0d79201d80d95cf2
++       List(t"a", t"b", t"c", t"d", t"e").columnate(7, downward = true)        // List(t"a  c  e", t"b  d")
+
+@ 0 1 0 16d5edd67043601e1aac056bfa822d3a
++       List(t"a", t"bb").columnate(10, align = TextAlignment.Right)            // List(t" a  bb")
+
+@ 1 1 0 0c9e62515a913b061f8c945ca876758d
++       ```
+
+@ 0 1 0 149aaf455529bdd9140c60123561b9a4
++ entry .tabulation
++   info
++       `rows.tabulation` : une liste tabulée par le `Tabulable` de son type d'élément, ou une
++       valeur par son `Tabular`
+
+@ 0 6 0 00c16086d7d5031616666cfc5a26d2be
++   detail
++       Deux extensions. Sur une `List[row]`, `rows.tabulation` requiert un `row is Tabulable[text]`
++       — dérivé pour toute case class, et fourni pour `Int`, `Double` et `Text` — et donne la
++       `Tabulation[text]` du scaffold appliqué aux lignes. Sur n'importe quelle valeur,
++       `value.tabulation` requiert un `value is Tabular[text]`, qui fournit à la fois le scaffold
++       et les lignes à partir de la valeur elle-même. Le type de texte est inféré à partir de
++       l'instance, ou donné sous la forme `rows.tabulation[Text]`.
+
+@ 2 1 0 09103ff98c007bcf12f622df2b10e572
++       ```scala
+
+@ 3 1 0 14572310d18ddf1e0563fff8a11b7a6e
++       import soundness.*
+
+@ 4 1 0 1429e9389e94118d18d2d61c41f1d940
++       import tableStyles.thinRoundedTableStyle
+
+@ 5 1 0 1521453040be78e00668c920671bf8b4
++       import textMetrics.uniformMetric
+
+@ 6 1 0 16baaadfaf46c19a09c82b390deb2da4
++       import columnAttenuation.ignoreAttenuation
+
+@ 8 1 0 12e10e68635ad90914af806a9a6745f9
++       case class Person(name: Text, age: Int)
+
+@ 0 1 0 153366e790c43c4019b33ebfcf6570b1
++       List(Person(t"Poins", 30), Person(t"Hal", 16)).tabulation.grid(40).render.to[List]
+
+@ 0 1 0 09fbf520876774db16cf7119b8e37a31
++       List(1, 22, 333).tabulation.grid(20).render.to[List]   // one untitled, right-aligned column
+
+@ 1 1 0 0bfcc9d75a6a77d514b44d823c9574d8
++       ```
+
+@ 0 1 0 0c47fb8f3bdea26a1a72ebe62dcf93dc
++ entry .Tabulable
++   info
++       une classe de types : la façon dont un type est réparti en colonnes, pour qu'une liste de ce
++       type se tabule
+
+@ 0 9 0 015f209b8434b6ed1505b3a8aa09912a
++   detail
++       `row is Tabulable[text]` est une fonction `#table()` qui renvoie le `Scaffold[row, text]` du
++       type ; `#tabulate` l'applique à une liste. Son objet compagnon dérive une instance pour
++       toute case class — une colonne par champ, chacune intitulée d'après le nom de son champ
++       décamélisé et capitalisé (`linesOfCode` devient `Lines Of Code`), à moins qu'une
++       `Table.Relabelling` pour le type dans la portée n'en décide autrement — et fournit des
++       instances pour `Int`, `Double` et `Text`, chacune une seule colonne sans titre. La colonne
++       d'un champ est le scaffold `Tabulable` propre au type du champ, adapté à l'enregistrement
++       avec `Column#contramap`, de sorte qu'un champ d'un type case class apporte à son tour les
++       colonnes de ce type.
+
+% 2 1 0 00f0833e57cb05540ca8d390d63ae212
+
+% 3 1 0 02665e3c438129761f74d934ba58db04
+
+% 4 1 0 10d6ade31d68f2a60a20b0569223921e
+
+% 5 1 0 00cdc2fedb82eff6112a933d9dc85d18
+
+% 6 1 0 1ba099b59eace20102c3045219dad201
+
+% 8 1 0 036763a341a22bd71e231455266dfa4a
+
+% 0 1 0 0cb87fe46047e4c31f447933b7e952ab
+
+% 1 1 0 1cd5f24293bdd17b1ae2b62c5ca7e766
+
+@ 0 1 0 198e514cf1cfbb6812ffcc9783e17419
++       Une instance personnelle est le point d'accroche pour un type dont les colonnes ne sont pas
++       ses champs :
+
+% 2 1 0 09c864bde7d45a7e1f5f31ee9475acec
+
+% 3 1 0 13b8fce14cda7dcc03c174445fcaf84d
+
+% 5 1 0 11a93fb44c0c63140d65cc0024284657
+
+% 0 1 0 1c5bbb395f608e0808899c97e264ce21
+
+% 0 1 0 18cd771cc8e8dfb30665a18088515510
+
+% 1 1 0 16374e28dd338be4000ae60aef4e8049
+
+@ 0 2 0 1a2891397b70614c18a5a524fc56effc
++       Seules les instances à cellules `Text` sont dérivées : un tableau `Teletype` s'écrit à la
++       main sous forme de `Scaffold`.
+
+% 1 1 0 1fe79681b46ba7f3151f61be72112e35
+
+% 0 1 0 19471b843a9b1a4313446d19a24a66ff
+
+% 1 1 0 11022a05d60ca920162e754f336802c0
+
+@ 0 1 0 05f17f0a5b58c54513682b1a63108560
++   entry .JoinTabulable
++     info
++         l'instance dérivée pour un type produit, à partir des colonnes de ses champs
+
+@ 0 3 0 18a90ff62418d3ae19ab490ea852c2b2
++     detail
++         La classe que construit la dérivation : un `Tabulable[Text]` dont le scaffold est formé
++         des colonnes données. Un utilisateur n'a normalement pas à la nommer ; `conjunction` en
++         crée une.
+
+@ 0 1 0 0097e833e41d3d241a31771fdb180024
++     entry #table
++       info
++           le scaffold des colonnes réunies
+
+@ 0 1 0 0528caa0b229027a0d53ab1c3bd33e3a
++   entry .conjunction
++     info
++         dérive l'instance pour une case class, une colonne par champ
+
+@ 0 5 0 15e1c7be13e959ee1e371347d06de729
++     detail
++         Le `Tabulable` de chaque champ donne ses colonnes, qui sont adaptées à l'enregistrement et
++         réintitulées d'après l'étiquette du champ — par une `Table.Relabelling[derivation]` s'il y
++         en a une dans la portée, et sinon décamélisées et capitalisées. C'est ce qu'appelle le
++         given `derived` hérité du `ProductDerivation` de wisteria, de sorte qu'une case class n'a
++         besoin d'aucune annotation pour être tabulée.
+
+@ 0 1 0 1507f2d436146fd5086b005889c11e01
++   entry .int
++     info
++         `Int` sous forme d'une colonne sans titre, alignée à droite et repliable
+
+@ 0 2 0 1662cc3fe442b80f098829fea7a76591
++     detail
++         La colonne se replie au seuil `0.3`, de sorte qu'un nombre isolé est la première chose à
++         disparaître quand un enregistrement de plusieurs champs est comprimé.
+
+@ 0 1 0 0b164927d182630e164cc3e986f381da
++   entry .double
++     info
++         `Double` sous forme d'une colonne sans titre, alignée à droite et repliable
+
+@ 0 1 0 02039d05cf93674f00126d7de2abfda8
++     detail
++         Requiert un `Decimalizer` dans la portée, qui décide du nombre de décimales affichées.
+
+@ 0 1 0 0e67f9bb0e30bc9b0ddcb149bc3dc42a
++   entry .text
++     info
++         `Text` sous forme d'une colonne paragraphe sans titre, alignée à gauche
+
+@ 0 1 0 0a53e060d14bd512098dc4dd663b44cf
++   entry #table
++     info
++         le scaffold du type
+
+@ 0 1 0 1cd153fadf84a3651bb606b5154b3104
++   entry #tabulate
++     info
++         le scaffold appliqué à une liste du type : une `Tabulation`
+
+@ 0 1 0 0b51167a4bb37d89013f331f260172ff
++     detail
++         Le scaffold est construit une seule fois, paresseusement, et réutilisé à chaque appel.
+
+@ 0 1 0 07fdddede2dd914e1bc8c064f03844f4
++ entry .Tabular
++   info
++       une classe de types : une valeur qui est elle-même un tableau, fournissant à la fois ses
++       colonnes et ses lignes
+
+@ 0 6 0 163110c449ff17d807f3097b31b02685
++   detail
++       Là où `Tabulable` tabule une *liste* d'un type, `value is Tabular[text]` tabule une seule
++       valeur qui contient ses lignes : `#table` donne le scaffold de son type `#Element` et
++       `#rows` en extrait les éléments, et `#tabulate` applique l'un à l'autre. Un objet de
++       rapport, un résultat de requête ou une matrice se tabule en en fournissant une instance,
++       puis avec `value.tabulation` grâce à l'extension `tabulation`.
+
+% 0 1 0 14cf5b0f7cd386ae154b325859c91b76
+
+% 1 1 0 076129e3dbb377c706a737d356bc0735
+
+@ 0 1 0 09409ef13ef2208d0634a98900def755
++   entry #Element
++     info
++         le type de ligne qu'ont les lignes de la valeur
+
+@ 0 1 0 063dbbb35fc6182b0fccb10f74419b89
++   entry #table
++     info
++         le scaffold des lignes de la valeur
+
+@ 0 1 0 0d844af9e8059ac1197139479aa1e116
++   entry #rows
++     info
++         les lignes de la valeur, sous forme de liste d'`Element`
+
+@ 0 1 0 111555c32b3321391a5b91c43bac4309
++   entry #tabulate
++     info
++         la valeur sous forme de `Tabulation` : `table(value).tabulate(rows(value))`
+
+@ 0 1 0 121792c0835d63381047c7ab2a1e49d0
++ entry .Table
++   info
++       l'espace de noms d'un tableau rendu : ses cellules, lignes, sections et style, et
++       `Table.Error`
+
+@ 0 5 0 0bbf22ec8dcf24dc0d5ac7bdcef3fc83
++   detail
++       `Table` est un espace de noms, pas un type : une définition de tableau est un `Scaffold`,
++       des données disposées par un scaffold une `Tabulation`, et le résultat ajusté une `Grid`.
++       `Table` contient les éléments à partir desquels une grille est dessinée (`Cell`, `Row`,
++       `Section`), le `Style` dans lequel elle est dessinée, la `Relabelling` qui renomme les
++       colonnes dérivées, et l'`Error` levée quand un tableau ne peut pas tenir.
+
+% 1 1 0 18245c07c19fc87c025b4eaa570c242f
+
+% 1 1 0 08ac4623f24de3261236ba8714246cde
+
+@ 0 1 0 15efd5fe6440b7f404b22a587de8aaa1
++   entry .Error
++     info
++         le tableau avait besoin de plus de largeur qu'on ne lui en a donné
+
+@ 0 9 0 115a2dad5fe4032807e0365c5cbd43ad
++     detail
++         _the table required a minimum width of `minimumWidth`, but only `availableWidth` was
++         available_. Levée par `columnAttenuation.failAttenuation` quand, après la suppression de
++         toutes les colonnes repliables, les largeurs minimales des colonnes restantes et
++         l'habillage du style dépassent encore la largeur demandée pour une grille ou une mise en
++         page. La limite est concrète : une colonne `Paragraph` ne peut jamais être plus étroite
++         que son mot le plus long, de sorte qu'un tableau dont la colonne de description contient
++         `Statically-checked` ne peut pas tenir en dessous de la largeur de ce mot plus le reste.
++         Avec `ignoreAttenuation`, l'erreur n'est jamais levée et le tableau déborde à la place.
+
+% 2 1 0 1678493ba205a3a20f9080eaa791a75e
+
+% 3 1 0 076b4200ea0a8cb209b08fe1f6e114af
+
+% 4 1 0 011f6d213f9a682c0faf0a7119f00436
+
+% 5 1 0 02f17a392685209c10738e4ace138e8d
+
+% 0 1 0 19dca18fec62fa2c0915fdaab9366f6a
+
+% 0 1 0 042c7f5eddbd6eb81fde4c13f24bb080
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 074cb3daeb2bac671b9b9c2132727c65
+
+% 0 1 0 10668dddf3dbacb90364827279b84605
+
+% 0 1 0 1fe95e04628d69d902bfb9092fe2aa4b
+
+% 1 1 0 19c650f5c79797251faa76176f18cb4f
+
+@ 0 1 0 147734fbc926825515f106f40993992e
++     entry #minimumWidth
++       info
++           la largeur la plus étroite à laquelle toutes les colonnes du tableau pourraient tenir
+
+@ 0 1 0 1eae66637681424a16a263139a5354a1
++     entry #availableWidth
++       info
++           la largeur dans laquelle le tableau devait tenir
+
+@ 0 1 0 1414895c1ddb502a1456fd705f93cbbb
++   entry .Cell
++     info
++         une cellule telle que rendue : ses lignes ajustées, sa largeur, son alignement et sa
++         décoration
+
+@ 0 4 0 1ee6c5ebfad757110508f5f6f759af79
++     detail
++         L'enregistrement que tient le moteur de rendu d'une cellule après que `Layout#tableRow`
++         l'a ajustée : les lignes qu'elle affiche à la largeur de sa colonne, leur nombre, leur
++         alignement, et sa décoration. Un utilisateur de `Grid` ou de `Layout` les voit à
++         l'intérieur d'une `Row` ; rien d'autre n'en crée.
+
+% 0 1 0 0a69cc2976d15e111ff6bc44f2184551
+
+@ 0 1 0 1b39e624559a765314c1b1e4504cebae
++     entry #width
++       info
++           la largeur retenue pour la colonne, en cellules
+
+@ 0 1 0 17e2cce63ddbdcfa195b73a0a1d59e33
++     entry #span
++       info
++           le nombre de colonnes que couvre la cellule ; toujours `1`
+
+@ 0 1 0 087a39372c95c27401b4b6faab90983b
++     entry #lines
++       info
++           les lignes ajustées
+
+@ 0 1 0 15fb0d446baba27401ce18ad3ae834ea
++     entry #minHeight
++       info
++           le nombre de lignes
+
+@ 0 1 0 15000fae9e991f1a020f7098eaaa83f1
++     entry #textAlign
++       info
++           la façon dont chaque ligne est complétée jusqu'à la largeur
+
+@ 0 1 0 0a7f68da5be3363a1e2c318041f3a27c
++     entry #verticalAlign
++       info
++           l'endroit où se placent les lignes quand la rangée est plus haute que `minHeight`
+
+@ 0 1 0 1065f0938fa075311573099decc75863
++     entry #decorate
++       info
++           la transformation appliquée à chaque ligne rendue, ou `Unset`
+
+@ 0 1 0 03f5307037aef5b71bc46ff2b915556b
++     entry #apply
++       info
++           la ligne à un indice, que l'appelant a déjà vérifié par rapport à `minHeight`
+
+@ 0 1 0 1f058d1a84dc3ec806f77809c8df85fc
++   entry .Row
++     info
++         une rangée de cellules ajustées, avec sa hauteur en lignes
+
+@ 0 4 0 1a473473a703aa7312e8e4d0e3545341
++     detail
++         Créée par `Layout#tableRow`, et rendue par `Grid.rowLines`. La hauteur de la rangée est le
++         nombre de lignes de sa cellule la plus haute, et une cellule plus courte y est placée
++         selon son alignement vertical.
+
+% 0 1 0 116b240365aeef2f161801b468515628
+
+% 1 1 0 19c6bbfca8ad0a6d021a7a733d2fa05d
+
+@ 0 1 0 055a8335b2c8555711d0a2b734a1d852
++     entry #cells
++       info
++           les cellules ajustées, une par colonne restante
+
+@ 0 1 0 04483f96c61eec3a06ccc4f874f43275
++     entry #title
++       info
++           s'il s'agit d'une rangée de titres
+
+@ 0 1 0 0351432c69ed6c1d0cf4be3832851fbd
++     entry #height
++       info
++           le nombre de lignes visuelles qu'occupe la rangée
+
+@ 0 1 0 0e23be10ad9498e418f9f2eea5dfad8f
++     entry #apply
++       info
++           la cellule à un indice de colonne
+
+@ 0 1 0 1d76761e445ee4fa082fed4e49ee53ee
++   entry .Section
++     info
++         une suite de rangées qui partagent les mêmes largeurs de colonnes
+
+@ 0 4 0 1316e05b6afde40118ebc90163c11cd0
++     detail
++         Une `Grid` est une liste de sections, dessinées avec un filet entre chaque paire.
++         `Tabulation#grid` en crée deux — les titres et les données — aux mêmes largeurs ; les
++         rangées de chaque section sont rendues selon les `widths` propres à la section.
+
+% 1 1 0 1575eaf3883b166b1a099395ea7c99b1
+
+@ 0 1 0 1ca92d667e0646de078ef0531aeab3d1
++     entry #widths
++       info
++           les largeurs de colonnes auxquelles les rangées de la section ont été ajustées
+
+@ 0 1 0 1d942767f7b28d1c14e5baea27b36019
++     entry #rows
++       info
++           les rangées, paresseusement, sous forme de `Chain`
+
+@ 0 1 0 108a8463239b90790d3b6b3ace7568ee
++   entry .Style
++     info
++         les filets, les coins et le remplissage avec lesquels un tableau est dessiné
+
+@ 0 7 0 1d8b025f3eb7bc2a022613ffacb6d2d4
++     detail
++         Un `Style` indique combien de remplissage chaque cellule a de chaque côté, quelle
++         épaisseur de trait — `Blank`, `Thin`, `Thick` ou `Double`, ou `Unset` pour aucun trait —
++         dessine le bord du haut, le bord du bas, le filet sous les titres, les côtés extérieurs et
++         les bords intérieurs des colonnes, et quel `LineCharset` (`Default`, `Rounded` ou `Ascii`)
++         fournit les glyphes. Les six styles du package `tableStyles` couvrent les choix
++         habituels ; un style personnel est une valeur `Style` fournie localement.
+
+@ 0 3 0 003b78a55ef773171593fd24f15b7fab
++         Un style est une valeur contextuelle : `Tabulation#grid`, `Scaffold#layout` et les givens
++         `Printable` en prennent un, et `import soundness.*` n'en apporte aucun ; on importe donc
++         l'un des givens de `tableStyles` par son nom.
+
+% 2 1 0 128dbd9f2c98837b054971c3baa3a692
+
+% 3 1 0 19c13802f1b329310d9ce34cae072d76
+
+% 0 1 0 1df9e0cdb273238d0289668a0347f8df
+
+% 0 1 0 1ae3d9f893e21b8e07020f237ffcaf7f
+
+% 1 1 0 1670080bce36129e0a50bdcdc22364c6
+
+@ 0 3 0 004f7b32eb8ea83002489ce0fcbd8adb
++         `Blank` et `Unset` diffèrent : une ligne du haut `Blank` est dessinée comme une ligne
++         vide, ce qui préserve l'espacement vertical du tableau, alors que `Unset` ne dessine rien.
++         Le contenu `Teletype` stylé se met en page selon sa largeur visible dans tous les styles.
+
+% 0 1 0 0d3a2cbc8f3d6c5b094da7c81299bf57
+
+% 1 1 0 0ba4d0bdebcb60b613bc4638f35370d9
+
+@ 0 1 0 05e861e48a62e8031b0d87cbc479da6d
++     entry #padding
++       info
++           les cellules à gauche et à droite du contenu de chaque cellule
+
+@ 0 1 0 121264da58fa6a7a107317898a3411cc
++     entry #topLine
++       info
++           l'épaisseur du bord du haut, ou `Unset` pour aucun bord du haut
+
+@ 0 1 0 1f2a53a0dfb6bc1f0120d3706f2f8baf
++     entry #bottomLine
++       info
++           l'épaisseur du bord du bas, ou `Unset` pour aucun bord du bas
+
+@ 0 1 0 0e926a256f7191a51900f500497ead2b
++     entry #titleLine
++       info
++           l'épaisseur du filet entre les titres et les rangées, ou `Unset` pour aucun
+
+@ 0 1 0 16fde4d208d3f8770b98e17ddbe3b944
++     entry #sideLines
++       info
++           l'épaisseur des bords extérieurs gauche et droit ; `Blank` pour aucun
+
+@ 0 1 0 013422ac435279de05eff765c38489e4
++     entry #innerLines
++       info
++           l'épaisseur des bords entre les colonnes ; `Blank` pour aucun
+
+@ 0 1 0 19c39672fc793430053044c51e0eb3c6
++     entry #charset
++       info
++           quel jeu de glyphes dessine les traits : `Default`, `Rounded` ou `Ascii`
+
+@ 0 1 0 0156a633f060fd4904019912d602b91e
++     entry #columnCost
++       info
++           l'habillage qu'ajoute une colonne : son remplissage des deux côtés et un bord
+
+@ 0 1 0 131ea2e5d32b45d113ef69fc880a07b8
++     entry #cost
++       info
++           l'habillage d'un nombre donné de colonnes : leurs coûts et le bord de fermeture
+
+@ 0 1 0 1610da214bdf2b7f1dd2d6bfa82194e0
++   entry .Relabelling
++     info
++         remplace les titres de colonnes qu'un tableau dérivé tire des noms de ses champs
+
+@ 0 6 0 19993f7490bb232306c4f6e7ed2b24bd
++     detail
++         Une `Relabelling[target]` est une fonction `#relabelling()` des noms de champs vers les
++         titres voulus à leur place, consultée par le `Tabulable` dérivé pour `target` : un champ
++         nommé dans la map prend le titre associé, et tout autre son nom décamélisé et capitalisé.
++         Un given dans la portée au point de dérivation suffit ; le trait est covariant dans sa
++         cible, de sorte qu'un réétiquetage pour un supertype s'applique à ses sous-types.
+
+% 2 1 0 0998b877742fad331769518095dd6358
+
+% 3 1 0 0606af2da98ed383058b56b8df5ffc9d
+
+% 4 1 0 18fffb517059ddb90d02af10134741d3
+
+% 5 1 0 007592fd79472c551975019da01e4060
+
+% 6 1 0 0bf86d6bb649dd331f3e5d4a77f1e9a0
+
+% 8 1 0 1872d32dc08fa5c30f0923ac6db8a1ff
+
+% 0 1 0 1ea399f97a94e0a215a7ed0446376a78
+
+% 0 1 0 085f4f4bf3dd92bc0be6df7de671526f
+
+% 1 1 0 0d1c317203c3c31a0768a0fbcabfb462
+
+% 0 1 0 161798c74f8e8f74066f72a21cca1ffe
+
+@ 0 1 0 173a7010e5ba6a2618e00a0c982fb19b
++     entry #relabelling
++       info
++           la map des noms de champs vers les titres
+
+@ 0 1 0 1189f8913de7b1e808a1bf78f8c843ca
++       detail
++           Appelée une seule fois et mise en cache ; un champ absent de la map garde son titre
++           dérivé.
+
+@ 0 1 0 0fb4f0e04f3ff1a31c0c86ce92e2089b
++     entry #apply
++       info
++           le titre d'un nom de champ, ou `Unset` si la map ne le nomme pas
+
+@ 0 1 0 175531554e2e8f13120cef02c838f6c9
++ entry .Attenuation
++   info
++       ce qui se passe quand les colonnes d'un tableau ne peuvent pas tenir dans la largeur donnée
+
+@ 0 8 0 015a09a4cd1bf06d0e885ede7b8b76b7
++   detail
++       Une `Attenuation` est appelée par `Layout.solve` avec la largeur minimale dont le tableau
++       avait besoin et la largeur dont il disposait, quand la première dépasse la seconde même
++       après la suppression de toutes les colonnes repliables. C'est une politique, pas un
++       comportement que la bibliothèque impose : un rapport écrit dans un fichier, où personne ne
++       verra que les colonnes ont été abîmées, veut un échec ; un affichage interactif, où
++       l'utilisateur peut élargir la fenêtre, veut le rendu. Les deux politiques sont les givens du
++       package `columnAttenuation`, importés par leur nom ; chaque `grid`, `layout`, `extend` et
++       `resize` en requiert une dans la portée.
+
+% 1 1 0 098e1dbf0fb6648a08e03fdfa4d3d415
+
+% 1 1 0 05d79cc39dd275a419b9c3b55bc8ff92
+
+@ 0 1 0 09736303e5339f940debcfe184e9fc32
++   entry #apply
++     info
++         appelée avec la largeur minimale dont le tableau avait besoin et la largeur disponible
+
+@ 0 1 0 0b7cc8d4da01974118882d16100dca51
++ entry .columnAttenuation
++   info
++       les deux politiques pour un tableau qui ne tient pas, chacune un given à importer par son
++       nom
+
+% 0 2 0 129f526836097231016708ddcda3f573
+
+% 2 1 0 0bc97b6e16268c230d2159d6da92bed9
+
+% 1 1 0 067cf51cd6536cf5114d37a57402baae
+
+% 1 1 0 11e8a22fbadf82c30229d8d2d55d36a4
+
+@ 0 5 0 0a09fcc5df60bee10d178cbeb58ead70
++       `ignoreAttenuation` rend le tableau quand même, au mieux de ce que permet la largeur, et ne
++       peut pas échouer ; la choisir ne demande donc aucun traitement d'erreur ; `failAttenuation`
++       lève une `Table.Error` plutôt que de produire quelque chose de trompeur, et requiert donc
++       une `Tactic[Table.Error]` — un `recover`, un `safely` ou `strategies.throwUnsafely` — dans
++       la portée. Aucune n'est dans la portée sans import, puisque `import soundness.*` n'importe
++       aucun given.
+
+% 0 1 0 12a33ae65ce44b370c91c9f43b59baa7
+
+% 1 1 0 01fe6d3f165dc39b1730ca685925d016
+
+@ 0 1 0 14343426b5b9b180138b3a4fdb336c38
++   entry .failAttenuation
++     info
++         lève une `Table.Error` quand le tableau ne peut pas tenir
+
+@ 0 3 0 03076cace5ec03b0008ea579f0b2eb2d
++     detail
++         Une fonction contextuelle d'une `Tactic[Table.Error]` vers une `Attenuation` qui la
++         capture, de sorte qu'importer le given exige aussi la tactique là où le tableau est mis en
++         page. L'erreur porte la largeur minimale requise et la largeur disponible.
+
+@ 0 1 0 07c826df77be44561fb9efaad90fdf87
++   entry .ignoreAttenuation
++     info
++         rend le tableau quand même, en dépassant la largeur
+
+@ 0 2 0 1a650ed0daca7ab30519e69778139fae
++     detail
++         Ne fait rien quand on l'avertit que le tableau ne tient pas : les colonnes restantes
++         gardent leurs largeurs minimales et les lignes dépassent la largeur demandée.
+
+@ 0 1 0 023ae57f100c5c371a10eff64c97be3a
++ entry .tableStyles
++   info
++       six styles de tableau prêts à l'emploi, chacun un given à importer par son nom
+
+@ 0 4 0 116c708ba44769f3082a5f9ee8cf0b78
++   detail
++       Le dessin des boîtes est choisi par le given `Table.Style` dans la portée, et le choix n'est
++       jamais implicite : `import soundness.*` n'en apporte aucun, et l'on en importe un par son
++       nom. Le même tableau dans les six styles :
+
+% 2 1 0 1af3453ca8730d5f0c26b557e1f321a2
+
+% 3 1 0 1362fc11a94297c40dbd29532fc52714
+
+% 4 1 0 0679ace4905d57a919c3fb0114b6ef9a
+
+% 2 1 0 0a39c0a79a98347209cbd0118637da64
+
+% 4 1 0 09f908ef9a5543ef196a29005ef0547a
+
+% 5 1 0 13eb0ad9d87244530dc55918a7b95778
+
+% 1 1 0 13b6574b0ce8d5cd0db290e720262e46
+
+% 2 1 0 02534176a96c8b0c186dfffa6f1daf35
+
+% 0 1 0 13563984c42cfb9614ebeba62a577d2a
+
+% 1 1 0 1dfeac7ecce8bbeb100e438c5ed4f402
+
+% 2 1 0 0185533d60613d921462c8ca2787d761
+
+% 0 1 0 19553389edd59bcb0640c004cbc6ea56
+
+% 1 1 0 0122fdb9f215c52c083e1853c591f57a
+
+% 0 1 0 0e60d91504b1554f13a77ad5caf7d466
+
+% 0 1 0 07aa1c07de347efb1827c123b90199c6
+
+% 0 1 0 09f18bc181aee3e31fca864317f1064f
+
+% 0 1 0 0b541a8d9e5eea2803aee1f394990811
+
+% 0 1 0 1547473fbc86976c0842ea068851e7f2
+
+% 0 1 0 1e771c0b413f3e210a07fcfd36d599e1
+
+% 0 1 0 17d879d7be8270e10e36028e2eeda5c0
+
+% 1 1 0 10fa8d3ca1d4596c0f517b8e82037ef7
+
+% 2 1 0 1ed51d07c91432d90b3dc5617bfc718e
+
+% 0 1 0 1f8b34474e85522a0a9145f99c2d095a
+
+% 1 1 0 1a9d933ca2dc92ee1b4d7d5efd6caefd
+
+% 0 1 0 0814c6a7953579240497149b8ae10393
+
+% 0 1 0 0b00da2589fdfa2708c3334339f49e4d
+
+% 0 1 0 148b71cfb44202c5122c7cb15e361174
+
+% 0 1 0 0eaad8ab4a286554144a5413158c0c97
+
+% 0 1 0 189e055d6850129818de5c260944ec78
+
+% 0 1 0 156b692f90fb488f11f20accce9516f9
+
+% 0 1 0 09a4571d16ae92d20331184dea6b563d
+
+% 1 1 0 06210e63e5bf5d3704bf758e04809535
+
+% 2 1 0 08e9fc68da2fe9d80f232768f28f2f2c
+
+% 0 1 0 04f1f84475e3bbb31857f0d0d9748c0c
+
+% 1 1 0 074002f0648e052f0c5da28c2ee2abc7
+
+% 1 1 0 1a0557f3cdbfc6c81591cec54facc84f
+
+% 1 1 0 162952dd784305ca11b576f82f02fae5
+
+% 2 1 0 0e73d5549e2300db1daaafa6f1736346
+
+% 3 1 0 1f17c20487eaf32f05a130bcd147d2ba
+
+% 4 1 0 07cdcbabe8dd637f13db551c2a5dafc4
+
+% 1 1 0 14df755ca0c96bed13230f2a8873d2c2
+
+% 0 1 0 1663d25d0c3fdc771fc0613084d608d1
+
+% 1 1 0 052ab5edc1c5a53a1b36c8d3d54c7ed4
+
+% 2 1 0 09424f56406982b31b6a920c388378d4
+
+% 0 1 0 15095dde40d6dbff12352129d2f06538
+
+% 1 1 0 08c97684fab165650d306f7922830b45
+
+% 0 1 0 14ddc487a6feff3c1b5a2bafb3493848
+
+% 1 1 0 0491dd816ec88a4a0284873dcdaf8f52
+
+% 2 1 0 110e4bf5aeca63261edf33b4afd378b5
+
+% 0 1 0 0c631bda6fe23b980501043abb67887a
+
+% 1 1 0 0df106ef07a423fd0733b809ca96aceb
+
+% 0 1 0 0dac36ff7bea52e6153f98fe1f80f62d
+
+% 1 1 0 135ec5837037683c18323f3429d93d17
+
+% 2 1 0 0413200090607bc41fdbe6c4f51a4a69
+
+% 0 1 0 1195dc1266cf29500f9dea72dc7e596e
+
+% 1 1 0 12dde3c08a999ff6060edeb3317be5f6
+
+% 1 1 0 10f5ba6f9852ec3a1bb3d00cf40c6897
+
+% 2 1 0 050c9229527e74bd099910bbfb057d5c
+
+% 3 1 0 1f95c5cdb1a54cdb096eba700d5db4b4
+
+% 4 1 0 040390d3fc3729611a836678906c70b9
+
+% 1 1 0 06ee91f4c98efe8c1cd849b9caf57231
+
+% 2 1 0 0fb3060a8198217c0ccfd1eb4d15db06
+
+@ 0 1 0 0f5e091dfc0c7e7a19d55ee32a305ba2
++       Un style personnel est une valeur `Table.Style` liée à la place comme given local.
+
+% 1 1 0 04cdd2954a74ae4306f31d18cdd77f9a
+
+@ 0 1 0 0acb7984193cf08e11cac418224c6915
++   entry .thickTableStyle
++     info
++         haut, bas et côtés épais ; filet de titre et bords de colonnes fins ; coins carrés
+
+@ 0 1 0 1bc6bf65783c6bc51266aac210e87a99
++   entry .thinRoundedTableStyle
++     info
++         des filets fins partout, avec des coins arrondis
+
+@ 0 1 0 1362934e9c5cc2a9111acf2b78789707
++   entry .horizontalTableStyle
++     info
++         filets du haut, du bas et de titre fins ; aucune ligne verticale
+
+@ 0 2 0 0877650a3304392208fa418b8f007db6
++     detail
++         Les cellules gardent leur remplissage, de sorte que les colonnes sont séparées par deux
++         espaces là où le bord se serait trouvé.
+
+@ 0 1 0 09285afe8ff693e91bbe944e71d849f6
++   entry .midOnlyTableStyle
++     info
++         un filet fin sous les titres ; des lignes vides au-dessus et au-dessous du tableau
+
+@ 0 2 0 105e0dcaba38924117fae7a2d2c5ddb3
++     detail
++         Les lignes du haut et du bas sont `Blank`, et non absentes, de sorte que le tableau garde
++         l'espacement vertical qu'aurait un tableau bordé sans dessiner la bordure.
+
+@ 0 1 0 0b2fc8e27aed482a16b949366ab18c5f
++   entry .verticalTableStyle
++     info
++         bords latéraux et de colonnes fins ; aucun filet horizontal
+
+@ 0 2 0 16d046e4eae9a84e020b28678d4fcd16
++     detail
++         Les filets horizontaux sont `Blank`, de sorte que chacun est une ligne d'amorces de bord :
++         `╷` au-dessus et `╵` en dessous.
+
+@ 0 1 0 08bbc462d6f96e1d06dac2133b1e26fd
++   entry .minimalTableStyle
++     info
++         un filet fin sous les titres et rien d'autre
+
+@ 0 2 0 1c51cc9e7bb998e2053913e05c20e061
++     detail
++         Les lignes du haut et du bas sont `Unset` ; le tableau se réduit donc à sa ligne de
++         titres, un filet et ses rangées.
+
+@ 0 1 0 1a7dcaa6b10b380e14997425c67579b6
++ entry .TextAlignment
++   info
++       la façon dont les lignes d'une cellule se placent dans la largeur d'une colonne :
++       l'`Alignment` de tessellate
+
+@ 0 7 0 102e5f87d886e72d112ef6a2531d4c6e
++   detail
++       `TextAlignment` est un alias de `tessellate.Alignment`, avec `TextAlignment` comme valeur
++       `tessellate.Alignment`, de sorte que les cas se nomment `TextAlignment.Left`. `Left`
++       complète à droite ; `Right` complète à gauche ; `Center` partage le remplissage, en mettant
++       la cellule impaire à droite ; `Justify` répartit les espaces entre les mots de sorte que
++       chaque ligne sauf la dernière atteigne toute la largeur — la composition des journaux, qui
++       convient à une colonne de prose et à rien d'autre. Chacun a un `pad(content, width, last)`
++       qui effectue le remplissage, `last` indiquant si la ligne est la dernière d'une cellule, que
++       `Justify` laisse en drapeau.
+
+@ 2 1 0 01f41f52f60330951879d5b129b4dfde
++       ```scala
+
+@ 3 1 0 13b7c178a3752d360fc537edbe43ddec
++       import soundness.*
+
+@ 4 1 0 10258df820161faf19ad0c15da42dfa3
++       import textMetrics.uniformMetric
+
+@ 0 1 0 05c19e16da48abc80f3703ec2316bc1b
++       TextAlignment.Left.pad(t"hi", 6, true)        // t"hi    "
+
+@ 0 1 0 007fbf1e4cbb9bf21c7368e36bc20247
++       TextAlignment.Right.pad(t"hi", 6, true)       // t"    hi"
+
+@ 0 1 0 07bfe80b3b763c7c0ecb581be49abb46
++       TextAlignment.Center.pad(t"hi", 7, true)      // t"  hi   "
+
+@ 0 1 0 14ddb12460c63c6f148e06e30e045aae
++       TextAlignment.Justify.pad(t"a b c", 9, false) // t"a   b   c"
+
+@ 1 1 0 0c68b523c7d2cba00957571a1d7f5a18
++       ```
+
+@ 0 1 0 162fe6afc44fd250185c43f07f2e0e51
++ entry .VerticalAlignment
++   info
++       l'endroit où se place une cellule dans une rangée qu'une autre cellule a rendue plus haute :
++       l'`Alignment.Vertical` de tessellate
+
+@ 0 4 0 1d41cc66b4f6a32b0fbf5b765561e33b
++   detail
++       Un alias de `tessellate.Alignment.Vertical`, avec les cas `Top`, `Middle` et `Bottom`. Une
++       cellule enroulée rend toute sa rangée plus haute, et les autres cellules de cette rangée se
++       placent en haut, au milieu ou en bas de la hauteur supplémentaire selon le `verticalAlign`
++       de leur colonne ; `Top` est la valeur par défaut pour tous les types.

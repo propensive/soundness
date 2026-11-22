@@ -1,0 +1,227 @@
+orthant 2 language
+
+@ 0 1 0 0494433b492191e6042b734ec0d7f908
++ ## Hifenização
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 6 0 0c412b650d34c9e406ed77dd93a4696d
++ Quebrar uma palavra no fim de uma linha só é aceitável em certos pontos, e encontrar esses pontos é
++ a tarefa da [hifenização](https://en.wikipedia.org/wiki/Syllabification). As palavras são
++ hifenizadas com o mesmo algoritmo, e os mesmos arquivos de padrões, do
++ [TeX](https://en.wikipedia.org/wiki/TeX), para cuja tipografia a técnica foi inventada. Uma
++ palavra ganha seus pontos de quebra permitidos, é hifenizada com um caractere escolhido, ou é
++ dividida em suas sílabas.
+
+@ 0 3 0 0cc5a2846631ab6408e8249204d4b18c
++ Os padrões de uma língua são um [valor contextual], e o inglês americano é fornecido. O conjunto de
++ padrões pode ser estendido, ou substituído a partir de qualquer arquivo de padrões do TeX, quando
++ uma palavra se quebra de um modo que os padrões comuns não conhecem.
+
+@ 0 1 0 0019c813b8952ea80127b98757a8d33a
++ ### Sobre a hifenização
+
+@ 0 5 0 01a0b03c01faae9d158fb9f1797c7f8a
++ Onde uma palavra pode se quebrar não é algo que um algoritmo consiga ler da sua grafia.
++ *hy-phen-ation* se quebra entre sílabas que nenhuma regra simples identifica. O algoritmo de
++ Liang, que foi criado para o TeX, responde a isso com um dicionário de milhares de pequenos padrões
++ de pontuação, derivados de dicionários reais de hifenização. Ele continua sendo o padrão, porque é
++ preciso e rápido, e seus arquivos de padrões existem para muitas línguas.
+
+@ 0 2 0 1e0ee0ced0b9bd511eb2ab1784a7745c
++ Esse algoritmo é implementado aqui, sobre os arquivos de padrões comuns, e é oferecido como três
++ operações sobre [texto](text.md), com a língua fornecida como um [given]:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 0147b76e17e889b01d85879409c1b626
++ column  Operação
++ column  Retorna
++ column  Para
++ row  `hyphenate`  o `Text` com um caractere de hífen em cada quebra permitida  texto a ser composto em linhas
++ row  `syllables`  uma `Sequence[Text]` de sílabas e sequências de não letras  análise das partes de uma palavra
++ row  `breakPoints`  um `Array[Int]` de posições de quebra  código que posiciona as quebras por conta própria
+
+% 1 1 0 032e8a754ab89d4b0ed06a41312a51fc
+
+@ 0 3 0 032d6f02fc779c7018b9757afc4c7296
++ Quebrar o texto nos pontos certos é uma função pura dos padrões da língua, e continua sendo, o que
++ é [imutabilidade](../../philosophy/immutability.md) num domínio que convida à iteração com estado.
+
+@ 0 2 0 18c85857c0e7a28e149dfcf775c1be30
++ Tudo vem do pacote `soundness`, com os padrões do inglês em escopo. O último import permite que os
++ exemplos imprimam seus resultados:
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 08f070a70bdb87031db2223cc0bdebe1
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1e24313b739f716e1525cadfcaa84fc1
++ ### Hifenizando
+
+@ 0 3 0 1fcdcdc81bd11882190d68785d4db398
++ `hyphenate` insere um caractere de hífen em cada quebra permitida. O padrão é o
++ [hífen suave](https://en.wikipedia.org/wiki/Soft_hyphen) do Unicode, que é invisível a menos que
++ uma linha realmente se quebre ali. Passar um caractere visível mostra os pontos de quebra:
+
+% 2 1 0 1ffb0e187611d4661fdc0089c7d4547e
+
+% 3 1 0 06e3dd52e5dcdf541c7594375b601416
+
+% 4 1 0 0fbb517eb8bc7cf51e0a1a70ce6d01bb
+
+% 0 1 0 1d9baa8cc06e8f4800981feb5c8b547b
+
+% 0 1 0 07ec3a8f0e0302101739021af21597cc
+
+% 1 1 0 1e5cab8b5b86cbfe18e28f8af2b85ae6
+
+@ 0 2 0 1208113247474cf3119b1a08911da798
++ `leftMin` e `rightMin` mantêm um número mínimo de caracteres juntos antes da primeira quebra e
++ depois da última, para que uma quebra nunca deixe uma ou duas letras isoladas:
+
+% 2 1 0 06ca336f4cd0e70e05319194a413ea9c
+
+% 3 1 0 04dbaab269f631db05b72df5b738132b
+
+% 4 1 0 09c4730ff66172fb02fbc41e9266ec97
+
+% 0 1 0 0b9c11cd2c15f5e41b5143fb3036c699
+
+% 0 1 0 0763edefe3a86e5e0805ecab6d62e5e3
+
+% 1 1 0 1aa664b7d47341f603999e421f345f49
+
+@ 0 1 0 10e47f90842cecc709330cc5658f2f4e
++ ### Sílabas
+
+@ 0 2 0 17c0e0e0e3c0aa3e1b4f7ae48da6030b
++ `syllables` divide o texto em suas partes. Cada sílaba é um segmento, e cada sequência de
++ caracteres que não são letras passa como um segmento próprio:
+
+% 2 1 0 169f409f49e4489d000bfa55e76ffb8b
+
+% 3 1 0 0fc3491fb15e28b3069aab37b7f16b61
+
+% 4 1 0 0a5d3762fa710276107803e3e007d270
+
+% 0 1 0 0b0321678fc9221505804bf3af366266
+
+% 1 1 0 184b1adbc62ee84c030adcae49302e74
+
+@ 0 1 0 056fd70d42d476bf14425517f349ae61
++ ### Pontos de quebra
+
+@ 0 2 0 0e6f09bc00e7188700b4d1f6c80480a7
++ `breakPoints` dá as posições brutas em que uma palavra pode se quebrar. É para código que posiciona
++ as quebras por conta própria, como um algoritmo de quebra de linhas, em vez de inserir caracteres:
+
+% 2 1 0 1c462e58b47d0b4617e700b43d01a517
+
+% 3 1 0 02a6ea41b4e9ccab047264dd8e5ca56d
+
+% 4 1 0 0253eacb121c4f2711637506fab11a0d
+
+% 0 1 0 06e3fa7c89ec9b571c2d2e857a3d81ab
+
+% 1 1 0 1ea9002471ceca0511b2810f3f46785f
+
+@ 0 1 0 1d3572d220ee1b2300ebead6b8534081
++ ### Texto que não é uma única palavra
+
+@ 0 3 0 0f6273f097ef9f470527a836444c9cb4
++ A hifenização se aplica a letras, e o texto raramente é só letras. Cada sequência de letras é
++ hifenizada de forma independente. Todo o resto, como espaços, pontuação e dígitos, passa intacto:
+
+% 2 1 0 1c7783518e875fff1cd21106c7a3d210
+
+% 3 1 0 13e99b92a20999bd104a8cbd73b1a039
+
+% 4 1 0 1696541e326560bd01950643a60a0e5f
+
+% 0 1 0 15f5e008b2e30f4312e9ee06706117ad
+
+% 0 1 0 0486ede99adf87ab03d77f000bf6b22e
+
+% 1 1 0 0eb88affaf708b8d121ffd6f866abf9e
+
+@ 0 3 0 0dd1cf2f76fd08d408c462d08af0d857
++ As duas palavras do primeiro texto são curtas demais para se quebrar. `syllables` segue a mesma
++ regra, e dá as sequências que não são letras como segmentos próprios, de modo que juntar os
++ segmentos de volta reproduz exatamente o texto original.
+
+@ 0 1 0 035cd0e7ea80d44f1643ec05dc3ce8e0
++ ### Estendendo os padrões
+
+@ 0 2 0 1ed321a67d1e63371ece6aa6795b4ca1
++ Uma palavra de um campo especializado, que os padrões comuns quebram errado, ou não quebram, é
++ ensinada com um padrão extra, na notação do TeX, sobreposto ao conjunto existente:
+
+% 2 1 0 006f39b4cbac1a6b1bb050a66fd72ee0
+
+% 3 1 0 056fec36b21ae86f1dfeaf6071a68420
+
+% 4 1 0 1b9202f3bc3af0ab0459836a97d9bd40
+
+% 5 1 0 0fe5d1c09c74358d0f33df7b61f1d97f
+
+% 0 1 0 1b7f16e4fa2180d617d6fa11a37b38a9
+
+% 0 1 0 1d3076c36eafe0de18878ea1a8acd0f2
+
+% 1 1 0 14f6a709f6e8e7f51d563c447f40b28f
+
+@ 0 3 0 0c53230de008ff091410c1b8c8c7e9eb
++ Os padrões são mesclados tomando a pontuação mais alta em cada posição. Um padrão acrescentado com
++ pontuação ímpar, portanto, restaura uma quebra que um padrão comum com pontuação par havia
++ proibido. É assim que se corrige uma palavra, sem perturbar o resto da língua.
+
+@ 0 2 0 1184b8585675dd8901578fb835cca521
++ Algumas palavras nenhum padrão acerta. Uma *exceção* declara diretamente as quebras de uma palavra,
++ e tem precedência sobre o algoritmo:
+
+% 2 1 0 0396ed7e06fe982d191ea796bd80144c
+
+% 3 1 0 144695626d9df522149b740d85ee80a3
+
+% 4 1 0 05e73c20457ac49c091f981a668bd74e
+
+% 5 1 0 0f4e8ae93bab354b14f9f2a8fca9a6ff
+
+% 0 1 0 021f767ea6c4f53116e959e8365bd532
+
+% 0 1 0 0ce3e73f9fb62df811716001a5c42847
+
+% 1 1 0 0fd5effad54bc69407f7527590c96db1
+
+@ 0 2 0 190e0a094e0ce14b08d5d6fff66cb3ec
++ O conjunto comum do inglês já tem a lista de exceções que o TeX distribui, então `associate` se
++ quebra como `as-so-ciate`, e `table` como `ta-ble`, onde os padrões sozinhos não o fariam.
+
+@ 0 2 0 1a3f50a0aa687a6105efeffb056783f7
++ Uma língua inteira é fornecida da mesma forma. `Hyphenation.fromTex` lê qualquer arquivo de padrões
++ do TeX, de modo que as línguas publicadas para o TeX ficam disponíveis carregando seus padrões.
+
+@ 0 1 0 07f43d5a194b97ae19d524abf4a3eb69
++ ### Quando não há padrões disponíveis
+
+@ 0 4 0 089d68a7bdf08bbf02a6c070466a7be3
++ Uma língua para a qual nenhum conjunto de padrões foi carregado não hifeniza nada, e não tenta
++ adivinhar. `hyphenate` devolve o texto inalterado, e `breakPoints` fica vazio. Um algoritmo de
++ quebra de linhas recorre, portanto, a quebrar nos espaços, que é o comportamento correto, e não
++ inventa quebras numa língua cujas regras não conhece.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 3 0 1f14cf5da6c0d3e70bfbdc0ec5a8e515
++ - [Tabelas](tables.md) quebra o texto de uma coluna com hifenização.
++ - [Texto](text.md) descreve as outras operações sobre texto.
++ - [PDF](pdf.md) e [Páginas](pages.md) compõem parágrafos que se quebram entre linhas.

@@ -1,0 +1,296 @@
+orthant 2 language
+
+@ 0 1 0 044a22d235970b2307ed86aeec6c9e56
++ ## Imagens
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 5 0 077bc5d1fb1e4b840eaa4b595b2c0ca2
++ Imagens raster, que são PNG, JPEG, WebP, GIF e BMP, são lidas em um valor `Raster` com o formato
++ em seu tipo, assim como o [áudio](audio.md) traz seu formato. Um `Raster in Png` e um
++ `Raster in Jpeg` são tipos distintos, e converter entre eles é um único método. A imagem em si é
++ uma grade [imutável] de pixels. Cada pixel é lido como uma [cor](colors.md) tipada, e recortes,
++ espelhamentos e rotações produzem novas imagens.
+
+@ 0 4 0 0d726b9a8336fd0b1da46583037ef630
++ Um raster também pode trazer seu *layout de pixels* no tipo: quantos bits cada canal ocupa, e em
++ que ordem. Um pixel é então lido com um único deslocamento e uma máscara, calculados enquanto o
++ código compila, em vez de despachados em [tempo de execução]. Todo codec é implementado
++ diretamente, de modo que as imagens são lidas e gravadas em todas as plataformas, e não só na
++ JVM.
+
+@ 0 1 0 166495a9885742651465f29f60b293a3
++ ### Sobre imagens raster
+
+@ 0 5 0 1b84a13f0e038412059c6363b5fa32a8
++ A API de imagens da JVM lê qualquer formato em uma `BufferedImage` mutável e esquece qual
++ formato era, e deixa decisões de codificação e formatos de pixel a chamadas guiadas por flags.
++ Para as tarefas comuns, que são ler uma imagem, perguntar seu tamanho, olhar seus pixels,
++ converter seu formato e gravá-la de volta, essa maquinaria é sobretudo cerimônia, e a
++ mutabilidade torna uma imagem insegura de compartilhar.
+
+@ 0 6 0 1170825f975a10f109cee12472ecaf0d
++ Um `Raster` é imutável e conhece seu formato. A leitura nomeia o formato esperado, de modo que
++ um JPEG se passando por PNG é um erro tipado, e não um null. Os pixels voltam como cores, prontos
++ para as operações de cor. A gravação é a mesma leitura polimórfica como bytes usada por todos os
++ outros formatos. Um raster cujo formato e cujo modelo de cor estão no tipo segue a
++ [segurança por construção](../../philosophy/safety-by-construction.md): uma conversão que não
++ pode ser feita não pode ser escrita.
+
+@ 0 2 0 01361c3a432fd91f1f19d266550f6358
++ Tudo vem do pacote `soundness`. Os outros imports escolhem uma [estratégia] para os erros, e
++ permitem que os exemplos imprimam seus resultados:
+
+% 2 1 0 0c5552414e12bc00093eee7a70f990a3
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 08c941c3efc87d830104e747fd7bc7b2
++ ### Leitura
+
+@ 0 3 0 10e075df8c545e5b1b62058a6a9f481d
++ Uma origem de bytes é lida como um raster de um formato nomeado. Estes bytes são um PNG
++ completo, uma imagem de dois por um cujo pixel esquerdo é vermelho e cujo pixel direito é azul.
++ Ela é pequena o bastante para ser escrita aqui:
+
+% 2 1 0 1686f059508ba9950ef8a38d228d5bff
+
+% 0 1 0 0fb0f3f021c9ce2e19188b9020933aec
+
+% 0 1 0 172631f017a8c7a21fa43fea4afef6ec
+
+% 0 1 0 020697cb74c26979102e296bb60a522e
+
+% 1 1 0 1e96c1662262f253130d4e1881e4c9e8
+
+% 3 1 0 05ec533984b972561a2bfc5f99f587f1
+
+% 4 1 0 0afe6f0d65e800cd0d88af83ab2c1f76
+
+% 5 1 0 1f2025c43b63eaef0749b101d21f7f6f
+
+% 0 1 0 164f161805f44601008a3b471339ec3c
+
+% 0 1 0 12bdd82adee4200e1ed7a785b46d2814
+
+% 0 1 0 003d0154676ec5051e7c06ccd2abea13
+
+% 1 1 0 06891cc8b0ed88fa132fb9ab93fec9ab
+
+@ 0 2 0 192c7fbac0a66dcc19656b5af84a415e
++ Bytes que não estão no formato nomeado lançam um `Raster.Error`, que nomeia o formato que
++ falhou:
+
+% 2 1 0 1a7a2e7cb29a59050b23b86924578eb4
+
+% 3 1 0 1b5e87a648477b840beb2e4a2efb5a7f
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 14960d490a2523fe02534ae2a934bfea
+
+% 1 1 0 137dfe7a2a140d91120b4a4b00751f00
+
+% 0 1 0 02857cb7bda522b908304922c0b2fc05
+
+@ 0 2 0 114cd7d778a1c6f10685d1f155b8cabf
++ Aplicar uma imagem a coordenadas lê um pixel como um `Chroma`, uma cor com canais de um byte,
++ o que liga a imagem a toda a maquinaria de [cores](colors.md):
+
+% 2 1 0 0eb34a20cd6a65a500a9b596f45c30c5
+
+% 3 1 0 0dcfcb7702590bbb048d9855a1ea71c8
+
+% 4 1 0 07b23677773dc08200687ef6711adb0d
+
+% 0 1 0 180fe659d3cc81e511d66419e3c8a9d5
+
+% 0 1 0 1ff99f1297985de812f8a6e43cd55f9b
+
+% 0 1 0 161d064053d789c70ef0cd4b474d059c
+
+% 1 1 0 0b6bc1105d3210801ea7de1f9f24281a
+
+@ 0 2 0 0de5f23faaf45f191c06eb76e54c6136
++ Uma imagem também pode ser *construída* a partir de uma função de pixel, que é como imagens de
++ teste e gráficos gerados são feitos:
+
+% 2 1 0 0259ddbfda6392421bffe6369afbfda0
+
+% 0 1 0 09ef49234e995051169fe7d39ea87c6d
+
+% 1 1 0 1cada717bf25a168147d39f4c67ec5ca
+
+% 3 1 0 174b05db40c844e31316f1acb01e83d5
+
+% 4 1 0 16df5a8b1ba2623c002792ce695c1770
+
+% 5 1 0 0a990654170636190e747c58a734a23a
+
+% 0 1 0 1106a48757809bc71fe660cbc0315b62
+
+% 0 1 0 0a7c4f7a5255b4930425ef645941c70c
+
+% 1 1 0 10757dc2b8fcc33d104276e67c7528fb
+
+@ 0 1 0 0dc71becd23618b9068d43ebcd09bb1e
++ ### Layouts de pixels
+
+@ 0 4 0 1ac815355262022a03bbafb6ae5101a5
++ Um layout é uma tupla de tipos de canal, do mais significativo para o menos.
++ `(Red[10], Green[12], Blue[10])` é exatamente o empacotamento de um pixel RGB de 32 bits, e
++ `Rgba` nomeia o conhecido de oito bits. Um raster construído com um layout dá acesso tipado, e
++ `pixel` é compilado em um único deslocamento e uma máscara constantes:
+
+% 2 1 0 0ec122e8ba734edf1f835d08e48ad586
+
+% 0 1 0 18574cdd06cb756e1c5820b3d65a3f27
+
+% 0 1 0 0958ec7f36477c7b197e79b3e56f0c07
+
+% 1 1 0 1d28da0a275d50680342080a726786de
+
+% 3 1 0 05ef9d0bc37a990c04eba3631b2508f7
+
+% 4 1 0 1ef2ef665bf6b9fc1890e0b35f6654ec
+
+% 5 1 0 00a4d400ea1d02e902e5ef1e400f4b61
+
+% 0 1 0 06306a1500955a5d09e6d3d6a6a06643
+
+% 0 1 0 0e88a200d38f5df4187ea23054fd15d8
+
+% 1 1 0 0222347c66437ec31565a0a37fac0085
+
+@ 0 4 0 0807a55d82041e94007d42600127a034
++ `repack` converte entre layouts. Ele acrescenta um canal alfa totalmente opaco onde o destino
++ tem um, e ajusta a escala dos canais onde suas profundidades diferem. Reempacotar para o layout
++ que um raster já tem retorna o mesmo raster. Um `descriptor` informa o layout em tempo de
++ execução, para as operações que precisam funcionar seja ele qual for.
+
+@ 0 1 0 0e06ff7d7903c7d903c43c11b1420ad5
++ ### Canvas
+
+@ 0 4 0 156e0d412ccd0f071029a7fc75d634d8
++ Um `Raster` é imutável, e gerá-lo um pixel por vez com `Raster(w, h)(…)` nem sempre é a forma
++ que um algoritmo de desenho quer. Abrir um raster como um `Canvas` dá, em vez disso, um handle
++ com escopo sobre seu buffer. Qualquer canvas pode ser lido. Só um aberto com a concessão `Write`
++ pode receber escritas, e a escrita altera no lugar:
+
+% 2 1 0 0c027b01e8960e2117a474c632a4eacc
+
+% 0 1 0 0d8a65516c9461841cd3697657cd4179
+
+% 0 1 0 0d032ff46f88eece13f7a09d5f8c8359
+
+% 0 1 0 05d47aae01ca3d2d1de169d871c26991
+
+% 1 1 0 04c0a21407294c5f10c70cfab09bfdee
+
+@ 0 1 0 04ae1850305aa1b202ce50fdf46c6691
++ `snapshot` tira uma cópia independente, de modo que uma imagem derivada não é afetada por
++ escritas posteriores.
+
+@ 0 1 0 184e7137d957cc821fa3901d305490bb
++ ### Transformação
+
+@ 0 1 0 10cad7c73995778c1150cfeecc4e9a74
++ Recorte, espelhamento e rotação em quartos de volta produzem, cada um, uma nova imagem:
+
+% 2 1 0 0692389af565cbb61b98878c8b06d09a
+
+% 3 1 0 1426d55d85af3e5a0b36ead601d8598d
+
+% 4 1 0 196cf77f4405010d14127571b9c24266
+
+% 0 1 0 09b02e0f6b6ffc51191046adb2a79de1
+
+% 0 1 0 0fa80148fca649d3197e40d4e62034de
+
+% 0 1 0 120b7980aab8933516ecb838e3f55b9a
+
+% 1 1 0 1466a930e6deaae01a018e23349252c8
+
+@ 0 2 0 01a73849ba13ff8e1c4bcee4240cebfa
++ O argumento de `rotate` admite apenas `90`, `180` ou `270`. Uma rotação que exigiria
++ reamostragem não é aproximada em silêncio:
+
+% 2 1 0 03c89e0f2d3a28e206446f364b454f1b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 19ec60d9bf1166a40e8544e9f19d7e02
+
+% 1 1 0 09f24a3aba1d93e606807dfef1623f5e
+
+@ 0 1 0 14edd77c34b8b4230597962106a6c9ed
++ ### Conversão e gravação
+
+@ 0 2 0 085513b1de8bbebc01cb454844073800
++ `to` reexpressa uma imagem em outro formato, e lê-la como `Data` produz os bytes codificados,
++ simetricamente à leitura:
+
+% 2 1 0 02076b22856fc82e03a1b29d58d1b2c9
+
+% 3 1 0 1a8304f6e4d396511ac918292fcc7f24
+
+% 4 1 0 147cfad26457c85904ea107157c48613
+
+% 0 1 0 1efb0c468ca6fb071f702efb96e7f5cc
+
+% 0 1 0 04a99a3fdc5476111c1f9cba4dbd4460
+
+% 0 1 0 0b9d543983a6651e17e61775e1862b1b
+
+% 1 1 0 1334cd415e7751481c06f6ab2abcdf13
+
+@ 0 1 0 093a82d39a14aeb1075dee9b08a4acd7
++ Os codecs são escritos diretamente sobre os formatos:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 9 0 1d30cd30f1b599b60afa701b5fa45199
++ column  Formato
++ column  Lê
++ column  Grava
++ column  Na JVM
++ row  PNG  todos os tipos de cor, profundidades de 1 a 16 bits, os cinco filtros, entrelaçamento Adam7  truecolor de 8 bits, com alfa quando o layout tem  `javax.imageio`
++ row  JPEG  baseline e progressivo, escala de cinza, YCbCr e CMYK  baseline  `javax.imageio`
++ row  WebP  VP8 com perdas, VP8L sem perdas e VP8X estendido  VP8L sem perdas  o codec puro
++ row  GIF  GIF87a e GIF89a, só o primeiro quadro  um quadro GIF89a de no máximo 256 cores  `javax.imageio`
++ row  BMP  de 1 a 32 bits, `BI_RGB` ou `BI_BITFIELDS`, sem codificação run-length  `BI_RGB` de 24 bits  `javax.imageio`
+
+% 1 1 0 0b4c4237a8fd97a71ab942d6649fc8f1
+
+@ 0 3 0 126c8b1d07f8166a1283a0c1c8b9d3ad
++ Uma costura de backend escolhe entre cada codec e a biblioteca de imagens da própria plataforma,
++ quando existe uma, de modo que o mesmo código converte uma imagem na JVM, em um navegador e
++ dentro de um componente WebAssembly.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionados
+
+@ 0 7 0 083f122ec8afef5a1f372b5f0b79cd6f
++ - [Cores](colors.md) descreve `Chroma`, `Srgb` e as operações sobre a cor de um pixel.
++ - [Áudio](audio.md) traz seu formato no tipo da mesma forma.
++ - [Dados binários](binary-data.md) descreve `hex"…"` e o `Data` que as imagens codificadas são.
++ - [SVG](svg.md) descreve gráficos vetoriais, que não têm pixels até serem renderizados.
++ - [Tipos de mídia](media-types.md) nomeia os formatos.
++ - [Automação web](web-automation.md) faz uma captura de tela como um `Raster in Png`.
++ - [Sistema de arquivos](filesystem.md) descreve os arquivos dos quais as imagens são lidas e nos
++   quais são gravadas.

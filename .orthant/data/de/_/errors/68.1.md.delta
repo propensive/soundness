@@ -1,0 +1,38 @@
+orthant 2 language
+
+% 0 1 0 1fd11b085bc89cba01214c4785d45521
+
+@ 0 2 0 0de70d20ba191fe713174d532954cee5
++ Wird ausgelöst, wenn ein Wert die Regeln des `Nominative`-Systems eines benannten Typs nicht
++ erfüllt.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 5 0 0eaef446b591ce7d049bd9a9a1fb23fe
++ Nomenclature definiert `Name`-artige Typen, die durch ein `Nominative`-System parametrisiert sind,
++ dessen Regeln die gültigen Werte einschränken. Verletzt ein Kandidat eine Regel, wird dieser Fehler
++ geworfen und trägt den `name`, die verletzte `Rule` und einen `parameter`, der die konkrete
++ Beanstandung der Regel beschreibt.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 16bd27528f5d6885070650b4b7667454
+
+% 1 1 0 06f9dd97990034e51b5675b23580bc2b
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 2 0 11828b16a52684e211835b922a548e14
++ Den Wert so anpassen, dass er die Regel erfüllt, oder ein anderes `Nominative`-System wählen,
++ dessen Regeln den Wert zulassen.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 0818ff9a9b820c4a182ebf3c8b48580e
++ - Quelle: `lib/nomenclature/src/core/nomenclature.internal.scala`

@@ -1,7 +1,0 @@
-orthant 1 language
-
-- A [stream](/doc/soundness/modules/streams.md) pipeline is the clearest case. Each stage takes a
-- stream and yields a stream, so stages chain without adapters and in any order that makes
-- sense:
-+ [ストリーム](/doc/soundness/modules/streams.md) のパイプラインは、最も明快な例である。
-+ 各段階はストリームを取ってストリームを生むので、段階はアダプターなしで、意味をなすどの順序でもつながる。

@@ -1,0 +1,1288 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 05ae0722c90c6237148bcb0a16790148
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0325dc246f6294d401080ab1c59d6889
++ info   die Umgebung eines Programms — Umgebungsvariablen, Systemeigenschaften, Verzeichnisse, die Plattform — als typisierte Kontextwerte
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 1d7e76ad8678c89b1327d577f137253a
++     _Ambience_ stellt das dar, was ein Programm von dem Ort erbt, an dem es gestartet wurde —
++     seine **Umgebungsvariablen**, die **Systemeigenschaften** der JVM, das
++     **Arbeitsverzeichnis**, ein **temporäres Verzeichnis**, die Fähigkeiten des **Terminals**,
++     das **Betriebssystem** und den **Prozessor**, auf dem es läuft —, und zwar als typisierte
++     Kontextwerte statt als die nullbaren Strings der rohen Plattform, die über globale
++     statische Aufrufe erreicht werden.
+
+@ 0 9 0 0f450a662a51d902142490ee73988668
++     Jede Quelle ist ein kleiner Trait: Ein `Environment` beantwortet den Namen einer Variable
++     mit ihrem optionalen Text, ein `System` den Namen einer Eigenschaft, ein `WorkingDirectory`
++     und ein `TemporaryDirectory` benennen je ein Verzeichnis. Eine Methode, die aus einer davon
++     liest, nimmt sie als `using`-Parameter, sodass ihre Abhängigkeit von ihrer Umgebung in ihrer
++     Signatur sichtbar ist, und ein Test, eine Sandbox oder ein Daemon, der viele Shells bedient,
++     kann eine andere liefern. Das Lesen ist typisiert: Eine Variable wird als Member von
++     `Environment` gelesen (`Environment.editor[Text]`, wobei der Name in Camel Case zu `EDITOR`
++     wird), eine Eigenschaft als gepunkteter Member-Pfad von `System.properties`
++     (`System.properties.user.home[Text]()`), und jede wird in den angeforderten Typ dekodiert
++     und löst `Environment.Error` oder `Property.Error` aus, wenn der Wert nicht gesetzt ist.
+
+% 2 1 0 198d39ceea5367d8138fd92793819f97
+
+% 3 1 0 1a5f85489df042c40e68cdeec815a5bc
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 0b7cb11b02bb3caa18ba79acd2078896
+
+% 0 1 0 0ace4261ef6d4a551809f4e58e68044d
+
+% 0 1 0 1964e0c0ab2318060bc72be6ef63c5e4
+
+% 0 1 0 1416e8b10accf58c0b7b1a98ad9aba13
+
+% 1 1 0 096f4d52568a0a7b0741fb04ac0ec519
+
+@ 0 7 0 0c693c224ca3dce2081471a32afd8b29
++     Die echte Umgebung und die echten Eigenschaften sind nie von selbst im Geltungsbereich:
++     Jede ist ein Given in einem Auswahlpaket und wird beim Namen importiert, denn
++     `import soundness.*` importiert keine Givens. Die Pakete sind `environments`
++     (`javaBaseEnvironment`, `emptyEnvironment` sowie die Daemon- und WASI-Umgebungen, die andere
++     Bibliotheken hinzufügen), `systems` (`javaBaseSystem`, `emptySystem`),
++     `workingDirectories`, `temporaryDirectories`, `termcaps` und `wasiApis`. Ein `Environment`
++     ist eine einzige Funktion von einem Namen auf ein `Optional[Text]`, daher ist eines, das für
++     einen Block gebaut wird, ein Lambda, und `variables(name = value)` legt eine Variable über
++     die Umgebung im Geltungsbereich.
+
+@ 0 5 0 16face481582b2c6188e92421662a828
++     Auf den rohen Quellen aufbauend liefern `Xdg` und `Directories` die Standardverzeichnisse
++     der XDG Base Directory Specification (und ihre Windows-Entsprechungen) als Pfade beliebigen
++     Typs, ein `Configurator` liest die Einstellungen einer Anwendung unter einem Präfix aus
++     Eigenschaften und Variablen, und `Searchpath` ist die Markierung für eine Pfad-Ebene, die
++     eine Liste von Verzeichnissen durchsucht, etwa die XDG-Daten- und -Konfigurationsverzeichnisse.
+
+@ 0 7 0 15c2bef8503b6fcd164c436d0982811d
++     Die Bibliothek hat zwei Source-Sets. `ambience.core` enthält alles oben Genannte und
++     kompiliert für die JVM, Scala.js und Scala Native, wobei die `javaBase…`-Givens
++     `java.lang.System` lesen. `ambience.wasi` fügt `environments.wasiEnvironment` und
++     `workingDirectories.wasiWorkingDirectory` hinzu, die die Schnittstelle
++     `wasi:cli/environment` einer Wasm-Komponente lesen. Andere Bibliotheken ergänzen die
++     Auswahlpakete: `ethereal` liefert `environments.daemonEnvironment` und
++     `workingDirectories.daemonClientWorkingDirectory`, und `exoskeleton` liefert
++     `environments.daemonClientEnvironment`.
+
+@ 0 5 0 134710ff87567b211304a28aa09c083e
++     Alles wird in das Umbrella `soundness` exportiert, was eine Folge hat, die man kennen muss:
++     `soundness.System` ist das `System` dieser Bibliothek und verdeckt `java.lang.System` in
++     jeder Datei, die `soundness.*` importiert. Ein bloßes `System.nanoTime`, `System.out` oder
++     `System.arraycopy` in einer solchen Datei scheitert mit _value nanoTime is not a member of
++     object ambience.System_; schreiben Sie `java.lang.System.nanoTime` oder
++     `import java.lang as jl` und `jl.System.nanoTime`.
+
+% 0 1 0 1a3e04a0feab57591fd3a69458462447
+
+% 0 1 0 0a62f8c2677f33ff12490bfd7d7217b0
+
+% 0 1 0 1a367ad8479398ab0f0d2f22876aaafd
+
+% 0 1 0 10bd8e9a57aa9a3417d6f0d432db7fe6
+
+% 0 1 0 0dfdd4c5d9d24c6a0f5632a6ff364be8
+
+% 0 1 0 0c729b8dc575319f1fcb051812e6a706
+
+% 0 1 0 163d836e9113ed981f93e3bffc3da373
+
+@ 0 1 0 09e7b1df389424e6118c7bb6a9b9c3ca
++ entry .Environment   die Umgebungsvariablen, als Kontextwert, gelesen durch typisierten Member-Zugriff
+
+% 1 1 0 1d7c12e5f839d8e915e148d784b541ce
+
+@ 0 6 0 0bf46fdebd4aa7f30ec809e67ec051a4
++       Ein `Environment` ist die Quelle der Umgebungsvariablen eines Programms: `#variable`
++       beantwortet einen Namen mit seinem Text, oder mit `Unset`, wenn er nicht definiert ist, und
++       `#entries` zählt jede Variable auf, wo die Umgebung das kann. Die echte ist
++       `environments.javaBaseEnvironment`, beim Namen importiert; `environments.emptyEnvironment`
++       definiert nichts; und da der Trait eine einzige abstrakte Methode hat, ist ein Lambda von
++       einem Namen auf `Optional[Text]` eine Umgebung für einen Test oder einen Block.
+
+@ 0 8 0 1e739b7d7b2632b3169737ff52f8aa90
++       Über das Begleitobjekt wird eine Variable gelesen. `Environment.editor[Text]` liest
++       `EDITOR`: Ein Member-Name in Camel Case wird zum üblichen Variablennamen in Upper Snake
++       Case (`xdgConfigHome` ist `XDG_CONFIG_HOME`), und das Typargument gibt an, wozu der Wert
++       dekodiert werden soll, über eine `Variable`-Instanz für diesen Namen und Typ. Das
++       Begleitobjekt von `Variable` hat Instanzen für die bekannten Variablen (`home`, `path`,
++       `shell`, die XDG-Variablen), als Pfade typisiert, `columns` als `Int` und einen
++       generischen Rückfall für jeden Namen als `Text` oder als beliebigen Typ, der
++       `Decodable in Text` ist. Ein Name, der kein gültiger Bezeichner ist oder erst zur
++       Laufzeit bekannt ist, wird mit `Environment[Text](t"NAME")` gelesen.
+
+% 2 1 0 1a1989673cd679fe02b089a5cb6ffb4f
+
+% 3 1 0 002f5a1fbcf42e91176ba40fdbf1ea5e
+
+% 4 1 0 00975588de2a7386148c7bfb23c374f9
+
+% 5 1 0 0343515aba20356c055947912966fbe1
+
+% 0 1 0 0b476c8febecfeb40bf175c6fdd1fb12
+
+% 0 1 0 00c56a8c4b2f54d019e0a85925b6d794
+
+% 0 1 0 08885577ed81330510e9f1c8c6000711
+
+% 1 1 0 185d36df378f82b902055d4639d1d5c0
+
+@ 0 2 0 0b7c4ddc7001a15008ee4f87e7124b2b
++       Beide Formen brauchen ein `Environment` im Geltungsbereich und lösen `Environment.Error`
++       aus, wenn die Variable nicht definiert ist; ein `safely(…)` um das Lesen macht aus einer
++       fehlenden Variable `Unset`.
+
+@ 0 2 0 1b7cd15d2b9dd31212305eedfea3f2f9
++       Die Umgebung ist eine Capability, daher kann ein Block gegen eine andere laufen, und ein
++       Given in einem engeren Geltungsbereich gewinnt:
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0256ac8744d8fca8148b67cc8fc2f4f9
+
+% 1 1 0 001a4d3c1d78540507e27a538e330405
+
+% 2 1 0 02b4ece742652eea1e5ac5553e56a9ef
+
+% 3 1 0 1f76e06923a71b1107ca9d81390692ff
+
+% 0 1 0 0c4919636905be9c0089637c4e456fcf
+
+% 0 1 0 0e9d74ebf196ec1f01b58969a6749a96
+
+% 1 1 0 028151b6884edbe402fff473921963fd
+
+% 2 1 0 12c41b2fa36a0ecd11d190ace3b77b4e
+
+% 0 1 0 05fdee043c624cce18f502be09e782de
+
+% 0 1 0 1d768113772db8ca0ebef4ccddea05c3
+
+% 0 1 0 0952fe6a1d85d5b918e2e6115e54e9b3
+
+% 1 1 0 064c9cda3160844a058ec426b6e81e70
+
+% 2 1 0 07cc003ab7efbfbf14868d78eaaa01b0
+
+% 0 1 0 041099fe0e9195c519c9f6106e1e5c54
+
+% 0 1 0 0d675e9872832c8b1aa563846e2fca1d
+
+% 0 1 0 19b9917ea74aa5ff0aa2d119bfafe8d9
+
+% 1 1 0 05d7a7ce5155b71d031a4b4130c7bd99
+
+% 2 1 0 03a6e6d368e6cd00128e2061eda029ef
+
+% 3 1 0 1f6f245a38d0557508c45fd1eb8bd6fc
+
+% 0 1 0 15874479aae17c2c023c3693c414396c
+
+% 0 1 0 0343df635c53915f0e840f2ab59c92c3
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 1e7726e78bf941d709ddfd59b31f80fb
++       Ein residenter Daemon bedient Aufrufe aus vielen Shells, jede mit ihrer eigenen Umgebung,
++       und die globale Umgebung der JVM gehört der Shell, die den Daemon gestartet hat: In einem
++       Daemon ist die Umgebung des Aufrufs `environments.daemonClientEnvironment` (aus
++       `exoskeleton`) und die startende `environments.daemonEnvironment` (aus `ethereal`).
+
+@ 0 2 0 149d0af039019efa15eb0716ecce9da4
++       Ein `Environment` ist `Findable`, sodass ein `Path` relativ dazu aufgelöst werden kann, wo
++       eine Dateisystem-Bibliothek das anbietet.
+
+% 0 1 0 11c98e954ae661ec0e8837f5842581a9
+
+% 0 1 0 014d10d2df187ba61a52410e3badc3ca
+
+% 0 1 0 106f93f9d4d35300075a00109b441520
+
+% 1 1 0 02d842228f65ee861020024dae3faff3
+
+@ 0 20 0 1bd9d7f3355a5dc91d5509efc647b8e0
++   entry .apply   liest eine Variable anhand ihres Laufzeitnamens, dekodiert in den angeforderten Typ
++       `Environment[Text](t"HOME")` liest die durch den Text benannte Variable, über die Instanz
++       `Variable[Label, T]` für den Typ (`Text` oder ein beliebiger Typ, der `Decodable in Text`
++       ist), und löst `Environment.Error` aus, wenn sie nicht definiert ist. Es braucht ein
++       `Environment` im Geltungsbereich. Dies ist die Form für einen Namen, der erst zur Laufzeit
++       bekannt ist oder kein Bezeichner ist; eine bekannte Variable ist einfacher ein
++       Member-Zugriff, `Environment.home[Text]`.
++   entry .selectDynamic   die Form des Member-Zugriffs: `Environment.xdgConfigHome[Text]` liest `XDG_CONFIG_HOME`
++       Jeder Bezeichner ist ein Member von `Environment`: Der Name in Camel Case wird vom
++       `defaultName` der `Variable`-Instanz in Upper Snake Case übersetzt (`xdgConfigHome` zu
++       `XDG_CONFIG_HOME`, `term` zu `TERM`), die Variable wird aus dem `Environment` im
++       Geltungsbereich gelesen, und ihr Text wird von der Instanz für den Namen und das
++       Typargument dekodiert. `Environment.Error` wird über die `Tactic` im Geltungsbereich
++       ausgelöst, wenn die Variable nicht definiert ist. Das Typargument wird gewöhnlich
++       gebraucht: `Environment.home[Text]` oder `Environment.home[Path on Linux]`, wo die Instanz
++       `Variable.home` einen Pfad eines beliebigen Typs liest, der
++       `Instantiable across Paths from Text` ist.
++   entry .provided   ein `Environment` aus einem beliebigen `Environment.Provider` im Geltungsbereich
++       Ein Given im Begleitobjekt, braucht also keinen Import: Wo immer ein `Provider` — etwa ein
++       CLI-Aufruf, der die Umgebung trägt, aus der er aufgerufen wurde — ein Given ist, lässt sich
++       ein `Environment` direkt herbeirufen.
++   entry .Provider   etwas, das eine kanonische Umgebung trägt, etwa ein CLI-Aufruf
+
+% 1 1 0 0770fb226302a92809c54bc7a17ab4dd
+
+@ 0 5 0 1ff3ab2fcb8928fd13cb58210bfa994a
++         Ein Trait mit einem Member, `#environment`. Ein Typ, der eine eigene Umgebung hat
++         (etwa ein Aufruf eines Daemons), erweitert ihn, und `Environment.provided` macht diese
++         Umgebung überall dort zu der im Geltungsbereich, wo der Provider ein Given ist.
++     entry #environment   die Umgebung, die dieser Provider trägt
++   entry .Error   ausgelöst, wenn eine gelesene Variable nicht definiert ist
+
+% 1 1 0 00116a48cc56ffeb16975691b148aeb7
+
+@ 0 12 0 127669a81ef344010da7ff623f3e6438
++         Fehler `↯/s.62.2`: _the environment variable `variable` was not defined_. Von
++         `Environment.apply` und der Form des Member-Zugriffs über die
++         `Tactic[Environment.Error]` im Geltungsbereich ausgelöst;
++         `safely(Environment.editor[Text])` liest stattdessen `Unset`.
++     entry #variable   der Name der nicht definierten Variable, so wie er nachgeschlagen wurde (`EDITOR`)
++   entry #variable   der Wert einer Variable anhand ihres Namens, oder `Unset`, wenn sie nicht definiert ist
++       Die einzige abstrakte Methode: der rohe Text der Variable, undekodiert.
++       `Environment.apply` und die Form des Member-Zugriffs rufen sie auf und dekodieren das
++       Ergebnis.
++   entry #entries   jede Variable, wo die Umgebung sie aufzählen kann; `Unset`, wo nicht
++       Die Umgebung der JVM und die leere Umgebung können sich selbst auflisten; eine aus einem
++       Lambda gebaute kann es nicht und antwortet `Unset`. Ein Kindprozess, der unter einer
++       aufzählbaren Umgebung gestartet wird, erhält genau diese Variablen, weshalb
++       `variables(…)` seine Überschreibungen sowohl den Einträgen als auch dem Nachschlagen
++       hinzufügt.
+
+@ 0 1 0 0a1020ce0ac9a869098200ce734f8ad6
++ entry .Variable   wie eine Umgebungsvariable anhand ihrer Beschriftung in Camel Case benannt und dekodiert wird
+
+% 1 1 0 0d114563a5fbfabc0eea851c42b618e9
+
+@ 0 4 0 0567fbbaf893434d0aa6f3287f893c7d
++       `Variable[alias, T]` ist die Typklasse hinter `Environment.alias[T]`: Für eine
++       Beschriftung wie `"xdgConfigHome"` kennt sie den tatsächlichen Namen der Variable
++       (`#defaultName`, also `#name`, wenn die Instanz ihn überschreibt, sonst die Beschriftung in
++       Upper Snake Case) und weiß, wie ihr Text mit `#read` als `T` zu lesen ist.
+
+@ 0 1 0 09bbb4051fad16c50fc0a96f183bb86c
++       Das Begleitobjekt hat Instanzen für die bekannten Variablen, jede nach ihrer Beschriftung:
+
+% 0 1 0 043bc34b60147f690b77713336e306b0
+
+% 0 1 0 187c497f3cf55e1e0f5f0a2ef41c5f13
+
+@ 0 6 0 1d809ec57d91e6460f19b2d394961e71
++       `xdgCacheHome` und `xdgRuntimeDir` lesen einen einzelnen Pfad eines beliebigen Typs, der
++       `Instantiable across Paths from Text` ist; `path`, `xdgDataDirs` und `xdgConfigDirs`
++       lesen eine Liste von Pfaden, getrennt an der Eigenschaft `path.separator` des `System` im
++       Geltungsbereich (oder an `:`, wo es keine hat); `columns` liest ein `Int`; und `lang`,
++       `display` und `term` lesen `Text`. Vom Elternteil `Protovariable` stammen die beiden
++       Rückfälle für jede Beschriftung: `generic` liest den Text, wie er ist, und `decoder` liest
++       ihn als einen beliebigen Typ, der `Decodable in Text` ist.
+
+% 2 1 0 1affe5879f8eb62a0ab9982977b5828e
+
+% 3 1 0 1233e51fae1678dc1c0e6e0c9b810488
+
+% 4 1 0 072f8d0ec777510709bb8c8633e748fd
+
+% 5 1 0 17e73b5504ec236319883e6ce0a27d57
+
+% 2 1 0 1db942de6b944095175375276bc01e9f
+
+% 0 1 0 158269893f0dd576004514aecc25e00b
+
+% 0 1 0 029553d59986e24208b8a7a40b1e3f2c
+
+% 0 1 0 14e05c31469a27a01cde3b7ee9c72f3d
+
+% 1 1 0 076371086a8acb520bc597e3510a21ed
+
+@ 0 2 0 0fb1a05c1dfb7225158a7b154f738095
++       Ein Programm kann eine eigene Instanz für eine Variable deklarieren, als Given
++       `Variable["myVar", MyType]`, und `Environment.myVar[MyType]` liest sie.
+
+% 1 1 0 1fa89e911652bccb0d7df2a47b920aa8
+
+% 0 1 0 16a5743014b6cd080d83baf50e4ce7de
+
+@ 0 27 0 1efce0b365ae2b840378b051ea3f7a65
++   entry .path   `PATH`, als Liste von Pfaden, getrennt am Pfadtrenner der Plattform
++       Braucht ein `System` für die Eigenschaft `path.separator`, mit `:` als Rückfall.
++   entry .xdgDataDirs   `XDG_DATA_DIRS`, als Liste von Pfaden
++   entry .xdgConfigDirs   `XDG_CONFIG_DIRS`, als Liste von Pfaden
++   entry .xdgDataHome   `XDG_DATA_HOME`, als Pfad
++   entry .xdgConfigHome   `XDG_CONFIG_HOME`, als Pfad
++   entry .xdgBinHome   `XDG_BIN_HOME`, als Pfad
++   entry .xdgStateHome   `XDG_STATE_HOME`, als Pfad
++   entry .xdgCacheHome   `XDG_CACHE_HOME`, als Pfad
++   entry .xdgRuntimeDir   `XDG_RUNTIME_DIR`, als Pfad
++   entry .home   `HOME`, als Pfad
++   entry .mail   `MAIL`, als Pfad
++   entry .shell   `SHELL`, als Pfad
++   entry .oldpwd   `OLDPWD`, als Pfad
++   entry .windowid   `WINDOWID`, als Pfad
++   entry .editor   `EDITOR`, als Pfad
++   entry .pager   `PAGER`, als Pfad
++   entry .manpager   `MANPAGER`, als Pfad
++   entry .sshAuthSock   `SSH_AUTH_SOCK`, als Pfad
++   entry .columns   `COLUMNS`, als `Int`
++   entry .lang   `LANG`, als Text
++   entry .display   `DISPLAY`, als Text
++   entry .term   `TERM`, als Text
++   entry #defaultName   der tatsächliche Name der Variable: `#name`, falls gesetzt, sonst die Beschriftung in Upper Snake Case
++       `"xdgDataHome"` wird zu `XDG_DATA_HOME` und `"term"` zu `TERM`.
++   entry #name   ein expliziter Variablenname, der den abgeleiteten überschreibt; standardmäßig `Unset`
++   entry #read   dekodiert den Text der Variable in den Typ der Instanz
+
+@ 0 1 0 0f83ea4835cfdc30086862bcb919c01a
++ entry .Protovariable   die `Variable`-Instanzen als Rückfall für jede Beschriftung: als Text oder als beliebiger dekodierbarer Typ
+
+% 1 1 0 194f85c634f85aae02792332c85b3763
+
+@ 0 7 0 17b9882047c7229c1eebfaa1456c43f4
++       Das Elternteil des Begleitobjekts von `Variable`, das die beiden Instanzen enthält, die für
++       jede Beschriftung gelten, mit niedrigerer Priorität als die benannten in `Variable` selbst:
++       So liest `Environment.anything[Text]` jede Variable als Text, und
++       `Environment.anything[Int]` dekodiert sie mit der Instanz `Int is Decodable in Text`.
++       Normalerweise nicht direkt angesprochen.
++   entry #generic   jede Variable, als ihr roher Text
++   entry #decoder   jede Variable, dekodiert in einen Typ, der `Decodable in Text` ist
+
+@ 0 1 0 1e95c5e7fb844ef702db36ac540a0a44
++ entry .variables   führt einen Block mit benannten Variablen aus, die über die Umgebung im Geltungsbereich gelegt werden
+
+% 1 1 0 03b9973a9eb7a9cb1a65f8e28263487e
+
+@ 0 6 0 1de2ad24be9a060809fa892119680a05
++       `variables(name = value, …)(block)` benennt jede Variable in Camel Case und setzt sie in
++       der üblichen Form in Upper Snake Case — `gitIndexFile` ist `GIT_INDEX_FILE` — über dem
++       `Environment` im Geltungsbereich, für die Dauer des Blocks, der die neue Umgebung als
++       Kontextparameter erhält. Nachschlagen anderer Namen fällt auf die äußere Umgebung durch,
++       und die Überschreibungen werden auch `Environment#entries` hinzugefügt, sodass ein
++       innerhalb des Blocks gestarteter Unterprozess sie erbt.
+
+% 2 1 0 1414ae2358a23dba0a6b655478ec52b5
+
+% 3 1 0 1448e1d2ec6b8b2a1bbbf2d00cd55f76
+
+% 4 1 0 05393be4fef8b3700331a9de5540c914
+
+% 5 1 0 198ec65b9b7565a30ee96bca53156f80
+
+% 0 1 0 16ce3674082ca7c1008b4d3830316240
+
+% 0 1 0 0cdde077800b59d303517d825b887fa4
+
+% 1 1 0 054d5dfd2f270dad007de0004eb7593e
+
+@ 0 5 0 1182492daddec909020f04285da1bd6c
++       Die Werte sind `Text`; ein äußeres `Environment` ist erforderlich.
++   entry .applyDynamicNamed   die Anwendung mit benannten Argumenten hinter `variables(name = value)(block)`
++       Nicht beim Namen aufgerufen: Der Compiler schreibt `variables(gitIndexFile = t"…")` darauf
++       um. Jeder Argumentname wird von Camel Case in Upper Snake Case umgewandelt, und der Block
++       erhält das erweiterte `Environment` als Kontextparameter.
+
+@ 0 1 0 094804a0177fb1da0803d726eb986741
++ entry .System   die Systemeigenschaften, als Kontextwert, und die daraus gelesene Plattform
+
+% 1 1 0 1bb25ce51598f9ba0c0700aaa0d1862f
+
+@ 0 3 0 02301ebd09c52d8512dbf2f351dce777
++       Ein `System` beantwortet den Namen einer Eigenschaft mit ihrem Text, oder mit `Unset`; das
++       eigene der JVM ist `systems.javaBaseSystem`, beim Namen importiert, und
++       `systems.emptySystem` definiert nichts. Ein Lambda von einem Namen auf `Optional[Text]`
++       ist ein `System` für einen Test.
+
+@ 0 7 0 1469945d832d587a0b4ad707f0d2d336
++       Eigenschaften werden über `.properties` gelesen, wobei der gepunktete Name als Pfad von
++       Membern geschrieben wird, der mit einer Anwendung endet, deren Typargument angibt, wozu der
++       Wert dekodiert wird: `System.properties.user.home[Text]()`,
++       `System.properties.file.separator[Char]()`. Die `Property`-Instanzen des Begleitobjekts
++       kennen die Typen der Standardeigenschaften (`java.home` und `user.home` als Pfade,
++       `os.arch` als `Architecture`, `java.class.version` als `Int`), und jede andere Eigenschaft
++       wird als `Text` oder als beliebiger Typ gelesen, der `Decodable in Text` ist. Eine nicht
++       definierte Eigenschaft löst `Property.Error` aus.
+
+% 2 1 0 19956707363a88110a0990b3a39cc3a2
+
+% 3 1 0 1c845264d8b077eb0d8e728d3be855d2
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 2 1 0 087b335af072e54313f73e94aaa91dfd
+
+% 0 1 0 1f54db1f7aab7b201b30e4478a3d1616
+
+% 0 1 0 06b1d9e830c3722c1be85b8459e97bf3
+
+% 0 1 0 16f80f6518dde20a0751fedf1730d626
+
+% 0 1 0 1f17ae85827c54680c0fe828fa43b3ba
+
+% 1 1 0 0d286dea9c6b29971ab1091cc3088b05
+
+@ 0 4 0 02453407a24e860215fdf4e5474104b1
++       Eigenschaften und Umgebungsvariablen gleichen sich darin, dass sie textuelle
++       Schlüssel-Wert-Daten sind, und unterscheiden sich in ihrer Herkunft: Eine Eigenschaft wird
++       der JVM als `-D`-Argument übergeben und in gepunkteter Kleinschreibung benannt, eine
++       Variable wird von der Shell geerbt und in Upper Snake Case benannt. Jede wird an der Stelle
++       des Lesens dekodiert, statt als Text nach innen weitergereicht zu werden.
+
+@ 0 2 0 1ea8c3bb606158320b7dc47f24471932
++       In einer Datei, die `soundness.*` importiert, verdeckt dieses `System` `java.lang.System`:
++       Schreiben Sie `java.lang.System.nanoTime` für das von Java.
+
+% 0 1 0 1b38210a2abcbdf40bdf0d2d20009f4a
+
+% 0 1 0 1d35dbfba5489b2411c6b352fbd50c75
+
+% 1 1 0 0849b07617ed304f1ce0bd2f8c5ac46f
+
+% 1 1 0 012039e2d429496d0ec7b8ab7f3a1cd8
+
+@ 0 9 0 0ac70d5e5807efac072737c98d6f84df
++   entry .os   das laufende Betriebssystem, dekodiert aus der Eigenschaft `os.name`
++       `System.os` liest `os.name` aus dem `System` im Geltungsbereich und dekodiert es als `Os`,
++       sodass ein Programm auf `Os.MacOs` matcht statt auf die vielen Schreibweisen, die die
++       Eigenschaft annimmt. Es löst eine Panic aus, statt einen Fehler auszulösen, wenn die
++       Eigenschaft nicht definiert ist, wie es die typisierten Eigenschaftslesungen tun; eine
++       nachsichtige Prüfung ist `system(t"os.name").let(_.as[Os])`.
++   entry .architecture   die laufende Prozessorarchitektur, dekodiert aus der Eigenschaft `os.arch`
++       `System.architecture` liest `os.arch` und dekodiert es als `Architecture`, `Arm(64)` für
++       `aarch64` oder `arm64`. Löst eine Panic aus, wenn die Eigenschaft nicht definiert ist.
++   entry .properties   die Wurzel des Pfads aus gepunkteten Namen zum Lesen einer Eigenschaft
+
+% 1 1 0 1f555c67d2e24e2318538377a349c3ee
+
+@ 0 4 0 008f1a4d072d26e115ab986484b67189
++         `System.properties.a.b.c[T]()` liest die Eigenschaft `a.b.c`: Jeder Member-Zugriff
++         erweitert einen `Property.Access` um ein weiteres Segment, und die abschließende
++         Anwendung liest die Eigenschaft aus dem `System` im Geltungsbereich über die
++         `Property`-Instanz für diesen Namen und Typ. `System.properties[T](t"a.b.c")` liest eine
++         Eigenschaft anhand ihres Laufzeitnamens.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 0c768c6e82769c890f2f559fbfa153a3
+
+% 0 1 0 0f424c3bd82258290ca5264e02688012
+
+% 0 1 0 01fee8fb56043e7b06894305cef3b4ca
+
+% 0 1 0 1fa8088dd27ac886097738cc33374440
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 6 0 1767b6a2284e073d1a985bd50f37a5d0
++     entry .apply   liest eine Eigenschaft anhand ihres Laufzeitnamens, dekodiert in den angeforderten Typ
++         Braucht ein `System` und eine `Property`-Instanz für den Typ: `Text` oder einen
++         beliebigen Typ, der `Decodable in Text` ist. Löst `Property.Error` aus, wenn die
++         Eigenschaft nicht definiert ist.
++     entry .selectDynamic   beginnt einen gepunkteten Eigenschaftsnamen: `System.properties.user` ist ein `Property.Access["user"]`
++   entry #apply   der Wert einer Eigenschaft anhand ihres Namens, oder `Unset`, wenn sie nicht definiert ist
++       Die einzige abstrakte Methode, der rohe Text. Die typisierten Lesungen rufen sie auf und
++       dekodieren das Ergebnis.
+
+@ 0 1 0 1f071c669121416502dd5fc668aa0c0a
++ entry .Property   wie eine Systemeigenschaft anhand ihres gepunkteten Namens in einen Typ dekodiert wird
+
+% 1 1 0 01bfb6185fa03a97182bb9f0a52c5b58
+
+@ 0 11 0 13fc4425408a450e087e0eb470e135b5
++       `name is Property of T` ist die Typklasse hinter `System.properties.<name>[T]()`: Für den
++       literalen Eigenschaftsnamen weiß sie, wie der optionale Text mit `#read` als `T` zu lesen
++       ist und was bei fehlender Eigenschaft geschehen soll. Das Begleitobjekt hat Instanzen für
++       die Standardeigenschaften der JVM, sodass jede als ihr natürlicher Typ gelesen wird:
++       `java.home`, `user.home` und `user.dir` als Pfad eines beliebigen Typs, der
++       `Instantiable across Paths from Text` ist; `file.separator` und `path.separator` als
++       `Char`; `os.arch` als `Architecture`; `java.class.version` als `Int` (`65` für Java 21);
++       und `java.version`, `java.vendor`, `java.vendor.url`, `java.runtime.version`,
++       `line.separator`, `user.name`, `os.name` und `os.version` als `Text`. Jede andere
++       Eigenschaft wird als `Text` (`.generic`) oder als beliebiger Typ gelesen, der
++       `Decodable in Text` ist (`.decoder`), wobei jede `Property.Error` über die `Tactic` im
++       Geltungsbereich auslöst, wenn sie nicht definiert ist.
+
+@ 0 3 0 125d677733cb047e0bf299add87317d8
++       Die Standardinstanzen mit festem Typ lösen bei einer fehlenden Eigenschaft eine Panic aus,
++       statt einen Fehler auszulösen, da eine JVM sie immer definiert; die generischen sowie
++       `javaRuntimeVersion` und `javaClassVersion` brauchen eine `Tactic[Property.Error]`.
+
+% 2 1 0 11deb9504159bb8d04d6106817561c8a
+
+% 3 1 0 1ac7f8570ab6e2b01dc3e249cd474a87
+
+% 4 1 0 00a630d33852e98b179711b72ec812b2
+
+% 2 1 0 1e118d80a98b6e58146e844ea4a69a16
+
+% 2 1 0 1c6f19df4592e92f0505f9dabfe33a55
+
+% 0 1 0 1a36588bd13bc7761b5f272d62408ca5
+
+% 0 1 0 154a33a426ce4bea1cd581ec48bca12f
+
+% 0 1 0 03e9248d87d000ab17e56961da312e01
+
+% 1 1 0 007e75e469a97f9d026d06260729f01f
+
+@ 0 2 0 0dfaba1eb2b4d651131a59ba0fc1c0da
++       Ein Eigenschaftsname, der ein Scala-Schlüsselwort ist, etwa `class` in `java.class.path`,
++       wird in Backticks geschrieben.
+
+% 1 1 0 14e9fa31ecbfc4370518c70bb12caa2f
+
+@ 0 24 0 1dd13fa3288ba26f17f6f871363a713c
++   entry .apply   erzeugt eine `Property`-Instanz aus einer Funktion über dem Text der Eigenschaft
++       `Property[name, T](text => …)` ist die Instanz, die eine definierte Eigenschaft mit der
++       Funktion dekodiert und eine Panic auslöst, wenn sie nicht definiert ist; so sind die
++       Instanzen mit festem Typ im Begleitobjekt geschrieben, und so deklariert ein Programm den
++       Typ einer eigenen Eigenschaft.
++   entry .generic   jede Eigenschaft, als ihr roher Text; löst `Property.Error` aus, wenn sie nicht definiert ist
++   entry .decoder   jede Eigenschaft, dekodiert in einen Typ, der `Decodable in Text` ist; löst `Property.Error` aus, wenn sie nicht definiert ist
++   entry .javaHome   `java.home`, als Pfad beliebigen Typs
++   entry .javaVersion   `java.version`, als Text
++   entry .javaVendor   `java.vendor`, als Text
++   entry .javaVendorUrl   `java.vendor.url`, als Text
++   entry .javaRuntimeVersion   `java.runtime.version`, als Text (`21.0.2+13-LTS`); löst `Property.Error` aus, wenn sie nicht definiert ist
++   entry .javaClassVersion   `java.class.version`, als Hauptversion des Classfile-Formats (`65` für Java 21)
++       Die Eigenschaft ist eine Dezimalzahl wie `65.0`; gewünscht ist ihr ganzzahliger Teil. Löst
++       `Property.Error` aus, wenn die Eigenschaft nicht definiert ist oder sich nicht parsen lässt.
++   entry .fileSeparator   `file.separator`, als `Char`
++   entry .pathSeparator   `path.separator`, als `Char`
++   entry .lineSeparator   `line.separator`, als Text
++   entry .userName   `user.name`, als Text
++   entry .userHome   `user.home`, als Pfad beliebigen Typs
++   entry .userDir   `user.dir`, als Pfad beliebigen Typs
++   entry .osName   `os.name`, als Text; `System.os` dekodiert es als `Os`
++   entry .osVersion   `os.version`, als Text
++   entry .osArch   `os.arch`, als `Architecture`
++   entry .Access   ein teilweise geschriebener gepunkteter Eigenschaftsname, durch Member-Zugriff erweitert und durch Anwendung gelesen
+
+% 1 1 0 14c9825ca80392e700962be76ebbb942
+
+@ 0 8 0 0ef522fa16c1ae2d00ffb807b82d7e00
++         `System.properties.user` ist ein `Property.Access["user"]`; `.home` erweitert ihn zu
++         `Property.Access["user.home"]`, und `[Text]()` liest ihn. Der Name wird im Typ
++         mitgeführt, sodass die `Property`-Instanz zur Kompilierzeit anhand des vollständigen
++         gepunkteten Namens gewählt wird.
++     entry #selectDynamic   erweitert den Namen um ein gepunktetes Segment
++     entry #applyDynamic   erweitert den Namen um ein Segment und liest die Eigenschaft in einem Schritt
++     entry #property   der bisher geschriebene gepunktete Eigenschaftsname, als String
++     entry #apply   liest die benannte Eigenschaft aus dem `System` im Geltungsbereich, dekodiert in das Typargument
++   entry .Error   ausgelöst, wenn eine gelesene Eigenschaft nicht definiert ist
+
+% 1 1 0 18b579df03306f341c3d064d42215466
+
+@ 0 7 0 1407dcb62b7edd2713de2a33e0857912
++         Fehler `↯/s.62.1`: _the system property `property` was not defined_. Von den
++         Instanzen `generic` und `decoder` sowie von `javaRuntimeVersion` und
++         `javaClassVersion` über die `Tactic[Property.Error]` im Geltungsbereich ausgelöst; auch
++         von anderen Bibliotheken, die eine benötigte Eigenschaft lesen, etwa `LocalClasspath`
++         beim Lesen von `path.separator`.
++     entry #property   der gepunktete Name der nicht definierten Eigenschaft
++   entry #read   dekodiert den optionalen Text einer Eigenschaft, mit ihrem Namen, in den Typ der Instanz
++   entry #Self   der Name der Eigenschaft, als literaler String-Typ
+
+@ 0 1 0 0c0ffe09742f3bec05963b9aeedd57b0
++ entry .Os   das Betriebssystem, auf dem ein Programm läuft, als aus `os.name` dekodierter Wert
+
+% 1 1 0 05b2ee11de9c0ca41f2a713a89c626d5
+
+@ 0 5 0 08585d286048eb04071a66e6b09c28ba
++       Ein Enum der Betriebssysteme, die die JVM meldet — `Linux`, `MacOs`, `Windows`,
++       `FreeBsd`, `OpenBsd`, `NetBsd`, `Solaris`, `Aix` — und `Other(name)` für eines, das sie
++       nicht kennt, wobei der Name erhalten bleibt. `System.os` liest das laufende aus dem
++       `System` im Geltungsbereich, und `text.as[Os]` dekodiert jeden `os.name`-Text, indem es
++       das kleingeschriebene Präfix abgleicht, sodass `Mac OS X`, `Windows Server 2022` und
++       `SunOS` jeweils wie erwartet dekodiert werden.
+
+% 2 1 0 01195e2fdfbe5db315124042bbb46fd7
+
+% 3 1 0 014c928cd6d53f720fa64e832b635487
+
+% 4 1 0 187952b2457681741c9a4d346fdc03f3
+
+% 0 1 0 1220e20f34579bf212c889064351e978
+
+% 0 1 0 1cbf715806d4298901ba7e70d5264e7e
+
+% 0 1 0 136340b1f787c34717a33394e4fddfc8
+
+% 0 1 0 1edeb008775f795c01c0befbf6d824fc
+
+% 0 1 0 078b75a71c5f865a1d0de5b4fc6d7534
+
+% 0 1 0 0a9e8869826248051d375545acf80354
+
+% 0 1 0 0ca450fa96fece13019541dce60d30ef
+
+% 1 1 0 16264cb2f124b9ed1bd596359b3fb918
+
+@ 0 2 0 175331663abcc8131cbd091e909c15e3
++       `Os` ist nicht das Ziel von `Vm.intercept`; die Ereignisse der virtuellen Maschine werden
++       über `Vm` abgefangen.
+
+% 1 1 0 1e6cddd58a414e77147e9a39aee1fd4c
+
+% 1 1 0 1444876cb50919f113c779a702a8c765
+
+@ 0 3 0 0f42c4f286e74fca1c64b79c814a907f
++   entry .decodable   liest einen `os.name`-Text als `Os`, anhand seines kleingeschriebenen Präfixes
++       `linux`; `mac` oder `darwin`; `windows`; `freebsd`; `openbsd`; `netbsd`; `sunos` oder
++       `solaris`; `aix`; alles andere ist `Other(name)`. Das Dekodieren scheitert nie.
+
+@ 0 1 0 12b57ffc905b7ce40bd6e1a7dc886da2
++ entry .Architecture   die Prozessorarchitektur, als aus `os.arch` dekodierter Wert
+
+% 1 1 0 15331d44f8d6658614f397de8fd9425e
+
+@ 0 1 0 02471868b0da9bf91b50b1205f8541d6
++       Ein Enum von Prozessorfamilien mit ihrer Wortbreite: `X86(32 | 64)`, `Arm(32 | 64)`,
+
+% 0 1 0 1e3576c3acfa9e45110bed17678fa0c9
+
+@ 0 4 0 0d861a8cfc4c1e8a100e559cd04b134f
++       `RiscV` und `Other(name)` für eine, die es nicht kennt. `System.architecture` liest die
++       laufende aus dem `System` im Geltungsbereich, sodass Code, der eine native Bibliothek oder
++       einen Codepfad nach Architektur wählt, auf einen Wert matcht statt auf einen String, dessen
++       Schreibweise je nach Plattform variiert.
+
+% 2 1 0 1e51da224403fa8a1493b14d693873f0
+
+% 3 1 0 0b52713bae955a4807935bbc15724a89
+
+% 0 1 0 080a4de4179f6d0b1ae8480a6d4b0338
+
+% 0 1 0 0d00e155056ed7c00dc60bb188137a1e
+
+% 0 1 0 13b2b22fd4e8504608b26b97b361ca2c
+
+% 1 1 0 07999a09aabfdc361ee891209fafe515
+
+% 1 1 0 10767315774c248615edc017fb5c82eb
+
+% 1 1 0 007fe401b42c65c3016f696874bb2165
+
+@ 0 2 0 0a4537fbffbcd8f211b47bded4a48631
++   entry .decodable   liest einen `os.arch`-Text als `Architecture`
++       Das Dekodieren scheitert nie; ein unbekannter Name bleibt als `Other(name)` erhalten:
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+% 0 1 0 0bb3d2f9ecf5719e1030ff89f146c273
+
+@ 0 1 0 1fea34b488c9e575090cfaadadeef366
++       column  Architektur
+
+% 0 1 0 1b41c302e0b78e960e0bd4c4ce1f53c3
+
+% 0 1 0 14f1f3aa299b6f771d83effb086e45b4
+
+% 0 1 0 17f1beda082592a314be602788e3e539
+
+% 0 1 0 0b0955c91e2ebc8c19a79fcb437fe8a0
+
+% 0 1 0 1edd57828f6229451d25c9b9c7bea453
+
+% 0 1 0 15e6459a87081ec807eb921f319c01b7
+
+@ 0 1 0 1efb3b7db1ccc9ca0dedfac6b8842270
++       row  `ppc64le`  `Ppc(64, true)`, Little-Endian
+
+% 0 1 0 07ccb0649395579e0fbc9e94364eb01d
+
+% 0 1 0 0f264fb83952242b03a0e79df7511262
+
+% 0 1 0 1bc4a759e74bfa500f58137070c0084e
+
+% 0 1 0 0477af65dc1641dc1da4989d20afe196
+
+% 0 1 0 139345cb9ce11e581d2b9cb4f2c9a31e
+
+% 0 1 0 089794724002307b1bd99c2ff71ef626
+
+% 0 1 0 10992186dd28f66a0d009fcfe4e91280
+
+@ 0 1 0 117e71103d41fd7100c41e7bfc0a0071
++       row  jeder andere Name  `Other(name)`
+
+% 1 1 0 16cb0dc7fe44f38d1ba13441370ad6ee
+
+@ 0 7 0 02550e117b84ec981ff2895dba2086cd
++ entry .Vm   die virtuelle Maschine, in der das Programm läuft: das Ziel von `Vm.intercept`
++     Ein Objekt ohne eigene Member. An ihm werden die Ereignisse abgefangen, die die virtuelle
++     Maschine auslöst — ihr Herunterfahren, eine nicht abgefangene Exception, eine Garbage
++     Collection —, über `Vm.intercept[Shutdown]`, `Vm.intercept[Fault]` und
++     `Vm.intercept[GarbageCollection]` in der Bibliothek `parasite`, die diese Ereignisse als an
++     diesem Ziel abfangbar deklariert. Heute stellt nur die JVM die Ereignisse bereit, aber keines
++     davon ist im Prinzip JVM-spezifisch, weshalb das Ziel `Vm` ist und nicht das
++     Staging-Gerüst `Jvm`.
+
+% 2 1 0 06aff328f3d275d50c1367dbcc480db4
+
+% 3 1 0 13f4b4dadf37bfbf18ea07af5f51bf5b
+
+% 0 1 0 165462afad97f91204a9c33272297e1b
+
+% 0 1 0 1334ebfb7f1c19870ee5acdbaefefb39
+
+% 1 1 0 1a6a52a25899c6ca078ad125828d4a05
+
+@ 0 1 0 0afc52d4b273fe2f0f81f51707adbf88
++ entry .WorkingDirectory   das Verzeichnis, in dem ein Programm gestartet wurde, als Kontextwert
+
+% 1 1 0 09001a04b14f07da17c0d5812b91f678
+
+@ 0 9 0 0b3f4424ca8527701540a9845dbda81d
++       Ein `WorkingDirectory` benennt ein Verzeichnis, als Text von `#directory()`; eine Methode,
++       die einen relativen Pfad gegen das Arbeitsverzeichnis auflöst, nimmt eines als
++       `using`-Parameter, statt `user.dir` aus einer globalen Quelle zu lesen. Die beim Namen zu
++       importierenden liegen im Paket `workingDirectories`: `javaBaseWorkingDirectory` ist das
++       `user.dir` der JVM, `systemWorkingDirectory` liest `user.dir` aus dem `System` im
++       Geltungsbereich, `wasiWorkingDirectory` das Anfangsverzeichnis einer Wasm-Komponente und
++       `daemonClientWorkingDirectory` (aus `ethereal`) das Verzeichnis, aus dem jeder Aufruf eines
++       Daemons erfolgte. `WorkingDirectory(path)` erzeugt eines aus einem beliebigen Pfadwert, und
++       das `workingDirectory[Path on Linux]` auf oberster Ebene löst das im Geltungsbereich in
++       einen Pfadtyp auf.
+
+% 2 1 0 01b033a4b739d5ad011265a97418ff46
+
+% 3 1 0 054b9ff855c313650b66c7fd507f5831
+
+% 4 1 0 1ad427f18900ed511ccf4688e2e3a152
+
+% 1 1 0 06a942ff3853a560118ebcb82d23fca2
+
+% 0 1 0 02ab150339f5b3121d8aa703e8ffadb7
+
+% 0 1 0 07d1673df12056240cdd99dc28a89592
+
+% 0 1 0 0f1640e4ec19692916b0da9338a2acb9
+
+% 1 1 0 175b8efdcbbe57e71f0cd95e5fc54e5b
+
+% 0 1 0 07653f6d3bf18c5f08320d45a283d1fc
+
+% 0 1 0 01ba52eeeb1156d418e416e22d0e88ac
+
+@ 0 5 0 02d56471e87cd93f01befbe441e3f981
++   entry .apply   ein Arbeitsverzeichnis aus einem beliebigen Pfadtyp, der `Abstractable across Paths to Text` ist
++   entry .provided   ein `WorkingDirectory` aus einem beliebigen `WorkingDirectory.Provider` im Geltungsbereich
++       Ein Given im Begleitobjekt, braucht also keinen Import: Wo immer ein Provider, etwa ein
++       CLI-Aufruf, ein Given ist, lässt sich sein Arbeitsverzeichnis direkt herbeirufen.
++   entry .Provider   etwas, das ein kanonisches Arbeitsverzeichnis trägt, etwa ein CLI-Aufruf
+
+% 1 1 0 0e470651f2a5735a13ef093fa94639bf
+
+@ 0 5 0 0c4ba2d9e366c8ec06c68e4374000925
++         Ein Trait mit einem Member, `#workingDirectory`. Jeder Client eines Daemons hat ein
++         eigenes Arbeitsverzeichnis, daher stellt der Aufruftyp es bereit, und
++         `WorkingDirectory.provided` macht es zu dem im Geltungsbereich.
++     entry #workingDirectory   das Arbeitsverzeichnis, das dieser Provider trägt
++   entry .Error   ausgelöst, wenn ein Arbeitsverzeichnis gebraucht wird und keines vorhanden ist
+
+% 1 1 0 1db732683ab7fbc50039d7b02136fe5c
+
+@ 0 4 0 05ced1bf6ec5a2bc023d6ff764848317
++         Fehler `↯/s.62.3`: _there is no working directory_. Von Code ausgelöst, der einen
++         relativen Pfad auflösen muss und kein `WorkingDirectory` hat, gegen das er ihn auflösen
++         kann, etwa ein Daemon-Aufruf, dessen Client keines melden konnte.
++   entry #directory   das Arbeitsverzeichnis, als Text
+
+@ 0 1 0 173421742de01ad212fd4754558baba1
++ entry .TemporaryDirectory   ein Verzeichnis für temporäre Dateien, als Kontextwert
+
+% 1 1 0 1e9b6f8f4feda3c2179e8e601420e056
+
+@ 0 7 0 123bf059d50b55c315c4d575916012d8
++       Ein `TemporaryDirectory` benennt ein Verzeichnis als Text von `#directory()`, und
++       `#path[T]` instanziiert es als beliebigen Pfadtyp. Die beim Namen zu importierenden liegen
++       im Paket `temporaryDirectories`: `javaBaseTemporaryDirectory` liest `java.io.tmpdir` der
++       JVM, `systemTemporaryDirectory` dieselbe Eigenschaft aus dem `System` im Geltungsbereich
++       und `environmentTemporaryDirectory` die erste von `TMPDIR`, `TMP` und `TEMP` aus dem
++       `Environment` im Geltungsbereich. Das `temporaryDirectory[Path on Linux]` auf oberster
++       Ebene löst das im Geltungsbereich in einen Pfadtyp auf.
+
+% 2 1 0 1331aab65dd429ce058084c66f1de237
+
+% 3 1 0 0c308ee9b93d428612a8c6f67e8fba93
+
+% 4 1 0 14feef47ac7ab656165a42a4ddca494e
+
+% 1 1 0 1d2f89ca805c77dc1ae07a68ba3ee9a6
+
+% 0 1 0 024a9a989c160a771559e8ae038c8e65
+
+% 1 1 0 19d0f14375d19684068264ca45199c1b
+
+% 0 1 0 184f2bb714060bc80993d6ed18bcbb2c
+
+% 0 1 0 066ea94f4552b7c3070d2bdde9078ad3
+
+@ 0 2 0 0ce9262043a90a1b14ea413bb0e52020
++   entry #directory   das temporäre Verzeichnis, als Text
++   entry #path   das temporäre Verzeichnis als Pfad eines beliebigen Typs, der `Instantiable across Paths from Text` ist
+
+@ 0 5 0 0d05d317f9d6a2851e7e3ba7a550e2f6
++ entry .workingDirectory   das `WorkingDirectory` im Geltungsbereich, in einen Pfadtyp aufgelöst: `workingDirectory[Path on Linux]`
++     Braucht ein `WorkingDirectory` und einen Pfadtyp, der `Representative of Paths` ist. Der
++     Text wird über die vertrauenswürdige Instanziierung des Typs instanziiert, wo er eine hat —
++     ein Arbeitsverzeichnis stammt vom Betriebssystem und wird daher nicht validiert —, und
++     sonst aus einfachem Text. Die Methode ist `inline`, sodass sie innerhalb des `cli`-Blocks
++     eines Daemons expandiert werden kann.
+
+% 2 1 0 078856e95be189021eb62f49ce3054ac
+
+% 3 1 0 12eb4f531cc93eca07fc4199959a0dee
+
+% 4 1 0 0721ebfb25f9111c008e5b5960c64e2d
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 0 1 0 0e659f2b8aacbd33091432e0917fd237
+
+% 1 1 0 1e6d856f1f4cf30a1fe12c664648e9b8
+
+@ 0 3 0 166e9a132d46ab7603dad8d47b7f7c65
++ entry .temporaryDirectory   das `TemporaryDirectory` im Geltungsbereich, in einen Pfadtyp aufgelöst: `temporaryDirectory[Path on Linux]`
++     Braucht ein `TemporaryDirectory` und einen Pfadtyp, der `Representative of Paths` ist; der
++     Text wird über die vertrauenswürdige Instanziierung des Typs instanziiert, wie es
++     `workingDirectory` tut.
+
+% 2 1 0 146e1fb118e898c0154087cd98ab2e3c
+
+% 3 1 0 08114d4895a2e535130aabf79de230ca
+
+% 4 1 0 15214bff81f30ea11ba959cd8b78fec5
+
+% 0 1 0 037c3d11b9a634a1015cf79f672406ef
+
+% 0 1 0 18110d55acc0a0fe1014aea42bb09efa
+
+% 1 1 0 054151ef2fc37d7214dc4d0294d55ad4
+
+@ 0 1 0 0b0dde005d4773cd00e6a841b27c0a31
++ entry .Xdg   die XDG-Basisverzeichnisse, aus der Umgebung, wo gesetzt, und mit den Vorgaben der Spezifikation, wo nicht
+
+% 1 1 0 0dbfe5cdb1ad6b551cb808954931907a
+
+@ 0 7 0 1bc8b197fe20eb68104e604656cd8626
++       Die XDG Base Directory Specification legt fest, wohin die Daten, die Konfiguration, der
++       Cache und der Zustand eines Programms gehören: Sie beachtet die Umgebung des Benutzers
++       (`XDG_DATA_HOME`, `XDG_CONFIG_DIRS`, …), wo sie gesetzt ist, und greift sonst auf die
++       Vorgaben der Spezifikation unterhalb des Home-Verzeichnisses (aus der Eigenschaft
++       `user.home`) zurück. Jede Methode nimmt den zurückzugebenden Pfadtyp als Typargument und
++       braucht ein `Environment` und ein `System` im Geltungsbereich. `Directories` ist dieselbe
++       Menge von Verzeichnissen, mit den Windows-Orten unter Windows.
+
+% 2 1 0 01175245239c855b0967dd4e55519a3d
+
+% 3 1 0 1d847361c1b15f4b16eeff0963f9902c
+
+% 4 1 0 085afba393a9f33e1501ae27a25cb222
+
+% 5 1 0 00c4d62322d494581730e29925e3482c
+
+% 6 1 0 0225916e262914c61f589d7ede78b504
+
+% 0 1 0 0539575999d841d41d4bb44d725b6f85
+
+% 0 1 0 1554a67897f2fc6b08d630da33ddbebd
+
+% 0 1 0 17510b5afba3525d0532d48b8897c418
+
+% 1 1 0 0ee376145b5a5f0e046025f684c81b87
+
+@ 0 2 0 1197680b12499580026ee0fd03dd963e
++       Diese statt eines fest kodierten `~/.myapp` zu verwenden, sorgt dafür, dass die Dateien
++       eines Programms dort landen, wo die Werkzeuge des Benutzers für Sicherung, Synchronisation
++       und Aufräumen sie erwarten.
+
+@ 0 4 0 0fb364795bee41fa087646c7eeb1aa92
++       `Xdg.Data` und `Xdg.Config` sind die beiden XDG-Suchpfad-Ebenen: Ein `Path on Xdg.Data`
++       bezeichnet einen Unterpfad, der über `dataHome` und jeden Eintrag von `dataDirs` gesucht
++       wird, in dieser Rangfolge, und `Path on Xdg.Config` ebenso über `configHome` und
++       `configDirs`. Das Suchen selbst liegt in der Bibliothek `galilei`.
+
+% 0 1 0 023f67cec20ed9f4125a58a5f411ef34
+
+% 0 1 0 06046212a76742f008400e63f2f842c2
+
+% 1 1 0 14ab07b5603d38a7075d9a95f75b3a5c
+
+@ 0 12 0 1909db4f66579187024b95f3daad609f
++   entry .Data   die Suchpfad-Ebene über `dataHome` und `dataDirs`, ein `Searchpath`
++       Ein `Path on Xdg.Data` ist ein Unterpfad wie `myapp/schema.json`, aufgelöst durch Suchen
++       im Daten-Home und dann in jedem Datenverzeichnis. Die Auflösung liegt in `galilei`.
++   entry .Config   die Suchpfad-Ebene über `configHome` und `configDirs`, ein `Searchpath`
++   entry .dataHome   `$XDG_DATA_HOME`, oder `~/.local/share`
++   entry .configHome   `$XDG_CONFIG_HOME`, oder `~/.config`
++   entry .cacheHome   `$XDG_CACHE_HOME`, oder `~/.cache`
++   entry .stateHome   `$XDG_STATE_HOME`, oder `~/.local/state`
++   entry .runtimeDir   `$XDG_RUNTIME_DIR`, oder `Unset`: Die Spezifikation gibt keine Vorgabe dafür
++   entry .bin   `$XDG_BIN_HOME`, oder `~/.local/bin`
++   entry .dataDirs   `$XDG_DATA_DIRS`, getrennt am Pfadtrenner, oder `/usr/local/share` und `/usr/share`
++   entry .configDirs   `$XDG_CONFIG_DIRS`, getrennt am Pfadtrenner, oder `/etc/xdg`
+
+@ 0 1 0 1743797024c97a9a0f96c8e47c353712
++ entry .Directories   die Standardverzeichnisse des Benutzers, mit den Windows-Orten unter Windows und denen von XDG anderswo
+
+% 1 1 0 10f049cf462dbcbd0244508e41418353
+
+@ 0 8 0 07caa6fd7f80c57d12e168f3fff5c586
++       Dieselben Verzeichnisse wie `Xdg`, nach Plattform gewählt: Wo das `System` im
++       Geltungsbereich einen `os.name` meldet, der als `Os.Windows` dekodiert, sind die Homes für
++       Daten, Konfiguration, Cache und Zustand die Roaming- oder lokalen `AppData`-Verzeichnisse
++       (aus `APPDATA` und `LOCALAPPDATA`, mit den üblichen Vorgaben unter dem Home-Verzeichnis, wo
++       sie nicht gesetzt sind), das Laufzeitverzeichnis und `bin` liegen unter dem lokalen
++       `AppData`, und die Daten- und Konfigurationsverzeichnisse sind `PROGRAMDATA`; auf jeder
++       anderen Plattform, oder wo `os.name` fehlt, ist jedes das gleichnamige `Xdg`-Verzeichnis.
++       Jede Methode nimmt den Pfadtyp als Typargument und braucht ein `Environment` und ein
++       `System`.
+
+% 2 1 0 0f7b5a0d3cd65d2e1af24410cb9ebbc1
+
+% 3 1 0 1aba79a7c819a3200c6455ca8e7891b1
+
+% 4 1 0 16cab6c210e738da018746555d1430e0
+
+% 5 1 0 0607ccf1380205f90cd444f4117e2d24
+
+% 6 1 0 09662ba56456b4bb13a8f561ba1456a6
+
+% 0 1 0 110340846c4383ca0c4088c52ba7329a
+
+% 0 1 0 05addcb1e6fdb0f1191e1afade21d28a
+
+% 1 1 0 16b84b03aab0beb6116f1c8164d7be37
+
+% 1 1 0 138c61ed304315240f62d43a10e57a4a
+
+@ 0 11 0 156ec816009ebf611f014423ce581bbf
++   entry .home   das Home-Verzeichnis des Benutzers, aus `user.home`, als Pfad beliebigen Typs
++       Braucht nur ein `System`; löst eine Panic aus, wenn `user.home` nicht gesetzt ist, da eine
++       JVM es immer setzt.
++   entry .homeText   das Home-Verzeichnis des Benutzers, aus `user.home`, als Text
++   entry .dataHome   Roaming-`AppData` unter Windows; anderswo `Xdg.dataHome`
++   entry .configHome   Roaming-`AppData` unter Windows; anderswo `Xdg.configHome`
++   entry .cacheHome   lokales `AppData` unter Windows; anderswo `Xdg.cacheHome`
++   entry .stateHome   lokales `AppData` unter Windows; anderswo `Xdg.stateHome`
++   entry .runtimeDir   `Temp` unter dem lokalen `AppData` unter Windows; anderswo `Xdg.runtimeDir`, das `Unset` sein kann
++   entry .bin   `Programs` unter dem lokalen `AppData` unter Windows; anderswo `Xdg.bin`
++   entry .dataDirs   `PROGRAMDATA` (oder `C:\ProgramData`) unter Windows; anderswo `Xdg.dataDirs`
++   entry .configDirs   `PROGRAMDATA` (oder `C:\ProgramData`) unter Windows; anderswo `Xdg.configDirs`
+
+@ 0 1 0 1debff874c1a76dc0f8380b0da7eb661
++ entry .Searchpath   die Markierung für eine Pfad-Ebene, die eine geordnete Liste echter Verzeichnisse durchsucht
+
+% 1 1 0 104dfb73990e8b9916d12f01a37f29b4
+
+@ 0 6 0 08541c818e4ddbb5029d8566b1cbe17e
++       Eine _Suchpfad-Ebene_ fügt eine geordnete Liste von Verzeichnissen zu einer einzigen
++       durchsuchbaren Sicht zusammen — die XDG-Datenverzeichnisse oder `$PATH` —, sodass ein
++       `Path on Xdg.Data` einen Unterpfad benennt, der in dem Verzeichnis gefunden wird, das ihn
++       zuerst hat. Eine Ebene erweitert `Searchpath`, um sich dafür zu entscheiden, wie es
++       `Xdg.Data` und `Xdg.Config` tun; das Begleitobjekt liefert dann im impliziten
++       Geltungsbereich die `serpentine`-Givens, die jede solche Ebene braucht: Pfade wurzeln in
++       `%`, die Wurzel kodiert als nichts (sodass ein Pfad sich als `myapp/config.json` liest),
++       und jedes Segment unterliegt `.Rules`.
+
+@ 0 5 0 162f10410f58be291a2d57117e3e6d1f
++       Mit Absicht hat eine Suchpfad-Ebene keine `Filesystem`-Instanz: Die Operationen von
++       `galilei` auf absoluten Pfaden, die durch ein `Filesystem` beschränkt sind, dürfen nicht
++       auf einen virtuellen Pfad angewandt werden, den sie als literalen Plattformpfad auflösen
++       würden. Die Maschinerie des Zusammenfügens — die geordneten Stämme, auf die eine Ebene
++       auflöst, die Auflösung nach dem ersten Treffer und zusammengeführte, verdeckende
++       Auflistungen — ist `Searchpaths` aus `galilei`.
+
+% 1 1 0 157cee268583eb6d1a25bd04d3b4b61e
+
+@ 0 9 0 199394f4df31560e041f31c45ae2a025
++   entry .Rules   was ein Segment eines Suchpfad-Pfads sein darf
++       Ein Segment darf kein `/` enthalten und darf nicht `.`, `..` oder leer sein.
++   entry .nominative   das Given, das Suchpfad-Pfade an `.Rules` bindet
++   entry .submissible   das Given, mit dem sich ein Pfad auf einer beliebigen Suchpfad-Ebene aus der Wurzel `%` bauen lässt
++   entry .radical   wie die Wurzel `%` einer Suchpfad-Ebene geschrieben wird: als nichts
++       Die Wurzel ist im Text jedes Eintrags implizit, sodass ein Pfad auf der Ebene allein als
++       seine Segmente kodiert wird.
++   entry .eradicable   wie die Wurzel `%` einer Suchpfad-Ebene gelesen wird: immer `%`, ohne Text zu verbrauchen
++       Das Lesen der Wurzel kann nicht scheitern, daher ist dieses Given rein und nimmt keine
++       Taktik.
+
+@ 0 1 0 13eaf2a7388dd4ef187f556bbb90c739
++ entry .Configurator   eine Quelle der Einstellungen einer Anwendung, nach Namen in Camel Case, nach Priorität zusammengesetzt
+
+% 1 1 0 16fd9a701e799ca90c0b2ecad87b16b6
+
+@ 0 7 0 1d97d6ae803b9a210741e473cb6bf15d
++       Ein `Configurator` liest eine Einstellung anhand ihres kanonischen Namens in Camel Case
++       (`logLevel`) aus einer Quelle, der die Abbildung in ihren eigenen Namensraum gehört:
++       `Configurator.environment` liest `MYAPP_LOG_LEVEL` aus dem `Environment` im
++       Geltungsbereich und `Configurator.properties` liest `myapp.log.level` aus dem `System`,
++       jeweils unter dem `Configurator.Prefix` der Anwendung. Configurators werden mit `#++`
++       zusammengesetzt, und die Reihenfolge der Zusammensetzung ist die Reihenfolge der
++       Priorität: Die linke Quelle wird zuerst befragt, und ein Name, den sie nicht hat, fällt
++       nach rechts durch.
+
+@ 0 5 0 01bbbf532f66a658078c8571f80d9cce
++       Die Deklaration eines `Prefix`-Givens aktiviert die Standardkaskade, `.default`:
++       Systemeigenschaften haben Vorrang vor Umgebungsvariablen, und die Kommandozeile, die beide
++       schlägt, wird von dem Typ behandelt, der den Configurator befragt. Ein
++       `Configurator`-Given im lexikalischen Geltungsbereich überschreibt die Vorgabe, sodass eine
++       Konfigurationsdatei in einem beliebigen Format als Lambda von einem Namen auf
++       `Optional[Text]` in die Kaskade eintritt.
+
+% 2 1 0 0a4c54f7c0138df607a99177d029a3f9
+
+% 3 1 0 126666be8523138f0b19bd51e20cce74
+
+% 4 1 0 1af5ed6893cdb6c90aa0da839cd5de97
+
+% 1 1 0 1d8f69c74a89a2bc051c7f337ce8df6c
+
+% 0 1 0 02944b0aaca1d06c01145f8c66b251c5
+
+% 0 1 0 0f3070a45a4a607b0451cb3741a55674
+
+% 0 1 0 054c318487834e5402d24c96de9e7baa
+
+% 1 1 0 00bbddae21571ae71b0086eacde0501a
+
+@ 0 3 0 0895963e51418e8417763cd3544951fa
++       Ein Configurator ist eine Capability: Er greift über das Programm hinaus, daher wird der
++       Typ überall verfolgt, wo er auftritt, und eine Methode, die Einstellungen liest, nimmt
++       `using Configurator`. Er ist geteilt, nicht exklusiv, da das Lesen frei von
++       Seiteneffekten ist.
+
+% 1 1 0 0ce892106d1df1761ae5a77d96a05387
+
+% 1 1 0 0b1d72277dcebbb00b9d1e9e45969349
+
+@ 0 1 0 15f550a5b8112471009b453c780e79c5
++   entry .Prefix   der Name der Anwendung, der ihren Variablen (`MYAPP_`) und Eigenschaften (`myapp.`) vorangestellt wird
+
+% 1 1 0 1cdcdec98d7ba1d70d341ff3ce7dc7cd
+
+@ 0 17 0 131854d4c1fca8711ee1fddd075761ff
++         Einmal als Given deklariert, `given Configurator.Prefix = Configurator.Prefix(t"myapp")`:
++         Für die Umgebung wird er großgeschrieben, für Eigenschaften kleingeschrieben.
++     entry #name   der Name der Anwendung
++   entry .environment   der Configurator über dem `Environment` im Geltungsbereich: `logLevel` liest `MYAPP_LOG_LEVEL`
++       Der Name in Camel Case wird in Upper Snake Case umgewandelt und mit dem großgeschriebenen
++       `Prefix` und einem Unterstrich versehen. Braucht ein `Prefix` und ein `Environment`.
++   entry .properties   der Configurator über dem `System` im Geltungsbereich: `logLevel` liest `myapp.log.level`
++       Der Name in Camel Case wird in gepunktete Kleinschreibung umgewandelt und mit dem
++       kleingeschriebenen `Prefix` und einem Punkt versehen. Braucht ein `Prefix` und ein
++       `System`.
++   entry .default   die Standardkaskade, Eigenschaften vor Umgebung, aktiviert durch ein `Prefix`-Given
++       `properties ++ environment`. Ein Given im Begleitobjekt, daher wird es überall
++       herbeigerufen, wo ein `Prefix`, ein `Environment` und ein `System` im Geltungsbereich sind;
++       ein `Configurator`-Given im lexikalischen Geltungsbereich hat Vorrang davor.
++   entry #read   der Text der Einstellung anhand ihres Namens in Camel Case, oder `Unset`, wenn diese Quelle sie nicht hat
++   entry #++   setzt zwei Configurators zusammen, wobei dieser Vorrang hat
++       `this ++ that` liest aus `this` und fällt für einen Namen, den es nicht hat, auf `that`
++       durch. Das Ergebnis ist ein neuer Configurator, der beide erfasst.
+
+@ 0 5 0 1365510f230a20241f1184d7facb902a
++ entry .WasiEnvironmentApi   der WIT-Schnittstellentyp von `wasi:cli/environment`, wie `ambience.wasi` ihn bindet
++     `Interface in Wit at "/ambience/environment.wit"`: der Typ des Givens
++     `wasiApis.wasiEnvironmentApi`, gegen den `environments.wasiEnvironment` und
++     `workingDirectories.wasiWorkingDirectory` typgeprüft werden. Nur im Source-Set
++     `ambience.wasi`.
+
+@ 0 1 0 108d3bec66d5225b1c83ae2a6864c5ce
++ entry .environments   die beim Namen zu importierenden Umgebungen: die der JVM, die leere, die eines Daemons, die einer Wasm-Komponente
+
+% 1 1 0 0807c36e69d237a20584db6417a9b77a
+
+@ 0 3 0 1a407e7a0933acbf17eced75b38be3f4
++       Aus welcher Umgebung `Environment.editor[Text]` liest, ist das `Environment`-Given im
++       Geltungsbereich, und die Wahl ist nie implizit: `import soundness.*` bringt keine davon
++       mit, und eine wird beim Namen importiert.
+
+% 2 1 0 10340a0175b049291595da3c79e806ab
+
+% 3 1 0 00bbefa6701b340f0a9ed1bd7b9d1e2b
+
+% 4 1 0 0aac264ffd36bf281e1a9ba44fa27711
+
+% 1 1 0 18be41699109ab5d1232b7933ec23fab
+
+@ 0 27 0 0d550f6dffb8ce9218d8f02ff5d869fc
++       `javaBaseEnvironment` passt zu einem gewöhnlichen Programm. `emptyEnvironment` ist für
++       Tests und Sandboxes. Die beiden Daemon-Umgebungen, die andere Bibliotheken liefern,
++       unterscheiden die Umgebung des Aufrufs von der, mit der der Daemon gestartet wurde. Ein
++       `Environment` ist eine einzige Funktion von einem Namen auf `Optional[Text]`, daher ist
++       eine eigene ein Lambda, das als lokales Given gebunden wird.
++   entry .javaBaseEnvironment   die Umgebung, mit der die JVM gestartet wurde, aus `java.lang.System.getenv`
++       Aufzählbar: `entries` ist die ganze Umgebung. In einem Daemon ist dies nicht die Umgebung
++       irgendeines Aufrufs: Der Launcher startet den Daemon mit einer bereinigten Umgebung, und
++       die eigene Umgebung jedes Aufrufs kommt mit ihm als `daemonClientEnvironment` an.
++   entry .emptyEnvironment   eine Umgebung, die nichts definiert; `entries` ist die leere Map
++       Für einen Test oder eine Sandbox: Jedes Lesen ist `Unset`, daher löst jedes typisierte
++       Lesen `Environment.Error` aus.
++   entry .wasiEnvironment   die Umgebung einer Wasm-Komponente, aus `get-environment` von `wasi:cli/environment`
++       Im Source-Set `ambience.wasi`. Ein `inline`-Given, damit der Import der Wasm-Komponente an
++       der Stelle materialisiert wird, die es herbeiruft, in Code, der für ein Wasm-Ziel
++       kompiliert wird; eine mit WASI gelinkte Anwendung ruft es einmal herbei. Es kann nicht
++       aufzählen: `entries` ist `Unset`.
++   entry .daemonEnvironment   die Umgebung des Aufrufs, der den Daemon gestartet hat; geliefert von `ethereal`
++       Der Launcher startet einen Daemon mit einer eigenen bereinigten Umgebung, damit der Zustand
++       des Daemons nicht davon abhängt, wer ihn zufällig gestartet hat, und sendet die Umgebung,
++       mit der er selbst gestartet wurde, über die Standardeingabe des Daemons. Dieses Given ist
++       diese Umgebung, im Speicher gehalten. Wenig braucht sie statt der Umgebung des aktuellen
++       Aufrufs, die `daemonClientEnvironment` ist; ohne Launcher (eine direkt ausgeführte JVM)
++       ist sie die eigene Umgebung der JVM.
++   entry .daemonClientEnvironment   die Umgebung des aktuellen Aufrufs eines Daemons; geliefert von `exoskeleton`
++       Braucht ein `Cli` im Geltungsbereich, den Aufruf, und ist dessen Umgebung: die Variablen
++       der Shell, die den Befehl ausgeführt hat, nicht der Shell, die den Daemon gestartet hat.
++       Dies ist die Umgebung, die der Befehls-Handler eines Daemons lesen sollte.
+
+@ 0 1 0 088f696d1a9ef99507612b46fb37a6d3
++ entry .systems   die beim Namen zu importierenden Quellen für Systemeigenschaften: die der JVM oder eine leere
+
+% 1 1 0 14289a3b4141987c0b56d6712c2f3839
+
+@ 0 4 0 019ad472de358c790b2f3b145b221543
++       Aus dem `System` im Geltungsbereich lesen `System.properties.user.home[Text]()`,
++       `System.os` und die Standardverzeichnisse. `import soundness.*` bringt keines mit; eines
++       wird beim Namen importiert, oder ein Lambda von einem Namen auf `Optional[Text]` wird für
++       einen Test als lokales Given gebunden.
+
+% 2 1 0 19152476ffc093c407fa0dde68e53073
+
+% 3 1 0 02dccd6c703bbf9b0b422900c907afba
+
+% 4 1 0 0aa91e08461bdd2617793da40ba5e5ed
+
+% 1 1 0 09edd48417069cc1186a47efbecc2f9a
+
+@ 0 5 0 1b41a1cc95e091e01e78be9eb36cfc8b
++   entry .javaBaseSystem   die Eigenschaften der JVM, aus `java.lang.System.getProperty`
++   entry .emptySystem   ein System, das keine Eigenschaften definiert
++       Für einen Test, der nicht von der JVM abhängen darf, unter der er läuft: Jedes Lesen ist
++       `Unset`, daher löst jedes typisierte Lesen `Property.Error` aus oder, bei den
++       Standardeigenschaften mit festem Typ, eine Panic.
+
+@ 0 1 0 128dbafcc9b281c01b24da0cc2438165
++ entry .workingDirectories   die beim Namen zu importierenden Arbeitsverzeichnisse: das der JVM, das des `System`, das eines Daemon-Clients, das einer Wasm-Komponente
+
+% 1 1 0 08d666635422cfb01e52abd0c924c77d
+
+@ 0 2 0 1a06965150b8422c0866c960ae0e76f7
++       Das `WorkingDirectory` im Geltungsbereich ist das, was `workingDirectory[Path on Linux]`
++       auflöst und wogegen ein relativer Pfad aufgelöst wird. Eines wird beim Namen importiert:
+
+% 2 1 0 1c6b1cbea4e849df185c344da890592f
+
+% 3 1 0 0da9faba7317361505f737b9f165d0ab
+
+% 1 1 0 02f0a1de411ca3650fe6699dd43a745b
+
+% 1 1 0 1650bc3f29b2f41e06be7deff50afb6c
+
+@ 0 14 0 14d5e0437875341a0d5853cf900fc29c
++       In einem Daemon ist das Verzeichnis, aus dem jeder Aufruf erfolgte,
++       `daemonClientWorkingDirectory`, nicht das der JVM.
++   entry .javaBaseWorkingDirectory   die Eigenschaft `user.dir` der JVM
++       `systemWorkingDirectory`, spezialisiert auf `systems.javaBaseSystem`.
++   entry .systemWorkingDirectory   `user.dir`, aus dem `System` im Geltungsbereich gelesen
++       Braucht ein `System`, sodass ein Test das Arbeitsverzeichnis festlegen kann, indem er das
++       System festlegt; löst eine Panic aus, wenn die Eigenschaft nicht gesetzt ist.
++   entry .wasiWorkingDirectory   das Anfangsverzeichnis einer Wasm-Komponente, aus `initial-cwd` von `wasi:cli/environment`
++       Im Source-Set `ambience.wasi`; ein `inline`-Given, materialisiert dort, wo es
++       herbeigerufen wird. Eine Komponente ohne Anfangsverzeichnis fällt auf `/` zurück.
++   entry .daemonClientWorkingDirectory   das Verzeichnis, aus dem der aktuelle Daemon-Aufruf erfolgte; geliefert von `ethereal`
++       Braucht ein `Cli` im Geltungsbereich, den Aufruf, und ist dessen Arbeitsverzeichnis. Jeder
++       Client eines Daemons hat sein eigenes, über das das `user.dir` der JVM — das Verzeichnis,
++       in dem der Daemon gestartet wurde — nichts aussagt.
+
+@ 0 1 0 0fd42a0252d1dc05195ad7b0abb975c9
++ entry .temporaryDirectories   die beim Namen zu importierenden temporären Verzeichnisse: nach Eigenschaft, nach `System` oder nach Umgebung
+
+% 1 1 0 16b4f42220052eab0b9810a5f9a2fe4a
+
+@ 0 2 0 0f83f653ad41200c1619f033b0646408
++       Das `TemporaryDirectory` im Geltungsbereich ist das, was
++       `temporaryDirectory[Path on Linux]` auflöst. Eines wird beim Namen importiert:
+
+% 2 1 0 02e22c2aabccebba08bf747b7a3ed8ac
+
+% 3 1 0 00cd0373596019fd09fe4e13597c5758
+
+% 1 1 0 1976e8a9892575e11938274e6155615f
+
+% 1 1 0 162cabfc523420a919f00deeafc51756
+
+@ 0 7 0 1c2a2bd7736ef7a70b1473f5078c9b6d
++   entry .javaBaseTemporaryDirectory   die Eigenschaft `java.io.tmpdir` der JVM
++       Löst eine Panic aus, wenn die Eigenschaft nicht gesetzt ist, was eine JVM immer tut.
++   entry .systemTemporaryDirectory   `java.io.tmpdir`, mit einem `System` im Geltungsbereich als Voraussetzung
++       Nimmt ein `System`, damit die Abhängigkeit deklariert ist, obwohl der gelesene Wert die
++       eigene Eigenschaft `java.io.tmpdir` der JVM ist.
++   entry .environmentTemporaryDirectory   die erste von `TMPDIR`, `TMP` und `TEMP` im `Environment` im Geltungsbereich
++       Braucht ein `Environment`; löst eine Panic aus, wenn keine der drei Variablen gesetzt ist.
+
+@ 0 1 0 0f2cf028a00cd76f16e2eea138518715
++ entry .termcaps   die aus der Umgebung gelesenen Terminal-Fähigkeiten, als beim Namen zu importierendes Given
+
+% 1 1 0 08652e9a778fe49e1835bc2137d24c68
+
+@ 0 5 0 02e523c06549f6e9033ae02db5a38dab
++       Ein `Termcap` sagt, was das Terminal kann — ob es ANSI-Escapes annimmt, seine Farbtiefe,
++       seine Breite und Höhe —, und gestaltete Ausgabe wird passend dazu dargestellt. Die festen
++       (`basicTermcap`, `xterm256Termcap`, `xtermTrueColorTermcap`) liegen im Paket
++       `termcapDefinitions` der Bibliothek `anticipation`; das `environmentTermcap` dieses Pakets
++       ermittelt die Fähigkeiten aus der Umgebung.
+
+% 2 1 0 02ed90dc2f7e1a6d0f62e7d5b3597452
+
+% 3 1 0 00b8c50e6e36f2dc0b962964a58aeaad
+
+% 4 1 0 1adc803990b18f3a198caafeff5c4fd0
+
+% 0 1 0 165058a3772bd3eb1204a3645a2b08e1
+
+% 1 1 0 02409bb69148b234133155bcfe2bf791
+
+@ 0 7 0 0c2b566dc9e2778c1f220122ff07c431
++   entry .environmentTermcap   ein Terminal, beschrieben durch `COLUMNS` und `COLORTERM` oder durch `tput colors`
++       Braucht ein `Environment`. ANSI-Escapes werden angenommen. Die Breite ist `COLUMNS`, wo
++       der aufrufende Kontext es gesetzt hat; wo es fehlt oder fehlerhaft ist — etwa wenn die
++       Ausgabe in eine Datei oder eine Pipe umgeleitet wird —, ist die Breite unbegrenzt, und
++       nichts bricht um. Die Farbtiefe ist `TrueColor`, wo `COLORTERM` `truecolor` ist, und wird
++       sonst durch Ausführen von `tput colors` gelesen, mit `NoColor` als Rückfall, falls das
++       scheitert. Beides wird einmal berechnet, lazy, wenn es zum ersten Mal angefragt wird.
+
+@ 0 1 0 1e7a2f5c2998491c1ba876aca0281577
++ entry .wasiApis   die WIT-Schnittstellendefinitionen von `ambience.wasi`, als beim Namen zu importierende Givens
+
+% 1 1 0 1cb12a0ff555ebaf07c86a3076488d48
+
+@ 0 5 0 1ff18f5dc0fe4c0709667bbaa7dae494
++       Der `call`-Materialisierer eines WASI-Imports befragt die Schnittstelle im
++       Geltungsbereich nach der Modul-ID der Funktion. Nur im Source-Set `ambience.wasi`.
++   entry .wasiEnvironmentApi   die Schnittstelle `wasi:cli/environment`, aus dem mitgelieferten `/ambience/environment.wit`
++       Eine `WasiEnvironmentApi`, aus der Classpath-Ressource gelesen. Importieren Sie sie beim
++       Namen, wo `environments.wasiEnvironment` oder `workingDirectories.wasiWorkingDirectory`
++       verwendet wird.

@@ -1,0 +1,171 @@
+orthant 2 language
+
+@ 0 1 0 142b83973858fed20ac3d5dd48e1d050
++ # Inmutabilidad
+
+@ 0 7 0 1a230fbebbefcfc11cb6e74407e2fa77
++ Los valores de Soundness son inmutables: una vez construido, un valor nunca cambia, y cualquier
++ operación que lo alteraría devuelve en su lugar un valor nuevo. Esto elimina categorías enteras de
++ errores —sorpresas por alias, carreras de datos y cambios que se notan a distancia— y hace que un
++ valor pueda compartirse libremente entre hilos y ámbitos sin copias defensivas. Un valor inmutable
++ también es más fácil de razonar, porque su significado queda fijado en el momento en que se crea
++ y no puede invalidarlo código que se ejecute en otra parte.
+
+@ 0 1 0 1e0bda0e5956cc2a0160c5289eda389e
++ ## Actualizar sin mutar
+
+@ 0 5 0 19c178493ef357260f6607f371b646a3
++ La objeción a la inmutabilidad es siempre la misma: cambiar un campo en lo más profundo de una
++ estructura obliga a reconstruir todas las capas que hay por encima. Es cierto, y es un problema de
++ sintaxis y no de semántica, así que Soundness lo resuelve con sintaxis. Una
++ [lente](../en/modules/optics.md) recibe la actualización escrita como una asignación corriente a
++ una ruta y hace la reconstrucción:
+
+% 2 1 0 039650cfae1264e0142553c689d387d7
+
+% 3 1 0 08ae8ed4d750f6d819fee9b799a0b21f
+
+% 4 1 0 1a33d307a99ae5c200c0d68df273d96a
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 0a826de8ae4effd70e125f0b28f9b284
+
+% 0 1 0 020debf66e114ca6012828b10dd75205
+
+% 0 1 0 1ddf7b1759804b76189e14b087fb4351
+
+% 1 1 0 0a25eed5e86dcbb60fb30cc25599e3dd
+
+@ 0 3 0 132225dace18f3d6065f7ff46994ba04
++ El resultado es un `Play` nuevo; el original queda intacto, y cualquier otra referencia a él sigue
++ viendo lo que veía. Varias actualizaciones se aplican juntas, y las que comparten un prefijo
++ reconstruyen la estructura compartida una sola vez y no una vez cada una:
+
+% 2 1 0 0006f04d01654bc807968e629c6a0ab2
+
+% 3 1 0 0520a141cac424e6004cf8aeaa19769c
+
+% 4 1 0 0e7cb712fd9893f408c7f49a214796c2
+
+% 0 1 0 0dbc24d0de27c1dc15bed3f95832083e
+
+% 0 1 0 1603281dbfae6bc0117d3db346ca9aa2
+
+% 0 1 0 0dca8f83ab9724a11181ee68ec5b7eb0
+
+% 1 1 0 1381e7b34096df27089233877df9cbe3
+
+@ 0 2 0 075dd8b4becc7c051bd0f99fac49c57e
++ La misma sintaxis atraviesa colecciones con `Each` y `Filter`, así que «dar a cada actor una edad
++ de treinta años» es una sola expresión y no una reconstrucción escrita a mano.
+
+@ 0 1 0 06ded5d5266d0294059bb92bf873e4c7
++ ## Compartir sin copiar
+
+@ 0 4 0 14eb3a16ab4f1c550ca560f1bb28f55d
++ Un valor inmutable no necesita copias defensivas, porque no hay nada de lo que defenderse. Un
++ `Data` entregado a tres hilos lo leen tres hilos; un documento analizado y guardado en una caché
++ no puede alterarlo quien lo obtuvo; una configuración pasada a un subsistema no puede volver
++ cambiada.
+
+@ 0 4 0 12b9ee915926204303c41e2af6287ff8
++ Eso es lo que hace segura la compartición estructural. Una lente reconstruye solo la columna
++ vertebral por la que desciende, y cada rama que no tocó es *el mismo objeto* en el valor antiguo y
++ en el nuevo. Por tanto, la inmutabilidad es lo que abarata la reconstrucción: sin ella, compartir
++ una subestructura entre dos valores sería un error.
+
+@ 0 1 0 141458cbd430e910195f01db8bccd159
++ ## Dónde sobrevive la mutación, y por qué
+
+@ 0 2 0 1191bb0c606344bc0772e8670b0d3eaa
++ La inmutabilidad es una propiedad de los valores, no una prohibición impuesta a la máquina. Hay
++ cuatro lugares de Soundness que son mutables deliberadamente:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 7 0 143176bf35715a5c0808a88a03934fbc
++ column  Lugar
++ column  Muta
++ column  Lo mantiene seguro
++ row  un builder  un búfer del que es dueño exclusivo  que nada observa los estados intermedios
++ row  el núcleo de flujos  una ventana a un búfer  la comprobación de capturas y de separación
++ row  un `Canvas`  píxeles, en su sitio  el ámbito del bloque `open` y la concesión `Write`
++ row  una celda atómica  una palabra de máquina compartida  operaciones indivisibles
+
+% 1 1 0 0421a2960068d86c01c37043ae4af191
+
+@ 0 1 0 12093d507dade89513a1c9bc9242c9a1
++ Los tres primeros están confinados.
+
+@ 0 2 0 1568d9bbf84829b705172c26c0db28cd
++ Un **builder** muta un búfer del que es dueño exclusivo y produce un valor inmutable al final.
++ Nada observa los estados intermedios, así que nada depende de ellos.
+
+@ 0 6 0 1e7c55cf0a26e2841392056db47c9da9
++ El **núcleo de flujos** expone una ventana mutable a un búfer, que es precisamente lo que le
++ permite funcionar sin copias. Esa ventana pertenece exactamente a un consumidor, y el compilador
++ lo hace cumplir: un `Stream` es una capacidad exclusiva, así que crear un alias de uno, o dejar que
++ uno escape del ámbito al que pertenece su origen, no compila. Aquí se permite la mutación porque
++ la [comprobación de capturas y de separación](capture-checking.md) demuestra que nadie más puede
++ verla.
+
+@ 0 5 0 1a9da3d198e21a4c054df4a851599267
++ Un **`Canvas`**, que se obtiene abriendo un [ráster](../en/modules/images.md) para escritura, muta
++ los píxeles en su sitio, porque generar una imagen grande con una llamada a una función por píxel
++ no es la forma adecuada para un algoritmo de dibujo. La mutación está limitada al ámbito del
++ bloque `open` y condicionada por la concesión `Write`, y `snapshot` toma una copia independiente
++ para lo que deba sobrevivirle.
+
+@ 0 2 0 06ebaafe3e53caeb1fa9d496674440a6
++ El patrón es el mismo en los tres: la mutación es una técnica de implementación local con una
++ prueba de confinamiento, nunca una propiedad de un valor que otros puedan ver.
+
+@ 0 7 0 1f1fbcafef1a1df7010542ef28025d98
++ Una **celda atómica** es la excepción, y conviene nombrarla como tal en lugar de ocultarla. Un
++ `Atomic[Int]` o un `Atomic.Ref[State]` *no* está confinado, deliberadamente: todo su propósito es
++ que dos hilos vean una misma ubicación, así que ningún análisis de alias puede ayudar y no se
++ intenta ninguno. Lo que sustituye al confinamiento es una garantía distinta. La ubicación es una
++ única palabra de máquina, y toda operación sobre ella es indivisible, así que no hay ningún estado
++ intermedio que pueda observar otro hilo. El tipo no promete que la mutación sea invisible; promete
++ que no puede sorprenderse a medio hacer.
+
+@ 0 4 0 13b31f2bd144bce214efc4839123d317
++ Por eso las operaciones se nombran según el valor que devuelven. `count.ere(_ + 1)` produce el
++ valor que desplazó y `count.since(_ + 1)` el valor que instaló, de modo que quien llama puede
++ saber si fue él, y no otro, quien hizo la transición: la pregunta que solo surge cuando la
++ mutación es compartida, y la que un `var` no puede responder:
+
+% 2 1 0 1b9690b9eb41d622187b205741018c6f
+
+% 3 1 0 12d35964dd654e6a0367a75fd50dc5c4
+
+% 4 1 0 029018b9749c1cd911adc908e177f332
+
+% 0 1 0 1673e2b6ab600dac1654a0c5e24eff3e
+
+% 1 1 0 07ca53e1605b0ff40a810b4aabcb1e78
+
+@ 0 3 0 03551aa5779a10c0154e8e0fe5f1e1ba
++ Las celdas compartidas son una herramienta de bajo nivel, y la colección las usa donde el tema es
++ la concurrencia: supervisar tareas, acumular errores a lo largo de un ámbito y los anillos de
++ traspaso que hay por debajo del núcleo de flujos. No son la forma de modelar un valor.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Lo que cuesta
+
+@ 0 5 0 0a4e170cbb75bf641a8c2e8c0366a897
++ Reconstruir no es gratis. Una actualización con una lente reserva un objeto por cada nivel que
++ desciende, así que un bucle intensivo que actualiza una estructura profunda reserva más memoria
++ de la que reservaría la mutación en su sitio. Donde eso importa —y importa mucho menos a menudo de
++ lo que sugiere la intuición, ya que las reservas son jóvenes y de vida corta—, la respuesta es un
++ builder o una región mutable de ámbito limitado, no hacer mutable el propio valor.
+
+@ 0 2 0 082b3c583579f6890b9b7f5c8b3c50db
++ El intercambio es deliberado: pagar un poco de reserva de memoria para eliminar una clase de error
++ que, de otro modo, solo se encuentra en producción, un martes, bajo carga.
+
+@ 0 3 0 076397851cf4950004a37b97e0f66075
++ Véase [estados imposibles](impossible-states.md) para la disciplina relacionada sobre lo que puede
++ ser un valor, y [comprobación de capturas](capture-checking.md) para saber cómo se demuestra que
++ las mutaciones confinadas son seguras.

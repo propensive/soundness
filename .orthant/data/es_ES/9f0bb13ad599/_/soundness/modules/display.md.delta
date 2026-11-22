@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 8 0 1431c98063de65a00a71fea57e055f77
++ column  Intento
++ column  Representación
++ row  1  la propia instancia de `Inspectable` del tipo
++ row  2  su instancia de `Encodable in Text`, entre `⸤` y `⸥`
++ row  3  su instancia de `Showable`, entre `⸢` y `⸣`
++ row  4  para un `Optional`, el valor que contiene, entre `｢` y `｣`, o `○` si no está definido
++ row  5  una representación estructural derivada de su forma
++ row  6  una representación de último recurso, su `toString` entre `“` y `”`
+
+@ 0 2 0 00ab82423b62806a0907786a980e61f6
++ Los corchetes marcan una representación que se ha tomado prestada de otra clase de tipos, o de
++ `toString`, y que no es la propia del tipo.

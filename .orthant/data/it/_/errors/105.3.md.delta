@@ -1,0 +1,43 @@
+orthant 2 language
+
+% 0 1 0 06c5ab84a998c54402b0164b14277bdb
+
+@ 0 1 0 0fffb3be147ea5fc0e605f6364134d4d
++ Sollevato quando un keystore PKCS#12 non può essere aperto o letto.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 11020d0fc2e3ce0610b4a59d834ad509
++ Un keystore viene aperto per la durata di un ambito, con la sua password fornita come flag. Questo
++ errore copre un deposito che non si può leggere e una scrittura che non è supportata.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Codice
++ column  Motivo
++ column  Messaggio
+
+% 0 1 0 07858f2209aa6df911115adbc63be3ca
+
+% 0 1 0 0c6f7dbc235736830974d2ea9d8ec745
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 3 0 07afe0313e6cdb510a75b152cb65ea22
++ Una password errata e un deposito corrotto sono deliberatamente indistinguibili (entrambi sono
++ `Unreadable`), perché distinguerli rivelerebbe a chi tira a indovinare quale dei due è andato
++ storto. La scrittura in un keystore non è ancora supportata.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 0b88481b72eaa0a815318c4e5538b3d9
++ - Sorgente: `lib/enigmatic/src/core-jvm/enigmatic.Keystore.scala`

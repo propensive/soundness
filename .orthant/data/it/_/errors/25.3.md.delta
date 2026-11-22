@@ -1,0 +1,34 @@
+orthant 2 language
+
+% 0 1 0 0d0c72f6e402301f11c88f2e682182df
+
+@ 0 2 0 06ce82b8b41c65a21fc4d260223726e0
++ Sollevato quando un testo viene decodificato come valore di un'enumerazione Scala ma non è il nome
++ di nessuno dei suoi valori.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 0b87946ea6f5cf921c7600b988e1ba48
++ `distillate.Decodable.enumeration` decodifica un `reflect.Enum` in base al suo nome (eventualmente
++ rietichettato). Il messaggio reso è
++ `the specified variant ($inputLabel) is not one of the valid variants ($validVariants) of the enumeration $sum`.
+
+@ 0 2 0 0510886676b4c5d206ee79a7820b7ff9
++ **Esempio.** `[↯/s.25.3] the specified variant (blue) is not one of the valid variants (red, green) of the enumeration Colour`
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 2 0 144ec8bac241d0d00d765e3e2a5764d9
++ Usare uno dei nomi elencati; se la forma di trasmissione differisce dal nome Scala, rietichettare
++ il valore con `@name` o con un'istanza di `Identifiable`.
+
+@ 0 1 0 0adad908e6756fa1054b3eb0b9c760c1
++ Prima che esistesse questo errore, lo stesso fallimento sollevava `wisteria.Variant.Error`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 1e54a1f5ad32b4081c004d9c958b8eaf
++ - Sorgente: `lib/distillate/src/core/distillate.Enumerable.scala`

@@ -1,0 +1,312 @@
+orthant 2 language
+
+@ 0 1 0 00760b9ac28ed0bc18ff7eed1db7c234
++ # Paridade de plataformas
+
+@ 0 5 0 02e0e1edbcf8665814961578b89e88fc
++ Uma plataforma com baterias incluídas só merece o nome se as baterias funcionarem onde as
++ aplicações de fato rodam: na JVM, em navegadores, como binários nativos, dentro de runtimes WASM e
++ em dispositivos Android. A promessa não é que todo módulo rode em toda parte — um navegador não tem
++ sistema de arquivos —, mas que toda exclusão seja inerente, declarada e verificada, e que fazer o
++ build para qualquer alvo não seja mais difícil do que fazê-lo para a JVM.
+
+@ 0 1 0 01b7abbd40ce8f4c05a1e98866bb5983
++ Onde cada alvo está hoje:
+
+% 2 1 0 0883e0b79cb06b510b571ab7dbc9b5d5
+
+@ 0 3 0 01e8c035955b4c8b15805f26acde4d48
++ column  Alvo
++ column  Hoje
++ column  Fechado por
+
+% 0 1 0 0aec46afecb114b107d658bb65b3b471
+
+@ 0 4 0 16af8a79585bec4a13d81e58af4e5b72
++ row  JavaScript  a maioria dos módulos  plat-3
++ row  Native  a maioria dos módulos  plat-3
++ row  WASI  uma fatia estreita mas real, construída sobre o modelo de componentes do WASM  plat-4
++ row  Android  de ponta a ponta — dexing com D8 e assinatura de APK sem o Android SDK —, mas fora do build comum  plat-2
+
+% 1 1 0 0a3afe9e3c46ec421ee33a70c32b2104
+
+@ 0 3 0 12c576a84f39ace80384922fd3d5edd8
++ Paridade significa fechar cada uma dessas ressalvas, e o instrumento para isso é um manifesto: a
++ matriz de plataformas como dados versionados, em que todo “não” traz um motivo, e o CI falha
++ quando a realidade regride em relação ao manifesto. Quando os únicos motivos restantes forem os
++ inerentes, a declaração de paridade se sustenta.
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ Os itens da trilha, com seus horizontes e dependências rígidas; [`status.tel`](status.tel) registra onde cada um está:
+
+% 2 1 0 1a49486c3b4d2d2d15f5c2c51b85eebd
+
+% 0 1 0 1c9766d1627faf630369fb490d6f524f
+
+@ 0 10 0 1d7fdd900d99c4941d8bbd168ab0c7b4
++ column  Título
++ column  Horizonte
++ column  Requer
++ row  plat-1  o manifesto de plataformas é imposto  próximo
++ row  plat-2  Android no build comum  próximo → médio
++ row  plat-3  JavaScript e Native com cobertura total do que não é excluído  médio  plat-1
++ row  plat-4  WASI além dos sete primeiros backends  médio → longo
++ row  plat-5  a declaração de paridade se sustenta  longo  plat-4
++ row  plat-6  o navegador é um alvo de aplicação de primeira classe  médio
++ row  plat-7  o degustation atomiza TASTy sem o compilador  médio  plat-3
+
+% 1 1 0 170d3f3709b3deef1cd2ff673b424c42
+
+@ 0 1 0 046e448e2e19632a01bcd6f0bb7f0299
++ ## plat-1: o manifesto de plataformas é imposto
+
+@ 0 2 0 101f07bd9906972015586fe41eb3f43b
++ Horizonte: próximo
++ Linha de base: 104 de 145 linhas fazem build para JavaScript, 108 para Native; 34 exclusões de JavaScript, cada uma com um motivo (medido em 2026-10-21; 101 de 144 em 2026-09-25; 94 de 132 em 2026-08-01)
+
+@ 0 6 0 0955585b3bd56b54186f37d0a4c93f52
++ `doc/compatibility.tsv` registra a matriz, e `etc/check-compatibility.py` (executado por `make
++ build`) regenera suas colunas de plataforma a partir de `build.mill` — as flags
++ `scalaJs`/ `scalaNative` de cada componente e os source sets `sources`/`jsSources`/`nativeSources`
++ — e falha diante de qualquer divergência em relação à cópia versionada ou de uma exclusão sem
++ motivo em `notes`. A matriz é, portanto, um contrato: um módulo adicionado sem linha, ou uma flag
++ trocada sem o arquivo, faz o build falhar, e o único conteúdo escrito à mão é o motivo de cada
++ célula `no` ou `core`.
+
+@ 0 2 0 155a8ca79eb6b193158be804bdda4d43
++ Concluído quando: o build comum regenerar o manifesto, falhar diante de divergência em relação à
++ cópia versionada, e nenhuma linha de exclusão tiver motivo vazio — atendido por
++ `etc/check-compatibility.py`. Indicador provisório:
+
+% 0 1 0 131c76c742857dfc08f4e5d29215867d
+
+@ 0 1 0 193f187e802cd4da03fde08c28230438
++ ## plat-2: Android no build comum
+
+@ 0 1 0 1ab880ee5d02c1ea1d60c0cf49f6c644
++ Horizonte: próximo → médio
+
+@ 0 3 0 0d9b885c84dd405e1e692c1bbe35853c
++ O caminho de dexing e assinatura de APK funciona, mas é condicionado a `ANDROID_HOME` e excluído
++ do CI. Uma aplicação Android deveria ser construída e assinada a cada execução atestada, para que
++ as regressões apareçam imediatamente e não na próxima tentativa manual.
+
+@ 0 2 0 1e32707143aaedca1cb799318a771c46
++ Concluído quando: `make attest` incluir o estágio Android, e o CI registrar um APK assinado para
++ cada release.
+
+@ 0 1 0 134e5670da1189d31ee1387d2bff0082
++ ## plat-3: JavaScript e Native com cobertura total do que não é excluído
+
+@ 0 2 0 1a40572e16b707af0053a8ba6efb463d
++ Horizonte: médio
++ Requer: plat-1
+
+@ 0 2 0 02e1d0dd4b7a16dc110414ffd42a8393
++ Todo módulo faz build para JavaScript e Native, a menos que o motivo de sua exclusão seja
++ inerente, e a cobertura de Native é verificada pela verificação de linkagem do binário real em
++ toda parte, não apenas pela compilação.
+
+@ 0 2 0 041a025fe2e13f960ed32836dac38a64
++ Concluído quando: o manifesto não mostrar nenhuma exclusão de JavaScript ou Native cujo motivo não
++ seja inerente, e a verificação de linkagem de Native cobrir todo módulo capaz de rodar em Native.
+
+@ 0 8 0 1de2b5b5d0d17643106252bfe802ccde
++ Não resta nenhuma lacuna conhecida e não inerente em Native. Fechada em 2026-10-22: o
++ pseudoterminal do guillotine, reescrito sobre a interoperabilidade com C do Scala Native
++ (`posix_openpt`, `posix_spawn`, `poll`; o da JVM é Panama), de modo que `Command#pty` roda
++ terminais reais em Native. Fechadas em 2026-10-21: o backend nativo do coaxial entra em grupos
++ multicast (levando o syndesis para Native); o cliente `soundnessHttp` do telekinesis passou para o
++ `telekinesis.sockets`, que faz compilação cruzada, dando a Native um `Http.Backend` (HTTP/1.1,
++ sobre a conexão OpenSSL do coaxial para `https`); e a construção de classloaders do hellenism
++ passou para um source set `core-jvm`, de modo que os recursos `cp"…"`, as folhas de estilo HTML do
++ cataclysm e os sete backends WASI também compilam para Native.
+
+@ 0 8 0 084e5ab8dc7699011608878f3e56df6d
++ A criptografia não é mais uma exclusão de JavaScript: o `SoundnessCrypto` em Scala puro do
++ enigmatic (AES em todos os modos, HMAC, AES-GCM, ChaCha20-Poly1305, X25519, Ed25519) sustenta os
++ builds de Scala.js e Scala Native, e `import providers.soundnessProvider` o seleciona em qualquer
++ lugar. O que ele não cobre — RSA, DSA, ECDSA, ML-DSA — fica com o JDK e o OpenSSL. Um provedor
++ sobre a Web Crypto API do navegador depende do JSPI: `crypto.subtle` só trabalha com Promises e o
++ contrato `Crypto` é síncrono, então ele precisa antes que o `js.async`/`js.await` do fork esteja
++ comprovado sob o backend Wasm (plat-6); com isso, a Web Crypto entra como provedor alternativo para
++ as primitivas que possui, sem mudança de API.
+
+@ 0 9 0 12a5fc1273536a500f0c21bcafa80635
++ A verificação de linkagem volta a linkar (2026-10-22): o Proscala 1.0.4 publica sua biblioteca
++ suplementar como `proscala-library_native0.5_3`, então `scala.caps.SharedUnscoped` (que toda
++ linkagem de Native então alcançava por meio de `contingency.ThrowTactic`; desde o #2328 só
++ `scala.Spreadable` é alcançado) tem NIR vindo da própria toolchain, por meio de
++ `nativeToolchain.runtimeDeps`; o `nativelink.shim` de um único trait que cobria a lacuna não existe
++ mais. A mesma release traz o `tasty-core` para Scala.js e Scala Native, o que permite ao
++ `hyperbole.tasty` ler TASTy em ambos sem o compilador. `nativelink.binary` roda a cada atestação,
++ exercitando a FFI, o sistema de arquivos, sockets, supervisores, o pseudoterminal e o OpenSSL;
++ falta estendê-lo a todo módulo capaz de rodar em Native (e reviver `nativelink.testSuites`).
+
+@ 0 1 0 0fa7e2f0fee933fe1a48b937c471cbaf
++ ## plat-4: WASI além dos sete primeiros backends
+
+@ 0 2 0 17c1d8017e0250cd1c575622676e221f
++ Horizonte: médio → longo
++ Linha de base: 7 backends WASI; o HTTP envia qualquer método com corpo, os sockets são só TCP (medido em 2026-09-25; o HTTP era só GET em 2026-08-01)
+
+@ 0 6 0 1416fb93ea44981a19f11aea36bd6765
++ A fatia WASI — ambiente, relógio, aleatoriedade, sockets, sistema de arquivos, HTTP, stdio — prova
++ a abordagem do modelo de componentes WIT; a paridade exige o conjunto completo de métodos HTTP,
++ UDP e backends para todo módulo cujo domínio o WASI consiga expressar. O lado do compilador está
++ ao alcance: o Soundness é construído com o Proscala, então o backend Wasm e a geração de bindings
++ (hoje um fork de `wit-bindgen` fora da árvore, a ser incorporado) cabe a nós corrigir. O portão
++ genuinamente externo é o próprio WASI: suas interfaces precisam amadurecer o bastante para
++ expressar o que os backends precisam.
+
+@ 0 2 0 1f97f24449afbeb7112fabfd020f055c
++ Concluído quando: a coluna WASI do manifesto coincidir com a coluna JavaScript, exceto onde o
++ motivo da exclusão nomear uma capacidade ausente do WASI. Indicador provisório:
+
+% 0 1 0 0f3c66635b03a3d8184117850749fa05
+
+@ 0 6 0 0b24b16a2cc6cc9b0b2aca4f3c467fc2
++ Um componente agora pode ser implantado, além de executado: `Image.wasm` (embarcadero) o empacota
++ como um Wasm OCI Artifact, o formato `OciImage` do anthology chega a isso a partir de uma
++ compilação em um único caminho, e `make wasm-e2e` serve o componente HTTP empacotado sob
++ `wasmtime serve`. O que ainda falta entre isto e uma carga de trabalho Wasm rodando em um cluster é
++ a distribuição — nada na árvore fala o protocolo de registry OCI, então um artefato só chega a um
++ registry via `skopeo` ou `ctr` —, e o cliente containerd ainda não consegue nomear um runtime Wasm
++ ao criar um contêiner.
+
+@ 0 1 0 02f1e2e8561cbdb510ef20b1aac51275
++ ## plat-5: a declaração de paridade se sustenta
+
+@ 0 2 0 0466901bc3fdba5500ca8101a96a2228
++ Horizonte: longo
++ Requer: plat-4
+
+@ 0 3 0 1fea897334dc6c930413010bdeb03d43
++ O estado final, declarado como um fato sobre o manifesto: nenhum motivo de exclusão em parte alguma
++ dele significa “ainda não”. Todo motivo é inerente — a plataforma não pode suportar a capacidade —,
++ e os próprios motivos do manifesto são o sinal de conclusão.
+
+@ 0 2 0 19c6e43d758f5543098910d9595bfb3a
++ Concluído quando: todo motivo de exclusão em `doc/compatibility.tsv` descrever uma limitação
++ inerente da plataforma, e uma verificação do vocabulário de motivos no CI impuser essa distinção.
+
+@ 0 1 0 0da7504b41531da817583bd42934a04f
++ ## plat-7: o degustation atomiza TASTy sem o compilador
+
+@ 0 3 0 1c6f1f2429f9712b011b3967768bf151
++ Horizonte: médio
++ Requer: plat-3
++ Linha de base: `degustation.core` (1.179 linhas) conduz o `scala3-tasty-inspector` sobre a reflexão do compilador; só JVM, com `scala3-compiler_3` no seu classpath (medido em 2026-10-23)
+
+@ 0 7 0 131a8d07937bbf450ba91a9290b2fef2
++ O degustation — o atomizador `tasty/1` por trás da disciplina Scala do LIRA — é o último módulo
++ mantido fora de JavaScript e Native pelo compilador por um motivo que não é inerente: a disciplina
++ é *definida* sobre o modelo semântico do compilador (`tasty.md` §4), então o atomizador faz
++ casamento de padrões sobre tipos de `quotes.reflect` e pede aos símbolos seu `fullName`,
++ `signature`, `children` e flags. O Proscala 1.0.4 publica o `tasty-core` para as três plataformas,
++ e o `hyperbole.tasty` já lê TASTy por meio dele, então a questão é do que o degustation precisa
++ além dos bytes. Delimitado em 2026-10-23:
+
+@ 0 19 0 007cbbfcfdf377a80c6a638053cf64d5
++ - **Estrutural, e disponível de graça no TASTy cru**: modificadores (o conjunto inteiro de flags do
++   `tasty/1`, `PRIVATEqualified` para a regra de visibilidade, `ARTIFACT`/`SYNTHETIC`), anotações
++   (incluindo as anotações `@Child`, que são a lista de filhos de sealed/enum, na ordem de
++   declaração), os pais de um template, o self type, os parâmetros de tipo e as declarações, o tipo
++   declarado de cada membro (`tpt`s de parâmetros e resultado, limites, aliases), corpos inline e de
++   macro como árvores com símbolos locais endereçáveis para alfa-normalização, referências
++   qualificadas por pacote (`TERMREFpkg`/`TYPEREFpkg`) e — do lado *que referencia* — a própria
++   assinatura apagada, que todo `TERMREF` para um membro sobrecarregado traz no seu nome `SIGNED`.
++   Os placeholders `LazyRef` do compilador, que o §7 precisa tratar como caso especial, não existem
++   no arquivo.
++ - **Semântico, e precisando de um modelo do classpath de dependências**: apenas duas coisas. (1) O
++   desambiguador por assinatura apagada da chave de uma *declaração* (§6): apagar o tipo declarado
++   de um parâmetro significa desfazer seus aliases, apagar um tipo opaco e uma value class para os
++   seus tipos subjacentes, uma referência a parâmetro de tipo para o seu limite, e uma interseção
++   pela distinção class/trait das suas partes — e cada uma dessas coisas pergunta o que um tipo
++   referenciado *é*, no TASTy de uma dependência ou em um classfile Java. (2) O proprietário
++   declarante de um membro selecionado (§6 “a chave é pela declaração”, `TastyDiscipline`):
++   `play.title` é serializado como o nome assinado de `title` contra o tipo de `play`, e descobrir
++   que `title` é declarado em `Base` é uma busca de membro ao longo dos pais de `Play`. Nenhuma das
++   duas precisa de subtipagem, inferência de tipos, substituição as-seen-from ou ordem de
++   completamento; ambas precisam do classpath carregado de forma preguiçosa, que é exatamente para o
++   que o `tasty-query` existe.
+
+@ 0 1 0 1d98056fdb067ade032b7191b71ee9ae
++ Três maneiras de fechá-lo:
+
+@ 0 10 0 080cce816217458b162958cf03a981f9
++ 1. **Uma camada semântica própria sobre o `tasty-core`** (recomendada): cinco componentes, listados
++    abaixo, de aproximadamente 6.000 linhas contra as 19.000 do `tasty-query`, porque o degustation
++    não precisa de nada da sua subtipagem, dos seus type maps nem do seu leitor de pickles do Scala 2.
++ 2. **Depender do `tasty-query`**: ~1.000 linhas alteradas, mas uma dependência de 19.000 linhas
++    publicada só para a JVM e o Scala.js — Native precisaria de um build cruzado publicado por nós,
++    como o Proscala agora faz para o `tasty-core` —, cujo apagamento e cuja resolução de membros são
++    sua própria reimplementação dos do compilador, com o mesmo acoplamento a cada release do Scala.
++ 3. **Deixá-lo no compilador** e classificar a exclusão como inerente: a atomização roda no momento
++    da montagem e da publicação, onde há uma JVM à mão. Honesto hoje, mas impede atomizar a partir de
++    uma ferramenta de build em Native ou Wasm, que é o motivo de querer isso.
+
+@ 0 1 0 15db87563e3ccecc1d0a15650e714cc2
++ Os componentes da primeira opção e seus tamanhos estimados:
+
+% 2 1 0 154dee85a73f7db51eeda1313f888bdd
+
+@ 0 8 0 1553f8c8c8c7cc080c8cf62d5f0bca91
++ column  Componente
++ column  Linhas
++ column  Notas
++ row  um desserializador de árvores para dados simples  ~2.000  o `hyperbole.tasty` contribui com o cabeçalho e a tabela de nomes
++ row  um carregador preguiçoso de classpath sobre diretórios e jars, com um leitor de classfiles Java para a categoria da classe, parâmetros de tipo e descritores de membros  ~1.200
++ row  apagamento e grafia de assinaturas do Scala 3  ~900  segundo o `TypeErasure` e o `Signature` do dotc
++ row  busca de membros ao longo dos pais  ~300
++ row  o atomizador reexpresso sobre o modelo de dados  ~1.200  as regras de codificação inalteradas
+
+% 1 1 0 157de62fd75c206a1cc90286752da647
+
+@ 0 9 0 093346393e7d9e5c1c86492523a436df
++ Qualquer uma das duas primeiras é uma nova disciplina, `tasty/2` (`tasty.md` §1: qualquer mudança
++ na canonicalização é uma nova disciplina): a extração do §4 sobre TASTy cru em vez do modelo do
++ compilador; o §6, o §11 e o §12 grafando o apagamento como a disciplina o define, em vez de “como o
++ compilador o calcula”; o §7 perdendo a cláusula `LazyRef`; a promessa do §14 tornando-se de fato
++ verificável, já que duas toolchains não podem mais discordar sobre um modelo que só uma delas
++ constrói. A verificação é diferencial: rodar o novo atomizador e o conduzido pelo compilador sobre
++ cada `*.tasty` que o Soundness publica e exigir listagens (chave, classe, valor) idênticas — os
++ testes existentes “o TASTy de um módulo real é atomizado” são a semente desse corpus — antes que o
++ conduzido pelo compilador seja aposentado.
+
+@ 0 8 0 1020e0c3605055370442f216b8d5df23
++ Progresso (2026-10-23, branch `degustation-tasty`): opção 1 construída. O `degustation.tasty`
++ contém o modelo de dados, o leitor, o `Universe` do classpath, `Erasure` e `Degustation.atomize`, e
++ atravessa as três plataformas; o `degustation.core` mantém `Inspection.atomize` como sua face para
++ o sistema de arquivos (diretórios e jars por meio de `java.util.zip`, as classes do JDK por meio do
++ class loader da plataforma) e é só JVM por esse motivo, sem nenhuma dependência do compilador.
++ Sobre os 147 módulos do build, os átomos são idênticos byte a byte aos do atomizador conduzido pelo
++ compilador, exceto onde a saída do compilador era um artefato da execução (`tasty.md` §16); o
++ atomizador conduzido pelo compilador é o oráculo da suíte de testes. `tasty.md` descreve o
++ `tasty/2`.
+
+@ 0 4 0 131c830233371c8f0a3f343802904c3b
++ Concluído quando: o `degustation.core` depender do `tasty-core` e não do compilador, fizer build
++ para JavaScript e Native (ou sua face para o sistema de arquivos se mostrar o único resíduo de JVM,
++ e uma ferramenta de build em Native puder fornecer as classes do JDK como um jar), e atomizar o
++ corpus do Soundness de forma idêntica ao atomizador conduzido pelo compilador que ele substitui;
++ `tasty.md` descreve o `tasty/2`.
+
+@ 0 1 0 1fb046d6f3ec99ee170722975e2b27ce
++ ## plat-6: o navegador é um alvo de aplicação de primeira classe
+
+@ 2 1 0 13ea3a3481ee418b0a4388cf054a0697
++ Horizonte: médio
+
+@ 0 6 0 09494f8572db532814bc66c3047a566c
++ Compilar para JavaScript é necessário, mas não suficiente: um site construído com o Soundness
++ deveria ser escrito em Soundness de ponta a ponta, com o front-end em Scala.js e toda API web —
++ DOM, fetch, armazenamento, mídia — alcançada por meio de facades tipadas geradas a partir de WebIDL
++ pelo xenophile, sobre o DOM tipado do querencia. Nenhum JavaScript escrito à mão, nenhuma costura
++ `js.Dynamic` sem tipos. A prova é usar o próprio produto: o próprio front-end de soundness.dev,
++ servido pelo site que está na árvore, construído desta forma.
+
+@ 0 2 0 135645698bafe5f61df9262090290d39
++ Concluído quando: o front-end de soundness.dev for distribuído como Scala.js compilado pelo
++ Soundness, com todo acesso a APIs web por meio de facades tipadas geradas, e fizer build no build
++ comum.

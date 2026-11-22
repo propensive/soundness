@@ -1,0 +1,64 @@
+orthant 2 language
+
+% 0 1 0 034521a36c271d7c1f86f106004c533d
+
+@ 0 1 0 16b7e94f7205b3f90afbfe475dbc515c
++ Wird ausgelöst, wenn ein JSON-Pointer nicht aufgelöst werden kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 2 0 0218d972e0cd99281d6d5dfa8e653bbc
++ Jacinta löst JSON-Pointer nach RFC 6901 auf. Der Konstruktor nimmt einen `reason: Reason`; die
++ dargestellte Meldung ist `the JSON pointer
+
+% 0 1 0 158b131027feb9391eab6e0b397ad073
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+@ 0 2 0 0ce9f3323010cab5021e70adfcef5654
++ (`↯/s.106.2.1`, `UnknownDocument`, wurde ausgemustert, als `JsonPointer` seine nie belegte
++ Dokument-URL und `JsonPointer.Registry` verlor; die übrigen Nummern sind unverändert.)
+
+% 0 1 0 00dd5d5779c0f95f1477eb240a154ecb
+
+@ 0 1 0 01c29b357a79e9d80c0e5d213f43e9e8
++ Eine JSON-Referenz beginnt nicht mit `#`.
+
+@ 0 1 0 105e3c4dee51a790105a64c459096fa9
++ **Beispiel.** `[↯/s.106.2.2] the JSON reference was not valid because a JSON reference must begin with '#'`
+
+@ 0 1 0 0e02c3730b3808551133a6b50f498754
++ **Behebung.** Beginnen Sie die Referenz mit `#`, wie in `#/play/title`.
+
+% 0 1 0 034c98f84dc358491b08ae76143624e5
+
+@ 0 1 0 06fbbc8ff422674809e73432ced72b39
++ Das Fragment einer JSON-Referenz beginnt nicht mit `/`.
+
+@ 0 1 0 1eebdd34b53ab9cd0b440a81e81db782
++ **Beispiel.** `[↯/s.106.2.3] the JSON reference was not valid because a JSON reference fragment must begin with '/'`
+
+@ 0 1 0 045bcb580c6de5281b75c7ff0313c11f
++ **Behebung.** Beginnen Sie das Fragment mit `/`, wie in `#/play`. Ein bloßes `#`, das das ganze
++ Dokument adressiert, ist ebenfalls gültig.
+
+% 0 1 0 06c60eb430a43dda148893f098ee48aa
+
+@ 0 1 0 1b3c92628749be9715451d7fbc0415f1
++ Auf ein `~` in einer JSON-Referenz folgt weder `0` noch `1`.
+
+@ 0 1 0 05c7364129967dc101f1e6e394871984
++ **Beispiel.** `[↯/s.106.2.4] the JSON reference was not valid because a '~' in a JSON reference must be followed by '0' or '1'`
+
+@ 0 1 0 12b5dc6f91211c980559d07428049b1b
++ **Behebung.** Maskieren Sie ein literales `~` als `~0` und ein literales `/` als `~1`. Keine
++ andere Maskierung ist definiert.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 2 0 1969b177843c517a1349e53956b6ebf8
++ - Quelle: `lib/jacinta/src/core/jacinta.JsonPointer.scala`
++ - `↯/s.106.1` — Fehler beim typisierten JSON-Zugriff

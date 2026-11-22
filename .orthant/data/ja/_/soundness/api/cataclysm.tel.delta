@@ -1,0 +1,1470 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1f5833b64febbc391dfd68b455ef5b25
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 07810fa37386b2841145bd095841df34
++ info   型のついた値としての CSS：実際の文法に照らして検査されるスタイルシート、セレクター、プロパティ
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 069510c983c180ea1dbd5740495f3c14
++     _Cataclysm_ は CSS、つまりスタイルシート、そのルールとセレクター、そしてプロパティの値を、型のついた値として表す。
++     それらはブラウザに無視されるまま放置されるのではなく、各プロパティの本物の文法に照らして検査される。
++     ブラウザは CSS を決して拒まない。
++     綴りを誤ったプロパティや不正な値は、何もしないことで失敗する。
++     ここでは同じ誤りが、テキストを実行時に読むときには `Css.Error` になり、`css"…"` リテラルや `Css.Style(…)` コンストラクターに書いたときにはコンパイルエラーになる。
++     どちらも、六百を超えるプロパティについての MDN のデータの値定義構文に照らして検査される。
+
+@ 0 9 0 1dd74f4461c977dd14de6fc8d94343bc
++     中心となる型は `Css` である。
++     これはスタイルシートを `Css.Node`（ルール、宣言、アットルール）のリストとして表したもので、`read[Css]` でテキストから読み、`css"…"` 補間子で書き、`+` で結合し、`formatting` パッケージから名前で選んだ `Css.Formatting` のもとで `show` によって描画する。
++     ルールのセレクターは `Selector` の `SelectorList` であり、各 `Selector` は `Selector.Simple` の部品を `Selector.Combinator` でつないだ `Selector.Compound` からなり、Selectors Level 4 の全体を扱う。
++     プロパティの値には型がある。
++     長さ、角度、時間、グリッドのフレックスは CSS 自身の単位での量であり（`4.0*Px`、`90.0*Deg`、`200.0*Ms`、`2.0*Fr`）、色は 16 進数の三つ組として描画され、`Css.Convertible` 型クラスは、どの値定義型に対してどのネイティブ型を受け付けるかを述べる。
+
+% 2 1 0 1a257b602f1fee4e0b752b96f1b70b87
+
+% 3 1 0 0aacf5c7c1e2ef2d1ddec05a106f7565
+
+% 4 1 0 1238f33caae5a3c71f32cef7fce1a5f1
+
+% 5 1 0 0359ba011e66231d1a3b756e79ace53b
+
+% 0 1 0 0b014b2c52185b23001af5573e592715
+
+% 0 1 0 1dbeabf7faf35a0207e7efe71a3bb312
+
+% 1 1 0 028065ec59253bd214e476227eea4848
+
+% 0 1 0 03c376ea4340b39b1946e5f08dffe69c
+
+% 0 1 0 12c3817e848da3db000fb963c091dfa1
+
+% 0 1 0 02e3d7ad5804118f18c3d2c26bf57487
+
+% 0 1 0 043231e68ecb1c9e01b3b2150977aa79
+
+% 0 1 0 0d01e097593e8eb8047158bf73bd9ca1
+
+% 1 1 0 12a6040a24546d660d668b8c881464b4
+
+@ 0 4 0 1d6766da4be6647913ec34be27a1c55e
++     読み取りは、最初の誤りで止まるのではなく、未知のプロパティ、不正な値、閉じられていないコメントなど、すべての誤りを一つの `Css.Errors` に蓄積するので、スタイルシートは一度で修正できる。
++     エラーには、`errorDiagnostics.stackTracesDiagnostics` のような `Diagnostics` がスコープ内に必要である。
+
+@ 0 1 0 1c2315358367c5db196b18bacc02b83e
++     このライブラリは三つのソースセットに分かれている。
+
+@ 0 13 0 01b86c7132a5e90d1935d62809b2a4fd
++     - `cataclysm.core`：`Css` とそのノード、エラー、キーワード、`Css.Convertible`。セレクターのモデル（`SelectorList`、`Selector`、`Selector.Compound`、`Selector.Simple`、…）。プロパティのデータセット（`PropertyDef`、`Css.Syntax.Matcher`、`Css.Syntax`、`ValueToken`、`Css.Outcome`）。単位（`Px`、`Rem`、`Vw`、`Pct`、`Deg`、`Fr`、…）。`css"…"` 補間子。`classes` と `ids` の拡張。そして `formatting` と `construables` のパッケージ。JVM、Scala.js、Scala Native 向けにコンパイルされる。
++     - `cataclysm.fonts`：`Web` メディアとその書体のプロビジョン（`Web.linked`、`Web.imported`、`Web.local`、総称ファミリー）、`FontFace`、`Css.fontFace` と `Css.fontFaces`、そして phoenicia の `Face` や `Font` を、それを選択する `Css.Style` に変える `style` 拡張。
++     - `cataclysm.html`：honeycomb とのバインディング。`inlineStyle` は `Css.Style` を `style` 属性にし、`Styles` と `cssBindings.checkedBinding` は、テンプレート中のすべてのクラス名と id 名を、クラスパス上のスタイルシートに照らしてコンパイル時に検査する。
+
+@ 0 5 0 02e17f91ed1c8d1913eef9d1ee919f45
++     すべてが `soundness` アンブレラにエクスポートされる。
++     `formatting`、`construables`、`cssBindings` のパッケージはアンブレラ自身のものに統合され、その given は名前でインポートする。
++     `import soundness.*` は given をインポートしないからである。
++     プログラムは、スタイルシートを描画する前に `import formatting.indentedCssFormatting`（または `compactCssFormatting`）と書き、検査されたクラス名を有効にするために `import cssBindings.checkedBinding` と書く。
+
+% 0 1 0 07ce35ed5adcf912137e4969eb82aa49
+
+% 0 1 0 1e76a5bc6f0eb468009d699aed48f969
+
+% 0 1 0 0dd1f832fb8c066609e118cb295c1e2f
+
+% 0 1 0 1b8b5a251a8376950c2b1b40128db44e
+
+% 0 1 0 127fa8577891928b1c4c2f045c784deb
+
+% 0 1 0 1bd33b1ba6cc0bb10f3bb8f198e4cf9e
+
+% 0 1 0 05d54a31471a1d230b48892305a6d3ce
+
+@ 0 1 0 01bbbd690e12eb2c000782917ac32410
++ entry .Css   スタイルシート：読み、書き、結合し、描画する、ルール、宣言、アットルールのリスト
+
+% 1 1 0 136b8849e2f8bbf409ab28ab3008984d
+
+@ 0 6 0 168fe9b0434d714a11d4751e499a8c85
++       `Css` は値としてのスタイルシートである。
++       その `#rules` は `Css.Node` であり、それぞれ、パースされた `SelectorList` と本体を持つルール、プロパティとその値の宣言、または名前と前置部と省略可能な本体を持つアットルールである。
++       テキストを読むこと（`.aggregable`）、`css"…"` 補間子、フォントからの `Css.fontFace`、あるいはノードから直接作られる。
++       二つのスタイルシートは `+`（`.addable`）で、両方のルールのリストを持つ一つのスタイルシートに結合される。
+
+% 2 1 0 1192de110b3c8e55022837b6be00015a
+
+% 3 1 0 037ba08fce5d53300def16d5525d07f9
+
+% 4 1 0 11ea339f5674227e12ee30f3903320c4
+
+% 5 1 0 0bb9f456f3aefe10058c9f2af9eaf66f
+
+% 1 1 0 08f6eccee8d2c96b1f8e7d0b180960c8
+
+% 0 1 0 1ed2830211ce9d8a004a8e9f2cfe0fab
+
+% 0 1 0 0dee864c9f6372d519615db2552f2fde
+
+% 0 1 0 18f2111631ed00fe0d4cff22198faeec
+
+% 0 1 0 13d5fd7b18071a781219a5be4f3dc8f0
+
+% 1 1 0 01470bc32e860e400e2b8e5fcc272953
+
+@ 0 7 0 1c83e5cb6e6ca54f02bb0d5395786c47
++       読み取りは、すべての宣言をプロパティの文法に照らして検証し、すべての問題を `Css.Errors` に蓄積して、最後に一度だけ発生させる。
++       描画はスコープ内の `Css.Formatting` を通じて行われる。
++       `formatting.indentedCssFormatting` は各ルールと各宣言をそれぞれ字下げした行に置き、`formatting.compactCssFormatting` は本質的でない文字をすべて取り除く。
++       描画の形は、`show`（`.showable`）、遅延された `Stream[Text]`（`.streamable`）、HTTP の `text/css` の本文（`.media`）である。
++       どのスタイルでも、最後のものを含め、各宣言の後に `;` がつく。
+
+@ 0 4 0 1907c4649b564c571d2efdb8bc8b97ec
++       コンパニオンは、置換のための型のついた値として、CSS 全体のキーワード（`.inherit`、`.initial`、`.unset`、`.revert`、`.revertLayer`）と色のキーワード（`.transparent`、`.currentColor`）も持つ。
++       さらに、インラインスタイルのための `.Style` コンストラクター、`.Convertible` 型クラス、`.Syntax` 文法型、`.Error` も持つ。
+
+% 0 1 0 155d931f148ccac60ccc59a389e97b03
+
+% 1 1 0 11991a81ee71faaf17bb6a7ddc29ba8b
+
+% 0 1 0 1f88529129e197f613ba16389aeb2267
+
+% 0 1 0 11f9dd4bdb9d48741676827e28912b4a
+
+@ 0 7 0 1cf499503d2b46fb19890116cff87b34
++   entry .aggregable   テキストからスタイルシートを読み、すべての `Css.Error` を一つの `Css.Errors` に蓄積する
++       テキストを `read[Css]` できるようにする given である。
++       パースはすべての宣言を検証する。
++       プロパティは既知でなければならず、その値はプロパティの文法を満たさなければならない。
++       パースは `track` のもとで実行されるので、各 `Css.Error` はパースを止めるのではなく蓄積され、そのすべてを持つ一つの `Css.Errors` が最後に発生する。
++       完全に正しいスタイルシートからは、何も発生させずに `Css` が得られる。
++       スコープ内に `Tactic[Css.Errors]` と `Diagnostics` が必要である。
+
+% 2 1 0 1b9332c42957904f0b8a52b91ac0fa0e
+
+% 3 1 0 021aa0602baf40e31740726eca48e9e2
+
+% 4 1 0 1b6c37c8e9c750061658a3f80f339956
+
+% 5 1 0 0490e819ae59e9cb0b9efea8e42aa841
+
+% 0 1 0 11027fce74fad78903fa89ddaa262c78
+
+% 0 1 0 0b8f2e07d4c19ddc0a13c131ad26c2ae
+
+% 0 1 0 0cb1ef552c2a79fb03dea1870d33cecb
+
+% 1 1 0 013e3e092d67b4221e995dfff9b76907
+
+@ 0 4 0 011d66183fad0553175ec738e991729b
++       カスタムプロパティ（`--name`）は定義なしで受け付けられる。
++       マッチャーが実装していない型を文法に使う値は、黙って通されるのではなく `UnsupportedValue` として報告される。
++   entry .Formatting   スタイルシートの描画の仕方：改行と字下げをつけるか、コンパクトにするか
+
+% 1 1 0 008da007572e478d1f38006613174426
+
+@ 0 7 0 0d29f620ed0a56f307b5f1b8194a8fbf
++         `Css.Formatting` は、描画が各ルールと各宣言をそれぞれ字下げした行に置くかどうか（`#newlines`）と、`:` の後と `{` の前に見た目のための空白を加えるかどうか（`#spaces`）を述べる。
++         `Css` の `Showable`、`Streamable`、`Media` のインスタンスはどれもこれをコンテキスト値として取るので、描画にはスコープ内にこれが必要である。
++         標準のものは二つあり、`formatting.indentedCssFormatting`（両方とも有効）と `formatting.compactCssFormatting`（両方とも無効）で、名前でインポートする。
++         それ以外のものは `Css.Formatting(newlines, spaces)` で作る。
+
+% 2 1 0 16d8090b072a1659081c318d43984b3a
+
+% 3 1 0 0e5accbf7522106c03ee770545cae12c
+
+% 4 1 0 07da06d43d5ef99f056db17ea60481ad
+
+% 5 1 0 092aa883f49df90d1957174fe543e7a8
+
+% 0 1 0 0795dadc4571c07c10992f14d10d7e93
+
+% 2 1 0 164af54cf5c4578d1e15fa6708660f91
+
+% 0 1 0 185126c59ec9115e040f741858f0fdd6
+
+% 0 1 0 146ddad6baf7650a000763f5d824ad52
+
+% 2 1 0 07dbd12b8e200b930361b5d7b1cd3659
+
+% 0 1 0 036c2537c44262f718d7ae0561bb0e09
+
+% 0 1 0 0bf685bf123631011095e3c27eac8995
+
+% 1 1 0 1a058ef924b516fb19264eb10f3447b9
+
+% 0 1 0 13421b03ae58513a079ac2c7eb922fd2
+
+@ 0 11 0 0b62871f02deafac08e7f401587b1279
++     entry .apply   与えられた改行と空白の選択による書式
++     entry #newlines   各ルールと各宣言をそれぞれ字下げした行に置くかどうか
++     entry #spaces   各 `:` の後と各 `{` の前に空白を置くかどうか
++   entry .Node   スタイルシートの一つのノード：ルール、宣言、アットルールのいずれか
++       スタイルシートが持つ三種類のノードを表す列挙型である。
++       `Rule(selector, body)` は、パースされた `SelectorList` と、さらなるノードからなる本体を持つルールであり、入れ子のルールは直接表現される。
++       `Declaration(property, value)` は一つのプロパティとその値であり、どちらもテキストで、コメントは取り除かれ、空白は正規化されている。
++       `At(name, prelude,
++       body)` はアットルールであり、名前（`@` は含まない）、前置部のテキスト、本体を持つ。
++       本体は、`@import url("x.css");` のような文のアットルールでは `Unset` であり、`@media screen { … }` のようなブロックのアットルールではノードのリストである。
+
+% 2 1 0 1fdaefcaa7f496721a3cfa6fe2e68850
+
+% 3 1 0 16d9e95b9a6a970714a8134eb2b536d4
+
+% 0 1 0 06a707affab00f8014cd1d73980e3f8e
+
+% 0 1 0 09d1e48e204a39571e6f9116092ab652
+
+% 0 1 0 0fedb8efbdb4e9ea092ef59013b0b202
+
+% 0 1 0 15315b59c8776cd11622e421a63d394c
+
+% 1 1 0 1a47bb0d039feb2e00dca2c42ff485b6
+
+@ 0 25 0 19aa7f0d3f146299123396b2e2b72b2a
++       直接作ったノードは検証されない。
++       検査される経路は `read[Css]` と `css"…"` である。
++   entry .streamable   配信のために、スタイルシートを `Stream[Text]` として遅延して描画する
++       `Css` をチャンクごとにストリームできるようにする given であり、大きなスタイルシートが一つのテキストとして保持されることはない。
++       ストリームが消費される間、生産者がタスクから描画結果を書き込む。
++       スコープ内に `Monitor`、`Probate`、`Css.Formatting` が必要であり、`.media` と組み合わせてスタイルシートを HTTP レスポンスとして配信する。
++   entry .showable   スコープ内の `Css.Formatting` のもとで、スタイルシートをテキストとして描画する
++       `css.show` はスタイルシート全体を一つの `Text` に書く。
++       ルールと宣言のレイアウトは書式が決める。
++       `formatting.indentedCssFormatting` はブロックごとに一つのルールを、二つの空白の字下げと末尾の改行つきで与え、`formatting.compactCssFormatting` は `a{color:red;}` を与える。
++       描画は往復できる。
++       スタイルシートを自身の描画結果から読み直すと、元のものと等しい。
++   entry .interpolator   `css"…"` の背後にある `Interpolable`。`cataclysm.css` を参照
++       `css"…"` リテラルを展開する、コンテキスト補間子の given である。
++       結果の型は transparent である。
++       宣言だけのリテラルは `Css.Style` であり、セレクターやアットルールを持つリテラルは `Css` である。
++       直接呼び出すことはない。
++       `StringContext` に対する `css` 拡張がその表面である。
++   entry .addable   `css + css`：両方のルールのリストを順に持つ一つのスタイルシート
++       `Addable` の given である。
++       `css"a { … }" + css"b { … }"` は両方のルールを持つスタイルシートであり、`stylesheet + Css.fontFace(font)` はフォントのアットルールをページ自身のスタイルに追加する。
++   entry .media   HTTP のためのスタイルシートのメディアタイプ：`text/css; charset=UTF-8`
++       `Media` の given であり、これにより `Css` は正しいコンテンツタイプでレスポンスの本文として配信され、`.streamable` を通じてストリームされる。
++   entry .Style   インラインの `style="…"` 属性のための宣言の集合。コンパイル時に検査される
+
+% 1 1 0 17ee461165e53d4212741f04874febee
+
+@ 0 5 0 1ab114043833e9cb07ff96d13ee4e2f8
++         `Css.Style` はセレクターを持たないプロパティと値の組のリストであり、要素の `style` 属性のためのものである。
++         名前つき引数で作る。
++         各名前はキャメルケースのプロパティ名であり（ケバブケースに変換される。`borderWidth` は `border-width` である）、各値は、プロパティが受け付ける値定義型を持つ `Css.Convertible` がある任意の型である。
++         長さには `4.0*Px`、色には色、そしてどこにでも `Css.inherit` を使える。
+
+% 2 1 0 052616ee7334d3fe1ab9d356cc877ebe
+
+% 3 1 0 1a7760d08c542f001cff893743e0eb2e
+
+% 0 1 0 16234519696ec00e19150ecf53ccdaa9
+
+% 0 1 0 0dfaedb6e96a5e430fdaf862cca82b47
+
+% 0 1 0 18451809714387020aa23527d0361fc5
+
+% 0 1 0 17bcb3d80c1cb32e1456aecc190233e1
+
+% 0 1 0 0653ac124c80f6d51bc1bc3b0234670c
+
+% 0 1 0 17891a815bc686ad1488bcff35ecdfcb
+
+% 0 1 0 0fd15cbe0f8c1bba0dfb1e0106dde0bd
+
+% 1 1 0 13ac435a43806ee3026e226bf1224557
+
+@ 0 7 0 1293d4cb4743278e0980612f9fbfe003
++         データセットが知らないプロパティはコンパイルエラー _cataclysm: `name` is not a known CSS property_ になり、種類の誤った値は別のコンパイルエラー _cataclysm: a `length` value is not valid for the `color` property_ になる。
++         宣言だけの `css"…"` リテラル（`css"color: red; width: 4px"`）も `Css.Style` であり、二つのスタイルは `+` で結合される。
++         `cataclysm.html` があれば、`Css.Style` は honeycomb の `style` 属性として直接受け付けられる（`inlineStyle`）。
++         `cataclysm.fonts` の `style` 拡張は、phoenicia の `Face` を選択するスタイルを作る。
+
+% 0 1 0 014b1384a91ba80514911d6179a23d50
+
+% 0 1 0 07ba80a1554ce3471aded571a7f4d248
+
+@ 0 15 0 050deb7b7e19b29900bd1c09e4da73ff
++     entry .of   すでに描画されたプロパティと値の組からのスタイル。検査されない
++         `Css.Style.of(List(t"font-family" -> t"\"Inter\""))` は、テキストの組から検査なしにスタイルを作る。
++         これは `Css.Style(…)` マクロとフォントの `style` 拡張が出力するファクトリーであり、データセットが検査できない宣言を運ぶ手段である。
++     entry .applyDynamic   `Css.Style()`：空のスタイル
++     entry .applyDynamicNamed   `Css.Style(property = value, …)`：検査される、名前つき引数のコンストラクター
++         `Css.Style(borderWidth = 2.0*Px, color = red)` の背後にあるマクロである。
++         各名前はリテラルとして読まれ、キャメルケースを解いて CSS のプロパティにされ、値の `Css.Convertible` が召喚される。
++         プロパティはデータセットに存在し、変換可能な型の値を受け付けなければならない。
++         そうでなければコードはコンパイルされない。
++     entry .addable   `style + style`：両方のプロパティのリストを順に持つ一つのスタイル
++     entry #properties   プロパティと値の組。それぞれすでにテキストとして描画されている
++     entry #text   `style` 属性のテキストとしての宣言：`color: #ff0000; width: 4px`
++         各組は `name: value` として描画され、`; ` で結合され、末尾にセミコロンはつかない。
++   entry .Value   値定義型でタグづけされた、描画済みの CSS の値。`Css.Value of "length"`
+
+% 1 1 0 15981be65be319151e2bfac5302e4b8b
+
+@ 0 6 0 1472ceff838454391e2903d767904e76
++         `Css.Value` は CSS のためにすでに描画されたテキストであり、その `Topic` 型メンバーは、それが満たす値定義型を名指す。
++         `"length"`、`"color"`、`"time"`、`"angle"`、`"percentage"`、`"number"`、`"integer"`、`"flex"`、または CSS 全体のキーワードには `"*"` である。
++         このトレイトは `into` なので、`Css.Convertible` を持つネイティブな値（量、色、`Int`）は、そのトピックの `Css.Value of` が期待されるところならどこでも受け付けられ、`.converter` によって持ち上げられる。
++         `Css.Value(text)` はトピックなしにテキストを包む。
+
+% 0 1 0 0d1bb26d2146bbbf0944a3085d600fa6
+
+@ 0 24 0 10546eaa6861644716a326f7572e670b
++     entry .apply   すでに描画されたテキストを、トピックのない値として包む
++     entry .converter   任意の `Css.Convertible` な型を、そのトピックの `Css.Value of` に持ち上げる `Conversion`
++         ジェネリックな given が一つだけなので、新しい変換可能な型に必要なのは `Css.Convertible` のインスタンス一つであり、独自の変換は要らない。
++     entry #text   CSS のテキストとしての値
++   entry .Keyword   CSS 全体のキーワード `inherit`、`initial`、`unset`、`revert`、`revert-layer`
++       ケース `Inherit`、`Initial`、`Unset`、`Revert`、`RevertLayer` を持つ列挙型であり、これらはすべてのプロパティの唯一の値として正しい。
++       小文字の値 `Css.inherit`、`Css.initial`、`Css.unset`、`Css.revert`、`Css.revertLayer` を通じて参照する。
++       これにより、裸の `Unset` が vacuous の `Unset` と衝突するのを避ける。
++       その `Css.Convertible` のトピックは `"*"` なので、`Css.Style(…)` や `css"…"` の中で、既知のどのプロパティに対しても受け付けられる。
++   entry .ColorKeyword   色のキーワード `transparent` と `currentcolor`
++       ケース `Transparent` と `CurrentColor` を持つ列挙型であり、`Css.transparent` と `Css.currentColor` として参照し、トピック `"color"` の `Css.Convertible` を持つ。
++   entry .inherit   `inherit` キーワード。任意のプロパティの値として
++   entry .initial   `initial` キーワード。任意のプロパティの値として
++   entry .unset   `unset` キーワード。任意のプロパティの値として
++       vacuous の `Unset` を覆い隠さないように、小文字で名づけられている。
++   entry .revert   `revert` キーワード。任意のプロパティの値として
++   entry .revertLayer   `revert-layer` キーワード。任意のプロパティの値として
++   entry .transparent   `transparent` 色キーワード
++   entry .currentColor   `currentcolor` 色キーワード
++   entry .Error   CSS のテキスト中の一つの誤り。行、列、理由を持つ
+
+% 1 1 0 06c3c1cb68f6bc1f0b80b4f473d0ecaf
+
+@ 0 6 0 1f084579ffa8c4870a27b6efebc84333
++         エラー `↯/s.90.1`：_invalid CSS at line `n` column `n`: `reason`_ であり、理由自身の番号がサブコードになる。
++         スタイルシートを読むとき、あるいはセレクター、文法、値をパースするときに見つかった問題ごとに一つ発生する。
++         `read[Css]` はそれらをすべて `Css.Errors` に集め、`SelectorList.parse` と `Css.Syntax.Matcher.check` は `Tactic[Css.Error]` を通じて一つの `Css.Error` を発生させる。
++         作るには `Diagnostics` が必要である。
+
+% 2 1 0 0b47c26dd99ca38b00c23c0d0be03b56
+
+% 3 1 0 0318b808bd7a64da0f21f587e04ec87a
+
+% 4 1 0 17f21349a82b947400acffadb3ffc5e5
+
+% 5 1 0 1aaf28139e72c02c0515b86ace202b69
+
+% 0 1 0 008c4875626e08c00a3d5719dc6185fc
+
+% 0 1 0 0777326cdce2c61100e39c530edf78b4
+
+% 1 1 0 118bbb0ba9aaf01504e69832c9d226ea
+
+% 0 1 0 199d8570e7eb59dc0e0dc55a8037a8e8
+
+@ 0 1 0 197d6754ae7f5c75116d7cc176416a9e
++     entry .Reason   CSS が不正だった理由：番号のついた九種類の誤り
+
+% 1 1 0 03b9dc4c8e1bdebf0fdbd9d2178062e3
+
+@ 0 1 0 00d2fb736573525c1462c169294409fb
++           `Reason` は `#number` を持つ `Clarification` であり、その番号がエラーのサブコードになる。
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  注記
+
+% 0 1 0 16bfc7654963ac8e0f33de3199ef0d63
+
+% 0 1 0 16788bef4b0475f20f40b9a517a9ddd9
+
+% 0 1 0 13a199f694608e1a1785cc238d8f266c
+
+% 0 1 0 068b2b0ea0adc4a1114ae978467baa03
+
+@ 0 1 0 1345781c2bcc687705f1866a368a7e9d
++           row  `EmptySelector`  5  _a selector was expected but none was found_  `{` の前に何もないルール
+
+% 0 1 0 11f732d0771ea45a01e5b21e4b936544
+
+% 0 1 0 0978b9ebefd53070004951fecbe5109a
+
+@ 0 2 0 0541151e4d5c8da9066caafc7cf5f327
++           row  `UnsupportedValue(property, types)`  8  _the value of `property` uses an unsupported type_  プロパティの文法が、マッチャーが実装していない値の型を使っている。それらは `types` に列挙される
++           row  `InvalidName(name)`  9  _`name` is not a valid CSS identifier_  クラスまたは id
+
+% 1 1 0 1f8f5da489b3945f063fc0e11ac04b21
+
+@ 0 6 0 00832669e398a8a5106514aa1d524b98
++       entry .communicable   各理由をそのメッセージとして描画する
++       entry #number   理由の番号。1 から 9 で、エラーのサブコードになる
++     entry #reason   何が誤っていたか
++     entry #line   誤りの行。`Ordinal` として
++     entry #column   誤りの列。`Ordinal` として
++   entry .Errors   スタイルシートを読む間に見つかったすべての `Css.Error`。一度だけ発生する
+
+% 1 1 0 09185f4ded35f1ec188d79181ea1c1b6
+
+@ 0 5 0 1c95e5dd62a786c41f96d0ab96443b70
++         _the CSS contained `n` errors_。
++         スタイルシート全体がパースされた後に `read[Css]`（`Css.aggregable`）が発生させ、各誤りを文書の順に `#errors` に持つので、不正な宣言をいくつも持つスタイルシートはそれらをすべて一度に報告する。
++         型が複数形なのは、誤りをいくつも持つ文書から一度に一つずつ誤りを報告するのは、リンターやビルドの手順にとって誤った形だからである。
+
+% 2 1 0 0a6793c37fe781cc0e584a3f231ea530
+
+% 3 1 0 0a94eec2f61942751c3081d407992261
+
+% 4 1 0 010ad11590df81ae06dc7def35fd0eff
+
+% 5 1 0 04f86e3f7925cbe61596c696efbe5b48
+
+% 0 1 0 1761800b0ad8298d04d13d53927462e2
+
+% 1 1 0 1d1920b13ed0c33118d47c289a882c7f
+
+@ 0 3 0 1bf2fa2ae4c2322815fcca98e150c1a4
++     entry #errors   誤り。文書の順
++     entry #+   この集約に、もう一つのエラーを追加したもの
++   entry .Convertible   どのネイティブ型が CSS の値として描画され、それがどの値定義型か
+
+% 1 1 0 008ca6a59c423ac219d5e842e7f3f26b
+
+@ 0 7 0 1fd7e7d1953a84651cfb01f7325dc497
++         `T is Css.Convertible of "length"` は、`T` が値定義型 `<length>` を満たす CSS のテキスト（`#value`）に描画されることを述べる。
++         これは `css"…"` 中のすべての置換と、`Css.Style(…)` へのすべての引数の背後にある型クラスである。
++         マクロは値自身の型に対するインスタンスを召喚し、その `Topic` を読み、プロパティがその型の値を受け付けることを検査する。
++         そのため `css"a { color: $length }"` はコンパイルされない。
++         ジェネリックな `Conversion` が一つ（`Css.Value.converter`）あって、任意の変換可能な型を `Css.Value of Topic` に持ち上げるので、新しい型に必要なのはここでのインスタンス一つである。
+
+@ 0 6 0 12b112d9180208491c5a14e8f8c401ca
++         コンパニオン内のインスタンスは、CSS の単位（`Pixels`、`Rems`、`Exs`、`Chs`、ビューポート、パーセントの単位のすべての `Quantity`、そして quantitative 自身の `Ems`、`Metres`、`Inches`、`Points`、`Picas`、`Seconds`）、角度とフレックスの単位、`Int` と `Double`、キーワード、そして `Chromatic` インスタンスを持つ任意の色を扱う。
++         数値は余分な `.0` なしで描画され（`12.0px` ではなく `12px`）、小数点以下六桁に丸められるので、変換された物理的な長さに浮動小数点の誤差が漏れ出ることはない。
+
+% 2 1 0 0dd59ffc2177ae15191a1f021854832d
+
+% 3 1 0 1f37bb86c8f3d38e121d1cf3260d3787
+
+% 0 1 0 1d1dd5f871464c8418e211e5e71ffd1f
+
+% 0 1 0 1c49fccedb6a18f1181f92c8c2c3a538
+
+% 0 1 0 19b19d14f72935330e83da7dcff433c5
+
+% 0 1 0 13a1763fa87e92f118c57630aa45137a
+
+% 1 1 0 0251985269c0a3a3049d78b4ad74a492
+
+@ 0 4 0 01fac1821cb5ab43154e46b80ef9df22
++         ユーザー定義のインスタンスのトピックは、プロパティの文法が名指すものでなければならない。
++         `"length"`、`"color"`、`"percentage"`、`"number"`、`"integer"`、`"time"`、`"angle"`、`"flex"` は文法に照らして調べられ、それ以外のトピックは検査なしに受け付けられる。
+
+% 0 1 0 1386a1370919716110b2b850716783a6
+
+% 0 1 0 07a2e320d6a2e7af1b5e1f20fb2bc4a2
+
+@ 0 37 0 164705d2a3b77de619c3d19ad1562656
++     entry .pixels   `Pixels` の量を `<length>` として：`4px`
++     entry .ems   `Ems` の量（quantitative のもの）を `<length>` として：`2em`
++     entry .rems   `Rems` の量を `<length>` として：`2rem`
++     entry .exs   `Exs` の量を `<length>` として：`1ex`
++     entry .chs   `Chs` の量を `<length>` として：`40ch`
++     entry .vws   `ViewportWidths` の量を `<length>` として：`100vw`
++     entry .vhs   `ViewportHeights` の量を `<length>` として：`100vh`
++     entry .vmins   `ViewportMins` の量を `<length>` として：`50vmin`
++     entry .vmaxes   `ViewportMaxes` の量を `<length>` として：`50vmax`
++     entry .metres   任意の物理的な長さ（`Metres` の量）を `<length>` として、`mm` で
++         `3.0*Cm`、`10.0*Mm`、`1.0*Metre`、あるいは quantitative の任意の長さとして書かれた `Distance` の量は、ミリメートルで描画される。
++         CSS は `cm`、`mm`、`m` を同じように読むからである。
++         `3.0*Cm` は `30mm` になる。
++         インチ、ポイント、パイカは自身の単位を保つ。
++     entry .inches   `Inches` の量を `<length>` として：`1in`
++     entry .points   `Points` の量を `<length>` として：`12pt`
++     entry .picas   `Picas` の量を `<length>` として：`1pc`
++     entry .percents   `Percents` の量を `<percentage>` として：`50%`
++     entry .chromatic   `Chromatic` インスタンスを持つ任意の色を `<color>` として、16 進数で描画する
++         anticipation の `Chroma` と、iridescence のすべての色の形式（`Srgb`、`Hsl`、`Cielab`、…、そして `rgb"#3344ff"` リテラル）を、それらの `Color.chromatic` インスタンスを通じて扱う。
++         それぞれ、赤、緑、青のチャンネルから 0–255 に切り詰めて、六桁の 16 進数の三つ組として描画する。
++         インスタンスは色の任意のスーパータイプについて探されるので、`Chromatic` を自身の形式から得る色のクラスも、`Css.Style(…)` が値の正確な型を求めるときに見つかる。
++     entry .seconds   任意の時間（`Seconds` の量）を `<time>` として、`ms` で
++         `200.0*Ms` は `200ms`、`1.5*S` は `1500ms` である。
++     entry .degrees   `Degrees` の量を `<angle>` として：`90deg`
++     entry .radians   `Radians` の量を `<angle>` として：`1rad`
++     entry .turns   `Turns` の量を `<angle>` として：`0.5turn`
++     entry .flexes   `Flexes` の量を `<flex>` として：`2fr`
++     entry .integer   `Int` を `<integer>` として
++     entry .decimal   `Double` を `<number>` として。余分な `.0` はつかない
++     entry .keyword   `Css.Keyword` を、その CSS での綴りとして。すべてのプロパティに対して正しい
++         トピックは `"*"` であり、プロパティの検査は既知のどのプロパティに対してもこれを受け付ける。
++     entry .colorKeyword   `Css.ColorKeyword` を `transparent` または `currentcolor` として
++     entry #value   ネイティブな値を CSS のテキストとして描画する
++   entry .Syntax   CSS の値定義構文で書かれた、プロパティの値の文法を木として表したもの
+
+% 1 1 0 1da14e63c935b2340591ec064f796812
+
+@ 0 4 0 037f8d752d8e36460da8f47202fd71fc
++         `<line-width> ||
++         <line-style> || <color>` のような値定義構文の文字列をパースした形である。
++         この記法で、MDN のデータセットは各プロパティに許される値を記述しており、`Css.Syntax.Matcher` は具体的な値をこれに照らして照合する。
++         `PropertyDef#grammar` はプロパティの `Css.Syntax` である。
+
+@ 0 10 0 05030362c8d802a01cc399a85cb549db
++         ケースは記法に従う。
++         `Keyword(name)` は `auto` のようなリテラルの識別子、`Literal(token)` は `/`、`,`、引用された `'+'` のようなリテラルのトークンである。
++         `Type(name, bounds)` は `<length>` や `<integer [1,4]>` であり、範囲はそのまま保持される。
++         `Property(name)` は別のプロパティの文法への参照 `<'border-width'>`、`Function(name, body)` は関数記法 `rgb( <number>#{3} )` である。
++         `Sequence(terms)` は順序どおりの並置、`OneOf(options)` は `|` 結合子（ちょうど一つ）、`AnyOf(terms)` は `||` 結合子（一つ以上、任意の順序）、`AllOf(terms)` は `&&` 結合子（すべて、任意の順序）である。
++         `Repeated(term, min, max,
++         separated)` は乗数 `?`、`*`、`+`、`{m,n}`、`#`（カンマ区切り）であり、上限がない場合 `max` は `Unset` である。
++         `Mandatory(term)` は `!` 乗数である。
+
+% 2 1 0 10169b8d97ea61760408678017d39302
+
+% 3 1 0 14a6b9e9fcaa1c9a13ee179a4639fdaa
+
+% 0 1 0 1c8a1f422922e8240f1896c3e015d21a
+
+% 1 1 0 1b3dbba6fc98b72a17aeda64f24ddda6
+
+@ 0 2 0 02aa6566c5711204046e89dcb59441fb
++         アンブレラの中で stenography の `Syntax` と衝突しないように、トップレベルではなく `Css` の下に置かれている。
+
+% 0 1 0 1d0446be19eb7adf0e482ef490a27b14
+
+% 0 1 0 026b7fb46772449f1ed46aae6ce41462
+
+@ 0 2 0 0d3d6df6921ce97e07cbb50ff9ebe5c3
++   entry #rules   スタイルシートのノード。順序どおり
++     entry .Matcher   プロパティの値をその文法に照らして検査する：正しい、不正、未対応のいずれか
+
+% 1 1 0 00a70d75ba8457391414de0bc9e9b47c
+
+@ 0 11 0 056f5650113d0cc31af4bbf5dd39411f
++           `Css.Syntax.Matcher.check(property, value)` は値をトークン化し（`ValueToken`）、それをプロパティの `Css.Syntax` に照らしてバックトラックつきで照合する。
++           複合的な `<type>` は MDN の `syntaxes.json` データセットから解決し、末端のプリミティブ（`<length>`、`<percentage>`、`<number>`、`<integer>`、`<angle>`、`<time>`、`<resolution>`、`<frequency>`、`<flex>`、`<ratio>`、`<string>`、`<url>`、`<hex-color>`、識別子の型）はトークンの水準で照合する。
++           結果は `Outcome` であり、`Valid`、`Invalid`、または `Unsupported(types)` である。
++           後者は、マッチャーが複合としてもプリミティブとしても実装していない型に文法が行き着いた場合であり、文法の実装されていない一角は、黙って通されたり失敗させられたりするのではなく報告される。
++           これは `read[Css]`、`css"…"`、`Css.Style(…)` がすべての宣言に適用する検査である。
+
+@ 0 4 0 1e201df391ff98131a03b939dcca8516
++           任意置換の関数 `var()` や `env()` を含む値は、置換待ちの値と同じく、常に正しい。
++           CSS 全体のキーワードはすべてのプロパティの唯一の値として正しい。
++           `calc()`、`min()`、`max()`、`clamp()` などの数学関数は、数値のプリミティブが期待されるところならどこでも受け付けられる。
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 1 1 0 06b2b3821b59f61500c87df20de0e769
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 1012e0401a4235931db671ec67f92f61
+
+% 0 1 0 03dfaca54a3b71b4088823f8e16f3484
+
+% 0 1 0 19250033e5fa0ece1479d8b37786414a
+
+% 0 1 0 10496e97d0f59c0702e448bf2160c270
+
+% 1 1 0 12c93b2706510cd21872d68bf2ce46d3
+
+% 0 1 0 0efb5e5172f3856800dcc3db18225d0d
+
+% 0 1 0 05d3a9ace20b225011950a8083d8975a
+
+% 0 1 0 086b29a4778fb6be12cac90fea05a216
+
+@ 0 5 0 0c2181a169f5ba1e137578f26a0a450e
++       entry .check   値を、プロパティの文法に照らして、または `Css.Syntax` に直接照らして検査する
++           二つのオーバーロードがある。
++           `check(property: PropertyDef, value)` はプロパティのパースされた文法を使い、`check(grammar: Css.Syntax, value)` は任意の文法を使う。
++           どちらも `Tactic[Css.Error]` を必要とし、エラーが発生するのは値のテキストをトークン化できない場合（閉じられていない文字列）だけである。
+
+@ 0 4 0 180483d5490337ca08e1ac6f23276bc8
++   entry .Outcome   値を文法に照らして検査した結果：`Valid`、`Invalid`、`Unsupported` のいずれか
++       `Css.Syntax.Matcher.check` が返す列挙型である。
++       `Valid` と `Invalid` は確定した判定である。
++       `Unsupported(types)` は、マッチャーが照合できなかった値定義型を名指し、`read[Css]` はこれを `Css.Error.Reason.UnsupportedValue` として報告する。
+
+@ 0 7 0 1b400e3c3319883006f8dfa8729becfe
++ entry .css   `css"…"` 補間子：コンパイル時に検査される、スタイルシートまたはインラインスタイル
++     `css"a { color: red }"` は `Css` であり、セレクターのない宣言だけの `css"color: red; width: 4px"` は `Css.Style` である。
++     結果の型は transparent であり、内容によって決まる。
++     リテラルはコンパイル時に、`read[Css]` と同じ検査でパースされ検証される。
++     未知のプロパティ、プロパティの文法を満たさない値、閉じられていないコメントや文字列、不正なセレクターはコンパイルエラーになり、誤りの行と列で報告される。
+
+@ 0 8 0 0d3abc69314df2641b6263cac69ae728
++     置換には型がある。
++     **値** の位置では、`$value` は宣言の値全体でなければならず、その型は、プロパティが受け付けるトピックを持つ `Css.Convertible` を持たなければならない。
++     `color` には色、`width` には長さ、`transition-duration` には時間、そして何に対しても CSS 全体のキーワードである。
++     **セレクター** の位置では、`$name` は `Name[CssClass]` か `Name[DomId]` でなければならず、これはクラスセレクター（ドットと名前）または id セレクター（ハッシュと名前）として描画され、リテラルのテキストと複合させてもよい（`div$button`）。
++     それ以外の場所、つまりプロパティ名、アットルールの前置部、あるいは値の中でリテラルのテキストと混ぜた場合（`margin: $width 0`）はコンパイルエラーである。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 0c8e70bf2437f7730f7b39c33f6f43ef
++       label コンパイル時に検査される、リテラルのスタイルシート
+
+% 1 1 0 1b02fab7a85088ee071c98206d7fc438
+
+% 2 1 0 019c679383089de2180c18171befb00f
+
+% 0 1 0 0aa0eda6dcda95d51d762d7fdd376ecf
+
+% 1 1 0 079ce60b3094a6ef067cf91954446c59
+
+@ 0 1 0 1ba70d013b74dbe91501177047a67b91
++       label 値に置換された色と長さ
+
+% 1 1 0 01cd5ae16189355e013370978d28112d
+
+% 2 1 0 17081356650e685d18aaf98e8b46ad93
+
+% 4 1 0 04a20c70d1b516a90a478028d0067ba0
+
+% 5 1 0 01b3ce7c349740b4066f5aa820379279
+
+% 0 1 0 05c64818bb601362085cb37a2cda11ef
+
+% 1 1 0 042c8e31f524000f16473a39107ab498
+
+@ 0 1 0 10a7f6ffe295f1050c923b44954285b7
++       label セレクターに置換されたクラス名
+
+% 1 1 0 18df31a39a8496551273b6f7392aa689
+
+% 2 1 0 13942dd81dce9ca917cfb582acb95952
+
+% 4 1 0 0a72e390a626ebd9023fdc58cfd753f0
+
+% 5 1 0 0787760edd216a520b4245fe4031e429
+
+% 6 1 0 1ffebc23edc976010b6c3599e1534257
+
+% 0 1 0 19204601251d48040c6721af4adc99d7
+
+% 1 1 0 15f491b954453c0c0925e34efa186009
+
+@ 0 1 0 08386460acbc195c0e1ed695734dec0c
++       label 型の誤った置換はコンパイルされない
+
+% 1 1 0 0a88442ebea951071bee4e47c6d29c46
+
+% 2 1 0 02dff1e227079d8f1379b59924869e92
+
+% 4 1 0 0d83be61ab054cf01b0d8811f540cc6a
+
+% 5 1 0 11acd002cee6fe2b09366a516ad2bad1
+
+% 6 1 0 01490461c186a04c01d38abe69b44f3e
+
+% 0 1 0 1f164169f6b5e1d61a9a5394fe759501
+
+% 0 1 0 0a13e4a3017b1f2b119dab972e32971c
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 3 0 0dda9743d00fbb9a1d073abb9f300f8e
++     結果はパースされたノードから作られた `Css` であり、各置換は実行時にその `Css.Convertible` を通じて描画される。
++     そのため `css"a { color: $red }"` は `t"a { color: #ff0000 }".read[Css]` と等しい。
++     スタイルシートは `+` で結合され、インラインスタイルも同様である。
+
+@ 0 6 0 100d615c96ee5bc803ea4c36ef8a60e3
++ entry .classes   スタイルシートのセレクターが言及するクラス名。`Set[Name[CssClass]]` として
++     `Css` に対する拡張である。
++     他のルールやアットルールの本体に入れ子になったルールを含むすべてのルールと、`:is()`、`:where()`、`:not()`、`:has()`、`:nth-child(… of …)` のセレクターリスト引数をたどり、各 `Selector.Simple.Class` を集める。
++     これは、`Styles` と `cssBindings.checkedBinding` が HTML テンプレートのクラス名を照らし合わせる集合である。
+
+% 2 1 0 1bcc9823b4d9ce55004a998a6a99fba0
+
+% 3 1 0 14f63afcfde333ac10f348d2ad541331
+
+% 4 1 0 0374ae47aceb40ea05565c698add238b
+
+% 5 1 0 1154b2e9c8b4d8740b750ce5acd4e047
+
+% 0 1 0 0f04776eed85fc821f3a0e662fdf2c73
+
+% 0 1 0 142af66c11a50d2e102a01ae90861bee
+
+% 1 1 0 163038994d2627e21013954a94f3995b
+
+@ 0 3 0 08b5b65c3732dd6e1ae15932083ad04a
++ entry .ids   スタイルシートのセレクターが言及する id 名。`Set[Name[DomId]]` として
++     `Css` に対する拡張であり、`Selector.Simple.Id` の部品について `classes` に対応するものである。
++     どれほど深く入れ子になっていても、すべてのセレクターリストのすべての id セレクターを集める。
+
+@ 0 1 0 0ca9228f0bc7615f1bf516c9e041b5fc
++ entry .formatting   スタイルシートの二つの標準の描画。それぞれ名前でインポートする given
+
+% 1 1 0 0de3241572bfec6f1a4a6229a36305c7
+
+@ 0 3 0 19e90fd9813e7b0c0871a7e742ff6d81
++       `Css` を描画するにはスコープ内に `Css.Formatting` が必要であり、`import soundness.*` はどれも持ち込まない。
++       プログラムはこれらの一つを名前でインポートするか、独自の `Css.Formatting(newlines, spaces)` をローカルな given として束縛する。
+
+% 2 1 0 0b725675bf1222831d95207992f983a1
+
+% 0 1 0 111d95d52c2ff33b11ad745df3b0669b
+
+% 1 1 0 0e5468dda34c539e0927db36e44bd2b2
+
+% 2 1 0 124a90d7384ad360019e9671381ff0cb
+
+% 3 1 0 00729481344fc36c0a07ffb9228797d2
+
+% 4 1 0 09dde44d19c9b53f12e393424d3e5fb6
+
+% 6 1 0 02a4d189c6605bc0091a693598962989
+
+% 8 1 0 09acd21a2f6a5b9a0395df8b44e440ec
+
+% 0 1 0 06cd5fa85ead98060d34bda35ddde442
+
+% 0 1 0 08124e87a7d06c741e676479cc61a536
+
+% 0 1 0 0595e598221146b1165c699509e4abe3
+
+% 1 1 0 12b1f2e7519fc2c708515716d18d30a0
+
+% 2 1 0 0308e45cd2f79ed6011e3b3aee16bbab
+
+% 3 1 0 0381fc73316444e908d79e6a12e6afa4
+
+% 4 1 0 04f07c20ced178420b9a6dca9bcc6c7f
+
+% 6 1 0 0439ae00ebaebd61149ecf9be5f532d0
+
+% 8 1 0 1f539e33627c693e051f90cf67680075
+
+% 0 1 0 05f5b9421db7b90b0e9e3f2841dbe9b7
+
+% 0 1 0 016b6c73e667be1813aecb9d2ff07097
+
+% 1 1 0 0281a551ca92c3bb150ff47a16879772
+
+% 2 1 0 098f5efcc745d9ad19bd29efe8133a96
+
+@ 0 7 0 1621495164e096d81dc734183414bb6f
++   entry .indentedCssFormatting   ブロックごとに一つのルール、字下げした行の宣言、末尾の改行
++       `Css.Formatting(newlines = true, spaces = true)` である。
++       各 `{` の前と各 `:` の後に空白を置き、階層ごとに二つの空白で字下げし、トップレベルのルールの間に空行を入れ、最後に改行を置く。
++   entry .compactCssFormatting   改行も見た目のための空白もない：`a{color:red;}`
++       `Css.Formatting(newlines = false, spaces = false)` である。
++       ブロックの最後の宣言を含め、すべての宣言の後にはやはり `;` がつく。
+
+@ 0 1 0 15ece9bc601c31c510ec7735ec2f0b45
++ entry .construables   スタイルシートのためのメディアタイプからの構築。名前でインポートする given
+
+% 1 1 0 1358bdde28d0f9581dc49098f2c66b67
+
+@ 0 5 0 181519e1262c383713e80a0ede882b22
++       `Construable` のパッケージであり、他のライブラリもここに given を置く。
++       ここにある given によって、あるメディアタイプの本文を値として構築できる。
++   entry .cssConstruable   `text/css` の本文から `Css` を構築する
++       `"text/css" is Construable to Css` である。
++       HTTP の本文や、メディアタイプのついた CSS のテキストの他のソースは、`Css.aggregable` を通じて `Css` として読まれる。
+
+@ 0 1 0 00fe4d4904c3384913885fc06841df9f
++ entry .SelectorList   カンマで区切られたセレクターのリスト。ルールの前置部
+
+% 1 1 0 0fdc7195c25ac353154660ac5c81cab7
+
+@ 0 5 0 17d8e8acbc54aaed09678c03312225e0
++       CSS のセレクターの三つの階層のうち、最も緩いものである。
++       `SelectorList` はカンマで区切られた選択肢を持ち、それぞれが `Selector`（複雑セレクター。結合子でつながれた複合セレクター）であり、その各 `Selector.Compound` は `Selector.Simple` の部品の連なりである。
++       これは `Css.Node.Rule` が持つものであり、`:is()`、`:not()`、`:has()`、`:where()` が引数として取るものである。
+
+% 2 1 0 13852ea3d821814a052677ed1e978cff
+
+% 3 1 0 1230d45761f386d11577888a246b6067
+
+% 4 1 0 1f6728342b38caea1239a6190135e70a
+
+% 5 1 0 0f0a4ed3d59073e40f9d034e77df79af
+
+% 0 1 0 07dac6a9768e7d3f03b5307a985e74dc
+
+% 0 1 0 11f0e944e021a65b084e64cf12e867f8
+
+% 0 1 0 066e02f0885d2c130c3a404daddea0b7
+
+% 1 1 0 10cfe677a0cdc8710c37d89f2aa51fb3
+
+@ 0 5 0 154e99f52d8c47c50cccc7310ae20fc4
++       パーサーは Selectors Level 4 に従う。
++       列の `||` を含む五つの結合子すべて、名前空間つきの型セレクターと属性セレクター、すべての属性マッチャーと `i`/`s` 修飾子、入れ子のセレクターリストを持つ関数型の擬似クラス、`odd`、`even`、`of` 節を伴う `An+B` 引数、そして入れ子セレクター `&` を扱う。
++       不正なセレクターは `Css.Error` を発生させる。
+
+% 0 1 0 0f4885655bd85e700e6edf26459d456a
+
+% 0 1 0 130cea9ab6bbacd11ba99433a99fee63
+
+% 0 1 0 17c50e0f9e7997960642a37f81c30e3b
+
+@ 0 14 0 021693a79a97004a17bb995b8eb8a8ea
++   entry .showable   セレクターの間に `, ` を置いてリストを描画する
++   entry .focusable   セレクターリストを、方式 `css selector` による tarantula のフォーカスにする
++       `Focusable` の given であり、これによりブラウザ自動化の検索は、テキストではなくパースされたセレクターを取れる。
++   entry .parse   セレクターのテキストをパースし、不正なら `Css.Error` を発生させる
++       `Tactic[Css.Error]` が必要である。
++       テキストは、`read[Css]` がコメントを取り除いた後のルールの前置部と同じく、コメントを含まず空白が正規化されているものとして扱われる。
++       完全なセレクターリストの後に続く入力は `UnexpectedChar` であり、空のリストは `EmptySelector` である。
++   entry .unsafeRead   `css"…"` の展開が使うパース。`Unsafe` で保護されている
++       補間子が展開時にすでにパースしたテキストから、ルールのセレクターを実行時に作り直すので、失敗することはない。
++       `Unsafe` トークンがそれを表明する。
++       任意のテキストは `.parse` を通す。
++   entry #selectors   選択肢。順序どおり
+
+@ 0 1 0 163865b53faef6ef1bac16006c505b2c
++ entry .Selector   複雑セレクター：先頭の複合セレクターと、その後に続く結合子と複合セレクターの段
+
+% 1 1 0 01ec5d6d7a5edd7017306f5027f1fb65
+
+@ 0 4 0 0ab8aeac4abbe60b1ad76cd5574bf284
++       `Selector(lead, head, rest)` は `ul > li a` のようなセレクターである。
++       その `#head` は最初の `Compound`（`ul`）であり、`#rest` はそれに続く段で、それぞれ `Combinator` とそれが到達する `Compound` からなる（`li` への `Child`、`a` への `Descendant`）。
++       `#lead` は相対セレクター、つまり `:has(> img)` の `>` の場合にだけ設定され、それ以外では `Unset` である。
+
+% 2 1 0 0e48303ae1c7115e168b31776a3fb60b
+
+% 3 1 0 10d6ea5298519fd211100d0e76846ca9
+
+% 0 1 0 08c4f3d812be396e0c3ea6104b05f826
+
+% 0 1 0 04f7b019c1f4522e0436c803e38336ab
+
+% 0 1 0 154952d1ec5d9d4b1c06bcd3e795b943
+
+% 0 1 0 038ff332b3343a151d0deb6e06cecf9f
+
+% 1 1 0 0eaa8a0dcb34c3931df09f7468ffda65
+
+% 1 1 0 09402fd84985227516e549717a8ecba4
+
+% 0 1 0 02614ea18f2de5aa1511a8d05e6f9434
+
+@ 0 4 0 15ed835fda00ecd70415bf146c1761d1
++   entry .showable   セレクターを描画する。子孫結合子を除くすべての結合子の前後に空白を置く
++   entry #lead   相対セレクターの先頭の結合子。または `Unset`
++   entry #head   最初の複合セレクター
++   entry #rest   先頭の後の段。それぞれ結合子と、それが到達する複合セレクター
+
+@ 0 1 0 09b276293d0406ad0719d6b22611461b
++   entry .Compound   複合セレクター：間に何も挟まない単純セレクターの並び。`li.item:hover`
+
+% 1 1 0 0403478717ac0c6210e5b2cb049feaac
+
+@ 0 7 0 010a1e6d1ef9d2aa0069f3430c290c21
++         結合子も空白も挟まずに結びついた `Simple` の部品の連なりである。
++         型セレクターまたは全称セレクターがあればそれが先にきて、その後に id、クラス、属性セレクター、擬似クラス、擬似要素が続く。
++         `Compound(List(Simple.Type(Unset, t"a"),
++         Simple.PseudoClass(t"hover", Unset)))` は `a:hover` である。
++     entry .showable   部品を連結して描画する
++     entry #parts   単純セレクター。順序どおり
++   entry .Simple   一つの単純セレクター：型、クラス、id、属性、擬似クラス、擬似要素、`*`、`&` のいずれか
+
+% 1 1 0 101c9d266cbc250800c3af4642152533
+
+@ 0 7 0 1f05807b50db4e760ed1a93ca4475d8e
++         八種類の単純セレクターを表す列挙型である。
++         `Universal(namespace)` は `*` であり、省略可能な名前空間の `Prefix` を持つ。
++         `Type(namespace, name)` は `div` や `svg|rect` のような要素名である。
++         `Id(name)` は id セレクター（ハッシュと名前）で、`Name[DomId]` として型づけされる。
++         `Class(name)` はクラスセレクター（ドットと名前）で、`Name[CssClass]` として型づけされる。
++         `Nesting` は入れ子のルールの `&` である。
++         `Attribute(namespace, name, test)` は `[name]` であり、`^="https" i` のような省略可能な `AttributeTest` を持つ。
++         `PseudoClass(name, argument)` は `:hover` や `:nth-child(2n+1)` であり、省略可能な `PseudoArgument` を持つ。
++         `PseudoElement(name, argument)` は `::before` である。
+
+% 2 1 0 11aef3ba7f39f5e6069709031e3cdb94
+
+% 3 1 0 176c176a02168d76187fe48747cff13a
+
+% 0 1 0 0e98122967f320ad065c2370c39c9b71
+
+% 0 1 0 076db4ed83b2322d00d5ceac3ee39cfc
+
+% 0 1 0 185db11603769c830586a7fd79c373c2
+
+% 1 1 0 17fcc179ed92503019c6c650e58cafa4
+
+@ 0 3 0 00bff296fe9ef8df1172d2c44104a08f
++         クラス名と id 名は `Name` なので、正しい CSS の識別子でない名前はパース時に拒まれ（`Css.Error.Reason.InvalidName`）、`Css` に対する `classes` と `ids` はそれらを型つきで返す。
+
+% 0 1 0 1cf8a0429ccc56e413f1ddc109bddd26
+
+% 0 1 0 0afef677894ac0751b0157cf520abec2
+
+% 0 1 0 038f1466212e87a01d1927776a52dcc8
+
+@ 0 9 0 190779c347effb0f1fb451c3c82faab9
++     entry .showable   各種類を CSS として描画する：`*`、`div`、id またはクラスのセレクター、`&`、`[a^=b i]`、`:is(…)`、`::before`
++         `An+B` 引数は正規化される。
++         `1n` は `n` と、`-1n` は `-n` と描画され、`a` がゼロなら `b` だけになる。
++         属性値は引用符なしで描画される。
++   entry .Combinator   二つの複合セレクターの関係：子孫、子、次の兄弟、後続の兄弟、列のいずれか
++       Selectors Level 4 の五つの結合子を表す列挙型である。
++       `Descendant`（空白）、`Child`（`>`）、`NextSibling`（`+`）、`SubsequentSibling`（`~`）、`Column`（`||`）がある。
++       `Selector#rest` は、先頭の後の各複合セレクターに一つずつこれを組にする。
++       コンパニオンの `showable` の given は、それぞれを記号として描画し、子孫結合子は一つの空白として描画する。
++   entry .AttributeTest   属性セレクターの右辺：マッチャー、値、修飾子
+
+% 1 1 0 0d9e3135c8916f7d0d5bee9cc5933fca
+
+@ 0 21 0 105b5ea8dbe68482120e563285d7a2d5
++         `AttributeTest(matcher, value, modifier)` は `[href^="https"
++         i]` の `^="https" i` である。
++         `AttributeMatcher`、比較される値（引用符なし）、そして大文字小文字の区別についての省略可能な修飾子 `i` または `s` からなる。
++         テストのない `Simple.Attribute`、つまり `[disabled]` は、代わりに `Unset` を持つ。
++     entry #matcher   値をどのように比較するか
++     entry #value   比較される値。引用符は含まない
++     entry #modifier   大文字小文字の修飾子 `i` または `s`。または `Unset`
++   entry .AttributeMatcher   属性セレクターが値をどのように比較するか：`=`、`~=`、`|=`、`^=`、`$=`、`*=` のいずれか
++       六つのマッチャーを表す列挙型である。
++       `Exact`（`=`）、`Includes`（`~=`、空白で区切られた単語）、`DashMatch`（`|=`、値そのもの、または接頭辞 `value-`）、`Prefix`（`^=`）、`Suffix`（`$=`）、`Substring`（`*=`）がある。
++       `AttributeTest` は、比較する値とともにこれを一つ持つ。
++   entry .Prefix   型セレクター、全称セレクター、属性セレクターの名前空間の接頭辞
++       三つの形を表す列挙型であり、それぞれ意味が異なるので区別して保持される。
++       `Any` は `*|`（任意の名前空間）、`Default` は裸の `|`（名前空間なし）、`Named(prefix)` は宣言された名前空間 `svg|` である。
++       接頭辞をまったく持たないセレクターは `Unset` を持つ。
++   entry .PseudoArgument   関数型の擬似クラスの引数：セレクターリスト、`An+B`、生のテキストのいずれか
++       三つの形を表す列挙型である。
++       `Selectors(list)` は `:is()`、`:where()`、`:not()`、`:has()` の入れ子の `SelectorList` であり、それらの中身もまた検査できる。
++       `Nth(a, b, of)` は `:nth-child()` とその仲間の `An+B` であり、`odd` は `2n+1` に、`even` は `2n` に正規化され、省略可能な `of` のセレクターリストもあわせて保持される。
++       `Raw(text)` は `:lang(en)` のようなそれ以外の関数の引数であり、テキストとして保持される。
+
+@ 0 1 0 1b64f832f7e578e0173277da10afaac5
++ entry .PropertyDef   MDN のデータセットにある CSS プロパティの定義：名前と値の文法
+
+% 1 1 0 168da26e540bb2fc17e643fc2cd3752a
+
+@ 0 5 0 140024ca9d024f921154cd81ea8cbe16
++       既知のすべての CSS プロパティ（六百を超え、MDN の `css/properties.json` データセット（CC0）から、ビルド時にライブラリに組み込まれる）は、その `#name` と `#syntax` からなる `PropertyDef` である。
++       `#syntax` は値定義構文の生の文字列であり、`#grammar` が必要に応じてこれを `Css.Syntax` にパースする。
++       `PropertyDef.of(name)` は一つを検索する。
++       `.all` は表全体であり、`.list` は同じものをデータセットの順に並べたものである。
+
+% 2 1 0 08228765f7fcff641cb080b3410a684f
+
+% 3 1 0 1be8dd8431da57420aed9abca240056d
+
+% 4 1 0 12447d1c72aa6b740944f26eb6aca354
+
+% 5 1 0 133cb7a9aa4089f203a5829ce2dd8ffa
+
+% 0 1 0 0b0f81b16134aa9802f93a7bb8f5522c
+
+% 0 1 0 04adf092583363041da1b928e564d9e9
+
+% 0 1 0 031e0eda6d5ceb1509fe20e2154bfa02
+
+% 0 1 0 1042dfed1de4110019d80f925d1c6c41
+
+% 0 1 0 1f431b651d42916502c2a6c263cf0dd1
+
+% 1 1 0 13887cd5746beb7e0f455ca803f15741
+
+@ 0 2 0 13d4c41cee9c4f7a1cd571bf767e3a22
++       カスタムプロパティ（`--name`）は定義なしで正しく、呼び出し側の責任である。
++       `of` はそれらに対して `Unset` を返す。
+
+% 0 1 0 1a8a14ab85f11d760e2380a68041b00a
+
+% 0 1 0 091130df2e046a020e378b26cae4a4a5
+
+@ 0 6 0 1997c8251ae9322416b5e8df2d6cc4f5
++   entry .list   既知のすべてのプロパティ。データセットの順
++   entry .all   既知のすべてのプロパティ。`Dictionary` の中で名前をキーとする
++   entry .of   名前のついたプロパティの定義。認識されたプロパティでなければ `Unset`
++   entry #name   プロパティの名前。ケバブケース
++   entry #syntax   データセットが書くとおりの値の文法。`<length> | auto`
++   entry #grammar   `Css.Syntax` にパースされた値の文法。最初に使うときに計算される
+
+@ 0 4 0 09bc6d42674c3d0b1852b063883b99be
++ entry .ValueToken   プロパティの値の一つのトークン：識別子、数値、次元、文字列、関数、…
++     照合の前にプロパティの値が分解される単位であり、値の中に現れるトークンについては CSS Syntax Module Level 3 のトークナイザに従う。
++     `Css.Syntax.Matcher` がこれを消費する。
++     ツールが値の字句的な形を調べられるように公開されている。
++     ケースは次のとおりである。
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 11 0 1883b0c626334de7150f127668e3c2c2
++     column  ケース
++     column  トークン
++     row  `Whitespace`  空白
++     row  `Ident(value)`  識別子：`auto`、`solid`、`--my-var`
++     row  `Function(name)`  直後に `(` が続く識別子
++     row  `Hash(value)`  `#ff0000`。`ff0000` を持つ
++     row  `Quoted(value)`  文字列の中身。引用符は含まない
++     row  `Url(value)`  引用されていない `url(…)`
++     row  `Number(value, integer, raw)`  数値
++     row  `Percentage(value, raw)`  パーセント値
++     row  `Dimension(value, unit, raw)`  単位つきの数値：`10px`
+
+% 0 1 0 10feff17d8b2e8ce125cbb444ce19797
+
+@ 0 2 0 06d96a51dbc549c81ccc5f5ff9bbaec7
++     row  `Open`, `Close`  `(` と `)`
++     row  `Delim(char)`  `/` や `+` のような、それ以外の一文字
+
+% 1 1 0 0ee300beb0cd6cc91b2d4f9583171ec4
+
+@ 0 9 0 0fe4cf025239e85802df3840168328c7
++ entry .Px   一 CSS ピクセル。`Quantity[Pixels[1]]`：長さは `4.0*Px`
++     数値に掛けてピクセル単位の長さを作る単位の値であり、`Css.Convertible.pixels` を通じて `4px` と描画される。
++     `Px` は他のどれとも比率を持たない新しい次元なので、`2.0*Px + 3.0*Cm` と `(1.0*Px).convert[Metres]` はコンパイルされない。
++     ピクセルの物理的な大きさを決めるのはブラウザである。
++     すべての相対単位とビューポートの単位（`Rem`、`Ex`、`Ch`、`Vw`、`Vh`、`Vmin`、`Vmax`、`Pct`）、角度（`Deg`、`Rad`、`Turn`）、グリッドのフレックス（`Fr`）についても同じことが成り立つ。
++     物理的な単位 `Cm`、`Mm`、`Pt`、`Pc` と quantitative 自身の `Inch` と `Metre` は `Distance` 次元を共有し、通常どおり相互に変換でき、`S` と `Ms` は quantitative の秒である。
+
+% 2 1 0 093c1b33b2e7dc3802cc6979782a60af
+
+% 3 1 0 05d0e9e444e6e77d193e71c34770e0f4
+
+% 1 1 0 10a8cb6a043cf5a2049209bb9d26b579
+
+% 0 1 0 1e640e86d47efbfe003fbf990f7947c3
+
+% 0 1 0 166b78631fb5e7c61211243523a9d42f
+
+% 1 1 0 0adb8906cb3d351b0f4b0c829083b6c8
+
+@ 0 26 0 1f8194715cce01571b59a4bf043f8189
++ entry .Rem   ルート要素のフォントサイズ一つ分。`Quantity[Rems[1]]`：`2.0*Rem` は `2rem` と描画される
++ entry .Ex   要素のフォントの x ハイト一つ分。`Quantity[Exs[1]]`：`ex` と描画される
++ entry .Ch   要素のフォントの `0` の送り幅一つ分。`Quantity[Chs[1]]`：`ch` と描画される
++ entry .Vw   ビューポートの幅の 1 パーセント。`Quantity[ViewportWidths[1]]`：`vw` と描画される
++ entry .Vh   ビューポートの高さの 1 パーセント。`Quantity[ViewportHeights[1]]`：`vh` と描画される
++ entry .Vmin   ビューポートの短い辺の 1 パーセント。`Quantity[ViewportMins[1]]`：`vmin` と描画される
++ entry .Vmax   ビューポートの長い辺の 1 パーセント。`Quantity[ViewportMaxes[1]]`：`vmax` と描画される
++ entry .Cm   一センチメートル。quantitative の `Metres` として：`3.0*Cm` は `30mm` と描画される
++     新しい型ではなく、`Metres` の便利な大きさである。
++     `3.0*Cm == 0.03*Metre` であり、すべての物理的な長さは `Css.Convertible.metres` を通じてミリメートルで描画される。
++ entry .Mm   一ミリメートル。quantitative の `Metres` として：`10.0*Mm` は `10mm` と描画される
++ entry .Pt   一タイポグラフィックポイント。`Quantity[Points[1]]`：`pt` と描画される
++     quantitative の `Points` なので、インチ、パイカ、メートルと相互に変換できる。
++ entry .Pc   一パイカ。`Quantity[Picas[1]]`：`pc` と描画される
++ entry .Pct   1 パーセント。`Quantity[Percents[1]]`：`50.0*Pct` は `50%` と描画される
++     数値ではなく新しい次元である。
++     パーセントは長さや `Double` に足せず、`Css.Convertible.percents` はこれをトピック `"percentage"` で描画する。
++ entry .S   一秒。quantitative の `Seconds` として：`1.5*S` は `1500ms` と描画される
++     時間は、どの大きさで書かれていてもミリ秒で描画される。
++ entry .Ms   一ミリ秒。quantitative の `Seconds` として：`200.0*Ms` は `200ms` と描画される
++ entry .Deg   一度。`Quantity[Degrees[1]]`：`90.0*Deg` は `90deg` と描画される
++     角度は新しい、互いに変換できない次元である。
++     `1.0*Deg + 1.0*Rad` はコンパイルされない。
++ entry .Rad   一ラジアン。`Quantity[Radians[1]]`：`rad` と描画される
++ entry .Turn   一回転。`Quantity[Turns[1]]`：`0.5*Turn` は `0.5turn` と描画される
++ entry .Fr   グリッドトラックの空き領域の一単位分。`Quantity[Flexes[1]]`：`2.0*Fr` は `2fr` と描画される
+
+@ 0 15 0 0d63ba7de70b50eb15e73bb293def779
++ entry .Pixels   `CssPixel` 次元の上の、CSS ピクセルの単位 `Pixels[1]`
++     `Px` の単位型であり、`Quantity[Pixels[1]]` はピクセルで表した長さである。
++     `Power` 型パラメーターは、quantitative のすべての単位型と同じく指数である。
++ entry .Rems   `CssRootFontSize` の上の、ルート要素のフォントサイズの単位
++ entry .Exs   `CssXHeight` の上の、x ハイトの単位
++ entry .Chs   `CssCharacterWidth` の上の、文字送り幅の単位
++ entry .ViewportWidths   `CssViewportWidth` の上の、ビューポートの幅に対する百分率の単位
++ entry .ViewportHeights   `CssViewportHeight` の上の、ビューポートの高さに対する百分率の単位
++ entry .ViewportMins   `CssViewportMin` の上の、ビューポートの最小値に対する百分率の単位
++ entry .ViewportMaxes   `CssViewportMax` の上の、ビューポートの最大値に対する百分率の単位
++ entry .Percents   `CssRatio` の上の、百分率の単位
++ entry .Degrees   `CssDegree` の上の、度の単位
++ entry .Radians   `CssRadian` の上の、ラジアンの単位
++ entry .Turns   `CssTurn` の上の、回転数の単位
++ entry .Flexes   `CssFlex` の上の、グリッドのフレックス比の単位
+
+@ 0 19 0 0c85157476b97a791fa10506149669e9
++ entry .CssPixel   ほかのどれとも比率を持たない、CSS ピクセルの次元
++     独自のシールされた次元なので、ピクセルの長さは物理的な長さや相対的な長さに足すことも変換することもできない。
++     CSS 固有の各次元（`CssPixel`、`CssRootFontSize`、`CssXHeight`、`CssCharacterWidth`、`CssViewportWidth`、`CssViewportHeight`、`CssViewportMin`、`CssViewportMax`、`CssRatio`、`CssDegree`、`CssRadian`、`CssTurn`、`CssFlex`）は、意図的に変換できないようになっている。その物理的な大きさを決めるのはスタイルシートではなく、ブラウザ、フォント、ビューポートだからである。
++ entry .CssRootFontSize   `rem` の長さの次元。変換できない
++ entry .CssXHeight   `ex` の長さの次元。変換できない
++ entry .CssCharacterWidth   `ch` の長さの次元。変換できない
++ entry .CssViewportWidth   `vw` の長さの次元。変換できない
++ entry .CssViewportHeight   `vh` の長さの次元。変換できない
++ entry .CssViewportMin   `vmin` の長さの次元。変換できない
++ entry .CssViewportMax   `vmax` の長さの次元。変換できない
++ entry .CssRatio   百分率の次元。ただの数に変換できない
++ entry .CssDegree   度で表した角度の次元。ラジアンや回転数に変換できない
++ entry .CssRadian   ラジアンで表した角度の次元。変換できない
++ entry .CssTurn   回転数で表した角度の次元。変換できない
++ entry .CssFlex   グリッドのフレックス比の次元。変換できない
+
+@ 0 1 0 0eb0db0b7aa8f81913033a3ec608564c
++ entry .internal   `css"…"` と `Css.Style(…)` の背後にあるマクロの実装
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 15 0 018f5c2ca1a16d630bf2e3d76306c20b
++       直接使うものではない。このオブジェクトは、マクロに安定した置き場を与えるために存在する。
++   entry .expand   `css"…"` の背後にあるマクロ：展開時にリテラルをパースし、`Css` または `Css.Style` として組み立て直す
++       リテラルの各部分を、埋め込みごとに番兵を挟んでつなぎ、全体をコンパイル時にパースして検証し（誤りはその行と列で報告される）、ノードを式としてスプライスし直す。
++       単独の埋め込みである宣言の値は型付きの値になり、`propertyIssue` によってプロパティに照らして検査される。セレクターの中の埋め込みは `Name[CssClass]` または `Name[DomId]` でなければならない。
++   entry .style   `Css.Style(property = value, …)` の背後にあるマクロ
++       各リテラルの名前のキャメルケースを解いてプロパティにし、値の `Css.Convertible` を召喚し、プロパティがその convertible のトピックを受け付けることを検査して、`Css.Style.of` を出力する。
++   entry .topicOf   `Css.Convertible` インスタンスの型が持つ値定義のトピック。なければ空
++   entry .propertyIssue   プロパティがあるトピックの値を受け付けるなら `Unset`。そうでなければ、その理由を述べるメッセージ
++       未知のプロパティ、またはプロパティの文法が拒むトピックのサンプル（`"length"` には `1px`、`"color"` には `#000000`、…）である。
++       トピック `"*"` は既知のすべてのプロパティで受け付けられ、サンプルのないトピックは検査されない。
+
+@ 0 1 0 0d8fc098bc89a68c12f621c1e765daf6
++ entry .Web   組版のメディアとしてのウェブ：ブラウザが書体をどう入手するか、および総称ファミリー
+
+% 1 1 0 1e786ab39f5f92ac14d2893d600b0b9e
+
+@ 0 11 0 0fb32b7cf68e852e1896cb520cb7dd68
++       `Web` は phoenicia の `Medium` であり、ブラウザが CSS から組むテキストのメディアである。ページが書体に対する `@font-face` を持つか、それを持つスタイルシートをインポートするか、総称ファミリーを名指すとき、その書体は利用できる。
++       書体は、given `(Typeface of "Inter") is Typesettable in Web` によってウェブに提供される。これはコンパニオンのファクトリーの一つ（URL にあるフォントファイルには `.linked`、フォントサービスのスタイルシートには `.imported`、読み手がインストールしたフォントには `.local`）によって一度だけ宣言するか、ページに含まれるファイルには phoenicia の `Typesettable.embedded` によって `in Medium` として宣言する。
++       CSS の六つの総称ファミリー（`.sansSerif`、`.serif`、`.monospace`、`.cursive`、`.fantasy`、`.systemUi`）は、ここ、つまりメディアのコンパニオンですでに提供されている。このコンパニオンは `(Typeface of "sans-serif") is Typesettable in Web` の暗黙のスコープにあるので、宣言もインポートも要らない。
+
+@ 0 6 0 087d7304d880a6b30aaa9622c79fb182
++       `Font in Web` は、フェイスとスコープ内にあるその書体のためのプロビジョンを組にしたものであり、`.font`（または phoenicia の `Font.of[Web](face)`）で作る。
++       スコープにプロビジョンのない書体はウェブフォントになれず、プロビジョンのカバレッジが組めないフェイス（直立体だけと宣言されたファイルからのイタリック）は、組にするときに `Font.Error` になる。
++       するとフォントのアットルールは `Css.fontFace(font)` であり、フェイスを選択する宣言は `font.style` である。
+
+% 2 1 0 16bc24922b7cc0f005c86c389635d88d
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 039d619bf9240d3317a4d926c3b5dee6
++         label リンクされたフォントファイルとしてウェブに提供される書体
+
+% 1 1 0 1995340f1fff09f81fbf3514ac0df656
+
+% 2 1 0 18be736f26df1e29079366bc1698fdeb
+
+% 3 1 0 047bf1a07b90d9e709c96c43f7f99607
+
+% 4 1 0 1dbb3ce86cbf5f511bb85d13204e4fbd
+
+% 6 1 0 1ffc32543e9ca51619e5c9ce0a99442c
+
+% 8 1 0 1977fb8e34ca09fa0f0af18da4d2f67d
+
+% 9 1 0 157f79cecc41af3a11430552e97a9333
+
+% 10 1 0 0db124faba3331f30aa0139e59c16009
+
+% 11 1 0 1625278c475ce34a128a8d258c56ad14
+
+% 1 1 0 0ecc045748105a4c00cb4e652d8d9403
+
+@ 0 1 0 01f2937430ea5de6122c05929733c097
++         label プロビジョンと組にしたフェイス：ウェブのためのフォント
+
+% 1 1 0 0fa4888c8c1c8c301e3292149a24ca6c
+
+% 2 1 0 07b49417258f2fa7183db4a09381f115
+
+% 3 1 0 0355c22de0cf18721a24bf1d223f1e6f
+
+% 4 1 0 1b59359efbf26fac1c0bb1e489521051
+
+% 6 1 0 06c45e63c9b7820a098dfe4af956abc1
+
+% 8 1 0 173b3a13d38358491442423d6d08fa2a
+
+% 9 1 0 18bf8daf183e86cd061cc4f57504200c
+
+% 10 1 0 015aa60f87df5ea70d8522ae0190fd95
+
+% 11 1 0 1dda46fc4d1c61fc19f884a5ed186f72
+
+% 13 1 0 0bf7be817b9596d104d845e8fcbd5390
+
+% 1 1 0 0731751560ffa31918ec5113b4618166
+
+@ 0 1 0 1397335d7b61f07c0620ec6dc1c10af3
++         label ページが必要とするアットルールと、フェイスを選択する宣言
+
+% 1 1 0 04467541121d1c89179d54fdd6c2537e
+
+% 2 1 0 188160e468f0979f087e18b5f0cda13f
+
+% 3 1 0 1bbb659c27e3f47f09d61c8f645dbdc3
+
+% 4 1 0 0187659025b78a9009da50a373681598
+
+% 6 1 0 051918f4673063bd09902bb122c748bc
+
+% 8 1 0 08ebe3b5686e762905aecbb6ad3d4de3
+
+% 9 1 0 05cb61d350201bcf15ab67252afb5cba
+
+% 10 1 0 15400704a34161b20adbdef9530a6e11
+
+% 11 1 0 06fae3bb85c9bd24006f7e90c05965d7
+
+% 13 1 0 07b7d6ddd19ca3100c0eef39d6e59400
+
+% 0 1 0 0297529c3ba49bdd01f4e0aff5ee6416
+
+% 0 1 0 1d9867411d8fd2431c5a974d35111095
+
+% 0 1 0 071d5e8ae2bc98d80e1451ec1577285c
+
+% 0 1 0 126cf11fdc25fa7e102948834a335567
+
+% 1 1 0 0980e04a570ab26b1543f93d0127ee06
+
+% 2 1 0 0b4d6e5713a968c51daa7b54de22e564
+
+@ 0 6 0 049bb7a47a646cb60f770042f48e549f
++       名前付きの given の型は制限された given の型の文法でパースされ、そこでは中置のオペランドをリテラル型にできないので、書体は括弧で囲む：`given inter: (Typeface of "Inter") is Typesettable in Web = …`。
++       ブラウザ以外のレンダラー（SVG の `<style>`、PDF）も使えるプロビジョンは `Typesettable in (? >: Web)` を求め、`Web` のプロビジョンも埋め込みの `Medium` のプロビジョンもそれを満たす。
+
+% 1 1 0 0cce7d9b4eae472b004d432706a25e12
+
+% 0 1 0 05c8cabf634f0b23118d27e69a40cb1b
+
+% 0 1 0 01f127d5f0a0c64c1bdaa3ac9b67c0fd
+
+@ 0 1 0 1cd8e0a12386afb5193d73e99a82a0ba
++   entry .Provision   値としてのウェブのプロビジョン：そのソースと宣言されたカバレッジ
+
+% 1 1 0 0804590f42bc84a60d88d1a12029584a
+
+@ 0 32 0 0df8b63a566a8b3119c030156e5b52d0
++         `Web` のすべてのファクトリーが返すクラスであり、これによってプロビジョンは安定した型を持つ。
++         `Web.Provision[family](sources, coverage)` は `(Typeface of family) is Typesettable in Web` であり、その `#sources` はブラウザが書体を入手する `Typesettable.Source` であり、`#coverage` は宣言されたときの `Coverage` である。
++         `FontFace.rules` はソースを一つずつ描画する。
++     entry #sources   ブラウザが書体を得る場所：リンク、インポート、ローカル、総称
++     entry #coverage   プロビジョンが提供すると宣言された太さ、傾き、字幅、軸
++     entry #Self   提供される書体 `Typeface of family`
++     entry #Form   メディア `Web`
++   entry .sansSerif   総称ファミリー `sans-serif`。宣言なしにウェブで提供される
++       ブラウザは各総称ファミリーを手持ちのもので組むので、プロビジョンは単一の `Generic` ソースと、すべてのフェイスを認める `Coverage.Unknown` を持つ。
++       アットルールは描画せず、引用符なしの `font-family: sans-serif` を描画する。
++   entry .serif   総称ファミリー `serif`。宣言なしに提供される
++   entry .monospace   総称ファミリー `monospace`。宣言なしに提供される
++   entry .cursive   総称ファミリー `cursive`。宣言なしに提供される
++   entry .fantasy   総称ファミリー `fantasy`。宣言なしに提供される
++   entry .systemUi   総称ファミリー `system-ui`。宣言なしに提供される
++   entry .linked   ブラウザが URL から取得するフォントファイルからのプロビジョン
++       `Web.linked[family](url, coverage, format)` は、`Abstractable across Urls to Text` であるあらゆる URL 型（`url"…"` からの `HttpUrl`、またはテキスト）、ファイルが持つと宣言された `Coverage`、そして `format()` のヒントのための省略可能な `Typesettable.Source.Format`（`Ttf`、`Otf`、`Woff`、`Woff2`）を取る。
++       ファイルは手元になく読めないので、宣言されたものだけが認められる。そのため、ある太さで宣言されたフォントは、ブラウザに合成させるのではなく、別の太さの要求を拒む。
++       型引数 `family` は、普通は given の宣言された型から推論される。
++       `src` が `url("…") format("woff2")` である `@font-face` として描画される。
++   entry .local   読み手がインストールしていると期待されるフォントからのプロビジョン
++       `Web.local[family](coverage)` は書体を `src: local("Name")` の中で名指し、書体のファミリー名はリテラル `family` である。
++       読み手がそれを持っている保証は何もないので、これは最も弱いプロビジョンであり、そのカバレッジ（与えなければすべてのフェイスを認める `Coverage.Unknown`）は宣言されたことしか述べない。
+
+% 2 1 0 17fa1e0d38e4ddd41e39a95e0ff9fa68
+
+% 3 1 0 05934999dfd98b76111a09540f8a0931
+
+% 4 1 0 18149310ec53a6091b035bd6b83a1882
+
+% 1 1 0 153d7515339ef8d803587bc9d8f544fb
+
+% 0 1 0 0237c1b9d179fa560ecd81c7a9693b5b
+
+% 0 1 0 067b11d41706a4ac09dcffb2362d13dc
+
+% 0 1 0 1701a766acd79f470d91d1ad6c758cd2
+
+% 1 1 0 1cda5002adab070315a8a7ac1c1e3406
+
+@ 0 17 0 0af2834f533cc9ac17f4dca9726d089d
++   entry .imported   フォントサービスのものなど、書体そのものを宣言するスタイルシートからのプロビジョン
++       `Web.imported[family](url, coverage)` は、スタイルシートの URL（`Abstractable across Urls to Text` であるあらゆる型）と、それが提供すると宣言されたカバレッジを取る。
++       するとページは `@import url("…");` を持ち、`Css.fontFaces` は CSS が求めるとおり、それをほかのすべてのルールの前に置く。
++   entry .sansSerifFont   `Font in Web` としての総称の sans-serif：失敗しえない既定値
++       `Typeface.SansSerif.face` を `.sansSerif` と組にしたものである。総称ファミリーはすべてのフェイスを認めるので、組にしても決してエラーを発生させず、その `Css.fontFace` は空である。
++   entry .font   フェイスをスコープ内のそのプロビジョンと組にした `Font in Web`
++       `Web.font(face)` には、フェイスの書体のための `(Typeface of family) is Typesettable in (? >: Web)` の given（ウェブのプロビジョンか埋め込みのプロビジョン）と、プロビジョンのカバレッジがフェイスを組めないときに発生させる `Tactic[Font.Error]` が必要である。
++       スコープにプロビジョンのない書体はコンパイルエラーになる。
++       フェイスは inline パラメーターなので、要求が型に含まれるフェイス（`inter.bold.italic`）と、フォントファイルがクラスパスにあるプロビジョンはコードのコンパイル時に検査され、同じ拒否がコンパイルエラーとして報告される。
++       期待される型がすでにメディアを名指している場所では、phoenicia の `Font(face)` で足りる。
+
+@ 0 1 0 08d3dfe7bfd653e605c6d296d61bc44d
++ entry .FontFace   フォントのプロビジョンが必要とする `@font-face` と `@import` のルール。`Css.Node` として
+
+% 1 1 0 1f162ba3e7666dfc022fc109fb868377
+
+@ 0 10 0 13fd315eddaca39119cbd5222a736de5
++       プロビジョンのソースをアットルールとして描画する。
++       埋め込みのフォントは、`src` が base-64 の `data:` URI（`Opentype` には `format("opentype")` 付きの `font/otf`、それ以外には `format("truetype")` 付きの `font/ttf`）である `@font-face` になるので、スタイルシート、あるいはそれを含む SVG は自己完結する。リンクされたフォントは URL と形式のヒントを持つ `@font-face` に、ローカルのフォントは `src: local("Name")` を持つ `@font-face` に、インポートされたスタイルシートは `@import url("…");` になり、総称ファミリーは何にもならない。
++       各 `@font-face` は `font-weight`（単一の太さ、または `100 900` の範囲）を持ち、カバレッジのフェイスが既定値と異なるところでは `font-style` と `font-stretch` も持つ。これらはカバレッジのすべての項目にわたるので、ブラウザのフェイスの照合はファイルが持つものを見つけられる。
++       普段使うのは `Css.fontFace` と `Css.fontFaces` である。
+
+% 1 1 0 08b5a34a8feb295b1322853ac9330934
+
+% 0 1 0 096695ba1e0fa8e9087b1f0cf918cf86
+
+@ 0 4 0 0065336cfd1875bb06e06eeefa42254a
++   entry .rules   一つのフォントの書体のためのアットルール。ノードとして
++   entry .stylesheet   複数のフォントのためのルールのスタイルシート。各書体は一度だけで、`@import` が先に来る
++       フォントの `List` を取る。
++       二回以上現れる書体のルールは一度だけ出力され、CSS が求めるとおり、すべての `@import` は `@font-face` の前に移される。
+
+@ 0 6 0 015833c1cfe2ecf00ea9c6abf042c712
++ entry .fontFace   `Css.fontFace(font)`：ページがフォントの書体のために必要とするアットルール。`Css` として
++     `cataclysm.fonts` にある、`Css` コンパニオンに対する拡張である。`Font in (? >: Web)`（ウェブフォント、またはプロビジョンが埋め込みの `Medium` のものであるフォント）を取り、それに対する `FontFace.rules` のスタイルシートを返す。
++     `+` でスタイルシート自身のルールとつなぐので、ページはそのスタイルが名指すフォントを持つ。総称ファミリーは空のスタイルシートを与える。
+
+% 2 1 0 15753ac2e28c248b1d6fa5befee68a03
+
+% 3 1 0 07ee49716cd297f90168077063bdc354
+
+% 4 1 0 1aa65ece10f7b8f40b850adfe7a6421b
+
+% 5 1 0 16515ab8aa2d6d5312d126545046e705
+
+% 7 1 0 0d543fd2827577b81daf3cc749249273
+
+% 0 1 0 1c40f0e944b40b261a3e7dc0c451c068
+
+% 0 1 0 08d49ac6a1beb64c1ac3ebad0a7323fe
+
+% 1 1 0 16d5aa23739a1ada034b47d622d2dace
+
+@ 0 2 0 1ee968e57ec15d4314e023973273fe4b
++     フェイスを選択する宣言 `code.style` は、スタイルシートのルールではなく、要素の `style` 属性のための `Css.Style` である。
+
+@ 0 3 0 04bce3f5840a790b022f7d8599367b9b
++ entry .fontFaces   `Css.fontFaces(fonts*)`：複数のフォントのためのルール。各書体は一度だけで、`@import` が先に来る
++     `cataclysm.fonts` にある、`Css` コンパニオンに対する拡張であり、与えられたフォントに対する `FontFace.stylesheet` である。そのため、一つの書体の二つのフェイスを使うページは、その書体を一度だけ宣言する。
+
+% 2 1 0 12b4a252b089cdbe0805988b85b7e416
+
+% 3 1 0 1fb94814b932b59f14e3686d1c43ab3b
+
+% 4 1 0 0a10d441308edba70908f3e05a92474c
+
+% 5 1 0 03b8f0098032cfd81c29e441dda19245
+
+% 7 1 0 0c7227874adbdec1177a9d82c5e3b987
+
+% 0 1 0 00bc4a044a70b8f202c55cb40547a199
+
+% 0 1 0 05aff051718afb251de9ed7b47f45728
+
+% 0 1 0 16787f619320e2120cf6f76bf891c974
+
+% 1 1 0 03f1401c4d689e5618b5e5a5274b37d7
+
+@ 0 8 0 0dbab9f85273927a11e33654309e66e5
++ entry .style   phoenicia の `Face` または `Font` を選択する宣言。`Css.Style` として
++     `cataclysm.fonts` にある、`Face` に対する、そして（そのフェイスを通して）`Font` に対する拡張である。
++     スタイルは常に `font-family`（総称ファミリーは引用符なし、それ以外の名前は引用符付き）と `font-weight` を持ち、既定値と異なるものだけを加える。傾きには `font-style: italic` または `oblique 12deg`、字幅には `font-stretch`、フォント独自の軸上の位置には `font-variation-settings`、有効または無効にしたレイアウトのフィーチャーには `font-feature-settings` である。
++     登録済みの太さ、字幅、イタリックの軸は高水準のプロパティを通るので、静的なフォントと可変フォントは同じように要求される。
+
+% 2 1 0 193ad132b5473c5c06f812c2ad9186d5
+
+% 3 1 0 07596f66d01a0e5b0df5155fb6a3271c
+
+% 0 1 0 16f500912f13cb8f08eeb14977aa4460
+
+% 0 1 0 1e44ca007687b9671aefa04f736f3da2
+
+% 0 1 0 042d1a899d76748c0c2a8b2c1da6b429
+
+% 0 1 0 03fbeec2d686fcf31918aace7b3d14c8
+
+% 0 1 0 043a7e5e16719ee5046db5fab897f4f9
+
+% 0 1 0 18a3778012bf373c0d70cf7630056eea
+
+% 0 1 0 1043c88bf7f1c7f2122ea4b60b01e2db
+
+% 1 1 0 07b70998d9bf3f740b631702894a02c3
+
+@ 0 2 0 12c2cafaf89d767d0d4d2b85136dbe3c
++     結果は `Css.Style` なので、`+` で別のものとつながり、`inlineStyle` を通して honeycomb の `style` 属性として使える。
+
+@ 0 1 0 1a33ef216a9d69a619861d2629ddebbd
++ entry .Styles   HTML のクラス名と id 名をそれに照らして検査するように束縛した、クラスパス上のスタイルシート
+
+% 1 1 0 125b6f372b7160ae10dd3b5ad31ee1a7
+
+@ 0 7 0 10e41b582ecd1cdd0caf96b941366f04
++       `Styles` は、スタイルシートのクラスパス上のパスを `Locus` 型として持つマーカーである：`Styles(cp"/site.css")` は `Styles at "/site.css"` である。
++       `cssBindings.checkedBinding` をインポートしたうえで given としてスコープに持ち込むと、honeycomb のすべての属性付け `Tag.name(…)` は、コードのコンパイル時に `name` をスタイルシートの `classes` と `ids` に照らして解決する。
++       クラス名は `class="name"` を、id は `id="name"` を付け、スタイルシートが言及しない名前はコンパイルエラーになり、クラスでも id でもある名前もコンパイルエラーになる。そのため、テンプレートの中で綴りを誤ったクラスがブラウザに届くことはない。
+
+% 2 1 0 163c4900ecd0f6280499182757ac5fd6
+
+% 3 1 0 1c350d87f0c5287809ba383ce3f69d7c
+
+% 4 1 0 0fb2ce39cb59faa807bb88be92800e4f
+
+% 5 1 0 18c395cda1ce026a0e5f83c9dd5cff58
+
+% 6 1 0 12246ba9326e5c8e08e866b54053e74b
+
+% 8 1 0 0f9f826b5f5b7384070cff8cc4789e58
+
+% 9 1 0 0f956bfbee8acbef037ddba7b36f42be
+
+% 0 1 0 097d654e069ae4d913ecd2a3c2390ff3
+
+% 0 1 0 0dbe63b6552631ff131854da9bd9989f
+
+% 1 1 0 1f81570e6157d4c2089d875a6773ce69
+
+@ 0 5 0 08bf2d2915743c5000e98ac3fc84de24
++       リソースはマクロの展開中に（パスごとに一度）読まれてパースされるので、スタイルシートはコンパイラのクラスパスになければならず、名前付きの given の型は、リテラルを含む given の型がそうでなければならないように括弧で囲む。
++       読めないかパースできないスタイルシートは、パスを名指すコンパイルエラーになる。
++       これを持つのは `cataclysm.html` だけであり、それは hellenism と honeycomb に依存する。
+
+% 0 1 0 1791425329c23fdc127add256328e171
+
+% 0 1 0 0ac410be3847382f1121e42b35ca4a89
+
+% 0 1 0 1e1b26233a2737e40298d059ecf4b437
+
+@ 0 4 0 0c9268bf6f5b1a7f0e0e39184548f954
++   entry .apply   `Styles(cp"/path.css")`：`Locus` がリソースのパスであるマーカー
++       `cp"…"` リソースの `Locus` を結果の型に持ち上げるマクロなので、`Styles(cp"/site.css")` は `Styles at "/site.css"` と型付けされる。`Locus` のないリソースはコンパイルエラーになる。
+
+@ 0 7 0 182401e38076570818326c3bc02f0f19
++ entry .attributeFor   スコープ内の `Styles` のスタイルシートで名前が表す属性、`class` または `id`
++     `attributeFor["button"]` は、スコープ内の `Styles` のスタイルシートがどちらを宣言しているかに応じて `t"class"` または `t"id"` に展開され、名前がどちらでもない場合（_cataclysm: `name` is not a class or id in the stylesheet_）、両方である場合（_… is both a class and an id in the stylesheet; rename one_）、または `Styles` の given がスコープにない場合（_cataclysm: no stylesheet is in scope; add a `given Styles at "/path"`_）はコンパイルに失敗する。
++     名前は文字列リテラルでなければならない。
++     `cssBindings.checkedBinding` はこれの上に作られている。
+
+@ 0 6 0 1ca501dcb030435e10f5c76272a8ccf4
++ entry .inlineStyle   `Css.Style` を honeycomb の `style` 属性の値にできるようにする
++     `cataclysm.html` にある given `Css.Style is Attributive to Whatwg.Css` なので、`Div(style = Css.Style(color = red, width = 4.0*Px))` は `style="color: #ff0000; width: 4px"` を描画する。
++     これは一意な名前を持つトップレベルの given であり、`import soundness.*` のもとでは、名前でインポートする（`import soundness.inlineStyle`）か、`import cataclysm.inlineStyle` を通した場合にだけスコープに入る。
+
+@ 0 1 0 0e4b54c2261fb56f0ef0aeaa949e2ca7
++ entry .cssBindings   HTML のための検査されたクラス名と id 名。名前でインポートする given
+
+% 1 1 0 1120a0daa08471f51dece44cd49f937f
+
+@ 0 3 0 14d34b3ea7bfd2660a9c1c4973fa0a3f
++       `checkedBinding` を持つパッケージであり、これは honeycomb の `Tag.name(…)` という属性付けを、スコープ内の `Styles` のスタイルシートに照らして検査される名前に変える。
++       `Styles` の given を宣言した後に、名前でインポートする。
+
+% 2 1 0 0b05d33ce07b7c6e0b7b36b787c4c7f6
+
+% 3 1 0 01be99e34347bb44159644b595ab3847
+
+% 4 1 0 0b8b2cbb05975afc144256e013793974
+
+% 5 1 0 02e52007ecc784e50682cd33f9d02526
+
+% 6 1 0 124f8aed1f6240d5179d2c40a56a6894
+
+% 8 1 0 17571c125a70863d11183d65ae99ef9b
+
+% 9 1 0 0876acc0da80c5781346c0a2890ed8e2
+
+% 1 1 0 1b3ce83a7a540f331beeaac54a9c71cf
+
+@ 0 6 0 03cdf203582e356a11e3493b2a6d597c
++   entry .checkedBinding   スコープ内のスタイルシートに従って、`Tag.name(…)` に `class="name"` または `id="name"` を付けさせる
++       `apply` を除くすべてのリテラルの名前に対する inline given `Attribution of name` であり、`attributeFor` を通して正しい属性に展開されるか、スコープ内の `Styles` のスタイルシートが宣言していない名前ではコンパイルエラーに展開される。
++       その検査しない対応物は honeycomb の `stylesheets.uncheckedClasses` であり、これはどんな名前にも `class="name"` を付ける。
++       二つは代替であり、それぞれ名前でインポートし、両方を同時には使わない。

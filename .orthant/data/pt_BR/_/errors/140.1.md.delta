@@ -1,0 +1,50 @@
+orthant 2 language
+
+% 0 1 0 0115a31ca43d05821326cc35d72968a7
+
+@ 0 1 0 14ef401502b40ce418c5cff44229edb4
++ Lançado quando um daemon não consegue preparar uma atualização para o seu launcher.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 6 0 1c6f0624269bdecd0217fa4d28fd8fb3
++ Uma aplicação Ethereal pode substituir o seu próprio binário preparando o novo como
++ `<data>/<name>/.pending`, que o launcher verifica e coloca no lugar no início da sua próxima
++ invocação. Este erro cobre uma origem que não pôde ser lida, um nome de aplicação que não está
++ disponível (o daemon não foi iniciado por um launcher) e um arquivo `<name>/.pending` que não
++ pôde ser escrito. Um candidato que o launcher rejeita não é um erro aqui: ele é relatado depois
++ por `Upgrade.outcome`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Código
++ column  Motivo
++ column  Mensagem
+
+% 0 1 0 09fd44d0bfa124ec0ca1617d3f59643f
+
+% 0 1 0 0c9a8d777bb7fa940a5f445a0723f612
+
+% 0 1 0 176574de4f6880b01b50e5d8779a4d1f
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 4 0 0d6a5466e8d42b7e11e9f11427be2ce5
++ Execute a aplicação pelo seu launcher XEK, que passa ao daemon o seu nome, e garanta que o
++ diretório de dados (`$XDG_DATA_HOME`, `~/.local/share` ou `%LOCALAPPDATA%`) permite escrita.
++ Verifique `Upgrade.enabled` antes de oferecer uma atualização: um executável construído sem uma
++ chave de release e um id de aplicação recusa todo candidato.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 1910f0aaa51329071c6159525711cd00
++ - Código-fonte: `lib/ethereal/src/core/ethereal.Upgrade.scala`

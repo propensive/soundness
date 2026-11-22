@@ -1,0 +1,176 @@
+orthant 2 language
+
+@ 0 1 0 11706cc2fe1b2fef1c1b860a9bfb0b0a
++ # Optionalität
+
+@ 0 7 0 0dba26581e4635bf0ca4a33aba4ecfbe
++ Soundness stellt einen fehlenden Wert mit einem flachen `Optional` dar, nicht mit `null` und
++ nicht mit `Option`. Anders als `null` ist ein `Optional` im Typ sichtbar und kann nicht
++ versehentlich dereferenziert werden; anders als `Option` legt es keinen Wrapper um den Wert,
++ sodass ein vorhandener Wert einfach der Wert selbst ist und sich Optionalität nicht zu
++ verschachtelten Schichten stapelt. Abwesenheit wird dort behandelt, wo sie entsteht, statt durch
++ das ganze Programm gefädelt zu werden, und das hält den häufigen Fall – einen vorhandenen Wert –
++ direkt und unbelastet. In Soundness gilt `null` als nicht darstellbar und als unnötig.
+
+@ 0 1 0 1ae3d7af2c08106e0c6dbec8ef3553b8
++ ## Abwesenheit ohne Wrapper
+
+@ 0 2 0 1737b5c13ef67a2707ba368fcd69d3c4
++ Ein `Optional[Text]` *ist* ein `Text`, oder es ist `Unset`. Es gibt kein `Some`, das alloziert,
++ und kein `Some`, das ausgepackt werden müsste:
+
+% 2 1 0 1b18f51e00ffd5f40d8410d5d66dbc20
+
+% 3 1 0 1d25141ad39ea89718c65347efac25cf
+
+% 4 1 0 0561c02a0160476b02649f383aea4a44
+
+% 0 1 0 1a6bc6c1d6b615ba162688765b35db3c
+
+% 0 1 0 13fa776b77fed826051b81b2253f0da0
+
+% 0 1 0 0f822d80b70ee63109f76347c57b3358
+
+% 0 1 0 0f64806cc71797b018f0dfd19e32b48a
+
+% 1 1 0 15d72ec80c8820b50413a8484c201316
+
+@ 0 1 0 0b239f2b5c2f6d270188932a1a569b49
++ Die Operationen lesen sich wie die Fragen, die sie beantworten:
+
+% 2 1 0 0cb05ca7d2968004001132a8d04fa06e
+
+@ 0 8 0 0364bd648dbbf230170dd2b4b8e65b59
++ column  Methode
++ column  Bewirkt
++ column  Ergebnistyp
++ row  `or`  liefert einen Rückfall für einen fehlenden Wert  der Typ des Werts
++ row  `let`  transformiert einen vorhandenen Wert und lässt einen fehlenden unberührt  ein `Optional`
++ row  `lay`  liefert einen Rückfall und eine Transformation zusammen  der Typ der Transformation
++ row  `present`  fragt, ob es einen Wert gibt  `Boolean`
++ row  `absent`  fragt, ob es keinen gibt  `Boolean`
+
+% 1 1 0 129db27d6a47da480b14c48fa1bac786
+
+@ 0 2 0 1b67f223d4a8979e0b9ae462520c2bfa
++ Und `assume` besteht auf Vorhandensein, wo der umgebende Code es bereits sichergestellt hat, und
++ wirft einen `Optional.Error`, wenn das falsch war:
+
+% 2 1 0 05e18f3e4e640d7b116072fa895569bf
+
+% 3 1 0 0c9e79b2c98bab5a03e58b0558e7ea72
+
+% 4 1 0 0915851a8058d7521bcd9b8e88af1ac5
+
+% 0 1 0 1d672bf6964d710c1181a5758ef99d93
+
+% 0 1 0 02b594b0c7073e3b0b6fa6cda5e4a9b8
+
+% 0 1 0 106abebcd78276e21935261bbb18925a
+
+% 0 1 0 113c727a8bf07d280a203d270ed68b79
+
+% 1 1 0 1e28bc45ea2024fc1a011de54707a59e
+
+@ 0 1 0 0efc2faea47436341617c58401eafab1
++ ## Warum der Wrapper mehr kostet, als es scheint
+
+@ 0 4 0 12403bfbe87a7ae117b78a145e472780
++ `Option` alloziert ein Objekt pro vorhandenem Wert. In einem einzelnen Ausdruck ist das
++ unsichtbar; in einer Tabelle von einer Million Datensätzen mit drei optionalen Spalten sind es
++ drei Millionen Objekte, die nur existieren, um „ja, es gibt einen“ zu sagen – und jedes Lesen
++ eines davon ist ein Zeiger, dem gefolgt werden muss.
+
+@ 0 4 0 1e0734753b5307e7024c0399968e1c4c
++ Die tiefere Last ist, dass sich Wrapper *stapeln*. `Option[Option[T]]` ist ein zulässiger Typ mit
++ drei Bewohnern und keiner vereinbarten Bedeutung, und er entsteht immer dann, wenn ein
++ Nachschlagen, das fehlschlagen kann, einen Wert zurückgibt, der selbst fehlen kann. Code, der auf
++ einen trifft, flacht ihn meist ab und hofft, dass die beiden Abwesenheiten dasselbe bedeuteten.
+
+@ 0 4 0 0dd8a4ed52c710071984974dfc0e93f0
++ `Optional` kann sich nicht stapeln, und zwar nicht durch eine Regel, die es verbietet.
++ `Optional[value]` ist die Union `Unset | value`, und eine Union absorbiert ein wiederholtes
++ Mitglied, sodass `Optional[Optional[Int]]` `Optional[Int]` *ist* – derselbe Typ, erreicht durch
++ gewöhnliche Typgleichheit statt durch eine Prüfung, die ihn zurückweist.
+
+@ 0 2 0 01e21b8c367caa8f0e2e779fb5bb2518
++ Der mehrdeutige Typ entsteht daher gar nicht erst, um wegabgeflacht zu werden. Es gibt kein
++ `Some(None)` zu entwirren, weil es nichts gibt, was es sein könnte.
+
+@ 0 1 0 0bd14eaea0e3fa6b0a54ac5625ef72a2
++ Die drei Darstellungen von Abwesenheit nebeneinander:
+
+% 2 1 0 0c5b102c9430dbab1cf611c27fca7356
+
+@ 0 7 0 045c2bcf095058a51ff1bd2f2855053c
++ column  Darstellung
++ column  Im Typ sichtbar
++ column  Vorhandener Wert
++ column  Verschachtelte Abwesenheit
++ row  `null`  nein  der Wert selbst  nicht ausdrückbar
++ row  `Option`  ja  in ein `Some` verpackt  `Option[Option[T]]`, ohne vereinbarte Bedeutung
++ row  `Optional`  ja  der Wert selbst  absorbiert: `Optional[Optional[Int]]` ist `Optional[Int]`
+
+% 1 1 0 0982ed44ce6aef65196e43fecce573f1
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Was es kostet
+
+@ 0 1 0 1893d26e2232a9ad1b29008fe1b8a889
++ Zwei Dinge, und sie verdienen es, offen gesagt zu werden.
+
+@ 0 5 0 07076a5fe4e1db8904705b010d777cb1
++ Das erste ist der Preis dieser Absorption. Sie funktioniert, weil der Compiler beide Mitglieder
++ der Union sehen kann – und bei einem *abstrakten* Typ kann er das nicht: Ein `value`, der später
++ mit etwas bereits Optionalem instanziiert wird, würde zwei Abwesenheiten verschmelzen, die
++ verschieden gemeint waren. Daher braucht eine generische Methode, die ein `Optional[value]`
++ nimmt, einen Nachweis, dass `value` ein bestimmter Typ ist, und der Nachweis erscheint in der
++ Signatur:
+
+% 2 1 0 136034696737997a1294b02431558ad9
+
+% 3 1 0 1a4351151dfbf5ab1f9b06fe919a4eae
+
+% 4 1 0 1b93e4c7a32383801019fb19c45c6dc7
+
+% 0 1 0 01e464c011f04054191668e880db99ee
+
+% 0 1 0 143675795e3f849c026fbc4c56b78397
+
+% 1 1 0 1b65b22a8484afe6051c621b51f34b20
+
+@ 0 5 0 0bbb62c2b85eb97a04e54dd2eee93781
++ Das zweite ist, dass `Optional` keine Monade ist und nicht vorgibt, eine zu sein. Es gibt kein
++ `flatMap`, das Abwesenheit durch eine `for`-Comprehension fädelt. Abwesenheit wird dort
++ behandelt, wo sie entsteht – mit `or`, `let` oder `lay` –, und das ist der Zweck, keine
++ Auslassung: Ein Wert, der fehlen könnte, wird nahe dort, wo er gewonnen wurde, bestimmt gemacht,
++ statt in einem Wrapper durch das Programm getragen zu werden, auf den sich jeder spätere Schritt
++ einstellen muss.
+
+@ 0 1 0 0a1bc8b3cd8cd65d1e6dadbb52181f19
++ ## `Option` an der Grenze begegnen
+
+@ 0 2 0 144aefe08192ff3e015d7602ccff1b62
++ Andere Bibliotheken geben `Option` zurück, und ein Soundness-Wert muss manchmal zu einem werden.
++ Die Umwandlung ist in beide Richtungen explizit und auf die Grenze beschränkt:
+
+% 2 1 0 063fe6b9f3738fb104c17965f369e3f8
+
+% 3 1 0 07bc3a86f0d4338402947441518b46f2
+
+% 4 1 0 0781665634b79a521347cc0629befe8f
+
+% 0 1 0 16f2eb55c9ca47691663ea730256a3cf
+
+% 0 1 0 08105fbc02ab5d89190e77e85d43aa37
+
+% 1 1 0 1e97933f09d951740e3fe0e61ca41966
+
+@ 0 3 0 16b10fb9eba3da510116aaf65f3dcbc0
++ An der Grenze umzuwandeln, statt `Option` überall zu übernehmen, ist dieselbe Disziplin, die auf
++ `null` angewendet wird: Eine fremde Darstellung wird einmal, bei der Ankunft, übersetzt, und das
++ Innere des Programms spricht eine Sprache.
+
+@ 0 2 0 1df122a5d57143b01f9cb51f1935fcfa
++ Siehe [Nullkosten](zero-cost.md) für das allgemeine Prinzip, von dem dies ein Fall ist, und
++ [unmögliche Zustände](impossible-states.md) dafür, warum das Nicht-Verschachteln wichtig ist.

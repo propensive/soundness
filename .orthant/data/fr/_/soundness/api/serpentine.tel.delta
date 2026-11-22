@@ -1,0 +1,1497 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0a5003698bdf947015429cf31614beab
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1854dc56a4f524d40e1e78ade0b23865
++ info
++     les chemins comme valeurs typées : absolus et relatifs, liés à une plateforme, composés avec
++     `/` et vérifiés à la compilation du code
+
+@ 0 6 0 109a869d2d02427e15880695ee014844
++ detail
++     _Serpentine_ est l'algèbre de chemins que partagent toutes les hiérarchies de Soundness :
++     chemins du système de fichiers, classpath, chemins d'URL, pointeurs JSON, refs Git et entrées
++     d'archive sont tous un `Path` ou un `Relative` sur un certain **plan**. Elle porte sur la
++     *forme* d'un chemin, et non sur un fichier sur disque ; lire et écrire des fichiers relève de
++     galilei, où se trouvent aussi les plans de plateforme eux-mêmes (`Linux`, `MacOs`, `Posix`,
++     `Windows`, `Local`) et l'interpolateur `p"…"`.
+
+@ 0 3 0 1b94ad61501188d513c95edc88bfbc14
++     Un chemin absolu est un `Path` : une racine, qui est du texte brut dans la notation propre au
++     plan, et une descente de noms, conservée de la feuille vers la racine. Un chemin relatif est
++     un `Relative` : un nombre de pas vers le haut, puis une descente. Tous deux portent trois
++     membres de type, chacun lu par un alias infixe :
+
+@ 0 6 0 120805e84ba915bc00ce3482478ee1ce
++     - `on` — le `Plane`, le système de fichiers ou la hiérarchie dont le chemin suit les règles,
++       de sorte qu'un `Path on Linux` et un `Path on Windows` sont des types distincts ;
++     - `of` — le `Topic`, le tuple des noms du chemin lorsque le compilateur les connaît, du plus
++       profond au moins profond : `% / "home" / "work"` est un `Path of ("work", "home")` ;
++     - `under` — la `Limit` : pour un `Path`, le type de sa racine (`%.type`, `Drive`) ; pour un
++       `Relative`, le nombre de pas qu'il remonte.
+
+% 2 1 0 182d4eda5d2fa20a1f5cedb10b046ae6
+
+% 3 1 0 0989b38e45c59c02134c3c742a212bdf
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 15972a4c8eefcbd70a48607212199108
+
+% 0 1 0 1b810bbdc91eab500838686c6ac0a5fa
+
+% 0 1 0 06079cf28a213a810f7c27348a037b8e
+
+% 0 1 0 139079f3da8a99f009e278a040c963a1
+
+% 0 1 0 19a17d8121a71f71084b3a53a77fae6f
+
+% 0 1 0 0815b4f4e433ff7e0553305b6d540cec
+
+% 1 1 0 135e6eeda54bf8ed098522a97622f78e
+
+@ 0 5 0 1f5418f77a39533b04a7e84e62297886
++     Un chemin construit avec `/` est indépendant de la plateforme jusqu'à ce que `on` le lie, en
++     vérifiant chaque nom ; un chemin construit sur une valeur qui a déjà un plan
++     (`Drive('C') / "Windows"`) y reste, et chaque nom ajouté est vérifié au moment de son ajout.
++     Lorsque les noms sont des littéraux, la vérification, ainsi que l'arithmétique de `+`,
++     `toward` et `conjunction`, a lieu à la compilation du code ; lorsqu'ils sont du texte connu à
++     l'exécution, une `Tactic[Name.Error]` doit être dans la portée.
+
+@ 0 6 0 12b59574cb76d420098c4c53ae6042f5
++     Les classes de types décrivent ce que fournit un plan : `Filesystem` (son séparateur, et ses
++     noms pour soi-même et pour le parent), `Radical` et `Eradicable` (comment un type de racine
++     s'écrit en texte et se relit), `Admissible` et `Navigable` (quelles valeurs peuvent être un
++     nom sur ce plan, et comment), et `Submissible` et `Compliant` (quelles racines et quels
++     chemins relatifs d'autres plans il accepte). Une nouvelle hiérarchie est un type doté de ces
++     givens dans son compagnon, et un objet racine qui étend `Root`.
+
+@ 0 2 0 0d5c110762f1196403d565b2b10b682e
++     Il y a un seul ensemble de sources, `serpentine.core`, qui compile pour toutes les
++     plateformes. Tout est exporté vers le package parapluie `soundness`, y compris `%`, `^` et
++     `?`.
+
+% 0 1 0 0e8047d521777b99077effbf694a3175
+
+% 0 1 0 04f853940c55340d0d029d2ffa440b1e
+
+% 0 1 0 09ec07978e4baafd17c1d82eecad0757
+
+% 0 1 0 0c650e8452c62e1a0accbe229bf5d402
+
+% 0 1 0 048b35d7d8b9d360036b37a4f35dfdd8
+
+% 0 1 0 1045fc9e5fdb85dd195c6103114cbefa
+
+@ 0 1 0 04c891a30f220231065266d263cf8d8b
++ entry .%
++   info
++       la racine d'un chemin POSIX, d'où un chemin absolu descend avec `/`
+
+@ 0 5 0 0b64705cad08e799049d2147d23525a8
++   detail
++       L'objet `Path.%`, exporté vers le package : `% / "home" / "work"` est un chemin absolu,
++       indépendant de la plateforme jusqu'à ce que `on` le lie (`(% / "home").on[Linux]`). Son type
++       sert de `Limit` à un chemin enraciné en `/`, de sorte que `Path on Linux under %.type` est
++       un chemin Linux dont on sait qu'il commence à la racine. Les plans de galilei `Linux`,
++       `MacOs` et `Posix` donnent à `%.type` ses instances `Radical` et `Eradicable`, de sorte
++       qu'il se lit et s'écrit `/`.
+
+@ 0 1 0 04a2eca89f8f4a5a1347a85b7866b152
++ entry .^
++   info
++       un pas vers le haut, dans un chemin relatif : `? / ^ / "sibling"`
+
+@ 0 3 0 14795a58613527c60bf110bcd326d754
++   detail
++       L'objet `Relative.^`, exporté vers le package. Il n'est jamais que l'enfant de `?` ou d'une
++       autre remontée : `? / ^ / ^` remonte de deux niveaux, sous forme d'`Ascent under 2`, et un
++       nom qui le suit commence la descente.
+
+@ 0 1 0 0d1b2e44f6e0d69c0bbc3ec9a2ea3eee
++ entry .?
++   info
++       l'emplacement courant : le chemin relatif à soi-même, à partir duquel on construit un chemin
++       relatif
+
+@ 0 3 0 15bbe55f5d6f859d066d397ca34ebe52
++   detail
++       L'objet `Relative.?`, exporté vers le package : le `Relative` sans remontée ni descente, qui
++       s'encode sous la forme du nom de soi-même du système de fichiers (`.`). Un chemin relatif se
++       construit à partir de lui avec `/`, par des pas vers le haut (`^`) puis des noms :
++       `? / ^ / "more"`.
+
+@ 0 1 0 07aef0d81400b65c0efdd2609a2c63de
++ entry .Path
++   info
++       un chemin absolu : une racine et une descente de noms, typé par plan, noms et racine
+
+@ 0 7 0 1d2911f7911b25f91ea1b65891b1ecf5
++   detail
++       Un `Path` est une case class composée d'une `#root` — la racine sous forme de texte, dans la
++       notation propre au plan, `/` ou `C:\` — et d'une `#descent` de noms, conservée **de la
++       feuille vers la racine**, de sorte que `% / "home" / "work"` est
++       `Path(t"/", t"work", t"home")`. Ses membres de type disent ce qu'on sait de lui : le `Plane`
++       sur lequel il se trouve (`Path on Linux`), le tuple `#Topic` de ses noms, du plus profond au
++       moins profond (`Path of ("work", "home")`), et la `Limit`, le type de sa racine
++       (`Path under %.type`). Chacun est facultatif : un `Path` nu reste un chemin.
+
+% 2 1 0 162491459b66211311abc271dbd19c75
+
+% 3 1 0 14c711d04a6676651f19b5b2dedaa7a9
+
+% 4 1 0 06c3bed29f04c9fc1153d6306a5f0e25
+
+% 0 1 0 017834ebf6b357cf19e89c331f252c03
+
+% 0 1 0 1893a5989b9dfa60107ffc4c361b4c5b
+
+% 0 1 0 1b3f24b98336a75904398fdc378f363a
+
+% 0 1 0 0397928f1d07d808096c9480f024df79
+
+% 0 1 0 1955fec886f91ca70263f4a65f33106b
+
+% 0 1 0 13637f235f7491d4035e6d17e713ba4e
+
+% 1 1 0 05da08b4b260bf0a0536343a6832bc30
+
+@ 0 6 0 08f0baba2976c6710f875371e3e88456
++       Un `Path of …` dont le `Topic` est connu se convertit implicitement en le même chemin sur un
++       plan (`.convert`), en vérifiant ses noms, de sorte qu'un chemin littéral peut être passé là
++       où un `Path on Linux` est attendu. Un texte ne se décode en chemin que lorsque le plan est
++       nommé (`as[Path on Linux]`), puisque c'est le plan qui décide du séparateur et des règles ;
++       la racine est lue par l'`Eradicable` du plan, qui lève `Path.Error` de raison `InvalidRoot`
++       par la `Tactic[Path.Error]` dans la portée. Un séparateur final est ignoré.
+
+@ 0 2 0 0c8d9dfc63f3c67b0371a0ad5281d23f
++       Un chemin se filtre avec l'extracteur `/:`, qui détache la racine puis chaque nom depuis le
++       haut (`.quotient`) :
+
+% 2 1 0 19a8a1968cd2726a1cc6386cc6bce161
+
+% 3 1 0 0ad277ff346653c71f4b79ea8491acd0
+
+% 4 1 0 14cc75a1d693f6a7053867aa89918470
+
+% 0 1 0 034a10215028ed5a15a2276bb8d00269
+
+% 0 1 0 13e9657dcec56fb11cc571028181b027
+
+% 0 1 0 1f955b49403cbe55005f80413066151b
+
+% 0 1 0 0a7b48a393e0b0fa0651957d5d47ad02
+
+% 1 1 0 122806593bb734ac0d388993ab0387e5
+
+@ 0 5 0 0066766d1082b17f1eca9a91fa356685
++       Un piège : un nom dont le type est raffiné sur le site d'appel — `dir / t"$name.txt"`, ou un
++       chemin construit à partir d'un paramètre de lambda — donne un `Topic` auquel certains givens
++       portant sur un simple `Path on Linux` ne correspondent pas. Liez le chemin à un `val` annoté
++       `Path on Linux`, appelez `on[Linux]` juste après l'avoir composé à partir d'une valeur
++       stable, ou construisez-le à partir de texte : `t"${dir.encode}/$name".as[Path on Linux]`.
+
+% 0 1 0 071ac52b966c6f9e14c27faad588af58
+
+% 0 1 0 0de900039da9cc5e1f50d327750a7570
+
+% 1 1 0 0e40812e568acdac1741b4841a0df671
+
+% 1 1 0 0396be11179880af07444a35117520e3
+
+@ 0 1 0 186e0c781eaf8d4d1b363a9d8bd00675
++   entry .%
++     info
++         la racine d'un chemin POSIX, exportée vers le package sous le nom `%`
+
+@ 0 3 0 14f1ff312f039dc4070cd44dc447a45a
++     detail
++         Un objet qui étend `Path(t"/")` avec un `Topic` vide, et dont la `Limit` est son propre
++         type. `% / "name"` est le début de tout chemin POSIX ; il est exporté vers `serpentine` et
++         le package parapluie `soundness`, il s'écrit donc tel quel.
+
+@ 0 1 0 0d659abde642f3e00560cc4d58e2514e
++   entry .apply
++     info
++         un chemin à partir du texte de sa racine et de ses noms, de la feuille vers la racine,
++         avec le plan et les types choisis
+
+@ 0 5 0 10b562dead33f3031f5e9a72a5ddbdca
++     detail
++         `Path(t"/", t"capulet", t"verona")` est le constructeur de la case class, le texte de la
++         racine puis les noms du plus profond au moins profond, et est égal à
++         `% / "verona" / "capulet"`. La surcharge
++         `Path[filesystem, root, topic](root, descent: List[Text])` crée un chemin dont les trois
++         membres de type sont fixés, sans rien vérifier : c'est la brique de base des opérations,
++         et des décodeurs propres à un plan.
+
+@ 2 1 0 1666dc8148a7abf211481248089fd804
++         ```scala
+
+@ 3 1 0 1acf4f887b9c7f2c0c34147976532266
++         import soundness.*
+
+@ 0 1 0 179589beb967c3d208bcebdb3af0cbf8
++         Path(t"/", t"capulet", t"verona") == % / "verona" / "capulet"
+
+@ 1 1 0 1a20deb1836ccd4c1f83ce4a9b56e8c6
++         ```
+
+@ 0 1 0 16f668039c02b08e1165e2d507bb1ca9
++   entry .unplatformed
++     info
++         un chemin dont le sujet et la racine sont connus mais sans plan, non vérifié
+
+@ 0 2 0 084e589d78f841ae086d181bc2365eb6
++     detail
++         `Path.unplatformed[root, topic](root, descent*)` : ce que construit `/` lorsque l'enfant
++         n'est pas admissible sur le plan du parent, de sorte que le résultat n'a pas de `Plane`
++         tant que `on` ne lui en lie pas un.
+
+@ 0 1 0 084d807a34a6f07f1caf15ad797c5899
++   entry .decodable
++     info
++         lit un `Path on filesystem` à partir de texte, avec le séparateur et la racine du plan
+
+@ 0 5 0 0188b2727811da011272b45bca019856
++     detail
++         Exige le `Filesystem` du plan, ainsi qu'un `Radical` et un `Eradicable` pour son type de
++         racine. La racine est lue par l'`Eradicable`, le reste découpé selon le séparateur, un nom
++         vide final abandonné, et chaque nom déséchappé. L'instance conserve l'`Eradicable`, et
++         avec lui la `Tactic[Path.Error]` qu'il a prise : un plan dont la racine ne peut pas être
++         mal formée (une archive zip, le web) donne un décodeur qui n'exige aucune tactique.
+
+@ 0 1 0 1a86e2a65321953c00a8b90748e8ae5b
++   entry .decodable2
++     info
++         lit un `Path on filesystem under root` à partir de texte, en conservant le type de la
++         racine
+
+@ 0 2 0 1b31b8162b0e63a619872819e10858d5
++     detail
++         Comme `.decodable`, pour un type cible qui nomme aussi la racine, tel que
++         `Path on Linux under %.type`, dont a besoin un filtrage avec `/:`.
+
+@ 0 1 0 1cfb8ebbd128e816118a010842006a61
++   entry .instantiable
++     info
++         crée un `Path on filesystem` à partir de texte, pour les API qui acceptent n'importe quel
++         type de chemin
+
+@ 0 3 0 11601707227e735c120f3b6038570257
++     detail
++         Le given `Instantiable across Paths from Text` : une bibliothèque qui renvoie des chemins
++         du type choisi par l'appelant (`entry[Path on Linux]()`) les décode par son intermédiaire,
++         avec les mêmes exigences que `.decodable`.
+
+@ 0 1 0 03c6435604b61ba60ae1db55bb8f3068
++   entry .trustedInstantiable
++     info
++         crée un `Path on filesystem` à partir d'un texte de chemin dont on sait déjà qu'il est
++         valide
+
+@ 0 4 0 02e08f64bbe425dc0dd50c0ddd07378e
++     detail
++         Le given `Instantiable across Paths from Paths.Trusted` : des données de chemin provenant
++         du système de fichiers lui-même ne peuvent pas être mal formées, si bien que le décodage
++         s'exécute sous son propre `unsafely` et que l'appelant n'a besoin d'aucune
++         `Tactic[Path.Error]`. Il exige le `Filesystem` du plan, le `Radical` de sa racine, et un
++         `Eradicable` qui prend une tactique.
+
+@ 0 1 0 1e98e110302af5641283bb45f9393a50
++   entry .encodable
++     info
++         rend un chemin sous forme de texte dans la notation de son plan : la racine, puis les noms
++         joints par son séparateur
+
+@ 0 2 0 07fbe8180afda3f80f107b239e5cbd9a
++     detail
++         Exige le `Filesystem` du plan ; chaque nom est échappé par `Filesystem#escape`. Un chemin
++         Windows `Drive('D') / "Globe"` s'encode en `D:\Globe`.
+
+@ 0 1 0 080b512bc8aeb9f718fac6ea5d79976d
++   entry .showable
++     info
++         affiche un chemin sous forme de son texte encodé, pour tout chemin sur un plan doté d'un
++         `Filesystem`
+
+@ 0 1 0 1ca63832339303441522c0449f3bf0d1
++   entry .communicable
++     info
++         rend un chemin sous forme de message, son texte encodé
+
+@ 0 1 0 03fc1c702c6bd0cb142f30db802a0f3e
++   entry .inspectable
++     info
++         un rendu de débogage de n'importe quel chemin, avec ou sans plan : `/verona/capulet`
+
+@ 0 3 0 158428f7f268479d081dc05ecbf232a2
++     detail
++         Toujours disponible, puisqu'il n'exige pas de `Filesystem` : la racine est montrée telle
++         qu'elle est stockée, ce qui porte déjà la notation du plan, et les noms sont joints par
++         `/`, sans déséchappement. `(% / "verona" / "capulet").inspect` est `t"/verona/capulet"`.
+
+@ 0 1 0 09ef70a74d14218e0f51b66eac4fb85b
++   entry .nominable
++     info
++         le nom d'un chemin, pour les API qui nomment des choses : sa feuille, ou le texte de sa
++         racine s'il n'en a pas
+
+@ 0 1 0 1ea18b6bb55f112b1e569bd0cc0fe218
++   entry .generic
++     info
++         tout chemin sur un plan doté d'un `Filesystem` en tant
++         qu'`Abstractable across Paths to Text`
+
+@ 0 2 0 17064c88b772070b184b6a6f5c5c0fec
++     detail
++         Ce qui permet de passer un chemin serpentine à toute API qui accepte un chemin de
++         n'importe quel type (comme le fait `Classpath.Directory(path)`) : il s'abstrait en son
++         texte encodé.
+
+@ 0 1 0 1e2db1eb33af05ea093cd1ffa5fe315e
++   entry .convert
++     info
++         la conversion implicite d'un chemin aux noms connus en le même chemin sur un plan
+
+@ 0 2 0 05648d0dea25030a0e9f6d8cdcc0679a
++     detail
++         `Conversion[Path of topic under root, Path of topic on filesystem under root]`, via `#on`,
++         de sorte que les noms sont vérifiés par rapport au plan cible à la compilation du code :
+
+@ 2 1 0 0e98e0ae8125504c005f6f8b8da67ead
++         ```scala
+
+@ 3 1 0 1733164bf221aece15012639b5bde178
++         import soundness.*
+
+@ 0 1 0 0205218d689aefb307ba246f5bc362d0
++         def receive(path: into[Path on Linux]): Unit = ()
+
+@ 0 1 0 06f0e42cf9696c780a98f320307abbf7
++         receive(% / "verona" / "capulet")
+
+@ 1 1 0 043ccd697bd514be11440521f345e897
++         ```
+
+@ 0 1 0 1dda6a4b6ff09ae819710bbddffd6276
++   entry .quotient
++     info
++         l'extracteur `/:` d'un chemin : sa racine, puis le reste sous forme de nom ou de
++         `Relative`
+
+@ 0 5 0 0eb058f5ba80f8fd149e80b38805eaef
++     detail
++         Un chemin sans noms ne correspond pas. Un chemin d'un seul nom correspond sous la forme
++         `root /: name`, et un chemin de plusieurs noms sous la forme `root /: relative`, où le
++         `Relative` se filtre à nouveau avec `/:`, en détachant à chaque fois le nom du haut. La
++         racine est décodée par l'`Eradicable` du plan, si bien qu'un filtrage exige que la `Limit`
++         du chemin soit connue (`Path on Linux under %.type`) et, pour une racine qui peut être mal
++         formée, une `Tactic[Path.Error]`.
+
+@ 0 1 0 03c26be12fa25f67003427c4633649fa
++   entry .conjunction
++     info
++         l'ancêtre commun le plus profond de deux chemins, calculé à la compilation du code lorsque
++         c'est possible
+
+@ 0 4 0 1400b0a56983bb4c01d017c449226d8a
++     detail
++         Une extension sur tout `Path`. Lorsque les noms des deux chemins sont connus et qu'ils
++         partagent une racine, les noms du résultat figurent dans son type :
++         `(% / "home" / "work" / "data").conjunction(% / "home" / "more")` est un
++         `Path of Mono["home"]`. Sinon, il est calculé à l'exécution. Le résultat est `Optional`,
++         pour deux chemins de racines différentes.
+
+@ 2 1 0 1dd92d00062dc77311a7be2d1c9d6fd0
++         ```scala
+
+@ 3 1 0 127877e45d4e6f3215b566420ba83b8c
++         import soundness.*
+
+@ 0 1 0 1582d143c71aa41512a6f6e3697877c5
++         val a = % / "home" / "work" / "data"
+
+@ 0 1 0 1a8138b200d8e5dc0b5e03c1c91bb944
++         val b = % / "home" / "work" / "more"
+
+@ 0 1 0 03a3b4ed3dd62281166ccb2687dab3ae
++         a.conjunction(b)   // % / "home" / "work"
+
+@ 1 1 0 0a03ab30893b7d39060c82cd0c2543d0
++         ```
+
+@ 0 1 0 019a57c32f7b7add0da65bd36abc7e52
++   entry .toward
++     info
++         le chemin relatif d'un chemin vers un autre, calculé à la compilation du code lorsque
++         c'est possible
+
+@ 0 4 0 0a113342f01071701dadf28093c9bfd9
++     detail
++         Une extension sur tout `Path` : `a.toward(b)` est le `Relative` qui, ajouté à `a`, donne
++         `b` — en remontant de `a` jusqu'à la `conjunction` des deux chemins, puis en descendant
++         jusqu'à `b`. Le chemin relatif conserve le plan de la cible, et lorsque chaque nom est
++         connu, sa remontée et ses noms figurent dans son type. Le résultat est `Optional`.
+
+@ 2 1 0 148400eb402567e40f2ee253a49aec00
++         ```scala
+
+@ 3 1 0 1ffe07c69905eedf0929e2696cce25bf
++         import soundness.*
+
+@ 0 1 0 1aa802faa144fc9e13b7030c681c8c4a
++         val a = % / "home" / "work" / "data" / "hamlet"
+
+@ 0 1 0 0506e70fa1956c641b71ed9887ded4a3
++         val b = % / "home" / "more"
+
+@ 0 1 0 1ee2812664dba7d403f85307dceaaa5a
++         a.toward(b)   // ? / ^ / ^ / ^ / "more"
+
+@ 0 1 0 05434dc40b7abc400d152f114cc800ec
++         b.toward(a)   // ? / ^ / "work" / "data" / "hamlet"
+
+@ 1 1 0 11b3ab24124c3c60087894b876cbe3b9
++         ```
+
+@ 0 1 0 131508bf83ae8cc404de0d3aabe73989
++   entry .Error
++     info
++         levée lorsqu'un chemin ne peut pas être lu ou résolu : une racine ou un nom invalide, ou
++         des racines qui diffèrent
+
+@ 0 3 0 0d08ff3bab01bc9a08d7cf07a8919b32
++     detail
++         Erreur `↯/s.70.1` : _the path `path` was invalid because `reason`_, où le chemin est nommé
++         s'il est connu. La `#reason` est une `Path.Error.Reason` :
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 8 0 1c3ec77405facdc01a082e431ed58e56
++         column  Cas
++         column  Code
++         column  Message
++         column  Remarque
++         row  `RootParent`  1  _the root has no parent_
++         row  `InvalidRoot`  2  _the root is not valid_  un texte qui ne commence pas comme la racine du plan, tel que `C:` sous Linux
++         row  `DifferentRoots`  3  _it does not have the same root as the source_
++         row  `InvalidName`  4  _the name is not valid_
+
+% 1 1 0 11362977fd60dd600121d0d6fcc71418
+
+@ 0 3 0 120b355e3952e5940467114212e795d9
++         Elle est levée par l'`Eradicable` d'un plan lorsqu'un texte est décodé en chemin, et par
++         `Path#resolve`. Un nom qui enfreint les règles d'un plan lorsqu'il est *ajouté* à un
++         chemin est une `Name.Error`, et non celle-ci.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 13db34982658c5cd18dfa07704806b28
+
+% 1 1 0 0fa776a024c8f3851138a5a062382aec
+
+@ 0 1 0 025b59802b28e2d90a28cc86cc75278c
++     entry .apply
++       info
++           une erreur de chemin à partir d'une raison, choisie sous la forme `_.InvalidRoot`, et du
++           texte du chemin s'il est connu
+
+@ 0 3 0 1b814b791c6f1bf005b23c6d92059816
++       detail
++           `Path.Error(_.InvalidRoot, t"C:")` : la raison est une fonction du compagnon `Reason`,
++           de sorte que l'`Eradicable` d'un plan écrit `abort(Path.Error(_.InvalidRoot))`. Exige
++           des `Diagnostics` dans la portée, comme la construction de toute erreur.
+
+@ 0 1 0 1846e2f9d2513797187fcee7a72a4ad3
++     entry .Reason
++       info
++           pourquoi un chemin était invalide : `RootParent`, `InvalidRoot`, `DifferentRoots` ou
++           `InvalidName`
+
+@ 0 4 0 12fbabd379f59d5b1d9bcc7acbfc77c6
++       detail
++           Une énumération de quatre cas numérotés, qui forment la deuxième partie du code de
++           l'erreur. Son compagnon contient un given `Communicable` anonyme qui rend chacun sous
++           forme de message, tel que _the root is not valid_.
+
+@ 0 1 0 0049fad64bde446004fc7b48d53bb27b
++       entry #number
++         info
++             le numéro de la raison, de `1` à `4`
+
+@ 0 1 0 00b022d0aed458ff0fba56224de03be5
++     entry #reason
++       info
++           pourquoi le chemin était invalide
+
+@ 0 1 0 06317ede6ab719b60cc280b00136613e
++     entry #path
++       info
++           le texte du chemin, ou `Unset` s'il n'est pas connu
+
+@ 0 1 0 092460ca4fdcae6b1b25d71d84da5ad6
++   entry #root
++     info
++         la racine, sous forme de texte dans la notation du plan : `/`, `C:\`, `refs/`
+
+@ 1 1 0 1aa6aa8e98ec55b8184ec321744db94c
++   entry #descent
++     info
++         les noms du chemin, de la feuille vers la racine
+
+@ 0 2 0 09befce8426b806e1a4737d96a3274c9
++     detail
++         `(% / "home" / "work").descent` vaut `t"work"`, `t"home"` ; `encode` les inverse. Un
++         chemin reconstruit à partir de noms lus de haut en bas doit d'abord les inverser.
+
+@ 1 1 0 0b8e30542fc092f4160016ef7639ae71
++   entry #Topic
++     info
++         le tuple des noms du chemin, du plus profond au moins profond, lorsque le compilateur les
++         connaît
+
+@ 0 3 0 1d8683d5490a35780cb9a729932ab6a0
++     detail
++         `% / "verona" / "capulet"` est un `Path of ("capulet", "verona")`, lu par l'alias infixe
++         `of`. Un nom issu d'un texte connu à l'exécution apporte son type singleton, et un chemin
++         dont les noms ne sont pas du tout connus a la borne `Tuple`.
+
+@ 0 1 0 14116fcaa006993f068c95fd1ec862a2
++         ```scala fuel
+
+@ 1 1 0 08d9458eb73012351c93056f35e51984
++         frame
+
+@ 0 1 0 0ba42635d19052360a77709b3c79c215
++           label The root
+
+@ 1 1 0 118520bcf90aceb41666ddc798e91b32
++           code
+
+@ 2 1 0 0fe9a3ef9c80762d1c9747c9c0348d58
++               import soundness.*
+
+@ 0 1 0 127bf120d1aefef616eabe54ca77d355
++               val path = %                          // %.type: no names, Topic EmptyTuple
+
+@ 1 1 0 027a109f9f0798e6158aee07311ba9f5
++         frame
+
+@ 0 1 0 1eaecc6822ae1b220456280983061c4a
++           label One name
+
+@ 1 1 0 08d512572a7ec6db1ffe6ef4d61293b7
++           code
+
+@ 2 1 0 12c2b9143670b41f02c956cc440ec7a3
++               import soundness.*
+
+@ 0 1 0 134930ed3dc2ee7407fdefa0b1dac378
++               val path = % / "home"                 // Path of Mono["home"] under %.type
+
+@ 1 1 0 0a4b9afbb718adf90bc5b099a6106aeb
++         frame
+
+@ 0 1 0 04a50461923f19371d32f796df2e808f
++           label Two names, innermost first
+
+@ 1 1 0 00ae6c77bec5a84f00691433f3359478
++           code
+
+@ 2 1 0 0e5fc590f1fc5b581fc8c319553f585d
++               import soundness.*
+
+@ 0 1 0 11f5159d171faab80e8488bd36c424a6
++               val path = % / "home" / "work"        // Path of ("work", "home") under %.type
+
+@ 1 1 0 057be8d89673bb181f0527cf35e8f990
++         frame
+
+@ 0 1 0 033153c46653db8d05edadb6a95efd8c
++           label Bound to a plane
+
+@ 1 1 0 1255a1a32eac1b141b9a0e6c271962c3
++           code
+
+@ 2 1 0 072c0497a66b27f61aaa1715861566e0
++               import soundness.*
+
+@ 0 1 0 15bb5fff20544bcf0d2ba9d211d71ee3
++               val path = (% / "home" / "work").on[Linux]   // Path of ("work", "home") on Linux under %.type
+
+@ 0 1 0 05324ab952d132031fa7821cd90c1137
++         ##
+
+@ 1 1 0 1a277342ea9dfdc5113023e785963c91
++         ```
+
+@ 0 1 0 0e7d922daa6f9efa17c9dc62848f3f1d
++   entry #name
++     info
++         le nom de la feuille du chemin, ou le texte de sa racine s'il n'a pas de noms
+
+@ 0 1 0 1e0c00138e08fe9615b7a0d25e75bf14
++   entry #nil
++     info
++         si le chemin n'a pas de noms : la racine seule
+
+@ 0 1 0 1f7f6185223639601ed46ec83cafc38c
++   entry #knownElementTypes
++     info
++         si le `Topic` est un tuple connu, même si certains de ses noms sont des valeurs connues à
++         l'exécution
+
+@ 0 1 0 1a8d946e9f248c4a07bb0d8a1ea6334d
++   entry #knownElements
++     info
++         si chaque nom du `Topic` est un littéral connu du compilateur
+
+@ 0 2 0 11a960a03a01a51c131e13dbfef3232d
++     detail
++         `(% / "verona" / "capulet").knownElements` vaut `true` ; un chemin dont un nom provient
++         d'une variable, ou annoté `Path on Linux`, vaut `false`.
+
+@ 0 1 0 12dc00ccf270d8e60e39a6b126a780a3
++   entry #depth
++     info
++         le nombre de noms du chemin, calculé à partir du `Topic` lorsqu'il est connu
+
+@ 0 1 0 1805500ba0d587a003b452b44a8e9e3e
++   entry #on
++     info
++         ce chemin lié à un plan, en vérifiant chaque nom par rapport à ses règles
+
+@ 0 6 0 184b8df2a65148790547a735a44d8ee7
++     detail
++         `path.on[Linux]` vérifie chaque nom avec son instance `Admissible on Linux` — à la
++         compilation pour un littéral, et par une `Tactic[Name.Error]` pour un texte connu à
++         l'exécution — et vérifie la racine : que son type est `Submissible` sur le plan, ou
++         qu'elle se décode avec l'`Eradicable` du plan, ou que le plan a une racine unique. Un
++         chemin déjà sur le plan est renvoyé tel quel. Une racine d'un autre plan est une erreur de
++         compilation, de sorte que `(Drive('C') / "verona").on[Linux]` ne compile pas, et qu'un
++         chemin sur Linux se convertit librement vers `MacOs`.
+
+@ 2 1 0 14e67ab9d72005021f9f9aa73f7f9e03
++         ```scala
+
+@ 3 1 0 04914ced739f290e05e2c2eddcfcd3c2
++         import soundness.*
+
+@ 0 1 0 17be1d44694286c31a369282acd671a7
++         (% / "home" / "work").on[Linux]
+
+@ 0 1 0 059f86de68af76010ba06097b67caba0
++         (% / "fo/o").on[Linux]   // does not compile
+
+@ 1 1 0 0954f73d4e03ab511833589a7c50a050
++         ```
+
+@ 0 1 0 0016f0aa38fed1be116fd0e060020ed8
++   entry #/
++     info
++         un enfant de ce chemin : un nom de plus, vérifié par rapport au plan si le chemin en a un
+
+@ 0 5 0 14512d7148e3efed1335e42bb0707594
++     detail
++         L'enfant peut être une chaîne littérale, un `Text`, un `Name`, ou toute valeur dotée d'une
++         instance `Navigable` (un `Uuid`, un `Ordinal` sur un pointeur JSON). Si l'enfant est
++         `Admissible` sur le plan du chemin, le résultat reste sur ce plan, et le nom est vérifié —
++         à la compilation pour un littéral, par une `Tactic[Name.Error]` pour un texte connu à
++         l'exécution. Sinon, le résultat est indépendant de la plateforme, et le type singleton de
++         l'enfant est ajouté au `Topic`.
+
+@ 2 1 0 03e5461c96dbcea311c89cab79ddd088
++         ```scala
+
+@ 3 1 0 1f1e8f6c7a0df7770b670f21083e8cf1
++         import soundness.*
+
+@ 4 1 0 1ff31e64731cc6f3054abd7332d33681
++         import strategies.throwUnsafely
+
+@ 6 1 0 0577569b3b6fcb420092ea11ad7a7b15
++         val dir: Text = t"work"
+
+@ 0 1 0 0424ffc58a2f0e160c5379b408aca939
++         val home: Path on Linux = % / "home"
+
+@ 0 1 0 1f6ecdb00049cc9904e9b6d80ad96e2f
++         home / dir / "data"     // Path on Linux, with `dir` checked at runtime
+
+@ 1 1 0 0fcb98e38e070ddd1f42818ecdc8358f
++         ```
+
+@ 0 1 0 115f79b7c47ac52f016d54cd2813601f
++   entry #peer
++     info
++         un frère de ce chemin : sa feuille remplacée par un autre nom
+
+@ 0 3 0 16fa7e7b2768dcde1b9592e6e9b194c8
++     detail
++         `path.peer("montague")` sur `% / "verona" / "capulet"` donne `% / "verona" / "montague"`.
++         Le nom doit être `Admissible` sur le plan du chemin. La méthode lit le `Topic`, de sorte
++         que sur un chemin dont le `Topic` est abstrait, elle dégénère ; dans ce cas, construisez
++         le frère à partir de `#parent`.
+
+@ 0 1 0 1fcfbe51043efa910b0cdcef172d0385
++   entry #parent
++     info
++         le chemin d'un niveau au-dessus, ou `Unset` pour une racine
+
+@ 0 2 0 0b9dbbd5d8a3ce451f49c94cd8e58cd3
++     detail
++         Typé à partir du `Topic` lorsqu'il est connu, de sorte que le parent d'un
++         `Path of ("capulet", "verona")` est un `Path of Mono["verona"]`, et que le parent d'une
++         racine est statiquement `Unset`.
+
+@ 0 1 0 107733870328751c04160cd2b8a6eb32
++   entry #ancestors
++     info
++         chaque ancêtre de ce chemin, du plus proche au plus lointain, jusqu'à la racine
+
+@ 0 1 0 1f75092e6eeda3e7170b42d3ae563af5
++   entry #+
++     info
++         ce chemin auquel on applique un chemin relatif : on remonte selon sa remontée, puis on
++         descend selon ses noms
+
+@ 0 2 0 0ac7821e85e3798805286c21db39907b
++     detail
++         `(% / "home" / "work" / "data") + (? / ^ / "more")` donne `% / "home" / "work" / "more"`,
++         le `Topic` du résultat étant calculé à partir des deux.
+
+@ 2 1 0 1d5dd983dc8910150e5800ef85c2ce9d
++         ```scala
+
+@ 3 1 0 1c2627eab91bc248191f5149bb34b055
++         import soundness.*
+
+@ 0 1 0 1e6a56925ebe53ea028bf7f980051074
++         val path = (% / "home" / "work" / "data" / "hamlet").on[Linux]
+
+@ 0 1 0 02bbc7493a0ad1f213e0bd4704dd0b4b
++         path + (? / ^ / ^ / "elsinore" / "yorick")   // % / "home" / "work" / "elsinore" / "yorick"
+
+@ 1 1 0 1fd80a816bb9ff9814e5a0e232b372b8
++         ```
+
+@ 0 1 0 06f2eac2ce9a436707c04f23aa3d3c7f
++   entry #resolve
++     info
++         un texte résolu par rapport à ce chemin : un chemin absolu tel quel, un chemin relatif à
++         partir d'ici
+
+@ 0 3 0 16b36f163f7b8d721d27cc25c1dd96bc
++     detail
++         `base.resolve(text)` décode le texte en un `Path on Plane`, et à défaut en un
++         `Relative on Plane` ajouté à ce chemin ; un texte qui n'est ni l'un ni l'autre lève
++         `Path.Error` de raison `InvalidRoot`. Exige les décodeurs de chemins et de chemins
++         relatifs du plan et une `Tactic[Path.Error]`.
+
+@ 2 1 0 0bf999b7b9ff58e8105d6d26560aacb5
++         ```scala
+
+@ 3 1 0 1c0806ebdcb166d41ac6b20e97a53bb8
++         import soundness.*
+
+@ 4 1 0 046075a6bd4ce3b40c20183f312959e2
++         import strategies.throwUnsafely
+
+@ 0 1 0 05058a38821ae5300350ee5efb2f5cf0
++         val base: Path on Linux = % / "home" / "work"
+
+@ 0 1 0 0f433df0d351b3b60db5cf9aee461859
++         base.resolve(t"../more")    // % / "home" / "more"
+
+@ 0 1 0 0f9fd5cb3e73e7071362f3f50ecba0bb
++         base.resolve(t"/etc")       // % / "etc"
+
+@ 1 1 0 1b4ee5fcc4c4cb85186d382c01491f40
++         ```
+
+@ 0 1 0 16a888f8168b524605b4af10a80aa998
++   entry #precedes
++     info
++         si ce chemin est un ancêtre d'un autre, ou le même chemin
+
+@ 0 2 0 01207a9e98bac55504cd94fb5d1bef25
++     detail
++         `(% / "verona" / "capulet").precedes(% / "verona" / "capulet" / "juliet")` vaut `true` ;
++         les racines doivent être les mêmes.
+
+@ 0 1 0 07c190b5c0959a411f2f7a291c2ec851
++   entry #relative
++     info
++         les noms de ce chemin sous forme de `Relative` sans remontée, comme à partir de sa racine
+
+@ 0 1 0 16c75975867009000c2b6ff7ab06c14e
++   entry #shift
++     info
++         ce chemin privé de ses noms les plus hauts : `(% / "a" / "b" / "c").shift(1)` donne
++         `% / "b" / "c"`
+
+@ 0 1 0 1e7c1e8e0f36b4a108ad48e6c709abf5
++   entry #graft
++     info
++         les mêmes noms sur une racine différente
+
+@ 0 2 0 00c26d4d281239161149e4d529f54e55
++     detail
++         `path.graft(root)` exige le `Radical` de la nouvelle racine sur le plan du chemin, qui
++         écrit la racine sous forme de texte ; la `Limit` du résultat est le type singleton de la
++         nouvelle racine.
+
+@ 0 1 0 194abd78a85bf2a31837637fc63ac1d1
++   entry #sameRoot
++     info
++         si deux chemins partagent une racine, statiquement `true` sur un plan à racine unique
+
+@ 0 1 0 1c7656d143c6f66f07efa29fa2a66f17
++   entry #rename
++     info
++         ce chemin dont la feuille est renommée par une fonction de son ancien nom, ou `Unset` pour
++         une racine
+
+@ 0 1 0 165043110b5c9d920ccae44040ad6ecd
++     detail
++         Le bloc reçoit l'ancien nom sous forme de `Text aka "prior"` contextuel, que lit `prior` :
+
+@ 2 1 0 12a7cace3c039248081c922decfb95cc
++         ```scala
+
+@ 3 1 0 0f16f780e7fc737115d752213ad787e7
++         import soundness.*
+
+@ 4 1 0 168ea6f7e197f3670b1fc1cd5a399635
++         import strategies.throwUnsafely
+
+@ 0 1 0 108c51767bb087c3132519c45bf4ac49
++         val file: Path on Linux = % / "home" / "notes.txt"
+
+@ 0 1 0 1d738162ee6e2b5006bc59454db927fe
++         file.rename(t"$prior.bak")   // % / "home" / "notes.txt.bak"
+
+@ 1 1 0 040436392959c9001865f44683af1057
++         ```
+
+@ 0 1 0 0fa7ee55347331a707afb995c82208fb
++   entry #unsafeChild
++     info
++         un enfant à partir d'un texte connu à l'exécution, sans aucune vérification, pour un nom
++         déjà validé
+
+@ 0 4 0 05ae8331f2df423701165af1ce7730e2
++     detail
++         `path.unsafeChild(name)(using Unsafe)` ajoute le nom sans consulter les règles du plan ;
++         le jeton `Unsafe` effacé marque le site d'appel. Utilisez-le lorsqu'on sait que le nom est
++         valide — un nom lu dans un listing de répertoire — et qu'on ne veut ni du coût ni de la
++         tactique d'une vérification, ou lorsque `/` ne peut pas être utilisé parce que le `Topic`
++         du chemin est abstrait.
+
+@ 0 1 0 1c9fe17da192af1207d3b38f24e25a90
++ entry .Relative
++   info
++       un chemin relatif : un nombre de pas vers le haut, puis une descente de noms, typé par plan
+
+@ 0 6 0 055a281f043af9e00b127c13cf36319b
++   detail
++       Un `Relative` est une case class composée d'une `#ascent`, le nombre de pas vers le haut, et
++       d'une `#descent` de noms, conservée de la feuille vers la racine. Il se construit à partir
++       de `?` avec `/`, par `^` pour chaque pas vers le haut puis des noms, et son type porte le
++       plan (`on`), le `#Topic` de ses noms (`of`) et sa remontée sous forme de `#Limit` littérale
++       (`under`), de sorte que `? / ^ / "more"` est un `Relative of Mono["more"] under 1`.
+
+% 2 1 0 18c69ab67e5560880ca6440306f512ce
+
+% 3 1 0 16cca5a3c2d4701215289081a668298f
+
+% 0 1 0 0855b38cb7e53a161332214f53cc8bb9
+
+% 0 1 0 0f636bc802dc9829139a40feea5febd5
+
+% 0 1 0 1d1286e56a9090e006df6c25114fbc75
+
+% 0 1 0 190211cdc2daaac0056236958c1ef5f4
+
+% 1 1 0 0c8746b5537c062d09f01ca9f1d74b5c
+
+@ 0 4 0 0b6db716d5aac47a07bf8a0ff9263fe7
++       Un chemin relatif est produit par `Path#toward`, appliqué avec `Path#+`, et s'encode et se
++       décode avec les noms de soi-même, de parent et de séparateur de son plan, de sorte que
++       `? / ^ / "verona"` donne `../verona` sous Linux et `..\verona` sous Windows. Comme un
++       chemin, il ne se décode à partir de texte que lorsque son plan est nommé.
+
+% 0 1 0 1a6dc83ab60658d70f43c37d5902f3c2
+
+% 0 1 0 034ff7979ce68ea00c325f774e1fea26
+
+% 0 1 0 1f8d9024e45c82d8073ae035cb7af1e0
+
+@ 0 1 0 0ec120ad9981582c09b356873a4fd5b1
++   entry .^
++     info
++         un pas vers le haut, écrit après `?` ou un autre pas : `? / ^ / ^`
+
+@ 0 2 0 1b60aa513d9960630008892b22889fc5
++     detail
++         Exporté vers le package sous le nom `^`. Il ne porte aucune valeur propre : `Ascent#/` le
++         prend et ajoute un à la remontée.
+
+@ 0 1 0 054fa73ad984f8ad02945f23eb23dc07
++   entry .?
++     info
++         l'emplacement courant, le `Relative` vide, à partir duquel on construit les chemins
++         relatifs
+
+@ 0 2 0 128169a3b55975f91461c248e62d6c19
++     detail
++         Exporté vers le package sous le nom `?`. Une `Ascent` de zéro, de sorte que `?` s'encode
++         sous la forme du nom de soi-même du plan, `.`, et que `? / ^` remonte d'un niveau.
+
+@ 0 1 0 1b0e865df642715f07d67e0de9917e2d
++   entry .apply
++     info
++         un chemin relatif à partir de sa remontée et de ses noms, de la feuille vers la racine,
++         avec le plan et les types choisis
+
+@ 0 3 0 0e5c9c274708f97b11ffbfcc31a02b71
++     detail
++         `Relative(1, List(t"verona"))` est le constructeur de la case class, et est égal à
++         `? / ^ / "verona"`. La surcharge `Relative[filesystem, topic, limit](ascent, descent*)`
++         fixe les trois membres de type sans rien vérifier.
+
+@ 0 1 0 11aeb89d12e7d71d1e9528f1a7821844
++   entry .decodable
++     info
++         lit un `Relative on filesystem` à partir de texte, avec les noms de soi-même, de parent et
++         de séparateur du plan
+
+@ 0 3 0 12f811b515b7916002d15bf7c9a83588
++     detail
++         Un texte égal au nom de soi-même donne `?` ; sinon, il est découpé selon le séparateur, un
++         nom vide final et un nom de soi-même initial abandonnés, les noms de parent initiaux
++         comptés comme la remontée, et le reste pris comme descente. Il ne lève rien.
+
+@ 0 1 0 0e34aac759a0a3691ed9faa9bf26cced
++   entry .encodable
++     info
++         rend un chemin relatif dans la notation de son plan : `../verona` sous Linux, `..\verona`
++         sous Windows
+
+@ 0 2 0 1f8a2f4c8f33408d0e8682966e456fe0
++     detail
++         Le chemin relatif à soi-même est le nom de soi-même (`.`), et un chemin avec une remontée
++         et sans noms est le nom de parent répété (`../..`).
+
+@ 0 1 0 1ce3b28713822b5b1f422f97a7c18d37
++   entry .showable
++     info
++         affiche un chemin relatif sous forme de son texte encodé, pour un chemin sur un plan doté
++         d'un `Filesystem`
+
+@ 0 1 0 1faf12205a201423015ae2fa7bb9e23f
++   entry .inspectable
++     info
++         un rendu de débogage de n'importe quel chemin relatif, en notation POSIX : `../../verona`,
++         ou `.`
+
+@ 0 2 0 1a54e9a1be80ba2a05c4bbc1b0a6a1ce
++     detail
++         Toujours disponible, avec ou sans plan : chaque pas vers le haut est `..`, les noms sont
++         joints par `/`, et le chemin relatif à soi-même est `.`.
+
+@ 0 1 0 1a015e5b35ff0a2c09f10f986f33e286
++   entry .conversion
++     info
++         la conversion implicite d'un chemin relatif aux noms connus en le même chemin sur un plan
+
+@ 0 1 0 1d0686cc627dbcfb0fa4f9a97fe988e8
++     detail
++         Via `#on`, de sorte que les noms sont vérifiés par rapport au plan cible.
+
+@ 0 1 0 018c82267f87a3141ff2ec1c8fdba309
++   entry .quotient
++     info
++         l'extracteur `/:` d'un chemin relatif : son nom du haut, puis le reste
+
+@ 0 3 0 1e9e9bd7a70ed444176a48e36e6fcd76
++     detail
++         Un chemin relatif de deux noms correspond sous la forme `name /: name`, un chemin de
++         plusieurs noms sous la forme `name /: relative`, de sorte qu'un chemin filtré avec `/:`
++         peut être décomposé nom par nom. Un chemin relatif de moins de deux noms ne correspond
++         pas.
+
+@ 0 1 0 16fa2f47d771bb8b0dd6b5c99fc4eedc
++   entry #ascent
++     info
++         le nombre de pas vers le haut que remonte le chemin avant de descendre
+
+@ 1 1 0 141c00a44330ba610da969c6c3b8deb1
++   entry #descent
++     info
++         les noms du chemin, de la feuille vers la racine
+
+@ 1 1 0 0a66a70cd59d8ab706088eee488cfb5d
++   entry #Topic
++     info
++         le tuple des noms du chemin, du plus profond au moins profond, lorsque le compilateur les
++         connaît
+
+@ 0 1 0 08ef04cc142501fb040b2ec088e92174
++   entry #Limit
++     info
++         la remontée du chemin, sous forme de type littéral lorsqu'elle est connue
+
+@ 0 1 0 1f78e7faf618e7d31f79361142b9702a
++   entry #delta
++     info
++         la variation de profondeur du chemin : ses noms moins sa remontée
+
+@ 0 1 0 0e61131f7b735f310d26e577f1b4a73f
++   entry #name
++     info
++         le nom de la feuille, ou `Unset` si le chemin n'a pas de noms
+
+@ 0 1 0 1702530bfe230f2b166f0d3162e4f771
++   entry #self
++     info
++         s'il s'agit du chemin relatif à soi-même, sans remontée ni noms
+
+@ 0 1 0 178e0050a50b55fd0153874462fcc939
++   entry #rename
++     info
++         ce chemin dont la feuille est renommée par une fonction de son ancien nom, lu comme
++         `prior`
+
+@ 0 1 0 0c53fe917e4631bd1895a046f5bc0aa3
++   entry #on
++     info
++         ce chemin relatif lié à un plan, en vérifiant chaque nom par rapport à ses règles
+
+@ 0 3 0 0a781d72f97bd14a0af4e722e15d502b
++     detail
++         Un chemin relatif déjà sur un plan qui est `Compliant` sur la cible (un chemin Linux, dans
++         une archive tar) se convertit sans vérification ; sinon, chaque nom est vérifié par son
++         instance `Admissible` sur le plan cible.
+
+@ 0 1 0 1ed3c77167992c29034f53619a93a31c
++   entry #unqualified
++     info
++         ce chemin relatif dont le plan est oublié
+
+@ 0 1 0 060286efd6e9eca117c9d261318f3e9f
++   entry #parent
++     info
++         le chemin d'un niveau au-dessus : sa feuille abandonnée, ou un pas de remontée de plus
++         s'il n'a pas de noms
+
+@ 0 1 0 1b6f4b9abcba48e211795dead1d34f66
++   entry #/
++     info
++         un enfant de ce chemin relatif : un nom de plus, vérifié par rapport au plan s'il en a un
+
+@ 0 1 0 0288eae16d540bb00d4072b4c7fd1438
++ entry .Ascent
++   info
++       un chemin relatif fait uniquement de pas vers le haut, qui accepte `^` comme enfant
+
+@ 0 4 0 135f17e7c4e09c760d019aff8d150819
++   detail
++       `?` est une `Ascent` de zéro, et `? / ^ / ^` une `Ascent under 2` : un `Relative` sans noms,
++       dont le `/` accepte `^` aussi bien qu'un nom. Son type porte la remontée sous forme de
++       littéral, de sorte qu'un chemin relatif qui remonte au-delà d'une racine peut être détecté
++       là où il est écrit.
+
+@ 0 1 0 14929b97292c2cb001b3a2bccffab2a5
++   entry #ascent0
++     info
++         le nombre de pas vers le haut, tel que le constructeur l'a reçu
+
+@ 0 1 0 12f994c7aa1d5d791a586054deabd75a
++   entry #Topic
++     info
++         toujours `EmptyTuple` : une remontée n'a pas de noms
+
+@ 0 1 0 17bd91e3fe80245e191757468d30b49c
++   entry #/
++     info
++         un pas de plus vers le haut, écrit `/ ^`
+
+@ 0 1 0 14648b2e164f68c111362bc4f67a5411
++ entry .Root
++   info
++       la classe de base d'un objet racine : un `Path` sans noms et dont le texte de racine est
++       fixé
+
+@ 0 4 0 0222b8de33578c4d0716f509021f152e
++   detail
++       `abstract class Root(name: Text)` : étendez-la pour donner sa racine à une nouvelle
++       hiérarchie, comme le font `Classpath` (`Root(t"")`), `JsonPointer` et le `Drive` de galilei
++       (`Root(t"C:\")`). Deux racines sont égales lorsque leurs textes de racine le sont, et le
++       `Topic` d'une racine est `EmptyTuple`, de sorte que `/` appliqué à elle commence un chemin.
+
+@ 2 1 0 1a863a7b4c4f08b81712c306195ad2a3
++       ```scala
+
+@ 3 1 0 0b2efdb8b70b1de21130c30004b92a9d
++       import soundness.*
+
+@ 0 1 0 0ca6af8d139f097a1de91963129f4af0
++       object Archive extends Root(t"/")
+
+@ 0 1 0 185f7336e8b56bce16d2a927196031bd
++       Archive / "docs" / "readme.txt"
+
+@ 1 1 0 042cf9e15d7ded6e0b8dd6719a0f268e
++       ```
+
+@ 0 1 0 1195abd46d0b8d5219191844fc93123e
++ entry .Filesystem
++   info
++       la notation d'un plan : son nom, son séparateur, ses noms de soi-même et de parent, et son
++       échappement
+
+@ 0 5 0 1e10e7c52989f6380600e19ea689b271
++   detail
++       La classe de types qui fait d'un type un plan sur lequel on peut écrire des chemins. Son
++       instance se trouve dans le compagnon du plan, elle est donc trouvée sans import : `Linux` a
++       `/`, `.` et `..` ; `Windows` a `\` ; le classpath, une archive tar et un arbre Git ont les
++       leurs. Tout encodage et tout décodage d'un `Path` ou d'un `Relative` en a besoin.
+
+% 2 1 0 1517ed41080488f114ef1316063d1e02
+
+% 3 1 0 07193c7dfc5500f009c963d4d6725c1e
+
+% 0 1 0 0835eddf6596999c09e89bde128d395f
+
+% 0 1 0 1092830e37aaeff319769be6845aab46
+
+% 1 1 0 0dd582a1ed0b206b037f7ba6006b245c
+
+@ 0 3 0 1518ce902c68547c1ef06b4671fa226b
++       `#UniqueRoot` indique si le plan a une seule racine (`Linux`) ou plusieurs (`Windows`, avec
++       une racine par lecteur) : sur un plan à racine unique, deux chemins partagent toujours une
++       racine, de sorte que `Path#sameRoot` est statiquement `true` et que `on` n'a pas besoin de
++       vérifier la racine.
+
+@ 0 1 0 14e37a255285b3961ad334683471ddc4
++   entry #UniqueRoot
++     info
++         `true` si chaque chemin du plan a la même racine, sous forme de type littéral
+
+@ 0 1 0 0e83cfa92835307507b04527882c90db
++   entry #name
++     info
++         le nom du plan, pour les messages : `Linux`, `Windows`, `Java classpath`
+
+@ 0 1 0 12aae224d850d04b14eed5ea7d1708ce
++   entry #separator
++     info
++         le texte entre les noms : `/` ou `\`
+
+@ 0 1 0 14adb955c56a7b500a07bcd5b92418dc
++   entry #self
++     info
++         le nom de l'emplacement courant dans un chemin relatif : `.`
+
+@ 0 1 0 1e5279a054e1894718cf2c6fa2d28ebd
++   entry #parent
++     info
++         le nom d'un pas vers le haut dans un chemin relatif : `..`
+
+@ 0 1 0 02dd6fce729a499412bd8157f34047b5
++   entry #escape
++     info
++         échappe un nom pour l'encodage, en le laissant par défaut tel quel
+
+@ 0 1 0 07676678efc53a4f1d36441cc3197d4e
++   entry #unescape
++     info
++         inverse `#escape` sur un nom décodé, en le laissant par défaut tel quel
+
+@ 0 1 0 098ca898042866f00bf5630eafa24a47
++ entry .Radical
++   info
++       comment un type de racine s'écrit en texte : la moitié pure de l'algèbre de chemins d'une
++       racine
+
+@ 0 5 0 072b501962bc54b219930913b7fd621e
++   detail
++       `root is Radical on plane` encode une valeur de racine sous la forme du texte que contient
++       la `#root` d'un `Path` : `%` en `/` sous Linux, un `Drive` en `C:\` sous Windows. Elle ne
++       peut pas échouer, et ne prend donc aucune tactique. Sa moitié de lecture est `Eradicable` ;
++       le type de racine d'un plan possède les deux, dans le compagnon du plan, et `Path.decodable`
++       a besoin de la paire.
+
+% 2 1 0 18cd9151906aa68b1076df7712d3610a
+
+% 3 1 0 021e2ac0723f17420dd410b562fad29f
+
+% 0 1 0 095247fc632352960956554e3cded602
+
+% 1 1 0 119c0583ab58690e0a02bef511c50bd8
+
+% 1 1 0 02ae28316356080a06da22fa09ed14df
+
+@ 0 1 0 0868b01a5bdcda8e1e3ec4fba8081921
++   entry #encode
++     info
++         la racine sous forme de texte, dans la notation du plan
+
+@ 0 1 0 002b5dabe8fc53770949756fbf0671ed
++ entry .Eradicable
++   info
++       comment une racine se lit à partir de texte, et quelle part du texte elle occupe
+
+@ 0 7 0 0e888314c82fb13213fcbf7b28d049a6
++   detail
++       `root is Eradicable on plane` lit la racine au début du texte d'un chemin — `/` sous Linux,
++       `C:\` sous Windows — et indique combien de caractères elle a pris, afin que le reste puisse
++       être découpé en noms. Aucune des deux méthodes ne déclare d'erreur : une racine qui peut
++       être mal formée a une instance qui prend une `Tactic[Path.Error]` dans la signature de son
++       given et la capture, en levant la raison `InvalidRoot`, tandis qu'une racine qui ne le peut
++       pas (une archive zip, un chemin de recherche, le web) a une instance pure, de sorte qu'un
++       chemin décodé par rapport à elle n'exige aucune tactique.
+
+% 2 1 0 145eead4859f5e670ef6a3d0ffa5a91d
+
+% 3 1 0 0b5a22ca5eb59a1003072d890dfc38d5
+
+% 4 1 0 0b37816d25ef51b40319f35b788d843c
+
+% 0 1 0 14fdd1fdee5c8a35082cb15781445137
+
+% 0 1 0 01584d94b28d0f8205c976a8cbc1d1ea
+
+% 0 1 0 126ceb660b072a6e1900bd180a464d88
+
+% 1 1 0 1642a726d8c1c5960712d17764ca6263
+
+@ 0 2 0 05e384dfa9ac85cb1e55c43b02bb5fc8
++       C'est la moitié de lecture de `Radical`, séparée de celui-ci afin que le rendu pur ne porte
++       jamais de capacité.
+
+% 1 1 0 0e41d01bdc3e246603d0df265d2964fd
+
+@ 0 1 0 1e5095d4d5f6b7f61454bfd244255eef
++   entry #decode
++     info
++         la racine au début du texte, ou la `Path.Error` du plan levée par sa tactique
+
+@ 0 1 0 008599022516e24119f7880d26355f7b
++   entry #length
++     info
++         le nombre de caractères du texte qu'occupe la racine
+
+@ 0 1 0 0cb4aa65ca76945507003f27fb9df919
++ entry .Submissible
++   info
++       quels types de racine accepte un plan, vérifiés lorsqu'un chemin lui est lié avec `on`
+
+@ 0 4 0 0ce7b6b65098e8cd18d75567ade4072d
++   detail
++       `root is Submissible on plane` permet de lier à `plane` un chemin enraciné sur `root` avec
++       `Path#on`, après une vérification du texte de sa racine : `%.type` est soumissible sur
++       `Linux` et `MacOs`, et `Drive` sur `Windows`, de sorte que `(% / "verona").on[Windows]` ne
++       compile pas.
+
+@ 0 1 0 00ee5e68e739e03f197c2a4076a596ff
++   entry #check
++     info
++         vérifie le texte d'une racine, en levant par la tactique que capture l'instance
+
+@ 0 1 0 1cbb448fce240fa803cb9ad71bae1e09
++ entry .Compliant
++   info
++       que les chemins relatifs d'un plan sont valides sur un autre, et se convertissent donc sans
++       vérification
+
+@ 0 4 0 14a05f966eccccb8024c021968785830
++   detail
++       `source is Compliant on target` permet à `Relative#on[target]` de prendre tel quel un chemin
++       relatif sur `source`, sans vérifier ses noms : un `Relative on Linux` nomme des entrées
++       valides dans une archive tar, donc `Linux is Compliant on Tar`. La classe de types n'a pas
++       de méthodes : sa présence est la preuve.
+
+@ 0 1 0 0decd7c4707d6f9309379fb6b1e31944
++ entry .Admissible
++   info
++       quelles valeurs peuvent être un nom sur un plan, et la vérification que chacune doit passer
+
+@ 0 6 0 1d85d634bdc23f1a19a9d03b950acbf0
++   detail
++       `value is Admissible on plane` vérifie un texte sur le point de devenir un nom dans un
++       chemin sur `plane`, lorsque `Path#/`, `Path#peer` et `on` l'ajoutent. Une chaîne littérale
++       est vérifiée à la compilation par rapport aux règles `Nominative` du plan (`.admissible`),
++       de sorte que `% / "fo/o"` sous Linux ne compile pas ; un `Text` connu à l'exécution est
++       vérifié lors de son ajout, en levant `Name.Error` par la `Tactic[Name.Error]` dans la portée
++       (`.text`), sauf s'il est déjà un `Name` du plan.
+
+% 2 1 0 0fbde207e578f044038c3df99a00e128
+
+% 3 1 0 001373361393c5c10cbd9691536d597c
+
+% 4 1 0 17e7d171749c9baf181d6e56cebd265f
+
+% 6 1 0 1b844dc1a3a20ccb025047d0a153f4c9
+
+% 0 1 0 07979b4fe825cf8d0f7648298daeeb2a
+
+% 0 1 0 019596169fcdedca06e63922d5ad235d
+
+% 1 1 0 04b7ad4a1c0e7f2e07894b1a7bbe63c9
+
+@ 0 3 0 063814da22c4d38f1fb1edb8e581bb60
++       Une nouvelle sorte de nom reçoit une instance dans son propre compagnon, créée avec `.apply`
++       ou, pour un type dont chaque valeur est valide, `.unchecked` (comme le fait galilei pour un
++       `Uuid` sur chaque plan de système d'exploitation).
+
+% 0 1 0 074867e18dfde7241dccaaacc1662542
+
+@ 0 1 0 1109be797e1fa6a7152fc060e1e62f65
++   entry .unchecked
++     info
++         une instance qui accepte toute valeur, pour un type de nom qui ne peut pas être invalide
+
+@ 0 1 0 172d0ef475a0928d1af809cc22637c2e
++   entry .apply
++     info
++         une instance à partir d'une fonction de vérification, qui lève une erreur si le texte
++         n'est pas un nom valide
+
+@ 0 1 0 0a662b1abe8f15d2050184754b994ab2
++   entry .text
++     info
++         vérifie un `Text` connu à l'exécution par rapport aux règles du plan, par une
++         `Tactic[Name.Error]`
+
+@ 0 2 0 0b8828237e63a1570a216160f9daf66b
++     detail
++         Un `Name` du plan n'a besoin ni de vérification ni de tactique ; tout autre texte est
++         vérifié en tant que `Name` lorsqu'il est ajouté à un chemin, en levant `Name.Error` s'il
++         enfreint une règle.
+
+@ 0 1 0 006785c6b743611c084978df78c5e01c
++   entry .admissible
++     info
++         vérifie une chaîne littérale par rapport aux règles `Nominative` du plan à la compilation
++         du code
+
+@ 0 1 0 10c9eff578e64d0911d5687a5046abcd
++   entry #check
++     info
++         vérifie le texte d'un nom, en levant une erreur s'il n'est pas admissible
+
+@ 0 1 0 00dca6e9ec60f6ae00b98fe524ffbbf9
++ entry .Navigable
++   info
++       comment une valeur devient un nom dans un chemin : son texte
+
+@ 0 4 0 0445c840d8fc007d11d71c28c8d6ba46
++   detail
++       `value is Navigable on plane` transforme l'enfant d'un chemin en le texte de son nom. Les
++       chaînes littérales, les `Text` et les `Name` sont navigables sur tout plan ; d'autres
++       bibliothèques ajoutent les leurs, comme un `Ordinal` sur un pointeur JSON, ou un `Uuid` sur
++       chaque plan de système d'exploitation.
+
+% 2 1 0 187a24c30cc49d810cf3d9120e85c1d0
+
+% 3 1 0 1f896b41ccd3cd630a5d10827e0c114d
+
+% 4 1 0 19052c4e2c82a5db115e5b6862de49d3
+
+% 0 1 0 1d2e309ce03d18e91684d6243e7b1a80
+
+% 0 1 0 17ac0523a3834e9d0e5e499ed6cbeaa2
+
+% 1 1 0 1259eeb17809a92f15bdd330c9164f1b
+
+@ 0 1 0 16254fa2bcff972814d6ce3f9e8d5648
++   entry .label
++     info
++         une chaîne littérale est le nom qu'elle épelle
+
+@ 0 1 0 1ec150e32fa84cc30ec97acda401aa08
++   entry .text
++     info
++         un `Text` est le nom qu'il contient
+
+@ 0 1 0 19e68b6cb05452ac00ec287311b9fa5f
++   entry .name
++     info
++         un `Name` du plan est le nom qu'il contient
+
+@ 0 1 0 1243b276689110d319790e99c144028c
++   entry #follow
++     info
++         le texte du nom que représente une valeur enfant
+
+@ 0 1 0 092af76f285077ea0d74f6560544c901
++ entry .Case
++   info
++       comment un système de fichiers traite la casse des noms : sensible, ramenée en minuscules ou
++       en majuscules, ou préservée
+
+@ 0 5 0 1761ec10db2b1bcf17f2b5e0aae74be0
++   detail
++       Une énumération de quatre cas. `Sensitive` compare les noms exactement et les conserve tels
++       qu'écrits ; `Preserving` les conserve tels qu'écrits mais les compare sans tenir compte de
++       la casse, comme le font macOS et Windows ; `Lower` et `Upper` ramènent chaque nom à une
++       seule casse, et comparent sans tenir compte de la casse.
+
+% 2 1 0 04b356f194f451e710edc5f6ba56ff07
+
+% 3 1 0 12370bdddf71cfb30a08edd750830219
+
+% 0 1 0 1d43b40e8211def914a9a540b06c28b7
+
+% 0 1 0 0e087d98f79e8142021d7fb3a564dd4a
+
+% 1 1 0 05287531f85648df198471f6e855dbc8
+
+@ 0 1 0 15d726028bc558fd0d92b0dcd288366a
++   entry #apply
++     info
++         un nom tel que le système de fichiers le stocke : ramené à une casse pour `Lower` et
++         `Upper`, inchangé sinon
+
+@ 0 1 0 06724b9e978f46a201827e5217b26098
++   entry #equal
++     info
++         si deux noms, ou deux listes de noms, sont identiques selon cette règle de casse
+
+@ 0 1 0 13eb80db6a19efd500d66b5451a36988
++   entry #hash
++     info
++         un hachage d'une descente de noms, cohérent avec `#equal`
+
+@ 0 1 0 0e60a349eb746eca1ed001b437f22490
++ entry .internal
++   info
++       les macros derrière `Path.toward` et `Path.conjunction`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+@ 0 3 0 0354c8fcb9501ada1a46cf9604090415
++   detail
++       Non destiné à un usage direct : l'objet contient l'arithmétique de chemins à la compilation
++       qu'insèrent par splice les extensions `toward` et `conjunction` du compagnon de `Path`.
+
+@ 0 1 0 02f83c65869ed7f90877c69f7c5db651
++   entry .toward
++     info
++         la macro derrière `Path.toward` : le chemin relatif entre deux chemins, statiquement
++         lorsque c'est possible
+
+@ 0 1 0 09e4cefa7907145016f77517d157c00b
++   entry .conjunction
++     info
++         la macro derrière `Path.conjunction` : l'ancêtre commun de deux chemins, statiquement
++         lorsque c'est possible

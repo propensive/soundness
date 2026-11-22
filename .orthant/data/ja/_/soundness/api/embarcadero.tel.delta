@@ -1,0 +1,1531 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 043e9aa0ea1971851bf1f7bcafcc6cb5
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 085c9b7e29e3409f18a6b51c5002fc6d
++ info   値としての OCI コンテナーイメージと Wasm アーティファクト、そして containerd のための型付きの gRPC クライアント
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 170186acba47c0d9069269da3b3d2c75
++     _Embarcadero_ は、コンテナーでソフトウェアを動かすことの二つの側面を扱う。
++     一つ目は**イメージ**である。
++     これはファイルシステムのレイヤーと構成の積み重ねであり、各部分はそのバイトのダイジェストで参照される。その形式は Open Container Initiative（OCI）が標準化したもので、Docker、containerd、podman、そしてあらゆるレジストリが理解する。
++     二つ目は**デーモン**である。
++     Docker と Kubernetes の下にあるランタイムである containerd を、ローカルのソケット上の gRPC で操作し、コンテナーを登録し、その中でタスクを実行し、イメージと名前空間を管理する。
+
+@ 0 13 0 09fd60e5ff9b7361025533ef44712f2a
++     `Oci.Image` はメモリ上で `Oci.Layer`（それぞれが gzip で圧縮された `Tarfile` であり、二度ハッシュされる。一度は `diffId` のために非圧縮のまま、もう一度は `digest` のために格納された形で）と、何を実行するかを `Oci.ContainerConfig` で示す `Oci.Image.Config` から組み立てられる。
++     ライブラリは構成の blob、構成とレイヤーをダイジェストで結びつける `Oci.Manifest`、そして単一の項目を持つ `Oci.Index` を計算する。
++     `Oci.Image#archive` はその全体を OCI のイメージレイアウトの tar（「oci-archive」）として描画し、それは `docker load`、`ctr images import`、`podman load`、`skopeo` が受け付ける。
++     `Oci.Image.wasm` は同じレイアウトを Wasm OCI Artifact として構築する。その唯一のレイヤーは `application/wasm` のコンポーネントであり、構成は WASI の世代と、コンポーネントがインポートおよびエクスポートする Component Model のインターフェースを示す `Oci.WasmConfig` である。
++     既存のアーカイブは `data.open[Oci.Image]()` または `path.open[Oci.Image]()` で開いて読み取る。
++     これはブロックのスコープの間 `Oci.Image.Handle` を与え、その `index`、`manifest`、`config`、そして各 `layer` はマニフェストが宣言するダイジェストに照らして検証される。欠けているもの、壊れているもの、サポートされていないものに対しては `Oci.Error` が発生する。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 1 1 0 16cc6d8804722b8a0f7317e8512d864e
+
+% 0 1 0 14588f17e082136b0f9cdeee8cf947c0
+
+% 0 1 0 1cc238c51b278d900931eba201d3f83d
+
+% 0 1 0 13a41fc02ca648a80f8fd38063f8679f
+
+% 0 1 0 02d960bebaba9df10cf233804e381968
+
+% 0 1 0 1230139693e0b3d00f0e2bad9e77aacc
+
+% 0 1 0 17f5f33cc1decdd0055061a90d905530
+
+% 0 1 0 0986221147163c6f112d0432d13030fe
+
+% 0 1 0 1182c1110991ab5e020ba8135303bbea
+
+% 0 1 0 1bd781d71c6e902a1b991c615c434737
+
+% 0 1 0 1fbaafac42a2acec1c4a422381b74e69
+
+% 0 1 0 139c014edaeb99471781785470ff863e
+
+% 0 1 0 1829919f1742aead08ef086c932d8121
+
+% 0 1 0 0dc0c456024a1a2d0a790c7ca242245e
+
+% 0 1 0 025a03fb0a35e26c05906a70d50154be
+
+% 1 1 0 166fd05b5cfa8dfa0bb4f5f4d9369c0d
+
+@ 0 12 0 1308f48e4fa9cb0e125de86f2ac1a300
++     `Containerd` クライアントは `supervise` のスコープ内で `Http2.Endpoint`（通常は平文の HTTP/2 を運ぶ Unix ソケット）を通じてデーモンに接続し、一つの containerd の名前空間に結びつけられる。
++     そのメソッドはそれぞれ、型付きのレコードをやりとりする一回の gRPC 呼び出しである。
++     `Containerd.Container` は `createContainer` で登録され、`Containerd.Mount` からなるルートファイルシステムと、`createTask` でタスクを与えられ、`…Task` メソッドで開始、シグナル送信、待機、削除され、`state` が `Containerd.ProcessStatus` である `Workload` として調べられる。
++     `Workload` の openable は、そのライフサイクル全体をスコープに結びつける。
++     `container.open[Workload](Read & Launch & Signalling)` とすると、タスクが作られ、必要なら開始され、ブロックが終わると必ずキル、回収、削除される。
++     ワイヤ上のメッセージ — すべての `…Request` と `…Response`、`Containerd.AnyMessage`、`Containerd.Timestamp`、`Containerd.Empty` — は protobuf のフィールド番号を持つ通常のケースクラスなので、デーモンとの間で往復でき、locomotion の `Protobuf` で直接エンコードおよびデコードできる。
+
+% 2 1 0 0ffab6790af95b8918f4e9455cb9ce2f
+
+% 3 1 0 0a19010e24e2e41c16e7f854dd0cd5d2
+
+% 4 1 0 0bf276fb6e2e30de05f847d2bfcc6f5e
+
+% 5 1 0 13a16cd2dad51a94019490109bd30275
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 1 1 0 062360b94dd462cb18e2d0c3dddc770e
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 1cafa3eb26255ce818f922681a0eba16
+
+% 0 1 0 02ad3b79beeee9251139290757a93b36
+
+% 0 1 0 052e0e03775ac6510a5dd8f18896626c
+
+% 0 1 0 0006ec91f9ffa945004b84531182b7f4
+
+% 1 1 0 0b39c08175e88e6c0587a6aa23242f26
+
+@ 0 1 0 1c948d45ba03373419b271c209842386
++     このライブラリは三つのソースセットを持つ。
+
+@ 0 12 0 1c6887135cbb405012c3bcdd2ce8493c
++     - `embarcadero.oci` — `Oci.Image`、`Oci.Layer`、`Oci`、`Oci.Descriptor`、`Oci.Index`、`Oci.RootFs`、`Oci.History`、`Oci.ContainerConfig`、`Oci.WasmConfig`、`Oci.WasmComponent`、そしてメモリ上の `Data` をイメージとして開くための `Oci.Image.dataOpenable`。JVM、Scala.js、Scala Native 向けにコンパイルできるので、イメージをブラウザや Wasm のゲストの中で組み立てられる。tar のレイヤーには bitumen を、gzip には pneumatic を、SHA-256 には gastronomy を、JSON ドキュメントには jacinta を使う。
++     - JVM 上の `embarcadero.oci` には、さらに `ImageOpenable` と given の `imagePathOpenable` がある。これらは bitumen のディスクに基づく tar リーダーを通じて、ファイルシステムの*パス*をイメージとして開く。
++     - `embarcadero.containerd` — JVM のみ。`Containerd`、`Workload`、`Launch` と `Signalling` のモード、`Containerd.ProcessStatus`、`Containerd.Event`、そして protobuf のメッセージ型。obligatory の gRPC と telekinesis の HTTP/2 の上に構築されている。
+
+@ 0 12 0 19892a76141cc3a01296aabab0d80257
++     containerd の protobuf のレコード — `Containerd.Container`、`Containerd.Mount`、`Containerd.Timestamp`、そしてサービスのリクエストと応答 — は `Containerd` の中に入れ子になっているので、`soundness` アンブレラの中で他のライブラリの名前と競合しない。
++     ライブラリ自身が必要とする given（`providers.javaBaseProvider`、`alphabets.hexLowerCase`、`formatting.compactJsonFormatting`、`codepages.utf8Codepage`）はライブラリの内部でインポートされているので、プログラムは自分のコードが使うものだけをインポートすればよい。
++     openable（`Oci.Image.dataOpenable`、`Workload.openable`）はそれぞれのコンパニオンにあり、インポートなしに解決される。一方 `imagePathOpenable` はトップレベルの given であり、`import soundness.*` を通じて得られる。
++     containerd の呼び出しには `Monitor`（`supervise` から得る）と、`Grpc.Error`、`Http2.Error`、`Async.Error`、`Protobuf.Error` の戦術が必要である。
++     また、行う変更ごとに `Containerd.Event` をログに記録するので、`logging.silentLogging` のような `Containerd.Event is Loggable` がスコープになければならない。
+
+% 0 1 0 0490cf8d2727c7050094a7ba6c30936b
+
+% 0 1 0 09639245015c51c50a41c965d903265d
+
+% 0 1 0 00d8eac03c61b681139a65d99dd3477f
+
+% 0 1 0 0a4da9bc24c8f3fc0f176dbac56f7945
+
+% 0 1 0 0192febf0ce3d3af1fac730802ea7421
+
+@ 0 1 0 0176759bc7b54e431673be2bbd679610
++ entry .Oci   汎用的な名前を持つ OCI のドキュメント型のための名前空間：`Oci.Manifest`、`Oci.Config`、`Oci.Error`
+
+% 1 1 0 04a3a8e1a40485cd1bdfb39deddff402
+
+@ 0 4 0 11b64da70bae70e103fb5450af913579
++       自然な名前が `soundness` アンブレラにとって汎用的すぎる OCI の型を保持するオブジェクトである。
++       `Manifest` は revolution の JAR の `Manifest` と衝突し、`Config` と `Error` は誰もが使う名前である。
++       `.Manifest` はイメージのマニフェストのドキュメント、`.Config` は構成の blob の二つの形のユニオン、`.Error` はアーカイブの読み取りが発生させるものである。
+
+% 0 1 0 088dc7f93685e8660823a2b2f48e0184
+
+@ 0 7 0 1f54745335149b531693c3a623c10525
++   entry .Config   イメージの構成の blob がとりうる二つの形：`Image.Config | WasmConfig`
++       型エイリアスである。
++       二つはワイヤ上では構成の記述子のメディアタイプ（`application/vnd.oci.image.config.v1+json` または `application/vnd.wasm.config.v0+json`）で区別される。構成の blob より上のもの — マニフェスト、インデックス、イメージレイアウト — はすべて共通である。
++       `Image#config` と `Image.Handle#config` はこの型を持ち、`Image.Config` と `WasmConfig` に対する `match` で二つを分けられる。
++   entry .Manifest   OCI のイメージマニフェスト：構成の blob の記述子と、順序づけられたレイヤーの記述子
+
+% 1 1 0 12d904391ab1f60a04f2748cb820af99
+
+@ 0 12 0 192112be67f1afcc0a0e35682e06897b
++         イメージを一つにまとめるドキュメント（メディアタイプ `application/vnd.oci.image.manifest.v1+json`）である。
++         `#config` は構成の blob の `Descriptor` であり、`#layers` は最下層から順に並べた各レイヤーの `Descriptor` である。そのため、読み手はすべての blob をダイジェストで取得し検証できる。
++         `#schemaVersion` は常に `2` である。
++         `Image.apply` と `Image.wasm` はこれを構築し、`Image.Handle#manifest` はダイジェストを検証したうえでこれを読み戻す。
++         jacinta を通じて JSON としてエンコードおよびデコードされる。
++     entry #schemaVersion   マニフェストのスキーマのバージョン：常に `2`
++     entry #mediaType   マニフェスト自身のメディアタイプ、`application/vnd.oci.image.manifest.v1+json`
++     entry #config   構成の blob の記述子。そのメディアタイプがどちらの `Oci.Config` の形かを示す
++     entry #layers   レイヤーの記述子。順序どおりに並ぶ
++     entry #annotations   自由形式の `Map[Text, Text]` のアノテーション。なければ `Unset`
++   entry .Error   OCI アーカイブを読み取れないときに発生する：欠けているドキュメント、不正なダイジェスト、サポートされていない形
+
+% 1 1 0 0e3071b59db0943a1acdedaf46e2a3a4
+
+@ 0 9 0 1ac3b0f750d6705109ad297740ac2eaf
++         エラー `↯/s.113.1`：_the OCI image archive could not be read because `reason`_。
++         `Image.Handle` のメソッドと openable が、何が問題だったかを示す `.Reason` とともに発生させる。
++         理由は次のとおりである。
++         `MissingLayout`（`oci-layout` マーカーがない）、`UnsupportedLayout (version)`（`1.` で始まらないレイアウトのバージョン）、`MissingIndex`（`index.json` がない）、`MissingBlob(digest)`、`DigestMismatch(expected, actual)`（バイトのハッシュが参照に使われるダイジェストと一致しない blob）、`InvalidBlob(digest, detail)`（パースできないドキュメント、またはサイズが記述子と一致しない blob）、`UnsupportedDigest(algorithm)`（`sha256:` で始まらないダイジェスト）、`NoManifest`（マニフェストを一つも挙げていないインデックス）、`WriteUnsupported`（`Write` で開かれたアーカイブ）。
+
+% 2 1 0 0866dd9c3d2ccb04111558883c0090f9
+
+% 3 1 0 190060cdedad3e111fd169c5b05b49ba
+
+% 4 1 0 1f6d828dbc18198e00ada24e2cb6a09f
+
+% 0 1 0 1dd298955d4e2ceb027bdd5a9b966933
+
+% 0 1 0 061b55ca23689ab11295341426055949
+
+% 1 1 0 06a4eaf4a90b3b940a3d77225c65675a
+
+@ 0 4 0 15044d01e9cc6457099bf68a76f43269
++         `safely` のもとではどの失敗も `Unset` になる。
++         `capture[Oci.Error]` はエラーを保持するので、その `#reason` でマッチできる。
++     entry .Reason   アーカイブを読み取れなかった理由。case ごとに番号を持つ enum である
++         番号はエラーのサブコードである。
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 4 0 0f05ca2e342788f71a13a5a1ab147c4e
++         column  case
++         column  コード
++         column  メッセージ
++         column  備考
+
+% 0 1 0 1951932a4ad9c01611caa66f10a277ba
+
+% 0 1 0 0f4326aad06ccdc80288d30c44d140ce
+
+% 0 1 0 1226833b2e74aded18f1c49d4c3b5b73
+
+% 0 1 0 10e79b0e7e81b082010b1750443abfcc
+
+% 0 1 0 1479512aeb01fa560c2db1d0563e851f
+
+% 0 1 0 17b46c472367a40c12d3e184fe89bcac
+
+% 0 1 0 073d37805d92cd180e1a7125d0883703
+
+% 0 1 0 01c311ecd944a61a09932cdc2d70b8a1
+
+% 0 1 0 184271708448b9a816c5e66845d3a5bb
+
+% 1 1 0 0e138df173eee27b1d2f4dfca51b642e
+
+@ 0 2 0 07c121e1acbb5a2c1fdd1539f1a20b4f
++     entry .communicable   各理由を、_the blob `digest` is not present in the archive_ のようなメッセージとして描画する
++     entry #reason   失敗の原因となった `Oci.Error.Reason`
+
+@ 0 1 0 05cfe3e86c3eba9d066e11e9edecab94
++   entry .Image   メモリ上で組み立てられる OCI イメージまたは Wasm アーティファクト：レイヤー、構成、マニフェスト、インデックス
+
+% 1 1 0 1657bc3d03d15cf504208ed3eaa50b4a
+
+@ 0 10 0 1dd6a66d2c80b07a12585e11be102820
++         `Image` は、ダイジェストの整合した OCI イメージの完全な内容である。
++         その `#layers`、`#config` ドキュメントとそれを描画した `#configBytes`、構成と各レイヤーを `Descriptor` で示す `#manifest`、そしてマニフェストを示す単一の項目を持つ `#index` からなる。
++         これらはすべてイメージを構築するときに計算されるので、ダイジェストとサイズは構成上正しく、`#archive` はそれを、ランタイムがインポートする OCI のイメージレイアウトの tar として描画する。
++         コンパニオンはイメージを二通りの方法で構築する。
++         ファイルシステムのレイヤーと `ContainerConfig` から作る `.apply` と、コンパイルされた Wasm のコンポーネントから作る `.wasm` である。
++         イメージを読み戻すのは、スコープつきの*オープン*である。
++         `.Handle` は、`data.open[Image]()`（`.dataOpenable` を通じて）または `path.open[Image]()`（`imagePathOpenable` を通じて。JVM のみ）がブロックの間だけ与えるものである。
+
+@ 0 2 0 04c8603c07611a4a123c9ea5751e4611
++         各部分は決まった順序で組み合わされ、それぞれが一つ前のもののダイジェストで参照される。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 16cede69352400150dd4304837c21f23
++           label レイヤー：圧縮され、二度ハッシュされる tar
+
+% 1 1 0 06d91dfff17af1f4194c069feadc91c4
+
+% 2 1 0 01acacccda5361690f7ec0bbd8134f44
+
+% 3 1 0 031765814b1749130b6623f4f0377f0e
+
+% 4 1 0 05de4216a57643ea0b4223fa8d1f0cc1
+
+% 6 1 0 0549678df5e4f3e61b729b02222dbc61
+
+% 7 1 0 1d1f898118f930da0d4191a1e570415e
+
+% 8 1 0 0dae90998ee66bf109ccb2fba7f64a22
+
+% 9 1 0 1ab7ce1050f59a32115e6446ae9e4518
+
+% 10 1 0 0852fb6a3c9aa7e311afa485f0b096ef
+
+% 11 1 0 066677b32b2b24d8051bcce807186efc
+
+% 12 1 0 11c245eb141af90701d1ebdea00301b8
+
+% 13 1 0 1ab7d2428d8db61f16849144097da383
+
+% 15 1 0 1bbf075266a96f1418ebb6a5618bc783
+
+% 0 1 0 1572256d505c08381a328428965906bd
+
+% 0 1 0 1e2d51b2d7cccea41fe2d63579dd5a2e
+
+% 1 1 0 00cef885ff728260132fc627d5e49096
+
+@ 0 1 0 1bedba59b3d35799012225d2c8eda2b4
++           label 構成：プラットフォーム、rootfs の diff_ids、そして何を実行するか
+
+% 1 1 0 09657241527f6dc818c7cdb1b7296bf9
+
+% 2 1 0 056bb7bb90b7d2d308986525196d8f63
+
+% 3 1 0 1c3a8caa5e2b598617cf44cd1cf6db92
+
+% 4 1 0 02f7fa5c1fda190d095a4d08fc520699
+
+% 6 1 0 0ad57ffb4051234f1bc7991f696087d4
+
+% 7 1 0 188e3a77280491e9081744f4a1d01b7d
+
+% 8 1 0 1a6b4d3f017987d812d9f3ff40a56398
+
+% 9 1 0 1ca6f7f18462415b0d1698b0f614c7ba
+
+% 10 1 0 137313d3bc0703ef019716a5e3147ed2
+
+% 11 1 0 126f0f09a12ca3ba1fbee6701a2dd9b2
+
+% 12 1 0 14b925767fa9aca10d5e862466372e39
+
+% 13 1 0 08f00c8cf68ac1e016658ede75befe38
+
+% 15 1 0 1fcd8e897d9c253e1225e4caa45890f9
+
+% 16 1 0 0013b5d1010e74c711aa0d54d3ee1227
+
+% 0 1 0 0bbdd87d1a959aa50b62d925631570a6
+
+% 0 1 0 0b5265514ea735e40df67e467c18cfd2
+
+% 1 1 0 069bf483d40a3d140cebfe0de85a0514
+
+@ 0 1 0 0733bd22e94e351f11c8a5506e3449e0
++           label マニフェスト：記述子で示した構成と各レイヤー
+
+% 1 1 0 0738a13daa8821731baed3077bae9c78
+
+% 2 1 0 1b064df4be23a9f90dc7edcd24be2df3
+
+% 3 1 0 00d177739d91e6120b7254d8d5fa1e11
+
+% 4 1 0 0681528403206202190c54a88d870cd6
+
+% 6 1 0 014035661c18efd51e8cdd8ed8477d56
+
+% 7 1 0 1353a3e159a5fc6e03acb7a3b0a2c61e
+
+% 8 1 0 17a75d887f1d6f1e0cba51ee8d0257ab
+
+% 9 1 0 02cf4aeac0658033167d5aa2620dd4ae
+
+% 10 1 0 00042ef735e2207b1344aeeb7de90da0
+
+% 11 1 0 03e4a18dfc387321010731c808738d88
+
+% 12 1 0 09ce8c8906f295cd04e58902afbd5fc4
+
+% 13 1 0 0b172ab9cfc7d9201f3c7461a2e092ac
+
+% 15 1 0 026c207416de29f805a345794aa0c06a
+
+% 16 1 0 08bb9a8661e1d7a31f592e33441fe61f
+
+% 0 1 0 00f92eb709314ebd11e508cabc02fd95
+
+% 0 1 0 1d2695ba78cc68a1108b8d917aad2c9e
+
+% 0 1 0 0cd06872569d72f80867158f6afc9de6
+
+% 1 1 0 1956deb3b0cfb7b31c206441d58538d6
+
+@ 0 1 0 1e0ecb2a8fb804830f2b30205a8124e8
++           label インデックスとアーカイブ：oci-layout の tar として書き出される一つのマニフェスト
+
+% 1 1 0 141c2efa9a4977b7177855f45cda31c9
+
+% 2 1 0 0959fe9c7aa9470610c7a9ffcc782d11
+
+% 3 1 0 1a54aa4e3b1641a3157d1889e936fcbb
+
+% 4 1 0 15c5256de301023013c16453c051bbe8
+
+% 6 1 0 03ffdbb5df882404054c62fbc07efabf
+
+% 7 1 0 09e630466e4ac3cd158ac8aafd7a0f20
+
+% 8 1 0 0554dbbb5e4eef7706dd70be2b20fbef
+
+% 9 1 0 19bd0a85720507541ea2f7de38b064a1
+
+% 10 1 0 0e2fd4cc0a4f1bc008ac782f96918053
+
+% 11 1 0 0ff580184f243f880d70bb82ccb77b9f
+
+% 12 1 0 16795e6443f6542b1577e3f2a210b2d0
+
+% 13 1 0 1307fb544726a96c1564f0fd23acc529
+
+% 15 1 0 11d7a44a20d54dc21a50887fca1715ee
+
+% 16 1 0 1c8e4829cf7163bb129c11758945c6ae
+
+% 0 1 0 1b8130be71fce41508cec7f6d6c087cb
+
+% 0 1 0 13a3f82e06b9a23e1f9e6cd5c5bf73f6
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 3 0 1c7fb4e15e2668a51adbb2f4fbab2f23
++         `Image` は自分自身のケイパビリティを持たない単なるケースクラスなので、どこでも — JVM でも、Scala.js でも、Scala Native でも — 構築でき、アーカイブをファイルに書き出したり、レジストリにプッシュしたり、デーモンにインポートしたりするコードに渡せる。
+
+% 1 1 0 0ce7db8819895a5017db61f8fcc6f803
+
+% 0 1 0 0dc81157b419b908183107a22621fe19
+
+% 0 1 0 1be3d6d953a591401f0057c746d80200
+
+% 1 1 0 05b7e3b8dac598f80b3de452e76d7515
+
+@ 0 9 0 173caf5f5bf3d6ab0da0239b6fc184b9
++     entry .apply   ファイルシステムのレイヤーと、省略可能な実行時の構成からイメージを組み立てる
++         `Image(layers, config, architecture, os, annotations)` は `Image.Config` を構築する（`architecture` のデフォルトは `amd64`、`os` のデフォルトは `linux`。`rootfs` はレイヤーの `diffId` を順に並べたもの。`config` は `ContainerConfig` があればそれ）。
++         そしてそれを構成の blob のための簡潔な JSON として描画し、メディアタイプ `application/vnd.oci.image.config.v1+json` で記述子を作り、それとレイヤーの記述子を `Oci.Manifest`（`annotations` があればそれを持つ）に包み、そのマニフェストを単一の項目を持つ `Index` から示す。
++         何も発生しない。
++         すべてのダイジェストは、すでにメモリ上にあるバイトから計算される。
+
+% 2 1 0 192ac50c6545a40f0f738925e946637c
+
+% 3 1 0 1ed552b2abc4a97c04ab2f2524962c16
+
+% 4 1 0 105d9e1c0663684804530e712ded28e7
+
+% 5 1 0 0cdb42351a1a8ba8121f834efa712552
+
+% 7 1 0 1be820c8aab9f77d15286dfd2cff1bab
+
+% 0 1 0 19309df07c9a48760ecc65633f4a7810
+
+% 0 1 0 0a5d541a119db55113eab837060e8d70
+
+% 0 1 0 12c1d3db893d9cb4066508ccc67eb6b4
+
+% 0 1 0 0fa6f6f6412d42a40be2fe473479b004
+
+% 0 1 0 12c95f5fd6602a42160189f4887568d6
+
+% 0 1 0 1d157ecce996767204ad3ee210c98f62
+
+% 0 1 0 132cbf8741492b0f180bbbd053f62f85
+
+% 1 1 0 14a23a7370fb9eb80602f5d36cba0e7b
+
+@ 0 12 0 15936c70d28ecde9134f54f7e8172f5d
++     entry .wasm   Wasm OCI Artifact を組み立てる：Wasm の構成のもとにある、非圧縮の `application/wasm` のレイヤー一つ
++         `Image.wasm(component, exports, imports, target, architecture, os, annotations)` は、Wasm OCI Artifact のレイアウトが WebAssembly のワークロードに対して定める形である。
++         唯一のレイヤーは `Layer.blob(component, media"application/wasm")` であり、そのまま格納されるので、その `diffId` と `digest` は一致する。
++         構成の blob は `WasmConfig`（メディアタイプ `application/vnd.wasm.config.v0+json`）であり、その `architecture` は `wasm`、`os` は WASI の世代（デフォルトは `wasip2`）を示し、`layerDigests` はコンポーネントの blob を示し、`component` は `exports`、`imports`、省略可能な `target` のワールドを `WasmComponent` として記録する。
++         マニフェスト、インデックス、アーカイブは通常の OCI のものなので、同じレジストリとツールがこれを扱える。
++         ランタイムは二つのメディアタイプでディスパッチし、rootfs を `runc` に渡す代わりに、コンポーネントを（`io.containerd.wasmtime.v1` のようなシムを通じて）Wasm エンジンに渡す。
+
+% 2 1 0 041d187d468ff0b61b01e5fbac042d44
+
+% 3 1 0 04bc7cca778c7f0a184f04a49b042306
+
+% 0 1 0 1103fc419464cd6b076dbb435b43b567
+
+% 0 1 0 0ac92672543b8caf09d740404614594a
+
+% 0 1 0 0b87afa74cd6ae9b1313c54e402189fa
+
+% 0 1 0 0fb9fd561c633b97132d583ab89bec1e
+
+% 0 1 0 1adfe4776f2a19801f1623c5e6004c0b
+
+% 0 1 0 10f9b70d8a2bb66c1bedff40bfa8dade
+
+% 0 1 0 12202a87c27879ce1e2ee4b0210de2d0
+
+% 0 1 0 1c7c6f307fb801ff07f1ca4aec16dd1f
+
+% 0 1 0 07ac5aa7e88381de1d22ca5ec33770f0
+
+% 1 1 0 1da22cb94abf57671a9c775a0e3de176
+
+@ 0 12 0 1d65146496d753901c0b46d9c8421c9d
++         インターフェースは通常、手で書くのではなく、コンポーネントがリンクされた WIT のワールドから読み取る。
++         xenophile の `WitDialect.worlds(wit)(name)` は、その `exports` と `imports` をそのまま渡せるワールドを与える。
++         anthology の OCI の境界と、リポジトリ自身の Wasm のエンドツーエンドのパッケージャー（`tests/wasm/packager`）は、こうして wasmtime と `wasmtime serve` のもとで実行するアーティファクトを構築している。
++         バイトは決してパースされない。
++         任意のペイロードも、本物のコンポーネントとまったく同じようにパッケージされる。
++     entry .dataOpenable   `data.open[Image]()` の背後にある given：メモリ上のバイトを OCI アーカイブとして開く
++         コンパニオンにある given なので、インポートなしに解決される。
++         `Image.DataOpenable` を提供し、スコープに `Tactic[Oci.Error]`、`Tactic[Tar.Error]`、`Tactic[Truncation.Error]` を必要とし、それらをキャプチャする。
++         ファイルシステムの*パス*を開くのは、JVM のソースセットにある `imagePathOpenable` である。
++     entry .Config   OCI のイメージ構成のドキュメント：プラットフォーム、rootfs の diff_id の連鎖、実行の構成、履歴
+
+% 1 1 0 07101a94b1a4b36e0ce140fccc67529c
+
+@ 0 18 0 00365b2cb4f65f7a12bc06c0e4583e43
++           ファイルシステムのイメージの構成の blob（メディアタイプ `application/vnd.oci.image.config.v1+json`）であり、`Image.apply` がこれを書き、`Image.Handle#imageConfig` がこれを読み戻す。
++           対象の `#architecture` と `#os`、`diff_ids` が非圧縮のレイヤーのダイジェストを順に並べたものである `#rootfs`、省略可能な `#config`（何を実行するかを示す `ContainerConfig`）、ビルドの `#history`、そして `#created` の時刻と `#author` を記録する。
++           その JSON のエンコードとデコードは jacinta を通じて導出され、メンバー名はワイヤ上の名前なので、`created` は `created` として描画される。
++           `WasmConfig` とともに `Oci.Config` を構成する。これは、どの種類のアーティファクトを開いたかわからない読み手が `Image.Handle#config` から得るユニオンである。
++       entry #architecture   イメージが対象とする CPU アーキテクチャ。`amd64` や `arm64` など
++       entry #os   イメージが対象とするオペレーティングシステム。`linux` など
++       entry #rootfs   `RootFs`：非圧縮のレイヤーの、順序づけられた `diff_id`
++       entry #config   イメージの実行方法を示す `ContainerConfig`。なければ `Unset`
++       entry #history   各レイヤーがどのように作られたか。レイヤーまたは空の変更ごとに一つの `History`。なければ `Unset`
++       entry #created   イメージがビルドされた時刻。RFC 3339 のテキスト。なければ `Unset`
++       entry #author   イメージをビルドした者。なければ `Unset`
++     entry .Handle   開かれた OCI アーカイブのスコープつきのビュー：そのインデックス、マニフェスト、構成、blob
+
+% 1 1 0 1d18e09e8c3f098a19a6bf9653bc9cb2
+
+@ 0 7 0 19b162c34785ab2314b477fdf5bbbc86
++           `data.open[Image]()` または `path.open[Image]()` がそのブロックの間だけ与えるケイパビリティである。
++           排他的なケイパビリティなので、格納したり返したりはできない。
++           アーカイブの項目は一度だけ読まれ、名前で索引づけられてハンドルの存続期間中保持されるので、最初の後の参照はすべてマップへのアクセスになる。
++           `Image#archive` が書くアーカイブは blob より前に `index.json` を置くので、メタデータへの経路は安価である。
++           どのメソッドも `Tactic[Oci.Error]` を受け取り、欠けている、または読み取れないドキュメントや blob に対しては `Oci.Error` を発生させる。
+
+% 2 1 0 1b5dd8e537de2c9203e097b2f27a4be5
+
+% 3 1 0 17ac8efbbde007c4037ee80a9597482f
+
+% 0 1 0 03214a9eeeaf913115b5b1a17c3cf419
+
+% 1 1 0 0811e1d0a2536a3f09623ed6f34491d1
+
+% 0 1 0 114bf96af995acef184dba6d57783a0c
+
+% 0 1 0 0600cc5e1978ad7110528ed2bfec5b8e
+
+% 2 1 0 09ded996cfb39ee4099c258583d78fef
+
+% 0 1 0 0bfa1edbae4e14310220ed2d7793cc6e
+
+% 0 1 0 1ef464b856c54c240fb7beeaa56fb57d
+
+% 0 1 0 0fca7052a4b9f10301093f21ed9727d2
+
+% 0 1 0 0ae155623cb882270df1c96d7f8b00eb
+
+% 1 1 0 0d07a17d353e001a07ecb7397885ae55
+
+@ 0 5 0 149cc10445d965c70a81b5b3bd68ab49
++           レイヤーへの到達方法は三つあり、それによってコストが明示される。
++           `#compressed` は格納されたバイトをそのままストリームし、`#layer` はそれをストリームとして展開し、`#verified` はそれを集めてダイジェストとサイズを記述子と照合する。
++           ファイルシステムのイメージと Wasm アーティファクトのどちらを持っているかわからない読み手は `#config` を求める。
++           これは構成の記述子のメディアタイプでディスパッチする。
+
+@ 0 2 0 0943256377c91763054b4eaed3ca010e
++           書き込みのためのオープンは拒否される。
++           `archive.open[Image](Write)` は `WriteUnsupported` とともに `Oci.Error` を発生させる。
+
+% 0 1 0 0fea82ef3e30f4991ff0ea1d0166a253
+
+@ 0 30 0 1a623f36bd6bc8dd0bd4153caee3e0e2
++       entry #blob   `sha256:…` のダイジェストで示す blob。格納されたチャンクのストリームとして、検証せずに返す
++           `blobs/sha256/<hex>` にある、格納された生のバイト（レイヤーなら gzip で圧縮された tar）を `Stream[Data] over Credit` として返す。
++           アルゴリズムが `sha256` でないダイジェストに対しては `UnsupportedDigest` とともに、アーカイブにその blob がないときは `MissingBlob` とともに `Oci.Error` を発生させる。
++           何も検査しない。
++           検査つきの読み取りは `#verified` である。
++       entry #index   `oci-layout` マーカーを検査した後にデコードした、トップレベルの `index.json`
++           `oci-layout` ドキュメントを読み、その `imageLayoutVersion` が `1.` で始まることを要求し、それから `index.json` を `Index` としてデコードする。
++           `MissingLayout`、`UnsupportedLayout`、`MissingIndex`、またはパースできないドキュメントに対しては `InvalidBlob` とともに `Oci.Error` を発生させる。
++       entry #manifest   インデックスの最初のマニフェスト、または記述子が選ぶマニフェスト。ダイジェストを検証する
++           `handle.manifest` は `#index` の最初の記述子をとる（なければ `NoManifest` とともに `Oci.Error` を発生させる）。
++           `handle.manifest(descriptor)` は選んだものをとる。
++           マニフェストの blob は `#verified` を通じて読まれるので、壊れたマニフェストはデコードされるのではなく `DigestMismatch` として報告され、その後 `Oci.Manifest` としてデコードされる。
++       entry #imageConfig   マニフェストのデコードされた `Image.Config`。デフォルトでは最初のマニフェストのもの
++           `handle.imageConfig` または `handle.imageConfig(manifest)` であり、マニフェストの構成の blob を検証して `Image.Config` としてデコードしたものである。
++           Wasm アーティファクトでは blob は `WasmConfig` であり、ここでのデコードは `InvalidBlob` で失敗する。
++           種類がわからないときは `#config` を使う。
++       entry #wasmConfig   マニフェストのデコードされた `WasmConfig`。デフォルトでは最初のマニフェストのもの
++           `handle.wasmConfig` または `handle.wasmConfig(manifest)` であり、マニフェストの構成の blob を検証して `WasmConfig` としてデコードしたものである。
++       entry #config   メディアタイプが示す形での構成の blob：`Image.Config` または `WasmConfig`
++           `handle.config` または `handle.config(manifest)` は `Oci.Config` を返す。
++           構成の記述子のメディアタイプが `application/vnd.wasm.config.v0+json` なら blob を `WasmConfig` として、そうでなければ `Image.Config` としてデコードする。
++           これは、rootfs を展開するかコンポーネントをインスタンス化するかを決めるランタイムの入口である。
+
+% 2 1 0 1700ce0c8b0208ac1c342f93cb505f9a
+
+% 3 1 0 1403afa5683a14c601ce8859aa4d9123
+
+% 1 1 0 1a5597492304bdb01fa6efdb17963222
+
+% 0 1 0 093f435666a93d4c0f09869f5c3fc014
+
+% 2 1 0 15e9901cce3340611b3d687d26c1bec1
+
+% 0 1 0 13c5224ee9a2385e05655f06f0de8f21
+
+% 0 1 0 181909ec6ed6069219ccba7040b3d62e
+
+% 0 1 0 14096428eb9b445f11ccb6f74207614b
+
+% 1 1 0 118a4af32b82530715c33c0595c904ed
+
+@ 0 15 0 0e73c0f25951cdd90d7547c0072cf2bc
++       entry #compressed   格納されたままのレイヤーの blob：OCI のレイヤーなら gzip で圧縮された tar
++           記述子のダイジェストによる `#blob` を `Stream[Data] over Credit` として返す。
++           あるアーカイブから別のアーカイブへレイヤーをコピーする最も安価な方法である。
++       entry #layer   非圧縮の tar のバイトストリームとしてのレイヤーの内容
++           記述子のメディアタイプが `+gzip` の接尾辞を持つときは `#compressed` を gzip のデコーダーに通してストリームし、そうでなければそのままストリームする。
++           そのため、Wasm アーティファクトの `application/wasm` のレイヤーは、コンポーネント自身のバイトとして返ってくる。
++           ストリームはダイジェストと照合されない。
++           照合するには、まずストリームを読み尽くさなければならないからである。
++       entry #verified   先行して集め、記述子のダイジェストとサイズに照らして検査した blob
++           blob 全体を `Data` に読み込み、その SHA-256 を計算して記述子の `digest` と比較し、異なれば `DigestMismatch(expected, actual)` とともに `Oci.Error` を発生させる。
++           また、その長さを記述子の `size` と比較し、異なれば `InvalidBlob` を発生させる。
++           オプトインの検査つきの経路であり、`#manifest`、`#imageConfig`、`#wasmConfig` がデコードするドキュメントのために使う。
++     entry .DataOpenable   メモリ上の `Data` を読み取り専用の OCI アーカイブとして開く `Openable`
+
+% 1 1 0 1c7148b96974b49708ac5cbfadd287d1
+
+@ 0 34 0 18aef5794671efc617c5be4411bd1cdd
++           `Image.dataOpenable` が提供するクラスであり、結果の型が正確に示されるよう、匿名ではなく名前を持つ。
++           `Data`（`Self`）を `Image`（`Form`）として、フラグなし（`Operand = Nothing`）で開き、ブロックに `Image.Handle`（`Result`）を与える。
++           `Tactic[Oci.Error]`、`Tactic[Tar.Error]`、`Tactic[Truncation.Error]` を必要とする。
++           `Write` を含むモードは `Oci.Error`（`WriteUnsupported`）で拒否される。
++           アーカイブは読み取るものであり、書き出すのは `Image#archive` だけである。
++       entry #Self   `Data`：開かれるもの
++       entry #Form   `Image`：開かれるときの形
++       entry #Operand   `Nothing`：オープンのフラグはない
++       entry #Result   `Image.Handle`：ブロックが受け取るもの
++       entry #open   バイトを tar として読み、その項目に対する `Image.Handle` を構築し、ブロックを実行する
++     entry #layers   イメージのレイヤー。最下層から順に並ぶ
++     entry #config   構成のドキュメント：ファイルシステムのイメージなら `Image.Config`、Wasm アーティファクトなら `WasmConfig`
++         `Oci.Config` のユニオンである。
++         `#imageConfig` と `#wasmConfig` は、`match` なしにこれを絞り込む。
++     entry #configBytes   描画された構成の blob：簡潔な JSON。構成のダイジェストを計算する対象のバイト
++     entry #configDescriptor   マニフェストが参照する、構成の blob の記述子
++     entry #manifest   構成と各レイヤーを記述子で示す `Oci.Manifest`
++     entry #manifestBytes   描画されたマニフェストの blob：簡潔な JSON
++     entry #manifestDescriptor   インデックスが参照する、マニフェストの blob の記述子
++     entry #index   マニフェストを示す、単一の項目を持つ `Index`
++     entry #indexBytes   描画された `index.json` ドキュメント：簡潔な JSON
++     entry #imageConfig   `Image.Config` としての構成。Wasm アーティファクトなら `Unset`
++     entry #wasmConfig   `WasmConfig` としての構成。ファイルシステムのイメージなら `Unset`
++     entry #blobs   すべての blob を `(digest, bytes)` の組として：構成、各レイヤー、そしてマニフェスト
++         `#archive` が `blobs/sha256/` の下に書き出す内容であり、それぞれの正規の `sha256:<hex>` ダイジェストをキーとする。
++     entry #archive   OCI のイメージレイアウトの tar としてのイメージ：`oci-layout`、`index.json`、`blobs/sha256/…`
++         `oci-layout` マーカー（`{"imageLayoutVersion":"1.0.0"}`）、`index.json`、そして `#blobs` の項目ごとに十六進のダイジェストを名前とするファイルを一つずつ保持する `Tarfile` である。
++         各ファイルのモードは `UnixMode()`、所有者とグループは `0`、mtime は `0` なので、アーカイブは再現可能である。
++         `image.archive.source[Data]` でバイトとして読み、ファイルに書き出す。
++         その結果は `docker load`、`ctr images import`、`podman load`、`skopeo copy oci-archive:…` が受け付けるものであり、`data.open[Image]()` が読み戻すものである。
++   entry .Index   OCI のイメージインデックス：一つ以上のマニフェストの記述子を挙げるトップレベルの `index.json`
+
+% 1 1 0 1775d19ddef7465b009711761b65f5ee
+
+@ 0 10 0 0f59134fa7a5feab142120be38cde198
++         イメージレイアウトの根にあるドキュメント（メディアタイプ `application/vnd.oci.image.index.v1+json`）であり、その `#manifests` はアーカイブが保持するマニフェストの `Descriptor` である。
++         `Image.apply` と `Image.wasm` は単一の項目を持つインデックスを書き出し、`Image.Handle#index` はそれを読み戻し、`Image.Handle#manifest` はデフォルトでその最初の項目をとる。
++         jacinta を通じて JSON としてエンコードおよびデコードされる。
++     entry #schemaVersion   インデックスのスキーマのバージョン：常に `2`
++     entry #mediaType   インデックス自身のメディアタイプ、`application/vnd.oci.image.index.v1+json`
++     entry #manifests   マニフェストの記述子。順序どおりに並ぶ
++     entry #annotations   自由形式の `Map[Text, Text]` のアノテーション。なければ `Unset`
++   entry .Layer   イメージのレイヤー一つと、その二つのダイジェスト：生の内容の `diffId` と、格納された blob の `digest`
+
+% 1 1 0 1e1deea0dcf1e3d707631408e5b60ec0
+
+@ 0 6 0 015a48a75dd0eeec075fb67e11973245
++         レイヤーは二つの異なるダイジェストを持ち、OCI の形式はその両方が正しいことに依存する。
++         `#diffId` は*非圧縮の*内容の SHA-256 であり、イメージ構成の `rootfs.diff_ids` に記録される。
++         `#digest` は*格納された*ままの blob の SHA-256 であり、マニフェストのレイヤーの記述子に `size` とともに記録される。
++         ファイルシステムのレイヤーでは二つは異なる。格納の際に tar が gzip で圧縮されるからである。
++         blob のレイヤーでは二つは一致する。
++         どちらも内容から遅延して、一度だけ計算される。
+
+% 2 1 0 1630598e3efd3a7908a0ab6914efeaf7
+
+% 3 1 0 11f277f9b03cb4620e504519be165e34
+
+% 4 1 0 05cb30c4d8d5ac1409e26e80deb5b5df
+
+% 5 1 0 125c052e8ebc35900adb2e41781f5e03
+
+% 7 1 0 17677bb426e838ed17dd4dc5aa4aa23e
+
+% 0 1 0 0bad94727ac0f0de0cbe0a1e2391a3dd
+
+% 0 1 0 15aa8e0b5107e26b1bf6200a3afce4a5
+
+% 0 1 0 047328e2ab763d5c1e849e57d3ba753e
+
+% 0 1 0 1b3587c8824887d803bc3cba97070693
+
+% 1 1 0 045465aa5fc4de400e6468149ace1fba
+
+@ 0 3 0 00408627fe85cfc30eb9567cd85904df
++         `Layer` は公開のコンストラクターを持たない。
++         `.apply` は `Tarfile` からファイルシステムのレイヤーを作り、`.blob` は任意のメディアタイプの単一の blob のレイヤーを作る。
++         内容は最初に使われるまで名前渡しで保持され、そのときにメモ化される。
+
+% 1 1 0 03af95f5f003c25804451759318b8d9b
+
+% 1 1 0 07db32f81c7a6d5b1fbd9cd20d3ecfd4
+
+@ 0 14 0 11357ca5acbcbdd31fbc11954da18803
++     entry .apply   gzip で圧縮して格納される、`Tarfile` から作るファイルシステムのレイヤー
++         `Layer(tar)` は tar のバイトを生の内容として読み、それを gzip で圧縮して格納する blob とし、記述子を `application/vnd.oci.image.layer.v1.tar+gzip` と型付けする。
++         ダイジェストまたは blob が初めて求められるまで、何も読まれない。
++     entry .blob   内容が一つの不透明な blob であり、それ自身のメディアタイプでそのまま格納されるレイヤー
++         `Layer.blob(data, mediaType)` は、Wasm OCI Artifact が `application/wasm` のコンポーネントに使う形である。
++         圧縮しないので、`#diffId` と `#digest` は同じ値であり、記述子の `size` はデータの長さである。
++     entry #raw   非圧縮の内容：tar のバイト、または blob そのもの
++     entry #blob   格納されたままの内容：gzip で圧縮された tar、または blob そのもの
++     entry #diffId   イメージ構成の `rootfs.diff_ids` が記録する、`#raw` の `sha256:<hex>`
++     entry #digest   マニフェストのレイヤーの記述子が記録する、`#blob` の `sha256:<hex>`
++     entry #descriptor   レイヤーの `Descriptor`：メディアタイプ、`#digest`、そして格納された blob のサイズ
++   entry .Descriptor   OCI のコンテンツ記述子：blob を指す、メディアタイプ、`sha256:…` のダイジェスト、サイズ
+
+% 1 1 0 08b9638e0ce9988f0efba4b99d10ddf0
+
+@ 0 8 0 0e1ea9734ca4edfa0a744143696afee2
++         すべての OCI ドキュメントが blob を示すために使う、型付きでダイジェストで参照するポインターである。
++         マニフェストの `config` と `layers`、インデックスの `manifests` がこれにあたる。
++         `#digest` は格納されたままの（レイヤーなら圧縮された）blob の `sha256:<lowercase hex>` であり、`#size` はそのバイト長なので、読み手は blob を取得して両方を検査できる。
++         `Layer#descriptor` はレイヤーの記述子を作り、`Image#configDescriptor` と `Image#manifestDescriptor` はドキュメントの記述子を作る。
++         マルチアーキテクチャのインデックスのための仕様の `platform` メンバーは、まだモデル化されていない。
++         これは OCI の JSON の記述子であり、containerd の protobuf の記述子は `Containerd.ContentDescriptor` である。
+
+% 1 1 0 01b180c71cddf2ac19ddbb5d8e1159e3
+
+% 0 1 0 0c119ea8191f5d1b09cd8daba1917dea
+
+@ 0 6 0 04a4f03bb55aad95116e7fdd7a649c9c
++     entry #mediaType   blob のメディアタイプ。`application/vnd.oci.image.layer.v1.tar+gzip` など
++     entry #digest   格納された blob の `sha256:<hex>` ダイジェスト
++     entry #size   格納された blob のバイト長
++     entry #annotations   自由形式の `Map[Text, Text]` のアノテーション。なければ `Unset`
++     entry #urls   blob を取得できる URL。なければ `Unset`
++   entry .History   イメージ構成の `history` の項目一つ：レイヤー、または空の変更がどのように作られたか
+
+% 1 1 0 0fa84a2f3b8403481321ed7d649c07fc
+
+@ 0 9 0 0c4b46e711c0425b017fb5e27814d109
++         `Image.Config#history` のレコードであり、レイヤーまたは空の変更ごとに一つずつ、順に並ぶ。
++         どのフィールドも省略可能で、設定されていなければ JSON から省かれる。
++         メンバー名はワイヤ上の名前なので、`created_by` と `empty_layer` はアンダースコアを保つ。
++     entry #created   変更が行われた時刻。RFC 3339 のテキスト。なければ `Unset`
++     entry #created_by   レイヤーを作ったコマンド。なければ `Unset`
++     entry #author   変更を行った者。なければ `Unset`
++     entry #comment   自由形式の注記。なければ `Unset`
++     entry #empty_layer   その項目がファイルシステムのレイヤーを作らなかったときは `true`。なければ `Unset`
++   entry .RootFs   イメージ構成の `rootfs`：非圧縮のレイヤーの、順序づけられた `diff_id`
+
+% 1 1 0 1b5f8ea2c44a5d670ceef8132a393b5a
+
+@ 0 7 0 10ee05788d83164a1f923dedf2160745
++         `RootFs(type, diff_ids)` であり、`type` は常に `layers`、`diff_ids` は各レイヤーの `Layer#diffId` を最下層から順に挙げる。
++         `Image.apply` はレイヤーからこれを構築する。
++         読み手は、展開したレイヤーの非圧縮の tar を対応する項目と照合する。
++         メンバー名はワイヤ上の名前である。
++     entry #type   rootfs の種類：常に `layers`
++     entry #diff_ids   レイヤーの `diffId`。順序どおりに並ぶ
++   entry .ContainerConfig   イメージの実行パラメーター：ユーザー、環境、エントリポイント、コマンド、作業ディレクトリ、ラベル
+
+% 1 1 0 15eefe80451dec5216c9f49e3cd7e2fa
+
+@ 0 4 0 0834c8a5dad85cda00a3439dbb971dbb
++         `Image.Config` の `config` メンバーであり、ランタイムがイメージのファイルシステムで何をするかを示す。
++         メンバー名は、Docker のイメージ仕様から受け継いだワイヤ形式に合わせて大文字で始まり（`Cmd`、`Env`、`WorkingDir`）、どのフィールドも省略可能で、設定されていなければ JSON から省かれる。
+
+% 2 1 0 1716216ef57683b21c17f2abf72d5923
+
+% 3 1 0 04efd04b264e14430d19f776e899df1d
+
+% 0 1 0 0b0d179b32f442f415e4ec4742325adb
+
+% 0 1 0 0829d7b3d875e5821ce60cfe09db7ed4
+
+% 0 1 0 0d844c8e50e015c51944074f5c8891b6
+
+% 0 1 0 1e9d5134b21dda901276bdb20262ceaa
+
+% 0 1 0 0b94fd899ee332a00c1d1e0305d3615b
+
+% 0 1 0 0f94875a6fd9a1711bc1aeecf39b9749
+
+% 0 1 0 0e1c4cce7a92d59b1dfc80fcf3d15b5a
+
+% 1 1 0 0018ca18e1ccc9d71abd01b926786783
+
+% 1 1 0 005d891d433d49b01b712f034ae1b94f
+
+@ 0 8 0 16a89684e151248a0244c24d8a078eb1
++     entry #User   実行するユーザー（および省略可能なグループ）。なければ `Unset`
++     entry #Env   `NAME=value` の項目としての環境変数。なければ `Unset`
++     entry #Entrypoint   実行ファイルとその固定の引数。なければ `Unset`
++     entry #Cmd   デフォルトの引数。`Entrypoint` に付け加えられるか、単独で実行される。なければ `Unset`
++     entry #WorkingDir   プロセスが開始する作業ディレクトリ。なければ `Unset`
++     entry #Labels   自由形式の `Map[Text, Text]` のラベル。なければ `Unset`
++     entry #StopSignal   コンテナーを停止するシグナル。`SIGTERM` など。なければ `Unset`
++   entry .WasmConfig   Wasm アーティファクトの構成のドキュメント：WASI の世代、コンポーネントの blob のダイジェスト、そのインターフェース
+
+% 1 1 0 1ec35df3b9b6930b0b5cb936b422e366
+
+@ 0 10 0 03a9f2ac488cf7ad1d65e24810eb04ea
++         Wasm OCI Artifact の構成の blob（メディアタイプ `application/vnd.wasm.config.v0+json`）である。
++         `Image.Config` があるべき場所に置かれるが、ファイルシステムではなくコンポーネントを記述する。
++         積み重ねるレイヤーがないので `rootfs` はなく、`#layerDigests` が単一の `application/wasm` の blob を直接示し、`#component` がそれに必要なインターフェースを述べる。
++         `#architecture` は `wasm` であり、`#os` は WASI の世代（`wasip1`、`wasip2`、`wasip3`）を示す。
++         ランタイムはこの二つのフィールドでディスパッチして、そもそも Wasm のワークロードであることを認識する。
++         `Image.wasm` がこれを構築し、`Image#wasmConfig` と `Image.Handle#wasmConfig` がこれを返し、これは `Oci.Config` の一方の枝である。
++         JSON は仕様のキャメルケースの `layerDigests` キーを使い、`created` と `author` は設定されていなければ省く。
+
+% 1 1 0 1647ad586a77d11000e2affe75c5f112
+
+% 0 1 0 03b40c42b2e7d85504ceae990c01c960
+
+@ 0 7 0 11160a31d384e4f7037844025d57ec14
++     entry #created   アーティファクトがビルドされた時刻。RFC 3339 のテキスト。なければ `Unset`
++     entry #author   アーティファクトをビルドした者。なければ `Unset`
++     entry #architecture   常に `wasm`
++     entry #os   WASI の世代：`wasip1`、`wasip2`（デフォルト）、または `wasip3`
++     entry #layerDigests   アーティファクトのレイヤーのダイジェスト：唯一の `application/wasm` の blob
++     entry #component   エクスポート、インポート、対象のワールドを示す `WasmComponent`。なければ `Unset`
++   entry .WasmComponent   Wasm アーティファクトの構成の `component` メンバー：エクスポートおよびインポートするインターフェースと、対象のワールド
+
+% 1 1 0 1a15447eb7c326de0274dbe120f61b64
+
+@ 0 8 0 1ac6245b156068481d4d2bc976e38fa8
++         Wasm OCI Artifact が、そのコンポーネントがどの Component Model の契約に合わせてビルドされたかについて述べるものである。
++         `#exports` は提供するインターフェース（`wasi:http/incoming-handler@0.2.0`）、`#imports` は必要とするケイパビリティ（`wasi:io/streams@0.2.0`）、`#target` は適合する標準のワールド（`wasi:http/proxy@0.2.0`）があればそれである。
++         Wasm OCI Artifact のレイアウトは `wasip2` のアーティファクトにこのメンバーを要求し、ホストはこれによって、コンポーネントを取得する前にそのワークロードを満たせるかどうかを判断できる。
++         `Image.wasm` は、通常はコンポーネントがリンクされた WIT のワールドから読み取った `exports`、`imports`、`target` のパラメーターからこれを構築する。
+
+% 1 1 0 1d845ace6791ff4710a7ca81e1a9975a
+
+@ 0 3 0 0fdfff5744ba63e8034ace70d7047ade
++     entry #exports   コンポーネントがエクスポートするインターフェース。`namespace:package/interface@version` の名前で示す
++     entry #imports   コンポーネントがインポートするインターフェース
++     entry #target   コンポーネントが対象とする標準のワールド。なければ `Unset`
+
+@ 0 1 0 080d19a92cacc1f90e73c2d681343003
++ entry .ImageOpenable   ファイルシステムのパスを読み取り専用の OCI アーカイブとして開く `Openable`
+
+% 1 1 0 1254c3ea865d3b9a1dd37cb1434043cc
+
+@ 0 7 0 012c3d83e779c8921906f6297218ae7d
++       bitumen の `TarOpenable` を通じてディスクから tar を読むので、JVM のソースセットにある。
++       `ImageOpenable[path]` は、`Abstractable across Paths to Text` である任意の `path`（`Self`）を `Image`（`Form`）として、フラグなし（`Operand = Nothing`）で開き、ブロックに `Oci.Image.Handle`（`Result`）を与える。
++       `Tactic[Oci.Error]`、`Tactic[Tar.Error]`、`Tactic[Truncation.Error]` を必要とし、`Write` を含むモードは `Oci.Error`（`WriteUnsupported`）で拒否する。
++       given の `imagePathOpenable` がこれを提供するので、プログラムはクラスを名指しせずに `path.open[Oci.Image]()` と書く。
+
+% 0 1 0 02a89a74042fd71e1543c2c219686117
+
+@ 0 5 0 11f51cb6a693524303820b44b8795636
++   entry #Self   開かれるパスの型
++   entry #Form   `Image`：開かれるときの形
++   entry #Operand   `Nothing`：オープンのフラグはない
++   entry #Result   `Image.Handle`：ブロックが受け取るもの
++   entry #open   パスを tar として開き、その項目に対する `Image.Handle` を構築し、ブロックを実行する
+
+@ 0 6 0 1e2b55fd8ef4b85214ebc066ed7828e1
++ entry .imagePathOpenable   JVM における `path.open[Image]()` の背後にある given：アーカイブファイルをイメージとして開く
++     JVM のソースセットにあるトップレベルの given であり、アンブレラのインポートでスコープに入るよう `soundness.*` を通じてエクスポートされる。
++     `Abstractable across Paths to Text` である任意のパスの型に対して `ImageOpenable[path]` を提供し、必要とする `Tactic[Oci.Error]`、`Tactic[Tar.Error]`、`Tactic[Truncation.Error]` をキャプチャする。
++     ハンドルはブロックの間だけ存続する。
+
+% 2 1 0 0d4461fea2846f7c1e2bff67488f91ac
+
+% 3 1 0 091090db2b0e8ae314179d1aa1ced2a6
+
+% 4 1 0 1516b2c974f19c0615149a5e6d29b93d
+
+% 5 1 0 1f84181074cd251000676290e2fd624e
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 0 1 0 0808cee7fdc1c9c400d9b60d971a1c63
+
+% 0 1 0 1e70cc9ee6135a6816289077923f9521
+
+% 0 1 0 1f646a2facc3ea2a13b24279e9f9f73a
+
+% 1 1 0 1f12e59163ac2f7d0d41c82a8bcb891c
+
+@ 0 1 0 1e9fdf3c14c23f601758a7f04cd4b728
++ entry .Containerd   接続された containerd クライアント：メソッドごとに一回の gRPC 呼び出し。名前空間に結びつけられる
+
+% 1 1 0 0c910962783027cc04c3a8d4c536b23a
+
+@ 0 7 0 040ae7ce9a0efe131c2da53f0c6a4ebf
++       `Containerd(endpoint, namespace)` は `Http2.Endpoint` — 通常は平文の HTTP/2 を運ぶ `/run/containerd/containerd.sock` のような Unix ソケット — を通じて containerd のデーモンに接続し、すべての呼び出しを一つの containerd の名前空間に結びつける。名前空間は必須の `containerd-namespace` ヘッダーとして送られる。
++       接続はバックグラウンドのデーモンを動かすので、クライアントは `supervise` のスコープ内で作らなければならない。また、クライアントは周囲の `Monitor` を保持する `#channel` を保持する。
++       そのため `Containerd` はそれ自体がケイパビリティであり、型を明示する箇所では `Containerd^` と書く。
+
+@ 0 10 0 05d63d8e2dd535f20ac65abb5c12b26b
++       各メソッドは、共有されたチャンネル上の一回の単項 gRPC 呼び出しであり、`containerd` コンポーネントの型付きのメッセージのレコードをやりとりする。
++       `#version`、コンテナーサービスの `#containers`、`#container`、`#createContainer`、`#deleteContainer`、名前空間の `#namespaces`、`#createNamespace`、`#deleteNamespace`、イメージの `#images`、`#image`、`#deleteImage`、そしてコンテナー内で実行されるタスクのための `#createTask`、`#startTask`、`#killTask`、`#waitTask`、`#deleteTask`、`#task`、`#tasks` である。
++       どの呼び出しも `Monitor` と、`Grpc.Error`（デーモンからのゼロでない gRPC ステータス）、`Http2.Error`、`Async.Error`、`Protobuf.Error` の戦術を必要とする。
++       デーモンを変更する呼び出しはそれぞれ `info` で `Containerd.Event` をログに記録するので、`Containerd.Event is Loggable` がスコープになければならない。
+
+% 2 1 0 0339880d2191775f1f455a4392dbb8cd
+
+% 3 1 0 026f94dddac7d13e03297270ac26b25d
+
+% 4 1 0 10fa98f8afb6144600d3236cf8a12914
+
+% 5 1 0 1896beaee7a7a2d305fa8a719a2ee636
+
+% 6 1 0 0a375629e4fc79110b4e113fff948eba
+
+% 7 1 0 1a7fd89b78fcb69a1da3b2204de01f41
+
+% 8 1 0 052e2943fd5964fe189623fefecda702
+
+% 9 1 0 1c678c10074b838a0a10cc1e725047c4
+
+% 10 1 0 024ef867edddbd0902ce70fa52c95498
+
+% 12 1 0 03f656f1810b9acb14d934ca7278d9f7
+
+% 13 1 0 079bb36d3d0652171e453c26df587910
+
+% 0 1 0 0a9baafc5ea05ff2050c3fa85f509ff1
+
+% 0 1 0 0655208f0e1d1a7b1c9f451366394332
+
+% 0 1 0 1332df82a8308784196ea35b0ef6aadf
+
+% 0 1 0 1da1aef7ce6e7d540cd0a4f15c97a93a
+
+% 0 1 0 1029b8c568f79cf60166729a8529298a
+
+% 0 1 0 0e5fedcbb84bf2fd1f8eb895030b3377
+
+% 0 1 0 0d35e0450e9cccc805e5a7055fdfa48e
+
+% 0 1 0 1564062b72cfc73d033567d138137b71
+
+% 0 1 0 1bbdde5f787cdc950bb27133df043e15
+
+% 0 1 0 10969cabe1c296441f5ee39dc66fb5d3
+
+% 0 1 0 05ae4a686152df6b0dc98799c27c3c62
+
+% 1 1 0 15c3e61530a3604508e234181662267b
+
+@ 0 4 0 186e57c458f297f812e64422e7549380
++       コンテナーは定義であり、*タスク*はその実行中のインスタンスである。
++       タスクはコンテナーからそのルートファイルシステムの `Mount` とともに作られ、開始、シグナル送信、待機、削除の順に扱われる（containerd は回収していないタスクの削除を拒否する）。
++       `Workload` の openable は、スコープに対してこの一連の手順を行い、どの終了経路でも後始末をする。
+
+% 0 1 0 0db791d9a166ff000ada6c6325d4cb9e
+
+% 0 1 0 1c03c192532fd14002374cd82b8e7bb9
+
+% 0 1 0 0a8e15508c22531c14beaf52327a4588
+
+@ 0 69 0 1b211585e002d60f1a510bb17c646f07
++   entry .apply   containerd のエンドポイントに接続し、すべての呼び出しを名前空間に結びつける
++       `Containerd(endpoint, namespace)` は、任意の `Connectable` かつ `Showable` なエンドポイントの型に対する `Http2.Endpoint` と名前空間の名前を受け取り、デフォルトのメタデータに `containerd-namespace: <namespace>` を持つ `Grpc.Channel` を開き、クライアントを返す。
++       `Monitor` と `Probate`（`supervise` と `probates` の given から得る）、そして `Async.Error` と `Socket.Error` の戦術を必要とする。後者はソケットに接続できないときに発生する。
++       結果はモニターをキャプチャする。
++   entry #channel   すべての呼び出しが行われる `Grpc.Channel`。デフォルトのメタデータに名前空間を持つ
++   entry #version   デーモンのバージョンとビルドのリビジョン。`VersionResponse` として返す
++       `Empty` のリクエストによる `containerd.services.version.v1.Version` の呼び出しである。
++   entry #containers   結びつけられた名前空間にあるコンテナー。containerd のフィルターで絞り込める
++       `client.containers()` または `client.containers(filters)` であり、コンテナーサービスの `List` 呼び出しである。
++       フィルターは `labels."tier"==db` のような containerd のフィルター式である。
++       空のリストはすべてを返す。
++   entry #createContainer   コンテナーを登録し、デーモンが格納したとおりに返す
++       コンテナーサービスの `Create` 呼び出しである。
++       `Container` の `spec` は OCI のランタイム仕様を `AnyMessage` として持ち、そのまま渡される。その `runtime` はランタイムのプラグイン（`io.containerd.runc.v2`）を示す。
++       `Containerd.Event.ContainerCreated` をログに記録する。
++   entry #container   id で示す一つのコンテナー。`Container` として返す
++       コンテナーサービスの `Get` 呼び出しである。
++       デーモンが持たないコンテナーは `Grpc.Error` になる。
++   entry #deleteContainer   id で示すコンテナーを削除する
++       コンテナーサービスの `Delete` 呼び出しである。
++       `Containerd.Event.ContainerDeleted` をログに記録する。
++       動作中のタスクを持つコンテナーは削除できないので、先にタスクを削除する。
++   entry #namespaces   デーモン上の名前空間。フィルターで絞り込める
++       `client.namespaces()` または `client.namespaces(filter)` であり、名前空間サービスの `List` 呼び出しである。これ自体は結びつけられた名前空間に限定されない。
++   entry #createNamespace   名前空間を作り、格納されたとおりに返す
++       名前とラベルを持つ `Namespace` による、名前空間サービスの `Create` 呼び出しである。
++   entry #deleteNamespace   名前で示す名前空間を削除する
++       名前空間サービスの `Delete` 呼び出しである。
++   entry #images   結びつけられた名前空間にあるイメージ。フィルターで絞り込める。`ImageRecord` として返す
++       `client.images()` または `client.images(filters)` であり、イメージサービスの `List` 呼び出しである。
++       `ImageRecord` はデーモンのメタデータ — 名前、ラベル、マニフェストの `ContentDescriptor` — であり、イメージの内容ではない。
++       コンテンツストアはこのクライアントに含まれないので、イメージは `Oci.Image#archive` から `ctr images import` で読み込む。
++   entry #image   参照で示す一つのイメージ。`ImageRecord` として返す
++       `docker.io/library/alpine:latest` のような参照による、イメージサービスの `Get` 呼び出しである。
++   entry #deleteImage   参照で示すイメージを削除する。その内容が回収されるのを待つこともできる
++       `client.deleteImage(name)` または `client.deleteImage(name, sync = true)` であり、イメージサービスの `Delete` 呼び出しである。
++       `sync` を指定すると、呼び出しはガベージコレクションの後でのみ戻る。
++       `Containerd.Event.ImageDeleted` をログに記録する。
++   entry #createTask   コンテナーのタスクをルートファイルシステムのマウントとともに作り、タスクの pid を返す
++       `client.createTask(containerId, rootfs, options)` であり、タスクサービスの `Create` 呼び出しである。
++       `rootfs` はルートファイルシステムの `Mount`（通常は展開したスナップショットのオーバーレイ）であり、`options` はランタイムのオプションの `AnyMessage` で、デフォルトでは空である。
++       結果は、コンテナーの id と、まだ開始していない新しいタスクのホスト上の pid からなる `CreateTaskResponse` である。
++       `Containerd.Event.TaskCreated` をログに記録する。
++   entry #startTask   作られたタスクを開始し、そのホスト上の pid を返す
++       `client.startTask(containerId)`、または exec プロセスに対する `client.startTask(containerId, execId)` であり、タスクサービスの `Start` 呼び出しである。
++       `Containerd.Event.TaskStarted` をログに記録する。
++   entry #killTask   タスク、またはそのコンテナー内のすべてのプロセスにシグナルを送る
++       `client.killTask(containerId, signal, execId, all)` であり、タスクサービスの `Kill` 呼び出しである。シグナルは番号（`SIGTERM` なら `15`、`SIGKILL` なら `9`）で示す。
++       `all` はコンテナー内のすべてのプロセスを対象にする。
++       `Containerd.Event.TaskKilled` をログに記録する。
++   entry #waitTask   タスクの終了を待ち、その終了ステータスと時刻を返す
++       `client.waitTask(containerId)` または `client.waitTask(containerId, execId)` であり、タスクサービスの `Wait` 呼び出しである。プロセスが終了するまでブロックし、`WaitResponse` を返す。
++       開始したタスクは、削除する前に待機しなければならない。
++   entry #deleteTask   タスクを削除し、その最終的な終了ステータスを返す
++       `client.deleteTask(containerId)` または `client.deleteTask(containerId, execId)` であり、タスクサービスの `Delete` 呼び出しで、`DeleteTaskResponse` を返す。
++       `Containerd.Event.TaskDeleted` をログに記録する。
++   entry #task   一つのタスクの状態。`Workload` として返す
++       `client.task(containerId)` または `client.task(containerId, execId)` であり、タスクサービスの `Get` 呼び出しである。
++       `Workload#state` は `ProcessStatus` である。
++   entry #tasks   デーモンが知っているすべてのタスク。フィルターで絞り込める
++       `client.tasks()` または `client.tasks(filter)` であり、タスクサービスの `List` 呼び出しである。
+
+@ 0 1 0 1c4ff770151d60da038c87513fafe988
++   entry .ProcessStatus   タスクのプロセスの状態：`Unknown`、`Created`、`Running`、`Stopped`、`Paused`、または `Pausing`
+
+% 1 1 0 0e5d06ba76369f020f5853a9a430e6e0
+
+@ 0 5 0 1627534bbc370a6a18a496adfcb309ab
++         containerd のプロセスの状態であり、`Workload` の中で数値の `#code` として運ばれる protobuf の enum である。
++         `Unknown`（0）、`Created`（1）、`Running`（2）、`Stopped`（3）、`Paused`（4）、`Pausing`（5）がある。
++         `Workload#state` と `Workload.Handle` の `state()` はコードをこれらのいずれかにデコードし、`Workload(…, status = ProcessStatus.Running.code)` はその逆を行う。
+
+% 1 1 0 0c8ad4471fe4e6980a3177b6e5e19594
+
+@ 0 2 0 066a735af92df5890cf56eb52a629ea5
++     entry .of   コードに対応する状態。enum が知らない番号なら `Unset`
++     entry #code   containerd がワイヤ上で送る数値
+
+@ 0 1 0 01a50289fecf2542143e396308227ed3
++   entry .Event   containerd クライアントがデーモンを変更する際にログに記録するもの
+
+% 1 1 0 06f967b7b96f7dd31557a58153856788
+
+@ 0 8 0 11a610394f1a6b330d690d5176c75d4c
++         `Containerd` がデーモンに加える変更はすべて `info` でログに記録される。
++         `ContainerCreated(id)`、`ContainerDeleted(id)`、`ImageDeleted(name)`、`TaskCreated(container)`、`TaskStarted(container, pid)`、`TaskKilled(container, signal)`、`TaskDeleted(container)` である。
++         `ImageDeleted` 以外はすべて `Log.Process` のタグを持ち、`ImageDeleted` は `Log.Resource` のタグを持つ。
++         読み取り（`containers`、`version`、`task`、…）は何もログに記録しない。
++         クライアントのすべてのメソッドに対して `Containerd.Event is Loggable` がスコープになければならない。
++         `logging.silentLogging` はそれらを破棄する。
++     entry .communicable   各イベントを、_started the task for container `web` as PID `4321`_ のようなメッセージとして描画する
+
+@ 0 1 0 0c1b1b2d4ed36eef1bd8ff82aa1f1796
++   entry .AnyMessage   protobuf の `google.protobuf.Any`：型 URL を持つシリアライズされたメッセージ。そのまま渡される
+
+% 1 1 0 13fa78cf349ad5fe01de39ea1cb3bd2e
+
+@ 0 5 0 14fd5f7cf6612cc90f06e4fe25702a1c
++         containerd は不透明なペイロード — コンテナーの OCI ランタイム仕様、ランタイムのオプション、タスクのオプション — を `Any` メッセージとして運ぶ。このクライアントはそれを構築も解釈もしない。
++         `#typeUrl` はメッセージの型を示し、`#value` はそのシリアライズされたバイトを `AnyMessage.Payload` として保持する。
++         `scala.Any` と区別するために `AnyMessage` と名づけている。
++         メッセージが `AnyMessage` を受け取る箇所では、空の `AnyMessage()` がデフォルトである。
+
+% 2 1 0 1a11343bec7a0a2411aa9b832ccd6725
+
+% 3 1 0 16a85729c0c63afb053aa180b33eb046
+
+% 4 1 0 02777697cae4dddf1aa8be82c6b5223b
+
+% 0 1 0 11511f39fac0521310279696b1356e4b
+
+% 0 1 0 1ac43f34df33d78312e1dc9d867319d6
+
+% 0 1 0 18a0dac7e1966489196c2f09cf40502c
+
+% 1 1 0 1fce13a474dd5a401aab61adae00d45b
+
+@ 0 1 0 08b4eff539a493a509b785fec508f90d
++     entry .Payload   `AnyMessage` のシリアライズされたバイト。不透明で不変なバイト配列として保持する
+
+% 1 1 0 0194eaf5758a760e163cc93b54f18be3
+
+@ 0 11 0 0adb4bd0885e98a2071e5a2e25fc9855
++           素の `Data` のフィールドではなく、凍結済みのバイト配列に対する不透明型である。
++           そのため、protobuf の導出はこれを単純でキャプチャを持たない値とみなせる。
++           `Payload(data)` は `Data` をラップし、`.empty` は長さゼロのペイロードであり、`AnyMessage` の `data` 拡張メソッドがそれを読み戻す。
++           ワイヤ上では長さで区切られたフィールドとしてエンコードされる。
++       entry .empty   長さゼロのペイロード。`AnyMessage` の `value` のデフォルト
++       entry .apply   `Data` をペイロードとしてラップする
++       entry .encodable   ペイロードを長さで区切られた protobuf のフィールドとしてエンコードする
++       entry .decodable   長さで区切られた protobuf のフィールドをペイロードとしてデコードする
++     entry .data   `payload.data`：`Data` としてのペイロードのバイト
++     entry #typeUrl   シリアライズされたメッセージの型を示す型 URL
++     entry #value   `AnyMessage.Payload` としての、シリアライズされたメッセージ
+
+@ 0 1 0 1d6cf7d3f508bdf11d1aa3ea490e3599
++   entry .Timestamp   protobuf の `google.protobuf.Timestamp`：Unix エポックからの秒とナノ秒
+
+% 1 1 0 1b77920a7b92f2d61b96ca06066bf6a3
+
+@ 0 8 0 134d41614d8ec27f058e6ab54037eb2f
++         containerd のレコードが持つタイムスタンプ（`Container#createdAt`、`Workload#exitedAt`、…）であり、整数の `#seconds` と端数の `#nanos` からなる。
++         aviation の `Timestamp` がその名前を保持しているので、これは `soundness` アンブレラにエクスポート**されない**。
++         `embarcadero.Timestamp` と書く。
++         anticipation の汎用的な時刻の抽象を通じて任意の時点の型と相互に変換できるので、二つのライブラリの間に依存関係がなくても aviation の `Instant` をミリ秒の精度で扱える。
++         汎用的な表現はエポックからのミリ秒なので、protobuf のミリ秒未満のナノ秒は運ばれない。
+
+% 2 1 0 1dd1374dc63b6afb10bc718d3dcf4e03
+
+% 3 1 0 041d717b6477a7080b0e5326b30e6913
+
+% 0 1 0 19940f9abf69810d1d45cc6b4014a99b
+
+% 0 1 0 1d3a81f1652a644b15f644acf7c4aa98
+
+% 0 1 0 0715040fc65625100180849da4cd6710
+
+% 0 1 0 0a34c47ac2bb4fee164d9ee14787ec59
+
+% 0 1 0 0d2ececd57f471aa01e3d03ff7930bf5
+
+% 0 1 0 0b6b79c1106a89db125b6a1205c3b53a
+
+% 1 1 0 08af6a62c48cefd013c448e61e029a69
+
+@ 0 4 0 0bf491ec3a894f180eed9e6ef0c1ac96
++     entry .of   `Abstractable across Instants to Long` である任意の時点の型から、ミリ秒の精度で作るタイムスタンプ
++     entry #seconds   Unix エポックからの整数の秒
++     entry #nanos   ナノ秒の端数。`0` から `999999999`。`.of` で作った場合は百万の倍数になる
++     entry #instant   `Instantiable across Instants from Long` である任意の時点の型としての、ミリ秒の精度のタイムスタンプ
+
+@ 0 1 0 0807f16dbee0f1e01153d2bcb1e098de
++   entry .Container   containerd のコンテナーのレコード：id、ラベル、イメージ、ランタイム、OCI 仕様、スナップショット、タイムスタンプ
+
+% 1 1 0 11c82f3a2fbd247b17eed51d1b0890ee
+
+@ 0 6 0 1b457b93a69856981dffc29ee8d9739a
++         コンテナーサービスのメタデータのレコードであり、デーモンとの間で往復できるよう protobuf のフィールド番号を保っている。
++         クライアントがモデル化していないフィールド（`extensions` のマップ）はデコードの際に読み飛ばされる。
++         必須なのは `#id` だけである。
++         `Container(t"web", image = t"docker.io/library/alpine:latest")` は、`Containerd#createContainer` で登録したり `Workload` として開いたりするための完全な定義である。
++         コンテナーはプロセスではなく定義であり、実行されるのはそのために作られたタスクである。
+
+% 0 1 0 0cbcf9ff8e4650ec127d1a2666135e93
+
+% 1 1 0 18d9242921d8190a06c6f3d0f1ab28aa
+
+@ 0 10 0 160ad81f9ff72c8a0952993e76712b96
++     entry #id   コンテナーの id。その名前空間の中で一意である
++     entry #labels   自由形式の `Map[Text, Text]` のラベル。containerd のフィルターでこれを選択できる
++     entry #image   コンテナーの作成元のイメージの参照
++     entry #runtime   `Runtime` の結びつけ：ランタイムのプラグインの名前とオプション
++     entry #spec   不透明な `AnyMessage` としての OCI ランタイム仕様
++     entry #snapshotter   コンテナーのルートファイルシステムを保持するスナップショッター
++     entry #snapshotKey   コンテナーのスナップショットのキー
++     entry #createdAt   デーモンがレコードを格納した時刻。`Timestamp` として示す
++     entry #updatedAt   レコードが最後に変更された時刻。`Timestamp` として示す
++     entry #sandbox   コンテナーが属するサンドボックス（あれば）
+
+@ 0 1 0 0af3390bd59d641f1daa045ff7e1f5d0
++   entry .ContentDescriptor   containerd の protobuf による blob の記述子：メディアタイプ、ダイジェスト、サイズ、アノテーション
+
+% 1 1 0 051623fa8943b30f1f8009bc133ba41e
+
+@ 0 4 0 066f3a1ec3531a70153213510d4730ce
++         `containerd.types.Descriptor` メッセージであり、`ImageRecord#target` はこれでマニフェストを指す。
++         ライブラリのもう一方の側で同じ意味を持つ OCI の JSON の `Oci.Descriptor` と区別するために `ContentDescriptor` と名づけている。
++         `platform` メンバーはモデル化されていない。
+
+% 1 1 0 00f5e17205f5403611c0b5609f83c3dd
+
+@ 0 4 0 110129439c3b3a110bde1a424f27d493
++     entry #mediaType   テキストとしての blob のメディアタイプ
++     entry #digest   blob の `sha256:<hex>` ダイジェスト
++     entry #size   blob のバイト長
++     entry #annotations   自由形式の `Map[Text, Text]` のアノテーション
+
+@ 0 1 0 1d9df66d310f2f14031693558edade22
++   entry .ImageRecord   containerd のイメージのレコード：内容を指す参照名と、ラベルとタイムスタンプ
+
+% 1 1 0 17a6efbe10a7a8070783c139447b06b5
+
+@ 0 5 0 15bda0f95b910cc210bcb0c9e6669d0c
++         `Containerd#images` と `Containerd#image` が返す、イメージサービスのメタデータのレコードである。
++         `#name` は参照（`docker.io/library/alpine:latest`）であり、`#target` はコンテンツストア内のマニフェストの `ContentDescriptor` である。
++         このライブラリが構築する OCI の `Oci.Image` と区別するために `ImageRecord` と名づけている。
++         このレコードはデーモンのインデックスの項目であり、内容ではない。
+
+% 1 1 0 1abd2390c85b7bb104e5034141dea95d
+
+@ 0 5 0 0c46a9b72e2df0431d8af7a68b5c389c
++     entry #name   イメージの参照
++     entry #labels   自由形式の `Map[Text, Text]` のラベル
++     entry #target   イメージのマニフェストの `ContentDescriptor`
++     entry #createdAt   デーモンがレコードを格納した時刻。`Timestamp` として示す
++     entry #updatedAt   レコードが最後に変更された時刻。`Timestamp` として示す
+
+@ 0 1 0 18ed60be08dc821c13bb2711875ec7d7
++   entry .Mount   タスクのルートファイルシステムにおけるマウント：種類とオプションを持ち、ソースをターゲットにマウントする
+
+% 1 1 0 146c10048862ddb7159e8a9da1f87a27
+
+@ 0 3 0 1c97f62ee0c6ffac0b51e4fd9c535ed0
++         `containerd.types.Mount` メッセージであり、`Containerd#createTask` にはタスクの `rootfs` として、`container.open[Workload](…)` にはそのフラグとして与える。
++         `#mountType` は proto の `type` である。
++         よくあるのは、展開したスナップショットのオーバーレイである。
+
+% 2 1 0 15e8e983a98bbde804ec0d34c37cd78a
+
+% 3 1 0 117f247dce220a5e0d0e0ed7eb41ca2d
+
+% 0 1 0 1b58183dfed5ab2e0fda5096d8b274f0
+
+% 0 1 0 05b5616e5cd8c35d02014891ea63d7c2
+
+% 1 1 0 00059d7b8fae86ac10305f2c721e636d
+
+@ 0 4 0 12bb7e8d12ea09f603ff666adc1ab27f
++     entry #mountType   ファイルシステムの種類。`overlay` や `bind` など
++     entry #source   マウントされるもの
++     entry #target   タスクのルートの中でマウントされる場所
++     entry #options   `key=value` の項目としてのマウントオプション
+
+@ 0 1 0 073cba3c365693020cf279967c17c58a
++   entry .Namespace   containerd の名前空間：コンテナー、イメージ、タスクを隔離するスコープ。ラベルを持つ
+
+% 1 1 0 1b7019c818bc3a13032c34909a35dc27
+
+@ 0 5 0 1f7790085e287a40019e7b2880a558c0
++         名前空間サービスのレコードであり、`#name`（`default`、`k8s.io`、`moby`）と自由形式の `#labels` を持つ。
++         `Containerd` クライアントは接続時に一つの名前空間に結びつけられる。
++         `Containerd#namespaces`、`#createNamespace`、`#deleteNamespace` が名前空間を管理する。
++     entry #name   名前空間の名前
++     entry #labels   自由形式の `Map[Text, Text]` のラベル
+
+@ 0 1 0 09262ca65113399a1b124a8c15169443
++   entry .Runtime   コンテナーのランタイムの結びつけ：ランタイムのプラグインの名前と、その不透明なオプション
+
+% 1 1 0 13474c75c23da47e1040412e595eb785
+
+@ 0 6 0 1648d678adb9f01505712d649b469885
++         `Container.Runtime` メッセージである。
++         `#name` はプラグイン（ファイルシステムのイメージなら `io.containerd.runc.v2`、wasmtime のシムのもとの Wasm アーティファクトなら `io.containerd.wasmtime.v1`）であり、`#options` はそのオプションの `AnyMessage` である。
++         この名前は `soundness` アンブレラに `Runtime` としてエクスポートされるので、他のライブラリはこの名前をエクスポートできない。
++     entry #name   ランタイムのプラグインの名前
++     entry #options   不透明な `AnyMessage` としての、プラグインのオプション
+
+@ 0 3 0 0894b19fd6f540e510b144fceeef2209
++   entry .Empty   protobuf の `google.protobuf.Empty`：フィールドを持たないメッセージ
++       `Containerd#version` のようなパラメーターのない呼び出しのリクエストであり、削除の呼び出しの応答である。
++       `Empty()` が唯一の値である。
+
+@ 0 1 0 0093fed7e167eae619086c20469649be
++   entry .VersionResponse   containerd の `Version` 呼び出しの応答：デーモンのバージョンと git のリビジョン
+
+% 1 1 0 1b433492e08c8f1b168df7dbe08f4a99
+
+@ 0 4 0 10866b64b8c595210a413e87d4659e64
++         `Containerd#version` が返すものである。
++         `#version` はセマンティックバージョン（`1.7.0`）であり、`#revision` はデーモンのビルド元の git のリビジョンである。
++     entry #version   デーモンのセマンティックバージョン
++     entry #revision   ビルド元の git のリビジョン
+
+@ 0 1 0 11508425372bf5301839741cba432d40
++   entry .CreateContainerRequest   コンテナーサービスの `Create` のリクエスト：登録するコンテナー
+
+% 1 1 0 04b7ec1a43957b7916b37a81aacf3b1a
+
+@ 0 9 0 025de93870c9d07a172a55f94b304ea7
++         `…Request` と `…Response` の型は、containerd の gRPC プロトコルをフィールドごとに写したものである。
++         それぞれは `Containerd` のメソッドが構築およびデコードする、protobuf のフィールド番号を持つケースクラスであり、プログラムが `Grpc.Channel` を通じて直接デーモンとやりとりしたり、`in[Protobuf]` でエンコードしたりできるようエクスポートされている。
++         コンテナーサービスについては、`CreateContainerRequest(container)` と `CreateContainerResponse(container)`、`GetContainerRequest(id)` と `GetContainerResponse(container)`、`ListContainersRequest(filters)` と `ListContainersResponse(containers)`、そして応答が `Empty` である `DeleteContainerRequest(id)` がある。
++     entry #container   登録する `Container`
+
+@ 0 2 0 017e30fe19b80b5f0467a72326d88a75
++   entry .CreateContainerResponse   コンテナーサービスの `Create` の応答：格納されたとおりのコンテナー
++     entry #container   格納された `Container`
+
+@ 0 2 0 075cb87f57529efd1301abdf6b484852
++   entry .GetContainerRequest   コンテナーサービスの `Get` のリクエスト：コンテナーの id
++     entry #id   取得するコンテナーの id
+
+@ 0 2 0 1e56163af049569b139b90442fe452cb
++   entry .GetContainerResponse   コンテナーサービスの `Get` の応答：コンテナー
++     entry #container   要求された `Container`
+
+@ 0 2 0 130b17fe944856a709246819403aa22e
++   entry .ListContainersRequest   コンテナーサービスの `List` のリクエスト：省略可能なフィルター式
++     entry #filters   `labels."tier"==db` のような containerd のフィルター式。すべてを得るなら空
+
+@ 0 2 0 1d84963f7e45e54b055c08c96468a1f0
++   entry .ListContainersResponse   コンテナーサービスの `List` の応答：一致するコンテナー
++     entry #containers   一致する `Container`。containerd の順序で並ぶ
+
+@ 0 2 0 1925a0e05a09fe6909165dfc491988c4
++   entry .DeleteContainerRequest   コンテナーサービスの `Delete` のリクエスト：コンテナーの id。応答は `Empty`
++     entry #id   削除するコンテナーの id
+
+@ 0 1 0 076276cf4ba4a4c2173d9839d5ca4ddd
++   entry .CreateNamespaceRequest   名前空間サービスの `Create` のリクエスト：作成する名前空間
+
+% 1 1 0 08fa52a3be22fd281770516deafc57f0
+
+@ 0 5 0 033a7c47926342e41148f7d0339e2a15
++         名前空間サービスのメッセージは、`CreateNamespaceRequest(namespace)` と `CreateNamespaceResponse(namespace)`、`ListNamespacesRequest(filter)` と `ListNamespacesResponse(namespaces)`、そして応答が `Empty` である `DeleteNamespaceRequest(name)` である。
++     entry #namespace   作成する `Namespace`
+
+@ 0 2 0 136b74838a0f0dfe1f4fd797c14a61ab
++   entry .CreateNamespaceResponse   名前空間サービスの `Create` の応答：格納されたとおりの名前空間
++     entry #namespace   格納された `Namespace`
+
+@ 0 2 0 08c3e64323d8a383106d765796467feb
++   entry .ListNamespacesRequest   名前空間サービスの `List` のリクエスト：省略可能なフィルター式
++     entry #filter   containerd のフィルター式。すべてを得るなら空
+
+@ 0 2 0 087194d7ffd96a440f0870c10f2a3f73
++   entry .ListNamespacesResponse   名前空間サービスの `List` の応答：一致する名前空間
++     entry #namespaces   一致する `Namespace`
+
+@ 0 2 0 10a492efe99ae70c09cf06119f289f20
++   entry .DeleteNamespaceRequest   名前空間サービスの `Delete` のリクエスト：名前空間の名前。応答は `Empty`
++     entry #name   削除する名前空間の名前
+
+@ 0 1 0 18645feaa6e72ad01572b4685ed74072
++   entry .GetImageRequest   イメージサービスの `Get` のリクエスト：イメージの参照
+
+% 1 1 0 1e8d4c7d9bbb2d67092be98c7f03fbe7
+
+@ 0 4 0 15bdb89286498e0c11cad98a3c83406c
++         イメージサービスのメッセージは、`GetImageRequest(name)` と `GetImageResponse(image)`、`ListImagesRequest(filters)` と `ListImagesResponse(images)`、そして応答が `Empty` である `DeleteImageRequest(name, sync)` である。
++     entry #name   取得するイメージの参照
+
+@ 0 2 0 004e81fcb89222cd15eb3d52f72c5b15
++   entry .GetImageResponse   イメージサービスの `Get` の応答：イメージのレコード
++     entry #image   要求された `ImageRecord`
+
+@ 0 2 0 17bc01d1545030d213e8112022641238
++   entry .ListImagesRequest   イメージサービスの `List` のリクエスト：省略可能なフィルター式
++     entry #filters   containerd のフィルター式。すべてを得るなら空
+
+@ 0 2 0 023fac4fe484c4ce113eac3a0e66bf11
++   entry .ListImagesResponse   イメージサービスの `List` の応答：一致するイメージのレコード
++     entry #images   一致する `ImageRecord`
+
+@ 0 3 0 0b472528df06f4ea05ac323c0eec08ce
++   entry .DeleteImageRequest   イメージサービスの `Delete` のリクエスト：イメージの参照と、待つかどうか。応答は `Empty`
++     entry #name   削除するイメージの参照
++     entry #sync   内容がガベージコレクションされた後でのみ戻るかどうか
+
+@ 0 1 0 01c1511e6c7032aa1d6db77f0efea639
++   entry .CreateTaskRequest   タスクサービスの `Create` のリクエスト：コンテナー、その rootfs のマウント、標準入出力、オプション
+
+% 1 1 0 1fc0a543eaa2505a03b15d1721b12b23
+
+@ 0 15 0 10691c2959807a86050cfbc04f35e96e
++         タスクサービスのメッセージは、`CreateTaskRequest` と `CreateTaskResponse(containerId, pid)`、`StartRequest(containerId, execId)` と `StartResponse(pid)`、応答が `Empty` である `KillRequest(containerId, execId, signal, all)`、`WaitRequest(containerId, execId)` と `WaitResponse(exitStatus, exitedAt)`、`DeleteTaskRequest(containerId, execId)` と `DeleteTaskResponse(id, pid, exitStatus, exitedAt)`、`GetTaskRequest(containerId, execId)` と `GetTaskResponse(process)`、そして `ListTasksRequest(filter)` と `ListTasksResponse(tasks)` である。
++         空の `execId` はコンテナーのメインのタスクを意味し、空でないものはその中の exec プロセスを示す。
++     entry #containerId   タスクを作成する対象のコンテナー
++     entry #rootfs   タスクのルートファイルシステムの `Mount`
++     entry #stdin   タスクの標準入力を読み取るパス。なければ空
++     entry #stdout   タスクの標準出力を書き出すパス。なければ空
++     entry #stderr   タスクの標準エラー出力を書き出すパス。なければ空
++     entry #terminal   タスクが疑似端末を得るかどうか
++     entry #options   不透明な `AnyMessage` としての、ランタイムのオプション
+
+@ 0 3 0 0141ed1342d8aa95130055b5a7a8dad5
++   entry .CreateTaskResponse   タスクサービスの `Create` の応答：コンテナーの id と、新しいタスクのホスト上の pid
++     entry #containerId   タスクが作成された対象のコンテナー
++     entry #pid   作成されたタスクのホスト上の pid
+
+@ 0 3 0 1e7b31a0bea5e3380c799f64de6ca6c0
++   entry .StartRequest   タスクサービスの `Start` のリクエスト：開始するタスク、または exec プロセス
++     entry #containerId   タスクを開始するコンテナー
++     entry #execId   開始する exec プロセス。メインのタスクなら空
+
+@ 0 2 0 1f356f55e4f769930b9291cec52d7f02
++   entry .StartResponse   タスクサービスの `Start` の応答：開始したプロセスのホスト上の pid
++     entry #pid   開始したプロセスのホスト上の pid
+
+@ 0 5 0 0c72f52eb0aa0c6c065ad2900760b9b0
++   entry .KillRequest   タスクサービスの `Kill` のリクエスト：タスク、exec プロセス、またはすべてのプロセスへのシグナル。応答は `Empty`
++     entry #containerId   タスクにシグナルを送るコンテナー
++     entry #execId   シグナルを送る exec プロセス。メインのタスクなら空
++     entry #signal   シグナルの番号。`SIGTERM` なら `15` など
++     entry #all   コンテナー内のすべてのプロセスにシグナルを送るかどうか
+
+@ 0 3 0 131b223b66c6180809fd44f1fcd0ff0c
++   entry .WaitRequest   タスクサービスの `Wait` のリクエスト：待機するタスク、または exec プロセス
++     entry #containerId   タスクを待機するコンテナー
++     entry #execId   待機する exec プロセス。メインのタスクなら空
+
+@ 0 3 0 07b567ecbf81699e1851431d8a7ec004
++   entry .WaitResponse   タスクサービスの `Wait` の応答：終了ステータスと終了時刻
++     entry #exitStatus   プロセスの終了ステータス
++     entry #exitedAt   終了した時刻。`Timestamp` として示す
+
+@ 0 3 0 1da37a4ab1487efc133e67852483bfe0
++   entry .DeleteTaskRequest   タスクサービスの `Delete` のリクエスト：削除するタスク、または exec プロセス
++     entry #containerId   タスクを削除するコンテナー
++     entry #execId   削除する exec プロセス。メインのタスクなら空
+
+@ 0 5 0 14a7f09453cffb691e5b90b8e2c275df
++   entry .DeleteTaskResponse   タスクサービスの `Delete` の応答：削除したプロセスの id、pid、終了ステータス、時刻
++     entry #id   削除したプロセスの exec id
++     entry #pid   そのホスト上の pid
++     entry #exitStatus   停止したときの終了ステータス
++     entry #exitedAt   終了した時刻。`Timestamp` として示す
+
+@ 0 3 0 04f216e5b44a5a100f345bfd8a4c2eb7
++   entry .GetTaskRequest   タスクサービスの `Get` のリクエスト：調べるタスク、または exec プロセス
++     entry #containerId   タスクを取得するコンテナー
++     entry #execId   取得する exec プロセス。メインのタスクなら空
+
+@ 0 2 0 043c0c67decebb891c5fc9485d3a9000
++   entry .GetTaskResponse   タスクサービスの `Get` の応答：プロセスの状態
++     entry #process   要求された `Workload`
+
+@ 0 2 0 1388df52469d139300f2243957576be5
++   entry .ListTasksRequest   タスクサービスの `List` のリクエスト：省略可能なフィルター式
++     entry #filter   containerd のフィルター式。すべてを得るなら空
+
+@ 0 2 0 0b6a4029496377600764d5ac1067beaa
++   entry .ListTasksResponse   タスクサービスの `List` の応答：一致するタスクのプロセス
++     entry #tasks   一致する `Workload`
+
+@ 0 1 0 1c34d5192115518403a5a712d1a34918
++ entry .Workload   タスクのプロセスの状態と、コンテナーのライフサイクル全体をブロックのスコープに収める openable
+
+% 1 1 0 15e247034b9c86810dcf02817cc7bd18
+
+@ 0 5 0 02080cf4d0d844c90f4b9526778fc687
++       `Workload` は二つのものである。
++       **レコード**としては、containerd が報告するタスクのプロセスの状態（一部は `containerd.v1.types.Process`）である。それが属する `#containerId` と exec の `#id`、ホスト上の `#pid`、生の `#status` コード（`#state` によって `Containerd.ProcessStatus` にデコードされる）、そして停止した後の `#exitStatus` と `#exitedAt` を持つ。
++       これは `Containerd#task` と `Containerd#tasks` が返すものである。
+
+@ 0 8 0 07a10e8378321d120af0bd14372f9176
++       **形式**としては、`Containerd.Container` を開くときの形式である。`container.open[Workload]()` はコンテナーを登録し、フラグとして与えられた `Containerd.Mount` を使ってそのタスクを作成し、`Workload.Handle` を渡してブロックを実行する。そして通常の終了、例外、エラーのどの終了経路でも、タスクが開始されていればそれを kill し、回収し、削除し、コンテナーを削除する。
++       ワークロードの生存期間がそのまま*スコープ*である。
++       モードはブロックに何ができるかを示す。デフォルトの `Read` はコンテナーとタスクを作成するが開始はせず、検査のためのスコープになる。`Launch` はタスクを開始し、`await` を与える。`Signalling` は `kill` を与える。
+
+% 2 1 0 0cf1eb0392ade8810ffcdfcb90255ecd
+
+% 3 1 0 045147549ad9a2e50e925a0d8b7bc0c8
+
+% 4 1 0 0b5e9b212102997e0a15c163a932aeb0
+
+% 5 1 0 1716b116016252b1187d05db739eff45
+
+% 6 1 0 089b621caf9fe07b1e5bae29d4dfb7ae
+
+% 7 1 0 132c0499ac1d341b195590c7ff6ca038
+
+% 8 1 0 00f0d111fc2a3ba1082098a24eb02e17
+
+% 9 1 0 01514d39850cf8f00bc07287ce03931b
+
+% 10 1 0 16a944110d6dc9f104be411713491cbc
+
+% 12 1 0 00e2ff7fbb81c8b40c47133e9ea83c16
+
+% 13 1 0 0a65e01c3e4757e01b60dab13217f4a5
+
+% 0 1 0 128476e8b8f5ac5b05da569eff45fb83
+
+% 0 1 0 0dc6bb230f7d907f17fcb2d271135c50
+
+% 0 1 0 0a3c8c550e2a4f4f1f30f24c281565e9
+
+% 0 1 0 1a1b798d0eda559916a5d0f15467c0ed
+
+% 0 1 0 0b519b821511ccb91328b58eeaf93879
+
+% 0 1 0 06819374b9a6c79f0e3b2d77894acc7b
+
+% 0 1 0 12db663a6abd5e14028dc32d3c447230
+
+% 1 1 0 1d27d5b10b60104c15cba950eb05ca7f
+
+@ 0 5 0 150cc336fc5aba1e0e7a6e103fa6f48b
++       `.openable` はそれを通して解決されるので、`Containerd^` はスコープ内の given でなければならず、`Monitor` は `supervise` から来る。
++       後片付けはベストエフォートであり、ブロック自身の結果やエラーを覆い隠すことは決してない。例外を投げたブロックでもタスクは kill され削除され、例外はそのまま外へ出る。
++       `createContainer` が失敗した場合、それ以上の呼び出しは行われない。
+
+% 0 1 0 0b95e773f783fcc2003bae0488707dcd
+
+% 0 1 0 136f42661dc67873161721b463b1d499
+
+% 0 1 0 0065a64dfe8edbf4179d94af4b8ea03e
+
+% 0 1 0 0ba604e63918950e18d5b8c3fb10cd72
+
+@ 0 5 0 0e0b7bfe39f043051bfea4689d5a98f9
++   entry .openable   `container.open[Workload](…)` の背後にある given。スコープ内の `Containerd^` の上の `Workload.Openable`
++       コンパニオンにある given なので、インポートなしで解決される。
++       `Containerd^` の given と `Monitor^`、そして `Grpc.Error`、`Http2.Error`、`Async.Error`、`Protobuf.Error` に対する戦術を必要とし、それらをすべてキャプチャする。
++   entry .Grant   ワークロードに特有の権限。`Launch`（タスクが開始される）と `Signal`（シグナルを送ってよい）
+
+% 1 1 0 11f16643ef8fd1ae0078d93ed8d59d1e
+
+@ 0 8 0 1725744552a31bf719f5df556b7342c4
++         aperture の開いた `Grant` 階層にある二つのトレイトであり、モード `Launch` と `Signalling` によって選ばれ、ブロックが受け取る `Workload.Handle` を細分化する。そのため `await` は開始されたタスクでのみ、`kill` はシグナル送信が求められたときにのみ利用できる。
++     entry .Launch   開くときにタスクが開始されるという権限。`await` を与える
++     entry .Signal   `kill` を与える権限
++         権限は `Signal` という名前を保つ。そのモードは `Signalling` である。`soundness` アンブレラでは profanity の割り込みが `Signal` を使っているからである。
++   entry .Handle   実行中または作成済みのタスクへのスコープ付きのハンドル。その pid、状態、終了、シグナル
+
+% 1 1 0 1c099bb0ebb8b076050378e2ad4513a9
+
+@ 0 19 0 00111398ac8c6c810f1227905a119da6
++         `container.open[Workload](…)` のブロックが受け取るもの。スコープのために作られたタスクの `#containerId` と `#pid` を保持する排他的なケイパビリティである。
++         その操作はメソッドではなく、コンパニオンにある拡張であり、モードが与えた権限によって制限される。`.state` はどのハンドルでも、`.await` は `Launch` されたハンドルで、`.kill` は `Signalling` のハンドルで使える。
++         それぞれがデーモンへの呼び出しであり、`Containerd` のメソッドと同じ `Monitor` と戦術を必要とする。
++         ハンドルはそのブロックの外へ逃げられない。
++     entry .state   デーモンに問い合わせた、タスクの現在の `ProcessStatus`
++         `workload.state()`。どのハンドルでも使える。ハンドルのコンテナーに対する `Containerd#task` であり、`Created`、`Running`、`Stopped`、`Paused`、`Pausing`、`Unknown` のいずれかにデコードされる。
++     entry .await   起動されたタスクの終了を待ち、その `WaitResponse` を返す
++         `workload.await()`。モードが `Launch` を含むときに使える。
++         `wait` ではなく `await` と名付けられているのは、`Object#wait` がその名前を使っているからである。
++     entry .kill   タスク、またはそのコンテナー内のすべてのプロセスにシグナルを送る
++         `workload.kill(signal)` または `workload.kill(signal, all = true)`。モードが `Signalling` を含むときに使える。
++     entry #containerId   スコープが登録したコンテナーの id
++     entry #pid   タスクのホスト上の pid。`Launch` の下では開始されたプロセスのもの、それ以外では作成されたタスクのもの
++   entry .Openable   `Container` を `Workload` として開く `Openable`。`Mount` をフラグとする
+
+% 1 1 0 0ef3fbab04c977de1b2dcf5561e21daf
+
+@ 0 22 0 01eac96ca233969309545dc42cadb26d
++         `Workload.openable` が提供するクラスであり、結果の型が正確に示されるように名前が付けられている。
++         `Containerd.Container`（`Self`）を `Workload`（`Form`）として開き、ルートファイルシステムの `Containerd.Mount` をフラグ（`Operand`）として取り、`Workload.Handle`（`Result`）を与える。
++         `Containerd^` と `Monitor^`、そして containerd の呼び出しに必要な四つの戦術の上に構築される。
++     entry #Self   `Container`。開かれるもの
++     entry #Form   `Workload`。開くときの形式
++     entry #Operand   `Mount`。フラグはルートファイルシステムのマウントである
++     entry #Result   `Workload.Handle`。ブロックが受け取るもの
++     entry #open   コンテナーとそのタスクを作成し、`Launch` の下ではそれを開始し、ブロックを実行し、すべてを破棄する
++         手順は `createContainer`、フラグを `rootfs` とする `createTask`、モードが `Launch` を含むなら `startTask`、ブロック、そして `finally` の中で、開始されていれば `killTask(9, all = true)` と `waitTask`、`deleteTask`、`deleteContainer` である。
++         後片付けの各段階は `safely` で包まれているので、そこでの失敗がブロックの結果を覆い隠すことはない。
++   entry #containerId   タスクが属するコンテナー
++   entry #id   コンテナー内の exec の id。コンテナーのメインタスクでは空
++   entry #pid   タスクのホスト上の pid
++   entry #status   containerd の生の状態コード。`#state` がそれをデコードする
++   entry #exitStatus   タスクが停止した後の終了ステータス
++   entry #exitedAt   タスクが終了した時刻。`Timestamp` として
++   entry #state   `#status` コードを `ProcessStatus` にしたもの。列挙型が知らないコードは `Unknown`
+
+@ 0 6 0 05c7e0b586c427521edb94a0acd5d61f
++ entry .Launch   タスクを開始する open のモード：`container.open[Workload](Read & Launch)`
++     `Mode granting Workload.Grant.Launch` であり、aperture の `Read` や `Signalling` と `&` で組み合わせる。
++     これがあると、`Workload.Openable` はタスクを作成した後に `startTask` を呼び、ハンドルの `pid` は開始されたプロセスのものになり、`await` が使えるようになり、後片付けはタスクを削除する前にそれを kill して回収する。
++     これがなければ、タスクは作成されるが開始されることはない。
+
+@ 0 5 0 04e47693da6cbe8f14a83830881fe8aa
++ entry .Signalling   ブロックがタスクにシグナルを送れるようにする open のモード：`container.open[Workload](Read & Launch & Signalling)`
++     `Mode granting Workload.Grant.Signal` であり、`Read` や `Launch` と `&` で組み合わせる。
++     これがあると、`Workload.Handle` で `kill` が使えるようになる。
++     名前が `Signal` ではなく `Signalling` なのは、`soundness` アンブレラでは profanity の割り込みが `Signal` を使っているからである。権限自体は今も `Workload.Grant.Signal` である。

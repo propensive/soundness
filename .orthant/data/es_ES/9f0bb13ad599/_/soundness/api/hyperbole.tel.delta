@@ -1,0 +1,10 @@
+orthant 2 language
+
+@ 0 7 0 17ba98e4f07396441288739143c29fab
++ entry .tastySymbolTeletypeable   representa un `Tasty.Symbol` como una tabla de dos columnas con sus propiedades
++     El given `Teletypeable` para `Tasty.Symbol`, que necesita una `TastyPalette`. La tabla tiene
++     una fila para el nombre (el prefijo atenuado, el nombre en negrita), una fila de indicadores
++     con los activados resaltados sobre el color `flagOn` de la paleta, una fila de propiedades
++     con las activadas en `propertyOn`, y una fila por cada detalle. Es un given de nivel
++     superior, así que se resuelve sin importación dentro de `hyperbole` y por nombre en otros
++     lugares: `import soundness.tastySymbolTeletypeable`.

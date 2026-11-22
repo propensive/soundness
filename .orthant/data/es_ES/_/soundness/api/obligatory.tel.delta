@@ -1,0 +1,1504 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 181208bb8e1b61921cc7c7acca994648
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 070d55ffe2c201b41054fa1f33ee109d
++ info   llamadas a procedimientos remotos tipadas: JSON-RPC, gRPC, eventos enviados por el servidor y entramado de mensajes
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1c7c2bc9a8ff39ed0e5eff2b640df3bf
++     _Obligatory_ hace que una llamada a procedimiento remoto esté tipada en ambos extremos. Una
++     interfaz RPC es un trait corriente cuyos métodos llevan la anotación `@rpc`; a partir de esa
++     única definición, una macro deriva un **despachador del lado del servidor**, que encamina las
++     peticiones entrantes hacia una implementación, y un **stub de cliente**, que convierte cada
++     llamada a un método en un mensaje de transmisión, de modo que los dos lados no pueden
++     discrepar sobre el nombre de un método, sus parámetros o su resultado. La misma forma sirve a
++     dos protocolos: JSON-RPC 2.0, cuyas cargas útiles son `Json`, y gRPC sobre HTTP/2, cuyas
++     cargas útiles son mensajes de Protocol Buffers.
+
+@ 0 6 0 1dbb1059ee1924390430dbe049aa6195
++     Bajo los protocolos se encuentra la fontanería de los flujos de mensajes. El **entramado**
++     divide un flujo de texto o de bytes en sus mensajes según una convención que se nombra como
++     un tipo — `LengthPrefix`, `ContentLength`, `CrLf`, `Linefeed`, `CarriageReturn`, `Sse` o
++     `Grpc.Framing` — mediante la extensión `frames` y la clase de tipos `Framable`; y un valor
++     `Sse` es un evento enviado por el servidor, con `Sse.Source` como búfer reproducible de ellos
++     para una respuesta `text/event-stream`.
+
+% 2 1 0 015612327cb29c291284fdb7a970c12f
+
+% 3 1 0 132559872a7f5e5818fb6dbe8a86c7a5
+
+% 4 1 0 0d7151a43e6281391a48047847451b79
+
+% 2 1 0 1ffa06cbaa856763054f085afa384185
+
+% 3 1 0 0b661f856c5a2b921b0fb8008f20e69a
+
+% 5 1 0 132d8bcdba6627c8181a0c0895995e55
+
+% 6 1 0 0c61ea64dc5a77780df5e27b1cfc0cfe
+
+% 0 1 0 013ebe4898310f3819572e0bfaa4ae3a
+
+% 0 1 0 1213fec88dccd3e71082ac419383b354
+
+% 0 1 0 04b8d46e97492f07036d83eeac7c021a
+
+% 0 1 0 00592949af9e49521361c8a0d9785094
+
+% 0 1 0 04310b8972df79280e04a912ec3d5cb5
+
+% 1 1 0 1a24ee2fc89b8cb5131cb1c1dbaf58e9
+
+@ 0 11 0 083e8eb353b8b76f02c636f2ef1e373f
++     Un método cuyo tipo de resultado es `Unit` es una *notificación*: el cliente la envía sin id
++     y no espera respuesta, y el despachador la responde con `Unset`. Cualquier otro método es una
++     petición, correlacionada por id. En el lado que llama, `remote[Echo](url)` fabrica un cliente
++     que envía cada llamada con POST a una URL HTTP como JSON-RPC, y el `client`/`proxy` de una
++     instancia de `JsonRpc` fabrica uno sobre un canal bidireccional de mensajes `Json`, que es
++     como un servidor de lenguaje (`exegesis`), un agente (`espionage`) o una sesión MCP
++     (`synesthesia`) se comunica con su interlocutor. Para gRPC, `Grpc.remote[Echo](channel,
++     t"echo.Echo")` deriva el stub sobre un `Grpc.Channel`, que es una única conexión HTTP/2
++     persistente: un método que devuelve un valor hace una llamada unaria, uno que devuelve una
++     `Chain` hace una llamada con flujo del servidor, y un estado distinto de `Ok` llega como un
++     `Grpc.Error` que lleva el `Grpc.Status` canónico.
+
+@ 0 6 0 0ec0dd0843a4716b01302a22dfc635ed
++     MCP se apoya en la mitad JSON-RPC: `Mcp.Server` en `synesthesia` es un `JsonRpc` cuyo
++     `Origin` es la interfaz del cliente, cada petición se despacha mediante `JsonRpc.serve`, los
++     fallos se responden con `JsonRpc.failure`, y la mitad de servidor a cliente del transporte
++     HTTP transmisible de MCP es el `JsonRpc#stream` de eventos `Sse`, servido como
++     `text/event-stream` por `Sse.servable`. El Language Server Protocol hace lo mismo sobre flujos
++     estándar entramados con `ContentLength`, y el Agent Client Protocol sobre flujos entramados
++     con `Linefeed`.
+
+@ 0 1 0 1c2315358367c5db196b18bacc02b83e
++     La biblioteca se divide en tres conjuntos de fuentes:
+
+@ 0 8 0 14a2b4dbc3eef69411310374de5c9b06
++     - `obligatory.core` — la clase de tipos de entramado `Framable`, la extensión `frames`, los
++       entramadores `CarriageReturn`, `Linefeed`, `CrLf`, `ContentLength` y `LengthPrefix`,
++       `Framing.Error`, las anotaciones `@rpc` y `@bare` y `Rpc.Error`. Compila para la JVM,
++       Scala.js y Scala Native.
++     - `obligatory.json` — `JsonRpc`, `remote` y `Sse`. Solo para la JVM, ya que llega a HTTP a
++       través de `telekinesis` y `jacinta.http`.
++     - `obligatory.grpc` — `Grpc` y `GrpcSessional`, sobre el cliente HTTP/2 de `telekinesis` y
++       los Protocol Buffers de `locomotion`. Solo para la JVM.
+
+@ 0 6 0 158d27a12e3f0cd517ad59a949429d74
++     Todo se exporta al paraguas `soundness`. La biblioteca no tiene paquetes de elección: cada
++     given vive en el objeto compañero de su sujeto (`Sse.framable`, `LengthPrefix.framable`,
++     `Grpc.Endpoint.sessional`, …) y se encuentra mediante el ámbito implícito sin ninguna
++     importación. Lo que sí necesita un ejemplo es una `Tactic` para los errores que lanza un
++     entramador o una llamada — `import strategies.throwUnsafely` como mínimo — y, para cualquier
++     cosa sobre una conexión, un ámbito `supervise` que proporcione un `Monitor` y un `Probate`.
+
+% 0 1 0 0e54dc62de0993661f606bd62a10cbd2
+
+% 0 1 0 1365aa8a54b97c05055e92fedc1cdab9
+
+% 0 1 0 167feb5cd6bc483d136efb95ec0715b4
+
+% 0 1 0 0b41cae943974c7b189767beb31972cd
+
+% 0 1 0 1881221f0f435dab1e42f49ff260cb0d
+
+% 0 1 0 19a86f2751a907bc184a7c7689d338f0
+
+@ 0 1 0 1b963bdf41cc22e9165d8ce4783486b4
++ entry .Framable   la clase de tipos que divide un flujo en tramas según una convención con nombre
+
+% 1 1 0 108c33e78f4fad9905d4780a6a3eed91
+
+@ 0 5 0 1a0fcea759f6a28c0d3b229e8d420176
++       `element is Framable by frame` es la evidencia de que un flujo de `element`s (`Text` o
++       `Data`) puede dividirse en mensajes según la convención que nombra `frame` — `CrLf`,
++       `Linefeed`, `CarriageReturn`, `ContentLength`, `LengthPrefix`, `Sse` o `Grpc.Framing` —,
++       cada una un tipo sellado y deshabitado cuyo objeto compañero contiene el given. La
++       extensión `frames` sobre un `Iterator[element]^` o una `Chain[element]` la aplica:
++       `chain.frames[Linefeed]`.
+
+@ 0 3 0 03bf9bfb280592d31e31e506dfd119c0
++       Un entramador mantiene su propia posición en un `Cursor` sobre la entrada, así que los
++       límites entre fragmentos no significan nada para él: un mensaje partido en tres fragmentos,
++       dos mensajes en un mismo fragmento y un mensaje final sin terminador se entregan enteros.
+
+% 2 1 0 18a460d5bae971f003a10610f0dece3d
+
+% 3 1 0 0820af156097af2b068e28e23e66ac20
+
+% 2 1 0 1b4d93f3905c53771b93a5eefdbb2163
+
+% 1 1 0 0593fb8b9162f077138f4bf83319ba50
+
+@ 0 5 0 1b6d56e968886d41186466d5ff82a49e
++       El iterador entramado extrae de su entrada de forma perezosa y por eso la captura, y
++       captura también el entramador, ya que un entramador construido a partir de una
++       `Tactic[Framing.Error]` lanza a través de ella durante la iteración y no de antemano. Por
++       tanto, un entramador que necesita una táctica (`CrLf`, `ContentLength`, `LengthPrefix`,
++       `Grpc.Framing`) la necesita en el ámbito donde se llama a `frames`; `CarriageReturn`,
++       `Linefeed` y `Sse` no pueden fallar y no necesitan ninguna.
+
+@ 0 2 0 13e4947cf90026c21853b5c8f7fc5fa9
++       Un entramador definido por el usuario es un `new Framable` con `Self` y `Operand`
++       establecidos y `frames` implementado, lo más sencillo sobre `Framable.frames` y un
++       `Cursor`.
+
+% 1 1 0 1161d15563a7b08118800f80dfa65034
+
+% 0 1 0 1dd6c0c49ffa68ea11bebb0c57045d51
+
+@ 0 10 0 151d1f80efa11fae01dd894e8a89f755
++   entry .frames   envuelve un thunk que lee una trama, o `Unset` al final, como un iterador
++       `Framable.frames[data](frame)` convierte una expresión por nombre — que lee y devuelve la
++       siguiente trama, o `Unset` cuando la entrada se agota — en un
++       `murmuration.Iterator[data]`, ocultando el búfer de un elemento por delante que, de otro
++       modo, todo entramador duplicaría. El thunk suele cerrar sobre el `Cursor` de quien llama,
++       así que el iterador captura el thunk (`^{frame, caps.any}`). Así se escriben todos los
++       entramadores de la biblioteca, y `Sse.framable`.
++   entry #frames   los mensajes entramados de un flujo de entrada, como un iterador perezoso de un solo uso
++       Toma un `Iterator[Self]^` y devuelve el `Iterator[Self]^{input, this}` de sus tramas. Se
++       llama mediante la extensión `frames` y no directamente.
+
+@ 0 7 0 087844b8758ab4c119b2a67480d8df69
++ entry .frames   `stream.frames[Convention]`: los mensajes de un flujo, según una convención de entramado
++     Una extensión sobre un `Iterator[element]^` y sobre una `Chain[element]`, cada una de las
++     cuales devuelve el `Iterator[element]` de un solo uso de los mensajes que delimita el given
++     `element is Framable by frame` del ámbito. El argumento de tipo nombra la convención:
++     `frames[LengthPrefix]`, `frames[ContentLength]`, `frames[CrLf]`, `frames[Linefeed]`,
++     `frames[CarriageReturn]`, `frames[Sse]` o `frames[Grpc.Framing]`. El receptor se consume: un
++     iterador entramado es el único lector de su entrada.
+
+% 2 1 0 06b70005d6216bfc1b685ebb9b424b34
+
+% 3 1 0 0849c0ec96291db2061795a3552817db
+
+% 4 1 0 183e51cc584faca21eac01113b59b4e5
+
+% 0 1 0 01b5f6639dba21fe1f20e49c40a99bbb
+
+% 0 1 0 15eb285d9fca2ec10ee6c080ec8d094d
+
+% 0 1 0 1e58a159388b44031efbb8368512cd05
+
+% 0 1 0 023cb931f96fda95141d2e790899c1a7
+
+% 0 1 0 065d0b9a3e166d0519488bfec95b27fe
+
+% 0 1 0 1cc021532b1318201fed00172f55f919
+
+% 0 1 0 0db1aa190f7b505008c9f260bf65a481
+
+% 1 1 0 01a49e12abb8679d1156b80bee87d009
+
+@ 0 5 0 1dd966f64245b1100d649aa395b5f562
++     La evidencia es polimórfica en capturas: un entramador que lanza `Framing.Error` (`CrLf`,
++     `ContentLength`, `LengthPrefix`) necesita una `Tactic[Framing.Error]` en el ámbito de la
++     llamada, y el iterador la retiene, de modo que lanza una trama truncada o mal formada en el
++     momento de leerla y no cuando se llama a `frames`. Un receptor `Chain` es la forma en que
++     llega el `.chain` de un flujo: `stream.chain.frames[Linefeed]` lee la salida de un
++     subproceso línea a línea.
+
+@ 0 1 0 1babd0165c573a9814f89680cbcee84f
++ entry .Framing   el acto de delimitar mensajes en un flujo, y el error cuando falla
+
+% 1 1 0 09be15ece9c73f1e0208635e611a4398
+
+@ 0 4 0 1e300a53ca06d9c30ec1622bdd04e3ff
++       `Framing` es el hogar de `Framing.Error`, el error que lanza todo entramador ante un flujo
++       que no puede desentramar. Se llama así por el acto y no por la trama — obligatory no tiene
++       ningún tipo `Frame` — y es distinto de `Grpc.Framing`, la convención de mensajes de gRPC,
++       que en su lugar lanza `Grpc.Error`.
+
+% 1 1 0 1fe94366cf0a3bd90279c3da40d3cf09
+
+@ 0 1 0 139a09562dc763c50f78024b60a2ef88
++   entry .Error   se lanza cuando un flujo no puede dividirse en tramas: error `↯/s.112.2`
+
+% 1 1 0 1c36b3769c5a6a2c1208ab9797e3629e
+
+@ 0 10 0 1ceb0c9c4da34359118163e0dac34ee2
++         Error `↯/s.112.2`: _could not deframe the message because `reason`_. Se lanza, a través
++         de la `Tactic[Framing.Error]` que capturó el given del entramador, al leer el iterador
++         entramado. El `reason` indica qué estaba mal: `ShortRead` cuando la entrada terminó
++         dentro de una trama (`LengthPrefix` con menos bytes de los que prometía su cabecera,
++         `ContentLength` con una cabecera o un cuerpo truncados); `MissingLineFeed` cuando `CrLf`
++         encontró un retorno de carro no seguido de un salto de línea; `MalformedLength` cuando
++         el valor de una cabecera `Content-Length` faltaba o no era un número; y `UnknownHeader`,
++         reservado para una cabecera que el protocolo rechaza (actualmente `ContentLength` omite
++         las cabeceras no reconocidas en lugar de lanzarlo).
++     entry .Reason   por qué no pudo leerse una trama
++         El número es el número de detalle del error:
+
+% 3 1 0 1c3c8fa4c76c609a0d18d6510c3500ea
+
+@ 4 4 0 09cbb2932ef5fca603e49f5b8b313bf0
++         column  Caso
++         column  Código
++         column  Mensaje
++         column  Nota
+
+% 0 1 0 11796bcc7d5d8c520121e216d8978bc2
+
+% 0 1 0 034859d340cb4ade170b3284c11ed730
+
+% 0 1 0 15d463aa4ad64116093fbc505de801ef
+
+% 0 1 0 1fd7fadf16bedcc9053ea7055f1446fb
+
+% 1 1 0 148107bd6dcc8c9a0112a186534afb90
+
+@ 0 2 0 158be23c86b4a36e1bb2d1e663321064
++     entry .communicable   representa cada `Framing.Error.Reason` como su mensaje
++     entry #reason   por qué no pudo leerse la trama
+
+@ 0 1 0 0bbf2d9308ed84b31e5240cf80c9d93d
++ entry .CarriageReturn   la convención de entramado de líneas terminadas por un retorno de carro solo
+
+% 1 1 0 078ec04105f20d4b0b1fd469996c8dfa
+
+@ 0 4 0 1c7f40b4b208acef07bcf1a7ebf9e186
++       Un tipo sellado que nombra la convención que `frames[CarriageReturn]` aplica a un flujo de
++       `Text`: cada trama es el texto anterior a un `\r`, que se consume; un fragmento final sin
++       terminador se entrega tal cual, y una entrada vacía no produce nada. La convención no
++       puede fallar, así que no se necesita ninguna táctica.
+
+% 2 1 0 0298ff36abb9ba081479d017ca09eaaa
+
+% 3 1 0 0777e5f6bc4a4abd1157544c184d1034
+
+% 0 1 0 00631730011a71e0113468695aabb6fc
+
+% 1 1 0 066ccff8352fe2f805ef26ec4424a6e8
+
+@ 0 1 0 02fe9d6a8f861c081ed66768bb581b78
++   entry .framable   el given `Text is Framable by CarriageReturn`, en el ámbito implícito
+
+@ 0 1 0 04012cb8a6f8a69f0477655b24bccb8b
++ entry .Linefeed   la convención de entramado de líneas terminadas por un salto de línea, para texto o bytes
+
+% 1 1 0 0ae959a21ef497bc0a629612a128a40a
+
+@ 0 7 0 09600fcc02aa7572135feb3863a0418b
++       Un tipo sellado que nombra la convención que aplica `frames[Linefeed]`: cada trama es el
++       contenido anterior a un `\n`, que se consume; un fragmento final sin terminar se entrega
++       tal cual, y las líneas vacías se conservan como tramas vacías. No puede fallar, así que no
++       se necesita ninguna táctica. Lo sirven dos givens: `.framable` para un flujo de `Text`, y
++       `.framableData` para un flujo de `Data`, que divide por el byte en bruto antes de cualquier
++       decodificación de texto, de modo que el contenido UTF-8 multibyte pasa intacto — la forma
++       del JSON delimitado por saltos de línea sobre un flujo binario, como el que usa el Agent
++       Client Protocol.
+
+% 2 1 0 1ddb909287e34a24068906f4b2de7907
+
+% 3 1 0 03286c1085f3f5830ef47661d026cfd6
+
+% 1 1 0 1b393a49198909460836d728f5136ee6
+
+% 2 1 0 10176be1a29bef310dd4ade131ced455
+
+% 0 1 0 1dcb0ec8498407de1ad9c1c0359b3e82
+
+% 1 1 0 14f0f7ab1953ffe71084f3cf54855173
+
+@ 0 8 0 0f0790dcc5dec5710c16ed0b91f15530
++       El entramador de bytes lee flujos *en vivo*, como la salida de un subproceso: consume un
++       terminador con el `advance()` del cursor, que no recarga, de modo que una línea que
++       termina justo al final de su fragmento se entrega de inmediato en lugar de bloquearse a la
++       espera de bytes posteriores; la recarga se paga al principio de la línea siguiente.
++   entry .framable   el given `Text is Framable by Linefeed`, en el ámbito implícito
++   entry .framableData   el given `Data is Framable by Linefeed`: divide los bytes por el byte `\n` en bruto
++       En el ámbito implícito. Divide por el byte 10 antes de cualquier decodificación, así que el
++       contenido UTF-8 nunca se corta dentro de un carácter; un fragmento final sin terminar se
++       entrega tal cual.
+
+@ 0 1 0 17fe30b1c214248c1b6ff1749950291f
++ entry .CrLf   la convención de entramado de líneas terminadas por un retorno de carro y un salto de línea
+
+% 1 1 0 145b73a8f2d31a420f13a01e7116401d
+
+@ 0 5 0 1225fd68cb998476114a18d3716f9252
++       Un tipo sellado que nombra la convención que `frames[CrLf]` aplica a un flujo de `Text`:
++       cada trama es el texto anterior a `\r\n`, y ambos se consumen; un fragmento final sin
++       terminador se entrega tal cual. Un `\r` no seguido de `\n` es una violación del protocolo,
++       que se lanza como `Framing.Error(MissingLineFeed)`, así que el given necesita una
++       `Tactic[Framing.Error]` en el ámbito, que el iterador entramado retiene.
+
+% 2 1 0 13bb1301c9ebd10e0e3c6a1a1050cb66
+
+% 3 1 0 0cff337c002748960aabfaefdaa297b8
+
+% 4 1 0 14e7256774cea5be1d1f68c45dacc42f
+
+% 0 1 0 069ea1b5866efff318cc4c0befbdfe54
+
+% 1 1 0 075c88c381e2292b177e401f68c30cca
+
+@ 0 1 0 143c8c0972368e7c17a0d7ea444cad25
++   entry .framable   el given `Text is Framable by CrLf`; necesita una `Tactic[Framing.Error]`
+
+@ 0 1 0 1523faff4a6928d50572924633f33720
++ entry .ContentLength   la convención de entramado de un bloque de cabeceras `Content-Length` antes de cada cuerpo
+
+% 1 1 0 0e3564d90561628213cb367d3305221f
+
+@ 0 9 0 07743c53ea38d30f0de59a4de2dd5ed4
++       Un tipo sellado que nombra la convención que `frames[ContentLength]` aplica a un flujo de
++       `Data`: el protocolo base del Language Server Protocol, y el entramado al estilo de HTTP
++       del que deriva. Cada mensaje es un bloque de cabeceras `Name: value`, cada una terminada
++       por `\r\n`, un `\r\n` en blanco y después exactamente `Content-Length` bytes de cuerpo,
++       que se entregan como `Data`. La cuenta es de *bytes*, como la define la especificación, y
++       por eso el entramador trabaja sobre `Data` y deja la decodificación del texto a quien
++       llama: contar caracteres solo coincide con contar bytes en ASCII, y corrompe el flujo ante
++       cualquier cuerpo UTF-8 multibyte. Los nombres de las cabeceras se comparan sin distinguir
++       mayúsculas de minúsculas, y las cabeceras distintas de `Content-Length` (`Content-Type`,
++       por ejemplo) se omiten.
+
+% 2 1 0 12d0a87f9f42272a1583d40fa735ae87
+
+% 3 1 0 1fa412d765958ac61805e5e43688afce
+
+% 4 1 0 13c90b87718f2d0c180b383b5c3384a7
+
+% 1 1 0 1f0d33ac9029de9b05c44d6992611c68
+
+% 0 1 0 07c9c22a5b80d5610c7ad5c18f49bcd9
+
+% 0 1 0 02b8a43376fc7ecf1033350b03ec4b74
+
+% 1 1 0 1a80d556dd2fa8b5188b88335729d612
+
+@ 0 4 0 176c00c3065130ed1bde4285f93eea5c
++       Un bloque de cabeceras sin un `Content-Length` numérico lanza
++       `Framing.Error(MalformedLength)`, y una entrada que termina dentro de una cabecera o de un
++       cuerpo lanza `Framing.Error(ShortRead)`, así que el given necesita una
++       `Tactic[Framing.Error]`, que el iterador entramado retiene.
++   entry .framable   el given `Data is Framable by ContentLength`; necesita una `Tactic[Framing.Error]`
+
+@ 0 1 0 0a7109e13fd0afc807add075fbc7be84
++ entry .LengthPrefix   la convención de entramado de una longitud big-endian de cuatro bytes antes de cada registro
+
+% 1 1 0 11c65d5cd27b3fc40974977d13b338ba
+
+@ 0 4 0 0a940ac6b9664a741585c08cf9ed346c
++       Un tipo sellado que nombra la convención que `frames[LengthPrefix]` aplica a un flujo de
++       `Data`: cada registro son cuatro bytes de longitud big-endian y después esa cantidad de
++       bytes, que se entregan como `Data`. `.encode` es la mitad de escritura, que antepone el
++       prefijo a un registro para la transmisión, de modo que un flujo entramado puede producirse
++       además de leerse; un `Duplex` que lleva mensajes BinTEL se entrama de esta forma.
+
+% 2 1 0 0aff3c7c5f6f01bf0e48b3b1e5726bcd
+
+% 3 1 0 0c986d8620d0a681122a52d0e5e42a6f
+
+% 4 1 0 1d4791f9b022020e18c3ab1be9c1c971
+
+% 0 1 0 0a0df8633f29cc450b2ccc10b306f5c1
+
+% 0 1 0 0696122e1252c0ac074a8c983264a0da
+
+% 1 1 0 171d55f7c5cc4b0701b91bfcf6509e05
+
+@ 0 9 0 10d338907f73322e10331fc1971abc6b
++       Una entrada que termina dentro de una cabecera o de un registro lanza
++       `Framing.Error(ShortRead)`, así que el given necesita una `Tactic[Framing.Error]`, que el
++       iterador entramado retiene. Las longitudes se leen enmascarando cada byte antes de
++       desplazarlo, de modo que un registro de 128 bytes o más, o de más de 32767, se entrama
++       correctamente pese a que los bytes de `Data` tienen signo.
++   entry .encode   antepone a un registro su longitud como cuatro bytes big-endian
++       `LengthPrefix.encode(record)` es el `Data` de la cabecera de cuatro bytes seguida del
++       registro: la inversa de `.framable`, y lo que llama quien escribe un flujo con prefijo de
++       longitud para cada registro.
++   entry .framable   el given `Data is Framable by LengthPrefix`; necesita una `Tactic[Framing.Error]`
+
+@ 0 1 0 05a129c020ddf4061d986bf87d83207c
++ entry .Associable   una clase de tipos que empareja un valor de sesión con la respuesta que gobierna
+
+% 1 1 0 04b614026f4b238414125379cf0eced0
+
+@ 0 7 0 096888983312d0fb13804c53e878f325
++       `Self is Associable by Operand to Target`: `association(operand)` crea un valor de sesión
++       a partir de un operando, y `associate(session)(response)` asocia esa sesión a una
++       respuesta del tipo `Target`. Es un punto de enganche para un transporte que debe marcar
++       cada respuesta con la sesión a la que pertenece (como MCP marca una respuesta con la
++       cabecera de su id de sesión); la biblioteca declara la clase de tipos y ninguna instancia
++       de ella.
++   entry #association   crea el valor de sesión `Self` a partir de un `Operand`
++   entry #associate   asocia una sesión a una respuesta `Target` y devuelve la respuesta marcada
+
+@ 0 1 0 1fcc2ee040324fc21a2c040a184a99bf
++ entry .Rpc   el hogar de `Rpc.Error`, el fallo genérico de una llamada remota
+
+% 1 1 0 01cb95cdccd2f97907487bea39354f38
+
+@ 0 7 0 10facd6a3377f8540a4eb121f2bd9f44
++       El objeto contiene solo `Rpc.Error`. Los fallos específicos de cada protocolo son
++       `JsonRpc.Error` y `Grpc.Error`, cada uno con lo que informa su formato de transmisión;
++       `Rpc.Error` solo dice que una llamada falló.
++   entry .Error   se lanza cuando falla una llamada a procedimiento remoto: error `↯/s.112.8`
++       Error `↯/s.112.8`: _the remote procedure call failed_. Un fallo genérico sin detalle, para
++       un transporte que no puede decir más; `JsonRpc.Error` y `Grpc.Error` llevan el código y el
++       mensaje del interlocutor.
+
+@ 0 9 0 0d716715d1ba21000fcb9695e7ba4222
++ entry .rpc   la anotación `@rpc`: marca un método de una interfaz como procedimiento remoto
++     `@rpc def call(request: Ping): Pong` declara que `call` es un método que expone el
++     protocolo. `JsonRpc.serve`, `JsonRpc#proxy`, `remote` y `Grpc.remote` leen cada uno los
++     métodos `@rpc` de una interfaz (incluidos los heredados) e ignoran cualquier otro miembro.
++     El nombre del método es el nombre del método en la transmisión — un nombre JSON-RPC con
++     una barra se escribe como un identificador entre comillas invertidas, `` @rpc def
++     `prompts/list`(…) `` —, los nombres de sus parámetros son los miembros de un objeto
++     `params` de JSON-RPC, y un resultado `Unit` marca una notificación, que no espera
++     respuesta. Un método `@rpc` de gRPC toma exactamente un mensaje de petición. La anotación
++     se declara en el objeto `annotations` y se exporta.
+
+@ 0 7 0 139481e33424ec0f045021d30a1e0b69
++ entry .bare   la anotación `@bare`: un parámetro JSON-RPC que es el valor `params` entero
++     Marca un parámetro de un método `@rpc` como decodificado a partir del valor `params`
++     entero, en lugar del campo homónimo de un objeto `params`; del mismo modo, el lado cliente
++     lo envía como el `params` entero. Para un protocolo de transmisión cuyo `params` es un
++     objeto sin envolver que se decodifica directamente en un tipo, como la familia `*/resolve`
++     del LSP. Un método puede declarar como mucho un parámetro `@bare`: un segundo es un error
++     de compilación en `JsonRpc#proxy`. La anotación se declara en el objeto `annotations` y se
++     exporta.
+
+@ 0 1 0 1d044ad1bde91951017d95654230d3a4
++ entry .annotations   el hogar de las anotaciones `@rpc` y `@bare`
+
+% 1 1 0 04e621464944ac1d0dbae72c8fea6bab
+
+@ 0 6 0 18b13a364ca9125313fe077762449a3a
++       Las dos anotaciones se declaran aquí, y no en el nivel superior del paquete, para que
++       `rpc` no comparta nombre de fichero de clase con `Rpc` en un sistema de ficheros que no
++       distingue mayúsculas de minúsculas; ambas se exportan a `obligatory` y al paraguas
++       `soundness`, así que `@rpc` y `@bare` se escriben sin cualificar.
++   entry .rpc   marca un método de una interfaz como procedimiento remoto; véase `obligatory.rpc`
++   entry .bare   marca un parámetro como el valor `params` entero de JSON-RPC; véase `obligatory.bare`
+
+@ 0 1 0 19faf76ab9d192e21602b758de2cc4ec
++ entry .JsonRpc   JSON-RPC 2.0: un despachador y un stub de cliente derivados de una interfaz `@rpc`, sobre HTTP o un canal
+
+% 1 1 0 10e729884a2f28f706b99cdb15d0bdf6
+
+@ 0 9 0 100547103a84178a0d45aef4ceb95b80
++       `JsonRpc` es dos cosas. Como **objeto**, es el kit de herramientas de JSON-RPC 2.0:
++       `.serve` deriva un despachador a partir de una interfaz de métodos `@rpc`, `.Request`,
++       `.Response` y `.Failure` son las tres formas de mensaje, `.failure` escribe una respuesta
++       de error conforme, y `.call`, `.request`, `.notification`, `.outcome` y `.answer` son la
++       maquinaria de correlación con la que se construye un cliente. Como **trait**, es una
++       conexión bidireccional: una clase de protocolo extiende `JsonRpc`, nombra la interfaz del
++       interlocutor como su `Origin` y obtiene `#client` (un stub de esa interfaz cuyas llamadas
++       se encolan en el canal de salida de la conexión), `#put` para mensajes propios, y
++       `#outgoing` o `#stream` para que el transporte los vacíe.
+
+% 2 1 0 0db83e3c081630d708d386d561e0f4ba
+
+% 3 1 0 1ec53f5a1e6e7f15180b7fe982065482
+
+@ 0 1 0 19f00fc56b7e1d6a101a839d14860dd9
++         label Una interfaz de métodos remotos
+
+% 1 1 0 13690aa4d70db9e10c5f6a31ea8f2921
+
+% 2 1 0 1b1589ee76c0abea001652545b8dc6b7
+
+% 3 1 0 0675ef31a7918d1e1b60971d251f4a81
+
+% 5 1 0 0c060c4a10f41ede0a3b241202f7814f
+
+% 6 1 0 1546347dc8c2565516ac4f788c8b3b8a
+
+% 8 1 0 1ea87b2e5f464f780d5e138bf3418197
+
+% 9 1 0 0620400443b9f1740462d8debe2b0e0a
+
+% 10 1 0 00650472f2900278017638622f5adf8b
+
+% 1 1 0 0bb48eb5e71a55341b767ae7f3520dbc
+
+@ 0 1 0 055d6e13f5e9df1a07dbb596f81b1737
++         label Una implementación se convierte en un despachador
+
+% 1 1 0 138be5bc30dd9d500434de6f573f7d7f
+
+% 2 1 0 1681facef18cf0180b2860514f592259
+
+% 3 1 0 1a58f390ee70c42f1bedeb19f853e252
+
+% 5 1 0 1bf366614e795f590bd14bbf74bb6806
+
+% 6 1 0 05ca2187a28cf6ba0d678a83242c336b
+
+% 8 1 0 1e44939d967c2f151e360de9585af0c1
+
+% 9 1 0 0116c057fd18963412c339a23c41f359
+
+% 10 1 0 10a6d7284ee4386a191080caa4e2d409
+
+% 12 1 0 1b7882cb29ef584a1e7e0da6eacf6791
+
+% 13 1 0 18ec0852909802dc08b508626035c163
+
+% 14 1 0 0db0248dd44505961fcf0e9deb21378f
+
+% 16 1 0 0c242aa1a146b26b0248d7c1ae3c36cc
+
+% 1 1 0 0e70b1634f9ae4d41967b9d534d1eb56
+
+@ 0 1 0 13358fb0d50226431007c0fb017ed1a5
++         label Una petición se despacha y se responde
+
+% 1 1 0 08ba1c16f02716f612d916a72e7b97f1
+
+% 2 1 0 074c372185377a6e15ee9629b5da19af
+
+% 3 1 0 0329e129353c85f117785c496252b812
+
+% 5 1 0 132b2f53e6429db7077938ec6b2cf535
+
+% 6 1 0 1020a08e5c174dda15d988de9f92e6c4
+
+% 8 1 0 072edcfa8dfd56440d895fc60b1255b8
+
+% 9 1 0 0555ae8e481926b2007e2b67d05e9b36
+
+% 10 1 0 17c24bc6b92ac47418d430d00355e8dd
+
+% 12 1 0 00655c9947ea301a1c9fcaa52c205277
+
+% 13 1 0 064b36dce536da9f1076b4e2f67af13c
+
+% 14 1 0 0e33462a49921d4c01b8512269c6017a
+
+% 16 1 0 06c85035b36c3f2518ff2ce16b927483
+
+% 18 1 0 040ed28eff949d7a00a284bfa126bb78
+
+% 19 1 0 04ecaf2166d6cf35121424256a561f3d
+
+% 1 1 0 0dc25ea83d18f7141e8ac4e88257fa30
+
+@ 0 1 0 1744e19c8efc76a9184f52b1a43747d9
++         label Una notificación se despacha y no produce respuesta
+
+% 1 1 0 06fa76c6e0bceb9c16b1c23bdb9be86d
+
+% 2 1 0 19c817a9961e6d3715385de9c2f257f7
+
+% 3 1 0 102fdd4cce2a3bac02c84f90219ae827
+
+% 5 1 0 100497d4bbe62c921c20a1110edb48b4
+
+% 6 1 0 00483a5ba51032a410941373b6b23428
+
+% 8 1 0 1aabdd5731aa9b0e1ffe996c572b9bd1
+
+% 9 1 0 1156ae00bfd102ea170b1a2414ac2e62
+
+% 10 1 0 04cea3dda559cb4212c064afbf214849
+
+% 12 1 0 1cfb5a5bc9446bab1b28f29880f9ade8
+
+% 13 1 0 02f9078c2b7d0e2f1d5cc133e59996b6
+
+% 14 1 0 0fbb6328248dbf8c0a24006f067a7112
+
+% 16 1 0 15337713bc8046a5143593773f3abafd
+
+% 18 1 0 13ffc29b9e0510c50bd91a792915f796
+
+% 19 1 0 13a5fbb607069965184f999db45bdcc9
+
+% 0 1 0 0ffaa65478b8c361061cd4b3752949bc
+
+% 0 1 0 0ecc3830f3a0f2c90fa7c9eca7845c6c
+
+% 1 1 0 1eb86a172aaf360b126cbe5d26fccc80
+
+% 2 1 0 09dbeed81ab7a3091f2a8f87847a3e1a
+
+@ 0 10 0 116ab51a463d8ae51535f608b215d9da
++       Los parámetros de un método son los miembros del objeto `params` de la petición, por
++       nombre, cada uno decodificado con el `Json.Decodable` de su tipo; un parámetro `@bare` es,
++       en cambio, el valor `params` entero. El resultado se codifica con el `Encodable in Json` de
++       su tipo y se envuelve en una `Response` que repite el id de la petición. Un método que
++       devuelve `Unit` es una notificación, que se responde con `Unset`. Una petición cuyo método
++       no declara la interfaz lanza `JsonRpc.Error(UnknownMethod)`, y una cuyos parámetros no se
++       decodifican lanza un `Json.Error`, en cada caso para que el bucle de servicio lo capture y
++       responda con `.failure` (`-32601` y `-32602` en el vocabulario de la especificación). Un
++       mensaje sin miembro `method` es una respuesta, que el despachador encamina hacia `.answer`
++       y para la que devuelve `Unset`, de modo que un mismo despachador puede leer un flujo
++       bidireccional.
+
+@ 0 5 0 109459591e7dc8e91fae36a927744ca9
++       El despachador cierra solo sobre la implementación y retiene únicamente capacidades
++       duraderas, así que puede llamarse desde una tarea. Cada expansión de `.serve` inserta en
++       línea un códec portador de esquema para cada método, y una interfaz muy grande — la del
++       Language Server Protocol — puede superar el pool de constantes por clase de la JVM:
++       divídela en varios traits, deriva un despachador por trait y encamina según `.methods`.
+
+@ 0 9 0 0d9c29af31ab5f90124041b915c47456
++       **Sobre HTTP.** `remote[Echo](url)` es el cliente de un despachador montado tras una ruta
++       HTTP: cada llamada envía con POST una `Request` a la URL y decodifica la `Response`.
++       **Sobre un canal.** Para una conexión bidireccional de larga duración — flujos estándar
++       entramados con `ContentLength` o `Linefeed`, un socket o una sesión MCP —, una clase
++       extiende el trait `JsonRpc`, y el escritor del transporte vacía `#outgoing` mientras su
++       lector entrega cada documento entrante al despachador. El `Mcp.Server` de `synesthesia`
++       es una clase así, con `Origin = Mcp.Client`: su `serve` despacha cada petición recibida por
++       POST mediante `.serve`, responde a los fallos con `.failure` y transmite de vuelta su
++       `#stream` de eventos `Sse` como `text/event-stream`.
+
+% 0 1 0 1aaa155934d22d05151c5a8122692d3d
+
+% 1 1 0 0ac2c0e0c878a05d061ae7ccab3997df
+
+% 0 1 0 110d2606f44d246f1e9e78d92f9d1828
+
+% 0 1 0 091bece190e186611d4880daa5fe867a
+
+@ 0 6 0 1f2fd76ef3a6aab10cf148cd684f06c2
++   entry .serve   deriva un despachador, `Json => Optional[Json]`, a partir de la implementación de una interfaz
++       `JsonRpc.serve[Interface](implementation)` es una macro que lee los métodos `@rpc` de
++       `Interface` y devuelve una función de un documento de petición a su documento de
++       respuesta — `Unset` para una notificación, o para una respuesta encaminada hacia
++       `.answer`. Su tipo de resultado es `Json ->{caps.any.only[Durable]} Optional[Json]`: el
++       despachador retiene solo capacidades duraderas y la implementación, así que puede
++       guardarlo una tarea.
+
+@ 0 13 0 1d38c97fd74e9f541f2d4f91d6e6e4d1
++       La macro necesita un `Encodable in Json` para el tipo de resultado de cada método en el
++       punto de expansión — si falta uno, es un error de compilación que nombra el método — y
++       convoca el `Json.Decodable` de cada parámetro dentro del despachador generado bajo una
++       táctica por llamada, de modo que un decodificador que falta lo informa el propio mensaje
++       "no given instance" del compilador en el punto de `serve`. Un método desconocido se lanza
++       como `JsonRpc.Error(UnknownMethod)` y un parámetro que no se decodifica como `Json.Error`,
++       para que el bucle de servicio los capture y responda con `.failure`; no se necesita
++       ninguna táctica en el punto de expansión.
++   entry .methods   los nombres de los métodos `@rpc` de una interfaz, para encaminar entre varios despachadores
++       `JsonRpc.methods[Interface]` es una `List[Text]` de los nombres de los métodos `@rpc` de
++       la interfaz, incluidos los heredados. Un protocolo demasiado grande para una sola clase de
++       despachador deriva uno con `.serve` por cada subinterfaz y encamina cada petición hacia el
++       despachador cuyos `methods` contienen su `method`; `exegesis` lo hace para los siete
++       grupos de métodos del LSP.
++   entry .Request   un documento de petición o notificación JSON-RPC, como valor
+
+% 1 1 0 119f365b3c97037d0c7d70c57fee948d
+
+@ 0 14 0 1a2f4a0468568c43140558daafc8bfd5
++         `Request(jsonrpc, method, params, id)`: la versión `jsonrpc` (`"2.0"`), el nombre del
++         `method`, el documento `params` y el `id`, que es `Unset` para una notificación. El
++         `.decodable` del objeto compañero lee una a partir de un `Json`, de modo que
++         `safely(json.as[JsonRpc.Request])` distingue una petición de una respuesta — una
++         respuesta no tiene miembro `method` y no se decodifica — y
++         `json.as[JsonRpc.Request].id` es el id que se repite en un fallo.
++     entry .decodable   el given `JsonRpc.Request is Json.Decodable`, en el ámbito implícito
++         Un ancla de derivación pura que lanza excepciones: lanza `Json.Error` en lugar de
++         lanzarlo a través de una táctica del ámbito, así que puede convocarse dentro de `safely`
++         sin que la convocatoria capture la táctica.
++     entry #jsonrpc   la versión del protocolo, `"2.0"`
++     entry #method   el nombre del método
++     entry #params   los parámetros: un objeto de miembros con nombre, o un valor sin envolver para un parámetro `@bare`
++     entry #id   el id de correlación, o `Unset` para una notificación
++   entry .Response   un documento de respuesta JSON-RPC satisfactoria, como valor
+
+% 1 1 0 03a01275090517001144b0fc008b54a3
+
+@ 0 8 0 0e4c8a077b33842904e2e925022f08ec
++         `Response(jsonrpc, result, id)`: la versión, el `result` codificado y el `id` de la
++         petición a la que responde. `JsonRpc.serve` construye una por cada petición que
++         despacha; un protocolo que responde él mismo a las peticiones (un proxy, por ejemplo)
++         construye una con `JsonRpc.Response("2.0", result, id).in[Json]`. Un fallo no es una
++         `Response`, sino un documento de `JsonRpc.failure`.
++     entry #jsonrpc   la versión del protocolo, `"2.0"`
++     entry #result   el resultado codificado del método
++     entry #id   el id de la petición respondida
++   entry .Failure   el miembro `error` de una respuesta de error JSON-RPC: un código, un mensaje y datos opcionales
+
+% 1 1 0 0268f6e5d42442e1049b4ba0f5199057
+
+@ 0 3 0 0be9437a7dbb3a7113159504162ce501
++         `Failure(code, message, data)` es el objeto que un interlocutor conforme coloca en el
++         miembro `error` de una respuesta en lugar de `result`. Los códigos son los de la
++         especificación, y un protocolo puede definir los suyos además de ellos:
+
+% 2 1 0 09c9e296603c81631f8fd7dfc680d35f
+
+@ 0 7 0 18d5442eaa9195d4010510e9815680bc
++         column  Código
++         column  Significado
++         row  -32700  no se pudo analizar el JSON
++         row  -32600  una petición no válida
++         row  -32601  un método desconocido
++         row  -32602  parámetros no válidos
++         row  -32603  un error interno
+
+% 1 1 0 0d90478489faa4831b5abe5d2f89db91
+
+@ 0 15 0 13affb388a77135c1e245c11675065db
++         `JsonRpc.failure` construye el documento de respuesta completo alrededor de uno;
++         `JsonRpc.answer` lo vuelve a leer de una respuesta y se lo entrega a
++         `JsonRpc.receiveFailure`, donde `JsonRpc.outcome` lo convierte en un
++         `JsonRpc.Error(Failed)` que lleva el código y el mensaje.
++     entry .decodable   el given `JsonRpc.Failure is Json.Decodable`, en el ámbito implícito
++         Un ancla de derivación pura que lanza excepciones, como `JsonRpc.Request.decodable`,
++         así que `safely(json.error.as[JsonRpc.Failure])` funciona en un punto de uso.
++     entry #code   el código de error numérico
++     entry #message   el mensaje de error legible
++     entry #data   cualquier detalle adicional que haya adjuntado el interlocutor, o `Unset`
++   entry .failure   un documento de respuesta de error conforme a la especificación, que repite el id de la petición fallida
++       `JsonRpc.failure(code, message, id)` es el `Json` de una respuesta de error: el fallo va
++       en el miembro `error` como un `.Failure`, no hay miembro `result`, e `id` repite el id de
++       la petición fallida — como un `null` de JSON explícito, tal como exige la especificación,
++       cuando se omite porque la petición no pudo analizarse y su id no puede conocerse.
+
+% 2 1 0 18f43889d06676750883b59caee3e19e
+
+% 3 1 0 11e28b841bb1aa79024bb5d80384bf40
+
+% 0 1 0 10d6f7e0646a3ed70876a012b19a9826
+
+% 0 1 0 1bde9bbbacc964b11cad4d18135dab71
+
+% 1 1 0 13903722b44c908413f40a303d08c76c
+
+@ 0 46 0 1660d5f84df6337f1e47753ea2096121
++   entry .notification   envía una notificación, a un canal `JsonRpc` o con POST a una URL HTTP
++       Dos sobrecargas, cada una de las cuales envía una `Request` sin id y devuelve una
++       `Promise[Unit]` ya ofrecida, puesto que una notificación no espera respuesta.
++       `JsonRpc.notification(target: JsonRpc, method, payload)` pone el documento en el canal de
++       salida del destino. `JsonRpc.notification(url: HttpUrl, method, payload)` lo envía con
++       POST a la URL y descarta la respuesta; necesita un `Monitor`, un `Probate` y un `Online`
++       en el ámbito, y un fallo de conexión, de HTTP, de tipo de medio o de truncamiento se
++       ignora, ya que la entrega de una notificación no se confirma. Los stubs de cliente `@rpc`
++       llaman a estas para un método `Unit`.
++   entry .call   envía una petición en un canal `JsonRpc` y devuelve la llamada `Pending` que se espera
++       `JsonRpc.call(target, method, payload)` acuña un id UUID, registra una promesa bajo él,
++       pone la `Request` en el canal de salida del destino y devuelve el par `.Pending` de id y
++       promesa. `.outcome` lo espera; `.answer` lo cumple o lo cancela cuando llega la
++       respuesta. El id se conserva porque una respuesta de error no puede cumplir la promesa y
++       debe emparejarse con quien llamó por su id.
++   entry .request   envía una petición, en un canal `JsonRpc` o con POST a una URL HTTP, como promesa del resultado
++       Dos sobrecargas. `JsonRpc.request(target: JsonRpc, method, payload)` es `.call` sin el
++       id: la `Promise[Json]` del resultado, que `.answer` cumple cuando la respuesta llega al
++       lector de la conexión, o cancela si el interlocutor respondió con un error (el fallo
++       entonces solo puede recuperarse mediante `.outcome` sobre el `.Pending`).
++       `JsonRpc.request(url: HttpUrl, method, payload)` envía la `Request` con POST a la URL en
++       una tarea y cumple la promesa con el documento de respuesta; necesita un `Monitor`, un
++       `Probate` y un `Online` en el ámbito, y un fallo de conexión, de HTTP, de tipo de medio o
++       de análisis cancela la promesa, de modo que quien la espera ve un `Async.Error`.
++   entry .outcome   espera la respuesta de una llamada `Pending` y lanza el fallo del interlocutor como un `JsonRpc.Error`
++       `JsonRpc.outcome(pending)` espera la promesa, y necesita un `Monitor` y una
++       `Tactic[JsonRpc.Error]`. Una respuesta con un `result` se devuelve como `Json`; una con un
++       `error` llega como `JsonRpc.Error(Failed, code, message)`, con el código y el mensaje del
++       interlocutor para que quien llama los traduzca a su propio vocabulario; y una promesa
++       cancelada sin ningún fallo registrado — la conexión terminó antes — es
++       `JsonRpc.Error(Abandoned)`. Los métodos `#proxy` generados llaman a esto.
++   entry .answer   encamina una respuesta entrante hacia el `.call` que la espera, por id
++       `JsonRpc.answer(json)` lee el `id` de la respuesta y exactamente uno de `result` y
++       `error`: un `result` cumple la promesa pendiente con `.receive`, y un `error` registra el
++       `.Failure` y la cancela con `.receiveFailure`. Un documento sin `id` legible, o con un id
++       que nadie espera, se ignora. Un despachador `.serve` llama a esto para cualquier
++       documento sin miembro `method`, de modo que el lector de una conexión puede entregar cada
++       documento entrante a un único despachador.
++   entry .receive   cumple con su resultado la llamada pendiente del id dado
++       `JsonRpc.receive(id, result)` completa y olvida la promesa registrada bajo `id`; un id
++       desconocido se ignora. `.answer` es quien suele llamarlo.
++   entry .receiveFailure   registra un fallo para la llamada pendiente del id dado y la cancela
++       `JsonRpc.receiveFailure(id, failure)` guarda el `.Failure` para que `.outcome` lo
++       encuentre y cancela la promesa registrada bajo `id`, ya que una respuesta de error no
++       lleva ningún resultado con el que cumplirla. `.answer` es quien suele llamarlo.
++   entry .Pending   una petición en curso: su id de correlación y la promesa de su respuesta
+
+% 1 1 0 0d9e68676dea64951feb6b21b5852b57
+
+@ 0 5 0 1d9895eb8aff3b37159a023a1db82d1d
++         Lo devuelve `JsonRpc.call` y lo consume `JsonRpc.outcome`. El id se guarda junto a la
++         promesa porque una respuesta de error no puede cumplir la promesa y se empareja por id.
++     entry #id   el UUID con el que se envió la petición
++     entry #promise   la promesa que `JsonRpc.answer` cumple con el resultado, o cancela ante un fallo
++   entry .Error   se lanza cuando falla una operación JSON-RPC: error `↯/s.112.7`
+
+% 1 1 0 057bca10a44fb127012c81e37b93fc0f
+
+@ 0 8 0 0027911dc4db33e01f727cd732bad5bc
++         Error `↯/s.112.7`: _the JSON-RPC operation failed because `reason`_. Lo lanza un
++         despachador `JsonRpc.serve` para un método que la interfaz no declara
++         (`UnknownMethod`), y `JsonRpc.outcome` — y por tanto todo método `#proxy` generado —
++         cuando el interlocutor respondió con un error (`Failed`, con `#code` y `#detail`
++         llevando el `error.code` y el `error.message` del interlocutor) o cuando la petición
++         nunca se respondió porque su promesa se canceló (`Abandoned`). Un cliente de protocolo
++         recupera su propio vocabulario de errores a partir del código: un cliente LSP traduce
++         `code` a un `Lsp.Error.Reason`.
++     entry .Reason   por qué falló la operación
+
+% 0 1 0 0b726a6b693cfa3d1397bcb0614e8f8a
+
+% 0 1 0 15920f7dee8a2f5a06352777d80b0961
+
+@ 0 32 0 0b803d02144f8aee0663e3d77b94b0c0
++         never answered_. El número es el número de detalle del error.
++     entry .communicable   representa cada `JsonRpc.Error.Reason` como su mensaje
++     entry #reason   por qué falló la operación
++     entry #code   el `error.code` del interlocutor, cuando el fallo volvió por la transmisión; si no, `Unset`
++     entry #detail   el `error.message` del interlocutor, cuando el fallo volvió por la transmisión; si no, `Unset`
++   entry #client   un stub de la interfaz `Origin` cuyas llamadas se envían por esta conexión
++       `proxy[Origin]`: un `Origin^` cuyos métodos `@rpc` ponen cada uno una `JsonRpc.Request`
++       en el canal de salida de esta instancia. Su resultado es una capacidad, ya que retiene la
++       conexión.
++   entry #proxy   un stub de cualquier interfaz `@rpc` cuyas llamadas se envían por esta conexión
++       `proxy[Interface]` es una macro que construye un objeto que implementa `Interface`: cada
++       método `@rpc` codifica sus parámetros como un objeto `params` (o un parámetro `@bare`
++       como el `params` entero), pone la petición en el canal de esta instancia con
++       `JsonRpc.call`, la espera con `JsonRpc.outcome` y decodifica el resultado con el
++       `Json.Decodable` del tipo, convocado dentro del método generado bajo la táctica propia de
++       la llamada. Un método `Unit` envía una notificación y regresa de inmediato. La macro
++       necesita un `Monitor` en su punto de expansión y un `Encodable in Json` para cada
++       parámetro; una respuesta de error del interlocutor lanza `JsonRpc.Error(Failed)` desde la
++       llamada. Un protocolo cuya superficie se reparte entre varias interfaces construye un
++       proxy por interfaz, y todos comparten el único canal de salida.
++   entry #put   encola un documento en el canal de salida de esta conexión
++       Para los mensajes que no crean los stubs: una respuesta que un protocolo da por sí mismo,
++       un fallo de `JsonRpc.failure`, una notificación iniciada por el servidor.
++   entry #stop   termina el canal de salida, de modo que `#outgoing` y `#stream` acaban una vez vaciados
++       Un lector del canal termina después de lo que ya se había puesto, en lugar de esperar
++       más. Una subclase que ya tenía un miembro llamado `stop()` debe sobrescribirlo.
++   entry #outgoing   los documentos de salida, como una `Chain[Json]` para que la vacíe el escritor del transporte
++       Cada accesor vacía la cola compartida a través de una vista nueva de propietario único:
++       usa `outgoing` o `stream`, no ambos, en una misma instancia.
++   entry #stream   los documentos de salida como eventos `Sse`, para una respuesta `text/event-stream`
++       Cada documento se convierte en un `Sse` cuya única línea `data` es su JSON compacto, que
++       `Sse.servable` sirve como `text/event-stream`: la mitad de servidor a cliente del
++       transporte HTTP transmisible de MCP. Usa `stream` o `outgoing`, no ambos, en una misma
++       instancia.
+
+@ 0 6 0 005b306c92fb955208f16c8a630834b0
++ entry .remote   `remote[Interface](url)`: un stub de cliente JSON-RPC que envía cada llamada con POST a una URL HTTP
++     Una macro que construye un objeto que implementa `Interface` a partir de sus métodos `@rpc`,
++     para un despachador montado tras una ruta HTTP. Cada método codifica sus parámetros como un
++     objeto `params`, envía con POST una `JsonRpc.Request` a `url` con `JsonRpc.request`, espera
++     la respuesta y decodifica el `result` con el `Json.Decodable` del tipo de resultado; un
++     método `Unit` envía una notificación con `JsonRpc.notification` y regresa en cuanto se ha
++     enviado.
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 149c77db45ac644f1a74f205bbafc35a
+
+% 2 1 0 00c648c4451d3840102b5a9ac5af6427
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 059174723a298f9c186e2cbad03d1515
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 2 1 0 1b92696f897689ba1a719427b33c8f80
+
+% 3 1 0 109e179f2da37a521fae52f792b39466
+
+% 5 1 0 1628154c9fc5e5d81d9bcfc8b04c6455
+
+% 6 1 0 1c0aa24e5082690b1fb1f23a467e898f
+
+% 0 1 0 02c573240d33b38616e69334fc6d9971
+
+% 0 1 0 0a2a8d667154a8c80f795fb1eb7ca1fd
+
+% 0 1 0 19bd53717efe5eed1cf1c9f3d94081b9
+
+% 1 1 0 11f5997087bca1a30f765f8e613c24fd
+
+@ 0 5 0 1468e252ed4733e61f62a179ac5a8b3e
++     El punto de expansión debe tener en el ámbito un `Monitor`, un `Probate` y un `Online` —
++     cada uno que falte es un error de compilación — y un `Encodable in Json` para cada
++     parámetro y un `Json.Decodable` para cada resultado. Un fallo de conexión, de HTTP o de
++     análisis cancela la promesa de la petición, que el método generado lanza desde la llamada
++     como un `Async.Error`. Para un cliente sobre un canal bidireccional en lugar de HTTP, véase
++     `JsonRpc#proxy`.
+
+@ 0 1 0 1228d0d85679ffb90aa97731bd254dfa
++ entry .Sse   un evento enviado por el servidor: su nombre de evento, sus líneas de datos, su id y su intervalo de reintento
+
+% 1 1 0 0ab10a8695d98876158ce7286b7630ea
+
+@ 0 8 0 1fb235948a7291111074705467f7b428
++       `Sse(event, data, id, retry)` es un evento de un `text/event-stream`: el nombre `event`
++       (`"message"` si no se establece), las líneas `data` y el `id` y el intervalo `retry`
++       opcionales, en milisegundos. Su objeto compañero contiene todo lo necesario para leer y
++       escribir el flujo: `.framable` divide un flujo de texto en eventos en las líneas en
++       blanco, `.decodable` analiza los campos de un evento, `.encodable` representa uno,
++       `.servable` sirve una `Chain[Sse]` como respuesta HTTP en flujo, y `.jsonEncodable` y
++       `.textEncodable` crean un evento a partir de un documento JSON o de una línea de texto.
++       `Sse.Source` es un búfer reproducible de eventos para un cliente que se reconecta con el
++       último id que vio.
+
+% 2 1 0 06d146a9bcda11fd07f0eb18d111784d
+
+% 3 1 0 188b17d6ee19b4881d9aeea6766665df
+
+@ 0 1 0 10630a5e204a38121af89e256906d263
++         label El texto de un flujo de eventos
+
+% 1 1 0 043cc594da2b334603d4862be80ffae2
+
+% 2 1 0 0c9255001deda2d6193f81b60146bf5e
+
+% 3 1 0 18ea2d6076e455591c071d1d1a4a9da2
+
+% 5 1 0 125890a7a2d1bce51376b6d2a72164c9
+
+% 1 1 0 15ad0e7c1eb3cb680ff73f28fad50add
+
+@ 0 1 0 09b4ea18cc89849a13583744845154d1
++         label Entramado en eventos en cada línea en blanco
+
+% 1 1 0 0632a021a393d3fb0da72990650cbcdb
+
+% 2 1 0 1a84ef9afe1eeb1e147fd974b9832b01
+
+% 3 1 0 0c5e44e5c48994e0177e91900bfc9abd
+
+% 5 1 0 0675c07744881d0f11b4ec931b434922
+
+% 0 1 0 15dee661d85d37eb174ba6d4e1026c77
+
+% 0 1 0 0859dfacf01525f1155350716510fef1
+
+% 1 1 0 06fdd9c673ac3c1a11898a702f3b2643
+
+@ 0 1 0 1b3fb89c8892cd6001cc74582b6d8336
++         label Cada evento decodificado en sus campos
+
+% 1 1 0 1fc44a804b47f931055e83dcef3b5a2d
+
+% 2 1 0 1451d1bf73e8ac3a1659b3e7a9990e1e
+
+% 3 1 0 05df0e09992aef7c060ea3e346b2c37b
+
+% 5 1 0 1d84ff1bca43471f0f91a80eac204e07
+
+% 0 1 0 08ec8e3b17b5d32b0b976211a164b6f7
+
+% 0 1 0 063224d02abdea150210021c113a1cbc
+
+% 1 1 0 0311bed8e49ea4b0046afbe99ef47607
+
+% 2 1 0 1d14b26503ea4fe702dd1d6137a3c058
+
+@ 0 3 0 0cc34dc080dfed4414114926fe96050c
++       Un `JsonRpc#stream` es una `Chain[Sse]` de los documentos de salida de una conexión, que
++       es como un servidor MCP transmite sus notificaciones al cliente; `Sse.servable` es el
++       given que permite a un manejador HTTP devolver esa cadena como respuesta.
+
+% 0 1 0 150fa6533cf08426038d26901519e6a3
+
+% 1 1 0 0c5d1c57b6db92ba1e0c2c5277254138
+
+@ 0 27 0 06abfb524adcb3931940ea4fff6a095b
++   entry .servable   sirve una `Chain[Sse]` como respuesta HTTP `text/event-stream` en flujo
++       El given `Chain[Sse] is Servable`, en el ámbito implícito: un manejador HTTP que devuelve
++       una `Chain[Sse]` envía un cuerpo continuo con el texto `.encodable` de cada evento,
++       codificado en UTF-8, bajo el tipo de medio `text/event-stream`, y entrega cada evento a
++       medida que la cadena lo produce.
++   entry .framable   el given `Text is Framable by Sse`: una trama por evento, divididas en las líneas en blanco
++       En el ámbito implícito; `text.frames[Sse]` entrega las líneas de cada evento como un único
++       `Text`, sin la línea en blanco que lo terminó, y un evento final sin línea en blanco de
++       cierre tal cual. No puede fallar. Las tramas se decodifican después con `.decodable`:
++       `frame.as[Sse]`.
++   entry .decodable   analiza las líneas `field: value` de un evento en un `Sse`; necesita una `Tactic[Sse.Error]`
++       El given `Sse is Decodable in Text`, en el ámbito implícito, de modo que `text.as[Sse]` lee
++       un evento entramado. Cada línea es `field: value`, con un espacio opcional tras los dos
++       puntos; `event` establece el nombre, cada línea `data` se añade en orden, `id` se
++       conserva como texto y `retry` se analiza como un `Long`. Una línea sin dos puntos lanza
++       `Sse.Error(MalformedField)`, un nombre de campo desconocido `Sse.Error(UnknownField)` y un
++       `retry` no numérico `Sse.Error(BadRetryValue)`; se lanzan todos los errores de una trama,
++       y una trama con algún error nunca se entrega como un evento a medio rellenar.
++   entry .encodable   representa un `Sse` como su texto de transmisión: líneas `event:`, `data:`, `id:` y `retry:`, y después una línea en blanco
++       El given `Sse is Encodable in Text`, en el ámbito implícito: `sse.encode` es
++       `event: name`, una `data: line` por cada línea de datos, `id: …` y `retry: …` cuando se
++       han establecido, cada una terminada por `\n`, y un `\n` final que termina el evento.
++       `.servable` escribe esto para cada evento que sirve.
++   entry .jsonEncodable   crea un `Sse` a partir de un documento `Json`: un evento `message` con el JSON compacto como datos
++       El given `Json is Encodable in Sse`, en el ámbito implícito: `json.encode` como `Sse` tiene
++       el nombre de evento `message` y una línea de datos con la representación compacta del
++       documento, que es lo que guarda `Sse.Source#put(json)` y lo que produce `JsonRpc#stream`.
++   entry .textEncodable   crea un `Sse` a partir de un `Text`: un evento `message` con el texto como su única línea de datos
++       El given `Text is Encodable in Sse`, en el ámbito implícito, de modo que
++       `Sse.Source#put(t"…")` funciona.
++   entry .Error   se lanza cuando un evento enviado por el servidor no es válido, o una reproducción supera el búfer de una fuente: error `↯/s.112.5`
+
+% 1 1 0 1d4fe11890f19e7602ee3f40365523d6
+
+@ 0 7 0 0c898753b5b056260f36d5638585b177
++         Error `↯/s.112.5`: _the server-sent event was not valid because `reason`_. Lo lanza
++         `Sse.decodable` ante una línea mal formada (`MalformedField`), un nombre de campo
++         desconocido (`UnknownField`) o un `retry` que no es un entero (`BadRetryValue`), y
++         `Sse.Source#stream` cuando la reproducción solicitada llega más atrás de la capacidad de
++         la fuente (`CapacityExceeded`).
++     entry .Reason   por qué el evento, o la reproducción, no era válido
++         El número es el número de detalle del error:
+
+% 3 1 0 1d443b425db050651557c15cff807ee8
+
+@ 4 4 0 18bc1dae84c32bd41b32da1463652ba4
++         column  Caso
++         column  Código
++         column  Mensaje
++         column  Nota
+
+% 0 1 0 1f06d451e2d932271836a1aafa15672b
+
+% 0 1 0 05a311f96df4a68d14b645f6587f6857
+
+% 0 1 0 05ab5e21aaafc17a09f670f490448441
+
+% 0 1 0 001416a8b2b403c300d3853be107d8df
+
+% 1 1 0 0cb98cc39c17e78100d2b08c3d085e0a
+
+@ 0 3 0 1949e8aea82b0c3b0632008ca9f868a9
++     entry .communicable   representa cada `Sse.Error.Reason` como su mensaje
++     entry #reason   por qué el evento, o la reproducción, no era válido
++   entry .Source   un búfer reproducible de eventos, numerados por id, para un cliente que se reconecta
+
+% 1 1 0 1e6577b9cd04d2181c7def95f73d80f9
+
+@ 0 5 0 1551284250a21e350c40cba1332051ab
++         `Sse.Source(capacity)` guarda los últimos `capacity` eventos en un anillo y alimenta con
++         ellos un flujo en vivo. `#put` marca cada evento con su número de secuencia como su `id`,
++         y `#stream(start)` es la cadena de eventos posteriores al id `start` — reproducidos desde
++         el anillo y después en vivo a medida que se ponen —, que es el comportamiento de
++         reconexión que pide el protocolo: un cliente envía el `Last-Event-ID` que vio, y la
++         fuente continúa a partir de él.
+
+% 2 1 0 145619edf69056d400cf10ad7765c12a
+
+% 3 1 0 14ff874b57ef3c5e13c70caa31c2c9e6
+
+% 4 1 0 0ed05fcf289a8cd31b3105aa077f1bf1
+
+% 0 1 0 14507dc1b739096a0d7255100d423f11
+
+% 0 1 0 1293f89741b811cc14c375e21da725a9
+
+% 0 1 0 1ba29754a636195c130bef1285288a96
+
+% 0 1 0 0b3951b9bfe2dd960b3f685ae8c7b4d6
+
+% 0 1 0 0980ce4c3008e1731b56c486b317a0d9
+
+% 1 1 0 03f6bb3df693f9451a9249ec77c3dca1
+
+@ 0 17 0 1b1cfa8db70d0b0a08b2b71afae6a356
++         La fuente está sincronizada, así que pueden ponerse eventos desde cualquier hilo; pero
++         cada llamada a `#stream(start)` con un inicio sustituye la bobina en vivo y termina el
++         flujo de cualquier consumidor anterior, de modo que una fuente alimenta a un solo
++         consumidor cada vez.
++     entry #put   guarda y publica un evento, marcándolo con su número de secuencia como id
++         `put(value)` toma cualquier cosa `Encodable in Sse` — un `Text`, un `Json` o un `Sse` —,
++         establece su `id` al siguiente número de secuencia, lo guarda en el anillo (desalojando
++         el más antiguo una vez superada `capacity`) y lo envía al flujo en vivo.
++     entry #stream   los eventos posteriores a un último id visto, reproducidos desde el búfer y después en vivo
++         `stream(start)` con un id de inicio reproduce cada evento del búfer cuyo id es mayor que
++         `start` y continúa después con cada evento que se ponga, como una `Chain[Sse]`; lanza
++         `Sse.Error(CapacityExceeded)` si se han puesto más de `capacity` eventos desde `start`,
++         ya que la reproducción tendría un hueco. Sin inicio, son solo los eventos en vivo.
++         Iniciar una reproducción termina el flujo de cualquier consumidor anterior.
++   entry #event   el nombre del evento, `message` salvo que el flujo haya nombrado uno
++   entry #data   las líneas de datos, en orden; un consumidor las une con saltos de línea
++   entry #id   el id del evento, si el flujo estableció uno, que un cliente devuelve como `Last-Event-ID`
++   entry #retry   el intervalo de reconexión en milisegundos, si el flujo estableció uno
+
+@ 0 1 0 129409bc5d6cd2a409d9ae99d05c99f0
++ entry .internal   las implementaciones de macro detrás de `JsonRpc.serve`, `JsonRpc.methods`, `JsonRpc#proxy` y `remote`
+
+% 1 1 0 11d5a1855a0bd8ad14b75aafb12cb844
+
+% 2 1 0 1d70faa39fe80a750e5d9444ce619a36
+
+@ 0 7 0 09637ca10cde2739131d80ba7db3705d
++       No es para uso directo: el objeto existe para que las macros de JSON-RPC tengan un hogar
++       estable. Cada una lee los métodos `@rpc` de una interfaz (incluidos los heredados) y
++       genera código que insertan `JsonRpc` y `remote`.
++   entry .methodNames   la macro detrás de `JsonRpc.methods`: los nombres de los métodos `@rpc` de una interfaz
++   entry .dispatcher   la macro detrás de `JsonRpc.serve`: una coincidencia sobre los nombres de los métodos que decodifica y codifica cada uno
++   entry .remote   la macro detrás de `remote`: un objeto que implementa la interfaz mediante POST HTTP
++   entry .client   la macro detrás de `JsonRpc#proxy`: un objeto que implementa la interfaz sobre un canal
+
+@ 0 1 0 03dcc7a2b6de0784089d290c679b093b
++ entry .Grpc   gRPC sobre HTTP/2: canales, endpoints, los estados canónicos, el entramado de mensajes y stubs derivados
+
+% 1 1 0 0f9b0020c82a295b0db060eab220a7de
+
+@ 0 8 0 14f59bc2aa3e4bc40e5fea9ae14c2a67
++       `Grpc` agrupa el vocabulario de gRPC —`Status`, `Method`, `Metadata`, `Endpoint`,
++       `Channel`, `Error` y `Framing`— bajo un solo nombre, igual que `telekinesis` agrupa sus
++       tipos bajo `Http` y `Http2`. Un `Grpc.Channel` es una única conexión HTTP/2 persistente
++       en la que cada llamada abre un flujo multiplexado: la petición es un mensaje de Protocol
++       Buffers con prefijo de longitud, la respuesta es un mensaje (`Channel#unary`) o una
++       secuencia de ellos decodificada de forma perezosa (`Channel#serverStreaming`), y el
++       estado canónico llega en el tráiler `grpc-status` de la respuesta. `Grpc.remote` deriva
++       un stub tipado para una interfaz de servicio de métodos `@rpc` sobre un canal, así que
++       una llamada es una llamada a un método.
+
+% 2 1 0 197ae190836cac7d0147eca91d242e73
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 04ea60e84068f7921bdf4ecb54884444
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 0 1 0 0e73e7682d74a82f06278b1faec7f952
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 0 1 0 099cc1f5b3c02f8d103cd6a42f21344b
+
+% 0 1 0 08f5b05833287b1618a12d159d43d9ad
+
+% 0 1 0 12c65388be6c9cba0f41551ac4c2f48c
+
+% 0 1 0 11456b760a806ff90248e5c1f27698dd
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 06ebef5403ea94af1a20eba023d619b7
+
+% 0 1 0 09545cd0bdf4771e04d278b7e462a8cb
+
+% 0 1 0 1607e1b04c0c531e167bacdb8f38df29
+
+% 0 1 0 1a650a14ba7e2b220ea0cb0fe7e0940c
+
+% 1 1 0 039ed632a320dea006f6295022ccb505
+
+@ 0 8 0 1eaa359dc59cad7e186e857b9f1b3eb7
++       Los mensajes se codifican y decodifican con `Encodable in Protobuf` y
++       `Decodable in Protobuf` de `locomotion`, derivados para las case classes. La petición
++       es siempre un mensaje: las llamadas con flujo del cliente y bidireccionales esperan a
++       una mejora de `Http2`. Un canal retiene su conexión, que contiene el `Monitor`
++       ambiental, así que un canal es una capacidad y vive dentro de un ámbito `supervise`;
++       `Grpc.Endpoint(…).session: channel ?=> …` limita en cambio uno a un bloque, y cierra la
++       conexión cuando termina el bloque. Una respuesta con un estado distinto de `Ok`, un
++       estado HTTP distinto de 200, un cuerpo truncado o sin mensaje lanza `Grpc.Error`, cuyo
++       `status` es el `Grpc.Status` canónico.
+
+% 0 1 0 0dcb6423fd3698930e5256943b3381b4
+
+% 1 1 0 132def176c7657fc0546d41a2cab4384
+
+% 1 1 0 1519932a1c29406004316c37e738bee8
+
+@ 0 1 0 1ac33d7b84241ef6112487a86b29fb74
++   entry .Status   los diecisiete códigos de estado canónicos de gRPC, transportados en el tráiler `grpc-status`
+
+% 1 1 0 09958014b99aedf60e5621892f3606f8
+
+@ 0 14 0 1e2cf17acec069b01df11a711101e279
++         Un enum de los códigos canónicos, cada uno con su `#code` numérico: `Ok` (0) es el
++         éxito y todos los demás son fallos: `Cancelled` (1), `Unknown` (2),
++         `InvalidArgument` (3), `DeadlineExceeded` (4), `NotFound` (5), `AlreadyExists` (6),
++         `PermissionDenied` (7), `ResourceExhausted` (8), `FailedPrecondition` (9),
++         `Aborted` (10), `OutOfRange` (11), `Unimplemented` (12), `Internal` (13),
++         `Unavailable` (14), `DataLoss` (15) y `Unauthenticated` (16). Un `Grpc.Error` lleva el
++         estado que devolvió el servidor, así que quien llama hace coincidencia sobre él:
++         `case Grpc.Error(Grpc.Status.NotFound, _) => …`. Un fallo en el nivel del transporte
++         que detecta el propio canal se notifica como `Internal`.
++     entry .of   el estado de un código numérico, o `Unset` para uno no reconocido
++         `Grpc.Status.of(5)` es `Grpc.Status.NotFound`. Un canal lee con esto el tráiler
++         `grpc-status`, y trata un código ausente o no reconocido como `Unknown`.
++     entry .communicable   representa un estado como su nombre, para el mensaje de `Grpc.Error`
++     entry #code   el código numérico, de `0` a `16`
++   entry .Method   un método gRPC totalmente cualificado: un nombre de servicio y un nombre de rpc
+
+% 1 1 0 096e4c6515d3c2291d39d4b84aae34a5
+
+@ 0 9 0 1325013890d4089414e365b34a5ad6bf
++         `Grpc.Method(service, rpc)` nombra un método tal como lo direcciona la transmisión,
++         por el `:path` de HTTP/2 `/<package>.<Service>/<Method>`:
++         `Grpc.Method(t"grpc.health.v1.Health", t"Check")` para
++         `/grpc.health.v1.Health/Check`. `Channel#unary` y `Channel#serverStreaming` toman uno;
++         `Grpc.remote` construye uno por cada método `@rpc` a partir del nombre del servicio y
++         del propio nombre del método.
++     entry #service   el nombre totalmente cualificado del servicio, el paquete y el `Service`
++     entry #rpc   el nombre del método dentro del servicio
++     entry #path   el `:path` de HTTP/2, `/service/rpc`
++   entry .Metadata   metadatos personalizados de la llamada: pares clave/valor enviados como cabeceras HTTP/2 con la llamada
+
+% 1 1 0 070b0fcc04b7b17a0d1a8b012e8da516
+
+@ 0 6 0 02ad4658da297dfb0a7fb949aef24795
++         `Grpc.Metadata(entries)` es una lista de pares de nombre y valor de cabecera que se
++         envían junto a las pseudocabeceras de gRPC: el `containerd-namespace` de containerd,
++         un token de autorización. Los `defaults` de un canal se envían con cada llamada, y los
++         metadatos propios de una llamada se añaden tras ellos.
++     entry #entries   los pares de nombre y valor de cabecera, en orden
++   entry .Endpoint   un endpoint gRPC: el destino de un canal limitado a un ámbito, `Grpc.Endpoint(…).session`
+
+% 1 1 0 140e1e3f5717388f0562df2632e985ef
+
+@ 0 7 0 0b4ba86507be99e4156c1e109c11f5a6
++         `Grpc.Endpoint(endpoint, defaults)` empareja un `Http2.Endpoint` —cualquier dirección
++         `Connectable` y `Showable`, como un `Endpoint` TCP o un socket Unix— con los
++         `Metadata` que debe llevar cada llamada. Su único uso es como sujeto de una sesión: el
++         given `.sessional` del objeto compañero lo hace `Sessional`, así que
++         `Grpc.Endpoint(…).session: channel ?=> …` abre la conexión HTTP/2, completa el
++         handshake, presta un `Grpc.Channel^` al bloque y cierra la conexión cuando termina el
++         bloque, mientras que `Grpc.Channel.apply` mantiene su conexión abierta hasta que
++         termina el ámbito `supervise` que lo envuelve.
+
+% 2 1 0 0a6e62180f97c73312228ca23939b932
+
+% 3 1 0 13b3eb261bceeed81f8332df75de9ce9
+
+% 4 1 0 1da145652dfff2a9020a803c9e27045c
+
+% 5 1 0 12e355363e3784a306a9821e6b3680d1
+
+% 6 1 0 19a9ce7bb78684461e848cb465108e6a
+
+% 7 1 0 0cbc51aaa049d8d30523c120a4c2816d
+
+% 8 1 0 0d829c04f0cad5ee1fd4b4d6dc6b9f1b
+
+% 0 1 0 1cc3b0e519c77d4c1c98c05c46dfe672
+
+% 2 1 0 0962506583a0991f035adf6c7aeaefad
+
+% 3 1 0 09ef38a3e68c015012861e4f59c87e25
+
+% 5 1 0 1f8660474e5d317a1c5e0c9252cb8a84
+
+% 0 1 0 0c4809ceeab50ae11a2d49c014ebb97f
+
+% 0 1 0 1782753e3b0e8ba404948b2f6e5a64f7
+
+% 0 1 0 076b0b5c257e608402adb47ec1f55e76
+
+% 1 1 0 0bedf1a1641ebe621359bd5ecc29e843
+
+@ 0 16 0 0ff0f4f9433c31151f643b7e1e6f0530
++         El canal es una capacidad nueva del bloque: el comprobador de capturas rechaza que se
++         devuelva desde el bloque, a él o a cualquier cosa que lo capture.
++     entry .sessional   el given que hace de un `Grpc.Endpoint` el sujeto de una sesión de canal limitada a un ámbito
++         Un `GrpcSessional[endpoint]`, en el ámbito implícito, para cualquier tipo de endpoint
++         `Connectable` y `Showable`. Necesita en el ámbito un `Monitor`, un `Probate`, una
++         `Tactic[Async.Error]`, una `Tactic[Socket.Error]` y un `Socket.Event is Loggable`, y
++         los captura, ya que los demonios lector y escritor de la conexión se ejecutan bajo
++         ellos.
++     entry #endpoint   el endpoint HTTP/2 al que conectarse
++     entry #defaults   los metadatos que se envían con cada llamada en el canal
++   entry .remote   `Grpc.remote[Interface](channel, service)`: un stub de cliente tipado sobre un canal
++       Una macro que construye un objeto que implementa `Interface` a partir de sus métodos
++       `@rpc`, cada uno de los cuales debe tomar exactamente un mensaje de petición. Un método
++       que devuelve un valor hace una llamada `Channel#unary`; uno que devuelve un
++       `Chain[Response]` hace una llamada `Channel#serverStreaming`. El `:path` de cada uno es
++       `/service/method`, a partir del nombre totalmente cualificado del servicio proto dado y
++       del propio nombre del método, así que `Grpc.remote[Echo](channel, t"echo.Echo")` envía
++       `call` a `/echo.Echo/call`.
+
+@ 0 7 0 161ebc13a1fc3cc800bbde8060840e79
++       Los códecs de Protocol Buffers (`Encodable in Protobuf` para cada petición,
++       `Decodable in Protobuf` para cada respuesta) y las capacidades de la llamada —un
++       `Monitor` y tácticas para `Grpc.Error`, `Http2.Error`, `Async.Error` y
++       `Protobuf.Error`— se convocan en el punto de llamada de `remote`, así que debe
++       invocarse donde estén en el ámbito; los métodos del stub tienen entonces las
++       signaturas simples de la interfaz, y una llamada fallida lanza a través de la táctica
++       capturada allí. Un método con cero o con varios parámetros es un error de compilación.
++   entry .Channel   un canal gRPC sobre una conexión HTTP/2 persistente, para llamadas unarias y con flujo del servidor
+
+% 1 1 0 19c1bbff87a7cc9e0e96221172a39c9b
+
+@ 0 9 0 08b512b08c6f6d950101e9101bc33202
++         Un `Channel` envuelve una `Http2.Connection`, la `:authority` que se envía y los
++         `Metadata` que lleva cada llamada. `Channel.apply(endpoint)` abre uno dentro de un
++         ámbito `supervise` y deja su conexión abierta hasta que termina el ámbito;
++         `Grpc.Endpoint(…).session` presta uno durante un bloque. Cada llamada es un flujo
++         HTTP/2: un `POST` al `:path` del método con `content-type: application/grpc+proto`,
++         `te: trailers` y los metadatos como cabeceras, un cuerpo de exactamente un mensaje con
++         el prefijo de `Grpc.Framing`, y una respuesta cuyos mensajes se desentraman del cuerpo
++         y cuyo estado se lee de los campos `grpc-status` y `grpc-message` de los tráileres (o
++         de las cabeceras, en una respuesta Trailers-Only).
+
+% 2 1 0 1118f39a777bd87101f009dfc5ef24df
+
+% 3 1 0 0adb407da6200e351f99c749fda76171
+
+% 4 1 0 063c24f7cc38880a01f699e20b6eef9e
+
+% 5 1 0 12920f0a336b33441c43aaed2671953d
+
+% 6 1 0 0ccc17e545a24c8708c6f6413fc6c0f3
+
+% 7 1 0 091f46d74d2e14b80a56bed22401979a
+
+% 8 1 0 0f49ad4fd599fae6070fc65515cab38f
+
+% 2 1 0 1ad1c811aec9cc511ccc81fc833d54b0
+
+% 3 1 0 06e1821c853b76b61d160a272a3637cc
+
+% 5 1 0 023bb0a9c45ffb8404872eb364bd8182
+
+% 0 1 0 0ff26a3025010e07007c9a9ca28fa52c
+
+% 0 1 0 150b0f3d47e77784004f31c745c5d90f
+
+% 0 1 0 1a50ab14d13ba2b2095c56e2cf0d62dc
+
+% 0 1 0 17bbd7974fee50e51fc638095207eb4b
+
+% 1 1 0 10216f9ac7bec56314420f3b4892506b
+
+@ 0 29 0 0d2e3cf00999514c0a5e0624965bf874
++         Un canal es una capacidad (`Channel^{monitor, caps.any}`), ya que su conexión contiene
++         el `Monitor` ambiental. El constructor `new Channel(connection, authority, defaults)`
++         es público, para una conexión abierta por otros medios; el `Host` de las peticiones
++         que construye se toma de la parte de `authority` anterior a cualquier `:`, o es
++         `Localhost` cuando no es un nombre de host (un literal IPv6 entre corchetes, por
++         ejemplo), lo cual es inofensivo, ya que el transporte HTTP/2 envía `authority` como
++         `:authority` y lo ignora.
++     entry .apply   abre un canal a un endpoint en claro (h2c) y completa el handshake de HTTP/2
++         `Grpc.Channel(endpoint, defaults)` conecta el `Http2.Endpoint`, completa el handshake
++         y devuelve el canal. Los demonios de lectura y escritura de la conexión capturan el
++         `Monitor` y el `Probate` ambientales, así que debe llamarse dentro de un ámbito
++         `supervise`, y necesita una `Tactic[Async.Error]` y una `Tactic[Socket.Error]` para
++         una conexión que no pueda establecerse. La conexión permanece abierta hasta que termina
++         el ámbito; para una limitada a un bloque, usa `Grpc.Endpoint(…).session`.
++     entry #unary   envía un mensaje, lee exactamente un mensaje de respuesta y después comprueba el estado
++         `channel.unary[Request, Response](method, value, metadata)` codifica `value` con su
++         `Encodable in Protobuf`, lo envía, decodifica el primer mensaje de respuesta con el
++         `Decodable in Protobuf` de `Response` y lo devuelve. Necesita un `Monitor` y tácticas
++         para `Grpc.Error`, `Http2.Error`, `Async.Error` y `Protobuf.Error`. El estado final se
++         comprueba antes de exigir un mensaje, así que una respuesta de error Trailers-Only
++         lanza `Grpc.Error` con su estado real en lugar de `Internal` por un mensaje ausente;
++         un estado HTTP distinto de 200, un cuerpo truncado o un estado de éxito sin mensaje
++         lanzan cada uno `Grpc.Error(Internal, …)`.
++     entry #serverStreaming   envía un mensaje y decodifica de forma perezosa cada mensaje de respuesta como una `Chain`
++         `channel.serverStreaming[Request, Response](method, value, metadata)` es como
++         `#unary`, pero devuelve la `Chain[Response]` de todos los mensajes del cuerpo de la
++         respuesta, decodificados a medida que se fuerza la cadena. El estado final solo se
++         verifica una vez agotado el cuerpo, así que un estado distinto de `Ok` se lanza al
++         final de la cadena, y la cadena debe consumirse dentro del ámbito `supervise` al que
++         pertenece el canal.
++   entry .Error   se lanza cuando falla una llamada gRPC: el estado canónico y el mensaje del servidor
+
+% 1 1 0 012dcca6444840f5037bbb9b21eceffc
+
+@ 0 10 0 1534491fc2f8faa41c61888b5441a97f
++         _the gRPC call failed with status `status`: `detail`_. Lo lanzan `Channel#unary` y
++         `Channel#serverStreaming` (y, por tanto, todos los métodos de stub de `Grpc.remote`)
++         cuando el `grpc-status` de la respuesta no es `Ok`, con `#status` el `Grpc.Status`
++         canónico y `#detail` el texto de `grpc-message`; y con `Grpc.Status.Internal` y un
++         diagnóstico local cuando el servidor devolvió un estado HTTP distinto de 200, no envió
++         ningún mensaje a una llamada unaria, cortó la respuesta o envió una trama de mensaje
++         truncada (`Grpc.Framing.framable`). El error no lleva número de error de fulminate.
++     entry #status   el estado canónico, que refleja el código de `grpc-status`
++     entry #detail   el texto de `grpc-message`, o un diagnóstico local
++   entry .Framing   el entramado de mensajes de gRPC: un byte de indicador de compresión, una longitud de cuatro bytes y después la carga útil
+
+% 1 1 0 0c128efd0b26a34d0f4d199ebe8d06f9
+
+@ 0 7 0 0015fa0f3d4d6a800119a81a72ee8d1f
++         Todo mensaje gRPC, sea cual sea su códec, lleva en la transmisión el prefijo de un
++         byte que es `1` si la carga útil está comprimida con el `grpc-encoding` de la llamada
++         (aquí, gzip) y `0` en caso contrario, y después su longitud en cuatro bytes big-endian.
++         `.encode` pone el prefijo a un mensaje, y `.framable` vuelve a montar mensajes
++         completos a partir de un cuerpo de respuesta dividido en fragmentos arbitrarios, así
++         que `body.frames[Grpc.Framing]` es el `Iterator[Data]` de sus mensajes, descomprimidos
++         donde lo indica el indicador. `Grpc.Framing` es el tipo sellado con el que se nombra
++         la convención; sus fallos son `Grpc.Error`, no `Framing.Error`.
+
+% 2 1 0 0a9564034ca414fb0b37d75ae1ffa58c
+
+% 3 1 0 1dff50f4418f7fe31173a9dc5afbd527
+
+% 4 1 0 0c6ef3b7f570f70c0e1d5a7772d2f70a
+
+% 0 1 0 1549dce1def0d2b3146a423ec9cc1b2e
+
+% 0 1 0 0d58d694702ca6d41c37fcdd4c940a4b
+
+% 0 1 0 03b273905b0a865a02efa0007292f33c
+
+% 0 1 0 17f661e428c8e14c06145efd85384357
+
+% 0 1 0 0d7d112cfa88365c1543dd4405c34829
+
+% 1 1 0 13f42f9289c8e88818eba79b0a0a33f2
+
+@ 0 11 0 00b7ea925c904e9710292df72b5c4125
++     entry .encode   pone el prefijo a un mensaje para la transmisión, y lo comprime con gzip si se pide
++         `Grpc.Framing.encode(message, compress)` es la cabecera de cinco bytes seguida de la
++         carga útil: el mensaje tal como se da, o su compresión gzip con el byte de indicador
++         activado cuando `compress` es `true` (es `false` salvo que se active). El canal envía
++         todos los mensajes de petición sin comprimir.
++     entry .framable   el given `Data is Framable by Grpc.Framing`; necesita una `Tactic[Grpc.Error]`
++         En el ámbito implícito. Lee cada cabecera de cinco bytes y toma ese número de bytes,
++         descomprimiendo con gunzip una carga útil cuyo indicador esté activado; si la entrada
++         termina en una frontera de mensaje, termina el iterador, y si termina dentro de una
++         cabecera o de una carga útil, se lanza `Grpc.Error(Internal,
++         "the gRPC message frame was truncated")`. Las longitudes se enmascaran byte a byte,
++         así que un mensaje de 128 bytes o más se entrama correctamente.
+
+@ 0 1 0 0b18d5b10efae680098e2ba45236cdff
++ entry .GrpcSessional   la instancia de `Sessional` que presta un `Grpc.Channel` limitado a un ámbito para un `Grpc.Endpoint`
+
+% 1 1 0 027ed91951aeef35186dcee4b342c221
+
+@ 0 8 0 1a70b92740780f730eb179bab8e7e2a9
++       `GrpcSessional[endpoint]` es la clase detrás de `Grpc.Endpoint.sessional`: su `Self` es
++       `Grpc.Endpoint[endpoint]` y su `Result` es un `Grpc.Channel^` nuevo. `session(target)`
++       abre la conexión HTTP/2 del endpoint mediante `Http2.EndpointSessional`, completa el
++       handshake, presta al bloque un canal sobre ella y cierra la conexión y sus demonios
++       lector y escritor cuando termina el bloque, a diferencia de `Grpc.Channel.apply`, cuya
++       conexión mantiene abierta un demonio aparcado hasta que termina el ámbito `supervise`
++       que lo envuelve. Es una clase con nombre y no un given anónimo porque una instancia
++       anónima refrescaría los tipos de capacidad de su `Result` inferido.
+
+@ 0 4 0 19e3fb255645135611c91956492ccd33
++       Se construye con un `Monitor`, un `Probate`, una `Tactic[Async.Error]`, una
++       `Tactic[Socket.Error]` y un `Socket.Event is Loggable`, todos los cuales toma
++       `Grpc.Endpoint.sessional` del ámbito; un usuario escribe
++       `Grpc.Endpoint(endpoint).session: channel ?=> …` y nunca nombra la clase.
+
+% 0 1 0 026d6bc26b4b257c1b33bf53dbbfd801
+
+@ 0 7 0 11aa7950ca207358009db789616ce42b
++   entry #Self   el tipo del sujeto, `Grpc.Endpoint[endpoint]`
++   entry #Result   el valor prestado, un `Grpc.Channel^` nuevo que no puede escapar del bloque
++   entry #session   abre la conexión, presta un canal al bloque y después la cierra
++       `session(target)(lambda)`: el bloque recibe el `Grpc.Channel^` como valor contextual,
++       así que una llamada dentro de él es `channel.unary[…](…)`, donde `channel` es el
++       parámetro de contexto que nombra el bloque. Una conexión que no puede establecerse
++       lanza `Socket.Error` o `Async.Error` a través de las tácticas que capturó la
++       instancia.
+
+@ 0 1 0 0ea0c1e17dc4b2b00bb87aa67dc1124f
++ entry .grpcInternal   la implementación de macro detrás de `Grpc.remote`
+
+% 1 1 0 11425998ffe5882e197e0a89277992bf
+
+% 2 1 0 038a205e94a595b30282d863b630e9b0
+
+@ 0 5 0 19671ee6f2155246123e5e1fce1312bb
++       No es para uso directo: el objeto existe para que la macro de stubs de gRPC tenga un
++       hogar estable.
++   entry .remote   la macro detrás de `Grpc.remote`: un objeto que implementa la interfaz sobre un canal
++       Para cada método `@rpc` de la interfaz, genera un cuerpo que convoca los códecs de
++       Protocol Buffers, el `Monitor` y las cuatro tácticas en el punto de expansión, y llama a
++       `Grpc.Channel#unary` o, para un resultado `Chain`, a `Grpc.Channel#serverStreaming`.

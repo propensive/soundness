@@ -1,0 +1,174 @@
+orthant 2 language
+
+@ 0 1 0 11706cc2fe1b2fef1c1b860a9bfb0b0a
++ # Opcionalidade
+
+@ 0 7 0 0dba26581e4635bf0ca4a33aba4ecfbe
++ O Soundness representa um valor ausente com um `Optional` plano, e não com `null` nem com
++ `Option`. Ao contrário de `null`, um `Optional` é visível no tipo e não pode ser desreferenciado
++ por acidente; ao contrário de `Option`, ele não acrescenta nenhum embrulho em torno do valor, de
++ modo que um valor presente é simplesmente o próprio valor, e a opcionalidade não se empilha em
++ camadas aninhadas. A ausência é tratada onde surge, em vez de ser conduzida pelo programa
++ inteiro, o que mantém o caso comum — um valor que está presente — direto e desimpedido. No
++ Soundness, `null` é tratado como irrepresentável e desnecessário ao mesmo tempo.
+
+@ 0 1 0 1ae3d7af2c08106e0c6dbec8ef3553b8
++ ## Ausência sem embrulho
+
+@ 0 2 0 1737b5c13ef67a2707ba368fcd69d3c4
++ Um `Optional[Text]` *é* um `Text`, ou é `Unset`. Não há nenhum `Some` a alocar nem nenhum `Some`
++ a desembrulhar:
+
+% 2 1 0 1b18f51e00ffd5f40d8410d5d66dbc20
+
+% 3 1 0 1d25141ad39ea89718c65347efac25cf
+
+% 4 1 0 0561c02a0160476b02649f383aea4a44
+
+% 0 1 0 1a6bc6c1d6b615ba162688765b35db3c
+
+% 0 1 0 13fa776b77fed826051b81b2253f0da0
+
+% 0 1 0 0f822d80b70ee63109f76347c57b3358
+
+% 0 1 0 0f64806cc71797b018f0dfd19e32b48a
+
+% 1 1 0 15d72ec80c8820b50413a8484c201316
+
+@ 0 1 0 0b239f2b5c2f6d270188932a1a569b49
++ As operações se leem como as perguntas que respondem:
+
+% 2 1 0 0cb05ca7d2968004001132a8d04fa06e
+
+@ 0 8 0 0364bd648dbbf230170dd2b4b8e65b59
++ column  Método
++ column  Faz
++ column  Tipo do resultado
++ row  `or`  fornece um fallback para um valor ausente  o tipo do valor
++ row  `let`  transforma um valor presente, deixando um ausente como está  um `Optional`
++ row  `lay`  fornece um fallback e uma transformação ao mesmo tempo  o tipo da transformação
++ row  `present`  pergunta se há um valor  `Boolean`
++ row  `absent`  pergunta se não há nenhum  `Boolean`
+
+% 1 1 0 129db27d6a47da480b14c48fa1bac786
+
+@ 0 2 0 1b67f223d4a8979e0b9ae462520c2bfa
++ E `assume` insiste na presença onde o código ao redor já a estabeleceu, lançando um
++ `Optional.Error` se isso estava errado:
+
+% 2 1 0 05e18f3e4e640d7b116072fa895569bf
+
+% 3 1 0 0c9e79b2c98bab5a03e58b0558e7ea72
+
+% 4 1 0 0915851a8058d7521bcd9b8e88af1ac5
+
+% 0 1 0 1d672bf6964d710c1181a5758ef99d93
+
+% 0 1 0 02b594b0c7073e3b0b6fa6cda5e4a9b8
+
+% 0 1 0 106abebcd78276e21935261bbb18925a
+
+% 0 1 0 113c727a8bf07d280a203d270ed68b79
+
+% 1 1 0 1e28bc45ea2024fc1a011de54707a59e
+
+@ 0 1 0 0efc2faea47436341617c58401eafab1
++ ## Por que o embrulho custa mais do que parece
+
+@ 0 4 0 12403bfbe87a7ae117b78a145e472780
++ `Option` aloca um objeto por valor presente. Em uma única expressão, isso é invisível; em uma
++ tabela de um milhão de registros com três colunas opcionais, são três milhões de objetos que
++ existem apenas para dizer “sim, há um” — e cada leitura de um deles é um ponteiro a seguir.
+
+@ 0 4 0 1e0734753b5307e7024c0399968e1c4c
++ O custo mais profundo é que os embrulhos se *empilham*. `Option[Option[T]]` é um tipo legal com
++ três habitantes e nenhum significado consensual, e ele surge sempre que uma busca que pode falhar
++ retorna um valor que pode ele mesmo estar ausente. O código que se depara com um deles
++ normalmente o achata e torce para que as duas ausências significassem a mesma coisa.
+
+@ 0 4 0 0dd8a4ed52c710071984974dfc0e93f0
++ `Optional` não pode se empilhar, e não por uma regra que o proíba. `Optional[value]` é a união
++ `Unset | value`, e uma união absorve um membro repetido, de modo que `Optional[Optional[Int]]`
++ *é* `Optional[Int]` — o mesmo tipo, obtido pela igualdade de tipos comum, e não por uma
++ verificação que o rejeite.
+
+@ 0 2 0 01e21b8c367caa8f0e2e779fb5bb2518
++ O tipo ambíguo, portanto, nunca chega a surgir para ser achatado. Não há nenhum `Some(None)` a
++ desambiguar, porque não há nada que ele possa ser.
+
+@ 0 1 0 0bd14eaea0e3fa6b0a54ac5625ef72a2
++ As três representações da ausência, lado a lado:
+
+% 2 1 0 0c5b102c9430dbab1cf611c27fca7356
+
+@ 0 7 0 045c2bcf095058a51ff1bd2f2855053c
++ column  Representação
++ column  Visível no tipo
++ column  Valor presente
++ column  Ausência aninhada
++ row  `null`  não  o próprio valor  não pode ser expressa
++ row  `Option`  sim  embrulhado em um `Some`  `Option[Option[T]]`, sem significado consensual
++ row  `Optional`  sim  o próprio valor  absorvida: `Optional[Optional[Int]]` é `Optional[Int]`
+
+% 1 1 0 0982ed44ce6aef65196e43fecce573f1
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Quanto custa
+
+@ 0 1 0 1893d26e2232a9ad1b29008fe1b8a889
++ Duas coisas, e vale a pena dizê-las com franqueza.
+
+@ 0 5 0 07076a5fe4e1db8904705b010d777cb1
++ A primeira é o preço dessa absorção. Ela funciona porque o compilador consegue ver os dois
++ membros da união — e, para um tipo *abstrato*, ele não consegue: um `value` instanciado mais
++ tarde como algo que já é opcional fundiria duas ausências que deveriam ser distintas. Assim, um
++ método genérico que recebe um `Optional[value]` precisa de uma evidência de que `value` é um tipo
++ definido, e a evidência aparece na assinatura:
+
+% 2 1 0 136034696737997a1294b02431558ad9
+
+% 3 1 0 1a4351151dfbf5ab1f9b06fe919a4eae
+
+% 4 1 0 1b93e4c7a32383801019fb19c45c6dc7
+
+% 0 1 0 01e464c011f04054191668e880db99ee
+
+% 0 1 0 143675795e3f849c026fbc4c56b78397
+
+% 1 1 0 1b65b22a8484afe6051c621b51f34b20
+
+@ 0 5 0 0bbb62c2b85eb97a04e54dd2eee93781
++ A segunda é que `Optional` não é uma mônada e não finge ser. Não há nenhum `flatMap` que conduza
++ a ausência através de uma comprehension `for`. A ausência é tratada onde surge — com `or`, `let`
++ ou `lay` —, o que é o objetivo, e não uma omissão: um valor que pode estar ausente é tornado
++ definido perto de onde foi obtido, em vez de ser carregado pelo programa em um embrulho ao qual
++ cada passo posterior precisa se acomodar.
+
+@ 0 1 0 0a1bc8b3cd8cd65d1e6dadbb52181f19
++ ## Encontrando `Option` na fronteira
+
+@ 0 2 0 144aefe08192ff3e015d7602ccff1b62
++ Outras bibliotecas retornam `Option`, e um valor do Soundness às vezes precisa se tornar um. A
++ conversão é explícita nos dois sentidos e fica confinada à fronteira:
+
+% 2 1 0 063fe6b9f3738fb104c17965f369e3f8
+
+% 3 1 0 07bc3a86f0d4338402947441518b46f2
+
+% 4 1 0 0781665634b79a521347cc0629befe8f
+
+% 0 1 0 16f2eb55c9ca47691663ea730256a3cf
+
+% 0 1 0 08105fbc02ab5d89190e77e85d43aa37
+
+% 1 1 0 1e97933f09d951740e3fe0e61ca41966
+
+@ 0 3 0 16b10fb9eba3da510116aaf65f3dcbc0
++ Converter na borda, em vez de adotar `Option` em todo lugar, é a mesma disciplina aplicada a
++ `null`: uma representação estrangeira é traduzida uma vez, na chegada, e o interior do programa
++ fala uma única língua.
+
+@ 0 2 0 1df122a5d57143b01f9cb51f1935fcfa
++ Veja [custo zero](zero-cost.md) para o princípio geral de que isto é uma instância, e
++ [estados impossíveis](impossible-states.md) para saber por que a ausência de aninhamento
++ importa.

@@ -1,0 +1,42 @@
+orthant 2 language
+
+% 0 1 0 03436614c831c1f70dfe1f0f885feb1b
+
+@ 0 2 0 1dfe712c90d7e34b0ad23b490143cafe
++ Порождается, когда обнаружение сервисов DNS-SD (`syndesis`) не может выполнить анонсирование,
++ просмотр или разрешение либо когда сервис, экземпляр или значение TXT недопустимы.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Причина
+
+@ 0 4 0 13488b490aeb2a1806fa0aa6bd0efbbd
++ `Discovery.Service`, `Discovery.Instance` и `Discovery.Txt` проверяют свои части при
++ построении; анонсирование зондирует своё имя и сдаётся после слишком большого числа конфликтов;
++ разрешение ждёт записей экземпляра в пределах тайм-аута; а бэкенд должен суметь запуститься.
++ Сообщение — `service discovery failed because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Варианты
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 11 0 1bdfeeb0968780850977d0e272a22d8b
++ column  Код
++ column  Причина
++ column  Значение
++ column  Сообщение
++ column  Решение
++ row  `↯/s.102.1.1`  `Conflict`  Другой хост продолжал претендовать на каждое имя, опробованное для анонсирования, вплоть до предела переименований.  `[↯/s.102.1.1] service discovery failed because the name Hamlet._fury._tcp.local could not be claimed after repeated conflicts`  Выберите уникальное имя экземпляра или остановите другого анонсирующего.
++ row  `↯/s.102.1.2`  `Timeout`  Записи SRV, TXT или адресов экземпляра не пришли в пределах тайм-аута разрешения.  `[↯/s.102.1.2] service discovery failed because the instance Hamlet._fury._tcp.local did not resolve before the timeout`  Возможно, экземпляр покинул сеть; выполните просмотр снова или увеличьте тайм-аут.
++ row  `↯/s.102.1.3`  `InvalidName`  Метка экземпляра пуста либо метка или имя превышают ограничения DNS (63 октета для метки, 255 для имени).  `[↯/s.102.1.3] service discovery failed because the name is not a valid DNS-SD name`  Сократите метку; она может содержать любой UTF-8, включая точки и пробелы.
++ row  `↯/s.102.1.4`  `InvalidTxt`  Ключ TXT пуст, не является печатным ASCII или содержит `=`; либо пара `key=value` превышает 255 октетов.  `[↯/s.102.1.4] service discovery failed because the TXT entry a=b is not valid`  Ключи — это короткие печатные имена ASCII; поместите `=` в значение и разбейте длинные значения на несколько ключей.
++ row  `↯/s.102.1.5`  `InvalidService`  Имя сервиса пусто, длиннее пятнадцати символов или начинается с подчёркивания, которое добавляет форма DNS.  `[↯/s.102.1.5] service discovery failed because the service name _fury is not valid`  Укажите зарегистрированное имя сервиса без подчёркивания: `fury`, а не `_fury`.
++ row  `↯/s.102.1.6`  `Unavailable`  Бэкенд не смог запуститься: сокетный ответчик не нашёл интерфейса с поддержкой многоадресной рассылки или не смог присоединиться к группе mDNS.  `[↯/s.102.1.6] service discovery failed because no service discovery backend could be started`  Проверьте сетевые интерфейсы хоста и то, что порт 5353 можно привязать с повторным использованием.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## См. также
+
+@ 0 1 0 0aac7d226d20ddd91529b8334ee1c1cf
++ - Исходник: `lib/syndesis/src/core/syndesis.Discovery.scala`

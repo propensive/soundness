@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 0af116d466d011c7110573854fec3967
++ # `↯/s.17.5` — Falta um `Functor` para a derivação de mônada
+
+@ 0 2 0 0fd27fa745c4295a103a947a9b18c64f
++ Lançado em tempo de compilação pela macro `monad` do Mercator quando nenhuma
++ instância de `Functor` pode ser convocada para o tipo.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 0359c69dfe7ecb250e9821335a6876b0
++ A derivação de `Monad` do Mercator depende de uma instância subjacente de
++ `Functor`.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensagem de exemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0185397c6ac1e701004a03ba2e9b30de
+
+% 1 1 0 0fd7d00e51d64e791c28410d566838ad
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 1 0 106cfb1866498b120d0516fd49fb7551
++ Traga ou derive antes uma instância de `Functor`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 1cb104d057b8971f1427e232956fe585
++ - Código-fonte: `lib/mercator/src/core/mercator.internal.scala`

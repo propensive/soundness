@@ -1,0 +1,647 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0c16ea87ef318b710ee30c861541aa4d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1c31a9c8bd6149e7132335d0f3930e81
++ info   不変でデマングルされた値としてのスタックトレース、呼び出し位置、検証済みのクラス名
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1bd56b2fb789f82e08a09a8e75b90e52
++     _Digression_ は、失敗についての JVM の見方を、プログラムが調べて描画できる値に変える。
++     `StackTrace` は `stackTrace` によって任意の `Throwable` から捕捉される：例外のクラス、メッセージ、`StackTrace.Frame` のリスト、そして別の `StackTrace` としての原因である。
++     各フレームのクラス名とメソッド名は、コンパイラのエンコーディングから、それを生んだ Scala の形へ向けて **デマングル** される（`$plus` は `+` に、`$anonfun$3` は `λ₃` に、`<init>` は `ⲛ` になる）。そして `StackTrace.Resolver` がインポートされていれば、それが各フレームを元のソースの定義に対応付ける。
+
+% 2 1 0 16b510f0c8d1186d15a4235716969abd
+
+% 3 1 0 09ca52a168da48c404f62f234e380f68
+
+% 0 1 0 1f2ae059e1f4bd9a1aca20f622222eac
+
+% 0 1 0 1d84d59c97c154941fa68606178bb4a4
+
+% 0 1 0 1359acc6773ce3261f69c6800f6945df
+
+% 0 1 0 18647f0779e2dec71991e6c2780831f0
+
+% 0 1 0 13b48802a4aabb6d08281127041994a9
+
+% 1 1 0 15ec8af62d51001501d3e724c157b0e5
+
+@ 0 6 0 048231e3471c69421606ffb26b450178
++     それと並んで、コードを実行するのではなく記述する小さな道具が二つある：`Codepoint` は呼び出し位置のソースファイルと行であり、メソッドが求める場所ではどこでも given として捕捉される。`Fqcn` は JVM の規則に対して検証された完全修飾クラス名であり、`fqcn"…"` でリテラルとして書かれる。
++     `Smap` は、インライン化されたコードのためにクラスファイルが持つ JSR-45 のソースマップをパースする。フレームは、そのインライン化された行がどこで書かれたかをこれによって知る。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     このライブラリには二つのソースセットがある：
+
+@ 0 7 0 108fc1535f9a57f306a0a2a40eebd708
++     - `digression.core`：`StackTrace`、`Codepoint`、`Fqcn`、`Smap`、`stackTrace`、`fqcn"…"`、`idempotent` と、プレーンテキストの描画（`Showable` と `Communicable`）。ファイルを読まないので、すべてのプラットフォーム向けにコンパイルされる。既定の `StackTrace.Resolver` は何もせず、TASTy を読んで各フレームのソースを見つけるリゾルバーは hyperbole の `stackResolutions.tastyStackResolution` である。
++     - `digression.ansi`：`StackTracePalette` と `teletypeables` パッケージ。トレース、フレーム、メソッド、例外の、色付きで表形式の端末向けの描画である。
+
+@ 0 3 0 18ab8b9af52dbe7d0a272bb91eafb0cb
++     すべてが `soundness` アンブレラにエクスポートされ、`teletypeables` 選択パッケージはアンブレラ自身のものと合併される。
++     `import teletypeables.*` は given をインポートしないので、その given は名前でインポートする：
+
+% 2 1 0 190b8677a4efa9350efc6b76e8e51f95
+
+% 3 1 0 179ab22dc5a336450caac8591c142fc9
+
+% 0 1 0 19de83050add395b1c3e973740e6e8e4
+
+% 0 1 0 15c3bd29db4cff9e063cc6ce44c7ab7b
+
+% 0 1 0 06c460ffead2c63b1d387a3876843f1f
+
+% 1 1 0 1c2b1005279baa911d1e2844f851dd10
+
+% 0 1 0 0139ef97e07e3e7c007739de9a764db0
+
+% 0 1 0 0ab956b5e26509b10ecfee1ad8375317
+
+% 0 1 0 09f4e53d48363bd4183838ce63c009d7
+
+% 0 1 0 0878906e37bf145b11b3a6293bf7b01f
+
+% 0 1 0 16f60eb84fe8d57f1b02b30629b75bc1
+
+@ 0 7 0 0cb58322323a833e1850be9c09763678
++ entry .stackTrace   スコープ内のリゾルバーで解決された、`StackTrace` 値としての `Throwable` のスタックトレース
++     `Throwable` 上の拡張：`error.stackTrace` は `StackTrace(error)` であり、各フレームは *呼び出し側の* スコープにある `StackTrace.Resolver` を通される。
++     何もインポートされていなければ、コンパニオンの `StackTrace.Resolver.none` が適用され、フレームはデマングルされた名前だけを持つ。hyperbole の `stackResolutions.tastyStackResolution` をインポートすると、フレームはソースの定義も持つようになる。
++     リゾルバーをもっと深い場所ではなくここで受け取るのは、`StackTrace` の中で召喚されたリゾルバーは既定のものしか見つけられないからである。
+
+% 2 1 0 04ccb9694ee11ded01f75859caf09271
+
+% 3 1 0 1328a2590cbf1a270b915b1818c5aade
+
+% 0 1 0 0107120b4fe1394d0ba352dd7387250c
+
+% 0 1 0 1c15d17075ef37a71e006eb85147d3ed
+
+% 1 1 0 031ced9e5692fd6b108f8ebe1cb79748
+
+@ 0 5 0 0f224f7b29644e6203f9efb04c64ed10
++ entry .fqcn   `fqcn"…"` 補間子：コードのコンパイル時に検証される、完全修飾クラス名
++     `fqcn"com.example.Main"` は `Fqcn` であり、`Fqcn(text)` と同じ規則でコンパイル時に検査される：各セグメントは空でなく、ASCII の英字、数字、`_`、`$` からなり、数字で始まらず、Java のキーワードでない。
++     規則を破る名前は、理由を示すコンパイルエラーになる。
++     リテラルは埋め込みを取らない。
+
+% 2 1 0 040ed4e97a52393909b3abcd1a46fc8a
+
+% 3 1 0 0444e83ec5f3b5e21638586a6f9dc144
+
+% 0 1 0 0e3a43ae954e1b7d0b5203ba51595646
+
+% 0 1 0 0beaf15581bea048091daf223c15ccca
+
+% 1 1 0 09965581b63e6b5508d15e79042c04e2
+
+@ 0 6 0 0ffcf609b5d660be1fa3bb0965916bed
++ entry .idempotent   プログラムの存続期間中、呼び出し位置ごとに高々一度だけブロックを実行する
++     `idempotent { … }` は、自動的に捕捉される呼び出し位置の `Codepoint` を受け取り、実行が初めてその位置に到達したときにブロックを実行する。それ以降の訪問では何もしない。
++     一度だけ表示する警告や、インラインで書いた一回限りの初期化に向いている。
++     記録はグローバルでスレッドセーフであり、異なる行にある二つの呼び出しは別々の位置である。
+
+% 2 1 0 1af7b433408edfbc0634084f079d9f53
+
+% 3 1 0 15c2c475daf9195301f4be2175990eb0
+
+% 0 1 0 0ed797afa8f857c807defbd6bf522be2
+
+% 0 1 0 1d158225ce9f48931c28b9ae72a47c8b
+
+% 0 1 0 1fd2ac2ab040bf0b149d3a836afcae0b
+
+% 1 1 0 06dc1bb4b6cc96e1036714191da33eba
+
+@ 0 1 0 1203c319f4e55f230d9be026bf371627
++ entry .Codepoint   自動的に given として捕捉される、呼び出し位置のソースファイルと行
+
+% 1 1 0 17ec35d16dd65bb81eff2f9a8b0a637c
+
+@ 0 4 0 0fff07c9db219ccc1dafaab56448ef95
++       `(using Codepoint)` を取るメソッドは、手で何も渡さなくても、それを呼び出したコードの位置を受け取る：コンパニオンの inline given である `.default` はマクロであり、各呼び出し位置で、その位置のソースのパスと行に展開される。
++       ログ、テスト、キャッシュが自身の呼び出し元を知るのはこの方法による。
+
+% 2 1 0 02cf88a1c6a563670e7f25baf7b82ba7
+
+% 3 1 0 15a1ab23d4617eaa0303c55f17461a9d
+
+% 0 1 0 15ae4f0676383c111cbd967d4e4f7ecc
+
+% 0 1 0 1321ca1035834bd6045f044b6b92e5cb
+
+% 0 1 0 0a3441f26f2eb3c4139779ca6e63241f
+
+% 1 1 0 0b4dfbd2d12612bd0c6cc2eb5876767e
+
+@ 0 7 0 12e731cbe420b8d207f84c01da7b8c1d
++       `Codepoint` はケースクラスなので、同じファイルと行を名指す二つは等しい。`idempotent` が位置を見分けるのはこのためである。
++       `Findable` なので、コンテキスト値として召喚できる。
++   entry .default   given が召喚された場所でマクロが見つける、呼び出し位置の位置
++   entry #source   コンパイラが見たとおりの、ソースファイルの完全なパス
++   entry #line   1 から数えた行番号
++   entry #text   ファイルのパスの最後のセグメントと行。`app.scala:42` のように
+
+@ 0 1 0 10ac0893d0638c64144a5ebcb79c9a5c
++ entry .Fqcn   完全修飾された JVM のクラス名：ドットで区切られた、それぞれ有効な、一つ以上のセグメント
+
+% 1 1 0 1c8d64be3fb90f490d1527bd121d255a
+
+@ 0 5 0 16d58c022b8746e70275c6d7e85e5041
++       `Fqcn` は、少なくともクラスを名指すことはできるクラス名である：その `#parts` はそれぞれ空でなく、ASCII の英字、数字、`_`、`$` からなり、数字で始まらず、Java のキーワードでなく、少なくとも一つある。型がそう示しており、それによって `#className` と `#packageName` が全域的になる。
++       `Fqcn.Error` を発生させる `Fqcn(text)`、コンパイル時の `fqcn"…"`、あるいは `as[Fqcn]` によるテキストからのデコードで作られる。
+
+% 2 1 0 02ebc3be2d3e80c81238704df04b589c
+
+% 3 1 0 02240f0ffa0d271e10d5d6cf174ebae5
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0489b5ecbd9def56065e591ef4056489
+
+% 0 1 0 05968fa429ab0e571e6e74bddb35d857
+
+% 0 1 0 022a11692ca689971fa107852c2299be
+
+% 0 1 0 086b61a2a3e7538e12839865072dc24d
+
+% 0 1 0 1f447d4f19633b9e1a62cfa5d5b2ad79
+
+% 1 1 0 03aee7f6a0186f6f06d1522d4d637d7b
+
+@ 0 2 0 187ffd5dab2ef98d0a1bdbd1962d2193
++       クラス名が渡るあらゆる場所（マニフェストの `Main-Class`、リフレクションによる検索、ランチャーの引数）で、`Fqcn` はそれが整った形であるという保証を運ぶ。
+
+% 0 1 0 123979d593f6a6b700cdf6110cca2ae4
+
+@ 0 15 0 01dfaaeff67d54bd18755d06803022cf
++   entry .apply   クラス名をパースして検証し、最初に破られた規則に対して `Fqcn.Error` を発生させる
++       テキストを `.` で分割してすべてのセグメントを検査し、スコープ内の `Tactic[Fqcn.Error]` を通じてエラーを発生させる：空のセグメント（`com..Main`）には `EmptyName`、`class` のようなものには `JavaKeyword`、許された集合の外の文字には `InvalidChar`、先頭の数字には `InvalidStart` である。
++   entry .unsafeFrom   すでに有効と分かっているテキストからのクラス名。`Unsafe` で制限される
++       `fqcn"…"` が展開される先：名前はコードのコンパイル時に検証されたので、再パースは失敗し得ない。消去された `Unsafe` トークンは、呼び出し側がそれを保証することを示す。
++   entry .valid   文字がセグメントに現れてよいかどうか：ASCII の英字、数字、`_`、`$`
++   entry .decodable   テキストを `Fqcn` としてデコードし、捕捉した戦術を通じて `Fqcn.Error` を発生させる
++       召喚される場所に `Tactic[Fqcn.Error]` が必要であり、それを保持する。`t"…".as[Fqcn]` は `Fqcn(text)` である。
++   entry .encodable   `Fqcn` をドット区切りのテキストとしてエンコードする
++   entry .Error   テキストが有効なクラス名でないときに発生する：空のセグメント、キーワード、不正な文字
+
+% 1 1 0 1c27792451539dc914b7a2d32ec0d8e6
+
+@ 0 3 0 07bfcadb4b27db360b6c900d1146a7f5
++         エラー `↯/s.63.1`：_the class name `name` is not valid because `reason`_。
++         `Fqcn.apply` と、`as[Fqcn]` によるテキストのデコードが発生させる。`fqcn"…"` は同じ理由をコンパイルエラーとして報告する。
+
+% 2 1 0 188427309c9f922a142ac1d9bb68ab99
+
+% 3 1 0 057f4a8eec2809ae0057e2a82f54a383
+
+% 0 1 0 00ad3583ded003390195d673ae7cb290
+
+% 0 1 0 1787b25d11249e750d8eafd6f8eb5683
+
+% 1 1 0 1b9ef6dc2c1a2c7a0abb278a8f949a2c
+
+@ 0 1 0 168421f4d815bb1902eae25bac50c772
++     entry .Reason   クラス名が無効である理由：`InvalidChar`、`InvalidStart`、`EmptyName`、`JavaKeyword`
+
+% 1 1 0 011d7dba48610cfd15cf1c5026ecae3c
+
+@ 0 1 0 0da1a2e50d9c6099004d1f0518c3c4f7
++           番号付きの四つのケースからなる enum：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  注記
+
+% 0 1 0 0ab86642202331a21bff6c855e809da0
+
+@ 0 1 0 0c1d52efc93f88830673bf7447b3d5bc
++           row  `InvalidStart(char)`  2  _a package name may not start with the character `char`_  数字
+
+% 0 1 0 0781cea665c8e6e91bc5c395c1b6f286
+
+% 0 1 0 01d361fb5c638e3709f0268fb0631515
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 8 0 1663d6649d2891be18173230f6a6021e
++       entry #number   理由の番号。`1` から `4` まで
++     entry .communicable   各 `Fqcn.Error.Reason` をメッセージとして描画する
++     entry #name   有効なクラス名でなかったテキスト
++     entry #reason   それが有効でなかった理由
++   entry #parts   名前のセグメントを順に並べたもの。空でないと型付けされている
++   entry #text   ドット区切りのテキストとしての名前：`com.example.Main`
++   entry #className   最後のセグメント：クラスの単純名
++   entry #packageName   最後を除くすべてのセグメントをドットでつないだもの：パッケージ。既定のパッケージなら空
+
+@ 0 1 0 122c95cd18d52e301d4f121703c12148
++ entry .StackTrace   値として捕捉されたスタックトレース：例外のクラス、メッセージ、フレーム、原因
+
+% 1 1 0 0e0ee92d78919ee20221190a1d71a470
+
+@ 0 5 0 15be00abc15871510290a84cf47fc603
++       `StackTrace` は、`Throwable` がどこで投げられたかについて述べることを、デマングルされた不変の形で保持する：例外のパッケージ（`#component`）と単純なクラス名（`#className`）、`#message`、スタックの上から下への `#frames`、そして別の `StackTrace` としての `#cause` である。
++       Soundness の `Error` のメッセージは、発生させたときの構造化された `Message` のまま保たれる。それ以外の例外のメッセージはそのテキストである。
+
+% 2 1 0 1681e6a49d975d0c0a9891bd8fc09c13
+
+% 3 1 0 0ac5123e3b91fd8908569e3bb5a3ba09
+
+% 0 1 0 1ca6bfc98ce20bbd000c00751e889dbe
+
+% 0 1 0 1afa58e367a6766e039ddea930b72a26
+
+% 0 1 0 1e275aa757e5ec42068ac286a2399b68
+
+% 0 1 0 0f7261dfe946138a198c039c7bb12b14
+
+% 0 1 0 17fbecbb1b359fa70914083fd7ea48f8
+
+% 1 1 0 00a605b305cb703c03c4c498199302d4
+
+@ 0 4 0 05c8384c1bddde5b12a217936808a3fd
++       フレームの名前は `.rewrite` によって書き換えられ、そのグリフは `.legend` が説明する。
++       各フレームは、呼び出し側のスコープにある `StackTrace.Resolver` を通される。これは既定では何もしない。コンパイラの TASTy を読むリゾルバーは、各フレームに、その元となった定義である `Frame.Source` を与える。
+
+@ 0 4 0 0a98373feeec7ff213be51e4dddb0e23
++       トレースは、`show` で整列したプレーンテキストとして（`.showable`）、メッセージとして（`.communicable`）、また `digression.ansi` コンポーネントがあれば `teletypeables.stackTraceTeletype` を通じて `teletype` で色付きで描画される。
++       Soundness 自身のエラーがそもそもトレースを捕捉するかどうかは、スコープ内の `Diagnostics` の given が決める。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1adcbb25415767e508a823d23857fb5c
++         label 捕捉したまま、未解決
+
+% 1 1 0 03dee5457a81b84407306fc43ab6e321
+
+% 2 1 0 1e35b6e28c64e2020aac28497bbfd685
+
+% 2 1 0 0970633f648d363d0247f50d3572c611
+
+% 0 1 0 0c1d061fec3f141d0aa9661d3fa2c53d
+
+% 0 1 0 18a12ef0084d926e1308c71ac3d12fe2
+
+% 1 1 0 165387772e7726fb1549f465b564ca2b
+
+@ 0 1 0 1aa0fffdae239a491c478b32a1872ef6
++         label TASTy を通じて解決
+
+% 1 1 0 03fd9183e95a20a60e8eaec7f2416a81
+
+% 2 1 0 13aa49569ca8d724169d95a5eadabce4
+
+% 0 1 0 1568baf2c53444f81b89d3508eef5586
+
+% 0 1 0 19e5a642d4befcc50f034187f2948dc0
+
+% 0 1 0 1109de1a9f4c73ae071c263fedc28828
+
+% 2 1 0 1bf65ae89eb70d3b18f6b344d6224e47
+
+% 0 1 0 1e1bc03a1230273b16398ab3e0733f89
+
+% 0 1 0 0cc5227c0a2ce97c00e083d833faabd2
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+% 0 1 0 0eb64f21f1c32b12165ee9136094c130
+
+% 0 1 0 0c2aeae04db353c10ba3b9d36601413d
+
+% 0 1 0 0e76e8365c21c39414c9014550297ae6
+
+% 0 1 0 181d2143e6ab29a90d441f28075a3c88
+
+@ 0 16 0 08f06ca1512ceebe05cb818500fc9a11
++   entry .apply   与えられた `Resolver` で各フレームを解決しながら、`Throwable` のスタックトレースを捕捉する
++       `StackTrace(exception)` は、throwable の `StackTraceElement` を読み、各クラス名とメソッド名を `.rewrite` でデマングルし、コンパイルされた名前を `Frame#jvmClass` と `Frame#jvmMethod` として保ち、すべてのフレームをリゾルバーに通す。
++       ファイル名がなければ `———`、行がなければ `Unset` である。
++       原因も順に捕捉される。
++       通常の入り口は拡張 `stackTrace` である。
++   entry .rewrite   JVM のクラス名やメソッド名を Scala の形へ向けてデマングルし、合成された部分には簡潔なグリフを使う
++       演算子は記号を取り戻し（`$plus$plus` は `++`）、`$uXXXX` のエスケープはその文字になり、コンパイラが合成したマーカーである `.Marker.all` はグリフになる。グリフは `.legend` に一覧がある：`λ` はラムダ、`Λ` は適応されたラムダ、`α` は匿名クラス、`ⲛ` はコンストラクター、`ι` は初期化子、`ℓ` は遅延値、`↑` は super アクセサー、`⇢` はその他のアクセサー、`≔` はトレイトのセッター、`⊢` は拡張メソッド、`∂` は直接メソッド、`δ` はデフォルト引数、`⊡` は保持されたインラインの本体、`⊙` は外側への参照、`Σ` はシグネチャを伴う特殊化されたメソッドであり、後に続く数は下付き添字になる。
++       モジュールクラス `globe.Play$` は `globe.ΞPlay` になり、パッケージオブジェクトのクラスは `⁅…⁆` で囲まれる。
++       `method = true` のときは、結果は `()` で終わり、`$` は `.` として区切る。
+
+% 2 1 0 10bcf50cfc36eb841e8198c4696aeeb1
+
+% 3 1 0 0c55f84ca5a6311e130c71405dda567d
+
+% 0 1 0 009a6aa595fcbcbc08f37d62993ae22d
+
+% 0 1 0 1c8e188adc1fc7f603f8b630e4153c3d
+
+% 0 1 0 12a218b58c4748b71e5038fd9f3660e3
+
+% 0 1 0 1408d2541b5a0d47185699557e91ad3a
+
+% 1 1 0 1511cfdee0294d1910e3a9913eb38cad
+
+@ 0 20 0 0da2170b77f98f380e5f4aa66d4d6f27
++   entry .Marker   プログラム自身の名前が決まった後にコンパイラが作り出す名前と、そのグリフ
++       各 `Marker` は、コンパイラが書く `jvm` テキスト（`$anonfun`、`<init>`、`$lzyINIT`）、表示に使う `glyph`、凡例のための `meaning`、そしてマーカーがそれを確定させる場合には、それを持つメソッド名が該当すると分かる `Frame.Kind` を持つ。
++       `Marker.all` は、コンパイラの `NameKinds` と `StdNames` が定義するとおりに、`.rewrite` が試す順にそれらを並べる。`Marker.operators` は各演算子の文字をそのエンコーディングと組にする。
++       `.rewrite` はこの表を読み、`.legend` はこれから導かれ、hyperbole の `StackResolver.hint` はこれによってフレームを分類するので、三つが食い違うことはない。
++   entry .legend   デマングルされた名前の各グリフの意味。トレースと並べて描画するための、グリフから説明への対応
++       `.rewrite` が生成する各グリフから短い説明への `Map[Text, Text]` であり、`.Marker.all` から導かれる：`λ` は _lambda_、`ⲛ` は _constructor_、`δ` は _default argument_、`⁅⁆` は _package file_、などである。
++       グリフの後に続く数は、コンパイラ自身の番号付けであり、下付き添字で書かれる。
++   entry .showable   トレースをプレーンテキストとして描画する：例外、次にフレームごとに一行の整列した `at` の行、次にその原因
++       各フレームの行には、整列するように詰め物をしたクラスとメソッド、次にファイルと行がある。解決されたフレームでは、その後に引用されたソースの行が続き、フレームの SMAP が記録したインライン化の各段階は、その下に内側から順に `↳ inlined from` の行として現れる。
++       原因は `caused by:` の後に続く。
++   entry .communicable   `.showable` と同じようにトレースをメッセージとして描画する。整列には改行しない空白を使う
++   entry .Method   フレームが記録する、デマングルされたクラス名とメソッド名
+
+% 1 1 0 137caaa2520f63df060303fc5801c3e7
+
+@ 0 7 0 044cd7753bac76420122cc2350924a7f
++         どちらの名前もすでに `StackTrace.rewrite` で書き換えられている：`className` は `globe.ΞPlay` のような形で、`method` は `()` で終わる。
++     entry #className   パッケージを含む、デマングルされたクラス名
++     entry #method   デマングルされたメソッド名
++     entry #cls   クラス名の最後のセグメント
++     entry #prefix   最後のセグメントを除いたクラス名：そのパッケージと囲んでいるクラス
++   entry .Frame   トレースの一つのフレーム：そのメソッド、ファイルと行、コンパイルされた名前、解決されていればそのソース
+
+% 1 1 0 1618d39887070e801427e1c5a561e296
+
+@ 0 4 0 0f216d86fc56f09e0dc5b1885e254f65
++         フレームは、デマングルされた `#method`、報告する `#file` と `#line`、`#native` かどうか、そしてリゾルバーが必要とする、構築元となったコンパイルされた名前 `#jvmClass` と `#jvmMethod` を記録する。
++         リゾルバーは、その元となった `#source` の定義と、その行の `#inlined` の出所を加えることがある。
+
+@ 0 3 0 1cfc103db3bd19f810757acf508788ee
++         `#displayClass` と `#displayMethod` は描画器が表示するものである：フレームが解決されていればソースの名前、そうでなければデマングルされた名前なので、どの描画器も自前の分岐を必要としない。
+
+% 2 1 0 1f2235a8cd74e2b10231649e14abcd55
+
+% 3 1 0 1aaf6fbed281d7c502a9ce0ae0be1bb1
+
+% 0 1 0 1efa75521e6af85c1be0e7ddf06e94a5
+
+% 0 1 0 077699c766affba4055a0c2920e5fa4a
+
+% 0 1 0 0d9bc9d6bcda52751731d11bbf71c192
+
+% 0 1 0 0fbb800a6303de6a0d4e5f7ba75b2de3
+
+% 0 1 0 1b3696e05a10e97d0ae2d1a4a5a6f2f2
+
+% 0 1 0 066b45f63d7fcb2006881cd9c0485a18
+
+% 0 1 0 0d579c73cab06d6c03cb5b3ea75d1598
+
+% 0 1 0 1f4d1030481eb4ac1ef05d10d8e5dbef
+
+% 0 1 0 05b758b944ae03861efa822c05e01812
+
+% 1 1 0 0e67c25d8599c0e612854871c74fbe3d
+
+@ 0 1 0 0d09d6182d480ca40c5452b3a547a41a
++     entry .Kind   解決されたときにフレームが何であると分かったか：メソッド、ラムダ、…、あるいはコンパイラの配管
+
+% 1 1 0 0b07cf02fcc38c4b1d9a082ad808d689
+
+@ 0 7 0 0356c63caf939e50192b133c09e298a1
++           フレームのコンパイル元となり得る定義の種類の enum：`Method`、`Lambda`、`Value`、`Class`、`Constructor`、`Extension`、`Default`（デフォルト引数）はソースに書かれる。`Bridge`、`Forwarder`、`Initializer`、`Specialized`、`Synthetic` はコンパイラが合成するもので、`#plumbing` がそう示すので、描画器はそれらを薄く表示したり省いたりできる。
++       entry #plumbing   その種類がコンパイラの合成したものかどうか：ブリッジ、フォワーダー、初期化子、…
++     entry .Source   リゾルバーが見つけた、フレームのコンパイル元のソースの定義
+
+% 1 1 0 1e05f21689e1095a15a92462689678cd
+
+@ 0 11 0 0aa7a54276a2d2b31aa6dd81a9856977
++           解決されたフレームの定義：ソースファイルの完全な `#path`（スタックトレースは最後のセグメントしか記録しない）、囲んでいる定義の連なりである `#owner`、それ自身のソース上の `#name`、その `#kind`、そして任意でその行の `#code` である。
++       entry #path   ソースファイルの完全なパス
++       entry #owner   ドットでつないだ、囲んでいる定義の連なり：`globe.Play.stage`
++       entry #name   定義それ自身のソース上の名前
++       entry #kind   `StackTrace.Frame.Kind` としての、定義の種類
++       entry #code   リゾルバーが読んでいれば、ソースの行。そうでなければ `Unset`
++       entry #definition   所有者と名前を `.` でつないだもの。所有者がなければ名前だけ
++     entry .Inlined   フレームの行が表すインライン化の一段階：それが書かれたファイルと行
+
+% 1 1 0 0bf0ed37545fb93f085c0a855d9d14cc
+
+@ 0 21 0 0cf9e13b93dd856d1a371cca70124b6e
++           フレームの行が他の場所からインライン化されたことをクラスファイルの SMAP が記録していれば、フレームは段階ごとに一つの `Inlined` を内側から順に持つ：`#file` の名前、その完全な `#path`、`#line`、そしてリゾルバーが見つけた場合は、その位置が含まれる `#source` の定義（インラインメソッドそのもの）である。
++       entry #file   ソースファイルの名前。パスの最後のセグメント
++       entry #path   ソースファイルの完全なパス
++       entry #line   インライン化されたコードが書かれた行
++       entry #source   リゾルバーが見つけた場合、その位置が含まれる定義
++     entry #method   フレームのデマングルされたクラス名とメソッド名
++     entry #file   クラスファイルが記録するソースファイルの名前。なければ `———`
++     entry #line   行番号。記録されていなければ `Unset`
++     entry #native   フレームがネイティブメソッドかどうか
++     entry #jvmClass   デマングルする前の、コンパイルされたクラス名
++     entry #jvmMethod   デマングルする前の、コンパイルされたメソッド名
++     entry #source   リゾルバーが見つけた場合、ソースの定義
++     entry #inlined   フレームの行が表すインライン化の段階。内側から順に並ぶ
++     entry #displayClass   フレームの所有者として表示するもの：解決されていればソース上の所有者、そうでなければデマングルされたクラス
++     entry #displayMethod   フレームのメソッドとして表示するもの：解決されていればソース上の名前、そうでなければデマングルされたメソッド
++     entry #displayPrefix   最後のセグメントを除いた `#displayClass`
++     entry #displaySegment   `#displayClass` の最後のセグメント
++   entry .Resolver   呼び出し側のスコープにある given によって選ばれる、フレームをソースレベルの定義に対応付けるもの
+
+% 1 1 0 0631bf649d44f10d09f1e9c7be8eca86
+
+@ 0 6 0 09f1a96be700edc01a74f72f4be07764
++         フレームの解決には digression が持たないケイパビリティ（少なくともクラスパス）が必要なので、既定の `.none` はすべてのフレームをそのまま返し、実装はそれを持つモジュールからインポートする：hyperbole の `stackResolutions.tastyStackResolution` は、各トップレベルクラスの TASTy を読む（トレースで名指されたクラスごとにファイルを一回読む）。
++         ケイパビリティを外に置いておくことで、トレースはブラウザ、ネイティブバイナリ、WebAssembly コンポーネントでもそのまま動く。
+
+% 2 1 0 17b188807fa8cab60c560be75697515e
+
+% 3 1 0 1e62b4c896b7082a0eeeacd2a7f15086
+
+% 0 1 0 020b6f6dc589b97a1e47673d0f593f8a
+
+% 0 1 0 00da3440539e6d8f074777942a4d1448
+
+% 1 1 0 11d9c42b688ef29f0d330cb4ab15e330
+
+@ 0 13 0 07b8368a59db7628187dac1bd52cd31c
++     entry .none   すべてのフレームを捕捉したままにしておく、既定のリゾルバー
++     entry #resolve   ソースの定義が加えるもの（`#source`、`#inlined`）を伴ったフレーム
++   entry #component   例外クラスのパッケージ：`java.lang`
++   entry #className   デマングルされた、例外クラスの単純名：`Exception`
++   entry #message   `Message` としての、例外のメッセージ
++   entry #frames   スタックの上から下へ並んだフレーム
++   entry #cause   例外の原因のトレース。なければ `Unset`
++   entry #crop   デマングルされたクラスとメソッドで名指された一つのメソッドのフレームを除いた、このトレース
++       `trace.crop(className, method)` は、`Method` がデマングルされたそのクラス名とメソッド名を持つすべてのフレーム（たとえばテストランナーの入り口のフレーム）を取り除き、残りを順に保つ。
++   entry #drop   最上位の `n` 個のフレームを除いた、このトレース
++   entry #dropRight   最下位の `n` 個のフレームを除いた、このトレース
+
+@ 0 1 0 1c4fd428f0d1c12301b258478d63c6b9
++ entry .Smap   パースされた JSR-45 のソースマップ：クラスファイルの合成された行番号がどこで書かれたか
+
+% 1 1 0 01c6c150026d6b1507eae0439fe570e1
+
+@ 0 6 0 0becd8e6a217da331619d97181b6d489
++       コンパイラがコードをインライン化するとき、クラスファイルの行表は自身のファイルの行しか名指せないので、合成された行番号と、それらを元に対応付ける `SourceDebugExtension` 属性（SMAP）を記録する。
++       `Smap.parse` はそれを読む：生成されたファイルの `#generated` の名前、`#default` の層、そして名前による `#strata` である。
++       `#expand` は合成された行を、それが表す出所の連なり（内側から順）と、それがたどり着く実際の呼び出し位置の行に変える。`#sites` はその逆であり、ソースの行が行き着いた生成された範囲である。
+
+% 2 1 0 15550197654c037018c9c88d603c9cff
+
+% 3 1 0 10fb6d89897b33751be09dbf7df01f0d
+
+% 0 1 0 06275b40778ee59d1245495052a70a1e
+
+% 0 1 0 195b9d1eee049e791f6a3ecf764ce91f
+
+% 0 1 0 1af91be0d7746a260fd14236fe726710
+
+% 0 1 0 08f2f578ea3ff42c1210b19fda1798b1
+
+% 0 1 0 161a16999d2301080ae2f1387cb991a7
+
+% 0 1 0 0d54731b4e033cc01b754037fb913a9f
+
+% 0 1 0 08d5130224b2f36c14aef348730b1183
+
+% 0 1 0 1190c212a4c9cc7a15f68ef1e08d79cd
+
+% 0 1 0 1e5e4d24419467cd0b2ab53f3cfaf0c7
+
+% 0 1 0 001059c6a0701627154108faa85b09a8
+
+% 0 1 0 1f16c9a7e3a3e8330a0ddc898a4b0d88
+
+% 0 1 0 1f1ea552cb45648115c1d2bce2887c6c
+
+% 0 1 0 09b0d7185f354d761150682c90349958
+
+% 1 1 0 10c556ba3ade481a0a8949072bde7bda
+
+@ 0 10 0 1211a87078ea56cd17b3ed1849793682
++       Scala と Kotlin のコンパイラが書くような `<default>Debug` の層は、合成された行をそのインラインの呼び出し位置に対応付けるので、`#expand` はそれを一段階ずつたどる。`<default>Class` の層は、各出所が含まれるトップレベルクラスを名指す。
++   entry .parse   SMAP のテキストをパースする。ヘッダーが読めなければ `Unset`
++       `SMAP` と二行のヘッダーで始まらないテキストは `Unset` である。セクションの中では、不正な形のものはすべて飛ばされる。SMAP は追加の詳細の出所にすぎないからである。
++   entry .File   層のファイル表の一つのファイル：スタックトレースが記録する名前と、その完全なパス
++     entry #name   スタックトレースが記録するとおりの、ファイルの名前
++     entry #path   ファイルの完全なパス。SMAP が与えなければ、もう一度名前
++   entry .Entry   行の対応付けの一つのエントリー：あるファイルの入力行の連続部分を、出力行の連続部分に対応付ける
+
+% 1 1 0 0318be04614b66a012379e7940cbe80b
+
+@ 0 30 0 1b51f3d81295fb0d1563f24f776a67e1
++         ファイル `fileId` の `inputLine` から始まる `repeat` 個の入力行が、`outputLine` から始まる出力行に対応付けられ、各入力行は `increment` 個の出力行を覆う。
++     entry #inputLine   連続部分の最初の入力行
++     entry #fileId   入力行があるファイル。ファイル表での ID による
++     entry #repeat   連続部分にある入力行の数
++     entry #outputLine   連続部分が対応付けられる最初の出力行
++     entry #increment   各入力行が覆う出力行の数
++     entry #apply   出力行が当たる入力行。エントリーがそれを覆わなければ `Unset`
++   entry .Stratum   SMAP の一つの層：そのファイル表と行のエントリー
++     entry #files   ファイル ID によるファイル表
++     entry #entries   順に並んだ、行の対応付けのエントリー
++     entry #apply   出力行を覆う最初のエントリーによる、出力行が対応付けられるファイル ID と入力行
++     entry #origin   ファイル表がファイルを知っている場合、出力行が対応付けられるファイルと入力行
++   entry .Origin   インライン化されたコードの行がどこで書かれたか：ファイル、パス、行、それが含まれるクラス
++     entry #file   ソースファイルの名前
++     entry #path   ソースファイルの完全なパス
++     entry #line   1 から数えた行
++     entry #cls   SMAP が示す場合、その位置を含む単位のトップレベルクラスのバイナリ名
++   entry .Expansion   合成された行が表すもの：内側から順のインラインの出所と、実際の行
++     entry #inlined   内側から順に並んだ出所
++     entry #line   連なりがたどり着く、フレーム自身のファイルの実際の行。途中で尽きたら `Unset`
++   entry #generated   SMAP が属する生成されたファイルの名前
++   entry #default   `Scala` のような、既定の層の名前
++   entry #strata   名前による層
++   entry #path   ファイル表が記録していれば、生成されたファイルの完全なパス
++   entry #expand   合成された行のインラインの出所と、実際の呼び出し位置の行。実際の行に対しては `Unset`
++   entry #sites   ソースファイルの行がインライン化された、生成された `[start, end)` の行の範囲
++       位置ごとに一つの範囲があり、生成されたファイル自体の中でのその行の本来の出現は除かれる。SMAP に無関係なファイルに対しては空である。
++       複数の位置でインライン化された行は複数の範囲を与える。その行のブレークポイントは、そのすべてに置かれるべきだからである。
+
+@ 0 1 0 0b99017ad6454e7a02afb626f8f9bd97
++ entry .StackTracePalette   端末のスタックトレースを描く色：メッセージ、ファイル、メソッド、行、アクセント色
+
+% 1 1 0 04bc67a8796ff72304a190bc4b2eb9fc
+
+@ 0 5 0 084bac036d1be9a61bfd6a26e8546cba
++       `digression.ansi` コンポーネントにある、`teletypeables` の描画のための sRGB の色の `iridescence.Palette`：`#message`、`#file`、`#method`、`#line` の色、`#separator`、そしてフレームのパッケージを順に色付けする五つのアクセント色であり、一つのパッケージのフレームは同じ色を共有する。
++       コンパニオンの `.default` は暗黙のスコープにある。自分の given はそれを上書きする。
+
+% 2 1 0 1167b3b13b4c522914b8bd259da35e82
+
+% 3 1 0 1ada2c7dd726a99f076bc5687f946da2
+
+% 4 1 0 17f614d75c5bcc1b1ffed72248664d3b
+
+% 0 1 0 0722a3d2d26a5b4a16acaafb054a49ff
+
+% 0 1 0 100eaa7b505be848036b1a5a7a58ea58
+
+% 0 1 0 17c2119d214fd30218cf0c35ed65fac7
+
+% 1 1 0 1ef1ab099a8b0d38019bd9e03b677006
+
+@ 0 12 0 01124b5abf0305fa18979aab53163870
++   entry .default   黒地に白の文字。ファイルと行は青緑で、アクセント色は暖色
++   entry #Form   パレットの色空間、`Srgb`
++   entry #message   例外の行と `caused by:` の色
++   entry #file   ファイル名の色
++   entry #method   メソッド名の色
++   entry #line   行番号の色
++   entry #separator   区切りの色：`at`、`.`、`:`
++   entry #accent1   一つ目のパッケージのアクセント色
++   entry #accent2   二つ目のパッケージのアクセント色
++   entry #accent3   三つ目のパッケージのアクセント色
++   entry #accent4   四つ目のパッケージのアクセント色
++   entry #accent5   五つ目のパッケージのアクセント色。六つ目のパッケージは再び一つ目を使う
+
+@ 0 1 0 129b4932aaedb02b0b9b4b864cf03895
++ entry .teletypeables   トレース、フレーム、メソッド、例外の、色付きの端末向けの描画。名前でインポートする
+
+% 1 1 0 0a63e85c2235c51e0c8c9751854193db
+
+@ 0 5 0 008f58dffe9505620872524fca537e0e
++       `digression.ansi` コンポーネントにある。
++       各 given はその対象を `Teletypeable` にするので、`teletype` はそれを端末向けのスタイル付きテキストとして描画する。どれも列の幅のためにスコープ内に `Text is Measurable`（`textMetrics.uniformMetric` など）が必要であり、描画はスコープ内の `StackTracePalette` を使う。
++       `import teletypeables.*` は given をインポートしないので、それぞれ名前でインポートする。
+
+% 2 1 0 0852884132dbb1a4057b778cbddb44d8
+
+% 3 1 0 04827b35766cd0090b136fce01dd1ed5
+
+% 4 1 0 12f63c4dcf9e54f217f2dc725ab60416
+
+% 0 1 0 0e3f2c3b9261c8f0037d3c609768a164
+
+% 0 1 0 04f08902b8b598dd084cc0d502445056
+
+% 1 1 0 040506868f7596f71ad395e8b03e87b6
+
+@ 0 11 0 16f2d7425ae7a74409e6276982e92f82
++   entry .stackTraceTeletype   罫線のない表としてのトレース：フレームごとに一行で、整列し、パッケージによって色付けされる
++       例外の行、次にフレームごとの行（`at`、整列した一つの列としてのクラスとメソッド、別の列としてのファイルと行、そして解決されたフレームの引用されたソース。端末が狭いときに最初に消えるのはこの列である）があり、その下にインライン化の段階ごとに `↳` の行が続く。
++       上と同じクラスのフレームは控えめに表示され、コンパイラの配管も同様である。原因は `caused by:` の後に続く。
++   entry .exceptionTeletype   スコープ内のリゾルバーで捕捉した、スタックトレースとして描画される `Exception`
++       `Text is Measurable` と `StackTrace.Resolver` が必要であり、`.stackTraceTeletype` を通じて描画する。
++   entry .frameTeletype   一行に一つのフレーム：四十列に収めたクラスとメソッド、次にファイルと行
++   entry .methodTeletype   `⌗` で区切られた、クラスとメソッドとしての `StackTrace.Method`
+
+@ 0 1 0 024dda655c3104191562fca42fa0bd35
++ entry .internal   `Codepoint.default` と `fqcn"…"` の背後にあるマクロ
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 05215239b24b403800c9826a3663484b
++       直接使うためのものではない：このオブジェクトは、マクロに安定した置き場所を与えるために存在する。
++   entry .location   `Codepoint.default` の背後にあるマクロ：展開位置のソースのパスと行
++   entry .fqcn   `fqcn"…"` の背後にあるマクロ：リテラルを検証し、`Fqcn.unsafeFrom` をスプライスする
++   entry .javaKeywords   クラス名のセグメントになってはならない Java のキーワード

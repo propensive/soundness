@@ -1,0 +1,589 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1816f82651a7183f14e7dc026cc98f4e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09d5bcdaf6c5b0f100ed108c644f2b17
++ info   データ型から導出される HTML フォームと、その送信内容のデコード元となるフォームエンコードされた `Query`
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 18173414ba64218813da28adb904e3fe
++     _Legerdemain_ は HTML フォームをデータ型へのユーザーインターフェースとして扱う。
++     ケースクラスからフォームが得られる。各フィールドに対してその型に応じて選ばれたラベル付きのウィジェットがあり、ネストしたケースクラスはネストしたフィールドセットになる。
++     そして送信内容、すなわちキーと値の対からなる `Query` はケースクラスへデコードし直され、失敗があればその原因となったフィールドを指し示す。
++     型が両方の側の唯一の信頼できる情報源なので、フォームが収集するデータから乖離することはない。
+
+% 2 1 0 05b97a4d2cfe536903470dafd9efe6e9
+
+% 3 1 0 0598b18039e5119003c2d993600ea147
+
+% 4 1 0 14c481c12c396a1f04bafc8515d89bee
+
+% 5 1 0 0f3f6e9b438a253d06ca8feff9e1a7f7
+
+% 0 1 0 099357e06907479a1fc8c3c025a7630c
+
+% 0 1 0 1be073e19c57569a0da176bcb0474da3
+
+% 0 1 0 1f193ff683528bd5130d83fb33cdd69e
+
+% 0 1 0 16b627110ecefc2b1ceb0fbb68afc42c
+
+% 0 1 0 1ba668cb1ff8be4f10f36656f6c1a547
+
+% 1 1 0 02adf972541e2302098b7ef83e527069
+
+@ 0 7 0 0649e728f52f17800aea6c4ec87ab40d
++     各部分は三つの型クラスを通じて組み合わさる。
++     `Elicitable` は、フィールドの型をどの `Widget` で編集するかを表す。テキストとしてエンコードできるものには `Field`、`Boolean` には `Checkbox`、列挙型には `Combobox`、保存された `Reference` には `Dropdown` である。
++     `Formulaic` は直積型に対してそのフィールドの `Elicitable` から導出され、フォームの行を生成する。
++     `Formulation` は、フォームとその各行を HTML でどう囲むかを決める。標準の選択肢は `formulations.postFormulation` 一つで、`import soundness.*` は given をインポートしないので、名前でインポートする。
+
+@ 0 6 0 0bc30018822ad9ee1442fe1bec1c5eeb
++     このライブラリには二つのソースセットがある。
++     `legerdemain.query` は `Query` と `Parametric` を持つ。これは HTML を含まない、フォームエンコードされたキーと値の構造であり、HTTP のクライアントとサーバーが URL のクエリ文字列とフォームの POST に使う。
++     `legerdemain.core` はウィジェット、型クラス、`elicit`、`edit`、`formulations` パッケージを加え、honeycomb の HTML に依存する。
++     すべてが `soundness` アンブレラにエクスポートされる。
++     Telekinesis はこれらの上にフォームのサイクル（描画し、送信し、エラーとともに再描画する）を `orchestrate` として構築する。
+
+% 0 1 0 070e6e8be6a8f9610ec1f5ab60ce86d1
+
+% 0 1 0 1dc3224e54923d0a1218577fb61cf5e6
+
+% 0 1 0 169399e3e1ecc60f01686c3e992b7b35
+
+% 0 1 0 03350034340ac5a2108cf9d4c98d2f7d
+
+% 0 1 0 16a78fc871728de60b1963a5fc0890ea
+
+@ 0 6 0 05edf16bf9127f321c1805a562b0c922
++ entry .elicit   型のフォームを描画する。必要に応じて送信された `Query` で値を埋め、検証メッセージを添える
++     `elicit[Value](query, validation, submit)` は、スコープにある `Formulation` の given を通じて、`Value` のフォーム全体を描画する。`Value` は `Formulaic` でなければならない。
++     `query` は送信された内容で、ユーザーの入力を再表示するためのものである（空のフォームには `Unset`）。`validation` は各フィールドの `Pointer` をキーとして、フィールドに付けるメッセージを保持する（なければ `Validation()`）。`submit` は送信ボタンのラベルで、`Unset` ならフォーミュレーションの既定のものになる。
+
+% 2 1 0 0d13ad250e4390271e55e2b8f7b09475
+
+% 3 1 0 15dd599ba608c15c1abc964d3930585e
+
+% 4 1 0 097f7701f318ac1d1d9df6661eea5b1c
+
+% 5 1 0 0bc5d2bd7794a32418780fcb9ce5cd2e
+
+% 2 1 0 15369c286d01570f1ab9509943fb7583
+
+% 0 1 0 07a95ab6c9d9b4430b2fa306fa272985
+
+% 0 1 0 0a2cbbf91e2154de0f70ab1858e945d3
+
+% 0 1 0 0ae20a52d6fbf87e1d51697ad280eb65
+
+% 1 1 0 055802dc285765ff05482d5f9b4e0850
+
+@ 0 4 0 0f679f9f7bd890e715ff6f8f87ea5afe
++     各フィールドのラベルはその名前から作られ、大文字の位置で区切って先頭を大文字にする（`firstName` は _First name_ になる）。ネストしたケースクラスは、フィールドのラベルを凡例とする `<fieldset>` になる。
++     フィールドのウィジェットにはドット区切りのパス `speaker.name` が名前として付き、これが送信時のキーになる。
+
+@ 0 5 0 0bb9c6010d743f4915b273e6bda72fc9
++ entry .edit   値のフォームを、その値のフィールドで埋めて描画する
++     `Formulaic` であり、かつ `Encodable in Query` でもある任意の値に対する拡張メソッドである。
++     `value.edit(validation, submit)` は `elicit` が描画するフォームを、値自身のフィールドを `Query` としてエンコードしたもので埋めたもので、既存のレコードを変更するためにある。
++     スコープに `Formulation` を必要とする。
+
+% 2 1 0 0bc5fde39d0172a705e5b04f2e8c621f
+
+% 3 1 0 08847ded56ac6ac6076a871273c5adaa
+
+% 4 1 0 111e442fab2d0b9a030e84d984b2956d
+
+% 2 1 0 150f0eee9d896de31dea105f150d413d
+
+% 0 1 0 1c27a48ee6ceffbf017c4b15fbfcf9a8
+
+% 1 1 0 15554eb473c2a5e9076f21b85b3e7326
+
+@ 0 1 0 12ca44f0eafb14781e19a3058ab74c8e
++ entry .formulations   フォームを HTML で囲む標準の方法。それぞれ名前でインポートする given である
+
+% 1 1 0 0c9ee1cf5e56377f0ff933b435b3aa49
+
+@ 0 3 0 02bcf320134ec454173c8a6b76a81916
++       フォームとその行がどう描画されるかは、スコープにある `Formulation` で決まる。`import soundness.*` はそれを一つも持ち込まない。名前で一つをインポートするか、アプリケーションが自身のデザインに合わせて独自のものを定義する。
+
+% 2 1 0 165647207bcadcb101799250713e4873
+
+% 3 1 0 08daf9406e36c21a1b7d685235444e3a
+
+% 0 1 0 11e571ee7c39219108c83c7a1daefdd7
+
+% 1 1 0 15abc6b9bab8db7000bbae132f1cf76f
+
+@ 0 7 0 1c6b3d318950b06d0110d7b355ef1863
++   entry .postFormulation   自身の URL へ POST し返す、装飾のない素朴なフォーム
++       フォームは `<form action="." method="post">` で、行と、`submit` のテキスト（`Unset` なら _Submit_）をラベルとする送信ボタンを保持する。
++       各行は `<div>` で、フィールドの検証メッセージがあればそれを持つ `<p class="alert">`、凡例とウィジェットを囲む `<label>`、そして `<span class="required">*</span>` を保持するので、スタイルシートで警告とマーカーにスタイルを付けられる。
++       マーカーは現在、フィールドが必須かどうかにかかわらずすべての行に表示される。
+
+@ 0 1 0 05c503e6c3a368e40b17779b2132147d
++ entry .Formulation   フォームと、そのラベル付きの各行を HTML でどう囲むか
+
+% 1 1 0 10460bfeb23b13cc0607c609fb5e57e2
+
+@ 0 5 0 01b2d9f02de036d7160d219e2d89dbea
++       `Formulation` はフォームの見せ方であり、フィールドがどう導出されるかとは別のものである。`#form` は行と送信ボタンを包み、`#element` は一つのウィジェットをその凡例と検証メッセージとともに囲む。
++       `elicit` と `edit` はこれをコンテキスト値として受け取る。`formulations.postFormulation` が標準のものであり、アプリケーションは独自のマークアップのために独自のものを定義する。
+
+% 2 1 0 0ad6a71e0796600e0f568897f53e5695
+
+% 3 1 0 03fb70bd85af054f019ad547f16c16ea
+
+% 0 1 0 1da6d46e0f216dc51283ca7212c8124f
+
+% 0 1 0 0d8e888e819df8f814afe8969b6f167d
+
+% 0 1 0 0b0a8ef604f9f4a40a0ed28dd987a3a7
+
+% 0 1 0 10f2f08127a2b95a06de001a69d8dd56
+
+% 0 1 0 1e81af7ffeb068ce0cb4d44bf5ebc5f8
+
+% 0 1 0 0b6b75ba305165e70c42b455889c228c
+
+% 0 1 0 1fa500fbe95b054100263919a5314f59
+
+% 0 1 0 0e34cc68eb25a2981e153e8dbc7a33d0
+
+% 1 1 0 10b0051310137f7117bd851c31b64056
+
+@ 0 1 0 122d221d1cd604c003120e241aa0dd7b
++       `Formulation` はキャプチャ追跡される（`Findable`）ので、ケイパビリティを閉じ込められる。
+
+% 0 1 0 15c23bf2061bb1600928dd660875b8de
+
+@ 0 2 0 12569fce9f2b15bb1988e883c44e09f1
++   entry #form      フォームの行と送信ボタンを包む。ボタンのラベルはそのテキストか既定のものになる
++   entry #element   一つのウィジェットを、その凡例、検証メッセージ、必須かどうかとともに囲む
+
+@ 0 1 0 1f1ac04e489e9e31112bb344858906db
++ entry .Formulaic   フォームの行として提示できる型。ケースクラスに対してフィールドごとに導出される
+
+% 1 1 0 1b83b47346db263600e5935d187a9039
+
+@ 0 5 0 06b6751aa2dca019006ccd94d89caa3e
++       `Formulaic` は `elicit` と `edit` が必要とする型クラスである。
++       直積型に対してはそのフィールドから導出され（各フィールド自身も `Formulaic` でなければならない）、`Elicitable` であってウィジェットがフレージング HTML として `Renderable` である任意の単一の値に対しては given として与えられる。
++       導出された直積型は `<legend>` 付きの `<fieldset>` として描画されるので、データのネストがそのままフォームのネストになる。
+
+@ 0 3 0 152ed909f6ff51eb041e5f6869530ee2
++       `#fields` は、フォーム全体の中での値の `Pointer`、その凡例、送信された `Query` のうちそのポインターの下にある部分、`Validation`、そして `Formulation` を受け取る。単一のフィールドは自身のメッセージを、そのポインターによって検証の中から探す。
+
+% 0 1 0 17efcd80442d96ac1c3da3efbf099571
+
+% 1 1 0 115498ebfd5488df1ebbf0a6bb3d3fa9
+
+@ 0 8 0 1fbaf0d4a48e4b5c018d12e089482a13
++   entry .elicitable   単一のフィールドの行。その `Elicitable` のウィジェットを描画し、メッセージとともに囲む
++       フィールドのドット区切りの名前、凡例、送信された値から値のウィジェットを作り、それを描画し、フォーミュレーションの `element` で囲む。
++   entry .conjunction   ケースクラスの行を導出する。各フィールドの行からなるフィールドセットである
++       `Formulaic` が直積型に使う導出である。
++       各フィールドの凡例はその名前を大文字の位置で区切って先頭を大文字にしたもので、そのポインターは親のポインターをフィールドの名前で延長したものである。
++   entry #fields   値のフォームの行。ポインター、凡例、送信されたクエリ、検証、フォーミュレーションから作られる
+
+@ 0 1 0 18f839fa05ebcad70a3f9527a36f7502
++ entry .Elicitable   型をどのウィジェットで編集するか、そしてその値をテキストとしてどう入力するか
+
+% 1 1 0 05d08716e46f26ec0c391c46912b892d
+
+@ 0 3 0 03d36f91579674910a06fb32853b7aec
++       `value is Elicitable` は、型 `value` のフォームフィールドがどう見えるかを表す。その `Operand` は `Widget` 型であり、`#widget` はフィールドの名前、凡例、現在の値からウィジェットを作り、`#input` は値が送信されるときのテキストを与える。
++       コンパニオンの given が次のように選ぶ。
+
+@ 0 6 0 049737dcc05651f41bb7d86fc5c734b1
++       - `Encodable in Text` である任意の値（`Text`、数値、`EmailAddress` のような検証済みの型）はテキストの `Field` になる（`Elicitable2` にある、優先度の低い `decodable`）。
++       - `Boolean` は `Checkbox` になり、チェックされているときは `on` として送信される（`boolean`）。
++       - `Enumerable` な型は、各値の名前を候補として示す `Combobox` になる（`enumerable`）。
++       - 保存されたエンティティへの `Reference[Entity]` は、保存されたすべてのエンティティからなる `Dropdown` になり、それぞれ `Showable` による描画で表示される（`reference`）。
+
+@ 0 1 0 01dbf0b07d7acde516b1aa85eb1ca2ef
++       独自の型は、独自の given によって別のウィジェットを得る。
+
+% 0 1 0 138d9437b8bcaa5719360097d57a553a
+
+% 0 1 0 1a90924ff14ae77008f767372188e94e
+
+@ 0 10 0 0f5348b04ba32a8d03f489a857380a3c
++   entry .boolean      `Boolean` を `Checkbox` で編集する。真のときは `on`、偽のときは空として入力される
++   entry .enumerable   `Enumerable` な型を、その値の名前からなる `Combobox` で編集する
++       各値は `Enumerable` が付ける名前で入力され、コンボボックスのリストはそのすべてを候補として示す。
++   entry .reference    保存されたエンティティへの `Reference` を、そのようなすべてのエンティティからなる `Dropdown` で編集する
++       エンティティが `Listable`、`Showable`、`Referenceable` であり、その参照のオペランドが `Encodable in Text` であることを必要とする。保存されたすべてのエンティティが列挙され、各選択肢はエンコードされた参照をキーとし、エンティティの `show` をラベルとする。
++   entry #input    この型の値が入力または送信されるときのテキスト
++   entry #widget   フィールドのウィジェット。その名前、凡例、現在のテキストから作られる
+
+@ 0 1 0 1a0e0576f25699e71928579331e08e0a
++ entry .Elicitable2   テキストとしてエンコードできる任意の型に対する、優先度の低い `Elicitable` の given
+
+% 1 1 0 031ac0efbd25710205bcf22a8f8742c8
+
+@ 0 4 0 1f13fc7dd808d50803e168aae9d16288
++       `Elicitable` のコンパニオンにミックスインされ、そこにあるより具体的な given が優先されるようにする。
++   entry #decodable   `Encodable in Text` である任意の値をテキストの `Field` で編集し、そのエンコードとして入力される
++       名前に反して、型が `Encodable in Text` であることしか要求しない。フィールドは値のエンコードを表示し、送信内容は `Query` を通じて別にデコードされる。
+
+@ 0 1 0 02f61cb5f53f7a33047b5a6fddd9d3bf
++ entry .Widget   フォームのコントロール。送信時の名前と現在の値を持つ
+
+% 1 1 0 177b940413d19b5e1b75509edaac9574
+
+@ 0 5 0 0a85aa46a5d8d26514cbab90f3ea160c
++       `Field`、`Checkbox`、`Combobox`、`Dropdown`、`RadioGroup` に共通する形である。それぞれ、フォーム内でのフィールドのドット区切りのパスである `#name` と、保持するテキストである `#value` を持つケースクラスであり、各コンパニオンにはそれをフレージング HTML として描画する `Renderable` の given がある。
++   entry #name    コントロールが送信されるときの名前。フォーム内でのフィールドのドット区切りのパスである
++   entry #value   コントロールが保持するテキスト。送信されたクエリか、編集中の値から得られる
+
+@ 0 1 0 0e7c195511e6b9631aad2f1dcb1f023c
++ entry .Field   テキスト入力。テキストとしてエンコードできる任意の値のウィジェット
+
+% 1 1 0 1a49d4a00561f3dc1e304a8ffde27e7f
+
+@ 0 6 0 1d68747965062124112443416ed2689a
++       ウィジェットの名前と値を持つ `<input type="text">` として描画される。ラベルは、それを囲む `Formulation` によって描画される。
++   entry .renderable   フィールドを `<input type="text">` として描画する
++   entry #label   フィールドの凡例
++   entry #name    フィールドが送信されるときの名前。フォーム内でのドット区切りのパスである
++   entry #value   フィールド内のテキスト
+
+@ 0 1 0 1a35a8e65b9cc31c07449c79fd1325bd
++ entry .Checkbox   チェックボックス。`Boolean` のウィジェット
+
+% 1 1 0 0edd8eac35c79f2705596ab5fd2bb45b
+
+@ 0 6 0 0f99e2b4f5d770570b866cc3e04274f2
++       `<input type="checkbox">` として描画され、値が空でないときにチェックされる。
++       チェックされたボックスは `on` として送信され、チェックされていないものはまったく送信されない。このため `Boolean` は `Query` から、そのキーが存在するかどうかによってデコードされる。
++   entry .renderable   チェックボックスを描画する。値が空でなければチェックされる
++   entry #name    ボックスが送信されるときの名前。フォーム内でのドット区切りのパスである
++   entry #value   チェックされているときは `on`、それ以外は空
+
+@ 0 1 0 1bf23067b5c39c551fe5af29d7b0ca58
++ entry .Combobox   候補のリストを持つテキスト入力。列挙型のウィジェット
+
+% 1 1 0 0ea90385ffadc4d2090c11f2709cc047
+
+@ 0 9 0 1a3f909613d2e7ba156b8faafc1116a5
++       `list` 属性によって選択肢の `<datalist>` と結び付いた `<input>` として描画されるので、ブラウザは値を候補として示しつつ、入力されたテキストも受け付ける。そのテキストはデコードできなければならない。
++       datalist の id はウィジェットの名前なので、名前は有効な DOM の id でなければならない。名前に空白を含むフィールドや、フォームのルートにある単独の列挙型（名前が空になる）は描画できない。
++   entry .renderable   コンボボックスを `<input>` とその `<datalist>` として描画する
++   entry #name      入力が送信されるときの名前であり、その datalist の id でもある
++   entry #options   候補となる値
++   entry #value     入力内のテキスト
+
+@ 0 1 0 064a473e89d5fabc117448668aacebaf
++ entry .Dropdown   ラベル付きの選択肢からなる固定のリストからの選択。保存された参照のウィジェット
+
+% 1 1 0 03fa308343f8791a0cb3da576ff7f9f8
+
+@ 0 5 0 1ef8e03dc7bda702002e2c0cecc5b9cd
++       `<option>` からなる `<select>` として描画され、それぞれが自身の `key` を送信し、`value` を表示する。
++   entry .renderable   ドロップダウンを、その選択肢からなる `<select>` として描画する
++   entry #name      選択が送信されるときの名前
++   entry #options   選択肢。それぞれ送信されるキーと表示されるラベルからなる
++   entry #value     現在選択されているキー
+
+@ 0 1 0 10bbf692c1710aac101133d3b4ede78c
++ entry .RadioGroup   一つの名前を共有するラジオボタンの集まりで、そのうち一つが選ばれる
+
+% 1 1 0 03f3f88765e8aa44161d3c5bf637fe51
+
+@ 0 7 0 139b2c6549d06e400fc510eeb9cb2d7f
++       選択肢ごとに、`<input type="radio">` を囲む `<label>` として描画される。
++       これを生成する標準の `Elicitable` はない。ラジオボタンで選ばせたい型には、`Operand` が `RadioGroup` である `Elicitable` の given が必要である。
++   entry .renderable   ラジオグループを、選択肢ごとのラベル付きのラジオボタンとして描画する
++   entry #name      グループ内のすべてのボタンが送信されるときの名前
++   entry #options   選択肢。それぞれキー、送信される値、ラベルを持つ
++   entry #value     現在選ばれている値
+
+@ 0 1 0 0c22e949889dde441aa8281e2a2f1259
++ entry .Query   フォームエンコードされたキーと値の対。URL のクエリ文字列やフォームの送信内容と、そのコーデック
+
+% 1 1 0 137af14deeb112ec00c613b3f2b68da5
+
+@ 0 5 0 0f51853c59e73535067d2117d14dfb23
++       `Query` は `Text` の `(key, value)` の対を順序付きで並べたリストであり、クエリ文字列 `a=1&b=2` や `application/x-www-form-urlencoded` の本文が保持する形である。
++       ネストしたデータはドット区切りのキー（`speaker.name`）へ平坦化されるので、ケースクラスはフィールドごとに `Query` へエンコードされ、そこからデコードされる。こうしてフォームの送信内容やクエリパラメーターが型付きの値になる。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1b09dd2943dee7711572a7bfadc804cc
++         label 空のクエリ
+
+% 1 1 0 16c9d472591ea8dd02f8aafdc192b6df
+
+% 2 1 0 12a2456f9b36a6011006ff90bbaa3d83
+
+% 3 1 0 08dcf1ae0320a69e16e79e656dc6d046
+
+% 0 1 0 0f6604aca456157c076ffbd6576104a6
+
+% 0 1 0 06905ce725fd03b80b21ad458f2bd17d
+
+% 1 1 0 0419a33130f082510faea32938bf8826
+
+@ 0 1 0 1528526bb45882680d954d07c66c22b9
++         label パラメーター一つ
+
+% 1 1 0 143fe1041fa84df80b2aaad07bc9bdcb
+
+% 2 1 0 165199b7c45c17540e84612d7c0c3ec4
+
+% 3 1 0 0e00f8ecc5cdab511d014cdddcfd3933
+
+% 0 1 0 17ce139a6ee8b48a1716c7e365bbfe1a
+
+% 0 1 0 1835039ffdbda110081cb4a34823baf3
+
+% 1 1 0 1978244a25d24cce0dd2323876784140
+
+@ 0 1 0 12c5315c9eb94bed047d8758b71b5ec3
++         label 二つ目のパラメーターを追加
+
+% 1 1 0 0ddbfb79563f1af508bd058b9dfea02a
+
+% 2 1 0 1fb7d47f45e5b99601954302a67039fd
+
+% 3 1 0 0540e3a41eb11a7f19f93b2ad3dd83be
+
+% 0 1 0 16e6c69df601f7f208549ccc75d9df9f
+
+% 0 1 0 03ca07f99a6c8fef0d1db700890b7b36
+
+% 1 1 0 08e169406b5acbae1948685ed2832135
+
+@ 0 1 0 019f83119e5d231c1dff88b42fd02f91
++         label 両方を接頭辞の下にネストし、デコードする
+
+% 1 1 0 1a903d77f0414b921fd6e74b67c65d73
+
+% 2 1 0 10a72e118fe3b0dc0e97a905edc3763e
+
+% 3 1 0 10f60762e5b3dd350f509f57c39d445c
+
+% 0 1 0 1b053025a27ea06517187934ed192b18
+
+% 0 1 0 028cbf1bc02f01461e50fd4b7924dcb1
+
+% 0 1 0 0284c59024acf3610df830e8efe4ff56
+
+% 0 1 0 0928d04a94c6473509a82e8d8f61b8a6
+
+% 0 1 0 0af8ff365f39d1e7101a708b64c80cf3
+
+% 0 1 0 181c7dd74e919bda06473d8ad93d2483
+
+% 0 1 0 0b4df2833d5769ca08c6dad0b50d4848
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 6 0 0cdf9675725c8adc164a3ed13d28823a
++       テキストは `as[Query]` で `Query` へデコードされ、`Query` は URL エンコードされた文字列としてエンコードされる、つまり `show` される。
++       `Encodable in Text` である任意の型は名前のない一つの値からなる `Query` へエンコードされ、フィールドがエンコードできる任意のケースクラスはフィールドごとにエンコードされる。デコードはその両方を鏡写しにし、パラメーターが欠けていれば `Query.Error` を発生させる。
++       蓄積型の戦略（`validate`）の下では、ケースクラスの欠けている、あるいは無効なフィールドがすべて、それぞれドット区切りの `Pointer` とともに報告され、ケースクラスのコンストラクターはすべてのフィールドがデコードできた場合にのみ実行される。
+
+@ 0 2 0 0bcbe581d6c3478f1289be879fddac1d
++       名前付きのパラメーターは、`Parametric` の given がその名前に型を与えるとき、動的に読み書きされる（`query.name`、`query.name = value`、`Query.make(name = value)`）。
+
+% 0 1 0 0d44f2f2eef4167a1888e88c0fedc130
+
+% 1 1 0 01776fce97be213013ba7803b719b32c
+
+@ 0 9 0 1522f651ee9bfaa11a104873b45328e0
++   entry .apply   空のクエリ、名前のない一つの値からなるクエリ、または与えられた対を順に並べたクエリ
++       `Query()` は空である。`Query(text)` は空のキーを持つ単一の値 `text` を保持する。これは `Encodable in Text` である値がエンコードされる形である。`Query(pairs)` は `(key, value)` の対のリストをそのまま保持する。
++   entry .encodable   `Query` を URL エンコードされたテキストとしてエンコードし、また任意のエンコード可能な値やケースクラスを `Query` としてエンコードする
++       二つの given がこの名前を共有する。
++       一つは `Query` を `&` で連結した `key=value` の対として描画し、各キーと値は URL エンコードされる。
++       もう一つは inline の given で、任意の型を `Encodable in Query` にする。`Encodable in Text` である型は名前のない一つの値からなるクエリになり、ケースクラスは各フィールドをその名前の下に、ネストしたフィールドをドット区切りのキーの下にエンコードする。
+
+% 2 1 0 05a97a552f8f10420569d682a98ae57b
+
+% 3 1 0 051ce768152bc62e1e53c5145e59b13c
+
+% 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
+
+% 0 1 0 08659b3d3fcf27d70c388bc3af27a2a8
+
+% 1 1 0 0583592f11ffca320ad3c6ce0a4eb204
+
+@ 0 6 0 094a3ae0062884f005612a030911b750
++   entry .decodable   URL エンコードされたテキストを `Query` としてデコードし、また `Query` を任意のデコード可能な値やケースクラスとしてデコードする
++       二つの given がこの名前を共有する。
++       一つはテキストを `&` で分割し、各部分を最初の `=` で分割して、両側を URL デコードする。`=` のない部分は空の値を持つキーである。
++       もう一つは inline の given で、任意の型を `Decodable in Query` にする。`Decodable in Text` である型はクエリの名前のない値からデコードされ、ケースクラスはそのフィールドの名前の下にあるパラメーターからフィールドごとにデコードされる。
+
+@ 0 5 0 02f19e1f145824811722ae4d1388e55e
++       値が欠けていると、理由 `Missing` を持つ `Query.Error` が発生する。ただし型に `Default` があれば、エラーが発生した後にそれが使われる。
++       蓄積型の戦略の下では、ケースクラスの欠けているフィールドがすべてエラーとして発生し、それぞれドット区切りの `Pointer` にフォーカスされる。そしてコンストラクターは代替の値に対しては実行されない。このため細分化された型のコンストラクターが、ユーザーが入力しなかったフィールドについて幻のエラーを報告することはない。
+
+% 2 1 0 1244ea5d9101d6f21fb0973f792b728c
+
+% 3 1 0 1b25642fd9ea393b094c76707529bf5b
+
+% 4 1 0 0cf38464b4c02c1218a4411950e73613
+
+% 0 1 0 0a65634d34e41fa013d1a661b1826922
+
+% 0 1 0 01b2b051011e6cec09418ebf69486153
+
+% 1 1 0 1af07ce2b7769e0c11cd91cda6fa9a01
+
+@ 0 1 0 0fd106d2d9e88a0707bd22a6179b3c89
++   entry .EncodableDerivation   `Encodable in Query` の直積型の導出。各フィールドをその名前の下にエンコードする
+
+% 1 1 0 14070ab33649d1b70fd2897cf1bd5d93
+
+@ 0 3 0 107d3c6632e80c4d1eca8d3eb92737ba
++         ケースクラスに対する inline の `encodable` の given が使う。通常は直接名指ししない。
++     entry .conjunction   直積型を、そのフィールドのクエリの和としてエンコードする。各クエリにはフィールドの名前が接頭辞として付く
++   entry .DecodableDerivation   `Decodable in Query` の直積型の導出。各フィールドをそのパラメーターからデコードする
+
+% 1 1 0 03f8eb496f34821a1e62aeae1b67816f
+
+@ 0 17 0 19ce6a1c6fc478de102d535c563e4ab8
++         ケースクラスに対する inline の `decodable` の given が使う。通常は直接名指ししない。
++         フィールドを一度の走査でデコードし、各フィールドのエラーをその `Pointer` にフォーカスし（ネストしたレコードのエラーは `outer.inner` に置かれる）、すべてのフィールドが問題なくデコードできたときにのみ直積を構築する。
++     entry .conjunction   直積型をフィールドごとにデコードし、すべてのフィールドがデコードできた場合にのみ構築する
++   entry .booleanEncodable   `Boolean` をチェックボックスと同じようにエンコードする。真のときは `on`、偽のときは何もない
++   entry .booleanDecodable   `Boolean` をチェックボックスの送信内容としてデコードする。値が少しでも存在すれば真である
++       チェックされていないチェックボックスは送信されないので、`Boolean` のフィールドが欠けることはない。存在しないことが `false` である。
++   entry .showable   `Query` を、`#queryString` が与えるとおりの URL エンコードされたクエリ文字列として表示する
++   entry .inspectable   `Query` のデバッグ用の描画。カンマで区切られた `key = "value"` の対で、URL エンコードはされない
++   entry .applyDynamicNamed   `Query.make(name = value, …)`。名前付きの型付きパラメーターからクエリを作る
++       各パラメーター名には、その値がどの型を取るかを表す `Parametric` の given がスコープになければならず、各値は `Encodable in Query` でなければならない。どちらもコードのコンパイル時に検査される。
++       誤った型の値はコンパイルエラー _the parameter `name` takes values of `T` but the provided value had type `U`_ になる。`Parametric` のない名前は別のエラー（エラー `↯/s.87.4`）になり、エンコーディングのない値は三つ目のエラー（エラー `↯/s.87.3`）になる。
+
+% 2 1 0 0826fa908f9a8284081e876f583ab2e4
+
+% 3 1 0 0708f5e69e07063a1d5b3ddf7b78ade8
+
+% 0 1 0 07ed1395cacb9602103c25c3f2b48e17
+
+% 0 1 0 0f58a88339cd075f1d52467860846253
+
+% 0 1 0 1990392abd9337a20f2b72c048e42865
+
+% 1 1 0 13cf69521ce6c47e0a359fcdc9e5631e
+
+@ 0 4 0 1ab0ebbbe60e3ba310a59ad5d358e9b8
++       Telekinesis の `queryParameters.arbitraryQueryParameter` を名前でインポートすると、任意の名前と任意の値を受け付ける。
++   entry .addable   `query + query`。両方の対で、左のものが先に来る
++   entry .Error   値が必要とするパラメーターがクエリに欠けているときに発生する
+
+% 1 1 0 0b1419ee9c644788159abf8beb09406c
+
+@ 0 4 0 0adf787ba22ec3951e3f155e297ec3c8
++         エラー `↯/s.87.2`：_the query parameter could not be read because the parameter was not present in the query string_。
++         必須の値にパラメーターがないとき `Decodable in Query` の given によって発生し、ケースクラスのデコード時にはそのフィールドの `Pointer` にフォーカスされるので、蓄積型の戦略はフォームの欠けているフィールドをすべて報告する。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 109b642e3654197f1a7d7f072c241117
+
+% 0 1 0 189f17deb544cc2610dffbeffc3157b9
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 1 0 1f4fe7028e1915fc06bec5182b9af9ce
++     entry .Reason   クエリパラメーターを読めなかった理由。唯一の理由は `Missing` である
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 26 0 09bdf08dd217babb135e62d253816837
++           `Missing` (1)：パラメーターがクエリ文字列に存在しなかった。
++       entry #number   理由の番号。エラーコードの二番目の部分である
++     entry .communicable   理由をメッセージとして描画する：_the parameter was not present in the query string_
++     entry #reason   `Query.Error.Reason`
++   entry #values   クエリの `(key, value)` の対を順に並べたもの。ネストしたフィールドのキーはドット区切りになる
++   entry #append   このクエリの対の後に別のクエリの対を続けたクエリ
++   entry #nil      クエリが対を一つも保持していないかどうか
++   entry #++       このクエリの対の後に別のクエリの対を続けたクエリ。`#append` と同じである
++   entry #selectDynamic   `query.name`。パラメーター `name` を、その `Parametric` が名指す型へデコードしたもの
++       `"name" is Parametric to Result` と `Result is Decodable in Query` を必要とする。クエリのうち `name` の下にある部分（それ自身の値とドット区切りの子）がデコードされ、欠けていれば `Query.Error` が発生する。
++   entry #updateDynamic   `query.name = value`。型付きの値からエンコードしたパラメーター `name` を加えたクエリ
++       `"name" is Parametric to Result` と、値が `Encodable in Query` であることを必要とする。
++       名前のない一つの値へエンコードされる値は `name` の下に加えられ、構造を持つ値は `name.` とその各キーの下に加えられる。
++       レシーバは変更されない。
++   entry #at      キーの下にある値をテキストからデコードしたもの。なければ `Unset`
++       `query.at[Int](t"page")` はパラメーター `page` の値を `Int` として返し、`page` パラメーターがそれ自身の値を持たないときは `Unset` を返す。
++       デコードのために `Tactic` を必要とする。
++   entry #as      クエリ全体を値としてデコードしたもの。エラーはその `Pointer` にフォーカスされる
++       `query.as[Person]` は `Person is Decodable in Query` を通じてデコードするので、欠けているフィールドはそのフィールドのドット区切りのポインターにフォーカスされた `Query.Error` を発生させる。
++   entry #apply   クエリの名前のない値、または `Unset`。あるいはキーの下にあるクエリの部分
++       `query()` は、空のキーを持つ対をちょうど一つ保持するクエリの値であり、それ以外では `Unset` である。
++       `query(t"speaker")` は `speaker` の下にある部分クエリである。キー `speaker` の対は名前のない値になり、`speaker.` で始まる各キーはその接頭辞を失う。
+
+% 2 1 0 0543e539d56086811457cf05068a8073
+
+% 3 1 0 1f74ba6ae2c54ec71774573220d0575a
+
+% 4 1 0 0c471cd2b6595fc00ad723d08c0df6c5
+
+% 0 1 0 1a27cfe8169c39d60dbe764489b9c0c4
+
+% 0 1 0 1c27f2f20d8314d01b25b94ed8a06ff4
+
+% 0 1 0 0987d6ed079bf941164d877fb0a0e14b
+
+% 1 1 0 13cefe27880b8eda11ec728e4fb4679e
+
+@ 0 6 0 1e8426939dd1d7791ccc29a5deca0794
++   entry #prefix   すべてのキーを接頭辞の下に置いたクエリ。`name` は `prefix.name` になる
++       名前のない値のキーは接頭辞そのものになるので、単独でエンコードされてから接頭辞を付けられた値は名前付きのパラメーターになる。
++   entry #queryString   URL エンコードされたテキストとしてのクエリ。名前のない値は `=` なしに単独で書かれる
++       各対は URL エンコードされた `key=value` で、`&` で連結される。空のキーを持つ対は値だけが書かれる。
+
+@ 0 1 0 1accb5ab4afe0dea06f3fbc6a1169948
++ entry .Parametric   名前付きのクエリパラメーターが取る型。`query.name` と `Query.make(name = …)` のためのもの
+
+% 1 1 0 184aef61f501fd3502bca1794e81d639
+
+@ 0 5 0 1edbb27fd21efa20031667f4ac36bb05
++       `"name" is Parametric to Result` は、クエリパラメーター `name` が型 `Result` の値を保持することを宣言する。
++       これは `Query` の動的なアクセサー（`query.name`、`query.name = value`、`Query.make(name = value)`）が必要とする証拠であり、パラメーターはコードのコンパイル時に検査される固定の型で読み書きされる。
++       振る舞いを持たないので、given は消去されたプレースホルダーとして書く。
+
+% 2 1 0 0c7793b1a9d1f74319b636dd65e852f6
+
+% 3 1 0 12c07bb37ddf1b0a12d3265e38fce1f5
+
+% 0 1 0 1b7378daaa5d8a721f6f4802d08e4df0
+
+% 1 1 0 155dc05194c3d7bb1ca3e0d29e1a8dac
+
+@ 0 2 0 0466e96d12a2535b00317b1422b8ddca
++       Telekinesis の `queryParameters.arbitraryQueryParameter` は、すべての名前にすべての型を与える。各パラメーターを宣言せずに動的にアクセスしたいコードのためのものである。
+
+% 0 1 0 081014bdc9d21eaa0b93d3b5f9647b1e
+
+@ 0 1 0 0695963a36d8411219de4a069f83369a
++   entry #Self   パラメーターの名前。リテラルの `Label` 型である
+
+@ 0 1 0 0a9a8278e381b2ae17a0188c9c9e0b1e
++ entry .internal   `Query.make` の背後にあるマクロ
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 2 0 1ea659d4152ea6c313b6977fa3317271
++       直接使うためのものではない。このオブジェクトは、マクロに安定した置き場所を与えるために存在する。
++   entry .query   `Query.make(name = value, …)` の背後にあるマクロ。各名前の `Parametric` を検査し、各値をエンコードする

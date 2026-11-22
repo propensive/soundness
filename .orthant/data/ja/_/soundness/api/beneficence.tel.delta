@@ -1,0 +1,275 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 17ce6dd5de3773731bddabb274f25ef1
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 01a13deee3ab393f0b4a3b3fb331e59c
++ info   given、テストスイート、テストをコンパイル時に索引付けし、後でツールが見つけられるようにするコンパイラプラグイン
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 164616ab90af759711b6212bfea12955
++     _Beneficence_ は、小さな実行時の部分を伴う Scala 3 のコンパイラプラグインである。
++     各モジュールがコンパイルされるとき、プラグインは型付けされた木を走査し、モジュールの出力ディレクトリに三つの索引を書き込む。
++     そうすることで、ツールは後から、クラスパスのどれもロードも実行もせずに、そのクラスパスが何を提供しているかを知ることができる：
+
+@ 0 11 0 1e0d7e0fe1d394880e4a114440339458
++     - `META-INF/givens/<typeclass>` — `Findable` な型の名前付き given のすべてを、プログラマーがそれをインポートするときに使う完全修飾名で記録する。`frontier` ライブラリは、欠けているコンテキスト値を説明するときにこの索引を（`givens` を通じて）読み、それを供給できる given を提案する。たとえば、欠けている `System` に対して `systems.javaBaseSystem` を提案する。
++     - `META-INF/services/probably.Suite` — すべての `probably.Suite` オブジェクトを、標準の `ServiceLoader` のレイアウトで記録する。スイートにはメインクラスがない。fume テストランナーはこの索引だけからスイートを発見するので、プラグインなしでコンパイルしたテストモジュールには実行可能なテストがない。
++     - `META-INF/probably/tests/<source>-<hash>` — ソースごとに一つのファイルで、各テスト、グループ、スイートについて、階層内での位置、種類、モニカー、タグ、行を列挙する。そうすることで、ランナーはスイートを実行することなくテストを一覧表示し、選択できる。
+
+@ 0 1 0 13d32ba7caccf15701bca3230e2de867
++     型は `Findable` を継承することで given の索引に参加する：
+
+% 2 1 0 1ba2836ac564cfd61c93a4ec9eb07d58
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 0 1 0 1e02286af3c0250a00297434acd2e40d
+
+% 0 1 0 055395efa336d90506acb78519d15f05
+
+% 0 1 0 055ea710e1e1b1b7082beeed05137e76
+
+% 0 1 0 0efc6cea83328dfe012c6ecbb9f67b1f
+
+% 1 1 0 00682fd81fe6065f082577d6ccbc25f5
+
+@ 0 2 0 077d8eea7032b6331f0655fda3b73844
++     これをプラグインとともにコンパイルすると、`META-INF/givens/Renderer` に、元のファイルを名指す `# source:` の行の下に `renderers.plainRenderer` が書き込まれる。
+
+@ 0 7 0 19537c386c656be614b927d611f257ce
++     プラグインは、`beneficence.plugin` の jar を指す `-Xplugin:` で有効になり、`beneficence.Findable` がコンパイルのクラスパス上になければ何もしない。
++     書き込むのはディレクトリへの出力だけである。
++     JAR へ直接コンパイルした場合は索引は書かれない。
++     コンパイルは増分に対して安全である。
++     再コンパイルされるソースが提供したエントリーは置き換えられ、それ以外のすべてのソースのエントリーは保持される。
++     また、各ファイルはその隣の一意な一時ファイルに書き込まれてからアトミックに所定の位置へ移されるので、同じディレクトリへの並行したコンパイルが互いを壊すことはない。
+
+@ 0 3 0 04f40904be8db8611da633857564511f
++     各モジュールは各索引の自分の断片を書き込むので、モジュールを一つの JAR にまとめるビルド（アセンブリ、fat jar）は、`META-INF/givens/`、`META-INF/services/`、`META-INF/probably/` の下のファイルを、どれか一つだけを残すのではなく連結しなければならない。
+
+@ 0 1 0 1f464efe1917bf091a914ec7f5969566
++     このライブラリには二つのコンポーネントがある：
+
+@ 0 5 0 0d8d409e1878683b12346a3a5cd41282
++     - `beneficence.core` — `Findable` と `givens` による検索。ほぼすべての Soundness ライブラリの依存先である。`soundness` アンブレラにエクスポートされる。
++     - `beneficence.plugin` — `BeneficencePlugin` とそのフェーズ。コンパイラに対してビルドされ、独立した成果物として公開される。`-Xplugin:` の jar はちょうど一つのプラグインを宣言するからである。
+
+% 0 1 0 0d1e1293c0f484560e6c09d2a0704e43
+
+% 0 1 0 1f163f1f18d047531b0c3e039aed5092
+
+% 0 1 0 152e77a6c4f4f6450203edc7b547674c
+
+@ 0 1 0 1b82343d5dc2225502afd3c304e54213
++ entry .Findable   名前付き given が `META-INF/givens` の索引に記録される型を示す
+
+% 1 1 0 1112cd08c86005f61337c75d31119105
+
+@ 0 6 0 1941cb9fbc53472b0b1bc963acf5ac48
++       `Findable` は空のマーカートレイトである。
++       型の基底クラスに `Findable` を含む `given` は、beneficence プラグインによって `META-INF/givens/<typeclass>` の下に記録される。
++       ここで型クラスとは、その given の最初の真の基底クラスである。
++       `given javaBaseSystem: System` の場合、ファイルは `META-INF/givens/ambience.System` であり、行は `ambience.systems.javaBaseSystem` である。
++       細分化する本体を伴って宣言された given（`given puck: T: …`）は、コンパイラがそれ自身のクラスとして実装するが、`T` の下に記録される。
+
+@ 0 1 0 017b61ef16ff3b1a013538d5094f8fcb
++       宣言が変わるにつれて、プラグインが何を記録するか：
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0b22bee2fda1bd370dd8e3fdbd920c93
++         label 素のトレイト：何も記録されない
+
+% 1 1 0 03e897c4528b77c30bed803fc3e66695
+
+% 0 1 0 02c215b05dd756770a79fbf36090cb53
+
+% 1 1 0 126933c6f538104d15dab1270095001d
+
+% 3 1 0 1009a52b5439023608d71b134808f736
+
+% 4 1 0 0f03d28f0eac691415b55f372bf6e2ff
+
+% 5 1 0 1ce1cad46ea882351f2d779dbe0e6b8f
+
+% 6 1 0 16f8b90f8bdd7c651acfbe6a45d5c638
+
+@ 0 1 0 0b247098c05502a20677b2f3c3e2f428
++         label Findable を継承する：`dialects.ansiDialect` が META-INF/givens/Dialect に書き込まれる
+
+% 1 1 0 04214016c1349ec31a166f6ba242c1e1
+
+% 2 1 0 0057b2b1bed2e2111bf11fc3095d0c5c
+
+% 3 1 0 1377c9f8d90f979a17790504417136ab
+
+% 3 1 0 1d11306c0c1ab2f6080eae67cab3f62b
+
+% 4 1 0 1479e0b48df865631325b3c4230d474b
+
+% 5 1 0 12efd14edb82022112f034422a200221
+
+% 6 1 0 09fd5c97eafd046115ebe6192b037af7
+
+@ 0 1 0 144db3b3a1101b5617168bbbd3f5c4bb
++         label クラスの中の given はインポートできないので、記録されない
+
+% 1 1 0 0cebea128d9683d11fd899414b9521ef
+
+% 2 1 0 0c5ff96a61810b460064e1298c565d56
+
+% 3 1 0 0afc1735bdd775210ff93a3300a7544e
+
+% 0 1 0 07e4e070a805fd440f40f740f1a194fd
+
+% 1 1 0 14929716d901f05e0b99bac072363ecb
+
+% 2 1 0 037f6ef91a56357f0eec26c2bcec0c0a
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 6 0 1edeb576be638d9a06ec8dd80275c02a
++       記録されるのは、素の `import` で到達できる given だけである。
++       囲むスコープはすべてパッケージかオブジェクトでなければならない。
++       クラス、トレイト、メソッドの本体の中の given は飛ばされ、インポートする名前を持たない無名の given も同様である。
++       Soundness の多くのコンテキストは `Findable` であり（`System`、`Clock`、`Random`、`Timezone`、`Environment`、`Serializable`、`Deserializable`、…）、そのおかげで、それらが欠けているときのコンパイルエラーが、それを供給するインポートを提案できる。
+
+% 0 1 0 05d1090f77b738141f38f8bd85f66b62
+
+@ 0 7 0 07998e1c3a5dc1a814943ec9157d671a
++ entry .givens   コンパイラのクラスパス上に型クラスについて記録された given。マクロで使うためのもの
++     `givens(typeRepr)` はマクロ時の検索である。
++     `Quotes` コンテキストの中で `TypeRepr` を与えると、マクロ自身のクラスローダーのクラスパス上にあるすべての `META-INF/givens/<typeclass>` リソース（別名を解決した型のクラスがファイルを名指す）を読み、空行と `#` のコメントを飛ばし、重複を取り除き、各完全修飾名を、それを所有するオブジェクトまたはクラスのメソッドまたはフィールドとして、given の `Symbol` に解決する。
++     もはや解決できない名前は黙って捨てられ、クラスシンボルを持たない型は `Nil` を返す。
+
+% 2 1 0 0a0362e75b01ff1f11cb73c82479e5c0
+
+% 0 1 0 17aa25563b6ef5f20ef33c4527c8861e
+
+% 1 1 0 03683557f751aba6066aa7200860680a
+
+% 0 1 0 0722b7ad7eeb5eb608ce2a35db51be12
+
+% 0 1 0 0d1371cb9127a4db0b4b8071b6c7c3d9
+
+% 0 1 0 1ac5afcf3b11c11b04c7a84dec0656a0
+
+% 1 1 0 0791f32dd3968cf50e2c732b3a08e7eb
+
+@ 0 3 0 0eae0ca7c9a0d605111ed4daed8924c6
++     結果は `quotes.reflect.Symbol` の標準ライブラリの `List` である。
++     マクロのコードでしか使われないからである。
++     `frontier` はこれを使って、欠けているコンテキストパラメーターを満たす given を提案する。
+
+@ 0 1 0 0ce38bb8dbf72cc81e5db8c379fd4d7a
++ entry .internal   `givens` の背後にあるクラスパスの読み取り器
+
+% 1 1 0 030b78ab957466920386b1f7d058de82
+
+% 2 1 0 19bd283e6ee7d9681329c3ca1f511f52
+
+@ 0 2 0 02a176c8d67faa3006026c595a154328
++       直接使うためのものではない。
++       `givens` はこれに委譲する。
++   entry .givens   ある型についての `META-INF/givens` のエントリーを読んで解決する。`beneficence.givens` を参照
+
+@ 0 1 0 1d60c13ce82abe4a06d650bf901da23c
++ entry .BeneficencePlugin   given、スイート、テストの索引を書き込むコンパイラプラグイン
+
+% 1 1 0 029fa8236c33160815a4727de70f40f3
+
+@ 0 5 0 08fc07d985656e8d0ec4b8b6377ba1ba
++       `beneficence` という名前の `StandardPlugin` であり、一つのフェーズ `GivensPhase` を組み込む。
++       `beneficence.plugin` の jar を `-Xplugin:<path to the jar>` としてコンパイラに渡すことで有効になり、オプションは取らない。
++       プラグインは索引をディレクトリへの出力にだけ書き込み、given を記録するのは `beneficence.Findable` がクラスパス上にある場合だけである。
++       スイートとテストが索引付けされるのは、`probably.Suite`（と `probably.Testable`）がクラスパス上にある場合だけである。
+
+% 0 1 0 1fc086a56d77b8e1066428b52cc00c5e
+
+@ 0 1 0 1898b7dc8aa31aea035e2e77082bbf0e
++   entry #name   プラグインの名前：`beneficence`
+
+@ 0 1 0 1d7cd6ffb4748af8030a2ad5c0dcf901
++ entry .GivensPhase   given、スイート、テストを収集し、その索引を書き込むプラグインのフェーズ
+
+% 1 1 0 01051d0d42cbebd31fde0d82c03a1542
+
+@ 0 2 0 1a76feb8273541580a0f82a30880b3ec
++       `typer` の後、`pickler` の前に、一回の実行のすべてのコンパイル単位に対して一度に実行される。
++       記録するのは次のものである：
+
+@ 0 4 0 11807bc52c6be9f71376e96651105dcc
++       - `Findable` な型の、安定してアクセス可能な名前付き given のそれぞれ。その型クラスの下に記録する。
++       - `probably.Suite` を継承する、トップレベルまたはオブジェクトの中に入れ子になった `object` のそれぞれ。`META-INF/services/probably.Suite` に記録する。
++       - 各ソースのテスト。`TestsIndex` を通じて `META-INF/probably/tests` に記録する。
+
+@ 0 7 0 16e48c92a07c7c5610ab98347130ce75
++       その後、見つけたものを `GivensWriter` で出力ディレクトリにマージする。
++       このフェーズは、テストを索引付けする間に二つのコンパイルエラーを報告することもある。
++       `Topic` がそのような識別子でないスイートに対しては _the suite id "…" must be a letter or `_` followed by letters, digits, `_` or `-`, so that it can be typed on a command line_ を、`Topic` が固定されていない `Testable` を取るメソッドに対しては _this Testable has no topic, so a test declared in this method would not be declared for it_ を報告する（`Testable of "<suite>"` と書くか、型パラメーター `topic <: Label` に対しては `Testable of topic` と書く）。
+
+% 0 1 0 1a96ad76e95a860f01f60bf3f59d7a99
+
+% 0 1 0 17bed36861bb978a0cd69d58a2cf0b1f
+
+@ 0 1 0 1110d9c12a487a850beb620616068f84
++   entry #phaseName   フェーズの名前：`beneficenceGivens`
+
+@ 0 1 0 02d5d4d6bd360b911a512a74b0b2514a
++ entry .Entry   記録された名前一つと、それを宣言したソースファイル
+
+% 1 1 0 0d698321c1e27c3a1ebd25b7a94d8d49
+
+% 2 1 0 123bdedc5056d7b20745fd22f68a8c2a
+
+@ 0 4 0 0321f6897eb8451e0352e3475caa850d
++       プラグインの作業用のレコードであり、索引をマージするときにソースごとにまとめられる。
++       直接使うためのものではない。
++   entry #fqn          given またはスイートの完全修飾名
++   entry #sourceFile   それを宣言したソースファイルのパス
+
+@ 0 1 0 0fae77d68ab3274a0794f40541d5b943
++ entry .GivensWriter   プラグインが収集したエントリーを出力ディレクトリの索引ファイルにマージする
+
+% 1 1 0 113881db28822ad7136834e971719b3e
+
+% 2 1 0 172a23dffaa3d8601910037ced86fa3d
+
+@ 0 12 0 1cba37f38b95b6161a03df2888455df5
++       直接使うためのものではない。
++       各索引ファイルはブロックの並びであり、ソースファイルごとに一つのブロックがある。
++       各ブロックは `# source: <path>` を見出しとし、その後に一行に一つずつ完全修飾名が続く。
++       マージは、再コンパイルされるソースのブロックを捨て、それ以外を順序どおりに保持し、新しいブロックを末尾に加え、その後でターゲットの隣に一意な一時ファイルを書き込んで、それをアトミックに所定の位置へ移す。
++       JAR への出力では何も書き込まない。
++   entry .merge         収集した given を `META-INF/givens/<typeclass>` にマージする。型クラスごとに一つのファイル
++   entry .mergeSuites   収集したスイートを `META-INF/services/probably.Suite` にマージする
++       コンパイルでスイートが一つも見つからなかった場合はまったく行われず、以前のファイルはそのまま残る。
++   entry .writeTests    各ソースのテストの索引を `META-INF/probably/tests` に書き込む
++       ソースごとに一つのファイルであり、その名前はソースのファイル名と、そのパスの SHA-256 の最初の六バイトから作られるので、アセンブリの二つのモジュールが同じファイルを書き込むことはない。
++       もはやテストを宣言していないソースは、そのファイルが削除される。
+
+@ 0 1 0 1d6caede2b3985a31118cf4f7e09e8c3
++ entry .TestsIndex   プラグインがソースファイルごとに書き込む、Probably のテストの静的な索引
+
+% 1 1 0 1818a2a62282b3ca0c68779b89f5f788
+
+% 2 1 0 0317566158046d9b0b6d2eb93698dd74
+
+@ 0 10 0 0e7053813c4f56091311d23dc6c1c786
++       直接使うためのものではない。
++       この形式は fume のようなテストランナーが読む。
++       各ファイルは `# probably tests <version>` と `# source: <path>` で始まり、その後に `suite`、`group`、`test`、`nest`、`call`、`open` の六種類のタブ区切りの行が続く。
++       これらの行は、各テストの宣言を、ソースのどこにあるかではなく、コンパイラがそれのために選んだ `probably.Testable` によって、スイートの階層の中に位置づける。
++       `impromptu` ブロックの中で宣言されたテストは除外され、`open` の行は、その場所に列挙されているより多くのテストがあることを示す。
++       フィールドの中のバックスラッシュ、タブ、改行はバックスラッシュでエスケープされ、`\*` は実行時にしかわからない名前の一部を表す。
++   entry .version   索引の形式のバージョン。各ファイルの最初の行に書かれる
++   entry .index     一つのコンパイル単位に対する索引の行

@@ -1,0 +1,311 @@
+orthant 2 language
+
+@ 0 1 0 0e148f9a93d2cee21167af7773698fbe
++ info
++     Git sous forme d'opérations typées sur un dépôt ouvert pour une portée, avec un backend qui
++     lance `git` ou un autre qui n'a besoin d'aucun `git`
+
+@ 0 1 0 130285ee21b29e69010dfb3d15ce170d
++ entry .Git
++   info
++       l'espace de noms du modèle de Git et des poignées de dépôt et de worktree
+
+@ 0 1 0 08e662e62dd36c010c14d551073fc34c
++   entry .Ref
++     info
++         un chemin de référence pleinement qualifié, `refs/heads/main`, sous forme de
++         `Path on Git.Refs`
+
+@ 0 7 0 1b9dbf6c1b2390e21208f4514634db47
++     detail
++         Erreur `↯/s.123.1` : _the Git operation could not be completed because `reason`_. C'est
++         l'unique erreur que lève toute opération sur un dépôt, via une `Tactic[Git.Error]` dans la
++         portée ; sa `#reason` est une `Git.Error.Reason`, numérotée de sorte que le code complet
++         soit `685.<n>`, et son `#detail` est ce que git lui-même a dit, quand un backend en
++         dispose : la sortie d'erreur standard, tronquée de ses espaces, du processus `git` sous
++         `Commandline`, ou le message propre d'un échec du système de fichiers ou du réseau sous
++         `Native`.
+
+@ 0 2 0 01ee8f83c971cd241ad92fe97a6e6b63
++       detail
++           Une énumération `Clarification`, de sorte que chaque cas porte son numéro (`685.<n>`) et
++           se rend via `.communicable` sous forme de son message. Les cas, dans l'ordre des
++           numéros :
+
+@ 0 1 0 03f1a2963b61e30100a12ad614676d6d
++   entry .RefError
++     info
++         levée quand un texte n'est pas une référence, un hachage ou un refspec Git valide
+
+@ 0 1 0 12a36d5f65921f0303497de6de1ffdc5
++   entry .Refs
++     info
++         le plan des références pleinement qualifiées, enraciné en `refs/`
+
+@ 0 1 0 056643f42af7b55616499c833f15c3b0
++   entry .Revision
++     info
++         tout ce que git accepte là où une révision est attendue : un hachage, une branche, un tag
++         ou une expression
+
+@ 0 1 0 07f9684edad272041c576075390f9930
++   entry .Refspec
++     info
++         un refspec de fetch ou de push, `+refs/heads/*:refs/remotes/origin/*`
+
+@ 0 1 0 12b305fbd4b1b9f90fc12408c3600a99
++   entry .Tag
++     info
++         un tag par son nom, d'un type distinct d'une branche ou d'un hachage
+
+@ 0 1 0 08e19ff25662b2ca15f8f6a89f98578a
++     entry .parse
++       info
++           un tag par son nom, vérifié selon les règles de référence de git
+
+@ 0 5 0 0295436745dea8551d6b4dda2fd0a8e7
++       detail
++           `Lightweight(commit)` est une ref de tag qui nomme un commit ;
++           `Annotated(annotation, commit)` nomme un objet tag, dont la cible propre est `commit`.
++           `#peeled` est le commit dans les deux cas. La méthode `tag` de `Git.Repo.Handle` en lit
++           un, et `tags()` liste les tags déjà déréférencés jusqu'à leurs commits.
+
+@ 0 1 0 0d46fac47322eb300b2bc4b48f5e6d30
++     entry .Annotation
++       info
++           le contenu d'un objet tag annoté
+
+@ 0 1 0 1be9c1d6a1a6c24f0697bfc8650d928c
++   entry .Branch
++     info
++         une branche par son nom, d'un type distinct d'un tag ou d'un hachage
+
+@ 0 1 0 12099f9362ae243f1b4ff899edf321cc
++   entry .Hash
++     info
++         un hachage d'objet de quarante caractères, et la racine d'un chemin de notes
+
+@ 0 1 0 0271774806819e9d1f22eeee9583f23f
++   entry .Identity
++     info
++         qui : un nom et une adresse e-mail
+
+@ 0 1 0 1fb2ad589d53f332136d3751339db1c1
++   entry .Timestamp
++     info
++         l'horodatage propre à git : des secondes depuis l'epoch et un décalage UTC en minutes
+
+@ 0 1 0 0a854b4954753dc80623510ac4038bc8
++   entry .Signature
++     info
++         une ligne `author`, `committer` ou `tagger` : qui, et quand
+
+@ 0 1 0 1fdafcb38f82fb530ed819634da80840
++   entry .Object
++     info
++         un objet git tel que lu dans la base : un blob, un tree, un commit ou un tag
+
+@ 0 1 0 0278b423a9f7655a1b8bffb173da2816
++     entry .Kind
++       info
++           les quatre sortes d'objets, telles que git les nomme : `blob`, `tree`, `commit`, `tag`
+
+@ 0 1 0 018fed107b89c4ca11a34490cfc24b5e
++     entry .Tree
++       info
++           les modes et entrées d'un objet tree
+
+@ 0 1 0 0eea0f03360568d811175f21d46bef41
++       entry .Mode
++         info
++             le mode d'une entrée de tree : régulier, exécutable, lien symbolique, gitlink ou
++             répertoire
+
+@ 0 1 0 0713bc7d39adf527002f1f3f2a3b2578
++       entry .Entry
++         info
++             une entrée d'un tree : son mode, son nom et le hachage qu'elle nomme
+
+@ 0 1 0 157bae18df864d1a17f685c6e069dd98
++   entry .Head
++     info
++         où se trouve HEAD : attachée à une branche, ou détachée sur un commit
+
+@ 0 1 0 0275774552ae0c0f071c526862496ab7
++   entry .Status
++     info
++         l'état d'un chemin, sous forme d'une lettre de `git status`
+
+@ 0 1 0 1f944b3e5bd8ce401b0a74acac97a7bb
++   entry .PathStatus
++     info
++         une ligne de `status` : l'état de l'index et celui du fichier de travail, et le chemin
+
+@ 0 1 0 0318fb850902b609189d0fe1fbc334fd
++   entry .Activity
++     info
++         la progression d'un clone, d'un fetch, d'un push ou d'un pull, partagée entre le
++         travailleur et un observateur
+
+@ 0 1 0 0e2cb08bfe8784ec01e9d6fe2cf8c2d2
++     entry .Phase
++       info
++           l'étape d'un transfert en cours
+
+@ 0 1 0 10b1568d2b3f4cb217d0c66dfea36268
++     entry .Report
++       info
++           une observation d'une activité : de pures données, périmées dès leur lecture
+
+@ 0 1 0 09afa63f5c076f49161a38d07e3f1f78
++   entry .Config
++     info
++         la configuration git : clés, portées, sources, et la poignée qui les lit et les écrit
+
+@ 0 1 0 155bd2e236957d8e13cd831bd29c00e2
++     entry .Key
++       info
++           une clé de configuration : sa section, sa sous-section optionnelle et son nom
+
+@ 0 1 0 17a4fd14df32195b0820e1d7d66cbc64
++     entry .Source
++       info
++           le fichier de configuration qu'une poignée lit et écrit
+
+@ 0 1 0 0995fa92bb9c133402dc13c413a1ea41
++     entry .Handle
++       info
++           une poignée de configuration prêtée : `get`, `all` et `list` pour lire, `set`, `add` et
++           `unset` pour écrire
+
+@ 0 1 0 0b202422445118be00abde35dbb6719f
++     entry .Openable
++       info
++           comment un chemin s'ouvre comme `Git.Config` : une poignée prêtée sur ce fichier
+
+@ 0 1 0 143bf365deb5c53013e3636d6931ef48
++   entry .Operation
++     info
++         une opération arrêtée en cours de route, en attente de la résolution des conflits
+
+@ 0 1 0 0a928c1bdd933b5218810126aceb088d
++   entry .Sequence
++     info
++         l'issue d'un cherry-pick, d'un revert, d'un rebase ou de l'application d'un stash, et les
++         verbes qui les pilotent
+
+@ 0 1 0 04d8f30371e1df070f97d00083ea5f99
++   entry .Merge
++     info
++         l'issue d'une fusion ou d'un pull
+
+@ 0 1 0 1fc718778ece3a4800a7720923f4f42a
++   entry .Push
++     info
++         la politique de forçage d'un push, et ce qui est arrivé à chaque ref
+
+@ 0 1 0 0219a58fc1f1b8eb03e8a607b7ec97ca
++   entry .Stash
++     info
++         les entrées du stash
+
+@ 0 1 0 049d65b9271e49dd150bbe3cd37f6e6e
++   entry .Signer
++     info
++         produit la signature que porte un commit ou un tag
+
+@ 0 1 0 15578df28164c88a05760088cd3b798f
++   entry .Verifier
++     info
++         vérifie la signature que porte un commit ou un tag
+
+@ 0 1 0 166f5752392a75a619e6fcef4e10c154
++   entry .Verification
++     info
++         `Good(signer)`, `Bad(detail)` ou `Unknown(detail)`
+
+@ 0 8 0 126fb11a432505db089a340a89844803
++     detail
++         Chaque opération sur un `Git.Repo.Handle` ou un `Git.Worktree.Handle` est écrite une seule
++         fois, au-dessus des primitives que déclare ce trait ; les deux backends les implémentent
++         différemment. La plomberie — refs, objets, index, configuration, notes — est assez simple
++         pour que le compare-and-swap, l'assemblage des objets et la signature vivent dans la
++         poignée ; les verbes algorithmiques (`merge`, `rebase`, `cherryPick`, `stash`, les
++         transports) sont propres à chaque backend. Un `Git.Backend^` est une capacité : on le
++         choisit en important par son nom l'un des givens de `gitBackends`, et chaque poignée garde
++         celui avec lequel elle a été ouverte.
+
+@ 0 1 0 05505dde2ebb0d4c1b4ee06923917434
++     entry .Location
++       info
++           où un dépôt a été trouvé : son répertoire git, le répertoire partagé, et son arbre de
++           travail
+
+@ 0 1 0 18d509a9eaa7463311f67e2a2d3f94db
++     entry .Expectation
++       info
++           ce que doit contenir une ref pour qu'une mise à jour ait lieu : n'importe quoi, rien, ou
++           un hachage
+
+@ 0 1 0 0e45e44d773da167093bc4b4766a3ce1
++   entry .OpenFlag
++     info
++         les indicateurs que peut prendre une ouverture : `Await`
+
+@ 0 9 0 1bc6a9e8256b70b91eb2b36ad9124fca
++     detail
++         `path.open[Git.Repo](mode) { repo ?=> … }` ouvre un dépôt nu, un répertoire `.git`, un
++         arbre de travail qui en contient un, ou le fichier `.git` d'un worktree lié, et prête un
++         `Git.Repo.Handle` au bloc. Le mode nomme les droits : `Read` (par défaut, avec
++         `open[Git.Repo]()`), `Read & Write`, ou `Exclusive & Write` pour refuser les autres
++         poignées exclusives de cette JVM (avec `Git.OpenFlag.Await` pour les attendre à la place).
++         L'ouverture vérifie qu'un dépôt est bien là — en levant `Git.Error(NoRepository(path))`
++         sinon — si bien qu'une poignée désignait toujours un dépôt au moment où elle a été
++         accordée ; ce qui se passe ensuite est l'affaire d'un autre processus, c'est pourquoi
++         toute lecture qui résout une ref est `Stale`.
+
+@ 0 1 0 1940af628834e91d048e0ebc1227d325
++     entry .Handle
++       info
++           une poignée de dépôt prêtée : chaque opération sur le dépôt est une extension sur elle,
++           conditionnée par un droit
+
+@ 0 3 0 047ab610a8d7e774029a1cca7c5301f5
++       `.reason` est la table qui lit la sortie d'erreur standard de git comme une
++       `Git.Error.Reason` ; tout ce qui n'est pas reconnu donne `Unexpected`, le message étant
++       conservé comme `detail` de l'erreur, si bien que rien n'est perdu. L'impossibilité même de
++       lancer `git` donne `CannotExecuteGit`.
+
+@ 0 3 0 0423890663dca32215280c0ceecc0219
++     detail
++         `gitCommands.searchpathGitCommand` le trouve dans le chemin de recherche ; un programme
++         qui embarque son propre git le nomme explicitement,
++         `Commandline.Command(t"/opt/git/bin/git")`.
+
+@ 0 2 0 1774d81b87ddc92d00e1d87fe264e6b0
++     entry #path   le chemin de l'exécutable, sous forme de texte
++   entry .Event   ce que journalise le backend : chaque invocation de `git`, sous forme d'`Exec.Event` de guillotine
+
+@ 0 4 0 0f9d4e1689f97f471b5476ba5bbe8594
++     detail
++         `Exec(event)` enveloppe un `guillotine.Exec.Event`, tagué `Log.Process` ; `.execEvent`
++         y transcrit les événements de guillotine, si bien qu'un `Commandline.Event is Loggable`
++         dans la portée est tout ce dont le backend a besoin. `logging.silentLogging` les ignore.
+
+@ 0 15 0 139ddfbef20d8e2c12982927626a0f54
++     entry .execEvent   transcrit un `Exec.Event` de guillotine en `Commandline.Event`
++     entry .communicable   rend un événement sous la forme _git: `event`_
++   entry .Outcome   ce qu'a produit une invocation de `git` : son code de sortie, sa sortie standard et sa sortie d'erreur standard
++     entry #exit   le code de sortie
++     entry #stdout   la sortie standard, sous forme de texte
++     entry #stderr   la sortie d'erreur standard, sous forme de texte
++     entry #ok   si le code de sortie valait zéro
++     entry #lines   la sortie standard sous forme de lignes non vides
++   entry .reason   lit la sortie d'erreur standard de git comme une `Git.Error.Reason`
++       Reconnaît les messages de git — assez stables pour être reconnus — pour `NoRepository`,
++       `Moved`, `RefExists`, `Locked`, `NoSuchRef`, `Unmerged`, `NoSuchObject`,
++       `NothingToCommit`, `Detached`, `Dirty`, `NotFastForward`, `LeaseFailed`,
++       `OutsideWorktree`, `Untracked`, `NoOperationInProgress`, `NoSuchRemote`, `RemoteExists`,
++       `Unauthorized`, `Unreachable`, `RemoteRejected`, `InvalidConfig`, `NoteExists`,
++       `BadSignature`, `SigningFailed`, `NoSuchWorktree` et `Conflict` ; tout le reste donne
++       `Unexpected`.

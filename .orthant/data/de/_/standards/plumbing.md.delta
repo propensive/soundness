@@ -1,0 +1,283 @@
+orthant 2 language
+
+@ 0 1 0 08ce036e0b6bdbaf0d7a0bb393a97a6d
++ # Konvertierungshelfer
+
+@ 0 8 0 115ab87544bc155f082b776ee699ca2f
++ Soundness konvertiert per Abstraktion, nicht von Hand. Ein Wert ändert Typ oder Gestalt über eine
++ Typklasse (`Showable`, `Encodable`, `Decodable`, `Convertible`), eine Brücke, die die überquerte
++ Grenze benennt (`.tt`, `.s`, `List.stdlib`, `Array.unsafeFrozen`), oder eine Methode auf dem Typ
++ selbst. Ein *Konvertierungshelfer* ist ein kleines `def` — privat oder lokal in einer Methode —,
++ dessen ganze Aufgabe darin besteht, einen Wert in den Typ zu bringen, den die nächste Zeile will.
++ Er ist keine Lösung; er ist ein Indiz dafür, dass eine Abstraktion fehlt, unzureichend ist oder
++ vorhanden, aber ungenutzt, und er ist die Stelle, an der sich eine vereinfachende oder falsche
++ Konvertierung (ein `toString`, wo ein `show` gemeint war, ein Hin- und Rückweg über `String`, der
++ eine Kodierung verliert) ungeprüft einschleicht. Dasselbe gilt für eine `given Conversion`, die
++ geschrieben wurde, um eine Unstimmigkeit zu überdecken.
+
+@ 0 8 0 0458be4a46395a3e1a4afd399d7e25de
++ `flare assess plumbing` findet sie. Die Regel `plumbing` in `.pyrocosm/flare/config.tel` benennt
++ das Modell, die unten stehenden Kriterien mit ihren Gewichten und diese Datei als Bewertungsschema;
++ flare sammelt die Kandidatendefinitionen aus dem Parsebaum, lässt das Modell die Kriterien in
++ Stapeln beantworten und hält jedes Urteil als BinTEL in Git-Notes unter
++ `refs/notes/flare-assess/plumbing` fest. Eine Definition wird durch ihren *Locus* identifiziert —
++ Pfad, umschließende Definitionen und Signatur, niemals eine Zeile —, und ihr Urteil ist unter einem
++ Hashwert ihres normalisierten Texts abgelegt, sodass eine Definition einmal beurteilt wird, solange
++ ihr Text, dieses Bewertungsschema, die Kriterien und das Modell bestehen. `make plumbing` führt es
++ aus; `flare assess plumbing --show HEAD` gibt die für einen Commit festgehaltene Rangfolge aus.
+
+@ 0 1 0 144361c702019e661cb8fffac7cade8d
++ ## Was was ersetzt
+
+% 2 1 0 07781d3a6a565c640701402a0a79c361
+
+@ 0 9 0 0c3b3c764691220b0b06491e4665a25c
++ column  Von Hand gebaut
++ column  Stattdessen verwenden
++ row  `x.toString.tt`, ein Helfer `render(x): Text` oder `name(x): Text`  `x.show` (`Showable`) oder `x.in[Text]`
++ row  `private inline def kebab(s: String): Text = Text(s)`  `.tt` an der Aufrufstelle
++ row  `text.s.replace(…).nn.tt`, jeder Hin- und Rückweg `.s … .tt`  eine `Text`-Operation aus gossamer, oder eine hinzufügen
++ row  `Integer.parseInt(hex.s, 16)`  `hex.deserialize[Hex]` oder `text.as[Int]` (`Decodable`)
++ row  `Array.unsafeFrozen(text.s.getBytes(UTF_8).nn)`  `text.in[Data]` mit einem `CharEncoder` im Geltungsbereich
++ row  ein von Hand geschriebenes `toList`/`toMap` auf einem Container  eine `Convertible`-Instanz, dann `.to[List]`/`.to[Map]`
++ row  ein `match`, das jeden Konstruktor eines Enums auf einen eines anderen abbildet  `Enumerable`/`Extractable` oder eine Methode auf dem Quelltyp
+
+% 0 1 0 083fb7c2b8bb492706d54f549de3a982
+
+@ 0 6 0 1f030cfc1bc849810f18e4b77c1a4d2f
++ row  `Option` nach `Optional` von Hand  `.optional`
++ row  `try … catch` nach `Optional`  `safely`
++ row  `asInstanceOf`, um eine Stdlib-Collection zu erreichen  `stdlib` auf der Collection, wie `List.stdlib`
++ row  Hin- und Herschieben zwischen 0- und 1-basierten Indizes  `.z`, `.u`, `.n0`, `.n1`
++ row  dasselbe `tag(out, char) = out.append(char.toByte)`, in sechs Atomisierer kopiert  eine Erweiterung auf `Scribe[Byte]`
++ row  `given Conversion[Int, Expression] = int => Number(int.toDouble)`  ein `Expression.apply(Int)` oder ein `Decodable`
+
+% 1 1 0 0dc2eef590fc25c9087e7f5ce6e69dd0
+
+@ 0 3 0 1b79b445c8bb88b21f7a24589a71e0a3
++ Die Behebung ist nie, den Helfer zu behalten und umzubenennen. Entweder existiert die Abstraktion,
++ und die Aufrufstelle verwendet sie, oder sie existiert nicht, und die Bibliothek, der der Zieltyp
++ gehört, erhält sie — im Begleitobjekt, damit sie ohne Import aufgelöst wird (siehe die Regeln zur
++ Platzierung von Givens in `.claude/CLAUDE.md`).
+
+@ 0 1 0 1291dd24bf9b520315f13d5e2d6421b8
++ ## Was bleiben darf
+
+@ 0 2 0 039c4cca884be7b016581a797a5f48b3
++ Eine kleine Funktion ist nicht schon deshalb ein Konvertierungshelfer, weil ihr Ergebnis einen
++ anderen Typ hat als ihr Argument. Vier Gestalten sind legitim.
+
+@ 0 10 0 1fc701b7097dc81c03b2d97d55214297
++ 1. **Parsen und Dekodieren, das scheitern kann.** Ein Rumpf, der auslöst, abmildert, `Optional`
++    zurückgibt oder eine `Decodable`/`Parsable`-Instanz ist, leistet die Arbeit, für die die
++    Abstraktion existiert.
++ 2. **Berechnung.** `toJulianDay`, `convertBitDepthsToSymbols`, eine CRC, das Extrahieren eines
++    Bitfelds: Arithmetik auf dem Wert, nicht dessen erneutes Umhüllen.
++ 3. **Eine einmal überquerte Grenze.** Ein einzelnes `.tt`, `.s`, `.nn`, `List.stdlib` oder
++    `Array.unsafeJvm`, wo Soundness auf das JDK, WASI oder Scala.js trifft, inline an dem Aufruf,
++    der es braucht. Ein Helfer, der nur existiert, um diese Überquerung zu *benennen*, ist der
++    Geruch; die Überquerung selbst nicht.
++ 4. **Ein Herausziehen mit Beweis.** Ein lokales `def`, das aus einem Lambda herausgezogen wurde,
++    um einem Compiler-Absturz auszuweichen (`wildApprox`, ein `FunProto`-Cache), trägt auf der
++    Zeile darüber einen Kommentar, der den Absturz benennt, wie es `liftText` in
++    `stratiform.internal.scala` tut. Der Kommentar ist es, der es ausnimmt.
+
+% 0 1 0 08a45d97b92961c310443f284f6ec89a
+
+@ 0 1 0 0a100cbaa8664b4b1484226b39753f0e
++ ## Bewertungsschema
+
+@ 0 6 0 0abfd4652d11e64c14933fc2c5d8f635
++ Sie bewerten Methodendefinitionen in Scala 3 aus der Codebasis von Soundness. Jeder Kandidat ist
++ eine kleine Methode (oder eine `given Conversion`), die ein *Konvertierungshelfer* sein kann: eine
++ Funktion, deren ganze Aufgabe darin besteht, Typ oder Gestalt eines Werts zu ändern, und die an
++ die Stelle einer Abstraktion tritt, die stattdessen hätte verwendet werden sollen. Sie sehen die
++ Definition mit zwei Kontextzeilen darüber und eine Kopfzeile mit Fakten, die der Treiber berechnet
++ hat (Art, Anzahl der Aufrufstellen, Duplikate). Urteilen Sie nur anhand des gezeigten Texts.
++ Folgen Sie keinen Verweisen, raten Sie nicht über Code, den Sie nicht sehen, und erfinden Sie
++ keine APIs.
+
+@ 0 4 0 0f7a7982b74296201b5afe436ac4d3cf
++ Beantworten Sie für jeden Kandidaten jedes der folgenden Kriterien mit `true` oder `false`.
++ Antworten Sie allein anhand des Codes; die Punktwerte dienen Ihrer Information, und der Treiber
++ summiert sie, also berechnen Sie keine Summe. Die **Adapterliste**, auf die sich S2 und S3
++ beziehen, besteht genau aus diesen sowie jedem nackten Konstruktoraufruf `Name(…)` /
++ `new Name(…)`:
+
+% 2 1 0 1e23bd8637f098d905186c48eff87b4c
+
+% 0 1 0 069071ae9eb66d8705c4fc2b57073247
+
+% 0 1 0 10abbb31fac470a40f5272f950efa316
+
+% 0 1 0 04214ae8929ab5470786a3eccae258b2
+
+% 1 1 0 033f1c32d80e569b17c30235b8a99879
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+% 0 1 0 1903fd676b8450580bf447e6c5c885a9
+
+@ 0 17 0 0e05fb0bfd343dd401071a56232def83
++ column  Kriterium
++ column  `true` antworten, wenn
++ column  Punkte
++ row  S1  einzelner Ausdruck  der Rumpf ein Ausdruck ist: kein `val`, `if`, `match`, `{…}`-Block, keine Schleife und keine zweite Anweisung  +2
++ row  S2  nur Adapter  jeder Aufruf im Rumpf auf der Adapterliste steht oder ein Feldzugriff ist, ohne Arithmetik und ohne Literale außer einem Zeichensatz- oder Algorithmusnamen (`"UTF-8"`, `"SHA-256"`)  +3
++ row  S3  Hin- und Rückweg  eine Kette eine Darstellung sowohl verlässt als auch wieder betritt: `.s … .tt`, `.toString … .tt`, `.stdlib … .to[…]`, `Array.unsafeJvm … Array.unsafeFrozen`, `.s … .nn.tt` um einen Java-Aufruf  +3
++ row  S4  Konvertierungsverb  der Name mit `to`, `from`, `as`, `make`, `mk`, `convert`, `lift`, `wrap` oder `unwrap` gefolgt von einem Großbuchstaben beginnt oder genau `text`, `string`, `bytes`, `number`, `decimal`, `hex`, `key` oder `node` ist  +1
++ row  S5  Synonym einer bestehenden Operation  der Name `toList`, `toMap`, `toSeq`, `toArray`, `text`, `show`, `render`, `str`, `string`, `bytes`, `optional`, `orNull` oder der Name des Rückgabetyps in Kleinbuchstaben ist  +2
++ row  S6  reiner Weiterleiter  der Rumpf ein einzelner Aufruf einer Methode oder eines Konstruktors ist, der die Parameter unverändert und in Reihenfolge durchreicht, eventuell mit einem auf einen davon angewandten Adapter  +3
++ row  S7  Eins-zu-eins-Leiter  der Rumpf ein `match` ist, in dem jeder Fall `pattern => Constant` oder `pattern => Wrap(binding)` ist, ohne Guards und ohne sonstige Logik  +2
++ row  S8  Rückgabetyp nur der Gestalt nach  der deklarierte Rückgabetyp `Text`, `String`, `Data`, `Array[Byte]`, `List[…]`, `Map[…]`, `Seq[…]` oder `Unit` ist  +1
++ row  S9  ein Parameter  die Methode genau einen Wertparameter nimmt  +1
++ row  S10  Konvertierungs-Given  die Deklaration eine `given … Conversion[A, B]` ist (S4, S5 und S6 mit `false` beantworten, wenn dies `true` ist)  +3
++ row  X1  behandelt Fehlschläge  der Rumpf `raise`, `abort`, `mitigate`, `safely`, `lest`, `Optional`, `Unset`, `.or(`, `try`, `panic` oder einen bewachten Fall enthält  −3
++ row  X2  rechnet  der Rumpf Arithmetik auf Werten ausführt, ein numerisches Literal außer `0`, `1` oder einer Basis verwendet, drei oder mehr Teile verkettet, eine Schleife enthält oder rekursiv ist  −3
++ row  X3  durch einen Kommentar begründet  ein Kommentar an der Definition oder auf der Zeile darüber `compiler`, `crash`, `macro`, `boundary`, `workaround`, `JVM` oder `Java` erwähnt  −2
++ row  X4  Name aus der Codec-Familie  der Name mit `read`, `write`, `parse`, `decode`, `encode`, `serialize` oder `deserialize` beginnt  −2
+
+% 1 1 0 0688c462558e17231c1640ef5af93097
+
+@ 0 3 0 0085533bd01fa70d1cb393ea58d6f6d3
++ Wählen Sie dann ein `replacement` ausschließlich aus diesem Vokabular — die Abstraktion, die die
++ Aufrufstelle stattdessen verwenden sollte — oder `none`, wenn Sie es nicht sagen können. Einträge
++ sind durch Leerzeichen getrennt, außer dass `inline at call site` ein einzelner Eintrag ist:
+
+% 2 1 0 05ed5d9ac9283fd60fb817a0b5db77e4
+
+% 0 1 0 02959b3bf631169e1ab4b50ef030415b
+
+% 0 1 0 1802b44b90f7d04a1e448e7a498bb2e4
+
+% 0 1 0 0f3c3112183c0a771a01186b4f0cc4a8
+
+% 0 1 0 01420cc4e4f017e2187098d048c947f0
+
+% 1 1 0 03fddfc979282cbc05e034c916f3e252
+
+@ 0 1 0 0d2c4b10ee77f65e19eff6a317fccdfd
++ Geben Sie schließlich einen einsätzigen `reason` an und zitieren Sie das Fragment des Rumpfs, das
++ den Ausschlag gegeben hat.
+
+@ 0 1 0 10bc71774229126d01269e0b4f876055
++ ### Ausgabe
+
+@ 0 1 0 08152ab1013a22aa07df4134192ec7e7
++ Geben Sie ein JSON-Array zurück, ein Objekt pro Kandidat, in der gegebenen Reihenfolge, und sonst
++ nichts:
+
+% 0 1 0 169dd671eb57630c0371b3518946361b
+
+% 0 1 0 07cc27e2d218795d08cccc85a87f9f76
+
+% 0 1 0 1311a3b6e7e1f68f038c056ba24c8f2c
+
+% 0 1 0 121be430bc8ba18d15e748661d1d066c
+
+% 0 1 0 05671ff61c5741180a2a54dc75048785
+
+% 0 1 0 1c94d4a8994875f10ffcd259c20bcde2
+
+% 0 1 0 17caab2e3d549d9c1773010d5d06dcbd
+
+% 1 1 0 14e2c39b3d50aa541fde636e687d2145
+
+% 0 1 0 04bce149f69e92cb19b2d1170c717336
+
+@ 0 3 0 09c0fda9877124eb16bc1367c1102955
++ flare berechnet die Punktzahl aus den Booleans neu (der Arithmetik eines kleinen Modells wird
++ nicht vertraut), fügt eigene Signale hinzu und validiert `replacement` gegen das Vokabular, sodass
++ keine halluzinierte API in den Zensus gelangen kann. Es fügt die `signal`-Zeilen der Regel hinzu:
+
+% 2 1 0 09d78df2d57aa5b5170752fec1106faa
+
+% 0 1 0 0f3305af5cded8f81f8b45960dac6106
+
+@ 0 9 0 097d08d011024e650e6407fa62eb0cc7
++ column  Wann
++ column  Punkte
++ row  `local`  ein lokales `def`  +2
++ row  `private`  eine `private` Definition  +1
++ row  `calls 1`  eine Aufrufstelle im Geltungsbereich  +2
++ row  `calls 2`  zwei Aufrufstellen im Geltungsbereich  +1
++ row  `calls 4+`  vier oder mehr Aufrufstellen im Geltungsbereich  −1
++ row  `duplicate`  ein Rumpf, wörtlich (mit umbenannten Parametern) in einer anderen Definition dupliziert  +3
++ row  `one-liner`  die ganze Definition auf einer Zeile  +1
+
+% 1 1 0 0f2d255e1200720118f88e484804fbdd
+
+@ 0 1 0 07c68ab8a7761a9a13572b6f277fe514
++ Der Zensus wird von der höchsten Summe abwärts in Bändern abgearbeitet:
+
+% 2 1 0 113ac38ff5fd24b5045d4220ee58f271
+
+% 0 1 0 01d7e442bd908fed17eaa520ea18005a
+
+@ 0 5 0 143c33c4165d0bb91b02bdb37b89dd89
++ column  Summe
++ row  **eindeutig**  10 oder mehr
++ row  **wahrscheinlich**  5 bis 9
++ row  **schwach**  0 bis 4
++ row  **legitim**  unter 0
+
+% 1 1 0 0388a6626839f4b41dfd4643f44c2474
+
+@ 0 1 0 0deb34ee4e7a892a05669a9350343b70
++ ## Ausgearbeitete Beispiele
+
+% 2 1 0 008b11b121951aaf08f8790be0bb5fc2
+
+@ 0 10 0 0f0c18a52ae3e2600b6226bab9e113d8
++ column  Kandidat
++ column  Zeichen
++ column  Modell
++ column  Treiber
++ column  Summe
++ row  lokales `def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(UTF_8).nn)`  S1 S2 S3 S5 S8 S9  12  lokal, ein Aufruf, eine Zeile  17
++ row  `private def tag(out: Scribe[Byte], char: Char): Unit = out.append(char.toByte)`, in sechs Dateien  S1 S2 S6 S8  9  privat, dupliziert, eine Zeile  14
++ row  `private inline def kebab(s: String): Text = Text(s)`  S1 S2 S6 S8 S9  10  privat, zwei Aufrufe, eine Zeile  13
++ row  `private def normalise(text: Text): Text = text.s.replace("proscenium.", "").nn.tt`  S1 S3 S8 S9  7  privat, ein Aufruf, eine Zeile  11
++ row  `def monthName(month: Mensual): Text = month.toString.tt`  S1 S2 S3 S8 S9  10  öffentlich, ein Aufruf  12
+
+% 0 1 0 1e2f8e0769b00a9e052361f4af6a6dc1
+
+@ 0 3 0 02f203b99ca8a34f1c050c4dc0af6e7b
++ row  `private def typeKindToFrame(kind: jlc.TypeKind): Frame = kind match …`  S4 S7 S9  4  privat, ein Aufruf  7
++ row  `def toJulianDay(date: Date): Int = … arithmetic …`  S4 S9 X2  −1  drei Aufrufe  −1
++ row  `def parseHeader(text: Text): Header raises ParseError = …`  vor der Bewertung anhand des Namens ausgeschlossen  —  —  —
+
+% 1 1 0 1fa8cbfc7c33bd220f2fd53bed3dafca
+
+@ 0 3 0 00ce6f23f0023c3f1b998086ffbe0aac
++ Die ersten fünf bilden das eindeutige Band des Zensus: reines erneutes Umhüllen, jeweils mit einem
++ Ersatz, der bereits existiert. Die Leiter ist wahrscheinlich, und ein Mensch entscheidet, ob das
++ Enum eine Methode oder ein `Extractable` erhält. Die letzten beiden sind das, was die Ausschlüsse
++ und die X-Kriterien fernhalten sollen.
+
+@ 0 1 0 160e0bac3849e02e11ce3cc3ed77dc58
++ ## Fallen
+
+@ 0 2 0 0537697278df75fa0bd68ab547a71a1e
++ Ein von Hand geschriebenes `toList` auf einem Typ ohne `Convertible`-Instanz erzielt eine hohe
++ Punktzahl, und zwar zu Recht: Die Behebung ist, die Instanz hinzuzufügen, nicht, den Helfer zu
++ behalten, weil nichts anderes dient.
+
+@ 0 3 0 140b790b80d018251dd14081cb2e8efb
++ Ein privater Weiterleiter, der existiert, um einer öffentlichen Funktion einen internen Namen zu
++ geben (`private def
++ number = Css.number`), wird als reiner Weiterleiter bewertet. Meist ist er einer; die Ausnahmen
++ verdienen einen Kommentar, der dann X3 auslöst.
+
+@ 0 3 0 09f7d16f7f9ea7d7044f3ce6b26b824b
++ Der Extraktor lässt eine öffentliche Definition nur als `given Conversion`, als Hin- und Rückweg
++ oder als einzeilige Adapterkette ohne Logik zu; eine private oder lokale Definition außerdem
++ anhand eines Konvertierungsverbs oder eines Adapteraufrufs in einem kurzen Rumpf. Mit den
++ `gate`-Zeilen der Regel wird das erweitert oder eingeengt.
+
+@ 0 4 0 08073831ad758c7d0052682ceb59fff6
++ Das Modell ist nichtdeterministisch. Der Zensus ist eine Rangfolge, mit der man arbeitet, keine
++ Zahl, die man verteidigt; die Booleans werden festgehalten, damit sich eine überraschende Punktzahl
++ gegen den Code prüfen lässt, und ein Urteil wird unter dem Hashwert der Definition aufbewahrt,
++ sodass ein erneuter Lauf das Modell nur zu Definitionen befragt, die sich geändert haben — oder
++ einmal zu allen, nachdem sich das Bewertungsschema geändert hat.

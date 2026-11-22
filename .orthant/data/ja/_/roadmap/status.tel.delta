@@ -1,0 +1,1158 @@
+orthant 2 language
+
+@ 0 3 0 0df6ce32c1002187093c1ad4386d9bc3
++ # ロードマップの項目の機械可読な索引。doc/roadmap/ にある九つのトラックファイルにわたり、
++ # 項目ごとに一つの `item` レコードを持つ。このファイルが状態の唯一の情報源である。
++ # 散文のファイルは完了を主張せず、ここにリンクする。
+
+% 1 1 0 178093d0cfb42ef11d0efa2748a871af
+
+@ 0 3 0 12751814401e3cb60bd69a6114149afb
++ # フィールド：
++ #   id         項目の恒久的な識別子（再利用されない）
++ #   track      項目が属するトラックファイル（.md を除く）
+
+% 0 1 0 002b4a5f855574d009d2fa11a41a4c33
+
+% 0 1 0 1a81642eb01c48a108da86153fa34e54
+
+@ 0 4 0 0e5e05ae22422921036a214b747ab76a
++ #   needs      トラック内またはトラック間の厳格な依存（繰り返し可）
++ #   baseline   測定した出発点と測定日
++ #   criterion  完了条件のコマンドまたは観察できる事実（典拠はトラックファイル）
++ #   done       完了させたプルリクエストと日付。status が done のときだけ存在する
+
+% 1 1 0 096fa7fc88e964011ebbb8340af85207
+
+@ 0 1 0 03ad75f66c0e232206c5ff31af065258
++ # 複数のトークンからなる値はハードスペースモードを使う。キーワードの後に空白を二つ置く。
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 2 1 0 14c03b9dffb92e001f76cdd73a860ae8
+
+% 0 1 0 1f7bdcb7f099829d1b66edf4c6de898f
+
+% 1 1 0 008b3ffbe0cccdd41cc60ec0cad2a65e
+
+% 1 1 0 13557338e67c5b6512d9dbe824bd4d1c
+
+% 2 1 0 14dae85d21c3f3b61e73481c8114691c
+
+@ 0 1 0 01275f4eabb3d874036cef58cc697f04
++   baseline  31 個のファイルがソート済み／順序付きの標準ライブラリのコレクションを使っている（2026-10-21。2026-09-25 には 32、2026-08-01 には 16）
+
+% 0 1 0 12b875a2533932701d22de62aa2e44df
+
+% 2 1 0 13c142715625c3a31df0c137fffa6909
+
+% 0 1 0 1f7bdcb7f099829e1b66edf4c6de8990
+
+% 1 1 0 0494781e0a6bffa404f50959b72112e8
+
+% 2 1 0 0bc9558c9a44bee813b751f01370c384
+
+% 2 1 0 17d1ba8835bf14501b700a11b1fafe9e
+
+% 0 1 0 1b9e1ccb36befa090c64247026f1cf83
+
+% 1 1 0 180dea06d4a6db2a1f67c67e978f0096
+
+@ 0 2 0 0d15b6a8c90becfa01b2e1ec1ac822fd
++   baseline  475 個のファイルが proscenium.compat をインポートしている。compat ファイルは 551 行（2026-08-01）
++   criterion  git grep -l 'import proscenium.compat' -- lib | wc -l == 0 であり、compat ファイルにメンバーがない
+
+% 2 1 0 04c67afa08379cbd037fe69c74bd0a66
+
+% 0 1 0 1f7bdcb7f099829f1b66edf4c6de8991
+
+% 1 1 0 089db040340b31740d2403f2a36f7f71
+
+% 2 1 0 07c44270a46cf40e0a483b07953783a7
+
+% 2 1 0 118ceb529847510a0e788fa38075fb20
+
+% 1 1 0 188b267cbdfb249a1fa82bcf4cfb6f10
+
+@ 0 1 0 1b45780e906fbd891191406babb4f307
++   baseline  239 個のファイルが scala.collection をインポートしており、そのうち 115 個が scala.collection.mutable（2026-10-21。2026-09-25 には 228 と 106、2026-08-01 には 219 と 170）
+
+% 0 1 0 01e09c0a8401fbb40abf53c461df0e96
+
+% 2 1 0 1cbd96ca1a95e9481857c39a51dcfc2b
+
+% 0 1 0 1f7bdcb7f09982a01b66edf4c6de8992
+
+% 1 1 0 0ca6e8625daa63441552fe8b8fbdebfa
+
+% 1 1 0 039d6241beddba8c0e4b197492720c65
+
+% 2 1 0 11566f665c252cf51602ffc78a1fe56c
+
+@ 0 2 0 192cc211637734cf07cb5577039ef5a4
++   baseline  lib のコアに while ループが 1669、readUnchecked が 993、charAt が 514（2026-10-21、#2274 で凍結済みの Array が唯一の不変配列になった後。2026-09-25 には 1606、476、507）
++   criterion  部分的なインデックス付きの apply を公開するコレクションがない（issue #1666）。残るすべての while は doc/standards/loops.md が認める形であり、その不変条件を名指すコメントを持つ
+
+% 2 1 0 0f0cf78db0158a0001fac38be54c71ff
+
+% 0 1 0 1f7bdcb7f09982a11b66edf4c6de8993
+
+% 1 1 0 10b02084874995141d81f9247c0c5883
+
+% 1 1 0 1942c7a1602a26b712959df54bc1feb1
+
+% 2 1 0 176835a220ffdf2e00af638ba77a202f
+
+@ 0 1 0 167c4aa260984ea60da8cc53b6fc22e7
++   criterion  描画されたトレース、値、型名に Java のエンコーディングがないことをテストスイートが表明する
+
+% 2 1 0 0b6d85cdad3cace3113d01321f90fe99
+
+% 0 1 0 1f7bdcb7f09982a21b66edf4c6de8994
+
+% 1 1 0 14b958a6b0e8c6e405b0f3bd685ac50d
+
+% 1 1 0 11c548884998cd4c16ca418b03ef84bf
+
+% 2 1 0 0a58b7ccccf338f90acec7a2190623b2
+
+@ 0 1 0 00a0f3ff92f912de09657b73736a2efe
++   criterion  全域性の監査が CI で実行され、違反ゼロを報告する
+
+% 2 1 0 1af7dfe14089e48b0ef5b16e39d88bd9
+
+% 0 1 0 1a2dea98290875f2101f027d57c145fa
+
+% 1 1 0 014cbff3876b6cb41a803031f2da0218
+
+% 2 1 0 0b0d3e1313011373025b46092b972198
+
+% 3 1 0 17fc7c7061f2e75e00c34df32a4fe254
+
+@ 0 1 0 11ccc2c2f265ac9d1c881b2c19d93a1b
++   baseline  untrackedCaptures の出現が 385（2026-10-21。2026-10-08 には 484、2026-10-07 には 507、2026-09-25 には 468、2026-08-01 には 288）
+
+% 0 1 0 164e6f91abca89b50ef1db69aadc87c3
+
+% 2 1 0 0d72720fc09c90c70cbd83a98f304b05
+
+% 0 1 0 1a2dea98290875f3101f027d57c145fb
+
+% 1 1 0 0555f815b10a9e8402af2acadf286ea2
+
+% 2 1 0 07082af71d29489918ec2f20ad5de1ba
+
+% 3 1 0 0387be8a0034459515eed7e070d72819
+
+% 3 1 0 0cfe589d2941e92c188046b56abb52c9
+
+@ 0 2 0 1a0458864d1f141200fecb12c67018ab
++   baseline  unsafeAssumeSeparate が 218、unsafeAssumePure が 289、unsafeErasedValue が 35、untrackedCaptures が 381。タグなしは 0 で、etc/check-escape-count.py がラチェットをかけている（2026-10-21。2026-10-07 には 419、511、50 とタグなし 2、2026-09-25 には 416、502、50、2026-08-01 には 323、273、45）
++   criterion  残るすべての caps.unsafe の出現が理由のタグを持ち、集計がタグなしゼロを報告する
+
+% 2 1 0 0012436b516678c60132d6f9789f7a03
+
+% 0 1 0 1a2dea98290875f4101f027d57c145fc
+
+% 1 1 0 095f3037daa9d0540ade2563cb76db2b
+
+% 2 1 0 030317db27517dbf0f7d18382f24a1dd
+
+% 3 1 0 0289623863861d3f112b6cf1545466e2
+
+@ 0 1 0 09aa295fd65bc33a0c263934ffde028d
++   criterion  rep/STATUS.md が、固定したリリースのもとでのすべてのケースについて判定を記録する。プローブのスイートと較正済みのすべてのケースが、クリーンなチェックアウトから期待どおりの結果で通る
+
+% 2 1 0 1f3e68dc19ba9fb11caf305bd2634f5b
+
+% 0 1 0 1a2dea98290875f5101f027d57c145fd
+
+% 1 1 0 0d68685a04490224130d1ffcb7c547b4
+
+% 1 1 0 09e94212a3421a3b16e447bb9aedae5f
+
+% 2 1 0 105a7c1c287d198917ae85e727abb1f2
+
+% 0 1 0 0c15d2669eb123f50537fb5539966e9d
+
+% 0 1 0 004197653c0ffc8a0d0a98e3e181071c
+
+@ 0 1 0 0e8e93d0f5efbfcd070ed284a420d69b
++   baseline  caps.unsafe の出現が合計 928（2026-10-21。2026-10-07 には 1485、2026-09-25 には 1436、2026-08-01 には 929）
+
+% 0 1 0 0537b18bd54e58e60dff94d93cc22ea1
+
+% 2 1 0 02d5eba158c0a8d30d2a94e8812479f0
+
+% 0 1 0 1a2dea98290875f6101f027d57c145fe
+
+% 1 1 0 1171a07c2de833f41b3c1a95a413b43d
+
+% 2 1 0 1968c6f29ebe59f1008f500a11e459c6
+
+% 3 1 0 02941770104898620def0b75164aa606
+
+@ 0 1 0 198fa12f4f735a6010ce2857b814fbf5
++   criterion  CI が、本流の Scala のプロジェクトから公開済みの成果物を利用する。rep/ がリベースの手順と、直近二回のリベースのコストを記録する
+
+% 2 1 0 03b86ed64507b7ff15bdc5b1fedbc75a
+
+% 0 1 0 1a2dea98290875f7101f027d57c145ff
+
+% 1 1 0 157ad89e578765c4036b152e906220c7
+
+% 2 1 0 1563b3d6a8e68f171720392193ab19e8
+
+% 3 1 0 07da8a541112335216231af42b4ce84d
+
+@ 0 2 0 05848ff874c664161940d14b73745789
++   baseline  447 個のモジュールのうち 12 個が、#2202 以来すべてのモジュールの既定である settings.sep から下げている。11 個は素のオプションへ、1 個は settings.cc へで、それぞれに理由のコメントがある（2026-10-21。2026-10-07 には 464 個中 81 個、2026-09-25 には 424 個中 87 個）
++   criterion  build.mill のどのコンポーネントも settings.sep より弱いものでコンパイルされない
+
+% 2 1 0 0cf178d509e6253b02b68e5308d4ba3d
+
+% 0 1 0 1a2dea98290875f8101f027d57c14600
+
+% 1 1 0 198410c0812697940b9a0fc77cb08d50
+
+% 2 1 0 12eecb6b4ff2525609c0bc96363fa268
+
+% 3 1 0 17a32dc866ac88ff11fbaaeda85d6fff
+
+@ 0 1 0 0903638046e69904010a1b138165e277
++   criterion  集計がリリースごとに記録され、ファイルごとの一つの関門が check-while-count.py と check-stdlib-count.sh に取って代わる
+
+% 2 1 0 0712561b4c3b2eac13832bd58506f6bc
+
+% 0 1 0 1a2dea98290875f9101f027d57c14601
+
+% 1 1 0 1d8d48e2aac5c96413c90a6068fef9d9
+
+% 2 1 0 0ee9b84f5a1a877c0051a5adb806628b
+
+% 3 1 0 032e6fe204ede736072734daeee4b5c5
+
+% 0 1 0 0ff6237f266db294148009e3913bdac4
+
+% 1 1 0 1cd7e51e1de4150912c61cbdeae44c5b
+
+@ 0 2 0 1a3b06c726a6301c1aee62f0df4ced1c
++   baseline  lib/*/src/core に排他的な戦術の重なりのシールが約 60、contingency に 3。下流に導出のアンカーが 103、シールされたコーデックの given が約 125（2026-10-07）
++   criterion  Emit が caps.SharedCapability を継承する。git grep -c unsafeAssumeSeparate -- lib/contingency == 0。[tactic-overlap] タグが残っていない
+
+% 2 1 0 0035617bd1c1a0db1f167e0443887e59
+
+% 0 1 0 1a2dea98290875fa101f027d57c14602
+
+% 1 1 0 01968104d464fb351bf804f9554d6662
+
+% 2 1 0 04a695598cc7e2b7008f9b633673fb5a
+
+% 2 1 0 10c401023d3c4eab126f2c6d322c9062
+
+% 0 1 0 0aeb17d3362e0e4c1e81cd680ac0ca71
+
+@ 0 1 0 0f4d937a7a4c8e081e9b34c250e39986
++   baseline  lib/*/src/test に unsafeAssumeSeparate が 236：exoskeleton 63、zephyrine 50、facsimile 38、galilei 29、turbulence 19（2026-10-07）
+
+% 0 1 0 1ecc5364cd968d21060ededc7d8af662
+
+% 2 1 0 1fddc0609a88f45b15ad4b103ac485c0
+
+% 0 1 0 0a7db3440d5edbf9139bb426f0c86f56
+
+% 1 1 0 1bece340e0ebe1c817febc6be740c41d
+
+% 1 1 0 1443dcb301f5ae0f1299c33ae19dbc13
+
+% 2 1 0 0a48b5e063a267500d0222230a517730
+
+% 2 1 0 06177692a3c0a8fa0282d054276373c4
+
+@ 0 2 0 1b2b29dc4c03c86e07ce8f59f52bf8f1
++   baseline  [by-name-capture] のタグを付けた逃げ道が 61（2026-10-21。2026-10-07 には純粋なサンクのシールが約 46）
++   criterion  rep/byname-capture が固定したリリースのもとでコンパイルされ、[by-name-capture] タグが残っていない
+
+% 2 1 0 073ca7b180e76cd305cc62d4180f531c
+
+% 0 1 0 0a7db3440d5edbfa139bb426f0c86f57
+
+% 1 1 0 1ff61b630a8b1398002db704d38f30a7
+
+% 2 1 0 07c45e70c3621ede102ff65a46e9ae19
+
+% 2 1 0 0a7f31cc9fc48b650577b1ff00a78ce4
+
+% 2 1 0 1aa070fbc36e1f3506f2fffc0ddef588
+
+@ 0 1 0 099d71b048f7d9d71a8260e21d3700fe
++   criterion  rep/STATUS.md がすべてのケースとプローブについて 3.10 の列を持ち、ロードマップがその行の決定を記録する
+
+% 2 1 0 0890469b5563fcf610a0ee224ffecc41
+
+% 0 1 0 0a7db3440d5edbfb139bb426f0c86f58
+
+% 1 1 0 03ff5385342a4569085cb19dbfdd9d30
+
+% 2 1 0 09fd5b2ea5052def1d13d2d3cc09958f
+
+% 3 1 0 17b91c5ad00d461c18fdf640e2ffb9ce
+
+@ 0 1 0 068c2b0765b3d8d301638f6f35edbfb5
++   criterion  doc/standards/capabilities.md が存在し、集計が認識するすべてのタグを定義し、rep/DECISIONS.md の手順の節がそこにリンクする
+
+% 2 1 0 1a14b59f4b5adf101340e2a302b0c988
+
+% 0 1 0 0d3ead9ce414956b15924aaf3dc9974d
+
+% 1 1 0 15ad333cc302b2e709ec9d026b265616
+
+% 1 1 0 0bbf19c837d7db151afd809f136ff0d9
+
+% 2 1 0 1f34247867abdce007c724e3cbbef17e
+
+@ 0 2 0 165a7c908f3f171b19175c2100a6d9cd
++   baseline  145 行のうち 104 行が JavaScript 向けに、108 行が Native 向けにビルドされ、JavaScript の除外が理由付きで 34。etc/check-compatibility.py が make build でファイルを再生成して検査する（2026-10-21。2026-09-25 には 144 行中 101 行、2026-08-01 には 132 行中 94 行）
++   criterion  CI が doc/compatibility.tsv を再生成し、食い違いがあれば失敗し、理由を欠く除外がない
+
+% 2 1 0 0431bf08c093764305c2f56e9bd8327c
+
+% 0 1 0 0d3ead9ce414956c15924aaf3dc9974e
+
+% 1 1 0 19b66b5eeca1e4b7121b979b5774c29f
+
+% 1 1 0 058109ee605d012a04aa8d3d1016c986
+
+% 2 1 0 15a1583840b776ee0ad4f1fc999b8003
+
+@ 0 1 0 07e83d9c3f54c0c40630cda693b6b3a4
++   criterion  make attest が Android の段階を含む。CI がリリースごとに署名済みの APK を記録する
+
+% 2 1 0 0aa998183349eb660126c37d45cfaf84
+
+% 0 1 0 0d3ead9ce414956d15924aaf3dc9974f
+
+% 1 1 0 1dbfa381164116871a4a923443c32f28
+
+% 2 1 0 14905c0d427fed6a1b0638d554fe0b6d
+
+% 3 1 0 10a9a79d80977b9f0b16a7add2c99feb
+
+% 0 1 0 05fef3f654369777119b2bea36ce1de9
+
+@ 0 1 0 162b9074ec6e791319599765ed27feab
++   criterion  マニフェストのどの JavaScript または Native の除外も、本質的でない理由を持たない。Native のリンク検査が Native に対応するすべてのモジュールを網羅する
+
+% 2 1 0 12991a47a38b306e1bdc40da2818f956
+
+% 0 1 0 0d3ead9ce414956e15924aaf3dc99750
+
+% 1 1 0 01c8dba33fe0485802798ccd30119bb2
+
+% 1 1 0 11ac6e30b185a6671ab942ac3a74a26e
+
+% 2 1 0 1b7ca287c97005121d0bc5e4c09fa511
+
+@ 0 2 0 0dd92f23d34c15b7122eaa7f59b524a1
++   baseline  WASI バックエンドが 7 個。HTTP は任意のメソッド。ソケットは TCP のみ（2026-09-25。2026-08-01 には HTTP は GET のみ）
++   criterion  マニフェストの WASI の列が、理由が欠けた WASI のケイパビリティを名指すところを除いて、JavaScript の列と一致する
+
+% 2 1 0 0f44bffd68638b5b1c081bb22881c117
+
+% 0 1 0 0d3ead9ce414956f15924aaf3dc99751
+
+% 1 1 0 05d213c5697f7a280aa887661c60083b
+
+% 1 1 0 0a2eef179af44cfc1eede641f2a2287c
+
+% 2 1 0 0e6d24b275635edd072b29fb322ba895
+
+% 0 1 0 05fef3f65436977a119b2bea36ce1dec
+
+@ 0 1 0 069584389bdd742f121a30abef4ca5ab
++   criterion  doc/compatibility.tsv のすべての除外の理由が本質的なものである。理由の語彙の検査が CI でそれを強制する
+
+% 2 1 0 0adb3b04257c053303ccd688fdc94f15
+
+% 0 1 0 0d3ead9ce414957015924aaf3dc99752
+
+% 1 1 0 09db4be7931eabf812d781ff08ae74c4
+
+% 2 1 0 088122b960f88cdc1eb8f41bda524bd5
+
+% 3 1 0 007d004982f44c7003b2d62b11d066c1
+
+@ 0 1 0 01883e8fdd209b1f147284c0ebe783af
++   criterion  soundness.dev のフロントエンドが、Soundness でコンパイルした Scala.js として、すべての Web API へのアクセスを生成された型付きのファサードを通じて行う形で、通常のビルドから出荷される
+
+% 2 1 0 105c2a0a77978b9e100017281548df15
+
+% 0 1 0 0d3ead9ce414957115924aaf3dc99753
+
+% 1 1 0 0de48409bcbdddc81b067c97f4fce14d
+
+% 2 1 0 047c0f9d6b20c2021549dd335c190bf8
+
+% 3 1 0 05c3732d83bde7600be6e5aa26d2a908
+
+% 0 1 0 05fef3f654369779119b2bea36ce1deb
+
+@ 0 2 0 17c12f5cc707f22e1185882f5d88c7b7
++   baseline  degustation.tasty はすべてのプラットフォームでコンパイラなしに原子化する。degustation.core はその JVM のファイルシステム側の顔である（2026-10-23）
++   criterion  degustation.core がコンパイラではなく tasty-core に依存する。JavaScript と Native 向けにビルドされる。Soundness のコーパスを、コンパイラ駆動の原子化器と同一に原子化する。tasty.md が tasty/2 を説明する
+
+% 2 1 0 0732d77ff98923ba0031d9174fb3d665
+
+% 0 1 0 139751f2800bf7671b8b94cfb0c396ac
+
+% 1 1 0 193dddde2c3cbd7d0db9e895e4cead48
+
+% 2 1 0 1a601675ada7281e0f58957d38eb070d
+
+% 3 1 0 1d3fbe8e91be86bc01ba14f5c0b13abf
+
+@ 0 2 0 12c8384880d4a67404172ee9a2d55351
++   baseline  名前を変えた名前のうち 4 個がまだトップレベルにある。名前 210 個の接頭辞ファミリー 61 個と、単独のもの 216 個が列挙されている（2026-09-25）
++   criterion  doc/api-nesting-proposal.md の改名表が完全に適用され、doc/api-reduction-candidates.md の 'Remaining names by prefix family' の節が 'Reviewed items which should not be moved' の外にある名前を一つも列挙しない
+
+% 2 1 0 03a6e9a2235a61f00d9f5645cc74fda4
+
+% 0 1 0 139751f2800bf7681b8b94cfb0c396ad
+
+% 1 1 0 1d47160055dbef4d15e8e32ed11d19d1
+
+% 2 1 0 165b0359b7cf5d4405e97e94bab1c730
+
+% 3 1 0 02863172928821ad09ee2474d5b37d06
+
+@ 0 2 0 112bee2ece69c354198e43b8f0e8973b
++   baseline  同音異義語の組が 12、同義語のファミリーが 1。check-given-uniqueness.py は given の名前だけを検査する（2026-09-25）
++   criterion  C4-homonym と C4-synonym の節が空である。同名同物の検査が通常のビルドで実行される
+
+% 2 1 0 0d9e69d452ee9695122b0ea70d85b333
+
+% 0 1 0 139751f2800bf7691b8b94cfb0c396ae
+
+% 1 1 0 01504e227f7b211e1e17ddc7bd6b865a
+
+% 2 1 0 029ddf469a58f19117eba538aa2d469b
+
+% 3 1 0 04482b5fcdb2f5dc09b1eb9ef3c13b9d
+
+@ 0 2 0 0670159f5d31d61410b5ead4d032dabb
++   baseline  C2 の略語が 3 個列挙されている（2026-09-25）
++   criterion  doc/api-reduction-candidates.md の C2 の節が空である（C3 と C3b は doc/api-nesting-proposal.md に取って代わられ、それとともに閉じられた）
+
+% 2 1 0 10c9aaa8d27e111a192e5343cfd0c7b7
+
+% 0 1 0 139751f2800bf76a1b8b94cfb0c396af
+
+% 1 1 0 05598644a91a52ee0646d860a9b9f2e4
+
+% 2 1 0 1e98cc2aa48126b60e7c8e502bf406be
+
+% 3 1 0 098e9e43ce7c90cc11e5fb1e08c37de4
+
+@ 0 1 0 0ecf1ae556de793906eac7ea418a83ef
++   criterion  命名の適合性の一斉点検が逸脱ゼロを報告し、通常のビルドで実行される
+
+% 2 1 0 102dd1e3c7a26c7403cc109e84165824
+
+% 0 1 0 139751f2800bf76b1b8b94cfb0c396b0
+
+% 1 1 0 0962be66d2b984be0e75d2f996085f6d
+
+% 2 1 0 08bb9f5539646e9d0d8c9f7e1f383f3b
+
+% 3 1 0 07d7598e401437c00ee5d277acabfe71
+
+% 0 1 0 02693ebaa5ce335d06b3d282590cd71d
+
+% 0 1 0 02693ebaa5ce335e06b3d282590cd71e
+
+% 0 1 0 02693ebaa5ce335f06b3d282590cd71f
+
+% 0 1 0 02693ebaa5ce336306b3d282590cd723
+
+@ 0 1 0 07708d807a20586f1f04a11b894f95cb
++   criterion  doc/api-reduction-candidates.md がもう存在しない
+
+% 2 1 0 0a96992beac2cafb001c6f5eaeaafca6
+
+% 0 1 0 139751f2800bf76c1b8b94cfb0c396b1
+
+% 1 1 0 0d6bf688fc58b68e16a4cd928256cbf6
+
+% 2 1 0 04b68c39438ca3c3041d8895a0feff5e
+
+% 3 1 0 0d1dcc7240ddd2b01719e1f6c1ae40b8
+
+% 0 1 0 0be20cbb270ca3261eea7fce01ea36cc
+
+@ 0 1 0 1a3d9507ed91b1ad0df87f56fd25cd30
++   criterion  dist-2 の CI 検査が、表面を変えるすべてのプルリクエストに対して、十回連続のリリースにわたって強制される
+
+% 2 1 0 1ca940639d405a1e05fb70d4873a76bd
+
+% 0 1 0 139751f2800bf76d1b8b94cfb0c396b2
+
+% 1 1 0 11752eab25f7e85e1ed3c82b6ea5387f
+
+% 2 1 0 128992d6c2f9c628122f4996b1484726
+
+% 3 1 0 1961f6efd0d9619c0a82299b47ca44ba
+
+@ 0 2 0 0adfd74ff703fa6903c6d9e8b5f23ba0
++   baseline  二つのライブラリがエクスポートする名前が 0。信頼度の高い R8 の行 22 個のうち 19 個が完了。Tag/Renderable はまだ @unexported（2026-11-12 の後の時点。同じ日の早い時点では、名前 6 個、@unexported の同音異義語 2 個、R8 の候補が約 110）
++   criterion  どの名前も二つ以上のライブラリにエクスポートされず、衝突を避ける @unexported がなく、doc/api-nesting-proposal.md の R8 の表のすべての行が適用されたか、検討のうえ維持された
+
+% 2 1 0 10ff3701f80dffe21e869450cbc9cde1
+
+% 0 1 0 00ebad01df39f2621ca404d7982dfd56
+
+% 1 1 0 108b647a775487901e17ed73ec2738a4
+
+% 2 1 0 162a00db936eac1e0984d807069c5604
+
+% 2 1 0 031df8649d25c4e21d005b23f08d5349
+
+@ 0 2 0 1038988c9dd4ab96026121a61886129b
++   baseline  SN コードを持たないエラー型が 41。エラーページが 247。パリティのスクリプトはない（2026-10-21。2026-09-25 には 40 と 241、2026-08-01 には 39 と 233）
++   criterion  CI でのパリティ検査。git grep -hE 'extends +Error\((m"|[a-z])' -- lib | wc -l == 0
+
+% 2 1 0 1fb1c647dee916800a4993099775a8ee
+
+% 0 1 0 00ebad01df39f2631ca404d7982dfd57
+
+% 1 1 0 14949c9ca0f3b9600646e80cd875a52e
+
+% 2 1 0 1224edbf9d96e1440015c11e88631627
+
+% 3 1 0 16a52e309301d4fa038c1982b43ac1b4
+
+% 3 1 0 00fa8ac98f96ab410576e49e426d7c40
+
+@ 0 1 0 02a570c22607516c07869503452d4438
++   baseline  Stub の目印が 1 個残っていた（2026-09-25）
+
+% 0 1 0 0688084a5d42d70f1814bfa9185bbf02
+
+% 2 1 0 16baf1863d6bcc361162db957a025d93
+
+% 0 1 0 00ebad01df39f2641ca404d7982dfd58
+
+% 1 1 0 189dd4beca92eb300e75e2a5c4c411b7
+
+% 2 1 0 0e1fdaa3a7bf166a16a6aa360a29d649
+
+% 3 1 0 1beba11493cb6fea0bc02901c93d03fb
+
+% 0 1 0 01bf7f8103ad70491dfe94f00183dc07
+
+@ 0 2 0 1eaaa1011408b1cb04717a1238ca8e29
++   baseline  モジュールごとの readme の定型文のファイルが 92 個。lib/*/doc/ ディレクトリが 98 個（2026-08-01）
++   criterion  旧来の readme の定型文に合うファイルがなく、lib/*/doc/ ディレクトリが一つも残っていない
+
+% 2 1 0 080ed72758ab6d0a1720c3a61db6f40a
+
+% 0 1 0 00ebad01df39f2651ca404d7982dfd59
+
+% 1 1 0 1ca70ce0f4321d0016a4dd3eb1127e40
+
+% 2 1 0 1a62b6908a48aab608a8d0d9f9a555b5
+
+% 2 1 0 05de4ea374fec16701878d3d2b1dd318
+
+% 2 1 0 1c02392dfa62258012a0ce4dc9879df5
+
+@ 0 2 0 0b0976438afd6361002ad6de239b22aa
++   baseline  doc/modules/ にトピックが 101 個。145 個のライブラリのうち 145 個が網羅されている（2026-10-21。2026-09-25 には 144 個中 1 個が未網羅、2026-08-01 にはトピック 91 個で 35 個が未網羅）
++   criterion  python3 etc/check-doc-coverage.py がすべてのライブラリを網羅済みと報告し、0 で終了する
+
+% 2 1 0 0e796220a06a7dd00a240001cc58cfff
+
+% 0 1 0 00ebad01df39f2661ca404d7982dfd5a
+
+% 1 1 0 00b045031dd14ed11ed3d7d79d60eac9
+
+% 2 1 0 165da3749470dfdc1f39b9f17b6c15d7
+
+% 3 1 0 1caf3eb032481bc306c0853ccac8015b
+
+@ 0 2 0 02c0d1e426481ab70d0ac2c7d5081f20
++   baseline  公開されたすべての docJar が空である。build.mill はそのタスクをスタブにしている（2026-09-25。2026-08-01 から変わらず）
++   criterion  公開されたすべてのコンポーネントが空でない API ドキュメントを持ち、リリースごとに公開される
+
+% 2 1 0 19ff89b81f6f2eb41caa1ba8bbde8337
+
+% 0 1 0 00ebad01df39f2671ca404d7982dfd5b
+
+% 1 1 0 04b97d25477080a10702d27089af5753
+
+% 2 1 0 125890589e99150215caa308fd32d5fa
+
+% 3 1 0 01f5b1943311b6b40ef494bbdfca43a2
+
+@ 0 1 0 0ab7689bcb9f2ce50d1f303042b9951a
++   criterion  web/res/content/ が、doc/ のどのページについても手で保守する複製を含まない
+
+% 2 1 0 0d9017e47e807e50021edb706d610845
+
+% 0 1 0 00ebad01df39f2681ca404d7982dfd5c
+
+% 1 1 0 08c2b547710fb2710f31cd0975fdc3dc
+
+% 2 1 0 1c7b6383337c5ce814dab436f0770e77
+
+% 3 1 0 003e6cdea4a95da80bf46c1583b2c42f
+
+@ 0 1 0 1671539e7dd8e8340de700365de85cc1
++   criterion  各哲学のページが、それを体現するモジュールのトピックガイドから参照されていることをリンク検査が確かめる
+
+% 2 1 0 0ef7307590002fbd1e808049751d9a27
+
+% 0 1 0 00ebad01df39f2691ca404d7982dfd5d
+
+% 1 1 0 0ccbed699aaee4411760c7a2624c3065
+
+% 2 1 0 187650673da4920e0b6b9d4e723dce9a
+
+% 3 1 0 0584dfc2a572f89814287b9498b50676
+
+% 2 1 0 0c03847126032cff0137a95445a1e9ac
+
+% 1 1 0 19e30f6d5a28a70903ffab8e8ce32205
+
+@ 0 1 0 09567c0d456d1afd04193400c89aa26f
++   criterion  ゼロからのウォークスルーが CI でエージェントによって実行され、リリースごとに記録される
+
+% 2 1 0 1f330f57e0fb9ef41cbb4aec75489c4e
+
+% 0 1 0 0e995d3ccbad4bbb1ef62a92d58450b1
+
+% 1 1 0 1d70537d1e8d6d811ad8fbf7f0291328
+
+% 1 1 0 13d7e5a36f8bc5c71ebffe64f736b1a9
+
+% 2 1 0 0fb0e0ab891b4b9107ded5ba8beb011a
+
+@ 0 2 0 09e122539ad95dd2135b8bd1e07610fc
++   baseline  flame 0.8.0 が etc/tools に固定されている。現在のリリースは 0.72.0。リリースごとの flame のビルドはない（2026-10-21。2026-09-25 には 0.3.0 と 0.68.0）
++   criterion  flame の CI が、新しいリリースが告知される前に、すべての新しいリリースに対してビルドする
+
+% 2 1 0 035645f6252fe67e07fdd9cbd4b72e65
+
+% 0 1 0 0e995d3ccbad4bbc1ef62a92d58450b2
+
+% 1 1 0 01798b9f482c9f520307f690dc777fb2
+
+% 2 1 0 1a0b221de5f7302e1280583053a9f1c2
+
+% 3 1 0 0f22df541bc6041c1c3b271289f36d72
+
+% 0 1 0 105ab646f548a1d30ae4bb9f20471836
+
+@ 0 2 0 1fe9356e933dad14104ab041d9fad29e
++   baseline  fume 0.8.3 が CI でスイートを実行する。無効にしたスイートはない（2026-10-21。2026-09-25 には fume 0.4.1 で、orthodoxy が無効）
++   criterion  fume が CI で完全なスイートを実行する。grep -c 'enabled = false' build.mill == 0
+
+% 2 1 0 05d96b5db7eaf07d066812d07ad906b0
+
+% 0 1 0 0e995d3ccbad4bbd1ef62a92d58450b3
+
+% 1 1 0 0582c3c171cbd1220b36f129c8c5ec3b
+
+% 2 1 0 16060f01f01f655409114147d570b1e5
+
+% 2 1 0 0c62e3a0ff9ea8e517e41d418b4c931d
+
+@ 0 2 0 0748c27594e7806a11c3066057b8165c
++   baseline  exegesis のスイートは、プロセス内のサーバーを JSON-RPC で駆動する：initialize、open、diagnose、hover、change、completion を、メモリ上の Stdio を介したフレーミングで行う。definition も references もなく、CI のセッションもない（2026-10-21。2026-09-25 には completion もトランスポートもなし）
++   criterion  スクリプト化した LSP のエディターセッションのテストが CI で通る
+
+% 2 1 0 1a5ceeb8c25fd5e51d31ceeb200adfa1
+
+% 0 1 0 0e995d3ccbad4bbe1ef62a92d58450b4
+
+% 1 1 0 098bfbe39b6b02f21365ebc2b51458c4
+
+% 2 1 0 0886fac8aa23d38c11665b4dc84558a4
+
+% 3 1 0 133479fa43bf52a107363bc68c1cd8cf
+
+@ 0 1 0 0954270ccea81ca70e878dd68f607f88
++   criterion  fury build がクリーンなチェックアウトから Soundness をビルドし、Mill のビルドとアテステーション上同一になる
+
+% 2 1 0 02a5965f1913283214b2b8693e1a008f
+
+% 0 1 0 0e995d3ccbad4bbf1ef62a92d58450b5
+
+% 1 1 0 0d953405c50a34c21b94e65ba162c54d
+
+% 2 1 0 0481e7acb44c08b207f744654a0c18c7
+
+% 3 1 0 187aecde4488ed910f6a4b45a11f1b16
+
+@ 0 2 0 0a233f74436110ba0055eb7dfa81c16d
++   baseline  synesthesia は汎用の MCP ライブラリである。SN、トピック、ロードマップ、移行のリソースはどれも存在しない（2026-09-25）
++   criterion  スクリプト化した MCP のセッションが、SN コード、モジュールのトピック、ロードマップの項目の状態を CI で解決する
+
+% 2 1 0 13edc4e4bad750141c276d57f2f806dd
+
+% 0 1 0 0e995d3ccbad4bc01ef62a92d58450b6
+
+% 1 1 0 119e6c27eea9669203c3e0f48db131d7
+
+% 2 1 0 007cd490be743dd81e882d7ccbd2d8e9
+
+% 3 1 0 1dc15fc245528881179e5ac4b6215d5d
+
+@ 0 1 0 1eca18041a69af8108b771da51583d71
++   criterion  probably が縮小を伴う forAll 形式の生成を出荷するか、哲学のページが軸／展開の設計を説明する
+
+% 2 1 0 1c9d908989b432f517c9698e2ffd5a8a
+
+% 0 1 0 0e995d3ccbad4bc11ef62a92d58450b7
+
+% 1 1 0 15a7a44a184898620bf2db8d79ff9e60
+
+% 2 1 0 0a9fa7bb535785be1d983eaabf171166
+
+% 3 1 0 1c0a1b0cb6ea2f75149e321e5a09ddea
+
+% 2 1 0 14677aa4ef300d920e04e010b7905028
+
+@ 0 1 0 0aed44b781321eda1a0060f01d456c7b
++   criterion  fluence が、現在のリリースに対して、名前、型、シグネチャの問い合わせに答える
+
+% 2 1 0 03b5332839e970e10d577fec3225c0ea
+
+% 0 1 0 0e995d3ccbad4bc21ef62a92d58450b8
+
+% 1 1 0 19b0dc6c41e7ca321421d626664e0ae9
+
+% 2 1 0 069a949f5d7fbae4142927c240ddd189
+
+% 3 1 0 01508df0b7b3ca661cd2419d6f0c2031
+
+@ 0 1 0 177c744dddc4e6c301228ed6db885d19
++   criterion  fume の実行をブラウザでライブに見ることができる。git note のレポートがストリームと一致する
+
+% 2 1 0 02e78b1478df26b908ffdab72ecad6f6
+
+% 0 1 0 0e995d3ccbad4bc31ef62a92d58450b9
+
+% 1 1 0 1dba148e6b86fc021c50d0bf529c7772
+
+% 2 1 0 0295818367a7f00a0aba10d9c2a491ac
+
+% 3 1 0 069700d4b87d65560506511c840e6279
+
+@ 0 2 0 1af86018e0b0069805b0a0e3f4e54efa
++   baseline  flare、flame、fume は .pyrocosm/<tool>/config.tel を読む（2026-09-25）
++   criterion  エコシステムのどのツールも、TEL 以外の設定形式を受け付けない
+
+% 2 1 0 153d80cc6033959e088587745768b308
+
+% 0 1 0 08f9d0299a6552f21c317aab12ac2b30
+
+% 1 1 0 023b51d94c5714f21a4af7527a86ebd5
+
+% 2 1 0 1137bf1e01f50bbb17611853bffe0804
+
+% 3 1 0 1f92890634d540b41cfe765ed71ed12d
+
+% 2 1 0 108b33971a0f9bbc1710fdf5b0031fb9
+
+@ 0 2 0 1521291bc91786f01ff201d147ee315b
++   baseline  スクリプト化した DAP のスイートが、ブレークポイントで止め、ステップ実行し、値をその Inspectable インスタンスを通じて調べる。トピックは doc/modules/debugging.md（2026-10-21。2026-09-25 にはオブジェクトが JVM のクラス名として表示され、トピックもなし）
++   criterion  スクリプト化した DAP のセッション（ブレークポイント、ステップ実行、Soundness で描画した値の検査）が、実行中のアプリケーションに対して CI で通る
+
+% 2 1 0 16ac2a910f606e12073607614461adf2
+
+% 0 1 0 08f9d0299a6552f31c317aab12ac2b31
+
+% 1 1 0 064489fb75f646c20279f1eb66d5585f
+
+% 2 1 0 03b8aae4bbf979f31fb63259b2d2aec3
+
+% 3 1 0 1e5db0c85c04f4491fc57b93c445fa42
+
+% 4 1 0 11fb719a8132d33c1bb3e37bb542f791
+
+@ 0 1 0 0741b5ac1d9e86b51beac7f5aa194058
++   criterion  すべての CI の実行がカバレッジを git note に記録する。一つのコマンドが任意の二つのコミットの間のカバレッジの差分を報告する
+
+% 2 1 0 0d93b2c583d4e84f148503528f4649b5
+
+% 0 1 0 08f9d0299a6552f41c317aab12ac2b32
+
+% 1 1 0 0a4dc21d9f9578920aa8ec845323c4e8
+
+% 2 1 0 1fb397c8c621af1816471b7134996ee6
+
+% 3 1 0 03a423ac5cce8f3a07f98b12d9483c8a
+
+% 4 1 0 1eb89d5721b7a764071c064085eda429
+
+@ 0 1 0 1e8223d63f9bc876074f01954202f90c
++   criterion  main のすべてのコミットがベンチマークの git note を持つ。一つのコマンドが任意の二つのコミットの間のベンチマークの差分を報告する
+
+% 2 1 0 0096b85ec0f498b40ddba1fb3cb399de
+
+% 0 1 0 1321c661b6eaa11902e19e9308e5b030
+
+% 1 1 0 1ae8446b77e5e51d19e6a0d4d1455169
+
+% 2 1 0 174c95113fee3dd801efe1a86304c3a9
+
+% 3 1 0 1407e03bf20f485c0add13afa2d9e95f
+
+@ 0 2 0 007ec0209439f01f0f5f0a1bdbd3b633
++   baseline  変更履歴はない。release_notes.py（propensive/.github）がマージされたプルリクエストの本文から Changes の節を組み立てる。リリースは署名付きタグで切られる（2026-09-25）
++   criterion  変更履歴が存在する。共有のリリース（etc/release で設定）が、リリースするバージョンに項目がなければ失敗する
+
+% 2 1 0 1400579ce7a86c9109d8d25161c50982
+
+% 0 1 0 1321c661b6eaa11a02e19e9308e5b031
+
+% 1 1 0 1ef17c8da18516ed02159b6dbd93bdf3
+
+% 2 1 0 134781f54a1672fe1880cabfe4cb83cb
+
+% 3 1 0 194e531ff2d8e34c1311232eb7dc2ba6
+
+@ 0 2 0 1b63a81c02b33b310f12ecafbe40db74
++   baseline  doc/migration.md と 0.65.0.md–0.73.0.md が存在する。etc/release の migration 指令がリリースの関門となる。プルリクエストの検査はない（2026-10-21。2026-09-25 には 0.68.0 までの注記）
++   criterion  doc/migration.md が存在する。リリース（etc/release の migration 指令）が doc/migration/<version>.md なしにはタグ付けを拒む。lib/**/src を変えながら未リリースの doc/migration/<version>.md に触れないプルリクエストを、CI の検査が失敗させる
+
+% 2 1 0 1958c7747538076207d8e574c97f0796
+
+% 0 1 0 1321c661b6eaa11b02e19e9308e5b032
+
+% 1 1 0 02fab4afcb2448be0a449606a9e22a7c
+
+% 1 1 0 0311d41f83c438221e7c4b08e3a84431
+
+% 2 1 0 1b4e7f7e6ce2ad300cca3f68fdecd4ef
+
+@ 0 2 0 1ab7197015eee2cd1686657a111228eb
++   baseline  lira リポジトリの形式モジュールが、単体の往復とともに .lira ファイルを読み、組み立てる。リリース全体の往復はない（2026-09-25）
++   criterion  LIRA の参照実装が、スクリプト化したテストの中で Soundness のリリースをバイト単位で同一に往復させる
+
+% 2 1 0 19030186cc370b17168f5979e89e2385
+
+% 0 1 0 1321c661b6eaa11c02e19e9308e5b033
+
+% 1 1 0 0703ecd1f4c37a8e1273909f96309705
+
+% 2 1 0 1b854ac636c83c700113da7b560dc35a
+
+% 3 1 0 0056bff12ecd526c1b08f9d7eaec2c84
+
+% 2 1 0 09bf3df60a0bb365051717892e4442f7
+
+@ 0 1 0 1a3ba249f78e0823022941ca903d2b10
++   criterion  バージョンが抽出した API の表面から計算される。互換性のない変更は、それにふさわしいバージョンを強制する
+
+% 2 1 0 018156cf4b4f15620a04d714ea3368ee
+
+% 0 1 0 1321c661b6eaa11d02e19e9308e5b034
+
+% 1 1 0 0b0d24f41e62ac5e1aa28b38827f038e
+
+% 2 1 0 178037aa40f0719617a4c392d7d4837c
+
+% 3 1 0 059d32d52f96ed5c033d0956ffee6ecc
+
+% 1 1 0 07a8a701990eedbb0337686d5ba13636
+
+@ 0 1 0 0dbf5dc9913bf1a31169999ea1e11c6c
++   criterion  fury publish が、実際のリリースについて署名付きの .lira ファイルを作成して公開する
+
+% 2 1 0 0f88de4c0ac325a50041882efa2feb73
+
+% 0 1 0 1321c661b6eaa11e02e19e9308e5b035
+
+% 1 1 0 0f165d164801de2e02d185d16ecd7018
+
+% 1 1 0 0f3d3861d4ecdd5f148b00780e061d1a
+
+% 2 1 0 0129c9cdf59b3b551f01135124f0f9fd
+
+@ 0 1 0 1228bf9e7bbc6f3d1843ac89500752b9
++   criterion  署名、名前空間、透明性ログへの収録が、出荷される単一のコマンドで検証される
+
+% 2 1 0 16ec1742c46c6cd115abeb0bea98da64
+
+% 0 1 0 1321c661b6eaa11f02e19e9308e5b036
+
+% 1 1 0 131f953871a10ffe0b00806a5b1bdca1
+
+% 2 1 0 0f7611725540dbe204c695c1db6203c2
+
+% 3 1 0 102a189d312a233c13a5285529f2f35a
+
+% 0 1 0 0be20cbb270ca3271eea7fce01ea36cd
+
+@ 0 1 0 0855eefc375dd1021418d55046288344
++   criterion  リリースがアテステーション付きで LIRA に出荷される。make verify-attest が公開された成果物を網羅する
+
+% 2 1 0 10e3be64a385e92b01e331955fad5d00
+
+% 0 1 0 1321c661b6eaa12002e19e9308e5b037
+
+% 1 1 0 1728cd5a9b4041ce132f7b03476a492a
+
+% 2 1 0 1998e49cea2423c803d6a6efcea63c3f
+
+% 3 1 0 0e72d3e7a2c1ca3010a4ffaecddb73e7
+
+% 0 1 0 0be20cbb270ca3291eea7fce01ea36cf
+
+% 0 1 0 0be20cbb270ca32a1eea7fce01ea36d0
+
+% 0 1 0 0be20cbb270ca32b1eea7fce01ea36d1
+
+@ 0 1 0 10b2d822c3aaa61a12d6b3b3f5062b67
++   criterion  リリースのスクリプトに Maven Central への公開の段階がない。新しい fury プロジェクトが、Maven のリゾルバーを無効にしてビルドされ実行される
+
+% 2 1 0 03b73a35e228a1f202db3b6a5cb87b5a
+
+% 0 1 0 1321c661b6eaa12102e19e9308e5b038
+
+% 1 1 0 1b32057cc4df739e1b5e759c33b8b5b3
+
+% 2 1 0 1593d180f44c58ee1a679007506cfc61
+
+% 3 1 0 13b946cba38b652018d90f2de2ddb62e
+
+@ 0 1 0 0301d4357fd110381312abcd6bf1e0c4
++   criterion  公開データだけを使う、スクリプト化した第三者による検証が、最新のリリースについて通る
+
+% 2 1 0 1cf5e322daf22fc9173d432cd9da73e3
+
+% 0 1 0 021495136a85a014152702e97d5c8e60
+
+% 1 1 0 12ebcdd5af7adb5e19edd5b287102f29
+
+% 2 1 0 064701c2de22b3aa14c01f08ae3eeb64
+
+% 2 1 0 04e14bbe93d7132309bc72503010466a
+
+% 0 1 0 07107ffcb0e5b13f15006fd4098ef240
+
+@ 0 2 0 1db3be1f03d0cf921c9fa259d29b000e
++   baseline  lib/reliquary（7387 行）と、anthology.lira、degustation.lira、mandible.lira、xenophile.lira およびそれらのテスト（2026-09-25）
++   criterion  lib/reliquary が存在せず、lib/*/src/lira ディレクトリが一つも残らず、build.mill、etc/、doc/modules が reliquary に言及しない
+
+% 2 1 0 1132d942ccdb3445063fa2d5e2feea23
+
+% 0 1 0 046b1024571aeeb513e1b6b0c8d10198
+
+% 1 1 0 1a4aad84cd1ff3750d014593270a4fc1
+
+% 2 1 0 089f55bde5f6fe351f9ec2f0f0fcf5de
+
+% 3 1 0 1ca1007fd014089f1cfd2cf28fb2af40
+
+@ 0 1 0 0e7b24a56c212074197c485bfa6d38b8
++   criterion  JOSE のモジュールが、テスト、SN のページ、トピックとともに出荷される。RFC 7515/7516 の例のベクターを往復させる
+
+% 2 1 0 12c3d664c64593bf18a4f434783930cf
+
+% 0 1 0 046b1024571aeeb613e1b6b0c8d10199
+
+% 1 1 0 1e53e5a6f6bf25451530402c1358bc4a
+
+% 2 1 0 049a42a1f01f335b162fac0872c3b601
+
+% 3 1 0 01e77363d0dda39005313c71a4b4f188
+
+@ 0 1 0 1df36e5d2dbf514a104a6563c3609847
++   criterion  TOML のモジュールが、テスト、SN のページ、トピックとともに出荷される。TOML の適合性スイートに通る
+
+% 2 1 0 1f1b8ab9d446860809dd82ada73c1098
+
+% 0 1 0 046b1024571aeeb713e1b6b0c8d1019a
+
+% 1 1 0 025d1dc9205e57161d5f3ac4ffa728d3
+
+% 1 1 0 1a574fff5d1320d70364d027638237a3
+
+% 2 1 0 1efd7d21dff486d91b3e768eb5358373
+
+% 0 1 0 133cfcec7cdd2aaa1f09f463711a4208
+
+@ 0 1 0 01ef260caab51fe81895a30475530645
++   criterion  WebAuthn のモジュールが、テスト、SN のページ、トピックとともに出荷される。スクリプト化したセレモニーが参照用の認証器に対して通る
+
+% 2 1 0 1b03eb481bfa310511a65b98ea49c9d8
+
+% 0 1 0 046b1024571aeeb813e1b6b0c8d1019b
+
+% 1 1 0 066655eb49fd88e6058e355debf5955d
+
+% 2 1 0 1afff1b9678c0f8d0741e3da55836dea
+
+% 3 1 0 01f2289b7da01eb301f4daf566ab30ac
+
+@ 0 1 0 062b8d0546e25d8e0cc052d10b09cbd4
++   criterion  QUIC/HTTP-3 のモジュールが、テスト、SN のページ、トピックとともに出荷される。参照用のピアと相互運用する
+
+% 2 1 0 0cf28f000b612357022ab3929a9f380c
+
+% 0 1 0 046b1024571aeeb913e1b6b0c8d1019c
+
+% 1 1 0 0a6f8e0d739cbab60dbd2ff6d84401e6
+
+% 2 1 0 16fade9d71b444b31dd2ccf1d74a2e0c
+
+% 3 1 0 07389b7f7e69b9a30a28ea747bad72f3
+
+@ 0 1 0 1a465e8845679baa0cd455561ea8d179
++   criterion  IMAP のモジュールが、テスト、SN のページ、トピックとともに出荷される。スクリプト化したセッションが参照用のサーバーに対して通る
+
+% 2 1 0 0d7556ef9ba0458f02d1f1f891f94465
+
+% 0 1 0 1228926b1b793b871a67d5305495599a
+
+% 1 1 0 1ce2bf34886931141b2bec4bb07892d9
+
+% 2 1 0 0cd41d60a7c1637416a0174e47f500cb
+
+% 3 1 0 05e3fb81f169684f041a66f2c3b0449a
+
+% 4 1 0 0c7cd8ec1ed64ab1023b45d62b98bd8e
+
+@ 0 1 0 04aab9110355be9c003bed176ea8c4a3
++   criterion  落とした各エッジが grep で未使用と確かめられ、削除してもコンパイルが通り、make attest が通る
+
+% 2 1 0 153b2a91127deb54104730aa3a13097b
+
+% 0 1 0 1228926b1b793b881a67d5305495599b
+
+% 1 1 0 00ebf756b20862e5035ae6e49cc6ff63
+
+% 2 1 0 08cf0a44b1e9989a0d310065c9bbc0ee
+
+% 3 1 0 0b2a6e65f233033f0c4e7671d8b286e1
+
+% 4 1 0 193a04a8bf5b1ed90da3689afc436a25
+
+@ 0 1 0 036d253ba93b1ea81c930925a9ccadb6
++   criterion  列挙した各エッジが切られ、新しいサブモジュールがバンドルされ、どの下流のモジュールも切られた閉包を推移的に取り戻さない
+
+% 2 1 0 1c556e5d13294c3717bae28df9de06ef
+
+% 0 1 0 1228926b1b793b891a67d5305495599c
+
+% 1 1 0 04f52f78dba794b50b89e17d89156bec
+
+% 1 1 0 070998ec48b46a480366b9691cd36e4d
+
+% 2 1 0 16b777126c44bf860db0501b38c9bbc5
+
+@ 0 1 0 00804dfc317a9c38118fe96fd3962805
++   criterion  分割した各モジュールがバンドルされ、その親の依存のリストが、残ったコードが使うエッジだけを含む
+
+% 2 1 0 174fc1e26f13dc70120b043b7f204c73
+
+% 0 1 0 1228926b1b793b8a1a67d5305495599d
+
+% 1 1 0 08fe679b0546c68513b8dc167563d875
+
+% 2 1 0 110cd3159e9b620c15c410213afe007c
+
+% 2 1 0 1cc5ca5bcd9a5eb702323aad73f8a990
+
+% 0 1 0 0307d8b684ae3f6d1bd82d0b9c1581cd
+
+@ 0 1 0 137cf58305be0db61056d61471f49d88
++   criterion  一つの形式の利用者がもうほかの形式のコードをコンパイルせず、プラットフォームのフラグが新しい閉包を反映する
+
+% 2 1 0 1e35fb46ed285e1d035601dbdcdcca9e
+
+% 0 1 0 1228926b1b793b8b1a67d5305495599e
+
+% 1 1 0 0d079fbd2ee5f8551be7d6af61b244fe
+
+% 2 1 0 0d07bff9a8c397320c54f938bcc4c09f
+
+% 2 1 0 1680fb2630229b71153ac03f4273a611
+
+% 0 1 0 00fa7f33413b7780059012e2fcde9a0e
+
+@ 0 2 0 0950b39d8f942d780a11fe1ef0b7f413
++   baseline  CRC は corpuscular にだけある。Huffman のビルダーが 9 個と varint のループが約 9 個残っており、corpuscular にはない（2026-10-21）
++   criterion  各アルゴリズムがちょうど一つの実装を持つことが、シグネチャのパターン（CRC の表、Huffman のビルダー、varint のループ）の grep で確かめられる
+
+% 2 1 0 0722bd1fbf6a19770c6838f79f600295
+
+% 0 1 0 1228926b1b793b8c1a67d5305495599f
+
+% 1 1 0 1110d7df58852a250416d1484e00b188
+
+% 1 1 0 1334fd2e99dd0f8519756ed847314735
+
+% 2 1 0 1c92c161f4fd4daa1fe724035fcde0d3
+
+@ 0 1 0 0da8cceadf39fefe00f7989e5594877d
++   criterion  どの .staged モジュールも展開環境の自前の複製を含まず、ベンチマークのコーパスが形式ごとに性能の同等を示す
+
+% 2 1 0 18e5fd56ce3cd9b61937d0abe6be48c0
+
+% 0 1 0 1228926b1b793b8d1a67d530549559a0
+
+% 1 1 0 151a100182245bf50c45cbe13a4f1e11
+
+% 1 1 0 0bb77e15834bb61a1daa126dff5ecd43
+
+% 2 1 0 0f83438ca0f0a7750a068819d159e457
+
+@ 0 1 0 1287301cfab34230188f3e2cf0fd05ed
++   criterion  各ストレッチゴールが、始める前に個別に承認される。どれも予定されていない
+
+% 2 1 0 17827c8361c1cab3013d00d7b2c97636
+
+% 0 1 0 1228926b1b793b8e1a67d530549559a1
+
+% 1 1 0 19234823abc38dc51474c67a269d8a9a
+
+% 2 1 0 10b0979ceedad77d149676f2d46441be
+
+% 3 1 0 0ad11fbdf6eca4e01d86d36c56c0148c
+
+% 0 1 0 1cd4a6e4458bea94020f30cdb8cf84e9
+
+@ 0 1 0 019bd470da6a4c9a09ee1e14de3ef2d0
++   criterion  各誤宣言が修正され、各死んだエッジが削除され、影響を受けるすべてのコンポーネントとその依存元がコンパイルされる（make attest、make build）
+
+% 2 1 0 06b372079e930d5e0c9a46a657bd67ee
+
+% 0 1 0 1228926b1b793b8f1a67d530549559a2
+
+% 1 1 0 1d2c8045d562bf951ca3c11312ebf723
+
+% 2 1 0 0cab8480f9030ca30b27600a562b01e1
+
+% 3 1 0 101792a1f7b63fd005bae2eb6bc256d4
+
+% 0 1 0 0727d67b85bc2d6b0c185898f19da528
+
+@ 0 1 0 1374ae54175e05e21539bb6d6a3d12e8
++   criterion  exegesis.core の閉包にコンパイラスタックのモジュールがなく、obligatory.json を通る最も深い連鎖が jacinta で終わる
+
+% 2 1 0 1bd4550c16c916951830c7003ea925b2
+
+% 0 1 0 06ecab1276adb4311e5265708c4fb278
+
+% 1 1 0 1e6859a8e11468ec09d0ee9a84a0e109
+
+% 2 1 0 1e262d6829bfe8fb05fa73b81d275e40
+
+% 2 1 0 1a05741cf5c162321dab0894396829c1
+
+@ 0 2 0 07da09c0bddc5fc901e0c3d601d47bc3
++   baseline  turbulence.core はもう capricious.core に依存しない。parasite.core はまだ mercator.core に依存する。gossamer.core の閉包は 26 個のコンポーネントを持つ（2026-10-21）
++   criterion  parasite.core が mercator.core へのエッジを宣言せず、turbulence.core が capricious.core へのエッジを宣言しない。gossamer.core の閉包が持つコンポーネントは 23 個以下である

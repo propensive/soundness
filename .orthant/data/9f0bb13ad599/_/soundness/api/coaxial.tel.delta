@@ -1,0 +1,33 @@
+orthant 2 release
+
+@ 0 1 0 1874eb5002ead3f702947fe96baddb5a
++     - `coaxial.dns` — `ask` on an `Endpoint[Udp.Port]`: one DNS message to a nameserver and
+
+@ 0 1 0 12eedd73cb81202410fe0a2012255a5d
++ refer coaxial.ask
+
+@ 0 1 0 026c1a59ee9271480e2c556e8f648858
++         from the right place. `ask` in `coaxial.dns` is built on it. Raises `Transmit` on
+
+@ 0 1 0 0348e35ec80ce6d3050d3699145242da
++           A receive on a datagram socket which elapses raises `Socket.Error(Timeout)`; `ask`
+
+@ 0 1 0 09550f1f001ea3ff08726ab3092ad4f4
++   entry .subscribable   any `Multicast` (or a type refined by its literal port) `is Subscribable`, over the `Socket.Backend` and `Every[Socket.Option.Udp]` in scope
+
+@ 0 1 0 01259ee3d9fcc06511976a607f39be78
++ entry .ask   a DNS query to a nameserver over UDP: one message out, its answer back; in `coaxial.dns`
+
+@ 0 1 0 0c619acb320b11750785637dfda64645
++       `endpoint.ask(message: Dns.Message)` sends the message as one datagram from an
+
+@ 0 1 0 0b7830deee5fab2f0e504d4af60ba696
++       `Dns.Error(Mismatch(id))` is raised. `endpoint.ask(name, rtype = Dns.Type.A)` asks
+
+@ 0 2 0 04e90c8d5c56d40f090bd64fa7e89ce3
++       val addresses = resolver.ask(dns"example.com").map(_.rdata)
++       val mail = resolver.ask(dns"example.com", Dns.Type.MX)
+
+@ 0 1 0 1b57c289f4587dc0108b20cab305eac8
++       It is `ask` rather than `lookup`, `resolve` or `query`, names `soundness` reserves for
++       anamnesis, syndesis and telekinesis.

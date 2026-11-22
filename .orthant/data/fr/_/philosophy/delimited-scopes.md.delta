@@ -1,0 +1,156 @@
+orthant 2 language
+
+@ 0 1 0 15d61a42cfc8ebd90ef3e513b9e3d5f7
++ # Les portées délimitées
+
+@ 0 7 0 1e4d5aa9ab013e0c0bee47f1362dd0f9
++ Soundness utilise des fonctions contextuelles pour délimiter les blocs au sein desquels une capacité
++ ou un élément de contexte supplémentaire est disponible. Entrer dans un tel bloc — pour gérer des
++ erreurs, exécuter des tâches concurrentes, garder une ressource ouverte — rend les valeurs
++ contextuelles pertinentes disponibles à l'intérieur et les retire à sa frontière. La portée d'une
++ capacité est donc visible dans la structure même du code : une capacité s'applique exactement là où
++ le bloc l'indique, et pas au-delà. C'est ce confinement structurel que le [contrôle des
++ captures](capture-checking.md) impose ensuite dans les types.
+
+@ 0 1 0 182d61a630d365b00cc707c94117bb0b
++ ## Une seule forme, partout
+
+@ 0 2 0 0949f07ad9e9af50178a6bde4b1b548e
++ Le même motif introduit une ressource, un gestionnaire d'erreurs, un contexte de concurrence et un
++ secret prêté. Le reconnaître une fois, c'est les reconnaître tous :
+
+% 2 1 0 150773a18b0dfa7b0633e6b06935a0ed
+
+% 3 1 0 0bcb8136ec1bc4d904183fae567951fb
+
+% 4 1 0 0eca05afe4986a3000831daa72f4fa55
+
+% 0 1 0 140e5dd57243cd3f10ccaa75527863d8
+
+% 0 1 0 15d5d175bff5f9a30f2b42fb44fda259
+
+% 0 1 0 1286ab9e4062e2c717549c709e5e7a14
+
+% 0 1 0 0c5b48f9a53ae50d15051c342c618152
+
+% 0 1 0 1fb74406d1b64bef06148f6d54815341
+
+% 0 1 0 1548ee3ef66c5283179ab1deae8f1167
+
+% 0 1 0 1ad537c6cf1a386b02c70fe6d7907a6d
+
+% 0 1 0 16fd4b340c492b2b167ef521dbaf2235
+
+% 0 1 0 13ba912b44dc874409c867769842ac5d
+
+% 1 1 0 02be1ae0330118a10cf896b480bbbf7c
+
+@ 0 3 0 17a76be72fc445c40d5f2aa421022517
++ Dans chaque cas, la capacité existe à l'intérieur du bloc et nulle part ailleurs, et l'étendue du
++ bloc est l'étendue de la capacité — visible sur la page, sans lire la moindre documentation sur les
++ durées de vie.
+
+@ 0 1 0 0f845d3e6c5d749516fede9047c25c19
++ ## Pourquoi un bloc plutôt qu'un constructeur
+
+@ 0 1 0 161d0e446dbb946619f933d24b8f0118
++ L'alternative consiste à construire la capacité, à l'utiliser, puis à la libérer :
+
+% 2 1 0 1c6b6963fc68a89f1883c0f620153564
+
+% 3 1 0 0b4ef4af8c3b99651c8a828b04b9fa86
+
+% 4 1 0 1fd7a04c9824b42d1bf4f74b3f6eb7ea
+
+% 0 1 0 1792013304fc896d06c4fac6ebd73604
+
+% 0 1 0 0bc703a8f20071dd057f8aa66d1607cf
+
+% 1 1 0 08055d312a59260e17c767fa58478372
+
+@ 0 4 0 0f4cffbf8500fac8070aa5767aabda12
++ Cela présente trois défauts que la forme en bloc n'a pas. Le `close` peut être oublié, ou placé là
++ où un retour anticipé le saute. La poignée existe comme valeur *avant* d'être valide et *après*
++ avoir cessé de l'être ; son type ne dit donc rien du moment où elle peut être utilisée. Et en
++ imbriquer deux double la cérémonie, avec l'ordre de libération indiqué à la main.
+
+@ 0 2 0 0bf5c70ab2e60aea1707244877d82982
++ La forme en bloc corrige chacun d'eux : il n'y a aucune libération à écrire, la capacité n'est
++ disponible que là où elle est valide, et imbriquer deux ressources revient à imbriquer deux blocs.
+
+@ 0 1 0 10cf37bd950e7d9e02d6ef70c530f449
++ ## La portée est un instrument précis
+
+@ 0 4 0 15a1c922632128d6064cbd239e48f435
++ Comme le mécanisme est la portée lexicale ordinaire, la granularité est celle dont le code a besoin.
++ Un given importé en tête d'un fichier configure le fichier ; un given déclaré dans une méthode
++ configure la méthode, en remplaçant le choix plus large ; un bloc `locally` confine une exception à
++ quelques lignes :
+
+% 2 1 0 11b350b050bda128113e9a42214b22aa
+
+% 3 1 0 04085bf39e2b3a4a04ee39719f0cd9a8
+
+% 4 1 0 058d9e57e17f74ab0c30811ce28cece8
+
+% 0 1 0 0d2451b6474da3780123f5bcca399f0f
+
+% 0 1 0 1713b723343ad4240a44a0dfaf90cb33
+
+% 0 1 0 1ce56f8149b9021819efd845b2ba91d3
+
+% 0 1 0 02d46d4a051a899110041929ea41bb5e
+
+% 0 1 0 0e34db07470cb8631aaef2f9ede40b25
+
+% 0 1 0 1e37049925fe18571e4e747e84736cf7
+
+% 0 1 0 155ce7bf0c4ba643122956989fd4487c
+
+% 1 1 0 18a60f504236cc0e01b4f68bba4fd17e
+
+@ 0 2 0 032693b2c2b7987e062a0fddd71aa1a7
++ Rien n'a besoin de prendre en charge spécialement cette granularité. Elle découle de l'utilisation
++ des portées du langage lui-même plutôt que d'un mécanisme de configuration sur mesure.
+
+@ 0 1 0 15117289264c368706ba363a9c536dbc
++ ## Ce que « retiré à la frontière » signifie vraiment
+
+@ 0 5 0 1bd021c390e95f6803b6e9b8037423a8
++ Structurellement, la capacité sort de la portée lorsque le bloc se termine. Cela seul n'empêcherait
++ pas une valeur de l'*emporter* au-dehors — un flux paresseux qui tient encore un fichier ouvert, une
++ clôture qui tient encore un gestionnaire d'erreurs, une tâche qui tient encore son superviseur. Ces
++ échappements sont exactement ce que le raisonnement à l'œil manque, car la paresse, les clôtures et
++ la concurrence dissocient le moment où le code s'exécute de l'endroit où il a été écrit.
+
+@ 0 3 0 046fd529cf1ef20c10c260509085c5be
++ Le [contrôle des captures](capture-checking.md) comble cette lacune : la portée de la capacité
++ voyage dans le type de la valeur, si bien qu'un échappement est une erreur de compilation plutôt
++ qu'une surprise à l'exécution. Les portées délimitées énoncent l'intention ; le contrôle des captures
++ en fait une garantie.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Ce que cela coûte
+
+@ 0 1 0 17a2511765a941c813f0e8f41d2e6936
++ Deux coûts, tous deux réels.
+
+@ 0 5 0 0fe7d414c896df000e1c825912012eb3
++ **La dérive vers la droite.** Chaque capacité imbriquée indente le code, et une fonction qui en a
++ besoin de quatre se trouve à quatre niveaux avant même de commencer. La syntaxe des lambdas avec
++ deux-points de Scala limite cela à un niveau par capacité plutôt qu'un niveau plus une accolade
++ fermante, mais un code très doté en capacités paraît toujours profondément imbriqué — et là où cela
++ devient illisible, la réponse est d'extraire le travail intérieur dans une méthode qui déclare ce
++ dont elle a besoin, et non d'élargir les portées.
+
+@ 0 5 0 0dbd12442f91dada19d427499e0db9ab
++ **La capacité ne peut pas simplement être stockée.** Une valeur qui a besoin d'une poignée de fichier
++ à un moment ultérieur, sans rapport, ne peut pas en garder une ; elle doit soit faire son travail
++ dans la portée, soit prendre une copie mémoïsée de ce dont elle avait besoin. C'est une véritable
++ contrainte, et c'est la contrainte qui fait le travail : « garder cette ressource indéfiniment et
++ espérer » est précisément le motif qui est exclu.
+
+@ 0 3 0 024c8c94b0011b82179ff59cd5b4507b
++ Voir [le contexte déclaratif](declarative-context.md) pour ce qui est placé dans ces portées, et [la
++ concurrence structurée](structured-concurrency.md) pour le cas où la chose délimitée est un ensemble
++ de tâches en cours d'exécution.

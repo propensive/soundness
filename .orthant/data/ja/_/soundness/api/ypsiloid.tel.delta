@@ -1,0 +1,1753 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1d0d8ca941a31ee70408ad32cbc2dc15
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0214c8453750cfed17af47e6d60e67d9
++ info   型付きの値にパースされ、描画し直される YAML：ドキュメント、パス、コーデック、`y"…"` リテラル
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0128a72293a0d31703cb49c464d77029
++     _Ypsiloid_ は、Soundness が JSON を扱うのと同じやり方で YAML を扱う。
++     テキストは `Yaml` 値にパースされ、`Yaml` はケースクラス（または `Decodable in Yaml` を持つ任意の型）にデコードされ、そこからエンコードし直される。
++     `y"…"` 補間子は、コードのコンパイル時に検査される YAML を書く。
++     パーサーは実際に使われている言語の範囲をカバーする。
++     ブロックスタイルとフロースタイル、三種類のスカラーのクォート、チョンピング指示子を伴うブロックスカラー、タグ、アンカーとエイリアス、ディレクティブ、複数ドキュメントのストリームがそれである。
++     `Yaml` は `show` によって、再パース可能なきれいなブロックスタイルのテキストに描画し直される。
+
+@ 0 5 0 18eb69c022983355006b86281def88e9
++     中心となる型は `Yaml`、つまりドキュメントである。
++     これは不変の木（`Yaml.Ast`）であり、位置追跡を有効にしてパースされた場合には、任意のノードの行と列を復元できるインデックスも持つ。
++     ドキュメント内のノードは `YamlPath`（JSON Pointer と同じ RFC 6901 のエスケープを用い、`#/a/b` と書く）で指定される。
++     デコードエラーが _どこで_ 起きたかを示すのも、`locate` がノードのソース上の位置を見つけるのも、これによる。
+
+% 2 1 0 10b088ef36c5bd93168e18f2f616e1b2
+
+% 3 1 0 12e7f0036e7d3fb41f07f4afb744d5e5
+
+% 4 1 0 05a392bbea2c8ddc0e73ca91cac5eddf
+
+% 0 1 0 11c5e85304224b291919158842bfcc37
+
+% 2 1 0 07369ca7273e357d12f70de4115af217
+
+% 0 1 0 12f48d4397330d0e1830511436b2f200
+
+% 0 1 0 1d2f5ba770af861417eadb0f93db5c41
+
+% 0 1 0 018df32a66755b81072501e976745a09
+
+% 1 1 0 1e289d3441566c0b0b0ffdecd97892d3
+
+@ 0 8 0 03451fdf9c3e4e750dc67e75aed5838e
++     デコードは他のすべての形式が使うのと同じ導出（`Decodable in Yaml` と `Encodable in Yaml` に対する wisteria の導出）なので、レコードに注釈は要らない。
++     `@name` はワイヤ上のフィールドやバリアントの名前を変え、列挙型はスコープ内の `discriminables` の given が名付ける判別フィールドを用いてエンコードされる。
++     `Optional` や `Option` のフィールドは、`optionalityOptions` パッケージが変えるポリシーのもとで、存在しないキーや `null` を `Unset`/`None` として読む。
++     蓄積型の戦略（`validate`）のもとでは、デコードは最初の誤りで止まらず、ドキュメント内のすべての誤りを集める。
++     それぞれの誤りには `Yaml.Focus`（そのパスと、追跡されたドキュメントであればその位置）が付く。
+
+@ 0 5 0 17c547bc817ecd3307371a524bf2b0e1
++     レコードは _直接_ のパーサーとプリンター（`Yaml.Parsable` と `Yaml.Printable`）を持つこともできる。
++     これらはパースされた木から直接フィールドを読み、木を構築せずにテキストを書く。
++     `derives Yaml.Direct` は両方をコンパニオンに導出し、`import codecs.direct` はスコープ内のすべてのレコードについて直接の経路を選ぶ（他のモードは `codecs.derived` と `codecs.strict` である）。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     このライブラリには二つのソースセットがある。
+
+@ 0 6 0 030f6dd187537efb0bb9921d0311a5d6
++     - `ypsiloid.core` — `Yaml` とその内部のすべて、`YamlPath`、`y"…"` と `yp"…"` の補間子、そして選択パッケージ `formatting`、`optionalityOptions`、`discriminables`、`dynamicAccess`、`conversions`。JVM、Scala.js、Scala Native 向けにコンパイルされる。
++     - `ypsiloid.http` — `Yaml` を `application/yaml` のリクエストまたはレスポンスの本文として運べるようにする `postables`、`servables`、`construables` の given。
+
+@ 0 7 0 0e51d3c6b3c40e3018400f84c3183729
++     `import soundness.*` は given をインポートしないので、いくつかの given は選択であり、名前でインポートしなければならない。
++     `formatting.blockYamlFormatting` は `show` と HTTP のエンコードを有効にし、`dynamicAccess.dynamicYaml` は `yaml.field` によるアクセスと `yaml.field = value` による更新を有効にする。
++     `discriminables.yamlByTypeDiscriminable`（または `…ByKind…`）は直和型のエンコードやデコードに必要であり、（zephyrine の）`parsing.trackPositions` は位置追跡を有効にする。
++     すべては `soundness` アンブレラにエクスポートされ、そこで選択パッケージは他の形式のものと統合される。
+
+% 0 1 0 085bf2d0276d003f0660c91fe77fcc54
+
+% 0 1 0 12c3866784f7c7c417874414782cf51c
+
+% 0 1 0 1c8e84636d7bb7281d87a4ca699f575d
+
+% 0 1 0 042a927df2aa0d9b048d0ace9ac048e4
+
+% 0 1 0 0e265cd0376176bb1cb8c20c86a5204e
+
+@ 0 1 0 044f4bb1f2be96e11bf61b1a2aa131ed
++ entry .Yaml   YAML ドキュメント：不変の木で、`as` でデコードし、レンズで更新し、`show` で描画する
+
+% 1 1 0 1f7d324046f346dd12b77385e4c612b8
+
+@ 0 5 0 1338d267587be13b1d906e1d217886f6
++       `Yaml` はパースされた木（`#root`、`Yaml.Ast`）を包む。
++       `parsing.trackPositions` がスコープ内にある状態でパースされた場合には `#positionIndex` も持ち、`locate(path)` はそこから任意のノードの行と列を見つける。
++       `Yaml` は `text.read[Yaml]`、`data.read[Yaml]`、`y"…"` リテラル、`value.in[Yaml]`、`Yaml.make(field = …)` によって作られ、`#as` によって消費される。
++       `#as` は、`Decodable in Yaml` を持つ任意の型としてそれをデコードする。
+
+% 2 1 0 1cd4cbfa57671f1511601280a48b779c
+
+% 3 1 0 0e2c6ad7f613f45b153823017bd740d2
+
+% 4 1 0 1ad245904164345812ca45acba6eb126
+
+% 5 1 0 113a9ada597ed58a032d1a8a95f83c33
+
+% 1 1 0 18e48abd5d11822406275060e2c54a4e
+
+% 2 1 0 09621152b30aaf7c1f9157e21c2240a5
+
+% 0 1 0 130a7ec3f188c872100f2979b6c6548c
+
+% 0 1 0 131b807994bfd51811b98fa4b2adf1a2
+
+% 0 1 0 05784f9e48fdd56e07082a1bffe5a351
+
+% 0 1 0 0846fa03d2a4d886085d80c38b3098fd
+
+% 0 1 0 084ddf1c12b224b113af4f95f3c9c707
+
+% 0 1 0 08207439c1c43e141c75f1faf502a3a1
+
+% 1 1 0 0207864e7070362d0dece850b3d66535
+
+@ 0 3 0 10ab3fb3c6a8fca70ece824a386a3a18
++       ドキュメントは値である。
++       すべての更新（`#update`、`#updateDynamic`、`lens`）は新しい `Yaml` を構築し、古いものはそのままにする。
++       二つのドキュメントは、位置にかかわらず、木が構造的に等しい（`Yaml.Ast.deepEquals`）ときに等しい。
+
+@ 0 5 0 0e4f116c4d3bbab014d87392905b7eb6
++       読み込み：`.decodable` と `.aggregable` はテキストをパースし、`.aggregableData` はバイト列をトランスコードせずにパースし、`.aggregableAll` は `---` で区切られたストリームを `List[Yaml]` として読む。
++       ストリームのソースは届くそばからパースされ、先に連結されることはないので、大きなファイルも全体を保持せずにパースできる。
++       パースは `Parse.Error` を発生させ、その問題は何がどこで間違っていたかを示す `Yaml.Ast.Issue` である。
+
+@ 0 5 0 1d5529f08fbd18480bb9bb8ada9fc6b4
++       デコード：`#as` と、プリミティブ、コレクション、`Option`/`Optional`、導出のコーデックは `Yaml.Error` を発生させる。
++       形の間違った値には `Reason.NotType(found, expected)`、存在しないフィールドには `Reason.Absent` が使われる。
++       また `Yaml.Focus` を追跡するので、蓄積型の戦略はそれぞれの誤りをそのパスとともに報告する。
++       簡略形として、`text.read[Person in Yaml]` は読み込みとデコードを一度に行い、`person.in[Text over Yaml]` はエンコードと描画を一度に行う。
+
+@ 0 5 0 0d05d6c50cd38cc1010a61d5d51424f0
++       描画：`show` にはスコープ内の `Yaml.Formatting`（唯一のものである `formatting.blockYamlFormatting`）が必要であり、ブロックスタイルを出力する。
++       インデントは二つの空白で、空のコレクションには `{}` と `[]` を用い、文字列は数値、真偽値、null と取り違えられない場合にだけプレーンに書き、そうでなければダブルクォートで囲む。
++       これらは、テキストが同じ木に再パースされるように選ばれている。
++       `.emit` は一ブロックずつ描画し、`.streamable` は `Yaml` を `Stream[Text]` にする。
+
+@ 0 4 0 157573ea90f91a2c1bed74e53922464e
++       動的アクセス（`#selectDynamic`、`#applyDynamic`、`#updateDynamic`、`#update`、そして `.lens` の given）は `Yaml is Dynamical` によって制限されている。
++       これは `dynamicAccess.dynamicYaml` がスコープに、`dynamically[Yaml]:` がブロックに与えるもので、これにより `doc.name` が誤って `Yaml` のメンバーと取り違えられることはない。
+
+@ 0 5 0 0b8dfdc8b2d07efd033580bf75a89fff
++       すべての型が最後に行き着くフォールバックのコーデック（`decodable`、`encodable`、`optional`、`optionalEncodable`、`encodableOver`、`aggregableIn`）は優先度の層 `Yaml2` から継承され、直接コーデックの入り口（`aggregableParsed`、`encodableOverPrinted`、そして `codecs.strict` の二つの失敗）は `Yaml1` から継承される。
++       それらはそれぞれのトレイトでドキュメント化されている。
+
+% 0 1 0 1f2cb2afea28e87f1e5592d38c60d312
+
+% 0 1 0 0b7a15c9748b21171f2074cd664c8c1d
+
+% 1 1 0 0b2c93c8349311d801ccf433bf8d3aa6
+
+% 0 1 0 13c52c996820ed0d1459221f10c2e969
+
+% 0 1 0 064d04157cc1492c0c4ced497604ed1e
+
+@ 0 17 0 052f4e94fc3d9bbe02f93d73a7db3ba7
++   entry #root   ドキュメントの木、`Yaml.Ast`
++       パースされた木であり、`Yaml.Ast` のコンパニオンにあるアクセサー（`isObject`、`objectKey`、`arrayElement`、`string`、…）や、他の木形式への橋渡しのためにある。
++       `Yaml.unseal` は同じノードを、抽象化を破る行為として名前を付けて取り出すものである。
++   entry #positionIndex   追跡付きのパースが構築した位置インデックス、または `Unset`
++       `parsing.trackPositions` がスコープ内にある状態でドキュメントがパースされたときにだけ設定される。
++       追跡なしのパースや、値から構築されたすべての `Yaml` では `Unset` である。
++       `locate(path)` と `locateKey(path)`（`.positionable` を通じた zephyrine の `Positionable` の拡張）は、ノードの `Yaml.Ast.Position` を見つけるためにこれをたどる。
++   entry #as   ドキュメントを、`Decodable in Yaml` を持つ任意の型としてデコードする
++       `doc.as[Person]` は、スコープ内の `Person is Decodable in Yaml` を通じてデコードする。
++       これはケースクラスや列挙型では導出され、プリミティブ、`Text`、`List`、`Set`、`Map[Text, _]`、`Option`、`Optional` ではコンパニオンの given のいずれかである。
++       `Yaml.Error` を発生させ、`Yaml.Focus` を追跡する。
++       `strategies.throwUnsafely` のもとでは最初の誤りで例外が投げられ、`validate[Yaml.Focus]` ブロックのもとではすべての誤りが蓄積される。
++       それぞれのフォーカスはフィールドのパス（`#/address/city`）と、追跡されたドキュメントであればソース上の位置を持ち、`#as` は戻る前に登録されたすべてのフォーカスについてその位置を埋める。
+
+% 2 1 0 15015301203c1eec06cf06c75728c778
+
+% 3 1 0 0966984aa2158aa91b129e2fbc70eb0b
+
+% 4 1 0 05ca27befdc997ad1788fef807d83659
+
+% 0 1 0 0708fc4f50b5ca920d184bac07ff48d1
+
+% 0 1 0 1a2d0f72970e49d01ca3795f4ae9f3c1
+
+% 0 1 0 06fff591b2b92c8b168cc33d7ff098a4
+
+% 0 1 0 1c944975948c07eb0be2701fece91a6a
+
+% 1 1 0 1ab25955b9f1064c14b79b6f0b143ea0
+
+@ 0 6 0 0eb9f644e3d62a080272eaf3be6d3c00
++   entry #apply   `doc(index)` はシーケンスの項目、`doc(field)` はマッピングの値、または存在しないもの
++       `doc(1)` はシーケンスの二番目の項目であり、ルートがシーケンスでなければ `Reason.NotType(found, Sequence)` とともに `Yaml.Error` を発生させる。
++       `doc(t"name")` は文字列のキーの下にある値であり、キーが存在しないかルートがマッピングでなければ、存在しない `Yaml`（ルートが `isAbsent` であるもの）となる。
++       存在しないドキュメントを `Option` や `Optional` としてデコードすると `None`/`Unset` となり、それ以外のものとしてデコードすると `Reason.Absent` が発生する。
+
+% 2 1 0 02e65292817fd45a0d774b1afd6c1721
+
+% 3 1 0 1d83e45764321d8804895c7bb59b0611
+
+% 4 1 0 1076452ed6d981d419ea1fd46e69dbc0
+
+% 0 1 0 07c761273c729c2e035958882bc45aa2
+
+% 0 1 0 0af26c38cd44da040100d7bd4e775b9b
+
+% 1 1 0 0254d975c6c4095f11bc80bf20d2e1b7
+
+@ 0 18 0 12001cb827a3f6a718f689ec79965f78
++   entry #selectDynamic   `doc.field`：動的アクセスを有効にした状態での、名前によるマッピングの値
++       `doc.name` は `selectDynamic("name")` に脱糖され、テキストのキーによる `#apply` となるので、存在しないキーはエラーではなく存在しないドキュメントとなる。
++       スコープ内に `Yaml is Dynamical` が必要である：`import dynamicAccess.dynamicYaml` か、`dynamically[Yaml]:` ブロックを用いる。
++   entry #applyDynamic   `doc.field(index)`：シーケンスを値とするフィールドの項目
++       `doc.items(1)` は `doc(t"items")(1)` である。
++       名前でフィールドを、次にインデックスで項目を取り出し、フィールドがシーケンスでなければ `Yaml.Error` を発生させる。
++       `Yaml is Dynamical` が必要である。
++   entry #update   `doc(index) = value`：シーケンスの項目を一つ置き換えた新しいドキュメント
++       `value` をその `Encodable in Yaml` を通じてエンコードし、`index` の項目を置き換えたドキュメントのコピーを返す。
++       末尾を超えるインデックスでは、シーケンスはそのままである。
++       シーケンスでないルートは `Yaml.Error` を発生させる。
++       `Yaml is Dynamical` が必要である。
++   entry #updateDynamic   `doc.field = value` はマッピングの項目を追加または置き換え、`= Unset` はそれを削除する
++       `doc.age = 31` は `updateDynamic("age")(31)` に脱糖される。
++       値はその `Encodable in Yaml` を通じてエンコードされ、結果は、`age` があれば置き換え、なければ末尾に追加した新しいドキュメントとなる。
++       `doc.age = Unset` は項目を削除し、存在しないキーに対しては何もしない。
++       マッピングでないルートは `Yaml.Error` を発生させる。
++       `Yaml is Dynamical` が必要である。
+
+% 2 1 0 1a1419b4b02fcb8c0b23cd75170cf4bc
+
+% 3 1 0 0aa893ffae4205400d1be53437f3b2ce
+
+% 4 1 0 052aedb7f4d9272d13e2f1fee39e2cde
+
+% 5 1 0 135fd59a43b3ecf404659f82867f564c
+
+% 0 1 0 05b423974bb715c51847ca7349fe613c
+
+% 0 1 0 17dee4b2bf04f7df0b860854726758a0
+
+% 0 1 0 0307b8544db4e72506e1dc18519dd40f
+
+% 1 1 0 1ec50315ae200b5516725702bc760eab
+
+@ 0 8 0 180f456d6ee9e5da0a7052e0e7c6d0d5
++   entry .apply   木をドキュメントとして包む：`Yaml(ast)` または `Yaml(ast, positions)`
++       ノードの上に `Yaml` を構築し、追跡付きのパースの `Yaml.PositionIndex` を伴わせることもできる。
++       `object Yaml` は（`.make` のために）`Dynamic` を拡張しており、それがコンストラクタープロキシを抑制するので、パラメーターの型は `Any` となっている。
++       値は実際に `Yaml.Ast` でなければならない。
++       すでに手元にあるノードに対する型付きの形は `.ast` である。
++   entry .ast   `Yaml.Ast` のノードをドキュメントとして包む
++       `Yaml.ast(node)` は、ノードの型を検査したうえでの `Yaml(node)` である。
++       光学（オプティクス）やコーデックは、木の一部を置き換えたあとにこれでドキュメントを再構築する。
+
+% 2 1 0 11ecc29c0aed7aac157415062c853869
+
+% 3 1 0 0ad8d3327b5c0758037b26b72b1a9389
+
+% 0 1 0 19a4c74648573bbf02fa8ae66012f864
+
+% 1 1 0 080135330bb01d230ad23ba64c470976
+
+@ 0 4 0 17ef56c6a4d975460dec8c7018496fe2
++   entry .unseal   ドキュメントの内部の木を、抽象化を破る行為として名前を付けて取り出す
++       `Yaml.unseal(doc)` は `doc.root`、つまり `Yaml.Ast` である。
++       `Yaml.Ast.Sequence`、`Mapping`、`Str`、… の抽出子でパターンマッチするためや、二つのパース結果を `Yaml.Ast.deepEquals` で比較するために用いる。
+
+% 2 1 0 1239461f34d35bf000bf7f6bd8ae57fe
+
+% 3 1 0 13991127ed72613b162710bb3b943f82
+
+% 4 1 0 002212948307c1c21718b40b2da0dbbb
+
+% 0 1 0 0258461e74211c1c19e7021345efd19f
+
+% 0 1 0 089b53a8636118b302f3ffa43a055baa
+
+% 0 1 0 190dc2e37be2c8810919d531930a90af
+
+% 1 1 0 136d2eb7a34391ee1f94f941e0fa7fea
+
+@ 0 5 0 1765ab25193035520e2cff4bab092c56
++   entry .applyDynamicNamed   `Yaml.make(field = yaml, …)`：名前付き引数から作るマッピングのドキュメント
++       `Yaml.make(name = t"Kate".in[Yaml], age = 30.in[Yaml])` は `applyDynamicNamed("make")(("name", …), ("age", …))` に脱糖され、書かれた順に項目を持つマッピングを構築する。
++       各引数はすでに `Yaml` なので、入れ子のマッピングには `Yaml.make` の呼び出しを入れ子にする。
++       受け付けるメソッド名は `make` だけである。
+
+% 2 1 0 003871fc4905414f0eec05e7cac9778d
+
+% 3 1 0 13bc82a8dd0fb66b15ea6c16947f8289
+
+% 4 1 0 075947571faa8dba1b543ae125671723
+
+% 2 1 0 06d49e6868c23b361b2e008133c9245e
+
+% 0 1 0 19843350e1e735c70bb99714ae082d0f
+
+% 1 1 0 0c794dda82f6f3bd0829f4489819c0cb
+
+@ 0 10 0 078cccef73611a881084415c4ca49725
++   entry .showable   `Yaml.Formatting` があるとき、ドキュメントをブロックスタイルの YAML テキストとして描画する
++       `Yaml` のコンパニオンにある `Showable` なので、`Yaml.Formatting` がスコープ内にある場所（`import formatting.blockYamlFormatting`）ならどこでも `doc.show` が使える。
++       出力は保守的なブロックスタイルで、構造的に同一の木に再パースされるように選ばれている。
++       整数はそのままの数字で、小数は `Double.toString` または `.inf`、`-.inf`、`.nan` で、真偽値は `true`/`false`、null は `null` で書かれる。
++       文字列は、文字で始まり、真偽値や null を綴らない、文字、数字、`_`、`-` の並びである場合にだけプレーンに書かれ、そうでなければ（`\"`、`\\`、`\n`、`\r`、`\t`、`\uXXXX` のエスケープを用いて）ダブルクォートで囲まれる。
++       マッピングとシーケンスは二つの空白でインデントされたブロックコレクションで、空のものは `{}` と `[]` である。
++       テキストは常に改行で終わる。
+
+% 2 1 0 11e37f7c9553bdaf123befec2a19032f
+
+% 3 1 0 0a70fdb68c3c569d1526d31aaec1b2c5
+
+% 4 1 0 13a6ebd6bc66d1fa1e8f52027bff7b77
+
+% 5 1 0 1bede710b434a43d1a831b536d69c307
+
+% 0 1 0 06abb0e796672d971420d824ae360190
+
+% 0 1 0 05128144eefb843c00791e3e06024593
+
+% 0 1 0 05304d35f2d69e6501f62360dc399bec
+
+% 0 1 0 03b2ce708b11c5580705a2e49c65b36b
+
+% 0 1 0 03b2ce708b11c5590705a2e49c65b36c
+
+% 0 1 0 0bfc3b0e7ea5ea1b0c829df367b24a10
+
+% 1 1 0 025f36634efffd30095f97cf4f9c49e6
+
+@ 0 11 0 1a105a387a26d638181ea4c395888c7e
++   entry .inspectable   ドキュメントのデバッグ用の一行の描画：`yaml"name: Percy\nage: 30\n"`
++       `Formatting` を必要としないので、デバッガーやテストの失敗は常にドキュメントを表示できる。
++       ブロックスタイルのテキストの改行をエスケープし、`yaml"…"` で包んだものなので、ドキュメントは同じ文字を保持する `Text` と区別できる。
++   entry .emit   ドキュメントを一ブロックずつ描画する。イテレーターとして引き出すか、関数へ押し出す
++       `Yaml.emit(doc)` は `Iterator[Text]` で、引き出されるたびに木の次の項目を描画し、ブロックがスコープ内の `Buffering` の容量に達したら二つの項目の間で止まる（一つの長いスカラーはそれを超えることがある）。
++       `Yaml.emit(doc, deliver)` は押し出しの形である。
++       呼び出し側のスレッドで描画し、各ブロックが満たされるたびに `deliver` に渡すので、ファイル、ソケット、`OutputStream` への書き込みに適した形である。
++       ブロックを連結したものは、`show` が描画するものと完全に一致する。
++       どちらも `Yaml.Formatting` と `Buffering` を必要とする。
+
+% 2 1 0 0f04110ac9ca92370adccf1ab61043e3
+
+% 3 1 0 0d2e4f8458139bda1910133d976e665e
+
+% 4 1 0 1bd2da3c4cae3ee012ff93d7830af7e9
+
+% 5 1 0 13ddb60a6c089faa07a3407fb3f0fe81
+
+% 0 1 0 1cfe894df37d86cc0ad108bef861a2fa
+
+% 0 1 0 086e4e85c767a6e71bc0243e66c0789a
+
+% 1 1 0 0447032ca98b05500e7f0a1279667eb1
+
+@ 0 27 0 0ad22f65cfeaca4c17b9888f7306695c
++   entry .streamable   ドキュメントを `Stream[Text] over Credit` として、引き出されるたびに描画する
++       `.emit` の上に構築されているので、ストリームのチャンクはエミッターのブロックである。
++       `Yaml.Formatting` と `Buffering` が必要である。
++       これにより、`Yaml` はストリームを受け取る任意のテキストのシンクに書き込める。
++   entry .Formatting   ドキュメントを描画するときのオプション。現在はブロックスタイルのみ
++       `show`、`in[Text over Yaml]`、`.emit`、`.streamable`、`.abstractable`、そして HTTP の given には、スコープ内に `Yaml.Formatting`（`zephyrine.Formatting`）がなければならない。
++       YAML のブロックスタイルは固定されており、往復可能性によって制約されているので、このトレイトはまだオプションを持たない。
++       `formatting.blockYamlFormatting` が唯一のインスタンスであり、名前でインポートする。
++   entry .decodable   `Yaml is Decodable in Text`：`text.as[Yaml]` はテキスト全体をドキュメントとしてパースする
++       `Yaml is Decodable in Text` として、これは `text.as[Yaml]` である。
++       スコープ内の `PositionTracking` のもとで（位置は `parsing.trackPositions` をインポートしたときにだけ記録される）、`Yaml.Parser` でテキスト全体をパースし、不正な入力には `Parse.Error` を発生させる。
++   entry .aggregable   テキストのストリームを、届くそばから一つのドキュメントとしてパースする
++       `text.read[Yaml]` と `stream.read[Yaml]` の背後にある `Yaml is Aggregable by Text` である。
++       `Chain[Text]` は連結されて全体がパースされるが、`Stream[Text] over Credit` は引き出されるたびに UTF-8 にトランスコードされてパーサーのカーソルに渡されるので、大きなドキュメントが全体として保持されることはなく、二つのチャンクにまたがる `---` マーカーも境界として扱われる。
++       `Tactic[Parse.Error]` が必要であり、スコープ内の `PositionTracking` に従う。
++   entry .aggregableData   バイトのストリームを、トランスコードせずに一つのドキュメントとしてパースする
++       `data.read[Yaml]` や、ファイルや HTTP の本文の読み込みの背後にある `Yaml is Aggregable by Data` である。
++       パーサーは UTF-8 のバイトに基づいているので、バイトは届いたとおりに読まれ、先頭のバイト順マークは吸収される。
++       `Tactic[Parse.Error]` が必要である。
++   entry .aggregableAll   `---` で区切られたストリームを、ドキュメントごとに一つの `List[Yaml]` として読む
++       `text.read[List[Yaml]]`：YAML ストリームのすべてのドキュメントを順に返す。
++       ディレクティブ（`%YAML`、`%TAG`）は、仕様のとおり、その後に続くドキュメントにだけ適用され、空のテキストは空のリストとなる。
++       `.aggregable` と同じく `PositionTracking` に従う。
+
+% 2 1 0 18d1959754dc1dcf13b664e748065c0c
+
+% 3 1 0 088b6555b5714cb01aeea86d5690194a
+
+% 4 1 0 11af3eec742ca04d1e6bf443587a3e87
+
+% 0 1 0 1134632dfcc627970d5873de1f24332a
+
+% 1 1 0 1e30276c1245d76e1cd77a414c361898
+
+@ 0 71 0 1acfa3309096f2b505cc54342af39282
++   entry .aggregableDerived   `import codecs.derived`：直接のパーサーがスコープ内にあっても木の経路を使う
++       `Codecs.Derived` のもとでだけ `.aggregableParsed` より優先され、読み込みを `.aggregableIn` に送る。
++   entry .aggregableStrict   `import codecs.strict`：直接のパーサーか、コンパイルエラー
++       `Codecs.Strict` のもとでは、`Yaml.Parsable` を持つ型はこれを通じて直接読まれ、持たない型は `.aggregableStrictFailure` に行き当たる。
++       これは木にフォールバックせず、使用箇所でその型を名指して _has no direct codec_ と報告する。
++   entry .encodableOverDerived   `import codecs.derived`：直接のプリンターがスコープ内にあっても木の経路を使う
++   entry .encodableOverStrict   `import codecs.strict`：直接のプリンターか、コンパイルエラー
++       `.encodableOverStrictFailure` と対になる。
++       これは `Yaml.Printable` を持たない型、たとえば積のリフレクションを持たず、したがって導出されたプリンターを持たない列挙型について、コンパイルを失敗させる。
++   entry .encodableOverData   `person.in[Data over Yaml]`：スコープ内の `Codepage` でのバイト列としての YAML テキスト
++       `in[Text over Yaml]` を通じてエンコードし、次に `Codepage`（`codepages.utf8Codepage` など）を通す。
++       `data.read[Person in Yaml]` で読み戻せる。
++   entry .abstractable   `application/yaml` のコンテンツタイプを持つ、HTTP の本文としてのドキュメント
++       `Yaml is Abstractable across HttpStreams to HttpStreams.Content` である。
++       本文はスコープ内の `Codepage` で描画したテキストで、コンテンツタイプは `application/yaml; charset=<encoding>` である。
++       `Yaml.Formatting` が必要である。
++       `ypsiloid.http` の `postables` と `servables` の given は、同じ描画から構築された telekinesis のインスタンスである。
++   entry .instantiable   HTTP のリクエストまたはレスポンスの本文をドキュメントとして読み戻す
++       `Yaml is Instantiable across HttpRequests from Text` である。
++       本文のテキストは、スコープ内の `PositionTracking` のもとで `text.read[Yaml]` としてパースされ、`Parse.Error` を発生させる。
++   entry .yaml   `Yaml is Decodable in Yaml`：`doc.as[Yaml]` はドキュメントそのもの
++       恒等デコーダーなので、ケースクラスの中で `Yaml` 型を付けたフィールドは、木のその部分をデコードせずに保ち、あとで調べたりデコードしたりできる。
++   entry .yamlEncodable   `Yaml is Encodable in Yaml`：ドキュメントはそれ自身としてエンコードされる
++       恒等エンコーダーで、`.yaml` に対応するものである。
++       `Yaml` 型のフィールドはそのままマッピングに差し込まれ、`Yaml.make` は引数をこれを通じて受け取る。
++   entry .int   `Int is Decodable in Yaml`：整数または小数のスカラーを `Int` に切り捨てる
++       YAML の整数（`42`、`0x2A`、`0o17`）や小数（切り捨てられる）は `Int` として読まれる。
++       それ以外のノードは `Reason.NotType(found, Integer)`（存在しないフィールドでは `Reason.Absent`）とともに `Yaml.Error` を登録し、`0` で処理を続けるので、`validate` ブロックのもとでは兄弟のフィールドがそれぞれの誤りを蓄積できる。
++       `throwUnsafely` のもとでは最初の誤りで例外が投げられる。
++   entry .long   `Long is Decodable in Yaml`：整数または小数のスカラーを `Long` として読む
++       `.int` と同じである。
++       `Long` の範囲を超える整数は木の中で `Bcd` として保持され、ここでは切り捨てられる。
++       完全な精度で読むには、`Yaml.unseal` を通じて `Yaml.Ast#bcd` として読む。
++   entry .double   `Double is Decodable in Yaml`：小数または整数のスカラーを `Double` として読む
++       `.inf`、`-.inf`、`.nan` は IEEE の値として読まれる。
++       形の間違ったノードは `Reason.NotType(found, Decimal)` を登録し、`0.0` で処理を続ける。
++   entry .float   `Float is Decodable in Yaml`：小数または整数のスカラーを `Float` として読む
++   entry .boolean   `Boolean is Decodable in Yaml`：真偽値のスカラー
++       （YAML のいずれかの綴りでの）`true`/`false` だけが真偽値として解決される。
++       クォートされた `"true"` は文字列であり、`Reason.NotType(Str, Bool)` を登録する。
++   entry .text   `Text is Decodable in Yaml`：文字列のスカラー
++       クォートされたスカラー、ブロックスカラー、数値・真偽値・null として解決されないプレーンスカラー、または `!!str` のタグが付いた任意のスカラーである。
++       数値は変換されない：`42` は `Reason.NotType(Integer, Str)` を登録する。
++       テキストにするには `!!str 42` または `"42"` と書く。
++   entry .string   `String is Decodable in Yaml`：文字列のスカラーを Java の `String` として読む
++   entry .unit   `Unit is Decodable in Yaml`：null のスカラー
++       `null`、`~`、空の値、または `!!null` のタグが付いた任意のものである。
++       それ以外のノードは `Reason.NotType(found, Null)` を登録する。
++   entry .memory   `Memory is Decodable in Yaml`：整数のスカラーから読むバイト数
++       ノードを `Long` として読み、そこから `Memory`（rudiments のバイト数）を作る。
++   entry .listDecodable   デコーダーを持つ任意の要素に対する `List[T] is Decodable in Yaml`
++       シーケンスを読み、各要素をその序数でフォーカスするので、要素の誤りは `#/items/2` で報告される。
++       シーケンスでないノードは `Reason.NotType(found, Sequence)` を登録する。
++       `List` は Soundness 独自の（不透明な）リストなので、これは標準ライブラリのコレクションを扱う `.iterable` とは別の given である。
++   entry .setDecodable   `Set[T] is Decodable in Yaml`：シーケンスを `Set` に読み込む
++   entry .seriesDecodable   `Sequence[T] is Decodable in Yaml`：シーケンスを `Sequence` に読み込む
++   entry .iterable   `Factory` を持つ任意の標準ライブラリの `Iterable` は、シーケンスからデコードできる
++       `Factory` を通じて構築される `scala.collection` の型（`Vector`、`scala.List`、…）のための一般的な given である。
++       `.listDecodable`、`.setDecodable`、`.seriesDecodable` は、Soundness 独自のコレクションに対するそのインスタンスである。
++   entry .map   `Map[Text, T] is Decodable in Yaml`：キーをテキストとして読むマッピング
++       各キーはスカラーでなければならない。
++       文字列はそのまま使われ、数値や真偽値のキーはテキストとして描画され、`null` のキーは `t"null"` となる。
++       コレクションのキーは `Reason.NotType(found, Str)` で中断する。
++       マッピングでないノードは `Reason.NotType(found, Mapping)` を登録し、空のマップで処理を続ける。
+
+% 2 1 0 187dd25b5bffbf5e03054c437db9f063
+
+% 3 1 0 07129a6f3c13100412378b1989c3a29d
+
+% 4 1 0 0419986cbdd77ebf011d08c981586a22
+
+% 0 1 0 0b50139662f54c161324b6b6448037cd
+
+% 1 1 0 109fe04cf50bbb9e1d9628856966d65a
+
+@ 0 34 0 19b3de8f579b5e0314ba5b937ed53138
++   entry .option   `optionalityOptions` のポリシーのもとでの `Option[T] is Decodable in Yaml`
++       存在しないキーは、`strictYamlAbsence` がスコープ内になければ `None` として読まれる（あれば `Yaml.Error(Absent)`）。
++       YAML の `null` は、`strictYamlNulls` がスコープ内になければ `None` として読まれる（あれば内側のデコーダーがそれを受け取り、`Unit` 以外では失敗する）。
++       内側のデコーダーが拒否する値は、`lenientYamlFaults` がスコープ内になければエラーとなる（あれば `None`）。
++       三つのポリシーは `Decodable.Absence`、`Nullity`、`Fault` の `in Yaml` であり、存在しないことに寛容、null に寛容、誤りに厳格という既定値が distillate にある。
++   entry .optionEncodable   `Option[T] is Encodable in Yaml`：`None` は存在しないものとしてエンコードされる
++   entry .intEncodable   `Int is Encodable in Yaml`：整数のスカラー
++   entry .longEncodable   `Long is Encodable in Yaml`：整数のスカラー
++   entry .integralEncodable   任意の `Integral` 型は、`toLong` を通じて整数のスカラーとしてエンコードされる
++   entry .doubleEncodable   `Double is Encodable in Yaml`：小数のスカラー。`.inf` と `.nan` は YAML の綴りで書く
++   entry .floatEncodable   `Float is Encodable in Yaml`：小数のスカラー
++   entry .booleanEncodable   `Boolean is Encodable in Yaml`：`true` または `false`
++   entry .textEncodable   `Text is Encodable in Yaml`：文字列のスカラー。描画上必要なときはクォートされる
++       木はテキストをそのまま保持する。
++       プレーンスカラーにできるか、ダブルクォートで囲まなければならないかは `show` が決めるので、`t"42"` は数値ではなく文字列 `"42"` として往復する。
++   entry .stringEncodable   `String is Encodable in Yaml`：文字列のスカラー
++   entry .unitEncodable   `Unit is Encodable in Yaml`：`null` のスカラー
++   entry .listEncodable   `List[T] is Encodable in Yaml`：要素のエンコード結果のシーケンス
++   entry .setAliasEncodable   `Set[T] is Encodable in Yaml`：集合の反復順でのシーケンス
++   entry .seriesAliasEncodable   `Sequence[T] is Encodable in Yaml`：シーケンス
++   entry .iterableEncodable   任意の標準ライブラリの `Iterable` はシーケンスとしてエンコードされる
++   entry .mapEncodable   `Encodable in Text` を持つ任意のキーに対する `Map[K, V] is Encodable in Yaml`
++       キーは `Encodable in Text` を通じてテキストに描画され、文字列のスカラーとなる。
++       値は `Encodable in Yaml` を通じてエンコードされる。
++       項目はマップの反復順に従う。
++   entry .discriminatedUnion   任意の名前のマッピングのフィールドをキーとする `Discriminable in Yaml`
++       `Yaml.discriminatedUnion[Shape](t"kind")` は、直和型のバリアントをワイヤ上でどう名付けるかを定める。
++       `discriminate` は `kind` の下の文字列を読み、`rewrite` はエンコード時にバリアントの名前でフィールドを追加または置き換え、`variant` はバリアント自身のデコーダーが動く前にそれを取り除く。
++       `discriminables` パッケージは、よく使われる二つの選択である `type` と `kind` を、インポートできる given として持つ。
++       それ以外のフィールド名にはこれを呼び出し、結果をローカルな given として束縛する。
+
+% 2 1 0 184b182b6e258f470a12ec0275a8ca8b
+
+% 3 1 0 1906a9ce531cbcdf1c80af49da1fdf3e
+
+% 4 1 0 0726afee39ff4dad07dbe8defcfb5568
+
+% 2 1 0 000bab8c145243510224c7e43c8eee95
+
+% 3 1 0 0adf95eb4b3275f704c512680b2081b4
+
+% 4 1 0 05950d897e2bf8500339ccf8c6482f02
+
+% 0 1 0 09c7f57a2d63104e0e71ddd2e8b09669
+
+% 0 1 0 1cf46dd188d3407405f2945b937a4c79
+
+% 1 1 0 05b23888426263c604a474b03fc2b8f6
+
+@ 0 6 0 050715945b4436040b5ab697ea44fe98
++   entry .positionable   `doc.locate(path)` と `doc.locateKey(path)`：ノードのソース上の位置
++       zephyrine の `locate` 拡張の背後にある `Yaml is Positionable by YamlPath to Yaml.Ast.Position` である。
++       `locate` は `YamlPath` にある値の位置を、`locateKey` はそれを保持するマッピングのキーの位置を返す。
++       どちらも、追跡されていないドキュメント（`parsing.trackPositions` なしでパースされたもの）や解決できないパスでは `Unset` であり、`locateKey` はルートに対しても `Unset` である。
++       行と列は 1 から数える。
+
+% 2 1 0 1ec83dfd65b0fd570309cac6abd00636
+
+% 3 1 0 10fa4a71e1fe878606cb2719890710ef
+
+% 4 1 0 0f7cff86875458d61ad32b239f4e724f
+
+% 0 1 0 1cdc57769a14db061e8c86d90120bb16
+
+% 0 1 0 05f98e0bb0f14cdb1f237a9160991405
+
+% 0 1 0 110f751c8ce651890d616782501a6f05
+
+% 0 1 0 06f1c5193a09e6a51141c3d4dcf735a7
+
+% 1 1 0 08b5cb5221a1c36117c95831f9408c29
+
+@ 0 13 0 04cd522bbd9896e61e7229e5bcd67641
++   entry .interpolator   `y"…"` の背後にある given：コンパイル時にパースされる YAML リテラル
++       結果を `Yaml` とする `Yaml is Interpolable` である。
++       補間子が受け付けるものについては `ypsiloid.y` を参照。
++   entry .extrapolator   `case y"…" =>` の背後にある given：パターンとしての YAML リテラル
++       `Yaml is Extrapolable` である。
++       `y"…"` パターンはドキュメントに構造的にマッチし、その中の `$x` の穴はその位置のノードを `Yaml` として束縛する。
++       `ypsiloid.y` を参照。
++   entry .lens   `"field" is Lens from Yaml onto Yaml`：ラベルによる、レンズとしてのマッピングの項目
++       `doc.lens(_.inner.n = value)` を機能させる given である。
++       パスの各ラベルはレンズであり、そのゲッターは `#selectDynamic`、セッターは項目を置き換える（または挿入する）ので、入れ子の更新は各階層でマッピングを再構築して新しいドキュメントを返す。
++       `Yaml is Dynamical`（`dynamicAccess.dynamicYaml`）によって制限され、`Tactic[Yaml.Error]` が必要である。
++       代入する値は `Yaml` でなければならない。
++       `in[Yaml]` でエンコードするか、`conversions.encodableToYaml` をインポートすれば任意のエンコード可能な値を直接代入できる。
+
+% 2 1 0 139b4c5b6637a64013f26f9ad3681e2f
+
+% 3 1 0 164b6a1b84ceef510ac185ac0deb76e9
+
+% 4 1 0 07168ea46f30457403dabc7ae8ef348a
+
+% 5 1 0 0a06584cbca6af3c06868f47c8a3c950
+
+% 6 1 0 146481280e455f151b1582830ad1d712
+
+% 0 1 0 0d5ccecbbce63eb0005561572df9b843
+
+% 0 1 0 0c2b61eb37bed9ac0a5a4a2c5432f55e
+
+% 0 1 0 01d011873b3e634a0c2b9f2b3564f811
+
+% 0 1 0 13a77b3b4aa789d10db3ef0594ed6ea0
+
+% 0 1 0 0bbf50a6e7fdf0f51ba990be532b2b73
+
+% 1 1 0 1f5e5f42300658d61616cc7ab2d45669
+
+@ 0 10 0 06193cb5ec8a98880f716ef094fcf36b
++   entry .ordinalOptical   `Ordinal is Optical from Yaml onto Yaml`：位置で指定したシーケンスの一つの項目
++       `doc.lens(_.items(Prim) = value)` で、シーケンスを値とするフィールドの最初の項目を更新できるようにする。
++       末尾を超える序数や、シーケンスでないノードでは、ドキュメントは変わらない。
++   entry .eachOptical   `Each is Optical from Yaml onto Yaml`：シーケンスのすべての項目
++       `doc.lens(_.items(Each) = 0)` はシーケンスのすべての項目に更新を適用し、シーケンスでないものに対しては何もしない。
++   entry .filterOptical   `Filter[Yaml] is Optical from Yaml onto Yaml`：述語が選ぶ項目
++       `doc.lens(_.items(Filter[Yaml](_.as[Int] > 15)) = 0)` は述語が成り立つ項目だけを更新し、残りはそのままにする。
+
+% 2 1 0 162138cc8e17f8041181792bd3251fc1
+
+% 3 1 0 0ceb13c6bb9c86310da4a8c589b8efc2
+
+% 4 1 0 126871836a9aaa121bdb1a18d903c8cc
+
+% 5 1 0 14dcf9053d61302d04a9381b93b951d6
+
+% 6 1 0 099105aa768d57011e50c8f070d15bbd
+
+% 0 1 0 0d7cc3952bcaf225025db1ccf7e3fea3
+
+% 0 1 0 1f27403983e982870fd9c93d1919cd56
+
+% 1 1 0 15698275119db0230c5f537f11e85f0b
+
+@ 0 27 0 1dd524c08b840b580a5cf1bdc8941e11
++   entry .primitive   ノードの `Yaml.Primitive` の種類：エラーが _found_ として報告するもの
++       `Yaml.primitive(ast)` はノードを `Null`、`Bool`、`Integer`、`Decimal`、`Str`、`Sequence`、`Mapping` のいずれかに分類する。
++       高精度の `Bcd` の数値は `Decimal` として、存在しないノードは `Null` として報告される。
++   entry .YamlString   木の中の文字列スカラーの JVM 上の表現：`String`
++   entry .YamlInteger   整数スカラーの表現：`Long`、または `Long` の範囲を超えるなら `Bcd`
++   entry .YamlDecimal   小数スカラーの表現：`Double`、または有効数字が 17 桁を超えるなら `Bcd`
++   entry .YamlBoolean   真偽値スカラーの表現：`Boolean`
++   entry .YamlNull   木の中の YAML の `null` を表す番兵。存在しないノードとは区別される
++       オブジェクトとそのシングルトン型である。
++       YAML の `null` と存在しない値（`Unset` で表される、存在しないフィールド）は区別されていなければならない。
++       `Optional` のフィールドはそれらを異なるポリシーのもとで扱うからである。
++       そのため null は JVM の `null` ではなくこの番兵となっている。
++       ノードは `Yaml.Ast.Null`、判定は `isNull` である。
++   entry .YamlSequence   シーケンスの表現：長さが奇数の凍結済みの `Array[Any]`
++       シーケンスとマッピングは一つの配列表現を共有し、長さの偶奇で区別される。
++       シーケンスの配列は常に長さが奇数で、項目数が偶数のときは番兵でパディングされる。
++       実際の個数は `Yaml.Ast.sequenceLength` が返す。
++   entry .YamlMapping   マッピングの表現：キーと値が交互に並ぶ凍結済みの `Array[Any]`
++       常に長さが偶数で、`[k0, v0, k1, v1, …]` とドキュメントの順に並ぶ。
++       キーはノードであり、`Yaml#apply`、`YamlPath`、導出されたデコーダーで指定できるのは文字列のキーだけである。
++   entry .PositionIndex   追跡付きのパースが木と並べて記録する、ソース上の位置のフラットなインデックス
++       位置記述子を一ノードにつき一つずつ並べた、不透明な凍結済みの `Array[Int]` であり、どの記述子の境界で切り出した部分もそれ自体が有効なインデックスとなるよう配置されている。
++       `parsing.trackPositions` がスコープ内にあるときにだけ構築され、`Yaml#positionIndex` として運ばれ、`locate` と `locateKey` に答えるために `.positionable` がたどる。
++       これを直接読む公開の方法はない。
++   entry .Focus   デコードの誤りが起きた場所：その `YamlPath` と、ドキュメントが追跡されていればその位置
+
+% 1 1 0 1bd46c3a967d0b9015549a78035fdced
+
+@ 0 4 0 14ffc6efe7012f370362650ea02f7bc0
++         `Yaml#as` が追跡するフォーカスで、蓄積型の戦略がそれぞれの誤りをその場所とともに報告できるようにする。
++         `pointer` はフィールドへのパス（ルートから順に、`#/address/city`）であり、`position` はその行と列である。
++         `position` は、ドキュメントが `positionIndex` を持つときに、登録されたすべてのフォーカスについて `#withPosition` が埋め、そうでなければ `Unset` である。
+
+% 2 1 0 127151345d3d955812bb9ae005bd3d4d
+
+% 3 1 0 06f27788d97735bf0a55b09649774a2d
+
+% 4 1 0 0d613a8f3fd16b1e0d41447f509ad8b3
+
+% 0 1 0 0c5e7da21545287f0200475c5c26fe72
+
+% 0 1 0 079224546a6c87c70db325ed7be30c2f
+
+% 0 1 0 0b45670b200971d0029006fbbde5e807
+
+% 0 1 0 0c76e6da84827bd1029b9d73ed16aeb7
+
+% 0 1 0 056661f221c689760705c0a04124abb1
+
+% 0 1 0 1bec820d92b8ed9c061b1cb2911abb6c
+
+% 0 1 0 1ccb69a10bd7dcf614719dbef4d0dc7c
+
+% 0 1 0 1b1514e39c4cd0891d2117d2f1181f36
+
+% 0 1 0 0d61d5cc56fb87080a7c852d06fed419
+
+% 1 1 0 133e3cddd4242a5b1596e27a71a3583f
+
+@ 0 6 0 1fc06564ac1ca5e813ad6f083dd904ea
++     entry #pointer   誤りのあるノードのパス。ルートから順に
++     entry #position   ノードのソース上の位置。追跡されていないドキュメントでは `Unset`
++     entry #withPosition   ドキュメントのインデックスに照らして `position` を解決したコピー
++         `focus.withPosition(doc)` は、`position` を `doc.locate(pointer)` に設定した `focus` である。
++         `Yaml#as` は登録されたすべてのフォーカスにこれを適用するので、ハンドラがそうする必要はほとんどない。
++   entry .Ast   木のノード：ボックス化されていないスカラー、シーケンス、マッピングのいずれかで、拡張を通じて調べる
+
+% 1 1 0 07fc6f7d4e57c0e6013f7b0aeed820a7
+
+@ 0 8 0 1b168ada4ce061320470e283be4da4a8
++         `Yaml.Ast` は YAML の値の JVM 上の表現に対する不透明型である。
++         表現とは、`String`、`Long`、`Double`、`Boolean`、`Bcd` のスカラー、`YamlNull` の番兵、シーケンスやマッピングのための凍結済みの配列、そして存在しない値のための `Unset` であり、スカラーはラッパーなしで格納される。
++         コンパニオンが API のすべてである。
++         パターンマッチの抽出子を兼ねるコンストラクター（`Str`、`Integer`、`Sequence`、…）、拡張メソッドとしての述語（`isString`、`isObject`、…）とアクセサー（`string`、`arrayElement`、`objectIndexOf`、…）、構造比較のための `deepEquals`、そしてパースが報告する `Position` 型と `Issue` 型がある。
+
+% 2 1 0 12f91a919dbdb998182858bddfb54c89
+
+% 3 1 0 125472d507e8d3c9187ec5c8673e7214
+
+% 4 1 0 134abc7d4f817db6113fc2c0023126c3
+
+% 0 1 0 1676aada3da7f5ee14a6d61366e7771a
+
+% 0 1 0 17afc517ae3eb63e19b508574616c426
+
+% 0 1 0 021e82497336572e12f0a89aa9021240
+
+% 0 1 0 0f07c1f573ab1aa61d9a8ef3a68eb3ff
+
+% 0 1 0 06af713f955fe5500df007cd82b916cc
+
+% 0 1 0 0decc8ae50b06f401c98cf70ff4a8e6a
+
+% 0 1 0 1a12fc32ecb0f8e114b58c6cfe378f0f
+
+% 0 1 0 01eaf633481877090f646482e7e75c3d
+
+% 1 1 0 0b5896b535cb06a61623af9e0896adc2
+
+@ 0 4 0 1aec19c4def2d80d02fbb44a4947cfc8
++         ドキュメント（`Yaml`）はノードを包む。
++         ほとんどのコードはドキュメントとそのコーデックを通じて動作し、ノードに触れるのは構造でマッチするときか、高精度の数値を `Bcd` として読むときだけである。
++         コンパニオンは YAML のパースの `Format` でもあり、その名前は `YAML` で、その `Parse.Error` は `Yaml.Ast.Issue` と `Yaml.Ast.Position` を運ぶ。
+
+% 0 1 0 0b3060986179f3db1a547ce673d9103b
+
+% 0 1 0 1f3cf91c242f7b15103b43655ce639d6
+
+% 0 1 0 07878f1aaec1bf3b1c743feef0aaa515
+
+@ 0 74 0 1a4495f701a10fbd09b2a1aa42ffe122
++     entry .name   形式の名前 `YAML`。`Parse.Error` のメッセージが報告するもの
++     entry .showable   `Yaml.Formatting` があるとき、ノードをブロックスタイルの YAML テキストとして描画する
++         `Yaml` の `showable` と同じエミッターを、裸のノードに対して用いる。
++     entry .inspectable   ノードのデバッグ用の一行の描画。末尾に `ᵃˢᵗ` が付く
++         ドキュメントと同じく改行をエスケープして表示し、さらに上付きの `ᵃˢᵗ` を付けるので、裸のノードはそれを包む `Yaml` と区別できる。
++     entry .apply   任意の表現の値をノードとして包む
++         `Long`、`Double`、`Bcd`、`Boolean`、`String`、凍結済みの `Array[Any]`、`YamlNull`、`Unset` に対する `Yaml.Ast(value)` である。
++         種類が分かっている場合は、型付きのコンストラクター `.Str`、`.Integer`、… の方が明確である。
++     entry .Null   `null` のノード
++     entry .Bool   `Yaml.Ast.Bool(true)` は真偽値のノードを作り、`case Yaml.Ast.Bool(b)` はそれにマッチする
++     entry .Integer   `Yaml.Ast.Integer(42L)` は整数のノードを作り、`case Yaml.Ast.Integer(n)` はそれにマッチする
++         抽出子は `Long` の範囲の整数にだけマッチする。
++         `Bcd` として保持された整数は `.BcdValue` にマッチする。
++     entry .Decimal   `Yaml.Ast.Decimal(3.14)` は小数のノードを作り、`case Yaml.Ast.Decimal(d)` はそれにマッチする
++     entry .BcdValue   `Bcd` として保持された高精度の数値のノード。パターンではそれにマッチする
++         `Long` の範囲を超える整数や、有効数字が 17 桁を超える小数は、丸められずに `Bcd` にパースされる。
++         これはそのノードを構築または抽出する。
++     entry .Str   `Yaml.Ast.Str(t"x")` は文字列のノードを作り、`case Yaml.Ast.Str(text)` はそれにマッチする
++     entry .Sequence   `Yaml.Ast.Sequence(items)` はノードの凍結済みの配列からシーケンスを作り、それにマッチする
++         抽出子は、表現が持ちうるパディングの番兵を除いて、項目を凍結済みの `Array[Yaml.Ast]` として返す。
++         コンストラクターも抽出子も、個数が偶数のときはコピーを行う。
++     entry .Mapping   `Yaml.Ast.Mapping(entries)` はキーと値の組からマッピングを作り、それにマッチする
++         コンストラクターは凍結済みの `Array[(Yaml.Ast, Yaml.Ast)]` を受け取って平坦化し、抽出子はドキュメントの順に組を返す。
++     entry .sequenceLength   シーケンスの配列の項目数。パディングの番兵を除く
++         表現（`Array[Any]`）に対する低レベルのアクセサーである。
++         ノードに対して同じことをするのは `arrayLength` である。
++     entry .mappingSize   マッピングの配列の項目数：長さの半分
++     entry .foreachItem   シーケンスの配列の各項目にインラインの本体を適用する
++         コレクションのデコーダーのためのホットパスのループで、イテレーターもインデックスのボックス化もない。
++     entry .foreachEntry   マッピングの配列の各キーと値にインラインの本体を適用する
++     entry .deepEquals   シーケンスとマッピングをたどる、二つのノードの構造的な等価性
++         同じテキストを二回パースすると、異なる配列のインスタンスとなる。
++         これはそれらを内容で比較するもので、`Yaml#equals` が用いる。
++         数値は種類と値で比較されるので、`Integer(1)` と `Decimal(1.0)` は等しくない。
++     entry .deepHash   `.deepEquals` と整合するハッシュで、`Yaml#hashCode` が用いる
++     entry .isAbsent   ノードが存在しないことを表す番兵かどうか：存在しないフィールド、または存在しないキーに対する `Yaml#apply`
++     entry .isNull   ノードが YAML の `null` かどうか
++     entry .isLong   ノードが `Long` の範囲内の整数かどうか
++     entry .isDouble   ノードが `Double` として保持された小数かどうか
++     entry .isBcd   ノードが `Bcd` として保持された高精度の数値かどうか
++     entry .isNumber   ノードが任意の精度の整数または小数かどうか
++     entry .isString   ノードが文字列のスカラーかどうか
++     entry .isBoolean   ノードが真偽値のスカラーかどうか
++     entry .isObject   ノードがマッピングかどうか
++     entry .isArray   ノードがシーケンスかどうか
++     entry .arrayLength   シーケンスのノードの項目数。他のノードでは未定義
++         アクセサー `arrayLength`、`arrayElement`、`objectSize`、`objectKey`、`objectValue` は速度のために検査を行わない。
++         先に `isArray` や `isObject` で判定するか、`Yaml.Error` を登録する検査付きの `array`、`string`、`long`、… を使う。
++     entry .arrayElement   シーケンスのノードの、インデックス位置の項目。検査なし
++     entry .objectSize   マッピングのノードの項目数。検査なし
++     entry .objectKey   マッピングのノードの、組のインデックス位置のキーを `String` として返す。検査なし
++         キーの `String` である。
++         文字列でないキーはキャストに失敗するので、他の種類のスカラーのキーを持ちうるマッピングには `objectIndexOf` を使うか、`.Mapping` でマッチする。
++     entry .objectValue   マッピングのノードの、組のインデックス位置の値。検査なし
++     entry .objectIndexOf   マッピングにおける文字列のキーの組のインデックス、または `-1`
++         文字列のキーだけにマッチする線形走査である。
++         存在しないキーや、マッピングでないノードでは `-1` となる。
++         インデックスは `objectKey` と `objectValue` に渡す。
++     entry .array   シーケンスのノードの項目、または登録された `Yaml.Error` と空の配列
++         `Tactic[Yaml.Error]` が必要である。
++         シーケンスでないノードは `Reason.NotType(found, Sequence)`（または `Reason.Absent`）を登録し、項目なしで処理を続ける。
++     entry .double   小数、整数、`Bcd` から読む `Double` としてのノード。そうでなければ登録された `Yaml.Error`
++     entry .long   整数、小数、`Bcd` から読む `Long` としてのノード。そうでなければ登録された `Yaml.Error`
++     entry .bcd   任意の数値から完全な精度で読む `Bcd` としてのノード。そうでなければ登録された `Yaml.Error`
++         `Long` には大きすぎる数値や `Double` には精度が高すぎる数値を、損失なく読む方法である：`Yaml.unseal(doc).bcd.toBigDecimal`。
++     entry .string   文字列のスカラーから読む `Text` としてのノード。そうでなければ登録された `Yaml.Error`
++     entry .boolean   `Boolean` としてのノード。そうでなければ登録された `Yaml.Error`
++     entry .primitive   ノードの `Yaml.Primitive` の種類
++     entry .Position   ソース上の位置：行と列（1 から数える）、およびノードのオフセットと長さ
+
+% 1 1 0 16517a3fc7b9680f1bf5ce50bec124b5
+
+@ 0 10 0 134bbee2ed4b6b921189bb78c1998691
++           YAML のパースの `Format.Position` であり、すべての `Parse.Error` が運び、`locate` が返す。
++           `line` と `column` はエディターが表示するとおり 1 から数え、`span` は診断が強調する 0 から数える範囲である。
++           `describe` は `line 2, column 10` と描画する。
++       entry #line   1 から数える行
++       entry #column   1 から数える列
++       entry #offset   ソースの先頭からの文字オフセット（分かっている場合）
++       entry #length   ノードのソーステキストの長さ（分かっている場合）
++       entry #describe   位置をテキストとして返す：`line 2, column 10`
++       entry #span   位置を、`length` 文字の 0 から数える `Span` として返す
++     entry .Issue   パースが見つけうる誤りで、それぞれメッセージを持つ
+
+% 1 1 0 152f15f51715856518b9bde543a2978b
+
+@ 0 18 0 1154a15b7fc10b59190d86ad4ed57828
++           YAML のパースの `Format.Issue` である。
++           `Parse.Error` の `issue` はこれらのいずれかであり、`describe` はそのメッセージを返す。
++           ケースは次のものをカバーする。
++           ドキュメントの構造（ドキュメントの間に `---` がない、`...` の後に内容がある、ディレクティブの位置や形式が不正、`%YAML` が繰り返されているか `major.minor` のバージョンがない、`%TAG` にハンドルとプレフィックスがない）、ノードのプロパティ（一つのノードに二つのアンカーや二つのタグがある、エイリアスにアンカーがある、終端されていない逐語タグ、`UndefinedTagHandle(handle)`、`UnknownAlias(name)`、ノードの先頭にある予約済みの指示子）、ブロック構造（インデントの中のタブ、`---` の行で始まるマッピング、キーの行にあるシーケンス、`:` のないキー、複数行にわたる暗黙のキー、一行の中で連鎖した値、インデントの足りない継続行）、クォートされたスカラー（終端されていないシングルクォートやダブルクォート、終端されていない、不正な、あるいは途中で切れたエスケープ、不正な十六進数字、閉じクォートの後に続く内容、複数行のスカラーの中のドキュメントマーカー）、フローコレクション（終端されていない `[` や `{`、空の項目、`,` や閉じ記号が期待される、キーとその `:` が別の行にある、インデントの足りない内容、フローの文脈の中のドキュメントマーカー）、ブロックスカラー（不正なヘッダー、1–9 の範囲外または繰り返されたインデント指示子、繰り返されたチョンピング指示子、インデントが深すぎる先頭の空行、前に空白のないヘッダーコメント）、そして前に空白のないコメントである。
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 045412dfde465a9c01b6523a99947589
+
+% 0 1 0 0d86740dc839cbc21d228ae5723842cd
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 2 0 129c79489b6abbff15c7d5ddcd138abb
++       entry #describe   誤りのメッセージ。たとえば _the alias *name does not refer to a known anchor_
++     entry .Byte   パーサーが分岐に用いる ASCII バイトの定数
+
+% 0 1 0 1dbd995455f497aa1e6b704af81ae91c
+
+% 1 1 0 0cfae82a36adc9830abbf88f939f135b
+
+@ 0 3 0 0a4d454ddd19342e0e989ad501b29fa7
++           直接使うためのものではない。
++           パーサーのディスパッチテーブルが比較するバイト値に名前を付けた定数（`Colon`、`Minus`、`OpenBracket`、…）である。
++   entry .Error   ドキュメントを求められた型としてデコードできないときに発生する
+
+% 1 1 0 1083fe3b0cf7f553168ac5d0aeb681e2
+
+@ 0 9 0 0515ca665a6c951e01968543635ba6f1
++         エラー `↯/s.134.1`：_could not access the YAML value because `reason`_。
++         ノードの形が間違っているか必須のフィールドが存在しないときに、`Yaml#as`、`Yaml#apply`、更新操作、そしてすべての `Decodable in Yaml` が発生させる。
++         理由は二つのうちのいずれかである。
++         `Reason.NotType(found, expected)`（_the YAML value had type `found` instead of `expected`_。どちらも `Yaml.Primitive`）と、`Reason.Absent`（_the YAML value was not present_）である。
++         プリミティブのデコーダーはエラーを登録して番兵で処理を続けるので、蓄積型の戦略のもとでは、不正なフィールドを三つ持つレコードは、それぞれのフィールドにフォーカスした三つのエラーを報告する。
++         制限付きの構築により、レコードのコンストラクターが番兵の値で実行されることはない。
+
+@ 0 2 0 052feaaa0124c1a716e8494568b5faf8
++         パースの失敗は `Yaml.Error` ではない。
++         不正なテキストは、`Yaml.Ast.Issue` と `Yaml.Ast.Position` を伴う zephyrine の `Parse.Error` を発生させる。
+
+% 0 1 0 0109a0417f4887e2035fb6c53fa01b33
+
+% 0 1 0 009656fc58dc334e0f89f24549e288e7
+
+@ 0 2 0 037e92a72eb8b1b21f1cbf1d14a712e6
++     entry #reason   値を読めなかった理由：`NotType(found, expected)` または `Absent`
++     entry .Reason   二つの理由：種類の間違ったノード、または存在しない値
+
+% 1 1 0 03e277bae24edb6e1f350eef62208f9e
+
+@ 0 7 0 0e936ae9c9875e91037681f65d232770
++           `NotType(found: Yaml.Primitive, expected: Yaml.Primitive)`（番号 1）は、整数が来るべきところにある文字列のような、種類の間違ったノードである。
++           `Absent`（番号 2）は、マッピングが持たないフィールド、または厳格なオプショナル性のポリシーのもとでの `null` や存在しない値である。
++           どちらも `Clarification` なので、エラーの番号は `31.1` または `31.2` となる。
++       entry .communicable   理由をそのメッセージとして描画する
++   entry .Primitive   ノードの七つの種類。エラーが見つけたものと期待したものを名指すときに使う
+
+% 1 1 0 08ca8cca139f2a2a11d1c0f423738faf
+
+@ 0 5 0 1e0cc947306fdb140d914e2341183d21
++         `Null`、`Bool`、`Integer`、`Decimal`、`Str`、`Sequence`、`Mapping` である。
++         `Yaml.primitive(node)` はノードを分類する。
++         `Bcd` の数値は `Decimal`、存在しないノードは `Null` である。
++     entry .communicable   メッセージの中でプリミティブの名前を描画する
++   entry .Direct   レコードの直接のパーサーとプリンターのための `derives` のキャリア
+
+% 1 1 0 009789d88eabde241dee1b50d096bd88
+
+@ 0 7 0 008f7e321d7228d21b7e8c3cf13d879c
++         `case class Config(…) derives Yaml.Direct` は、`Config` の `Yaml.Parsable` と `Yaml.Printable` を一度だけそのコンパニオンに導出する。
++         それらはそこで、すべての `read[Config in Yaml]` と `in[Text over Yaml]` に使われる。
++         `import codecs.direct` があってもなくても同じであり、そのインポートがあれば使用箇所ごとに改めて導出されるところを、コンパニオンのインスタンスがインポートより優先されるので、こちらが先に使われる。
++         `Self` 型を持つ型クラスはそれ自体を `derives` 節に書けないので、このパラメーター化されたキャリアが存在する。
++         `Parsable` と `Printable` の `.declared` がそれを取り出す。
+
+% 2 1 0 05cb1563abaadfaa15e202bac203291f
+
+% 3 1 0 116f853c75c6539b1a42b14d0ee85920
+
+% 4 1 0 184b3cd584ffeb78148ef3b3a77eaaa7
+
+% 0 1 0 14227f9931bcb39c051f8bb27a242664
+
+% 0 1 0 1549984e4ca98bd403d825711ccbe19d
+
+% 0 1 0 09cedd63fe9f39ca1488f87cb9cb5d76
+
+% 1 1 0 0e898c958af186c612e17f25fadd11aa
+
+@ 0 4 0 0c591c821103ad60175af6e3f76cc321
++     entry .derived   積に対する `Direct` を導出する：そのパーサーとプリンターを、フィールドごとに
++     entry #parsable   レコードの直接のパーサー
++     entry #printable   レコードの直接のプリンター
++   entry .Parsable   パースされた木から直接読まれる型。各ノードの周りに `Yaml` を構築しない
+
+% 1 1 0 0ef3e74adfc8042e0a301301531b1e68
+
+@ 0 10 0 1e7c4ce63990b77d19697fcdf2880f60
++         直接の読み込みのための、明示的に選ぶ入り口である。
++         `Yaml.Parsable` を持つ型は、`read[T in Yaml]` によって、`Decodable in Yaml` ではなく `.aggregableParsed` を通じて読まれる。
++         インスタンスは、`derives Yaml.Direct`、given として束縛した `Parsable.derived[T]`、`import codecs.direct`（すべての積について使用箇所で導出する）、あるいは橋渡しの `fromField` と `fromDecodable` から得られる。
++         `Parsable` は `Yaml.Field` なので、レコードのパーサーは別のレコードの中でフィールドのパーサーとしても使える。
++         直接のパーサーは木の経路と同じ結果と同じフォーカス付きのエラーを返し、`@name`、既定値、`optionalityOptions` のポリシーに従う。
++         `generated` の given は優先度の層 `Parsable2` から継承され、そこでドキュメント化されている。
+
+% 0 1 0 14a1c4c16860b2260aebc2e25693a016
+
+% 1 1 0 18340ec162d509fc0d295b5dda850726
+
+% 1 1 0 1997a5954cd3841d067eef03b8e5f237
+
+@ 0 7 0 1832eb99da023202018c9e0179d61fc9
++     entry .derived   積に対する直接のパーサーを、その `ProductReflection` から導出する
++     entry .fromField   `Yaml.Field` から作る `Parsable`：常に解決される入り口から、明示的に選ぶ入り口を作る
++     entry .fromDecodable   `Decodable in Yaml` を通じて、ノードを `Yaml` としてデコードする `Parsable`
++         木の世界からの、まるごとの橋渡しである。
++         読み込みを直接にはできないが、`codecs.strict` を満たさなければならない型のためにある。
++     entry .declared   `derives Yaml.Direct` する型のパーサー。そのコンパニオンの `Direct` から取り出す
++   entry .Field   木のノードから読まれる値。導出されたパーサーが各フィールドを読むときの形
+
+% 1 1 0 061e54ce96924d3802ba1c9d1804c5ab
+
+@ 0 8 0 0ddb4164275674ca08295c030e5f63cd
++         `Yaml.Parsable` の、常に解決される上位型である。
++         すべての型が `Yaml.Field` を持つ。
++         プリミティブ、`Text`、`Unit`、`Option`、`Optional`、`List`、`Set`、`Sequence`、`Map[Text, _]`、任意の標準ライブラリの `Iterable` に対するコンパニオンの given、任意の積に対する導出されたもの（`.product`）、そして任意の `Decodable in Yaml` からの橋渡し（`.decodable`）があるので、導出されたパーサーはどんな型のフィールドでも読める。
++         `Field` は `(reader, node)` から読み、マッピングにないキーに対してはノードが存在しないことを表す番兵となる。
++         `product` と `decodable` の given は優先度の層 `Field1` と `Field2` から継承され、そこでドキュメント化されている。
+
+% 0 1 0 0d9faa42677074af08476f8e3bd1a3bb
+
+% 1 1 0 0c82b4dd7259d53604ad2f70523e8b2b
+
+@ 0 11 0 1f1b1eff0ac7d6231f1454250ab7ab9d
++     entry #Transport   フィールドを読む元の形式：`Yaml`
++     entry #Reader   フィールドが読むときに通すリーダー：`Yaml.Reader`
++     entry #parse   ノードから値を読む。リーダーだけを渡して呼ぶと、存在しないノードから読む
++     entry .parseField   `AnyRef` として運ばれるリーダーから、その `Field` を通じて一つのフィールドを読む
++         導出されたコードのための縁の呼び出し点である。
++         導出されたコードは、ケイパビリティの型を持つリーダーを関数のパラメーターに保持できないからである。
++     entry .readerOf   `AnyRef` のキャリアから取り出したリーダー
++     entry .lookup   マッピングのノードで、文字列のキーの下にある値、または `null`
++         マッピングでないノードでも `null` となる。
++         木のデコーダーの検索と同じく、文字列のキーだけがマッチする。
++     entry .int   `Int is Yaml.Field`：整数または小数のノード
+
+% 0 1 0 09c3e518abc980dd1cf6eb5754cee75b
+
+% 0 1 0 1ecfd89eab23d9ac1cbe27d293f4dc43
+
+% 0 1 0 136f9d666b32f8fa1361ac4b9a437fa9
+
+% 0 1 0 02364c9b9de7248f0c05ff23d9a80027
+
+@ 0 1 0 07b844636b6d8c51011453b7304cb985
++     entry .text   `Text is Yaml.Field`：文字列のノード
+
+% 0 1 0 1a8fec41bfa5c82f1854d66aefb18451
+
+@ 0 12 0 1d5fc1c2015181a2055b8971222ac550
++     entry .unit   `Unit is Yaml.Field`：null のノード
++     entry .optional   `optionalityOptions` のポリシーのもとでの `Optional[T] is Yaml.Field`
++         木のデコーダーの `Yaml.optional` と同じである。
++         存在しない値と `null` は、`strictYamlAbsence` や `strictYamlNulls` がスコープ内になければ `Unset` として読まれ、拒否された値は、`lenientYamlFaults` がなければ誤りとなる。
++     entry .option   同じポリシーのもとでの `Option[T] is Yaml.Field`。`None` を返す
++     entry .iterable   `Factory` を持つ任意の標準ライブラリの `Iterable`。シーケンスのノードから読み、各項目を序数でフォーカスする
++     entry .list   `List[T] is Yaml.Field`：シーケンスのノード
++     entry .set   `Set[T] is Yaml.Field`：シーケンスのノード
++     entry .series   `Sequence[T] is Yaml.Field`：シーケンスのノード
++     entry .map   `Map[Text, T] is Yaml.Field`：文字列のキーを持つマッピングのノード
++   entry .Reader   直接のパーサーが読むときの文脈：読み込みの戦術とフォーカス
+
+% 1 1 0 02582c3dce9e1db6183ed09fa70118e9
+
+@ 0 15 0 03ac89965a128a0d0059f9b82c9c291c
++         `Yaml.Parsable` は `Reader` を通じてノードを読む。
++         `Reader` は読み込みの `Tactic[Yaml.Error]` と `Foci[Yaml.Focus]` を保持するので、インスタンスは構築を伴わず、同じパーサーがすべての読み込みに使える。
++         そのスカラーのメソッドは、木のデコーダーと同じく、種類の間違いや存在しないことによる誤りを戦術を通じて登録し、番兵で処理を続けるので、兄弟のフィールドはそれぞれのエラーを蓄積する。
++         これを作るのは `.aggregableParsed` だけであり、手書きの `Parsable` はそれを受け取る。
++     entry #int   整数または小数のノードを `Int` として返す。そうでなければ誤りを登録して `0`
++     entry #long   整数または小数のノードを `Long` として返す。そうでなければ誤りを登録して `0`
++     entry #double   小数または整数のノードを `Double` として返す。そうでなければ誤りを登録して `0.0`
++     entry #float   小数または整数のノードを `Float` として返す。そうでなければ誤りを登録して `0.0f`
++     entry #boolean   真偽値のノード。そうでなければ誤りを登録して `false`
++     entry #string   文字列のノードを `String` として返す。そうでなければ誤りを登録して `""`
++     entry #unit   ノードが `null` であることを確認し、そうでなければ誤りを登録する
++     entry #shape   形の間違ったノード（シーケンスやマッピングが来るべきところにあるスカラー）を登録し、処理を続ける
++   entry .Printable   木を構築せずに、フィールドから直接 YAML テキストに書かれる型
+
+% 1 1 0 0c3134bbcf41336a0911e47aa75a42eb
+
+@ 0 8 0 0d2fe23ca3e7f6ef129728e49eec9954
++         直接の書き込みのための、明示的に選ぶ入り口である。
++         `Yaml.Printable` を持つ型は、`Encodable in Yaml` と `show` ではなく、`.encodableOverPrinted` を通じた `in[Text over Yaml]` や、`Printable.print` と `Printable.emit` によって書かれる。
++         インスタンスは、`derives Yaml.Direct`、`Printable.derived[T]`、`import codecs.direct`、あるいは橋渡しの `fromWritable` と `fromEncodable` から得られる。
++         テキストは、値の木に対して `show` が描画するものと完全に一致する。
++         `generated` の given は優先度の層 `Printable2` から継承され、そこでドキュメント化されている。
+
+% 0 1 0 0aed4b9c9c3d5e150620104efac7f396
+
+% 1 1 0 16ede631f73c075703ad81af65df57dd
+
+% 1 1 0 0641919829278e3e17b3f0ef9498a8bc
+
+@ 0 5 0 11adc020b90c7b6314f66aa6918bd4b3
++     entry .derived   積に対する直接のプリンターを、その `ProductReflection` から導出する
++     entry .fromWritable   `Yaml.Writable` から作る `Printable`
++     entry .fromEncodable   値を木にエンコードし、それをその場で書く `Printable`
++     entry .declared   `derives Yaml.Direct` する型のプリンター。そのコンパニオンの `Direct` から取り出す
++     entry .print   値の YAML テキスト全体を、その `Printable` を通じて返す
+
+% 1 1 0 126d1845504fe2400da4ff9323f5cb68
+
+% 2 1 0 0c7bc8fe78286e70020f1c4a1cb4cca9
+
+% 0 1 0 0e3ea85a8a7d33b90596b0f230e7ff82
+
+% 0 1 0 082aa163bac3d4221e7ddc601aa143d9
+
+% 1 1 0 061735f34cb0755c05f361ffb8e321aa
+
+@ 0 4 0 169c319a7e8c08900543372c8adb2c44
++     entry .emit   値のテキストを `Buffering` の容量のブロックごとに書き、それぞれを関数に渡す
++         大きな値のための押し出しの形である。
++         テキストが容量に達するたびに、完成した各行が `deliver` に渡されるので、値全体のテキストが構築されることはない。
++   entry .Writable   マッピングの値、シーケンスの項目、またはドキュメントとして書かれる値。導出されたプリンターが各フィールドを書くときの形
+
+% 1 1 0 1b0f65fba968df581291bb24f6b621b0
+
+@ 0 8 0 1e5574a77f6b90e01bfd226ff1e85541
++         `Yaml.Printable` の、常に解決される上位型である。
++         すべての型が `Yaml.Writable` を持つ。
++         プリミティブ、`Text`、`Unit`、`Option`、`Optional`、`List`、`Set`、`Sequence`、`Map`、任意の標準ライブラリの `Iterable` に対するコンパニオンの given、任意の積に対する導出されたもの（`.product`）、そして任意の `Encodable in Yaml` からの橋渡し（`.encodable`）がある。
++         `Writable` は、`key:` や `-` のマーカーの後に来るべき値として `Yaml.Out` に書き込み、マッピングから完全に省くべきかどうかを `#absent` で示す。
++         `product` と `encodable` の given は優先度の層 `Writable1` と `Writable2` から継承され、そこでドキュメント化されている。
+
+% 0 1 0 0e18938cdda29ce00a3267e3d20c4cfe
+
+% 1 1 0 0b7b2e17c59ddda80c9e891ae8209019
+
+@ 0 4 0 02328be6ca2a56481fc25c6baf1e99ac
++     entry #absent   値をマッピングから省くかどうか：`Unset` または `None` のフィールド
++     entry #write   値を `Yaml.Out` に、マーカーの後に来るべき値として、またはドキュメントとして書き込む
++     entry .writeField   `AnyRef` として運ばれるライターに、その `Writable` を通じて一つのフィールドを書き込む
++     entry .keyOf   `AnyRef` として運ばれるライターに `key:` のマーカーを書き込む
+
+% 0 1 0 11259f7017a6e8d00fdd22978ac02243
+
+% 0 1 0 1c70a13b9e21bd1d0e95f5172f23deec
+
+% 0 1 0 1c206b4ef28661e51d72df995aaa872c
+
+% 0 1 0 1731fbd2a0bd81890bb4f7873f12cc54
+
+% 0 1 0 0dba5689e8e07f060e27314a5c31cf58
+
+@ 0 1 0 1d874e236ecbb1ff08f6881dc72eb50a
++     entry .text   `Text is Yaml.Writable`：`show` の判断に従って、プレーンまたはダブルクォートで書く
+
+% 0 1 0 11380873112f7d221979410356c691d3
+
+@ 0 9 0 0e2fd59c9cba919f0c4271a5078fab11
++     entry .unit   `Unit is Yaml.Writable`：`null` を書く
++     entry .optional   `Optional[T] is Yaml.Writable`：`Unset` は存在しないものとされ、マッピングから省かれる
++     entry .option   `Option[T] is Yaml.Writable`：`None` は存在しないものとされる
++     entry .iterable   任意の標準ライブラリの `Iterable` はブロックシーケンスとして書かれ、空なら `[]` となる
++     entry .list   `List[T] is Yaml.Writable`：ブロックシーケンス
++     entry .set   `Set[T] is Yaml.Writable`：ブロックシーケンス
++     entry .series   `Sequence[T] is Yaml.Writable`：ブロックシーケンス
++     entry .map   `Encodable in Text` を持つ任意のキーに対する `Map[K, V] is Yaml.Writable`：ブロックマッピングで、空なら `{}`
++   entry .Out   直接のプリンターが書き込むライター：これまでのテキスト、インデント、値を待っているマーカー
+
+% 1 1 0 0b0132399818568707550de650037b55
+
+@ 0 7 0 18f2cd9f1ab39fb10e1b912ee71cd453
++         ブロックエミッターが木を配置するのとまったく同じようにテキストを配置する。
++         `#key` や `#item` は `key:` や `-` のマーカーを書き、その後に来るべき値を残す。
++         次にスカラーは同じ行に書かれ、空でないコレクションは `#open` と `#close` の間で、一段深く、下の行に書かれる。
++         テキストがライターの上限に達するたびに完成した各行が渡されるので、`Printable.emit` は値を一ブロックずつ書ける。
++         これを作るのは `Printable.print` と `Printable.emit` だけであり、手書きの `Writable` はそれを受け取る。
+
+% 2 1 0 0e9c179f18881ded0ec31413e50a86c6
+
+% 3 1 0 1c7f592ae4d507cc1b7e8c9fef2752f4
+
+% 0 1 0 0843c77b25fe644403e9a0df7c04b14f
+
+% 0 1 0 02ba4bca7ed46a51079322d4dc2410f5
+
+% 0 1 0 0e2d452d7fcfda58037b122277fa65e2
+
+% 0 1 0 09269c94ea3dcf0108769b249fbbafe1
+
+% 0 1 0 0324789defe21dfd128feb74e3a5dcf6
+
+% 0 1 0 1a8dc7550d7c1b7c0453af00c2b9c6b0
+
+% 0 1 0 0b3e0df251be8bce05fc10d52b4ecc1f
+
+% 0 1 0 0c1ecb925b292114168010d1c1fce27b
+
+% 1 1 0 167d11cbc293fdb8148c0f7773988e1a
+
+@ 0 13 0 03a636442b32cc27033a052eca91a2a5
++     entry #long   来るべき値として整数を書く
++     entry #double   来るべき値として小数を書く。`.inf`、`-.inf`、`.nan` は YAML の綴りで書く
++     entry #boolean   来るべき値として `true` または `false` を書く
++     entry #string   来るべき値として文字列を、`show` の判断に従ってプレーンまたはダブルクォートで書く
++     entry #nullValue   来るべき値として `null` を書く
++     entry #empty   来るべき値として `{}` または `[]` を書く
++     entry #key   マッピングの項目の `key:` マーカーを、現在のインデントで書く
++     entry #item   シーケンスの項目の `-` マーカーを書く
++     entry #open   空でないコレクションをマーカーの下の行に開き、`#close` が復元するものを返す
++         ドキュメントの最上位では来るべき値がなく、項目は余白の位置に書かれる。
++     entry #close   `#open` が返したインデントを復元する
++     entry #tree   ブロックエミッターと同じように、来るべき値として `Yaml.Ast` を書く
++   entry .FieldDerivation   直接のパースの背後にある、積の `Yaml.Field` の導出
+
+% 1 1 0 109300d85ad823d102be755760c94cae
+
+% 2 1 0 1737c542fa263b4710620f953a0dad98
+
+@ 0 4 0 000cdbf73abcdb49131e670f8d20cd8e
++         直接使うためのものではない。
++         `Yaml.Field.product` と `Yaml.Parsable.derived` がこれに到達する。
++     entry .conjunction   積のフィールドのパーサー：各フィールドをマッピングのノードから読む
++     entry .FieldProductParser   導出されたパーサーがなる `Field`。リーダーを `AnyRef` として受け取るラムダの上に作られる
++   entry .WritableDerivation   直接の描画の背後にある、積の `Yaml.Writable` の導出
+
+% 1 1 0 0a56dfadd90b740e088051de8b93cbb1
+
+% 2 1 0 1d8cf9b56ade53050f13136ee02663d9
+
+@ 0 4 0 09c4a19102e0768e139259b1f4b3da98
++         直接使うためのものではない。
++         `Yaml.Writable.product` と `Yaml.Printable.derived` がこれに到達する。
++     entry .conjunction   積のフィールドのライター：存在する各フィールドを `key:` マーカーの後に書く
++     entry .WritableProductPrinter   導出されたプリンターがなる `Writable`。ライターを `AnyRef` として受け取るラムダの上に作られる
++   entry .Field1   `Yaml.Field.product` を保持する優先度の層
+
+% 1 1 0 1c987de824baee6b1573690c96c8885d
+
+% 2 1 0 121fdcc180d8cbcf1f15b69307c39088
+
+@ 0 6 0 09292b45e0ef47031ed806fe76fd9552
++         直接使うためのものではない。
++         `object Yaml.Field` の親であり、導出された積のパーサーがコンパニオン自身の given より低く、`Decodable` の橋渡しより高い優先度になるようにする。
++     entry #product   任意の積に対する、その `ProductReflection` から導出されたフィールドのパーサー
++         `Yaml.Field1` の中でインラインなので、直接のパーサーの中の入れ子のレコードもそれ自体が直接読まれ、そのためにコーデックが呼び出されることはない。
++   entry .Field2   `Yaml.Field.decodable` を保持する優先度の層
+
+% 1 1 0 0dbe4a55b1686ff512bce85bddde5d54
+
+% 2 1 0 17e4eda90d502c1f0f701fdbeef7da1f
+
+@ 0 6 0 152a69a5c40a343c11aafeea19be9f8f
++         直接使うためのものではない。
++         `object Yaml.Field` の最も低い親である。
++     entry #decodable   橋渡し：任意の `Decodable in Yaml` が、`Yaml` として包んだノードを読む
++         `Yaml.Field2` の中で優先度が最も低いので、独自の直接のフィールドパーサーを持たない型（列挙型や、手書きのデコーダーを持つ型）も、そのフィールドについてだけ木の経路を通じて、直接のパーサーの中で読める。
++   entry .Writable1   `Yaml.Writable.product` を保持する優先度の層
+
+% 1 1 0 196216b99d2c0bc716b9d2d3e256edaa
+
+% 2 1 0 17d6575882ee87dc1e67823e76d055c4
+
+@ 0 3 0 1b7241ebd65e9b4f173009f8bb3c0414
++         直接使うためのものではない。
++         `object Yaml.Writable` の親である。
++     entry #product   `Yaml.Writable1` の中にある、任意の積に対する導出されたフィールドのライター
++   entry .Writable2   `Yaml.Writable.encodable` を保持する優先度の層
+
+% 1 1 0 01c9c31ff8d666f30c24c7d61477ae5c
+
+% 2 1 0 0e771ea0ca88db600dca7701b1969e17
+
+@ 0 3 0 12ef5bd140c15eb615ca1a801896c333
++         直接使うためのものではない。
++         `object Yaml.Writable` の最も低い親である。
++     entry #encodable   `Yaml.Writable2` の中にある橋渡し：任意の `Encodable in Yaml` がその木をその場で書く
++   entry .Parsable2   `Yaml.Parsable.generated` を保持する優先度の層
+
+% 1 1 0 0177ffee425a2caa078a719809d5f8a5
+
+% 2 1 0 19b6c02a506eefd20693e06879ed97ab
+
+@ 0 7 0 0ef4d36ca17f83580161dd32b3d4655d
++         直接使うためのものではない。
++         `object Yaml.Parsable` の親であり、`import codecs.direct` がコンパニオンのインスタンスや `derives Yaml.Direct` より低い優先度になるようにする。
++     entry #generated   `import codecs.direct`：すべての積に対して、使用箇所で導出されるパーサー
++         `Codecs.Direct` のもとで、かつ `ProductReflection` を持つ型に対してだけ解決される。
++         列挙型は木の経路のままである。
++         コンパニオンのインスタンスや `derives Yaml.Direct` がこれより優先される。
++   entry .Printable2   `Yaml.Printable.generated` を保持する優先度の層
+
+% 1 1 0 0edce4bcb896248e0a949548de54b074
+
+% 2 1 0 138c7b3f5c180e861c8b6bf3bd1dabdb
+
+@ 0 2 0 1cc486da5448a9ab0b80290d5753898b
++         直接使うためのものではない。
++         `object Yaml.Printable` の親である。
++     entry #generated   `import codecs.direct`：すべての積に対して、使用箇所で導出されるプリンター
+
+@ 0 1 0 176fcd50d53705ae0adae45fe355bfc3
++ entry .Yaml1   直接のコーデックへの入口を保持する、`object Yaml` の優先度の層
+
+% 1 1 0 0d3593f206208f8813ee72ce1180cdcf
+
+% 2 1 0 0db8cc48c90030d400d2524178e58a37
+
+@ 0 17 0 05bb7e528574a97603eb2bfbbffddc5d
++       直接使うためのものではない：`object Yaml` の親であり、`aggregableParsed`、`encodableOverPrinted`、そして二つの `codecs.strict` の失敗を保持する。これにより、直接のコーデックを持つ型は、`Yaml2` にある木のコーデックよりも先にそれを取る。
++   entry #aggregableParsed   直接パーサーが存在する場合の、それを通じた `text.read[Person in Yaml]`
++       `Yaml.Parsable` を持つ型（`derives Yaml.Direct` するもの、コンパニオンにインスタンスを持つもの、または `import codecs.direct` のもとでの直積型）に対しても、文書はやはり全体がパースされる（YAML のエイリアスはそれより前の任意のノードを参照できるので、文書が保持されるまではどのレコードも読めない）。しかしその後、レコードのフィールドは、どのノードの周りにも `Yaml` を構築することなく、フィールドごとにコーデックをディスパッチすることもなく、木のノードから直接読み取られる。
++       エラーは、木の経路と同じフォーカスと位置を運ぶ。
++   entry #encodableOverPrinted   直接プリンターが存在する場合の、それを通じた `in[Text over Yaml]`
++       `Yaml.Printable` を持つ型に対しては、テキストは木を構築することなく、`Yaml.Printable.print` を通じてフィールドから直接書き出される。テキストは木の経路のものと同じである。
++   entry #aggregableStrictFailure   直接パーサーを持たない型に対して `codecs.strict` が発生させるコンパイルエラー
++       インラインで、木の入口より上にあるので、`Codecs.Strict` のもとでは、`.aggregableStrict` が取らない型はすべてここに到達し、その型を名指してコンパイルに失敗する。
++   entry #encodableOverStrictFailure   直接プリンターを持たない型に対して `codecs.strict` が発生させるコンパイルエラー
+
+@ 0 1 0 1b879b89b8fce12b1a3cee3d92e9729f
++ entry .Yaml2   `object Yaml` の最も低い優先度の層：木のコーデックと導出
+
+% 1 1 0 1509d40f7183251a0ecb0ae3b0f52b2f
+
+% 2 1 0 11d998c2b101b0030cd57c84b5cbef8c
+
+@ 0 21 0 0154ded40a29c9b208723117f7132e04
++       直接使うためのものではない：`object Yaml` の最も下の親であり、あらゆる型に対する代替の `decodable` と `encodable` の given、`optional`、`optionalEncodable`、`encodableOver`、`aggregableIn`、そして二つの導出オブジェクトを保持する。
++   entry #decodable   任意の型の `Decodable in Yaml`。テキストのデコーダーから、または導出によって得る
++       `[value] => value is Decodable in Yaml` として、インラインで最も低い優先度にあり、あらゆる型にデコーダーを与える：`Decodable in Text` を持つ型は YAML の文字列スカラーから読まれ（そのため、テキストのデコーダーを持つ列挙型はその名前から読まれる）、wisteria の `Reflection` を持つ型（ケースクラスまたはシールされた階層）は `#DecodableDerivation` によって導出される。
++       ケースクラスはマッピングからフィールドごとに読まれ、マッピングにないキーに対してはフィールドの既定値を取り、既定値のないものに対しては `Yaml.Error(Absent)` を発生させる。直和型は、スコープにある `Discriminable in Yaml`（`discriminables.yamlByTypeDiscriminable`）が名指す判別子のフィールドからそのバリアントを読む。
++       `@name[Yaml](t"full_name")` と、むき出しの `@name` のアノテーションは、ワイヤ上でフィールドやバリアントの名前を変える。
++   entry #encodable   任意の型の `Encodable in Yaml`。テキストのエンコーダーから、または導出によって得る
++       インラインで最も低い優先度にある：`Encodable in Text` を持つ型は文字列スカラーとしてエンコードされ、`Reflection` を持つ型は `#EncodableDerivation` によって導出される。ケースクラスはフィールドの順にマッピングへエンコードされ、エンコードの結果が存在しないフィールド（`Unset` や `None`）は省かれる。直和型は、そのバリアントのマッピングに、スコープにある `Discriminable in Yaml` が判別子のフィールドを加えたものへエンコードされる。
++       `@name` による名前の変更は、読み込み時と同じく書き出し時にも適用される。
+
+% 2 1 0 05df8af5104270d90b2bc030f3725221
+
+% 3 1 0 0ecbfae7a90d8bc019bac405a1dccabd
+
+% 4 1 0 0959c93c082228cb184b8aa6aa625c4d
+
+% 5 1 0 0e98daca6ee3531d140c4ee2c24a416c
+
+% 1 1 0 10ac75edd6ea97b11ccd8697a9fcd66d
+
+% 3 1 0 05a8496a680bfa950bd3cbd6606594f8
+
+% 4 1 0 1db08ff0d85f884a1c1c9415880d6d89
+
+% 5 1 0 0b934b0e4f1bcea817020a95c536f86a
+
+% 0 1 0 19185b83d136147d072c28bad180e8a9
+
+% 1 1 0 060bc4d3042b7b8c12a3d5c7dbefdeec
+
+@ 0 4 0 03d36fea4262c3f704d77576dfde04c8
++   entry #optional   `Optional[T] is Decodable in Yaml`：`.option` と同様で、`Unset` を返す
++       同じ三つのポリシーが、`Optional[Int]` 型のフィールド（または `Mandatable to inner` である任意の `value >: Unset.type`）に適用される：既定では、存在しない値と `null` は `Unset` として読まれ、型の違う値は、`lenientYamlFaults` がインポートされていなければ誤りである。
+
+% 2 1 0 01a8c8fed174cbf41a829ac4ecedcd46
+
+% 3 1 0 0b37423985f93b8c1aa57f32eab93d89
+
+% 4 1 0 14deb678b4c14f3d0fbba6254e51f918
+
+% 0 1 0 044c487d699586481700b3ec44ca98de
+
+% 0 1 0 18aae1ca0f3c449608756a0d57516cc8
+
+% 0 1 0 007382f27533bf6f1f4528acb2cf6a0e
+
+% 0 1 0 0cb407862da8a7350ffade9d65c64e68
+
+% 0 1 0 0c394ec49b4955470a094a00da593eda
+
+% 0 1 0 00a44b73b5e1e64516e3c24f9618b497
+
+% 1 1 0 13f23cd646f7645211501a4c18bd4a81
+
+@ 0 13 0 1d3880370ca1756916ffa8e2c0829afe
++   entry #optionalEncodable   `Optional[T] is Encodable in Yaml`：`Unset` は存在しないものとしてエンコードされる
++       `Unset` のフィールドは存在しないノードとしてエンコードされ、導出されたマッピングはそれを完全に省く。存在する値は内側の `Encodable in Yaml` を通じてエンコードされる。
++   entry #encodableOver   `person.in[Text over Yaml]`：木へのエンコードと描画を一度に行う
++       `read[Person in Yaml]` の書き出し側の鏡像である：値の `Encodable in Yaml` が木を構築し、スコープにある `Yaml.Formatting` がそれを描画するので、`show` が描画するのとまったく同じテキストが得られる。
++       `Yaml.Printable` を持つ型は、代わりに `.encodableOverPrinted` を取る。
++   entry #aggregableIn   `text.read[Person in Yaml]`：木を通じて、パースとデコードを一度に行う
++       `Decodable in Yaml` を持つ任意の型に対する `(value in Yaml) is Aggregable by Text` である：テキスト（またはストリーム）は `Yaml` にパースされ、`as` でデコードされるので、`Tactic[Parse.Error]` と `Tactic[Yaml.Error]` が必要である。
++       `Yaml.Parsable` を持つ型は、代わりにこれより優先される `.aggregableParsed` を取る。
++   entry #DecodableDerivation   直積型と直和型に対する `Decodable in Yaml` の wisteria による導出
+
+% 1 1 0 0fa01dae0cb9e7110ba0e0ff2ef59c15
+
+% 2 1 0 166e098dfe330e2504cb833079930b0f
+
+@ 0 9 0 015067784390e789043882f083db539f
++         直接使うためのものではない：`Reflection` を持つ任意の型に対して、`Yaml.decodable` がこれに到達する。
++         `conjunction` は直積型のデコーダーを導出する。各フィールドはそれ自身のフォーカスで読まれ、存在しないフィールドは既定値を取るか `Absent` を登録し、構築には条件が課されるので、コンストラクターが番兵の値に対して実行されることは決してない。`disjunction` は直和型のデコーダーを、スコープにある `Discriminable in Yaml` を通じて導出し、判別子が未知であったり存在しなかったりした場合の `Variant.Error` は、直和型のフォーカスで一つの `Yaml.Error` に畳み込まれる。
++     entry .conjunction   直積型のデコーダー。マッピングからフィールドごとに読む
++     entry .disjunction   直和型のデコーダー。判別子のフィールドによって読む
++   entry #EncodableDerivation   直積型と直和型に対する `Encodable in Yaml` の wisteria による導出
+
+% 1 1 0 1b47f030c1619ded1aa4c4452798a271
+
+% 2 1 0 09abe7f65c50ebac0faa56ae6332199d
+
+@ 0 5 0 101eac54384b01370d5d079f79033f45
++         直接使うためのものではない：`Reflection` を持つ任意の型に対して、`Yaml.encodable` がこれに到達する。
++         `conjunction` は直積型をフィールドの順にマッピングとして書き出し、存在しないエンコードは省く。`disjunction` は直和型のバリアントを書き出し、判別子のフィールドを加える。
++     entry .conjunction   直積型のエンコーダー。マッピングへ書き出す
++     entry .disjunction   直和型のエンコーダー。判別子を加える
+
+@ 0 1 0 1edcd51b9cce269a0f055b2cd3ca99ce
++ entry .YamlPath   文書の中のノードのアドレス。JSON Pointer のエスケープを使って `#/a/0/b` と書く
+
+% 1 1 0 01031578375f970d1db08b7308dfffa7
+
+@ 0 8 0 05b97668bb0c90aa066cd43c9e4e4625
++       `YamlPath` は、根からのキーとインデックスによってノードを名指す：`YamlPath()` は文書全体（`#`）であり、`YamlPath()(t"servers")(Prim)(t"port")` は最初のサーバーの `port`（`#/servers/0/port`）である。
++       独自のプレーン上の serpentine のパスなので、`/` や `apply` メソッドで構築し、`yp"…"` 補間子で書き（コードのコンパイル時に検査される）、`as[YamlPath]` でテキストからデコードし、`encode` でエンコードする。
++       セグメントは RFC 6901 のエスケープ（`~` に対する `~0` と、`/` に対する `~1`）を使うので、文書を JSON として扱ったとき、パスは同じノードの JSON Pointer になる。
++       アドレスで指定できるのは、文字列のマッピングキーだけである。
+
+@ 0 2 0 1497faae67820ea41a54451afb5ddc3c
++       パスは `Yaml.Focus` が運ぶものであり、そのため蓄積されたデコードのエラーは `#/age` と述べる。また、位置を追跡した文書の中でノードのソース上の位置を見つけるために `locate` が受け取るものでもある。
+
+% 2 1 0 0455933ce53f230a1178df5b92256e50
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0e37a6e02fcaceea05257b0a4130b121
++         label 位置を記録してパースした文書
+
+% 1 1 0 1999497d5f290cac14f8b78b370002a5
+
+% 2 1 0 18412c62fe15cc0319c6b7b21d60b19a
+
+% 3 1 0 00e84ab971127b9418c2d7b9b1fdf42b
+
+% 4 1 0 1774477afe03bd981701d1b999139009
+
+% 6 1 0 0af0eb0269b74554110087ffa3979ae6
+
+% 1 1 0 05e8aac36550572611c7a53b89cbbc1c
+
+@ 0 1 0 1bea6d4c71ed304c19eb454f2ee6cb46
++         label 最初のサーバーの port へのパス
+
+% 1 1 0 0ab4792faf524ebe09e8f1d5d365bd97
+
+% 2 1 0 05bf45b0519617400b75f7e725927047
+
+% 3 1 0 11e9d38809f882130b83e315f064e1ff
+
+% 4 1 0 1b4584bec4698dc01ad0c582912f90fb
+
+% 6 1 0 132d862d69890f4519f9834723616ed7
+
+% 7 1 0 1b9bd2086f622606005952fb59bdb992
+
+% 0 1 0 17e219426ef9234d0cd15e6ccabca21b
+
+% 1 1 0 01c3daaf242b7e5e10d7349787af8137
+
+@ 0 1 0 05a4642e2969e48d090477d2a7fe9e68
++         label そのノードがソースのどこにあるか
+
+% 1 1 0 041a30bf4f982cbe1d8359daeb5b94fb
+
+% 2 1 0 0268effb54fe220c17e8a50f47a1796c
+
+% 3 1 0 046da1b9b8bd481e0f403a87bf336230
+
+% 4 1 0 08d1ec25a931228604617eb503606905
+
+% 6 1 0 0105204f691e902f1b794a526ca58f8d
+
+% 7 1 0 00544635c6916c331c2a09166c0a0792
+
+% 8 1 0 063a6b4c6cbb7d271233cdbd641234bd
+
+% 1 1 0 1fbfad3ad03e115907ec86174328f528
+
+@ 0 1 0 0b98dd5305f9605318f37a3358a724b3
++         label ナビゲートしてデコードしたノードそのもの
+
+% 1 1 0 0bfcab7f6e47afcd0a7fb8c19bbd9888
+
+% 2 1 0 16a8e1d0f49217ac1007d562f60495fc
+
+% 3 1 0 1478450f1edd4fc41330b621bd93e676
+
+% 4 1 0 0ae8d0cb759145eb13b5e3c97823ec2e
+
+% 6 1 0 1f44852f41eb0bd814f76d895ad69b94
+
+% 7 1 0 1ddc835584a16408084dcd536837cfb8
+
+% 8 1 0 0f52cf210d410a3e1d9452bb87a3fbd3
+
+% 0 1 0 1271967b918e326415d259c3c733ef57
+
+% 1 1 0 081977c35b1369791e2a67c11e25e83e
+
+% 2 1 0 0a999c6a39654932041442241184edf8
+
+@ 0 2 0 025713f4c0a71e77040b47c3604ea05c
++       テキストのデコードは、`#` で始まらないとき、フラグメントが `/` で始まらないとき、または `~` の後に `0` も `1` も続かないときに `YamlPath.Error` を発生させる。
+
+% 0 1 0 04f7ad819037c3f8164d522f86e7e86a
+
+% 1 1 0 10af99ba747cc2e910203e58f3cd433c
+
+% 0 1 0 071aa137f3f0031f05b0b4770db576ed
+
+@ 0 23 0 12ebbd1c0cc150a71d6dcf2bf66a0356
++   entry .Plane   YAML のパスのプレーン：`YamlPath` そのもの
++   entry .navigable   パスのセグメントとしての `Ordinal`：ゼロ始まりのインデックスをテキストにしたもの
++       `YamlPath()(Prim)` は `#/0` とエンコードされるので、インデックスは JSON Pointer と同じように書かれる。
++   entry .admissible   任意の `Ordinal` はセグメントとして受け入れられる
++   entry .admissible2   任意の `Text` はセグメントとして受け入れられる。エスケープはエンコード時に行われる
++   entry .filesystem   パスの文法：`/` 区切り、自身を表す `#`、親を表す `..`、RFC 6901 のエスケープ
++       名前は `YAML` である。
++       `escape` は `~` を `~0` に、`/` を `~1` に変え、`unescape` はそれを元に戻すので、どちらかの文字を含むキーもアドレスで指定できる。
++   entry .interpolable   `yp"…"` の背後にある given。`ypsiloid.yp` を参照
++   entry .decodable   テキストからパスを読む：`#`、`#/`、または `#/a/b`
++       `t"#/a/b".as[YamlPath]` は、誤りの文字オフセットとともに `YamlPath.Error` を発生させる：`#` で始まらないテキストには 0 での `ExpectedHash`、`/` で始まらないフラグメントには 1 での `ExpectedSlash`、不正なエスケープにはその `~` での `BadEscape` である。
++       セグメントは読まれるときにエスケープを解除され、空のセグメントは捨てられる。
++       パスはコンパニオンに無名の `Encodable in Text` の given も持つので、`path.encode` はセグメントをエスケープして `#/a/b`（根には `#`）を描画する。
++   entry .unsafeParse   すでに妥当であると証明されたパスを、戦術なしでデコードする
++       コンパイル中にリテラルをパースした `yp"…"` 補間子のためのものである：`Unsafe` トークンは、実行時の再パースが失敗しえないことを表明する。
++   entry .divisible   `path / t"key"`：テキストのセグメントで延長したパス
++   entry .divisible2   `path / ordinal`：インデックスのセグメントで延長したパス
++   entry .Error   テキストが妥当な YAML のパスでないときに発生する
+
+% 1 1 0 1d26370fe0f033aa19f94a8850ac95e1
+
+@ 0 6 0 1403027d7c47376f1e530ab5254a5489
++         エラー `↯/s.134.2`：_the YAML path was not valid because `reason`_。
++         `.decodable` が発生させ、`yp"…"` 補間子がコードのコンパイル時に正確な文字の位置で報告する。
++         `offset` は、テキストの中で誤りが見つかったインデックスである。
++     entry #reason   `ExpectedHash`、`ExpectedSlash`、または `BadEscape`
++     entry #offset   テキストの中での誤りの文字インデックス
++     entry .Reason   パスが不正になる三つの場合
+
+% 1 1 0 1bddb00d6511c2dd0f0babcc48b248f9
+
+@ 0 7 0 0e97bd65abbd7b340e746d9a350f723a
++           `ExpectedHash`（番号 2）：_a YAML path must begin with '#'_。`ExpectedSlash`（番号 3）：_a YAML path fragment must begin with '/'_。`BadEscape`（番号 4）：_a '~' in a YAML path must be followed by '0' or '1'_。
++     entry .communicable   理由をそのメッセージとして描画する
++   entry #path   基礎となる serpentine の `Path on YamlPath`
++   entry #apply   `path(t"key")` または `path(ordinal)`：セグメントを一つ延長したパス
++       `/` と同じものをメソッドとして提供する：`YamlPath()(t"servers")(Prim)(t"port")`。
+
+@ 0 10 0 0edba9a5b77f8c2f15cd1f25c8a3d527
++ entry .y   `y"…"` 補間子：コードのコンパイル時に検査され、`$` の穴を持つ YAML リテラル。パターンにもなる
++     `y"name: $name\nage: $age"` は `Yaml` の文書であり、そのテキストはコードのコンパイル中にパースされ（不正なリテラルはコンパイルエラーとなり、テンプレートの誤った範囲が正確に強調表示される）、その `$` の穴は実行時に埋められる。
++     値の位置にある穴は任意の `Yaml`（または `Encodable in Yaml` を持つ値で、それを通じてエンコードされる）を取る。プレーンスカラーの中の穴（`greeting: hello $name`）は値のテキストを文字列にスプライスする。シーケンスの最後の要素としての `$xs*` は、`Iterable` の項目をその中に展開する（それぞれはその `Encodable in Yaml` を通じてエンコードされる）。
++     エンコーダーのない値や、最後でない、あるいは `Iterable` でない展開は、穴の位置で強調表示されるコンパイルエラーとなる。
++     結果は位置を運ばない。
+
+% 2 1 0 069e84a59d82eea61bb37d8edc91d5ab
+
+% 3 1 0 0a72ff7ff4ccc46411c710c62336bfa2
+
+% 4 1 0 192636d81c283ccb0b62db76c1faf00c
+
+% 2 1 0 00f505b5977fdfc716086145bdee8b14
+
+% 0 1 0 1ad7cdac55026673175edc020ebc20e7
+
+% 0 1 0 09de2ddcbeaf2a7e086d95a6ebb563f6
+
+% 0 1 0 1651633ab1be7c9f1ec5d7c65fc78bef
+
+% 0 1 0 004cbdb6de44020e077742172c6e549d
+
+% 0 1 0 0cf6363626a940a20bbd081b74ff0b02
+
+% 0 1 0 0d5c45be77eb80c61cc22f1e5ddaeade
+
+% 0 1 0 0e647005598b6313055dc8fd6c75ccd4
+
+% 0 1 0 096ac16adb8a9fa00682330d9776fac2
+
+% 1 1 0 07a259e5997241bd1fb37843d61e26b4
+
+@ 0 3 0 04072fcca866b7580c4fdddc934aecaf
++     パターンの中では、`case y"name: $n" =>` は構造がリテラルと同じ文書にマッチし、`n` を穴の位置にあるノードに `Yaml` として束縛する。穴のないリテラルは構造の等価性でマッチする。
+
+% 2 1 0 0a74c3ad605febc30803409d2c4870f9
+
+% 3 1 0 01d6f69d28488b4509aa896c1513529e
+
+% 4 1 0 0fd207f016a6c1511241ca449df9f93d
+
+% 0 1 0 1337a2a542ed3adb126c4d141148a3f2
+
+% 0 1 0 00ce88689107a696023b065dd42432e7
+
+% 0 1 0 12d7ff39898546740606521632477dd0
+
+% 1 1 0 14e13ba9f512de0e0604e7bc22c8b556
+
+@ 0 5 0 0059857b850a1f5a06a019bfc47f0892
++ entry .yp   `yp"…"` 補間子：コードのコンパイル時に検査される `YamlPath` のリテラル
++     `yp"#/servers/0/port"` はそのテキストの `YamlPath` であり、コードのコンパイル中に `YamlPath` 自身のデコーダーを通じてデコードされる。そのため、不正なパスは問題の文字を指すコンパイルエラーとなる：`yp"/servers"` は `/` の位置で拒否され（_a YAML path must begin with '#'_）、`yp"#/a~2b"` は `~` の位置で拒否される。
++     この補間子は `$` による埋め込みを取らない。
+
+% 2 1 0 0cd1dd6b32e8783b017cc6b31eff1549
+
+% 3 1 0 086810ef3b64821b04515d4c4b563079
+
+% 0 1 0 17f5a684a426b18c0c0883e23778ba43
+
+% 0 1 0 165f094f69277ac10d4b6a1c1288270a
+
+% 1 1 0 0a112d042d85d5c412963de3fe85aac2
+
+@ 0 1 0 01509f6e2ded94240c6a516906383dad
++ entry .formatting   文書の描画方法：名前でインポートする一つの given
+
+% 1 1 0 0f9a23bf979b91f601f6a41b1bcec9b8
+
+@ 0 2 0 1bdd09da5c14eb321dfa5ba8dfc2f49c
++       `show`、`in[Text over Yaml]`、`Yaml.emit`、そして HTTP の given には、スコープに `Yaml.Formatting` が必要であり、`import soundness.*` はそれを何も持ち込まないので、選択は常に明示的である：
+
+% 2 1 0 027756a3ca1a5acf0e6d2786827d5149
+
+% 3 1 0 1079ccdcd3b8b45e10fc92d2e5562f39
+
+% 4 1 0 18416278aaaffad512c0a60ada1ea058
+
+% 5 1 0 0acef7a8988726911b989e0b6f5fe46e
+
+% 0 1 0 0988ef323304845104dfe8b8a5385fd1
+
+% 1 1 0 171fc357231024a3133dadd38028bad9
+
+@ 0 8 0 01ee872303904f0c1d58b81e4780be37
++       現在、書式はブロックスタイルだけである。このパッケージが存在するのは、フロースタイルの書式やオプションを持つ書式を、どの呼び出し箇所も変えずにその横に追加できるようにするためである。
++       `soundness` アンブレラでは、このパッケージは他の形式の `formatting` パッケージ（`indentedJsonFormatting`、…）と併合される。
++   entry .blockYamlFormatting   2 スペースでインデントするブロックスタイル。空のコレクションには `{}` と `[]` を使う
++       既定の、そして唯一の `Yaml.Formatting` である。
++       その出力は、再パースして同じ木になるように選ばれる：スカラーはパーサーが同じ種類に解決し直すように書かれ、文字列は他の何とも取り違えられない場合にだけプレーンで書かれる。
+
+@ 0 1 0 00750fd5d246e3e312b2b3246f557d30
++ entry .optionalityOptions   `Optional` や `Option` のフィールドが、存在しないキー、`null`、不正な値をどう読むか
+
+% 1 1 0 07545dd1c31188b51077f4abaa970aaa
+
+@ 0 5 0 1e1ed2ff01cb446109d5efdb6dad7724
++       三つの独立したポリシーで、それぞれは一組の given であり、そのうち一つを名前でインポートする。既定（distillate による）は、存在しない値に寛容、null に寛容、誤りに厳格である。
++       これらは `Yaml.optional`、`Yaml.option`、そして直接の `Yaml.Field.optional` と `Yaml.Field.option` を同じように制御する。
++       アンブレラでは、このパッケージは他の形式の `optionalityOptions` と併合されるので、名前は区別を保つために `Yaml` を含む。
+
+% 2 1 0 08539d7b39f9fac6158a688a23033235
+
+% 0 1 0 1a64040dc63845e7121043dd67139bee
+
+% 1 1 0 18e1e17281ab535916c544b433820b5e
+
+% 2 1 0 10daf487394b362d0a7dfc1520c696de
+
+% 3 1 0 18028c8a797c631f0db117c5d6113570
+
+% 2 1 0 17c7e518b8b9df410c77e6bddcf66cd7
+
+% 0 1 0 1ca27e4057528e84133eb07a179322c6
+
+% 0 1 0 0f13b2d297538a76178b238c0f2d8947
+
+% 0 1 0 0309e14355e7383005ab8e7b0248e95a
+
+% 0 1 0 03c61282620ea78616295d7c855a951c
+
+% 0 1 0 07e253f3624b8da30eab6cc67e48a7b8
+
+% 1 1 0 07efe15c21df60c115ea8ae4dbd88690
+
+% 2 1 0 1756d680ec28f6a5077c212f83658f9d
+
+% 3 1 0 133db89c7e21d089012a04b69db5bd15
+
+% 0 1 0 1b304068ed8d2ddc192028286ab334d4
+
+% 2 1 0 12db348d5077cd141fe405d0edf3a1ef
+
+% 0 1 0 1c4594c3e0ccc4b80a0547246696c293
+
+% 0 1 0 10b09172fb6555b616dfbf7322563850
+
+% 0 1 0 08cf580088938a470696e6e0a7198fd8
+
+% 1 1 0 0c4b511dbe2f67191e7306802be6583a
+
+% 2 1 0 0af76077936f5100097a156d594d003f
+
+% 3 1 0 03d198faee4dda8a142bd64d7aefbc86
+
+% 0 1 0 06d67c447ad5ffea1029911f8d975292
+
+% 2 1 0 1a79e624038858391fb5bb84944d175e
+
+% 0 1 0 09cf5e054fd09c5c0abf8cb4bf48a985
+
+% 0 1 0 0793af297d81d277159e0c3a0cacd25b
+
+% 0 1 0 17f5b2fbd0fdd4d6187da5973c1ea22e
+
+% 1 1 0 0ee7add46e08edf207590826f772d947
+
+% 2 1 0 01bb6839ede799f81d9bc9317563e368
+
+% 3 1 0 1e4557722bdaad6707a253e01f9c9655
+
+% 0 1 0 004553ec98f23fbc12835eae2aced976
+
+% 2 1 0 0ceb24e9b899ed1006ff9754fbd46dec
+
+% 0 1 0 1ccf92c7773f6ccd12dbd6c294138d38
+
+% 1 1 0 05fe7decfc6399eb0e19d97ff82fcc5e
+
+% 2 1 0 1c8b034f77e2398a00a72c690b074459
+
+@ 0 8 0 07e0521a7613f480015a1905f0bd5fbd
++   entry .strictYamlAbsence   存在しないキーは、`Optional` のフィールドであっても `Yaml.Error(Absent)` となる
++   entry .lenientYamlAbsence   存在しないキーは `Unset` または `None` として読まれる：既定
++   entry .strictYamlNulls   `null` は内側のデコーダーに渡され、`Unit` 以外では失敗する
++   entry .lenientYamlNulls   `null` は `Unset` または `None` として読まれる：既定
++   entry .strictYamlFaults   内側のデコーダーが拒否する値はエラーとなる：既定
++   entry .lenientYamlFaults   内側のデコーダーが拒否する値は `Unset` または `None` として読まれる
++       内側のデコードは `tactic.tolerate` のもとで実行されるので、蓄積型の戦略のもとでも誤りは登録されない。
+
+@ 0 1 0 1d7d94b304b9fc5718c75151300ea5dd
++ entry .discriminables   直和型のバリアントがワイヤ上でどう名指されるか：`type` または `kind` のフィールドによる
+
+% 1 1 0 028579f07827cb730fd6135b7ea40b3a
+
+@ 0 6 0 06e959c6caef313607543db7a6699337
++       列挙型やシールされた階層をエンコードまたはデコードするには、スコープに `Discriminable in Yaml` が必要であり、`import soundness.*` はそれを持ち込まない。これらのうち一つを名前でインポートするか、`Yaml.discriminatedUnion` で別のフィールドに対するものを構築する。
++       バリアントの名前（またはその `@name`）は、バリアント自身のフィールドと並んで、そのフィールドの下に文字列スカラーとして書かれる。デコード時には、そのフィールドが読まれ、バリアントのデコーダーが実行される前に取り除かれる。
++       アンブレラは、このパッケージを他の形式のものと併合する。
+
+% 2 1 0 1e5f9366842461bb02cdcb5a52a9c3d1
+
+% 3 1 0 1633353ba32ccb7d1ff7ebbc3c846b5d
+
+% 4 1 0 1d46735e8c60663810b88d76ea9495c5
+
+% 1 1 0 03ef21726064b27d151a0e22f05c7b44
+
+% 3 1 0 1b6a0d1d6d7b809d1cf61cf18fd75b75
+
+% 4 1 0 10cc1c5ade49260205f2734cffe0bf51
+
+% 5 1 0 1600afcf722ced4a099a04050887cca2
+
+% 0 1 0 0068d7efa3baacb61021362bc885c659
+
+% 1 1 0 1cbd1eea153a0f0c1ee35990bdfca9c5
+
+@ 0 2 0 02164e2c66e89931033f549fc591905f
++   entry .yamlByTypeDiscriminable   `type` フィールドの下のバリアントの名前
++   entry .yamlByKindDiscriminable   `kind` フィールドの下のバリアントの名前
+
+@ 0 1 0 1149eb61152317351925088cf20f5f4f
++ entry .dynamicAccess   `doc.field` による読み取りと `doc.field = value` による更新を有効にする given
+
+% 1 1 0 1ffa6779dd83afc61e73867075c3b527
+
+@ 0 5 0 0c38f8c5fba2ce4914cdf1628a45d4fb
++       `Yaml#selectDynamic`、`#applyDynamic`、`#update`、`#updateDynamic`、そして `Yaml.lens` の given は、すべて `Yaml is Dynamical` を条件としているので、メンバー名の綴り間違いは、黙ってフィールドを探すのではなくコンパイルエラーとなる。
++       スコープにそれを与えるには `dynamicYaml` をインポートするか、そこだけに与えるにはブロックを `dynamically[Yaml]:`（すべての形式に対しては `dynamically:`）で包む。
+
+% 2 1 0 0cae3c1356df26a504043263326de904
+
+% 3 1 0 1f5c34c630a49c911ccd13ae3abd79d7
+
+% 4 1 0 19b78f1f337df27700dd73fafafd15b4
+
+% 5 1 0 073cb8fe28f10fb516f8158b5ce55036
+
+% 0 1 0 1f0c443514ea8eb11e01017913ac87bb
+
+% 0 1 0 05670f506d953e4411dd43afd4381828
+
+% 1 1 0 0ed2a04af3d55e091ca6861be0641cdf
+
+@ 0 2 0 1fa126fcb69b2e8a0508855818efc040
++   entry .dynamicYaml   `Yaml is Dynamical`：インポートされたスコープで、文書に対する動的なメンバーアクセスを可能にする
++       消去される given である：実行時には何のコストもなく、スコープにあるためだけに存在する。
+
+@ 0 1 0 138c4197261fceef04019abf4c5f36c6
++ entry .conversions   エンコード可能な任意の値をレンズを通じて代入できるようにする変換
+
+% 1 1 0 0441db24722861b41490612ec462b95c
+
+@ 0 5 0 170c10ce55073f7e0bfdf0e8e347fe72
++       `doc.lens(_.field = value)` は右辺に `Yaml` を求める。`encodableToYaml` をインポートすると、`Encodable in Yaml` を持つ任意の値がその場で変換されるので、`doc.lens(_.age = 31.in[Yaml])` ではなく、`doc.lens(_.age = 31)` と期待どおりに書ける。
++       変換はインポートのスコープに限られる。
++   entry .encodableToYaml   `Encodable in Yaml` を持つ任意の `T` に対する `Conversion[T, Yaml]`
+
+@ 0 1 0 1c0794cfd3b44eb716f03002a20e8cbb
++ entry .postables   HTTP リクエストの本文としての文書。`ypsiloid.http` のソースセットのためのもの
+
+% 1 1 0 102a7ea4a9d4ae8703a22509718916d6
+
+@ 0 5 0 15cde5173f9cfc650c025966a739f7ed
++       telekinesis の `Postable` の選択はどれもそうであるように、名前でインポートする：`import postables.yamlPostable` で、`Yaml` を `post` や `put` の本文にできる。
++   entry .yamlPostable   メディアタイプ `application/yaml; charset=UTF-8` を持つ `Yaml is Postable`
++       本文は、スコープにある `Codepage` での描画されたテキスト（`show`）なので、`Codepage` と `Yaml.Formatting` の両方が必要である。
+
+@ 0 1 0 1277a2ec1182c86f042c82f74cbbb8cb
++ entry .servables   HTTP レスポンスの本文としての文書。`ypsiloid.http` のソースセットのためのもの
+
+% 1 1 0 0da97d18db27677319bab95e0a1d761e
+
+@ 0 5 0 0e0a0de1299a16ca140fb42be12ce4e4
++       `import servables.yamlServable` で、ハンドラは `Yaml` の値でレスポンスを返せる。レスポンスは、描画されたテキストを固定長の本文とし、メディアタイプ `application/yaml; charset=UTF-8` を持つ。
++   entry .yamlServable   メディアタイプ `application/yaml; charset=UTF-8` を持つ `Yaml is Servable`
++       スコープに `Codepage` と `Yaml.Formatting` が必要である。
+
+@ 0 1 0 0c8da4dd9ffc5de6151f7a1882986f5b
++ entry .construables   `application/yaml` の本文を `Yaml` として読む。`ypsiloid.http` のソースセットのためのもの
+
+% 1 1 0 1c0b31f2b84c74a20d5383b011473ef1
+
+@ 0 3 0 04c309dd72f19bf6077e1063c209e658
++       `import construables.yamlConstruable` は、gesticulate のコンテントネゴシエーションに、メディアタイプ `application/yaml` の本文が `Yaml` として構築されることを伝えるので、その型のリクエストやレスポンスの本文は到着時にパースされる。
++       Scala.js では利用できない。
+
+% 0 1 0 1ea759b6169f018700c45ee2c15be266
+
+@ 0 1 0 04c92de5aa4c4f530f6e54aeac8819ca
++ entry .internal   `y"…"` と `yp"…"` の背後にあるマクロ実装
+
+% 1 1 0 1143f714a9375f9f1bf06031bca54bb2
+
+% 2 1 0 0ce38ebf4ed3f1f80994db9290a5e9b4
+
+@ 0 7 0 0747efa0d4b0d4501a76a15942b4389a
++       直接使うためのものではない：このオブジェクトは、マクロが安定した置き場所を持つために存在する。
++       `y"…"` はリテラルの部分を番兵のマーカーで連結し、その結果を本物のパーサーでパースして、木の中の番兵を穴として認識する。パースエラーのオフセットは、部分を通じてテンプレートのソース上の範囲へと写し戻される。
++   entry .interpolator   式としての `y"…"` の背後にあるマクロ
++   entry .extractor   パターンとしての `y"…"` の背後にあるマクロ
++   entry .yamlPath   `yp"…"` の背後にあるマクロ：コンパイル中にリテラルをデコードし、誤りの文字を報告する

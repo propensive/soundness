@@ -1,0 +1,8 @@
+orthant 2 release
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     The library has three source sets:
+
+@ 1 0 0 160f9941894412a00975ebed91c9d38e
++     - `orthodoxy.oidc` — OpenID Connect: `Oidc.discover` for a provider's metadata, and
++       `Oidc.identify`, which verifies the ID token an `Authorization` carries with sigillate.

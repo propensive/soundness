@@ -1,0 +1,732 @@
+orthant 2 language
+
+@ 0 1 0 179de16fda5a018307f8ed5d2f3d42a1
++ ## Números
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 1 0 17f8abf362d88bf80bae8e80aa23d1e4
++ Los tipos numéricos son precisos y regulares, y el nombre de cada uno dice lo que es:
+
+% 2 1 0 17fec4f217b4ea671b822dcdb44e6470
+
+@ 0 8 0 18d6f6c72e02e4290d7ed64aa4015da7
++ column  Familia
++ column  Tipos
++ column  Es
++ column  Operadores
++ row  `U*`  `U8`, `U16`, `U32`, `U64`  sin signo  aritméticos
++ row  `S*`  `S8`, `S16`, `S32`, `S64`  con signo en complemento a dos  aritméticos
++ row  `F*`  `F32`, `F64`  de coma flotante  aritméticos
++ row  `B*`  `B8`, `B16`, `B32`, `B64`  un patrón de bits en bruto  desplazamientos, rotaciones y máscaras
+
+% 1 1 0 14200e16fd91296810d591af1985af64
+
+@ 0 3 0 0eb509820c49401e0b1c3a435fa71f2a
++ La letra dice cómo se leen los bits de un número, y las cifras dicen cuántos bits hay, así que
++ ambas cosas forman parte de su tipo. La aritmética puede comprobar el desbordamiento y la división
++ por cero. La comprobación se elige mediante una importación, y solo se paga donde se quiere.
+
+@ 0 4 0 011d4e8bcdf750891d67f7d84c77b24e
++ Un tipo *acotado* va más allá, y lleva el rango permitido de un número. Un valor fuera de `[0, 1]`
++ es entonces un error en [tiempo de compilación], allí donde se escribe, y la aritmética sobre
++ números acotados calcula el rango del resultado. Un rango en el tipo es la forma más sencilla de
++ hacer irrepresentable un [estado imposible](../../philosophy/impossible-states.md).
+
+@ 0 1 0 02d70e146a8c41190dd7da29c273abc5
++ ### Sobre los números
+
+@ 0 1 0 0bdd708c236f3428089327187228b8ab
++ Scala hereda los números de la JVM, que son un batiburrillo:
+
+@ 0 6 0 068690a98b04a25b0a7cf6d49096e94e
++ - Todo entero tiene signo.
++ - La suma se desborda en silencio, y da la vuelta hasta un número negativo.
++ - Dividir un entero por cero lanza una excepción, mientras que dividir un número de coma flotante
++   por cero da `NaN` o un infinito.
++ - Los operadores de bits están en los mismos tipos que los aritméticos, así que un desplazamiento
++   y una multiplicación se parecen.
+
+@ 0 1 0 0e2e21583052bccd0bdb43ddc5b0da53
++ El tipo solo dice cuántos bits tiene un número, y nunca cómo deben leerse esos bits.
+
+@ 0 5 0 0591ee32ccf3ea151c53ecf5175a9780
++ Aquí se separan las responsabilidades. Un número es *o bien* aritmético, un `U*`, `S*` o `F*` con
++ `+`, `-`, `*` y `/` y sin operadores de bits, *o bien* un patrón de bits, un `B*` con
++ desplazamientos y máscaras y sin aritmética. Las conversiones entre ellos son explícitas, y
++ gratuitas. Las operaciones peligrosas solo se comprueban cuando hay un [given] de comprobación en
++ el ámbito. Cada tipo es un [tipo opaco] sobre un primitivo de la JVM, así que nada de esto existe
++ en [tiempo de ejecución].
+
+@ 0 3 0 03718005799f2bb715bf90cf23b86d90
++ Todo procede del paquete `soundness`. Los literales numéricos genéricos están habilitados, para
++ que un literal adopte el tipo numérico que se espere, y la última importación permite que los
++ ejemplos impriman sus resultados:
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 10787d3d9c2d26d1187631d7778dafc0
+
+% 0 1 0 1983cda2abcdd53d0362a0ccc635b790
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 19b2084b71c2422111d5df4206ef66db
++ ### Tipos numéricos
+
+@ 0 2 0 04c84e3ecd8e598205d044beaa33391e
++ Un literal adopta el tipo al que se asigna. Una conversión entre tipos es un método corto con el
++ nombre del tipo de destino:
+
+% 2 1 0 0211f73aaad88e53168f6b1a3ea98e04
+
+% 0 1 0 172aeb1a2f3b72f60b849dd4ac6ab7ca
+
+% 0 1 0 119dcf459943f53e0f38a2f7273e9a7a
+
+% 0 1 0 07ebaf88b09c21d31838ee3769a8016d
+
+% 0 1 0 02d8b0e9a78b0b74134033fbe706437f
+
+% 1 1 0 0fff8936fd64c4481dd85fde0f9fc0a4
+
+@ 0 3 0 175ee8be14ead44e12036aa21f01c3a7
++ Convertir un `U8` en un `S32` no puede perder nada, ya que el tipo más ancho contiene todos los
++ valores del más estrecho. Un valor sin signo y uno con signo son tipos distintos, así que
++ mezclarlos es siempre una conversión deliberada, nunca un accidente:
+
+% 2 1 0 0325f0a488c874fb0fd438a191eecf15
+
+% 3 1 0 0a02c98ad8fe528a09f2f441ee21ae38
+
+% 4 1 0 1c2c3ef95f3e70dd073ace032d675fae
+
+% 5 1 0 005d03fd036cfe171bba32fdd99db76f
+
+% 0 1 0 158635d1afa66fcb116d584d6c5c9bd4
+
+% 1 1 0 1fd5c91c0e6828780b6b7da4a935fcf4
+
+@ 0 6 0 14bdfe49aafbaca70065844801bd51be
++ Los operadores `+`, `-`, `*`, `/` y el `-` prefijo no son métodos de estos tipos. Se encuentran a
++ través de las [clases de tipos][clase de tipos] `Addable`, `Subtractable`, `Multiplicable`,
++ `Divisible` y `Negatable`, que se describen en
++ [Sobrecarga de los operadores](#overloading-the-operators). Por tanto, el código escrito contra
++ esas clases de tipos puede sumar igual un `U32` que un `F64`, y un valor de uno de estos tipos
++ puede combinarse con un `Double`, un `Int` o un tipo más estrecho, siempre que exista una
++ conversión:
+
+% 2 1 0 155438162d08105011951e5aac479bac
+
+% 0 1 0 136e96c514d988971c98f55bb0114986
+
+% 1 1 0 06b28bd841527afe1a860323947f038c
+
+% 3 1 0 1451de40367e204e0ec2b3eea869ae57
+
+% 4 1 0 1a72c7aa420d8ea60c6a15b3b58e9f77
+
+% 5 1 0 11e5381fc741ec26149d4c7f57844222
+
+% 0 1 0 157e7e839f244f4610b9757f535d1573
+
+% 0 1 0 0cc6090ad8d47b8b0a309ac461a6d671
+
+% 0 1 0 13de4c9181b839c61bee2f4cd1fb99ed
+
+% 1 1 0 0db4929e8de0195a064abdef3fdecebd
+
+@ 0 2 0 13346c8f301981750474b8b79e92feca
++ El operando de un operador así es un parámetro de tipo, que un literal entero desnudo no
++ determina. Por eso un operando que es un literal entero se escribe con su tipo, como en
+
+% 0 1 0 067d2fa59f7c63b61ce555291761c603
+
+@ 0 1 0 035eb7e93a2f0bc20063d8c64e6e98f3
++ ### Aritmética comprobada
+
+@ 0 2 0 07af2c677b9df21b16cba748f52aae76
++ La aritmética sobre los tipos enteros necesita una política de desbordamiento en el ámbito, y la
++ división necesita una propia. Cada política se importa del paquete `arithmeticOptions`:
+
+% 2 1 0 0309c2a136ab5101032b9b25299e30f3
+
+@ 0 7 0 01e5d6ccb6e9a43a03815ca547e0c360
++ column  Importación
++ column  Gobierna
++ column  Comportamiento
++ row  `uncheckedOverflow`  `+`, `-` y `*`  el del hardware, que da la vuelta al desbordarse
++ row  `checkedOverflow`  `+`, `-` y `*`  lanza `Arithmetic.Error` al desbordarse
++ row  `uncheckedDivision`  `/`  el comportamiento desnudo de la máquina
++ row  `checkedDivision`  `/`  lanza `Arithmetic.Error` al dividir por cero
+
+% 1 1 0 11b5b66d6758a2bb06a2a0c9cabf3777
+
+@ 0 3 0 1d112c4a567b7c4319c32f5c35d412ac
++ `checkedOverflow` cambia el tipo del resultado de `+`, `-` y `*` por uno que puede lanzar un
++ `Arithmetic.Error`. Un desbordamiento pasa a ser entonces un fallo que hay que
++ [manejar](errors.md), y no una vuelta silenciosa hasta un número negativo:
+
+% 2 1 0 131ed4ed1980436414f3da0fbf8be2ca
+
+% 0 1 0 0eec5ae3e8b48b180792fe9a583f342b
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0265b63d3e8a07531c9e3ed7de1b755f
+
+% 1 1 0 0e7136e5e23cd38c047d6e83fff100b6
+
+% 3 1 0 04801755979dc8e20f9e1d8b35fa7808
+
+% 4 1 0 080da1545d8cb7be0b8cf9de631febf6
+
+% 5 1 0 19d4d6d6a82461111d21233107e405a7
+
+% 0 1 0 1cc614f94b80e87118226612671e42c9
+
+% 1 1 0 0329e0c2408b6b4417116276dae2967c
+
+% 3 1 0 1e29304ce134e74f09e33ef1c0d7a597
+
+% 4 1 0 1964923caf567b4511f0e37a11661a2c
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 11ed875880f6bf4b096e799f65e24267
+
+% 1 1 0 1dbf22441f3a32c2077b24aedba7af88
+
+@ 0 2 0 1142d74a0331eca60279df40ab502e6e
++ Las dos comprobaciones son independientes. Un programa que no debe dar la vuelta, pero que confía
++ en sus divisores, importa solo la primera.
+
+@ 0 3 0 1e62be20047a602d0584a7f438ab58dd
++ Ninguna cuesta nada donde no se elige. Tras la expansión en línea, un `a + b` sin comprobar sobre
++ un `S32` es la única instrucción `iadd` que el hardware tiene para ello, sin nada reservado en
++ memoria, y uno comprobado es la misma instrucción seguida de una prueba.
+
+@ 0 3 0 03630e9f1877ffac1c05bc967190195c
++ La detección del desbordamiento es exacta. Distingue los casos en que una suma con signo se
++ desborda de verdad de aquellos en que simplemente cruza el cero. La suma del valor más negativo
++ consigo mismo se detecta, mientras que la aritmética negativa ordinaria no se ve afectada.
+
+@ 0 1 0 1cae8eb34acf3d0a0a580df4d6d44b9e
++ ### Manipulación de bits
+
+@ 0 2 0 0e6c33d6a0a520b718d5c135821c8a66
++ Los tipos `B*` tratan un número como un conjunto de bits. Tienen los desplazamientos, las
++ rotaciones y las máscaras, y se escriben en las bases habituales, pero no tienen aritmética:
+
+% 2 1 0 132720a3a53562f40995a1cc233e960f
+
+% 0 1 0 05dc03ce5158a9bc13ba529792302998
+
+% 1 1 0 19a01ab5148617eb0587780cbf044f70
+
+% 3 1 0 0f9d5bbf8316ef3604e56c9e7304fe14
+
+% 4 1 0 0f417847b2fe25da10c61b22be32a1eb
+
+% 5 1 0 12f499c9f17fe1bf1daf0573292e88aa
+
+% 0 1 0 1269ef1fdd16aa1f1266d4a007bee573
+
+% 0 1 0 17d128837a83a1510e2a2f5d2f160bcc
+
+% 0 1 0 0cebb10d26da80031c294a65e2cba8b5
+
+% 1 1 0 083f47776a824f2a0474f2c1fcc849a9
+
+@ 0 1 0 11be152adc036ff10874ac9f3b142486
++ La aritmética sobre un patrón de bits no compila:
+
+% 2 1 0 06be6a9d4b12c8a91a71b39a4793be90
+
+% 3 1 0 179c59f5d8dab91515f3584b11f8ab40
+
+% 4 1 0 1d536ac1a4effa471ab9131904c04c19
+
+% 5 1 0 08a14eea1296a4990a83068ab13cf92e
+
+% 0 1 0 10562e2abc9a6de3092bcb1b57874468
+
+% 1 1 0 1fe83bcd54afb51c1abee5263e9fbddf
+
+@ 0 1 0 00df24800edbfe2d10f2210ad60cfc7c
++ Las operaciones sobre un patrón de bits son:
+
+% 2 1 0 17e03a5b2d1786a1064f30b63fa66ea5
+
+@ 0 10 0 043379884bae5055113e21418762adab
++ column  Operación
++ column  Hace
++ row  `<<`, `>>`  desplaza a la izquierda o a la derecha, rellenando con ceros
++ row  `<<<`, `>>>`  rota a la izquierda o a la derecha
++ row  `&`, `|`, `^`  y, o y o exclusivo
++ row  `~`  invierte cada bit
++ row  `bit`  lee un bit
++ row  `set`, `clear`, `flip`  escribe un bit, o cada bit de un intervalo
++ row  `leadingZeros`, `trailingZeros`  cuenta los ceros de cualquiera de los extremos
++ row  `reverse`  invierte el orden de los bits
+
+% 1 1 0 1e0f5df7ca65c8391c145e40247e1709
+
+@ 0 3 0 0522e3fbac3e484419f564433fa56403
++ Un bit se direcciona mediante un [ordinal](#ordinals): `Prim` es el primero y `Sec` el segundo.
++ Así, la posición de un bit no puede confundirse con la convención basada en cero o en uno de la
++ especificación que se esté implementando:
+
+% 2 1 0 07162c9e27ceb63016758713ce845e24
+
+% 3 1 0 1db54a0c3aace2fe00f78cb5933b7fd3
+
+% 4 1 0 15ac8c308c388cc81ccd4d9b1afc2057
+
+% 0 1 0 179e516952e1d1291acc48622b3600f8
+
+% 1 1 0 0cc83b6bb75994e30f7bfbfd4c82965a
+
+@ 0 2 0 1c1ced5888c1e2251280f8f2e3066499
++ Un patrón de bits se escribe rellenado hasta la anchura completa de su tipo, sin quitar los ceros
++ a la izquierda, de modo que el número de caracteres dice qué tipo lo produjo:
+
+% 2 1 0 188e8290bafbf72b0730f1357580b8d6
+
+% 3 1 0 1c6ad264c362b14f10b72dba51860eb2
+
+% 4 1 0 171cbdd84187d480050ad14e83fc99c8
+
+% 0 1 0 00483d1f6e8f38aa13a30438f1ea09f5
+
+% 0 1 0 13c71cd34ea98b9f13babe1f2a631dae
+
+% 1 1 0 13fdba78f93634cf035014ed1b02f0ab
+
+@ 0 2 0 1763f6e374e16d4505627372a84d36a0
++ [Indicadores de bits](flags.md) nombra los bits de una palabra con los casos de una enumeración, y
++ [Datos binarios](binary-data.md) lee estos tipos a partir de una secuencia de bytes.
+
+@ 0 1 0 1d909277ce21cd550672630d8808d505
++ ### Matemáticas
+
+@ 0 3 0 1b5cac4dfa1d895a1c2bb4c5ab67a03e
++ Las operaciones que Java dispersa por `java.lang.Math` son métodos de extensión, coherentes en
++ todos los tipos numéricos: `abs`, `ceiling`, `floor`, `round`, `signum` y los demás. `**` eleva a
++ una potencia. `%%` es un módulo con redondeo hacia abajo que, a diferencia de `%`, nunca da un
++ resto negativo:
+
+% 2 1 0 0702f6b2013c77f4099b3094128c8dcc
+
+% 3 1 0 13c615c040902a4417ba8d175e812f73
+
+% 4 1 0 0c0c9637e4c67f0d07f6a27e84d7fcf8
+
+% 0 1 0 0cb05701594a4bfe15b1d3326d4183bc
+
+% 0 1 0 13d1c9305190cef50d179fe00ec9db59
+
+% 0 1 0 0eca5dce3a6d3f41186686f7bc32d0e4
+
+% 1 1 0 0907979883f272c8019cc6a064927b9a
+
+@ 0 2 0 118b7d61c905e57b0ca206abfc3562b9
++ Las funciones trigonométricas y logarítmicas son funciones normales: `cos`, `sin`, `exp`, `ln` y
++ `log10`. Las constantes `π`, `euler` y `φ` están junto a ellas.
+
+@ 0 2 0 1a6515fe709702030d078135196cc8c1
++ `**` amplía su resultado. Elevar un `Short` a una potencia que excede el rango de un `Short` da la
++ respuesta correcta, no una que ha dado la vuelta, y un exponente fraccionario da un resultado
++ fraccionario:
+
+% 2 1 0 0469fd7db107d1dd1c60cb392e331248
+
+% 3 1 0 08fc62cf0ff36da50fd89d5529f3946b
+
+% 4 1 0 0b4d9540d02c3d9d0e5aec200a6404a6
+
+% 0 1 0 03041f1f99b2b0ff1aa6a922879d980c
+
+% 0 1 0 06b589d4bee8d94810b4de8cff1cc53b
+
+% 1 1 0 0622bf15b8fff0980ad7022f0c34aa19
+
+@ 0 3 0 14c5bad1d5aa2c171dcbc795d4156b6d
++ Las estadísticas de una colección también son métodos de extensión. `median` encuentra el valor
++ central mediante un algoritmo de selección, sin ordenar toda la colección, y promedia los dos
++ valores centrales cuando el número de elementos es par:
+
+% 2 1 0 0a5862fea5d753220b07184b21f5236d
+
+% 3 1 0 166c985538a8ee7a0fb9062167f99103
+
+% 4 1 0 0508b4864bc917a61093ec5929571feb
+
+% 0 1 0 15925cad678da54211a77bb8d3bd72f2
+
+% 1 1 0 0da85428b52a99640a866b9218b73e82
+
+@ 0 1 0 1fe2c3852a5c3bf016f34dba3d5a7c19
++ [Matemáticas](mathematics.md) construye números complejos, vectores y matrices sobre estos tipos.
+
+@ 0 1 0 1e7c3e5cb67cdd6c1deba6ebe736856c
++ ### Comparaciones
+
+@ 0 2 0 1f86e69eac3120cf05103454f6664a98
++ Las comparaciones se encadenan como en matemáticas, de modo que un valor puede compararse con dos
++ límites a la vez:
+
+% 2 1 0 16b0c8e30102bf2d1ea0c83498300f3b
+
+% 3 1 0 1a87084f8d5d734d06995ffddffa54f7
+
+% 4 1 0 02f5682d645020e407ad9d3bc8051af9
+
+% 0 1 0 10454938c3d438301a3c314e7729aeaa
+
+% 1 1 0 0ddb399df85864621ccd373d453824c8
+
+@ 0 2 0 19f7d130f3bea4760a24f7db29d86d3a
++ `min` y `max` comparan dos valores, y
++ [`minimum` y `maximum`](collections.md#searching-and-measuring) reducen una colección.
+
+@ 0 1 0 0f2b4da88f82c1400cdec7a7afe8c8ef
++ ### Precisión arbitraria
+
+@ 0 3 0 16d13652f15727811154d47ba7db9754
++ Algunos valores deben ser exactos, y ninguna anchura fija sirve: un total monetario, una
++ coordenada en un documento, una cifra leída de un fichero que no prometía nada sobre su tamaño.
++ Un `Decimal` contiene un signo, una magnitud de cualquier tamaño y una escala decimal:
+
+% 2 1 0 16f13c2f60579bf90b801ce8c9489f03
+
+% 0 1 0 16d94f288ec47c7209dae31dbd38eaff
+
+% 0 1 0 0c4aeb4c42daaed316f6fb3ccb8ec2c2
+
+% 0 1 0 055baf37d4ee62c80f36169cffe78bf6
+
+% 1 1 0 097f4b4cca23527e02f0a928ed7a62e9
+
+@ 0 1 0 19102b8e091d95361a5a445d50acbda6
++ `text` escribe un decimal exactamente, sin perder nada:
+
+% 2 1 0 0bedb8abe385a95d1557c9f58c23fe6c
+
+% 3 1 0 12ed144f7d8dd77b1dcfe9e384225e91
+
+% 4 1 0 0899022d3aeb81400e190587115d6445
+
+% 0 1 0 0c0ce0874e00085a0d15033072ee40e8
+
+% 0 1 0 157018cf6442bdc5029119fbd4d82490
+
+% 0 1 0 12bf859cf8c571a003d9b009b081ca70
+
+% 1 1 0 174d1c56d67b021e08c0146b8fc65346
+
+@ 0 2 0 16c6e6891041cf020328b9330b5b2217
++ Un literal decimal en el código fuente se convierte directamente en un `Decimal`, donde se espera
++ uno. `Decimal(0.1)` convierte un `Double`, y lanza un `Decimal.Error` si el doble no es exacto.
+
+@ 0 3 0 053dda7ba6632d38185e65b76c56686a
++ Los valores son canónicos. Los ceros finales se absorben en la escala al construir un valor, y el
++ cero tiene una sola representación, así que dos decimales numéricamente iguales son el mismo
++ valor. La trampa de `BigDecimal`, en la que `equals` y `compareTo` discrepan, no tiene equivalente
++ aquí.
+
+@ 0 2 0 0528343f83cfc75f07de86c96cc226d5
++ La división no siempre puede ser exacta, así que hay que decirle lo que se quiere: una escala y un
++ modo de redondeo, que se dan y nunca se suponen.
+
+% 2 1 0 03b3decf9909883d076352b7c49809d1
+
+% 3 1 0 0293c27baecb4ea3038202f5d5490e40
+
+% 4 1 0 13451c0d29bb20f51ca1ac81fab6c340
+
+% 0 1 0 06a9107558e6cbc608ef4aaeb62bcd6c
+
+% 1 1 0 0e6061944bb401430c7ea4d52cc277c9
+
+@ 0 3 0 0c0dea3358e6c74b1a362d2208afc2d1
++ `Decimal` está escrito en Scala puro, y no es un envoltorio sobre el `BigDecimal` de la JVM, así
++ que funciona en todas las plataformas. Nada en él depende de la aritmética nativa de 64 bits, lo
++ que importa donde `Long` se emula. [Dinero](money.md) usa aritmética exacta para importes en una
++ divisa.
+
+@ 0 1 0 1fee6fe02861b7fe14ef686bf9e9877c
++ ### Sobrecarga de los operadores
+
+@ 0 2 0 1907795144f7a280126c80bf1426ba77
++ `+`, `-`, `*` y `/` no están integrados en ninguno de los tipos anteriores. Proceden de clases de
++ tipos, y eso es lo que permite que la aritmética signifique algo para tipos cuyos operandos y
++ resultados difieren.
+
+@ 0 5 0 01d44dde80215a14007f07c50bfba671
++ Los operadores propios de Scala son métodos, así que un tipo puede definir `+` solo donde conoce
++ ambos lados y el resultado. Eso basta para un número más un número. No basta para la mayoría de
++ los casos interesantes. Multiplicar una longitud por una longitud da un *área*. Sumar una duración
++ a un instante da un instante. Dividir una magnitud por otra da algo cuyo tipo ninguno de los
++ operandos podría haber previsto.
+
+@ 0 2 0 0bf725a36c86f0a30c0a8fa32ef8e4f5
++ Por eso los operadores se definen sobre clases de tipos, cada una de las cuales nombra tanto el
++ operando como el resultado:
+
+% 2 1 0 1281a6eddc863df1064f52dafae47d10
+
+@ 0 2 0 02cd47ce3db5f636020ba432e05690a4
++ column  Clase de tipos
++ column  Proporciona
+
+% 0 1 0 023ae1f2874c1c2e1c150650d00fae76
+
+% 0 1 0 051910e336601e5118784e415ec949cb
+
+% 0 1 0 02de4c3e4056fb5100de50b9e52e96f2
+
+% 0 1 0 109044521ad927ee1b2f996ae3efd9a4
+
+@ 0 4 0 1e8dfa5d902f88fe133208fe7a959bcb
++ row  `Negatable`  `-` prefijo
++ row  `Rootable`  `sqrt` y `cbrt`
++ row  `Zeroic`  `zero`, el elemento neutro de la suma
++ row  `Unital`  `one`, el elemento neutro de la multiplicación
+
+% 1 1 0 15e851be36e7c45e0c7bd75fa3784937
+
+@ 0 1 0 0a9ea93fc6968f30109e30ab67fe562b
++ Una instancia se lee como una frase:
+
+% 2 1 0 13ee65c1a07c45e31f02fc0d4010ae3a
+
+% 0 1 0 0cd66ef7eb5eca810bb29e8c781ad0aa
+
+% 1 1 0 13e58a4652c3bcfa1faede56229a0cce
+
+@ 0 4 0 0acdbe1f2a2ef74e030cd95285abba2e
++ Un `Double` *es sumable con* un `Double` *para dar* un `Double`. El tipo del resultado pertenece a
++ la instancia, y no es un parámetro del operador. Así, `length*length` puede producir
++ `Quantity[Metres[2]]` mientras que `length*number` produce `Quantity[Metres[1]]`, y el mismo `*`
++ encuentra ambos. Los elementos neutros, `zero` y `one`, sirven a un algoritmo que necesita un
++ valor desde el que empezar.
+
+@ 0 1 0 0df8a7dab2eb6cd3016804273b1d8bbb
++ Otras tres partes de Soundness se apoyan en estas clases de tipos:
+
+@ 0 5 0 05a5ce1c1b0f008c0f605b687e3eed60
++ - [Magnitudes](quantities.md), donde comprobar las dimensiones de un cálculo es exactamente
++   calcular el tipo del resultado.
++ - [Números complejos y matrices](mathematics.md), que son genéricos en un tipo de elemento que
++   solo combinan mediante estos operadores.
++ - [Derivación](derivation.md), que puede producir aritmética para una case class, campo a campo.
+
+@ 0 1 0 18d762136ccf0e2f13f3f83a27ddedbe
++ [Tiempo](time.md) también las usa, para sumar una duración a un instante.
+
+@ 0 1 0 04f9955f0c809a9e1c3b5211d01f7534
++ ### Ordinales
+
+@ 0 4 0 01ed45f43472c3c41952354a12d9610a
++ Los errores por uno vienen de una sola ambigüedad: si «1» significa el primer elemento, o el que
++ va después del primero. `Ordinal` elimina la ambigüedad siendo un tipo distinto de `Int`. Un `Int`
++ no puede usarse donde se espera un `Ordinal`, ni al revés, y no existe el ordinal cero. Un
++ `Ordinal` es un tipo opaco sobre un `Int`, así que no cuesta nada. Los siete primeros tienen
++ nombre:
+
+% 2 1 0 150498e57003a6040b9962e5ac0d9f60
+
+% 0 1 0 1897218e3d13c1cf03d58921dc00b916
+
+@ 0 9 0 0f76864b5e8fdadb0064015fad88f47a
++ column  Posición
++ column  De
++ row  `Prim`  primero  primario
++ row  `Sec`  segundo  secundario
++ row  `Ter`  tercero  terciario
++ row  `Quat`  cuarto  cuaternario
++ row  `Quin`  quinto  quinario
++ row  `Sen`  sexto  senario
++ row  `Sept`  séptimo  septenario
+
+% 1 1 0 035c6268881497d60200864ba69e2471
+
+@ 0 5 0 1eb425b6f1e7424a095fcb78096f20b9
++ Pasar de un `Int` a un `Ordinal` es explícito, y dice de qué convención *procede* el número. `z`
++ lee como ordinal una cuenta desde cero, y `u` lee una cuenta desde uno. Así, `0.z` y `1.u` son
++ ambos `Prim`. La procedencia de un número, ya sea un protocolo de transmisión que cuenta desde cero
++ o una especificación que cuenta desde uno, queda así registrada donde el número entra en el
++ programa, y no hace falta recordarla después.
+
+@ 0 2 0 0ea6339e1999e6cf066e83a02796724d
++ Solo está disponible la aritmética que significa algo. Sumar un número a un ordinal da un
++ ordinal, y restar un ordinal de otro da la distancia entre ellos, un `Int`:
+
+% 2 1 0 04b340fc3ef0b18b0f19cbcd7382ee8c
+
+% 3 1 0 19c5e4e90cb4f83b138329cb8709b6a4
+
+% 4 1 0 19f67d74b8a23d3f1380cbdd9b006b0c
+
+% 0 1 0 12d4707c49420ea3190f71f368e35c6f
+
+% 0 1 0 0d2c6f78a07fc1041147b56baf7f4795
+
+% 1 1 0 17c49ab5faa0ccb718a156ae27f14ec4
+
+@ 0 1 0 05a675b9598c1a671cab946bfe0ef473
++ Multiplicar dos ordinales no compila, porque no significa nada:
+
+% 2 1 0 1402abb428a226dc1b8decc507d95e0e
+
+% 3 1 0 0d533474c0dae0d40a772be6c14e60ff
+
+% 4 1 0 02d34eccc74372cf1d5ff6e994ac1c3f
+
+% 5 1 0 117e85baa0dc7fed00f27bcbc5ba0f83
+
+% 0 1 0 0cef7dc9a3c2804a109261821f613e1d
+
+% 1 1 0 13f77cc6a92195361b581d92d36e9d6b
+
+@ 0 3 0 1324318e0261a70907edd72c259aca08
++ Los últimos elementos de una secuencia tienen nombre, no se calculan. `ult` es el último
++ («último»), `pen` el penúltimo y `ant` el antepenúltimo. Cada uno da un `Optional`, ya que una
++ secuencia puede ser demasiado corta para tenerlo, y cada uno está disponible en cualquier tipo con
++ una instancia de `Countable`.
+
+@ 0 2 0 01a8f47369823dc31a341a05e4c77b7b
++ Un rango de ordinales es un `Interval`. Se construye con `thru` para un extremo inclusivo, `till`
++ para uno exclusivo, o `span` para una longitud:
+
+% 2 1 0 1ad4ea936518c6fb10650b77faaa0fec
+
+% 3 1 0 0a50aab71a8e7f8e1399b4fb3f9beed8
+
+% 4 1 0 0e3c1bf7b102d3da040c5d66aeacbd81
+
+% 0 1 0 16e4d3110b8bf0920acfad5300207fb1
+
+% 0 1 0 1a3b3eb06e173a4d0b05c447b168d757
+
+% 0 1 0 0bb0836185235bbc1a562b51a873fd70
+
+% 1 1 0 0d03728fe3c70a990b3da73425d19701
+
+@ 0 4 0 1b7ce5bb2cde9a971a1f9d9566318b1c
++ Un intervalo conoce su `start`, su `end` y su `size`. Itera con `each` y pliega con `fuse`, como
++ hace una [colección](collections.md). `extent` da todo un valor contable como intervalo, para que
++ un recorrido exprese sus límites en términos del valor que recorre, y no en enteros en bruto.
+
+@ 0 5 0 1a9931385ee0ea8c1585e69430825a0b
++ Un intervalo que procede de `extent` lleva, en su tipo, el valor del que procede, y lo mismo hacen
++ los ordinales que entrega al iterarse. Está probado que un ordinal así queda dentro de la
++ colección, así que leer con él no puede fallar. Da un elemento, donde un índice sin prueba daría
++ un `Optional`. Por tanto, un bucle que cuenta sobre una colección se escribe sin contador, y sin
++ comprobación de límites en ninguno de los lados:
+
+% 2 1 0 02ddb50236560ba602fcea2a560d57d5
+
+% 0 1 0 1bbadb17eabf889d023de3e09f6ac671
+
+% 0 1 0 09ecb3d93b2ae9df1ff2673c9fa34ef1
+
+% 0 1 0 04b087c1c9dd7ce304a25237827838c5
+
+% 1 1 0 1e1fd84d03d05b210d992de0a5469257
+
+% 3 1 0 042f34d19fe5e2990902f3a6a8e5f0d4
+
+% 4 1 0 1aef434715e1289619e3ae03f358a070
+
+% 5 1 0 044dc55c2b83a8e4056ea230d6b94f4a
+
+% 0 1 0 1f2b83b9f1be5f260aeb146e9b711f36
+
+% 1 1 0 0ad98fe8194aa4b00b04039fd0e2a807
+
+@ 0 2 0 0838082aaa3998000be98411478adc97
++ `capped` estrecha un intervalo así conservando lo que prueba. `array.extent.capped(2)` itera las
++ dos primeras posiciones, y sus ordinales aún pueden leerse sin comprobación.
+
+@ 0 1 0 0f7fe2b68392c8801d225d52d32dacd9
++ ### Números acotados
+
+@ 0 1 0 0f0b8c295910e8051ebcf603be33bbcd
++ Un número puede llevar su rango permitido en su tipo, escrito con `~`:
+
+% 2 1 0 1d16f585255f1f1f1b13fb643e4f4411
+
+% 3 1 0 101f33854770704e1721c2755a524e4d
+
+% 1 1 0 0418e04c4e9f93be05f1d57b0bbb2db1
+
+% 0 1 0 1d9fa89fa4a25d6904e9f5f8f967bcff
+
+% 1 1 0 16a7a0916dbe291a0371f202e271f627
+
+@ 0 1 0 0b8e10c030976e88096177495e9f0bd5
++ Un literal fuera del rango es un error en tiempo de compilación, detectado donde se escribe:
+
+% 2 1 0 1f159a981b1c8a90127d5f93ab43f3ec
+
+% 3 1 0 1aa24f93952ce9e207dd2bcb8f7b3552
+
+% 4 1 0 0f7d3dbbfb60c93a16e9623d866f3ec6
+
+% 5 1 0 065f483466a5b87a016716e96b7a0efb
+
+% 0 1 0 06328e13f0c762cb00d9ef90f947aefa
+
+% 1 1 0 1af04e688d19520b11b3e030982714d3
+
+@ 0 3 0 0ea98991cb96b1c610276a9a147f886a
++ La aritmética sobre números acotados calcula el rango del resultado a partir de los rangos de sus
++ operandos. Duplicar un valor en `[0, 1]` da uno que se sabe que está en `[0, 2]`, y por tanto con
++ toda seguridad dentro de `[-2, 2]`:
+
+% 2 1 0 00eb2a5e5d2372940ff77cfe0928b688
+
+% 3 1 0 1b2d2157590335c2140eafe91cdcbd6f
+
+% 4 1 0 18e8a31b79a7caec186e325bd82d54ce
+
+% 0 1 0 124cdf157c4c5e3e1e699c711e40a496
+
+% 1 1 0 0c5db343e80a32810c2a37e455540f8e
+
+@ 0 4 0 018247fe4099e4ae1c79b230ddbdf78e
++ La cota viaja con el valor a lo largo de un cálculo, y un paso que pudiera romperla no compila.
++ Es la disciplina de las [magnitudes físicas](quantities.md), aplicada a rangos simples. La
++ inferencia es precisa. Tiene en cuenta si cada operando es un valor acotado, un literal o un
++ `Double` del que no se sabe nada, y se compone a lo largo de toda una expresión:
+
+% 2 1 0 02e5ad670716fc5206534d84ed2f57ae
+
+% 3 1 0 17cd8dc578fdee2a0a255e0cc6ec4bc1
+
+% 4 1 0 1e6527870a0a8cbd16184a5670503494
+
+% 0 1 0 0b27568d0e1dd2241e9bd1b8cbc4dbeb
+
+% 0 1 0 1542a7df4a6668470e3a73bdae261cbf
+
+% 0 1 0 1682adc77676b62b00ec3f68cb69a9df
+
+% 0 1 0 138a938bcf377cc401a28b957103b1b0
+
+% 1 1 0 039591148dc565e505cdb474fe49d616
+
+@ 0 3 0 0cfb8fb15457ca98122eaefcee4e73f2
++ Pero los `Double` ordinarios sin cota están por todas partes, y un programa debe poder traer uno
++ a este mundo desde fuera. `force` afirma una cota que el compilador no puede comprobar. Eso la
++ convierte en la única operación aquí que puede ser errónea, y por tanto en la que hay que usar
++ deliberadamente.

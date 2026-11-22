@@ -1,0 +1,49 @@
+orthant 2 language
+
+% 0 1 0 173c47bae2eabcc51ed9f53c62aff0de
+
+@ 0 1 0 18bca49ee94f1e0c0224951ae3282aec
++ Se lanza cuando un entero de longitud variable de BinTEL está mal formado.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 162c15d95ec78ded1f7f888ab73b0478
++ BinTEL codifica los enteros como varints, siete bits por byte con un indicador de continuación.
++ Este error abarca un varint que se extiende más allá del final de la entrada, uno más ancho que
++ los 64 bits que permite el formato, y uno que no es mínimo: una codificación sobrelarga como
++ `80 00` para el cero, que el §4 de la especificación de BinTEL rechaza para que cada entero tenga
++ exactamente una codificación.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Código
++ column  Motivo
++ column  Mensaje
+
+% 0 1 0 0ccd023f9a98df4d16b17217a6e7aa9f
+
+% 0 1 0 1116c36d6bb2987f002600d475ffebb0
+
+% 0 1 0 05d7a7f71396d4030d99b36743d3f2c9
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 3 0 02c0ae5a3593f800110501e38ccd5a6b
++ El flujo está truncado o corrupto. Un varint más largo de lo que permite el tipo de destino suele
++ significar que el lector y el escritor no están de acuerdo en el tipo del campo. Un varint
++ sobrelargo procede de un codificador que rellena, algo que no hace ningún codificador de BinTEL
++ conforme.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 07aa718866039f7e0ff5e503f72fcab5
++ - Código fuente: `lib/stratiform/src/core/stratiform.Varint.scala`

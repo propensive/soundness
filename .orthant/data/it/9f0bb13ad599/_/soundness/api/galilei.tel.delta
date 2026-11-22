@@ -1,0 +1,254 @@
+orthant 2 language
+
+% 7 1 0 1a1956cb84a7ec440c0f256248e53526
+
+@ 0 5 0 1c0025c9eaaf9fe40e98071d332871be
++     Oltre ai singoli percorsi: `Cas` è un archivio di blob indirizzati per contenuto sotto una
++     directory; `Searchpaths.Stems` risolve un piano di searchpath XDG (`Xdg.Data`, `Xdg.Config`)
++     su directory reali con `discover`, `locations`, `listing` e `destination`; `Umask` e
++     `Fdtable` sono valori contestuali che un demone fornisce per conto di un client (la maschera
++     che le sue creazioni rispettano, e la tabella dei descrittori attraverso cui si aprono i suoi
++     percorsi `/dev/fd/N`).
+
+@ 0 10 0 014f9df73eaa0e1e1ec1313fd4d24eae
++       Spostare un file su un percorso dove esiste già qualcosa o distrugge quella cosa o si
++       rifiuta di farlo; eliminare una directory o la svuota o si rifiuta; copiare un link
++       simbolico o lo segue o copia il link. Nessuna delle due risposte è giusta in generale,
++       quindi galilei non sceglie mai in silenzio: ogni domanda è un trait di politica
++       (`OverwritePreexisting`, `DeleteRecursively`, `CreateParents`,
++       `DereferenceSymlinks`, `MoveAtomically`, `CopyAttributes`), e l'operazione che deve
++       rispondere riceve la politica come parametro contestuale. Chiamare `moveTo` senza né
++       `overwritePreexisting` né `failOnPreexisting` nell'ambito è un errore di compilazione che
++       nomina la politica mancante. Le politiche vanno a coppie, una permissiva e una rigorosa, e
++       si importano per nome (`import soundness.*` non importa i given), per un intero file o
++       limitate a un solo blocco.
+
+@ 0 5 0 17e0ab60fee4267f02c273f107304bef
++       - `copyTo`, `moveTo`, `hardLinkTo`, `symlinkTo`: `OverwritePreexisting` e
++         `CreateParents` (e `DereferenceSymlinks` per copia e spostamento,
++         `MoveAtomically` per lo spostamento).
++       - `copyInto`, `moveInto`, `symlinkInto`: `OverwritePreexisting` e `DereferenceSymlinks`
++         (e `MoveAtomically`); i genitori vengono creati, poiché la directory di destinazione è
++         nominata.
+
+@ 0 3 0 0ac53c76d610908a177e3bb3183b3f73
++       - `create[…]`: nessuna è richiesta. `CreateFlag.Parents` e `CreateFlag.Replace`
++         dichiarano l'intenzione nel punto di chiamata; anche una politica `CreateParents`, se
++         ce n'è una nell'ambito dove si chiama `create`, viene rispettata.
+
+% 0 1 0 1abd1fb2681a63ba0899f5a16108fec1
+
+% 0 1 0 0757fee2b534bf971c9e195a7d37d8a0
+
+@ 0 48 0 01453ece02b6183508e6ad33388a35cd
++   entry .dereferenceSymlinks   seguire un link simbolico come componente finale: operare su ciò a cui punta
++       Il `DereferenceSymlinks` permissivo: `entry()` riporta il tipo della destinazione, `copyTo`
++       copia il contenuto della destinazione, `descendants` e `checksum` attraversano le
++       directory collegate, `hardLinks()` conta i link della destinazione.
++   entry .preserveSymlinks   non seguire un link simbolico: operare sul link stesso
++       Il `DereferenceSymlinks` rigoroso: `entry()` riporta `Symlink`, `copyTo` copia il link, un
++       attraversamento non scende in una directory collegata. `filesize()` usa sempre questo,
++       quindi la dimensione di un link è quella del link.
++   entry .moveAtomically   `moveTo` deve essere atomico, ed è `Unsupported` dove non può esserlo
++       Il `MoveAtomically` che chiede al backend una ridenominazione atomica (`ATOMIC_MOVE` sulla
++       JVM). Un lettore non vede mai una voce spostata a metà; uno spostamento tra volumi, che
++       non può essere atomico, solleva `Io.Error` con `Unsupported` anziché ripiegare su una
++       copia.
++   entry .moveNonAtomically   `moveTo` può essere una copia seguita da un'eliminazione
++       Il `MoveAtomically` che consente uno spostamento non atomico, così uno spostamento tra
++       volumi riesce, al prezzo che un fallimento a metà può lasciare sia la sorgente sia una
++       destinazione parziale.
++   entry .copyAttributes   una copia porta con sé gli attributi della sorgente (timestamp, permessi)
++       Il `CopyAttributes` permissivo. Al momento nessuna operazione lo consulta: la politica
++       esiste perché il trattamento degli attributi in una copia sia dichiarato una volta che i
++       backend lo rispettino.
++   entry .discardAttributes   una copia prende solo il contenuto; gli attributi della copia sono nuovi
++       Il `CopyAttributes` rigoroso; si veda `.copyAttributes` per il suo stato attuale.
++   entry .deleteRecursively   `delete` e `wipe` su una directory eliminano prima tutto ciò che contiene
++       Il `DeleteRecursively on <plane>` permissivo, per qualsiasi piano con un `Explorable` e un
++       backend. Elimina i figli in profondità prima dell'operazione che protegge, quindi `wipe()`
++       rimuove un intero albero. È anche ciò di cui ha bisogno `overwritePreexisting`, così che
++       sostituire una directory possa svuotarla.
++   entry .deleteOnlyEmpty   `delete` e `wipe` rifiutano una directory che ha figli
++       Il `DeleteRecursively` rigoroso: una directory con almeno un figlio solleva `Io.Error` con
++       `Operation.Delete` e `Reason.DirectoryNotEmpty` prima di toccare qualsiasi cosa. Un
++       programma che non deve mai rimuovere più di una voce alla volta importa questo.
++   entry .overwritePreexisting   una destinazione che esiste già viene prima rimossa
++       L'`OverwritePreexisting on <plane>` permissivo, che richiede un
++       `DeleteRecursively on <plane>` nell'ambito (per svuotare una directory da sostituire).
++       `copyTo`, `moveTo`, `hardLinkTo`, `symlinkTo` e `Device.create` non possono quindi
++       sollevare `AlreadyExists`.
++   entry .failOnPreexisting   una destinazione che esiste già è un `Io.Error`
++       L'`OverwritePreexisting` rigoroso: l'operazione procede senza toccare nulla, e il backend
++       solleva `Io.Error` con `Reason.AlreadyExists` quando entra in collisione con una voce
++       esistente, che il chiamante deve poi gestire.
++   entry .createParents   le directory antenate mancanti di una destinazione vengono create
++       Il `CreateParents on <plane>` permissivo, che richiede un backend. Prima
++       dell'operazione, viene creato ogni antenato assente della destinazione, risalendo dal più
++       vicino. Le directory vengono create con la maschera del processo stesso. `copyInto`,
++       `moveInto` e `symlinkInto` lo usano implicitamente, poiché la loro directory di
++       destinazione è nominata. Con essa nell'ambito, anche `create[…]` crea gli antenati
++       mancanti, come se fosse stato dato `CreateFlag.Parents`.
++   entry .requireParents   una destinazione il cui genitore manca è un `Io.Error`
++       Il `CreateParents` rigoroso: non viene creato nulla, e il backend solleva
++       `Io.Error` con `Reason.Nonexistent` per il genitore mancante.
+
+@ 0 1 0 1296882510845f1b1289f7a791a2f225
++ entry .CreateParents   la politica per una destinazione il cui genitore manca: crearlo, o fallire
+
+@ 0 8 0 1d4190ed60324ddb174e9b361d6bd755
++       Una politica di piano (`CreateParents on Linux`) il cui `#apply` incapsula
++       l'operazione. `filesystemOptions.createParents` crea ogni antenato mancante;
++       `filesystemOptions.requireParents` lascia che il backend sollevi `Nonexistent`. Richiesta
++       da `copyTo`, `moveTo`, `hardLinkTo`, `symlinkTo` e `Device.create`. Le operazioni
++       `create[…]` non ne richiedono una, ma rispettano quella che è nell'ambito dove vengono
++       chiamate: sotto `createParents` creano gli antenati mancanti senza
++       `CreateFlag.Parents`.
++   entry #apply   esegue un'operazione in `path`, dopo aver creato o meno i suoi antenati mancanti
+
+@ 0 9 0 0a2294adcdf9815c0b76589ef0ac24d3
++       L'assenza di flag significa rigore: creare una voce il cui genitore manca solleva
++       `Io.Error` con `Nonexistent` (a meno che `filesystemOptions.createParents` non sia
++       nell'ambito), e crearne una che esiste già solleva `AlreadyExists`, a meno che il chiamante
++       non dica altrimenti nel punto di chiamata. `Parents` crea ogni directory
++       antenata mancante (sotto lo `Umask` nell'ambito); `Replace` elimina prima una voce
++       esistente nel percorso — ricorsivamente, se è una directory. I flag sono gli argomenti che
++       seguono la forma: `path.create[Directory](CreateFlag.Parents)`,
++       `path.create[File](CreateFlag.Replace)`. `Replace` deliberatamente non è una politica di
++       `filesystemOptions`: l'intento distruttivo alla creazione si dichiara dove avviene.
+
+@ 0 8 0 17a4139b13863d8611fb563a80109d2e
++ entry .copyTo   `path.copyTo(destination)`: copia una voce in un percorso, consultando le politiche nell'ambito
++     Un'estensione su qualsiasi `Path on <plane: Filesystem>`, che richiede un
++     `OverwritePreexisting on plane`, un `DereferenceSymlinks`, un
++     `CreateParents on plane`, un backend, un `Tactic[Io.Error]` e un
++     `Io.Event is Loggable`. Sotto `failOnPreexisting` una destinazione esistente solleva
++     `AlreadyExists`; sotto `overwritePreexisting` viene rimossa prima. Sotto `requireParents`
++     un genitore mancante solleva `Nonexistent`. Una directory viene copiata come directory
++     vuota (il `Files.copy` della JVM), non ricorsivamente. Registra `Io.Event.Copy` e
++     restituisce la destinazione.
+
+% 7 1 0 0245801bb2136c841da686b0680d804a
+
+@ 0 8 0 1ab020043205a63e14aceafbbfc0774c
++ entry .moveTo   `path.moveTo(destination)`: sposta una voce in un percorso, consultando le politiche nell'ambito
++     Un'estensione su qualsiasi `Path on <plane: Filesystem>`, che richiede un
++     `OverwritePreexisting on plane`, un `MoveAtomically`, un `DereferenceSymlinks`, un
++     `CreateParents on plane`, un backend, un `Tactic[Io.Error]` e un
++     `Io.Event is Loggable`. Con `moveAtomically` lo spostamento è una singola rinomina, e uno
++     tra volumi diversi è `Unsupported`; con `moveNonAtomically` può essere una copia seguita da
++     un'eliminazione. `AlreadyExists` e `Nonexistent` si presentano sotto le politiche rigorose
++     come per `copyTo`. Registra `Io.Event.Move` e restituisce la destinazione.
+
+% 7 1 0 15e5d40e31eead1b00c12857e960f691
+
+@ 0 6 0 1bbf9af2231e9434158c38a7e76496d9
++ entry .hardLinkTo   `path.hardLinkTo(link)`: crea in `link` un hard link a questa voce
++     Un'estensione su qualsiasi `Path on <plane: Filesystem>`, che richiede un
++     `OverwritePreexisting on plane`, un `CreateParents on plane`, un backend, un
++     `Tactic[Io.Error]` e un `Io.Event is Loggable`. Il ricevente è la voce esistente e
++     l'argomento il nuovo nome; dopo, entrambi hanno lo stesso `entryIdentity`. Registra
++     `Io.Event.HardLink` e restituisce il percorso del link.
+
+@ 0 6 0 1c6f69fde0af460216c7f82989bfdf38
++ entry .symlinkTo   `path.symlinkTo(link)`: crea in `link` un link simbolico che punta a questo percorso
++     Un'estensione su qualsiasi `Path on <plane: Filesystem>`, che richiede un
++     `OverwritePreexisting on plane`, un `CreateParents on plane`, un backend, un
++     `Tactic[Io.Error]` e un `Io.Event is Loggable`. Il ricevente è il bersaglio e l'argomento il
++     link, che viene creato; il link memorizza il testo completo del ricevente. Registra
++     `Io.Event.Symlink` e restituisce il percorso del link.
+
+% 7 1 0 1d0dc59b173b45101e4a5a641f4d9ca0
+
+@ 0 8 0 14255f9cbc7e5a441a48337417dc0a10
++       Molti file non si cercano in un unico posto ma lungo una lista di posti — un'icona in
++       qualunque directory dei dati XDG la contenga, un file di configurazione nel primo di
++       diversi posti. Un piano `Searchpath` di ambience (`Xdg.Data`, `Xdg.Config`) è una tale
++       lista presentata come un unico albero navigabile, e la risoluzione sulla piattaforma reale
++       passa per un `Searchpaths.Stems` contestuale: le directory ordinate da provare, di cui la
++       prima è quella scrivibile. Un percorso relativo sul piano si risolve allora con `discover()`
++       nel primo tronco che lo contiene, con `locations()` in ogni tronco che lo contiene, con
++       `listing()` nell'elenco unificato della directory, e con `destination()` nel suo posto
++       sotto il primo tronco.
+
+% 0 1 0 1ef3712c378c838d0276d43da971c5a5
+
+% 0 1 0 18568f6ddf325ebe0118d8fa232ea4d0
+
+@ 0 5 0 1b3a0d5251df1ee909b8890539b540b6
++ entry .discover   `path.discover()`: la prima directory reale di un percorso di ricerca in cui il percorso esiste, o `Unset`
++     Un'estensione su `Path on <plane <: Searchpath>`, con bisogno di un `Searchpaths.Stems` per
++     il piano e di un `FilesystemBackend` per la sua destinazione. Vince la prima
++     corrispondenza, secondo la specifica XDG; il risultato è un `Path on stems.Target`. Si
++     chiama `discover` anziché `locate` o `search`, che zephyrine e gossamer esportano
++     nell'ombrello.
+
+@ 0 4 0 0b310b54a9ef907a1147f3cf8ca85ee0
++ entry .destination   `path.destination()`: il posto del percorso sotto il primo tronco, dove la specifica XDG prescrive le scritture
++     Un'estensione su `Path on <plane <: Searchpath>`. Totale: su disco non viene verificato
++     nulla. Creare le eventuali directory intermedie mancanti spetta a chi chiama, tramite
++     `filesystemOptions.createParents` sulla scrittura stessa.
+
+@ 0 4 0 08affb08ea0beeb1106b596931ca7264
++       In `galilei.jvm`. `Device.create(path, Device.Kind.Block, major, minor)` esegue il
++       comando `mknod`, consultando le politiche `CreateParents` e
++       `OverwritePreexisting` nell'ambito, e solleva `Io.Error` con `PermissionDenied` se il
++       comando fallisce — creare un nodo di dispositivo di solito richiede root.
+
+% 0 1 0 1bfc186d2c6371b41faa2d6a22a08838
+
+@ 0 5 0 0eb553b78dd028881026bb9c909cfbaa
++ entry .mapped   `path.mapped { view => … }`: l'intero file mappato in memoria, in sola lettura, come `Terrain` per la durata di un blocco
++     Nulla viene copiato: gli interi si leggono sul posto dalla page cache, e i processi che
++     mappano uno stesso file ne condividono una sola copia. Il file viene smappato quando il
++     blocco termina, e la vista è una capability confinata al blocco. I backend JVM e Scala
++     Native mappano i file; WASI solleva `Io.Error` con il motivo `Unsupported`.
+
+@ 0 6 0 0319e67535d2aa521b0832ad7f582d74
++ entry .hold   `path.hold(reserve) { holding => … }`: l'intero file mappato per essere modificato sul posto, come `Holding`, sotto un lock esclusivo
++     Il file viene creato se non c'è, ed esteso a `reserve` byte se è più corto; l'`expand`
++     dell'holding lo estende ulteriormente. Il lock è sul file stesso, ed è tenuto per il
++     blocco: un secondo `hold` del file, in questo processo o in un altro, solleva `Io.Error`
++     con il motivo `Busy`. Ciò che è stato scritto è durevole quando il blocco termina. Solo i
++     backend JVM e Scala Native mappano un file per la modifica; quello di WASI solleva
++     `Unsupported`.
+
+@ 0 5 0 15a3d430ea8c7ec50db26d8e610c81a5
++ entry .claim   `path.claim[record] { owner => … }`: la proprietà di un nome per la durata di un blocco, per pubblicare sotto di esso versioni di `record`
++     Per tutto il tempo è tenuto un lock esclusivo del sistema operativo sul file fratello
++     `<name>.lock`, così un solo processo, e un solo ambito al suo interno, pubblica sotto il
++     nome alla volta; un secondo solleva `Io.Error` con il motivo `Busy`. Il lock è
++     consultivo, e affidabile tra processi che cooperano su un filesystem locale.
+
+@ 0 4 0 00e9fb594f49f696182f1a9cda4f790c
++ entry .observe   `path.observe[record] { observer => … }`: la versione di un nome attualmente pubblicata, mappata, con il mezzo per passare a una più recente
++     Non viene acquisito alcun lock, quindi un observer non ritarda mai il proprietario, né il
++     proprietario un observer. Tutto ciò che è mappato viene smappato quando il blocco termina.
++     Un nome sotto il quale non è stato pubblicato nulla solleva `Io.Error`.
+
+@ 0 2 0 16b4996b5b09ee631003a445d8029a27
++ entry .Edition   l'identità di una versione pubblicata: a quale file portava il nome, e quando è stato scritto
++     Due edizioni sono la stessa versione esattamente quando sono uguali; non hanno un ordine.
+
+@ 0 4 0 16c024220c7964ec153f02eb5e566de4
++ entry .Owner   la proprietà di un nome, per il blocco di `claim`: la capability di pubblicare sotto di esso versioni di `record`
++   entry #publish   sostituisce atomicamente il file pubblicato con la codifica di un valore, e risponde con la nuova `Edition`
++       Il valore viene scritto in modo sincrono nel file fratello temporaneo `.<name>.part`, e
++       spostato sopra il nome, così un observer che ha mappato una versione precedente non
++       viene disturbato.
+
+@ 0 1 0 17f48f2f57de485414f06b97d1cabc9a
++ entry .Observer   la presa di un lettore su un nome pubblicato, per il blocco di `observe`: la versione corrente, mappata, e il mezzo per passare oltre
+
+% 1 1 0 004ef53efa407ece0a665176c19bce70
+
+@ 0 8 0 1be53bb2b72a06bb1b4200b6b7c0448e
++       Una capability condivisa: non acquisisce alcun lock, e può essere usata da più thread.
++       Mantiene in vita la versione che ha mappato finché non passa oltre, o finché il suo
++       blocco non termina.
++   entry #edition   l'edizione della versione mappata
++   entry #map   presta una vista `Terrain` della versione mappata per la durata di un blocco, che un `refresh` nel frattempo non disturba
++   entry #refresh   mappa la versione a cui ora porta il nome, se non è quella già mappata, e risponde se l'ha fatto
++   entry #open   apre la versione mappata come `record`, tramite la sua istanza di `zephyrine.Surveyable`, per la durata di un blocco
++       Il tipo dato all'observer è la forma in cui si legge la sua versione: un observer di un
++       `Ratel of Playbill` apre un'immagine di un `Playbill`, e rifiuta qualsiasi altra.

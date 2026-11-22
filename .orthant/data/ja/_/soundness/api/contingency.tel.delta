@@ -1,0 +1,1515 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0c29e8314bc38deb1a492ca41d270c11
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 06b9c1f3ce181208186553b55bf332a8
++ info   呼び出し側での選択としてのエラー処理：型には `raises`、スコープには `Tactic`
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 16c172d9410cbe6b1d68ff527a9037de
++     _Contingency_ は、失敗しうるコードを、失敗が何をするかの決定から切り離す。
++     失敗しうるメソッドは、そのことを戻り値の型で `raises` によって述べる。その内側では、`abort` がエラーを報告して止まり、`raise` がエラーを報告して続行する。
++     エラーがどうなるかは、呼び出し側が**戦術**（`Tactic[error]`）をスコープに置くことで決める：例外として投げる、結果を存在しないものにする、他のエラーとともに集める、値で置き換える、別のエラーに変換する、あるいはプロセスを終了する。
++     失敗しうるメソッドはそのどれであるかを決して述べないので、一つの本体があらゆる対応に役立つ。
+
+% 2 1 0 14f206d76925f4081ab10c7f30b54896
+
+% 3 1 0 0fd79df4edd049db0bcde5796e6e3ec6
+
+% 5 1 0 0bcfe3614bd566ed0868208ed98a6e78
+
+% 6 1 0 1ebd995c1dc6248b09a42b663e360004
+
+% 0 1 0 12934c70173a0e3117b692f1f1e164d8
+
+% 0 1 0 04639a66b4d34a9918430297a177e249
+
+% 0 1 0 104fd80c26fe836e161769de130e12f3
+
+% 1 1 0 18b2f9915bed9d9c034319a361c7fcd6
+
+@ 0 6 0 1eb1f6a8a54102bd1687f0965711aeb5
++     `Connection raises PortError` は、コンテキスト関数型 `Tactic[PortError] ?=> Connection` の別名にすぎない。したがって `raises` メソッドとは、エラー処理のポリシーをコンテキスト引数として受け取るメソッドであり、`abort` はそれを呼び出すものである。
++     この要求は伝播する：`connect` の呼び出し側は、自ら `raises PortError` を宣言するか、以下のハンドラのいずれかでその義務を解消する。
++     同じ失敗する呼び出し（数値でないテキストのデコードであり、`Number.Error` を発生させる）を、それぞれのもとで示す：
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 12632cd97ed98e1008a3c75aac31b1e0
+
+% 1 1 0 1f68a5629f7b337b104f59d8d8831a00
+
+% 2 1 0 0175c93570be7a3b1f270e7abe3c2d37
+
+% 0 1 0 1b89f21b116972d006b18b4e80ff4ab5
+
+% 0 1 0 0798179fd46066390d73f0f2d8a2bf3e
+
+% 0 1 0 13662b8583c5baf10420d2a385c00dd0
+
+% 0 1 0 1e5d47c1f789a78810590652ba70c4ae
+
+% 1 1 0 1f2c837985d743ba0462261e10e3ef81
+
+% 2 1 0 1331ca7e407add340493f4eb8c1c94f1
+
+% 0 1 0 190e0e8c923ff5ed1323d3b6abe45991
+
+% 0 1 0 08660c7421a6e56212476952244e4d3f
+
+% 1 1 0 16a7f0d6272c7b3303967b823fe13fb6
+
+% 2 1 0 116a09f5b827304f03810e4bb5400b19
+
+% 0 1 0 0edf383ea8ab5e691afc545124cdce1d
+
+% 0 1 0 1c82ca4909d915c21c596f60b6fec3d1
+
+% 1 1 0 15ecff079ca4e74216d5833d33bd8124
+
+% 2 1 0 07d656a2f8d96d2a14a0b238b8dc610c
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 19fce888477ff0201ab388293ee62f7a
+
+% 0 1 0 107746abb83845c6114f395bea9ade81
+
+% 1 1 0 015cd61b47fbccb11d3f2c78ad1ed016
+
+% 2 1 0 0491ff23cfba137a149512c9242ffe58
+
+% 0 1 0 1fdbc2b20abf9d34035734c53179b9a4
+
+% 0 1 0 1670cc54faa9f1d6135a3f177b47c570
+
+% 0 1 0 088a3562ed9bfb9b1880b5856d9b4c74
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 1 0 0c8733bdd6031bf90219f5cf9c2a5d5c
++     構成要素を、それぞれが答える問いごとに挙げる：
+
+@ 0 19 0 06996f5f38a09c17163cfccdcde7ff80
++     - **失敗の宣言**：`raises`、`raise`、`abort`、そしてそれらの背後にあるケイパビリティである `Tactic`/`Emit`。`Emit` は報告しかできず、`Tactic` は中断もできる。
++     - **一度だけ、広く選ぶ**：`strategies` パッケージ。その given は名前でインポートする。プロトタイプとエントリーポイントには `throwUnsafely`、`CanThrow` のもとでは `throwSafely`、`Unchecked` や `Fatal` に分類されたエラーには `uncheckedErrors` と `fatalErrors`、`Mitigable` な変換を持つエラーには `mitigation` を使う。`import soundness.*` はそのどれも持ち込まない。ワイルドカードインポートは決して given をインポートしないからである。
++     - **ブロックのために局所的に選ぶ**：`safely`（失敗すると存在しない）、`unsafely`（例外を投げ、そのことを明示する）、`throwErrors`、`attempt`（`Attempt`）、`capture`（エラーそのもの。テスト用）、`amalgamate`（ユニオン）、そしてハンドラの構築子 `recover`、`mitigate`、`accrue`、`handle`。それぞれ match のケースとして書き、`protect` でブロックに適用する。
++     - **すべての失敗を集める**：`raise` は記録して続行するので、蓄積型の戦術（`accrue`、`track`、`validate`）は検証の一回の走査のすべてのエラーを集める。`Foci`、`focus`、`Pointer` は、それぞれが*どこで*起きたかを述べる。`venture` と `guard` は、記録された失敗が見せかけの失敗へと連鎖するのを防ぐ。`Tactic#tolerate` は、アンビエントの戦術の中でブロックの失敗を捨てる。
++     - **エラーの分類**：`Unchecked`（処理されずに投げられてよい）、`Fatal`（`Exit` ステータスでプロセスを終える）、`Mitigable`（別のエラーに変換される）。
++     - **値としてのエラー**：`Attempt`、`Venture`、`Errors`、`Validation`、`Expectation.Error`。
+
+@ 0 8 0 1ffabd5b207058bf11cf7a1cab7fc25f
++     戦術はケイパビリティである。
++     `Emit`、したがってすべての `Tactic` は `caps.Control` を拡張する：それを導入したコードのスタック上の戻り先を捕捉するので、別のスレッド（タスクのスレッド）で走る本体はそれを保持できず、戦術がそのスコープが閉じた後で使われることは決してない。
++     アンビエントの戦略は例外であり、意図的に純粋である：スコープを持たない throw は戻り先を保持しない。
++     すべてのエラーは `Hazard`（純粋な `Exception`）なので、どのエラーも、自身を閉じ込めたスコープからケイパビリティを持ち出すことはできない。（`errorDiagnostics` からの）`Diagnostics` given は、各エラーがスタックトレースを捕捉するかどうかを決め、エラーを捨てる戦術は自ら `Diagnostics.omit` を与える。
+
+@ 0 5 0 057e7ea4fb4e2baa02b84f7de004f633
++     このライブラリは一つのソースセット `contingency.core` であり、`fulminate`（`Error`、`Message`、`Diagnostics` のため）と `vacuous`（`Optional` のため）の上に作られ、JVM、Scala.js、Scala Native のいずれにもコンパイルされる。
++     `raising` と `FatalTactic` を除くすべてが `soundness` アンブレラにエクスポートされ、`strategies` はアンブレラ自身の同名のパッケージと統合される。
+
+% 0 1 0 0db7ca6617f1b5c50f03c89938e496e6
+
+% 0 1 0 0d0fb1f0acde56b91ea84e6ae51a5f09
+
+% 0 1 0 0cf6b86111cd3c8f1754ea96c2ed0521
+
+% 0 1 0 1b33897eb9cbb21d0998c47e67068454
+
+% 0 1 0 1edec44af7c5113d1231da2bf0256c07
+
+% 0 1 0 09c6ab96ab155d7205f2c796bb07569a
+
+% 0 1 0 0afc6443f648f4f31ac1dc48d6a16eab
+
+@ 0 1 0 17749d17f862a3dd09939d5db9a634b5
++ entry .Tactic   エラーを報告し、エラーとともに中断するケイパビリティ：`raises` が求めるもの
+
+% 1 1 0 018faaeb13a43d2b125235dd9786e829
+
+@ 0 6 0 0547deb5d718ab2b124a6d184c564854
++       `Tactic[error]` は、さらに `abort`（値を置き換える異常な脱出）ができる `Emit[error]` である。
++       `success raises error` は `Tactic[error]^ ?=> success` なので、失敗しうるメソッドはすべて戦術をコンテキストパラメーターとして受け取り、`raise` はその `record` を、`abort` はその `abort` を呼び出す。
++       それぞれが何をするかは戦術が選ぶ：`ThrowTactic` は例外を投げ、`OptionalTactic` は `Unset` で `safely` から抜け出し、`AccrueTactic` はエラーを蓄積に畳み込んで続行する。
+
+@ 0 5 0 1fefa74e6867333a0a36a42d3bc28c0f
++       この型は `error` について反変であり、それによってアンビエントの `ThrowTactic[Hazard]` が `Tactic[PortError]` を満たせる。
++       戦術を手で作ることはまれである：ハンドラ（`safely`、`attempt`、`recover`…）と `strategies` の given が戦術を与え、`summon[Tactic[PortError]]` はスコープにある戦術に届く。メソッドの本体が `#tolerate` を呼び出すときにはそうする。
+
+% 2 1 0 1fbea3d31ca4c7aa06c070cc29212a9f
+
+% 3 1 0 0661b7aaba966b52105492ae7011e631
+
+% 0 1 0 1f84930ae4aea00c1f6a3b791b2c9833
+
+% 0 1 0 0c9dca013944409c16b20787dc35f6cd
+
+% 1 1 0 15362b11938f09b41d5e8d4e0c55cfb4
+
+@ 0 6 0 039403fecfcc111504d5fbe96962f722
++       戦術は `caps.Control` ケイパビリティであり、排他的ではなく共有される：一つの戦術は、そのスコープに報告するすべてのものから正当に別名で参照される（`as` のために召喚されたコーデックは、`as` が証拠として受け取るのと同じ戦術を捕捉する）。そしてエラーを発生させることは、消費する使用ではない。
++       境界に基づく戦術はスタックのラベルを閉じ込むので、戦術は別のスレッドで走る本体には保持できず、それを導入したブロックが戻った後で使ってはならない。
+
+% 0 1 0 176b8e6712fe1a460e4c441ec26634a7
+
+% 0 1 0 13ca7be10bc5477902d50924d02379da
+
+% 1 1 0 01b891656f16d06515635eab31f7660b
+
+@ 0 29 0 0d6d113bdbe0010d0acedeb15640fd74
++   entry #abort   エラーを報告し、戻らない
++       値を置き換える脱出である。
++       即座に失敗する戦術のもとでは、エラーはただちに抜け出す。蓄積型の戦術のもとでは、エラーは畳み込まれ、それを囲む集約のスコープが放棄される。`VentureTactic` のもとでは、その試みだけが断念される。
++   entry #certify   集約のスコープの放出点：何かが記録されていれば、そのスコープを放棄する
++       戦術が `#tainted` なら、`certify` は戻らない。スコープはその蓄積したエラーとともに抜け出す。そうでなければ何もしない。
++       即座に失敗する戦術では常に何もしない。記録されたエラーはすでに抜け出しているはずだからである。
++       `guard` は、汚染された戦術のもとでブロックを飛ばすためにこれを呼び出し、パッケージレベルの `certify[error]()` はスコープにある戦術に対してこれを呼び出す。
++   entry #tainted   この戦術の集約のスコープで何らかのエラーが記録されたかどうか
++       `record` が決して戻らない即座に失敗する戦術では正しく `false` であり、`#contramap` を通して転送されるので、汚染は `mitigate` されたライブラリの境界を越える：ライブラリの中の `guard` は、呼び出し側のスコープがすでに汚染されていれば飛ばされる。
++   entry #tolerate   ブロックを実行し、それが発生させたものを何であれ捨てる：その値か `Unset`
++       ブロックの結果、あるいはエラーが記録されるかブロックが中断した時点で `Unset` である。これは、`safely` がするように新しい戦術を導入するのではなく、アンビエントの戦術の中で行う。
++       デフォルトの実装は、即座に失敗する戦術が行う脱出を捕まえる。蓄積型の戦術（`AccrueTactic`、`TrackTactic`、`VentureTactic`）は、さらにその蓄積をブロックの前の状態に巻き戻すので、許容された誤りは痕跡を残さない。
++       これは、オプショナルなフィールドを寛容にデコードするコーデックのための手段である：フィールドのデコーダーは、解決されたときにアンビエントの戦術に結び付けられたので、その誤りを横取りできる場所は戦術だけである。
++   entry #contramap   各エラーをこのエラーに変換することで得る、別のエラー型のための戦術
++       `tactic.contramap(lambda)` は `Tactic[error2]^{tactic}` であり、その `record`、`abort`、`certify`、`tainted`、`tolerate` はすべて `tactic` に転送され、各エラーは先に `lambda` を通される。
++       ラムダは純粋な `->` 関数である：共有のケイパビリティが保持してよいのは共有のケイパビリティと純粋な値だけであり、エラーの変換子がそれ以外のものを捕捉する理由はない。
++       `strategies.mitigation` と `mitigate` はこれの上に作られている。
+
+@ 0 1 0 1f125d97233fc82f1989254bbe253775
++ entry .Emit   中断する力を持たずに、副作用としてエラーを報告するケイパビリティ
+
+% 1 1 0 1196204b27b638fa1f68c548cc81acfa
+
+@ 0 6 0 089c975927c1af4308ff3ba0a677a405
++       `Emit[error]` はエラーを `record` できるが、それ自体で止まることはできない：その後に制御が続くかどうかは実装が選ぶ。
++       `raise` に必要なのは `Emit` だけであり、`abort` には完全な `Tactic` が必要である。
++       したがって `Emit[error] ?=>` の義務は `raises error` より弱く、スコープにある `Tactic` はどちらも解消する。
++       `handle` は、裸のエミッターを与える構文である：そのハンドラの各ケースは、`record` がその場でケースの本体を実行する `Emit` になり、保護されたブロックは続行する。
+
+@ 0 4 0 1343937308b5ebda1fbb48877ccd5d72
++       エミッターは `caps.Control` ケイパビリティであり、`Findable` なので、欠けている場合には、それを与える選択パッケージとともに報告される。
++       保持してよいのは他の `Control` ケイパビリティだけである：`.apply` に渡したハンドラのラムダは外側の戦術にエラーを発生させられるが、ロガーやストリームは捕捉できない。
+
+% 0 1 0 1472945676d8a6851330835323edb1b6
+
+% 1 1 0 0618164fef58622e07f05c996286215f
+
+@ 0 15 0 13318ea6e57ea11d030abf3ff3be0d25
++   entry .apply   報告の地点でハンドラを実行するエミッター
++       `Emit(handler)`（スコープに `Diagnostics` が必要）は `Emit[error]^` であり、その `record` はエラーに対して `handler` を呼び出して戻る。
++       ハンドラは `consume` された関数であり、`caps.Control` ケイパビリティ（エラーを発生させる先の外側の戦術）しか捕捉できない。それがなるエミッター自体が分類されたケイパビリティだからである。
++       `handle { … }.protect` は、扱う各エラー型に対してこれを導入する。
++   entry #diagnostics   このエミッターを通して報告されるエラーを作るときの `Diagnostics`
++       すべての `record` と `abort` はエラーを `Diagnostics ?=> error` のサンクとして受け取り、これで評価する。したがって、スタックトレースを捕捉するかどうかを決めるのは、エラーを発生させるコードではなく戦術である。
++       `ThrowTactic` はそれを捕捉し、`OptionalTactic` は省く。エラーは捨てられるからである。
++   entry #record   エラーを報告する。制御が続くかどうかは実装が選ぶ
++   entry #contramap   各エラーをこのエラーに変換することで得る、別のエラー型のためのエミッター
++       `emit.contramap(lambda)` は、すべての記録を純粋な `lambda` を通して転送する `Emit[error2]^{emit}` である。
+
+@ 0 1 0 11b31f146c877c2a1fb6a08307a76fe0
++ entry .strategies   広く適用する、インポート可能な戦術：投げる、`CanThrow` のもとで投げる、非検査、致命的、緩和
+
+% 1 1 0 1fd15dc087ba59c80d8fe8a9b1bb00f8
+
+@ 0 4 0 015fb98790e5ad6e1121907c2d5a2a42
++       *戦略*とは、一度インポートして広く適用する戦術である。一方、`safely` や `recover` が導入する*戦術*はブロックに局所的である。どちらも同じ一つの型 `Tactic` である。
++       この選択は決して暗黙ではない：`import soundness.*` はこれらの given を一つも持ち込まず、一つずつ名前でインポートする。
+
+% 2 1 0 11f857dcf67b31d80aafde46cb6da17a
+
+% 3 1 0 0e50ee3938277fe61475e90b065dd7da
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 126fc90197f79c23172b7f966270cd2e
+
+% 1 1 0 165c95a0ca89e5980b082532e6addc8f
+
+@ 0 6 0 04129275819bd58b0ebc2e3fb1aef683
++       アンビエントの戦略は、プログラムのエントリーポイントとプロトタイピングのためのものである。意図された進め方は、`throwUnsafely` のもとでプロトタイプを作り、プログラムが固まるにつれて重要な箇所を本当の処理に変えていくことであり、失敗しうるコードには何の変更もいらない。
++       メソッドに局所的な `import strategies.throwUnsafely` は、その下にあるすべての `abort` について、メソッド自身の `raises` の戦術を覆い隠す。これは入れ子の規則が設計どおりに働いているのだが、`raises` メソッドの中では誤ってそうしやすい。
+
+@ 0 5 0 1c5d96c5da93dc4e0fa1b942ad278dac
++       `throwUnsafely`、`uncheckedErrors`、`fatalErrors` は、追跡されるケイパビリティではなく純粋な値である：スコープを持たない throw（あるいはその場での終了）は戻り先を保持せず、追跡されるアンビエントの戦術は、導出されたコーデックの合成されたサンクの中でレベル検査に失敗するか、それを通してエラーを発生させるすべてのラムダに捕捉されてしまう。
++       `throwSafely` はスコープを持つものであり、それが投げる根拠となる `CanThrow` の証拠を捕捉する。
+
+% 0 1 0 13866403ec2f0aaa0b64c5800734cdec
+
+% 1 1 0 195a1d6a59a5945c1276c661232a0d00
+
+% 1 1 0 0a4ec694e65fa82c0e6b58befef60794
+
+% 0 1 0 1f270d499f35decd1d28cde9c6caddf6
+
+@ 0 17 0 02bd2831b640d77703caafe02bbc9854
++   entry .throwUnsafely   ケイパビリティを必要とせず、すべてのエラーを普通の例外として投げる
++       純粋な `ThrowTactic[Hazard]^{}` なので、反変性によってあらゆる `Tactic[error]` を一度に満たす。
++       エラーは `Diagnostics.capture` で作られるので、スタックトレースを持つ。
++       スクリプト、プロトタイプ、プログラムの最も外側の層に向く。ライブラリは代わりに自身が何をするかを述べるべきであり、義務が発動しえない所では `unsafely` を使い、その横に理由を添える。
++   entry .throwSafely   投げるが、スコープに `CanThrow[error]` ケイパビリティがある所でのみ
++       `throwSafely[error]` は `ThrowTactic[error]^{canThrow}` である：`throwUnsafely` とまったく同じように投げるが、（消去される）`CanThrow[error]` given を必要とするので、`saferExceptions` のもとでは投げる可能性が型に見えたままになる。
++       そのキャプチャ集合は `CanThrow` の証拠であり、これは `caps.Control` ケイパビリティなので、別のスレッドで走る本体には入れない。
++   entry .mitigation   すでに処理されているエラーへ `Mitigable to` である任意のエラーのための戦術
++       スコープにある `Tactic[error]^` と `error2 is Mitigable to error` があれば、各 `error2` を `mitigate` で変換して外側の戦術に報告する `Tactic[error2]^` を与える。
++       こうして低レベルの失敗は、すべての呼び出し箇所で変換を繰り返すことなく、API の境界にその境界の語彙へ変換された状態で届く。
+
+% 2 1 0 1f88572a25d8ea5e1a4195a94a762889
+
+% 3 1 0 11f04ac3a2e468cd118f4b98a2a495a9
+
+% 4 1 0 15f68c989931cde6149f091a14e8fa07
+
+% 0 1 0 0f102db49648e11a0e3f6a1ea4365fd8
+
+% 2 1 0 1f57ac2d5a4eb09e1341f601f2861020
+
+% 3 1 0 074ef10553e995d311c078e9cab0168e
+
+% 5 1 0 1e783ca33d42741a138bd06314f97d58
+
+% 0 1 0 0ad5745f7fae3db200a4ef72d2e0d5bd
+
+% 1 1 0 1ade3741001162830bd790a9c334525b
+
+@ 0 9 0 1a7036229d8aa8191d4eda3a1b3b3550
++   entry .fatalErrors   `Fatal` と印付けられたエラーについて、エラーの `Exit` ステータスでプロセスを終了する
++       `is Fatal` given を持つ任意のエラー型のための純粋な `FatalTactic[exception]^{}` であり、その given がどのステータスで終了するかを述べる。
++       続行する意味のある方法がない初期化中の失敗に向く。
++   entry .uncheckedErrors   `Unchecked` と印付けられた任意のエラーを、処理せずに投げる
++       消去される `error is Unchecked` given を持つ任意のエラーのための純粋な `UncheckedTactic[error]^{}` である。
++       エラーはスタックトレースとともに投げられる（`Diagnostics.capture`）。
++       これにより、エラーを処理する価値のない型（実際には起こりえない失敗）を、宣言はしたまま、各箇所でハンドラなしに発生させられる。
+
+% 2 1 0 15b74d1966a36bf31fb41496aa604c53
+
+% 3 1 0 0e626d9b29ad14c403c99257327e84cc
+
+% 0 1 0 1086b9000364cb00034dadd240294fa4
+
+% 0 1 0 0add340533d4735c0368964f7d9160dc
+
+% 0 1 0 1084480cb27fbc1a0970f0181a0902c7
+
+% 1 1 0 0afd7f79c0b6bf6b0720c722ca255a8f
+
+@ 0 8 0 17088a1609a1474c0697947a2d283738
++ entry .raises   `success raises error`：`error` を発生させうるメソッドの戻り値の型
++     中置の型の別名である：`success raises error` は `Tactic[error]^ ?=> success` であり、エラー処理の戦術を受け取るコンテキスト関数である。
++     これで宣言したメソッドは、ポリシーをコンテキスト引数として受け取るメソッドであり、その中の `abort` と `raise` はその戦術を呼び出す。
++     複数の仕方で失敗しうるメソッドは、それぞれを書く：`Int raises Io.Error raises Number.Error`。
++     そうしたメソッドを呼び出すには、各エラーについてスコープに `Tactic`（`strategies` の given、あるいは囲む `safely`、`recover`、`attempt`… のブロック）があるか、それについて自ら `raises` を宣言している囲むメソッドが必要である。
+
+% 2 1 0 1c597e097741d31e0c1fe8d51af03d2a
+
+% 3 1 0 1747c7468ed1d9ab0fe9d9f24eb4b7ae
+
+% 0 1 0 01d04090df03cb5d0d199e92d9b07d2f
+
+% 0 1 0 1c93cb79119f1a3505a5301adc49b918
+
+% 0 1 0 1ea99e1c7c61d6a31f9d403bd58c2cb1
+
+% 1 1 0 066ff86b16673cf704c627635e342788
+
+@ 0 4 0 1b216ddc551a275d17eb004878b9037a
++     `raises` の呼び出しで初期化した `val` は、コンテキスト関数型ではなく結果の型を得る：戦術は呼び出しの時点で解決される。
++     メソッドの結果が `S raises E` である型クラスのインスタンスは、キャプチャ検査のもとでは書けない（`?=>` ごとに新しいルートが作られる）。そうしたインスタンスは、代わりに `Tactic[E]` を `using` パラメーターとして受け取る。
+
+@ 0 6 0 18df243bedb238eb0f3a514dd891c298
++ entry .raising   `success raising (E1, E2)`：タプルの各エラーに対する `raises`。マッチ型である
++     `result raising (Io.Error, Number.Error)` は `Tactic[Io.Error] ?=> Tactic[Number.Error] ?=> result` に簡約され、タプルでない `raising E` は `Tactic[E] ?=> result` に簡約される。
++     `soundness` アンブレラにはエクスポートされず、まだ `raises` を置き換えられない：メソッドの戻り値の型でコンテキスト関数に簡約されるマッチ型は、モジュールをまたぐ使用箇所でコンパイラをクラッシュさせるので、書くべき形はエラーごとに一度ずつ連ねた `raises` である。
+
+@ 0 4 0 1cd5c2fc5beec5440095867bd8c682e5
++ entry .mitigates   `error mitigates error2`：`error2` を `error` に変換できるという証拠
++     `error2 is Mitigable to error` の中置の別名であり、コンテキスト境界や `using` 節を変換の読まれる方向で書ける。
++     `Mitigable` と `strategies.mitigation` を参照。
+
+@ 0 6 0 0ef89767da05facb0d894738ec02fcd8
++ entry .tracks   `result tracks focus`：スコープに `Foci[focus]` を置いて計算する結果
++     `Foci[focus] ?=> result` の中置の別名であり、`raises` の後に書く：`Unit raises Json.Error tracks JsonPointer` は、各エラーをそれが起きた位置に対して記録する検証である。
++     `Foci` given は常に解決できる（`Foci.default` はすべてを捨てる）ので、`tracks` メソッドはどこでも呼び出せ、位置を観測できるようにするのは囲む `track` か `validate` だけである。
+
+@ 0 7 0 05f0370e77e25eb81110b7709b5907a2
++ entry .raise   エラーを報告して続行する：値を保つ報告
++     `raise(error)` は、スコープにある `Emit[error]^` の `record` を呼び出し、`Unit` を返す。
++     即座に失敗する戦術（`throwUnsafely`、`safely`、`attempt`…）のもとでは制御は決して戻らない。蓄積型の戦術（`accrue`、`track`、`validate`、`handle`）のもとでは戻るので、コードは続行し、囲むスコープの結果は最終的に捨てられて、蓄積されたエラーが代わりになる。
++     エラーは `Diagnostics ?=> error` のサンクであり、戦術自身の `Diagnostics` で作られるので、エラーを発生させるメソッドは自身の `Diagnostics` を必要としない。
+
+@ 0 4 0 1258ccd483edf271194c0654275f96c5
++     `raise` は `Unit` を返すので、値を持って続行しなければならないメソッドは、その後に*代用*の値を書く：`raise(error) yet 0`。
++     代用の値は取るに足らないものであるべきである：その下流の何もそれに依存すべきではなく、さらなるエラーを引き起こすべきでもない。`venture` と `guard` は、これを期待に頼るのではなく構造的なものにする。
+
+% 2 1 0 0ab8bdc3121f5def12b4027bf79f192e
+
+% 3 1 0 18dcbb24788dbfd6095ba2a5f5d0e95b
+
+% 0 1 0 15a62a735783d8cb16d15f125bd17f9f
+
+% 0 1 0 01db3dbed26af0ba099f0eb81fed62ea
+
+% 0 1 0 06ad3e35c48d3688160c077587e797cc
+
+% 1 1 0 1a0d087130305f2c07635742740fb981
+
+@ 0 1 0 12179839f6cd1cff0cea80634d3ba67f
++     `raise` が求めるのは、より弱いケイパビリティである `Emit` だけであり、`abort` には `Tactic` が必要である。
+
+@ 0 6 0 02dbc5489818eaeb069330eb93e696d0
++ entry .abort   エラーを報告し、戻らない：値を置き換える脱出
++     `abort(error)` は、スコープにある `Tactic[error]^` の `abort` を呼び出し、型は `Nothing` なので、値が必要などこにでも置ける。
++     即座に失敗する戦術のもとでは、エラーは戦術のスコープから抜け出す。蓄積型の戦術のもとでは、エラーは畳み込まれ、スコープは放棄される。`venture` の中では、その venture だけが断念される。
++     エラーのサンクは、戦術の `Diagnostics` で作られる。
+
+% 2 1 0 0f138f8d355f8ab605c1a17d7540fdba
+
+% 3 1 0 18dd21fdee69d3760c28b288ad6800ad
+
+% 5 1 0 0f3ac47fd07dd0a61ce50e9d8f7f2c78
+
+% 6 1 0 014c91d83ee059d40140f54e9183b26c
+
+% 0 1 0 0557f5aaad87cb1e1e5baf689ac0c33a
+
+% 0 1 0 08ae0284b44ba73e1111006aeccda1d3
+
+% 1 1 0 0045803d24a9ae921c39a1064756c1a0
+
+@ 0 5 0 1a396eac69262110160a9da666f26a9b
++ entry .certify   何らかのエラーが記録されていれば、囲む集約のスコープを放棄する
++     `certify[error]()` は、スコープにある戦術の `Tactic#certify` を呼び出す：即座に失敗する戦術のもとでは何もせず、蓄積型の戦術のもとでは、汚染されたスコープが続行せずに蓄積したエラーとともに抜け出す地点になる。
++     同じことをブロックの周りで表す普通の方法は `guard` である。
+
+@ 0 7 0 0bcd0607ee5ed91e01c142dcc05b1c46
++ entry .safely   ブロックを実行し、その失敗を存在しないものにする：値か `Unset`
++     `safely(block)` は、スコープに `OptionalTactic` を置いてブロックを評価し、`Optional[success]` を返す：ブロックの値、あるいは最初のエラーが記録されるか中断された時点で `Unset` である。
++     エラー自体は捨てられるので、`Diagnostics.omit` で作られ（スタックトレースは捕捉されない）、`safely` は自身の `Diagnostics` を必要としない。
++     ブロックが投げた例外（ブロックは `CanThrow[Exception]` も受け取る）も同様に捕まえられ、`Unset` になる。
+
+% 2 1 0 1bcb3991a37e5d4a020abc99027fed7c
+
+% 3 1 0 1afc6a6927e90e5506bd8408f4dcfdc7
+
+% 0 1 0 08c2df03910729681f2c08256fc67838
+
+% 0 1 0 1450564fecd135fc1f2aa5ac14ac242e
+
+% 0 1 0 0c536abca33700700e27d763e8da7e8d
+
+% 1 1 0 119a7a75607a0525083a80391b6881e1
+
+@ 0 5 0 1d6c1bb6ca30cd1d19038f332e393890
++     エラー型はブロックの要求から推論される。推論に助けが必要なとき、あるいはブロックの唯一の義務が解消しようとしているものであるときは、`safely[Number.Error](…)` で名指す。
++     `safely` は*新しい*戦術を導入する：蓄積型のスコープの中では、ブロックで記録されたエラーは外側の蓄積に畳み込まれない。
++     アンビエントの戦術の中に留まる代替手段は `Tactic#tolerate` である。
+
+@ 0 8 0 19281a7f419543df1082e3284bc9a450
++ entry .unsafely   エラーが起きないと表明したブロックを実行する：値か、例外の送出
++     `unsafely(block)` は `ThrowTactic` のもとでブロックを評価するので、実際に起きたエラーは、スタックトレースを伴う普通の非検査例外として投げられる。
++     義務を処理せずに解消する。これは、プログラムの境界、値が問題ないことをすでに確かめたテスト、あるいはエラーが不可能であることを直前に証明した検査の横では正当であり、保証が途切れる場所の検索可能な目印になる。
++     ブロックは `Unsafe` トークンも受け取るので、その中では `(using Unsafe)` で制限されたメソッドを呼び出せる。
+
+% 2 1 0 1ffa3427c52badc71e70d4a3da890f80
+
+% 3 1 0 194e89d9a0167f27129a84a911682d53
+
+% 0 1 0 1d48df9f7832d35701998cc79143a6ca
+
+% 0 1 0 0365352462c38c66031bc388ff428f26
+
+% 1 1 0 1db8526fbbde3f5019025089af917360
+
+@ 0 4 0 0923b326b122d7371657135514e11b32
++     望ましい順に、証明を型に持つ全域的な API、次に名前付きのエラーへの `mitigate`、そしてコメントに理由を書いた `unsafely` を選ぶ。
++     細分化されたパス型である `success` 型は、`unsafely` の型変数によって拡大される。スコープを持つ検査は、呼び出しの周りではなく API の中に置く。
+
+@ 0 5 0 0aa19093dea7d5eb116d4f28497a2a6a
++ entry .throwErrors   `CanThrow[error]` があれば、`ThrowTactic` のもとでブロックを実行する
++     `throwErrors[error](block)` はブロックに `ThrowTactic[error]` を与えるので、エラーは投げられる。`unsafely` と違い、スコープに `CanThrow[error]` ケイパビリティを必要とするので、`saferExceptions` のもとでは送出は検査されたままである。
++     これは `strategies.throwSafely` のブロック形式である。
+
+@ 0 7 0 09c20991a047edad10ddc2dc70d42ba1
++ entry .capture   失敗すると予期されるブロックを実行し、それが発生させたエラーを返す
++     `capture[error](block)` は `EitherTactic` でブロックを評価し、それが記録した、あるいは中断に用いた `error` を返す。
++     成功するブロックはそれ自体が失敗である（テストが間違ったものを検査していた）ので、生成された値を持つ `Expectation.Error` で中断する。したがって `capture` には、スコープにある `Tactic[Expectation.Error[success]]^`（アンビエントの `strategies.throwUnsafely` で足りる）と `Diagnostics` が必要である。
++     捕捉する型の例外が、発生させられるのではなく投げられた場合も捕捉される。それ以外の例外は伝播する。
+
+% 2 1 0 1ddba8e2bb4705a7015f65b888256460
+
+% 3 1 0 1ad4a4f3c2a9efa8065a026ae73b9e96
+
+% 4 1 0 0b0e9a5fb03f9e730680e807eb705076
+
+% 5 1 0 11c28ef1b708d5d50119cfbca4486f73
+
+% 0 1 0 1db1ff8e0b2e1750193c4e09105dc141
+
+% 1 1 0 0c887c0d5125c798033b7b7b8cdca937
+
+@ 0 3 0 04faf68ff82304081d2a32d2cbb5579f
++     エラー型は明示しなければならない（それを捕まえるのに `ClassTag` が必要である）。それはまた、テストの中の `capture` をそのアサーションとして読めるようにするものでもある：ブロックはまさにこれで失敗しなければならない。
+
+@ 0 5 0 15298a5d46493293121b2ad2d30e6cdd
++ entry .attempt   ブロックを実行し、`Attempt` を返す：その値か、失敗したときのエラー
++     `attempt[error](block)` は `AttemptTactic` でブロックを評価し、`Attempt.Success(value)` を返すか、最初のエラーが記録されるか中断された時点で `Attempt.Failure(error)` を返す。両方の結果で分岐しなければならないコードのためのものである。
++     エラーは保持されるので、スコープに `Diagnostics` が必要である。
+
+% 2 1 0 1198d50e0a8c33f81a8862e67bcbd5fb
+
+% 3 1 0 05341eacf27b1dea06c49185e9e3386f
+
+% 4 1 0 03196f37417193d1016eb68eeae29292
+
+% 0 1 0 19f203982ed9a2e20251205d541eece4
+
+% 0 1 0 10fa0b47952df627188d48b0de90c6d4
+
+% 0 1 0 0ce5be532fa5d3941e8750a6a8e51c73
+
+% 0 1 0 0e9fb34d52dabeab0e93b99d47eb5346
+
+% 1 1 0 0930d031784036991999cf0bd6b2b645
+
+@ 0 4 0 02d69efca4db787a09b5bb3654a9d0ef
++ entry .amalgamate   ブロックを実行し、その値かエラーをユニオンとして返す
++     `amalgamate[error](block)` は `AmalgamateTactic` でブロックを評価し、`success | error` を返す：値、あるいは最初に記録された、または中断に用いられたエラーである。
++     結果に対する match が、ラッパーなしで両者を分ける。
++     `Diagnostics` が必要である。
+
+% 2 1 0 02fe06beda9f28560f346188c23481bf
+
+% 3 1 0 0983109c0a41c3e614cc00def39b3158
+
+% 4 1 0 10f3a176bb373dc51c3d358ed194c3b3
+
+% 0 1 0 0dbb4366ee70488f02730181de8f2e2a
+
+% 0 1 0 1d2a2d7837cb9ff513cfe6a39a82e7a6
+
+% 0 1 0 0e0edaef925a67e3042025ba3f0b46ac
+
+% 1 1 0 02e66939e970e2de1c52868584700f0c
+
+@ 0 6 0 19f643c35de4248e027bbe3a91c14270
++ entry .abortive   マクロのブロックを `HaltTactic` のもとで実行する：エラーはコンパイルエラーになる
++     マクロの実装のためのものであり、スコープに `Quotes` が必要である。
++     `abortive[error](block)` は `HaltTactic[error, success]` と `Diagnostics.omit` を与えるので、ブロックで記録された、あるいは中断に用いられたエラーは、エラーの `labelled` メッセージ（そのボルトのコードとテキスト）を診断としてコンパイルを停止させる。
++     展開時にリテラルをパースするマクロは、パースを `abortive` で包み、不正なリテラルをそれが書かれた場所で報告する。
+
+@ 0 1 0 1fd2fb8d51fb0795055423dfb2e09c61
++ entry .Attempt   `attempt` の結果：値を持つ成功か、エラーを持つ失敗
+
+% 1 1 0 1320a17fc27bfe6a1632392c69099c6b
+
+@ 0 3 0 0cc668f5efe33c2d051e90698d7df86e
++       二つのケース `Success(value: result)` と `Failure(value: error)` を持つ列挙型であり、`error <: Hazard` である。
++       それを生み出すのは `attempt[error](block)` であり、そのメソッドで結果を調べたり、変換したり、エラーの発生に戻したりできる。
+
+% 2 1 0 01b4ac3d860ae96f07c7a967433d2ae7
+
+% 3 1 0 11f46bdc988eed560a80dcd328b95851
+
+% 4 1 0 0bf5338dc541561f05681bcfb2e945e3
+
+% 0 1 0 1de41422aa53ce3210b2b05184efdd75
+
+% 0 1 0 08143e761400665e0dd8e3ff8fd75e5e
+
+% 0 1 0 08e5da795198d82d12270e04be2c13b6
+
+% 0 1 0 1aae8e580a74c7871ce77690f3a833b4
+
+% 1 1 0 03d57b89b209893f17977c5c4e99db51
+
+% 1 1 0 14cfb33fc51b9f2f0d6547b674285fb0
+
+@ 0 17 0 13b6a6418c6b7bdf0e40b21ac19031b1
++   entry #failure   これが `Failure` かどうか
++   entry #success   これが `Success` かどうか
++   entry #map   `Success` の値を変換する。`Failure` は変わらずそのまま通る
++   entry #handle   `Failure` のエラーを、部分関数によって別のエラーで置き換える
++       `attempt.handle { case Number.Error(text, _, _) => InputError(text) }` はケースを `Failure` のエラーに適用し、ケースが扱わないエラーはそのまま残し、エラー型を `Hazard` に拡大する。
++       `Success` は変わらない。
++   entry #acknowledge   `Failure` のエラーに対して副作用を実行し、この attempt を返す
++       失敗を消費せずにログに記録するためのものである：部分関数がそのエラーで定義されていれば適用され、どちらの場合も attempt は変わらずに返される。
++   entry #apply   `Success` の値。あるいは `Failure` のエラーで中断する
++       `attempt()` は `result raises error` である：`Attempt` を、スコープにある戦術に対するエラーの発生に戻すので、調べるために捕捉した値を通常の流れに戻せる。
++   entry #recover   `Success` の値、あるいは `Failure` のエラーから計算した置き換え
++       `attempt.recover { case error => fallback }` は、値があればその値、なければエラーに部分関数を適用したものである。部分関数は、出会いうるすべてのエラーを扱わなければならない。
+
+@ 0 7 0 0483d68840adaebc04b8bd3020552a53
++ entry .recover   選んだエラーを、置き換えの値を与えることで処理する。`protect` とともに使う
++     `recover { cases }.protect(block)` は、ケースが扱う各エラー型の戦術を置いてブロックを実行する。扱われるエラーが最初に起きると、ブロックは断念され、一致したケースの本体の値が代わりに返される。
++     ハンドラは match のケースとして書き、インラインで書かなければならない：マクロはコンパイル時にケースを読んで、それらがどのエラー型を扱うかを調べる。`protect` はそれによって、どの戦術を注入するかを知る。
++     ケースが扱わないエラーは処理されない：その `raises` の義務は通常どおり外側へ伝播する。
+
+% 2 1 0 0052e4c5fc2bbe361ec7c6275421efdf
+
+% 3 1 0 01c2ecd62cbe44770037712a7d87b8be
+
+% 2 1 0 11af4061ad0970140a37e4be221a68f7
+
+% 0 1 0 1220731fcd70d6e41cd52ca75f1fbe53
+
+% 0 1 0 1f6182a93c56764310c68e45473a3b4c
+
+% 1 1 0 0ae166d117f374da0a24939c4c050132
+
+@ 0 7 0 1ad00071db62e57b1f6f283e43c5b3a1
++     エラー型のユニオンに一致するケース（`case error: (Io.Error | Number.Error)`）、あるいはユニオンの別名に一致するケースは、各メンバーにハンドラを登録する。
++     パターンはそのエラー型について網羅的でなければならず（すべてのフィールドがワイルドカードか束縛であるケースクラスのパターン。可変長引数のフィールドは `arguments*` とする）、そうでなければコンパイルエラーである：`recover` は型を半分だけ処理することはできない。
++     `inline def` の内側に直接書いた `recover` は、その戦術を解決しない。本体はインラインでないヘルパーメソッドに委ねる。
++     ケースの本体は外側の戦術にエラーを発生させてよいが、ロガーのような `Control` でないケイパビリティを捕捉してはならない。
+
+@ 0 1 0 0493fa687c3fc76a143217a00ab64587
++ entry .Recovery   保護するブロックを待っている `recover` のハンドラ
+
+% 1 1 0 1ac142b73fe529b10a0f662da622ac1e
+
+@ 0 4 0 0364bf7d7844c70d1f73040ceb1db1eb
++       `recover { cases }` は `Recovery[lambda]` であり、その型パラメーターは、ケースが扱うエラー型を型ラムダ `[result] =>> (Tactic[E1], …, Tactic[En]) ?=> result` として記録する。そして `.protect(block)` が、扱われる型ごとに一つの戦術をブロックに注入する。
++       この値は、`recover { … }.protect { … }` としてしか使われない。
+
+% 0 1 0 010135e281dc4ccf19f1bca6cb6a1041
+
+@ 0 6 0 12660bd87dadd90d0418b60e4fa17370
++   entry .protect   回復の戦術のもとでブロックを実行し、扱われるエラーをそのケースの値で置き換える
++       ブロックを `boundary` の中で実行する：注入された各戦術は、`record` または `abort` のときにハンドラをエラーに適用し、ケースの本体の値をブロックの結果として抜け出す。
++       置き換えの値は `Recovery.Escape` として運ばれるので、型の誤ったケースの本体は `protect` の箇所でコンパイルエラーになる。
++   entry .Escape   回復した値を保護されたブロックの外へ運ぶキャリア
+
+% 1 1 0 15de3033e24687cc020b9b6ddaf170be
+
+@ 0 10 0 11c87fcfe4bb8c211593ebe4e8145d16
++         スタックを持たない例外であり、構造上純粋であって、ケースの本体の値を、一つの `protect` 呼び出しの二つのフレームの間で型のない参照として運ぶ。
++         ユーザーのコードが発生させるものではない。
++     entry .apply   値を脱出用に包む
++     entry #value   回復した値。元の型のまま
++     entry #fillInStackTrace   これ自身を返す：脱出はスタックトレースを決して記録しない
++   entry .EscapeTactic   `protect` の背後にある戦術。脱出した値を伴って `boundary` から抜け出す
++       `boundary.Label[result]` の上の `Tactic[Recovery.Escape[result]]` であり、`Diagnostics.omit` を伴う：その `record` と `abort` は脱出の値を取り出して抜け出す。
++       `protect` は、扱われるエラー型ごとに一度これを contramap する。
++   entry #handler   match のケース。`Exception` からの部分関数としてのもの
+
+@ 0 7 0 12aca1d466bfd0d806d87ec99e4e491c
++ entry .mitigate   選んだエラーを別のエラーに変換し、それを伝播させる。`protect` とともに使う
++     `mitigate { cases }.protect(block)` は、ケースが扱う各エラー型の戦術を置いてブロックを実行する。扱われるエラーはそのケースに通され、ケースが返すエラーは*その型についてスコープにある*戦術に対して発生させられる。こうしてブロックの低レベルの失敗は、囲むメソッドが宣言するエラーになる。
++     各ケースの本体のエラー型には、`mitigate` の箇所でスコープに `Tactic` がなければならない。そうでなければ、マクロは _There is no available handler for E_ で停止する。
++     ケースは、`recover` と同じく、インラインで書かなければならない。
+
+% 2 1 0 0727175a0e04558316a5366ef9c3c80d
+
+% 3 1 0 131b9085ce3cbe331f011dfb1bb49e9b
+
+% 4 1 0 1fec22d11c78f71b0eefe45cad497a37
+
+% 0 1 0 0efb95b87190163f153f78929b38df77
+
+% 0 1 0 01dea307f8a723230d1eef47b5db4d2c
+
+% 0 1 0 17d2e9898e703a9d0b273ae553954af5
+
+% 0 1 0 08d2b72f78a0df861c2dac25b92d6998
+
+% 0 1 0 134c730e4949c1811e786f11e1a53293
+
+% 0 1 0 1fb44a2e09851d7e0a777a2fe84a9834
+
+% 0 1 0 0d9df0dbb90e72f30df8633733050711
+
+% 1 1 0 0410066fdddb04e306d01a0f39dcf1c1
+
+@ 0 8 0 1c31c31273383cb602bcc73085d48cf9
++     緩和は連鎖する：別の `mitigate` の内側にある `mitigate` は、A を B に、そして B を C に変える。
++     汚染は緩和を越える（内側の戦術の `tainted` は外側に転送される）ので、保護されたブロックの中の `guard` は呼び出し側の蓄積を見る。
++     ケースの本体は、ブロックのどの `Diagnostics` の外側でもエラーを作るので、`Diagnostics` を一つインポートする（`errorDiagnostics`）か、元のエラーのものを再利用する：`InputError(text)(using error.diagnostics)`。
++     `recover` と同じく、`inline def` の内側に直接書いた `mitigate` は戦術を見つけない。インラインでないメソッドに委ねる。
++     `strategies.mitigation` は、外側の戦術が存在する所ならどこでも、`Mitigable` インスタンスから同じ変換を暗黙に適用する。
+
+@ 0 1 0 0aa3ebbd2bf5697b1c84cf51ebeada23
++ entry .Mitigation   保護するブロックを待っている `mitigate` のハンドラ
+
+% 1 1 0 1193c176fdfc6b2d1e235108fafd9149
+
+@ 0 4 0 097ff684afc2545a18d7b6803acea8dc
++       `mitigate { cases }` は、扱われるエラー型をその型ラムダに記録する `Mitigation[lambda]` である。`.protect(block)` は、それぞれについて、ケースの*結果*のエラー型についてスコープにある戦術を、ケースを通して contramap したうえで注入する。
++       `mitigate { … }.protect { … }` としてしか使われない。
+
+% 1 1 0 1588bdb92872c0d20c15bd0ab1118ec9
+
+@ 0 2 0 06d7988e10f14d2519246d44c9acbd6a
++   entry .protect   ブロックを実行し、扱われる各エラーをそのケースによる変換として発生させる
++   entry #handler   match のケース。`Exception` からの部分関数としてのもの
+
+@ 0 9 0 08000030291ecfa7068e14c7658ae2e5
++ entry .accrue   選んだすべてのエラーを一つの蓄積されたエラーに集める。`protect` とともに使う
++     `accrue(initial)(combine) { cases }.protect(block)` は、ケースが扱う各エラー型の `AccrueTactic` を置いてブロックを実行する。
++     ブロックが発生させた扱われる各エラーは `combine` で蓄積に畳み込まれ、ブロックは続行する。ブロックが終わったとき（あるいは中断したとき）、何かが蓄積されていれば、蓄積されたエラーが囲む `Tactic[accrual]` に対して発生させられ、ブロック自身の結果は捨てられる。
++     何も蓄積されていなければ、ブロックの値が返される。
++     `cases` は扱われる型を*名指す*だけである（その本体は実行されない）。畳み込みは `combine` が行い、これは純粋な `->` 関数である。競合のもとで再実行されることがあるからである。
+
+% 2 1 0 1794952e16c1efa101664331802ea178
+
+% 3 1 0 0544a13dc40ca09314711fa0a63a0f8d
+
+% 4 1 0 08df1bd162afd96c0d05b78fef92c5a2
+
+% 5 1 0 056d07afdaaa679d0f7097c2b8721d94
+
+% 1 1 0 0b70e9416e8ea449082f240177fed96d
+
+% 3 1 0 0c5575e974ae0f8d1402c757d2b03f3f
+
+% 4 1 0 1dc9061b24480b131df0f5c2dd782fc3
+
+% 0 1 0 1094b69efea0a3190d69581d19e0ab3d
+
+% 0 1 0 1eca3b7eb688d11a10dd31bd83c6617c
+
+% 0 1 0 176f1182edf3d71f1acc8e1c2edc757e
+
+% 0 1 0 1afc100813f5fc1103f7f1575cd51b40
+
+% 0 1 0 162d4a480547324b189e61e83f0e1ee0
+
+% 1 1 0 06051c1d3b2c0b791cbb63f6e83c99f8
+
+% 2 1 0 0b01e0b30826d03207abd7ad4e2d0c38
+
+% 3 1 0 0e4d5bdfbf9cfc8f0cf690d4d85d01a0
+
+% 0 1 0 1c461c024c9d61d21c4fd3eba854c2ce
+
+% 1 1 0 1879c21317c3e4091697bfe3decfea19
+
+@ 0 2 0 1c2b095557436b6a12702398298ab657
++     蓄積の型は、発生させられるので `Hazard` でなければならない。蓄積を代わりに普通の値として返す双子が `validate` である。
++     `track` は各エラーにフォーカスを加える。
+
+@ 0 1 0 167e52e627fc09751c3dd0d4df273ec9
++ entry .Accrual   `accrue` のハンドラと、それが導入する戦術
+
+% 1 1 0 18c0a90e6d4b16911ed1dea144f02d8d
+
+@ 0 4 0 13ba3088649f4d820074e1e447419fdc
++       `accrue(initial)(combine) { cases }` は、初期の蓄積、結合する関数、ケースを保持する `Accrual[accrual, lambda]` である。`.protect(block)` は、扱われるすべてのエラー型が共有する一つの `AccrueTactic` のもとでブロックを実行し、スコープに `Tactic[accrual]^` と `Diagnostics` を必要とする。
+
+% 0 1 0 1081758709fc4e320a1f8250a610716a
+
+@ 0 5 0 14e2065e52b5c97b0bfed4ccad2c1931
++   entry .protect   ブロックを実行し、扱われる各エラーを蓄積に畳み込む。何かあれば蓄積を発生させる
++       何も蓄積されていなければ、ブロックの値を返す。
++       そうでなければ、ブロックが完了したか、中断したか、例外を投げたかにかかわらず、蓄積されたエラーを囲む `Tactic[accrual]` に対して記録して投げるので、ブロックの結果が呼び出し側に届くことは決してない。
++   entry .AccrueTactic   `accrue` が注入する戦術：各エラーを蓄積に畳み込んで続行する
+
+% 1 1 0 0a0c00939e895df919c170f3d2bc1138
+
+@ 0 18 0 016d50ca5188a90303a543b59857b75d
++         初期の `accrual` と純粋な `combine: (accrual, Exception) -> accrual` の上の `Tactic[error]` であり、エラーを作るための `Diagnostics` を伴う。
++         `record` はエラーを畳み込んで戻り、`abort` はエラーを畳み込んで蓄積を投げ、`certify` は何かが蓄積されていれば蓄積を投げ、`tolerate` は蓄積をそのブロックの前に取ったスナップショットに巻き戻す。
++         蓄積はアトミックなセルに保持されるので、この戦術は一つのスコープの複数のスレッドの間で安全に共有できるが、`combine` は競合のもとで再実行されることがあり、純粋でなければならない。
++     entry #diagnostics   エラーを作るときの `Diagnostics`
++     entry #record   エラーを蓄積に畳み込んで戻る
++     entry #abort   エラーを畳み込み、蓄積されたエラーを投げる
++     entry #certify   何かが蓄積されていれば、蓄積されたエラーを投げる
++     entry #tainted   蓄積が初期値と異なるかどうか
++     entry #tolerate   ブロックの値、あるいは蓄積を元の状態に戻したうえでの `Unset`
++     entry #accumulated   これまでの蓄積
++     entry #changed   蓄積が初期値と異なるかどうか
++   entry #handler   扱われるエラー型を名指す match のケース
++   entry #initial   何らかのエラーが起きる前の蓄積
++   entry #combine   各エラーを蓄積に畳み込む純粋な関数
+
+@ 0 7 0 0b45531c1504d83102cb367d48d813d5
++ entry .handle   選んだエラーのケースの本体を副作用として実行して続行する。`protect` とともに使う
++     `handle { cases }.protect(block)` は、ケースが扱う各エラー型について、完全な `Tactic` ではなく `Emit` を置いてブロックを実行する：扱われるエラーの `raise` はその場でケースの本体を実行し、制御はブロックに戻って、ブロックは続行する。
++     ケースの本体は `Unit` を返す。
++     扱われないエラー、あるいはケースの本体が再び発生させたエラーは、囲むスコープの義務のままである。
++     注入されるのは `Emit` だけなので、ブロックの中での扱われるエラーの `abort` は `handle` によって解消されない。
+
+% 2 1 0 14a9ee48ea08bc2701b12cd43e0ff194
+
+% 3 1 0 14a7070720b92edc18d87156bad16991
+
+% 4 1 0 0ac22534315d337414dcb599204e78fe
+
+% 0 1 0 1a10bbbbb0c378c708a8f9ed53344840
+
+% 0 1 0 1475543ed29cc69d177baf4f125e48ac
+
+% 0 1 0 1d86ec182a4e987719f840d04deee388
+
+% 1 1 0 139c16bb929c40c21d98c1e6b00f0aef
+
+% 0 1 0 053b6813612393880b5d24e307d50129
+
+% 0 1 0 1f2f63100e76d0010528be30f255d546
+
+% 0 1 0 0e19ced31594dd7a18d7f78e13f39298
+
+% 1 1 0 049b0409301f120c03ce1e8ad5d6709a
+
+@ 0 3 0 0fa8830674d9ae951dbe0ce4a73b0277
++     ケースの本体は `caps.Control` ケイパビリティのハンドラになるので、外側の戦術にエラーを発生させてよいが、ロガーのような制御でないケイパビリティを捕捉してはならない：そうした処理はケースの本体の外に移す。
+
+@ 0 1 0 1ae36b139b4a06341b032961d0c4052d
++ entry .Handler   保護するブロックを待っている `handle` のハンドラ
+
+% 1 1 0 0f215c80b24ccc7d15f2d837c3213308
+
+@ 0 3 0 05ce6f7ab6c7e7fc008c6dc1c3a33b79
++       `handle { cases }` は、扱われるエラー型を `Emit` の上の型ラムダとして記録する `Handler[lambda]` である。`.protect(block)` は型ごとに一つの `Emit` を注入し、それぞれはケースの本体に支えられ、スコープに `Diagnostics` を必要とする。
++       `handle { … }.protect { … }` としてしか使われない。
+
+% 1 1 0 1ae193ba5116a1d80b3b47064f9d4051
+
+@ 0 2 0 0a6e73ca500ef9180be4eb454306d259
++   entry .protect   扱われるエラーごとに `Emit` を置いてブロックを実行し、それぞれがその場でケースの本体を実行する
++   entry #handler   match のケース。`Exception` から `Unit` への部分関数としてのもの
+
+@ 0 9 0 10285df535afa8230f9bbf805c429a79
++ entry .track   選んだエラーを、それぞれが発生したときのフォーカスとともに、一つの蓄積されたエラーに集める
++     `track[focus](initial) { cases }.protect(block)` は、位置を伴う `accrue` である。
++     ブロックは、`Foci[focus]` と、ケースが扱う各エラー型の `TrackTactic` を置いて実行される。扱われるすべてのエラーは、その時点の現在のフォーカス（`focus` で設定される）とともに foci に対して登録され、ブロックは続行する。
++     ブロックが終わったとき、何かが登録されていれば、エラーは畳み込まれ（各ケースはエラーを受け取り、`prior`（それが発生した `Optional[focus]`）と `accrual`（これまでの蓄積）を名前付きのコンテキスト値として持つ）、その結果で囲む `Tactic[accrual]` に対して中断する。
++     各ケースは新しい蓄積を返す。
+
+% 2 1 0 03e8e660869d67471505abc15b88fcd0
+
+% 3 1 0 173bf48240a237d51897bc19898c41a4
+
+% 4 1 0 08cad3b1bce0b45e050170295dcd36f6
+
+% 1 1 0 03bb676a38e31d831d25edc7c123b1bb
+
+% 3 1 0 1662e4a3e12ddfb8182d75026847d17e
+
+% 4 1 0 195929079fcc03311d2050f7215987d6
+
+% 2 1 0 0f44c8476857a9f714c8d38fa460dfd8
+
+% 0 1 0 071df93aba1d508512f432aba636d2b1
+
+% 1 1 0 18bbbbe1f88540251683a9f53dc190ab
+
+% 0 1 0 1ad868188db630cd184317ae1fdb347f
+
+% 0 1 0 0c973042a085269f0390582134d235a1
+
+% 0 1 0 03b5db5ea2411d961fc9dbad3cee8b8a
+
+% 0 1 0 03bf304d0769445d0d36431a9c8e7269
+
+% 0 1 0 10668dddf3dbacb90364827279b84605
+
+% 0 1 0 0e78fb385056647705c265f104586db8
+
+% 0 1 0 08acebd71a0e221f1f2b06060f49c91a
+
+% 0 1 0 0f6836672be19d4e10d7e01edae836a4
+
+% 0 1 0 03cef629b9b235381a4f4a3f2268f40b
+
+% 1 1 0 06e4162aff93df6300b8d4f52693dfe4
+
+@ 0 4 0 1d01fa6472871c5f1330db458fe8d5ec
++     フォーカスの型は走査される構造によって選ばれる（JSON なら `JsonPointer`、XML ならパス、スプレッドシートならセルの参照）ので、位置はデータ自身の語彙で報告される。
++     `validate` は、蓄積を発生させるのではなく普通の値として返す同じ構文である。
+
+@ 0 1 0 0f69a919b7c893960bdedfcb7e03ee0b
++ entry .Tracking   保護するブロックを待っている `track` のハンドラ
+
+% 1 1 0 052a948f7594c45c17c582aed45ad4e3
+
+@ 0 6 0 1554bea2037082090b3bd6e6f316a846
++       `track[focus](initial) { cases }` は、初期の蓄積と畳み込みを保持する `Tracking[accrual, lambda, focus]` である。`.protect(block)` は、新しい `TrackFoci` と、扱われるエラー型ごとの `TrackTactic` を置いてブロックを実行し、スコープに `Tactic[accrual]^` と `Diagnostics` を必要とする。
++       `track[…](…) { … }.protect { … }` としてしか使われない。
++       `… raises E tracks F` と型付けされた関数の*値*はキャプチャ検査のもとでは書けないので、`track` を包むヘルパーは、本体が `protect` にスプライスされる `inline def` にすべきである。
+
+% 1 1 0 10e9a9e6ca579a010040b3208a57372f
+
+@ 0 3 0 14aafd5abfc598521f3315a35b9fb85c
++   entry .protect   ブロックを実行し、扱われるエラーをそのフォーカスとともに登録する。何かあれば畳み込みの結果で中断する
++   entry #initial   何らかのエラーが起きる前の蓄積
++   entry #lambda   畳み込み：各エラーを、その `prior` のフォーカスとこれまでの `accrual` とともに、新しい蓄積へ写す
+
+@ 0 7 0 0afaeac2d62722c016228e753577b6ec
++ entry .validate   選んだエラーをそのフォーカスとともに値に集め、発生させずに返す
++     `validate[focus](initial) { cases }.protect(block)` は、結果が蓄積そのものである `track` である：ブロックは `Foci[focus]` と扱われるエラー型ごとの `TrackTactic` を置いて実行され、ブロックが返すものは何であれ捨てられる。登録されたエラーに対する畳み込み（各ケースはスコープに `prior` と `accrual` を持つ）が式全体の値である。
++     蓄積はエラーである必要はない：`Count` やメッセージのリストを集める `validate` は、返されるだけである。
++     `Diagnostics` が必要である。
+
+% 2 1 0 03e095e7e5114a771c554de11e045927
+
+% 3 1 0 0e0d54dbac44a07b0a7e4dc51025356f
+
+% 4 1 0 0744d373bdb384dd0cf5b51091b4ea36
+
+% 0 1 0 19bc8b99bfbe058d1cdab5d83679fca0
+
+% 0 1 0 15ce250728f2d9ff0641b8117455df5e
+
+% 0 1 0 15ecb22d868b096d0de6be9482c00368
+
+% 0 1 0 1fcc4495a781724a1aa200ff21a56a66
+
+% 1 1 0 11365a6a5cb31e0615d342d6de6634f0
+
+% 2 1 0 189567a584d0229d0779fc1d4a7556e9
+
+% 3 1 0 058faa81b3c3f34817f7451536f22a5d
+
+% 0 1 0 0a5a74c84cd16db71eedaf89e7a816fd
+
+% 1 1 0 0d504d0479efb0e6151e5782ec77c3d3
+
+@ 0 2 0 0c10b4db69323c76161a5d4002a4b519
++     入れ子の検証は完全に区切られる：内側の `validate` は自身のエラーを保持し、外側にはそのどれも見えない。
+
+@ 0 1 0 0b05aececb48c6f81a6b7423de317a69
++ entry .Validate   保護するブロックを待っている `validate` のハンドラ
+
+% 1 1 0 14c6052e0adccab21de91ec015cfc0fd
+
+@ 0 5 0 1185edfedbe1163814bf95f2943525d0
++       `validate[focus](initial) { cases }` は `Validate[accrual, lambda, focus]` である。`.protect (block)` は、新しい `TrackFoci` と扱われる型ごとの `TrackTactic` を置いてブロックを実行し、それから畳み込みの結果を返す。
++       ヘルパーが扱われる型を自ら名指す必要がある所では、直接構築できる：`Validate[Tally, [r] =>> r raises CErrorA, Pointer](initial, cases)`。
+
+% 0 1 0 19fa298c162814b01dcd081853c2ddd0
+
+@ 0 3 0 096906e8ae6292541a8727835ce74cd9
++   entry .protect   ブロックを実行し、扱われるエラーをそのフォーカスとともに登録する。畳み込みの結果を返す
++   entry #initial   何らかのエラーが起きる前の蓄積
++   entry #lambda   畳み込み：各エラーを、その `prior` のフォーカスとこれまでの `accrual` とともに、新しい蓄積へ写す
+
+@ 0 4 0 09ee6ba362e61ab31b00dc956ab7b2fc
++ entry .accrual   `track`、`validate`、`accrue` のケースの中での、ここまでの蓄積
++     `track` や `validate` の畳み込みが各ケースに渡すコンテキスト値 `accrual aka "accrual"` を読む：`case error: Number.Error => Invalid(accrual.problems :+ error.text)`。
++     そうしたケースの外では、この値はスコープにない。
+
+@ 0 7 0 1f0823580413ae8a0d0794b332cbef44
++ entry .focus   ブロックを実行し、その中で登録された各エラーにフォーカスを付ける
++     `focus(transform)(block)` はブロックを評価し、それがどのように終わったかにかかわらず、その間にスコープ内の `Foci[focus]` が登録したすべてのエラーに、`transform` が生成するフォーカスを補う。
++     変換は、（内側の `focus` によって）すでに付けられている `Optional[focus]` である `prior` を受け取るので、構造を下りていく走査は位置を内側から外側へと組み立てる：`focus(prior.or(Pointer.Self)(t"name"))`。
++     不活性な `Foci.default` は何も登録せず、`Foci#active` を使えば、ホットループはこの包み込みをまったく省略できる。
+
+% 2 1 0 04bdf8cb15bc0a0114d7bd764a3f2d58
+
+% 3 1 0 044b48f685c14d3010a21ca14d90c2d7
+
+% 4 1 0 0c4ecfd994876c1c0b53acfd4914fc83
+
+% 0 1 0 0d3f23b4b92f99fc1810338171151b25
+
+% 0 1 0 010df9107a2e60f21669ae47de9d3a56
+
+% 0 1 0 13b182bdcaacd02112059e595cb30b48
+
+% 0 1 0 0667df2eae4fd8a6122e99cdc96bea89
+
+% 0 1 0 025fc88130415d8a15bfee9ff5115ccc
+
+% 1 1 0 1daa46b1e710889210db396d7f211083
+
+@ 0 1 0 07852b64dec7718e1adcdf3a6c7a3919
++ entry .Foci   エラーが登録された場所の記録：`track` や `validate` が集める位置
+
+% 1 1 0 1081c30c432a58b708f975950b7133e4
+
+@ 0 6 0 125f60dddf8ce8a20eadb57339ac9b42
++       `Foci[focus]` は、`TrackTactic` が報告する先の可変な登録簿である。各エラーは、構造の中でそれが発生した場所を示す `Optional[focus]` とともに記録され、走査が巻き戻るにつれて `focus` がそれを埋める。
++       `TrackFoci` は、`track` と `validate` が置く記録用の実装である。`Foci.default` は、それ以外のあらゆる場所で暗黙のスコープにある不活性な実装である。そのため、`tracks focus` と宣言されたメソッドは常に呼び出すことができ、位置を観測するのは外側を囲む `track` や `validate` だけである。
+
+% 1 1 0 1b598b6ab14147a30c161661f76e7ebc
+
+% 0 1 0 0d071da936b5907607d1443f539a38e9
+
+% 0 1 0 028448c59979e4301d70d866b98a4b48
+
+@ 0 19 0 0042bcb6f87958881e718af0c374cbde
++   entry .default   暗黙のスコープにある不活性な `Foci`：何も登録せず、成功も報告しない
++       その `active` は `false`、`length` は 0 であり、`register` と `supplement` はすべてを捨て、`fold` は初期値を返し、`success` は `false` である（エラーは記録されていないが、何も追跡されてもいない）。
++   entry #active   登録されたエラーが保持されるかどうか。`false` になるのは `Foci.default` だけである
++       ホットなデコードのループは、フォーカスが決して観測されないとき、これを調べてフィールドごとの `focus` の包み込みと、包み込みのたびにアロケーションされるクロージャを省略する。
++   entry #length   登録されたエラーの数
++   entry #success   追跡が実行され、エラーが一つも登録されなかったかどうか
++   entry #register   エラーを、まだフォーカスなしで記録する
++   entry #fold   登録されたエラーを、それぞれのフォーカスとともに一つの蓄積へと畳み込む
++       `fold(initial)((focus, accumulation) => { case error => … })`：ラムダはフォーカスと蓄積を受け取り、エラーに対する部分関数を返す。
++   entry #supplement   最後に登録された `count` 個のエラーのフォーカスに変換を適用する
++       `focus` が位置を付ける仕組みである：変換はすでにある `Optional[focus]` を受け取り、新しいものを返す。
++   entry #truncate   最初の `length` 個より後に登録されたエラーをすべて捨てる
++       `TrackTactic#tolerate` が、そのブロックが記録したものを巻き戻す仕組みである。
++   entry #tainted   何らかのエラーが登録されたかどうか
+
+@ 0 4 0 1a3fe2995c529af60b0affe4a6945e66
++ entry .TrackFoci   記録用の `Foci`：登録されたすべてのエラーをそのフォーカスとともに保持する
++     `track` と `validate` が置く実装で、エラーの `ArrayBuffer` と、それらの `Optional[focus]` の `ArrayBuffer` を持つ。
++     `track` なしでフォーカスを観測するために、ローカルな given として束縛することもできる（`given Foci[Pointer] = TrackFoci()`）。
+
+@ 0 1 0 001f1fe1d0eb0a9c1a1886e2dd428518
++ entry .Pointer   エラーのフォーカスとしての、構造の中へのドット区切りのパス
+
+% 1 1 0 0c8aeb47054bce6e18b03075a43e0ac5
+
+@ 0 5 0 17fb0a832b37312a1196878034424cb9
++       最も単純なフォーカスの型である：`Pointer.Self` は根であり、`Pointer.Child(parent, label)` はそこから一段下である。
++       `Pointer(t"a")(t"b")(t"c")` はパスを組み立て、それは `a.b.c` と描画される。構造が独自のポインター型を持たない場合に `validate` の例が使うフォーカスの型がこれである。
++       `Encodable in Text` かつ `Communicable` であるので、ドット区切りのテキストとしてメッセージに埋め込まれる。
+
+% 2 1 0 004e77c2488e8cb804f7107a253e10a0
+
+% 3 1 0 0c118fce6c81634a17d97508cbc5408d
+
+% 0 1 0 1ddb70beb21e17280994b28f4eab5804
+
+% 0 1 0 071faee78810dbfd08d0e0858b3fd1b0
+
+% 1 1 0 1c1b73a26bdaef3904ed1860d9d1e4fc
+
+@ 0 5 0 0003a391e6c2100800d4be3e9f35102e
++   entry .apply   `Pointer()` は根であり、`Pointer(label)` は根の子である
++   entry .encodable   ポインターをドット区切りのテキストとして描画する
++   entry .communicable   ポインターを、ドット区切りのテキストのメッセージとして描画する
++   entry #text   `.` で連結されたラベル。根では空である
++   entry #apply   `pointer(label)`：このポインターの、そのラベルを持つ子
+
+@ 0 1 0 0297260ad8a7fd900e7a6948d0d7e75f
++ entry .TrackTactic   `track` と `validate` が注入する戦術：各エラーを foci に登録して続行する
+
+% 1 1 0 0418339ffce41d6f04a864618da06638
+
+@ 0 12 0 152453220fcb07091a0211a72ef09914
++       `boundary` のラベル、初期の蓄積、登録先の `Foci` に対する `Tactic[error]` であり、エラーを構築するための `Diagnostics` を持つ。
++       `record` はエラーを登録して戻る。`abort` はエラーを登録してブロックから抜け出す。`certify` は foci が汚染されていれば抜け出す。`tolerate` は foci を、そのブロックの前の状態まで切り詰める。
++   entry #diagnostics   エラーの構築に使われる `Diagnostics`
++   entry #record   エラーを foci に登録して戻る
++   entry #finish   何もしない。戦術の形を保つために残されている
++   entry #certify   何らかのエラーが登録されていれば、追跡されたブロックから抜け出す
++   entry #tainted   foci が何らかのエラーを保持しているかどうか
++   entry #tolerate   ブロックの値、またはそのブロックが登録したエラーを foci から捨てたうえでの `Unset`
++   entry #abort   エラーを登録し、追跡されたブロックから抜け出す
+
+@ 0 1 0 1403e24f00fde1d10434f28251f986f6
++ entry .Errors   まとめて報告される複数のエラー。それぞれはフォーカスのテキストをキーとする
+
+% 1 1 0 07172af0bc9c678f0e4233ab892a241e
+
+@ 0 3 0 0abb2576660014be112cd55e98a6f78f
++       エラー `↯/s.24.5`：_`n` accrued errors: `message` at `focus`; …_。
++       `(Text, Error)` の組を保持する `Error` で、失敗する前にすべての問題を集める検証のためのものである。
++       空の状態で構築して `+` で増やし、あるフォーカスのエラーは `apply` で引く。
+
+% 2 1 0 1318c38d8bf7030316eb8c95216bd92e
+
+% 3 1 0 0ebd76fa7937c8d817e388181172d6ee
+
+% 4 1 0 0094536c09938dc0046b8fce0e3b8cb4
+
+% 0 1 0 112dcc59abf1dff808be4eafcba8d5b5
+
+% 0 1 0 02c5f684ea9474a5159e7a9474de69ac
+
+% 0 1 0 04a6b62292d1fa0a18bee4add70b59ff
+
+% 1 1 0 12f63cb0f171b6bf1d70046f50e1fa53
+
+@ 0 3 0 1e60f99b3f5247f914c0b494f094d092
++   entry #errors   `(focus, error)` の組。新しいものが先頭にある
++   entry #+   `errors + (focus, error)`：組が一つ増えた新しい `Errors`
++   entry #apply   あるフォーカスで記録されたエラー、または `Unset`
+
+@ 0 1 0 04804f7fecb7097d0c949c6dce609a26
++ entry .Validation   まとめて報告される複数のメッセージ。それぞれは `Pointer` の位置にある
+
+% 1 1 0 0695496ee5cdded51c46e257366526f7
+
+@ 0 5 0 09c791c77cc66f370e809447446bf6f8
++       エラー `↯/s.24.3`：_`n` messages: `message` at `pointer`; …_（件数が少ないときは `no messages`、`one message`、`two messages`… となり、`Pointer.Self` のメッセージは位置なしで示される）。
++       `(Pointer, Message)` の組を保持する `Error` で、構造を走査し、最初の問題で中断するのではなく、見つけた誤りを蓄積するパイプラインのためのものである。
++       空の状態で構築して `+` で増やす。
+
+% 2 1 0 0b91c606086db7c404a29a1e8f209c2f
+
+% 3 1 0 0c710824fbaf812e10d57fb0e8f7acef
+
+% 4 1 0 1084b1da26a6b67613d9d85a5818e553
+
+% 0 1 0 164828b5d89fe61a03450473813a5a6b
+
+% 0 1 0 007807ee9a12192a0382842ac9ffedba
+
+% 0 1 0 1f181463aa6d04431b1e07faa5899d09
+
+% 1 1 0 097d62a68bd2cea319d876054703a747
+
+@ 0 5 0 05ba72496a457d5e06be06330502ed31
++   entry .text   `(Pointer, Message)` の組のリストに対するメッセージ：件数に続いて、各メッセージをそのポインターとともに示す
++   entry #messages   組。新しいものが先頭にある
++   entry #+   `validation + (pointer, message)`：組が一つ増えた新しい `Validation`
++   entry #apply   あるポインターで記録されたメッセージ、または `Unset`
++   entry #text   `Validation.text` が描画する、この検証のメッセージ
+
+@ 0 1 0 0cf39984f802143e1f480c0d90f13b27
++ entry .Expectation   `capture` のブロックが成功したときに発生する `Expectation.Error` の置き場所
+
+% 1 1 0 0d88eb28408e550d1980844cf0cd1796
+
+@ 0 2 0 016e3783c532f26217acf973ee51bfd7
++       `capture` はそのブロックが失敗することを期待し、発生したエラーを返す。`Expectation` はその期待に名前を与え、期待が裏切られたときの置き場所を作る。
+
+% 1 1 0 1ec3e7bcd294bc7f0e2fcceec0dd752b
+
+@ 0 1 0 19121da42bbf532c0c83e38560775bf8
++   entry .Error   失敗が期待されていたブロックが成功したときに `capture` が発生させる
+
+% 1 1 0 02637c5c0a822f010b50d7005df8d92d
+
+@ 0 5 0 172d6d3dd945d652094483ad929ab419
++         エラー `↯/s.24.16`：_the expression was expected to fail, but succeeded_。
++         代わりにブロックが生成した値を運ぶので、テストは何が返されたかを確認できる。
++         `capture` にはそのための `Tactic[Expectation.Error[success]]` がスコープに必要であり、`strategies.throwUnsafely` がそれを供給する。
++     entry #result   失敗する代わりにブロックが生成した値
+
+@ 0 8 0 0758a206c60c3829035441f389dca658
++ entry .venture   ブロックを即座に評価し、それが何らかのエラーを記録したかどうかを覚えておく
++     `venture(block)` はブロックを直ちに実行する。その際、アンビエントの `Tactic[error]` の手前に `VentureTactic` が挟み込まれる：ブロックが発生させるすべてのエラーは、外側にあるときとまったく同じようにアンビエントのスコープに記録されるが、結果は `Venture[value]` となる。ブロックが何も記録しなければその値であり、記録すれば `Failed` マーカーである。
++     venture の中の `abort` は*区切られている*：それはエラーを記録し、その venture だけを断念する。そのため、兄弟の venture はそれぞれ自身のエラーをすべて差し出し、後で失敗した venture を `venture()` で強制するコードは、プレースホルダーを与えられるのではなく省略される。
+
+% 2 1 0 04b17ddd5365e6e5071a3d47ce331050
+
+% 3 1 0 15b809c8a90c118605215829918d3d1e
+
+% 4 1 0 1bd818e6b36f51210ddc591991ccba95
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 0dd75933a3ab40501c06206ce974a13d
+
+% 0 1 0 153d3dd38d0e7ff310648120a97af1c3
+
+% 0 1 0 0d94c8e28ede36be0c5dc1e9d4d80acb
+
+% 0 1 0 16605f6aeffbcd2916a201d42851079a
+
+% 0 1 0 1fb470897531c5850cbf2bb5ec5f6315
+
+% 0 1 0 1f90964b5c93bc8417ea37ef0df9d6a2
+
+% 0 1 0 0b13bdbf1f9daae516930ba13fa49335
+
+% 0 1 0 1430ee9e126bdf36159e6ca1a99a1a97
+
+% 0 1 0 0388ca821a3c1e240dd7f6cd4bbe31b8
+
+% 0 1 0 0b87a8cb49d49f511baf90d2fa1c635e
+
+% 1 1 0 05360d887eb84a250d6f5a78dd2a1057
+
+@ 0 4 0 0395aa58e21200ac13fce251f285b52d
++     即座に失敗するアンビエントの戦術（`safely`、`throwUnsafely`、`attempt`…）のもとでは、転送された `record` は直ちに抜け出し、`venture` は透過的な即時評価となる：同じ本体があらゆる戦略に役立つ。
++     ブロックは、その戦術であると同時にその `Guard` でもある一つのケイパビリティ（`Venturer[error]`）を受け取るので、venture は別の venture の中で強制できる。
+
+@ 0 6 0 1a0254352afe74140d305312a1f33f1c
++ entry .guard   これまでに何も記録されていない場合にだけブロックを実行する。そうでなければスコープを放棄する
++     `guard(block)` はアンビエントの `Tactic[error]` の `tainted` を調べる：汚染されていなければ、スコープに `Guard` ケイパビリティを置いてブロックを実行する（そのため、その中で venture を強制できる）。汚染されていれば、戦術を certify することでブロックを省略し、それによって集約のスコープ全体を、その蓄積されたエラーへと放棄する。
++     ブロックの中で失敗した `Venture` を強制した場合も、同じように抜け出す。
++     即座に失敗する戦術のもとでは `tainted` は常に `false` なので、`guard` は恒等関数である。
+
+% 2 1 0 048ff01d3b513a3f05ed2beedad1191b
+
+% 3 1 0 1dcb5b2c952e3e7815d18956ecb0a567
+
+% 4 1 0 1fe5229f95311b3916fbf759a25072d4
+
+% 0 1 0 10c8c77b85aa22b70e8fcbe0c80f9d58
+
+% 0 1 0 110cedfe59a75ec417c5cb58d99d918a
+
+% 0 1 0 18aa210f957d21911055c882a36dfcd0
+
+% 0 1 0 01062207b138b883070996e232918224
+
+% 1 1 0 147d6e8b13b7389413be03468b9e83d0
+
+@ 0 1 0 1a93b413d69367ff0003d1848054ff27
++ entry .Guard   外側を囲む省略スコープの証人。失敗した `Venture` はそこへ抜け出すことができる
+
+% 1 1 0 1635a265e3d93e4004ddb175fe695f1f
+
+@ 0 5 0 1dbffadebde8dbd904f9f99a703ffda1
++       `venture` や `guard` のブロックに与えられるケイパビリティである：`Venture` を `venture()` で強制するにはこれが必要であり、そのため強制は、断念すべきレキシカルな領域が存在する場所でしかできない。
++       `escape()` が断念を行う。`venture` であれば venture そのものを失敗させ、`guard` であればアンビエントの戦術を certify する。
++       コンテキストに省略スコープがなければ、強制はコンパイルできない：省略して抜ける先として明確に定まった場所がないからである。
+
+% 1 1 0 07a131e6e088d3320f4bdb2cc0fc558f
+
+% 2 1 0 08ef44d50ee123ef1896dac7d0805b91
+
+@ 0 1 0 1676f04c40ec3fc81d65a28d17daae2a
++   entry #escape   外側を囲む省略スコープを断念する。戻らない
+
+@ 0 5 0 077c2b8b1623e1b315464cfe973ce952
++ entry .Venturer   `venture` のブロックが受け取る唯一のケイパビリティ：その戦術であり、同時にその `Guard` でもある
++     `Venturer[error]` は `Tactic[error] & Guard` である：venture の区切りとなる戦術と、その venture 自身の省略スコープの証人とは同じオブジェクトであり、一度だけ渡される。分離検査のもとでは、同じケイパビリティを二度渡すことはできないからである。
++     名前付きの別名になっているのは、括弧で囲んだキャプチャを伴う交差型を、コンテキスト関数の位置でパースできないからである。
+
+@ 0 1 0 004feb882c50b643132309cba34c6386
++ entry .Venture   `venture` の結果：値、またはエラーが記録されたことを示すマーカー
+
+% 1 1 0 1213c244c42c9f8b0717c94a344475c2
+
+@ 0 5 0 13f28ae44ad842261f7a6701b2bba135
++       `Venture[value]` は `value` と `Venture.Failed` の不透明なユニオンなので、成功した venture は何もアロケーションしない。`Optional` と違って不透明であるのは、`apply()` が venture に対してだけ解決されるようにするためである。
++       エラーそのものはここには保持されない：それらは venture の宣言の時点でアンビエントの戦術に記録されており、`Failed` は値が使えないことを示すだけである。失敗した venture を強制してもそれ以上何も報告されないのはこのためである。
+
+% 2 1 0 0d2979053a7d563501e008e4a76369d8
+
+% 3 1 0 136216fd9169f6840054c89e0ca4b3a6
+
+% 4 1 0 060c9956a7c91d2d16d495d7d89090e8
+
+% 0 1 0 12eb39130fc15e48164fae5ba3544192
+
+% 0 1 0 0e876a2cebad134307fe00d7cdec3a21
+
+% 0 1 0 133dbeae5dcad3e00c844657ff2d4e41
+
+% 0 1 0 080f94265a3f68c30c60d891b8e80311
+
+% 0 1 0 1c62f93bac52529a12b987a5eee6b251
+
+% 1 1 0 0cea95f61aaef48e0a95b616bd5dfcd3
+
+% 1 1 0 10c7e75784aedf7f1234dbaafc5f364e
+
+% 2 1 0 1ff83f384db8d1b905f31bf65dd5591d
+
+% 0 1 0 1cdbb09a682f0548044b9f5bed4aa04b
+
+@ 0 13 0 0552254078b9c37518e1049fd6c722e6
++   entry .Failed   エラーを記録した venture のマーカー
++   entry .Type   `Venture[value]` が別名とする不透明型 `Failed.type | value`
++   entry .apply   `Venture(value)` は準備のできた venture である。`venture()` は venture を強制し、失敗していれば抜け出す
++       `Venture.apply(value)` は値を準備のできた venture として包む。
++       インスタンスに対する拡張 `venture()` は、その値であるか、venture が失敗していれば外側を囲む省略スコープへ抜け出す：スコープに `Guard^`（外側を囲む `venture` または `guard` のブロック）が必要であり、それがなければコンパイルできない。
++   entry .failed   任意の値型の、失敗した venture
++   entry .ready   venture が `Failed` ではなく値を保持しているかどうか
++   entry .vouch   その値。venture が失敗していればパニックする
++       呼び出し側がすでに `ready` で確認した venture を、抜け出しなしで強制する。一括分をすべて確認してから使うデコーダーがその例である。
++       ここで失敗した venture に到達するのは論理エラーなので、省略するのではなくパニックする。
+
+@ 0 1 0 0e3a9e7401c645d202a9dbe04248784f
++ entry .VentureTactic   `venture` が挟み込む戦術：アンビエントのスコープに記録し、venture だけを中断する
+
+% 1 1 0 0d7a5f8726941eef0d97e406f892db00
+
+@ 0 16 0 1b81f00904d8d5951ad958e8a549dbd8
++       アンビエントの戦術と venture の `boundary` ラベルに対する `Tactic[error]` かつ `Guard` である。
++       `record` はエラーを数え、アンビエントの戦術に転送する。`abort` は同じことをしてから `Venture.failed` で venture から抜け出す。`certify` は venture が何かを記録していればそれを失敗させる。`tolerate` はアンビエントの戦術の `tolerate` に委譲し、venture 自身の件数を元に戻す。`escape` は venture を失敗させる。
++       即座に失敗するアンビエントの戦術のもとでは、転送された `record` は決して戻らない。
++   entry #diagnostics   アンビエントの戦術の `Diagnostics`
++   entry #failed   この venture の評価中にエラーが記録されたかどうか
++       アンビエントのスコープも反映する `tainted` とは別である：先行する venture の失敗によって、この venture が失敗してはならない。
++   entry #tainted   この venture、またはアンビエントのスコープがエラーを記録したかどうか
++   entry #record   エラーを数え、アンビエントの戦術に転送する
++   entry #abort   エラーを数えて転送し、それから venture を断念する
++   entry #certify   venture が何かを記録していれば、それを断念する
++   entry #tolerate   アンビエントの戦術の `tolerate`。その後でこの venture の件数を元に戻す
++   entry #escape   それ以上何も記録せずに venture を断念する
+
+@ 0 1 0 03ef2525794e2b0a11570efe976ceb1d
++ entry .ThrowTactic   例外を投げる戦術：`throwUnsafely`、`throwSafely`、`unsafely`、`throwErrors` の背後にある
+
+% 1 1 0 1a2a13b39ca272951e1ac51f1f9bce8b
+
+@ 0 7 0 0c6e92377458843e054e41721e870220
++       `record` と `abort` の両方がエラーを非検査例外として投げる `Tactic[error]` であり、`Diagnostics.capture` で構築されるので、スタックトレースを運ぶ。
++       例外を投げる戦術は何もキャプチャしない（`CanThrow` は消去される）ので、アンビエントの戦略として自然である：`.ambient` は `strategies.throwUnsafely` が提供する純粋なインスタンスであり、スコープ付きの形式はそれぞれ自前のものを作る。
++       `error` について反変なので、一つの `ThrowTactic[Hazard]` があらゆる `Tactic[error]` を満たす。
++       戦略をインポートせずに一つのメソッドに例外を投げる戦術を供給するには、ローカルな `given tactic: Tactic[Json.Error] = ThrowTactic()` を使う。
+
+% 1 1 0 1b78daeed640ac0a0c39b55f12fe883f
+
+@ 0 8 0 07c4c97098af8c3e1ca9baf60a564311
++   entry .ambient   `strategies.throwUnsafely` の背後にある純粋な `ThrowTactic[Hazard]^{}`
++       `unsafeExceptions.canThrowAny` と同じく純粋な値である：スコープを持たない throw は戻り先を保持しない。また、追跡されたアンビエントの戦術では、導出が合成するサンクも、それを通じてエラーを発生させるラムダも満たすことができない。
++   entry #diagnostics   `Diagnostics.capture`：投げられたエラーはスタックトレースを運ぶ
++   entry #record   エラーを投げる
++   entry #abort   エラーを投げる
++   entry #certify   何もしない：投げられたエラーはすでに抜け出している
+
+@ 0 1 0 1a505b000b1e99b009a5735f9679e41c
++ entry .OptionalTactic   `safely` と `dare` が置く戦術：`Unset` で抜け出す
+
+% 1 1 0 0d1b38c0c49aca2b01cc3f103f3e6281
+
+@ 0 3 0 0816807c297f6a1d0d31a8b8a272290a
++       `boundary.Label[Optional[success]]` に対する `Tactic[error]` である：`record` と `abort` の両方が `Unset` でブロックから抜け出し、エラーは決して実体化されないので、`Diagnostics.omit` で構築される。
+
+% 0 1 0 01ee536f18b2a2de0dc57f38520f9f24
+
+% 0 1 0 04b145155b876e350c22b5e01b7e74d9
+
+% 0 1 0 0c3a38db5cb432ac18e4bb8d72683bed
+
+@ 0 4 0 0b6d099234ce6ac80d8c3c41e18c3d24
++   entry #diagnostics   `Diagnostics.omit`：エラーは捨てられるので、トレースはキャプチャされない
++   entry #record   `Unset` でブロックから抜け出す
++   entry #abort   `Unset` でブロックから抜け出す
++   entry #certify   何もしない
+
+@ 0 1 0 03beb920f013e30e0f9b97d5a6c51115
++ entry .AttemptTactic   `attempt` が置く戦術：`Attempt.Failure(error)` で抜け出す
+
+% 1 1 0 0bfb161a00d5283011b7fcf556283041
+
+@ 0 3 0 1e78f7033c3a096301f633ae56897197
++       `boundary.Label[Attempt[success, error]]` に対する `Tactic[error]` で、`attempt` の時点でスコープにある `Diagnostics` を持つ：`record` と `abort` は、エラーを `Failure` として包んで抜け出す。
+
+% 1 1 0 1fce61e7932562ea055018b14be5db77
+
+% 0 1 0 083cdc4cb5b22a3f0669f28fa4cb1d3b
+
+% 0 1 0 1d783ff26a5462e90ec68793411c2117
+
+@ 0 4 0 1be5bdd2bb9c8aef09d056be076e819b
++   entry #diagnostics   `attempt` の時点で与えられた `Diagnostics`
++   entry #record   `Attempt.Failure(error)` で抜け出す
++   entry #abort   `Attempt.Failure(error)` で抜け出す
++   entry #certify   何もしない
+
+@ 0 1 0 002f86db8240b6ab04500ac3623d109c
++ entry .EitherTactic   `capture` が置く戦術：`Left(error)` で抜け出す
+
+% 1 1 0 039d7173b743c464122f9d3a0484b2d7
+
+@ 0 4 0 0d07025d9553a9a3063b0fff0f8b2a9b
++       `boundary.Label[Either[error, success]]` に対する `Tactic[error]` で、スコープにある `Diagnostics` を持つ：`record` と `abort` は `Left(error)` で抜け出す。
++       `capture` は `Either` を開いてエラーを返すか、`Right` であれば `Expectation.Error` で中断する。
+
+% 1 1 0 193d66f43ae5d4dd1f66cce12647dec7
+
+@ 0 4 0 19973ccdee6576da1c5473b746f3126d
++   entry #diagnostics   `capture` の時点で与えられた `Diagnostics`
++   entry #record   `Left(error)` で抜け出す
++   entry #abort   `Left(error)` で抜け出す
++   entry #certify   何もしない
+
+@ 0 1 0 19046a34c83843260a73790bd00773de
++ entry .AmalgamateTactic   `amalgamate` が置く戦術：エラーそのもので抜け出す
+
+% 1 1 0 01d1aed10fe3278a097b793c04961f34
+
+@ 0 3 0 10e7f153c09518d411a08a6c8430a770
++       `boundary.Label[success | error]` に対する `Tactic[error]` で、スコープにある `Diagnostics` を持つ：`record` と `abort` はむき出しのエラーで抜け出し、呼び出し側は型によるマッチでそれを値と区別する。
+
+% 0 1 0 01f988450a0c98030f1879cc034fc227
+
+% 0 1 0 157eea3f09856afe1d7ad296c26cfd67
+
+% 0 1 0 124863d3e889b56616a33460321b9997
+
+@ 0 4 0 158ca08079d565900986ffdfc7f891de
++   entry #diagnostics   `amalgamate` の時点で与えられた `Diagnostics`
++   entry #record   エラーで抜け出す
++   entry #abort   エラーで抜け出す
++   entry #certify   何もしない
+
+@ 0 1 0 1e0da7b742c05c6d1f05f8bef5e77551
++ entry .HaltTactic   マクロのための戦術：エラーは、そのラベル付きのメッセージでコンパイルを停止させる
+
+% 1 1 0 03800769e56d574a07996d936f8cdf9f
+
+@ 0 5 0 0953f1e6c2314d450a0c150ef0cc8299
++       `Quotes` を受け取る `open class` で、`error <: Error` に対するものである：`record` と `abort` の両方が、エラーの `labelled` メッセージ（その bolt コードとテキスト）で `halt` を呼ぶので、展開時に失敗するパースはコンパイルエラーとして報告される。
++       `abortive` がこれを置く。エラーを特定の木の位置に置きたいマクロは、これをサブクラス化し、`record`/`abort` をオーバーライドして位置を渡す。
+
+% 0 1 0 015d429060a19c101559184ee34a9e17
+
+@ 0 4 0 0eb7b3a51df7a95317f1b9a606496e91
++   entry #diagnostics   given としての `Diagnostics.omit`：コンパイル時のエラーにスタックトレースは要らない
++   entry #record   エラーのメッセージでコンパイルを停止させる
++   entry #abort   エラーのメッセージでコンパイルを停止させる
++   entry #certify   何もしない
+
+@ 0 1 0 01e31ff3885c46791ce713af2b41b931
++ entry .UncheckedTactic   `Unchecked` に分類されたエラーを投げる戦術
+
+% 1 1 0 1250bd486f997ae20863dd6c866c7f33
+
+@ 0 4 0 14f2c0a242e63d21083fb82982ad1072
++       `record` と `abort` が例外を投げる `Tactic[error]` で、`errorDiagnostics.stackTracesDiagnostics` で構築される。
++       `error is Unchecked` の証拠は、戦術が保持するのではなく、召喚の場所で `strategies.uncheckedErrors` が検査する。これが純粋な `.ambient` インスタンスを提供する。
+
+% 1 1 0 1bddd79a86316b431f29ad00ca27c633
+
+@ 0 5 0 0f8cfa2978ae35ae084c152475159830
++   entry .ambient   `strategies.uncheckedErrors` の背後にある純粋な `UncheckedTactic[Hazard]^{}`
++   entry #diagnostics   given として、スタックトレースがキャプチャされる
++   entry #record   エラーを投げる
++   entry #abort   エラーを投げる
++   entry #certify   何もしない
+
+@ 0 1 0 1e004ddf2f2388d912693caf3d2a4f40
++ entry .FatalTactic   エラーの `Exit` ステータスでプロセスを終了させる戦術
+
+% 1 1 0 18ca371321e2070c1386975179728962
+
+@ 0 4 0 093bddad5ea737540405c00435612fa5
++       `is Fatal` の given を持つエラー型に対する `Tactic[exception]` である：`record` と `abort` の両方が、`Fatal` インスタンスにエラーの `Exit` ステータスを尋ね、そのステータスでプロセスを `terminate()` する。
++       `strategies.fatalErrors` が純粋なインスタンスを提供する。
++       `soundness` アンブレラにはエクスポートされない：直接名指すのではなく、戦略を通じて到達するものである。
+
+% 1 1 0 02f559a56a5e6c410a73aa2b64917e2f
+
+@ 0 4 0 019b6744de4bcb1a1ff5bcc763d03265
++   entry #diagnostics   given として、スタックトレースがキャプチャされる
++   entry #record   エラーのステータスでプロセスを終了させる
++   entry #abort   エラーのステータスでプロセスを終了させる
++   entry #certify   何もしない
+
+@ 0 6 0 0281222e217d154d14d53853bdd1c15a
++ entry .Unchecked   処理されずに投げられてよいエラーを示すマーカーの型クラス
++     `error is Unchecked` にはメンバーがないので、given を `erased` にできる：`erased given AsciiError is Unchecked`。
++     `strategies.uncheckedErrors` をインポートすると、非検査のエラーを発生させるメソッドを、それに対する戦術がスコープになくても呼び出すことができ、エラーは投げられる。
++     この分類は、その失敗が各場所で処理するに値しないという作者の主張であり、それでも型には宣言されたままである。
+
+@ 0 1 0 1db3c0811a3d270405bdec0f2d03bf4f
++ entry .Fatal   プロセスを終了させるエラーの型クラス。どのステータスで終了するかを述べる
+
+% 1 1 0 043a39dc5f7cad771e2a33abad57045a
+
+@ 0 3 0 1f25719c9f3a1c3716339fda30fb1556
++       `error is Fatal` は、エラーを、プロセスが終了すべき `Exit` ステータスに写す。`strategies.fatalErrors` のもとでは、そうしたエラーを発生させるとプロセスが終了する。
++       続行する意味のある方法がない、初期化中の失敗に向いている。
+
+% 2 1 0 09db1b3e91b75ea0025d053842b7816c
+
+% 3 1 0 133d1e5108fdecb808026eb1ad4ac27b
+
+% 0 1 0 0f3a03762ed0691a149daadc0a86b100
+
+% 0 1 0 19494235ba1228ac16d6233bcd7c2ef9
+
+% 0 1 0 1324ab2d48fa7a0c10f26468e9168201
+
+% 1 1 0 154f5da8ad60fa4a0493358428b0dc14
+
+% 1 1 0 0864f0065fc6589e04591b3d141fb297
+
+@ 0 2 0 1034e00395999bba1c43f4cd3a4a95de
++   entry #status   あるエラーに対する `Exit` ステータス
++   entry #contramap   別の型をこの型に写すことによる、その型の `Fatal`
+
+@ 0 1 0 062447cfa098c75606aa5b4a72384d4d
++ entry .Mitigable   あるエラー型がどのように別のエラー型になるかを述べる型クラス
+
+% 1 1 0 11fed3166d220645013916399324264e
+
+@ 0 6 0 078ce4be2951e4941fc3330e5cf9d4d0
++       `error2 is Mitigable to error`（中置の書き方では `error mitigates error2`）はメソッドを一つ、`mitigate` を持ち、`error2` を `error` に変換する。
++       `strategies.mitigation` をインポートすると、スコープにある任意の `Tactic[error]` から自動的に `Tactic[error2]` が得られるので、低レベルの失敗は、外側のエラーを宣言する API の境界で変換され、呼び出しの場所ごとにそれを述べ直す必要はない。
++       `mitigate { cases }` は、明示的でブロックにスコープを持つ形式である。
+
+% 2 1 0 1f18df56e9dc578f18eca388124e93e4
+
+% 3 1 0 03a3f4af94681ac1026985ff1db86d86
+
+% 4 1 0 00e136eb1202fcef11279fcfe9fef55f
+
+% 2 1 0 1f0f3ef077a7802210c06c1387727a85
+
+% 3 1 0 053b4892d0d4fe6314aa22e9dff78289
+
+% 5 1 0 059ae6fc9a2f78fe18cde3240927c7e9
+
+% 1 1 0 0fcc91263f39f7be19c943df617d14bb
+
+@ 0 2 0 123ada056101091f16daee000a7bdb81
++       変換は、エラーを発生させた場所の `Diagnostics` の外で実行される。`Diagnostics` をインポートするか、新しいエラーを `(using error.diagnostics)` で構築する。
+
+% 1 1 0 09f2e9c7f78846900906766b3d254b9e
+
+% 1 1 0 083e30f76a92e066000fc951afeeb300
+
+@ 0 3 0 13260272fd9e25f91855effcf477f564
++   entry #Self   変換元のエラー型
++   entry #Result   変換先のエラー型
++   entry #mitigate   一方のエラーからもう一方への変換
+
+@ 0 4 0 162ad7a0603722350295414124697117
++ entry .lest   `optional.lest(error)`：その値。`Unset` であればエラーで中断する
++     `Optional[value]` に対する拡張である：`optional.lest(error)` は、値が存在すればその値であり、存在しなければスコープにある `Tactic[error]^` に対する `abort(error)` である。
++     値が必要とされる地点で、存在しないことを宣言された失敗に変える。
+
+% 2 1 0 1f686aaa8196dff1027c987f7ba21276
+
+% 3 1 0 0b4782240df2c4ea1dc106894b94cfcc
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 0 1 0 1165e13a85f42038031c5dc4e707eb86
+
+% 0 1 0 0413ba56bdea1a9703853980da370a5e
+
+% 1 1 0 0beb95f43acf40a1043dec33981662f7
+
+@ 0 4 0 10fa68800cc1bb77032de959cea697b8
++ entry .dare   `optional.dare(block)`：存在する値に失敗しうるブロックを適用する。失敗すれば存在しない
++     `Optional[value]` に対する拡張である：`optional.dare[error](value => …)` は、オプショナルが存在しなければ `Unset` であり、そうでなければブロックの結果、またはブロックがエラーを発生させれば `Unset` である。これは `let` と `safely` を合成したものであり、同じ `OptionalTactic` を使い、スタックトレースはキャプチャされない。
+
+% 2 1 0 05162b58f9a73bbd09c508f197f2c874
+
+% 3 1 0 1507999d6428ef750efb48010267f00c
+
+% 0 1 0 03beb396cf5ab3071a0339d72084f0b6
+
+% 0 1 0 0a9a6e8bae2f83be02d76d59b7122465
+
+% 1 1 0 10a2b2f24a7393100b6047264fe99e26
+
+@ 0 5 0 1db1485637f185bc07056a89d0484ea0
++ entry .survive   コレクションに対して失敗しうるラムダを適用した結果。失敗したものは捨てられる
++     `Traversable by element` である任意のレシーバに対する拡張である：`collection.survive[error](element => …)` は、`safely` のもとで各要素にラムダを適用し、エラーを発生させなかった結果だけを残して、それらを `List[result]` として返す。
+
+% 2 1 0 117759f4a479861202fae0fe19f26ccf
+
+% 3 1 0 01b138781118f827148067384d4279ec
+
+% 0 1 0 0083370ada7bf76c0acb13da1681912e
+
+% 1 1 0 148851b4842984dd1aa5cdd5caece142
+
+@ 0 1 0 15d1b54b5e9d54ad198851d8a14a0973
++ entry .internal   `recover`、`mitigate`、`accrue`、`handle`、`track`、`validate` の背後にあるマクロ実装
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 20 0 0fd4d37f4a6a8fe51dd069211b533899
++       直接使うためのものではない。
++       このオブジェクトは、コンパイル時にハンドラのマッチのケースを読んでそれらがどのエラー型を扱うかを調べ、ハンドラの値が運ぶ型ラムダ `[result] =>> (Tactic[E1], …, Tactic[En]) ?=> result` を構築し、戦術を `protect` されたブロックにスプライスする。
++       受け付けるパターンは、型付きパターン（ユニオンはその各メンバーを扱う）、束縛、選択肢、または網羅的なケースクラスの抽出子である。ワイルドカードや網羅的でないパターンはコンパイルエラーになる。
++   entry .unwrap   項から `Inlined` と単一定義のブロックを取り除く
++   entry .unpack   ユニオン型のメンバーを、別名を展開したリストとして返す
++   entry .track   `track` のハンドラから `Tracking` を構築する
++   entry .validate   `validate` のハンドラから `Validate` を構築する
++   entry .trackWithin   `Tracking.protect` の本体
++   entry .validateWithin   `Validate.protect` の本体
++   entry .recoverBuild   `recover` のハンドラから `Recovery` を構築する
++   entry .mitigateBuild   `mitigate` のハンドラから `Mitigation` を構築する
++   entry .accrueBuild   `accrue` のハンドラから `Accrual` を構築する
++   entry .handleBuild   `handle` のハンドラから `Handler` を構築する
++   entry .protectBody   `Handler.protect` の本体
++   entry .mitigateBody   `Mitigation.protect` の本体
++   entry .recoverBody   `Recovery.protect` の本体
++   entry .accrueBody   `Accrual.protect` の本体

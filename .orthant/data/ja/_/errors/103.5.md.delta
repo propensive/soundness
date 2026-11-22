@@ -1,0 +1,78 @@
+orthant 2 language
+
+% 0 1 0 16eb7807439918eb0e93df5cdcf01599
+
+@ 0 1 0 1bc17e73757ad821185ab2819e0693e9
++ Telekinesis が TCP/TLS の接続を確立できないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 1d605ca80eb27d6c0ff1b9dc773e3319
++ `Connect.Error` は、HTTP のやり取りが起こりうるより前の、接続の設定中の失敗を報告する。
++ メッセージは `the TCP connection failed because $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 195eb014e5f6a968082360a4ebaf599b
+
+@ 0 1 0 15fcb2bd8cb9f04a14faebd23104a2c7
++ サーバーのホスト名を解決できなかった。
+
+@ 0 1 0 1744e137e508c8a9140df9154c19ebff
++ **例。** `[↯/s.103.5.1] the TCP connection failed because the server address could not be resolved by DNS`
+
+@ 0 1 0 1513e4df6d01695211baefa37a13a8e5
++ **解決方法。** ホスト名が正しく、DNS に到達できることを検証する。
+
+% 0 1 0 0760008c4207c13205ef4e330d6e9ec8
+
+@ 0 2 0 0ce6f1de3ade498a07b794936fa52e22
++ サーバーが接続を能動的に拒否した（たとえば、そのポートで何もリッスンしていない）。
+
+@ 0 1 0 075b40a0993d308306676cba4198ec58
++ **例。** `[↯/s.103.5.2] the TCP connection failed because the connection was refused`
+
+@ 0 2 0 128ebb63b2441b0a10538c7a1ab6267c
++ **解決方法。** サーバーが動いていて、期待されるポートでリッスンしていることを確かめる。ファイアウォールを確認する。
+
+% 0 1 0 0e78d0f49813296115caa60898973eda
+
+@ 0 2 0 053de12d95c5949904651faafd904281
++ TLS のハンドシェイクが失敗した。
++ 入れ子の `Ssl.Reason` が、`Handshake`、`Key`、`Peer`、`Protocol` の失敗を区別する。
+
+@ 0 1 0 03cf6eeb763c44170fcc836bdd75a47e
++ **例。** `[↯/s.103.5.3] the TCP connection failed because the SSL/TLS layer could not be established because the remote peer's identity could not be verified`
+
+@ 0 3 0 09e43bdcbfc4a88c1bb02723adc2a966
++ **解決方法。** 内側の理由を調べる。証明書と信頼の連鎖（`Peer`）、鍵の素材（`Key`）、サポートされるプロトコルのバージョン（`Protocol`）、暗号スイートの交渉（`Handshake`）を確認する。
+
+% 0 1 0 1b5ddd0ae49cb2b909aef043e8d4af7a
+
+@ 0 1 0 1dcb661dcfb3750514199e17ef03eb18
++ サーバーが許された時間内に応答しなかった。
+
+@ 0 1 0 149a6622e99353ec1b028d07f9265256
++ **例。** `[↯/s.103.5.4] the TCP connection failed because the server did not respond within the time limit`
+
+@ 0 2 0 11ddc6b6043db8c51931a3118530cf82
++ **解決方法。** より長いタイムアウトで再試行するか、サーバーが遅い理由を調べる。
+
+% 0 1 0 115f811f400a7ae2039df4254b9a4138
+
+@ 0 1 0 0a421aea22ad484805c112a8c14fbe8a
++ 原因が、より具体的なバリアントのどれにも一致しない。
+
+@ 0 1 0 146f9e23d7e31dc31db8204c2a0b1c9a
++ **例。** `[↯/s.103.5.5] the TCP connection failed because an unrecognized error occurred`
+
+@ 0 1 0 13efeb42befe83eb0920f372080aa165
++ **解決方法。** ログと、エラーに付けられた原因を調べる。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 1a64f4547cd1c4f50851e87816b6a570
++ - ソース：`lib/telekinesis/src/core/telekinesis.Connect.scala`

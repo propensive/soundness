@@ -1,0 +1,25 @@
+orthant 2 language
+
+% 0 1 0 0f026212a2b772471c4fb8468bb5c5ff
+
+% 0 1 0 1751e012accd74720c57d65fd8292233
+
+@ 0 18 0 0392750bc2a343160e360fff43d2cf1b
++         `Exec(event)` は `guillotine.Exec.Event` を包み、`Log.Process` のタグが付く。
++         `.execEvent` が guillotine のイベントをこれに書き写すので、バックエンドに必要なのはスコープ内の `Commandline.Event is Loggable` だけである。
++         `logging.silentLogging` はそれらを捨てる。
++     entry .execEvent   guillotine の `Exec.Event` を `Commandline.Event` に書き写す
++     entry .communicable   イベントを _git: `event`_ として描画する
++   entry .Outcome   `git` の一回の呼び出しが生んだもの。終了ステータス、標準出力、標準エラー
++     entry #exit   終了ステータス
++     entry #stdout   標準出力、テキストとして
++     entry #stderr   標準エラー、テキストとして
++     entry #ok   終了ステータスがゼロだったかどうか
++     entry #lines   空でない行としての標準出力
++   entry .reason   git の標準エラーを `Git.Error.Reason` として読む
++       照合できるほど安定した git のメッセージを、`NoRepository`、`Moved`、`RefExists`、`Locked`、`NoSuchRef`、`Unmerged`、`NoSuchObject`、`NothingToCommit`、`Detached`、`Dirty`、`NotFastForward`、`LeaseFailed`、`OutsideWorktree`、`Untracked`、`NoOperationInProgress`、`NoSuchRemote`、`RemoteExists`、`Unauthorized`、`Unreachable`、`RemoteRejected`、`InvalidConfig`、`NoteExists`、`BadSignature`、`SigningFailed`、`NoSuchWorktree`、`Conflict` に照合する。
++       それ以外はすべて `Unexpected` である。
+
+% 7 1 0 1629a76aa3214d6912f2ede136ce4616
+
+% 7 1 0 07f206a66839aca11ebfcd26c08e27a7

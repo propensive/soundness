@@ -1,0 +1,334 @@
+orthant 2 language
+
+% 0 1 0 157898be62f31c91079f6ba6eafb1764
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 1 0 06807f751098395a14c3df995c28bc52
++ Una JVM si può sottoporre a debug da un'altra JVM tramite il
+
+% 0 1 0 02b7b4a79604c0b4187897107d76c70a
+
+@ 0 4 0 07a5e316fc58127a0394607de6427a55
++ e questi tipi lo parlano direttamente su un socket. Un processo sottoposto a debug viene avviato
++ sotto l'agente di debug, oppure ci si collega a esso dove è già in esecuzione. La [sessione] che ne
++ risulta imposta breakpoint, fa avanzare i thread a passi, legge frame e variabili, valuta
++ espressioni nel programma fermo, e riceve gli eventi della VM come valori tipizzati. Niente dipende
++ da `com.sun.jdi`.
+
+@ 0 1 0 0ed301e3b475215c07aa31a659b07b8f
++ La stessa sessione serve un editor tramite il
+
+% 0 1 0 07cbdfc863907ff1179d58bb1d0ce5ba
+
+@ 0 1 0 0be81a2dcfc17b521c3befeef36fb533
++ ### Sul debugging dall'esterno
+
+@ 0 4 0 03f3c9161f41075307949907bee59b86
++ L'interfaccia di debugging della JVM stessa è un'API Java che avvolge un protocollo di
++ trasmissione, e si vede. I tipi sono mutabili, gli errori non sono verificati, e la forma di una
++ sessione, che consiste nel collegarsi, sospendere, richiedere, riprendere e scollegarsi, è lasciata
++ a chi chiama perché la rispetti. Tutto ciò che vi si costruisce sopra eredita tutto questo, ed è per
++ questo che i debugger sono programmi grandi e non piccoli.
+
+@ 0 5 0 078789de6ecfabd503ab0e766240ce78
++ Il protocollo sottostante è semplice: pacchetti prefissati dalla lunghezza, big-endian, con le
++ larghezze degli identificatori negoziate una sola volta all'inizio della connessione. Modellarlo
++ direttamente dà identificatori tipizzati che non si possono confondere tra loro, una sessione
++ confinata in un ambito dal [capture checking](../../philosophy/capture-checking.md), ed eventi come
++ uno stream da consumare e non come callback da registrare.
+
+@ 0 2 0 1129589e8aff8e110c1cc9a7785eeb2c
++ Tutto viene dal package `soundness`. Una sessione esegue il suo lettore come task, quindi richiede
++ un [modello di thread](concurrency.md) nell'ambito e vive dentro `supervise`:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 10b23da8489c5a5010fd6d3e77471a89
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 1 1 0 0e23e86ae81b750f047cfaa2192660e5
+
+@ 0 2 0 0e11f8939b4ddea40467964571f70f12
++ Gli esempi di questa pagina avviano altri processi e vi si collegano, quindi sono compilati ma non
++ eseguiti.
+
+@ 0 1 0 0ec2b64902f37b46093ea8a8967a89df
++ ### Aprire una sessione
+
+@ 0 4 0 0f4b0d5b15869b6301fdaeabf4048ece
++ Un `Debuggee` descrive un programma da eseguire sotto l'agente di debug: un comando, la porta su
++ cui restare in ascolto, e se la VM debba sospendersi prima di eseguire `main`, cosa di cui ha
++ bisogno un breakpoint nell'inizializzazione. Il suo metodo `session` presta una [capability]
++ `Debug` a un blocco, in cui la si raggiunge tramite `debug`:
+
+% 2 1 0 05968f4f57f77a28096e1a3f8d88824e
+
+% 0 1 0 0571ca7ed22c077715312c7cc14010ef
+
+% 0 1 0 1004fc1cd39c91140f40e1d56b094b7a
+
+% 0 1 0 023064638668549b0f52e2c30b2bf873
+
+% 0 1 0 033e9bf3177d35620cb69ca34440fced
+
+% 1 1 0 0b561bc885c3f31b13590e17bd75f8e3
+
+@ 0 3 0 09d51ffc1ef28ddb10e194769327df5d
++ Il comando viene avviato con l'opzione dell'agente inserita, e la connessione attende che la VM
++ cominci ad ascoltare. Quando il blocco termina, sia che restituisca un valore sia che fallisca,
++ tutto viene smantellato: il socket viene chiuso e il processo fermato.
+
+@ 0 2 0 0d35f4426372f87f0992043325ff2128
++ Un `Debugger` apre lo stesso tipo di sessione verso un endpoint dove una VM sospesa è già in
++ ascolto, per collegarsi a qualcosa che è già in esecuzione.
+
+@ 0 2 0 068a610c5e307a2b1182f27d85647151
++ L'handle della sessione è una capability confinata nel suo blocco. Non può sfuggire, e quindi non
++ si può usare dopo che il processo sottoposto a debug se n'è andato.
+
+@ 0 1 0 151ebb23ca2ac6e21112920895a07b75
++ ### Thread e frame
+
+@ 0 2 0 0b373768e5a6c5ff0390837050d95f93
++ I thread della VM si elencano, si nominano, si sospendono e si riprendono, singolarmente o tutti
++ insieme. Lo stack delle chiamate di un thread sospeso si legge come frame accoppiati alle loro
++ posizioni:
+
+% 2 1 0 08cb2a599c4a6f671a559d16ea3dacf6
+
+% 0 1 0 0ea206d6336af5fe19d06697f3c0beb3
+
+% 0 1 0 1ecdf15dcd7e09c00dde3e4058338491
+
+% 0 1 0 107d49d5f9493f16085b943fa2eca6e4
+
+% 0 1 0 03e6c4723f839690169b8371caaa6f6c
+
+% 0 1 0 021634f44197c43a1bba713dfdd71ccd
+
+% 0 1 0 1f13839c3911715800e43868f813023d
+
+% 1 1 0 1b0cb5a1690e16a404b88d121cef6bc3
+
+@ 0 1 0 0e673cd6c58747591ea6586558568d90
++ ### Breakpoint
+
+@ 0 2 0 012c2c7e8a59f98302907ca80e8a1393
++ Un breakpoint si imposta su un file sorgente e una riga, o su una classe e un metodo. Accetta un
++ *handler*, che viene eseguito ogni volta che un thread si ferma lì.
+
+@ 0 5 0 05aafb4da850b02e1ca3c46c2ed899d0
++ All'handler viene prestato un `Halt`: una vista del thread fermo, con i suoi `frames()`, le sue
++ `variables()`, e l'eccezione in corso se è per questo che si è fermato. Un `Halt` non può
++ sopravvivere alla fermata, poiché una volta che il thread riprende, ogni identificatore che ha
++ fornito può essere stantio. Un handler che vuole lasciare il thread sospeso lo dice con `remain()`.
++ Altrimenti il thread riprende quando l'handler ritorna:
+
+% 2 1 0 1a773831fe68e7e00d6327b4891f6418
+
+% 0 1 0 07abe88d4c16eef50438e6286123bb8c
+
+% 0 1 0 0bf43b3a6244d02909d2de72eead928a
+
+% 0 1 0 0882d847e1d432c90c8cd855b2a843ce
+
+% 0 1 0 14ad7420f730eb430d871cc1471bd5eb
+
+% 0 1 0 080de214a79dfd2a16c04fee038c1672
+
+% 0 1 0 19e6da23edf27b5e12c034090def4d77
+
+% 1 1 0 0637f1dd4090d7b015c802dcd572acfd
+
+@ 0 2 0 027dce16e3742f550fddbfdc28a031a1
++ I breakpoint sul codice reso inline funzionano per posizione. Il file e la riga sono dove il codice
++ è stato scritto, non dove il compilatore lo ha collocato, ricavati dalle mappe dei sorgenti che il
++ compilatore registra.
+
+@ 0 1 0 172d13da1eddb0fe109e2fa1904c36ba
++ Ogni tipo di richiesta esegue il suo handler su un evento diverso:
+
+% 2 1 0 0f5a9f0396b818fd00dd8d22848fc956
+
+@ 0 8 0 18a407217dd93ca00af4ef3125ae75f0
++ column  Richiesta
++ column  Eseguito quando
++ column  Tipo di evento
++ row  `breakpoint`  un thread raggiunge una riga di sorgente, l'ingresso di un metodo o una posizione  `Breakpoint`
++ row  `logpoint`  un thread raggiunge una posizione, stampa un messaggio e riprende subito  `Breakpoint`
++ row  `watch`  un campo viene scritto, o con `access = true` letto  `FieldModified`, `FieldAccess`
++ row  `exceptions`  viene lanciata un'eccezione  `Exception`
++ row  `step`  un thread che avanza a passi arriva a destinazione  `SingleStep`
+
+% 1 1 0 0ae723cadf4c6d1a0a5f6d54fe3d4f9e
+
+@ 0 2 0 035998538a1e5ae604c2a7ebeefa0f10
++ Un breakpoint restituisce l'identificatore della sua richiesta, che è ciò che in seguito lo
++ rimuove. La *politica di sospensione* decide quanta parte della VM si ferma quando si colpisce il
++ breakpoint:
+
+% 2 1 0 1557cb833cebc1e916df55e9a0ff0bdd
+
+@ 0 5 0 125644865294ba0804f27229a4db88f2
++ column  Politica di sospensione
++ column  Ferma
++ row  `Jdwp.SuspendPolicy.All`  l'intera VM
++ row  `Jdwp.SuspendPolicy.EventThread`  solo il thread che l'ha colpito
++ row  `Jdwp.SuspendPolicy.None`  niente del tutto
+
+% 1 1 0 0bca717f90bf6b52072a4e88012aede2
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 058f0264436dda6615a615512e130515
+
+% 0 1 0 1279df74f6343b901709ac7a185279c5
+
+% 0 1 0 0e3536dedcc2bf791d318ca4915e3164
+
+% 1 1 0 0405206bdf576e390e0cc1068e52a5e6
+
+@ 0 1 0 0f8e7da9303a8abc04196170e78218c5
++ ### Avanzamento a passi
+
+@ 0 4 0 0f5ec12b0180d33512fd531d5918ea98
++ L'avanzamento a passi è una richiesta verso un thread sospeso, con un handler per il punto in cui
++ arriva. La *profondità* dice se entrare in una chiamata (`Jdwp.StepDepth.Into`), scavalcarla
++ (`Over`), o uscire dal frame corrente (`Out`). Una chiamata resa inline avanza come si legge il
++ sorgente, dentro il corpo reso inline riga per riga, e non come è stato disposto il bytecode:
+
+% 2 1 0 07929dae8f49899f137ba49cb3129f60
+
+% 0 1 0 0e029580e49fa8bf0d1f1b49d8872eb5
+
+% 0 1 0 1bb8c8695f27c85715340e1249ac7f83
+
+% 0 1 0 159daf4d5ecf3f310d66036d45cff1ce
+
+% 0 1 0 0243c90657fc59a305aa80357ff801fc
+
+% 1 1 0 1c6f3c8c48f6387a05faba2bac946c51
+
+@ 0 1 0 04e58de82e57b5dd1c1a8a40b6794a92
++ ### Valutare espressioni
+
+@ 0 4 0 1511d3352c2db6c81462dd0e7788c384
++ Con l'`Evaluator` nell'ambito, un'espressione viene compilata rispetto alle variabili locali del
++ frame fermo e iniettata nel processo sottoposto a debug in esecuzione. Così `total + 1` in un
++ handler significa ciò che significherebbe in quella riga del sorgente. La console e il passaggio
++ del mouse di un debugger usano questo meccanismo, ed è anche così che un editor mostra il tipo che
++ il compilatore ha inferito per un nome.
+
+@ 0 1 0 1371d9ff712f24e21f0779e0ef739e63
++ ### Eventi
+
+@ 0 2 0 00ecdcfba0f6a3da023b865fc9cf9e2f
++ Sotto gli handler, la VM riporta ciò che è accaduto come eventi compositi. `events` ne è lo
++ [stream](streams.md), quindi il ciclo principale di un debugger può essere un normale
++ attraversamento:
+
+% 2 1 0 1e0dc951c01aefda0760f3734e66b785
+
+% 0 1 0 18d66383bca38c610338862626568739
+
+% 0 1 0 1371a3a84c53c0cb0d355f3edef04382
+
+% 0 1 0 170ed5d0c1722d0f1e750a0934613841
+
+% 0 1 0 05f711d5bd8a6f600834f6818aac67a0
+
+% 0 1 0 0fdccbba6e5fb05f1d990b0444c01f5c
+
+% 0 1 0 169c4e6d4d895c3805f71503caf3dead
+
+% 1 1 0 11434a3f463114100ca9e51dac34f717
+
+@ 0 2 0 1a80b2aa5b7e56d10ae5c2b585b2c7bf
++ Richieste e risposte sono correlate in modo asincrono. Molti comandi possono essere in corso
++ contemporaneamente, e un evento che arriva durante uno di essi non lo disturba.
+
+@ 0 1 0 004bdc9321e719691f249ea08c309678
++ ### Servire un editor
+
+@ 0 4 0 03ab9e0bcef7742105740692ea7b460f
++ `Dap.listen` serve la sessione tramite il Debug Adapter Protocol su una porta TCP. Qualsiasi editor
++ che lo parli, cioè VS Code e la maggior parte degli altri, può avviare, fermare, avanzare a passi,
++ ispezionare variabili e valutare tramite questa implementazione. I completamenti, i tipi al
++ passaggio del mouse e l'avanzamento a passi consapevole del codice inline passano tutti all'editor.
+
+@ 0 1 0 145138a4d134b4b10538ce09f6babc7e
++ ### Il vocabolario del protocollo
+
+@ 0 3 0 07ad9f76f655921b00071515e9ef8938
++ `Jdwp` contiene il modello del protocollo stesso, per il lavoro al di sotto del livello che la
++ sessione espone. I tipi degli identificatori sono viste etichettate di un unico [tipo opaco]. Non
++ costano niente a [runtime], e non si possono scambiare a [tempo di compilazione]:
+
+% 2 1 0 18f8a8107b348df802a9277c7b7bafec
+
+@ 0 11 0 14d1edce076f5a5f0a1f82000a803301
++ column  Tipo
++ column  Identifica
++ row  `ObjectId`  un oggetto
++ row  `ThreadId`  un thread
++ row  `ThreadGroupId`  un gruppo di thread
++ row  `StringId`  un oggetto stringa
++ row  `ClassLoaderId`  un class loader
++ row  `ReferenceTypeId`  una classe, un'interfaccia o un tipo array
++ row  `MethodId`  un metodo
++ row  `FieldId`  un campo
++ row  `FrameId`  uno stack frame
+
+% 1 1 0 1e2a05dab28216de1871ff59f463b23c
+
+@ 0 2 0 1d35b4954b53123415ebbbffc074a7b7
++ Accanto a essi stanno `Jdwp.Location`, i `Jdwp.Value` etichettati, i `Jdwp.Modifier` che
++ vincolano una richiesta di evento, e i `Jdwp.Event` che una VM sospesa rimanda indietro.
+
+@ 0 3 0 1e9cd40b8a5a012e1ba7c5476f6466a9
++ `Jdwp.Reader` e `Jdwp.Writer` sono i codec big-endian scritti a mano. Conoscono le dimensioni degli
++ identificatori negoziate con la VM all'apertura della sessione, ed è per questo che si costruiscono
++ con quelle dimensioni invece di presumerle.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 9 0 07aab45479f415f518aa01f0366a5a30
++ - [Processi](processes.md) descrive i comandi `sh"…"` con cui si avvia un processo sottoposto a
++   debug.
++ - [Concorrenza](concurrency.md) descrive `supervise` e i modelli di thread sotto cui è eseguita una
++   sessione.
++ - [Socket](sockets.md) descrive le connessioni TCP su cui viaggiano i protocolli.
++ - [LSP](lsp.md) serve un editor tramite il Language Server Protocol, protocollo affine.
++ - [Stack trace](stack-traces.md) descrive i frame di un programma fermo come valori.
++ - [Capture checking](../../philosophy/capture-checking.md) spiega come l'handle di una sessione è
++   confinato nel suo blocco.
++ - [Filesystem](filesystem.md) descrive gli handle di cui una sessione di debugging condivide la
++   forma.

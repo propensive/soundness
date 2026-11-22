@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 1 0 13dbfbcad5228fdc18c72755039015eb
++ # `SN-520` — Impossible de filtrer une déclaration doctype (retirée)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Cette erreur n'existe plus. La page est conservée pour que le code ne soit pas réutilisé, et
++ pour qu'une référence à celui-ci depuis une version plus ancienne puisse toujours être résolue.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Ce qu'il est devenu
+
+@ 0 2 0 120530ebcba650a7040f736124472bc2
++ Le filtrage par motif HTML de Honeycomb ne lève plus cette erreur : rien dans le source ne la
++ signalait lorsque Soundness a adopté les codes bolt, si bien qu'elle n'en a reçu aucun.

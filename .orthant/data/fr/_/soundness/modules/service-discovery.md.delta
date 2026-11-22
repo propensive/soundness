@@ -1,0 +1,232 @@
+orthant 2 language
+
+@ 0 1 0 1903b4d383c99f460fe2667a21a1faf7
++ ## Découverte de services
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 6 0 0a9334da4312396404bd8ce6c8c7b780
++ Un programme qui sert quelque chose sur le réseau local, comme un démon de build, une imprimante
++ ou un jeu, peut être trouvé sans que personne n'ait à recevoir son adresse.
++ La [découverte de services fondée sur DNS](https://www.rfc-editor.org/rfc/rfc6763) nomme un
++ type de service, comme `_fury._tcp`, et ses instances, comme `Elsinore._fury._tcp.local`.
++ Le [DNS multicast](https://www.rfc-editor.org/rfc/rfc6762) transporte ces noms sur le lien sans
++ serveur de noms. Chaque hôte répond pour les siens.
+
+@ 0 4 0 03b15bef6da8be6e0663069905441033
++ Un service s'annonce, les services des autres se recherchent, et une instance se résout en son
++ hôte, son port et ses adresses, au moyen d'un `Discovery.Backend`. Le backend fourni ici est un
++ répondeur mDNS sur des sockets. Un backend ultérieur pourra déléguer à un répondeur du système
++ comme Bonjour ou Avahi.
+
+@ 0 1 0 103aa6c6b399d73006c12080d93b17ef
++ ### La découverte
+
+@ 0 3 0 08aa286919641a121102266c73c6718f
++ Tout provient du package `soundness`. Le deuxième import choisit une
++ [stratégie](errors.md#choosing-a-strategy) pour les erreurs, et le troisième permet aux
++ exemples d'afficher leurs résultats :
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 2 0 0b003c19bb7906b807e8d6f161bdb53b
++ Les exemples qui construisent des noms et des enregistrements s'exécutent ici. Ceux qui touchent
++ au réseau sont compilés mais pas exécutés.
+
+@ 0 1 0 025baee0ee29c8f40f439cd2989ec89c
++ ### Services et instances
+
+@ 0 4 0 1d973911b7fbac12112a3895a93f5cc5
++ Un type de service est un nom enregistré d'au plus quinze caractères et un transport. Une
++ instance est une étiquette UTF-8, espaces et points compris, sous ce type. Les deux calculent
++ leurs noms DNS-SD à leur construction, avec validation : un nom qui dépasse les limites de DNS
++ est donc signalé à ce moment-là, et non en transmission :
+
+% 2 1 0 1a20a1d12cf25b08064aaf69d898267b
+
+% 0 1 0 15c5a7667918262011725fe0db47230c
+
+% 1 1 0 15cdb0263004051115d900f9ebb6ffe6
+
+% 3 1 0 1f6e527dfce07d9219ed4f473c284d8e
+
+% 4 1 0 013709ea2956c9a514589f7a173e901f
+
+% 5 1 0 0c2e895454f403b80396e98b2cfa470b
+
+% 0 1 0 03fd25fcd5d8fa5d09c70309114d5257
+
+% 0 1 0 1c5aa0e1185595c60546f2f65f85e7d0
+
+% 1 1 0 058242f97c3b403e10a8773834fb7133
+
+@ 0 1 0 1a705420cfe3777312402712cd4e520b
++ Un nom de service de plus de quinze caractères est rejeté :
+
+% 2 1 0 0e8068c71cb134ee1bc171b0d17c2e92
+
+% 3 1 0 059e30cf90e6037501f3a2368a60994f
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 008cb1605a251b0b12738e162ec364d9
+
+% 1 1 0 068e2cbbfa1f3d5201504016d4fd0a47
+
+@ 0 2 0 0184e1b62686e64d0610f37589835a87
++ Une instance en dit davantage sur elle-même dans un enregistrement TXT : des paires
++ `key=value`, lues sans tenir compte de la casse, la première occurrence d'une clé l'emportant :
+
+% 2 1 0 112de6a430206f401357d2427135517b
+
+% 0 1 0 0e337bdcef747ded101863b93d136864
+
+% 1 1 0 17f657dd13f188b90edf1678d83aaf44
+
+% 3 1 0 145dae1a091a9665009a8b86943bc0f3
+
+% 4 1 0 17466c7cc301182e04e0a29586bbffa8
+
+% 5 1 0 119c14c0066e4b811ae30fcd0950aade
+
+% 0 1 0 0573f6dcf496cd03158c4fbd49f16c72
+
+% 0 1 0 1bc45827ed151f611a7fe547fc6da092
+
+% 1 1 0 1e76c5721245b700002c8bd71eeb3faf
+
+@ 0 1 0 083e1cdd8e05e43a09ee1c473ec82803
++ ### Annonce
+
+@ 0 3 0 11af44c1ed08ef0c1aa5c80c33b95c40
++ Une annonce est un prêt. L'instance est sondée, revendiquée et annoncée. Si un autre hôte détient
++ le nom, l'instance est renommée en `Elsinore (2)`. Elle reste annoncée pendant le bloc, et un
++ adieu est envoyé quand le bloc se termine, ou quand le `Monitor` est annulé, ce qui la défait :
+
+% 2 1 0 0bb9631ef771f7dd0e344d514f7657fa
+
+% 3 1 0 1f9e24946b2eacf9021d79971cd314b0
+
+% 4 1 0 1a89799477eaef0412f941b7751b6b4d
+
+% 0 1 0 10b23da8489c5a5010fd6d3e77471a89
+
+% 0 1 0 0bc77ee45441ac150d42b750febb22a0
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 2 1 0 0c15ebe71d5764d00d510b94811ccca4
+
+% 0 1 0 1b4b4aecb9edd0c21e4c8f2ac09a6827
+
+% 0 1 0 02c8c6af2953f34f189353ec766c2ec1
+
+% 0 1 0 030a2882cfd76a4304af20d1c4f7c963
+
+% 1 1 0 1fd865adf160bd601f4a1eef9e5a31c1
+
+@ 0 2 0 0c863259845c2a9118ac3d0a28f6c339
++ Le nom au sein du bloc est le nom sous lequel l'instance a été revendiquée, qui n'est peut-être
++ pas celui qu'elle a demandé.
+
+@ 0 1 0 04ecc4f0d86cba4d032eb6b62b0fb2f4
++ ### Recherche et résolution
+
+@ 0 4 0 0ea7532a0da28e2a0abaa64b6825a560
++ Une recherche est aussi un prêt. Elle prête un `Discovery.Browser`, dont les `events` sont les
++ instances qui apparaissent sur le lien et le quittent, au fur et à mesure, et dont les
++ `instances` sont celles actuellement connues. Résoudre une instance donne son nom d'hôte, son
++ port, son enregistrement TXT et ses adresses, dans un délai imparti :
+
+% 2 1 0 01a1a0ef86fe65b50a1d7dbc8acdd177
+
+% 3 1 0 0fabe559d9de33f211b4d82baeae7d46
+
+% 4 1 0 1a8a44e0a59af28a0bf5926c686eb5b6
+
+% 0 1 0 1053b7f4d00925d113a294eb36bd355e
+
+% 0 1 0 11c703150342ca831e72c1cdbeedfb28
+
+% 2 1 0 0755726f39a621ef1e02542c7eb14141
+
+% 0 1 0 1792eb1d955ba62c0bc78f45ad383385
+
+% 0 1 0 148bd57751e525c6094507dcaa501a83
+
+% 0 1 0 05c94933f2da8e2509b82bd3310b392a
+
+% 0 1 0 1e80e6fc9423b37f11f2fb2a97608500
+
+% 0 1 0 041ac16a0eb598b80f89e569c38eb552
+
+% 0 1 0 00066fbb23c27a000eedbe0e2880f3e0
+
+% 1 1 0 09cde9b180db2aca134e82f82fef95e7
+
+@ 0 1 0 046db2eef4fd34381aebf28356f64ab4
++ ### Le répondeur
+
+@ 0 6 0 1e420754b54a45bb00be32d23397481c
++ `discoveryBackends.mdnsSockets` est le répondeur mDNS sur des [sockets](sockets.md) multicast.
++ Il rejoint `224.0.0.251:5353` et `[ff02::fb]:5353` sur chaque interface active, capable de
++ multicast et dotée d'une adresse de la famille du groupe, avec réutilisation d'adresse et de
++ port : il fonctionne donc à côté du propre répondeur du système. L'intention est d'avoir un
++ répondeur par programme : liez donc le given une seule fois, plutôt que de l'invoquer à chaque
++ utilisation. Il ouvre ses sockets au premier prêt, et les ferme après le dernier.
+
+@ 0 6 0 1c752310be7d4c250edcbf0ea8c490fc
++ Deux hôtes qui revendiquent un même nom au même moment sont départagés comme le prescrit la
++ RFC 6762. Chacun voit la sonde de l'autre. Celui qui propose les enregistrements
++ lexicographiquement inférieurs cède, et lorsqu'il sonde de nouveau une seconde plus tard, le
++ gagnant défend le nom : le perdant est donc renommé. Un hôte qui apparaît plus tard, en
++ revendiquant un nom que ce répondeur a établi, le fait sonder le nom à nouveau, et le renommer
++ si la sonde reçoit une réponse. C'est pourquoi `Advertisement.instance` est lu en direct, et non
++ copié.
+
+@ 0 4 0 133afd593e27f47b0e350fde4ac94810
++ Ce que fait le répondeur pour un prêt, c'est-à-dire sonder, céder, un conflit, revendiquer, se
++ retirer, rechercher et résoudre, est journalisé sous forme d'événements `Discovery.Activity` par
++ le `Loggable` dans la portée au moment du prêt. C'est silencieux à moins qu'un
++ [puits de journalisation](logging.md) ne soit présent. Son travail en arrière-plan entre les
++ prêts n'est pas journalisé.
+
+@ 0 3 0 19894191078eb79c0551f43c3879fec0
++ Pour un programme en test, `Mdns.Transport.Bus` est un lien en mémoire. Des répondeurs reliés à
++ un même bus s'entendent les uns les autres et rien d'autre : le protocole, avec ses sondages,
++ ses renommages et ses adieux, s'exécute donc de façon déterministe sans réseau.
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### Erreurs
+
+@ 0 3 0 1d76bfcfcd035e101bf63ba7b1972482
++ La validation, un nom qui ne peut pas être revendiqué, une résolution qui dépasse son délai et un
++ répondeur qui ne peut pas démarrer sont chacun une `Discovery.Error`, dont la raison dit
++ laquelle. L'échec du répondeur lui-même à rejoindre le groupe est une `Mdns.Error`.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 7 0 065d783696fd5deb13db85e1358c7f37
++ - [Sockets](sockets.md) décrit les sockets multicast qu'utilise le répondeur.
++ - [Adresses réseau](network-addresses.md) décrit les ports et les adresses que donne une
++   résolution.
++ - [Démons](daemons.md) décrit les processus résidents qui sont souvent annoncés.
++ - [Concurrence](concurrency.md) décrit `supervise`, `Promise` et le `Monitor` qui défait un
++   prêt.
++ - [Journalisation](logging.md) reçoit les événements `Discovery.Activity`.

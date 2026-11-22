@@ -1,0 +1,137 @@
+orthant 2 release
+
+@ 0 1 0 1b9b354bb4f09e2c1a8c5ea2659438e9
++ describe them. A `Path on Local` has the operations which touch the disk: opening it to read
+
+@ 0 1 0 196c8a597bcc2c1b0933e778d81765e3
++ import filesystemOptions.createParents
+
+@ 0 1 0 192f76a6c5156586131e417dd782493b
++ import pathInterfaces.pathOnLocal
+
+@ 0 1 0 09c3e9956e54430c0df18d64647988e3
++ row  `pathInterfaces.pathOnLocal`  the type of path which the standard directories are given as
+
+@ 0 1 0 00e51681c5cdc9da101de8239861f825
++ val directory = temporaryDirectory[Path on Local] / "soundness-filesystem-tutorial"
+
+@ 0 3 0 0dec220c4c7e35d411b66003d6100cfa
++ By default, creating refuses to destroy anything. Creating over something which exists is an
++ `Io.Error`, and so is creating under a parent which does not exist, unless
++ `filesystemOptions.createParents` is imported, as it is here. A flag states either
++ intent at the place where it happens, whatever is imported:
+
+@ 2 0 0 16c0b617cf8083f20b865a6b986588b3
++ `hold` maps a whole file for changing where it lies, and lends a `Holding`: a `Terrain` which
++ is stored to as well as loaded from. `set8`, `set16`, `set32` and `set64` store an integer at
++ an offset, `write` stores some `Data`, `zero` clears a range and `move` copies one within the
++ file, and `expand` makes the holding longer, and the file with it. A file which is not there is
++ created, at the size which `hold` is given. An exclusive lock is held on the file for the
++ length of the block, so a second `hold` of the same file, in this program or another, is
++ refused with `Busy`:
++
++ ```scala fuel
++ run
++ ##
++ val ledger = directory / "ledger"
++
++ ledger.hold(16L): holding =>
++   holding.set32(0L, 1599L)
++   holding.expand(32L)
++   holding.set64(24L, 1616L)
++
++ val first = ledger.mapped(_.u32(0L))
++ val last = ledger.mapped(_.u64(24L))
++ Out.println(t"${first.show}, then ${last.show}")
++ ```
++
++ A holding hands out no address into its memory, since `expand` may move it: every load and store
++ is at an offset, and a `slice` of a holding reads through it, so it stays good afterwards. What
++ was stored is in the file when the block ends. It is what a format which is altered in place
++ is altered through, as an image of [RaTEL](tel.md#ratel) is by the program which owns it.
++ `Holding(size)` is one on the heap, for an image which is not yet a file. A file is mapped for
++ changing on the JVM and on Scala Native; WASI, which can neither map nor lock a file, reports
++ `Unsupported`.
++
+
+@ 0 3 0 0a5728f70160bd2812968d0e7cc9eb45
++ `observe` gives an `Observer`, which reads what the owner publishes. Its `map` lends a
++ `Terrain` view of the version it holds, and its `refresh` moves it to the version which the
++ name now leads to, and says whether there was one:
+
+@ 0 1 0 110d73eda73d14ff1d7e803be0de569c
++ file.observe[Text]: observer =>
+
+@ 0 3 0 1e5792eae720341f1960bc19bdad331d
++   val before = observer.map(_.u8(0L))
++   val moved = observer.refresh()
++   val after = observer.map(_.u8(0L))
+
+@ 0 1 0 077a1633c3f79fab10da74b7b6c335a9
++ An observer takes no lock, so it never delays the owner, and the owner never delays it. A view
+
+@ 0 5 0 175511a3a5db551a0a0554091375b486
++ The type which `claim` and `observe` are given is what is published under the name. For a
++ form which is read in place, an observer's `open` maps the current version and opens it as
++ that type, in one block: an observer of a `Ratel of Playbill` opens an image of a `Playbill`,
++ and refuses one of anything else, as [RaTEL](tel.md#ratel) shows.
+
+@ 2 0 0 0bac83c1d86f0b2b1b8e596df9be423c
++ An observer keeps the version it has mapped in existence, even after a newer one has replaced
++ it under the name, so a long-lived observer should `refresh` when it learns that there is
++ something new, whether from a message or from [watching](#watching-for-changes) the name. The
++ lock is advisory, and is dependable between cooperating programs on one machine's own
++ filesystems, but not over a network filesystem.
++
+
+@ 0 1 0 10c043813b7d8e6c0afb0062091cffff
++ row  Create missing parent directories?  `createParents`  `requireParents`
+
+@ 0 1 0 0e04bcf5a0cd705912c9c8e8a7b1b78b
++ val store: Cas in Sha2[256] on (Path on Local) = Cas[Sha2[256]](directory, t".blob")
+
+@ 0 4 0 08da348001331b0216b92425c865df08
++ val home = Home[Path on Local]()
++ val cache = Home.Cache[Path on Local]()
++ val bin = Home.Local.Bin[Path on Local]()
++ val share = Base.Usr.Share[Path on Local]()
+
+@ 0 1 0 15002ee939105aa917f53b09533850b1
++ Home.Cashe[Path on Local]()
+
+@ 0 2 0 00ca8bebd10217020f15f2f10af9a2a0
++ row  `Home.Cache`  `~/.cache`, or `$XDG_CACHE_HOME`  no
++ row  `Home.Config`  `~/.config`, or `$XDG_CONFIG_HOME`  no
+
+@ 0 1 0 18fb82af0b4fa121183f9fdddee9ad23
++ row  `Home.Local.Bin`  `~/.local/bin`, or `$XDG_BIN_HOME`  no
+
+@ 0 2 0 1d95a6e967214ffd0def3c3b5dfcf8d1
++ row  `Home.Local.Share`  `~/.local/share`, or `$XDG_DATA_HOME`  no
++ row  `Home.Local.State`  `~/.local/state`, or `$XDG_STATE_HOME`  no
+
+@ 0 5 0 1b3ad9372613ea481890d8433be22370
++ Most layouts are fixed places. The five which the
++ [XDG specification](environment.md#standard-directories) lets the user move are not:
++ `Home.Config` is normally `$HOME/.config`, but is `$XDG_CONFIG_HOME` where the user has set
++ that to an absolute path. Applying a layout constructs a value of
++ whichever directory type is asked for, so the same names serve a `Path on Local` and any
+
+@ 0 1 0 163ae248eb8023cc1b113f1779b4aa0c
++ corresponding plane is resolved with `discover` to the first of them which holds it, or to
+
+@ 0 3 0 0251c0baa6e0e28a17dd730fd6a624e7
++ given stems: (Searchpaths.Stems on Xdg.Data onto Local) = new Searchpaths.Stems:
+
+@ 0 2 0 07e267f198ff1933103be0d13d4963ad
++   type Target = Local
++   val stems: List[Path on Local] = List(directory, directory / "inner")
+
+@ 0 1 0 0fe5c79dc0620bae0560ecb0735d91d1
++ val found = (% / "inner.txt").on[Xdg.Data].discover()
+
+@ 0 1 0 1126dbfc5f3af8df1e8ae3314de64858
++ def rebuild(changed: List[Path on Local]): Unit = ()
+
+@ 0 1 0 18e1437c7a5dc6b70c91a19cabb80718
++       rebuild(batch.paths[Path on Local])

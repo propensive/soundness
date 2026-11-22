@@ -1,0 +1,38 @@
+orthant 2 language
+
+% 0 1 0 0942075fc1bf46591e1dfb62e67d7605
+
+@ 0 2 0 1afcb839f03442ff03e37412aea25d73
++ Sollevato quando una chiamata RPC fallisce per un motivo che non può essere
++ espresso dal tipo di errore JSON-RPC.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 1c7cdeddfb635e880e72815f4e359389
++ I fallimenti di Obligatory a livello di trasporto (una connessione che non è stato possibile
++ stabilire, una risposta mai arrivata, un messaggio a cui non è stato possibile applicare il
++ framing) non hanno un codice di errore JSON-RPC che li porti, perché l'oggetto di errore
++ JSON-RPC descrive guasti in una chiamata che si è conclusa. Questo errore copre il resto.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Messaggio di esempio
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0bfa767c0dad9d901fed392a3c098f58
+
+% 1 1 0 0f3a70848a4ab4760d5f72936e4996a7
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 1 0 14c9c86596f7732f1b08faf65861b08d
++ Esaminare la catena di cause per i dettagli a livello di trasporto o di protocollo.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 2 0 158eb4cc4bdc4670121a36b2972970eb
++ - Sorgente: `lib/obligatory/src/core/obligatory.Rpc.scala`
++ - `↯/s.112.7` — fallimento specifico di JSON-RPC

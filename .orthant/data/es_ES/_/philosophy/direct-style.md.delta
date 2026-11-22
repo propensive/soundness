@@ -1,0 +1,148 @@
+orthant 2 language
+
+@ 0 1 0 08af2de9a4ac2516115537e8ecb54c57
++ # Estilo directo
+
+@ 0 7 0 0219a4d0f3c72da50e632f8b8ff960ba
++ Soundness está escrito en estilo directo: el código se lee como una secuencia sencilla de pasos,
++ no como una cadena de combinadores que van pasando un valor a través de una mónada. Efectos como
++ el fallo, la asincronía y el contexto los llevan las capacidades y los tipos, no tipos envoltorio
++ que haya que combinar con `map` y `flatMap`. El resultado se compone como se compone el código
++ corriente —con llamadas, bloques y valores locales—, así que la forma de un programa sigue la
++ forma del problema y no la de una abstracción superpuesta a él.
+
+@ 0 3 0 1995a4a1bacae122105feda8102239e7
++ La diferencia se ve en la composición. Las expresiones de estilo directo se anidan: una llamada
++ que puede fallar puede ir dentro de una lista de argumentos, dentro de una cadena interpolada,
++ dentro de una condición, en cualquier lugar donde pueda ir una expresión,
+
+% 2 1 0 1082cc8907151aa40163ce8a3b515b08
+
+% 3 1 0 138593ef92e3a3f1146e9312130acb47
+
+% 4 1 0 1f1e89ec49e50a691ac72fbe0dd25f36
+
+% 0 1 0 07db6a88bb90f76e0a9c62f2f64e68b7
+
+% 1 1 0 1493ffbb3423bfcc08640caacff3374f
+
+@ 0 2 0 090f340a1195f1dd079514920e930676
++ mientras que los valores monádicos solo se componen mediante sus combinadores. La misma línea, con
++ el fallo como tipo envoltorio, debe desplegarse en pasos intermedios con nombre:
+
+% 2 1 0 04677b75877140b30c2bd0b11671f073
+
+% 3 1 0 0dd1e2ed93448f431577f5fe26384e30
+
+% 4 1 0 03922e7adafefdbe0723a767b49ea72f
+
+% 0 1 0 11c36e366b28ddad0f59dfebc797db82
+
+% 1 1 0 05cbd6236364aa460eab1b9acbf318c9
+
+@ 0 6 0 048c2da7b64eebe31d405ba1efa84418
++ y cada efecto adicional hace más profundo el despliegue. Las for-comprehensions suavizan la
++ sintaxis pero no la restricción: un `for` solo compone valores de *una* mónada, así que mezclar el
++ fallo con la asincronía y con la iteración exige pilas de transformadores o fontanería manual, y
++ el flujo de control corriente —un `while`, un retorno anticipado, un `try`/`finally`— no tiene un
++ lugar directo dentro de él. Dos bibliotecas monádicas con tipos envoltorio distintos no se
++ componen en absoluto sin adaptadores.
+
+@ 0 6 0 0a9165603c35497c190441e1af2fd7d6
++ El estilo directo disuelve el problema en lugar de gestionarlo. Los efectos son capacidades
++ contextuales, así que combinarlos consiste en tener ambos en el ámbito, no en anidar sus tipos;
++ todas las estructuras de control del lenguaje funcionan sin cambios; y la llamada que puede
++ fallar, la asíncrona y la pura parecen todas llamadas. Donde los valores monádicos deben
++ *secuenciarse*, las expresiones de estilo directo simplemente *aparecen*, y por eso la composición
++ nunca deja de ser corriente.
+
+@ 0 1 0 1d422644ea2b58c3156169020c169acd
++ ## El flujo de control corriente sigue funcionando
+
+@ 0 2 0 1e01ab0c8ac5af5005f9864272b457a4
++ La afirmación es más fácil de comprobar en las construcciones que una codificación monádica tiene
++ que sustituir. Cada una de ellas funciona sin cambios alrededor de código que puede fallar, que es
++ asíncrono o que retiene recursos:
+
+% 2 1 0 0fc313d262e0bf520cfd70e5317d142e
+
+% 3 1 0 0abfebc0311ec551015ca0738841043b
+
+% 4 1 0 1baac387c8a8ec860258c6733211aedf
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 12a3bb48f477fdf40e7b043dfa98b3d5
+
+% 0 1 0 03b705012a111fc61c16df5225ca2f12
+
+% 0 1 0 0a59478acccec6aa0f5e0144839a371e
+
+% 0 1 0 157980801989006f1ab5011392cf5882
+
+% 1 1 0 1d94616d117336990fcf61fddf23469e
+
+@ 0 3 0 0acbafa0c0300ce419b11e5ae53c6723
++ Ni `traverse`, ni `whenA`, ni un combinador de tipo bracket, ni la pregunta de sobre qué mónada es
++ el `for`, porque no es sobre ninguna. Un bucle `while`, un retorno anticipado, un `match`, una
++ definición de función anidada: todos significan lo que significan en Scala.
+
+@ 0 1 0 1ae78d5fd17ed985177b9d1074866960
++ ## Los efectos siguen apareciendo en los tipos
+
+@ 0 3 0 14b23249c7a8e1b00710a0a4c886b3f8
++ El estilo directo no es un borrado de los efectos. Lo que necesita una operación está en su
++ signatura, exactamente igual que lo estaría en la codificación monádica; la diferencia es que
++ aparece como un *requisito* y no como un envoltorio alrededor del resultado:
+
+% 2 1 0 0d0dcd288952cb5f1de2bed94f0a6908
+
+% 3 1 0 1b802507986911ce18db06b510632ad6
+
+% 4 1 0 04cf60ebc38fc4bf156e7c3940db6b4d
+
+% 0 1 0 088724f7f3390ae00ffa5549b78cc59d
+
+% 1 1 0 19736e2c820f1ce100eed77c87c43b84
+
+@ 0 4 0 0d47fa452a2848280165187e69145a8f
++ El acceso a la red, la suspensión y el fallo son todos visibles. Lo que *no* se impone es un
++ cambio en la forma del valor: el método devuelve `Text`, así que su resultado se compone con todo
++ lo que acepta `Text`, y quien llama, una vez satisfechos los requisitos, tiene en la mano un valor
++ corriente.
+
+@ 0 2 0 08d7f431ac86cc7419cc9b42c49ff1d5
++ Esta es la propiedad a la que renuncia la codificación monádica. `IO[Either[HttpError, Text]]`
++ lleva la misma información y no puede pasarse a nada que espere `Text`.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Lo que cuesta
+
+@ 0 4 0 1d338e6efa658f0204ac5be0e57a0fe6
++ **Las capacidades deben estar en el ámbito, y eso se propaga.** Un método que llama a algo que
++ necesita `Online` debe proporcionarlo o declararlo. Es la misma propagación que tiene una
++ codificación monádica —allí está en el tipo de retorno—, así que es un coste de la honestidad más
++ que del estilo directo, pero no es nulo.
+
+@ 0 5 0 112fa5284c343fce13eb7429279f710d
++ **El mecanismo es contextual, y el código contextual puede sorprender.** La estrategia que haya en
++ el ámbito determina lo que hace un fallo, y un given importado al principio de un fichero afecta a
++ código que está mucho más abajo. Ese es el poder que se busca —véase
++ [contexto declarativo](declarative-context.md)—, pero un lector que no revise las importaciones
++ puede malinterpretar lo que hará una llamada que puede fallar.
+
+@ 0 5 0 014f3bc97f52a8381c7e84c5423eefb2
++ **Algunos razonamientos son de verdad más fáciles con un valor explícito.** Un valor monádico
++ puede almacenarse, reintentarse o pasarse a un combinador que lo ejecute tres veces. Una expresión
++ de estilo directo que puede fallar no es un valor de la misma manera, y por eso existe `defer`,
++ para guardar un cálculo que puede fallar y que aún no se ha aplicado cuando de verdad se quiere
++ uno. Que haga falta un mecanismo para ello es reconocer que el envoltorio tenía su utilidad.
+
+@ 0 3 0 1ee093689fa61bb5002adaea87c68e71
++ **Se apoya en características más nuevas del lenguaje.** Las funciones contextuales, la
++ comprobación de capturas y `transparent inline` son las que hacen el trabajo, y la segunda aún está
++ madurando. La codificación monádica no necesita ninguna de ellas y funciona en cualquier Scala.
+
+@ 0 2 0 171ed60b3f90fe701ad9f68ad9668c0f
++ Véase [ámbitos delimitados](delimited-scopes.md) para saber cómo se introduce una capacidad, y
++ [tratamiento de errores](error-handling.md) para el efecto en el que esto más importa.

@@ -1,0 +1,1023 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 14b7ea2cc44022971599f7702adf9185
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1e79e4695b1c25aa085ae9689953b275
++ info
++     enregistrements et tuples nommés dont les champs sont typés à partir d'un schéma lu à la
++     compilation du code
+
+@ 0 7 0 08119ebbaf70cca50111b2e04c4305f2
++ detail
++     _Polyvinyl_ est la mécanique de fournisseur de types sous-jacente aux enregistrements
++     pilotés par schéma de Soundness. Une **spécification** — un objet qui étend
++     `Specification` — lit un schéma (un JSON Schema, un XML Schema, un document de schéma TEL,
++     les définitions de tables d'une base de données) pendant la compilation du code appelant,
++     et ses méthodes `record` et `tuple` transforment des données brutes en une valeur dont les
++     champs ont exactement les types que déclare le schéma. `record.name` est bien typé en tant
++     que `Text` et `record.nope` ne compile pas, sans qu'aucune classe Scala ne soit écrite pour
++     refléter le schéma.
+
+@ 0 1 0 0834dd4adcd801ed166db1a53f6f5320
++     Les pièces s'assemblent ainsi :
+
+@ 0 10 0 0664c3fe8a052e101a4bf2b07848130c
++     - une `Specification` fournit le schéma sous forme de liste ordonnée de
++       `Specification.Member`, et quelques primitives sur les données sous-jacentes :
++       `access`, `absent` et `repeated`, et pour les formats plus riches `entries`, `kind`,
++       `elements` et `pairs` ;
++     - chaque `Specification.Member` est un `Specification.Member.Value` (un scalaire, désigné
++       par une étiquette de type), un `Specification.Member.Record` d'autres membres, ou un
++       `Specification.Member.Union` d'alternatives, et porte une `Specification.Multiplicity` :
++       `One`, `Optional`, `Many` ou `Keyed` ;
++     - une instance `Intensional` pour chaque étiquette de type indique en quel type Scala se
++       transforme un scalaire et comment une valeur de celui-ci est lue ; une lecture
++       `Intensional.Fallible` peut échouer ;
++     - les macros `record` et `tuple` assemblent le tout en un raffinement structurel de
++       `Record`, lu paresseusement, ou en un tuple nommé, lu de façon stricte.
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0312b5b1490cf40113dea322c192b2c9
+
+% 0 1 0 138e6f155c61d06f1b614e1acbe56630
+
+% 0 1 0 16e2f0b08bc444f40dc50acffb8c9a1a
+
+% 0 1 0 1854204de30aae1f097a5db828bd42ba
+
+% 0 1 0 1b06eaaee677f79211fa8f98f2a2ea36
+
+% 0 1 0 096cd005e507031b151f4a286aabfd00
+
+% 0 1 0 1e5b4ee5df4d29d0134b95df1bdea303
+
+% 0 1 0 0b5cc8f746dd9f3c0fd26f43b2590475
+
+% 0 1 0 1e1efd36401482cc05976ff2fb8d3853
+
+% 0 1 0 0c09b282f14c934105380f2d61776caf
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 3 0 0ecc7b9abca2d9ef19bb1a3bfec72653
++     Les spécifications concrètes résident avec leurs formats : `Json.Provider` dans jacinta,
++     `Xml.Provider` dans xylophone, `Tel.Provider` dans stratiform, et le `record()` du client
++     OpenAPI. Polyvinyl lui-même ne connaît aucun format.
+
+@ 0 5 0 13814946ae99b7081ff36a8c97741498
++     **Ordre de compilation.** Les macros évaluent l'objet de spécification pendant la
++     compilation du site d'appel, en chargeant sa classe par le classpath du compilateur ;
++     l'objet doit donc être compilé avant le code qui appelle son `record` ou son `tuple` :
++     déclarez-le dans un fichier à part. Le compilateur ordonne pour cela les fichiers distincts
++     d'une même exécution, en suspendant l'unité appelante jusqu'à ce que l'objet ait été émis ;
++     un fichier unique contenant les deux ne peut pas être ordonné.
+
+@ 0 7 0 03d6defeebaf71970d29dcf683434708
++     La bibliothèque a un seul ensemble de sources publié, `polyvinyl.core`, qui se compile pour
++     toutes les plateformes et est entièrement exporté dans le package parapluie `soundness` :
++     `Intensional`, `Specification.Member`, `Specification.Multiplicity`, `Record` et
++     `Specification`. Un second composant, `polyvinyl.fixtures`, est interne et non publié : il
++     contient les spécifications de test (`TreeProvider` sur un petit type de document `Tree`,
++     et des objets tels que `PersonRecords` et `ShapeRecords`) que les tests ont besoin de voir
++     compilées avant leurs sites d'appel, et constitue un exemple compact et complet de
++     `Specification`.
+
+@ 0 2 0 1f1a10506a35df8b0632f87cc55271e9
++     Un enregistrement est un `Selectable` ; le code qui lit des enregistrements ne devrait donc
++     pas être soumis au contrôle des captures : sous contrôle des captures, la sélection d'un
++     champ `Text` d'un `Record` raffiné est actuellement rejetée.
+
+% 0 1 0 0aa68fcad3c751a111ec846d97a35e0a
+
+% 0 1 0 0dca070edc2c86bf1112695f8698ddca
+
+% 0 1 0 16187f063511b01604dea561fe643b12
+
+% 0 1 0 1c71f6f59de9a0780d892be6fd794b68
+
+% 0 1 0 021cb88f010b1f73025cf2443a5423e4
+
+@ 0 1 0 100beaa20e60510717c444d34cb67290
++ entry .Specification
++   info
++       un fournisseur de types sur un format de document : un schéma sous forme de `#fields`, et
++       des primitives de lecture
+
+@ 0 4 0 139b436cf3b021120d5e7fb322581631
++   detail
++       Une `Specification` est l'objet d'où provient un type d'enregistrement piloté par schéma.
++       Une spécification concrète est un `object` (étendant généralement la classe de fournisseur
++       d'un format, comme `Json.Provider`) qui indique :
+
+@ 0 6 0 011e8977a78be7b000563b4ea5d5da64
++       - `#Origin`, le type des données brutes (`Json`, `Xml`, `Tel`), et `#Form`, un type
++         marqueur sous lequel se trouvent ses instances `Intensional` ;
++       - `#Failure`, l'erreur par laquelle tout champ peut échouer lors de sa lecture ;
++       - `#fields`, le schéma, sous forme de liste ordonnée de `Member` nommés ;
++       - les primitives `#access`, `#absent` et `#repeated`, et, lorsque le format en dispose,
++         `#required`, `#entries`, `#kind`, `#elements`, `#pairs` et `#unoffered`.
+
+@ 0 4 0 007b8cd4c0642f4805e9307f2f7ce837
++       Elle dispose alors de `#record` et `#tuple` sans rien déclarer de plus : les deux sont
++       `transparent
++       inline`, développées là où elles sont appelées avec l'objet de spécification comme
++       receveur ; la macro trouve donc cet objet par son type, le charge et évalue ses
++       `#fields`. L'objet doit par conséquent être compilé avant le code appelant, dans un
++       fichier à part.
+
+% 2 1 0 1ba2a1518413244d046144d495162184
+
+% 3 1 0 115a10cc3936fbe71a094491ee1e4fbc
+
+% 0 1 0 060c8756c5bc68ed03ef8b25b8228dda
+
+% 0 1 0 0b1657291b3efd4d0c5ac8aed6ec388b
+
+% 0 1 0 1fca43ca7261d78c05f46113f329e024
+
+% 0 1 0 0bc89da13a281f5d0a9d1813da65509c
+
+% 0 1 0 19cd78cf64ddf0201e9e5979281cca0b
+
+% 0 1 0 144ffbf443339eba1b39755e26d7410b
+
+% 0 1 0 18f5109599ebad670609d5653e74b597
+
+% 0 1 0 0c4026e4f15aef1514c17d49cf3d3754
+
+% 0 1 0 10234c844f7d73da0b755346d7aefc15
+
+% 0 1 0 12057c34d6bf407a097383a6c4098455
+
+% 0 1 0 1c2e2c134f494a6d1bc2d88ff3d7774d
+
+% 0 1 0 07b4b179c928eee30d3a5756aac40de3
+
+% 0 1 0 13d8ae79615cd9e517477034f73bfee9
+
+% 0 1 0 05042ad12966d193132c46df4bffd617
+
+% 0 1 0 047c59d1efb5309b0c5c45ecfd713942
+
+% 0 1 0 0711717e7789638f1ecefd9bd3906c58
+
+% 0 1 0 1eb3f0e0b5f7491d17ea9c45f88a172f
+
+% 0 1 0 064fc1ca2eee24a4068cf5e62c9a03e0
+
+% 0 1 0 028eb5f288598e2c15416a39418d0873
+
+% 0 1 0 1bd02338c9ee809209f8c3e9ce5c32f3
+
+% 0 1 0 09309df4f1d70f38003a2ee87aba12a1
+
+% 0 1 0 15436800a5b04cd91b753b845975dcf0
+
+% 0 1 0 10f0bbaeb36ee2851a58b00a0ae48660
+
+% 0 1 0 1b7e8e262e48d1d719ca96e099015f99
+
+% 1 1 0 02e618c23026e3680fa1de89cdbc137c
+
+@ 0 4 0 0643bd446b3c111e04aca73da73e8bf8
++       Ainsi, `object People extends TreeProvider(List(t"name" -> Member.Value(t"text")))`, dans
++       un autre fichier, fait de `People.record(tree).name` un champ de type `Text`. Les instances
++       `Intensional` résident dans le compagnon du type `#Form` ; elles sont donc trouvées sans
++       import.
+
+@ 0 3 0 0a234a897cd99b70160f71d983b0ef53
++       Un schéma illisible est levé depuis `#fields` sous forme de `Specification.Error`, que les
++       macros signalent comme une erreur de compilation au site d'appel, comme elles le font pour
++       un champ dont l'étiquette de type n'a pas d'instance `Intensional`.
+
+% 1 1 0 17be0a99ef75a7420098461be2fa466c
+
+% 0 1 0 006eef61ad47c1da151826df85d6b981
+
+% 0 1 0 14c25f9bf061344b034538f2863046cc
+
+@ 0 1 0 11417341a0d8ec3d0c3a414c426b82f2
++   entry .Error
++     info
++         un schéma qui n'a pas pu être lu : signalé comme une erreur de compilation là où `record`
++         ou `tuple` est appelé
+
+@ 0 6 0 16161be273f7a59f00e32352ff3241a2
++     detail
++         _the specification could not be read because `detail`_. Levée par les `#fields` d'une
++         spécification lorsque son schéma ne peut être analysé ou composé — un document malformé,
++         une référence qui ne se résout pas. Les macros `record` et `tuple` lisent les champs sous
++         une tactique qui arrête la compilation ; l'erreur apparaît donc comme une erreur de
++         compilation au site d'appel plutôt qu'à l'exécution.
+
+@ 0 1 0 14d068918a2ee9e40b121f61422dfdf9
++     entry #detail
++       info
++           ce qui n'allait pas dans le schéma
+
+@ 0 1 0 1fcb494a85fffdd91fe81447dc032aba
++   entry .Raising
++     info
++         une spécification qui lit depuis `origin` dans `form`, dont les champs échouent avec
++         `failure`
+
+@ 0 3 0 040004bf911ef6a91b860e46bd83af9e
++     detail
++         `Specification.Raising[form, origin, failure]` est `(Specification in form from origin) {
++         type Failure = failure }` : le type d'un objet de spécification tel qu'une macro y fait
++         référence, utilisé par `.recordExpansion` et `.tupleExpansion`.
+
+@ 0 1 0 0198cbd7fa3b65b8114f1aae0de5d9ee
++   entry .record
++     info
++         l'implémentation macro derrière `Specification#record`
+
+@ 0 4 0 00cf6df9faca58b5109d1670cf319499
++     detail
++         Pas appelée directement : `#record` sur un objet de spécification y fait un splice ; elle
++         localise l'objet à partir de son type singleton, évalue ses `#fields`, et construit le
++         type `Record` raffiné ainsi que la transformation par laquelle ses champs sont lus. Elle
++         s'arrête avec _record and tuple can only be called on a specification object_ lorsque le
++         receveur n'est pas un objet.
+
+@ 0 1 0 042f2bd6b044bc390bf703bb641eb2b0
++   entry .tuple
++     info
++         l'implémentation macro derrière `Specification#tuple`
+
+@ 0 4 0 10dc053589b0c1661d2a7dde933c73fa
++     detail
++         Pas appelée directement : `#tuple` sur un objet de spécification y fait un splice. Elle
++         construit le type de tuple nommé et le code qui lit tous les champs d'un coup, et s'arrête
++         avec _the
++         tuple's fields may raise `Failure`, but no Tactic for it is in scope_ lorsqu'aucune
++         `Tactic[Failure]` n'est trouvée au site d'appel.
+
+@ 0 1 0 17fee1c7d1b12b1513cef2bc082c50cf
++   entry .recordExpansion
++     info
++         un type `Record` raffiné et sa transformation, à partir d'une liste explicite de champs
+
+@ 0 5 0 01dfd777506f71f617cc0919bc63d246
++     detail
++         Pour une macro d'une autre bibliothèque qui a déjà sous la main les champs d'une partie
++         d'un document — le schéma de réponse dans un document OpenAPI, par exemple — et un objet
++         de spécification ne fournissant que les primitives du format et les instances
++         `Intensional`. Elle renvoie le type `Record` raffiné et la transformation à passer à
++         `#build`. S'exécute dans une macro, sous `Quotes`.
+
+@ 0 1 0 02a671b7781d55820d8f46a83546c24f
++   entry .tupleExpansion
++     info
++         un type de tuple nommé et la fonction qui le construit, à partir d'une liste explicite de
++         champs
+
+@ 0 2 0 1d3df0c65e0610d010784b06b7b7dbeb
++     detail
++         Comme `.recordExpansion`, pour la forme tuple nommé : elle renvoie le type de tuple nommé
++         et le code qui y lit une valeur du type d'origine. S'exécute dans une macro, sous
++         `Quotes`.
+
+@ 0 1 0 1ce599ce8dc9f9af15f3a3ec9d1767cc
++   entry #Origin
++     info
++         le type des données brutes que lit la spécification, comme `Json` ou `Xml`
+
+@ 0 1 0 13fdf180ed6bc04100ed322d7bd2871d
++   entry #Form
++     info
++         le type marqueur sous lequel se trouvent les instances `Intensional` de la spécification
+
+@ 0 3 0 142f69fec097051101467d9ac22eba0a
++     detail
++         Une instance pour l'étiquette de type `"text"` est un `"text" is Intensional in Form from
++         Origin
++         to Text`. Généralement, `Form` est la classe de fournisseur elle-même ; les instances
++         résident donc dans son compagnon et sont trouvées par la portée implicite.
+
+@ 0 1 0 1c9fdd71f60000a3087fb8f0114545a0
++   entry #Failure
++     info
++         l'erreur par laquelle tout champ peut échouer lors de sa lecture
+
+@ 0 5 0 18fa0efb50b429e117aa94555b5bf118
++     detail
++         Une valeur requise absente, une valeur du mauvais genre, une valeur qui enfreint les
++         contraintes du schéma. Le champ d'un enregistrement est typé
++         `Record.Field[result, Failure]` ; chaque accès requiert donc une `Tactic[Failure]`, et un
++         appelant peut rassembler tous les problèmes d'un document sous une même tactique (avec
++         `validate` et `track`, un `venture` par champ). Chaque instance `Intensional.Fallible`
++         qu'utilise une spécification doit lever `Failure` ou un sous-type.
+
+@ 0 1 0 0fcafa5d8972dc4f17f82c4122944938
++   entry #fields
++     info
++         le schéma : les champs de l'enregistrement dans l'ordre, chacun un nom et un `Member`
+
+@ 0 3 0 1e625eb4b53c691b066f991b82dbcf65
++     detail
++         Évalué par les macros pendant la compilation du site d'appel. Les membres d'un
++         enregistrement ne sont pas ordonnés, mais les éléments d'un tuple nommé suivent cet ordre.
++         Un schéma illisible lève `Specification.Error`, qui devient une erreur de compilation.
+
+@ 0 1 0 132788e4a57b60ce14e4fcf80940cc55
++   entry #access
++     info
++         la valeur d'un champ nommé dans une valeur, ou une sentinelle pour un champ manquant
+
+@ 0 3 0 15e0899409c889eb15cd550d7312982a
++     detail
++         La primitive par laquelle est récupéré chaque champ `Multiplicity.One` et
++         `Multiplicity.Optional` : la propriété d'un objet JSON, l'enfant d'un élément XML portant
++         l'étiquette du champ. Un champ manquant n'est pas une erreur ici ; c'est une valeur pour
++         laquelle `#absent` est vrai.
+
+@ 0 1 0 0d0809e5efb5a06f15b6caba8992b218
++   entry #absent
++     info
++         si une valeur renvoyée par `#access` représente un champ manquant
+
+@ 0 1 0 12a24f0240d2843d0ee2d820c4a73a87
++     detail
++         Un champ `Optional` vaut `Unset` là où ceci est vrai.
+
+@ 0 1 0 018afcc0cc5a74280b9ad65ae1c5eb8c
++   entry #repeated
++     info
++         toutes les valeurs d'un champ qui en porte un nombre quelconque, dans l'ordre du document
+
+@ 0 2 0 0626c9b59a3ce0e01648d553c078c926
++     detail
++         La primitive derrière `Multiplicity.Many` : les éléments d'un tableau JSON, ou chaque
++         frère portant le mot-clé du champ dans un format qui répète un champ. Un champ absent n'en
++         a aucune.
+
+@ 0 1 0 01b310558184e50a0b1f089745286f3a
++   entry #required
++     info
++         la valeur d'un champ qui doit être présent, échouant là où le format le prévoit
+
+@ 0 3 0 10ca7297e03459641931398f5a90f4dc
++     detail
++         Appliquée à un champ lu sous `Multiplicity.One`. Par défaut, elle renvoie la valeur telle
++         quelle, et l'instance `Intensional` du champ rencontre la valeur absente ; une
++         spécification la redéfinit pour lever son `#Failure` en cas de champ requis manquant.
+
+@ 0 1 0 1d8a7c8cb8456e3e02e70c477cca1187
++   entry #entries
++     info
++         les valeurs d'un champ à clés, par nom, pour `Multiplicity.Keyed`
+
+@ 0 2 0 182879da02d4636f18ae3a66076884a2
++     detail
++         Un format doté de dictionnaires la redéfinit ; par défaut, elle panique avec _this
++         specification
++         has no keyed fields_ ; un membre à clés n'est donc utilisable que là où elle est
++         redéfinie.
+
+@ 0 1 0 01f6cb48b210bc1d002172ca24c02fd4
++   entry #kind
++     info
++         le genre d'une valeur, par lequel un `Member.Union` choisit son alternative
+
+@ 0 3 0 067517a1656b0e8608220a0619b483b9
++     detail
++         `t"leaf"`, `t"node"`, `t"string"`, `t"array"` : les noms que la spécification donne aux
++         formes que peuvent prendre ses valeurs, correspondant aux genres qui servent de clés aux
++         alternatives de ses unions. Par défaut, elle panique avec _this specification has no
++         unions_.
+
+@ 0 1 0 04445df26dd0f46d07932e7311851b40
++   entry #elements
++     info
++         les éléments d'une valeur qui est elle-même une séquence, pour une alternative `Many`
++         d'une union
+
+@ 1 1 0 0b5b1d3075d9b445023d918f7e4b4b2b
++     detail
++         Par défaut, elle panique avec _this specification has no unions_.
+
+@ 0 1 0 0c1436a701f082a20f1f77164d95e9f9
++   entry #pairs
++     info
++         les valeurs nommées d'une valeur qui est elle-même un dictionnaire, pour une alternative
++         `Keyed`
+
+@ 1 1 0 18bc83ec41296c9d1b18a8b88619e7e2
++     detail
++         Par défaut, elle panique avec _this specification has no unions_.
+
+@ 0 1 0 0af63b79d94d34e51ce359527121e235
++   entry #unoffered
++     info
++         échoue pour une valeur d'une union dont le genre ne correspond à aucune des alternatives
++         proposées
+
+@ 0 3 0 1470d647b5454fc31e3c3e5f8812bd53
++     detail
++         Reçoit le genre de la valeur et les genres proposés. Une spécification la redéfinit pour
++         lever son `#Failure` ; par défaut, elle panique avec _the value's kind, `kind`, is none
++         the union offers_.
+
+@ 0 1 0 169570e9705c7ddf036ca98a139167bf
++   entry #Context
++     info
++         ce dans quoi sont lus les membres d'un enregistrement, pour une spécification dont la
++         source ne se trouve pas dans ses valeurs
+
+@ 0 5 0 1bd3474ec3e518821a9db5fb8bf509fc
++     detail
++         Un fichier ouvert, par exemple, dont un enregistrement indique seulement où regarder. Un
++         enregistrement créé par `Specification.recordWith` demande un contexte partout où un
++         membre est sélectionné, ainsi qu'une `Tactic`, et le transmet à `#accessWith`,
++         `#repeatedWith`, `#entriesWith` et `#series`. Le contexte est suivi partout où il est
++         transmis ; le type désigné n'a donc pas besoin de dire qu'il s'agit d'une capacité, et
++         peut en être une. Une spécification sans contexte le laisse indéfini.
+
+@ 0 1 0 00c233f41b95f6670a55275bcb519f94
++   entry #accessWith
++     info
++         `#access`, dans un contexte
+
+@ 0 1 0 136ef52701d00e890a3fe12c921de0f8
++     detail
++         Ce par quoi un enregistrement créé par `recordWith` récupère un champ. Par défaut,
++         `#access`.
+
+@ 0 1 0 07cdc494aeb0ded001784d3619ed8e44
++   entry #repeatedWith
++     info
++         `#repeated`, dans un contexte
+
+@ 0 1 0 1c4699b57ad648780195e50131f33317
++   entry #entriesWith
++     info
++         `#entries`, dans un contexte
+
+@ 0 1 0 1085053d531f2e2413a3e367d8296cef
++   entry #Series
++     info
++         la collection sous laquelle est lu un membre de multiplicité `Series`
+
+@ 0 2 0 1d1501f48f29f88402322d5561f4db26
++     detail
++         Un type propre à la spécification, fonction du contexte avec lequel un enregistrement a
++         été créé et du type d'un élément.
+
+@ 0 1 0 14ca2cc4f98ef6e10fd8b734589a93e2
++   entry #series
++     info
++         crée la collection d'un membre `Series`, à partir d'une fonction qui lit un élément
+
+@ 0 4 0 050825ecf023c635109efdcc4b2f2554
++     detail
++         La fonction est appliquée à une valeur, un contexte et une tactique, et c'est ce que la
++         macro aurait appliqué à chaque élément d'un membre `Many`. Une collection la conserve et
++         lit un élément lorsqu'on le lui demande, dans le contexte qui lui est alors donné. Par
++         défaut, elle panique avec _this specification has no series_.
+
+@ 0 1 0 1bdb92c0e85e557b0ffe833750f1efa9
++   entry #build
++     info
++         enveloppe une valeur et une transformation de champs sous forme de `Record`
+
+@ 0 2 0 0bf25b06486866cb0fcc026ccd9e0696
++     detail
++         Appelée par le code généré pour chaque enregistrement et enregistrement imbriqué ; par
++         défaut `Record(data, transform)`. La transformation est une fonction pure, puisqu'un
++         enregistrement la retient.
+
+@ 0 1 0 03f0b890a6777e7b0ae6fa04ca53d284
++   entry #record
++     info
++         un enregistrement lu paresseusement sur une valeur, raffiné d'un membre typé par champ
+
+@ 0 6 0 19ef952e28ce8a8214678a900cd2ab72
++     detail
++         `spec.record(value)` est déclaré comme renvoyant `Record`, mais, étant
++         `transparent inline`, son appel en a un raffinement structurel : pour un schéma de trois
++         champs,
++         `Record { def age: Record.Field[Int, Failure]; def name: Record.Field[Text, Failure];
++         def employed: Record.Field[Boolean, Failure] }`. Un champ absent du schéma ne compile pas.
+
+@ 0 4 0 0f0ccf862cb718ca002fa23107baa166
++         Un enregistrement conserve la valeur brute et lit un champ chaque fois qu'il est
++         sélectionné ; un champ malformé n'est donc remarqué que lorsqu'il est lu, et un champ lu
++         deux fois est converti deux fois. Chaque accès à un champ échoue par la `Tactic[Failure]`
++         dans la portée là où le champ est sélectionné.
+
+% 2 1 0 00b4976bd926d33f125bbe7a3b261d25
+
+% 3 1 0 121a94869cd2721e1c6bc9283d4d2795
+
+% 4 1 0 1b812c3e122227de031c36ab55c04c88
+
+% 5 1 0 0c049e0247be77a104c3e9a14e6fb743
+
+% 6 1 0 13088df6c7d6fe6612ce9be68d700b80
+
+% 8 1 0 1b7d57d6d97740ba037a948ee7ae747d
+
+% 0 1 0 1cda08154806309318f088b013407e3d
+
+% 0 1 0 115eaaba5cfad25b03899f5c860e1633
+
+% 1 1 0 0b0653c6fead68b00ec26d7ca826325e
+
+@ 0 2 0 0054af3d70e069a30e50951e58323ee3
++         Les `Member.Record` imbriqués deviennent des enregistrements imbriqués, les membres `Many`
++         des `List`, les membres `Optional` des `Optional` et les membres `Keyed` des
++         `Map[Text, _]`.
+
+@ 0 1 0 08c4d426d1e375aa0f1e5654f581b05c
++   entry #tuple
++     info
++         un tuple nommé lu de façon stricte sur une valeur, un élément par champ dans l'ordre du
++         schéma
+
+@ 0 5 0 1f62eff1b791f9b30ca0d148aaaa9a93
++     detail
++         `spec.tuple(value)` lit tous les champs d'un coup, lors de la construction du tuple : un
++         champ malformé fait échouer la construction, qu'il soit utilisé ou non ; les éléments ont
++         donc leurs types simples (`Int`, et non `Record.Field[Int, Failure]`) et une
++         `Tactic[Failure]` doit être dans la portée lors de l'appel, qui ne compile pas sans elle.
+
+% 2 1 0 144c0768ca524bac028923e839dba54e
+
+% 3 1 0 06ba25ec2e8a8c3217e76e5bc362fdf0
+
+% 4 1 0 13d43eeecb193f8402c6c3c541c6a8ea
+
+% 5 1 0 0955b589a9f2bd2e1190d731f0f31e3a
+
+% 6 1 0 16036521f1651df404cfc8b1dce7ebf0
+
+% 8 1 0 1b9a71e35d0c4ef415b26a2d0454a5ae
+
+% 0 1 0 0acaa67d173345b31443c58194348e1b
+
+% 0 1 0 08b852a2f56771a90983bd9b2cafa156
+
+% 0 1 0 13776354efa1c93a1177916e170d9cc7
+
+% 1 1 0 0e37fdffe4f28a300b8a7f8060880544
+
+@ 0 2 0 01bef1c5f4bc78bf12e2bec4159f883d
++         Un membre enregistrement imbriqué devient un tuple nommé imbriqué, et l'alternative
++         enregistrement d'une union devient elle aussi un tuple imbriqué.
+
+@ 0 1 0 18b4a4cafca3ead31a9fea0dfff7f8ec
++   entry .Member
++     info
++         un champ du schéma d'une spécification : un scalaire, un enregistrement imbriqué ou une
++         union
+
+@ 0 3 0 0682145cf2f273881dbe7715100c96b6
++     detail
++         Les `#fields` d'une spécification sont une liste de `Member` nommés, dans l'ordre que
++         suivent les éléments d'un tuple nommé. Il en existe trois genres :
+
+@ 0 8 0 0dd6d23bbeded09815af083f0e62ce73
++         - `Member.Value(fieldType, params, multiplicity)` : un scalaire, lu par l'instance
++           `Intensional` de l'étiquette `fieldType` (`t"text"`, `t"integer"`), qui reçoit `params`
++           (une borne, un motif) tels quels ;
++         - `Member.Record(fields, multiplicity)` : un enregistrement imbriqué d'autres membres, lu
++           depuis la valeur propre du champ par la même spécification ;
++         - `Member.Union(alternatives, multiplicity)` : des alternatives, chacune associée au genre
++           de valeur (tel que le signale `Specification#kind`) qui la sélectionne, lues comme
++           l'union Scala de leurs types.
+
+@ 0 2 0 0b04922c9a4ab46217a4e5443f26f0f3
++         Chacun porte une `Multiplicity`, `One` par défaut, définie avec `#optional`, `#many` et
++         `#keyed`.
+
+% 2 1 0 1468f666ba2632571dbec997dde2ab02
+
+% 0 1 0 10c83641e9ec49e30ab13c21bd7364fd
+
+% 1 1 0 0207a0cab5a7499a0bf4506eda1da0fb
+
+% 0 1 0 1e2fb9f2e29dd9980021853d34359368
+
+% 0 1 0 00343613fc5ffbdb100127d9a55f59d4
+
+% 1 1 0 00194a939c0357f71032585ee6ef9920
+
+% 0 1 0 12d529a03583becd0c5333702ab09647
+
+% 0 1 0 1956b32af6bb29250457fd2299849140
+
+% 1 1 0 1a382d4db2b976b11296eccb33aef446
+
+% 0 1 0 1166592741ffe09d0f8f67dffc4d3dff
+
+% 0 1 0 13d778ec4e5f83e40a7591aa293dec73
+
+% 1 1 0 1684f67196560de702b99859d6bef2d4
+
+% 0 1 0 124ba4f248340fc20e682d26dbade710
+
+% 0 1 0 01695ae756265dff093df446e8aa7709
+
+% 1 1 0 153518dd4f7d1c101037f60f366e8f67
+
+% 0 1 0 0845c0ee572c6b540865f9198bb5388f
+
+% 0 1 0 1b3bc51b641e4a581eff98734477948e
+
+% 0 1 0 1dd3a30aa1df9d420cddbf3ca2e46bc4
+
+% 1 1 0 196098c5347c0bac0aa5f2d272740a99
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 3 0 14317d5ff51da6a40af8640b5aa32b96
++         L'alternative d'une union peut porter sa propre multiplicité ; une union à une seule
++         alternative imbrique donc une multiplicité dans une autre (`List[List[Text]]`) ; un
++         `Member` seul n'en porte qu'une.
+
+% 0 1 0 0a6c368f0b21219e1265105d86c78017
+
+% 0 1 0 1a199b8b1cd93f121f0f321014da98af
+
+@ 0 1 0 02f4fd9f2ee5ce340c8fb1d66395202b
++     entry .Value
++       info
++           un champ scalaire, lu par l'instance `Intensional` de son étiquette de type
+
+@ 0 1 0 1d50da9c478f6f3913bfd3d836004ee3
++       entry #fieldType
++         info
++             l'étiquette de type, comme `t"text"`, par laquelle est trouvée l'instance
++             `Intensional` du champ
+
+@ 0 3 0 07d5637dc59051e60422465bf381aa09
++         detail
++             Les instances sont indexées par l'étiquette exacte : `t"Text"` ne trouve pas
++             l'instance de `"text"`, et une étiquette sans instance est une erreur de compilation,
++             _could not find an Intensional instance for the field `name` with type `label`_.
+
+@ 0 1 0 057f852039363b9819f4e0aa68637586
++       entry #params
++         info
++             les paramètres du membre, transmis tels quels à son instance
+
+@ 0 1 0 0d605bf8a8d8c27308511e239ba93688
++         detail
++             Comme une borne ou un motif, pour une instance créée avec `Intensional.parametric`.
+
+@ 1 1 0 0374b65493b548981a03711803061794
++       entry #multiplicity
++         info
++             combien de valeurs porte le champ
+
+@ 0 1 0 093c496fdb8f14f5169d27d70561bdc4
++     entry .Record
++       info
++           un enregistrement imbriqué d'autres membres
+
+@ 0 1 0 1fc8bf6b456601600e4a089961db87ac
++       entry #fields
++         info
++             les champs de l'enregistrement imbriqué, dans l'ordre
+
+@ 0 1 0 096a2785babe52481e9fd03e00edd3cc
++       entry #multiplicity
++         info
++             combien d'enregistrements imbriqués porte le champ
+
+@ 0 1 0 18372240d24861bb1b46f8dd41d482a7
++     entry .Union
++       info
++           un champ dont la valeur peut prendre plusieurs formes, choisie par son genre
+
+@ 0 5 0 1f66bdc1a69a010b1eabfe89bd972b97
++       detail
++           Chaque alternative est associée au genre (`Specification#kind`) de valeur qui la
++           sélectionne, et le champ se lit comme l'union des types des alternatives
++           (`Text | List[Text]`). Une valeur dont aucune alternative ne propose le genre est
++           transmise à `Specification#unoffered`. Dans un tuple, une alternative enregistrement
++           devient un tuple nommé imbriqué.
+
+@ 0 1 0 0f10c228a59fcbee0ee611f7901eba8a
++       entry #alternatives
++         info
++             chaque alternative, associée au genre de valeur qui la sélectionne
+
+@ 1 1 0 0bac8086e22d7815194365f61d0c1ad4
++       entry #multiplicity
++         info
++             combien de valeurs porte le champ
+
+@ 0 1 0 1294cd3de5ecfbae0e4c3d10e882f314
++     entry #multiplicity
++       info
++           combien de valeurs porte le champ
+
+@ 0 1 0 10d79f3eb02ae4d30b3dc084391edf5a
++     entry #of
++       info
++           ce membre avec une autre multiplicité
+
+@ 0 1 0 04daf4dc4611e13f1bf9d7bac15e0f24
++     entry #optional
++       info
++           ce membre lu comme `Optional`, `Unset` là où la valeur est absente
+
+@ 0 1 0 18a1ccf5c751752809e1e4dd9eaea781
++     entry #many
++       info
++           ce membre lu comme une `List` d'un nombre quelconque de valeurs
+
+@ 0 1 0 18da2cb274d229ba17fcbd73881079b4
++     entry #keyed
++       info
++           ce membre lu comme une `Map[Text, _]` de valeurs chacune sous un nom
+
+@ 0 1 0 188b9be3b465a93f009dd4f3a73c06f0
++     entry #series
++       info
++           ce membre lu comme la collection propre à la spécification, élément par élément
+
+@ 0 1 0 07dc8bf79d34f65209428f73515e0125
++   entry .Multiplicity
++     info
++         combien de valeurs porte un champ : une, au plus une, un nombre quelconque, ou un nombre
++         quelconque par nom
+
+@ 0 7 0 07b5e79a4da3d00716f8389ca5b945e6
++     detail
++         `One` lit exactement une valeur, au moyen de `Specification#access` et
++         `Specification#required` ; `Optional` en lit au plus une, sous forme d'un `Optional` qui
++         vaut `Unset` là où `Specification#absent` est vrai ; `Many` en lit un nombre quelconque,
++         sous forme de `List`, au moyen de `Specification#repeated` ; et `Keyed` en lit un nombre
++         quelconque, chacune sous un nom, sous forme de `Map[Text, _]`, au moyen de
++         `Specification#entries`. `Series` en lit un nombre quelconque sous forme d'une collection
++         propre à la spécification, son `#Series`, créée par `Specification#series`, qui ne lit un
++         élément que lorsqu'on le lui demande ; elle sert à une spécification lue dans un
++         `#Context`.
+
+@ 0 3 0 1a386b3bd90c18f41fd2115afe0f2098
++         La macro applique elle-même la multiplicité ; une instance `Intensional` ne décrit donc
++         qu'une seule valeur, et une spécification n'en dit pas davantage sur l'optionnalité ou la
++         répétition. Un `Member` en prend une avec `#of`, ou `#optional`, `#many` et `#keyed`.
+
+@ 0 1 0 05b2f7a22824f92f09a5ddf9f99bc5a7
++ entry .Record
++   info
++       une valeur dont les champs sont typés par une spécification, lue paresseusement depuis ses
++       données sous-jacentes
+
+@ 0 6 0 1a8b0dca7584da5f0d9408d939a55db6
++   detail
++       Un `Record` est un `Selectable` sur une valeur brute (son `#recordData`) et une fonction
++       qui va du nom d'un champ à la lecture de ce champ (son `#recordAccess`). On ne le construit
++       pas à la main : la méthode `record` d'une spécification renvoie un raffinement structurel
++       de `Record from Origin` avec un membre par champ du schéma, typé
++       `Record.Field[result, Failure]` ; un champ sélectionné a donc le type du schéma et est lu
++       au moyen de la `Tactic` de l'appelant.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 05af3bccaae7232102b763a9c4c9bc67
+
+% 0 1 0 120f060ef5cfca661bd1cdd26d5d66d3
+
+% 0 1 0 180089370c1d10780972ae432a4d7076
+
+% 0 1 0 044278a0f086c25013a038d69169575d
+
+% 1 1 0 1b77df62f0be3244068fb7bba1d8d215
+
+@ 0 5 0 0a45ab6df480da940d311ab7fd0cbace
++       Ses propres membres ont des noms délibérément inhabituels (`recordData`, `recordAccess`)
++       afin qu'un schéma puisse déclarer presque n'importe quel nom de champ ; on atteint les
++       données brutes avec l'extension `.data`, sur laquelle l'emporte un champ de schéma nommé
++       `data`. Un champ de schéma portant le nom d'une méthode de `java.lang.Object` (`notify`,
++       `toString`) ne peut pas être atteint par sélection, seulement par `#selectDynamic`.
+
+% 1 1 0 037f76c84e5ff13018aa5d45cc0e2d8c
+
+@ 0 1 0 0239d987a1927e9e0fa968848adc2682
++   entry .Field
++     info
++         le type du champ d'un enregistrement : sa valeur, lue sous la `Tactic` du code qui le lit
+
+@ 0 4 0 1870238df3069f1c1d4d27b709eefd1e
++     detail
++         `Record.Field[result, failure]` est la fonction contextuelle pure `Tactic[failure]^ ?->
++         result`, appliquée partout où le champ est sélectionné, comme le serait
++         `result raises failure`. Étant pure, un type qui mentionne un enregistrement — une erreur
++         qui en porte un comme charge utile — ne capture rien.
+
+@ 0 1 0 10dc9e7ad63d73c0061dda13f8c9f5c3
++   entry .apply
++     info
++         un enregistrement sur une valeur et une transformation de champs
+
+@ 0 2 0 035a7084959cba87061b31691029bac8
++     detail
++         `Record(data, access)` : la façon dont le code généré construit un enregistrement, appelée
++         par `Specification#build`. L'accesseur est une fonction pure, puisque l'enregistrement le
++         retient.
+
+@ 0 1 0 0551e091788a2b2d08a4b955a5cc5cd4
++   entry .data
++     info
++         les données sous-jacentes de l'enregistrement, typées comme l'`Origin` de la spécification
+
+@ 0 3 0 03e621f209bd5b4a035d869ad4d56605
++     detail
++         Une extension plutôt qu'un membre, afin qu'un schéma puisse déclarer un champ appelé
++         `data`, qui l'emporte alors : le membre d'un raffinement est sélectionné avant qu'une
++         extension ne soit essayée.
+
+@ 0 1 0 16f0f0a8b5c8b77c0c97f799baf4aba3
++   entry #recordData
++     info
++         la valeur brute depuis laquelle l'enregistrement lit ses champs
+
+@ 0 1 0 0ed6ae161974c629116c65c8292bf696
++   entry #recordAccess
++     info
++         la fonction qui va du nom d'un champ et des données de l'enregistrement à la lecture de ce
++         champ
+
+@ 0 1 0 00bae202ed02fb9314df6b02e188794c
++   entry #selectDynamic
++     info
++         lit un champ par son nom, comme le font les sélections de champs de l'enregistrement
++         raffiné
+
+@ 0 5 0 0a993e8c534aee6b178e5cb7955b0de6
++     detail
++         Le nom arrive encodé à la manière de la JVM (`street$minusaddress` pour `street-address`)
++         et est décodé avant d'être recherché. Le résultat est la lecture du champ, une fonction
++         contextuelle sur la `Tactic[Failure]` de la spécification, qu'un type de champ raffiné
++         applique au site d'appel ; appelée par son nom, c'est l'appelant qui la caste et
++         l'applique. Un nom qui n'est pas un champ panique avec _the record has no field named
++         `field`_.
+
+@ 0 1 0 1243bb4a6e9beba718cc43f2bcea7086
++ entry .Intensional
++   info
++       comment est lue une étiquette de type scalaire : le type Scala qu'elle devient, et comment
++       une valeur est lue
+
+@ 0 5 0 04e9143e331d0a2e1453af87883f1e6e
++   detail
++       Une spécification déclare une instance pour chaque étiquette de type scalaire que ses
++       schémas peuvent nommer. Un `"text" is Intensional in Form from Origin to Text` lit un
++       `Specification.Member.Value(t"text")` sous forme de `Text` depuis une valeur de l'`Origin`
++       de la spécification ; le `Form` est le type marqueur de la spécification ; les instances
++       sont donc données dans son compagnon et trouvées sans import.
+
+% 2 1 0 08652242f78d0b2004f187869f0a2fe5
+
+% 3 1 0 1332dfdad31ea9cd13523fb8223948f1
+
+% 0 1 0 0723387d36447c2802dcda6c5b7f85c2
+
+% 0 1 0 08f2ff5a34b9e4c8003f1c36f4420995
+
+% 0 1 0 040f32c4a66024181a3a2330549eff60
+
+% 0 1 0 0008f08f938ccae116a377729ed135f2
+
+% 0 1 0 1aec714bd69579831df92817866abefd
+
+% 0 1 0 087bd9b09db6efb7060285b6318299f2
+
+% 1 1 0 109ff7d3c0ec9ff41ea2e463ed4a9622
+
+@ 0 4 0 06d7cb2c2e1d06e21c5d01a02d5685bf
++       Une instance lit une valeur : la `Specification.Multiplicity` du membre est appliquée
++       autour d'elle par la macro. Une lecture qui peut échouer est plutôt un
++       `Intensional.Fallible`, généralement créé avec `Intensional.Reading`. Une instance retient
++       son accesseur ; elle capture donc tout ce que capture l'accesseur ; une instance sur une
++       fonction pure est elle-même pure.
+
+% 1 1 0 05f258209aa23315014eba4d1806de66
+
+% 1 1 0 11df7d05bc42b12b171a55af59535d79
+
+@ 0 1 0 0e56a3fa84abed50152a2a79f81bb276
++   entry .Fallible
++     info
++         un `Intensional` dont la lecture peut échouer, au moyen de la `Tactic` de son `Error`
+
+@ 0 5 0 0d04d52a3043eab6112212c7d24805e2
++     detail
++         Une lecture qui peut échouer — une valeur du mauvais genre, une valeur hors de ses bornes,
++         une chaîne qui ne correspond pas à son motif — est un `Fallible`, dont le `#transform`
++         prend une `Tactic[Error]`. Dans un enregistrement, le champ est lu sous la `Tactic` du
++         code qui le sélectionne ; dans un tuple, sous celle de l'endroit où le tuple est
++         construit.
+
+@ 0 5 0 0c5e4dc1e6b46c740ce58d10f878b81f
++         L'`Error` de l'instance doit être la `Failure` de la spécification ou un sous-type, de
++         sorte que chaque champ échoue d'une même façon ; une instance qui lève autre chose est une
++         erreur de compilation, _the
++         instance for `label` raises `error`, not the specification's `failure`_. La faillibilité
++         est déclarée ici, plutôt que sous forme de résultat `raises`, car sous contrôle des
++         captures un résultat `raises` ne peut pas implémenter une méthode abstraite.
+
+@ 0 1 0 0de7ae1c062d82db17acee125379f383
++     entry #Self
++       info
++           l'étiquette de type que lit cette instance
+
+@ 0 1 0 1bcff3719212cd2911a943ecc11063e4
++     entry #Error
++       info
++           l'erreur que la lecture peut lever
+
+@ 0 1 0 190618aac70142871dce726f2a7485d5
++     entry #transform
++       info
++           lit une valeur, avec les paramètres du membre, en levant au moyen de la `Tactic`
+
+@ 0 1 0 0ee7b23819dc14fd12f4ef6d64e1750c
++   entry .Reading
++     info
++         une instance `Fallible` sur une fonction pure de la valeur, de ses paramètres et de la
++         `Tactic`
+
+@ 0 5 0 1f165f745bb111251ec21ef3165f310f
++     detail
++         `Intensional.Reading[label, form, origin, result, error]` est une classe ; un format peut
++         donc déclarer chacun de ses lecteurs faillibles comme un given d'un type classe : un given
++         typé avec le `Fallible` raffiné serait un champ capturant `any`, faisant de l'objet qui le
++         contient une capacité.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 1 1 0 11621829530a7bef0191b6af5796467c
+
+% 0 1 0 0d3e9870591dc63401924cece0565571
+
+% 0 1 0 1a1315823408bce809a79f992364962d
+
+% 0 1 0 07009eedece20825038f65815972471c
+
+% 0 1 0 145b92940fec9a39046bcd6d77bf8f09
+
+% 0 1 0 07412f7cbbe51efb0c85f7c54860b0f1
+
+% 0 1 0 0d68c179663c3aea13a937c1f54493ee
+
+% 0 1 0 0e929d0885f3dc501a4c040152ccaa18
+
+% 1 1 0 123b18ed36c9eafe04c35744221ae67d
+
+@ 0 1 0 1f9f86db489c9571025168d4dbebb9b5
++   entry .apply
++     info
++         une instance à partir d'une fonction de la seule valeur
+
+@ 0 3 0 18a8e451ea03a94804d4022c3de49c08
++     detail
++         `Intensional(accessor)` crée une instance qui ignore les paramètres du membre. Ses types
++         d'étiquette, de forme, d'origine et de résultat proviennent du type attendu du given
++         qu'elle définit.
+
+@ 0 1 0 139c9d7e4f2bcbc51e5c35eae2d49335
++   entry .parametric
++     info
++         une instance à partir d'une fonction de la valeur et des paramètres du membre
+
+@ 0 2 0 1c0364722f022745119fb4ead9c88f07
++     detail
++         Pour une étiquette de type dont la lecture dépend de ses paramètres, comme un entier borné
++         ou un motif : la fonction reçoit tels quels les `params` du `Specification.Member.Value`.
+
+@ 0 1 0 19e900fe998c46d40796d0300796ea0b
++   entry #Self
++     info
++         l'étiquette de type que lit cette instance, un type `String` littéral comme `"text"`
+
+@ 0 1 0 0ec26295f0a179531dbd11afa602be00
++   entry #transform
++     info
++         lit une valeur du type d'origine, avec les paramètres du membre

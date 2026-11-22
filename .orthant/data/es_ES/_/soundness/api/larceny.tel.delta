@@ -1,0 +1,296 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 112f433dd235acf61601691ede4cb2e4
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 166fcb9214aa69d3101d6173570fb605
++ info   un plugin del compilador que captura como valores los errores y advertencias de compilación de un bloque, para las pruebas
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0a59d7955d7939bd17b1c96def7de828
++     _Larceny_ hace que el fallo de compilación pueda probarse. El código envuelto en
++     `demilitarize` se compila por separado, y los errores y advertencias que caen dentro de él se
++     entregan al programa como una `List[CompileError]` en lugar de hacer fallar la compilación.
++     Una prueba puede entonces afirmar que un literal no válido, una suma con la divisa equivocada o
++     una relación no declarada realmente no compila: donde los invariantes viven en los tipos, la
++     imposibilidad es la funcionalidad, y así es como se prueba.
+
+% 2 1 0 0762838422b359a8070ecb6b2a1ffbd3
+
+% 3 1 0 0dab47b159ebbac61b2a2b5f3331cf57
+
+% 4 1 0 03bc766bd43f0367101b203a926b0167
+
+% 5 1 0 1edf626254384227184b9e55b7f83ba7
+
+% 0 1 0 0b37b4b2167c832e1f237ad128b46fc6
+
+% 1 1 0 1dff888dd1ed2bd40322bc80b1175855
+
+% 1 1 0 0672f655d214027710b3cd43bfcce752
+
+% 0 1 0 0e1ee0cd344335e80570133032f659bd
+
+% 1 1 0 0ce7505fab0b7967074f8384d4beda3a
+
+% 2 1 0 16abe7e07f43009e1705249ffef35adc
+
+@ 0 7 0 001352af2d0345cc0b9386bffafa369a
++     La biblioteca es un plugin del compilador, y `demilitarize` no hace nada sin él: el plugin
++     debe activarse en toda compilación cuyos ficheros fuente lo usen, pasando su jar al compilador
++     como `-Xplugin:<path to the larceny plugin jar>` (el `plugin.properties` del jar nombra
++     `larceny.LarcenyPlugin`). El plugin se publica como un artefacto independiente en lugar de en
++     una agrupación de Soundness, porque un jar de `-Xplugin` debe declarar exactamente un plugin;
++     también debe estar en el classpath de compilación, ya que `demilitarize` y `CompileError` son
++     símbolos corrientes. Los propios módulos de prueba de Soundness añaden ambas cosas.
+
+@ 0 10 0 0a05d6b364dfce8b0058acfc3ac68b7a
++     El plugin se ejecuta después del análisis sintáctico y antes del tipado. Para cada unidad de
++     compilación que contiene un bloque `demilitarize`, vuelve a compilar el mismo fichero fuente en
++     una subcompilación, con el mismo classpath y los mismos ajustes del lenguaje, preludio
++     (`-Yimports`, `-Yno-predef`), `-Ycc-new`, características `-Z`, `-preview`, opciones de
++     advertencia (`-deprecation`, `-feature`, `-unchecked`, `-Wall`, `-Wunused`, `-Wconf`) y demás
++     plugins, pero sin él mismo. Los diagnósticos cuyo punto cae dentro de cada bloque se capturan y
++     se sustituyen, en la compilación principal, por código que construye los valores
++     `CompileError` correspondientes; el tipado solo ve entonces esas construcciones, así que la
++     compilación tiene éxito siempre que no haya nada incorrecto fuera de un bloque `demilitarize`.
++     `-Werror` no se propaga a propósito, de modo que las advertencias se capturan como
++     advertencias.
+
+@ 0 6 0 16163ce3920087b01c8c1c03857b8728
++     Un error en una fase temprana impide que se ejecuten las fases posteriores. Para que un bloque
++     que falla no pueda ocultar los diagnósticos de otro, el plugin sustituye por `{}` cada bloque
++     que contiene un error y vuelve a compilar, tantas veces como haga falta, y por eso un fichero
++     con muchos bloques `demilitarize` compila más despacio de lo que sugiere su tamaño. Dentro de
++     un bloque, un error suprime las advertencias de fase tardía de ese bloque (entre ellas las de
++     obsolescencia), a las que nunca se llega.
+
+@ 0 3 0 0eeaafe8c814ba891bfe4baa4ed0db02
++     Dentro de un bloque `demilitarize`, las llamadas mediante el azúcar de las extensiones inline
++     pueden quitar el alias a colecciones opacas en tipos proxy e informar de un falso desajuste
++     entre tipos de `scala.collection` y de `proscenium`; en un bloque así, llámese directamente al
++     método subyacente.
+
+@ 0 3 0 16c38e08aebeee300ef53e49f6c0b6af
++     La biblioteca es el conjunto de fuentes `larceny.plugin`, solo para la JVM, que depende del
++     compilador de Scala y de nada de Soundness. `CompileError` y `demilitarize` se exportan al
++     paraguas `soundness`.
+
+% 0 1 0 0141e3d9b45e3e9f16f8308ab00f6534
+
+% 0 1 0 057d0d63d42ebd960ee33c0f28dabf6e
+
+% 0 1 0 1975e75192374a421896f0d007cb7e83
+
+@ 0 5 0 0a86b32d189385f80d716caff9833cc8
++ entry .demilitarize   compila un bloque por separado y devuelve sus errores y advertencias de compilación como valores
++     El plugin larceny reescribe `demilitarize(code)`, antes del tipado, en la
++     `List[CompileError]` de todos los diagnósticos cuyo punto está dentro de `code`, en el orden en
++     que los notificó el compilador. El código que compila limpiamente da una lista vacía. El bloque
++     en sí nunca se tipa en la compilación principal, así que puede contener cualquier cosa que se
++     pueda analizar.
+
+% 2 1 0 12e3489b19580966122dd2747da65f3c
+
+% 3 1 0 123ab041c859a5b60029dafcaccf56a7
+
+% 4 1 0 17aa33153e4ceb061e43910c6b10546e
+
+% 5 1 0 03f83296092f1ece0b4ff8506577a4c4
+
+% 0 1 0 0f6232e2bc37417c131a7e210f9c5dd3
+
+% 0 1 0 08c27ac2f465d9650437ca40636bc27c
+
+% 0 1 0 0b03c8b2e82a750317d246c33feb6b08
+
+% 1 1 0 0c3231f370da4c2e15e25d6009020925
+
+% 0 1 0 08ad9ad34e1bbf9216fc481fdcf023b0
+
+% 1 1 0 1ba40fe08d30b73802114476190154d8
+
+% 0 1 0 0cdaaca70851d5a616a0d33e2affec03
+
+% 1 1 0 092a92ed42e834ba0bd737ac49eda9b2
+
+% 2 1 0 06101ec9e7e37a681ad10189f69b12ee
+
+@ 0 4 0 0bca7b7f5c95ef331472490b143b2ec0
++     Sin el plugin activado, la llamada es un método corriente y devuelve una lista vacía: toda
++     aserción de un fallo fallaría entonces, en lugar de pasar en silencio. Un bloque con un error
++     no informa de ninguna de sus propias advertencias de fase tardía, ya que la compilación del
++     bloque se detiene en el error.
+
+@ 0 4 0 05cfe83393c02186006984dde9201f78
++ entry .procrastinate   aplaza al tiempo de ejecución la compilación de un bloque de código fuente, mediante el `Subcompiler`
++     El plugin reescribe `procrastinate(code)` en una llamada a `Subcompiler` que lleva el texto
++     fuente del bloque y el classpath, de modo que el código se compila cuando se ejecuta el
++     programa y no cuando se construye. Sin el plugin, devuelve su argumento.
+
+@ 0 1 0 05f7cfc4e556e41501cbb1bc9888cb1c
++ entry .CompileError   un diagnóstico capturado por `demilitarize`: su motivo, mensaje, posición y gravedad
+
+% 1 1 0 1a765ec200c1df63153c6a492dc85910
+
+@ 0 5 0 1409897ad47acf090761175e816d3349
++       Una case class que describe un único error, advertencia o mensaje informativo del
++       compilador procedente de un bloque `demilitarize`. `#reason` es el propio identificador de
++       mensaje del compilador, como un `CompileError.Reason`, que es lo más robusto sobre lo que
++       hacer aserciones; `#message` es su texto completo; `#focus` es el texto fuente que abarca el
++       diagnóstico; y `#importance` dice si es un error, una advertencia o información.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 0 1 0 03e156f9b4684ee71e065e8ff9f301d3
+
+% 0 1 0 1eaa6f959b7ee02b03f3be3758d531a0
+
+% 0 1 0 0a0ab87ac720e22b155c0a8a266cc703
+
+% 0 1 0 00b0c9e4ee824acd15243a0528555649
+
+% 0 1 0 1e93f88dfaae2911026fa84afad97845
+
+% 0 1 0 14162e0d294e75031b28f956606da924
+
+% 0 1 0 163ab2c8a5ce58550a7b2c35bbc2d6f8
+
+% 0 1 0 1b250c3ec7801aeb08bbf38791b0b178
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 4 0 1ef3665fa189b00609c119d3a60994b4
++       Las posiciones se toman del código fuente del usuario incluso para un diagnóstico lanzado
++       dentro de una expansión inline o de una macro: el plugin toma la posición más estrecha de la
++       unidad de compilación que está dentro del punto de llamada, de modo que `#focus` es, por
++       ejemplo, la inserción incorrecta de un interpolador y no el literal entero.
+
+% 0 1 0 0d6676f448e169f0022629e5d2f9bcb1
+
+% 0 1 0 11aafa57d56bb34613eda9497c7c1810
+
+@ 0 5 0 0864b110969fa7460532c0412d5ff14c
++   entry .apply   un `CompileError` a partir de un ordinal de motivo, mensaje, foco, inicio, desplazamiento y nivel de gravedad
++       La forma que genera el plugin. Un ordinal más reciente de los que conoce
++       `CompileError.Reason` se convierte en `NoExplanation`, y un nivel fuera del rango conocido en
++       un `Error`, de modo que un diagnóstico de un compilador más reciente se sigue capturando en
++       lugar de descartarse en silencio.
++   entry .Importance   la gravedad de un diagnóstico capturado: `Info`, `Warning` o `Error`
+
+% 1 1 0 04dc0f09fc96b3771ef219ef0008bc82
+
+@ 0 5 0 00011cf0ab793d511cc1e7480b0efa1c
++         Un enum cuyos casos reflejan los niveles de diagnóstico del compilador de Scala y se
++         llaman igual que los de `anthology.Importance`. Se repite aquí porque el plugin no depende
++         de nada de Soundness.
++     entry .apply   la importancia correspondiente a un nivel de diagnóstico del compilador, tratando un nivel desconocido como `Error`
++   entry .Reason   el identificador del compilador para la clase de un diagnóstico, como `TypeMismatch`
+
+% 1 1 0 1c67d14758992a8903aa15c2066f559d
+
+@ 0 7 0 144c3e904649d92b17798f7cca54f986
++         Un enum con un caso por cada `ErrorMessageID` del compilador de Scala 3, en el mismo
++         orden, de modo que un diagnóstico capturado pueda compararse por su clase en lugar de por
++         la redacción de su mensaje: `TypeMismatch`, `NotAMember`, `MissingImplicitArgument`,
++         `AmbiguousOverload`, `PatternMatchExhaustivity`, `MatchCaseUnreachable`, etcétera.
++         `NoExplanation` es el motivo de un diagnóstico sin identificador específico, lo que
++         incluye todo error que una macro lanza con `halt` y todo `compiletime.error`. Los casos
++         marcados como _old_ en el código fuente son identificadores retirados que se conservan por
++         su posición.
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 02660c3ffe200bb508b57acfa1152426
+
+% 0 1 0 0a8178f38f3d06500a346c08ea923a92
+
+% 0 1 0 19d6d7d1a6324d7009047ed4d978ac10
+
+% 0 1 0 1b0e0764abfb386f0a06b4f8bb451057
+
+% 0 1 0 09128362491f487919752aeab2a16e17
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 12 0 0d02f053f8a2430004c74f34c96958f7
++   entry .Id   un extractor que compara un `CompileError` por su `CompileError.Reason`
++       `case CompileError.Id(reason) =>` liga el motivo del error; siempre coincide. Antes era el
++       tipo independiente `CompileErrorId`.
++   entry #reason   el identificador del compilador para la clase de diagnóstico, como un `CompileError.Reason`
++   entry #message   el texto completo del diagnóstico, tal como lo escribió el compilador
++   entry #focus   el texto fuente que abarca la posición del diagnóstico
++   entry #start   el desplazamiento en el fichero fuente en el que empieza el tramo del diagnóstico
++   entry #offset   la distancia del punto del diagnóstico desde el inicio de su tramo
++   entry #importance   si el diagnóstico es un error, una advertencia o información
++   entry #point   el desplazamiento en el fichero fuente del punto del diagnóstico: `#start` más `#offset`
++   entry #warning   si el diagnóstico es una advertencia
++   entry #error   si el diagnóstico es un error
+
+@ 0 1 0 10938b283332ee761e2a82603962c315
++ entry .LarcenyPlugin   la clase del plugin del compilador, nombrada en el `plugin.properties` de larceny
+
+% 1 1 0 0e40596355a0768c09b6cd327634fc94
+
+@ 0 2 0 0e2e0b32ea3dea4811aea6053a5d84a5
++       El `StandardPlugin` que instancia el compilador cuando se le pasa el jar de larceny con
++       `-Xplugin:`. Instala una única fase, `LarcenyTransformer`, y no se usa directamente.
+
+% 0 1 0 157715bb850a8b9f1ce2ea77dc08ea74
+
+@ 0 1 0 01b2c434f4daf7b10df1850d1a5193d7
++   entry #name   el nombre del plugin, `larceny`
+
+@ 0 1 0 14cc39b91734552d1849084d2a80bf91
++ entry .LarcenyTransformer   la fase del plugin que encuentra los bloques `demilitarize` y sustituye sus errores
+
+% 1 1 0 148a4d2149169b2c14b96886c2193edd
+
+% 2 1 0 00ff6cccdd4a1dc807cec6f873b0c0a2
+
+@ 0 8 0 13736ac6ef4f1d42156f723d7f90a9ec
++       No es para uso directo. Una fase llamada `errorcap`, que se ejecuta después de `parser` y
++       antes de `typer`, que recoge las regiones de todos los bloques `demilitarize` de una unidad,
++       ejecuta el `Subcompiler` sobre el código fuente de la unidad y reescribe cada bloque en la
++       construcción de sus `CompileError` capturados.
++   entry .isLarceny   si una ruta de `-Xplugin` (jar o directorio) es el propio plugin larceny
++       Se lee del `plugin.properties` de la ruta; es como el plugin se mantiene fuera de sus propias
++       subcompilaciones, que de otro modo serían recursivas.
++   entry #phaseName   el nombre de la fase, `errorcap`
+
+@ 0 1 0 039de50815d375b5064d80f3e67205b3
++ entry .Subcompiler   la subcompilación que compila un código fuente y recoge sus diagnósticos
+
+% 1 1 0 106491663e55fe8d0b559129f3dd376c
+
+% 2 1 0 0d8f1295e1188fd20281ae28a6ec4577
+
+@ 0 6 0 12fd3c11f7b4c0280d6237cb45ae80ff
++       No es para uso directo. `.compile` compila un código fuente con un compilador nuevo,
++       recogiendo cada diagnóstico como un `CompileError`; si se le dan regiones, deja en blanco
++       cada una que contiene un error y vuelve a compilar hasta que no aparecen errores nuevos, de
++       modo que el error de un bloque no pueda ocultar los diagnósticos de otro.
++   entry .compile   compila un código fuente y devuelve sus diagnósticos como `CompileError`
++   entry .CustomReporter   el notificador del compilador que registra los diagnósticos como `CompileError`
+
+% 1 1 0 1ac60320c74122f61c7f53034d36731b
+
+@ 0 4 0 190b83d903c8415503b70d9f0a2cbe36
++         Sitúa cada diagnóstico en la posición más estrecha del propio código fuente de la unidad de
++         compilación que está dentro del punto de llamada del usuario.
++     entry #errors   los diagnósticos registrados hasta el momento
++     entry #doReport   registra un diagnóstico como un `CompileError`

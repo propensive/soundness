@@ -1,0 +1,58 @@
+orthant 2 language
+
+% 0 1 0 020813bb11b2e27814cd769cda49cc45
+
+@ 0 1 0 1b2d55ab6fdcf8410314c6418fdc37f2
++ Levée lorsqu'un TELP ne s'analyse pas ou ne se résout pas.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 3 0 1088d60329541a2b0a6824290b98e2b5
++ TELP est le langage de chemins textuel de TEL, défini sur le modèle sémantique d'un document
++ typé par un schéma. Ses échecs sont des résultats de l'API de résolution, et non des erreurs de
++ document : ils ne portent pas de codes E de TEL. Chaque raison porte l'index, à partir de 0, du
++ composant auquel l'analyse ou la résolution a échoué.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 1 0 067cb1f1318b02481e3bbc36bb1f7f3d
++ column  Raison
+
+% 0 1 0 0249aa51fd8056d51a0c1dba7eb0290e
+
+% 0 1 0 1c0f3818dc36dc7716c2adddd8374250
+
+% 0 1 0 04a522044e543c1d1895b54f998b5f36
+
+% 0 1 0 1007eaf2533b8ac0146bfd772aa627d5
+
+% 0 1 0 1c298d8613f8c500151df3bca847b9c7
+
+% 0 1 0 0b0a5250eda281461c7b56a8b2be9a96
+
+% 0 1 0 07260408b571476b1144c626b4f04af9
+
+% 0 1 0 0892b0a111ef0e5c084b6a94c41d60e8
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 4 0 17869fe77115de7c1b0043ee6706a686
++ Le délimiteur d'un chemin est son premier caractère : un composant qui contient le délimiteur
++ choisi s'écrit avec un autre délimiteur (il n'existe pas de syntaxe d'échappement). Un composant
++ entièrement numérique est toujours un index d'occurrence, si bien qu'une valeur de clé
++ entièrement numérique ne peut être sélectionnée que par sa position. La résolution nécessite un
++ schéma composé ; un document non typé n'a pas de modèle sémantique, ni de résolution TELP.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 00e4ae170022be88025a6dff1b7fd0ff
++ - Source : `lib/stratiform/src/core/stratiform.Telp.scala`

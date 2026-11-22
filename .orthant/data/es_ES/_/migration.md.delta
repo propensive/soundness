@@ -1,0 +1,46 @@
+orthant 2 language
+
+@ 0 1 0 158c113733dfac6107769ec27e962a8b
++ # Notas de migración
+
+@ 0 3 0 01ab8e4b37f86270046f01f94a78db8b
++ Soundness avanza deprisa y renombra, traslada y remodela su API entre versiones. Se espera que el
++ código que la usa lo actualice un agente LLM y no una persona a mano, así que desde la versión 0.64.0
++ cada versión incluye un registro, orientado a máquinas, de lo que ha cambiado.
+
+@ 0 1 0 132970a8f8d9f90e0c9b41c00293bc66
++ ## Cómo funciona
+
+@ 0 10 0 123e54cfefdf9eb70c7d4664c17d0389
++ - Los cambios desde la última versión se acumulan en `doc/migration/<version>.md`, nombrado desde el
++   principio según la versión de la que formarán parte (por ejemplo, `doc/migration/0.71.0.md` tras
++   Soundness 0.70.0). Cada PR que introduce un cambio material en la API pública o en el
++   comportamiento observable le añade una entrada; el primero de esos cambios tras una versión lo
++   crea.
++ - Etiquetar la versión publica el fichero tal como está, así que ningún cambio tiene que integrarse
++   antes. La publicación se niega a ejecutarse mientras falte `<version>.md`, o mientras haya notas de
++   otra versión sin publicar, de modo que las notas no pueden omitirse ni quedar varadas bajo la
++   versión equivocada. Los ficheros publicados no se editan después salvo para corregir errores.
++ - El resultado es un fichero por versión, cada uno de los cuales describe exactamente los cambios
++   entre la versión anterior y esa.
+
+@ 0 1 0 0edc58d927def64f031fedc5f92c65dc
++ ## Actualizar el código que la usa
+
+@ 0 4 0 04a2df78b26c41021c795f8e36ba71bc
++ Para actualizar un proyecto de la versión `A` a la versión `B`, indica a un agente LLM que lea cada
++ fichero `doc/migration/<v>.md` con `A < v <= B`, en orden ascendente de versión, y que aplique al
++ código del proyecto los cambios que describe cada uno. Por ejemplo, pasar de 0.64.0 a 0.67.0
++ significa leer `0.65.0.md`, `0.66.0.md` y `0.67.0.md`, en ese orden.
+
+@ 0 1 0 148a18f02812f00b0b58cee43be10eaa
++ ## Qué contienen los ficheros
+
+@ 0 7 0 0c99ea1062e66ccd0a5ad4be77437be3
++ Los ficheros están escritos para un LLM inteligente, no para personas. Son precisos, densos y
++ completos: cada renombrado, traslado, cambio de signatura, eliminación, valor por defecto cambiado y
++ comportamiento cambiado que pueda observar quien use una biblioteca de Soundness. Dicen *qué* ha
++ cambiado, con los nombres antiguos y nuevos totalmente cualificados y la semántica exacta, y dejan al
++ agente que los lee averiguar *cómo* adaptar un código concreto, salvo cuando la adaptación no se
++ deduce del propio cambio. `AGENTS.md`, en la raíz del repositorio, especifica el formato y las reglas
++ para mantenerlos.

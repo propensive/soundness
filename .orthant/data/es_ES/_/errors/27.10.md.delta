@@ -1,0 +1,31 @@
+orthant 2 language
+
+% 0 1 0 1a260160731f23fe0070beef25a48b94
+
+@ 0 1 0 0275e74b4eeb25ef0fb61b1e51dc349f
++ Se lanza cuando un valor no se puede representar como un decimal de precisión arbitraria.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 0d00c1e73a0568ce11abdb823d00b2b5
++ Un `Decimal` se construye a partir de un texto, de un entero o de un `Double`. A partir de un
++ texto, este error significa que el texto no es un número decimal; a partir de un `Double`, que el
++ double no tiene una representación decimal exacta.
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 3 0 0507276eec7e26f6190c74e11cddd029
++ Para un texto, comprueba la sintaxis: un signo opcional, dígitos, un punto opcional y un exponente
++ opcional. Para un `Double`, el fallo te está diciendo que el valor binario no es exactamente el
++ decimal que pretendías; constrúyelo a partir de un texto, o de un entero sin escala y una escala.
+
+@ 0 1 0 18661a39c50ebc2f040b88d7d57c4687
++ > Este error usaba antes el código `↯/s.62.2`, que colisionaba con `EnvironmentError`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 1ab250dc8c64572218ef347c2694cda1
++ - Fuente: `lib/hypotenuse/src/core/hypotenuse.Decimal.scala`

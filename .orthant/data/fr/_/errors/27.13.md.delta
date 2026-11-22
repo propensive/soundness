@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 10c258373267f7d11d3123c62a06fee7
++ # `↯/s.27.13` — Valeur `S8` supérieure à `Byte.MaxValue`
+
+@ 0 2 0 1e8bfbf46a77680709eba637e123a2c0
++ Levée à la compilation par la macro `s8` d'Hypotenuse lorsque la valeur
++ dépasse `127`.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 1 0 1b383e4a85558076183ff1ba5582d467
++ Un `S8` (entier signé sur 8 bits) est borné supérieurement par `Byte.MaxValue`.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1f4bc98168927c6f0b0dd609d73880d9
+
+% 1 1 0 158123dd4c19862716c12be23c2d80af
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 1 0 1be8379dbd35b9db02b47f135aa97b08
++ Fournissez une valeur comprise entre `-128` et `127`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 2 0 1670b5a1d401440e1b2b356791d92b91
++ - Les autres erreurs de littéraux entiers : [Familles](README.md#families)
++ - Source : `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

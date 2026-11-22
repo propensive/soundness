@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 156914880018765e15b73637402051e7
++ info   可逆な並べ替えとしての置換で、階乗進法の転倒表としてコンパクトに格納される
+
+@ 0 7 0 0b0b3fa346652b010b400ba0e2dc5136
++     内部的には、置換は階乗進法で書いたその[転倒表](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics))、つまり `Factoradic` である。これは置換を一意に識別する一つの整数なので、置換は格納にも列挙にもコンパクトであり、`Permutation.bySize(n)` は `n!` 個のすべてを順に列挙する。
++     *n* 個の要素の置換は O(*n* log *n*) ビットを占め、これは情報理論上の最小値である。
++     `Factorial` は、この符号化の土台となる階乗を提供する。
+
+@ 0 1 0 1d26461196f23b53060f7a77f7f68e42
++ entry .Permutation   列の可逆な並べ替えで、その階乗進法の転倒表として格納される
+
+% 0 1 0 12f1691e82eb607a119924e35c1f9b25
+
+% 0 3 0 191ec179f21eac24041f768279364dba
+
+@ 0 7 0 15bf6ad78c4a6277137f8ef993e37197
++       リストに適用すると要素を並べ替え（`#apply`）、`#inverse` はそれを元に戻す。
++       置換は作られたときの長さを記録せず、並べ替える先頭の位置の数、つまり `#extent` だけを記録する。任意のサイズの恒等置換は `Permutation(Factoradic(0))` であり、`Permutation(Sequence(0, 2, 1))` は `Permutation(Sequence(0, 2, 1, 3, 4))` に等しい。
++       これは、有限個の自然数だけを動かす、自然数の置換である。
++       より長いリストに適用すると、最初の `#extent` 個の要素を並べ替え、残りはその場に残す。
+
+@ 0 8 0 08eefffb16b65507134784a8c70cfbc2
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  注記
++         row  `BaseRange(value, base)`  1  _the value `value` is too large for its positional base `base`_  `Factoradic(List(…))` に与えた桁が、その位置の基数未満でない
++         row  `DuplicateIndex(index, element)`  2  _the index `index` was duplicated at `element`_  `Permutation(Sequence(…))` があるインデックスに二度目に出会った。`element` はそれが再び現れた位置である
++         row  `InvalidIndex(last, max)`  3  _the index `last` appears, but every index should be in the range 0-`max`_  `Permutation(Sequence(…))` に与えたインデックスが負であるか、列の長さ未満でない
++         row  `TooShort(length, min)`  4  _the input, of size `length`, is too short for the permutation of size `min`_  `Permutation#apply` に、置換が並べ替える範囲より短いリストが与えられた
+
+@ 0 23 0 0231e4924be1658c1bc45d381f39ea72
++           `BaseRange`、`DuplicateIndex`、`InvalidIndex`、`TooShort` からなる列挙型で、それぞれメッセージが挙げる値を持つ。各ケースがいつ発生するかは `Permutation.Error` を参照のこと。
++           各ケースには 1 から 4 までの `#number` があり、これがエラーの副コードである。
++       entry #number   理由の副エラーコードで、1 から 4
++     entry .communicable   各 `Permutation.Error.Reason` をメッセージとして描画する
++     entry #reason   置換を作れなかった、または適用できなかった理由
++   entry #factoradic   階乗進法で表した置換の数
++   entry #extent   置換が並べ替える先頭の位置の数：置換が動かす最後の位置に一を足したもの
++       恒等置換では 0 である。`#extent` 以降のすべての位置は固定されている。
++   entry #inversions   転倒表：各位置について、それより前の位置のうち、より大きいインデックスをもつものの個数
++       最初の `#extent` 個の位置それぞれについて、順に一つの項目がある。
++       位置 *i* の項目は高々 *i* なので、基数 *i* + 1 の桁である。これらは `#factoradic` の桁を最下位から順に並べたものである。
++       動くすべての位置より後でその場に留まる位置は、その前により大きいインデックスをもたない。末尾の固定された位置が数に何も加えないのはこのためである。
++   entry #expansion   並べ替えたインデックス：`0` から `extent - 1` に置換を適用したもの
++       `.apply` に与えられたインデックスのうち、動く最後のものまでである。`Permutation(Sequence(3, 1, 4, 2, 0, 5))` なら `List(3, 1, 4, 2, 0)` となる。
++       `#extent` と同じ長さなので、置換がその場に残す末尾のインデックスは省かれる。
++   entry #apply   リストを並べ替える。あるいは、ある位置がどのインデックスから要素を取るかを返す
++       `permutation(list)` は、少なくとも `#extent` と同じ長さのリストを並べ替え、そうでなければ `TooShort` を伴う `Permutation.Error` を発生させる。より長いリストは最初の `#extent` 個の要素が並べ替えられ、残りはその場に残る。
+
+@ 0 1 0 01cf5a1c79149f4814f8f1324782e4d9
++ entry .Factoradic   階乗進法で表した負でない整数で、転倒表の書き方に従う
+
+@ 0 9 0 09b0fffac4d2358314803651c90f4b7a
++   entry .apply   最上位から順に並べた桁からの階乗進数で、各桁がその基数未満であることが検査される
++       最後の桁は基数 1 なので 0 でなければならず、その前の桁は基数 2 であり、以下同様である。
++       基数未満でない桁は `BaseRange` を伴う `Permutation.Error` を発生させるので、`Tactic[Permutation.Error]` が必要である。
++       ケースクラスのコンストラクター `Factoradic(number)` は `BigInt` を直接取る。
++   entry #number   整数で、`BigInt` として
++   entry #expand   数の桁で、最上位から順に並べ、先頭のゼロを含まない
++       `Factoradic(0).expand` は `Nil` である。それ以外では、リストは常にゼロである一の位の桁で終わる。
++       これを逆順にしたものが、置換の `#inversions` である。

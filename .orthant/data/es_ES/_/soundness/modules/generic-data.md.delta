@@ -1,0 +1,173 @@
+orthant 2 language
+
+@ 0 1 0 05575ee322adad9e18f418b61ef701fd
++ ## Datos genéricos
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 4 0 1e8727bf8516e78c0f139b3c9a14389c
++ A veces un valor tiene que salir del mundo en el que se conoce su clase y llegar intacto: a otro
++ cargador de clases, a otro proceso o al otro lado de una frontera de ejecución por etapas. La
++ representación `Pojo` transporta cualquier valor de Scala usando solo los tipos que comparte todo
++ contexto de la JVM. Esos tipos son primitivos en su caja, cadenas y arrays de objetos.
+
+@ 0 2 0 06f629db74db4cec0aca3dcec27f6930
++ Una case class o una enumeración se convierte en un `Pojo` y vuelve gracias a códecs
++ [derivados][derivación], de modo que el valor sobrevive al cruce sin que su clase viaje con él.
+
+@ 0 1 0 18c7bb4feed79da116b43923bfd1e1ae
++ ### Sobre los datos neutrales respecto al cargador de clases
+
+@ 0 4 0 0185108e59a49ecc0896bd5c64fdcf6c
++ Un objeto de Scala está soldado a su clase, y su clase al cargador de clases que la definió. Si se
++ entrega el objeto a código que se cargó en otro sitio, como un plugin aislado o un cálculo
++ preparado por etapas en otra máquina, el lado receptor no puede volver a convertirlo. La «misma»
++ clase procedente de otro cargador es una clase distinta.
+
+@ 0 2 0 189b778b4f10d9770934d61592c19852
++ La serialización completa resuelve esto con una maquinaria pesada. Pasar cadenas lo resuelve
++ renunciando a la estructura.
+
+@ 0 5 0 0fe8df2d6074b42316994a3d5443ad37
++ Un `Pojo` conserva la estructura y prescinde de la clase. Un producto se convierte en un array de
++ sus campos, una variante en un par con rótulo, y un primitivo en sí mismo dentro de su caja.
++ Todos estos son tipos definidos por el JDK, y significan lo mismo a ambos lados de cualquier
++ frontera. Este es el transporte que hay debajo de la ejecución remota [por etapas](staging.md), y
++ trabajar así sobre una representación genérica es aquello en lo que se apoya la
++ [componibilidad](../../philosophy/composability.md) entre formatos.
+
+@ 0 2 0 0c17d3ff00e9ad521a168794996ea02d
++ Todo procede del paquete `soundness`. Los ejemplos lanzan cualquier error como una excepción, y
++ la última importación les permite imprimir sus resultados:
+
+% 2 1 0 0a014aa077766c0e19cc2515b4eb1aa8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 174e339ee5ceabff091d520aa1b0e1c7
++ ### Codificar y decodificar
+
+@ 0 1 0 02f7b681af11813618013a283bfd50c1
++ `pojo` codifica un valor. El resultado contiene solo arrays, cadenas y primitivos en su caja:
+
+% 2 1 0 07b54dad24333a5c1a37e4951794968a
+
+% 0 1 0 11d3fce420acb6b31579ecde9a021563
+
+% 0 1 0 034e076457a0e98711994539fb32c914
+
+% 0 1 0 118069b5d3abbcc6100be564454eac3b
+
+% 0 1 0 1906a16bac8758cd038a4e6ab8143665
+
+% 1 1 0 0d44369c9835dc081ff01e336aaf1867
+
+@ 0 2 0 1a8ea710104f771c13a574ed3b6b2439
++ `as` lo decodifica. El lado receptor debe indicar el tipo que espera, y puede que los datos no
++ correspondan a ese tipo, así que la decodificación puede fallar y necesita una [estrategia]:
+
+% 2 1 0 12d2fd0d40691e5b0ba733c57d257fc2
+
+% 3 1 0 0d3e2410d2bd29f91aa87d530430c3bd
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 0ba4da68bdc981af039a865f182de32d
+
+% 1 1 0 1da90f5621ed06d00334282d3c383b85
+
+@ 0 2 0 07f0cda0cadf16651d05538e23f89597
++ Los datos que no tienen la forma del tipo esperado lanzan un `Pojo.Error`. Una cadena, por
++ ejemplo, no es un `Person`:
+
+% 2 1 0 175d63a2de02900c0c274b626e1e110a
+
+% 3 1 0 0b8a0386ce5da91a15a93c57c4e59908
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 17527d5dcb417e3907b1d951064acd76
+
+% 1 1 0 1fcabf01c9ebf7ea18070c8a07160898
+
+@ 0 2 0 18869724333bbff91033c5b53fe6fadd
++ Las case classes anidadas, las colecciones y las enumeraciones derivan todas sus conversiones,
++ así que cualquier valor que tenga forma de datos cruza sin preparación.
+
+@ 0 1 0 04b699a8a8d550e10c2a50278c0903a2
++ ### La representación
+
+@ 0 1 0 1c5f9b65cb00b214123773548be9ce2f
++ La codificación es transparente a propósito:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 7 0 17b5226dafc1b71e1431fed19b121be4
++ column  Valor de Scala
++ column  Forma Pojo
++ row  `Text` o `String`  un `String`
++ row  `Int`, `Long`, `Float`, `Double`, `Char`, `Boolean` o `Byte`  su forma `java.lang` en su caja
++ row  una colección: `List`, `Set`, `Sequence` u otro `Iterable`  un `Array[Object]` de sus elementos
++ row  una case class  un `Array[Object]` de sus campos en el orden de declaración
++ row  un caso de enumeración  un par `Array[Object]` con su nombre y su carga útil
+
+% 1 1 0 059f2076fcb82d7d16919813d484499e
+
+@ 0 3 0 1a4146576b91b61e0ce6598e9912f4dc
++ Así, `Person(t"Bottom", 35).pojo` es un array con la cadena `"Bottom"` y el entero `35` en su
++ caja, y el caso `Green` de una enumeración es un array con la cadena `"Green"` y un array vacío:
+
+% 2 1 0 0af69be56b392a231ee10e988de75b28
+
+% 0 1 0 1a62de65f428a3821fef2470e29d9f0c
+
+% 0 1 0 0ccc6e7a0efbb9251014fc513abaad21
+
+% 0 1 0 1a2c4e68f787125f0feddaa6afb709d6
+
+% 0 1 0 069d46aea07348b1033c6c77c48249e6
+
+% 1 1 0 0973d9ab4613af3a13e09bb6eb92e565
+
+@ 0 2 0 1df27b3a8342bc051b3f8534a8d78a0a
++ Ambos lados derivan el códec de la misma definición de tipo, así que la codificación no necesita
++ ningún esquema en la transmisión. Eso sí significa que ambos lados deben estar de acuerdo en esa
++ definición.
+
+@ 0 2 0 0ca25f71369613f70dc9d373996ad953
++ `Pojo` es un [tipo opaco] sobre los tipos del JDK que permite. Un `Pojo` no puede confundirse con
++ un `Object` arbitrario, y la única forma de producir uno es mediante un codificador.
+
+@ 0 1 0 148a1d98274519f808d6fe132e61028d
++ ### Dónde se usa
+
+@ 0 4 0 15e69c15c0da05e61c773bbc3c712dd4
++ El caso obvio es una frontera entre cargadores de clases. El código que se carga en un cargador
++ aislado, como un plugin, un trozo de código compilado o una extensión en un entorno aislado, comparte
++ con su anfitrión las clases del JDK, y nada más. Las clases del JDK son, por tanto, exactamente el
++ vocabulario que ambos pueden hablar. [Classpath](classpath.md) describe los cargadores de clases.
+
+@ 0 3 0 158a496aa682f153073f47448365eb14
++ El mismo razonamiento se aplica a una frontera entre procesos, que es lo que usa la ejecución
++ remota [por etapas](staging.md). Los argumentos de un cálculo por etapas se codifican en un lado,
++ se envían y se decodifican en el otro extremo frente al tipo que espera el código por etapas.
+
+@ 0 2 0 1b8060ae3906fe51158553d1f8bd79a0
++ Nada de la representación es específico de ninguno de los dos usos. Cualquier frontera que pueda
++ transportar primitivos en su caja, cadenas y arrays de objetos puede transportar un valor de
++ Scala.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 1 0 0ac5cdd3d5602f8d0fcb66e3e23c08cc
++ - [Derivación](derivation.md) explica el motor que genera los códecs.

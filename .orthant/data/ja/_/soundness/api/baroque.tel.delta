@@ -1,0 +1,281 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0acd985fca7d839c13845c8c9a4936f2
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1015a776fc6b793b06a9a32c9c806981
++ info   量を含む任意の数値の成分型の上の複素数。double はボックス化されない
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 08c85e3aae820eda0fed53c726d6b53b
++     _Baroque_ は `Complex` を提供する。これは実部と虚部が、演算に必要な算術を持つ任意の型でありうる複素数である。`Int`、`Double`、有理数の `Q64`、あるいは量であり、複素インピーダンスや複素速度は、あらゆる和と積を通して単位を保つ。
++     `i` は `Complex[Double]` としての虚数単位である。
+
+% 2 1 0 16d3af3012851a871a34ddcf0563aac1
+
+% 3 1 0 105d725a584aea14130cac19b7ff1f1b
+
+% 0 1 0 0b76cac599b366c61f87578fd49502ff
+
+% 0 1 0 0edcd0fe5fb031d21d36bf4b03dc2b44
+
+% 0 1 0 1eedcb1fb8a95eff0501e1721f96116a
+
+% 0 1 0 1c50227687bcd83f0df938ba3167f7a2
+
+% 1 1 0 056fd88217c5d65b1d7cff18466d0006
+
+@ 0 7 0 11be897b92902a4a001e0cc9aa4aded3
++     算術は `Complex` 自身にではなく、symbolism の型クラスを通して定義されている。
++     `Complex` のコンパニオンは `Addable`、`Subtractable`、`Multiplicable`、`Divisible`、`Negatable` の given を持ち、これらは成分が対応する演算を持つときにちょうど存在し、その結果は成分の結果型の複素数である。
++     2 つの複素数の長さの積は複素数の面積であり、インチとフィートの和はメートル単位の複素数の長さである。
++     すべての given は暗黙のスコープにあるので、`soundness.*` 以外に何もインポートする必要はない。
+
+@ 0 6 0 0f54cab076181aba086386d1220e9c2b
++     コンストラクター、アクセサー、算術はすべて `inline` であり、成分の演算を呼び出し箇所で解決する。成分が内部で `Double` である `Complex`（`Double` そのもの、量、`F64`）は 2 つのプリミティブの double として格納され（`Complex.Doubles`）、それ以外は 2 つの参照として格納される（`Complex.Boxed`）。
++     したがって 2 つの `Complex[Double]` に対する `c*d` は、4 回の乗算、1 回の加算、1 回の減算、1 回のアロケーションにコンパイルされ、ボックス化はない。
+
+@ 0 2 0 117252b61533f9821dc5d28c6ec96f54
++     このライブラリにはすべてのプラットフォーム向けにコンパイルされる単一のソースセット `baroque.core` があり、その 2 つの名前はどちらも `soundness` アンブレラにエクスポートされる。
+
+% 0 1 0 07f6671b83868ae906ae120ec739bb85
+
+% 0 1 0 18531ac1d3356e520b6001814c7ff7d0
+
+% 0 1 0 1746e6085ecbcd3601cd60f091689818
+
+@ 0 1 0 0d76a5a26a77de7408e64bee4e737bb2
++ entry .Complex   任意の型の 2 つの成分からなる複素数。成分が許す算術を持つ
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 6 0 070f0707a86cf63c0885f06ba92b7f41
++       `Complex[component]` は同じ型の実部と虚部を保持する。
++       これはシールされた抽象クラスであり、成分の実行時のクラスによって選ばれる 2 つの表現を持つ。内部で `Double` である成分には 2 つのプリミティブの `Double` フィールドを持つ `Complex.Doubles`、それ以外には 2 つの参照を持つ `Complex.Boxed` である。
++       選択は `.apply` が行い、`.real` と `.imaginary` が読み戻すので、汎用のコードと double 専用のコードの認識は常に一致する。利用者がどちらかのサブクラスを名指す必要は決してない。
+
+% 2 1 0 11fdd9f6956df17f07326eb3383c21ee
+
+% 3 1 0 1819d1f5106c764a189b87a48430ff7f
+
+% 0 1 0 1cea18ad8d6d0dd60b93ba374fe3662b
+
+% 0 1 0 1eb8986fdeb704541c9b430509e80426
+
+% 0 1 0 1f71786e104a9dd40a909c5d498ed39e
+
+% 0 1 0 0fe01996149186f809f78441f47cd474
+
+% 0 1 0 068b6a6033d53c8501626866aef16478
+
+% 0 1 0 01ab83c04a624bc00932b90204f3f864
+
+% 0 1 0 0417aa0789429c4c18fe718b047a5e2a
+
+% 0 1 0 1702c648f0b6465702da700b84847b6d
+
+% 1 1 0 17c15b31b2d9fbd70e2ba8c82c52419d
+
+@ 0 5 0 10b88bcb096469b30ddf315ec6c1bd5c
++       算術は symbolism の演算子を通して行われ、その given はこのコンパニオンにある。`.addable`、`.subtractable`、`.multiplicable`、`.divisible`、`.negatable`、そしてどちらの側からでも実数で拡大縮小するための `.multiplicableByDouble` と `.doubleMultiplicable` である。
++       それぞれは、その公式が成分に求めるものだけを要求し、成分の型は、その演算が定義されている限り異なってもよい：
+
+% 2 1 0 0edf486869404d6c1186301e6be7e5e4
+
+% 3 1 0 1e02ed92f35e3ee60b860a7ca6f12095
+
+% 0 1 0 1f762de9e3afd13c1ea327c2ae57f6f2
+
+% 0 1 0 0b9646b8535197551d667cf73ed71d37
+
+% 1 1 0 08fd9d3d8195189b144e483fc6017c01
+
+@ 0 3 0 0c531911405132341ca10b86050d84d0
++       複素数は `1 + 3ℐ` として表示され（`.showable`）、`1+3i` として検査用に表示される（`.inspectable`）。極形式は `.modulus` と `.argument` であり、`Angle` を取る 2 引数の `.apply` で極形式から数を作れる。
+
+% 0 1 0 0657aefa113a029318e7a46ec62091aa
+
+% 0 1 0 19bc8308e6c6c1820f6e37a338b37b2c
+
+% 0 1 0 041b0ec338ca52a10a6e38c6ab592acd
+
+% 0 1 0 1e3f3e9573007ac21400308391000119
+
+@ 0 1 0 053621ce4251d95a19d78e8d0d625105
++   entry .Doubles   成分が内部で `Double` である複素数の表現
+
+% 1 1 0 1221134b643219f51b8c91aacb52da03
+
+@ 0 8 0 19f0cf458704afa705876d319e60fb2f
++         2 つのプリミティブの `Double` フィールドであり、`Complex[Double]`、複素数の量、そして `Underlying[component, Double]` の証拠を持つか実行時の値が double であるほかの成分型に使われる。
++         ここでの成分型は幻の型である。`.real` と `.imaginary` はフィールドをその型にキャストし戻す。
++         等価性とハッシュは 2 つの double を比較する。
++         `Complex.apply` によって作られ、直接は作られない。
++     entry #real        実部。プリミティブの `Double` として
++     entry #imaginary   虚部。プリミティブの `Double` として
++   entry .Boxed   成分が内部で `Double` でない複素数の表現
+
+% 1 1 0 0ed8aaf4431570d81254989d6da5a72a
+
+@ 0 10 0 09901bc89681b2ca16816fd0b1c62521
++         成分の値への 2 つの参照であり、`Int`、`Q64`、そしてほかのあらゆる成分型に使われる。
++         等価性とハッシュは 2 つの成分を比較する。
++         `Complex.apply` によって作られ、直接は作られない。
++     entry #real        実部
++     entry #imaginary   虚部
++   entry .apply   実部と虚部から、または絶対値と `Angle` から作る複素数
++       `Complex(real, imaginary)` は同じ型の 2 つの成分を取り、表現を選ぶ。成分が内部で `Double` であるとわかっているとき（`Underlying` の証拠によって、または `Double` であることによって）は `Complex.Doubles` を選び、そうでなければ値に対する型テストで選び、最後は `Complex.Boxed` に落ち着く。
+
+@ 0 3 0 096dd5ae4b1d5a961645fa4306b69c60
++       `Complex(modulus, argument)` は極形式である。絶対値は `Double` を掛けられる任意の成分であり、偏角は `hypotenuse` の `Angle` である。
++       結果は積の型の複素数 `modulus*cos(argument)` + `modulus*sin(argument)ℐ` である。
+
+% 2 1 0 0a2a3636dfe415311dbb6acb6f4bd83a
+
+% 3 1 0 156d37751c94aba6052db4368ad0d10d
+
+% 0 1 0 158f83fb3eea4eee1e840468310626a5
+
+% 0 1 0 126dfade298138ad090b137a125a24cf
+
+% 1 1 0 1f1c7f47229441f0190d77784eea6e9e
+
+@ 0 14 0 0192dad667a20c42047a84d8e141e185
++   entry .unapply   複素数を実部と虚部に分解する
++       常にマッチするので、`val Complex(re, im) = z` と `case Complex(re, im) =>` はどちらの表現にも使える。
++   entry .real   複素数の実部。その成分型として
++       `Complex[component]` に対するインラインの拡張である。
++       成分が静的に内部で `Double` であれば、型テストのない単一のフィールドの読み取りになる。そうでなければ表現でマッチする。
++   entry .imaginary   複素数の虚部。その成分型として
++       `Complex[component]` に対するインラインの拡張であり、`.real` と同じように読まれる。成分が静的に内部で `Double` であればフィールドの読み取り、そうでなければ表現でのマッチである。
++   entry .modulus   複素数の絶対値 √(re² + im²)。成分の単位を持つ
++       インラインの拡張である。
++       成分がそれ自身と `Multiplicable` であり、その積がそれ自身と `Addable` であり、その和が `Rootable[2]` であることを必要とし、その型は平方根の結果である。複素数の長さの絶対値は長さである。
+
+% 2 1 0 0d4c0a23d99d5da507cfc61e3b62f839
+
+% 3 1 0 1d95ab62d2c9f05b1d29f0009ab6ba47
+
+% 0 1 0 0be8bb25a8f03a43023c7b5679d4596b
+
+% 0 1 0 09506d337ca3809a17ba7f60f0ef1203
+
+% 1 1 0 00c2eccb3e9d4fbc0727c0fdf2ba6d8e
+
+@ 0 5 0 121bb0ef6e704e3c1206038a2704d600
++   entry .argument   正の実軸から測った複素数の角度。`Angle` として
++       インラインの拡張であり、それぞれ `.modulus` で割った両部分の `atan2` として計算される。したがって `.modulus` が必要とするすべてのものに加え、成分を絶対値で割ったものが普通の `Double` であることを必要とする。単位は打ち消し合うので、これは数にも量にも成り立つ。
+
+% 2 1 0 13ec3799d2197ff500faf3ba4581dcbb
+
+% 3 1 0 0723635f84817932167e2201c7118816
+
+% 0 1 0 0c680d44a7d4c64a0e0c943459cfc764
+
+% 1 1 0 0b8a953a0cc4b26b0a77ed0a5a498b37
+
+@ 0 9 0 13e7cff8f4ace1cd15453b91f74c2d04
++   entry .sqrt   複素数の主平方根。その極形式から求める
++       インラインの拡張である。`.argument` の半分の角度での `.modulus` の平方根であり、極形式の `Complex.apply` で作られる。
++       `.argument` が必要とするすべてのものに加え、絶対値自身が `Double` を掛けられる平方根を持つことを必要とする。複素数の面積の平方根は複素数の長さである。
++   entry .unary_~   複素共役 `~z`：同じ実部と、符号を反転した虚部
++       `conjugate` という名前でコンパイルされる前置演算子である。
++       成分が `Negatable` であることを必要とし、結果の成分型は成分と符号反転の結果型のユニオンであり、数と量についてはそれは成分そのものである。
+
+% 2 1 0 0b92b9a0aee3ed7d09747a7a85ef47f6
+
+% 3 1 0 0c829afa5e8adcee08ccf60b2be1d60c
+
+% 0 1 0 03e0b0e6549b161f1801c60b467be897
+
+% 1 1 0 102e5e5353faa42c11b67f254da6a024
+
+@ 0 4 0 0cb6f6436989bad9186380063c3f53e5
++   entry .showable   複素数を `1 + 3ℐ` として表示する。0 の部分は省く
++       `Showable`、`Zeroic`、それ自身と `Commensurable`、`Negatable` である任意の成分のためのインラインの given である。
++       虚部が 0 なら実部だけを表示し、実部が 0 なら `3ℐ` を表示し、負の虚部はマイナスで書かれる：`1 - 3ℐ`。
+
+@ 0 4 0 09a969d5a8c1a28e073707a389f276a3
++       `Distributive` である成分、つまり単位が数に従う量や、フィートとインチのような混合単位の `Quanta` は、両部分を単位の内側にまとめて表示する：`(1.00 + 9.00ℐ) m·s¯¹`、あるいは `(1 + 2ℐ) yd, 2 ft, (6ℐ) in`。
++       `Double` の成分を表示するには、スコープに `Decimalizer` が必要である。
+
+% 2 1 0 1228bb424c9f0f4f19772215a3b29f81
+
+% 3 1 0 1dcee0f62f76cfd8102d22764962bc51
+
+% 0 1 0 12c5bd5ff86b4f601c8977cee6888885
+
+% 0 1 0 0ca15c10ee71f5b80cc147c7aa82fb1e
+
+% 0 1 0 0f8ae8a286f7074c0d5ec7d5915a6fd5
+
+% 1 1 0 1e2030e260958d2a04843c208b6b2fa7
+
+@ 0 15 0 148829fc4fa3dc0a0a367de1180fb0d0
++   entry .inspectable   複素数を `1+3i` として検査用に表示する。各部分はそれぞれの検査用表示のとおり
++       `Inspectable` である任意の成分に使える。
++       両部分は `+` で、あるいは虚部の検査用表示が `-` で始まるときは `-` で結ばれ、その後に `i` が続く：`1.0-3.0i`。
++   entry .addable   成分が加算できるとき、2 つの複素数を部分ごとに加える
++       インラインの given である。`a is Addable by b to r` であるときはいつでも `Complex[a] + Complex[b]` は `Complex[r]` なので、異なる単位の複素数の長さを足すと複素数の長さになる。
++       成分にマクロで生成された `AddOp` があれば（量にはある）、その `Addable` より優先される。
++   entry .subtractable   成分が減算できるとき、2 つの複素数を部分ごとに引く
++       インラインの given である。`a is Subtractable by b to r` であるときはいつでも `Complex[a] - Complex[b]` は `Complex[r]` である。
++   entry .multiplicable   2 つの複素数を掛ける。(a + bℐ)(c + dℐ) = (ac − bd) + (ad + bc)ℐ
++       インラインの given である。
++       成分が積の型へ `Multiplicable` であり、その積がそれ自身と `Addable` かつ `Subtractable` であることを必要とする。結果は積の和と差の型の複素数なので、複素数のメートルに複素数の秒を掛けると、メートル秒の複素数になる。
+
+% 2 1 0 0db57c121874efcf153a0bac86d94a42
+
+% 3 1 0 193c4b7c71d07d0902b705381d0f2ea7
+
+% 0 1 0 1b09df9b0dd5debc02ffb2143b854f31
+
+% 1 1 0 11a02d285840030905e0ddb48b0a6d0e
+
+@ 0 6 0 0fc42a7ddad679ce0a3827c3fa4c76c6
++   entry .multiplicableByDouble   `i*1.8` のように、右から実数の `Double` で複素数を拡大縮小する
++       `Double` で `Multiplicable` である任意の成分のためのインラインの given であり、各部分がスカラーで掛けられる。
++   entry .doubleMultiplicable   `2.0*z` のように、左から実数の `Double` で複素数を拡大縮小する
++       `Double` がそれで `Multiplicable` であるような任意の成分のためのインラインの given であり、各部分がスカラーで掛けられる。
+
+% 2 1 0 008a168bbeaef25d0291cf648562c474
+
+% 3 1 0 1650ce7195b7a4fd11229b467fb39832
+
+% 0 1 0 1c297b0dc414cb4c1e7c31369a9505bd
+
+% 1 1 0 1ccde5a10636e6140b076f660edcb26f
+
+@ 0 5 0 05a9e121b8cf48e41ffa83193c71702c
++   entry .divisible   除数の共役を掛けることで、2 つの複素数を割る
++       インラインの given である。
++       商は `(ac + bd)/(c² + d²) + (bc − ad)/(c² + d²)ℐ` なので、両方の成分型が掛け算でき、被除数の成分が `Negatable` であり、積が足し算でき、被除数の和が除数の和で割れることを必要とする。
++       複素数のメートルを複素数のフィートで割ると、無次元の複素数になる。
+
+% 2 1 0 06917ea097a5c4631a7516e8c71c5f46
+
+% 3 1 0 0ca5844fcb05dcea020fb26862949c3d
+
+% 0 1 0 17b284f5531f46a7061cc6c077cb913a
+
+% 1 1 0 1fc8eb7338ff346315d29049b487a84b
+
+@ 0 3 0 1f00bda28ac86dbd1238f6b889ea38b0
++   entry .negatable   複素数の両部分の符号を反転する。`-z`
++       任意の `Negatable` な成分のためのインラインの given であり、結果は符号反転の結果型の複素数である。
+
+@ 0 3 0 0042a4f5c986401a0f3e1a60a0c54830
++ entry .i   虚数単位 `Complex(0.0, 1.0)`。複素数を `a + b*i` と書くためのもの
++     `Complex[Double]` なので、`i*1.8` は `Complex.multiplicableByDouble` を通して `Complex(0.0, 1.8)` になり、数を和として書くことができる：
+
+% 2 1 0 07829b18cd73abd81a7ec140c833c160
+
+% 3 1 0 0684733f51d8bc1e1d162c2a41971fcd
+
+% 0 1 0 00cc1e258790df0c19d7cd7b7aa4d837
+
+% 1 1 0 076500bad941afb7160a8195bb5dcd91

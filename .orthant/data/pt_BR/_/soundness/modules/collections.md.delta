@@ -1,0 +1,719 @@
+orthant 2 language
+
+@ 0 1 0 063b0a7a263f1554042ab7e0cf2cbbb1
++ ## Coleções
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Visão geral
+
+@ 0 3 0 0aff1f34807fb2f010536b0e03eaba9f
++ O Soundness tem seus próprios tipos de coleção: `List`, `Sequence`, `Set`, `Map` e a preguiçosa
++ `Chain`. Um único vocabulário de operações funciona sobre todos eles, e sobre [texto](text.md),
++ que é percorrido como seus caracteres.
+
+@ 0 2 0 088f7681e071eed6193288ce44dce09b
++ Cada tipo é um [tipo opaco] sobre a estrutura da biblioteca padrão, então não custa nada a mais.
++ O que muda é a API, que é menor e faz três promessas:
+
+@ 0 4 0 1375c998b836616f05ba9c397deee270
++ - Uma operação que poderia falhar produz um valor [opcional](optional-values.md). Ela não lança
++   exceção.
++ - Uma operação mais lenta do que seu nome sugere precisa ser reconhecida com uma importação.
++ - A ordenação nomeia o algoritmo que usa.
+
+@ 0 3 0 066770b2c376135604b86c94f09a404a
++ As operações são fornecidas por meio de [classes de tipos][classe de tipos]. Uma nova forma,
++ como um buffer de bytes, um documento analisado ou um stream de registros, ganha o vocabulário
++ inteiro ao fornecer uma única instância, e o vocabulário se lê da mesma maneira seja qual for o
++ alvo ao qual é aplicado.
+
+@ 0 1 0 01c08f5295b2b2160126fe1965fd95e3
++ ### Sobre coleções
+
+@ 0 1 0 0edfb9943f5529aa0cd0566201c4a216
++ As coleções da biblioteca padrão são grandes, parciais e silenciosamente caras:
+
+% 2 1 0 05318442bcd17bf103361ae95b041377
+
+@ 0 6 0 0b8d5e78b3d4331f132ce83bb441e5f0
++ column  Na biblioteca padrão
++ column  A armadilha
++ row  `head`  lança exceção em uma lista vazia
++ row  `apply` em uma `List`  percorre a lista, mas parece a leitura de um array
++ row  `sorted`  escolhe um algoritmo sem que se peça, e ordena uma `String` sem perguntar em qual idioma
++ row  todo tipo de coleção  traz várias centenas de métodos, muitos deles duplicatas sob outros nomes
+
+% 1 1 0 09be8df9df00783001d62527eb18e110
+
+@ 0 3 0 104d155394bd5de00e59477808ed6660
++ O Soundness mantém as estruturas e substitui a superfície. Nada é copiado, e nada custa mais do
++ que antes: uma `List` continua sendo uma lista ligada. Mas os métodos são aqueles de que um
++ programa precisa, e cada um tem um tipo que diz o que ele pode e não pode fazer.
+
+@ 0 3 0 08fccec2ea102504072ff96e8b4981b3
++ Onde o custo de um método depende da estrutura, o programa precisa dizer que sabe disso. Contar
++ uma lista ligada significa percorrê-la inteira, então o `size` de uma `List` só está disponível
++ onde o reconhecimento de *tamanho linear* foi importado.
+
+@ 0 2 0 0c17d3ff00e9ad521a168794996ea02d
++ Tudo vem do pacote `soundness`. Os exemplos lançam qualquer erro como exceção, e a última
++ importação permite que imprimam seus resultados:
+
+% 2 1 0 0a014aa077766c0e19cc2515b4eb1aa8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0b7101da4df2514700570c246ab9f516
++ ### Os tipos
+
+@ 0 1 0 0039304b1920fae5013d8d2ad88087fe
++ Os cinco tipos diferem em sua estrutura e, portanto, no que é barato:
+
+% 2 1 0 1bfedcfd89655afb1fd1437bd7b436e2
+
+@ 0 9 0 18ce8a8b1cff4a6208fc2a91725ba05a
++ column  Tipo
++ column  Contém
++ column  Barato
++ column  `size` exige
++ row  `List`  uma lista ligada  inserir no início e percorrer  `linearSize`
++ row  `Sequence`  uma sequência indexada  ler em qualquer posição  nada
++ row  `Set`  cada elemento uma vez, sem ordem  testar pertinência  nada
++ row  `Map`  valores pareados com chaves  ler um valor pela chave  nada
++ row  `Chain`  uma sequência preguiçosa, lembrada depois de calculada, e possivelmente infinita  forçar apenas o prefixo exigido  `unboundedSize`
+
+% 1 1 0 1f5242b452f8dff414dd309b91ba38b2
+
+@ 0 1 0 18bc48bda3a1ed9502f94acc0e29fa52
++ Cada um é construído aplicando seu objeto companheiro, e `Nil` é a lista vazia:
+
+% 2 1 0 11a7599fe90ff13e18558b86ffb08524
+
+% 0 1 0 192d17c872f70cf11a2767f7b72b54e9
+
+% 0 1 0 18b2433bf9d26ef21dae2ef77052fb09
+
+% 0 1 0 054a2abcbae8f86f162ac6bbf725d23e
+
+% 0 1 0 1d4c329addfc9b9212d789c419a3b615
+
+% 0 1 0 11e9d3cdba22b94a13ef7da6171d67e3
+
+% 1 1 0 04d3c329c42744b71656abf5fbad417c
+
+@ 0 3 0 027c9f569f073a3b021b0be1904c4a6b
++ Uma lista construída a partir de um número conhecido de elementos é tipada como *populada*, e
++ nesse tipo `head`, `last` e `tail` não podem falhar. Eles não estão disponíveis em uma `List` de
++ comprimento desconhecido, onde se usam em vez disso os acessores que produzem um `Optional`.
+
+@ 0 1 0 12b1bffef3499384067829c126ace5bc
++ ### Posições e acesso
+
+@ 0 4 0 0e7631d72c2571651072a066ac4a38b2
++ Uma posição é um [ordinal](numbers.md), e não um inteiro. `Prim`, `Sec` e `Ter` nomeiam as três
++ primeiras posições, e `Ordinal.zerary` converte um índice baseado em zero. Aplicar uma coleção a
++ um ordinal lê o elemento ali, como um `Optional`, já que a posição pode estar além do fim.
++ `inspect` exibe um valor opcional presente entre colchetes de canto, e um ausente como `○`:
+
+% 2 1 0 1ba743315862132a1490c5909ee79198
+
+% 3 1 0 1067ac434c5c246e0f8d73e8627f8a17
+
+% 4 1 0 184b98a28482222f0f7cbb506a49afaa
+
+% 0 1 0 0037ee71c253a51603fb3f9a01b6f9c9
+
+% 0 1 0 0eba58c65e920d4a04844d47aaf43837
+
+% 0 1 0 041b279b90d7195b0e1eaf69bb5f1d57
+
+% 1 1 0 1e01284e027e47ad1331bdde310b7b42
+
+@ 0 1 0 0dbcff3e43d484350ff936f3539cc07a
++ `prim`, `sec` e `ter` leem diretamente os primeiros elementos.
+
+@ 0 2 0 17069d8d25dc2da312b736f0acd4181e
++ Ler uma `List` em uma posição significa percorrê-la a partir da cabeça. Contá-la significa
++ percorrê-la inteira. Nenhuma das duas operações está disponível até que o custo tenha sido
++ reconhecido:
+
+% 2 1 0 0b7b55896924aa1c0f8f45a866c9ed3f
+
+% 3 1 0 14df09db652109480be3f440ac3963b3
+
+% 4 1 0 0a8b0256ff4c8e590df604bb5ce4db11
+
+% 5 1 0 15ff25cc988997ca0b68f5de8b183743
+
+% 0 1 0 03590e430aa98e4b02468fa14d6e71fd
+
+% 1 1 0 01d989eca9b17d890f45c31dc793d6f9
+
+@ 0 1 0 13dc1f9e788c94f4141461e17853e755
++ Cada reconhecimento é um given no pacote `dysasymptotics`:
+
+% 2 1 0 1b855135eb37a59a11a85e2804e45409
+
+@ 0 6 0 0614fc3f077dfbcc0c95235fed557c29
++ column  Reconhecimento
++ column  Libera
++ column  Porque
++ row  `linearSize`  `size` e `last` de uma `List`, e acrescentar ao fim dela com `:+`  cada um percorre a lista inteira
++ row  `linearAccess`  ler uma `List` em um ordinal além dos primeiros  percorre da cabeça até a posição
++ row  `unboundedSize`  `size` e `last` de uma `Chain`  cada um força a cadeia inteira, que pode ser infinita
+
+% 1 1 0 02ca1451850205ea0e61ae9c4e4039f1
+
+% 3 1 0 0d89f0681274ba0107cea0465395a536
+
+% 0 1 0 17c4080a72a4511e14724e8df4195b8b
+
+% 1 1 0 16feadf11f30c0081cb412af5c43ee8d
+
+% 3 1 0 088e08517608a9d40efee6fa2e1627f7
+
+% 4 1 0 1dfb9f3ffe3291ba06e5da13415f837a
+
+% 5 1 0 0536bb91713ccd321386060c45093e67
+
+% 0 1 0 146f17b4211c76a81a2bef516ae00c49
+
+% 0 1 0 1a3f096bedb6f5101213bf6fe71813ce
+
+% 0 1 0 0a684a142d8908eb08c2bfabdf5b6fc6
+
+% 1 1 0 032cd85bb857ac4606126929627e04ec
+
+@ 0 3 0 18c3460889229f2e0c5dec00f4c85741
++ Uma `Sequence` não tem nenhum dos dois custos e não precisa de importação. As importações são
++ baratas de escrever e dizem algo verdadeiro. Um programa que lê uma lista ligada por posição
++ dentro de um laço tem um algoritmo quadrático, e deveria saber disso.
+
+@ 0 1 0 04ea5d87bc971c66141fc3ee82abcb70
++ ### Percurso e transformação
+
+@ 0 1 0 085a09e25ad381401b0333cb1719d6a6
++ Cinco operações cobrem a maioria dos percursos:
+
+% 2 1 0 09d2df0c48b9d601118ecfbab0f5258c
+
+@ 0 7 0 17366b87e2a82c5e157624985486a1b6
++ column  Operação
++ column  Faz
++ row  `each`  visita cada elemento, com o ordinal do elemento disponível como valor contextual
++ row  `map`  transforma cada elemento
++ row  `filter`  mantém os elementos que casam com um predicado
++ row  `bind`  transforma cada elemento em uma coleção e achata os resultados
++ row  `flat`  achata um nível de aninhamento
+
+% 1 1 0 1e4a21fd4855d21d1fbf24f836b51d96
+
+% 3 1 0 089087310fe89d851fc9c41835cf1834
+
+% 4 1 0 19175796988d11d10eaf46d75377572e
+
+% 5 1 0 1ec28b835fe798c80bd8b1a0a8527921
+
+% 0 1 0 1aecece4dbc2461c0c9452a288c2c56d
+
+% 0 1 0 01718d630a7e816b0c4e995d688cec8c
+
+% 0 1 0 15bc616065ad52790fa2bd14f55cf439
+
+% 0 1 0 161e026f60a111aa0d2c7ea4edace625
+
+% 1 1 0 023bb4a09e2445fc147a1d26136cf47b
+
+@ 0 2 0 06eba36de4a1ec5f07da59f94d46c682
++ `bind` é a operação que a biblioteca padrão chama de `flatMap`. Ela também está disponível com
++ esse nome, para que as compreensões `for` funcionem:
+
+% 2 1 0 1fbf0d9c21efb8af079ec21449d544ae
+
+% 0 1 0 0486c77e84d06c2e1373a110590874a9
+
+% 0 1 0 110ac443a37c4400019b4734d9a78747
+
+% 0 1 0 1ec5aaef9f1b31941eca2d24ee5df6f3
+
+% 0 1 0 045492a0763a1749115e1e20efa9b81e
+
+% 0 1 0 0d0fa90ac5f04030013a9a8051bac160
+
+% 1 1 0 0577829bf283a36a0aba9cd3b0228ce2
+
+% 3 1 0 1ecfc18b560e8c7012133ac799edec1a
+
+% 4 1 0 0c4e207ff9734e861cdd5e205d8195b6
+
+% 5 1 0 11ce5588c4ef1074190ec0975cb033d0
+
+% 0 1 0 0cef7ea744e24e8317702b77494f148c
+
+% 1 1 0 1beea326d3d71dd20ee9e69968e617c2
+
+@ 0 4 0 0f30f3a4f0f627431d9939671df95e3b
++ Toda operação devolve a forma que recebeu. Mapear um `Set` produz um `Set`, e filtrar uma
++ `Chain` produz uma `Chain` preguiçosa. A exceção é quando o resultado não pode ter essa forma.
++ `map` em um `Map` transforma seus valores e mantém suas chaves. `remap` transforma suas entradas
++ como pares, e produz um `Map` quando os resultados são pares, e uma `List` quando não são:
+
+% 2 1 0 12268fbbb3fd6fd10b437a0f9a884ea2
+
+% 3 1 0 0baa226d3540d9810d757e5e900b62fa
+
+% 4 1 0 104c0cfbbeed71ec042a60e28886153a
+
+% 0 1 0 14998c918548f9cb1aa69d7396a6db1c
+
+% 0 1 0 0c3b2ccd3ce5848b030fd40ee0b208c7
+
+% 1 1 0 0e7f230034b1a4691ae10e022ea8b4d3
+
+@ 0 1 0 13ee1ce0f9e84cbd02f703eecf75e6ce
++ ### Busca e medição
+
+@ 0 3 0 13761b07f6899b250b143c8fac55398f
++ `has` testa pertinência, `exists` testa um predicado e `count` conta as correspondências. `fold`
++ acumula a partir de um estado inicial, e `trace` é um `fold` que mantém todo estado
++ intermediário, começando pelo inicial:
+
+% 2 1 0 158fe3d9f6f95c3a1f89585e7cf3464e
+
+% 3 1 0 0729bd3be8d89e0900de97eae68bebe3
+
+% 4 1 0 0b1cc072708bf2f5075bba144d462137
+
+% 0 1 0 11c2fa2847c192d20bab683144b374ae
+
+% 0 1 0 1a74fc99f8caba5618ccdfcd0205719e
+
+% 0 1 0 1935082d6ff579991e67ccb3b206cdf3
+
+% 0 1 0 0c2abd6cc7d0de511f2ab814edbf4b52
+
+% 0 1 0 087e7a7adc66da790fd8dd4a36c7f2a5
+
+% 1 1 0 0b4d136263670ea2025b249634f72277
+
+@ 0 2 0 07e62c2407b54c9506da7d6b7f857807
++ `minimum` e `maximum` produzem o menor e o maior elemento. Cada um é um `Optional`, já que a
++ coleção pode estar vazia, e ambos estão definidos para qualquer tipo de elemento que possa ser
++ comparado:
+
+% 2 1 0 0ad88c5e90366bf010426317d5ecd30d
+
+% 3 1 0 1af1e39db11ed45a0cf29ce0244351d8
+
+% 4 1 0 116ff015b5647125035a3f4d2f105bd6
+
+% 0 1 0 05c73b39a61cca0208a88ec43fa87268
+
+% 0 1 0 14a01fe75630f9d9017178c2e68add52
+
+% 0 1 0 02e71f0ea2e8bdf2158b0476b6459f29
+
+% 1 1 0 13f552d11cecd56a1a93d1622e6462c0
+
+@ 0 1 0 0ebffb39418f1ffc0d7044742c6fa486
++ ### Remodelagem
+
+@ 0 1 0 0b9c774cd47fb64c17708a2861275ee7
++ Estas operações reorganizam uma coleção sem alterar seus elementos:
+
+% 2 1 0 174f61b50f3e8d7a1797bbfe13de723a
+
+@ 0 8 0 17d70919afe9e00c1316be40efafaaea
++ column  Operação
++ column  Produz
++ row  `excerpt(from, to)`  uma sequência contínua por posição, excluindo o fim; limites além do fim são ajustados, então nunca falha
++ row  `zip(other)`  pares de elementos por posição, parando no lado mais curto
++ row  `group(f)`  um `Map` de cada chave para os elementos com essa chave
++ row  `partition(p)`  os elementos que casam e os que não casam, cada grupo em ordem
++ row  `span(p)`  os elementos antes do primeiro que falha em um predicado, e o restante
++ row  `batched(n)`  sequências de no máximo `n` elementos
+
+% 1 1 0 003d37a0ad4bea0508cddccfa5256fd6
+
+% 3 1 0 0727809dea66ea4f17aba31cb169cc19
+
+% 4 1 0 13989e96cc534a9e0690ca343188d6d3
+
+% 5 1 0 1712239edb256ac70094586af453c07a
+
+% 0 1 0 039c3d3e3e15dd3719b2fcbd26b3bebe
+
+% 0 1 0 102cc2ebd61729a804140531756a8442
+
+% 0 1 0 01ddefd3b4aa7bd806aa2c84f65d4d5a
+
+% 0 1 0 0c41897e5c6d63ba0eb9b6be8a542b83
+
+% 0 1 0 16cc58a89e7839060fbf62f00a9f8700
+
+% 0 1 0 0032a8b9d8a1fa48051713c085138106
+
+% 0 1 0 17d77e8c888f76160bae14bdc9e06580
+
+% 1 1 0 16d7c12859d8b1861ca32e95925d2238
+
+@ 0 1 0 0ab422cd5e6e95ac11711d7965595de3
++ `sweep` filtra e mapeia em uma única passada, por meio de uma função parcial:
+
+% 2 1 0 074a008da5aff4770eb9ef1b8d1e0351
+
+% 3 1 0 1a59ec74210356f11a2bf8da283278a6
+
+% 4 1 0 00e976f35e5d7a6619f193b7f23e0adc
+
+% 0 1 0 05ee21f525e59adb1fa5b9febe29cc24
+
+% 1 1 0 17d6b633980ae3df1144716fac2b7e4a
+
+@ 0 4 0 0dd1481ce42085aa07ecf4f0e5d40db5
++ `join` é o inverso de `batched`. Elementos que são eles próprios juntáveis, como coleções ou
++ texto, são concatenados, com um separador opcional do mesmo tipo entre eles. Elementos que não
++ são juntáveis são intercalados com um separador que é ele próprio um elemento, produzindo uma
++ coleção da forma original:
+
+% 2 1 0 1b48b609fbfb0e52101fe6e1ae34d233
+
+% 3 1 0 16efbe436bfe28980baf592be1080c59
+
+% 4 1 0 182b78a3b796e13704afe26e04a00f3e
+
+% 0 1 0 099f2716668d9dd3163751c5e15889d1
+
+% 0 1 0 0cece79c488190c215261072ef5ad376
+
+% 0 1 0 19613a0c6c2381bc1dde234e5078989c
+
+% 1 1 0 00c2275ccf5896a00a93abfa9fad1c07
+
+@ 0 1 0 014748c9b4f62ad50b6bd0a1f3568da6
++ ### Duplicatas e ordem
+
+@ 0 2 0 19174c6ff669ce5b1788c8697342ecfb
++ `distinct` descarta elementos repetidos, mantendo o primeiro de cada. `deduplicate` faz o mesmo
++ por uma chave. `reverse` inverte qualquer forma que tenha uma ordem, texto incluído:
+
+% 2 1 0 1f06462162d9d30f19b58edf8b8bd064
+
+% 3 1 0 0b491cd348e97f9f1e2f3f869919287a
+
+% 4 1 0 1dafa55df82b41820bee59b02be86ed5
+
+% 0 1 0 130933308807eb6f1d4d39b493776d81
+
+% 0 1 0 085eeea8c34734fd02030a5c09989aca
+
+% 0 1 0 0b499fe5e4cfe00a05cb4cedd14dcb58
+
+% 0 1 0 180a15f7f0f181d814f132167911ffe8
+
+% 1 1 0 0fcc41740f80a4ad0bc20682207acb2c
+
+@ 0 2 0 122799d676991efa1faa7424ad2839c1
++ Um `Set` não tem ordem, então não pode ser invertido, ordenado, recortado nem deduplicado. Essas
++ operações estão ausentes dele, em vez de serem definidas para fazer algo arbitrário:
+
+% 2 1 0 1d1aee531bbb106b161a0f62fdd72261
+
+% 3 1 0 1b04b01bc5e6c69406e1e132ca9d25cb
+
+% 4 1 0 038e6d8c7889f6c71b67ffbbf96bf2c0
+
+% 5 1 0 02e8f908b21861f31801f8058a5d1861
+
+% 0 1 0 1b0ac3ca32fb59f5094a12e2a792cad4
+
+% 1 1 0 1dc451b1091508be1d4d6e899a67df81
+
+@ 0 1 0 0d629437df7e8ae20df212c340421687
++ ### Ordenação
+
+@ 0 1 0 0810801577411a1707e74b0550151ccf
++ A ordenação tem dois ingredientes, e ambos são explícitos.
+
+@ 0 3 0 09d299f3e6a2fc0b06c79dd8dd098469
++ A *comparação* vem de uma instância de `Comparable` para o tipo do elemento. Os tipos numéricos
++ têm uma. [Texto](text.md#sorting-and-comparing-text) exige que se escolha uma collation, já que
++ nenhuma ordem de texto é natural.
+
+@ 0 2 0 072d6fd18111208518758983a52f05e6
++ O *algoritmo* é um given, selecionado por importação. Sem nenhum algoritmo no escopo, uma
++ ordenação não compila:
+
+% 2 1 0 0de3aac86eb97922073bc5a5b588d48e
+
+% 3 1 0 168f34baf5fa13fd1646af1ad5aa1fca
+
+% 4 1 0 1caee222f77facb409b4ac55b5fe7e64
+
+% 5 1 0 0055039d0e25cf320edbff5bfdbdbbf9
+
+% 0 1 0 099d4ef5b15a9ae105f0143a624006bd
+
+% 1 1 0 1dad02297d17721511e76e51666cb97f
+
+@ 0 1 0 04ebd22e21c367e204ca5a762589da60
++ Os algoritmos são os givens do pacote `sortingAlgorithms`:
+
+% 2 1 0 1e73d17d841d886f19fec26594bd39a6
+
+% 0 1 0 1ca77613e7a1c24100f8bf0c68a101b5
+
+@ 0 8 0 16a2d5e6830c1fa21b5f7441877a5757
++ column  Estável
++ column  Adequado a
++ row  `timsort`  sim  dados parcialmente ordenados; a ordenação do próprio JDK
++ row  `powersort`  sim  dados parcialmente ordenados
++ row  `quicksort`  não  memória limitada
++ row  `heapsort`  não  memória limitada
++ row  `insertionSort`  sim  entradas minúsculas
++ row  `bubbleSort`  sim  entradas minúsculas
+
+% 1 1 0 131babbdb1f1af891e816819bef630d8
+
+@ 0 3 0 07d9aa82acfa73a015dcb9e2dee79dab
++ O compilador exige a escolha porque o algoritmo decide coisas das quais um programa pode
++ depender: se elementos iguais mantêm sua ordem, e como a ordenação se comporta com dados que já
++ estão quase ordenados. Com dois algoritmos no escopo, uma ordenação é ambígua, e também não
++ compila.
+
+% 2 1 0 1b97f66cf66d3aa002e14ed0e11bb75b
+
+% 0 1 0 031a83585ff66cd91df2d52fec7183ef
+
+% 1 1 0 0935c67289bb7b2a11c31c6e7e5ad4de
+
+@ 0 1 0 1c5ef0a91bfb0a670767a98526f1e577
++ `sort` ordena os elementos por sua própria comparação, e `order` os ordena por uma chave:
+
+% 2 1 0 051a5b7eebd1cd0c0c6ce1162fbce071
+
+% 3 1 0 1df7bf8afed1b91012bb1b8c98a75c62
+
+% 4 1 0 15b1c01e470ad1a108e61dff50ca5d22
+
+% 0 1 0 02ac27b671612c440c4b85326f41c1e5
+
+% 0 1 0 0f252cd27226170d0559f2eb982b4632
+
+% 0 1 0 02d497d6f7322b9b1749b6a9542048ed
+
+% 1 1 0 139e1c175601f9041708a6e848d60c06
+
+@ 0 1 0 06dc55ccc06150380ee6c7805b8a9654
++ O Timsort é estável, então `t"a"` e `t"d"`, que têm o mesmo comprimento, mantêm sua ordem
++ original.
+
+@ 0 1 0 117589527ef0ed56189ae324fd364a76
++ ### As operações em resumo
+
+@ 0 1 0 074e18a6d0a6ab041f7894237d8d3fa8
++ As operações das seções acima, em um só lugar:
+
+% 2 1 0 1483f06fd04430f8009d719254c8be4a
+
+@ 0 27 0 15c55c4a9e6cafc114b6eb5ffd24df92
++ column  Operação
++ column  Produz
++ row  `each(f)`  nada; visita cada elemento, com seu ordinal no contexto
++ row  `map(f)`  cada elemento transformado; os valores de um `Map`, mantendo suas chaves
++ row  `remap(f)`  as entradas de um `Map` transformadas como pares
++ row  `filter(p)`  os elementos que casam com um predicado
++ row  `bind(f)`, `flatMap(f)`  os resultados de `f`, achatados
++ row  `flat`  um nível de aninhamento achatado
++ row  `sweep(pf)`  os elementos nos quais uma função parcial está definida, mapeados por ela
++ row  `has(x)`  se um elemento está presente
++ row  `exists(p)`  se algum elemento casa
++ row  `count(p)`  o número de elementos que casam
++ row  `fold(z)(f)`  o estado final de uma acumulação
++ row  `trace(z)(f)`  todo estado de uma acumulação, o inicial primeiro
++ row  `minimum`, `maximum`  o menor ou o maior elemento, como um `Optional`
++ row  `excerpt(from, to)`  uma sequência contínua por posição, com fim exclusivo e limites ajustados
++ row  `zip(other)`  pares por posição, até o lado mais curto
++ row  `group(f)`  um `Map` de cada chave para seus elementos
++ row  `partition(p)`  os elementos que casam e os demais, em ordem
++ row  `span(p)`  o prefixo que casa com um predicado, e o restante
++ row  `batched(n)`  sequências de no máximo `n` elementos
++ row  `join`, `join(separator)`  os elementos concatenados, ou intercalados com um separador
++ row  `distinct`  o primeiro de cada elemento repetido
++ row  `deduplicate(f)`  o primeiro elemento para cada chave
++ row  `reverse`  os elementos em ordem inversa
++ row  `sort`  os elementos em sua própria ordem
++ row  `order(f)`  os elementos na ordem de uma chave
+
+% 1 1 0 08a1aa014bbe330004c15bd9d8b98090
+
+@ 0 1 0 163ad66b87fb320b19b72ca651f69778
++ ### Conjuntos e mapas
+
+@ 0 1 0 0e2ec5775398e536005b0d5358c5d653
++ Um `Set` e um `Map` acrescentam operações próprias:
+
+% 2 1 0 0aaf6e55f81e475801867831fb9bacd9
+
+@ 0 13 0 08e5ebf55cfdc00914667e8d744e4779
++ column  Operação
++ column  Em
++ column  Produz
++ row  `:+`  `Set`  o conjunto com um elemento adicionado
++ row  `concat`  `Set`  a união de dois conjuntos
++ row  `intersect`  `Set`  os elementos presentes nos dois conjuntos
++ row  `except`  `Set`  os elementos que não estão no outro conjunto
++ row  `has`  `Set`  se um elemento é membro
++ row  `at`  `Map`  o valor de uma chave, como um `Optional`
++ row  `defines`  `Map`  se uma chave está presente
++ row  `define`  `Map`  o mapa com o valor de uma chave adicionado ou substituído
++ row  `omit`  `Map`  o mapa sem uma chave
++ row  `keys`, `values`  `Map`  as chaves, ou os valores
+
+% 1 1 0 07acac4cc5b3921a1e0bfb643ec1f8ff
+
+% 3 1 0 0e8a423daa7d58460b236138ed8df6bb
+
+% 4 1 0 1887856f27534e8506e828b5e9537d91
+
+% 5 1 0 10e9f7d787d4ed94198c5b8a4049844a
+
+% 0 1 0 030d2bdab0de8035027b7181ffd4aef0
+
+% 0 1 0 195b3145aa46c65f1069835fb64cf4c0
+
+% 0 1 0 13d7a7a152584c85175512d27d7789a1
+
+% 1 1 0 180b3ba8ddf15c6b0ffe79339a7813f9
+
+@ 0 1 0 0f2cde1108a42b240ed87f1a7777ab37
++ Procurar uma chave que não está em um mapa produz `Unset`. Não lança exceção:
+
+% 2 1 0 135770fabd1401d016e8b476ba053f57
+
+% 3 1 0 002618a47871d87e1ab81b978dd1386a
+
+% 4 1 0 02f4a50e673aebea05de7be42192a415
+
+% 0 1 0 0f325128550a4b2d061c9102fced1e7f
+
+% 0 1 0 10f202d4054aa688089656c3c3454397
+
+% 0 1 0 056480ed4bc6a01b04410602bf7ad772
+
+% 0 1 0 135ddcc3b272123f0cf3c4d1b7134631
+
+% 0 1 0 19433f3c1b30a35713f683b84c5ecee5
+
+% 0 1 0 10adf8f39b8d3b2c13c8d72478722926
+
+% 1 1 0 08481bb3498eb3871ab2f70e0a73127d
+
+@ 0 3 0 1cf926b23590565a08fdaa77f2d1255e
++ Toda coleção é [imutável]. `define` e `omit` produzem novos mapas, e `ages` não muda depois de
++ nenhum dos dois, como a [imutabilidade](../../philosophy/immutability.md) exige em todo o resto.
++ [Flags de bits](flags.md) guarda um conjunto de casos de uma enumeração em uma única palavra.
+
+@ 0 1 0 038a136b8f7f80cf08d6e5579f12f874
++ ### Cadeias preguiçosas
+
+@ 0 4 0 14fc50c4808b27191eed7ef3dd56521d
++ Uma `Chain` calcula seus elementos sob demanda e os lembra. Ela pode, portanto, descrever uma
++ sequência infinita, como todos os números naturais, ou todas as linhas que um processo vai
++ imprimir, desde que apenas uma parte finita dela seja forçada. Estas operações constroem e
++ cortam cadeias sem forçar o que deixam de lado:
+
+% 2 1 0 0fc8dff10401ad3e02f1466d679b9961
+
+@ 0 8 0 1322e6378c4d47110af7e56d7f3fb67a
++ column  Operação
++ column  Produz
++ row  `x #:: chain`  a cadeia com `x` inserido no início, sem forçar o que vem depois
++ row  `Chain.iterate(seed)(f)`  `seed`, e então `f` aplicada repetidamente
++ row  `Chain.unfold(seed)(f)`  os elementos que `f` gera a partir de uma semente
++ row  `Chain.continually(x)`  `x`, repetido
++ row  `keep(n)`  os primeiros `n` elementos, sem forçar o restante
++ row  `skip(n)`  todos menos os primeiros `n` elementos, sem forçar o restante
+
+% 1 1 0 132627b92891c2e91a4420cce774f7b5
+
+% 3 1 0 0205bf05a63add4e036640bd92ee2453
+
+% 0 1 0 073af0d5de06d4ee0886cc6de5582010
+
+% 1 1 0 04da573bbf8298a20b6f78247d390f63
+
+% 3 1 0 12602857b5e8d3af0f4898de83ebcf08
+
+% 4 1 0 1fd0f8e5dc2d85be01382359d204f434
+
+% 5 1 0 1c5edcba4cada006039a66bbfcca9ee6
+
+% 0 1 0 0c8327a0f27f8c1f0cc4d32f30a1ad05
+
+% 0 1 0 09724a89f11da12b0977351f138579cb
+
+% 0 1 0 197413388bdfe12215af1d8b16748319
+
+% 0 1 0 1e40a5c7f69011aa05c2851da0cf7c3f
+
+% 1 1 0 1671742c8039bfc40f4e18e25ae660b9
+
+@ 0 4 0 1c335e2a0e6e158e040579706e9061c8
++ Uma cadeia pode ser ilimitada, então `size` não está definido nela a menos que o programa
++ reconheça, com `dysasymptotics.unboundedSize`, que a contagem pode nunca terminar. Um
++ [stream](streams.md) analisado de forma preguiçosa, ou uma recorrência de [datas](time.md), é uma
++ `Chain` exatamente por esse motivo: o consumidor decide quanto é calculado.
+
+@ 0 1 0 0ec8ace0f1d66ea105ba62891272d4b3
++ ### Texto como coleção
+
+@ 0 2 0 0dab96fd51b24d340792e1e0350a8193
++ `Text` é percorrido como seus caracteres, então o mesmo vocabulário se aplica a ele diretamente.
++ Uma operação cujo resultado são caracteres devolve texto:
+
+% 2 1 0 15ce74c7d55137501c9b6c1225e137f0
+
+% 3 1 0 1b7bfdc738f0fcc915efa5be1dd4369b
+
+% 4 1 0 01ed3aa0fbb41cdd0af9f68a5c927a6f
+
+% 0 1 0 08f1ff1445b1649f0940f9e8aab3b027
+
+% 0 1 0 0ec8eba6e9682bd201fe1c5b35c7bf97
+
+% 0 1 0 0ba4b08b5afb3cee13a59f40477f4856
+
+% 0 1 0 0dfb445a0dc258401e55252d8527abae
+
+% 1 1 0 1e368a87e85aeb86138e9f728a44ea61
+
+@ 0 1 0 0358c24af9d4814b0a63da034f71a607
++ [Texto](text.md) descreve as operações que são próprias do texto.
+
+@ 0 1 0 099546e160ccfd2713c23ef84d69f6f4
++ ### Travessia para a biblioteca padrão
+
+@ 0 2 0 17263324406e7cc60b9470a8d51642dd
++ Algum código precisa entregar uma coleção a uma biblioteca escrita para a biblioteca padrão.
++ `stdlib` expõe a estrutura subjacente sem copiar, e o `from` do objeto companheiro faz o caminho
++ de volta:
+
+% 2 1 0 0e3692a730d360be11266cbed490c03d
+
+% 0 1 0 01f442bfd09878211aea13eefe0b2d3a
+
+% 0 1 0 12df27bd2dae3109033844576dea51b6
+
+% 1 1 0 0900852c309a5db91bcfb624476e6af7
+
+@ 0 3 0 1a5a49557d0e772800dde0b0895bdf4c
++ Manter a travessia explícita, e fácil de encontrar, é o que permite que o resto de um programa
++ seja escrito no vocabulário menor. A API maior e parcial ainda pode ser alcançada, mas apenas
++ onde o código diz isso.

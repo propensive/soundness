@@ -1,0 +1,115 @@
+orthant 2 language
+
+@ 0 4 0 05eb45037408fb11057e10c2d258b133
++ Una case class di [tipi numerici](numbers.md#numeric-types) dimensionati descrive un layout
++ binario. Ogni campo dichiara la sua larghezza esatta e come vanno letti i suoi byte, quindi la
++ forma del record è la sua definizione, e leggere un valore significa nominarne il tipo a un
++ offset. Scriverne uno è la stessa definizione, usata nella direzione opposta.
+
+@ 0 2 0 01975e84328eeafd011bff4658ef7c51
++ Tutto proviene dal package `soundness`. Il secondo import permette agli esempi di stampare i
++ loro risultati, e il terzo permette loro di leggere byte senza gestire l'errore che solleva un
++ record troppo corto:
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+@ 0 3 0 0978ea4ebe0c10cf13b30da5abfcb4c0
++ Un record binario è una case class di campi a larghezza fissa, che riceve un'istanza di
++ `Structural` per derivazione. L'ordine dei byte all'interno di un campo appartiene al formato,
++ quindi lo si sceglie dove si dichiara il layout, importandolo da `byteOrders`:
+
+% 0 1 0 0a8651b622749bd0166cad14fbf97d34
+
+% 0 1 0 0f679049a59664ee16c7b65094aa5a6d
+
+@ 0 2 0 121fdababb84873516a123afa2a5743c
++ La larghezza di ogni campo discende dal suo tipo. Qui le larghezze sono quattro, due, due e
++ quattro byte, quindi il record è di dodici byte. Lo dice `Structural.width`, senza avere in mano
++ un valore:
+
+% 0 1 0 192f2ea9c942ba560b5d0f33c3e229eb
+
+@ 0 4 0 1123519ccc868c4a14358701bdc3d455
++ I record si annidano. Un campo il cui tipo è a sua volta `Structural` contribuisce con tutta la
++ sua larghezza, quindi un layout si compone da layout più piccoli, e non serve appiattirlo a
++ mano. Un record annidato mantiene l'ordine dei byte con cui è stato dichiarato, ed è così che si
++ descrive un formato che mescola i due.
+
+@ 0 2 0 133fd897f6b30b1e161e10884120d899
++ Una derivazione senza un ordine dei byte nell'ambito non compila, e nemmeno una in cui un campo
++ ha un tipo senza layout fisso.
+
+@ 0 1 0 1a2d3814d3f219c800a048918d540232
++ `unpack` legge un valore di un tipo scelto dai byte, a un offset:
+
+% 0 1 0 1fb77bda4754774f0d717049ab6cf6de
+
+@ 0 3 0 1921303bc0c82e35039c589101dc7766
++ L'intero record viene confrontato una sola volta con la lunghezza dei dati, prima che si legga
++ qualsiasi campo. Un record che andrebbe oltre la fine solleva uno `Structural.Error`, che indica
++ l'offset, la larghezza del record e il numero di byte presenti:
+
+% 0 4 0 1c275054af78b2b5039fad57cd82dc6a
+
+@ 0 2 0 1d31d1c6fb4ef67f1452fef38d6ebebe
++ I formati binari prediligono le sezioni ripetute, e una sezione di record si spacchetta in base
++ al suo offset e al suo conteggio, come un unico array:
+
+% 0 1 0 0183ba2bae654924132d91e7c239d9ee
+
+% 0 1 0 12d7d14b458cc4a4087e7805f3b62a4d
+
+% 0 1 0 03526977cd93fab21559afc1f77220cd
+
+@ 0 2 0 1be62d39b4f2f82201a781a907eadb7e
++ La stessa chiamata legge un record da un `Expanse`, come un `Terrain` di byte mappati in
++ memoria, a un offset `Long`. Da esso si leggono solo i byte del record stesso.
+
+@ 0 1 0 031e799c979801b01abdd3555d287aac
++ ### Scrittura
+
+@ 0 2 0 12625a32c9350e1318f814a1dda0e14a
++ `pack` è l'inverso: dispone un valore in esattamente tanti byte quanto è largo il suo layout,
++ con la stessa istanza, quindi ciò che si impacchetta è ciò che `unpack` rilegge:
+
+% 0 2 0 038b7938c9a79fa30bdf117f54902562
+
+% 0 5 0 0588620aca8349f90a757086ce8bc2ef
+
+@ 0 1 0 1d40e167098578ad11be08eac45bb0a2
++ ### La typeclass
+
+@ 0 4 0 07ca347fd28d05670b8bd3d8c0b63482
++ `Structural` descrive un tipo con un layout fisso, in entrambe le direzioni. Un'istanza dichiara
++ tre cose: `width`, il numero di byte che il valore occupa; `load`, che legge un valore da quei
++ byte a un offset; e `store`, che ne scrive uno in un array di byte. `unpack` e `pack` verificano
++ che i byte ci siano, e poi li chiamano.
+
+@ 0 4 0 0eff5f1f96c99fb10fd0f2fbaf624011
++ La derivazione calcola ogni offset a [tempo di compilazione], quando si dichiara il
++ layout, e si espande in un caricamento per ogni campo al suo offset, nell'ordine dei byte
++ scelto. Leggere un record costa quindi un solo controllo dei limiti e tanti caricamenti quanti
++ sono i campi, senza allocare nulla oltre al record.
+
+@ 0 3 0 03612a23538f3392152fbb45e12d10da
++ I tipi dimensionati fissano come i byte vengono *interpretati*, non solo quanti sono. Un `B32`
++ è quattro byte grezzi, un `U32` li legge come intero senza segno, e un `S32` li legge come
++ intero con segno. Si possono usare anche i semplici tipi Scala, per i layout più facili da
++ dichiarare con essi:
+
+@ 0 3 0 00129bea2dcd95f91e5ab6d723a0a3ff
++ Un campo di qualsiasi altro tipo ha bisogno di una propria istanza di `Structural`, che la
++ derivazione compone poi come un record annidato. È così che a un campo si dà una
++ rappresentazione che i tipi dimensionati non offrono, come tre byte di colore:
+
+% 0 1 0 12dfed929269776716973385c9f2f8ad
+
+% 0 4 0 03375ecb7bafac6b0fdbc4bf0dd7a337
+
+% 0 2 0 06d72899db3cc813045940dd54be4864
+
+% 0 4 0 0312126fd12062990f08b39b6798ee97
+
+@ 0 2 0 02da14b1c70e3aa012b5f78d99666356
++ `load` e `store` non sono controllati: vengono chiamati solo una volta che il chiamante ha
++ stabilito che i `width` byte ci sono.

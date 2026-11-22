@@ -1,0 +1,620 @@
+orthant 2 language
+
+% 0 1 0 16f943528d924ef614569aed5c605b3a
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 5 0 090cf2523ccfa5401692495e227ee3fc
++ [CSV](https://en.wikipedia.org/wiki/Comma-separated_values), sein tabulatorgetrennter Verwandter TSV
++ und andere Formate mit Trennzeichen werden auf eine einzige Weise gelesen und geschrieben. Text wird
++ zu einem `Sheet` geparst, einer Folge von Zeilen. Jede Zeile, ein `Dsv`, wird in eine Case-Klasse
++ dekodiert, deren Felder die Spalten der Reihe nach übernehmen. Eine Case-Klasse wird auf dieselbe
++ Weise zurück in eine Zeile kodiert. Encoder und Decoder werden aus dem Typ
++ [abgeleitet][Ableitung], es gibt also nichts von Hand zu schreiben.
+
+@ 0 4 0 06269dbdafd365b60df63a7e7de472c2
++ Trennzeichen, Quotierung und das Vorhandensein einer Kopfzeile legt ein Format fest, das im
++ Geltungsbereich gewählt wird, sodass dieselben Daten durch einen anderen Import als CSV oder TSV
++ gelesen werden. Verschachtelte Case-Klassen erstrecken sich über mehrere Spalten, optionale Felder
++ werden unterstützt, und eine Spalte lässt sich über ihre Kopfzeile statt über ihre Position
++ ansprechen.
+
+@ 0 1 0 19a95ca82805771c1edeb1f6a2076039
++ ### Über Daten mit Trennzeichen
+
+@ 0 1 0 1d18a8b03908081b01386e6cb65d5b9d
++ CSV sieht trivial aus, ist es aber nicht:
+
+@ 0 4 0 0e149e8fc78170d30be19aecb4f9519e
++ - Ein Feld darf das Trennzeichen enthalten, wenn es quotiert ist.
++ - Ein Anführungszeichen innerhalb eines quotierten Felds wird verdoppelt.
++ - Eine Datei beginnt mit einer Kopfzeile oder auch nicht.
++ - Eine „CSV“-Datei ist ebenso oft durch Tabulatoren oder Semikolons getrennt wie durch Kommas.
+
+@ 0 2 0 03934205491ab33f0e25631518835d50
++ Code, der an Kommas aufspaltet, behandelt nichts davon. Und die Zuordnung von Spalten zu den
++ eigenen Typen eines Programms wird meist von Hand ausgeschrieben und nur durch Disziplin
++ synchron gehalten.
+
+@ 0 5 0 0e378b1a0724bfdf17ad85e0a0921e24
++ Hier wird diese Zuordnung aus der Case-Klasse abgeleitet, zu der die Daten werden sollen. Das
++ Parsen beachtet Quotierung und Maskierung. Das Format ist ein expliziter Wert, keine Vermutung. Eine
++ Zeile in einen Typ zu dekodieren oder einen Typ in eine Zeile ist eine einzige abgeleitete
++ Operation, über dieselbe Ableitung wie bei jedem anderen Format, sodass die Gestalt der Daten
++ einmal geprüft wird, wie es [Korrektheit](../../philosophy/correctness.md) vorzieht.
+
+@ 0 2 0 1c75a5a8816e40eb00b3f31238b50dac
++ Alles kommt aus dem Paket `soundness`. Ein Format und eine Fehler-[Strategie] sind im
++ Geltungsbereich, und der letzte Import lässt die Beispiele ihre Ergebnisse ausgeben:
+
+% 2 1 0 0f8dc632a664d4731acc384146b8c787
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 191938421d588de210e90bb5d023d320
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0187392ffc103acc14c597749a2c60b7
++ ### Zeilen lesen
+
+@ 0 2 0 04dbd4f4f2eddea212744c0db241d12d
++ `read[Sheet]` parst Text zu einem `Sheet`. Seine `rows` sind `Dsv`-Werte, einer pro Zeile, gemäß dem
++ Format in Zellen aufgeteilt:
+
+% 2 1 0 151bf2467938cc2e067fdeda91f6cbd3
+
+% 3 1 0 1a68e776b9a0410602b0983f98ac87e0
+
+% 4 1 0 02f965b359c5f3d11284d4b9216f07e6
+
+% 0 1 0 1794f0b61af2d47707268eb6293b34d7
+
+% 1 1 0 171aa9c4059e049b0a058b674a85c0b6
+
+@ 0 1 0 083c741623b90f2619ca2d1580ea631a
++ Das Trennzeichen innerhalb einer quotierten Zelle gehört zur Zelle, also hat diese Zeile drei
++ Zellen, nicht vier:
+
+% 2 1 0 0b31e140849946a3197e0b8fe6ca75d5
+
+% 3 1 0 168f31867f7cacd903f050c509044f71
+
+% 4 1 0 1189efdac30157e30d11e1da2827687c
+
+% 0 1 0 0a8f559917582d8003bbf73b0e1a8d36
+
+% 1 1 0 07df6a1844a4308e12a9c126e58b2d70
+
+@ 0 5 0 002aec2bbf3ba9860dee207619f42f41
++ Ein `Sheet` hält alle seine Zeilen im Speicher, in einem Array, sodass sie sich günstig wiederholt
++ durchlaufen, indizieren und vergleichen lassen. Eine Datei, die zu groß zum Festhalten ist, braucht
++ überhaupt kein Sheet. `rows` auf einem [Stream](streams.md) von Zeichen liefert die Zeilen einzeln,
++ geparst vom selben Reader, sodass eine quotierte Zelle, die die Grenze zwischen Chunks oder zwischen
++ Zeilen überspannt, genau so behandelt wird wie in einem Sheet:
+
+% 2 1 0 1a0125917c0a28f31e84b38024f8f3f8
+
+% 0 1 0 1f68a9968f590330194d55712fefaeff
+
+% 0 1 0 0a6a401cf5c3b1af1e3cdd6f09ad3e4a
+
+% 1 1 0 07fbb8a1943149d60aea915065e9da72
+
+@ 0 1 0 1a736aaff562091a067accd98cc981cc
++ ### In eine Case-Klasse dekodieren
+
+@ 0 2 0 1bae19cbd6a8676712cf27383dabf501
++ `as` dekodiert eine Zeile in eine Case-Klasse und nimmt die Zellen der Reihe nach. Eine
++ verschachtelte Case-Klasse verbraucht einfach so viele Spalten, wie sie Felder hat:
+
+% 2 1 0 1365686368a8551c0e8fcce92fa89442
+
+% 0 1 0 143215878e338d1506428a80c7ded090
+
+% 0 1 0 08a9e2697ed575071afa517a48dcddb2
+
+% 0 1 0 0fc3d74f45cc42450ae6d2bda9f2ae67
+
+% 1 1 0 0c7f08b560e326e9000bd9f409465d3c
+
+% 3 1 0 13680a34428eec210a96b57dc78d75b3
+
+% 4 1 0 1a811f7d5b32b0c30b3cdc3867c3b231
+
+% 5 1 0 14eb3af1657d4b9800cc77f7e1366d0c
+
+% 0 1 0 09b7c76c0813865513b9fea18be1216d
+
+% 1 1 0 18c8ff9044a4f94d02870a1d216caadb
+
+@ 0 2 0 07f0c7a3274a4cee0b8f0a7cdd6c8b32
++ `rows(Prim)` liefert eine [optionale](optional-values.md) Zeile, da das Sheet leer sein kann, also
++ dekodiert `let` die Zeile, falls es eine gibt.
+
+@ 0 1 0 0d6416b20fab507d1881481f737e6fde
++ Direkt in einen Typ zu lesen verbindet die beiden Schritte und dekodiert einen einzelnen Datensatz
++ aus Text:
+
+% 2 1 0 16a140895e3ad6ed1f48ec929a6e928a
+
+% 3 1 0 06742af2bafbc9f90058ec30d03da14a
+
+% 4 1 0 086b785ed6706c9d1927757161cd69e2
+
+% 0 1 0 06c46a7452df822c131a926e4a4954cc
+
+% 1 1 0 18c161f4c9b286a0166d176d668e56bb
+
+@ 0 1 0 188f0bb1d996be3413f1af4494020c0c
++ Eine Zelle, die sich nicht als Typ ihres Felds dekodieren lässt, ist ein Fehler:
+
+% 2 1 0 18b6995bdac43db10d4d75045d5ddf9c
+
+% 3 1 0 145bc5654e9f716810b001c33947bed0
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 03ebc4f59728c8a300bb56e1356046e9
+
+% 1 1 0 0a3f4c0b90048fa502a6c7dab78362a2
+
+@ 0 1 0 196677f70196bdf61933b52d135abadd
++ ### Kodieren
+
+@ 0 2 0 1c71fc2de9cd4f9013b487f3755fc0bd
++ `dsv` kodiert eine Case-Klasse als Zeile und eine Folge davon als `Sheet`. `show` schreibt das
++ Ergebnis als Text mit Trennzeichen:
+
+% 2 1 0 046fad25e9bced340435e52747129d60
+
+% 3 1 0 06e2e95b1f3d4d0217ff6a6372667a5c
+
+% 4 1 0 147941f486ac08fc02ee3a49f17559a3
+
+% 0 1 0 179e23ef6607370e06bc7028a78406a4
+
+% 0 1 0 1988603298ae7a8a0179c123db0dad6b
+
+% 1 1 0 15db6c794cb054551f089c0c31832659
+
+@ 0 2 0 16e74e9ec287bbf51400cd0f9eb1a05a
++ `in[Text over Dsv]` kodiert einen Wert in einem Schritt als einzelnen Datensatz, und
++ `in[Data over Dsv]` schreibt denselben Text als Bytes, in der `Codepage` im Geltungsbereich:
+
+% 2 1 0 09b5d447f3f8658c06ad84022928c96f
+
+% 0 1 0 1f5baa85984b2d43128af2fce696cae1
+
+% 1 1 0 1e63d949dd8d57b508c7d9e6c84da37b
+
+% 3 1 0 1427f3baf2a2f6b117b6a145a0ca3ffa
+
+% 4 1 0 131d525f0a624de609b1449564703bcc
+
+% 5 1 0 18cb1f8f07c1443b04ab7f1c0686b74e
+
+% 0 1 0 120ddd7744c70050033420e57cb2ceed
+
+% 1 1 0 000bc63f0e587d180cc100a3c784e7a0
+
+@ 0 2 0 1e26a2789dc51ed81119aca83b939b54
++ Eine Zelle wird nur quotiert, wenn sie das Trennzeichen, ein Anführungszeichen oder einen
++ Zeilenumbruch enthält, und ein Anführungszeichen innerhalb einer Zelle wird verdoppelt:
+
+% 2 1 0 0cc03f8136cdf556176781e8622a799b
+
+% 0 1 0 0baed302752a5b6517ab3c30b37e9ff9
+
+% 1 1 0 1e13dc78a82d8b800ffe9741346062af
+
+% 3 1 0 0fe058c3a238098f0f706fe9416dd1f1
+
+% 4 1 0 17fae31d218da80e1b2dccef920949a1
+
+% 5 1 0 08cb440ff57aa4a40a7a8680991c42cd
+
+% 0 1 0 0a68e19b00c8f80514149bbbf76631b8
+
+% 1 1 0 0ff0bae7c655094b14f3c702f69da48b
+
+@ 0 1 0 0325d804222f183917eb978379da2555
++ ### Kopfzeilen
+
+@ 0 2 0 1c49979a1f7980201fb0055755ef7e14
++ Daten beginnen oft mit einer Kopfzeile. Ein Format, das eine erwartet, ordnet jede Spalte dem
++ gleichnamigen Feld zu, sodass die Reihenfolge der Spalten nicht der Reihenfolge der Felder
++ entsprechen muss:
+
+% 2 1 0 04e04bcb708401360fa1074ad02f9048
+
+% 3 1 0 0b1763095853726306f879b56d548e7d
+
+% 4 1 0 06cf6d68385e1fe61593643926fa9aae
+
+% 5 1 0 1add3892ce8d8e880ed2e22a029b5cc4
+
+% 1 1 0 030b8f802cdc77db016db602a4f3b219
+
+% 0 1 0 07569edf6486822207edf74c263708c7
+
+% 1 1 0 17cc6c64104da69f0f983be72eb32809
+
+@ 0 1 0 11f24a6ad67b7fd71071c354be7e252f
++ ### Formate
+
+@ 0 2 0 0c33e3c729a74dd804a6760a4ee6f7d2
++ Das Format im Geltungsbereich bestimmt Trennzeichen und Quotierung. Zu jedem Trennzeichen gibt es
++ im Paket `dsvFormats` ein einfaches Format und eine Variante mit Kopfzeile, und alle quotieren mit
++ `"`:
+
+% 2 1 0 137e61f7223724c11b543cd81262326e
+
+% 0 1 0 1f44cd52edfe79f606866f1b941ba69c
+
+@ 0 5 0 08c2068d6a5ecd04069b056d9e9e1b25
++ column  Mit Kopfzeile
++ column  Trennzeichen
++ row  `csvFormat`  `csvWithHeaderFormat`  Komma
++ row  `tsvFormat`  `tsvWithHeaderFormat`  Tabulator
++ row  `ssvFormat`  `ssvWithHeaderFormat`  Leerzeichen
+
+% 1 1 0 03e078133b1a50f0033e058a46b24dc6
+
+@ 0 1 0 1a8070e0280a0da21da65d8b144fe1b5
++ Ein anderes Format in einem inneren Geltungsbereich zu importieren ändert das Trennzeichen:
+
+% 2 1 0 11e4a20974cafb91058d1e3b9d4b20e0
+
+% 3 1 0 055bcd57f7dfd44502c0c33e780d7c4a
+
+% 4 1 0 1368c42f0bdc0335083593a3e71eb59c
+
+% 5 1 0 0a3b91c29fefdf9a0a5c74cfb969fca0
+
+% 0 1 0 014a841ddc6b1ac6122463b96f916714
+
+% 0 1 0 090cb315c3b779731c11d0c9486a42cd
+
+% 1 1 0 094a094e4dfb6bbe0d7ee6958cfe22a3
+
+@ 0 1 0 03d12966e37c78c90699277b5331c655
++ ### Spaltenspannen
+
+@ 0 4 0 1a88e2393953788e1f0c0a1dc903f5f5
++ Eine verschachtelte Case-Klasse belegt so viele Spalten, wie sie Felder hat. Diese Zahl wird aus
++ dem Typ berechnet, nicht beim Parsen ermittelt. Die *Spanne* jedes Felds gibt an, wie viele
++ Spalten es verbraucht, sodass ein Decoder weiß, wo ein Feld endet und das nächste beginnt, auch
++ wenn mehrere verschachtelt sind. `Person` erstreckt sich insgesamt über vier Spalten:
+
+% 2 1 0 0b694c98bb4b28b1045507443be27762
+
+% 3 1 0 0346d4990fa52731144272e4805508bd
+
+% 4 1 0 195fe728ae9e4d6e13b6ebfa29fbf959
+
+% 0 1 0 0ef2753895caca4603e6729752cb8245
+
+% 1 1 0 19ce510101c6e5df13ffc673e2c626ed
+
+@ 0 4 0 1c82aef9ed858e06119217029f3db17f
++ Dekodieren nach Position ist von Natur aus fragil. Ein zusätzliches Feld in einer verschachtelten
++ Case-Klasse verschiebt jede Spalte dahinter, und nichts in der Datei weist darauf hin. So verhalten
++ sich positionale Daten, und kein Decoder kann das ändern. Deshalb lohnt sich ein Format mit
++ Kopfzeilen, wo man die Wahl hat, und deshalb lassen sich Zellen
++ [über ihren Namen ansprechen](#addressing-cells-by-name).
+
+@ 0 1 0 05034cb934a33abb1941be82816becd0
++ ### Optionale Spalten
+
+@ 0 2 0 05ac43b954809ab51061812cc48a4c78
++ Ein `Optional`-Feld erstreckt sich über eine Spalte. Eine Zeile, die vor ihr endet, dekodiert es
++ als `Unset`, und genau das bedeutet eine nachgestellte optionale Spalte in einer echten Tabelle:
+
+% 2 1 0 1793212bf577f6ac03f72620309f6a28
+
+% 0 1 0 1456d8921f953395104d84c618ba59ce
+
+% 1 1 0 02718b50556755e905a277a2e235dc63
+
+% 3 1 0 0886041a48330a170b87081cc4e4c86a
+
+% 4 1 0 171662713c7b8aff14711f2b3ff9690f
+
+% 5 1 0 1ba7aebd69c8bb97020a17d7d92263c9
+
+% 0 1 0 026ebcc43e4f8fd41020e23031a09efb
+
+% 0 1 0 04f540d505af91af0ffff514765bfbc2
+
+% 1 1 0 1691c1376d5312b30397c4b5192c66b5
+
+@ 0 3 0 14d728eef30f6b5e005995be0e983a78
++ Das Lesen eines `Optional`-Felds folgt den Richtlinien, die
++ [Dekodieren](decoding.md#policies-for-optional-fields) beschreibt, jede durch ein Given im Paket
++ `optionalityOptions` veränderbar. Text mit Trennzeichen kennt kein Null:
+
+% 2 1 0 077135260271c81e08360c5f6b949018
+
+@ 0 5 0 01dec2081e59dcad06ef0cc71d5d0396
++ column  Ein Feld, das
++ column  Wird gelesen als
++ column  Außer
++ row  in einer Spalte liegt, die der Zeile fehlt  `Unset`  `strictDsvAbsence` macht es zu einem Fehler
++ row  vorhanden ist, aber vom inneren Decoder abgelehnt wird  ein Fehler  `lenientDsvFaults` liest es als `Unset`
+
+% 1 1 0 06c49ab09406a831189d6ed8bd04877c
+
+@ 0 3 0 1dd5a5ace5b595580513f2a45df0f03e
++ Eine Spalte, die der Zeile fehlt, liegt jenseits des Endes einer kurzen Zeile oder ist eine
++ Kopfzeilenspalte, die die Zeile nicht hat. Der dafür unter `strictDsvAbsence` ausgelöste Fehler hat
++ den Grund `Dsv.Error.Reason.Absent`. Eine leere Zelle ist ein vorhandener Wert, kein Null.
+
+% 2 1 0 06091d345fd766b21e84bf69746feedc
+
+% 0 1 0 1528c823dd1f27e7140501dbf09796f6
+
+% 0 1 0 07ff2c9f0b0eaff2022a98b58d693ac6
+
+% 0 1 0 1704affb859f1d3f0256f7d346b34548
+
+% 0 1 0 0c8ea8c4dbc9703d08e249584714582d
+
+% 1 1 0 1b6d371a171f07e80a7686a4a5ecedd6
+
+% 3 1 0 061dea348523f433045adc99da006969
+
+% 4 1 0 097e4f88005d6b1d10a18cb6b3c097a6
+
+% 5 1 0 1f59e9eab05f2b7b0d5014c4b381e07d
+
+% 0 1 0 141aa914cc85d2ba18f3063adf07bb9c
+
+% 1 1 0 025a8f2a135c61c505e514d4fa7786b8
+
+@ 0 1 0 05dc60ec41354b140fd2bfd91786fcc7
++ ### Zellen über ihren Namen ansprechen
+
+@ 0 3 0 0fbbee0ed1b7dbe10a86f930f1e2cf49
++ Bei aktiviertem dynamischem Zugriff wird eine Zelle einer Zeile mit Kopfzeile als benannter Member
++ gelesen und in den angeforderten Typ dekodiert. Eine *Redesignation* im Geltungsbereich gibt an, wie
++ aus dem Namen eines Members eine Kopfzeile wird. `unchangedRedesignation` verwendet den Namen
++ unverändert:
+
+% 2 1 0 0deac79546734d8f0e60fc5bbd3b2e50
+
+% 0 1 0 1cc9d33040ca74631c6d1b575b675602
+
+% 0 1 0 13280a4d3f6fa08d17c3b0fe2186374f
+
+% 1 1 0 17f15212be063e6f1cca8b912a970a1c
+
+% 0 1 0 01a9d11531a355801aea02e2245f3cd8
+
+% 0 1 0 1a4b1af0cfcc365708c75c7c3b009aca
+
+% 1 1 0 0e1ee6ca2231f24d07770ba888d37bbb
+
+@ 0 2 0 1c778b687f095be7113d3b7dabcffa7f
++ Die Spaltennamen in einer Datei sehen selten wie Scala-Namen aus. Eine andere Redesignation bildet
++ zwischen den beiden Konventionen ab, sodass der Member `targetPerson` die Spalte mit der Kopfzeile
++ `Target Person` liest:
+
+% 2 1 0 01f21e64c5fc94620b6a56857807d6f4
+
+% 0 1 0 08829e589763b2fa03a4555fdd5a8dda
+
+% 1 1 0 16f10a73063690160eb6788e5c38dca7
+
+% 0 1 0 1c3ae67c4375d3120b992eea5601743b
+
+% 0 1 0 08bd95f71d0e0a3111fb196a1a1d06bb
+
+% 1 1 0 0181ab3ffd27db720bf592033770a72a
+
+% 3 1 0 130076c48e0b91ee010a7186f5399724
+
+% 4 1 0 0fd1991b3cf699590220155ff84af85c
+
+% 5 1 0 1a9f8b602c686d871c0a921bffdab794
+
+% 0 1 0 1f7ae5af0e4335d00927553ae86ec3d8
+
+% 0 1 0 1f404ba1fdd32d24092293c052e19147
+
+% 1 1 0 06d1c761332d23de0130c2e559d0c6c3
+
+@ 0 2 0 1dc88d36729addd90ec2365cd358be88
++ Jede Redesignation im Paket `dsvRedesignations` gibt dem Member `targetPerson` diese Kopfzeile:
+
+% 2 1 0 1323c6e426bcc6890bd559acbd167766
+
+% 0 1 0 11236f76ff9e6b361aeb0746395392db
+
+@ 0 1 0 163d2e5f4d7c74df0d648ae7d2a0627a
++ column  Kopfzeile
+
+% 0 1 0 03748be03d5e81591e650b306710113c
+
+% 0 1 0 02da12893b8df09d067ea010d545aab8
+
+% 0 1 0 126a7eb8b8c0b17d08165a52e7fb115d
+
+% 0 1 0 1951601e7857fb5015d136cb759713d4
+
+% 0 1 0 04a4b50357ec812713e5d579e2c2ef18
+
+% 1 1 0 09f5c00c08d6188f04533c8b6dd19dad
+
+@ 0 1 0 0a6e888821ec6d8311a17ed49f54c531
++ Ohne eine Redesignation im Geltungsbereich lässt sich eine Zelle nicht über ihren Namen lesen:
+
+% 2 1 0 18e368a62a713b941990343d3d1c6ab8
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 1a7943dd627c3c3518a2025aebdffb13
+
+% 1 1 0 015fe53f42fcfd0d182ff88c1f13f196
+
+@ 0 4 0 0df7b898ea2170c1195f43dc4e03047c
++ Der Import von `dynamicDsv` gewährt dem Rest seines Geltungsbereichs die Genehmigung
++ `Dsv is Dynamical`. `dynamically[Dsv]:` gewährt sie stattdessen einem einzelnen Block, wie
++ [JSON](json.md#fields-as-members) beschreibt. Ein Feld einer Case-Klasse, dessen Name von seiner
++ Kopfzeile abweicht, wird mit [`@name`](json.md#renaming-fields) umbenannt.
+
+@ 0 1 0 1ef7b8023aacb1780627fa021478ab84
++ ### Jede fehlerhafte Zelle melden
+
+@ 0 5 0 1f150d871f4446551ec81fdf1cc9132a
++ Eine anderswo exportierte Tabelle ist selten nur an einer Stelle fehlerhaft, und ein Decoder, der
++ bei der ersten fehlerhaften Zelle anhält, macht ihre Korrektur zu einer Folge von Vermutungen.
++ Unter einer Strategie, die [Fehlschläge akkumuliert](errors.md#accumulating-failures), wird jede
++ fehlschlagende Zelle gemeldet, fehlende und nicht parsbare zusammen. Jede wird über ihre Spalte
++ identifiziert, sodass ein einziger Durchgang über eine Datei die ganze Liste dessen liefert, was zu
++ korrigieren ist.
+
+@ 0 3 0 0211b09b88636cf8130cff7fc9f8fa72
++ Die Akkumulation ist ein Wert nach Wahl des Aufrufers, hier ein Fehler, der jeden Defekt mit der
++ Spalte sammelt, in der er gefunden wurde. `Validate` gibt an, wie jeder Defekt hinzukommt, und ist
++ auf die `CellRef` fokussiert, die der Decoder gerade las:
+
+% 2 1 0 154c8e75825f779114ddabb26339efa3
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 163375f111fa9a6812c559a4dfa968e3
+
+% 0 1 0 01f8e8ff0b2ce07d1e598d2b9bdfb45c
+
+% 0 1 0 1d3a59e65fcbdf140fa0a72dc1f0c9fd
+
+% 0 1 0 0965f99efea16faf1f803bfe3ab3fdd8
+
+% 0 1 0 033c48d8fe3380f21cf0cf4cb9eca2b6
+
+% 1 1 0 075a94b94442c6e602b102440c7c1150
+
+% 0 1 0 0dfe854eaee6ff300ce52bc585f547f1
+
+% 0 1 0 1274ef776a68ec3e09ff6526edf9bdb9
+
+% 0 1 0 1b7856209f71157f0292ee57c80137ba
+
+% 0 1 0 1c9d6fd014872435089b50dfe962343a
+
+% 0 1 0 02a42cb4274e0f040dfa9e47606ae606
+
+% 0 1 0 19515b4e6e73adb11045115917c906a8
+
+% 0 1 0 01a60fd9533fe87e022fd5e71a9c9a65
+
+% 1 1 0 0af70766c985a44018b4a04cbe0d202d
+
+% 3 1 0 1b2c594c88b742ab15b41ef0a08a3a21
+
+% 4 1 0 1893869b0af0de75140199519c5c9d55
+
+% 5 1 0 0a760e76562031111f2a20236d30dc73
+
+% 0 1 0 1c1a7f182eec9327094a0c8b889127ac
+
+% 0 1 0 08e5a6c24ba00b5c173cf82f0d0c05ac
+
+% 1 1 0 1c1b2078c9d7e8ce11ac20631a43382b
+
+@ 0 1 0 1e17a01edd469f4d1c982026e3272de9
++ ### Direkt in einen Typ parsen
+
+@ 0 3 0 0f60cae25f1399ba00b64de2f9254ea9
++ Für jede Zeile ein `Dsv` zu bauen, nur um es zu dekodieren und wegzuwerfen, ist vergeudete Arbeit.
++ Ein Typ mit einer `Dsv.Parsable`-Instanz wird direkt aus der Quelle geparst. Seine Zellen werden an
++ Ort und Stelle aus dem Puffer des Parsers gelesen, und es wird überhaupt kein Zeilenwert gebaut:
+
+% 2 1 0 0b9a7d158553954804b1551e7eaa4f5b
+
+% 0 1 0 059786a217ad99d3090f5e656be728f4
+
+% 0 1 0 1e7afeeb7c69e8a40e6a06a2cf5a5d82
+
+% 1 1 0 03304c8a5fa5e97f0fc4917ebb31169f
+
+% 3 1 0 1a7d859251ba9753174bf12288b868f0
+
+% 4 1 0 07522de2fcc887631ee9b15fc8be34d2
+
+% 5 1 0 0096d91469d60ca80fe2851d37cd46b0
+
+% 0 1 0 01a486e2f3c3c32a112a1e760546064c
+
+% 0 1 0 0652a3d4cb9cc4b60f812260c3f14574
+
+% 1 1 0 1a09716028166b970c119d852a4b87cf
+
+@ 0 1 0 1bb93b9496107af70b1504dd6b4507e6
++ Ein Stream liefert Datensätze auf dieselbe Weise, über `rowsOf`:
+
+% 2 1 0 0125f5a2820e99ad077ee75dde3f58da
+
+% 3 1 0 050f8db97618e54419677581b836439a
+
+% 4 1 0 0b45b1ab76521b360b47e1f08bde9664
+
+% 0 1 0 116ce2b3acbf019714ded8f41209e97d
+
+% 1 1 0 110e482bcd7b3fae12ee77bfafd5e000
+
+@ 0 2 0 1a6b07b9a011928a1891c14812bc4cb0
++ Felder werden nach Kopfzeilenname zugeordnet, wo das Format eine Kopfzeile hat, und nach Position,
++ wo es keine hat. Ein `Optional`-Feld, das die Zeile nicht erreicht, ist `Unset`, kein Fehler.
+
+@ 0 2 0 03ea0f1e002e86e30a6f3168a54cdb5a
++ Der `codecs`-Import, der für jedes andere Format den Weg wählt, wählt ihn auch für Text mit
++ Trennzeichen:
+
+% 2 1 0 126717d0af8fede31b43148594b04c9d
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 5 0 1c627a6097cbe028108fef9b340ed622
++ column  Für ein Produkt
++ column  Für jeden anderen Typ
++ row  `codecs.direct`  direkt geparst, ohne deklarierte Instanz  der Zeilendekodierer, außer er hat ein `Dsv.Parsable`
++ row  `codecs.derived`  der Zeilendekodierer, auch wenn ein `Dsv.Parsable` im Geltungsbereich ist  der Zeilendekodierer
++ row  `codecs.strict`  direkt geparst, ohne deklarierte Instanz  ein Kompilierfehler, der den Typ nennt, außer er hat ein `Dsv.Parsable`
+
+% 1 1 0 13d199c84d68d92007fe730848f98c36
+
+@ 0 2 0 107a98555161205d03b365cd18fb8db6
++ Die Modi sind Alternativen, also importieren Sie jeweils nur einen. Das Lesen eines
++ `List[Play] in Dsv` ist in jedem Modus direkt, da der Zeilendekodierer kein Gegenstück für ein
++ ganzes Sheet hat.
+
+@ 0 4 0 1fcfc44ce8b2102b1f057d6dbe6c71b4
++ Jedes Feld eines direkt geparsten Produkts liest eine Zelle über seine `Decodable in Text`-Instanz
++ oder ist selbst ein Produkt solcher Felder. Ein Feld, das nur eine `Decodable in Dsv`-Instanz hat,
++ behält für seinen Typ den Zeilendekodierer: Deklarieren Sie für den Typ kein `Dsv.Parsable`, und
++ importieren Sie keinen Modus.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 5 0 18774b3c18ad653212b11d2266efe7d1
++ - [Tabellen](tables.md) ordnet Datenzeilen zur Anzeige in einem Terminal an.
++ - [Dekodieren](decoding.md) beschreibt die `Decodable in Text`-Instanzen, die jede Zelle lesen.
++ - [JSON](json.md) und [YAML](yaml.md) dekodieren verschachtelte Dokumente mit derselben Ableitung.
++ - [Streams](streams.md) behandelt die Quellen, aus denen `rows` und `rowsOf` lesen.
++ - [Ableitung](derivation.md) erklärt, wie eine Zeile ohne von Hand geschriebene Instanz in eine Case-Klasse dekodiert wird.

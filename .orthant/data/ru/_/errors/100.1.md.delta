@@ -1,0 +1,48 @@
+orthant 2 language
+
+% 0 1 0 063420d5aec240d501c72e4e3d3ae40b
+
+@ 0 1 0 083020eca8c6a5171484f77bf35c81b9
++ Порождается, когда сообщение или имя DNS невозможно декодировать, закодировать или разрешить.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Причина
+
+@ 0 4 0 13b19148fc74d1aa0cba6a567d2aff52
++ Словарь `Dns` из Urticose декодирует передаваемые сообщения RFC 1035 (`data.as[Dns.Message]`),
++ разбирает имена из их формы представления (`Dns.Name.parse`), кодирует сообщения обратно в
++ байты, разрешает имена через резолвер платформы (`Dns.resolve`) и, в coaxial, обменивается
++ запросами с сервером имён. Сообщение: `the DNS message is not valid because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Варианты
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 18 0 01822b2cf49446141e6b21f0e15173a7
++ column  Код
++ column  Причина
++ column  Значение
++ column  Сообщение
++ column  Решение
++ row  `↯/s.100.1.1`  `Truncated`  Сообщение закончилось внутри поля: заголовка, имени, вопроса или данных записи.  `[↯/s.100.1.1] the DNS message is not valid because the message ends at offset 12, inside a field`  Убедитесь, что датаграмма получена целиком; ответ UDP длиннее буфера приёма обрезается, поэтому увеличьте размер буфера (`Socket.Option.DatagramSize`) или повторите запрос по TCP.
++ row  `↯/s.100.1.2`  `BadPointer`  Сжатое имя указывает вперёд, на само себя или за конец сообщения. RFC 1035 допускает указатель только на *предшествующее* вхождение имени.  `[↯/s.100.1.2] the DNS message is not valid because the name pointer at offset 12 points forward`  Сжатие у отправителя нарушено; сообщение невозможно прочитать.
++ row  `↯/s.100.1.3`  `BadLabel`  Байт метки использует один из зарезервированных типов меток (`0x40` или `0x80`) вместо длины или указателя.  `[↯/s.100.1.3] the DNS message is not valid because the label at offset 20 has unsupported type 64`  Расширенные типы меток не поддерживаются; сообщение невозможно прочитать.
++ row  `↯/s.100.1.4`  `LongLabel`  Метка длиннее 63 октетов UTF-8. Проверяется при построении имени (`Dns.Name(…)`, `Dns.Name.parse`, `+`, `prefix`), чтобы кодирование сообщения было тотальным.  `[↯/s.100.1.4] the DNS message is not valid because the label aaaa… is longer than 63 octets`  Сократите метку; имя экземпляра DNS-SD ограничено 63 байтами UTF-8.
++ row  `↯/s.100.1.5`  `LongName`  Метки имени вместе с байтами длины и завершителем превышают 255 октетов.  `[↯/s.100.1.5] the DNS message is not valid because the name a.b.c… is longer than 255 octets`  Сократите имя.
++ row  `↯/s.100.1.6`  `EmptyLabel`  Имя в форме представления содержит пустую метку, например `a..b` или `.a`.  `[↯/s.100.1.6] the DNS message is not valid because the name a..b contains an empty label`  Удалите удвоенную или начальную точку; *завершающая* точка допустима и обозначает корень.
++ row  `↯/s.100.1.7`  `BadEscape`  За обратной косой чертой в имени в форме представления не следует символ или три десятичные цифры в диапазоне 0–255.  `[↯/s.100.1.7] the DNS message is not valid because the name a\9b contains a malformed escape sequence`  Записывайте буквальную обратную косую черту как `\\`, буквальную точку как `\.`, а произвольный код символа как `\DDD`.
++ row  `↯/s.100.1.8`  `BadRdata`  Длина данных записи не согласуется с её типизированным телом: запись `A` не из четырёх байтов, `AAAA` не из шестнадцати, имя или поля `SRV`, выходящие за объявленную длину.  `[↯/s.100.1.8] the DNS message is not valid because the A record data at offset 40 is malformed`  Запись отправителя некорректна; сообщение невозможно прочитать.
++ row  `↯/s.100.1.9`  `LongString`  Строка символов `TXT` длиннее 255 октетов; проверяется при построении `Dns.Rdata.Txt`.  `[↯/s.100.1.9] the DNS message is not valid because a character-string of 300 octets exceeds 255`  Разбейте длинное содержимое `TXT` на несколько строк.
++ row  `↯/s.100.1.10`  `Trailing`  После последней секции сообщения остались байты.  `[↯/s.100.1.10] the DNS message is not valid because the message has trailing bytes from offset 60`  Декодируйте ровно одну датаграмму данных.
++ row  `↯/s.100.1.11`  `Unresolved`  `Dns.resolve` не смог разрешить имя через резолвер платформы.  `[↯/s.100.1.11] the DNS message is not valid because the name nonexistent.example could not be resolved`  Проверьте имя и конфигурацию DNS машины.
++ row  `↯/s.100.1.12`  `Timeout`  Ответ на запрос не пришёл до истечения тайм-аута.  `[↯/s.100.1.12] the DNS message is not valid because no response arrived before the timeout`  Убедитесь, что сервер имён доступен, или увеличьте `Socket.Option.Timeout`.
++ row  `↯/s.100.1.13`  `Mismatch`  Идентификатор или вопрос ответа не соответствует запросу, на который он получен.  `[↯/s.100.1.13] the DNS message is not valid because the response with ID 4660 does not answer the query`  Получена посторонняя или поддельная датаграмма; повторите запрос.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## См. также
+
+@ 0 1 0 0342e1cea7d43c5f105848baa2788885
++ - Исходный код: `lib/urticose/src/dns/urticose.Dns.scala`

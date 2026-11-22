@@ -1,0 +1,1338 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 10dd84f1f8f5d1491aefaa9d9ba5db88
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0274ba51d352c2300f5c9d9635c75457
++ info   mathematische Auszeichnung als typisierte Werte: MathML-Bäume, die Kurzschrift Ergo und das Rendern nach XML, HTML und Text
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1420dd02eec0454e07376eea1b2c9d7d
++     _Archimedes_ modelliert mathematische Notation als unveränderlichen Baum typisierter Werte:
++     die Elemente von [MathML](https://www.w3.org/TR/MathML-Core/) — Zeilen, Brüche, Skripte,
++     Wurzeln, Tabellen — jeweils eine Case-Klasse unter dem Objekt `Mathml`, mit einer Wurzel
++     `Math`, die nach XML rendert (`in[Xml]`), sich in Honeycomb-HTML einbetten lässt (`html`)
++     und als Text in fester Breite für ein Terminal gezeichnet wird (`draw`). MathML-Text wird
++     mit `read[Math]` zurückgelesen, und ein Hin- und Rückweg ist verlustfrei: Attribute, die das
++     Modell nicht interpretiert, bleiben erhalten.
+
+@ 0 7 0 178761acd590b3a71e00cde5db0538a3
++     Weil MathML von Hand unerträglich zu schreiben ist, bietet die Bibliothek **Ergo**, eine
++     einzeilige Kurzschrift mit einem Zeichen pro struktureller Rolle (`↗` Hochstellung, `↘`
++     Tiefstellung, `/` Bruch, `√` Wurzel, `⋱` Matrix, …), die mit `Ergo.parse` in denselben
++     Baum geparst und mit `Ergo.serialize` zurück serialisiert wird. Der Interpolator `ergo"…"`
++     prüft ein Literal, während der Code kompiliert, und setzt jeden Wert ein, der
++     `Encodable in Math` ist: Zahlen, Text, rationale Zahlen, komplexe Zahlen, Vektoren,
++     Matrizen und dimensionsbehaftete Größen haben alle Encoder, erreichbar als `value.math`
++     (eine `<math>`-Wurzel) oder `value.mathml` (ein einzelner Knoten).
+
+% 2 1 0 04ab2a7e523686f3102a6fcc890aa664
+
+% 3 1 0 0ea25030dc5d784707460ad254620e36
+
+% 4 1 0 1d6545ac27fe0c9e04d274d7a330929d
+
+% 1 1 0 1a4a554aec0ac9ff064cedb706f3288a
+
+% 0 1 0 0a7dbbab05c7c6e110d82930e8e4606b
+
+% 0 1 0 194b5eab2d53211c1ff7e36f33411538
+
+% 0 1 0 18f615e26eaebd30077ccd28a03f3e87
+
+% 0 1 0 08197ae83355d8531cb86d3f5b55e6c9
+
+% 0 1 0 139ee0e534297c460199a563ed372cc7
+
+% 0 1 0 0ab548ed1a51104c0616a90cff6b42c4
+
+% 1 1 0 03496e0a4f8f01931732716c9fe9c0ef
+
+@ 0 6 0 0ea7597b192014e21708b6109de72d74
++     Die Elementtypen liegen im Objekt `Mathml` (`Mathml.Mi`, `Mathml.Mrow`, …) statt flach im
++     Paket, damit generische Namen wie `Token`, `Layout` und `Ms` nicht mit anderen Modulen im
++     Namensraum `soundness` kollidieren; `import Mathml.*` holt die bloßen Namen herein, wo
++     MathML von Hand geschrieben wird. Das Lesen von MathML braucht ein `XmlSchema`
++     (`xmlSchemas.freeformXmlSchema` lässt jedes Element zu), und die beim Parsen ausgelösten
++     `Mathml.Error` und `Ergo.Error` brauchen eine Taktik, etwa `strategies.throwUnsafely`.
+
+@ 0 5 0 1c5a98854fa5140407c92e741717b9e1
++     Die Bibliothek hat ein Source-Set, `archimedes.core`, das für die JVM, Scala.js und Scala
++     Native kompiliert. Alles wird in das Umbrella `soundness` exportiert: `Math`, `Mathml`,
++     `Mathml.Display`, `Ergo`, `Mathml.Cell`, `mathmlNamespace` und die Erweiterungen `ergo`,
++     `math`, `mathml`, `cell` und `draw`. Die Erweiterung `html`, die einen `Math`- oder
++     `Mathml`-Knoten in einen HTML-Baum einbettet, gehört zu Honeycomb und wird über
++     `Math.renderable` und `Mathml.renderable` aufgelöst.
+
+% 0 1 0 076e0626e247ef600bd50879473cf7cd
+
+% 0 1 0 1958ddd510830cf11fb6e5f1f684b7b7
+
+% 0 1 0 02ca3e5da9d0baed0fac2a32ab320943
+
+% 0 1 0 0daeee4fd83c799014542ca91629ca0b
+
+@ 0 1 0 1563dab45565330509c18143ca0215bf
++ entry .Math   das Wurzelelement `<math>`: eine Liste von MathML-Knoten mit einem Anzeigemodus und Attributen
+
+% 1 1 0 1f8ce7f5cbe509a21e5d089f633fd0ac
+
+@ 0 5 0 00426e1cfbc5f8ab18da8e886f0f85c8
++       Ein `Math` ist die Wurzel eines MathML-Dokuments: Seine `#contents` sind die Knoten der
++       obersten Ebene, sein `#display` gibt an, ob der Browser es als abgesetzten Block oder im
++       Fließtext setzt, und seine `#attributes` sind weitere Attribute, die auf das Element
++       `<math>` geschrieben werden. Es wird aus Knoten mit `Math(nodes*)` gebaut, aus einem
++       Ergo-Literal mit `ergo"…"` oder `Ergo.parse`, oder aus jedem Wert, der
++       `Encodable in Math` ist, mit `value.math`.
+
+% 2 1 0 1e283f9c1f95abfe164137795562af9a
+
+% 3 1 0 13049e488ddba8740174ddcdb60a4bfb
+
+% 4 1 0 14b16d72efd8c92e03d16e471076d756
+
+% 1 1 0 056eff5473b907ef09cd6b9f7f307cf9
+
+% 2 1 0 020b83a3637be7ea13968d9460c502a2
+
+% 0 1 0 152b8c9f59b951240bb0883f32272625
+
+% 0 1 0 1a4b9153e9aff1501ef04196ae5025c6
+
+% 0 1 0 0f41082d6be5be981a684ad945996a8d
+
+% 0 1 0 03eb72b1e7039b9a191f94db226e6105
+
+% 0 1 0 19d75340033a2ac70eb01ecf7d4716bf
+
+% 1 1 0 0aa3073a524f48890d47274f7c9e4b44
+
+@ 0 7 0 157dd3826edc8ed01e1899a42c274748
++       Ein `Math` rendert auf vier Arten: `in[Xml]` (`.encodableInXml`) baut den
++       Xylophone-Baum, wobei das Attribut `xmlns` immer geschrieben wird; `html` (`.renderable`,
++       über die Erweiterung von Honeycomb) bettet es als `Html of "math"` überall dort ein, wo
++       `<math>` zulässig ist; `draw` und `cell` setzen es als Text in fester Breite; und ein
++       `Document[Math]` ist `Showable` als MathML-Text mit einem XML-Header (`.showable`).
++       Schreiben Sie für das XML `in[Xml]`, nicht `encode`: Ein `Math` ist auch
++       `Encodable in Math` (die Identität, `.self`), sodass `encode` mehrdeutig wäre.
+
+@ 0 3 0 02a4fe0160b47fe90ff7202b406b8986
++       Das Lesen ist die Umkehrung: `text.read[Math]` und `data.load[Math]` parsen das XML mit
++       Xylophone und bilden den Baum dann mit `Mathml.Parser` ab, wobei `Mathml.Error` ausgelöst
++       wird, wenn die Wurzel nicht `<math>` ist oder ein Element unbekannt ist. Beide brauchen
++       ein `XmlSchema` im Geltungsbereich.
+
+@ 0 2 0 0673db336b608f1e16673d8b99ba6d42
++       `Math` ist `Documentary`, mit `Encoding` als seinen `#Metadata`, sodass ein
++       `Document[Math]` die Kodierung trägt, die die Datei deklariert hat.
+
+% 0 1 0 1a5a8406f3ac323a1c88c3fc8f1aac04
+
+% 1 1 0 001888f035d515c00e06ac9a404d8c41
+
+% 0 1 0 1cf163a8f365d13e1dfcffc7ee78577b
+
+@ 0 5 0 04dbe3f12149e09e0d9983f2813240fc
++   entry .aggregable   liest `Math` aus MathML-Text, als `text.read[Math]`
++       Parst den Text über das eigene `Aggregable` von Xylophone als XML und dekodiert dann die
++       Wurzel `<math>` mit `Mathml.Parser.decodeMath`. Es braucht ein `XmlSchema` im
++       Geltungsbereich sowie Taktiken für `Parse.Error`, `Xml.Error` und `Mathml.Error`: die
++       ersten beiden für fehlerhaftes XML, die letzte, wenn das Wurzelelement nicht `<math>` ist
++       oder ein Element kein MathML ist.
+
+% 2 1 0 142bfb09852904f61174582f6aa8fcd2
+
+% 3 1 0 13a12f46861417a61cb1c028f2549c00
+
+% 3 1 0 0a6f11bf06d5bcbd0288a88a61a658ca
+
+% 2 1 0 0c21695d3d504c87018dc43f3b45e730
+
+% 0 1 0 08c7e8abc871688912d492dcf5b1e392
+
+% 1 1 0 03bf31ebdd62b3571f44f3d1b0583473
+
+@ 0 25 0 018837f5079acaaa18a0eb2cd6eb5341
++   entry .loadable   lädt ein `Document[Math]` aus MathML-Text, mit seiner deklarierten Kodierung
++       Wie `.aggregable`, aber über das `Loadable` von Xylophone, wobei der XML-Header erhalten
++       bleibt: Das Ergebnis ist ein `Document[Math]`, dessen Metadaten das deklarierte
++       `Encoding` sind (UTF-8, wenn keines deklariert ist). Es braucht ein `XmlSchema` und
++       dieselben drei Taktiken.
++   entry .loadableData   lädt ein `Document[Math]` aus Bytes, als `data.load[Math]`
++       Die Byte-Form von `.loadable`: Das XML wird direkt aus den `Data` geparst, sodass die
++       deklarierte Kodierung beachtet wird. Es braucht neben einem `XmlSchema` und den Taktiken
++       für `Parse.Error`, `Xml.Error` und `Mathml.Error` auch ein `Buffering` im
++       Geltungsbereich. Über diese Instanz läuft das Lesen einer Datei: `path.load[Math]` ergibt
++       das `Document[Math]`, dessen `root` das `Math` ist.
++   entry .showable   serialisiert ein `Document[Math]` als MathML-Text mit einem XML-Header
++       Nur ein `Document[Math]` ist `Showable`, kein bloßes `Math`: Die Darstellung ist ein
++       vollständiges Dokument, ein Header `<?xml version="1.0" …?>`, der die Kodierung des
++       Dokuments nennt, gefolgt vom Element `<math>`. Für das Element allein schreiben Sie
++       `math.in[Xml].show`.
++   entry .encodableInXml   das Element `<math>` als Xylophone-`Xml`, als `math.in[Xml]`
++       Baut das `Xml.Element` namens `math` mit dem Attribut `xmlns`, dem Attribut `display`,
++       wenn `#display` gesetzt ist, und dann den `#attributes`, über dem eigenen `in[Xml]` jedes
++       Inhaltsknotens. Es heißt `encodableInXml` statt `encodable`, weil ein `Math` über
++       `.self` auch `Encodable in Math` ist; `in[Xml]` wählt eindeutig dieses.
++   entry .renderable   ein `Math` als Honeycomb-HTML, als `math.html`, wo `<math>` zulässig ist
++       Das `Renderable`-Given mit `Form = "math"`: Die Erweiterung `html` von Honeycomb rendert
++       das `Math` als WHATWG-Element `<math>` mit denselben Attributen, die `.encodableInXml`
++       schreibt, und jeden Knoten über `Mathml.renderable` als Fremdinhalt. Das Ergebnis ist ein
++       `Html of "math"`, das überall akzeptiert wird, wo Honeycomb eingebetteten, Phrasing- oder
++       Flow-Inhalt zulässt. `Mathml.Reader.read` holt es wieder aus der Seite heraus.
+
+% 2 1 0 07be18809a1d071b1719579fdc9a595d
+
+% 3 1 0 1fea12d31d7b633611295609690e69f7
+
+% 4 1 0 0c021020ae4e7923105d5ebdc83286a0
+
+% 0 1 0 132a8863e7b64cc7146411c7efb6800c
+
+% 1 1 0 1d61dc00c30d5cd00a8da55d48f4affa
+
+@ 0 52 0 054043cbe00a62c416d1ed7b59815c43
++   entry .inspectable   eine Debug-Darstellung des Knotenbaums in geklammerter Präfixform
++       `Math(○ ⟨mn t"2"⟩)`: der Anzeigemodus (`○` für nicht gesetzt, `｢block｣`, wenn gesetzt),
++       dann jeder Knoten als sein Elementname, seine Attribute und entweder sein Text oder seine
++       Kinder, auf einer Zeile. Aus dieser Form liest man einen Fehler beim Parsen oder im
++       Layout ab; `show` gibt es nur für ein `Document[Math]`.
++   entry .int   ein `Int` als Zahl `<mn>`
++       `42.math` ist `<math><mn>42</mn></math>`, und `42.mathml` das bloße `<mn>`. `Long`,
++       `Short` und `Byte` werden auf dieselbe Weise über `.long`, `.short` und `.byte` kodiert.
++   entry .long   ein `Long` als Zahl `<mn>`
++   entry .short   ein `Short` als Zahl `<mn>`
++   entry .byte   ein `Byte` als Zahl `<mn>`
++   entry .double   ein `Double` als Zahl `<mn>`, in seiner `toString`-Form
++       `3.14.mathml` ist `<mn>3.14</mn>`; der Text ist die eigene Darstellung des `Double`, also
++       bleibt `5.0` `5.0`.
++   entry .float   ein `Float` als Zahl `<mn>`, in seiner `toString`-Form
++   entry .bigInt   ein `BigInt` als Zahl `<mn>`
++   entry .bigDecimal   ein `BigDecimal` als Zahl `<mn>`
++   entry .text   ein `Text` als `<mtext>`
++       `t"speed".mathml` ist `<mtext>speed</mtext>`: wörtlicher Text in der Formel, kein
++       Bezeichner. Für einen Bezeichner bauen Sie direkt ein `Mathml.Mi`.
++   entry .identical   jeder `Mathml`-Knoten als `<math>`-Wurzel über genau diesem Knoten
++       Erlaubt es, einen bereits vorliegenden Knoten überall dort zu verwenden, wo ein
++       `Encodable in Math` verlangt wird, insbesondere als Einsetzung in `ergo"…"`:
++       `ergo"(x↗$node)"`.
++   entry .self   ein `Math` als es selbst: der Identitäts-Encoder
++       Erlaubt es, ein `Math` in ein anderes `ergo"…"`-Literal einzusetzen, wo `Mathml.atom` es
++       auf einen Knoten reduziert (seinen einzigen Inhaltsknoten oder ein `<mrow>` aus
++       mehreren). Wegen dieser Instanz ist `encode` auf einem `Math` mehrdeutig; verwenden Sie
++       `in[Xml]` für das XML.
++   entry .q64   eine rationale Zahl `Q64` als `<mfrac>` oder, wenn ganzzahlig, als `<mn>`, mit vorangezogenem Vorzeichen
++       `Q64(-3, 4).math` ist `<mrow><mo>−</mo><mfrac><mn>3</mn><mn>4</mn></mfrac></mrow>`: Das
++       Vorzeichen wird als Minusoperator vor einen vorzeichenlosen Bruch geschrieben, ein
++       ganzzahliger Wert reduziert sich auf ein schlichtes `<mn>`, und ein Nenner null wird als
++       Text `NaR` gerendert. `.q32` verhält sich für `Q32` ebenso.
++   entry .q32   eine rationale Zahl `Q32` als `<mfrac>` oder, wenn ganzzahlig, als `<mn>`, mit vorangezogenem Vorzeichen
++   entry .QuantityEncodable   die Klasse hinter `.quantity`: ein Encoder für eine `Quantity[units]`
++       Nur deshalb eine öffentliche Klasse, weil das Inline-Given `.quantity` eine Referenz auf
++       sie inlinet; sie verpackt eine reine Funktion von einer `Quantity[units]` zu einem `Math`
++       als `Encodable in Math`. Nicht zur direkten Konstruktion gedacht.
++   entry .quantity   eine dimensionsbehaftete `Quantity` als ihr Betrag, gefolgt von ihren Einheiten
++       `(5*Metre/Second).mathml` ist die Zahl `<mn>5.0</mn>`, gefolgt von `<mi>m</mi>` und
++       `<msup><mi>s</mi><mn>-1</mn></msup>`, verbunden durch unsichtbare Multiplikationsoperatoren:
++       Jede Einheit ist ein Bezeichner, erhoben zu ihrer Potenz, wenn diese nicht 1 ist, in
++       alphabetischer Reihenfolge der Symbole. Ein Inline-Given, also wird es für jeden konkreten
++       `units`-Typ aufgelöst.
++   entry .complex   eine komplexe Zahl `Complex` als `re + im i`
++       `Complex(3, 4).mathml` ist `<mrow><mn>3</mn><mo>+</mo><mn>4</mn><mi>i</mi></mrow>`; der
++       Komponententyp braucht ein eigenes `Encodable in Math`.
++   entry .vector   ein Mosquito-`Vector` als eingeklammerte Spalte
++       Jedes Element ist eine Zeile einer `<mtable>` in dehnbaren runden Klammern:
++       `Vector(1, 2, 3).mathml` ist `(` über einer Spalte aus `<mtr><mtd><mn>…</mn></mtd></mtr>`.
++       Der Elementtyp braucht ein eigenes `Encodable in Math`.
++   entry .matrix   eine Mosquito-`Matrix` als eingeklammerte Tabelle
++       Jede Zeile der Matrix ist ein `<mtr>` aus `<mtd>`-Zellen in dehnbaren eckigen Klammern:
++       `Matrix[2, 2]((1, 2), (3, 4)).mathml`. Der Elementtyp braucht ein eigenes
+
+% 0 1 0 1f56e61785cf46c71eff58bd3a8e9f14
+
+@ 0 16 0 03dcf1b9a795ecdb1a3736f4974ce2e6
++   entry .interpolable   der Interpolator `ergo"…"`, geprüft, während der Code kompiliert
++       Das `Interpolable`-Given, das `ergo"…"` zu einem `Math` macht. Es liegt im Begleitobjekt
++       von `Math`, sodass über `import soundness.*` hinaus kein Import nötig ist; die
++       Erweiterung `ergo` auf `StringContext` ist das, was es benennt. Ein fehlerhaftes Literal
++       lässt die Kompilierung an dem Zeichen scheitern, an dem das Parsen anhielt, und eine
++       `$`-Einsetzung muss `Encodable in Math` sein.
++   entry #contents   die Knoten der obersten Ebene der Formel, in Reihenfolge
++   entry #display   `Display.Block`, `Display.Inline` oder `Unset`, um das Attribut wegzulassen
++       Entscheidet, ob der Browser die Formel als abgesetzte Gleichung oder im Fließtext setzt.
++       Wird von `Mathml.Parser.decodeMath` aus dem Attribut `display` zurückgelesen, wobei ein
++       unbekannter Wert zu `Inline` wird.
++   entry #attributes   weitere Attribute, die auf das Element `<math>` geschrieben werden, als Name-Wert-Paare
++       Jedes Attribut außer `xmlns` und `display`, die strukturell gehalten werden. Der Parser
++       legt jedes andere Attribut der Wurzel hier ab, sodass ein Hin- und Rückweg sie erhält.
++   entry #attributePairs   jedes Attribut, mit dem das Element `<math>` geschrieben wird
++       Zuerst `xmlns`, dann `display`, falls gesetzt, dann `#attributes`: die Liste, die sowohl
++       `in[Xml]` als auch `html` schreiben.
+
+% 0 1 0 10a9e1547edcaafb06180e06ea313e6e
+
+@ 0 1 0 06be896f2fa2e7b300d249de383edc84
++   entry #Metadata   `Encoding`: was ein `Document[Math]` trägt, die deklarierte Zeichenkodierung
+
+@ 0 1 0 15cececa0986d66807553c6c975267b6
++ entry .Mathml   der Basistyp jedes MathML-Knotens und das Zuhause aller Elementtypen
+
+% 1 1 0 153d7d9ae6f00a0e129542f1a31073cf
+
+@ 0 7 0 06de739e0cc1da4018b12c221bf5cce3
++       Jedes Element von Presentation MathML ist eine unveränderliche Case-Klasse, die im Objekt
++       `Mathml` verschachtelt ist — `Mathml.Mi`, `Mathml.Mn`, `Mathml.Mrow`, `Mathml.Mfrac`,
++       `Mathml.Msup` und die übrigen —, und `Mathml` ist der Trait, den sie alle erweitern. Ein
++       Knoten kennt sein Tag (`#label`), seine geordnete Sammlung `#attributes` und entweder
++       seine Zeichendaten (`#text`, für ein Token-Element wie `<mi>`) oder seine Kindknoten
++       `#contents` (für ein Layout-Element wie `<mrow>`). Die Attribute bleiben wörtlich
++       erhalten, sodass ein Hin- und Rückweg aus Parsen und Serialisieren selbst für ein Attribut
++       verlustfrei ist, dem das Modell keinen typisierten Accessor gibt.
+
+@ 0 5 0 1165370e877411120ab4667f7161b7cd
++       Die Elemente sind nach ihrer MathML-Klasse in die Sealed Traits `Token`, `Layout`,
++       `Script`, `Tabular`, `Elementary` und `Semantic` gruppiert; nichts verzweigt anhand
++       dieser, und Code gleicht gegen die konkreten Elemente ab. Die Typen sind verschachtelt
++       statt flach exportiert, damit Namen wie `Token`, `Layout` und `Ms` nicht mit anderen
++       Modulen im Namensraum `soundness` kollidieren: `import Mathml.*` holt die bloßen Namen
++       herein.
+
+% 2 1 0 074b117e05977d080e78924123ec557e
+
+% 3 1 0 030f3fb502648615075e216bc0b0ef07
+
+% 4 1 0 1e8f06eec79119291dfbad1123d8d246
+
+% 0 1 0 107fe0a0037ccefe1f324f108a128f5f
+
+% 0 1 0 1a2c9c98ae27b155182960a9d44c1184
+
+% 0 1 0 1b1444c503dbf24f16c7353532b2b2e1
+
+% 0 1 0 04064c22d5f6ca4303108d9eec65a29b
+
+% 0 1 0 03271d5cff09f4e51f0f1552762bb7f9
+
+% 1 1 0 037c504ae80cde2d13411378f6fe9be2
+
+@ 0 6 0 058d39426fdc1351083b04d181e4655b
++       Ein Knoten rendert in zwei Dokumentmodelle: `in[Xml]` (`.encodable`) baut einen
++       Xylophone-Baum, und die Erweiterung `html` von Honeycomb (`.renderable`) baut einen Baum
++       aus Fremdelementen zum Einbetten in eine Seite. Beide sind generisch über jeden Untertyp,
++       sodass `Msup(…).in[Xml]` ohne Aufweitung funktioniert. `draw` und `cell` setzen einen
++       Knoten als Text in fester Breite. Die einheitlichen Container (`Mrow`, `Msqrt`, `Mtable`,
++       …) haben jeweils ein variadisches `apply` aus `Container`; die positionalen Schemata
++       (`Mfrac`, `Msub`, `Mroot`, …) benennen stattdessen ihre Kinder.
+
+@ 0 3 0 1819b0ac647e456011c729eeba68b77e
++       `Mathml.Parser` dekodiert Xylophone-XML in Knoten, `Mathml.Reader` findet und dekodiert
++       einen `<math>`-Teilbaum in Honeycomb-HTML, und beide lösen `Mathml.Error` für ein Element
++       aus, das kein MathML ist.
+
+% 1 1 0 0af2986071c0eb3f15d0cc79b13bcb4b
+
+% 1 1 0 0f64eb518a70b30915b6e62deeae7a55
+
+% 0 1 0 0ef72c07aaf7825605786cf2d92ace93
+
+@ 0 13 0 0fa3f5053f33ad4f020a2e25189ad3fe
++   entry .encodable   jeder Knoten als Xylophone-Element `Xml`, als `node.in[Xml]`
++       Generisch über jeden `node <: Mathml`: ein `Xml.Element` mit dem `label` des Knotens,
++       seinen Attributen und entweder einem einzelnen Textkind oder dem eigenen `in[Xml]` der
++       Kinder. Die Wurzel `<math>` ist `Math.encodableInXml`.
++   entry .renderable   jeder Knoten als Honeycomb-Fremdinhalt, als `node.html`
++       Das `Renderable`-Given mit `Form = "#foreign"`, generisch über jeden `node <: Mathml`:
++       Die Erweiterung `html` von Honeycomb rendert den Knoten als Fremdelement mit seinem Label
++       und seinen Attributen; so rendert `Math.renderable` den Inhalt einer Formel innerhalb von
++       `<math>`.
++   entry .atom   reduziert eine `<math>`-Wurzel auf einen Knoten: ihren einzigen Inhalt oder ein `<mrow>`
++       `Mathml.atom(math)` ist `math.contents`, wenn das genau ein Knoten ist, und sonst ein
++       `Mrow` aus den Inhalten. Das verwenden die Erweiterung `mathml` und der Interpolator
++       `ergo"…"`, um einen kodierten Wert dort einzubetten, wo ein einzelner Operand verlangt
++       wird.
++   entry .Container   der variadische Konstruktor, den jedes Element teilt, dessen Kinder eine Liste sind
+
+% 1 1 0 1abb1548eee742e80a90e30ff0e87508
+
+@ 0 7 0 154a2f17851e8110071fa13ea32651d6
++         Ein Trait, den ein Begleitobjekt als `object Mrow extends Container(new Mrow(_))`
++         erweitert, was ihm `apply(children: Mathml*)` gibt. Auch `Math` erweitert ihn, sodass
++         `Math(nodes*)` eine Wurzel baut.
++     entry #apply   baut das Element über den gegebenen Kindern, in Reihenfolge
++   entry .Token   die Blattelemente, deren Inhalt Zeichendaten sind: `Mi`, `Mn`, `Mo`, `Mtext`, `Ms`, `Mspace`, `Mglyph`
++       Ein Sealed Trait ohne `#contents`. Auch `Mspace` und `Mglyph` tragen keinen Text, da sie
++       vollständig durch ihre Attribute gesteuert werden.
++   entry .Mi   `<mi>`: ein Bezeichner, etwa eine Variable oder ein Funktionsname
+
+% 1 1 0 1c88a78f124fd6d206c4d9ca29dc241a
+
+@ 0 6 0 1ccab13367e8182c1bb1b45ac01a531e
++         `Mi(t"x")`. In Ergo ist eine Folge von Buchstaben ein Bezeichner, also ist `sin`
++         `<mi>sin</mi>` und `x y` sind zwei. Ein Bezeichner aus einem Buchstaben wird nach den
++         eigenen Regeln von MathML kursiv gesetzt; das Attribut `mathvariant="normal"` (die
++         Ergo-Direktive `⦱`) stellt ihn aufrecht.
++     entry #value   der Text des Bezeichners
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mn   `<mn>`: ein numerisches Literal
+
+% 1 1 0 18e17f14acb6e1c40daad811705ad04e
+
+@ 0 5 0 07932fc62586119003526d78c1087bd2
++         `Mn(t"2")`. Der Text ist das, als was die Zahl gelesen werden soll; die
++         `Encodable in Math`-Instanzen für Zahlen schreiben hier ihre `show`- oder
++         `toString`-Form.
++     entry #value   der Text der Zahl
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mo   `<mo>`: ein Operator, eine Klammer oder ein Trennzeichen
+
+% 1 1 0 174ba72887e2feea106131c9a5eca259
+
+@ 0 6 0 12726ca7266667d0171b09f82cf24ef7
++         `Mo(t"+")`. Klammern, Integrale und die großen Operatoren `∑` und `∏` sind Operatoren,
++         die `Cell` beim Zeichnen auf die Höhe ihres Operanden dehnt; eine dehnbare Klammer ist
++         in MathML ein `Mo` mit `stretchy="true"`.
++     entry #value   der Text des Operators
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mtext   `<mtext>`: wörtlicher Text innerhalb der Formel
+
+% 1 1 0 07df8578191f1d7e07b4e1dce633af62
+
+@ 0 8 0 1c3bb68d7e855ac5024764f868d6dfe8
++         `Mtext(t"speed")`: Wörter statt Mathematik. `Text` wird über `Math.text` hierzu
++         kodiert. Es hat keine Ergo-Form, sodass `Ergo.serialize` es zurückweist.
++     entry #value   der Text
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Ms   `<ms>`: ein String-Literal, in Anführungszeichen gezeigt
++     entry #value   der Text des Strings
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mspace   `<mspace>`: Leerraum einer gegebenen Breite, Höhe oder Tiefe
+
+% 1 1 0 13f5d710709eab8f0910ca519f55f5f1
+
+@ 0 8 0 1adab729017b94121da9db68b3df0539
++         `Mspace(List(t"width" -> t"1em"))` rendert als `<mspace width="1em"/>`. Es hat weder
++         Text noch Kinder; `Cell` zeichnet es als eine leere Spalte.
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mglyph   `<mglyph>`: ein Zeichen aus einem Bild, über seine Attribute
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Layout   die allgemeinen Layout-Schemata: `Mrow`, `Mfrac`, `Msqrt`, `Mroot`, `Mstyle`, `Merror`, `Mpadded`, `Mphantom`, `Menclose`, `Mfenced`
++       Ein Sealed Trait aus Elementen mit Kindern und ohne Text.
++   entry .Mrow   `<mrow>`: eine horizontale Zeile von Knoten, als eine Einheit gruppiert
+
+% 1 1 0 039de98f4e0df17b0f282eec4f64cf89
+
+@ 0 6 0 029462fdb7fe28d10265a0b3bf238d71
++         `Mrow(Mi(t"x"), Mo(t"+"), Mn(t"1"))`. Das gruppierende Element: Eine Klammergruppe in
++         Ergo ist ein `Mrow`, und `Mathml.atom` verpackt mehrere Knoten in eines. `Cell` zeichnet
++         eine Zeile, indem es die Grundlinien ihrer Kinder ausrichtet und binäre Operatoren mit
++         Abstand setzt.
++     entry #contents   die Kinder der Zeile, in Reihenfolge
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mfrac   `<mfrac>`: ein Bruch, Zähler über Nenner
+
+% 1 1 0 0b9011ea91fe91530c6db268e008c76b
+
+@ 0 6 0 026d71d38f77ee1b0f5aaca27db74da3
++         `Mfrac(Mn(t"1"), Mn(t"2"))`; in Ergo `a/b`. `linethickness="0"` (in Ergo `═(0)`)
++         entfernt den Bruchstrich, für einen Binomialkoeffizienten.
++     entry #numerator   der Knoten über dem Bruchstrich
++     entry #denominator   der Knoten unter dem Bruchstrich
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Msqrt   `<msqrt>`: eine Quadratwurzel über ihren Kindern
+
+% 1 1 0 0dd7919aa2eebc800721d559110f2c86
+
+@ 0 4 0 1aaa6fbce09b782103e48b02f8552ce7
++         `Msqrt(Mi(t"x"))`; in Ergo `√x`. `Cell` zeichnet ein Vinculum über den Radikanden.
++     entry #contents   der Radikand, als Liste von Knoten
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mroot   `<mroot>`: eine n-te Wurzel, mit dem Index über dem Zeichen
+
+% 1 1 0 0a214f398b4cc56c085107c36ea867a9
+
+@ 0 16 0 05a3c6c4d6fc17df1c921c30e97310af
++         `Mroot(Mi(t"x"), Mn(t"3"))` ist die Kubikwurzel von `x`: zuerst die Basis, dann der
++         Index, wie MathML sie ordnet. In Ergo ergibt ein Index-Atom, das unmittelbar vor `√`
++         geschrieben wird, eine solche: `3√x`.
++     entry #base   der Radikand
++     entry #index   der Grad der Wurzel
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mstyle   `<mstyle>`: eine Stiländerung, die auf ihre Kinder angewendet wird
++     entry #contents   die Kinder
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Merror   `<merror>`: als fehlerhaft markierter Inhalt
++     entry #contents   die Kinder
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mpadded   `<mpadded>`: Kinder mit angepasster Größe oder Position
++     entry #contents   die Kinder
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mphantom   `<mphantom>`: Kinder, die Platz einnehmen, aber nicht gezeichnet werden
+
+% 1 1 0 02804ff215ae33a808632480613f355f
+
+@ 0 4 0 004a6948fc53e4b8050272788fbfe73f
++         `Cell` zeichnet es als leeren Block von der Größe der Kinder.
++     entry #contents   die Kinder
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Menclose   `<menclose>`: Kinder, umschlossen von einer Notation wie einem Kasten oder einer Durchstreichung
+
+% 1 1 0 11eab6da70824ce70bfbfe9741418706
+
+@ 0 4 0 0943f23dcc91b0200c36d091f59022fb
++         Nur MathML 3: MathML Core hat es gestrichen, daher hat es keine Ergo-Direktive.
++     entry #contents   die Kinder
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mfenced   `<mfenced>`: Kinder zwischen einem Klammerpaar
+
+% 1 1 0 179a54e503154c461e9fadcfd6af7821
+
+@ 0 11 0 152c2d881ff990ab116972194d28ccb4
++         `Cell` zeichnet es mit runden Klammern, die auf die Höhe des Inhalts gedehnt sind; so
++         wird ein hoher Ausdruck in der Textausgabe eingeklammert. In MathML Core ist das
++         Gegenstück ein `Mrow` aus dehnbaren `Mo`-Klammern, und genau das schreiben die Encoder
++         `Math.vector` und `Math.matrix`.
++     entry #contents   die Kinder
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Script   die Schemata für Skripte und Grenzen: `Msub`, `Msup`, `Msubsup`, `Munder`, `Mover`, `Munderover`, `Mmultiscripts`, `Mprescripts`, `Mnone`
++       Ein Sealed Trait. Die Eckskripte und die zentrierten Grenzen sind positional;
++       `Mmultiscripts` ist ein Container, dessen Kinder die Basis, ihre Postskripte, einen
++       `Mprescripts`-Marker und ihre Präskripte verschränken, mit `Mnone` als leerem Platzhalter.
++   entry .Msub   `<msub>`: eine Basis mit einem Index unten
+
+% 1 1 0 0bf007927cab98681438d70793aa944d
+
+@ 0 7 0 00fbf0a281d5eb6613825375dd61ea8b
++         `Msub(Mi(t"x"), Mi(t"i"))`; in Ergo `x↘i`. `Cell` setzt eine Tiefstellung in
++         Unicode-Tiefstellungszeichen auf die eigene Zeile der Basis (`xᵢ`), wenn jedes Zeichen
++         eines hat, und stapelt sie sonst darunter.
++     entry #base   der Knoten, an den das Skript angefügt wird
++     entry #subscript   das Skript, rechts unten gesetzt
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Msup   `<msup>`: eine Basis mit einer Hochstellung
+
+% 1 1 0 12e964bfc91e76d519a47d46f7258399
+
+@ 0 6 0 19c3b3aae3c4e0c01cba78ad20bc85f3
++         `Msup(Mi(t"x"), Mn(t"2"))`; in Ergo `x↗2`. `Cell` zeichnet es als `x²`, wenn sich das
++         Skript in Unicode-Hochstellungszeichen schreiben lässt, und stapelt es sonst diagonal
++         darüber.
++     entry #base   der Knoten, an den das Skript angefügt wird
++     entry #superscript   das Skript, rechts oben gesetzt
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Msubsup   `<msubsup>`: eine Basis mit sowohl einer Tief- als auch einer Hochstellung
+
+% 1 1 0 1cde90ee33829a121df2176b5f316bb1
+
+@ 0 6 0 1ed7bbf41d1cd10a0214bafd19ac172e
++         In Ergo `x↘i↗2`: Eine Basis, die ein `↘` und ein `↗` erhält, verschmilzt zu diesem
++         Element.
++     entry #base   der Knoten, an den die Skripte angefügt werden
++     entry #subscript   das untere Skript
++     entry #superscript   das obere Skript
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Munder   `<munder>`: eine Basis mit einem Unterskript oder einer unteren Grenze
+
+% 1 1 0 07d84c6a20b63bf81a44743e4654f91d
+
+@ 0 6 0 02de0e798a35f81e1b7f6fd5a795accb
++         In Ergo `x↓n`. Ist das Unterskript ein einzelnes `Mo`, markiert der Ergo-Parser es mit
++         `accentunder="true"` und behandelt einen Strich oder Pfeil als eng anliegenden Akzent
++         statt als Grenze.
++     entry #base   der Knoten, an den das Skript angefügt wird
++     entry #underscript   das Skript, unten zentriert
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mover   `<mover>`: eine Basis mit einem Überskript oder einer oberen Grenze
+
+% 1 1 0 0ff7429ae50fc3b81f705b383f9bded6
+
+@ 0 6 0 09b01168364369ff1ab9f3e7633cfb03
++         In Ergo `x↑n`, oder `x↑^` für ein Dach, das der Parser mit `accent="true"` markiert,
++         weil das Überskript ein einzelner Operator ist.
++     entry #base   der Knoten, an den das Skript angefügt wird
++     entry #overscript   das Skript, oben zentriert
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Munderover   `<munderover>`: eine Basis mit Grenzen sowohl unten als auch oben
+
+% 1 1 0 1cacdb3fe3a713a60058e5d2cb429060
+
+@ 0 7 0 0886791511b1b2b1080385d842b48961
++         In Ergo `∑↓(i = 1)↑n`: die natürliche Form für die Grenzen eines großen Operators.
++         `Cell` zeichnet die Grenzen zentriert über und unter der Basis.
++     entry #base   der Knoten, an den die Skripte angefügt werden
++     entry #underscript   die untere Grenze
++     entry #overscript   die obere Grenze
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mmultiscripts   `<mmultiscripts>`: eine Basis mit beliebig vielen Prä- und Postskripten
+
+% 1 1 0 1c005134a5f428891171cf1712c47627
+
+@ 0 12 0 1633a7b36802d99112c92a0e3d14791c
++         Die Kinder sind die Basis, dann Paare aus Tief- und Hochstellung nach ihr, dann ein
++         `Mprescripts`-Marker und Paare vor ihr; `Mnone` füllt eine leere Position.
++     entry #contents   die Basis, Skripte und Marker, in der Reihenfolge von MathML
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mprescripts   `<mprescripts/>`: der Marker in `Mmultiscripts`, nach dem die Präskripte folgen
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mnone   `<mnone/>`: eine leere Skriptposition in `Mmultiscripts`
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Tabular   die Tabellenschemata: `Mtable`, `Mtr`, `Mlabeledtr`, `Mtd`, `Maligngroup`, `Malignmark`
++       Ein Sealed Trait. MathML Core behält die Tabellenelemente, aber keines ihrer MathML-3-
++       Attribute (`columnalign`, `rowspan`, `frame`, …), daher haben diese keine
++       Ergo-Direktiven.
++   entry .Mtable   `<mtable>`: eine Tabelle oder Matrix aus Zeilen
+
+% 1 1 0 0e65580aa20621581aa2f3979ab19f94
+
+@ 0 46 0 1b6768d11926110c1b343520167b07d5
++         `Mtable(Mtr(Mtd(Mn(t"1")), Mtd(Mn(t"2"))))`. Die Ergo-Einleitungszeichen `⋱`, `⋯` und
++         `⋮` bauen eine Matrix, eine einzeilige Tabelle und eine einspaltige Tabelle; die Encoder
++         `Math.vector` und `Math.matrix` schreiben eine in dehnbaren Klammern.
++     entry #contents   die Zeilen, jeweils ein `Mtr` oder `Mlabeledtr`
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mtr   `<mtr>`: eine Tabellenzeile aus Zellen
++     entry #contents   die Zellen, jeweils ein `Mtd`
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mlabeledtr   `<mlabeledtr>`: eine Tabellenzeile, deren erstes Kind ihre Beschriftung ist
++     entry #contents   die Beschriftung, dann die Zellen
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mtd   `<mtd>`: eine Zelle einer Tabellenzeile
++     entry #contents   der Inhalt der Zelle
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Maligngroup   `<maligngroup/>`: ein Marker für eine Ausrichtungsgruppe innerhalb einer Zelle
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Malignmark   `<malignmark/>`: ein Marker für einen Ausrichtungspunkt innerhalb einer Zelle
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Elementary   die Schemata für elementare Mathematik: `Mstack`, `Mlongdiv`, `Msgroup`, `Msrow`, `Mscarries`, `Mscarry`, `Msline`
++       Ein Sealed Trait der MathML-3-Elemente für spaltenweises Rechnen und schriftliche
++       Division, die MathML Core gestrichen hat; sie werden geparst und serialisiert, haben aber
++       keine Ergo-Form.
++   entry .Mstack   `<mstack>`: ein spaltenweise ausgerichteter Stapel von Zeilen für elementares Rechnen
++     entry #contents   die Zeilen
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mlongdiv   `<mlongdiv>`: ein Layout für schriftliche Division
++     entry #contents   der Divisor, das Ergebnis, der Dividend und die Zeilen darunter
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Msgroup   `<msgroup>`: eine Gruppe von Zeilen innerhalb eines Stapels, gemeinsam verschoben
++     entry #contents   die Zeilen
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Msrow   `<msrow>`: eine Zeile eines Stapels
++     entry #contents   die Ziffern und Operatoren der Zeile
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mscarries   `<mscarries>`: eine Zeile von Überträgen über der folgenden Zeile
++     entry #contents   die Überträge, jeweils ein `Mscarry` oder ein schlichter Knoten
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Mscarry   `<mscarry>`: ein Übertrag innerhalb von `Mscarries`
++     entry #contents   der Inhalt des Übertrags
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Msline   `<msline/>`: eine horizontale Linie innerhalb eines Stapels
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Semantic   `<maction>` und die Semantik-Brücke: `Maction`, `Semantics`, `Annotation`, `AnnotationXml`
++       Ein Sealed Trait. `Semantics` paart einen Präsentationsteilbaum mit Annotationen: Eine
++       `Annotation` trägt Zeichendaten wie einen TeX-String, eine `AnnotationXml` einen
++       verschachtelten Auszeichnungsteilbaum.
++   entry .Maction   `<maction>`: Kinder, die an eine Aktion wie Umschalten oder Hervorheben gebunden sind
+
+% 1 1 0 1f45b8433a913dce00c7cf4649c26d42
+
+@ 0 14 0 0c2e33d54c0196ae02733710bb15a8e9
++         Das Attribut `actiontype` (in Ergo `⚙(type)`) benennt die Aktion; es ist veraltet und
++         in MathML Core nicht definiert.
++     entry #contents   die Kinder
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Semantics   `<semantics>`: ein Präsentationsteilbaum mit einer oder mehreren Annotationen
++     entry #contents   der Präsentationsknoten, dann seine Annotationen
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Annotation   `<annotation>`: Zeichendaten, die eine Formel annotieren, etwa ihren TeX-Quelltext
++     entry #value   der Text der Annotation
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .AnnotationXml   `<annotation-xml>`: ein Auszeichnungsteilbaum, der eine Formel annotiert
++     entry #contents   die Knoten der Annotation
++     entry #attributes   die Attribute des Elements, als Name-Wert-Paare
++   entry .Error   ausgelöst, wenn XML oder HTML keinen MathML-Baum enthält
+
+% 1 1 0 025c67c71b69cc6307b86e49bb53f32f
+
+@ 0 5 0 01265477c429d7e0114a114121f1fb2f
++         Fehler `↯/s.129.1`: _the MathML could not be parsed because reason_. Ausgelöst von
++         `Math.aggregable`, `Math.loadable`, `Math.loadableData`, `Mathml.Parser` und
++         `Mathml.Reader`, wenn das Wurzelelement nicht `<math>` ist oder ein Element ein Label
++         hat, das kein MathML-Element ist. Die Wohlgeformtheit des XML selbst ist Sache von
++         `Xml.Error` und `Parse.Error` aus Xylophone, die vor diesem ausgelöst werden.
+
+% 2 1 0 14fb17b3e713c43100daaa1d002476ef
+
+% 3 1 0 1ed0b6e8466498b910e9f7131b314209
+
+% 1 1 0 01e216ffbf7534fe1439bb82c911f4ee
+
+% 0 1 0 1fd97adbaecfd4f0071902df79baad04
+
+% 1 1 0 0f5e35f8cdef81061b3bfff584cc7739
+
+@ 0 11 0 03ca4f0cdf5ceaef0825ef39a8466d57
++         Unter `strategies.throwUnsafely` wirft dasselbe Lesen eine Ausnahme, und der `#reason`
++         des Fehlers ist `Mathml.Error.Reason.NotMathml(t"svg")`.
++     entry .Reason   warum der Baum kein MathML ist: `NotMathml(label)` oder `UnknownElement(label)`
++         `NotMathml(label)` (Grund 1, _the root element was `<label>` instead of `<math>`_):
++         Die Wurzel des Dokuments oder die HTML-Seite hatte kein Element `<math>`; das Label ist
++         `<missing>`, wenn ein Fragment oder eine Seite überhaupt keines enthielt.
++         `UnknownElement(label)` (Grund 2, _the element `<label>` is not a known MathML
++         element_): ein Element innerhalb von `<math>`, dessen Tag `Mathml.Parser.decodeNode`
++         nicht erkennt.
++     entry .communicable   rendert jeden Grund als seine Meldung
++     entry #reason   welcher Fehler gefunden wurde
++   entry .Parser   dekodiert einen Xylophone-Baum `Xml` in `Math`- und `Mathml`-Knoten
+
+% 1 1 0 1939402f6f3600351972e5d46b495aad
+
+@ 0 5 0 1a1dfa0ab40a152b1f6eafae8c1720e8
++         Der Decoder hinter `read[Math]`: Er verzweigt anhand des Labels jedes Elements zur
++         passenden Case-Klasse und hält jedes Attribut wörtlich in der Sammlung `attributes` des
++         Knotens fest, außer `xmlns` und `display` an der Wurzel, die `Math` strukturell hält.
++         Ein positionales Element (`<mfrac>`, `<msup>`, …), dem ein Kind fehlt, erhält an
++         dessen Stelle ein leeres `Mrow`.
+
+% 2 1 0 05ec3a109599b4ac1d72ab25ce9338dd
+
+% 3 1 0 12a5de5aee471a0118e8c866aa50b3ce
+
+% 1 1 0 10c75085845bdbdf08b47c1db265ea53
+
+% 1 1 0 0eff06a39f326980140a29dab5c67489
+
+% 0 1 0 00542ffad24aace01c15e8dae5594e88
+
+% 0 1 0 09f4f5ebcaa730e6058c08637b4c62b4
+
+% 1 1 0 0b52384181664cf10bf4ad3b90319c5d
+
+@ 0 16 0 0671d78ad8c72f1b1bc5d18c7b0448b1
++         Jede dekodierende Methode braucht eine `Tactic[Mathml.Error]`.
++     entry .labelOf   das Label eines `Xml`-Werts oder `<unknown>` für ein Nicht-Element
++     entry .findMath   das erste Element `<math>` in einer Liste von XML-Knoten
++         Löst `Mathml.Error` mit `NotMathml(<missing>)` aus, wenn es keines gibt.
++     entry .rootElement   das Element `<math>` eines XML-Werts: der Wert selbst oder das erste in einem Fragment
++         Löst `Mathml.Error` mit `NotMathml(label)` aus, wenn der Wert ein Element mit einem
++         anderen Namen ist oder ein Fragment ohne Element `<math>`.
++     entry .decodeMath   dekodiert ein Element `<math>` in ein `Math` und liest dabei `display` und die übrigen Attribute
++         Das Attribut `display` wird zu `#display` (`Display.Block`, `Display.Inline` oder
++         `Inline` für jeden anderen Wert; `Unset`, wenn es fehlt); `xmlns` wird verworfen, da es
++         immer zurückgeschrieben wird; jedes andere Attribut bleibt erhalten. Die Kinder werden
++         mit `.decodeNode` dekodiert.
++     entry .decodeNode   dekodiert ein Element in die `Mathml`-Case-Klasse für sein Label
++         Löst `Mathml.Error` mit `UnknownElement(label)` für ein Label aus, das keines der
++         MathML-Elemente ist.
++   entry .Reader   holt in einen Honeycomb-HTML-Baum eingebettetes MathML heraus
+
+% 1 1 0 0f5511797deba7ce049ca0acb942ff89
+
+@ 0 4 0 13b387c9b1f3f82f026c68f06c0c01f7
++         Honeycomb parst `<math>` als Fremdelement mit eigenen Knotentypen, daher durchläuft der
++         Reader den HTML-Baum in Tiefensuche nach dem ersten `<math>`-Teilbaum, überträgt ihn in
++         ein Xylophone-`Xml.Element` und dekodiert dieses mit `Mathml.Parser`. Das ist die
++         Umkehrung von `math.html`.
+
+% 2 1 0 019936af2aef47720ec6ff31424e9bcd
+
+% 3 1 0 05da1d627f67019715ed43806eadc285
+
+% 4 1 0 00c9e477f70e9da10e704461685bf670
+
+% 1 1 0 19c269351317ddb30a1c428ad3226bd9
+
+% 0 1 0 09e529b03572332f134ea16a4fc8c756
+
+% 0 1 0 10fb2cf1186e2c40155af454e7eff04e
+
+% 1 1 0 111cfc31d3522581000c134e75820fdd
+
+@ 0 3 0 1e61c774dfd8962109e4f04c0fb8ce9c
++     entry .read   das erste `<math>` in einem HTML-Baum, dekodiert als `Math`
++         Löst `Mathml.Error` mit `NotMathml(<missing>)` aus, wenn der Baum kein Element `<math>`
++         hat, und `UnknownElement` für ein Nicht-MathML-Element darin; braucht eine
+
+% 0 1 0 0e0fbbec0d5da58502e6f19c34a78390
+
+@ 0 7 0 078a93ab7c570b0a05a321964b5caddf
++     entry .findMath   das erste Element `<math>` in einem HTML-Baum, als Honeycombs eigener Elementtyp, oder `Unset`
++   entry #label   der Tag-Name des Elements, etwa `mi` oder `annotation-xml`
++   entry #attributes   die Attribute des Elements, als Name-Wert-Paare, in Reihenfolge
++       Wörtlich erhalten: Auch ein Attribut, für das das Modell keinen Accessor hat, übersteht
++       den Hin- und Rückweg.
++   entry #contents   die Kindknoten, in Reihenfolge; leer für ein Token-Element
++   entry #text   die Zeichendaten eines Token-Elements oder `Unset` für ein Layout-Element
++       `Mspace` und `Mglyph` sind Token ohne Text, daher ist ihres ebenfalls `Unset`.
+
+@ 0 1 0 15a426221504e732017882612388a096
++   entry .Display   ob eine `<math>`-Wurzel ein abgesetzter Block ist oder inline im Fließtext gesetzt wird
+
+% 1 1 0 1ca0c025d03b511904dbe61939726ded
+
+@ 0 4 0 076eeb7c80e6baf01d8d7b3b6f7dd888
++         Der Wert des Attributs `display` am Wurzelelement `<math>`: `Display.Block` für eine
++         abgesetzte Gleichung auf eigener Zeile, `Display.Inline` für eine, die innerhalb eines
++         Absatzes gesetzt wird. Ein `Math` hält einen davon als sein `display`, oder `Unset`, um
++         das Attribut wegzulassen, und die Ergo-Direktiven `◻` und `▭` setzen ihn.
+
+% 2 1 0 1c6c7b09e2e3aee812827089f0f64b4f
+
+% 3 1 0 01051a5cd1907684025ba2bb4ca5473b
+
+% 4 1 0 0f935fc4bf18296b14814591351dff89
+
+% 0 1 0 155ea76cc6f91fb10bd35608da849111
+
+% 0 1 0 12e3a2d18340769219b5e72f0fc3ffa3
+
+% 1 1 0 195a27d8358fdcfb15a0f1a1415db3e9
+
+@ 0 5 0 1a18bbcb82dfb8f01e4c10c005a54cc4
++     entry .encodable   rendert einen Anzeigemodus als Text des Attributs: `block` oder `inline`
++     entry .unapply   erkennt den Text `block` oder `inline` als `Display`, für ein Pattern
++         `case Display(display) =>` auf einem `Text`; jeder andere Text passt nicht, und so fällt
++         `Mathml.Parser.decodeMath` bei einem unbekannten Wert auf `Inline` zurück.
++   entry .Cell   ein Block aus Text in fester Breite mit einer Grundlinie: die Terminaldarstellung einer Formel
+
+% 1 1 0 06b2e08fd67e993016a949865c536dc1
+
+@ 0 6 0 009fa720bb87dbe90c4fdd0a683f1902
++         Eine `Cell` ist ein Rechteck aus Zeichenzellen, `#width` Spalten mal `#height` Zeilen,
++         mit einer `#baseline` — der Zeile, von oben gezählt, der mathematischen Achse, an der
++         die Komposition ausrichtet. Ihre `#lines` sind `Writing`s, sodass ein kombinierender
++         Akzent oder ein Cluster aus mehreren Codepunkten als eine Spalte zählt, und jede Zeile
++         hat genau `width` Spalten. `Cell.of` setzt jeden `Mathml`-Knoten, und `#render` macht
++         den Block zu durch Zeilenumbrüche getrenntem `Text`; die Erweiterungen `cell` und `draw`
++         auf einem `Mathml` oder einem `Math` sind der übliche Einstieg.
+
+% 2 1 0 01723d81673c811501a2a1e1acb48bdf
+
+% 3 1 0 124d1d36026a1db512c7e1572f6be289
+
+% 4 1 0 10bb5cfa3489acf407344885b2097609
+
+% 0 1 0 0643dad035b29da400539c802adb1885
+
+% 0 1 0 0e6780b36044b206080bd33988b82a9a
+
+% 0 1 0 1798b580a0c753130c08b5e06dc75990
+
+% 0 1 0 0d423a0c4759841a07a2984692df6c71
+
+% 1 1 0 176ad58bebd8e0d31ef74676449f566a
+
+@ 0 12 0 1b49fcdb4faba2a31084a8d8dd77d4fb
++         Die Layout-Regeln: Eine Hoch- oder Tiefstellung, die sich in den Hoch- und
++         Tiefstellungszeichen von Unicode schreiben lässt (Ziffern, Vorzeichen, Klammern und ein
++         Großteil des lateinischen Alphabets, wenn auch kein hochgestelltes `q`), wird auf die
++         eigene Zeile der Basis gesetzt, als `x²` oder `xᵢ`; alles andere — ein griechischer
++         Buchstabe, ein Bruch, ein verschachteltes Skript — wird diagonal gestapelt. Ein Bruch
++         zentriert seine Teile über einem Strich aus `─`; eine Quadratwurzel zeichnet ein
++         Vinculum `┌─`, mit einem Schaft `│` und einem Fuß `╲`, wenn der Radikand höher als eine
++         Zeile ist; eine n-te Wurzel setzt den Index eine Zeile über das Zeichen. In einer Zeile
++         werden binäre Operatoren mit Abstand gesetzt, und Klammern, Integrale und die großen
++         Operatoren `∑` und `∏` dehnen sich auf die Höhe des Inhalts: Eine Klammer wird zu
++         Rahmenzeichen-Stücken, ein Integral zu einem Strich aus `╭`–`│`–`╯` (verdoppelt oder
++         verdreifacht, mit einem `○` für ein Kurvenintegral), und `∑` und `∏` zu Strichgrafik in
++         der Größe des Summanden. Die Bausteine des Begleitobjekts (`beside`, `fraction`,
++         `radical`, `bracket`, …) sind die Primitive, die `of` zusammensetzt, und lassen sich
++         für ein eigenes Layout direkt verwenden.
+
+@ 0 2 0 04e62c42a18fba2a00bf208e283c2f85
++         Im Umbrella `soundness` ist der Name `Cell` dieser Typ; die Tabellenzelle von Probably
++         ist `Tally`.
+
+% 0 1 0 1621b37bb921f7fe11c46eafb0eef6fd
+
+% 0 1 0 1c7cf59e7dc36dcb0448a6776a5f503f
+
+@ 0 64 0 054c1580c160d2bc0db2cad59baa7126
++     entry .inspectable   eine Debug-Darstellung: die Abmessungen, die Grundlinie und jede Zeile als Textliteral
++         `Cell(2×1@0 t"xy")`: Breite mal Höhe, `@` die Grundlinienzeile, dann jede Zeile in
++         Anführungszeichen, sodass nachgestellte Auffüllung sichtbar ist. `#render` zeigt den
++         Block so, wie er erscheinen wird, was eine Inspektion nicht kann.
++     entry .empty   die Zelle aus einer leeren Zeile, null Spalten breit
++     entry .line   eine einzeilige Zelle mit dem gegebenen Text, mit Grundlinie 0
++         Die Breite ist die Graphem-Breite des Texts unter der Metrik für breite Zeichen, sodass
++         ein CJK-Zeichen als zwei Spalten zählt.
++     entry .blank   eine Zelle aus Leerzeichen mit der gegebenen Breite, Höhe und Grundlinie
++     entry .beside   fügt Zellen von links nach rechts mit ausgerichteten Grundlinien zusammen
++         Das Arbeitspferd von `<mrow>`: Jede Zelle wird oben und unten mit leeren Zeilen
++         gerahmt, sodass jede Grundlinie auf dieselbe Zeile fällt, dann werden die Zeilen
++         verkettet. Die Grundlinie des Ergebnisses ist die größte der Eingaben.
++     entry .fraction   stapelt einen Zähler über einem Strich aus `─` über einem Nenner
++         Beide Teile werden innerhalb des breiteren plus je einer Randspalte auf jeder Seite
++         zentriert; die Grundlinie ist der Strich.
++     entry .superscript   setzt eine Skriptzelle diagonal rechts über eine Basiszelle
++         Die gestapelte Form, verwendet, wenn `Cell.of` das Skript nicht in Unicode-Zeichen
++         schreiben kann. Die Grundlinie rückt um die Höhe des Skripts nach unten.
++     entry .subscript   setzt eine Skriptzelle diagonal rechts unter eine Basiszelle
++     entry .subsup   setzt eine Tief- und eine Hochstellungszelle rechts neben eine Basis, übereinander
++         Beide Skripte werden auf das breitere aufgefüllt; die Grundlinie der Basis bleibt
++         erhalten, verschoben um die Höhe der Hochstellung.
++     entry .overscript   zentriert eine Zelle über einer Basiszelle
++     entry .underscript   zentriert eine Zelle unter einer Basiszelle
++     entry .underover   zentriert eine Zelle über und eine andere unter einer Basiszelle
++         So zeichnet `Munderover`: die Grenzen einer Summe über und unter dem `∑`.
++     entry .radical   zeichnet ein Quadratwurzelzeichen und ein Vinculum um eine Zelle
++         Ein einzeiliger Radikand erhält das Zeichen `√` mit einer Überstreichung `┌─…`; ein
++         höherer erhält einen Fuß `╲` und einen Schaft `│`, der bis zur Ecke aufsteigt.
++     entry .root   zeichnet eine n-te Wurzel: den Index eine Zeile über dem Zeichen, links davon
++         Immer die hohe Form des Zeichens, damit der Index eine Zeile hat, auf der er sitzt.
++     entry .fence   klammert eine Zelle mit einem öffnenden und einem schließenden Zeichen ein, auf ihre Höhe gedehnt
++         `fence('(', ')', inner)`: so zeichnet `Mfenced`.
++     entry .bracket   ein Klammerzeichen, auf eine Höhe gedehnt, als einspaltige Zelle
++         Eine einzeilige Höhe ergibt das wörtliche Zeichen; bei größerer Höhe werden `(`, `[`
++         und `{` zu ihren Rahmenzeichen-Stücken für oben, Mitte und unten (eine geschweifte
++         Klammer setzt ihr `⎨` in die Grundlinienzeile), und jedes andere Zeichen zu einem
++         Strich `│`. `opening` wählt die linken oder rechten Stücke.
++     entry .integral   ein Integralzeichen, auf eine Höhe gedehnt, mit einer Spalte Auffüllung danach
++         `∫`, `∬` und `∭` sind ein, zwei und drei Striche aus `╭`–`│`–`╯`; `∮`, `∯` und `∰`
++         legen ein `○` über die Achsenzeile des ersten Strichs. Eine einzeilige Höhe ergibt das
++         schlichte Zeichen.
++     entry .bigOperator   `∑` oder `∏` als Strichgrafik einer gegebenen Höhe
++         Eine Summe besteht aus Balken `▁` und `▔`, verbunden durch Diagonalen `╲` und `╱`, die
++         stufenweise zu einer Spitze einrücken, was eine gerade Höhe von mindestens vier
++         verlangt; ein Produkt ist ein Sturz `┬──┬` über zwei Beinen `│`, in jeder Höhe. Die
++         Grundlinie ist die vertikale Mitte.
++     entry .row   setzt eine Liste von Knoten nebeneinander und dehnt dabei Klammern, Integrale und große Operatoren
++         Misst zuerst den nicht dehnbaren Inhalt, zeichnet dann jeden dehnbaren Operator auf
++         diese Höhe und fügt alles mit `beside` zusammen. Eine einzeilige Zeile behält für jeden
++         Operator das schlichte Zeichen.
++     entry .of   setzt jeden `Mathml`-Knoten als Zelle
++         Das rekursive Layout: Jede Elementart wird auf den entsprechenden Baustein abgebildet,
++         ein Token auf `line` (wobei ein binärer Operator mit Abstand gesetzt und ein
++         unsichtbarer Operator weggelassen wird), und ein Element ohne besonderes Layout auf eine
++         Zeile seiner Kinder.
++     entry #lines   die Zeilen des Blocks, von oben nach unten, jede genau `width` Spalten
++     entry #width   die Anzahl der Spalten
++     entry #baseline   die Zeile, von oben gezählt, der Achse, an der die Komposition ausrichtet
++     entry #height   die Anzahl der Zeilen
++     entry #render   der Block als Text, seine Zeilen durch Zeilenumbrüche verbunden
++         Die Form zum Ausgeben: Nachgestellte Leerzeichen bleiben erhalten, sodass jede Zeile
++         gleich breit ist.
++     entry #hpad   füllt jede Zeile links und rechts mit Leerzeichen auf und verbreitert so den Block
++     entry #hcenter   zentriert den Block innerhalb einer größeren Spaltenzahl; verschmälert nie
++     entry #framed   fügt oben und unten leere Zeilen hinzu, um eine gegebene Ober- und Unterlänge zu erreichen
++         Von `Cell.beside` verwendet, um Zellen auf eine gemeinsame Höhe zu bringen, bevor sie
++         zeilenweise zusammengefügt werden.
+
+@ 0 1 0 0c9cf62d7df969e016bfaf1410d696e9
++ entry .Ergo   die Kurzschrift Ergo: eine einzeilige Notation, die zu MathML geparst und zurück serialisiert wird
+
+% 1 1 0 0c3c2931b853302601a73a4ece94ca19
+
+@ 0 6 0 1def703c7d0cf5271fce73139f7b04a6
++       Ergo ist eine kompakte lineare Notation für Presentation MathML, ein Zeichen pro
++       struktureller Rolle, die `.parse` in ein `Math` umwandelt und `.serialize` wieder
++       ausschreibt, exakt invers über den Elementen, für die Ergo eine Syntax hat. Ein Ausdruck
++       wird durch ein Klammerpaar begrenzt, und sein **erstes Zeichen** wählt, welche der
++       Klammern `(`, `[`, `{` oder `⟨` durchgehend als Gruppierung dient; jede andere Klammer
++       ist dann ein wörtlicher Operator. Eine gruppierte Folge ist ein `<mrow>`.
+
+@ 0 3 0 1a2d803e6f24e88c16663f9f0c9c9193
++       Token: Eine Folge von Buchstaben ist ein Bezeichner (`sin` ist `<mi>sin</mi>`; `x y`
++       sind zwei), eine Folge von Ziffern mit einem inneren `.` ist eine Zahl, ein Leerzeichen
++       trennt und rendert als nichts, und jedes andere Zeichen ist ein Operator. Die
++       strukturellen Zeichen, das am stärksten bindende zuerst:
+
+% 2 1 0 0c4f0d1d859218cf10d90762dfa7e797
+
+@ 0 2 0 128a5bde8004c49c0f687a5c7190323d
++       column  Zeichen
++       column  Rolle
+
+% 0 1 0 1854e6c39ae47494013e5bb4d3c1405d
+
+@ 0 14 0 18e57ee033065ea419b6436474edae51
++       column  Beispiel
++       row  `√`  Quadratwurzel  `<msqrt>`  `√x`
++       row  `√` nach einem Index  n-te Wurzel  `<mroot>`  `3√x`, der Index ohne Leerzeichen davor
++       row  `↗`  Hochstellung  `<msup>`  `x↗2`
++       row  `↘`  Tiefstellung  `<msub>`  `x↘i`
++       row  `↘` und `↗`  beides, an einer Basis  `<msubsup>`  `x↘i↗2`
++       row  `↑`  Überskript  `<mover>`
++       row  `↓`  Unterskript  `<munder>`
++       row  `↓` und `↑`  beides, an einer Basis  `<munderover>`  `∑↓(i = 1)↑n`
++       row  `/`  Bruch, schwächer bindend als die Skripte  `<mfrac>`  `a/b`
++       row  Nebeneinanderstellung  Zeile  `<mrow>`  `x+1`
++       row  `⋱`  Matrix, aus der folgenden Gruppe  `<mtable>`  `⋱(((1)(2))((3)(4)))` ist 2×2
++       row  `⋯`  Zeilenvektor  eine einzeilige `<mtable>`
++       row  `⋮`  Spaltenvektor  eine einspaltige `<mtable>`
+
+% 1 1 0 1ea6efb2f222fe7804f89339bcfb637a
+
+@ 0 5 0 06e1725ac9f061100041c94573f1304f
++       Ein Operatorzeichen, dem ein Operand fehlt, wird zu einem wörtlichen Operator, sodass
++       `(↗)` `<mo>↗</mo>` ist statt eines Fehlers. Jedes Präsentationsattribut von MathML Core
++       hat ein Zeichen als **Postfix-Direktive**, das an das Atom oder die Gruppe zu seiner
++       Linken bindet. Ein boolesches oder aufgezähltes Attribut hat für jeden Wert ein bloßes
++       Zeichen, und eines mit offenem Wertebereich (eine Länge, eine Farbe oder eine Ganzzahl)
++       nimmt seinen Wert in der Gruppierungsklammer, wörtlich gelesen:
+
+% 2 1 0 1d1873bb7348dedd158108a1cb606f06
+
+@ 0 3 0 092c3f9b04cf8d2d11421d27c055557c
++       column  Zeichen
++       column  Attribut
++       column  Werte
+
+% 0 1 0 133a6aa74a214bb80bbaae67d71a2210
+
+@ 0 1 0 01474e8e4014997801d13350b6a43464
++       row  `⌄(…)`  `scriptlevel`  der eingeklammerte Wert
+
+% 0 1 0 1f5aff853083fe93071e09b81c784f34
+
+@ 0 3 0 1919a264a2b22a8f16dc6b89778435a0
++       row  `●(…)`  `mathcolor`  der eingeklammerte Wert
++       row  `▨(…)`  `mathbackground`  der eingeklammerte Wert
++       row  `⟑(…)`  `mathsize`  der eingeklammerte Wert
+
+% 0 1 0 0765928fadbb4fa805e4149af7c645c3
+
+% 0 1 0 003d16defd413c35122c025e30b6d850
+
+% 0 1 0 03ab8a4992f4105102559e94cf0a2afd
+
+% 0 1 0 189e7021d2fd7a0a1df585e387f2d8fa
+
+% 0 1 0 08bd3785094bb9be19bb53927c3e0b69
+
+% 0 1 0 1d2cd91ba08156b7117657f30784d59f
+
+% 0 1 0 0399f7ea0ead54b102bb3880fde8837d
+
+% 0 1 0 12c5fb3b226c8f6c0042de5137240f47
+
+% 0 1 0 10ddb73d6ea9518e1ecebb7d3084e5f0
+
+@ 0 9 0 0f9e3f7c2778ebae05964827e8d37e92
++       row  `⧔(…)`  `lspace`  der eingeklammerte Wert
++       row  `⧕(…)`  `rspace`  der eingeklammerte Wert
++       row  `⟰(…)`  `maxsize`  der eingeklammerte Wert
++       row  `⟱(…)`  `minsize`  der eingeklammerte Wert
++       row  `↔(…)`  `width`  der eingeklammerte Wert
++       row  `⍏(…)`  `height`  der eingeklammerte Wert
++       row  `⍖(…)`  `depth`  der eingeklammerte Wert
++       row  `↕(…)`  `voffset`  der eingeklammerte Wert
++       row  `═(…)`  `linethickness`  der eingeklammerte Wert
+
+% 0 1 0 050470488bb0560a155198cec4ec290c
+
+% 0 1 0 12743a88c60a51fc1e0f56b20c19a647
+
+@ 0 1 0 0e7720c34f956a0c0348e0f2bf134b91
++       row  `⚙(…)`  `actiontype`  der eingeklammerte Wert
+
+% 1 1 0 148a5f2be5870fec13fa1c5c5a65095a
+
+@ 0 2 0 174206294247872a1a53c362ee38ebf8
++       Die Gruppierung bestimmt den Geltungsbereich: `(x↗2)●(red)` färbt die ganze Potenz,
++       `x↗2●(red)` nur die `2`.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1c3d264c19dcc62b0b6ebac1c97df630
++         label Ein Bezeichner
+
+% 1 1 0 137e836ee3217f211a3f32d46619aa6d
+
+% 2 1 0 071bed0fb6f5e7861c97de6c01b810fa
+
+% 3 1 0 1ba254f9e8c7e1a20d27e97ae95c33db
+
+% 0 1 0 1a954feb1c1d2f430836dacdfe44d401
+
+% 1 1 0 1cb970d28232ceca0b7de156c116baea
+
+@ 0 1 0 0a2c6aaeec458436043c3db00e544da1
++         label Eine Hochstellung
+
+% 1 1 0 12a7cd1ab4ef91da0ca4702f6bc61395
+
+% 2 1 0 03efdbbb7021fb1604639c1491905352
+
+% 3 1 0 019edd7418f1c9e219fb716b4be6b61e
+
+% 0 1 0 1beee8ae3d8f261310a1e0126386a117
+
+% 1 1 0 09ebcd5db1921b9008a06eea77d209c2
+
+@ 0 1 0 0bddac9c333eafc915ba49746ea7a336
++         label Ein Bruch, schwächer bindend als das Skript
+
+% 1 1 0 160a5bcce18b07fa14ff44c9e6119430
+
+% 2 1 0 012c7d416c7498c10ce81f15b83149d7
+
+% 3 1 0 118dd348912bf2990084148b27aded9c
+
+% 0 1 0 1762f5b588300ec40568a109cf106759
+
+% 1 1 0 1f1bb994cf59d34e15533caec399df9a
+
+@ 0 1 0 0dee9681172c61a40b99509c611e7fbe
++         label Eine Quadratwurzel über dem Bruch
+
+% 1 1 0 1fa714384e924b0009d90acba4af5105
+
+% 2 1 0 150a5870ce8154f110b9844850599091
+
+% 3 1 0 14f2de9e441218bd0f55a8ecdbf0a576
+
+% 0 1 0 012cb8f646beaee701cdb846a5fee6aa
+
+% 1 1 0 018bb3ba61d3d33e057a5df105eb2a52
+
+@ 0 1 0 0ab58c9a17ddff701b7160d8762ad0f5
++         label Eine Summe mit Grenzen
+
+% 1 1 0 1eed386aa0c911181b980dd59f101f6a
+
+% 2 1 0 12bd56f9692f9fb61acede4c1709570b
+
+% 3 1 0 10db8bbabdba3beb1bbe21e49f222353
+
+% 0 1 0 122ed355e4eb193c04bdbe9b01f4f7a3
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 1a3a4e45bc99f1b509daf5e48417227a
++       Das Parsen braucht eine `Tactic[Ergo.Error]`; der Interpolator `ergo"…"` parst das
++       Literal stattdessen, während der Code kompiliert, und meldet ein fehlerhaftes an dem
++       Zeichen, an dem das Parsen anhielt. Die Serialisierung weist ein Element außerhalb der
++       Ergo-Teilmenge (`<mtext>`, `<mspace>`, `<mstyle>`, die Tabellenattribute, die Elemente
++       für elementare Mathematik) mit einem `Ergo.Error` zurück, statt es anzunähern, und
++       verwirft die eigenen Attribute der Wurzel.
+
+% 0 1 0 0c8b27c506084d491ec67a1a7c048407
+
+% 1 1 0 0386de205fa60abb0a784acbfc3ed4b8
+
+@ 0 1 0 052f8cf97f2f4f5312e9ce5bb97bebf4
++   entry .parse   parst Ergo-Text in ein `Math`
+
+% 1 1 0 015955a53079f291158c325245927364
+
+% 2 1 0 04beac83d30c46650d9b112b805219f8
+
+% 3 1 0 14722fffb714fc0b1d05aa5b853c93ba
+
+% 0 1 0 045d7bc9d1158b0b01dc62545b622390
+
+% 0 1 0 1fe0021ba33757b104aa7a20a0b0ba8d
+
+% 1 1 0 00a107b269ca7b631b4abc69641ca519
+
+@ 0 14 0 014f440b13eb4c6c0a54f62c875667ef
++       Löst `Ergo.Error` aus bei einer leeren Eingabe, einer Eingabe, die nicht mit einer der
++       vier Gruppierungsklammern beginnt, einer Gruppe, die nicht geschlossen wird, einer
++       Eingabe, die mittendrin endet, oder einem Einleitungszeichen (`⋱`, `⋯`, `⋮`), dem keine
++       Gruppe folgt. Der `offset` des Fehlers ist das Zeichen, an dem das Parsen anhielt.
++   entry .interpolate   parst die Teile eines interpolierten Literals, mit einem an jeder Lücke eingesetzten Knoten
++       Die Laufzeithälfte des Interpolators `ergo"…"`: Die Textteile werden mit einem
++       Platzhalter an jeder Einsetzung verbunden, und jeder Platzhalter wird der Reihe nach als
++       das entsprechende, bereits kodierte `Mathml`-Atom geparst. Braucht eine
++       `Tactic[Ergo.Error]`; der Interpolator selbst ruft `.unsafeInterpolate` auf, nachdem er
++       das Literal zur Kompilierzeit geprüft hat.
++   entry .unsafeInterpolate   `.interpolate` ohne Taktik, für ein Literal, das bereits zur Kompilierzeit geprüft wurde
++       Nimmt `(using Unsafe)`: Der vom Makro `ergo"…"` erzeugte Code ruft es auf, da die
++       Wohlgeformtheit des Literals beim Kompilieren festgestellt wurde. Code, der Text parst,
++       den er nicht geprüft hat, sollte `.parse` oder `.interpolate` aufrufen und `Ergo.Error`
++       behandeln.
++   entry .serialize   schreibt ein `Math` wieder als Ergo-Text aus, mit `(` als Gruppierungsklammer
+
+% 1 1 0 0d181b4636994dcd0cd033bd7bb8f251
+
+% 2 1 0 0f475d892d2128900958078f45f1f0c7
+
+% 3 1 0 043ae68b2c88e9d91875da9d0550e119
+
+% 0 1 0 1622b6732016785719f1e4d8d95298df
+
+% 0 1 0 16a3645ac0a5a48e0dc3ff5b12ed71ec
+
+% 1 1 0 162a31cf2753857403cbdc1694c035ca
+
+@ 0 8 0 16720d449b57935513b910f78c706c3b
++       Bedeutungslose Leerzeichen werden verworfen, und ein Leerzeichen bleibt nur dort
++       erhalten, wo zwei Token sonst verschmelzen würden (zwei Buchstaben zu einem Bezeichner,
++       zwei Ziffern zu einer Zahl). Attribute werden als Direktiven geschrieben, wobei ein
++       bloßes Zeichen bevorzugt wird, wo der Wert eines hat; ein Akzentattribut, das sich aus
++       einem Skript aus einem einzelnen Operator ergibt, wird weggelassen, da das Parsen es
++       wiederherstellt. Ein geparster Ausdruck serialisiert und parst erneut zu einem gleichen
++       Baum. Löst `Ergo.Error` mit `Unsupported(label)` für ein Element ohne Ergo-Form aus,
++       etwa `<mtext>`; braucht eine `Tactic[Ergo.Error]`.
++   entry .Error   ausgelöst, wenn Ergo-Text nicht geparst oder ein Baum nicht als Ergo geschrieben werden kann
+
+% 1 1 0 00d9a09a5ba921da1da429a4bc8dd7a8
+
+@ 0 5 0 15b989f35c86915a16abc4d99c37b5c1
++         Fehler `↯/s.129.2`: _the ergo expression could not be parsed because reason_.
++         Ausgelöst von `Ergo.parse` und `Ergo.interpolate` für fehlerhaften Text und von
++         `Ergo.serialize` für ein Element außerhalb der Ergo-Teilmenge. Im Interpolator
++         `ergo"…"` sind dieselben Fehler Kompilierfehler, positioniert an dem Zeichen, an dem
++         das Parsen anhielt (dem letzten Zeichen bei einer nicht geschlossenen Gruppe, dem
++         ersten bei einer fehlenden öffnenden Klammer).
+
+% 2 1 0 0899827b650da0ff0328f1ff1427898e
+
+% 3 1 0 04368a33918c091117a20691cd937d2e
+
+% 0 1 0 0979ffdf99edf3580a4d4a0d84fd4f27
+
+% 1 1 0 18d34c13118a8e981fa898f0e39a1233
+
+@ 0 2 0 0508efcbbf05aafa06406713d5d66f38
++     entry .Reason   welcher Fehler gefunden wurde
++         Die Fälle, deren `char`-Felder `Char`s sind:
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 1 0 0c1c263a0de533d10a1161cb385ec376
++         column  Fall
+
+% 0 1 0 0a4e9924d22d7168034fe72e758ec50f
+
+@ 0 2 0 181473b62bc80c971eb19bd166535b1f
++         column  Meldung
++         column  Anmerkung
+
+% 0 1 0 1a07ec9fd04dcb9b178999df3a420698
+
+@ 0 1 0 1138282f6e981c43141e87f9fe0c2cf7
++         row  `BadOpener(char)`  2  _the expression must start with a bracket, not `char`_  das erste Zeichen ist nicht `(`, `[`, `{` oder `⟨`
+
+% 0 1 0 0699e79776cdb18d1675ab6675ca6c3e
+
+% 0 1 0 1c7f03cbb20e21d60ecb75a829085dcd
+
+@ 0 2 0 0a40cf17bdadd21212a9b50dda26fc0f
++         row  `MissingBody(char)`  5  _the `char` introducer must be followed by a group_  ein `⋱`, `⋯` oder `⋮` ohne Gruppe danach
++         row  `Unsupported(label)`  6  _the `<label>` element has no ergo representation_  aus `Ergo.serialize`
+
+% 1 1 0 09d3ef1672bf04e7134cab42536c06a4
+
+@ 0 3 0 13f90fce196e7aff08da3063f11a4303
++     entry .communicable   rendert jeden Grund als seine Meldung
++     entry #reason   welcher Fehler gefunden wurde
++     entry #offset   die Zeichenposition, an der das Parsen anhielt, oder `-1` aus der Serialisierung
+
+@ 0 2 0 022dc7661792e1f40c94aa0b73453f8f
++ entry .mathmlNamespace   die Namensraum-URI von MathML, als `xmlns` auf jede `<math>`-Wurzel geschrieben
++     `http://www.w3.org/1998/Math/MathML`: `Math.attributePairs` stellt sie immer an den Anfang.
+
+@ 0 5 0 1e1bee1ae749bd1f0ec75dd3db5c538a
++ entry .math   jeder `Encodable in Math`-Wert als `<math>`-Wurzel, als `value.math`
++     Eine Erweiterung auf jedem Typ mit einer `Encodable in Math`-Instanz — den Zahlen, `Text`,
++     `Q64`/`Q32`, `Complex`, Mosquito-`Vector` und -`Matrix`, dimensionsbehafteten `Quantity`s
++     und jedem `Mathml`-Knoten oder `Math` —, die das kodierte `Math` liefert. Die Instanzen
++     liegen im Begleitobjekt von `Math`, sodass kein Import nötig ist.
+
+% 2 1 0 0d1e8840e7cd4a2c11b4585ca932540d
+
+% 3 1 0 01ed0b633eb3e96f15a7907a16eaee6f
+
+% 0 1 0 1a2b01cc7c521ceb00b83c4fbbfa9131
+
+% 0 1 0 04607a11b49e1719119857b324d15bed
+
+% 1 1 0 0d5bdba7b401e8490fe0cef3e6400178
+
+@ 0 3 0 1ca11595ab1ec5191b93c7e96df5e6ef
++ entry .mathml   jeder `Encodable in Math`-Wert als einzelner MathML-Knoten, als `value.mathml`
++     Wie `math`, dann mit `Mathml.atom` auf einen Knoten reduziert: den einzigen Inhaltsknoten
++     oder ein `<mrow>` aus mehreren. Zum Bauen eines größeren Baums von Hand aus kodierten
++     Teilen.
+
+% 2 1 0 1d724de473f954b41e0a734939cac173
+
+% 3 1 0 01d75e1bf29a2f971d4a8d0ca25fc81b
+
+% 4 1 0 1819e7da0015abd60ccddf0e62e481b8
+
+% 0 1 0 1e13ef5168574d291d63dc7945feb5d0
+
+% 0 1 0 0d2a78ba0769595d02e6412c38778884
+
+% 0 1 0 1c51399fe31432e41dd627b53704cb9b
+
+% 1 1 0 1f4d927d59531434081e9e66b68149ba
+
+@ 0 7 0 1132bf8017c7a84b11c3219c724d935c
++ entry .ergo   der Interpolator `ergo"…"`: ein Ergo-Ausdruck, geparst, während der Code kompiliert
++     `ergo"(x↗2)"` ist ein `Math`, zur Kompilierzeit geparst, sodass ein fehlerhaftes Literal
++     ein Kompilierfehler ist, positioniert an dem Zeichen, an dem das Parsen anhielt: _the ergo
++     expression could not be parsed because a group was not closed with )_. Eine
++     `$`-Einsetzung darf jeder Wert sein, der `Encodable in Math` ist — eine Zahl, Text, ein
++     `Mathml`-Knoten, ein anderes `Math`, ein Vektor —, und wird als einzelnes Atom eingesetzt,
++     sodass eine Direktive oder ein Skript an das Ganze bindet; ein Wert, der nicht kodierbar
++     ist, ist ein Kompilierfehler, der seinen Typ nennt.
+
+% 2 1 0 1cc677d9c5c5b2971e76729101fa422a
+
+% 3 1 0 164c66f13acedaf11417fd13619166c9
+
+% 0 1 0 097504ab7fdaf3ef12a03ce43a0f5fbe
+
+% 0 1 0 006855c50bf792ac13704f4c2cf8f524
+
+% 0 1 0 0d67af57aec7ff331a667f189153a24a
+
+% 0 1 0 1d53c31ea5bd4f9d1eb76036ef5bf552
+
+% 0 1 0 1710031303e589e80ea72bb35ca66f05
+
+% 1 1 0 12f3f66c1572c2dd1281f4ac33e1bb47
+
+@ 0 2 0 1cfecfdc6caed9670b8794b1dcf5f8ee
++     Die Notation ist unter `Ergo` beschrieben; das `Interpolable`-Given ist
++     `Math.interpolable`, im Begleitobjekt, sodass `import soundness.*` genügt.
+
+@ 0 3 0 035a035901e05f3110d72a644ebbca3f
++ entry .cell   ein `Mathml`-Knoten oder ein `Math`, als `Cell` gesetzt, zum Zusammensetzen mit anderen Blöcken
++     `Mathml.Cell.of(node)`, oder für ein `Math` das Layout seiner Inhalte als Zeile. `draw`
++     ist derselbe Block als Text.
+
+@ 0 1 0 17be4b6edd9514a91940721470581b58
++ entry .draw   ein `Mathml`-Knoten oder ein `Math` als Text in fester Breite aus Rahmenzeichen für ein Terminal
+
+% 1 1 0 053f202f5fc43286009de909ba28db7e
+
+% 2 1 0 0b9a89f8e005deb606a1836beaf90f16
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 0 1 0 1694ccca866148630e43879510e1fc89
+
+% 0 1 0 1b824c51f9b12f92168b841f8fc4385d
+
+% 1 1 0 101f8f511c080aa3113e1d3c6a9d3d4c
+
+@ 0 2 0 08ab3ab7d35b9ece0eeead6074c56f18
++     Mehrere Zeilen, durch Zeilenumbrüche verbunden, jede Zeile gleich breit; `Mathml.Cell`
++     beschreibt die Layout-Regeln.
+
+@ 0 1 0 1098e68bfad657b31a4a60b77b6c523c
++ entry .internal   die Makro-Implementierung hinter dem Interpolator `ergo"…"`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 6 0 040885e5e02f3a5f10433b8721f7990f
++       Nicht zur direkten Verwendung: Das Objekt existiert, damit das Makro ein stabiles
++       Zuhause hat.
++   entry .ergoInterpolator   das Makro hinter `ergo"…"`: prüft das Literal zur Kompilierzeit und setzt `Ergo.unsafeInterpolate` ein
++       Gewinnt die Literalteile zurück, macht jede Einsetzung über ihr `Encodable in Math` zu
++       einem `Mathml`-Atom (ein Kompilierfehler, wenn es keines gibt), parst das Ganze mit
++       Platzhalteratomen, sodass ein Fehler an seiner Position gemeldet wird, und erzeugt dann
++       Code, der zur Laufzeit mit den echten eingewobenen Atomen erneut parst.

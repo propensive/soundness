@@ -1,0 +1,40 @@
+orthant 2 language
+
+% 0 1 0 1cd264e58d1e637101c36854b3b3702b
+
+@ 0 1 0 0ff2fc062be2430c00dbf785cc67083f
++ リモートのプロバイダーに対する OAuth のフローが失敗したときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 1227c6afc583442917f248f4428e04a5
++ Orthodoxy は OAuth 2.0 のやり取りを仲介する。
++ ネットワーク、パース、ステータス、スコープのいずれの失敗も、以下のバリアントのいずれかとして現れる。
++ メッセージは `OAuth failed because $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 11 0 1990aee9c6705d0502ee21e116372ca4
++ column  コード
++ column  理由
++ column  意味
++ column  メッセージ
++ column  解決方法
++ row  `↯/s.117.1.1`  `Connection`  OAuth のプロバイダーへの TCP/TLS 接続が失敗した。  `[↯/s.117.1.1] OAuth failed because could not connect to the OAuth provider at https://example.com because the connection was refused`  ネットワークの接続性、プロバイダーの URL、TLS の構成を確かめる。詳細は内側の `ConnectError.Reason` を調べる。
++ row  `↯/s.117.1.2`  `InvalidJsonResponse`  プロバイダーが JSON としてパースできない本文を返した。  `[↯/s.117.1.2] OAuth failed because Invalid JSON response`  期待されるレスポンスの形式をプロバイダーのドキュメントで確認し、手がかりを得るために生のレスポンスを調べる。
++ row  `↯/s.117.1.3`  `UnexpectedHttpStatus`  プロバイダーが期待される集合の外のステータスで応答した。  `[↯/s.117.1.3] OAuth failed because the provider returne an unexpected HTTP status: 500`  プロバイダーのステータスについてのドキュメントを参照する。多くのプロバイダーはクライアントのエラーに対して、本文に診断用の JSON を入れて 4xx を返す。
++ row  `↯/s.117.1.4`  `InsufficientPrivileges`  アプリケーションが要求したスコープをユーザーが許可しなかった。  `[↯/s.117.1.4] OAuth failed because the user has not granted access to read:user`  必要なスコープを含めてユーザーに再度求めるか、それを必要とする機能を穏やかに縮退させる。
++ row  `↯/s.117.1.5`  `Unauthorized`  ユーザーが明示的に認可を拒否したか、プロバイダーが資格情報を拒絶した。  `[↯/s.117.1.5] OAuth failed because authorization was not granted`  ユーザーに明確なメッセージを示し、適切であれば OAuth のフローをやり直す。
++ row  `↯/s.117.1.6`  `Other`  上記のカテゴリーに当てはまらない雑多なエラー。  `[↯/s.117.1.6] OAuth failed because an unexpected error occurred`  ログと、エラーに添付された原因を調べる。このバリアントは意図的に汎用的であり、将来より具体的な理由が追加されるかもしれない。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 03287911e639c5a7105007e6dd07c192
++ - ソース：`lib/orthodoxy/src/core/orthodoxy.OAuth.scala`

@@ -1,0 +1,796 @@
+orthant 2 language
+
+@ 0 1 0 078d39ffe598271e087f34120d0fcd54
++ ## Dérivation
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 7 0 129e13b7f0bf874a1a39c104df77e6f7
++ Les codecs dérivés que l'on rencontre dans toutes ces bibliothèques, comme les encodeurs
++ [JSON](json.md) à partir de case classes, les lignes [CSV](csv.md) à partir de champs et les
++ condensés à partir de structures, sont tous produits par un même moteur de dérivation. Il
++ génère une instance de [classe de types] pour tout *produit*, c'est-à-dire une case class, dont
++ l'instance combine celles de ses champs, ou pour tout *coproduit*, c'est-à-dire une
++ [énumération] ou un sealed trait, dont l'instance effectue une répartition selon la variante.
++ L'auteur d'une classe de types écrit une seule fois les deux règles de combinaison, et chaque
++ type défini par l'utilisateur obtient gratuitement une instance.
+
+@ 0 3 0 02872111f72cbbad1ae4208445651f12
++ Pour l'utilisateur d'une classe de types, la [dérivation] est invisible. Définir une case class
++ suffit. Pour l'auteur d'une classe de types, elle se résume à deux méthodes : l'une qui dit
++ comment les champs se combinent, l'autre qui dit comment distinguer les variantes.
+
+@ 0 1 0 13da955ebeb416e9156cce727676ff67
++ ### À propos de la dérivation
+
+@ 0 5 0 04e22dc122332dbf04ca44842896f1f0
++ Les instances de la plupart des classes de types pour la plupart des types de données sont
++ mécaniques. Un `Show` pour une case class affiche chaque champ. Un `Eq` compare chaque champ.
++ Un encodeur JSON encode chaque champ sous son nom. Les écrire à la main, c'est produire du code
++ répétitif qui dérive avec le temps. Écrire une macro pour chaque classe de types exige une
++ expertise que la plupart des bibliothèques n'ont pas. Ce que l'on veut, c'est énoncer les deux
++ règles générales, à savoir que les produits combinent et que les coproduits choisissent, d'où
++ découle chaque instance concrète.
+
+@ 0 3 0 0c763521cf1daacb16ffff82de3f218f
++ Le moteur présenté ici, successeur de Magnolia, fournit exactement cela, sous forme d'héritage
++ ordinaire et non d'écriture de macros. La dérivation est ce qui rend possibles les
++ [petites API](../../philosophy/small-apis.md) : une classe de types a besoin de deux règles, et
++ non d'une instance pour chaque type.
+
+@ 0 3 0 13ace7eeb6e5bc951b470519303cc725
++ Tout provient du package `soundness`. Le deuxième import apporte le `label` d'un champ, dont le
++ nom est partagé, dans le package parapluie, avec celui d'un élément de navigateur. Le troisième
++ permet d'indexer les tableaux de champs que produit une dérivation, et le quatrième choisit une
++ [stratégie] pour les erreurs :
+
+% 2 1 0 1fae809b3ff69e6310c7614153ed674f
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0f222d90cb9ae22d0bb3b3b92f61fc75
+
+% 0 1 0 065602687d307d73103e811667609571
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 2 0 1f317c8fe50bb8781174a0a35767610c
++ Les exemples de cette page sont vérifiés par un test compilé de la bibliothèque,
++ `wisteria_doccheck.scala`. Ils ne sont pas exécutés ici.
+
+@ 0 1 0 19951c500d2f74f60b5f8bd5022f72ca
++ ### Produits, sommes et classes de types
+
+@ 0 1 0 1c21e16922f0a2a10d580237361b33b7
++ Deux mots portent l'essentiel du sens, *produit* et *somme* :
+
+% 2 1 0 0ff134c08f7da7ef0ba339cd117b5234
+
+@ 0 6 0 0976b55c9694ed86176fc1e692992c39
++ column  Sorte
++ column  Un type qui est
++ column  Par exemple
++ column  Composé de
++ row  produit  une séquence fixe de valeurs d'autres types  une case class, un cas d'énumération, un tuple, un singleton  *champs*
++ row  somme  un choix unique parmi un ensemble fixe de types disjoints  une énumération, un sealed trait  *variantes*
+
+% 1 1 0 00e84d41ff740c4810f536f0c8de0e6c
+
+@ 0 2 0 185bae055e7355931ae0057f6cebad5a
++ Les champs d'un produit ont des types fixes, un ordre canonique et des étiquettes. Produits et
++ sommes sont duaux au sens de la théorie des catégories, et il en va de même, en conséquence,
++ des champs et des variantes.
+
+% 2 1 0 0fbdce7147dce29b08a1a35236110f83
+
+% 0 1 0 00cddb461ef03cfe0b4951203772e1c8
+
+% 0 1 0 1891d01767329f8c028043f3d88b26b0
+
+% 0 1 0 0a2ee9eaac26da48036e4d94794100b1
+
+% 0 1 0 084a27c170ddc53f1de429c2bc8efca4
+
+% 0 1 0 0f1372a54aa025e11b4f976597c7f47c
+
+% 0 1 0 0a3a1ed0cc27ec640502781a811553d4
+
+% 1 1 0 14079e73180231960d6aee1d6ac3086a
+
+@ 0 3 0 1f72dd0e3ce142a311857691e9020a04
++ Ici, `Temporal` est une somme dont les variantes sont `Date` et `DateTime`. `Date`, `Time` et
++ `DateTime` sont des produits, et `day`, `month` et `year` sont les champs de `Date`. `Month`
++ est une somme dont les douze variantes sont elles-mêmes des produits : des singletons, qui sont
++ des produits sans champ.
+
+@ 0 5 0 0da86cfe5000674111ddc8c9f3afb20c
++ Les classes de types se divisent selon une ligne voisine. Lorsque le paramètre de type apparaît
++ dans le type de *retour* de la méthode abstraite, la classe de types est un *producteur*. Elle
++ crée de nouvelles instances de ce type, et peut être covariante. Lorsque le paramètre apparaît
++ dans les *paramètres* de la méthode, la classe de types est un *consommateur*. Des instances
++ existantes lui sont remises, et elle peut être contravariante. Rien n'est épuisé. Le mot dit
++ seulement dans quel sens circule la valeur :
+
+% 2 1 0 1d1e5b246fad8fbf154f73ad4ddb4635
+
+% 0 1 0 1947713d711de50e1d0ce906682bf8ad
+
+% 1 1 0 170786eb51f77d7e04b5abd8e2a8ce73
+
+% 0 1 0 1d8f97a86842d4ff0765129e6e98a73c
+
+% 0 1 0 11ef007aa88b074a0a2b611342f486f4
+
+% 1 1 0 1116f3a723f98fbc06a2ca9fc319c5c7
+
+@ 0 2 0 1afd5e3e9c467398097357192f2ba933
++ La distinction compte, car les deux se dérivent différemment. Un consommateur effectue un pli
++ sur les champs d'une valeur qu'on lui a donnée. Un producteur n'a aucune valeur sur laquelle
++ plier, et doit en construire une.
+
+@ 0 1 0 07690399cba00d300da069ef15bb9393
++ ### Dériver les instances d'une classe de types
+
+@ 0 4 0 053f67396c5588221e5fdfc4db5344d6
++ Une classe de types acquiert la dérivation en étendant `Derivation`, ou `ProductDerivation` là
++ où seules les case classes ont un sens, et en implémentant `conjunction` pour les produits et
++ `disjunction` pour les coproduits. Voici une classe de types semblable à Show, en entier, avec
++ la méthode d'extension qui la rend pratique à appeler :
+
+% 2 1 0 00605460fcbe600218a26ec9bf12f339
+
+% 0 1 0 05a7a9f9eba8976a07a373a02a35bb8d
+
+% 1 1 0 0cf4362be643988008597cfd2da751d9
+
+% 0 1 0 0bd2bfb3b203cee21f1ee633876c9a9c
+
+% 0 1 0 1432a907607f5822186d1f169b72997f
+
+% 0 1 0 156a6647c3ae68de0c832c1eac00ec29
+
+% 0 1 0 031c5847b77b26051df1cb5c97c0d195
+
+% 1 1 0 1c8888c8504467e001246cd45b233c99
+
+% 0 1 0 15e7cbac4fdfd12b0b84b2193320fe9c
+
+% 0 1 0 0c944b30404a0b1a1c37acd3eeed07cf
+
+% 0 1 0 1445d07492b5a8681287c34d7a3f28ca
+
+% 0 1 0 053c054ae420d55905b149bc80219921
+
+% 1 1 0 0416364f6847bc840cab01b43189b710
+
+% 1 1 0 13ac8b59f287ad0a0d3a438331b2efd5
+
+% 0 1 0 0b82098b329f29a31e26274be1a90d31
+
+% 2 1 0 14fd4019417d651f0a5382a277ac585f
+
+% 0 1 0 0b7f81916698dab901f74a5413f0e99e
+
+% 1 1 0 1ef3043076d7dd611239d676374be041
+
+@ 0 3 0 09bc2814fe93408e173077d5ddb0b075
++ `fields` effectue un pli sur les champs d'un produit, et donne à chacun son `label`, sa
++ position, et l'instance `contextual` de la classe de types pour son type. `variant` effectue
++ une répartition selon le cas effectif d'un coproduit. C'est là tout le coût de la dérivation
++ pour une classe de types.
+
+@ 0 2 0 1d6f72d53b08cec11a41c4a352dc7b8f
++ `fields` et `variant` font partie d'un petit ensemble de primitives, que les sections
++ ci-dessous présentent tour à tour :
+
+% 2 1 0 09f2bf8563707d7514056cd23c3d595d
+
+@ 0 15 0 08c85d1389daa4d2014554aab22f680f
++ column  Primitive
++ column  Utilisée dans
++ column  Effet
++ row  `fields(value)`  `conjunction`  plie sur les champs d'un produit, avec leurs valeurs
++ row  `contexts[derivation]()`  `conjunction`  plie sur les champs d'un produit, sans valeur en main
++ row  `build[derivation]`  `conjunction`  construit un produit à partir d'une valeur pour chaque champ
++ row  `construct`  `conjunction`  construit un produit dans un constructeur de type, étant donnés son `pure` et son `bind`
++ row  `dereference`  une lambda de `contexts`  extrait le champ courant d'un produit
++ row  `variant(value)`  `disjunction`  répartit selon la variante d'une valeur
++ row  `delegate[derivation](label)`  `disjunction`  répartit vers la variante que nomme une étiquette
++ row  `complement(other)`  une lambda de `variant`  restreint une autre valeur à la même variante, sous forme d'`Optional`
++ row  `choice[derivation]`  `disjunction`  indique, pendant la compilation, si chaque variante est un singleton
++ row  `choices[derivation]`  `disjunction`  plie sur chaque variante, sans valeur en main
++ row  `singleton[derivation](label)`  `disjunction`  produit le singleton que nomme une étiquette
++ row  `variantLabels[derivation]`  `disjunction`  liste les étiquettes des variantes
+
+% 1 1 0 01b3e12ab88ee0f701bfeaf2a10a1bda
+
+@ 0 5 0 0a5869489c482d861f69d8e74d5407b5
++ La syntaxe `[field] => field => …` est une *lambda polymorphe*, et elle mérite qu'on s'y
++ arrête, car c'est la seule pièce peu familière. Elle est à une méthode polymorphe exactement ce
++ qu'une lambda ordinaire est à une méthode ordinaire. Là où la lambda de
++ `def transform(field: Field): Text` est `Field => Text`, la lambda de
++ `def transform[field](field: field): Text` est `[field] => field => Text`.
+
+@ 0 6 0 0a27705dc9cf7a0b021af1c9442f122f
++ Elle est nécessaire car chaque champ a un type différent, et le corps ne sait absolument rien
++ de ces types, sauf la seule chose qui compte : deux occurrences de `field` désignent le *même*
++ type. Cela suffit, car cela signifie que l'instance `contextual` fournie à côté du champ est un
++ `Presentation[field]` pour précisément le type de ce champ, et qu'elle peut donc lui être
++ appliquée. Le corps d'une dérivation n'a pas d'autre moyen de faire quoi que ce soit d'une
++ valeur dont il ne voit pas le type. C'est aussi pourquoi la paramétricité fait que ces corps
++ s'écrivent presque d'eux-mêmes.
+
+@ 0 3 0 051e4ac83ca8a3510651448cd22fe5e7
++ `contexts` est le même pli sans valeur sur laquelle plier, et donne seulement l'instance de la
++ classe de types de chaque champ. `typeName`, `tuple` et `singleton` décrivent le produit pour
++ lequel on dérive, si bien qu'une dérivation peut omettre le nom du type pour un tuple, ou les
++ parenthèses pour un singleton.
+
+@ 0 1 0 10a122cb0ffecd8d1a70b45c925ae828
++ ### Utiliser une instance dérivée
+
+@ 0 2 0 064257bc5a5a80d10c3f4ddf8f15091e
++ Avec l'objet ci-dessus dans la portée, toute case class ou énumération a une `Presentation`.
++ Elle est résolue automatiquement, ou demandée explicitement avec une clause `derives` :
+
+% 2 1 0 0ef82e36d14deadc14ff67f7c1ff50d3
+
+% 3 1 0 05c90970037e27fb0fc52935d3581e2c
+
+% 4 1 0 184079d7748eee6014722571e53dba57
+
+% 0 1 0 0f1038dcf87704011ae3a2fea0beb612
+
+% 0 1 0 1bab9f09487bda041dccb37986adab09
+
+% 1 1 0 04bd0b1fc227a1e104476c4a9db8c685
+
+@ 0 2 0 0bdc701749d8ef1617c2165685491efd
++ Ici, `presented` vaut `t"Person(name=Hamlet, age=30)"`. Les structures imbriquées se dérivent
++ récursivement. Une case class de case classes n'a besoin de rien de plus.
+
+@ 0 1 0 0cbf8985499bd96304d11ba3310dc8f2
++ ### Ce qu'une dérivation peut voir
+
+@ 0 2 0 05e1736083815be505d32154d2bbbcca
++ Dans `conjunction`, chaque champ porte plus que sa valeur, et le type pour lequel on dérive
++ peut lui aussi être décrit :
+
+% 2 1 0 1123dbde5dd67b7f18fd349b830b1bc7
+
+@ 0 10 0 170e4de23917ac0609aa1e46739d7607
++ column  Valeur
++ column  Disponible dans
++ column  Donne
++ row  `label`  la lambda de toute primitive qui visite des champs ou des variantes  le nom du champ ou de la variante tel qu'écrit
++ row  `index`  la lambda de toute primitive qui visite des champs ou des variantes  sa position
++ row  `contextual`  la lambda de toute primitive qui visite des champs ou des variantes  l'instance de la classe de types pour son type
++ row  `default`  les lambdas de `fields`, `contexts`, `build` et `construct`  la valeur par défaut déclarée du champ, ou `Unset`
++ row  `typeName[derivation]`  une dérivation  le nom du type pour lequel on dérive
++ row  `tuple[derivation]`  une dérivation  si ce type est un tuple
++ row  `singleton[derivation]`  une dérivation  si ce type est un singleton
+
+% 1 1 0 19b0664d1adeab0b16d8c47a93b7f8e0
+
+@ 0 5 0 034e97a92f72fd9f1e35a26f75a24358
++ Une dérivation peut donc produire quelque chose qui mentionne la structure, et pas seulement
++ quelque chose qui la plie. Ici, elle produit les étiquettes des champs d'un produit, sans
++ valeur en main, via `contexts`. Puisque la dérivation compose les instances des champs d'un
++ produit, chaque type de champ en a besoin d'une, même lorsqu'elle est triviale, comme c'est le
++ cas pour les étiquettes d'un `Text` ou d'un `Int`, qui n'en ont pas :
+
+% 2 1 0 14090825326366a00bd12389b6641e88
+
+% 3 1 0 084059c4416cbac21dd35bba75f49664
+
+% 4 1 0 00e9312e07146e0019a32de30bf9e28e
+
+% 0 1 0 1128c1bb43fb92f6116926a230161844
+
+% 0 1 0 0c2778e19afdae7705ea53bb13ed141e
+
+% 0 1 0 0264a5b24b1b33e117bb044dfc92976c
+
+% 0 1 0 00a0c32aa7b174de0d63f43baec3b72a
+
+% 0 1 0 1fe86e8c122a8a02080643cc196b01bb
+
+% 0 1 0 0e4dc1c716e9764101b9e2f9adb76014
+
+% 0 1 0 0a133700ca1b63bf1f58014378a8dedc
+
+% 0 1 0 1d641ad51e1829090d8b406ab3c2775b
+
+% 0 1 0 1b646e1851b1a04e07e9037c4977bb6b
+
+% 0 1 0 16f3a4c806c68aff1cf518168136804e
+
+% 0 1 0 0168110163e3ff4f009c33f665016d07
+
+% 0 1 0 1b3466dfbba8dc9a011aa5ccfc235520
+
+% 1 1 0 1c8552557689031717b262ba2d4e5e65
+
+@ 0 4 0 0b123b0ba73b6430143ee33167406fa5
++ `Labels.derived[Person].labels` vaut `List(t"name", t"age")`, et
++ `Labels.derived[Empty].labels` est la liste vide. Un produit vide est un produit sans champ, et
++ un produit à un seul champ n'est pas un cas particulier. Tous deux se dérivent de la même
++ règle, et c'est là que les instances écrites à la main se trompent généralement.
+
+@ 0 2 0 09240facfea25c7d0bff713e1969e915
++ Dans `disjunction`, `variant` restreint la valeur à son cas effectif, si bien que le corps est
++ typé selon ce cas plutôt que selon la somme, et l'étiquette propre du cas est disponible pour
++ un discriminant.
+
+@ 0 1 0 0bbeee57432607f212d23a7f482be1c9
++ ### Produire une valeur plutôt que la consommer
+
+@ 0 4 0 0b78d71e33419b6c00d8323d306bc016
++ Un producteur n'a aucune instance sur laquelle plier ; au lieu de `fields`, il utilise donc
++ `build`, qui construit une nouvelle instance du produit. Sa lambda reçoit l'instance de la
++ classe de types pour chaque champ, la seule chose capable de créer une valeur d'un type que le
++ corps ne voit pas, et renvoie la valeur de ce champ. Voici un analyseur de champs séparés par
++ des virgules, en entier :
+
+% 2 1 0 1b78d63700cb29ad0ab61ef656199b7c
+
+% 3 1 0 1d7edf66d4091325021bccf5b8f74570
+
+% 4 1 0 1b00514bd37d40b40b9cbd9285e6ca43
+
+% 0 1 0 0a908368cad7135a0232db50cb41375f
+
+% 0 1 0 02c3a84a2c58f8401699b5fabe751559
+
+% 0 1 0 16b176e6c4bf9f4e024194f937a20ede
+
+% 0 1 0 052a0f183375453e1190562388ca9191
+
+% 0 1 0 124c597ee9dbcf2917d60aab8c8896d4
+
+% 1 1 0 00ead7af0f3cf6e919ba3682ddc7093e
+
+% 1 1 0 1898a724b20b95e91fb78006674f8e0a
+
+% 0 1 0 13efe12eb3006853194e86f611fd98c9
+
+% 0 1 0 0aebc90b9474becb14efbe3c3f7b89e4
+
+% 0 1 0 059e4f9eb36325ef0485ed1e0cc0b975
+
+% 0 1 0 19de638f40ca6efa01218be3aa34d0ce
+
+% 1 1 0 090597856788be991e455c9b3e829c03
+
+@ 0 3 0 084f7b943600993419ea09c7493bb346
++ `Parsing.derived[Person].parse(t"Hamlet,30")` vaut `Person(t"Hamlet", 30)`. `Parsing` est
++ une classe de types à part entière, et non le `Readable` que cherche `read`, si bien que
++ `t"Hamlet,30".read[Person]` ne compile pas. On atteint ses instances via `derived`.
+
+@ 0 4 0 060ece4aa4073c140b678eb1996a8c7d
++ L'équivalent pour les sommes est `delegate`, qui prend l'étiquette de la variante à
++ construire et répartit vers l'instance de cette variante. `variant` peut lire la réponse sur
++ une valeur qu'on lui a donnée. `delegate`, lui, se voit indiquer quelle variante produire ;
++ l'étiquette provient donc généralement de l'entrée, ici un préfixe `Date:` ou `DateTime:`. Une
++ étiquette qui ne nomme aucune variante lève une `Variant.Error` :
+
+% 2 1 0 04837da082bf28090b2d41a10b07fc66
+
+% 3 1 0 00ec81263d74598805a4c71fd7819d95
+
+% 4 1 0 175381fa5b009a77023721815dbc4478
+
+% 0 1 0 1430ba7b863ae10118bae5f44a91adae
+
+% 1 1 0 180197c6db0b1238017272bc966f5df8
+
+% 0 1 0 0cca3f709f8849db17555619152063f8
+
+% 0 1 0 0375c71c173bcc831a7aca760fb27b0d
+
+% 1 1 0 0197ea8e285fc7741e336a980b66fd1f
+
+% 0 1 0 1d6e03ed1cc391b1060bc9d2d7e186ae
+
+% 0 1 0 01b3d00947807eac06fe7e399146f8b8
+
+% 0 1 0 103a182768afd3690793ec87d0524373
+
+% 0 1 0 0741241eb125a36f15ddf9556ea21498
+
+% 1 1 0 0b8d6f59806d4c5007b391b148f7ece3
+
+@ 0 3 0 03f98c56f274d2340173c9afc47bfa93
++ Lorsque la valeur produite est enveloppée dans un constructeur de type, comme c'est le cas d'un
++ analyseur qui renvoie un `Optional` ou d'un décodeur qui renvoie un `Attempt`, `construct`
++ prend les opérations polymorphes `pure` et `bind` de ce constructeur, et y fait passer les
++ champs.
+
+@ 0 1 0 0e7c45ae36d22aff1e6dab93969b8d26
++ ### Classes de types sur deux valeurs
+
+@ 0 5 0 11f78fb857a1f67303a00198f9e089dc
++ Certaines classes de types prennent deux valeurs du même type. Une équivalence en est
++ l'exemple évident. Plier sur les champs de la valeur de gauche est facile. Le champ
++ correspondant de la valeur de droite est le problème. Le faire à la main impliquerait de
++ construire des tableaux parallèles de champs de gauche, de champs de droite et d'instances, et
++ dès que ces valeurs sont séparées de la lambda qui les typait, leurs types sont effacés, et
++ seuls des transtypages permettent de les réassembler.
+
+@ 0 6 0 056870ba7fd827e4147a708e007990e8
++ `dereference` et `complement` évitent cela. Dans `contexts`, `dereference` est une fonction du
++ produit vers le champ courant, typée avec le type de ce champ, si bien que le même champ peut
++ être extrait des *deux* valeurs et remis à l'unique instance `contextual`. Pour les sommes,
++ `complement` joue le rôle correspondant dans `variant`. Elle récupère l'autre valeur,
++ restreinte au même cas. Elle renvoie un [`Optional`](optional-values.md), puisque les deux
++ valeurs ne sont pas forcément de la même variante, et que si elles ne le sont pas, il n'existe
++ aucune valeur typée de manière sensée à renvoyer :
+
+% 2 1 0 1891740d8018e56d014630dddace9814
+
+% 3 1 0 1d18dd74af370f2f0aace9c53f33c1ca
+
+% 4 1 0 13ffae21194ad797001df2a7a9a8ba2c
+
+% 0 1 0 1d7d609f112ab4ec069d87a38a9a2239
+
+% 0 1 0 0b87a6e35561e8110710d6f6c5a43f19
+
+% 0 1 0 0e2fa0afe27e69f310320942a7e7c84f
+
+% 0 1 0 016d43139bfa741a18219f2adc4f5317
+
+% 0 1 0 1376b369cbd3b0d41348797e29764cdb
+
+% 0 1 0 09ec8a96b14f09c21850a828263eb794
+
+% 1 1 0 1d98724717e4421818010738edddd818
+
+% 0 1 0 0f6543aa0e7613ba0afe444df9033b31
+
+% 0 1 0 08e1a0de6ce03d8d0a81d9b01ce6edfb
+
+% 0 1 0 10e7ed485659c224067cd7946e217708
+
+% 0 1 0 13de8ad1dd6a37180cdaff5ffa6459a9
+
+% 0 1 0 1d2b07bc3514219b15749164b3a07184
+
+% 0 1 0 0e034489cce1667c13430e9d32cb27d4
+
+% 1 1 0 0fd6a658b6c7b8100964dbeb3dce7fa4
+
+% 0 1 0 1fc546e73cc33c361132750f14ccde60
+
+% 0 1 0 167ded4573a4e03f1e0c39da9f60ae72
+
+% 0 1 0 0c5c33f12a814fb71b1661a4955ec384
+
+% 0 1 0 0159bc42ad913a540af8899dd8402431
+
+% 1 1 0 070973e29b53f06903008b4f412c6dda
+
+@ 0 3 0 110bb90d8b88ab6e0cc7b0f924e2c705
++ `Equivalence.derived[Person].equal(Person(t"Hamlet", 30), Person(t"HAMLET", 30))` vaut
++ `true`, puisque l'instance pour `Text` ignore la casse. Des variantes différentes sont
++ inégales. Une même variante se compare via l'instance que les deux partagent.
+
+@ 0 1 0 0435ef359a541fe40f86291d15815a38
++ ### Énumérations de singletons
+
+@ 0 4 0 05b5d63091ed01661d861680e253c2fc
++ Une énumération dont tous les cas sont des singletons est un simple choix entre des noms, sans
++ données, et elle permet des choses que ne permet pas une somme générale. `choice` indique,
++ [à la compilation][compilation], si c'est le cas, si bien qu'une dérivation peut se limiter à
++ de telles énumérations, et rejeter les autres avec un message de son cru :
+
+% 2 1 0 0017346e3796d9cc19ff3ca9b41ec5d8
+
+% 0 1 0 067316cc8cea139712bc03ca4ff03ac6
+
+% 0 1 0 19ee1d525fd825f201fd60426eb58323
+
+% 0 1 0 1a4e400ff13db9df18e9f67ce37d045e
+
+% 0 1 0 19a8c4fa3d8b48101fc4f3e4a950333e
+
+% 0 1 0 185dcf79e29f13dc03730982932703ce
+
+% 0 1 0 11eed12a18b9aa0f057a9cb30be0ca8f
+
+% 0 1 0 0a1e4e894b9b24a40de869610fb6729f
+
+% 1 1 0 13c9616c235fc44b0939724b96bf6d97
+
+% 0 1 0 1ac2eabfa14b4cd80ee2d37e1f827fe0
+
+% 0 1 0 1095b21144d5594d0f0bbb99c61cf1cd
+
+% 0 1 0 104ee0147cf138be1a9a28db47457ee8
+
+% 1 1 0 199bd127ba62fc6105635e7de854b8b0
+
+@ 0 3 0 043742d3e52be35e0cece53dd30cd011
++ `Naming.derived[Month].name(Month.Mar)` vaut `t"Month.Mar"`. Le `inline if` compte. Il force
++ l'évaluation de `choice` pendant la compilation, si bien que la branche
++ `scala.compiletime.error` est soit éliminée, soit atteinte, et l'atteindre fait échouer le
++ build.
+
+@ 0 4 0 131b3d0e317a59c319b721a957edc6b6
++ Pour une telle énumération, `singleton` reconvertit une étiquette en la valeur qu'elle nomme,
++ `variantLabels` liste les étiquettes, et `choices` plie sur chaque variante sans avoir besoin
++ d'une valeur sur laquelle répartir. C'est ce dont a besoin une dérivation qui produit un
++ *schéma*, plutôt qu'une instance.
+
+@ 0 1 0 062e0f77a85b372f021198926dae0ef4
++ ### Valeurs par défaut des champs
+
+@ 0 5 0 1cc3bc51cd7ab8d10aac67867efff3f8
++ Une case class peut donner des valeurs par défaut à ses champs, et un décodeur les veut
++ généralement. Un champ absent de l'entrée doit prendre la valeur par défaut que l'auteur a
++ écrite, et ne pas échouer. Dans les lambdas de `fields`, `contexts` et `build`, un
++ `Default[Optional[field]]` contextuel est disponible, et appeler `default` donne un
++ `Optional[field]` : la valeur par défaut déclarée, ou `Unset` si le champ n'en a pas. Voici un
++ analyseur qui tolère l'absence de colonnes finales :
+
+% 2 1 0 1465f703cf8aa8da09c549b39f547f73
+
+% 3 1 0 12b3240be882ff20182b1b06ac50d277
+
+% 1 1 0 11fbab526cc88d1908b66312e2428bc1
+
+% 0 1 0 0d589d77ccf3fcc90dc3983d982d3558
+
+% 1 1 0 1bc16c3c28c9c1cc1ddd0084e8d0f9c8
+
+% 0 1 0 0eb23f017f3667730d0ae6db60a28948
+
+% 1 1 0 039120970543f2cd0fc88a2552995cc8
+
+% 2 1 0 1627edef7985fc010f2914046a4a4ea0
+
+% 4 1 0 0f350bc64db2fbf5117f8b21c12e3c97
+
+% 5 1 0 08c0ea4b7c013a8411c8886e026725b7
+
+% 6 1 0 157860b7844ca0840a4255edc6872fba
+
+% 7 1 0 1e33f7ad12cd527a1b91bb699732582b
+
+% 0 1 0 1cc4f93273b759961610bef56f39dc95
+
+% 1 1 0 1f1fb43e54e0ba7f012801bd7cf99ca9
+
+% 0 1 0 0b353a7f269d6fae15695d4b2731dc3e
+
+% 1 1 0 05678e5a5a6211a313b76a6591654c48
+
+% 0 1 0 1ce773d30838b8e411527c6cb31ea08e
+
+% 1 1 0 11e0e50aca6c3b001f96c65979cd2432
+
+% 2 1 0 00ca732ffb1c9f281287a84e0adf2cf1
+
+% 4 1 0 1c65a588078c3ebc0fcba6e38a6c5b7a
+
+% 5 1 0 1fe16c5c027e46bd0a30453a65832f5b
+
+% 6 1 0 12c8980cab55bd9c02a74ec56acf07d4
+
+% 7 1 0 1e304b9b2a13e4401627f076bf52cea9
+
+% 0 1 0 000063c7414ce2ba0cf79a677d87b774
+
+% 0 1 0 1511963bf68eb96905febe9cd157ca5f
+
+% 0 1 0 0f8180e7e2a3367d1650ff2e372b7ce0
+
+% 0 1 0 09218bac97ece4f0059f433571942c76
+
+% 0 1 0 1294acccdf035114113d954a59a4bf98
+
+% 1 1 0 0df9b80d699822271a77c903299355f6
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 1 0 1c9fffa602f48ffa0eb9d5d6dbe810b3
++ `LenientParsing.derived[Settings].parse(t"primary")` vaut `Settings(t"primary", 3)`.
+
+@ 0 1 0 182e98668116a9490f563bd794b5b67f
++ ### Dériver au-delà des codecs
+
+@ 0 3 0 01b134780964f7741904f0aa88cd5179
++ Rien dans le moteur n'est propre à l'encodage. Toute classe de types dont les instances se
++ composent structurellement se dérive de la même manière, y compris les classes arithmétiques,
++ qui combinent deux valeurs d'un produit champ par champ :
+
+% 2 1 0 0d3511bdb1c5aea41509d7cafe956194
+
+% 0 1 0 077c50034f1d0a3409e40e87dc9b5bda
+
+% 0 1 0 1b8d3012606ff7951fab82ee87a98c1f
+
+% 0 1 0 048d1df099ce34b71fe81d2e378f9b7a
+
+% 1 1 0 0d17dad0236d4bf105767689620ff59d
+
+@ 0 3 0 10f67e29b15e633512081cd7e6439318
++ Ici, `sum` vaut `Pair(t"Rosencrantz", 25)`. L'addition sur `Pair` est l'addition sur chaque
++ champ, si bien que `Text` concatène tandis que `Int` additionne, et qu'aucune instance n'est
++ écrite pour `Pair`. `Subtractable`, `Multiplicable` et leurs semblables suivent la même règle.
+
+@ 0 1 0 1e8f7bd676b06afc043047efad45f3f1
++ ### Quand la dérivation échoue
+
+@ 0 5 0 0872badad6651b671664ac3e20ad241a
++ Une classe de types peut raisonnablement se dériver pour les produits mais pas pour les
++ coproduits, ou l'inverse. Étendre `ProductDerivation` plutôt que `Derivation` le dit, et
++ l'appliquer à un type somme est alors une erreur de compilation qui nomme l'incompatibilité,
++ et non une surprise [à l'exécution][exécution]. Un type sans aucun `Mirror`, comme un trait
++ ordinaire ou une classe qui n'est pas une case class, échoue de même au point de dérivation,
++ où le message peut dire ce qui manque.
+
+@ 0 1 0 1126a41ad3edb2a60d339386c12d5209
++ Trois échecs sont assez courants pour être nommés :
+
+% 2 1 0 010c74de0f039c1f02a18a3f1ae2fcc2
+
+@ 0 6 0 03ab37d431e5ba2a0f0e894bfbc14533
++ column  Symptôme
++ column  Cause habituelle
++ column  Correctif
++ row  un long message se terminant par "given instance derived in trait Derivation does not match type…"  la variable de type d'une lambda polymorphe n'a pas de borne supérieure  écrire `[variant <: derivation]`, et non `[variant]`
++ row  une incompatibilité de type avec `Product`  il manque sa borne au paramètre de type de `conjunction`  ajouter `<: Product`
++ row  aucune instance trouvée pour un type dont les champs semblent corrects  l'un de *ces* champs n'a pas d'instance  compiler un appel explicite à `derived`, qui indique lequel
+
+% 1 1 0 15dcd635dd10d80d100e3e25f1ae4710
+
+@ 0 3 0 05abf72563ce9523178758ae37827467
++ Un type récursif est un cas particulier. Il ne peut pas être dérivé sur place, car la
++ dérivation devrait s'invoquer elle-même en cours de route. Définir l'instance sur le compagnon
++ du type, avec une clause `derives`, rompt le cycle :
+
+% 2 1 0 10cf936a504727da0575f827cc779f37
+
+% 3 1 0 191704584123f9c50251b8718fd9ebe7
+
+% 4 1 0 1d33fee99afa12fd003742b448cfdb3d
+
+% 0 1 0 0d4c8f2d5bae9f3b18d95ad3918894d7
+
+% 0 1 0 1b24d5f92ed99f3d15a5baad3db29001
+
+% 0 1 0 16883fcd32e349bc1b3856c7f77af7aa
+
+% 0 1 0 0c2e211188e873200c10bf3453e55937
+
+% 1 1 0 1f0dfda2ec88d6c514a1ae8dd3becb82
+
+@ 0 1 0 1b492aa0f8c9a8f30a66626144dcd146
++ Ici, `tree` vaut `t"Branch(left=Leaf, value=1, right=Leaf)"`.
+
+@ 0 1 0 165acc2c54a12b4f166e4f76a6753af9
++ ### Choisir entre des instances candidates
+
+@ 0 4 0 1df2a4f2aeafa55010cb61590857bd91
++ Une instance dérivée provient d'un `given` hérité de `Derivation` ; elle a donc une priorité
++ plus basse que tout `given` écrit dans le corps du compagnon. C'est généralement ce que l'on
++ veut, et parfois non. Lorsqu'une instance dérivée et une instance écrite à la main sont
++ réellement ambiguës, ajuster les priorités tend à résoudre une ambiguïté en en créant une autre
++ ailleurs.
+
+@ 0 3 0 1e37ffa77a2288c216a974e041b35d31
++ Le correctif fiable consiste à rendre le choix explicite, et non à le hiérarchiser.
++ Transformez les `given` concurrents en méthodes ordinaires, et écrivez un unique `derived` qui
++ choisit parmi elles dans l'ordre, avec `scala.compiletime.summonFrom` :
+
+% 2 1 0 01084b1a8c0897f61a7600d8a263782e
+
+% 0 1 0 181376be612138a01f68592fb8f79467
+
+% 0 1 0 05af1413c44d3e8a141f88a5eb2ba004
+
+% 0 1 0 10aa1605b58286d61d9a789edeec0543
+
+% 0 1 0 14b14ce0c8b4166b0051c00c74d39fc2
+
+% 0 1 0 0ef66dc579f4b42e190393ff8b590ac4
+
+% 0 1 0 1472af835932af910c1059170161e812
+
+% 0 1 0 0c60621a95f85f651b39a612fce34c3f
+
+% 0 1 0 1c9fa785f04ec1531d496bfa89872e2a
+
+% 2 1 0 1ba10a1ac64969a4149e532aa4cb7d6e
+
+% 0 1 0 043dcaf2edd921321bd3a4513a610115
+
+% 1 1 0 1b21208ee433b41a0925095da7a1912f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 1078baf283ba951004ee4fb58e66e04b
+
+% 4 1 0 198b208e6f86732f10342477ea0cf641
+
+% 0 1 0 05dfb73c142fecf6123fe55fe1083e01
+
+% 0 1 0 1afcf955a509b7be127acb2b3f7ad772
+
+% 1 1 0 002b572e320090940d1e57b1e461f964
+
+@ 0 7 0 0d608623556292e808a0bd6bdac974bb
++ Le premier passe par `Presentation`, que `Person` dérive. Le second passe par `Showable`, que
++ `Double` possède. Lu simplement : utiliser une `Presentation` s'il en existe une ; sinon un
++ `Showable`, mis dans la portée pour le membre de droite ; sinon se replier. L'ordre dans le
++ code source *est* la priorité, et c'est pourquoi il est plus facile de raisonner sur cette
++ forme que sur un treillis de portées implicites. Le paramètre de type prend ici une majuscule
++ pour une raison. Dans un motif de `summonFrom`, un nom de type en minuscules serait lu comme
++ une nouvelle variable de motif, et non comme le paramètre propre du given.
+
+@ 0 4 0 052345f62648f6dd05c651fa4ea565ac
++ La même technique fournit la dérivation sans l'exposer. Définissez `conjunction` et
++ `disjunction` sur un objet ordinaire plutôt que sur le compagnon, et appelez `derived` dessus
++ explicitement partout où une instance est voulue, comme l'ont fait `ParsingSums` et
++ `LenientParsing` plus haut. Rien n'atteint alors la recherche implicite sans avoir été demandé.
+
+@ 0 1 0 11b930712c05d9c6150f4f708985be1f
++ ### Instances par champ
+
+@ 0 3 0 0f199a512736ac2e0852cf8c5f4a7573
++ Il arrive qu'un champ d'un type ait besoin d'une instance différente de celle par défaut : un
++ codec spécial pour une colonne, ou une redéfinition pour un chemin. `specifically` construit
++ une telle map de redéfinitions en nommant les chemins, qui sont vérifiés par rapport à la
++ structure réelle du type :
+
+% 2 1 0 0173f6aa1886f22213ea5be35cd90c24
+
+% 3 1 0 18a731c680bfb1c2016e76fd3a9ff92c
+
+% 4 1 0 097921e949ef1ab60fb1e90b07811f18
+
+% 0 1 0 13c5dbe80c7a43400a12fa801e4bb4cb
+
+% 0 1 0 17d909b654b1e5ea18f5278ba0d8c9ae
+
+% 0 1 0 0fabceb583b79ec91ae5642b20237d8e
+
+% 0 1 0 14e134f289e218050506a5ca40ad1525
+
+% 0 1 0 1f3277de94e53b0e01ca0d29cbd7b77a
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 00d466240c5589fd07f18248d224d225
+
+% 1 1 0 08bea616c737ab860256118039828499
+
+@ 0 4 0 0f8394ca0756d32c02e4138986686140
++ Ici, `encoded` vaut
++ `{"hero":{"name":"Othello","age":40},"villain":{"name":"IAGO","age":28}}`. Un chemin mal
++ orthographié, ou une instance du mauvais type pour son champ, est une erreur de compilation.
++ Une dérivation qui prend en charge les redéfinitions consulte la map à chaque champ qu'elle
++ visite, comme le font [JSON](json.md) et les [catalogues](catalogs.md).
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 11 0 036af1802448937c1f186d4693cb9bf0
++ - [JSON](json.md), [CSV](csv.md), [XML](xml.md) et les autres formats dérivent leurs codecs de
++   cette manière.
++ - [Annotations](annotations.md) décrit l'annotation `@name` qu'une dérivation lit pour renommer
++   un champ.
++ - [Catalogues](catalogs.md) et [optiques](optics.md) décrivent `Specific` et les chemins de
++   champ qui lui servent de clés.
++ - [Métaprogrammation](metaprogramming.md) décrit les outils de compilation sous-jacents au
++   moteur.
++ - [Données génériques](generic-data.md) décrit un codec dérivé sur des structures de forme
++   quelconque.
++ - [Petites API](../../philosophy/small-apis.md) explique pourquoi deux règles valent mieux
++   qu'une instance pour chaque type.
++ - [Affichage](display.md) et [nombres](numbers.md) dérivent leurs instances pour les case
++   classes, et [erreurs](errors.md) décrit le diagnostic lorsqu'une dérivation échoue.

@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 11 0 1b6e63d97d32b2f7020ca28995e895d0
++   entry .int   decodifica um `Int` a partir de texto decimal, distinguindo o que não pode ser analisado do que está fora do intervalo
++       Precisa de uma `Tactic[Number.Error]`. Analisa com `Integer.parseInt`, então o texto
++       precisa ser um inteiro decimal opcionalmente com sinal, sem espaço ao redor. Texto que
++       não é um inteiro lança `Number.Error` com `Reason.Unparseable`; um inteiro fora do
++       intervalo de um `Int` o lança com `Reason.OutOfRange`.
++   entry .byte   decodifica um `Byte` a partir de texto decimal, distinguindo o que não pode ser analisado do que está fora do intervalo
++       Precisa de uma `Tactic[Number.Error]`. Texto que não é um inteiro lança `Number.Error` com
++       `Reason.Unparseable`; um inteiro fora de −128 a 127 o lança com `Reason.OutOfRange`.
++   entry .short   decodifica um `Short` a partir de texto decimal, distinguindo o que não pode ser analisado do que está fora do intervalo
++       Precisa de uma `Tactic[Number.Error]`. Texto que não é um inteiro lança `Number.Error` com
++       `Reason.Unparseable`; um inteiro fora do intervalo de um `Short` o lança com
+
+@ 0 18 0 1c31e178d1ae60de1158a91a8681842f
++   entry .long   decodifica um `Long` a partir de texto decimal, distinguindo o que não pode ser analisado do que está fora do intervalo
++       Precisa de uma `Tactic[Number.Error]`; analisa com `java.lang.Long.parseLong`. Texto que
++       não é um inteiro lança `Number.Error` com `Reason.Unparseable`; um inteiro fora do
++       intervalo de um `Long` o lança com `Reason.OutOfRange`.
++   entry .double   decodifica um `Double` a partir de texto, lançando `Number.Error` se não puder ser analisado
++       Precisa de uma `Tactic[Number.Error]`; analisa com `java.lang.Double.parseDouble`, então
++       expoentes, `NaN` e `Infinity` são aceitos como o Java os aceita.
++   entry .float   decodifica um `Float` a partir de texto, lançando `Number.Error` se não puder ser analisado
++       Precisa de uma `Tactic[Number.Error]`; analisa com `java.lang.Float.parseFloat`.
++   entry .char   decodifica um `Char` como o primeiro caractere do texto
++       Não precisa de tática. Qualquer texto além do primeiro caractere é ignorado, e o texto
++       vazio não é verificado: prefira `As[Char]`, que casa apenas com texto de exatamente um
++       caractere.
++   entry .boolean   decodifica um `Boolean` a partir de qualquer grafia de `Truth` em escopo, sem distinção de maiúsculas, lançando `Truth.Error`
++       Precisa de uma `Tactic[Truth.Error]` e reúne toda `Truth` em escopo (`Every[Truth]`). O
++       texto é aparado e convertido para minúsculas, e então oferecido a cada grafia por vez;
++       texto que nenhuma reconhece lança `Truth.Error`. `Truth.trueFalse`, no objeto companheiro
++       de `Truth`, está sempre em escopo, e cada given de `truths` importado acrescenta uma grafia
++       ao lado dela, em vez de substituí-la.
+
+@ 0 18 0 16885b2e9230ab0910a207397079e908
++   entry .stringText   converte uma `String` em `Text`
++   entry .irrefutable   uma `String` é convertida com o `Irrefutable` de `Text`, após a conversão para `Text`
++   entry .textString   converte `Text` numa `String`
++   entry .ident   converte qualquer valor em si mesmo
++   entry .byteShort   alarga um `Byte` para um `Short`
++   entry .byteInt   alarga um `Byte` para um `Int`
++   entry .byteLong   alarga um `Byte` para um `Long`
++   entry .byteFloat   alarga um `Byte` para um `Float`
++   entry .byteDouble   alarga um `Byte` para um `Double`
++   entry .shortInt   alarga um `Short` para um `Int`
++   entry .shortLong   alarga um `Short` para um `Long`
++   entry .shortFloat   alarga um `Short` para um `Float`
++   entry .shortDouble   alarga um `Short` para um `Double`
++   entry .intLong   alarga um `Int` para um `Long`
++   entry .intDouble   alarga um `Int` para um `Double`
++   entry .floatDouble   alarga um `Float` para um `Double`
++   entry #unapply   converte um valor; não pode falhar
++   entry #contramap   uma conversão irrefutável a partir de um novo tipo, aplicando antes uma função pura

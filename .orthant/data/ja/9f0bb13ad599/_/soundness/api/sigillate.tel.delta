@@ -1,0 +1,114 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0c8aebbcc5fa8d0f1f490e0d394ed554
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 18d9b8eb055272b705a4c8a7570112e5
++ info   JOSE：署名され暗号化されたトークン、JSON としての鍵、ベアラー認証
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 1568b6bc0a765c590a9f4dadff0fe8ec
++     _Sigillate_ は [JOSE](https://www.rfc-editor.org/rfc/rfc7515) を実装する。
++     これは、Web API が認証に使うトークンの背後にある標準（RFC 7515–7519）である。
++     `Jws` は署名または MAC の付いたコンテンツ、`Jwe` は暗号化されたコンテンツ、`Jwk` と `Jwks` は JSON としての鍵、`Jwt` はそのどちらかで運ばれるクレームの集合である。
++     これらは enigmatic の鍵と暗号方式、そして jacinta の JSON の上に作られている。
+
+@ 0 3 0 08f49886b7ea3fbf0324bdd42871d1d4
++     鍵の型がアルゴリズムを選ぶ。
++     ヘッダーの `alg` は、鍵の暗号方式が表すアルゴリズムと比較され、鍵をどう扱うかを決めるためには決して使われないので、トークンのラベルを付け替えて別の方法で検査させることはできない。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0ad93198262cba4102f10ea1980b5899
+
+% 0 1 0 15fecec1136068c01035a37d89ba0cd2
+
+% 0 1 0 1166258a5e9c00d8005e2019d58fd80e
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 09583daf6313cc2613f1f3df627c02f3
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 098392ca96d9bb94167323c7f9c2a04c
+
+% 0 1 0 08c6a1e2df2e49520d917eb41b8ac957
+
+% 0 1 0 0f919ae58b75716307fb565236e72019
+
+% 0 1 0 19f482543f932e1713b0c4a3d38efd16
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 1 0 1c948d45ba03373419b271c209842386
++     このライブラリには三つのソースセットがある。
+
+@ 0 6 0 1bf58aa7ae48949108e0638f93cf1516
++     - `sigillate.core` — `Jws`、`Jwe`、`Jwk`、`Jwks`、`Jwt`、そして `Jose`。`Jose` はヘッダー、エラー、暗号方式をアルゴリズム名に写す型クラスを持つ。
++     - `sigillate.http` — `Jwks.retrieve`。所有者が公開している URL から取得した鍵の集合である。
++     - `sigillate.server` — `bearerAuth`。scintillate のミドルウェアとしてのベアラートークン認証であり、検証されたトークンが `jwt` としてスコープに入る。
+
+@ 0 4 0 07c5232cdb1a6ff403991cfa173a8acf
++     すべては `soundness` のアンブレラにエクスポートされる。
++     独自の選択パッケージはない。
++     署名と暗号化には `Crypto` プロバイダー（`providers.javaBaseProvider`）が、秘密鍵を読むには `Cloak`（`cloaks.heapCloak`）が、トークンを検証するには `Clock` が必要であり、すべての失敗は `Jose.Error` である。
+
+% 0 1 0 0afd0252650f07bc02371d49ca8ea624
+
+% 0 1 0 0afd0252650f07ae02371d49ca8ea616
+
+% 0 1 0 0afd0252650f07b402371d49ca8ea61c
+
+% 0 1 0 0afd0252650f07bd02371d49ca8ea625
+
+% 0 1 0 0d279ef8f3faed7101fb8a9080e2ef7c
+
+@ 0 1 0 17d9f76318a7b6c906ba68f88f0e1817
++ entry .Jws   JSON Web Signature：コンテンツと、それとそのヘッダーに対する署名または MAC
+
+% 1 1 0 16ae6fe5a457bae7048183941dbd92f9
+
+@ 0 4 0 08f45c7d675d50760eed1cc0c38cc92b
++       `Jws(payload, key)` は、鍵の暗号方式が表すアルゴリズムのもとで署名する。
++       `#verify` は、公開鍵または対称鍵に照らして署名を検査し、ペイロードを与える。
++       ペイロードに到達する方法はこれだけである。
++       コンパクト直列化形式は `Text` のコーデックであり、JSON 直列化形式は `#flattened`、`Jws.general`、`Jws.read` である。
+
+@ 0 1 0 1ea449b11cb1e7810e477ec7c7cab379
++ entry .Jwe   JSON Web Encryption：受信者に伝えられる鍵のもとで暗号化されたコンテンツ
+
+% 1 1 0 0d4259bad081eca11eeb15b434744e4b
+
+@ 0 3 0 10243a5f08f9f5b300c0b7e37628aedc
++       `Jwe[content](payload, key)` は、型引数が指定するコンテンツの暗号方式で暗号化し、その鍵を、受信者の鍵が表す鍵管理の一群によって伝える。
++       `#decrypt` はそれを元に戻す。
++       復号のあらゆる失敗は同じエラーである。
+
+@ 0 1 0 1882e86fd62e8c350607debc7a10aeaa
++ entry .Jwk   JSON Web Key：JSON オブジェクトとしての公開鍵、秘密鍵、または対称鍵
+
+% 1 1 0 12d35099084b1dc307cd7ac775a63298
+
+@ 0 3 0 047245c45fa3fc91051bd5681784f8a4
++       `Jwk(key)` は公開鍵を書き、`Jwk(key, Divulgence)` は秘密鍵または対称鍵を書く。
++       `#publicKey`、`#privateKey`、`#symmetricKey` は、それを指定した暗号方式の鍵として読み戻し、`#thumbprint` はその RFC 7638 サムプリントである。
+
+@ 0 1 0 12c390603090b3b804fc2cb473c089b3
++ entry .Jwt   JSON Web Token：登録済みのクレームと、アプリケーション独自のクレーム
+
+% 1 1 0 1cd1f4f810fb48c604d6652902a5f17d
+
+@ 0 3 0 18c182f6f854eeda030f5ca22f1152c1
++       `Jwt.verify` は、トークンを鍵に照らして検査し、その有効期間をスコープにある `Clock` に照らして検査する。
++       `#validate` はその発行者と受け手を検査し、`#sign` はそれから `Jws` を作る。

@@ -1,0 +1,193 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 17bde55d855d7a1306f83bd8e6701d49
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09cbdf0739d5dc5a18a5e0773080f400
++ info   o DOM do navegador como uma interface estrangeira tipada, navegada em Scala e renderizada como JavaScript
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 12204fe31bc75943085605ea361902dc
++     _Querencia_ permite que um programa Scala que gera uma página web escreva os scripts da
++     página — encontrar um elemento, dar foco a ele, rolar a janela — em Scala, verificados membro
++     por membro contra as próprias declarações WebIDL do DOM feitas pelo navegador, e renderizados
++     como JavaScript para que a página os execute. Nada executa o DOM na JVM: navegar por
++     `document` ou `window` constrói uma `Foreign.Expression` tipada, que `Javascript.serialize`
++     transforma em texto-fonte, e que um atributo HTML de handler de evento, como `onclick`,
++     aceita diretamente.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0904af1d23c5658c032667b6cf820d6a
+
+% 0 1 0 1292da9c469e3a0a10c90dc559c56c97
+
+% 0 1 0 0d76c2500fd125940475ce46f58f45d1
+
+% 0 1 0 038946c8e684cca1027b8997e10aee6b
+
+% 0 1 0 0dd74a7611bc0d1815d9c354df60fb4a
+
+% 0 1 0 0cd557c9ee20dbac181ee421ad08a489
+
+% 0 1 0 02c426315d4be033078be95dad59a16b
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 7 0 0eab6f65a1c5bac718a8cee147badff7
++     Um membro que a interface WebIDL não declara, ou um argumento sem contraparte no sistema de
++     tipos estrangeiro, é um erro de compilação. O mecanismo é o mecanismo geral do xenophile para
++     interfaces estrangeiras; o querencia fornece o ecossistema `Browser`, suas definições do DOM
++     empacotadas (`/querencia/dom.idl` no classpath), as conversões de valores Scala para tipos
++     WebIDL, os dois globais e o renderizador de JavaScript. Todo given mora no objeto
++     companheiro `Browser`, que está no escopo implícito onde quer que um tipo mencione
++     `Browser`, de modo que nada precisa ser importado para navegar pelo DOM ou para usar um
++     handler.
+
+@ 0 4 0 0fb6ecefe16c56aa190da1dcaa8b7553
++     A biblioteca tem um único source set, `querencia.core`, para a JVM e o Scala.js (não o Scala
++     Native, já que as bibliotecas HTML sobre as quais ela é construída carregam recursos do
++     classpath em tempo de execução). Tudo é exportado para o guarda-chuva `soundness`, onde
++     `document` e `window` são exportados como nomes de nível superior.
+
+% 0 1 0 0689885865f0149708505256e964f8e1
+
+% 0 1 0 1508f737e890089e1734dbb8ec88d94f
+
+% 0 1 0 07f50a3a71ec10c918cfb8a0fc6e8ca9
+
+% 0 1 0 03765ca51188275c0434dd784d55bdc8
+
+@ 0 1 0 147e4684db5e47d7069c65ab3f2edf88
++ entry .Browser   o navegador web como um ecossistema estrangeiro, cujas interfaces são o WebIDL do DOM
+
+% 1 1 0 1a87444a8ea9d2f2185e1b9007860a49
+
+@ 0 6 0 01b18561b89079b91be1c6b7e66823c0
++       `Browser` é um `Ecosystem` do xenophile cuja gramática é o `WebIdlDialect`, e cujas
++       definições de interface são as do DOM, lidas do `/querencia/dom.idl` empacotado. Um valor
++       do tipo `Foreign of "HTMLElement" from Browser` é uma referência a um objeto do DOM cuja
++       interface WebIDL é `HTMLElement`; selecionar seus membros dá outros valores estrangeiros
++       dos tipos declarados, com a herança achatada, de modo que um `HTMLElement` também oferece
++       o que `Element` e `Node` declaram.
+
+% 2 1 0 12e7200adf356e9801da44c9bf55ddfa
+
+% 3 1 0 1c51ebc95795f44d0bdcf9f3186df247
+
+% 0 1 0 040ac32ff8285cc20614010e7bbb7458
+
+% 0 1 0 0e02ff846787d3a409572e07bb26c5f8
+
+% 1 1 0 0e2aa4b0c13f878c1814b41e6fe09df9
+
+@ 0 3 0 19e074d2938deee0015f214a603859ac
++       Ele é distinto do ecossistema geral `WebIdl` do xenophile para que possa ser o dono da
++       `Interface` do DOM, e para que apenas um `Foreign from Browser` — e não um do TypeScript
++       ou do WIT — sirva de handler de evento HTML (`.scripting`).
+
+@ 0 5 0 1ee748ccb182f3fd128d14b84e725fc0
++       Um valor Scala só passa como argumento onde uma instância de `Interoperable in Browser`
++       dá seu tipo estrangeiro: os números com tamanho definido `S8`–`S64`, `U8`–`U64`, `F32` e
++       `F64` como os tipos WebIDL de mesma largura (de modo que um parâmetro `long` recebe um
++       `S32`, e não um `Int`), `Boolean`, `Text` como uma string, uma `List` como uma
++       `sequence` e um `Optional` como um tipo anulável, com `Unset` atravessando como `null`.
+
+% 0 1 0 012d8a527d1333f00262d5140f7330cc
+
+@ 0 4 0 09c7f852a8fc29da09c3a84ee33eb3df
++   entry #Grammar   a gramática do ecossistema: o `WebIdlDialect` do xenophile
++   entry .document   o global `document` da página, um `Document` estrangeiro
++       `Foreign of "Document" from Browser`, renderizado como o identificador JavaScript
++       `document`. É exportado para o pacote `soundness` como um nome de nível superior.
+
+% 2 1 0 1823833769a28cdb03a2b2ea39ff045b
+
+% 3 1 0 0554358df401ad0d1f5b293405a06847
+
+% 0 1 0 1653cedcb7c5be5700cc9f8d4666466e
+
+% 0 1 0 0ee7bbde547bb2d91b6348ad99c14525
+
+% 1 1 0 110f34ce88c1298f162e2b388ef63527
+
+@ 0 4 0 0b6aa62e065eda58062f2c5da2415437
++   entry .window   o global `window` da página, uma `Window` estrangeira
++       `Foreign of "Window" from Browser`, renderizado como o identificador JavaScript `window`.
++       `Window` declara um atributo `document`, então `window.document` alcança a mesma página
++       que `document`. É exportado para o pacote `soundness` como um nome de nível superior.
+
+% 2 1 0 0026ec6aa77fccd5034e5967bcf75369
+
+% 3 1 0 1d1d0cedb1f60d801080104302e77802
+
+% 0 1 0 02cc72cd930025ae13856e66bff6faef
+
+% 1 1 0 142e9f0ecc243acb11b5d039f87849a5
+
+@ 0 26 0 0844277c6a6fe1840b65b729a616711a
++   entry .interface   as definições WebIDL do DOM, lidas de `/querencia/dom.idl` no classpath
++       A `Interface in Browser` que a macro de navegação convoca para encontrar os membros de
++       cada tipo estrangeiro. Ela é lida por meio do hellenism a partir do próprio JAR do
++       querencia.
++   entry .scripting   permite que um `Foreign from Browser` seja o valor de um atributo HTML de script
++       A instância de `Attributive to Whatwg.Scripting` que torna uma expressão DOM um valor
++       válido para `onclick`, `onchange` e os demais atributos de handler de evento dos elementos
++       HTML do honeycomb, renderizada com `Javascript.serialize` quando a página é exibida. Um
++       texto simples não é um script, então `Button(onclick = t"…")` não compila.
++   entry .s8   passa um `S8` como o tipo WebIDL `s8` (`byte`)
++   entry .s16   passa um `S16` como o tipo WebIDL `s16` (`short`)
++   entry .s32   passa um `S32` como o tipo WebIDL `s32` (`long`)
++   entry .s64   passa um `S64` como o tipo WebIDL `s64` (`long long`)
++   entry .u8   passa um `U8` como o tipo WebIDL `u8` (`octet`)
++   entry .u16   passa um `U16` como o tipo WebIDL `u16` (`unsigned short`)
++   entry .u32   passa um `U32` como o tipo WebIDL `u32` (`unsigned long`)
++   entry .u64   passa um `U64` como o tipo WebIDL `u64` (`unsigned long long`)
++   entry .f32   passa um `F32` como o tipo WebIDL `f32` (`float`)
++   entry .f64   passa um `F64` como o tipo WebIDL `f64` (`double`)
++   entry .boolean   passa um `Boolean` como o tipo WebIDL `boolean`
++   entry .string   passa `Text` como uma string WebIDL: `DOMString`, `USVString` ou `ByteString`
++   entry .sequence   passa uma `List` de valores interoperáveis como uma `sequence` WebIDL
++   entry .nullable   passa `Unset` como o `null` do WebIDL
++   entry .optional   passa um `Optional` de um tipo interoperável como um tipo WebIDL anulável
++       `Optional[T]` corresponde a `T?`, com `Unset` atravessando como `null`. A instância só se
++       aplica a tipos com uma forma `Mandatable`, de modo que nunca concorre com a instância para
++       o próprio `T`.
+
+@ 0 1 0 0b01d0f04992a72b00c41fb54c84cb9f
++ entry .Javascript   renderiza uma expressão DOM estrangeira como texto-fonte JavaScript
+
+% 1 1 0 00d6e0483648510603ae2be4edde9e1d
+
+@ 0 1 0 0b091329288f40361c4a213f74308132
++       O renderizador por trás dos handlers de evento do querencia, disponível para uso direto.
+
+% 0 1 0 078b2e8a491939e00522306181faed2e
+
+@ 0 6 0 1aeec0127ec476bc06fe369079b2a4dc
++   entry .serialize   renderiza uma `Foreign.Expression` como texto-fonte JavaScript
++       Uma `Reference` é renderizada como seu nome, um `Select` como `target.member`, um `Apply`
++       como `target(arguments)`, um `Index` como `target[index]` e um `Literal` como JavaScript:
++       textos entre aspas simples, com barras invertidas, aspas e quebras de linha com escape,
++       para que a saída se aninhe dentro das aspas duplas de um atributo HTML; booleanos como
++       `true` e `false`; números literalmente.
+
+% 2 1 0 03135ee449f22ba01857b669eefc691e
+
+% 3 1 0 0d21f2f743fce50b00a69005540b2bee
+
+% 0 1 0 069de09ff8d9c56818cdb897ac321612
+
+% 0 1 0 0d28a6c4b5541e671365665a75d68afa
+
+% 0 1 0 15c2dfa18e0481c8188b2cfe84acd3a3
+
+% 0 1 0 10247153158ac9b011f5e7f459978551
+
+% 1 1 0 12445222178d1c500d9f1a56cdf1f798

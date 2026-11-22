@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 9 0 1a241fe6c66dbd9507172f836d70279f
++       Die Warteschlange und der schreibende Daemon gehören zur **Aufrufstelle** und zum Ziel:
++       Jeder `Logger`, der an derselben Quellposition für ein gleiches Ziel gebaut wird, teilt
++       sich einen, sodass ein Given, das bei jedem Herbeirufen neu ausgewertet wird, nicht jedes
++       Mal einen neuen Thread startet, und ein Helfer, der aus einer Zeile `Logger(path)` für
++       verschiedene Pfade baut, für jeden eine Warteschlange erhält.
++   entry #accepts   ob der Logger Ereignisse einer Stufe aufzeichnet: auf oder über seinem Schwellenwert
++   entry #submit   reiht ein übertragenes Ereignis zum Formatieren und Schreiben ein, mit einer Stufe und einem Zeitstempel
++       Wird von `Loggable.fanOut` aufgerufen, sobald `#accepts` und `admits` bestanden sind; das
++       Ereignis wird auf dem aufrufenden Thread formatiert und sein Datensatz für den
++       schreibenden Daemon eingereiht. Meist nicht direkt aufgerufen.
+
+@ 0 4 0 1f408433dcd1404302e9905c86c98c22
++ entry .dateFormat   das Datums- und Zeitmuster der Formate mit Zeitstempel: `2026-Nov-04 09:30:00.250`
++     Ein `java.time.format.DateTimeFormatter` für `yyyy-MMM-dd HH:mm:ss.SSS` in der
++     Standardzeitzone der JVM, verwendet von `timestampedLogFormat` und
++     `ansiTimestampedLogFormat`. Er ist unveränderlich und daher sicher von mehreren Threads aus
++     verwendbar.
+
+@ 0 18 0 04ccd8bc38e978cb08d9b89461024798
++       `timestampedLogFormat` und `untimestampedLogFormat` formatieren jeden
++       `Communicable`-Wert, `ansiTimestampedLogFormat` und `googleCloudPlatformLogFormat` nur eine
++       `Message`, in die ein `Logger[…, Message]` jedes Ereignis überträgt.
++       `textLevelLogFormat` und `teletypeableLogFormat`, die eine `Log.Level` darstellen, werden
++       von den anderen verwendet.
++   entry .timestampedLogFormat   eine Textzeile: Datum und Uhrzeit, die Stufe in Klammern und die Meldung
++       `2026-Nov-04 09:30:00.250 [INFO] server listening on 8080`, mit einem Zeilenumbruch am
++       Ende, für jedes `Communicable`-Ereignis, wobei der Zeitstempel von `dateFormat`
++       formatiert wird.
++   entry .untimestampedLogFormat   eine Textzeile: die Stufe in Klammern und die Meldung
++       `[INFO] server listening on 8080`, mit einem Zeilenumbruch am Ende, für jedes
++       `Communicable`-Ereignis. Passt zu einem Ziel, das seinen eigenen Zeitstempel hinzufügt,
++       etwa `Syslog`.
++   entry .textLevelLogFormat   stellt eine `Log.Level` als `FINE`, `INFO`, `WARN` oder `FAIL` dar
++       Das `Showable` für `Log.Level`, das die Textformate interpolieren.
++   entry .ansiTimestampedLogFormat   ein Teletype: gedimmtes Datum und gedimmte Uhrzeit, die Stufe auf farbigem Grund, `>` und die Meldung
++       Ein `Message is Inscribable in Teletype` für Terminals, in `eucalyptus.ansi`. Es braucht
++       eine `LogPalette` im Geltungsbereich für seine Farben. Meldungen werden in Zeilen von
++       höchstens 76 Zeichen geschnitten, und jede Fortsetzungszeile wird so eingerückt, dass sie
++       unter der Meldung der ersten Zeile steht. Mit `Out` als Ziel braucht es außerdem
++       `writables.outTeletypeWritable` und ein `Stdio`.
+
+@ 0 11 0 190478ab175d462714e45d0774375a5a
++       Jeder Datensatz endet mit einem Zeilenumbruch.
++   entry .teletypeableLogFormat   stellt eine `Log.Level` als fette Beschriftung auf der `LogPalette`-Farbe ihrer Stufe dar
++       Das `Teletypeable` für `Log.Level`, das `ansiTimestampedLogFormat` verwendet, in
++       `eucalyptus.ansi`. Es braucht eine `LogPalette`.
++   entry .googleCloudPlatformLogFormat   ein kompaktes JSON-Objekt pro Ereignis, mit `severity` und `message`
++       Ein `Message is Inscribable in Text`, in `eucalyptus.gcp`, das
++       `{"severity":"WARNING","message":"…"}` schreibt, die strukturierte Form, die der
++       Logging-Agent von Google Cloud aus der Standardausgabe eines Containers liest. Die Stufen
++       werden auf `DEBUG`, `INFO`, `WARNING` und `ERROR` abgebildet; die Meldung ist ihr reiner
++       Text, ohne Gestaltung. Es wird kein Zeitstempel geschrieben, da der Agent seinen eigenen
++       aufzeichnet. Jeder Datensatz endet mit einem Zeilenumbruch: ein Objekt pro Zeile.

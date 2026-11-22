@@ -1,0 +1,1902 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 02c24cf3cbd2ab1013330955e06463ab
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0fcab838a3d347b2092b795eeed69c9f
++ info   CBOR (RFC 8949) als typisierter Baum, abgeleitete und generierte Codecs, ein streamender Parser und HTTP-Bodys
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 0adff90548faa2e4076748f2bd3feef1
++     _Breviloquence_ liest und schreibt [CBOR](https://datatracker.ietf.org/doc/html/rfc8949), den
++     binären Verwandten von JSON, mit derselben Schnittstelle, die Soundness seinen textuellen
++     Geschwistern gibt: Bytes werden zu einem `Cbor`-Wert geparst, Case-Klassen werden mit Codecs,
++     die aus ihren Definitionen abgeleitet sind, in ihn und aus ihm umgewandelt, und Navigation,
++     Aktualisierungen und Linsen funktionieren wie bei JSON und YAML. Wo kein Mensch die
++     Übertragung liest — ein Geräteprotokoll, ein Cache-Eintrag, eine Message-Queue —, behält CBOR
++     das Datenmodell von JSON (Maps, Arrays, Ganzzahlen, Gleitkommazahlen, Text, Byte-Strings,
++     boolesche Werte, `null` und `undefined`) in einer kompakten binären Form bei und fügt
++     **Tags** hinzu, die einen Wert mit seiner Bedeutung annotieren.
+
+@ 0 5 0 143f4a48dec0eec91e048ed9cb90acbb
++     Ein `Cbor` ist ein unveränderlicher Baum über einem `Cbor.Ast`, dem opaken Speichertyp, dessen
++     Accessoren (`isMap`, `entries`, `key`, `value`, `long`, `string`, …) einen Knoten
++     klassifizieren und lesen. Ein Wert wird mit `in[Cbor]` kodiert und ein Baum mit `as[T]`
++     dekodiert; Bytes kommen aus `Cbor.Ast.encodable` und gehen über `Cbor.Ast.parse` zurück, oder,
++     in jeweils einem Schritt in jede Richtung, über `in[Data over Cbor]` und `read[T in Cbor]`:
+
+% 2 1 0 16f9d7bb9f391dfc001459c038ad2b4e
+
+% 3 1 0 09222fa0ca691d7c148aae13e7fbc4f1
+
+% 4 1 0 0a3ceaf396bc5a311497b117a33a68d5
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 08c152d49378e447160881afb557962c
+
+% 0 1 0 0cddcd20ae4510510d59c996ec38484a
+
+% 0 1 0 06e677f66cf68c750a59dbf253c2920b
+
+% 0 1 0 0f9519b6891e1cea0790a47a669ec1ef
+
+% 0 1 0 1862989715c9132b09720cdce049177d
+
+% 1 1 0 1e54dd97a5b4f50c056650b06273ba75
+
+@ 0 5 0 04be20b186db4f1a0d92830fb9ebd528
++     Das Lesen ist streamend: `read[Cbor]`, `read[Cbor.Ast]` und `read[T in Cbor]` über einer
++     `Chain[Data]` oder einem `Stream[Data]` treiben den `CborParser` an, eine zustandsbehaftete
++     Capability über einem `zephyrine.Cursor`, die jeden Chunk liest, sobald er gezogen wird, und
++     die Eingabe nie vorher zusammensetzt. Ein über Chunks verteilter Wert wird genauso gelesen wie
++     einer, der als Ganzes eingetroffen ist, und jeder `Cbor.Error` meldet einen absoluten
++     Byte-Offset.
+
+@ 0 10 0 1c3b05b0d27866c20419de7ff2f77c41
++     Drei Wege führen von Bytes zu einem Wert. Der **abgeleitete** Weg parst den ganzen Baum und
++     dekodiert ihn über `Decodable in Cbor`, abgeleitet für jede Case-Klasse und jede versiegelte
++     Hierarchie. Der **direkte** Weg, `Cbor.Parsable` und `Cbor.Printable`, verbraucht Elemente
++     über einen `Cbor.Reader` direkt vom Rand des Parsers oder schreibt sie direkt in einen
++     Byte-Produzenten, ohne dass ein Baum gebaut wird; `Inlinable.parsable[T]` und
++     `Inlinable.printable[T]` generieren solche Instanzen zur Kompilierzeit, `derives Cbor.Direct`
++     generiert beide in ein Begleitobjekt, und `import codecs.direct` wählt den generierten Codec
++     für jeden Record im Geltungsbereich. Eine dritte Option, `import codecs.strict`, macht einen
++     Record ohne direkten Codec zu einem Kompilierfehler. Ohne importierten Modus nimmt ein Typ
++     genau dann den direkten Weg, wenn er ein eigenes `Cbor.Parsable` oder `Cbor.Printable` hat,
++     und sonst den abgeleiteten.
+
+@ 0 1 0 1af03583aa97792d1ed95982f8b2b936
++     Die Bibliothek hat drei Komponenten:
+
+@ 0 11 0 16da09a4fd54b93913bdf6fcfff58e56
++     - `breviloquence.core` — `Cbor`, `Cbor.Ast`, `CborParser`, `Cbor.Reader`, die abgeleiteten
++       und direkten Codecs, Optiken, `Inlinable` und die Pakete `optionalityOptions`,
++       `dynamicAccess` und `conversions`. Kompiliert für die JVM, Scala.js und Scala Native.
++     - `breviloquence.staged` — ein Staging-Compiler innerhalb des Makros (`InlinableStager`), der
++       `Inlinable.parsable` erlaubt, eine handgeschriebene `Inlinable`-Instanz und das
++       `Discriminable in Cbor` einer versiegelten Summe auszuwerten, während der Code kompiliert. Er
++       bringt den Scala-Compiler auf den Klassenpfad der Makros und ist daher eine separate,
++       optionale Komponente; ohne ihn nimmt ein Feld, dessen Typ nur eine handgeschriebene Instanz
++       hat, eine Nahtstelle zur Laufzeit, und eine Summe wird nicht generiert. Nur JVM.
++     - `breviloquence.http` — die givens `postables`, `servables` und `construables`, die mit
++       Telekinesis ein `Cbor` zu einem `application/cbor`-Body eines Requests oder einer Response machen.
++       Nur JVM.
+
+@ 0 5 0 1632f61ace5a95e714c14dce4bdfb3ea
++     `Cbor` und `Cbor2` werden in den Umbrella `soundness` exportiert, mit der Erweiterung `parse`,
++     und jedes Auswahlpaket verschmilzt mit dem gleichnamigen des Umbrellas: Man schreibt
++     `import soundness.*` und importiert dann eine Richtlinie namentlich, da `import soundness.*`
++     keine givens importiert (`import optionalityOptions.strictCborNulls`,
++     `import dynamicAccess.dynamicCbor`, `import codecs.direct`).
+
+% 0 1 0 063a0ed12c64fddc156d5a4ce74f2b6f
+
+% 0 1 0 104f3eca87bb771a1a6413181fe20d3f
+
+% 0 1 0 1b64f3bf1f2ee61400bf726b7dee47e6
+
+% 0 1 0 1e435648e360435108e156e414c77194
+
+% 0 1 0 052926ec0b94db1d0396cd9bd23caebc
+
+@ 0 1 0 1eb90146bf2d815d1c3ce88650f18476
++ entry .Cbor   ein CBOR-Dokument: ein unveränderlicher Baum, mit seinen Codecs, Parser-Hooks und Optiken
+
+% 1 1 0 090209f3f6cf0efd0e85a1c48694b7ae
+
+@ 0 7 0 0b9ad31eac8aa2d01477eebe9793e604
++       Ein `Cbor` verpackt einen `Cbor.Ast`-Knoten — die Wurzel eines Dokuments — und ist der Typ,
++       den jede Kodierung erzeugt und jede Dekodierung verbraucht. Es ist `Dynamic`, sodass mit
++       `dynamicAccess.dynamicCbor` im Geltungsbereich die Felder einer Map als Mitglieder gelesen
++       werden, ein Array indiziert und eine Zuweisung eine aktualisierte Kopie erzeugt; es wird
++       mit `==` strukturell verglichen, Map-Einträge Position für Position (kanonisches CBOR ordnet
++       Schlüssel deterministisch, sodass ein hin und zurück übertragenes Dokument als gleich
++       verglichen wird, zwei Maps mit denselben Einträgen in anderer Reihenfolge aber nicht).
+
+% 2 1 0 0825354a57666aba02f6a273c29abfee
+
+% 3 1 0 0eff69ed7ccaebf2100e7c5dbfdcc625
+
+% 4 1 0 04e625dc3fc62b9019170ea80cb8ad83
+
+% 5 1 0 0c5c35100da37a0d0db8b3d841b7b3bf
+
+% 7 1 0 0e4e97936058e0c5072ae4cc7c332aef
+
+% 2 1 0 1c61a718f9beb3c81b2ef691cfae48e5
+
+% 0 1 0 05f9857e3f22b7e9017a12a8d5741423
+
+% 0 1 0 0c64d7eabf92d3591d8b6f0e29a1185c
+
+% 0 1 0 1b9ea3524b6aaeb209c7a5dad3c1ac76
+
+% 1 1 0 0e9b8b8e554f1a0f1fa2d8081d9a19f7
+
+@ 0 12 0 001fd450aa230730152764e14399317b
++       Das Begleitobjekt enthält alles, was ein `Cbor` kann: die givens `Encodable in Cbor` und
++       `Decodable in Cbor` für Primitive, Collections, `Optional`, `Option` und `Map`
++       (`Cbor.decodable` und `Cbor.encodable` leiten sie für jede Case-Klasse und jede versiegelte
++       Hierarchie ab), die Lesewege `.aggregable`, `Cbor.aggregableIn` und
++       `Cbor.aggregableParsed`, die gechunkte Bytes in einen Baum oder einen Wert verwandeln, die
++       Schreibwege `Cbor.encodableOver` und `Cbor.encodableOverPrinted` hinter
++       `in[Data over Cbor]`, die `.lens`- und Array-Optiken, `.emit` zum blockweisen Serialisieren
++       und die Oberfläche der direkten Codecs `.Parsable`, `.Printable`, `.Reader` und `.Direct`.
++       All dies liegt im impliziten Geltungsbereich: Nur die Richtlinien in `optionalityOptions`,
++       `dynamicAccess`, `conversions` und `codecs` werden namentlich importiert. Die hier als
++       `Cbor.…` geschriebenen sind geerbt statt deklariert: Die Traits niedrigerer Priorität
++       `Cbor1` und `Cbor2` deklarieren und dokumentieren sie.
+
+@ 0 5 0 137922e17a8cbdae177152c5325c2428
++       Das Dekodieren braucht eine `Tactic[Cbor.Error]` im Geltungsbereich
++       (`strategies.throwUnsafely`, einen `safely`- oder `unsafely`-Block oder eine
++       `raises Cbor.Error`-Klausel). Ein gescheiterter Lesezugriff löst `Cbor.Error` mit einem
++       `Cbor.Error.Reason` aus: Fehlerhafte Eingabe nennt einen Byte-Offset, und eine gescheiterte
++       Umwandlung sagt, welcher Typ gefunden und welcher erwartet wurde oder dass ein Feld fehlte.
+
+% 1 1 0 0113e06e5eac465b1b04f12ad34217b5
+
+% 2 1 0 0dbd2326a7735c6602dc633bd2e3987b
+
+% 1 1 0 1019ae734818d93e0fe2368caf08a2e4
+
+% 2 1 0 118acb3bf6e0c22216a429d64579f486
+
+% 0 1 0 0126836c20f0effa13fbab59e6c0638f
+
+% 0 1 0 08ee871eef7d3ca8035821ade2a179b7
+
+@ 0 22 0 1ed0ef709c9a4872000d198aaaa08585
++   entry #apply   das Feld einer Map nach Namen oder das Element eines Arrays nach Index
++       `cbor(t"name")` ist der Wert unter dem Schlüssel `name`, als `Cbor`, oder ein `Cbor`, dessen
++       Wurzel `undefined` ist, wenn die Map keinen solchen Schlüssel hat (sodass eine Kette von
++       Nachschlagevorgängen in fehlende Felder `undefined` ergibt, statt zu scheitern); das
++       Nachschlagen eines Felds auf etwas, das keine Map ist, löst `Cbor.Error` mit
++       `NotType(found, Map)` aus. `cbor(2)` ist das dritte Element eines Arrays und löst auf allem
++       anderen `NotType` aus.
++   entry #selectDynamic   `cbor.field`: ein Map-Eintrag nach Namen, unter `dynamicAccess.dynamicCbor`
++       Die `Dynamic`-Form von `#apply` mit einem Textschlüssel, nur verfügbar, wo ein
++       `(? >: Cbor) is Dynamical` im Geltungsbereich ist — `import dynamicAccess.dynamicCbor` für
++       einen ganzen Geltungsbereich oder ein `dynamically[Cbor]:`-Block für einen Ausdruck —,
++       sodass ein falsch geschriebener Feldname nicht mit einer Methode verwechselt werden kann,
++       wo dynamischer Zugriff nicht beabsichtigt war. Löst `Cbor.Error` aus, wenn der Empfänger
++       keine Map ist.
++   entry #applyDynamic   `cbor.field(index)`: ein Element eines Felds mit Array-Wert
++       Unter `dynamicAccess.dynamicCbor` ist `cbor.values(1)` das zweite Element des Arrays unter
++       dem Schlüssel `values`. Löst `Cbor.Error` aus, wenn der Empfänger keine Map oder das Feld
++       kein Array ist.
++   entry #updateDynamic   `cbor.field = value`: eine Kopie mit ersetztem, hinzugefügtem oder entferntem Eintrag
++       Unter `dynamicAccess.dynamicCbor` ist `person.age = 40` ein neues `Cbor`, dessen Eintrag
++       `age` die Kodierung von `40` enthält (jeder `Encodable in Cbor`-Wert;
++       `conversions.encodableToCbor` lässt auch eine Linsenzuweisung einen nehmen), als neuer
++       Eintrag angehängt, wenn der Schlüssel fehlte. `person.age = Unset` entfernt den Eintrag.
++       Beide lösen `Cbor.Error` mit `NotType(found,
++       Map)` aus, wenn der Empfänger keine Map ist.
+
+% 2 1 0 0debbdafa1f6685a18159b9682175ee4
+
+% 3 1 0 023928d166a8de760aaf1187bedb183b
+
+% 4 1 0 12ec4ab81ba41a97139139fbe4b5c64b
+
+% 5 1 0 1df36cc553a628fc1d0adabed8186510
+
+% 7 1 0 1e30defe796c086c17d08ba5f121e682
+
+% 0 1 0 17538327139d1f0e0a29d47cd67e914e
+
+% 2 1 0 0dd14cd9fa6e84c50531db75fe7d5e71
+
+% 0 1 0 17ce32ef177251850c83b8233cbf2c4f
+
+% 0 1 0 124f70c9144a1a210c8f4be8e27ed9b6
+
+% 1 1 0 076fbb4ee92a747f0520e367db7c9b1f
+
+@ 0 13 0 165c6961eca9c1fb0526cb0bc46dc047
++   entry #as   dekodiert das Dokument als einen Typ, über dessen `Decodable in Cbor`
++       `cbor.as[Person]` führt den Decoder des Typs über den Baum aus und braucht eine
++       `Tactic[Cbor.Error]`. Eine Case-Klasse wird aus einer Map nach Feldnamen dekodiert
++       (umbenannt durch eine `@name[Cbor]`-Annotation), eine versiegelte Hierarchie über ihr
++       `Discriminable in Cbor`, eine Collection aus einem Array und ein Primitiv aus dem passenden
++       Blatt; ein `Optional`- oder `Option`-Feld liest einen fehlenden Schlüssel, ein `null` oder
++       einen falsch typisierten Wert so, wie `optionalityOptions` es sagt. In einem
++       `Validate`-Geltungsbereich sammelt jedes falsch typisierte oder fehlende Feld seinen
++       eigenen Fehler mit einem `Pointer` darauf, und die Case-Klasse wird nur konstruiert, wenn
++       jedes Feld fehlerfrei war.
++   entry .ast   verpackt einen AST-Knoten als `Cbor`-Dokument
++       `Cbor.ast(node)` ist die Umkehrung von `.unseal`: ein `Cbor.Ast` — das Ergebnis von
++       `Cbor.Ast.parse` oder ein über die Accessoren erreichter Knoten — als Dokument, das
++       dekodiert, navigiert und aktualisiert werden kann.
+
+% 2 1 0 1da374f7ccec1f0a1aabe809094860be
+
+% 3 1 0 190b2e12d7a265651ba2075b65fc4fec
+
+% 4 1 0 033f3f9a4d342bdc041b28c1e6b0636b
+
+% 0 1 0 15dc158b77ccd8c406a4605fb45f17c9
+
+% 1 1 0 1d29210ed99cf8a91c63a170bc0c0b70
+
+@ 0 17 0 0e50fa3c4e7ced4f04a0c03397ee8f3b
++   entry .unseal   der AST-Knoten an der Wurzel eines Dokuments
++       `Cbor.unseal(cbor)` legt den Baum als `Cbor.Ast` offen, für die Accessoren (`isTag`,
++       `entries`, `key`, …), für `show` in Diagnosenotation und für
++       `Cbor.Ast.encodable.encoded`, das die Bytes des Dokuments liefert.
++   entry .applyDynamicNamed   `Cbor.make(key = value, …)`: eine aus benannten Argumenten gebaute Map
++       Das Begleitobjekt ist `Dynamic` mit dem einzigen Methodennamen `make`, sodass
++       `Cbor.make(name = t"Kate".in[Cbor], age = 30.in[Cbor])` eine Map mit diesen Einträgen in
++       dieser Reihenfolge ist, jedes Argument bereits ein `Cbor`. So wird eine Map
++       zusammengesetzt, wo keine Case-Klasse passt.
++   entry .emit   die Bytes eines Dokuments blockweise, als Iterator gezogen oder an eine Funktion geschoben
++       Zwei Formen über demselben Tiefendurchlauf, die jeweils ein `Buffering` im
++       Geltungsbereich für die Blockgröße brauchen. `Cbor.emit(cbor)` ist ein `Iterator[Data]^`,
++       der den nächsten Block erst serialisiert, wenn er gezogen wird, ohne Fiber: Ein Block endet
++       an der ersten Knotengrenze jenseits der Pufferkapazität, sodass ein langer String sie
++       überschreiten kann. `Cbor.emit(cbor, deliver)` serialisiert auf dem Thread des Aufrufers
++       und übergibt jeden Block an `deliver`, sobald er voll ist, die Form zum Schreiben in eine
++       Datei, einen Socket oder einen `OutputStream`. Die Bytes sind genau die, die
++       `Cbor.Ast.encodable` schreibt, und `.streamable` verpackt die Zieh-Form als `Stream`.
+
+% 2 1 0 007d3be9bfa1775302490979e46c1694
+
+% 3 1 0 0b7f7090773ad529063aa809c0927341
+
+% 2 1 0 1e835696c9ebfcf4009bc88477d3044c
+
+% 0 1 0 024902c67eb3f2481356eb44773a021e
+
+% 0 1 0 1f7d38aaff0cfd3c0cb7fd0dfa909bf7
+
+% 0 1 0 17b05650567989c60dc6102662e099af
+
+% 0 1 0 1ac0f620c1a3a79606ac085ac7c1e7e9
+
+% 0 1 0 03e3504ec26462471783254e2bd6d5c6
+
+% 0 1 0 152e1583280cafe80cda1d5b89ff6fc5
+
+% 1 1 0 0790b4cb62e650b41689cd0cf3b948c3
+
+@ 0 24 0 1e3e5e37e2d726521e25e874787af5a7
++   entry .streamable   ein `Cbor` als `Stream[Data]`, über `Credit` bemessen, durch `.emit`
++       Braucht ein `Buffering`. Dadurch lässt sich ein Dokument mit `stream.transfer` schreiben
++       oder überallhin senden, wo ein `Streamable by Data` angenommen wird, ohne seine ganze
++       Kodierung im Speicher zu halten.
++   entry .aggregable   liest gechunkte Bytes in ein `Cbor`: das given hinter `read[Cbor]`
++       `Chain(bytes).read[Cbor]` und `stream.read[Cbor]` parsen ein Datenelement, lesen jeden
++       Chunk, sobald er gezogen wird, und weisen nachfolgende Bytes mit
++       `Cbor.Error(Trailing(offset))` zurück. Braucht eine `Tactic[Cbor.Error]`; der ganze Baum
++       wird gebaut, sodass die Größe der Eingabe den gehaltenen Speicher bestimmt.
++   entry .aggregableDerived   unter `codecs.derived` der Baumweg, auch wo ein `Cbor.Parsable` im Geltungsbereich ist
++       `import codecs.derived` wählt die abgeleiteten Codecs für jeden Typ: Dieses given hat
++       Vorrang vor `Cbor.aggregableParsed` und greift genau dort, wo dieses greifen würde, sodass
++       `read[T in Cbor]` den Baum parst und ihn über das `Decodable in Cbor` des Typs dekodiert,
++       selbst wenn ein direkter Parser im Geltungsbereich ist.
++   entry .readableDerived   unter `codecs.derived` `data.read[T in Cbor]` über den Baum
++       Das Gegenstück von `.aggregableDerived` für ganze `Data`, mit Vorrang vor
++       `Cbor.readableParsed`.
++   entry .encodableOverDerived   unter `codecs.derived` `in[Data over Cbor]` über den Baum
++       Hat Vorrang vor `Cbor.encodableOverPrinted`, wo immer ein `Cbor.Printable` im
++       Geltungsbereich ist, sodass der Wert über sein `Encodable in Cbor` zu einem Baum kodiert
++       und serialisiert wird.
++   entry .aggregableStrict   unter `codecs.strict` der direkte Leseweg für einen Typ mit einem `Cbor.Parsable`
++       `import codecs.strict` ist `codecs.direct` ohne Rückfall: Ein Typ mit einem direkten
++       Parser wird über ihn gelesen, und ein Typ ohne einen trifft statt auf den Baumweg auf
++       `Cbor.aggregableStrictFailure`, einen Kompilierfehler, der den Typ nennt.
++   entry .encodableOverStrict   unter `codecs.strict` `in[Data over Cbor]` über ein `Cbor.Printable`
++       Die schreibende Hälfte des strikten Paars; ein Typ ohne `Cbor.Printable` trifft auf
+
+% 0 1 0 191acb45b26ec13019bea35782d7d32e
+
+@ 0 68 0 0c454c30824d592b19797add28ae3e12
++   entry .option   dekodiert ein `Option[T]`-Feld, nach denselben drei `optionalityOptions`-Richtlinien wie `Cbor.optional`
++       Fehlende, `null`- und fehlerhafte Werte ergeben unter den nachsichtigen Richtlinien `None`
++       und lösen unter den strikten `Cbor.Error` aus; ein vorhandener Wert wird zu `Some`
++       dekodiert.
++   entry .optionEncodable   kodiert ein `Option[T]`: die Kodierung des Werts oder `undefined` für `None`
++   entry .unit   dekodiert CBOR-`null` als `()`
++       Alles außer `null` löst `Cbor.Error` aus: `Absent` für `undefined` und `NotType(found,
++       Null)` sonst.
++   entry .boolean   dekodiert einen booleschen CBOR-Wert als `Boolean`
++       Jeder andere Knoten löst `Cbor.Error(NotType(found, Boolean))` aus.
++   entry .double   dekodiert eine CBOR-Gleitkommazahl als `Double` oder eine zu einer solchen geweitete Ganzzahl
++       Gleitkommazahlen halber, einfacher und doppelter Genauigkeit werden alle zu einem `Double`
++       geparst; ein Ganzzahlknoten wird umgewandelt. Jeder andere Knoten löst
++       `Cbor.Error(NotType(found, Float))` aus.
++   entry .float   dekodiert eine CBOR-Gleitkommazahl oder -Ganzzahl als `Float`
++   entry .long   dekodiert eine CBOR-Ganzzahl als `Long` oder eine darauf abgeschnittene Gleitkommazahl
++       Eine Ganzzahl außerhalb des Bereichs eines `Long` scheitert beim Parsen mit
++       `Overflow(offset)`; ein Gleitkommaknoten wird abgeschnitten. Jeder andere Knoten löst
++       `Cbor.Error(NotType(found, Integer))` aus.
++   entry .int   dekodiert eine CBOR-Ganzzahl als `Int`
++       Über `.long`, dann mit `toInt` verengt: Ein Wert außerhalb des `Int`-Bereichs läuft über,
++       statt zu scheitern.
++   entry .text   dekodiert einen CBOR-Textstring als `Text`
++       Jeder andere Knoten löst `Cbor.Error(NotType(found, TextString))` aus.
++   entry .string   dekodiert einen CBOR-Textstring als `String`
++   entry .byteString   dekodiert einen CBOR-Byte-String als eingefrorenes `Array[Byte]`, also `Data`
++       Jeder andere Knoten löst `Cbor.Error(NotType(found, ByteString))` aus.
++   entry .cbor   dekodiert ein `Cbor` als sich selbst, sodass ein Feld seinen Teilbaum als Dokument behalten kann
++   entry .integralEncodable   kodiert jede `Integral`-Zahl als CBOR-Ganzzahl, über `toLong`
++   entry .textEncodable   kodiert `Text` als CBOR-Textstring
++   entry .stringEncodable   kodiert `String` als CBOR-Textstring
++   entry .doubleEncodable   kodiert `Double` als 64-Bit-CBOR-Gleitkommazahl
++       Gleitkommazahlen werden stets mit 64 Bit geschrieben; die kürzeren Kodierungen werden
++       geparst, aber nie erzeugt.
++   entry .floatEncodable   kodiert `Float` als 64-Bit-CBOR-Gleitkommazahl
++   entry .intEncodable   kodiert `Int` als CBOR-Ganzzahl, in der kürzesten Kopfkodierung
++   entry .longEncodable   kodiert `Long` als CBOR-Ganzzahl, in der kürzesten Kopfkodierung
++       Ein negativer Wert wird als Major Type 1 geschrieben; der Kopf belegt je nach Betrag 1, 2,
++       3, 5 oder 9 Bytes.
++   entry .booleanEncodable   kodiert `Boolean` als CBOR-`true` oder -`false`
++   entry .unitEncodable   kodiert `()` als CBOR-`null`
++   entry .bytesEncodable   kodiert ein eingefrorenes `Array[Byte]` (`Data`) als CBOR-Byte-String
++   entry .cborEncodable   kodiert ein `Cbor` als sich selbst
++   entry .listEncodable   kodiert eine `List[T]` als CBOR-Array, über das `Encodable in Cbor` des Elements
++       Fängt den Element-Codec ein, der als By-Name-Parameter genommen wird, damit sich ein
++       rekursiver Typ (ein `Tree` mit `children: List[Tree]`) ableiten lässt.
++   entry .setEncodable   kodiert ein `Set[T]` als CBOR-Array seiner Elemente, in der Reihenfolge der Menge
++   entry .seriesEncodable   kodiert eine `Sequence[T]` als CBOR-Array
++   entry .collectionDecodable   dekodiert ein CBOR-Array in jede `Iterable`-Collection mit einer `Factory`
++       Die allgemeine Instanz für Collection-Typen der Standardbibliothek; `.listDecodable`,
++       `.setDecodable` und `.seriesDecodable` sind ihre Gegenstücke für Soundness' eigene `List`,
++       `Set` und `Sequence`, die opak sind und daher nicht auf `Iterable` passen. Ein Knoten, der
++       kein Array ist, löst `Cbor.Error(NotType(found, Array))` aus. Fängt die Taktik und den
++       Element-Decoder ein.
++   entry .listDecodable   dekodiert ein CBOR-Array als `List[T]`
++       Der Element-Decoder wird als By-Name-Parameter genommen, sodass sich ein über eine `List`
++       rekursiver Typ (ein `Tree` mit `children: List[Tree]`) ohne handgeschriebene Instanz
++       ableiten lässt.
++   entry .setDecodable   dekodiert ein CBOR-Array als `Set[T]`
++   entry .seriesDecodable   dekodiert ein CBOR-Array als `Sequence[T]`
++   entry .mapDecodable   dekodiert eine CBOR-Map mit Textschlüsseln als `Map[K, V]`
++       Jeder Schlüssel wird über das `Decodable in Text` von `K` dekodiert und jeder Wert über das
++       `Decodable in Cbor` von `V`; ein Schlüssel, der kein Textstring ist, löst
++       `Cbor.Error(NonStringKey)` aus. Ein Knoten, der keine Map ist, wird als leere Map dekodiert.
++   entry .mapEncodable   kodiert eine `Map[K, V]` als CBOR-Map mit Textschlüsseln
++       Schlüssel werden über das `Encodable in Text` von `K` geschrieben, in der
++       Iterationsreihenfolge der Map.
++   entry .lens   `cbor.lens(_.field = value)`: eine `Lens` von einem Dokument auf einen seiner Map-Einträge
++       Jeder Name wird zu einem `name is Lens from Cbor onto Cbor`, das den Eintrag mit
++       `#selectDynamic` liest und ihn mit einer unveränderlichen Aktualisierung schreibt, sodass
++       `play.lens(_.hero.name =
++       t"Kent")` den Pfad von der Wurzel aus neu aufbaut. Es braucht ein `(? >: Cbor) is Dynamical`
++       (`dynamicAccess.dynamicCbor`) und eine `Tactic[Cbor.Error]`; ist
++       `conversions.encodableToCbor` importiert, darf der zugewiesene Wert jedes `Encodable in
++       Cbor` sein statt eines `Cbor`.
+
+% 2 1 0 11ced4a36058486b1359e36ec76fac45
+
+% 3 1 0 041b5dca307c30c40a921467463408b3
+
+% 4 1 0 0abff5d4053bf1fd0751d8e5bc63c7ca
+
+% 5 1 0 034538189c5b902d06b5c3636da09c3f
+
+% 6 1 0 0650882d4893f2a11c8359a1d5c3679c
+
+% 2 1 0 13b6353bc9dd48db0686b02802951178
+
+% 3 1 0 076de571ba6d83f0167a37f3985b5d44
+
+% 0 1 0 130b27c72aad91a716f7851983e1d9be
+
+% 0 1 0 00857ffaaab2c60c1681696147ba0e30
+
+% 0 1 0 1f198abd6d7721bb168ea9ec57f7158e
+
+% 0 1 0 093ab500d79f10c90044f55dadaae518
+
+% 1 1 0 0d910f5b2964e70d1f742ffa456a1da1
+
+@ 0 8 0 14987a389565bee108a04c5925c39d05
++   entry .ordinalOptical   `cbor.lens(_.values(Sec) = x)`: eine Optik auf ein Element eines Arrays nach Ordinalzahl
++       Eine `Ordinal` (`Prim`, `Sec`, `Ter`, …), innerhalb eines Linsenpfads angewendet, wählt ein
++       Element eines Eintrags mit Array-Wert; eine Ordinalzahl jenseits des Endes oder etwas, das
++       kein Array ist, lässt das Dokument unverändert.
++   entry .eachOptical   `cbor.lens(_.values(Each) = x)`: eine Optik über jedes Element eines Arrays
++       Wendet die Aktualisierung auf jedes Element an; etwas, das kein Array ist, bleibt
++       unverändert.
++   entry .filterOptical   `cbor.lens(_.values(Filter[Cbor](p)) = x)`: eine Optik über die Elemente, die ein Prädikat auswählt
++       Wendet die Aktualisierung auf jedes Element an, für das das Prädikat gilt, und behält den
++       Rest.
+
+% 2 1 0 0174c9b150f7506315207879be49f192
+
+% 3 1 0 129166c86f28bd021f317e2675f587de
+
+% 4 1 0 09eb99f350149cc21198a72c161c275f
+
+% 5 1 0 0e84bc44111a159503fc2f7a18507bbe
+
+% 6 1 0 1f77e874e2bbb64f09dd39b6bef21bfe
+
+% 2 1 0 11a18eca10c3c894018b4baa8decf77b
+
+% 0 1 0 0e91b96fdfc0cf4c050f6e2d009c45ad
+
+% 0 1 0 01bb103938969ccb1c7e46cba9de2c87
+
+% 0 1 0 03fcb8d9ef96b32807975634d70532c7
+
+% 0 1 0 059c0519022bb53404528aaf97f98871
+
+% 1 1 0 18bd140fe38f95be15eac9a644dee5da
+
+@ 0 13 0 1aedf81d8ed717ce13727055a66c59b9
++   entry .abstractable   ein `Cbor` als HTTP-Body: `application/cbor` und die kodierten Bytes
++       Das given `Abstractable across HttpStreams`, aus dem Telekinesis einen Request- oder
++       Response-Body ableitet: `cbor.generic` ist das Paar aus Medientyp und Bytes.
++       `postables.cborPostable` und `servables.cborServable` der Komponente
++       `breviloquence.http` sind die benannten Formen für das `post` eines Clients und die
++       Response eines Servers, und ein Body wird über `.aggregable` zurückgeparst.
++   entry .discriminatedUnion   ein `Discriminable in Cbor` für eine versiegelte Hierarchie, über einen benannten Map-Schlüssel
++       `given (Status is Discriminable in Cbor) = Cbor.discriminatedUnion(t"kind")` erklärt
++       einmalig, dass ein `Status` als die Map seiner Variante mit einem zusätzlichen Eintrag
++       `kind` kodiert wird, der den Namen der Variante enthält (umbenannt durch `@name[Cbor]` am
++       Fall), und dekodiert wird, indem derselbe Eintrag zurückgelesen wird. Das Ergebnis ist ein
++       `.DiscriminantKey`, die eine Form, die der Generator direkter Codecs erkennen kann, sodass
++       eine Summe mit dieser Instanz auch von `Inlinable.parsable` generiert werden kann, wenn
++       `breviloquence.staged` auf dem Klassenpfad des Compilers liegt.
+
+% 2 1 0 1d0c6bb88af9f98d0b043ad7a787c266
+
+% 3 1 0 15e07262289e383315db4cd95bba54fe
+
+% 4 1 0 1c3c5e0a2f8e02aa1286f68fedcbd327
+
+% 0 1 0 0e8b9ce63e8b41fb088398a055553f4a
+
+% 0 1 0 05cac0ee6d70eeec1fafff0c1ee1d089
+
+% 0 1 0 1f000fe81ac728e60a459e11b7e91cc2
+
+% 0 1 0 1fee4682de9f1aa517b5ceb10b935bab
+
+% 0 1 0 1df9463995fa27af0b8518ca5787c3bb
+
+% 1 1 0 08bce1d2e4fd6b0f14264745635d36fa
+
+@ 0 1 0 129ff61a1e517bb5010d2aced7d0b2c6
++   entry .DiscriminantKey   das über einen Map-Schlüssel unterscheidende `Discriminable in Cbor`, als Klasse, die der Generator erkennen kann
+
+% 1 1 0 01753abb31bce7690729e89bd3f60266
+
+@ 0 12 0 1533abe985c4d4cd06a4dec3940d4d02
++         Die Klasse, die `Cbor.discriminatedUnion` zurückgibt: ein `Discriminable` mit
++         `Form = Cbor`, das den Variantennamen unter `#key` schreibt, ihn aus demselben Eintrag
++         zurückliest und den Eintrag entfernt, bevor eine Variante als ihr Produkt dekodiert wird.
++         Sie ist eine benannte Klasse, keine anonyme Instanz, weil ein generierter direkter Parser
++         monomorph nach dem Diskriminanten verzweigt und den Schlüssel zur Expansionszeit
++         herauslösen muss.
++     entry #key   der Map-Schlüssel, der den Namen einer Variante enthält
++     entry #rewrite   fügt der kodierten Map einer Variante den Diskriminator-Eintrag hinzu
++     entry #discriminate   der Variantenname, den ein Dokument unter dem Schlüssel trägt, oder `Unset`
++         `Unset`, wenn das Dokument keine Map ist, keinen solchen Schlüssel hat oder der Wert des
++         Schlüssels kein Text ist; der abgeleitete Decoder löst dann `Cbor.Error(Absent)` aus.
++     entry #variant   das Dokument ohne den Diskriminator-Eintrag, bereit, als Produkt dekodiert zu werden
++   entry .Ast   ein CBOR-Knoten: der opake Speichertyp hinter einem Dokument, mit seinen Accessoren und Codecs
+
+% 1 1 0 0ab1283a6faa9ba71fded67a5b40a331
+
+@ 0 12 0 0cb342b9083119b817b9ee81223e6541
++         `Cbor.Ast` ist die Darstellung eines CBOR-Datenelements: eine opake Union über den
++         JVM-Werten, die jeden Major Type speichern — ein `Long` für eine Ganzzahl, ein `Double` für
++         eine Gleitkommazahl, ein `String` für einen Textstring, ein eingefrorenes `Array[Byte]` für
++         einen Byte-String, ein `Boolean`, `.CborNull` für `null`, `Unset` für `undefined`, ein
++         `.Tag` für einen getaggten Wert und ein eingefrorenes `Array[Any]` für ein Array oder eine
++         Map (das zugrunde liegende Array eines Arrays hat ungerade Länge, mit einem Sentinel
++         aufgefüllt, und das einer Map gerade Länge, Schlüssel und Werte abwechselnd, und so werden
++         die beiden unterschieden). Gegen einen Knoten wird nie ein Musterabgleich durchgeführt: Die
++         Accessoren im Begleitobjekt klassifizieren ihn (`unset`, `nullary`, `isInteger`,
++         `isFloat`, `isTextString`, `isByteString`, `isBoolean`, `isTag`, `isArray`, `isMap`,
++         `primitive`) und lesen ihn (`long`, `double`, `string`, `byteString`, `boolean`, `tag`,
++         `array`, `elements`, `element`, `entries`, `key`, `value`, `index`), und jeder liegt im
++         impliziten Geltungsbereich, wo immer ein `Cbor.Ast` verwendet wird, allein durch
++         `import soundness.*`.
+
+% 2 1 0 00f473ce2f5becf70f506297ca0dccd5
+
+% 3 1 0 04e328420a4eb14002be63647b910839
+
+% 4 1 0 1985394b682b1e5c00d287e83752d8a0
+
+% 0 1 0 1d630fbfa6f5d748166349f26e75fc3e
+
+% 0 1 0 15147f46283bdd590d72af05f7cde88d
+
+% 0 1 0 0cbe2f3047ee97f90b69875d7ec99cf8
+
+% 0 1 0 00e42d9bb0c2aba9118564691b883767
+
+% 0 1 0 1d161dfca017c9461cb924326b0c879d
+
+% 0 1 0 0cb6afc89e794acc12ff4700909fcb49
+
+% 1 1 0 046178f6962e0e77146f013c4a647734
+
+@ 0 5 0 0eab1aa427e98a5f0f1a5aba814eca06
++         Ein Knoten wird mit `parse` (einer Erweiterung auf dem Begleitobjekt, aus
++         `breviloquence.parse`) aus Bytes geparst, mit `read[Cbor.Ast]` über `.aggregable` aus
++         gechunkten Bytes gelesen, über `.encodable` serialisiert und über `.showable` in der
++         Diagnosenotation von RFC 8949 dargestellt. `Cbor.ast` verpackt einen Knoten als Dokument,
++         und `Cbor.unseal` holt den Wurzelknoten wieder heraus.
+
+% 0 1 0 19196bdc1fcf19ed04c80e61f5429dbc
+
+% 0 1 0 0f42cc8aa8a26fad0c51a4ca9bf2cbec
+
+% 1 1 0 033d518832110ef1189399948dcddd65
+
+@ 0 38 0 05d174994d6da57f1a9313a7c86f85ea
++     entry .apply   verpackt einen Speicherwert — einen `Long`, einen `String`, ein `Tag`, `Unset`, … — als Knoten
++         `Cbor.Ast(42L)`, `Cbor.Ast("text")`, `Cbor.Ast(Unset)` für `undefined`,
++         `Cbor.Ast(Cbor.CborNull)` für `null` oder `Cbor.Ast(Cbor.Tag(1L, 1363896240L))`. Das
++         Argument muss eines der Mitglieder von `.CborTypes` sein; ein Array oder eine Map wird
++         stattdessen mit `.array` oder `.map` gebaut, die das zugrunde liegende Array korrekt
++         anlegen.
++     entry .map   ein Map-Knoten aus parallelen Arrays von Schlüsseln und Werten
++         `Cbor.Ast.map(keys, values)` verschränkt die beiden eingefrorenen `Array[Any]`s von
++         Knoten zu dem zugrunde liegenden Array gerader Länge, das ein Map-Knoten ist; die Arrays
++         müssen gleich lang sein.
++     entry .array   die Elemente eines Knotens als Array oder ein Array-Knoten aus einem Array von Elementen
++         Als Methode des Begleitobjekts erzeugt `Cbor.Ast.array(elements)` einen Array-Knoten aus
++         einem eingefrorenen `Array[Any]` von Knoten und füllt es mit einem Sentinel auf, wenn
++         seine Länge gerade ist, damit es sich von einer Map unterscheiden lässt. Als Accessor ist
++         `ast.array` die Elemente eines Array-Knotens als eingefrorenes `Array[Cbor.Ast]` (ohne
++         die Auffüllung) und löst auf jedem anderen Knoten `Cbor.Error(NotType(found, Array))`
++         aus.
++     entry .length   die Anzahl der Elemente, die ein Array-Knoten enthält, ohne die Auffüllung
++         Der Accessor `elements` ist dieselbe Anzahl; `.size` ist die Zahl der Einträge eines
++         Map-Knotens.
++     entry .size   die Anzahl der Einträge, die ein Map-Knoten enthält
++         Der Accessor `entries` ist dieselbe Anzahl.
++     entry .Sentinel   das Auffüllobjekt am Ende des zugrunde liegenden Arrays eines Arrays mit gerader Elementzahl
++         Ein Implementierungsdetail des Speicherlayouts, öffentlich, weil die Accessoren inline
++         sind: Es ist nie der Wert eines Knotens, und `elements` zählt es nie.
++     entry .encodable   serialisiert einen Knoten zu seinen CBOR-Bytes: `Cbor.Ast.encodable.encoded(ast)`
++         Das given `Encodable in Data` und damit `ast.encode`: Der Baum wird in Tiefe zuerst
++         geschrieben, mit Ganzzahlen in der kürzesten Kopfkodierung, Gleitkommazahlen stets mit 64
++         Bit, Text als UTF-8 und Arrays und Maps mit Längenpräfix (nie mit unbestimmter Länge, die
++         geparst, aber nicht erzeugt wird). Die Bytes sind genau die, die ein generiertes
++         `Cbor.Printable` schreibt und `Cbor.emit` Block für Block liefert.
++     entry .aggregable   liest gechunkte Bytes in einen Knoten: das given hinter `read[Cbor.Ast]`
++         `Chain(bytes).read[Cbor.Ast]` und `stream.read[Cbor.Ast]` parsen ein Datenelement über
++         den `CborParser`, ziehen jeden Chunk, sobald der Parser ihn braucht, und weisen
++         nachfolgende Bytes mit `Cbor.Error(Trailing(offset))` zurück. Braucht eine
++         `Tactic[Cbor.Error]`.
++     entry .showable   stellt einen Knoten in der Diagnosenotation von RFC 8949 dar: `ast.show`
++         Die menschenlesbare Darstellung, die die Spezifikation definiert, das lesbare Gegenstück
++         des Formats zu einem Hexdump: Ganzzahlen und Gleitkommazahlen als Zahlen (`NaN`,
++         `Infinity`, `-Infinity` ausgeschrieben), Textstrings in Anführungszeichen mit den
++         Escapes `\"`, `\\`, `\n`, `\r`, `\t` und `\uXXXX`, Byte-Strings als `h'0102'`, boolesche
++         Werte, `null` und `undefined` beim Namen, ein Tag als `1(1363896240)`, Arrays als
++         `[1, 2, 3]` und Maps als `{"a": 1}`. Danach greift man, wenn eine Nachricht nicht ist, was
++         sie sein sollte.
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 10bc42a246cc95e81adccaf6e5d90d4c
++           label Ein Record, kodiert
+
+% 1 1 0 14006b1dae29689116c3698aa64c21fa
+
+% 0 1 0 19300448114fc7e810c6bf10a88a596e
+
+% 0 1 0 18f6fe48cb7dc1e41de3d51f99255dc2
+
+% 0 1 0 14baa297b21aefd106a438be3cbc0748
+
+% 0 1 0 03a08728a3b5aa6b11fd40d9eea628f6
+
+% 0 1 0 126447142f3b28c302c59e4a60876857
+
+% 1 1 0 16dd2ce4df65e66a18b11de2926e5f80
+
+@ 0 1 0 166a914e6725b6811920e3dbf5f7bd0e
++           label Die Bytes, in Diagnosenotation
+
+% 1 1 0 11d5dfe18490d23f12a2dc06646ea68a
+
+% 0 1 0 1d5e83dbfdd8d4150275e9c3dce95887
+
+% 1 1 0 05b084462bc5150112d00bfd9146781b
+
+@ 0 1 0 06bcc9928a1d8c20156687df9a7b3a5a
++           label Und zurück dekodiert
+
+% 1 1 0 0595f4d8ff8a00a503010ffe13ce1dd4
+
+% 0 1 0 004ab0872bf773eb032901694a3572ce
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 40 0 0b086012ed96c42b0012b2f7ea914083
++     entry .unset   ob ein Knoten `undefined` (oder fehlend) ist: er ist `Unset`
++     entry .nullary   ob ein Knoten CBOR-`null` ist
++         `null` und `undefined` sind in der Übertragungsform verschieden (0xF6 und 0xF7) und hier
++         ebenso: `null` ist der Sentinel `.CborNull`, damit er nicht mit dem auf null gestützten
++         `Unset` kollidieren kann, das `undefined` und einen fehlenden Schlüssel darstellt.
++     entry .isInteger   ob ein Knoten eine Ganzzahl ist (Major Types 0 und 1), als `Long` gespeichert
++     entry .isFloat   ob ein Knoten eine Gleitkommazahl ist, als `Double` gespeichert, unabhängig von ihrer Breite in der Übertragung
++     entry .isTextString   ob ein Knoten ein Textstring ist (Major Type 3), als `String` gespeichert
++     entry .isByteString   ob ein Knoten ein Byte-String ist (Major Type 2), als eingefrorenes `Array[Byte]` gespeichert
++     entry .isBoolean   ob ein Knoten `true` oder `false` ist
++     entry .isTag   ob ein Knoten ein getaggter Wert ist, ein `Cbor.Tag`
++     entry .isArray   ob ein Knoten ein Array ist (Major Type 4)
++     entry .isMap   ob ein Knoten eine Map ist (Major Type 5)
++     entry .primitive   welche Art von Knoten dies ist, als `Cbor.Error.Primitive`
++         Die Klassifikation, die ein Fehler meldet: `Integer`, `Float`, `TextString`,
++         `ByteString`, `Boolean`, `Map`, `Array`, `Tag`, `Undefined` oder `Null`.
++     entry .elements   die Anzahl der Elemente eines Array-Knotens
++         Kostenlos auf einem Array; auf jedem anderen Knoten ist das Ergebnis bedeutungslos, also
++         prüfen Sie zuerst `isArray`.
++     entry .element   ein Element eines Array-Knotens nach Index, ungeprüft
++         `ast.element(i)` liest direkt das zugrunde liegende Array: Der Index muss unter
++         `elements` liegen, und der Knoten muss ein Array sein.
++     entry .entries   die Anzahl der Einträge eines Map-Knotens
++     entry .key   der Schlüssel eines Map-Knotens nach Eintragsindex, ungeprüft
++         `ast.key(i)` für `i` unter `entries`. Ein Schlüssel ist ein beliebiger Knoten, doch die
++         abgeleiteten Codecs verwenden nur Textschlüssel und ignorieren einen Eintrag unter jedem
++         anderen.
++     entry .value   der Wert eines Map-Knotens nach Eintragsindex, ungeprüft
++     entry .index   der Eintragsindex eines Textschlüssels in einem Map-Knoten oder `-1`, falls er fehlt
++         Ein linearer Durchlauf, der jeden Schlüssel mit dem `String` vergleicht; der erste Treffer
++         gewinnt, weshalb ein wiederholter Schlüssel als sein erstes Vorkommen gelesen wird.
++     entry .long   der Wert eines Ganzzahlknotens oder der einer abgeschnittenen Gleitkommazahl; löst sonst `NotType` aus
++         Jeder andere Knoten löst `Cbor.Error(NotType(found, Integer))` aus, oder `Absent` für
++         `undefined`. In einem sammelnden `Validate`-Geltungsbereich wird der Fehler registriert
++         und `0L` zurückgegeben, sodass benachbarte Felder weiter sammeln; der abgeleitete Decoder
++         konstruiert nie daraus.
++     entry .double   der Wert eines Gleitkommaknotens oder der einer geweiteten Ganzzahl; löst sonst `NotType` aus
++     entry .string   der Wert eines Textstring-Knotens als `String`; löst sonst `NotType` aus
++     entry .byteString   die Bytes eines Byte-String-Knotens als eingefrorenes `Array[Byte]`; löst sonst `NotType` aus
++     entry .boolean   der Wert eines booleschen Knotens; löst sonst `NotType` aus
++     entry .tag   ein getaggter Knoten als `Cbor.Tag`; löst sonst `NotType` aus
+
+% 1 1 0 1e03289a2c53cc2801a1e458f38e1240
+
+% 2 1 0 19c87c5498aa050e03e53657ccfa0b2f
+
+% 3 1 0 189b01c93156ac75108512d1a7d0940b
+
+% 0 1 0 134bf453fc3d50200e251b264b4ff614
+
+% 0 1 0 05191e66d77fdd75115fc0a7a2769a7d
+
+% 0 1 0 02d648d214972f1a0dd7f41853a12d6f
+
+% 1 1 0 128c43708b93f33f149a57121577dfa4
+
+@ 0 1 0 013aac4ce6e3f6ba02fe40e2ae25d80b
++   entry .Tag   ein getaggter Wert: die Tag-Nummer und der Knoten, den es annotiert
+
+% 1 1 0 1b0bc7802b5cad170df98633e05a11cb
+
+@ 0 22 0 16bceef833603e1318710f6fd371fa55
++         Die Tags von CBOR (Major Type 6) annotieren einen Wert mit seiner Bedeutung — Tag 1 ist
++         eine Epochenzeit, Tag 2 eine große Ganzzahl, und das Register umfasst Hunderte. Ein
++         geparstes Tag behält sowohl seine Nummer als auch seinen Inhalt, sodass ein Dokument mit
++         Tags hin und zurück übertragen wird, ohne sie zu verlieren; nichts in der Bibliothek
++         interpretiert die Bedeutung eines Tags. Zwei Tags sind gleich, wenn ihre Nummern und Werte
++         es sind. Die abgeleiteten Codecs erzeugen keine Tags, und das Dekodieren eines getaggten
++         Knotens als Primitiv löst `Cbor.Error(NotType(Tag, …))` aus; lesen Sie das Tag mit
++         `ast.tag` und dekodieren Sie seinen `#value`.
++     entry #tag   die Tag-Nummer
++     entry #value   der getaggte Knoten, als `Any`; wandeln Sie ihn in `Cbor.Ast` um, um ihn zu lesen
++   entry .CborNull   der Sentinel, der ein CBOR-`null` speichert, verschieden von `Unset`
++       Ein Objekt und der Typ dieses Objekts. `undefined` (0xF7) und ein fehlender Schlüssel sind
++       das auf null gestützte `Unset`; `null` (0xF6) wäre dasselbe JVM-`null`, also ist es
++       stattdessen dieser Sentinel, auf den `nullary` prüft.
++   entry .CborInteger   der Speichertyp eines Ganzzahlknotens: `Long`
++   entry .CborFloat   der Speichertyp eines Gleitkommaknotens: `Double`
++   entry .CborText   der Speichertyp eines Textstring-Knotens: `String`
++   entry .CborBytes   der Speichertyp eines Byte-String-Knotens: ein eingefrorenes `Array[Byte]`
++   entry .CborArray   der Speichertyp eines Array-Knotens: ein eingefrorenes `Array[Any]` ungerader Länge
++   entry .CborMap   der Speichertyp eines Map-Knotens: ein eingefrorenes `Array[Any]` gerader Länge, Schlüssel und Werte abwechselnd
++   entry .CborBoolean   der Speichertyp eines booleschen Knotens: `Boolean`
++   entry .CborUndefined   der Speichertyp von `undefined`: `Unset`
++   entry .CborTypes   die Union aller Speichertypen, die ein `Cbor.Ast` sein kann
+
+% 0 1 0 1d965c47dbac1f5a1ca426898885fed0
+
+@ 0 2 0 096f2b2f85e9424c1c3c1b2704319e2a
++       CborNull | CborUndefined | Tag`: was `Cbor.Ast.apply` annimmt.
++   entry .Error   ausgelöst, wenn CBOR nicht geparst oder ein Knoten nicht als der verlangte Typ dekodiert werden kann
+
+% 1 1 0 09cfa78a4db6343611a485e9571b5da9
+
+@ 0 8 0 04f1532060a882461f75e3852b205ee0
++         Fehler `↯/s.104.1`: _could not process the CBOR value because `reason`_, mit
++         der eigenen Nummer des `.Reason` als zweiter Komponente des Fehlers. Ausgelöst von
++         `Cbor.Ast.parse` und jedem `read[…]` für fehlerhafte Eingabe, mit dem absoluten
++         Byte-Offset, an dem der Fehler angetroffen wurde — Eingabe, die mitten in einem Wert
++         aufhört, nennt den Offset des Bytes, das hätte folgen sollen, nachfolgende Bytes nennen,
++         wo der Überschuss beginnt, und ein reserviertes Kopfbyte nennt seinen Offset und seinen
++         Wert —, und von jedem Decoder für einen Knoten der falschen Art, ein fehlendes Feld oder
++         einen Map-Schlüssel, der kein Text ist. Zum Konstruieren braucht er `Diagnostics` im
++         Geltungsbereich, wie jeder `fulminate.Error`.
+
+% 2 1 0 0419aa60d83fbddb03c5bb5fcae77cfe
+
+% 3 1 0 011220c8497dffca086b3e597c5ca170
+
+% 0 1 0 13f99d288ed84d931e192d804dc36085
+
+% 0 1 0 0ca0e49a18245efd109102bb9532d74e
+
+% 0 1 0 135ed7d83d68a9fe03dfd2deeea87e42
+
+% 0 1 0 141f40e3a639d67411d9678ba872ef90
+
+% 1 1 0 111bb33879f13de0147eba5bcf18fc68
+
+@ 0 4 0 1c23f5a0b4b92f87166c547840687d2b
++         In einem `Validate`-Geltungsbereich sammelt das Dekodieren einen Fehler pro fehlerhaftem
++         Feld, jeder mit einem `Pointer`, der das Feld nennt (`lead.name` für einen verschachtelten
++         Record).
++     entry #reason   warum der Wert nicht verarbeitet werden konnte, als `Cbor.Error.Reason`
++     entry .Reason   der konkrete Fehler: wo die Eingabe abbrach oder was nicht passte
+
+% 1 1 0 0b3435f3f19df4380468ee2e9444edd5
+
+@ 0 3 0 14cea7c339bc2e340d3c14f6064a346a
++           Eine `Clarification`-Aufzählung, jeder Fall nummeriert. Die Fälle 1 bis 7 sind
++           Parse-Fehler und tragen einen absoluten Byte-Offset in die Eingabe, vom Anfang an
++           gezählt, unabhängig von der Aufteilung in Chunks; die Fälle 8 bis 11 sind
++           Dekodierfehler, die den Baum betreffen:
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 1 0 01d268914a0d3e2d01fb4fa702406f38
++           column  Fall
+
+% 0 1 0 0004db7c0e557bc41b39d50a3f7070d0
+
+@ 0 13 0 05f6ba6120744e52043d5512a85d4a19
++           column  Meldung
++           column  Anmerkung
++           row  `Truncated(offset)`  1  _the input was truncated at byte `offset`_  das Element brauchte ein Byte, das nicht da war
++           row  `Reserved(offset, byte)`  2  _a reserved CBOR head byte `byte` was found at byte `offset`_  Zusatzinformation 28 bis 30
++           row  `BadSimpleValue(offset, value)`  3  _an invalid simple value `value` was found at byte `offset`_  ein einfacher Zwei-Byte-Wert unter 32
++           row  `InvalidUtf8(offset)`  4  _invalid UTF-8 was found at byte `offset`_  in einem Textstring
++           row  `Overflow(offset)`  5  _an integer too large for Long was found at byte `offset`_  eine vorzeichenlose 64-Bit-Ganzzahl oder eine negative, jenseits von `Long`
++           row  `UnexpectedBreak(offset)`  6  _an unexpected break stop code was found at byte `offset`_  0xFF außerhalb eines Elements unbestimmter Länge
++           row  `Trailing(offset)`  7  _unexpected trailing bytes were found from byte `offset`_  das Element endete, die Eingabe aber nicht
++           row  `OutOfRange`  8  _the array index was out of range_
++           row  `NotType(found, expected)`  9  _the CBOR value had type `found` instead of `expected`_  jeweils ein `.Primitive`
++           row  `NonStringKey`  10  _the map key was not a string_  beim Dekodieren einer `Map`
++           row  `Absent`  11  _the CBOR value was not present_  der Schlüssel eines Pflichtfelds oder der Diskriminator einer versiegelten Hierarchie fehlte, oder ein `Optional` fehlte unter `optionalityOptions.strictCborAbsence`
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 3 0 000aa72b3f3e6967118deee0d22022f6
++       entry #number   die Nummer des Grunds, 1 bis 11, die der Fehler als seine zweite Komponente meldet
++       entry .communicable   stellt jeden Grund als seine Meldung dar
++     entry .Primitive   die Arten von CBOR-Knoten, die ein Fehler nennt: was gefunden und was erwartet wurde
+
+% 1 1 0 1b3a9ffa99dd2b2c1d5d26cf1fe9c11d
+
+% 0 1 0 0b66559a48ae225b1ba0e1b4f2bf7c39
+
+@ 0 4 0 1036175e96fbb1e21907b31a94950a94
++           `Null` und `Undefined`: die Klassifikation, die der Accessor `primitive` von `Cbor.Ast`
++           liefert, verwendet von `Reason.NotType`.
++       entry .communicable   stellt jede Art als Meldung dar: `integer`, `byte string`, `text string`, …
++   entry .Reader   der eingeschränkte Rand des Parsers, über den ein `Cbor.Parsable` liest: ein Element pro Aufruf
+
+% 1 1 0 0c1ae3274648ebfb11bcf40d9b0c8ce4
+
+@ 0 8 0 13e8b5d1600593031dff489539a94175
++         Ein `Cbor.Reader` verpackt einen `CborParser` und die `Tactic[Cbor.Error]` des
++         Lesevorgangs, der ihn erzeugt hat, und wird dem `parse` eines `Cbor.Parsable` übergeben,
++         damit die Instanz Datenelemente direkt von der Eingabe verbrauchen kann, ohne dass ein
++         `Cbor.Ast` gebaut wird. Jede Methode verbraucht genau ein Element oder einen
++         strukturellen Schritt; Fehlschläge brechen über die mitgeführte Taktik ab, sodass ein
++         `parse`-Rumpf kein eigenes Fehlervokabular braucht. Werte und Fehlschläge stimmen genau
++         mit den Accessoren von `Cbor.Ast` überein — eine Ganzzahl wird zu einer Gleitkommazahl
++         umgewandelt und eine Gleitkommazahl zu einer Ganzzahl, wie es `long` und `double` auf
++         einem Knoten tun —, sodass ein direkter Lesevorgang und einer über den Baum gleiche Werte
++         ergeben.
+
+@ 0 5 0 0a91ea89ab29b7b20ef5added20d3a79
++         Er ist eine exklusive, zustandsbehaftete Capability
++         (`caps.ExclusiveCapability, caps.Stateful`), die für ihre Dauer einem einzigen
++         `parse`-Aufruf gehört: Jede lesende Methode ist ein `update def`, nur über einen
++         `Cbor.Reader^` aufrufbar, und nichts davon darf nach dem Aufruf behalten werden. Nur die
++         Lesewege der Bibliothek konstruieren einen; eine handgeschriebene Instanz erhält ihn.
+
+% 2 1 0 0e9c179f18881ded0ec31413e50a86c6
+
+% 3 1 0 1c7f592ae4d507cc1b7e8c9fef2752f4
+
+% 4 1 0 001537aa3fe5860801decf914f479f46
+
+% 0 1 0 0843c77b25fe644403e9a0df7c04b14f
+
+% 0 1 0 16caed482e36362310778fb8482fab92
+
+% 0 1 0 1ec8133b1f1646f5110f68ad78b1446c
+
+% 0 1 0 0548ec5534d2783717fd0ed39af4102d
+
+% 0 1 0 067f8dd4458373a603c77efbaa4df968
+
+% 0 1 0 17463def8ce5f1451b9250be410a848b
+
+% 0 1 0 0f98fdce4001230118642cbef4af3534
+
+% 0 1 0 12f28584ba75af490b0ebaac59e3fa7a
+
+% 0 1 0 1cad2506ad40bebf120d5bcefc632520
+
+% 0 1 0 11778ce21bdadd9e12804704b65bf5b6
+
+% 0 1 0 15b4e74dfd7f7ea812b19fe2af91d2d0
+
+% 0 1 0 1cae175a287e0d85124c70870e5392f7
+
+% 0 1 0 0c44a19c3abd1c8b09cba141e17fb783
+
+% 0 1 0 152bdd8d0ff90cba04af792424f83d5b
+
+% 1 1 0 045c1dd457f4af6513f5ed647284f528
+
+% 2 1 0 0a66a57f63ea265e1c165cf0f71c12f9
+
+% 1 1 0 1ad2802ab39adb881ac6093292dadf36
+
+@ 0 54 0 1ae6d137a263c9c218785dd4b0763901
++     entry .KeyOpaque   der Wert, den `#keyWord` für einen Schlüssel zurückgibt, den es nicht packen kann: `-2L`
++         Als gepackter Schlüssel unmöglich, dessen Bytes alle 7-Bit-ASCII sind. Ein Aufrufer, der
++         ihn sieht, nimmt stattdessen den Schritt `#keyName`.
++     entry .of   bestätigt erneut einen Reader, der als `AnyRef`-Träger gereist ist, für generierte Parser
++         `Cbor.Reader.of(carrier)` wandelt eine neutrale Referenz zurück in einen `Cbor.Reader^`
++         um. Es ist der Einstiegspunkt der Parser, die `Inlinable.parsable` in Benutzermodule
++         einfügt, wo der generierte Rumpf den Reader ohne Capture-Information erhält;
++         handgeschriebener Code hat keine Verwendung dafür.
++     entry #long   verbraucht ein Ganzzahlelement als `Long` oder eine darauf abgeschnittene Gleitkommazahl
++     entry #int   verbraucht ein Ganzzahlelement als `Int`
++     entry #double   verbraucht ein Gleitkommaelement als `Double` oder eine dazu geweitete Ganzzahl
++     entry #boolean   verbraucht ein `true`- oder `false`-Element
++     entry #text   verbraucht ein Textstring-Element als `Text`
++     entry #string   verbraucht ein Textstring-Element als `String`
++     entry #byteString   verbraucht ein Byte-String-Element als eingefrorenes `Array[Byte]`
++     entry #hasUndefined   ob das nächste Element `undefined` ist, ohne es zu verbrauchen
++         Der Blick voraus, den ein optionaler Wrapper macht, um ein `undefined` (0xF7) aus der
++         Übertragung auf einen fehlenden Wert abzubilden, genau wie es `Cbor.optional` auf dem
++         Baumweg tut.
++     entry #undefined   verbraucht ein `undefined`-Element
++     entry #openMap   öffnet eine Map: ihre Anzahl an Einträgen oder `-1` für eine Map unbestimmter Länge
++         Eine Map unbestimmter Länge endet mit einem Break-Stoppcode, verbraucht von `#breakEnd`.
++         Jedes andere Element wird ganz verbraucht und als leere Map gelesen — jedes Feld fehlt —,
++         und genau das tut der Record-Decoder des Baumwegs mit etwas, das keine Map ist.
++     entry #openArray   öffnet ein Array: seine Anzahl an Elementen oder `-1` für ein Array unbestimmter Länge
++         Ein Element, das kein Array ist, scheitert mit `Cbor.Error(NotType(found, Array))`, wie
++         es der Baum-Accessor `array` tut.
++     entry #breakEnd   verbraucht einen Break-Stoppcode, falls einer folgt: das Ende eines Elements unbestimmter Länge
++         `true`, wenn der Break da war und verbraucht wurde, `false` (ohne etwas zu verbrauchen),
++         wenn das nächste Element ein weiteres Element oder ein weiterer Eintrag ist.
++     entry #keyWord   der nächste Map-Schlüssel, in einen `Long` gepackt, zum Vergleich mit Literalen
++         Generierte Parser kompilieren Feldnamen zu Direktwerten: Ein Textschlüssel bestimmter
++         Länge mit einem bis sechzehn Bytes und reinem 7-Bit-Inhalt wird in zwei Wörter gepackt,
++         wobei das niedrige zurückgegeben und das hohe in `#keyHigh` gelassen wird, und der
++         Schlüssel wird verbraucht. Ein Schlüssel, der sich nicht packen lässt, ergibt
++         `.KeyOpaque` und verbraucht nichts, sodass der Aufrufer stattdessen `#keyName` nimmt. Ein
++         über eine Chunk-Grenze verteilter Schlüssel wird zuerst ganz gepuffert, sodass er gepackt
++         wird wie einer, der als Ganzes eingetroffen ist.
++     entry #keyHigh   das hohe Wort des Schlüssels, den `#keyWord` zuletzt gepackt hat
++     entry #keyName   verbraucht den nächsten Map-Schlüssel: den Inhalt eines Textschlüssels oder `null` für einen Schlüssel, der kein Text ist
++         Der Eintrag eines Schlüssels, der kein Text ist, wird von den Record-Decodern ignoriert,
++         sodass ein Aufrufer, der `null` sieht, den Wert des Eintrags mit `#skipValue`
++         überspringt und fortfährt.
++     entry #value   verbraucht ein ganzes Element als `Cbor`-Dokument
++         Die Nahtstelle zurück in die Welt der Bäume: Ein Feld, dessen Typ nur ein
++         `Decodable in Cbor` hat, wird hierüber gelesen und dekodiert, wobei nur der Teilbaum
++         dieses Felds materialisiert wird.
++     entry #skipValue   verbraucht ein ganzes Element, ohne etwas zu bauen
++         Für einen unbekannten Schlüssel: Der Inhalt eines Strings wird übersprungen, nicht
++         gepuffert, sodass das Überspringen unabhängig von der Größe des Elements mit begrenztem
++         Speicher auskommt, und ein fehlerhaftes Element scheitert genau so, wie es beim Parsen
++         scheitern würde.
++     entry #discriminant   der Textwert unter einem Schlüssel der kommenden Map, wobei der Reader bleibt, wo er war
++         Das Verzweigungsprimitiv für eine versiegelte Hierarchie: Der Diskriminanten-Eintrag kann
++         überall in der Map stehen, also wird die Map vorausgelesen und der Reader an ihren Anfang
++         zurückgesetzt, bevor die gewählte Variante sie parst. `Unset`, wenn das Element keine Map
++         ist, keinen solchen Schlüssel hat oder der Wert des Schlüssels kein Text ist. Die Map wird
++         für die Dauer des Durchlaufs im Puffer gehalten, die einzige Stelle, an der ein direkter
++         Lesevorgang mehr als ein einzelnes Element hält.
++   entry .Parsable   die Typklasse des direkten Parsens: ein Typ, der CBOR-Elemente von einem `Cbor.Reader` verbraucht
+
+% 1 1 0 14ed13171c2791370597bf482d87691f
+
+@ 0 10 0 022c19c2f46bb53f0b9b236dc060daad
++         `Cbor.Parsable` ist das Gegenstück des direkten Parsens zu `Decodable in Cbor`: Wo ein
++         Decoder einen materialisierten Baum durchläuft, verbraucht das `parse(reader)` einer
++         Instanz Datenelemente über einen `Cbor.Reader` direkt von der Eingabe, sodass
++         `read[T in Cbor]` den Wert ohne gebauten Baum instanziiert und nur das gerade gelesene
++         Element hält. Es ist die optionale Oberfläche für den direkten Weg: eine explizite Instanz
++         (`Cbor.Parsable(reader => …)`), eine zur Kompilierzeit von `Inlinable.parsable[T]`
++         generierte, eine von `derives Cbor.Direct` in das Begleitobjekt generierte oder
++         `import codecs.direct` für jeden Record im Geltungsbereich. Ohne eine davon ändert kein
++         Lesevorgang sein Verhalten. Ein Feldtyp ohne Instanz wird über `.fromDecodable`
++         überbrückt, das den Teilbaum des Felds parst und dekodiert.
+
+% 2 1 0 18e1b442313eb642026f1fede2c1b0be
+
+% 3 1 0 1a26e9af6089fb5c150708ce2101e507
+
+% 4 1 0 1810ed95ac97cfb70e855a75aa3d99a4
+
+% 2 1 0 1920e53fb20042c81fd7bca6efbe1239
+
+% 0 1 0 02ccba7a8e551b5f17b8873ed89af308
+
+% 0 1 0 057cf2a251af79100f23f8e1a0cdd003
+
+% 0 1 0 1bf937536571e09c007fb2f77be5161a
+
+% 0 1 0 037b2a7acaaee92906ba0cb6115e7dc9
+
+% 1 1 0 1b1d969bc8eca3aa1a30122921013828
+
+@ 0 4 0 0ae9ad948dcf10c0089a8b240c413841
++         Eine Instanz ist ein `distillate.Parsable` mit `Transport = Cbor` und `Reader =
++         Cbor.Reader`; `#absent` sagt, was ein Feld des Typs ergibt, wenn sein Schlüssel in einer
++         Map fehlt. Das given `generated` des Begleitobjekts (geerbt von `Cbor.Parsable2`) ist die
++         Instanz für `codecs.direct` und `.declared` die für `derives Cbor.Direct`.
+
+% 0 1 0 175eec23c8252c07063d30bd0fc84742
+
+% 1 1 0 1d1355b25300a442156f85444190875c
+
+% 1 1 0 13c4584dc22b18881f2d76c3c25a546d
+
+% 0 1 0 0ad4e69a403365f900b0a3da6d681c01
+
+@ 0 24 0 1f12f987d49ac0331590fbffe4232aac
++     entry #Transport   das Format, das dieser Parser liest: `Cbor`
++     entry #Reader   der Reader, über den er liest: `Cbor.Reader`
++     entry #absent   was ein Feld dieses Typs ergibt, wenn sein Schlüssel in der Map fehlt
++         Löst `Cbor.Error(Absent)` aus, sofern nicht überschrieben; `.fromDecodable` überschreibt
++         es, um `undefined` über den überbrückten Decoder zu dekodieren, und so wird ein
++         `Optional`-Feld zu `Unset` überbrückt.
++     entry .apply   eine Instanz aus einer Funktion über dem Reader: `Cbor.Parsable(reader => …)`
++         Die Funktion erhält einen `Cbor.Reader^` und muss genau ein Element verbrauchen. Die
++         Instanz fängt die Funktion ein.
++     entry .fromDecodable   eine Instanz, die ein Element als Baum parst und mit einem `Decodable in Cbor` dekodiert
++         Die universelle Brücke aus der Welt der Bäume und der einzeilige Notausgang, wenn ein
++         eigener Decoder einen generierten direkten Parser schlagen muss:
++         `Cbor.Parsable.fromDecodable(decoder)`. Sein `#absent` dekodiert `undefined` über den
++         Decoder.
++     entry .declared   der Parser, den ein Typ mit `derives Cbor.Direct` in sein Begleitobjekt generiert hat
++         Ein given, das über `Cbor.Direct[T]` aufgelöst wird, sodass ein mit der
++         `derives`-Klausel deklarierter Record ohne Import direkt geparst wird.
++     entry .missing   löst `Cbor.Error(Absent)` für ein Pflichtfeld aus, dessen Schlüssel nicht in der Map war
++         Öffentlich, weil generierte Parser, in Benutzermodule eingefügt, es aufrufen.
++     entry .parseField   ruft ein nominales `Cbor.Parsable` aus einem generierten Parser auf, mit dem Reader als Träger
++         Der Aufrufpunkt für eine handgeschriebene oder rekursive Instanz an einer Feldposition
++         generierten Codes, der ohne Capture-Information ist; beide Argumente reisen als `AnyRef`,
++         und die Capability wird hier erneut bestätigt. Nicht für handgeschriebenen Code.
++     entry .absentField   ruft das `absent` eines nominalen `Cbor.Parsable` aus einem generierten Parser auf
++     entry .Direct   die Basisklasse generierter Parser, die den Reader als Träger erhält
+
+% 1 1 0 1bc3e9cbec2169a50d1921325477cb08
+
+@ 0 5 0 0a3aa0a4f151469e1eac621c909078ef
++           Ein abstraktes `Cbor.Parsable`, dessen `parse` mit dem Reader als `AnyRef` an
++           `#parseCarrier` weiterleitet: Generierter Code ist ohne Capture-Information, also wird
++           die Capability an diesem Rand bestätigt statt im generierten Rumpf.
++           `Inlinable.parsable` erweitert es; handgeschriebener Code verwendet
++           `Cbor.Parsable.apply`.
++   entry .Printable   die Typklasse des direkten Druckens: ein Typ, der seine CBOR-Bytes direkt in einen Produzenten schreibt
+
+% 1 1 0 16d880e45abecf4a06d8056866285c4f
+
+@ 0 7 0 1eefc02977afe6710da128289ac8528d
++         `Cbor.Printable` ist das schreibende Gegenstück zu `Cbor.Parsable` und das direkte
++         Gegenstück zu `Encodable in Cbor`: `write(value, out)` legt die Bytes des Werts ohne
++         gebauten Baum in einen `Producer.Bytes`, und `in[Data over Cbor]` verwendet eine Instanz,
++         wo immer eine existiert. Die Bytes sind genau die, die die abgeleitete Kodierung schreibt.
++         Seine Oberfläche ist eine explizite Instanz, `Inlinable.printable[T]`,
++         `derives Cbor.Direct` und `import codecs.direct`; ein Feldtyp ohne Instanz wird über
++         `.fromEncodable` überbrückt.
+
+% 2 1 0 0e8c6613deeb27661fa8cd44fd7c675a
+
+% 3 1 0 198945676f735dd917e5e8aadf65653b
+
+% 2 1 0 154bbffdbd406e7e08281b5343c93cce
+
+% 0 1 0 17d211bf184fe7910f34ca9f87ad7d87
+
+% 0 1 0 0c9f7f5af900aaf509adc309b84c9300
+
+% 0 1 0 0332ae4a7a3c20531c2a5e0c826c35e9
+
+% 1 1 0 0ed275ab51f2be910f5b49b77c92c338
+
+@ 0 3 0 1037c48b418a675f0990dcce300e652d
++         `.print` liefert die Bytes als Ganzes und `.emit` reicht sie blockweise weiter, sodass
++         ein Wert gesendet werden kann, ohne dass je seine ganze Kodierung gehalten wird. Die
++         `write…`-Methoden sind die Blattschreiber, die generierte Printer aufrufen.
+
+% 1 1 0 07dc6cc2670ee2d500f3ac44001fed33
+
+% 1 1 0 04db787be7a30ebb19c8817c6c5d3434
+
+@ 0 29 0 1c2c3b4c99ddff7b111ce804918ecf57
++     entry #write   schreibt die CBOR-Bytes eines Werts in einen Byte-Produzenten
++     entry .print   die gesamten CBOR-Bytes eines Werts über sein `Cbor.Printable`
++         `Cbor.Printable.print(value)` sammelt, was `#write` erzeugt, in ein einziges `Data`.
++     entry .emit   die Bytes eines Werts in Blöcken der `Buffering`-Kapazität, jeder an eine Funktion übergeben, sobald er voll ist
++         `Cbor.Printable.emit(value, deliver)` serialisiert auf dem Thread des Aufrufers und baut
++         nie ein Array des ganzen Werts: die Form zum Schreiben eines großen Records in eine Datei
++         oder einen Socket. Braucht das `Cbor.Printable` des Typs und ein `Buffering`.
++     entry .fromEncodable   eine Instanz, die einen Wert zu einem Baum kodiert und den Baum schreibt
++         Die Brücke aus der Welt der Bäume, für einen Feldtyp mit nur einem `Encodable in Cbor`
++         oder um einen eigenen Encoder statt eines generierten Printers zu erzwingen.
++     entry .declared   der Printer, den ein Typ mit `derives Cbor.Direct` in sein Begleitobjekt generiert hat
++     entry .present   ob der kodierte Baum eines Felds überhaupt geschrieben wird: `false` für `undefined`
++         Die abgeleitete Kodierung lässt ein Feld aus, dessen Kodierung `undefined` ist, etwa ein
++         nicht gesetztes `Optional`; generierte Printer fragen dies, bevor sie ein überbrücktes
++         Feld schreiben.
++     entry .writeHead   schreibt den Kopf eines Major Type mit einer Anzahl: der Blattschreiber für den Kopf eines Arrays oder einer Map
++         `writeHead(out, 5, entries)` öffnet eine Map mit so vielen Einträgen; `4` öffnet ein
++         Array. Der Produzent reist als `AnyRef`-Träger, wie in jeder `write…`-Methode, weil
++         generierter Code ohne Capture-Information ist; handgeschriebener Code verwendet
++         `Cbor.Ast.encodable` oder `Cbor.emit`.
++     entry .writeLong   schreibt eine Ganzzahl in der kürzesten Kopfkodierung, negative als Major Type 1
++     entry .writeDouble   schreibt eine 64-Bit-Gleitkommazahl
++     entry .writeText   schreibt einen Textstring, als UTF-8 mit seinem Längenkopf
++     entry .writeBytes   schreibt einen Byte-String mit seinem Längenkopf
++     entry .writeBoolean   schreibt `true` oder `false`
++     entry .writeAst   schreibt einen ganzen `Cbor.Ast`-Knoten: die Nahtstelle für ein als Dokument behaltenes Feld
++     entry .writeField   ruft ein nominales `Cbor.Printable` aus einem generierten Printer auf, mit dem Produzenten als Träger
++         Der Aufrufpunkt für eine handgeschriebene oder rekursive Instanz an einer Feldposition.
++         Nicht für handgeschriebenen Code.
++     entry .Direct   die Basisklasse generierter Printer, die den Produzenten als Träger erhält
+
+% 1 1 0 10303acb56773a9e0735568b6ced8543
+
+@ 0 4 0 1a6bfeea769976d906fc5a8f749c24a2
++           Ein abstraktes `Cbor.Printable`, dessen `write` mit dem Produzenten als `AnyRef` an
++           `#writeCarrier` weiterleitet, wie es `Cbor.Parsable.Direct` für Parser tut.
++           `Inlinable.printable` erweitert es.
++   entry .Parsable2   der Trait, der das Parser-given für `codecs.direct` enthält
+
+% 1 1 0 1d0c3eeb500bbda005cd843a70e19242
+
+% 2 1 0 0600d98314bcc2d30d7a329f2455bf3e
+
+@ 0 9 0 0f4a346f653fb0081a09e3cb8e6def41
++         In das Begleitobjekt von `Cbor.Parsable` eingemischt, damit sein einziges given unterhalb
++         der Instanz `declared` des Begleitobjekts liegt; nicht zur direkten Verwendung.
++     entry #generated   unter `codecs.direct` ein generiertes `Cbor.Parsable` für jeden Record
++         Ein Inline-Given, bedingt durch `Codecs.Direct` und durch `Inlinable.Generates[T]`, den
++         Nachweis, dass der Generator den Typ strukturell als Record baut: Ein Typ, der kein Record
++         ist — eine generische Case-Klasse, eine versiegelte Hierarchie —, besteht den Nachweis
++         nicht und behält den abgeleiteten Weg, sofern er keine eigene Instanz hat. Expandiert
++         `Inlinable.parsable[T]`, wo es gebraucht wird.
++   entry .Printable2   der Trait, der das Printer-given für `codecs.direct` enthält
+
+% 1 1 0 1b8c7884f9d538ae0d42436bcf4f5cd7
+
+% 2 1 0 06d2c93378384d3a09694090f9d45996
+
+@ 0 5 0 1fb23c3813493ac61edc4abed7f619d5
++         In das Begleitobjekt von `Cbor.Printable` eingemischt; nicht zur direkten Verwendung.
++     entry #generated   unter `codecs.direct` ein generiertes `Cbor.Printable` für jeden Record
++         Das schreibende Gegenstück zu `Cbor.Parsable.generated`: expandiert
++         `Inlinable.printable[T]` für jeden Typ mit einem Nachweis `Inlinable.Generates[T]`.
++   entry .Direct   `derives Cbor.Direct`: der generierte Parser und Printer eines Records, einmal in sein Begleitobjekt erzeugt
+
+% 1 1 0 1bebd89cc805d582161b74767ce2018e
+
+@ 0 6 0 1922c22c4e906c01079e5b22c05c9523
++         Eine `Self`-typisierte Typklasse hat keine Typparameter, sodass weder `Cbor.Parsable` noch
++         `Cbor.Printable` in einer `derives`-Klausel stehen kann; `Cbor.Direct[T]` ist der Träger,
++         der es kann. `case class Play(…) derives Cbor.Direct` generiert den Parser und Printer
++         von `Play` einmal in sein Begleitobjekt, wo die givens `declared` von `Cbor.Parsable` und
++         `Cbor.Printable` sie finden, sodass `Play` ohne Import und ohne Expansion bei jeder
++         Verwendung direkt gelesen und geschrieben wird.
+
+% 2 1 0 195620877bab2f7d0384b2dd5d6d4501
+
+% 3 1 0 057b6eedb113fdbb0e97b1b0eb206065
+
+% 4 1 0 086cf28352dee8ac0b6edbb3ced08a3a
+
+% 0 1 0 1d2307c2f2ac19990226392804540d59
+
+% 0 1 0 145758cf7cc2344e174d469633148cbd
+
+% 1 1 0 036e96bbb1feb2cd198b015e1c947c17
+
+% 2 1 0 1c46eef67e9ec6bc17807d5571f8f910
+
+% 1 1 0 1bba3f8e79d12227160640984672b31f
+
+% 1 1 0 1400ae07b98a9161141bc5c01c0d4b2a
+
+@ 0 3 0 0aef5cac8c7ea24e183e37439e6ec07d
++     entry .derived   der `derives`-Hook: `Inlinable.parsable[T]` und `Inlinable.printable[T]`, gepaart
++     entry #parsable   das generierte `Cbor.Parsable`
++     entry #printable   das generierte `Cbor.Printable`
+
+@ 0 1 0 03b8124fe44b59c2120a5f799b05b994
++ entry .Cbor1   der Trait, der die Givens des direkten Pfads von `object Cbor` enthält, oberhalb des abgeleiteten Pfads
+
+% 1 1 0 0645f92d4ca9a6320349385f10f52344
+
+% 2 1 0 1acc6865ce59e92108b78dd703e2d0c0
+
+@ 0 28 0 02316cc0e04f148809dbe0cfcf864c20
++       In `object Cbor` zwischen `Cbor2` und die eigenen Member des Objekts eingemischt, sodass
++       seine Givens den abgeleiteten Pfad übertreffen und von den Paaren `codecs.derived` und
++       `codecs.strict` übertroffen werden; nicht zur direkten Verwendung. Seine Member —
++       `aggregableParsed`, `readableParsed`, `encodableOverPrinted`, `aggregableStrictFailure`
++       und `encodableOverStrictFailure` — sind hier dokumentiert; `object Cbor` erbt sie.
++   entry #aggregableParsed   der direkte Lesepfad: Ein `Cbor.Parsable` treibt den Parser an, kein Baum wird gebaut
++       Im Geltungsbereich für jeden Typ mit einem `(value is Cbor.Parsable)^`, oberhalb von
++       `Cbor.aggregableIn`: `read[T in Cbor]` über eine `Chain[Data]` oder einen `Stream[Data]`
++       verbraucht die Items dann direkt vom `CborParser` über einen `Cbor.Reader` und hält dabei
++       höchstens das eine Item, das gerade gelesen wird (der Diskriminanten-Scan einer Summe hält
++       deren Map), sodass ein großes Dokument mit begrenztem Speicher gestreamt wird.
++       Nachgestellte Bytes werden genau wie auf dem Baumpfad abgelehnt. Das Given erfasst das
++       Parsable und die `Tactic[Cbor.Error]`, die es verwendet; ein Herbeirufen, das seinen Typ
++       nennt, muss die Erfassung zulassen (`summon[((T in Cbor) is Aggregable by Data)^]`),
++       während die Auflösung über `read` nichts braucht.
++   entry #readableParsed   `data.read[T in Cbor]` für ein ganzes `Data`, an Ort und Stelle über ein `Cbor.Parsable` geparst
++       Das speicherinterne Gegenstück zu `#aggregableParsed`: Wenn der ganze Inhalt bereits ein
++       `Data` ist, wird er dort geparst, wo er liegt, statt in eine einelementige Chain verpackt
++       zu werden. Erfasst das Parsable und die Taktik, wie `#aggregableParsed` es tut.
++   entry #encodableOverPrinted   `in[Data over Cbor]`, direkt über ein `Cbor.Printable` geschrieben
++       Im Geltungsbereich für jeden Typ mit einem `(value is Cbor.Printable)^`, oberhalb von
++       `Cbor.encodableOver`: Die Bytes des Werts werden direkt in einen Byte-Produzenten
++       geschrieben, ohne dass ein Baum gebaut wird, und sind genau die, die die abgeleitete
++       Kodierung schreibt.
++   entry #aggregableStrictFailure   unter `codecs.strict` der Kompilierfehler für einen Typ ohne direkten Parser
++       Ein Inline-Given, das für jeden Typ gewählt wird, den das strikte Paar nicht übernimmt,
++       und das dann an der Verwendungsstelle _breviloquence: `T` has no direct codec_ meldet. Es
++       existiert, damit `read[T in Cbor]` unter `codecs.strict` nie stillschweigend auf den Baum
++       zurückfällt.
++   entry #encodableOverStrictFailure   unter `codecs.strict` der Kompilierfehler für einen Typ ohne direkten Printer
++       Das schreibende Gegenstück zu `#aggregableStrictFailure`, für `in[Data over Cbor]`.
+
+@ 0 1 0 0f894a2f928fdc1014de04d5963a710e
++ entry .Cbor2   der Trait, der die Givens des abgeleiteten Pfads von `object Cbor` enthält, mit der niedrigsten Priorität
+
+% 1 1 0 02a1519bd9d9af4b0909cbeecdd4f5a9
+
+% 2 1 0 1a01d9360676232202eb3054c714b2a9
+
+@ 0 14 0 1bcc4c7f114147c806dac869385f47b6
++       In `object Cbor` unterhalb von allem anderen eingemischt und zusammen mit `Cbor` in das
++       Umbrella `soundness` exportiert, damit seine Givens dort erreichbar bleiben; nicht zur
++       direkten Verwendung. Seine Member — `decodable`, `encodable`, `optional`,
++       `optionalEncodable`, `aggregableIn`, `encodableOver`, `DecodableDerivation` und
++       `EncodableDerivation` — sind hier dokumentiert; `object Cbor` erbt sie.
++   entry #aggregableIn   `read[T in Cbor]` über gechunkte Bytes: den Baum parsen, dann dekodieren
++       `source.read[Person in Cbor]` ist für jeden Typ, der `Decodable in Cbor` ist, eine
++       Kurzform für `source.read[Cbor].as[Person]`. Es ist der abgeleitete Lesepfad;
++       `Cbor.aggregableParsed` übertrifft ihn, sobald der Typ ein `Cbor.Parsable` hat, sodass
++       derselbe Ausdruck direkt und ohne Baum liest, sobald ein direkter Parser im
++       Geltungsbereich ist. Braucht eine `Tactic[Cbor.Error]`.
++   entry #encodableOver   `in[Data over Cbor]`: die CBOR-Bytes eines Werts über seinen Baum
++       Das schreibseitige Spiegelbild von `read[T in Cbor]`: `person.in[Data over Cbor]` kodiert
++       den Wert zu einem `Cbor` und serialisiert ihn. `Cbor.encodableOverPrinted` übertrifft es,
++       sobald der Typ ein `Cbor.Printable` hat, und schreibt dieselben Bytes ohne Baum.
+
+% 2 1 0 1bd9f3fb8a5fab7f1796320a2398a875
+
+% 3 1 0 0441d03e83a811c31c9f756933603f66
+
+% 4 1 0 077e6accc0c89fb31b15ba04b7754e25
+
+% 6 1 0 018122a2fb54b6e50c3ad7d0a31885cf
+
+% 0 1 0 1b775328b78ae6b4150524c9a2296346
+
+% 1 1 0 1e65b05ec1045c811a7e90b219430117
+
+@ 0 8 0 12d127755ace98e604a19625b255e30f
++   entry #decodable   leitet ein `Decodable in Cbor` für jede Case-Klasse, jede versiegelte Hierarchie und jeden aus Text dekodierbaren Typ ab
++       Ein Inline-Given mit der niedrigsten Priorität, das den ersten von zwei Wegen nimmt: Ein
++       Typ, der `Decodable in Text` ist, dekodiert über diesen Decoder aus einem CBOR-Textstring,
++       und ein Typ mit einer `Reflection` wird abgeleitet — eine Case-Klasse aus einer Map, nach
++       Feldnamen, eine versiegelte Hierarchie über ihr `Discriminable in Cbor` (einmal mit
++       `Cbor.discriminatedUnion` deklariert). Eine Annotation `@name[Cbor]` (oder ein bloßes
++       `@name`) benennt den Schlüssel eines Felds oder den Diskriminator einer Variante um; ein
++       Feld mit Vorgabewert erhält diesen, wenn der Schlüssel fehlt; der Fehler eines
++       verschachtelten Datensatzes wird auf `outer.inner` bezogen. Die Ableitung ist
+
+% 0 1 0 146d7656c5392b491e25d30e86fa4d0c
+
+@ 0 13 0 117b515ab8016cde053bf02957650fd9
++   entry #encodable   leitet ein `Encodable in Cbor` für jede Case-Klasse, jede versiegelte Hierarchie und jeden als Text kodierbaren Typ ab
++       Das schreibende Gegenstück zu `#decodable`: Ein Typ, der `Encodable in Text` ist, kodiert
++       als Textstring, und ein Typ mit einer `Reflection` wird abgeleitet — eine Case-Klasse als
++       Map ihrer Felder (ein Feld, dessen Kodierung `undefined` ist, etwa ein nicht gesetztes
++       `Optional`, wird weggelassen), eine versiegelte Hierarchie als Map der Variante, ergänzt
++       um den Diskriminator-Eintrag durch ihr `Discriminable in Cbor`. Die Ableitung ist
++       `#EncodableDerivation`.
++   entry #optional   dekodiert ein `Optional[T]`-Feld und liest Fehlen, `null` und Fehler gemäß den Richtlinien `optionalityOptions`
++       Ein fehlender Schlüssel und ein übertragenes `undefined` (0xF7) werden als `Unset` gelesen,
++       sofern nicht `strictCborAbsence` im Geltungsbereich ist, das `Cbor.Error(Absent)` auslöst;
++       ein übertragenes `null` (0xF6) wird als `Unset` gelesen, sofern nicht `strictCborNulls` im
++       Geltungsbereich ist, das es an den inneren Decoder weitergibt; und ein Wert, den der innere
++       Decoder ablehnt, ist ein Fehler, sofern nicht `lenientCborFaults` im Geltungsbereich ist,
++       das ihn als `Unset` liest. Das Given erfasst die `Tactic[Cbor.Error]` und den inneren
++       Decoder.
+
+% 2 1 0 0aac66f2c4e5793111121e1fec2e611c
+
+% 3 1 0 198b9c833168660e12b12a202bcc6fe4
+
+% 4 1 0 1d05044bf85812b016d038fc89c7cb3c
+
+% 5 1 0 03864beb60017cc70dab5648dd0bbef0
+
+% 6 1 0 05bd9a060b663b110694ae35aa7e13ab
+
+% 8 1 0 1aa8830d845b978c1fcc9c973114bac1
+
+% 4 1 0 054c174c60863132008d21e77d7f931f
+
+% 5 1 0 155d4439536cb5001e4eb1d131159b20
+
+% 1 1 0 134ad0f88cd72fe416068e2a854682fd
+
+% 2 1 0 0bc1bdbb8cc8c9991cc36bcedd8f5b3c
+
+% 1 1 0 0837e9e131b78ffa1fcd084283cfd403
+
+% 0 1 0 141e0f9184d89fa91e54ff55680333d3
+
+% 1 1 0 061ec2dcaab5dc8e1ff758f23371fc9e
+
+% 2 1 0 1b2d956832fbe0ae02b50fc45e6c56b6
+
+% 3 1 0 02b2b7dc5c33d6350b58b548780476b4
+
+% 4 1 0 1c9262d6171162e70cf14eb9078d2333
+
+% 5 1 0 1a1766bd5581f5f60e9ec8dd3faaf01c
+
+% 7 1 0 15f89e6a6861607d0bd0d403b964ec11
+
+% 4 1 0 0fa114da51b6dcbf02ba2a7f7da4f38d
+
+% 5 1 0 00fd45de8ee917d7012a0cbe66eff381
+
+% 2 1 0 1b7e86fe2490c10a0e027a155c70fe3f
+
+% 3 1 0 0c937b503d3f0a430d53fe080ddbc978
+
+% 4 1 0 0bf6ab205ea1ea9b0c37079dc40fd0f1
+
+% 5 1 0 09403ba083559f0f13dc6045e7d84174
+
+% 6 1 0 15c8a5923ce4b7b50e4759aa805b6f6f
+
+% 7 1 0 03f6b75eab7155061f77f54fa609e15c
+
+% 9 1 0 0c9bc6c32cd816fa0c0c144cb3abf361
+
+% 1 1 0 1ea6b49814da2cdf00eb277a40d3612d
+
+% 2 1 0 13d87050d925466b0cd1127efd88a93a
+
+% 2 1 0 058284b21e6cd63404144327f02bb680
+
+% 3 1 0 1dfa410a1e80af3f18a02f3abce958b8
+
+% 4 1 0 1a828d6a285e098e071118ac0c3161c8
+
+@ 0 4 0 0cd5f600f319469f006b5990504a6cb1
++   entry #optionalEncodable   kodiert ein `Optional[T]`: die Kodierung des Werts, oder `undefined`, wenn nicht gesetzt
++       Ein nicht gesetztes Feld kodiert als `undefined`, das die abgeleitete Datensatzkodierung
++       dann aus der Map weglässt, sodass ein `Optional`-Feld bei der Übertragung nichts kostet,
++       wenn es fehlt.
++   entry #DecodableDerivation   die wisteria-Ableitung hinter `Cbor.decodable`
+
+% 1 1 0 18f50daadec1a0ab011ef5776fbba6e4
+
+@ 0 16 0 06635e07f6dbbfa815587fa9718240d3
++         Ein `Derivable[Decodable in Cbor]`: `.conjunction` dekodiert eine Case-Klasse aus einer
++         Map und `.disjunction` eine versiegelte Hierarchie über ihr `Discriminable in Cbor`. Es
++         wird über `Cbor.decodable` erreicht und kann namentlich verwendet werden, um eine Instanz
++         explizit abzuleiten (`given (Person is Decodable in Cbor) = Cbor.DecodableDerivation.derived`).
++     entry .conjunction   dekodiert ein Produkt: jedes Feld aus dem Map-Eintrag seines (umbenannten) Namens
++         Feldnamen werden über die Umbenennung mit `@name[Cbor]` (oder einem bloßen `@name`) auf
++         Schlüssel abgebildet; ein fehlender Schlüssel nimmt den Vorgabewert des Felds, falls es
++         einen hat, und dekodiert andernfalls `undefined` (ein `Optional` liest `Unset`, ein
++         Pflichttyp löst `Cbor.Error(Absent)` aus). In einem sammelnden
++         `Validate`-Geltungsbereich registriert jedes fehlerhafte Feld seinen eigenen Fehler mit einem
++         `Pointer`, und der Konstruktor läuft nur, wenn jedes Feld fehlerfrei war. Etwas anderes
++         als eine Map dekodiert als Map ohne Einträge.
++     entry .disjunction   dekodiert eine Summe: Der Diskriminator wählt die Variante, die dieselbe Map dekodiert
++         Braucht ein `Discriminable in Cbor` für den Typ, etwa
++         `Cbor.discriminatedUnion(t"kind")`; ein fehlender Diskriminator löst
++         `Cbor.Error(Absent)` aus. `@name[Cbor]` an einem Case benennt dessen
++         Diskriminatorwert um.
++   entry #EncodableDerivation   die wisteria-Ableitung hinter `Cbor.encodable`
+
+% 1 1 0 15a176e258718e481c831470b3f19aeb
+
+@ 0 8 0 0a25a284f76892091914d47f414af3f7
++         Ein `Derivable[Encodable in Cbor]`: `.conjunction` kodiert eine Case-Klasse als Map und
++         `.disjunction` eine versiegelte Hierarchie als Map der Variante mit ihrem
++         Diskriminator-Eintrag.
++     entry .conjunction   kodiert ein Produkt als Map seiner Felder und lässt die aus, die als `undefined` kodieren
++         Die Schlüssel sind die Feldnamen, umbenannt durch `@name[Cbor]`; ein Feld, dessen
++         Kodierung `undefined` ist — ein nicht gesetztes `Optional`, ein `None` —, wird aus der
++         Map weggelassen.
++     entry .disjunction   kodiert eine Summe als Map der Variante, ergänzt um den Diskriminator-Eintrag
++         Über das `Discriminable in Cbor` des Typs, wobei der Variantenname durch `@name[Cbor]`
++         am Case umbenannt wird.
+
+@ 0 1 0 09dfcb4c146e0953194762d66fe3ba69
++ entry .CborParser   der streamende CBOR-Parser: ein Datenitem nach dem anderen von einem `Cursor` aus Bytes
+
+% 1 1 0 067d32b888d79dfc171337fb4b66184a
+
+@ 0 8 0 00935b67a890f7ff1b350d8a0765af34
++       `CborParser` liest CBOR-Datenitems aus einem `zephyrine.Cursor[Data]`, sodass ein in Chunks
++       eintreffendes Dokument beim Eintreffen gelesen wird und der Puffer nur das Item hält, das
++       gerade gelesen wird — einen Byte- oder Textstring vollständig, da das Ergebnis ein Array
++       ist, aber nie die Elemente eines Containers, sobald sie verbraucht sind. Ihn verwendet jeder
++       Lesepfad: `Cbor.Ast.parse` über ein `Data` oder eine `Chain[Data]`, `read[Cbor.Ast]`,
++       `read[Cbor]` und `read[T in Cbor]` über eine Chain oder einen `Stream[Data]` sowie ein
++       `Cbor.Parsable` über den `Cbor.Reader`, der ihn umhüllt. Jeder `Cbor.Error`, den er
++       auslöst, trägt den absoluten Byte-Offset des Fehlers, gezählt vom Anfang der Eingabe,
++       unabhängig von der Aufteilung in Chunks.
+
+@ 0 6 0 1da655183ad67bb101d9b9ef172c722f
++       Als Typ ist er öffentlich — generierte Parser, die in Benutzermodule eingefügt werden,
++       binden je Datensatz einen und lesen über seinen direkten Rand —, doch nur die Lesepfade der
++       Bibliothek können einen konstruieren. Er ist eine zustandsbehaftete Capability
++       (`caps.ExclusiveCapability, caps.Stateful`, ein `Cursor.Snapshot[Data, Byte]`): Jede
++       lesende Methode ist ein `update def`, nur über einen `CborParser^` aufrufbar. Von Hand
++       geschriebener Code liest über einen `Cbor.Reader`, dessen Methoden mit der Taktik des
++       Lesevorgangs an die `direct…`-Methoden hier weiterleiten.
+
+@ 0 8 0 0db01dc8365d11a002e1ada28400a99d
++       Zwei Gruppen von Methoden: `#value` ist der Baumpfad und parst ein ganzes Item in einen
++       `Cbor.Ast`; die `direct…`-Methoden sind der Rand auf Byte-Ebene für das direkte Parsen und
++       verbrauchen jeweils ein vollständiges Item, mit schnellen Pfaden für die üblichen
++       Kopfformen und einem Rückfall über `#value` bei allem Exotischen — Tags, falsch typisierte
++       Items, Fehlen —, sodass Werte und Fehler genau mit den Baum-Accessoren übereinstimmen.
++       Strings, Arrays und Maps unbestimmter Länge werden alle gelesen; Gleitkommazahlen halber
++       und einfacher Genauigkeit werden zu `Double` erweitert; eine Ganzzahl jenseits von `Long`
++       scheitert mit `Overflow`; einfache Werte außer den Booleans, `null` und `undefined`
++       scheitern mit `BadSimpleValue`.
+
+% 0 1 0 0e7c792dd4da13741883d258313d6305
+
+% 1 1 0 1e998905cd13235d1365505e579fb3ce
+
+% 2 1 0 11242652656878c20ae1b18bf6d5196b
+
+@ 0 48 0 10edad4833075cf81dded679ebe64f01
++   entry .of   bekräftigt einen Parser erneut, der als `AnyRef`-Träger gereist ist, für generierte Parser
++       `CborParser.of(carrier)` castet eine neutrale Referenz zurück zu einem `CborParser^`: der
++       Punkt der erneuten Bekräftigung der Parser, die `Inlinable.parsable` in Benutzermodule
++       einfügt. Von Hand geschriebener Code hat dafür keine Verwendung.
++   entry #directKeyHigh   das obere Wort des Schlüssels, den `#directKeyWord` zuletzt gepackt hat
++   entry #value   parst ein ganzes Datenitem in einen `Cbor.Ast`
++       Der Baumpfad: schnelle Pfade für kleine Ganzzahlen im Kopf, kurze Textstrings und
++       Byte-Strings, dann die allgemeine Dekodierung nach Haupttyp. Die Elemente eines Containers
++       werden rekursiv geparst; ein Tag umhüllt seinen geparsten Inhalt mit einem `Cbor.Tag`.
++       Braucht eine `Tactic[Cbor.Error]` und löst `Truncated`, `Reserved`, `BadSimpleValue`,
++       `InvalidUtf8`, `Overflow` oder `UnexpectedBreak` mit dem Offset des Fehlers aus.
++   entry #directLong   verbraucht ein Ganzzahl-Item als `Long`, oder eine darauf abgeschnittene Gleitkommazahl
++   entry #directDouble   verbraucht ein Gleitkomma-Item als `Double`, oder eine dazu erweiterte Ganzzahl
++   entry #directBoolean   verbraucht ein Item `true` oder `false`
++   entry #directString   verbraucht ein Textstring-Item als `String` und liest es an Ort und Stelle
++       Ein String bestimmter Länge wird direkt aus dem Puffer dekodiert; die Chunks eines Strings
++       unbestimmter Länge werden zusammengefügt. Ungültiges UTF-8 löst `InvalidUtf8(offset)` aus.
++   entry #directBytes   verbraucht ein Byte-String-Item als eingefrorenes `Array[Byte]`
++   entry #directIsUndefined   ob das nächste Item `undefined` (0xF7) ist, ohne es zu verbrauchen
++   entry #directUndefined   verbraucht ein Item `undefined`
++   entry #directOpenMap   öffnet eine Map: ihre Eintragsanzahl, oder `-1` bei unbestimmter Länge
++       Jedes andere Item wird ganz verbraucht und liest sich als leere Map, so wie der
++       Datensatzdecoder des Baumpfads etwas anderes als eine Map behandelt.
++   entry #directOpenArray   öffnet ein Array: seine Elementanzahl, oder `-1` bei unbestimmter Länge
++       Jedes andere Item scheitert mit `Cbor.Error(NotType(found, Array))`, wie es der
++       Baum-Accessor `array` tut.
++   entry #directBreak   verbraucht einen Break-Stoppcode (0xFF), falls einer folgt
++       `true`, wenn er verbraucht wurde: der Endschritt einer Map oder eines Arrays unbestimmter
++       Länge.
++   entry #directKeyWord   der nächste Map-Schlüssel in einen `Long` gepackt, oder `Cbor.Reader.KeyOpaque`
++       Ein Textschlüssel bestimmter Länge mit ein bis sechzehn Bytes, rein 7-bittig, wird in zwei
++       Wörter gepackt — das untere zurückgegeben, das obere in `#directKeyHigh` hinterlegt — und
++       verbraucht; alles andere ergibt `KeyOpaque` und verbraucht nichts, sodass der Aufrufer
++       `#directKeyName` nimmt. Ein über eine Chunk-Grenze verteilter Schlüssel wird zuerst ganz
++       gepuffert; nur ein abgeschnittener Schlüssel ist hier opak, und der allgemeine Schritt
++       meldet dann die Abschneidung.
++   entry #directKeyName   verbraucht den nächsten Map-Schlüssel: den Inhalt eines Textschlüssels, oder `null` für einen Nicht-Text-Schlüssel
++       Die Datensatzdecoder ignorieren einen Eintrag unter einem Nicht-Text-Schlüssel, daher
++       überspringt der Aufrufer dessen Wert mit `#directSkipValue` und fährt fort.
++   entry #directSkipValue   verbraucht ein ganzes Item, ohne etwas zu bauen
++       Für unbekannte Schlüssel und Datensätze, die keine Map sind: lehnt genau die Kopfformen ab,
++       die `#value` ablehnt, sodass ein übersprungenes fehlerhaftes Item so scheitert, wie der
++       Baumpfad scheitern würde, und der Inhalt eines Strings wird übersprungen, nicht gepuffert,
++       sodass das Überspringen unabhängig von der Größe des Items mit begrenztem Speicher
++       auskommt.
++   entry #directDiscriminant   der Text unter einem Schlüssel der folgenden Map, wobei der Parser dort bleibt, wo er begann
++       Das Verteilungs-Primitiv für den Diskriminanten-Eintrag einer versiegelten Hierarchie, der
++       überall in der Map stehen kann: Die Map wird durchsucht, die Position zurückgesetzt, und
++       das Ergebnis ist der Textwert des Schlüssels oder `null`, wenn das Item keine Map ist,
++       keinen solchen Schlüssel hat oder der Wert kein Text ist. Die Map wird für die Dauer der
++       Suche im Puffer gehalten — die einzige Stelle, an der der Puffer über ein einzelnes Item
++       hinaus wächst — und freigegeben, bevor das Parsen der Variante selbst beginnt.
+
+@ 0 1 0 04132812775e3c4a0312d2fdc1c48e4e
++ entry .Inlinable   der Codegenerator zur Kompilierzeit für direkte Codecs: `Inlinable.parsable[T]` und `Inlinable.printable[T]`
+
+% 1 1 0 1f0b04deb1b7dc92159cbdf6ed6ddc25
+
+@ 0 9 0 12eaa0b308e5716813129ad846cbdfc4
++       `Inlinable` ist das Gegenstück zu `Cbor.Parsable` und `Cbor.Printable` auf der Ebene von
++       `Expr`: eine Typklasse, deren Methoden Codegeneratoren zur Makrozeit sind. Eine Instanz
++       erhält einen `Expr` des Readers und gibt einen `Expr` des geparsten Werts zurück (oder
++       erhält den Wert und den Produzenten und gibt den schreibenden Code zurück), den das
++       generierende Makro direkt in einen einzigen flachen, monomorphen Parser oder Printer
++       einfügt — verschachtelte Datensätze, Collection-Schleifen, Verteilung auf Varianten und
++       eigene Blatt-Parser werden alle inline eingefügt, ohne Verteilung zur Laufzeit und ohne
++       Adapter-Zwischenschritte. Die Einstiegspunkte für Benutzer sind `.parsable` und
++       `.printable`, die ein `Cbor.Parsable` oder ein `Cbor.Printable` für eine Case-Klasse
++       generieren, oder für eine versiegelte Hierarchie, deren `Discriminable in Cbor`
++       `Cbor.discriminatedUnion` ist:
+
+% 2 1 0 185e64622047259017fbebba0241ca04
+
+% 3 1 0 00b46f0da421e8ea113d5f9a48e7161b
+
+% 4 1 0 07093079af93a7eb0c8aa242a1f1d351
+
+% 6 1 0 1686318b6f1bfbd50bdfc2158b6eb5ac
+
+% 3 1 0 196d6e506060ded71a6ed2a252c54872
+
+% 0 1 0 1d9f1aa1b2c0474a164bbe1d36750865
+
+% 0 1 0 048c5c61d72583770310ed8ccd67cfd0
+
+% 0 1 0 099867edae2ec05f01cecf5145ec9d62
+
+% 1 1 0 0a37fe805d7e07cb156ffa1f5e0308fb
+
+@ 0 6 0 1c66ceb94245ebe503f24a9044af092e
++       Ein generierter Parser vergleicht Map-Schlüssel mit den zu Direktwerten kompilierten
++       Feldnamen (`Cbor.Reader#keyWord`), nimmt den deklarierten Vorgabewert eines Felds, wenn
++       dessen Schlüssel fehlt, überbrückt ein `Optional`-Feld zu `Unset`, überspringt unbekannte
++       Schlüssel ganz, ignoriert Nicht-Text-Schlüssel, lässt bei einem wiederholten Schlüssel den
++       ersten gewinnen und wandelt eine Gleitkommazahl in einem Ganzzahlfeld um, wie es die
++       Baum-Accessoren tun — sodass ein direktes Lesen und ein Lesen über den Baum derselben Bytes
++       übereinstimmen und ein generierter Printer genau die Bytes der abgeleiteten Kodierung
++       schreibt.
+
+@ 0 8 0 183488e3a8e29b130e5c5b74e6c251e0
++       Der Generator löst den Typ jedes Felds über eine Leiter auf: ein eingebautes Blatt (die
++       Givens `.int`, `.long`, `.double`, `.float`, `.boolean`, `.text`, `.string`,
++       `.byteString`, `.cbor`), dann eine durch ein Herbeirufen im Staging gefundene
++       `Inlinable`-Instanz, dann ein struktureller Generator für eine Collection (`.iterable`),
++       eine Case-Klasse (`.derived`) oder eine Summe und schließlich eine Laufzeit-Nahtstelle: Ein
++       Feld, dessen Typ ein eigenes `Cbor.Parsable` hat, ruft es auf, und alles andere wird über
++       sein `Decodable in Cbor` überbrückt, wobei nur der Teilbaum dieses Felds materialisiert
++       wird. Ein rekursives Vorkommen (ein `Tree` mit `children: List[Tree]`) nimmt die
++       Nahtstelle, statt endlos expandiert zu werden.
+
+@ 0 8 0 09af09a0d2b458e51b21707833c3baeb
++       Instanzen sind gewöhnliche Laufzeitwerte, sodass eine von Hand geschriebene Instanz und das
++       `Discriminable in Cbor` einer Summe nur herangezogen werden können, indem sie während des
++       Kompilierens ausgewertet werden — was einen Staging-Compiler im Makro erfordert und mit ihm
++       die Compiler-JARs. Das ist `breviloquence.staged`: Liegt es im Kompilier-Klassenpfad, wertet
++       `.Stager` sie aus; ohne es nimmt ein Feld, dessen Typ nur eine von Hand geschriebene Instanz
++       hat, die Laufzeit-Nahtstelle, und `Inlinable.parsable` einer Summe meldet, dass die Summe
++       nicht inline-fähig ist. In beiden Fällen muss eine Instanz (und ihr Typ) in einem früheren
++       Lauf als die Expansion kompiliert werden: Eine Instanz aus demselben Lauf fällt auf die
++       Nahtstelle zurück.
+
+@ 0 2 0 06cf7ba5415be13f15cc98957ddd80f5
++       Die Alternativen mit abgeleiteten Codecs, `derives Cbor.Direct` und `import codecs.direct`,
++       expandieren beide über diesen Generator.
+
+% 1 1 0 0d55c626bce25dc51b0e4ea2b2908519
+
+% 2 1 0 05380eb9aa9fc7c309542d69456c61ee
+
+% 0 1 0 01f273a44ce84d6612f745758edd37c4
+
+% 0 1 0 0d41467978a67a13021f1221bcce568e
+
+@ 0 15 0 077e93d0ea1564870fc4b0f020f3e005
++   entry .parsable   generiert ein monomorphes `Cbor.Parsable` für eine Case-Klasse oder eine nach Schlüssel diskriminierte Summe
++       `Inlinable.parsable[T]` ist ein Makro: ein zur Kompilierzeit aus `Inlinable`-Instanzen
++       zusammengesetzter Parser, in den verschachtelte Datensätze, Collection-Schleifen,
++       Verteilung auf Varianten und eigene Blatt-Parser alle inline eingefügt sind. Ein Typ, den
++       der Generator nicht bauen kann — eine Summe ohne `breviloquence.staged`, ein Typ ohne
++       Felder, die er lesen kann —, ist ein Kompilierfehler, der den Typ nennt.
++   entry .printable   generiert ein monomorphes `Cbor.Printable` für eine Case-Klasse oder eine nach Schlüssel diskriminierte Summe
++       Das schreibende Gegenstück zu `.parsable`, aus denselben Instanzen zusammengesetzt: ein
++       Printer, der den Wert direkt in einen Byte-Produzenten schreibt und genau die Bytes der
++       abgeleiteten Kodierung erzeugt. Ein Feld, dessen Instanz nicht druckt (`#prints` ist
++       `false`), wird über seine Nahtstelle `Encodable in Cbor` geschrieben.
++   entry .derived   die strukturelle Instanz für eine Case-Klasse, per Reflexion, wenn ihr Code generiert wird
++       `Inlinable.derived[T]` braucht kein eigenes Makro: Der `Type[T]` kommt mit dem Aufruf von
++       `parse` oder `write`. Es ist das, was `derives Inlinable.ForCbor` in ein Begleitobjekt
++       setzt.
++   entry .Generates   Nachweis, dass der Generator den Codec eines Typs strukturell, als Datensatz, baut
+
+% 1 1 0 0dceaffab42805571cd2a5fcddd57b3d
+
+@ 0 9 0 0a70aa0d238a4e54171422d9de07bc3c
++         Die Bedingung der `codecs.direct`-Givens (`Cbor.Parsable.generated` und
++         `Cbor.Printable.generated`): `Inlinable.Generates[T]` wird für eine Case-Klasse
++         aufgelöst, die der Generator expandieren kann, und sein Given scheitert für jeden anderen
++         Typ — eine generische Case-Klasse, eine versiegelte Hierarchie —, sodass auch die Suche
++         nach einer generierten Instanz scheitert und stattdessen der abgeleitete Pfad aufgelöst
++         wird. Ein billiger Gestalttest, sodass eine Suche unter diesem Modus billig bleibt; die
++         Diskriminante einer Summe kennt nur der Staging-Compiler, daher behält eine Summe unter
++         `codecs.direct` den abgeleiteten Pfad, sofern sie keine eigene Instanz hat.
++     entry .generates   das Transparent-Inline-Given, das den Nachweis liefert oder daran scheitert
++   entry .Stager   der Hook, über den `breviloquence.staged` Instanzen während des Kompilierens auswertet
+
+% 1 1 0 0e42fffa5a69fa2a1542b4ccd7f0a58c
+
+@ 0 12 0 1992e36eb353ac13091cc58bd6a74abd
++         Ein Trait mit zwei Operationen zur Makrozeit — `#summon`, das die `Inlinable`-Instanz für
++         einen Feldtyp auswertet, und `#discriminantKey`, das das `Discriminable in Cbor` einer
++         Summe auswertet und dessen Schlüssel zurückgibt, wenn es ein `Cbor.DiscriminantKey` ist
++         — und ein Begleitobjekt, das die Implementierung `InlinableStager.Implementation`
++         namentlich aus dem eigenen Classloader des Makros lädt, wenn `breviloquence.staged` im
++         Kompilier-Klassenpfad liegt, und andernfalls auf alles `None` antwortet. Der
++         Kern-Generator ruft das Begleitobjekt auf; Benutzercode tut das nie.
++     entry .summon   das `Inlinable` für einen Typ, vom Staging-Compiler ausgewertet, oder `None`
++     entry .discriminantKey   der Map-Schlüssel der Diskriminante einer Summe, wenn ihr `Discriminable in Cbor` ein `Cbor.DiscriminantKey` ist
++     entry #summon   die Implementierung des Herbeirufens im Staging
++     entry #discriminantKey   die Implementierung der Auswertung des Diskriminanten-Schlüssels
++   entry .ForCbor   `derives Inlinable.ForCbor`: das strukturelle `Inlinable` einer Case-Klasse, in ihr Begleitobjekt gesetzt
+
+% 1 1 0 1b047e398d93a00d1cfc2a62d3b59860
+
+@ 0 39 0 0a56a63a24ce7e611750384c19e049c7
++         Eine `Self`-typisierte Typklasse kann nicht in einer `derives`-Klausel stehen, daher
++         synthetisiert `case class Play(…) derives Inlinable.ForCbor` diesen parametrisierten
++         Subtrait — der ein `Play is Inlinable` *ist* — in das Begleitobjekt von `Play`, wo das
++         Herbeirufen im Staging ihn findet, wenn `Play` ein Feld eines Typs ist, der in einem
++         späteren Kompilierlauf generiert wird. Er delegiert jede Operation an die strukturelle
++         Instanz, die er umhüllt.
++     entry .derived   der `derives`-Hook: umhüllt `Inlinable.derived[T]`
++     entry #parse   delegiert an den Generator der umhüllten Instanz
++     entry #absent   delegiert an den Generator der umhüllten Instanz für fehlende Felder
++     entry #prints   ob die umhüllte Instanz einen Printer generiert
++     entry #write   delegiert an den Writer-Generator der umhüllten Instanz
++   entry #parse   generiert den Code, der ein Item von `Self` aus einem Reader-Ausdruck parst
++       Erhält einen `Expr[Cbor.Reader]`, die `Quotes` und den `Type[Self]` und gibt den
++       `Expr[Self]` zurück, den das generierende Makro einfügt. Der Rumpf einer von Hand
++       geschriebenen Instanz ist gewöhnlicher gequoteter Code über den Methoden des Readers
++       (`'{$reader.int()}`) und wird zur Expansionszeit nur herangezogen, wenn
++       `breviloquence.staged` im Kompilier-Klassenpfad liegt.
++   entry #prints   ob diese Instanz auch einen Printer generiert: `false`, sofern nicht überschrieben
++       Eine Instanz, die nur parst, bleibt ehrlich: Ein Feld ihres Typs wird über seine
++       Nahtstelle `Encodable in Cbor` geschrieben, statt zu scheitern.
++   entry #write   generiert den Code, der einen Wert von `Self` in einen Produzenten-Ausdruck schreibt
++       Der Produzent reist als `Expr[AnyRef]`, da generierter Code capture-gelöscht ist; die
++       `write…`-Methoden von `Cbor.Printable` bekräftigen ihn erneut. Die Vorgabe meldet einen
++       Kompilierfehler, _breviloquence: the Inlinable for `T` generates no printer_; eine
++       Instanz, die sie überschreibt, überschreibt auch `#prints`.
++   entry #absent   generiert, was ein Feld von `Self` ergibt, wenn sein Schlüssel in der Map fehlt
++       Ein Abbruch mit `Cbor.Error(Absent)` über `Cbor.Parsable.missing`, sofern nicht
++       überschrieben, entsprechend den Laufzeitinstanzen.
++   entry .int   der Blattgenerator für `Int`: `reader.int()`
++   entry .long   der Blattgenerator für `Long`: `reader.long()`
++   entry .double   der Blattgenerator für `Double`: `reader.double()`
++   entry .float   der Blattgenerator für `Float`: `reader.double().toFloat`
++   entry .boolean   der Blattgenerator für `Boolean`: `reader.boolean()`
++   entry .text   der Blattgenerator für `Text`: `reader.text()`
++   entry .string   der Blattgenerator für `String`: `reader.string()`
++   entry .byteString   der Blattgenerator für `Data`: `reader.byteString()`
++   entry .cbor   der Blattgenerator für ein `Cbor`-Feld: ein ganzes Item, als Dokument behalten
++   entry .iterable   der Generator für jede `Iterable`-Collection eines inline-fähigen Elements
++       Setzt über die Instanz des Elements und die `Factory` der Collection eine Schleife über ein
++       Array bestimmter oder unbestimmter Länge zusammen; die eigenen `List`, `Set` und `Sequence`
++       von Soundness werden am Symbol erkannt und mit ihrem zugrunde liegenden Typ gebaut.
+
+@ 0 1 0 08fcd3036c2fd03d17e18c33610a5199
++ entry .InlinableStager   der Staging-Compiler im Makro hinter `Inlinable.parsable`, aus `breviloquence.staged`
+
+% 1 1 0 0489a6ee4ef8757a17089c129a416e23
+
+% 2 1 0 0f69d2139e1211041302e235df7f80b4
+
+@ 0 13 0 1389287b393e8581152508ec6d46eab7
++       Nicht zur direkten Verwendung. Die Implementierung von `Inlinable.Stager` in der Komponente
++       `breviloquence.staged`: Für jeden Feldtyp startet sie einen frischen Staging-Compiler über
++       dem Klassenpfad des Makro-Classloaders (ohne das aktuelle Ausgabeverzeichnis, da ein in der
++       laufenden Kompilierung definierter Typ keine vertrauenswürdige Classfile hat) und ruft die
++       `Inlinable`-Instanz oder das `Discriminable in Cbor` der Summe live herbei, damit der
++       Generator sie heranziehen kann. Der Typ reist als Baum von Klassen in den inneren Compiler,
++       was die Auswertung auf klassenförmige Typen beschränkt; opake und strukturelle Typen fallen
++       auf eine Laufzeit-Nahtstelle zurück. Jedes Herbeirufen meldet seine Dauer als
++       Informationsmeldung des Compilers. Nur JVM: Diese Komponente hängt von den JARs des
++       Scala-Compilers und des Stagings ab, weshalb sie aus `breviloquence.core` herausgehalten
++       wird.
++   entry .evaluate   das `Inlinable` für einen Feldtyp, in einem frischen Staging-Compiler herbeigerufen, oder `None`
++   entry .discriminantKey   der Diskriminanten-Schlüssel einer Summe, wenn ihr `Discriminable in Cbor` zu einem `Cbor.DiscriminantKey` ausgewertet wird
++   entry .Implementation   der `Inlinable.Stager`, den `Inlinable.Stager` namentlich lädt
+
+% 1 1 0 09211261f363640e0031af5b16f55ce4
+
+@ 0 2 0 1c0f7a5509d69fca16ec51b16014548a
++         Das Objekt, das `Inlinable.Stager` über `Class.forName` findet, wenn diese Komponente im
++         Makro-Klassenpfad liegt.
+
+% 0 1 0 0f572bb7a736555b161a4d9d2c9a3e1d
+
+% 0 1 0 04fe5e628e6f525900cc53370a3357fa
+
+@ 0 1 0 16a38d3835af591e00265c000299a28d
++ entry .inlining   die Mechanik hinter `Inlinable`: die Auflösungsleiter, die strukturellen Generatoren und die Einstiegsmakros
+
+% 1 1 0 1f36cb84cd561b3a08bc32ef2e09d0ea
+
+% 2 1 0 0f9d2dd07df285d202c052c5c422221a
+
+@ 0 14 0 08607e6c8f57a5e20916cf4aa43b5f39
++       Nicht zur direkten Verwendung. Instanzauflösung zur Expansionszeit (eingebautes Blatt,
++       Herbeirufen im Staging, strukturelle Collection, Produkt oder Summe, Laufzeit-Nahtstelle),
++       die Generatoren, die die Schlüsselverteilungsschleife eines Datensatzes, die Schleife einer
++       Collection und die Diskriminantenverteilung einer Summe erzeugen, und die
++       Makroimplementierungen, zu denen `Inlinable.parsable`, `Inlinable.printable` und
++       `Inlinable.Generates` expandieren. Seine öffentlichen Member existieren, weil generierter
++       Code in Benutzermodule eingefügt wird.
++   entry .fieldSeam   die Laufzeit-Nahtstelle für ein Feld ohne `Inlinable`: sein `Cbor.Parsable`, oder sein überbrücktes `Decodable in Cbor`
++       Eine Inline-Methode, die dort expandiert wird, wo der generierte Parser eingefügt wird:
++       Ein nominales `Cbor.Parsable` wird direkt aufgerufen, und alles andere parst den Teilbaum
++       des Felds und dekodiert ihn über `Cbor.Parsable.fromDecodable`.
++   entry .fieldSeamAbsent   das Gegenstück der Nahtstelle bei Fehlen: was ein überbrücktes Feld ergibt, wenn sein Schlüssel fehlt
++   entry .generates   das Makro hinter `Inlinable.Generates`: Nachweis für einen Datensatz, oder ein Kompilierfehler
++   entry .inlinableParsable   das Makro hinter `Inlinable.parsable`
++   entry .inlinablePrintable   das Makro hinter `Inlinable.printable`
+
+@ 0 7 0 00a23f8589943dae1a3addab50cbdf6d
++ entry .parse   `Cbor.Ast.parse(bytes)`: parst genau ein Datenitem und lehnt nachgestellte Bytes ab
++     Eine Erweiterung auf dem Begleitobjekt `Cbor.Ast`, in das Umbrella als `soundness.parse`
++     exportiert. `Cbor.Ast.parse(data)` liest das Item an Ort und Stelle aus einem `Data`;
++     `Cbor.Ast.parse(chain)` liest es aus einer `Chain[Data]`, während die Chunks gezogen werden.
++     Beide brauchen eine `Tactic[Cbor.Error]` und lösen `Cbor.Error` mit dem absoluten Offset
++     jedes Fehlers aus, einschließlich `Trailing(offset)`, wenn auf das Item Bytes folgen. Ein
++     Stream wird stattdessen mit `stream.read[Cbor.Ast]` gelesen, das ebenso streamt.
+
+% 2 1 0 14b80e74c0bc1f4f1d84b1a982c7d099
+
+% 3 1 0 12d4567134d87c010c63fa3a5e89e2cd
+
+% 4 1 0 0845ff9979a9ec1c1601bcb6b6bbf3dc
+
+% 0 1 0 196aeaeb290c642317211e733b5bb3b6
+
+% 0 1 0 179b903bca1f161c129e860c04e21881
+
+% 1 1 0 16a3637228986c250a545a5acaa438e5
+
+@ 0 1 0 0ce909dd38c8a38b09b0e4b0b9fbfe67
++ entry .optionalityOptions   wie ein `Optional`- oder `Option`-Feld Fehlen, `null` und einen fehlerhaften Wert liest: sechs Givens, die namentlich importiert werden
+
+% 1 1 0 1010aac353629ce60398a801134c50cf
+
+@ 0 8 0 0ec84c065216a9fc1e674918e5087ead
++       Drei unabhängige Richtlinien, jede mit einem strikten und einem nachgiebigen Given,
++       entscheiden, was ein `Optional[T]`- oder `Option[T]`-Feld ergibt, wenn sein Schlüssel in
++       der Map fehlt (oder bei der Übertragung `undefined` steht), wenn `null` übertragen wird und
++       wenn der innere Decoder den Wert ablehnt. Die Vorgaben, wenn nichts importiert ist, sind
++       nachgiebiges Fehlen, nachgiebige Nulls und strikte Fehler: Ein fehlendes oder `null`-Feld
++       liest sich als `Unset` oder `None`, und ein falsch typisiertes ist ein `Cbor.Error`. Jede
++       Richtlinie wird getrennt variiert, indem ein Given namentlich importiert wird —
++       `import soundness.*` bringt keines mit —, und die Wahl gilt im Geltungsbereich des Imports.
+
+% 2 1 0 1faa101180bca5ef0892028058586941
+
+% 3 1 0 1ce14ac8f0b5bfa714f53a034f8edc5f
+
+% 4 1 0 009f3506983f380c102b8c7553ab40b4
+
+% 5 1 0 052d1f9106bef7b0094f2e1134dcb72d
+
+% 6 1 0 15d6cd1e62cf007f18a299882670f06f
+
+% 8 1 0 19e96ce045f6dbd509208721958fc267
+
+% 4 1 0 0f4a0fc4ee40f47819682e77f7c662b3
+
+% 1 1 0 0ad1d278df0a1b040bead9d5bd65907c
+
+% 1 1 0 08654eb1912df4b81356fede659fc844
+
+% 0 1 0 027bda8a9b2a1a1e1dfb965a552864ce
+
+% 1 1 0 014121e35f9609b913d2bf8659a39b27
+
+% 0 1 0 1b9f2b9c174a8da01a742b4869ca8d64
+
+% 0 1 0 08cf580088938a470696e6e0a7198fd8
+
+% 1 1 0 0c4b511dbe2f67191e7306802be6583a
+
+% 2 1 0 0af76077936f5100097a156d594d003f
+
+% 3 1 0 03d198faee4dda8a142bd64d7aefbc86
+
+% 0 1 0 019a9214c38098661b299f736cf36098
+
+% 2 1 0 145ab1c2059e0c0c12a5b36e9153bcec
+
+% 4 1 0 0fbe6072156a8f940d510eda95fb42d3
+
+% 0 1 0 0ff6584c3445bee51765d319f9f4bf95
+
+% 1 1 0 11ba217ff2b91ea014bb352983fe82c7
+
+% 2 1 0 177574bd912cc54e067b80cf4a2d75a0
+
+% 3 1 0 1e9c20172935178b1cc3b2f2d6f6ef2b
+
+% 4 1 0 068590272cdf4d4507197228e1a0973d
+
+% 5 1 0 0056ff15fb962be209576f5c4bbe78d1
+
+% 7 1 0 0db40bcebe8857c70dd479251b22eb42
+
+% 1 1 0 1fb773f421a3469b07b949d3cd2b3077
+
+% 2 1 0 1cea0d3702671a1611d94985a0f815e1
+
+% 3 1 0 0d06d579479ad4821b8f5bdf13501e64
+
+% 4 1 0 1ccc1ab9e4d156ff042a7e18a9b80cb5
+
+% 5 1 0 0b8507a703a4f2d701b5a2394e85d803
+
+% 6 1 0 1280307ec08fa9371756597b9f12f5d9
+
+% 7 1 0 0b5b871585242d7e160c0067ac4144bd
+
+% 9 1 0 0cc01c1e65fb2bbd12169dfa44f12288
+
+% 1 1 0 0d911de47a8e304516c80bddc93347cd
+
+% 2 1 0 174fd4fb3a40945f08a0517e0bf9a43e
+
+% 3 1 0 15812174477d959d033ce44a23e20fa3
+
+% 4 1 0 1fc4bf17605138e305ff0655a4e6472d
+
+@ 0 13 0 0eca42477074008d0861746973119079
++       Die Givens sind `distillate.Decodable.Absence in Cbor`, `Nullity in Cbor` und `Fault
++       in Cbor`, dieselben Richtlinientypen, die jedes Soundness-Format verwendet, sodass ein
++       Programm, das mehrere Formate liest, die Richtlinie jedes Formats unabhängig festlegt. Sie
++       gelten für den Baumpfad (`Cbor.optional` und `Cbor.option`) und, über die Nahtstelle, für
++       ein `Optional`-Feld eines generierten direkten Parsers.
++   entry .strictCborAbsence   ein fehlender Schlüssel oder ein übertragenes `undefined` löst `Cbor.Error(Absent)` aus
++   entry .lenientCborAbsence   ein fehlender Schlüssel oder ein übertragenes `undefined` liest sich als `Unset` oder `None`: die Vorgabe
++   entry .strictCborNulls   ein übertragenes `null` wird an den inneren Decoder weitergegeben, der es für die meisten Typen ablehnt
++   entry .lenientCborNulls   ein übertragenes `null` liest sich als `Unset` oder `None`: die Vorgabe
++   entry .strictCborFaults   ein Wert, den der innere Decoder ablehnt, löst dessen `Cbor.Error` aus: die Vorgabe
++   entry .lenientCborFaults   ein Wert, den der innere Decoder ablehnt, liest sich als `Unset` oder `None`
++       Der innere Decoder läuft unter `tolerate`, sodass sein Fehler in einem sammelnden
++       `Validate`-Geltungsbereich dennoch für das Feld festgehalten wird.
+
+@ 0 1 0 14466d8d91167e3e0c08f5661a31b771
++ entry .dynamicAccess   das Given, das `cbor.field`, `cbor.field(i)` und `cbor.field = value` ermöglicht
+
+% 1 1 0 1418babed992f3b01eba0bac6617e1a7
+
+@ 0 5 0 140f8af4ae68429e04848aeaf36844dc
++       Dynamischer Member-Zugriff auf ein `Cbor` ist durch ein `(? >: Cbor) is Dynamical`
++       gesperrt, damit ein falsch geschriebener Methodenname nicht stillschweigend zu einem
++       Map-Lookup wird, wo keiner beabsichtigt war. `import dynamicAccess.dynamicCbor` gewährt ihn
++       dem Rest eines Geltungsbereichs; ein Block `dynamically[Cbor]:` gewährt ihn einem Ausdruck.
++       Das Given `Cbor.lens` braucht denselben Nachweis.
+
+% 2 1 0 115e593578041b9f192a633b79be6665
+
+% 3 1 0 156980a30cc718aa158e27f1b12d4f52
+
+% 4 1 0 14d27717555f70ab0d9b71d4c6e3efe4
+
+% 5 1 0 0380b099f86fba6010a9a076ee1c4e7f
+
+% 7 1 0 1865cc2757f7ad8b102ef6778aa78f14
+
+% 1 1 0 041a143e7ed07b5d1eef65243318f594
+
+% 0 1 0 0755fb3786ee2edd14b68e3123ba28f0
+
+% 0 1 0 1be14409bc02f2cf0b7f9d1f7e92d8f7
+
+% 1 1 0 14a559c4eb2023490512eeec51592158
+
+@ 0 1 0 18deab71faaa188d1a304d737b3f7d5b
++   entry .dynamicCbor   `Cbor is Dynamical`: ein gelöschtes Given, das `selectDynamic`, `applyDynamic` und `updateDynamic` freischaltet
+
+@ 0 1 0 0b496cf61669ea10069692939192ca38
++ entry .conversions   eine `Conversion`, mit der jeder `Encodable in Cbor`-Wert dort stehen kann, wo ein `Cbor` verlangt wird
+
+% 1 1 0 1e9a77294af115c50511189f0d319ce6
+
+@ 0 4 0 0e433093c2e879c31a70e8a5edf849d7
++       Namentlich importiert für den Geltungsbereich, der über eine Linse zuweist: `import
++       conversions.encodableToCbor` lässt `play.lens(_.year = 1608)` den `Int` direkt nehmen,
++       wo die Zuweisung sonst `5.in[Cbor]` braucht.
++   entry .encodableToCbor   `Conversion[T, Cbor]` für jedes `T`, das `Encodable in Cbor` ist: `_.encode`
+
+@ 0 1 0 1a9b38bc762af62b1a9380dd4ef68627
++ entry .postables   das Given, das ein `Cbor` als Request-Body `application/cbor` sendet
+
+% 1 1 0 1bc78b717e14d4371bd0ef3795ab81b5
+
+@ 0 4 0 0a86820bae4cd8ea0e3649b0b70e03ce
++       Aus `breviloquence.http` (nur JVM). Namentlich importiert — `import postables.cborPostable`
++       —, damit ein telekinesis-Client einen `Cbor`-Wert per `post` senden kann: Der Body sind die
++       kodierten Bytes des Dokuments, ohne Zeichensatz, und der Medientyp ist `application/cbor`.
++   entry .cborPostable   `Cbor is Postable`: `application/cbor`, die kodierten Bytes als Body
+
+@ 0 1 0 0627eeb5ca7d932b1fb3b9c15e104423
++ entry .servables   das Given, das ein `Cbor` als Response-Body `application/cbor` ausliefert
+
+% 1 1 0 090946111647a80804e066edc05ac6d2
+
+@ 0 4 0 197e55d5318dcce50d0ddc6be5772455
++       Aus `breviloquence.http` (nur JVM). Namentlich importiert — `import servables.cborServable`
++       —, damit ein scintillate- oder telekinesis-Handler mit einem `Cbor`-Wert antworten kann:
++       ein fester Body aus den kodierten Bytes des Dokuments, typisiert als `application/cbor`.
++   entry .cborServable   `Cbor is Servable`: `application/cbor`, die kodierten Bytes als fester Body
+
+@ 0 1 0 03f5d2be9ee0440601a97e607b14a163
++ entry .construables   das Given, das einen `application/cbor`-Body zurück in ein `Cbor` liest
+
+% 1 1 0 03af7528a954f3a90f0dd2d0762e6d65
+
+@ 0 5 0 006afdfdc1a9f88819f85176cecccf8a
++       Aus `breviloquence.http` (nur JVM). Namentlich importiert — `import
++       construables.cborConstruable` —, damit sich ein Request- oder Response-Body mit dem
++       Medientyp `application/cbor` über `Cbor.aggregable` als `Cbor` interpretieren lässt; eine
++       binäre API wird dann mit demselben Code verwendet und angeboten wie eine JSON-API, nur der
++       Typ des Formats unterscheidet sich.
+
+% 0 1 0 1635e134d0d77ef017c026c34e1f6b50

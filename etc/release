@@ -24,9 +24,9 @@ probes     beneficence.plugin larceny.plugin rudiments.core rudiments.core.js ru
 # change after the last; the release refuses to run while that file is missing, or while another
 # version's notes are unreleased. They live in the Orthant store, not in `doc/work`, which is the
 # git-ignored working tree: a version's notes are created at the unreleased `main` point, so the
-# English of the next release's notes is a whole file under `release=main`, and the notes of
+# English of the next release's notes is a whole file under `main/_`, and the notes of
 # released versions are not there.
-migration  .orthant/data/release=main/migration
+migration  .orthant/data/main/_/migration
 
 # The trust boundary is the signed attestation note on refs/notes/ci-attestation, not the runner.
 verify     ./mill groupCheck.validate

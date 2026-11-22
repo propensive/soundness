@@ -1,0 +1,775 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1920c2d1eb1b711e11f86530cc5798cd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 03c7e18b61ef542106b726a70abea6aa
++ info   値としての JVM クラスファイル：メソッド、スタックをシミュレートしたバイトコード、宣言の表面、上位型の閉包
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 1db668b972be760e13c28d0f76c9e058
++     _Mandible_ は JVM クラスファイル（`scalac` や `javac` が出力する `.class`）を不変で型付きの値として読み込む。
++     これにより、プログラムはコンパイラとオプティマイザが実際に生成したものを、推測ではなく検査できる。
++     ファイルは JDK 自身の `java.lang.classfile` API を通じて読み込まれ、クラスは三つのビューとして提示される。
++     いずれも値である。
+
+@ 0 10 0 135a1714c18750f41cd4d3fe5c9dc139
++     - `Classfile` は**バイトコード**のビューである。クラスのメソッドがそれぞれ `Bytecode` を持ち、それは型付きの `Bytecode.Opcode` にデコードされた `Bytecode.Instruction` のリストで、各命令は由来するソース行と、実行後のオペランドスタックのシミュレーションを持つ。端末では色付きの表として描画され、`disassemble` はクォートされたブロックをコンパイルして、そのバイトコードをそのまま読み戻す。
++     - `ClassSurface` は**宣言**のビューである。コンパイル済みの利用者がリンクする名前、記述子、アクセスフラグ、上位型、ジェネリックシグネチャを持ち、同じソースの二つのビルドの間で正当に異なりうるものは何も持たない。
++     - `ClasspathIndex` は、メモリ上に保持されたクラスの集合とクラスパスに対して、JVM の内部クラス名をその `ClassSurface` に解決し、クラスの上位型の閉包をたどる。
+
+% 2 1 0 1d43f5285e1b8aee0306338a1a2e3411
+
+% 3 1 0 054d364bee67c2c01a357a9787bcb359
+
+% 0 1 0 14f9c325451410601fe228db57704df4
+
+% 0 1 0 1f983654f665ce53141df93c51bdaf88
+
+% 0 1 0 0241d3a9a95acaa908c9acf176572b87
+
+% 0 1 0 1291bede785a4b991d64c5560f01fcb1
+
+% 0 1 0 17542073aa1c969e02d761693a2945c4
+
+% 1 1 0 161779758abc7fe0134845eb51e2e93d
+
+@ 0 6 0 0ca39a28b286bc7d1cb12bae2628788c
++     クラスファイルは、スコープ内の given の `Classloader`（`classloaders` パッケージから名前で選ぶ。`import soundness.*` は given をインポートしない）を通じて見つけるか、`read[Classfile]` で任意のバイトのストリームから読み込む。
++     ライブラリのソースセットは `mandible.core` 一つだけで、JVM 専用である。
++     `java.lang.classfile`、`disassemble` のためのステージングコンパイラ、JVM のクラスパスに依存する。
++     すべてが `soundness` アンブレラにエクスポートされる。
+
+@ 0 3 0 039ac435d8a0dd2713fe2374eb40b8a8
++     `Bytecode` を端末に描画するには、スコープ内に `BytecodePalette` が必要である。
++     これはソース参照、ソース行、スタックの輪郭の色を指定する `Palette` である。
++     デフォルトのパレットは提供されないので、プログラムが自分で定義する。
+
+% 0 1 0 13f6a90709bec59811f8f95538a20c67
+
+% 0 1 0 06fda04bfab89fe80f587a08b948b92f
+
+% 0 1 0 0cdd25c63e91a0931965c8f415d89465
+
+% 0 1 0 14fe61781865c78004a55228c07a7857
+
+@ 0 1 0 0059f7443a7ac1540a03af0e5c3c5f88
++ entry .Classfile   パースされた JVM クラスファイル：そのメソッド、メソッドのバイトコード、ソース属性
+
+% 1 1 0 0a29464758eebd2c08784f72bc91abfe
+
+@ 0 4 0 0e376ef40b3cd6730f32dd97eaa83baa
++       `Classfile` は一つの `.class` ファイルのバイトを包み、最初の使用時に JDK の `java.lang.classfile` API でパースする。
++       クラスパス上で名前または型によって、スコープ内の given の `Classloader` を通じて見つけるか、任意のバイトの供給源（ファイル、リソース、ストリーム）から `read[Classfile]` で読み込む。
++       `Aggregable by Data` だからである。
+
+% 2 1 0 1c809734db7b63ef0aa5e93c89dc2adc
+
+% 3 1 0 11873b6197d81c9301941987fc3e7e00
+
+% 4 1 0 1eb184e992b475c20e1ba886d5cd6079
+
+% 0 1 0 0aa67ed5acff682c175168de660c91fc
+
+% 0 1 0 183a0324b0ac44ba06edfe66574ff368
+
+% 1 1 0 11772f6f277968021ad02f925eb33306
+
+@ 0 6 0 19eb552dad69a5ab0bab9e135f83b9dc
++       メンバーは、逆アセンブラとスタックトレースの解決器が必要とする部分である。
++       `#methods` はそれぞれが `Classfile.Method` で、その `bytecode` は要求に応じてデコードされる。
++       `#sourceFile` は `SourceFile` 属性である。
++       `#sourceDebugExtension` は JSR-45 の SMAP で、インライン化されたコードの合成された行番号を、それが書かれた場所へ対応付ける。
++       クラスの宣言の表面（フィールド、フラグ、上位型、シグネチャ）は、別の `ClassSurface` ビューである。
+
+@ 0 2 0 01bd82d2e693b76007d085202a970f31
++       `Classfile` はケイパビリティを保持しない。
++       バイトは構築時にコピーされるので、値は自由に保持し、共有し、受け渡せる。
+
+% 1 1 0 185c8fe5dc4d9b481f7b12bd66d341fb
+
+% 1 1 0 0c5192e1f2ae001b0728d25ceea5eabc
+
+% 1 1 0 11d62d6ce8c98b4702fc105ec6175cd0
+
+@ 0 9 0 19e641142038b19b19a0af0566c05f3c
++   entry .Error   クラスファイルを読み込めないときに発生する
++       エラー `↯/s.88.2`：_there was an error reading the classfile_。
++       クラスファイルを読むものが発生させるために宣言されている。
++       `Classfile` のコンストラクター自体は、メンバーが最初に使われるまでパースを遅らせ、`Classfile.apply` はクラスローダーが持たないクラスに対してエラーを発生させず `Unset` を返す。
++   entry .aggregable   任意のバイトのストリームから `read[Classfile]` として `Classfile` を読み込む
++       ファイル、クラスパスのリソース、その他任意の `Readable` な供給源をクラスファイルとして読めるようにする `Aggregable by Data` の given である。
++       ストリーム全体が一つの `Data` に集められ、包まれる。
++       結果のメンバーが使われるまで、バイトはパースされない。
+
+% 2 1 0 040aa88d4a78ab3d0d8e4aeb7bf2d722
+
+% 3 1 0 0a9f7ea877b540760aa5dacfa8d39623
+
+% 4 1 0 137cabb64dafeaf31fcaa00485ec9fca
+
+% 5 1 0 1b3d7d88f1e7123b1ad7f27d20eeca6e
+
+% 0 1 0 0fe6d59753759fcd04b7d21dbd7f4761
+
+% 1 1 0 1cb7ed36a2fa38860780db3d8ce26ba2
+
+@ 0 6 0 0a96ebace5d6a15412960394d4084581
++   entry .apply   リソース名または型のクラスファイルを、スコープ内の `Classloader` を通じて得る
++       `Classfile(name)` は、`name`（拡張子付きの JVM 内部名、`scala/Option.class`）にあるクラスパスのリソースを、スコープ内の given の `Classloader` を通じて読む。
++       `Classfile[T]` は `T` のクラスをその `ClassTag` で見つけ、そのバイナリ名が示すリソースを読むので、ネストしたクラスは `Outer$Nested.class` に解決される。
++       どちらも、クラスローダーがそのリソースを持たないときは `Unset` を返す。
+
+% 2 1 0 1c8279000b2e18321d357c63df38677a
+
+% 3 1 0 06a2a920726a14d31644e9eb72e1fa2f
+
+% 4 1 0 0e189c0fa199af110e66364e1f55b106
+
+% 0 1 0 0c480d90f6383902082ef5016d54974c
+
+% 0 1 0 17f21b87f593c6d70cd3aa06d63d6455
+
+% 1 1 0 11986e170af019891864e06aad61cef5
+
+@ 0 19 0 0c76b21bd3c43c900f85a708be5eb40b
++       型の形式は `ClassTag` を取るので、クラスやオブジェクトの型には使えるが、適用されていない型コンストラクターには使えない。
++       hellenism の `Classloader[T]` は、クラスローダー自体を見つけるための対になる操作である。
++   entry #sourceFile   `SourceFile` 属性：クラスのコンパイル元のソースの名前
++       コンパイラが記録するとおりの、ディレクトリを含まないファイル名だけ（`Option.scala`）である。
++       クラスファイルにその属性がなければ `Unset` で、生成されたクラスの中にはそういうものもある。
++       これはスタックトレースが報告するファイル名で、`Bytecode#sourceFile` がそれを描画されたリストへ引き継ぐ。
++   entry #sourceDebugExtension   JSR-45 の `SourceDebugExtension` 属性をテキストとして。存在する場合のみ
++       属性の本体は SMAP である。
++       これはコンパイラがインライン化されたコードに割り当てる合成の行番号を、それが書かれたファイルと行へ、レベルごとに変換するソースマップである。
++       インライン化のないクラスでは `Unset` になる。
++       スタックトレースの解決器はこれを読んで、インライン化されたフレームに本当の呼び出し位置の行を与える。
++       digression の `Smap.parse` がこのテキストをデコードする。
++   entry #methods   クラスファイル内の順序でのクラスのメソッド。それぞれが `Classfile.Method`
++       コンストラクターは `<init>`、静的初期化子は `<clinit>` として現れ、コンパイラの合成メソッド（ラムダ本体、ブリッジ、デフォルト引数のゲッター）はコンパイル後の名前で現れる。
++       リストは最初の使用時に一度だけ計算され、パースもそのときに行われる。
++   entry #Method   クラスファイルの一つのメソッド。名前とデコードされたバイトコードを持つ
+
+% 1 1 0 08e1778932544c491db390c8d21c5ca3
+
+@ 0 4 0 17cdbfb757929f900309bbcdccfda5f0
++         `Classfile.Method` は `Classfile#methods` が作るもので、直接は構築しない。
++         `#name` はメソッドのコンパイル後の名前で、`#bytecode` はその `Code` 属性を `Bytecode` 値にデコードする。
++         それはすべての命令を、そのオフセット、属するソース行、メソッドのスタックマップフレームからシミュレートしたオペランドスタックとともに持つ。
+
+% 2 1 0 03389adfa4f5b8e70d7e96d582bec0fc
+
+% 3 1 0 062dac09fcb44991069db7b81e36844f
+
+% 0 1 0 066c7de4214f31cd1db1c856202b68b2
+
+% 0 1 0 06d9d2933d6fdd8f021b8f31f35ad741
+
+% 1 1 0 0adc9883aa2c8f190a148f07ac671cc9
+
+@ 0 12 0 1329127a4f67b4e009d1c50bd4b74172
++     entry #name   クラスファイルが綴るとおりのメソッド名
++         ソース上の名前ではなくコンパイル後の名前である。
++         コンストラクターは `<init>`、`+` のような演算子は `$plus`、ラムダ本体は `$anonfun$…` になる。
++         digression の `StackTrace.rewrite` は、そのような名前をソース上の綴りへ戻す。
++     entry #bytecode   メソッドの `Code` 属性を `Bytecode` にデコードしたもの。抽象メソッドでは `Unset`
++         メソッドのすべての命令を `Bytecode.Opcode` にデコードし、分岐先をバイトオフセットに解決し、それらを通してオペランドスタックのシミュレーションを進める。
++         各命令の後のスタックは `Bytecode.Opcode#transform` が計算し、メソッドの `StackMapTable` のフレームによってすべてのラベルでリセットされる。
++         そのため分岐先でのスタックは、フォールスルーの経路が残したものではなく、ベリファイアが記録したものになる。
++         `LineNumberTable` の行番号は、各行の最初の命令に付けられる。
++         コードを持たないメソッド（抽象メソッドやネイティブメソッド）は `Unset` を返す。
+
+@ 0 2 0 1c7d035f7e41001c13d668953ab0c2aa
++         結果はクラスの `sourceFile` と、メソッドで宣言された `maxStack` と `maxLocals` を持つ。
+
+@ 0 1 0 13b0f6677f9a2d9502c0fc9ab10e55bd
++ entry .Bytecode   一つのメソッドの命令。それぞれデコードされ、ソース行に置かれ、シミュレートされたオペランドスタックを持つ
+
+% 1 1 0 073c54f03a31fd0f0c3606655f4c37ad
+
+@ 0 7 0 194935b86ba7ad96131b9431a10945a1
++       `Bytecode` は一つのメソッドのデコードされた `Code` 属性である。
++       その `#instructions` はそれぞれ `Bytecode.Instruction` で、型付きの `Bytecode.Opcode` を、そのバイト `offset`、それが始めるソースの `line`、命令の実行後のオペランドの `stack`（`Bytecode.Frame` のリスト）と組にする。
++       加えて、メソッドで宣言された `#maxStack` と `#maxLocals`、クラスの `#sourceFile` を持つ。
++       クラスパス上のクラスから `Classfile.Method#bytecode` によって、またはその場でコンパイルされたクォートされたブロックから `disassemble` によって作られる。
++       解析のために `Instruction` から手で組み立てることもできる。
+
+% 2 1 0 0a59f980ac2275cd1a8eba398baa07bc
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1ed208c6190d0771065e9572b432d914
++         label スコープ内のクラスローダーを通じて見つけたクラスファイル
+
+% 1 1 0 15ed6fd5776675e613ca09fde5875982
+
+% 2 1 0 0650345239b0591e0d02277badf290a6
+
+% 3 1 0 12aa4bc1a48157c800d3608ac1610637
+
+% 5 1 0 113b93825f6be35306028addbac218fd
+
+% 1 1 0 1668aed0eb07e20209e2f836f53c23aa
+
+@ 0 1 0 0d6d6ad44d9c18cf0fe8b4005798ad57
++         label 名前で選んだそのメソッドの一つ
+
+% 1 1 0 1818aa0219fbd45f099bcc19b6a63c7d
+
+% 2 1 0 125cf5e9dfb7c2e413e8569c3d9f9c4f
+
+% 3 1 0 12775983f52b2bd21c8746192aa01c7e
+
+% 5 1 0 018c8d2302fe042304aac8422a127b27
+
+% 6 1 0 0c94fb37988a701d051dc92fc7b3d01b
+
+% 7 1 0 1ec000f9e0ab1ad808c797769886a0b4
+
+% 1 1 0 1cf058140e7c1b45199a73397c809e3d
+
+@ 0 1 0 1a1646c18f26db8a1f6b53cbd997dbe2
++         label オペコードとして並べたそのバイトコード
+
+% 1 1 0 007138b856d0d1f819aed33976a3bf16
+
+% 2 1 0 17b81819b84529f0196c0f176c62056f
+
+% 3 1 0 04dfad0fb1623cfc09bd218c252f4b1d
+
+% 5 1 0 111b8fe615b76b8a0013f254ec1134bf
+
+% 6 1 0 114a828d0e2b8e3f135355c6916e8ac3
+
+% 7 1 0 04d7ab91e608ace701a22f612037a384
+
+% 8 1 0 18d3c1801b87d4cb0f06c0b6bd5b4680
+
+% 0 1 0 1f3939f165a06de408c8c330fe7d3093
+
+% 1 1 0 0ec0d46c738358301839e3e9e1f3049e
+
+@ 0 1 0 1b41bc8c7636d36d1e2f64908ffb12dd
++         label デコードされた一つの命令：そのオフセット、行、残すスタック
+
+% 1 1 0 1ecd2e923f0265820324c9c236fa7875
+
+% 2 1 0 1f8fbc31543f5d7f025c79d574899dc7
+
+% 3 1 0 1ca8cfaa15f99cf2110c0d21c246c698
+
+% 5 1 0 15b5a02e0bcdbf530bf62ccbe0e726e7
+
+% 6 1 0 16a19c8a9a5b9ff30dbf7bc87d940efe
+
+% 7 1 0 19c63d1ef51570011268d9ae614e9d1a
+
+% 8 1 0 1378dba0875d7491175a7732f5002fca
+
+% 0 1 0 0c0bc6cee4fd6562120fca717d2baf70
+
+% 0 1 0 0691ac112bf824661ffda58d5374d919
+
+% 1 1 0 1b87ae96f783dee9164b9110ce3d80db
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 18cdc2947e7d4d4306bd79a7b666d269
++       オペランドスタックは測定ではなくシミュレーションである。
++       `Bytecode.Opcode#transform` は各オペコードが定義どおりにプッシュ・ポップするものをプッシュ・ポップし、メソッドの `StackMapTable` がすべての分岐先でそれをリセットする。
++       スタック上の参照は、それをプッシュした命令がクラスを名指す場合は `Frame.L(className)`、そうでない場合は `Frame.L(t"?")` になる。
+
+@ 0 5 0 1f89ddb201b172ea146083554b46acee
++       描画にはスコープ内の `BytecodePalette` が必要である。
++       `bytecode.teletype` はソース位置、オフセット、オペコード（`Opcode#cost` で色付け）、スタックの四列の表で、`bytecode.printable` がそれを出力する。
++       `#linearize` は、メソッドが行う静的呼び出しと実質的に静的な呼び出しを、上限のある深さまで呼び出し先のバイトコードへたどる。
++       ホットパスの命令列全体を一つのリストで見るにはこうする。
+
+% 1 1 0 0c3d64caef1b8ebf03167e4686319095
+
+% 1 1 0 0219988a0f395c471eeca045d951f59f
+
+% 0 1 0 135e3219365786e40fc64f2ec5bed0f0
+
+@ 0 13 0 14925e53763e03fe1f4123cb90860efc
++   entry .teletypeable   バイトコードを色付きの表として描画する：ソース行、オフセット、オペコード、スタック
++       `Teletypeable` の given で、`BytecodePalette` を必要とする。
++       命令ごとに一行で、命令が行を始める箇所ではソースファイルと行（パレットの `bytecode` と `sourceCode` の色）、下付き添字でのバイトオフセット、`Opcode#cost` で色付けされたオペコード、パレットの `outline` の色で輪郭を描いたシミュレート済みのスタックを示す。
++       表は 160 桁向けにレイアウトされる。
++   entry .printable   バイトコードのリストを `Printable` として出力する
++       `.teletypeable` の表を、出力先の端末向けに描画する。
++       `BytecodePalette` が必要である。
++   entry .stack   シミュレートされたオペランドスタック `List[Bytecode.Frame]` を一行で描画する
++       スタックのための `Teletypeable` の given で、`BytecodePalette` を必要とする。
++       フレームは底から順に示され、`┊` で区切られ、パレットの `outline` の色の `┃` で囲まれる。
++   entry .Frame   オペランドスタックの一つのスロット、または一つの検証型：プリミティブ、参照、配列
+
+% 1 1 0 044e26d387b207eb00f8d4b1748cb5b2
+
+@ 0 6 0 03c2507620580139018f4d827faeb127
++         ケースは、プリミティブを表す JVM の記述子の文字（`Z`（boolean）、`B`（byte）、`C`（char）、`S`（short）、`I`（int）、`J`（long）、`F`（float）、`D`（double））に、バイナリ名（`java.lang.String`）によるクラスへの参照 `L(name)` と、別のフレームの配列 `Array(frame)` を加えたものである。
++         クラスが不明な参照は `L(t"?")` である。
++         ベリファイアの特殊な型は `L(t"null")`、`L(t"this")`、`L(t"top")`、`L(t"uninit")` として現れる。
+
+% 2 1 0 07b2249edebc56031ca2e5706f7ecc05
+
+% 3 1 0 0f9c5bf51f8e5b721bf4f6f53aa72804
+
+% 0 1 0 10733d2ec5a073f119f92e0544e55759
+
+% 0 1 0 1889a2308e8f03ed02630a3127988365
+
+% 1 1 0 1f367f4307b9933d03677630ab6bce60
+
+@ 0 16 0 018ae1aa61dbb49718a2bafd7146623e
++         `Frame` はその文字として、参照は `*name` として、配列は `[frame]` として表示される。
++     entry .showable   フレームを描画する：プリミティブはその文字、参照は `*name`、配列は `[frame]`
++     entry .parseOne   記述子のある位置から型を一つ読み、フレームとその直後の位置を返す
++         `Frame.parseOne(descriptor, cursor)` は、`cursor` で始まる記述子の型（文字、`[` を接頭辞とする配列、`L…;` のクラス）をデコードし、そのすぐ後のインデックスとともに返す。
++         メソッド記述子のパラメーターリストをたどる呼び出し側のためのものである。
++         クラスファイル由来の記述子は整形式なので、予期しない文字はパニックになる。
++     entry .fromFieldDescriptor   フィールド記述子のフレーム。`I` や `Ljava/lang/String;`
++         フィールド記述子全体を一つの `Frame` にデコードする。
++         クラス名中の `/` は `.` に書き換える。
++     entry .fromVerificationType   `StackMapTable` の検証型のフレーム
++         JDK の `VerificationTypeInfo` を `Frame` に対応付ける。
++         単純型はそのプリミティブに、オブジェクト型は `L(name)`（クラスが配列クラスなら配列のフレーム）に、`null`、`uninitializedThis`、`top` は `L(t"null")`、`L(t"this")`、`L(t"top")` に、未初期化のオブジェクトは `L(t"uninit")` になる。
++   entry .Descriptor   パラメーターのフレームと結果にパースされたメソッド記述子
+
+% 1 1 0 132d98d04b54df4d13383a47dc2b801c
+
+@ 0 4 0 0f11e8534c75f4a413866507cab74eca
++         `Bytecode.Descriptor.parse(t"(Ljava/lang/String;I)V")` は、`#args` がフレーム `L(java.lang.String)` と `I` で、`V` が void なので `#result` が `Unset` である `Descriptor` を返す。
++         命令デコーダーはこれを使って、呼び出しがいくつのオペランドをポップし、結果をプッシュするかどうかを知る。
+
+% 2 1 0 172990762da62a3a165c3c855d2016b7
+
+% 3 1 0 080240b85a770de91969ca25af8dc868
+
+% 0 1 0 1ebbb4a65eb9b04a07d7f11dfbe01931
+
+% 0 1 0 0538383d0f1b484d1c1294c70665cb84
+
+% 0 1 0 0b0861542f68fc2901216fb20435459e
+
+% 1 1 0 085379f3d453e151036c9d1c2f1c14d2
+
+@ 0 6 0 0fe0f13431bb7df303b013c64935eb3b
++     entry .parse   `(…)R` 形式のメソッド記述子を `Descriptor` に読み込む
++         テキストは `(` で始まらなければならない。
++         `)` までのパラメーター型が `#args` に、戻り値の型が `#result` になり、`V` は `Unset` になる。
++         不正な記述子はパニックする。
++     entry #args   パラメーターの型。順序どおり
++     entry #result   戻り値の型。`void` なら `Unset`
++   entry .Instruction   デコードされた一つの命令：オペコード、ソース行、結果のスタック、オフセット
+
+% 1 1 0 0acca7af543fe03505a3e764276d75f9
+
+@ 0 5 0 0a39c4f2aad7b39d0cc6f70a49ae8e7e
++         `Bytecode#instructions` の要素である。
++         `#line` は各ソース行の最初の命令に設定され、残りでは `Unset` である。
++         `#stack` は命令の後のシミュレートされたオペランドスタックで、シミュレーションが失われた後は `Unset` である。
++         `#offset` はメソッドのコード内での命令の位置をバイト単位で表し、分岐先と `Bytecode#effectivelyStaticCalls` が参照するのはこれである。
+
+% 2 1 0 0acd5c45ba53ecf3117ef4b253d67aee
+
+% 3 1 0 172905d2326718e508a162c3e4611c87
+
+% 0 1 0 0eb794703f4b2887195115965d5f746f
+
+% 0 1 0 0d9c7ce7306c99f106052751fcc6a2cc
+
+% 1 1 0 1ec2304a72213dc6197777a0b0a9665e
+
+@ 0 5 0 13f83908bb87a2a3102c826c95072873
++     entry #opcode   命令。`Bytecode.Opcode` として
++     entry #line   この命令が始めるソース行。行の続きなら `Unset`
++     entry #stack   命令の後のシミュレートされたオペランドスタック。先頭が上。わかる場合のみ
++     entry #offset   メソッドのコード内での命令のバイトオフセット
++   entry .Linearized   線形化されたリストの一つの命令。インライン化の深さと由来するメソッドを持つ
+
+% 1 1 0 0c8b498c524ae3e9179e85eef2889833
+
+@ 0 13 0 0b83712bc0c07c151f6a6fceccf58540
++         `Bytecode#linearize` が返すリストの要素である。
++         `#depth` はメソッド自身の命令では `0` で、呼び出し先へたどる呼び出しごとに一つ増える。
++         `#source` は呼び出し先を `owner.method` として名指し、深さ `0` では空である。
++         `#instruction` は命令そのものである。
++         `List[Linearized]` は `BytecodePalette` があれば、インデントされたリストとして描画される。
++     entry .teletypeable   線形化されたリストを、深さ一段ごとに空白二つでインデントして描画する
++         `List[Bytecode.Linearized]` のための `Teletypeable` の given で、`BytecodePalette` を必要とする。
++         各行は深さに応じてインデントされ、パレットの `bytecode` の色で由来するメソッドが前に置かれ、その後にオペコードが続く。
++     entry #depth   命令が呼び出し何段分深いか。リストされたメソッド自身では `0`
++     entry #source   命令のインライン化元の `owner.method`。深さ `0` では空
++     entry #instruction   命令
++   entry .Opcode   すべての JVM 命令を、オペランドをデコードした列挙型のケースとして表す
+
+% 1 1 0 12b00d07330c81810f0179c59f37e81d
+
+@ 0 11 0 1af2a1fedc5e1cb5019c4f0a34d3c62b
++         JVM 命令セットのオペコードごとに一つのケースがオペコード順に並ぶので、ケースの `ordinal` がそのオペコード番号になる。
++         `Nop`（0）から `Jsr`、`GotoW`（200）、`JsrW`（201）までで、予約された `Breakpoint`、`Impdep1`、`Impdep2` と、割り当てのない `OpCb` … `OpFd` が隙間を埋める。
++         オペランドはフィールドにデコードされる。
++         ロードとストアは `slot` を持ち、`Bipush`、`Sipush`、`Ldc`、`LdcW`、`Ldc2W` は `value` を、すべての分岐はバイトオフセットとしての `target` を、`Tableswitch` と `Lookupswitch` は表を、フィールド命令は `owner`、`field`、`descriptor` を、呼び出しは `owner`、`method`、`descriptor`（`Invokeinterface` は `count` も、`Invokedynamic` は `method` と `descriptor` だけ）を、`New`、`Checkcast`、`Instanceof`、`Anewarray` はクラスを、`Newarray` は要素の `Frame` を、`Multianewarray` はクラスと `dimensions` を、`Iinc` は `slot` と `const` を持つ。
+
+@ 0 3 0 0f6e06e27992daa60334be792de4af7d
++         クラス名は `java.lang.String` のように `.` を使うバイナリ名である。
++         `Invokedynamic` のメソッド名は `StackTrace.rewrite` でデマングルされるので、ラムダの呼び出し位置は `$anonfun$1` ではなく `λ₁` と読める。
+
+% 2 1 0 0578f2e46626a7d908e6e51b97693696
+
+% 3 1 0 04c249bad750aef2136a2945deee0c6e
+
+% 0 1 0 1ea1e5ad81a87c221ea210d0b1e8c9e2
+
+% 0 1 0 0b0504f0023cbf1717545514c5c37609
+
+% 0 1 0 06bb7a36435eaa7f0b3485f0ba9528fe
+
+% 0 1 0 13c21367a0473733000d0ddf7ba4d4b8
+
+% 1 1 0 185254f42342d7ea14965af8164bcc26
+
+@ 0 29 0 0a7849a705766a4c0754a877e44f2f0f
++         オペコードは `Showable` で、そのニーモニックとして表示される。
++         複合名の部分の間には `·` を、定数とスロットには下付き添字を使い（`a·load₀`、`i·const₋₁`、`dup²∕₁`）、その後にオペランドが続く。
++         また `Teletypeable` でもあり、ニーモニックを `#cost` で色付けし、オペランドをイタリックにする。
++         どちらの given もコンパニオンにある無名の given なので、常にスコープ内にある。
++         `Opcode` は `.apply` で JDK の命令モデルから読み込む。
++     entry .apply   `java.lang.classfile.Instruction` を `Opcode` にデコードする
++         `Opcode(instruction, labels)` は JDK の命令オブジェクトを、そのオペコードの列挙型のケースに対応付け、オペランドをデコードする。
++         `labels` はコードの `Label` をバイトオフセットに対応付けるので、分岐の `target` はオフセットになる。
++         ラベルがマップにない命令は `0` を得る。
++         デコーダーが認識しないオペコードはパニックになる。
++     entry #cost   命令の大まかな相対コスト。`0` から `3` まで
++         リストの色付けに使う粗い順位付けである。
++         `0` は定数、ロード、ストア、スタックの入れ替え、拡大変換。
++         `1` は算術、比較、条件分岐、静的呼び出しと special 呼び出し。
++         `2` は配列アクセス、フィールドアクセス、キャスト、無条件ジャンプ、リターン、仮想呼び出し。
++         `3` は switch、アロケーション、モニター、`athrow`、インターフェース呼び出しと動的呼び出しである。
++     entry #describe   命令が何をするかの一行の説明。知っているオペコードについてのみ
++         定数とプッシュの命令、予約されたオペコードを言葉で説明し（`push the int constant 1`）、残りには `unrecognized` を返す。
++     entry #highlight   命令の `#cost` の色。ティール（`0`）からクリムゾン（`3`）まで
++     entry #transform   命令前のスタックから求めた、この命令後のオペランドスタック
++         スタックのシミュレーションである。
++         命令が消費するものをポップし、生成するものをプッシュする。
++         `int` の結果には `Frame.I`、`new` のオブジェクトやクラス型のフィールドのロードには `Frame.L(name)`、命令が名指せない参照には `Frame.L(t"?")`、呼び出しにはメソッドの戻り値のフレーム（記述子からパースする）を使う。
++         スタックは先頭が上である。
++         空のスタックへの `Dup` は失敗する。
++         必要より短いスタックへの入れ替えは、スタックをそのままにする。
++   entry .Error   コンパイルされたクラスファイルを開けない、または読めないときに `disassemble` が発生させる
+
+% 1 1 0 0b0df258ef9aae231687055ee5199136
+
+@ 0 27 0 03babe12e28e7cb018b6eb51597f592d
++         エラー `↯/s.88.3`、_the bytecode could not be extracted because …_ で、`#reason` を持つ。
++         ステージングコンパイラが読むべきクラスファイルを残さなかったときは `ClassfileMissing`（295.1、_the generated classfile could not be opened_）、ファイルが途中で切れていたか、生成されたメソッドがその中に見つからなかったときは `ClassfileUnreadable`（295.2、_the generated classfile could not be read_）である。
++         `disassemble` はスコープ内に `Tactic[Bytecode.Error]` を必要とする。
++     entry .Reason   抽出が失敗した理由：`ClassfileMissing` または `ClassfileUnreadable`
++         `number` がエラーのサブ番号である `Clarification` である。
++         `ClassfileMissing` は `1`、`ClassfileUnreadable` は `2` である。
++     entry .communicable   `Reason` を、エラーが埋め込むメッセージとして描画する
++     entry #reason   理由
++   entry #sourceFile   メソッドのクラスのコンパイル元のソースファイル名。記録されている場合のみ
++   entry #instructions   メソッドの命令。コードの順序どおり
++   entry #maxStack   メソッドが宣言するオペランドスタックの最大の深さ
++   entry #maxLocals   メソッドが宣言するローカル変数のスロット数
++   entry #embed   コードがそこに書かれたかのように、リストの行番号を `Codepoint` へずらす
++       `bytecode.embed(codepoint)` は、すべての命令の `line` にコードポイントの行（から一を引いたもの）を加え、`sourceFile` をコードポイントのソースパスの最後のセグメントに置き換える。
++       `disassemble` はこれを使って、一時ファイルでコンパイルされたブロックのバイトコードを、そのブロックが書かれたファイルと行に対して報告する。
++   entry #linearize   上限のある深さと長さまで、呼び出しを呼び出し先のバイトコードへたどる
++       `bytecode.linearize(resolver, maxDepth, maxInstructions)` は命令を順にたどる。
++       各 `Invokestatic` と、`#effectivelyStaticCalls` が既知のクラスへディスパッチすると示した各 `Invokevirtual` と `Invokeinterface` で、呼び出し先の `Bytecode` を `resolver(owner, method, descriptor)` に求め、その命令を呼び出し命令の後に、一段深くしてその場にリストする。
++       リゾルバーは見つけられないメソッドには `Unset` を返し、その場合は呼び出しだけがリストされる。
++       `maxDepth`（デフォルトは `3`）が入れ子の深さを、`maxInstructions`（デフォルトは `1000`）がリストの全長を制限する。
+
+% 2 1 0 05d36e433eaabfa61aa08aae7d3b6b8c
+
+% 3 1 0 1abef0dd8fda79c21154ef1e5990afa9
+
+% 0 1 0 04a2c75556fe475c1aaf0964ca749a91
+
+% 0 1 0 1a215e8d89df14ed160fd68af00264ea
+
+% 0 1 0 0b55426606d4529d0fef93dc799f45ce
+
+% 1 1 0 0acd3436adafb1001f88bd212115181a
+
+@ 0 9 0 1c97cdcff354dbec1ac31e53b6cf209a
++       クラスパスに対するリゾルバーは `Classfile` で書ける。
++       所有者のクラスファイルを見つけ、メソッドを名前で探し、その `bytecode` を取ればよい。
++   entry #effectivelyStaticCalls   レシーバが既知のシングルトンである仮想呼び出しとインターフェース呼び出しのオフセット
++       `invokevirtual` または `invokeinterface` による呼び出しで、呼び出し前のシミュレートされたスタックにあるレシーバが、呼び出し自身の所有者クラスとちょうど同じ `Frame.L(owner)` であるもの（Scala の `object` の `MODULE$` に対する呼び出しがそうである）は、そのクラスにしかディスパッチできないので、静的呼び出しと同じようにたどってよい。
++       結果はそのような呼び出しのバイトオフセットの集合である。
++       クラスが不明な（`L(t"?")`）レシーバや別のクラスのレシーバは除外され、シミュレートされたスタックが浅すぎてレシーバを保持できない呼び出しも除外される。
+
+% 2 1 0 1c6ee6b38af9053318ecc87035a642eb
+
+% 3 1 0 0f813fa170d15ee1199d9acd052cb961
+
+% 0 1 0 0c3a76c92cd0350e199ea3d9252c8273
+
+% 0 1 0 126daffedd8154771896783ff889dbc9
+
+% 0 1 0 10865d9d3ad1149c1ed173aabd458e95
+
+% 0 1 0 02e7846a02a361b0198af25947f86c1a
+
+% 0 1 0 1d23daa4520abfe91f6a45ef54789a6d
+
+% 0 1 0 02226bc55860518c018088cccaccbd6b
+
+% 1 1 0 124744871c17df7f15d33de69c0104e4
+
+@ 0 1 0 002d1756b6843d201b8f45220e46169f
++ entry .ClassSurface   クラスの宣言の表面：コンパイル済みの利用者がリンクするもの、そしてそれだけ
+
+% 1 1 0 06acd5ee1df57f9e06ccf6131fe9e615
+
+@ 0 9 0 0cf0e61aad9d897c02dd4280957f2930
++       `ClassSurface` は、クラスファイルをその**リンケージの表面**に絞り込んだものである。
++       内部名の `#name`、アクセスの `#flags`、`#superclass`、`#interfaces`、ジェネリックな `#signature`、そして `#members`（`ClassSurface.Member` としてのフィールドとメソッドで、それぞれ名前、記述子、フラグ、ジェネリックシグネチャ、宣言された例外、インライン化可能な定数を持つ）からなる。
++       `Code`、`SourceFile`、`LineNumberTable`、アノテーションは意図的に捨てられる。
++       同じソースの二つのビルドは、利用者が束縛するものを変えずに、これらすべてで異なりうるからである。
++       これはリリースをバイナリ互換性について比較するためのビューである。
++       そのため、メンバーはファイル内の順序（コンパイルの副産物である）のままではなくセレクターで、インターフェースと例外は名前でソートされる。
+
+% 2 1 0 00218b28cefb5fdb01272fc2857b1d72
+
+% 3 1 0 0755e65faeb4a5451b19759e5ac2e6a0
+
+% 4 1 0 06fa97dc687e039307576ac074b01608
+
+% 5 1 0 1284b7d1484bb5711e80b8c30e38f195
+
+% 0 1 0 176a69fb4fea21211c019b20a7f96886
+
+% 0 1 0 07e486c19e15f39e0ff0126bbe581a6f
+
+% 0 1 0 110cef3df8ce92f40e7a0250e6f8dce0
+
+% 0 1 0 0112ae64943fee8e0c32c7f051254b94
+
+% 1 1 0 1eb5e4b35bd39d1a14094cbf4971e265
+
+@ 0 4 0 177236afcfc6c714092001875a42e7ee
++       名前は、クラスファイル内のすべての参照が綴るとおりの JVM 内部名 `java/lang/String` である。
++       ネストしたクラスのアクセス可能性は `InnerClasses` 属性（`#innerFlags`）から読む。
++       クラス自身のフラグでは、`protected` のメンバークラスがパッケージプライベートと誤って報告されるからである。
+
+% 0 1 0 1d224511c203446e118366df225969c4
+
+% 1 1 0 12cdd1818224a5b50c978cd7165f0eb1
+
+@ 0 2 0 0948083dd278dbca072a04d1ece9fa40
++   entry .Kind   メンバーが `Method` か `Field` か
++   entry .Member   JVM が解決するとおりの、クラスの一つのフィールドまたはメソッド
+
+% 1 1 0 11be09e0a303b6fd058ac3c0be42f468
+
+@ 0 6 0 1c5b5df7dd1135321dd6aab27aa5d1d6
++         メンバーは `#kind`、`#name`、`#descriptor`（`(I)V` や `Ljava/lang/String;` など）、アクセスの `#flags`、オプショナルなジェネリック `#signature`、宣言された `#exceptions` のソート済みの内部名（メソッドのみ）、そして `static final` フィールドでは `ConstantValue` 属性が持つ `#constant` を持つ。
++         述語はフラグのビットを読む。
++         `#visible` はメンバーが `public` か `protected` かで、パッケージ外の利用者がリンクできるアクセス可能性はこの二つだけである。
+
+% 2 1 0 14b37f02fe43256a1f7f99f54ff5e6bd
+
+% 3 1 0 05c821760b65fe4f043ebfbe04a4ce2f
+
+% 0 1 0 1490eb792f48dd291bb32b26f895ab12
+
+% 0 1 0 15bbcb3205fd987e0b7b1bbce6ae4351
+
+% 0 1 0 002a53229493bb3615547b7770ae379c
+
+% 1 1 0 042375988f7ceeae06cbe4c7bfd3290f
+
+@ 0 52 0 1fc5e6642d4a0a771965c0b5e94e51fb
++     entry #kind   `Kind.Method` または `Kind.Field`
++     entry #name   コンパイル後のメンバー名
++     entry #descriptor   JVM の記述子：メソッドの `(params)result`、またはフィールドの型
++     entry #flags   `access_flags` のビットマスク
++     entry #signature   ジェネリックな `Signature` 属性。再コンパイルする利用者が必要とするものをイレイジャが失うので保持する
++     entry #exceptions   `Exceptions` 属性の内部名。ソート済み。フィールドでは `Nil`
++     entry #constant   `static final` フィールドの `ConstantValue`。`class:value` の形で、たとえば `java.lang.Integer:1`
++         定数のクラスは値と一緒に畳み込まれる。
++         `Integer` としての `1` と `String` としての `"1"` は、`toString` が一致しても異なる契約だからである。
++     entry #selector   クラス内でのメンバーのキー：名前と記述子に、メソッドなら `#`、フィールドなら `.` を前置したもの
++         シジルが同名のメソッドとフィールドを区別し、記述子がオーバーロードを区別するので、セレクターはクラスの一つのメンバーを識別する。
++     entry #public   `ACC_PUBLIC` が設定されているか
++     entry #protect   `ACC_PROTECTED` が設定されているか
++     entry #priv   `ACC_PRIVATE` が設定されているか
++     entry #static   `ACC_STATIC` が設定されているか
++     entry #finl   `ACC_FINAL` が設定されているか
++     entry #abstrakt   `ACC_ABSTRACT` が設定されているか
++     entry #bridge   `ACC_BRIDGE` が設定されているか：コンパイラが生成したブリッジメソッド
++     entry #synthetic   `ACC_SYNTHETIC` が設定されているか
++     entry #visible   メンバーが `public` か `protected` か：パッケージの外からリンクできるか
++     entry #inlinable   利用者のコンパイラが、このフィールドの値を自身の定数プールにすでにコピーしているかもしれないか
++         プリミティブ型または `String` 型の `static final` フィールドで、`#constant` を持つものでは真になる。
++         JLS の規則により、コンパイラはそのような定数を使用箇所ごとにインライン化する。
++         そのため値を変えてもリンケージは壊れないが、利用者が再コンパイルされるまで、その動作は変わる。
++         それ以外のフィールドの `ConstantValue` はインライン化されないので、属性の有無だけでは判定にならない。
++   entry .apply   クラスファイルのバイトをパースして `ClassSurface` にする
++       `ClassSurface(data)` はクラスファイルを `java.lang.classfile` で読み、リンケージの表面だけを保持する。
++       フィールドはシグネチャと定数とともに、メソッドはシグネチャと例外とともに読まれる。
++       メンバーは `Member#selector` で、インターフェースは名前でソートされる。
++       バイトは保持されない。
++   entry #name   クラスの内部名。`scala/Option`
++   entry #flags   クラスファイルが記録するとおりの、クラスの `access_flags` のビットマスク
++   entry #superclass   スーパークラスの内部名。`java/lang/Object` 自体なら `Unset`
++   entry #interfaces   直接実装するインターフェースの内部名。ソート済み
++   entry #signature   クラスのジェネリックな `Signature` 属性。あれば
++   entry #members   フィールドとメソッド。`Member#selector` でソート済み
++   entry #innerFlags   ネストしたクラスの場合に、`InnerClasses` 属性がこのクラスについて記録するフラグ
++       ネストしたクラス自身の `access_flags` は外側から見た姿を示し、そこでは `protected` のメンバークラスは public でも protected でもない。
++       本当のアクセス可能性は、それを囲むクラスの `InnerClasses` にあるそのクラスのエントリーにあり、これはそれを読み戻す。
++       トップレベルのクラスでは `Unset` である。
++   entry #interface   クラスがインターフェース（`ACC_INTERFACE`）か
++   entry #isFinal   クラスが final（`ACC_FINAL`）か
++   entry #synthetic   クラスがコンパイラの生成したもの（`ACC_SYNTHETIC`）か
++   entry #access   アクセス可能性を決めるフラグ：あれば `#innerFlags`、なければ `#flags`
++   entry #visible   `#access` のフラグによって、クラスが `public` か `protected` か
++   entry #supertypes   直接名指された上位型。スーパークラスが先で、次にインターフェース
++       JVM 自身の解決がたどる順序であり、`ClasspathIndex#closure` が継承したメンバーをキーにする順序でもある。
++   entry #member   与えられた `Member#selector` を持つメンバー。なければ `Unset`
+
+@ 0 1 0 1fdeaf7b27a752361bd5211c699607b6
++ entry .ClasspathIndex   メモリ上のクラスとクラスパスに対して、内部クラス名をその表面に解決する
+
+% 1 1 0 06e341d858b8af650a8e4b66438d8eb2
+
+@ 0 7 0 182ed94836703afd017f81134ee9ad8f
++       `ClasspathIndex` は、クラスの集合が参照しうるすべてのクラスについて「クラス `name` は何を宣言しているか」に答える。
++       与えられたクラス（リリース自身のクラスで、調べる対象である）の表面は即座に保持する。
++       それ以外はすべて、クラスパスのエントリーに対する `URLClassLoader` から `name.class` を読んで遅延的に解決する。
++       その親はプラットフォームのクラスローダーなので、JDK 自身のクラスも解決される。
++       失敗したものも含め、すべての解決はメモ化される。
++       これにより、多数のクラスの上位型をたどる処理が線形に保たれる。
+
+% 2 1 0 054002a09b76f2dc023dd4b436fe2e3f
+
+% 3 1 0 085cb7c24c3851c3006e094d637cb326
+
+% 4 1 0 03da222b262deeb914968577b7996868
+
+% 5 1 0 1da5bcbecf2dfbdb0faeb2386b8987f7
+
+% 0 1 0 00ae0d8b35952d2a10f43d261365bdd1
+
+% 0 1 0 1c2652707cb4aa581fe38c93c1e045a7
+
+% 0 1 0 0e4836812a8b6f0912c47d36b467c705
+
+% 0 1 0 0e9f12b5a3c4717a066f0bb311992c58
+
+% 1 1 0 020e3deff035cef709aca679b32329bd
+
+@ 0 2 0 1dc0bec72e67f01413a938a8ead90901
++       メモリ上のマップにあるクラスが、クラスパスの前方にある同名のクラスに隠されることはない。
+
+% 1 1 0 1f21c156bb72660015530e2764fe6f57
+
+@ 0 13 0 033b9b12569a696018a4d617534b3ebd
++   entry .apply   内部名による表面のマップと、テキストとしてのクラスパスのエントリーに対するインデックス
++       各クラスパスのエントリーは、テキストとしてのディレクトリまたは JAR のパスである。
++       ローダーがディレクトリとして扱うには、ディレクトリがディスク上に存在しなければならない。
++       存在しないエントリーは何も解決しない。
++   entry #own   メモリ上に保持されたクラスの内部名。ソート済み
++   entry #apply   内部名によるクラスの表面。何も供給できなければ `Unset`
++       まずメモリ上のマップを探し、次にクラスパスからクラスファイルを読む。
++       どちらの場合も答えはキャッシュされる。
++   entry #closure   クラスの推移的な上位型（近いものが先）と、解決できなかった名前
++       `index.closure(name)` は、`name` から `ClassSurface#supertypes` を幅優先でたどり（`name` 自身は除く）、組を返す。
++       見つかった上位型を発見順に並べたものと、どの供給源も解決できなかったものの名前である。
++       解決できない上位型は飛ばさずに報告される。
++       それがなければ、クラスの継承したメンバーの集合がわからないからである。
+
+@ 0 1 0 1f5d17bc75a5e71917755f495ad598d7
++ entry .disassemble   クォートされたブロックをステージングコンパイラでコンパイルし、そのバイトコードを読み戻す
+
+% 1 1 0 19e5c3a46e445bcb19eaab9e6f5e598b
+
+@ 0 5 0 1626dbf68b358ceb07d6e0297294a858
++       `disassemble(code)` は `Quotes ?=> Expr[Any]`（`'{…}` でクォートされたコードのブロック）を取る。
++       それをメソッドで包み、ステージングコンパイラで一時ディレクトリにコンパイルし、結果のクラスファイルを読んで、そのメソッドの `Bytecode` を返す。
++       行番号は `Bytecode#embed` で呼び出し位置の `Codepoint` へずらされるので、リストはブロックが書かれたファイルに対して読める。
+
+% 2 1 0 1ebea1f49f4186dc035f62b2df1f0f73
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 0d740c43472456511a55524f839d8892
+
+% 3 1 0 0fb781dee5363c921de992195a62ea9a
+
+% 0 1 0 1f3918a79623b6a81645e18b9fd2c5e4
+
+% 0 1 0 18e4b8ddb94fc31a1dd1aaf921a535cb
+
+% 0 1 0 0a3d17916c429428124db4561ad17fd8
+
+% 1 1 0 10e5244114f9e317002c14f041ef2039
+
+@ 0 7 0 06d85db9398e524d02163ffdf721bf4b
++       コンパイラの出力のための `TemporaryDirectory`、コンパイラがロードする対象の `Classloader`（その `java` インスタンスがステージングコンパイラに渡される）、そして `Tactic[Bytecode.Error]` が必要である。
++       エラーは、クラスファイルが現れないときは `ClassfileMissing`、それを読めないか生成されたメソッドがその中にないときは `ClassfileUnreadable` として発生する。
++       ブロックは Scala 3.6 の設定のもとで、実験的言語機能のフラグを有効にしてコンパイルされる。
++       コンパイルには少し時間がかかるので、これはコンパイラとそのオプティマイザが生成するものを調べるための道具であり、ホットパスのためのものではない。
+
+% 1 1 0 164889fa4a4cd77802baa0335fdc34bf
+
+% 1 1 0 1628e7a70d63f47f1c59c27f741b0f74
+
+@ 0 7 0 12d4776dd6b12f2608a12ee3b7212695
++ entry .BytecodePalette   バイトコードのリストの描画に使う色
++     sRGB の `Palette` で、すべてのパレットが持つ `background` と `foreground` に加えて三つの色を持つ。
++     `bytecode` はソースファイルの参照と、線形化された命令の由来するメソッドに使う。
++     `sourceCode` は行番号に使う。
++     `outline` はスタックの列の枠に使う。
++     `Bytecode`、`List[Bytecode.Frame]`、`List[Bytecode.Linearized]` を `Teletype` として描画するには、スコープ内に `BytecodePalette` がなければならない。
++     ライブラリはデフォルトを提供しないので、プログラムが定義する。
++     オペコードの色はパレットにはなく、コストに応じて `Bytecode.Opcode#highlight` から得られる。
+
+% 2 1 0 194d1b953f289ea403a034cbfdc9db20
+
+% 3 1 0 03b493b5e067e8d10778039f0c7d85c1
+
+% 0 1 0 15262b3c0efc50150dacc737d2489177
+
+% 0 1 0 045552636ab390d117494ddfc8a2cba6
+
+% 0 1 0 0a6456c0b2fcca4b02f1660cd5dd6ab5
+
+% 0 1 0 00d17034d10f3ded0d511e6670714786
+
+% 0 1 0 0a4e691ca0c0a1530e8bee20cc5d9987
+
+% 0 1 0 026b6231218d1fc405d618add8e05ef8
+
+% 0 1 0 0350c669f51e6ca4022fe3109f2ef3ce
+
+% 1 1 0 0ddde4d6f5685bcd1f708fbf94c6aa56
+
+@ 0 1 0 120832797b14c9750094e556927f9531
++ entry .internal   ラムダで選んだメソッドを逆アセンブルするマクロの置き場所
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 007ce0d31b3a1bf6042bcb045972ea21
++       直接使うためのものではない。
++       `disassemble` を保持する。
++       これはマクロの実装で、ある型に対する `_.method` という形のラムダと `Classloader` の式が与えられると、そのメソッドの `Bytecode` を `Classfile` を通じて調べるコードをスプライスする。
++       現在、これを呼び出す公開のインラインのエントリーポイントはない。
++   entry .disassemble   マクロ：メソッドを選ぶ `target => Any` から、そのメソッドのバイトコードへ
++       単純なメンバー選択でないラムダに対しては、_this type of lambda is not supported_（コード 91）で停止する。

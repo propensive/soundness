@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 05e22d0d0c4c952c1a616480d0d54f00
++ ### Identificar al usuario
+
+@ 0 4 0 0f1186eb9790ecf8040de3bf966f6f31
++ OAuth 2 dice lo que puede hacer un cliente, pero no quién es el usuario.
++ [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html) añade eso, como un
++ *token de identidad* junto al token de acceso. Es un [JWT](jose.md), firmado por el proveedor,
++ y un `Authorization` lo conserva tal como llegó, en `identityToken`.
+
+@ 0 2 0 17ee95122d77c51e1b758d53b02e70ec
++ `Oidc.discover` lee los endpoints de un proveedor, y la ubicación de sus claves, de su URL
++ conocida. El proveedor es entonces un `Issuer` para un cliente que está registrado en él:
+
+% 2 1 0 1676f28cb17211c618c8f10965429eea
+
+% 3 1 0 12416b93396d5f01074ee5e4ff7eacd5
+
+% 4 1 0 02f205f52fb10683093ec652b6425573
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0e420dc0f15b9ffe1bcc5f9461b53f86
+
+% 0 1 0 1493e4beb236334d0483777a1c096a83
+
+% 0 1 0 06684d0c4899b42507981915848f35f1
+
+% 1 1 0 026380f622da0c1a04252c4ad06649dc
+
+@ 0 3 0 017155772118f2530999114569e9903e
++ `Oidc.identify` verifica el token de identidad. Las claves del proveedor son un `Jwks`, entre
++ las que el token nombra una. El argumento de tipo es el cifrado como el que se leen esas
++ claves, y por tanto el único algoritmo de firma que se acepta:
+
+% 2 1 0 015bcf69810dd9b51b518ff6bc627dd7
+
+% 3 1 0 0c0a6430dffcbe360ff5af91ba0b14ee
+
+% 4 1 0 1f5c2df64601e93815ea77fa019483cc
+
+% 0 1 0 01bf49b20b90b2e100bc44eec75f8da2
+
+% 0 1 0 0e11bb161cac60b512fd6ab7618e844c
+
+% 0 1 0 037312fb8cde11a7171d78bfe5dcc15d
+
+% 1 1 0 034cd2b7dbd9c2dc0010c2fde965e5be
+
+@ 0 4 0 0822b8853f541c4f10d7556f60389df7
++ El token debe estar firmado por el proveedor, haberse emitido para este cliente y estar dentro
++ de su periodo de validez según el `Clock` del ámbito. Cuando se envió un *nonce* con la
++ petición de autorización, el token debe llevar el mismo, lo que lo vincula a esa petición.
++ Cualquier otra cosa lanza un `OAuth.Error`, y el usuario no queda identificado.

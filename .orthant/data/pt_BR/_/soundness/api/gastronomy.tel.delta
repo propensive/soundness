@@ -1,0 +1,1453 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0f3d23bc3a26a1d40d64c83ab97e4fea
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1100799f5b35796d062bdee50e0e4861
++ info   hashing: digests de qualquer valor ou stream, com o algoritmo como tipo e as escolhas fracas atrás de autorizações
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 1de776c63c6e09a90d801d9fec09fb6b
++     _Gastronomy_ calcula digests. O algoritmo é um **tipo** — `Sha2[256]`, `Sha1`, `Md5`,
++     `Blake3`, `Murmur3`, ou os checksums `Crc32`, `Crc64` e `Adler32` de corpuscular —, de modo
++     que um `Digest in Sha2[256]` nunca pode ser confundido com um `Digest in Md5`, e um erro de
++     digitação no nome de um algoritmo é um erro de compilação, e não uma
++     `NoSuchAlgorithmException`. Qualquer valor com uma instância de `Digestible` recebe o hash
++     diretamente com `digest`: os primitivos, `Text`, `Data`, as coleções e toda case class e
++     enum, cujas instâncias são derivadas dos seus campos. Um stream, um arquivo ou um diretório
++     recebe o hash à medida que flui, com `checksum`, por meio de `Checksummable`, em memória
++     limitada.
+
+% 2 1 0 048bb6badde73d1a0dafa7ecd7a4c3b0
+
+% 3 1 0 1491a9b2665b5b6e18b0027a156eba86
+
+% 0 1 0 09583daf6313cc2613f1f3df627c02f3
+
+% 0 1 0 1a94ea18d9ba3afe12b51cc7d574e969
+
+% 0 1 0 14be6cbd3a3feeb513077878dd31b0ce
+
+% 0 1 0 1d9905fd838e79f3131fb9996f7bc636
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 10e19cb57185554a1aac0c32c267213a
+
+% 1 1 0 0c7a6d8677fbdbf3117ceb8035b6fb99
+
+@ 0 2 0 01febbd81f600f7009d3789851599500
++     Três decisões são sempre explícitas, cada uma um import por nome (`import soundness.*` não
++     traz nenhuma delas, pois um import curinga não importa givens):
+
+@ 0 18 0 07e8e28c850081740a5a8b004eb4d49e
++     - **O provedor.** Um provedor `Hashing` fornece a implementação de cada algoritmo e é
++       selecionado no pacote `providers`: `providers.javaBaseProvider` é o `MessageDigest` e o
++       `java.util.zip` do JDK (e, fora da JVM, o mesmo código em Scala puro que o provedor do
++       Soundness usa, de modo que o import se lê da mesma forma em todas as plataformas);
++       `providers.soundnessProvider` é o `SoundnessHashing` em Scala puro, a única fonte de
++       `Blake3`, `Murmur3` e `Crc64`. O given `Hash` de cada algoritmo exige, estruturalmente, um
++       provedor com o método desse algoritmo, de modo que `digest[Blake3]` apenas com o provedor
++       do JDK é um erro de compilação que nomeia o `Hash in Blake3` ausente, e não uma falha em
++       tempo de execução. Importar os dois provedores não é problema; o `SoundnessHashing`
++       importado lexicalmente passa então a servir todos os algoritmos.
++     - **A autorização.** MD5 e SHA-1 estão quebrados, e os checksums e `Murmur3` nem sequer são
++       criptográficos, por isso `digest[Md5]` precisa de `cryptoPermits.permitDisallowedCrypto`
++       (ou de `permitDeprecatedCrypto`, apenas para SHA-1) e `digest[Crc32]` precisa de
++       `cryptoPermits.permitNonCryptographicHashes`. As autorizações são evidências `Permit`
++       apagadas, resolvidas por `HashWeakness`; SHA-2 e BLAKE3 são `Concession.Acceptable` e não
++       precisam de nenhuma.
++     - **O alfabeto.** Um `Digest` é um conjunto de bytes, renderizado com `serialize[Hex]` ou
++       `serialize[Base64]` de monotonous sob um import de `alphabets`; `show` o renderiza como
++       Base64 sob o `Alphabet[Base64]` em escopo, e `inspect` é sempre hexadecimal minúsculo com
++       um sufixo `ᴰ`.
+
+@ 0 2 0 07f41b4fc1b47f7013918948f97a57d6
++     Muitas vezes, o tipo `Digest in algorithm` é tudo o que é preciso para indicar o algoritmo:
++     um campo declarado como `Digest in Sha2[256]` fixa o que `payload.digest` calcula, sem
++     argumento de tipo.
+
+@ 0 8 0 03c3abadeb68629b1cb0552fc78a985a
++     Além dos digests, a biblioteca contém o **vocabulário compartilhado de autorizações
++     criptográficas** — `Concession`, `Permit`, `ProcessingPermit` e o pacote `cryptoPermits` —,
++     com o qual enigmatic (cifras, HMAC, assinaturas) e telekinesis (TLS) também controlam o
++     acesso, de modo que um único import, como `cryptoPermits.permitDisallowedCrypto`, cobre
++     tanto hashes fracos quanto cifras fracas; a interface `Signing` que as cifras de assinatura
++     de enigmatic implementam; `Hash#hmacName`, o nome JCE que o `hmac[Sha2[256]](key)` de
++     enigmatic usa; `Feistel`, uma rede de Feistel sobre valores de 64 bits; e, no seu componente
++     `multihash`, o envelope autodescritivo `Multihash` da especificação multiformats, com
++     `Multicodec` associando cada algoritmo ao seu código registrado.
+
+@ 0 1 0 1f1beb75a79fadfc050c016179f3bca2
++     Os componentes:
+
+@ 0 6 0 060ee34620ff8345071a0d3bba6cde53
++     - `gastronomy.core` — tudo o que foi descrito acima, exceto multihash. Compila para a JVM,
++       Scala.js e Scala Native: BLAKE3, MurmurHash3, MD5, SHA-1 e SHA-2 são Scala puro, e os
++       checksums são os acumuladores de corpuscular. Na JVM, `JavaBaseHashing` é apoiado por
++       `MessageDigest` e `java.util.zip`; nas outras plataformas, o mesmo objeto encaminha para
++       `SoundnessHashing`, de modo que a seleção do provedor é o mesmo código-fonte em todo lugar.
++     - `gastronomy.multihash` — `Multihash` e `Multicodec`, para chamadores que endereçam por
++       conteúdo.
+
+@ 0 3 0 1bed0f6db3886bfa051336d655320582
++     Tudo é exportado para o guarda-chuva `soundness`, e os pacotes de escolhas `providers` e
++     `cryptoPermits` se fundem com os do próprio guarda-chuva, de modo que o usuário escreve
++     `import soundness.*` e depois importa por nome um provedor e quaisquer autorizações.
+
+% 0 1 0 1c6c9050beb10c0e049a8d11818fd40d
+
+% 0 1 0 18be7dab9dfafae60f304bb88a4a8a6a
+
+% 0 1 0 1800103d6e0e645e0678f732d821d7eb
+
+% 0 1 0 0e3c4b276c2978580f1782149071fdb6
+
+% 0 1 0 09fc521befbfb88712b00211704e1b65
+
+% 0 1 0 0a862621e96b74fa088e671ee11b9c8c
+
+% 0 1 0 1565a220b779649719d0d91fe2f6a950
+
+% 0 1 0 066a5dfac6ef62110cc5cc654f53465f
+
+@ 0 1 0 1222386a5372efba1d67e1132bbaa122
++ entry .digest   o digest de qualquer valor `Digestible`, no algoritmo nomeado como tipo
+
+% 1 1 0 18f062cace8eeffd189994558c6b3813
+
+@ 0 7 0 1f7e4ae32540d25806f7731d50229cb5
++       `value.digest[Sha2[256]]` alimenta os bytes do valor, tal como a sua instância de
++       `Digestible` os define, em uma `Digestion` nova do algoritmo e devolve o resultado como um
++       `Digest in Sha2[256]`. Precisa de um `Hash in algorithm` — que o objeto companheiro de cada
++       algoritmo deriva do provedor `Hashing` em escopo, por isso `import
++       providers.javaBaseProvider` ou `providers.soundnessProvider` é obrigatório — e de uma
++       `Permit[HashWeakness[algorithm]]` apagada, que está sempre disponível para SHA-2 e BLAKE3 e
++       precisa ser importada de `cryptoPermits` para MD5, SHA-1, os checksums e MurmurHash3.
+
+@ 0 2 0 0662c9694dc664601274f0666afe173c
++       O argumento de tipo pode ser deixado para a inferência quando o tipo esperado nomeia o
++       algoritmo, que é a forma habitual em um modelo de dados:
+
+% 2 1 0 039422bc6c1611580e6ffb2873b30c30
+
+% 3 1 0 127f6535fea7a640076c7522644e2234
+
+% 4 1 0 1c9a9637db29b90d17ae4684dca1f6f8
+
+% 0 1 0 017595c65d7b1f3e03d6a341debdaf7d
+
+% 0 1 0 12e51cd9c719d4760cf522efab9a099a
+
+% 0 1 0 1e8d12137ea7e09d0631d0794c4c3ecd
+
+% 1 1 0 0d69d29901408d9219be1bab0cb7b9b5
+
+@ 0 3 0 02d33e4ee126d64402cdcdcda889942f
++       Os mesmos bytes, com o digest calculado em cada algoritmo, com os imports de que cada um
++       precisa: SHA-256 precisa apenas de um provedor; SHA-1 está obsoleto, por isso precisa de
++       uma autorização; MD5 é proibido, por isso precisa da autorização mais ampla; e BLAKE3
++       precisa do provedor do Soundness, que falta ao JDK:
+
+% 2 1 0 0fb561c485b8ed9a00ae42d62f383bb3
+
+% 0 1 0 0682180745758ffa02c5398259339c13
+
+% 1 1 0 02fcbc0ce2931023149697c071545525
+
+% 2 1 0 19f5ec89c68cd4ea1a99069bc5d935f9
+
+% 3 1 0 102aef6f796634970f68e7305ff82488
+
+% 0 1 0 15f3586e9477dd86192c9dd458a3bb19
+
+% 0 1 0 06bbd88dad10c484171770afc19467b0
+
+% 0 1 0 1d4ef2d9dd260e4716deab642b0ac558
+
+% 1 1 0 0b0f1c3a656b14110017d925b1fa08c8
+
+% 2 1 0 1174d950811fe9f71caa419775342927
+
+% 3 1 0 1a72d870d9605298002192c449cd192a
+
+% 0 1 0 1a71d33236587ff616d14ca261ea120b
+
+% 0 1 0 10993d5d46bc51bf0b168bd30494e798
+
+% 0 1 0 14abc023303b2a6a176ffa83b7cd9263
+
+% 0 1 0 0508b479775ade1c01e9dad42d2b544d
+
+% 1 1 0 19c6a2a98f32f3ab18c851fd6ae29f21
+
+% 2 1 0 1fc3e145d5da878615813c97b5317119
+
+% 3 1 0 1235fd71a813180f046f45ca980423b7
+
+% 0 1 0 116b9db17840920a1715d3d9ff31a35a
+
+% 0 1 0 1ae4a173b47a330c1e3b500b3efb78c6
+
+% 0 1 0 0a18327f5a6b1bb70c4acea9af41ead0
+
+% 0 1 0 1bc537a9038cb2b00f8f6cbba22f68bd
+
+% 1 1 0 113a1a14bfa2e4831a55662891e5dd8e
+
+% 0 1 0 19a2adf273afd6130d5ecbf89a9a9be9
+
+% 1 1 0 1698e130973478c71f0cb912ebdbfd50
+
+% 0 1 0 046d7243f9cd88f71fbe36d37e66f54f
+
+% 1 1 0 1cb863ff25cb531c158c74c3ed957597
+
+% 2 1 0 1068d97d65062845192f2603809ef5f5
+
+@ 0 5 0 0f4fdac221053e5a0a2781cc22e63fd0
++       Um valor recebe o digest por inteiro; `checksum` calcula o digest do que está *por trás* de
++       um valor (os chunks de um stream, o conteúdo de um arquivo) sem retê-lo, e `Digester`
++       calcula o digest de vários valores em um único acumulador. Sem uma autorização, o erro de
++       compilação diz _this operation uses a sub-optimal algorithm, key length or mode — or a
++       checksum in place of a hash; import the matching permit …_; sem um provedor, ele nomeia o
++       `Hash in algorithm` ausente.
+
+% 0 1 0 1bfd08a97d6c85bf0e07f22b607f4604
+
+% 1 1 0 0545231e274d711e1cd9db3a95875c32
+
+% 1 1 0 1c2351c4df4557091c3ca56d49f847b5
+
+% 1 1 0 1b6428ef5f8c76d608658343eef23aa5
+
+% 1 1 0 0ab1c74377b2f3060c372ed3fc894dbe
+
+@ 0 1 0 1d489b9219ac2ddd0c17e6570a5c6876
++ entry .checksum   o digest do conteúdo por trás de um valor: os bytes de um stream, um arquivo, um diretório
+
+% 1 1 0 0b63c3f3f579a3951c50f9451349c545
+
+@ 0 8 0 120477d95399690f1a042a13d2bda078
++       `source.checksum[Sha2[256]]` calcula o digest do que quer que a instância de
++       `Checksummable` da origem forneça — para qualquer origem `Streamable by Data over Credit`,
++       cada chunk do seu stream, em ordem, drenado janela por janela, de modo que o digest é
++       calculado em memória limitada; para um `Path` de galilei, os bytes de um arquivo ou os
++       arquivos regulares de um diretório — e devolve um `Digest in Sha2[256]`. Precisa do `Hash
++       in algorithm` que o provedor em escopo fornece e da `Permit[HashWeakness[algorithm]]`
++       apagada, exatamente como `digest`. O resultado é o mesmo qualquer que seja o tamanho em que
++       os chunks cheguem, inclusive um byte de cada vez, pois a `Digestion` leva os blocos
++       parciais através das fronteiras entre janelas.
+
+% 2 1 0 1766a9175c911e6f041392b409103364
+
+% 3 1 0 0bc6d47b7ca5f2b10a6a9327cc077bed
+
+% 4 1 0 1fe724334ac59c4f0748f46f8c70bed5
+
+% 5 1 0 0744cecd42c543c00e7d53e4f7304bb6
+
+% 0 1 0 0f556ea5641fbdef00cfebd6e16b99ad
+
+% 0 1 0 0c4b4fa434f617691edb7732565c0853
+
+% 1 1 0 05065f892194121211b244b133178ceb
+
+% 1 1 0 19e446626bc2190d065aa4e6f06245c7
+
+@ 0 4 0 05e0be2bb0ae4e960bd366a44586b7a5
++       O checksum de um único valor `Data` é igual ao seu `digest`, pois o seu stream é ele mesmo.
++       Um `Checksummable` que lança erros, como a instância de galilei para caminhos (`Io.Error`,
++       e ela recebe a política `DereferenceSymlinks` em escopo), leva a sua `Tactic` no seu
++       conjunto de capturas, de modo que `path.checksum[Blake3]` precisa ficar dentro de `safely`,
++       `unsafely` ou de um handler.
+
+% 0 1 0 148fade1d3be9eb10765d90293800289
+
+% 1 1 0 0978700d97b7b6cc023b34fdbed726b1
+
+@ 0 1 0 18719ebd538b6a730f6f9c4637b6a043
++ entry .Checksummable   como o conteúdo subjacente de um valor é fornecido a um digest, para `checksum`
+
+% 1 1 0 17ffe6de42d53d530b7163caee65aeec
+
+@ 0 6 0 06abfe55e7fd3bf51600360a9bfa9aac
++       Uma classe de tipos com um único método, `#checksum`, que acrescenta os bytes *por trás* de
++       um valor — não a codificação do próprio valor, que é assunto de `Digestible` — a uma
++       `Digestion` exclusiva. A instância `.streamable` do objeto companheiro cobre toda origem de
++       bytes, e galilei acrescenta uma para caminhos, de modo que `checksum[algorithm]` funciona
++       com uma `Chain[Data]`, um stream, um arquivo ou um diretório. Um `Checksummable` pode
++       capturar uma `Tactic` (o de galilei captura), e é por isso que a classe de tipos não é
++       `Pure` e `checksum` a recebe como parâmetro com captura.
+
+% 1 1 0 155e484bd36691cb0c9274f85cf80a69
+
+@ 0 5 0 06ef329f50badfdd090d50a64b82dfff
++   entry .streamable   qualquer origem `Streamable by Data over Credit`, com o checksum calculado ao drenar o seu stream
++       Drena o stream da origem região por região e acrescenta cada janela à `Digestion` com o
++       `append` por janelas, de modo que um buffer reutilizável recebe o hash no lugar e nunca é
++       copiado. A instância captura o `Streamable` a partir do qual é construída.
++   entry #checksum   acrescenta o conteúdo por trás de um valor a uma `Digestion` exclusiva
+
+@ 0 2 0 1002da69257e74f3190e3df684d8cc7c
++ entry .HashWeakness   a `Concession` que um algoritmo carrega: de que autorização `digest[algorithm]` precisa
++     Um match type de um `Algorithm` para a ressalva de que um chamador precisa ter uma `Permit`:
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 2 0 03d451dee53b5e140fd2a094b7849e12
++     column  Algoritmo
++     column  Ressalva
+
+% 0 1 0 0f1f8ee1f3c41b211ce8849f1051ec9a
+
+% 0 1 0 0a272c67f0e948ef0c1b70b4842e6972
+
+% 0 1 0 0c86a8101c51be0f070a8bb2d8b81ceb
+
+@ 0 1 0 1de4410911a76e481432bb7bfc71a256
++     row  qualquer outro: a família SHA-2, BLAKE3  `Concession.Acceptable`, cuja autorização `Permit.acceptable` está sempre em escopo
+
+% 1 1 0 093ad4247d11220c000727c16b7a134e
+
+@ 0 3 0 08f5bc9e9177e2d314b14427ace003f8
++     `digest`, `checksum` e o `hmac` de enigmatic exigem todos uma
++     `Permit[HashWeakness[algorithm]]` apagada, e é assim que um hash fraco deixa de compilar até
++     que um given de `cryptoPermits` seja importado por nome.
+
+@ 0 1 0 05695b8f2f575a0a1ab9671ff8c20bed
++ entry .Digest   os bytes que um hash produziu, tipados pelo seu algoritmo como `Digest in Sha2[256]`
+
+% 1 1 0 025fff6e6e92b92f152d1ea010a700e7
+
+@ 0 5 0 09b543c1588436721644b7eca8537e51
++       Um `Digest` contém os `#data` brutos de um hash, e o seu membro de tipo `#Form` é o
++       `Algorithm` que o produziu, escrito com o `in` de prepositional: `Digest in Sha2[256]`.
++       Dois digests são iguais quando os seus bytes são iguais, de modo que um digest pode ser
++       usado como chave de um `Map`, e o algoritmo é um fantasma — não fica armazenado no valor, e
++       é por isso que existe um `Multihash` para um digest que precisa se descrever através de uma
++       fronteira.
+
+@ 0 2 0 105fdbd9d5d61f621dfc5538e786304d
++       Um digest é renderizado por meio das codificações de base, sob um import de `alphabets`,
++       já que é `Encodable in Data`; Base64 é também o que `show` renderiza:
+
+% 2 1 0 1396ae8329b95e3c16c4b1847bc7177e
+
+% 0 1 0 10cfa796fc7efdee094df760d8310a0a
+
+% 1 1 0 173db88ed92b6d261aa4abd89b50e6d8
+
+% 2 1 0 0c8c7da128ab206a0aa3537c0dd3181c
+
+% 3 1 0 16e0c6d7908b8d8602ab2bde79857fc5
+
+% 0 1 0 07eb822edccd5bc3093e2ea644ac1ea3
+
+% 1 1 0 0f54cdf18860d3c51fd1c2219fcffc0a
+
+% 0 1 0 0413ff6776b9aed617917ee26675038e
+
+% 0 1 0 16b17a459d0e0fb317f7cc0cc21c2115
+
+% 1 1 0 1dc75635d3a2a85719166a10b3479ba9
+
+% 2 1 0 0eb0de291d3081d6092822715e50f84d
+
+% 3 1 0 099b30f3a9cf93181c19fa4873ebba15
+
+% 0 1 0 16d9fa7fc338aca40621bb2274f86ac8
+
+% 1 1 0 17016a91c5b40f5c04bd0c3cd20eebf5
+
+% 0 1 0 04d6332429842d3211314e042b89c515
+
+% 0 1 0 0ba2f7b7ffcf3be11cadea537f3caf16
+
+% 1 1 0 1a675c6b3add2558069dd5645b45293e
+
+% 2 1 0 045277a6d7aee6f0091f1a2c9fb849ae
+
+% 3 1 0 02c05e65f48085d3055d75da73de012c
+
+% 0 1 0 046758c796f39f601916211f28146558
+
+% 0 1 0 03946dcb2e454e510b2edfb3ad032fda
+
+% 0 1 0 0929d256b172ebe9032512491254918b
+
+% 1 1 0 03ea925c4d121c58197eb5e905d8ecbc
+
+% 2 1 0 0e9b0f41789f37ec110c7ae4c0729d9c
+
+@ 0 5 0 18eabc26d86102030d0edf4f5028d00a
++       Um digest é lido de volta a partir de texto hexadecimal com `.as[Digest in Sha2[256]]`, sob
++       um alfabeto `Hex` e uma `Tactic[Serialization.Error]`; o comprimento do texto não é
++       verificado em relação ao algoritmo, pois o algoritmo é um fantasma. `Digest(data)` cria um
++       a partir de bytes já disponíveis, e um digest é ele próprio `Digestible`, de modo que pode
++       ser incorporado a um valor maior e receber o hash novamente.
+
+% 1 1 0 0dffc2e74cf11f9609305afda5e22205
+
+% 1 1 0 11238b9d27f43beb1f73ca3f35a23b37
+
+@ 0 17 0 121366e66a42346a0c5ba7c510961924
++   entry .apply   `Digest[Sha2[256]](data)`: um digest a partir de bytes já calculados
++       Envolve `data` como um `Digest in algorithm` sem verificar se o seu comprimento é adequado
++       ao algoritmo, pois o algoritmo é um tipo fantasma. `digest` e `checksum` constroem os seus
++       resultados com ele; um chamador o usa para um digest lido de um armazenamento ou recebido de
++       outro lugar.
++   entry .showable   renderiza um digest como texto Base64, sob o `Alphabet[Base64]` em escopo
++       `digest.show` é `digest.data.serialize[Base64]`, por isso precisa de um alfabeto Base64
++       importado por nome — `alphabets.base64Standard` ou `alphabets.base64Url` — e não compila
++       sem um. A renderização de depuração `.inspectable` não precisa de nada.
++   entry .encodable   um digest como os seus bytes, `Encodable in Data`
++       A instância por trás de `digest.serialize[Hex]`, de `serialize[Base64]` e de todo outro
++       consumidor de `Data`: produz `#data`. É também por isso que um digest é `Digestible` por
++       meio de `Digestible.encodable`.
++   entry .decodable   lê um digest a partir de texto hexadecimal, como `text.as[Digest in Sha2[256]]`
++       Desserializa o texto como `Hex` sob o alfabeto hexadecimal em escopo, que decide quais
++       maiúsculas ou minúsculas são aceitas, e envolve os bytes com `.apply`. Precisa de um
++       `Deserializable in Hex` e de uma `Tactic[Serialization.Error]`, lançado para texto que não
++       é hexadecimal; o comprimento não é verificado em relação ao algoritmo.
+
+% 2 1 0 0a20f0506b708d8c0b1f0260cb49f2a6
+
+% 3 1 0 1ee8341ef9ac0ecc130fd92bf36e0e6f
+
+% 4 1 0 003617befc34311f0067b19297776293
+
+% 5 1 0 1fc457759ea0706108cd29ada0ad99f1
+
+% 0 1 0 144b15b3f77f8c2102cfba0e88521a34
+
+% 0 1 0 1f18d64d76616e931bb3a4d4677d4fcd
+
+% 1 1 0 1ba0398ff9da933715ded4a99773d636
+
+@ 0 11 0 1906daa2c5f828d9150c8346ca48db05
++   entry .inspectable   uma renderização de depuração: cada byte em hexadecimal minúsculo, com um sufixo `ᴰ`
++       Sempre disponível, sem alfabeto em escopo, de modo que um digest pode ser inspecionado onde
++       `show` não pode: `64ec88ca…7f3cᴰ`. O sufixo marca os dígitos como um digest, pois o
++       algoritmo não pode ser mostrado em tempo de execução.
++   entry #data   os bytes do digest
++       A saída bruta do hash, na ordem que o algoritmo define: 32 bytes para `Sha2[256]`, 20 para
++       `Sha1`, 16 para `Md5` e `Murmur3`, 4 para `Crc32` e `Adler32`, 8 para `Crc64`.
++   entry #Form   o algoritmo que produziu o digest, um subtipo de `Algorithm`
++       O membro de tipo que o `in` de prepositional nomeia: `Digest in Sha2[256]` é `Digest { type
++       Form = Sha2[256] }`. É um fantasma, carregado apenas pelo tipo.
+
+@ 0 1 0 04c5c0357ac96efd0ecbdbbd41437469
++ entry .Digestible   como os bytes de um valor são fornecidos a um hash; derivado para case classes e enums
+
+% 1 1 0 144609ea98dfe415131d8108be9e6183
+
+@ 0 7 0 0308f083a805b39711b1b5b6917a3a13
++       Um valor `Digestible` é aquele que pode ser acrescentado a uma `Digestion`: `#digest`
++       escreve os bytes do valor no acumulador, e `digest[algorithm]` sobre qualquer valor desse
++       tipo constrói o `Digest`. O objeto companheiro fornece instâncias para os primitivos (`Int`
++       e `Long` em big-endian, `Double` e `Float` pelos seus bits brutos, `Boolean` como um byte,
++       `Char` e `Short` como dois), `Text` (como UTF-8), `Data`, `Digest`, tudo o que é `Encodable
++       in Data`, `Optional`, `List`, `Set`, `Sequence`, arrays congelados, `Map` e `Chain`, e
++       deriva uma para todo tipo produto e tipo soma, de modo que uma case class recebe o hash
++       como os seus campos em ordem, sem etapa de serialização:
+
+% 2 1 0 128c69c10d0461901787e2a92462f5d1
+
+% 3 1 0 10855b0a2d62bb461ed4e98fee89a8bb
+
+% 4 1 0 062d33dba265cbe70377fa570f020955
+
+% 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
+
+% 0 1 0 038481e8483316b510f11c01e67fb2d5
+
+% 0 1 0 16cb76c7068fad5a1a36161f492a167e
+
+% 0 1 0 0e7aa43b738bc6240282a300c2dd591a
+
+% 0 1 0 0240835e68a2b0f60b1bf05f82e9bfbf
+
+% 0 1 0 114592ed98428fc8057ca7b57c7aa09a
+
+% 1 1 0 193ed83f4df68e9e1e0e0f10f19e353b
+
+@ 0 6 0 0a5062ca15e18d950cbbf6becd4bdf10
++       A codificação derivada é uma concatenação: os campos contribuem com os seus bytes na ordem
++       de declaração, sem separadores nem comprimentos, e um tipo soma contribui com o índice do
++       seu caso como um `Int` antes dos campos do caso. É determinística e portável entre
++       plataformas, mas não é injetiva — `(t"ab", t"c")` e `(t"a", t"bc")` dão o mesmo digest —,
++       por isso é uma impressão digital de um valor, e não uma serialização. Para uma codificação
++       com enquadramento, calcule o digest da forma `serialize`d do valor.
+
+@ 0 3 0 0a609264d1e56f8b0bae25b2890b6cb5
++       A classe de tipos é `Pure`: uma instância pode receber qualquer `Digestion^` exclusiva e não
++       retém nenhuma capability própria. `#contramap` constrói uma instância para outro tipo a
++       partir de uma função para este, assim como `Digestible.double` é construído sobre
++       `Digestible.long`.
+
+% 1 1 0 0ca96b8649bc9d260f48451d29e299c4
+
+% 0 1 0 007afa5b20c3121f0a64ebd95acdee51
+
+@ 0 40 0 0c6c54d5df8193040f9049f1ba50f42a
++   entry .conjunction   deriva a instância de um produto: cada campo em ordem, por meio da sua própria instância
++       Usada pela derivação para qualquer case class ou tupla com uma `ProductReflection`; o tipo
++       de cada campo precisa ter o seu próprio `Digestible`, resolvido de forma preguiçosa, para
++       que tipos recursivos possam ser derivados.
++   entry .disjunction   deriva a instância de uma soma: o índice do caso como um `Int`, e depois o caso
++       Usada pela derivação para enums e sealed traits com uma `SumReflection`; o ordinal distingue
++       casos cujos campos por acaso têm a mesma codificação.
++   entry .optional   um `Optional[value]`: os bytes do valor, se definido, nada se for `Unset`
++       `Unset` não contribui com nenhum byte, de modo que um `Optional[Text]` com `Unset` e com
++       `t""` dão o mesmo digest. Não se aplica quando o tipo já inclui `Unset.type`.
++   entry .list   uma `List[value]`: cada elemento em ordem
++   entry .set   um `Set[value]`: cada elemento, na ordem de iteração do conjunto
++       Um `Set` com os mesmos elementos construído de outra forma pode iterar em outra ordem, por
++       isso esta instância é estável apenas para um dado valor de conjunto.
++   entry .sequence   qualquer `Sequence[value]`: cada elemento em ordem
++   entry .frozenArray   um `Array[value]^{}` congelado: cada elemento em ordem
++   entry .map   um `Map[key, value]`: cada chave seguida do seu valor, na ordem de iteração
++   entry .stream   uma `Chain[value]`: cada elemento em ordem, forçado à medida que recebe o digest
++   entry .int   um `Int`, como quatro bytes big-endian
++   entry .long   um `Long`, como oito bytes big-endian
++   entry .double   um `Double`, como os oito bytes do seu padrão de bits bruto IEEE 754
++   entry .float   um `Float`, como os quatro bytes do seu padrão de bits bruto IEEE 754
++   entry .boolean   um `Boolean`, como o único byte 1 ou 0
++   entry .byte   um `Byte`, como ele mesmo
++   entry .short   um `Short`, como dois bytes big-endian
++   entry .char   um `Char`, como dois bytes big-endian da sua unidade de código UTF-16
++   entry .text   qualquer `Text`, como os seus bytes UTF-8
++       Sempre UTF-8, qualquer que seja o import de `codepages` em escopo, de modo que o digest de
++       um texto é o mesmo em todo lugar.
++   entry .bytes   `Data`, acrescentado tal como está
++   entry .digest   um `Digest`, como os seus bytes, de modo que um hash pode receber hash novamente
++   entry .encodable   qualquer valor `Encodable in Data`, como a sua codificação
++       Uma instância genérica sobre a classe de tipos `Encodable`: um tipo com uma instância
++       `Encodable in Data` — um `Hmac`, uma chave, um valor do próprio usuário com a forma de um
++       `Multihash` — é digerível sem declarar nada mais.
++   entry #digest   escreve os bytes de um valor em uma `Digestion` exclusiva
++       `digest(digestion, value)` acrescenta os bytes do valor com `Digestion#append`; o
++       acumulador é `Digestion^`, exclusivo do chamador, e a própria instância é pura.
++   entry #contramap   um `Digestible` para outro tipo, por meio de uma função pura para este
++       `textDigestible.contramap[Person](_.name)` calcula o digest de uma pessoa apenas pelo seu
++       nome. A função precisa ser pura (`->`), para que a instância construída continue pura e
++       utilizável em derivações.
+
+@ 0 1 0 1acc44d631eabfc8127a51a8ba1b1910
++ entry .Digester   uma sequência de passos de digest sobre um único acumulador, executada quando um algoritmo é escolhido
+
+% 1 1 0 181def30c54127540c276ec67430fc00
+
+@ 0 5 0 064ca7e0eb4489530ff05e465be42ad3
++       Um `Digester` é uma função pura de uma `Digestion^` nova para `Unit`, construída por
++       `#digest`, um valor de cada vez, e executada por `#apply[algorithm]`, que cria o acumulador
++       para o `Hash` do algoritmo em escopo, aplica cada passo e devolve o `Digest`. É assim que o
++       digest de vários valores é calculado em um único hash sem antes concatenar os seus bytes, e
++       o algoritmo é escolhido por último, de modo que um único digester pode produzir vários
++       digests:
+
+% 2 1 0 100ebde95cfb78520525fe769fc3b4ac
+
+% 3 1 0 16aab8c7c5d649871cfefc4e87421ebb
+
+% 4 1 0 0b50109839a62c0f18a738d17dec6bf4
+
+% 5 1 0 0322cd7819a0de521fc0f67cf248db30
+
+% 0 1 0 1f850b82824a22cb1948ddf5b3c33e46
+
+% 0 1 0 10a3058cf1d5eb5f0f1b5e7e72f6e1c5
+
+% 1 1 0 10330e72dd0c06d90fc7ea28ad3bd10d
+
+% 0 1 0 114c51c8f0dfcd431436cfb8d40f79b9
+
+% 1 1 0 14580b1236da0bb00a1022a76b9dc1fb
+
+@ 0 1 0 018b7b47479b047a13a7b5f84054da1b
++       `digest[algorithm]` sobre um valor é um digester de um único passo. O digester vazio é
+
+% 0 1 0 009216df9c13251c0a6b06d0924395e5
+
+% 1 1 0 181a14914a4aa0e808489c518a437267
+
+@ 0 8 0 11696fbf4dc8afa3187ec036e61caf39
++   entry #run   os passos, como uma função pura de uma `Digestion^` nova para `Unit`
++   entry #apply   executa os passos em um acumulador novo para `algorithm` e devolve o `Digest`
++       `digester.apply[Sha2[256]]` precisa de um `Hash in Sha2[256]` do provedor em escopo.
++       Diferentemente de `digest` sobre um valor, não recebe autorização: o controle fica no
++       `digest` e no `checksum` do valor, não aqui.
++   entry #digest   um novo digester que executa estes passos e depois calcula o digest de outro valor
++       `digester.digest(value)` acrescenta um passo para qualquer valor `Digestible`; o digester
++       original não é alterado.
+
+@ 0 1 0 0d3330efef98c99d07bde1645b9c1965
++ entry .Hash   a implementação de um algoritmo como valor, derivada do provedor `Hashing` em escopo
+
+% 1 1 0 105638f9a2a123970572f960cee8fc4e
+
+@ 0 10 0 03ce92257f1ae773068b25972af92cef
++       Um `Hash in algorithm` é o que `digest`, `checksum` e `Digester#apply` resolvem: conhece o
++       `#name` do algoritmo no estilo JCE (`SHA-256`), o seu `#hmacName` para HMAC (`HmacSHA256`,
++       que o `hmac` de enigmatic usa) e `#initialize`, uma `Digestion` exclusiva nova obtida da
++       `Hashing.Function` do provedor. O objeto companheiro de cada algoritmo deriva a sua
++       instância *estruturalmente* de qualquer `Hashing` que esteja em escopo: `Sha2.hash` precisa
++       de um `Hashing { def sha2(bits: Int): Hashing.Function }`, `Blake3.hash` de um `Hashing {
++       def blake3: Hashing.Function }`, de modo que um algoritmo que o provedor selecionado não
++       implementa não tem `Hash` e não compila na chamada. As instâncias dos checksums de
++       corpuscular ficam aqui, no próprio objeto companheiro de `Hash` (`.crc32`, `.crc64`,
++       `.adler32`), já que corpuscular não enxerga `Hashing`; a resolução é a mesma.
+
+% 2 1 0 064c372c82e337f31324f01f47316ecf
+
+% 3 1 0 18ba4cee6442fdc602e89c8194c39c01
+
+% 4 1 0 0ce43c3eec1ed79115c97da83846e969
+
+% 0 1 0 0350a3ed80b9fa5b0af9839b9577504c
+
+% 0 1 0 01f697d2bcb1a7bb1e5a67a5c26bbddf
+
+% 0 1 0 12c36d9f0c3a67531759a9c624a9bbb2
+
+% 1 1 0 044a69e3a0b3768e05a0dc9e53650726
+
+@ 0 1 0 04d807024f88896c1b4e6843705236f6
++       `Hash(name, hmacName, function)` constrói uma instância para um provedor próprio.
+
+% 0 1 0 1e233913a41da643039e4c7ba320f1ad
+
+% 1 1 0 1a285c74d40179fb115ade062ffe894c
+
+% 1 1 0 10974b89d1cb35fc1d270319b1612ed3
+
+@ 0 2 0 16d524708dedde950eed2609dd5240db
++   entry .crc32   `Hash in Crc32`, de um provedor com `crc32`: os dois provedores o têm
++       Com o nome `CRC32` e o nome HMAC `HMAC-CRC32`. Calcular o digest com ele exige
+
+% 1 1 0 01a7801a397eb56c07f395762ab7fcfa
+
+@ 0 3 0 1fc16b2ac4f387cf01167d1477576e44
++   entry .crc64   `Hash in Crc64`, de um provedor com `crc64`: apenas o provedor do Soundness
++       Com o nome `CRC64` (CRC-64/ECMA). O JDK não tem CRC-64, por isso `JavaBaseHashing` não o
++       oferece e `digest[Crc64]` só é resolvido sob `providers.soundnessProvider`. Exige
+
+% 1 1 0 12f5d73fdecc17881bc75d22c27ec93e
+
+@ 0 15 0 0adb10bdd46710931352af6f0dac4fd7
++   entry .adler32   `Hash in Adler32`, de um provedor com `adler32`: os dois provedores o têm
++       Com o nome `ADLER32`. Exige `cryptoPermits.permitNonCryptographicHashes`.
++   entry .apply   `Hash[algorithm](name, hmacName, function)`: uma instância sobre a função de um provedor
++       Constrói um `Hash in algorithm` cujo `initialize` chama `function.digestion()`. Os objetos
++       companheiros o usam; um usuário só precisa dele para acrescentar um algoritmo ou um
++       provedor.
++   entry #Form   o algoritmo que este hash calcula
++   entry #name   o nome do algoritmo no estilo JCE: `SHA-256`, `SHA1`, `MD5`, `BLAKE3`, `CRC32`
++   entry #hmacName   o nome HMAC JCE do algoritmo: `HmacSHA256`, `HmacSHA1`, `HmacMD5`
++       O que o `hmac[algorithm](key)` de enigmatic passa ao provedor criptográfico, de modo que
++       um HMAC sobre um hash de gastronomy está disponível para todo algoritmo que o MAC do
++       provedor criptográfico suporta. Para BLAKE3, MurmurHash3 e os checksums, o nome é
++       `HMAC-…`, que nenhum provedor JCE implementa.
++   entry #initialize   uma `Digestion` nova e exclusiva para um único cálculo
++       Cada chamada inicia um novo acumulador: acrescente bytes com `append` e chame `digest()`
++       uma única vez. É `Digestion^`, por isso não pode ser compartilhada nem armazenada.
+
+@ 0 1 0 1d7df5f7d120808c1723846fb5033a4c
++ entry .Hashing   um provedor de hashing: uma `Hashing.Function` para cada algoritmo que implementa
+
+% 1 1 0 10503f1d6432e62f184f7684f849c72e
+
+@ 0 6 0 1c009dd631f900c30aefffb7ff4bec2b
++       Um provedor `Hashing` fornece a implementação de cada hash como uma `Hashing.Function`, uma
++       fábrica de `Digestion`s novas. O trait em si não tem membros: o given `Hash` de cada
++       algoritmo o refina estruturalmente (`Hashing { def sha2(bits: Int): Hashing.Function }`),
++       de modo que os provedores são *disjuntos*, e não ordenados por prioridade —
++       `JavaBaseHashing` tem `md5`, `sha1`, `sha2`, `crc32` e `adler32`; `SoundnessHashing` tem
++       todos esses e ainda `blake3`, `murmur3` e `crc64` —, e um algoritmo ausente é um erro de
++       compilação no digest.
+
+@ 0 5 0 1e9c32ef99a340060477717a1dcec9f0
++       Um provedor é selecionado por nome no pacote `providers`. `providers.soundnessProvider` é
++       o próprio objeto `SoundnessHashing`; `providers.javaBaseProvider` é o marcador
++       `Provider.JavaBase`, a partir do qual `.javaBaseHashing` deriva `JavaBaseHashing` (e
++       enigmatic deriva a sua criptografia do JDK), de modo que um único import habilita ambos. Um
++       provedor próprio é um objeto que estende `Hashing` com os métodos nomeados acima, vinculado
++       como given.
+
+% 1 1 0 1ed1f85e514a225f004419c4cc4fa0ed
+
+% 0 1 0 042a58813b84eb3316475d0a6b66608b
+
+% 1 1 0 0020829eb9a34f2818e89d1b2bfd72dd
+
+@ 0 1 0 171dc8176b82898d078b39e18aaaded7
++   entry .Function   a implementação de um algoritmo: uma fábrica de `Digestion`s novas
+
+% 1 1 0 13453d33324c47dd18d94c14e28faeb0
+
+@ 0 8 0 1a6ea9e0fc8bb9c31efafb454b61a7cb
++         `function.digestion()` devolve um novo acumulador exclusivo; o método de um provedor para
++         cada algoritmo (`sha2(bits)`, `blake3`, `crc32`) devolve uma destas, e `Hash` a envolve.
++     entry #digestion   uma `Digestion` nova e exclusiva para um único cálculo
++   entry .javaBaseHashing   `JavaBaseHashing`, sempre que `providers.javaBaseProvider` é importado
++       Um given no escopo implícito de `Hashing`, derivado do marcador `Provider.JavaBase.type`,
++       de modo que importar por nome o provedor do JDK habilita o hashing sem um segundo import.
++       Na JVM, é `MessageDigest` e `java.util.zip`; em outros lugares, o mesmo nome encaminha
++       para o `SoundnessHashing` em Scala puro.
+
+@ 0 1 0 0c768c991e1a61331992483c7ab5dd8f
++ entry .Provider   os marcadores de provedores com várias capabilities; `Provider.JavaBase` é o do JDK
+
+% 1 1 0 14afdf226a8362fb12ff2e7345bef317
+
+@ 0 6 0 0fe1a86b6ebd2e7311649965465510e7
++       Um provedor que fornece mais de uma capability — o JDK fornece tanto hashing quanto
++       criptografia — é selecionado por meio de um marcador: `providers.javaBaseProvider` é
++       `Provider.JavaBase`, e `Hashing.javaBaseHashing` (aqui) e o given criptográfico de
++       enigmatic derivam cada um a sua implementação a partir dele. Provedores de uma única
++       capability, como `SoundnessHashing`, não têm marcador; o seu given em `providers` é o
++       próprio objeto da capability.
+
+% 1 1 0 09e60e34a0ab5b661ad1489f178775c2
+
+@ 0 2 0 08084299190a4ef21493f9278f061cc1
++   entry .JavaBase   o provedor do JDK: hashing com `MessageDigest` e `java.util.zip`, criptografia JCE
++       O marcador que `providers.javaBaseProvider` fornece. Não tem membros próprios.
+
+@ 0 1 0 01ffbd64fd51721108131bc6ffabeeff
++ entry .JavaBaseHashing   o provedor de hashing apoiado no JDK: MD5, SHA-1, SHA-2, CRC-32 e Adler-32
+
+% 1 1 0 0b5aef387827961712be6e465ca8659f
+
+@ 0 8 0 063fd395549142c911754fdd28f135b1
++       O provedor padrão, alcançado por `import providers.javaBaseProvider`. É o único objeto
++       declarado por dois componentes. Na JVM (`gastronomy.core` com o seu código-fonte
++       `core-jvm`), é apoiado por `java.security.MessageDigest` para `.md5`, `.sha1` e `.sha2`, e
++       por `java.util.zip.CRC32` e `Adler32` para `.crc32` e `.adler32`, todos acrescentando
++       janelas no lugar; é o único lugar da biblioteca onde `java.security` aparece. No Scala.js e
++       no Scala Native (`core-native`), os mesmos cinco métodos encaminham para as implementações
++       em Scala puro de `SoundnessHashing`, validadas byte a byte em relação às do JDK, de modo que
++       um código que seleciona o provedor do JDK calcula hashes idênticos em todas as plataformas,
++       sem alteração no código-fonte.
+
+@ 0 2 0 1d41bc05304e7dcf1df8773a2d846676
++       Nenhuma das plataformas oferece `blake3`, `murmur3` ou `crc64`: o JDK não implementa
++       nenhum deles, por isso um `Hash` para esses algoritmos só é resolvido sob
++       `providers.soundnessProvider`.
+
+% 1 1 0 132e29b1bc030a5906a234d0acbe776d
+
+% 1 1 0 1eb8cdfa43cef0d203454e2c32264f69
+
+@ 0 4 0 0a42c9390a352f0916fb933d9b2acc2d
++   entry .md5   MD5, como `MessageDigest("MD5")` na JVM e a versão pura em outros lugares
++   entry .sha1   SHA-1, como `MessageDigest("SHA1")` na JVM e a versão pura em outros lugares
++   entry .sha2   SHA-224, SHA-256, SHA-384 ou SHA-512 conforme o número de bits, como `MessageDigest("SHA-<bits>")`
++       `sha2(bits)` recebe 224, 256, 384 ou 512; `Sha2.hash` fornece o número a partir do tipo
+
+% 0 1 0 17cb60eff62311e40626ac191cd7b567
+
+@ 0 4 0 113c219e903fb0cf13aee07265fcb4db
++   entry .crc32   CRC-32, como `java.util.zip.CRC32` na JVM e o acumulador de corpuscular em outros lugares
++       O valor de 32 bits é escrito em big-endian, em quatro bytes.
++   entry .adler32   Adler-32, como `java.util.zip.Adler32` na JVM e o de corpuscular em outros lugares
++       O valor de 32 bits é escrito em big-endian, em quatro bytes.
+
+@ 0 1 0 080e1265f04ce29d1034e7f03a2916cb
++ entry .SoundnessHashing   o provedor em Scala puro: todos os algoritmos, inclusive BLAKE3, MurmurHash3 e CRC-64
+
+% 1 1 0 13797990ea721067015a844458112c16
+
+@ 0 9 0 0f2e8f37a7cd55a310eed2f928d2a720
++       Selecionado por `import providers.soundnessProvider`. Implementa MD5, SHA-1 e a família
++       SHA-2 em Scala (segundo a RFC 1321 e a FIPS 180-4, conferidos com o JDK em cada fronteira
++       de preenchimento de bloco), BLAKE3 (conferido com os vetores oficiais em cada comprimento de
++       entrada) e MurmurHash3 (byte a byte o `murmur3_128()` do Guava), e alcança diretamente os
++       acumuladores CRC-32, CRC-64 e Adler-32 de corpuscular. É o único provedor com `.blake3`,
++       `.murmur3` e `.crc64`, por isso um programa que calcula digests com eles o importa, sozinho
++       ou junto com o provedor do JDK. Quando os dois são importados, este, por estar lexicalmente
++       em escopo, serve todos os algoritmos; o `MessageDigest` nativo do JDK é mais rápido para
++       SHA-2 na JVM, por isso um programa que o queira ali e também queira BLAKE3 deve delimitar o
++       escopo dos imports.
+
+% 1 1 0 15d8bd2ea6140bcb0a6f00f6d12b5b57
+
+% 0 1 0 1637ebd09fbc883e0124b55d202e9b9f
+
+% 0 1 0 0efb0b0cc8f40dfd17780c194d96f619
+
+@ 0 9 0 1552a16471ee58780ce7fd04be6ce4b0
++   entry .blake3   BLAKE3, saída de 256 bits, a partir de `Blake3.digestion()`
++   entry .murmur3   MurmurHash3 x64 de 128 bits, semente 0, a partir de `Murmur3.digestion()`
++   entry .md5   o MD5 em Scala puro
++   entry .sha1   o SHA-1 em Scala puro
++   entry .sha2   o SHA-224, SHA-256, SHA-384 ou SHA-512 em Scala puro, conforme o número de bits
++       `sha2(bits)` recebe 224, 256, 384 ou 512; qualquer outro número é tratado como 512.
++   entry .crc32   CRC-32 (RFC 1952), o acumulador de corpuscular
++   entry .crc64   CRC-64/ECMA, o acumulador de corpuscular; nenhum outro provedor o tem
++   entry .adler32   Adler-32, o acumulador de corpuscular
+
+@ 0 1 0 1f5edc203cc99c601bb06d9b9e4e0117
++ entry .Sha2   a família SHA-2 como um único tipo: `Sha2[224]`, `Sha2[256]`, `Sha2[384]` ou `Sha2[512]`
+
+% 1 1 0 04aea986d599481c1cb4f880d90cd8b9
+
+@ 0 3 0 1463ee031494be721b18a6bcb7798b2c
++       `Sha2[bits]` é o tipo de algoritmo do SHA-2 com 224, 256, 384 ou 512 bits, cada um deles
++       um tipo distinto, de modo que `Digest in Sha2[256]` e `Digest in Sha2[512]` não se
++       misturam. Não precisa de autorização, por ser `Concession.Acceptable`, e os dois provedores
++       o implementam.
+
+% 2 1 0 0a0eee345558fa8d0f4d8772b9fb94e9
+
+% 3 1 0 10a10a91ae6cd6d016a4a6d806453325
+
+% 4 1 0 1b53db967d90c8bb10d06b6eb7af26a5
+
+% 0 1 0 1e16732a0b3e88fb034a49fc31ebb932
+
+% 0 1 0 1023e3b4c0d51d3a085379c804a32213
+
+% 0 1 0 07bcac96915192cd09957fe2db454c69
+
+% 1 1 0 1063c3a8cc8c057b081efe391fb2fa22
+
+@ 0 3 0 1aaeb40374c882b91b7f5668fa19343d
++       SHA-256 é a escolha habitual; SHA-512 é mais rápido em hardware de 64 bits para entradas
++       longas, e SHA-224 e SHA-384 são truncamentos dele com estados iniciais distintos. Os
++       códigos multihash são `0x12` (256), `0x13` (512), `0x20` (384) e `0x1013` (224).
+
+% 1 1 0 15aebbfadfa3bb62074492dcf6b3be47
+
+% 1 1 0 18be6614cd3a041f1e5c4a51438f5d5f
+
+@ 0 4 0 0f1f86d201c1c7d318fbef6f83a71c8b
++   entry .hash   `Hash in Sha2[bits]`, de qualquer provedor com `sha2(bits: Int)`
++       Derivado no escopo implícito a partir do `Hashing` em escopo, com o número de bits tirado
++       do tipo; com o nome `SHA-<bits>` e o nome HMAC `HmacSHA<bits>`.
++   entry #Bits   o comprimento da saída em bits: o próprio parâmetro do tipo
+
+@ 0 1 0 1514509b2395288405615906b909751a
++ entry .Sha1   SHA-1, 160 bits: obsoleto, e com digest calculado apenas sob uma autorização
+
+% 1 1 0 145cf9bfcdd4856c0068626a1cb3962d
+
+@ 0 5 0 0eeccd45d3253439184c75a9d1de261a
++       O SHA-1 está quebrado contra ataques de colisão e permanece para os formatos que ainda
++       precisam dele, como os nomes de objetos do Git. `digest[Sha1]` precisa de
++       `cryptoPermits.permitDeprecatedCrypto` (ou de qualquer autorização que a contenha:
++       `permitDisallowedCrypto`, `permitCryptoThrough2030`) em escopo, já que
++       `HashWeakness[Sha1]` é `Concession.Sha1`. Os dois provedores o implementam; o código
++       multihash é `0x11`.
+
+% 2 1 0 097388d5131ca7ba1b63f1e8a0ae33c6
+
+% 3 1 0 0891e34c132374fb0425d0db60d5770a
+
+% 4 1 0 0bbe9f7787a0a1f00b8cfd48c7f15df6
+
+% 0 1 0 0f8044e61a9fbc7b028f71aad35cd1af
+
+% 0 1 0 08f8b8dc07cf8439133657af70f81bd2
+
+% 0 1 0 1ff29bca3d16468a162c3ca751b81775
+
+% 1 1 0 06bd201de18f417b0b4d4114222fb830
+
+% 2 1 0 0491bdf34b121201153d241eb0cc4bbb
+
+@ 0 2 0 129418beba5b0bed0807e7df13fc7e60
++   entry .hash   `Hash in Sha1`, de qualquer provedor com `sha1`
++       Com o nome `SHA1` e o nome HMAC `HmacSHA1`.
+
+% 0 1 0 021c8cea78d2f2a70d279b6d4ef9767f
+
+@ 0 1 0 093af52c627d9356041f903f0e0cc39e
++ entry .Md5   MD5, 128 bits: proibido, e com digest calculado apenas sob uma autorização
+
+% 1 1 0 0cab52cecbe5d9980511e29620b17993
+
+@ 0 4 0 1481b9c094c96cff1d55a6beb859ee96
++       O MD5 está completamente quebrado e permanece para checksums legados e compatibilidade.
++       `digest[Md5]` precisa de `cryptoPermits.permitDisallowedCrypto` (ou de
++       `permitCryptoThrough2014` ou posterior) em escopo, já que `HashWeakness[Md5]` é
++       `Concession.Md5`. Os dois provedores o implementam; o código multihash é `0xd5`.
+
+% 2 1 0 1db98123ecefad47134629c081826019
+
+% 3 1 0 1f8ffc0442e2eaec00e8e29d03c6b528
+
+% 4 1 0 1c930cf5035c7c9a151b6ab9c6dea28b
+
+% 5 1 0 07b53c10f696213818c263cc615fcdae
+
+% 1 1 0 0e6d5529b0d8e0b10a58091c94f47209
+
+% 0 1 0 04539d2ab2a93ab10e15983fa7b613da
+
+% 1 1 0 055f648d244aad0618e0d6eb8525e6bd
+
+% 2 1 0 1a6eaf021b4ac6e907ba75b5cf6ca9ce
+
+@ 0 2 0 08cc5338f8c1095b04794d112e36dd7b
++   entry .hash   `Hash in Md5`, de qualquer provedor com `md5`
++       Com o nome `MD5` e o nome HMAC `HmacMD5`.
+
+% 1 1 0 1181f5f48364377a0062130c1a595540
+
+@ 0 1 0 146e6495cb16ce1f1906392d84a9fb10
++ entry .Blake3   BLAKE3, 256 bits: um hash em Scala puro com modos com chave e de derivação de chaves
+
+% 1 1 0 12b1f5cb4b661f25131a906e4927cfcf
+
+@ 0 7 0 04e389eacfe2198d1ab34e557742038b
++       O BLAKE3 é um hash em árvore moderno, mais rápido que o SHA-2 em software e extensível a
++       qualquer comprimento de saída. O JDK não tem implementação dele, por isso `digest[Blake3]`
++       precisa de `providers.soundnessProvider`; não precisa de autorização. Os três modos do
++       algoritmo estão todos aqui: o hash simples (por meio de `digest`, ou de `.hashOf` para um
++       comprimento de saída escolhido), o hash com chave `.keyedHash` para autenticação de
++       mensagens com uma chave de 32 bytes, e `.deriveKey` para derivar uma chave a partir de uma
++       string de contexto e de material de chave. Os três são conferidos com os vetores de teste
++       oficiais em cada comprimento de entrada que eles cobrem.
+
+% 2 1 0 062a3fb8686b84711b3032f0869aef71
+
+% 3 1 0 08a9d973f8a2925710c36e0a5766375c
+
+% 4 1 0 1b8cddab5f923f331f270475be061280
+
+% 5 1 0 139c25f98f30913305e2826b230986ff
+
+% 0 1 0 0a347b577b1d4e3e0ac26503c18995b3
+
+% 0 1 0 0dacce37480955b2145bade393e7c0f6
+
+% 1 1 0 1fda78214523c095186231ec0a46fd04
+
+@ 0 1 0 01ac846678ba79900880d6531a5ffaed
++       O código multihash é `0x1e`.
+
+% 1 1 0 0baf73bc2a2be2691d561c71319662c9
+
+% 1 1 0 07f99e679131c6c7005ac9a0ac8ba31f
+
+@ 0 18 0 03c6f6e6894c9f260893808fc577f2ce
++   entry .hash   `Hash in Blake3`, de um provedor com `blake3`: o provedor do Soundness
++       Com o nome `BLAKE3` e o nome HMAC `HMAC-BLAKE3`, que nenhum provedor JCE implementa; um
++       BLAKE3 com chave é `.keyedHash`, não um HMAC.
++   entry .digestion   uma `Digestion` BLAKE3 nova e exclusiva, com saída de 32 bytes
++       O que `SoundnessHashing.blake3` fornece: acrescente bytes em quaisquer janelas e chame
++       `digest()` uma única vez.
++   entry .hashOf   o hash BLAKE3 de um array de bytes congelado, em qualquer comprimento de saída
++       `Blake3.hashOf(input, length)`: o hash simples, de 32 bytes, a menos que `length` diga
++       outra coisa. A saída do BLAKE3 é um stream extensível, por isso um comprimento maior é um
++       prefixo mais longo do mesmo stream, e não um hash diferente.
++   entry .keyedHash   o hash BLAKE3 com chave de uma entrada sob uma chave de 32 bytes, em qualquer comprimento de saída
++       `Blake3.keyedHash(key, input, length)`: autenticação de mensagens, em que a chave substitui
++       o estado inicial do algoritmo. A chave precisa ter exatamente 32 bytes; qualquer outro
++       comprimento é um pânico, _BLAKE3 key must be 32 bytes_.
++   entry .deriveKey   deriva material de chave a partir de uma string de contexto e de uma entrada, em qualquer comprimento de saída
++       `Blake3.deriveKey(context, material, length)`: o contexto — um texto único e específico da
++       aplicação, como `t"myapp 2026-01-01 session key"` — recebe o hash no modo de contexto de
++       derivação de chave, resultando em uma chave sob a qual o material recebe então o hash, de
++       modo que chaves derivadas do mesmo material para propósitos diferentes não têm relação
++       entre si.
+
+% 0 1 0 149265e06bd177b419770a40d39735b9
+
+@ 0 1 0 1a31fed46c5699ac1f99edf7b421a1f2
++ entry .Murmur3   MurmurHash3, x64 de 128 bits: um hash rápido e não criptográfico, sob uma autorização
+
+% 1 1 0 028da0e631ca99531816c02d2c8d635c
+
+@ 0 7 0 1ec4ce6e9bbb09aa114165f60a99135b
++       O MurmurHash3 é o hash por trás dos filtros de Bloom e das estruturas indexadas por hash do
++       Guava: algumas operações por bloco de 16 bytes, para entradas que não são adversariais, em
++       que as rodadas de um digest criptográfico custariam várias vezes mais trabalho sem nenhum
++       benefício. Não oferece resistência a colisões diante de um atacante, por isso
++       `digest[Murmur3]` precisa de `cryptoPermits.permitNonCryptographicHashes` — a mesma
++       autorização dos checksums — e só é implementado pelo provedor do Soundness. A saída são as
++       duas palavras de 64 bits `h₁` e depois `h₂`, cada uma em little-endian, byte a byte o que o
++       `murmur3_128()` do Guava produz.
+
+% 2 1 0 12c9e05f6d44330900e6dc18dd978b85
+
+% 3 1 0 0f8716ef0d42452e04a3a1101f53bb06
+
+% 4 1 0 00942df461dfcbc514c713ad2dcb4ddf
+
+% 1 1 0 0f8eebae756eaee41510bb0673591edf
+
+% 1 1 0 16e7898532c269b1062b0d6d681be60b
+
+% 0 1 0 1b7b6bd17c23add61671457c7667ea91
+
+% 1 1 0 12cd00af12f2ed530a6482fdae592112
+
+@ 0 2 0 18d71c6c4ba956c608b8b3bc82607281
++       Uma digestion com semente é `.digestion(seed)`; a do provedor usa a semente 0. O
++       `BloomFilter` de ulysses calcula digests por meio deste tipo.
+
+% 1 1 0 18050e552c2fa30302bcf334c6871f41
+
+% 1 1 0 15fd7ef364df6796015c7b792603bfbc
+
+@ 0 6 0 022536edf163fa6b1306d5b2cf141075
++   entry .hash   `Hash in Murmur3`, de um provedor com `murmur3`: o provedor do Soundness
++       Com o nome `Murmur3-128` e o nome HMAC `HMAC-Murmur3-128`, que nada implementa.
++   entry .digestion   uma `Digestion` MurmurHash3 nova e exclusiva, com uma semente opcional
++       `Murmur3.digestion(seed)` inicia as duas palavras de estado em `seed` (0 por padrão), para
++       uma tabela hash que queira um sal por instância; o resultado tem 16 bytes. Nada é alocado
++       até `digest()`.
+
+% 1 1 0 188efd7ab4a9dfbd06a9695b36b72a09
+
+@ 0 5 0 1f294d772fa258e513dce9578a93e675
++ entry .Sha384   SHA-384 como tipo de algoritmo próprio, com um código multihash, mas sem `Hash` próprio
++     Um `Algorithm` de 384 bits cuja instância de `Multicodec` compartilha o código de
++     `Sha2[384]`, `0x20`, já que são a mesma função. O digest é calculado por meio de
++     `Sha2[384]`: nenhum `Hash in Sha384` é derivado, por isso `digest[Sha384]` não compila; o
++     tipo existe para um valor que nomeia o algoritmo sem um parâmetro de número de bits.
+
+@ 0 4 0 0cb26e53643b2e030eb33768e87fc5bd
++ entry .Sha512   SHA-512 como tipo de algoritmo próprio, com um código multihash, mas sem `Hash` próprio
++     Um `Algorithm` de 512 bits cuja instância de `Multicodec` compartilha o código de
++     `Sha2[512]`, `0x13`. O digest é calculado por meio de `Sha2[512]`: nenhum `Hash in Sha512`
++     é derivado, por isso `digest[Sha512]` não compila.
+
+@ 0 9 0 109a581e2a68f91904e6e1df78571d21
++ entry .Feistel   uma rede de Feistel sobre um valor de 64 bits, a partir de uma lista de subchaves e de uma função de rodada
++     `Feistel(subkeys, round)(input)` executa uma rodada por subchave: cada rodada move a palavra
++     baixa de 32 bits do valor para a palavra alta e define a palavra baixa como a antiga palavra
++     alta XOR `round(low, subkey)`. A função de rodada pode devolver qualquer `Int`, inclusive
++     negativo; o XOR é mascarado em 32 bits, sem extensão de sinal. Sem subchaves, a entrada é
++     devolvida inalterada; as rodadas são reversíveis executando-as de trás para a frente com as
++     subchaves invertidas, e é isso que faz de uma rede de Feistel uma bijeção sobre valores de 64
++     bits — uma permutação que preserva o formato, para ofuscar identificadores ou chaves de
++     sharding. Não é criptografia, a menos que a função de rodada seja criptográfica.
+
+% 2 1 0 064488eb45e1e24816091cafbe99a322
+
+% 3 1 0 11f10771423f59a80a5673ab82291c04
+
+% 0 1 0 024fa29e51e505d11f75e9022f953a89
+
+% 0 1 0 09f4d5568eff5b9010dd690620f0acb3
+
+% 0 1 0 089944efa9e3de6b0c34e53715a6b48f
+
+% 1 1 0 07c168d4f7b7ff310c8a5149de78ac3c
+
+@ 0 1 0 0f28feb0e24575c20f2519ffe8f77440
++ entry .Permit   evidência apagada de que um algoritmo, comprimento de chave ou modo fraco pode ser *aplicado*
+
+% 1 1 0 0846f436f03de26f1f7daa63a00492f4
+
+@ 0 6 0 1182f76beb3e1c3500b28f1b3b98c92f
++       Uma `Permit[concession]` é a capability que `digest`, `checksum`, o `hmac`, o `encrypt` e o
++       `sign` de enigmatic e a configuração TLS de telekinesis exigem antes de usar algo que a
++       NIST SP 800-131A lista como obsoleto ou proibido: `digest[Md5]` precisa de uma
++       `Permit[Concession.Md5]`, `digest[Crc32]` de uma `Permit[Concession.NonCryptographic]`. É
++       apagada, por isso não custa nada em tempo de execução; é um controle em tempo de
++       compilação. Uma `Permit` é também uma `ProcessingPermit`, por isso também cobre a
++       verificação e a decifração.
+
+@ 0 3 0 161d8c1ab71e87371b71658ab8650136
++       `Permit.acceptable`, para `Concession.Acceptable`, está sempre em escopo, e é por isso que
++       SHA-2 e BLAKE3 não precisam de import. Toda outra autorização é importada por nome do
++       pacote `cryptoPermits`, cada uma uma interseção das autorizações específicas que libera:
+
+% 2 1 0 0e7653b187a0b5cf1a36b77b91e45cf6
+
+% 3 1 0 013daeb6fa3b09ac1a234263e4600f31
+
+% 4 1 0 06a07f69e51d20ca147241666787d1de
+
+% 5 1 0 16b65526d37a7d7902eae9bdb03b8fee
+
+% 0 1 0 04311b9196855fe3113adf9c913e7571
+
+% 1 1 0 0d0b17f3681e8c9401bf73670e151ea4
+
+@ 0 1 0 069f7fc0b4a502dd07ea60d795017ac5
++       Sem uma, o erro de compilação diz _this operation uses a sub-optimal algorithm, key
+
+% 0 1 0 08d17c5e2bda3b231a504c26dd0df3c9
+
+% 0 1 0 0f33b2455ab7fe3d1fc9a523f7cf8bd4
+
+% 0 1 0 194e66d31ad154e605b764771d08c432
+
+% 0 1 0 0d5a62aeacb138c30cbee8f0cab9c58f
+
+% 1 1 0 01844ce40b03a74300f2edc2148b4e1f
+
+% 1 1 0 019d3d38df5c082502a37d581713c439
+
+% 0 1 0 0ed11a9a5dc880a204dde93e8e746cba
+
+@ 0 1 0 061cfbb0ed6673ad0ef1e56e67312dd8
++   entry .acceptable   `Permit[Concession.Acceptable]`, sempre em escopo: algoritmos fortes não precisam de import
+
+@ 0 1 0 1d0aa24f0246f65107539e455e6caf5c
++ entry .ProcessingPermit   evidência apagada de que dados já protegidos podem ser *processados* com um algoritmo fraco
+
+% 1 1 0 095cd698737c9e851bfe34a85106022c
+
+@ 0 6 0 1b8f9539970fed861ba847879280067a
++       A NIST SP 800-131A distingue *aplicar* proteção (cifrar, assinar, calcular hash) de
++       *processar* dados já protegidos (decifrar, verificar), e permite o segundo por mais tempo:
++       “uso legado”. Uma `ProcessingPermit[concession]` libera apenas o processamento; `Permit` a
++       estende e libera ambos. `cryptoPermits.permitLegacyCrypto` é a única autorização
++       puramente de processamento, para Triple-DES e DSA, usada pelo `decrypt` e pelo `verify` de
++       enigmatic; as operações do próprio gastronomy aplicam todas proteção e precisam de uma
++       `Permit` completa.
+
+@ 0 1 0 18896c7eaf67286901303b3a5bc9ef36
++       Sem uma, o erro de compilação diz _this operation uses an algorithm whose status is
+
+% 0 1 0 0975fe007d79f51d070827c290a1fc63
+
+% 0 1 0 12c464a03a3328f310c50ecd5e9d81f3
+
+% 1 1 0 1fe2f6d4bb9f90731201244a7184d0d4
+
+% 1 1 0 1eadcc304db81ccd08161016bcb38a0f
+
+@ 0 1 0 1bf2b87e0d7b7e9f1c9c3965a4d8207b
++   entry .acceptable   `ProcessingPermit[Concession.Acceptable]`, sempre em escopo
+
+@ 0 1 0 0ecfd2ed30e17f9d18e0ff6823ed3c52
++ entry .Concession   as fraquezas que um chamador pode admitir: um marcador por algoritmo, modo, tamanho de chave ou relaxamento de TLS
+
+% 1 1 0 0007b8adadee7a7302f995bcb4a40287
+
+@ 0 6 0 1398c9635b307f5818ad4421540740cf
++       Uma ressalva nomeia uma coisa específica que um programa aceita ao importar uma
++       autorização: um hash quebrado, uma cifra fraca, uma chave curta, um modo não autenticado ou
++       uma configuração TLS tolerante. Os marcadores são sealed traits sem membros, usados apenas
++       como argumento de tipo de `Permit` e `ProcessingPermit`; todos eles ficam aqui, na
++       biblioteca criptográfica de nível mais baixo, de modo que os hashes de gastronomy, as cifras
++       de enigmatic e o TLS de telekinesis compartilham um único vocabulário e um único conjunto de
++       imports de `cryptoPermits`. `HashWeakness` associa cada algoritmo de hash à sua ressalva.
+
+@ 0 8 0 1813d1f82cd9bae416b0b8ffd8a558e4
++       As ressalvas de hashing são `Md5`, `Sha1` e `NonCryptographic` (os checksums e o
++       MurmurHash3, que não são defeituosos, mas não oferecem resistência a colisões diante de um
++       adversário), e `Acceptable` é a ausência de qualquer fraqueza. As ressalvas de cifras,
++       usadas por enigmatic, são `Des`, `TripleDes`, `Rc2`, `Blowfish`, `SmallRsa` (uma chave RSA
++       de menos de 2048 bits), `Dsa`, `Ecb` e `Unauthenticated` (qualquer modo de cifra de bloco
++       que não seja AEAD). As ressalvas de TLS, usadas por telekinesis, são `Tls10`, `Tls11`,
++       `SmallDh` (DH efêmero de menos de 2048 bits), `CbcCipher`, `ExpiredCertificate`,
++       `SelfSignedCertificate`, `UnverifiedHostname` e `UncheckedRevocation`.
+
+% 1 1 0 037dfa2cf4f30d1702a36b0d2f90f582
+
+% 1 1 0 1ffc6b2a90c931da05f2f96505160c9f
+
+% 0 1 0 0dd16d54dadc80a0145782e2b6b5bb10
+
+@ 0 23 0 0152d5972fa66e7e1b8a754defd8af9a
++   entry .Acceptable   nenhuma fraqueza: SHA-2, BLAKE3, AES-GCM; a sua autorização está sempre em escopo
++   entry .Md5   calcular digests com MD5; liberada por `permitDisallowedCrypto` e por `permitCryptoThrough2014` em diante
++   entry .Sha1   calcular digests com SHA-1; liberada por `permitDeprecatedCrypto`, `permitDisallowedCrypto`, `permitCryptoThrough2030`
++   entry .NonCryptographic   calcular digests com CRC-32, CRC-64, Adler-32 ou MurmurHash3; liberada por `permitNonCryptographicHashes`
++       Não é um defeito do algoritmo — um checksum faz exatamente o que promete —, mas a admissão
++       de que nenhum adversário faz parte do modelo de ameaças, já que nenhum destes resiste a uma
++       colisão deliberada.
++   entry .Tls10   aceitar TLS 1.0; liberada por `permitLegacyTls`
++   entry .Tls11   aceitar TLS 1.1; liberada por `permitLegacyTls`
++   entry .SmallDh   aceitar Diffie-Hellman efêmero com menos de 2048 bits; liberada por `permitLegacyTls`
++   entry .CbcCipher   aceitar suítes de cifras TLS no modo CBC; liberada por `permitLegacyTls`
++   entry .ExpiredCertificate   aceitar um certificado expirado do par; liberada por `permitUntrustedCertificates`
++   entry .SelfSignedCertificate   aceitar um certificado autoassinado do par; liberada por `permitUntrustedCertificates`
++   entry .UnverifiedHostname   aceitar um certificado cujo nome não corresponde ao host; liberada por `permitUntrustedCertificates`
++   entry .UncheckedRevocation   conectar sem verificar a revogação de certificados; liberada por `permitUncheckedRevocation`
++   entry .Des   DES; liberada por `permitDisallowedCrypto` e por `permitCryptoThrough2014` em diante
++   entry .TripleDes   Triple-DES; aplicado sob `permitDeprecatedCrypto`, processado sob `permitLegacyCrypto`
++   entry .Rc2   RC2; liberada por `permitDisallowedCrypto` e por `permitCryptoThrough2014` em diante
++   entry .Blowfish   Blowfish; liberada por `permitDisallowedCrypto` e por `permitCryptoThrough2014` em diante
++   entry .SmallRsa   RSA com chave de menos de 2048 bits; liberada por `permitDisallowedCrypto`, `permitCryptoThrough2014` em diante
++   entry .Dsa   assinaturas DSA; aplicadas sob `permitDisallowedCrypto`, processadas sob `permitLegacyCrypto`
++   entry .Ecb   modo ECB; liberada apenas por `permitDisallowedCrypto`
++   entry .Unauthenticated   qualquer modo de cifra não autenticado (não AEAD); liberada por `permitUnauthenticatedCrypto`
+
+@ 0 1 0 1f619cfcb94cc097005e21dc9bdbb829
++ entry .Signing   o que um algoritmo de assinatura faz: assina bytes com uma chave privada e verifica com uma pública
+
+% 1 1 0 01fe16f60943fe2c1a6d57b08efd608a
+
+@ 0 6 0 006755e94d0e9e8f0b2f06e7fefef66b
++       A interface que as cifras assimétricas de enigmatic (`Rsa`, `Ecdsa`) e o seu adaptador
++       HMAC implementam, declarada aqui para que uma biblioteca abaixo de enigmatic possa receber
++       como valor “algo que assina”. Chaves e assinaturas são `Data` brutos; `PrivateKey#sign` e
++       `PublicKey#verify` de enigmatic são a fachada tipada para ela, controlada por autorizações.
++   entry #sign   a assinatura de `data` sob `privateKey`, como bytes
++   entry #verify   se `signature` é a assinatura de `data` sob `publicKey`
+
+@ 0 1 0 0bd4628af07e4889072e009a04e3c7d1
++ entry .providers   os provedores de hashing, cada um deles um given a importar por nome
+
+% 1 1 0 0895be6ddef80c5e1a2e35d8e47925b3
+
+@ 0 5 0 19d2cc4fc914d2ed1a299584b47803fb
++       Qual implementação calcula um digest é decidido pelo given `Hashing` em escopo, e a escolha
++       nunca é implícita: `import soundness.*` não traz nenhum deles, e um ou ambos são importados
++       por nome. O mesmo pacote, fundido no guarda-chuva, contém o `opensslProvider` de enigmatic,
++       e `javaBaseProvider` habilita a criptografia do JDK de enigmatic, além do hashing daqui.
+
+% 2 1 0 0af86422ea0451561ca76fea1ae1b7ce
+
+% 3 1 0 1dcd3ee2e264885a02d087c7ef8df630
+
+% 0 1 0 017022d7152b48d30afc99c6aa88cf83
+
+% 1 1 0 132c0eb0450e81080ad8691bc9b47938
+
+@ 0 12 0 1127acfcfa4c916413226ec57a84ed81
++       O `Hash` de cada algoritmo é derivado de um provedor que tem o método desse algoritmo, de
++       modo que os dois são complementares, e não ordenados por prioridade: falta ao provedor do
++       JDK `Blake3`, `Murmur3` e `Crc64`, e nada se perde ao importar ambos. Com os dois em
++       escopo, o provedor do Soundness, por ser importado lexicalmente, enquanto o do JDK é
++       derivado no escopo implícito, serve todos os algoritmos; para usar lado a lado o SHA-2
++       nativo do JDK e o BLAKE3, delimite o escopo dos imports com `locally`.
++   entry .javaBaseProvider   o JDK: `MessageDigest` e `java.util.zip` na JVM, a versão pura em outros lugares
++       Fornece o marcador `Provider.JavaBase`, a partir do qual `Hashing.javaBaseHashing` deriva
++       `JavaBaseHashing` (e enigmatic o seu `JavaBaseCrypto`). MD5, SHA-1, SHA-2, CRC-32 e
++       Adler-32; não BLAKE3, MurmurHash3 nem CRC-64.
++   entry .soundnessProvider   o `SoundnessHashing` em Scala puro: todos os algoritmos, em todas as plataformas
++       Fornece `SoundnessHashing` diretamente. O único provedor de `Blake3`, `Murmur3` e
+
+% 0 1 0 0105439d2f621e16162ff7ef2f574635
+
+@ 0 1 0 1c6824325243d89719ecf06656b8a667
++ entry .cryptoPermits   as autorizações criptográficas, cada uma um given a importar por nome: que fraqueza um programa aceita
+
+% 1 1 0 1ca7ee9e7f806c5806b9cf0da7f7c8f3
+
+@ 0 7 0 0e3cd5452367464d07fbf88db6a30d68
++       Cada given é uma interseção apagada de `Permit`s específicas (ou de `ProcessingPermit`s),
++       com o nome tirado dos status de algoritmo da NIST SP 800-131A — *deprecated*, *legacy use*,
++       *disallowed* — ou de um ano, e cobre tanto os hashes daqui quanto as cifras e as
++       configurações TLS de enigmatic e telekinesis. Os níveis se aninham por inclusão:
++       `permitDisallowedCrypto` contém todas as autorizações de algoritmos, e cada
++       `permitCryptoThrough<year>` contém as dos anos anteriores. Importe a mais restrita que
++       admita aquilo de que o programa precisa, para que a ressalva continue visível:
+
+% 2 1 0 17a598f895fa69e81d99e2e7411df47e
+
+% 3 1 0 0dafcb23904c9d450459f4decb750589
+
+% 4 1 0 02d451b7ea25164518bf3f07983c2784
+
+% 1 1 0 034856616298a3c50819c15f1c22cb62
+
+% 0 1 0 11f0efd23d05601c10b5896f7bfaf0f1
+
+% 1 1 0 0423460e9cb44e7d0a14d24a7d7b955e
+
+@ 0 2 0 09f5d9f325f51e7c1c9f456a85f24ebb
++       Nenhuma está em escopo por padrão; `import soundness.*` não importa givens, e uma
++       autorização importada em um bloco com `locally` tem o escopo limitado a esse bloco.
+
+% 1 1 0 14057fabd98a7f5d106fecc003c5c510
+
+% 1 1 0 1f508ebc8dd6f0c804d582e28814ed64
+
+@ 0 24 0 07b457b809395c0608468b6692c5196d
++   entry .permitNonCryptographicHashes   calcular digests com CRC-32, CRC-64, Adler-32 ou MurmurHash3
++       `Permit[Concession.NonCryptographic]`: declara que nenhum adversário faz parte do modelo de
++       ameaças — detecção de corrupção, tabelas hash, filtros de Bloom —, o que é uma ressalva
++       diferente da de um hash quebrado, por isso não está contida em `permitDisallowedCrypto`.
++   entry .permitDeprecatedCrypto   SHA-1 e Triple-DES: utilizáveis, mas transitórios
++       `Permit[Concession.TripleDes] & Permit[Concession.Sha1]`: o status “deprecated” da NIST. O
++       import para um programa que ainda precisa calcular SHA-1, como para os nomes de objetos do
++       Git.
++   entry .permitDisallowedCrypto   todos os algoritmos, comprimentos de chave e modos quebrados ou não aprovados, inclusive MD5 e SHA-1
++       `Permit` para `Des`, `Rc2`, `Blowfish`, `TripleDes`, `Dsa`, `SmallRsa`, `Ecb`,
++       `Unauthenticated`, `Md5` e `Sha1`: o status “disallowed” da NIST, que abrange todas as
++       autorizações de algoritmos mais fracas. Não inclui `NonCryptographic` nem as autorizações
++       de TLS.
++   entry .permitLegacyCrypto   processar dados já protegidos com Triple-DES ou DSA: apenas decifrar e verificar
++       `ProcessingPermit[Concession.TripleDes] & ProcessingPermit[Concession.Dsa]`: o “legacy
++       use” da NIST. Não é uma `Permit`, por isso não permite nenhuma nova cifração ou
++       assinatura, nem nenhum digest de gastronomy.
++   entry .permitUnauthenticatedCrypto   qualquer modo de cifra de bloco não autenticado (não AEAD), para enigmatic
++       `Permit[Concession.Unauthenticated]`: todo modo de cifra de bloco exceto os AEAD, que
++       enigmatic controla.
++   entry .permitLegacyTls   TLS 1.0 e 1.1, DH efêmero pequeno e suítes CBC, para telekinesis
++       `Permit` para `Tls10`, `Tls11`, `SmallDh` e `CbcCipher`. Reabilitá-los no JDK vale para o
++       processo inteiro.
++   entry .permitUntrustedCertificates   certificados do par expirados ou autoassinados e divergências de nome de host, para telekinesis
++       `Permit` para `ExpiredCertificate`, `SelfSignedCertificate` e `UnverifiedHostname`.
++   entry .permitUncheckedRevocation   conectar sem verificar a revogação de certificados, para telekinesis
+
+% 0 1 0 1a98e7492ac0b3bc03320a51c89599ae
+
+@ 0 9 0 1296305cd1cc210e033d3ec68c13638a
++   entry .permitCryptoThrough2014   todos os algoritmos que a NIST proibiu até 2014: DES, MD5, RC2, Blowfish, RSA pequeno
++       `Permit` para `Des`, `Md5`, `Rc2`, `Blowfish` e `SmallRsa`: a alternativa baseada em anos
++       aos níveis nomeados. Admite MD5, mas não SHA-1 nem Triple-DES.
++   entry .permitCryptoThrough2024   como 2014, mais Triple-DES e DSA
++       Acrescenta `Permit[Concession.TripleDes]` e `Permit[Concession.Dsa]`, proibidos depois de
++       2023 e removidos na FIPS 186-5.
++   entry .permitCryptoThrough2030   como 2024, mais SHA-1: a eliminação gradual planejada pela NIST
++       Acrescenta `Permit[Concession.Sha1]`, de modo que admite todos os algoritmos de hash,
++       exceto os não criptográficos.
+
+@ 0 1 0 0e01d3874a366e8115817d6d708af554
++ entry .Multicodec   o código multiformats de um algoritmo de hash, para envolver o seu digest como um `Multihash`
+
+% 1 1 0 1ffda9c07bea55790416fa7daa71ca79
+
+@ 0 2 0 034368327f6bd5f31b72b39059208714
++       Uma classe de tipos que *é* a associação de um `Algorithm` ao seu código e nome
++       registrados na tabela multiformats:
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 3 0 00dd020b122f811c0483ca706e3f9454
++       column  Algoritmo
++       column  Código
++       column  Nome
+
+% 0 1 0 16e466bc2176019d1ac647512494d89d
+
+% 0 1 0 13c872a4a115562d079d3f93f06712f2
+
+% 0 1 0 167220d316d8779617523ae896c3aeb5
+
+% 0 1 0 040e094eecb2873c1ecd90f1e16907e8
+
+% 0 1 0 067c23cb8a99b6ad08b232d983bb2fa7
+
+% 0 1 0 06f980d42373e3d912538e240aabe414
+
+% 0 1 0 187e3ee681da449d0cb96bf28aac4d05
+
+% 1 1 0 03525ec6ede4c46118ffa26e5a0e75d5
+
+@ 0 7 0 0a979249c6401c97109548c2c2a07ec1
++       `Blake3` e `Md5` são entradas provisórias na tabela, mas inequívocas e amplamente
++       implementadas. A classe de tipos é deliberadamente parcial: um algoritmo sem instância não
++       pode ser envolvido, e `Multihash(digest)` não compila para ele. Os checksums não têm
++       nenhuma — o Adler-32 não está registrado, e o CRC-32 e o CRC-64 estão registrados como
++       `hash`, não como `multihash`, já que a especificação reserva o multihash para funções
++       criptográficas adequadas ao endereçamento por conteúdo; um chamador que queira envolver um
++       checksum mesmo assim pode construir o `Multihash(code, bytes)` diretamente a partir do seu
++       código.
+
+@ 0 3 0 1143e71dac8a149c145a26e6b1d06a26
++       Fica em `gastronomy.multihash`. `.name(code)` dá o nome registrado de um código que esta
++       biblioteca conhece, para descrever um envelope decodificado cujo algoritmo não pode ser
++       recuperado como tipo.
+
+% 1 1 0 08eb6dd55029eb4e19857a673a9c403d
+
+% 0 1 0 179767fd8f1186730b3e0123f37985c4
+
+% 0 1 0 0e53f80d4c6938960e143a8c1f8fb188
+
+% 0 1 0 1866f9c4c58e2cad0cdaf7f20ae9c106
+
+% 0 1 0 05995b6b8a73964418b67ad077a7687c
+
+@ 0 11 0 02f74a7da16236671034e397ad767346
++   entry .sha2_224   `0x1013`, `sha2-224`: um varint de dois bytes no envelope
++   entry .sha384   `0x20`, `sha2-384`, para o tipo `Sha384`
++   entry .sha512   `0x13`, `sha2-512`, para o tipo `Sha512`
++   entry .blake3   `0x1e`, `blake3`: uma entrada provisória na tabela, mas inequívoca e amplamente implementada
++   entry .md5   `0xd5`, `md5`: uma entrada provisória na tabela
++   entry .name   o nome registrado de um código que esta biblioteca conhece, ou `Unset`
++       `Multicodec.name(0x12)` é `t"sha2-256"`; `0x00` é `identity`. Um código fora do conjunto
++       acima é válido e representável em um `Multihash`, mas não tem nome aqui.
++   entry .apply   `Multicodec[algorithm](code, name)`: uma instância para um algoritmo próprio
++   entry #code   o código multicodec do algoritmo, tal como registrado na tabela multiformats
++   entry #name   o nome multicodec registrado do algoritmo, como `sha2-256`
+
+@ 0 1 0 0e430fec18785ba81edbff3a018af75c
++ entry .Multihash   um envelope de digest autodescritivo: código varint, comprimento varint e depois os bytes do digest
+
+% 1 1 0 1c3bf2963f902a52101a4e90c617d361
+
+@ 0 6 0 13e75a94a52afb791a27912caad5d0f2
++       Um `Multihash` é o envelope multiformats `<varint code><varint length><digest bytes>`, no
++       qual um digest atravessa uma fronteira sem que as partes combinem o seu algoritmo por outro
++       canal — o que armazenamentos endereçados por conteúdo, IPFS, IPLD, libp2p e `did:key`
++       trocam. Um envelope é construído a partir de um digest tipado com `.apply`, cujo
++       `Multicodec` fornece o código, de modo que um envelope nunca pode alegar um algoritmo
++       diferente daquele que calculou o seu digest; e é lido de volta a partir de bytes com
++       `.parse`.
+
+% 2 1 0 1068647e293210c907edba6e35557941
+
+% 3 1 0 1c58b78c9ce43287048338e421a7943c
+
+% 4 1 0 078b35135240dde50631db12d1de1b37
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0922a227fdd14a120160048e7d9057eb
+
+% 0 1 0 0012f465320673dd11788c6d28d9afc3
+
+% 0 1 0 0b697319f6a2b04e13ed46ad2d3958c9
+
+% 0 1 0 149505c7475cfc6a1ac922fe7ab88942
+
+% 1 1 0 1469907721a99e0a0035f509a64fa72c
+
+@ 0 6 0 1482f0e94bc275f01acd31f062e99a5e
++       O `#code` é um simples `Int`, não um `Algorithm` de gastronomy: um envelope recebido pode
++       nomear uma função que esta biblioteca não sabe calcular, e esse valor é representável —
++       comparável, encaminhável —, e não um erro; `#algorithm` o nomeia quando o código é
++       conhecido. O comprimento de um digest é explícito, por isso um digest truncado é um
++       envelope válido. Dois multihashes são iguais quando os seus códigos e bytes são iguais. Os
++       varints são o LEB128 sem sinal da especificação, limitado a nove grupos. Fica em
++       `gastronomy.multihash`.
+
+% 0 1 0 125b14230ef75a221afc63a7bfa8e086
+
+% 1 1 0 1fdb34207719c1011f6d3a71d58a5126
+
+@ 0 17 0 17def87615291044062cfd1901e74f18
++   entry .apply   `Multihash(digest)`: envolve um digest tipado sob o código do seu algoritmo; `Multihash(code, bytes)` é a forma bruta
++       `Multihash(digest)` precisa que o algoritmo do digest seja um `Multicodec`, resolvido a
++       partir do seu tipo `Digest in algorithm`, de modo que um algoritmo sem código registrado —
++       um checksum — não compila. O construtor da case class `Multihash(code, digest)` recebe
++       qualquer código e quaisquer bytes, para um algoritmo que esta biblioteca não conhece ou um
++       digest truncado.
++   entry .parse   lê um envelope a partir de bytes, lançando `Multihash.Error` para um que esteja malformado
++       Decodifica os varints de código e de comprimento e toma exatamente `length` bytes depois
++       deles. O comprimento declarado precisa corresponder aos bytes que seguem: menos é
++       `Reason.Truncated`, mais é `Reason.Trailing`, pois qualquer um dos dois não seria igual a
++       nada, embora parecesse bem formado; um varint que ultrapassa nove grupos é
++       `Reason.Oversize`. Precisa de uma `Tactic[Multihash.Error]`.
++   entry .Reason   por que um envelope não pôde ser lido: `Truncated`, `Trailing` ou `Oversize`
++       `Truncated`: _the data end before the declared digest length_ (ou antes de um varint estar
++       completo); `Trailing`: _bytes remain after the declared digest length_; `Oversize`: _the
++       varint exceeds the nine groups the specification permits_. O enum é `Communicable` com
++       essas mensagens, que `Multihash.Error` incorpora.
++   entry .Error   lançado por `Multihash.parse` para um envelope que não pode ser lido
+
+% 1 1 0 026740c0cb3130af14992bcb1eec7ed2
+
+@ 0 12 0 1bc52eb5281e95c211f0945c716c3d60
++         Erro `↯/s.66.1`, com o ordinal do `Reason` como número de detalhe: _the multihash could
++         not be read because `reason`_, em que o motivo é uma das mensagens de `Multihash.Reason`.
++     entry #reason   qual dos `Multihash.Reason` se aplica
++   entry #code   o código multicodec do algoritmo, como um `Int`
++       Qualquer código que o varint possa conter, conhecido ou não por esta biblioteca;
++       `#algorithm` nomeia os conhecidos.
++   entry #digest   os bytes do digest, de qualquer comprimento que o envelope tenha declarado
++   entry #algorithm   o nome registrado do código, como `sha2-256`, ou `Unset` se for desconhecido
++       `Multicodec.name(code)`: um envelope decodificado que nomeia uma função que esta biblioteca
++       não conhece mantém o seu código e os seus bytes e simplesmente não tem nome.
++   entry #serialize   o envelope como bytes: código varint, comprimento varint, digest
++       O que é armazenado ou enviado; `Multihash.parse` o lê de volta, e os dois fazem a ida e
++       volta.

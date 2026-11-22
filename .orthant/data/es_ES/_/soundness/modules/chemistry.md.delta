@@ -1,0 +1,285 @@
+orthant 2 language
+
+@ 0 1 0 0ac964c6ea79e8611c0676681001fa4d
++ ## Química
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 4 0 0d6d3d0c7212c75f07e61e8bc3781f96
++ La [tabla periódica](https://en.wikipedia.org/wiki/Periodic_table), las fórmulas químicas y las
++ ecuaciones químicas se modelan como valores. Los 118 elementos están disponibles por sus
++ símbolos. Los elementos se combinan en moléculas, y las moléculas en fórmulas, con operadores
++ corrientes. Una ecuación une dos fórmulas con una flecha de reacción tipada y puede decir si está
++ ajustada.
+
+@ 0 1 0 06df82e45ad74d22094a21e8e7777be3
++ ### Sobre la notación química
+
+@ 0 4 0 1c5be5334a53791617cf24ac131ba94f
++ La notación química es un pequeño lenguaje formal. Una molécula es una colección de átomos, en la
++ que un átomo puede aparecer más de una vez, con una posible carga. Una fórmula es una suma de
++ moléculas con coeficientes. Una ecuación afirma una relación entre dos fórmulas, que es dirigida,
++ reversible o de equilibrio.
+
+@ 0 2 0 18a374182acd489709bfc978dec6c7eb
++ Escrita como cadenas, ninguna de esa estructura está disponible. `2H₂ + O₂` no son más que
++ caracteres, y si una ecuación está ajustada no es una pregunta que una cadena pueda responder.
+
+@ 0 3 0 133dcd40a38c780c133b45fcc84490a4
++ Aquí la estructura se construye a partir de partes tipadas. Las fórmulas se montan con operadores,
++ no se analizan a partir de texto. Se escriben con los subíndices y superíndices correctos. Y se
++ pueden interrogar: los dos miembros de una ecuación se comparan átomo a átomo.
+
+@ 0 2 0 0912bef352deaa6311e67b789081c2f6
++ Todo procede del paquete `soundness`. La segunda importación permite que los ejemplos impriman sus
++ resultados:
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 199f7818b30dec3505fd828eed336e39
++ ### Elementos
+
+@ 0 2 0 02eba028e408729d1859f68d8df8279f
++ Cada elemento es un valor de `PeriodicTable`, con su número atómico, su símbolo y su nombre.
++ También se puede llegar a los elementos por número, o por símbolo, en [tiempo de ejecución]:
+
+% 2 1 0 069520c723dbcc7c14a9e1a23c4f48c9
+
+% 0 1 0 0050335d536ba0410201356cb03d0027
+
+% 1 1 0 10b4341d76a9de4e081c8134e5cda6b2
+
+% 3 1 0 038d541531dbef29139c466e39dcd0b7
+
+% 4 1 0 1f256957eac7a65306076e7789775c6c
+
+% 5 1 0 166e178eb336ead51364f3a4ada1dd49
+
+% 0 1 0 0226a2183c3315020a62e6badc93746f
+
+% 0 1 0 0a8a749e85583e0e0927ab8a8a4f7efd
+
+% 0 1 0 111f9f23fb2c622801527bed1700ae5b
+
+% 0 1 0 18390ab9d6937bfe027dbc5298ab1e56
+
+% 1 1 0 169841c8894871710f69b01fd95fc7ab
+
+@ 0 2 0 19b13e0bd7bb4cc219b6cc7bff86505e
++ Buscar un elemento por número da un valor [opcional](optional-values.md), ya que puede que a un
++ número no le corresponda ningún elemento.
+
+@ 0 1 0 150972dd9d531cb814b08f0fd3c01eb7
++ ### Moléculas
+
+@ 0 2 0 1c2364abb74cd983015fb2f6ab2f4ffc
++ Los átomos se enlazan en una molécula con `*`, y un átomo repetido toma su número como argumento
++ de tipo. Una molécula se escribe con los subíndices adecuados:
+
+% 2 1 0 17a54e1f140a727c011fb293f010f273
+
+% 0 1 0 10227188158730550ebc7db127336f2a
+
+% 1 1 0 10f23883c919c25c15e0d83a19c9808f
+
+% 3 1 0 1468a4d043c6e6110f1be52cc45c01bd
+
+% 4 1 0 1d596266d81f154a09597c4321b6d159
+
+% 5 1 0 0ff47897b3816ebd05cf5f13ade98a17
+
+% 0 1 0 00236d29977178c21c37a85c4f21f907
+
+% 0 1 0 11da4bdc321a2a9a0b8ce7441feaa1e2
+
+% 0 1 0 1131eb54ffb0c6671e674ee7ff98501b
+
+% 1 1 0 1cb99c852dab4f8c0da17d9d029a4256
+
+@ 0 1 0 02811e2b72f4a1ec052241c1448970ca
++ ### Fórmulas y ecuaciones
+
+@ 0 2 0 054bc3a547548aff0e8067643e5a1caf
++ Una molécula con un coeficiente es un término de una fórmula. Los términos se suman con `+`, y dos
++ fórmulas se unen en una ecuación con una flecha de reacción:
+
+% 2 1 0 01c45b49d610ba2c064f9e923bd09c09
+
+% 0 1 0 0f05a959f60f50951880b6a39474dbfc
+
+% 1 1 0 0acd5e28ee608f6111d847c90c9246af
+
+% 3 1 0 15b4cc4a68fe75fa060fa505ec5254b6
+
+% 4 1 0 1fd1d3e67137bf1e01721b37635e9577
+
+% 5 1 0 107fd8a3878da25d057e70732483f6fb
+
+% 0 1 0 136c54e5e5b7f878073e7029d71efe37
+
+% 1 1 0 0703738eacdd801c00a4652352daec19
+
+@ 0 1 0 19759cf1b34c347617cfdb5e21ffb61f
++ Una ecuación sabe si sus dos miembros contienen los mismos átomos:
+
+% 2 1 0 0876aff16e9af0511f32f4c623657c7a
+
+% 3 1 0 1f7f02c5f1a8a5d70e2e10be719c099f
+
+% 4 1 0 1d7f3b7645e0f4910c4e8495f3529ea3
+
+% 0 1 0 189001fb3ca2ccb41e296a0a974550f5
+
+% 0 1 0 154a24df551756b1077964c8666b697f
+
+% 1 1 0 1a51de16e7ec2d7310f165164887db88
+
+@ 0 5 0 0eb19a0c3658eede054d95bc8475f98a
++ Cada miembro es una colección tipada de átomos, no texto, así que el ajuste es una comprobación
++ real, calculada a partir de la estructura. `atoms` da esa colección para cualquiera de los dos
++ miembros. De este modo, una fórmula informa de su propia composición, como el número de cada
++ elemento en todas las moléculas y coeficientes que contiene. Eso es lo que necesita el cálculo de
++ una masa molar, o la comprobación de una reacción propuesta.
+
+@ 0 1 0 0d90904979fb31f80e75c3e977867cef
++ ### Las flechas de reacción
+
+@ 0 1 0 193584fa0b64c5531c5baa9907c861d2
++ Hay cinco flechas disponibles. Significan cosas distintas y no son variantes de estilo:
+
+% 2 1 0 090e58a6b4cc1fde10059d3db2d59162
+
+@ 0 6 0 0e62468bdc7ab6601b3ea3b2662411df
++ column  Flecha
++ column  Reacción
++ column  Se representa como
++ row  `-->`  `Reaction.NetForward`, una reacción neta hacia delante  `→`
++ row  `<=>`  `Reaction.BothDirections`, una reacción que avanza en ambos sentidos  `⇄`
++ row  `<~>`  `Reaction.Equilibrium`, una reacción en equilibrio  `⇋`
+
+% 0 1 0 0c97affb193bbfc00a56e833235f295c
+
+% 0 1 0 17459d55bc7ffce603d88fa3abd63d91
+
+% 1 1 0 0d2b11008b7bc96a0d976d8f4a470757
+
+@ 0 1 0 1330deefb97a31511cfa0a6c0fec14c9
++ La flecha que escribe un químico transmite información, y la ecuación la conserva.
+
+@ 0 1 0 05c8dc345b1ef01312daa0e12244c86b
++ ### Carga y estado
+
+@ 0 3 0 0b6d973f68a50a3419c8726e2124e114
++ Un ion lleva su carga como parte de la molécula. Por tanto, una especie cargada es un valor
++ distinto de su homóloga neutra, y las dos no pueden confundirse al ajustar. Una carga unitaria es
++ un prefijo `+` o `-`, y cualquier otra carga procede de `ion`:
+
+% 2 1 0 0e0276c195e469a4054ebb311a25f17d
+
+% 3 1 0 0e9be5660a3b87e7074651255534452e
+
+% 4 1 0 071b10a197d8ebd8051902beb6a1b55a
+
+% 0 1 0 1476e53fed7e7d1a00111da3f2ccdec5
+
+% 0 1 0 0fa3fd2d5de48f28199d8ab8457595ad
+
+% 0 1 0 191653c05768413113c5e5a910ef3fa9
+
+% 1 1 0 0d562f1d1b8c0d281a03fe4d02e2fd0a
+
+@ 0 3 0 143c71faea2874bc1414bd2f63e6b84f
++ Son el catión sodio, el acetato y el hierro(III). Las cargas se suman al combinarse las especies,
++ así que `+Na*(-Cl)` es neutro. Eso es lo que hace que un compuesto iónico salga bien, sin que
++ haya que indicar su carga por separado.
+
+@ 0 2 0 1ec2c2523696f7c9118b0d47e946bc71
++ Una molécula también puede anotar su estado físico. Hay cuatro estados, cada uno escrito como
++ sufijo:
+
+% 2 1 0 1cbf5920cb625d3813f00634dec7d62f
+
+@ 0 5 0 0255406908c791dc181a2a8c12490a6a
++ column  Estado
++ column  Caso
++ column  Se representa como
++ row  sólido  `PhysicalState.Solid`  `(s)`
++ row  líquido  `PhysicalState.Liquid`  `(l)`
+
+% 0 1 0 1da8427e1d86495e1d4e6ec92e431d11
+
+@ 0 1 0 1c0bb0ae29c837a41cbdb4d9d7ef90a2
++ row  acuoso  `PhysicalState.Aqueous`  `(aq)`
+
+% 1 1 0 1ef4a6c54c787b0c18a7bc32c1f24fdd
+
+@ 0 3 0 0e96ff57282c2c261e0dcd949204c37d
++ El estado físico es una anotación, no parte de la identidad. Afecta a cómo se escribe una
++ especie, no a lo que es, así que `H₂O(aq)` y `H₂O(l)` describen la misma sustancia en condiciones
++ distintas. `inState` aplica un estado, y los paréntesis importan:
+
+% 2 1 0 1d0f9954de680b94019327f191730185
+
+% 3 1 0 1d3b48ee5bc5148c0e4a0fcd2037aeab
+
+% 4 1 0 04109bc986172cf41e1bc4abf715e295
+
+% 0 1 0 128d45a247924e530f1d56f03dd89f9f
+
+% 0 1 0 1274d11eee9e6e5715512c7c6845e657
+
+% 0 1 0 1aceb9ad34badde10522c9d91f6f746b
+
+% 1 1 0 15e1e2540ec93f751fc380f9936e7f90
+
+@ 0 4 0 0c1dcd12525d183e07b61cdb54b11c24
++ Combinar dos moléculas deja sin fijar el estado del resultado, porque el estado de una
++ combinación no puede inferirse de los estados de sus partes. Por tanto, el enlace descarta un
++ estado aplicado antes de formarse, como muestra la última línea, y el estado debe aplicarse a la
++ especie terminada.
+
+@ 0 1 0 0c4223193c188e1514066e1f62323267
++ ### Piezas básicas
+
+@ 0 2 0 15c6f0b1eb74dd3d151bb9ec3dc028cf
++ `Molecular` y `Formulable` son las dos [clases de tipos][clase de tipos] sobre las que se definen
++ los operadores:
+
+% 2 1 0 17e2a492536323180bb0ad53f2c35c7f
+
+@ 0 11 0 13e491c8b991b8df0d3df5cab9b11a43
++ column  Operación
++ column  Definida en
++ column  Produce
++ row  `a*b`  `Molecular`  una molécula que enlaza los átomos de ambos
++ row  `a*n`  `Molecular`  un término de fórmula con coeficiente `n`
++ row  `a**n`  `Molecular`  una molécula con cada átomo y la carga multiplicados por `n`
++ row  `+a`, `-a`  `Molecular`  la molécula con su carga aumentada o disminuida en uno
++ row  `a.ion(n)`  `Molecular`  la molécula con carga `n`
++ row  `a.inState(state)`  `Molecular`  la molécula en un estado físico
++ row  `a + b`  `Formulable`  una fórmula que contiene ambos
++ row  `a --> b`, y las demás flechas  `Formulable`  una ecuación
+
+% 1 1 0 1045429ededd829d02fb70ade4ac02fe
+
+@ 0 3 0 0f4273818593e7eb086b74f9a75adcbe
++ Un elemento es molecular, una molécula es molecular, y ambos son formulables. Por eso un elemento,
++ una molécula y una fórmula completa pueden aparecer en cualquiera de los dos miembros de una
++ ecuación, sin conversión.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 5 0 0b4cf9fa29e66d450a03b6c9e5293a90
++ - [Magnitudes](quantities.md) describe las unidades, como los moles y los gramos, en que se miden
++   las cantidades químicas.
++ - [Notación matemática](mathematical-markup.md) compone fórmulas de otra clase.
++ - [Números](numbers.md#overloading-the-operators) explica cómo se definen `*` y `+` para tipos
++   que no son números.

@@ -1,0 +1,274 @@
+orthant 2 language
+
+@ 0 1 0 11bbccb16729533509d0e4addc42c7f9
++ # Cicli e indicizzazione
+
+@ 0 6 0 005a9f0cdaa9815001181e73d5ffa774
++ Soundness itera per prova, non per contatore. Un indice è un `Ordinal` confinato alla collezione
++ che indicizza — `Ordinal in xs.type` — e solo un combinatore che ha già stabilito il limite può
++ coniarne uno. La lettura con un indice confinato passa per un `apply` totale che produce un
++ elemento; la lettura con un indice non provato produce un `Optional`. Lo schema che si sta
++ smaltendo è `var i = 0; while i < xs.length`, in cui l'indice è un semplice `Int` non vincolato
++ da nulla (voce della roadmap core-4, [#1666]).
+
+@ 0 2 0 064f9ddd10f014bb1c678f2b4c35d3af
++ `etc/check-while-count.py`, eseguito da `make build`, tiene la linea: nessun file può acquisire un
++ `while`, un `readUnchecked` o un `.charAt(` oltre a quanto registra `etc/while-baseline.tsv`.
+
+@ 0 1 0 144361c702019e661cb8fffac7cade8d
++ ## Che cosa sostituisce che cosa
+
+% 2 1 0 07781d3a6a565c640701402a0a79c361
+
+@ 0 15 0 17a311b31be14f5a0a8f3b6e3ee51e1c
++ column  Forma
++ column  Sostituto
++ row  contatore mai usato nel corpo  `repeat(n): …`
++ row  `xs(i)` su un ricevente contabile  `xs.extent.each: i => … xs(i) …`
++ row  costruzione di una collezione da `xs(i)`  `xs.tabulate: i => … xs(i) …` (e `range.tabulate` su qualsiasi sotto-intervallo con marchio)
++ row  `if i < xs.length then … xs(i) …`  `xs.pick(i): i => … xs(i) …`, oppure `xs.at(i)` quando il corpo vuole solo l'elemento
++ row  `xs(i)` e `ys(i)` su due riceventi della stessa lunghezza  `xs.coextent(ys).let: shared => … ys(shared(i)) …`, oppure `shared.each: (i, j) => …`
++ row  lo stesso, su una parte  `xs.extent.capped(n).each`, oppure `start thru end` da estremi confinati
++ row  lo stesso, ancorato alla collezione  `xs.iterate: i => …`, e `xs.iterate(range)`
++ row  discendente  `xs.retrace: i => …`
++ row  scansione con guardia dal cui `i` il chiamante riprende  `xs.prefix(p)` e `xs.prefix(after)(p)`; il solo indice di arresto è `xs.spot(p)`
++ row  rifilatura in coda  `xs.pare(floor)(p)`
++ row  `iterator.hasNext`  `each` o `fuse` sulla sorgente
++ row  cursore un byte alla volta  `xs.survey: cursor => …`
++ row  riempimento di un array nuovo  `Array.scribe(n): scribe => …`
+
+% 0 1 0 08f22b0bbd452b500b35b41a6b24fc16
+
+@ 0 1 0 1e064c07ba18f89c1de357862f184e1e
++ row  numero fisso di effetti collaterali  `repeat(n): …`
+
+% 1 1 0 04f45b8924fc266c1d174dab121efc0c
+
+@ 0 1 0 1f4369b5c59aec7d04e8512656362910
++ ## Quali riceventi si possono smaltire
+
+@ 0 3 0 115877c11981c568004887a5508de72c
++ Solo un ricevente con un'istanza di `Countable` ha un `extent`, e solo uno con un'istanza di
++ `Applicable` si può leggere con un ordinale. Un ciclo su qualsiasi altra cosa non ha una forma
++ confinata e resta com'è. I riceventi che si incontrano:
+
+% 2 1 0 0d52858f0bd1600b114af813c976d110
+
+@ 0 9 0 0b37046c829deaa10ed8a23f4fa14a54
++ column  Ricevente
++ column  Smaltibile
++ column  Perché no
++ row  `Array[element]^{}` congelato, `Data`  sì
++ row  `Sequence`, `Text`, `IndexedSeq`, `Map`, `Set`  sì
++ row  `List`, `Chain`  dietro un riconoscimento disasintotico
++ row  `scala.Array` mutabile  no  nessuna istanza di `Countable` o `Applicable`
++ row  `Seq` varargs (un parametro di classe; il parametro ripetuto di un metodo è una `List`)  no  nessuna istanza di `Countable` o `Applicable`
++ row  `IndexedSeq` i cui elementi portano capability  no  l'istanza di `Countable` è priva di cattura, e una capability non può fluirvi
+
+% 1 1 0 1b681c630bd4daa8112ffcd76efd16b1
+
+@ 0 2 0 1b88c87827af6a3b0f9bfbd4cafbf5d1
++ Un buffer mutabile in fase di riempimento non è un'eccezione da aggirare: lo si scrive tramite
++ `Array.scribe`, il cui handle marchia i propri indici.
+
+@ 0 1 0 1b36fdfd2299a02b1f63528371f0a54c
++ ## Lunghezze provate
+
+@ 0 2 0 0c01d9e44829d7401d2f26a37aa4f8ad
++ Un marchio può registrare una *lunghezza* oltre a un limite. `Sized[n]` (proscenium, accanto a
++ `Populated`) è un raffinamento fantasma, `Any { type Length = n }`, coniato in tre modi:
+
+@ 0 16 0 19fe93b3de92486214d4c010dad089b0
++ - **per costruzione**: `Array.fill(512)(…)`, `Array.tabulate(8)(…)` e `Data.fill(16)(…)` con una
++   lunghezza letterale restituiscono `… & Sized[n]`, come `List(a, b)` restituisce `& Populated`;
++   una lunghezza data da una `val` o da un'espressione non marchia (solo una costante di tempo di
++   compilazione è una prova che la macro può leggere). Il marchio è un raffinamento del tipo del
++   valore: le istanze di collezione per l'array congelato (`Traversable`, `Encodable`,
++   `Streamable`, `Countable`, `Applicable`, `Terminable` e, a valle, `Postable`, `Servable`,
++   `Transmissible`, `Readable`, `Encodable in Protobuf`) hanno un'istanza `Sized` — scritta con il
++   marchio nel `Self`, poiché una variabile di tipo limitata da un tipo che cattura acquisisce
++   `any.rd` — ma una typeclass di *mezzo* (`Addressable`, dietro `stream`, `Cursor(…)` e
++   `Stream(…)`) indica il mezzo su cui corre uno stream, dove un marchio non ha senso, quindi un
++   `Data` inteso come mezzo indica il proprio tipo: `val payload: Data = Data.fill(100)(_.toByte)`.
++   La regola per un nuovo given `Data is X`: se `Self` compare solo in posizione di argomento, gli
++   si affianca un gemello `sized…` (`[length <: Int] => (Data & Sized[length]) is X`), così che un
++   blocco provato sia accettato ovunque lo sia quello semplice; se `Self` è un risultato o un
++   elemento di stream (un mezzo), no;
++ - **per dichiarazione**: un producer che fissa un layout — un'intestazione tar di 512 byte,
++   un'intestazione di chunk di 8 byte — dichiara `Sized[n]` sul suo risultato e lo assolve una volta
++   al confine;
++ - **per verifica**: `xs.sized[512]` produce `Optional[xs.type & Sized[512]]`, il corrispettivo di
+
+% 0 1 0 08363255e6c11e2b099f524d0c4faff2
+
+@ 0 9 0 19ff9efc772f99da0b55805b3371ab48
++ Su un ricevente `Sized[n]`, `xs(156.z)` — oppure `xs(Quat)`, poiché i letterali ordinali vengono
++ resi inline come i loro interi — viene letto da una macro che decide `156 < n` mentre si espande:
++ la lettura è totale, e un letterale oltre la lunghezza non compila. Gli ordinali mantengono il loro
++ tipo semplice (un tipo letterale raffinato verrebbe inferito in ogni `val` che lo lega); un ordinale
++ variabile su un ricevente `Sized` produce `Optional`, come fa `at`, e `pick`/`extent` restano le
++ prove per gli indici calcolati. Le lunghezze si combinano a livello di tipo:
++ `Array.concat` di due array provati è `Sized[n + m]`, ridotto quando entrambi sono letterali e
++ portato simbolicamente altrimenti. Quando il layout è fisso, si preferisce il marchio a un
++ `readUnchecked` con un commento: i test di sondaggio dei byte (`header(156.z)`) sono esattamente
++ questo caso.
+
+@ 0 1 0 0aa26bec63addfd9036ae4f60e8e0193
++ ## Modificare un array congelato
+
+@ 0 2 0 14e77fe83ae82fb508da1db997316c6a
++ In un array congelato (`Array[e]^{}`) non si scrive mai; una modifica è una copia, e la forma della
++ copia indica la modifica:
+
+% 2 1 0 14eaae118bedd442052cba66c1c54488
+
+@ 0 6 0 04f705b328e6311d197ee636f85ca31e
++ column  Modifica
++ column  Copia
++ row  uno slot  `xs.define(i, v)`
++ row  uno slot rimosso  `xs.omit(i)`
++ row  un segmento sostituito  `Array.concat(xs.before(i), replacement, xs.after(i))`, che copia le tre parti una volta sola
++ row  più slot insieme  `Array.thaw(xs)`, una copia esclusiva scritta con `copy(i) = v` e di nuovo congelata da `Array.freeze`
+
+% 1 1 0 087c70ec25b9e6180b3243ec22266c79
+
+@ 0 3 0 00122ffbfbff7ba419de9cd6a2c0d649
++ I segmenti sono `before`/`upto`/`from`/`after` attorno a un ordinale, oppure `keep`/`skip` per
++ numero. Nessuno di questi passa per la vista della stdlib: `xs.stdlib.updated`, `take ++ … ++ drop`
++ e un `ArrayBuffer.from(xs.stdlib)` sono le forme che sostituiscono.
+
+@ 0 1 0 0f2c650aa5ab1dc308d3f091699ef0ba
++ ## Quando un `while` può restare
+
+@ 0 2 0 1b558b2d2a17cf530de15cb3105fd122
++ Un `while` può restare solo quando nessuna espressione nella sua condizione viene confrontata con
++ la dimensione di una collezione che il corpo indicizza. Tre forme si qualificano.
+
+@ 0 1 0 078d739e211368771830a7664ed2740b
++ 1. **Terminazione per stato, non per limite.** `while !settled do`, `while cursor.more do`,
+
+% 0 1 0 10d9fd1385574bf507901e2d5e7a2a9c
+
+@ 0 6 0 01113677b26ed3e003379ec27b9d65f6
++ 2. **Aritmetica degli indici derivata dai dati.** La divisione di Knuth, i riferimenti all'indietro
++    dei compressori, i predittori PNG, il setacciamento di un heap, un percorso UTF-8 che avanza di
++    `charCount`. Un commento sopra il ciclo indica l'invariante che mantiene ogni indice
++    nell'intervallo, e le letture usano `readUnchecked` con quel commento come prova.
++ 3. **Gli interni del vocabolario stesso**, in denominative, concordance, zephyrine e proscenium,
++    che implementano i combinatori usati dal resto della libreria.
+
+@ 0 1 0 08a5c0a76a6963ce183e93c93f0eddc2
++ ## Quando un `Iterator` è il tipo onesto
+
+@ 0 8 0 026156f9c1d01d6d1d30d15b83279cc9
++ `murmuration.Iterator[element]` (esportato da rudiments e dal modulo ombrello) è un pull one-shot
++ con stato, ed è esattamente ciò che dovrebbe denotare: una sorgente letta una volta dal mondo
++ esterno (i frame di un socket, uno stream di eventi HTTP, le pressioni di tasto di un terminale, un
++ archivio serializzato chunk per chunk man mano che si apre il payload di ogni voce), oppure un
++ cursore da cui riprende una ricerca con backtracking. È una capability `caps.Stateful`, quindi un
++ metodo che lo fa avanzare è un `update def`, un combinatore che ne prende possesso è un
++ `consume def`, e il compilatore rifiuta un secondo uso di un iteratore già consumato. Non esiste una
++ coppia `hasNext`/`next()`: i tre modi onesti di leggerne uno sono
+
+@ 0 13 0 11edaac9ded9cd190a8e34115bc82266
++ 1. **Un'operazione terminale** — `each`, `fold`, `exists`, `all`, `count`, `size`, `seek`,
++    `chain`, `to[result]` — che svuota l'iteratore sul posto. `each` è il ciclo.
++ 2. **`next()`**, per un consumatore con stato che tiene l'iteratore in un campo (una sorgente
++    `Stream`, la pompa di eventi di un terminale): una chiamata avanza e produce `element |
++    Iterator.Exhausted`, quindi il chiamante deve fare il match su `Iterator.Exhausted` prima di
++    avere un elemento.
++ 3. **Lo stile mobile**, `pull`, per un ciclo scritto a mano che ha bisogno dell'elemento e del
++    diritto di fermarsi tra un elemento e l'altro: `iterator.pull` consuma l'iteratore e produce
++    `Iterator.Exhausted` o un `Cursor[element]^` che lo possiede; `cursor.value` legge l'elemento e
++    `cursor.pull` consuma il cursore per avanzare. Si dirama con un pattern tipizzato
++    (`case cursor: Iterator.Cursor[Int]`), si rilega l'handle a ogni passo, e si legge
++    `cursor.value` prima di `cursor.pull` nella stessa espressione. Riusare un cursore consumato,
++    o leggere un valore senza cursore, non compila.
+
+@ 0 7 0 112e05ca1fb52a3b05c338f406319366
++ Le implementazioni forniscono il nucleo veloce — `update def advance(): Boolean`, che avanza e
++ materializza l'elemento in una `var`, e `def current: element`, una lettura semplice — ed
++ ereditano tutto il resto. I combinatori pigri (`map`, `filter`, `sweep`, `keep`, `skip`,
++ `zip`, `indexed`, `trace`, `excerpt`, `batched`, `distinct`, `concat`, `flatMap`) consumano il
++ loro ricevente e restituiscono un iteratore nuovo il cui insieme di cattura nomina la lambda, così
++ una lambda che cattura un valore esclusivo rende esclusivo anche il risultato; `flatMap` prende una
++ lambda che restituisce una *collezione* (`Traversable`), mai un iteratore.
+
+@ 0 4 0 0f1df231c7ac7add1928aa9e5b70e9c3
++ Un `scala.collection.Iterator` si raggiunge solo a un confine: `Iterator.from(javaIterator)` e
++ `Iterator.from(stdlibIterator)` ne avvolgono uno in ingresso, e `iterator.stdlib` ne consegna uno
++ in uscita a un'API della stdlib o del JDK che lo pretende, con il tag `[stdlib-boundary]` come ogni
++ ponte. Tutto ciò che prima ricorreva a `xs.stdlib.iterator` aveva una forma nativa:
+
+% 2 1 0 189001873ce2559308a2a10ac8480785
+
+@ 0 7 0 1ed24952c27b686305f8014cc6f966da
++ column  Uso
++ column  Forma nativa
++ row  uno stream o un cursore su una `Chain`  `Stream(chain)`, `Cursor(chain)`
++ row  un framer su una `Chain`  `chain.frames[F]`
++ row  una catena viva  svuotata con `each`
++ row  un percorso in parallelo  `zip(…).each` o `indexed.each`
++ row  una scansione pigra della prima corrispondenza  `fuse` con un `or` per nome
+
+% 1 1 0 1ade6af34ca3158513f2edadde24349f
+
+@ 0 1 0 1736df3749f7ea5619a360a8f9bd6f27
++ ## Commenti di prova
+
+@ 0 5 0 1d48f3163a6f3c340f73abb1361b7b0d
++ `attested` e `readUnchecked` sono i due punti in cui un limite non può seguire il programma. Ogni
++ punto di chiamata porta un commento, sulla stessa riga o su quella sopra, che indica la costruzione
++ che prova il limite — "`n = min(a.length, b.length)`, checked at :117". Il commento è la prova, e il
++ ratchet rifiuta un `attested` che ne sia privo. Si preferisce la forma a blocco,
++ `xs.attested(i): i => …`, così che l'estensione dell'attestazione sia visibile.
+
+@ 0 1 0 160e0bac3849e02e11ce3cc3ed77dc58
++ ## Trappole
+
+@ 0 4 0 088118e23b409c1816ccf19aea0a1842
++ Un contatore che sopravvive al proprio ciclo non si può semplicemente cancellare. Può essere
++ condiviso con un ciclo successivo che riprende da dove il primo si è fermato, nel qual caso
++ rimuovere la dichiarazione cambia in silenzio quante volte viene eseguito il secondo; oppure può
++ essere azzerato prima del riuso, nel qual caso la dichiarazione si sposta. In nessuno dei due casi
++ la compilazione fallisce.
+
+@ 0 5 0 04f6d962ccc2f6cd089b7fd00e04a96c
++ `each` è un nome diffuso. Un'estensione omonima su un tipo non correlato, raggiunta tramite
++ l'oggetto compagno di un tipo che il file importa, ha la precedenza sull'`each` dell'intervallo e
++ toglie il marchio senza alcun errore: la lettura torna semplicemente `Optional`. Un nome del genere
++ non raggiunge mai il modulo ombrello, quindi l'errore di compilazione che normalmente intercetta un
++ conflitto non può scattare; la soluzione è rinominare l'altro metodo, come `hypotenuse.Bcd#each` è
++ diventato `eachNibble`.
+
+@ 0 6 0 01e22303c3fb0f591e98c77559352f5e
++ Un nome che entra in `package soundness` può fallire in tre modi, e nessuno di essi è l'errore di
++ compilazione che la filosofia dei nomi descrive come ciò che intercetta i conflitti: ciascuno
++ fallisce in silenzio. Due moduli che esportano lo stesso nome ne perdono uno. Un'alternativa senza
++ marchio raggiungibile tramite l'ambito implicito ha la precedenza su una con marchio e toglie il
++ marchio senza alcun errore. E un `export` di un'estensione *sovraccaricata* inoltra un solo
++ overload, quindi l'altro scompare: per questo `thru`, `till` ed `each` sono scritti a mano nei loro
++ file dell'ombrello anziché esportati.
+
+@ 0 8 0 0c8a196b5dbbcd8b1d3c03512074d41d
++ I membri di estensione si risolvono su un ordinale con marchio: `i.n0`, `i.next`, `i.within(ys)` e
++ gli altri funzionano su un `Ordinal in xs.type` senza upcast, e `i + 1` e `i - j` passano per i
++ given generici sul marchio nell'oggetto compagno di `Ordinal` (il risultato è un semplice
++ `Ordinal`, poiché l'aritmetica esce dall'intervallo provato). L'upcast `(i: Ordinal).n0` non serve
++ più da nessuna parte. Ciò che fa funzionare il tutto si trova in `denominative.internal`: ogni
++ estensione inline lì allarga il proprio ricevente con un cast cancellato
++ (`ordinal.asInstanceOf[Int]`), perché l'inliner non può ritipizzare un ricevente nudo o ascritto
++ rispetto al marchio una volta che la chiamata attraversa un'unità di compilazione. Quando se ne
++ aggiunge una, si mantiene questa disciplina.
+
+@ 0 3 0 003b39ed536851310736cf643ab8dbd5
++ Un marchio non può servire due riceventi: `Ordinal in xs.type & Ordinal in ys.type` non è un
++ sottotipo di nessuno dei due (raffinamenti di alias omonimi non si intersecano in uno solo), quindi
++ una lettura parallela passa per `coextent`, il cui token trasferisce invece la prova.
+
+@ 0 3 0 1f1708808cfac34c1aba05306026c57a
++ `extent` e i combinatori di intervallo sono a livello di package in `denominative`, quindi un file
++ che li raggiunge per la prima volta ha bisogno di `import denominative.*`; solo le operazioni negli
++ oggetti compagni propri dei tipi opachi arrivano tramite l'ambito implicito.
+
+% 0 1 0 008df0fcc830bdcd0e955842dd357116

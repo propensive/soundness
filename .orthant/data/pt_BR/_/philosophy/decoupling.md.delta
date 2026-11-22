@@ -1,0 +1,118 @@
+orthant 2 language
+
+@ 0 1 0 14d4c2c921e3da6e1f0c7d7e7bd995a2
++ # Desacoplamento
+
+@ 0 6 0 143ea76d1855e0ac17cbd8c8cfffb4bb
++ Os módulos do Soundness são desacoplados: bibliotecas não relacionadas não dependem diretamente
++ umas das outras, mesmo quando precisam interoperar. Pequenas abstrações compartilhadas — classes
++ de tipos que descrevem apenas o necessário — permitem que dois módulos cooperem sem que nenhum
++ conheça o outro, de modo que cada um pode ser adotado à la carte e evoluir por conta própria. A
++ integração sem emendas que os usuários experimentam vem dessas interfaces comuns, e não de uma
++ teia de dependências rígidas entre componentes que deveriam permanecer separados.
+
+@ 0 1 0 0f5eb0012c34d0d61204d22c48b542b3
++ ## O problema, em termos concretos
+
+@ 0 3 0 18f5e3c1cc9d9aa20898568ddfa25257
++ Uma biblioteca de tempo e uma biblioteca HTTP precisam ambas falar de instantes: uma os produz,
++ a outra os coloca em cabeçalhos `Date`. Há três formas convencionais de organizar isso, e as
++ três são ruins.
+
+@ 0 4 0 03b4f92376456fee0cff7269ea457b6b
++ A biblioteca HTTP pode depender da biblioteca de tempo — impondo-a a todo usuário que só queria
++ HTTP. A biblioteca de tempo pode depender da biblioteca HTTP — absurdo, mas acontece. Ou cada
++ uma pode definir seu próprio tipo de instante, deixando os usuários converterem em cada
++ fronteira, e deixando as duas definições livres para divergir.
+
+@ 0 1 0 127bb35d79a426760cd0c587e83ba2e6
++ ## O arranjo que o Soundness usa
+
+@ 0 2 0 096fce701c29626e090f37610e134976
++ Um terceiro módulo define um *marcador* e um par de classes de tipos que dizem como qualquer
++ tipo é convertido de e para uma representação comum:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 0a8fd027f633887d0882c7e438546cf9
+
+% 0 1 0 0cad7b252d2a92491473765dc6a0d8a8
+
+% 0 1 0 15840b139a4f05950f0b5301c0ad4ced
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 039f1a94257dacaa048323a5a50c58ab
++ A biblioteca de tempo declara que o tipo de instante *dela* é abstraível através de
++ `Instants`. A biblioteca HTTP declara que aceita qualquer coisa abstraível através de
++ `Instants`. Nenhuma menciona a outra, e nenhuma é carregada a menos que o programa a use.
+
+@ 0 3 0 12175ba52cc8a1020395bf142976511d
++ Esses marcadores são pequenos e não são muitos: `Instants`, `Durations`, `Dates`, `Paths`,
++ `Urls`, `HttpStreams`, `Text` e mais alguns. Cada um nomeia um único conceito sobre o qual várias
++ bibliotecas precisam concordar, e não define nada além do acordo.
+
+@ 0 1 0 1856c817f4f0ebd80fe9aa1c325d6756
++ ## O que isso compra
+
+@ 0 3 0 1e28ab4da8ef97b01d4a51c6d69431c8
++ **Adoção à la carte.** Um programa que só quer análise de JSON obtém um grafo de dependências que
++ contém a análise de JSON. As integrações que ele não usa não estão no build, porque não se
++ depende dos módulos que as fornecem.
+
+@ 0 4 0 0e6a7a39e5b5e9c1091f27ad954539f0
++ **Tipos estrangeiros participam.** A classe de tipos não tem implementações privilegiadas, então
++ um `java.time.Instant`, ou um tipo de uma biblioteca não relacionada, passa a poder ser usado
++ onde quer que se espere um instante, bastando fornecer uma instância. Nada precisa ser envolvido,
++ e a integração vive no programa, em vez de exigir que alguma das bibliotecas mude.
+
+@ 0 3 0 160d9ee4f5b57aa81caabdb1ca3cde66
++ **Evolução independente.** A biblioteca de tempo pode mudar sua representação interna sem que a
++ biblioteca HTTP seja recompilada, porque o que elas compartilham é o marcador e a forma da
++ conversão, e não um tipo.
+
+@ 0 1 0 00fc4aca294fc5280d9897a1b684b37c
++ ## O mesmo princípio dentro de um módulo
+
+@ 0 3 0 051a4655d945bcf109cafdac2e03a677
++ O desacoplamento também opera abaixo da fronteira do módulo, como uma *costura de backend*: as
++ operações de que uma capability precisa são reunidas em uma única trait, e as implementações
++ específicas de cada plataforma são fornecidas à parte.
+
+@ 0 7 0 1757a738b628648e0f1fc3d8d54f01ab
++ `FilesystemBackend` reúne stat, open, read, write, list, link e delete; tudo na API de
++ [sistema de arquivos](../en/modules/filesystem.md) é definido em termos delas. A implementação
++ `java.nio`, a implementação WASI sobre `wasi:filesystem` e qualquer outra futura são
++ intercambiáveis, e a API voltada ao usuário não menciona plataforma nenhuma. A mesma forma dá
++ aos [sockets](../en/modules/sockets.md) um `SocketBackend`, à
++ [compressão](../en/modules/compression.md) seus motores DEFLATE por plataforma, e às
++ [imagens](../en/modules/images.md) seus codecs.
+
+@ 0 3 0 133995449cc82c4f130a298c2204f2ad
++ É isso que faz o mesmo código rodar na JVM, em um navegador, em um binário nativo e dentro de um
++ componente WebAssembly: não compilação condicional, mas uma costura estreita o bastante para que
++ várias implementações possam honestamente ficar atrás dela.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Quanto custa
+
+@ 0 4 0 0701500932dba1781c55e7085e68475f
++ A indireção não é de graça para ler. Seguir como um valor `Yaml` se torna um corpo HTTP
++ significa encontrar a instância `Abstractable across HttpStreams`, que não está nem onde está o
++ código YAML nem onde está o código HTTP — e um leitor que não conhece a convenção não vai
++ adivinhar onde procurar.
+
+@ 0 4 0 07177ace6f66ec990c9bdbbc11326067
++ A atenuação é que há *uma* convenção, e não um mecanismo diferente por integração, então o custo
++ é pago uma vez no aprendizado, e não uma vez por fronteira. Mas é um custo real, e é a razão de o
++ conjunto de marcadores ser mantido pequeno: cada um é uma peça de vocabulário que todo leitor
++ precisa, mais cedo ou mais tarde, adquirir.
+
+@ 0 2 0 0f653ca96e30b4fa1b305615b38b529f
++ Veja [assinaturas honestas](honest-signatures.md) para por que as classes de tipos permanecem
++ mínimas, e [composabilidade](composability.md) para o que as interfaces compartilhadas tornam
++ possível.

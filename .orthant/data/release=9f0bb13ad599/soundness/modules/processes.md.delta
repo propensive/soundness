@@ -1,8 +1,0 @@
-orthant 1 release
-
-- import pathInterfaces.pathOnLinux
-+ import pathInterfaces.pathOnLocal
-+ import systems.javaBaseSystem
-
-- val directory: Path on Linux = (% / "var" / "log").on[Linux]
-+ val directory: Path on Local = (% / "var" / "log").on[Local]

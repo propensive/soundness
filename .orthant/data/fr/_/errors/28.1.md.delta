@@ -1,0 +1,72 @@
+orthant 2 language
+
+% 0 1 0 198aa3faa12e2e761cb023cb9d4a5cef
+
+@ 0 2 0 030797335e8d9d7d02a2715426f1ccbd
++ Levée lorsque Metamorphose ne peut pas construire une permutation à partir
++ des arguments fournis.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 4 0 0a94406b24bce47a0381f762ceac278f
++ Dans Metamorphose, une permutation se construit à partir d'une séquence d'indices
++ sur une base positionnelle. Les variantes de l'erreur signalent les quatre façons
++ dont les indices peuvent être incohérents avec la base demandée ou la longueur de
++ l'entrée. Le message est `could not construct permutation because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0b3f97083d8a1963130135e3160f9373
+
+@ 0 1 0 1a9a0e4ccd21d4991a2058fc2b632351
++ Une valeur positionnelle est supérieure ou égale à sa base.
+
+@ 0 1 0 03dd3deeab25705915d1f7d59a51084e
++ **Exemple.** `[↯/s.28.1.1] could not construct permutation because the value 5 is too large for its positional base 4`
+
+@ 0 2 0 05f46dc375c086111c22512a77caeaa7
++ **Résolution.** Réduisez la valeur fautive, ou augmentez la base de la
++ permutation.
+
+% 0 1 0 17fc650e96b3ae1b1bca1c204c58cdd8
+
+@ 0 2 0 0f0f402afc4ad03a1c4a27682a6d6a44
++ Le même indice apparaît à deux positions distinctes, ce qui associerait deux
++ entrées à la même sortie.
+
+@ 0 1 0 11fda1658bf3f93616190c44b439500a
++ **Exemple.** `[↯/s.28.1.2] could not construct permutation because the index 3 was duplicated at 5`
+
+@ 0 2 0 00db5178b8ed9ecb0ca6e5ceba1005b0
++ **Résolution.** Chaque indice doit apparaître exactement une fois ; supprimez les
++ doublons de l'entrée.
+
+% 0 1 0 173f80531bb013c802b9bae4702fc1ec
+
+@ 0 1 0 0f23ac038550155d0709099e25b0fd38
++ Un indice est hors de l'intervalle valide `0..max`.
+
+@ 0 1 0 1ebd90d2c32422bb1d0fab750d79a3a9
++ **Exemple.** `[↯/s.28.1.3] could not construct permutation because the index appears, but every index should be in the range 0-7`
+
+@ 0 1 0 051e421c749fa91b0f95796d284105e6
++ **Résolution.** N'utilisez que des indices compris dans la taille de la permutation.
+
+% 0 1 0 042fd2209e8d923a089cd2d6af43cd87
+
+@ 0 1 0 1f5150416f18860b0dff6b2a059a49a2
++ L'entrée a moins d'éléments que la permutation n'en exige.
+
+@ 0 1 0 1f47a002eebcb4c813080e7c6b23d153
++ **Exemple.** `[↯/s.28.1.4] could not construct permutation because the input, of size 3, is too short for the permutation of size 5`
+
+@ 0 2 0 1f1be192a01323fd043a59ec9762b82c
++ **Résolution.** Fournissez une entrée au moins aussi longue que la taille de la
++ permutation, ou construisez une permutation plus petite.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 09657371824b40a900f30ac879cbd7af
++ - Source : `lib/metamorphose/src/core/metamorphose.Permutation.scala`

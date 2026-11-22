@@ -1,0 +1,1706 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 133cbee0bf1ef9f70c2b0a19af47fdb5
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 10a834c9e90162ec089ce9104ecdd0e9
++ info   Servidores del Model Context Protocol cuyas herramientas, recursos y prompts son métodos de Scala anotados
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 1bc2dc1b91c1e6bd042e0badf7f65d96
++     _Synesthesia_ implementa el [Model Context Protocol](https://modelcontextprotocol.io/), el
++     protocolo con el que el arnés de un asistente de IA recurre a un servidor en busca de
++     **herramientas** a las que puede llamar, **recursos** que puede leer y **prompts** que puede
++     usar. Un servidor es un objeto que extiende `Mcp.Server` y cuyas prestaciones son métodos
++     corrientes marcados con anotaciones: un método `@tool` es una herramienta invocable, con sus
++     esquemas de entrada y salida derivados de los tipos de sus parámetros y de su resultado; un
++     método `@resource("uri")` sirve contenido en una URI; un método `@prompt` devuelve una
++     conversación escrita con los interpoladores `human"…"` y `agent"…"`. El protocolo en sí —
++     JSON-RPC sobre el transporte HTTP transmisible, las sesiones, los listados que descubre el
++     cliente — lo genera a partir de esas definiciones la macro `Mcp.Specification`, de modo que
++     la descripción que lee un modelo nunca puede contradecir el código al que llama.
+
+% 2 1 0 0a9377bdcd3bd7ea199d5901eb8a5fa5
+
+% 3 1 0 0d2402be2c82fcbc001131b7c59a9312
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1a9bdcbbbc188cc81380fdfcd489236a
+
+% 0 1 0 018ef09784aaa5ab109384de30d3546a
+
+% 1 1 0 17955793454babf402addde3ce56c3f9
+
+% 2 1 0 12e496c0bd51f38003db450acd40e678
+
+% 0 1 0 1369d4d7f969105201626bbb0aafffdb
+
+% 0 1 0 0893cd07603670261422c1c82a8693b5
+
+% 1 1 0 13a1ee3ea9beb97610c1c49d2bd3b797
+
+% 2 1 0 1a89ce06384390cf07d99c86acbcf23a
+
+% 4 1 0 059b8206373fee9718e301f9a4ae4071
+
+% 0 1 0 14147aa1fabe01e319e4ea33217f0b8d
+
+% 0 1 0 185853b07828eaea1b10efe98223a665
+
+% 1 1 0 1df454ec4a6650eb09caf3f7acab888b
+
+@ 0 5 0 1fb39faf7237009b1d7d22166145917a
++     El servidor se monta en un manejador HTTP llamando a `AssistantTools.serve`, que responde a
++     las peticiones JSON-RPC enviadas con `POST`, transmite eventos enviados por el servidor a un
++     `GET` y termina una sesión con `DELETE`. Una herramienta que toma un `using Mcp.Client`
++     puede responder al cliente mientras se ejecuta: `log` transmite el progreso y `elicit` pide
++     al usuario datos estructurados, con un formulario cuyo esquema se deriva de una case class.
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     La biblioteca tiene dos conjuntos de fuentes:
+
+@ 0 7 0 1d281bb20461153b044c9c3f36ddabf0
++     - `synesthesia.content` — el vocabulario de bloques de contenido compartido con el Agent
++       Client Protocol: `Content` (bloques de texto, imagen, audio, enlace a recurso y recurso
++       incrustado, contenidos de recursos, `Icon`, `Annotations`, `Role`) y la anotación
++       `@about`. Solo depende de JSON, así que un cliente ACP puede usarlo sin un servidor HTTP.
++     - `synesthesia.core` — solo para la JVM: `Mcp` con sus registros del protocolo,
++       `Mcp.Server`, `Mcp.Client`, `Mcp.Interface`, `Mcp.Specification`; las anotaciones
++       `@tool`, `@resource`, `@prompt`, `@title` y `@ui`; `Discourse` y los interpoladores
++       `human`/`agent`.
+
+@ 0 6 0 0b61a1f73504b46709511cd960bc7ea2
++     Todo se exporta al paraguas `soundness`, donde `Content` se escribe `McpContent` (`Content`
++     en el paraguas es la carga útil con tipo de medio de gesticulate); sus miembros también son
++     accesibles como `Mcp.TextContent`, etc., ya que `Mcp` los reexporta. `Mcp.Server#serve`
++     necesita los valores contextuales que tiene un manejador HTTP — un `Monitor`, un `Probate`,
++     un `Online` y la `Http.Request` — y derivar una especificación necesita una
++     `Tactic[Json.Error]` y una `Tactic[Mcp.Error]`, que proporciona `strategies.throwUnsafely`.
+
+% 0 1 0 1d8436a8941e75d80d3a5fde3aa97a72
+
+% 0 1 0 07cee1c7c0a0f40c002ca38ef027536a
+
+% 0 1 0 005f812ca19619611ea178a19e3d2326
+
+% 0 1 0 13b5955c648fb0441802965a97a7341e
+
+% 0 1 0 1fb20612115503f10776e8698e9b3658
+
+@ 0 1 0 1140ca31cf58b4dc05fdc3e8ec36f1f8
++ entry .Mcp   el Model Context Protocol: sus registros, su interfaz JSON-RPC, servidores, clientes y sesiones
+
+% 1 1 0 0724f3a8d422f4f4184d7a3284d7f777
+
+@ 0 7 0 061064daef692f571c2e3386faf45b7b
++       `Mcp` es el hogar de todo lo que define el protocolo. Sus registros — `Tool`, `Resource`,
++       `Prompt`, `CallTool`, `Initialize`, `ServerCapabilities` y los demás — son case classes que
++       reflejan campo a campo los objetos JSON del protocolo, cada una codificable a `Json` y
++       decodificable desde `Json` por derivación, con los campos `Optional` ausentes en la
++       transmisión cuando son `Unset`. Sus enumeraciones (`LoggingLevel`, `TaskStatus`, `Role`,
++       …) llevan códecs escritos a mano hacia las grafías en minúsculas del protocolo, y sus
++       tipos suma (`ContentBlock`, `Reference`) se codifican con un discriminador `type`.
+
+@ 0 6 0 03172103078abaca0cf5f028ea6f70b8
++       El lado del servidor consta de cuatro piezas. El servidor propio de un programa extiende
++       `.Server` y marca sus métodos con `@tool`, `@resource` o `@prompt`; la macro
++       `.Specification` lee esas anotaciones para formar los listados y el despacho;
++       `.Interface` es la implementación JSON-RPC de `.Api` para una sesión, construida sobre esa
++       especificación; y `.send` asigna una petición HTTP a ella. Una herramienta que toma un
++       `using Mcp.Client` llega al cliente mediante `.Client`.
+
+% 2 1 0 16326e603109e27102041ff4768eb070
+
+% 3 1 0 1332f6d932c2995f1b2864bd8a0dcafa
+
+% 4 1 0 197dfac578cb4095088145593499705c
+
+% 0 1 0 0c57500ebbbac08c0a2a37b9c9941650
+
+% 0 1 0 03eb187255151006155c0c244b750574
+
+% 0 1 0 035232eb3f87c27e04954d49e7ece15e
+
+% 0 1 0 106d0d3ca95fe5d50aeda012c75418c2
+
+% 0 1 0 179935d56ee8d5771d46e731f601754d
+
+% 0 1 0 139b7fd883540a070a88921f78a46335
+
+% 0 1 0 13ba9ca3bea4d2da00179d9568c7dfb3
+
+% 0 1 0 09e15b9b84a2047812fec87184661053
+
+% 0 1 0 09556d69eb2ccec4056c4e90688aa046
+
+% 0 1 0 0f56b62a78095c7916cf6ad19e1da0b1
+
+% 0 1 0 1b29db89623cdd980dff4c7efd565a26
+
+% 1 1 0 128e69aae9f6297110ab1e07c6d111db
+
+@ 0 4 0 12e7dfe7b3c7204402e8952f2bd22442
++       El vocabulario de bloques de contenido (`TextContent`, `ImageContent`, `AudioContent`,
++       `ResourceLink`, `EmbeddedResource`, los contenidos de recursos, `Icon`, `Annotations` y
++       `Role`) se define en `Content` y se reexporta aquí, de modo que el código MCP escribe
++       `Mcp.TextContent`. La versión del protocolo que se habla es `.version`, `2025-11-25`.
+
+% 0 1 0 10cb076d34d1a8850e9e0648c891fbde
+
+% 0 1 0 1883ee7948b4403713cfe254f1a871e6
+
+% 0 1 0 1347bbaf6c7569b11945b3bf8b7660d6
+
+% 0 1 0 09f1535f4ab82f9d07ec8609cb6bf7a4
+
+@ 0 8 0 0b8d0424678d03881178a1cc49d0e5f2
++   entry .version   la versión del protocolo que habla esta implementación: `2025-11-25`
++       Se envía como cabecera `Mcp-Protocol-Version` de cada respuesta y como `protocolVersion`
++       de un resultado `Initialize`.
++   entry .Cursor   un cursor de paginación, como `Text`
++       El testigo opaco que un listado (`ListTools`, `ListResources`, `ListPrompts`,
++       `ListTasks`) devuelve como `nextCursor` y que un cliente devuelve para continuar. Los
++       listados propios del servidor nunca se paginan, así que siempre es `Unset`.
++   entry .send   responde a una petición HTTP del transporte HTTP transmisible frente a una interfaz
+
+% 1 1 0 1635a19e2bef2db31818410ecf3c5523
+
+@ 0 8 0 00b8ea5f02e720370e87adbf98a5a4c4
++         `Mcp.send(sessionId, server, interface)(dispatch)` asigna una petición al transporte del
++         protocolo: `OPTIONS` responde `204 No Content`; `GET` responde `200 OK` con el flujo de
++         eventos de la interfaz como eventos enviados por el servidor, mantenido vivo y sin
++         caché; `POST` lee el cuerpo como JSON, lo pasa a `dispatch` (normalmente
++         `JsonRpc.serve(interface)`) y responde el resultado como JSON, o `202 Accepted` cuando
++         el despacho no produjo nada (una notificación). Cualquier otro método, incluido
++         `DELETE`, responde `405 Method Not Allowed`; `Mcp.Server#serve` gestiona `DELETE` por sí
++         mismo antes de llegar aquí. Cada respuesta lleva las cabeceras `Mcp-Protocol-Version` y
++         `Mcp-Session-Id`.
+
+@ 0 5 0 12c7c5b3c7d53c401746e31993609209
++         Un fallo es un error JSON-RPC en un cuerpo `200 OK`, bajo el `id` de la petición para
++         que el cliente pueda emparejarlo: un cuerpo que no se puede analizar es `-32700`, uno que
++         no es una petición válida `-32600`, un `Mcp.Error` (una herramienta desconocida, un
++         parámetro ausente) `-32602`, un método desconocido `-32601`, y cualquier otra excepción
++         `-32603`. La excepción propia de una herramienta no es un fallo aquí: `Mcp.Interface` la
++         responde como un resultado marcado con `isError`.
+
+@ 0 11 0 0417e68eb8bd00621d47c8831d0be18c
++         Necesita un `Monitor`, un `Probate`, un `Online` y la `Http.Request` en el ámbito, como
++         los tiene el cuerpo de un manejador HTTP. `Mcp.Server#serve` lo llama; un programa solo
++         lo llama directamente para poner su propio despacho delante de la interfaz.
++   entry .ParseError   el código de error JSON-RPC `-32700`: el cuerpo de la petición no se pudo analizar
++   entry .InvalidRequest   el código de error JSON-RPC `-32600`: el cuerpo no era una petición válida
++   entry .MethodNotFound   el código de error JSON-RPC `-32601`: no existe ese método
++   entry .InvalidParams   el código de error JSON-RPC `-32602`: una herramienta desconocida o un parámetro ausente
++       El código con el que `Mcp.send` responde a un `Mcp.Error`.
++   entry .InternalError   el código de error JSON-RPC `-32603`: una excepción inesperada en el servidor
++   entry .UrlElicitationRequired   el código de error JSON-RPC `-32042`: la petición necesita antes una elicitación por URL
++   entry .TextInt   un identificador JSON-RPC que puede ser una cadena o un entero
+
+% 1 1 0 1537e66b9f08f69f1202f8e52df0655e
+
+@ 0 19 0 013eae3e9fed46b71bb210b1a3b50474
++         Los ids de petición y los testigos de progreso del protocolo pueden ser una cadena o un
++         número. `TextInt(id: Text | Int)` guarda cualquiera de los dos, se codifica como el que
++         guarde, y decodifica un número JSON como un `Int` y cualquier otra cosa como `Text`. Es
++         el único tipo de `Mcp` con un `Inspectable` propio (`.inspectable`), ya que una
++         derivación no puede representar un campo `Text | Int`; `Mcp.TextInt(42).inspect` es
++         `TextInt(id:42)`.
++     entry .encodable   escribe el id como una cadena o un número JSON, según lo que guarde
++     entry .decodable   lee un número JSON como un `Int` y cualquier otro valor como `Text`
++     entry .inspectable   representa el id mostrando de qué lado de la unión procede
++         `TextInt(id:42)` para un entero y `TextInt(id:t"abc")` para un texto. Es necesario
++         porque la derivación estructural no tiene instancia para un campo `Text | Int` y
++         recurriría a `toString`.
++     entry #id   el identificador, como `Text` o `Int`
++   entry .TaskAugmented   los metadatos opcionales `task` de una petición, que piden que se ejecute como tarea
++     entry #task   los `TaskMetadata`, si la petición ha de ser una tarea
++   entry .TaskMetadata   los metadatos que lleva una petición para ejecutarse como tarea: un tiempo de vida
++     entry #ttl   cuánto tiempo, en milisegundos, se conserva el resultado de la tarea, si se indica
++   entry .RelatedTaskMetadata   el id de la tarea con la que se relaciona un mensaje
++     entry #taskId   el id de la tarea relacionada
++   entry .BaseMetadata   un nombre y un título legible opcional, la base de todo registro con nombre
+
+% 1 1 0 1b910fa92a047f1708b471b147eb6fa1
+
+@ 0 6 0 19b66d95d97b12a40b93ddeac1236939
++         Los dos campos que comparten toda herramienta, prompt, recurso e implementación. Su
++         objeto compañero contiene los códecs JSON derivados (un `Encodable`, y un `Decodable`
++         que necesita una `Tactic[Json.Error]`), anclados una sola vez para que todo registro que
++         lo incluya los reutilice.
++     entry #name   el nombre programático
++     entry #title   un título legible, si se indica
++   entry .Implementation   el nombre, la versión y la descripción de un programa cliente o servidor
+
+% 1 1 0 1f7a56b68cdde5090a8461fc93a0c790
+
+@ 0 24 0 00cb949166a008b21742eb3e269f39fd
++         Lo que cada lado envía sobre sí mismo al inicializarse la sesión: un cliente en
++         `initialize`, y un servidor en su respuesta `Initialize`, donde `Mcp.Interface` lo
++         construye a partir del `name` y la `version` del servidor. El objeto compañero contiene
++         códecs JSON derivados anclados; decodificar necesita una `Tactic[Json.Error]`.
++     entry #name   el nombre del programa
++     entry #title   un título legible, si se indica
++     entry #icons   iconos que representan el programa, si se indican
++     entry #version   la versión del programa, como texto
++     entry #description   una descripción del programa, si se indica
++     entry #websiteUrl   el sitio web del programa, si se indica
++   entry .ClientInfo   el nombre, el título, la versión, la descripción y los iconos de un cliente
++     entry #name   el nombre del cliente
++     entry #title   el título del cliente
++     entry #version   la versión del cliente
++     entry #description   una descripción del cliente
++     entry #icons   iconos que representan al cliente, si se indican
++   entry .ServerInfo   el nombre, el título, la versión, la descripción, los iconos y el sitio web de un servidor
++     entry #name   el nombre del servidor
++     entry #title   el título del servidor
++     entry #version   la versión del servidor
++     entry #description   una descripción del servidor
++     entry #icons   iconos que representan al servidor, si se indican
++     entry #websiteUrl   el sitio web del servidor, como un `HttpUrl`
++   entry .Initialize   la respuesta del servidor a `initialize`: versión, prestaciones, identidad e instrucciones
+
+% 1 1 0 04fc1b6ec3caec2c06f7e2477884eea2
+
+@ 0 37 0 1d7bcd02a5469708031f2d9bd01fbbc5
++         `Mcp.Interface#initialize` responde con `Mcp.version`, unas `ServerCapabilities()`
++         predeterminadas (herramientas, prompts y recursos, cada uno con notificaciones de cambio
++         de lista), una `Implementation` con el nombre y la versión del servidor, y la
++         `description` del servidor como instrucciones.
++     entry #protocolVersion   la versión del protocolo que habla el servidor
++     entry #capabilities   lo que puede hacer el servidor, como `ServerCapabilities`
++     entry #serverInfo   la identidad del servidor, como una `Implementation`
++     entry #instructions   texto para el modelo sobre cómo usar el servidor, si se indica
++   entry .ListChanged   un indicador de prestación: si se envía una notificación de cambio de lista
++     entry #listChanged   si el servidor notifica cuando cambia la lista, si se declara
++   entry .Resources   la prestación de recursos: soporte de suscripción y de cambio de lista
++     entry #subscribe   si un cliente puede suscribirse a un recurso, `true` por defecto
++     entry #listChanged   si el servidor notifica cuando cambia la lista de recursos, `true` por defecto
++   entry .Sampling   la prestación de muestreo de un cliente: inclusión de contexto y uso de herramientas
++     entry #context   el soporte del cliente para incluir contexto, si se declara
++     entry #tools   el soporte del cliente para herramientas durante el muestreo, si se declara
++   entry .Elicitation   la prestación de elicitación de un cliente: modos de formulario y de URL
++     entry #form   si el cliente puede mostrar un formulario, si se declara
++     entry #url   si el cliente puede abrir una URL, si se declara
++   entry .RequestsElicitation   las peticiones de elicitación que puede hacer una tarea
++     entry #create   si `elicitation/create` puede ejecutarse como tarea, si se declara
++   entry .Call   si `tools/call` puede ejecutarse como tarea
++     entry #call   el valor de la prestación, si se declara
++   entry .RequestsSampling   las peticiones de muestreo que puede hacer una tarea
++     entry #createMessage   si `sampling/createMessage` puede ejecutarse como tarea, si se declara
++   entry .Tasks   la prestación de tareas: listado, cancelación y qué peticiones pueden ser tareas
++     entry #list   si se pueden listar las tareas, si se declara
++     entry #cancel   si se pueden cancelar las tareas, si se declara
++     entry #requests   qué peticiones pueden ejecutarse como tareas, como `Requests`, si se declara
++   entry .ListTasks   la respuesta a `tasks/list`: tareas y un cursor de continuación
++     entry #nextCursor   el cursor de la página siguiente, si la hay
++     entry #tasks   las tareas, como una lista de `Task`
++   entry .Requests   qué peticiones pueden ejecutarse como tareas: muestreo, elicitación y llamadas a herramientas
++     entry #sampling   las peticiones de muestreo, como `RequestsSampling`, si se declara
++     entry #elicitation   las peticiones de elicitación, como `RequestsElicitation`, si se declara
++     entry #tools   las llamadas a herramientas, como `Call`, si se declara
++   entry .ServerCapabilities   lo que ofrece un servidor: herramientas, prompts, recursos, registro, compleciones, tareas
+
+% 1 1 0 1dea0e6acf4bfe6e0eb2bc0e38ed0502
+
+@ 0 25 0 0309dcecb175bef10033d99af4ce43a9
++         Los valores predeterminados describen lo que implementa `Mcp.Interface`: `prompts` y
++         `tools` con notificaciones de cambio de lista y `resources` con suscripción, y ninguna
++         prestación experimental, de registro, de compleción ni de tareas.
++     entry #experimental   prestaciones experimentales, por nombre, si las hay
++     entry #logging   la prestación de registro, si se ofrece
++     entry #completions   la prestación de compleción de argumentos, si se ofrece
++     entry #prompts   la prestación de prompts, con notificación de cambio de lista por defecto
++     entry #resources   la prestación de recursos, como `Resources`, con sus valores predeterminados
++     entry #tools   la prestación de herramientas, con notificación de cambio de lista por defecto
++     entry #tasks   la prestación de tareas, si se ofrece
++   entry .ClientCapabilities   lo que ofrece un cliente: raíces, muestreo, elicitación y tareas
++     entry #experimental   prestaciones experimentales, por nombre, si las hay
++     entry #roots   si el cliente expone raíces del sistema de ficheros, si se declara
++     entry #sampling   la prestación de muestreo del cliente, si se ofrece
++     entry #elicitation   la prestación de elicitación del cliente, si se ofrece
++     entry #tasks   la prestación de tareas del cliente, si se ofrece
++   entry .Context   los argumentos ya dados, para completar otro
++     entry #arguments   los argumentos por nombre, si los hay
++   entry .ListResources   la respuesta a `resources/list`: recursos y un cursor de continuación
++     entry #nextCursor   el cursor de la página siguiente, si la hay
++     entry #resources   los recursos, como una lista de `Resource`
++   entry .ListResourceTemplates   la respuesta a `resources/templates/list`
++     entry #nextCursor   el cursor de la página siguiente, si la hay
++     entry #resourceTemplates   las plantillas, como una lista de `ResourceTemplate`
++   entry .ReadResource   la respuesta a `resources/read`: los contenidos del recurso
+
+% 1 1 0 1f517703aca98770106cfe724b5f8faf
+
+@ 0 4 0 1e002d24b5fd82510fb1b182f5f6cfb3
++         `Mcp.Interface#resources/read` responde un único `Contents`, de texto o binario según
++         cómo se transmita el tipo del resultado del método `@resource`.
++     entry #contents   los contenidos, cada uno de texto o un blob en Base64
++   entry .Resource   un recurso tal como se lista: su nombre, su URI, su descripción, su tipo MIME y sus metadatos
+
+% 1 1 0 08a1fc1161669a5a0671fa9cc33105ef
+
+@ 0 15 0 078d0de60dc044d8139d64d198050f73
++         La macro `Mcp.Specification` construye uno para cada método `@resource`: `name` es el
++         nombre del método, `uri` el de la anotación, `title` y `description` proceden de
++         `@title` y `@about`, y `mimeType` es el de la anotación, o `text/html;profile=mcp-app`
++         cuando el `@ui` de una herramienta nombra la URI, o `text/plain` para un resultado de
++         texto y `application/octet-stream` para uno binario.
++     entry #name   el nombre del recurso
++     entry #uri   de dónde se lee el recurso
++     entry #title   un título legible, si se indica
++     entry #description   una descripción, si se indica
++     entry #icons   iconos que representan el recurso, si se indican
++     entry #mimeType   el tipo MIME del recurso, si se conoce
++     entry #annotations   indicaciones de audiencia y prioridad, como `Annotations`
++     entry #size   el tamaño del recurso en bytes, si se conoce
++     entry #_meta   metadatos del protocolo, si los hay
++   entry .ResourceTemplate   una familia de recursos, descrita por una plantilla de URI
+
+% 1 1 0 0fff6bb3cc59456300f1d8c65d5518f9
+
+@ 0 19 0 0334d3da9a885a991643b5b1c1d38acd
++         Se lista mediante `resources/templates/list`, que `Mcp.Interface` aún no implementa.
++     entry #name   el nombre de la plantilla
++     entry #title   un título legible, si se indica
++     entry #icons   iconos, si se indican
++     entry #uriTemplate   la plantilla RFC 6570 con la que coinciden las URI de sus recursos
++     entry #description   una descripción, si se indica
++     entry #mimeType   el tipo MIME de sus recursos, si comparten uno
++     entry #annotations   indicaciones de audiencia y prioridad, como `Annotations`
++     entry #_meta   metadatos del protocolo, si los hay
++   entry .ListPrompts   la respuesta a `prompts/list`: prompts y un cursor de continuación
++     entry #nextCursor   el cursor de la página siguiente, si la hay
++     entry #prompts   los prompts, como una lista de `Prompt`
++   entry .Complete   la respuesta a `completion/complete`
++     entry #completion   los valores de compleción, como `Completion`
++   entry .Completion   valores sugeridos para un argumento, con un total y si hay más
++     entry #values   los valores sugeridos
++     entry #total   cuántos hay en total, si se sabe
++     entry #hasMore   si existen más de los devueltos, si se sabe
++   entry .TaskSupport   si una herramienta puede, debe o no debe ejecutarse como tarea
+
+% 1 1 0 096fefa74a9003f00f3e36a0ad14498f
+
+@ 0 5 0 125b5485a39419380c1573e56ecab279
++         `Forbidden`, `Optional` y `Required`, codificados como `forbidden`, `optional` y
++         `required`; cualquier otro texto no se puede decodificar y da un `Json.Error`.
++     entry .encodable   escribe el caso como su nombre en minúsculas
++     entry .decodable   lee `forbidden`, `optional` o `required`, y lanza `Json.Error` para cualquier otra cosa
++   entry .LoggingLevel   los niveles de gravedad de syslog que puede llevar un mensaje de registro
+
+% 1 1 0 0cfc175f0ea7f3d812710e38dee665c4
+
+@ 0 10 0 01b7858137d6468616578664884e4387
++         `Debug`, `Info`, `Notice`, `Warning`, `Error`, `Critical`, `Alert` y `Emergency`,
++         codificados como sus nombres en minúsculas. `Mcp.Client#log` envía en `Info`, y
++         `logging/setLevel` fija el nivel que guarda una `Mcp.Interface`.
++     entry .encodable   escribe el caso como su nombre en minúsculas
++     entry .decodable   lee un nombre de nivel en minúsculas, y lanza `Json.Error` para cualquier otra cosa
++   entry .LoggingMessage   una notificación de registro: nivel, nombre del logger y datos
++     entry #level   la gravedad, como `LoggingLevel`
++     entry #logger   el nombre del logger, si se indica
++     entry #data   el mensaje, como JSON
++   entry .TaskStatus   el estado de una tarea: en curso, a la espera de datos, completada, fallida o cancelada
+
+% 1 1 0 1ba4a75b48b4fca2141656836781cb28
+
+@ 0 5 0 10bbe7542b8707ca182e05e3fb4cdd08
++         `Working`, `InputRequired`, `Completed`, `Failed` y `Cancelled`, codificados como
++         `working`, `input_required`, `completed`, `failed` y `cancelled`.
++     entry .encodable   escribe el caso con su grafía de transmisión
++     entry .decodable   lee una grafía de transmisión, y lanza `Json.Error` para cualquier otra cosa
++   entry .PromptArgument   un argumento que toma un prompt: nombre, título, descripción y si es obligatorio
+
+% 1 1 0 0794bf82295950b509291bb7f45e3bab
+
+@ 0 7 0 07e57fb029987cf705aeb33c2a34e223
++         Lo construye la macro `Mcp.Specification` a partir de cada parámetro de un método
++         `@prompt`, con su `title` y su `description` procedentes de los `@title` y `@about` del
++         propio parámetro.
++     entry #name   el nombre del argumento
++     entry #title   un título legible, si se indica
++     entry #description   una descripción, si se indica
++     entry #required   si el argumento debe proporcionarse, si se declara
++   entry .Prompt   un prompt tal como se lista: su nombre, su título, su descripción y sus argumentos
+
+% 1 1 0 01aa4d47fcb2442a1cbe30af50cd4c35
+
+@ 0 14 0 1ec973e398744f1202d8b55c75c34cd6
++         La macro `Mcp.Specification` construye uno para cada método `@prompt`, con su nombre,
++         con `title` y `description` procedentes de `@title` y `@about` y un argumento por cada
++         parámetro; un método sin parámetros tiene `arguments` a `Unset`. El abstracto
++         `Mcp.Server#prompts` es una lista de ellos.
++     entry #name   el nombre del prompt
++     entry #title   un título legible, si se indica
++     entry #icons   iconos, si se indican
++     entry #description   una descripción, si se indica
++     entry #arguments   los argumentos que toma el prompt, si los hay
++     entry #_meta   metadatos del protocolo, si los hay
++   entry .Argument   un nombre y un valor, tal como se dan a `completion/complete`
++     entry #name   el nombre del argumento
++     entry #value   el valor tecleado hasta el momento
++   entry .Reference   para qué es una compleción: un prompt o una plantilla de recurso
+
+% 1 1 0 062e38878e889223168c889731bf9feb
+
+@ 0 10 0 061c2d9fc8894da0170165ced3d44453
++         Una suma sellada de `PromptReference` y `ResourceTemplateReference`, codificada con un
++         discriminador `type` de `ref/prompt` o `ref/resource`.
++     entry .encodable   escribe la referencia con su discriminador `type`
++     entry .decodable   lee una referencia por su `type`, y lanza `Json.Error` para uno desconocido
++   entry .PromptReference   una referencia a un prompt por su nombre
++     entry #name   el nombre del prompt
++     entry #title   el título del prompt, si se indica
++   entry .ResourceTemplateReference   una referencia a una plantilla de recurso por su URI
++     entry #uri   la URI de la plantilla
++   entry .PromptMessage   un mensaje de un prompt: un rol y un bloque de contenido
+
+% 1 1 0 14a7e5931ea224961e401eca170763e8
+
+@ 0 8 0 072afa686d1b785f07f1618edaa70044
++         `Mcp.Interface#prompts/get` convierte un mensaje `Discourse.Human` en un `TextContent`
++         de `User` y un mensaje `Discourse.Agent` en uno de `Assistant`.
++     entry #role   quién habla, como `Role`
++     entry #content   lo que se dice, como un `ContentBlock`
++   entry .GetPrompt   la respuesta a `prompts/get`: una descripción y los mensajes
++     entry #description   una descripción del prompt, si se indica
++     entry #messages   los mensajes, como una lista de `PromptMessage`
++   entry .CallTool   la respuesta a `tools/call`: contenido, contenido estructurado y si es un error
+
+% 1 1 0 1a5c475bd6d5e2211089100b9fd62410
+
+@ 0 4 0 0fafab4f5d81869c1ba46f4349cb3285
++         `Mcp.Interface#tools/call` responde el resultado de una herramienta tanto como
++         `structuredContent`, un objeto JSON `{"result": …}` con la codificación del resultado,
++         como en forma de `TextContent` de ese JSON. Una herramienta que lanza una excepción
++         responde `CallTool(List(TextContent(message)), isError = true)`, un resultado que el
++         modelo puede leer y sobre el que puede actuar, en lugar de un fallo del protocolo.
+
+% 2 1 0 1da9d1d4daec03a81d6bc2eeaab8100a
+
+% 3 1 0 08cf2345c6910b13177a39e16119b215
+
+% 0 1 0 15a3366135fcf9e008bf77a2b0db945a
+
+% 1 1 0 19f9ff6e376bb27e0033596ea4ab6bce
+
+@ 0 13 0 1227a012db62fecb035a589302dad123
++     entry #content   el resultado como bloques de contenido, para que lo lea el modelo
++     entry #structuredContent   el resultado como JSON conforme al esquema de salida de la herramienta, si se indica
++     entry #isError   si la propia herramienta falló, si se declara
++   entry .ListTools   la respuesta a `tools/list`: herramientas y un cursor de continuación
++     entry #nextCursor   el cursor de la página siguiente, si la hay
++     entry #tools   las herramientas, como una lista de `Tool`
++   entry .ListRoots   la respuesta a `roots/list`: las raíces del sistema de ficheros del cliente
++     entry #roots   las raíces, como una lista de `Root`
++   entry .Root   una raíz del sistema de ficheros que expone el cliente: una URI y un nombre
++     entry #uri   la URI de la raíz
++     entry #name   el nombre de la raíz, si se indica
++     entry #_meta   metadatos del protocolo, si los hay
++   entry .Tool   una herramienta tal como se lista: nombre, esquemas, título, descripción, ejecución y anotaciones
+
+% 1 1 0 0e16943abd6553660b0cac2d74682a62
+
+@ 0 7 0 09ceebf8305c507d0f3444dd7dee0220
++         La macro `Mcp.Specification` construye una para cada método `@tool`. `name` es el nombre
++         del método; `inputSchema` es un `JsonSchema.Object` con una propiedad por parámetro (cada
++         esquema derivado del tipo del parámetro, y su `description` del `@about` del parámetro)
++         cuya lista `required` omite todo parámetro de tipo `Optional` o con un argumento
++         predeterminado; `outputSchema` es un objeto con la única propiedad obligatoria
++         `result`, el esquema del tipo del resultado; `title` y `description` proceden de
++         `@title` y `@about`; y `_meta` nombra el recurso al que apunta una anotación `@ui`, como
+
+% 0 1 0 0590573c302c45e21f63fbb3a961acf0
+
+@ 0 20 0 0e383aa49484d10116b4e73a70b05c3d
++     entry #name   el nombre de la herramienta
++     entry #inputSchema   el esquema JSON de los argumentos de la herramienta
++     entry #outputSchema   el esquema JSON del resultado estructurado de la herramienta, si se indica
++     entry #title   un título legible, si se indica
++     entry #icons   iconos, si se indican
++     entry #description   una descripción, para que el modelo decida cuándo llamarla, si se indica
++     entry #execution   si la herramienta puede ejecutarse como tarea, si se declara
++     entry #annotations   indicaciones de comportamiento, como `ToolAnnotations`, si se indican
++     entry #_meta   metadatos del protocolo, si los hay; aquí se nombra el recurso de interfaz de usuario de una herramienta `@ui`
++   entry .ToolExecution   cómo se ejecuta una herramienta: su soporte de tareas
++     entry #taskSupport   si la herramienta puede ejecutarse como tarea, si se declara
++   entry .ToolAnnotations   indicaciones sobre el comportamiento de una herramienta: solo lectura, destructiva, idempotente, de mundo abierto
++     entry #title   un título legible, si se indica
++     entry #readOnlyHint   si la herramienta no cambia nada, si se declara
++     entry #destructiveHint   si la herramienta puede hacer cambios destructivos, si se declara
++     entry #idempotentHint   si repetir una llamada con los mismos argumentos no tiene más efecto, si se declara
++     entry #openWorldHint   si la herramienta llega fuera de su propio mundo cerrado, si se declara
++   entry .ToolChoice   cómo permite una petición de muestreo que el modelo elija herramientas
++     entry #mode   el modo, como `Mode`, si se declara
++   entry .Mode   si un modelo de muestreo puede, debe o no debe usar herramientas
+
+% 1 1 0 1b440ce31b41773003409e592404ff6f
+
+@ 0 8 0 1907ee42210e03b111327464116002ac
++         `Auto`, `Required` y `None`, codificados como `auto`, `required` y `none`.
++     entry .encodable   escribe el caso como su nombre en minúsculas
++     entry .decodable   lee `auto`, `required` o `none`, y lanza `Json.Error` para cualquier otra cosa
++   entry .SamplingMessage   un mensaje de una petición de muestreo: un rol y bloques de contenido
++     entry #role   quién habla, como `Role`
++     entry #content   los bloques del mensaje, cada uno un `SamplingMessageContentBlock`
++     entry #_meta   metadatos del protocolo, si los hay
++   entry .SamplingMessageContentBlock   los bloques que puede contener un mensaje de muestreo, como tipo unión
+
+% 1 1 0 1e663c8d4ec623c901922d0b90f844f1
+
+@ 0 7 0 13485ef0ccc1920b1424c5e1415c7949
++         `TextContent | ImageContent | AudioContent | ToolUseContent | ToolResultContent`. Es un
++         alias de tipo y no un trait sellado, porque tres de sus miembros pertenecen a `Content`,
++         en un componente sobre el que se construye este; sus códecs JSON viven en el objeto
++         compañero de `ToolUseContent`, el primer miembro definido aquí, que está en el ámbito
++         implícito de la unión. Se codifican con un discriminador `type` de `text`, `image`,
++         `audio`, `tool_use` o `tool_result`.
++   entry .ToolUseContent   la petición de un modelo de llamar a una herramienta, en un mensaje de muestreo
+
+% 1 1 0 1613a4de4030c2b6059d682cf9fd2ead
+
+@ 0 35 0 04189fdfa8ff527d193042bde01fc05e
++         El objeto compañero ancla también los códecs JSON de `SamplingMessageContentBlock`, la
++         unión de la que este es miembro, ya que un alias de tipo no tiene objeto compañero
++         propio.
++     entry .encodable   escribe cualquier `SamplingMessageContentBlock` con su discriminador `type`
++     entry .decodable   lee un `SamplingMessageContentBlock` por su `type`, y lanza `Json.Error` para uno desconocido
++     entry #id   el id con el que se emparejará el resultado
++     entry #name   la herramienta a la que llamar
++     entry #input   los argumentos, como JSON
++   entry .ToolResultContent   el resultado de una llamada a una herramienta, en un mensaje de muestreo
++     entry #toolUseId   el id del `ToolUseContent` al que responde
++     entry #content   el resultado como bloques de contenido
++     entry #structuredContent   el resultado como JSON, si se indica
++     entry #isError   si la herramienta falló, si se declara
++   entry .ModelPreferences   las preferencias de un servidor sobre qué modelo muestrea: indicaciones y prioridades
++     entry #hints   nombres de modelos preferidos, en orden, si se indican
++     entry #costPriority   cuánto pesa el coste, de 0 a 1, si se indica
++     entry #speedPriority   cuánto pesa la velocidad, de 0 a 1, si se indica
++     entry #intelligencePriority   cuánto pesa la competencia del modelo, de 0 a 1, si se indica
++   entry .ModelHint   una indicación que nombra un modelo o una familia preferidos
++     entry #name   el nombre del modelo o una subcadena de él, si se indica
++   entry .CreateMessage   la respuesta a `sampling/createMessage`: el mensaje del modelo
++     entry #role   quién habla, como `Role`
++     entry #content   los bloques del mensaje, cada uno un `SamplingMessageContentBlock`
++     entry #model   el nombre del modelo que respondió
++     entry #stopReason   por qué se detuvo la generación, si se indica
++   entry .Task   una petición de larga duración: su id, su estado, sus marcas de tiempo y su intervalo de sondeo
++     entry #taskId   el id de la tarea
++     entry #status   el estado de la tarea, como `TaskStatus`
++     entry #statusMessage   una descripción legible del estado, si se indica
++     entry #createdAt   cuándo se creó la tarea, como marca de tiempo ISO 8601
++     entry #lastUpdatedAt   cuándo cambió por última vez la tarea, como marca de tiempo ISO 8601
++     entry #ttl   cuánto tiempo se conserva el resultado, en milisegundos, si se indica
++     entry #pollInterval   con qué frecuencia sondear, en milisegundos, si se sugiere
++   entry .CreateTaskResult   la respuesta a una petición que se convirtió en tarea
++     entry #task   la tarea creada, como `Task`
++   entry .ElicitAction   lo que hizo el usuario con una elicitación: aceptarla, rechazarla o cancelarla
+
+% 1 1 0 1f26c3c28a0bae7116179e199e846976
+
+@ 0 20 0 11dd2de2782d83cf0d48154d8ef652c0
++         `Accept`, `Decline` y `Cancel`, codificados como `accept`, `decline` y `cancel`.
++     entry .encodable   escribe el caso como su nombre en minúsculas
++     entry .decodable   lee `accept`, `decline` o `cancel`, y lanza `Json.Error` para cualquier otra cosa
++   entry .ElicitResult   la respuesta del cliente a `elicitation/create`: la acción y el contenido, si lo hay
++     entry #action   lo que hizo el usuario, como `ElicitAction`
++     entry #content   los valores enviados, como JSON, si se aceptó
++   entry .ElicitRequest   una petición de datos al usuario: un formulario o una URL
++       Una suma sellada de `ElicitRequestForm` y `ElicitRequestUrl`.
++   entry .ElicitRequestForm   una elicitación que pide al usuario que rellene un formulario descrito por un esquema
++     entry #message   qué preguntar al usuario
++     entry #requestedSchema   el esquema JSON de los valores que se quieren
++     entry #mode   el modo de elicitación, si se indica
++   entry .ElicitRequestUrl   una elicitación que pide al usuario que visite una URL
++     entry #mode   el modo de elicitación
++     entry #message   qué preguntar al usuario
++     entry #elicitationId   el id con el que se notifica que ha terminado
++     entry #url   la URL que abrir
++   entry .ElicitationComplete   la notificación de que una elicitación por URL ha terminado
++     entry #elicitationId   el id de la elicitación que terminó
++   entry .Api   la interfaz JSON-RPC de un servidor MCP: cada método al que puede llamar un cliente, como métodos `@rpc`
+
+% 1 1 0 11a6175792413fff160a4c94d17a03d0
+
+@ 0 2 0 12cbc79a0db11f7c0d155b5758d83586
++         El trait `JsonRpc` que declara los métodos del lado del servidor del protocolo, cada uno
++         marcado con `@rpc` y con el nombre que le da el protocolo: `ping`, `initialize`,
+
+% 0 1 0 16df29bdd5118bcb096c6831878316d2
+
+% 0 1 0 04516ab88a1b90180c2c4e1aaca2e2bb
+
+% 0 1 0 02a54229c67c0faa0053cc410c88737b
+
+@ 0 1 0 08a276f6bf10d24a099c7f42a4c25a3e
++         `tasks/get`, `tasks/result`, `tasks/list`, `tasks/cancel`, y las notificaciones
+
+% 0 1 0 019912d76301bf9010eebb2debf5263e
+
+% 0 1 0 0b8f654c0a0f28c518e984233eef0e62
+
+% 0 1 0 07c08c4cfb459ee91ad1b71bd77ac7a8
+
+@ 0 5 0 0aeb54c0384bb23a0b970040dab4b18a
++         `notifications/prompts/list_changed`, `notifications/tools/list_changed` y
++         `notifications/message`. Cada uno toma por nombre los parámetros de la petición, con un
++         `_meta: Optional[Json]` final, y devuelve el registro de resultado del protocolo
++         (`Initialize`, `ListTools`, `CallTool`, `GetPrompt`, …) o `Unit` para una notificación.
++         Su `Origin` es `Mcp.Client`.
+
+@ 0 7 0 043bc104ed958c1c0939be53f30e92cf
++         `Mcp.Interface` es la implementación; `JsonRpc.serve(interface)` despacha una petición
++         JSON al método de ese nombre, y un método desconocido es un `JsonRpc.Error`, que
++         `Mcp.send` responde como `-32601`.
++     entry #Origin   el otro lado de la interfaz: `Mcp.Client`
++     entry #ping   responde a una comprobación de actividad sin nada
++     entry #initialize   inicia una sesión: toma la versión, las prestaciones y la identidad del cliente, y responde `Initialize`
++   entry .Interface   la implementación de `Mcp.Api` para una sesión, sobre la especificación de un servidor
+
+% 1 1 0 1521ec78134b74ae142d66bac7c644fd
+
+@ 0 5 0 1eb5ed2a514f31e8025c3a850c1815b1
++         `Mcp.Interface(sessionId, server)` es el objeto que responde a las llamadas JSON-RPC de
++         una sesión. Se construye una vez por id de sesión y se guarda en caché, de modo que una
++         segunda llamada con el mismo id devuelve la misma interfaz; `Mcp.Server#terminate` la
++         expulsa, lo que también termina su flujo de eventos para que un `GET` abierto finalice.
++         Necesita un `server.type is Mcp.Specification`, que deriva la macro
++         `Mcp.Specification.mcpSpecification`.
+
+@ 0 13 0 0a5db9eb487f753e1af6e3cf138f9b88
++         Los listados responden a partir de la especificación: `tools/list` es `spec.tools()`,
++         `resources/list` es `spec.resources()`, `prompts/list` es `spec.prompts()`, cada uno sin
++         paginar. `tools/call` ejecuta `spec.invokeTool` bajo su propia supervisión y responde
++         `CallTool` con el resultado como `structuredContent` y como texto; una herramienta que
++         lanza una excepción responde un resultado marcado con `isError` que lleva el mensaje de
++         la excepción, mientras que un `Mcp.Error` (una herramienta desconocida, un parámetro
++         obligatorio ausente) se vuelve a lanzar para que `Mcp.send` lo responda como error
++         JSON-RPC. `prompts/get` ejecuta `spec.invokePrompt` y convierte cada `Discourse.Human`
++         en un mensaje `User` y cada `Discourse.Agent` en uno `Assistant`. `resources/read`
++         responde `spec.invokeResource`. `initialize` responde el nombre, la versión y la
++         descripción del servidor con las `ServerCapabilities` predeterminadas, y
++         `logging/setLevel` registra el nivel. `ping`, `notifications/initialized`,
++         `notifications/cancelled` y `notifications/progress` aceptan y no hacen nada;
++         `tasks/list` siempre está vacía.
+
+@ 0 3 0 123749fe72cdc8420538b8266a827ee0
++         La compleción, las plantillas de recursos, las suscripciones, las tareas y las
++         notificaciones restantes no están implementadas, y una llamada a cualquiera de ellas
++         lanza `NotImplementedError`, que `Mcp.send` responde como `-32603`.
+
+% 2 1 0 06bb2a01c5bea25b13d91f712113edec
+
+% 3 1 0 0e5fc06467240cb5194841b9a95da04a
+
+% 4 1 0 12bc496276eb35991d5f75b3bf53f073
+
+% 6 1 0 1681b5f6cac7660a0203c8e4b02cafe0
+
+% 7 1 0 0b4265a93f3c946913b6e1376b726755
+
+% 8 1 0 00cc61320e96fc8b09da78e5cfa2f70c
+
+% 9 1 0 04af0560973378620fb3a103ff3e85c5
+
+% 10 1 0 1b7b997f53f5cf36132ab59e73b37181
+
+% 11 1 0 06a2989f5c1260081fb244b518153f97
+
+% 12 1 0 19b5e3b46ed84e6a173feb3dd374b990
+
+% 14 1 0 1c2f1cd29e9753420029b9bf84d123af
+
+% 0 1 0 1a665e4d3d5b8ae5076be13b00351e8d
+
+% 0 1 0 02de147fab5592da1375c94a673ca633
+
+% 0 1 0 1248d199a91018ef0ea2d9263210b154
+
+% 0 1 0 02c5e971220dac441f4c368e4b07d307
+
+% 1 1 0 02844bd2f6eafd3e004f212e155968d5
+
+@ 0 2 0 1ed863890759e4c11304bbb46cc1d760
++         La interfaz es `Streamable` como eventos enviados por el servidor (`.streamable`), que es
++         como `Mcp.send` responde a un `GET`.
+
+% 0 1 0 1d1d9e7dcab6d0f1168f76ccf539312f
+
+% 1 1 0 197bf473a11515041ab7e421f4e41f34
+
+% 0 1 0 1763e5d3ceb30eb40a3612572d6bec8c
+
+@ 0 12 0 08d79b25218b061b14dc05431b69269f
++     entry .apply   la interfaz de un id de sesión, construida sobre un servidor o encontrada en la caché
++         `Mcp.Interface(sessionId, server)` necesita un `server.type is Mcp.Specification` en el
++         ámbito, derivado por la macro given de `Mcp.Specification`; la interfaz se recuerda por
++         su id hasta que `Mcp.Server#terminate` la olvida.
++     entry .streamable   transmite los mensajes salientes de la interfaz como eventos enviados por el servidor
++         El given `Streamable by Array[Sse]` que usa `Mcp.send` para responder a un `GET` con el
++         flujo de eventos de la sesión, y que necesita un `Credit` para la medición.
++     entry #server   el servidor al que despacha la interfaz
++     entry #spec   la `Mcp.Specification` derivada de ese servidor
++     entry #ping   responde a una comprobación de actividad sin nada
++     entry #initialize   responde `Initialize` con la versión del protocolo, las prestaciones predeterminadas y la identidad del servidor
++   entry .Client   el cliente visto desde una herramienta: registro, elicitación y muestreo de vuelta hacia él
+
+% 1 1 0 0287638f1f6ddbb808640858ccbca62b
+
+@ 0 5 0 1aee403b05e770ac0acd4ec1c79a5096
++         Un método de herramienta o de prompt que declara una segunda lista de parámetros
++         `(using client: Mcp.Client)` recibe el cliente de la sesión que lo llamó, y puede
++         hablar con él mientras se ejecuta la llamada. `#log` envía un `notifications/message`
++         que el cliente muestra como progreso; `#elicit[Form](message)` pide al usuario que
++         rellene un formulario cuyos campos son los de una case class, y devuelve lo que envió
++         como JSON.
+
+% 2 1 0 06cb46c9bc77b80c1252cc326f75effc
+
+% 3 1 0 003dec4377418d8c132085a94b61104e
+
+% 0 1 0 08aa2496b497b109012ff2113585e0b0
+
+% 1 1 0 1657468296f572b906007b4466ce50d0
+
+% 2 1 0 003b970b6135d6d81115b917cf2b7aca
+
+% 0 1 0 15ca0df54a67180600c49cd183091517
+
+% 0 1 0 0c6531753a471e2f05b806df24fa697d
+
+% 1 1 0 070e02f2245a284a0ce4671e868377d2
+
+% 2 1 0 0b8a97f5868c804f1dac001d956ccd62
+
+% 4 1 0 1d114b24f8ad35811df5a62af108842c
+
+% 0 1 0 14c15faaa22a234f100f758bcafa5cf8
+
+% 0 1 0 041f8bbfd2b626ca16c49d3d6e623f58
+
+% 0 1 0 0dd68ace3d3abc2e01ee805402d30685
+
+% 0 1 0 1814028b61b63b3b122f11acd303ee72
+
+% 0 1 0 190bcee33336f8ab06ffc6b4e4d28fb3
+
+% 1 1 0 0172a8c3a60f88450f12866b8c73b6b7
+
+@ 0 13 0 143b6ea289251cf810b6766cc98f7887
++         Los métodos `@rpc` del lado del cliente sobre los que se implementa (`ping`,
++         `notifications/message`, `elicitation/create`) son protegidos; una herramienta usa los
++         tres métodos públicos.
++     entry #log   envía un mensaje al cliente con nivel `Info`, como un `notifications/message`
++         El mensaje se envía con el nombre de logger `updates`, como `{"message": …}`, de modo
++         que el cliente lo muestra como progreso mientras se ejecuta la herramienta.
++     entry #elicit   pide al usuario datos estructurados, como un formulario descrito por el esquema de un tipo
++         `client.elicit[Form](message)` envía un `elicitation/create` en modo `form`, con el
++         esquema JSON derivado de `Form` (cualquier tipo que sea `Schematic over JsonSchema`, como
++         una case class), y devuelve la respuesta del cliente como `Json`.
++     entry #sample   pide al modelo del cliente que genere; aún no está implementado
++         Llamarlo lanza `NotImplementedError`.
++   entry .Specification   lo que deriva la macro de un servidor: sus listados y su despacho
+
+% 1 1 0 023fddfbb874ab211e379a37ad4e489f
+
+@ 0 9 0 095e3056f6545b8c03ae930ae4ffc554
++         Un `server.type is Mcp.Specification` es la forma compilada de las anotaciones de un
++         servidor. `#tools()`, `#resources()` y `#prompts()` son los listados que descubre el
++         cliente, y `#invokeTool`, `#invokeResource` e `#invokePrompt` despachan una llamada por
++         nombre al método anotado, decodificando sus argumentos desde JSON y codificando su
++         resultado. Lo deriva el given inline `.mcpSpecification`, que está en el ámbito
++         implícito de todo subtipo de `Mcp.Server` y necesita una `Tactic[Json.Error]` y una
++         `Tactic[Mcp.Error]` en el punto donde se convoca — `Mcp.Server#serve` lo toma como
++         parámetro `using`, así que un manejador que llama a `serve` necesita esas tácticas, que
++         proporciona `strategies.throwUnsafely`.
+
+% 2 1 0 09504022b04d7ff005ecec35d43f20ff
+
+% 3 1 0 1ac2ff44cf3d693e0cbfa0ba875b999d
+
+% 4 1 0 067246e8f40c5e30193bf885a621acd3
+
+% 6 1 0 03dd964bba5ebb881b14eda344815e47
+
+% 7 1 0 0eda0021c09b6e7b15b66da6ce5ee3ab
+
+% 8 1 0 0f7e61584cb6fa5319ca66166d75f36a
+
+% 9 1 0 0cb01c46db02ac761229ae5cb7fdd68a
+
+% 10 1 0 064050774e956ec91fd16811a919616f
+
+% 11 1 0 023dc5403d45642f1d59bdc249b56631
+
+% 12 1 0 09d2329185f7c65e0491c2b128a1293b
+
+% 14 1 0 0f0c2f8cf525b40615627349b31892f6
+
+% 0 1 0 10e4c40964b649880f6d1b55c4f80a8f
+
+% 0 1 0 132190cde0193deb08b1d6696ca0190d
+
+% 0 1 0 1f1e21ce73f6ace70ba9a7fa75011ea2
+
+% 0 1 0 0ce8e7b630757972037a50e342f7e339
+
+% 0 1 0 1bca0a781d30cc6b12831f90aa1dd023
+
+% 0 1 0 0b827d74707f77b1038d5bf21665ab12
+
+% 1 1 0 153b161faa7f8d440e69496288062ae4
+
+@ 0 8 0 1b8b58d113782a7713f3ef0bcab211f8
++         Lo que la macro exige de un método, cada cosa un error de compilación cuando falta: el
++         tipo de cada parámetro y del resultado de un `@tool` debe ser `Schematic over
++         JsonSchema` (_There was no JSON schema for `name`_) y el parámetro debe poder
++         decodificarse desde JSON; un método `@resource` no toma parámetros (_MCP resource
++         methods cannot have any parameters_) y su resultado debe ser `Streamable by Text` o
++         `Streamable by Data`; un método `@prompt` debe devolver `List[Discourse]`. Un método
++         puede tener una lista de parámetros, o dos si la segunda es `(using Mcp.Client)`. Las
++         anotaciones de un método sobrescrito se ven a través de la sobrescritura.
+
+@ 0 2 0 000b49a142f9cb7f1b1caf1b8e21a884
++         La derivación es limpia en cuanto a capturas, de modo que un objeto servidor puede
++         vivir en un módulo compilado con comprobación de capturas.
+
+% 0 1 0 11f219f8cb93fcaf00df726aa634dca5
+
+% 0 1 0 0fb30c27609ac6761542ff2834dbe8eb
+
+@ 0 21 0 1524bbc559992bb814a66e2fd73fbca7
++     entry .mcpSpecification   el given inline que deriva una especificación para cualquier subtipo de `Mcp.Server`
++         Está en el ámbito implícito a través del objeto compañero `Specification`, así que no
++         hace falta importarlo. Es una macro, que se expande donde se convoca, y allí necesita
++         una `Tactic[Json.Error]` y una `Tactic[Mcp.Error]`; se detiene con _could not find a
++         contextual `Tactic[Mcp.Error]` instance_ si falta alguna.
++     entry #tools   las herramientas del servidor, un `Mcp.Tool` por cada método `@tool`
++     entry #resources   los recursos del servidor, un `Mcp.Resource` por cada método `@resource`
++     entry #prompts   los prompts del servidor, un `Mcp.Prompt` por cada método `@prompt`
++     entry #invokeTool   llama a una herramienta por su nombre con argumentos JSON, y devuelve su resultado como `{"result": …}`
++         Lanza `Mcp.Error(UnknownMethod)` para un nombre que no tiene ningún método `@tool` y
++         `Mcp.Error(MissingParameter)` para un argumento obligatorio del que carece el JSON; un
++         argumento de tipo `Optional` es `Unset` cuando falta, y uno con valor predeterminado lo
++         toma. La excepción propia de la herramienta se propaga.
++     entry #invokeResource   lee un recurso por su URI, como texto o como un blob en Base64
++         Lanza `Mcp.Error(UnknownResource)` para una URI que no declara ningún método
++         `@resource`. Un resultado que se transmite como texto es un `TextResourceContents`; uno
++         que se transmite como bytes es un `BlobResourceContents`, codificado en Base64.
++     entry #invokePrompt   ejecuta un prompt por su nombre con argumentos de texto, y devuelve sus mensajes `Discourse`
++         Lanza `Mcp.Error(UnknownMethod)` para un nombre desconocido y
++         `Mcp.Error(MissingParameter)` para un argumento obligatorio que no se ha dado.
++   entry .Server   la base de un servidor MCP: identidad, sesiones y los métodos anotados que son sus prestaciones
+
+% 1 1 0 1288dc777274e6c5164b240671cffcde
+
+@ 0 5 0 1b89af65c6b8282c1802ff2effbd2352
++         Un servidor es un objeto (o una clase) que extiende `Mcp.Server()`, da su `#name`, su
++         `#description`, su `#version` y sus `#prompts`, define su tipo `#Session` e
++         `#initialize()` para crear una, y marca métodos con `@tool`, `@resource` y `@prompt`. La
++         macro `Mcp.Specification` los convierte en el protocolo, y `#serve` responde con él a
++         una petición HTTP. Obsérvese cómo crece uno:
+
+% 2 1 0 0e4a8b9e2fd0b3af1340804b78cceb93
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 0913c1b9a3825776164521add2f7e306
++           label Un servidor sin nada que ofrecer
+
+% 1 1 0 1f4857a65ca791fb11c98c08ba06cbf2
+
+% 2 1 0 19ddcf27bb9c039304193c0361b809d5
+
+% 3 1 0 137e3b1fdcb392fc0805fb23bbf49943
+
+% 5 1 0 087f267ad31edaec0ef9dab24c164547
+
+% 6 1 0 0d8fd27b7a5bf849198477cb4fd20934
+
+% 7 1 0 0685fda503c582c90cb8cdb943043c2d
+
+% 8 1 0 0113770651a76b530192a09b1c0effc2
+
+% 9 1 0 128fcd09b89c5f14151f895e410bf7ce
+
+% 10 1 0 09931ffdba9b71e30b5cc41dbf739b1e
+
+% 11 1 0 0a20bd67c97a7d8405b3d3e0c7da8520
+
+% 1 1 0 17a79eaf7ad8b56411d66c15a602381d
+
+@ 0 1 0 11a6d64f78ab2af80888702093635980
++           label Una herramienta: su nombre y los esquemas de sus parámetros y de su resultado proceden de la signatura
+
+% 1 1 0 1c440faa9e498a48152ac7cf3ee3fbb4
+
+% 2 1 0 01eb42462f84acea1b03711889bef8d3
+
+% 3 1 0 08ea2665d5d73385181c0afce6b5ca32
+
+% 5 1 0 02bb5758467eb05316fa3081396eb866
+
+% 6 1 0 1a24a7cc34b76681044dffbd3c044eae
+
+% 7 1 0 0913446054bcd41605928f347fe90c65
+
+% 8 1 0 175eb89f88fe8fe21ed8e99248e90d44
+
+% 9 1 0 10b2b89012fe0faa16af112ce3a6c46c
+
+% 10 1 0 0e971452b7e0189a19d9d467bebbfdf1
+
+% 11 1 0 1d1bf0082db22360187e8aedc610d0cd
+
+% 13 1 0 07b5e2987541e0d41fc735fc4d2b2f6d
+
+% 14 1 0 06ffbbfc21a332010d9c177827b94e19
+
+% 0 1 0 1a69ba6182d5180c18e3a78b8e2e5d30
+
+% 1 1 0 1b24fa5dc4cfc3b11580a92709993394
+
+@ 0 1 0 129c67ddf410970605a5eca9485406cf
++           label Un parámetro opcional y uno con valor predeterminado no son obligatorios
+
+% 1 1 0 15a0de272974cd2d068c4a3d044e47c3
+
+% 2 1 0 1214e65ebb73a3bd1f016ad3e5a0ca65
+
+% 3 1 0 140028acb61f6d4b1e2a447de0a5e47f
+
+% 5 1 0 17dbb1d74fe9eaa811c9819e194f25eb
+
+% 6 1 0 1bd0fe84baed2311156ed09a617210fa
+
+% 7 1 0 017593efaca640b80115268cda2322bb
+
+% 8 1 0 0d15bf0b442531731e4985ab98b8c234
+
+% 9 1 0 1acb1347af613d230e18377e69e2d83f
+
+% 10 1 0 0179684a4043b737169f83fe61aef2e5
+
+% 11 1 0 007320875988013408f716cc1c00bc4f
+
+% 13 1 0 12e143defb8568640008ef62e5e28a44
+
+% 14 1 0 1e439eb76b5c06661b22e14f0d9019bc
+
+% 15 1 0 11ab391be46efc7b0914d4b9427af071
+
+% 16 1 0 12e119376ea09fad1c6ed07ccada2851
+
+% 17 1 0 1c0016a8fc5a25a21a004d666a26042f
+
+% 1 1 0 187ff218c7c8c10d17c5a71826042ee8
+
+@ 0 1 0 157a59eb65cb98091b7f225f0b6341fc
++           label Un recurso, servido en una URI con un tipo MIME
+
+% 1 1 0 1b610e42b196e6080827a57a5ae0be78
+
+% 2 1 0 07bc2831d18f726209f4f56befac0634
+
+% 3 1 0 1b88b1d05253c4441d70a3765c2e2266
+
+% 5 1 0 1c319ed51f006bb30fcd954505bce23a
+
+% 6 1 0 0ef2e3e095aec6e1157603d9c0fd1c34
+
+% 7 1 0 1e3a2e331a5bbf540fe4c04e6db86a80
+
+% 8 1 0 17b7009758ae62010731b1fe1bc4c1dc
+
+% 9 1 0 0bd39a10052b11b6080fbc023647c086
+
+% 10 1 0 14f403660cc52fbb02889b79e64c070c
+
+% 11 1 0 006e0b8bbd34559b1950cf0e197337fa
+
+% 13 1 0 163d208b6e6c493d1f7515fa0cb8981d
+
+% 14 1 0 0b8d0c5d56c715770bcbc499c24f3235
+
+% 15 1 0 10d2f0acd783ebc30beb9e0d252ae8dc
+
+% 16 1 0 1dca920970a6309917e1177da3c1c40e
+
+% 17 1 0 1cb1cc98f533a39604bb2f1532bb518d
+
+% 19 1 0 1f27a84772c4611b1d2d9113b24c3a21
+
+% 20 1 0 0d962b63fab1caca071a6284a1d94d88
+
+% 21 1 0 1154163ac815d49407d7d55ea961486c
+
+% 1 1 0 1b1ce1ba70863da80626770214312d31
+
+@ 0 1 0 1ee3b849e58f037e0a8a9d81dc869899
++           label Un prompt, y una herramienta que responde al cliente
+
+% 1 1 0 1ef8378f2e7e6d970e1841aeb0d3d2d1
+
+% 2 1 0 04da39ba421e4d120c82c6cc8249af10
+
+% 3 1 0 05b950eea8e43c1b1ef2c088e08daba4
+
+% 5 1 0 1b5201888958af650a58e61cb2f69536
+
+% 6 1 0 0d4c56395da9c98a00766c4f1b8ab3d5
+
+% 7 1 0 169c83f060be213e0e1ed01694ce9a23
+
+% 8 1 0 019aa7ba625840eb0c78519305e343e2
+
+% 9 1 0 1fdb31cc7cdd827d08e5e0ed1b093973
+
+% 10 1 0 004885ff479049bd1ced86720fb0c234
+
+% 11 1 0 15ce07b59158225c04bce2cf028cc28a
+
+% 13 1 0 07f2a7df914e636d02302df93bd23628
+
+% 14 1 0 166e894de87222e211419dcd27ad3844
+
+% 15 1 0 1b7ae0bdd6c46f6b108fd2ed97d17341
+
+% 16 1 0 043f0b1ac4b52b111d8335e1b2b3f1e7
+
+% 17 1 0 1a80ce33ad9ebc33149368978e74ecb8
+
+% 19 1 0 05430db6634900581f55edc133aa062c
+
+% 20 1 0 0502e6812705471e1168373efbee3d49
+
+% 21 1 0 00dc9c43d87457110af174da5aa95335
+
+% 0 1 0 1d39f690df0bc6a51ebea959e6174d36
+
+% 0 1 0 06e6dea0ab66573a161dbd092354bbad
+
+% 0 1 0 0cb14f4fbbe058090bd9b26d204e32e3
+
+% 2 1 0 0f247dffc7fce34e09b9f1b4fedb99ed
+
+% 0 1 0 16af03e9f22f15a01bb1647bbfb97274
+
+% 0 1 0 0c07ee60955afdbd02a1e3fb811717eb
+
+% 0 1 0 1fc339ccb82b0c4f173a6599350c3d03
+
+% 0 1 0 101004312a12bc810145c0f7f16278b9
+
+% 0 1 0 17403ffdee596bba175d89079059a888
+
+% 1 1 0 0cc20c60b8007c1b09c1d31383a6f592
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 4 0 1ab1bbcf6cb7c15f0554e63d25e5c66c
++         Una sesión la crea `#initialize()` la primera vez que se ve un id de sesión y se guarda
++         en `#session`; el servidor guarda allí el estado de cada cliente. `#terminate` olvida
++         una sesión y su `Mcp.Interface`, que es lo que hace `#serve` ante un `DELETE`. El
++         servidor se monta en un manejador HTTP:
+
+% 2 1 0 181ca9d7a10fc10a01364a17213f97b6
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 1 1 0 1c42636a507cbf0f1903c90f073389c7
+
+% 0 1 0 006da0b214c0fa0b0773205ac9376eb8
+
+% 0 1 0 1feb701b5aff3c930b6d511d6d5de85e
+
+% 0 1 0 00be5946a13a08d60b704eeb33684012
+
+% 0 1 0 16f3e0d180aa28c40f1277916da247e8
+
+% 0 1 0 18c4596639b680e3003c3a7eebec1545
+
+% 1 1 0 09fd11a7e54e373909787b0251eff962
+
+@ 0 2 0 1fd0e4bc5c829ddb1a6c1b1c2810ef6e
++         Un miembro propio de una subclase llamado `terminate` que toma un único `Text` colisiona
++         con `#terminate` y debe renombrarse o marcarse con `override`.
+
+% 1 1 0 013c27d825f7b420197f1f76623e56d1
+
+% 0 1 0 146ece3b0337bddb0b871fe16919419d
+
+% 0 1 0 17c6a19fb175a9d504e9f4f038b1c0dc
+
+% 0 1 0 0e12a3aa14b1b7ad150102ee88dda6f8
+
+% 0 1 0 0122662ecbcde45c1454cfff7d929022
+
+% 0 1 0 1291631d04bf200316d19c7e9c8ea8a4
+
+@ 0 31 0 1689ad2b443951051c0b3b39ee9ef964
++     entry #Session   el tipo del estado por cliente de este servidor, un subtipo de `Mcp.Session`
++         Cada servidor declara el suyo, normalmente `class Session() extends Mcp.Session` con los
++         campos que el servidor guarde para un cliente.
++     entry #Origin   el otro lado del protocolo: `Mcp.Client`
++     entry #session   la sesión de un id, creada con `initialize()` la primera vez que se pide
++         Las sesiones se guardan en una tabla indexada por el valor de la cabecera
++         `Mcp-Session-Id` hasta que `#terminate` las elimina.
++     entry #terminate   termina una sesión: olvida su estado y su `Mcp.Interface`, y responde si era conocida
++         Expulsar la interfaz termina su flujo de eventos, de modo que el `GET` abierto de un
++         cliente finaliza. `#serve` lo llama ante una petición `DELETE`.
++     entry #initialize   crea una `Session` nueva para un cliente nuevo; abstracto
++     entry #serve   responde a una petición HTTP del transporte HTTP transmisible
++         Necesita `this.type is Mcp.Specification` (derivado por la macro, dadas una
++         `Tactic[Json.Error]` y una `Tactic[Mcp.Error]`), un `Monitor`, un `Probate`, un
++         `Online` y la `Http.Request`, como los tiene el cuerpo de un manejador. Un `DELETE` con
++         un `Mcp-Session-Id` que nombra una sesión conocida la termina y responde `204 No
++         Content`; un id desconocido responde `404 Not Found`, y la ausencia de id `400 Bad
++         Request`. Cualquier otra petición toma su sesión de la cabecera (o un UUID nuevo),
++         encuentra o construye la `Mcp.Interface` de la sesión, y pasa el control a `Mcp.send`
++         con `JsonRpc.serve(interface)` como despacho. Un `JsonRpc.Error` que escapa del
++         transporte se responde como una respuesta no satisfecha con el mensaje del error.
++     entry #name   el nombre del servidor, enviado como su `Implementation` en `initialize`; abstracto
++     entry #description   para qué sirve el servidor, enviado como las `instructions` en `initialize`; abstracto
++     entry #version   la versión del servidor, como un `Semver`; abstracto
++     entry #prompts   el listado de prompts del servidor, como `Mcp.Prompt`; abstracto
++         La especificación derivada lista por sí misma los métodos `@prompt`, así que un servidor
++         sin ninguno da `Nil`.
++   entry .Session   el trait marcador que extiende el estado por cliente de un servidor
++       El tipo `Session` de un servidor es un subtipo de este, creado por
++       `Mcp.Server#initialize()` para cada id de sesión nuevo y guardado por
++       `Mcp.Server#session` hasta que se termina la sesión.
++   entry .Error   se lanza cuando una llamada no nombra ninguna herramienta, prompt o recurso, u omite un parámetro obligatorio
+
+% 1 1 0 17b444360b2646880a14fdd21978c730
+
+@ 0 6 0 0a8a5b16b16cae601a6eebcee3a8c834
++         Error `↯/s.124.1`: _the MCP operation failed because `reason`_. Lo lanza el despacho de
++         una `Mcp.Specification` derivada, y `Mcp.send` lo responde como el error JSON-RPC
++         `-32602` bajo el id de la petición, de modo que un error del protocolo se distingue del
++         fallo propio de una herramienta (que es un `CallTool` marcado con `isError`). Derivar
++         una especificación necesita una `Tactic[Mcp.Error]` en el ámbito, y `Mcp.Interface`
++         vuelve a lanzar el error fuera de ámbito.
++     entry .Reason   por qué falló la operación
+
+% 0 1 0 0be6257c8c47a3e7045e8f90ca78220a
+
+% 0 1 0 11313548e688b9160f9a668d49880700
+
+% 0 1 0 1f8b367ce2d7fa8217572695a729533e
+
+@ 0 28 0 0ef788f9284e17830a157d910e07b979
++     entry .communicable   representa cada motivo como su mensaje
++     entry #reason   cuál de los tres fallos fue
++   entry .Icon   la fuente, el tipo MIME, los tamaños y el tema de un icono; reexportado desde `Content`
++       `Mcp.Icon` es `synesthesia.Content.Icon`, cuya página tiene la descripción completa.
++   entry .Contents   los contenidos de un recurso, texto o blob; reexportado desde `Content`
++       `Mcp.Contents` es `synesthesia.Content.Contents`, cuya página tiene la descripción completa.
++   entry .ResourceContents   la base de los contenidos de un recurso: URI, tipo MIME y metadatos; reexportado desde `Content`
++       `Mcp.ResourceContents` es `synesthesia.Content.ResourceContents`.
++   entry .TextResourceContents   los contenidos de un recurso como texto; reexportado desde `Content`
++       `Mcp.TextResourceContents` es `synesthesia.Content.TextResourceContents`.
++   entry .BlobResourceContents   los contenidos de un recurso como un blob en Base64; reexportado desde `Content`
++       `Mcp.BlobResourceContents` es `synesthesia.Content.BlobResourceContents`.
++   entry .Annotations   indicaciones de audiencia, prioridad y modificación; reexportado desde `Content`
++       `Mcp.Annotations` es `synesthesia.Content.Annotations`.
++   entry .Role   quién habla, `User` o `Assistant`; reexportado desde `Content`
++       `Mcp.Role` es `synesthesia.Content.Role`, cuya página tiene la descripción completa.
++   entry .ContentBlock   un bloque de contenido: texto, imagen, audio, enlace a recurso o recurso incrustado; reexportado desde `Content`
++       `Mcp.ContentBlock` es `synesthesia.Content.ContentBlock`, cuya página tiene la descripción
++       completa.
++   entry .TextContent   un bloque de texto; reexportado desde `Content`
++       `Mcp.TextContent` es `synesthesia.Content.TextContent`.
++   entry .ImageContent   una imagen en Base64 con su tipo MIME; reexportado desde `Content`
++       `Mcp.ImageContent` es `synesthesia.Content.ImageContent`.
++   entry .AudioContent   audio en Base64 con su tipo MIME; reexportado desde `Content`
++       `Mcp.AudioContent` es `synesthesia.Content.AudioContent`.
++   entry .ResourceLink   un enlace a un recurso por su URI; reexportado desde `Content`
++       `Mcp.ResourceLink` es `synesthesia.Content.ResourceLink`.
++   entry .EmbeddedResource   los contenidos de un recurso llevados en línea; reexportado desde `Content`
++       `Mcp.EmbeddedResource` es `synesthesia.Content.EmbeddedResource`.
+
+@ 0 1 0 095d162e32850b68107c452a04d3ad56
++ entry .Content   el vocabulario de bloques de contenido que comparten MCP y el Agent Client Protocol
+
+% 1 1 0 1f11145115d6ed6102aa2d0f1a53ab9b
+
+@ 0 7 0 10369866764f0d950afba340f0d3d333
++       Las representaciones JSON del contenido que intercambian ambos protocolos: un
++       `ContentBlock` es texto, una imagen, audio, un enlace a un recurso o un recurso incrustado,
++       cada uno una case class codificada con un discriminador `type`; el contenido de un recurso
++       es `TextResourceContents` o `BlobResourceContents`, envuelto como `Contents`; e `Icon`,
++       `Annotations` y `Role` son los registros que comparten. Vive en el conjunto de fuentes
++       `synesthesia.content`, que solo depende de JSON, de modo que un cliente ACP —que lanza
++       agentes como subprocesos y no necesita para nada un servidor HTTP— puede compartir estos
++       tipos con un servidor MCP.
+
+% 2 1 0 10e2080a45e77c330ed9e76165b56649
+
+% 3 1 0 1a7b19553dc0b0e41e32cce2b33a8267
+
+% 4 1 0 0efd9847291309050654deda4f5b29c5
+
+% 0 1 0 02b309a8834413030e24f8d330e947f4
+
+% 0 1 0 1726e6151597ebe21d213b5d5991bf67
+
+% 0 1 0 1191d0dc5d9511570e238e683b4e8cf7
+
+% 1 1 0 0f4fbdb5cc35d2db00a80643ccbc982f
+
+@ 0 4 0 09ac4b234689f48f18d05a96de6a6da4
++       Cada miembro se reexporta desde `Mcp`, así que el código MCP escribe `Mcp.TextContent`; en
++       el paraguas `soundness` el propio objeto se escribe `McpContent`, ya que allí `Content` es
++       la carga útil con tipo de medio de gesticulate. Los códecs JSON de los registros se derivan
++       una vez en sus objetos compañeros y están en el ámbito implícito; decodificar necesita una
++       `Tactic[Json.Error]`.
+
+% 0 1 0 0971b70e28ad531714ff239c2a623cbf
+
+@ 0 1 0 1071a61551f65b45101c7869648d7a45
++   entry .Icon   un icono: su origen, su tipo MIME, sus tamaños y su tema
+
+% 1 1 0 0f648d3225f4a3f80980f5dc5d5fa8f0
+
+@ 0 7 0 0352c232f6e6c21f18e158b888f0b3ce
++         Lo llevan las implementaciones, las herramientas, los recursos y los prompts para
++         mostrarlo junto a ellos. El objeto compañero contiene códecs JSON derivados.
++     entry #src   el URI o el URI de datos del icono
++     entry #mimeType   el tipo MIME del icono, si se da
++     entry #sizes   los tamaños disponibles, como textos `WxH`, si se dan
++     entry #theme   el tema al que se ajusta el icono, `light` o `dark`, si se da
++   entry .Contents   el contenido de un recurso, como texto o como blob
+
+% 1 1 0 1cca5b4c141f07671531ff36d549a216
+
+@ 0 11 0 1535e9f29896886b099b63645a92ed61
++         Envuelve un `TextResourceContents | BlobResourceContents`, para que un `ReadResource`
++         pueda listar cualquiera de los dos. Se codifica como el que contenga (`.encodable`) y se
++         decodifica probando primero con texto (`.decodable`).
++     entry .encodable   escribe el contenido de texto o de blob que contiene
++     entry .decodable   lee contenido de texto, o contenido de blob si el JSON no tiene `text`
++     entry #contents   el contenido, `TextResourceContents` o `BlobResourceContents`
++   entry .ResourceContents   la base del contenido de un recurso: URI, tipo MIME y metadatos
++     entry #uri   el URI del recurso
++     entry #mimeType   el tipo MIME del recurso, si se conoce
++     entry #_meta   metadatos del protocolo, si los hay
++   entry .TextResourceContents   el contenido de un recurso como texto
+
+% 1 1 0 017d50196324b616021107562a2a84db
+
+@ 0 8 0 004102300dcaf5a717c8ee53c500627d
++         Lo que responde una `Mcp.Specification` derivada para un método `@resource` cuyo
++         resultado se transmite como `Text`; su `mimeType` es el de la anotación, o `text/plain`.
++         El objeto compañero contiene códecs JSON derivados.
++     entry #uri   el URI del recurso
++     entry #mimeType   el tipo MIME del recurso, si se conoce
++     entry #text   el contenido
++     entry #_meta   metadatos del protocolo, si los hay
++   entry .BlobResourceContents   el contenido de un recurso como blob en Base64
+
+% 1 1 0 19214c7595aec6e41981c6f21a57760f
+
+@ 0 8 0 1b9612662fc86dfe1192203e9a2b807f
++         Lo que responde una `Mcp.Specification` derivada para un método `@resource` cuyo
++         resultado se transmite como `Data`; su `mimeType` es el de la anotación, o
++         `application/octet-stream`. El objeto compañero contiene códecs JSON derivados.
++     entry #uri   el URI del recurso
++     entry #mimeType   el tipo MIME del recurso, si se conoce
++     entry #blob   el contenido, codificado en Base64
++     entry #_meta   metadatos del protocolo, si los hay
++   entry .Annotations   indicaciones sobre el contenido: su audiencia, su prioridad y su última modificación
+
+% 1 1 0 1d28f5db9f8fada10763cf8350950e30
+
+@ 0 5 0 1bc6816185c2262209f3db8aa2331970
++         El objeto compañero contiene códecs JSON derivados.
++     entry #audience   a quién va dirigido el contenido, como `Role`, si se da
++     entry #priority   su importancia, de 0 a 1, si se da
++     entry #lastModified   cuándo cambió por última vez, como marca de tiempo ISO 8601, si se da
++   entry .Role   de quién es un mensaje: del usuario o del asistente
+
+% 1 1 0 0f6367ce930211af1a2fb0c17676af86
+
+@ 0 5 0 1280a90f0b4cdcc409ae5ff52e79b1d0
++         `User` y `Assistant`, codificados como `user` y `assistant`; `Mcp.Interface` convierte
++         un mensaje de prompt `Discourse.Human` en uno `User` y un mensaje `Discourse.Agent` en
++         uno `Assistant`.
++     entry .encodable   escribe `user` o `assistant`
++     entry .decodable   lee `user` o `assistant`, y lanza `Json.Error` ante cualquier otra cosa
++   entry .ContentBlock   un bloque de contenido: texto, una imagen, audio, un enlace a un recurso o un recurso incrustado
+
+% 1 1 0 14656d3fbc071f061dcaa1f88e1787e3
+
+@ 0 4 0 112abd8d94a8df670d1464a8c95e0458
++         La suma sellada de `TextContent`, `ImageContent`, `AudioContent`, `ResourceLink` y
++         `EmbeddedResource`, codificada con un discriminador `type` de valor `text`, `image`,
++         `audio`, `resource_link` o `resource`. El resultado de una herramienta y los mensajes de
++         un prompt son listas de estos bloques.
+
+% 2 1 0 10d961810b4dea540e65a33f63dba6df
+
+% 3 1 0 0b8a12e31fdc674407f6852ac86e7937
+
+% 0 1 0 11d2f437201c476f108f6da93a7e745e
+
+% 0 1 0 077ceb38517fbc6d1a9e19aa1bb01fcb
+
+% 0 1 0 025adcdf45a9e60019a87eeeef4306f6
+
+% 0 1 0 14bc49114768f54b065df216caa6aa57
+
+% 0 1 0 0ae10b25ce227322164ec8a9d3ba1663
+
+% 0 1 0 14f13022d453f8bc1cde5ad469ffe4b9
+
+% 0 1 0 12875baaf769f1c7011fe00df7beb8f6
+
+% 0 1 0 01c4a8e2864400231f3ec7612f681aae
+
+% 1 1 0 04e4f6be586c088b1024236a6778de98
+
+@ 0 3 0 08a93a9550802e4017f7a69242c72532
++     entry .encodable   escribe un bloque con su discriminador `type`
++     entry .decodable   lee un bloque según su `type`, y lanza `Json.Error` ante uno desconocido
++   entry .TextContent   un bloque de texto, con anotaciones opcionales
+
+% 1 1 0 1466eb6bfe0dcd890097a82e0a2365a8
+
+@ 0 4 0 0d50aadf6814ac201ba0a6bd2c9f752c
++         El objeto compañero contiene códecs JSON derivados.
++     entry #text   el texto
++     entry #annotations   indicaciones de audiencia y prioridad, si se dan
++   entry .ImageContent   una imagen como datos en Base64 con su tipo MIME
+
+% 1 1 0 0f26a8b36b59248c0135fb28d7675e7b
+
+@ 0 8 0 120ad8df7b888e501754549715b45a98
++         El campo `uri` lo define el Agent Client Protocol, no MCP; al ser `Optional`, no aparece
++         en la transmisión MCP cuando es `Unset`. El objeto compañero contiene códecs JSON
++         derivados.
++     entry #data   la imagen, codificada en Base64
++     entry #mimeType   el tipo MIME de la imagen
++     entry #uri   de dónde procede la imagen, si se da (un campo de ACP)
++     entry #annotations   indicaciones de audiencia y prioridad, si se dan
++   entry .AudioContent   audio como datos en Base64 con su tipo MIME
+
+% 1 1 0 02feccdfe7bb7a1b1ecd63b761316136
+
+@ 0 5 0 0f6ab18815c6fc5a12682d8fb4f0faec
++         El objeto compañero contiene códecs JSON derivados.
++     entry #data   el audio, codificado en Base64
++     entry #mimeType   el tipo MIME del audio
++     entry #annotations   indicaciones de audiencia y prioridad, si se dan
++   entry .ResourceLink   un enlace a un recurso que el cliente puede leer, por URI
+
+% 1 1 0 10828b55c3002dac08c47c5496a24d24
+
+@ 0 11 0 1ac82ac0275727370e9d9f5e9c6a0a02
++         El objeto compañero contiene códecs JSON derivados.
++     entry #name   el nombre del recurso
++     entry #uri   el URI del recurso
++     entry #title   un título legible por personas, si se da
++     entry #description   una descripción, si se da
++     entry #icons   iconos, si se dan
++     entry #mimeType   el tipo MIME del recurso, si se conoce
++     entry #annotations   indicaciones de audiencia y prioridad, si se dan
++     entry #size   el tamaño del recurso en bytes, si se conoce
++     entry #_meta   metadatos del protocolo, si los hay
++   entry .EmbeddedResource   el contenido de un recurso llevado en línea dentro de un mensaje
+
+% 1 1 0 1845da0f76d055440549a1dbaaa01e99
+
+@ 0 4 0 11e180c442ffcc101e7d20e519ebc3e3
++         El objeto compañero contiene códecs JSON derivados.
++     entry #resource   el contenido, como `Contents`
++     entry #annotations   indicaciones de audiencia y prioridad, si se dan
++     entry #_meta   metadatos del protocolo, si los hay
+
+@ 0 6 0 1c8a72c2d26afa4411b88eb37aedbfe3
++ entry .about   la anotación `@about("…")`: la descripción de una herramienta, un recurso, un prompt o un parámetro
++     En un método `@tool`, `@resource` o `@prompt`, `@about` proporciona la `description` que
++     lee el modelo al decidir si usarlo. En un parámetro de una herramienta, se convierte en la
++     `description` de esa propiedad en el esquema de entrada; en un parámetro de un prompt, en la
++     descripción del `PromptArgument`. Se define en el conjunto de fuentes `synesthesia.content`,
++     para que los tipos del Agent Client Protocol también puedan usarla.
+
+% 2 1 0 19caad7458abe6771c74d907f2e4d70f
+
+% 3 1 0 14ee34565222fa6e1c1f5aacb0fddfdf
+
+% 0 1 0 16b90cd924d3e966155d7f477780b5f8
+
+% 1 1 0 0528355dc120cf5c0298c79187a6122a
+
+% 2 1 0 13a7198ad48199721b2611fda18218dc
+
+% 0 1 0 122fbe1670aefe111cd9e7eec2f84949
+
+% 0 1 0 0af789cb1997c54518ef8229eaedb18b
+
+% 1 1 0 15fdbbcb6502e12e1cb094188e6aa072
+
+% 2 1 0 1960a7fe21d546dd1c11346ec5e55ba2
+
+% 4 1 0 0fe8c067720ae84a1fb6fa41034c1252
+
+% 0 1 0 089c4e108b7b320c192b01848a69fb39
+
+% 0 1 0 0519a68dc8b766bb1accc122da2fd1cc
+
+% 1 1 0 1f2da8372160b0310c4313e2400c2331
+
+@ 0 10 0 1111c4d487cf4b191d085bd05904761e
++ entry .tool   la anotación `@tool`: un método es una herramienta que el cliente puede llamar
++     Un método `@tool` de un `Mcp.Server` se lista con `tools/list` y se llama con `tools/call`.
++     Su nombre es el del método; su esquema de entrada tiene una propiedad por parámetro,
++     derivada del tipo del parámetro (que debe ser `Schematic over JsonSchema` y decodificable a
++     partir de JSON), y exige todo parámetro que no sea `Optional` ni tenga valor por defecto; su
++     esquema de salida es un objeto con la única propiedad `result`, el esquema del tipo del
++     resultado. El resultado se responde como `{"result": …}` en el `structuredContent` del
++     `CallTool` y como texto. Un método puede recibir una segunda lista de parámetros
++     `(using client: Mcp.Client)` para registrar mensajes en el cliente, o para obtener de él
++     datos de entrada mediante elicitación, mientras se ejecuta. Una herramienta que lanza una
++     excepción responde un `CallTool` marcado con `isError` con el mensaje de la excepción.
+
+% 2 1 0 0e5a3307a8ef61bb193b6d72a4975d77
+
+% 3 1 0 00557b12d5a0db831c72ca19f2aae67e
+
+% 0 1 0 0f801bf4419bd8241f60d93c983819fd
+
+% 1 1 0 04c7a3c1660ada2b13362c531eb732fd
+
+% 2 1 0 054c4fa19706b34e1e85c3a37d55a172
+
+% 0 1 0 0e8ca15148cdb23e0f8ee68c48c6e1c0
+
+% 0 1 0 12eadee85fbbfb8916720e4d83582bcc
+
+% 1 1 0 027aa53dd3e339bd17ae3c6190999ff9
+
+% 2 1 0 1d1e10cacacc1939177cabf100162093
+
+% 4 1 0 1a6c9d8e66bc996803a0493487bf41b6
+
+% 0 1 0 1d1b4711890d02191dc2faab0c5e76bf
+
+% 0 1 0 1d944432550aa17816451265fca55db5
+
+% 0 1 0 191ebffa945fe693116e62c4fe2b18a0
+
+% 0 1 0 0f8e5678e87cac1e07830b83744da2b1
+
+% 1 1 0 1bf56444e2f782aa049effd119d1a72b
+
+@ 0 3 0 11c0392cb80075e20c04e804af3ce7fe
++     Aquí `workspace` y `limit` no son obligatorios: un cliente puede omitirlos, y el método ve
++     `Unset` y `20`. `@title` da un título a la herramienta y `@ui` nombra el recurso que es su
++     interfaz de usuario.
+
+@ 0 8 0 061b3fcb311e45cb15b420fb6cde10d7
++ entry .resource   la anotación `@resource("uri")`: el resultado de un método se sirve en un URI
++     Un método `@resource(uri)` de un `Mcp.Server` no recibe parámetros y devuelve cualquier
++     cosa `Streamable by Text` o `Streamable by Data`: se lista con `resources/list` como un
++     `Mcp.Resource` con el nombre del método y se lee con `resources/read` con ese URI, como
++     `TextResourceContents` o, codificado en Base64, `BlobResourceContents`. El segundo
++     parámetro, `mimeType`, da el tipo que se informa; sin él, un recurso cuyo URI nombra el
++     `@ui` de una herramienta es `text/html;profile=mcp-app`, un recurso de texto `text/plain` y
++     uno binario `application/octet-stream`.
+
+% 2 1 0 1d27687ede3633ee1a0614dd46a48d44
+
+% 3 1 0 1deb28ea411e39350ef54db41e8b05fe
+
+% 0 1 0 16873c0e97b520431fcdbfd4f1fc68b0
+
+% 1 1 0 1cf890593eb40c9c11a18de55be6b325
+
+% 2 1 0 04dfc66b679c8a631c40c974602fefca
+
+% 0 1 0 01c977c062dd1e6b1b4a7b0f9c71c258
+
+% 0 1 0 01353848b929dbec138bbe89f0cf1487
+
+% 1 1 0 02157efd203f1b5e0ed6fafce413b3e8
+
+% 2 1 0 1fd32b80100dc3c0039e9ebf7929d4f7
+
+% 0 1 0 154cc31d607bc18f1513e41a0c727032
+
+% 0 1 0 0637c6b2044462a3054ce772bd0905a2
+
+% 0 1 0 1e89a5dbf4113f620343ea153e0ceec1
+
+% 1 1 0 16f100bd95d7355816ca347d95c21f8b
+
+@ 0 2 0 005910dd68b04ec80b6baa33d48a1be6
++     Un método con parámetros es un error de compilación, _MCP resource methods cannot have any
++     parameters_, y también lo es un tipo de resultado que no se transmite como flujo.
+
+@ 0 6 0 1edc0f2c33431a75094600161a654ab6
++ entry .prompt   la anotación `@prompt`: un método devuelve una plantilla de conversación
++     Un método `@prompt` de un `Mcp.Server` devuelve una `List[Discourse]`, escrita con los
++     interpoladores `human"…"` y `agent"…"`, y se lista con `prompts/list` como un `Mcp.Prompt`
++     con su nombre, con un `PromptArgument` por parámetro, y se ejecuta con `prompts/get` con los
++     argumentos como texto. Cada mensaje `Discourse.Human` se convierte en un `PromptMessage`
++     `User` y cada `Discourse.Agent` en uno `Assistant`.
+
+% 2 1 0 0c66a7a6169696521f9799e749c79a5d
+
+% 3 1 0 138273c51860a34a0d6bbd08da53dcda
+
+% 0 1 0 1ab0356293bfeb3005cdc045ad94112a
+
+% 1 1 0 11319a7edae89a6602f351d41cb604ad
+
+% 2 1 0 122668b4990f006b1f8f58333713eae4
+
+% 0 1 0 0d921e02ad3d2d9e0c8ab1a6ce739270
+
+% 0 1 0 18ccee1b5ace5f060a1e84b96b33c356
+
+% 1 1 0 1c472579afab2b501391f97a57835a3e
+
+% 2 1 0 0e0479b12f58aee20716467a00d79183
+
+% 0 1 0 18c478f3e78962d71c3a27ced84f95f7
+
+% 0 1 0 13deb9589975bc010703a2741001e6b6
+
+% 0 1 0 0c6924c9db5e1f710a63c216caac14f4
+
+% 1 1 0 171864dbff57289d14d9ec335b6173f5
+
+@ 0 3 0 071ee07bc58bc75e01ba9b537708f0f4
++ entry .title   la anotación `@title("…")`: un título legible por personas para una herramienta, un recurso, un prompt o un argumento
++     Se convierte en el `title` del `Mcp.Tool`, `Mcp.Resource` o `Mcp.Prompt` listado, o del
++     `PromptArgument` de un parámetro de prompt, donde `@about` da la descripción.
+
+@ 0 4 0 1eb11903d9621f1417a377017476eb70
++ entry .ui   la anotación `@ui("uri")`: nombra el recurso que es la interfaz de usuario de una herramienta
++     En un método `@tool`, `@ui(uri)` añade `{"ui": {"visibility": ["model", "app"], "resourceUri": uri}}`
++     al `_meta` de la herramienta, lo que indica a un cliente de apps MCP qué recurso mostrar para
++     ella, y hace que el `@resource` con ese URI tenga por defecto el tipo MIME
+
+% 0 1 0 1d68c1e8f4c5555d1300b2bcbe8e1814
+
+% 2 1 0 11daf6f6796beb5515959658596a4252
+
+% 3 1 0 1cabe3b53b47d9bf11c407d7770b40de
+
+% 0 1 0 05f5dc434f74ff2115756999dccc00b4
+
+% 0 1 0 191cbfb78d46a62217529dcb01c2bc42
+
+% 0 1 0 1c00cdeeccdd2583168c4fcb89ec260a
+
+% 1 1 0 17d6e5eb403fdf3e1c9c4d719a80656d
+
+% 2 1 0 098653aa1db65de01acc322b4370d229
+
+% 0 1 0 184811212ee5279b1903b75c9cfadcc0
+
+% 0 1 0 0f2ec27b5804f1060c54b988e37e850e
+
+% 1 1 0 1e8eee6635b0f53f1828d64fbe0327f9
+
+% 2 1 0 18cce5810445a2730010c1903124dc1b
+
+% 4 1 0 1f10292ec0f2b22415584ae47283336c
+
+% 0 1 0 1b396ae07115492d19ee1ce89f0529ca
+
+% 0 1 0 04b64b9b1aac1fdc0911663282f917c4
+
+% 0 1 0 1b24f7e632fa5d1200c89eca8fb498ff
+
+% 0 1 0 0ab1432c124e76151db11910f35b0c66
+
+% 0 1 0 15b837cf836e1372056cc0b4f6f518a8
+
+% 1 1 0 0b1e0fb0afa3994c1f24a7c506919d5c
+
+@ 0 1 0 0c62d1be4f6026bd16089c4f287363ad
++ entry .Discourse   un mensaje de la conversación de un prompt: del humano o del agente
+
+% 1 1 0 0d33e20b1548c59b15a30659c8eec9a6
+
+@ 0 4 0 1b24c4ca7a907e3c10a742ea5467e63d
++       La suma sellada de `Human` y `Agent`, cada uno con un mensaje `Text`. Un método `@prompt`
++       devuelve una `List[Discourse]`, que se escribe más fácilmente con los interpoladores
++       `human"…"` y `agent"…"`; `Mcp.Interface` convierte cada uno en un `PromptMessage` con el
++       papel `User` o `Assistant` y un `TextContent`.
+
+% 2 1 0 068f0e9e270eaea80ddcf0daaea32d89
+
+% 3 1 0 0d48d0ebdd956981000392afb1c1ef0e
+
+% 0 1 0 1201dc817b504e6e1c159024057d0de0
+
+% 0 1 0 1650d19fba143a690e6bb8676e30a45e
+
+% 1 1 0 10e7343ba386933b1555075ccb845d76
+
+@ 0 2 0 01f46708acc2b1ac0ab518fc1b4f8814
++   entry .Human   un mensaje de prompt del usuario
++       `Human(message)`, tal como lo construye `human"…"`. Se inspecciona estructuralmente, como
+
+% 0 1 0 0d1fd477d100431d000ef2cd3a96872a
+
+@ 0 2 0 1808789feef07fad09e60885cc0c5727
++   entry .Agent   un mensaje de prompt del asistente
++       `Agent(message)`, tal como lo construye `agent"…"`.
+
+@ 0 4 0 05d829f18daa6a2a184ece644741f945
++ entry .human   el interpolador `human"…"`: un mensaje `Human`, con las sustituciones mostradas como texto
++     Cada `$substitution` debe ser `Showable`, y se representa con su `Showable`; un valor sin
++     `Showable` es un error de compilación, _could not find a contextual `T is Showable`
++     instance_. El resultado es un `Discourse`.
+
+% 2 1 0 19406a8f8cbcd9f419b304625da66cc2
+
+% 3 1 0 1fdd5b562ba432ae193cdefb909669cc
+
+% 0 1 0 0e7fc1d4bb9f817d0ac93e2ef2abd8b6
+
+% 0 1 0 1c92b2e4b2a505640a2d919357407307
+
+% 1 1 0 198199cf843384b20040aab064776c38
+
+@ 0 2 0 071244b213781e66132c4faaca370778
++ entry .agent   el interpolador `agent"…"`: un mensaje `Agent`, con las sustituciones mostradas como texto
++     Como `human"…"`, pero construye un `Discourse.Agent`: la parte del asistente en la
++     conversación de un prompt.
+
+% 2 1 0 0438ed8fbc29715b14a30fc93eb61f0d
+
+% 3 1 0 1913525154bf23ed0ef319ef5c1dbe11
+
+% 0 1 0 0fc4895181bd3bf610672098da68ef01
+
+% 1 1 0 1575e06225077768079b18474d0c1140
+
+@ 0 1 0 07e539f2f78861991dfc18716642564d
++ entry .internal   las implementaciones con macros que hay detrás de `human"…"`, `agent"…"` y `Mcp.Specification`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 8 0 11541b2458ad193e015c1d4cf441c151
++       No son para uso directo: el objeto existe para que las macros tengan un lugar estable.
++   entry .prompt   la macro que hay detrás de `human"…"` y `agent"…"`
++       Concatena las partes literales con la representación `Showable` de cada sustitución e
++       inserta un `Discourse.Human` o un `Discourse.Agent`.
++   entry .spec   la macro que hay detrás de `Mcp.Specification.mcpSpecification`
++       Lee los métodos `@tool`, `@resource` y `@prompt` de un tipo de servidor (incluidas las
++       anotaciones de los métodos sobrescritos), deriva sus esquemas e inserta una
++       `Mcp.Specification` con los listados y el despacho.

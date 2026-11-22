@@ -1,0 +1,265 @@
+orthant 2 language
+
+@ 0 1 0 18967b6efd75bc2c1d60c408646b615d
++ ## Datenbanken
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 4 0 140fdeea2cfa79541fb369f465c03ddb
++ Eine `Database` ist ein In-Memory-Speicher für typisierte Entitäten und die Relationen zwischen
++ ihnen. Ein Wert wird einmal gespeichert und durch eine typisierte Referenz identifiziert. Die
++ Relationen, die eine Datenbank unterstützt, sind *in ihrem Typ* deklariert, sodass das In-Relation-Setzen
++ zweier Entitäten, die das Schema nicht verbindet, ein Kompilierfehler ist.
+
+@ 0 2 0 184c99bcd8afe9620bac67ef5da7a1d4
++ Sie hat die Gestalt einer relationalen Datenbank, mit Entitäten, Fremdschlüsseln und Joins, für
++ die vielen Programme, deren Arbeitsdaten in den Speicher passen und deren Schema vom Compiler
++ geprüft werden sollte.
+
+@ 0 1 0 0dc5d803f13483f11e1d807cb28f3c0b
++ ### Über typisierte Speicherung
+
+@ 0 5 0 1e24a89bd25703b71f34ae1f6fce2aff
++ In-Memory-Datenmodelle driften zu Maps von Maps: Entitäten nach ID geschlüsselt, Relationen als
++ `Map[Id, Set[Id]]`, und das Schema, das sagt, welche Arten von Dingen mit welchen in Relation
++ stehen dürfen, lebt nur in der Konvention. Der Compiler kennt die Typen von allem anderen und weiß
++ nichts darüber, welche Beziehungen bestehen sollen. So ist eine Kiste, die einer Person zugeordnet
++ wird, in einer Domäne, in der Kisten zu Regalböden gehören, eine Überraschung zur [Laufzeit] oder
++ eine stille Verfälschung.
+
+@ 0 4 0 044a784cc381f3ca1328784d8122039d
++ Hier sind die Relationen ein Typ. Eine Datenbank wird *aus* ihrem Tupel von Relationen erzeugt, und
++ jede Zuordnung, Entfernung und Abfrage wird dagegen geprüft. Eine Operation, die das Schema nicht
++ erlaubt, kann nicht geschrieben werden, und das ist
++ [Sicherheit durch Konstruktion](../../philosophy/safety-by-construction.md) für ein Datenmodell.
+
+@ 0 3 0 08aa286919641a121102266c73c6718f
++ Alles stammt aus dem Paket `soundness`. Der zweite Import wählt eine
++ [Strategie](errors.md#choosing-a-strategy) für Fehler, und der dritte erlaubt den Beispielen, ihre
++ Ergebnisse auszugeben:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 19457510374c1569056d9ed2ced73c99
++ ### Eine Datenbank deklarieren
+
+@ 0 1 0 1130b81dad0ea38705f197185df557cf
++ Die Relationen bilden den Typ der Datenbank. `A -< B` liest sich als „ein `A` kann `B`s haben“:
+
+% 2 1 0 073243d8c0176ba007886d9152cf74c4
+
+% 0 1 0 008b582ca68a2fe50d6452dfb866ce0d
+
+% 0 1 0 062420b0159c36820671d1defd520112
+
+% 0 1 0 0dec36f4c2ada2820a9221a57a4e1dea
+
+% 0 1 0 01959242600251151c00cbc1d8f8cd6c
+
+% 1 1 0 09d0ff4c64095caf1bd2bff97d072c84
+
+@ 0 1 0 0140a54dfe3cded40f30be6425793ae3
++ ### Speichern und referenzieren
+
+@ 0 3 0 038a2ab02357eded1bdaf39c85e101ba
++ `store` internalisiert einen Wert und gibt seine typisierte Referenz zurück. Die Referenz ist eine
++ `Ref of Box in db.type`, sodass sie weder mit einer Referenz aus einer anderen Datenbank noch mit
++ einer auf einen anderen Typ verwechselt werden kann:
+
+% 2 1 0 14a7711c35c2147618aba4905c1b770d
+
+% 0 1 0 0b40270a665a9c341dbd4bd3bce93134
+
+% 0 1 0 0c29a88754b108fe09cb052c52b2d5f5
+
+% 1 1 0 0e60321081f6bd6412ada9a605125ebd
+
+@ 0 1 0 0b569b894e117c3c05b8b84da2a66ceb
++ Eine Referenz wird dereferenziert, indem man sie anwendet, was den Wert zurückgibt:
+
+% 2 1 0 094e52ea372286b6083db4758d515b36
+
+% 3 1 0 0e1792809bc986a9065d30b679c8b5b7
+
+% 4 1 0 0de1865a38ce09b30904dcce819dc0dd
+
+% 0 1 0 0ce42b5ace7737ef164241bbead23c71
+
+% 1 1 0 09f5d1e6896ab5170a39008146e677f2
+
+@ 0 1 0 15050fb8a25563aa00680f8f85234061
++ ### Referenzen über Schlüssel
+
+@ 0 4 0 019264e28983e5cf0cc4f6e095b56d90
++ Eine Referenz muss überhaupt nicht aus einem Speichervorgang stammen. Wo eine Entität ihren eigenen
++ Schlüssel trägt, etwa eine E-Mail-Adresse oder einen Produktcode, ist eine `Reference` darauf
++ dieser Schlüssel, typisiert nach dem, worauf er verweist. Eine `Resolvable`-Instanz sagt, wie ein
++ Schlüssel seine Entität findet. Diese hier wird aus einer Menge von Werten gebaut und durchsucht
++ sie über das mit `@primary` markierte Feld:
+
+% 2 1 0 0a23ebd56876a8b20260b2ec41267ce8
+
+% 0 1 0 08b9bc67268c95300da76963aa47c11f
+
+% 0 1 0 105f3cb122006dd717a92d5486945bc2
+
+% 0 1 0 04043e95f61aa8e90a7195c6e6b42f2c
+
+% 0 1 0 01d0074750383f5f0057f398305571bb
+
+% 1 1 0 1e2b0f3ecf08721f1db367c7c9e9ee1b
+
+@ 0 2 0 1612facf44d3588019e3b1d202e4e452
++ Ist das im Geltungsbereich, nimmt `ref` die Referenz eines Wertes, die nichts als seinen Schlüssel
++ hält. Wird die Referenz angewandt, löst sie sich zurück auf:
+
+% 2 1 0 1fb15cb142be746c02e49e9d3184f5cb
+
+% 3 1 0 03d902e285e83d6108edfe7e8cbc0f02
+
+% 4 1 0 1818a6fab4b1099d0d93bb8f072503d7
+
+% 0 1 0 0cd13a7c06e8e22701f59b08046feb5c
+
+% 0 1 0 1fef0199fad8443e143e8e0f02d63b26
+
+% 0 1 0 15989f53ceca089c084fc38b5bf9c6c5
+
+% 1 1 0 034ecba0cb2c4bed13d2fa586ece26a8
+
+@ 0 2 0 067c848e98c704b10213a67c0ddeed49
++ Eine Referenz, die aus einem Schlüssel gebaut wird, der zu nichts passt, löst einen
++ `Reference.Error` aus, wenn sie angewandt wird, und nicht, wenn sie gebaut wird:
+
+% 2 1 0 0333c70242ea595512cc06e25124777f
+
+% 3 1 0 01ff7f9764776ee207c0a122432aa86f
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 05a3a48c08da48f61aabb34f9da39133
+
+% 1 1 0 14de7a8a35c0d99f0b772b9c0191e610
+
+@ 0 1 0 011acc11e285e5c81b310b456eb87cd0
++ ### In Relation setzen
+
+@ 0 2 0 1de8c7b2d4ae25991a4e96ad5256dae3
++ Referenzen werden mit `assign` in Relation gesetzt, mit `unassign` aus der Relation gelöst und mit
++ `lookup` durchlaufen. Jede dieser Operationen ist nur für eine Relation gültig, die der Typ der
++ Datenbank deklariert:
+
+% 2 1 0 07d6a3bca15e839e091e2edd098e5239
+
+% 3 1 0 19480f3da8da3fb50c6168bb766192bf
+
+% 4 1 0 053256ee676e9d2d0ee1c450618ba614
+
+% 5 1 0 1a11f4c211e9a6771e2c29672515ad75
+
+% 1 1 0 03a43799137b5c610cb485d59c5c4f26
+
+% 0 1 0 1979f98dfa7927a409826f12b08e20c9
+
+% 1 1 0 04417edcee1cd59a160d5ba2a06bc283
+
+% 1 1 0 05ecc50aad7a2df217622478403af213
+
+@ 0 1 0 10f92ddaf8f00d4a0141528c243cd0a6
++ Es gibt keine Relation `Box -< Shelf`, daher kann einer Kiste kein Regalboden zugeordnet werden:
+
+% 2 1 0 1213394458eecd441d07ed8b5940500e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 1b1781970f9f0eb30b07f880e970c0a9
+
+% 1 1 0 19fd2ca0aaa5841b1650c4c349864b8b
+
+@ 0 2 0 0a1ac4e5974a44bb1703bab934938db6
++ Darum geht es. Das Schema ist keine Dokumentation, sondern ein Typ, und eine Operation außerhalb
++ davon läuft nie, weil sie nie kompiliert.
+
+@ 0 3 0 16cda9bce8f32dff0d5893d8c9144255
++ `ref` findet die Referenz für einen Wert, der bereits gespeichert ist, und löst einen
++ `Database.Error` aus, wo er es nicht ist. So wird ein Wert, der von anderswo ankommt, dem zugeordnet,
++ was die Datenbank bereits hält, statt ein zweites Mal gespeichert zu werden.
+
+% 0 1 0 1bb0030fd9b341c51b202d80cfbde761
+
+@ 0 2 0 1a32f8c353d3a80e018cbdf59fab645e
++ `store` *internalisiert*. Wird ein gleicher Wert zweimal gespeichert, ergibt das dieselbe
++ Referenz, sodass die Identität in der Datenbank über den Wert besteht und nicht über die
++ Allokation:
+
+% 2 1 0 08270d900433d35f172b0c8e7bf6cb3c
+
+% 3 1 0 0f9801327b2768ac0eaab4141ac8d879
+
+% 4 1 0 0adf70204248b7fd0fe08064a719240b
+
+% 0 1 0 109f80e8cb91e34c1e8e6742477fa834
+
+% 1 1 0 1c0994003ed63a9c008b824ab707d84b
+
+@ 0 2 0 168b94a2319135b81c79be1e2bb06887
++ Das macht eine Referenz sicher zum Vergleichen, zur Verwendung als Schlüssel und zum Halten anstelle
++ des Wertes, den sie benennt.
+
+@ 0 3 0 066ce4678e33a29d1497d7ab5aa25dee
++ Eine Referenz ist ein opakes Handle, kein Zeiger und kein Index in eine Tabelle, die der Aufrufer
++ sehen kann. Eine Referenz aus einer Datenbank kann nicht gegen eine andere dereferenziert werden.
++ Der Typ sagt, zu welcher Datenbank sie gehört, und es gibt keine Möglichkeit, eine zu
++ konstruieren, die lügt.
+
+@ 0 1 0 08738ff9214c82e812358f7e33270b16
++ ### Abfragen
+
+@ 0 2 0 0315304e089359561d2da4c47ff7ac1f
++ `lookup` folgt einer Relation und liefert jede Referenz des Typs, nach dem gefragt wird. Eine
++ Abfrage, die auswählen statt durchlaufen muss, ist ein Prädikat über die Werte dieser Referenzen:
+
+% 2 1 0 0880ee68cc36f9141b817a522fa1e97c
+
+% 3 1 0 1367daa5ffc081e60c3cef4853f66e68
+
+% 4 1 0 00ba3885a8ee3768028b13777b20838e
+
+% 5 1 0 0548678e53d3e125041be6a1e8718549
+
+% 0 1 0 15880bda0b69364209186f5c2b658d8d
+
+% 0 1 0 048e1a4544020cdf1d1cefad4ad04717
+
+% 1 1 0 119cad234a7c7a0e0b7c8678ac2b3a35
+
+@ 0 3 0 19c73b58418d76140ca6f55ddae6acf8
++ Das Prädikat ist eine gewöhnliche Funktion über den gespeicherten Typ, sodass eine Abfrage in Scala
++ geschrieben wird und nicht in einer in Strings eingebetteten Abfragesprache. Der Compiler prüft sie
++ wie den Rest des Programms.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 6 0 0f34e6307294ae410730705a07addfa0
++ - [Annotationen](annotations.md#finding-the-annotated-field) beschreibt `@primary`, das den
++   Schlüssel markiert, über den ein `Resolvable` sucht.
++ - [Collections](collections.md) beschreibt die `Set`-Operationen, die eine Abfrage unterstützt.
++ - [Fehler](errors.md) beschreibt `safely` und die Strategien, die einem `Reference.Error` begegnen.
++ - [Records](records.md) typisiert Daten, deren Schema aus einer echten Datenbank stammt.
++ - [HTTP-Server](http-server.md) stellt die Daten bereit, die eine Datenbank hält.

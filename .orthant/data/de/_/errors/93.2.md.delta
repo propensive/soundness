@@ -1,0 +1,65 @@
+orthant 2 language
+
+% 0 1 0 006a2062b68ca4431d830ab60ecca11c
+
+@ 0 2 0 17e613b265198b5106e21ef8b293c60a
++ Wird ausgelöst, wenn ein `ar`-Archiv (das Containerformat von `*.deb`-Paketen und statischen
++ `*.a`-Bibliotheken) nicht gelesen oder geschrieben werden kann.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 4 0 105ec851f588c1a616ca43987e52689e
++ Bitumen parst `ar`-Member lazy aus einem Byte-Stream; ein Fehler wird daher gemeldet, wenn die
++ fehlerhafte Struktur erreicht wird, nicht beim Öffnen des Archivs. Das Format trägt weder eine
++ Prüfsumme noch eine Markierung für das Archivende; der zwei Byte lange Header-Abschluss und die
++ aufgezeichnete Member-Größe sind daher die einzigen verfügbaren Strukturprüfungen.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 2 0 1db5f3bb22f47958123f6ac253b017e2
++ column  Grund
++ column  Meldung
+
+% 0 1 0 09a6122dbd4c4f7f02319e1a120cdc19
+
+% 0 1 0 18b8cbcd4827beb8078a98b3b752642c
+
+% 0 1 0 12ac43d61f30b7af1b8acf843e61d0b6
+
+% 0 1 0 1455fbed3ad83ddd0a256f6c6b3151f9
+
+% 0 1 0 0c846c6231f82b4b13853bc4df1b96f0
+
+% 0 1 0 17cce69921df5ad418a43e0c361c1a25
+
+% 0 1 0 152a00c5a7d1930604c65beaac09c8b5
+
+% 0 1 0 1241533bf8baac0605e2e6344fced27d
+
+% 0 1 0 0f383a77df797fdc0551a945cfb35eb2
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 5 0 06fb2bfe2cd3357b04358cd179db78a1
++ Ein abgeschnittenes Archiv bedeutet meist einen unvollständigen Download oder einen vorzeitig
++ beendeten Stream; ein fehlerhafter Abschluss bedeutet, dass der Reader die Header-Grenze verloren
++ hat, typischerweise weil das Größenfeld eines früheren Members beschädigt war. Ein Langnamen-Verweis,
++ der sich nicht auflösen lässt, bedeutet ein GNU-Archiv, dessen Namenstabelle `//` fehlt oder vor
++ den falschen Membern steht. Namen im BSD-Stil `#1/<length>` werden von Debian- oder GNU-Werkzeugen
++ nicht erzeugt und abgelehnt, statt falsch gelesen zu werden.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 2 0 0af96f2b28ea05cb149ad568dcf04ac4
++ - Quelle: `lib/bitumen/src/core/bitumen.Ar.scala`
++ - `↯/s.93.1` (`Tar.Error`), der TAR-Reader daneben

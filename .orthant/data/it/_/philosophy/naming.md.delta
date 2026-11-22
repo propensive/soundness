@@ -1,0 +1,156 @@
+orthant 2 language
+
+@ 0 1 0 0575231b23f581a10d3c47168127ac1b
++ # Nomi
+
+@ 0 6 0 056ef03eb7f5c363009a14789757f68c
++ In Soundness i nomi si scelgono con cura, perché una cosa ben nominata si legge correttamente e una
++ nominata male oscura ogni riga che la usa. Metodi, tipi e valori contestuali sono nominati in modo
++ che le espressioni che formano si leggano come linguaggio naturale, e convenzioni coerenti fanno sì
++ che un nome porti lo stesso significato ovunque compaia. Scegliere bene i nomi è inseparabile dal
++ far leggere il codice come una [prosa elegante](elegant-prose.md): il nome giusto al posto giusto
++ elimina il bisogno di un commento che lo spieghi.
+
+@ 0 8 0 068bd5e305a04c491d482beb384a7c95
++ I nomi sono anche unici in tutto Soundness. Ogni tipo pubblico ha un unico significato nel
++ namespace `soundness`: c'è un solo `Path`, un solo `Message`, un solo `Error`, e un modulo che ha
++ bisogno di un concetto distinto conia un nome distinto: `Teletype`, non un altro `String`;
++ `GitHash`, non un altro `Hash`. L'unicità è ciò che rende possibile l'import ombrello:
++ `import soundness.*` non costringe mai a scegliere tra due cose chiamate allo stesso modo, un nome
++ nudo nella documentazione o in un messaggio di errore è privo di ambiguità, e spostare codice tra
++ moduli non cambia mai silenziosamente quale `Path` esso intenda. Dove la stessa parola si addice
++ davvero a due cose, una delle due viene rinominata anziché qualificata per sempre.
+
+@ 0 6 0 015238232e8fe32d191a5a38643e7595
++ La descrittività si estende ai nomi più piccoli. I parametri di tipo sono parole, non lettere: un
++ metodo è generico su `element`, `format`, `duration` o `plane`, mai su `A`, `B`, `T`, così una
++ firma si legge come una frase sui tipi di cose coinvolte, e le sue clausole di vincolo
++ (`element: Encodable in Json`) si leggono come affermazioni su di esse. La convenzione costa
++ qualche carattere per dichiarazione e lo ripaga a ogni lettura: è lo scambio che la scelta dei nomi
++ dovrebbe sempre fare.
+
+@ 0 1 0 0a9d5175e6d934e0064320f6517e29d9
++ ## Nomi che formano frasi
+
+@ 0 2 0 0c407d77cba1a7100e6ee6d67e44d438
++ Un nome si sceglie per come si legge *nella sua posizione*, non isolatamente. La prova è se
++ l'espressione risultante si può leggere ad alta voce:
+
+% 2 1 0 08fa801eaa7725681a846bddfc9f1c55
+
+% 3 1 0 14936856d082ae280e2db10b2efaca9e
+
+% 4 1 0 066d0a9bebbd6423183e3f43d65b94d2
+
+% 0 1 0 0567dd676232b453187980514e92885f
+
+% 0 1 0 1d596561c674e412192499b15ff264de
+
+% 0 1 0 11502d4557f8f4841271a24c6191f9fa
+
+% 0 1 0 185dd576a6ad593b1b46441ff1c96764
+
+% 1 1 0 0ee2e190e8b752840eeba1cc1d9f73fe
+
+@ 0 4 0 09543f048e9d26d10a7a76fb86683b0a
++ `on` unisce un orario a una data perché è la preposizione inglese; `uncloak` dice che cosa accade a
++ un segreto; `Read & Exclusive` si legge come la modalità che nomina. Nessuno migliorerebbe con un
++ nome più letterale, e parecchi peggiorerebbero: `combineTimeAndDate` dice meno di `on` e si legge
++ molto peggio.
+
+@ 0 2 0 139d04ef1292389e0819f60b232d9d8b
++ Lo stesso vale per i valori contestuali, che sono nominati per ciò che *selezionano* anziché per il
++ loro tipo, poiché l'import è ciò che un lettore vede:
+
+% 2 1 0 0782382dc6d447c1175616e44d115acf
+
+% 3 1 0 16d4f3cfde38d38a1a92b172316619d0
+
+% 4 1 0 0ddb778c4f2b622a1549e128438a4c07
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 1ffc216c123501de05bfcc61dc208228
+
+% 0 1 0 161e68b1f117a22a0b4b7f185305da70
+
+% 1 1 0 16777d0ab7cb49ef143a34772210f5fd
+
+@ 0 2 0 1fd0974086ea16e90a1ab3261ea6dcfd
++ Chi incontra `import strategies.throwUnsafely` in codice non familiare impara qualcosa su quel
++ codice già dalla sola riga dell'import.
+
+@ 0 1 0 14eda103e0aa19ba0d05a5dd9b52d821
++ ## Parametri di tipo come parole
+
+@ 0 2 0 07fb8bfdcd0c2ba909dd51a4d37e40f7
++ La convenzione si giudica più facilmente per confronto, su una firma scritta nello stile
++ convenzionale e nello stile di Soundness:
+
+% 2 1 0 0100ece2d15533d615bfe0bf298dc949
+
+% 3 1 0 022d836750d589161d92cae49545b6e3
+
+% 0 1 0 02af42bc22d19c85061eb632ff60d765
+
+% 1 1 0 0d9fb4b7ef8f89640a7713d604c03685
+
+% 0 1 0 0cb757b386720acc006f3b9950bed93b
+
+% 0 1 0 11e138a2f5f39f8a09af3ab634fd2516
+
+% 1 1 0 14bb6164555d661617801dcbdc27aa0f
+
+% 0 1 0 1b498e6a2c25c8a7038ebcf159e3336f
+
+% 1 1 0 1c2db90d72017cb915130c6185ba05c2
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 4 0 1b4206db1c51015b06419a645b2e0299
++ La versione di Soundness dice che cosa *sono* le parti: `result` è ciò che viene prodotto, `value`
++ ciò da cui si legge, e la clausola di vincolo si legge come un'affermazione su di essi. Non serve
++ alcuna chiave per decifrare le lettere, e non c'è spazio per la svista mentale per cui `T` in una
++ firma significa qualcosa di diverso da `T` nella successiva.
+
+@ 0 1 0 0d4f7130a755dbda1798cf7e9b715427
++ ## L'unicità è imposta, non auspicata
+
+@ 0 3 0 155ab54fdefdb0d90c0d853ab7379216
++ L'unicità dei nomi non è semplicemente una convenzione a cui badano i revisori. Poiché ogni modulo
++ riesporta in un unico namespace `soundness`, un conflitto è un errore di compilazione nel modulo
++ ombrello: così una collisione viene scoperta quando viene introdotta, non quando un utente la
++ incontra.
+
+@ 0 6 0 0fe66a5efc816347017a684ea372e144
++ Le conseguenze compaiono nella storia del repository come rinomine deliberate: la scala temporale
++ `Posix` di aviation è diventata `Unix` per liberare `soundness.Posix` per il piano del filesystem;
++ `Transmitter`, `Trust` ed `enumerate` sono stati rinominati quando sono entrati in collisione; i
++ tipi di elemento di MathML sono stati annidati dentro `Mathml` anziché oscurare i nomi generali.
++ Ognuna è stata un rimaneggiamento, accettato perché l'alternativa (due significati per una parola,
++ qualificati per sempre) è una tassa permanente su ogni lettore.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Quanto costa
+
+@ 0 3 0 117613d0876ac770117d749213a6dabc
++ **Rinominare è dirompente.** Una collisione scoperta tardi significa cambiare un nome pubblicato e
++ rompere il codice a valle. La politica lo accetta, in base al fatto che l'alternativa si aggrava
++ col tempo.
+
+@ 0 3 0 0ca6acca86c6111f116a333491d54033
++ **I buoni nomi sono difficili da trovare.** `Teletype` per il testo di terminale con stili ha
++ richiesto una riflessione che `AnsiString` non avrebbe richiesto, e la ricerca non sempre riesce al
++ primo tentativo.
+
+@ 0 4 0 04effdc2e3a0d75a0d331afaa528cab5
++ **Un namespace di nomi unici contiene molti nomi.** `import soundness.*` porta dentro moltissimo, e
++ un nome che sembra libero può non esserlo: è il prezzo diretto dell'import ombrello, ed è il motivo
++ per cui i nomi di un nuovo modulo vengono confrontati con l'insieme prima che venga aggiunto.
+
+@ 0 2 0 162253b43a3ee4a20198fbd8c90e8cd1
++ Si veda [la prosa elegante](elegant-prose.md) per ciò a cui la scelta dei nomi è al servizio, e
++ [le API piccole](small-apis.md) per il motivo per cui ci sono meno nomi da scegliere di quanti
++ potrebbero essercene.

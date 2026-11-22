@@ -1,0 +1,3748 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1895e7063e1c10471bdab7b34bcabffd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 08298710bff8ab3716f1426c3bc393a1
++ info   ficheros, directorios y enlaces en disco, manejados mediante rutas con tipo y políticas explícitas
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 09037eb5265f0a1d0d6d8679df082c20
++     _Galilei_ es el sistema de ficheros: un `Path on Linux`, `Path on MacOs`, `Path on Windows`
++     o `Path on Local` (las rutas abstractas de serpentine, ligadas a uno de los tipos de
++     plataforma de galilei) adquiere todas las operaciones que tocan el disco —leer y escribir,
++     abrir durante un ámbito, crear, listar, copiar, mover, enlazar, borrar, calcular sumas de
++     comprobación—, y cada operación indica en su tipo lo que puede lanzar y qué política
++     consulta. Los casos delicados (¿sobrescribir o negarse?, ¿recorrer un directorio
++     recursivamente o negarse?, ¿seguir un enlace simbólico o no?) nunca tienen un valor por
++     defecto: son valores contextuales del paquete `filesystemOptions`, importados por nombre,
++     y una operación a la que le falta su política no compila.
+
+% 2 1 0 09f1ac8720cf0922159d2777ce6527ec
+
+% 3 1 0 1e110f24cf968d5815d223a80081f5d3
+
+% 4 1 0 001d684971b671c60a483f02226ce2d1
+
+% 5 1 0 19afc33468f556b503cafa25c905d6a5
+
+% 6 1 0 1ac985a689ddaa76081f033326ae7460
+
+% 7 1 0 12ffb7f51da12cc002189e1f9a33bb76
+
+% 8 1 0 1ab63160e59fdb60114c68b6dd5bf6eb
+
+% 9 1 0 0ae0f9d86fbcc4ab01be155f76345818
+
+% 10 1 0 0de017c01e291e8511de2d156a61f76b
+
+% 11 1 0 166b81b52c26d13e17326458d6f69b3f
+
+% 12 1 0 12d8e6c9288aa88003769c8cbcb1f33c
+
+% 0 1 0 19cb2771e4e82d7e17bb586e8e6bd4fd
+
+% 0 1 0 05ab092ebcc097c4116efcf00fa9846f
+
+% 0 1 0 0fc1ed4f4c9daf131c306fee7a9d2bef
+
+% 0 1 0 1addd7c40d4ebf85199a4f49fa8da1a9
+
+% 0 1 0 1c7bf77bca472f31177b80f371b9fad5
+
+% 0 1 0 04b3c57953be90d7014e12eb2e4e04e1
+
+% 0 1 0 0126fdbd958600551031a927076c3f35
+
+% 0 1 0 0d12e1f23b04a88d1806831c9d07eb6d
+
+% 1 1 0 15c9a2a13ad50c680348a59a2c99b1ef
+
+@ 0 9 0 1e997b4d1db5a85f0df2e80e9fbc5f51
++     **Plataformas.** La plataforma de una ruta es un tipo fantasma que extiende `Platform`:
++     `Posix`, sus refinamientos `Linux` y `MacOs`, `Windows`, y `Local`, que es la que use la
++     máquina en ejecución (su instancia de `Filesystem` lee el separador del `System` en el
++     ámbito). El objeto compañero de cada plataforma contiene sus `Rules` de nombres (lo que
++     puede ser un segmento), su instancia de `Filesystem` (nombre, separador, `.` y `..`), y el
++     par `Radical`/`Eradicable` que lee su raíz —`%` para POSIX, un `Drive` para Windows— desde
++     texto y de vuelta. Una ruta se liga a una plataforma con `on[Linux]`, se decodifica desde
++     texto con `t"/tmp/x".as[Path on Linux]`, o se escribe como literal con `p"/tmp/x"`, que el
++     compilador comprueba y tipa como `Path on Posix` (o `Path on Windows`, según su forma).
+
+@ 0 8 0 1aa587bf2a5cc99a0b22c003cf5130bc
++     **El backend.** Nada en la API pública nombra una API de la plataforma. Las operaciones
++     primitivas —`stat`, `open`, `children`, `createFile`, `copy`, `move`, `delete`, `realPath`
++     y las demás— se reúnen en un único `FilesystemBackend on <platform>`, que se elige
++     importando por nombre un given del paquete `filesystemBackends`: `javaBaseFilesystem`
++     (`java.nio`, en `galilei.jvm`), `scalaNativeFilesystem` (`galilei.native`) o
++     `wasiFilesystem` (`wasi:filesystem`, en `galilei.wasi`, que además necesita
++     `wasiApis.wasiFilesystemApi`). Una operación que un backend no puede admitir lanza
++     `Io.Error` con `Reason.Unsupported` en lugar de aproximarla.
+
+@ 0 1 0 0a461322d8d027eb0cd8e48d6912288c
++     **Errores.** Toda operación en disco lanza `Io.Error`, que nombra la ruta, la
+
+% 0 1 0 1d1518ee102088911680b4921b7d21ba
+
+@ 0 1 0 01e3e452307e610f05b6b7f58ec1ef35
++     `Open`, `Access`) y un `Io.Error.Reason` tomado del vocabulario de errno de POSIX
+
+% 0 1 0 06ca4c703f146f911583dd04773b5147
+
+@ 0 5 0 106b40b96a59d3fb074d26f9ba336adb
++     `Unsupported`, …), de modo que un fallo se distingue por lo que ha ido mal y no por la
++     clase de la excepción. Decodificar texto como ruta lanza el `Path.Error` de serpentine (una
++     raíz incorrecta, un nombre que incumple las reglas de la plataforma); es un error
++     distinto, que se lanza antes de tocar ningún disco. Se necesita una `Tactic[Io.Error]` en
++     el ámbito: `strategies.throwUnsafely`, `safely`, `unsafely` o un `mitigate` propio.
+
+@ 0 9 0 1869755cd8d24227023c8d605cddb72c
++     **Ámbitos.** `path.open[File](Read & Write)` ejecuta un bloque con un `Handle` que solo
++     existe durante el bloque, y `path.open[Directory](…)`, uno con un `Directory.Handle` cuyas
++     rutas viven en un plano nuevo, de modo que `..` no compila y nada derivado del descriptor
++     escapa. El `Mode` va en el tipo del descriptor como `Grant`s, así que escribir a través de
++     un descriptor de solo lectura es un error de compilación; `Exclusive` y `Shared` además
++     toman bloqueos consultivos del sistema operativo y se inscriben en el `AccessRegister` del
++     proceso. `create[File]()` y `create[Directory]()` son las contrapartidas para algo que aún
++     no existe. `Scratch` y `Scratch.File` son formas cuya entrada se crea nueva y se elimina
++     cuando termina el ámbito, termine como termine. `Ram` (JVM) mapea un fichero en memoria, y
++     `Slice` abre una ventana sobre un rango de bytes de él.
+
+@ 0 8 0 0cacbb00f8bf6e01094040b925ae2d11
++     **Listar e inspeccionar.** `children` lista las entradas inmediatas de un directorio,
++     `descendants` todo su subárbol en el `TraversalOrder` elegido de `filesystemTraversal`, y
++     `glob` expande un patrón `Glob` bajo él. `entry()` dice si una ruta es un `File`,
++     `Directory`, `Symlink`, `Fifo`, `Sock`, `BlockDevice` o `CharDevice`; `filesize()`,
++     `modified()`, `accessed()`, `hidden()`, `volume()`, `entryIdentity` y `hardLinks()` leen
++     sus metadatos. `canonical()` es la ruta tal como la conoce el propio sistema de ficheros,
++     con todos los enlaces simbólicos resueltos. `checksum[Sha2[256]]` calcula el resumen de
++     los bytes de un fichero, o de los ficheros de un directorio con sus nombres relativos.
+
+@ 0 4 0 19b8851c398653951315906abb0fab27
++     **Eje del sistema de ficheros de almacenamiento.** En qué sistema de ficheros está
++     almacenada una entrada —`Btrfs`, `Ext4`, `Apfs`, `Ntfs`— se establece mediante una
++     coincidencia (`case Apfs(path) => …`) y se registra en el tipo de la ruta como
++     `Path on Linux over Apfs`, lo que habilita los atributos extendidos (`attribute`,
++     `attributes`), una hora de `creation()` total y el `subvolume()` de btrfs.
+
+@ 0 5 0 114894f24125fcc10fda36a37cb02c1b
++     Más allá de las rutas sueltas: `Cas` es un almacén de blobs direccionado por contenido
++     bajo un directorio; `Searchpaths.Stems` resuelve un plano de rutas de búsqueda XDG
++     (`Xdg.Data`, `Xdg.Config`) sobre directorios reales con `search`, `locations`, `listing` y
++     `destination`; `Umask` y `Fdtable` son valores contextuales que un demonio proporciona en
++     nombre de un cliente (la máscara que respetan sus creaciones, y la tabla de descriptores a
++     través de la cual se abren sus rutas `/dev/fd/N`).
+
+@ 0 1 0 18b5259a85e28e15163e759bc4f3e220
++     La biblioteca se divide según lo que puede hacer cada plataforma:
+
+@ 0 12 0 11f21f8a8f0754c10e19c8575f0d8976
++     - `galilei.core`: las plataformas, `FilesystemBackend`, todas las operaciones sobre rutas,
++       `Io`, las políticas, `Handle`, `Directory.Handle`, `Scratch`, `Slice`, `Cas`,
++       `Searchpaths`, `Umask`, `Fdtable`. Independiente de la plataforma.
++     - `galilei.jvm`: `filesystemBackends.javaBaseFilesystem`, los ficheros `Ram` mapeados en
++       memoria, la creación de `Sock` de dominio Unix (`socketCreatable`), los nodos de
++       dispositivo (`Device`) y las vías de escape `javaPath`/`javaFile` (no exportadas al
++       paraguas).
++     - `galilei.native`: `filesystemBackends.scalaNativeFilesystem`, la misma implementación
++       con `java.nio` compilada para Scala Native.
++     - `galilei.wasi`: `filesystemBackends.wasiFilesystem` sobre la interfaz de componente
++       `wasi:filesystem`, y `wasiApis.wasiFilesystemApi`, su definición WIT. WASI no tiene
++       bloqueo de ficheros, ni `realpath`, ni atributos extendidos, ni volúmenes, ni FIFO, así
++       que todo eso lanza `Unsupported`.
+
+@ 0 8 0 1073ca4dbeafbd431e90c09c370e92e0
++     Todo se exporta al paraguas `soundness`, y los paquetes de elección `filesystemOptions`,
++     `filesystemTraversal`, `filesystemBackends` y `wasiApis` se fusionan con los del propio
++     paraguas, así que el usuario escribe `import soundness.*` y después importa por nombre
++     cada política y el backend: `import pkg.*` no importa givens. Los givens de
++     `pathInterfaces` (`pathOnLinux`, `pathOnWindows`, `pathOnMacOs`, `pathOnLocal`,
++     `pathOnPosix`), que permiten pedir un `Path on Linux` allí donde se espera un tipo de ruta
++     (`temporaryDirectory[Path on Linux]`, `Home[Path on Linux]()`), se declaran en el paquete
++     `anticipation` y se documentan allí.
+
+% 0 1 0 1fde5e150c1e4e071a678f41d4766274
+
+% 0 1 0 15198dbb2ee7af7702ac40a54ad0ebae
+
+% 0 1 0 1209dd7ee558311d057dfc21b3bdaf25
+
+% 0 1 0 062b0627a57e97341fd840bf912a81b6
+
+% 0 1 0 0bf765632ba2533e05c780925fcfd24c
+
+% 0 1 0 07458429275b114004eb77e7a58d66be
+
+% 0 1 0 019573978201dc300c7a3313ca3d9035
+
+% 0 1 0 01c1a10808ceb2751002a47ed164258f
+
+@ 0 1 0 1f9b4c9c9ece1d420115bad49c4334bb
++ entry .Platform   la base común de los tipos de plataforma del sistema operativo, y el hogar de los givens de disco de toda ruta
+
+% 1 1 0 0109a446c8e72f990ca9d96aa876fdd7
+
+@ 0 5 0 04810f3ccdd53fa0099c8fe17498ba1d
++       `Platform` es el tipo fantasma que extiende todo plano de sistema operativo: `Posix` (y
++       sus refinamientos `Linux` y `MacOs`), `Windows` y `Local`. Un `Path on <platform>` es una
++       ruta de serpentine cuyos nombres cumplen las reglas de esa plataforma; `Platform` en sí
++       no tiene miembros y es puro (nunca captura), de modo que el plano de una ruta unifica
++       exactamente a través de los alias de exportación de `soundness`.
+
+@ 0 7 0 115517eb0f27e7e906e1e2b58fb19a06
++       El objeto compañero es donde viven los givens que hacen que una ruta *haga* cosas, de
++       modo que están en el ámbito implícito de todo `Path on <platform>` sin ninguna
++       importación: `.pathReadable` (`path.read[Text]`), `.pathWritable` (la forma de clase de
++       tipos de `path.write`), `.pathChecksummable` (`path.checksum[Sha2[256]]`), `.openable` y
++       `.directoryOpenable` (`path.open[File]`, `path.open[Directory]`), `.fileCreatable`,
++       `.directoryCreatable` y `.fifoCreatable` (`path.create[File]()` y los demás), y `.eof`
++       (`Eof(path).open(Write)` añade al final). Todos necesitan un
++       `FilesystemBackend on <platform>` y una `Tactic[Io.Error]`.
+
+% 2 1 0 003cdf304e9d784b0d9b43e07eb55b7a
+
+% 3 1 0 0d9b519baef7784815953d7b943d1ad0
+
+% 4 1 0 0827c2fcd5d2b23c1221158b3bbe9499
+
+% 5 1 0 0be5d391cee63c1b08b810188eab1ff2
+
+% 6 1 0 086a28e57672d7670debd6ad778dc036
+
+% 7 1 0 0b460a03b2f1f57b14126b68bed6fda1
+
+% 0 1 0 1c76bc217e4841c80518badb7168087b
+
+% 0 1 0 1a0489832c0a5cfd08be846c0300a012
+
+% 0 1 0 105ca851654b82b51bf67eda432df35c
+
+% 0 1 0 0b67abe8685cad650ce5d4f951592af6
+
+% 0 1 0 1d496ef548ca7aff144004cd9b6b348e
+
+% 1 1 0 0d7fb7581396cad412b2e851b1d492c3
+
+% 2 1 0 01781b5cb83326ba12d69479e11d980d
+
+% 1 1 0 0ee1e89f47037c1c04f5c488fcbf18d8
+
+% 2 1 0 15bc03b4dfc586a61cbb7a3d9ecb73cf
+
+% 1 1 0 00e2f4d253ad5fd108b150f9bcaddfde
+
+% 1 1 0 1bc9e1afc61bcf4411480fde6a0afe49
+
+% 1 1 0 1f63cfee1b6103d207ab7eed8c912808
+
+@ 0 15 0 1f5542face134cf202a363a393b11927
++   entry .uuid   permite que un `Uuid` haga de nombre en la ruta de cualquier plataforma
++       El given `Admissible` que admite un `Uuid` como segmento de ruta (`directory / Uuid()`),
++       sin comprobación, ya que el texto de un UUID —dígitos hexadecimales y guiones— no
++       incumple las reglas de ninguna plataforma. `.uuidNavigable` lo representa.
++   entry .uuidNavigable   representa un segmento `Uuid` como su texto
++   entry .pathChecksummable   `path.checksum[Algorithm]`: los bytes de un fichero, o los ficheros de un directorio con sus nombres
++       El given `Checksummable` para cualquier `Path on <platform>`. Un fichero aporta sus
++       bytes, así que su suma de comprobación es el resumen de su contenido. Un directorio
++       aporta sus ficheros regulares en el orden de sus rutas relativas a él, cada uno como su
++       ruta relativa y su contenido, con cada parte precedida de su longitud; así, un cambio de
++       nombre, un movimiento o un cambio de contenido cambian el resumen, dos directorios que
++       contienen los mismos ficheros dan el mismo resumen estén donde estén, y un directorio
++       vacío tiene el resumen de nada. Los enlaces simbólicos se siguen, o no, según decida el
++       `DereferenceSymlinks` del ámbito. Necesita un `FilesystemBackend`, un
++       `DereferenceSymlinks`, una `Tactic[Io.Error]` y un `Every[Fdtable]` (que satisface el
++       valor por defecto), y el `Hash` habitual de gastronomy para el algoritmo.
+
+% 2 1 0 05b33cb251c38c5f1effad9df84a4152
+
+% 3 1 0 10c5a4edb9a2f5d60ede1da893f4f05a
+
+% 4 1 0 08ca320a30b1675d0aeb5686abd104cb
+
+% 5 1 0 0f6b7b34e3e1c0c61bf37b3183b2f2ee
+
+% 6 1 0 1ba0a450a0d9fb051c4701b6cc9f31d1
+
+% 0 1 0 159d376a444fae2a12c7db6b8d893f68
+
+% 1 1 0 195b6bdc2c8b11360ee994c55c07e95f
+
+% 2 1 0 19c9a5104ff916711c50d422393cacbb
+
+% 0 1 0 0a2f6a9849bac1950304d65c4c2ed7f6
+
+% 0 1 0 02eb0f061d3a94c30d2b1902d922ba7a
+
+% 1 1 0 1e05caac592b6d961e7d87de959db06e
+
+@ 0 36 0 0f385556a52079e80db31daaecf694a1
++   entry .pathReadable   `path.read[Text]`, `path.read[Data]`: el fichero entero, en una sola lectura
++       El given `Readable` que hace que `path.read[result]` se resuelva para cualquier `Path on
++       <platform>` sin ninguna importación. El fichero entero se lee en memoria de una vez, sin
++       mantener ningún descriptor ni necesitar ningún ámbito —a diferencia de abrir la ruta,
++       que transmite en flujo dentro de un ámbito—, y se entrega a un `Data is Readable to
++       result` (`Text`, `Data` o cualquier cosa decodificable a partir de bytes). Lanza
++       `Io.Error` (`Nonexistent`, `PermissionDenied`, `IsDirectory`, …), y una lectura que el
++       fichero corta antes de tiempo se notifica como `Reason.Physical`. Una ruta que gobierna
++       el `Fdtable` del ámbito se lee a través de su descriptor y no del sistema de ficheros de
++       este proceso. El sujeto se acota como `path <: Path on plane` para que un literal
++       `p"…"` o una ruta `on[Linux]`, cuyos tipos son más ricos que `Path on Linux`, también
++       coincidan.
++   entry .pathWritable   la forma `Writable` de `path.write`: sustituye todo el contenido del fichero a partir de un flujo
++       La contrapartida de clase de tipos de la extensión estricta `write`, para que los
++       escritores genéricos (la escritura de vuelta de `open[Tel]`, por ejemplo) se resuelvan
++       para cualquier `Path on <platform>` sin ninguna importación. Agrega el flujo y lo
++       escribe entero; una ruta gobernada por un `Fdtable` se escribe a través de su
++       descriptor.
++   entry .openable   `path.open[File](mode, flags*)`: la instancia de `FileOpenable` para toda ruta de plataforma
++       Anclada aquí, por el tipo de ruta, y no en el objeto compañero de `File`, para que
++       `path.open[File](…)` se resuelva sin ninguna importación. Necesita un backend, una
++       `Tactic[Io.Error]`, un `Umask` (por defecto, el del propio proceso) y un
++       `Every[Fdtable]`. Véase `FileOpenable` para lo que hacen el modo y los `OpenFlag`.
++   entry .directoryOpenable   `path.open[Directory](mode)`: la instancia de `Directory.Openable` para toda ruta de plataforma
++       Con esta y `.openable` en el ámbito, un `path.open(…)` sin más es ambiguo, así que la
++       forma siempre se indica: `open[File]` u `open[Directory]`.
++   entry .directoryCreatable   `path.create[Directory](flags*)`: crea un directorio, o compone uno dentro de un ámbito
++       Necesita un backend, una `Tactic[Io.Error]`, un `Io.Event is Loggable` y un `Umask`.
++       Véase `Creation.DirectoryCreatable`.
++   entry .fileCreatable   `path.create[File](flags*)`: crea un fichero vacío, o compone uno dentro de un ámbito
++       Véase `Creation.FileCreatable`: la forma con ámbito escribe en un hermano temporal y lo
++       mueve a su sitio cuando termina el bloque.
++   entry .fifoCreatable   `path.create[Fifo](flags*)`: crea una tubería con nombre
++       Véase `Creation.FifoCreatable`. Solo se admite la forma que instancia; una composición
++       con ámbito de una FIFO se bloquearía hasta que un interlocutor abriera el otro extremo.
++   entry .eof   `Eof(path).open(Write)`: abre un fichero para añadir al final
++       La instancia de `Openable` para `Eof[path]`, para cualquier ruta que sea ella misma
++       abrible como `File`: antepone `OpenFlag.Append` y delega, de modo que las escrituras del
++       descriptor van después del contenido existente.
+
+% 2 1 0 0808e52cc040962b1be07d114abde35c
+
+% 3 1 0 0a91ec1f44f04c870dbd1a498722f9b4
+
+% 4 1 0 1a2668db72f8c9c012668032217e3daa
+
+% 5 1 0 0f17ec65d9d42a5c0f89f942330b0c2d
+
+% 6 1 0 1db9dba3d794380a02d610c95e7ffd13
+
+% 7 1 0 0707f9496caf60d5077b35533e079a05
+
+% 0 1 0 0e0693ca472aedc01d943f55114031f7
+
+% 0 1 0 1be8f6f21cad718001e88b84b46392af
+
+% 0 1 0 1f253794fcf00d5e0dcf2521ed721dae
+
+% 1 1 0 17196d21c199c0d00d1c2373fc348fea
+
+@ 0 1 0 0ad2d607b35ec7c911e4bd1900618bc5
++ entry .Posix   la plataforma POSIX: rutas con raíz en `/` cuyos nombres no pueden contener `/` ni `:`
+
+% 1 1 0 17e7dda5c1139bb608a54372b6f040ea
+
+@ 0 6 0 1e9fe4740d0b882b1f9d6f6f6c7037ec
++       El plano de una ruta en cualquier sistema POSIX, y el supertipo de `Linux` y `MacOs`. Su
++       raíz es `%`, codificada como `/`; sus `.Rules` prohíben `/` y `:` en un nombre, y los
++       nombres `.`, `..`, el nombre vacío e `Icon\r` (el fichero del icono de carpeta de macOS),
++       de modo que una ruta válida en `Posix` es válida en ambos refinamientos. `p"/home/user"`
++       es un `Path on Posix`. Las operaciones exclusivas de POSIX —`executable`,
++       `hardLinks()`— están disponibles en cualquier `Path on <plane <: Posix>`.
+
+% 2 1 0 18240df4a968956b0cba247b27ef2d29
+
+% 3 1 0 12513084ae8e2ff40c1a948918ae1aca
+
+% 4 1 0 0c874550052b18450e6eed93f8538dff
+
+% 0 1 0 0db2846be9fbad861fdd742bb98a0e17
+
+% 0 1 0 1ae00d191f3cd9e31ee3495b28b8a6b7
+
+% 1 1 0 07682eeb9ecfdcb61bf10401dd621e7e
+
+% 1 1 0 01306aff3d36014511d4cecec42f0f65
+
+% 2 1 0 050fd64e494c0c71076c22d3e998f87c
+
+@ 0 8 0 03761a0f847170a7182bc227592fd281
++   entry .Rules   lo que puede ser un nombre POSIX: sin `/`, sin `:`, y que no sea `.`, `..`, vacío ni `Icon\r`
++   entry .filesystem   la instancia de `Filesystem`: llamada `POSIX`, separada por `/`, con `.` y `..`, una sola raíz
++   entry .radical   codifica la raíz `%` como `/`
++   entry .eradicable   decodifica una raíz a partir de texto que empieza por `/`, o lanza `Path.Error(InvalidRoot)`
++       Necesita una `Tactic[Path.Error]`, que conserva, de modo que decodificar texto como
++       `Path on Posix` solo puede fallar en su raíz o en un nombre que incumpla `.Rules`.
++   entry .submissible   permite que `%` sea la raíz de un `Path on Posix` construido con `/`
++   entry #UniqueRoot   `true`: toda ruta POSIX tiene la única raíz `%`
+
+@ 0 1 0 0bd8267b492bf097138a8493685828b8
++ entry .Linux   la plataforma Linux: rutas POSIX con las reglas de nombres POSIX simples
+
+% 1 1 0 18f2b1e489859bec157009009a28572b
+
+@ 0 6 0 169b38bbf333016615aacb524719d3d7
++       Un refinamiento de `Posix` cuyas `.Rules` son las POSIX mínimas (sin `/`; que no sea `.`,
++       `..` ni vacío), con las restricciones de `:` e `Icon\r` de `MacOs` relajadas.
++       `Path on Linux` es el tipo con el que trabaja la mayor parte del código: es lo que
++       producen `Xdg`, `Home` y `temporaryDirectory[Path on Linux]`, y la plataforma de destino
++       de las rutas de búsqueda XDG (`Searchpaths.Stems on Xdg.Data onto Linux`). Una ruta
++       relativa al estilo de `Linux` también puede reinterpretarse en un plano de rutas de
++       búsqueda, a través de `searchpathCompliant`.
+
+% 2 1 0 004811fdf3abc0470746dfd2558e7f11
+
+% 3 1 0 100992dc952a65c415f2c3b112bbb626
+
+% 4 1 0 163c4949e92b3b810e90591a7124282d
+
+% 0 1 0 048bf4e47002d44604e1ca24e6122d8d
+
+% 0 1 0 0c18c639d35e734b06740b6eedc3c467
+
+% 1 1 0 01e71363fccd5bd91eed523a618d4fae
+
+% 2 1 0 067fb1b165b7bb7e15337c5143e051a0
+
+@ 0 11 0 07f948387431d5ba0b21c39c7e2518d7
++   entry .Rules   sin `/`; que no sea `.`, `..` ni el nombre vacío
++   entry .nominative   el given que somete las rutas de Linux a `.Rules`
++   entry .pathOnLinux   marca `Path on Linux` como representante del dominio `Paths`
++       El given `Representative of Paths`, para que un `Path on Linux` pueda pedirse por
++       dominio (`as[Path on Linux]` a partir de una URL o de una entrada del classpath). El
++       mismo given también se exporta desde `anticipation.pathInterfaces` como `pathOnLinux`,
++       donde se importa por nombre.
++   entry .filesystem   la instancia de `Filesystem`: llamada `Linux`, separada por `/`, una sola raíz
++   entry .radical   codifica la raíz `%` como `/`
++   entry .eradicable   decodifica una raíz a partir de texto que empieza por `/`, o lanza `Path.Error(InvalidRoot)`
++   entry .submissible   permite que `%` sea la raíz de un `Path on Linux` construido con `/`
+
+@ 0 1 0 1aca2a3a647467670f35e74e25c63c7c
++ entry .MacOs   la plataforma macOS: rutas POSIX cuyos nombres excluyen además `:` e `Icon\r`
+
+% 1 1 0 082db4cd1a9f8987121b7a1ffd58a85e
+
+@ 0 5 0 095282e5171ebba70bb7b606aca592d1
++       Un refinamiento de `Posix` cuyas `.Rules` añaden las restricciones propias de macOS: un
++       nombre no puede contener `:` (el separador del Mac OS clásico, que Finder sigue
++       rechazando) ni ser `Icon\r`, el fichero oculto que lleva el icono personalizado de una
++       carpeta. Una ruta válida en `MacOs` es válida en `Linux`; lo contrario no. Las reglas de
++       `Local` son `MacOs.Rules & Windows.Rules`, así que un `Path on Local` también cumple las
++       de macOS.
+
+% 1 1 0 01e40af82f42739a11280db692c41c67
+
+% 1 1 0 13bb5335fcc5552118d45027b98ebed3
+
+@ 0 6 0 08aa7002b72cd85b1a16c618e9798e4f
++   entry .Rules   sin `/` ni `:`; que no sea `.`, `..`, vacío ni `Icon\r`
++   entry .pathOnMacOs   marca `Path on MacOs` como representante del dominio `Paths`
++   entry .filesystem   la instancia de `Filesystem`: llamada `Mac OS`, separada por `/`, una sola raíz
++   entry .radical   codifica la raíz `%` como `/`
++   entry .eradicable   decodifica una raíz a partir de texto que empieza por `/`, o lanza `Path.Error(InvalidRoot)`
++   entry .submissible   permite que `%` sea la raíz de un `Path on MacOs` construido con `/`
+
+@ 0 1 0 07d3117fb9993979050079cb21238db1
++ entry .Windows   la plataforma Windows: rutas con raíz en una unidad, separadas por `\`, con las reglas de nombres de Windows
+
+% 1 1 0 1776267abb96547708bed7b11c77551f
+
+@ 0 5 0 15302c135667f5400c3b2eb1c150aa37
++       El plano de una ruta de Windows. Su raíz es un `Drive`, codificado como `C:\`; sus
++       `.Rules` son las de Windows: sin `\`, `/`, `:`, `*`, `?`, `"`, `<`, `>` ni `|` en un
++       nombre, sin `.` ni espacio al final, y ninguno de los nombres de dispositivo reservados
++       (`CON`, `PRN`, `AUX`, `NUL`, `COM0`–`COM9`, `LPT0`–`LPT9`, con o sin extensión, en
++       mayúsculas o minúsculas). Un `Path on Windows` tiene una operación propia, `created()`,
++       ya que NTFS registra las horas de creación.
+
+% 2 1 0 00027b6ddf4034d3198f0fe67cb0eedb
+
+% 3 1 0 1b05157bca3213eb15ab316e4f22a0b6
+
+% 4 1 0 1cd651f762795a3a1ddfc84ff97c2281
+
+% 0 1 0 0b52f386c292fb5e0a9d2d6542a83d0e
+
+% 0 1 0 0bd240d05e92fe35148fe5dd3013ceb8
+
+% 0 1 0 145c37ae3067f2cd06d63fe7672628c7
+
+% 0 1 0 0630ff9483f12f5811b00a64abff1f00
+
+% 1 1 0 1a815979f918f23307ebd06738c891ac
+
+% 0 1 0 131c36d9beb91a5d05a469d3465fbb24
+
+% 0 1 0 1add31b8713624be14fcf1039f9f96e0
+
+@ 0 7 0 001c7772982a2e8c0cb272cb206d59a2
++   entry .Rules   sin `\ / : * ? " < > |`, sin `.` ni espacio al final, sin nombres de dispositivo reservados
++   entry .pathOnWindows   marca `Path on Windows` como representante del dominio `Paths`
++   entry .filesystem   la instancia de `Filesystem`: llamada `Windows`, separada por `\`, muchas raíces
++   entry .radical   codifica una raíz `Drive` como `C:\`
++   entry .eradicable   decodifica un `Drive` a partir de texto de la forma `C:\…`, o lanza `Path.Error(InvalidRoot)`
++       La raíz tiene tres caracteres: una letra, `:` y `\`. Un texto sin ellos falla con
++       `Path.Error(InvalidRoot)` a través de la `Tactic[Path.Error]` del ámbito.
+
+@ 0 1 0 0c16bcd86a84655f176b59d929404faf
++ entry .Local   la plataforma de la máquina en ejecución, sea cual sea
+
+% 1 1 0 171eb8f9d8475b380516a2e96960614c
+
+@ 0 6 0 041791fbec35b19e07aa3b3fa3929d71
++       `Local` es para código que debe ejecutarse en cualquier sistema operativo sin nombrarlo:
++       su raíz puede ser `%` o un `Drive`, así que un `Path on Local` puede tener forma POSIX o
++       de Windows, y sus `.Rules` son la intersección de `Windows.Rules` y `MacOs.Rules`, así
++       que un nombre válido en `Local` es válido en todas partes. La instancia `.filesystem`
++       necesita un `System` en el ámbito (`systems.javaBaseSystem`), del que lee las
++       propiedades `os.name` y `file.separator`, de modo que `Local` es la única plataforma
++       cuyo separador no se conoce hasta el tiempo de ejecución.
+
+% 2 1 0 118fc15b7a105ca818e6907e407b7c05
+
+% 3 1 0 199e78629ab933c017fb28d087662c93
+
+% 4 1 0 0d5e9ac628dc171d0bd24540e2d4d129
+
+% 0 1 0 1cf4664307464f100bbb951c649b1048
+
+% 0 1 0 17f89baf73da5d651707b5070da5db1a
+
+% 0 1 0 0ea066eb844889e3058d39af4a4e1a68
+
+% 1 1 0 093ff47e5e6de22215e8f670621d62b0
+
+@ 0 9 0 147d0effc4e6e2bb1dace4418809b159
++   entry .Rules   `Windows.Rules & MacOs.Rules`: un nombre válido en todas las plataformas
++   entry .nominative   el given que somete las rutas locales a `.Rules`
++   entry .pathOnLocal   marca `Path on Local` como representante del dominio `Paths`
++   entry .filesystem   la instancia de `Filesystem`, leída del `System` del ámbito
++       Se nombra según la propiedad `os.name` y se separa con `file.separator`, con `.` y `..`
++       como nombres del propio directorio y del padre, y muchas raíces. Necesita un `System`.
++   entry .radical   codifica una raíz como `/` para `%` o `C:\` para un `Drive`
++   entry .eradicable   decodifica una raíz como `%` a partir de un `/` inicial, o como `Drive` a partir de `C:\`
++       La longitud de la raíz es 1 o 3 según el caso; cualquier otro texto lanza
++       `Path.Error(InvalidRoot)`.
+
+@ 0 1 0 0f89430a061342830c4cc9a8f8e40018
++ entry .Dos   las reglas de nombres 8.3 de DOS, como plano nominativo
+
+% 1 1 0 1aa14d04bc71cf920d20a081e7457694
+
+@ 0 6 0 0553728b55d64d921dd19b4906a84c33
++       Un marcador cuyas `.Rules` son las de MS-DOS: un nombre de uno a ocho caracteres ASCII
++       imprimibles distintos del espacio, seguido opcionalmente de `.` y de uno a tres más. No
++       tiene instancia de `Filesystem` ni raíz: existe para que un nombre pueda comprobarse
++       contra la forma 8.3 (para un volumen FAT, un medio de arranque o un archivo que deba
++       seguir siendo legible en DOS), no para manejar ficheros a través de él.
++   entry .Rules   `[^.]{1,8}(\.[^.]{1,3})?`, sin espacios, solo ASCII imprimible
+
+@ 0 1 0 01b2f37b26f22133187373cc4a902035
++ entry .Drive   una letra de unidad de Windows, la raíz de un `Path on Windows`
+
+% 1 1 0 1c8eb9328c758e7b09870867488c559d
+
+@ 0 4 0 076ee1b76294c82b0f3503f4d79788bf
++       `Drive('C')` es la raíz `C:\`. Es una `Root` de serpentine cuyo plano es `Windows`, así
++       que `Drive('C') / "Windows"` es una ruta de Windows, y es lo que `Windows.eradicable`
++       decodifica del principio de `C:\…`. Dos unidades son iguales cuando lo son sus letras. El
++       paquete define `C` y `D` como las dos unidades más habituales.
+
+% 2 1 0 11f7482811a4939206b72da967855ab1
+
+% 3 1 0 1fdb933bcde7aece19a21a8c9a532060
+
+% 0 1 0 10ab979578bdb70302a7e147a7d5b5d3
+
+% 0 1 0 0dde39f73905e6ed1614848ebadb974f
+
+% 1 1 0 0fda4ee10e390e4a1b74db8bc3e1679a
+
+% 1 1 0 1377359b71f307a50e32d053f1274798
+
+% 0 1 0 0aa62458a394e1dc030eb101b357fb2d
+
+@ 0 5 0 067918c0b4870a501012798e8d008d4c
++   entry .apply   `Drive(letter)`: la unidad con esa letra
++   entry .unapply   reconoce una unidad, extrayendo su letra
++   entry .submissible   permite que un `Drive` sea la raíz de un `Path on Windows` construido con `/`
++   entry #letter   la letra de la unidad
++   entry #Plane   el plano del que una unidad es raíz: `Windows`
+
+@ 0 3 0 0d15f32eff9243c6044b6b4a24521fb6
++ entry .C   la unidad `C:\`, como `Drive('C')`
++     Un valor de nivel superior para la unidad de sistema habitual, de modo que `C / "Windows"`
++     se lee como una ruta de Windows.
+
+@ 0 1 0 05be485f0e9747860d4ad5d279f05427
++ entry .D   la unidad `D:\`, como `Drive('D')`
+
+@ 0 7 0 00dccf0c678a22f718a2ac7f9134af54
++ entry .p   el interpolador `p"…"`: un literal de ruta, comprobado y tipado al compilar el código
++     `p"/home/user/data.csv"` decodifica su literal como ruta POSIX y, si no lo es, como ruta
++     de Windows, e inserta un `Path` cuya plataforma es `Posix` o `Windows` según el caso y
++     cuyo `Topic` es la tupla de los tipos literales de sus nombres, empezando por la hoja:
++     `p"/verona/capulet/juliet"` es un `Path of ("juliet", "capulet", "verona") on Posix`. Un
++     texto que no es una ruta POSIX válida ni una ruta de Windows válida es un error de
++     compilación, _The path `…` is not a valid Windows or POSIX path_. El interpolador no
++     admite sustituciones con `$`.
+
+% 2 1 0 06ba4049d010fc3c08f5cea0b6b7c041
+
+% 3 1 0 031a265ba176473b0cc63d112c57581c
+
+% 0 1 0 16be09fa3b04d37f014e50b9523745db
+
+% 0 1 0 130f2f632bbc560d005e1ef8629a7bba
+
+% 0 1 0 0aaca8dcf40ec1b71260c158dbead66c
+
+% 1 1 0 083ec98bb2750af010c28a9ccc5c269b
+
+@ 0 2 0 078555903fe6f9ed0553095c887d4b4a
++     Un `Path on Posix` se lee y se escribe como cualquier ruta de plataforma (`Posix` tiene un
++     `Filesystem`), así que `p"/tmp/x".write(t"…")` no necesita `on[Linux]`.
+
+@ 0 1 0 02bceca4f4b7003f1503cda2f86a040d
++ entry .internal   la macro tras `p"…"`
+
+% 1 1 0 0b74de7f2792194916b8a45a2e1ea16d
+
+% 2 1 0 0934429ca7cb378a0478c02eb973065e
+
+@ 0 3 0 0c9af911ea496a250a368572ce116a12
++       No es para uso directo: el objeto existe para que la macro de literales de ruta tenga un
++       hogar junto a los tipos de plataforma cuyos givens `Radical` necesita en el momento de
++       la expansión.
++   entry .path   decodifica el literal del interpolador como ruta POSIX, y si no como ruta de Windows, y lo inserta
+
+@ 0 1 0 139181206e2e07310ed639d44cbb66c1
++ entry .FilesystemBackend   las operaciones primitivas del sistema de ficheros para un plano, sobre las que se construye todo lo demás
+
+% 1 1 0 0d015b8975e157d51fa82127a77a31ff
+
+@ 0 8 0 1df6c111102d167d0f0ee37e07b8dc3f
++       Un `FilesystemBackend on <plane>` es el conjunto completo de operaciones primitivas
++       —stat, abrir, listar, crear, enlazar, copiar, mover, borrar, atributos, acceso
++       posicional— expresadas sin referencia a ninguna API de la plataforma, y toda operación de
++       cara al usuario sobre un `Path on <plane>` se define en función de ellas. Se elige uno
++       importando por nombre un given del paquete `filesystemBackends`: `javaBaseFilesystem` en
++       la JVM, `scalaNativeFilesystem` en Scala Native, `wasiFilesystem` en un componente Wasm.
++       Las operaciones que combinan varias primitivas (el borrado recursivo, la copia dentro de
++       un directorio, la creación de los padres que faltan) viven en la API de rutas, no aquí.
+
+% 2 1 0 0ddfb66e577ca7040ee8670a9cf2f191
+
+% 3 1 0 0a1701226e1a8b5615cecad9658eab99
+
+% 4 1 0 1b8a2d3e82f957241391479fc1af1280
+
+% 2 1 0 035a3c5d969940501136fd94e4fc2ad7
+
+% 1 1 0 045805ec3ef11eb216f82218ad68897b
+
+@ 0 8 0 0757cdbb3403d7161dd614542be79ff7
++       Cada backend traduce sus fallos nativos (excepciones, códigos de error de WASI) al
++       vocabulario común de `Io.Error.Reason` de la forma más informativa que puede, y una
++       operación que un backend no puede admitir lanza `Io.Error` con `Reason.Unsupported` en
++       lugar de aproximarla: WASI no tiene bloqueos, ni `realpath`, ni atributos extendidos, ni
++       volúmenes, ni FIFO. El argumento `dereference` que reciben varias primitivas indica si
++       se sigue un enlace simbólico en el último componente. Un programa que implementa su
++       propio backend —sobre un sistema de ficheros remoto, un archivo, un doble de pruebas—
++       implementa este trait; `realPath` es la incorporación más reciente.
+
+% 0 1 0 1eef00db99cdb9920cd218fa2def1153
+
+% 0 1 0 11e743ef9bf5bd1a06308736b1b0707f
+
+% 0 1 0 001c498ad5f293171408518f3d17b633
+
+@ 0 79 0 00bf1217538c868a10492767cf25dfe4
++   entry .Attribute   los indicadores de permiso generales que un backend lee y establece: `Readable`, `Writable`, `Executable`
++       Desde la perspectiva del usuario actual, tal como los ven `Files.isReadable` y
++       `File#setReadable`. `FilesystemAttribute` es la vista con tipo a nivel de ruta.
++   entry #stat   el tipo de la entrada, su tamaño, sus marcas de tiempo y sus campos de inodo, en una sola lectura
++       Devuelve un `Stat`. `created` es `Unset` en los sistemas de ficheros que no registran
++       horas de creación, y los campos de inodo (`mode`, `user`, `group`, `device`) lo son
++       donde la plataforma no tiene inodos Unix. Lanza `Io.Error` con `Operation.Metadata`:
++       `Nonexistent` para una entrada que falta.
++   entry #linkTarget   el texto al que apunta un enlace simbólico, exactamente como está almacenado
++       Un enlace relativo sigue siendo relativo. Lanza `Io.Error` si la entrada no es un enlace.
++   entry #realPath   la ruta tal como la conoce el sistema de ficheros: absoluta, normalizada, con todos los enlaces simbólicos resueltos
++       `realpath(3)`. La entrada debe existir (si no, `Nonexistent`). `Path#canonical()` se
++       construye sobre ella; WASI lanza `Unsupported`.
++   entry #exists   si la entrada existe, siguiendo un enlace simbólico final si `dereference` es verdadero
++       Total: una entrada ilegible o ausente es simplemente `false`.
++   entry #children   los nombres (no las rutas) de los hijos inmediatos de un directorio
++       Estricta —el listado se materializa antes de volver, de modo que se libera el
++       descriptor del directorio— y lanzada a través de la `Tactic[Io.Error]` de quien llama.
++       En la JVM, lo que no es un directorio se lista como vacío.
++   entry #createDirectory   crea un directorio, con los bits de permiso dados, si los hay
++       `mode` son los bits de permiso exactos que debe tener la nueva entrada —con el `Umask`
++       de una invocación ya aplicado a `Umask.directoryBits`—, y un backend cuya plataforma
++       tiene bits de permiso los establece en la creación; `Unset` deja que se aplique la
++       máscara del propio proceso, y una plataforma sin permisos POSIX ignora la petición.
++       Lanza `AlreadyExists` o `Nonexistent` (sin padre).
++   entry #createFile   crea un fichero vacío, con los bits de permiso dados, si los hay
++   entry #createFifo   crea una tubería con nombre, con los bits de permiso dados, si los hay
++       En la JVM, mediante la orden `mkfifo`, cuyo fallo se notifica como `Unsupported`; WASI
++       lanza `Unsupported` directamente.
++   entry #delete   borra una entrada, lanzando `Nonexistent` si no existe o `DirectoryNotEmpty` si es un directorio con contenido
++   entry #deleteIfExists   borra una entrada si existe, y no hace nada en caso contrario
++   entry #symlink   crea en `link` un enlace simbólico que apunta a `target`
++   entry #hardLink   crea en `link` un enlace duro a la entrada de `target`
++   entry #copy   copia una entrada a un destino, siguiendo un enlace simbólico final si `dereference`
++       Lanza `AlreadyExists` si el destino existe: la política `OverwritePreexisting` de la API
++       de rutas lo despeja antes cuando se le pide.
++   entry #move   mueve una entrada, de forma atómica si se pide, siguiendo un enlace simbólico final si `dereference`
++       Un movimiento atómico que la plataforma no puede hacer (entre volúmenes, por ejemplo) es
++       `Unsupported`; `NotSameVolume` es el motivo de un movimiento simple entre volúmenes que
++       falla.
++   entry #touch   establece la hora de modificación de la entrada en el momento presente
++   entry #hidden   si la entrada está oculta según la convención de la plataforma
++       Un `.` inicial en POSIX; el atributo oculto en Windows.
++   entry #volume   el `Volume` en el que está almacenada la entrada: su nombre y el tipo de sistema de ficheros
++       Lo que sondean `Btrfs`, `Ext4`, `Apfs` y `Ntfs`. WASI lanza `Unsupported`.
++   entry #hardLinkCount   cuántos enlaces duros apuntan a la entrada
++   entry #attribute   lee un indicador de permiso general, o lee o escribe un atributo extendido
++       Tres sobrecargas. `attribute(path, Attribute.Readable)` es el permiso del usuario
++       actual, total. `attribute(path, name)` es el atributo extendido con ese nombre como
++       `Data`, o `Unset`; `attribute(path, name, value)` lo establece. Los atributos
++       extendidos dependen del sistema de ficheros de almacenamiento, así que los accesores con
++       tipo de las rutas están protegidos por una compuerta en el eje `Attributed`; en esta
++       costura, un sistema de ficheros que no los tiene lanza `Unsupported`.
++   entry #update   activa o desactiva un indicador de permiso general
++       Lanza `PermissionDenied` si la plataforma rechaza el cambio.
++   entry #attributes   los nombres de los atributos extendidos de la entrada
++   entry #identity   los números de dispositivo y de inodo de la entrada, o `Unset` donde la plataforma no los tiene
++       Total, y separada de `stat` porque las dos plataformas que no pueden responderla (WASI,
++       y la JVM fuera de POSIX) son precisamente aquellas en las que todos los demás campos de
++       `Stat` son baratos. `Path#entryIdentity` es el accesor a nivel de ruta.
++   entry #expanse   abre la entrada para lectura posicional con ámbito y aplica una lambda a la vista
++       Un `zephyrine.Expanse` —`size` más un `read(offset, length)` al estilo de `pread`, cada
++       lectura independiente de cualquier posición secuencial— válido durante el ámbito de la
++       llamada y cerrado después. No se mapea el fichero entero, así que pueden direccionarse
++       ficheros de más de 2 GiB, a diferencia del único mapa direccionado por `Int` de `Ram`.
++       Una lectura que sobrepasa el final del fichero devuelve los bytes que existen.
++   entry #slice   abre un rango de bytes de la entrada como una vista en ventana, bloqueándolo si lo piden los indicadores
++       Como `#expanse`, pero la vista es una `Slice.Window` confinada a `[offset, offset +
++       extent)`: su `size` es el de la ventana, las lecturas son relativas al inicio de la
++       ventana y se limitan a ella, y las escrituras almacenan todo lo que cabe y devuelven la
++       cuenta. `OpenFlag.Lock` u `OpenFlag.LockShared` toman un bloqueo consultivo del sistema
++       operativo exactamente sobre ese rango durante el ámbito; una escritura solo tiene
++       sentido con `OpenFlag.Write`. WASI sirve la ventana pero rechaza una apertura con
++       bloqueo como `Unsupported`.
++   entry #open   abre el contenido de la entrada para transmitirlo en flujo, aplica una lambda al `Handle` y lo cierra
++       `flags` son los `OpenFlag` (`Read`, `Write`, `Append`, `Create`, `Truncate`, …), y `mode`
++       los bits de permiso de un fichero que crea la apertura (`Create` o `Exclusive`), como
++       en `#createFile`. El descriptor se cierra sea cual sea el resultado. En la JVM, `Lock` y
++       `LockShared` toman un bloqueo consultivo tras la apertura; un canal de solo lectura no
++       puede tomar un bloqueo exclusivo, así que se toma uno compartido en su lugar (la
++       exclusividad dentro del proceso ya la arbitra el `AccessRegister`), y `Await` espera al
++       bloqueo en lugar de fallar con `Busy`.
+
+@ 0 1 0 1c427cb0574f3d38013800e6d3abcb3d
++ entry .filesystemBackends   los backends de sistema de ficheros, cada uno un given que se importa por nombre
+
+% 1 1 0 053ebec3a6c06cb91dab6a2dd1cc6d8f
+
+@ 0 4 0 0865e52fd0acb49b1a7bf96b8ce6c180
++       Toda operación sobre un `Path on <platform>` necesita un `FilesystemBackend on
++       <platform>` en el ámbito, y la elección deliberadamente nunca es implícita:
++       `import soundness.*` no trae ninguno de ellos, y se importa uno por nombre. Cada uno es
++       genérico sobre el plano, así que una sola importación sirve igual para `Path on Linux`,
++       `Path on Windows` y `Path on Local`.
+
+% 2 1 0 029755fb4ca2bac3143c95c7afe3c727
+
+% 3 1 0 004d158f8b6030b8008987cb1724be83
+
+% 4 1 0 017c55da9ce7a7d50ac00515dc297e1e
+
+% 1 1 0 08a576db11af276c01abf1976300cdce
+
+@ 0 3 0 09a39d1a379164b513329a349fe934fe
++   entry .javaBaseFilesystem   el backend de `java.nio.file`, en `galilei.jvm`
++       El backend de un programa JVM corriente. Las excepciones de `java.nio` se traducen a
++       `Io.Error.Reason` según su tipo:
+
+% 2 1 0 1c5541f2d6b91e2c1784ce76088f2342
+
+@ 0 2 0 1afde471d49abe6e0ee9e60f89bdfd65
++       column  Excepción
++       column  Motivo
+
+% 0 1 0 0628ab96a64aa8f60b5d6c036f7df447
+
+% 0 1 0 18c0eddd5e089d110c6c0c2f66c04352
+
+% 0 1 0 119f4ebad13de1630b9fab3182aaf743
+
+% 0 1 0 1998e7ed0bc61b1d0e505de6a8406ac1
+
+% 0 1 0 018835ef7e9efad604fd1c4ae359aef8
+
+% 0 1 0 0291e9a9379f7c381d88581759511ade
+
+% 0 1 0 1844f3de23b9066e153625dbae0f7f3c
+
+@ 0 4 0 161f6c2e6305853d0540d820aede20c0
++       row  una `InterruptedIOException`  `Interrupted`
++       row  una `FileSystemException` sin más  según el texto de su motivo, abajo
++       row  cualquier otra `IOException`  `Physical`
++       row  cualquier otra cosa  `Unsupported`
+
+% 2 1 0 0f8fcfeebd99390411cc5863239624c7
+
+@ 0 2 0 0c0c619482dafd700e74d78380caa91a
++       Una `FileSystemException` sin más se traduce según el texto de su motivo, en minúsculas,
++       y gana la primera coincidencia:
+
+% 2 1 0 10b30afeb4fa84da02be3ed57d78fb9d
+
+@ 0 2 0 0f17efe86eafe81d173794ef079c5062
++       column  El texto del motivo contiene
++       column  Motivo
+
+% 0 1 0 034ec54a0fc8d8ef1160d15d6765df41
+
+% 0 1 0 0b7ac90ead2715a807ccd0b401f0bbde
+
+@ 0 1 0 0944b64cbe36104f1931cd90d6ded4bc
++       row  `cross-device` o `different disk`  `NotSameVolume`
+
+% 0 1 0 05e862716abe3b18034babb897e610fc
+
+% 0 1 0 11a2a46a82e1866005f5e20388b5be8b
+
+% 0 1 0 060e8b9d76b6c344158f56c6fada8bf6
+
+% 0 1 0 05ed45a273e177120170ff6b11d65a87
+
+% 0 1 0 17fd2bf4a7a7d1130d00ea1187089b9b
+
+% 0 1 0 10a77c49b70d1b061338509d62cd7866
+
+% 0 1 0 0758cf07cae2c99615e8f9fdfbb7187e
+
+@ 1 1 0 07df8aa0b16c3dc40350cbe55981dfc5
++       row  cualquier otra cosa  `Unsupported`
+
+% 2 1 0 184a74949c008eed1b5afce522a7bc32
+
+@ 0 17 0 18aaf84531ceeb6f0fd7e0cadb40bfd3
++       Los bits de permiso se solicitan en la creación y después se establecen exactamente, de
++       modo que una entrada nunca existe con más permisos de los pedidos; en un sistema de
++       ficheros sin la vista POSIX (Windows), el modo solicitado se ignora. Las FIFO se crean
++       mediante `mkfifo`, los bloqueos mediante `FileChannel.lock`, y los atributos extendidos
++       mediante la `UserDefinedFileAttributeView`, que es `Unsupported` donde el volumen no la
++       tiene.
++   entry .wasiFilesystem   el backend de `wasi:filesystem` para componentes Wasm, en `galilei.wasi`
++       Un given `inline` sobre la interfaz de sistema de ficheros de WASI preview 2: las
++       `call`s que hace se expanden en el punto que lo convoca, de modo que las importaciones
++       del componente solo se materializan en código compilado para un destino Wasm, y
++       `wasiApis.wasiFilesystemApi` debe ser visible allí. Los sistemas de ficheros WASI se
++       basan en capacidades: el anfitrión concede acceso como descriptores de directorio
++       preabiertos (`wasmtime run --dir …`), cada operación resuelve su ruta contra el
++       directorio preabierto con el prefijo coincidente más largo, y una ruta fuera de todos
++       ellos lanza `PermissionDenied`. Los códigos de error de WASI se traducen a
++       `Io.Error.Reason` (`no-entry` a `Nonexistent`, `quota` a `QuotaExceeded`,
++       `insufficient-space` a `StorageFull`, …). No se admiten aquí: `realPath` (y, por tanto,
++       `canonical()`), las FIFO, los volúmenes (así que los extractores del eje de
++       almacenamiento nunca coinciden), los atributos extendidos, las actualizaciones de
++       permisos, la identidad de las entradas ni ninguna apertura con bloqueo (`Exclusive`,
++       `Shared`, `OpenFlag.Lock`).
+
+@ 0 1 0 069d5990b9452b311780f49a6398ab22
++ entry .wasiApis   la interfaz WIT contra la que se comprueban los tipos del backend WASI, como given que se importa por nombre
+
+% 1 1 0 002494f3120bd1910b0d54d8bee603a2
+
+@ 0 4 0 15440495497193bc1cc95611741705a1
++       `wasiFilesystem` recorre el mundo `wasi:filesystem` a través del `Interface in Wit` de
++       xenophile, y la definición WIT es un valor contextual para que el materializador `call`
++       pueda consultarla en el punto de expansión posterior. En `galilei.wasi`; el paquete se
++       fusiona con el `wasiApis` del propio paraguas.
+
+% 2 1 0 1699a71fd990f02c142ef172fe9c31b6
+
+% 3 1 0 0e85ce9370bdc8ca05ea47e61544641e
+
+% 0 1 0 1e0d1fe56ae9c73e192581b54ceb0bfe
+
+% 0 1 0 01dd4be42700774f029cfab10b7e9d72
+
+% 1 1 0 1a97329ef576244b0536c5494d390b06
+
+@ 0 1 0 1be973017e4dcc48129ce4c14be8ba47
++   entry .wasiFilesystemApi   el recurso `filesystem.wit` incluido con `galilei.wasi`, como `WasiFilesystemApi`
+
+@ 0 3 0 1571898b48d40a481dd3a313b41eca2c
++ entry .WasiFilesystemApi   el tipo de la interfaz WIT del sistema de ficheros de WASI: `Interface in Wit at "/galilei/filesystem.wit"`
++     Las definiciones WIT contra las que se comprueban los tipos de `wasiFilesystem`,
++     situadas en el classpath en esa ruta de recurso; `wasiApis.wasiFilesystemApi` es su único
++     valor. En `galilei.wasi`.
+
+@ 0 1 0 0ac4ad39c5a4c5701bcfe5022bd6405d
++ entry .Io   el vocabulario de E/S de galilei: el `Io.Error` que lanza toda operación en disco, y los `Io.Event` que registra
+
+% 1 1 0 074349ec3b0f684004efd58b92fa7767
+
+@ 0 4 0 1d83383fb519bd6d07ee57148d63b151
++       `Io` agrupa dos cosas. `Io.Error` es el único tipo de error del sistema de ficheros:
++       nombra la ruta, la `Operation` que se intentaba y el `Reason` por el que falló, de modo
++       que un programa distingue por lo que ha ido mal. `Io.Event` es lo que registran las
++       operaciones que modifican —creaciones, borrados, movimientos, copias, enlaces y
++       `touch`—, cada uno con la etiqueta `Log.Filesystem`.
+
+% 2 1 0 02c9606f9f4359e1070b93174b08457a
+
+% 3 1 0 14b82db5f6c2b71d0f3ad2dad50f5ac7
+
+% 4 1 0 08ad5cc67ebd535a1d990a2a9c360c8e
+
+% 5 1 0 1fb6adfaa798cc2807a40bf170ac15da
+
+% 6 1 0 0bebaa1070a65a3c0502d7925748c100
+
+% 0 1 0 0b9de35a077968f1054349f310e38d12
+
+% 0 1 0 026d44ea02c10e6711d9ff15f78ffac2
+
+% 0 1 0 0c91e2ca20ad77ec16fc83330feb4271
+
+% 1 1 0 0801af191b6af62e0a49f6594d5f19c5
+
+@ 0 2 0 13eea6cf025130c10692099310ca82bd
++       `safely` convierte cualquier `Io.Error` en `Unset`; `capture` conserva el error para que
++       pueda inspeccionarse su `reason`.
+
+% 1 1 0 1b590c30ea51c22a0cbdba984e3c17bd
+
+@ 0 1 0 1b48b1c1997f3cf41281339727cff94b
++   entry .Error   se lanza cuando falla una operación del sistema de ficheros: qué ruta, qué operación y por qué
+
+% 1 1 0 1ce09f396378146f0b8b34fd0e74db6d
+
+@ 0 7 0 1299808d64ea159f16da2c6b0073d348
++         El mensaje dice _the `operation` operation at `path` on `filesystem` failed because
++         `reason`_; por ejemplo, _the read operation at /tmp/x on Linux failed because the
++         entry does not exist_. Sus motivos son la tabla de errno de POSIX con nombres legibles
++         (`Nonexistent` es `ENOENT`, `NotSameVolume` es `EXDEV`, `Physical` es `EIO`), de modo
++         que los fallos que puede notificar un sistema de ficheros se nombran una sola vez y
++         todos los backends se traducen a ellos. El constructor
++         `Io.Error(path, operation, reason)` necesita que el plano de la ruta tenga un
++         `Filesystem` (para representarla) y unos `Diagnostics` en el ámbito.
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 0239237dea428b3e0219c106c0a5bd9f
+
+% 0 1 0 19b42f1b979ba1df0dc7d24f97a826d7
+
+% 0 1 0 170f6114495007a61e39c3825fab5f20
+
+% 0 1 0 14c3edc41fb5b533127c4eb1db47a9c5
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 21 0 03bfd2a61d4206cd1589cdb4f31feb37
++         Tanto `Operation` como `Reason` son `Communicable`, mediante givens anónimos, así que
++         cada uno se representa dentro de un mensaje.
++     entry .Operation   lo que se intentaba: `Read`, `Write`, `Create`, `Copy`, `Move`, `Delete`, `Metadata`, `Open` o `Access`
++         `Metadata` abarca `stat`, `realPath`, `touch`, `volume`, los atributos y los permisos;
++         `Open`, una llamada a `open`, incluido el bloqueo que toma; `Access`, una comprobación
++         de existencia o de permisos.
++     entry .Reason   por qué falló, en el vocabulario de errno de POSIX
++         `PermissionDenied` (el usuario no tenía permisos suficientes), `Nonexistent` (la
++         entrada no existe), `AlreadyExists`, `IsNotDirectory`, `IsDirectory`,
++         `DirectoryNotEmpty`, `NotSameVolume` (origen y destino en volúmenes distintos),
++         `Unsupported` (no lo admite el sistema de ficheros o el backend), `Cycle` (un bucle de
++         enlaces simbólicos), `Busy` (la entrada está en uso, incluida una apertura que rechaza
++         el `AccessRegister`), `ReadOnly`, `TooManyLinks`, `NameTooLong`, `QuotaExceeded`,
++         `StorageFull`, `InvalidData`, `Interrupted` y `Physical` (un error de entrada/salida,
++         incluida una lectura o escritura que el fichero cortó antes de tiempo).
++     entry .apply   `Io.Error(path, operation, reason)`: un error para una ruta de cualquier plano con un `Filesystem`
++     entry #path   la ruta en la que se intentó la operación
++     entry #operation   la `Io.Error.Operation` que falló
++     entry #reason   el `Io.Error.Reason` por el que falló
++     entry #filesystem   la instancia de `Filesystem` del plano de la ruta, que se usa para representar el mensaje
++   entry .Event   lo que registran las operaciones de ruta que modifican
+
+% 1 1 0 1251796b3d9e7a2913f2e4cfa8f123a2
+
+@ 0 23 0 1b4c3c43e2da09dd014579af258e0389
++         Todo `Event` lleva la etiqueta `Log.Filesystem`, de modo que una configuración de
++         registro puede seleccionarlos o silenciarlos por etiqueta. `create`, `delete`, `wipe`,
++         `copyTo`, `moveTo`, `hardLinkTo` y `symlinkTo` registran en `info`; `touch`, en
++         `fine`. Cada una de esas operaciones recibe un `Io.Event is Loggable` en el ámbito.
++     entry .communicable   representa cada evento como un mensaje: _created `path`_, _moved `from` to `to`_, …
++     entry .Create   se creó una entrada: _created `path`_
++       entry #path   la ruta creada, como texto
++     entry .Delete   se borró una entrada: _deleted `path`_
++       entry #path   la ruta borrada, como texto
++     entry .Move   se movió una entrada: _moved `from` to `to`_
++       entry #from   la ruta de origen, como texto
++       entry #to   la ruta de destino, como texto
++     entry .Copy   se copió una entrada: _copied `from` to `to`_
++       entry #from   la ruta de origen, como texto
++       entry #to   la ruta de destino, como texto
++     entry .HardLink   se creó un enlace duro: _hard-linked `from` to `to`_
++       entry #from   la entrada existente, como texto
++       entry #to   el nuevo enlace, como texto
++     entry .Symlink   se creó un enlace simbólico: _symlinked `link` to `target`_
++       entry #link   el nuevo enlace, como texto
++       entry #target   aquello a lo que apunta, como texto
++     entry .Touch   se estableció la hora de modificación de una entrada: _touched `path`_
++       entry #path   la ruta tocada, como texto
+
+@ 0 1 0 1c8da259e422f1b709b3e5f37c7338a2
++ entry .filesystemOptions   las políticas para los casos delicados, cada una un given que se importa por nombre
+
+% 1 1 0 08796719a59cedb50b9c9e899c70755d
+
+@ 0 10 0 0d9c2a38b737810309e45b8cef1fef84
++       Mover un fichero a una ruta donde ya existe algo o bien destruye eso o bien se niega a
++       hacerlo; borrar un directorio o bien lo vacía o bien se niega; copiar un enlace
++       simbólico o bien lo sigue o bien copia el enlace. Ninguna respuesta es correcta en
++       general, así que galilei nunca elige en silencio: cada pregunta es un trait de política
++       —`OverwritePreexisting`, `DeleteRecursively`, `CreateNonexistentParents`,
++       `DereferenceSymlinks`, `MoveAtomically`, `CopyAttributes`— y la operación que debe
++       responderla recibe la política como parámetro contextual. Llamar a `moveTo` sin
++       `overwritePreexisting` ni `failOnPreexisting` en el ámbito es un error de compilación que
++       nombra la política que falta. Las políticas van por pares, una permisiva y otra
++       estricta, y se importan por nombre (`import soundness.*` no importa givens), para todo
++       un fichero o restringidas a un bloque.
+
+@ 0 1 0 0b0009c1426c20df1d8418e2258f3ed1
++       Qué políticas necesita cada operación:
+
+@ 0 5 0 0ae82fe8d0d764db15735871bb545eb5
++       - `copyTo`, `moveTo`, `hardLinkTo`, `symlinkTo`: `OverwritePreexisting` y
++         `CreateNonexistentParents` (y `DereferenceSymlinks` para copiar y mover,
++         `MoveAtomically` para mover).
++       - `copyInto`, `moveInto`, `symlinkInto`: `OverwritePreexisting` y `DereferenceSymlinks`
++         (y `MoveAtomically`); los padres se crean, ya que se nombra el directorio de destino.
+
+% 0 1 0 06e4bf1fc9cdcfb81fa0604174735a2f
+
+% 0 1 0 1879fbcf5b6304dc025e19d1f3b05d52
+
+@ 0 2 0 0b448dc405f7a35b15d2a4c3167aaaa3
++       - `create[…]`: ninguna; `CreateFlag.Parents` y `CreateFlag.Replace` expresan en su
++         lugar la intención en el punto de llamada.
+
+@ 0 1 0 07789554d9be9cd81c8a4ffa05ab9336
++       El mismo fichero, escrito, leído, movido y borrado, a medida que se acumulan las
++       importaciones:
+
+% 2 1 0 090969ea73e1f8021f38410f62892033
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0c39d7eaefc54e141e2e81e4b72d0803
++         label Leer y escribir solo necesitan un backend y una táctica
+
+% 1 1 0 008052bfdab2892812b56c244161bef6
+
+% 2 1 0 1b8179f54acff293160ff62544f5a0c7
+
+% 3 1 0 03ba2fa433d051951ba76c7e26b399c6
+
+% 4 1 0 1b7e8d0e107ee22a0d64b3305c0b866c
+
+% 2 1 0 04eb18108a5c45291fbd9bfa3f7b3f03
+
+% 3 1 0 19c8dc890b11456617c34130dd3c88c2
+
+% 0 1 0 1fc48c5f3395b5211e9ceeab3e22858b
+
+% 0 1 0 1e372205cedd9cb104944ce33094e759
+
+% 0 1 0 00ce93ecf438042610cee1a75d4a02a0
+
+% 1 1 0 00e33afbdc98fc1416f08e448a4ca631
+
+@ 0 1 0 0668c410dc6ea3ef1ed69bacbe4a6c39
++         label Mover necesita una respuesta para una colisión, un padre que falta, un enlace simbólico y la atomicidad
+
+% 1 1 0 09850f620388658f183c17d244e742fd
+
+% 2 1 0 0a176311085117fb02b46a16fa0260ae
+
+% 3 1 0 0285b838908eb89e08a894f83899ab8c
+
+% 4 1 0 07ffc3822787bd450876b923eb65bd21
+
+% 0 1 0 05b229e73b543df315bb461a8bb9dedd
+
+% 0 1 0 1ddb31a451cfcaeb0138ada5b1dcd0f6
+
+% 0 1 0 0e837cd47d9de812195e19e1405d30ef
+
+% 1 1 0 14ffe09fc561d4361b408633e864dc11
+
+% 3 1 0 1365b973f1db9381173500cdac732041
+
+% 3 1 0 0c965951a04e797517698e4682beaf2a
+
+% 0 1 0 10e9ebd3ee6777270a82d2a4eb1edeb3
+
+% 1 1 0 15fb667e72d9ae680503e66952bec45c
+
+@ 0 1 0 0d8f7aa52ccba38a11149b3c2ae80434
++         label Las políticas permisivas hacen imposibles la colisión y el padre que falta
+
+% 1 1 0 16865acef5feb03d00a165d36a9ef3e4
+
+% 2 1 0 13e1f323e8073557143dc51991b466da
+
+% 3 1 0 044fab8ff9a5382008506ef1517ca177
+
+% 4 1 0 0b7536a88c6cc1f209233c6adc2b80c9
+
+% 0 1 0 150c8c42ea9e06c00ab62e5ca8df3452
+
+% 0 1 0 0d4691dbaae0d8f80a9909bcc7770e33
+
+% 1 1 0 1914f034f1e778091e359c2385d23997
+
+% 1 1 0 0c78017972c52f011681291eb4dec629
+
+% 1 1 0 0be55f4637825ee60f04840ad8342b9f
+
+% 3 1 0 0d009cc943bb55221efa97c137156bd6
+
+% 0 1 0 0b61ea10c4972f941e173018657d6a18
+
+% 0 1 0 0aacb7af93ead0660035d7ba082bc202
+
+% 1 1 0 0d9919339cdabf170e5f014b5834d724
+
+@ 0 1 0 05f47f1191ab83921148a331fbf698d6
++         label Borrar un directorio necesita una decisión sobre la recursividad
+
+% 1 1 0 17fd24cca704952a1c6c42996ff37bcf
+
+% 2 1 0 045b092cf8ea27d41c72b85cae7f024b
+
+% 3 1 0 12de5b206ac575b80cc469541831f5b9
+
+% 4 1 0 1bc2645be85b4a39170f9f683273afd2
+
+% 1 1 0 19cfe7b0f59fe4080ebe7134ef7846f4
+
+% 2 1 0 1a23425db64f73cb12828587768631db
+
+% 0 1 0 0b35794d2f3581380d615ae693c15d5c
+
+% 1 1 0 161dd6b3751619e61780f6e798be8769
+
+% 2 1 0 042a26903bd8875f149d824401bb43d9
+
+@ 0 3 0 02ecf796bcf878a302a4342d74a8d626
++       Con `deleteOnlyEmpty` en lugar de `deleteRecursively`, el último paso lanzaría
++       `Io.Error` con `DirectoryNotEmpty`. Obsérvese que el propio `overwritePreexisting`
++       necesita un `DeleteRecursively` en el ámbito, ya que sustituir un directorio significa
++       vaciarlo.
+
+% 0 1 0 12dabe1177df3a9205dcc575a11b78d4
+
+% 0 1 0 1f3fd56ce16820e9154cc0338e925bb8
+
+% 0 1 0 0d89ee07b80f00390695714cccab6c0a
+
+% 0 1 0 18f343058f77a5bd1503cc588e2f3b1e
+
+% 0 1 0 1e43949f958bbb1313823885eb0f66ad
+
+% 0 1 0 05f8fc365244f99a17daa11c2d96fe10
+
+@ 0 47 0 05cd27fd0c762f9b1b0d848fac96a8f7
++   entry .dereferenceSymlinks   seguir un enlace simbólico en el último componente: operar sobre aquello a lo que apunta
++       El `DereferenceSymlinks` permisivo: `entry()` notifica el tipo del destino, `copyTo`
++       copia el contenido del destino, `descendants` y `checksum` recorren los directorios
++       enlazados, y `hardLinks()` cuenta los enlaces del destino.
++   entry .preserveSymlinks   no seguir un enlace simbólico: operar sobre el propio enlace
++       El `DereferenceSymlinks` estricto: `entry()` notifica `Symlink`, `copyTo` copia el
++       enlace, y un recorrido no desciende a través de un directorio enlazado. `filesize()`
++       siempre usa este, así que el tamaño de un enlace es el del enlace.
++   entry .moveAtomically   `moveTo` debe ser atómico, y es `Unsupported` donde no puede serlo
++       El `MoveAtomically` que pide al backend un renombrado atómico (`ATOMIC_MOVE` en la
++       JVM). Un lector nunca ve una entrada a medio mover; un movimiento entre volúmenes, que
++       no puede ser atómico, lanza `Io.Error` con `Unsupported` en lugar de recurrir a una
++       copia.
++   entry .moveNonAtomically   `moveTo` puede ser una copia seguida de un borrado
++       El `MoveAtomically` que permite un movimiento no atómico, de modo que un movimiento
++       entre volúmenes tiene éxito, a costa de que un fallo a mitad de camino puede dejar tanto
++       el origen como un destino parcial.
++   entry .copyAttributes   una copia lleva consigo los atributos del origen (marcas de tiempo, permisos)
++       El `CopyAttributes` permisivo. Ninguna operación lo consulta actualmente: la política
++       existe para que el tratamiento de los atributos en una copia quede expresado cuando los
++       backends lo respeten.
++   entry .discardAttributes   una copia toma solo el contenido; los atributos de la copia son nuevos
++       El `CopyAttributes` estricto; véase `.copyAttributes` para su situación actual.
++   entry .deleteRecursively   `delete` y `wipe` sobre un directorio borran primero todo lo que hay bajo él
++       El `DeleteRecursively on <plane>` permisivo, para cualquier plano con un `Explorable` y
++       un backend. Borra los hijos en profundidad antes de la operación que protege, de modo
++       que `wipe()` elimina un árbol entero. También es lo que necesita
++       `overwritePreexisting`, para que sustituir un directorio pueda vaciarlo.
++   entry .deleteOnlyEmpty   `delete` y `wipe` rechazan un directorio que tiene hijos
++       El `DeleteRecursively` estricto: un directorio con algún hijo lanza `Io.Error` con
++       `Operation.Delete` y `Reason.DirectoryNotEmpty` antes de tocar nada. Un programa que
++       nunca debe eliminar más de una entrada a la vez importa este.
++   entry .overwritePreexisting   un destino que ya existe se elimina primero
++       El `OverwritePreexisting on <plane>` permisivo, que necesita un `DeleteRecursively on
++       <plane>` en el ámbito (para vaciar un directorio que se sustituye). Así, `copyTo`,
++       `moveTo`, `hardLinkTo`, `symlinkTo` y `Device.create` no pueden lanzar `AlreadyExists`.
++   entry .failOnPreexisting   un destino que ya existe es un `Io.Error`
++       El `OverwritePreexisting` estricto: la operación sigue sin tocar nada, y el backend
++       lanza `Io.Error` con `Reason.AlreadyExists` cuando choca con una entrada existente, que
++       quien llama debe gestionar entonces.
++   entry .createNonexistentParents   se crean los directorios antecesores que le faltan a un destino
++       El `CreateNonexistentParents on <plane>` permisivo, que necesita un backend. Antes de la
++       operación se crea cada antecesor ausente del destino, subiendo desde el más cercano.
++       Los directorios se crean con la máscara del propio proceso. `copyInto`, `moveInto` y
++       `symlinkInto` lo usan implícitamente, ya que se nombra su directorio de destino.
++   entry .requireParents   un destino cuyo padre falta es un `Io.Error`
++       El `CreateNonexistentParents` estricto: no se crea nada, y el backend lanza `Io.Error`
++       con `Reason.Nonexistent` para el padre que falta.
+
+@ 0 1 0 10d37892f1d3dbe21b6a4ca440c95125
++ entry .DereferenceSymlinks   la política para un enlace simbólico en el componente final: seguirlo o actuar sobre el enlace
+
+% 1 1 0 1a9a1305097afa7803876d28b36dfce7
+
+@ 0 7 0 1d23fdb903fa0917170854cdf074927e
++       Un valor contextual con un solo dato, `#dereference`, que las operaciones que leen o
++       copian una entrada pasan al backend. `filesystemOptions.dereferenceSymlinks` sigue los
++       enlaces y `filesystemOptions.preserveSymlinks` los conserva. Es un `Findable`, no una
++       función, así que una instancia propia se escribe como `given DereferenceSymlinks: def
++       dereference = …`. La necesitan `entry()`, `copyTo`, `copyInto`, `moveTo`, `moveInto`,
++       `symlinkInto`, `descendants`, `glob`, `hardLinks()` y `checksum`.
++   entry #dereference   `true` para seguir un enlace simbólico final, `false` para operar sobre el propio enlace
+
+@ 0 1 0 1c42aec4cd534d7712e886a1568107e4
++ entry .MoveAtomically   la política que decide si `moveTo` debe ser un único renombrado atómico
+
+% 1 1 0 0ee843c97ba5a77d0b5d4df0b5114134
+
+@ 0 4 0 13d322ca982a19661ebbee86f290cdb8
++       `filesystemOptions.moveAtomically` exige atomicidad (y falla con `Unsupported` entre
++       volúmenes); `filesystemOptions.moveNonAtomically` permite copiar y borrar. La necesitan
++       `moveTo`, `moveInto` y `symlinkInto`.
++   entry #atomic   `true` para exigir un movimiento atómico
+
+@ 0 1 0 0d689155a4c291cf17994443286571ea
++ entry .CopyAttributes   la política que decide si una copia lleva consigo los atributos del origen
+
+% 1 1 0 01777b5ea1e16124002f75307b9b46f2
+
+@ 0 4 0 0e6bf43c671c6ce114e5c1fc290246f0
++       `filesystemOptions.copyAttributes` y `filesystemOptions.discardAttributes` son sus dos
++       instancias. Ninguna operación actual la consulta; está reservada para backends que
++       distingan ambos casos.
++   entry #attributes   `true` para copiar los atributos junto con el contenido
+
+@ 0 1 0 0126fd2e62b1f83a0b5da25b4166b8bf
++ entry .DeleteRecursively   la política para borrar un directorio que tiene hijos: vaciarlo primero o negarse
+
+% 1 1 0 0d472eab1a444f24056ff8cb4a7bbf64
+
+@ 0 5 0 081d16030d0785360333b7616dd1459c
++       Una política planar (`DeleteRecursively on Linux`) cuyo `#conditionally` envuelve un
++       borrado: `filesystemOptions.deleteRecursively` borra primero todos los descendientes;
++       `filesystemOptions.deleteOnlyEmpty` lanza en su lugar `Io.Error(DirectoryNotEmpty)`. La
++       necesitan `delete()` y `wipe()`, y también `overwritePreexisting`.
++   entry #conditionally   ejecuta un borrado de `path`, tras vaciarlo o negarse, bajo una `Tactic[Io.Error]`
+
+@ 0 1 0 0dbb52defd668d2f19b5962311ffb154
++ entry .OverwritePreexisting   la política para un destino que ya existe: eliminarlo primero o fallar
+
+% 1 1 0 0a6f28d24f9a0d661c8e74ab9e3a8cdf
+
+@ 0 7 0 149feee61a6152470fc25aad7dc0d37a
++       Una política planar (`OverwritePreexisting on Linux`) cuyo `#apply` envuelve la
++       operación que colisionaría. `filesystemOptions.overwritePreexisting` borra la entrada
++       existente (de forma recursiva, mediante la `DeleteRecursively` del ámbito) antes de la
++       operación; `filesystemOptions.failOnPreexisting` la ejecuta sin cambios y deja que el
++       backend lance `AlreadyExists`. La necesitan `copyTo`, `copyInto`, `moveTo`, `moveInto`,
++       `hardLinkTo`, `symlinkTo`, `symlinkInto` y `Device.create`.
++   entry #apply   ejecuta una operación en `path`, tras eliminar o no una entrada existente allí
+
+@ 0 1 0 1bdc2bfe6fc05d090cb30cad36eacfe5
++ entry .CreateNonexistentParents   la política para un destino cuyo padre no existe: crearlo o fallar
+
+% 1 1 0 005e7771fc2324b0168330307ee8a6a0
+
+@ 0 6 0 0cdc2e180a770bd615b17baeca9c2ba1
++       Una política planar (`CreateNonexistentParents on Linux`) cuyo `#apply` envuelve la
++       operación. `filesystemOptions.createNonexistentParents` crea cada ancestro que falta;
++       `filesystemOptions.requireParents` deja que el backend lance `Nonexistent`. La necesitan
++       `copyTo`, `moveTo`, `hardLinkTo`, `symlinkTo` y `Device.create`. Las operaciones
++       `create[…]` no la consultan: en su lugar reciben `CreateFlag.Parents` en la llamada.
++   entry #apply   ejecuta una operación en `path`, tras crear o no los ancestros que le faltan
+
+@ 0 1 0 01728ebf1541ae8210c5be394e2cce59
++ entry .filesystemTraversal   el orden en que se recorre un árbol de directorios, cada uno un given que se importa por su nombre
+
+% 1 1 0 06898f6506128d84011a3eaf0112591c
+
+@ 0 5 0 183c1712bdabe22c1ef981c399f9d6f1
++       `descendants` produce el subárbol completo de un directorio, y el `TraversalOrder` del
++       ámbito indica si cada directorio va antes o después de lo que contiene. Ninguno es el
++       valor por defecto: un programa que recorre un árbol importa uno por su nombre. El
++       preorden pone cada directorio antes de su contenido, como necesita imprimir o copiar un
++       árbol; el postorden lo pone después, como hace borrarlo o sumar sus tamaños. El mismo
++       árbol, recorrido de las dos formas:
+
+% 2 1 0 058cbff1a7e197890786fb73ead22ec0
+
+% 0 1 0 186c81a8d53a044b1c225db852b32ee6
+
+% 1 1 0 19addeccc4657ff516b11ef8756a39db
+
+% 2 1 0 09e81e9222dbd2f60f0b3b38cb403c9b
+
+% 3 1 0 10924276f9422aa81dc9645d17f6b06e
+
+% 4 1 0 1152d6778f27c19f037ca2239dd7da20
+
+% 0 1 0 111c8ae308e9c4cd1f82fb1c8c32c841
+
+% 1 1 0 1844d92389e8d75c01e148e238da9616
+
+% 3 1 0 155675aebbd5032b023a88db2bbffd3b
+
+% 0 1 0 05acf7d3ea26ae04081b8b9bf21f3d9e
+
+% 0 1 0 0611781664ff14ac1171ca3adee7b6c2
+
+% 1 1 0 05cda53d19530c121baa1571e4a54d1f
+
+% 2 1 0 12c9d7cd84150d041f2e19b63ff4a4ff
+
+% 3 1 0 1cca393d3cf4a15507474d6d5f8743a4
+
+% 4 1 0 044c0a5c4ec14a9c06ace2dcc0bc187d
+
+% 0 1 0 12ee47242eb45ca81d0b806db392376a
+
+% 1 1 0 0c4802407b4de5c50b296414ee9ce4b3
+
+% 3 1 0 119a5b59658b4e6613e13bb30d9ac9eb
+
+% 0 1 0 02db0ba2f6a947431182b705270de28c
+
+% 1 1 0 0fe792dd2616dc820081f155f6ed841b
+
+% 2 1 0 13b478099600d67f1d0473f2a73d6132
+
+@ 0 1 0 028b46612d73ca850134f81f5bdf2ed9
++       Los hermanos llegan en el orden en que los enumera el backend, que no está ordenado.
+
+% 0 1 0 145c1c1c5e949b4e0fc69972d5538282
+
+% 0 1 0 0a2e015dad1d34f90ccf431c18ea72c6
+
+@ 0 2 0 18d219968351219c1f5aa6e36235d7b2
++   entry .preOrderTraversal   `TraversalOrder.PreOrder`: un directorio y después sus descendientes
++   entry .postOrderTraversal   `TraversalOrder.PostOrder`: los descendientes de un directorio y después el directorio
+
+@ 0 1 0 044fae6ba87b2ddc180fa98d40264dea
++ entry .TraversalOrder   si `descendants` produce un directorio antes o después de su contenido
+
+% 1 1 0 010c0b06aa1a117c1638da92e431a5dc
+
+@ 0 5 0 1027fc51feb4cc9403399ca68cfe3cd5
++       `PreOrder` coloca cada directorio antes de sus descendientes, el orden para copiar o
++       imprimir un árbol; `PostOrder` lo coloca después, el orden para borrarlo, donde un
++       directorio solo puede eliminarse una vez vacío. El valor es un parámetro contextual de
++       `descendants`, importado de `filesystemTraversal`; `filesize()` y `checksum` fijan ellos
++       mismos `PreOrder`.
+
+% 0 1 0 078a1ea46d66e0ae10c6d1f5fd208f1e
+
+@ 0 1 0 0da2586349570e830d04aed16a033af8
++ entry .CreateFlag   lo que `create[…]` puede hacer además de crear la entrada: `Parents` o `Replace`
+
+% 1 1 0 19b30c9618a085b81d4b50edb19754a6
+
+@ 0 8 0 09b3684e4252cf711a9879cac37d6d45
++       La ausencia de indicadores significa rigor: crear una entrada cuyo padre no existe lanza
++       `Io.Error` con `Nonexistent`, y crear una que ya existe lanza `AlreadyExists`, salvo que
++       quien llama indique otra cosa en el punto de llamada. `Parents` crea cada directorio
++       ancestro que falta (con la `Umask` del ámbito); `Replace` borra primero una entrada
++       existente en la ruta, de forma recursiva si es un directorio. Los indicadores son los
++       argumentos que siguen a la forma: `path.create[Directory](CreateFlag.Parents)`,
++       `path.create[File](CreateFlag.Replace)`. Deliberadamente no son políticas de
++       `filesystemOptions`: la intención destructiva al crear se declara allí donde ocurre.
+
+% 2 1 0 0d78e5d852e70cbb0dfe8917800694b5
+
+% 3 1 0 1a8add386e27c3ef12b2c00e075d63c4
+
+% 4 1 0 10f2edbf06e9da57024752ecb3690c00
+
+% 5 1 0 0889190c970b02c40b5d691872cd4ef4
+
+% 6 1 0 1e8b1ac6988fa4a317788775796a0f54
+
+% 7 1 0 1c405582748daaef138088535a2300d0
+
+% 0 1 0 0a7b5aa07b46feb80a6a0276bbc265be
+
+% 0 1 0 0a5a8aff5a3c97c3119a5e5b3e0caabe
+
+% 0 1 0 0a12390cdd31de271ff1686c50d98639
+
+% 0 1 0 07b21108e7d5aea8084034bd9d5cd5b8
+
+% 1 1 0 1d336c37b0aa6fde19464bff87377a64
+
+% 1 1 0 07330d6048a8a8720d4ffe380d8e5d79
+
+@ 0 1 0 075c69560d36a2ff0efe5dc4655127b8
++ entry .Explorable   la clase de tipos que enumera los directorios de un plano: `path.children`
+
+% 1 1 0 1a040be226adf91809e63f1a842851a3
+
+@ 0 10 0 0b8c88685c2d41270be94cd68718d7ef
++       `plane is Explorable` indica que una `Path on plane` se puede enumerar. Todo plano con un
++       `FilesystemBackend` se explora de la misma manera —`.explorable` pide al backend los
++       nombres de los hijos y añade cada uno al padre—, así que la clase de tipos es una
++       costura, no algo que implemente el usuario: acota `children`, `descendants`, `glob`,
++       `filesize()` y la política `deleteRecursively`.
++   entry .explorable   el `Explorable` para cualquier plano con un `FilesystemBackend`
++       En el ámbito implícito: necesita el backend y nada más.
++   entry #children   los hijos inmediatos de un directorio, como rutas, lanzando `Io.Error` mediante la táctica de quien llama
++       Estricto: un fallo al enumerar (`Nonexistent`, `PermissionDenied`) se lanza aquí, no se
++       difiere a la cadena.
+
+@ 0 1 0 06b9e3cb7f69d3c6011e3a0088f38cde
++ entry .Substantiable   la clase de tipos tras `existent()`: si un valor nombra algo que existe
+
+% 1 1 0 0906a9afef4f774c1183cdce2b213896
+
+@ 0 5 0 1a83428a146bc80f170f22e5825e1043
++       `path.existent()` está definido para cualquier valor `Substantiable`. La instancia de
++       Galilei, `.substantiable`, sirve a toda `Path on <platform>`: es total (nunca lanza) y
++       sigue un enlace simbólico final, así que un enlace colgante no existe. Una ruta que
++       gobierna el `Fdtable` del ámbito existe en lo que respecta a este proceso, sin preguntar
++       al sistema de ficheros. Hellenism proporciona otra instancia, para una `Path on
++       Classpath`.
+
+% 2 1 0 1eb61cc4da5f76311d4d6aff2ba3852e
+
+% 3 1 0 16c7a0007d80aa9c1baf7c87f9374da5
+
+% 4 1 0 14303e34987702c601ab2e9e9d582e5f
+
+% 5 1 0 11fd3b4ed7d699201ed204a517a54e6d
+
+% 6 1 0 0957ce48934542e103c4054eefd316bf
+
+% 0 1 0 0963b48edaed15a010ed8d45c453a7a2
+
+% 0 1 0 1124dfa8d20129fc016b9f16eaaf3830
+
+% 1 1 0 19c125936de2815d09c1df0b08bed2e6
+
+% 0 1 0 0687814ef7ba7a310fea411b445e7ce2
+
+@ 0 2 0 0607b8b9204b22010c5f75444d7f6d46
++   entry .substantiable   el `Substantiable` para cualquier ruta de plataforma, mediante el `exists` del backend
++   entry #existence   si el valor existe
+
+@ 0 6 0 0bf2ec2b781a4c6a195008c85650b610
++ entry .existent   `value.existent()`: si una ruta (o cualquier `Substantiable`) nombra una entrada existente
++     Una extensión sobre cualquier valor `Substantiable`. Para una `Path on <platform>` solo
++     necesita un `FilesystemBackend` y nunca lanza: una entrada que falta, ilegible o colgante
++     es `false`. Dentro de un bloque `open[Directory]`, la operación correspondiente sobre la
++     ruta de un descriptor es `extant()`, con otro nombre porque una extensión importada
++     léxicamente la ocultaría.
+
+@ 0 7 0 1d0ae573d6807d42085822dde7fceadd
++ entry .children   `path.children`: las entradas inmediatas de un directorio, como rutas
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita el `Explorable`
++     del plano y una `Tactic[Io.Error]`. El resultado es una `Chain[Path on plane]` con las
++     rutas completas de las entradas, en el orden en que las enumera el backend (sin ordenar);
++     cada nombre está bien formado por construcción, puesto que procede de una entrada de
++     directorio real. Un directorio que falta o es ilegible lanza `Io.Error` (`Nonexistent`,
++     `PermissionDenied`), y algo que no es un directorio se enumera como vacío en la JVM.
+
+% 2 1 0 0f31cba710478cc90bbb3c63229f392d
+
+% 3 1 0 02a60a2d86c5220c04928a667159b751
+
+% 4 1 0 188c1f44851b84be1bef90a4ab194828
+
+% 5 1 0 1e165f89b269824e15c3ae92434124ed
+
+% 6 1 0 0bb77294ef20460f1f4299292d7efdba
+
+% 7 1 0 0f8a220188fe28510efb579120f4d1ba
+
+% 0 1 0 1b28f018832f288c0c5a7ab1978ed34f
+
+% 0 1 0 05aa4c1ffdf2ade81062b09c66ebe48c
+
+% 1 1 0 02d343c2b80f6f8f151e99bcdb33dc1b
+
+@ 0 6 0 0cc188e9920f6fdd1fc98858677c8cb5
++ entry .descendants   `path.descendants`: todas las entradas bajo un directorio, en el `TraversalOrder` del ámbito
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita un
++     `DereferenceSymlinks`, un `TraversalOrder` (de `filesystemTraversal`) y el `Explorable`
++     del plano, y que lanza `Io.Error`. El resultado es una `Chain[Path on plane]` perezosa:
++     con `preOrderTraversal` cada directorio precede a su contenido, y con
++     `postOrderTraversal` lo sigue. Con `preserveSymlinks` no se desciende a un directorio
++     enlazado.
+
+% 2 1 0 13ed81320c7cc02a080314e1cb9b9a82
+
+% 3 1 0 01f02e520cfd30ee01f448d7c2dc4dee
+
+% 4 1 0 06714bf976056747136ad924356a487f
+
+% 5 1 0 05f6e7b0c4157e60139394764e4138b5
+
+% 6 1 0 17e09a2401f1b38916de130ab9c33cbc
+
+% 7 1 0 0c46078df385e7570e5e0e0df5a2556a
+
+% 0 1 0 10ad931588c9903503db50a754b3c0b0
+
+% 1 1 0 00e30ff6298dabee059d494a011ec60c
+
+% 3 1 0 09b9c45005deff570ffbaef6a0bfa83b
+
+% 0 1 0 08828d229e2f6b4808b2450fd94bbad0
+
+% 1 1 0 1d7ed74ea04a3bc011592e2ab325b679
+
+@ 0 9 0 056254b7a00d6e711bc102ee4c9e20a3
++ entry .glob   `path.glob(pattern)`: las entradas bajo un directorio que coinciden con un `Glob`
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita el `Explorable`
++     del plano, un `DereferenceSymlinks` y un backend, y que lanza `Io.Error`. El patrón es
++     relativo a la ruta, que debe nombrar un directorio, y se expande segmento a segmento: cada
++     segmento ordinario filtra por coincidencia los hijos de los directorios actuales (`*` y
++     `?` dentro de un nombre, `[bd]` una clase de caracteres), y un segmento que es exactamente
++     `**` coincide con cualquier número de directorios intermedios. Solo se enumeran los
++     directorios del eje del patrón, así que `sub1/*.jar` nunca recorre `sub2`. Un `**`
++     mezclado en un segmento (`a**b`) coincide dentro de un solo nombre, como hace `*`. El
++     resultado es una `List[Path on plane]` sin repeticiones.
+
+% 2 1 0 1ecd8c385d1f72e304a10a8738649b8e
+
+% 3 1 0 107fd498eaa1c06e0077d79585f56b67
+
+% 4 1 0 16142fe539e1942206c542d40fcdf7a5
+
+% 5 1 0 0876db7d4da4b5d30e47e7746e348186
+
+% 6 1 0 0414729bc3eab5420d065a5ba0769add
+
+% 7 1 0 0fbba9665c27e7bc0b2bbb589327d3d4
+
+% 1 1 0 19219577798c00fb17bf8db3786ef3eb
+
+% 3 1 0 1d8bdcc604c76d6410b750f1a632e570
+
+% 0 1 0 03c542731517754905ef30372d641ee3
+
+% 0 1 0 088ffc939708ec221e0e781d314d2404
+
+% 0 1 0 0658618ae3b0e62907040b30f82964bf
+
+% 1 1 0 0c7eee34e6dd3b021d5234efc18319ca
+
+@ 0 7 0 13c1ef2d1a4fbc0c0fd3319aa4cec074
++ entry .write   `path.write(content)`: sustituye todo el contenido del fichero, en una sola operación directa
++     Una extensión sobre cualquier `Path on <plane: Filesystem>` que recibe cualquier cosa
++     `Streamable by Data` (`Text`, `Data`, una `Chain[Data]`, un flujo) y necesita una
++     `Tactic[Io.Error]`. El contenido se agrega y se escribe de una vez, sin mantener ningún
++     descriptor ni necesitar ningún ámbito; un fichero que existe se sustituye y uno que no
++     existe se crea, pero un padre que falta lanza `Io.Error` con `Nonexistent`. Una ruta que
++     gobierna el `Fdtable` del ámbito se escribe en su lugar mediante su descriptor de fichero.
++     `read[Text]` es su contrapartida, mediante `Platform.pathReadable`.
+
+% 2 1 0 0b1af4478e55a1370445eb7097e49953
+
+% 3 1 0 026d0ed018d86b401cdb81209f8d4747
+
+% 4 1 0 0de0bb165c58c06510015d011708860e
+
+% 5 1 0 162a968dd2ee3cbb11f0c554c1540cb8
+
+% 6 1 0 0aaf3d98ea078426038f32f7b6196012
+
+% 7 1 0 145bab2508be7fd714278a4f3fd4b4aa
+
+% 3 1 0 15ade5724a5332bc18cf31398d7b7049
+
+% 0 1 0 0fa60b46d892408818a9f1fd9888f11f
+
+% 0 1 0 05e092a7136a84aa164c399133a82af3
+
+% 1 1 0 0880c1ab7c12013418c390c9130c371d
+
+@ 0 8 0 1efd8d25fe014cef1f806f4a9bbac4a9
++ entry .expanse   `path.expanse(lambda)`: lecturas posicionales de un fichero dentro de un ámbito, sin mapearlo
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita un backend y una
++     `Tactic[Io.Error]`. La lambda recibe un `zephyrine.Expanse` —`size`, y `read(offset,
++     length)`, cada lectura independiente de cualquier posición secuencial— válido durante el
++     ámbito de la llamada, tras el cual se cierra el fichero. Todos los backends lo
++     implementan, así que un lector de formatos orientado al posicionamiento no necesita ni
++     `java.nio` ni mapear el fichero entero, y se pueden direccionar ficheros de más de 2 GiB.
++     Una lectura que sobrepasa el final del fichero devuelve los bytes que existen.
+
+% 2 1 0 013b7d767da87bf0013f89c11234d70b
+
+% 3 1 0 0bb527cbbad8abf30cb6b71bbf0a111f
+
+% 4 1 0 1c1f49857287a08b0a85b63606678d01
+
+% 5 1 0 1231de80bfca7b2716abd8e6512f0e88
+
+% 6 1 0 11634384b06a30701d49b9510e14134f
+
+% 7 1 0 123621854d51ad7309697247953655f7
+
+% 0 1 0 19984a552dfb484a07a36680b9439bf0
+
+% 0 1 0 11752f6fd8deacf51b315ed65156c0aa
+
+% 0 1 0 10b078b29068ba581c3a2ef275da9d96
+
+% 1 1 0 069781b768598a4d19ff0770698cf67a
+
+@ 0 6 0 17a366e9fd573a3f1ddec4e99e280d9c
++ entry .filesize   `path.filesize()`: el tamaño de un fichero, o de todo lo que hay bajo un directorio, en `Bytes`
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita el `Explorable`
++     del plano y un backend, y que lanza `Io.Error`. El tamaño de un fichero es el suyo propio;
++     el de un directorio es el suyo más los tamaños de todos sus descendientes, recorridos sin
++     seguir los enlaces simbólicos. Se llama `filesize` y no `size` para que no compita con el
++     `size` de las colecciones en el paraguas `soundness`.
+
+@ 0 6 0 1d07104e646f50ce1ea068acc3c84aa6
++ entry .delete   `path.delete()`: borra una entrada, recorriendo recursivamente un directorio según lo permita la política `DeleteRecursively`
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita una
++     `DeleteRecursively on plane` (`filesystemOptions.deleteRecursively` o `deleteOnlyEmpty`),
++     un backend, una `Tactic[Io.Error]` y un `Io.Event is Loggable`. Una entrada que falta
++     lanza `Io.Error` con `Nonexistent`; un directorio no vacío con `deleteOnlyEmpty` lanza
++     `DirectoryNotEmpty`. Registra `Io.Event.Delete` y devuelve la ruta.
+
+@ 0 4 0 17ad3c754bce5e081363893ed7acc87d
++ entry .wipe   `path.wipe()`: borra una entrada si existe, de forma recursiva según lo permita la política `DeleteRecursively`
++     Como `delete()`, pero una entrada que falta no es un error, así que `wipe()` es la forma
++     idempotente: después, la ruta no existe. Con `deleteRecursively` elimina un árbol entero.
+
+% 2 1 0 0f90f185a24448d4004b8d61f09da6f1
+
+% 3 1 0 05f4f0a772a32a65181090e51a24905c
+
+% 4 1 0 04212b56c4a0385700aca37d9225026c
+
+% 5 1 0 02b872a377a352330a17bacc796b417a
+
+% 6 1 0 0967bbda0d0e9f13084d8c8196d23ffb
+
+% 1 1 0 1acd973708b0277a11cb56489f28c4ad
+
+% 1 1 0 122c676701082bc813428043c5358f5b
+
+% 0 1 0 1bae8b589f39e2a20b0a5628373afe88
+
+% 0 1 0 07e4608cbb114ea40ea9acf62e4b3b58
+
+% 0 1 0 10e82323f54988cf00743cec94803d1d
+
+% 1 1 0 1242d3ff73a37b591cb4585b31b04993
+
+@ 0 4 0 02332befee2cbfc712242659d4f48b7b
++ entry .volume   `path.volume()`: el volumen de almacenamiento en el que está la entrada, por nombre y tipo de sistema de ficheros
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita un backend y
++     lanza `Io.Error`. El `volumeType` del `Volume` (`ext4`, `apfs`, `btrfs`, `ntfs`, …) es lo
++     que comprueban los extractores del eje de almacenamiento `Ext4`, `Apfs`, `Btrfs` y
++     `Ntfs`. WASI lanza `Unsupported`.
+
+@ 0 6 0 0ce33e8049ccb24919ab43a84a0abb09
++ entry .entryIdentity   `path.entryIdentity`: los números de dispositivo y de inodo de la entrada, o `Unset`
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita un backend. Una
++     `Stat.Identity` nombra un fichero de forma única en su dispositivo: dos rutas con
++     identidades iguales son enlaces duros a un mismo fichero. Total: `Unset`, en lugar de
++     lanzar, donde la plataforma no la registra (WASI, y la JVM fuera de POSIX). Su nombre
++     remite a `entry()` en lugar de ser simplemente `identity`, que competiría con la función
++     de proscenium allí donde se importe el paraguas.
+
+% 2 1 0 084658adfac14b031dbdd420384693f9
+
+% 3 1 0 02229abae201cee70ad89c3f145d938f
+
+% 4 1 0 14564c3d7652218c015dc7b102b8fc38
+
+% 5 1 0 087a127698f288e514415b6c7196c3c7
+
+% 6 1 0 104070e715e4693d1d619b7d1c31b988
+
+% 0 1 0 07b46ffdb1eacfb817ae8bedbb4b6306
+
+% 0 1 0 0cda49e73f967315078ebab5109b9b6f
+
+% 0 1 0 1f28c63a05dd5272005c744a545e6aa0
+
+% 1 1 0 059e2565817142511ca7acd4025309c1
+
+@ 0 6 0 017bd50721cf0c7d17c069568ec68354
++ entry .entry   `path.entry()`: qué clase de entrada nombra la ruta
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita un
++     `DereferenceSymlinks` y un backend, y que lanza `Io.Error` (`Nonexistent` para una ruta
++     ausente). El resultado es uno de los objetos `Entry` —`File`, `Directory`, `Symlink`,
++     `Fifo`, `Sock`, `BlockDevice`, `CharDevice`— y solo es `Symlink` con `preserveSymlinks`;
++     con `dereferenceSymlinks`, un enlace informa de la clase de su destino.
+
+% 2 1 0 0e89106a0ecf422a0118bc1c3c192475
+
+% 3 1 0 1f9e148839da73ff07bfe90e16aa5ef9
+
+% 4 1 0 1507edc02b4749ff033e48bfbbf56a35
+
+% 5 1 0 196ae7ae72f755821c540a29ec681d06
+
+% 6 1 0 15660db7dd7ac1cc1ce481ee85abd8ab
+
+% 0 1 0 04164f01682606db1cb435c1e15b1246
+
+% 1 1 0 16b4f7b2cc8438b5026bd2bc35b8e3cd
+
+% 3 1 0 1d605e1bc2b2ca6513813b91140b71a3
+
+% 0 1 0 0569ca8d725cf9b7173a0bf6f0fd4679
+
+% 0 1 0 0d2e4293168ba8071b5df318e964472f
+
+% 0 1 0 138b4c9a56a944e8146f7456ecb906f2
+
+% 0 1 0 118c711cd618e8c30bf7d3a0baeec593
+
+% 0 1 0 1eb28004e3cf2d3a0be2f3530af23fb5
+
+% 1 1 0 179467ac2eb689c91cc6d0d0fc51fb59
+
+@ 0 8 0 18eb92c81b9a5cbc1c6ab72fcc0a6126
++ entry .copyTo   `path.copyTo(destination)`: copia una entrada en una ruta, consultando las políticas del ámbito
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita una
++     `OverwritePreexisting on plane`, un `DereferenceSymlinks`, una `CreateNonexistentParents
++     on plane`, un backend, una `Tactic[Io.Error]` y un `Io.Event is Loggable`. Con
++     `failOnPreexisting`, un destino existente lanza `AlreadyExists`; con
++     `overwritePreexisting`, se elimina primero. Con `requireParents`, un padre que falta lanza
++     `Nonexistent`. Un directorio se copia como un directorio vacío (el `Files.copy` de la
++     JVM), no de forma recursiva. Registra `Io.Event.Copy` y devuelve el destino.
+
+% 2 1 0 04e8ad39345490ac09dbd37a0bd829ba
+
+% 3 1 0 1a37d542d95e11af015088d521dddb03
+
+% 4 1 0 1bc88026edc0e9a607dec26a0684ca99
+
+% 5 1 0 1dac8afddfde9ecd1491af0128a31042
+
+% 6 1 0 10af32c96c07fcec03dc416753e6c5e3
+
+% 7 1 0 1b2be1454b0cacff13afff6db95c069a
+
+% 8 1 0 1e2638cfc4b8c59501288548bfd64aab
+
+% 9 1 0 0bc17c1f184ea0c1029d409fd15f816b
+
+% 2 1 0 18897d3006dc6ca1021e352b89fafab3
+
+% 3 1 0 0f8851e0cceb36310640cb26d72de13b
+
+% 3 1 0 19be0b2a3868a5ba1718063a49504dda
+
+% 0 1 0 0b8915f6db4637e10ed3c79a28aa5ca6
+
+% 1 1 0 1c248ff0e1a901f313ea4393033920bf
+
+@ 0 5 0 101738394c261de708dc8c1c0776119c
++ entry .copyInto   `path.copyInto(directory)`: copia una entrada dentro de un directorio, conservando su nombre
++     Como `copyTo(directory / path.name)`: el destino nombra el directorio, y bajo él se usa el
++     propio nombre de la entrada. Necesita una `OverwritePreexisting on plane`, un
++     `DereferenceSymlinks`, un backend y una `Tactic[Io.Error]`; los padres se crean, puesto
++     que el directorio de destino se nombra explícitamente.
+
+@ 0 8 0 004bfca49603dff30dbce52bc28d14c6
++ entry .moveTo   `path.moveTo(destination)`: mueve una entrada a una ruta, consultando las políticas del ámbito
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita una
++     `OverwritePreexisting on plane`, un `MoveAtomically`, un `DereferenceSymlinks`, una
++     `CreateNonexistentParents on plane`, un backend, una `Tactic[Io.Error]` y un `Io.Event is
++     Loggable`. Con `moveAtomically`, el movimiento es un único renombrado, y uno entre
++     volúmenes es `Unsupported`; con `moveNonAtomically` puede ser una copia y un borrado.
++     `AlreadyExists` y `Nonexistent` surgen con las políticas estrictas igual que en `copyTo`.
++     Registra `Io.Event.Move` y devuelve el destino.
+
+% 2 1 0 1f81faf2083afb5c0d00f45b795ee793
+
+% 3 1 0 1dde5e0e36479cbe12e85ad03314ff69
+
+% 4 1 0 08e34cd31e54dafe1e2f227768367ef4
+
+% 5 1 0 0180df65777fd80719f1201e3d2e1447
+
+% 6 1 0 046650d580c2414504317d36fd2dd91a
+
+% 7 1 0 0ecc3537cae7ed9716caa1153aaf7ce0
+
+% 8 1 0 0f9bace75dfb25270f4bd783e2316553
+
+% 9 1 0 1aa14496af0b6af917d322e522c388be
+
+% 10 1 0 1c45e057855be3761ca61007e21ed343
+
+% 11 1 0 1c3070837d2b73920690fd94b02b94fc
+
+% 12 1 0 1d7cb250e45bcccc1940f7db76ff2573
+
+% 0 1 0 058b94bb1c0d8eb10fc1cd853f316027
+
+% 0 1 0 129462d9447645f20134d700c9cb2e45
+
+% 1 1 0 01746c89397fb64d017227d4853f98b1
+
+@ 0 4 0 034098b5a87e9bc70b82c18508831171
++ entry .moveInto   `path.moveInto(directory)`: mueve una entrada dentro de un directorio, conservando su nombre
++     Como `moveTo(directory / path.name)`. Necesita una `OverwritePreexisting on plane`, un
++     `MoveAtomically`, un `DereferenceSymlinks`, un backend y una `Tactic[Io.Error]`; los
++     padres se crean.
+
+@ 0 6 0 0108ba8dbe0f043d171e5b134c2f4569
++ entry .hardLinkTo   `path.hardLinkTo(link)`: crea en `link` un enlace duro a esta entrada
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita una
++     `OverwritePreexisting on plane`, una `CreateNonexistentParents on plane`, un backend, una
++     `Tactic[Io.Error]` y un `Io.Event is Loggable`. El receptor es la entrada existente y el
++     argumento, el nuevo nombre; después, ambos tienen la misma `entryIdentity`. Registra
++     `Io.Event.HardLink` y devuelve la ruta del enlace.
+
+@ 0 6 0 01b889997b9fb60b185a1a94ee8a8dc8
++ entry .symlinkTo   `path.symlinkTo(link)`: crea en `link` un enlace simbólico que apunta a esta ruta
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita una
++     `OverwritePreexisting on plane`, una `CreateNonexistentParents on plane`, un backend, una
++     `Tactic[Io.Error]` y un `Io.Event is Loggable`. El receptor es el destino y el argumento,
++     el enlace, que se crea; el enlace guarda el texto completo del receptor. Registra
++     `Io.Event.Symlink` y devuelve la ruta del enlace.
+
+% 2 1 0 1c868c03d29cf0100a613aed48efa1a2
+
+% 3 1 0 1d4c9d5f0aa6561f0ea1a26d5d59686d
+
+% 4 1 0 0744be79b580c22d18330230ded238b4
+
+% 5 1 0 06f5b8fe65adc3480b13c3b9a3b07103
+
+% 6 1 0 0ca75024f74c40981a8b81bf074ef7e9
+
+% 7 1 0 15f426c4b034858c1453d321709c22f0
+
+% 1 1 0 035bc91b151b184e00cdee7d8fb3a4f1
+
+% 2 1 0 166eb961f2f9bb1a10e6469d4691c3e7
+
+% 3 1 0 072d10c7749fc2a906548a98cd01712b
+
+% 0 1 0 1f1014a3c56bab9414a0e4186fe5155b
+
+% 0 1 0 02fa03ec3c4e23d702e70405d3d869f3
+
+% 1 1 0 1ea034c2467972bf1f6e06cb26db1d4a
+
+@ 0 4 0 054e380fa99797471ac1b48fb5cae232
++ entry .symlinkInto   `path.symlinkInto(directory)`: crea dentro de un directorio un enlace simbólico a esta ruta
++     Como `symlinkTo(directory / path.name)`. Necesita una `OverwritePreexisting on plane`, un
++     `MoveAtomically`, un `DereferenceSymlinks`, un backend y una `Tactic[Io.Error]`; los
++     padres se crean.
+
+@ 0 7 0 143cfcbe7fd29179062e0833a486258a
++ entry .canonical   `path.canonical()`: la ruta tal como la conoce el sistema de ficheros, con todos los enlaces simbólicos resueltos
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita un backend y
++     lanza `Io.Error`. El `realPath` del backend —`realpath(3)`— se reconstruye como una ruta
++     en el mismo plano, así que dos caminos hacia una misma entrada (a través de un enlace
++     simbólico, o a través de `/tmp` y `/private/tmp` en macOS) se canonizan en la misma ruta,
++     que es lo que debe guardar un registro indexado por ruta. La entrada debe existir (si no,
++     `Nonexistent`); una ruta real bajo otra raíz (una unión de Windows hacia otra unidad) es
++     `Unsupported`, igual que WASI.
+
+% 2 1 0 1fc7b4f8f210a46018d7a0d6e88ccb91
+
+% 3 1 0 0165681335df9eff1039612c32164faf
+
+% 4 1 0 0cf0af800ef9c7ee0967984abdd6cae1
+
+% 5 1 0 16e6d56f46cf63260ec955c84ea80c6b
+
+% 6 1 0 1f6ac4413dad259914d3e2c013d1370a
+
+% 7 1 0 1c69c9dd9c4ef8d80394856d000143b3
+
+% 0 1 0 088d42a8ada860a11f42d9a5223c2ac8
+
+% 0 1 0 1510e35d91c978cd0c5e75653a166a44
+
+% 1 1 0 0bf4752dda2610090b994d6f0087d922
+
+@ 0 5 0 012747f982a30c3817725ad38e9de910
++ entry .modified   `path.modified[Instant]()`: cuándo se modificó la entrada por última vez
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita un backend y
++     lanza `Io.Error`. El tipo del resultado lo elige quien llama: cualquier `Instantiable
++     across Instants from Long`, ya sea el `Instant` de aviation o un simple `Long` de
++     milisegundos desde la época mediante `instantiables.epochMillisecondsInstantiable`. Sigue
++     un enlace simbólico final.
+
+@ 0 2 0 0e3eab9d2d025f0301fbb82428f12eb3
++ entry .accessed   `path.accessed[Instant]()`: cuándo se accedió a la entrada por última vez
++     Como `modified()`, para el tiempo de acceso; los montajes `noatime` no lo actualizan.
+
+@ 0 5 0 081e4c57c08094fc0b914cf48ce38c9c
++ entry .created   `path.created[Instant]()`: cuándo se creó una entrada de Windows
++     Una extensión solo sobre `Path on Windows`, puesto que NTFS registra los tiempos de
++     creación y la mayoría de los sistemas de ficheros POSIX no. En un sistema de ficheros que
++     no lo registra, lanza `Io.Error` con `Unsupported`. En otras plataformas, `creation()` es
++     el mismo accesor, condicionado a que el sistema de ficheros de almacenamiento sea
++     `CreationTimed`.
+
+@ 0 6 0 1d0cf0b500d35db61b2c69612f17ef3d
++ entry .creation   `path.creation[Instant]()`: el tiempo de creación de una entrada en un sistema de ficheros `CreationTimed`
++     Una extensión sobre `Path on plane over <transport <: CreationTimed>`: una ruta cuyo
++     sistema de ficheros de almacenamiento se ha establecido, mediante la coincidencia con
++     `Btrfs(path)`, `Apfs(path)` o `Ntfs(path)`, como uno que registra los tiempos de creación.
++     Por eso es total donde `Stat.created` es opcional: aquí, la ausencia de valor es un fallo
++     del backend, que se notifica como `Io.Error` con `Unsupported`.
+
+% 2 1 0 03bef631c9471b2c065c8b0d43eecd5a
+
+% 3 1 0 0366e6ea2ad6a067054b4a8ea32c0e52
+
+% 4 1 0 0a324b4933c6703912445354960789e6
+
+% 5 1 0 0222b60bbad3591f10c4e2a284344b2b
+
+% 6 1 0 134789fe41cfa3011f467b09c1d1ae94
+
+% 0 1 0 191f14928d005ae617a4f7f5f0245f57
+
+% 1 1 0 1a1eda4401ad10b9053aea5321203f44
+
+% 3 1 0 1cc243259caf2fd01780547a6e635748
+
+% 0 1 0 18b05cc5e92d484c160b9975b14490db
+
+% 0 1 0 0e05f24aa62f601103bd5e91a51a0a02
+
+% 0 1 0 0b3de82be92b142712f25a6dd161396c
+
+% 0 1 0 09ca18fcb2d751ee03525d1d5f64b9dc
+
+% 1 1 0 0fe730918d4c7936019af1e5c969b4db
+
+@ 0 4 0 034e20127f2b9c070666935a04515cce
++ entry .readable   `path.readable()` y `path.readable = false`: el permiso de lectura de la entrada para el usuario actual
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita un backend.
++     Devuelve un `FilesystemAttribute.Readable`, cuyo `apply()` es el indicador actual (total)
++     y cuyo `update` lo establece, lanzando `Io.Error` con `PermissionDenied` si la plataforma
++     se niega.
+
+@ 0 2 0 1e45b227c87f9be018d5c05430467d52
++ entry .writable   `path.writable()` y `path.writable = false`: el permiso de escritura de la entrada para el usuario actual
++     Como `readable`, pero devuelve un `FilesystemAttribute.Writable`.
+
+@ 0 3 0 00d89acdb44800d91f56e9cdaf4f70ea
++ entry .executable   `path.executable()` y `path.executable = true`: el permiso de ejecución de una entrada POSIX
++     Una extensión solo sobre `Path on <plane <: Posix>`, que devuelve un
++     `FilesystemAttribute.Executable`; Windows no tiene bit de ejecución.
+
+% 2 1 0 00f0021b0175ade7026a793122a6aaf8
+
+% 3 1 0 18e249c725d3eb7b166fcc82d7f2e6cf
+
+% 4 1 0 1c4b549dbbf13c4d170330e0e95e1a98
+
+% 5 1 0 07e2b8aad658978d13dc44432fdc2be9
+
+% 6 1 0 13f691514b9ba73b1141f1d005d8d17f
+
+% 7 1 0 1abd27d9254826bc1c464d42106727b2
+
+% 0 1 0 0a5a6c4a53bc19f519bdac724dbd8d4f
+
+% 0 1 0 19bb4f4c3f5fa1051dc79140310b8acf
+
+% 0 1 0 0838eb153d43fc3b0dea19aca47e1d9f
+
+% 1 1 0 03c3d4ad5897765411f4e76b92d2026e
+
+@ 0 3 0 03731c3a180e14ad1cf657afdd5451f6
++ entry .hidden   `path.hidden()`: si la entrada está oculta según la convención de la plataforma
++     Un `.` inicial en el nombre en POSIX, el atributo de oculto en Windows. Necesita un
++     backend y lanza `Io.Error`.
+
+@ 0 4 0 14fe7fe38cbba5970860ba7e75906a52
++ entry .touch   `path.touch()`: establece el tiempo de modificación de la entrada en el momento actual
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita un backend, una
++     `Tactic[Io.Error]` y un `Io.Event is Loggable`. A diferencia del `touch` de la shell, no
++     crea un fichero que falta: eso lanza `Nonexistent`. Registra `Io.Event.Touch` en el nivel
++     `fine`.
+
+@ 0 3 0 05d0a1905d429e011ddc4532f1ffb3a0
++ entry .hardLinks   `path.hardLinks()`: cuántos enlaces duros apuntan a una entrada POSIX
++     Una extensión sobre `Path on <plane <: Posix>`, que necesita un `DereferenceSymlinks` y un
++     backend, y que lanza `Io.Error`. Un fichero recién creado tiene uno.
+
+@ 0 6 0 05feb91120e5f2ed0c0eb8b406d2b6f8
++ entry .attributes   `path.attributes()`: los nombres de los atributos extendidos de una entrada
++     Una extensión sobre `Path on plane over <transport <: Attributed>`: una ruta cuyo sistema
++     de ficheros de almacenamiento se ha establecido, mediante la coincidencia con
++     `Ext4(path)`, `Btrfs(path)`, `Apfs(path)` o `Ntfs(path)`, como uno que admite atributos
++     definidos por el usuario. Necesita un backend y lanza `Io.Error`. Sin la coincidencia, la
++     extensión no está disponible: el tipo dice que el sistema de ficheros es desconocido.
+
+@ 0 6 0 0d8a07972057519101130d8dc6bbb46d
++ entry .attribute   `path.attribute[Data](name)` lee un atributo extendido; `path.attribute(name, data)` establece uno
++     Dos sobrecargas, ambas sobre `Path on plane over <transport <: Attributed>`, que necesitan
++     un backend y lanzan `Io.Error`. La de lectura es genérica en su resultado, decodificado
++     mediante `Aggregable by Data` (`Data`, `Text`), y da `Unset` cuando el atributo no está;
++     la de escritura recibe el valor como `Data`. En Linux, los nombres son el espacio de
++     nombres `user.` tal como los presenta el `UserDefinedFileAttributeView` de `java.nio`, sin
++     el prefijo.
+
+% 2 1 0 0fb5f72a870a40521ee107d2a8791ca2
+
+% 3 1 0 000cfc1e417d2c590e69fa3b4099efdc
+
+% 4 1 0 01fe8d6bb3e075570e2629e82214e641
+
+% 5 1 0 044b30e36263132a0ca411f627db302f
+
+% 6 1 0 11e78355df6b82df046f6e850e7f01c0
+
+% 7 1 0 1b815652ceb02d83118eeda70b8d1c06
+
+% 0 1 0 15c07107ecc102db14fce71c817e4d80
+
+% 0 1 0 030447e8c2bd0f4f16e7efd5d81af261
+
+% 0 1 0 00cbe7ee029f58ba10345e3a28e05fc8
+
+% 1 1 0 1c0e67a80144dde5146659dd491d7940
+
+% 0 1 0 0b56416edf80703005a33e19fdb6a333
+
+% 0 1 0 1619a2a445d8a2b1090721eea7d2703a
+
+% 1 1 0 0213a16a271738d814364f50329be42d
+
+% 0 1 0 058516a99e13f27906df66ac58e42dd1
+
+% 0 1 0 116639bba0d13b561940d61d7a33b05b
+
+% 1 1 0 0796a103ca28020f000ce6c577b987ef
+
+@ 0 6 0 0e09edd2b368d9400cc9ef4a21b2a331
++ entry .subvolume   `path.subvolume()`: el subvolumen de btrfs en el que está almacenada una entrada
++     Una extensión sobre `Path on plane over Btrfs`, que necesita un backend y lanza
++     `Io.Error`. Btrfs da a cada subvolumen su propio número de dispositivo anónimo, así que la
++     raíz del subvolumen se encuentra ascendiendo mientras se mantenga el número de
++     dispositivo, solo con `stat`. El resultado es un `Btrfs.Subvolume` que nombra esa raíz;
++     una plataforma que no puede informar de la identidad de las entradas lanza
++     `Unsupported`.
+
+@ 0 4 0 12e41d71598130b302992165252212e8
++ entry .subvolumeRoot   `path.subvolumeRoot`: si una entrada de btrfs es ella misma la raíz de un subvolumen
++     Una extensión sobre `Path on plane over Btrfs`, que necesita un backend. Toda raíz de
++     subvolumen de btrfs es el inodo 256, así que esto es total, como `existent()`: una entrada
++     cuyo inodo no se puede leer no es una raíz de subvolumen a efectos de cualquier cosa
++     condicionada por esto.
+
+@ 0 5 0 12a9a91f9d81c17614958aa2fce589b0
++ entry .file   el `Handle` contextual dentro de un bloque `open[File]`, como valor
++     Dentro de `path.open[File](mode): handle ?=> …` el descriptor es un parámetro contextual;
++     `file` lo nombra sin declarar ninguna variable, así que
++     `path.open[File]()(file.stream.read[Data])` lee el fichero abierto. Es transparent
++     inline, así que se conserva el tipo preciso del descriptor, refinado por las concesiones:
++     `file.write(…)` solo compila cuando el modo concedió `Write`.
+
+% 2 1 0 17d4e313d31698c21c4bb126611a41aa
+
+% 3 1 0 115afa5d9164576116436556fbd67e26
+
+% 4 1 0 1fba18c24302458d1ff5af157238ab7d
+
+% 5 1 0 0fb6c2741244cbb213c09473ad59e7c5
+
+% 6 1 0 1fc3dcd9d62ba8350458c438d9aa4436
+
+% 7 1 0 1e9ca9fe1d20b740136e533eb42cadc2
+
+% 0 1 0 0976fcd7c81a6091146925894e2d1048
+
+% 0 1 0 0216b81b3d0cb8160283b57a003abd6c
+
+% 1 1 0 1097639b5bcd0c6917008003cf70632d
+
+@ 0 3 0 032e1b2d4683d2a417b92de43895a4ba
++ entry .dir   el `Directory.Handle` contextual dentro de un bloque `open[Directory]`, como valor
++     Como `file`, para el ámbito de un directorio: `path.open[Directory]()(dir.base.entries)`
++     enumera el directorio abierto sin nombrar ninguna variable.
+
+@ 0 1 0 06cf8571f9550d581c8fcc64908b7f43
++ entry .Entry   lo que puede ser una entrada del sistema de ficheros: el tipo común de `File`, `Directory`, `Symlink` y los demás
+
+% 1 1 0 0271936e602c1a3e1ea0f9092bf923ab
+
+@ 0 7 0 074652a33667d0ef0917a18e4fb2461f
++       `path.entry()` y `Stat#entry` responden con uno de los objetos de entrada: `File`,
++       `Directory`, `Symlink`, `Fifo`, `Sock`, `BlockDevice`, `CharDevice`. `UnixEntry` y
++       `WindowsEntry` son los dos subconjuntos —`File`, `Directory` y `Symlink` existen en
++       ambos, los demás solo en Unix—, así que una coincidencia sobre las entradas de una ruta de
++       Windows no necesita tratar una FIFO. Cada objeto es también la *forma* del mismo nombre
++       que se pasa a `open` y a `create` (`open[File]`, `create[Directory]`): la clase de una
++       cosa y la manera de abrirla comparten nombre.
+
+% 0 1 0 1aca02636b6b524e1a78ad913fb32631
+
+% 1 1 0 04d9eaf551585e160caa16301e3296d5
+
+% 2 1 0 1167a54a4a2d1566037806974f3cbb1e
+
+@ 0 1 0 04932879856f56691c0fd7567a2a441e
++ entry .UnixEntry   una clase de entrada que existe en Unix: `File`, `Directory`, `Symlink`, `Fifo`, `Sock`, `BlockDevice`, `CharDevice`
+
+@ 0 1 0 1890e296d035a55111dc98177be96fd6
++ entry .WindowsEntry   una clase de entrada que existe en Windows: `File`, `Directory` o `Symlink`
+
+@ 0 1 0 0ca63a7078847c531bf0c5d8db90743b
++ entry .File   un fichero regular, como clase de entrada y como la forma que se abre o se crea para su contenido
+
+% 1 1 0 1e1c1a609bc8d52e0feded68fb5d0d3b
+
+@ 0 5 0 14fb549d03a47fb41051c43cacb0cfc2
++       Como objeto `File`, es lo que devuelve `entry()` para un fichero regular. Como trait
++       `File`, es la forma de `path.open[File](mode, flags*)`, que produce un `Handle` sobre el
++       contenido del fichero para el bloque (véase `FileOpenable`), de `path.create[File](flags*)`,
++       que crea un fichero vacío o escribe uno dentro de un ámbito (véase
++       `Creation.FileCreatable`), y de `Slice(path, offset, extent).open[File](…)`.
+
+% 2 1 0 0a4d8adc9a87ab9b16481992bfe48a42
+
+% 3 1 0 0397bd3c9cf173f0067d31707a3a9a0c
+
+% 4 1 0 16ceb20dadfa14780781b1014020b15b
+
+% 5 1 0 0e0c1c53b68382f1077bea3edc2414cb
+
+% 6 1 0 1a270edc03fe8a8111754badf698c4ac
+
+% 7 1 0 1f748f52da20ccca00448c589f29968d
+
+% 9 1 0 021664f40996542e1e5a991b72b1a0ec
+
+% 0 1 0 185e699e9fa4be020e0477511a7b098c
+
+% 1 1 0 1c88175f98d5af0a054cda04f2f3c459
+
+% 0 1 0 0c070c2141b282c80f023d31274d01c8
+
+% 0 1 0 118f38cfae6267d917d7b96429ceaf97
+
+% 2 1 0 15db19be5d1c88c808d1dbb97726ed2a
+
+% 0 1 0 00d9f1481f1ad5b809eba240dba2b231
+
+% 0 1 0 14f5a5d08f1772511e5c55c3fab9d6ff
+
+% 1 1 0 158728f2fdff110815266d4d0d8ace26
+
+% 1 1 0 094cba00d55dc3ee1f665b3194fb51ff
+
+% 1 1 0 13f13c13438cc0280dd730d3c97c6d3b
+
+% 1 1 0 0ea037a6d404dcf410647199721378c9
+
+@ 0 1 0 1445df68533f0d9915a2ca91c3af15db
++ entry .Directory   un directorio, como clase de entrada y como la forma que se abre para un acceso confinado y con ámbito
+
+% 1 1 0 175911f55eef994615ace3548672d366
+
+@ 0 9 0 10a3e65c6e4b5f811ab4c4fde15780e6
++       Como objeto `Directory`, es lo que devuelve `entry()` para un directorio. Como trait
++       `Directory`, es la forma de `path.open[Directory](mode)`, que ejecuta un bloque con un
++       `Directory.Handle`: las rutas derivadas del descriptor (`dir / "src" / "main.scala"`)
++       viven en un plano nuevo, propio del descriptor, así que `..` no compila, una ruta de un
++       directorio abierto no puede usarse bajo otro, y nada derivado del descriptor sobrevive al
++       bloque. Dentro del ámbito, las operaciones sobre el subárbol son `contents`,
++       `overwrite`, `extant`, `entries` y `remove` (véase `Subtree`), cada una condicionada por
++       las concesiones que seleccionó el modo. `path.create[Directory](flags*)` crea un
++       directorio, o escribe uno dentro del mismo tipo de ámbito.
+
+% 2 1 0 1d585103e660d9a7081fca854a7c11c7
+
+% 3 1 0 0f91b9be282f7c1215d29d32e6b4b976
+
+% 4 1 0 01bc492fa7f6fa291b140cbc407d0a6c
+
+% 5 1 0 128e07e648358e890aaff26763988ca0
+
+% 6 1 0 0043d95ac3def69d103c44dc200b8fa8
+
+% 7 1 0 183c1673e17914d513806401c38b7ccf
+
+% 9 1 0 1a14517d204c769917f5b2af31506d57
+
+% 11 1 0 16a9d7dc85ab275e1ec432abcc5d11b7
+
+% 0 1 0 0b8917a87469bcb5186576c656c72dca
+
+% 0 1 0 07dab1d5e7d49e890adaa4fc49fa0e4c
+
+% 0 1 0 1e9ab1201adce0f5174c9cfeb1660aa0
+
+% 1 1 0 1bfcfc3593fd02530ddd4e5a1c41c8d2
+
+@ 0 5 0 1133c1eee4dcb7b307bc35e147675c3f
++       Al abrirse se verifica que la entrada existe y es un directorio (si no, `Io.Error` con
++       `IsNotDirectory`) y se inscribe el ámbito en el `AccessRegister`: pueden coexistir
++       cualquier número de ámbitos `Read` y `Write` solapados, pero un ámbito `Exclusive` entra
++       en conflicto con cualquier otra apertura de un subárbol que se solape, en cualquier
++       dirección, y la segunda apertura lanza `Io.Error` con `Busy`.
+
+% 0 1 0 0b512145c5c33079162c46c3754c56f5
+
+% 1 1 0 1e9c7bf7cbe9ce491e7958695cd84ef8
+
+% 0 1 0 0d82f3fd1690b96e143ef6d1b9f65282
+
+@ 0 1 0 0198748d2068120f1cb1e2741238c027
++   entry .Handle   la capacidad que mantiene un bloque `open[Directory]`: un plano nuevo con raíz en el directorio
+
+% 1 1 0 173bb575a288fbbd17520b79bc3bc301
+
+@ 0 19 0 05f8e230e0787f0608d88cd5fb069ca0
++         El `#Plane` de cada descriptor es un subtipo abstracto nuevo de `Subtree`, así que las
++         rutas formadas dentro del ámbito tienen tipos solo de ese descriptor; `#Under` es la
++         plataforma real que hay debajo y `#stem`, el directorio real. `dir / "name"` construye
++         una ruta en el plano nuevo, y `#base` es la raíz del plano (el propio directorio). El
++         descriptor es una capacidad exclusiva, así que no se puede guardar ni devolver.
++     entry #Plane   el plano nuevo propio del descriptor, un subtipo de `Subtree`
++     entry #Under   la plataforma real en la que está el directorio
++     entry #stem   la ruta real del directorio abierto
++     entry #atoms   los átomos de `Mode` con los que se abrió el descriptor, para la atenuación en tiempo de ejecución y las comprobaciones del registro
++     entry #base   la raíz del plano del descriptor: el directorio abierto, como `Path on Plane`
++         `dir.base.entries` enumera el propio directorio.
++     entry #/   `dir / "name"`: una ruta bajo el directorio, en el plano del descriptor
++         Un método y no una extensión, para que las extensiones `/` genéricas del ámbito léxico
++         no lo oculten. El nombre se comprueba contra `Subtree.Rules` al compilar el código:
++         `dir / ".."` no compila.
++     entry #resolve   la ruta real que denota una ruta del plano del descriptor, bajo `#stem`
++         Lo que llaman las operaciones sobre el subárbol para llegar al disco; es público porque
++         ellas son transparent inline.
++   entry .Openable   la instancia de `Openable` tras `path.open[Directory](mode)`
+
+% 1 1 0 119db955b83aa26902e62f42621de0ae
+
+@ 0 4 0 0542f3b0464937ce06fa674d63cc290f
++         Una clase con nombre, instanciada por `Platform.directoryOpenable` para cualquier ruta
++         de plataforma. Necesita un backend y una `Tactic[Io.Error]`, no recibe indicadores, y su
++         resultado es un `Directory.Handle { type Under = filesystem }` refinado con las
++         concesiones del modo.
++     entry #open   comprueba que la entrada es un directorio, adquiere el registro y ejecuta el bloque con un descriptor
+
+@ 0 6 0 1185404abfd288281e332f090b78f8ca
++ entry .Fifo   una tubería con nombre, como clase de entrada y como la forma que crea `create[Fifo]()`
++     Como objeto `Fifo`, lo que devuelve `entry()` para una FIFO. Como trait `Fifo`, la forma
++     de `path.create[Fifo](flags*)`, que crea la tubería (mediante `mkfifo` en la JVM;
++     `Unsupported` en WASI). Solo existe la forma que instancia: escribir una FIFO dentro de su
++     ámbito de creación se rechaza como `Unsupported`, puesto que abrir cualquiera de sus
++     extremos se bloquea hasta que aparece un par.
+
+@ 0 3 0 0138c8894dcedd730af454e391de8b18
++ entry .BlockDevice   un nodo de dispositivo de bloques, como clase de entrada
++     Lo que devuelve `entry()` para un dispositivo de bloques. El objeto es la clase de entrada
++     y el trait, un marcador; `Device.create` (JVM) crea uno.
+
+@ 0 2 0 192e8a1c4bf9f9270ceba7bbfd53c140
++ entry .CharDevice   un nodo de dispositivo de caracteres, como clase de entrada
++     Lo que devuelve `entry()` para un dispositivo de caracteres, como un terminal.
+
+@ 0 1 0 12d6fbbe0cd4cd280fdfab5820ac867f
++ entry .Symlink   un enlace simbólico, como clase de entrada, y un valor que nombra uno por su ruta
+
+% 1 1 0 074732a6cc4c71791bb8a1bb7ea292ea
+
+@ 0 5 0 007648e71f3d604008eed8eb93db3dc4
++       El objeto `Symlink` es lo que devuelve `entry()` para un enlace con `preserveSymlinks`;
++       con `dereferenceSymlinks`, un enlace informa en su lugar de la clase de su destino. La
++       case class `Symlink[plane](path)` lleva la ruta de un enlace como valor, y se inspecciona
++       como `symlink:<path>`. Los enlaces se crean con `symlinkTo` y `symlinkInto`, y su texto
++       guardado se lee con `FilesystemBackend#linkTarget`.
+
+% 0 1 0 0d395ddd1c4c0a881fcbe6ff4a2c67a2
+
+@ 0 1 0 0ce66c934ee429801c2266409bec62e9
++   entry #path   la ruta del enlace
+
+@ 0 1 0 13a3b76f3d7efb030d1435ae53fbeec9
++ entry .Sock   un socket de dominio Unix, como clase de entrada, y el canal de un socket ligado
+
+% 1 1 0 0ad3e9818a50606d14571601f91963df
+
+@ 0 4 0 07314b8b41c716cf06ba3b430a1cd19c
++       El objeto `Sock` es lo que devuelve `entry()` para un fichero de socket. La case class
++       `Sock(channel)` es el valor que mantiene un ámbito `create[Sock]` en la JVM: el
++       `ServerSocketChannel` vivo y ligado, que se cierra cuando termina el ámbito (véase
++       `socketCreatable`).
++   entry #channel   el `java.nio.channels.ServerSocketChannel` ligado
+
+@ 0 1 0 195ceb84d3f37ded08fc293b3f751e8a
++ entry .Stat   los metadatos de una entrada en un solo valor: su clase, tamaño, marcas de tiempo y campos de inodo
+
+% 1 1 0 0dd6d7e46f9f4bca0074258f799e90fd
+
+@ 0 6 0 07dfd5fa169318d804dc0c6c0e6c4e89
++       Lo que devuelve `FilesystemBackend#stat`, y de lo que `entry()`, `filesize()`,
++       `modified()` y `accessed()` leen cada uno un campo. Las marcas de tiempo son milisegundos
++       desde la época. `created` es `Unset` en los sistemas de ficheros que no registran los
++       tiempos de creación (la mayoría de los sistemas de ficheros POSIX, y WASI). `mode` es el
++       `st_mode` completo —los bits de tipo además de los permisos, tal como lo guarda `ar`— y
++       `device` es `st_rdev`, que solo tiene sentido para un nodo de dispositivo; los cuatro
++       campos de inodo son `Unset` donde la plataforma no tiene inodos de Unix (Windows, WASI).
+
+% 2 1 0 1faa42b3fc4b9bd40ee0f50b546a66b3
+
+% 3 1 0 1cd08e379257d9cf1fb4c15a39c7e939
+
+% 4 1 0 040c05ce2752d79c1084d1ffe2390c7d
+
+% 5 1 0 1742a2e92bf83d3b10f729d797b98130
+
+% 6 1 0 04df0f42229beecc01db644b50cee533
+
+% 7 1 0 16283f6750daf140009141fce3c81e6a
+
+% 2 1 0 1e22956a6c8810d91edfc0817f08a010
+
+% 0 1 0 039c5683266b9fb419317fd694636965
+
+% 0 1 0 119f118a2f143d2b0683f6a1e0f6ff36
+
+% 0 1 0 1b602f81bea864b81b9c982671576e57
+
+% 1 1 0 1ed198f9996b060d1c5ebd432f4b93e5
+
+@ 0 1 0 0d5d48eac88c78870ee80fa7321a06f6
++   entry .Identity   la identidad de una entrada en su dispositivo: el número de dispositivo y el número de inodo
+
+% 1 1 0 00db4c3e87b1527512ecaf4e5ad5ffdc
+
+@ 0 14 0 1bf0b80eef7c11d80b57edde62a7cfdd
++         Dos rutas con identidades iguales son enlaces duros a un mismo fichero. Los límites de
++         los subvolúmenes de btrfs se leen del número de dispositivo (cada subvolumen tiene el
++         suyo) y toda raíz de subvolumen de btrfs es el inodo 256. `Path#entryIdentity` lee una.
++     entry #device   el número de dispositivo (`st_dev`)
++     entry #inode   el número de inodo (`st_ino`)
++   entry #entry   la clase de la entrada: `File`, `Directory`, `Symlink`, `Fifo`, `Sock`, `BlockDevice` o `CharDevice`
++   entry #size   el tamaño en bytes
++   entry #modified   el tiempo de la última modificación, en milisegundos desde la época
++   entry #accessed   el tiempo del último acceso, en milisegundos desde la época
++   entry #created   el tiempo de creación, en milisegundos desde la época, o `Unset` donde no se registra
++   entry #mode   el `st_mode` completo, con los bits de tipo, o `Unset` sin inodo de Unix
++   entry #user   el identificador numérico del usuario propietario, o `Unset`
++   entry #group   el identificador numérico del grupo propietario, o `Unset`
++   entry #device   `st_rdev`, el dispositivo al que se refiere un nodo de dispositivo, o `Unset`
+
+@ 0 1 0 1e6df376f4e189a80142a2c1de8c7a67
++ entry .Volume   un volumen de almacenamiento: su nombre y su tipo de sistema de ficheros
+
+% 1 1 0 0d404628b43ad4b9086e9ff035a24afd
+
+@ 0 5 0 1cb2940ad71097830a0390cfc228308a
++       Lo que devuelve `path.volume()`: en la JVM, el nombre del `FileStore` (`/dev/sda1`, por
++       ejemplo) y su tipo (`ext4`, `apfs`, `btrfs`, `ntfs`). Se inspecciona como
++       `volume[name:type]`. Los extractores del eje de almacenamiento comparan el tipo, en
++       minúsculas, con el nombre de su sistema de ficheros.
++   entry #name   el nombre del volumen, tal como lo indica la plataforma
++   entry #volumeType   el tipo de sistema de ficheros, tal como lo indica la plataforma
+
+@ 0 4 0 17a1f8cca7693e00096d2590e4486270
++ entry .CreationTimed   los sistemas de ficheros de almacenamiento que registran los tiempos de creación: `Btrfs`, `Apfs`, `Ntfs`
++     Un marcador sellado en el eje del sistema de ficheros de almacenamiento del tipo de una
++     ruta. Una ruta reconocida como `Path on plane over <transport <: CreationTimed>` obtiene
++     el accesor total `creation()`, mientras que `Stat#created` es opcional porque la mayoría
++     de los sistemas de ficheros POSIX no registran ninguno.
+
+@ 0 3 0 1971ea8338a772330bd5e877d258e521
++ entry .Attributed   los sistemas de ficheros de almacenamiento que admiten atributos extendidos: `Btrfs`, `Ext4`, `Apfs`, `Ntfs`
++     Un marcador sellado en el eje del sistema de ficheros de almacenamiento. Una ruta
++     reconocida como `Path on plane over <transport <: Attributed>` obtiene `attributes()` y
++     los dos accesores `attribute`.
+
+@ 0 1 0 0c38a9f292fbfdc9030a22a62fbc038b
++ entry .Btrfs   el sistema de ficheros de almacenamiento btrfs: un extractor que tipa una ruta como almacenada en btrfs
+
+% 1 1 0 11c35f27b905a3351da20458b3515828
+
+@ 0 8 0 174bc50fcf23791710faedae0d4bac3c
++       El sistema de ficheros en el que está almacenada una entrada determina qué metadatos
++       puede llevar, con independencia de su plataforma, y una ruta no puede saberlo por su
++       sintaxis. Por eso el eje se establece sondeando en tiempo de ejecución, mediante el
++       extractor de cada sistema de ficheros: `case Btrfs(path) =>` liga `path` como `Path on
++       plane over Btrfs`, un refinamiento que desbloquea las extensiones condicionadas
++       `subvolume()`, `subvolumeRoot`, `attributes()`, `attribute` y `creation()`. El sondeo es
++       `path.volume().volumeType`, en minúsculas; un sondeo que falla (un volumen ilegible, o
++       WASI) simplemente no coincide. `Btrfs` es a la vez `CreationTimed` y `Attributed`.
+
+% 2 1 0 0e050e6fb70ca059026c9d5a8d20c70c
+
+% 3 1 0 0329e2d02ed62cb70c0d68353985f9ee
+
+% 4 1 0 1380ef01f20036550581a11c2766a0f8
+
+% 5 1 0 1bb6ca59a631629c175e55e7b4bcceb3
+
+% 6 1 0 11f7aed04e941b5b1825ccde9e32f1cb
+
+% 7 1 0 1e6f3471d6bdeef90b726b7a78162b3f
+
+% 0 1 0 0dd43eb501ae29a51137f6f590cdea19
+
+% 0 1 0 13e9657dcec56fb11cc571028181b027
+
+% 0 1 0 062325ba0c97fa2f058eac07f67719bc
+
+% 0 1 0 0e5f47e238cd79d81c285c5c8bd5a545
+
+% 0 1 0 16249109449a58ec05e8033ed91b0d84
+
+% 1 1 0 19649243316daddb1322bf5ec181329a
+
+% 0 1 0 0611151568774f16195c76f840634105
+
+% 0 1 0 0899c1b5dc38a2b0175c09ad4c2dcd3a
+
+% 0 1 0 1fbd652a8f4ca1e913c401979f72b4e2
+
+% 0 1 0 1fb055cd2aef62e81f62a68ec31df1b6
+
+@ 0 3 0 01bf7b9eb808adb1144686603fb93071
++   entry .unapply   reconoce una ruta almacenada en btrfs, dándole el tipo `Path on plane over Btrfs`
++       Necesita un `FilesystemBackend on plane`. Devuelve un `Option`, como debe hacer un
++       extractor de Scala.
++   entry .Subvolume   un subvolumen de btrfs, nombrado por el directorio en el que tiene su raíz
+
+% 1 1 0 0a5649114fb839f5112113348e77a782
+
+@ 0 6 0 048237337b85c35101a25b02d88d1926
++         Lo que devuelve `subvolume()`. Btrfs divide un sistema de ficheros en subárboles de los
++         que se pueden hacer instantáneas de forma independiente, así que el subvolumen de una
++         entrada forma parte de dónde está almacenada. No se llevan el identificador numérico,
++         el UUID ni la generación del subvolumen: btrfs solo los expone mediante un `ioctl` que
++         ningún backend puede emitir, mientras que la raíz se puede recuperar solo con `stat`.
++     entry #root   el directorio raíz del subvolumen, como `Path on plane over Btrfs`
+
+@ 0 1 0 137c3f7a43d9cf940ad3bb1659890f7d
++ entry .Ext4   el sistema de ficheros de almacenamiento ext4: un extractor que tipa una ruta como almacenada en ext4
+
+% 1 1 0 134e0607bdb17c25146cee11a88463c9
+
+@ 0 5 0 1a785a6230a61f8317209698f6777b8d
++       `case Ext4(path) =>` liga `path` como `Path on plane over Ext4`, que es `Attributed` (así
++       que se aplican `attribute` y `attributes()`) pero no `CreationTimed`. El sondeo es
++       `path.volume().volumeType`; necesita un `FilesystemBackend on plane`. Véase `Btrfs` para
++       el eje.
++   entry .unapply   reconoce una ruta almacenada en ext4, dándole el tipo `Path on plane over Ext4`
+
+@ 0 1 0 180ae5e5ae84217406e069ed27775ba8
++ entry .Apfs   el sistema de ficheros de almacenamiento APFS: un extractor que tipa una ruta como almacenada en APFS
+
+% 1 1 0 13d7584978256a301eda21427b8b6480
+
+@ 0 4 0 0da60e4aa48caaa61beb3f12f3593c2a
++       `case Apfs(path) =>` liga `path` como `Path on plane over Apfs`, que es a la vez
++       `CreationTimed` y `Attributed`: macOS registra los tiempos de creación y admite atributos
++       extendidos. Necesita un `FilesystemBackend on plane`. Véase `Btrfs` para el eje.
++   entry .unapply   reconoce una ruta almacenada en APFS, dándole el tipo `Path on plane over Apfs`
+
+@ 0 1 0 007312b2689ac8ac022268fb8f473608
++ entry .Ntfs   el sistema de ficheros de almacenamiento NTFS: un extractor que tipa una ruta como almacenada en NTFS
+
+% 1 1 0 1f98d20c2394246e0591e4e7f0e81c8a
+
+@ 0 4 0 117ce2a58ef0651d0993613cab07db12
++       `case Ntfs(path) =>` liga `path` como `Path on plane over Ntfs`, a la vez `CreationTimed`
++       y `Attributed`. Tiene sentido con `Windows`, y con `Linux` para un volumen NTFS montado.
++       Necesita un `FilesystemBackend on plane`. Véase `Btrfs` para el eje.
++   entry .unapply   reconoce una ruta almacenada en NTFS, dándole el tipo `Path on plane over Ntfs`
+
+@ 0 1 0 0b492fbdb3ebfb5f169fe12a67873ba5
++ entry .FilesystemAttribute   las vistas tipadas de los indicadores de permisos básicos de una entrada, que se leen con `()` y se establecen con `=`
+
+% 1 1 0 1bbc23d2e170cbce13fdfbf9befe9ca3
+
+@ 0 5 0 12a84cad3b3708c519a5be2f9c68797a
++       `path.readable`, `path.writable` y `path.executable` devuelven cada uno uno de estos: un
++       pequeño objeto sobre la ruta cuyo `apply()` lee el indicador (total, desde la perspectiva
++       del usuario actual) y cuyo `update` lo establece, así que la sintaxis es
++       `path.readable()` y `path.readable = false`. Establecerlo lanza `Io.Error` con
++       `PermissionDenied` si la plataforma se niega (o `Unsupported` en WASI).
+
+% 0 1 0 1dbca219a062250d144a59315bb25e99
+
+% 0 1 0 07255d82193924800ab330ff672a3a07
+
+% 0 1 0 18e5f1cbe12106d1018aaf3733d5baa7
+
+@ 0 9 0 0c1bcc821540908a1dc191584533d6c8
++   entry .Readable   el indicador de lectura de una ruta en cualquier plataforma
++     entry #apply   si el usuario actual puede leer la entrada
++     entry #update   establece el indicador de lectura, lanzando `Io.Error` si se rechaza
++   entry .Writable   el indicador de escritura de una ruta en cualquier plataforma
++     entry #apply   si el usuario actual puede escribir la entrada
++     entry #update   establece el indicador de escritura, lanzando `Io.Error` si se rechaza
++   entry .Executable   el indicador de ejecución de una ruta en una plataforma POSIX
++     entry #apply   si el usuario actual puede ejecutar la entrada
++     entry #update   establece el indicador de ejecución, lanzando `Io.Error` si se rechaza
+
+@ 0 1 0 159c064bb61409c20b559355f90bf27d
++ entry .Handle   los extremos de un fichero abierto, mantenidos durante el ámbito de un bloque `open[File]` o `create[File]`
+
+% 1 1 0 15e74c2d2c5a05891d19bf3e009cf920
+
+@ 0 7 0 145f62830a2ea7251d22de97be2d269c
++       Un `Handle` es la capacidad que mantiene un bloque `open[File]`: todo el contenido como
++       una cadena (`#reader`, `#writer`) y las formas de flujo (`#source`, `#intake`) que el
++       backend sirve desde sus propios búferes. Es una capacidad exclusiva, así que no se puede
++       guardar, devolver ni capturar, y el fichero se cierra cuando termina el bloque. Lo que se
++       puede hacer con él está en su tipo: las `Grant`s del modo lo refinan, así que
++       `handle.write(…)` sobre un descriptor abierto solo con `Read` no compila, y los givens
++       `Streamable`, `Writable` y `Sink` del objeto compañero están acotados cada uno por la
++       concesión que necesitan.
+
+% 2 1 0 1e3978037becc2d60c017d85d1e0f311
+
+% 3 1 0 0d044541abe10d151c4c098e0d14cb20
+
+% 4 1 0 0c5e8b5598d70dc90f6a1c8886df8ebd
+
+% 5 1 0 02367bf4592c5b6207d0e6d400246595
+
+% 6 1 0 1ff4ec29844803d50f979d1b1d39922e
+
+% 7 1 0 0bbe8ad0589d1f301ee6fec41f762dbd
+
+% 9 1 0 17749f07b94e29040da0ed2a2b75d3ad
+
+% 0 1 0 1edce88f0f3dbd0012e0a79640790477
+
+% 0 1 0 0753a465d7b48c5f0858390920db01c9
+
+% 0 1 0 1d31938daa9d208d00483716221d1a4f
+
+% 0 1 0 0c819834acfc3a3c0b18952c37b8373a
+
+% 1 1 0 0be97d2b71e17bc21950f4a88c9f203b
+
+@ 0 6 0 1181a76db7143243022c8f4749184e86
++       Una lectura o escritura que el fichero interrumpe lanza `Truncation.Error`, tomado como
++       táctica en la llamada y no cuando se creó el descriptor; `path.read` y `path.write` lo
++       convierten en `Io.Error` con `Reason.Physical`. `#read` y `#write` son extensiones además
++       de givens de clases de tipos, porque convocar una clase de tipos sobre el tipo refinado
++       de una capacidad con ámbito puede fallar bajo la comprobación de capturas; las
++       extensiones resuelven en su lugar la clase de tipos sobre el tipo del origen o del
++       resultado.
+
+% 1 1 0 0710ed12144e7bf4003d57992644aa71
+
+% 1 1 0 0231a8a987a8b4af0ec98fed26a8fb21
+
+% 0 1 0 0dc17d52738f073e05f959b167f7c46b
+
+@ 0 20 0 14d7edb8c7e204550f0b47379a5c856d
++   entry .whole   un descriptor solo sobre extremos de fragmentos completos, para un origen que no es un fichero de este proceso
++       `Handle.whole(reader, writer)` construye un descriptor a partir de una función que
++       produce todo el contenido y otra que lo acepta, derivando las formas de flujo. Es lo que
++       proporciona un `Fdtable.Descriptor` para el descriptor de un cliente llevado a un demonio.
++   entry .streamable   un descriptor que concede `Read` es `Streamable by Data`, así que `read[T]` y `stream` funcionan sobre él
++       Conserva la `Tactic[Truncation.Error]` bajo la que se convoca.
++   entry .writable   un descriptor que concede `Write` es `Writable by Data`, así que se le puede escribir un flujo
++       Conserva el `Emit[Truncation.Error]` bajo el que se convoca.
++   entry .sink   un descriptor que concede `Write` es un `Sink by Data over Credit`
++   entry .stream   `handle.stream`: todo el contenido como `Chain[Data]`, sobre un descriptor que concede `Read`
++   entry .read   `handle.read[T]`: el contenido decodificado como `T`, sobre un descriptor que concede `Read`
++       Mediante cualquier `Chain[Data] is Readable to T` —`Data`, `Text` o el lector de un
++       formato—, bajo una `Tactic[Truncation.Error]`.
++   entry .write   `handle.write(source)`: escribe cualquier cosa `Streamable by Data`, sobre un descriptor que concede `Write`
++       Una `Chain[Data]`, un `Text`, un `Data` o un flujo; se bombea a la entrada del
++       descriptor bajo un `Emit[Truncation.Error]`.
++   entry #reader   todo el contenido como `Chain[Data]`
++   entry #writer   escribe una `Chain[Data]` como el contenido
++   entry #source   el contenido como `Stream[Data] over Credit`, servido desde los búferes del backend
++   entry #intake   un `Intake[Data] over Credit` que escribe en el fichero
+
+@ 0 1 0 182f9d88853f325203728681ed571937
++ entry .FileOpenable   la instancia de `Openable` tras `path.open[File](mode, flags*)`
+
+% 1 1 0 1bb57a992f733a060ba06e81bd25c2e9
+
+@ 0 9 0 068ee15e4623bf2b12f94fbdd11b8cf9
++       Una clase con nombre, que `Platform.openable` instancia para cualquier ruta de una
++       plataforma; necesita un backend, una `Tactic[Io.Error]`, un `Umask` y un
++       `Every[Fdtable]`. Los átomos del modo se convierten en `OpenFlag`s —`Read`, `Write`— y el
++       bloque recibe un `Handle` refinado con las concesiones del modo. `Exclusive` no se
++       traduce a `OpenFlag.Exclusive` (el `O_EXCL` de POSIX rige la *creación* exclusiva): en su
++       lugar inscribe la apertura en el `AccessRegister`, de modo que las aperturas de ficheros
++       participan en el mismo arbitraje dentro del proceso que los ámbitos de directorio, y
++       añade `OpenFlag.Lock` para que el backend tome un bloqueo consultivo del sistema
++       operativo para el caso entre procesos. `Shared` hace lo mismo con `OpenFlag.LockShared`.
++       Una apertura en conflicto lanza `Io.Error` con `Busy`, a menos que `OpenFlag.Await` le
++       pida esperar.
+
+% 2 1 0 0bde7bd27a07b207179378c306d8a386
+
+% 3 1 0 0b62f24ed214003512424c87be9c2e69
+
+% 4 1 0 1292348fc56ee6ee0817434fd8a1f965
+
+% 5 1 0 169a4f5255220b4f08d8ce8b77ace859
+
+% 6 1 0 1c440c43242e47d616e8d299d93b02fe
+
+% 7 1 0 1ebacc127efb49d91e21da417616fb66
+
+% 9 1 0 11a9c6009532c372193baa2bb2c2877a
+
+% 0 1 0 0c19d5f0844195ee15d7f2cd0bfba716
+
+% 1 1 0 1a9d710990b2e80108d3f5836102c996
+
+% 2 1 0 01b6d1de4ba810c20703deabd4df2b68
+
+@ 0 2 0 08cda79599e272631c817b7d7ec42ef9
++       Una ruta que gobierna el `Fdtable` del ámbito (`/dev/fd/3`, por ejemplo) se abre a
++       través de la tabla, antes de consultar el sistema de ficheros, el registro o el backend.
+
+% 1 1 0 017c16ed0b0b7027053054ba9db62487
+
+% 0 1 0 0a4bdff3d3ea0f4219cb9498ec60b34b
+
+% 0 1 0 0387525ffb7246e30f9d95d203c60a72
+
+@ 0 1 0 0e9e5f2865ba0c941c8450f037e82f57
++   entry #open   abre el fichero con los indicadores del modo, bajo el registro y el bloqueo que pide el modo
+
+@ 0 1 0 028295d36b169e51006208fd1be8b9ae
++ entry .OpenFlag   las opciones, neutrales respecto a la plataforma, para abrir el contenido de un fichero
+
+% 1 1 0 01710ec154ccb4be0d1487f2942d34b1
+
+@ 0 3 0 1552e4e97001c3d81e8b273ac74e1095
++       `Read` y `Write` los aporta el `Mode` de la llamada a `open`, `Append` se obtiene al
++       abrir un `Eof(path)`, y el resto se puede pasar tras el modo: `path.open[File](Write,
++       OpenFlag.Create, OpenFlag.Truncate)`. Todos los interpreta el `FilesystemBackend`.
+
+% 2 1 0 1c1111712cbf52dc1b9217a5d4fe0c93
+
+@ 0 9 0 0b05e6ec838b88e109cab073cf4927aa
++       column  Indicador
++       column  Efecto
++       row  `Create`  crea el fichero si no existe, bajo el `Umask` del ámbito; sin él, abrir un fichero que falta lanza `Nonexistent`
++       row  `Exclusive`  con `Create`, falla con `AlreadyExists` si el fichero existe (`O_EXCL`)
++       row  `Truncate`  vacía el fichero al abrirlo
++       row  `Sync`, `Dsync`  escrituras síncronas, de datos y metadatos o solo de datos
++       row  `NoFollow`  se niega a abrir a través de un enlace simbólico
++       row  `Lock`, `LockShared`  mantiene un bloqueo consultivo del sistema operativo, exclusivo o compartido, mientras dura la apertura
++       row  `Await`  se bloquea hasta poder adquirir el bloqueo y la inscripción dentro del proceso, en lugar de fallar de inmediato con `Busy`
+
+% 1 1 0 18a8caaa5ba4e0f41b514fe33f4bd2ea
+
+@ 0 3 0 0abf1b708544b58a1c2a1a94423b21c5
++       `FileOpenable` añade `Lock` o `LockShared` cuando el modo concede `Exclusive` o
++       `Shared`; los backends que no pueden bloquear (WASI) rechazan la apertura como
++       `Unsupported` en lugar de no bloquear en silencio.
+
+@ 0 1 0 101f12d4468bed3b075481e7683e8827
++       `Read` y `Append` no se pueden combinar en un `FileChannel` de la JVM.
+
+% 1 1 0 0bbad929aa5291350621c8bb76b2945a
+
+@ 0 1 0 10b5247e249292761f9cfc1015ac1125
++ entry .Shared   el modo de bloqueo compartido: `path.open[File](Read & Shared)`
+
+% 1 1 0 1687a2ee6c46934616f9875af43d39bd
+
+@ 0 7 0 1c36fe133fa72b2205c1cb27fa476cc9
++       Un tercer `Mode` junto a `Read`, `Write` y `Exclusive` de aperture, y un asunto del
++       sistema de ficheros, así que se define aquí. Pueden coexistir cualquier número de
++       aperturas `Shared` de un fichero, entre procesos mediante un bloqueo consultivo
++       compartido del sistema operativo, pero una apertura `Shared` entra en conflicto con una
++       `Exclusive` en cualquier dirección: una apertura exclusiva espera a los poseedores
++       compartidos (con `OpenFlag.Await`) o falla de inmediato con `Busy`. `Read` no lo implica,
++       y es deliberado: tomar incluso un bloqueo compartido haría que toda lectura ordinaria
++       compitiera con quienes toman bloqueos exclusivos.
+
+% 2 1 0 183637bb156f49fb009b7d5728052a56
+
+% 3 1 0 0a2155f201d659971ec9d9f19928bfa0
+
+% 4 1 0 0afcee213f34230e1460fcd8addf4c3f
+
+% 5 1 0 16354a1e8a2eb035187ae1d3474c3577
+
+% 6 1 0 014e5a63c5fb39770f581b4ae83871c0
+
+% 7 1 0 0192ab4c59c0c0ab1dae94be0074bd0d
+
+% 9 1 0 06a6d72fe5da29911f2234cb7b59f784
+
+% 0 1 0 1529a953ca6eae98072df4a6846df980
+
+% 1 1 0 06560e6ffdde8bc4079734b6c6ad78c6
+
+% 2 1 0 1edbbf3dca40be38064896da0716a57b
+
+@ 0 1 0 00248271986c800d1e892856313953da
++   entry .Grant   la concesión que otorga un modo `Shared`, para el tipo de un descriptor
+
+@ 0 1 0 1a39aaedeff3a5240d55ee1995ddd75e
++ entry .Creation   las instancias de `Creatable` tras `path.create[Directory]`, `create[File]` y `create[Fifo]`
+
+% 1 1 0 173dfadb951c048710d4c580580227d5
+
+@ 0 7 0 0f6be9a35c3049cb174a8545df576076
++       `path.create[Directory]()` y `path.create[File]()` crean una entrada vacía; las formas
++       de bloque —`path.create[Directory](): dir ?=> …`, `path.create[File](): handle ?=>
++       …`— escriben la entrada recién nacida, mediante un `Directory.Handle` de plano nuevo para
++       un directorio y un `Handle` de escritura para un fichero, con la garantía de que una
++       excepción que escapa del ámbito no deja nada detrás. Ambas consultan el `Umask` del
++       ámbito y los `CreateFlag`s dados: sin `Parents`, un padre que falta es `Nonexistent`;
++       sin `Replace`, una entrada existente es `AlreadyExists`. Cada una registra en el log un
++       `Io.Event.Create`.
+
+% 2 1 0 133692678ed0e6df1a4f12906c027a9a
+
+% 3 1 0 09015c039e058fbb168dcc8da23e10d5
+
+% 4 1 0 025b8ae652f18b870de2f0d96296dba0
+
+% 5 1 0 1ad3aa882ec4b352098ddb1bb35f8d8e
+
+% 6 1 0 1c9f0af233c38e8703306c1c4d4bba52
+
+% 7 1 0 053167e31dc1f5c116f6a4e056479b66
+
+% 0 1 0 14052444c88833000f4e2eea4087423b
+
+% 0 1 0 1fbdf93b4a250a1406daabca75a3dbd7
+
+% 1 1 0 19845151e4a2cc640854ad322f22bf30
+
+% 0 1 0 0aea98f9edd41a630ed80c17fe6f1319
+
+% 0 1 0 1d3f9e874ebfc5bb0bd6e769ede3abdb
+
+% 1 1 0 16cf1d88cf8b279c136bb6db6a69674e
+
+@ 0 3 0 0a52b8ee30150a1d10cd9b4208fe0501
++       Las instancias las instancian `Platform.fileCreatable`, `directoryCreatable` y
++       `fifoCreatable`, así que no hace falta ninguna importación; al objeto solo se accede
++       directamente para `.wipe`.
+
+% 0 1 0 1801bbb8ab726c9d13e303ff7bf7468d
+
+% 1 1 0 0098d2dcec48932d0b22dd1011988376
+
+% 1 1 0 04fdef44567522ff1fadc54fc3a4d6ad
+
+% 2 1 0 117eb7bcd5cf6a0512578238ed0b41c8
+
+@ 0 6 0 1d281b82ec4216041045f60aef4ac4d6
++   entry .wipe   `Creation.wipe(path)`: borra una entrada y, de forma recursiva, todo lo que hay bajo ella
++       El borrado recursivo que realizan un ámbito de creación fallido y `CreateFlag.Replace`,
++       público para que otras limpiezas con ámbito puedan compartirlo. No recibe ninguna
++       política `DeleteRecursively` —la recursión es su propósito— y lanza `Io.Error`. La
++       operación sobre rutas regida por la política es `wipe()`.
++   entry .DirectoryCreatable   crea un directorio, o escribe uno dentro de un ámbito mediante un descriptor de plano nuevo
+
+% 1 1 0 12630d0c67d29a6f0a6f5cf3cb8849d2
+
+@ 0 8 0 1a76cf487a9221ff0c0f246f6da8f93f
++         La instancia para `create[Directory]`. Sus concesiones son `Read & Write`, y su
++         resultado, un `Directory.Handle { type Under = filesystem }`. El directorio recién
++         nacido tiene un nombre visible elegido por el llamante, así que, a diferencia de un
++         ámbito `Scratch`, participa en el `AccessRegister` como cualquier directorio abierto,
++         y una apertura en conflicto lanza `Busy`. Un throwable que escapa del bloque borra el
++         directorio antes de propagarse.
++     entry #make   crea el directorio, respetando `Parents`, `Replace` y el `Umask`
++     entry #create   crea el directorio y ejecuta el bloque con un descriptor sobre él, y lo borra si falla
++   entry .FileCreatable   crea un fichero vacío, o escribe uno en un hermano temporal que se mueve a su sitio si tiene éxito
+
+% 1 1 0 01ffda05a5244ce7125f8fbd82eaf4c5
+
+@ 0 10 0 178eea849952b85f08a26599fef4cd63
++         La instancia para `create[File]`. La forma con ámbito escribe el contenido en un
++         hermano temporal (el nombre del destino con un `.` delante y un sufijo `part`) y lo
++         mueve sobre el destino de forma atómica cuando el bloque termina: la creación es el
++         único momento en que la sustitución atómica sale gratis, ya que nada puede tener aún
++         la ruta. Un throwable que escapa del bloque borra el hermano, así que el destino nunca
++         existe a medio escribir. Sin `Replace`, un destino existente es `AlreadyExists` antes
++         de cualquier escritura.
++     entry #make   crea un fichero vacío, respetando `Parents`, `Replace` y el `Umask`
++     entry #create   prepara las escrituras del bloque en un hermano y lo mueve sobre el destino si tiene éxito
++   entry .FifoCreatable   crea una tubería con nombre; la forma con ámbito se rechaza
+
+% 1 1 0 0ccfca7bc56fd47017f09a3512f49ce4
+
+@ 0 5 0 115987bb9b24fcb41f3d39eb18906055
++         La instancia para `create[Fifo]`. Solo `#make` hace algo: `#create` lanza `Io.Error`
++         con `Unsupported`, ya que abrir cualquiera de los extremos de una FIFO se bloquea
++         hasta que aparece un par, así que nunca se podría proporcionar con seguridad un
++         descriptor con ámbito.
++     entry #make   crea la FIFO, respetando `Parents`, `Replace` y el `Umask`
++     entry #create   lanza `Io.Error` con `Unsupported`
+
+@ 0 1 0 123a1a2440aea5511261114f81669731
++ entry .Scratch   las formas para directorios y ficheros de trabajo transitorios, creados nuevos y eliminados cuando termina el ámbito
+
+% 1 1 0 07fe71959313d5e51bef54d141079872
+
+@ 0 6 0 14bcd28627440be512f9e60634ecf2e7
++       `parent.open[Scratch](Read & Write)` crea un directorio nuevo, con un nombre único, bajo
++       `parent`, proporciona al bloque un `Directory.Handle` sobre él, y lo borra —junto con
++       todo lo creado dentro— cuando el bloque termina, termine como termine. La vida del
++       directorio *es* el ámbito, y la maquinaria de plano nuevo garantiza que ninguna ruta
++       hacia él sobrevive más allá, así que el borrado es siempre seguro. El `stem` del
++       descriptor es la ruta real del directorio, para la rara herramienta a la que hay que
++       decírsela.
+
+@ 0 6 0 0380c6b480ffabfd043f9b854134c009
++       `parent.open[Scratch.File](Read & Write)` es la forma para ficheros: un fichero nuevo,
++       con un nombre único, bajo `parent`, cuyo descriptor es un `Handle` que además conoce su
++       `path` (`Scratch.Located`), para una herramienta a la que hay que decirle dónde está el
++       fichero: un índice desechable, una fixture. Ambas necesitan un backend y una
++       `Tactic[Io.Error]`; la forma para ficheros también recibe el `Umask` del ámbito y
++       cualquier `OpenFlag`. El padre debe ser un directorio (si no, `IsNotDirectory`).
+
+% 2 1 0 0f391cdd38db358601d31491741d1dad
+
+% 3 1 0 14d3c95d2e55f98d0f0cc4c6da7acac7
+
+% 4 1 0 0ab3beaa2582b3c6050a7e9d108495bf
+
+% 5 1 0 0718cad37018097d07b51ba6ce6cd8a0
+
+% 6 1 0 051c69bc084e031714b666023e590258
+
+% 7 1 0 16941d35f3d6e6701925eaec8f85f826
+
+% 0 1 0 0cbcef15874d7ac1103b3bdb1de26794
+
+% 0 1 0 17ff28022ca9782f16f7102f2c9cb5d3
+
+% 0 1 0 0181b2909c67b4680951f732d6bdbe64
+
+% 0 1 0 008288aea101b5e805af53c4992df28a
+
+% 0 1 0 19b39529e32c3bba11f4f4fd6773c5b1
+
+% 0 1 0 1cf58ea4d1d5060102c7b51c42312f44
+
+% 0 1 0 09adef45986c308c1af4080027c10ab6
+
+% 1 1 0 110691fd24ac007f1028e4f6bf965cab
+
+@ 0 2 0 0488faf225c76f350997958fb80b9a81
++       Un directorio temporal no necesita el arbitraje del `AccessRegister`: ningún otro ámbito
++       puede denotar su nombre nuevo.
+
+% 1 1 0 07db5d5c83758c6c0b99ad0689575622
+
+% 1 1 0 1f2fb196bd2a11ce0db0d5cbd1c765e4
+
+@ 0 1 0 013e862af9fe666b19871fcb44fb884a
++   entry .ScratchOpenable   la instancia de `Openable` tras `path.open[Scratch](mode)`
+
+% 1 1 0 000870c042611afd17415c401854c7f2
+
+@ 0 9 0 0ecad14c99bafa940c1fcb7184622ef1
++         Una clase con nombre, que `.openable` instancia para cualquier ruta de una
++         plataforma. Su resultado es un `Directory.Handle { type Under = filesystem }` sobre el
++         nuevo directorio, creado con la máscara propia del proceso.
++     entry #open   crea un directorio con un nombre único bajo la ruta, ejecuta el bloque y lo borra
++   entry .openable   `path.open[Scratch](mode)` para cualquier ruta de una plataforma; necesita un backend y una `Tactic[Io.Error]`
++   entry .File   la forma para un fichero temporal: `parent.open[Scratch.File](mode, flags*)`
++       El descriptor es un `Handle & Scratch.Located[filesystem]`, así que `file.path` es la
++       ruta real del fichero mientras dura el bloque, tras lo cual el fichero se borra.
++   entry .Located   un descriptor que conoce la ruta del fichero sobre el que está
+
+% 1 1 0 18e11714933ddde21db4d5a946fc3499
+
+@ 0 4 0 1c31b12d745c659d07239a4574523e41
++         Se mezcla en el descriptor de un fichero temporal, para que `file.path` esté
++         disponible junto a los extremos habituales de `Handle`.
++     entry #path   la ruta real del fichero temporal
++   entry .ScratchFileOpenable   la instancia de `Openable` tras `path.open[Scratch.File](mode, flags*)`
+
+% 1 1 0 02d2a33094686e7e0c6e04949f7d501f
+
+@ 0 5 0 03f8267876012f4f07b76dbc5d15d089
++         Una clase con nombre, que instancia `.fileOpenable`. Crea el fichero con
++         `OpenFlag.Create` y los indicadores del modo bajo el `Umask` del ámbito, y lo borra
++         cuando termina el bloque.
++     entry #open   crea un fichero con un nombre único bajo la ruta, ejecuta el bloque con su descriptor y lo borra
++   entry .fileOpenable   `path.open[Scratch.File](…)` para cualquier ruta de una plataforma; necesita un backend, una táctica y un `Umask`
+
+@ 0 1 0 0a0d05b5743b3a3c014300c66746dd90
++ entry .Slice   un rango de bytes de un fichero, abierto como una vista con ventana y, opcionalmente, con un bloqueo de rango
+
+% 1 1 0 135f5c3a47c0d793109758a32eac84a8
+
+@ 0 10 0 03def996e47155ba07233283ed14dac2
++       `Slice(path, offset, extent)` es un sujeto para `open`: `Slice(path, 0L,
++       1024L).open[File](Read & Write & Exclusive): window ?=> …` abre el fichero y entrega al
++       bloque una `Slice.Window` confinada a `[offset, offset + extent)`. El `size` de la
++       ventana es el de la ventana, las lecturas son relativas a su inicio y se limitan a ella,
++       y las escrituras almacenan tanto como cabe y devuelven la cantidad, a la manera de
++       `pwrite`, así que una escritura no puede salirse de su rango. Un modo `Exclusive` o
++       `Shared` toma un bloqueo consultivo del sistema operativo exactamente sobre ese rango e
++       inscribe el rango en el `AccessRegister`, donde solo entra en conflicto con rangos que se
++       solapan; una apertura del fichero entero se solapa con todos los rangos. Abierto sin un
++       modo de bloqueo, un slice es simplemente una vista con ventana, que admiten incluso los
++       backends sin bloqueo (WASI).
+
+% 2 1 0 19d7ba48d6d5a9a605e48f252f884cbf
+
+% 3 1 0 0f1ad45c5dc5d5a81fc97945701a0f99
+
+% 4 1 0 1dda45b65647d802187697983d32ea5d
+
+% 5 1 0 1d43fc97492cc6c90050d796bbd860af
+
+% 6 1 0 0bc508f5dba03f3508d62da27086e208
+
+% 7 1 0 11c98456bdf0beec0db61c19b5b98d95
+
+% 0 1 0 1a573db94cbe239d10ea6d8f4189858c
+
+% 0 1 0 0e4f6101bdd82ee01323c41bdb08e121
+
+% 0 1 0 0a4b82314722f12a0cd2bc2fb59f96b6
+
+% 0 1 0 138d38a845fb063e1bfbbcb167289cd1
+
+% 1 1 0 0dcbd440ff23396d1542b929f6645eaf
+
+@ 0 1 0 1ee9d30350c95c8a17a717b881d9cfcd
++       Las extensiones `read` y `write` están condicionadas por las concesiones del modo, igual
++       que las de `Ram`.
+
+% 1 1 0 1941ded0111a902a0f04625b5fd7e027
+
+% 1 1 0 048896f7ada500fd01deccace37feb9a
+
+% 1 1 0 1adcdf43eabfb41705b20e7b8b35980a
+
+@ 0 1 0 1ec9114a53f177b11dfc4e3b40293ecc
++   entry .Window   el descriptor de un slice abierto: una vista posicional con ventana sobre su rango
+
+% 1 1 0 085ab5a5d7ce5fbb0f1a4879c87d5c53
+
+@ 0 12 0 03e3853ecf2bce780c3d7044cd46c103
++         `#size` es la extensión de la ventana, limitada al fichero; `#readFrom` y `#writeTo`
++         son los métodos operativos, ya con ventana, a los que llaman las extensiones `.read` y
++         `.write` condicionadas por las concesiones.
++     entry #size   los bytes disponibles en la ventana, `min(extent, fileSize - offset)`
++     entry #readFrom   lee hasta `length` bytes en un desplazamiento dentro de la ventana, limitado a ella
++     entry #writeTo   almacena tanto de `data` como cabe en un desplazamiento dentro de la ventana; cuántos bytes se escribieron
++   entry .read   `window.read(offset, length)`: una lectura posicional, en una ventana que concede `Read`
++   entry .write   `window.write(offset, data)`: una escritura posicional que devuelve la cantidad almacenada, en una ventana que concede `Write`
++       Limitada a la extensión de la ventana, de modo que un llamante que almacena cerca del
++       límite observa el truncamiento en lugar de perder datos en silencio; una escritura en el
++       final o más allá no almacena nada y devuelve `0`.
++   entry .SliceOpenable   la instancia de `Openable` tras `slice.open[File](mode, flags*)`
+
+% 1 1 0 0e681909ead9a23a0478a5730fa3816f
+
+@ 0 9 0 1938f811d237f3201ce8daf9b5f751d7
++         Una clase con nombre que instancia `.openable`. Traduce el modo a `OpenFlag`s,
++         adquiere el rango en el registro (o espera, con `OpenFlag.Await`), pide al backend la
++         vista con ventana y mezcla las concesiones en la ventana que entrega al bloque. Un
++         conflicto lanza `Io.Error` con `Busy`.
++     entry #open   abre el slice bajo el registro y el bloqueo que pide el modo, y ejecuta el bloque
++   entry .openable   `slice.open[File](…)` para un slice en cualquier plano; necesita un backend y una `Tactic[Io.Error]`
++   entry #path   el fichero del que es el slice
++   entry #offset   dónde empieza la ventana, en bytes desde el inicio del fichero
++   entry #extent   la longitud de la ventana en bytes
+
+@ 0 1 0 1d858edef0bbd11208c7af1dd201348e
++ entry .Subtree   la cota superior común del plano nuevo de cada `Directory.Handle`, y las operaciones sobre sus rutas
+
+% 1 1 0 1f5230697ead15631053bb6b8aa03feb
+
+@ 0 9 0 05f248a9c1d6d3ad1b27de78ba15210c
++       El descriptor de cada directorio abierto tiene un `Plane` que es un subtipo nuevo de
++       `Subtree`. Los givens de Serpentine definidos de forma genérica sobre `plane <: Subtree`
++       suministran las reglas de nombres para las rutas del plano de cualquier descriptor, así
++       que `dir / "name"` valida sus nombres al compilarse el código: `.` y `..` no son
++       admisibles, lo que hace que escapar de un directorio abierto sea inexpresable, en lugar
++       de comprobado. Deliberadamente, un plano de subárbol no tiene ninguna instancia de
++       `Filesystem`, así que las operaciones de galilei sobre rutas absolutas (`read`, `write`,
++       `delete`, `children`) no pueden aplicarse a una ruta de subárbol, lo que la resolvería
++       con respecto al directorio de trabajo en lugar de al descriptor; las operaciones sobre el
++       subárbol de aquí son sus sustitutas, y cada una selecciona el descriptor por su plano y
++       está condicionada por la concesión que necesita.
+
+% 2 1 0 1e6b12ce114f929317c05b36698f356a
+
+% 3 1 0 1fee9cd520cde32c15db4ded198487b2
+
+% 4 1 0 0353aefff078582d136f7fd1e98f04e2
+
+% 5 1 0 1c1e1e0b4d8bd74a1127592252487bb7
+
+% 6 1 0 11c9b565ee22cda61e33c93a43f21eec
+
+% 7 1 0 12646f4672dbe741112d4880de5bf9fe
+
+% 9 1 0 093c86c6366f82ce18948868693a8d63
+
+% 11 1 0 034a16906c537b1402f987b9b78d4b40
+
+% 0 1 0 0e8722b0a2484f64173781752c9330c3
+
+% 0 1 0 0e374f4c0e6813f41851f5dd2a8bb63f
+
+% 0 1 0 1db8679ae45fb6b01ff9c4fe4b02105b
+
+% 0 1 0 1cfe31829800411618a9f861a0c55401
+
+% 0 1 0 05e1f362f185a90c0c02f7852512d007
+
+% 0 1 0 0cfe29bcc0a0c2a01511fe6a65897cd8
+
+% 1 1 0 0ce807e3142c5175128e04f73e87bf41
+
+@ 0 5 0 13038d6ff736afa303698f9372f1de43
++       Los nombres difieren de los de las operaciones sobre rutas absolutas (`contents` y no
++       `read`, `extant` y no `existent`, `remove` y no `delete`) porque una extensión del mismo
++       nombre importada léxicamente se probaría primero y fallaría sin pasar a la siguiente.
++       Los auxiliares `…Resolved` son públicos solo porque las operaciones son transparent
++       inline; llama a las operaciones.
+
+% 1 1 0 1f0754fa9ec60fbd16c60fff9aeccbcd
+
+@ 0 4 0 0a013d6978a0abc31f6220906313841a
++   entry .Rules   lo que puede ser un nombre en el plano de un descriptor: sin `/`; ni `.`, ni `..`, ni vacío
++   entry .nominative   el given que somete las rutas de todo plano de subárbol a `.Rules`
++   entry .contents   `path.contents[T]`: lee un fichero bajo el directorio abierto, como `T`
++       Mediante cualquier `Data is Readable to T`; necesita que el descriptor conceda `Read` y
++       lanza `Io.Error`.
++   entry .overwrite   `path.overwrite(content)`: escribe un fichero bajo el directorio abierto, sustituyéndolo
++       Recibe cualquier cosa `Streamable by Data`; necesita que el descriptor conceda `Write` y
++       lanza `Io.Error`.
++   entry .extant   `path.extant()`: si existe una entrada bajo el directorio abierto
++       Necesita que el descriptor conceda `Read`; es total.
++   entry .entries   `path.entries`: los hijos de un directorio bajo el directorio abierto, en el plano del descriptor
++       `dir.base.entries` enumera el propio directorio abierto. Necesita `Read` y lanza
+
+% 1 1 0 0fac4e99140b7267130ba17cc6118838
+
+@ 0 16 0 07c4cc74109bf2fb0057a9a40affe120
++   entry .remove   `path.remove()`: borra una entrada bajo el directorio abierto, si es un fichero o un directorio vacío
++       Necesita `Write` y lanza `Io.Error`: un directorio no vacío es `DirectoryNotEmpty`, ya
++       que aquí la política `deleteOnlyEmpty` es fija.
++   entry .readResolved   la lectura sobre la ruta real tras `.contents`
++   entry .writeResolved   la escritura sobre la ruta real tras `.overwrite`
++   entry .existsResolved   la comprobación de existencia sobre la ruta real tras `.extant`
++   entry .entriesResolved   el listado sobre la ruta real tras `.entries`
++   entry .removeResolved   el borrado sobre la ruta real tras `.remove`
+
+@ 0 1 0 1e89d4bbc3d90ff41177597762dcfe82
++ entry .AccessRegister   el registro de ámbitos abiertos de todo el proceso, que rechaza las aperturas `Exclusive` en conflicto
+
+% 1 1 0 13d7a435b075ab801cd14b9c6c2b290d
+
+@ 0 9 0 17f8d63c8ae7ccd1004b30d24ca475e3
++       Todo ámbito `open[Directory]` o `create[Directory]` y toda apertura con bloqueo de
++       `open[File]` o de `Slice` inscribe aquí su ruta real (con los enlaces simbólicos
++       resueltos) y los átomos de su modo mientras dura. Los conflictos se detectan por
++       solapamiento de subárboles —un directorio y todo lo que hay bajo él se solapan; dos
++       hermanos, no— y por rangos de bytes en el caso de los slices: pueden coexistir cualquier
++       número de aperturas `Read`, `Write` y `Shared` que se solapan, pero una apertura
++       `Exclusive` entra en conflicto con cualquier otra apertura de un subárbol o rango que se
++       solape, en cualquier dirección. Ningún sistema de tipos puede ver que dos descriptores
++       abiertos de forma independiente denotan árboles que se solapan, así que esto se
++       comprueba en tiempo de ejecución, en la llamada a `open`, donde el conflicto se convierte
++       en `Io.Error` con `Busy`, o en una espera, con `OpenFlag.Await`.
+
+@ 0 4 0 15eabe748e604d2e0f125f9351db75ab
++       El registro solo arbitra entre ámbitos de un mismo proceso; los bloqueos consultivos del
++       sistema operativo, tomados para las aperturas de ficheros `Exclusive` y `Shared`, cubren
++       los demás procesos. No se exporta al paraguas `soundness`: las formas de `open` lo usan,
++       y un programa no tiene ningún motivo para llamarlo directamente.
+
+% 1 1 0 0808c0f194dbabd9169cafdf7b82db9b
+
+% 1 1 0 0ca8c9efaf7f64da1385d232aedf90e8
+
+@ 0 4 0 1554e04cca0b40c614429b02f0cf1917
++   entry .acquire   inscribe una ruta real y los átomos de un modo (y un rango de bytes), o devuelve `false` si hay un conflicto
++   entry .acquireAwait   inscribe como hace `.acquire`, esperando hasta que no quede ninguna inscripción en conflicto
++       A los que esperan los despierta `.release`; la equidad es la del monitor.
++   entry .release   elimina una inscripción hecha por `.acquire` y despierta a los que esperan
+
+@ 0 1 0 1a343a339f8dd63414ffb54e95e5ce48
++ entry .Umask   una máscara de creación de ficheros, como la define `umask(2)` de POSIX, aplicada a toda entrada creada mientras está en el ámbito
+
+% 1 1 0 146bd12e452fb4e014c4e7bc4b453d35
+
+@ 0 10 0 15291b4520a1bdd90a0b320f89131d89
++       Los bits de permiso que se retiran de todo fichero y directorio creado mientras se
++       aplica la máscara: `Umask(0x3f)` (`077` en octal) da entradas que solo su propietario
++       puede leer y escribir. Para un proceso ordinario, el sistema operativo aplica gratis la
++       máscara propia del proceso, y `Umask.process` —el given por defecto— pide exactamente
++       eso. Un demonio que atiende varias invocaciones, cada una con su propia máscara, no puede
++       fiarse de la del proceso, así que la máscara llega a galilei como un valor contextual:
++       un `Umask` en el ámbito se aplica a todo `create[…]`, todo `open[File]` con `Create`,
++       todo `Scratch.File` y todo directorio de `CreateFlag.Parents`, y se pide en la creación,
++       de modo que la entrada nunca llega a existir con más permisos de los pedidos. Un
++       `Umask.Provider` (el descriptor de servicio de un demonio) hace que la máscara de la
++       invocación se pueda convocar sin ninguna declaración.
+
+% 2 1 0 1b8274b17c566e771163466a3ae7498b
+
+% 3 1 0 16b7699042c79fd70c4d951f4b6a24c9
+
+% 4 1 0 079eda7c723893e90f59ee6c95d6a300
+
+% 5 1 0 02605914a7b9a4d4058018a6355afe2a
+
+% 6 1 0 1ccd28cdec8232c00e1300fa48fd8360
+
+% 7 1 0 01b4181198dd4fa603e437dae133719d
+
+% 0 1 0 1274e6020264fd350e553d3726db9596
+
+% 2 1 0 0fac70b5cae8c6280b47ce7e50803e4f
+
+% 0 1 0 0b3fddc1e4689ae21a1d925b8cb35111
+
+% 0 1 0 0b12c6608451c325112e7228ff34e215
+
+% 0 1 0 0c23e24b416564eb0f010da7b4f5c29e
+
+% 0 1 0 17026f7769a131121e48f7abde8d05c5
+
+% 1 1 0 0b36797b71af824012652d94e4405554
+
+@ 0 3 0 052e93234e50fc88177faacbc45e3a87
++       `Umask` es un `Int` opaco; se muestra, se codifica y se decodifica en la forma octal que
++       imprime `umask` (`022`, `077`), y `Umask.process` se representa como texto vacío. En un
++       sistema de ficheros sin bits de permiso POSIX (Windows), la petición se ignora.
+
+% 1 1 0 10f8e51a698db89415538c1c4d6857d9
+
+@ 0 1 0 1433332cf013a9ec0c2597e7be225296
++   entry .Provider   algo que conoce la máscara de una invocación, y hace que se pueda convocar como un `Umask`
+
+% 1 1 0 1c17dc4a2e658eda07eaa112de17d967
+
+@ 0 22 0 061b7cf675137cda0f0980caa1570934
++         Lo implementa el descriptor de servicio de un demonio; `.provided` convierte cualquier
++         `Provider` del ámbito en el given `Umask`, y recurre a `.process` cuando el proveedor
++         no tiene ninguna.
++     entry #umask   la máscara de la invocación, o `Unset` para usar la del proceso
++   entry .process   la máscara propia del proceso, sea cual sea, que aplica el sistema operativo
++       El `Umask` por defecto cuando no se declara ninguno. Su `mode(bits)` es `Unset`, así que
++       un backend no pide ningún bit de permiso y el sistema operativo aplica la máscara del
++       proceso como siempre.
++   entry .fileBits   `0o666`: los bits convencionales con los que se crea un fichero o una FIFO antes de aplicar ninguna máscara
++   entry .directoryBits   `0o777`: los bits convencionales con los que se crea un directorio antes de aplicar ninguna máscara
++   entry .apply   `Umask(bits)`: la máscara que retira esos bits (reducidos a los nueve inferiores)
++       Scala no tiene literales octales, así que `Umask(0x3f)` es `077` y `Umask(0x12)` es
++       `022`; `.parse` lee la forma octal.
++   entry .parse   `Umask.parse(text)`: una máscara a partir de la forma octal que imprime `umask`, o `Unset` si no se puede analizar
++   entry .provided   el `Umask` de cualquier `Umask.Provider` del ámbito, o `.process` si no tiene ninguno
++       Tiene prioridad sobre el valor por defecto heredado, así que un proveedor gana y, si no
++       hay ninguno, nada cambia.
++   entry .showable   representa una máscara en octal: `022`
++   entry .encodable   codifica una máscara como su texto octal
++   entry .decodable   decodifica una máscara a partir de texto octal, con `.process` como alternativa
++   entry .octal   `umask.octal`: la representación octal de tres dígitos, o texto vacío para `.process`
++   entry .bits   `umask.bits`: los bits retirados como un `Int`
++   entry .mode   `umask.mode(bits)`: los bits de permiso que debe pedir una creación, o `Unset` para la máscara del proceso
++       `bits & ~umask`: `Umask.fileBits` o `Umask.directoryBits` con la máscara aplicada, que
++       un backend establece en la creación.
+
+@ 0 1 0 11641cbd7dd481ca000be78e6b5d0ecc
++ entry .Fdtable   la tabla de descriptores de ficheros de un proceso tal como la nombran las rutas, consultada antes que el sistema de ficheros
+
+% 1 1 0 17ffb05d5407a80111e73426886f1b91
+
+@ 0 8 0 1508e2e6c3611241070d74ffbd6f505e
++       `/dev/fd/63`, `/dev/stdin` y `/proc/self/fd/3` son posiciones de la tabla de
++       descriptores de un proceso, y abrirlas desde cualquier otro proceso llega a la posición
++       del mismo número de ese otro proceso, o a nada. Una aplicación que un demonio ejecuta en
++       nombre de un cliente recibe rutas así como argumentos y debe abrir los descriptores *del
++       cliente*, a los que solo puede llegar el lanzador. Un `Fdtable` es la tabla del cliente
++       tal como la ve galilei: se consulta antes de todo `open`, `read`, `write` y
++       `existent()`, responde por las rutas que gobierna con un `Descriptor` que abre lo que
++       corresponde, y declina cualquier otra ruta, que entonces va al sistema de ficheros como
++       siempre.
+
+@ 0 5 0 0f2c2051f88322ae145156f551546880
++       Llega a galilei como un valor contextual, igual que `Umask`: un `Fdtable.Provider` (el
++       descriptor de servicio de un demonio) hace que la tabla de la invocación se pueda
++       convocar, y donde no hay ninguno en el ámbito se aplica la tabla vacía `.none`. Los
++       puntos de consulta reciben `Every[Fdtable]`, así que las tablas se pueden apilar en capas,
++       y gana la primera que responde por una ruta. Un programa que escribe la suya propia —un
++       doble de prueba, por ejemplo— da una función de la ruta codificada a un
++       `Optional[Descriptor]`:
+
+% 2 1 0 0ae8720e7f1fb24e19f372956b0a4f5c
+
+% 3 1 0 03540b53427de3db17d89004d587d8da
+
+% 4 1 0 1bb185c242e8a8f21553b5938ee5716f
+
+% 5 1 0 12f2908c6bcd18201b85d5f0efed3931
+
+% 6 1 0 1d930968e1c14e25012021d721141059
+
+% 7 1 0 1f035cfec7a8f5e306c3bd8fab92ba2b
+
+% 0 1 0 14788f875f401f641db67234e26a634b
+
+% 0 1 0 1fe483f8e06675a810eeb0466faec146
+
+% 0 1 0 02c7db68ea2a70e511eeb70c12d9b532
+
+% 0 1 0 02c65ca9e39475ec1c0c8d14b9a245ac
+
+% 0 1 0 194e398d0b62ca491c77ab44af3ff928
+
+% 0 1 0 04f46b82ab1d56621ba8734fcd70b3b1
+
+% 0 1 0 16ffb210366aa2b212db33efe3adbf5d
+
+% 1 1 0 1aab07ed9cacd3880e98453d997b7a6a
+
+% 1 1 0 03bf378d0e4e8d650e929e3b4511f984
+
+% 1 1 0 16bd82ae12592e781ebb6636667848c7
+
+@ 0 3 0 18067638819a5d6b1d898057345c3b3d
++   entry .Provider   algo que conoce la tabla de descriptores de una invocación, y hace que se pueda convocar como un `Fdtable`
++     entry #fdtable   la tabla de la invocación, o `Unset` si no hay ninguna
++   entry .Descriptor   lo que nombra una ruta gobernada: algo que se puede abrir, dentro de un ámbito, para los indicadores pedidos
+
+% 1 1 0 0c7bd1ffbaf797bd0babc75aba6e8307
+
+@ 0 8 0 0e565ec48cff931d190430d405201f79
++         `open(flags)(lambda)` abre el descriptor para las operaciones que piden sus
++         `OpenFlag`s —que deben ser operaciones que el descriptor admite— y ejecuta la lambda
++         con un `Handle`, que se cierra cuando esta retorna. Un descriptor que no se puede abrir
++         así (uno que el cliente no tiene, o uno abierto para escritura que solo admite
++         lectura) lanza un `Fdtable.Refusal`, que el punto de consulta lanza como el `Io.Error`
++         de la ruta que estaba abriendo.
++     entry #open   abre el descriptor para los indicadores y ejecuta la lambda con su `Handle`
++   entry .Refusal   lo lanza un `Descriptor` que no se puede abrir como se pide; se convierte en el `Io.Error` de la ruta
+
+% 1 1 0 0731d3774ecf850205b811ec9b4ac429
+
+@ 0 10 0 0504b246db2393e80c5f118ae125d25c
++         Una excepción que solo lleva el `Io.Error.Reason` (`Nonexistent`,
++         `PermissionDenied`, …): una tabla no tiene ninguna ruta propia que nombrar, así que el
++         punto que la consultó aporta la ruta y la operación.
++     entry #reason   por qué se negó el descriptor
++   entry .none   la tabla vacía, que no responde por ninguna ruta
++   entry .provided   el `Fdtable` de cualquier `Fdtable.Provider` del ámbito, o `.none` si no tiene ninguno
++       Tiene prioridad sobre el valor por defecto heredado, así que un proveedor gana y, si no
++       hay ninguno, nada cambia.
++   entry .resolve   `Fdtable.resolve(tables, path)`: el primer descriptor entre todas las tablas del ámbito, si alguna responde
++   entry #descriptor   el `Descriptor` que nombra una ruta en esta tabla, o `Unset` para una ruta que no gobierna
++       La ruta está en su forma codificada, tal como la nombraría la plataforma.
+
+@ 0 1 0 18168a39ad65c7030620cbd08605d76c
++ entry .Cas   un almacén direccionable por contenido: un blob por cada resumen de sus bytes, bajo una raíz
+
+% 1 1 0 1ff61ede9e79ed48168a7cdf8f402333
+
+@ 0 7 0 0f356ef8ffb2eafc1739e5ff748c50d0
++       Un directorio de blobs, cada uno nombrado por el resumen de sus propios bytes, es un
++       almacén en el que un blob se escribe una sola vez, se verifica a medida que se escribe y
++       lo encuentra cualquiera que conozca su resumen. `Cas` es ese almacén, con el algoritmo
++       de hash en su tipo y en el tipo de todo resumen que acepta —a un `Cas in Sha2[256]` no se
++       le puede pedir un resumen BLAKE3— y con el almacenamiento en el tipo de su raíz: `Cas in
++       Sha2[256] on (Path on Linux)`. Un almacén se crea con `Cas[Sha2[256]](root, suffix)`
++       para cualquier raíz con una instancia de `Cas.Storage`; un directorio en cualquier
++       plataforma con un backend lo es.
+
+% 2 1 0 0ef6c28d0c287ba10d00c2dcbbf020ca
+
+% 3 1 0 17308611b4499fc501933686a9ee02cc
+
+% 4 1 0 02bb702e466d970b093bafacc9b204c3
+
+% 5 1 0 01fe524dbf0890471d69938e6299702a
+
+% 6 1 0 0807c28fe59523eb10d83e0ca2636099
+
+% 1 1 0 07b1e46236bb5a5e1e17875d51793924
+
+% 2 1 0 1a977957cbd7a27e0346859a83f62fec
+
+% 0 1 0 1f1e94abd07591921b205eb03ed46627
+
+% 0 1 0 0376688093ec482a06eef258ddb4ce23
+
+% 0 1 0 050a7c33d6c4310f0318319357849cb4
+
+% 0 1 0 0d3e3cacfdc0ef9210ae992d4cee8e1b
+
+% 0 1 0 1913a47a6504238819b1b622e8f9c121
+
+% 0 1 0 055ef86113580df807b609ef87a568fd
+
+% 0 1 0 198724dcc92700df10ee7d0e8c54de20
+
+% 1 1 0 1bc5c72a2eade0060a6579c9be2fc7aa
+
+@ 0 7 0 0ae52ce52582468c0f1b28da13ab8715
++       `store() = data` almacena los datos bajo su propio resumen, que devuelve, y no hace nada
++       si el blob ya está ahí; `store(digest) = data` hace lo mismo tras comprobar que los
++       datos tienen de verdad ese resumen, y lanza `Cas.Error` si no. Un blob se escribe en un
++       hermano con un nombre único y se mueve a su sitio de forma atómica, así que un lector
++       nunca ve un blob parcial. Como colección, un almacén es sus resúmenes: `size`, `has`,
++       `at` y el recorrido funcionan todos sobre él, mediante vistas puras que tratan un
++       almacén ilegible como vacío; los métodos son donde se lanza un `Io.Error`.
+
+% 0 1 0 0ea4e38e126607e01eb7d8d57f6d1932
+
+@ 0 1 0 0e4e26e74980dbb511ab4d068a090979
++   entry .Storage   cómo se guardan los blobs en una raíz de un tipo dado: se comprueban, se leen, se sustituyen de forma atómica, se listan y se borran
+
+% 1 1 0 1a6bd70291918f9c0e062afb5904d1ec
+
+@ 0 14 0 126303c2c916e20d14548cef59c81d7b
++         La clase de tipos a través de la que almacena un `Cas`. `Cas.Storage.path` es la
++         instancia para un directorio en cualquier plataforma; otro almacenamiento (una base de
++         datos, un almacén de objetos) proporciona otra instancia y obtiene un almacén con la
++         misma interfaz. `replace` debe ser atómico desde el punto de vista de un lector.
++     entry .path   el `Storage` para un directorio `Path on <platform>`; necesita un backend
++         Los nombres de los blobs son hexadecimales más el sufijo, así que están bien formados
++         en todo plano. Un blob se escribe en un hermano nombrado con un `.` delante, un UUID y
++         un sufijo `part`, y después se mueve a su sitio de forma atómica; un fallo no deja nada
++         detrás.
++     entry #has   si existe un blob con ese nombre bajo la raíz
++     entry #read   los bytes del blob; lanza `Io.Error`
++     entry #replace   escribe el blob de forma atómica; lanza `Io.Error`
++     entry #names   todos los nombres bajo la raíz; lanza `Io.Error`
++     entry #delete   borra el blob si existe; lanza `Io.Error`
++   entry .Error   lo lanza `store(digest) = data` cuando el resumen de los datos no es el dado
+
+% 1 1 0 00156812b6684ab81f80bd4d195ef37c
+
+@ 0 29 0 066f52a909925a781461e7776c8c0305
++         El mensaje dice _the data's digest, `actual`, is not `expected`_, ambos en
++         hexadecimal en minúsculas. Cuando se lanza, no se escribe nada.
++     entry #expected   el resumen que afirmó el llamante, en hexadecimal
++     entry #actual   el resumen que tienen de verdad los datos, en hexadecimal
++   entry .apply   `Cas[Algorithm](root, suffix)`: el almacén en `root` cuyos blobs se llaman `<digest><suffix>`
++       El `Hash` del algoritmo y su permiso de debilidad se comprueban aquí, una sola vez, así
++       que un almacén sobre un algoritmo débil necesita el mismo `Permit` que cualquier otro
++       uso de él. La raíz puede ser cualquier valor con un `Cas.Storage`; el sufijo, por
++       defecto, está vacío.
++   entry .countable   el `size` de un almacén es cuántos resúmenes contiene
++   entry .traversable   un almacén se recorre como sus resúmenes
++   entry .inclusive   `store.has(digest)` a través del vocabulario de colecciones
++   entry .applicable   `store.at(digest)`: los bytes del blob, después de que `defines(digest)` haya dicho que está ahí
++       `at` solo lee después de `contains`, así que un fallo ahí es un blob que desapareció
++       entretanto, lo que provoca un pánico en lugar de devolver `Unset`.
++   entry #Form   el algoritmo de hash, como tipo
++   entry #Plane   el tipo de la raíz
++   entry #root   la raíz bajo la que se guardan los blobs
++   entry #suffix   el sufijo que se añade al nombre hexadecimal de todo blob
++   entry #name   `store.name(digest)`: el nombre del blob, hexadecimal en minúsculas seguido del sufijo
++   entry #digest   `store.digest(data)`: el resumen de los datos en el algoritmo del almacén
++   entry #has   `store.has(digest)`: si el blob está almacenado
++   entry #missing   `store.missing(digests)`: cuáles de los resúmenes no están almacenados
++   entry #apply   `store(digest)`: los bytes del blob, o `Unset` si no está almacenado; lanza `Io.Error`
++   entry #update   `store() = data` almacena bajo el propio resumen de los datos; `store(digest) = data` lo comprueba primero
++       El primero devuelve el resumen y necesita una `Tactic[Io.Error]`; el segundo necesita
++       además una `Tactic[Cas.Error]`. Ninguno reescribe un blob ya presente.
++   entry #digests   todos los resúmenes almacenados: los nombres con el sufijo cuyo resto es hexadecimal
++       Los demás ficheros bajo la raíz se ignoran. Lanza `Io.Error`.
++   entry #prune   `store.prune(keep)`: borra todo blob cuyo resumen no está en el conjunto; cuántos se borraron
+
+@ 0 1 0 19bbe140887fcf4d13200248f506d2b0
++ entry .Searchpaths   la maquinaria que resuelve un plano de rutas de búsqueda en una lista ordenada de directorios reales
+
+% 1 1 0 0062d2f80e9a32141ca0a6bafe28c5fa
+
+@ 0 8 0 1f341a6db99e63b70d77f98af3e811ca
++       Muchos ficheros no se buscan en un solo lugar, sino a lo largo de una lista de ellos: un
++       icono en el directorio de datos XDG que lo contenga, un fichero de configuración en el
++       primero de varios lugares. Un plano `Searchpath` de ambience (`Xdg.Data`, `Xdg.Config`)
++       es una lista así presentada como un único árbol navegable, y la resolución en la
++       plataforma real pasa por un `Searchpaths.Stems` contextual: los directorios ordenados que
++       se prueban, de los que el primero es el que admite escritura. Una ruta relativa en el
++       plano se resuelve entonces con `search()` en el primer directorio raíz que la contiene,
++       con `locations()` en todos los que la contienen, con `listing()` en el listado fusionado
++       del directorio, y con `destination()` en su lugar bajo el primer directorio raíz.
+
+% 2 1 0 05bb1e1cae0a7ffe1ceadbf513d9c4c7
+
+% 3 1 0 1677f5a893020af11f4d69a494bf2629
+
+% 4 1 0 11e66db7a1a04eea1a0e0487e5e79f4c
+
+% 5 1 0 111452515f10ed501c324226d67a2be1
+
+% 6 1 0 17789f14cfd21aef087f074e770335a4
+
+% 7 1 0 1f78c1e3d000c4a40cb575f4580ed73a
+
+% 0 1 0 12554ec23b43b85205279b5c170ba687
+
+% 0 1 0 0de70e7ada2f85171b902d76485683c4
+
+% 0 1 0 03b213d2f2ceeac303d09c0275c81042
+
+% 0 1 0 142e1ae4fd58ec120e6712a599773c7d
+
+% 0 1 0 1e3fd558a15b71931b6055760b49af6a
+
+% 0 1 0 12933b051cb72df60cc39300a48fac6c
+
+% 0 1 0 14ff65f2c9146c90189fe0cb1c603126
+
+% 0 1 0 05dff1dbde904d3703d5b09e24373d1f
+
+% 0 1 0 0bb68620defba08017d040c9d1e83f00
+
+% 0 1 0 12235134683afd96061210590bf4d24a
+
+% 1 1 0 0f7c91805d6641b4131c022b05140433
+
+@ 0 3 0 18159c9b9dcb7048159bb99b739f5a39
++       `dataSearch()` y `configSearch()` construyen los `Stems` para las rutas de búsqueda de
++       datos y de configuración de XDG a partir del entorno. Los auxiliares del objeto son
++       públicos solo porque las operaciones son transparent inline; llama a las operaciones.
+
+% 0 1 0 0b3404a5cfadb2a50a0bd05c8d620a4c
+
+% 0 1 0 17cfb7247bdd77100dbc2bf0c9019796
+
+@ 0 1 0 00d7d355eff5e5ea006a8fb3b87f2b72
++   entry .Stems   los directorios reales ordenados en los que se resuelve un plano de rutas de búsqueda
+
+% 1 1 0 199c87ccedfcb6c50bc0cae9dcfe537f
+
+@ 0 11 0 118df5e0350e82d90400056baadc1566
++         `Searchpaths.Stems on Xdg.Data onto Linux`: `#Plane` es el plano virtual, `#Target` la
++         plataforma que hay debajo y `#stems` los directorios en orden de precedencia, al menos
++         uno; el primero es donde van las escrituras, ya que la especificación XDG Base
++         Directory indica a las aplicaciones que escriban solo en el directorio base específico
++         del usuario.
++     entry #Plane   el plano de rutas de búsqueda, como `Xdg.Data`
++     entry #Target   la plataforma en la que están los directorios raíz, como `Linux`
++     entry #stems   los directorios que se prueban, en orden de precedencia; no vacío
++   entry .resolve   `Searchpaths.resolve(stem, path)`: los nombres de la ruta añadidos bajo un directorio raíz
++   entry .locateResolved   el primer directorio raíz bajo el que existe la ruta, o `Unset`
++   entry .locationsResolved   todos los directorios raíz bajo los que existe la ruta, en orden de precedencia
++   entry .entryNames   los nombres de hijos fusionados de todos los directorios raíz, sin duplicados, primero los de los anteriores
+
+@ 0 5 0 0a5263e90104d11d089de05d371b1e77
++ entry .search   `path.search()`: el primer directorio real de una ruta de búsqueda en el que existe la ruta, o `Unset`
++     Una extensión sobre `Path on <plane <: Searchpath>`, que necesita un `Searchpaths.Stems`
++     para el plano y un `FilesystemBackend` para su destino. Gana la primera coincidencia,
++     según la especificación XDG; el resultado es un `Path on stems.Target`. Se llama
++     `search` y no `locate`, que zephyrine exporta en el paraguas.
+
+@ 0 3 0 02bb07ddac4d4ab5113f327c4e4078b9
++ entry .locations   `path.locations()`: todas las rutas reales de una ruta de búsqueda en las que existe la ruta, en orden de precedencia
++     Una extensión sobre `Path on <plane <: Searchpath>`, para consumidores que fusionan en
++     cascada y leen todas las copias de un fichero de configuración.
+
+@ 0 4 0 17aa1e83022da5e30a5b866db58667db
++ entry .listing   `path.listing()`: el listado fusionado de un directorio de una ruta de búsqueda, de todos los directorios raíz
++     Una extensión sobre `Path on <plane <: Searchpath>`, que necesita el `Explorable` del
++     destino y una `Tactic[Io.Error]`. Los hijos se deduplican por nombre, de modo que los
++     directorios raíz anteriores ocultan a los posteriores, y se devuelven en el plano de rutas
++     de búsqueda, así que el árbol virtual es navegable.
+
+@ 0 4 0 0f89585387175a8c1bbb9b7753f6ab54
++ entry .destination   `path.destination()`: el lugar de la ruta bajo el primer directorio raíz, donde la especificación XDG indica que se escriba
++     Una extensión sobre `Path on <plane <: Searchpath>`. Es total: no se comprueba nada en
++     el disco. Crear los directorios intermedios que falten corresponde al llamante, mediante
++     `filesystemOptions.createNonexistentParents` en la propia escritura.
+
+@ 0 5 0 17e5a499e5bcc370164c1e8ce1865945
++ entry .searchpathCompliant   permite reinterpretar una ruta relativa o literal al estilo de `Linux` en un plano de rutas de búsqueda
++     El given `Compliant` que hace que `(% / "icons" / "app.png").on[Xdg.Data]` compruebe sus
++     tipos: un nombre válido según las reglas de `Linux` es válido en cualquier plano
++     `Searchpath`. Es un given de nivel superior, con un nombre calificado por la biblioteca,
++     ya que el objeto compañero de ninguno de los dos sujetos puede alojarlo; es inline y no
++     necesita más importación que `soundness.*` cuando la exportación del paraguas está en el
++     ámbito.
+
+@ 0 5 0 03d6cb4f353e036d08c581bdc35640f2
++ entry .dataSearch   `Xdg.dataSearch()`: la ruta de búsqueda de datos de XDG, como `Searchpaths.Stems on Xdg.Data onto Linux`
++     Una extensión sobre el objeto `Xdg`, que necesita un `Environment` y un `System`. Los
++     directorios raíz son `XDG_DATA_HOME` (o su valor por defecto) seguido de cada entrada de
++     `XDG_DATA_DIRS`, en el orden de precedencia de la especificación, leídos una sola vez al
++     construirse; un conjunto de directorios que no se puede analizar recurre a los valores por
++     defecto de la especificación.
+
+% 2 1 0 16b68530a916763617edfb9a2e976082
+
+% 3 1 0 0441c64e668de17e0459768644c2589f
+
+% 4 1 0 1819b46f34aadfa9113392fe66774df8
+
+% 5 1 0 016fca507717066d125a616e8e5e4e95
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 127a57eab7ef682d0fe56853b185edb6
+
+% 1 1 0 072c2b805d867ca41807649f1501b0a1
+
+@ 0 2 0 1dc01522fc26c1b61d04b83817b02611
++ entry .configSearch   `Xdg.configSearch()`: la ruta de búsqueda de configuración de XDG, como `Searchpaths.Stems on Xdg.Config onto Linux`
++     Como `dataSearch()`, para `XDG_CONFIG_HOME` seguido de `XDG_CONFIG_DIRS`.
+
+@ 0 1 0 19d625158e16330d1c78a6b26b97ee7a
++ entry .Ram   la forma para el acceso aleatorio a los bytes de un fichero mediante proyección en memoria: `path.open[Ram](mode)`
+
+% 1 1 0 0177d40bdd7e62881fd8acad3cde1c2d
+
+@ 0 8 0 0ada8248b50d87a6111f6eb5b28ffc63
++       En `galilei.jvm`. El descriptor atiende lecturas posicionales con `ram(offset, length)`
++       y, cuando se seleccionó la concesión `Write`, escrituras posicionales con `ram(offset) =
++       data` y crecimiento con `ram.grow(size)`; ambas pasan por un `MappedByteBuffer`, así que
++       el sistema operativo carga y descarga las páginas de datos a demanda. Un modo
++       `Exclusive` adquiere además un bloqueo de fichero del sistema operativo para el ámbito,
++       de modo que la exclusividad se mantiene frente a otros procesos. La proyección direcciona
++       con `Int`, así que un fichero de más de 2 GiB lanza `Io.Error` con `Unsupported`;
++       `path.expanse` es la alternativa neutral respecto a la plataforma, y sin límite, para
++       las lecturas. Las escrituras se vuelcan cuando termina el ámbito.
+
+% 2 1 0 17550b1b155003510f796b20f0b800f4
+
+% 3 1 0 028a652642d0283e005648a5a174906a
+
+% 4 1 0 116a929682a0f4bd1d283d48afff88f4
+
+% 5 1 0 16af59620f7d864d0f937d329b8a4f2c
+
+% 6 1 0 06e52e47d69841b613fd7d6cc0859deb
+
+% 7 1 0 01914ab6229a1d0e0d2bce8632c15f44
+
+% 0 1 0 0008f1ce75f9399a0ed90c0baa3a039b
+
+% 0 1 0 12d14e9868583f4c1a2959370273385e
+
+% 0 1 0 1ac0d88ebedb38bb00a794e0df566f2e
+
+% 0 1 0 055d4b63ba3bb6fa14d1a13132ee8d4f
+
+% 0 1 0 00cc012415489fcb0c045c5233762561
+
+% 0 1 0 1bfedab170b1e51a06a1e54d56b4d8f8
+
+% 0 1 0 09249efcdf863e5213e277feee8ae6fd
+
+% 0 1 0 11860e5a2070c733053ee0681f5ce8cc
+
+% 0 1 0 1ec1216c1278b07901daa9ffef95dcbf
+
+% 1 1 0 144ccafa1e29407910c0e271754035d8
+
+@ 0 3 0 11fdfe4e6bbfb56b0dc522a3db8795bf
++       `path.create[Ram](RamFlag.Size(n))` crea un fichero nuevo de exactamente ese tamaño,
++       proyectado para lectura y escritura durante el ámbito y eliminado si el ámbito falla; el
++       tamaño es obligatorio, ya que una proyección vacía no sirve de nada.
+
+% 1 1 0 174f21c89d0f748500aa3c8be36995a4
+
+% 0 1 0 1075b64e06e600a80ecfe0dfa36f9169
+
+@ 0 1 0 03acbc20fee2b5ad1b622249f5cba33f
++   entry .RamHandle   el descriptor sobre un fichero proyectado: lecturas y escrituras posicionales, crecimiento y una vista `Expanse`
+
+% 1 1 0 05c76ad81f8a37381e7f9a59b988209c
+
+@ 0 14 0 027a7a261cdb2d831f8a03e4799853ff
++         Una capacidad exclusiva. Las operaciones condicionadas por las concesiones son las
++         extensiones `.apply`, `.update` y `.grow`; `#readFrom`, `#writeTo` y `#growTo` son sus
++         formas operativas sin condición.
++     entry #size   el tamaño proyectado en bytes
++     entry #readFrom   lee `length` bytes en un desplazamiento
++     entry #writeTo   escribe datos en un desplazamiento, dentro del tamaño actual
++     entry #growTo   amplía el fichero y lo vuelve a proyectar con un tamaño mayor; un tamaño menor no hace nada
++         El nuevo tamaño debe caber en un `Int`.
++     entry #flush   fuerza que los cambios de la proyección pasen al fichero
++     entry #expanse   una vista posicional compartida, para consumidores escritos contra el `Expanse` de zephyrine
++   entry .apply   `ram(offset, length)`: una lectura posicional, en un descriptor que concede `Read`
++   entry .update   `ram(offset) = data`: una escritura posicional, en un descriptor que concede `Write`
++   entry .grow   `ram.grow(size)`: amplía la proyección para que se puedan direccionar escrituras más allá del antiguo final, en un descriptor que concede `Write`
++   entry .RamOpenable   la instancia de `Openable` tras `path.open[Ram](mode)`
+
+% 1 1 0 0fe4451ba2c8f7b5069004aa1fe60170
+
+@ 0 6 0 0608a039af664f1708eec052b9e83d01
++         Una clase con nombre que instancia `.openable`. Un modo `Exclusive` implica un canal
++         en el que se puede escribir (los bloqueos exclusivos del sistema operativo lo
++         requieren) y un bloqueo mantenido durante el ámbito; un conflicto lanza `Io.Error` con
++         `Busy`.
++     entry #open   proyecta el fichero durante el ámbito y ejecuta el bloque con un `RamHandle`
++   entry .openable   `path.open[Ram](…)` para cualquier ruta de una plataforma; necesita una `Tactic[Io.Error]`
++   entry .RamCreatable   la instancia de `Creatable` tras `path.create[Ram](RamFlag.Size(n), flags*)`
+
+% 1 1 0 0aa25b74ffe268200600d97b4c13e26e
+
+@ 0 6 0 057369680ebed7321c0f913399c64bcd
++         Crea el fichero nombrado, lo amplía hasta el tamaño, lo proyecta para lectura y
++         escritura durante el ámbito, y lo borra si el ámbito falla. Se respetan
++         `CreateFlag.Parents` y `CreateFlag.Replace`; un `Size` que falta, no positivo o mayor
++         que `Int.MaxValue` es `Unsupported`, y un fichero existente sin `Replace` es
++         `AlreadyExists`.
++     entry #create   crea el fichero, le da tamaño, lo proyecta y ejecuta el bloque con un `RamHandle`
++   entry .creatable   `path.create[Ram](…)` para cualquier ruta de una plataforma; necesita un backend y una `Tactic[Io.Error]`
+
+@ 0 1 0 12adcbffbcf0b4d516bd8d4b7c2f4959
++ entry .RamFlag   los indicadores de `create[Ram]`: `Size(bytes)`, el tamaño del fichero proyectado, que es obligatorio
+
+% 1 1 0 19203f4f5cbb77c21125c7b2e2d4c3a7
+
+@ 0 4 0 16cc65721595515d03f443959066b290
++       Crear un fichero proyectado exige conocer su tamaño de antemano, así que
++       `RamFlag.Size(n)` debe estar entre los indicadores, junto a cualquier `CreateFlag`. En
++       `galilei.jvm`.
++   entry .Size   `RamFlag.Size(bytes)`: el tamaño del fichero que se crea y se proyecta
++     entry #bytes   el tamaño en bytes
+
+@ 0 1 0 12ae2280490539c1016b3b8c0dd08d1f
++ entry .Device   crea un nodo de dispositivo de bloques o de caracteres en un sistema de ficheros POSIX, mediante `mknod`
+
+% 1 1 0 0e54beda72d3e8211798071fa72801f3
+
+@ 0 4 0 135a8d0b60548ab10e509e8f2a4c8b59
++       En `galilei.jvm`. `Device.create(path, Device.Kind.Block, major, minor)` ejecuta la
++       orden `mknod`, consultando las políticas `CreateNonexistentParents` y
++       `OverwritePreexisting` del ámbito, y lanza `Io.Error` con `PermissionDenied` si la orden
++       falla: crear un nodo de dispositivo normalmente requiere ser root.
+
+% 2 1 0 0b7b9b168185dc4415e5c696a4f2c90c
+
+% 3 1 0 0693b6a9e8c88916072ec0391b8e6b57
+
+% 4 1 0 00364daca4b3b98d1c6d15cfbfe308d8
+
+% 5 1 0 03eae9326f92218a0751a424a1134717
+
+% 6 1 0 0b18e38bba1a120209927f8244cf8d1c
+
+% 0 1 0 045e18a59784ef971d75c27066a4a63f
+
+% 0 1 0 13aeba78036930c805185a12877d23d6
+
+% 0 1 0 1d48f299bf65425f02655e6afc60eb71
+
+% 1 1 0 087fe192f3143da40fd1e7785c552ab3
+
+% 0 1 0 14be69f83b1231551e7f4b283971243a
+
+% 0 1 0 18d58a7e9d368da407a4063be0c2783a
+
+% 1 1 0 0f17eb24b4e2b8c704ec680d756cc53b
+
+@ 0 3 0 1a8e8f0737374e2d1004fee25d9db1c9
++   entry .Kind   `Block` o `Char`: qué tipo de nodo de dispositivo se crea
++     entry #flag   el indicador de tipo de `mknod`: `b` o `c`
++   entry .create   crea el nodo de dispositivo en una ruta con el tipo y los números mayor y menor dados
+
+@ 0 1 0 0cf17da69e839f311e1d4fcff42e3de8
++ entry .SocketCreation   la instancia de `Creatable` tras `path.create[Sock]()` en la JVM
+
+% 1 1 0 09e3cbd8a321ff1c16c7d8445c3b25d9
+
+% 2 1 0 01bc1e4a848c2f52100aa62591e142fe
+
+@ 0 8 0 1b1048e17e23f9b80074e094d475a7e0
++       El hogar de `socketCreatable`, que se exporta desde aquí; se accede a la instancia por
++       ese nombre. Vincular un socket de dominio Unix tiene por naturaleza un ámbito: la forma
++       de bloque proporciona el `Sock` vivo y vinculado, y cierra su canal cuando termina el
++       ámbito (el fichero del socket permanece; una excepción que escapa del ámbito lo
++       elimina), y la forma sin bloque lo vincula y lo cierra de inmediato, dejando solo el
++       fichero del socket.
++   entry .SocketCreatable   vincula un socket de dominio Unix en una ruta POSIX durante el ámbito de un bloque
++     entry #create   vincula un `ServerSocketChannel` a la ruta y ejecuta el bloque con el `Sock`
++   entry .socket   el given, para cualquier ruta de una plataforma POSIX con un backend y una `Tactic[Io.Error]`
+
+@ 0 6 0 1c4af14df13a9d340d93625efa0950ba
++ entry .socketCreatable   `path.create[Sock]()`: vincula un socket de dominio Unix en una ruta POSIX, durante el ámbito de un bloque
++     El given `Creatable` para la forma `Sock`, en `galilei.jvm`, que necesita un backend y
++     una `Tactic[Io.Error]`. El bloque recibe un `Sock` que contiene el `ServerSocketChannel`
++     vinculado, que se cierra cuando termina el bloque; se respetan `CreateFlag.Parents` y
++     `CreateFlag.Replace`. Después, el fichero del socket permanece, salvo que una excepción
++     haya escapado del ámbito.
+
+% 2 1 0 10b31e893d4584820edfd5994bc260e7
+
+% 3 1 0 11e242e9b01545ea161d510996c0dec6
+
+% 4 1 0 0108f8d063244dff0c7b51876e0ce1ca
+
+% 5 1 0 0b1bfe103e4feb650291364d73207026
+
+% 6 1 0 1c9a04c6a2c4e2f41d0d2acd570ccb0c
+
+% 7 1 0 009d7c2bfaf82bd807074f6dc1885291
+
+% 0 1 0 16af877f790c5edf1779f0e78b069018
+
+% 0 1 0 169e030b215da973105baa59d436e0e7
+
+% 0 1 0 0041f765f0e276ae1d60a52e77926b99
+
+% 1 1 0 183c7b0df92c930f0a7a23d55a52c9e4
+
+@ 0 5 0 04a06f921a7ec17e016913eceb8605fb
++ entry .javaPath   `path.javaPath`: el `java.nio.file.Path` de una ruta de plataforma, para las API de Java que reciben uno
++     Una extensión sobre cualquier `Path on <plane: Filesystem>` en `galilei.jvm`, que
++     deliberadamente *no* se exporta al paraguas `soundness`: es una vía de escape de la API
++     tipada, y acceder a ella como `galilei.javaPath` (o mediante `import galilei.javaPath`)
++     mantiene ese carácter deliberado.
+
+% 2 1 0 0c976b96b236e78e0dbd0ec4ae5fccf5
+
+% 3 1 0 14321b2504879cec0f7b447615eaf1c3
+
+% 0 1 0 05adf28557c472101625b9f684beff7c
+
+% 0 1 0 1e3e5983ea73ff180f1763ca2f81f50f
+
+% 0 1 0 00e70c1e3d9f79210cea0cc7742a7074
+
+% 1 1 0 05d9d3b1e2900adf0e552895fff93206
+
+@ 0 2 0 01b8163724b009240a787270cb339100
++ entry .javaFile   `path.javaFile`: el `java.io.File` de una ruta de plataforma
++     Como `javaPath`, para la API más antigua; en `galilei.jvm` y no exportado al paraguas.

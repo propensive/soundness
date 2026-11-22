@@ -1,0 +1,8 @@
+orthant 2 release
+
+@ 0 2 0 10ab5c6df1d9a0f90d0c8ecb75a10f24
++       change of behaviour; `import optics.given` brings them all (or `import soundness.optics.given`,
++       where every library's optics merge); a wildcard import does not import givens. A lens assignment also needs dynamic access enabled
+
+@ 0 1 0 015b918db1adbea803d43755da82713a
++       import optics.given

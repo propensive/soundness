@@ -1,0 +1,58 @@
+orthant 2 language
+
+% 0 1 0 0c79a0ffd4faa28801147d573c9f8a15
+
+@ 0 1 0 03a71f6bf599703b07eacf89b746270a
++ Lançado quando uma imagem de contêiner OCI está malformada ou não pode ser lida.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 1d83c4defc99455210ff2b1c56b2c5bb
++ Uma imagem OCI é um arquivo tar com um layout prescrito: um marcador `oci-layout`, um
++ `index.json` e blobs endereçados por digest. Este erro cobre um membro ausente ou malformado,
++ um algoritmo de digest não suportado e um blob cujo conteúdo não corresponde ao seu digest.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Código
++ column  Motivo
++ column  Mensagem
+
+% 0 1 0 0ac7504d852373c40bff9425f7b0ee39
+
+% 0 1 0 0ead0c4adc8464d200f73b168df7ac3f
+
+% 0 1 0 068090b16bc39c560399095eb6a6b468
+
+% 0 1 0 13d084517029355c1c37e9efc0e0e0f9
+
+% 0 1 0 0202073238ff5af9030fb9a2edab4f4a
+
+% 0 1 0 00bc7b9f633960ec1b4cc65adf6b1605
+
+% 0 1 0 156ae10ce44a0d980443a6c5d71b7c88
+
+% 0 1 0 0ea0c6e3afd5f0cc01ba6cc6475bdf04
+
+% 0 1 0 1f4cfcd25c2851260479ee78d28b45cb
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 3 0 0f6f3c8fa2c6e92f16a5387e5b39cd46
++ Uma divergência de digest significa que a imagem está corrompida ou foi alterada, e não deve
++ ser considerada confiável. Um blob ausente geralmente indica um pull incompleto. `verified`
++ verifica os digests; `layer` e `compressed` não verificam.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 06e6642a9b4a257915ac4f30f0442d31
++ - Código-fonte: `lib/embarcadero/src/oci/embarcadero.Oci.scala`

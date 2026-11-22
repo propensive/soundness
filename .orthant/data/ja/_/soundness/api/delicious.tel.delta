@@ -1,0 +1,501 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 10e669029b2ac30c082b52eb1c4f5fea
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 03d576093bc755b307da376dc3391b3f
++ info   コンパイラの意味論的な診断を木として表し、その型を実体化して、ユーザーが書くとおりに描画する
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 11a3bc7afe22075819494ef871d80188
++     _Delicious_ は、proscala コンパイラが `-Zsemantic-diagnostics`（anthology の `scalacOptions.semanticDiagnostics`）のもとで出力する**意味論的な診断**を読む。
++     これは、型、シンボル、名前、コード例のそれぞれが私用領域の文字によるマーカーでマークアップされ、さらに各型が TASTy のピクルされた形式を持つコンパイラメッセージである。
++     普通のコンパイラメッセージはテキストであり、そこでは `List[Int]` は九つの文字にすぎない。
++     意味論的なメッセージは、`List[Int]` が型であること、どの型であるか、そして `List` が `scala.collection.immutable.List` であることを知っている。
+
+@ 0 7 0 05b678f89ec603f9034991e78d81944f
++     `Markup.parse` はマークアップされたテキストを `Markup` ノード（`Textual`、`Typed`、`Symbolic`、`Named`、`Code`、`Spanned`）の木に変え、`SemanticMessage` はメッセージ全体を包む。
++     `Reifier` はクラスパスを与えられると、各 `Typed` ノードの TASTy ペイロードを stenography の `Syntax` にアンピクルし直す。そのため、型を一連のインポートに対して省略した形で、ユーザーが書くとおりに描画できる。
++     `render` はこれをメッセージ全体についてテキストとして行い、`teletype` は、すべてのコード例と型を harlequin で構文ハイライトした、スタイル付きの端末出力として行う。
+
+% 2 1 0 1ecef6f26d4c3e7e089ec5ccf1c49810
+
+% 1 1 0 0d439f278d701a4f174ee816c0a57fd2
+
+% 2 1 0 0529ee19d740d90219dbbae4fcda7edf
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1c65036f2fdab0ad1f81bd7f049017d3
+
+% 0 1 0 0fa7f5534cbdfbd716ba6a33625e1d39
+
+% 0 1 0 0849888e78e7ca071f5f38cfc87090dc
+
+% 0 1 0 0a73a5e2eccc41891e4b4fc38f3f27ad
+
+% 1 1 0 0f621344fe04df0a1d55fea7d58d0e38
+
+% 2 1 0 083ed2ebb7561b4f08f4cdf69394aac1
+
+% 3 1 0 16f70afb08d15f5a03629ebd1a2ad01c
+
+% 1 1 0 0c5ceab6fcbd3b691fba3cf9ed81c8a0
+
+% 0 1 0 0fd73a1d639ff0ed034a42ef5e5bc682
+
+% 0 1 0 0c832a4892374eca05c67a8e6c216bb0
+
+% 1 1 0 01a46fa427d68ae3155d0ec406295164
+
+% 0 1 0 0af70759b1a1829e00f3cbaf4e7eba7e
+
+% 0 1 0 12c8baac562b76870cf4fe54abb5580e
+
+% 0 1 0 0f9ab65a4332d7900cd759785612d0f6
+
+% 1 1 0 1d9236868ad2408c0664593a322e9aa0
+
+@ 0 5 0 06bd7f6ab5157a400c3696486a5a8777
++     コンパイラがピクルできなかったもの（ローカルな型、スコーレム、型変数、エラー型）は、ピクルの前に `Placeholder` に置き換えられ、描画の際にコンパイラがそれに対して表示した名前で埋め戻される。そのため、診断がクラッシュになることは決してない。アンピクルできないペイロードは、コンパイラ自身のテキストに代替される。
++     ライブラリは三つのソースセットに分かれている。
+
+@ 0 9 0 10f766f74bab0f3b033005bbc2166607
++     - `delicious.core` — `Markup`、`SemanticMessage`、`Placeholder`、`PlaceholderKind`、`Rendition`。テキスト以外の何にも依存しない純粋なパースであり、すべてのプラットフォームで使える。
++     - `delicious.scala` — `Reifier` と `render` 拡張。これらは TASTy をアンピクルするために Scala コンパイラを埋め込むので、JVM 専用である。
++     - `delicious.ansi` — `teletype` 拡張。harlequin の構文ハイライトでメッセージを描画する。JVM 専用である。
++     - `delicious.compiler` — Scala 3.9 と 3.10 の系統で異なる、コンパイラ内部のコンストラクター一つを覆う `Shim`。直接使うためのものではない。
+
+@ 0 3 0 1135e0e7bec9fc590ed1efde7aba9504
++     `teletype` を除くすべてが `soundness` アンブレラにエクスポートされる。`teletype` はそこで escapade の `Teletypeable` による描画と衝突するので、`delicious.teletype(message)(reifier)` として呼ぶ。
+
+% 0 1 0 096b211c26be9d17100ab892a9103365
+
+% 0 1 0 00f550bc174eb1151a9ef8c5a9356e0b
+
+% 0 1 0 1eb56ce52ae13ed11e4f94f1d593996a
+
+% 0 1 0 0c940c957c8175210eb6497ce49aed8f
+
+@ 0 1 0 05cdfd43c86b3ca20001a02163e233f7
++ entry .SemanticMessage   マークアップの木にパースされたコンパイラメッセージ
+
+% 1 1 0 18603f8045da362e0b38e1103cbbb3fc
+
+@ 0 6 0 015a6d99e58d1e581c300f75a0176fee
++       `SemanticMessage` は、マークアップされた一つのコンパイラメッセージの `Markup` ノードである。これは、コンパイラが `scalacOptions.semanticDiagnostics` 付きで実行されたときに anthology の `Compiler.Notice#markup` が持つテキストから、`SemanticMessage.parse` によって作られる。
++       そこから、`#plain` はマーカーを取り除いたメッセージ（通知自身の `message` と同じテキスト）、`#types` はメッセージが言及する `Markup.Typed` ノード、`render` と `teletype`（`Reifier` とともに）はすべての型を実体化した描画である。
+
+% 2 1 0 188cb46e1d00a6b21acd304bde346cf1
+
+% 1 1 0 02e77927d71f2d6f11c9e39a53fe776f
+
+% 2 1 0 0a010bfe4e9f3a5301637f19e5c27f8c
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 0044fc7e7f6b42ab01676e50edfcde10
+
+% 0 1 0 1de352ceb677a4d815dcbbf392272771
+
+% 0 1 0 00e706a65af7e2760080004bd1653f11
+
+% 1 1 0 0ebbb6c323402d600a77dd7896c5a5db
+
+% 0 1 0 07eda9492b835ea10cd1c858a8ccd70d
+
+% 1 1 0 077077e93dfb9cb411cafc110a74d828
+
+% 1 1 0 03b5b500c9e0a9c913ad0be1a1f299ec
+
+@ 0 12 0 00a44b3079ebbdec196daa84202eed85
++   entry .marked   テキストが意味論的な診断のマーカーを含むかどうか
++       マーカーが使う私用領域の文字のいずれかが存在すれば真である。そのため、意味論的な診断を持たないコンパイラからのメッセージを、持つものと安価に見分けられる。
++       `Markup.marked` と同じ判定である。
++   entry .parse   マークアップされたメッセージを `SemanticMessage` にパースする
++       テキスト全体に `Markup.parse` を適用する。マーカーのないメッセージは単一の `Markup.Textual` ノードにパースされるので、どのメッセージに対して呼んでも安全である。
++   entry #markup   メッセージのノード（順序どおり）
++   entry #plain   すべてのマーカーを取り除き、見えるテキストだけを残したメッセージ
++   entry #types   メッセージ内のすべての `Markup.Typed` ノード。外側のものが先で、入れ子のものも含む
++       `Named`、`Symbolic`、`Code`、`Spanned` のノードを通じて同様に見つかり、`Typed` ノード自身の `Typed` の子はそのノードの後に続く。
+
+@ 0 1 0 10392efc6327aea10a17ff757bb6f292
++ entry .Markup   意味論的な診断の一つのノード。テキスト、型、シンボル、名前、コード、またはスパン
+
+% 1 1 0 0bab96ea7ae1c71815e3b2acc1940bd2
+
+@ 0 3 0 16603c32f21febe9040169b5fd75091e
++       マークアップされたコンパイラメッセージを構成するノードの種類の enum である。コンパイラのテキストから木を読む `Markup.parse` と、それを取り除く `Markup.plain` を持つ。
++       ノードは次のいずれかである。
+
+% 2 1 0 189953c96a082d95014e8052d0abe099
+
+@ 0 8 0 036b0bf1a1d53ddc0d3731d9c93d9824
++       column  ケース
++       column  ノード
++       row  `Textual(text)`  マーカーの間の普通のテキスト
++       row  `Typed(tasty, placeholders, rendition, children)`  型。`tasty` は TASTy のピクルされた形式を Base64 テキストにしたもの（コンパイラが与えなかった場合は `Unset`）で、`Reifier#syntax` によって実体化される。`placeholders` はピクルできなかった部分の代わりとなる。`children` はコンパイラが表示した描画で、代替となる
++       row  `Symbolic(name, full, rendition, children)`  シンボルへの参照。`name` と完全修飾名（`full`）による
++       row  `Named(isType, rendition, children)`  名前。型の名前かどうかを伴う
++       row  `Code(rendition, children)`  コード例。`teletype` が構文ハイライトする
++       row  `Spanned(kind, rendition, children)`  このライブラリが知らない `kind` のマーカー。子とともに保持される
+
+% 1 1 0 0fc614ff67c9f0c814daac95ad5f0506
+
+@ 0 2 0 0907561eef7316610e666c7c0d565014
++       `Textual` 以外のすべてのノードは、コンパイラがそれを提示した形式である `Rendition` と、その内側のノードである `children` を持つ。どのノードでも、`#plain` はその見えるテキストである。
+
+% 2 1 0 1a6d062472b7d03705fe5602b9406e0a
+
+% 3 1 0 04dfec268351b6841812df3b0170c41f
+
+% 0 1 0 182d52ab7845d8ac0888b05262c852c7
+
+% 0 1 0 0bd4b1e20aa9d53e13fd554fe64dc938
+
+% 0 1 0 0668d36d19c770671bb0c91ab1200e53
+
+% 0 1 0 112a44bc3f93a5a905236a4f37d783e1
+
+% 0 1 0 146acacfe9c26fa400ea0a1f7cd4311c
+
+% 1 1 0 16e21531c49f39d4183881ab794162d6
+
+% 1 1 0 1020f9a6ad7df1290df3021be28024fd
+
+% 2 1 0 1061d10216ec014f0935cf14b47ceda5
+
+% 0 1 0 090271f39425e3e2178b3b4106b3f9b4
+
+@ 0 15 0 0dbcc134f3d373a1003f570cc3543d3d
++   entry .marked   テキストが、`parse` が読むマーカーのいずれかを含むかどうか
++       `U+E000` から `U+E003` までの私用領域の文字である。
++   entry .parse   マークアップされたテキストを、コンパイラ自身のパーサーと同じようにノードのリストにパースする
++       コンパイラの `DiagnosticMarkup.parse` に厳密に従う。マーカーは、開始文字、その種類、属性の区切り文字、`key=value` 属性（値が予約文字を含む場合はパーセントエンコードされ、ここでデコードされる）、テキストの区切り文字で始まり、終了文字で閉じる。
++       完全なマーカーを形作らないものは捨てられ、周りの内容はテキストとして保たれる。迷い込んだ開始文字や終了文字は消え、途中で切れたヘッダーは普通のテキストとして読まれる。また、閉じられなかったマーカーの子は親に継ぎ込まれるので、途中で切れたメッセージもパースできる。
++       種類がノードを決める。`type`、`sym`、`name`、`code` はそれぞれ専用のケースを持ち、それ以外の種類は `Spanned` になる。
++   entry .plain   すべてのマーカーを取り除き、見える内容だけを残したテキスト
++       マーカーのないテキストは、パースされずにそのまま返される。
++   entry #plain   このノードの見えるテキスト。自身のテキスト、または子のテキストを連結したもの
+
+@ 0 1 0 083d2679dab4cc4d12476d36f144cd9f
++ entry .Placeholder   コンパイラがピクルできなかった型の部分の代わりとなったもの
+
+% 1 1 0 199c4e074f36f5241d764565078cca99
+
+@ 0 7 0 040d2bb923ab551517f3bd1ac5c6d928
++       `Markup.Typed` ノードに TASTy ペイロードを与えるピクラーは、クラスパスだけで解決できるものしかピクルできない。
++       ローカルな型や項、スコーレム、型変数、エラー型は、極大の部分木全体として、番兵となる文字列リテラル型 `⟨scala-diag:N⟩` に置き換えられ、番号 `N` の `Placeholder` として記録される。これは `#kind`、`#name`、`#arity`、定義された場所、そしてコンパイラがそれに対して表示した（`#printed`）テキストを持つ。
++       `Reifier.substitute` は各番兵の位置に表示されたテキストを戻すので、`Local` がどのクラスパスにもなくても、`List[Bad.Local]` は `Bad.Local` とともに描画される。
+
+% 2 1 0 1c592e04cc0ca21911cb733e123a0117
+
+% 3 1 0 0f65b79e773d586a146c596d685e6233
+
+% 0 1 0 131d0ae923e93e9615dddbcca2d5ad74
+
+% 0 1 0 06c02171d2c33f1a1eb422e2f67b23c3
+
+% 0 1 0 1a03b0be906bf49b1c04edec021be777
+
+% 0 1 0 0ec9f9ae299e503b136e72a162582fe6
+
+% 1 1 0 0562b756f05dbd8e1e8dae86782e00c5
+
+% 0 1 0 05c392df7bfdb1300324997d7f675aa7
+
+% 1 1 0 1342f732be9187f306dd4eb5c20da7a4
+
+@ 0 19 0 04285066a53954e4015a95ce4b14e557
++   entry .Prefix   プレースホルダーの番兵の予約された接頭辞、`⟨scala-diag:`
++       本物の文字列リテラル型がたまたまこれで始まる場合、コンパイラは `esc:` 形式でエスケープし、`escaped` がそれを読み戻す。
++   entry .text   プレースホルダー番号に対する番兵のテキスト。`⟨scala-diag:N⟩`
++   entry .reference   テキストが番兵の参照であれば、そのプレースホルダー番号
++       エスケープされたリテラルを含め、それ以外のテキストでは `Unset` である。
++   entry .escaped   テキストがエスケープされた本物の文字列リテラルであれば、元のリテラル
++       `⟨scala-diag:esc:…⟩` は `…` を返す。
++   entry .decode   `|` で区切られた六つのフィールドから得たプレースホルダー、または `Unset`
++       フィールドは、番号、種類、名前、アリティ、定義された場所（空でもよい）、表示されたテキストであり、それぞれ `|` を含むことになる場合はパーセントエンコードされる。
++       番号が数値でない場合や、フィールドが少なすぎたり多すぎたりする場合は `Unset` になる。未知の種類は `PlaceholderKind.Other` として保持される。
++   entry #id   番兵が参照する、プレースホルダーの番号
++   entry #kind   置き換えられたもの。ローカルな型や項、エラー、型変数、またはスコーレム
++   entry #name   置き換えられたものの名前
++   entry #arity   置き換えられたものの型パラメーターの数
++   entry #definedAt   コンパイラが記録した、定義された場所、または `Unset`
++   entry #printed   コンパイラがそれに対して表示したテキスト。描画の際にその代わりに使われる
+
+@ 0 1 0 0e45e5faaf73b15b0c5f8db3a89d90a7
++ entry .PlaceholderKind   プレースホルダーが置き換えたものの種類
+
+% 1 1 0 0a2c9583ecf498401630efa18aae6967
+
+@ 0 1 0 0c6aec073574691a02ec37c219c0a4fc
++       `PlaceholderKind(text)` は、ワイヤ上の名前から種類を読む。
+
+% 2 1 0 0b07d6136ce5552200b7146aabcfee94
+
+@ 0 9 0 1ccdf9c72b5cbc8e1aa3c226febaf73f
++       column  ケース
++       column  ワイヤ上の名前
++       column  置き換えられたもの
++       row  `LocalType`  `local-type`  コンパイル単位にローカルな型定義
++       row  `LocalTerm`  `local-term`  コンパイル単位にローカルな項定義
++       row  `Error`  `error`  エラー型
++       row  `Typevar`  `typevar`  インスタンス化されていない型変数
++       row  `Skolem`  `skolem`  スコーレム
++       row  `Other(kind)`  その他すべて  このライブラリが知らない種類。コンパイラのテキストを保持する
+
+% 1 1 0 1c1697438e05b1df132dce798357ffae
+
+@ 0 1 0 156f9152bc9cc2781fae2e28d2073ed7
++   entry .apply   ワイヤ上の名前から得た種類。未知の名前は `Other` として保持される
+
+@ 0 1 0 11f9ac386941d5dd032ce2013fe107ed
++ entry .Rendition   シンボル参照が提示される形式。デフォルト、宣言、位置付き、または完全
+
+% 1 1 0 0eaeb636df82922c0f7d133f96cb75ff
+
+@ 0 2 0 17b9b776e3c1790400806d6e54675a0a
++       `Textual` 以外のすべての `Markup` ノードが持つ。
++       マーカーの `style` 属性からパースされるが、視覚的なスタイルではない。`Rendition(text)` はワイヤ上の名前からこれを読む。
+
+% 2 1 0 153960f7c34ab80213c4359539ae8b7c
+
+@ 0 7 0 0c4d8716df583cf506e34b5ded0edbd4
++       column  ケース
++       column  ワイヤ上の名前
++       column  シンボルの表示
++       row  `Declaration`  `dcl`  宣言として：`def act: Int`
++       row  `Located`  `located`  位置付きの名前として
++       row  `Full`  `full`  完全な名前として
++       row  `Default`  その他すべて、または `Unset`  通常表示されるとおりに
+
+% 1 1 0 1b787c8d9a237ba513edc990cc2421d9
+
+@ 0 1 0 086366e63624d78702a7dbb6059a8de5
++   entry .apply   オプショナルなワイヤ上の名前から得た形式。存在しないか未知の場合は `Default`
+
+@ 0 1 0 07e98667f8ac752d14ce28189d8f014f
++ entry .Reifier   意味論的な診断の中の TASTy の型を、stenography の `Syntax` にアンピクルし直す
+
+% 1 1 0 0362fbbfe0344a3d16cc57c93ecd808f
+
+@ 0 6 0 1eb90a6f0cb5949c042cb3b79b539a63
++       `Reifier(classpath)` は、hellenism の `LocalClasspath` に対するコンパイラのコンテキストを保持する。これは最初に使われたときに遅延して作られ、それに対して各 `Markup.Typed` ノードの TASTy ペイロードが型にアンピクルされ、stenography の `Syntax` として描画される。
++       クラスパスは、診断されたコードがコンパイルされたときのものであるべきである。ピクラーは、ペイロードがクラスパスだけで解決できることを保証する。それ以外のものはすべて `Placeholder` に置き換えられており、`Reifier.substitute` がそれを表示されたテキストで戻す。
+
+% 2 1 0 12d1904dca711d4700390a2a1f0d79b2
+
+% 3 1 0 13dda6292de5c3de1263ee0c7ed948f9
+
+% 1 1 0 137597125b21f63c186261e669985a5b
+
+% 2 1 0 1e96b9abc0fcba340070a39287452576
+
+% 0 1 0 195cd0173d523ce2111e41aa1fca939b
+
+% 0 1 0 1e2355df2af30ca113f56b995457e3a0
+
+% 0 1 0 0f1c50ba9254b1911afb162fdf1ac8f7
+
+% 0 1 0 1545b2f815f548860975fa87e9745a61
+
+% 0 1 0 0ff9de39011e863f1462a00e5bf36349
+
+% 1 1 0 16ecbd5479ba18e50a10ba6b2ee829d0
+
+@ 0 3 0 05a4b6115b48251214f7a529a32c1cf1
++       リファイアーは、メッセージごとに作るものではなく、保持しておく値である。そのコンテキストはクラスパスのシンボルテーブルを一度だけ読み込む。
++       `render` と `teletype` はこれを一つ取り、`#imports` は描画が省略の基準とする `Imports` を組み立てる。
++       `delicious.scala` にある。
+
+% 1 1 0 1c0735ad49f621ae0dde793edb408b41
+
+% 1 1 0 0f60779434b6b2910b50bb3b29932007
+
+% 2 1 0 08a9d4330436429c0f109c550354d8ab
+
+@ 0 6 0 0eb55383ef37e104176c8dd71aeae3c0
++   entry .substitute   `Syntax` の中のプレースホルダーの番兵を、表示されたテキストに書き換える
++       `Syntax` をたどり、テキストが引用された `⟨scala-diag:N⟩` 番兵であるプリミティブを、プレースホルダー `N` の表示されたテキストによる `Syntax.Symbolic` に置き換え、エスケープされた本物のリテラル `⟨scala-diag:esc:…⟩` を、それが表していたリテラルに置き換える。
++       ピクラーは極大の部分木全体を置き換えるので、番兵は常に完全な型であり、コンストラクターや接頭辞になることはない。そのため、これは健全である。
++       それ以外のプリミティブはそのまま残される。
+
+% 2 1 0 0ed588a31e11140b06fcfb7f522b7f3d
+
+% 3 1 0 0a9105b2f3e04f3b00e26e657b2701ad
+
+% 0 1 0 10481c013d965c211e512b4f0987d478
+
+% 0 1 0 12b3513a81ea8f6d1f36f999290ec088
+
+% 0 1 0 19c6a115b3c0368009f7313a8bea8395
+
+% 0 1 0 0989867aa0f4996610d3998ab37a7d66
+
+% 0 1 0 0c569ad83d9a41ea14aa8667a33d4405
+
+% 1 1 0 0800bb2e9b9f94ec1dd3e8b9cae448d9
+
+@ 0 10 0 112ae7e59446139a1f5518baac639ab3
++   entry #imports   このクラスパスに対して描画するための `Imports`。`export` は解決される
++       `reifier.imports(designators, direct)` は、リファイアーのコンテキストのもとでの `Imports.resolve` である。これは、ワイルドカードのスコープが `designators` で、直接インポートされた名前が `direct` である `Imports` を、`designators` のそれぞれで宣言されたすべての `export` エイリアスのターゲット（型とコンパニオン）で拡張したものである。
++       これにより、ワイルドカードでインポートされたプレリュードを通じて届く型（`import soundness.*` のもとでの `jacinta.Json`）が、ユーザーが書くとおりに末端の名前 `Json` で描画される。手で組み立てた `Imports` では修飾された形で描画される。
++       export を宣言しないスコープや、解決できないスコープは何も加えず、例外も投げない。
++       どちらの集合も、`Imports` 自身が保持するとおり、標準ライブラリの `scala.collection.immutable.Set[Designator]` である。
+
+% 2 1 0 108105e6ffc401a71c4add3135b9ea37
+
+% 3 1 0 19ae83a5658d68b6155d15d7c99551f3
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 0 1 0 10b704fe52bb6dee1f18ea5b12009793
+
+% 0 1 0 0f868c383c2afcbe1d0b597309c15d47
+
+% 0 1 0 1df60d62fdbecea91a7a49c2dcd8a040
+
+% 0 1 0 1fa71ac0b0bb1d170dd8174b1e5a2017
+
+% 1 1 0 13077f144c7aad810cae270f077295d2
+
+@ 0 7 0 08cea3b13a3fca9318808eed926b0ad9
++   entry #syntax   `Markup.Typed` ノードのペイロードの `Syntax`。アンピクルできなければ `Unset`
++       ノードの Base64 の TASTy をデコードし、リファイアーのコンテキストのもとで型の木としてアンピクルし、その型を stenography の `Syntax` に変換して、ノードのプレースホルダーとともに `Reifier.substitute` を適用する。
++       ペイロードのないノードや、ペイロードをアンピクルできないノード（異なるバージョンのコンパイラで、あるいは別のクラスパスに対してピクルされたもの）は、エラーではなく `Unset` を返す。そのため、呼び出し側はノードの表示された子に代替できる。
+
+@ 0 8 0 104d454ca16141bd1a54695b5aba3c1a
++ entry .render   すべての型を stenography で描画し直した、テキストとしての意味論的なメッセージ
++     `delicious.scala` にある、`SemanticMessage` に対する拡張である。
++     `message.render(reifier)(using Imports)` はメッセージのノードを連結する。各 `Markup.Typed` ノードは `reifier.syntax(node)` の `Syntax#text` として描画され、スコープ内の `Imports` に従って省略される。そのため `List[Int]` は、`scala.*` のインポートのもとでは `List[Int]` と、`Imports.empty` のもとでは `scala.collection.immutable.List[scala.Int]` と読める。それ以外のノードは見えるテキストとして描画される。
++     実体化できない型はコンパイラが表示したテキストに代替されるので、結果が `SemanticMessage#plain` より悪くなることはない。
+
+% 2 1 0 1b7485af4daa45d5134d2a485752597b
+
+% 0 1 0 08f225166e68361705acb5dcc1e7e2be
+
+% 1 1 0 0a0ea2de9a05df011d64223ddb917928
+
+% 2 1 0 1754ae32105eed9a12f190ac4cd0232e
+
+% 0 1 0 0f4d5c6b3daf24ef0a83e2fd2e1eda07
+
+% 0 1 0 07af79ab4f9a50800e235710fa93f5f0
+
+% 0 1 0 18f167d6b882391f0514f14b61cf37e6
+
+% 1 1 0 0bf289308be305f003e966b06a846e7a
+
+% 2 1 0 06be9f9b3ae47e9a01deb44e0f56c2cf
+
+% 3 1 0 136879d3ebd4bc2505af849ddcfda1eb
+
+% 4 1 0 0a4bc5437cc8088405cb1f154094c80b
+
+% 0 1 0 0292c53d6b9facfb083437abf8e55e4d
+
+% 1 1 0 08b9d33086c6b7a51fdebb42dda4a2bc
+
+% 0 1 0 1327d12ef7f16c220d8e1add77a2793f
+
+% 0 1 0 009f567177c2f1451c570616f775c979
+
+% 1 1 0 0bd3ad58a779fb3906763955d706bf7a
+
+% 2 1 0 1a2da4d7a0e4dbbc15a9760d4f966e4c
+
+% 3 1 0 1b87fc0d3634d4c80f39cbac8961b2d4
+
+% 4 1 0 0b3955b7512895240c6644555eda4ac4
+
+% 0 1 0 01bfbc019f831d16179a311ca587130a
+
+% 1 1 0 0a3cb561e8020c2212906907c5fb95d1
+
+% 0 1 0 1422cdf8f4c1c07209d70bd006942562
+
+% 1 1 0 0959e5a974f123191283828c2f663165
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 10 0 1bd89306f11969c6124d04ec4aa038df
++ entry .teletype   コードと型を構文ハイライトした、スタイル付きの端末テキストとしての意味論的なメッセージ
++     `delicious.ansi` にある `SemanticMessage` に対する拡張で、`delicious.teletype(message)(reifier)` として呼ぶ。アンブレラにはエクスポートされない。そこでは `teletype` は escapade の `Teletypeable` による描画だからである。
++     スコープ内に `Imports`、`ScalaSyntaxPalette`、`Highlight` を必要とする（トークン化された `Highlight.default` はインポートなしで見つかる）。
++     各 `Markup.Code` ノードは harlequin によって Scala の項としてハイライトされ、各 `Markup.Typed` ノードは `Reifier` を通じて実体化され、`Imports` に対して描画され、型の位置でハイライトされる。実体化できない型は、代わりにコンパイラが表示したテキストからハイライトされる。
++     コンパイラ自身がテキストに付けた ANSI のスタイルは先に取り除かれるので、ハイライトは一から行われる。
+
+% 2 1 0 02a363100a696c5100a56ada7739d6e7
+
+% 3 1 0 02c6f418f1aa06240a45a058ab83c53e
+
+% 1 1 0 0ea062f168fab3031f31d3875dd50b06
+
+% 2 1 0 18dad787821159e5025eb2fa9c86c403
+
+% 0 1 0 077749de4e6b83e1063dc8ed9e357a72
+
+% 0 1 0 045552636ab390d117494ddfc8a2cba6
+
+% 0 1 0 0d545189ad4bcdc80b75e86e9b2c7856
+
+% 0 1 0 16ed73310fd01ea417e78b58a524b3cb
+
+% 0 1 0 14c0ffec95a94f360596baac5450968a
+
+% 0 1 0 14e6d1d56a0552390c9137daf72bee47
+
+% 0 1 0 0c9a0d1bde7ffcc915b9a6695ce25e96
+
+% 0 1 0 00c4e3ca5bc9383204aac10905120d1f
+
+% 0 1 0 118fb17f1caf098918184c1d6c93ae00
+
+% 0 1 0 15dd2babbd84a4c90944ab37c1a8abef
+
+% 0 1 0 05278e039bf9d64f00722c5f62fd5de3
+
+% 0 1 0 0d90b6038e246a4b1921011701c01ff1
+
+% 0 1 0 1042c10eb6cdab760947b72144b2dac4
+
+% 0 1 0 0413921d2621b6490e9735fb408ab1d7
+
+% 0 1 0 162e7b79aecaa52800616c39be3cf672
+
+% 0 1 0 1753044b6845d15418eede5a99d422ca
+
+% 0 1 0 062c59b8d875ec261ce4b99c9cfe00dd
+
+% 0 1 0 1cdd72dd4df554520b96e8d4e6782f5e
+
+% 1 1 0 0da0658abe450d250c0bd0f46a90d6bf
+
+% 0 1 0 09eae7e79421fb3c052f2f5b5e3d6378
+
+% 0 1 0 1ea2a0c5d02d95de122077dbea9f8dd8
+
+% 0 1 0 0ce90d10d03eeb7916a3b4500345d00d
+
+% 1 1 0 1a99c6a08f9cc5b1107d21462d2e25e8
+
+@ 0 2 0 111699e3c2a541580a1c44d66bcfc99d
++     パレットは色の選択であるため、`ScalaSyntaxPalette` を提供するライブラリはない。プログラムは、この例のように、各アクセントに色を一つずつ割り当てたパレットを given として定義する。
+
+@ 0 1 0 009b7ab22dca918404eb284fcbf03aba
++ entry .Shim   delicious が包むコンパイラ内部の API の綴り。コンパイラの系統ごとにある
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 0c614c333d6a3455102d04de83a2a369
++       直接使うためのものではない。
++       `delicious.compiler` は、Scala 3.9 の系統用と 3.10 用の `Shim` を一つずつ持ち、それぞれの系統の形に対して同じ名前を定義する。そのため、delicious の他の部分は、どちらが使われているかを知らない。
++   entry .compilationUnitInfo   仮想ファイルとその `TastyInfo` に対する `CompilationUnitInfo`
++       3.9 は `TastyInfo` を値として受け取り、3.10 は遅延ローダーとして受け取る。木のアンピクラーはこれを無条件に読むので、シムはそれぞれの系統が期待するとおりに、常に存在する形で与える。

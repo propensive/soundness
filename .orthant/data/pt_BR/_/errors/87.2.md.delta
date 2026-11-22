@@ -1,0 +1,38 @@
+orthant 2 language
+
+% 0 1 0 134faaa6e4fc207c05e99ded56dc1638
+
+@ 0 1 0 1c747699f5130d9a192424fe02581c07
++ Lançado quando o Legerdemain não consegue ler um parâmetro de consulta.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 0a693e43b1c39699098f6d3685cf21df
++ O Legerdemain decodifica parâmetros de consulta nomeados em valores tipados. O construtor recebe
++ um `reason: Reason`; a mensagem renderizada é
+
+% 0 1 0 1740d9673b7a71940b2665d1fe2aca87
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0251a757dd170689116e576cfc585821
+
+@ 0 4 0 14c8be31c16086b101a3945369f62ac9
++ O parâmetro não estava presente na string de consulta. (Quando o tipo de destino tem uma
++ instância de `Default`, o padrão é usado no lugar do valor ausente, mas o erro ainda é lançado
++ para que o `Tactic` de quem chama possa observá-lo.)
+
+@ 0 1 0 1070e7e9cace714f1121cbd9d05e8df6
++ **Exemplo.** `[↯/s.87.2.1] the query parameter could not be read because the parameter was not present in the query string`
+
+@ 0 3 0 13989b7382383b8a15257851b65cf7d2
++ **Resolução.** Confirme que o parâmetro está incluído na string de consulta; forneça uma
++ instância de `Default[T]` para recorrer a ela quando ele estiver ausente.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 13b1329eeb7591731217af78d070afed
++ - Código-fonte: `lib/legerdemain/src/query/legerdemain.Query.scala`

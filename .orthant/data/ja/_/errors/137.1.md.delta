@@ -1,0 +1,55 @@
+orthant 2 language
+
+% 0 1 0 0896b3e432e43868016b187b992b8560
+
+@ 0 1 0 003ee888ec08263f08929c2470e8ff54
++ コンパイルの結果を成果物にリンクすることに失敗したときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 1f96c98d564e7a4c163d65495a1188d5
++ リンクは、コンパイルの出力を実行可能な JAR、JavaScript のバンドル、ネイティブのバイナリ、あるいは Android のパッケージに変える。
++ このエラーは、リンカーの異常終了と、各成果物が課すエントリーポイントの要件を扱う。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 1b34c4acdb932e331c202c33129a73fb
+
+@ 0 1 0 0e2b75042b553d2f099706bbd4809ed6
++ **例。** `[↯/s.137.1.1] the linker terminated abnormally`
+
+% 0 1 0 06e3b1f5269154f61e4b29827109e8b8
+
+@ 0 1 0 1135ea839ca27da10de3d744ab79ef89
++ **例。** `[↯/s.137.1.3] the artifact requires exactly one entry point`
+
+% 0 1 0 107cf66714a8f8d90dfda3013d2df95b
+
+@ 0 1 0 1bfdee007947a48104a27e138920b644
++ **例。** `[↯/s.137.1.4] an executable JAR permits at most one entry point`
+
+% 0 1 0 19e635ab50142bad138c841c394f83d8
+
+@ 0 1 0 1e5203bfb7b4d220088ee8a20462d306
++ **例。** `[↯/s.137.1.11] compilation failed with 2 errors`
+
+@ 0 1 0 1cd2aaa8f18f78d71024b8d645de18f1
++ 理由は、コンパイラが報告したすべての診断を `notices` として持つ。
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解決方法
+
+@ 0 3 0 135d53f731e3c25f1c1d8964dabd377c
++ 実行可能な JAR はエントリーポイントを最大一つしか許さず、ネイティブの実行ファイルはちょうど一つを要求する。理由が、どの規則が破られたかを示す。
++ 異常終了したリンカーは、そのスタックトレースを持つ。
+
+@ 0 1 0 0b71e6280b1370aa1e108b1a528a55e4
++ > このエラーは以前はコード `↯/s.137.3` を使っていたが、これは `CompilerError` と衝突していた。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 08f656e7909104d21223f6c6075ad419
++ - ソース：`lib/anthology/src/core/anthology.Link.scala`

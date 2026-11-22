@@ -1,0 +1,35 @@
+orthant 2 language
+
+% 0 1 0 186b8925cd923891109d7b6bf0e504df
+
+@ 0 1 0 01a8afc5336e3e4f0a2bca1365fddad4
++ Levée lorsque Zephyrine ne parvient pas à analyser une valeur d'un format enregistré.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 3 0 008fe1f3aeeb26fe1c29ca7a478f391f
++ `Parse.Error` est une erreur générique d'analyse de format. Elle porte le `Format` analysé, la
++ `Position` à laquelle se trouvait l'analyseur, et l'`Issue` signalée par l'analyseur propre au
++ format.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0ccc4e63a32e18c61e567331bdfd82bd
+
+% 1 1 0 16d943718c7bde1f1a88476bf205b137
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 2 0 1d64bd2b0d7ac48f0db6bc6545cc1361
++ Servez-vous de la `Position` et de l'`Issue` qu'elle contient pour localiser et corriger le
++ problème dans l'entrée.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 0fc70e27209fc31b0cb8ffc1209b0732
++ - Source : `lib/zephyrine/src/core/zephyrine.Parse.scala`

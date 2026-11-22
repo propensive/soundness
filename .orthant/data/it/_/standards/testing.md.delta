@@ -1,0 +1,142 @@
+orthant 2 language
+
+@ 0 1 0 0347f2f17bafdb50062aa78671957587
++ # Standard di test di Soundness
+
+@ 0 4 0 180093f96fd176021b81726097449021
++ Questo documento definisce come si scrivono e si organizzano i test nelle librerie Soundness. I
++ test usano [Probably](https://github.com/propensive/probably/). Integra `syntax.md` (spaziatura e
++ formattazione) e `benchmarking.md` (misura delle prestazioni). Gli esempi sono tratti da
++ `lib/*/src/test/*.scala`.
+
+@ 0 1 0 128121213fd1bbc803c5506b0f37a470
++ ## 1. Posizione e nomi
+
+@ 0 2 0 124fa5e2f4941d520e30c1d16e903188
++ I test si trovano nella directory `src/test` di un modulo. L'oggetto di test estende `Suite` e
++ implementa `run()`:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 18044bee7505f5bf1ce827a4102a630d
+
+% 0 1 0 05b21312d4476d490bedde74e2206bb2
+
+% 1 1 0 176ab5997d1a33eb01209ac7d07807b2
+
+@ 0 4 0 06149e7724a0030112a6316081df5f95
++ Il titolo della suite è un `Message`, che nomina il modulo sotto test. Prima di esso viene l'id
++ della suite, un letterale stringa con cui una selezione la indirizza: `fume run logging`. L'id
++ nomina lo scopo del modulo, non il modulo. Tienilo breve, e di una sola parola a meno che non ne
++ servano due:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 0a63bb414baca57611071104030a64c7
+
+% 0 1 0 1116ac56b72335f408c3022657ba1d16
+
+@ 0 4 0 0b42b0e9944df0d81aa65b66c02c18eb
++ column  Esempio
++ row  la suite di un modulo  lo scopo del modulo  `logging`, non `eucalyptus`; `html`, non `honeycomb`
++ row  la suite di un'area, in `<module>.<Area>Tests.scala`  l'id del modulo e l'area  `json-parser`, `json-records`
++ row  una suite dichiarata solo con il titolo  derivato dal titolo; un ripiego, non la convenzione  `eucalyptus-tests`
+
+% 1 1 0 19131d8fbd3b873c1ff62a940a6261bf
+
+@ 0 1 0 1c24d5d3914f8b0a14464d659202d909
++ Un metodo fuori da `run()` che dichiara test per la suite la nomina con lo stesso id:
+
+% 0 1 0 07985ca9314478fd079741853340b0f1
+
+@ 0 1 0 0061313c865e5a150c82da9f02a2b1b8
++ ## 2. Struttura
+
+@ 0 2 0 0f8bd52461a72d8e1915ccb9e902b2c4
++ Raggruppa i test correlati con `suite`, e scrivi ogni singolo test con `test`, entrambi con un
++ `Message`:
+
+% 2 1 0 144d93b1cccb8a680fe040b3ab5d5c48
+
+% 0 1 0 08d8de7dbf1cc98c049469de2e9093da
+
+% 0 1 0 0197b8799e87450007239635f36ada27
+
+% 0 1 0 07dd18d8e9cc763a0b80c686049aa059
+
+% 0 1 0 14ec7224cc90e62c14f570d31d599f84
+
+% 1 1 0 0a11c3e11d36e44607d976454a563117
+
+@ 0 3 0 14ae5fdc7767086913c23013f0c4366e
++ Un blocco `test` si valuta nel valore sotto esame; l'`assert` (o `check`) che segue dichiara che
++ cosa deve valere per esso. Tieni un'asserzione logica per test, così un fallimento nomina
++ esattamente che cosa si è rotto.
+
+@ 0 1 0 173d5eecb643b08607fe9647174bede1
++ ## 3. Nomi dei test
+
+@ 0 3 0 10c5c51761cebeb3112f0f6a88d0d5d8
++ Il nome di un test è una frase `m"..."` breve e descrittiva, **sotto i 70 caratteri**, che dichiara
++ la proprietà verificata anziché il metodo chiamato. Preferisci
++ `m"a malformed pointer fails to parse"` a `m"test parse"`.
+
+@ 0 1 0 17187bfaa3a48f95101f451f63dc7fc8
++ ## 4. Asserzioni
+
+@ 0 2 0 0c7a58f97e3ff6d91fc47657120852e2
++ Le asserzioni si scrivono in stile fluente, con il predicato applicato al risultato del blocco:
+
+% 2 1 0 0322f92bdd85cf66122c7a47c4405425
+
+% 0 1 0 109cb27fc4219ebc0253866de87830ed
+
+% 0 1 0 06afe6fa56576f9c040c3a5e785e977b
+
+% 0 1 0 0c43bc8b58ae90dd00f2f33b9c7eb612
+
+% 1 1 0 14c66cf341f6d87f0507548f432f9f89
+
+@ 0 2 0 094e9caa128f18a418baba832f717d25
++ Confronta con un valore atteso con `_ == expected`; usa un predicato per controlli più laschi. Non
++ lanciare eccezioni e non usare `require`/`assert` della libreria standard.
+
+@ 0 1 0 1b6a6722be2eafb20c9dbafbaaec5898
++ ## 5. Strategia di errore
+
+@ 0 3 0 0a3e882742e9a6c110d4517f32f1d2f0
++ Un test che esercita codice fallibile sceglie esplicitamente una strategia di errore, di solito
++ importando `strategies.throwUnsafely`, così che un fallimento inatteso emerga come test fallito
++ anziché come errore inghiottito:
+
+% 2 1 0 06b6f0785ac9e27200a98f376348778b
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 2 0 199604dd69404d1c072e5c78d6e478c1
++ Per verificare che un fallimento *avvenga*, catturalo e fai un'asserzione sul suo motivo invece di
++ lasciarlo propagare.
+
+@ 0 1 0 0b7bb768997e6f391ef13cb91e531c71
++ ## 6. Test a tempo di compilazione
+
+@ 0 4 0 0bb78481e4b927c717d8d59ab7ae96a3
++ Per asserire che il codice viene *rifiutato* dal compilatore, cioè che uno stato impossibile
++ davvero non può essere scritto, usa [Larceny](https://github.com/propensive/larceny/), che cattura
++ gli errori di compilazione come valori che un test può ispezionare. Un esempio `// does not compile`
++ nella documentazione dovrebbe avere un test Larceny corrispondente.
+
+@ 0 1 0 0f0b43066f3a0ee80a85f91378ec5c13
++ ## 7. Che cosa testare
+
+@ 0 4 0 07f06ddba67f12f819f5e00fad6c73aa
++ Testa il comportamento su cui un utente fa affidamento: il risultato di ogni operazione pubblica, i
++ casi limite (vuoto, assente, massimo), e i fallimenti che devono essere sollevati. Verifica che le
++ costruzioni non valide non compilino. Non testare direttamente i dettagli interni privati;
++ raggiungili attraverso la superficie pubblica.

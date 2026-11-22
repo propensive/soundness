@@ -1,0 +1,1118 @@
+orthant 2 language
+
+@ 0 1 0 107a54599e94545c0f0fc9caf941e101
++ ## Sistema de ficheros
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 4 0 16ba86d8262ceb9f043709b3ae2c527e
++ Los ficheros de un disco se leen y se escriben a través de las [rutas](paths.md) tipadas que ya
++ los describen. Una `Path on Linux` tiene las operaciones que tocan el disco: abrirla para leer o
++ escribir, crearla como fichero o como directorio, listar sus hijos, copiar, mover y borrar. Cada
++ operación declara los errores que puede lanzar.
+
+@ 0 3 0 1b8336d5f1310ff60c5f106f856a3707
++ Cómo se comporta una operación en los casos delicados lo deciden políticas, elegidas en el
++ ámbito. Dicen, por ejemplo, si una copia sobrescribe un fichero existente, y si un borrado
++ desciende a un directorio.
+
+@ 0 4 0 171b443660e191241d5309d181341b67
++ Más allá de los ficheros individuales, los directorios estándar de un sistema, como el
++ directorio personal, la caché y `/usr/share`, son valores con nombre. Un directorio se puede
++ vigilar para detectar cambios. Un fichero se puede bloquear, mapear en memoria, etiquetar con
++ atributos extendidos o buscar a lo largo de una lista de directorios.
+
+@ 0 1 0 16bd5223a217010d0702346fda07cfac
++ ### Sobre el sistema de ficheros
+
+@ 0 5 0 17f39d71b11217a918acc65ded4088ff
++ La API del sistema de ficheros de la JVM está llena de bordes sin tipos. Una ruta es una cadena,
++ o un objeto sin tipo. Un fichero que falta es un `null` aquí y una excepción allá. Las
++ cuestiones de política cruciales están enterradas en argumentos de indicadores, o fijadas por el
++ método que se elige, y son invisibles en el tipo: ¿sustituye esta copia lo que ya hay, y vacía
++ este borrado un árbol entero? Un programa que se equivoca en una de ellas destruye datos.
+
+@ 0 1 0 132f4a4afe4a91c714e83c067f84d8b8
++ Aquí se elevan a los tipos:
+
+@ 0 5 0 0e324b3e64584c1f144b70b2b2996ba0
++ - Una ruta lleva su plataforma, así que sus reglas se conocen.
++ - Una operación declara `raises Io.Error`, y el error tiene un motivo concreto: un fichero que
++   falta, un permiso denegado, un directorio que no está vacío.
++ - Cada política es un [valor contextual] explícito, así que sobrescribir, o borrar de forma
++   recursiva, es una decisión que el código declara, no un valor por defecto que hereda.
+
+@ 0 2 0 02ebf91e48de62881c3a56793d54fe88
++ Todo procede del paquete `soundness`. Las capacidades del sistema, y las políticas que necesitan
++ las operaciones, se ponen en el ámbito:
+
+% 2 1 0 155243e372c6dca21fef70f144ec1923
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 16dc30250898bc2409d813344f20c8e0
+
+% 0 1 0 0f5baf407fd4fe460823dbe8a72b08d0
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 196c8a597bcc2c1b0933e778d81765e3
+
+% 0 1 0 0e29fdb93f7639341f79f55d2ccb9309
+
+% 0 1 0 022401798934ffd81694ba61e697a094
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 0739bdcf01f910dc0d486b3e5f3b91e1
+
+% 0 1 0 185507d5c88995961b13dd553740b513
+
+% 1 1 0 158821a44078620408f260ca789543b2
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 9 0 14c71c6721dd8e79025b752242f8fe8c
++ column  Importaciones
++ column  Deciden
++ row  `filesystemBackends.javaBaseFilesystem`  qué implementación toca el disco: aquí, `java.nio`
++ row  `pathInterfaces.pathOnLinux`  el tipo de ruta con el que se dan los directorios estándar
++ row  las cinco de `filesystemOptions`  las respuestas a las cuestiones de política, descritas en [Copiar, mover y borrar](#copying-moving-and-deleting)
++ row  `charsets`, `codepages`, `textSanitizers`  cómo los bytes se convierten en texto, y el texto en bytes; [Caracteres](characters.md) los describe
++ row  `environments`, `systems`, `temporaryDirectories`  de dónde proceden el [entorno](environment.md), las propiedades del sistema y el directorio temporal
++ row  `strategies.throwUnsafely`  que un error se lanza como excepción; [Errores](errors.md#choosing-a-strategy) tiene las demás estrategias
++ row  `stdios`, `termcapDefinitions`  dónde imprimen sus resultados los ejemplos
+
+% 1 1 0 010f87bdd4bca34e06c2ce38bdb9b9dd
+
+@ 0 1 0 09588ee4321effc6064fee07f3e3a880
++ Los ejemplos trabajan en un directorio propio, bajo el directorio temporal del sistema:
+
+% 2 1 0 1fe92cbe96f01d1006cb96b3ae650474
+
+% 0 1 0 00e51681c5cdc9da101de8239861f825
+
+% 0 1 0 018cfc741c90bbee1241caf45f625e72
+
+% 1 1 0 022b4bfcfe363f940876d10c5d424e48
+
+@ 0 1 0 15a8e50419f71c4c162aa513d8c7bc92
++ ### Ficheros y directorios
+
+@ 0 2 0 1f1bf37b6cacbf4f0efb7507f13335e6
++ Una ruta nombra una ubicación. Que sea un fichero o un directorio depende de lo que se cree
++ allí. `create[Directory]` y `create[File]` hacen existir una entrada:
+
+% 2 1 0 0819aff275496d480aa63a34e8194b82
+
+% 3 1 0 17aeb4abab6ffa670d2ea9d6991fbdd7
+
+% 4 1 0 0cc87f16d41faa260400780536054992
+
+% 0 1 0 1d66446f3f3d8d9503f403b1bde0146e
+
+% 0 1 0 13153155407167361247e38e150c33e1
+
+% 1 1 0 0a9631fd2720487e19a16d751eb4ade9
+
+@ 0 3 0 0dec220c4c7e35d411b66003d6100cfa
++ Por defecto, crear se niega a destruir nada. Crear sobre algo que existe, o bajo un padre que no
++ existe, es un `Io.Error`. Donde se pretende cualquiera de las dos cosas, lo dice un indicador,
++ en el lugar donde ocurre, en lugar de una importación que lo diga para todo el fichero:
+
+% 2 1 0 02c29d81240d495717efcf0bce7e7d3e
+
+% 3 1 0 0b208763126b42fe153ddc145da067b9
+
+% 4 1 0 0efa4be4d7c922a90844197ea787366b
+
+% 0 1 0 00015d0db2dc5a6d166e1c1aa1aa5068
+
+% 0 1 0 1ad9e9b143f1476d0e7974db946b36d9
+
+% 0 1 0 107f536d17cfe71010e5f1cf7f252b5e
+
+% 2 1 0 1ef27c2081b7b8dd055b1ae37c4ee597
+
+% 0 1 0 1ac9de578a6a082f167cc22d8b1cd490
+
+% 1 1 0 18ba9e3d0e3f45210c94d64da2e3d871
+
+@ 0 1 0 1a1fb34b744921e8106b096086e87854
++ `Fifo` y `Sock` también son entradas, y se crean de la misma manera.
+
+@ 0 1 0 099d8ce7b7422e080d27b5267cc3c56e
++ ### Lectura y escritura
+
+@ 0 1 0 0793dea3703f59561e5dbbe1ab3546b4
++ Cuando se quiere un fichero pequeño entero, `read` y `write` actúan directamente sobre la ruta:
+
+% 2 1 0 0d3fa71d81c8d7e80f245d5d0aba7898
+
+% 3 1 0 0534d3b92929e4781baf4ca5e9922c43
+
+% 4 1 0 02606b8612dd3a4e03bf8ae0e2f16a2a
+
+% 5 1 0 119df1d417738b5713b10e3741e61c30
+
+% 1 1 0 18e478fc066e10451852af589c0abcaa
+
+% 2 1 0 04ce15d3b8ec3e5105e8c89284c50bfc
+
+@ 0 3 0 1e8d90859924733d17790a771316d8b0
++ `read` toma el tipo como el que se lee el fichero. `Text` se decodifica con el charset que hay
++ en el ámbito, y un tipo con un decodificador para un formato se lee de la misma manera, así que
++ `file.read[Json]` analiza un fichero [JSON](json.md#parsing).
+
+@ 0 3 0 1b9c9aaae0f6599c0c064c15d53aa5b0
++ Un fichero más grande se lee y se escribe *abriéndolo*. `open` nombra la forma como la que se
++ abre la ruta, y el modo en el que se abre, y ejecuta un bloque con un descriptor. Dentro del
++ bloque, `file` es el descriptor abierto:
+
+% 2 1 0 1ae8c557c909a45a198bb21caad679dd
+
+% 3 1 0 161157260566b5c90da6569d215a5004
+
+% 4 1 0 0a6c82351b04e7c70cbe87f209e86f38
+
+% 0 1 0 08a636603522eaca1a9ebd56799b406b
+
+% 1 1 0 1c62b73cb609ed871cc43071ef9f05b3
+
+% 0 1 0 0f047750df8a5c511174f1111af5c2cc
+
+% 1 1 0 0d853a23472781151012733437e43c5d
+
+@ 0 4 0 0ba732a794ca6e5406e0aeefcb5be605
++ El descriptor existe solo mientras dura el bloque, así que el descriptor de fichero no puede
++ sobrevivir al ámbito que lo posee. Esta es la forma descrita en
++ [ámbitos delimitados](../../philosophy/delimited-scopes.md), y la
++ [comprobación de capturas](../../philosophy/capture-checking.md) la impone.
+
+@ 0 4 0 09e61ee9e1e77fcc02533875778570fb
++ El modo no es un simple indicador en tiempo de ejecución. Se lleva en el tipo del descriptor,
++ como un conjunto de *concesiones*. Abrir con el modo por defecto, `Read`, da un descriptor que
++ concede solo la lectura, y `Read & Write` concede ambas. Escribir a través de un descriptor que
++ se abrió solo para lectura no compila:
+
+% 2 1 0 0060c063ef913d5908b1bc56855b894f
+
+% 3 1 0 1059f0a89bfc5fc0189d4b8354fe6276
+
+% 4 1 0 0983cf144ac5f5bb0fe793270f46a5e8
+
+% 5 1 0 190c05c99bd036a2004dc1445e537684
+
+% 0 1 0 125ff7d028140bdb0054193896ed304b
+
+% 1 1 0 15dbf37f5e3a56571ff023b39d6d93f6
+
+% 1 1 0 19b1da898df6e1601937a13b126c744a
+
+@ 0 2 0 01e27183f9ebc37a028c6d8a9e469250
++ Toda una clase de errores se convierte así en un error de compilación: escribir a través de un
++ descriptor de solo lectura, y retener un descriptor de fichero más allá de su ámbito.
+
+@ 0 3 0 07e65451c301968e0a84848841132187
++ Abrir una ruta que nombra un directorio limita lo que se puede alcanzar a través de ella. Las
++ rutas que se derivan del descriptor viven en un *plano nuevo* propio. `..` no compila sobre una
++ ruta así, y una ruta obtenida de un directorio abierto no puede escribirse bajo otro:
+
+% 2 1 0 0ad9cf5db43a5ffc094c98c79f238c8b
+
+% 3 1 0 1d5c5baf28595bf3179cc6ea34b73f7f
+
+% 4 1 0 13fcbead5c2151b1020943d4944b0999
+
+% 0 1 0 1537be846289719006c281a2a4af3e0f
+
+% 0 1 0 0ebd7060a305dbbb03b61023dafaf55f
+
+% 0 1 0 04a90863466cd478199ec410a137c78a
+
+% 0 1 0 04a78212446d813f05ad71a970bf67f4
+
+% 1 1 0 17a162343d2d0ac11b3f857c772501e4
+
+@ 0 1 0 1b29e799828bd4cd086005ef9a52be21
++ ### Acceso exclusivo y compartido
+
+@ 0 4 0 0b485e6e8eb213ce180de6550ed7ee3f
++ `Exclusive` es una tercera concesión, junto a `Read` y `Write`, y significa lo que dice. Ningún
++ otro ámbito del programa puede tener abierta una ruta que se solape mientras dura. El
++ solapamiento es por inclusión, no por igualdad: un directorio y algo que está debajo de él se
++ solapan, y dos hermanos no.
+
+% 2 1 0 01b1052fa02b80071faaad0aa20cd938
+
+% 3 1 0 00d8da55a086b5ba1ea14f4484e712c1
+
+% 4 1 0 121537bd2b6d5e0212c82e10699a0961
+
+% 0 1 0 07eca7b479606ca41c99d12490956cc6
+
+% 0 1 0 1747c774c9d5adf31a2f731c46f97dfa
+
+% 1 1 0 0cfadefa5a7e8046123b1bba5244e45c
+
+@ 0 4 0 198168aa54d3f54c1734c8c55f9cdda6
++ Dos lecturas ordinarias pueden coexistir. Una apertura exclusiva entra en conflicto con una
++ apertura que se solape en cualquiera de las dos direcciones, tanto si el ámbito exclusivo es el
++ exterior como si es el interior. El conflicto es un `Io.Error` cuyo motivo es `Busy`. Se lanza
++ en la segunda apertura, y no se descubre más tarde como corrupción. La reserva se libera cuando
++ termina el ámbito, termine como termine.
+
+@ 0 6 0 168bf1fe2aaf109b0a204b6a8df2787c
++ Para un *fichero*, a diferencia de un directorio, `Exclusive` toma además un bloqueo del sistema
++ operativo, así que la exclusividad se mantiene frente a otros procesos, y no solo dentro de este.
++ `Shared` es la contrapartida del lector. Puede coexistir cualquier número de poseedores
++ compartidos, y una apertura exclusiva los espera, o falla de inmediato si el bloqueo se pide sin
++ bloquear. Un bloqueo puede cubrir también un rango de bytes en lugar del fichero entero, para
++ las disposiciones orientadas a registros que usan las bases de datos.
+
+@ 0 1 0 103df564bbf22fab12184d16352faca7
++ Las cuatro concesiones, una junto a otra:
+
+% 2 1 0 0e326fa62ad68625039a0a76a0038317
+
+@ 0 7 0 1905cf0e16a6e7050459bf347e4b2727
++ column  Concesión
++ column  Permite
++ column  Entra en conflicto con
++ row  `Read`  la lectura, y es el modo por defecto  una apertura `Exclusive` que se solape
++ row  `Write`  la escritura  una apertura `Exclusive` que se solape
++ row  `Exclusive`  ninguna otra apertura que se solape en el programa, y para un fichero un bloqueo del SO  cualquier apertura que se solape, como `Busy`
++ row  `Shared`  para un fichero, un bloqueo compartido del SO, mantenido junto a cualquier número de otros  una apertura `Exclusive`, que lo espera
+
+% 1 1 0 129829dea30812391cd218017a7bb920
+
+@ 0 1 0 1999fc929da108e4122abcb2724a0344
++ ### Crear como ámbito
+
+@ 0 4 0 006681d847a91e16100d565471d67b04
++ `create` es la contrapartida de `open`. Donde abrir actúa sobre algo que existe, crear lo hace
++ existir, y da un descriptor sobre ello para el mismo ámbito. El contenido escrito dentro del
++ ámbito se consolida cuando el bloque termina, y un ámbito que falla no deja nada tras de sí:
+
+% 2 1 0 1df2c497320212c312b4235c2f1a6c36
+
+% 3 1 0 0e5b1c1f70a52e551f6c2e8a1ea531fc
+
+% 4 1 0 02c489edee6989c30eab2e92e1ca9899
+
+% 0 1 0 1bad568157b3051211b14e48877eb350
+
+% 0 1 0 087c1edc83a2a3111732fc261938c2f7
+
+% 0 1 0 006924ab7c02737802b6d04cdfa289dd
+
+% 0 1 0 0df3616b1683ccf306a3260893c2732e
+
+% 0 1 0 0942dbaa88699f7111a18034ce48d9be
+
+% 1 1 0 00e39ef8820566ae07c4b251f6240875
+
+@ 0 3 0 1bec28590da0734d17cf3d9e3797ec94
++ Un directorio *temporal* lo crea y lo elimina su ámbito, tanto si el ámbito tiene éxito como si
++ falla. Un *fichero* temporal funciona igual, para un índice desechable o una fixture de prueba.
++ Su descriptor conoce además su `path`, para lo que haya que decirle dónde está el fichero:
+
+% 2 1 0 15cb60547c7ed1b61ca62acfbeb534eb
+
+% 3 1 0 089ddd36714716451ad7c5fa8abdc482
+
+% 4 1 0 034e2529cd55bafc17a0461fbe92f85a
+
+% 0 1 0 188735f10e3883d718658fd559155a6a
+
+% 0 1 0 053bfb1cf64cb31a158a06bf8a1b18ba
+
+% 0 1 0 1c107e116a7fdd3513b6283c3e4e99bc
+
+% 0 1 0 08038fb03d3d4b491d6bc2260c8b21a1
+
+% 0 1 0 1dc248928e9057fa0d31965169f00031
+
+% 0 1 0 05ba3f5ce1cce79b1c9eab8ba66a5274
+
+% 1 1 0 0010dba12da50d2002831156b797db2e
+
+@ 0 1 0 06e84234673e2a280e6b85dfae05b01f
++ ### Máscaras de creación
+
+@ 0 4 0 072b535b04b213b41fc2ec4156752b92
++ Un proceso crea ficheros bajo su *umask*: los bits de permiso que el sistema operativo retira de
++ todo lo que crea. Normalmente, ahí acaba el asunto. Pero un proceso que sirve a varios
++ llamantes a la vez, como un [demonio](daemons.md), tiene una umask y muchas invocaciones, cada
++ una con la suya.
+
+@ 0 4 0 0d4c091071a644f503db45910cdd5340
++ Por eso la máscara puede ser un valor contextual. Una `Umask` en el ámbito se aplica a todo
++ fichero y directorio que se cree mientras está vigente. Se solicita en la creación, así que la
++ entrada nunca existe con permisos más amplios que los pedidos. Donde no hay ninguna en el
++ ámbito, se aplica `Umask.process`, que es la del propio sistema operativo, exactamente como
++ antes:
+
+% 2 1 0 09e44a63abc8c5441a99b1bb058e5864
+
+% 0 1 0 19b62c58cce3082809a2dceee2a42f2b
+
+% 0 1 0 02aaa3e4dbc836b41056445cb8d35407
+
+% 0 1 0 09d7f0626ee6529907e5d2d07273a08b
+
+% 0 1 0 0d62db0605ae72e506114570768d4c16
+
+% 1 1 0 0ca5157507172fbb1f3f942c3c0c3e4d
+
+@ 0 5 0 13c3d547047c29c216afea79ca06db6d
++ `0x3f` es la máscara que en octal se escribe `077`, que deja un fichero legible y escribible
++ solo por su propietario. Una máscara se analiza a partir de la forma octal que imprime `umask`,
++ con `Umask.parse(t"022")`, y `octal` la vuelve a escribir en la misma forma. El descriptor de
++ servicio de un demonio es un `Umask.Provider`, así que dentro de un bloque `cli` la máscara de
++ la invocación ya está en el ámbito, sin más declaraciones.
+
+@ 0 1 0 1e32e56bdad11e1206224f09b5c47937
++ ### El patrón de apertura, en general
+
+@ 0 4 0 11ba36f6a45f2c28135317e9b7f9a7b0
++ `open` no es específico de los ficheros. Muchísimas cosas comparten la misma forma. Un valor dice
++ *dónde* está algo, ya sea una ruta, un búfer en memoria o una URL, y llegar a su contenido es un
++ acto distinto y con ámbito. Nombrar ese patrón una sola vez significa que se lee igual dondequiera
++ que se aplica.
+
+@ 0 5 0 0d6f46fae17df0d70e905616766de3dd
++ Una instancia de `Openable` relaciona un destino con una *forma*. Por eso la forma es un
++ argumento de tipo, y no la implica el destino. La misma ruta se abre como `File`, como
++ `Directory`, como [archivo](archives.md) `Zip`, como [PDF](pdf.md) o como [imagen](images.md), y
++ cada uno es un descriptor distinto con operaciones distintas. La forma puede omitirse cuando un
++ destino tiene una sola instancia. Cuando tiene varias, se notifica la ambigüedad, con la lista
++ de alternativas.
+
+@ 0 3 0 0d54548c16f86865129c00042952b841
++ Detrás del patrón están las [clases de tipos][clase de tipos] `Openable`, `Creatable` y
++ `Sessional`, para `open`, `create` y `session`. El modo que toman las dos primeras es una
++ combinación de `Grant`.
+
+@ 0 1 0 15d481bfc7a72c2206d5bdd3f337e83e
++ Las formas que describe esta página son:
+
+% 2 1 0 08b9de4ee39561af10cd7c1f1777d240
+
+@ 0 8 0 19fb446add1aab681ce45e4775c11578
++ column  Forma
++ column  El descriptor da
++ row  `File`  el contenido del fichero, para leerlo o escribirlo según permitan las concesiones
++ row  `Directory`  rutas confinadas bajo el directorio, en un plano nuevo
++ row  `Scratch`  un directorio que se elimina cuando termina el ámbito
++ row  `Scratch.File`  un fichero que se elimina cuando termina el ámbito, y su `path`
++ row  `Ram`  lecturas y escrituras posicionales sobre un fichero mapeado en memoria, de cualquier tamaño
++ row  `Watch`  un flujo de los cambios bajo un directorio
+
+% 1 1 0 08e558da0c94c3c70073b0e0ac497c74
+
+@ 0 1 0 18b021c04c45e1a415c048d726d00346
++ De ello se siguen tres cosas de manera uniforme:
+
+@ 0 7 0 14c3529c192b2421046de5b463be8655
++ - El *modo*, que es `Read`, `Write`, `Exclusive`, `Shared` o una combinación de ellos, se lleva
++   en el tipo del descriptor, así que las concesiones que se solicitan son las operaciones que se
++   permiten.
++ - Los indicadores que van después del modo pertenecen a la instancia. Son específicos de la
++   clase de cosa que se abre, y un indicador que no viene al caso no pasa la comprobación de
++   tipos.
++ - El descriptor es una [capacidad] confinada al bloque, así que ni él ni nada derivado de él
++   puede escapar.
+
+@ 0 5 0 1a3942651f5cb5ca1f5453f9fc13f117
++ `create` es el mismo patrón para algo que todavía no existe. `session` es el mismo patrón para
++ un destino cuyo acceso es una conversación con algo que se está ejecutando, como un
++ [navegador](web-automation.md) o un [programa que se está depurando](debugging.md), y no un
++ descriptor sobre bytes almacenados. En cada caso, el ámbito es la vida, y el final del bloque es
++ el final del acceso.
+
+@ 0 1 0 1dbadcb1c8bfbd421255124f26363cc1
++ ### Acceso posicional
+
+@ 0 3 0 0ca97a47791546d009debe3e5fc962e9
++ Un fichero que se abre como `Ram` se mapea en memoria, y atiende lecturas y escrituras en
++ cualquier posición, sin recorrerlo como flujo. Se necesita la concesión `Write` para escribir,
++ como en todas partes:
+
+% 2 1 0 15bf34678af3b1011485a79c9a4c1ca5
+
+% 3 1 0 11780bc6eedc63b41c2f2d1b90dd301c
+
+% 4 1 0 1421ef2fb68fcaaa045d5383c778ecb4
+
+% 5 1 0 0d6543448297d6ed0ff9532a7c525cfa
+
+% 0 1 0 0d73d78456f97c030df300d3dc1f8400
+
+% 0 1 0 15a61f08869533890441913017bd506f
+
+% 0 1 0 106b4c6f25a3fc410f75ae3afd487fad
+
+% 0 1 0 0d5bfcf7bcd890f81752b3b72de17ca2
+
+% 0 1 0 05d5bfc4e02275e518f30132ab600d9e
+
+% 1 1 0 104d0d0ff424d34509b905ee6c168f87
+
+% 2 1 0 1e699f1cf022d73d1a8fc8257d7ecd6e
+
+@ 0 6 0 19fdb42ff2361a581817a3fafdd69fdd
++ `mapped` mapea un fichero entero para lectura, y presta una vista `Terrain` de él mientras dura
++ un bloque. Un `Terrain` es un `Expanse`, con su `size` y su `read` que copia, cuyos bytes están
++ en memoria. No se copia nada: los enteros se cargan directamente de la memoria mapeada, en
++ little-endian y en cualquier desplazamiento, y un `slice` es una vista más estrecha de la misma
++ memoria. Varios procesos que mapean un mismo fichero comparten una sola copia de él, en la caché
++ de páginas del sistema operativo, lo que hace de un fichero mapeado una manera de compartir un
++ índice grande entre programas:
+
+% 2 1 0 17f44a4212157ec50dd9350241f3a657
+
+% 3 1 0 1bd272b61b50f60d094cf01a8c25841e
+
+% 4 1 0 19e2d123660b102909690a4c87e983a5
+
+% 0 1 0 0544cc4cf91707ef05783c64e2fef233
+
+% 0 1 0 039fbb41581884070a8821e08d8daf69
+
+% 0 1 0 12762121d23730de0c428c8a5e091446
+
+% 0 1 0 0e5e559749e0559916656a6c23538be0
+
+% 0 1 0 16e7122c8ad7d8ff0910be2b736a1605
+
+% 0 1 0 03b0af489a50a19211b1072ecf03c993
+
+% 0 1 0 12dd7d107b6c307e127ee0b07a8fa709
+
+% 1 1 0 1e65d1619c3a34be15a903a9f80a2627
+
+@ 0 1 0 04c506650649166a0fcb5ac8519d82fb
++ Las cargas son estas:
+
+% 2 1 0 0acb8d67d81895c6034e2b570072a82c
+
+@ 0 10 0 14f68d695e3656e2055aae8cd51002ab
++ column  Método
++ column  Da
++ row  `u8`, `u16`  un byte sin signo o un entero de 16 bits sin signo, como `Int`
++ row  `u32`  un entero de 32 bits sin signo, como `Long`
++ row  `i32`  los mismos 32 bits como `Int` con signo
++ row  `u64`  un entero de 64 bits, como `Long`
++ row  `slice`  una vista de parte de la memoria, sin copia
++ row  `read`  algunos de los bytes como `Data`, para un valor que debe sobrevivir a la vista
++ row  `same`  si los bytes de un desplazamiento son los de cierto `Data`, comparados en el sitio
++ row  `compare`  el orden de unos bytes con respecto a cierto `Data`, comparados en el sitio
+
+% 1 1 0 161bdd6fc6e4b5ac138538385f8d589a
+
+@ 0 5 0 1761fee7219394bf16381c6934889a0f
++ El fichero se desmapea cuando termina el bloque. La vista, y cada porción de ella, es una
++ [capacidad] confinada al bloque, así que no se puede escribir una carga desde memoria que ya no
++ está mapeada. Un método que recibe una vista la declara como `Terrain^`. Las mismas cargas están
++ disponibles sobre `Data`, con `u16be`, `i32be`, `u32be` y `u64be` en big-endian junto a ellas,
++ de modo que un analizador lee un formato de la misma manera desde cualquiera de los dos.
+
+@ 0 3 0 1667c85f6944c9b20df329866d243f83
++ Un fichero mapeado debe sustituirse, moviendo un fichero nuevo sobre su nombre, y no reescribirse
++ en el sitio: una vista sigue viendo el fichero que mapeó, sin cambios, mientras se mantenga.
++ El mapeo está disponible en la JVM y en Scala Native; WASI no tiene mapeo de memoria, y notifica
+
+% 0 1 0 11a16c7ea48f71640c5f1c2cdbb67379
+
+@ 0 6 0 0d1cba4107da607713e0ac9fbaf641a1
++ `Terrain(data)` es una vista de bytes que ya están en memoria, para leer desde `Data` un formato
++ diseñado para un fichero mapeado. Una ruta es `Viewable`, la clase de tipos de un valor que
++ puede prestar una vista de sus bytes, así que un formato que se lee en el sitio se abre
++ directamente desde su fichero. [RaTEL](tel.md#ratel) es un formato así, un documento TEL
++ dispuesto de modo que un registro se encuentra sin leer el resto, y `file.open[Ratel]()` mapea el
++ fichero mientras dura su bloque.
+
+@ 0 1 0 1fe4b585f3d17acd001e373bf111851b
++ ### Publicar versiones
+
+@ 0 4 0 031ddec28e7f9b4e1e5cbac91b547e29
++ Un fichero mapeado es una manera de que un programa comparta un valor grande con otros, sin una
++ copia en cada uno. El programa que produce el valor es *dueño* de su nombre, y publica bajo él
++ una versión tras otra. Los programas que lo usan mapean la versión que sea la actual, y pasan a
++ la siguiente cuando lo deciden. Nada arbitra entre ellos, porque se cumplen dos reglas:
+
+@ 0 4 0 15920986ad5ca37d1215a9efb09a74c9
++ - Un fichero publicado nunca cambia. Cada versión se escribe junto al nombre y se mueve sobre él
++   en un solo paso, así que un lector que ha mapeado una versión la sigue viendo, entera.
++ - Un nombre tiene un solo dueño. `claim` mantiene un bloqueo del sistema operativo sobre
++   `<name>.lock` mientras se ejecuta su bloque, y un segundo dueño, en este proceso o en otro, se
++   rechaza con `Busy`.
+
+@ 0 2 0 173624c02e3bdf9815b2f47381d4239f
++ `claim` da un `Owner`, cuyo `publish` escribe un valor en la forma que dé su instancia de
++ `Encodable in Data`, y devuelve la `Edition` que publicó:
+
+% 2 1 0 1759d5a2dd068c4e03119f348a08f734
+
+% 3 1 0 0c572833d775f80811a4b4e8f154df61
+
+% 4 1 0 19e56ccd40be246f16fcba7c4d37f1f4
+
+% 0 1 0 06697ac96f96ed471783c5a0b41543ab
+
+% 0 1 0 0ad783375861ef45154867ee6336ecd9
+
+% 1 1 0 01a1e54fad49df5308d4757b368dd3b3
+
+% 2 1 0 092b7d49cacf080f09ea818d1db3a684
+
+@ 0 3 0 0a5728f70160bd2812968d0e7cc9eb45
++ `published` da un lector, un `Published`. Su `map` presta una vista `Terrain` de la versión que
++ contiene, y su `refresh` lo lleva a la versión a la que ahora conduce el nombre, y dice si había
++ una:
+
+% 2 1 0 01e2ee18d23ea9d8195078bcc4ea26c1
+
+% 3 1 0 1601f6dae5cca73712006cc201b15977
+
+% 4 1 0 04fdc73f105f33031f075af35ba796b7
+
+% 0 1 0 1d03052d36507c8519260aa8c05d60e1
+
+% 0 1 0 110d73eda73d14ff1d7e803be0de569c
+
+% 0 1 0 1af210fdd09fb0901097f8864cb7ab2e
+
+% 0 1 0 1eb11ee390361773100f61b19ce02fc3
+
+% 0 1 0 0a8ab4c7e6dcd9e60fa6c5dff2cefca1
+
+% 0 1 0 1760ce088de6c44917ad1be63cf39bb8
+
+% 0 1 0 1829b4a7cc779102199176c139f4a45f
+
+% 1 1 0 1bdbda924ec5fc091a153c5e60fc7087
+
+@ 0 4 0 02bee554d8b85a30167a955e53a29444
++ Un lector no toma ningún bloqueo, así que nunca retrasa al dueño, y el dueño nunca lo retrasa a
++ él. Una vista que está en uso cuando ocurre un `refresh`, en este hilo o en otro, sigue siendo
++ válida hasta que termina su bloque. Dos ediciones son iguales exactamente cuando son la misma
++ versión del fichero; no tienen orden.
+
+@ 0 5 0 175511a3a5db551a0a0554091375b486
++ Un lector mantiene existiendo la versión que ha mapeado, incluso después de que otra más nueva la
++ haya sustituido bajo el nombre, así que un lector de larga vida debe hacer `refresh` cuando sepa
++ que hay algo nuevo, ya sea por un mensaje o por [vigilar](#watching-for-changes) el nombre. El
++ bloqueo es consultivo, y es fiable entre programas que cooperan en los sistemas de ficheros
++ propios de una máquina, pero no sobre un sistema de ficheros de red.
+
+@ 0 3 0 03d4543c0c4e808e1b3766ef618f8032
++ Un `Slice` es una ventana sobre parte de un fichero, con un desplazamiento y una extensión. Se
++ abre para leer o escribir como un fichero propio. Por tanto, una región de un fichero grande
++ puede transmitirse como flujo hacia dentro o hacia fuera sin tocar el resto, y una escritura no
++ puede salirse de su ventana.
+
+@ 0 1 0 0d87f66a3b5d6628059867ec9487eb4b
++ ### Copiar, mover y borrar
+
+@ 0 2 0 11f3c5bb89418d01000ff32715e96fad
++ Una ruta se copia, se mueve, se enlaza o se borra con operaciones que nombran el destino, o que
++ actúan en el sitio:
+
+% 2 1 0 1458b7d801765cba0ca7ec85082623a7
+
+% 3 1 0 166ef637b28d2d1d1453b4cd9cb8d2a6
+
+% 4 1 0 0ddbdeb9e538291d1e440466f126c66b
+
+% 5 1 0 17e36aad0f2f1c011208775349ea3398
+
+% 0 1 0 1bcd392b1b302fc509ee9b90350faa9c
+
+% 0 1 0 1d581f33aec82ac5168a5367d362630e
+
+% 0 1 0 0abb1ccddaf143771a930a633dc9f91a
+
+% 2 1 0 0875e45fd1abe1f41ebf16d4e66dbe23
+
+% 1 1 0 060f72a2f3a8db010d881eb74d899934
+
+% 0 1 0 00a313ad5c1010a6067a71efc96bd180
+
+% 1 1 0 1a15f4426a20b185110e1e8741b3db62
+
+@ 0 1 0 0d3bffed9cc9e9481c24f5a41258075d
++ Cada una consulta las políticas que hay en el ámbito para los casos delicados, y cada una puede
++ lanzar un `Io.Error`.
+
+@ 0 6 0 01af3f52be6ad1ea0b1503d818cc6c11
++ Esas políticas no son valores por defecto que se puedan dejar estar. Mover un fichero a una ruta
++ donde ya existe algo o bien destruye eso, o bien se niega a hacerlo. Ninguna de las dos
++ respuestas es correcta en general, y elegir una en silencio haría que compilaran los programas
++ equivocados. Por eso `moveTo` exige que haya en el ámbito `overwritePreexisting` o
++ `failOnPreexisting`, y llamarlo sin ninguno de los dos es un error de compilación. Eso es
++ instructivo, además de prudente: a un lector que no se había dado cuenta de que la pregunta
++ necesitaba una respuesta se le dice que la necesita.
+
+@ 0 3 0 18b5b7b107322f0c00180172142d1916
++ La elección cambia también lo que hay que tratar. Con `failOnPreexisting` en el ámbito, una
++ colisión es un fallo que hay que gestionar. Con `overwritePreexisting`, no puede surgir, y la
++ obligación desaparece con ella.
+
+@ 0 3 0 0efa01bea0dafc8214ef67b37a454fd6
++ Las políticas son valores contextuales, así que pueden importarse para todo un fichero, o
++ restringirse a un solo bloque. Cada una responde a una pregunta, y viene como una de un par, del
++ paquete `filesystemOptions`:
+
+% 2 1 0 02b674577112ad4519bbeca76d342708
+
+@ 0 2 0 1d5bdbe2c523918b0f5cbc6f2d1b9389
++ column  Pregunta
++ column  Sí
+
+% 0 1 0 0653c1015352621f0842b50c68ec5d78
+
+@ 0 5 0 0fa999642ef112a91c466e54efd8f0c3
++ row  ¿Sustituir lo que ya hay en el destino?  `overwritePreexisting`  `failOnPreexisting`
++ row  ¿Vaciar un directorio antes de borrarlo?  `deleteRecursively`  `deleteOnlyEmpty`
++ row  ¿Crear los directorios padre que falten?  `createNonexistentParents`  `requireParents`
++ row  ¿Seguir los enlaces simbólicos?  `dereferenceSymlinks`  `preserveSymlinks`
++ row  ¿Mover de forma atómica?  `moveAtomically`  `moveNonAtomically`
+
+% 1 1 0 1fc98b4d95c3a31d05ec9ef4f6d25148
+
+@ 0 2 0 058d8eec7e7e7d370212e45ba7c7b190
++ Sustituir una entrada existente la borra primero, así que `overwritePreexisting` necesita además
++ una de las políticas de borrado en el ámbito.
+
+@ 0 1 0 06f975a13f0d6dd6187c4a3c71271a67
++ Cada operación consulta las políticas que le afectan:
+
+% 2 1 0 07e296f6d47b93c40128b0fafdff2925
+
+@ 0 10 0 02268e3b2c59d32d0377da0d3e9108e4
++ column  Operación
++ column  Actúa sobre
++ column  Políticas consultadas
++ row  `copyTo(path)`  la ruta dada  sustitución, padres, enlaces simbólicos
++ row  `copyInto(directory)`  un hijo del directorio, conservando el nombre  sustitución, enlaces simbólicos
++ row  `moveTo(path)`  la ruta dada  sustitución, padres, enlaces simbólicos, atomicidad
++ row  `moveInto(directory)`  un hijo del directorio, conservando el nombre  sustitución, enlaces simbólicos, atomicidad
++ row  `symlinkTo(path)`  un enlace nuevo en la ruta dada, que apunta aquí  sustitución, padres
++ row  `symlinkInto(directory)`  un enlace nuevo en el directorio, conservando el nombre  sustitución
++ row  `delete()`, `wipe()`  la propia ruta  borrado
+
+% 1 1 0 1604b534b635338a088a65cfa65ec533
+
+@ 0 3 0 0d0d1f42af9e59bb0eaeaf88df69550e
++ Las formas `…Into` crean ellas mismas los padres que falten. Borrar un directorio que tiene
++ hijos es un `Io.Error`, cuyo motivo es `DirectoryNotEmpty`, salvo que `deleteRecursively` esté en
++ el ámbito. El borrado recursivo es, por tanto, una política que debe activarse deliberadamente.
+
+@ 0 1 0 1bc8c23a7dbe2eac1a071d14b53e4837
++ ### Listar e inspeccionar
+
+@ 0 4 0 1bab6ea393d401d21b8b88e49416de59
++ `children` da los hijos inmediatos de un directorio, y `descendants` da todo su subárbol. Una
++ ruta indica si existe, su tamaño y qué clase de entrada es. Un `glob` selecciona hijos mediante
++ un patrón, en el que `*` coincide dentro de un nombre, y un segmento completo `**` abarca
++ directorios:
+
+% 2 1 0 09e28a4d23d585c811d6d51f456eabbf
+
+% 3 1 0 1abeb2396ecae92801a85f2ec49a848f
+
+% 4 1 0 081e5993718f1cf603a95470f20005b1
+
+% 0 1 0 119c5c4bcce297810e2ddabef3c832e8
+
+% 1 1 0 032f113a83afb4ac074a39597f4e047a
+
+% 0 1 0 0fa93af7a6be6e791550c2bf365f2851
+
+% 0 1 0 079996f8b363fa8a05027155b0a519e6
+
+% 0 1 0 12db853da6d6e8ae1c805e9c9e679d72
+
+% 1 1 0 0285e100e457c57100dcf171a7b75457
+
+@ 0 3 0 1a65369f6cbbdbbe07433e4ae803bf49
++ Dos rutas pueden nombrar una misma entrada, a través de enlaces simbólicos, o a través de `/tmp`
++ y `/private/tmp` en macOS. `canonical` es la ruta de la entrada tal como la conoce el propio
++ sistema de ficheros, con todos los enlaces resueltos. Esa es la ruta que debe almacenar un
++ registro indexado por ruta:
+
+% 2 1 0 0ce08adb9b55095e0816d1e9eadda81a
+
+% 3 1 0 041d763014544f550fcfe20afb99569f
+
+% 4 1 0 12a756ca88f4286806bdf0a41eb80c28
+
+% 0 1 0 09b2885734d92360142bd0e795b2f0aa
+
+% 1 1 0 0daad12a38d7adc004924099688d5f06
+
+@ 0 1 0 0c4be6803c93ff0c1b7afdadebddb5db
++ [Patrones](patterns.md) describe los globs.
+
+@ 0 1 0 1ce39191c0d84eb813524c2ef833b7fd
++ ### Almacenamiento direccionado por contenido
+
+@ 0 4 0 0ba7c36fdb79e51708f7b18fb6c983ef
++ Un directorio de blobs, cada uno nombrado por el resumen de sus propios bytes, es un *almacén
++ direccionado por contenido*. Un blob se escribe una vez, se verifica mientras se escribe, y lo
++ encuentra cualquier cosa que conozca su resumen. `Cas` es ese almacén. El
++ [algoritmo de hash](hashing.md) está en su tipo, y en el tipo de cada resumen que acepta, así
++ que a un almacén SHA-256 no se le puede pedir un resumen BLAKE3:
+
+% 2 1 0 026b22b66bd6bc7d008a5fc96bad27b5
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0e04bcf5a0cd705912c9c8e8a7b1b78b
+
+% 1 1 0 1acc47f474d1bf3d1a380d93d6104c74
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 08ae94fb12bacf46004ff9eb9163af24
+
+% 0 1 0 07fbb7aa51ab5cbf02657f07ff6c6a5b
+
+% 0 1 0 1611c86b3ac5f6730ca13020f82e24c6
+
+% 0 1 0 0f9a76c8999dfca0134524422bc3f3d9
+
+% 1 1 0 15faea8960fcb83401a8479935e61484
+
+@ 0 1 0 0771d4542fbf5a8c0c42fdb3a52a1f0c
++ Un almacén tiene estas operaciones:
+
+% 2 1 0 0f13bb9271e3a4be153e85d142a5afc2
+
+@ 0 9 0 1ddb73204d2d54741963197c0d4f840a
++ column  Expresión
++ column  Hace
++ row  `store() = data`  almacena los datos bajo su propio resumen, y lo devuelve; nada si el blob ya está
++ row  `store(digest) = data`  lo mismo, después de comprobar que los datos tienen ese resumen, y lanza un `Cas.Error` si no
++ row  `store(digest)`  los bytes, o `Unset`
++ row  `store.has(digest)`  si el blob está almacenado
++ row  `store.missing(digests)`  los de una lista de resúmenes que aún no están almacenados
++ row  `store.digests`  todos los resúmenes almacenados
++ row  `store.prune(digests)`  borra todos los blobs que no están en el conjunto, y devuelve cuántos borró
+
+% 1 1 0 0c813c3ec26dfcd2121253d22503b486
+
+@ 0 1 0 1e58f0a68d846cb30107919a7e1756c9
++ `prune` es como se recorta una caché a lo que todavía está referenciado.
+
+@ 0 5 0 0d846e31118512491fa88bfc6d7d6af7
++ Un blob se escribe en un hermano con un nombre único, y se mueve a su sitio de forma atómica, así
++ que un lector nunca ve un blob parcial. La raíz del almacén es aquí una `Path`, pero su tipo es
++ el tipo de esa raíz, y una instancia de `Cas.Storage` para otra clase de raíz construye un
++ almacén sobre ella con la misma interfaz. Como [colección](collections.md), un almacén son sus
++ resúmenes: `store.size`, `store.has(digest)`, `store.at(digest)` y el recorrido funcionan
++ todos sobre él.
+
+@ 0 1 0 1488ab1cbc7f5cb70255ba665462b295
++ ### Atributos extendidos y volúmenes
+
+@ 0 3 0 06cb1de56e0429a2122389be5fabaca0
++ El sistema de ficheros en el que está una ruta es un hecho tipado sobre ella. `Ext4`, `Btrfs`,
++ `Apfs`, `Ntfs` y `Dos` son los *ejes* con los que se puede comparar una ruta. Un sistema de
++ ficheros que admite atributos extendidos permite que una ruta lleve metadatos con nombre más allá
++ de su contenido:
+
+% 2 1 0 0abb37d5696a6170140f85c718716403
+
+% 3 1 0 1c8495b674fc63dc1b586372cc3179a3
+
+% 4 1 0 100dcdd5caa60da105828d1ad40f15ba
+
+% 0 1 0 1b6c2226608bb38507c1d14449d766c6
+
+% 0 1 0 11ed84d5fe4e328f17314b9d64202eee
+
+% 0 1 0 004a20244568178208cef5a708664091
+
+% 0 1 0 0d7bfc9f3df4b14d14f9e98507597d3f
+
+% 1 1 0 01521e984c74ed231525b25667555bb3
+
+@ 0 2 0 056e3691bb210447100e2d31c6679ac4
++ En btrfs, `subvolume` indica el subvolumen al que pertenece una ruta, y `subvolumeRoot` indica
++ si es la cima de uno.
+
+@ 0 1 0 0c79b0e645bd89551392f4a70e1320bf
++ ### Directorios estándar
+
+@ 0 3 0 047e8bf23837abe715b018d96c1d6876
++ Las ubicaciones convencionales de un sistema son valores con nombre, resueltos con respecto al
++ [entorno](environment.md). Al directorio personal y a las rutas que hay bajo él, y a los
++ directorios del sistema bajo la raíz, se llega navegando y aplicando:
+
+% 2 1 0 0d642b8d76d0a18e089d0388811fa0a4
+
+% 3 1 0 14e57f3a99e385e6023697e00a47ab70
+
+% 4 1 0 0e0264ad69a882dc1d487ddd1f6eabc5
+
+% 0 1 0 0df6927d912ded4a0b375700b44c291d
+
+% 0 1 0 0d48d9cb6c7a65e71cf48bb53977f8b0
+
+% 0 1 0 0ded134ade44d80d10752104828f01f8
+
+% 0 1 0 1b0ada2659bfd2cf1c50dadbe18629bc
+
+% 1 1 0 0fc16b24133b8d121d64257ec02147aa
+
+@ 0 4 0 0434475602a1e89109a4bffbab19df0b
++ Cada objeto lleva el nombre del directorio que representa, con mayúscula inicial y sin el `.`
++ inicial, si lo hay, ya que `.` es el separador entre miembros. Así, `$HOME/.local/bin` es
++ `Home.Local.Bin`, y `/var/lib` es `Base.Var.Lib`. Escribir una ubicación estándar de esta manera,
++ y no como texto, significa que un directorio mal escrito no compila:
+
+% 2 1 0 050c172cfa5cbdf1131db8aaf2a39a81
+
+% 3 1 0 19dc5279e93d36dc1e8e0438d2f3e066
+
+% 4 1 0 116471f18d9f7f260c75bb8c929fe300
+
+% 5 1 0 0e93110b08d7981a0184ae3da4575503
+
+% 0 1 0 15002ee939105aa917f53b09533850b1
+
+% 1 1 0 0b6cd6f14cece3dd1652bfa6754aedea
+
+@ 0 1 0 148bb1c45c16c73e07e10cc675cbee63
++ Estas son las disposiciones, y si `readOnly` marca cada una como no destinada a escribir en ella:
+
+% 2 1 0 1744c24ba328f4ba0b522af0f19e5912
+
+@ 0 3 0 15a0c476bb0c170c10e835028372536b
++ column  Disposición
++ column  Directorio
++ column  Solo lectura
+
+% 0 1 0 153b16d0ea4104b70b2dd4349a3952d9
+
+% 0 1 0 0be033a23164f7901d8f8b232813966d
+
+% 0 1 0 09f8dfdbb556d5401d3c583c84210026
+
+% 0 1 0 0e792e9af8034d021ea1f3a597afff5d
+
+% 0 1 0 18fb82af0b4fa121183f9fdddee9ad23
+
+% 0 1 0 1fd6f45c4703b3391b1d63def0064a6f
+
+% 0 1 0 0edc52644cd01b7f1acd1e3756d1ad8e
+
+% 0 1 0 133637db9a7bc36c1e2a9f7fd3bfac2a
+
+% 0 1 0 057f13790e996ac10b9850624a8802a8
+
+@ 0 1 0 00bb424fda57043f0188eb865142a0b1
++ row  `Base.Boot`  `/boot`  sí
+
+% 0 1 0 0b6a9678628d2b101079ed11c90c345c
+
+% 0 1 0 0625218264d99b141ad772b749455990
+
+@ 0 1 0 09c060b9bf90251113f8e9e41120af56
++ row  `Base.Efi`  `/efi`  sí
+
+% 0 1 0 1262a42cf8f8fedc055585bbe2b0b0eb
+
+% 0 1 0 1fabed33a19564d617a81d9e268aa07b
+
+% 0 1 0 0c9ba9618e33adb611bd2495f5b32ef1
+
+@ 0 2 0 17b2d1cbe7d1e2920b470c870c6d8074
++ row  `Base.Proc(pid)`  `/proc/<pid>`  sí
++ row  `Base.Proc.Sys`  `/proc/sys`  sí
+
+% 0 1 0 12937bc4e3af9d2d1ffe2606db751745
+
+% 0 1 0 12ac3200258b170f094a61d658dbe11a
+
+% 0 1 0 120481aa7fcbc19b1baa78ff5c05ee7b
+
+% 0 1 0 1cbbf8e2badb3d921ebd1cb711a45f49
+
+% 0 1 0 10fb071779ab8f8d05000b2a94f311cc
+
+@ 0 1 0 14f0144a405f41411ca9d12b76cbb7f2
++ row  `Base.Sys`  `/sys`  sí
+
+% 0 1 0 0311c12a58120d71026010e9e842f168
+
+@ 0 9 0 00e0b1e1e329642317374e58aa0c23a2
++ row  `Base.Usr`  `/usr`  sí
++ row  `Base.Usr.Bin`  `/usr/bin`  sí
++ row  `Base.Usr.Include`  `/usr/include`  sí
++ row  `Base.Usr.Lib`  `/usr/lib`  sí
++ row  `Base.Usr.Share`  `/usr/share`  sí
++ row  `Base.Usr.Share.Doc`  `/usr/share/doc`  sí
++ row  `Base.Usr.Share.Factory`  `/usr/share/factory`  sí
++ row  `Base.Usr.Share.Factory.Etc`  `/usr/share/factory/etc`  sí
++ row  `Base.Usr.Share.Factory.Var`  `/usr/share/factory/var`  sí
+
+% 0 1 0 1f589f27210bad110287cc3bb50386e5
+
+% 0 1 0 0e49b79240be94100867081b16b9dcf0
+
+% 0 1 0 1c622844a62ec29b0543c683856a1b88
+
+% 0 1 0 0eed282682626c930aaceeb30e914991
+
+% 0 1 0 0535fba3b7191f6717dc77e86c5209fe
+
+% 0 1 0 0e8d425cc64e7c8814e04fd40741084a
+
+% 1 1 0 0ad97e4a9e1823901dcdf3d3e0bd427a
+
+@ 0 6 0 0aa8b6ed35ad404b12222e62dc916832
++ Una disposición es un lugar fijo. `Home.Config` es siempre `$HOME/.config`, y del entorno solo se
++ lee `$HOME`. Las ubicaciones que la
++ [especificación XDG](environment.md#standard-directories) permite mover al usuario, como
++ `$XDG_CONFIG_HOME`, las da en cambio `Xdg`. Aplicar una disposición construye un valor del tipo
++ de directorio que se pida, así que los mismos nombres sirven para una `Path on Linux` y para
++ cualquier otra representación.
+
+@ 0 1 0 06f7e4b65fc1fe7a15c1330ddec6fdd6
++ ### Rutas de búsqueda
+
+@ 0 5 0 1406a0e20420f6951b64396fcdc6c049
++ Muchos ficheros no se buscan en una sola ubicación, sino a lo largo de una lista de ellas: un
++ icono en el directorio de datos XDG que lo contenga, o un fichero de configuración en el primero
++ de varios lugares. Una instancia de `Searchpaths.Stems` nombra los directorios que se prueban, en
++ orden. Una ruta relativa en el plano correspondiente se resuelve con `search` al primero de ellos
++ que la contiene, o a `Unset`:
+
+% 2 1 0 0962ee6a08aa0adb13d2e4810f575047
+
+% 3 1 0 06a6f77762438aa40888e80974fd11da
+
+% 4 1 0 0bbbd280c02e3b410e86c9898c28d487
+
+% 0 1 0 063e73fab05e6567189cd57bdb16da70
+
+% 0 1 0 1c96b468e4e6a34017526a156fe8b96a
+
+% 0 1 0 0d0d0aaf80ba69d7024657279d3f35dd
+
+% 0 1 0 0f2e3d299f8c337b0f09d132a7b65496
+
+% 0 1 0 18154ca5ed46bd370605212e90897b86
+
+% 0 1 0 0fe5c79dc0620bae0560ecb0735d91d1
+
+% 1 1 0 1e1a6dfc7d84e72a0d2d07c372fe0889
+
+@ 0 2 0 191d5d49db9a12230470ec9e4c6d0778
++ `dataSearch` y `configSearch` suministran las rutas de búsqueda XDG para datos y configuración, a
++ partir del entorno, de modo que los recursos de un programa se encuentran dondequiera que los
++ guarde el sistema del usuario.
+
+@ 0 1 0 1c8222528a12abf719262fe8ce446313
++ ### Vigilar los cambios
+
+@ 0 3 0 1462e0528d99b34900b554bce0002fbf
++ Un directorio se vigila abriéndolo como `Watch`, lo que da un [flujo](streams.md) de
++ `Watch.Event`: un fichero creado, modificado o borrado, o un directorio creado. El registro dura
++ exactamente lo que dura el bloque:
+
+% 2 1 0 19d161bdb15f2ab4040f0b7a4b26508e
+
+% 0 1 0 0a71c18ec97e7a4a1a2787ce5c10b274
+
+% 1 1 0 1a8f9e5a263f04720f14e9da582a43c4
+
+% 0 1 0 0e2e36ec4d12885b092276730675bf2e
+
+% 0 1 0 1e9997e92109f13018d778d0a1d7375b
+
+% 0 1 0 04c1d62c55bbdd880a6b5c1fa7ddf7c7
+
+% 0 1 0 0edc0d9f2110feec1ec81979517637e6
+
+% 0 1 0 181d70b3d9c3aaad1c02e73f747e1453
+
+% 1 1 0 0f3aa9f7e2c3c2940012ece5ebede700
+
+@ 0 2 0 0d2b07e729d9e2a81fcdf631ff229031
++ Varias rutas se vigilan juntas abriendo una lista de ellas, lo que da un único flujo de eventos
++ de todas ellas.
+
+@ 0 3 0 0c313d32153a41351826e1aa6c30c233
++ Los editores guardan a ráfagas, y una reconstrucción quiere una notificación por cada ráfaga, no
++ una por cada evento. `batches` da un `Watch.Batch` cada vez que no ha llegado ningún evento
++ durante el periodo de calma dado, y su `paths` lista una vez cada ruta que ha cambiado:
+
+% 2 1 0 00fb6dfaccd1796912dce64a2b7e6c22
+
+% 0 1 0 1126dbfc5f3af8df1e8ae3314de64858
+
+% 0 1 0 1fb582ddd5c7d5ec19dfd6ac79521eb9
+
+% 1 1 0 03d765348db66d161389623dab07335b
+
+% 0 1 0 1b4c7e5466cbe64806ad6d3edf76624f
+
+% 0 1 0 18e1437c7a5dc6b70c91a19cabb80718
+
+% 1 1 0 050f5e04c1fca6070f53c556f8140e9b
+
+@ 0 2 0 0a78b26afc65909f0b933898cb91787a
++ El vigilante por defecto usa las propias notificaciones del sistema operativo sobre los cambios
++ en los ficheros. Donde no están disponibles, `watchers.polling` comprueba en su lugar a
++ intervalos.
+
+@ 0 1 0 0f4ef2945e9b28a90956cbc6da521484
++ ### Elegir un backend
+
+@ 0 3 0 0eaee3bf4629216808daf8fae9644b08
++ Nada de lo anterior nombra la API de una plataforma. Las operaciones primitivas que debe ofrecer
++ un sistema de ficheros, que son stat, abrir, leer, escribir, listar, enlazar y borrar, se reúnen
++ en un `FilesystemBackend` para un plano, y todo lo demás se define en función de ellas.
+
+@ 0 6 0 137d62d979cb824f02819a21fe23d501
++ La implementación de `java.nio` es `filesystemBackends.javaBaseFilesystem`. Para los componentes
++ WebAssembly se suministra una implementación WASI, sobre `wasi:filesystem`, así que el mismo
++ código lee y escribe ficheros en la JVM y dentro de un componente. Una operación que un backend no
++ puede soportar lanza un `Io.Error` cuyo motivo es `Unsupported`. Nunca se aproxima. Reducir la
++ superficie de la plataforma a una costura tan pequeña es el
++ [desacoplamiento](../../philosophy/decoupling.md) aplicado dentro de una sola biblioteca.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 5 0 081048ec19f6f1c40972f21e54c07ca3
++ - [Rutas](paths.md) describe las rutas sobre las que actúan estas operaciones.
++ - [Flujos](streams.md) lee y escribe ficheros por partes.
++ - [Archivos](archives.md) abre una ruta como un archivo ZIP o tar.
++ - [Compresión](compression.md#compressing-a-stream) escribe un fichero comprimido.
++ - [Hashing](hashing.md#hashing-a-stream) calcula la suma de verificación de un fichero o de un
++   directorio.

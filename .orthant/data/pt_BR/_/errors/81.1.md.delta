@@ -1,0 +1,86 @@
+orthant 2 language
+
+% 0 1 0 158bc47a51d98c161b01fc87c9a3691e
+
+@ 0 2 0 0bdb0f6ec50389c814ddd1987e79b302
++ Lançado quando um valor não pode ser analisado como um tipo de mídia válido
++ (também conhecido como tipo MIME).
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 1ecddf4f0fa64223002695b83cf96bf1
++ O Gesticulate analisa tipos de mídia da forma `type/subtype[+suffix]
++ [; parameter=value]*`. As variantes assinalam problemas sintáticos específicos.
++ A mensagem é `the value $value is not a valid media type;
+
+% 0 1 0 13416a2f494028f811ed14b6d6edd96b
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 01769d80039ffd051a4de49a981b1966
+
+@ 0 1 0 0b2c692d5e4823db0621ff3035351a54
++ O valor não continha exatamente uma `/` entre o tipo e o subtipo.
+
+@ 0 1 0 073982c0f4f528c70652dcb3d88b28e6
++ **Exemplo.** `[↯/s.81.1.1] the value text/html/extra is not a valid media type; a media type should always contain exactly one '/' character`
+
+@ 0 1 0 1c67ddbe40e48c3710c478a15db786a2
++ **Resolução.** Forneça uma única `/` entre o tipo de nível superior e o subtipo.
+
+% 0 1 0 026a9a4fa165e705108b66493b9d2566
+
+@ 0 2 0 0d513fdff41e38991812f5a7bbc43690
++ O valor termina com `;`, o que sugere um parâmetro que não foi escrito.
+
+@ 0 1 0 1858e09bb88cc0450537e49a5cbdaa14
++ **Exemplo.** `[↯/s.81.1.2] the value text/html; is not a valid media type; a terminal ';' suggests that a parameter is missing`
+
+@ 0 1 0 1e5a2058954179fa197aec61decb6760
++ **Resolução.** Acrescente o parâmetro ou remova o `;` final.
+
+% 0 1 0 1fff04f937ef07ff1f8335f00ae2cc61
+
+@ 0 1 0 146f03e3f405fdc418d18bc07d4609d1
++ O tipo de nível superior não é um dos grupos registrados (por exemplo,
+
+% 0 1 0 0ea0a4aed083eee702b6218d7ceb19e2
+
+@ 0 1 0 05e50b11e957b4fc03fd397ea228649a
++ **Exemplo.** `[↯/s.81.1.3] the value play/scene is not a valid media type; the type must be one of: ...`
+
+@ 0 1 0 00d6d65a46ef0f0111292aaf1e00580c
++ **Resolução.** Escolha um tipo de nível superior registrado.
+
+% 0 1 0 1f3857cef5739d1118173eaafbbb5512
+
+@ 0 1 0 15b8cac6c0012016126d86af9ebaf84c
++ Aparece um caractere que não é permitido em tokens de tipos de mídia.
+
+@ 0 1 0 0c9aca850f1697bb0c569bfac66831e2
++ **Exemplo.** `[↯/s.81.1.4] the value text/ht ml is not a valid media type; the character ' ' is not allowed`
+
+@ 0 2 0 0d4783ad30e91e5b1267a28f66f5c476
++ **Resolução.** Remova o caractere problemático; os tokens não podem conter
++ espaços em branco nem caracteres especiais.
+
+% 0 1 0 120b87a82129a2531ad59e92e39b2403
+
+@ 0 1 0 01e4ba7d303f8fe6186ba071fbc5e86a
++ O sufixo de sintaxe estruturada (depois de `+`) não é reconhecido.
+
+@ 0 1 0 0a0ae5ef524d867c144f6b6a1bcfa079
++ **Exemplo.** `[↯/s.81.1.5] the value application/sonnet+xyz is not a valid media type; the suffix '+xyz' is not recognized`
+
+@ 0 2 0 1d7bd7d174759ad90cddb4e68b39aa71
++ **Resolução.** Use um sufixo documentado, como `+xml` ou `+json`, ou omita o
++ sufixo.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 2 0 18e98a815769672000ebbc4520510980
++ - Código-fonte: `lib/gesticulate/src/core/gesticulate.MediaType.scala`
++ - `↯/s.81.2` — análise de MIME multipart

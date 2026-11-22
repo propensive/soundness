@@ -1,0 +1,42 @@
+orthant 2 language
+
+% 0 1 0 1097a49644ebfac503974006102a5376
+
+@ 0 1 0 13d9f5d1201526010c6c5973f997ea05
++ 値が有効な Git の参照名でないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 0b7b785f65fc4b3f02190685f962f130
++ Octogenarian は、参照名を `git check-ref-format` の規則に照らして検証する。
++ コンストラクターは違反した `value` と `reason: Reason` を記録する。描画されるメッセージは `$value is not a valid Git reference because $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 13 0 1b5d062075a6030b0fe6de0445e2ba23
++ column  コード
++ column  理由
++ column  意味
++ column  メッセージ
++ column  解決方法
++ row  `↯/s.123.2.1`  `LeadingOrTrailingDot`  参照のパスのセグメントが `.` で始まるか終わっている。  `[↯/s.123.2.1] .verona is not a valid Git reference because a path segment starts or ends with .`  セグメントの先頭または末尾のドットを取り除く。
++ row  `↯/s.123.2.2`  `ReservedSuffix`  パスのセグメントが、Git がロックファイルのために予約しているパターン `*.lock` に一致する。  `[↯/s.123.2.2] feature.lock is not a valid Git reference because a path segment ends with the reserved suffix .lock`  `*.lock` に一致しない名前を選ぶ。
++ row  `↯/s.123.2.3`  `ReservedSequence`  名前が、Git が reflog のセレクター（例：`HEAD@{1}`）のために予約している `@{` を含んでいる。  `[↯/s.123.2.3] verona@{capulet} is not a valid Git reference because the name contains the reserved sequence @{`  `@{` の並びを取り除くか置き換える。
++ row  `↯/s.123.2.4`  `DoubleDot`  名前が、Git が範囲のセレクターのために予約している `..` を含んでいる。  `[↯/s.123.2.4] verona..capulet is not a valid Git reference because the name contains ..`  `..` を一つの `.` か別の区切り文字に置き換える。
++ row  `↯/s.123.2.5`  `EmptySegment`  名前が空のパスのセグメントを含んでいる。典型的には先頭、末尾、または二重の `/` である。  `[↯/s.123.2.5] verona//capulet is not a valid Git reference because the name contains an empty path segment`  空のセグメントを取り除く。
++ row  `↯/s.123.2.6`  `InvalidCharacter`  名前が、Git が参照で禁じている文字、つまり `*`、`[`、`\`、` `、`^`、`~`、`:`、`?` のいずれかを含んでいる。  `[↯/s.123.2.6] verona capulet is not a valid Git reference because the name contains a character forbidden by Git`  禁じられた文字を `-` か `_` に置き換える。
++ row  `↯/s.123.2.7`  `BadHash`  `Git.Hash` に渡した値が、40 文字の小文字の 16 進文字列でなかった。  `[↯/s.123.2.7] abc is not a valid Git reference because the value is not a 40-character hexadecimal hash`  40 文字の完全な SHA-1 のコミットハッシュを与える。
++ row  `↯/s.123.2.8`  `BadRefspec`  `Git.Refspec.parse` に渡した値が refspec でなかった。ソースと宛先を区切る `:` が二つ以上あった。  `[↯/s.123.2.8] a:b:c is not a valid Git reference because the value is not a valid refspec`  refspec を `source`、`source:destination` または `:destination` と書き、必要なら先頭に `+` を付ける。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 2 0 023fbd10cb04d6eb059b3853ad9a959e
++ - ソース：`lib/octogenarian/src/core/octogenarian.Git.scala`
++ - `↯/s.123.1` — Git の操作の失敗のバリアント

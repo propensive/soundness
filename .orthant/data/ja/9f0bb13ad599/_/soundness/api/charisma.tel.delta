@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 5 0 0f0a020048ce75790f970f9a5a6f8db9
++       `NetForward`（`→` と表示され、`-->` から作られる）、`BothDirections`（`⇄`、`<=>` から）、`Equilibrium`（`⇋`、`<~>` から）、`Stoichiometric`（`=`、`===` から）、`Resonance`（`↔`、`<->` から）の列挙型である。
++       化学者がどの矢印を書くかには意味があり、反応式はそれを保持する。
++   entry .showable   反応をその矢印として表示する

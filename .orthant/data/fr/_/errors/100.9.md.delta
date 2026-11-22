@@ -1,0 +1,35 @@
+orthant 2 language
+
+% 0 1 0 1531dcf552385389075e94f3f375f2fc
+
+@ 0 1 0 05992714cc11a80d13553c11c79a2295
++ Levée lorsqu'une connexion Internet est requise mais indisponible.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 3 0 1fe6e83006f0ede70c29ad52861e9f39
++ Urticose lance cette erreur lorsqu'on tente une opération exigeant
++ `Online` dans un contexte déclaré hors ligne (ou lorsque l'accès au
++ réseau échoue purement et simplement).
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 18397b2aca9e8a7508d071049bfa3908
+
+% 1 1 0 0c8796707e75b36313d50ec3d4272c65
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 2 0 189cc5d5fa3088060f5edbe8a8984005
++ Rétablissez la connectivité réseau, ou exécutez l'opération dans un
++ contexte où l'absence de connexion est acceptable.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 06adc256c443315505e0e57044c528d1
++ - Source : `lib/urticose/src/core/urticose.Internet.scala`

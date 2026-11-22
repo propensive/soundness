@@ -1,4 +1,0 @@
-orthant 1 release
-
-- [interpolation](../en/modules/interpolation.md) for how such a literal is built.
-+ [interpolation](/doc/soundness/modules/interpolation.md) for how such a literal is built.

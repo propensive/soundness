@@ -1,0 +1,188 @@
+orthant 2 language
+
+@ 0 1 0 03e11e70016f3c9e06b420d724906b93
++ # Conventions de nommage des méthodes
+
+@ 0 5 0 0adab9a619d1f8cc0fe657a8151b4bb3
++ Ce document définit le sens canonique des méthodes de fabrique et d'initialisation
++ nommées, utilisées de façon cohérente dans tout le code. Pour savoir *pourquoi* les
++ noms sont choisis comme ils le sont — méthodes qui forment des phrases, paramètres de
++ type en mots entiers, et unicité dans tout l'espace de noms — voir
++ [le nommage](../philosophy/naming.md) et [la prose élégante](../philosophy/elegant-prose.md).
+
+@ 0 1 0 03d183e4e326b30919e360b515dd8617
++ ## Noms standard
+
+@ 0 1 0 15bdca24cb76d3bf12dff81f81950fea
++ Chaque nom a un seul sens ; les sections ci-dessous les donnent chacun en entier :
+
+% 2 1 0 05111a77653eae0513c69c39cf24d309
+
+@ 0 12 0 0e1142eed29bfea40ff65219120a1c2f
++ column  Nom
++ column  Statut
++ column  Sens
++ column  Exemples
++ row  `apply`  standard  la fabrique par défaut, utilisée chaque fois que possible
++ row  `build`  standard  un assemblage piloté par une fonction de rappel fournie par l'appelant  `Data.build`, `Text.build`, `Specification.build`
++ row  `create`  standard  fait exister une ressource dans un système externe  répertoires, fichiers, sockets, FIFO
++ row  `make`  standard  une construction à partir d'entrées aux noms dynamiques, à côté d'un `apply` existant
++ row  `initialize`  standard  un contexte neuf pour une exécution d'une opération répétable  `Hash.initialize`, `Aes.initialize`
++ row  `init`  non standard  `Git.init` uniquement, d'après la commande `git init`  `Git.init`
++ row  `construct`  non standard  `wisteria.ProductDerivation.construct` uniquement  `ProductDerivation.construct`
++ row  `of`  non standard  une conversion forcée privée qui restreint un type à `X of Y`
+
+% 1 1 0 0f33c31fcdee626301644907633d969a
+
+% 0 1 0 17a0192866c35e6b00588126be21f3f3
+
+@ 0 3 0 194f1dfb395f601919e8db1318a5e76e
++ La méthode de fabrique standard de Scala. Elle est utilisée chaque fois que possible.
++ Tous les autres noms de ce document existent parce qu'`apply` ne peut pas être utilisé
++ — le plus souvent à cause de conflits de résolution de surcharge avec un `apply`
++ existant.
+
+% 0 1 0 1587cb14a269644a11f50580bfb3040b
+
+@ 0 2 0 1b4ef045e70539751d169607489ca6c5
++ Assemble une instance au moyen d'une fonction de rappel fournie par l'appelant, qui
++ pilote la construction. Les deux formes concrètes sont :
+
+@ 0 6 0 0732f7cd3592b8bf1056d759a3a43a21
++ - **Allouer → modifier → geler** : une structure intermédiaire mutable est allouée,
++   passée à la lambda de l'appelant pour être remplie, puis gelée en un résultat
++   immuable. Exemples : `Data.build`, `Array.scribe`, `Text.build`.
++ - **Assemblage piloté par une fonction de rappel à partir de données sources** :
++   l'appelant fournit une fonction qui indique comment extraire ou transformer des
++   champs à partir d'une valeur d'origine. Exemples : `Specification.build`,
++   `Addressable.build`.
+
+@ 0 2 0 132ea1f351cdc8be119bc29194023d6d
++ Dans les deux formes, l'appelant contrôle le processus d'assemblage par l'argument
++ fonction, au lieu de fournir directement la valeur finie.
+
+% 0 1 0 0f0f0e2fb7f320fa1cc5a63efc05fc2c
+
+@ 0 4 0 05087d5dcc2e87cd0df908e02785ea74
++ Fait exister une ressource dans un système externe, et a toujours des effets de
++ bord. Utilisé pour les ressources du système de fichiers (répertoires, fichiers,
++ sockets, FIFO). C'est le pendant d'`apply`/`build` pour les opérations qui ne sont
++ pas pures.
+
+% 0 1 0 1873a23489c3c36b0f199470c3d85b28
+
+@ 0 4 0 072c23fdde042b491ce667733c2a2e64
++ Construit une valeur à partir d'entrées aux noms dynamiques, et correspond à une
++ implémentation d'`applyDynamicNamed`. Si d'autres fabriques peuvent utiliser des
++ paramètres aux noms dynamiques, `make` est utilisé là où une autre méthode `apply`
++ non dynamique existe déjà.
+
+% 0 1 0 09dadde8cb66d43d047503c45ea29022
+
+@ 0 7 0 0bac543749c63a2019f4c54eac969217
++ Renvoie un contexte opérationnel neuf pour une opération répétable. Les exemples
++ comprennent un nouveau calcul de condensé (`Hash.initialize`), une instance
++ d'algorithme de chiffrement (`Aes.initialize`), un transport de fichier ouvert
++ (`Openable.initialize`) ou une nouvelle session (`McpServer.initialize`).
++ L'opération peut être pure ou impliquer l'acquisition de ressources ; ce qui unit ces
++ cas, c'est que le résultat représente le début d'une utilisation unique d'une
++ opération qui peut être recommencée de zéro.
+
+@ 0 1 0 1a58b0e6bb5f83d00fed5a36a97e4ad0
++ ## Noms non standard
+
+% 0 1 0 15dad777cf39f0a4010ae37861b9fb27
+
+@ 0 2 0 1855054d6b9a80c70c3839961d6576b4
++ Utilisé uniquement pour `Git.init`, qui suit le nommage de la commande CLI
++ `git init`. Partout ailleurs, on préfère `initialize`.
+
+% 0 1 0 1e92a0c0e4f46ce8181792b70b39f4d0
+
+@ 0 3 0 18e5aff42653ad911f8af18a8862e953
++ Réservé exclusivement à `wisteria.ProductDerivation.construct`. C'est un cas
++ particulier délibéré, utilisé dans la dérivation de classes de types à la
++ compilation, qui ne suit pas le schéma général de nommage des fabriques.
+
+% 0 1 0 14e2e0a3a949744e08288c970ed8c21a
+
+@ 0 4 0 0e5462cb1c2bad5a14d377b49f92ad18
++ Utilisé uniquement comme méthode d'instance qui restreint un type à une forme à
++ paramètre fantôme `X of Y`. Le corps est toujours une conversion forcée
++ (`asInstanceOf`), et le type de retour est littéralement `this.type of topic`. Ces
++ méthodes sont privées à leurs packages respectifs.
+
+@ 0 1 0 09851360f6913ae00e36d0bb49639d4a
++ ## Le préfixe `unsafe`
+
+@ 0 5 0 1c3e739d695f9de00fe56df7961f0db7
++ Une méthode qui prend `vacuous.Unsafe` comme paramètre `using` est protégée : son
++ appelant doit détenir le jeton, ce qui revient en pratique à écrire `(using Unsafe)`
++ ou à se trouver dans un bloc `unsafely`. Toute méthode de ce genre est nommée avec un
++ préfixe `unsafe` suivi d'une majuscule — `unsafeBuffer`, `unsafeAttested`,
++ `unsafeChild` — afin que la frontière soit visible au site d'appel et pas seulement
++ dans la signature.
+
+@ 0 4 0 0a3b769253dacf9919964dd01c8de7ea
++ C'est vérifié. La règle Consequent `S1.1` est `strict` pour tout composant, si bien
++ qu'une méthode protégée portant un nom ordinaire fait échouer le build. Là où le nom
++ ne peut pas recevoir de préfixe, la méthode est renommée plutôt qu'exemptée :
++ `Regex.apply(parts)(using Unsafe)` est devenu `Regex.unsafeFrom(parts)`.
+
+@ 0 3 0 036ec849c45cffc50eaa0c7faba0005c
++ Deux définitions échappent à la règle parce qu'aucune n'a de nom à préfixer : un
++ constructeur, et un `given`, qui est invoqué par son type. Toutes deux restent
++ protégées, et l'argument qui justifie la protection a sa place dans un commentaire à
++ côté d'elles.
+
+@ 0 2 0 02fd982e0c8f66941ead3185c26de225
++ La réciproque — une méthode au préfixe `unsafe` doit être protégée — est `S1.2`, et
++ elle est pour l'instant consultative plutôt que stricte. Huit définitions
++ l'enfreignent :
+
+% 2 1 0 0fe376c0e9ac1b3618138b344e57a631
+
+@ 0 2 0 04d97bbd107ea5781a8c8760265dea44
++ column  Composant
++ column  Définitions
+
+% 0 1 0 01f22307b9002ced1028d7065ee284ee
+
+@ 0 1 0 0c8223e0db0ff23a17af6ed4966fec93
++ row  vacuous  `Optional.unsafeGet` (privée au groupe d'extensions)
+
+% 0 1 0 03baf2dc658d817f0cf9d236a3d8bd2c
+
+% 0 1 0 04a20e72f90900330a4a0c029413c786
+
+% 1 1 0 1c0e93a3adfa6c2814bd846956d56b4d
+
+@ 0 1 0 04d3eea5f681c6011b566c011fc7a9ac
++ (`archimedes.Ergo.unsafeInterpolate` est protégée depuis l'élimination des
++ stratégies ambiantes.)
+
+@ 0 8 0 125d0e603d9b774006380070d124d5eb
++ Les protéger est souhaité et suivi comme tâche ultérieure, non écarté : un essai a
++ montré que le changement atteint des centaines de sites d'appel, dont une bonne part
++ sont des appels en bloc à deux-points (`Array.unsafeFrozen:` sur un argument indenté)
++ qui ne peuvent pas recevoir de liste d'arguments supplémentaire sans être
++ restructurés. `Optional.unsafeGet` a d'abord besoin d'un changement propre : elle se
++ trouve dans un groupe d'extensions portant une clause
++ `using Optionality[optional.type]`, et un `(using Unsafe)` explicite se lie à cette
++ clause initiale à la place, si bien que la méthode doit quitter le groupe avant de
++ pouvoir être protégée.
+
+@ 0 3 0 0cd3d8201553f7c51ec5e69b9ac52c78
++ D'ici là, le recensement les compte comme `unsafe-ungated`, ce qui en est le relevé
++ fiable : un avertissement `S1.2` est abandonné chaque fois que le compilateur a déjà
++ signalé quelque chose à une position englobante dans le même fichier.
+
+@ 0 2 0 00480bd6a9cd8336001ec06974cbccb7
++ Le préfixe est un marqueur, pas une licence. Il dit qu'une garantie s'arrête ici, ce
++ qui est le début d'un argument expliquant pourquoi c'est sûr, et non sa fin.
+
+@ 0 3 0 1e60644f1f450d7e0a0431151fd8460a
++ `unsafely` lui-même n'est pas concerné : le préfixe doit être un mot entier —
++ `unsafe` seul, ou `unsafe` suivi d'une majuscule — si bien que le bloc qui fournit le
++ jeton est exempté par construction, tandis qu'une méthode nommée simplement `unsafe`
++ ne l'est pas.

@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 8 0 1431c98063de65a00a71fea57e055f77
++ column  Versuch
++ column  Darstellung
++ row  1  die eigene `Inspectable`-Instanz des Typs
++ row  2  seine `Encodable in Text`-Instanz, zwischen `⸤` und `⸥`
++ row  3  seine `Showable`-Instanz, zwischen `⸢` und `⸣`
++ row  4  bei einem `Optional` der Wert, den es enthält, zwischen `｢` und `｣`, oder `○`, wenn es nicht gesetzt ist
++ row  5  eine strukturelle Darstellung, abgeleitet aus seiner Gestalt
++ row  6  eine Darstellung als letztes Mittel, sein `toString` zwischen `“` und `”`
+
+@ 0 2 0 00ab82423b62806a0907786a980e61f6
++ Die Klammern kennzeichnen eine Darstellung, die von einer anderen Typklasse oder von `toString`
++ entlehnt wurde und nicht die eigene des Typs ist.

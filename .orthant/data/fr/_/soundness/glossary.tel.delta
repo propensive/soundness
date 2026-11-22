@@ -1,0 +1,1065 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0df839e50c6f66941cf87bfe8f61548e
+
+% 0 1 0 1bc86656c3d9a2bf114b2bb68c999dee
+
+% 0 1 0 0b24f6d2c3b87ddd0d6b8fe0f4779b90
+
+% 0 1 0 09c4a17da68108ad06051afdc4612f5b
+
+@ 0 1 0 0f41a64e951278e802d223dde19c9cf3
++   term cumulatif
+
+@ 0 3 0 006539c73483123415654bb07d5f83ca
++   definition
++       Se dit d'une [stratégie], comme `validate`, qui enregistre chaque erreur et laisse le
++       travail continuer, puis réunit toutes les erreurs enregistrées en une seule, au lieu de
++       s'arrêter à la première.
+
+% 0 1 0 1c0c6cceec82bfed0ba5671fba350f1a
+
+@ 0 1 0 1f019de7fdab87d7020a975233a5fbaa
++   term armuré
+
+@ 0 4 0 001977392f5ca91e0a7f779a8dafc63c
++   definition
++       Se dit de données binaires, comme une clé, un certificat ou une signature, écrites sous
++       forme de texte ASCII, en Base64 entre des lignes `-----BEGIN …-----` et `-----END …-----`,
++       comme le fait PEM, si bien qu'un texte armuré se copie comme n'importe quel texte.
+
+@ 0 1 0 0306d7d13b29e80e01dcde5578c73a2c
++ define boxing
++   term boxé
+
+@ 0 4 0 0eb164bf1286a79f00dea35ec396f5aa
++   definition
++       Se dit d'une valeur primitive, comme un `Int` ou un `Double`, enveloppée dans un objet sur
++       le tas pour être utilisée là où un objet est attendu, au prix d'une allocation. Une valeur
++       non boxée est stockée sous la forme de la primitive elle-même.
+
+@ 0 1 0 07bfe291bad851b90276426a44edc524
++ define brand
++   term marque
+
+@ 0 4 0 098ad556ae1e92581c9bdfe347941a18
++   definition
++       Un marqueur dans le type d'une valeur qui enregistre sa provenance ou un fait la concernant,
++       comme dans `Ratel.Row of brand`, de sorte qu'une ligne ne puisse être lue que par le lecteur
++       dont elle provient.
+
+% 0 1 0 0fe6888dbcb3af9e04fb7d7cdca2ce46
+
+@ 1 1 0 0f6ee9500310be4b0b706d398345247c
++   term capacité
+
+@ 0 4 0 08fb904a2cce031d0ead92424a6485ea
++   definition
++       Une valeur qui doit être dans la portée pour qu'une opération soit permise, comme `Online`
++       pour une requête réseau. Une méthode qui en a besoin le dit dans sa signature, si bien que ce
++       qu'une méthode peut faire se voit dans son type.
+
+% 0 1 0 00597d89e5b3d64f1cf62bfae255ddd5
+
+@ 1 1 0 11a77683ba361c8703328aa40dd8afaf
++   term  contrôle des captures
+
+@ 0 4 0 0012e3bd4866e3d01cff5d5256d724d6
++   definition
++       Une vérification expérimentale du compilateur Scala 3 qui suit les [capacités][capacité] que
++       capture chaque valeur, de sorte qu'une capacité prêtée à une portée ne puisse pas s'en
++       échapper, par exemple en étant stockée ou renvoyée.
+
+% 0 1 0 0bfe3d978d2be1ad1d7ac821c3c9655e
+
+@ 0 1 0 0f1c8b265941765a1d322e3cf6c8d162
++   term porteur
+
+@ 0 4 0 15223412a34a8539081378cbad91d452
++   definition
++       Ce qui porte ce qu'une autre chose décrit : le type Scala qui contient un corps d'un type de
++       média donné, comme `Json` pour `application/json` ; ou un thread porteur qui exécute, à tour
++       de rôle, les tâches qui lui sont confiées, comme dans un pool.
+
+% 0 1 0 1ac1d59c594a02a60c9c8e9b5a4eeaab
+
+@ 1 1 0 1ba256881cb258ec07ff8c4d8e0d1d65
+
+@ 0 1 0 1e756b42a116a1c218e09f3d946700e5
+
+@ 1 0 0 1e756b42a116a1c218e09f3d946700e5
++   term  package de choix
++   keyword  import de politique
+
+@ 0 4 0 1b3db5a0a7c376740d14d41b5f9962dd
++   definition
++       Un package de [givens][given] alternatifs pour une même décision, comme `strategies`,
++       `alphabets` ou `httpBackends`. Importer un de ses membres par son nom fait ce choix pour tout
++       ce qui est dans la portée.
+
+@ 0 1 0 0917f0bcaecedf7e154ca0e1f1f478ba
++ define chunk
++   term morceau
+
+@ 0 4 0 1da849a7c3f39b7d10c00511f43f9d2f
++   definition
++       Un des morceaux par lesquels un flux livre ses données, comme un bloc d'octets. Le code qui
++       lit un flux doit admettre qu'une frontière, comme une fin de ligne, puisse tomber entre deux
++       morceaux.
+
+% 0 1 0 17ba553e447f668c15d213d153a7effc
+
+@ 0 1 0 03b6fe048f3bb387029d1ff28b254dda
++   term  algorithme de chiffrement
+
+@ 0 3 0 11a4e488bfe760a80a8a02b2b8a7b267
++   definition
++       Un algorithme qui chiffre et déchiffre des données au moyen d'une clé, comme AES ou RSA. Le
++       type d'une clé nomme son algorithme de chiffrement, si bien qu'une clé ne peut pas servir
++       avec un autre.
+
+% 0 1 0 0f6b958eddbe984b1df0a44e54491352
+
+@ 0 1 0 1c0df53294a3706902c113f5e3ad344c
++   term  chargeur de classes
+
+@ 0 3 0 18e5980e89ba936002ca6a12ed56ebea
++   definition
++       L'objet de la JVM qui trouve et charge les classes compilées et les ressources, depuis un
++       classpath ou ailleurs. Les ressources et les services sont recherchés au moyen du
++       `Classloader` dans la portée.
+
+@ 0 1 0 10c9d5f376498e2500a2c31400d2ec4c
++ define  clock tick
++   term tic
+
+@ 0 3 0 14d875ef45cf2b970c441f02b7f70ddc
++   definition
++       Un pas d'une horloge qui rythme un travail répété, comme une image d'une animation ou un
++       événement qui signale une progression. Ce n'est pas la même chose qu'une [graduation] sur l'axe
++       d'un graphique.
+
+% 0 1 0 025af9f587e406e9154e8232423c3eeb
+
+@ 0 1 0 13a942f2c18f42ba1ef87100354cd8a8
++   term option
+
+@ 0 3 0 0f06e9ae79fc2e1211bfc99b5822bd1f
++   definition
++       Un argument nommé d'un programme en ligne de commande, écrit avec un `--` initial, comme
++       `--verbose` ou `--log-level`, et qui peut prendre une valeur.
+
+@ 0 1 0 1a39645a09ef3b8c1213ac81de705026
++ define compiletime
++   term compilation
++   keyword  temps de compilation
+
+@ 0 3 0 0ddc083846ca893d17724a7f369ff2fb
++   definition
++       Le moment où le programme est compilé. Une vérification faite à la compilation rejette le
++       code erroné avant qu'il puisse s'exécuter ; une erreur de compilation est signalée par le
++       compilateur.
+
+% 0 1 0 1388853d84e2e5621a50337e84f8f361
+
+@ 1 1 0 0d5e713a42eb358e14ea4e885210ce26
+
+@ 0 1 0 1654a1ab8a965c781690b31dc9e63aa5
+
+@ 1 0 0 1654a1ab8a965c781690b31dc9e63aa5
++   term  valeur contextuelle
++   keyword implicite
+
+@ 0 3 0 1bcdb39746b9f85506afd3a727264ad1
++   definition
++       Une valeur que le compilateur trouve dans la portée et passe à une méthode sans qu'elle soit
++       écrite comme argument. Elle se déclare avec `given` et se demande avec `using`.
+
+% 0 1 0 1e7f6b22919ec94103493f4bd32e692b
+
+@ 0 1 0 100c49900235943713aa6d893cc69197
++   term  mode canonique
+
+@ 0 4 0 09e47caae0034ae11bf0b67a0611790a
++   definition
++       Le mode ordinaire d'un terminal, dans lequel l'entrée est livrée ligne par ligne, avec
++       l'écho et l'édition de ligne, comme la touche Retour arrière, gérés par le pilote du
++       terminal. Son contraire, le mode brut, livre chaque frappe de touche dès qu'elle est saisie.
+
+% 0 1 0 1e94cbb7b687ac4a1d970f506e9661dd
+
+@ 0 1 0 18aee109b57f492e06dae81d44453e32
++   term démon
+
+@ 0 4 0 136360126d310c370972be9160c0508e
++   definition
++       Un programme qui reste en cours d'exécution en arrière-plan et sert chaque invocation d'une
++       commande, reçue d'un petit lanceur, de sorte que la commande démarre aussitôt. En
++       concurrence, un `daemon` est une tâche lancée puis laissée en cours jusqu'à la fin de sa
++       portée.
+
+% 0 1 0 1c1af090876abc101b455be906132175
+
+@ 0 1 0 04aa4be4401ae2650c6861aa2b2dbd3b
++   term démangler
+
+@ 0 3 0 02b6881be4fc4d310c6b755e33b91213
++   definition
++       Ramener un nom tel que la JVM le voit, encodé par le compilateur Scala, comme `Foo$` ou
++       `$anonfun$1`, au nom qui était écrit dans le code source.
+
+% 0 1 0 1c95718957d2d8600aa534d779303ff8
+
+@ 0 1 0 054b1cbc80536a011bbe23a05e3bf214
++   term dérivation
+
+@ 0 3 0 1b71e4d8c9423a0d0651cc0534d65ac7
++   definition
++       Le fait de laisser le compilateur construire une instance de [classe de types] pour une case
++       class ou une énumération à partir des instances de ses champs ou de ses cas, au lieu de
++       l'écrire à la main.
+
+% 0 1 0 09cc5946d26376231497f9efec0e94bf
+
+@ 0 1 0 0c7513ceeeeed8a2051e8e64278e6aea
++   term condensé
+
+@ 0 3 0 07446cfa6e7e8ff91c1f958288358481
++   definition
++       La valeur de longueur fixe qu'un algorithme de hachage, comme SHA-256, calcule à partir de
++       données ou d'une valeur quelconque. Son type nomme l'algorithme, et des entrées égales
++       donnent toujours des condensés égaux.
+
+% 0 1 0 1d1b436b545b0e8b1881ca0673541f6e
+
+@ 0 1 0 128b0ca918ae8e6a169b8e9036e81cd4
++   term  style direct
+
+@ 0 3 0 1a5de3821fc3dd8c00e9ba51d8921815
++   definition
++       Du code écrit sous forme d'instructions et d'expressions ordinaires dont les valeurs sont
++       utilisées directement, sans envelopper les résultats dans une monade comme `Either`, `Try` ou
++       `Future`.
+
+@ 0 1 0 0205551bc5d658ef034a7f971a78229f
++ define endpoint
++   term endpoint
+
+@ 0 3 0 113e91de0f5bc70c06fbed37172fd4df
++   definition
++       L'adresse à laquelle on atteint un service, et à laquelle un client se connecte, comme un
++       hôte et un port, une URL, ou une commande à lancer.
+
+@ 0 1 0 15a3ad57b135b59f08ca39adc7e2bb84
++ define enumeration
++   term énumération
++   keyword enum
+
+@ 0 3 0 1abb63cdf9ae6a980a89d7317ad2804c
++   definition
++       Un type déclaré avec `enum` dont les cas forment une liste fixe de valeurs, connue du
++       compilateur, chacune avec un ordinal qui donne sa position dans la déclaration.
+
+@ 0 1 0 03e372b69e2e69130671c4d5c63585da
++ define evidence
++   term preuve
+
+@ 0 4 0 141fe2f361d1dc81133afcceeb35c689
++   definition
++       Une [valeur contextuelle] dont la présence prouve quelque chose que le compilateur ne peut
++       pas savoir autrement, comme le fait qu'un type est un sous-type d'un autre, ou qu'un outil
++       est disponible, et qu'une méthode exige comme preuve avant de pouvoir être appelée.
+
+% 0 1 0 1e06fa4b58e245a900f5167c9c0b474f
+
+@ 1 1 0 1363188e9983d0701b2e019b2269c1ad
++   term fonte
+
+@ 0 3 0 1227382ca4a30673101278f2b49ab7eb
++   definition
++       Un style d'une [famille de polices], un `Face`, choisi par sa graisse, son inclinaison et
++       ses fonctionnalités, comme Inter en gras italique.
+
+@ 0 1 0 1ed1a46e8e2dced1075dab8f1047ef01
++ define fan-out
++   term diffusion
+
+@ 0 3 0 1011111a8afe54ba1f7a2d474dc053ac
++   definition
++       La diffusion d'un travail ou de données d'une source unique vers de nombreux destinataires,
++       comme un lot de petites tâches réparties sur des threads, ou un flux livré à plusieurs
++       consommateurs.
+
+@ 0 1 0 1fa780cc23e5a4c8031d86aafb7e6f76
++ define fingerprint
++   term empreinte
+
+@ 0 4 0 0d24bc5ca9ee42860d51582fa7e6fa5a
++   definition
++       Une valeur courte calculée à partir d'un contenu, comme un schéma ou une clé, qui
++       l'identifie : comparer des empreintes permet de s'assurer que deux parties détiennent le
++       même contenu sans comparer le contenu lui-même.
+
+@ 0 1 0 0025a34f00e2aa9215e7bf184b91c42d
++ define fire-and-forget
++   term  sans suivi
+
+@ 0 3 0 116d61ca70f72aeb1f0bbe12e25a4f18
++   definition
++       Se dit d'un travail lancé sans suivi, c'est-à-dire sans attendre qu'il se termine ni aucune
++       réponse, comme une notification en RPC, un datagramme, ou une tâche lancée avec `daemon`.
+
+% 0 1 0 0f520ba97c8d4c6b1444b5316dc68bfa
+
+@ 0 1 0 16248f251b5f74fc1d463b34c25a52f5
++   term indicateur
+
+@ 0 4 0 0553463d303174630202f179e509fea2
++   definition
++       Un réglage nommé à deux états, souvent stocké sur un bit d'un entier, comme dans le champ
++       des indicateurs d'un en-tête binaire. Un ensemble d'indicateurs est typé par une
++       [énumération], si bien qu'un indicateur d'un autre ensemble est rejeté.
+
+% 0 1 0 131de5da7fc99f4d1d018f24090e16be
+
+@ 0 1 0 198b0e32fa7e33251111f4fd2ad41644
++   term focus
+
+@ 0 4 0 053270e3bdd69f2803eb013f300b80b6
++   definition
++       La position, dans une structure, sur laquelle le code travaille en ce moment, comme un
++       pointeur JSON, maintenue par `track` à mesure qu'un parcours descend. Une erreur enregistrée
++       sous `validate` est associée au focus où elle a été levée.
+
+@ 0 1 0 0ec13a0700e41dba03a064cae04815b2
++ define forwarder
++   term redirecteur
+
+@ 0 4 0 13bdd291b954a630128eb01e44a1970d
++   definition
++       Une méthode qui ne fait qu'appeler une autre définition avec les mêmes arguments, comme
++       celle que le compilateur génère pour une clause `export`, afin qu'un membre soit accessible
++       depuis un autre endroit.
+
+@ 0 1 0 1d83dc718c260deb0b1350d4ca8880e5
++ define frame
++   term trame
+
+@ 0 4 0 11f9facf6fabc943091531fbe7b492ca
++   definition
++       Une unité autonome d'une séquence : un message découpé dans un flux par le [tramage], un
++       document BinTEL qui voyage seul, ou une image d'une animation. Une entrée de la pile
++       d'appels est un [cadre de pile].
+
+% 0 1 0 09e66b544112e0e8072f295f100b807b
+
+@ 0 1 0 143ca37cf0f4fb4f039ad1a6a51399a0
++   term tramage
+
+@ 0 3 0 079f8b3a9ab1093b07a1b67e593e8a29
++   definition
++       Le découpage d'un flux continu d'octets ou de texte en messages distincts, au moyen d'un
++       préfixe de longueur, d'un en-tête `Content-Length` ou d'une fin de ligne, de sorte que
++       chaque message puisse être lu en entier.
+
+@ 0 1 0 056a6c84f04ce7271a55b70321265768
++ define frozen
++   term gelé
+
+@ 0 4 0 0877e07197b6eca80310c49c926bc144
++   definition
++       Rendu [immuable] une fois construit : une structure remplie par mutation puis gelée, comme
++       un filtre de Bloom ou une `Topology`, peut être partagée et interrogée, mais plus modifiée.
+
+% 0 1 0 06664a38722d20911a9f20fb8652fee6
+
+@ 1 1 0 12f2ca245f69c4f0039fb53e2c23c46f
++   term accesseur
+
+@ 0 3 0 02a128bb169ebc820dd3831dbca8a4f2
++   definition
++       Une fonction ou une méthode qui lit une partie d'une valeur, comme un champ. Associé à un
++       [mutateur], un accesseur forme une lentille.
+
+% 0 1 0 1184751ed9e3289d1bc1033f33229a95
+
+@ 1 1 0 181c0ea6f37f092800ec9d3704d1a693
++   term given
+
+@ 0 3 0 1b11dafa8fc7c5c508fc96e19c4eb98f
++   definition
++       Une définition marquée `given`, qui rend une [valeur contextuelle] disponible pour tout code
++       qui l'a dans sa portée.
+
+% 0 1 0 084420142785480f051a8128f03bbffa
+
+@ 0 1 0 12342b3e5daf05d41b440dfe44dc4861
++   term droit
+
+@ 0 4 0 1a530c39d489cd690afb345815eae5c9
++   definition
++       Un des types d'accès avec lesquels une [poignée] est ouverte, comme `Read`, `Write` ou
++       `Exclusive`. Les droits sont portés par le type de la poignée, si bien qu'une opération qui
++       n'a pas été accordée ne compile pas.
+
+% 0 1 0 00f3411913d91bb113a3637f96b8de18
+
+@ 0 1 0 14f0e7fb003d4bfd15cd065da12fe28d
++   term  grappe de graphèmes
+
+@ 0 4 0 1963678f7276e81512098665877d59ed
++   definition
++       Une suite d'un ou plusieurs caractères Unicode qu'un lecteur perçoit comme un seul
++       caractère, comme une lettre avec des accents combinants, ou un emoji formé de plusieurs
++       points de code.
+
+% 0 1 0 135064890c2eca2d0557074f81fd26dc
+
+@ 0 1 0 01cafce4528323071dd6d60eb5c2dc9c
++   term poignée
+
+@ 0 4 0 14dccd29e735f75b14b8765dc6de445d
++   definition
++       Une valeur qui donne accès à une ressource ouverte, comme un fichier, un canevas ou un
++       dépôt, pour la durée d'une portée. Le type de la poignée dit pour quelles opérations elle a
++       été ouverte, et la ressource est fermée à la fin de la portée.
+
+@ 0 1 0 10f428add9959f9706b77776b902dfdc
++ define handler
++   term gestionnaire
+
+@ 0 4 0 033125b2fc6bc3301e5ddd34805c19ef
++   definition
++       Une fonction fournie pour être exécutée quand quelque chose arrive ou se produit, comme une
++       requête qui parvient à un serveur ou un message d'un pair. Le gestionnaire décide de ce qui
++       en est fait et, pour une requête, de la réponse renvoyée.
+
+@ 0 1 0 12cc98e8c16ab7c71a3f8b55d02904f8
++ define harness
++   term harnais
+
+@ 0 3 0 09d15489abce25d8127e2589d1307523
++   definition
++       Le code qui exécute un autre code dans des conditions contrôlées et l'observe, comme le
++       `Harness` qui exécute un test et enregistre ce qu'il capture, ou un harnais de benchmark.
+
+% 0 1 0 0fa90a87ae9e65011ed0a322038e6a3b
+
+@ 0 1 0 116c3a43a83f31640567d6333c20a029
++   term  signature honnête
+
+@ 0 3 0 0bf0080c1abeb0920941856181b312d7
++   definition
++       Une signature de méthode qui énonce tout ce dont la méthode a besoin et toutes les façons dont
++       elle peut échouer, de sorte que rien de son appel n'est laissé à la documentation.
+
+% 0 1 0 19dd8489827a9ff51cea2c298f10875e
+
+@ 0 1 0 17546d609edc4e600b76a10164733150
++   term immuable
+
+@ 0 3 0 002a75776c93f6ac1b0c9a1edc0abea7
++   definition
++       Qui ne change jamais après sa construction. Une opération qui semble modifier une valeur
++       immuable renvoie une nouvelle valeur et laisse l'originale telle qu'elle était.
+
+% 0 1 0 06e8589868e200690db692509e379f30
+
+@ 0 1 0 14747dcf078f96671ce84ee760202f16
++   term  état impossible
+
+@ 0 3 0 01ffa4ef9a8b4804164d2cceff2380d2
++   definition
++       Une valeur qui n'aurait pas de sens ou serait invalide, et que les types sont conçus pour
++       rendre irreprésentable, de sorte qu'aucun code n'a besoin de la vérifier.
+
+% 0 1 0 052f685635f31ca41eb2a9b6c696f28f
+
+@ 0 1 0 07c466338a479fd31fa0a2f58dcfe8d5
++   term internement
+
+@ 0 3 0 15c28c7000e383ec0b6dcce400a43503
++   definition
++       Le fait de ne stocker chaque valeur distincte qu'une seule fois, de sorte que stocker ou
++       créer à nouveau une valeur égale donne la même instance ou la même référence, et que des
++       valeurs égales puissent être comparées par identité.
+
+% 0 1 0 147797ae2a412f6f1e1c9831eb9fe592
+
+@ 0 1 0 090a9fa7f0bb8cf4095e017f90e49ff2
++   term interpolateur
+
+@ 0 3 0 0d958eeba96f1ab300503d9a4c2a7d5e
++   definition
++       Un préfixe sur un littéral de chaîne, comme `t"…"`, `url"…"` ou `media"…"`, qui vérifie le
++       contenu du littéral [à la compilation][compilation] et donne une valeur d'un type précis.
+
+% 0 1 0 0142d9cf365f00fa009aa4d024478759
+
+@ 0 1 0 05fe0c5252cda01109b213b6c59371e4
++   term  frappe de touche
+
+@ 0 3 0 03a893ea3831dd9d1bbe28d69bef679e
++   definition
++       Une touche, ou une combinaison de touches, frappée dans un terminal, et reçue sous forme de
++       valeur `Keypress`, comme un caractère, Entrée ou une touche fléchée.
+
+% 0 1 0 1c6a927f6806dc83105c6ad4c50e35c8
+
+@ 0 1 0 0bec5d1036e768e3148926c7813af358
++   term étiquette
+
+@ 0 4 0 0200d1163c3362630025c7da2b752c30
++   definition
++       Un texte placé à côté de ce qu'il nomme, comme un point sur un graphique ou une ville sur
++       une carte ; plus généralement, le nom court sous lequel une valeur est présentée, comme
++       l'étiquette d'un bloc PEM.
+
+@ 0 1 0 1d0b78322e93f27514f24657fdd6e024
++ define layout
++   term disposition
+
+@ 0 3 0 06a8c1359e289a1a0ee18befccaa9428
++   definition
++       La disposition de parties dans l'espace ou en mémoire : la façon dont un tableau, une
++       interface de terminal ou un graphique place ses éléments, ou dont les bits d'un pixel se
++       répartissent entre ses canaux.
+
+% 0 1 0 06440f522bd54cf918b5cbe4c3b94908
+
+@ 0 1 0 1be9900c5b72704911ea5927c7974c8d
++   term tolérant
+
+@ 0 3 0 188c64f47519896802855ba7b626d6c3
++   definition
++       Se dit d'une politique de décodage qui lit une valeur optionnelle absente ou mal formée
++       comme `Unset` sans rien signaler, au lieu de lever une erreur comme le fait une politique
++       stricte.
+
+@ 0 1 0 1406f989044770fd00e9875ac103078a
++ define lift
++   term relever
+
+@ 0 4 0 183250d17ebe4e341819f5b6141786bf
++   definition
++       Faire passer une valeur dans un cadre plus riche qui la représente, comme une valeur dans un
++       conteneur, une constante dans une expression quotée pour une macro, ou un fait concernant
++       une valeur dans son type.
+
+@ 0 1 0 1207eb032ad66d861d8e8f980d47df91
++ define listener
++   term écouteur
+
+@ 0 4 0 0336f0322305b3f218ffe84219324713
++   definition
++       Une valeur ou une tâche qui attend des événements ou des connexions et agit sur chacun à son
++       arrivée, comme le `Lsp.Listener` qui reçoit ce qu'un serveur de langage envoie de lui-même,
++       ou un serveur qui attend des connexions sur un socket.
+
+% 0 1 0 03afa8123f52c21c06f0d2a9d766c4df
+
+@ 0 1 0 014e544dd0596d5915b300a76d698a04
++   term logger
+
+@ 0 4 0 18efef7519fca0da117cbd5dc8b11125
++   definition
++       La [valeur contextuelle] qui reçoit les événements typés qu'une méthode journalise, et les
++       écrit quelque part, comme un terminal, un fichier ou le journal système. Sans logger dans la
++       portée, la journalisation est silencieuse et ne coûte rien.
+
+% 0 1 0 08a21919cd3fc9c61ca7b009b83d5563
+
+@ 0 1 0 149432bfa61bebfa1b8d25798bcc7891
++   term  type de média
+
+@ 0 4 0 04c470a8c6e06e45055d9d3ee87aa7a3
++   definition
++       Le nom standard du format de certaines données, comme `text/html` ou `application/json`, qui
++       les accompagne dans un en-tête HTTP ou un e-mail, pour que le destinataire sache comment les
++       lire.
+
+@ 0 1 0 0114f61b2a26b203065846e99bc1295d
++ define one-shot
++   term  à usage unique
+
+@ 0 4 0 1def90edf9b646490bbf03509a272370
++   definition
++       Qui ne sert, ou ne se fait, qu'une fois : un itérateur à usage unique ne peut être parcouru
++       qu'une fois, et une opération à usage unique, comme `gzip` sur `Data`, traite une valeur
++       entière en un seul appel plutôt que de façon incrémentale.
+
+@ 0 1 0 0839065bf9eff6701a3451fa7835d742
++ define  opaque type
++   term  type opaque
+
+@ 0 3 0 14dfa2e58277b40414c4682e6db17771
++   definition
++       Un type représenté à l'exécution par un autre type, comme un `Long`, mais que le compilateur
++       traite comme distinct de celui-ci, de sorte que seules les opérations définies pour lui sont
++       permises.
+
+% 0 1 0 0204601cf5d4667d13cced5f986596ad
+
+@ 0 1 0 1dd4c90a7f7c1e990252c7eae5ff45bf
++   term optionnel
+
+@ 0 3 0 111bdccde74f3cf519a33bde361bb0c7
++   definition
++       De type `Optional[T]` : soit une valeur de type `T`, soit `Unset`. Une valeur présente n'est
++       pas enveloppée, elle ne coûte donc rien de plus que la valeur elle-même.
+
+@ 0 1 0 01dd0d1a4a5e99d615632e24dd527e55
++ define padding
++   term remplissage
+
+@ 0 4 0 0b67fbbd37fa34f50074a7a16ca81fb5
++   definition
++       Des caractères ou des octets ajoutés à une valeur pour l'amener à une longueur requise : les
++       espaces de remplissage qui complètent un texte jusqu'à la largeur d'une colonne, ou les
++       octets qu'un algorithme de chiffrement par blocs ajoute pour compléter son dernier bloc.
+
+% 0 1 0 18129ef9a5485f551b58c243d83844e6
+
+@ 0 1 0 1b9c37ab287b76071869f247d8f83208
++   term volet
+
+@ 0 3 0 1aa051ec90db38ce04fd478f6b6c5aaf
++   definition
++       Une région rectangulaire d'une interface de terminal qui affiche un contenu. Les volets
++       s'imbriquent en un arbre, résolu en fonction de la taille du terminal.
+
+@ 0 1 0 0910491bbbd482a807beeafbe5fa11ff
++ define park
++   term  mettre en attente
+
+@ 0 3 0 0e8531b8ccfdb2311439ff91e0818b83
++   definition
++       Suspendre un thread ou un [brin], sans consommer de temps processeur, jusqu'à ce qu'un autre
++       le réveille, comme le fait un écrivain quand son lecteur prend du retard.
+
+@ 0 1 0 178aeff303eca08410dfec7f7c36c6d6
++ define  pattern match
++   term  filtrage par motif
+
+@ 0 3 0 1b66ccda6b0c5bea036bd5020480055e
++   definition
++       Le test d'une valeur, dans une expression `match` ou un motif ailleurs, contre la forme de
++       chaque cas tour à tour, et l'extraction de parties du premier qui convient.
+
+@ 0 1 0 0aeae2868f3ab1db04e1040328b2f7a4
++ define payload
++   term  charge utile
+
+@ 0 3 0 1fc85798c86d11d41bd1aaf92a35427b
++   definition
++       Les données que transporte un message ou une requête, par opposition à l'enveloppe qui les
++       entoure, comme son nom de méthode, son identifiant ou ses en-têtes.
+
+% 0 1 0 059ada9391070c6614b70447432b4bda
+
+@ 0 1 0 11315050eac46a8403a46eb528088fc8
++   term permis
+
+@ 0 4 0 124c1c7bf344330513873591b791b6bd
++   definition
++       Une [valeur contextuelle] qui doit être importée avant de pouvoir utiliser un algorithme
++       faible ou obsolète, comme SHA-1, de sorte que l'acceptation de cet algorithme par un code se
++       résume à un import, qu'on peut rechercher.
+
+% 0 1 0 1b5007d03320ab8917d5e0c4cfad930b
+
+@ 0 1 0 12ba6e8452dbb1d9096a40b34b9c9b3c
++   term homologation
+
+@ 0 4 0 1acd4dcfcaa4a4e900e5ed34d6344407
++   definition
++       La [valeur contextuelle] qui décide du sort d'une tâche enfant encore en cours quand le
++       corps de son parent se termine : selon l'homologation, elle est annulée, attendue, ou
++       traitée comme une erreur.
+
+% 0 1 0 08d72ee32dfc73b806cc5398237a1676
+
+@ 0 1 0 05b7227d8cb271fc120fb7830a65789d
++   term fourniture
+
+@ 0 4 0 0f75adf9ca1a2b2f05dd601046d08be6
++   definition
++       Une instance [given] de `Typesettable` pour une [famille de polices] dans un médium, qui dit
++       comment ce médium obtient la police et quelles fontes il peut alors composer. Une police de
++       cette famille n'existe que là où sa fourniture est dans la portée.
+
+% 0 1 0 05b0cca1c93765561d56ada9a4d89750
+
+@ 1 1 0 18f820c3ead48a970920ff97ac4760a3
++   term raises
+
+@ 0 3 0 08e32cb70fc240311dd9cc83da46577f
++   definition
++       Le type infixe d'un type de retour, comme dans `Text raises ParseError`, qui déclare qu'une
++       méthode peut échouer avec cette erreur. Il exige de l'appelant une [tactique] pour l'erreur.
+
+% 0 1 0 1ab9801ee69c554d1e374903d801d8e0
+
+@ 0 1 0 0427a3024dcbf62c0b6e11da19840753
++   term raison
+
+@ 0 4 0 0e3419d4ab706ab01cafc96b43bcacf4
++   definition
++       La partie d'une erreur qui dit pourquoi elle s'est produite, en général un cas d'une
++       [énumération], comme `Json.Error.Reason.Absent`, si bien que le code peut distinguer une
++       cause d'une autre sans lire de message.
+
+@ 0 1 0 1a8e251f81f6174f0cc38ccf0e5b74ba
++ define receiver
++   term receveur
+
+@ 0 3 0 12a01b82ae1749fb11a0e491b8aae1e7
++   definition
++       La valeur sur laquelle une méthode est appelée, comme `x`, receveur de `x.f(y)` ; aussi,
++       dans un protocole, la partie qui reçoit un message.
+
+% 0 1 0 1c50ce304b248de416d32c737d64f477
+
+@ 0 1 0 1e1b53a5df3e63d804b9b8cb31c8142d
++   term  dépôt distant
+
+@ 0 3 0 0fa203b1a44385a81c7c526853a5d62f
++   definition
++       Une autre copie d'un dépôt Git, nommée dans le dépôt local comme dépôt distant, par exemple
++       `origin`, dont on récupère les commits et vers laquelle on les pousse.
+
+@ 0 1 0 0be0799b67f5d5741f00298334f58add
++ define runner
++   term exécuteur
+
+@ 0 3 0 086c606a3b9770021bea7f90042ed36a
++   definition
++       Un programme ou une valeur qui exécute du code fourni par un autre, comme un exécuteur de
++       tests qui lance les tests d'une suite, ou le lanceur qui s'exécute comme client d'un démon.
+
+@ 0 1 0 0bd23886b6aeb3130231a145389eb261
++ define runtime
++   term exécution
++   keyword runtime
+
+@ 0 3 0 01f51da604d879a61aacbdfdc55e976e
++   definition
++       Le moment où le programme s'exécute. Une erreur à l'exécution est une erreur que le
++       compilateur n'a pas pu exclure, et qui est signalée par une [tactique] quand elle survient.
+
+% 0 1 0 1058b69713692b3017ce1f99cda790bd
+
+@ 0 1 0 0d8a8ade00881eac121ad7c4da52ccec
++   term temporaire
+
+@ 0 4 0 0a2ba725bfe258be1ddb46f5fd8d9060
++   definition
++       Se dit d'un fichier ou d'un répertoire créé pour la durée d'une portée, et supprimé à la fin
++       de celle-ci, qu'elle réussisse ou échoue, comme pour un index jetable ou une fixture de
++       test.
+
+@ 0 1 0 0f86ce5a3e9f7cec0506a84bab9edd30
++ define scrutinee
++   term  valeur filtrée
+
+@ 0 3 0 03446530eac5fddd1482f71b44ae1594
++   definition
++       La valeur examinée par une expression `match` ou un extracteur, à laquelle le motif de
++       chaque cas est confronté.
+
+% 0 1 0 157b15dce93ef50a0660a717b8d59da2
+
+@ 0 1 0 1d4c6e7d44c4b0c70467f20606391c1c
++   term jonction
+
+@ 0 4 0 16a6fd5bca2a9fa61866f32b50bd9b39
++   definition
++       Le point étroit où une partie d'un système en rencontre une autre, remplaçable, comme les
++       quelques opérations primitives par lesquelles une bibliothèque atteint la plateforme
++       sous-jacente. Une autre plateforme se prend en charge en implémentant seulement la jonction.
+
+@ 0 1 0 1b0a73e39032f4ea11e24fc45ea664e6
++ define session
++   term session
+
+@ 0 3 0 1f9558644405f6751e03b1506d4e363c
++   definition
++       Une portée qui ouvre une ressource, comme une connexion, la prête au code à l'intérieur de la
++       portée, et la ferme quand la portée se termine.
+
+% 0 1 0 07c791365e7167001aa6f97ce30cfa83
+
+@ 1 1 0 19acf1c258a585d81c6b9313a9bc6c8e
++   term mutateur
+
+@ 0 4 0 080311f9873e37710ec3f9e6c334aa19
++   definition
++       Une fonction ou une méthode qui remplace une partie d'une valeur, comme un champ. Pour une
++       valeur [immuable], elle renvoie une nouvelle valeur où cette partie est remplacée. Associé à
++       un [accesseur], un mutateur forme une lentille.
+
+@ 0 1 0 00a132abe47f70fd08fa0286eb56b59e
++ define  singleton type
++   term  type singleton
+
+@ 0 4 0 1568b1463c03dc080fd283d5aedb39a5
++   definition
++       Le type d'une seule valeur, comme le type d'un cas particulier d'une [énumération]. Un
++       paramètre de type singleton doit recevoir une valeur que le compilateur peut identifier, et non
++       une valeur calculée [à l'exécution][exécution].
+
+% 0 1 0 07888cc5950c9f2c1c508f7405c441ff
+
+@ 0 1 0 1e2f2599cebd21230458227ad5627e30
++   term puits
+
+@ 0 3 0 01091d24f82ee7050e2d87f591ed2623
++   definition
++       Une destination dans laquelle un flux de données est écrit, comme un fichier, un socket ou
++       l'entrée d'un processus ; la contrepartie d'une source. Un puits de journalisation est
++       l'endroit où un logger écrit ses événements.
+
+@ 0 1 0 0f44fc4c18300d711fe35a289171c8d5
++ define span
++   term étendue
+
+@ 0 4 0 12694d7e2aa6641f16b5085620f60f1d
++   definition
++       Une portion contiguë de quelque chose, délimitée par son début et sa fin : un fragment de
++       code en ligne en Markdown, une cellule qui s'étend sur plusieurs colonnes, ou une plage
++       d'une séquence.
+
+% 0 1 0 05ff0aa5441872ab0268d5d584ced533
+
+@ 0 1 0 06c490549e5587de0b823f36846dedc4
++   term  cadre de pile
+
+@ 0 3 0 07ca61388aa358660b04f2a827023f3a
++   definition
++       Une entrée d'une [trace de pile] : une méthode en cours d'exécution, avec sa classe, ainsi
++       que le fichier et la ligne qu'elle avait atteints.
+
+% 0 1 0 1690c0bd3c04cbfc0468861f42117916
+
+@ 0 1 0 09e3178afac08c2b06df6edf9419d81f
++   term  trace de pile
+
+@ 0 3 0 1b1a943793f0c9c8114d7315f5183709
++   definition
++       La liste des appels de méthode en cours à un instant donné, du plus interne au plus externe,
++       telle qu'elle est enregistrée quand une exception ou une erreur est créée. Chaque entrée est
++       un [cadre de pile].
+
+% 0 1 0 144616e23fca899a135cd0f9f202735c
+
+@ 0 1 0 1d6a57a9280f0665049a720c2d1f5fd7
++   term  mise en étapes
+
+@ 0 4 0 0f0ef0a79ee8739a134f4f8d06148e45
++   definition
++       L'exécution d'un programme par étapes, où du code quoté sous la forme `'{…}` dans une étape
++       est compilé et exécuté dans une étape ultérieure. Soundness généralise la mise en étapes,
++       pour que le code quoté puisse s'exécuter dans un autre environnement, comme une nouvelle
++       JVM, et renvoyer son résultat.
+
+% 0 1 0 043dcf9746bb86a30b39bd774ccb9daf
+
+@ 0 1 0 14ab160c0680b19406ccaa8e5bc2bc9a
++   term brin
+
+@ 0 4 0 1e9869d86c17ba7919c16a9527a6b59e
++   definition
++       L'unité d'exécution sous-jacente à une tâche : une abstraction de thread dotée des quatre
++       opérations dont la suspension a besoin, à savoir interrompre, joindre, mettre en attente et
++       réveiller. Un superviseur fournit les brins, si bien qu'un ordonnanceur qui ne repose pas
++       sur des threads peut y être branché.
+
+% 0 1 0 0769d97c9752fb46196c4008c5a32ef6
+
+@ 0 1 0 0e4ff5ee5bf4d4941cdd8fc0ce74dd80
+
+@ 0 1 0 0bcb2d9feea752fa16679ed699c82477
+
+@ 1 0 0 0bcb2d9feea752fa16679ed699c82477
++   term stratégie
++   keyword  gestion des erreurs
+
+@ 0 4 0 1cd67eeedcb86ea403941c4ad21ff8cb
++   definition
++       Un choix, dans la portée, de ce qui se passe quand une opération échoue : `throwUnsafely`
++       lève une exception, `safely` donne `Unset`, `capture` renvoie l'erreur. Une stratégie fournit
++       la [tactique] qu'une méthode faillible demande.
+
+@ 0 1 0 09d434bf427b0ab50a073bf747fd3598
++ define summon
++   term invoquer
+
+@ 0 3 0 0af7f081a3d72c5214253d11452e6173
++   definition
++       Demander au compilateur la [valeur contextuelle] d'un type qui est dans la portée, en
++       écrivant `summon[T]`, au lieu de la recevoir en paramètre.
+
+@ 0 1 0 1ba279a1cbdaa05b17cec896673721ff
++ define swatch
++   term pastille
+
+@ 0 3 0 172eec4f1178957602d977f3bcaf9e96
++   definition
++       Un petit échantillon d'une couleur, comme le carré placé à côté du nom d'une série dans la
++       légende d'un graphique.
+
+% 0 1 0 0a06f7bc5500d58a031c6930efe818d0
+
+@ 1 1 0 06c79c4eeed6627b1b716a7faf1331e4
++   term tactique
+
+@ 0 3 0 0861dfd5ec15c962065ce61f7e24467a
++   definition
++       Une [valeur contextuelle] de type `Tactic[E]` dont une méthode a besoin pour signaler une
++       erreur de type `E`. Celui qui fournit la tactique décide de la manière dont l'échec est
++       traité.
+
+@ 0 1 0 1440b4e607ea95dd080beafdbd4cd209
++ define tag
++   term tag
+
+@ 0 4 0 01b07193cdf581d408c937d00b2ce43a
++   definition
++       Un marqueur court attaché à une valeur pour dire de quel genre de valeur il s'agit ou
++       comment elle s'appelle, comme le nom d'un élément HTML, le type d'un nœud YAML ou d'une
++       valeur ASN.1, ou le nom donné à un commit Git.
+
+@ 0 1 0 0db05990284da8a2064a9df272b4e9ad
++ define  tagged union
++   term  union étiquetée
+
+@ 0 3 0 11dc428b166a343d0b551b9f5a7e4fdd
++   definition
++       Un type dont chaque valeur est l'un de plusieurs cas, avec un [tag] qui indique de quel cas il
++       s'agit, comme un trait scellé ou une énumération, ou un objet JSON dont un champ nomme le cas.
+
+@ 0 1 0 107fa201e29d69c7063c442c0ec4c2be
++ define  text wrapping
++   term  retour à la ligne
+
+@ 0 3 0 0f2db6bf73cfb7780e29d36bc4279405
++   definition
++       Le découpage d'un texte en lignes qui tiennent dans une largeur donnée, avec un retour à la
++       ligne aux espaces ou aux points de césure permis, comme lorsqu'un texte est disposé dans un
++       terminal ou un tableau.
+
+% 0 1 0 16bd942fe54883c201724bdb2ef81bd1
+
+@ 0 1 0 024929468fe4a0351660628688fab803
++   term graduation
+
+@ 0 3 0 1f4abf790fa7849d1329edc5514efe8e
++   definition
++       Un court trait sur l'axe d'un graphique, à une valeur régulière, généralement accompagné
++       d'une étiquette qui donne cette valeur.
+
+% 0 1 0 03ecc68c94cb6ece1d72f4cef7bc361d
+
+@ 0 1 0 1ee54526627afa4f084d6604a7ed41af
++   term  ligne de temps
+
+@ 0 3 0 1de7b4f2e1b7804c03e0f79ac4088ad5
++   definition
++       Une échelle physique du temps, comme le temps Unix ou le TAI, sur laquelle un instant est
++       placé. Le type d'un instant nomme sa ligne de temps, comme dans `Instant over Unix`.
+
+% 0 1 0 1d2f750b7b9bc4b703a0762caca75d54
+
+@ 0 1 0 09b7cf10ed9dfb8f0a34a903c780e796
++   term  durée calendaire
+
+@ 0 4 0 06b33c263b06c3390c3de782e02cf1fb
++   definition
++       Une quantité de temps calendaire, en années, mois, semaines, jours, heures et minutes, dont
++       la longueur en secondes dépend du moment où elle s'applique. Une `Duration`, au contraire,
++       est un nombre fixe de secondes.
+
+@ 0 1 0 0014815a9747dd39073fd46abbc0d477
++ define tokenizer
++   term  analyseur lexical
+
+@ 0 3 0 1b3db2ed82e8d7d10d281e72b0079ccb
++   definition
++       La première étape de l'analyse, qui découpe un texte source en jetons, comme des mots-clés,
++       des identifiants, des littéraux et de la ponctuation, avant que leur structure soit
++       analysée.
+
+% 0 1 0 049fee600887b6ed14c8bc0c28605bc8
+
+@ 0 1 0 02884db99ab836de0aa8cfd6b356f48f
++   term toolchain
+
+@ 0 3 0 1179afde5ae0c97702b3996063e6fc54
++   definition
++       L'ensemble des outils qui, ensemble, transforment du code source en quelque chose
++       d'exécutable, comme un compilateur, un éditeur de liens et un outil d'empaquetage, avec les
++       versions et les réglages avec lesquels ils s'exécutent.
+
+@ 0 1 0 03c8455ac18c96281799bd7fb85a8818
++ define trailer
++   term trailer
+
+@ 0 4 0 1eb8e1b8d1e7896c1455e88af81c2b85
++   definition
++       Des données qui viennent après le contenu principal d'un message ou d'un fichier, et non
++       avant, comme les trailers HTTP envoyés après le corps d'une réponse, ou la structure située
++       à la fin d'une archive ZIP ou d'un fichier PDF.
+
+% 0 1 0 1967ac390071d53206c66c1548d9e759
+
+@ 0 1 0 14156cc643b4b8c51541cbb7dbd91bde
++   term  classe de types
++   keyword typeclass
+
+@ 0 5 0 105de509453e1e050ffac61235ac335b
++   definition
++       Un trait qui décrit une aptitude qu'un type peut avoir, comme être affiché, encodé ou
++       comparé, avec une instance pour chaque type qui l'a. Une instance est trouvée comme une
++       [valeur contextuelle], si bien qu'un type acquiert une aptitude sans être modifié.
++       `Color is Showable` est l'instance qui rend `Color` affichable.
+
+% 0 1 0 03f69b0a39f7907f1946afc4f6b396d8
+
+@ 1 1 0 0fe3a420e6e1bc651d9375955327439b
++   term  famille de polices
+
+@ 0 3 0 16f6d6d3fc6af84a04732294a2b47e76
++   definition
++       Une famille de polices, comme Inter, nommée par un `Typeface`, indépendamment de toute
++       graisse, inclinaison ou fichier. Une [fonte] y choisit un style.
+
+@ 0 1 0 00c8a953fdc869a603f6ccc27ecdaa8c
++ define variant
++   term variante
+
+@ 0 3 0 0d098637a788a64318ad7cb945a46a46
++   definition
++       Une des formes alternatives d'une même chose, comme l'alphabet de Base64 sûr pour les URL,
++       un dialecte de texte délimité, ou une alternative d'une sélection TEL.
+
+@ 0 1 0 108314c2b1db539f042d198a9b8b8f26
++ define viewport
++   term  zone d'affichage
+
+@ 0 3 0 153f9b6b26b3625b02fc3551e69c9d00
++   definition
++       Le rectangle dans lequel quelque chose est affiché, comme la partie visible d'une fenêtre de
++       navigateur, dont les unités CSS telles que `Vw` sont des fractions, ou la zone d'affichage
++       dans laquelle une image SVG est dessinée.
+
+@ 0 1 0 13edf8a3c098fb1d0811fc4eed6ab569
++ define  wire form
++   term  forme de transmission
+
+@ 0 4 0 050cc711ee47e4cf1dec20f812f24dcc
++   definition
++       La forme que prend une valeur quand elle est transmise entre programmes, dans un protocole
++       ou un format sérialisé, par opposition à sa forme en Scala : le nom sous lequel un champ est
++       transmis, le code sous lequel une erreur l'est, ou les octets de son encodage.

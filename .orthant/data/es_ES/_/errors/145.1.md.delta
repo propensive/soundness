@@ -1,0 +1,37 @@
+orthant 2 language
+
+% 0 1 0 0c3ffda4d2c6b04f1d71aad99d548eb0
+
+@ 0 3 0 0aaebac4bd7956031ec15e782aa0a285
++ Se lanza cuando no se puede establecer una sesión de depuración, o cuando la VM del programa
++ depurado responde a una orden JDWP con un código de error. El subcódigo es la constante de error
++ JDWP que devolvió la VM, o un valor negativo para un fallo local del depurador (un handshake
++ fallido o una conexión perdida).
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 4 0 04132eb24be763d508ec665ddcb33a7a
++ Vivisection habla el Java Debug Wire Protocol con una JVM depurada. Este error abarca un programa
++ depurado que rechaza o corta la conexión, un handshake que no se devuelve como eco y cualquier
++ orden que la VM rechace: un identificador no válido, un hilo que no está suspendido, una VM que ya
++ ha muerto y el resto de las constantes de error de JDWP.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Mensaje de ejemplo
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 09c71e213ff0bbcd12abc3e503056076
+
+% 1 1 0 05a58ba55f34f5691bf2e492e7a91257
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Solución
+
+@ 0 4 0 17f7a8bf64e9403718442c606dcab82c
++ La mayoría de las constantes de error de JDWP indican que la orden se refería a un estado que ha
++ cambiado desde entonces: un marco que ha retornado, un objeto que se ha recolectado o un hilo que se
++ ha reanudado. Vuelve a leer el estado pertinente tras la última suspensión de la VM antes de emitir
++ de nuevo la orden. Un motivo `Disconnected` significa que ha fallado el propio transporte; comprueba
++ que el programa depurado sigue en marcha y es accesible.

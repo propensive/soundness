@@ -1,0 +1,294 @@
+orthant 2 language
+
+% 0 1 0 044852d4c8c8b653044b520faf5e7181
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 2 0 19fdab46411282e20bcb4f4f57d6454a
++ El [classpath](https://en.wikipedia.org/wiki/Classpath) de la JVM y sus
++ [cargadores de clases](https://en.wikipedia.org/wiki/Java_Classloader) se representan como valores.
+
+@ 0 3 0 0e0ad309a1aaf9cb0150d74ea0258eb2
++ Un recurso incluido en el classpath se lee mediante una referencia que el compilador comprueba. Un
++ classpath es una lista [inmutable] de sus entradas, que son directorios, ficheros JAR y el entorno
++ de ejecución de Java, y la lista puede inspeccionarse. Un bloque de código puede ejecutarse bajo un
++ cargador de clases elegido.
+
+@ 0 1 0 0733ffea3bf9da1f1a0dcf06843dbc3f
++ ### Sobre el classpath
+
+@ 0 5 0 1416a91ae24919e3166acd1d42905a3a
++ Un programa que pide un fichero de datos incluido, como una plantilla, una tabla de búsqueda o un
++ icono, se lo pide al classpath, que busca en los directorios y archivos con los que se lanzó el
++ programa. La API de Java para esto devuelve `null` cuando falta un recurso, entrega un
++ `InputStream` en bruto y expone la jerarquía de cargadores de clases como estado mutable
++ compartido entre hilos. Nada de ello está tipado. Un recurso que falta solo se descubre cuando se
++ desreferencia el `null`.
+
+@ 0 5 0 1a7a76f9a4e123b218edfa603a8f5a87
++ Aquí un recurso del classpath es una [ruta](paths.md) como cualquier otra, y se lee con el mismo
++ `read` que un fichero. Un classpath es un valor inmutable cuyas entradas pueden enumerarse. Un
++ cargador de clases se elige explícitamente, como un [valor contextual], y no se busca de forma
++ implícita. Las entradas y los cargadores de clases tipados dan
++ [signaturas honestas](../../philosophy/honest-signatures.md) a una parte de la JVM que normalmente
++ no tiene ninguna.
+
+@ 0 3 0 060498e946852ecc0a90dcf7477e7e3b
++ Todo procede del paquete `soundness`. Las demás importaciones eligen un cargador de clases, una
++ [estrategia](errors.md#choosing-a-strategy) para los errores y el acceso a las propiedades del
++ sistema, y permiten a los ejemplos imprimir sus resultados:
+
+% 2 1 0 12576e583010dd7005c3bee03121485f
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 2 0 1a2701486634ce3b1d2fda2bbdd8d1de
++ La mayoría de los ejemplos de esta página dependen de la máquina que los ejecuta, así que se
++ compilan pero no se ejecutan.
+
+@ 0 1 0 1129ecc617dc946b192cd5424fc1fb30
++ ### Leer un recurso
+
+@ 0 4 0 02df45c0252928fc10fa3d3ac2d30547
++ El [interpolador] `cp"…"` nombra un recurso del classpath, y comprueba la referencia al compilarse
++ el código. El resultado es un `Resource`, que se lee como cualquier otra fuente: como bytes en
++ bruto, como texto o como un valor analizado. La biblioteca de Scala está en todos los classpaths,
++ así que una de sus clases constituye un recurso que siempre está presente:
+
+% 2 1 0 1eeda4de8ea6aa5f0bd15c77404f41dd
+
+% 0 1 0 17c9b532826d3b7a1a20472d2ac68a8f
+
+% 1 1 0 0158fc555cc1ccdf1d8542282f3370ba
+
+@ 0 2 0 184887244419d4b011c1d9eda446d850
++ El recurso se resuelve contra el cargador de clases que está en el ámbito, así que la lectura no
++ necesita ningún descriptor pasado a mano. Una ruta de recurso también puede construirse a partir de
++ texto en [tiempo de ejecución], decodificándolo:
+
+% 2 1 0 111f155d4b43aa2e0e8cbcadde274b25
+
+% 0 1 0 06554551a7f4041d11fdbba2f0af049f
+
+% 1 1 0 1900a8f7662808ff148667493570b4ab
+
+@ 0 2 0 031b913a8bbc20661bd0e150a7d228c4
++ La comprobación en tiempo de compilación se hace contra el classpath del compilador. Una referencia
++ a un recurso que no está ahí es un error de compilación:
+
+% 2 1 0 196e1bdce2e9038f0e39689b06e68f6f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 10d5c94e6150ee1312ecdf946033bf47
+
+% 1 1 0 12d441b353a75f2c1d8ce0de67f7db3f
+
+@ 0 2 0 108c68ae0eeadd20168626f5b7e378d2
++ Una ruta del classpath es también *sustanciable*. Su existencia puede comprobarse en tiempo de
++ ejecución antes de leerla, de modo que un programa puede comprobar si existe un recurso opcional en
++ lugar de manejar un fallo.
+
+@ 0 1 0 0ed4d01721f47d360fd852cd5b830b00
++ ### Elegir un cargador de clases
+
+@ 0 4 0 040a699060efc4f8047f82aa4c17f305
++ Una referencia a un recurso nombra una ruta, no una cosa. Dos cargadores de clases pueden resolver
++ la misma ruta a recursos distintos, o uno puede no resolverla a nada en absoluto. La elección no
++ puede estar implícita en la referencia, y procede del contexto en el que se lee el recurso. Decide
++ el `given
++ Classloader` que está en el ámbito, y se elige mediante una importación:
+
+% 2 1 0 197ba2d4b1e8585d09169a490887b09f
+
+% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+
+% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+
+% 0 1 0 1dca8f5a278525620f22995291834708
+
+% 1 1 0 061dd84fb952cd760b92ce69cda8ca68
+
+@ 0 1 0 179718e7cc73b21f0c3a8863a7effea7
++ El paquete `classloaders` contiene las elecciones estándar:
+
+% 2 1 0 1cde4b6910e75510032000f693131bc1
+
+% 0 1 0 1ca77613e7a1c24100f8bf0c68a101b5
+
+@ 0 5 0 1986545eda1182d20907ae0eba332739
++ column  Resuelve mediante
++ row  `threadContextClassloader`  el cargador de clases de contexto del hilo actual, que conviene a la mayoría de las aplicaciones
++ row  `systemClassloader`  el cargador de clases del sistema de la JVM
++ row  `platformClassloader`  el cargador de clases de plataforma de la JVM
++ row  `scalaClassloader`  el cargador de clases que cargó la biblioteca de Scala
+
+% 1 1 0 158fc6db6a75fe1f0921e4b5bc705e16
+
+@ 0 1 0 1fd91bd96ca640581e3c0b23ccf49178
++ ### Inspeccionar el classpath
+
+@ 0 3 0 11b82f10368f43261cdc8368bb43a69b
++ Un `LocalClasspath` es el classpath como lista de entradas. El classpath del programa en ejecución
++ es el valor de la propiedad `java.class.path`, que se decodifica a uno. Leer la propiedad requiere
++ el `System` en el ámbito, que se importó más arriba:
+
+% 2 1 0 026d85496417416a0d51592847c4b5f6
+
+% 0 1 0 0cd3b307b85d5d170406c423c30f24b4
+
+% 1 1 0 027ee494ff156fe814be540fbece62ef
+
+@ 0 1 0 082c3e4d744f391f03e036e24226ea80
++ Sus `entries` están tipadas, como una de las cuatro clases de `Classpath.Entry`:
+
+% 2 1 0 1c18bb0de3f8dbc90d64daf281922c2b
+
+@ 0 8 0 082ac8d483bf0df91aa5091a1ce9e1f5
++ column  Entrada
++ column  Representa
++ column  Su `path`
++ column  Con `classify`
++ row  `Directory(path)`  un directorio de clases y recursos  el directorio  un directorio, o una ruta que aún no existe
++ row  `Jar(path)`  un archivo  el fichero del archivo  un fichero que termina con el tráiler de un archivo ZIP
++ row  `Url(url)`  una ubicación remota  `Unset`  nunca
++ row  `JavaRuntime`  las clases propias del JDK  `Unset`  nunca
+
+% 1 1 0 0d347a2ad23e8f370ef04f3b47e6a345
+
+@ 0 2 0 1d585ae863c7d30c0ac8ab955dbdbbc5
++ Se sabe que las entradas de un classpath *local* no son URL, así que una coincidencia de patrones
++ sobre ellas no necesita tratar ese caso:
+
+% 2 1 0 0521b6e831c478bd1768131fb1c1f531
+
+% 0 1 0 0c7d26c1528fd15d02a36297d1e14767
+
+% 0 1 0 1a16b09eba901cbf07d5c28fcc3f05d7
+
+% 0 1 0 1fc31d78fd6e31561075bd6fda1fe629
+
+% 0 1 0 1c2f031eff7dcbd41bdc26b57a257c39
+
+% 1 1 0 14faaeb8ab9bdede076e1dc48418d589
+
+@ 0 4 0 06efb10d41b76dbd0f67271eeea546a0
++ Una entrada se clasifica por lo que hay en el disco, no por su nombre.
++ `Classpath.Entry.classify(path)` hace de una ruta inexistente un `Directory`, ya que puede llegar a
++ serlo. Hace de un fichero que termina con un tráiler ZIP un `Jar`, que es lo que es el ejecutable
++ de un lanzador con un prefijo shebang, aunque su nombre no termine en `jar`. Lanza un `Io.Error`
++ para cualquier otro fichero.
+
+@ 0 3 0 1ae82214b8d8c4b41c2cac6174d18f78
++ `LocalClasspath.running` es el classpath desde el que se cargó realmente el proceso en ejecución:
++ las entradas de un `URLClassLoader`, luego las de sus padres, luego `java.class.path`, en orden y
++ cada una una sola vez. Una herramienta que compila o carga código contra sí misma necesita esto:
+
+% 2 1 0 1288708b859555401e2b05075c970c5f
+
+% 0 1 0 16dc30250898bc2409d813344f20c8e0
+
+% 0 1 0 016b9edbc485bb8c0a2a61070f5d76a0
+
+% 0 1 0 0b5d58a3fc847b18154564de0ffb4f9a
+
+% 1 1 0 1b9cf1ad15dd939d0a992588f4eb10a2
+
+@ 0 1 0 10e9dc441967f411156500b16118eb13
++ ### Cargar servicios
+
+@ 0 3 0 1365fb497a9ea68302883a50e3899d1f
++ El mecanismo de [proveedores de servicios](https://en.wikipedia.org/wiki/Service_provider_interface)
++ de la JVM encuentra las implementaciones de una interfaz que están declaradas en el classpath.
++ `services` las devuelve, tipadas al servicio:
+
+% 2 1 0 1b02c4a280dc0b3814d5c3c3805f8d15
+
+% 0 1 0 1adb0437e185ecbb0b55d65576eca721
+
+% 1 1 0 07d40b62512ee3ef0d096c6fecb2e349
+
+@ 0 1 0 148359fe13cec8bd13e93eac7a0210f4
++ ### Construir un cargador de clases
+
+@ 0 6 0 1d66c056eb6ee87402ad2a94f0a8fbb3
++ Un classpath construye un cargador de clases sobre un padre elegido, que es el cargador de
++ plataforma salvo que se indique otro. La *delegación* del cargador dice qué lado gana cuando tanto
++ él como su padre ofrecen una clase con el mismo nombre, y siempre se indica de forma explícita.
++ `Deferential` es el orden habitual de la JVM, que cede ante el padre, y así comparte las clases del
++ padre con el código que se carga. `Preferential` prefiere las entradas del propio classpath, lo que
++ aísla las versiones que un plugin tiene de sus bibliotecas de las de su anfitrión:
+
+% 2 1 0 133d11598ff2ce670029e59b0c2443db
+
+% 0 1 0 1d277d6a58b7e76e1cde4e092027ff08
+
+% 0 1 0 0e7f9bc9f96eb1ce0b48051dba44c98b
+
+% 0 1 0 17ddd2261b4e854b066cffb3d51c1f1a
+
+% 0 1 0 16267cd8d89ecef11f8b2c3fb7f795f0
+
+% 1 1 0 08e1415f1790c6c2113a110842275481
+
+@ 0 2 0 18be3087d7a432820831ae11b749fb50
++ Aquí el plugin ve, a través de su padre, el contrato contra el que se escribió, mientras que todo
++ lo demás que incluye es suyo.
+
+@ 0 2 0 025f5385eb7641081c4b0d107f4dbb7b
++ Un recurso se lee de un cargador directamente, por su ruta. El resultado es un valor [opcional]
++ que no retiene nada, así que la lectura puede estar dentro de un bloque `safely`:
+
+% 2 1 0 02dfd8afcfa49a37041e087bf52c0bb5
+
+% 0 1 0 1370ca8e4ba5623e1672956a4c37d6c5
+
+% 1 1 0 19b488934dc03135107cb6e310b39c57
+
+@ 0 1 0 129ec83e1120d5bf02156a20f5d46d00
++ ### Ejecutar bajo un cargador de clases
+
+@ 0 3 0 07f446333c2766ca1778035e19aaeca0
++ Un valor `Classloader` ejecuta un bloque instalándose a sí mismo como cargador de clases de
++ contexto del hilo, y restaura el anterior después. Esto limita un cambio de cargador de clases
++ exactamente al código que lo necesita, como la carga de un plugin:
+
+% 2 1 0 1ec4466ccb692b93017ce8f07a58c3d9
+
+% 0 1 0 1fc6b850d344aee2077c7010734c134e
+
+% 0 1 0 1303c281e918d24010ef1526dc270136
+
+% 1 1 0 08f3772224f040f50f7d8a5527aa4034
+
+@ 0 2 0 16389d814d568d6f1ce43ed8eb78d23f
++ `Classloader[T]` encuentra el cargador de clases que cargó un tipo. Así es como se llega al
++ cargador de clases de un plugin desde una de sus clases.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 7 0 03af5e9c39ee2aa2182f9d2feed69c92
++ - [Rutas](paths.md) describe los tipos de ruta que comparte un recurso del classpath.
++ - [Flujos](streams.md) describe `read`, y las formas en que se lee un recurso.
++ - [Trazas de pila](stack-traces.md#resolving-frames-to-their-source) resuelven marcos a través de un
++   cargador de clases.
++ - [Compilación](compiler.md) compila código contra un classpath.
++ - [Empaquetado](packaging.md) construye los ficheros JAR que se convierten en entradas del
++   classpath.
++ - [Entorno](environment.md) describe las propiedades del sistema de las que se lee el classpath.

@@ -1,9 +1,0 @@
-orthant 1 language
-
-- Nesting is deterministic too, but a nested scope does not continue the sequence of the scope
-- enclosing it. Each scope starts afresh from the `Randomization` in scope, so under the same seed
-- an inner scope repeats the first draws of the outer one.
-+ L'imbrication est déterministe elle aussi, mais une portée imbriquée ne poursuit pas la
-+ séquence de la portée qui l'englobe. Chaque portée repart de zéro à partir de la
-+ `Randomization` dans la portée ; sous la même graine, une portée intérieure répète donc les
-+ premiers tirages de la portée extérieure.

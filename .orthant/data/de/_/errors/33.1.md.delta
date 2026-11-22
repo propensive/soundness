@@ -1,0 +1,67 @@
+orthant 2 language
+
+% 0 1 0 01ab9429f62750d802d1f088c8ec4eec
+
+@ 0 3 0 1373da2b2348116915771c294a6ef18e
++ Wird ausgelöst, wenn Praxinoscope einen regulären Ausdruck nicht in seine RE2-Form kompilieren
++ kann oder wenn eine Analyse über kompilierte Ausdrücke nicht abgeschlossen werden kann. Jede
++ Variante benennt das Problem genau.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 10 0 1a9f8c66ae73b626123333eda15a4283
++ Praxinoscope parst die Syntax regulärer Ausdrücke von RE2: eine strikte Teilmenge der üblichen
++ Regex-Syntax, die jedes Konstrukt ausschließt, das die Garantie linearer Laufzeit beim Abgleich
++ brechen würde. Kann der Parser die Eingabe nicht annehmen, löst er einen `Motif.Error` aus, der
++ den Zeichenindex `index`, an dem das Problem erkannt wurde, und einen `Reason` trägt, der erklärt,
++ was falsch war. Die erzeugte Meldung lautet `the regular expression could not be
++ compiled because $reason at $index`. Zwei weitere Varianten (`BudgetExceeded` und
++ `Unverifiable`) entstehen nicht beim Parsen, sondern bei der Inklusionsanalyse
++ (`subsumes`/`intersects`), deren ungünstigster Fall exponentiell ist und die daher mit einem
++ Budget versehen ist.
+
+@ 0 5 0 00dbf7de19a5aec415d490257d0bfebb
++ ## Varianten
++ Das Budget, das `↯/s.33.1.18` meldet, umfasst das Produkt aller untersuchten Programme, sodass
++ die Form von `subsumes`, die eine Liste von Kandidaten nimmt — und `L(⋂candidates) ⊆ L(cover)`
++ über dem Produktautomaten der Kandidaten entscheidet —, es bei Patterns erschöpfen kann, die
++ jeweils für sich bequem entschieden würden.
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 24 0 152617ee8ab0afc707239b332a576c95
++ column  Grund
++ column  Bedeutung
++ column  Behebung
++ row  `↯/s.33.1.1`  `UnclosedGroup`  Eine Gruppe wurde mit `(` geöffnet, aber nie mit `)` geschlossen.  Fügen Sie die fehlende `)` hinzu oder maskieren Sie die `(`, wenn eine wörtliche Klammer gemeint ist.
++ row  `↯/s.33.1.2`  `NotInGroup`  Eine `)` wurde ohne zugehörige `(` gefunden.  Fügen Sie die fehlende `(` hinzu, maskieren Sie die `)`, wenn sie wörtlich sein soll, oder entfernen Sie die überzählige schließende Klammer.
++ row  `↯/s.33.1.3`  `UnexpectedChar`  Ein Zeichen wurde gefunden, das nicht an diese Stelle gehört, etwa ein Quantor ohne etwas zu Wiederholendes oder ein verirrtes Zeichen in einem Wiederholungsbereich.  Prüfen Sie das Pattern um den gemeldeten Index herum.
++ row  `↯/s.33.1.4`  `BadRepetition`  Ein Wiederholungsbereich `{n,m}` hat `m < n`.  Vertauschen Sie die Grenzen oder verwenden Sie `{n,}`, wenn keine Obergrenze nötig ist.
++ row  `↯/s.33.1.5`  `IncompleteRepetition`  Ein Wiederholungsbereich wurde mit `{` geöffnet, aber nie mit `}` geschlossen.  Fügen Sie die fehlende `}` hinzu.
++ row  `↯/s.33.1.6`  `EmptyCharClass`  Eine Zeichenklasse `[…]` enthielt keine Zeichen.  Fügen Sie der Klasse mindestens ein Zeichen hinzu oder entfernen Sie das leere `[]`.
++ row  `↯/s.33.1.7`  `UnclosedClass`  Eine Zeichenklasse wurde mit `[` geöffnet, aber nie mit `]` geschlossen.  Fügen Sie die fehlende `]` hinzu oder maskieren Sie die `[`, wenn eine wörtliche eckige Klammer gemeint ist.
++ row  `↯/s.33.1.8`  `UnclosedEscape`  Das Pattern endet mit einem `\`, das nichts zu maskieren hat.  Entfernen Sie den abschließenden Backslash oder maskieren Sie das Zeichen, das ihm folgen soll.
++ row  `↯/s.33.1.9`  `InvalidEscape`  Eine Escape-Sequenz hat in der RE2-Syntax keine zugewiesene Bedeutung, etwa ein maskiertes alphanumerisches Zeichen ohne besondere Deutung, ein fehlerhaftes hexadezimales Escape `\x` oder ein Unicode-Property-Escape (`\p{…}`), das noch nicht unterstützt wird.  Entfernen Sie den Backslash, wenn das Zeichen wörtlich gemeint war, oder korrigieren Sie die Escape-Sequenz.
++ row  `↯/s.33.1.10`  `InvertedRange`  Ein Bereich `[a-b]` in einer Zeichenklasse hat ein Ende, das kleiner ist als sein Anfang.  Vertauschen Sie die Enden des Bereichs.
++ row  `↯/s.33.1.11`  `Backreference`  Das Pattern enthält einen Rückverweis (`\1`…`\9` oder `\k<…>`). Rückverweise machen den Abgleich NP-schwer, daher schließt die RE2-Syntax sie bewusst aus.  Strukturieren Sie das Pattern ohne Rückverweise um oder verwenden Sie das JVM-Regex-Backend, das sie unterstützt.
++ row  `↯/s.33.1.12`  `Lookaround`  Das Pattern enthält Lookahead (`(?=…)`, `(?!…)`) oder Lookbehind (`(?<=…)`, `(?<!…)`), was die RE2-Syntax bewusst ausschließt.  Strukturieren Sie das Pattern um oder verwenden Sie das JVM-Regex-Backend, das Lookaround unterstützt.
++ row  `↯/s.33.1.13`  `PossessiveQuantifier`  Das Pattern enthält einen possessiven Quantor (`*+`, `++`, `?+` oder `{n,m}+`). Possessiver Abgleich ist ein Mittel zur Steuerung des Backtrackings, und der Abgleich von RE2 betreibt nie Backtracking, sodass das Konstrukt hier bedeutungslos ist.  Verwenden Sie den einfachen gierigen Quantor.
++ row  `↯/s.33.1.14`  `AtomicGroup`  Das Pattern enthält eine atomare Gruppe (`(?>…)`), die wie possessive Quantoren das Backtracking steuert und beim Abgleich von RE2 keine Bedeutung hat.  Verwenden Sie eine einfache Gruppe.
++ row  `↯/s.33.1.15`  `UnsupportedGroup`  Das Pattern verwendet eine nicht unterstützte Gruppensyntax, etwa eine benannte Gruppe (`(?<name>…)` oder `(?P<name>…)`).  Verwenden Sie eine einfache Erfassungsgruppe.
++ row  `↯/s.33.1.16`  `Flag`  Das Pattern enthält Inline-Flags (`(?i)`, `(?m)`, `(?s)`, …), die noch nicht unterstützt werden.  Drücken Sie die Absicht direkt im Pattern aus, zum Beispiel `[Aa]` statt eines Flags für Groß-/Kleinschreibung.
++ row  `↯/s.33.1.17`  `RepetitionTooLarge`  Eine Wiederholungsgrenze in `{n,m}` übersteigt 1000, dieselbe Grenze, die RE2 setzt, da begrenzte Wiederholungen durch Expansion kompiliert werden.  Verwenden Sie einen unbegrenzten Quantor oder strukturieren Sie das Pattern um.
++ row  `↯/s.33.1.18`  `BudgetExceeded`  Eine Inklusionsanalyse (`subsumes` oder `intersects`) hat mehr Zustände untersucht, als ihr Budget erlaubt. Die Inklusion regulärer Sprachen ist entscheidbar, im ungünstigsten Fall aber exponentiell.  Vereinfachen Sie eines oder beide Patterns oder verringern Sie die Anzahl der Kandidaten in einem Schnitt.
++ row  `↯/s.33.1.19`  `Unverifiable`  Eine Inklusionsanalyse wurde für ein Pattern versucht, das ein Konstrukt enthält, das die Analyse nicht modellieren kann: eine Wortgrenze (`\b` oder `\B`) oder einen Zeilenanker unter dem Flag `m`, die beide von den Symbolen um eine Position herum abhängen statt von der Position allein.  Entfernen Sie die Grenze aus den verglichenen Patterns.
++ row  `↯/s.33.1.20`  `InvalidPosixClass`  Eine Zeichenklasse `[[:name:]]` benannte etwas außerhalb der POSIX-Menge (`alnum`, `alpha`, `ascii`, `blank`, `cntrl`, `digit`, `graph`, `lower`, `print`, `punct`, `space`, `upper`, `word`, `xdigit`).  Korrigieren Sie den Klassennamen. Beachten Sie, dass `[:name:]` außerhalb einer umschließenden Zeichenklasse eine gewöhnliche Klasse dieser Zeichen ist und keine POSIX-Klasse.
++ row  `↯/s.33.1.21`  `UnknownUnicodeClass`  Ein Escape `\p{…}` oder `\P{…}` benannte weder eine allgemeine Unicode-Kategorie (`L`, `Lu`, `Nd`, …) noch eine Schrift (`Greek`, `Han`, …).  Korrigieren Sie den Klassennamen. Schriftnamen sind die von Unicode, geschrieben wie bei RE2 — `\p{Greek}`, nicht Javas `\p{IsGreek}`.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 16925ae68c77d67b063afb3fb8b12c95
++ - Quelle: `lib/praxinoscope/src/core/praxinoscope.Motif.scala`

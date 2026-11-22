@@ -1,0 +1,16 @@
+orthant 2 language
+
+@ 0 1 0 13290fd621e42d201fd9f3d5f4fd1332
++ # `SN-698` — `InterpolationError` (retirado)
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ Este error ya no existe. La página se conserva para que el código no se reutilice, y para que una
++ referencia a él desde una versión anterior pueda seguir resolviéndose.
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## Qué fue de ello
+
+@ 0 3 0 175f50bba238e80905d269d2d4ab6599
++ La API `Interpolator` de Contextual, que lanzaba este error, se sustituyó por la clase de tipos
++ `Interpolable`. Ahora cada interpolador define su propio tipo de error, de modo que un fallo se
++ notifica en el vocabulario de lo que se analiza en lugar de mediante uno compartido.

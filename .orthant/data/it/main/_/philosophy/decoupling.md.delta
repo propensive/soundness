@@ -1,0 +1,10 @@
+orthant 2 language
+
+@ 0 7 0 060bbc9e119dc3320a83454349a15995
++ `FilesystemBackend` raccoglie stat, apertura, lettura, scrittura, elenco, link ed eliminazione;
++ tutto ciò che c'è nell'API del [filesystem](/doc/soundness/modules/filesystem.md) è definito in termini di
++ queste operazioni. L'implementazione `java.nio`, l'implementazione WASI su `wasi:filesystem`, e
++ qualunque implementazione futura sono intercambiabili, e l'API rivolta all'utente non nomina alcuna
++ piattaforma. La stessa forma dà ai [socket](/doc/soundness/modules/sockets.md) un `SocketBackend`, alla
++ [compressione](/doc/soundness/modules/compression.md) i suoi motori DEFLATE per piattaforma, e alle
++ [immagini](/doc/soundness/modules/images.md) i loro codec.

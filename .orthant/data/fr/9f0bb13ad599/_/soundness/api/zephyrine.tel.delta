@@ -1,0 +1,486 @@
+orthant 2 language
+
+@ 0 1 0 034a7382e59275a50242929229ac66ba
++ entry .Lineation   la politique qui décide quel élément termine une ligne, afin qu'un curseur puisse suivre la ligne et la colonne
+
+@ 0 4 0 02ad7679fc052414103504bf9cbc9dbe
++   entry .untrackedChars   la valeur par défaut pour les curseurs de caractères : aucun suivi de ligne ni de colonne
++   entry .untrackedData   la valeur par défaut pour les curseurs d'octets : aucun suivi de ligne ni de colonne
++   entry #active   si cette politique suit les lignes
++   entry #track   si un élément termine une ligne
+
+@ 0 1 0 1f7155e55039b1760347c33a08427c8e
++ entry .lineation   les politiques de suivi des lignes, chacune étant un given à importer par son nom
+
+@ 0 4 0 1d8cbdb088f121b809070d3d0853556a
++   entry .linefeedChar   la ligne d'un curseur de caractères se termine à `\n`
++   entry .carriageReturnChar   la ligne d'un curseur de caractères se termine à `\r`
++   entry .linefeedByte   la ligne d'un curseur d'octets se termine à l'octet 10
++   entry .carriageReturnByte   la ligne d'un curseur d'octets se termine à l'octet 13
+
+@ 0 1 0 07f9adb6c75f89190d5d2e9d80d00fdd
++ entry .PositionTracking   l'interrupteur, partagé par tous les analyseurs sensibles aux positions, qui commande l'enregistrement des positions dans le code source
+
+@ 0 1 0 168f07c171e3b50c193ba0ae5f518f43
++   entry .default   la valeur par défaut du compagnon : `Off`
+
+@ 0 1 0 19eb4e885bf1ab3b07c5da7c3fe6c912
++ entry .parsing   le given qui active le suivi des positions, importé par son nom
+
+@ 0 1 0 0e0a79665822a85913e444d5c668ffb1
++   entry .trackPositions   `PositionTracking.On` : les analyseurs sensibles aux positions enregistrent les positions dans le code source
+
+@ 0 1 0 0d90c73d4a2193b10d10947cd3bfb63a
++ entry .Positionable   relie une valeur analysée au type de chemin qui adresse ses nœuds et à la position vers laquelle chacun se résout
+
+@ 0 3 0 15a0ea8ce3d9d76f0630d7594d2b7e4f
++   entry #Result   le type de position vers lequel se résout le format, une `Format.Position`
++   entry #locate   la position du nœud qu'adresse un chemin, ou `Unset`
++   entry #locateKey   la position de la clé qui correspond au dernier segment du chemin, ou `Unset`
+
+@ 0 4 0 0f27f1fd55b15305156560c57b0e888c
++ entry .locate   la position dans le code source du nœud qu'adresse un chemin dans une valeur analysée, ou `Unset`
++     Une extension sur toute valeur dotée d'une instance `Positionable` ; le type de chemin est
++     fixé par cette instance (un `Json` se localise par un `JsonPointer`). `Unset` quand le
++     chemin ne se résout pas, ou quand la valeur a été analysée sans suivi des positions.
+
+% 0 5 0 0734eb7fd924f4e60949797b50d27ddb
+
+% 0 3 0 194be6a7961bddca011b4a83370d51eb
+
+@ 0 2 0 008194125c221b8509b9de847c66fc5c
++ entry .locateKey   la position dans le code source de la clé d'objet ou de mapping que nomme le dernier segment d'un chemin, ou `Unset`
++     Comme `locate`, mais pour la clé plutôt que pour sa valeur.
+
+@ 0 1 0 1fd084e7b11911fd0b9d8716f8a7292d
++ entry .Format   le nom d'un format analysé et les types de position et de problème que portent ses erreurs d'analyse
+
+@ 0 1 0 1e41c8018a6ad29017292f11b0d8bd9a
++   entry .Position   où dans le code source une erreur a été trouvée
+
+@ 0 9 0 1dd2e4ea9c115841150c8a080459041e
++     entry #describe   la position, rendue sous forme de texte
++     entry #offset   la position en caractères, si elle est connue
++     entry #length   la longueur de la plage concernée, si elle est connue
++     entry #span   la position sous forme de `Span`
++   entry .Issue   ce qui n'allait pas dans l'entrée
++     entry #describe   le problème, sous forme de message
++   entry #name   le nom du format, tel qu'il apparaît dans un message d'erreur
++   entry #Position   le type de position du format
++   entry #Issue   le type de problème du format
+
+@ 0 1 0 07cf99f6122476491b4d466f0b65d63d
++ entry .Parse   l'erreur que lève tout analyseur de format
+
+@ 0 5 0 08ab971dbf0ae3f11492c92d79f5b223
++   entry .Error   erreur `↯/s.60.2` : _le `format` n'était pas valide à `position` parce que `issue`_
++     entry #format   le format qui a rejeté l'entrée
++     entry #position   l'endroit où l'entrée a été rejetée
++     entry #issue   pourquoi elle a été rejetée
++     entry #span   la position sous forme de `Span` uniforme
+
+@ 0 4 0 0d22a781d489f7e21cbb1eb8d17fceac
++ entry .Formatting   le trait marqueur de la configuration de mise en forme de la sortie d'un sérialiseur
++     L'indentation, le retour à la ligne, les sauts de ligne finaux et autres. Chaque format
++     définit son propre sous-type avec les paramètres qui lui conviennent (YAML interdit
++     l'indentation par tabulations ; en HTML, les espaces sont structurels) et expose des
++     instances importables dans son espace de noms `formatting`.
+
+@ 0 1 0 02b3e577fdd588e5026d6984c193e18f
++ entry .Truncation   un flux qui s'est terminé avant d'avoir tout livré
+
+@ 0 2 0 09c8dfc7ec47e03b11ca38918c9bf275
++   entry .Error   erreur `↯/s.60.1` : _le flux a été coupé prématurément après `total`_
++     entry #total   la quantité livrée au moment où le flux a été coupé
+
+@ 0 1 0 0221e497196125c801fd2c36b5346b4b
++ entry .Expanse   une vue à accès aléatoire sur une étendue d'octets, pour les formats dont l'accès est positionnel
+
+@ 0 2 0 198ef93c5b508f0c0c47f2adb186f4b9
++   entry #size   la longueur de l'étendue en octets
++   entry #read   `length` octets à partir de `offset`, sous forme de `Data`
+
+@ 0 1 0 0f123abb5eef47bd018ff94920bf28d2
++ entry .Malleable   une `Expanse` dont les octets peuvent aussi être remplacés sur place, comme ceux d'un fichier mappé en mémoire
+
+@ 0 1 0 1ee5c27f72a7bbef0610e1de4a5fccb3
++   entry #write   remplace les octets situés à `offset` par `data`
+
+@ 0 1 0 1697104509eaad480ac7b84102fc11d4
++ entry .Terrain   une `Expanse` dont les octets sont en mémoire, et se lisent là où ils se trouvent : un fichier projeté, ou des octets sur le tas
+
+@ 0 6 0 04292ea9e2ccdb0e06a76d7e082a4b2f
++   detail
++       Les entiers sont chargés à n'importe quel décalage, en petit-boutiste, sans copie, et une
++       `slice` est une vue plus étroite de la même mémoire. Un terrain appartient à une portée --
++       un fichier est projeté pendant la durée d'un bloc -- si bien qu'il est prêté comme
++       `Terrain^` suivi, et que rien ne charge depuis une mémoire qui n'est plus projetée.
++       `Terrain(data)` en est un sur des octets qui sont déjà sur le tas.
+
+@ 0 8 0 1f82aa37cb25a06018efc603aa57f6e1
++   entry #u8   l'octet non signé à un décalage, comme `Int`
++   entry #u16   l'entier non signé de 16 bits à un décalage, comme `Int`
++   entry #u32   l'entier non signé de 32 bits à un décalage, comme `Long`
++   entry #u64   l'entier de 64 bits à un décalage, comme `Long`
++   entry #i32   les 32 bits à un décalage comme `Int` signé
++   entry #slice   une vue d'une partie de la mémoire, qui la partage ainsi que sa durée de vie
++   entry #same   si les octets à un décalage sont ceux de certaines `Data`, comparés sur place
++   entry #compare   l'ordre de certains octets par rapport à des `Data`, comparés sur place, un préfixe propre venant en premier
+
+@ 0 1 0 07161a9b0652a0aa1a17db213819117e
++ entry .Structural   la classe de types d'un type dont la disposition en octets est fixe : un enregistrement d'entiers dimensionnés, lu par `unpack` et écrit par `pack`
+
+% 1 1 0 1dbdb63afee1f932156ed79702a8c661
+
+@ 0 6 0 128e315dd90f3568120e87157c8b8686
++       Une case class dont les champs sont des entiers dimensionnés (`B32`, `U16`, `S64`, …, ou les
++       simples `Byte`, `Short`, `Int` et `Long`) *est* une disposition binaire : le type de chaque
++       champ indique sa largeur et son interprétation, et `Structural.derived` les compose dans
++       l'ordre de déclaration, en calculant chaque décalage là où la disposition est déclarée.
++       L'ordre des octets au sein d'un champ appartient au format ; l'un des givens de
++       `byteOrders` doit donc être dans la portée lors de la dérivation, et y est fixé.
+
+% 2 1 0 1028348aece70ff31c7aaeed6837ca1c
+
+% 3 1 0 1896b8c0fd7e20bf1ab326a30c99f925
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 145c2a0e5b655f4a01551ae66745ea11
+
+% 0 1 0 168466ec95ae64f612bc885cb2b2841d
+
+% 0 1 0 093c6418b1f1700a18f1408c98a066b3
+
+% 0 1 0 0615a36d4f727fca02926d57d58112ad
+
+% 0 1 0 189ffa41490178111b536fb9e978357e
+
+% 0 1 0 0d039d9fc0a074461f06c4c8881b3917
+
+% 0 1 0 0623aad5d5ab330b14edbda2daf2aa25
+
+% 0 1 0 1ddb200b0bd0fd091d26a860a273ba8d
+
+% 1 1 0 0d40c4a93de9c323126dc8a441ea820a
+
+@ 0 5 0 15c8c758d092fc251614546e2bfce78a
++       La dérivation se développe en un chargement (et un stockage) par champ à son décalage ;
++       lire un enregistrement coûte donc un seul contrôle de bornes et autant de chargements qu'il
++       y a de champs. Un champ de tout autre type nécessite sa propre instance `Structural` :
++       c'est ainsi que les enregistrements s'imbriquent, chacun gardant l'ordre des octets avec
++       lequel il a été déclaré, et ainsi qu'on donne à un champ une représentation que les
++       entiers dimensionnés n'offrent pas.
+
+@ 0 2 0 13110f9cb023a7e71678dba20250a369
++       Elle se trouve dans le composant `zephyrine.layout`, qui ajoute une dépendance à
++       hypotenuse pour les entiers dimensionnés, et se compile pour toutes les plateformes.
+
+% 0 1 0 1ccfba1656f9ccc70c9054f4bd681ef1
+
+% 0 1 0 058d7a75c2bb1d1903db18c18ef15834
+
+% 0 1 0 1ef84f397a13cf410f01323e64924852
+
+@ 0 8 0 0401c90956d974790c8c8732f11cdb5a
++   entry .derived   la disposition d'une case class, dans l'ordre des octets dans la portée ; ne compile pas sans lui, ni pour un champ sans disposition fixe
++   entry .width   le nombre d'octets qu'occupe une valeur d'un type, sans avoir de valeur en main
++   entry .Error   un enregistrement a été demandé à un décalage où sa largeur entière n'est pas présente
++       Porte le `offset`, la `width` de l'enregistrement, et la `size` des données ou de
++       l'étendue. `↯/s.60.3`.
++   entry #width   le nombre d'octets qu'occupe la disposition
++   entry #load   la valeur disposée à un décalage, sans contrôle : `unpack` est le point d'entrée contrôlé
++   entry #store   dispose une valeur dans un tableau d'octets à un décalage, sans contrôle : `pack` est le point d'entrée contrôlé
+
+@ 0 5 0 073bbbd5db87b69d1bc422484fb59138
++ entry .unpack   lit un enregistrement de disposition fixe depuis des `Data`, ou depuis un `Expanse`, à un décalage
++     `data.unpack[T](offset)` vérifie une seule fois que l'enregistrement entier est présent, en
++     levant `Structural.Error` s'il ne l'est pas, puis le charge. `data.unpack[T](offset, count)`
++     lit une section répétée de `count` enregistrements sous forme de tableau. Sur un
++     `Expanse`, comme un `Terrain` de mémoire projetée, le décalage est un `Long`, et seuls les
++     octets propres à l'enregistrement sont lus.
+
+@ 0 1 0 1a8068e940a69be61d8478647b738c6b
++ entry .pack   les octets d'une valeur de disposition fixe : exactement autant que la largeur de sa disposition
+
+@ 0 3 0 08bb951cb83163ed1539cbb483ceb5f2
++ entry .ByteOrder   l'ordre des octets d'un champ de plusieurs octets : `BigEndian` ou `LittleEndian`
++     Consulté par `Structural.derived` là où une disposition est déclarée, au moyen d'un given
++     importé de `byteOrders`.
+
+@ 0 3 0 06b7ea3d72d532bf1160db93d95677f1
++ entry .byteOrders   les ordres des octets, chacun un given à importer par son nom là où une disposition est dérivée
++   entry .bigEndianByteOrder   l'octet de poids fort en premier, comme dans les formats réseau et les fichiers de polices
++   entry .littleEndianByteOrder   l'octet de poids faible en premier
+
+@ 0 1 0 0833390a9f3ea0de00a05e7c4ef60e79
++ entry .layoutInternal   la macro derrière `Structural.derived`, et les stockages en lesquels elle se développe
+
+% 1 1 0 0f148338f1aac85318242f2f9b2fe261
+
+@ 0 1 0 1c20bcc328e8566b052a425d501b2b14
++ entry .Holding   un `Terrain` qui peut être modifié là où il se trouve : on y stocke à un décalage, et on l'étend
+
+@ 0 6 0 176e1119fb57c4071744f3f74ccdd2e3
++   detail
++       Ce par quoi un format conservé et modifié sur place est modifié : un fichier projeté en
++       écriture par le seul processus qui le possède (le `hold` de galilei), ou des octets sur
++       le tas (`Holding(size)`, `Holding(data)`). Chaque stockage se fait à un décalage, et aucune
++       adresse dans sa mémoire n'est donnée, puisque `expand` peut la déplacer ; une `slice` lit
++       à travers la tenure dont elle provient, et reste valable après une extension.
+
+@ 0 9 0 07343d2d0b08f55b1e25abb89775df50
++   entry #set8   stocke un octet à un décalage
++   entry #set16   stocke un entier de 16 bits à un décalage, en petit-boutiste
++   entry #set32   stocke un entier de 32 bits à un décalage, en petit-boutiste
++   entry #set64   stocke un entier de 64 bits à un décalage, en petit-boutiste
++   entry #write   stocke les octets de certaines `Data` à partir d'un décalage
++   entry #zero   stocke des octets nuls sur une plage
++   entry #move   copie une plage vers un autre décalage, qu'elle peut chevaucher
++   entry #expand   porte la tenure à une taille donnée au moins, les nouveaux octets étant nuls ; il ne rétrécit jamais
++   entry #flush   rend durable ce qui a été stocké, là où il y a un fichier dans lequel cela peut l'être
+
+@ 0 1 0 0d8f4cf87083945e1a83c5e80dcf998d
++ entry .Viewable   la classe de types d'une valeur dont les octets peuvent être prêtés comme `Terrain` pendant la durée d'un bloc
+
+@ 0 4 0 13c20b0c31db4b0d03b0a02a232cb9ed
++   detail
++       Un chemin est `Viewable`, son fichier étant projeté pour le bloc ; le sont aussi une image
++       déjà sur le tas, et un terrain déjà en main. Un format qui se lit sur place s'ouvre de la
++       même façon depuis chacun d'eux.
+
+@ 0 5 0 07b5955732fb760e0ce901c6934c301a
++   entry #view   prête les octets de la valeur comme `Terrain`
++   entry #hold   prête les octets de la valeur pour modification, comme `Holding`, ou renvoie `otherwise` s'ils ne peuvent pas être modifiés
++       Un fichier est projeté en écriture sous un verrou exclusif, et une tenure en main est
++       prêtée telle quelle ; des octets immuables, comme tout ce qui ne dit pas le contraire,
++       renvoient `otherwise`.
+
+@ 0 1 0 1d63dd87fd4f5677117bdc5b51b32bce
++ entry .Surveyable   la classe de types d'une forme qui se lit sur place depuis une vue de ses octets : `Form is Surveyable by Flag to Handle`
+
+@ 0 4 0 02a887e4eca05e5e049003e527694627
++   detail
++       C'est une instance pour la forme, et non pour ce qui prête la vue, ce qui permet à un
++       prêteur qui est lui-même une capacité -- un `Observer` d'un nom publié -- d'ouvrir la vue
++       comme une forme.
+
+@ 0 1 0 131398951b41b1f70a4553f5d737c82e
++   entry #survey   ouvre une vue comme la forme, avec des indicateurs, et fournit la poignée contextuellement pendant la durée d'un bloc
+
+@ 0 1 0 1c77d82579912cf11ff143118ab1e7b4
++ entry .Spring   une source de flux rematérialisable : chaque pull crée un nouvel endpoint exclusif sur le même contenu
+
+@ 0 9 0 191dbad533c25cdd105b48377c44fe65
++   detail
++       Un `Stream` se lit une seule fois ; un `Spring[medium]` peut être tiré un nombre quelconque
++       de fois, chaque `apply()` donnant un nouveau flux sur le même contenu. C'est un trait
++       plutôt qu'un type fonction, car une lambda ne peut pas créer une nouvelle capacité à portée
++       comme résultat, alors que le résultat d'une méthode est réajusté à chaque site d'appel ; et
++       comme `apply` prend une `Tactic[Truncation.Error]` (le pull est l'endroit où une source
++       coupée trop tôt est signalée), une lambda ne s'y convertit pas. `Spring(expression)` crée
++       un spring qui évalue à nouveau l'expression à chaque `apply()` ; donnez l'argument de type,
++       comme `Spring[Data](…)`, là où le type attendu ne suffit pas à le fixer. Une classe anonyme
++       convient aussi.
+
+% 0 1 0 01b8dfabb485bf69089d4d5c0df0dc55
+
+@ 0 2 0 0367f1a4510612701c9cef84eb244384
++   entry .apply   `Spring(expression)` : un spring dont chaque pull évalue l'expression pour obtenir un nouveau flux
++   entry #apply   un nouveau flux sur le contenu, levant `Truncation.Error` s'il est coupé trop tôt
+
+@ 0 1 0 013119bf19f8054f0ba3487acd7aab57
++ entry .Stream   l'endpoint pull d'un pipeline : un tampon dont la région lisible est prêtée sans copie à un consommateur
+
+@ 0 30 0 14d0bd302ccc73b80cc05b727f595faa
++   entry .apply   un flux sur une valeur unique, une chaîne paresseuse de fragments, ou un itérateur de fragments
++       `Stream(value)` est un flux en mémoire à région unique : un `Data` est partagé par
++       référence (ses plages de région sont stables, si bien qu'une diffusion peut les partager),
++       et tout autre support est copié une fois au premier rechargement. `Stream(chain)` force au
++       plus une cellule par rechargement, si bien que la demande pilote la production exactement
++       aussi loin que le permet la paresse de la chaîne. `Stream(iterator)` adapte un
++       `murmuration.Iterator` de fragments, en exposant chaque fragment à chaque rechargement
++       dans la mesure où la demande l'accorde ; la production propre de l'itérateur échappe au
++       contrôle du flux, et ses captures sont retenues avec celles du flux.
++   entry #addressable   l'instance `Addressable` du support
++   entry #Transport   le type de demande : `Credit` pour tout ce que construit le noyau
++   entry #refill   garantit qu'au moins un élément est lisible, sans produire plus que ce que permet `demand`, et renvoie combien
++       Bloque si nécessaire. Renvoie `0` uniquement quand `demand` n'accorde rien, `Unset` en fin
++       de flux, et sinon `limit - start`. Les éléments non encore consommés de la région sont
++       signalés sans en produire davantage : une région non sautée est signalée, pas étendue.
++   entry #lend   prête à une lambda la région lisible et son intervalle marqué, sans copie
++       La lambda reçoit une `Region[medium]` et un `Interval in region.type` couvrant
++       `start until limit`, si bien que tout indice qu'elle peut former est dans les bornes.
++       Valide seulement jusqu'au prochain `refill` ou `close`.
++   entry #unsafeStorage   le stockage sous-jacent brut, derrière `Unsafe`
++       Pour la plomberie de diffusion qui partage les plages de région par référence, et pour les
++       noyaux dont l'arithmétique d'indices dépasse les combinateurs de région. La conversion
++       depuis le `storage0` non typé est correcte parce que les instances `Addressable` sont
++       uniques par support.
++   entry #start   l'indice du premier élément lisible dans le stockage
++   entry #limit   l'indice situé juste après le dernier élément lisible
++   entry #skip   consomme `count` éléments de la région sans les matérialiser
++   entry #regionStable   si les plages de région antérieures restent valides après les rechargements suivants ; `false` sauf redéfinition
++       Vrai pour un tampon fixe unique que `refill` ne fait qu'étendre et que `skip` ne fait
++       qu'avancer (`Stream(value)`, `streamOf(expanse, …)`), si bien qu'une diffusion peut
++       partager les plages par référence plutôt que les copier. Un flux qui réutilise son tampon
++       ne doit jamais le prétendre.
++   entry #close   libère les ressources du flux, en se propageant vers l'amont à travers toute la chaîne
+
+@ 0 4 0 161d5b40e0219c3f1146a7da0bb7c877
++ entry .stream   `value.stream` ou `iterator.stream` : un flux pull en mémoire, en style fluide
++     Deux extensions : sur toute valeur `Addressable`, `Stream(value)` ; sur un
++     `murmuration.Iterator` de fragments, `Stream(iterator)`. Le type de la valeur doit nommer
++     exactement le support (`: Data`, et non un `Data & Sized[n]` marqué).
+
+% 2 3 0 06716235d73e93f912bacb99ac4669e9
+
+% 0 4 0 197da303580c3bfb01d28d885fb4b08b
+
+@ 0 1 0 0174011a768130b2019b52a6b20885b6
++ entry .Intake   l'endpoint push d'un pipeline : un tampon dont la région inscriptible est prêtée sans copie à un producteur
+
+@ 0 21 0 07ea99d7b1703b5916b461f3728661ff
++   entry #addressable   l'instance `Addressable` du support
++   entry #Operand   le type d'élément : `addressable.Operand`
++   entry #Transport   le type de demande
++   entry #demand   la demande que signale actuellement cet intake : indicative, pour borner la production en amont
++       Calculée à la demande et jamais mise en cache ; c'est `reserve` qui bloque réellement.
++   entry #reserve   garantit un espace inscriptible contigu d'au moins un élément, en bloquant si nécessaire, et renvoie sa taille
++       `min` est une demande : une implémentation peut renvoyer moins (les écrivains bouclent sur
++       `reserve`/`commit`), mais peut aussi prendre une grande demande comme indication de
++       dimensionnement — un `Conduit` crée alors un bloc de transfert d'autant plus grand.
++   entry #unsafeBuffer   le stockage, inscriptible de `mark` jusqu'à l'espace réservé, derrière `Unsafe`
++       Valide seulement jusqu'au prochain `commit`, `flush` ou `finish`.
++   entry #mark   l'indice auquel le prochain élément est écrit
++   entry #commit   déclare `count` éléments écrits à `mark` ; peut les propager en cascade de façon synchrone vers l'aval
++   entry #flush   propage dès maintenant vers l'aval les données en tampon, sans terminer le flux
++   entry #finish   termine le flux : vide les tampons, émet l'éventuel état terminal des étapes, libère l'aval ; appelée une fois
++   entry #fail   interrompt : propage l'erreur vers l'aval pour que les étapes libèrent leurs ressources ; elle est relevée chez le lecteur
++   entry #absorb   copie `count` éléments d'un stockage, à partir d'une position, via la boucle reserve/commit
++   entry #put   écrit une valeur entière, ou `size` de ses éléments à partir d'un ordinal, via la boucle reserve/commit
++       Redéfinissable : une frontière asynchrone fait plutôt passer un grand fragment immuable
++       par référence, comme le fait l'intake de `Conduit`.
++   entry #push   écrit un élément
+
+@ 0 1 0 03cb2a2c7baf72df17ae21fae04f9912
++ entry .Conduit   la frontière asynchrone : un intake pour le thread écrivain et un flux pour le thread lecteur
+
+@ 0 1 0 1375fc3156be0cf312c7e849211621af
++   entry .apply   un nouvel intake écrivain et un nouveau flux lecteur sur un anneau partagé, sous forme de paire
+
+@ 0 1 0 1c6d121ca1c27d1e1b11bda0f233690d
++ entry .Duct   une étape de transformation synchrone, attachable à un flux avec `viaDuct` ou à un intake avec `acceptingDuct`
+
+@ 0 1 0 09fae5abf46a14551d413a0c1e4fb1f9
++   entry .Progress   la paire non boxée (consommé, produit) que renvoie `step`
+
+@ 0 28 0 1059d9be826fa36316eb4db7914b1d79
++     entry .apply   une progression de `consumed` éléments d'entrée et `produced` éléments de sortie
++     entry .consumed   combien d'éléments d'entrée l'étape a consommés
++     entry .produced   combien d'éléments de sortie l'étape a produits
++   entry .feed   pilote un duct sur une valeur entière, comme s'il s'agissait de l'unique région d'un flux
++       `Duct.feed(value, duct)` exécute `step` sur le stockage de la valeur (son stockage
++       sous-jacent directement quand le support en expose un, sinon une copie) jusqu'à ce que
++       l'entrée soit consommée, en accumulant la sortie dans le builder du support, puis appelle
++       `flush` et `close` — le pendant pour une valeur entière de `stream.viaDuct(duct)`, sans
++       endpoint, sans comptabilité de crédit et sans cycle de rechargement. Exige un `Buffering`,
++       pour la fenêtre de sortie. C'est ainsi que `compress[Gzip]` et `encode[Base64]` exécutent
++       un noyau de streaming sur une valeur déjà disponible.
++   entry #input   l'instance `Addressable` du support opérande
++   entry #output   l'instance `Addressable` du support résultat
++   entry #Transport   le type de demande aval
++   entry #Upstream   le type de demande présenté en amont
++   entry #regulation   la `Regulation` du type de demande aval
++   entry #translate   convertit la demande aval en la demande que ce duct présente en amont
++   entry #quantum   l'espace de sortie minimal dont `step` a besoin pour garantir la progression ; `1` par défaut
++       `2` pour un duct dont le plus petit atome de sortie fait deux éléments (un encodeur
++       hexadécimal, un décodeur UTF-8 qui émet une paire de substitution).
++   entry #sizing   la fenêtre de sortie qu'alloue un pilote de streaming pour ce duct ; le bloc intermédiaire par défaut
++       Un duct dont le noyau paie un coût fixe important par appel (un passage JNI) et dilate son
++       entrée (décompression) redéfinit ceci au bloc de transfert, afin que le coût fixe soit
++       amorti sur seize fois plus de sortie.
++   entry #step   transforme la plage lisible d'une région source en l'espace inscriptible d'une slate cible
++   entry #flush   émet l'état terminal après la fin de l'amont ; appelée de façon répétée jusqu'à ce qu'elle renvoie `0`
++       L'implémentation par défaut renvoie `0`. Un duct capable de retenir une sortie non livrée
++       au-delà d'une étape (un décompresseur) doit la redéfinir : le premier `0` est interprété
++       comme la fin du flux.
++   entry #close   libère les ressources du duct, une fois que le pipeline n'en a plus besoin
+
+@ 0 1 0 0b10b102f989d80a14910dbe10fa4bd0
++ entry .Ductile   rend un descripteur d'étape — un jeu de caractères, une codepage, un schéma de compression — attachable comme duct
+
+@ 0 15 0 1223f23c0f2a4b0e0580f1d4a3252d54
++   entry .Instance   le type d'instance entièrement déterminé, qui nomme les cinq membres : `Instance[stage, in, out, transport, upstream]`
++   entry .charset   le décodage de caractères comme étape : `Charset is Ductile by Data to Text over Credit`
++       Les octets sont mis en attente en interne afin qu'un caractère multi-octets coupé entre
++       deux rechargements soit conservé, et une entrée malformée est remplacée via le
++       `TextSanitizer` du jeu de caractères, exactement comme le fait le décodage d'une valeur
++       entière. UTF-8 utilise un noyau écrit à la main — les suites ASCII sont élargies huit
++       octets à la fois, les séquences multi-octets décodées en ligne avec une validation stricte
++       — et ne se replie sur le décodeur du JDK que pour une entrée malformée. Un caractère hors
++       du plan multilingue de base émet une paire de substitution : le quantum du duct est donc
++       `2`.
++   entry .codepage   l'encodage de caractères comme étape : `Codepage is Ductile by Text to Data over Credit`
++       Une paire de substitution coupée en fin de flux et un caractère non représentable sont
++       remplacés, à l'image de l'encodage d'une valeur entière. La demande se traduit selon le
++       nombre d'octets par caractère dans le pire des cas de l'encodeur, avec un minimum de un.
++   entry #Transport   le type de demande aval du duct construit
++   entry #Upstream   le type de demande que le duct présente en amont
++   entry #duct   construit le duct d'une étape, en consommant l'étape ; exige un `Buffering`
+
+@ 0 1 0 066c6e1dfe900c0c13de129c00243d33
++ entry .Regulation   l'arithmétique d'un type de demande : ce qu'il accorde, comment il se dépense, comment il se regroupe dans un `Long`
+
+@ 0 8 0 0535559b0ee53ed50b1706e32fc073dc
++   entry .credit   `Credit is Regulation` : illimité au départ, accordant le nombre borné à `0..Int.MaxValue`
++   entry .pace   `Pace is Regulation` : `Halted` n'accorde rien, les autres tout ; `Measured` demande à la pompe de régler son rythme
++   entry #initial   la demande avant qu'aucune ne soit signalée
++   entry #grant   combien d'éléments accorde une demande, sous forme d'`Int`
++   entry #spend   la demande après que `count` éléments ont été produits à son compte
++   entry #measured   si la demande demande à la pompe de régler son rythme entre les blocs
++   entry #encode   la demande regroupée dans un `Long`
++   entry #decode   une demande extraite d'un `Long`
+
+@ 0 4 0 041fa0d67bddc4361d1770eec3d9a53f
++ entry .Pace   une demande de contre-pression grossière : `Free`, `Measured` ou `Halted`
++     Pour un puits qui ne peut pas compter utilement les éléments : `Free` demande à
++     l'amont d'envoyer librement, `Measured` de régler son rythme entre les blocs, et `Halted`
++     d'arrêter de produire jusqu'à ce que la demande soit à nouveau interrogée.
++     `Regulation.pace` en est l'arithmétique.
+
+@ 0 8 0 0897470f1deaad9b1ccd39c6d916fe01
++ entry .Records   un flux d'enregistrements analysés : `Stream[Array[record]^{}] over Credit`
++     Chaque région est un fragment d'enregistrements sous forme de tableau gelé : le crédit
++     compte donc des enregistrements et `Buffering` dimensionne les tampons en nombre de
++     références. Les enregistrements sont des valeurs immuables qui franchissent les frontières
++     d'étapes et de threads par référence (un enregistrement ne doit pas lui-même détenir un
++     endpoint actif) ; le type d'enregistrement doit s'effacer vers un type référence, et le
++     given `Addressable` qui l'admet (`Addressable.boxed`, `texts` ou `frames`) fait autorité à
++     la construction du flux. `records` itère sur les enregistrements d'un tel flux, et
++     `memoize` les matérialise en un seul tableau gelé.
+
+% 2 2 0 1de60199d07bcdf607ea501ce73c8443
+
+% 0 4 0 17e5a27dd279f8f20629bb82a09db5ee
+
+@ 0 1 0 0035b3c95f71826f15e639f5eee552e1
++ entry .via   `stream.via(stage)` : un flux d'un autre type qui tire à travers une étape dotée d'une instance `Ductile`
+
+@ 0 1 0 0f05192ad32249eb1d605444270fce7a
++ entry .viaDuct   `stream.viaDuct(duct)` : un flux d'un autre type qui tire directement à travers un `Duct`
+
+@ 0 1 0 189e8896ea5c042b1d2143a6351764eb
++ entry .pump   `stream.pump(intake)` : vide une chaîne pull dans une chaîne push sur le thread appelant
+
+@ 0 1 0 1341722eb23b43d40faa5e63bab0036a
++ entry .ingest   `intake.ingest(stream)` : absorbe un flux entier et renvoie l'intake, typé selon la classe propre de l'appelant
+
+@ 0 1 0 16fc237c48d7c0f41190e46be9a19fe4
++ entry .accepting   `intake.accepting(stage)` : un intake d'un autre type qui pousse à travers une étape dotée d'une instance `Ductile`
+
+@ 0 1 0 0c160f2c913badfa06e3ca2414002865
++ entry .acceptingDuct   `intake.acceptingDuct(duct)` : un intake d'un autre type qui pousse directement à travers un `Duct`
+
+@ 0 1 0 0a3fc23996d9c5850ee1e58097d3c609
++ entry .drain   `stream.drain(operation)` : une opération terminale qui applique une opération à chaque région successive et à son intervalle marqué

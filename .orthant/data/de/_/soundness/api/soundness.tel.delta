@@ -1,0 +1,687 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1db213c190fed19215fd6243300d601f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1ac7afa3d9bd82550a707a3898a19b3f
++ info   das Umbrella-Paket: ein einziges `import soundness.*` erreicht jede Soundness-Bibliothek
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 008b538b5ff63612125fabab9b2b446c
++     _Soundness_ ist eine Familie von weit über hundert Bibliotheken, jede in einem eigenen Paket
++     (`gossamer` für Text, `galilei` für das Dateisystem, `jacinta` für JSON, …), und `soundness`
++     ist das Paket, das sie zusammenführt. Ein Programm schreibt einen einzigen Wildcard-Import
++     und benennt dann, was immer es braucht, aus jeder Bibliothek, ohne zu wissen, aus welcher
++     Bibliothek es stammt:
+
+% 2 1 0 1f27894bfa5ee96700974cf2315ab044
+
+% 3 1 0 07d03e053d6dbfa412e64f480fa525ea
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 0d23fdfe469a9fb009d07926302e05d2
+
+% 0 1 0 1ea7b92cf800b6e9050c075d7a5aa5a4
+
+% 0 1 0 160d215c046410ab0b4670a71dceb6ad
+
+% 1 1 0 1ad70419275fbe121262246c7ad0e029
+
+@ 0 10 0 109e7b7d381ebf8d195aca70c8bdb572
++     Das Paket enthält fast nichts Eigenes. Jede Bibliothek hat in jeder ihrer Komponenten eine
++     Datei namens `soundness_<library>_<component>.scala`, die die öffentlichen Namen dieser
++     Komponente per `export` in `package soundness` exportiert, sodass das Umbrella mit den
++     Komponenten auf dem Klassenpfad wächst: Ein Programm, das von `galilei.jvm` abhängt, sieht
++     darin die Dateisystem-Backends von galilei, und eines, das nicht davon abhängt, sieht sie
++     nicht. Diese Weiterleiter sind dort dokumentiert, wo sie definiert sind, auf der eigenen
++     Seite jeder Bibliothek — `Classloader` auf der von hellenism, `Json` auf der von jacinta —
++     und nicht hier. Diese Seite dokumentiert nur, was das Umbrella selbst *deklariert*: eine
++     Handvoll handgeschriebener Weiterleiter, die ein `export` nicht ausdrücken kann, die
++     Collection-Aliase, zwei Annotationstypen, das Auffang-Given `explainMissingContext` und den
++     Einstiegspunkt `repackage`.
+
+@ 0 10 0 0503dd47d3c1b0171be895e5f5e242e2
++     **Auswahlpakete.** Ein Given, das eine Implementierung auswählt — eine
++     Fehlerbehandlungsstrategie, einen Classloader, eine Codepage, ein Log-Format, ein
++     Dateisystem-Backend —, liegt in einem kleinen Paket, das nach seiner Rolle benannt ist:
++     `strategies`, `classloaders`, `codepages`, `logFormats`, `filesystemBackends`. Das Umbrella
++     spiegelt jedes als `package` gleichen Namens, und gleichnamige Blöcke aus verschiedenen
++     Bibliotheken werden zusammengeführt, sodass `soundness.construables` die
++     `Construable`-Givens von jacinta, xylophone, honeycomb, caesura und einem Dutzend weiterer
++     enthält und `soundness.wasiApis` die jeder Bibliothek mit einem WASI-Backend. Der Pfad
++     durch das Umbrella und der Pfad durch die Bibliothek sind dasselbe Given:
++     `import soundness.monthFormats.englishMonths` und
++     `import aviation.monthFormats.englishMonths` sind austauschbar.
+
+@ 0 7 0 1eaa53881dd3ea8014c4656499ec1423
++     Ein Given aus einem Auswahlpaket wird immer **namentlich importiert**, denn
++     `import strategies.*` importiert keine Givens: Scalas Wildcard wählt nur gewöhnliche Member
++     aus, und ein Given braucht seinen eigenen Namen oder einen `given`-Selektor. Außerdem hat ein
++     in den lexikalischen Geltungsbereich importiertes Given Vorrang vor jedem Given in einem
++     Begleitobjekt, und genau das erlaubt es einem Auswahlpaket, die Vorgabe einer Bibliothek zu
++     überschreiben. `import soundness.*` selbst bringt daher keine Auswahl in den
++     Geltungsbereich — mit einer bewussten Ausnahme, `explainMissingContext`, das ein
++     `implicit def` alten Stils ist, gerade damit der Wildcard es einschließt.
+
+@ 0 5 0 15d4e9f0dccd02c11e5356472f4f7c41
++     **Ausgelassene Namen.** Typen und Terme leben in getrennten Namensräumen, sodass ein Typ
++     `via` und eine Methode `via` nebeneinander bestehen; aber zwei Bibliotheken, die denselben
++     *Term* (oder denselben *Typ*) in `package soundness` exportieren, überladen nicht — der
++     Compiler behält einen und verwirft den anderen stillschweigend. Über jede solche Kollision
++     ist entschieden worden, und der Unterlegene wird über sein eigenes Paket erreicht, wo er
++     seinen Namen behält:
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+% 0 1 0 109a5974f6e4bbb2121e509a07aca075
+
+@ 0 14 0 1ad4f69b7714611c0a4efd0f1836ae81
++     column  Im Umbrella
++     column  Den anderen erreichen als
++     row  `Channel`  der WebSocket-Kanal von perihelion  `anticipation.Channel` (Pixelkanäle)
++     row  `Completion`, `Completions`  die von exoskeleton  `harlequin.Completion`, `prophesy.Completion`
++     row  `Fragment`  das von honeycomb  `harlequin.Fragment`
++     row  `Descriptor`  der OCI-Deskriptor von embarcadero  `hallucination.Descriptor`
++     row  `Diagnostic`  das von harlequin  `frontier.Diagnostic`
++     row  `Message`  das von fulminate  `perihelion.Websocket.Message` (ein WebSocket-Frame)
++     row  `Tag`  das HTML-Tag von honeycomb  `probably.Tag`, `xylophone.Tag`
++     row  `Attributive`, `Renderable`  die von honeycomb  `xylophone.Attributive`, `xylophone.Renderable`
++     row  `Universe`, `Classfile`  die von anthology bzw. mandible  `degustation.Universe`, `degustation.Classfile`
++     row  `as`  das Dekodieren von distillate  `scintillate.as` (ein Request-Body)
++     row  `teletype`  das Darstellen von escapade  `delicious.teletype`
++     row  `Kelvin(…)` als `apply`  das deindizierende `apply` von rudiments  `import quantitative.*`
+
+% 1 1 0 1fe05398f31a392a1e01412394c85d10
+
+@ 0 8 0 155650acff16a34118650e7be0c1ea5f
++     Einige Namen fehlen aus einem anderen Grund: Ein `export` kann sie nicht getreu
++     weiterleiten. `Scribe`/`scribe` und `Surveyor`/`survey` von rudiments sowie `Region` und
++     `Slate` von zephyrine werden direkt über `rudiments` und `zephyrine` erreicht; `wsClient` und
++     `wsSessional` von perihelion werden namentlich aus `perihelion` importiert. Eine Definition,
++     die bewusst aus dem Umbrella herausgehalten wird, trägt in ihrem Quelltext die Annotation
++     `unexported`, und die Seite jeder Bibliothek sagt, welche ihrer Namen nicht exportiert
++     werden. Die MathML-Elementtypen liegen innerhalb von `Mathml` statt auf oberster Ebene,
++     sodass `import soundness.Mathml.*` die bloßen Elementnamen dort liefert, wo MathML von Hand
++     geschrieben wird.
+
+@ 0 3 0 052eca2412609c460d0a286f753eaa7d
++     Eine Verschattung sollte man kennen: `System` von ambience wird exportiert, sodass unter
++     `import soundness.*` ein bloßes `System` das von Soundness ist, und das des JDK muss als
++     `java.lang.System` geschrieben werden (für `System.nanoTime`, `System.arraycopy`, …).
+
+@ 0 3 0 1834630768f344ab010764d96f42bec5
++     **Warum manche Weiterleiter handgeschrieben sind.** Ein synthetisierter `export`-Weiterleiter
++     ist eine einfache Methode, und manche Definitionen überstehen den Weg nicht, daher deklariert
++     das Umbrella sie neu, jede an das Original ihrer Bibliothek delegierend:
+
+@ 0 15 0 1d44b880508c497410578124839d3134
++     - ein `export` einer *überladenen* Erweiterungsmethode leitet nur eine Überladung weiter,
++       daher werden `thru`, `till`, `tabulate` und das Intervall-`each` hier deklariert, jede
++       Überladung in einer einzigen Kompilierungseinheit;
++     - eine Erweiterungsmethode, deren Typklassen-Nachweis eine abhängige führende
++       `using`-Klausel ist — die deindizierende Gruppe `apply`, `at`, `defines`, `confine`,
++       `pick`, `unsafeAttested`, mit `define`, `omit`, `keep` und `skip` —, braucht diese
++       Klausel, damit ein fehlgeschlagenes Herbeirufen den Kandidaten verwirft, und ein
++       Weiterleiter kann sie nicht tragen;
++     - ein Weiterleiter verliert eine Capture-annotierte Verfeinerung, daher werden `via` und
++       `accepting` von zephyrine, `throwUnsafely` von contingency und die vier
++       `httpServers`-Givens von scintillate mit ihren Capture-Sets ausgeschrieben;
++     - ein `export` eines Objekts ist ein `def`, ein instabiles Präfix, durch das ein opaker Typ
++       transparent ist, daher werden die Collection-Begleitobjekte als stabile `val`s neben
++       parametrisierten Typaliasen (`List`, `Sequence`, `Set`, `Map`, `Chain`) weitergeleitet;
++     - ein `export` einer Case-Klasse bringt ihren Konstruktor-Proxy mit, einen Term, daher sind
++       `assign` und `attribute` allein Typaliase und überlassen die Termnamen anamnesis und
++       galilei.
+
+@ 0 6 0 053af8d316cfaf4c12acf92ee06ec896
++     **Wie die Dokumentation gegliedert ist.** Jedes Paket hat seine eigene, nach ihm benannte
++     Seite; ein über `soundness` erreichter Name ist auf der Seite des Pakets dokumentiert, das
++     ihn definiert, und die Seite jeder Bibliothek sagt, welche ihrer Komponenten was beitragen,
++     welche Auswahlpakete sie in das Umbrella spiegelt und welche Givens namentlich importiert
++     werden. Diese Seite hat einen Eintrag für jede eigene Deklaration des Umbrella und für die
++     zwei Auswahlpakete, deren Givens hier deklariert statt exportiert werden.
+
+% 0 1 0 1fc842fa91f423f6194eba67aa7a2420
+
+% 0 1 0 13c80a33ef99f3ba0c85db502606332c
+
+% 0 1 0 07e938e88f794de21ee4aef72c4e5da2
+
+% 0 1 0 1dc77c0a102f9b9615298ea68f15e5ec
+
+@ 0 8 0 0d748645130d011b08255a6e39cf8254
++ entry .List   die opake verkettete Liste `proscenium.List`, mit ihrem Begleitobjekt als stabilem Wert
++     `type List[+element] = proscenium.List[element]` und `val List = proscenium.List`: die
++     Soundness-Liste, auf der Seite von proscenium dokumentiert, so wie das Umbrella sie
++     benennt. Der Typ ist ein parametrisierter Alias, da ein bloßer Alias eines opaken
++     Konstruktors nicht durchschaut wird (`::`, `CanEqual` und die Erweiterungsmethoden würden
++     ihn als eine andere `List` behandeln); und das Begleitobjekt ist ein `val` statt eines per
++     `export` exportierten `def`, da ein Member des Begleitobjekts, das über ein `def`-Präfix
++     ausgewählt wird, die rechte Seite des opaken Typs sieht und die gesamte API der
++     Standardbibliothek offenlegt. `Nil`, `::` und `#::` werden daneben weitergeleitet.
+
+% 2 1 0 1d5458575237339e0b6192668054763e
+
+% 3 1 0 1ba0ccdc08437c4b0602f78537064c92
+
+% 0 1 0 01ed19fed8a88b98057ae194a159bfd5
+
+% 0 1 0 1a2f01312c8454d91137e5ff1bb475d1
+
+% 1 1 0 1c5c4fcaef4011461409f42f2de5e821
+
+@ 0 2 0 0f712a82afe1aaf30255142b969231b3
++     Eine aus einer Collection der Standardbibliothek aufgebaute Liste ist `List.from(xs)`,
++     nicht `xs.to[List]`, das auf einem Stdlib-Empfänger Scalas eigenes `to` erreicht und mangels
++     einer Factory fehlschlägt.
+
+@ 0 5 0 078e1935f7885ee811241073ea0350f6
++ entry .Sequence   die opake indizierte Sequenz `proscenium.Sequence`, mit ihrem Begleitobjekt als stabilem Wert
++     `type Sequence[+element] = proscenium.Sequence[element]` und `val Sequence =
++     proscenium.Sequence`: ein unveränderlicher `Vector` hinter einem opaken Typ, wie die Seite
++     von proscenium ihn beschreibt. Als parametrisierter Alias und stabiles `val` aus denselben
++     Gründen weitergeleitet wie `List`.
+
+% 2 1 0 00b717e417ffaf26110da6700f447778
+
+% 3 1 0 1a7495fb577f9dd91bcf3e6c76edba7a
+
+% 5 1 0 1a6908132ae54f4b04243fac558fdc41
+
+% 0 1 0 1ee0190c84e7cd800c449cbed5d20051
+
+% 1 1 0 1e458d3b85a3cc8e1575b92ebed5826c
+
+@ 0 4 0 0dde3ee6e89b5ca205ca1edc6487460c
++ entry .Set   die opake Hash-Menge `proscenium.Set`, mit ihrem Begleitobjekt als stabilem Wert
++     `type Set[element] = proscenium.Set[element]` und `val Set = proscenium.Set`, als Alias
++     und stabiles `val` aus denselben Gründen weitergeleitet wie `List`. Ein `Set` ist
++     `Reshapable`, hat aber keine stabile Reihenfolge, daher unterstützt es kein `sort`.
+
+@ 0 5 0 0a5ebff2da2aaa770652fd051598ffcd
++ entry .Map   die opake Hash-Map `proscenium.Map`, mit ihrem Begleitobjekt als stabilem Wert
++     `type Map[key, +value] = proscenium.Map[key, value]` und `val Map = proscenium.Map`, als
++     Alias und stabiles `val` aus denselben Gründen weitergeleitet wie `List`.
++     `map.confine(key)`, `map(key)`, `map.define(key, value)` und `map.omit(key)` sind die
++     deindizierenden Erweiterungsmethoden des Umbrella.
+
+% 2 1 0 1dd28fc07ae889150132fb540e89861f
+
+% 3 1 0 1c1bed034ffe626203a924908af8295b
+
+% 5 1 0 1f21e0fb0c508d94064fdff9c530322e
+
+% 6 1 0 15529da984c51c1011b8100801ae3ba3
+
+% 7 1 0 0fa034f4c263ac3f006dd7c9d12a0513
+
+@ 0 5 0 1b7dc9a57d807a2e1de50f1a4cb07b2a
++ entry .Chain   die opake lazy Sequenz `proscenium.Chain`, mit ihrem Begleitobjekt als stabilem Wert
++     `type Chain[+element] = proscenium.Chain[element]` und `val Chain = proscenium.Chain`: eine
++     `LazyList` hinter einem opaken Typ, als Alias und stabiles `val` aus denselben Gründen
++     weitergeleitet wie `List`. Ihr lazy `keep` und `skip` liegen in ihrem Begleitobjekt, und das
++     eigene `keep` und `skip` des Umbrella sind so gestaltet, dass ein `Chain`-Empfänger sie
++     weiterhin erreicht.
+
+@ 0 5 0 1facdda4504812290b96edeb704db533
++ entry .infer   `infer[context]`: ruft einen Kontextwert an der Stelle der Inline-Expansion herbei
++     `transparent inline def infer[context]: context = summonInline[context]`, im Umbrella
++     deklariert, damit Code, der gegen `import soundness.*` geschrieben ist, dieselbe
++     Schreibweise hat wie der von proscenium. Innerhalb einer Inline-Methode findet die Suche
++     dort statt, wo die Methode expandiert wird, statt dort, wo sie definiert ist; `summon` ist
++     die Nicht-Inline-Form.
+
+@ 0 7 0 082797ce229aa68a1a18215ef8aeae99
++ entry .explainMissingContext   erklärt jede fehlgeschlagene implizite Suche, eingebracht durch `import soundness.*`
++     Die Form des Umbrella für das Auffang-Given `frontier.context.explainMissingContext` von
++     frontier. Es ist Kandidat in jeder impliziten Suche; wenn eine Suche fehlschlägt, meldet der
++     Compiler anstelle seiner eigenen knappen Meldung einen dargestellten Baum der versuchten
++     Kandidaten, dessen, was jeder benötigte, und welche Instanzen auf dem Klassenpfad ihn
++     erfüllen würden. Wenn die Suche ohne es gelingen würde, tritt es beiseite und trägt nichts
++     bei, sodass es nie ändert, welche Instanz ein Programm verwendet.
+
+% 2 1 0 0d68f2da6f39c8281aea57d204f30184
+
+% 3 1 0 1eb3c5d85c95e3591b3497e278632098
+
+% 0 1 0 12921236bce385d40855562298c83f0e
+
+% 1 1 0 1ce8b8e2cc9e49dd052da87a9b8e52e8
+
+@ 0 5 0 1c568bb050982a781591a1f3f59cdab9
++     Es ist ein `transparent inline implicit def` alten Stils statt eines `given`, weil ein
++     Wildcard-Import Givens ausschließt und dieses für jeden im Geltungsbereich sein muss, der
++     `import soundness.*` schreibt. Es ist mit `@scala.annotation.internal.diagnostic`
++     annotiert, was der Proscala-Compiler berücksichtigt; die Seite von frontier erklärt seine
++     Grenzen und die Gestalten des Baums.
+
+@ 0 3 0 11e92bcc2ac0b75c1d150d4d557f3cec
++ entry .repackage   der `@main`-Einstiegspunkt des Repackagers von burdock: `java -cp app.jar soundness.repackage`
++     Ein Kommandozeilen-Einstiegspunkt im Paket `soundness`, damit er über einen voll
++     qualifizierten Namen gestartet werden kann, den jede Soundness-Anwendung mitbringt:
+
+% 0 1 0 04b53e90373db9ee0dcbb0c2bab35fe3
+
+% 0 1 0 131a1acda8fe5890080ba4c51a9b9971
+
+% 1 1 0 08f7cc58abbb6dca1d9632309e2fd5cd
+
+@ 0 3 0 1b370e4a62f24f2c1aaf9295df56de63
++     Er übergibt seine Argumente als `List[Text]` an `burdock.repackage`, das das JAR der
++     laufenden Anwendung an Ort und Stelle umschreibt und dabei ihre veröffentlichten
++     Abhängigkeiten auslagert; die Seite von burdock beschreibt die Argumente und die Ausgabe.
+
+@ 0 6 0 0d82d376197d09ee04a32dd17d0918d6
++ entry .assign   die Annotation `@assign(layer)` von stratiform, allein als Typ weitergeleitet
++     `type assign = stratiform.assign`: eine Feldannotation, die ein Feld einer Case-Klasse in
++     eine Schicht eines TEL-Schemas einordnet, wie die Seite von stratiform es beschreibt. Sie
++     ist ein Typalias statt eines `export`, da das Exportieren der Klasse auch ihren
++     Konstruktor-Proxy exportieren würde, einen Term `assign`, der die Methode `assign` von
++     anamnesis verdecken würde; die Annotation `@assign(…)` liest sich in beiden Fällen gleich.
+
+% 2 1 0 014572436a4986eb154e88c593d9552c
+
+% 3 1 0 11cce612f15effe81e9ff5e6ace44106
+
+% 0 1 0 19bfc4712dbfb1a2148c364ad3079f76
+
+% 0 1 0 1f9ac28a530652d90ffc8d9231c55124
+
+% 1 1 0 1cf7f8ffbe45ff4519ec94c093e0a0b0
+
+@ 0 6 0 1ccbfd64dc4c8501039edc772535c03e
++ entry .attribute   die Annotation `@attribute` von xylophone, als Typ; der Term ist der von galilei
++     `type attribute = xylophone.Xml.attribute`: die Annotation, die ein Feld einer Case-Klasse
++     als XML-Attribut statt als Kindelement markiert. Sie ist ein Typalias statt eines `export`,
++     weil galilei und tarantula bereits einen *Term* namens `attribute` in das Umbrella
++     exportieren (das Lesen eines erweiterten Attributs eines Pfades bzw. eines Attributs eines
++     Elements), mit dem das Begleitobjekt der Case-Klasse kollidieren würde; eine Annotation
++     braucht nur den Typ.
+
+% 2 1 0 16da3c51bf20479d1f2c8b988d1173c4
+
+% 3 1 0 0f823ecd35b01a7d12b0bc9d96343149
+
+% 0 1 0 045ceb6de96059cf17c04afedd43b60d
+
+% 1 1 0 19acb75380c33efa083d5bad022668bc
+
+@ 0 7 0 0d7bf49eee93caa50570c13229d582c9
++ entry .thru   `start thru end`: das Intervall zwischen zwei Ordinalzahlen, Ende eingeschlossen, beschränkt, wenn beide Enden es sind
++     `Ter thru Sen` ist das Intervall aus `Ter`, `Quat`, `Quin` und `Sen`. Zwei Überladungen,
++     beide im Umbrella deklariert: Über einfachen `Ordinal`s ist das Ergebnis ein einfaches
++     `Interval`, und über zwei auf denselben Wert beschränkten Ordinalzahlen (`Ordinal in form`)
++     ist es ein `Interval in form`, dessen jede Ordinalzahl diesen Wert total liest. Sie werden
++     hier deklariert statt aus denominative exportiert, weil ein `export` nur eine Überladung
++     weiterleitet und einem einfachen `Ordinal`-Empfänger dann die beschränkte angeboten würde,
++     die fehlschlüge.
+
+% 2 1 0 09adc7dc5bfc1a1a0d062f6a5f03f247
+
+% 3 1 0 1b48bb1f32a3fc5c0b2c407213f78f92
+
+% 0 1 0 0fd6950ebf8822c90139575f9997b12f
+
+% 1 1 0 12ab99a5f4e041c91dca18df18ddee2d
+
+@ 0 4 0 1f9bdf784bbf10ee087ed62d821eb97c
++ entry .till   `start till end`: das Intervall zwischen zwei Ordinalzahlen, Ende ausgeschlossen, beschränkt, wenn beide Enden es sind
++     `Ter till Sen` ist `Ter`, `Quat` und `Quin`; `Sec till Sec` ist leer. Wie bei `thru`
++     werden die zwei Überladungen — einfach und beschränkt — gemeinsam im Umbrella deklariert,
++     weil ein `export` nur eine weiterleiten würde.
+
+@ 0 6 0 1694799cd12ffffd11363a2c547e845a
++ entry .tabulate   `xs.tabulate { i => … }`: eine `Sequence` mit einem Element pro Ordinalzahl eines Wertes oder Intervalls
++     Das sammelnde Gegenstück zu `each`: baut eine `Sequence` mit einem Element pro Position auf,
++     in Reihenfolge. Drei Überladungen, aus demselben Grund wie bei `thru` gemeinsam im Umbrella
++     deklariert: Über einem `Countable`-Wert erhält das Lambda `Ordinal in value.type`, sodass
++     seine Lesezugriffe auf den Wert bloß sind; über einem einfachen `Interval` erhält es ein
++     einfaches `Ordinal`; über einem `Interval in form` ein `Ordinal in form`. Jede delegiert an
++     `denominative.tabulate`.
+
+% 2 1 0 1880c967d758dd5c1b4f264f577117b0
+
+% 3 1 0 0aa22d41fc34640f03054059b855fa9a
+
+% 5 1 0 136b082868d7a2aa097853d9bf2f0997
+
+% 0 1 0 16ef06ec0a46527c08432d64a386e767
+
+% 1 1 0 0f9ef1d86bc0edfe03e0faa3de45675c
+
+@ 0 9 0 033400a6c2a7cff111e67a5d163477f6
++ entry .each   `interval.each { i => … }`: besucht jede Ordinalzahl eines Intervalls, in Reihenfolge
++     Das Umbrella deklariert die zwei Intervall-Überladungen von `each` neben dem
++     Collection-`each`, das es aus rudiments exportiert: Über einem einfachen `Interval` erhält
++     das Lambda ein `Ordinal`, und über einem beschränkten `Interval in form` erhält es
++     `Ordinal in form`, sodass ein Lesezugriff darin total ist. Alle müssen sich einen
++     Geltungsbereich teilen — zwei Top-Level-Definitionen eines Namens in `package soundness`
++     überladen nicht, und eine wird stillschweigend verworfen —, und die beschränkte Überladung
++     muss neben der einfachen stehen, sonst gewinnt die einfache für einen beschränkten
++     Empfänger und entfernt seine Marke ohne Fehler. Die Collection-Form, `xs.each { x => … }`,
++     ist auf der Seite von rudiments dokumentiert.
+
+% 2 1 0 153b3d3649416408196da30b52bc4f27
+
+% 3 1 0 19bba5ce688cc672029f37f307b43b45
+
+% 0 1 0 161651618b79a789158fce49c3020b76
+
+% 0 1 0 0552678106cff1b81283dcaf10ddd11d
+
+% 1 1 0 0ad4724f5a7c13b40d1558b0f8946e14
+
+@ 0 9 0 1d45363e228532f700af66460a323ed0
++ entry .apply   `xs(index)`: das Element an einem Index, bloß für einen beschränkten Index und sonst `Optional`
++     Der universelle deindizierende Lesezugriff für jeden Wert mit einer `Applicable`-Instanz —
++     die Collections nach `Ordinal`, eine `Map` nach Schlüssel, ein `Text` nach `Ordinal` —,
++     hier neu deklariert statt exportiert, da sein Nachweis eine abhängige führende
++     `using`-Klausel ist, die ein Weiterleiter nicht tragen kann. Er delegiert inline an
++     `rudiments.apply`, sodass ein als `Operand in xs.type` typisierter Index (aus `confine`,
++     `pick`, `each`, …) das Element bloß liest und jeder andere Index geprüft wird, was ein
++     `Optional` ergibt. Eine zweite Überladung liest ein als `& Sized[n]` typisiertes
++     eingefrorenes Array mit einer literalen Ordinalzahl, geprüft gegen `n`, während der Code
++     kompiliert. Die Seite von rudiments enthält die vollständige Darstellung.
+
+% 2 1 0 112d22a355f79f5c033fb41a8ff74223
+
+% 3 1 0 0393554810a2c50a123a191180104efc
+
+% 5 1 0 14f679673800de550134491034f80566
+
+% 0 1 0 148f7bab0c2baa491d476cf8cc91a95d
+
+% 0 1 0 123c90370b7f934f053a53c5a0039953
+
+% 1 1 0 0149e2b7178398530a10c24f23e59ace
+
+@ 0 4 0 1178d2323c6133bf140fd133c730e7fc
++ entry .at   `xs.at(index)`: derselbe Lesezugriff wie `xs(index)`, bloß für einen beschränkten Index und sonst `Optional`
++     Identisch mit `apply`, mit ihm zusammen im Umbrella neu deklariert und an `rudiments.at`
++     delegierend; beibehalten für Code, der den Positionszugriff `xs.at(Sec)` und den
++     Schlüsselzugriff `map.at(key)` schreibt.
+
+@ 0 4 0 152b5822d57a6b740c71fa1adae7f186
++ entry .defines   `xs.defines(index)`: ob ein Index oder Schlüssel für einen Wert definiert ist
++     Wahr, wenn die `Applicable`-Instanz des Wertes den Index enthält: eine Ordinalzahl
++     innerhalb des Umfangs einer Collection oder ein in einer `Map` vorhandener Schlüssel. Mit
++     dem Rest der deindizierenden Gruppe im Umbrella neu deklariert, wobei der einzeilige Rumpf
++     dupliziert statt delegiert wird.
+
+@ 0 5 0 173813604391eafe13ccab6fb6caeaa3
++ entry .confine   `xs.confine(index)`: prüft einen Index gegen einen Wert und gibt ihn mit der Marke dieses Wertes zurück
++     `Unset`, wenn der Index für den Wert nicht definiert ist, und sonst der Index selbst,
++     typisiert als `Operand in xs.type`, sodass ein folgendes `xs(i)` bloß ist und nichts erneut
++     prüft. Funktioniert für Schlüssel ebenso wie für Ordinalzahlen. Mit dem Rest der
++     deindizierenden Gruppe im Umbrella neu deklariert.
+
+% 2 1 0 0a69ac665b168dac0f60c7859eb0aabb
+
+% 3 1 0 19467f19d12a97791cf4ae1fa3af3587
+
+% 5 1 0 0a63bf4f20e90a390ec170ebe81048b6
+
+% 6 1 0 0e9e786f724e62d31b38f7bbed843f38
+
+% 7 1 0 11d3f7a712ac1de5042ab5324ddb80b2
+
+@ 0 4 0 0f9b2944b23b47330eb03233f88a82d6
++ entry .pick   `xs.pick(index) { i => … }`: prüft einen Index und führt ein Lambda mit ihm beschränkt aus, oder ergibt `Unset`
++     Die verschmolzene Form von `confine` und `let`: Das Lambda erhält den Index typisiert als
++     `Operand in xs.type`, sodass seine Lesezugriffe auf `xs` bloß sind, und das Ergebnis ist `Optional`,
++     `Unset`, wenn der Index nicht definiert ist. Mit dem Rest der deindizierenden Gruppe im
++     Umbrella neu deklariert.
+
+% 2 1 0 1882bca90340f1271d5d8411fdfcde9b
+
+% 3 1 0 089403dade3bbb32091b5b789207fc3a
+
+% 5 1 0 13c41bfc069f06ca1311ab8bba544ce8
+
+% 0 1 0 071c6ed34526443800e7693becbb5d88
+
+% 1 1 0 12ae67c410a162c302a71da2584a3f2d
+
+@ 0 7 0 166762606bb1a6260b0c1a19ab194671
++ entry .unsafeAttested   markiert einen Index oder ein Intervall auf das Wort des Aufrufers hin als gültig für einen Wert
++     `xs.unsafeAttested(index)` ist `confine` ohne die Prüfung und prägt `Operand in xs.type`
++     direkt; `xs.unsafeAttested(index) { i => … }` beschränkt die Bescheinigung auf ein Lambda;
++     und `interval.unsafeAttested(xs)` markiert ein `Interval` als `Interval in xs.type`. Jede
++     Form nimmt ein gelöschtes `Unsafe`-Token, sodass der Aufruf innerhalb von `unsafely` steht,
++     und jeder Aufruf trägt einen Kommentar, der die Konstruktion nennt, die die Schranke
++     beweist. Mit dem Rest der deindizierenden Gruppe im Umbrella neu deklariert.
+
+% 2 1 0 0e5a676a895e3c8b1169f4cb608a62b6
+
+% 3 1 0 09c8b47f128664fe0b7cbfa99e5856c8
+
+% 0 1 0 11ffb27e0432af721657799d6bedaaa1
+
+% 0 1 0 1ee937620fd36ed00be4b497beef38db
+
+% 0 1 0 04533c7bf32cb0ae13438b2019f825fc
+
+% 0 1 0 1f4851f735ca7cdf1d5f6948c7c02ac4
+
+% 1 1 0 10cd1a69ef614cbe000df8a84294e013
+
+@ 0 5 0 02d835c8cb8d3612059e2466926bff48
++ entry .define   `xs.define(index, value)`: eine Kopie eines Containers, in der eine Position oder ein Schlüssel gesetzt ist
++     Über die `Definable`-Instanz des Empfängers: `xs.define(Sec, 9)` auf einer `Sequence`,
++     `map.define(key, value)` auf einer `Map`. Ordinalzahlen außerhalb des Bereichs lassen den
++     Container unverändert, und ein fehlender Schlüssel fügt einen Eintrag hinzu. Im Umbrella
++     neu deklariert, weil sein Nachweis eine abhängige führende `using`-Klausel ist.
+
+% 2 1 0 0cd3d68fce8db45b002f1e228b3f1e1f
+
+% 3 1 0 1395deafe5e342661f281454d25ab356
+
+% 0 1 0 0b6ee581a3070a66071a154659e36e50
+
+% 1 1 0 15197378eb781c3511dad2148f8e13a4
+
+@ 0 4 0 16051de06086b83c0f553d7fd5345114
++ entry .omit   `xs.omit(index)`: eine Kopie eines Containers ohne einen Schlüssel oder eine Position
++     Über die `Omissible`-Instanz des Empfängers: `map.omit(key)` entfernt einen Eintrag, und ein
++     fehlender Schlüssel lässt die Map, wie sie war. Im Umbrella neu deklariert, weil sein
++     Nachweis eine abhängige führende `using`-Klausel ist.
+
+@ 0 7 0 03ac612c6442982f00fe9c2cdc933261
++ entry .keep   die ersten (oder, mit `Bidi.Rtl`, die letzten) `count` Elemente oder die führende Folge, die auf ein Prädikat passt
++     `xs.keep(3)` nimmt drei Elemente, `xs.keep(3, Bidi.Rtl)` die letzten drei und
++     `xs.keep(_ < 4)` die führende Folge, die passt — ein Präfix, kein Filter.
++     Gestalterhaltend über `Segmentable`, sodass ein `Text` ein `Text` bleibt. Im Umbrella neu
++     deklariert statt exportiert, damit ein `Chain`-Empfänger, der keine `Segmentable`-Instanz
++     hat, diesen Kandidaten verwirft und das lazy `keep` im Begleitobjekt von `Chain` erreicht;
++     ein Weiterleiter würde den Aufruf an sich ziehen und fehlschlagen.
+
+% 2 1 0 17b4f6f0f71d13971f720d4fd284c764
+
+% 3 1 0 17e4fa1be447729b076fa0b1fd5558b8
+
+% 0 1 0 1c5b47f448c8732b01e88325ac9eb147
+
+% 0 1 0 09e4677c6ad2b13c1ec42e243423942a
+
+% 1 1 0 0214fbb2069a22511571fccf1abbe021
+
+@ 0 4 0 144b7daa5c4f40601509e367a39e657a
++ entry .skip   alle außer den ersten (oder, mit `Bidi.Rtl`, den letzten) `count` Elementen, oder alle nach der führenden passenden Folge
++     Das Komplement von `keep`: `xs.skip(2)` lässt zwei Elemente weg, `xs.skip(2, Bidi.Rtl)` die
++     letzten zwei und `xs.skip(_ == ' ')` die führende Folge von Leerzeichen. Aus demselben Grund
++     wie `keep` im Umbrella neu deklariert, damit eine `Chain` das lazy `skip` ihres
++     Begleitobjekts erreicht.
+
+@ 0 7 0 0556083e6b9a8bcb03fbc875faf6d68e
++ entry .via   `stream.via(stage)`: ein Stream, der durch eine Stufe mit einer `Ductile`-Instanz gezogen wird
++     Der handgeschriebene Weiterleiter des Umbrella für die Pull-Komposition von zephyrine:
++     konsumiert den Stream und die Stufe und ergibt einen Stream vom `Result`-Typ der Stufe über
++     ihrem `Transport`, wobei ein `Buffering` benötigt wird. Ein synthetisierter Weiterleiter
++     würde die abhängige Verfeinerung `ductile.Result` unter Capture-Checking verlieren, daher
++     ist dieser ausgeschrieben und delegiert an `zephyrine.via`; er verhält sich identisch. Der
++     *Typ* `via` (ein in einer Locale berechneter Wert) gehört cosmopolite, im Namensraum der
++     Typen, und kollidiert nicht.
+
+% 2 1 0 0583191f97c4728c024a71a148c11579
+
+% 3 1 0 11edfdc66cfa1bff01c176d2a9e8673e
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 0fa7d1ff594903310b01de83c23aa37e
+
+% 0 1 0 1fe95cbfb72bd37419a1f42d10c935b2
+
+% 1 1 0 0f2697f1eaf1876e0eff40de9d842df4
+
+@ 0 5 0 14b048d2340666bb055d68765460f79c
++ entry .accepting   `intake.accepting(stage)`: ein Intake, das durch eine Stufe mit einer `Ductile`-Instanz schiebt
++     Der handgeschriebene Weiterleiter des Umbrella für die Push-Komposition von zephyrine:
++     konsumiert das Intake und die Stufe und ergibt ein Intake vom `Operand`-Typ der Stufe über
++     ihrem `Upstream`, wobei ein `Buffering` benötigt wird. Aus demselben Grund wie `via`
++     ausgeschrieben statt exportiert und an `zephyrine.accepting` delegierend.
+
+@ 0 6 0 0e705eff31b104850a9a5dc4229c23c1
++ entry .dispose   `handle.dispose()`: gibt ein WIT-Ressourcen-Handle frei, in nach Wasm kompiliertem Code
++     Eine Inline-Erweiterungsmethode auf `xenophile.Wasm.Handle`, nur in der `wasm`-Komponente
++     von xenophile. Sie expandiert zu `WasmInvoke.dispose`, das den `[resource-drop]`-Import des
++     Component Model für die Ressource ausgibt; wie `invoke` ist sie schlicht `inline`, sodass der
++     Import an der nach Wasm gelinkten Aufrufstelle stromabwärts materialisiert wird. Ein
++     Programm sollte jedes Handle, das es erhält, freigeben, wenn es damit fertig ist,
++     typischerweise in einem `finally`.
+
+@ 0 5 0 110cfbfd7ba1761d0023aeafdea35d19
++ entry .threads   die Threading-Modelle von parasite, jedes ein `Threading`-Given, das namentlich importiert wird
++     Ein Objekt mit Weiterleitern zu `parasite.threads`: `platformThreads`, `virtualThreads`,
++     `adaptiveThreads`, `pooledThreads` und `javascriptThreads`, dokumentiert auf der Seite von
++     parasite. Es ist ein Objekt, kein Paket, wie das eigene von parasite: Seine Givens sind
++     Capabilities, die in einem Objekt liegen müssen.
+
+% 2 1 0 040e53f4eb6fc992064f626e9cfd3198
+
+% 3 1 0 1d07e33a8606e3ee03f423aa8a04e042
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 1 1 0 1fbd7da930f7d31d0fab2066905f33c7
+
+@ 0 4 0 08fc25de57db6c121570dfee4ddd34de
++ entry .supervisors   der globale Supervisor von parasite, als Given, das namentlich importiert wird
++     Ein Objekt, das `parasite.supervisors.globalSupervisor` weiterleitet, den
++     `PlatformSupervisor` als `Supervisor`-Given, für Code, der direkt einen Supervisor braucht
++     statt eines `Threading`.
+
+@ 0 5 0 0ee708c3c0504ce603a16ee9fe99f8b3
++ entry .unsupervised   der Monitor von parasite für die Lebensdauer des Prozesses, zum Blockieren außerhalb jedes `supervise`-Geltungsbereichs
++     Ein Objekt, das `parasite.unsupervised.orphanMonitor` weiterleitet, einen `Monitor`, der
++     den aufrufenden Plattform-Thread parkt und nichts überwacht: ein bewusster Notausgang für
++     Daemon-Lebenszyklen und Wartevorgänge über die Lebensdauer des Prozesses. Ziehen Sie
++     `supervise` überall dort vor, wo der blockierende Bereich bereits abgegrenzt ist.
+
+@ 0 1 0 1ad2761431b3688b08d662095e7e8bf6
++ entry .strategies   die Fehlerbehandlungsstrategien, aus jeder Bibliothek zusammengeführt; `throwUnsafely` wird hier deklariert
+
+% 1 1 0 0878aa0482e67db11b706d924e0bd498
+
+@ 0 3 0 10445cc01dda1631063d081391a393a2
++       Das Auswahlpaket `strategies` des Umbrella. Seine Givens sind `Tactic`s, die entscheiden,
++       was geschieht, wenn ein Fehler ausgelöst wird, und jedes wird namentlich importiert, da
++       `import strategies.*` keine Givens importiert. Die meisten sind Weiterleiter zu
+
+% 0 1 0 066b94b7dd9bc73c10a37d9c3acfff34
+
+@ 0 2 0 1619f30045411d481fdb0b40dcb6a05f
++       `uncheckedErrors`), dokumentiert auf der Seite von contingency; allein `throwUnsafely`
++       wird hier deklariert.
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 1 1 0 06e1f9e27e2e381a09e64b718299b319
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 19afb8e95c25a4f5044a33e4074e9c21
+
+% 1 1 0 0ef047122ef6aa300ace3e4f0699c88f
+
+% 0 1 0 0e3ef618e488455508792ae085ee09a9
+
+@ 0 7 0 00f18026316b86631c7962cf211dea2e
++   entry .throwUnsafely   wirft jeden Fehler als gewöhnliche Exception, ohne dass eine Capability nötig ist
++       Ein reines `ThrowTactic[Hazard]^{}`, das an `contingency.strategies.throwUnsafely`
++       delegiert, sodass es durch Kontravarianz jede `Tactic[error]` auf einmal erfüllt. Es ist
++       ein delegierendes Given statt eines Export-Weiterleiters: Ein Weiterleiter ist eine
++       Methode, und der Umbrella-Name eines Wert-Givens landete im Capture-Set jeder über ihn
++       herbeigerufenen `^{tactic}`-Instanz, wo eine Methode keine zulässige Capture-Referenz ist.
++       Geeignet für Skripte und die äußerste Schicht eines Programms; eine Bibliothek sollte
++       stattdessen angeben, was sie auslöst.
+
+@ 0 1 0 008339a2089dfa9c058050e907dde547
++ entry .httpServers   die HTTP-Server von scintillate, jeder ein `Protocolic`-Given, das namentlich importiert wird
+
+% 1 1 0 086c62bf7392c7701cfad8130309328a
+
+@ 0 7 0 1b76d5e422e43862142131dc1af0c40e
++       Das Auswahlpaket `httpServers` des Umbrella: Welcher Server `tcp"8080".serve[Http]`
++       beantwortet, wird gewählt, indem man einen davon namentlich importiert. Alle vier werden
++       hier als handgeschriebene Weiterleiter zu `scintillate.httpServers` deklariert, weil ein
++       synthetisierter Export-Weiterleiter die Capture-annotierten verfeinerten Typen der Givens
++       verliert. Jeder ist als `scintillate.httpServers.HttpdFor[port]` für einen Port 80, 443,
++       8080 oder 8000 typisiert, erfasst die `Tactic[Httpd.Error]` und den `Monitor`, die er
++       erhält, und braucht eine `Probate`, ein `Httpd.Event is Loggable` und eine
++       `WebserverErrorPage` im Geltungsbereich.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 1 1 0 041863eca0f6d4e71b29eb621b1a83f0
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 0 1 0 11738106f6d88b28149224b62d875beb
+
+% 0 1 0 07aee3a963c81e41082d67adafd250ef
+
+% 0 1 0 1e5e0a61e64bc2840669a827caf48567
+
+% 0 1 0 116b1bd0a8b68ab10d6b03f914f29df8
+
+% 0 1 0 0a2c389b0309ea7915422e5e13a19957
+
+% 1 1 0 04cf7290391dc935025305928ede3a56
+
+% 0 1 0 1f3234416814a8c9156c65143687a776
+
+% 0 1 0 0a31d44dd24d71231cf170324d917bac
+
+% 0 1 0 0db19d4bf145a35613d9ff6dc6aba3c6
+
+@ 0 12 0 0247a1e7202fb7f61cdd06cde7c1af74
++   entry .jdkHttpserver   `Http`, bereitgestellt vom `Httpd` des JDK auf `localhost`
++       Leitet `scintillate.httpServers.jdkHttpserver` weiter: den auf `com.sun.net.httpserver`
++       des JDK aufgebauten Server, nur an die Loopback-Schnittstelle gebunden.
++   entry .jdkHttpserverPublic   `Http`, bereitgestellt vom `Httpd` des JDK auf jeder Schnittstelle
++       Leitet `scintillate.httpServers.jdkHttpserverPublic` weiter: wie `jdkHttpserver`, aber an
++       jede Netzwerkschnittstelle gebunden, sodass er von anderen Rechnern erreichbar ist.
++   entry .soundnessHttpd   `Http`, bereitgestellt vom eigenen `SocketServer` von scintillate auf `localhost`
++       Leitet `scintillate.httpServers.soundnessHttpd` weiter: den eigenen Server von Soundness,
++       der auch HTTP/2 über TLS spricht, nur an die Loopback-Schnittstelle gebunden.
++   entry .soundnessHttpdPublic   `Http`, bereitgestellt vom eigenen `SocketServer` von scintillate auf jeder Schnittstelle
++       Leitet `scintillate.httpServers.soundnessHttpdPublic` weiter: wie `soundnessHttpd`, aber an
++       jede Netzwerkschnittstelle gebunden.

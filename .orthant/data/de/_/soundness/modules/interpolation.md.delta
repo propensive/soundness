@@ -1,0 +1,278 @@
+orthant 2 language
+
+% 0 1 0 05ffa5b44640df661648d474d8225046
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 4 0 15f57e6266222ac01c9cd2a001adebdf
++ Geprüfte Literale werden in ganz Soundness verwendet: ein `url"…"`, das eine URL sein muss, ein
++ `sh"…"`, dessen Quotierung ausgeglichen sein muss, ein `j"…"`, das JSON sein muss. Sie alle
++ beruhen auf einer einzigen Maschinerie zum Definieren eigener
++ [String-Interpolatoren](https://docs.scala-lang.org/scala3/book/string-interpolation.html).
+
+@ 0 4 0 060c53ca5c27392f0bde9ecc6c3e9960
++ Ein damit definierter [Interpolator] tut zur [Kompilierzeit] zweierlei. Er validiert den Inhalt
++ des Literals und meldet einen Fehler genau an dem Zeichen, das ihn verursacht. Und er akzeptiert
++ Einsetzungen nur der Typen, die er deklariert, jede geprüft für die Position, die sie einnimmt.
++ Dies ist das wichtigste Instrument der
++ [Sicherheit durch Konstruktion](../../philosophy/safety-by-construction.md).
+
+@ 0 4 0 12402fb34147e9650649c65b13bf4428
++ Einen Interpolator zu definieren heißt nicht, von Hand ein Makro zu schreiben. Die Arbeit, die
++ Teile des Literals und ihre Positionen in der Quelldatei zu erfassen, wird einmal erledigt. Der
++ Autor eines Interpolators liefert gewöhnliche Instanzen von [Typklassen][Typklasse], die angeben,
++ wie die Teile geparst werden und was wo eingesetzt werden darf.
+
+@ 0 1 0 102273bcd693d99319a07101f586b9e0
++ ### Über Interpolatoren
+
+@ 0 5 0 0cf8110ae17439bd116111eb5f41b7bb
++ Die eingebaute `s"…"`-Interpolation von Scala klebt Strings ohne Typen zusammen. Jeder Wert wird
++ mit `toString` umgewandelt, und die Literalteile bedeuten dem Compiler nichts. Dabei *ist* ein
++ String-Literal sehr oft etwas: eine URL, ein Pfad, ein regulärer Ausdruck, ein SQL-Fragment. Es
++ hat eine Syntax, die sich in dem Moment prüfen ließe, in dem es geschrieben wird, und Positionen,
++ an denen nur bestimmte Werte sinnvoll sind.
+
+@ 0 1 0 107e0e1871cc4a320b65f707d5f94a5b
++ Hier wird ein interpolierter String als kleines Programm behandelt, das kompiliert wird:
+
+@ 0 6 0 0f6fd926b9d3dd4102c231ef1d473da8
++ - Die Literalteile werden zur Kompilierzeit von der eigenen Logik des Interpolators geparst,
++   sodass ein fehlerhaftes Literal nie ein laufendes Programm erreicht.
++ - Einsetzungen werden über Typklassen aufgelöst. Was eingesetzt werden darf und wie es für seine
++   Position sicher gemacht wird, entscheiden Instanzen im Geltungsbereich, nicht `toString`.
++ - Die Quellpositionen der Teile werden erfasst, sodass eine Fehlermeldung auf das schuldige
++   Zeichen zeigt und nicht auf den ganzen Ausdruck.
+
+@ 0 1 0 19c6640c8bea873815109d890d75ca79
++ Alles stammt aus dem Paket `soundness`:
+
+% 2 1 0 128d8a54c105d7d2054418bec79c5bc7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 1 1 0 09a8f67b183dcdd50adab2731fead1e5
+
+@ 0 2 0 0aeeb4f72740d89b1b02f0f5a1c9d258
++ Ein Literal eines [Medientyps](media-types.md) zeigt das Ergebnis. Ein wohlgeformtes ist ein
++ `MediaType`, und ein falsch geschriebenes kompiliert nicht:
+
+% 2 1 0 1972d6cbb1af67f50a73fb50ee55c508
+
+% 0 1 0 1b437e24820afca1137081b39263d87d
+
+% 1 1 0 100402720eb62483112ccc79b5d2271d
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 149ac8054accce89012f8fb50b093d4c
+
+% 1 1 0 0ed1696c52255ded1d2c1d967a578575
+
+@ 0 1 0 03d7c066e29e2d0a0ae38ca8061d6503
++ ### Anatomie eines Interpolators
+
+@ 0 2 0 02f46c01930db2c0150e6550efc76d95
++ Ein Interpolator besteht aus drei Teilen. Der erste ist eine Präfixmethode auf `StringContext`,
++ die den Interpolator benennt und seinen Inhalt an die Maschinerie übergibt:
+
+% 2 1 0 0378f3d2151a123511de714ff43ca225
+
+% 0 1 0 1c7b5bfb1da9d5a90f6e774586e02d35
+
+% 0 1 0 0674c602ac0a01f80a7482190944415b
+
+% 1 1 0 14fec22340c598b01c3bc947df20fb9b
+
+@ 0 3 0 101086e1f9aaccc00dbb4a4cfa165cd9
++ Der zweite ist eine `Interpolable`-Instanz für den Zieltyp, die das Parsen und die Konstruktion
++ übernimmt. Sie empfängt die Literalteile mit ihren Quellpositionen und erzeugt den Wert, wobei
++ sie jeden Fehler gegen das Zeichen meldet, das ihn verursacht hat.
+
+@ 0 2 0 02f32a5706031d96147017ac1022c8cc
++ Der dritte ist eine Menge von `Insertion`-Instanzen, die die Typen deklarieren, die eingesetzt
++ werden dürfen, und wie jeder Teil des Ergebnisses wird.
+
+@ 0 1 0 01e29e691339de410087946e6c774e79
++ ### Einsetzungen
+
+@ 0 4 0 04bfe7fafa66e9ae111877473577e6c9
++ Eine `Insertion` bildet einen eingesetzten Wert auf den eigenen Eingabetyp des Interpolators
++ ab, sodass der Interpolator kontrolliert, wie fremde Werte hineingelangen. Die Einfügungen des
++ [Shell-Interpolators](processes.md) zeigen die Idee. Text wird zu einem Argument, und eine
++ Liste wird zu mehreren:
+
+% 2 1 0 0d4ede0a16f6c8511f4aed4908cdb190
+
+% 0 1 0 0616599e30f8c3de0bfbde6bf92b735f
+
+% 0 1 0 058f4f0ceb0055741b4eaa4842b41fd0
+
+% 1 1 0 0e74e45d9281bc4210457708e65ef2f7
+
+@ 0 3 0 1427fdfca806e1040bd94e2e4c521606
++ Insertion ist eine Typklasse, sodass ein neuer Typ durch die Deklaration einer einzigen Instanz
++ einsetzbar wird, ohne den Interpolator anzufassen. Ein Typ ohne Instanz lässt sich überhaupt
++ nicht einsetzen; so verbietet ein Interpolator, was er nicht sicher machen kann.
+
+@ 0 3 0 1f03faf635282e000f002c6bde2e7a99
++ Manchmal akzeptieren verschiedene Positionen Verschiedenes. Der Port einer URL nimmt eine Zahl,
++ ihr Pfad nimmt Text. Eine `Substitution` ist eine `Insertion` mit einem weiteren Typparameter,
++ einem Singleton-`Label`, das die Positionen unterscheidet.
+
+@ 0 4 0 1251a73c307869db096387a9314d5143
++ Zur [Laufzeit] verhalten sich beide gleich. Der Unterschied liegt in der Kompilierzeit. Eine
++ Einfügung teilt dem Parser des Interpolators nur mit, dass *etwas* eingesetzt wurde. Eine
++ Einsetzung übergibt dem Parser ihr Label, und der Parser fährt fort, als stünde an der Position
++ ein repräsentatives Token des eingesetzten Typs: `"0"` für eine Zahl, `""""` für einen String.
+
+% 2 1 0 167f69f1e218e9180eec9f4e7501ffb0
+
+% 0 1 0 01de60ebdec37c7a0a0dd4780869c931
+
+% 0 1 0 04a022693af9df7504d8f862a614e1d4
+
+% 0 1 0 0306977878bd994c16aa65c3d620645b
+
+% 0 1 0 11f1d9400c1ee45406bd48514371485e
+
+% 0 1 0 11e0949d7d239e8f13d78a91b6723d47
+
+% 1 1 0 1b2ed32bcdfa21ba0059f9492b9933e0
+
+@ 0 3 0 199cd73d9dece1ee103a37d21f2c8164
++ Wie der Interpolator das Literal zur Kompilierzeit liest, kann dann davon abhängen, was
++ eingesetzt wurde. Er kann die *Gestalt* eines Literals prüfen, das Einsetzungen enthält, statt
++ überall aufzugeben, wo eine auftaucht.
+
+% 0 1 0 09949b83746473dc15b29fe465b57287
+
+@ 0 4 0 01e8ee878f9d2b38084e437b1d237b33
++ Dieselbe Maschinerie läuft auch rückwärts. Eine `Extrapolable`-Instanz lässt ein interpoliertes
++ Literal als Pattern in einem `match` dienen, das einen Wert zerlegt und seine Einsetzungen
++ bindet. So funktionieren die Patterns von [`j"…"`](json.md#matching-json) und
++ [`html"…"`](html.md). Eine einzige Definition liefert sowohl die Konstruktion als auch den
++ Abgleich.
+
+@ 0 1 0 163c98e3bc76932808af796ded15cb06
++ Die vier Typklassen im Vergleich:
+
+% 2 1 0 03a64fb43aba2e7e14916d15aa5c17d3
+
+@ 0 7 0 1a5b97d45104dc6e074d4c5997661ae8
++ column  Typklasse
++ column  Given für
++ column  Gibt an
++ row  `Interpolable`  den Ergebnistyp  wie die Literalteile zu einem Wert geparst werden
++ row  `Insertion[input, value]`  einen einsetzbaren Typ  wie ein Wert in die Eingabe des Interpolators gelangt
++ row  `Substitution[input, value, label]`  einen einsetzbaren Typ  dasselbe, und welches Token der Parser an seiner Stelle sieht
++ row  `Extrapolable`  den abgeglichenen Typ  wie ein Wert durch ein Literal-Pattern zerlegt wird
+
+% 1 1 0 038263976a4823d110e317c1d53e7440
+
+@ 0 1 0 1767331c49cf415415717ad31be1d705
++ ### Kompilierzeit und Laufzeit
+
+@ 0 3 0 0e37f062892e331a1680031eb0188edc
++ Die Parse-Logik eines Interpolators ist gewöhnlicher Code und läuft in beiden Welten. Zur
++ Kompilierzeit prüft sie Literale und liefert Kompilierfehler. Zur Laufzeit parst sie dynamisch
++ aufgebaute Eingaben und liefert typisierte [Fehler](errors.md).
+
+@ 0 2 0 0c01bc42963c689d19b4e63e89b34cb5
++ Die beiden können nicht auseinanderdriften, weil sie derselbe Code sind. Ein von Hand
++ geschriebenes Makro mit einem separaten Laufzeit-Parser kann keine solche Garantie geben.
+
+@ 0 1 0 1c2cc71aae13029608986bef15375a7a
++ ### Teile und Ursprünge
+
+@ 0 2 0 06eb3d40d38dab40049e2a41a4a5675f
++ `interpolate` empfängt zwei Typparameter, die das tragen, was der Compiler über das Literal
++ weiß:
+
+% 2 1 0 06f7d21d6132e1bb011cecde70bc43f5
+
+@ 0 4 0 1727d8943528c7a60403bbc0b4ab304b
++ column  Typparameter
++ column  Trägt
++ row  `parts`  ein Tupel der Fragmente des Literals, als Singleton-String-Typen, sodass der Interpolator den Text jedes einzelnen sieht
++ row  `origins`  wo jedes Fragment in der Quelldatei begann, sodass ein Fehler gegen ein Zeichen zur Position dieses Zeichens aufgelöst wird
+
+% 1 1 0 1ec4c850cb0e3e121c5d50c5e331b660
+
+@ 0 1 0 190427715669225d1e4e8ccc06c96d7b
++ Die Instanz des Medientyp-Interpolators übergibt, in Umrissen, beide an ein Makro:
+
+% 2 1 0 1c555fe2fcd0fd8912b8430c39fbd380
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 1601b88ff3a665dc114ed6171c04ef47
+
+% 0 1 0 1ebab5d6ccdb9204076bbaf20125809a
+
+% 0 1 0 0fc7013665a3cf860aa8ff4bb87fcaf6
+
+% 0 1 0 1328306da22a418601db5da8f0308ee2
+
+% 0 1 0 09f1969ad2a8b4c41ffc8fef3c4b19cb
+
+% 1 1 0 0cd1bebe9073c7881b3eec348540724b
+
+@ 0 3 0 18d4be9f421502421aef2ca8eff7d3ee
++ Deshalb zeigt der Kompilierfehler für `media"text/plian"` auf den falsch geschriebenen Subtyp
++ und nicht auf das ganze Literal. [Metaprogrammierung](metaprogramming.md) beschreibt die Makros
++ selbst.
+
+@ 0 1 0 04c60761f9dfe8f41642c0a08cb9e35b
++ ### Einen präzisen Typ zurückgeben
+
+@ 0 3 0 02985491c8dcaf9c1bf639219f17d9d6
++ Die Präfixmethode ist `transparent inline`, sodass ein Interpolator etwas Spezifischeres als
++ seinen deklarierten Typ zurückgeben kann. Ein Literal kann so in das Typsystem tragen, was es
++ *ist*, über die bloße Gültigkeit hinaus:
+
+@ 0 3 0 0a8c847e7409f5f00e2b396eaa8e24fc
++ - Ein [Pfad](paths.md)-Literal gibt einen Pfad auf einer bestimmten Plattform zurück.
++ - Ein Namensliteral gibt einen Namen zurück, der für seine Art als gültig bewiesen ist.
++ - Ein gegen ein Schema geprüftes Dokumentliteral gibt ein durch dieses Schema typisiertes
++   Dokument zurück.
+
+@ 0 3 0 193df51c58bc6234100933e9b30b388e
++ Der Preis dieser Präzision ist, dass der Ergebnistyp vom Inhalt des Literals abhängt, sodass das
++ Literal zur Kompilierzeit bekannt sein muss. Wo es das nicht ist, gibt der entsprechende
++ Laufzeit-Parser, der derselbe Code ist, den allgemeinen Typ und einen typisierten Fehler zurück.
+
+@ 0 1 0 13e1346ccf47bf161f48323d3b9aa941
++ ### Zwischen Kompilierzeit und Laufzeit wählen
+
+@ 0 4 0 038a85235fbc2b861125c61f3442aa2f
++ Ein Interpolator ist das richtige Werkzeug, wo ein Literal eine Syntax hat und die Syntax sich
++ prüfen lässt. Er ist das falsche Werkzeug, wo der Inhalt wirklich dynamisch ist. Dann gibt es
++ beim Kompilieren des Codes nichts zu prüfen, und die Maschinerie des Interpolators bringt nichts
++ gegenüber dem Laufzeit-Parser, an den er delegiert.
+
+@ 0 3 0 0295570e25af00f219d1763d2a421806
++ Die Konvention ist daher durchweg, beides anzubieten: `url"…"` für ein Literal und
++ [`as[Url]`](decoding.md#decoding-a-value) für zur Laufzeit gewonnenen Text. Hinter beiden steht
++ derselbe Code, sodass ein Programm einen Wert ohne jede Verhaltensänderung vom einen zum anderen
++ verlagern kann.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 6 0 1c480c3f859b755d198cd364989e86b1
++ Auf diese Weise definierte Interpolatoren gibt es unter anderem für [Text](text.md#writing-text),
++ [JSON](json.md#building-json), [XML](xml.md) und [HTML](html.md),
++ [URLs und andere Netzwerkadressen](network-addresses.md), [Pfade](paths.md),
++ [reguläre Ausdrücke](patterns.md), [Shell-Befehle](processes.md),
++ [Medientypen](media-types.md) und [Fehlermeldungen](errors.md#defining-an-error).
++ - [Namen](names.md) prüft einen Bezeichner mit einem Interpolator.

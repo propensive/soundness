@@ -1,0 +1,200 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1839d307a452d6e40b6426e09bb0c989
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1d5d77e097f4a573135aea5c8b4ecee4
++ info   見つからない given を、試された候補と、一致するはずのクラスパス上の given の木として説明する
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 15781cd8e8cd524117f24b34ea0c8644
++     _Frontier_ は、コンパイラの簡潔な _no given instance of type `T` was found_ を、探索の説明で置き換える。
++     どの候補が試されたか、それらのどのコンテキストパラメーターが見つからなかったか、そしてクラスパス上の他のどの given（インポートされていないもの、または選択パッケージにあるもの）が見つからない値を供給するかを、それぞれを名指すインポートとともに示す。
+
+% 0 1 0 121f5d49fa83450310393c10f05ce4fa
+
+% 0 1 0 1b9261087ab5c65c00494e8c15158853
+
+% 0 1 0 003b0f83b764717304597eb74f0aacc5
+
+% 0 1 0 1a1aad2b12e3225a03151ad4b70d251e
+
+% 1 1 0 10f0167f8011fb52161242df18c834d2
+
+@ 0 6 0 0e4302b1c58e79600cb440ac0084a4ac
++     これは、型 `[any] => any` の一つの包括的な given `explainMissingContext` を通じて動作し、この given はあらゆる探索の候補となる。
++     試されると、それ自身が探索をやり直し、二つのうちいずれかを行う。
++     それなしで探索が成功すると分かれば、失敗して、型推論を損なわないままコンパイラにインスタンスを選ばせる。
++     そうでなければ、見つからなかったものの `Diagnostic` 木を組み立て、その木を描画したものをメッセージとして中断する。
++     この包括的な given がプログラムに項を与えることはない。純粋に診断のためのものである。
+
+@ 0 7 0 078b94650e82336d0a4c194a77e1e2f2
++     これはアノテーション `@scala.annotation.internal.diagnostic` に依存しており、このアノテーションは Soundness のビルドに使う Proscala コンパイラに存在する。
++     これを持つ given が暗黙の探索の途中で中断すると、通常の候補と同じように失敗するので、`summonFrom`、デフォルトの `using` 引数、`NotGiven` は、それがない場合と同じように振る舞う。
++     ただしコンパイラはそのエラーを `DiagnosticFailure` として保持し、探索全体が失敗した場合には、コンパイラ自身のメッセージ（および `@implicitNotFound` のメッセージ）の代わりに、そのメッセージをそのまま報告する。
++     このアノテーションを持たないコンパイラでは、この包括的な given は使えない。
+
+@ 0 1 0 063ed4f4d045da3e04b5beaf4ec2366a
++     この包括的な given をスコープに入れる方法は二つある。
+
+@ 0 4 0 17473136a501065a08e47c2ac175fac4
++     - `import soundness.*` は `soundness.explainMissingContext` を取り込む。これは `given` ではなく旧式の `implicit def` であり、それはまさにワイルドカードインポートに含まれるようにするためである。
++     - `import frontier.context.explainMissingContext` は、アンブレラをインポートしないコードのために、`given` を名前で取り込む。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 12921236bce385d40855562298c83f0e
+
+% 1 1 0 1ce8b8e2cc9e49dd052da87a9b8e52e8
+
+@ 0 5 0 0ad980165e6bd28b173fb26df2620255
++     `using` 節の連鎖では、示される説明は最も深いところで見つからない値、つまり最も内側の原因についてのものである。包括的な given はそこで最初に展開されるからである。
++     説明には上限がある。
++     深さが六を超える候補の連鎖や、一つの説明の中で 256 回を超える暗黙の探索は、たどられずに見つからないものとして報告され、描画された木は 100 行で切り詰められる。
+
+@ 0 3 0 1995f22dc81cceef0ca99943218a7b68
++     ライブラリは単一のソースセット `frontier.core` である。
++     `Diagnostic` は意図的に `soundness` アンブレラにエクスポートされていない。そこでは `harlequin.Diagnostic` と衝突するからである。
++     `frontier.Diagnostic` として参照する。
+
+% 0 1 0 194151561e25ce5919101cdcc2b88ded
+
+% 0 1 0 0f221ed2717ac3a9100b15b50965dad6
+
+@ 0 1 0 143f892d26c7f152076ee372cd452cfa
++ entry .context   包括的な given `explainMissingContext` を持ち、名前でインポートされる選択パッケージ
+
+% 1 1 0 0250e6d3bec738dc1f6e99a441ce4524
+
+@ 0 3 0 1df638e1da7a94dd01c6a065c74420a9
++       唯一の given を名前でインポートするパッケージである。`import frontier.context.*` は given をインポートしないからである。
++       `soundness` アンブレラをインポートするコードには必要ない。
++       `import soundness.*` が同等の `soundness.explainMissingContext` を取り込む。
+
+% 0 1 0 0d9fb0b7a1b2e2741a9a29ca5ceafd0b
+
+@ 0 10 0 13ba0b5714ff1e5017f905e65dccb707
++   entry .explainMissingContext   失敗した暗黙の探索を、候補とクラスパス上の提案の木として説明する
++       `@scala.annotation.internal.diagnostic` が付いた型 `[any] => any` の `transparent inline given` であり、そのためあらゆる暗黙の探索で候補となる。
++       試されると、自身を除いて探索を繰り返す。
++       探索が成功すれば包括的な given は失敗し、コンパイラが型変数を開いたまま自らインスタンスを選ぶようにする。
++       探索が失敗すれば、包括的な given は描画された `Diagnostic` 木とともに中断し、他のどの候補も成功しなければ、コンパイラはそれをエラーとして報告する。
++       対象が `NotGiven[X]` の場合は自明に成功する。そうすることで、コンパイラの候補ごとの否定がそれを失敗に変え、`NotGiven` 自身のインスタンスが決定し、`NotGiven[X]` は `X` がないときにちょうど成り立つ。
+
+% 2 1 0 06cf5b78f266969317260c70d1be036e
+
+% 0 1 0 00973241d22ea8a4012caaf81aeec69a
+
+% 0 1 0 08ee91ce048da1c30d2890f29f3caf49
+
+% 0 1 0 08ee91ce048da1c40d2890f29f3caf4a
+
+% 0 1 0 12689b8f01a131a817529a2fc39db27f
+
+% 0 1 0 001296c3f114510b1dcb0810a6100700
+
+% 1 1 0 173abe80ab8de7320a022afa3ad9a82f
+
+@ 0 3 0 040e488b9dfa1b2209cd459f85f02a20
++       メッセージは、最も内側の原因である、見つからない `B` を報告する。
++       多相的な given の提案は、その型パラメーターの束縛（`textual = Char`）を名指しし、候補の `NotGiven[X]` という要件は _prohibits X_ として、それに違反する given とともに示される。
+
+@ 0 1 0 112679f98c94cf5e029814da099941fd
++ entry .Diagnostic   失敗した暗黙の探索を説明する、描画済みの木と、その描画器
+
+% 1 1 0 111ccd669e24327e0e2215c7b3f5a7e6
+
+@ 0 5 0 1af5b916d8cd9dbc0744090e38b9c065
++       説明の、形式に依存しないモデルである。各ノードは種類、すでに `Text` として描画された `#name`、オプショナルな `#label`、そして `#children` を持つ。
++       名前がすでに描画されているので、描画器はコンパイラに依存せず、失敗を説明する必要のあるどのマクロも同じモデルを組み立てられる。Wisteria の汎用的な導出は、各ノードにフィールド名またはバリアント名をラベルとして付ける。
+
+@ 0 2 0 0583359f1acf43ba1ad88239ce325dfc
++       列挙型の六つのケースがそのノードの種類であり、それぞれ名前、オプショナルなラベル、子のリストを取る。
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 9 0 10a5462555db93a905f090192d9fd9a6
++       column  ケース
++       column  描画結果
++       column  ノード
++       row  `Resolving`  _■ resolving T_  根：解決される型
++       row  `Candidate`  _▪ candidate g_  試された、スコープ内の given
++       row  `Requires`  _✗ requires T_  見つからなかった、候補のコンテキストパラメーター
++       row  `Propose`  _▸ propose pkg.g_  スコープにはないが値を供給するはずの、クラスパス上の given
++       row  `Prohibits`  _⊘ prohibits X_  `X` に展開された `NotGiven[X]` という要件。その子はそれに違反する `Found` であり、成り立つ場合には子を持たずラベル `absent` を持つ
++       row  `Found`  _✓ found T_  見つかった値
+
+% 1 1 0 085a396440b94d5306c5eeced83a5004
+
+% 2 1 0 0673280dafa8be1405a02105a60e7489
+
+% 3 1 0 1b4080545ef535db03e59e50845d3623
+
+% 0 1 0 159b8d4e6cbaeaa113aac703fafd78db
+
+% 0 1 0 0c010ed7b57d2432034695f2df013319
+
+% 0 1 0 074caed5ee138b4b1f3de4bb9a5c300f
+
+% 0 1 0 0144d3b883890cf6199de2eb989393b7
+
+% 0 1 0 1ac6c91edfd6628f153d3499d8dd5942
+
+% 1 1 0 189bdac6354e2b190f71ebae5e8f5b8a
+
+@ 0 2 0 090a9e23fefe70e41403e95bb193df9c
++       `Diagnostic` は `soundness` アンブレラにエクスポートされていない。そこでは `harlequin.Diagnostic` と衝突するからである。
+
+% 0 1 0 149718fb9e8fd11705bdc5d2784127e8
+
+@ 0 7 0 0f5e55e677ee66fd1d4195833f518f79
++   entry .render   診断の木を、見出しの下に、最大で上限の行数まで、ANSI で色付けしたテキストとして描画する
++       根は `Resolving` ノードであるべきで、これが _■ resolving T_ の行を与える。それ以外のノードは一つの `Resolving` ノードに包まれる。
++       `headline` のデフォルトは _contextual value not found_、`limit` のデフォルトは 100 である。木は最大でその行数まで書かれ、行が省かれた場合は _… n more_ が続く。
++       すでに書かれたものと同一の、葉でない部分木は、その最初の行だけが _as above_ というラベルとともに書かれる。そうしなければ、大きなスコープでの説明は数千行に及びうるからである。
+
+% 2 1 0 019e19c47039c5bf1abf90decbf575e6
+
+% 3 1 0 09191a818f4814431c9d16f104a5c608
+
+% 0 1 0 03d6c89fab88062410e2e91683f1cc17
+
+% 0 1 0 0496797d163b904a1aee7903434fe546
+
+% 0 1 0 172dc24bf11f412d152e2648b4ff9f32
+
+% 1 1 0 04344e64d8e0e93c0151bedc6c1ff3a0
+
+@ 0 6 0 0beef1a9cb55de5b058ededce6df918f
++   entry .treeStyle   診断の木を描く罫線素片のスタイル
++   entry .expandable   `Diagnostic` を、木として描くために子へ展開可能にする
++   entry #name   ノードの型または given の、描画された名前
++   entry #label   名前の後に示されるオプショナルな注記で、フィールド名や `absent` など
++   entry #children   ノードの子ノード
++   entry #rebuild   同じ名前で、新しいラベルと子を持つ、同じ種類のノード
+
+@ 0 1 0 121f77e66ff8a44e0911ee9a30e423e0
++ entry .internal   `explainMissingContext` の背後にあるマクロ
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 0faa10a70af475360a95cad1e69d78dc
++       直接使うためのものではない。
++       包括的な given からそのマクロまでのすべての段階は `transparent inline` でなければならない。型付けの間に展開されるのは transparent inline の呼び出しだけなので、transparent でない段階があると、包括的な given が試される間マクロが展開されないまま残り、探索は誤って成功してしまう。
++   entry .explanation   説明するマクロの、transparent inline の入口
++   entry .explain   探索をやり直し、その `Diagnostic` を組み立てて描画するマクロ
++   entry .NoCandidates   候補のなかった暗黙の探索の失敗に一致し、その説明を与える
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 2 0 1e1fd34ade08fb8e132b0c4df5ca9693
++         `quotes.reflect.ImplicitSearchFailure` に対する抽出子で、マクロが使う。
++     entry .unapply   候補のない探索の失敗であれば、その説明

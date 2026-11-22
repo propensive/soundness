@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 5 0 074ba3b456a021991e2ea448943cc78b
++ Certains résultats dépendent de la longueur d'une chaîne d'exemple : les largeurs de colonnes d'un
++ tableau rendu, un texte complété ou aligné, un décalage en octets, une longueur encodée, la taille
++ de la charge utile d'un benchmark. Un test signale quand un tel résultat est devenu faux ; un
++ commentaire `// result` dans `doc/work/soundness/api/*.tel` ne le fait pas, puisque rien ne le vérifie. Là où une
++ longueur est déterminante, choisir donc un nom de la longueur requise, et là où un résultat affiché
++ change, évaluer de nouveau l'échantillon plutôt que de corriger le résultat à la main.

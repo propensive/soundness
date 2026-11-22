@@ -1,0 +1,595 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0706085bebe1c98807dce18244ccff80
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1d43a64c1a2f730d11073077cd535c3e
++ info   ラッパーなしの存在しない値：`Optional`、`Unset`、そしてそれらを消費するコンビネーター
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 127fada871b6951209725c9cd98dedfb
++     _Vacuous_ は、存在しないかもしれない値を `Optional[value]` として表す。これはまさにユニオン型 `Unset | value` である。存在する値はその値自身であって、アロケートしたり取り出したりする `Some` はなく、存在しないことは唯一の番兵 `Unset` である。
++     `null` とは異なり、存在しないことは型に見え、うっかり参照外しされることはない。`Option` とは異なり、オプショナルであることは*平坦*である。ユニオンは繰り返されたメンバーを吸収するので、`Optional[Optional[Int]]` は `Optional[Int]` と同じ型であり、`Some(None)` のような「存在する不在」はそもそも書けない。
+
+% 2 1 0 1696b11c151b1d07095889b92fd3e36c
+
+% 3 1 0 0f1d73d8431aa6e70685a680754c6b93
+
+% 5 1 0 09e723e51317da1a12c313158255c4bb
+
+% 1 1 0 0fc73d1592aeb98a0816c106166da67f
+
+% 0 1 0 02ae34b08665da771eb933bb7e7d0cfc
+
+% 0 1 0 1d779d3648026b2804962c0f82507f95
+
+% 0 1 0 18047cf2012f34a9165b98bd44f2be2e
+
+% 0 1 0 0a57ed76b535b82405c90cfdbfea28d5
+
+% 0 1 0 17c665027c78dcf303f8e59f1604342d
+
+% 1 1 0 13234b1eff6504dd170db26a8b744bc7
+
+@ 0 9 0 062d7f3a38cac862146cedfe67b77943
++     コンビネーターは、それが答える問いのように読める。
++     `or` は代替を与える。`let` は存在する値を変換して `Unset` をそのまま通し、`Option` なら `map` と `flatMap` の両方が必要なところで役立つ。`lay` は代替と変換を一緒に取るので、素の値を返す。`present` と `absent` は直接尋ねる。`mask` は述語を満たす存在する値を捨てる。`assume` と `presume` は値を要求し、`Optional.Error` を投げるか、型の `Default` に頼る。
++     逆向きには、`unless`、`puncture`、`only` が条件によって任意の値をオプショナルにし、`optional`/`option`/`javaOptional` が `Option` や `java.util.Optional` を使うコードとの境界で変換する。
+
+@ 0 4 0 1b45ec2358d3616210f5bda93271c2f2
++     `Optional` は意図的にモナドではない。それに対する `flatMap` も `for` 内包表記もない。
++     存在しないことは、後のすべてのステップが対応しなければならないラッパーに入れてプログラム中を運ぶのではなく、それが生じたところ（値が得られた場所の近く）で扱われる。
+
+@ 0 9 0 1ded330ed6df580e068587d180fbbef2
++     平坦な表現には一つのコストがあり、それはコンパイラが強制する。
++     吸収がうまくいくのはユニオンの両方のメンバーがわかっているからであり、*抽象*型ではそれがわからない。後ですでにオプショナルなものにインスタンス化される `value` は、区別されるはずの二つの不在を統合してしまう。
++     そのためコンビネーターは、レシーバの型が本当に `Optional` であるという `Optionality` の証明を要求し（素の `Text` に対して `let` を呼ぶとコンパイルエラー _the type Text is not an `Optional`_ になる）、抽象的な `value` に対する `Optional[value]` を取る汎用メソッドは、そのシグネチャで `value: Concrete` を求める。
++     `Distinct` と `Mandatable` は他の二つの型レベルの事実である。型がユニオンのメンバーでないこと、そして存在する値が持つオプショナルでない型である。
+
+@ 0 3 0 0685b4409bf0c80601f0d88d860b391b
++     `Option` ではすべてのステップが包み、結果は `Some(None)` になりうる。`Optional` では、存在する値はそれ自身であり、`let` は決して入れ子にならず、代替がその問いを問われた場所で閉じる。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 08fe819a6e2aebe30624e78931dfb6f9
+
+% 1 1 0 0f8f6f5776eb461a078e69d3290a8cc8
+
+% 0 1 0 0f8299b11ead136f154f73be68e00d99
+
+% 0 1 0 1a28dd72cee4dd9e1352a4892c7e0381
+
+% 0 1 0 0959ba81820bd8641e5ff330437e6d43
+
+% 0 1 0 0f9d9e3ac544c2a1116c8d1aae36a5de
+
+% 1 1 0 18c67fe897c5a8f20ca55e8b4b769272
+
+% 0 1 0 181741a316dd330109027e39c9be6112
+
+% 0 1 0 12babffaf6418d861ddb7d45170ed243
+
+% 0 1 0 07e4d399d6af781a040973cdfdd6e5e4
+
+% 0 1 0 00ccfc13e068262b0671209eaad560d8
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 3 0 09ce040e31379aa806bcfe8ff09b3e26
++     何も見つからないかもしれないすべてのコレクションのアクセサー（`Populated` と証明されていないリストに対する `head`、`Map` に対する `at`、`Sequence` に対するインデックス）は `Optional` を返すので、ここにあるコンビネーターはコレクションの結果を消費する普通の方法である。
+
+@ 0 6 0 0bbbe87ad454015307898ff8bd0d731b
++     ライブラリは JVM、Scala.js、Scala Native 向けにコンパイルされる単一のソースセット `vacuous.core` であり、すべてが `soundness` のアンブレラにエクスポートされる。
++     その given はすべてコンパニオンにある（明らかなゼロを持つ型に対する `Default` のインスタンスと、マクロに支えられた `Concrete`、`Distinct`、`Mandatable`、`Optionality` の証明）ので、インポートなしに解決される。
++     `Unsafe` ケイパビリティのトークンもここにあり、それを供給する contingency の `unsafely` より下に位置する。
+
+% 0 1 0 175aa1e37ddd2f8e0f205fbc28fe837e
+
+% 0 1 0 17b184332d68ddbd0ea0c7793d372402
+
+% 0 1 0 04b7fe4eeb61a72b0069899a791d11dd
+
+% 0 1 0 1bd9060f4226978912e72179cbe1526f
+
+% 0 1 0 0adb5bed2b9a74420680f8c1be1f8562
+
+% 0 1 0 0994a53cda02c88c1d64c8b550b69882
+
+@ 0 1 0 008824c8be783c4e0fd27a19676a176f
++ entry .Optional   存在しないかもしれない値。平坦なユニオン `Unset | value` として
+
+% 1 1 0 1a370a89e56ba4c91b322f33f41a1b4c
+
+@ 0 6 0 1a2dd6ccd9cf379e0f016bafd4a21c75
++       `Optional[value]` は型エイリアス `Unset | value` である。
++       存在する値はそれ自身として格納され、渡され、読まれる。存在しないことは `Unset` である。
++       ユニオンは繰り返されたメンバーを吸収するので、`Optional[Optional[Int]]` は `Optional[Int]` であり、オプショナルであることは決して入れ子にならず、曖昧な「存在する不在」もない。
++       したがって `Optional[Text]` を保持するのに `Text` 以上のコストはかからない。これがこの設計の理由のすべてである。`Option` は存在する値ごとに `Some` をアロケートする。
+
+% 2 1 0 0aa9b5d506726a8a1da8e784d1b126d3
+
+% 3 1 0 019ccde94295e0f71576611a97d53df8
+
+% 0 1 0 0fd0c2aa4bf08bc112ea7bddb8a6cbfe
+
+% 0 1 0 0770ebee5149d3901254a32e3f09a2f5
+
+% 0 1 0 1a646051fd1ea16912c834c28bd2c5ea
+
+% 0 1 0 055a83a8a11c5c6d10d35412564d020e
+
+% 0 1 0 132d55f8ee76ac8913e4cc2c57b01fc5
+
+% 1 1 0 16f7ee77fab21e040cd481dbcd9904b6
+
+@ 0 6 0 01451626afe62e090f5ec27386799eb2
++       コンビネーター（`or`、`let`、`lay`、`present`、`absent`、`mask`、`assume`、`presume`、`option`、`javaOptional`、`letGiven`、`layGiven`）はパッケージレベルの拡張であり、それぞれレシーバの型が `Optional` であるという `Optionality` の証明で守られている。`Optional.check[value]` は同じ検査を明示的に行う。
++       オブジェクトは、null 許容の Java の結果を `Optional` に変える `.apply` と、厳格な等価性のもとで任意の値を `Unset` と比較できるようにする二つの `CanEqual` given を持つ。
+
+@ 0 11 0 102ade784d06dce319ce660f07b60b87
++       キャプチャ検査の二つの事実がユーザーにとって重要である。
++       ユニオンの中の*凍結済みの配列*（たとえば `Optional[Data]` を返すメソッド）は、そのメソッドがケイパビリティのパラメーター（`Loggable`、または `logs Event` の糖衣構文）も取るとすぐに、すべての呼び出し箇所で読み取り専用のキャプチャへと新しくされ、その結果は `safely` にも型変数にも入れなくなる。うまくいく形は、`Optional[Data]` を返すケイパビリティを持たないメソッドを、ロギングを行う `inline` の外殻から呼ぶものであり、外殻はバイト列に対して `let` ではなく `present` で検査すべきである。バイト列に対するラムダは、それを再び新しくしてしまうからである。
++       そして、*ケイパビリティ*の `Optional`（`Optional[Handle^]`）は、`| Null` の番兵とフロー型付けを通じてではなく、最初のケースが `case Unset =>` である `match` で分岐させるべきである。前者では、消費された値に対する分離検査の追跡が失われる。
+
+% 0 1 0 0e987195d2e6f41b1acfb781d9d7a59c
+
+% 0 1 0 154dbda59e8f4ebc1dd25f29402e5a96
+
+% 0 1 0 049564bfa1ff3328011c14af770fd337
+
+% 0 1 0 1a13a359d9eb562a1d0546da0a4c4a93
+
+% 0 1 0 0915f937c35f32e3109f1e21fc8a7d86
+
+@ 0 16 0 0fa6169b25776ccd1647fc2f5f6b2ba5
++   entry .Unset   唯一の存在しない値。その型は不透明な `Unset` である
++       `Unset` は、不透明型 `Unset <: Matchable & caps.Pure` でもあり、その唯一の値でもある。
++       元になる表現は `null` なので、存在する値は決してボックス化されず、存在しないことにはコストがかからないが、型は不透明である。`Unset` は `Null` の部分型ではないので、`nn` はそれを取り除かず、`Unset | value` は given の解決において予測どおりに正規化される。
++       これは純粋なので、`value` が純粋であれば `Optional[value]` も純粋である。
++       名前はパッケージレベルにもエクスポートされているので、`import soundness.*` だけで `Unset` に到達できる。
++   entry .unsetEquality   `CanEqual[value, Unset]`：任意の値を `Unset` と比較できる
++       厳格な等価性のもとでは、独自の `CanEqual` を持たない `value` に対して、そうでなければ `optional == Unset` は拒否される。この given と `.equalityUnset` は、どちらの順序でもその比較を認める。`absent` と `present` はそれにコンパイルされる。
++   entry .equalityUnset   `CanEqual[Unset, value]`：`Unset` を任意の値と比較できる
++   entry .apply   null 許容の値を `Optional` に変える：`Optional(javaResult)`
++       `Optional(value)` は、`value` が `null` のときは `Unset`、そうでなければ `value` である。
++       これは Java の API の null 許容の結果への入口である。
+
+% 2 1 0 11035a1fed60cb4700fb59230d9db1ee
+
+% 3 1 0 08aa7682181e7c2b05c7babda83ffb9e
+
+% 0 1 0 08d2cf01bd8261fc1185d3d1d0f7df81
+
+% 1 1 0 0a32625e39e1c5451e78b7a4c87915c1
+
+@ 0 9 0 11e6f5e4079e99eb053a83d8d2f13a46
++   entry .check   型が `Optional` であることのコンパイル時の検査
++       `Optional.check[value]` は、`Unset` が `value` の部分型であれば何にも展開されず、そうでなければエラー `↯/s.20.3`、_the type `value` is not an `Optional`_ でコンパイルに失敗する。
++       これは `Optionality` given が行うことであり、その性質を直接表明したいコードのために公開されている。
++   entry .Error   値が存在しなかったときに `assume` が発生させる
++       エラー `↯/s.20.4`：_the value was not set_。
++       `assume` が投げる。`assume` は、まさに存在の検査されない表明であるがゆえに、スコープに `CanThrow[Optional.Error]`（`import unsafeExceptions.canThrowAny`、または囲む `unsafely`）を必要とする。
+
+@ 0 6 0 03cf1029fb28ed7609c39196defdc2f1
++ entry .Unset   唯一の存在しない値。`Optional.Unset` からエクスポートされている
++     すべての `Optional` が存在しないときに保持する値であり、その値の型である。
++     これは `Optional.Unset` であり、`Unset` がキーワードのように読めるようにパッケージレベルにエクスポートされている。
++     `== Unset` で比較し（`Optional` の中の `CanEqual` given がそれを認める）、`case Unset =>` でマッチし、存在しない `Optional[Text]` を型引数なしの `Unset` として構築する。`Unset` はすべての `Optional` に適合するからである。
+
+@ 0 7 0 1194b804a4d1c4631be3884c014a992f
++ entry .or   値が存在すればその値、そうでなければ代替
++     `optional.or(fallback)` は、値が存在するときはその値、そうでなければ `fallback` である。代替は名前渡しで、必要なときにだけ評価される。
++     その結果は素の `value` なので、`or` は `let` の連鎖の普通の最後のステップである。
++     これはマクロである。`optimizable` ブロックであるレシーバは、中間の `Optional` なしに代替がブロックに直接供給されるように書き換えられ、型が `Optional` でないレシーバはコンパイルエラー（465、_the type `T` is not an `Optional`_）になる。
+
+% 2 1 0 154890cbcddceb5d196141977e50fdc3
+
+% 3 1 0 05eab28529bd897c1c9565b417580f5d
+
+% 5 1 0 06b28d25c8cbf90f002480cd4a39b3b8
+
+% 0 1 0 11b8ab6c837786d40ff8bb792f475633
+
+% 1 1 0 1d9140308c08930708285f5e46f104c9
+
+@ 0 4 0 1c2a4e61c4b6f5550fc7e05945355a70
++ entry .let   存在する値を変換する。`Unset` はそのまま通す
++     `optional.let(lambda)` は存在する値に `lambda` を適用し、存在しない値に対しては `Unset` を生む。
++     オプショナルであることは平坦なので、それ自身が `Optional` を返す `lambda` も層を加えない。`let` は、`Option` なら `map` と `flatMap` の両方が必要なところで役立つ。
+
+% 2 1 0 00063737a05f887d0acd5bb349cb7c59
+
+% 3 1 0 19b4aace648a99451a134943dfa2e5ad
+
+% 0 1 0 1f75af68868fa268023b184b82e9513e
+
+% 1 1 0 1db41a627153b12d0d9332747339e72d
+
+% 0 1 0 098208b9b5ab3c2f1c227c37cc2d87db
+
+% 0 1 0 1cc370ff7219bf7107782233fbb35873
+
+% 1 1 0 05747d045de6cddf1bb236cbfdc42888
+
+@ 0 2 0 0bbb0a396d3b5d2216822ad0f528619b
++     レシーバの型に対する `Optionality` の証明を必要とし、それは任意の `Optional` に対して暗黙のスコープにある。
+
+@ 0 4 0 04ddc1c208ff19a20479c1368cec815f
++ entry .lay   不在に対する代替と存在に対する関数。素の値を与える
++     `optional.lay(alternative)(lambda)` は、値が存在するときは `lambda(value)`、そうでなければ（名前渡しの）`alternative` なので、`Optional` ではなく素の `value2` を返す。
++     これは一つのステップでの `let` と `or` であり、インライン化される。
+
+% 2 1 0 0229422133a20cd500369026d490e3fa
+
+% 3 1 0 1e122defefc895530144e0560223dcd7
+
+% 5 1 0 077e6267c6fb42d00aaa28e83d8a72ee
+
+% 0 1 0 0a218052f5cc87070f9aebd566abe03e
+
+% 1 1 0 1b1a10b10a00522c19e76ee0753fb13d
+
+@ 0 4 0 00776338fed22a190d1b23873d82db51
++ entry .letGiven   存在する値をコンテキスト値として供給する `let`
++     `optional.letGiven(block)` は、存在する値を `given` として `block` を評価し、存在しない値に対しては `Unset` を生む。
++     本体が値に名前を付けるのではなくそれを召喚する（`Tactic`、`Classloader`、セッション）ブロックのためのものである。
+
+@ 0 3 0 0a93b2cf6652a9741ceaed751fe44f93
++ entry .layGiven   存在する値をコンテキスト値として供給する `lay`
++     `optional.layGiven(alternative)(block)` は、存在する値を `given` として `block` を評価し、存在しないときは（名前渡しの）`alternative` を評価して、素の値を返す。
+
+@ 0 3 0 148e42899a89f8a305e2c3b226436242
++ entry .present   値が存在するかどうか
++     `optional.present` はインライン化された `optional != Unset` である。
++     `Optionality` の証明を必要とするので、`Optional` である型に対してのみ尋ねられる。
+
+@ 0 2 0 01600db13bc49ede0acb84589cc9eb5b
++ entry .absent   値が `Unset` かどうか
++     `optional.absent` はインライン化された `optional == Unset` である。
+
+@ 0 4 0 121c748e6bef61ce0be47d43371c9c1b
++ entry .mask   述語を満たす存在する値を捨てる
++     `optional.mask(predicate)` は、値が存在して `predicate` がそれについて成り立つときは `Unset`、そうでなければレシーバのままである。
++     意味は「覆い隠す」であり、述語は*取り除く*ものを名付ける。
+
+% 2 1 0 1736acea32562a280f0dba98eb6630c3
+
+% 3 1 0 1ef33fa2fa2b91a107adc64658df0e5e
+
+% 5 1 0 02c2e904bba882e309fed38ef1bf2e05
+
+% 0 1 0 1b015851dd7a433d10f3eefc8049ed00
+
+% 1 1 0 0203b8ec6e26c7f30ae76202bb52ea19
+
+@ 0 6 0 157d717b1bb0d3e7158bfa3efb12b1ca
++ entry .assume   値。存在しなければ投げられる `Optional.Error`
++     `optional.assume` は存在を表明する。
++     これは検査されない表明なので、スコープに `CanThrow[Optional.Error]`（`import unsafeExceptions.canThrowAny`、または囲む `unsafely`）を必要とし、表明が誤っているときはエラー `↯/s.20.4`、_the value was not set_ を投げる。
++     不在が何を意味するかをコードで言えるところでは、`or`、`lay`、またはマッチを使うほうがよい。
+
+% 2 1 0 0bc6ff54b90c1eaf11bec9b00b60b177
+
+% 3 1 0 18af29e89a27b9e114c7b25ce71b36a5
+
+% 0 1 0 0e561fef8d61f71209e71e56fc02c68d
+
+% 2 1 0 0cfdfa664d0e752a0795ff937076fea0
+
+% 0 1 0 182ede9beda3f112152c8e76a8c04214
+
+% 1 1 0 05fd47d94d23204e05061422fe667204
+
+@ 0 4 0 1073a1592680d8381125e9545c6b75b6
++ entry .presume   値。存在しなければ型の `Default`
++     `optional.presume` は、`Default` インスタンスを持つ `value`（空のテキスト、ゼロ、空のリスト）に対する `optional.or(default)` である。
++     `Default` を持たない型は推定できず、それは実行時の驚きではなくコンパイルエラーになる。
+
+% 2 1 0 01d6f47bb02c0f0f0d9215cff7e65386
+
+% 3 1 0 154c77a74fa292b301f9ba544823c30d
+
+% 5 1 0 1f190016da824a440c81166f24f599e6
+
+% 0 1 0 1699d8db09c995cc0b631868c525cee1
+
+% 1 1 0 0ae2ad924494b6a11e7b5f630e3a75de
+
+@ 0 4 0 0ba7ef6999aff7621b8d5130c0afa8c6
++ entry .option   `Option` としての値。`Option` を使うコードとの境界のために
++     `optional.option` は `Some(value)` または `None` である。
++     この変換はプログラムの端（`Option` を返したり取ったりするライブラリ）のためのもので、`optional` が逆に変換する。Soundness のプログラムの内部は `Optional` だけを使う。
+
+@ 0 3 0 1f4545426cec296c1349dbbd76479d36
++ entry .javaOptional   `java.util.Optional` としての値。Java の API のために
++     `optional.javaOptional` は `java.util.Optional.of(value)` または `java.util.Optional.empty` である。`java.util.Optional` に対する `optional` が逆に変換する。
+
+@ 0 5 0 0bf0ed8a9b2534a21bbef101d3d4fa15
++ entry .optional   `Option` または `java.util.Optional` を `Optional` として
++     二つの拡張がこの名前を共有する。`option.optional` は `Some` の値、または `None` に対しては `Unset` であり、`javaOptional.optional` は `java.util.Optional` に対して同じことをする。
++     どちらも内向きの境界の変換であり、`option` と `javaOptional` が外向きの変換である。
+
+% 2 1 0 05a1b8613ed372f712ae1ef7ebb1afe6
+
+% 3 1 0 1caf706b2470b8b304465848c900e576
+
+% 0 1 0 0918ac854f2391ed1e4a76fb228686dc
+
+% 0 1 0 0bf25de79db43ae50b418d3edcb99c5d
+
+% 1 1 0 049707706f6a5c821f762df5bcee71a9
+
+@ 0 4 0 1e7aba6988ce53ed1486824b526081f0
++ entry .unless   値をオプショナルにする：述語が成り立つときは `Unset`
++     `value.unless(predicate)` は、`predicate(value)` が成り立つとき（または `Boolean` を取るオーバーロードでは、条件が真のとき）は `Unset`、そうでなければ `value` である。
++     条件は*捨てる*場合を名付ける。
+
+% 2 1 0 01d5c7ba1a66cdca05a842925f138f27
+
+% 3 1 0 03a786a26e45b308071163558961beef
+
+% 0 1 0 1c0cff94d43c0b190a4aaf040c3e9411
+
+% 0 1 0 1341a6fe1f5d5fc3045f14fa06d38179
+
+% 0 1 0 0592a38b0a91d56e189db32a1f2224d3
+
+% 1 1 0 1253b03de9931645109f3b27cfc94311
+
+@ 0 3 0 0c32b022741488c81ce4b20a7a4ea465
++ entry .puncture   値をオプショナルにする：ある特定の値に等しいときは `Unset`
++     `value.puncture(point)` は、`value == point` のときは `Unset`、そうでなければ `value` である。API が不在のために使う番兵の値（空のテキスト、`-1`、`0`）のためのものである。
+
+% 2 1 0 11c15f8f013817721c638f0403f299a6
+
+% 3 1 0 1a28160f4838bba8197b8b1d5732b16c
+
+% 0 1 0 0ba500c57ef7f1290b4a4e487c162a92
+
+% 1 1 0 1b01e82e5989ff581cc9db37b537e073
+
+@ 0 5 0 1e95a246740642da08b5a2d3ae60ac10
++ entry .only   部分関数が定義されているところでだけ値を保ち、それを適用する
++     `value.only { case pattern => result }` は、部分関数が `value` で定義されているときは `result`、そうでなければ `Unset` である。一つのマッチでのフィルターと変換である。
++     部分関数はケイパビリティをキャプチャしてよい（エラーを発生させる抽出子はその `Tactic` をキャプチャする）ので、キャプチャする値として取られる。
+
+% 2 1 0 140a74f5448aba1d1aa1a61ef5aa7451
+
+% 3 1 0 06c9e65c5af499c00e7c2ee928902616
+
+% 0 1 0 1c52ea8c8e3416080e601a2b16a65de6
+
+% 1 1 0 1e21451aa471fcd70ca0144919301faa
+
+@ 0 4 0 0b0a05015b8447331c6c1b019ac197e0
++ entry .per   省略可能な第二引数が存在するときだけ、値に関数を適用する
++     `value.per(optional)(lambda)` は、`optional` が存在するときは `lambda(value, present)`、存在しないときは変わらない `value` である。ビルダーに省略可能な設定を適用するための形である：`element.per(start)(_.start = _)`。
+
+@ 0 7 0 07858f8200bad89d09a2dee715e48971
++ entry .compact   `Optional` のコレクションまたはイテレーターの、存在する要素
++     `collection.compact` はすべての `Unset` を落とし、存在する値を、コレクション自身の形で組み立て直して生む。`List[Optional[Text]]` は `List[Text]` に、`Set` は `Set` に詰められる。
++     これは任意の `Traversable` なコレクションで使える。`murmuration` の `Iterator[Optional[value]]^` に対するオーバーロードはイテレーターを消費し、進むにつれて存在しない要素を落とす `Iterator[value]^` を生む。
++     結果は、オプショナルであることを取り除いた要素の型で型付けされる。
+
+% 2 1 0 185a04424ea9be0b070cae84281630b4
+
+% 3 1 0 16381a3ed6938788075798393d530006
+
+% 0 1 0 02e3dec0b60b162617c4b60051f091aa
+
+% 1 1 0 01d93752c2b9d65f0d10fc41cd7f6193
+
+@ 0 4 0 17c73ca90c208f651caa579a7d44a06c
++ entry .entire   すべての要素が存在すればコレクション全体、そうでなければ `Unset`
++     `collection.entire` は全か無かである。どの要素も `Unset` でないときは、すべての要素からなるコレクション自身の形の `Optional` であり、一つでも `Unset` があれば `Unset` である。
++     存在を一度走査し、その答えを結果の型に記録する。`compact` なら隙間を黙って落としてしまうところである。
+
+@ 0 3 0 0cb8dbc1a27ef7751cc182c7a861d41f
++ entry .default   召喚された、型の `Default` の値：`default[Text]` は `t""`
++     `default[value]` は `summon[Default[value]]()` であり、型が頼る値である。
++     `presume` は、存在しない `Optional` に対して同じインスタンスを使う。
+
+@ 0 7 0 1209bf6be3af628f1fb4b9170b9954dd
++ entry .optimizable   `or` が代替を直接供給できるブロックに印を付ける
++     `optimizable[value] { default => body }` は、代替を受け取るラムダから `Optional[value]` を組み立て、最初は `Unset` に適用される。
++     結果がただちに `or(fallback)` によって消費されるとき、`or` マクロは適用を書き換えて、代わりに `fallback` をラムダに渡し、中間の `Optional` は組み立てられない。concordance のインデックス付きの `apply` はこれを使い、`xs(index).or(fallback)` が代替を手にしてスロットを読むようにしている。
++     ライブラリのためのコードであり、プログラムがこれを必要とすることはほとんどない。
+
+@ 0 5 0 0a5273359fc9400013b4813c173aa269
++ entry .invite   スコープにあれば型のインスタンス、なければ `Unset`
++     `invite[entity]` は `transparent inline` の召喚で、型 `entity` の given が使えるときはそれを生み、そうでなければ `Unset` を生む。`summon` ならコンパイルに失敗するところである。
++     メソッドが、あれば使い、なければなしで済ませる省略可能なケイパビリティ（ロガー、診断のコンテキスト）のためのものである。
+
+@ 0 1 0 0ebad75d57717f1b19a47e91868c68d7
++ entry .Default   型が頼る値。`presume` と `default` が使う
+
+% 1 1 0 1518a7c7e5d1b73412d931cbeaf981a3
+
+@ 0 5 0 1c6052c6b9f801b80e595c54cbae0b0f
++       `Default[value]` は名前渡しのサンク `() => value` なので、計算に費用のかかる既定値は、使われるところでだけ計算される。
++       インスタンスは、明らかなゼロを持つ型（`Int`、`Long`、`Text`、`String`、`List`、`Set`、`Sequence`）と、`ValueOf` を持つ任意のシングルトン型に対して、コンパニオンにある。型は、一つを定義することで独自のものを宣言する。
+
+% 2 1 0 0f05661f94fee13c0a2cbc956b3f2ffd
+
+% 3 1 0 056ac322345efad8105cf09d74a45d04
+
+% 0 1 0 1bbc976b14be7b890cead1b7da3c29cd
+
+% 0 1 0 160a122ff13371911c494fcd5593b217
+
+% 0 1 0 1c52fbca1fc1cfc3181dfa9f787e8f20
+
+% 0 1 0 186a3210d268bb5b184ded45f18c051f
+
+% 0 1 0 1fbb9c2dbb616d711da7ef2d1c0ad58e
+
+% 1 1 0 10bbb8eb1b45fbc818455a6180b759af
+
+@ 0 3 0 0ad25d6b8193b2df14f07a69b2e34a7d
++       `Default` は共変で純粋であり（`Self` メンバーを通じて選択されるのではなくパラメーター化されているので、直接 `scala.caps.Pure` である）、`Findable` でもある。これは、値がコンテキストによって供給される型に対する beneficence のマーカーである。
+
+% 0 1 0 1ea1a6e4fb34bf8218bbad81936b4555
+
+% 0 1 0 14dbd22273c2a9b01e4e9abb10f7d318
+
+@ 0 12 0 1557f9e3884cde691e7d4dffbc7202f6
++   entry .apply   名前渡しの値から `Default` を作る：`Default(Volume(0))`
++       引数は純粋な名前渡しのサンク（`-> value`）で、使うたびに評価される。
++   entry .int   `Default[Int]`：`0`
++   entry .default   `Default[Long]`：`0L`
++       `Long` に対する given で、`long` ではなく `default` と名付けられている。
++   entry .singleton   `ValueOf` を持つ任意のシングルトン型に対する `Default[value]`：その値
++   entry .text   `Default[Text]`：空のテキスト
++   entry .string   `Default[String]`：空の文字列
++   entry .list   `Default[List[element]]`：`Nil`
++   entry .set   `Default[Set[element]]`：空の集合
++   entry .sequence   `Default[Sequence[element]]`：空のシーケンス
++   entry #apply   既定値。呼び出しのたびに計算される
+
+@ 0 1 0 1eab32917668c48816287297f81c8081
++ entry .Optionality   型が `Optional` であることの証明。すべてのコンビネーターが要求する
+
+% 1 1 0 030b4530c4f5f87f1f62e1360a033bfb
+
+@ 0 7 0 073fa5a5291a854e054942429f33cb67
++       `Optionality[value]` はシールされたマーカーで、その唯一の given `.default` はマクロである。それは `Unset` が `value` の部分型であれば成功し、そうでなければエラー `↯/s.20.3`、_the type `value` is not an `Optional`_ で失敗する。
++       拡張 `or`、`let`、`lay`、`present`、`absent`、`mask`、`assume`、`presume`、`option`、`javaOptional`、`letGiven`、`layGiven` は `Optionality[optional.type]` を取るので、静的な型が `Unset` を許すレシーバに対してのみ解決される。素の `Text` には `let` がない。
++       この検査は実行時には何のコストもかからない。given はマーカーにキャストされた `null` である。
+
+% 2 1 0 19ac4ceff8741bad115428bcb938fc6e
+
+% 3 1 0 083b2524432479001a0c89f381080d8e
+
+% 0 1 0 0384f0978648ccf918ed6f4f3607eb74
+
+% 0 1 0 1c6ab6eac2e6e08a1752d9639c41c0dc
+
+% 1 1 0 05185c5b4ae4262b0324b24234697f34
+
+@ 0 1 0 18459422c3530d770ca70bb54ffeac9c
++   entry .default   マクロの given：`Unset <: value` のときの `Optionality[value]`
+
+@ 0 1 0 14b5154eec352ac10c9fcde3b3f66beb
++ entry .Concrete   型が抽象的でなく確定していることの証明
+
+% 1 1 0 11451237575b31a515ebf41608ddab0c
+
+@ 0 6 0 1bf9fd7f9dd3018f1034dc30c9b08bd7
++       `self is Concrete` はインラインの given `.concrete` が生み出す。これは `self` が抽象型でなければ成功し、そうでなければエラー `↯/s.20.5`、_type `self` is abstract_ で失敗するマクロである。
++       `Optional[value]` を取る汎用メソッドが `value: Concrete` を求めるのは、平坦なユニオンが曖昧でないのは両方のメンバーがわかっているときだけだからである。抽象的な `value` は後ですでにオプショナルな型にインスタンス化され、区別されるはずの二つの不在を統合してしまうかもしれない。
+
+% 2 1 0 066dab495e5b784703a90341fe220c85
+
+% 3 1 0 1f37dfaf14e979d00282b768d9aa205e
+
+% 0 1 0 08fd9ead4cf8754b167c88b6c1f8ac99
+
+% 0 1 0 14c5e020376d66d20570efe0e9b12620
+
+% 0 1 0 160dc59c15a49fd10c1b1065f6140182
+
+% 1 1 0 098380b7ddab547219f26657ef8e8f00
+
+@ 0 6 0 1a330372f6bd74df02527fb5a0dfafe4
++       `inline` メソッドの中では、検査は型パラメーターが具体的になる展開の場所まで遅らされるので、`inline def f[value: Concrete]` はコンパイルでき、その各呼び出しが検査される。
++       `Concrete.apply[self]()` は、その事実を自ら確かめたマクロのために、手でインスタンスを作る。
++   entry .concrete   マクロの given：型が抽象的でないときの `typeRef is Concrete`
++   entry .apply   表明によるインスタンス：`Concrete[self]()`
+
+@ 0 1 0 0818cde795ab805b026c92e517cb0b78
++ entry .Distinct   型がユニオンのメンバーでないことの証明：`self is Distinct from union`
+
+% 1 1 0 0fd95e598f3fffe30cdb0b4351510303
+
+@ 0 8 0 07587628a9e86c970ed74de238f24d2d
++       `typeRef is Distinct from otherType` はインラインの given `.distinct` が生み出す。これはまず `typeRef` が `Concrete` であることを要求し（そうでなければエラー `↯/s.20.5`）、次に `typeRef` が `otherType` の部分型であるときに、エラー `↯/s.20.2`、_type `typeRef` cannot be proven distinct from `otherType`_ で失敗するマクロである。
++       これは `Unset` を値の型から締め出す検査であり、API が曖昧さなしに「一つまたは複数」を受け入れられるようにする。caduceus の `many[entity: Distinct from List[Any]](value: entity | List[entity])` が単一の要素とそのリストを見分けられるのは、`entity` 自身がリストでないことが証明されているからにほかならない。
+
+% 2 1 0 1f5a0faad1e35dd01ada893c97157c65
+
+% 3 1 0 1dbfca172c73bcbe13ddc3aaf9147de4
+
+% 0 1 0 0d2c76436f2d93311fd8b53ae68b92d9
+
+% 0 1 0 17e1c637d7a9092511d3de023989900f
+
+% 0 1 0 0f68ebce9226a3d61613366643f92336
+
+% 1 1 0 16aa7662aefe7d9a0f884b697f5c3311
+
+@ 0 4 0 023b7678e77bd8680e7a6569c92e6af9
++       `Distinct` は `Original` を継承するので、もう一方の型はその `Origin` であり、`from` で名付けられる。
++       `Distinct.apply[self, origin]()` は表明によってインスタンスを作る。
++   entry .distinct   マクロの given：`typeRef <: otherType` でなければ `typeRef is Distinct from otherType`
++   entry .apply   表明によるインスタンス：`Distinct[self, origin]()`
+
+@ 0 1 0 144310bd7fcb6e97119074f91e4f6d53
++ entry .Mandatable   存在する値が持つオプショナルでない型：`self is Mandatable to result`
+
+% 1 1 0 1455b280f42ceaf419eeabf90b124c27
+
+@ 0 10 0 04563374e927d67916f22af487f29f87
++       `typeRef is Mandatable` は透過的なインラインの given `.mandatable` が生み出す。これはユニオン型からすべての `Unset` を取り除き、残ったものをその `#Result` として記録するマクロである：`Optional[Text] is Mandatable to Text`。
++       `Unset` を含まない型は、エラー `↯/s.20.1`、_the value is not an `Optional`_ で失敗する。
++       導出のコードは、オプショナルなフィールドに対してエンコードまたは描画する型を見つけるためにこれを使う。breviloquence の CBOR エンコーダーと導出された `Inspectable` は、どちらも `[inner <: value, value >: Unset.type: Mandatable to inner]` を取る。
++   entry .mandatable   マクロの given：`Unset` を取り除いた `typeRef is Mandatable to result`
++   entry .apply   表明によるインスタンス：`Mandatable[self, result]()`
++   entry #Result   オプショナルであることを取り除いた型。`Self` の部分型
+
+@ 0 1 0 0c19e489ea590a080b3feb85cbcb19c2
++ entry .Extractor   `Optional` で答えるパターンの抽出子
+
+% 1 1 0 1533a26ba143ecc507cab56923676c94
+
+@ 0 4 0 0bec58486b20617a1a510b66e5d17665
++       `case Name(value) =>` のパターンで使うためのオブジェクトのトレイトである。`Optional[extraction]` を返す `#extract` を実装すると、パターンマッチャーが要求する `Option` としての `#unapply` がそこから導かれる。
++       `Uuid` と phoenicia の `Otf` は `Extractor[Text, …]` なので、`case Uuid(uuid) =>` はそれとしてパースできるテキストにマッチする。
+
+% 2 1 0 11539e8998e5fa4c1a3a74685ee00e37
+
+% 3 1 0 164498c934028bf80f2f6cffc123edd1
+
+% 0 1 0 017de0490f44109109293f73b9b3aed9
+
+% 0 1 0 16f618a05cc8c0ee0c43a8a089b5d211
+
+% 0 1 0 1debc5e66369178d1357370fc9604759
+
+% 0 1 0 0e64903546a6e847148126ef33687292
+
+% 0 1 0 0d8078fa6934c44f0d12cb4d1071bb21
+
+% 1 1 0 0e7c902307a4aecd01d431a42f4ff77c
+
+@ 0 2 0 0537c8408a5f56d505e55f566d7170c1
++   entry #extract   抽出結果。検査対象がマッチしなければ `Unset`
++   entry #unapply   パターンマッチャーのための `extract(value).option`
+
+@ 0 10 0 02309896c3e7571c1331a4fd2bf89762
++ entry .Unsafe   安全性の保証を迂回する操作を制限するケイパビリティのトークン
++     検査されない操作（コンパイラがすでに検証したリテラルのパース、マクロが部分を検査した補間）を行うメソッドは、`(using Unsafe)` パラメーターを取り、`unsafe…` と名付けられる。呼び出し側は contingency の `unsafely` ブロックを通じてトークンを供給するか、`Unsafe` を明示的に渡す。
++     `Unsafe` はシールされたトレイトであり、その唯一のオブジェクトの値でもある。
++     Scala.js のバックエンドは消去されたパラメーターに対するクロージャをコンパイルできないので、これは `erased` なものではなく本物の値であるが、`using erased Unsafe` のパラメーターは引き続きその呼び出し箇所でそれを消去する。
++     トークンは grep で探せる主張であり、それを必要とする操作に限られる。メソッドは、その本体が本当に証明されていない性質に頼っているところでだけ、それを取るべきである。
+
+@ 0 1 0 13b90761e2e31ff818eab13349c483a5
++ entry .internal   証明と最適化された `or` の背後にあるマクロの実装
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 9 0 19db3199a65be2b40583cbc14a2e1f3a
++       直接使うものではない。
++       `check[value]` は `Optionality` と `Optional.check` のマクロである。`concrete`、`distinct`、`mandatable` は `Concrete`、`Distinct`、`Mandatable` の証明を生み出す。そして `optimizeOr` は `or` の背後にあるマクロで、`optimizable` なレシーバを、代替がそれに直接供給されるように書き換える。
++   entry .check   `Optionality[value]` のマクロ：`Unset <: value` のときに成功し、そうでなければエラー `↯/s.20.3`
++   entry .concrete   `typeRef is Concrete` のマクロ：抽象型に対してエラー `↯/s.20.5` で失敗する
++   entry .distinct   `typeRef is Distinct from union` のマクロ：部分型に対してエラー `↯/s.20.2` で失敗する
++   entry .mandatable   `typeRef is Mandatable` のマクロ：`Unset` を取り除く。なければエラー `↯/s.20.1`
++   entry .optimizeOr   `or` の背後にあるマクロ：代替を `optimizable` なレシーバにインライン化する

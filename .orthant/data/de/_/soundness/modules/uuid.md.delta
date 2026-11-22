@@ -1,0 +1,220 @@
+orthant 2 language
+
+% 0 1 0 1ca2aa4a69ea5c811cdb43d6c312cdcb
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 4 0 0361c650e8e048730e21a0fcbcf68b28
++ Eine [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) ist ein 128-Bit-Bezeichner,
++ eindeutig genug, um ohne Koordination vergeben zu werden. Sie wird als `Uuid`-Wert dargestellt.
++ Eine neue wird erzeugt, eine bekannte wird als Literal geschrieben, das der Compiler prüft, und
++ eine wird aus Text geparst, mit einem typisierten Fehler bei Misserfolg. Ihre Bytes und Bits
++ stehen zur Verfügung, wenn sie gebraucht werden.
+
+@ 0 1 0 0bf75eecdf0941960674259b18a0686d
++ ### Über UUIDs
+
+@ 0 4 0 1686ec0048fd708f0f5545a346ae6ff8
++ Eine UUID wird fast immer als String transportiert, und ein String ist ein unzuverlässiges
++ Zuhause für sie. Ein Literal mit einer falschen Ziffer oder ein Wert, der gar keine UUID ist,
++ lässt sich nicht von einem gültigen unterscheiden, bis etwas ihn parst und scheitert. Nichts im
++ Typ kennzeichnet einen bestimmten String als wohlgeformten Bezeichner.
+
+@ 0 4 0 0f9446a40ad6ba251be091a59fd31bac
++ Eine `Uuid` ist ein Wert, von dem bekannt ist, dass er wohlgeformt ist. Ein Literal wird zur
++ [Kompilierzeit] validiert. Das Parsen zur [Laufzeit] meldet einen typisierten `Uuid.Error` und
++ gibt nie einen defekten Wert zurück. Eine UUID, die sich nicht fehlerhaft konstruieren lässt, ist
++ [Sicherheit durch Konstruktion](../../philosophy/safety-by-construction.md) in ihrer einfachsten Form.
+
+@ 0 2 0 0dab7bfd8ab0ef2001c3e80a89f0c88d
++ Alles stammt aus dem Paket `soundness`. Der zweite Import lässt die Beispiele ihre Ergebnisse
++ ausgeben:
+
+% 2 1 0 0f745224983699021dac04bbe844e68e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1353f137610bddec0f806bc903166d61
++ Die Operationen, die jeweils unten behandelt werden:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 0021474943c19599105e7f12177dec1c
+
+@ 0 9 0 0ea08a5ef66f63e61a6a185e44875465
++ column  Ergebnis
++ row  `Uuid()`  ein neuer zufälliger Bezeichner
++ row  `uuid"…"`  ein literaler Bezeichner, beim Kompilieren des Codes geprüft
++ row  `Uuid.parse(text)`  der Bezeichner oder ein ausgelöster `Uuid.Error`
++ row  `Uuid.extract(text)`  ein `Optional`-Bezeichner; `Uuid(id)` leistet dasselbe als Pattern
++ row  `id.text`  der kanonische Text
++ row  `id.in[Data]`  die sechzehn Bytes, die höherwertige Hälfte zuerst
++ row  `id.msb`, `id.lsb`  die höchst- und niedrigstwertigen 64 Bits
++ row  `a ^ b`, `~a`  das exklusive Oder zweier Bezeichner und die Inversion eines Bezeichners
+
+% 1 1 0 1c787982f4e04b2b074825fde8357a24
+
+@ 0 1 0 0f8db4e11cc07a061404fd2f9603f98a
++ ### Erzeugen
+
+@ 0 1 0 194df59fae3448d20d2a13bf7f773b62
++ `Uuid()` erzeugt einen neuen zufälligen Bezeichner, jedes Mal einen anderen:
+
+% 2 1 0 06c25f6a28a1ec07004078b9b81316b9
+
+% 0 1 0 113f7a54b0908329198c04c8de3c15fc
+
+% 1 1 0 1e14a4dcfbd28d901e6fc50038a09e81
+
+@ 0 1 0 037e1aac6557139f12ad9e7b4e2588fc
++ ### Literale
+
+@ 0 1 0 002ad8150ceb7f5d11617cb187506fd7
++ Der `uuid"…"`-[Interpolator] schreibt einen bekannten Bezeichner und prüft ihn zur Kompilierzeit:
+
+% 2 1 0 0fd35630dbf2b2671783d7e76559ba14
+
+% 0 1 0 03577244cb219eca1ea971aad6ed3ccc
+
+% 1 1 0 1a9dab4e2220925c07007dadf6601088
+
+@ 0 1 0 11bae98385b70012154f659171ab8de6
++ Ein fehlerhaftes Literal kompiliert nicht:
+
+% 2 1 0 0abd01f219589885189fde94c26f9ac9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 03e66bdadd3aa623020411bb8102b64b
+
+% 1 1 0 00cae8a2340791d00acb904383bc2ee5
+
+@ 0 1 0 0be7689b9275055a16fd7074497e2d45
++ ### Parsen
+
+@ 0 2 0 1c82cde8c9e8c5e615cf2d0ee8d5b87f
++ Text, der zur Laufzeit eintrifft, ist möglicherweise keine UUID, daher löst `Uuid.parse` bei
++ Misserfolg einen `Uuid.Error` aus, den die [Strategie] im Geltungsbereich behandelt:
+
+% 2 1 0 12649924952f98561eba830bda750666
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+% 3 1 0 042e73bdc0550b5d19298413dd7d0b7b
+
+% 4 1 0 19c9b9965081e8b50118a06e4b3ee733
+
+% 5 1 0 025e7ee7206dd45e16ff93ea93595efb
+
+% 0 1 0 14127deeaa2b310609d83c168a57ed78
+
+% 1 1 0 008777c352b95942081d475a5b06bbaf
+
+% 3 1 0 19e04bfd3328682811e8d082605665a7
+
+% 4 1 0 0bb7f35259e4768e032d138d68d0a04b
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 0c06cc5e946841490219e070b540bd6d
+
+% 1 1 0 1312eb5c2832149900f7bea160f581d1
+
+@ 0 2 0 1cb3ef36456b87af0a0461c7e2150458
++ `Uuid.extract` liefert stattdessen einen [optionalen](optional-values.md) Wert, und derselbe
++ Extraktor dient auch in einem Pattern:
+
+% 2 1 0 1d5640210d0f0e350a94ee8c2eec4cf7
+
+% 0 1 0 0b84fa381db920de1ed9bdc54a22ef97
+
+% 0 1 0 18563c5bfcc0b1371a5a5540485bbf8a
+
+% 0 1 0 048fbcb9d6cd413e0bc8afadacbaae9b
+
+% 1 1 0 1abba4f153cba2f716563a644562d957
+
+% 3 1 0 04e83c880bedbfed125056d6c8bb13f4
+
+% 4 1 0 06dae8eed4a587f80d235b68c34d9cb5
+
+% 5 1 0 1a122f2f325eb599050a8812f42131b7
+
+% 0 1 0 1b1d49b953dfaa87172350d54f3a5657
+
+% 0 1 0 0e25ec27f4e5d3021500922a8735d80e
+
+% 0 1 0 1352447760ad0b4b0a8e53421ef6e7da
+
+% 1 1 0 12cfeefbd058a0db0452d6f0c698a681
+
+@ 0 3 0 0002dc90792e5af31126c2d09ab0113e
++ `as[Uuid]` [dekodiert](decoding.md#decoding-a-value) Text auf dieselbe Weise, sodass ein
++ `Uuid`-Feld in einer Case-Klasse ohne weiteren Code aus [JSON](json.md) oder einem
++ [Kommandozeilenparameter](cli.md) gelesen wird.
+
+@ 0 1 0 04664ceaea24118813e376f6e7be3751
++ ### Darstellung und Bytes
+
+@ 0 2 0 0894892c8d2a2d9e0bcc4f9aa2827cb8
++ `text` liefert den kanonischen Text einer UUID. Ihre sechzehn Bytes und ihre beiden
++ 64-Bit-Hälften sind ebenfalls verfügbar:
+
+% 2 1 0 04d5e8bf022f7c3414b49641aa753361
+
+% 3 1 0 09e80e61f63de58011986beca3bcdccc
+
+% 4 1 0 00ab9c90b79785d109a745484d63a40a
+
+% 0 1 0 161c9229850da6b11808285754db3d0e
+
+% 0 1 0 0b0f69fe01c7b9ef1ac04acc180576c6
+
+% 0 1 0 0a725a171cbedffc1669c637da80a46d
+
+% 0 1 0 048d643db80e9d6d14e72a282470a233
+
+% 1 1 0 005f98131fa1c757168dba87cfc99599
+
+@ 0 1 0 1f541ff99b1bdf5c1affc799c992696d
++ ### Kombinieren
+
+@ 0 3 0 1b071ecf0380df820a89d9f8366fb8bf
++ Zwei Bezeichner werden mit exklusivem Oder kombiniert, und einer wird mit `~` invertiert. Das ist
++ für die Fälle gedacht, in denen eine UUID als das Bitmuster behandelt wird, das sie ist, etwa um
++ aus zwei anderen einen stabilen Bezeichner abzuleiten:
+
+% 2 1 0 004c027b15ede2f8071e0d199f204e35
+
+% 0 1 0 03e6c22a1e253895122ddcb9ac22245e
+
+% 1 1 0 1b67859fd542cac90bb2a035ffafb1b9
+
+% 3 1 0 10161119cca35c1d0d81f3fd3b832911
+
+% 4 1 0 118d7d800139c72619ea4e05ebff2119
+
+% 5 1 0 0b62f8894488d927092f798e8850e17b
+
+% 0 1 0 074b76f3c82cba6e1caecaf448012daa
+
+% 0 1 0 12cdc1f710e07bdd1c13eb79d80ec710
+
+% 1 1 0 14383155ef76779f06fb9944e0887eeb
+
+@ 0 2 0 07b99617e1a73d651c863a07c5062acc
++ [Hashing](hashing.md) leitet einen Bezeichner aus Inhalten ab, und [Zufälligkeit](randomness.md)
++ steuert die Quelle, aus der `Uuid()` schöpft.

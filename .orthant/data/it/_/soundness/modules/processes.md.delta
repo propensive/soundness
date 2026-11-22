@@ -1,0 +1,491 @@
+orthant 2 language
+
+@ 0 1 0 1f84de237b8eeae21960dbdfae6c91fc
++ ## Processi
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 1 0 043ff3d3d37d1cbc0d3515785dfac976
++ I comandi della shell e i sottoprocessi si eseguono tramite l'[interpolatore] `sh"…"`:
+
+@ 0 5 0 13a8ba24e691c26208f00610bfc163ef
++ - Il comando viene analizzato a [tempo di compilazione], quindi una virgoletta non bilanciata non
++   compila.
++ - Un valore sostituito al suo interno viene sottoposto a escape secondo la posizione in cui si
++   trova, quindi un nome di file con uno spazio non può spezzare il comando.
++ - L'output viene convertito in qualunque tipo si chieda: le sue righe come lista, l'intero output
++   come testo, i byte grezzi come stream, o lo stato di uscita.
+
+@ 0 1 0 03f5ca22eeafc7ed183c46fbae3647b0
++ I comandi si collegano in pipe. Un comando si esegue e si attende, oppure si avvia con fork come
++ job in background.
+
+@ 0 1 0 03864c7f2374f9ca1d044d00036db3ea
++ ### Sui sottoprocessi
+
+@ 0 5 0 1f98d10b83c445e11f9dc084e8433b47
++ Eseguire un sottoprocesso è il terreno in cui proliferano i bug di iniezione. Se si costruisce il
++ comando come un'unica stringa, un valore sostituito può introdurre di nascosto argomenti in più, o
++ un carattere che per la shell significa qualcosa. Se lo si costruisce come array per stare sicuri,
++ la comodità sparisce. In entrambi i casi l'output torna come stream grezzo, da decodificare,
++ bufferizzare e chiudere a mano, e lo stato di uscita è un intero che qualcuno deve ricordarsi di
++ controllare.
+
+@ 0 7 0 113d1d91040427ba16f1c3b2d33e8b5e
++ Qui la struttura del comando viene analizzata a tempo di compilazione, quindi le virgolette sono
++ comprese prima che il programma venga eseguito. Ogni valore sostituito subisce l'escape adatto alla
++ sua posizione esatta: un valore collocato dove è atteso un singolo argomento resta un solo
++ argomento, comunque sia scritto. L'output è interpretato in base al tipo richiesto, quindi leggere
++ righe, byte o uno stato di uscita è questione di nominare il tipo, non di analizzare uno stream. Un
++ processo il cui tipo di risultato e i cui modi di fallire stanno nella sua firma ha una
++ [firma onesta](../../philosophy/honest-signatures.md), per qualcosa che di solito è governato da
++ effetti collaterali.
+
+@ 0 2 0 1f54cad100d74d48036c2056207d7031
++ Tutto viene dal package `soundness`. Una directory di lavoro e una [strategia] di errore sono
++ nell'ambito, e l'ultimo import permette agli esempi di stampare i loro risultati:
+
+% 2 1 0 1d6e7ff79859d1e112081cd588ee8fbb
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1a283a543643af1b1d45747955305272
++ ### Definire un comando
+
+@ 0 2 0 0e45a2651c6938291ebdb46fabb5308f
++ `sh"…"` costruisce un `Command`. Divide il testo in corrispondenza degli spazi, e rispetta le
++ virgolette come farebbe una shell:
+
+% 2 1 0 148b8b23514752a813dc32a7655afbaa
+
+% 3 1 0 12ac3a856768854405fdaea0982baab8
+
+% 4 1 0 0d40832ef2bae1a7187985c9adab91e9
+
+% 0 1 0 1f2ad2ed3658a8591d72813f124889a6
+
+% 0 1 0 1dc1502be9a1e32608e827b2ecf8588f
+
+% 1 1 0 0117bc9b6c8d9c210152ed5a53eda6f9
+
+@ 0 1 0 00a4f2f9adc7bace0b66072eef5787a1
++ Un comando le cui virgolette non sono bilanciate non compila:
+
+% 2 1 0 1a3fdd93c0921e6b11eb9f28dc25577a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 0a4a6443e52e5a8212ff9cc92980795e
+
+% 1 1 0 020ae3bd51599f8d1a7e367055793315
+
+@ 0 1 0 10b6e596397b54161c0bae68a1ae0f94
++ ### Eseguire un comando
+
+@ 0 1 0 16ccb37533be09801c8603b116a54a69
++ `exec` esegue il comando, e interpreta il suo output come il tipo nominato:
+
+% 2 1 0 027e433c67276d8912dd6d7714fa0444
+
+% 3 1 0 1a7b041433c1463013e23c5c933cfbcc
+
+% 4 1 0 0f8916bc56a535af1eea57fa30bf1aa9
+
+% 0 1 0 1ce114e114cb08ce1dfdd419dbc51e1f
+
+% 0 1 0 1279b59fea53aa8b0223fab6ef34948b
+
+% 0 1 0 0048a3bcc6ba161a0a37dd96aec75cf6
+
+% 1 1 0 0fa520086395fdfb17d64c9e162138ef
+
+@ 0 4 0 0a7ba69b0660d2db14904757f670086e
++ Il tipo fa più che nominare una conversione. Decide come il risultato viene *interpretato*. I
++ comandi non concordano su quale stream porti l'output importante, né su che cosa significhi uno
++ stato diverso da zero. Per alcuni è un fallimento, per altri è una tra diverse risposte ordinarie.
++ La scelta del tipo risolve entrambe le questioni. Decide anche *quando* la chiamata ritorna:
+
+% 2 1 0 1304244c2a75b7fa02fc09ec52d282ed
+
+@ 0 11 0 1fd2467d99152a051a85a1fe50c4ac24
++ column  Tipo
++ column  Dà
++ column  Ritorna
++ row  `Text`  l'intero standard output  quando il processo termina
++ row  `List[Text]`  le righe dello standard output  quando il processo termina
++ row  `Chain[Text]`  le righe dello standard output, in modo pigro  subito, leggendo ogni riga man mano che arriva
++ row  `Stderr`  l'intero standard error  quando il processo termina
++ row  `Data`  i byte grezzi dello standard output  quando il processo termina
++ row  `Exit`  lo stato di uscita  quando il processo termina
++ row  `Unit`  niente: l'output viene scartato  quando il processo termina
++ row  un tipo percorso  l'output ripulito degli spazi, letto come percorso  quando il processo termina
+
+% 1 1 0 138a2e3290d0bbc912f4411e620cf15a
+
+@ 0 3 0 172834ad2f33c92015884ddcb218c8c7
++ Ciascuno di questi è definito da un'istanza di `Computable`. Un tipo non coperto ne acquisisce una
++ dicendo come interpretare un processo che è terminato, o che è in esecuzione. Spesso lo si fa
++ mappando un'istanza esistente, poiché `Computable` è un funtore.
+
+@ 0 1 0 0e90920bf7a80e8b00109f686ec15685
++ ### Un tipo di output implicito
+
+@ 0 3 0 01a281b4df30474113c3b15ae499e35f
++ Molti comandi hanno un tipo di output ovvio, e quelli comuni sono noti. Applicare un comando
++ direttamente, senza nominare un tipo, usa quel valore predefinito. `echo` dà testo, e `ls` dà uno
++ stream di righe:
+
+% 2 1 0 11f85318b24903711ad2fff67cff3121
+
+% 3 1 0 06e87c9710c18f531173628bd72de08f
+
+% 4 1 0 1104c66beacb78020b957725b352d4f4
+
+% 0 1 0 1542523096738b790464810f133d4bf8
+
+% 1 1 0 12646050a7236c570c485f4c40fcd9a4
+
+@ 0 1 0 1f514927f870d62802def681e93c72e6
++ ### Sostituzione ed escape
+
+@ 0 2 0 1389a04d85c773bc1e61c75d9f4e9d4a
++ Un valore sostituito in un comando subisce l'escape adatto alla sua posizione. Dove è atteso un
++ argomento:
+
+% 2 1 0 05daa0404eef56861567a3acf7f95170
+
+@ 0 6 0 1f91f292920275e40cf8359c6999676a
++ column  Un elemento sostituito
++ column  Diventa
++ row  valore  esattamente un argomento, qualunque sia il suo contenuto
++ row  lista  un argomento per ogni elemento
++ row  percorso  un argomento, il suo testo
++ row  comando  un argomento, con escape, come descritto più avanti
+
+% 1 1 0 02400bf2447c879d0910305da1b93f44
+
+@ 0 1 0 1ea6e7e484f720341c5b073cbab5efc4
++ Un nome di file che contiene uno spazio resta un solo argomento, e una lista ne diventa diversi:
+
+% 2 1 0 1661f4dbe9e0ed3b1bbb0052e574caf8
+
+% 0 1 0 1f94dce148002df10c6c0cf576de400f
+
+% 0 1 0 13e7a72627daa4df03d955a6f7ae686d
+
+% 1 1 0 107531101cf178ff1633a9f57871def6
+
+% 3 1 0 053cbfc58f5734bc0c3cf655686069bf
+
+% 4 1 0 12c5478456e0375514ae9bf5bde80a97
+
+% 5 1 0 173e4c1d35bea7991b501b2c08c1adaf
+
+% 0 1 0 1d8573b47819c3851d9f87a994426e3f
+
+% 0 1 0 0a353327ddbbeaa919c72185c3ebe525
+
+% 1 1 0 0c84ac7ca6ce04e9059c0dd7ad90b077
+
+@ 0 4 0 10c07af51b2a94271965f772e8b5ffc8
++ Si può sostituire qualsiasi tipo che descriva come diventa un argomento di un comando, quindi un
++ valore del dominio proprio di un programma, come un [percorso](paths.md), si colloca in un comando
++ senza prima trasformarlo a mano in una stringa. [Interpolazione](interpolation.md#substitutions)
++ descrive il meccanismo.
+
+@ 0 1 0 1664858239873e761231de7a6f863e48
++ ### Pipe
+
+@ 0 2 0 0c2b645c0ef17f6908366c08d1be6b7f
++ I comandi si collegano in pipe con `|`. L'output di uno diventa l'input del successivo, e la
++ pipeline si esegue, e si legge, esattamente come un singolo comando:
+
+% 2 1 0 1b01d5654f4c5499188414356555750c
+
+% 3 1 0 130b641398e26356104ac631225cd95d
+
+% 4 1 0 18352c71acecaca21024c7c6389f0967
+
+% 0 1 0 00cbbd655f0249f917448a661954cf9e
+
+% 1 1 0 160497e921ff7fa90d6d9cbb3ed5bc23
+
+@ 0 2 0 08c6d3b10d02956d0baa88d085e334b5
++ Le pipeline si appiattiscono, e non si annidano. Una pipeline di tre stadi è una sola pipeline di
++ tre comandi, comunque sia stata assemblata, e una pipeline collegata in pipe a un comando si
++ estende con esso:
+
+% 2 1 0 01345260dacbb8b7145945bcc609d92e
+
+% 3 1 0 0e2edddbb62bf4460c9cfe1c8b1fe141
+
+% 4 1 0 129f2e182aeeab0d09923a62249fe5bb
+
+% 0 1 0 122498cf71d61c5e06902d3d8641ab47
+
+% 1 1 0 0600ee37d03d73e312e6079a34c5c3e3
+
+@ 0 1 0 05035e649fa5882f0f1793c3052e561f
++ ### Comandi dentro comandi
+
+@ 0 2 0 0495f3517290f8fc15bf9acd4e401f1f
++ Un comando sostituito in un altro subisce l'escape come un singolo argomento. È ciò che serve per
++ invocare una shell, ed è ciò che le stringhe di comando costruite a mano sbagliano:
+
+% 2 1 0 163cfebd54d72b150e792bed8402c9af
+
+% 0 1 0 1ff7d71afd2f6558152381d7308f73cc
+
+% 1 1 0 1f279f10e322c6521ee1e649916115e5
+
+% 3 1 0 15c2e12870f7402717486f24607b9f1f
+
+% 4 1 0 0d4a8c5ea40002930cecc71291a6053e
+
+% 5 1 0 0ecfa74124fcff1a045b0e6f9f429f29
+
+% 0 1 0 1cc4907c1cba9a2304431f8744755ac3
+
+% 0 1 0 0ab604a307e41d6607980ea2e1c2dd85
+
+% 1 1 0 13ac671ea996f701079f41b0fb86c6ad
+
+@ 0 3 0 1c10c2e2eca7319c1947c81d6782d7ab
++ Un argomento che contiene uno spazio, una virgoletta o un carattere speciale per la shell passa
++ quindi intatto. Non c'è alcun punto in cui diventi una stringa che una shell potrebbe di nuovo
++ dividere.
+
+@ 0 1 0 058a55e027a9dac4037e22c7e928e846
++ ### Fallimento
+
+@ 0 3 0 1dee7631e1a1db8202c3c861bf338b74
++ Un comando che non si può proprio eseguire, perché il suo binario manca, o è una directory, o non
++ è eseguibile, solleva un `Exec.Error`. L'errore porta con sé il comando che è fallito, quindi
++ nomina ciò che si è tentato, invece di riportare un numero di errore del sistema operativo:
+
+% 2 1 0 16b57f91e23f997013b5168371a54257
+
+% 3 1 0 1032d05b0143d6a009bb949fcf175b9a
+
+% 4 1 0 076fdce3ecef694d10c3fb61a0627704
+
+% 0 1 0 1192aae1ace8feec09949c0089b53cfb
+
+% 1 1 0 0eaa906d417cfad20d9eff8529ca46f5
+
+@ 0 4 0 0f9736ad07b18c580c010e5404f3b377
++ Un comando che viene eseguito, e *fallisce*, è un'altra faccenda. Il suo stato di uscita fa parte
++ del suo risultato, e che cosa significhi uno stato diverso da zero lo decide chi chiama. Chiedere
++ un `Exit` dà lo stato stesso. Chiedere un `Text`, o uno stream, dà l'output, con lo stato
++ disponibile accanto.
+
+@ 0 1 0 1242b09b5d3b2e5c0aaaf58a4c3b69c8
++ ### Fork
+
+@ 0 2 0 115c1d7c6ca64e390287b65b2f288b2b
++ `exec` blocca finché il comando non termina. `fork` avvia il comando senza attendere, e
++ restituisce un `Job`, di cui si può attendere il risultato, che si può ispezionare o fermare:
+
+% 2 1 0 03e8d7dfc8cd62aa056eeb9f831a9e8f
+
+% 3 1 0 0ba4ca46185e6a0402e2eca959cadb49
+
+% 4 1 0 044de9059d63721a0bb25a426823fc80
+
+% 0 1 0 12c7c7c3246afe800dfc434d091e4976
+
+% 0 1 0 00a77b5ac24312f019eb274f3f2b80e5
+
+% 0 1 0 1bef6ebfa7de470c0771e9e8639bb9ce
+
+% 1 1 0 166081b74411eddd1b8ebbfb3ee938c9
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 8 0 043b9d9a5ac9456e183f4e3554368b00
++ column  Membro di un `Job`
++ column  Fa
++ row  `alive`  dice se il processo è ancora in esecuzione
++ row  `abort()`  chiede al processo di fermarsi
++ row  `kill()`  insiste che si fermi
++ row  `await()`  blocca in attesa del risultato
++ row  `pid`  dà il `Pid` del processo
++ row  `process`  dà il processo stesso del sistema operativo
+
+% 1 1 0 1405baca2e9d27731418c03aac5d51be
+
+@ 0 3 0 1e1eca91505650ed16c342978bc9a665
++ `pid` e `process` servono nelle occasioni in cui si deve inviare un segnale, o ispezionare un albero
++ di processi. Un `Pid` è un tipo distinto, non un numero, quindi non si può confondere con un codice
++ di uscita o un descrittore di file, e si scrive e si analizza in una forma tutta sua.
+
+@ 0 1 0 06f41a995a7b65c1026b8f00cc3bca65
++ ### Distacco
+
+@ 0 4 0 0967839de0c6f78b062d6c9f1fe6586f
++ Un processo che deve sopravvivere a quello che lo avvia, come un server o un
++ [demone](daemons.md), viene *distaccato*. `detach` lo avvia leggendo dal dispositivo nullo, e
++ scrivendo da nessuna parte, oppure accodando a un log le cui directory genitrici vengono create. Dà
++ il pid del processo, e non ne trattiene altro.
+
+@ 0 4 0 08d46ce9eba58c1c1b6ec842b004c4aa
++ Un figlio avviato con fork eredita pipe che nessuno svuota, e un server che vi scrive prima o poi
++ si blocca. Un processo distaccato non può. Il suo ambiente è
++ l'[`Environment`](environment.md#overriding-for-a-block) nell'ambito, quindi `emptyEnvironment` con
++ `variables(…)` gli dà esattamente le variabili nominate:
+
+% 2 1 0 13f344274ac0e4211f7b6eed702641fe
+
+% 3 1 0 0fd2d1043f85b34e132e75996f8e4d0a
+
+% 4 1 0 04be4619fdcfc6d515158d5bf20a8de8
+
+% 0 1 0 192f76a6c5156586131e417dd782493b
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 101d38a9f3368d921c60dd1edb09922b
+
+% 0 1 0 11d334ee5f5b05b51e04b4713d112a7e
+
+% 1 1 0 09b8435a19a33fc50ee5ff8bc943d0f5
+
+@ 0 1 0 0751c46d4cc9164608c0f0503cee0572
++ Un comando si avvia quindi in uno di tre modi oppure, tramite `pty`, su un terminale:
+
+% 2 1 0 0d782de4dc2a16e50bb88639d42ceb1d
+
+@ 0 7 0 16de78dd2f15c0e304d4497840d8f3a7
++ column  Metodo
++ column  Attende
++ column  Risponde
++ row  `exec`  finché il comando non termina  il suo risultato, come il tipo nominato
++ row  `fork`  solo finché non è partito  un `Job`, da attendere, ispezionare o fermare
++ row  `detach`  solo finché non è partito  il suo `Pid`, senza trattenerne altro
++ row  `pty`  per niente  una descrizione del comando su uno pseudo-terminale, su cui fare `exec` o aprire una `session`
+
+% 1 1 0 1e57dc05578a379403b4e4514870fd22
+
+@ 0 1 0 07364a29556ca08d07ec899851f81e18
++ ### Su un terminale
+
+@ 0 5 0 1d1d47f55ccbbf4d043dc49e405c6911
++ Gli stream standard di un comando sono di norma pipe, e molti programmi si comportano diversamente
++ quando se ne accorgono. Una shell non stampa alcun prompt, `stty` fallisce, e un editor di riga non
++ parte mai. `pty` esegue invece il comando su un nuovo pseudo-terminale della dimensione data. Il
++ comando trova allora un terminale sul suo input, sul suo output e sul suo errore, come se l'avesse
++ digitato una persona. Qui `stty` riporta la dimensione richiesta, come 30 righe e 100 colonne:
+
+% 2 1 0 0e6ce12a979f4112089e53d870b51015
+
+% 3 1 0 07b00c8d1600b12417e1e91825376c8c
+
+% 4 1 0 0c9695310c33609f0daa8038156c2bb2
+
+% 0 1 0 0261d3ba3e0e0b5007b525e52c44e87c
+
+% 1 1 0 0ac9532adbf3e2281c386a8295a7aa57
+
+@ 0 3 0 0b7b2444d61b9d2519e8a4a3e6c5dd5a
++ Per un programma interattivo, una `session` presta il comando in esecuzione a un blocco, come un
++ `Job` che si può anche ridimensionare, e termina il comando quando termina il blocco. Se il
++ programma è ancora in esecuzione, gli si riaggancia, come accadrebbe chiudendo un terminale vero.
+
+@ 0 5 0 07adb213ca4dddc008242aa3c8058ee3
++ L'output della sessione è tutto ciò che il programma scrive sul terminale, standard error
++ compreso, con le sue sequenze di escape, cioè ciò che riceverebbe un
++ [emulatore di terminale](terminal-emulator.md). Gli si può digitare qualsiasi cosa sia
++ streamable, con `writeTo`. Un terminale non ha una fine dell'input sua propria, quindi a un
++ programma che legge fino alla fine viene inviato il carattere di fine file, `^D`, invece di
++ chiudergli l'input:
+
+% 2 1 0 080231eda558364f13fdfe5104a48d9d
+
+% 3 1 0 065ae0bf455125090b3ed2aee94cab75
+
+% 4 1 0 07ab5333072043870452026ee8fffb06
+
+% 0 1 0 04c555899d6c557f16f6b54eb834c9f2
+
+% 0 1 0 1d77fad138484a1d029660655745de0a
+
+% 0 1 0 08934c2f48b5dee004f3b2aa296ab36c
+
+% 0 1 0 1567fd0f77301793028c78b4ac31aad3
+
+% 1 1 0 05beb1a0834f966c02371e4dd1c342f2
+
+@ 0 2 0 11e107a78293eb9e1a3e449665b78434
++ Il ridimensionamento invia al programma il segnale `SIGWINCH`, scrivere `\r` preme Invio, e il
++ testo che torna è `50 132`.
+
+@ 0 2 0 09ae18d3a496d08402b3d982613c9961
++ Il valore che `pty` restituisce non è esso stesso un terminale. Descrive come eseguire il comando,
++ e ogni `session` o `exec` alloca un nuovo terminale, e poi lo rilascia.
+
+@ 0 6 0 047d0f0a4c10c90811db6d11d959dab5
++ La *disciplina di linea* di un terminale dice se fa l'eco di ciò che si digita, se raccoglie
++ l'input una riga alla volta, se trasforma `^C` in un segnale, e così via. È un `Termios`, dal nome
++ della struttura POSIX, con un interruttore per ciascuna delle flag che un programma cambia più
++ spesso. `Termios.raw` le spegne tutte, come fa un programma a schermo intero prima di disegnare, e
++ `Termios.cooked` le accende tutte. Un `Termios` passato a `pty` viene impostato prima che il comando
++ parta, e il terminale di un comando in esecuzione si può leggere e modificare tramite il suo `Job`:
+
+% 2 1 0 1b2bcae6fe521f880248fe5044e5a591
+
+% 3 1 0 162e58f2d37d54f105be59531f09edc2
+
+% 4 1 0 04c9577e212fb768127d8d614d34f7dd
+
+% 0 1 0 0f9cf6b26c04c52610f2222bb9957b35
+
+% 0 1 0 038720bf3ef687640ce225521daba2df
+
+% 0 1 0 0d4d0bc4a8d2e1a404b97d70987aec5d
+
+% 0 1 0 0b7aa29ca6db685d1d63f515bd3ccabe
+
+% 0 1 0 177fcfc039061e260cfe1fb07e681f40
+
+% 1 1 0 0a8cfd8edf7374780649494d0f4fa70e
+
+@ 0 2 0 1fca025abeec6adf1fe61d19f2ccb72d
++ In modalità raw i due caratteri vengono consegnati subito, senza un a capo, e non se ne fa l'eco,
++ quindi il testo che torna è solo `hi`.
+
+@ 0 3 0 104fdddb59f6c4ec1ecc192a6020a900
++ Gli pseudo-terminali sono allocati tramite la foreign function API del JDK, su Linux e macOS. Un
++ programma che li usa va eseguito con `--enable-native-access=ALL-UNNAMED`, perché il JDK non emetta
++ avvisi al riguardo.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 7 0 023b1c4a02746ebe07e31f08553298e8
++ - [Ambiente](environment.md) decide quali variabili eredita un sottoprocesso.
++ - [Stream](streams.md) legge l'output di un comando una parte alla volta.
++ - [Git](git.md), [Docker](docker.md) e [SSH](ssh.md) pilotano programmi specifici con API
++   tipizzate tutte loro.
++ - [Interfacce a riga di comando](cli.md) copre l'altro lato: un programma che viene esso stesso
++   eseguito da una shell.
++ - [ACP](acp.md), [debugging](debugging.md), [logging](logging.md), [LSP](lsp.md),
++   [staging](staging.md) e [terminale](terminal.md) avviano e controllano processi.

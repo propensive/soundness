@@ -1,0 +1,255 @@
+orthant 2 language
+
+@ 0 1 0 196e14d071a74be00e61c574f76af100
++ info   des valeurs aléatoires de tout type, issues d'une source et d'une distribution choisies explicitement
+
+@ 0 6 0 13c7b05fe3a3dc960f298b88dc434084
++ entry .stochastic   exécute un bloc avec un nouveau `Random`, issu de la `Randomization` dans la portée
++     `stochastic(block)` initialise un nouveau générateur à partir du given `Randomization` — qui
++     doit être importé par son nom depuis le package `randomization` — et exécute `block` avec
++     celui-ci comme `Random` contextuel. Avec `seededRandomization`, et une `Seed` dans la
++     portée, tout le bloc est une fonction de la graine, si bien qu'un test aléatoire en échec
++     peut être rejoué en fournissant à nouveau la même graine ; `Seed#stochastic` fait de même
++     avec sa graine fournie.
+
+% 2 3 0 140c750129963e3417dedf955ea75133
+
+% 0 1 0 1f7114c4ade944db09a9d6bd2bf8e78c
+
+% 0 2 0 12838e53483b676215a2ebb29c11cb68
+
+@ 0 4 0 1ccdda3cadc158dd07ad7fe196cac6a5
++     Chaque bloc `stochastic` démarre un nouveau générateur, si bien que deux blocs avec la même
++     graine tirent la même séquence ; les tirages successifs *au sein* d'un bloc diffèrent. Le
++     déterminisme porte sur l'ordre des tirages : des fils d'exécution concurrents qui tirent
++     depuis un même bloc s'entrelacent différemment à chaque exécution, si bien qu'un calcul
++     concurrent qui doit être reproductible requiert un bloc, et une graine, par fil.
+
+@ 0 4 0 0f52186b85ca8b1400350909f44af2bc
++ entry .arbitrary   une valeur aléatoire de tout type `Randomizable`, issue du `Random` dans la portée
++     `arbitrary[T]()` est `Randomizable.apply` pour `T`, et tire depuis le `Random` contextuel,
++     tel que celui que fournit `stochastic`. Un `Double` requiert une `Distribution` dans la
++     portée, et une collection un `Random.Size`.
+
+% 2 3 0 0f0a509c5bb6eb2116756a7ec91d7212
+
+% 0 2 0 10fbb0601939856a0c666a5360d09e7f
+
+% 0 3 0 07674635e5bb17191c95ef0a5ee65b2e
+
+@ 0 5 0 03ed340535a669bc08f1a9ed3f3af8e6
++ entry .random   une valeur aléatoire de tout type `Randomizable`, issue du générateur global partagé
++     `random[T]()` tire depuis `Random.global`, sans requérir de `Random`, de `Randomization` ni
++     de `Seed` dans la portée. Il est destiné aux scripts et aux valeurs ponctuelles : le
++     générateur global est sans graine et partagé, si bien que rien de ce qu'on y tire ne peut
++     être reproduit. Le code qui doit être testable prend un `Random` et utilise `arbitrary`.
+
+% 2 2 0 0c7b04dda2b9cd8c02e6804511fdc34a
+
+% 0 2 0 0c6117c79477eb99163f852ac2324e9f
+
+@ 0 3 0 057cb6a0b5366b3706bfd474a63e20a4
++ entry .toss   un tirage à pile ou face équitable : `true` ou `false`, à parts égales
++     `toss()` tire depuis le `Random` dans la portée, selon la même règle que
++     `arbitrary[Boolean]()` (le signe d'un `Long`) ; un tirage est donc reproductible à partir
++     d'une `Seed`.
+
+% 2 3 0 0abda99c9b4446da1a82ab774db3d5bf
+
+% 0 3 0 1a1e0e6bcb6f79921a3284635345ff2e
+
+@ 0 1 0 1d7f150ffe54a4d5077b1b728f5e6f02
++ entry .Random   un générateur pseudo-aléatoire, sous forme de capacité dont l'état avance à chaque tirage
+
+@ 0 1 0 0c7d71c499161fc11b92cafcc20cdbc6
++   entry .global   un `Random` sur un unique générateur partagé et sans graine, à utiliser sans portée
++       Chaque appel enveloppe le même générateur commun au processus, créé paresseusement par
++       `randomization.unseededRandomization`, si bien que les tirages qui en sont issus ne sont
++       jamais reproductibles. `random` l'utilise.
++   entry .apply   un nouveau `Random` issu de la `Randomization` dans la portée, avec la `Seed` donnée pour graine
++       `Random(seed)` initialise un générateur à partir de la `Randomization` contextuelle, qui
++       est résolue avec `seed` dans la portée : avec `seededRandomization`, le générateur part de
++       `seed`, comme dans `Seed#stochastic`, et une randomisation sans graine l'ignore.
++   entry .Size   combien d'éléments a une collection aléatoire, sous forme de valeur contextuelle
+
+@ 0 12 0 0ca5864ce7a569a004585bbe9ce4eae7
++     detail
++         Un trait à méthode unique : `generate(random)` tire une taille. `Randomizable.list`,
++         `Randomizable.set` et `Randomizable.frozenArray` en requièrent un, et le package
++         `randomSizes` contient des tailles uniformes jusqu'à 10, 100, 1000, 10000 et 100000,
++         importées par leur nom.
+
+@ 0 7 0 053c6e29e99c0629122b7e63083c1d18
++     entry #generate   tire une taille depuis un `Random`
++   entry #long   tire un `Long` uniformément aléatoire
++   entry #gaussian   tire un `Double` de la loi normale centrée réduite : moyenne 0, écart type 1
++   entry #unitInterval   tire un `Double` uniformément entre `0.0` inclus et `1.0` exclu
++   entry #apply   tire une valeur de tout type `Randomizable` : `random[Point]()`
++   entry #shuffle   une `List` dont les éléments sont dans un ordre aléatoire, tiré depuis ce générateur
++       Reproductible avec une graine : la même graine mélange la même liste de la même manière.
+
+% 2 3 0 0db8045d71e4fc45021ac6c969316157
+
+% 0 3 0 16fc0aa19c27a0470b955e56b478a245
+
+@ 0 1 0 0c6b197a9a5c6ae412cd594a9191c5e8
++ entry .Randomizable   la classe de types des types dont les valeurs peuvent être tirées au hasard, sous la forme `T is Randomizable`
+
+@ 0 24 0 04a55a33bab0309b039431791e6f182e
++   entry #randomize   tire une valeur depuis un `Random`
++   entry #apply   tire une valeur depuis le `Random` contextuel : `summon[Int is Randomizable]()`
++   entry #map   une instance pour un autre type, qui transforme chaque valeur tirée
++       `randomizable.map(lambda)` tire via cette instance et applique la lambda ; le résultat capture
++       les deux.
++   entry .long   tire un `Long` uniformément aléatoire
++   entry .byte   tire un `Byte`, les huit bits de poids faible d'un `Long` aléatoire
++   entry .short   tire un `Short`, les seize bits de poids faible d'un `Long` aléatoire
++   entry .int   tire un `Int`, les trente-deux bits de poids faible d'un `Long` aléatoire
++   entry .char   tire un `Char`, les seize bits de poids faible d'un `Long` aléatoire
++       N'importe quelle unité de code UTF-16, y compris les surrogates non appariés et les caractères
++       de contrôle.
++   entry .seed   tire une `Seed` de soixante-quatre bits, à partir d'un `Long` aléatoire
++   entry .boolean   tire un `Boolean` : `true` lorsqu'un `Long` aléatoire est négatif
++   entry .list   tire une `List` dont la taille provient du `Random.Size` dans la portée
++   entry .set   tire un `Set` d'au plus le `Random.Size` dans la portée, les doublons fusionnant
++   entry .frozenArray   tire un `Array[element]^{}` gelé dimensionné par le `Random.Size` dans la portée
++       Requiert un `ClassTag` pour le type des éléments en plus d'un `Random.Size`.
++   entry .double   tire un `Double` via la `Distribution` dans la portée
++       Il n'y a pas de distribution par défaut : un `Double` ne peut être tiré tant que le code n'a
++       pas dit de quel genre de `Double` il s'agit, ce qui évite de traiter un tirage uniforme comme
++       s'il suivait une loi normale. Importez-en une depuis `randomDistributions` ou déclarez un
++       `Gaussian`, un `PolarGaussian`, une `UniformDistribution` ou un `Gamma` comme given.
++   entry .conjunction   l'instance dérivée d'un produit : chaque champ tiré à tour de rôle depuis le même `Random`
++   entry .disjunction   l'instance dérivée d'une somme : une variante choisie uniformément, puis tirée depuis le même `Random`
+
+@ 0 1 0 1f0ec1c1b20375310f031fa829443d38
++ entry .Randomization   une source de générateurs pseudo-aléatoires : avec graine, sans graine ou sûre, choisie par import
+
+@ 0 1 0 06d0e1d5812d205a0545e2e7bee612e1
++   entry #initialize   crée un nouveau générateur
+
+@ 0 1 0 03289c1a6fc466db0cd839eff66d40c8
++ entry .Seed   la graine d'un générateur reproductible : quelques octets, issus généralement d'un `Long`
+
+@ 0 7 0 10ecc9010a3bf5531a4ed0889099cc80
++   entry .apply   une graine des huit octets d'un `Long`
++   entry #value   les octets de la graine
++   entry #entropy   la taille de la graine en bits : huit par octet
++   entry #long   les huit premiers octets de la graine sous forme de `Long`, ce qui restitue le `Long` à partir duquel elle a été créée
++   entry #stochastic   exécute un bloc avec un `Random` initialisé à partir de cette graine
++       Comme `stochastic`, avec cette graine comme `Seed` contextuelle ; une `Randomization` avec
++       graine doit tout de même être dans la portée, telle que
++       `randomization.seededRandomization`.
+
+@ 0 1 0 1033d09d5aa95eb51df0b21185b77982
++ entry .Distribution   la forme selon laquelle un `Double` aléatoire est tiré : gaussienne, uniforme, gamma, …
+
+@ 0 1 0 0e89372dcfe504d10c7c8d4c626fd326
++   entry #transform   tire un `Double` depuis un `Random`, selon la forme de cette distribution
+
+@ 0 1 0 177c6954d4f8629803b0c54067b2ce12
++ entry .Gaussian   la loi normale d'une moyenne et d'un écart type, par la transformation de Box–Muller
+
+@ 1 2 0 0b91d20aec8e9ac10fd505fe975886e8
++   entry #mean   la moyenne de la distribution
++   entry #std   l'écart type de la distribution
+
+@ 0 1 0 021d7ec6423e88a905cd8b4768c99261
++ entry .PolarGaussian   la loi normale d'une moyenne et d'un écart type, par la méthode polaire
+
+@ 1 2 0 10b7a0204fd00a7a1fb2f9009bc79ef0
++   entry #mean   la moyenne de la distribution
++   entry #std   l'écart type de la distribution
+
+@ 0 1 0 185cce843ee942800435db6f6af44e55
++ entry .UniformDistribution   la distribution uniforme entre un début et une fin
+
+@ 0 2 0 1040389bd7eb5cf41816d543ee6ace57
++   entry #start   la borne inférieure de l'intervalle
++   entry #end   la borne supérieure de l'intervalle
+
+@ 0 1 0 00fb0a4c829bf29d0f9db64f18b1a2a1
++ entry .Gamma   la loi gamma d'une forme et d'une échelle, par la méthode de Marsaglia–Tsang
+
+@ 0 8 0 0b64a016539c15371cd6053215ca6190
++   entry .approximate   la loi gamma de moyenne et d'écart type donnés
++       La forme vaut moyenne² ÷ variance et l'échelle variance ÷ moyenne.
++   entry #shape   le paramètre de forme, k
++   entry #scale   le paramètre d'échelle, θ
++   entry #mean   la moyenne de la distribution, forme × échelle, sous forme de `F64`
++   entry #variance   la variance de la distribution, forme × échelle², sous forme de `F64`
++   entry #variationCoefficient   le coefficient de variation, 1 ÷ √forme, sous forme de `F64`
++   entry #skewness   l'asymétrie de la distribution, 2 ÷ √forme, sous forme de `F64`
+
+@ 0 1 0 1821bf3ea8c75e2f1a22ffac7b6771b3
++ entry .randomization   les sources d'aléa standard, chacune un given à importer par son nom
+
+@ 0 16 0 0ea3c4ba38288b69082756b904ab6685
++   entry .unseededRandomization   un nouveau `java.util.Random` à chaque fois : rapide, variant d'une exécution à l'autre
++   entry .secureUnseededRandomization   un `SecureRandom`, initialisé par la plateforme, pour les valeurs qui ne doivent pas être prédites
++   entry .stronglySecureRandomization   `SecureRandom.getInstanceStrong` : la source la plus forte de la plateforme, qui peut bloquer
++       Adapté aux clés de longue durée ; la source forte peut bloquer pendant que le système
++       rassemble de l'entropie, elle n'est donc pas destinée à la génération en masse.
++   entry .seededRandomization   un `java.util.Random` initialisé à partir de la `Seed` dans la portée : entièrement reproductible
++       Requiert un given `Seed`. Chaque générateur qu'il initialise part de la même graine, si
++       bien que deux blocs `stochastic` qui l'utilisent tirent la même séquence.
++   entry .secureSeededRandomization   un `SecureRandom` initialisé à partir de la `Seed` dans la portée
++       Requiert un given `Seed`. Un `SecureRandom` peut mêler la graine à sa propre entropie, si
++       bien que sur la plupart des plateformes la séquence n'est pas reproductible ; utilisez-le
++       pour compléter une source sûre, non pour en rejouer une.
++   entry .wasiRandomization   tire depuis l'interface WASI `wasi:random/random` d'un composant Wasm
++       Dans `capricious.wasi`. Un given inline, expansé là où il est invoqué, qui appelle
++       `get-random-u64` via un `WasiRandom` ; il requiert `wasiApis.wasiRandomApi` dans la portée
++       et ne fonctionne que dans du code compilé pour une cible Wasm.
+
+@ 0 1 0 1f07f91f2e8664b50670a12262b9e6be
++ entry .randomDistributions   des distributions prêtes à l'emploi pour les `Double` aléatoires, chacune un given à importer par son nom
+
+@ 0 4 0 0b8d0a0a95745e6314ea884e90de5d9c
++   entry .gaussianDistribution   la loi normale centrée réduite : moyenne 0, écart type 1
++   entry .uniformUnitIntervalDistribution   uniforme entre 0 et 1
++   entry .uniformSymmetricUnitIntervalDistribution   uniforme entre −1 et 1
++   entry .binaryDistribution   un `Double` construit à partir de soixante-quatre bits aléatoires, de n'importe quelle grandeur
+
+@ 0 1 0 054e94f0734d19981a79c27e330b5180
++ entry .randomSizes   des tailles uniformes pour les collections aléatoires, chacune un given à importer par son nom
+
+@ 0 5 0 111d5f09361148500dc691993c960943
++   entry .uniformSizeUpto10   une taille de 0 à 9
++   entry .uniformSizeUpto100   une taille de 0 à 99
++   entry .uniformSizeUpto1000   une taille de 0 à 999
++   entry .uniformSizeUpto10000   une taille de 0 à 9999
++   entry .uniformSizeUpto100000   une taille de 0 à 99999
+
+@ 0 1 0 1b2b1a3687e4f5be09b5e41226c2d585
++ entry .randomTexts   des `Text` aléatoires pour les tests, chacun un given à importer par son nom
+
+@ 0 4 0 15cdca36c3c7de51168b6ab2f0f9c5a8
++   entry .naughtyStringsText   tire depuis la Big List of Naughty Strings : du texte qui fait souvent échouer les analyseurs
++       Chaque tirage choisit une ligne de la Big List of Naughty Strings fournie — mots réservés,
++       cas limites d'Unicode, tentatives d'injection, espaces inhabituels — lue depuis la
++       ressource du classpath `/capricious/blns.txt` lors de la première utilisation du given.
+
+% 0 4 0 193de65bf5e59da1121ab1398d862867
+
+% 0 2 0 1b598259e6d967170d4118efa640afa5
+
+@ 0 5 0 0a8fb902c8c50e361b4a93fa86daf1f3
++ entry .WasiRandom   un `java.util.Random` alimenté par une source d'entropie externe de 64 bits, telle que celle de WASI
++     Dans `capricious.wasi`. `WasiRandom(entropy)` adapte une fonction qui renvoie des `Long`
++     aléatoires au contrat `next` de `java.util.Random`, en prenant les bits de poids fort de
++     chacun, si bien qu'il peut servir de base à un `scala.util.Random` et donc à une
++     `Randomization`. Sa graine héritée n'est jamais utilisée. `randomization.wasiRandomization`
++     est construit dessus.
+
+@ 0 4 0 127784b0a74e33d9008b28077ebe59ba
++ entry .WasiRandomApi   le type de l'interface WIT `wasi:random/random`, telle que capricious la lie
++     Dans `capricious.wasi` : une `Interface in Wit` typée par les définitions WIT fournies dans
++     `/capricious/random.wit`, via laquelle appelle `randomization.wasiRandomization`. Le given
++     est `wasiApis.wasiRandomApi`.
+
+@ 0 1 0 0e5fd6d44c60655614723ec074eff613
++ entry .wasiApis   les liaisons d'interfaces WIT dont capricious a besoin sur WASI, chacune un given à importer par son nom
+
+@ 0 1 0 1a3e4712d4a10b3711bf93d7921864ce
++   entry .wasiRandomApi   l'interface `wasi:random/random`, lue depuis `/capricious/random.wit`

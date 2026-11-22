@@ -1,0 +1,40 @@
+orthant 2 language
+
+% 0 1 0 1cd264e58d1e637101c36854b3b3702b
+
+@ 0 1 0 0ff2fc062be2430c00dbf785cc67083f
++ Se lanza cuando falla un flujo OAuth contra un proveedor remoto.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 3 0 1227c6afc583442917f248f4428e04a5
++ Orthodoxy media en los intercambios de OAuth 2.0. Cualquier fallo —de red, de análisis, de estado
++ o de ámbito— aparece como una de las variantes siguientes. El mensaje es
++ `OAuth failed because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 11 0 1990aee9c6705d0502ee21e116372ca4
++ column  Código
++ column  Motivo
++ column  Significado
++ column  Mensaje
++ column  Solución
++ row  `↯/s.117.1.1`  `Connection`  Falló una conexión TCP/TLS con el proveedor OAuth.  `[↯/s.117.1.1] OAuth failed because could not connect to the OAuth provider at https://example.com because the connection was refused`  Verifica la conectividad de red, la URL del proveedor y la configuración TLS. Inspecciona el `ConnectError.Reason` interno para conocer los detalles.
++ row  `↯/s.117.1.2`  `InvalidJsonResponse`  El proveedor devolvió un cuerpo que no se pudo analizar como JSON.  `[↯/s.117.1.2] OAuth failed because Invalid JSON response`  Consulta la documentación del proveedor sobre el formato de respuesta esperado; inspecciona la respuesta en bruto en busca de pistas.
++ row  `↯/s.117.1.3`  `UnexpectedHttpStatus`  El proveedor respondió con un estado fuera del conjunto esperado.  `[↯/s.117.1.3] OAuth failed because the provider returne an unexpected HTTP status: 500`  Consulta la documentación de estados del proveedor; muchos proveedores devuelven 4xx para los errores del cliente, con JSON de diagnóstico en el cuerpo.
++ row  `↯/s.117.1.4`  `InsufficientPrivileges`  El usuario no concedió un ámbito que solicitó la aplicación.  `[↯/s.117.1.4] OAuth failed because the user has not granted access to read:user`  Vuelve a pedírselo al usuario incluyendo el ámbito necesario, o degrada con elegancia la funcionalidad que lo necesita.
++ row  `↯/s.117.1.5`  `Unauthorized`  El usuario denegó explícitamente la autorización, o el proveedor rechazó las credenciales.  `[↯/s.117.1.5] OAuth failed because authorization was not granted`  Muestra un mensaje claro al usuario y reinicia el flujo OAuth si procede.
++ row  `↯/s.117.1.6`  `Other`  Un error diverso que no encajaba en las categorías anteriores.  `[↯/s.117.1.6] OAuth failed because an unexpected error occurred`  Inspecciona los registros y cualquier causa adjunta al error. Esta variante es genérica a propósito; en el futuro puede añadirse un motivo más específico.
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Véase también
+
+@ 0 1 0 03287911e639c5a7105007e6dd07c192
++ - Fuente: `lib/orthodoxy/src/core/orthodoxy.OAuth.scala`

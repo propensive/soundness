@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 30 0 0642d31c7b12f98a19ed76289a4256e7
++   entry .int   dekodiert einen `Int` aus Dezimaltext und unterscheidet nicht parsbar von außerhalb des Bereichs
++       Benötigt einen `Tactic[Number.Error]`. Parst mit `Integer.parseInt`, daher muss der Text
++       eine optional vorzeichenbehaftete Dezimalzahl ohne umgebende Leerzeichen sein. Text, der
++       keine ganze Zahl ist, löst `Number.Error` mit `Reason.Unparseable` aus; eine ganze Zahl
++       außerhalb des Bereichs eines `Int` löst ihn mit `Reason.OutOfRange` aus.
++   entry .byte   dekodiert ein `Byte` aus Dezimaltext und unterscheidet nicht parsbar von außerhalb des Bereichs
++       Benötigt einen `Tactic[Number.Error]`. Text, der keine ganze Zahl ist, löst `Number.Error`
++       mit `Reason.Unparseable` aus; eine ganze Zahl außerhalb von −128 bis 127 löst ihn mit
++       `Reason.OutOfRange` aus.
++   entry .short   dekodiert einen `Short` aus Dezimaltext und unterscheidet nicht parsbar von außerhalb des Bereichs
++       Benötigt einen `Tactic[Number.Error]`. Text, der keine ganze Zahl ist, löst `Number.Error`
++       mit `Reason.Unparseable` aus; eine ganze Zahl außerhalb des Bereichs eines `Short` löst
++       ihn mit `Reason.OutOfRange` aus.
++   entry .long   dekodiert einen `Long` aus Dezimaltext und unterscheidet nicht parsbar von außerhalb des Bereichs
++       Benötigt einen `Tactic[Number.Error]`; parst mit `java.lang.Long.parseLong`. Text, der
++       keine ganze Zahl ist, löst `Number.Error` mit `Reason.Unparseable` aus; eine ganze Zahl
++       außerhalb des Bereichs eines `Long` löst ihn mit `Reason.OutOfRange` aus.
++   entry .double   dekodiert einen `Double` aus Text und löst `Number.Error` aus, wenn er nicht parsbar ist
++       Benötigt einen `Tactic[Number.Error]`; parst mit `java.lang.Double.parseDouble`, sodass
++       Exponenten, `NaN` und `Infinity` so akzeptiert werden, wie Java sie akzeptiert.
++   entry .float   dekodiert einen `Float` aus Text und löst `Number.Error` aus, wenn er nicht parsbar ist
++       Benötigt einen `Tactic[Number.Error]`; parst mit `java.lang.Float.parseFloat`.
++   entry .char   dekodiert einen `Char` als das erste Zeichen des Texts
++       Benötigt keine Taktik. Jeder Text nach dem ersten Zeichen wird ignoriert, und auf leeren
++       Text wird nicht geprüft: Bevorzugen Sie `As[Char]`, das nur auf Text aus genau einem
++       Zeichen passt.
++   entry .boolean   dekodiert einen `Boolean` aus jeder `Truth`-Schreibweise im Geltungsbereich, in beliebiger Groß-/Kleinschreibung, und löst `Truth.Error` aus
++       Benötigt einen `Tactic[Truth.Error]` und sammelt jede `Truth` im Geltungsbereich
++       (`Every[Truth]`). Der Text wird getrimmt und in Kleinbuchstaben umgewandelt und dann jeder
++       Schreibweise der Reihe nach angeboten; Text, den keine erkennt, löst `Truth.Error` aus.
++       `Truth.trueFalse` im Begleitobjekt von `Truth` ist immer im Geltungsbereich, und jedes
++       importierte `truths`-Given fügt eine Schreibweise daneben hinzu, statt sie zu ersetzen.
+
+@ 0 18 0 16885b2e9230ab0910a207397079e908
++   entry .stringText   wandelt einen `String` in `Text` um
++   entry .irrefutable   ein `String` wird nach der Umwandlung in `Text` mit dem `Irrefutable` von `Text` umgewandelt
++   entry .textString   wandelt `Text` in einen `String` um
++   entry .ident   wandelt jeden Wert in sich selbst um
++   entry .byteShort   erweitert ein `Byte` zu einem `Short`
++   entry .byteInt   erweitert ein `Byte` zu einem `Int`
++   entry .byteLong   erweitert ein `Byte` zu einem `Long`
++   entry .byteFloat   erweitert ein `Byte` zu einem `Float`
++   entry .byteDouble   erweitert ein `Byte` zu einem `Double`
++   entry .shortInt   erweitert einen `Short` zu einem `Int`
++   entry .shortLong   erweitert einen `Short` zu einem `Long`
++   entry .shortFloat   erweitert einen `Short` zu einem `Float`
++   entry .shortDouble   erweitert einen `Short` zu einem `Double`
++   entry .intLong   erweitert einen `Int` zu einem `Long`
++   entry .intDouble   erweitert einen `Int` zu einem `Double`
++   entry .floatDouble   erweitert einen `Float` zu einem `Double`
++   entry #unapply   wandelt einen Wert um; es kann nicht fehlschlagen
++   entry #contramap   eine unwiderlegbare Umwandlung aus einem neuen Typ, die zuerst eine reine Funktion anwendet

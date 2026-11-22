@@ -1,0 +1,194 @@
+orthant 2 language
+
+@ 0 1 0 051c393d42566eba119e5b64aae230ef
++ # Transiciones totales
+
+@ 0 8 0 0380acc2c1c669c409574d5022c7634e
++ La segunda regla de oro, compañera de hacer que los
++ [estados imposibles sean irrepresentables](impossible-states.md): toda operación que lleva un
++ valor de un estado a otro debe ser total, es decir, estar definida para toda entrada que pueda
++ recibir. Cuando todos los estados de partida son válidos y toda transición entre ellos es total, un
++ programa que empieza en un estado correcto nunca puede salir de uno. La parcialidad —una operación
++ no definida para algunas de sus entradas— es la grieta por la que los estados inválidos vuelven a
++ colarse, así que Soundness la elimina en el diseño, normalmente dando a una operación un tipo de
++ retorno lo bastante rico para expresar los casos que de otro modo no podría tratar.
+
+@ 0 9 0 084b649d555c075f020df2cfe600353e
++ El compilador vigila la totalidad allí donde se le permite, y debe permitírsele. Una coincidencia
++ de patrones a la que le falta un caso es la parcialidad en su forma más evidente, y Scala la
++ notifica; por eso los avisos que exigen que las coincidencias sean exhaustivas deben activarse y
++ tratarse como errores, nunca suprimirse como ruido. Bajo ese régimen, añadir un caso a una
++ enumeración produce un error de compilación en cada coincidencia que no lo ha considerado: el
++ compilador recorre las consecuencias de un cambio a lo largo del código, que es precisamente el
++ análisis que de otro modo un programador haría de memoria. Una coincidencia deliberadamente parcial
++ sigue pudiendo expresarse —`.absolve` marca la aserción, de forma visible y fácil de buscar—, así
++ que la disciplina no cuesta nada salvo la parcialidad accidental, que es la que se convierte en un
+
+% 0 1 0 0496709f6664e91a18739307aca1aa82
+
+@ 0 1 0 186faf91eec86756167ff2234ad6a710
++ ## Hacer total una operación
+
+@ 0 2 0 0f7c1a813497e6b91921a8778bd6ae18
++ Una operación es parcial cuando no tiene nada que devolver para algunas de sus entradas. Hay tres
++ maneras honestas de hacerla total, y una deshonesta:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 11cd34bf00dada860d9ffa3b4ec1da02
++ column  Técnica
++ column  Una entrada no definida se convierte en
++ row  ampliar el tipo de retorno para admitir la ausencia  un `Optional` que es `Unset`
++ row  ampliarlo para admitir el fallo  un error tipado, tratado en el punto de llamada
++ row  restringir el tipo de entrada  algo imposible de pasar
++ row  devolver un valor plausible (deshonesto)  una respuesta errónea que se propaga
+
+% 1 1 0 04ebc07666a7d03b1e4e8030f5006fde
+
+@ 0 2 0 0a7cc2ca1f937e5b1074f693cfade978
++ **Ampliar el tipo de retorno para admitir la ausencia.** Una búsqueda que puede no encontrar nada
++ devuelve un `Optional`, de modo que «no encontrado» es un valor en lugar de una excepción o un
++ `null`:
+
+% 2 1 0 1e27a3ad23b450a70d81455f0902d3d5
+
+% 3 1 0 136eeee06391e94e12124bd2eb8ef163
+
+% 4 1 0 1eb1be12215045940fcda55cb020b4dc
+
+% 0 1 0 13cadbf6701c1381057c99c4597df9f2
+
+% 0 1 0 1041d81669629afb19bb312d88368372
+
+% 1 1 0 053d737a756613dd089df0355f3b9721
+
+@ 0 2 0 094467dcacc3351001fd37b460f5a1e5
++ **Ampliarlo para admitir el fallo.** Cuando quien llama debe saber *por qué*, la operación lanza un
++ error tipado y la respuesta se elige en el punto de llamada:
+
+% 2 1 0 149addf7893fb50616946595535e0105
+
+% 3 1 0 1a49b0f846ace2590d31f4cbdc308030
+
+% 4 1 0 0e1b30dbf9d8615b1dae164149c5e9b4
+
+% 0 1 0 0ff2b3869304cefd13b88a89eb9fe0b9
+
+% 1 1 0 1f38698bdca933121d90644d046bac97
+
+@ 0 3 0 02fd346296fe672b0d8854089ae69d7a
++ **Restringir el tipo de entrada.** Lo mejor de todo, cuando es posible: si la operación no está
++ definida para algunas entradas, se toma un tipo de entrada que las excluya. `Port` existe
++ precisamente para que `connect` no tenga que ser parcial.
+
+@ 0 3 0 0c3bf664d8bc3615033821d673880749
++ La manera deshonesta es devolver un valor plausible para los casos no definidos —cero, vacío, el
++ primer elemento—, lo que convierte un fallo detectable en una respuesta errónea que se propaga.
+
+@ 0 1 0 0716201a1bf874d10e84359af437c926
++ ## La exhaustividad como herramienta de propagación de cambios
+
+@ 0 2 0 1645cd0a953290680cc933ec113cded0
++ La consecuencia más valiosa de tratar los avisos de exhaustividad como errores no es que las
++ coincidencias de hoy estén completas. Es lo que ocurre mañana, cuando se añade un caso:
+
+% 2 1 0 087ced948740690d0f183b286ae69c26
+
+% 3 1 0 1054819e68b5b56e1cfab6f4be9cfd9d
+
+% 1 1 0 11fbab526cc88d1908b66312e2428bc1
+
+@ 0 1 0 144162adf60bb3700126e9667e75e75a
++   label Ayer
+
+% 1 1 0 1db238813c8893741523d4496e78e115
+
+% 2 1 0 004f6f8d30db98ea1247d8117561101f
+
+% 3 1 0 181540b3ff133c87049bb162330d846a
+
+% 4 1 0 058dacf6b053bbac10e3c9f6064029b3
+
+% 5 1 0 1399081ad157e076174a865f1c60abba
+
+% 1 1 0 0f013ec79b1a40eb11d8f298b69ee2e1
+
+@ 0 1 0 08c3e991d4ce67670566e27a10373c7e
++   label Hoy
+
+% 1 1 0 053be94268513bd70c46f588298eb381
+
+% 2 1 0 1ce289895036543c0d4665ba07d3fc38
+
+% 3 1 0 00b4108b1257bd860cfa120697949318
+
+% 4 1 0 025eae1bb700b67c04dc83b5044a9c09
+
+% 5 1 0 0d72eb09c042ef7d0261ee30083b3a9c
+
+% 0 1 0 0a3988a6d690a31d06d4156ed49e0ec5
+
+% 1 1 0 170184d4a6fd7d170d5258ed1c64e5d1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 4 0 036eb75aa121e08d153665434b4a227e
++ Cada coincidencia sobre `Connection` que no ha considerado `Draining` deja ahora de compilar, y el
++ compilador las enumera. Ese es precisamente el análisis que de otro modo haría de memoria un
++ programador cuidadoso, a lo largo de un código que quizá no escribió él, hecho de forma exhaustiva,
++ en segundos, en cada construcción.
+
+@ 0 3 0 13078e2cfa3a6f0211b88f48a041071f
++ Por eso el aviso debe ser un *error*. Como aviso es orientativo, y los diagnósticos orientativos se
++ acumulan hasta que nadie los lee; como error es una herramienta que hace seguro añadir un caso.
+
+@ 0 1 0 1cb57f5bd90078ae093730dcd833cd57
++ ## Parcialidad deliberada, marcada
+
+@ 0 3 0 0d24177b9eb217831bfa352a93c93db5
++ Algunas coincidencias realmente no pueden ser exhaustivas, normalmente porque el compilador no
++ puede ver un invariante que el código ya ha establecido. Suprimir el aviso ocultaría los casos
++ accidentales junto con el deliberado, así que en su lugar se marca la aserción:
+
+% 2 1 0 17d758177996e19210f1dbf908b4d30d
+
+% 3 1 0 04c84cbef5319ab9055d474e429d73ef
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 1 1 0 05fa8d9217c170b60ac90a2b81c4d78c
+
+% 0 1 0 08e467dfc24261961ce28df90932e912
+
+% 0 1 0 0f6feb0aa11db938020f77d8a4c8d410
+
+% 1 1 0 086b0f9fb7d0dbc811f203fd42690c7a
+
+@ 0 4 0 0ef90bbf3427df011fdb039237ae6e8c
++ `absolve` es el `runtimeChecked` de Scala con un nombre que se lee como lo que significa. Marca una
++ sola expresión, así que no se silencia nada más; es fácil de buscar con grep, así que cada una de
++ esas aserciones puede encontrarse y revisarse; y es una afirmación que hace quien escribe, que es
++ exactamente el estatus que debe tener una aserción así.
+
+@ 0 1 0 0844dd3733d39264191e394839efcefa
++ ## Dónde la totalidad no es alcanzable
+
+@ 0 1 0 11d85fc892e5c591034216e058970788
++ Dos límites, que vale la pena enunciar.
+
+@ 0 4 0 1bf77ec00b45c5171c5bb437cb8f07c1
++ **El mundo es parcial.** Abrir un fichero que existe puede fallar igualmente: el disco, los
++ permisos, una carrera con otro proceso. Ningún tipo de retorno hace eso total; la respuesta honesta
++ es un error tipado, que es totalidad de la *signatura* y no de la operación.
+
+@ 0 5 0 13b6475dcaf768c70af1931bf991c978
++ **Algunos invariantes van más allá del sistema de tipos.** Si un nombre de host se resuelve, si dos
++ valores validados de forma independiente son coherentes entre sí, si un esquema y un documento que
++ se analizaron ambos concuerdan de verdad: todo esto puede comprobarse, pero no por construcción. La
++ disciplina consiste en hacer que la comprobación produzca un valor que lleve su resultado, de modo
++ que el código posterior herede la garantía en lugar de repetir la comprobación.
+
+@ 0 3 0 0f9d9d7ac71c5adc12251665926de193
++ Véase [estados imposibles](impossible-states.md) para la regla compañera: las dos son inútiles por
++ separado, ya que las transiciones totales entre estados sin sentido no conservan nada que merezca
++ conservarse.

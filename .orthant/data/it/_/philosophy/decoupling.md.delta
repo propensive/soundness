@@ -1,0 +1,117 @@
+orthant 2 language
+
+@ 0 1 0 14d4c2c921e3da6e1f0c7d7e7bd995a2
++ # Disaccoppiamento
+
+@ 0 6 0 143ea76d1855e0ac17cbd8c8cfffb4bb
++ I moduli di Soundness sono disaccoppiati: librerie non correlate non dipendono direttamente l'una
++ dall'altra, nemmeno quando devono interoperare. Piccole astrazioni condivise, typeclass che
++ descrivono solo ciò che serve, permettono a due moduli di cooperare senza che nessuno dei due
++ conosca l'altro, così ciascuno si può adottare à la carte e può evolvere per conto suo.
++ L'integrazione senza attriti che gli utenti sperimentano deriva da queste interfacce comuni, non da
++ una rete di dipendenze rigide tra componenti che dovrebbero restare separati.
+
+@ 0 1 0 0f5eb0012c34d0d61204d22c48b542b3
++ ## Il problema, in termini concreti
+
+@ 0 3 0 18f5e3c1cc9d9aa20898568ddfa25257
++ Una libreria per il tempo e una libreria HTTP devono entrambe parlare di istanti: una li produce,
++ l'altra li mette nelle intestazioni `Date`. Ci sono tre modi convenzionali di organizzare la cosa,
++ e sono tutti e tre cattivi.
+
+@ 0 4 0 03b4f92376456fee0cff7269ea457b6b
++ La libreria HTTP può dipendere dalla libreria per il tempo, imponendola a ogni utente che voleva
++ solo HTTP. La libreria per il tempo può dipendere dalla libreria HTTP: è assurdo, ma succede.
++ Oppure ciascuna può definire il proprio tipo di istante, lasciando agli utenti la conversione a ogni
++ confine, e lasciando le due definizioni libere di divergere.
+
+@ 0 1 0 127bb35d79a426760cd0c587e83ba2e6
++ ## L'organizzazione che usa Soundness
+
+@ 0 2 0 096fce701c29626e090f37610e134976
++ Un terzo modulo definisce un *marcatore* e una coppia di typeclass che dicono come un tipo qualsiasi
++ si converte da e verso una rappresentazione comune:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 0a8fd027f633887d0882c7e438546cf9
+
+% 0 1 0 0cad7b252d2a92491473765dc6a0d8a8
+
+% 0 1 0 15840b139a4f05950f0b5301c0ad4ced
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 039f1a94257dacaa048323a5a50c58ab
++ La libreria per il tempo dichiara che il *suo* tipo di istante è astraibile attraverso `Instants`.
++ La libreria HTTP dichiara di accettare qualunque cosa sia astraibile attraverso `Instants`. Nessuna
++ delle due nomina l'altra, e nessuna viene caricata a meno che il programma non la usi.
+
+@ 0 3 0 12175ba52cc8a1020395bf142976511d
++ Questi marcatori sono piccoli e non sono molti: `Instants`, `Durations`, `Dates`, `Paths`, `Urls`,
++ `HttpStreams`, `Text`, e pochi altri. Ciascuno nomina un concetto su cui diverse librerie devono
++ accordarsi, e non definisce nient'altro che l'accordo.
+
+@ 0 1 0 1856c817f4f0ebd80fe9aa1c325d6756
++ ## Che cosa si guadagna
+
+@ 0 3 0 1e28ab4da8ef97b01d4a51c6d69431c8
++ **Adozione à la carte.** Un programma che vuole solo il parsing JSON ottiene un grafo delle
++ dipendenze che contiene il parsing JSON. Le integrazioni che non usa non sono nella build, perché
++ nessuno dipende dai moduli che le forniscono.
+
+@ 0 4 0 0e6a7a39e5b5e9c1091f27ad954539f0
++ **I tipi stranieri partecipano.** La typeclass non ha implementazioni privilegiate, quindi un
++ `java.time.Instant`, o un tipo di una libreria non correlata, diventa utilizzabile ovunque sia
++ atteso un istante fornendo un'istanza. Niente va avvolto, e l'integrazione vive nel programma
++ anziché richiedere che una delle due librerie cambi.
+
+@ 0 3 0 160d9ee4f5b57aa81caabdb1ca3cde66
++ **Evoluzione indipendente.** La libreria per il tempo può cambiare la propria rappresentazione
++ interna senza che la libreria HTTP venga ricompilata, perché ciò che condividono è il marcatore e
++ la forma della conversione, non un tipo.
+
+@ 0 1 0 00fc4aca294fc5280d9897a1b684b37c
++ ## Lo stesso principio dentro un modulo
+
+@ 0 3 0 051a4655d945bcf109cafdac2e03a677
++ Il disaccoppiamento opera anche sotto il confine del modulo, come *giuntura di backend*: le
++ operazioni di cui una capability ha bisogno sono raccolte in un unico trait, e le implementazioni
++ specifiche delle piattaforme sono fornite separatamente.
+
+@ 0 7 0 1757a738b628648e0f1fc3d8d54f01ab
++ `FilesystemBackend` raccoglie stat, apertura, lettura, scrittura, elenco, link ed eliminazione;
++ tutto ciò che c'è nell'API del [filesystem](../en/modules/filesystem.md) è definito in termini di
++ queste operazioni. L'implementazione `java.nio`, l'implementazione WASI su `wasi:filesystem`, e
++ qualunque implementazione futura sono intercambiabili, e l'API rivolta all'utente non nomina alcuna
++ piattaforma. La stessa forma dà ai [socket](../en/modules/sockets.md) un `SocketBackend`, alla
++ [compressione](../en/modules/compression.md) i suoi motori DEFLATE per piattaforma, e alle
++ [immagini](../en/modules/images.md) i loro codec.
+
+@ 0 3 0 133995449cc82c4f130a298c2204f2ad
++ È questo che fa girare lo stesso codice sulla JVM, in un browser, in un binario nativo e dentro un
++ componente WebAssembly: non la compilazione condizionale, ma una giuntura abbastanza stretta da
++ poterci mettere dietro onestamente diverse implementazioni.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Quanto costa
+
+@ 0 4 0 0701500932dba1781c55e7085e68475f
++ L'indirezione non è gratuita da leggere. Seguire come un valore `Yaml` diventa un corpo HTTP
++ significa trovare l'istanza `Abstractable across HttpStreams`, che non si trova né dove sta il
++ codice YAML né dove sta il codice HTTP, e un lettore che non conosce la convenzione non indovinerà
++ dove cercare.
+
+@ 0 4 0 07177ace6f66ec990c9bdbbc11326067
++ L'attenuante è che esiste *una* convenzione anziché un meccanismo diverso per ogni integrazione,
++ quindi il costo si paga una volta nell'apprendimento e non una volta per ogni confine. Ma è un
++ costo reale, ed è il motivo per cui l'insieme dei marcatori viene tenuto piccolo: ciascuno è un
++ pezzo di vocabolario che ogni lettore prima o poi deve acquisire.
+
+@ 0 2 0 0f653ca96e30b4fa1b305615b38b529f
++ Vedi [firme oneste](honest-signatures.md) per il motivo per cui le typeclass restano minimali, e
++ [componibilità](composability.md) per ciò che le interfacce condivise rendono possibile.

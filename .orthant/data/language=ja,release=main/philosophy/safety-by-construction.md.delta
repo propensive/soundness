@@ -1,5 +1,0 @@
-orthant 1 language
-
-- See [impossible states](impossible-states.md) for the rule this serves, and
-- [interpolation](/doc/soundness/modules/interpolation.md) for how such a literal is built.
-+ これが仕える規則については[不可能な状態](impossible-states.md)を、そうしたリテラルがどう作られるかについては[補間](/doc/soundness/modules/interpolation.md)を参照。

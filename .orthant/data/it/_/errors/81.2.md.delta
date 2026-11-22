@@ -1,0 +1,82 @@
+orthant 2 language
+
+% 0 1 0 134735d34eb71cf017d174d515b950fb
+
+@ 0 1 0 1d875e78cb65a32f0633838315ab108a
++ Sollevato quando dei dati MIME multipart non possono essere analizzati.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 5 0 17a4469920ca3ccb04bef3165c787bb6
++ Gesticulate analizza corpi multipart delimitati da un confine dichiarato nell'intestazione
++ `Content-Type`. Ogni parte ha le proprie intestazioni e il proprio corpo. Questo errore segnala un
++ problema strutturale nello stream multipart. Il messaggio è
++ `multipart data could not be read because $reason`.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianti
+
+% 0 1 0 03b81b73ddd7267518f25999a3ba4dd8
+
+@ 0 2 0 06de294ad6efdc0f08541bbf0c9df6e8
++ Nella posizione del parser era atteso un carattere specifico, ma ne è stato incontrato uno
++ diverso.
+
+@ 0 1 0 179cd578b684d6f91fa543e88d229f51
++ **Esempio.** `[↯/s.81.2.1] multipart data could not be read because the character ':' was expected`
+
+@ 0 2 0 1b1f8d2a051f110b1c2d1b7caffa7abd
++ **Soluzione.** Verificare che il producer emetta dati multipart validi; controllare se mancano CRLF
++ o confini.
+
+% 0 1 0 06327e7539aefd3e1c54a53a8580d6df
+
+@ 0 1 0 19b8128eddd2072519b2007300c69d1d
++ Sono comparsi byte dopo il confine di chiusura.
+
+@ 0 1 0 1447cfdebb48387c11532467976372f2
++ **Esempio.** `[↯/s.81.2.2] multipart data could not be read because the stream continues beyond the last part`
+
+@ 0 2 0 146a6b0c128621d01fcafbcc843d5a91
++ **Soluzione.** Troncare il corpo al confine di chiusura, o smettere di emettere byte dopo di esso.
+
+% 0 1 0 045ffbc24f719ee916ada862b714fe96
+
+@ 0 2 0 1079b41110a9b279025e8043caaf632c
++ Un confine è stato seguito da contenuto che non corrisponde al formato di terminazione documentato.
+
+@ 0 1 0 0875a7f4316e7e7410f6451484f34424
++ **Esempio.** `[↯/s.81.2.3] multipart data could not be read because unexpected content followed the boundary`
+
+@ 0 2 0 1b0fd42990acc13616be6c9c63d00662
++ **Soluzione.** I confini devono essere seguiti da `\r\n` (inizio della parte successiva) o da
++ `--\r\n` (fine del corpo); correggere il producer.
+
+% 0 1 0 0706709ad094f8f608b4209d08210c02
+
+@ 0 1 0 06502d9c18b588a51e4ccb50e9bf5dd4
++ L'intestazione `Content-Type` di una parte non è un tipo di media valido.
+
+@ 0 1 0 004dc69806bbad6c06a819903e709254
++ **Esempio.** `[↯/s.81.2.4] multipart data could not be read because the media type is invalid`
+
+@ 0 1 0 089ccafbd17c28bf0ec2d540f2916ec7
++ **Soluzione.** Vedi `↯/s.81.1` per le regole sui tipi di media.
+
+% 0 1 0 1c2ada53b6f13e370a507d969d35893f
+
+@ 0 1 0 1db8dfa05ca0a9e217d749a66e3b58a7
++ L'intestazione `Content-Disposition` di una parte ha un formato errato.
+
+@ 0 1 0 0eda9a5f2afde8180e9ed8487d17192b
++ **Esempio.** `` [↯/s.81.2.5] multipart data could not be read because the `Content-Disposition` header has the wrong format ``
+
+@ 0 2 0 126204f5d620df1008ccccac0cb9082f
++ **Soluzione.** Usare la forma standard, ad esempio `form-data; name="field"; filename="x.txt"`.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 09952908d92f8c7f0ebacac01d6389de
++ - Sorgente: `lib/gesticulate/src/core/gesticulate.Multipart.scala`

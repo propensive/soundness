@@ -1,0 +1,28 @@
+orthant 2 language
+
+@ 0 11 0 0d8437f96b7f51390097d96c0bd1f4ef
++ O plugin flare (fixado em `etc/tools`, configurado por `.pyrocosm/flare/config.tel`, habilitado
++ em cada componente verificado pelas opções `-P:flare:` em `flareToolchain`) fornece o censo: cada
++ regra da configuração contada sobre os fontes — os escapes declarados (`unsafely`, a família
++ `caps.unsafe`, cada nome com o prefixo `unsafe`, cada método restrito pelo token), os contornos da
++ confiança no compilador (`asInstanceOf`, `.nn`, `@unchecked`, `???`, cláusulas catch-all), as
++ leituras parciais e as construções imperativas que o núcleo de streaming deve confinar.
++ `make unsafety` executa `flare metrics --dry-run` e o imprime; `flare metrics` o registra em git
++ notes, commit a commit, de modo que a tendência vive no git em vez de em um parágrafo do roadmap.
++ Uma regra já bloqueia: `S1.1`, um método que recebe `(using Unsafe)` precisa se chamar `unsafe…`,
++ faz o build falhar; a sua recíproca `S1.2` é consultiva, com as oito definições que a violam
++ listadas em `doc/work/standards/naming.md`.
+
+@ 0 7 0 0d173ddf177ff3580a0262c16790a340
++ As receitas que tornam viáveis a verificação de capturas e a de separação — quando um tipo é
++ Exclusive, Shared, Unscoped, Mutable ou Pure, e as armadilhas do reticulado entre eles; o manual do
++ given honesto (`(tactic: Tactic[E]) => ((X is TC)^{tactic})`, evidência de captura explícita em vez
++ de context bounds); onde um resultado novo pode e não pode ser cunhado; as costuras de `consume` e de
++ empréstimo; o que um teste pode e não pode fazer — existem apenas como entradas em
++ `rep/DECISIONS.md`, um log de 2400 linhas. Elas pertencem a `doc/work/standards/capabilities.md`, com o
++ vocabulário de tags de que `safety-2` depende e a única forma de válvula sancionada para cada tag, e
++ um ponteiro a partir de `doc/work/philosophy/capture-checking.md`.
+
+@ 0 2 0 184abde0f441241915e910e4b48261e0
++ Concluído quando: `doc/work/standards/capabilities.md` existir, definir cada tag que o censo reconhece,
++ e as seções de receitas de `rep/DECISIONS.md` apontarem para ele em vez de repeti-lo.

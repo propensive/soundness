@@ -1,0 +1,158 @@
+orthant 2 language
+
+@ 0 1 0 1ec603b4c009ad6c0b820afa5985a451
++ # Capture checking
+
+@ 0 5 0 1a4af1972ab96dd91d21a3beaed99770
++ Soundness usa il capture checking di Scala per rafforzare le garanzie che le sue
++ [capability con ambito](delimited-scopes.md) esprimono già. Il capture checking tiene traccia
++ delle capability da cui dipende un valore, così il compilatore può dimostrare che una risorsa, un
++ handler di errori o un contesto di concorrenza non sfugge al blocco che lo ha stabilito. Ciò che
++ l'ambito afferma con la struttura, il capture checking lo impone con i tipi.
+
+@ 0 2 0 191d93ac3c38cba11fa1bb14aaa56518
++ Diventa impossibile la famiglia di bug di fuga che l'ambito da solo non può fermare — ognuno è un
++ valore che fa uscire di contrabbando dal suo blocco una capability morta:
+
+% 2 1 0 0e949f74aefc607d01a582ebb86c1fcc
+
+% 3 1 0 0602cc2f4ebfcb0c0c0f11802bbaf3a0
+
+% 4 1 0 07563ccc2c56dbda0f27e98908ead537
+
+% 0 1 0 174f3aa2fbd61afa0d003d618cd1feb9
+
+% 0 1 0 02279e19d37c1c41190b1cd223689e5c
+
+% 0 1 0 1f39cfc5bf5a4f7119ff88659876dba4
+
+% 0 1 0 1dc9835d775f0cc30812caab2b940c85
+
+% 0 1 0 0d4959e40d67cc0c042a3dd4d3ac88a9
+
+% 0 1 0 1a852a3203de96031c01eac9eb135f6b
+
+% 0 1 0 1dd155deee7e04520e6abd1ad539bca1
+
+% 0 1 0 0b2800afe3b094ad104dcb7200a2d807
+
+% 0 1 0 0f627cd31a91080311e777504fda1d73
+
+% 1 1 0 1e0df54e6b038f82143fc957136782d9
+
+@ 0 2 0 07495102508fa60408d681abc8ae484a
++ Con il capture checking, ognuno di questi è un errore di compilazione, perché ogni valore cattura
++ una capability che non può sopravvivere al proprio ambito. La correzione che il compilatore impone
++ è quella giusta:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 0dfce39898444daa01b904d5694147f5
++ column  Valore che sfugge
++ column  Cattura
++ column  La correzione
++ row  lo stream lazy  l'handle aperto  consumare lo stream dentro il blocco
++ row  la closure  la `Tactic`  eseguire il codice fallibile dove vive il suo handler
++ row  il task  il `Monitor`  attendere il task sotto il suo supervisore
+
+% 1 1 0 01d1537675720ad011ec2d0e056c4b7e
+
+@ 0 5 0 191b65bd47c0580c07fbba5b2ee1b959
++ La garanzia va più a fondo di quanto potrebbe la disciplina: la valutazione lazy, le closure e la
++ concorrenza sono proprio le funzionalità che sconfiggono il ragionamento a occhio sui tempi di
++ vita, perché separano *quando* il codice viene eseguito da *dove* è stato scritto. Il capture
++ checking li ricollega — l'ambito della capability viaggia nel tipo, quindi una fuga è impossibile
++ da scrivere invece che sconsigliabile da tentare.
+
+@ 0 1 0 0dc12f9e6600044719df5f8af9b17362
++ ## Controllo di separazione
+
+@ 0 3 0 01184c8f50c5d9cf1ace3d0d488420f0
++ Il capture checking risponde a «questo valore può sopravvivere a quell'ambito?». Il suo compagno,
++ il controllo di *separazione*, risponde a una seconda domanda: «possono esistere
++ contemporaneamente due riferimenti a questo valore?»
+
+@ 0 4 0 0ae04412547ba63b1fd8876408ff1bc5
++ Alcune risorse si possono condividere senza rischi e altre no. Uno `Stream` nel kernel di streaming
++ espone una finestra mutabile su un buffer senza copiarlo, ed è questo che rende veloce il kernel —
++ ed è corretto solo se lo legge esattamente un consumatore. Due alias consumerebbero ciascuno byte
++ che l'altro si aspettava.
+
+@ 0 1 0 0d917dacbaf7005b0284eb6e3a0a1a34
++ Perciò uno `Stream` è una capability *esclusiva*, e crearne un alias non compila:
+
+% 2 1 0 03dbbd8d142b264208ad27062ec63eae
+
+% 3 1 0 17f56a3760c0f035139f76c515bd4ae4
+
+% 4 1 0 1797f361dd0c472213a40fcb922c11ce
+
+% 0 1 0 100c9b81efd376d50bcec948e06367ec
+
+% 0 1 0 17581f0eb62f6fab167ed01f3bace403
+
+% 1 1 0 0040b825e65d81ee1d42de0d2dde0f3a
+
+@ 0 4 0 01f34c38e9c594f41e5bdafa6a8be6ae
++ I moduli che dipendono da questo — il kernel stesso e i suoi consumatori immediati — sono
++ compilati con il controllo di separazione abilitato, quindi la garanzia è verificata invece che
++ documentata. È questo che permette di offrire un design a copia zero come un'API ordinaria invece
++ che come un'API non sicura con un avvertimento allegato.
+
+@ 0 1 0 0b1ebd96643c123e07f2f1d9b6637815
++ ## Che cosa ti chiede il compilatore
+
+@ 0 2 0 136322f37f253c370d1e16a417acb5aa
++ La parte onesta di questo documento. Il capture checking non è gratuito, e i costi ricadono su chi
++ scrive il codice, non su chi lo legge.
+
+@ 0 5 0 198da3a89387c2fc0477ea250fba8b05
++ **Le annotazioni compaiono nelle firme.** Un metodo che restituisce un valore che cattura qualcosa
++ lo dichiara — `(Stream[Data] over Credit)^` — e un parametro che sarà consumato invece che preso
++ in prestito è marcato `consume`. È sintassi reale che un lettore deve imparare, e si propaga: una
++ firma che restituisce un valore che cattura costringe le firme dei suoi chiamanti a riconoscerlo.
+
+@ 0 4 0 0ad7131d9e4edb420a2eb2c0a72c002d
++ **Gli errori sono difficili.** Una violazione di cattura viene segnalata in termini di insiemi di
++ cattura e talvolta di variabili skolem, il che è molto lontano da «questo stream sopravvivrebbe al
++ suo file». Leggere con scioltezza un errore del genere richiede pratica, e la pratica non si
++ trasferisce dallo Scala ordinario.
+
+@ 0 5 0 12ccb5c51e98ae8c110d97f58dc24b82
++ **È ancora in via di maturazione.** Il capture checking è una funzionalità del compilatore di
++ livello sperimentale, e Soundness usa un fork con correzioni non ancora integrate a monte. Alcuni
++ idiomi che dovrebbero funzionare ancora non funzionano — il port di zlib nel modulo di
++ compressione, ricco di alias, è compilato con il capture checking ma non con il controllo di
++ separazione, perché l'insieme di regole più severo rifiuta un port fedele di codice che è
++ comunque corretto.
+
+@ 0 5 0 1be9382b0b8f0aec0f4a99e89a726b1f
++ **Restano alcune vie di fuga.** `caps.unsafe.unsafeAssumePure` e
++ `@caps.unsafe.untrackedCaptures` esistono per i punti in cui il controllore non riesce ancora a
++ vedere ciò che l'autore può dimostrare. Ogni uso è un piccolo buco nella garanzia, e ognuno è
++ commentato con l'argomento sul perché è corretto — che è il modo giusto di tenere una cosa del
++ genere, ma non equivale a non averne bisogno.
+
+@ 0 1 0 1d86f26103aa06bf0a7b45e944a43fc1
++ ## Perché ne vale il costo
+
+@ 0 2 0 0901d0ef0b2fd2a614a9341c21cb878c
++ Perché l'alternativa non è «nessun costo» ma «lo stesso costo, pagato più tardi e da qualcun
++ altro».
+
+@ 0 6 0 036252fc0d6e7f681f72b07f1287e367
++ Uno stream letto dopo la chiusura del suo file è un bug che si riproduce in modo intermittente,
++ sotto carico, con uno stack trace che punta alla lettura invece che alla fuga. Una closure che
++ solleva un errore senza alcun handler nell'ambito fallisce in un punto di chiamata lontano da dove
++ la closure è stata creata. Queste sono tra le classi di bug più difficili da diagnosticare,
++ proprio perché la causa e il sintomo sono separati esattamente dai meccanismi — valutazione lazy,
++ closure, concorrenza — che il capture checking esiste per tracciare.
+
+@ 0 2 0 0d150909ae0bb39f0c92374a50a7744d
++ La lamentela del compilatore è precoce, locale e riguarda l'errore effettivo. È uno scambio
++ migliore di quanto sembri a prima vista.
+
+@ 0 3 0 1c65ab24f2b259c805bdaa9acb73d9a2
++ Vedi [ambiti delimitati](delimited-scopes.md) per la struttura che questo impone, ed
++ [errori espressivi](expressive-errors.md) per il perché gli errori devono essere puri — dato che
++ `throw` è l'unico canale che questa analisi non può vedere.

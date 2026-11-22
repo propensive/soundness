@@ -1,0 +1,148 @@
+orthant 2 language
+
+@ 0 1 0 0bb7406c65f4195e0bb145cab3f9b16f
++ # Concurrencia estructurada
+
+@ 0 6 0 13f37f2935a89dc50a1d863ca56b1266
++ La concurrencia en Soundness es estructurada: las tareas se generan dentro de un ámbito que las
++ posee, y ese ámbito no termina hasta que no han terminado sus tareas. Un fallo en una tarea se
++ propaga a sus hermanas y a su madre en lugar de desaparecer sin que nadie lo note, y cancelar un
++ ámbito cancela todo lo que hay por debajo. Las vidas concurrentes se anidan como los bloques del
++ código corriente, así que el trabajo en paralelo tiene el mismo principio y fin claros que el
++ trabajo secuencial, y ninguna tarea sobrevive al ámbito que la lanzó.
+
+@ 0 1 0 197386b47088f7c602111ce79f77f5c5
++ ## El ámbito posee la tarea
+
+@ 0 2 0 122364f1850af72c1a094f00bc0b954f
++ `supervise` abre un ámbito; `async` genera tareas dentro de él. El ámbito no retorna hasta que sus
++ hijas han concluido, tanto si algo las esperó como si no:
+
+% 2 1 0 131b45c65c2cbdbc1cd3332e5f3860b1
+
+% 3 1 0 13522da2bda70d891cb11e255874a32f
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 19151d611c6de0cf17c9d86d2b0e35ea
+
+% 0 1 0 198b0d13abd9393819d2f453eab75e2d
+
+% 0 1 0 01ec73c9ff3d190c083dae6e683c7f49
+
+% 1 1 0 02960e878ef535d4013a8c00daa8e194
+
+@ 0 2 0 18ed9a83de3ba1121fcfec723995cd6b
++ El equivalente no estructurado —lanzar dos hilos y esperar que todo vaya bien— difiere en lo que
++ ocurre cuando algo sale mal, que es el único caso para el que vale la pena diseñar.
+
+@ 0 1 0 0119fd13b3a0abf61f86d235074b75d3
++ ## Lo que aporta la estructura
+
+@ 0 5 0 1001e3ca96a6033218604767be661356
++ **Un fallo tiene adónde ir.** Un hilo que lanza una excepción no tiene a quién informar, así que
++ su excepción se imprime, o se pierde, o se entrega a un manejador que no tiene ni idea de qué se
++ estaba intentando. El fallo de una tarea se propaga al ámbito que la posee, que cancela las demás
++ hijas de ese ámbito, porque el trabajo emprendido en nombre de un cálculo que ya ha fallado es un
++ trabajo que nadie quiere ver terminado.
+
+@ 0 3 0 168f36c529a1ddb11c91d4ac1889696f
++ **La cancelación llega a todo el subárbol.** Cancelar un ámbito cancela sus hijas, que cancelan las
++ suyas. No hay ningún conjunto de referencias a hilos que mantener ni posibilidad de olvidarse de
++ una, porque el árbol de propiedad ya existe.
+
+@ 0 3 0 1734226298b0771d09a734b7d9dce9da
++ **Nada sobrevive a su razón de existir.** Una tarea no puede sobrevivir al ámbito que la lanzó, así
++ que «¿sigue ejecutándose ese trabajo en segundo plano?» tiene una respuesta estructural en lugar de
++ una empírica.
+
+@ 0 1 0 15c104ca12628b581368636687d93c9f
++ ## Qué ocurre en el límite
+
+@ 0 2 0 1215a63081f0fec919832f41c30b1a60
++ Un ámbito debe decidir qué hacer con una hija que sigue ejecutándose cuando termina el cuerpo de la
++ madre, y esa decisión es explícita en lugar de supuesta. La *testamentaría* le da nombre:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 1665e3d5fbba20de07b4c87ee85a6eae
++ column  Importación
++ column  Una hija que sigue ejecutándose cuando termina el cuerpo
++ row  `probates.awaitProbate`  se espera
++ row  `probates.cancelProbate`  se cancela
++ row  `probates.panicProbate`  provoca un pánico
++ row  `probates.failProbate`  lanza un `Async.Error`
+
+% 1 1 0 02b162bee2ac8c73182faf5b2d29cbe2
+
+@ 0 2 0 0106bf45d998429e1f90765a44b49f8b
++ Cada una es defendible en algún sitio y no es seguro adivinar ninguna, y por eso no hay valor por
++ defecto.
+
+@ 0 3 0 0f9a271a621e231714e13ca6cbea23f6
++ Un `daemon` es la excepción deliberada: trabajo de disparar y olvidar que el ámbito no espera y que
++ cancela cuando termina. Aun así no puede sobrevivir a su ámbito; solo es no estructurado en el
++ sentido de que nada espera su resultado.
+
+@ 0 1 0 093a2db087bdf0970effe2c86d222749
++ ## La suspensión es visible
+
+@ 0 3 0 0c9ada3a2b11f8c91865b55221b3ef06
++ Esperar es un efecto, y aparece en los tipos como cualquier otro. Esperar una tarea o una promesa,
++ dormir y ceder el paso exigen todos una capacidad `Monitor`, así que un método que puede bloquearse
++ lo dice en su signatura:
+
+% 2 1 0 0a81a6945bdf8f41163183cbc92610d8
+
+% 3 1 0 1119f40b1c8cc0c3084094d7507216fd
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 1 1 0 05fa8d9217c170b60ac90a2b81c4d78c
+
+% 0 1 0 103ac5c66c4d87620b1e7fa5e43ade81
+
+% 1 1 0 084ebc2b90c46ba60dd5d98eeb6ba0fd
+
+@ 0 3 0 142a85026146b6e618e1104948290a66
++ Es la misma disciplina que las [signaturas honestas](honest-signatures.md) aplican al fallo. Quien
++ llama puede ver, solo por el tipo, si un método podría aparcar el hilo en el que se le llama.
+
+@ 0 5 0 0592092f3d4016011f6d454c644a7c85
++ Por debajo, la unidad de ejecución es una `Strand` en lugar de un hilo, con las cuatro operaciones
++ que necesita la suspensión: interrumpir, unirse, aparcar y desaparcar. Como un supervisor
++ proporciona las hebras y un supervisor es un valor, un planificador que no se construye sobre
++ hilos —un bucle de eventos sobre los conjuntos esperables de WebAssembly— se conecta sin cambiar
++ nada del código que genera o espera tareas.
+
+@ 0 1 0 1963ce40bed34c001fc6cbad16727a56
++ ## Los errores de un demonio no viajan hacia atrás
+
+@ 0 5 0 0ebb9e2b9c61c748166f7639ca2a8937
++ De tomarse en serio la propiedad se deriva una sutileza. El cuerpo de un demonio no puede capturar
++ un manejador de errores del código que lo generó, porque para cuando el demonio falla, ese código
++ ya ha seguido adelante: entregarle el error significaría reanudar un cálculo que ya ha terminado.
++ Por eso un demonio que falla escala como un `Fault`, que un programa intercepta allí donde trata lo
++ inesperado.
+
+@ 0 3 0 1453cbc75f08509a147270d4cbcb5392
++ Este es el tipo de caso que la concurrencia no estructurada deja sin definir y que la estructura
++ obliga a sacar a la luz: la pregunta «¿adónde va este error?» siempre tiene respuesta, aunque la
++ respuesta sea «no adonde podrías haber supuesto».
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Lo que cuesta
+
+@ 0 6 0 01da9b750294f7371580b6c3a28977e0
++ La estructura restringe lo que puede expresarse. El trabajo que realmente debe sobrevivir al ámbito
++ que lo inició —por ejemplo, un servicio en segundo plano iniciado durante una petición— no puede
++ simplemente generarse y olvidarse; debe poseerlo un ámbito que viva lo suficiente, lo que significa
++ disponer uno. Eso es más trabajo que lanzar un hilo, y es más trabajo por una razón: un hilo sin
++ dueño es exactamente aquello sobre cuya vida nadie puede razonar después.
+
+@ 0 3 0 10fa488026cf4af813c5297b417ddcb8
++ Véase [ámbitos delimitados](delimited-scopes.md) para la forma general de la que esto es una
++ instancia, y [comprobación de capturas](capture-checking.md) para cómo se hace imposible la fuga en
++ lugar de simplemente desaconsejarla.

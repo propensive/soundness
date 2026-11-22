@@ -1,0 +1,41 @@
+orthant 2 language
+
+% 0 1 0 03b632ddc1ba56f7094d5672b9f0af40
+
+@ 0 1 0 1e2d6389d26b7b84114e3f81c6e5f7ea
++ Wird ausgelöst, wenn eine JSON-RPC-Operation fehlschlägt.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 1de0fd0d1430d8f917cc30c2067f691f
++ Der JSON-RPC-Verteiler von Obligatory löst diesen Fehler aus, wenn eine Anfrage nicht verarbeitet
++ werden kann. Der Konstruktor nimmt einen `reason: Reason`; die dargestellte Meldung lautet
++ `the JSON-RPC operation failed because
+
+% 0 1 0 04ca5a28474c5b9905df7261499fb1eb
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Varianten
+
+% 0 1 0 10d385792366bd2405f1052ce7c33d38
+
+@ 0 3 0 16abf98775676a350bec2b100b07e8c1
++ Das Feld `method` der eingehenden JSON-RPC-Anfrage entsprach keiner der Methoden, die an der
++ Schnittstelle des Verteilers deklariert sind; dies ist der Wildcard-Rückfall im generierten
++ Verteiler.
+
+@ 0 1 0 047256202a3543b00d232e69bd3cee5e
++ **Beispiel.** `[↯/s.112.7.1] the JSON-RPC operation failed because the method name was not recognised by the dispatcher`
+
+@ 0 2 0 0a63d0bb9fe9cdde10002a6fe219d3fd
++ **Behebung.** Stellen Sie sicher, dass der Methodenname einer Methode der RPC-Schnittstelle
++ entspricht; prüfen Sie auf Tippfehler.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 3 0 1473b6334e16fd3a19a0036de94f5eed
++ - Quelle: `lib/obligatory/src/json/obligatory.JsonRpc.scala`
++ - `↯/s.112.8` — allgemeiner RPC-Fehlschlag
++ - `SN-728` — fehlende `Tactic[JsonRpcError]` zur Kompilierzeit

@@ -1,0 +1,157 @@
+orthant 2 language
+
+@ 0 46 0 0aeb5453d151dbe51e3561b04ebfcd6f
++ abacist: zusammengesetzte-einheiten gemischte-basis zeitzerlegung größen
++ acyclicity: graph dag gerichteter-graph poset graphviz dot teilgraph
++ adversaria: annotationen metadaten reflexion reflexion-zur-kompilierzeit
++ ambience: umgebungsvariable systemeigenschaften konfiguration xdg verzeichnisse umgebung
++ anamnesis: datenbank entität persistenz speicherung datenzugriff
++ anthology: scala-compiler kompilierung programmatischer-compiler diagnosen
++ anticipation: integration typklassen-brücken abstrakte-typklassen modulübergreifend
++ aperture: öffnen erzeugen bereichsgebundene-ressource handle capability berechtigung modus
++ apoplexy: openapi swagger api-spezifikation rest schema
++ archimedes: mathml gleichungen mathematische-notation darstellung
++ austronesian: pojo java-interop serialisierung classloader-isolation
++ aviation: zeit datum kalender zeitzone iso8601 rfc1123 feiertage schaltsekunden tzdb
++ baroque: komplexe-zahlen mathematik imaginär algebra
++ beneficence: build-plugin veröffentlichung artefakte verteilung
++ bitumen: tar archiv pax tarball unix-berechtigungen
++ breviloquence: cbor binäres-json concise-binary serialisierung
++ burdock: bootstrap installer selbstinstallation
++ cacophony: audio klang aiff wav wiedergabe aufnahme stereo wellenform
++ caduceus: e-mail smtp mime absender anhang umschlag
++ caesura: csv tsv dsv tabellenkalkulation tabelle getrennte-werte
++ camouflage: cache lru-cache memoisierung
++ capricious: zufall rng wahrscheinlichkeit gauß gamma verteilung stichprobe seed
++ cardinality: verfeinerungstypen zahlenbereich begrenzte-zahlen bereiche
++ cartouche: beschriftungsplatzierung captions hindernisse anordnung kollisionsvermeidung diagrammbeschriftungen
++ cataclysm: css stylesheet selektoren keyframes media-queries schriften typsicheres-css
++ charisma: chemie periodensystem chemische-gleichung molekül summenformel
++ chiaroscuro: diff vergleich kontrast ähnlichkeit test-zusicherungen zerlegung
++ clavichord: tastatur tastendruck tasten modifikatoren eingabe
++ coaxial: socket tcp udp multicast dns netzwerk domain-socket bindbar verbindung
++ concordance: collections verkettung anhängbar voranstellbar verbinden
++ contextual: string-interpolation interpolator typsichere-interpolation eigene-interpolatoren
++ contingency: fehlerbehandlung exceptions taktiken wiederherstellung validierung effekte
++ corpuscular: prüfsumme crc32 crc64 adler32 nicht-kryptografischer-hash integrität
++ cosmopolite: i18n internationalisierung locale sprache polyglot l10n
++ degustation: tasty api-oberfläche api-atome inspektion bibliotheksidentität
++ delicious: semantische-diagnosen compilerfehler erklärungen diagnosen
++ dendrology: baumdiagramm dag-diagramm ascii-baum visualisierung baumdarstellung
++ denominative: ordinalzahl indizierung nullbasiert einsbasiert intervall
++ digression: stacktrace codepoint fqcn introspektion debugging
++ dissonance: diff myers-diff text-diff bearbeitungsabstand änderungserkennung
++ distillate: decoder encoder typklasse umwandlung extraktion
++ diuretic: java-interop adapter legacy-java kompatibilität java-typen
++ embarcadero: docker container container-laufzeit
++ enigmatic: kryptografie aes rsa hmac verschlüsselung signieren pem public-key
++ escapade: ansi-escape terminal-gestaltung farben textstil hyperlink ribbon teletype
++ escritoire: tabelle tabellierung raster rahmenzeichen terminal-tabellen spaltenausrichtung
+
+% 0 1 0 056d3b700f316392101d3ebc1f225f7b
+
+@ 0 2 0 114e1d49447364ce1edeea8e8c6b3535
++ ethereal: daemon ipc hintergrundprozess dienstinstallation client-server
++ eucalyptus: logging logs realm logger strukturiertes-logging
+
+% 0 1 0 172999ad224e6e2601374af60d755ee3
+
+@ 0 60 0 0fc1e96dbabf989a193b52d147e23082
++ exoskeleton: cli kommandozeile anwendungsframework einstiegspunkt shell-vervollständigung
++ facsimile: pdf cos dokument seitenbaum textextraktion annotationen lesezeichen
++ frontier: implicits given-suche reflexion-zur-kompilierzeit aufzählung
++ fulminate: fehlermeldungen diagnosen fail-fast strukturierte-meldungen internationalisierte-meldungen
++ galilei: dateisystem io dateien verzeichnisse symlinks volumes posix
++ gastronomy: hashing hashwert sha256 md5 crc32 feistel prüfsumme
++ geodesy: geolokalisierung kompass koordinaten richtungen geografie himmelsrichtung
++ gesticulate: mime medientypen multipart content-type assets
++ gigantism: makros metaprogrammierung kompilierzeit scala-compiler-interna
++ gnossienne: referenz fremdschlüssel entitätsreferenz auflösbar
++ gossamer: text strings text-hilfsmittel dezimalformatierung bidi unicode verbinden
++ graffiti: seite archetyp html-seite hero seitenkopf breadcrumbs kolophon favicon dashboard
++ guillotine: shell prozess unterprozess befehlsausführung posix sh
++ hallucination: bild png jpeg gif bmp raster bild-io
++ harlequin: syntaxhervorhebung quellcode tokenisierung scala-parser
++ hellenism: klassenpfad classloader jvm ressourcen jar
++ hieroglyph: unicode kodierung zeichenkodierung utf8 graphem textkodierung
++ honeycomb: html html5 dom typsicheres-html tags attribute
++ hyperbole: tasty scala-compiler introspektion ast makro-debugging
++ hypotenuse: numerisch überlauf division ganzzahlarithmetik geordnet
++ imperial: verzeichnislayout home-verzeichnis basisverzeichnis dateisystemlayout xdg
++ inimitable: uuid bezeichner guid
++ iridescence: farbe farbräume rgb cielab hsl srgb palette theme farbmetrik
++ jacinta: json parser serialisierung json-pointer json-schema schemavalidierung dynamischer-zugriff
++ kaleidoscope: regex glob musterabgleich scanner reguläre-ausdrücke
++ larceny: compiler-plugin kompilierfehler testen testen-zur-kompilierzeit
++ legerdemain: formulare widgets html-formulare eingabe felder
++ locomotion: protobuf protocol-buffers übertragungsformat binäre-serialisierung
++ mandible: bytecode jvm classfile class-datei
++ mercator: functor monad applicative typklasse funktionale-programmierung
++ metamorphose: permutationen kombinatorik factoradic lehmer
++ monotonous: base64 base32 hex binärkodierung basiskodierung serialisierung
++ mosquito: matrix lineare-algebra mathematik vektor
++ murmuration: collections typklassen traversable foldable mappable filterable
++ nomenclature: namensvalidierung typebene einschränkungen verfeinerungstypen string-literaltypen
++ obligatory: rpc json-rpc sse server-sent-events framing längenpräfix protokoll
++ octogenarian: git versionsverwaltung git-repository commit ssh-url
++ orthodoxy: oauth authentifizierung autorisierung oauth2 scope
++ panopticon: linse optiken komponierbar case-klasse accessor
++ parasite: async threading nebenläufigkeit aufgaben promise daemon überwachung
++ perihelion: websocket frame ws-protokoll
++ phoenicia: schriften typografie ttf truetype schriftmetriken opentype
++ plutocrat: währung geld preis finanzen luhn isin festkomma
++ pneumatic: kompression deflate gzip zlib brotli xz lzma2 lzw
++ polaris: binäre-serialisierung puffer packen entpacken byte-puffer
++ polysyllabic: silbentrennung liang-algorithmus zeilenumbruch satz
++ polyvinyl: strukturelle-typen datensätze anonyme-datensätze typ-provider
++ praxinoscope: regex re2 automat linearzeit regex-engine redos
++ prepositional: typklasse typinfrastruktur verfeinerungstypen abstrakte-typen
++ prescience: staging makro-typklasse codegenerierung expansionszeit
++ probably: testen test-runner property-testing benchmark zusicherungen
++ profanity: terminal tui tastatur zeileneditor interaktiv konsole
++ prophesy: vervollständigungen dynamische-typen tab-vervollständigung ide-vorschläge
++ proscenium: re-exporte stdlib hilfsmittel weniger-boilerplate
++ punctuation: markdown commonmark prosa textformatierung
++ quantitative: einheiten größen dimensionsanalyse si-einheiten messungen physik
++ querencia: dom browser typisiertes-dom web-ui clientseitig
++ revolution: jar-manifest semver versionierung
++ rudiments: hilfsmittel kernbibliothek bijektion schleifen indizierbar
++ savagery: svg vektorgrafik 2d-grafik pfad formen
+
+% 0 1 0 07211b34caeae461026af2395b7f3a7c
+
+@ 0 34 0 0fd672f59660f5350f9fc02b836407c2
++ sedentary: benchmarking performance-tests mikro-benchmark
++ serpentine: pfad dateisystempfade posix windows linux relativer-pfad absoluter-pfad
++ sibylline: llm anthropic openai gemini chat-completions tool-use strukturierte-ausgabe streaming
++ spectacular: show pretty-printing anzeige inspect
++ stenography: typname qualifizierte-namen importe symboldarstellung scala-typen
++ stratiform: tel konfigurationssprache datensätze schema binäres-tel
++ superlunary: staging entfernte-ausführung mehrstufige-programmierung verteiltes-rechnen
++ surveillance: datei-beobachter dateisystem dateiereignisse verzeichnisüberwachung nio
++ susurration: ssh ssh-client known-hosts identität transport sitzung entfernte-befehle
++ symbolism: operatoren arithmetik typklasse operatorüberladung algebra
++ syndesis: mdns dns-sd zeroconf bonjour diensterkennung multicast
++ synesthesia: mcp model-context-protocol llm ki-protokoll
++ tarantula: webdriver browser-automatisierung chrome firefox safari edge selenium headless
++ tasseomancy: diagramme graphen plotten datenvisualisierung svg benchmarks balkendiagramm liniendiagramm tortendiagramm histogramm
++ telekinesis: http http-client cookies authentifizierung rest-client web-requests
++ tessellate: layout rahmenzeichen umbruch ausrichtung flex textlayout
++ turbulence: streams io stdio streaming reaktiv zeilentrennung
++ typonym: typebene typliste typ-map heterogen reflexion
++ ultimatum: terminal-layout teilfenster fortschrittsbalken spinner anzeige sparkline tui
++ ulysses: bloom-filter probabilistische-datenstrukturen palimpsest
++ umbrageous: compiler-plugin shading namensraum-isolation
++ urticose: hostname e-mail-adresse ip-adresse mac-adresse port netzwerkbezeichner endpunkt dns
++ vacuous: optional null-sicherheit option maybe nullbar
++ vexillology: bit-flags flags aufzählung bitfeld
++ vicarious: katalog proxy typindiziert datensätze
++ virility: roff manpage man-seite troff dokumentation cli-hilfe
++ vivisection: debugging jdi breakpoints schrittweise-ausführung dap debug-adapter variablen
++ wisteria: ableitung produkttypen summentypen case-klasse typklassen-ableitung magnolia
++ xenophile: ffi fremd-interop wit webidl typescript kotlin wasm native
++ xylophone: xml xml-schema typsicheres-xml dynamisches-xml
++ yossarian: pty terminalemulator ansi-escape bildschirmpuffer vt100 cursor
++ ypsiloid: yaml parser serialisierung yaml-ast anker
++ zephyrine: parser parsen cursor emitter dünnes-format
++ zeppelin: zip archiv zip-datei kompression

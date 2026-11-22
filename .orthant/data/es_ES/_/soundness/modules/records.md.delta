@@ -1,0 +1,392 @@
+orthant 2 language
+
+@ 0 1 0 1d840f45fbb16f031609c87d13146ca1
++ ## Registros
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 2 0 0b47deaceb5f5375094501120b62cb30
++ La forma de ciertos datos se define fuera del programa: en una tabla de una base de datos, un
++ JSON Schema o un formato de configuración. Aun así, el programa debería leer sus campos con
++ tipos estáticos.
+
+@ 0 3 0 111b4b168ef19fe70fe4b225e7b74bec
++ Un `Record` es un valor cuyos campos proceden de una de esas *especificaciones* externas, que
++ se lee mientras se compila el código. Así, `record.name` se tipa como `Text`, `record.nope` no
++ compila, y no se escribe a mano ninguna clase que refleje el esquema.
+
+@ 0 4 0 0eec04775ed0dca908ae485e6a0f0d21
++ Los *proveedores* de [JSON](json.md#typed-records-from-a-schema), [XML](xml.md) y [TEL](tel.md)
++ se construyen sobre esto. Un JSON Schema, un XML Schema o un documento de esquema TEL producen
++ registros tipados. También lo hace el esquema de respuesta de una operación, mediante
++ `record()` en el cliente de [OpenAPI](openapi.md). Cualquier fuente de esquemas que un programa
++ pueda leer en [tiempo de compilación][tiempo de compilación] puede hacer lo mismo.
+
+@ 0 1 0 16916f4af379805c10863649483879a9
++ ### Sobre los esquemas externos
+
+@ 0 4 0 001b90fa898e50e41d1a04dcf678293b
++ Cuando la forma autorizada de los datos vive en otro sitio, una case class escrita a mano es
++ una copia, y las copias divergen. El esquema gana un campo, la clase no, y la discrepancia
++ aparece en [tiempo de ejecución][tiempo de ejecución]. La alternativa habitual es leer los
++ campos dinámicamente, mediante cadenas. Eso renuncia por completo a la comprobación.
+
+@ 0 6 0 0af74a7015d4a5cb14fa18d6bc912bb1
++ Un `Record` evita ambas cosas. El esquema se lee una vez, mientras se compila el programa. Los
++ [tipos estructurales](https://docs.scala-lang.org/scala3/book/types-structural.html) de Scala
++ construyen entonces a partir de él la interfaz exacta del registro, con cada campo del tipo que
++ declara el esquema. El esquema no puede divergir del código, porque los tipos del código *son*
++ los del esquema. Es [seguridad por construcción](../../philosophy/safety-by-construction.md),
++ sin ninguna clase que mantener.
+
+@ 0 2 0 0cffae2607360ad60bcda2026686055f
++ Todo procede del paquete `soundness`. Las demás importaciones eligen una codificación y una
++ [estrategia](errors.md#choosing-a-strategy) para los errores:
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 1 0 1de3c5e81966ed9a0a9a478f1ff2f2b8
++ ### Uso de los registros
+
+@ 0 4 0 045e17f26ec883ab1ceef8a3bbefc591
++ Un objeto proveedor contiene un esquema. Este es un `Json.Provider`, construido a partir de un
++ documento JSON Schema. En un programa real se declara en un fichero propio, por la razón que
++ explica [el orden de compilación](#compilation-order). Por esa misma razón, los ejemplos de
++ esta página se comprueban pero no se ejecutan:
+
+% 2 1 0 1495e086766d02ac0e49c4cc565a1d96
+
+% 3 1 0 037cbf5a08061e54161d8eea8837b1fa
+
+% 4 1 0 1bf1a6d1e02507bb143060564250fc6d
+
+% 0 1 0 0a87af4d0ec5fbda119ab390fdcbe436
+
+% 0 1 0 10ba014d2254dcd3076d9a543f8c2249
+
+% 0 1 0 168ff146ffda150b0e476e586aafc1e1
+
+% 0 1 0 09f81909fffbe8de1292b168fb564187
+
+% 0 1 0 1362070d19456a6d1ff95300d33f9885
+
+% 0 1 0 1801801a4ba865a909d63b9099a9992b
+
+% 0 1 0 1bc5bcc4ed89e3c3023374c5cfcb26fa
+
+% 0 1 0 0fc9cff73f111a0c12cc06307ef02288
+
+% 0 1 0 0c77b11fd8ee05fc0bb832a353adbbc7
+
+% 0 1 0 149015473f8af5b818332c25647b5a7d
+
+% 0 1 0 1a255adce984755704338ad3cff63d03
+
+% 0 1 0 15b0a682f57e42d110c3ee2a34fe3242
+
+% 0 1 0 1d086cabb9160ecc000956b4641e580d
+
+% 0 1 0 0be86f8d69ffc11606058c9696122812
+
+% 0 1 0 198a6ee6c6d76ce702d2e920fb535def
+
+% 0 1 0 0fc0f10454a7b6240d1b534d7132a368
+
+% 0 1 0 13b304132bf680561a0826cc1dc574d1
+
+% 1 1 0 16359d219418402c0d5966083d89828b
+
+@ 0 3 0 1a431015de2f42aa1b3db70718ab4057
++ El método `record` del proveedor convierte los datos en bruto en un registro tipado. Cada campo
++ tiene el tipo que le da el esquema. `name` es una cadena en el esquema, así que es un `Text`.
++ `weight` es un número, así que es un `Double`. El esquema no exige `age`, así que es un
+
+% 0 1 0 0381810d063407f51fccad7c65227580
+
+% 2 1 0 112fa67ece34020f1a1a758111efd135
+
+% 3 1 0 00f8569c1c4f2f8d1b3af9136f4c5a1e
+
+% 4 1 0 0bc2fa5a9112f36e1f72bf4421b4c700
+
+% 0 1 0 108651c2c97f7f1d0ee01c648046e110
+
+% 0 1 0 1624c445b5cfbd1714b78624b2dece95
+
+% 0 1 0 05099aaa0b26d7820d459bffbf69c43d
+
+% 0 1 0 1654877f489d45260b574b5c5821e7f7
+
+% 1 1 0 092d2da64375bcb01a4984954e2e4d54
+
+@ 0 1 0 1cb8ac1eeedacbd51defa056f0cdf47e
++ El esquema no tiene ningún campo llamado `nope`, así que `record.nope` no compila.
+
+@ 0 3 0 0d7805b9e8231baf023e636ac2a1d6cd
++ Un objeto anidado se convierte en un registro anidado, y un array en una lista. Cada acceso se
++ comprueba contra la especificación. Una clase escrita a mano daría la misma garantía, pero no
++ hay ninguna clase.
+
+@ 0 1 0 1297ee29ce312e180c580059c8012a89
++ ### Tuplas en lugar de registros
+
+@ 0 3 0 17b87d2b6620cc77109a5c013c523088
++ El mismo proveedor puede producir una
++ [tupla con nombre](https://docs.scala-lang.org/scala3/reference/other-new-features/named-tuples.html)
++ en lugar de un registro, mediante `tuple`, el gemelo de `record`.
+
+@ 0 4 0 0efd3f1eba8e9d4c1280cd02c96a30a0
++ Para el esquema anterior, `Catalogue.tuple(input)` tiene el tipo
++ `(name: Text, age: Optional[Int], children: List[(weight: Double)])`. Tiene un elemento por
++ cada campo, con el nombre que le da el esquema y en el orden del esquema. Los objetos anidados
++ se convierten en tuplas con nombre anidadas, y los arrays en listas de ellas.
+
+@ 0 2 0 0a42c18029eebbb50ca44ce744c50d3b
++ Una tupla con nombre se lee por nombre, como un registro. También es una tupla corriente, así
++ que se descompone por posición y se convierte en su forma sin nombres:
+
+% 2 1 0 014cf7d06a18e04407802a815ae4df97
+
+% 3 1 0 0fdfb4137ff3146a1ac374e488d30375
+
+% 4 1 0 1439dc20721d88771fce1539b5d99b5c
+
+% 0 1 0 1f6e4dc25c4c376c0626f81f48ac2e29
+
+% 0 1 0 19f05445560f6b0d13dab74dc7bc04e6
+
+% 0 1 0 0ca1c0cc2f3da06409d6932376f118f5
+
+% 0 1 0 02722cb3b490be451ca0580240fb25f8
+
+% 1 1 0 032553bf6fb3351f110fed15570d48d1
+
+@ 0 1 0 0ac4dc1592e56b6f111ca590978a820e
++ #### Estricta y perezosa
+
+@ 0 1 0 1e696f22220149510810c11e5983c33e
++ Las dos formas difieren en *cuándo* se leen los datos.
+
+@ 0 3 0 1352b3a18fa6a8f4062beddb32a145b5
++ Un registro es perezoso. Contiene los datos en bruto, y cada acceso lee y convierte su campo
++ de nuevo. Un campo mal formado solo se detecta cuando se lee ese campo, y un campo leído dos
++ veces se convierte dos veces.
+
+@ 0 3 0 17830e587ee7be7d08b53c8597d57aa8
++ Una tupla es estricta. Cada campo se lee una vez, cuando se construye la tupla, y la tupla
++ contiene los valores convertidos. Un campo mal formado hace fallar la construcción de la tupla,
++ tanto si el programa llega a leerlo como si no.
+
+@ 0 4 0 0274cc60b41412d70aea30266f495bc4
++ Esto cambia los tipos de los campos. Leer cualquier campo puede fallar: puede faltar un valor
++ obligatorio, un valor puede ser de una clase equivocada o puede incumplir una restricción del
++ esquema. Falla con el propio error de la especificación, como `Json.Provider.Error`, a través
++ de la [táctica] del código que lo lee.
+
+@ 0 4 0 12647dc8cc3fc6ff101ea0a1dadcd658
++ En un registro, un campo tiene el tipo `Record.Field[Int, Json.Provider.Error]`. Es una función
++ contextual sobre la táctica, que se aplica allí donde se selecciona el campo, así que cada
++ acceso necesita un manejador en el ámbito. En una tupla, un fallo solo puede producirse durante
++ la construcción. El tipo del elemento es simplemente `Int`, y el manejador debe estar en el
++ ámbito donde se construye la tupla.
+
+@ 0 4 0 0ccdeb81c82052fb08c985a0b3632b6e
++ Como todo fallo pasa por la táctica de quien llama, el lector elige cómo afrontarlo. Un campo
++ se puede envolver en `attempt` o `recover`. Un registro entero se puede leer con `validate` y
++ `track`, con una `venture` para cada campo, que reúne todos los problemas de un documento y
++ los notifica juntos. [Errores](errors.md) los describe.
+
+@ 0 1 0 154878b7202306cc0991d8a35db4942f
++ En resumen:
+
+% 2 1 0 0a2574fa96d0527e1c294b140e771c53
+
+@ 0 8 0 0f3fd976e40135200742c8dc746a931a
++ column  Aspecto
++ column  Registro
++ column  Tupla
++ row  Los datos se leen  en cada acceso a un campo  una vez, cuando se construye la tupla
++ row  Un campo mal formado hace fallar  el acceso a él  la construcción
++ row  Un campo de tipo integer en el esquema tiene el tipo  `Record.Field[Int, Json.Provider.Error]`  `Int`
++ row  La `Tactic` debe estar en el ámbito  allí donde se selecciona un campo  donde se construye la tupla
++ row  Se descompone por posición  no  sí
+
+% 1 1 0 0890aedd503880fc1ecf1e4ed13528da
+
+@ 0 1 0 1d1044c1c644821f051efb9aa4f52670
++ ### Definición de una especificación
+
+@ 0 3 0 0bd933504291edf3031de0abec2320cb
++ Una nueva fuente de esquemas se conecta implementando `Specification`. Una implementación así
++ es un *proveedor*. La fuente puede ser la definición de las tablas de una base de datos, un XML
++ Schema o un formato propietario.
+
+@ 0 3 0 05be6f171d94ee541d3e3e583564c7d0
++ Un proveedor proporciona los nombres y los tipos de los campos como una lista ordenada de
++ valores `Member`. Los elementos de una tupla siguen ese orden. También proporciona operaciones
++ primitivas sobre los datos subyacentes:
+
+% 2 1 0 067ef579623e5b5f1da8b1743822c627
+
+@ 0 12 0 07aee46ec79ab2ec180a62c6b2589448
++ column  Gancho
++ column  Predeterminado
++ column  Proporciona
++ row  `access`  ninguno: hay que implementarlo  el valor de un campo con nombre, obtenido de un valor
++ row  `absent`  ninguno: hay que implementarlo  si un valor obtenido representa un campo ausente
++ row  `repeated`  ninguno: hay que implementarlo  todos los valores de un campo que aparece muchas veces
++ row  `required`  devuelve el valor tal cual  el valor de un campo leído con `One`; se sobrescribe para que falle cuando está ausente
++ row  `entries`  falla  los valores de un campo con claves, por nombre
++ row  `kind`  falla  la clase de un valor, con la que una unión elige su alternativa
++ row  `elements`  falla  los elementos de un valor que es a su vez una secuencia
++ row  `pairs`  falla  los valores con nombre de un valor que es a su vez un diccionario
++ row  `unoffered`  falla  el fallo para un valor de una clase que no ofrece ninguna alternativa de una unión
+
+% 1 1 0 0c4d4bac0c82dae001c2031378c6ef0d
+
+@ 0 4 0 097693ffac2e622f03d09fbdb911c4c8
++ Los valores de un campo repetido son, por ejemplo, los elementos de un array JSON. En un
++ formato que repite un campo, son todos los hermanos con la palabra clave del campo. Un formato
++ que tiene uniones o diccionarios proporciona `entries`, `kind`, `elements` y `pairs`. Uno que
++ no los tiene deja sus valores predeterminados.
+
+@ 0 3 0 10ec7fb16861e7240547d552e5a4c016
++ Un `Member` es una de tres cosas. Un `Value` nombra el tipo escalar que declaró el esquema. Un
++ `Record` contiene más miembros. Una `Union` contiene alternativas, cada una con la *clase* de
++ valor que la selecciona como clave. Todo miembro lleva una `Multiplicity`:
+
+% 2 1 0 12d3d2591838a7c8060e99930ecb4fb6
+
+@ 0 8 0 0b8f7f45e8642f4808b29825da684b87
++ column  Multiplicidad
++ column  Se lee como
++ column  Mediante
++ row  `One`  el valor  `access` y luego `required`
++ row  `Optional`  un `Optional`, `Unset` donde `absent`  `access` y `absent`
++ row  `Many`  una `List`  `repeated`
++ row  `Keyed`  un `Map[Text, _]`  `entries`
++ row  `Series`  la colección propia del proveedor  `series`
+
+% 1 1 0 11ee20ecc155cca907ecce0332878653
+
+@ 0 3 0 1cd768d1dbd54a87179eed47e14380c2
++ El proveedor no dice nada más sobre la opcionalidad ni la repetición. La macro aplica ella
++ misma la multiplicidad. Una alternativa de una unión puede llevar la suya propia, de modo que
++ una unión con una sola alternativa anida una multiplicidad dentro de otra.
+
+@ 0 3 0 1d41592a2a0146d01a70b98397cbac41
++ Un proveedor nombra como su tipo `Failure` el error con el que fallan sus campos. Las
++ primitivas que pueden fallar son `access`, `repeated`, `required`, `entries`, `elements`,
++ `pairs` y `unoffered`, y cada una recibe la táctica de ese error.
+
+@ 0 3 0 14c86b782bee841d103ff66d13abd57a
++ Una [clase de tipos][clase de tipos] completa el panorama. Hay una instancia `Intensional` por
++ cada nombre de tipo escalar que puede declarar el esquema. Indica en qué tipo de Scala se
++ convierte el nombre y cómo leer un único valor de él. Hay tres formas de crear una:
+
+% 2 1 0 19e67c7afbdc077a1725b97f4a038f86
+
+% 0 1 0 0403bc3979b266b704a1e255bb488d9f
+
+@ 0 4 0 0c96d3df27187b9117ca464210a0a1ae
++ column  A partir de
++ row  `Intensional(accessor)`  una función del valor
++ row  `Intensional.parametric`  una función del valor y de los parámetros del miembro, para un tipo como un entero acotado
++ row  `Intensional.Reading`  una función del valor, de sus parámetros y de una `Tactic`, para una lectura que puede fallar
+
+% 1 1 0 1dcbc75308d55a5c03efac495ee4ac66
+
+@ 0 4 0 14be4780ec4863b10789750828d9b1d4
++ Una lectura puede fallar: el valor puede ser de una clase equivocada, estar fuera de sus
++ límites o ser una cadena que no coincide con su patrón. Una lectura así es un
++ `Intensional.Fallible`, cuyo `transform` recibe la táctica de su `Error`. Ese `Error` debe ser
++ el `Failure` del proveedor, o un subtipo suyo, para que todos los campos fallen de una única
++ forma. Una instancia que lance cualquier otra cosa es un error de compilación.
+
+@ 0 3 0 194f71fa8cc7dd2d1467232435ceae45
++ Las instancias viven en el objeto compañero del proveedor, así que se encuentran sin ninguna
++ importación. Un proveedor sobre XML, por ejemplo, obtendría un elemento hijo por su rótulo,
++ consideraría ausente un campo donde no existe tal hijo y repetiría sobre todos los hijos con
++ ese rótulo.
+
+@ 0 8 0 1c99d68021f7e6be0f4e30746f1b30dd
++ Algunas fuentes no están en los valores que se leen de ellas. Un registro sobre un fichero
++ proyectado en memoria solo contiene dónde mirar, y el propio fichero está abierto durante un
++ tiempo y después se cierra. Un proveedor para una fuente así nombra un `Context` y crea sus
++ registros con `Specification.recordWith`, indicando el tipo del contexto en el que se debe
++ leer cada uno. Un miembro de un registro así solo se lee donde hay un valor de ese tipo como
++ [given], junto a su táctica, de modo que un registro no se puede leer una vez desaparecida su
++ fuente, y el tipo puede indicar de cuál de varias fuentes procede un registro. Los métodos
++ `accessWith`, `repeatedWith` y `entriesWith` del proveedor reciben el contexto, y hacen las
++ veces de `access`, `repeated` y `entries`.
+
+@ 0 4 0 13ba4505815484a517b75d57c5da1b7c
++ Una `Series` también es para un proveedor así. Se lee como el tipo `Series` del proveedor, una
++ colección propia, que `series` crea a partir de una función que lee un elemento. La colección
++ lee un elemento cuando se le pide uno, en el contexto que se le da entonces, así que un campo
++ de cien mil registros no cuesta nada hasta que se consulta uno.
+
+@ 0 4 0 0358996d140f37351c43a6458cba92dd
++ Todo objeto de especificación obtiene `record` y `tuple` del propio `Specification`. No hace
++ falta declarar nada en el objeto aparte de su esquema. Ambos métodos son `transparent inline`.
++ Se expanden donde se llaman, con el objeto de especificación conocido, de modo que la macro
++ puede encontrar ese objeto por su tipo y evaluar sus `fields`.
+
+@ 0 2 0 04b58d986e6bd4ab006ddd86147446fe
++ El tipo de retorno declarado de `record` es `Record`. Lo que tiene realmente una llamada es un
++ *refinamiento estructural* de él. Para un esquema de tres campos, es un tipo como este:
+
+% 2 1 0 1c2568f587c9170719fc9b1ad125d6c9
+
+% 3 1 0 1ed21e237cc24fd90e523a12648f71a6
+
+% 4 1 0 0c3816223885b26d1a0c50a562b38883
+
+% 0 1 0 17f2029924debc9c1c0d0353f75c9da4
+
+% 1 1 0 153542cc04765f8d1b04d96f03859948
+
+@ 0 1 0 04a28d1a5cd6e69701578fcf5297c03e
++ Solo un método transparente permite que ese tipo más preciso llegue al lugar donde se llama.
+
+@ 0 1 0 0b1a118ce0e154e600cde691e54a3410
++ ### Orden de compilación
+
+@ 0 1 0 1d5f63fe9441d1ca0b48a50e4f874434
++ El objeto de esquema debe estar en un *fichero distinto* del código que llama a su método
++ `record`.
+
+@ 0 5 0 1a53a2db9e2eca910df7607bfd39fb3c
++ La macro se ejecuta mientras se compila el código que llama. Evalúa el objeto de esquema como
++ un valor en tiempo de ejecución, leyendo el documento JSON Schema o consultando la base de
++ datos. Por eso ese objeto ya debe estar compilado. Scala garantiza este orden para una macro y
++ su uso, siempre que estén en ficheros separados sin ningún ciclo entre ellos. Si están en un
++ mismo fichero, el esquema aún no está disponible cuando la macro lo necesita.
+
+@ 0 2 0 19d654797f5c3ab313b3010bf3ac380f
++ Esto es también lo que convierte el patrón en un proveedor de tipos, en el sentido de F#. El
++ compilador consulta el esquema autorizado, y los tipos contra los que se comprueba el programa
++ se construyen a partir de él.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 9 0 006b2353a026cc6d0aca7d6df2737831
++ - [JSON](json.md#typed-records-from-a-schema), [XML](xml.md) y [TEL](tel.md) describen cada
++   uno el proveedor de su propio lenguaje de esquemas.
++ - [OpenAPI](openapi.md) construye registros a partir de los esquemas de respuesta de una API.
++ - [Errores](errors.md) describe `attempt`, `recover`, `validate` y `track`, que afrontan el
++   fallo de un campo.
++ - [Valores opcionales](optional-values.md) describe el tipo de un campo que el esquema no
++   exige.
++ - [Metaprogramación](metaprogramming.md) describe las macros en las que se apoya un proveedor.
++ - [Catálogos](catalogs.md), [bases de datos](database.md) y [tablas](tables.md) trabajan con los campos de un registro por nombre.

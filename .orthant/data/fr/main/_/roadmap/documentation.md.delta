@@ -1,0 +1,46 @@
+orthant 2 language
+
+@ 0 9 0 18fec6f0745a2e3303c6d7ede277ff88
++ La prose existe aujourd'hui dans trois systèmes parallèles : les guides thématiques de
++ `doc/work/soundness/modules/` — la direction suivie, et l'endroit où s'écrit l'essentiel —, les anciens
++ modèles par module de `lib/*/doc/`, hérités de l'époque où chaque module avait son propre dépôt,
++ et une copie séparée des textes de philosophie sous `web/res/content/`. Trois systèmes signifient
++ des divergences, et une divergence signifie que l'un d'eux ment. Ce chantier les réduit à un seul,
++ complète la couverture et ajoute la couche que la prose ne peut pas fournir : une documentation
++ d'API générée et consultable — une infrastructure dont dépendent aussi fluence et le versionnage
++ de LIRA dérivé de l'API. Il se termine par le test de facilité d'apprentissage le plus exigeant
++ qui soit : un agent, muni de la seule documentation, construit et déploie une application qui
++ fonctionne.
+
+@ 0 3 0 0159d8134df7ee6d11f763fb21913385
++ `doc/work/standards/messages.md` se déclarait lui-même comme une ébauche, alors que la convention des
++ messages est porteuse dans tous les modules. La norme est désormais rédigée : registre, structure,
++ vocabulaire, ce qu'un message ne doit pas contenir, composition par `Communicable`, et événements
++ de journal.
+
+% 0 1 0 0d058f6728c5dcb01b3e933f5d633bc3
+
+@ 0 5 0 013b0edf65e4af1e17f85f3aa7922f99
++ Terminé : #1791 (2026-08-14)
++ La référence était de 92 fichiers de readme passe-partout par module, et de 98 répertoires
++ `lib/*/doc/` (mesuré le 2026-08-01). Ce texte passe-partout était antérieur au monodépôt ; ce
++ qui, dans `lib/*/doc/`, valait d'être conservé est passé dans les sujets de `doc/work/soundness/modules/`, et le
++ reste a été supprimé plutôt que laissé là pour induire en erreur. Il ne reste aucun répertoire
++ `lib/*/doc/`, et la phrase passe-partout ne correspond plus à rien.
+
+@ 0 2 0 0f2e79aa2fb742540e781b793bb298a3
++ Terminé : #2306 (2026-10-21)
++ La référence était de 99 sujets dans `doc/work/soundness/modules/` et d'une bibliothèque sur 144 non couverte (mesuré le 2026-09-25 ; 91 sujets et 35 non couvertes le 2026-08-01) ; 101 sujets couvrent 145 bibliothèques sur 145 le 2026-10-21
+
+@ 0 5 0 1a3d346f8d8345721a5f85b3f99b3f85
++ Chaque module publié est couvert par au moins un sujet de `doc/work/soundness/modules/`, et un script de
++ couverture associe les modules aux sujets pour rendre visibles les orphelins :
++ `etc/check-doc-coverage.py`, lancé par `make build`, se termine avec un code non nul en présence
++ d'un orphelin. Le dernier, burdock, est couvert par `packaging.md` ; l'entrée `COVERED_BY` qui
++ nommait ce sujet pour ziggurat (une bibliothèque que #1973 a supprimée) nomme désormais burdock.
+
+@ 0 3 0 0864272c52cb10310fe2fbb6e33b102e
++ La prose sous `web/res/content/` duplique à la main les textes de philosophie : dix pages,
++ modifiées pour la dernière fois dans #801, chacune étant une copie plus ancienne et plus courte
++ d'une page de `doc/work/philosophy/`. Le site web est rendu à partir de `doc/` — une seule source, sans
++ copies parallèles.

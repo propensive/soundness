@@ -1,0 +1,1416 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0d6479607fc959af0422e6a548bdf474
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0ef3d0cb7743909101b9b359cc1a1de9
++ info   Agent Client Protocol バージョン 1 のクライアント：セッション、プロンプト、ツール呼び出しを通してコーディングエージェントを動かす
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1f3125c9af6af85118b543f5268f9ba3
++     _Espionage_ は [Agent Client Protocol](https://agentclientprotocol.com/) バージョン 1 のクライアント側である。
++     これは Claude Code や Gemini CLI のようなコーディングエージェントに対してエディターが果たす役割であり、ここではそれをプログラムから使う。
++     プログラムはエージェントをサブプロセスとして起動し（あるいはストリームの組の向こうにいるエージェントに到達し）、セッションを開き、プロンプトを送り、エージェントの作業がストリームとして戻ってくるのを見守る。メッセージのチャンク、思考、ツール呼び出し、計画などである。
++     その間、エージェントがクライアントに求めるリクエスト、すなわち行動のパーミッション、ファイルの読み書き、端末に答える。
+
+@ 0 9 0 12f38558eeb0f7aa0eca168f09d28c2d
++     このプロトコルは両方向に同時に流れる JSON-RPC であり、プロンプトは関数呼び出しではなく**ターン**である。
++     ターンとは一つの長寿命なリクエストであり、その応答はエージェントがその中で行ったすべてのことの後にようやく届く。
++     このライブラリはターンを直接モデル化する。
++     `Acp.connect` は二つのブロックを取る。
++     一つ目は、コンビネーター `Acp.updated`、`Acp.permission`、`Acp.readFile`、`Acp.writeFile`、`Acp.terminals` を使って、貸し出された `Acp.Registry` にハンドラを登録する。
++     二つ目は生きた `Acp.Connection` を保持する。その `prompt` はエージェントが `StopReason` を報告するまでブロックし、その間ターンの更新は登録されたハンドラに並行してストリームとして届く。
++     クライアントが `initialize` で告知するケイパビリティは登録されたものから導出されるので、宣言が実装と食い違うことはありえない。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 1ba47d70455b82081d6c1d958e9c2376
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 0 1 0 02c573240d33b38616e69334fc6d9971
+
+% 0 1 0 142fded3cc69fbdf07822f907ed0cb8c
+
+% 0 1 0 0680b90707ed32e51f7219baf03bfebe
+
+% 1 1 0 1924ce9cf648846d00bc445af948f2e2
+
+% 2 1 0 18306e7107175a741b79a254483ed1a3
+
+% 0 1 0 1a13f0e0fb1720000e8474b98e6626cf
+
+% 0 1 0 0058d2a49c2d77d10f71986b36c980af
+
+% 1 1 0 16886e7e61524cf90376ab9680fd06d0
+
+% 2 1 0 1aecd28a53bb95c11f44583724a30733
+
+% 0 1 0 0938ee4cf91e0ed10f4009943ec6de1d
+
+% 0 1 0 102e489e4894e35c1fd519fa1592772c
+
+% 0 1 0 07caccbb67a1d3ce16e9cd997b20dd43
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 7 0 10d211eb8496b7990930e213b1aa5c85
++     接続にはコンテキスト値として次のものが必要である。
++     `Monitor`（読み取りタスクと書き込みタスクを実行するので `supervise` の内側に置く）、`Probate`、`Diagnostics`、エージェントを起動するための `WorkingDirectory` と `Environment`、そして `Tactic[Acp.Error]` である。
++     すべてのハンドラには、扱うセッションの id とそのペイロード（コンテキストのアクセサー `Acp.sessionId`、`Acp.update`、`Acp.toolCall`、`Acp.options`、`Acp.path`、`Acp.line`、`Acp.limit`、`Acp.content` で読む）、そして `Emit[Acp.Error]` が貸し出される。
++     そのため、ハンドラで発生させた誤りは、ターンを止めてしまうのではなく、エージェントへのエラー応答になる。
+
+@ 0 5 0 07340d4cb2b084991b6b18a13199c061
++     すべてのメッセージ型は `Acp` の中に入れ子になったケースクラスまたは列挙型であり、それぞれコンパニオンに JSON コーデックを持つ。
++     `SessionUpdate` とその八つのケース、`ToolCall` と `ToolCallUpdate`、`PermissionOption`、`StopReason`、ケイパビリティのレコード、そしてコンテンツブロックである。
++     コンテンツブロックは ACP が Model Context Protocol から採り入れたものであり、ここでは `synesthesia.Content` から再エクスポートされている。そのためコンテンツは変換なしに二つのプロトコルの間を行き来する。
+
+@ 0 4 0 0aaf1893f157641e09476049c3f93712
++     `Acp` のメンバーのいくつか（`update`、`path`、`content`、`options`、`line`、`connection`、`Cancelled`）はほかのライブラリも使う名前であり、アンブレラが `Acp` をエクスポートし、その中身をエクスポートしないのはそのためである。
++     それらは `Acp.update` のように書くか、デモのように、それを使うオブジェクトの内側で `import Acp.*` と書く。
+
+@ 0 5 0 1f01fce73b85da630b13ac3ef58112c7
++     標準入出力のフレーミングは改行区切りの JSON であり、一行に一つのコンパクトな UTF-8 メッセージを置き、デコードの前に生の改行バイトで分割する。
++     メッセージはその改行が届いた瞬間に配送される。
++     フレーマーは終端を覗き見て、それ以上の入力を求めずにその先へ進むので、生きたパイプ上でこのメッセージを配送するためにエージェントの次のメッセージを待つことはない。
++     空行と、`\r\n` 終端の残りは読み飛ばされる。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     このライブラリには二つのソースセットがある。
+
+@ 0 5 0 1c2436782b5f83fa0b69cfb816ee1f90
++     - `espionage.core` — `Acp` と `@rpc` ワイヤトレイト（`Acp.Agent`、`Acp.Client` とその部品）。obligatory の JSON-RPC サポートに依存するため JVM 向けにだけビルドされ、キャプチャ検査を必要とする。
++     - `espionage.demo` — `DemoAcpClient`。完全なコマンドラインクライアントであり、ライブラリとしては公開されない。
+
+@ 0 4 0 126e489a97add17914dfd49139fb09a2
++     `Acp` とワイヤトレイトは `soundness` アンブレラにエクスポートされるが、デモはエクスポートされない。
++     このライブラリは独自の選択パッケージの given を持たないが、`import soundness.*` は given をインポートしないので、接続には上記の名前付きインポート（`threads`、`probates`、`workingDirectories`、`environments`、そしてエラー戦略）が必要である。
+
+% 0 1 0 121da6c91a640e261d31c41f2646a9ad
+
+% 0 1 0 05b82b1396c1023d0c855879a15bfc24
+
+% 0 1 0 1b73aeff40c4ebb70b95ed1070809103
+
+% 0 1 0 0bdcc9e085b1ad6d10aa40974e781714
+
+% 0 1 0 0953bf4424f2f8ed10894334eb52693c
+
+% 0 1 0 07cee1c7c0a0f40c002ca38ef027536a
+
+@ 0 1 0 01febc2ed4ad46271d9b0f5486b73b3c
++ entry .Acp   Agent Client Protocol：そのメッセージ型、ハンドラのレジストリ、`connect`、そして接続
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 1 0 03f1f6e64b235ad11e1765d93ba53be4
++       `Acp` はクライアント全体を保持する。
++       そのメンバーは四つの群に分かれる。
+
+@ 0 16 0 14da46507c989f9a0f793d6431896c41
++       - **プロトコルの型**。ACP の構造ごとに一つのケースクラスまたは列挙型があり、それぞれコンパニオンに JSON コーデックを持つ：ケイパビリティのレコード（`ClientCapabilities`、`AgentCapabilities`、…）、セッション（`McpServer`、`SessionMode`、`NewSessionResult`）、ターン（`StopReason`、`PromptResult`）、更新（`SessionUpdate` とそのケース）、ツール呼び出し（`ToolCall`、`ToolCallUpdate`、`ToolCallContent`）、計画、パーミッション、ファイルシステムと端末の結果、そして `synesthesia.Content` から再エクスポートされたコンテンツブロック。
++       - **ハンドラ側**。ハンドラの型（`UpdateHandler`、`PermissionHandler`、`ReadFileHandler`、`WriteFileHandler`、および `Terminals` の束）、ハンドラが読むコンテキストのアクセサー（`sessionId`、`update`、`toolCall`、`options`、`path`、`line`、`limit`、`content`）、登録コンビネーター（`updated`、`permission`、`readFile`、`writeFile`、`terminals`、`capabilities`）、そしてそれらが書き込む `Registry`。
++       - **接続側**。エージェントの居場所を示す `Endpoint`、やりとりを開く `connect`、それが貸し出すハンドルであり `connection` として到達する `Connection`、そして生のトラフィックを見る `Observer`。
++       - 接続が発生させ、ハンドラが送出する `Error`。
+
+% 2 1 0 100ea36ba70c6d5b1d2cd2777d4c2ca7
+
+% 3 1 0 1486a351219133420b3a3e00f3f44a64
+
+% 4 1 0 16059b83662a300203b37f135af4d63e
+
+% 5 1 0 0420ea186997a0300d1f05fce3877450
+
+% 0 1 0 0af80dd4d55c79380f3e679906a2149b
+
+% 0 1 0 13e4cf1481986f5c1d36fe2dd191ba61
+
+% 2 1 0 19b31930fca2a02703632737d59842c1
+
+% 0 1 0 02977157b1f186c01231c7877911f6b0
+
+% 0 1 0 04b211983a19c67d0fc7e34cfd33ff20
+
+% 0 1 0 1fc9196e43a6f5d515b50073af46be4a
+
+% 0 1 0 13b2a3ca026be0400fa11d7e3066dc65
+
+% 0 1 0 175daeb1596d567c00a3a5be4039df23
+
+% 0 1 0 0c9340e9dfd68c720dd469eb44e57891
+
+% 0 1 0 1b6c254955f3fde206877b266c000c36
+
+% 1 1 0 1ccd9c54e82c7dd21fdf4e9dc02d536a
+
+@ 0 3 0 0f65b9bbcebe33060c71362c47db5cdf
++       登録は `Acp.Registry^` がスコープにある場所ならどこでも可能である。
++       `connect` の一つ目のブロックでも、上の `register` のようにそれを受け取るヘルパーでもよい。
++       そのためクライアントはハンドラをいくつものメソッドに分割できる。
+
+% 0 1 0 09b5237fa61f239e1414537229b96a3d
+
+% 0 1 0 1c9ac18ad7873fe11dd759324e2371c9
+
+% 0 1 0 1b18465b690c6a4a0ffc5bf15c6d4e5a
+
+% 0 1 0 14bf3cd678fcc6001e639efc2d02fb50
+
+@ 0 4 0 08590577e0e4c02506b239e1c611796c
++   entry .version   このライブラリが実装するプロトコルのバージョン：`1`
++       ACP のバージョンは単一の整数であり、互換性を破る変更のときにだけ増える。
++       クライアントは `initialize` でこれを送り、エージェントがほかのバージョンで答えると `Connection#initialize` は `Acp.Error.Reason.Incompatible` で中断する。
+
+@ 0 34 0 121e124392ec394814dee6e10f42000f
++   entry .Icon   アイコンのソース、MIME タイプ、サイズ、テーマ。`synesthesia.Content` から再エクスポートされている
++       `Acp.Icon` は MCP と共有される `synesthesia.Content.Icon` であり、詳しい説明はそのページにある。
++   entry .Annotations   コンテンツに付ける対象者、優先度、更新のヒント。`synesthesia.Content` から再エクスポートされている
++       `Acp.Annotations` は `synesthesia.Content.Annotations` である。
++   entry .Role   コンテンツが誰に向けたものか、`User` または `Assistant`。`synesthesia.Content` から再エクスポートされている
++       `Acp.Role` は `synesthesia.Content.Role` である。
++   entry .ContentBlock   コンテンツのブロック：テキスト、画像、音声、リソースリンク、埋め込みリソース。`synesthesia.Content` から再エクスポートされている
++       `Acp.ContentBlock` は `synesthesia.Content.ContentBlock` であり、詳しい説明はそのページにある。
++       プロンプトは `List[ContentBlock]` であり、エージェントがストリームとして送るメッセージや思考のチャンクはどれも一つのブロックを運ぶ。
++       ワイヤ上ではその `type` メンバーで判別される。
++   entry .TextContent   テキストのブロック。オプショナルなアノテーションを伴う。`synesthesia.Content` から再エクスポートされている
++       `Acp.TextContent` は `synesthesia.Content.TextContent` である。
++       ストリームとして届くテキストの通常のパターンは `case Acp.AgentMessageChunk(Acp.TextContent(text, _))` であり、`Connection#prompt(sessionId, text)` はそのテキストをこれで包む。
++   entry .ImageContent   MIME タイプを伴う Base64 の画像と、オプショナルな URI。`synesthesia.Content` から再エクスポートされている
++       `Acp.ImageContent` は `synesthesia.Content.ImageContent` である。
++       その `uri` メンバーは ACP が MCP の形に追加したものであり、設定されていなければワイヤから消える。
++       エージェントがプロンプト内の画像を受け付けるのは、その `PromptCapabilities#image` がそう示す場合に限られる。
++   entry .AudioContent   MIME タイプを伴う Base64 の音声。`synesthesia.Content` から再エクスポートされている
++       `Acp.AudioContent` は `synesthesia.Content.AudioContent` である。
++       エージェントがプロンプト内の音声を受け付けるのは、その `PromptCapabilities#audio` がそう示す場合に限られる。
++   entry .ResourceLink   URI によるリソースへのリンク。その名前とオプショナルなメタデータを伴う。`synesthesia.Content` から再エクスポートされている
++       `Acp.ResourceLink` は `synesthesia.Content.ResourceLink` である。
++   entry .EmbeddedResource   インラインで運ばれるリソースの内容。`synesthesia.Content` から再エクスポートされている
++       `Acp.EmbeddedResource` は `synesthesia.Content.EmbeddedResource` である。
++       エージェントがプロンプト内の埋め込みコンテキストを受け付けるのは、その `PromptCapabilities#embeddedContext` がそう示す場合に限られる。
++   entry .Contents   テキストまたはブロブとしてのリソースの内容。`synesthesia.Content` から再エクスポートされている
++       `Acp.Contents` は `synesthesia.Content.Contents` である。
++   entry .ResourceContents   リソースの内容に共通する形：URI、MIME タイプ、メタデータ。`synesthesia.Content` から再エクスポートされている
++       `Acp.ResourceContents` は `synesthesia.Content.ResourceContents` である。
++   entry .TextResourceContents   テキストとしてのリソースの内容。`synesthesia.Content` から再エクスポートされている
++       `Acp.TextResourceContents` は `synesthesia.Content.TextResourceContents` である。
++   entry .BlobResourceContents   Base64 のブロブとしてのリソースの内容。`synesthesia.Content` から再エクスポートされている
++       `Acp.BlobResourceContents` は `synesthesia.Content.BlobResourceContents` である。
+
+@ 0 1 0 040066939c55062e0eaa631afd37e45e
++   entry .Envelope   JSON-RPC メッセージの扱い方を決める二つのメンバー
+
+% 1 1 0 0927678a9e78632a063add3deb6267fb
+
+@ 0 8 0 1794903069c22d021ffb6aba33f4f663
++         `method`（応答にはない）と `id`（通知にはない）だけを読み取ったメッセージである。
++         どちらもオプショナルなので、どのメッセージもデコードできる。メソッドがなければ応答、id がなければ通知である。
++         やりとりの読み取り側はこれを使って、メッセージの形を知らずに各メッセージを振り分ける。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正なエンベロープは `Json.Error` を投げる
++     entry #method   メッセージが指定するメソッド。応答では `Unset`
++     entry #id   メッセージが対応付けに使う id。生の JSON として持つ。通知では `Unset`
+
+@ 0 1 0 1051f75c60cc999c19f68c3352d0a8ea
++   entry .FsCapabilities   クライアントがエージェントのファイルの読み書きに応じるかどうか
+
+% 1 1 0 04da0868073f65b11e571477465692fd
+
+@ 0 5 0 03b581b5223e9df7006c1e271d4642ac
++         `ClientCapabilities` の一部である。
++         `Acp.connect` は、`readFile` ハンドラが登録されているときにだけ `#readTextFile` を、`writeFile` ハンドラが登録されているときにだけ `#writeTextFile` を設定する。そのため、仕様に準拠したエージェントがクライアントにできない操作を求めることはない。
++     entry #readTextFile   クライアントが `fs/read_text_file` に答えるなら `true`
++     entry #writeTextFile   クライアントが `fs/write_text_file` に答えるなら `true`
+
+@ 0 1 0 0938249c4332b02f07f9fec907725a8e
++   entry .ClientCapabilities   クライアントが `initialize` でエージェントに伝える、自分にできること
+
+% 1 1 0 013cdf210598c65a0d02bdef96e31b59
+
+@ 0 4 0 19c3a3622142ae441e3d39da54a5f821
++         `Acp.connect` が登録から導出する。
++         どちらかのファイルシステムハンドラが登録されていれば `#fs` が存在し、`Terminals` の束が登録されていれば `#terminal` は `true` である。
++         `capabilities` コンビネーターは、登録からは導かれないものを宣言しなければならないクライアントのために、導出された値を最後に調整する。
+
+% 2 1 0 0e631c2eae60ff99058a9339470e4418
+
+% 3 1 0 04c9d381a97aa1d80faf3379a27ebb42
+
+% 4 1 0 14894a4089baa9df1e9bc4a0e1600eb8
+
+% 5 1 0 0ce4ab640fe1ec6f1f98b953395c456e
+
+% 2 1 0 1029943ab916a99905543aa80ef67e78
+
+% 0 1 0 04b1a6fcbeb2d07a03b79061f191f7af
+
+% 0 1 0 1ba7cfdb4ae3e6e50b74636b3761ee11
+
+% 1 1 0 13b6e9b54fc4854904902702cd7b1ad8
+
+@ 0 2 0 0b5791ceba2a6f3a1f56505392acd89a
++     entry #fs   ファイルシステムのケイパビリティ。クライアントがファイル操作に応じないなら `Unset`
++     entry #terminal   クライアントが端末を提供するなら `true`、そうでなければ `Unset`
+
+@ 0 1 0 0cc00e2d6e0a2407193e3069538ace21
++   entry .PromptCapabilities   エージェントがプロンプト内で受け付けるコンテンツの種類
+
+% 1 1 0 19642ff310e8223504a539c00c19c3bf
+
+@ 0 6 0 17fd3e04dadb7f120d73867cef3d9b80
++         エージェントが `AgentCapabilities#promptCapabilities` で報告する。
++         テキストとリソースリンクは常に受け付けられる。画像、音声、埋め込みリソースはエージェントがそう示す場合に限られる。
++     entry #image   プロンプトに `ImageContent` を含めてよいかどうか
++     entry #audio   プロンプトに `AudioContent` を含めてよいかどうか
++     entry #embeddedContext   プロンプトに `EmbeddedResource` のコンテンツを含めてよいかどうか
+
+@ 0 3 0 1df59e399000f3f00a6979b3971dcb2f
++   entry .McpCapabilities   エージェントが接続できる、標準入出力以外の MCP トランスポート
++     entry #http   エージェントが HTTP で MCP サーバーに接続するかどうか
++     entry #sse   エージェントが server-sent events で MCP サーバーに接続するかどうか
+
+@ 0 1 0 102712925ad986a511562874d7884730
++   entry .AgentCapabilities   エージェントが `initialize` でクライアントに伝える、自分にできること
+
+% 1 1 0 1aa4e35a7cf93bae14b29fe23f428e37
+
+@ 0 7 0 11273d96083ffca0121e7032d9053fe9
++         ケイパビリティのネゴシエーションのエージェント側であり、ハンドシェイクの後で接続が保持し、`Connection#agentCapabilities` として読む。
++         クライアントは `Connection#loadSession` を呼ぶ前に `#loadSession` を確認し、テキストとリソースリンク以外のものをプロンプトに入れる前に `#promptCapabilities` を確認する。
++     entry #loadSession   エージェントが `session/load` でセッションを再開できるかどうか
++     entry #promptCapabilities   エージェントがプロンプト内で受け付けるコンテンツの種類
++     entry #mcpCapabilities   エージェントが接続できる MCP トランスポート
+
+@ 0 1 0 045350531dce216e1590bda5f5aa32d9
++   entry .AuthMethod   エージェントが提示する、クライアントを認証する方法の一つ
+
+% 1 1 0 0a46de1c4b74aaa71175746fe985917b
+
+@ 0 6 0 09536dcbd0e5bf600b1ebe87e2ef5a0f
++         `InitializeResult#authMethods` に、したがって `Connection#authMethods` に列挙される。
++         リクエストが `Acp.Error.Reason.AuthRequired` で失敗したとき、クライアントは `Connection#authenticate(method.id)` で応じる。
++     entry #id   `Connection#authenticate` に渡す識別子
++     entry #name   方法の表示名
++     entry #description   より長い説明（エージェントが与えた場合）
+
+@ 0 1 0 12195622abbed96d15a9833f1cbe28e9
++   entry .InitializeResult   `initialize` に対するエージェントの応答：そのプロトコルバージョン、ケイパビリティ、認証方法
+
+% 1 1 0 13d8f757a33c9d461fd02e124bee3105
+
+@ 0 8 0 00e1deffd31ab8010ba942b7381c4a49
++         `Connection#initialize` が返すものである。
++         `Acp.connect` はハンドシェイクを自分で行うので、クライアントはこれを直接扱うのではなく、エージェントの応答を `Connection#agentCapabilities` と `Connection#authMethods` として読む。
++     entry .decodable   導出された JSON デコーダー。不正な結果は `Json.Error` を投げる
++     entry #protocolVersion   エージェントが話すバージョン。`Acp.version` でなければならない
++     entry #agentCapabilities   エージェントにできること（示された場合）
++     entry #authMethods   エージェントが提示する認証の方法（あれば）
++     entry #_meta   エージェントの実装定義のメタデータ。生の JSON として持つ
+
+@ 0 1 0 0ce02eba3e2f636c054524450067442d
++   entry .EnvVariable   名前と値で示す環境変数
+
+% 1 1 0 17e66539f9eaf71212c288e7ed36782f
+
+@ 0 4 0 018afab905182c5609efa88c839e3889
++         エージェントが起動する MCP サーバーについては `McpServer#env` が、エージェントがクライアントに作成を求める端末については（`Terminals#create`）これを運ぶ。
++     entry #name   変数の名前
++     entry #value   変数の値
+
+@ 0 1 0 1b71c500bc9014e3023b3e0e43108124
++   entry .McpServer   クライアントがエージェントに接続させたい MCP サーバー。その起動コマンドで示す
+
+% 1 1 0 16a8f642da999acd0fbe0a93ccbacf67
+
+@ 0 2 0 1da93b5c8d09d728137baea37ffad8c1
++         `Connection#newSession` または `Connection#loadSession` に渡す。
++         エージェントは各サーバーを標準入出力のトランスポートで起動し、そのツールをセッション内で使えるようにする。
+
+% 2 1 0 14e683a2335281ea0443bd7197932672
+
+% 3 1 0 0da591c143316fdc15c44ae7fd8dc3f6
+
+% 4 1 0 06370b897b35f44216ac9e63a87e3744
+
+% 5 1 0 195d886c2eb808a31a0542c960bdb2cb
+
+% 0 1 0 00bef855d019a9551d06286d908c590a
+
+% 0 1 0 1005e962ba281dbc0926596285871cae
+
+% 1 1 0 0a245600a1bfe1ca072d4e1af3d22323
+
+@ 0 4 0 1ccd155fa7dcb04a0de94dc34543ba52
++     entry #name   エージェントがそれを参照するときのサーバーの名前
++     entry #command   サーバーを起動するコマンド
++     entry #args   コマンドの引数
++     entry #env   サーバーのために設定する環境変数
+
+@ 0 4 0 17bc90d3f68be9251a883eb0210d5d95
++   entry .SessionMode   エージェントが作業できるモードの一つ。編集のたびに確認するモードなど
++     entry #id   `Connection#setMode` に渡す識別子
++     entry #name   モードの表示名
++     entry #description   より長い説明（エージェントが与えた場合）
+
+@ 0 1 0 1a459b42c58d129819629a58a2bf4c52
++   entry .SessionModeState   セッションが提供するモードと、現在のモード
+
+% 1 1 0 1d8e37be1f5554e117ff7d9878cca4fe
+
+@ 0 5 0 0773a3b5404eb14d15868e6d9d4d925b
++         `NewSessionResult#modes` で報告される。
++         現在のモードは `Connection#setMode` によって、あるいはエージェント自身の判断で変わり、後者は `CurrentModeUpdate` として報告される。
++     entry #currentModeId   セッションが現在いるモードの id
++     entry #availableModes   セッションが切り替えられるすべてのモード
+
+@ 0 1 0 09e702248f610b1e06dda8493dc60060
++   entry .NewSessionResult   `session/new` に対するエージェントの応答：セッションの id とそのモード
+
+% 1 1 0 041c1b9ea253f7d7048d067314e58518
+
+@ 0 7 0 00295fe4d992dec20191da0830395328
++         `Connection#newSession` が返す。
++         `#sessionId` は、そのセッションに関する以後のすべての呼び出し（`prompt`、`cancel`、`setMode`、`loadSession`）が取るものであり、すべてのハンドラに `Acp.sessionId` として貸し出されるものである。
++     entry .decodable   導出された JSON デコーダー。不正な結果は `Json.Error` を投げる
++     entry #sessionId   新しいセッションの識別子
++     entry #modes   セッションのモード（エージェントが提供する場合）
++     entry #_meta   エージェントの実装定義のメタデータ。生の JSON として持つ
+
+@ 0 1 0 1f797c8cb0b6b3f11fc1344d34813683
++   entry .StopReason   プロンプトのターンが終わった理由：`EndTurn`、`MaxTokens`、`MaxTurnRequests`、`Refusal`、`Cancelled`
+
+% 1 1 0 1103053592a5e2ac10bc2366c67aee91
+
+@ 0 6 0 1338fbf76aba0e0308e333d451195098
++         エージェントがそのターンで行ったすべてを終えた時点で `Connection#prompt` が返すものである。
++         `EndTurn` はエージェントが完了したことを意味する。
++         `MaxTokens` と `MaxTurnRequests` は、トークンまたはモデルへのリクエストの予算を使い果たしたことを意味する。
++         `Refusal` は続行を断ったことを意味する。
++         `Cancelled` はクライアントが `Connection#cancel` でターンを取り消したことを意味し、エージェントはこの方法で答える義務がある。
++         ワイヤ上でのケースは `end_turn`、`max_tokens`、`max_turn_requests`、`refusal`、`cancelled` である。
+
+% 2 1 0 0b3ce919e422fbb001ae46a89cf987fc
+
+% 3 1 0 02fda1298c6cf56f13967be4f9f088c9
+
+% 4 1 0 1a29602bfa9757cb02c9c868407a070f
+
+% 5 1 0 06d3572e922523ec1cb0d8dfc28ecb12
+
+% 0 1 0 0dfcc5320c58f2381c8100b3eb707f17
+
+% 0 1 0 193281debcabda010e943c8b16e5ba7f
+
+% 0 1 0 0af47deaf30096731000aa2bfdb75ab1
+
+% 0 1 0 063aced427f25c2d1b7394b439e2e69e
+
+% 1 1 0 0853da2d3fd2bd7f14348ab8813b2ff5
+
+@ 0 4 0 0b51c3e5e85ae20a07d4591ee8ecab9d
++     entry .encodable   停止理由をそのワイヤ上の文字列としてエンコードする
++     entry .decodable   停止理由をワイヤ上の文字列からデコードする。それ以外の文字列には `Json.Error` を発生させる
++         `Tactic[Json.Error]` を必要とし、未知の文字列はそれを通して理由 `OutOfRange` のエラーを発生させる。
+
+@ 0 1 0 0c5f41f9cc8c2d3c10668864df5aadef
++   entry .PromptResult   `session/prompt` に対するエージェントの応答：ターンが終わった理由
+
+% 1 1 0 10d385f443d75f570a9fd30ff3c7601a
+
+@ 0 4 0 01610a0876e7f6800ce4c2523f34be4d
++         `Connection#prompt` はその `#stopReason` だけを返す。
++     entry .decodable   導出された JSON デコーダー。不正な結果は `Json.Error` を投げる
++     entry #stopReason   ターンが終わった理由
++     entry #_meta   エージェントの実装定義のメタデータ。生の JSON として持つ
+
+@ 0 1 0 02ccb8e08746ff9a02e4849c66edccaa
++   entry .ToolKind   ツール呼び出しの種類：読み取り、編集、削除、移動、検索、実行、思考、取得、その他
+
+% 1 1 0 11a99e3b1472e5d305dcb0897a4b45a9
+
+@ 0 8 0 06ebe8b5506b1b220780369614bac686
++         `ToolCall#kind` で報告される。これによりクライアントは、ツール呼び出しをふさわしいアイコンで表示したり、それを認めることにどれだけ慎重になるかを決めたりできる。
++         ケースは `Read`、`Edit`、`Delete`、`Move`、`Search`、`Execute`、`Think`、`Fetch`、`Other` であり、ワイヤ上ではそれぞれ小文字の名前になる。
++     entry .encodable   種類をそのワイヤ上の文字列としてエンコードする
++     entry .decodable   種類をワイヤ上の文字列からデコードする。未知の種類は `Other` になる
++         ほかの列挙型のデコーダーと違い、これは決して失敗しない。
++         プロトコルはエージェントが種類を追加することを認めているので、このライブラリが知らない種類は `ToolKind.Other` として読まれる。
+
+@ 0 1 0 19046f1333c8192f061fd8fb7d3817a5
++   entry .ToolCallStatus   ツール呼び出しの進み具合：`Pending`、`InProgress`、`Completed`、`Failed`、`Cancelled`
+
+% 1 1 0 13af86e87e8907f600fd734dff410326
+
+@ 0 4 0 08cf69caec804bf81a692dc1e087de1d
++         `ToolCall#status` で報告され、`ToolCallUpdate#status` で更新される。
++         ワイヤ上でのケースは `pending`、`in_progress`、`completed`、`failed`、`cancelled` である。
++     entry .encodable   状態をそのワイヤ上の文字列としてエンコードする
++     entry .decodable   状態をワイヤ上の文字列からデコードする。それ以外の文字列には `Json.Error` を発生させる
+
+@ 0 1 0 0e48de14c7c8a97309d4f7b9ba5a2009
++   entry .ToolCallLocation   ツール呼び出しが作業しているファイルと、場合によってはその行
+
+% 1 1 0 0fe3884d10cbf3a20f868576491b31b4
+
+@ 0 4 0 1c307adaa52ffd7b19d20f545854fe4e
++         `ToolCall#locations` に列挙される。これによりクライアントは、エージェントが読み、編集するファイルを追いかけられる。
++     entry #path   ファイルの絶対パス
++     entry #line   その中の行（エージェントが示した場合）
+
+@ 0 1 0 0142910cb11b08670d1a22e8220f6ed4
++   entry .ToolCallContent   ツール呼び出しが生み出したもの：コンテンツ、ファイルの差分、または端末
+
+% 1 1 0 0903f2e9d9e4da5c116a114b1aea3177
+
+@ 0 4 0 0da9203bddd1c6741ef1a8279f707357
++         三つのケースからなるシールされた階層であり、ワイヤ上では `type` メンバーで判別される。
++         `ToolContent`（`content`）は通常の `ContentBlock` を包む。
++         `ToolDiff`（`diff`）は一つのファイルへの構造化された編集である。
++         `ToolTerminal`（`terminal`）はクライアントがエージェントのために作成した端末を参照し、クライアントはその出力を表示できる。
+
+% 2 1 0 0af993c843f9de540e0d7f1008151983
+
+% 3 1 0 1c741baa44173c270a7f8f01aff9ac1a
+
+% 4 1 0 0effadbb414cd97c044a01a51105cc25
+
+% 5 1 0 026548867f6b26c80f084a1f101397ef
+
+% 0 1 0 0d0b3290fe152d0400727deeb1324c12
+
+% 0 1 0 1772bea7f36ea4f105ba7d1d9bba73f3
+
+% 0 1 0 12d55ba1d7c2cb1f0ff8e74c580278dd
+
+% 0 1 0 14661166fc26c9df03071761404a5699
+
+% 0 1 0 1f43564ca4fbbda40baffbf989ccc3f3
+
+% 1 1 0 05f4667e0b394dc21b215f7d1394b6e7
+
+@ 0 2 0 1c4cf303628456a416e304a3aad54fb4
++     entry .encodable   三つのケースのいずれかを、その `type` 判別子とともにエンコードする
++     entry .decodable   `type` メンバーによってデコードする。未知の種類には `Json.Error` を発生させる
+
+@ 0 1 0 16fa4229d2d80dd916f589c727f3eee5
++   entry .ToolContent   通常のコンテンツブロックとしてのツールの出力
+
+% 1 1 0 12b4895a2f19c6460aec9d352a1abf58
+
+@ 0 4 0 0473fc728570688111c0ee88ea175c2a
++         `ToolCallContent` のケースであり、ワイヤ上では `type` が `content` である。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正なコンテンツは `Json.Error` を投げる
++     entry #content   コンテンツブロック
+
+@ 0 1 0 07c8ab2161fdc8c91223f99e36249f10
++   entry .ToolDiff   一つのファイルへの構造化された編集としてのツールの出力：その古いテキストと新しいテキスト
+
+% 1 1 0 089ce8a9b85c353b1a018707e903c26d
+
+@ 0 7 0 02755fc60a54eb810fb84b5ba03d3eb0
++         `ToolCallContent` のケースであり、ワイヤ上では `type` が `diff` である。
++         ツールが作成したファイルでは `#oldText` は `Unset` である。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な差分は `Json.Error` を投げる
++     entry #path   ファイルの絶対パス
++     entry #oldText   編集前のファイルのテキスト。新しいファイルなら `Unset`
++     entry #newText   編集後のファイルのテキスト
+
+@ 0 1 0 1989f8aa601b11ca1fa07d848afc452a
++   entry .ToolTerminal   クライアントが作成した端末への参照としてのツールの出力
+
+% 1 1 0 0d6dd6d37634f61d040ce0ef483bd4c7
+
+@ 0 5 0 19da7678455baeb11d6aba2ebe28564a
++         `ToolCallContent` のケースであり、ワイヤ上では `type` が `terminal` である。
++         その id は `Terminals#create` が返したものなので、クライアントはその端末の出力をツール呼び出しと並べて表示できる。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #terminalId   端末の id
+
+@ 0 1 0 14d4358d8c169a261fc615e618a8f7e2
++   entry .ToolCall   エージェントが最初に報告する時点のツール呼び出し：`tool_call` セッション更新
+
+% 1 1 0 1a6a8d552d831a8a12f45ed2e2e78056
+
+@ 0 3 0 01004fadcbbb54de11111fcbbfa46e5e
++         `SessionUpdate` のケースである。
++         必須なのは id とタイトルだけであり、それ以外はすべて、同じ `#toolCallId` を持つ `ToolCallUpdate` によって後から埋められてよい。
++         そのため、ツール呼び出しを表示するクライアントはそれらを id で保持し、各更新をそこに統合する。
+
+% 2 1 0 058f482245cb7c721afdb4dac06a4059
+
+% 3 1 0 0a9a49cb0d7a2a8e1baf9f23d96a85de
+
+% 4 1 0 02202e6a36c0c6151bb5aaa540bceb28
+
+% 5 1 0 00519684c4cbb40b0687cdf011ec6d6e
+
+% 7 1 0 142f916913a2dd981e790c671850f011
+
+% 8 1 0 00e160afa3040d440400ee90d0c87cf7
+
+% 0 1 0 03f1d22ad267b5511dd60887f78c4ca2
+
+% 0 1 0 00c3734516694ffb0fc274fd8c2f0423
+
+% 0 1 0 1f7059c164f893c8181f43fdcbdbeac1
+
+% 0 1 0 055725c3a3f76edd06076580d8249cc3
+
+% 0 1 0 038d05ecd365626b0dccf667cfc042e5
+
+% 1 1 0 01f02505f8a4002e1ef1bfbb0fed1f31
+
+@ 0 9 0 08d1b66cb18784fb0e9bd1b045961ca6
++     entry .decodable   導出された JSON デコーダー。不正なツール呼び出しは `Json.Error` を投げる
++     entry #toolCallId   後の更新やパーミッションのリクエストがこれを参照するのに使う id
++     entry #title   ツールが何をしているかを人間が読める形で記述したもの
++     entry #kind   ツールの種類（エージェントが示した場合）
++     entry #status   呼び出しの進み具合（エージェントが示した場合）
++     entry #content   呼び出しがこれまでに生み出したもの
++     entry #locations   呼び出しが作業しているファイル
++     entry #rawInput   生の JSON としてのツールの入力
++     entry #rawOutput   生の JSON としてのツールの出力
+
+@ 0 1 0 0c8074b313b75c8e079b14e23a91d093
++   entry .ToolCallUpdate   ツール呼び出しについての後からの報告、またはパーミッションのリクエストが扱うツール呼び出し
+
+% 1 1 0 0bf7ba4f8a213d9317157686921bac37
+
+@ 0 14 0 0d83977d9c880e7c1ebcd4c2208fccc2
++         `SessionUpdate` のケースであり、ワイヤ上では `tool_call_update` である。
++         `#toolCallId` 以外のメンバーはすべてオプショナルであり、存在するメンバーは以前に報告されたものを置き換える。
++         そのため `#content` はコンテンツ全体であり、それへの追加ではない。
++         同じ形が、パーミッションのリクエストが対象とするツール呼び出しも運び、パーミッションハンドラに `Acp.toolCall` として貸し出される。
++     entry .decodable   導出された JSON デコーダー。不正な更新は `Json.Error` を投げる
++     entry #toolCallId   更新されるツール呼び出しの id
++     entry #title   新しいタイトル。古いものを保つなら `Unset`
++     entry #kind   新しい種類。古いものを保つなら `Unset`
++     entry #status   新しい状態。古いものを保つなら `Unset`
++     entry #content   報告済みのものを置き換える、呼び出しのコンテンツ全体。保つなら `Unset`
++     entry #locations   呼び出しの位置のリスト全体。保つなら `Unset`
++     entry #rawInput   生の JSON としてのツールの入力。保つなら `Unset`
++     entry #rawOutput   生の JSON としてのツールの出力。保つなら `Unset`
+
+@ 0 3 0 122615f85a8b9dcf1cd7b47029e2cb4c
++   entry .PlanPriority   エージェントの計画の一ステップの重要度：`High`、`Medium`、`Low`
++     entry .encodable   優先度をそのワイヤ上の文字列としてエンコードする
++     entry .decodable   優先度をワイヤ上の文字列からデコードする。それ以外の文字列には `Json.Error` を発生させる
+
+@ 0 3 0 143c0df242ad4d2c162eaffb08079de7
++   entry .PlanStatus   エージェントの計画の一ステップの進み具合：`Pending`、`InProgress`、`Completed`
++     entry .encodable   状態をそのワイヤ上の文字列としてエンコードする
++     entry .decodable   状態をワイヤ上の文字列からデコードする。それ以外の文字列には `Json.Error` を発生させる
+
+@ 0 4 0 18127ca98c52863f002a550a76a42812
++   entry .PlanEntry   エージェントの計画の一ステップ：その内容、重要度、進み具合
++     entry #content   ステップを人間が読める形で記述したもの
++     entry #priority   ステップの重要度
++     entry #status   ステップの進み具合
+
+@ 0 1 0 05ecb40fc7bd9556118eccb46fb29214
++   entry .AvailableCommand   エージェントがセッションで提供するスラッシュコマンドと、その説明
+
+% 1 1 0 02e7b0701e3097431f3a4fa11a496ac2
+
+@ 0 5 0 0ad7dad8ffd800190258c66efc337c69
++         `AvailableCommandsUpdate` に列挙される。これによりクライアントは、ユーザーがプロンプトを入力する際にコマンドを補完候補として提示できる。
++     entry #name   スラッシュを除いたコマンドの名前
++     entry #description   コマンドが何をするか
++     entry #input   コマンドが入力を取る場合の、生の JSON としての入力の仕様
+
+@ 0 1 0 130201d6fa30b5850831bdcbf7ea160f
++   entry .SessionUpdate   一つの `session/update` 通知：作業中のエージェントがセッションについて報告するもの
+
+% 1 1 0 0f88c581af2ceea80570697ab6646852
+
+@ 0 3 0 12209805df7d24bd0f1d639bdbbff5aa
++         エージェントがターン中にストリームとして送る（そして `Connection#loadSession` の間には再開したセッションから再生する）八つのものからなるシールされた階層であり、ワイヤ上では `sessionUpdate` メンバーで判別される。
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 1 0 0c1c263a0de533d10a1161cb385ec376
++         column  ケース
+
+% 0 1 0 0f5fa17c93b8f4411f1d753a6211d613
+
+@ 0 9 0 03f57f4d744f6ea9029d311fb63407ac
++         column  更新
++         row  `UserMessageChunk`  `user_message_chunk`  再生されたセッションでの、ユーザー自身のメッセージの一部
++         row  `AgentMessageChunk`  `agent_message_chunk`  エージェントの回答の一部
++         row  `AgentThoughtChunk`  `agent_thought_chunk`  その推論の一部
++         row  `ToolCall`  `tool_call`  報告されたツール呼び出し
++         row  `ToolCallUpdate`  `tool_call_update`  ツール呼び出しへの後からの変更
++         row  `Plan`  `plan`  エージェントの計画の全体
++         row  `AvailableCommandsUpdate`  `available_commands_update`  現在提供されているスラッシュコマンド
++         row  `CurrentModeUpdate`  `current_mode_update`  セッションのモードが変わった
+
+% 1 1 0 17c57f91da50aace1ddd8760984b0844
+
+@ 0 4 0 17946f04e516c09d0b025cf4842bb56c
++         更新は、エージェントが送った順に `Acp.updated` で登録されたハンドラに届く。
++         チャンクの順序が重要なので、更新は起動された別のタスクではなく、接続の読み取りタスクそのものでディスパッチされる。
++         そのためハンドラは速やかに戻るべきであり、同じ接続のリクエストでブロックしてはならない。
+
+% 2 1 0 10b04a5cd8c2fcd31df14ae5e849ca55
+
+% 3 1 0 1c88d4c3b3aed7a4190319a672166c62
+
+% 4 1 0 087d2388200794b00dd107e38dfcb789
+
+% 5 1 0 078d7f1226b63c94040ddc2905901ed6
+
+% 7 1 0 1cc514e9f39742f100b11f0845335956
+
+% 8 1 0 134838a77ca87d940a5f7acbdc4347fa
+
+% 2 1 0 08c08b59bfebf7730a0efa0137dd8ce7
+
+% 0 1 0 188aa1da1aad1f481ddacd1ed308556c
+
+% 0 1 0 0b02d46cf1bb9468182a08e6448afdff
+
+% 0 1 0 0b119f5c26c524f105a6239cfb1e4460
+
+% 0 1 0 1124aa5b615690af0ec6c694a49b654a
+
+% 1 1 0 1746954d0a14c4370270e0c1cc53be42
+
+% 0 1 0 174f9e0c99e7fe470a153effce60bd42
+
+% 0 1 0 1a86525b0575484412904c863fe29f4b
+
+@ 0 2 0 17583566d14a281b0d66f6dc6f13f677
++     entry .encodable   任意の更新を、その `sessionUpdate` 判別子とともにエンコードする
++     entry .decodable   `sessionUpdate` メンバーによってデコードする。未知の種類には `Json.Error` を発生させる
+
+@ 0 1 0 1b2cde855cdd188604bae9306f26b5d4
++   entry .UserMessageChunk   エージェントが再開したセッションを再生するときの、ユーザーのメッセージの一部
+
+% 1 1 0 15546d1b188c0fb91c37b02cf677b734
+
+@ 0 4 0 0811bf8663e4a03e1ce79fcb83df064b
++         `SessionUpdate` のケースであり、ワイヤ上では `user_message_chunk` である。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #content   コンテンツの一部
+
+@ 0 1 0 1a2fb378df0135ea09030391fee7c86f
++   entry .AgentMessageChunk   書かれるそばからストリームとして届く、エージェントの回答の一部
+
+% 1 1 0 1d1784f73fc44ea703ef7ad0fc42bdae
+
+@ 0 6 0 109dc0e625fb4f3605f3f67c83d67b73
++         `SessionUpdate` のケースであり、ワイヤ上では `agent_message_chunk` である。
++         ターンの回答は多数のチャンクとして順に届く。
++         届いた `TextContent` をそのつど出力すれば、エージェントが書くとおりに回答が表示される。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #content   コンテンツの一部。通常は `TextContent`
+
+@ 0 1 0 1d20d4bcd24d513f0ff9b07d161ca397
++   entry .AgentThoughtChunk   考えるそばからストリームとして届く、エージェントの推論の一部
+
+% 1 1 0 13fe10d10d6490d2004a12aa1ffdc700
+
+@ 0 5 0 1bb18803b75265970b6855e26f1c77ff
++         `SessionUpdate` のケースであり、ワイヤ上では `agent_thought_chunk` である。
++         クライアントはこのテキストを回答とは別に表示してもよいし、まったく表示しなくてもよい。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #content   コンテンツの一部
+
+@ 0 1 0 11b0e411e06c415b084fd6f8d3986ef2
++   entry .Plan   そのターンに対するエージェントの計画の全体
+
+% 1 1 0 053d4162e695ab02117e9f7d49476b69
+
+@ 0 5 0 0175569c2407b17f1fbe6772555b43a0
++         `SessionUpdate` のケースであり、ワイヤ上では `plan` である。
++         各報告は計画の全体であり、直前のものを置き換える。それへの変更ではない。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #entries   計画のステップ（順に）
+
+@ 0 1 0 02198ba93a83e384082738243e2c8a06
++   entry .AvailableCommandsUpdate   エージェントがセッションで現在提供しているスラッシュコマンド
+
+% 1 1 0 0ede3abb7652052b022a2b4eec215cbc
+
+@ 0 5 0 034b4c7c72d4600c1838e581219259dd
++         `SessionUpdate` のケースであり、ワイヤ上では `available_commands_update` である。
++         各報告はリストの全体である。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #availableCommands   現在提供されているコマンド
+
+@ 0 1 0 07afcb6f87d534e1007d173508e59d12
++   entry .CurrentModeUpdate   セッションのモードが変わったこと
+
+% 1 1 0 19459691e6acedbb18e9411373ac90eb
+
+@ 0 5 0 14ca5faf4152028113c9024928889251
++         `SessionUpdate` のケースであり、ワイヤ上では `current_mode_update` である。
++         モードがエージェントの判断で、あるいは `Connection#setMode` に応じて変わったときに送られる。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #currentModeId   セッションが現在いるモードの id
+
+@ 0 1 0 01f4be64834846711eaf150204461f19
++   entry .PermissionOptionKind   パーミッションの選択肢を選ぶことの意味：一度だけ、または常に、認めるか拒否するか
+
+% 1 1 0 14b048dcb2478e940230fb07b4123f80
+
+@ 0 3 0 1485cc35b19c881a03a220d6b73840fb
++         ケースは `AllowOnce`、`AllowAlways`、`RejectOnce`、`RejectAlways` である（ワイヤ上では `allow_once`、`allow_always`、`reject_once`、`reject_always`）。
++         これらの種類により、クライアントはエージェントの言い回しではなくポリシーによって選択肢を選べる。
+
+% 2 1 0 082eafd4194f9b121deb3ed4824de7a1
+
+% 3 1 0 037ddb5efec2559f0c1216ce8a1eb015
+
+% 4 1 0 02200881a143ac3101e21d2ebc91a101
+
+% 5 1 0 1c400e05c5fcda5606f401535f691fb9
+
+% 0 1 0 1fa789ce8a626dee18a884697bdf74a5
+
+% 1 1 0 099499457eef07240a69dd91c5043f19
+
+% 2 1 0 0bd41ae8490f0d8705eb3053e1ab90ad
+
+% 1 1 0 12b2ef4ec23563981c1e8ff43d0f067c
+
+@ 0 2 0 00cd17d2c03c0acb0d8e0f3cd3f7f442
++     entry .encodable   種類をそのワイヤ上の文字列としてエンコードする
++     entry .decodable   種類をワイヤ上の文字列からデコードする。それ以外の文字列には `Json.Error` を発生させる
+
+@ 0 1 0 078f39355643de591e32778b1846113f
++   entry .PermissionOption   パーミッションのリクエストに対してエージェントが提示する回答の一つ
+
+% 1 1 0 13b539f2bf52e993166b9a4a3a1e56f6
+
+@ 0 7 0 077b1f04601672ba04db3f349216811b
++         パーミッションハンドラには提示された選択肢が `Acp.options` として貸し出され、ハンドラは選んだものについて `Acp.Selected(option.optionId)` で答える。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #optionId   `Selected` で答えるときの id
++     entry #name   ユーザーに表示する選択肢のラベル
++     entry #kind   その選択肢を選ぶことの意味
+
+@ 0 1 0 07c0981f04ce2c5013e809f31343c3e3
++   entry .RequestPermissionOutcome   パーミッションのリクエストへの回答：`Selected(optionId)` または `Cancelled`
+
+% 1 1 0 18363d80865feadb0357ae33ffb60047
+
+@ 0 9 0 038d91cbb00b2fa4131d3d478aa4348b
++         パーミッションハンドラの結果である。
++         `Selected` は提示された選択肢の一つを指定し、`Cancelled` は選ぶことを断る。
++         `Cancelled` は、ターンが取り消されたときに保留中のすべてのパーミッションのリクエストに対してプロトコルが要求する回答でもあり、接続がそれを自分で与える。
++         `Connection#cancel` の後に届いたリクエストにはハンドラを呼ばずに `Cancelled` で答え、取り消しが届いた時点ですでにハンドラの中にあるリクエストには、ハンドラが戻ったときにその選択を捨てて `Cancelled` で答える。
++         ワイヤ上では、結果は `outcome` メンバーで判別される。
++     entry .encodable   結果を、その `outcome` 判別子とともにエンコードする
++     entry .decodable   `outcome` メンバーによってデコードする。未知の結果には `Json.Error` を発生させる
+
+@ 0 2 0 090a8fc0cee629b50fd1c61df1930ad8
++   entry .Selected   提示された選択肢の一つを選ぶパーミッションの回答
++     entry #optionId   `PermissionOption#optionId` から取った、選ばれた選択肢の id
+
+@ 0 4 0 00304d7cc4ff377417f2622fb867ab20
++   entry .Cancelled   何も選ばないパーミッションの回答。取り消されたターンでは必須
++       `RequestPermissionOutcome` である。
++       ハンドラは断るときにこれを返し、ハンドラが登録されていないリクエストへの回答もこれである。
++       これは、取り消されたターンの終わり方である `StopReason.Cancelled` とは別物である。
+
+@ 0 2 0 0927094bedfd17e709ab1974acee84e8
++   entry .RequestPermissionResult   `session/request_permission` に対するクライアントの応答。結果を包む
++     entry #outcome   ハンドラの回答、または `Cancelled`
+
+@ 0 2 0 118a31ab6bafdadd062724196fbb158a
++   entry .ReadTextFileResult   `fs/read_text_file` に対するクライアントの応答：ファイルの内容
++     entry #content   読み取ったテキスト
+
+@ 0 2 0 06413d7d760ddc0a07ec6209d8b111ea
++   entry .CreateTerminalResult   `terminal/create` に対するクライアントの応答：新しい端末の id
++     entry #terminalId   `Terminals#create` が返した id
+
+@ 0 3 0 13cf54bbbb4b3e9815d2bdb8a0ca21b5
++   entry .TerminalExitStatus   端末のコマンドがどう終わったか：その終了コード、またはそれを終了させたシグナル
++     entry #exitCode   コマンドが終了した場合の終了コード
++     entry #signal   シグナルによって終了させられた場合の、そのシグナルの名前
+
+@ 0 4 0 14f6ba34ff02144218818432d11ad565
++   entry .TerminalOutputResult   これまでの端末の出力と、終了していればその終了状態
++     entry #output   これまでに取り込まれた出力
++     entry #truncated   バイト数の上限に収めるために出力が先頭から捨てられたかどうか
++     entry #exitStatus   コマンドがどう終わったか。実行中は `Unset`
+
+@ 0 1 0 0d0f86f27f4b20b60510a66305fe4fe6
++   entry .Terminals   クライアントがエージェントに提供する五つの端末操作。まとめて与える
+
+% 1 1 0 0256056f7f8976ef1a2efb783c9a8f7e
+
+@ 0 4 0 16d872e854858842052b387734fb3bf3
++         プロトコルは端末のサポートを単一のケイパビリティとして告知するので、操作はすべてか無かである。
++         クライアントはこのトレイトを実装して `Acp.terminals` で登録し、そうすると `ClientCapabilities#terminal` は `true` になる。
++         各メソッドは、扱うセッションの id とともにそれぞれ専用のタスクで呼ばれる。
++         端末の id を作り出すのはクライアントの役目である。
+
+% 2 1 0 1db288a7bacb1417026b3853ff41057a
+
+% 3 1 0 182f73e3ef932a67174dd8290571229a
+
+% 4 1 0 1dac9645d9e5dcc1093fa6801aca744e
+
+% 5 1 0 183a6781d60739841966c3e9d26e2abe
+
+% 0 1 0 0652e938bbee179e078b0cff84080626
+
+% 0 1 0 08cb6ed30233f6760bc8eafb1143ecfa
+
+% 0 1 0 1ab8ecbf160b7a8f1cc727ecd05f65b5
+
+% 0 1 0 0fc7fa15328d1a0c0ffbc20df21b92f7
+
+% 0 1 0 1d4fb2b5cd536fae01bc5d3c4d25bac1
+
+% 0 1 0 04e79789dfb5a9bb04782075bc80c13b
+
+% 0 1 0 0d2adc6d070de00c13186a00fa2b827a
+
+% 0 1 0 059045c1b33f250f0abed23f2920cfa6
+
+% 0 1 0 1078cd6a6a48c15c0bea98111b158af1
+
+% 0 1 0 14d46425b01eb743039395d63ee2ca64
+
+% 0 1 0 0a935af44fac094e19598a203271459e
+
+% 0 1 0 0cbe405b1335109f1757b45c68884e52
+
+% 0 1 0 0dd8060dfbbff7ae144e29996b8a1218
+
+% 0 1 0 12b2b01876070659137c1bbbd927f20f
+
+% 0 1 0 1b5a5eed9f516c720f3401d48c31738d
+
+% 0 1 0 1a60aaee0e368eed0e7b83973cc7fb86
+
+% 0 1 0 1995d08f874309cf1fc25616051bc423
+
+% 1 1 0 1713b1dbc1bd59f0182b0d96a6b82638
+
+@ 0 10 0 085ab197387067f01713f638eaf7917a
++         束が登録されていないときの端末操作のリクエストには `MethodNotFound` エラーで答えるので、ふるまいのおかしいエージェントは待たされたままにならず、そのことを知らされる。
++     entry #create   新しい端末でコマンドを開始し、端末の id を返す
++         コマンド、その引数と環境、オプショナルな作業ディレクトリー、保持する出力のバイト数のオプショナルな上限を与えて呼ばれる。
++         上限を超えた最も古い出力は捨てられ、`TerminalOutputResult#truncated` がそれを報告する。
++     entry #output   これまでの端末の出力と、終了していればその終了状態
++     entry #waitForExit   端末のコマンドが終了するまでブロックし、どう終わったかを返す
++     entry #kill   端末のコマンドを終了させる。出力のために端末は残す
++     entry #release   コマンドがまだ実行中なら終了させ、端末を解放する
+
+@ 0 9 0 0a0340acf9a6de6f1f7e4786b48c673d
++   entry .Turned1   ハンドラのコンテキスト：セッションの id、タグ付きのペイロード一つ、エラーのエミッター
++       `(sessionId: Text aka "sessionId", payload: payload, emit: Emit[Acp.Error]^) ?=> result`。
++       各ペイロードには `aka` でタグが付けられているので、コンテキストのアクセサー（`Acp.update` など）は名前でそれを見つける。
++       貸し出されるものはすべてコンテキストパラメーターであり、結果は純粋なので、ハンドラに貸し出されたものがそこから外へ出ることはできない。
++       `UpdateHandler` はその一つである。
++   entry .Turned2   ハンドラのコンテキスト：セッションの id、タグ付きのペイロード二つ、エラーのエミッター
++       `Turned1` と同じで、ペイロードを二つ持つ。
++       `PermissionHandler` と `WriteFileHandler` がそれである。
++   entry .Turned3   ハンドラのコンテキスト：セッションの id、タグ付きのペイロード三つ、エラーのエミッター
++       `Turned1` と同じで、ペイロードを三つ持つ。
++       `ReadFileHandler` がそれである。
+
+@ 0 14 0 0d2d8bb9f7db404e119f7c11f0fd3b67
++   entry .UpdateHandler   `Acp.updated` が取るハンドラ：各 `SessionUpdate` を見て、何も返さない
++       `Acp.sessionId` と `Acp.update` が貸し出される。
++       接続の読み取りタスクで、エージェントが更新を送った順に実行される。
++   entry .PermissionHandler   `Acp.permission` が取るハンドラ：提示された選択肢から選ぶ
++       `Acp.sessionId`、`Acp.toolCall`（リクエストが扱う `ToolCallUpdate`）、`Acp.options` が貸し出され、`RequestPermissionOutcome` を返す。
++       専用のタスクで実行されるので、ターンの更新を滞らせることなく（ユーザーを数分待つなどして）ブロックしてよい。
++   entry .ReadFileHandler   `Acp.readFile` が取るハンドラ：ファイルのテキストを返す
++       `Acp.sessionId`、`Acp.path`、そしてオプショナルな、読み始める行 `Acp.line`（1 起点）と行数の上限 `Acp.limit` が貸し出され、テキストを返す。
++       エディターの未保存のバッファーのような、クライアント自身から見たファイルの内容を返してもよい。
++   entry .WriteFileHandler   `Acp.writeFile` が取るハンドラ：ファイルのテキストを書き込む
++       `Acp.sessionId`、`Acp.path`、`Acp.content` が貸し出され、何も返さない。
+
+@ 0 17 0 039d45914889f13d03552f3a3bc76a9d
++   entry .connection   `Acp.connect` が二つ目のブロックに貸し出す生きた接続
++       `Acp.connection` は `Acp.Connection` コンテキストパラメーターをそのシングルトン型のまま読むので、`Acp.connection.prompt(…)` はスコープにあるまさにその接続に対する呼び出しである。
++       `connect` の二つ目のブロック、または `using Acp.Connection` を取るメソッドの内側でだけ使える。
++   entry .sessionId   ハンドラの中での、リクエストや更新が扱うセッションの id
++       すべてのハンドラにこれが貸し出される。
++   entry .update   更新ハンドラの中での、報告されている `SessionUpdate`
++   entry .toolCall   パーミッションハンドラの中での、エージェントがパーミッションを求めているツール呼び出し
++       `ToolCallUpdate` であり、その id と、エージェントがこれから行う呼び出しについて述べることを持つ。
++   entry .options   パーミッションハンドラの中での、エージェントが提示する回答。`PermissionOption` として
++   entry .path   ファイルハンドラの中での、読み書きするファイルの絶対パス
++   entry .line   読み取りハンドラの中での、読み始める 1 起点の行。先頭からなら `Unset`
++   entry .limit   読み取りハンドラの中での、返す行数の上限。上限がなければ `Unset`
++   entry .content   書き込みハンドラの中での、書き込むテキスト
++       コンテンツを運ぶレコードの `#content` メンバーと混同しないこと。
++       こちらはアクセサーであり、書き込みハンドラのコンテキストを必要とする。
+
+@ 0 3 0 0058e1064f90e877114c1ae2e1bd7a28
++   entry .updated   `session/update` のハンドラを登録する：すべてのセッションのすべての更新を見る
++       `Acp.sessionId` と `Acp.update` が貸し出される `UpdateHandler` である。
++       何も登録しなければ更新は捨てられる。
++       `Acp.connect` の一つ目のブロックのように、スコープに `Acp.Registry` が必要である。
+
+% 2 1 0 1175f5a773ac8b9704a2e02f1cd4cc63
+
+% 3 1 0 1a4b182156a033601ed3880b994aca96
+
+% 4 1 0 139d862117dbb37a0e2ec517cf813dd6
+
+% 5 1 0 0a1e864f9ef07e400bf478dd1c2fe07e
+
+% 0 1 0 00ed8647433cd4af10b628fade7a7d5e
+
+% 0 1 0 0b449bd156b1576b00a4e89900cacb23
+
+% 0 1 0 1e0c8ffbc046e2c50d4e3ce18cd1ef46
+
+% 0 1 0 1a5db3c3fb7247360a9213492a286c92
+
+% 1 1 0 1ea6dde389c9bbd20b402e1a2ead42f3
+
+@ 0 8 0 04c74c1eae595f070a0cbdbc34e6a9b1
++   entry .permission   `session/request_permission` のハンドラを登録する
++       `Acp.sessionId`、`Acp.toolCall`、`Acp.options` が貸し出され、`Acp.Selected(optionId)` または `Acp.Cancelled` を返す `PermissionHandler` である。
++       ハンドラが登録されていなければ、すべてのリクエストに `Cancelled` で答える。
++       取り消されたターンのリクエストには、ハンドラが何を返しても `Cancelled` で答える。
++   entry .readFile   `fs/read_text_file` のハンドラを登録し、そのケイパビリティを告知する
++       `Acp.path`、`Acp.line`、`Acp.limit` が貸し出され、テキストを返す `ReadFileHandler` である。
++       これを登録すると `FsCapabilities#readTextFile` が設定される。
+
+% 2 1 0 1c278dacce320c1d04f12508aafdba80
+
+% 3 1 0 0769e6d05b620dcf0938ebc386afb612
+
+% 4 1 0 19b8a8c045ce6d45020aa3a0ae7f74b9
+
+% 5 1 0 18cdc494f5ac0fe8040003a380533f58
+
+% 0 1 0 17ae010515f1d06d1ae4a0132df07de9
+
+% 0 1 0 1c4feda9015341a80f1b872d295c8d8c
+
+% 0 1 0 13035b428e7af2470e67ef586d8fb9d8
+
+% 0 1 0 17c2270d9c1c8b4d147d46e6ab42c99b
+
+% 1 1 0 15c8914346540011099047ae86299e4b
+
+@ 0 11 0 090b7ab36a0c19bc1afbc7d9e226d54e
++   entry .writeFile   `fs/write_text_file` のハンドラを登録し、そのケイパビリティを告知する
++       `Acp.path` と `Acp.content` が貸し出される `WriteFileHandler` である。
++       これを登録すると `FsCapabilities#writeTextFile` が設定される。
++   entry .terminals   `Terminals` の束を登録し、端末のケイパビリティを告知する
++       プロトコルは五つの端末操作を一つのケイパビリティとして告知するので、それらはまとめて登録される。
++       これを登録すると `ClientCapabilities#terminal` が設定される。
++   entry .capabilities   登録から導出されたクライアントのケイパビリティを、初期化時に最後に調整する
++       逃げ道である。
++       `Acp.capabilities(adjust)` は `initialize` が送られる直前に導出された `ClientCapabilities` に適用されるので、クライアントはケイパビリティを取り下げたり、別の手段で提供するケイパビリティを宣言したりできる。
++       導出された宣言はほとんどすべてのクライアントにとって正しい。
+
+@ 0 1 0 15196bcfee70cd9b0d3480dd113ef1c3
++   entry .connect   ブロックの実行中エージェントに接続する：ハンドラを登録し、初期化し、接続を貸し出す
+
+% 1 1 0 1567089f052016e415563d9027545a06
+
+@ 0 10 0 13e251b8877f0f6516c84a832dcc2c5e
++         `Acp.connect(agent, observer)(register)(lambda)`。
++         一つ目のブロックは、貸し出された `Acp.Registry` にクライアントのハンドラを登録する。
++         それが戻るとレジストリは消費され、クライアントのケイパビリティがそこから導出されるので、やりとりが始まった後には何も登録できない。
++         次にやりとりが開かれる。書き込みタスクが送信メッセージをエージェントの入力へと流し出し、読み取りタスクが戻ってくるものを振り分ける。そして `initialize` が交わされ、エージェントが `Acp.version` 以外のプロトコルバージョンを話す場合は理由 `Incompatible` の `Acp.Error` を発生させる。
++         その後、二つ目のブロックが、`Acp.connection` として到達できる初期化済みの生きた `Acp.Connection` とともに実行され、その値が `connect` の値になる。
++         それが戻るとやりとりは破棄され、サブプロセスのエージェントは終了させられるので、話し相手のエージェントより長く生き残るものはない。
+
+% 2 1 0 018b2a71e1693841112be9736605b94c
+
+% 3 1 0 0ebedee2977061c0115c3484c162c7bd
+
+% 4 1 0 0727fa8b0a74da8a149ee6b5b229e4b8
+
+% 5 1 0 0e28c9e838711ec810bd9c2241298637
+
+% 0 1 0 02c7dce2adb70ca00beda9028c3cc0d8
+
+% 1 1 0 11973c61dd3e6a11052339a84bd4b2d2
+
+% 0 1 0 031cb3caf20d802a1bfde3d303278fab
+
+% 0 1 0 1f98cbc7a3762ff907317e8e4d607571
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1483d7674d516abb1cf447f9b7b6208e
+
+% 0 1 0 19f27299307b8f4b1459c8ef59ed0cba
+
+% 0 1 0 00c6a0319b1764db01ad0989618ae2b5
+
+% 0 1 0 1cab3bca185b21901ef9bf6be21640a0
+
+% 0 1 0 032f53eb5849eacd098ed729b9b51382
+
+% 0 1 0 1f6c36941cd67c420123dcf7d1bf41f7
+
+% 0 1 0 1a78f555893aecc11e90e0dc8fabee97
+
+% 0 1 0 1d4fd8dbb5d314f70226567772391cad
+
+% 0 1 0 044f5d759553c23316ac6c360cf6bec3
+
+% 0 1 0 1c6209a58167f2d91578e9c0031633f9
+
+% 0 1 0 035576dfa11e60fb043561af6930c189
+
+% 1 1 0 197517955b76075710d531fb75164e59
+
+@ 0 6 0 1e9e1810e31c77760da9e80efb7095f5
++         これには `Monitor`（そのため `supervise` の内側に置く）、`Probate`、`Diagnostics`、（サブプロセスのエージェントを起動するための）`WorkingDirectory` と `Environment`、そして `Tactic[Acp.Error]` が必要である。
++         起動できないサブプロセスは、理由 `Internal` と起動失敗のメッセージを持つ `Acp.Error` を発生させる。
++         モニターは共有されるケイパビリティなので、接続のブロックはそれを自由にキャプチャしてよい。たとえば、あるタスクでプロンプトを送り、別のタスクから取り消すブロックである。
+
+@ 0 7 0 11946b0bc7a40b8e0da8e7ae8a3ec694
++         エージェントからのメッセージは種類によって振り分けられる。
++         応答はそれを待っているリクエストと対応付けられるので、複数のリクエストを同時に送信中にでき、任意の順序で答えられてよい。
++         `session/update` 通知は読み取りタスクで順にディスパッチされる。
++         リクエスト（パーミッション、ファイル操作、端末）はそれぞれ起動されたタスクでディスパッチされるので、ユーザーを待っているパーミッションハンドラが更新も応答も滞らせることはない。
++         このライブラリがモデル化していないメソッドへのリクエストには `Method not found` で答え、モデル化されていない通知は無視される。
+
+@ 0 2 0 00fbcd34c5a2d9711444ff7705d5c37b
++         `observer` が与えられれば、それはトランスポートを通過するすべてのメッセージを両方向で見る。
++         既定値は `Acp.Observer.Silent` である。
+
+% 0 1 0 141d6f63e23e6946109c0bf76b478596
+
+% 0 1 0 03bc24f81a00033401d806e1ab0ea059
+
+% 0 1 0 1c3f58e6ffcebe74023dc8133a102f21
+
+% 0 1 0 1eb801dd9650f2b4151a4ec56881b5de
+
+@ 0 1 0 1cbbf0c5cee607671091067883079af4
++   entry .Observer   生のトラフィックへのフック：トランスポートを通過するすべてのメッセージ
+
+% 1 1 0 07e8203d16a2a4a4008158af3c06ed92
+
+@ 0 5 0 1b34d089dd36192b11511208f52a4973
++         エージェントの標準出力はワイヤそのものであり、クライアントはやりとりのログやプロトコルのトレースを取りたいことがある。
++         オブザーバーは各メッセージをその JSON テキストとして見る。
++         受信側は解析の前に見るので、デコードに失敗したメッセージも観測される。送信側はフレーミングの前に見るので、両方向が同じように読める。
++         これは `observer` として `Acp.connect` に渡す。
+
+% 2 1 0 17717cb8898c0c6616bc91839072dca1
+
+% 3 1 0 19899e79f865965a16b6d2e6fba5e521
+
+% 4 1 0 1ef53d2c39d6ed66087658901c107ff0
+
+% 5 1 0 1d460ee6f14867f512b36640759e5de0
+
+% 0 1 0 002909ac29b5aa25198527a5b6b0cacd
+
+% 0 1 0 001f52a59efe28331f3ef9e4c27bf08b
+
+% 0 1 0 0d49725af6c7bf6303903d3dba8b882a
+
+% 1 1 0 153502d468670e38121422462a8768c0
+
+@ 0 7 0 1f51a28ab3236df506310210a533c968
++         書き込みタスクが `#sent` を、読み取りタスクが `#received` を同時に呼ぶので、実装は二つのスレッドから呼んでも安全でなければならない。
++         これは共有される、持続的なケイパビリティである。
++     entry .Silent   何もしないオブザーバー。純粋な値であり、`connect` の既定値
++     entry .silent   `Silent` をコンテキストで与える given。暗黙のスコープにある
++     entry #received   エージェントから読み取った各メッセージを、解析の前に受け取って呼ばれる
++     entry #sent   エージェントに送る各メッセージを、エンコードされた本体として、フレーミングの前に受け取って呼ばれる
+
+@ 0 1 0 03998bf05934723f16a58c934d8da9c6
++   entry .Endpoint   このプロセスが話せるエージェントの居場所：起動するコマンド、またはストリームの組
+
+% 1 1 0 1a71b3695c83b3921e49a44d273aa982
+
+@ 0 6 0 180c9ec72eab2a1118cf7c3b3de307a2
++         エージェントの居場所を示す単純な値であり、それ自身はチャネルを持たない。
++         チャネルは `Acp.connect` が始まるときに開かれ、終わるときに閉じられる。
++         `Endpoint.Process(command)` はサブプロセスとして起動されるエージェントであり、その標準入出力がプロトコルを運ぶ。
++         `Endpoint.Streams(input, output)` は `java.io` ストリームの組の向こうですでに実行中のエージェントである。このプロセス内、ソケットの向こう、あるいはテストのフィクスチャなどである。
++         `Endpoint(command)` と `Endpoint.streams(input, output)` はそれぞれを作り、`Endpoint` に拡大する。
+
+% 2 1 0 168afa9bf72eb45d1846c3031db58668
+
+% 3 1 0 0412d84d8c0070d8152b91d2ebbeff7c
+
+% 4 1 0 1da7bf689ec62e44094fc98e3e3ec529
+
+% 5 1 0 06858ef6c47632570b3585e6b0b00196
+
+% 0 1 0 0287c2f73871229f0633ea83194f7af0
+
+% 0 1 0 165717cbb7dfdee60649376efddaadae
+
+% 1 1 0 11c2f63aa30aadf715b9b3e1cef2e0ae
+
+@ 0 2 0 112960bb2bba68ab1915f33832ad2d08
++         サブプロセスのエージェントは、その標準出力がワイヤそのものなので、実行ログを出さない設定で起動され、接続が終わると、終了を待たれることなく終了させられる。
+
+% 1 1 0 175b551b4c086b170cadbc8ba085c585
+
+@ 0 7 0 140ee90a526563561b02b4c67e7ece3e
++     entry .apply   サブプロセスとして起動されるエージェント：`Acp.Endpoint(command)`
++         `sh"…"` で書いた guillotine の `Command` を取る。
++     entry .streams   入力ストリームと出力ストリームの向こうですでに実行中のエージェント
++         どちらのストリームがどちらかは、このプロセスから見たものである。`input` はエージェントが書くもの、`output` はエージェントが読むものである。
++         エージェントが書く各メッセージは終端の改行が届いた時点で配送されるので、パイプに書き込むフィクスチャは各行の後でフラッシュするだけでよい。
+
+@ 0 1 0 1e5748e5beb9c3d60edc3a41e505bd0d
++   entry .Error   ACP のやりとりにおける誤り、またはエージェントが報告した誤り。その JSON-RPC の理由で示す
+
+% 1 1 0 12aee50ba20075d7028a1c317a35d85f
+
+@ 0 6 0 042c4a0253607754083388bf633d174e
++         エラー `↯/s.125.1`：_the ACP operation failed because `reason`_。理由ごとに番号が振られる（`Parse` の 148.1 から `Incompatible` の 148.7 まで）。
++         各 `Reason` は、プロトコルがそれに割り当てる JSON-RPC のワイヤコードを持つ：`Parse` は −32700、`InvalidRequest` は −32600、`MethodNotFound` は −32601、`InvalidParams` は −32602、`Internal` は −32603、`AuthRequired` は −32000。
++         `Incompatible` はこのライブラリ独自のものであり、エージェントが別のプロトコルバージョンで `initialize` に答えたときに `Acp.connect` が発生させる。
+
+@ 0 5 0 0e0737135545fe6c15756ee6400e29a5
++         接続のリクエストは、エージェントからのエラー応答に対して、スコープにある `Tactic[Acp.Error]` を通してこれを発生させる。
++         理由は `.reason` によってワイヤコードから復元され（標準の集合の外にあるコードは `Internal` になる）、エージェントのメッセージは `#details` になる。
++         認証を必要とするエージェントは `AuthRequired` で答え、クライアントはそこで `Connection#authenticate` を呼ぶ。
+
+@ 0 3 0 0cf61d8ee598b0cf05400134b56c600a
++         ハンドラは貸し出された `Emit[Acp.Error]` を通してこれを発生させ、クライアントはエージェントのリクエストに、理由のコードとメッセージとしての `#response` を持つエラー応答で答える。
+
+% 2 1 0 0f65f36689a3d13317b68b0622423405
+
+% 3 1 0 035d6fdb029e8474189f79c434fa7da7
+
+% 4 1 0 0fceccc58104b9841c5cd02f5eab9e47
+
+% 5 1 0 0b011dbf39f3ed8f0fe1b48363bfb952
+
+% 1 1 0 108d7f683c90f3a204a6a908c9094992
+
+% 0 1 0 1c37cfe8ec0ca57100c54e101cdd5352
+
+% 0 1 0 0cd7677dd81ca91e04c7ee90234eeabc
+
+% 0 1 0 0615f693ecb4276f015850281cc816a3
+
+% 0 1 0 11f28b1c4a1f1e5d1467c0efec9d6464
+
+% 1 1 0 0083aa5de5aee63819d283471e4793d1
+
+@ 0 2 0 1864f32c0827fae007954bbd7f3b7d89
++         これを構築するには、すべての fulminate のエラーと同じく、スコープに `Diagnostics` が必要である。
++     entry .Reason   操作が失敗した理由。それぞれ JSON-RPC のワイヤ `code` と `number` を持つ
+
+% 1 1 0 173d6c4f14a840010c5fd358258cac29
+
+@ 0 1 0 0a0cd70d9bd64b8f1f823a0ba9673178
++           各ケースは `number` と並んで JSON-RPC のワイヤコードを持つ。
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 11 0 1ef2fe77896e5abc1c05cbee72b447f3
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  備考
++           row  `Parse`  1  _the message could not be parsed as JSON_  ワイヤコード −32700
++           row  `InvalidRequest`  2  _the message was not a valid JSON-RPC request_  ワイヤコード −32600
++           row  `MethodNotFound`  3  _the method name was not recognised_  ワイヤコード −32601
++           row  `InvalidParams`  4  _the parameters were not valid for the requested method_  ワイヤコード −32602
++           row  `Internal`  5  _an internal error occurred_  ワイヤコード −32603
++           row  `AuthRequired`  6  _the agent requires authentication_  ワイヤコード −32000
++           row  `Incompatible`  7  _the agent does not support the protocol version this client implements_  ワイヤコードなし
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 9 0 068ffbfaeace9c9515877aa403bc876c
++       entry #number   エラー `↯/s.125.1` の副番号
++       entry #code   JSON-RPC のワイヤコード。ワイヤコードを持たない `Incompatible` では `0`
++     entry .reason   ワイヤコードが示す理由。標準の集合の外にあるコードなら `Unset`
++         `Reason#code` の逆であり、エラー応答を読むためのものである。
++         `0` は決してワイヤコードではないので、`Incompatible` を返すことはない。
++     entry .communicable   理由をそのメッセージ（_the agent requires authentication_ など）として描画する
++     entry #reason   操作が失敗した理由
++     entry #details   エージェントのメッセージ、またはエラーを発生させたときに与えたメッセージ（あれば）
++     entry #response   エラー応答で送るメッセージ：詳細、または理由の説明
+
+@ 0 1 0 174ce464927bcc5e15d58a2f0ef72532
++   entry .Registry   クライアントのハンドラが記録される場所。`connect` の一つ目のブロックに貸し出される
+
+% 1 1 0 1e37a9bac9d00df01013cc51df2d183f
+
+@ 0 5 0 1d0e8bb20603abd117ee2726798ab27d
++         登録コンビネーターの書き込み先である。
++         `Acp.connect` はこれを一つ作り、コンテキストパラメーターとして登録ブロックに貸し出し、ブロックが戻ると消費する。そのため、やりとりが始まった後の登録は構造上不可能である。
++         そのコンストラクターは private であり、ブロックから逃げ出せないケイパビリティである。
++         ハンドラを登録する独自のメソッドは、これを `using Acp.Registry^` として取る。
+
+@ 0 6 0 150cca190a5c63a50bf86ad8664b4fc3
++         そのスロット（コンビネーターごとに一つの public な `var` で、コンビネーターの名前の末尾に `0` を付けた名前を持つ）が public なのは、inline のコンビネーターがそれらに代入するからにすぎない。また各ハンドラのスロットは `AnyRef | Null` と型付けされている。
++         コンテキスト関数型を含むユニオンは、適応のたびにそのキャプチャ集合を新たにしてしまうので、型付きの境界はコンビネーターのパラメーターに置かれ、そこでレジストリを閉じ込めるハンドラは拒否される。
++         登録はスロットではなくコンビネーターを通して行う。
+
+% 1 1 0 03982f530c299eb40cade6ce267187b0
+
+% 0 1 0 17ae4b68a3c33b3618171bbfab9e24ed
+
+@ 0 1 0 08141d298360e799074715f67b9efc01
++     entry .Slot   登録されたハンドラを保持する箱
+
+% 1 1 0 0ab9dab1c683023501c59a63f933ef5c
+
+@ 0 11 0 0dd617aa7644aaa908bcbeeffcb16da5
++           コンテキスト関数の値は、コンテキスト関数ではない任意の期待型に対して、適用されることで適応する。そのためハンドラを `Optional` や `AnyRef` のスロットに直接入れることはできない。
++           `Slot[handler](value)` はそれを損なわずに保持し、サービスはディスパッチするときにそれを取り出す。
++       entry #value   ハンドラ
++     entry #updated0   箱に入った `updated` ハンドラ、または `null`
++     entry #permission0   箱に入った `permission` ハンドラ、または `null`
++     entry #readFile0   箱に入った `readFile` ハンドラ、または `null`
++     entry #writeFile0   箱に入った `writeFile` ハンドラ、または `null`
++     entry #terminal0   箱に入った `terminals` の束、または `null`
++     entry #adjust0   `capabilities` の調整、または `Unset`
+
+@ 0 1 0 11ed36f36561dcac1eccef863286ebd4
++   entry .Connection   実行中のエージェントに対するクライアントのハンドル。ブロックの実行中 `connect` が貸し出す
+
+% 1 1 0 16f3a1fcb2aaa4e5194e533f837e75d6
+
+@ 0 3 0 035550490a9530fe1d1e88e8e7e886db
++         `Acp.connect` が二つ目のブロックに貸し出すものであり、`Acp.connection` として到達する。
++         これはケイパビリティであり、ブロックが戻ると破棄されるので、話し相手のエージェントより長く生き残ることはできない。
++         そのコンストラクターは private である。
+
+@ 0 3 0 1210bff86426716a0ae53d94ec17ec71
++         リクエストはエージェントの応答が届くまで呼び出し側をブロックするが、読み取り側をブロックすることは決してない。そのため複数のリクエストを異なるタスクで同時に送信中にでき、順不同で答えられてよい。
++         あるタスクがプロンプトのターンを開いたままにしている間に、別のタスクがそれを取り消すこともできる。
+
+% 2 1 0 19f3e7dffd3a77671aafffdec6ace833
+
+% 3 1 0 04f778bff21f882c03558017bc61ea24
+
+% 4 1 0 12d4b907f678dd641716c6470fa0c9b5
+
+% 5 1 0 08a7b95b645c75b51df84970760e9bd1
+
+% 0 1 0 024a4188eaa25213131b0c2c817b1dc5
+
+% 0 1 0 174a5b398d58104910fdf374fe6cc791
+
+% 0 1 0 0850faa70107c091126a03db66dccfdb
+
+% 0 1 0 094510b2541c34900c3e4f8fd927a36f
+
+% 1 1 0 02169463e2db35300023a7969a5dc5f6
+
+@ 0 4 0 0eddd3639d2926d504c56428c1c81db1
++         すべてのリクエストは、エラー応答に対して、スコープにある `Tactic[Acp.Error]` を通して `Acp.Error` を発生させる。
++         接続の下にあるのは obligatory の `JsonRpc` であり、その `#Origin` はエージェントのインターフェース `Acp.Agent` である。`#send` は、このライブラリがモデル化していないメソッドのメッセージを送る。
+
+% 1 1 0 053e02cf64c7ec2c0e8622d3f4683224
+
+% 0 1 0 00bb40d224fe55ac192df09f745f71ba
+
+@ 0 40 0 1ff88ddd85b4394807557b41c2a50e2d
++     entry #Origin   接続の向こう側：`Acp.Agent`
++     entry #lifecycle   `Acp.Agent.Lifecycle` に対して生成されたクライアント：`initialize` と `authenticate`
++         これを直接呼ぶと、接続自身のメソッドが行うエラー変換とバージョン確認を迂回することになる。
++     entry #sessions   `Acp.Agent.Session` に対して生成されたクライアント：`session/*` メソッド
++         `#lifecycle` と同じく、接続自身のメソッドを優先すること。
++     entry #send   与えられたとおりのメッセージを送る。id を作らず、回答も待たない
++         このライブラリがモデル化していない拡張メソッドや通知のための、生の継ぎ目である。
++         この方法で送ったリクエストの応答はどこにも振り分けられないので、これは通知のためのものである。
++     entry #initialize   ハンドシェイク：プロトコルバージョンとクライアントのケイパビリティを送る
++         `Acp.connect` は接続を貸し出す前にこれを呼ぶので、クライアントは呼ばない。
++         エージェントが `Acp.version` 以外のプロトコルバージョンで答えると理由 `Incompatible` の `Acp.Error` を発生させ、`#agentCapabilities` と `#authMethods` のためにエージェントの応答を記録する。
++     entry #authenticate   エージェントが提示した方法の一つで、その id によって認証する
++         リクエストに `Acp.Error.Reason.AuthRequired` で答えたエージェントのためのものである。id は `#authMethods` にある `AuthMethod#id` である。
++     entry #newSession   作業ディレクトリーでセッションを開く。オプショナルな MCP サーバーを伴う
++         `newSession(cwd, mcpServers)` は `NewSessionResult` を返し、その `sessionId` を、そのセッションに関する以後のすべての呼び出しが取る。
++         `cwd` は絶対パスであるべきである。エージェントはそれを基準に作業する。
++     entry #loadSession   id でセッションを再開し、その履歴を更新ハンドラを通して再生する
++         エージェントは、これが戻る前に、会話全体を `session/update` 通知として再生する。それらは `UserMessageChunk` も含めて `Acp.updated` で登録されたハンドラに振り分けられる。
++         これをサポートするのは `AgentCapabilities#loadSession` が `true` のエージェントだけである。
++     entry #prompt   一つのプロンプトのターン：エージェントがターンの終わった理由を報告するまでブロックする
++         `prompt(sessionId, content)` は `List[ContentBlock]` を取り、`prompt(sessionId, text)` は単一の `TextContent` を取る。
++         エージェントがそのターンで行ったすべてを終えた時点で `StopReason` を返し、その間ターンの更新は更新ハンドラに並行してストリームとして届く。
++         ターンを開くとセッションの取り消し状態が解除されるので、クライアントは取り消した後に再びプロンプトを送れる。
++     entry #cancel   セッションの現在のターンを取り消す
++         リクエストではなく通知である。ターンの結果は送信中の `#prompt` であり、エージェントはそれを `StopReason.Cancelled` で完了させなければならない。
++         これが呼ばれた時点で保留中のパーミッションのリクエスト、および次のターンが開く前に届いたものには、プロトコルの要求どおり `Cancelled` で答える。
++     entry #setMode   セッションを、id で指定したモードの一つに切り替える
++         id は `NewSessionResult#modes` にある `SessionMode#id` である。
++     entry #agentCapabilities   初期化時にエージェントが報告した、エージェントにできること
++     entry #authMethods   初期化時にエージェントが提示した認証の方法
+
+@ 0 1 0 1a6609ce28e1f1b61acfdaffddaece80
++   entry .Agent   クライアントから呼ぶ、エージェントのインターフェース全体：`Acp.Agent.Lifecycle` と `Acp.Agent.Session`
+
+% 1 1 0 1ab24999dc5377ec07fe04a339a02330
+
+@ 0 4 0 188e66ea499d0c961ef4c832a431a1f2
++         クライアント→エージェント方向のワイヤトレイトの合併であり、`Acp.Connection` の `JsonRpc` の `Origin` である。
++         クライアント側でこれを実装するものはない。これは向こう側の型である。
++     entry .Lifecycle   `initialize` と `authenticate`、すなわちクライアント→エージェント方向のハンドシェイクのワイヤトレイト
+
+% 1 1 0 0881f735effe6d77095054042f94a9b6
+
+@ 0 4 0 1ba7a2eb495fd8dd04e43e708d8e0aeb
++           合わせてエージェントのインターフェース `Acp.Agent` を構成する `@rpc` トレイトの一つである。
++           obligatory の `JsonRpc.proxy` がトレイトごとに扱いやすい大きさのクラスを生成するように分割されている。
++           `Acp.Connection#lifecycle` はこれに対して生成されたクライアントである。
++           プログラムがこれを必要とするのは独自の接続を作るときだけであり、`Acp.Connection` がこれを包んでいる。
+
+% 0 1 0 039e6df5628f025404484515465863b6
+
+@ 0 8 0 17554182da42222f099060d560082652
++       entry #initialize   プロトコルバージョンとクライアントのケイパビリティを伴って `initialize` を送る
++       entry #authenticate   認証方法の id を伴って `authenticate` を送る
++     entry .Session   クライアントがエージェントに対して呼ぶ `session/*` メソッドのワイヤトレイト
++         `session/new`、`session/load`、`session/prompt`、`session/cancel`（通知なので `Unit` を返す）、`session/set_mode` であり、それぞれがその名前のメソッドとして、プロトコル自身のパラメーター名と型を取る。
++         `Acp.Connection#sessions` はこれに対して生成されたクライアントであり、`Acp.Connection` の `newSession`、`loadSession`、`prompt`、`cancel`、`setMode` がこれを包んでいる。
+
+@ 0 1 0 1a8bd3e1f056a45c1b71930be9338de9
++   entry .Client   エージェントから呼ぶ、クライアントのインターフェース全体：セッション、ファイルシステム、端末のメソッド
+
+% 1 1 0 06bda32264e98cec0d3e069e894d29f0
+
+@ 0 16 0 1e3938bbd6b8427814021066f7501891
++         `Acp.Client.Session`、`Acp.Client.Fs`、`Acp.Client.Terminal` の合併である。
++         `Acp.connect` が作るサービスがこれを実装し、部品ごとに生成された JSON-RPC ディスパッチャーを一つずつ持つ。そのため、プログラムがこれを自分で実装するのは、`Acp.connect` 以外の手段でプロトコルを提供するときだけである。
++     entry .Session   エージェントがセッションについてクライアントに対して呼ぶもののワイヤトレイト
++         この方向での唯一の通知である `session/update` と、エージェントがブロックして待つリクエストである `session/request_permission`。
++         `Acp.connect` が作るサービスがこれを実装し、それらを `Acp.updated` と `Acp.permission` で登録されたハンドラに振り分ける。
++     entry .Fs   エージェントのファイルシステムリクエストのワイヤトレイト：`fs/read_text_file` と `fs/write_text_file`
++         `Acp.connect` が作るサービスがこれを実装し、それらを `Acp.readFile` と `Acp.writeFile` で登録されたハンドラに振り分け、登録されていないものには `MethodNotFound` で答える。
++     entry .Terminal   エージェントの端末リクエストのワイヤトレイト：`terminal/create`、`output`、`wait_for_exit`、`kill`、`release`
++         `Acp.connect` が作るサービスがこれを実装し、それらを `Acp.terminals` で登録された `Acp.Terminals` の束に振り分け、束が登録されていなければ `MethodNotFound` で答える。

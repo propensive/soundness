@@ -1,0 +1,255 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 082c183b14f8412400c6cf416a9e480d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 050c561742c60e5d1da6d9f2706fd530
++ info   referências tipadas a entidades, que guardam apenas suas chaves e são resolvidas de volta por meio de um repositório
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 165c198dfaf4a0380e9de6258e9be4f3
++     _Gnossienne_ representa uma referência a uma entidade — uma pessoa, um produto, uma linha —
++     como um valor que não guarda nada além da chave da entidade, tipado por aquilo a que se
++     refere. Uma `Reference to Person` construída a partir de `t"juliet@example.com"` não é um
++     `Text`, e não pode ser confundida com uma referência a qualquer outra coisa.
+
+@ 0 5 0 0d3e22cb5db93ca40e1253ea49bd2d13
++     O modo como uma chave encontra sua entidade é uma instância da classe de tipos
++     `Resolvable`. A usual é construída a partir de um conjunto de valores com
++     `Resolvable(store)`, e os procura pelo campo marcado com a anotação `@primary`. Com essa
++     instância no escopo, a extensão `ref` obtém a referência de qualquer valor, e aplicar uma
++     referência a resolve de volta, lançando um `Reference.Error` se nada no repositório tiver
++     essa chave.
+
+% 2 1 0 1126c05c50a3369e022aa000ddbe7877
+
+% 3 1 0 08cec7ff608e3d5e057e46fbfd8b182f
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 2 1 0 1c7dc61d53a29d8b061b2bba1dd82fd6
+
+% 0 1 0 1ac908a88e2af4bd14442782478975c3
+
+% 1 1 0 0337c74c2cf22f661b88e950e0d8e899
+
+% 0 1 0 14d9782da58e6c961428ff598f24584c
+
+% 0 1 0 0676d78f6a5371bf02c1c6f77fd476cb
+
+% 0 1 0 1b6d075363438ad4083e12421b9d076a
+
+% 0 1 0 0b237a8b4919e02b1c4e18e03809e12a
+
+% 0 1 0 0a16332cc20701de19baca19d5ab591c
+
+% 1 1 0 1753336499458167141afa111752b4f9
+
+@ 0 2 0 16166f0ae511d9010d0aed3952a25478
++     Uma referência é codificada como sua chave e decodificada a partir dela, de modo que pode ser
++     armazenada ou enviada como texto e resolvida depois. Ela só é validada quando é aplicada,
++     nunca quando é construída.
+
+@ 0 3 0 09190bc14448707a16b1e72dd19ba4e7
++     A biblioteca tem um único source set, `gnossienne.core`, para todas as plataformas, e tudo é
++     exportado para o guarda-chuva `soundness`. O tutorial de bancos de dados mostra referências
++     usadas junto com relações.
+
+% 0 1 0 0e36480fb14dca771324f8eb427889d4
+
+% 0 1 0 125fe216bebe48d10ca1f6c0c08fa479
+
+% 0 1 0 18cf172329b85318071977aff881b740
+
+% 0 1 0 00e3da3dfa54be6812bd8334fb98cde5
+
+@ 0 1 0 19e0e115124f7efb10d472bcb1d9bd78
++ entry .Reference   uma referência tipada a uma entidade, que guarda sua chave e é resolvida por meio de um `Resolvable`
+
+% 1 1 0 03a448e92f3fd8aa1cd4154d3b446b35
+
+@ 0 4 0 1d619a95af6bd54d0f9d3a49f10a9ba9
++       Uma `Reference` guarda a chave de uma entidade e, como seu membro de tipo `#Result`, o
++       tipo da entidade a que se refere: `Reference to Person` é uma referência a uma `Person`.
++       Ela é criada a partir de um valor com a extensão `ref`, ou a partir de uma chave com
++       `Reference[Person](key)`; de qualquer forma, sua `#key` é tipada como o `Operand` da
++       instância de `Resolvable` no escopo.
+
+@ 0 4 0 12a047f3a84551450b9fdc1db1bc09c5
++       Aplicar uma referência, `reference()`, procura a chave por meio de `Person is Resolvable`
++       e retorna a entidade, lançando `Reference.Error` se não houver nenhuma. Uma referência
++       criada a partir de uma chave que não casa com nada ainda é uma referência válida: a falha
++       só vem quando ela é aplicada.
+
+% 2 1 0 1b2bd7e6836fc16c16413a9c7f5db92f
+
+% 3 1 0 066d0923965235f61762cbecc2701a26
+
+% 4 1 0 1b5952cfb9b2cf99144942aeebae835d
+
+% 0 1 0 03192bf9c781dae10151efc5bfe7d029
+
+% 0 1 0 0764f101609dc5c408f7899bc196c085
+
+% 0 1 0 085b66bfd9ef18e4117ffa58a3be9bd6
+
+% 0 1 0 0474fe082ebd5cb91ba19501c625ecc7
+
+% 0 1 0 1d5fdd59d4acd1ca1a7fbfacf05158f8
+
+% 1 1 0 05e68c83701539ef04ce678c3fb81a3e
+
+@ 0 2 0 0aeb4d982fa5d2b900a3d506b0b3aed0
++       Uma referência é codificada como texto por meio de `.encodable` e decodificada por meio
++       de `.decodable`, em ambos os casos pelo codec da própria chave, de modo que
++       `t"1001".as[Reference to Product]` lê uma.
+
+% 0 1 0 165cda82ce1c6a321430f1b948ed1292
+
+% 0 1 0 169a1c95367cc8c30aa77110c57a79a7
+
+@ 0 11 0 1c96f4c2d7d7e9fe1bb4f0709dc523b2
++   entry .apply   cria uma referência a partir de uma chave, como `Reference[Entity](key)`
++       O tipo da chave é o `Operand` da instância de `Resolvable` para a entidade, que precisa
++       estar no escopo. Nada é procurado: uma chave que não casa com nenhuma entidade cria uma
++       referência que lança `Reference.Error` quando é aplicada.
++   entry .encodable   codifica uma referência como texto: a codificação de sua chave
++       Disponível para `Reference to Entity` sempre que `Entity is Resolvable` e seu tipo de
++       chave é `Encodable in Text`. Está no escopo implícito.
++   entry .decodable   decodifica uma referência a partir de texto, decodificando sua chave
++       Disponível para `Reference to Entity` sempre que `Entity is Resolvable` e seu tipo de
++       chave é `Decodable in Text`. A referência decodificada não é conferida com o repositório
++       até ser aplicada.
+
+% 2 1 0 09479b5c768963c410b170eefb118ade
+
+% 3 1 0 0f57a4f823b9303e1d156994d3464936
+
+% 4 1 0 1189d248c90512e31393b3aab10755d9
+
+% 6 1 0 11268607142430ff0a681d94b4d948cb
+
+% 0 1 0 104bcb25460eb5470c472c1a2064a69e
+
+% 0 1 0 0fac05e1d49696a814722a83c89d2f8e
+
+% 1 1 0 0e2e2da6fcd958060375a58be8ea0fcf
+
+@ 0 1 0 030f5fd136f6306810cb2a2b6898e703
++   entry .Error   lançado quando a chave de uma referência não casa com nenhuma entidade do repositório
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 7 0 007249a8de547b371b1ac80401859390
++         Erro `↯/s.31.1`: _the reference `reference` could not be resolved because `reason`_.
++         Lançado por `Reference#apply` (e por `Resolvable#resolve`) quando o repositório não tem
++         nenhuma entidade cujo campo `@primary` seja igual à chave. `#reference` é a chave,
++         codificada como texto.
++     entry #reference   a chave que não pôde ser resolvida, codificada como texto
++     entry #reason   por que a referência não pôde ser resolvida, um `Reference.Error.Reason`
++     entry .Reason   por que uma referência não pôde ser resolvida
++         O único caso é `NotFound`: _no target with that reference was found in the
+
+% 0 1 0 07fc1c0bc035989a0ed2a1ca405d6aa4
+
+@ 0 8 0 12a7e79d129455b31c3e428f420b176a
++     entry .communicable   renderiza um `Reference.Error.Reason` como uma mensagem
++   entry #Result   o tipo da entidade a que a referência se refere
++   entry #key   a chave da referência, tipada como o `Operand` da instância de `Resolvable`
++       Exige `Result is Resolvable` no escopo, o que fixa o tipo da chave.
++   entry #apply   resolve a referência para sua entidade, lançando `Reference.Error` se não houver nenhuma
++       Exige `Result is Resolvable` no escopo e uma `Tactic[Reference.Error]`. Cada aplicação
++       procura a chave de novo, de modo que uma referência criada antes de sua entidade ser
++       acrescentada ao repositório é resolvida assim que a entidade estiver lá.
+
+@ 0 1 0 1a99baa4ad8060030b831ba3275213ad
++ entry .Resolvable   uma classe de tipos que diz como uma chave do tipo `Operand` é resolvida para uma entidade do tipo `Self`
+
+% 1 1 0 129cb53513dddf8d05dd397383bbaddc
+
+@ 0 3 0 0d6c838d499cd6960d3b191330a82fd9
++       `Person is Resolvable by Text` diz que uma chave `Text` identifica uma `Person`, qual campo
++       de `Person` é essa chave (`#field`) e como uma chave é resolvida (`#resolve`). A extensão
++       `ref` e `Reference#apply` precisam ambas de uma no escopo.
+
+@ 0 1 0 0f513113d3242a1102a034bc6ac6f7e6
++       A instância usual é construída a partir de um repositório de valores com
++       `Resolvable(store)`:
+
+% 2 1 0 0373e8a323ce26431f057f8493563f5b
+
+% 3 1 0 1e2f0f2e18f56a751359581a0e66b136
+
+% 4 1 0 00385efef82382d013f8e2b511c710dc
+
+% 6 1 0 1168c682dabb32701e4e79dd5bf3488a
+
+% 0 1 0 014ab5048463d0b9187cedf65314118f
+
+% 0 1 0 0668617fa0ee633c04f88dab7eb15377
+
+% 0 1 0 0fbfc0bb4ff805f70727e3401459cada
+
+% 0 1 0 1b794459f9c4c1c4027801ef50b6c3da
+
+% 1 1 0 178252eba82f44150ac3ae9c0ee2e25e
+
+@ 0 2 0 0ddbb4b9f9c6eaf304aed5a01e94241b
++       Um repositório de outro tipo — uma tabela de banco de dados, um serviço remoto — pode
++       implementar a trait diretamente.
+
+% 0 1 0 1f89e113889f43d80b463269e38ad210
+
+% 0 1 0 1a5adb2a45d0f5c81e52f2466562e150
+
+@ 0 5 0 1ec29f1aa428c49810f648da33915d3f
++   entry .apply   um `Resolvable` que procura em um conjunto de valores pelo campo `@primary` deles
++       `Resolvable(store)` exige que o tipo da entidade tenha exatamente um campo anotado com
++       `@primary` (de modo que seja `Annotated by primary`), que esse campo possa ser
++       selecionado como `Dereferenceable to Operand` e que o tipo do campo seja
++       `Encodable in Text` (para a mensagem de erro). Tanto o tipo da chave quanto o campo são
++       inferidos a partir da anotação.
+
+@ 0 3 0 1586cbc4300a743d17cb3ea0b465c5e4
++       O repositório é recebido por nome e avaliado a cada resolução, de modo que um repositório
++       que muda é pesquisado tal como está no momento em que uma referência é aplicada. A busca
++       é uma varredura linear do conjunto.
+
+@ 0 7 0 06176ca5588dea32057abe9994cc6711
++       Seu tipo de resultado é `raises Reference.Error`, então construir a instância exige uma
++       `Tactic[Reference.Error]` no escopo (ou `unsafely(Resolvable(store))`), embora nada possa
++       falhar até que uma chave seja resolvida.
++   entry #Self   o tipo da entidade para a qual uma chave é resolvida
++   entry #Operand   o tipo da chave
++   entry #resolve   encontra a entidade com uma dada chave, lançando `Reference.Error` se não houver nenhuma
++   entry #field   o nome do campo-chave da entidade, como texto
+
+@ 0 4 0 15bf15b143a345091ecfff133f60340e
++ entry .primary   marca o campo de uma case class que é sua chave, para `Resolvable(store)`
++     Uma anotação em um parâmetro de uma case class: `case class Person(@primary email:
++     Text, name: Text)`. `Resolvable(store)` encontra o campo anotado por meio de
++     `Annotated by primary`, e usa seu tipo como o tipo de chave de toda `Reference` à classe.
+
+@ 0 4 0 097f6379bb5b114f0cfd6b84377be524
++ entry .ref   a referência a um valor: sua chave, tipada como uma `Reference` ao tipo do valor
++     Uma extensão sobre qualquer valor cujo tipo seja `Resolvable`. Ela lê o campo-chave do valor
++     (o marcado com `@primary`) e o envolve como uma `Reference to Entity`. Nada é procurado,
++     então ela não precisa de tática; aplicar a referência depois a resolve de volta.
+
+% 2 1 0 0c495ed8c153c68413285640a3834eae
+
+% 3 1 0 1001fcf1764c42d01832b3fd168d1c40
+
+% 2 1 0 11facafdcea7c03c07bd970bd84fcdbb
+
+% 1 1 0 1088d3ae6bab006a0a18203b364810ca
+
+% 0 1 0 1c511eb281f3e0a71350970840d6d2cb
+
+% 0 1 0 114e2f84450ce25500dab855159892f0
+
+% 1 1 0 1b6d37ee3e6225cd0ebd76dd4a944e2d

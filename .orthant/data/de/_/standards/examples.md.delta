@@ -1,0 +1,157 @@
+orthant 2 language
+
+@ 0 1 0 00ad22d7271203d206f2ed84ead7da78
++ # Beispieldaten
+
+@ 0 4 0 0dfb2caf35152be70cba6baa32843441
++ Soundness bezieht seine Beispiele aus Shakespeare. Jedes Tutorial, jedes API-Overlay, jeder Test,
++ jeder Benchmark und jeder Quellcodekommentar, der einen Namen, einen Ort, einen Datensatz oder
++ einen beliebigen String braucht, nimmt ihn aus den Stücken, bevorzugt aus den bekannten. Die
++ Beispiele lesen sich dann wie ein zusammenhängendes Werk: Wer in einem Tutorial
++ `Person(t"Hamlet", 30)` begegnet ist, trifft im nächsten auf dieselbe Besetzung.
+
+@ 0 2 0 16e7fda2ca3598810b79d58e66e50a48
++ `etc/check-example-data.py`, ausgeführt von `make build`, hält die Linie: Keine Datei darf
++ Beispiele aus dem ausgemusterten Vokabular über das hinaus hinzugewinnen, was
++ `etc/example-data-baseline.tsv` verzeichnet.
+
+@ 0 1 0 00fc3e5b335d65ac1d02aa34fde5cdf1
++ ## Was ausgemustert ist
+
+@ 0 6 0 197a9c8fa2e8b8cb1bbb4edf84b59082
++ - **Personen, reale oder erfundene.** Keine Alice und kein Bob, keine Ada Lovelace, kein Jon.
++   Das schließt Haustiere (Rex), andere Fiktion (Gondor, *Dune*) und Marken (Acme, die Beatles)
++   ein.
++ - **Unternehmensstruktur.** Kein `Company(ceo, cto)`, `Org`, `Firm`, `Employee`, `Department`,
++   `salary` oder `boss`, und kein `Role`, `Worker`, `Team` oder `Crew` als Ersatz dafür.
++ - **Metasyntaktische Platzhalter.** Kein `foo`, `bar`, `baz`, `qux`, `quux` oder `bippy`, weder
++   als Wert noch als Typ, und kein „Lorem ipsum“.
+
+@ 0 1 0 0bbd24c296df1f73154999451a5b135f
++ ## Grundsätze
+
+@ 0 17 0 1fbf36b3f4fd355d0694cdc43d0871e7
++ - **Das Feature veranschaulichen, nicht das alte Beispiel.** Ein Ersatz muss dem Ersetzten nicht
++   ähneln. Ein `Employee` wird nicht zum Höfling: Das alte Beispiel wird verworfen und ein neues
++   gewählt für das, was das Beispiel oder der Test zeigen muss — ein verschachtelter Datensatz,
++   zwei Felder eines Typs, eine zu aktualisierende Liste, ein `Int`, wo `Text` erwartet wurde.
++   Diese strukturelle Eigenschaft ist das Einzige, was ein Beispiel behalten muss.
++ - **Ein Stück pro Beispiel.** Hamlet ficht gegen Laertes, nicht gegen Tybalt. Daten aus einem
++   einzigen Stück lesen sich wie eine Szene statt wie eine Liste.
++ - **Die bekannten Stücke bevorzugen:** *Hamlet*, *Romeo und Julia*, *Macbeth*, *Othello*,
++   *König Lear*, *Ein Sommernachtstraum*, *Der Sturm*, *Was ihr wollt*, *Viel Lärm um nichts*,
++   *Der Kaufmann von Venedig*, *Julius Caesar* und die Stücke *Heinrich IV.* und *Heinrich V.*
++ - **Die Palette wiederverwenden.** Die Gestalten unten kehren überall wieder. Greifen Sie zu
++   einer von ihnen, bevor Sie eine neue erfinden, und erfinden Sie eine neue, wann immer keine das
++   Feature zeigt.
++ - **Die Figuren meiden, die einen ausgemusterten Namen tragen.** Peter Quince, John of Gaunt und
++   Paulina lesen sich wie die beliebigen Personen, die sie ersetzen, und die Prüfung zählt sie.
++ - **Auf die Exporte achten.** Ein Beispiel, das `soundness.*` importiert, teilt dessen
++   Namensraum: `History`, `Hero` und `Setting` sind dort bereits Typen; verwenden Sie sie also nur
++   als Feldnamen.
++ - **Shakespeare ist die einzige reale Person.** Ein Beispielbuch darf ihn als Autor nennen.
+
+@ 0 1 0 1b6bb2c7d460631708ec9493d135b961
++ ## Die Palette
+
+% 2 1 0 19400e55f541b63d1c784f9270a7bcb4
+
+@ 0 22 0 1cdd7adae55599570fa20beed70483a0
++ column  Um zu zeigen
++ column  Gestalt
++ column  Daten
++ row  einen flachen Datensatz aus `Text` und `Int`  `Person(name: Text, age: Int)`  Hamlet 30, Juliet 13, Lear 80; ein plausibles Alter, wo der Text keines nennt
++ row  einen Datensatz in einem Datensatz; zwei Felder eines Typs; Feldpfade  `Play(title: Text, hero: Person, villain: Person)`, `Duel(challenger: Person, opponent: Person)`  Othello und Iago; Hamlet und Laertes; `hero.name`, `villain.age`
++ row  ein Listenfeld; tiefe Optiken; eine Aktualisierung in einer Collection  `Play(title: Text, acts: List[Act])`, `Act(number: Int, scenes: List[Scene])`, `Scene(number: Int, place: Text)`  *Macbeth*: "A heath", "Dunsinane"
++ row  eine Liste von Datensätzen  `Troupe(name: Text, players: List[Person])`  Quince, Bottom, Flute, Snug, Snout, Starveling
++ row  einen Summentyp  `enum Genre { case Comedy, Tragedy, Romance }`; `Verse` mit `Sonnet(number: Int)` und `Song(title: Text)`
++ row  mehrere skalare Typen  `Speech(speaker: Text, act: Int, scene: Int, aside: Boolean)`, `Sonnet(number: Int, firstLine: Text)`  Sonnet 18, "Shall I compare thee to a summer's day?"
++ row  ein optionales Feld oder eines mit Vorgabewert  `Person(name: Text, age: Optional[Int])`, `aside: Boolean = false`  der Narr, der Pförtner
++ row  ein Map-Feld  `Play(title: Text, cast: Map[Text, Person])`
++ row  einen rekursiven Typ  `Lineage(name: Text, heirs: List[Lineage])`  Lear; Goneril, Regan, Cordelia
++ row  ein Attribut neben einem Element; einen Datensatz mit Schlüssel  `Play(title: Text, @attribute year: Int)`  *Hamlet* 1603, *Macbeth* 1606
++ row  einen Namen in Teilen  `FullName(first: Text, last: Text)`  Nick Bottom, Francis Flute, Toby Belch; Caius Martius Coriolanus
++ row  Text, der absichtlich kein ASCII ist    Cæsar, Æmilia (die Schreibweisen der Folio)
++ row  zwei Parteien und einen Lauscher    Romeo, Juliet und Tybalt
++ row  Hosts, Benutzer, Pfade, Adressen    `elsinore.local`, der Benutzer `hamlet`, `/home/hamlet`, `juliet@example.com`, "Hamlet's Printer"
++ row  Orte und Institutionen    Elsinore, Verona, Venice, Dunsinane, the Globe
++ row  Tiere    Crab, Tray, Blanch, Sweetheart, Graymalkin
++ row  beliebige Strings, Schlüssel, Pfadsegmente, Bezeichner    Namen oder Orte aus einem Stück: `/verona/capulet/juliet`
++ row  beliebige Typnamen in einer Regel über Typen  `Play`, `Act`, `Scene`, `Sonnet`  `Play.Scene`, nicht `PlayScene`; `read[Play in Json]`
++ row  Fülltext    ein Monolog
+
+% 1 1 0 0d60d75bdac0c7a70a9416ff94da4605
+
+@ 0 2 0 16ed00497350bcc51236ed4da459fce9
++ Adressen behalten die reservierten Beispieldomänen, wie in `juliet@example.com` und
++ `elsinore.local`: Nur der lokale Teil und das Host-Label stammen von Shakespeare.
+
+@ 0 1 0 1ec809304fa7b2230fd50dd47c32fdd5
++ ## Wenn die Länge des Strings zählt
+
+@ 0 5 0 18b1d5b5fd12bc160598ac14849bbb97
++ Manche Ergebnisse hängen von der Länge eines Beispielstrings ab: die Spaltenbreiten einer
++ dargestellten Tabelle, aufgefüllter oder ausgerichteter Text, ein Byte-Offset, eine kodierte
++ Länge, die Nutzdatengröße eines Benchmarks. Ein Test meldet, wenn ein solches Ergebnis falsch
++ geworden ist; ein `// result`-Kommentar in `doc/api/*.tel` tut das nicht, da nichts ihn prüft. Wo
++ also eine Länge tragend ist, wählen Sie einen Namen der erforderlichen Länge, und wo sich ein
++ gezeigtes Ergebnis ändert, werten Sie das Beispiel erneut aus, statt das Ergebnis von Hand zu
++ bearbeiten.
+
+% 2 1 0 0d5b0364aff67ccd047b6a53b6f6af30
+
+@ 0 2 0 0450793c3d276d650b87381f98d0f7db
++ column  Länge
++ column  Namen
+
+% 0 1 0 05838b547c185a0b1d71533d94b5b7cc
+
+% 0 1 0 106f9094cb45f4b5054a72b41969bacf
+
+% 0 1 0 146bc6a46d115e0f0a559e6c01800de5
+
+% 0 1 0 044c8bab42fcffce0d75b6c9be50c5f9
+
+% 0 1 0 13ebe2d7f8a079e61e16184884e482ad
+
+% 0 1 0 18518201f294800c082b74f848c2de74
+
+% 0 1 0 1e64ea931e2adf070f1d86705728f8c0
+
+% 1 1 0 145ed1411e44af450f292420d0cd7e53
+
+@ 0 2 0 075e53839c4735311ebc169d51603f52
++ Ein Beispiel, das existiert, um einen Defekt zu zeigen, behält den Defekt: `verona..capulet` ist
++ weiterhin ein Pfad mit einem leeren Segment, und ein erfundener Unicode-Name darf weiterhin
++ nicht existieren.
+
+@ 0 1 0 09a4c025eb1262a2140c07e1c4a75d40
++ ## Was kein Beispiel ist
+
+@ 0 1 0 10f221a6a9657ba610b506bf1728a0b9
++ Die Prüfung zählt Beispiele, nicht Vokabular. Diese bleiben, wie sie sind:
+
+@ 0 9 0 14f3412636e7f3a00c7e9435d140dcf6
++ - Namen, die die API oder das Protokoll sind: Einheiten wie `Newton` und `Henry`; `Role` in
++   harlequin, sibylline, synesthesia und bitumen; `Bar` und die Balken von Diagrammen; `Worker`
++   von parasite; `Organization` von X.509; der Boss-Thread eines Reactors;
++ - mitgelieferte und erfasste Daten: die IANA-Registry, die CommonMark-Spezifikation,
++   OpenAPI-Dokumente und -Schemas Dritter, W3C-Beispiele, Unicode-Daten, *Krieg und Frieden*;
++ - von einem Standard veröffentlichte Testvektoren, deren Bytes feststehen (ihre Variablennamen
++   nicht);
++ - veröffentlichte Migrationshinweise, die festhalten, was geschrieben wurde;
++ - generische neutrale Daten, bei denen keine Person und kein Unternehmen gemeint ist: Formen,
++   Farben, Obst, „Hello world“, ein Pangramm und reale Städte, wo Geografie oder Zeit das Thema
++   ist.
+
+@ 0 2 0 17ef14cf36f08a6519bcc4709273fc00
++ Wenn die Prüfung eines davon zählt, nennen Sie die Datei in der Tabelle `GENUINE` des Skripts,
++ statt sie umzuformulieren.
+
+@ 0 1 0 016d3e30a66cc40012b74d6986c89b92
++ ## Den Rest abarbeiten
+
+@ 0 3 0 098dfa450c90f2f50f88eb639191aaec
++ `python3 etc/check-example-data.py --list '<glob>'` gibt jede gezählte Zeile unter einem Pfad als
++ Warteschlange aus; `--totals` gibt die Anzeige aus. Senken Sie die Zeile einer Datei mit
++ `--update`, sobald eine Änderung ihre Beispiele entfernt hat.

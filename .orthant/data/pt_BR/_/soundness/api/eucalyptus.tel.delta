@@ -1,0 +1,539 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0ccec126e6ef834d0295d5459f8b67cc
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0e0b52da7b114da211aabf53557e99bb
++ info   loggers, formatos de log e destinos de log para os eventos tipados que `Log` emite
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0bf8906695a569ce188dd5267d985dc6
++     _Eucalyptus_ é a metade de tempo de execução do logging tipado de Soundness. Um método que faz
++     log declara isso no seu tipo (`Long logs Backup.Event`) e emite um evento tipado com
++     `Log.info`, `Log.warn` e os demais; esses nomes, com `Log.Level`, `Loggable` e o trait
++     `LogSink`, vivem em `anticipation`, abaixo de toda biblioteca que faz log. Eucalyptus fornece
++     o que uma *aplicação* acrescenta: um `Logger`, que é um `LogSink` posto em escopo como given,
++     um formato de log (um `Inscribable`) que renderiza cada evento, e destinos onde escrevê-lo.
+
+@ 0 4 0 1c43ee1c5041321c0fac8a5df497f4e8
++     Todo `Logger` em escopo recebe todo evento que admite, de modo que o roteamento é uma questão
++     de quais loggers estão em escopo, cada um com seu próprio limiar, suas categorias, seu formato
++     e seu destino. Sem nenhum em escopo, o logging é silencioso e gratuito: o argumento de todo
++     método de `Log` é por nome, e nunca é avaliado a menos que algum logger aceite seu nível.
+
+% 2 1 0 1f3ac7ed2b2cb9660452ea5d8263cdce
+
+% 3 1 0 07d2d9cfa7fca7070e9d31d29e24ea5d
+
+% 4 1 0 15a80a1b8904630d0dbf3455ea7b68fe
+
+% 5 1 0 09dc85d9de11a52d068864afdcd17f0e
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 1619ecc7ffe347c9086fae87aebae597
+
+% 0 1 0 0b178855fe8e97de19453fe2261f42bc
+
+% 0 1 0 11940fc83390cb92044b6066111370d3
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 037c3d11b9a634a1015cf79f672406ef
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 0b10b55d046ad30e04a673b2be4d5060
+
+% 0 1 0 02c573240d33b38616e69334fc6d9971
+
+% 0 1 0 1d70a33a28591f950407d01673683cbe
+
+% 0 1 0 0b03cdf861f7f9ca13a3d49ccd6a5f62
+
+% 0 1 0 1341e110599cae041f2ca3b0349ef68b
+
+% 1 1 0 00c2720300089f161ce7b38ed2b97baf
+
+@ 0 5 0 011353b3f72824620e3be5bc63101a55
++     Um `Logger` escreve em um daemon de segundo plano, então precisa do `Monitor` que
++     `supervise` fornece, de uma `Probate` (de `probates`) que define como esse daemon é encerrado
++     no fim da supervisão, e de um `Writable` para seu destino. Seu formato é escolhido importando
++     pelo nome um given de `logFormats`, e `logging.silentLogging` silencia um arquivo inteiro;
++     ambos são pacotes de escolhas, importados pelo nome porque `import logFormats.*` não importa
+
+% 0 1 0 0a3dca1116ed29b01cec754cb30d35c6
+
+@ 0 5 0 035bcd0c5584de611ad49ac0623fea9f
++     Escrever no terminal exige um destino em que se possa escrever na forma do formato. `Out` só
++     aceita escrita de `Teletype`, por meio de `writables.outTeletypeWritable` de escapade, então
++     um logger de terminal usa o formato `Teletype` `ansiTimestampedLogFormat` com uma
++     `LogPalette`; não há `Writable` para `Out` por `Text`, então `Logger(Out)` com
++     `timestampedLogFormat` não compila.
+
+@ 0 1 0 023bbc681e3a961c01643d67e0d3bd59
++     A biblioteca tem quatro source sets:
+
+@ 0 7 0 04b6b34380962c9414ec2331d8a9e70c
++     - `eucalyptus.core` — `Logger`, `Inscribable`, `mute`, `Taggable`, os formatos de texto
++       `timestampedLogFormat` e `untimestampedLogFormat`, e `logging.silentLogging`.
++     - `eucalyptus.ansi` — `LogPalette` e o formato de terminal `ansiTimestampedLogFormat`.
++     - `eucalyptus.gcp` — `googleCloudPlatformLogFormat`, um objeto JSON por evento, no formato
++       que o agente de logging do Google Cloud lê.
++     - `eucalyptus.syslog` — `Syslog`, um destino que entrega linhas ao log do sistema por meio
++       do comando `logger`.
+
+@ 0 2 0 1a2101a3b7e72fe312918ad7326971a5
++     Tudo é exportado para o guarda-chuva `soundness`, e os pacotes de escolhas `logFormats` e
++     `logging` se fundem com os do próprio guarda-chuva.
+
+% 0 1 0 12c5b3d8a770eeea1c3861fe65e897f0
+
+% 0 1 0 0710479ed3336c9703adce0c5329d37e
+
+% 0 1 0 12fa5bf8a2f2106a07edb1105ccaa9c1
+
+% 0 1 0 0a73aa28a7e969cf0dc18b840c884f47
+
+% 0 1 0 082f0b3b90faa2840558f5665b7fbb1c
+
+% 0 1 0 17f53a2bc14be2941c6423732c5014dd
+
+% 0 1 0 0af2b1943a09bb1f1b6efba761c48d64
+
+@ 0 1 0 141937c5be689caf1cc03bcd284791d8
++ entry .Logger   um sink de log que renderiza cada evento por meio de um formato e o escreve em um destino
+
+% 1 1 0 11bc2533fc63b09505ef41e256fd12fe
+
+@ 0 5 0 1bd0ee0a8e91765b1a500b6fbb7f524a
++       Um `Logger[Event, Form]` é um `LogSink`: posto em escopo como given, recebe todo evento do
++       tipo `Event` (ou de um subtipo) registrado nesse escopo, no seu nível limiar ou acima dele.
++       O primeiro parâmetro de tipo seleciona quais eventos ele aceita — `Any` para todos — e o
++       segundo é o portador para o qual eles são transcritos antes da formatação, geralmente
++       `Message`, em que todo evento `Communicable` se converte.
+
+% 2 1 0 014307bf02819b671f8945a8e9c131ba
+
+% 3 1 0 13e8b49eeae9462c06cbcf01eb301408
+
+% 4 1 0 038e7eb99f6712c108bcb72c41be48a7
+
+% 5 1 0 02c1e41d838af427088ebe95fe536f43
+
+% 0 1 0 05c7b6b663c0853b10f681bb6ec5d7d3
+
+% 0 1 0 1c4feda9015341a80f1b872d295c8d8c
+
+% 1 1 0 15ef1512078e38f21ea84a9b721a8b69
+
+% 0 1 0 1f6b7d85434f8a0f0596cfc8c38449be
+
+% 1 1 0 0a9da5baa3d8112f0d7acd3e0cbe7b45
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 04056516d35cf1d601f7d1e0db07ca4d
+
+% 1 1 0 030b1f52d68ee63b1a9ec7e8e6008402
+
+% 0 1 0 05da92369f2ca9f70e4665b985045ad5
+
+% 0 1 0 04166a8e0922cdee113a4ee01d545d76
+
+% 2 1 0 00b71327dc7caf4808ff0d2ade4e9fac
+
+% 0 1 0 189d3013649b2fa812c81da8eb9d8e67
+
+% 0 1 0 0febba9b2b1b932906ca717ba2ecb624
+
+% 0 1 0 01cf1b354c3b44751ec38be8ed8ba099
+
+% 1 1 0 171e7bed863cbdc01b8bdbc83bd62e53
+
+@ 0 5 0 1e116f4a6736d28a197a14a5a3b24624
++       Vários loggers podem estar em escopo ao mesmo tempo, e `Loggable.fanOut` entrega cada
++       evento a todos os que o aceitam. Um logger aceita um evento quando o nível deste está no
++       limiar do logger ou acima (`#accepts`) e, se o logger recebeu categorias, quando o tipo do
++       evento em tempo de execução mistura uma delas (`admits`); o evento só é construído e
++       formatado se algum logger o aceitar.
+
+@ 0 5 0 10115d3b33ee82a51c7f8869b6285bfa
++       A formatação acontece na thread que faz o log, e a escrita em um daemon: cada evento vira
++       um registro em uma fila, que o daemon envia como stream ao destino. Uma escrita que falha
++       (`Truncation.Error`) encerra esse stream, e o daemon começa um novo a partir da mesma fila,
++       de modo que uma falha passageira não silencia o logger; o daemon para quando a VM é
++       desligada.
+
+% 1 1 0 04cdee506d3bd5d31f3aba033a6d4bea
+
+% 0 1 0 171744aece8ce670069cf50284aee4e1
+
+% 0 1 0 0f2763c8a52f5010178bc4f95b17241d
+
+@ 0 5 0 0afa8854f2ad843b1b7f10dc813008b9
++   entry .apply   cria um logger que escreve em um destino, com um nível limiar e categorias opcionais
++       `Logger(destination, level, name, categories)`. O `level` tem como padrão
++       `Log.Level.Info`, e `categories` o conjunto vazio, que admite eventos de todas as
++       categorias; um conjunto não vazio de `Log.Category`s (`Log.Network`, `Log.Filesystem`, …)
++       admite apenas eventos cujo tipo em tempo de execução mistura um de seus traits marcadores.
++       `name` é aceito, mas ainda não é usado.
+
+@ 0 5 0 13a0225eccb9c44a1fd866048d6091df
++       Ele precisa ter em escopo um formato, `Form is Inscribable in Format` para o portador do
++       logger (um dos givens de `logFormats`), um `Writable` para o destino por arrays desse
++       formato (qualquer destino em que se escreve por `Text` serve, por meio de
++       `Writable.chunked`), um `Buffering`, um `Monitor` (de `supervise`), uma `Probate` e um
++       `Codepoint`, que o compilador fornece.
+
+@ 0 11 0 08b6410a2702dd6c1ce2d570cc897deb
++       A fila e o daemon escritor pertencem ao **ponto de chamada**: todo `Logger` construído na
++       mesma posição do código-fonte compartilha um só, de modo que um given reavaliado a cada
++       convocação não inicia uma thread nova a cada vez. A consequência é que o destino é fixado
++       pela primeira chamada naquela posição: um helper que constrói `Logger(path)` para caminhos
++       diferentes a partir de uma única linha escreve todos eles no primeiro caminho. Construa
++       loggers para destinos diferentes em pontos de chamada diferentes.
++   entry #accepts   se o logger registra eventos de um nível: no seu limiar ou acima
++   entry #submit   enfileira um evento transcrito para formatação e escrita, com um nível e um carimbo de tempo
++       Chamado por `Loggable.fanOut` depois que `#accepts` e `admits` passaram; o evento é
++       formatado na thread que chama e seu registro é enfileirado para o daemon escritor. Em
++       geral não é chamado diretamente.
+
+@ 0 1 0 01f23714e4f6b8050f5171fcca911262
++ entry .Inscribable   um formato de log: como um valor é renderizado, com seu nível e seu carimbo de tempo, como um registro
+
+% 1 1 0 1ad5c70e545178790d2839c3a78848c8
+
+@ 0 4 0 17c52d5247cd3a6e17f40ebde12bd29a
++       Uma classe de tipos, `Message is Inscribable in Text`, cujo `#formatter` transforma um
++       valor, seu `Log.Level` e seu carimbo de tempo (milissegundos desde a época) em um registro
++       do tipo `Form`. Um `Logger` usa o que estiver em escopo para seu tipo portador; os padrões
++       são importados pelo nome de `logFormats`. Um formato personalizado é uma lambda:
+
+% 2 1 0 18ffe2a7acfcf7fa0dd556a09ae778c8
+
+% 3 1 0 01cd5b82ed8163ce1656bd2531990aaa
+
+% 0 1 0 06f3c9423dcc0e0c0e2eb8bb09d5818c
+
+% 0 1 0 1bf89d00fe1712970beeeaff66de4823
+
+% 1 1 0 067724501d31efe80b3bd43774441596
+
+@ 0 2 0 068fdf478391e22100b18825bd57ab3f
++       Um formato de texto deve terminar cada registro com uma quebra de linha, já que um destino
++       escreve os registros um depois do outro.
+
+% 1 1 0 1774c6543172df4a01c0f1217070a709
+
+@ 0 6 0 10b982234ed493e0062731a4101ed4d0
++   entry #formatter   renderiza um valor com seu nível e seu carimbo de tempo como um registro
++   entry #contramap   um formato para outro tipo, que primeiro o converte para este
++       `format.contramap[Event](_.message)` formata um `Event` mapeando-o para o tipo que este
++       formato trata; o nível e o carimbo de tempo passam sem alteração.
++   entry #format   renderiza um valor como um registro, como método de extensão sobre o valor
++       `message.format(level, timestamp)`, o mesmo que `#formatter`.
+
+@ 0 1 0 13032050755a496e0343c60b71a62384
++ entry .Taggable   uma classe de tipos para valores aos quais se pode acrescentar uma tag do tipo `Operand`
+
+% 1 1 0 13369e02b063625b1c0ffb769af99f30
+
+@ 0 3 0 010f7b80afbe31f01be0933614c70536
++       `value.tag(operand)` devolve o valor com uma tag acrescentada. Nada em Soundness fornece
++       ou usa uma instância ainda.
++   entry #tag   o valor com uma tag acrescentada
+
+@ 0 5 0 17615a27363cfcae0a15e467065aee55
++ entry .mute   executa um bloco com o log de um tipo de evento suprimido, quaisquer que sejam os loggers em escopo
++     `mute[Event]:` avalia seu bloco com um given `Event is Loggable` silencioso, que tem
++     precedência sobre o `Loggable.fanOut` que os loggers em escopo forneceriam, de modo que os
++     eventos exatamente desse tipo são descartados dentro do bloco, enquanto todo outro evento é
++     registrado normalmente. Eventos transcritos para outro tipo antes de serem registrados não
++     são afetados.
+
+% 2 1 0 0227f722b0a7cf981a7a3f3af083aa3c
+
+% 3 1 0 067c3a1976d8433e10109c410ef7f32b
+
+% 4 1 0 07c79db7c2da4b541c5c0fa5234c1602
+
+% 5 1 0 0007de54ed699eaf1ed42a400b1ee2e6
+
+% 0 1 0 1ada92353fa6ddde1632d32f66e61a60
+
+% 0 1 0 16fb5d50566da01109298db539961a51
+
+% 0 1 0 11d4ff0576bcb9751615aba5345b8ecd
+
+% 0 1 0 1f1a7df1e3ce1ac20304bc881d29aaa9
+
+% 0 1 0 08c6e88c35954d9d170f0860fa9f5983
+
+% 0 1 0 1e44ae0c3334bc1f1ffa25564d7c0da2
+
+% 0 1 0 067500ae5726e0a9145ad21631985588
+
+% 0 1 0 18ab3e12f7fc3a4c0229c588c51c7db4
+
+% 0 1 0 038cb454ebe9ad4a083ac525354e8db2
+
+% 1 1 0 188f77a1884b666e16deba745dc5b23e
+
+@ 0 5 0 178377afbf899c3113d25ede5fa0be84
++ entry .dateFormat   o padrão de data e hora dos formatos com carimbo de tempo: `2026-Nov-04 09:30:00.250`
++     Um `java.text.SimpleDateFormat` para `yyyy-MMM-dd HH:mm:ss.SSS` no fuso horário padrão da
++     JVM, usado por `timestampedLogFormat` e `ansiTimestampedLogFormat`. Um `SimpleDateFormat`
++     não é seguro para uso concorrente, então não deve ser chamado diretamente de várias threads.
+
+@ 0 4 0 06ddaf65c8ade4070b6a153833d6af86
++ entry .LogPalette   as cores com que `ansiTimestampedLogFormat` pinta níveis e datas
++     Uma `Palette` em `Srgb` com mais quatro cores: `error` para `Fail`, `warning` para `Warn`,
++     `informative` para `Info`, e `subdued` para `Fine` e para a data. Nenhuma paleta é
++     fornecida, então um logger de terminal define uma como given.
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 1 1 0 1ce24c5daafd9a3201fb893f381ddb2a
+
+% 0 1 0 12cc132884ad92d21728ad250527aa86
+
+% 0 1 0 045552636ab390d117494ddfc8a2cba6
+
+% 0 1 0 1391c565c244eb0509de2ecaf3d88970
+
+% 0 1 0 006e2bc7f09e26c30f554b4235b3d8ee
+
+% 0 1 0 16e6a90a8f27bdec134d021182a42479
+
+% 0 1 0 1c191978229114421d99a1839c5328c2
+
+% 0 1 0 150a25c9b8ae2af903953681ebf47a06
+
+% 0 1 0 077a29b127cf27d009a2a48530b272ea
+
+% 1 1 0 1552d453f6a404551645440ad3b5bb5d
+
+@ 0 1 0 0e2b7f6658ec93651db583f5d8213d82
++ entry .Syslog   o log do sistema como destino de log, com uma tag opcional em cada linha
+
+% 1 1 0 1cf0579c0c6a04d305d2f37e0b0cc92d
+
+@ 0 5 0 1e6cf176540342f01503d53ca6af6ab7
++       `Syslog(tag)` é um destino para um `Logger` com formato `Text`: seus registros são
++       enviados pela entrada padrão do comando `logger`, com `-t tag` quando uma tag é dada, de
++       modo que chegam ao log do sistema tal como `logger` os escreve. Uma falha ao iniciar
++       `logger` ou ao escrever nele é ignorada em vez de lançada, e a própria inicialização não
++       é registrada em log.
+
+% 2 1 0 1ca7d0300c2c35930c1c50db82b43d54
+
+% 3 1 0 124d1e4358d9326b02f853d880883418
+
+% 4 1 0 1fa6c135f625a4d20d314029ff1d4527
+
+% 5 1 0 0fb75a2c9a6130310fb8f6a36c75f1a1
+
+% 1 1 0 1ade5faef96ded430d0e7bedbbdbc536
+
+% 1 1 0 0b0ea79ca47b401a11e959474b75a85b
+
+% 1 1 0 1d378d75969569d41e4c7e06d8aa594d
+
+% 2 1 0 11cc57f4cc1f838d1d869aed412a7bf0
+
+% 0 1 0 1bb3badd16a9a4cf0b6ca904b78709dc
+
+% 0 1 0 10d9fd00ee4fc0a51db9fc044a867b0f
+
+% 1 1 0 01158e10044404d3060003b27f887709
+
+@ 0 6 0 08a1dab565d9c6fc105d26a10a4f0248
++       Um formato sem carimbo de tempo é adequado, já que o log do sistema acrescenta o seu. O
++       comando `logger` precisa estar no path: isto é para sistemas do tipo Unix.
++   entry .writable   `Syslog` é `Writable` por `Text`: cada stream é enviado a um processo `logger`
++       Precisa de um `Monitor` em escopo, que o bloco `supervise` do `Logger` fornece. O texto é
++       codificado na página de código padrão do sistema.
++   entry #tag   a tag que `logger -t` põe em cada linha, ou `Unset` para nenhuma
+
+@ 0 1 0 0cff200417d9c57f1bfeebee5dd93ccc
++ entry .EucalyptusGcp   um objeto marcador vazio do source set `eucalyptus.gcp`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 1 0 0e3157755fde47e31533ddaaa6718dd2
++       Não é para uso direto; o formato do Google Cloud é `logFormats.googleCloudPlatformLogFormat`.
+
+@ 0 1 0 1e5cc560acfeddd80f80b58465794cd9
++ entry .logFormats   os formatos de log padrão, cada um um given a importar pelo nome
+
+% 1 1 0 181c20a900bd90810978de4425d5b71c
+
+@ 0 3 0 1885f09e030bbcc01c69e6e2054e3739
++       Um `Logger` renderiza cada evento por meio do given `Inscribable` em escopo para seu
++       portador, e nenhum está no escopo implícito: importa-se um pelo nome, já que `import
++       logFormats.*` não importa givens.
+
+% 2 1 0 1c28ca043dc89693045a459ef4938542
+
+% 0 1 0 0a312f54c8f327751435acd336ef783d
+
+% 1 1 0 1784426b20d96f5f0a049dc2000c28d3
+
+% 2 1 0 038d8551ce1f09300e42f8ec1e3303d3
+
+% 0 1 0 16d245f5c3f18951058f7d3cfb727b7e
+
+% 2 1 0 06c9e6d86c160b5701a1bcec7439f538
+
+% 3 1 0 1413923e701164c80ecbb510c92789a0
+
+% 0 1 0 1736c71cf7c37de608153f969048869d
+
+% 0 1 0 10ca40bf9a63c7b70d32a3c4b6b575f8
+
+% 1 1 0 0c45bb7b1ff1a3dd061852a0bd2b2152
+
+% 2 1 0 056bbd241b4725451e33a4a814742e98
+
+% 0 1 0 1414d599d9bd800d09340c970c877d7a
+
+% 2 1 0 19f2bdf0b30eef8e1b484b31e1495fac
+
+% 3 1 0 1533e3f9bf9015551d285bcdb1c67683
+
+% 0 1 0 11d5491b31fe67cd011d8190dc16ec7e
+
+% 0 1 0 09cb2ba5df3d22e505e062c187400130
+
+% 1 1 0 0c9281cfa6e2fb8c09557be0fbfb698e
+
+% 2 1 0 164c22bd7386834e00a27fcf8b6f605c
+
+% 0 1 0 0beb8705f7c8b44b1e920db1d2648e54
+
+% 2 1 0 0e53bc5e7bc8d44b0be644a062aae158
+
+% 3 1 0 1ff2917c5eedb685195ea4e0fcbb4447
+
+% 0 1 0 080eeea6a4cc35051d24baeb395db192
+
+% 1 1 0 17d079d1b971851912729ae2800b6fd1
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 20 0 0837d9fce7ce78ab11a555eb46de00ce
++       `timestampedLogFormat` e `untimestampedLogFormat` formatam qualquer valor `Communicable`;
++       `ansiTimestampedLogFormat` e `googleCloudPlatformLogFormat`, apenas uma `Message`, para a
++       qual um `Logger[…, Message]` transcreve todo evento. `textLevelLogFormat` e
++       `teletypeableLogFormat`, que renderizam um `Log.Level`, são usados pelos outros e não são
++       exportados para o `logFormats` do guarda-chuva.
++   entry .timestampedLogFormat   uma linha de texto: data e hora, o nível entre colchetes e a mensagem
++       `2026-Nov-04 09:30:00.250 [INFO] server listening on 8080`, terminando com uma quebra de
++       linha, para qualquer evento `Communicable`, com o carimbo de tempo formatado por
++       `dateFormat`.
++   entry .untimestampedLogFormat   uma linha de texto: o nível entre colchetes e a mensagem
++       `[INFO] server listening on 8080`, terminando com uma quebra de linha, para qualquer evento
++       `Communicable`. Adequado a um destino que acrescenta seu próprio carimbo de tempo, como
++       `Syslog`.
++   entry .textLevelLogFormat   renderiza um `Log.Level` como `FINE`, `INFO`, `WARN` ou `FAIL`
++       O `Showable` para `Log.Level` que os formatos de texto interpolam. Não é exportado para o
++       pacote `logFormats` do guarda-chuva; importe-o como `eucalyptus.logFormats.textLevelLogFormat`.
++   entry .ansiTimestampedLogFormat   um teletype: data e hora esmaecidas, o nível sobre um fundo colorido, `>` e a mensagem
++       Uma `Message is Inscribable in Teletype`, para terminais, em `eucalyptus.ansi`. Precisa de
++       uma `LogPalette` em escopo para suas cores. As mensagens são cortadas em linhas de no
++       máximo 76 caracteres, e cada linha de continuação é indentada para se alinhar sob a
++       mensagem da primeira linha. Com `Out` como destino, também precisa de
++       `writables.outTeletypeWritable` e de um `Stdio`.
+
+% 2 1 0 121166e142bfa6631d6c74a0a2a1dec4
+
+% 3 1 0 1dfa9dec4d374c0500be1b42ce3f8ea2
+
+% 4 1 0 051ccd7f33271c9615b538d37ba76087
+
+% 5 1 0 032d5eaa16dccc620bdd4cc1b85c0fd9
+
+% 0 1 0 0db93c1f93e7563403069dce88e9043c
+
+% 1 1 0 0be73e12f3d9cc6914df752efc0e58ea
+
+% 0 1 0 097beb2d551a40861eb78cf8410cfc61
+
+% 0 1 0 0735120d942630ba078c2e2d1d2d49c2
+
+% 1 1 0 12ebf5ace5b38af30f5a490e48a38fa3
+
+% 0 1 0 1f5b362253dbea8907db7b747d1958c1
+
+% 0 1 0 024e3953ffdde04b1a9c6da8602dede1
+
+% 0 1 0 0b4daaf07ee83e5d097c1d72c83a34a8
+
+% 0 1 0 0360f05ad4ca9ed8023f066cefc0cf0c
+
+% 0 1 0 103d56bd0323da9507b622e4319c1e8a
+
+% 0 1 0 1613bb2420871d4518c43569f57fcbb1
+
+% 0 1 0 081f210512adfd2009f49ff275f843e7
+
+% 0 1 0 15934dced264e82e043010c35fd83d64
+
+% 0 1 0 13ed7dfeccf697c2055659443cb2a25c
+
+% 2 1 0 0ca8f8baeb079cb714ed3efff419ea28
+
+% 0 1 0 00abc36b07433beb075370c3c3a2a2c4
+
+% 0 1 0 0086a82005593420173e05557a6c4248
+
+% 1 1 0 06e97cbfb8c149fc180d1d378dacd50c
+
+@ 0 12 0 052cd92f50fb673602376e017a96b1f2
++       Os registros não trazem quebra de linha no final, então eventos consecutivos escritos em
++       `Out` não ficam separados por uma.
++   entry .teletypeableLogFormat   renderiza um `Log.Level` como um rótulo em negrito sobre a cor da `LogPalette` para seu nível
++       O `Teletypeable` para `Log.Level` que `ansiTimestampedLogFormat` usa, em
++       `eucalyptus.ansi`. Precisa de uma `LogPalette`, e não é exportado para o pacote
++       `logFormats` do guarda-chuva.
++   entry .googleCloudPlatformLogFormat   um objeto JSON compacto por evento, com `severity` e `message`
++       Uma `Message is Inscribable in Text`, em `eucalyptus.gcp`, que escreve
++       `{"severity":"WARNING","message":"…"}`, a forma estruturada que o agente de logging do
++       Google Cloud lê da saída padrão de um contêiner. Os níveis são mapeados para `DEBUG`,
++       `INFO`, `WARNING` e `ERROR`; a mensagem é seu texto puro, sem estilo. Nenhum carimbo de
++       tempo é escrito, já que o agente registra o seu, e o registro não tem quebra de linha no
++       final.
+
+@ 0 1 0 04ae0a4fe0cfbfda1dd174a1b1b76f88
++ entry .logging   loggers a importar pelo nome, que se sobrepõem aos que estão em escopo
+
+% 1 1 0 1236c58cde4a781c0a64b5e15a8e8268
+
+@ 0 7 0 1b3268d2e55da413045a26a123dcdda4
++       Um pacote de escolhas, fundido com o `logging` do guarda-chuva. Um given importado pelo
++       nome tem precedência sobre o `Loggable.fanOut` do escopo do companheiro que os loggers em
++       escopo fornecem.
++   entry .silentLogging   descarta todo evento, em todo o escopo para o qual é importado
++       `import logging.silentLogging` fornece um `Loggable` silencioso para todo tipo de evento,
++       de modo que nada registrado no arquivo chega a qualquer `Logger`, e nenhum evento chega a
++       ser construído. Serve para um teste ou um script que chama uma biblioteca que faz log, mas
++       cuja saída é indesejada; para um tipo de evento dentro de um bloco, `mute` é mais fino.
+
+% 2 1 0 0a5244e24b8de8e805a0f411dc48cdb4
+
+% 3 1 0 11d03768b7dae62f18892c35da2b9479
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 0 1 0 0c5bb0523ba9d5151e79e1cc1e0b8d5c
+
+% 1 1 0 047a6a08833bb4ab186c8b2c7144c0b4

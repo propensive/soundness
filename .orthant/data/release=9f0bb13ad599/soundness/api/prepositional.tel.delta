@@ -1,4 +1,0 @@
-orthant 1 release
-
--       and galilei's filesystem policies (`CreateNonexistentParents`, `DeleteRecursively`)
-+       and galilei's filesystem policies (`CreateParents`, `DeleteRecursively`)

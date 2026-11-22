@@ -1,0 +1,16 @@
+orthant 2 language
+
+% 4 1 0 15e6a895458bd2d6147acefbbfe52eef
+
+% 4 1 0 01433c0f4787890615aaec8a85cd9611
+
+% 4 1 0 0122d02c7f95aad1136f263bc9575658
+
+@ 0 6 0 1c74390e481d23371a212d68849cc0ca
++     Sie benötigt die Richtlinien `CreateParents` und `OverwritePreexisting` für die
++     Ebene (namentlich aus `filesystemOptions` importiert), eine `Tactic[Io.Error]` und eine
++     `Tactic[Tar.Error]`. Modi werden über das Attribut `unix:mode` gesetzt und stillschweigend
++     beim Standard des Dateisystems belassen, wo dies nicht unterstützt wird. Um ein Archiv zu
++     entpacken, das zu groß ist, um es als `Tarfile` zu halten, iterieren Sie über
++     `Tarfile.read` oder einen `open[Tar]`-Block und bauen jeweils ein `Tarfile` aus einem
++     einzigen Eintrag.

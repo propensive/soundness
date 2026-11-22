@@ -1,0 +1,3274 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0e310d55627738e50aa912d11464a66a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 060e63be177a781b0fc5e15ea60246fc
++ info   型付きの値としての HTTP。リクエスト、レスポンス、ヘッダー、本文、クッキー、そしてインポートでトランスポートを選ぶクライアント
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 1d20aff7ee75397f1336e25ad019c2f1
++     _Telekinesis_ は、Soundness における HTTP とそのクライアントのモデルである。
++     リクエストは、コードのコンパイル時に検査された URL に送られる。
++     ヘッダーは名前付き引数であり、その値は設定するヘッダーに照らして検査される（`accept` は `MediaType` を、`authorization` は `Auth` を受け取る）。
++     リクエストの本文は自分のメディアタイプを知っている型付きの値（`Postable`）であり、レスポンスの本文は求められた型として読まれる（`Receivable`）。
++     失敗のステータスは `Http.Error` であり、確立できない接続は `Connect.Error` である。
++     どちらも推測すべき例外ではなく、`Tactic` を通して発生させる型付きのエラーである。
++     コードがネットワークに到達すること自体も目に見える。
++     どのリクエストも `Online` ケイパビリティを要求し、それは `internetAccess.online` としてインポートする。
+
+% 2 1 0 0777ec0739147fbd1e2b01970af265c0
+
+% 3 1 0 040d18f17a9a6bc6039d7741b9db13a2
+
+% 4 1 0 0e08fe6c88cae32605a16a9dec90dec9
+
+% 5 1 0 06f9972e9dcde6e81b870ef396865b7e
+
+% 0 1 0 1e13bb2d27b6fcca0581e75784422724
+
+% 1 1 0 012625f543ddacaf1fe60cd4d465b7cc
+
+% 2 1 0 0af2dc0a07df816c0e0c2854140b2a58
+
+% 3 1 0 183ea90f753252ee03a46f2dd90954a6
+
+% 4 1 0 0f0232d489fc52bf0fc6ac21bfb0c724
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0ec02e5ef6717f541a617ea7aa8a933b
+
+% 0 1 0 17e21dbf4e685fa21c1bb0cef36fe3dd
+
+% 0 1 0 03f708f800ea32e8020a1b9ce814a2dc
+
+% 1 1 0 0ab64c13b38ccd1a02d3e7ec3cef0f15
+
+@ 0 7 0 15bed0110efd805200865553617a4c35
++     同じ語彙が逆の方向にも使える。
++     `Http.Request` はサーバーが接続からパースするもの（`Http.Request.parse`）であり、`Http.Response` はハンドラが返すもの（`Http.Response(Http.Ok)(t"hello")`、または任意の `Servable` な値）である。
++     `Cookie`、`Parameter`、`Submission` はリクエストのクッキーとフォームのフィールドを読み、`Http.Connection` はハンドラから見た一つの生きたやり取りである。
++     `scintillate` ライブラリのサーバーはこれらの型の上に作られており、データ形式のライブラリが提供する `Servable`/`Postable` の組（`postables.jsonPostable`、`servables.xmlServable`、…）は両方の側に差し込める。
+
+@ 0 6 0 16257869eca3f1291c58f2eb7a48ca42
++     中心となる型はすべて `Http` の中に入れ子になっている。
++     `Http.Request`、`Http.Response`、`Http.Header`、`Http.Method`（`Http.Get`、`Http.Post`、… を含む）、`Http.Status`（`Http.Ok`、`Http.NotFound`、… を含み、`Http.Ok` がそのステータスになるようにエクスポートされている）、`Http.Body`、`Http.Backend`、`Http.Client`、`Http.Session`、`Http.Connection` である。
++     URL は urticose の `HttpUrl`（`url"…"`）、クエリ文字列は legerdemain の `Query`、メディアタイプは gesticulate の `MediaType`（`media"…"`）である。
+
+@ 0 1 0 06be053cd855533a17c578f1edbd6b55
++     このライブラリは、各プラットフォームでできることに応じてコンポーネントに分かれている。
+
+@ 0 21 0 083bf0cb566ebd8806753aeb9a66ad60
++     - `telekinesis.core` — モデル（`Http` とその中のすべて）、型クラス `Postable`、`Receivable`、`Servable`、`Fetchable`、`Directive`、拡張メソッド `fetch` と `submit`、`Auth`、`Cookie`、`Session`、`Context`、`Parameter`、`Submission`、`Connect.Error`、そして選択パッケージ `httpRedirections`、`queryParameters`、`construables`。プラットフォームに依存しない。クライアントのロジック（リダイレクト、ログ）はここにあり、ワイヤ上の処理は `Http.Backend` に委ねる。
++     - `telekinesis.forms` — `Orchestrate`/`orchestrate` と `Submission#form`。honeycomb の HTML と legerdemain のウィジェットで描画されるフォームの往復。
++     - `telekinesis.sockets` — `httpBackends.soundnessHttp`。coaxial のソケットの上で HTTP/1.1 のワイヤコーデックを直接話すバックエンドであり（JVM と Scala Native）、keep-alive の接続をプールする。JVM ではその `https` の経路が ALPN によって HTTP/2 をネゴシエートする。
++     - `telekinesis.jvm` — `java.net.http` の上の `httpBackends.javaNetHttp` と、Unix ドメインソケットのクライアント（`udsFetchable`、`udsHttpClient`、`requestTransmissible`）。
++     - `telekinesis.http2` — HTTP/2 の層（JVM のみ）。`Connection`、`Stream`、`Frame`、`Event`、`Error` を持つ `Http2`、`Hpack` と `Huffman` のコーデック、`FrameReader` と `PseudoHeaders`、`Http.Session` の実装、そして URL の上でセッションを開く `httpUrlSessional` given（`url.session: session ?=> …`）。それぞれに専用のページがある。
++     - `telekinesis.wasi` — `httpBackends.wasiHttp`（Wasm コンポーネントのための `wasi:http` の上のバックエンド）、そこから配信するための `WasiHttpServer`、そして `wasiApis.wasiHttpApi`。
+
+@ 0 8 0 032f34ecf15c324d16fc3139b2105e9e
++     `import soundness.*` は given をインポートしないので、三つの選択は given を名前でインポートすることで行う。
++     `httpBackends` からの**トランスポート**（`javaNetHttp`、`soundnessHttp`、`wasiHttp`）、`httpRedirections` からの**リダイレクトのポリシー**（`doNotFollowRedirects`。これがなければ、リダイレクトは `Http.Redirection` の上限である十回まで追われる）、そして汎用的に導出された `Query` のための `queryParameters.arbitraryQueryParameter` である。
++     リクエストにはさらに、スコープ内の `Http.Event is Loggable`（`logging.silentLogging` はイベントを捨てる）と、`Tactic[Connect.Error]` と `Tactic[Http.Error]`、または `strategies.throwUnsafely` のような戦略が必要である。
+
+@ 0 2 0 11162e40ba9a8bba0811e74579e794b7
++     すべては `soundness` アンブレラにエクスポートされ、そこで選択パッケージはアンブレラ自身のものと合わさる。
+
+% 0 1 0 18d5e63c64c0207c17373acba4a73b8e
+
+% 0 1 0 0c45b0f3e0cf55d902ff79fe2ec38bd0
+
+% 0 1 0 119fd230649fcff21c8cd33531529de8
+
+% 0 1 0 0af3e578632d373712f36af9b6597270
+
+% 0 1 0 01f2d2e26910251c160e74dd7a7c85c5
+
+% 0 1 0 066cd8e3e3dfcf650bf1d9f7837db24a
+
+% 0 1 0 164362d281f69df60fc75bd4042b84a3
+
+% 0 1 0 0b3f84a95166c67818ffbae91c6f0cf5
+
+@ 0 1 0 12d99fc1293bd5db1126842771dc5919
++ entry .Http   HTTP のモデル。メソッド、ステータス、ヘッダー、本文、リクエスト、レスポンス、クライアント
+
+% 1 1 0 122dd709d11ec8430c2bf72157170bbf
+
+@ 0 7 0 132522339dbbfa77096811283f4b7fc4
++       `Http` はモデル全体の名前空間であり、それ自身のインスタンスを持たないシールされたトレイトである。
++       メソッドは `Http.Get`、`Http.Post`、`Http.Head`、`Http.Put`、`Http.Delete`、`Http.Connect`、`Http.Options`、`Http.Trace`、`Http.Patch` であり、それぞれ `Http.Method` のケースオブジェクトである。
++       ステータスは `Http.Status` のケースであり、`Http.Ok`、`Http.NotFound` などに直接届くように `Http` へエクスポートされている。
++       メッセージは `Http.Request` か `Http.Response` であり、それぞれ `List[Http.Header]` と `Http.Body` を持つ。
+
+% 2 1 0 135a9a32cdcddc621b464f431381ab14
+
+% 3 1 0 04f5c085d504d9fc17234b4306865c26
+
+% 4 1 0 1b3971753db5d75000ae02ce2bd12309
+
+% 0 1 0 191c9c42efc03a9b09ea8b6a3456f8ab
+
+% 0 1 0 07d1eae15d0b17da084ac0b31c597ef4
+
+% 0 1 0 10c05fe2cc7a64c01b11bf76340685e2
+
+% 0 1 0 168e1c3b7b67b4fb0b1404f862ab62b4
+
+% 0 1 0 1c4bed9ed52957560b05d1db7e4833f7
+
+% 1 1 0 0c49c78732205dac0b9472ef69eb94f0
+
+@ 0 6 0 055e281c0063e11215a80e8affa8af7b
++       クライアント側は `Http.Fetch` と `Http.Submit` である。
++       これは `url.fetch` と `url.submit` が返す値であり、その `apply` がリクエストを組み立てて送る。
++       `Http.Client` は、`httpBackends` から選んだトランスポートである `Http.Backend` の上で、リダイレクトのループとログを実行する。
++       サーバー側は `Http.Request.parse` でパースし、`Http.Connection` を通して応答し、`Http.Response.serialize` で直列化する。
++       `Http.Session` は一つのオリジンへの一つの接続であり、その上で複数のリクエストがやり取りされる。
+
+@ 0 3 0 170733222b6f0c6b1af9cafffbdfa659
++       エラーは、`Http.Error`（成功の範囲外のレスポンス）、`Http.Request.Error` と `Http.Response.Error`（パースできなかったメッセージ）、そして `Connect.Error`（レスポンスがまったくない）である。
+
+% 1 1 0 1bb8805d9a02c3010125f4b6c28bbdfb
+
+% 1 1 0 0d58a5a6ea1742ef0a5921c15f3251f4
+
+% 1 1 0 0219be65f01c58820f9153959e996e3e
+
+% 1 1 0 14873f9b65329e701ecc452c7b49a94f
+
+% 0 1 0 14b699f6eef25190032461e1411836c0
+
+% 0 1 0 0d61f640db7e020900bf9d63f7b3b130
+
+@ 0 1 0 0b0d0cd9015fbd6600353dd679eb7138
++   entry .Version   メッセージのプロトコルバージョン：`0.9`、`1.0`、`1.1`、`2.0`、`3.0` のいずれか
+
+% 1 1 0 06e67368a1c21bff17888b3e4ba53d53
+
+@ 0 8 0 0ef2e222437c2ebc0938a147c830ff4e
++         `Http.Version` はリテラル型の和 `0.9 | 1.0 | 1.1 | 2.0 | 3.0` なので、バージョンは数そのもので書く：`Http.Request(Http.Get, 1.1, …)`。
++         コンパニオンがそれを描画しパースする。
++         `1.1` は `HTTP/1.1` と、`2.0` は `HTTP/2` と表示される。
++     entry .showable   バージョンを `HTTP/1.1`、`HTTP/2`、`HTTP/3` として描画する
++     entry .parse   `HTTP/1.1`、`HTTP/2` または `HTTP/2.0`、`HTTP/3` を読む。それ以外は `1.0` になる
++         意図的に寛容である。
++         パーサーが認識しないバージョンは、より良いものを送らないクライアントに対してサーバーが仮定しなければならないバージョンである `1.0` とみなされる。
++   entry .Header   一つのヘッダーフィールド。キーと値で、どちらもテキスト
+
+% 1 1 0 0058f93ce6dc194e15f9166330cb17d4
+
+@ 0 16 0 1d4a54266a13d43f01c7c5a7bd949f52
++         ワイヤから読んだもの、または `Directive` から作ったものとしての `Http.Header(key, value)`。
++         キーは大文字小文字を区別せず、名前付き引数から来たものはクライアントが小文字のケバブケース（`content-type`）で送る。
++         `Header` は `Encodable in Http.Header`（それ自身）なので、`response + header` でレスポンスに加えられる。
++     entry .encodable   恒等写像。`Header` はそれ自身としてエンコードされるので、`response + header` が使える
++     entry .repeatable   フィールドがメッセージに複数回現れてよいかどうか
++         `Http.Header.repeatable(t"set-cookie")` は `true` であり、`repeatable(t"content-type")` は `false` である。
++         リスト形式のフィールド（`accept`、`cache-control`、`vary`、…）と `Set-Cookie`（クッキーの値はカンマを含みうるので、繰り返さなければならない）は繰り返し可能である。
++         ライブラリが知らないものを含め、それ以外のフィールドはすべて単一であり、単一のフィールドを重複させるのはプロトコルのエラーである。
++         検索は大文字小文字を区別しない。
++         この規則は、`Http.Response(…)(body)` が、呼び出し側で指定したヘッダーとその `Servable` が導出するヘッダーをどう合わせるかを決める。
++         単一のものは上書きされ、繰り返し可能なフィールドは両方が残る。
++     entry #key   書かれたとおりのフィールド名
++     entry #value   フィールドの値
++   entry .Method   リクエストのメソッド。メソッドごとにケースオブジェクトを持つシールされたトレイト
+
+% 1 1 0 001e8faa89ae11a11791aa3bd21fc54f
+
+@ 0 6 0 056d2c2331eb9a7e045169d0e8ca23e2
++         `Http.Get`、`Http.Head`、`Http.Post`、`Http.Put`、`Http.Delete`、`Http.Connect`、`Http.Options`、`Http.Trace`、`Http.Patch`。
++         それぞれ、リクエストの本文を持つかどうかを型レベルで運ぶ。
++         `Http.Post.Payload` は `true`、`Http.Get.Payload` は `false` であり、`#payload` は、消去された `Method` 型を通して読める実行時の対応物である。
++         メソッドは大文字の名前として表示され、テキストから大文字小文字を区別せずにデコードされ、認識できないものは `GET` として読まれる。
+
+% 2 1 0 146ad4c1b3da19ec17ecc0dfb9d36a7f
+
+% 3 1 0 12c10222a667cfba0135c95236e45c48
+
+% 0 1 0 13854378bb6a33030e48c4dcded53f4f
+
+% 0 1 0 0aa67839fb5d7b831fbee8cfa4787666
+
+% 0 1 0 017a657cc6a647e013349262bdebc235
+
+% 0 1 0 0dee6d404d405b6c10d04a27ce7547a3
+
+% 1 1 0 1d1d48b4bd5c75291362aa961eb5e822
+
+@ 0 19 0 17ab3fa33997a09302eeb562894e5fe8
++         メソッドはリクエストに対する抽出子でもある。
++         `case Http.Post() =>` は、メソッドが `Post` のリクエストにマッチする。
++     entry .showable   メソッドを `GET`、`POST`、… として描画する
++     entry .decodable   テキストからメソッドを大文字小文字を区別せずに読む。未知の名前は `Get` になる
++     entry #Payload   メソッドがリクエストの本文を運ぶかどうかを、リテラルの `Boolean` 型として表す
++     entry #payload   メソッドがリクエストの本文を運ぶかどうかを、実行時の値として表す
++         型レベルの `valueOf` とは異なり、消去された `Http.Method` として型付けされた値を通して呼んでも安全である。
++     entry #unapply   `case Http.Post() =>`：メソッドがこのメソッドであるリクエストにマッチする
++   entry .Get   `GET` メソッド。本文はない
++   entry .Head   `HEAD` メソッド。本文はなく、それへのレスポンスにもない
++   entry .Post   `POST` メソッド。`submit` の既定値であり、本文を持つもの
++   entry .Put   `PUT` メソッド。本文を持つ
++   entry .Delete   `DELETE` メソッド。本文はない
++   entry .Connect   `CONNECT` メソッド。`Connect.Error` や `Http.Connection` と混同しないこと
++   entry .Options   `OPTIONS` メソッド。本文はない
++   entry .Trace   `TRACE` メソッド。本文はない
++   entry .Patch   `PATCH` メソッド
++   entry .Status   レスポンスのステータス。そのコード、理由句、分類
+
+% 1 1 0 0a53a648dbeb7e6819263426dd0db41f
+
+@ 0 16 0 067046d9b1f8cb1811511bc616f17ae2
++         標準のステータスの列挙型であり、それぞれ `#code` と `#description` を持つ。
++         `Continue` (100)、`SwitchingProtocols` (101)、`EarlyHints` (103)、`Ok` (200)、`Created`、`Accepted`、`NonAuthoritativeInformation`、`NoContent` (204)、`ResetContent`、`PartialContent`、`MultipleChoices` (300)、`MovedPermanently`、`Found` (302)、`SeeOther`、`NotModified` (304)、`TemporaryRedirect` (307)、`PermanentRedirect` (308)、`BadRequest` (400)、`Unauthorized`、`PaymentRequired`、`Forbidden`、`NotFound` (404)、`MethodNotAllowed`、`NotAcceptable`、`ProxyAuthenticationRequired`、`RequestTimeout`、`Conflict`、`Gone`、`LengthRequired`、`PreconditionFailed`、`PayloadTooLarge`、`UriTooLong`、`UnsupportedMediaType`、`RangeNotSatisfiable`、`ExpectationFailed`、`UnprocessableEntity` (422)、`TooEarly`、`UpgradeRequired`、`PreconditionRequired`、`TooManyRequests` (429)、`RequestHeaderFieldsTooLarge`、`UnavailableForLegalReasons`、`InternalServerError` (500)、`NotImplemented`、`BadGateway`、`ServiceUnavailable`、`GatewayTimeout`、`HttpVersionNotSupported`、`VariantAlsoNegotiates`、`InsufficientStorage`、`LoopDetected`、`NotExtended`、`NetworkAuthenticationRequired` (511) である。
+
+@ 0 3 0 168d057819a059a61df4512e4a808412
++         ケースは `Http` にエクスポートされているので、`Http.Ok` と `Http.Status.Ok` は同じ値である。
++         ステータスはレスポンスのコンストラクターでもある。
++         `Http.Ok(headers, body)` はそのステータスを持つレスポンスであり、`Servable` の given はこうしてレスポンスを作る。
+
+% 2 1 0 1370f64bddfdf3f303f504036f69c392
+
+% 3 1 0 004b97c7adae0e3706cce7890ac48dae
+
+% 0 1 0 13eb43b1f6972c5707d6da55fe25e727
+
+% 0 1 0 02f6f69479410ad518ed2a360391ab38
+
+% 0 1 0 0303fba9e4d0944e05534968bdbbc229
+
+% 0 1 0 1f937082d71288480cae0fb765969991
+
+% 0 1 0 110d06fc4e6337e71fc9169dc691e419
+
+% 1 1 0 0cee614597e7e5150c46236b1d4ba361
+
+@ 0 24 0 159003b69b7a4203189aeca5bdbca836
++         列挙型が名前を付けていないコードには `Status` がない。
++         それに対して `Http.Status.unapply` は `None` であり、そのようなコードを運ぶレスポンスは `Http.Response.Error` でパースに失敗する。
++     entry .unapply   コードに対応するステータス：`Int` に対する `case Http.Status(status) =>`
++         `Http.Status.unapply(200)` は `Some(Http.Ok)` であり、列挙型が名前を付けていないコードは `None` である。
++     entry .communicable   ステータスをメッセージとして描画する：`404 (Not Found)`
++     entry .Category   ステータスの五つの分類。情報、成功、リダイレクト、クライアントエラー、サーバーエラー
++         `Informational` (1xx)、`Successful` (2xx)、`Redirection` (3xx)、`ClientError` (4xx)、`ServerError` (5xx) である。
++         `Http.Status#category` はステータスの分類を返す。
++         これは `Receivable` が本文を読む前に検査するものであり、`Http.Client` がレスポンスを記録するレベルを決めるものである。
++     entry #code   数値のコード、`200`
++     entry #description   理由句、`OK`
++     entry #category   最初の桁から決まる、ステータスの `Http.Status.Category`
++     entry #apply   `Http.Ok(headers, body)`：このステータスを持つレスポンス
++         与えられたヘッダーと `Http.Body` を持つバージョン `1.1` のレスポンスである。
++         結果は、本文がキャプチャするものを何であれ保持する。
++   entry .Category   `Http` にエクスポートされた `Http.Status.Category`
++       `Http.Status.Category` と同じ列挙型であり、`Http.Status` のメンバーのエクスポートを通して `Http.Category` として届く。
++   entry .emptyBody   新しく作られた、最初から空のリクエスト本文のストリーム
++       `Http.emptyBody()` は何も入っていない `Stream[Data] over Credit` である。
++       呼ぶたびに新しく作られるので、これを返すリクエスト本文の `Spring` は、`Spring` の契約が求めるとおりに（リダイレクトやログのために）再び実体化できる。
+
+% 2 1 0 153d2d17744e417e08a193518c683c99
+
+% 3 1 0 173d4338627420bb0db1f19750638292
+
+% 4 1 0 062adbedb8aa76181ac90ab1c3373221
+
+% 0 1 0 0210d46f5f8ce55f04b0802f96d29bdd
+
+% 0 1 0 13bdcd5aed94c7420d3e5ec0687b06f4
+
+% 0 1 0 07b340ffed11e0b2107ba1c403141c91
+
+% 1 1 0 19e68cfd98b2cc2915e5367ad7c04391
+
+@ 0 1 0 1aec1377d53bf29b0610edf7f2eaf809
++   entry .Body   メッセージの本文。スプリングからのストリーム、固定のバイトの塊、または何もない
+
+% 1 1 0 0cb431bb6820498012940625761d0ed0
+
+@ 0 6 0 03925e387debc4f10ad8d90dd70ae61a
++         三つのケースを持つ列挙型である。
++         `Flowing(source: Spring[Data]^)` は `Spring` が要求に応じて生み出す本文である。
++         `Spring` は、求められるたびに新しいストリームを作ることも（リクエストの本文はリダイレクトの後に複数回送られることがある）、生きた接続から読むレスポンスの場合には、前の読み手が止めたところから再開する単一のストリームを再び貸し出すこともできる。
++         `Fixed(data)` はバイトがすでに手元にある本文であり、`Empty` は本文がない。
++         `Fixed` や `Empty` の本文は純粋であり、`Flowing` の本文はスプリングがキャプチャするものを保持する。
+
+% 2 1 0 0685e1503cee42700a4fd5ebe36047d3
+
+% 3 1 0 0f0b7e870a6361e70283ee4712a98d02
+
+% 4 1 0 1137d9a437f8d92c18c04509ade24a62
+
+% 5 1 0 108f2852c4d1632e149f26f75deffbb8
+
+% 0 1 0 12028d9051813fec1cfadec155086eb7
+
+% 0 1 0 14ee0cc8e0107ca50d300787ee9b05ea
+
+% 0 1 0 181f23c4adb6a62b0a3a02a2b40ac4c3
+
+% 1 1 0 155b81ecc71d5b2d0ee64d9e0d16b9b5
+
+@ 0 8 0 00e5b6460d5eb2491659b636a0f4270e
++         ワイヤ上では、`Http.Response.serialize` は `Fixed` や `Empty` の本文を `Content-Length` でフレーミングし、`Flowing` の本文を chunked 転送エンコーディングでフレーミングする。
++     entry #stream   本文のバイトに対する、新しく作られたプル側のエンドポイント
++         `Tactic[Truncation.Error]` が必要であり、`Flowing` の本文が途中で切れたときに発生させる。
++         `Fixed` と `Empty` ではストリームを何度でも作れる。
++         `Flowing` ではスプリングが返すものであり、クライアントのレスポンスでは接続に対する単一所有者のストリーム一つなので、一度だけ読むか、`memoize` する。
++   entry .Request   HTTP リクエスト。メソッド、バージョン、ホスト、ターゲット、ヘッダー、本文
+
+% 1 1 0 0824bbfd39e66e4815c1978fbfd1e205
+
+@ 0 5 0 0205b7ec73218c0e1bbb5574cf7af260
++         クライアントが送り、サーバーが受け取るリクエストである。
++         直接組み立てる（`Http.Request(method, version, host, target, headers, body)`。本文は呼ぶたびに新しいストリームを作る `Spring[Data]`）か、`.parse` で接続からパースする。
++         `fetch` と `submit` のマクロは、URL とその名前付きのヘッダー引数からリクエストを組み立てる。
+
+% 2 1 0 11fa475b19be543f170e25aac6880cdc
+
+% 3 1 0 188372c7793922ba0c7b13abcf1925d9
+
+% 4 1 0 0d6232c084c9ddf602e532a9c32e4eb9
+
+% 5 1 0 0e542cc221890fcf0c751ac605dcc7c9
+
+% 0 1 0 12b383ea45a182ae0439a19ef42285c0
+
+% 0 1 0 03a212b53975040d1affd7c55046bea0
+
+% 0 1 0 00b5a9817389cec30b17c3c92496fb0a
+
+% 0 1 0 19df05f27e03b7d70f4027e218532e56
+
+% 0 1 0 0be0add1cc9d03850669eff8dab1ea4e
+
+% 0 1 0 082ab5a1c4b0c90d1860ae539f8076f5
+
+% 0 1 0 1d1827561afec39f02344e3cfd1e1582
+
+% 0 1 0 00ce671de639b769024b1bcde077e79e
+
+% 1 1 0 0b8870725552c5190cf052a0055b6b0c
+
+@ 0 5 0 026fa92e298c3a1b17e99e70ea9be0f6
++         パーサーはバージョンについては寛容だが、`Host` ヘッダーについては厳格であり（それがない、または無効なリクエストは `Http.Request.Error` を発生させる）、上限がある。
++         リクエスト行は 8 KiB を、ヘッダーブロックは 64 KiB を超えてはならないので、敵対的なクライアントがサーバーに際限なく読ませることはできない。
++         リクエストは、ログのための一行の要約（メソッド、ホスト、パス、ヘッダー、本文の見本）として `Showable` である。
+
+% 0 1 0 1f2039c010e1977919b68e508bb4e20d
+
+% 0 1 0 0b375bcc3bc75fed1ca2f6c169526146
+
+% 0 1 0 162b2c1d0126a71b178fc269428fb1bc
+
+% 0 1 0 0fa85852ec691890115f0f4df2236929
+
+@ 0 9 0 0af0f619ab482a36100fa94d3ca0ddd5
++     entry .showable   ログのためのリクエストの一行の要約。コンテンツタイプ、メソッド、クエリ、ホスト、パス、本文の見本、ヘッダー
++     entry .serialize   HTTP/1.1 のワイヤ上のバイトとしてのリクエスト。リクエスト行、`Host`、フレーミング、ヘッダー、本文
++         メッセージ全体の新しい `Stream[Data] over Credit` であり、ソケットに直接書き込むトランスポートのためのものである（ドメインソケットのクライアントはこれを `requestTransmissible` として包む）。
++         本文は一ブロックずつ探られる。
++         最初のブロックの中で終わる本文は `Content-Length` でフレーミングされ、それより長いものは `Transfer-Encoding: chunked` でストリームされる。
++         `Buffering`（ブロックの大きさのため）と `Tactic[Truncation.Error]` が必要である。
++     entry .Head   本文の前の、パースされたリクエスト行とヘッダーブロック
+
+% 1 1 0 0cf0d0250a9095c108261a7bb5d4c8be
+
+@ 0 31 0 0518fccabba17baa02d3a1b08c5f8d9e
++           `Http.Request.Head(method, version, host, target, headers)`：本文を自分でフレーミングするサーバーのために `.parseHead` が返すもの。
++       entry #method   リクエストのメソッド
++       entry #version   プロトコルバージョン
++       entry #host   パースされた `Host` ヘッダー
++       entry #target   書かれたとおりのリクエストターゲット、パスとクエリ
++       entry #headers   ヘッダーフィールド、順序どおり
++     entry .parseHead   カーソルからリクエスト行とヘッダーをパースし、カーソルを本文の位置に残す
++         `Http.Request.parseHead(cursor, maxRequestLine = 8192, maxHeaders = 65536)` は `METHOD SP target SP HTTP-version CRLF` とヘッダーブロックを読み、本文の最初のバイトでそれ以上読まずに止まる。
++         そのため本文のない `GET` が、サーバーが応答するまで来ないバイトを待ってブロックすることはない。
++         keep-alive の接続にわたって一つのカーソルを駆動するサーバーは、これを `.fixedBody` や `.chunkedBody` とともに使って本文をフレーミングする。
++         上限を超えると `UriTooLong` か `HeadersTooLarge` を持つ `Http.Request.Error` を発生させ、`Host` ヘッダーがないか無効なら `Host` を、行末が不正なら `Expectation` を発生させる。
++     entry .parse   バイトのストリームからパースしたリクエスト
++         二つの形がある。
++         `parse(stream: Chain[Data])` はブロックの遅延チェーンから読み、`parse(input: Stream[Data] over Credit)` はプル側のエンドポイントを直接消費する。
++         どちらも、入力の残りを貸し出すスプリングを持つ `Flowing` の本文とともにリクエストを返すので、`request.body().memoize` で本文を読める。
++         `Tactic[Http.Request.Error]` が必要である。
++     entry .fixedBody   カーソルから貸し出される、ちょうど `length` バイトの本文。カーソルはその後も開いたままである
++         `Content-Length` でフレーミングされたリクエストのためのもの。
++         ストリームは `length` バイトの後で終わり、それ以上は決して読まないので、keep-alive の接続ではカーソルは次のパイプライン化されたリクエストの先頭に残る。
++     entry .chunkedBody   カーソルからデコードされる `Transfer-Encoding: chunked` の本文
++         各チャンクのデータを生み出し、チャンク拡張とトレーラーは飛ばし、カーソルを終端の `0` チャンクとその空行の後に残す。
++         寛容である。
++         不正な長さや途中で切れたストリームは本文を終わらせる。
++     entry .Error   リクエストをパースできないときに発生する
+
+% 1 1 0 1266e17f40032c4609541fc0b7699c25
+
+@ 0 3 0 00b4b6bf8cbcd7b418462251d20a4810
++           エラー `↯/s.103.2`：_could not parse HTTP request because `reason`_。`.parse` と `.parseHead` が発生させる。
++           理由には `367.1` から `367.5` までの番号が付き、`Reason` の下に表としてまとめてある。
++       entry .Reason   リクエストをパースできなかった理由
+
+% 1 1 0 0d2ff26173aabd050a5cf40d93f70b71
+
+@ 0 5 0 122f4aee2160130b0b108b32c433628b
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  備考
++           row  `Expectation(expected, found)`  1  _`found` was found when `expected` was expected_  不正な行末。どちらも `Char`
+
+% 0 1 0 1de9c4a887ccefdd069f450837a67659
+
+% 0 1 0 1141015b48551bfb163fef61d08ac4f0
+
+@ 0 2 0 0a0d8f85f62d50431d9891e0e5a75dda
++           row  `UriTooLong`  4  _the request line exceeded the maximum length_  `maxRequestLine`。サーバーは `414` で応答する
++           row  `HeadersTooLarge`  5  _the request headers exceeded the maximum size_  `maxHeaders`。サーバーは `431` で応答する
+
+% 1 1 0 1468e4b98244afa80d185ca6edce83c7
+
+@ 0 33 0 0b4c22df4e0abafb0f01a7e6183ca749
++       entry .communicable   各理由をメッセージとして描画する
++       entry #reason   `Http.Request.Error.Reason`
++     entry #method   メソッド
++     entry #version   プロトコルバージョン
++     entry #host   `Host` ヘッダーから得た、リクエストの宛先のホスト
++     entry #target   書かれたとおりのリクエストターゲット。パスと、あればクエリ
++     entry #textHeaders   すべてのヘッダーフィールド、順序どおり、`Http.Header` として
++     entry #body   `Spring[Data]` としての本文。呼ぶと新しいストリームが得られる
++         `request.body()` はストリームを作る（`Tactic[Truncation.Error]` が必要である）。
++         パースされたリクエストでは入力の残りを貸し出すので、一度だけ読むか `memoize` する。
++     entry #request   ハンドラのコンテキスト関数のレシーバのための、リクエストそのもの
++     entry #path   `%` を根とする `Path on Www` としてのターゲットのパス
++         URL のパス型である `Path on Www under %.type` としてデコードされた `location` であり、セグメントを `/` のパターンでマッチできる。
++     entry #on   オリジンを与えたときのリクエストの完全な URL：`request.on(origin)`
++         `Origin["http"]` か `Origin["https"]` に対する `Url[scheme](origin, target)` であり、クライアントが `Http.Event.Send` に記録するものである。
++     entry #query   URL とフォームエンコードされた本文を合わせたクエリパラメーター
++         ターゲットの `?…` の部分の `Query` に、`Content-Type` がそうだと言うときに `application/x-www-form-urlencoded` としてデコードした本文を加えたもの。
++         本文を読むには `Tactic[Truncation.Error]` が必要である。
++         `Parameter` はその一つのフィールドを読む。
++     entry #location   クエリを除いたターゲット：`/path?q=1` からの `/path`
++     entry #headers   名前によるヘッダーへの型付きのアクセス：`request.headers.contentType`
++         動的なセレクターである。
++         `request.headers.accept`、`request.headers.cookie`、`request.headers.contentLength` は、それぞれそのフィールドの値の `List` であり、その名前の `Directive` が宣言する型（`MediaType`、`List[Cookie.Value]`、`Bytes`）に、その `Decodable in Text` を通してデコードされる。
++         camelCase の名前はケバブケースのフィールド名に変換される。
++     entry #contentType   `MediaType` としての `Content-Type` ヘッダー、または `Unset`
++     entry #textCookies   名前から値への `Map` としてのリクエストのクッキー
++         `Cookie` ヘッダーからパースされる。
++         `Cookie#apply()` はそのうちの一つをその型にデコードして読む。
++   entry .Backend   一つのリクエストを送り、そのレスポンスを返すトランスポート
+
+% 1 1 0 173647f69ec3745611c0718748533226
+
+@ 0 8 0 1577c68874fdba880f9b70aee1f8fb56
++         差し替え可能なワイヤである。
++         `Http.Backend` は、完全に解決された URL をテキストとして（JVM でないバックエンドが自分でパースできるように）、メソッド、ヘッダー、本文のスプリングとともに受け取り、レスポンスを返す。
++         リダイレクトもログも扱わず、それはその上の `Http.Client` が行う。
++         バックエンドはプラットフォームに固有なので、常に `httpBackends` から given を名前でインポートして選ぶ。
++         `javaNetHttp`（`java.net.http`、`telekinesis.jvm` 内）、`soundnessHttp`（coaxial のソケットの上の Soundness 自身のワイヤコーデック、`telekinesis.sockets` 内、JVM と Native）、`wasiHttp`（`wasi:http`、`telekinesis.wasi` 内）である。
+
+% 2 1 0 1ff4e2fb2dead9c703f0026e9568279e
+
+% 3 1 0 09971b69e3e9161f0495e5cf5269f75b
+
+% 4 1 0 1fe429ec5da3acc0139949e9ad7a2a8d
+
+% 5 1 0 191e7510331053551bf9c5021dd982d4
+
+% 6 1 0 055f8f0ebf7d20d2085a40195989f023
+
+% 1 1 0 0bb435fef400c49f14a0e6030fb7b52e
+
+% 0 1 0 19399c733cfebdd50c2131677278ce61
+
+% 1 1 0 0eb31bd45830676f0398f310a3a65e79
+
+% 2 1 0 040d697e29e77b2403e874bea2201672
+
+% 0 1 0 1ede485b5a7d1dd90cca7c3c447eb40e
+
+% 1 1 0 0c6cf7212c3752e71420425b78fd2af2
+
+% 0 1 0 133c5b713c684eb3093584caf0e781c6
+
+% 1 1 0 0ed8866d15c434120fba3e1a2e9179fa
+
+@ 0 2 0 1de037731d82d91f12659c4f028885e1
++     entry #request   一つのリクエストを送ってそのレスポンスを返し、レスポンスが来なければ `Connect.Error` を発生させる
++   entry .Response   HTTP レスポンス。バージョン、ステータス、ヘッダー、本文
+
+% 1 1 0 1304cd7109aef6440d0cac9f2f8e5b8f
+
+@ 0 5 0 1606738eb88d343711edf951e9ad915b
++         レスポンスは、クライアントのフェッチから読まれるか、サーバーのハンドラが組み立てるか、接続からパースされる。
++         コンストラクターは private である。
++         レスポンスは、動的な `Http.Response(…)` の apply、ステータス（`Http.Ok(headers, body)`）、または `Servable`（スコープ内に `Servable` がある任意の値に対する `Http.Response(json)`、`.conversion` を通して）で作る。
+
+% 2 1 0 164b306312dcbdad0162a3759eb0c906
+
+% 3 1 0 043854c78a33679405c96e6ecac4ba58
+
+% 4 1 0 01c60f005824a2990588d6aa8660e874
+
+% 5 1 0 02730fd6bff7b75813d8fe9a0fb979fb
+
+% 0 1 0 10f6946cf3688fc01890d60ac297cd9f
+
+% 0 1 0 0521ae675cc901de0f7d9fc371f2dc7a
+
+% 0 1 0 05d54d7cbb5f41ab07eb08cb2dcbad54
+
+% 0 1 0 025605352746530e0f047e952f998e5e
+
+% 0 1 0 0c7747ab52f92d3116219d1fe2e8ce28
+
+% 1 1 0 0ead06875694b9b500915971714a4f53
+
+@ 0 6 0 124f28e5de2b268a00959f4ac0404d74
++         最初の引数リストは、順序を問わず、多くとも一つの `Http.Status` と名前付きのヘッダー（`contentType = media"…"`、`location = t"…"`。それぞれその `Directive` が検査する）を受け取る。
++         二つ目の引数リストは、本文を `Servable` な値か `Http.Body` として受け取る。
++         呼び出し側で指定したヘッダーは、同じ単一のフィールドについて `Servable` が導出するはずのものを上書きする（したがって `Text` の本文に `contentType = …` を付けると、ワイヤ上の `content-type` は一つになる）。
++         一方、`Set-Cookie` のような繰り返し可能なフィールドは両方が残る。
+
+@ 0 5 0 07401da735cfef8d0c2b7b256eee20ff
++         クライアントでは、`#receive[Text]` が本文を求められた型として読み、`#status` がステータスを調べ、`#headers.contentType` がヘッダーを名前で読む。
++         本文は接続に対する `Flowing` の本文であり、一度だけ読まれる。
++         `#successBody` や `#body.stream` は単一所有者のストリームを貸し出す。
++         サーバー側のレスポンスは、それが応答する生きた接続を保持することがある（`Response^{connection}`）が、クライアントに向けたレスポンスは常に純粋である。
+
+% 1 1 0 101f58f5d802f93a0a082e678859c1c2
+
+% 0 1 0 03b033a4e934d20e0c199578ea16e0a7
+
+% 0 1 0 08dc29274d5d2c550f57866324219798
+
+@ 0 15 0 0abfa1829794c987141e9bffc49e1793
++     entry .applyDynamicNamed   `Http.Response(Http.Ok, contentType = …)(body)`：ステータスと名前付きのヘッダー、そして本文
++         `Http.Response(…)` の背後にあるマクロである。
++         `Servable` を持つ引数一つだけなら、その値を配信したものになる（`Http.Response(t"hello")`）。
++         そうでなければ、省略可能な `Http.Status` と任意の数のヘッダーを `Protoresponse` に集める。
++         ヘッダーは名前付き（`contentType = …`、その名前の `Directive` でエンコードされる）でも、名前なし（`accept` に対する `MediaType` のように、型が一つのヘッダーを特定する値）でもよい。
++         `Protoresponse` 自身の `apply` が本文を受け取る。
++         ステータスを二度与えるとコンパイルエラーになり、間違った型のヘッダーの値も同様である：_the header `Content-Type` cannot take a value of type `Int`_。
++     entry .applyDynamic   `Http.Response(Http.Ok)(body)`：位置引数のみ
++         名前付き引数のない呼び出しのための、`.applyDynamicNamed` と同様のもの。
++     entry .conversion   任意の `Servable` な値を `Response` に変換する
++         `Http.Response` が期待される場所で、ハンドラが `Json`、`Text`、またはスコープ内に `Servable` がある任意の値を返せるようにする `Conversion` である。
++     entry .Protoresponse   本文を待っているステータスとヘッダー
+
+% 1 1 0 1f9927b6d2a5d0b91a70b6893b29bfaa
+
+@ 0 23 0 1596027be131b4ed1e0fff44eba56400
++           二つ目の引数リストの前の `Http.Response(Http.Ok, contentType = …)` の姿であり、`Protoresponse(status0, headers)` である。
++           完成させるための `apply` が二つある。
++       entry #status0   ステータス、または `Ok` を表す `Unset`
++       entry #headers   呼び出し側で指定したヘッダー
++       entry #apply   `Http.Body`（既定は `Empty`）か `Servable` な値でレスポンスを完成させる
++           `proto()` は空の本文を持つレスポンスである。
++           `proto(body: Http.Body)` は本文を付け、結果は本文がキャプチャするものを保持する。
++           `proto(value)` は値をその `Servable` を通して配信し、単一のフィールドについては呼び出し側のヘッダーが配信されたものを上書きする。
++           ステータスは、未設定なら配信されたレスポンスのものになる。
++     entry .streamable   成功したレスポンスは本文をストリームし、それ以外のステータスは `Http.Error` を発生させる
++         `Streamable by Data over Credit` の given であり、レスポンスを `read[Data]` したり先へ流したりできる。
++         ステータスが 2xx でないときに発生させる `Tactic[Http.Error]` と、`Tactic[Truncation.Error]` が必要である。
++     entry .serialize   HTTP/1.1 のワイヤ上のバイトとしてのレスポンス
++         `Http.Response.serialize(response, includeBody = true, version = 1.1)` は、ステータス行、ヘッダー（`Fixed` や `Empty` の本文には `Content-Length` が加えられ、`Flowing` の本文には、ヘッダーがすでにフレーミングしていない限り `Transfer-Encoding: chunked` のフレーミングが加えられる）、空行、本文を書く。
++         `includeBody = false` は `HEAD` リクエストへのレスポンスのためのもので、フレーミングのヘッダーは書かれるが本文は書かれない。
++         `101 Switching Protocols` の後では、本文はアップグレードされたプロトコルの生のストリームであり、フレーミングは加えられない。
++         HTTP/1.0 のクライアントには、ストリームする本文はそのまま書かれ、接続を閉じることで区切られる。
++         `Buffering` と `Tactic[Truncation.Error]` が必要である。
+
+% 2 1 0 1f5150fc08bebfaa0daf45d81fe95074
+
+% 3 1 0 034dfb0afa65e9070f2c6c20000bb6dd
+
+% 4 1 0 04fe9ee917258c9716b16198bdf906e0
+
+% 0 1 0 1d0fe69c17007ff2075aa423d2353293
+
+% 0 1 0 194b14fb5ac274dc0a6bcaa6eaf0a001
+
+% 1 1 0 1e0e53fb2f8c6b4903963314c7ca3526
+
+@ 0 14 0 0693a0638868a9d5058ff01b9f3ef513
++     entry .serializeHead   ステータス行とヘッダーだけを、一つのバイトの塊として返す
++         `.serialize` が書くのとまったく同じヘッド（フレーミングのヘッダーを含む）であり、固定の本文を、ハンドラのバイトからコピーなしで二つ目のバッファとして直接送るサーバーのためのものである。
++     entry .parse   バイトのストリームからパースしたレスポンス
++         `parse(stream: Chain[Data], bodiless = false)` は遅延チェーンから読み、`parse(input: Stream[Data] over Credit)` と `parse(input, bodiless)` はプル側のエンドポイントを消費する。
++         `bodiless` は `HEAD` リクエストへのレスポンスを示し、それは `GET` のフレーミングのヘッダーを繰り返すが本文を運ばない。
++         本文はヘッダーによってフレーミングされる。
++         `Transfer-Encoding: chunked` なら chunked のデコード、`Content-Length` なら固定長の連なり、`204`、`304`、`1xx`、本文のないレスポンスなら何もなし、`101` なら残り全体、それ以外なら接続が閉じるまでのすべてである。
++         カーソルは本文の後の最初のバイトに残されるので、keep-alive の接続では次のレスポンスをパースできる。
++         `Tactic[Http.Response.Error]` が必要である。
+
+% 2 1 0 10f1f0bff1be36921b308c69690e3cfd
+
+% 3 1 0 0fab65465d9948910bcf2e9e5a91374a
+
+% 4 1 0 1f2241edf13ae9510b33df6fc6d1544f
+
+% 5 1 0 06cc3196811e555e0e762980f09047ee
+
+% 0 1 0 11da24db47b475c31c13f253bedd88b4
+
+% 0 1 0 0c5df723009e2b1018efc376c2e8b277
+
+% 0 1 0 0cbf2f67c6fb740f046053b7e32129fa
+
+% 0 1 0 08d9fb93cf35edc31ac6c8b95f138719
+
+% 1 1 0 137867136d68273b090cec4712c3d6f5
+
+@ 0 1 0 0966b0b12f8cece60b8af2c3146ddd09
++     entry .Head   本文の前の、パースされたステータス行とヘッダーブロック
+
+% 1 1 0 0ac6ed49166e89a6019101bc126f4436
+
+@ 0 13 0 0c64f78dca611bb501ba9f6c663dbaf9
++           `Http.Response.Head(version, status, headers)`：`Http.Session` のように本文を自分でフレーミングするクライアントのために `.parseHead` が返すもの。
++       entry #version   プロトコルバージョン
++       entry #status   ステータス
++       entry #headers   ヘッダーフィールド、順序どおり
++     entry .parseHead   カーソルからステータス行とヘッダーをパースし、カーソルを本文の位置に残す
++         `HTTP-version SP code SP reason CRLF` とヘッダーブロックを読み、本文の最初のバイトでそれ以上読まずに止まる。
++         そのため keep-alive の接続上の本文のないレスポンスが、サーバーが決して送らない補充を待ってブロックすることはない。
++         コードが 1–5 で始まる三桁でないか、`Http.Status` の列挙型が名前を付けていないものなら `Status` を持つ `Http.Response.Error` を発生させ、行が不正なら `Expectation` を発生させる。
++     entry .Error   レスポンスをパースできないときに発生する
+
+% 1 1 0 089742536a15a4b5140706373d891e6d
+
+@ 0 25 0 125bb339ad0175b10f016bc65416af78
++           エラー `↯/s.103.1`：_could not parse HTTP response because `reason`_。`.parse` と `.parseHead` が発生させる。
++           理由は `Expectation(expected, found)`（366.1、_`found` was found when `expected` was expected_：バイトが `HTTP/` で始まらなかったか、行が CRLF で終わらなかった）と `Status(value)`（366.2、_the HTTP status code `value` was invalid_）である。
++           ソケットを使うクライアントは、これを `Connect.Error(Connect.Error.Reason.Unknown)` に変換する。
++       entry .Reason   レスポンスをパースできなかった理由：`Expectation(expected, found)` または `Status(value)`
++       entry .communicable   各理由をメッセージとして描画する
++       entry #reason   `Http.Response.Error.Reason`
++     entry #version   プロトコルバージョン。クライアントが組み立てるすべてのレスポンスで `1.1`
++     entry #status   `Http.Status`
++     entry #textHeaders   すべてのヘッダーフィールド、順序どおり、`Http.Header` として
++     entry #body   `Http.Body`
++     entry #updateDynamic   `response.contentType = media"…"`：ヘッダーを設定し、同じ名前のものを置き換える
++         動的なセッターである。
++         `response.location = t"/next"` は新しいレスポンスを返し（レシーバは不変である）、その名前の `Directive` が指すヘッダーをそれでエンコードして持ち、同じ名前の既存のフィールドを置き換える。
++     entry #successBody   ステータスが成功なら本文のストリーム、そうでなければ `Unset`
++         2xx のステータスに対する、本文の単一所有者のプル側のエンドポイントである。
++         `Tactic[Truncation.Error]` が必要である。
++     entry #receive   本文をある型として読む：`response.receive[Text]`
++         その型の `Receivable` を召喚して適用する。
++         標準のものは `Text`、`Http.Status`、`Aggregable by Data` な任意の型（`Data`、ストリーム、`Json`、…）、`Instantiable across HttpRequests from Text` な任意の型を読む。
++         成功でないステータスは、何かを読む前に `Http.Error` を発生させる。
+
+% 2 1 0 17b2c8dfc81246691cced35ef7b7a234
+
+% 3 1 0 0435eeb7d7412e53120fd58324ddb8cb
+
+% 4 1 0 00e9e8faae0667010efbc2c4e1a7274b
+
+% 5 1 0 0e5aeb05028959331809bf77f870b0e4
+
+% 6 1 0 04284c22c64687f2129a2a29685af7d1
+
+% 7 1 0 0ffc5541705ee94c18ad4af645ae09de
+
+% 8 1 0 0a123ca5724bfcfb1d67a495c1431802
+
+% 9 1 0 16815022730315b9003db5377becfd6c
+
+% 10 1 0 114a15d05cc5c6001ce7554bbd83e465
+
+% 0 1 0 1d544e075e5302600468858529771ecc
+
+% 0 1 0 047c56562cdce134080890d756cd5f25
+
+% 1 1 0 025256f60ddba8061bdf638d727ff8e1
+
+@ 0 7 0 092d57f7e78048e71fac119d8bea3b85
++     entry #headers   名前によるヘッダーへの型付きのアクセス：`response.headers.contentType`
++         `Http.Request` と同じく動的なセレクターである。
++         `response.headers.setCookie` は、そのフィールドの値をその `Directive` が宣言する型にデコードした `List` である。
++     entry #+   `response + cookie`：`Encodable in Http.Header` な任意の値からエンコードしたヘッダーを加える
++         `Cookie.Value` は `Set-Cookie` フィールドを加え、`Http.Header` はそれ自身を加える。
++         ヘッダーは先頭に加えられ、何も置き換えられない（置き換えるには `#updateDynamic` を使う）。
++   entry .Submit   本文を持つリクエスト。ヘッダーとペイロードを与えられるのを待っている
+
+% 1 1 0 020ce3e96ac50bc318fe041feb406419
+
+@ 0 16 0 09313d1cf7590e0d01cd076537632853
++         `url.submit` が返すものであり、リクエストターゲット、ホスト、`Fetchable` なターゲット（`HttpUrl` なら `Origin`、ソケットのエンドポイントなら `Uds`）を持つ。
++         その `apply` はマクロであり、最初の引数リストでメソッドとヘッダーを、二つ目でペイロードを受け取り、ペイロードの `Postable` から得た `Content-Type` を付けて `Http.Request` を組み立て、スコープ内の `Http.Client onto target` を通して送る。
++         `submit` を参照。
++     entry #originForm   リクエストターゲット：URL のパスとクエリ
++     entry #target   リクエストの行き先：URL の `Origin`、または `Uds`
++     entry #host   `Host` ヘッダーの値
++     entry #applyDynamicNamed   `url.submit(Http.Put, accept = media"…")(payload)`：メソッド、名前付きのヘッダー、そして本文
++         メソッドは、与えるなら最初の引数リストに一度だけ現れ、既定は `Http.Post` である。
++         残りはヘッダーで、名前付きでも名前なしでもよい（`fetch` を参照）。
++         ペイロードは `Postable` を持つ任意の値であり、`Content-Type` は `Postable` のメディアタイプである。
++         `Online`、`Http.Event is Loggable`、そしてターゲットへの `Http.Client onto` が必要である。
++     entry #applyDynamic   `url.submit(Http.Put)(payload)` または `url.submit()(payload)`：位置引数のみ
++   entry .Fetch   本文を持たないリクエスト。ヘッダーを与えられるのを待っている
+
+% 1 1 0 133763c55f5f61230d4b52096fee3af9
+
+@ 0 11 0 0631453eaf3baaea14774653e55fc139
++         `url.fetch` が返すもの。
++         その `apply` はマクロであり、メソッド（既定は `Http.Get`）とヘッダーを受け取り、スコープ内の `Http.Client onto target` を通してリクエストを送る。
++         `fetch` を参照。
++     entry #originForm   リクエストターゲット：URL のパスとクエリ
++     entry #target   リクエストの行き先：URL の `Origin`、または `Uds`
++     entry #host   `Host` ヘッダーの値
++     entry #applyDynamicNamed   `url.fetch(accept = media"…", authorization = Auth.Bearer(token))`：名前付きのヘッダー
++         `Online`、`Http.Event is Loggable`、そしてターゲットへの `Http.Client onto` が必要である。
++         本文は空である。
++     entry #applyDynamic   `url.fetch()` または `url.fetch(Http.Head, media"…")`：位置引数のみ
++   entry .Client   リクエストをターゲットに送る。リダイレクト、ログ、そしてその下の `Http.Backend`
+
+% 1 1 0 14d0fa5706524cdc0361b0dea46b3b15
+
+@ 0 6 0 1692f3691599089210edf17600d89dd4
++         `Http.Client onto Target` は、`Http.Request` とターゲットをレスポンスに変える。
++         `Origin["http" | "https"]` のターゲットについては、コンパニオンにある二つの given が競い、スコープ内に `Redirects.Disabled` があるかどうかで選ばれる。
++         `.http` はリダイレクトを追い、`.httpStrict` は追わない。
++         どちらも `Tactic[Connect.Error]`、`Online`、`Http.Backend` が必要であり、リクエスト自体には `Http.Event is Loggable` が必要である。
++         `Uds` のターゲットでは、クライアントは `telekinesis.jvm` にある `udsHttpClient` である。
+
+@ 0 3 0 1855822a46388bb00076b6c60209d36e
++         クライアントはケイパビリティである。
++         戦術、`Online` トークン、バックエンドから作られ、そのすべてを保持する。
++         手で召喚することはまれであり、`fetch` と `submit` が、その URL が与えるターゲットに対してそれを召喚する。
+
+% 0 1 0 17776523af3bb6170dffbceb4b68a293
+
+% 0 1 0 0f459a754ad6e6ab04c4b398306a6e0c
+
+% 0 1 0 1303902220d344860b433d5b71ae95c9
+
+@ 0 16 0 0792a3c76ac35af603a3c4a522d40582
++     entry .http   `http` と `https` のオリジンのための、リダイレクトを追うクライアント
++         スコープ内に `Redirects.Disabled` がないときに選ばれる。
++         `Http.Event.Send` を `info` で記録し、`Http.Backend` を通して送り、`301`、`302`、`303`、`307`、`308` のレスポンスをその `Location`（現在の URL に対して解決される）に従って、スコープ内の `Http.Redirection` の上限（既定では十回）まで追う。
++         `301`/`302`/`303` はメソッドを `GET` に格下げして本文を捨て、`307`/`308` は両方を保ち、本文をそのスプリングから作り直す。
++         捨てられた途中の本文は、その接続を解放するために排出され、各ホップは `Http.Event.Redirect` を `fine` で記録する。
++         最後のレスポンスは、その分類に応じたレベルで記録される。
++         5xx なら `fail`、4xx なら `warn`、それ以外なら `fine` である。
++         `Location` のないリダイレクトや上限を超えたリダイレクトは、そのまま返される。
++     entry .httpStrict   3xx のレスポンスを変えずに返すクライアント
++         スコープ内に `httpRedirections.doNotFollowRedirects`（`Redirects.Disabled`）があるときに選ばれる。
++         このときリダイレクトは普通のレスポンスであり、`receive` は 3xx のステータスを持つ `Http.Error` を発生させ、`status` はそれを調べる。
++     entry #request   リクエストをターゲットに送り、レスポンスを返す
++   entry .Error   成功の範囲外のステータスを持つレスポンスが届いたときに発生する
+
+% 1 1 0 16aec6ea1536b6f713984c063e910705
+
+@ 0 4 0 1571b3003d83412d19a73afe5fe339cc
++         エラー `↯/s.103.3`：_the HTTP request failed with status `status`_。
++         ステータスの分類が `Successful` でないとき、`Receivable`（`response.receive[T]`）と `Http.Response.streamable` が発生させる。
++         エラーはステータスとヘッダーを運ぶので、呼び出し側は何が悪かったかに応じて対処できる。
++         `response.status` を直接調べても、これが発生することはない。
+
+% 2 1 0 094b698cbba6139a1f52b395cdcb5cfc
+
+% 3 1 0 0cd370c6dbc18a301bfc3f71a229e563
+
+% 4 1 0 12d4867fa61bc9a60bfe0cde16888c29
+
+% 5 1 0 14ed8ba3fdec517d1768cd22286423b0
+
+% 6 1 0 11ed9a55b1bcf25e1b7188ba9a793afd
+
+% 7 1 0 1a24370e282e93ce1e00ff8cf3f7b652
+
+% 8 1 0 13034cf8feb0dac902544c3e42bfa668
+
+% 9 1 0 1f2826f205beba460ac05ee15b554e2a
+
+% 10 1 0 18599520d97679e901bb9d097418e9e4
+
+% 0 1 0 0c6bb037d796ffa20862ce0b2473a278
+
+% 1 1 0 0abeb78bbbf546e10ed208d1476e015b
+
+@ 0 3 0 0d7e6ff0cc8e483110ee361e83024a46
++     entry #status   レスポンスのステータス
++     entry #headers   レスポンスのヘッダー
++   entry .Event   クライアントがリクエストを送りレスポンスを受け取るときに記録するもの
+
+% 1 1 0 1936736cfcfca21f1549bddeee575e91
+
+@ 0 9 0 0a3b0e26c93af04d1772576f4bc09e4f
++         どの `Event` にも `Log.Network` のタグが付き、`Send` と `Redirect` には `Log.Protocol` も付く。
++         `Http.Client` は、リクエストが出ていくときに `Send(method, url, headers)` を `info` で、追う各ホップについて `Redirect(from, to)` を `fine` で、応答が届いたときに `Response(status)` を `fine`、`warn`（4xx）、`fail`（5xx）で記録する。
++         `Request(preview)` は、リクエストの本文を記録するトランスポートのための、その本文の見本である。
++         すべての `fetch` と `submit` について、スコープ内に `Http.Event is Loggable` がなければならない。
++         `logging.silentLogging` はそれらを捨てる。
++     entry .communicable   各イベントをメッセージとして描画する：_sending a GET request to …_
++   entry .Redirection   クライアントが追うリダイレクトの最大数。上書きされなければ十回
+
+% 1 1 0 1209710041bbae2213d615ff3c1107ec
+
+@ 0 8 0 13c1942e6878f8e718b6672679dfa18e
++         `Http.Client.http` は最大 `Http.Redirection#value` 回のホップを追う。
++         コンパニオンの `.default` は十回（curl の上限）であり、ローカルの `given Http.Redirection = Http.Redirection(1)` はそれを下げる。
++         上限に達すると 3xx のレスポンスがそのまま返されるので、その後の `receive` はリダイレクトのステータスを持つ `Http.Error` を発生させる。
++         一つも追わないようにするには、代わりに `httpRedirections.doNotFollowRedirects` をインポートする。
++     entry .default   暗黙のスコープにある、十回というリダイレクトの上限
++     entry #value   許されるリダイレクトの数
++   entry .Session   一つのオリジンへの一つのクライアント接続。その上で複数のリクエストがやり取りされる
+
+% 1 1 0 0ffcc113b88418551df775041e1344fd
+
+@ 0 6 0 1ee6ea7270e098b304cb3cbc0e387495
++         セッションは `url.session: session ?=> …`（`telekinesis.http2` にある `httpUrlSessional` given）で URL の上に開かれる。
++         これは一度接続し、セッションをブロックに貸し出し、その後で閉じる。
++         プロトコルはセッションの存続期間を通じて固定である。
++         `https` では、TLS のハンドシェイク中の ALPN が、フェッチが一つの接続の上で交互に進む多重化された HTTP/2 のセッションか、逐次的な HTTP/1.1 のセッションかを選ぶ。
++         平文の `http` は常に逐次的であり、keep-alive が一つの接続をフェッチにわたって固定する。
+
+% 2 1 0 174b5f7dfe165abc044732a7bb3603c8
+
+% 3 1 0 1bc99b732970ad9916b825059843b0ea
+
+% 4 1 0 180d3a92674319c5125704c5ecc0ea1f
+
+% 5 1 0 148bb8d4fa0a5d4918c81802b634b65e
+
+% 0 1 0 1cbce8534dfc667e162ca0e4afa96711
+
+% 1 1 0 175cc84b7680ffdc0c9249ec3bccb31a
+
+% 1 1 0 0972f93f3fc5e790017b3c9975ea599d
+
+% 1 1 0 10ddd3faf13d83971246a2f6537550bb
+
+% 1 1 0 159c32bd045c64a710533b4bde274bc1
+
+% 2 1 0 01fb8c598697677410833b68cc109ef6
+
+% 0 1 0 116f998ff554de2f118768013517f789
+
+% 0 1 0 10c1a0cb41d963b61c38f3771650904b
+
+% 1 1 0 1712c3f8d6a844fe1e0f4fe4b5510206
+
+% 1 1 0 176ece85ca3620fd14fa9ebd1f701e63
+
+% 1 1 0 0383bafa33bbbae4196630d6e7135437
+
+@ 0 6 0 01457cf0c195f17b1fc23fc157d07c5b
++         セッションは排他的で状態を持つケイパビリティである。
++         `#fetch` は `update` メソッドであり、そのレスポンスはセッションを借用するので、生きた接続からまだストリームしている本文はブロックから逃れられない。
++         メモ化されたものは逃れられる。
++         レスポンスを消費せずに残しても、セッションは脱線しない。
++         次のフェッチが、レスポンスの境界に達するために前の本文の残りを排出する。
++         （逃れるハンドルを静的に拒否するには、分離検査のさらなる対応を待つ必要がある。型はすでにそれを表している。）
+
+% 1 1 0 0cd15986ff8fd53212aad4815ff2441f
+
+@ 0 3 0 04b2dfaf01f5564019d14c59a68c0165
++     entry #fetch   セッションの接続の上でリクエストを送り、そのレスポンスを返す
++         `Tactic[Connect.Error]` が必要である。
++         結果はセッションを保持する。
++   entry .Connection   サーバーのハンドラから見た、一つの生きたリクエストとレスポンスのやり取り
+
+% 1 1 0 1bc22e46718b626317b00a36d8d8a253
+
+@ 0 9 0 014d59b84453e07d09148ce307564cbf
++         `Http.Connection` は、それが運ぶ `Http.Request` である（`Request` を継承しているので、ハンドラは `connection.method`、`connection.query`、`connection.headers` を直接読む）。
++         それに加えて、応答する手段である `#respond`（クライアントにレスポンスを書いてやり取りを閉じるシンク）と、トランスポートについての事実である `#tls` と `#port` を持つ。
++         やり取りには所有者が一人しかおらず、一度だけ応答されるので、これは排他的なケイパビリティである。
++         本文がリクエストからストリームされるとき、ハンドラのレスポンスはそれを保持することがある（`(connection: Http.Connection) ?=> Http.Response^{connection}`）。
++         サーバー（scintillate のもの）はそのトランスポートからこれを作る。
++         型自体に必要なのはリクエストとシンクだけである。
+
+% 1 1 0 171318645c1f01e607528213dceda3ff
+
+@ 0 1 0 1726985c223c1b410bba3eea4c042013
++     entry .Respond   クライアントにレスポンスを書いて接続を閉じるシンク
+
+% 1 1 0 126cacff33c65bbc04ba6e2b866c376c
+
+@ 0 6 0 02c5d4ecea7bfee3138b5f808e375d1e
++           関数型ではなく、名前の付いた単一メソッドのトレイト `apply(response: Response^)(using Tactic[Truncation.Error]): Unit` である。
++           こうすることで、レスポンスが生きた接続をキャプチャできる。
++     entry #tls   リクエストが TLS 越しに届いたかどうか
++     entry #port   サーバーが接続を受け付けたポート
++     entry #respond   このやり取りのための `Http.Connection.Respond` シンク
+
+@ 0 4 0 1adcaf019d0799c6134e5522ae56796f
++ entry .Acceptance   送信された値を検証した結果。受け入れ、またはエラー付きの拒否
++     二つのケースを持つ列挙型である。
++     `Accept(value)` はフォームの送信がデコードされた値を運び、`Reject(errors)` はそうならなかった理由を説明する `Errors` を運ぶ。
++     これは、送信を処理する前に検査するときにフォームのハンドラが返す形である。
+
+@ 0 1 0 0caf36c7eae092a70ec1d2386dfc57a8
++ entry .Auth   `Authorization` ヘッダーの認証情報。スキームごと
+
+% 1 1 0 07691e6023218f2e017e53ef808a0c7d
+
+@ 0 6 0 000300014bccec600f8b6ef58ded4ae4
++       認証スキームの列挙型である：`Basic(username, password)`、`Bearer(token)`、`Digest(digest)`、`Hoba(text)`、`Mutual(text)`、`Negotiate(text)`、`OAuth(text)`、`ScramSha1(text)`、`ScramSha256(text)`、`Vapid(text)`。
++       `Auth` はヘッダーの値として表示され（`Basic` は `username:password` を base64 でエンコードする）、ヘッダーの値からデコードされる。
++       そのため、これは `fetch` の `authorization` ヘッダーが受け取る型であり、`request.headers.authorization` が返すものである。
+
+% 2 1 0 0993c5c114ddd7e21e9cd492aedf58f9
+
+% 3 1 0 00e6cd4dfaca8e19059b5512372f3727
+
+% 4 1 0 1d0c7d12670c908708de70de043c81d5
+
+% 0 1 0 1f00e9f6cbd59ad50ea86f20b9db8bcb
+
+% 0 1 0 1036a45998898f180e12eb5764d9920b
+
+% 0 1 0 0bda60fd53aa8bca0196d60c43ef5980
+
+% 1 1 0 14b34736dc71929f04210eed835fb121
+
+% 2 1 0 02534176a96c8b0c186dfffa6f1daf35
+
+% 3 1 0 1f7f4ea47e4aacba07532d821e374bcf
+
+% 4 1 0 054ab02e63fb37dd1dcca5710d0252c5
+
+% 5 1 0 1e225271d193ea6f1401246f09890bf0
+
+% 6 1 0 1923e5ea430c1d2018d55bf85593032d
+
+% 7 1 0 0d34c5f790420006102cfa2ddef2c6b0
+
+% 8 1 0 0d629c6f034769a4083cd15cbfe986c9
+
+% 9 1 0 1a3c0251317628f806a6889cdfbaacac
+
+% 0 1 0 16e5ec7a9c0b8b931e4b29fc859a9b76
+
+% 1 1 0 0f7aa5d32e138b3e116dd8407ee2f6a9
+
+@ 0 8 0 0d31bede6a0594ca0f84e69d9f23bc92
++   entry .showable   任意の `Auth` のケースを、そのヘッダーの値 `Bearer …`、`Basic …` として描画する
++       すべての部分型に対して宣言されているので、`Auth.Bearer` として型付けされた値も、汎用的な列挙型の描画に落ちることなく、ヘッダーの値として描画される。
++   entry .decodable   ヘッダーの値から `Auth` を読む。未知のスキームには `Auth.Error` を発生させる
++       `Basic` の認証情報は一つの base64 テキストからデコードされ、最初のコロンで分割されるので、パスワードはコロンを含んでよい。
++       デコード後にコロンのないテキストは `Auth.Error` である。
++       `Tactic[Auth.Error]` が必要であり、インスタンスはそれを保持する。
++   entry .Error   ヘッダーの値が認識できる認証スキームでないときに発生する
+
+% 1 1 0 12046e599fbae7e70552dd6ec203aace
+
+@ 0 3 0 05734b386495b87519f328a7d000d444
++         エラー `↯/s.103.4`：_the authentication value `value` is not valid_。
++         知らないスキームや不正な `Basic` の認証情報に対して `.decodable` が発生させる。
++     entry #value   デコードできなかったテキスト
+
+@ 0 1 0 1bef250d794ff1971c1fd568de2ae878
++ entry .Connect   `Connect.Error` の名前空間：到達できなかったサーバー
+
+% 1 1 0 08e4d2eb73f54737102fcffe19c9df75
+
+@ 0 5 0 0d3560a644f5687c0601017ec1840866
++       `Connect` は、サーバーにそもそも到達できなかったこと（DNS、TCP 接続、TLS ハンドシェイク）のエラーを保持する。
++       これは、サーバーが実際に送ったレスポンスを報告する `Http.Error` とも、確立した後に失敗した接続を報告する coaxial の `Socket.Error` とも区別される。
++       隣接する名前は意図的に異なる名前になっている：`Http.Connect` は `CONNECT` メソッドであり、`Http.Connection` は確立済みのやり取りである。どちらもこれではない。
+
+% 1 1 0 106cc9c84f30c2ad196963cf441c7101
+
+@ 0 1 0 1fdefc54d0da19d70e89533afad2c9da
++   entry .Error   リクエストがサーバーに到達できないときに発生する：DNS、拒否、TLS、タイムアウト
+
+% 1 1 0 0b826d07960b2bc71db3d3387b3d2e83
+
+@ 0 9 0 0033a13251938cef0fbce1d0b2cef286
++         エラー `↯/s.103.5`：_the TCP connection failed because `reason`_ は、すべての `Http.Backend` と `Http.Client` が発生させるので、`fetch` や `submit` にはスコープ内の `Tactic[Connect.Error]` が必要である。
++         `999.1` から `999.5` までの番号が付いた理由は、`Reason` の下に表としてまとめてある。
++         TLS の失敗はネットワークの失敗と区別され、その `Connect.Error.Reason.Ssl.Reason` がどの段階で失敗したかを示す。期限切れの証明書、ホストが違う証明書、失効した証明書、壊れた暗号スイートは、いずれも警告付きで受け入れられるのではなく、ハンドシェイクで拒否される。
++         証明書を検証できないホストに接続しなければならない場合は、スコープ内の緩和された `TlsAcceptance` が、明示的にそれを許可する。
+
+% 2 1 0 0ed33e7e1242511b0b9070fdfddcf389
+
+% 3 1 0 10266cfca9763bfa1ebcefb6deef008b
+
+% 4 1 0 0d4d93d0941f569f0c09370325179d59
+
+% 5 1 0 1994fbd24bb047de063e3ff812596c46
+
+% 6 1 0 1d93822c4560f850120f61bac552c6dd
+
+% 7 1 0 0a4b71b2c1d71b2f19314a9f1a673dc1
+
+% 8 1 0 085c6aec84f97c1913007a6c3971d886
+
+% 9 1 0 047521347ad8223400347d7b307b175c
+
+% 0 1 0 0af4b1b6afa56c201789ad72edc78da0
+
+% 0 1 0 16ac27e123fb98c212cffffacb17ff1d
+
+% 1 1 0 0fb0410cde47e37a1d57e6edbeb42b20
+
+@ 0 4 0 04ac810f29509e8a0fd10312f467def5
++         ソケットに基づくクライアント（`soundnessHttp`、ドメインソケットのクライアント、セッション）は、`Socket.Error` を理由ごとに `Connect.Error` に対応づけ、不正な形式のレスポンス（`Http.Response.Error`）を `Unknown` として報告する。`javaNetHttp` は JDK の例外を分類する。
++     entry .Reason   接続が失敗した理由：`Dns`、`Refused`、`Ssl(reason)`、`Timeout`、`Unknown` のいずれか
+
+% 1 1 0 075ce22cdaa7af101293ca1ce3e1731c
+
+% 1 1 0 183d5f11254e8518154a3b6c2f0be0bd
+
+@ 2 4 0 1f8bdbb9b7a7466c0ba15f159ba64a67
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  注記
+
+% 0 1 0 0c8d8f9b61f7c72e0b90b3ba6442b061
+
+% 0 1 0 04cf36566083e5111dcc7440a4dbe98f
+
+@ 0 1 0 0582ec369b26c74d10ac5c7dfe6d1a63
++           row  `Ssl(reason)`  3  _the SSL/TLS layer could not be established because `reason`_  `Connect.Error.Reason.Ssl.Reason`。TLS 層がどこで失敗したかを示す
+
+% 0 1 0 1d31fa2e2858edd016619b83d63b0fdf
+
+% 0 1 0 03b7195221a5454e1249fb5eba848ea1
+
+% 1 1 0 0c7af4c083f83f510a6f8a3a28016383
+
+@ 0 1 0 02201d6822283bb61910dcfb25041169
++       entry .Ssl   TLS の失敗理由の名前空間
+
+% 0 1 0 1fa5966119e8ae1109b0dcda52a971aa
+
+@ 0 1 0 0fc869e8497dcb181d2e6697cc6c3844
++             `Connect.Error.Reason.Ssl.Reason` は、番号の付いていない TLS の失敗の列挙型である：
+
+% 0 1 0 17a12efcb5b524961abe798015d06fdd
+
+@ 0 4 0 016b7621a7c24fcf02ccee5ee1a923a6
++             column  ケース
++             column  メッセージ
++             column  注記
++             row  `Handshake`  _the local and remote peer could not negotiate the desired level of security_  証明書の問題と暗号スイートの不一致は、すべてこれとして報告される
+
+% 0 1 0 1da594ffe08c8cd91fb554899a6fa5e7
+
+% 0 1 0 0bdfb0b46c91ac561b62faef14533227
+
+% 0 1 0 0acfa83a3468bdcd0145784dce158f50
+
+% 0 1 0 0886f09d22a849f8174ec96cea203f24
+
+@ 0 6 0 1252aa250feb944b1b63642e0037ee80
++             ソケットに基づくクライアントは、すべての TLS の失敗を `Handshake` として報告する。`javaNetHttp` は JDK の例外から 4 つを区別する。
++         entry .Reason   `Handshake`、`Key`、`Peer`、`Protocol` のいずれか
++           entry .communicable   各 TLS の理由をメッセージとして描画する
++       entry .communicable   各理由をメッセージとして描画する
++     entry #reason   `Connect.Error.Reason`
+
+@ 0 1 0 0489f2ab512c96780859ca6842b00cfb
++ entry .Context   セッションごとの値のストア：各 `Session` に対して、ある型のスロットを 1 つ持つ
+
+% 1 1 0 00f73c0400ca3f5e1c3c1acb47ef6d92
+
+@ 0 6 0 0b3325e88552146f18e601b76ef44c12
++       `Context[value]()` はセッションごとに 1 つのスロットを持つストアで、`Session` の given のもとで読み書きされる。`context()` は現在のセッションの `Optional[value]` であり、`context() = value` はそれを設定する。
++       これは、サーバー側の状態（ログイン、買い物かご）を、セッションクッキーの `Session` をキーとしてリクエストをまたいで保持する方法である。
++       並行マップに基づいている。`Context` は `Findable` なので、コンテキスト値として召喚できる。
+
+% 2 1 0 0752fc5cd7b9e8a71177750ce7f2bf43
+
+% 3 1 0 1233d457701f96330d826826c55c5c83
+
+% 0 1 0 0259e76275a2dd451460264c1bb2e4a0
+
+% 0 1 0 13d998f588e00bc41114211e7dcac913
+
+% 0 1 0 1da7557931e18b151646a655f1780d6a
+
+% 0 1 0 0a11f68ec88d8dce06b4e2f0e98d8a41
+
+% 0 1 0 1c2c6e81f8fbff9801f02c817fa14c61
+
+% 1 1 0 0244c68616c5960d1486cd562a742bdb
+
+% 1 1 0 1a09b2e59925a5c50820db4c20dc1fed
+
+% 1 1 0 1d04716766c12f85129f9d16e3ae2f2e
+
+@ 0 3 0 0c9f67c62622aa040339a87f1aec6dc7
++   entry .apply   `Context[value]()`：新しい空のストア
++   entry #apply   現在のセッションの値、または `Unset`
++   entry #update   `context() = value`：現在のセッションの値を設定する
+
+@ 0 1 0 03822d7a0b3499a5090931db1c0d8ee6
++ entry .Cookie   クッキーのテンプレート：名前、その属性、および値をエンコードする型
+
+% 1 1 0 164f68688c91efea0fead61e513edbbc
+
+@ 0 6 0 1edc2c9ea7e8d5511ff139da9fb8dfa3
++       `Cookie[value]` は送信済みのクッキーではなく、クッキーを書き込むためのテンプレートである。`Cookie[Text](t"theme")` はクッキーとそのドメイン、有効期限、`Secure`、`HttpOnly`、パスの各属性、そして値をテキストとの間でエンコード・デコードする型を指定する。
++       `cookie(value)` は `Set-Cookie` ヘッダーで送る `Cookie.Value` を作り（`response + cookie(value)`）、`cookie()` はスコープ内の `Http.Request` の `Cookie` ヘッダーから値を読み戻し、その型にデコードする。
+
+% 2 1 0 072408388ea4698b04f694546c467f22
+
+% 3 1 0 0c69c165f238bcac1d7cf6b230d376db
+
+% 4 1 0 011fc0db1abb3f9611ddfa3674068a5c
+
+% 0 1 0 0c8714067b7d85bc04a7ed423fd393f4
+
+% 0 1 0 04f55ebe006a401f0bb152c4c3c2057b
+
+% 0 1 0 1fdf7d0b350fbaf01827cfcff7acf406
+
+% 1 1 0 0d8de823abec6f891fbcd1d5baad7fc3
+
+@ 0 5 0 15aca34413d96d5616ceda123f7c27c3
++       `Cookie[Session]` には `Cookie.session` があり、これはリクエストの `Session` のもとでブロックを実行する。リクエストにセッションがなければ、新たに発行してクッキーを設定する。
++       リクエストに対して `cookie.Session` でパターンマッチすると、デコードされた値が取り出される。
++       クッキーのテンプレートは `Cookie(t"theme" ╱ secure ╱ httpOnly)` のように検査され、持っている属性だけが表示される。
+
+% 1 1 0 0144991564f5dc8f0782b464eeb41577
+
+% 1 1 0 13ae035336289f9709a684962e9715e8
+
+@ 0 7 0 1cebf8bfb9683bb20aa19a22ed78f101
++   entry .apply   `Cookie[value](name, domain, expiry, secure, httpOnly, path)`：テンプレート
++       値の型は明示的に与え、`Encodable in Text` かつ `Decodable in Text` でなければならない。
++       `domain` は `Optional[Hostname]`、`expiry` は `Abstractable across Durations to Long` である任意の期間の型（秒単位で格納される）であり、`secure` と `httpOnly` のデフォルトは `false`、`path` は省略可能なテキストである。
++   entry .inspectable   テンプレートを `Cookie(name ╱ domain:… ╱ expiry:… ╱ secure ╱ httpOnly)` として描画する。存在する属性だけを含む
++   entry .Value   送信または受信されたクッキー：名前、値、およびその属性
+
+% 1 1 0 023fc629592a3239041d5ce3f9cd1625
+
+@ 0 4 0 0e51ff8ae91d46ac02cfd7ff884e2771
++         `Cookie.Value(name, value, domain, path, expiry, secure, httpOnly)` は具体的なクッキーである：テンプレートの `apply(value)` が作るもの、`request.headers.cookie` がデコードするもの、そして `response + cookieValue` が `Set-Cookie` ヘッダーとして追加するものである。
++         その `expiry` は秒単位の `Max-Age` である。
+
+% 2 1 0 1632e8ab40cdc092069ef6c4b175c0a5
+
+% 3 1 0 0fa26cd3bb6c2b320449bce8cb81c0eb
+
+% 0 1 0 05bf30784907240811af4fe83c6af0c0
+
+% 0 1 0 0f433a6d2260e45019ffab7f986f6fc4
+
+% 1 1 0 16b7312bcdbf0f9709c054f552a25aeb
+
+@ 0 30 0 1890dddc9d671e171201c771e53803e4
++     entry .showable   `Set-Cookie` の形式を描画する：`name=value; Max-Age=…; Domain=…; Path=…; Secure; HttpOnly`
++     entry .inspectable   `Set-Cookie` の形式を `Cookie.Value(…)` で囲んで描画し、ヘッダーのテキストと取り違えられないようにする
++     entry .encodable   クッキーを `Set-Cookie` ヘッダーとしてエンコードする。`response + cookie` のためのもの
++     entry .addable   `response + cookie`：`set-cookie` ヘッダーを追加したレスポンス
++     entry .decodable   `Cookie` リクエストヘッダー `a=1; b=2` を `List[Cookie.Value]` として読む
++         各 `name=value` の組は URL デコードされる。`=` のない断片は読み飛ばされる。
++     entry #name   クッキーの名前
++     entry #value   クッキーの値（テキスト）
++     entry #domain   `Domain` 属性（設定されていれば）
++     entry #path   `Path` 属性（設定されていれば）
++     entry #expiry   秒単位の `Max-Age` 属性（設定されていれば）
++     entry #secure   `Secure` 属性が設定されているかどうか
++     entry #httpOnly   `HttpOnly` 属性が設定されているかどうか
++   entry .session   リクエストのセッションのもとでハンドラを実行し、セッションが新しければセッションクッキーを設定する
++       `Cookie[Session]` に対する拡張である：`cookie.session { … }` はスコープ内のリクエストからセッションを読むか、UUID から新しいセッションを発行し、それを given としてブロックを実行し、ブロックが返すレスポンスにクッキーを追加する。
++   entry #name   クッキーの名前
++   entry #domain   テンプレートが課す `Domain` 属性（あれば）
++   entry #expiry   テンプレートが課す秒単位の `Max-Age`（あれば）
++   entry #secure   クッキーに `Secure` が付いているかどうか
++   entry #httpOnly   クッキーに `HttpOnly` が付いているかどうか
++   entry #path   テンプレートが課す `Path` 属性（あれば）
++   entry #apply   `cookie(value)` は `Cookie.Value` を作る。`cookie()` はスコープ内のリクエストから値を読む
++       `cookie(value)` は値をテキストにエンコードし、テンプレートの属性を付加する。
++       `cookie()` には `Http.Request` の given が必要で、そのリクエストにあるこの名前のクッキーからデコードした `Optional[value]` になる。クッキーがなければ `Unset` である。
++   entry #Session   スコープ内のリクエストに対する抽出子：`case cookie.Session(value) =>`
++       リクエストにこのクッキーがあるときにマッチし、デコードされた値をコンテキスト値として与えられたブロックを実行する。
+
+@ 0 1 0 0515ff6d3f2f15931e978fe03a7c8a7e
++ entry .Directive   ヘッダーの値の型を、ヘッダーの名前によってどう検査しエンコードするか
+
+% 1 1 0 08eb6593a20d088814cdf4aae6047e1f
+
+@ 0 9 0 1735cec97873d16212e6d9c4c050adbe
++       `Directive` は、名前付きのヘッダー引数の背後にある型クラスである。
++       `("accept" is Directive of MediaType)` は、`accept = …` と書かれるヘッダーが `MediaType` を取ること、そしてそれをどう描画するかを表す。`fetch`、`submit`、`Http.Response(…)` の背後にあるマクロは、各引数の名前に対するディレクティブを召喚し、値の型をそれと照合するので、`accept = 3` はコンパイルエラー _the header `Accept` cannot take a value of type `Int`_ になる。
++       ワイヤ上の名前は、camelCase のラベルをケバブケースにしたものである：`contentType` は `content-type` になる。
++       同じディレクティブが、動的な読み取り `request.headers.contentType` と `response.headers.setCookie` にも型を与え、フィールドのテキストをディレクティブの型にデコードする。
+
+@ 0 4 0 00b02179f55eff89158cddef23c2eebb
++       名前のない引数は型だけで照合されるので、単独の `MediaType` は `accept` に、`Auth` は `authorization` になる。複数のヘッダーに対する `Directive` である型（`Text`）は、名前なしでは渡せない：_the type `Text` does not uniquely identify a particular HTTP header_。
+
+% 2 1 0 045e4e7e46808a681f084b3e0d6e34d9
+
+% 3 1 0 1cdd1fc06b88eec813ac38e9ca179550
+
+% 4 1 0 1ac30f4b019c39d30b96a0acf3984bdb
+
+% 5 1 0 16541242399439791b7f83b1f507e7f6
+
+% 6 1 0 1a11ef9b3da1f57414525d573605316f
+
+% 7 1 0 15d0496310c4aca30824edf7d357275d
+
+% 8 1 0 14f6e64c87b7062212a7067381996383
+
+% 9 1 0 1a179f0098e476ab096e3882f5eb6b34
+
+% 0 1 0 185db210b192411d1ad2c40ffe3c33c9
+
+% 0 1 0 03e905fb33a32cc2170689361907c615
+
+% 1 1 0 1aae064e68a8bba8147a677466a540f0
+
+@ 0 8 0 0b0ff2b2bfa62ccd1720efd7fba06d14
++       コンパニオンは標準ヘッダーごとにディレクティブを宣言している。型付きのものは、`accept`（`MediaType` または `List[MediaType]`）、`authorization`（`Auth`）、`contentType`（`MediaType`）、`contentLength`（`Bytes`）、`contentEncoding`（`Encoding`）、`cookie`（`List[Cookie.Value]`）、`host`（`Host`）、`maxForwards`（`Int`）、`origin`（任意の URL の型）、`range`（`Interval`。`bytes=start-end` として描画される）、`transferEncoding`（`TransferEncoding`）である。その他の標準ヘッダーはすべて `Text` を取る。
++       コンパニオンが名前を挙げていないヘッダーを名前で渡すには、ローカルの given `given ("xRequestId" is Directive of Text) = identity(_)` が必要である。
+
+% 1 1 0 0abdc87c13325798175bf99c2e1648e0
+
+% 1 1 0 1488dbcd13dc5fad0006b4d34234f00d
+
+@ 0 73 0 14d23be13bda6d480cf91517c714edad
++   entry #Self   リテラル型としてのヘッダーの名前：`"contentType"`
++   entry #encode   ヘッダーの型の値を、フィールドのテキストとして描画する
++   entry #key   `Self` から得た、テキストとしてのヘッダーの名前
++   entry .contentEncoding   `contentEncoding`：`Encoding`。その名前で描画される
++   entry .accept   `accept`：`MediaType`
++   entry .accept2   `accept`：`List[MediaType]`。カンマで連結される
++   entry .authorization   `authorization`：`Auth`
++   entry .cacheControl   `cacheControl`：テキスト
++   entry .connection   `connection`：テキスト
++   entry .contentMd5   `contentMd5`：テキスト
++   entry .contentType   `contentType`：`MediaType`。パラメーターなしで描画される
++   entry .contentLength   `contentLength`：`Bytes` の量。数値として描画される
++   entry .cookie   `cookie`：`List[Cookie.Value]`。`; ` で連結される
++   entry .date   `date`：テキスト
++   entry .expect   `expect`：テキスト
++   entry .forwarded   `forwarded`：テキスト
++   entry .from   `from`：テキスト
++   entry .host   `host`：`Host`
++   entry .http2Settings   `http2Settings`：テキスト
++   entry .ifMatch   `ifMatch`：テキスト
++   entry .ifModifiedSince   `ifModifiedSince`：テキスト
++   entry .ifNoneMatch   `ifNoneMatch`：テキスト
++   entry .ifRange   `ifRange`：テキスト
++   entry .ifUnmodifiedSince   `ifUnmodifiedSince`：テキスト
++   entry .maxForwards   `maxForwards`：`Int`
++   entry .origin   `origin`：`Abstractable across Urls to Text` である任意の URL の型
++   entry .pragma   `pragma`：テキスト
++   entry .prefer   `prefer`：テキスト
++   entry .proxyAuthorization   `proxyAuthorization`：テキスト
++   entry .range   `range`：序数の `Interval`。`bytes=start-end` として描画される
++   entry .referer   `referer`：テキスト
++   entry .te   `te`：テキスト
++   entry .trailer   `trailer`：テキスト
++   entry .transferEncoding   `transferEncoding`：`TransferEncoding`
++   entry .userAgent   `userAgent`：テキスト
++   entry .upgrade   `upgrade`：テキスト
++   entry .via   `via`：テキスト
++   entry .warning   `warning`：テキスト
++   entry .acceptCharset   `acceptCharset`：テキスト
++   entry .accessControlAllowOrigin   `accessControlAllowOrigin`：テキスト
++   entry .accessControlAllowCredentials   `accessControlAllowCredentials`：テキスト
++   entry .accessControlExposeHeaders   `accessControlExposeHeaders`：テキスト
++   entry .accessControlMaxAge   `accessControlMaxAge`：テキスト
++   entry .accessControlAllowMethods   `accessControlAllowMethods`：テキスト
++   entry .accessControlAllowHeaders   `accessControlAllowHeaders`：テキスト
++   entry .acceptPatch   `acceptPatch`：テキスト
++   entry .acceptRanges   `acceptRanges`：テキスト
++   entry .age   `age`：テキスト
++   entry .allow   `allow`：テキスト
++   entry .altSvc   `altSvc`：テキスト
++   entry .contentDisposition   `contentDisposition`：テキスト
++   entry .contentLanguage   `contentLanguage`：テキスト
++   entry .contentLocation   `contentLocation`：テキスト
++   entry .contentRange   `contentRange`：テキスト
++   entry .deltaBase   `deltaBase`：テキスト
++   entry .eTag   `eTag`：テキスト
++   entry .expires   `expires`：テキスト
++   entry .im   `im`：テキスト
++   entry .lastModified   `lastModified`：テキスト
++   entry .link   `link`：テキスト
++   entry .location   `location`：テキスト
++   entry .p3p   `p3p`：テキスト
++   entry .preferenceApplied   `preferenceApplied`：テキスト
++   entry .proxyAuthenticate   `proxyAuthenticate`：テキスト
++   entry .publicKeyPins   `publicKeyPins`：テキスト
++   entry .retryAfter   `retryAfter`：テキスト
++   entry .server   `server`：テキスト
++   entry .setCookie   `setCookie`：テキスト
++   entry .strictTransportSecurity   `strictTransportSecurity`：テキスト
++   entry .tk   `tk`：テキスト
++   entry .vary   `vary`：テキスト
++   entry .wwwAuthenticate   `wwwAuthenticate`：テキスト
++   entry .xFrameOptions   `xFrameOptions`：テキスト
+
+@ 0 1 0 13e2ddb928ad5b960b112f89231e5ee1
++ entry .Fetchable   `fetch` と `submit` がエンドポイントとして受け付けるもの、およびその送信先
+
+% 1 1 0 05869d5acf64194d13763fee4238e44f
+
+@ 0 6 0 0db7c501faff175609a3b2a4e51c0963
++       `Fetchable` な値は、リクエストターゲット（テキストとしてのパスとクエリ）、`Host`、そして `Http.Client` を召喚する対象の `Target` をもたらす。`HttpUrl` はその `Origin["http" | "https"]` を対象とし、`Uds.Endpoint`（`telekinesis.jvm` の `udsFetchable` による）はそのソケットを対象とする。
++       コンパニオンの `.httpUrl` は、`url"…"` リテラルが持つスキームで絞り込まれた型を含め、すべての `HttpUrl` を扱う。
+
+% 1 1 0 1634765dd790c7c300852ca64d8914b3
+
+% 1 1 0 1a3dd8f25ff93f6b1207999cafc87848
+
+@ 0 6 0 19291a42d28c852f0282546e2493f88d
++   entry .httpUrl   任意の `HttpUrl` はフェッチ可能で、そのオリジンを対象とする
++       リクエストターゲットは URL のパスとクエリであり、ホストはそのホスト名である。ホスト名のない URL は欠陥である。
++   entry #target   エンドポイントの `Target`
++   entry #text   エンドポイントのリクエストターゲットのテキスト
++   entry #hostname   エンドポイントの `Host`
+
+@ 0 1 0 02a508bb68fd3b5209d94d10c2e1bf26
++ entry .Parameter   リクエストのクエリまたはフォーム本文の名前付きフィールド 1 つを、ある型として読むもの
+
+% 1 1 0 0f33dea52fb194751bb8d7aa0e91b7f3
+
+@ 0 5 0 05c26f7acf0ab60b121dd7bda3e5c033
++       `Parameter[Int](t"page")` は、フィールドと、それをデコード・エンコードする型を指定する。
++       スコープに `Http.Request` があれば、`page()` はその値であり、リクエストの `query`（URL パラメーターとフォームエンコードされた本文の両方）からデコードされる。値がないか不正な形式なら `Query.Error` を発生させる。`page(3)` は `Query` の断片 `page=3` であり、`case page(n) =>` はそれを持つリクエストにマッチする。
+
+% 2 1 0 0686a933ad57be581747ff6f0c73cad3
+
+% 3 1 0 1ebeaa4853a8bd2c0f521d757e0154f3
+
+% 4 1 0 04b1b83b7ac9270206c1b567fd4e1eb0
+
+% 2 1 0 114e83ce4ced1b6d19322b33b4d3e588
+
+% 0 1 0 0152619c50a620f20d28e66087c0a6d0
+
+% 0 1 0 0635381891b8cfe71cb4087b72141557
+
+% 0 1 0 0ed41a1191ac14ab1f882fe5f971730e
+
+% 0 1 0 0f0c65d9d197fd7f1282cae5b79e99d0
+
+% 1 1 0 138f8a791c1cb60f1629c7344fd07eed
+
+@ 0 2 0 04edaa42a5e5b0801179d47923ad4034
++       値の型は `Decodable in Query` かつ `Encodable in Query` でなければならない。すべてのプリミティブ型と、それらの直積はすべてこれを満たす。
+
+% 1 1 0 0dc05813934a62481c84f8b846e0f5b7
+
+% 1 1 0 0cebd8bc3325c88204df90ba03db5170
+
+@ 0 9 0 13ff89d38d9e2e7b1cd1ad4559b0aef7
++   entry .apply   `Parameter[value](name)`：ある名前とある型のパラメーター
++   entry #name   フィールドの名前
++   entry #decode   `Query` から得た値
++   entry #encode   値から得た `Query`
++   entry #apply   `parameter(value)` は値をエンコードする。`parameter()` はスコープ内のリクエストからそれを読む
++       読み取りには、`Http.Request` の given、フィールドがないか不正な形式の場合のための `Tactic[Query.Error]`、そして途中で切れたフォーム本文（フィールドがないものとして報告される）のための `Tactic[Truncation.Error]` が必要である。
++   entry #unapply   `Http.Request` に対する `case parameter(value) =>`：フィールドがデコードできればマッチする
+
+@ 0 1 0 1b47c0ce2fe187041badd1f2bbf1d4b7
++ entry .Postable   値がリクエスト本文になる方法：そのメディアタイプとバイト列
+
+% 1 1 0 1d678b842e6e1b770031b6e465d61cbd
+
+@ 0 10 0 0f7e629feb2407cb098a32f325eb891c
++       `Postable` な値は `submit` のペイロードになれる。この型クラスは、`Content-Type` ヘッダーになる `MediaType` と、求められるたびにそのバイト列の新しい `Stream[Data] over Credit` を与える（本文はリダイレクトの後に再送されることがあり、ロギングのために標本を取られることもある）。
++       コンパニオンは、`Text`（`text/plain`。スコープ内の `Codepage` でエンコードされる）、`Data` と `Data & Sized[n]`（`application/octet-stream`）、`Chain[Text]` と `Chain[Data]`（ストリームとして送られる。`application/octet-stream`）、`Query`（`application/x-www-form-urlencoded`。フォームの送信）、`Unit`（空の `text/plain` 本文）、そしてメディアタイプとストリームへの `Abstractable across HttpStreams` である任意の型を扱う。データ形式のライブラリは、`postables.jsonPostable`、`xmlPostable`、`yamlPostable`、`cborPostable`、`protobufPostable`、および gesticulate のマルチパートを追加する。
+
+% 2 1 0 0d0b96ba0ab3190c05578eda7fa4e817
+
+% 3 1 0 16cd2fe0a8ea3dfb11a9b4328a52850d
+
+% 4 1 0 1307fa0810a6bd3d1630885a18d9dc49
+
+% 5 1 0 03fb09910f1fef5617268daf5514be67
+
+% 6 1 0 04060d78d968eb6d18e7c1b875671bfb
+
+% 7 1 0 0daae30422eb83a006044fac37a9e0c5
+
+% 8 1 0 0efbec31f4a5bfb9082f9d1102d703ec
+
+% 9 1 0 0e19ccf7fe2f144c09a2065bc2795e26
+
+% 10 1 0 07dabd0e8e0fe7d615e36b275bf8c5da
+
+% 0 1 0 05d1d341d162925b1b395172df93d946
+
+% 0 1 0 1ea7b2c0a615da610b8ac50c82bd8f46
+
+% 1 1 0 05cf05ed27633649138c2eddf42c68c5
+
+@ 0 2 0 16676a7b6986b6ad18181cd13fd9d543
++       独自のインスタンスは `Postable(mediaType, streamer)` であり、streamer は値からストリームへの関数である。インスタンスは streamer がキャプチャするものを保持する。
+
+% 1 1 0 0115fab32a0facef1346088c4a28eb20
+
+% 0 1 0 0267f5ed1679c9481af5552f2715dc1f
+
+@ 0 1 0 1633f0cc8c1c63d208c8ad22ff8521f9
++   entry .Streamer   値から新しい本文ストリームへの関数。単一メソッドのトレイトとして表す
+
+% 1 1 0 1a467600a48c4dd10c9aa6d858d59240
+
+@ 0 19 0 18b3d9d0fd99cd441a680bdae35e34a1
++         関数型ではなく名前を付けた型にしているのは、その `stream` メソッドが新しいスコープ付きストリームを生成できるようにするためである。ラムダは呼び出し箇所でこれに変換される。
++     entry #stream   値のバイト列の新しいストリーム
++   entry .apply   `Postable(mediaType, streamer)`：メディアタイプと streamer から作るインスタンス
++   entry .text   `Text` は `text/plain` として送られ、スコープ内の `Codepage` でエンコードされる
++   entry .textStream   `Chain[Text]` は `application/octet-stream` として送られ、各ブロックがエンコードされる
++   entry .unit   `Unit` は空の `text/plain` 本文として送られる
++   entry .data   `Data` は `application/octet-stream` として送られる
++   entry .sizedData   `Data & Sized[length]` は `Data` と同じように送られる
++   entry .byteStream   `Chain[Data]` は `application/octet-stream` として、ストリームで送られる
++   entry .query   `Query` は `application/x-www-form-urlencoded`、すなわちフォームの送信として送られる
++   entry .dataStream   `Abstractable across HttpStreams` である任意の値は、それが抽象化されるメディアタイプとストリームで送られる
++       抽象化されたメディアタイプのテキストが解析できないときに発生する `Tactic[MediaType.Error]` が必要であり、インスタンスはそれを保持する。
++   entry #mediaType   値の本文のメディアタイプ
++   entry #stream   値の本文の新しいストリーム
++   entry #preview   ロギングのための、本文の最初のブロックの 16 進数の標本
++       再充填は高々 1 回までなので、ログを取るために大きな本文が読み尽くされることはない。128 バイトより長い標本は `...` で終わる。
+
+@ 0 1 0 16330e6c260a444910fcf264719665dc
++ entry .Receivable   レスポンスをある型として読む方法：`response.receive[T]`
+
+% 1 1 0 1d936fb9850a86f508b1806c84a7797b
+
+@ 0 8 0 0c8146ab425120d3031bbf6f3e0f0482
++       `Receivable` は `Http.Response` を読んで値にする。
++       `Receivable(reader)` で作られたインスタンスはすべて、まずステータスを確認する。`Successful` の分類に入らないレスポンスは、そのステータスとヘッダーとともに `Http.Error` を発生させ、そうでない場合にのみ本文のストリームがリーダーに渡される。
++       コンパニオンは、`Text`（本文全体。UTF-8）、`Aggregable by Data` である任意の型（`Data`、`Json`、`Chain[Data]` など）、`Instantiable across HttpRequests from Text` である任意の型、そして `Http.Status` を読む。`Http.Status` だけは本文を読まないので、決してエラーを発生させない。
++       `Instantiable` のインスタンス `instantiable` はトレイト `Receivable2` から継承され、コンパニオン自身のものより優先度が低い。
+
+% 2 1 0 015da383054144c70952a4c22f93252e
+
+% 3 1 0 036b0975652620451350bf8e0dd0fe25
+
+% 4 1 0 13111ec3323678da1c90661ffac054bb
+
+% 5 1 0 06b1fa6e453239e219232dffeeefa87b
+
+% 6 1 0 01d1c8c571e2b71f15ccd4eaa5d5e394
+
+% 7 1 0 10c1c230c9654f05140a4657af2ba8fb
+
+% 8 1 0 11498eb8b48251a207b8b37a8f8fcad7
+
+% 9 1 0 1066d9ace9d32f621769f472a69e63df
+
+% 4 1 0 138a62c8f7d6fff800634e5cc95a6a07
+
+% 0 1 0 0930b0d7f3c33c4a1d77276a931e8d23
+
+% 0 1 0 0244e41d87138e7310a6ab6bb0f09307
+
+% 0 1 0 150c605e34ce240705452d3fd4ab6338
+
+% 1 1 0 1fc44fba2bc66518157f5f53c1096d8e
+
+@ 0 3 0 0bcd42575202ee4016b9847425606263
++       本文は 1 回だけ読まれる。ストリームは接続の上にある単一所有者のエンドポイントなので、同じレスポンスに対する 2 回目の `receive[Text]` は、それが読み尽くされていることに気づく。
++       `#map` は、すでに手元にあるリーダーから別の型のリーダーを導く。
+
+% 1 1 0 0c5eea201358f1df0188147987ff9d8c
+
+% 1 1 0 0a224abb675dcb741ed149e9fac1fccd
+
+@ 0 1 0 1d04f119ee9bff660b17fde868934aeb
++   entry .Reader   本文のストリームから結果への関数。単一メソッドのトレイトとして表す
+
+% 1 1 0 0207425637772179189714db434aada5
+
+@ 0 11 0 029c631451f3173f0bfc70d7979cb202
++         関数型ではなく名前を付けた型にしているのは、ケイパビリティの型を持つストリームを受け取れるようにするためである。ラムダは呼び出し箇所でこれに変換される。
++     entry #read   本文のストリームから得た結果
++   entry .apply   `Receivable(reader)`：ステータスを確認してから本文を読むインスタンス
++       `Tactic[Http.Error]` と `Tactic[Truncation.Error]` が必要であり、インスタンスはリーダーとともにそれらを保持する。
++   entry .text   本文を UTF-8 としてデコードし、`Text` として読む
++   entry .streamable   任意の `Aggregable by Data`（`Data`、`Json`、ストリーム）を通して本文を読む
++   entry .httpStatus   `receive[Http.Status]`：ステータス。本文を読まず、決してエラーを発生させない
++   entry #read   レスポンスを読む。本文が生きた接続を保持しているレスポンスであってもよい
++   entry #map   このインスタンスの結果に対する関数による、別の型の `Receivable`
+
+@ 0 1 0 0eb3ed84b12ab0ab1b470bf9b9eb36ab
++ entry .Receivable2   優先度の低い `Receivable` インスタンス。コンパニオンに混ぜ込まれる
+
+% 1 1 0 06b85b5f876e0a2e01f6058be384ff1a
+
+% 2 1 0 1d029725260078ad01bbce8879d84fd4
+
+@ 0 4 0 0c3394d3cf7ebdbf1d42e3438ad4b1e2
++       直接使うためのものではない。`instantiable` を保持する。これは `Instantiable across HttpRequests from Text` である任意の型を本文の UTF-8 テキストから読むフォールバックであり、`Receivable.text` と `Receivable.streamable` より優先度が低い。
++   entry #instantiable   本文をテキストとして読み、任意の `Instantiable across HttpRequests from Text` をインスタンス化する
+
+@ 0 1 0 1a3dad6c66c391ea0b3629d9cbaa05b1
++ entry .Redirects   `Redirects.Disabled` の名前空間。リダイレクトの追跡を無効にするマーカー
+
+% 1 1 0 1aec922d3a68e0e90e09f4e5851650a9
+
+@ 0 3 0 007670e961d7faa70c884c456d16510d
++       `Redirects.Disabled` をスコープに入れると `Http.Client.httpStrict` が選ばれ、これは 3xx のレスポンスを追跡せずにそのまま返す。
++       そうするための given は `httpRedirections.doNotFollowRedirects` で、名前でインポートする。
+
+% 0 1 0 10895e0f8cd8e71d0b1e8f0d614dcabf
+
+@ 0 1 0 07985b8c0fa07d691cb18ea57f8eb781
++   entry .Disabled   マーカーのクラス。スコープにインスタンスがあるとリダイレクトの追跡が無効になる
+
+@ 0 1 0 1d0fc46ff3643b0610c46c787f8719ef
++ entry .Servable   値がレスポンスになる方法：`Http.Response(value)`、またはハンドラからそれを返すこと
+
+% 1 1 0 0d6cae7a5772259e0b097533c42938a6
+
+@ 0 8 0 08c87e94173c0e4c0118b420a1d205dc
++       `Servable` な値は、そのメディアタイプを `content-type` ヘッダーに、そのバイト列を本文にした `Http.Response` として提供される。
++       コンパニオンは、`Text`（`text/plain`。スコープ内の `Codepage` でエンコードされる）、`Data` と `Data & Sized[n]`（`application/octet-stream`）、gesticulate の `Content`（メディアタイプとストリーム）、`Abstractable across HttpStreams` である任意の型、そして `.media` を通じて、`Media` インスタンスと、`Encodable in Data` または `Streamable by Data` もしくは `by Text` を持つ任意の型を扱う。データ形式のライブラリは、`servables.jsonServable`、`xmlServable`、`yamlServable`、`cborServable`、`protobufServable` を追加する。
+
+% 2 1 0 0b13e11249c480cb0242aa8547aae354
+
+% 3 1 0 07172fbef591d71f0f7437cc32f44500
+
+% 4 1 0 13f89ce7b58693a80a636bd50b2b423a
+
+% 0 1 0 16935585091732ef01d9242c06db6ec8
+
+% 0 1 0 05f79e63c550c96f038228127c79cce5
+
+% 1 1 0 03a939d0b1acaeac17383c7386c25a5b
+
+@ 0 5 0 0edf821df79219bf148c9b97626adb52
++       独自のインスタンスは `Servable(mediaType)(value => body)` であり、メディアタイプが値に依存するときは `Servable(value => mediaType)(value => body)` である。
++       `.media` を通じて提供されるストリーミングの `Text` 本文は、`Codepage` をストリームの段階として実行する。サーバーは提供の経路でそれをブロックごとに消費しなければならず（`sweep`）、決して `memoize` してはならない。`Data` の本文（`Http.Body.Fixed`）なら、この問題は生じない。
+
+% 1 1 0 172bab0102c783570cee601efd68ae0f
+
+% 1 1 0 1148a9c80ce49d601581973a2eacc850
+
+@ 0 17 0 13de89031fb9bbc30adb1dd317d4fe5c
++   entry .apply   `Servable(mediaType)(value => body)`：メディアタイプと本文の関数から作るインスタンス
++       メディアタイプは定数（そのヘッダーは 1 回だけ描画される）でも、値の関数でもよい。
++       インスタンスは関数がキャプチャするものを保持する。
++   entry .content   gesticulate の `Content` は、それ自身のメディアタイプとストリームで提供される
++   entry .bytes   `Abstractable across HttpStreams` である任意の値は、それが抽象化されるメディアタイプとストリームで提供される
++       解析できないメディアタイプのテキストは `Abstractable` インスタンスの欠陥であり、パニックを起こす。
++   entry .data   `Data` は固定の `application/octet-stream` として提供される
++   entry .sizedData   `Data & Sized[length]` は `Data` と同じように提供される
++   entry .text   `Text` は固定の `text/plain` として提供され、スコープ内の `Codepage` でエンコードされる
++   entry .media   任意の `Media` 型は、その `Encodable in Data` または `Streamable` から、そのメディアタイプで提供される
++       召喚箇所で、`Encodable in Data`（固定の本文）、`Streamable by Data over Credit`（ストリームの本文）、`Streamable by Text over Credit`（スコープ内の `Codepage` と `Buffering` を通したストリーム）の順に選ぶインライン given である。
++   entry #serve   値に対するレスポンス
++   entry #contramap   この型への関数による、別の型の `Servable`
+
+@ 0 1 0 10eb6290142f8e371faa1d88ffdbf7b9
++ entry .Session   セッションキー：セッションクッキーがリクエストをまたいで運ぶ識別子
+
+% 1 1 0 18baf6354768f8761513c28a5adb486a
+
+@ 0 4 0 0222b3ff41dd25d519b716e6101ee195
++       `Session(key)` は、`Cookie[Session]` がブラウザに格納して読み戻す値であり、`Context` がセッションごとの状態を保持するときのキーである。
++       これは素のキーとしてエンコードされ、`Session(t"a3f1")` として検査されるので、両者は区別される。
++       `Findable` なので、`Cookie.session` の中でコンテキスト値として召喚できる。
+
+% 1 1 0 1aa367f4ad21ba6813eb1a077d4c7515
+
+% 1 1 0 0f95654d2c1af48b1b7b1f9abf97ea14
+
+@ 0 4 0 124a7bb8fc38059000ace29026c52a0f
++   entry .encodable   セッションはそのキーとしてエンコードされる
++   entry .decodable   セッションはそのキーからデコードされる
++   entry .inspectable   `Session(t"key")` として描画する
++   entry #key   セッションのキー
+
+@ 0 1 0 18a21cb13e10417c19fa554e887d8a37
++ entry .Submission   フォームの状態：まだ送信されていないか、デコードすべきクエリとともに送信されたか
+
+% 1 1 0 1a9580cb359dfe1003db40b482627401
+
+@ 0 4 0 130f2bb979191473155a84df07e201c7
++       `Submission[content](query)` は、フォームが送信されたときの `Query` を保持する。フォームが初めて表示されるときは `Unset` である。
++       `#value` はそれをフォームの型にデコードし、`#valid` はデコードできるかどうかを示し、`#fresh` と `#submitted` はどちらの状態にあるかを示す。
++       `telekinesis.forms` があれば、`submission.form(…)` はそれを HTML として描画する。
+
+% 0 1 0 07bb4ab1bdb520e61f0a4c62381ede96
+
+% 0 1 0 0109017e26a0240203ba9e8f5bf00e8f
+
+@ 0 6 0 0a3b01ee0f1de5911b7fe71fb22f44ae
++   entry #query   送信された `Query`、または `Unset`
++   entry #fresh   フォームがまだ送信されていないかどうか
++   entry #submitted   フォームが送信されたかどうか
++   entry #optional   デコードされた値。ないか無効なら `Unset`
++   entry #valid   送信されたクエリがフォームの型にデコードできるかどうか
++   entry #value   デコードされた値。送信されていなければ `Unset`。不正な形式のクエリはエラーを発生させる
+
+@ 0 1 0 0b8c0c01a808a95e054c4bd39b3c1527
++ entry .TransferEncoding   `Transfer-Encoding` ヘッダーの値
+
+% 1 1 0 1a63a51a58e5220a1732aff8a89f0958
+
+@ 0 3 0 1c5a1012b597b630043156f7c96bbb2d
++       列挙型であり、`Chunked`、`Compress`、`Deflate`、`Gzip` のそれぞれが小文字の名前としてエンコードされる。
++       `transferEncoding` ヘッダー引数が取る型である。
++   entry .encodable   転送エンコーディングを小文字の名前としてエンコードする
+
+@ 0 1 0 082b51434ff4e9161c7bf95adb90279f
++ entry .internal   `fetch`、`submit`、`Http.Response(…)` の背後にあるマクロの実装
+
+% 1 1 0 06c6d613445b534e136eb0db9baa2b04
+
+% 2 1 0 1ecb9230fd058d640f19e5bd36c2d294
+
+@ 0 8 0 0f39c2d0513e611e0dbcf3fe497f5709
++       直接使うためのものではない。このオブジェクトは、マクロに安定した置き場所を与えるために存在する。
++   entry .expand   呼び出しの引数を、メソッド、ステータス、エンコードされたヘッダーに振り分ける
++       名前付きの引数はその名前の `Directive` と、名前のない引数はその型の一意な `Directive` と照合される。メソッドやステータスが 2 回与えられた場合や、どのヘッダーにも当てはまらない値は、コンパイルエラーになる。
++   entry .submit   `Http.Submit#apply` の背後にあるマクロ：`Content-Type` を付けてリクエストを組み立て、送信する
++   entry .fetch   `Http.Fetch#apply` の背後にあるマクロ：本文のないリクエストを組み立て、送信する
++   entry .response   `Http.Response(…)` の背後にあるマクロ：提供される値、または `Protoresponse`
+
+@ 0 1 0 1ac5e51485bd2d68003b508bea6f7233
++ entry .fetch   `url.fetch(…)`：URL への `GET`（またはその他の本文のない）リクエスト。型付きのヘッダーを伴う
+
+% 1 1 0 014b94928b36c4bb167ebbaa1b904452
+
+@ 0 8 0 0b3cf0475f4a1c0d1fe2c60578dd6142
++       任意の `Fetchable` なエンドポイント（`HttpUrl`、または JVM 上の `Uds.Endpoint`）に対する拡張で、`Http.Fetch` を返す。その `apply` はマクロであり、省略可能な `Http.Method`（デフォルトは `Http.Get`）と任意のヘッダーを取り、リクエストを組み立てて、エンドポイントのターゲットに対する `Http.Client` を通じて送信する。
++       ヘッダーは、その名前の `Directive` で検査される名前付き引数か、型がヘッダーを特定する名前のない値である。
++       この呼び出しには、`Online`（`internetAccess.online`）、`Http.Event is Loggable`（`logging.silentLogging`）、`httpBackends` の `Http.Backend`、そして `Connect.Error` と、`receive` の場合は `Http.Error` に対する戦術が必要である。
+
+% 2 1 0 1c278bf50b2ecd320f63bbfabd81ecd7
+
+% 3 1 0 0941eda91bac48571d022bbd687fe7b8
+
+% 1 1 0 196763793b32db02032b83bb4b7efc71
+
+@ 0 1 0 1c86316cf3e37a021f3a620f574dff8d
++         label 素の fetch：ステータスだけ
+
+% 1 1 0 111e75cfd07b3f450d9dcbff2c3ed04a
+
+% 2 1 0 1f96e7a87ff725f71c0be8b68c9f1ba6
+
+% 3 1 0 126d72e6a83189b116985b4c25a455b9
+
+% 4 1 0 1c6008b960490b7505eac183e3de9d3e
+
+% 5 1 0 18c00bb23b2cf40405ed5d5445029811
+
+% 6 1 0 0da8152fc85335491ac2ca30d721e87d
+
+% 0 1 0 12e61943f50013610d92f3575c020f18
+
+% 1 1 0 09f0d45f8d23f2de0bf668adaeeb2d76
+
+@ 0 1 0 10e5e6b7142f5fea1dec42a57d2ac7fc
++         label 名前を付けて検査されるヘッダー：`accept` は `MediaType` を取る
+
+% 1 1 0 00db0f2ddcf526dd10a55be5c8f0fda7
+
+% 2 1 0 08bcb023bb626ec016194d2132a4cb76
+
+% 3 1 0 09e8c9fc617ba9390e980b7fed3d9cd6
+
+% 4 1 0 0adfcd9f6fa74540077cbbda5614baca
+
+% 5 1 0 11afb526351150e602d48d59b6aa1373
+
+% 6 1 0 1192702b6fddb03805ed06190059947e
+
+% 0 1 0 1bbfd080469a27ad148a99e18cf3a0b8
+
+% 1 1 0 1121b2b4a6146bb408274c53ac268a0a
+
+@ 0 1 0 10e98339a0894f720ec4a856b92fa83e
++         label 2 つ目のヘッダー：`authorization` は `Auth` を取る
+
+% 1 1 0 0e6ece00565af76a1c90ca4ace7ed0db
+
+% 2 1 0 0248a4f8fe8ca8d4106af9b381df52a9
+
+% 3 1 0 0fe6bcf2dc7967cb03376008ce7b2f89
+
+% 4 1 0 18c6223ea179089d08d7257ab2c304dc
+
+% 5 1 0 157f8eb1af8cd7b80079ca50bf04c5e5
+
+% 6 1 0 1718ab7b6481d065100a27fb43e23d8f
+
+% 0 1 0 1787be7b2bdb6bae046e8da33a008b43
+
+% 1 1 0 06b7f293795e97e41a176d210b314a3e
+
+@ 0 1 0 135e13addf0657ee063e8caa99e4bb9e
++         label 位置引数で与える `GET` 以外のメソッド
+
+% 1 1 0 1620ca0aefed45561755f98f976ce26f
+
+% 2 1 0 060fb5bbde484abf15d99135ec30d97b
+
+% 3 1 0 1acb8c7f3b6701ca0041c6e3201d9c47
+
+% 4 1 0 1e609ef9b136e3ed009744cabfc8f3da
+
+% 5 1 0 184e713ba3c333f900579ffdc007d956
+
+% 6 1 0 1a62a9e9eef0d98f0ca0cb350e2dcc1e
+
+% 0 1 0 1656066d2e2448940fdd343b96257b9a
+
+% 1 1 0 15b3e7bd8394294811271840087402b3
+
+@ 0 1 0 1b40b73ab63793ce15b76337641318ee
++         label ある型として読む本文
+
+% 1 1 0 1805b999e84c52d51dc8fc5b2150edd7
+
+% 2 1 0 0ec7f0287e2ac7510c96ba96848d7db6
+
+% 3 1 0 144c68c7f5cf08b6087452415f4a2210
+
+% 4 1 0 0912bd30c55b39b000b04cd15b0071ee
+
+% 5 1 0 0400098acd3d22b207eaf2c64aa255e0
+
+% 6 1 0 14006112b6e103a9165a029dded78de9
+
+% 0 1 0 1dea07e3942bf4f60d5d2e5e19f27e6c
+
+% 0 1 0 0e50798e48dc9152165c562311f1e671
+
+% 1 1 0 09a94a5f37be7f681753f510b6b73ffb
+
+% 2 1 0 1908a4523cdedfe80205f2fffb550741
+
+@ 0 4 0 0c372bdc3e3d8a461427c73863d0bb4d
++       `httpRedirections.doNotFollowRedirects` をインポートしない限り、リダイレクトは 10 回まで追跡される。成功の範囲に入らないレスポンスはそのまま返され、その本文を `receive` で読んだときにのみ `Http.Error` を発生させる。
++       サーバーに到達できないリクエストは `Connect.Error` を発生させる。
+
+% 1 1 0 14497bfbde427bd41e2361a858762c60
+
+% 0 1 0 1fcfcf4ceb332b091fd068197c8d6b1d
+
+% 1 1 0 0774057b0615fbbb04f196b2045d0865
+
+% 0 1 0 194c91364766d9670dbbd409ae5376ca
+
+@ 0 1 0 0bb9b32e5c44ace00921bf566a134694
++ entry .submit   `url.submit(…)(payload)`：本文を持つリクエスト。本文は型付きの `Postable` な値
+
+% 1 1 0 12713f12f6774b331a4cdfd25639d0d6
+
+@ 0 5 0 14d6e03029b8904f1d9bfe7bf246e2d2
++       任意の `Fetchable` なエンドポイントに対する拡張で、`Http.Submit` を返す。その `apply` は、1 つ目の引数リストでメソッド（デフォルトは `Http.Post`）とヘッダーを、2 つ目の引数リストでペイロードを取る。
++       ペイロードは `Postable` を持つ任意の値（`Text`、`Data`、`Query`（フォームの送信）、`postables.jsonPostable` を伴う `Json`）であり、そのメディアタイプが `Content-Type` ヘッダーになるので、それに合わせて手で設定するものは何もない。
+
+% 2 1 0 03e8ae05eb73ab0b0e37363da11ee5c6
+
+% 3 1 0 11583f77d6ee50b000eb3a26a56a78a1
+
+% 4 1 0 0393b3b9a72b306218857db0d24c23d0
+
+% 5 1 0 0f9600af97d7ae420a0f41f8450e4ceb
+
+% 6 1 0 1d05b85360b4eb1618aaaada1c49b4a9
+
+% 7 1 0 069bd22cf11908650c9ff6ca2fdab30e
+
+% 8 1 0 190234c9a9fd1aed0512142a22cd6764
+
+% 9 1 0 01039a231b0098e41263873a991f5142
+
+% 10 1 0 0c01759a0b3eeb470cccb336ac77565f
+
+% 0 1 0 03df5e91a1fd06e718c57063e389e7bd
+
+% 0 1 0 049dbb6dece84200039f5155eb17e925
+
+% 0 1 0 159c9aa364bccc950e27ccae74dc5fb8
+
+% 1 1 0 0d628809438a6c39165bf404df7bc2e8
+
+@ 0 3 0 12d6c5bd94e327f80dbc319c64923128
++       `fetch` と同じコンテキスト値、すなわち `Online`、`Http.Event is Loggable`、`Http.Backend`、`Tactic[Connect.Error]` に加えて、`Postable` 自身が必要とするもの（`Text` なら `Codepage`）が必要である。
+
+% 1 1 0 1f687f81439cd94812f9a255019d3d07
+
+% 1 1 0 0c627afff3d931341545f3203271cf7d
+
+% 0 1 0 0738377d82dc7d9b003b6b35d0bb07c0
+
+@ 0 3 0 116956c3e38dc1df1ba3d4baff942abc
++ entry .query   `value.query`：`Query` としての値。`url.query(query)`：パラメーターを追加した URL
++     2 つの拡張が同じ名前を共有している。
++     `value.query` は `Encodable in Query` である任意の値（ジェネリックな導出によるケースクラス。入れ子のフィールドはドットで連結される）を `Query` としてエンコードする：
+
+% 2 1 0 13416ce82652d4e0189df5b953b88425
+
+% 3 1 0 0e1bfb76689a3194073813c64246be02
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 1872f392c5dcfbc7158614081e276135
+
+% 0 1 0 14b16cc5ec63d25a180578ec55d8fc22
+
+% 0 1 0 05e552f6ca7d309d1b7896184716dbe2
+
+% 0 1 0 0dbeb67c875bc0ab1f3ac7c33e438f56
+
+% 0 1 0 059d95a53e1f0d0213ca0bc7c46c0c1f
+
+% 1 1 0 05362f149e0d0be3035334392a51f033
+
+@ 0 2 0 01f7fdd1f6c1dc6d0ae1fcc442fd566f
++     `url.query(query)` は、すでに持っているパラメーターにクエリのパラメーターを追加した `HttpUrl` であり、型付きのパラメーターからリクエストの URL を組み立てるためのものである：
+
+% 2 1 0 1069ef0b4b83324119afac0f5b9172e0
+
+% 3 1 0 059e27b043a2acae0fe1afc035385d16
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 0 1 0 0fd40c4c106c79051f278e920a7bd088
+
+% 1 1 0 1ec549b94f7dcc6912b4a25d65cc035f
+
+@ 0 1 0 03df3a7ab1439c4c15e8db2d7bd6d83a
++ entry .queryParameters   任意のフィールド名で `Query` を組み立てられるようにする given
+
+% 1 1 0 09e44214b4079e0517f4551325236e90
+
+@ 0 4 0 0a72a2833ab32eb11b18757eaa27e475
++       `Query.make(key = value, …)` は、各名前付き引数を `key is Parametric to value` の given と照合する。この given は、クエリが持てる各フィールドの名前と型を固定する。
++       名前でインポートする `arbitraryQueryParameter` の given は、任意の名前と任意の型を受け付けるので、クエリをその場で組み立てられる。入れ子の直積はジェネリックな導出によって平坦化される。
+
+% 2 1 0 1c95879d73a773cc1ccfa119fe8b3015
+
+% 3 1 0 11fe3ed555735123106bae6dcbb97d34
+
+% 0 1 0 14c26373278c29d604d444929c9eb95a
+
+% 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
+
+% 0 1 0 1b39ade6af662af2124fbe05abe477f0
+
+% 0 1 0 0fb1773505302b2d04fbeab2dcfc8874
+
+% 1 1 0 0c4f771e3c44688f0a2e97e179dd7da6
+
+@ 0 1 0 05e334c17318c6c21e1655392bdb2a12
++   entry .arbitraryQueryParameter   任意のラベルが、任意の型のクエリパラメーターになる
+
+@ 0 1 0 08d6ef8f45b7f38f132c7c082cf28858
++ entry .httpRedirections   名前でインポートする given としての、リダイレクトのポリシー
+
+% 1 1 0 08e4cd5dcfc223490e07eb7018bf7ec2
+
+@ 0 5 0 18d03d8cad425bef11446a43f46d94fd
++       何もインポートしなければ、`Http.Client` は `301`、`302`、`303`、`307`、`308` のレスポンスを、`Http.Redirection` の上限（デフォルトでは 10 回）まで追跡する。
++       `doNotFollowRedirects` をインポートすると `Redirects.Disabled` がスコープに入り、代わりに `Http.Client.httpStrict` が選ばれる。このときリダイレクトのレスポンスはそのまま返され、その本文を読むと 3xx のステータスとともに `Http.Error` が発生する。
+
+% 2 1 0 034d781f4cc6d83c107f580d7c2fc613
+
+% 3 1 0 0dd939ab7fdf729f168d127454ba29dc
+
+% 4 1 0 04d054653b0444271932f80dcc91c8fb
+
+% 5 1 0 1614a2da274af8e8181dd9993a51aecf
+
+% 6 1 0 08a81d406b75711303c1a09330867b31
+
+% 0 1 0 0de73a01e6bda16814a5ed268337b5a4
+
+% 1 1 0 0a88383eaab8915b16920fd7876f9291
+
+% 2 1 0 1aa60d8a4ab37df40fc0ce9bf1e27a97
+
+% 3 1 0 01583f87be4be18c114a6956c1da9a3b
+
+% 4 1 0 03d5f2b37060aeef1abb5dcf9c3e8bc3
+
+% 0 1 0 195703d77b275e830aadb8d13e060e84
+
+% 1 1 0 15d5c9efed597d350ae918c93a4086a9
+
+% 0 1 0 0ccb6862b6dc894204a0054a2009a302
+
+% 1 1 0 190b2590573572af166e5cdc396ac7dc
+
+@ 0 1 0 0f22407e587b7b300711ad670dee854a
++   entry .doNotFollowRedirects   `Redirects.Disabled`：3xx のレスポンスは追跡されず、そのまま返される
+
+@ 0 1 0 11271fa9530d2e9d18f5e46abb895b28
++ entry .construables   `application/x-www-form-urlencoded` を `Query` として解釈する given
+
+% 1 1 0 0659207cde3100081e9bfd11dc061c1a
+
+@ 0 4 0 06369689d32b4ba700c94d1033c5319e
++       `Construable` は、メディアタイプを、その型のレスポンスを読むときの Scala の型に対応づける。apoplexy が生成する API クライアントは、これを使ってレスポンスの本文をデコードする。
++       `formConstruable` を名前でインポートすると、フォームエンコードされた本文が `Query` として読まれる。
++   entry .formConstruable   `application/x-www-form-urlencoded` は `Query` として解釈される
+
+@ 0 1 0 0fc1055f7ae1d2871e8b9d227b3d9848
++ entry .httpBackends   HTTP のトランスポート。それぞれが名前でインポートする `Http.Backend` の given である
+
+% 1 1 0 0a05380e6a92d083064319af789bc948
+
+@ 0 7 0 02544ffa1730b9d213afefcbe842d3cf
++       どの経路がリクエストを運ぶかはスコープ内の `Http.Backend` が決め、その選択が暗黙に行われることはない。`import soundness.*` はこれらをどれも持ち込まないので、1 つを名前でインポートする。
++       `javaNetHttp` は JVM 自身の `java.net.http` を使う。`soundnessHttp` は、`java.net.http` をまったく介さずに、Soundness のワイヤコーデックで coaxial のソケットの上で直接通信し、JVM と Scala Native で動く。`wasiHttp` は Wasm コンポーネントから `wasi:http` を呼び出す。
++       バックエンドより上にあるもの（リダイレクト、ロギング、型付きのヘッダーと本文）は、どれを選んでも同じである。
+
+% 2 1 0 0126f4b866e9ee5a03b6242f1f729951
+
+% 3 1 0 1bf6af5b7ae72af80596c0eb434ff9d7
+
+% 0 1 0 11dde41b9288fd041d994c5dddc6eac4
+
+% 1 1 0 0bcdd568423b29150a1d7758b4c7dec0
+
+% 2 1 0 178e15825ba484cc099ced53021a886c
+
+% 3 1 0 1141a34b40aba61216d4eca37eb4d89f
+
+% 4 1 0 1d36964b3c36510200bfce0830839fc2
+
+% 5 1 0 01c623a32bf3f1d40f74237621b6c2ae
+
+% 2 1 0 1185a8ba286497da1332280a3bd63c2e
+
+% 0 1 0 13e6c6f62e9c60a71ec17efdd57116a5
+
+% 1 1 0 15d87c563bb8b2251dec6bf0ce19e77b
+
+% 0 1 0 179a9a1da797d30d06ff27275bffc9a4
+
+% 1 1 0 0a7734b5678aeb2c1590ce5442de7e76
+
+% 2 1 0 0dfdd335973cb20815b2f54bc625d3b2
+
+% 3 1 0 103ace6b995b79610464962e2a9fbedb
+
+% 4 1 0 176f41c1f6a49d580f451bb761bb04e5
+
+% 5 1 0 14e1012d030c76f017f98ea23729a317
+
+% 6 1 0 1e2efe16572bf5cc0d8fb5e1965abde0
+
+% 8 1 0 06a1bbdbbbbaf9ba1252b95a9ba04813
+
+% 9 1 0 1b853a423deb33a306e2e171449455bd
+
+% 1 1 0 12ac603a4c3d22971a970a873fedf822
+
+% 0 1 0 04e8a0c43e9eb6571c158a8047a9db6a
+
+% 1 1 0 0cab2475bb8fa80e181c8a42cbaa349f
+
+% 2 1 0 1d290734fbd074a61b6981c9d85a2f00
+
+% 3 1 0 1aae405d20d399e707472e0aa9995738
+
+% 4 1 0 04d984971c3773a509465a4c42a9e0fb
+
+% 5 1 0 0e2730efa286f37e04ef426af3589df3
+
+% 6 1 0 1d6e2889dece4e87051384ee8b01abc3
+
+% 8 1 0 193f20bdb9b26d600da2739ecf31a0ee
+
+% 9 1 0 1d1887474d813d6804adb6626bcbd511
+
+% 0 1 0 1493853c0a954c13055573b54c1544b3
+
+% 0 1 0 0c33664209bd619c12bc9ebc2b1b16cc
+
+% 1 1 0 14a26cdc157c8ad6186d5cf2b6031d93
+
+% 2 1 0 041d9b5280f54a0a0bb19564d1cdcdd5
+
+% 1 1 0 0a7bfba3e801060e05deff987caf1cf2
+
+% 1 1 0 15dca428aa72d0020f1810af002ea160
+
+@ 0 36 0 19513b7fff2a4e1719bd79a62c7dbd42
++   entry .javaNetHttp   `java.net.http` を使う JVM のトランスポート
++       `telekinesis.jvm` にある。
++       スコープ内に `TlsAcceptance` が必要であり（coaxial のもの。厳格なデフォルトはホスト名と証明書チェーンを検証し、`TlsAcceptance().permitSelfSigned` とその仲間は `cryptoPermits` のインポートのもとでそれを緩める）、異なる受け入れ方針ごとに JDK のクライアントを 1 つ作ってキャッシュする。
++       リダイレクトの追跡は `Http.Client` に任されるので、`Http.Redirection` の上限が正確に守られる。
++       平文の `http://` のオリジンへのリクエストは HTTP/1.1 として送られ、`h2c` へのアップグレードを申し出ることはない。`https` では、JDK の内部で ALPN が HTTP/2 を取り決めることがある。
++       本文は購読のたびに新しいストリームから遅延して発行されるので、大きな本文全体がメモリに保持されることはない。
++       JDK の例外は `Connect.Error` の理由に分類される：`UnknownHostException` は `Dns`、拒否されたかタイムアウトした接続は `Refused` または `Timeout`、SSL の例外は `Ssl(Handshake)`、`Ssl(Protocol)`、`Ssl(Peer)`、`Ssl(Key)` のいずれかになる。
++   entry .soundnessHttp   telekinesis のワイヤコーデックで coaxial のソケットの上で通信するトランスポート
++       `telekinesis.sockets` にあり、`Socket.Backend` を持つすべてのプラットフォームで使える。
++       `Online`、`Socket.Backend`（JVM では `socketBackends.javaBaseSockets`）、`Every[Socket.Option.Tcp]`、`Buffering`、`Tls` が必要である。
++       平文の `http` は、キープアライブ付きの生の TCP ソケット上の HTTP/1.1 である。レスポンスの長さが明示的で（フレーム化された本文か、本文なし）、どちらの側も切断を求めなかった場合、その接続はオリジンごとのプール（オリジンごとにアイドル状態のものは最大 8 つ）に戻り、次のリクエストに使われる。サーバーがその後に閉じたプール内のソケットは、使うときに発見され、新しい接続での 1 回の再試行に置き換えられる。
++       JVM 上の `https` では、ハンドシェイク中に ALPN が `h2`、次に `http/1.1` を申し出て、やり取りは相手が選んだ HTTP/2 または HTTP/1.1 のドライバーによって同じソケット上で行われる。接続はリクエストごとに 1 つである。Scala Native では、coaxial の OpenSSL 接続の上での 1 回の HTTP/1.1 のやり取りであり、ALPN も HTTP/2 もない。
++       フレーム化された本文は、接続を手放すか閉じる前に先行して読み尽くされるので、レスポンスはまだストリームされない。また `101` によるアップグレードは（アップグレードされたストリームが終わらないため）`Connect.Error(Unknown)` として拒否される。
++       `Socket.Error` は理由ごとに `Connect.Error` に対応づけられ、不正な形式のレスポンスは `Unknown` になる。
++   entry .wasiHttp   Wasm コンポーネントのための、`wasi:http/outgoing-handler` を使うトランスポート
++       `telekinesis.wasi` にある。
++       `inline` の given である：`wasi:http/types` の呼び出しは、それを召喚する箇所で展開される。その箇所のスコープには `wasiApis.wasiHttpApi` がなければならず、呼び出しは Wasm ターゲット向けにコンパイルされたコードでのみ実体化される。
++       リクエストは `fields` リソースと `outgoing-request` から組み立てられ、メソッドが本文を伴う場合は `outgoing-body` も加わる。レスポンスはその pollable を通じて待ち受けられ、その本文は `input-stream` から全体が読まれるので、結果は `Fixed` の本文になる。
++       ホスト呼び出しの失敗はすべて `Connect.Error(Unknown)` になる。
+
+@ 0 1 0 10e80bed71db9a081a7cabb9f6664b8e
++ entry .Orchestrate   フォームの往復：描画するか、`POST` ではデコード、検証、処理を行う
+
+% 1 1 0 19350ab6940f6ca808e3f85369f11435
+
+@ 0 8 0 17d497ec91d2c32b04706a545e85b5ca
++       `Orchestrate[value, result]`（`orchestrate` で作る）は、フォームの両方の半分を扱う。`POST` 以外のリクエストではフォームを描画し、`initial` が与えられていればそれで事前に埋める。`POST` ではリクエストのクエリを `value` にデコードし、それが失敗すれば呼び出し側の検証を実行してフィールドに注釈を付ける。
++       どちらの場合も、呼び出し側の `process` 関数は、`form` の描画関数（`Text => Html of Flow`。送信ボタンのラベルを取る）と `Optional[value]`（フォームを再表示する場合は `Unset`、デコードできた場合はその値）を受け取り、何を応答するかを決める。
++       呼び出し側の関数を保持するので、これはケイパビリティである。
++       `telekinesis.forms` にある。
+
+% 2 1 0 1bf4a905904c13681853a59b01159f46
+
+% 3 1 0 1a2cca2219425dd00f43ffaf81b25556
+
+% 4 1 0 0c7377e990ffac1d00875d0963ab980c
+
+% 5 1 0 1022b40547a3798d151e4a323cb97e16
+
+% 6 1 0 1d5905f711c83f69188351c6dd082b3e
+
+% 0 1 0 13dd3bb925d5ffbe099ec022b1a81125
+
+% 0 1 0 02291b758748b49c0fca3af086e777c7
+
+% 0 1 0 0cf998ce877de4a219b68407708f3838
+
+% 0 1 0 18ed8fb2df1d71ce04077e4976cc56ca
+
+% 0 1 0 00b5790c5ebfb4e105c5e5375b485b79
+
+% 0 1 0 06eb47ee87240aa0198a8b3714d175bf
+
+% 1 1 0 1678dd34674fd71318df8c7eef1d4599
+
+% 0 1 0 1969b24c27f66e74158d7295c8bf38df
+
+% 1 1 0 17423039c741a0be1117d41022c0191c
+
+@ 0 5 0 13eb77fa5c1f3b000c6a6d5450e78979
++   entry #otherwise   `POST` がデコードできないときに適用する検証とともに往復を実行する
++       `otherwise(validate)` には、`Formulation`（legerdemain のフォームのスタイル付け）、値の `Formulaic`（そのフィールドをどう描画するか）と `Decodable in Query`、スコープ内の `Http.Request`、そして `Query.Error` と `Truncation.Error` に対する戦術が必要である。
++       検証は、送信された `Query` に対するコンテキスト関数である。
+
+@ 0 5 0 0191b42a7b38a0a81ffcd273468e61a0
++ entry .orchestrate   `orchestrate[value](initial)(render)`：フォームの型に対する `Orchestrate` を作る
++     `render` 関数は、フォームの描画関数をコンテキスト値として受け取り、さらに `Optional[value]`（デコードされた送信内容、またはフォームを表示する場合は `Unset`）を受け取って、結果を生成する。その結果に対する `.otherwise(validation)` が、それを実行する。
++     結果は `render` がキャプチャするものを保持する。
++     `telekinesis.forms` にある。
+
+@ 0 6 0 15df993db95ca8e21d96e171b67d08af
++ entry .form   `submission.form(…)`：HTML のフォームとして描画した `Submission`
++     `Submission[value]` に対する拡張で、`telekinesis.forms` にある（コアのモデルが honeycomb や legerdemain のウィジェットに依存しないようにするため）。
++     値の `Formulaic` とスコープ内の `Formulation` を通じてフォームのフィールドを描画し、送信されたクエリで事前に埋め、与えられた `submit` ボタンのラベルと、フィールドに対する `Validation` のメッセージを付ける。
++     `Html of Flow` を返す。
+
+@ 0 5 0 02e9edf828487b431411e71886202344
++ entry .requestTransmissible   `Http.Request` は、その HTTP/1.1 のワイヤ形式として生のソケット上で送信される
++     `telekinesis.jvm` にある coaxial の `Transmissible` の given で、`Http.Request.serialize` の上に作られている。ドメインソケットのクライアントが `socket.transmit(request)` で送るものである。
++     トップレベルの given なので名前でインポートしなければならず（`import soundness.requestTransmissible`）、`Tactic[Truncation.Error]` が必要である。
+
+@ 0 4 0 1dafec358972c7f00384437577917532
++ entry .udsFetchable   `Uds.Endpoint` はフェッチ可能である：Unix ドメインソケット上で直接 HTTP/1.1 を話す
++     `telekinesis.jvm` にあり、Docker デーモンのもののようにローカルのソケットで提供される API のためのものである。
++     リクエストターゲットはエンドポイントのパス、`Host` は `localhost` であり、クライアントを召喚する対象のターゲットは `Uds` である。
++     トップレベルの given で、名前でインポートする。
+
+% 2 1 0 0485b9f58c7a925b017f7bdd468e764e
+
+% 3 1 0 1ce0175d5de6e8341ec61899b74ecddb
+
+% 4 1 0 0ef3e65289897cfd1ea90dd5cf52db4f
+
+% 5 1 0 09d61c70b90884d903ce5ac820fb0d71
+
+% 0 1 0 085bf4b590a935410d61c4bd3b65f745
+
+% 1 1 0 05574793770b76eb086296b90b98d416
+
+% 2 1 0 0eb6e88b476dcbb3188bd7b1e1ef6a85
+
+% 3 1 0 0f7fcf3f9d805179014f64459d5eef27
+
+% 4 1 0 0270ce1901aaa52a1c31a08ca6d97af8
+
+% 0 1 0 1e54b785d58358c20e9f508babdf10b2
+
+% 0 1 0 039ac17a473f0fda001caa63040dc5bc
+
+% 1 1 0 004b101960e7060a1ce15a13f955c305
+
+@ 0 6 0 060ffe0d2b17935014264ba6d1cc4c61
++ entry .udsHttpClient   `Http.Client onto Uds`：ソケット上での 1 つのリクエストと 1 つのレスポンス
++     `telekinesis.jvm` にある。
++     `requestTransmissible` でリクエストを直列化し、`Http.Response.parse` で応答を解析し、リダイレクトは追跡しない。
++     `Tactic[Truncation.Error]` と `Tactic[Connect.Error]` が必要である。`Socket.Error` は理由ごとに `Connect.Error` に対応づけられ、不正な形式のレスポンスは `Connect.Error(Connect.Error.Reason.Unknown)` になる。
++     トップレベルの given で、名前でインポートする。
+
+@ 0 5 0 1fe75eaefac8b91401d3b4aae8441fca
++ entry .WasiHttpApi   xenophile から見た、`wasi:http` の WIT インターフェース型
++     `Interface in Wit at "/telekinesis/http.wit"`：`telekinesis.wasi` に同梱された WIT の定義である。`httpBackends.wasiHttp` と `WasiHttpServer` はこれに対して型検査され、それらの `call` は、モジュール ID、リソースのメソッド、パラメーターの型を得るために展開箇所でこれを参照する。
+
+@ 0 1 0 0d44da996ecac6fc1330c95d5e954fb9
++ entry .wasiApis   名前でインポートする given としての、`wasi:http` インターフェース
+
+% 1 1 0 1e382e94051511700576a39ca81fd6d5
+
+@ 0 5 0 0771e0069786ebea1025c4137e88baad
++       `httpBackends.wasiHttp` を召喚する箇所や `WasiHttpServer.handle` を呼び出す箇所では、どこでも `wasiHttpApi` がスコープになければならない。どちらも `inline` であり、その箇所で WIT の呼び出しを解決するからである。
++       これは、他のライブラリの WASI インターフェースと並んで、アンブレラの `wasiApis` パッケージに統合される。
++   entry .wasiHttpApi   同梱の `http.wit` リソースから読んだ `WasiHttpApi` インターフェース
+
+@ 0 1 0 0002280171bf1c721d536ced83a3da28
++ entry .WasiHttpServer   Wasm コンポーネントから HTTP を提供する：`wasi:http/incoming-handler` から Soundness のハンドラへ
+
+% 1 1 0 1e89f46c0f384d871571cf6556d10306
+
+@ 0 9 0 1c31b6ae66322d451045d1a0262cb165
++       コンポーネントがエクスポートする `handle` 関数から `Http.Request => Http.Response` への橋渡しである。
++       アプリケーションは小さな `@WitExport` のシムを用意する。これは Wasm 向けにコンパイルされるアプリケーションの中に、アノテーション付きで存在しなければならない唯一の部品であり、2 つのファサードのインスタンスを型なしのまま渡す。残りは `WasiHttpServer.handle` が行う：リクエスト（そのメソッド、パス、ヘッダー、本文全体。コンポーネントはホスト名で指定されないので、ホストは `Localhost` である）をアンマーシャルし、ハンドラを呼び出し、レスポンスのステータス、ヘッダー、本文をマーシャルし、ホストがストリームできるように本文を書き込む前に outparam を設定する。
++       `inline` なので WIT の呼び出しは呼び出し箇所で展開され、その箇所のスコープには `wasiApis.wasiHttpApi` が必要である。
+
+% 0 1 0 180b259b8573eca1043c16eca560e5f1
+
+@ 0 4 0 195ff059ad01c26c09a1c78b60f0f88a
++   entry .handle   `WasiHttpServer.handle(request, responseOut)(handler)`：1 つの受信リクエストに応答する
++       2 つの型なしのファサードは、ホストがエクスポートに渡した `incoming-request` と `response-outparam` である。
++       ハンドラが途中で切り上げたレスポンスの本文は、エクスポートのその他の失敗と同じく、コンポーネントをトラップさせる。
+
+@ 0 1 0 17866595effdd22c04ce9d4730da0422
++ entry .Http2   HTTP/2 のエンジン：フレーム、HPACK で符号化されたヘッダー、多重化された接続のクライアントとサーバーの役割
+
+% 1 1 0 1bcdfe22b3e19e49079317424eb82b0b
+
+@ 0 6 0 096b9df96f362a610bbe5d50cc99bd43
++       `Http2` は、`Http` がトランスポートに依存しないモデルをまとめているのと同様に、HTTP/2（RFC 7540）の語彙を 1 つの名前のもとにまとめる。すなわち、`Frame` とその `FrameType`、`Flags`、`ErrorCode`、`SettingId`、`Setting`。接続の 2 つの役割である `Connection`（ストリームを開くクライアント）と `ServerConnection`（それを受け付けるサーバー）。両方の役割が共有する `Stream`。平文の h2c クライアントが接続する `Endpoint` と、その `Client` の given および `sessional` のセッション。そしてエンジンが発生させ、記録する `Error` と `Event` である。
+
+@ 0 11 0 19fc534278aa469d13015cb79fdab88b
++       接続は、1 つの持続的な `Duplex` の上で多数のリクエストストリームを多重化する。
++       書き込み側のデーモンが送信フレームのキューをソケットへ吐き出すので、すべての書き込みはロックなしで直列化される。読み取り側のデーモンは受信フレームをデコードし、ストリーム ID によって振り分ける。どちらも外側の `supervise` の `Monitor` のもとで動くので、接続はその中でしか作れない。
++       ハンドシェイクは `start()` である：各側の `SETTINGS` と、接続のウィンドウを受信予算まで引き上げる `WINDOW_UPDATE` である。
++       フロー制御は双方向で守られる。相手のウィンドウより大きな本文は、`WINDOW_UPDATE` がさらに許可するまで送信側のファイバーをパークさせ、アプリケーションが読み尽くしていない受信本文は、相手を通知済みのウィンドウにとどめる。スタックが処理しないフレームの種類（`PRIORITY`、`PUSH_PROMISE`、拡張）は、接続を失敗させるのではなく、RFC が求めるとおり、デコードされたうえで無視される。
+
+@ 0 5 0 094ac3e183d4a5b3173d3ef0e1b019ca
++       このエンジンは、Soundness の HTTP の両側にとっての HTTP/2 ドライバーである。`https` のクライアントバックエンドは、ALPN の交渉で `h2` が選ばれたすべての TLS 接続で `Connection` を使い、TLS の `SocketServer` は `h2` を交渉した接続を `ServerConnection` に渡す。
++       平文の形式、すなわち事前知識による h2c（アップグレードなし、TLS なし）には `Http2.Endpoint` を通じて到達する。これは gRPC が動くトランスポートである。
+
+@ 0 2 0 1a4d4a39c27c87d918ab21c109694c68
++       リクエストからワイヤ上のバイト列までのパイプラインは、これらの値の連鎖であり、その各段階はプログラムが手で行うこともできる：
+
+% 2 1 0 18dc65c47748ce4e1a9d239bad6cd703
+
+% 3 1 0 1d04539a59f753e208d830c83b572350
+
+@ 0 1 0 0ef84d16cef9a6ec1e83ea5f7638e110
++         label リクエストのヘッダーリスト。疑似ヘッダーが先頭に来る
+
+% 1 1 0 14ff9592ab9c54700f6ea95b54dbe9a8
+
+% 2 1 0 0eb9e1a94e9ed3af012231089f8f45f9
+
+% 3 1 0 16f8fd5841a353aa1b97702ab9d6a546
+
+% 5 1 0 0d4adbc212c569b517b48f85346e2efb
+
+% 6 1 0 00545ae8ee458153039863d75481421b
+
+% 8 1 0 125b6140f1404f0001e7683070f10cbf
+
+% 1 1 0 18c080caef1c7fce0bf030f572fc569f
+
+@ 0 1 0 163e6222b1b843861d35426493591ae4
++         label HPACK のヘッダーブロックとしてエンコードしたもの
+
+% 1 1 0 1b91a8a7208bc8b01d3f4a15a11cf9b7
+
+% 2 1 0 1bcede802bb0446a0f30a2b5254678f2
+
+% 3 1 0 0079ea69d760b15c08005bd1342abdfc
+
+% 5 1 0 19ca79cdf6ea40691962feadc9f11679
+
+% 6 1 0 1ff515fc236398b50de5cd71febb9618
+
+% 8 1 0 1a1ba99cd68de17b120d2c9205bc31c4
+
+% 9 1 0 03739d38a7f3bae81f5a22347b57d026
+
+% 1 1 0 0273bea03464ff2310e8338ec69542a5
+
+@ 0 1 0 0a65d39080806d7c13af99e704c4742e
++         label ストリーム 1 の HEADERS フレームで運ばれ、それがストリームを終わらせもする
+
+% 1 1 0 01903aa7eabb6d8511bc8edfbc1e8bf1
+
+% 2 1 0 060eab59f3e616a10aef451b5932c169
+
+% 3 1 0 012cab7a73c45dd60fe4ad2e732cca7c
+
+% 5 1 0 1fd387228a8428ee01bad48e580e8b30
+
+% 6 1 0 1cc6463fd89585bd10ddb0457d41f7aa
+
+% 8 1 0 18fff18afd5a1bb1008601d2de2d1a3c
+
+% 9 1 0 177134bc6161f722006956ec6849f394
+
+% 10 1 0 0ed4453f5f3add6904d61ee3b1e48d05
+
+% 1 1 0 1f83d02befc86080198f6a36779f4f58
+
+@ 0 1 0 0aeb27d2cbc3fec307d51e31de64d1df
++         label 直列化したもの：9 バイトのフレームヘッダーと、それに続くブロック
+
+% 1 1 0 049096887861a0c40a8a893ee89b1442
+
+% 2 1 0 03f7649083ce609d0893bcd96b4139a3
+
+% 3 1 0 16479ee2182f455e07cd77179a5a0c47
+
+% 5 1 0 17a6d931236b0df81194b1ba9c35e3a0
+
+% 6 1 0 1dd25a251df336ee13fc6255923d58f1
+
+% 8 1 0 0cf52b236e0e8e6f056b35cb5676b690
+
+% 9 1 0 1eab10e5ba9c11501c4ed2ddc55bc3f9
+
+% 10 1 0 11eca4c7acf5a94d11a4bf2949b31e6c
+
+% 0 1 0 1a3e58170cb52a59120daa8f00a932a1
+
+% 1 1 0 03d3a196a80039ca1e8d80676675ba18
+
+% 2 1 0 00c02b1dcf77c3b71c6f0c7e64700e43
+
+@ 0 3 0 0bb283de51be934201f596e7dc9ee7f9
++       `Connection#fetch` は `Http.Request` に対してこれをすべて行い、`FrameReader` と `Hpack#decode` は受信側でその逆を行う。
++       サーバープッシュはサポートされておらず（クライアントの `SETTINGS` がそれを無効にする）、相手からの `PUSH_PROMISE` は無視される。
+
+% 1 1 0 0db3696e179469750e7892115d6bfcf9
+
+% 2 1 0 138231a9ac61221f1d35bf600003058c
+
+% 0 1 0 029bac0122a8b30318a70efe7e9b119d
+
+% 1 1 0 0aa3b80fb8353396087873e5784e139b
+
+% 0 1 0 194f1c0c532cb7f500830253020cea7a
+
+% 0 1 0 0864bc3c29b3875811918dee32f52f15
+
+@ 0 1 0 0498bbcf26524e6c0bd84839cdda8321
++   entry .Connection   クライアントの役割：`Duplex` の上の多重化された HTTP/2 接続。リクエストごとにストリームを開く
+
+% 1 1 0 0403b0fca5604f950616fd9a746ed431
+
+@ 0 7 0 1edc2284e44f2fba14c1df06e3c9af7e
++         `Http2.Connection(duplex)` は、持続的な `Duplex`（ソケット、またはメモリ内の `Duplex.pair()` の片側）を HTTP/2 接続のクライアント側として包み、事前知識による平文の h2c を話す。すなわち、クライアントの接続プリフェイスを送り、続いてフレームを送る。アップグレードはなく、それ自身の TLS もない（`https` のバックエンドは、TLS ハンドシェイクですでに `h2` を交渉した `Duplex` を渡す）。
++         読み取り側と書き込み側のデーモンがそのもとで動くので、スコープに `Monitor` と `Probate` が必要であり、したがって `supervise` ブロックの中で作られる。最初のリクエストの前に `#start` を呼び出さなければならない。
+
+% 2 1 0 1f638067d6defa821c83731c58e7c03d
+
+% 3 1 0 173ac388ffa2d35d1dda87d497510079
+
+% 4 1 0 1fc4c4610b55ec6608bd29749f4a5d3a
+
+% 5 1 0 1fe08552837b67f00726afa8b92c8dc1
+
+% 6 1 0 06529f8381b9827c16b4eb29709d8471
+
+% 7 1 0 00f880efc165c7771c66b0864e47a18a
+
+% 8 1 0 05e3fd125ef8b58d14765b60e79308e6
+
+% 9 1 0 0482cc5cf3fe3d76100c29b502c87c68
+
+% 0 1 0 1cadd0499856c21e18b6c87a2da94c07
+
+% 0 1 0 1546f27ed7d7493105ae3b80ae32ee05
+
+% 0 1 0 13bf2a757245e809080573be5cb4ab5f
+
+% 0 1 0 05c3d5c60d11e0af0c62ef50ffc16a2b
+
+% 0 1 0 1f4077f9f135c8790e035380737fe6ab
+
+% 0 1 0 16bfe79db2b66e4e096f54ae185e86f7
+
+% 0 1 0 10970fab45ba905f1f9e0fbeff9083f0
+
+% 1 1 0 1424a83ad2b9353806e16ff26b36a662
+
+@ 0 8 0 1ec3a46f913ddac4021eeb7da3295d7e
++         2 つ目のコンストラクターパラメーター `window` は、接続がストリームごと、および接続全体に対して通知する受信予算（デフォルトでは 1 MiB）である。相手は、アプリケーションが消費した分を超えて、最大でそのバイト数までしか送信中にしておけない。これが、読まれていないレスポンスの本文が占めうるメモリを制限する。
++         補充は消費によって駆動され、まとめて行われる：予算の半分が読み尽くされると `WINDOW_UPDATE` が送られるので、停滞した消費者は、相手の出力を溜め込むのではなく、相手の送信側を停滞させる。
++         RFC のデフォルトである 65535 より小さい予算では、接続のウィンドウはデフォルトのままになり、ストリームのウィンドウが制限を課す。
+
+@ 0 6 0 093169acdfa1a8401a73eb23866a8e16
++         ストリームには、クライアントのものがそうでなければならないとおり、1、3、5、… と番号が付けられる。
++         並行する `#fetch` の呼び出しは、1 つの接続の上で多重化される。
++         どちらかのデーモンで書き込み、解析、HPACK の失敗が起きると、それはデーモンの外に漏れたり握りつぶされたりするのではなく、接続を破棄する。保留中のハンドシェイクは解放され、開いているストリームはすべて終了されて、そのヘッダー、本文、トレーラーを待っているものが止まったままになることはなく、書き込み側は終了する。相手からの `GOAWAY` は読み取り側を終了させ、`Http2.Event.GoAway` を記録する。
+
+% 1 1 0 0008b7f2b686621808e4e8396d501fdb
+
+% 0 1 0 1444dec51ddda8040012ce1b543b455e
+
+% 1 1 0 0a7433878a0d43ef163bddce3c8bf752
+
+@ 0 23 0 0dd83f66607c283c060c39411c1fc16c
++     entry #start   ハンドシェイクを行う：こちら側の `SETTINGS` を送り、相手のものを待つ
++         サーバープッシュを無効にし受信ウィンドウを通知する `SETTINGS` を送り、予算のほうが大きければ `WINDOW_UPDATE` で接続のウィンドウを RFC のデフォルトより引き上げ、相手自身の `SETTINGS` フレームが届く（読み取り側がそれに確認応答する）までブロックする。
++         `Tactic[Async.Error]` が必要であり、これはハンドシェイクが完了する前に接続が破棄された場合に発生する。
++         これが戻るまでは何も送ってはならない。
++     entry #request   ストリームを開き、ヘッダーブロックと省略可能な本文を送り、ストリームのハンドルを返す
++         フレームの水準でのリクエストの形式である。次の奇数のストリーム ID を割り当て、`headerBlock`（`PseudoHeaders.request` が整えるとおり、疑似ヘッダーがすでに先頭に来ていなければならない）を新しい HPACK エンコーダーでエンコードし、`HEADERS` フレームとして送る。`body` が `Unset` なら `END_STREAM` が設定される。
++         本文は、相手の接続とストリームのウィンドウ、およびその最大フレームサイズのもとで `DATA` フレームとして送られるので、大きなアップロードは、ウィンドウが尽きると、相手の `WINDOW_UPDATE` がさらに許可するまで呼び出し側のファイバーをパークさせる。
++         返される `Http2.Stream` には、レスポンスが届くにつれて読み取り側のデーモンが値を入れる：`#headers` を待ち、`#body` を消費し、次に `#trailers` を待つ。
++     entry #fetch   `Http.Request` を発行し、そのストリームと `Http.Response` を返す。ブロックするのはレスポンスヘッダーを待つ間だけである
++         `PseudoHeaders.request(request, scheme, authority)` でヘッダーブロックを組み立て（`Http.Request` はスキームも `:authority` も持たないので、どちらもここで与える）、リクエストの本文をメモ化し、`#request` でストリームを開き、レスポンスの `HEADERS` を待つ。
++         返される `Http.Response` は、その本文をストリームの受信 `DATA` フレームから遅延してストリームするので、大きなレスポンスは届くにつれて読まれる。また、本文の後でトレーラー（たとえば gRPC の `grpc-status`）を待てるように、ストリームもそれと並べて返される：`stream.trailers.await()`。
+
+@ 0 12 0 1497e270c89082ff0ec91ba017e401a4
++         `Http2.Event.RequestSent` を `fine` で記録するので、`logging.silentLogging` のような `Http2.Event is Loggable` が必要である。また、`Tactic[Http2.Error]`（このストリームでのプロトコルエラー、または有効な `:status` のないレスポンス）、`Tactic[Async.Error]`（待っている間に接続が破棄された場合）、`Tactic[Truncation.Error]`（メモ化している間にリクエストの本文が途中で切れた場合）を取る。
++     entry #close   `GOAWAY` を送り、デーモンを停止し、`Duplex` を閉じる
++         正常な終了処理である：`NoError` 付きの `GOAWAY` を送り、送信キューを停止し、読み取り側と書き込み側を取り消し、duplex を閉じる。
++         `supervise` ブロックの中で作られた接続はブロックが終わる前に閉じるべきである。さもないとブロックはデーモンを待ち続ける。
++         クライアントを閉じても、メモリ内のペアの反対側にある `ServerConnection` は停止しないので、それは別途閉じなければならない。
++   entry .ServerConnection   サーバーの役割：クライアントが開くストリームを受け付け、それらの上でレスポンスを返す
+
+% 1 1 0 0d5e6f30e86c50621586fc1c577ecf80
+
+@ 0 12 0 126c5eb94b638ef4198e8780fbbf79be
++         `Http2.ServerConnection(duplex)` は、クライアントがすでに交渉済みであるか、事前知識による h2c を話している HTTP/2 接続のサーバー側である。
++         その読み取り側のデーモンは、まず 24 バイトのクライアント接続プリフェイスを消費して検証し（一致しなければ、`Protocol` を理由とする `Http2.Error` になる）、次にフレームをデコードする。まだ見ていないストリーム ID の `HEADERS` フレームはそれぞれ `Stream` を作り、その `headers` のプロミスはリクエストのヘッダーブロックであり、それを `#eachStream` に渡す。生きているストリームでの 2 つ目の `HEADERS` ブロックは、リクエストのトレーラーである。
++         書き込み側のデーモンは送信キューを吐き出すので、`#sendHeaders`、`#sendData`、`#sendTrailers` は異なるストリームに対して並行して呼び出してよい。フレームは設計上交互に並び、各ヘッダーブロックは新しい HPACK エンコーダーでエンコードされるので、ハンドラ間でエンコーダーの状態は共有されない。
++         `Monitor` と `Probate` が必要なので `supervise` ブロックの中で作られ、それが取る `Duplex` は、ソケットのものと同様に、その I/O のケイパビリティをキャプチャしてよい（`Duplex^`）。
+
+@ 0 1 0 10f4d74ef4852d300ea75333aa367910
++         レスポンスは、そのヘッダーブロックから始めて、ストリームの上に組み立てられる：
+
+% 2 1 0 18d37fae892b375210af3b9dd7245477
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 091985a475ed752c19d8385e4c8a0053
++           label 本文のないレスポンス：ヘッダーブロックだけでストリームが終わる
+
+% 1 1 0 0d23cd53ffc4b7210f097e1e49724588
+
+% 2 1 0 11b716297cbdd0340d0848db9ecb9ec9
+
+% 3 1 0 1dcbb2e78285572410a9b7ad32d7004a
+
+% 5 1 0 0c2d230c7fa74be51156c030532e009b
+
+% 0 1 0 0970d7fff54b6a2510be0e2fb30bbfd7
+
+% 0 1 0 089447b43cff46ab1a6c8f61a9e9b90c
+
+% 1 1 0 1a1b2c5909a16fff1f40179b6c3842fb
+
+@ 0 1 0 18e6707706bed53207e33588f7e624b3
++           label 本文：ヘッダーは開いたままで、最後の DATA フレームがストリームを終わらせる
+
+% 1 1 0 11929c0d2d87edb20d95dd5113fc88de
+
+% 2 1 0 062d466714ebe7eb0370c1f766d45652
+
+% 3 1 0 0bf936d6cb81459d0d1c08788a32090b
+
+% 5 1 0 111b94297fff297f1d9c5ef4593d03d0
+
+% 6 1 0 0f57c65f11fcbc3a1e2ea7179c5cab76
+
+% 7 1 0 1ee863df9eb267840741a63440714965
+
+% 0 1 0 1a4bf774ce1b2d0f085651f732e390af
+
+% 1 1 0 13aff6cd419549e416dd782602bef630
+
+@ 0 1 0 0e2fd75833f652c715387135ab58a6c2
++           label トレーラー：ヘッダーと本文は開いたままで、末尾のブロックがストリームを終わらせる
+
+% 1 1 0 01baa1bd7f46414c0286a5fd6e58ff5b
+
+% 2 1 0 095e208947e426e6170403a1ee8bdfbd
+
+% 3 1 0 08cbb4978feeeef61d184d842018dd6b
+
+% 5 1 0 084731bf59b69f3d1eb3c4374380b457
+
+% 6 1 0 0292354f979590041fe3f3be0f3dc0b6
+
+% 7 1 0 1f84f56f33d4f10c1091571285f7cea5
+
+% 0 1 0 0b0bed6406e7835b05dbdf7967916d7c
+
+% 0 1 0 0708a7c9b54e707a1c05ceb853a20a04
+
+% 1 1 0 042b355c07e6a9cf1cbdcc63d35aaa8b
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 9 0 09c9ebe9c04d3c6d042f750b1df7588a
++         `PseudoHeaders.requestOf` は、受け付けたストリームのヘッダーブロックと本文を `Http.Request` に変換し、`PseudoHeaders.entries` は `Http.Response` を送信するヘッダーブロックに変換する。TLS の `SocketServer` は、こうしてハンドラに何の変更も加えずに、通常のハンドラを h2 で提供する。
++         エンジンを直接操作する人のための規則が 2 つある。流れているレスポンスの本文は、ブロックごとにストリームへ吐き出さなければならず、決してメモ化してはならない。変換を行う本文（テキストエンコーダーのもの）は `memoize` のもとでは終了しないからである。また、外側の `supervise` ブロックが戻る前に接続を `#close` しなければならない。さもないとブロックはそのデーモンを永遠に待ち続ける。反対側のクライアントを閉じても、サーバーの書き込み側は停止しない。
+
+@ 0 4 0 1f693f3234c133ae0cb5f9dbe8930ecc
++         受信予算（`window`。デフォルトでは 1 MiB）とそのまとめて行われる補充は、`Http2.Connection` のものと同じである：ハンドラが読み尽くしていないリクエストの本文は、クライアントを通知済みのウィンドウにとどめる。
++         相手の `SETTINGS_INITIAL_WINDOW_SIZE` は、それが届いた後に開かれたストリームに適用され、既存のストリームは調整されない。
++         サーバープッシュは実装されていない。
+
+% 1 1 0 09105479fee055d70f4ea17cdc91130c
+
+% 0 1 0 11472f321cfe9feb1f4aec5311801351
+
+% 1 1 0 0ee28719ee8b81e8045c842c918e230f
+
+@ 0 37 0 1793947a44bfa3a809d6e9e396f7d984
++     entry #start   ハンドシェイクのサーバー側を行う：`SETTINGS` を送り、クライアントのものを待つ
++         受信ウィンドウを通知する `SETTINGS` を送り（サーバーは `ENABLE_PUSH` を送らない）、予算のほうが大きければ接続のウィンドウを RFC のデフォルトより引き上げ、クライアントの `SETTINGS` フレームが届いて確認応答されるまでブロックする。
++         `Tactic[Async.Error]` が必要であり、これは先に接続が破棄された場合（たとえば不正なプリフェイス）に発生する。
++         クライアントのプリフェイスと `SETTINGS`、およびサーバーの `SETTINGS` はどちらの順で送られてもよいので、メモリ内のペアの両側で `start()` を並行して実行してよい。
++     entry #eachStream   接続が終わるまで、クライアントが開くすべてのストリームに対して、到着順にハンドラを実行する
++         読み取り側が満たすキューから受け付けた `Http2.Stream` を 1 つずつ取り出し、読み取り側が駆動する提供ループの上で `handler` を呼び出し、接続が終わる（`GOAWAY`、ソケットの切断、または `#close`）と戻る。
++         ハンドラには、リクエストのヘッダーブロックが届いた時点でストリームが与えられる（本文はまだ流れ込んでいる途中かもしれない）。ハンドラはストリームのために自分のファイバーを生成すべきであり、そうすれば 1 つの接続の上で多重化されたリクエストは、ループの上で 1 つずつではなく並行して提供される。
++     entry #sendHeaders   ストリームでレスポンスのヘッダーブロックを送る。レスポンスに本文がなければストリームを終わらせる
++         `entries` を新しい HPACK エンコーダーでエンコードし、`END_HEADERS` を設定した 1 つの `HEADERS` フレームとして送る。
++         `PseudoHeaders.entries` が整えるとおり、`:status` が先頭に来なければならない。
++         `endStream` は、本文のないレスポンスでは `true` であり、`#sendData` や `#sendTrailers` が続く場合は `false` である。
++     entry #sendData   相手のフロー制御のウィンドウのもとで、ストリームで本文を `DATA` フレームとして送る
++         `payload` を、接続のウィンドウ、ストリームのウィンドウ、相手の `SETTINGS_MAX_FRAME_SIZE` で制限されるチャンクに分割し、ウィンドウが尽きると受信した `WINDOW_UPDATE` がさらに許可するまで呼び出し側のファイバーをブロックするので、ウィンドウより大きなレスポンスも、相手のクレジットを超えることなく完全な形でストリームされる。
++         `endStream` は最後のチャンクに付く。空のペイロードはデータを運ばずにすぐ送られ、その唯一の役割はストリームを終わらせることである。
++     entry #sendTrailers   末尾のヘッダーブロックを送る。これは常にストリームを終わらせる
++         本文の後の 2 つ目の `HEADERS` ブロックで、`END_STREAM` が設定されている。gRPC の `grpc-status` のような、レスポンスのトレーラーである。
++         トレーラーを持つレスポンスは、その `#sendHeaders` と `#sendData` で `endStream` を設定せず、このブロックがストリームを閉じるようにする。
++         新しい HPACK エンコーダーでエンコードされる。
++     entry #close   `GOAWAY` を送り、提供ループとデーモンを停止し、`Duplex` を閉じる
++         `NoError` 付きの `GOAWAY` を送り、次に送信キューと受け付けたストリームのキューを停止し（これで `#eachStream` が戻る）、読み取り側と書き込み側を取り消し、duplex を閉じる。
++         外側の `supervise` ブロックが終わる前に呼び出すこと。
++   entry .Stream   1 つの HTTP/2 ストリームの受信側：そのヘッダーブロックのプロミスと、フロー制御される本文
+
+% 1 1 0 14ed9436fbba189004164be04360693c
+
+@ 0 9 0 1806f1e5b0f6b5fe1f6358631ff010c0
++         `Stream` は、どちらの役割においても、接続の受信側から見たリクエストの姿である。`Http2.Connection` にとってはクライアントが開いたリクエストへのレスポンスであり、`Http2.ServerConnection` にとってはクライアントが送ったリクエストである。
++         これは、`#id`、最初の `HEADERS` ブロックのプロミス（`#headers`：レスポンスのヘッダー、またはリクエストのもの）、2 つ目のストリームを終わらせるブロックのプロミス（`#trailers`）、そして `DATA` フレームが供給する `#body` を持つ。
++         接続の読み取り側のデーモンは、フレームが届くにつれてそれらに値を入れ、ストリームが終わるか、相手にリセットされるか、接続が破棄されたときには、まだ保留中のものを（`Nil` で、また本文を終わらせることで）解決するので、ストリームを待っているものが止まったままになることはない。
+
+% 2 1 0 0aafaed55685e00b17d28cb940704296
+
+% 3 1 0 030c78772047e0d40861047372189add
+
+% 4 1 0 046b47c6ad2cb4b71d22f5980c96c818
+
+% 5 1 0 0f1ae8655dbfc88b0e254572bf0acc22
+
+% 6 1 0 01f07285413a3bab0132a7c0f77453d9
+
+% 0 1 0 0b269f4a4e49a6171adbba2dcdf5dfb3
+
+% 0 1 0 13faee67639211050520644fe8bf0d30
+
+% 0 1 0 1a37f7ddd71bf9d815600777af159307
+
+% 0 1 0 076f4d666b34d7c514b426523b23b7ca
+
+% 1 1 0 0b2eaedcc34a2d211b6ca9e3d68572b6
+
+@ 0 5 0 112a5e7ba81b223408072b26abcdc1e3
++         本文は、バッファのサイズではなくプロトコルのクレジットによって制限される中継である。相手は、消費者が読み尽くした分を超えて、最大で接続が通知したウィンドウの分までしか送信中にしておけず、本文を読み尽くすことがウィンドウを補充する。
++         ストリームは接続が作るものであり、決して手で作るものではない。`#acceptHeaders`、`#acceptData`、`#end` は読み取り側のデーモンの入口である。
+
+% 1 1 0 10ba9d13812e6ba61ffede9a248c83fe
+
+% 1 1 0 0e23570c204debce01e56ae0e52c91dd
+
+% 0 1 0 12b2fccb4a3304fa088a48b02054fddd
+
+@ 0 1 0 151dd685cee6a54b1ae70255362ac0b9
++     entry .Body   ストリームの受信本文：フロー制御によって計量される `DATA` ペイロードの中継
+
+% 1 1 0 05af8e00ab1bf27e121607a2fb0f4ae1
+
+@ 0 32 0 0c9674f8bbc5ed59020a447cddcef8ba
++           `Body` は、そのストリーム上の各 `DATA` フレームのペイロードを集め、バイトブロックのストリームとして提供する。
++           そのバッファリングは構造上は無制限だが、プロトコルのクレジットによって制限される（相手は `WINDOW_UPDATE` なしには通知されたウィンドウより多くを送れない）。また、更新は消費者がレコードを読み飛ばしたときにだけ送られるので、読まれていない本文は、メモリに溜まるのではなく、相手をウィンドウにとどめる。
++           これは `Http2.Stream` が、接続の消費コールバックとともに作る。
++       entry #stream   バイトブロックのストリームとしての本文。その消費が相手のウィンドウを補充する
++           `Credit` 上の `Data` レコードの `zephyrine.Stream` で、スコープに `Buffering` が必要である。
++           消費者が読み飛ばした各レコードは数えられて接続に報告され、接続はその数をまとめて、ウィンドウの半分のしきい値で `WINDOW_UPDATE` にする。
++           各呼び出しは同じ下層の中継を貸し直すので、2 回目の読み取りは 1 回目が止まったところから再開する。それに対する `memoize` は、本文全体を 1 つの `Data` として集める。
++     entry #id   ストリームの識別子：クライアントが開いたストリームでは奇数であり、`0` は決してストリームではない
++     entry #headers   最初のヘッダーブロックのプロミス：レスポンスのヘッダー、またはリクエストのもの
++         ストリームの最初の `HEADERS` フレームで、読み取り側のデーモンによって、通常のフィールドより前に疑似ヘッダー（`:status`、または `:method`、`:scheme`、`:authority`、`:path`）を置いたデコード済みの `Hpack.Entry` のリストとして解決される。
++         それなしにストリームが終わった場合は `Nil` で解決される。
++         `await()` には `Tactic[Async.Error]` が必要である。
++     entry #trailers   2 つ目の、ストリームを終わらせるヘッダーブロックのプロミス：トレーラー、またはなければ `Nil`
++         ストリーム上の 2 つ目の `HEADERS` ブロックで解決される。プロトコルは、このブロックがストリームを終わらせることを求めている（gRPC の `grpc-status` はこうして届く）。2 つ目のブロックなしにストリームが終わったときは `Nil` で解決されるので、本文の後でこれを待つことは常に安全である。
++         `await()` には `Tactic[Async.Error]` が必要である。
++     entry #body   ストリームの受信本文。`Http2.Stream.Body`
++     entry #acceptHeaders   受信したヘッダーブロックを記録する：最初のものはヘッダーとして、それ以降のものはトレーラーとして
++         接続の読み取り側のデーモンが、デコード済みのブロックとともに呼び出す。アプリケーションで使うためのものではない。
++     entry #acceptData   受信した `DATA` ペイロードを本文に追加する
++         接続の読み取り側のデーモンが呼び出す。アプリケーションで使うためのものではない。
++     entry #end   受信側を閉じ、まだ保留中のものを解決して、待っているものが止まったままにならないようにする
++         未解決の `#headers` や `#trailers` は `Nil` で解決され、本文は停止される。
++         接続が、`END_STREAM`、`RST_STREAM`、`GOAWAY`、および破棄の際に呼び出す。
++   entry .Endpoint   平文の h2c のエンドポイント：`Http.Client` とセッションのための、接続可能なアドレスと送信する `:authority`
+
+% 1 1 0 12ab0b422abc884404433f44afc1f5fd
+
+@ 0 7 0 117e7e4d5d546c870b30676785d2e9cf
++         `Http2.Endpoint(endpoint, authority)` は、事前知識によって平文で HTTP/2 を話す相手のサーバーを指定する。`endpoint` は `Connectable`（かつ `Showable`）である任意の値（TCP 上の coaxial の `Endpoint(host, port)`、`Uds`、またはテストのループバック）であり、`authority` はすべてのリクエストが運ぶ `:authority` 疑似ヘッダーで、アドレスだけではそれはわからない。
++         これは、telekinesis の HTTP/1.1 クライアントが URL を対象とするのに対し、HTTP/2 の `Http.Client` の given（`Client.http2`）の `Target` であり、また 1 つの生きた接続をスコープに貸し出す `.sessional` の対象でもある。
+
+% 2 1 0 1b4c3f45725ce2b2073d2f79e27cbac9
+
+% 3 1 0 15184041a6f0990002e5bce70600531f
+
+% 4 1 0 0c1aca2d34414c6211861977ab874053
+
+% 5 1 0 02df617d7c1d63a902d0a8d9c90ac230
+
+% 6 1 0 0c7880d4d4f0fedc0f594fbca720a6c7
+
+% 7 1 0 0870bcad00bc632108e0c8d014aaa149
+
+% 8 1 0 022c00a528df3afd0d466c95c3d2bf34
+
+% 9 1 0 107c44df57d923df05d764d0564612c7
+
+% 10 1 0 1c8e03421eea60d90dcae7aa0468a88f
+
+% 12 1 0 0a8a48ab8073eaf30de79edd218766f4
+
+% 0 1 0 0c4809ceeab50ae11a2d49c014ebb97f
+
+% 0 1 0 05c0c75cba838acb112183fa923e251d
+
+% 1 1 0 1eb8e531c520ebbc0b9032340d5365eb
+
+% 0 1 0 0b1c1c039deb5ee60bf4e7d436cedc7b
+
+% 0 1 0 150e798b565e04751357f1d3069a5a72
+
+% 0 1 0 14c5657f511faf3d1f86399bc2000732
+
+% 1 1 0 0d41e9065b9b0fd60e854ec10d769fc5
+
+@ 0 1 0 00682da47f1a955b0cfc9252fcab483e
++         これは gRPC が使うトランスポートである。`Grpc.Channel` は `Http2.Endpoint` 上で開かれる。
+
+% 1 1 0 095ceedaf6a1505c047a358742697547
+
+% 0 1 0 1a0c58d4f9e45e67114b218994f23a5a
+
+% 0 1 0 004668f520281e2c1f786288fb7ced3e
+
+@ 0 13 0 13bcc3900e163d2f09f57ad8d9220327
++     entry #endpoint   接続可能なアドレス
++     entry #authority   すべてのリクエストで送る `:authority` 疑似ヘッダー。例えば `localhost:50051`
++     entry #connect   外側の `supervise` スコープが終わるまで存続する、多重化された接続を開く
++         アドレスに接続し、`Duplex` の上に `Http2.Connection` を作り、そのハンドシェイクを完了して返す。
++         接続は、デュプレックスを開いたまま保持するデーモン上で動き、そのデーモンはスコープが破棄されるまでパークしている。したがって、接続が遅延的にストリームするレスポンスの本文は、リクエストごとに閉じられるのではなく、スコープの存続期間中ずっと読める。それまで接続を閉じるものはない。
++         `Monitor` と `Probate` を必要とし（したがって `supervise` の中で呼び出す）、さらに接続できないアドレスのための `Tactic[Socket.Error]` と、準備が整う前にキャンセルされた接続のための `Tactic[Async.Error]` を必要とする。
++         結果はモニターを保持する。
++         `.sessional` はスコープ付きの代替であり、そのブロックが終わると接続を閉じる。
++   entry .EndpointSessional   `Http2.Endpoint` 上の `Http2.Connection` をスコープに貸し出す `Sessional` のインスタンス
+
+% 1 1 0 05f44980cf3049d51cd8bfdd956872dc
+
+@ 0 10 0 13f2664aaae155af193c033a5678becd
++         `.sessional` の given を支えるクラスであり、その `Result` 型（キャプチャする `Http2.Connection`）を正確に述べるために、無名ではなく名前が付けられている。
++         `endpoint.session: connection ?=> …` は、エンドポイントに接続し、ハンドシェイクを完了し、生きている接続をブロックに貸し出し、ブロックが終わるとそれ（リーダー、ライター、トランスポート）を破棄する。
++         貸し出しとスコープが一致するので、その後で接続を開いたまま保持するデーモンはない。
++         ブロックの結果の型はその外側で量化されるので、まだ接続を借りている値（遅延的にストリームするレスポンスの本文、開いている `Http2.Stream`）は外に出られないが、メモ化した本文は出られる。
++         ブロック内のフェッチは一つの接続の上で多重化され、並行して実行されうる。
++         `Monitor`、`Probate`、`Tactic[Async.Error]`、`Tactic[Socket.Error]`、`Socket.Event is Loggable` を必要とする。
+
+% 0 1 0 0df58be1e2e4d89e0d04eb36ba16702c
+
+@ 0 9 0 079217898112135d1b7610e6bedaea5b
++     entry #Result   `Http2.Connection^`：ブロックが受け取る生きている接続
++     entry #session   接続し、接続をブロックに貸し出し、その後で閉じる
++   entry .sessional   `Http2.Endpoint` 上で `endpoint.session: connection ?=> …` を使えるようにする given
++       アドレスが `Connectable` かつ `Showable` である任意の `Http2.Endpoint` のための `EndpointSessional` である。
++       `Http2` のコンパニオンのスコープにあるので import は必要ないが、召喚されるのは `Monitor`、`Probate`、`Tactic[Async.Error]`、`Tactic[Socket.Error]`、`Socket.Event is Loggable` がスコープにあるところだけである。例えば、`strategies.throwUnsafely` と `logging.silentLogging` を伴う `supervise` ブロックの中である。
++   entry .Client   HTTP/2 の `Http.Client` の given。h2c で `Http2.Endpoint` からフェッチする
+
+% 1 1 0 1b6aea4009f8581419e23d37eb0d6150
+
+@ 0 13 0 08ab311a5082668901c8743b75c1289e
++         `Http.Client onto Http2.Endpoint[endpoint]` のインスタンスである `.http2` を保持する。
++         `Http2.Endpoint` に送られた `Http.Request` は、事前知識による h2c 接続で運ばれ、エンドポイントの `authority` が `:authority` に、`http` がスキームになる。
++     entry .http2   `Http2.Endpoint` と HTTP/2 で話す `Http.Client`。リクエストごとに一つの接続を使い、スコープとともに閉じる
++         この given は、召喚されたコンテキストの `Monitor` と `Probate` をキャプチャする（接続のデーモンと、スコープに結びついた破棄がそれらを必要とする）ので、`supervise` ブロックの中でだけ解決される。
++         各リクエストは `Endpoint#connect` で新しい接続を開き、その接続はスコープが終わるまで存続する。
++         プーリングはないので、一つのエンドポイントに多くのリクエストを送るプログラムは、代わりに `endpoint.session` を使うべきである。
++         さらに `Tactic[Http2.Error]`、`Tactic[Async.Error]`、`Tactic[Socket.Error]`、`Tactic[Truncation.Error]` を必要とし、リクエストはスコープ内の `Http.Event is Loggable` を通じてログを出す。
+
+% 2 1 0 046d8056f642c30a12eceae164111c74
+
+% 3 1 0 0362d27e852e2ba10b3109b96405936f
+
+% 4 1 0 07c31077bf5bcbc3016bc2807cd8f2c8
+
+% 5 1 0 0cdf51eb28c704e50f5eec0af64205da
+
+% 6 1 0 1461a9b73d034d790724ede8cf71b4d8
+
+% 7 1 0 0a2411ed4f6c9c8f1703e133c7086c26
+
+% 8 1 0 13ca454ac63b7412024725410e7b996e
+
+% 9 1 0 1ffa48c3743484201b21241fda36a067
+
+% 10 1 0 0e564cee848147a00027d248880bbfbe
+
+% 12 1 0 18b1e31b189489aa13b7a5c7d78ae84e
+
+% 0 1 0 1480f135c6a571550348256530adc88d
+
+% 0 1 0 04c402d647da88fd0e3b41acdd71f09c
+
+% 0 1 0 0e1b50a751a96a6e1bc84d9e340dd4a4
+
+% 0 1 0 1a414827e09cac4105eb79a69b57fe78
+
+% 0 1 0 03d8dea1e822ceb70f7cf287fc3b0bd2
+
+% 1 1 0 0c63ac262535d86a136f364bca1a3f32
+
+@ 0 1 0 15ebd2f5ce68ec510a91e3a93e477039
++   entry .Frame   HTTP/2 のフレーム：9 バイトのヘッダーと型ごとのペイロード。バイト列からデコードし、バイト列に直列化する
+
+% 1 1 0 19aa5cf8896b6d7416c9995d32eb57fa
+
+@ 0 3 0 1dbae201e058a63819b0b02acb91d7ae
++         HTTP/2 のワイヤ上の単位である（RFC 7540 §4）：24 ビットの長さ、8 ビットの型、8 個のフラグビット、31 ビットのストリーム id、そして型によって形が決まるペイロード。
++         `Frame` はエンジンがモデル化する型の列挙型であり、各ケースは生のフラグではなくデコード済みのフィールドを保持する。
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 11 0 129c9d3689681126075e24f4656c7309
++         column  ケース
++         column  フレーム
++         row  `Headers(streamId, headerBlock, endStream, endHeaders)`  HPACK のブロック。パディングと `PRIORITY` の接頭辞はすでに取り除かれている
++         row  `Continuation(streamId, headerBlock, endHeaders)`  一つの `HEADERS` フレームには大きすぎるブロックの残り
++         row  `Data(streamId, payload, endStream)`  本文のバイト列。パディングは取り除かれている
++         row  `RstStream(streamId, errorCode)`  相手がストリームを放棄すること
++         row  `Settings(settings, ack)`  `Setting` のリスト、または空の確認応答
++         row  `Ping(opaque, ack)`  8 個の不透明なバイト。`ack` を付けてそのまま返される
++         row  `GoAway(lastStreamId, errorCode, debug)`  相手が接続を閉じること
++         row  `WindowUpdate(streamId, increment)`  フロー制御のクレジット。ストリーム `0` では接続のためのもの
++         row  `Ignored(typeId, streamId)`  エンジンがモデル化しない型（`PRIORITY`、`PUSH_PROMISE`、拡張）の受信フレーム。プロトコルが求めるとおり、破棄するためだけにデコードされる。直列化されることはない
+
+% 1 1 0 1b19efa941feb47608f8a6b08e0bbade
+
+% 2 1 0 08a1aaa27a33b3d600c40a4777139099
+
+% 3 1 0 15ed7097a93bde601582783fd7b9ecca
+
+% 4 1 0 02ff43e45101e4191eb1e57b7d17f385
+
+% 0 1 0 0a8c08fe9d85ed2215e4be23e25d7f67
+
+% 0 1 0 17ec938e31dd759c1dbfd0563179f00b
+
+% 0 1 0 0f0458fead3d449302d41895471da29f
+
+% 1 1 0 1ac2efe5d07f1708059cd26dc30604a0
+
+@ 0 2 0 027af476cad64ee60937edf4f6d868c9
++         プロトコルを手で話すプログラムは、`Duplex` 上で `frame.serialize` を送り、`FrameReader` で読む。`FrameReader` は、ソケットの任意のチャンクからフレームを組み立て直す。
+
+% 0 1 0 05defaa95eadf8bf028b5b7fad4b3324
+
+% 0 1 0 06433e425984044d0b0b25a27c16e4c4
+
+% 0 1 0 001e3c237f3050c4063004fafcab9f45
+
+@ 0 14 0 10698405e54dd9eb04de1581bbdd4765
++     entry .decode   オフセットの位置のバイト列から一つのフレームをデコードし、それとその直後のオフセットを返す
++         `Frame.decode(data, offset)` は、`offset` にある 9 バイトのヘッダーと、それが宣言するペイロードを読む。ペイロードはすでにすべて存在していなければならない。
++         `data` の終わりを越えるヘッダーやペイロードは理由 `Truncated` を持つ `Http2.Error` を発生させ、不正なパディングや 6 バイトの倍数でない `SETTINGS` のペイロードは `Protocol` の理由を持つものを発生させる。
++         エンジンが知らない型 id は `Frame.Ignored` になる。
++         結果はフレームと次のフレームのオフセットなので、いくつかのフレームからなるバッファーは繰り返しによってデコードする。
++     entry #stream   フレームが属するストリーム。接続レベルの `SETTINGS`、`PING`、`GOAWAY` では `0`
++     entry #serialize   ヘッダーを含めた、バイト列としてのフレーム
++         9 バイトのヘッダー（ペイロードの長さ、型の id、フィールドが含意するフラグ（`END_STREAM`、`END_HEADERS`、`ACK`）、ストリーム id）の後にペイロードが続く。
++         `Ignored` フレームの直列化はパニックである。それは破棄するためだけに存在する。
++   entry .FrameType   エンジンがモデル化するフレームの型。それぞれワイヤ上の id を持つ
+
+% 1 1 0 19ffae81e9ae601217bc7cae0e3fb7f6
+
+@ 0 8 0 1a70cff43f6460c406965ccc8abdb71b
++         エンジンがデコードし送信する八つの型の列挙型：`Data`（`0x0`）、`Headers`（`0x1`）、`RstStream`（`0x3`）、`Settings`（`0x4`）、`Ping`（`0x6`）、`GoAway`（`0x7`）、`WindowUpdate`（`0x8`）、`Continuation`（`0x9`）。
++         `PRIORITY`（`0x2`）と `PUSH_PROMISE`（`0x5`）にはケースがない。クライアントはサーバープッシュを無効にし、優先度は現れたところで読み飛ばされるので、どちらの種類の受信フレームも `Frame.Ignored` としてデコードされる。
++     entry .fromId   ワイヤ上の id を持つフレームの型。エンジンがモデル化しないものなら `Unset`
++     entry #id   型のワイヤ上の id。フレームヘッダーで長さの後にあるバイト
++   entry .Flags   フレームヘッダーのフラグビットと、その一つを調べる関数
+
+% 1 1 0 11a3d4b578754c8f1718cf9f085b98cf
+
+@ 0 13 0 06b1fa1ddbe0fa811c7f07e5497826fc
++         サポートされるフレームの型が使う、フラグバイトのビット：`EndStream`（`0x1`、`DATA` と `HEADERS` 上）、`Ack`（これも `0x1`、`SETTINGS` と `PING` 上。同じビットで意味が異なる）、`EndHeaders`（`0x4`、`HEADERS` と `CONTINUATION` 上）、`Padded`（`0x8`、`DATA` と `HEADERS` 上）、`Priority`（`0x20`、`HEADERS` 上）。
++         `Frame.decode` はこれらをフレームの Boolean のフィールドに読み込む。生のヘッダーを調べるプログラムのために公開されている。
++     entry .EndStream   `0x1`：フレームがそのストリームの送信側を終える（`DATA`、`HEADERS`）
++     entry .Ack   `0x1`：フレームが同じ型のフレームに確認応答する（`SETTINGS`、`PING`）
++     entry .EndHeaders   `0x4`：ヘッダーブロックが完結している（`HEADERS`、`CONTINUATION`）
++     entry .Padded   `0x8`：パディング長のバイトと末尾のパディングがある（`DATA`、`HEADERS`）
++     entry .Priority   `0x20`：5 バイトの優先度の接頭辞がヘッダーブロックの前にある（`HEADERS`）
++     entry .set   フラグバイトでフラグビットが立っているかどうか：`Flags.set(flags, Flags.EndStream)`
++   entry .ErrorCode   `RST_STREAM` と `GOAWAY` が運ぶ HTTP/2 のエラーコードと、その数値のコード
+
+% 1 1 0 0f2ac3784c50baec098061da368a3469
+
+@ 0 9 0 167b63cbf1d65b111b7c2d03fd44a923
++         RFC 7540 §7 の十四個のコードの列挙型であり、それぞれ `#code` を持つ：`NoError`（`0x0`）、`ProtocolError`（`0x1`）、`InternalError`（`0x2`）、`FlowControlError`（`0x3`）、`SettingsTimeout`（`0x4`）、`StreamClosed`（`0x5`）、`FrameSizeError`（`0x6`）、`RefusedStream`（`0x7`）、`Cancel`（`0x8`）、`CompressionError`（`0x9`）、`ConnectError`（`0xa`）、`EnhanceYourCalm`（`0xb`）、`InadequateSecurity`（`0xc`）、`Http11Required`（`0xd`）。
++         相手はリストにないコードを送ることがあるので、`Frame.RstStream` や `Frame.GoAway` は生の `Long` を運ぶ。
++         `ErrorCode.NoError.code` は、正常な `#close` が送るものである。
++     entry #code   コードの数値。`Long` として
++   entry .SettingId   `SETTINGS` のパラメーターの識別子と、その数値の id
+
+% 1 1 0 1859d8613e942a8115f009b78f7ac6db
+
+@ 0 8 0 1bffbb70d1412a2d03d3e90d0fdaf37a
++         RFC 7540 §6.5.2 の六つのパラメーターの列挙型であり、それぞれ `#id` を持つ：`HeaderTableSize`（`0x1`）、`EnablePush`（`0x2`）、`MaxConcurrentStreams`（`0x3`）、`InitialWindowSize`（`0x4`）、`MaxFrameSize`（`0x5`）、`MaxHeaderListSize`（`0x6`）。
++         未知の識別子は拒否するのではなく無視しなければならないので、`Setting` は `SettingId` ではなく生の id を保持する。
++         エンジンは相手からの `InitialWindowSize` と `MaxFrameSize` に従って動作し、`EnablePush`（クライアントからは `0` として）と `InitialWindowSize` を送る。
++     entry #id   パラメーターの 16 ビットの識別子
++   entry .Setting   一つの `SETTINGS` のパラメーター：16 ビットの識別子と 32 ビットの値
+
+% 1 1 0 0be8a394366190461cc576c6f71c0726
+
+@ 0 2 0 0cba1f8dbb34fbda0557c60de88e390d
++         `Setting(SettingId.InitialWindowSize.id, 65535)`。
++         プロトコルが求めるとおり、エンジンが知らないパラメーターを運んで無視できるよう、id は生のままである。
+
+% 2 1 0 0560bafeaa48fa88090a926c4abbf614
+
+% 3 1 0 1e64ebf33af2e3290856bf5ff4bf539c
+
+% 0 1 0 09957cba6592240e12090bc938554ad4
+
+% 0 1 0 13f17ea41e63da450a6ab95f7e13f48c
+
+% 1 1 0 0446879a26fc4f3f1a1ee34745bb77a7
+
+@ 0 3 0 0de0df583a55864e0f12968650c692ff
++     entry #id   パラメーターの識別子。既知のものなら `SettingId#id`
++     entry #value   パラメーターの値。`Long` の中の符号なし 32 ビットの数として
++   entry .Error   不正な、またはプロトコルに違反する HTTP/2 のやり取りに対して、`Reason` を伴って発生する
+
+% 1 1 0 108c080eac29ce0d1f767012fd934e55
+
+@ 0 6 0 1572a8c2fa2df1630433c03876fb26ff
++         _the HTTP/2 operation failed because `reason`_。
++         `Frame.decode`、`FrameReader`、`Hpack#decode`、`Huffman.decode`、`PseudoHeaders` によって `Tactic[Http2.Error]` を通じて発生し、`Connection#fetch` によってそれが駆動するやり取りについて発生する。
++         接続のリーダーデーモンの中では、このエラーは外に出るのではなく、その一つの接続を破棄する。`https` のセッションはこれを `Connect.Error` として報告する。
++     entry .Reason   HTTP/2 の操作が失敗した理由
+
+% 1 1 0 0a7827850760c5b01bee9cd37ec18154
+
+@ 0 1 0 03d1aeb1f05fc3531e37b4d6dd0d83c9
++           各ケースはそのメッセージとして描画される。
+
+% 1 1 0 05f424c7a32c4c0b0b03863d383d30a5
+
+@ 0 4 0 1c11022252accc3c1fe51bdc2fcd38b5
++           column  ケース
++           column  メッセージ
++           column  備考
++           row  `Truncated`  _the HTTP/2 data ended unexpectedly_  途中で切れたフレーム、ヘッダーブロック、または整数
+
+% 0 1 0 049882a67c69bbf61e562b90dc596586
+
+@ 0 1 0 14ea7cd4202f24dc1c8a6abaf874aa27
++           row  `BadHuffman`  _the Huffman-coded string was not valid_  30 ビットより長い符号、またはすべてが 1 ではないパディング
+
+% 0 1 0 0bcda516d445cbf80be6085f830631bd
+
+% 0 1 0 139b3921345273181bfffd290468882a
+
+% 0 1 0 001f9051c8b71cdc0bee2b881ecc56a1
+
+% 0 1 0 010e3e9d683682870a0f038c37e519b6
+
+% 0 1 0 167e6a3875fa69a201f2b5d94fc9890a
+
+@ 0 1 0 10c2b3af5a256c0513322d64b0d5704a
++           row  `Protocol(message)`  _a protocol error occurred: `message`_  不正な接続プリフェイス、不正なパディング、不正な `SETTINGS` の長さ、または `:status`、`:method`、`:path`、`:authority` を欠くヘッダーブロック
+
+% 0 1 0 035cb90b113c4e111414338a9d4ed430
+
+% 1 1 0 1fa48be84477bf2409f9d0ccfd8cf2b2
+
+@ 0 3 0 0111a4a23a498fec10260f8f19ea9f31
++       entry .communicable   それぞれの理由をそのメッセージとして描画する
++     entry #reason   理由。`Http2.Error.Reason`
++   entry .Event   接続がログに記録するもの：送信したリクエストと、受信した `GOAWAY`
+
+% 1 1 0 14bb0f65507cb146090506b6c49886b1
+
+@ 0 6 0 1eeb54dcbae62e8d0e6e57ad467545ed
++         すべての `Event` には `Log.Network` と `Log.Protocol` のタグが付く。
++         `Connection#fetch` は `RequestSent(authority)` を `fine` で記録し（_sending an HTTP/2 request to `authority`_）、接続のリーダーは停止する前に `GoAway(lastStream)` を警告として記録する（_received GOAWAY; the last processed stream was `lastStream`_）。
++         フェッチにはスコープに `Http2.Event is Loggable` が必要である。`logging.silentLogging` はそれらを捨てる。
++     entry .communicable   それぞれのイベントをメッセージとして描画する
+
+@ 0 1 0 1acb88a8108825961a79014a89489c27
++ entry .Hpack   HPACK のコーデック：独自の動的テーブルを使って HTTP/2 のヘッダーブロックを圧縮・展開する
+
+% 1 1 0 1aeb2c020352f57f110e78c5892d53e0
+
+@ 0 5 0 185b4590891969bd0ee0dd3aefa80903
++       HPACK（RFC 7541）は、HTTP/2 がヘッダーを運ぶ方法である。
++       各フィールドは、最近見たフィールドのテーブルへのインデックスか、リテラルの名前と値であり、それぞれ短くなる場合はハフマン符号化される。
++       `Hpack` のインスタンスは一方向の動的テーブルを所有し、そのテーブルはエンコードまたはデコードするブロックごとに変わる。
++       したがって接続は、受信ブロックをデコードするためのコーデックと、送信ブロックをエンコードするためのコーデックを一つずつ持ち、両者が混ざることはない。
+
+% 2 1 0 0656c5fea64821fe07521de2cbf9b00b
+
+% 3 1 0 0fd187f58b9e0c130abceaba6ecddae4
+
+% 4 1 0 05141930faf3750d06df68baeb20cf81
+
+% 0 1 0 01563c0006528d2b1e3c4a10907064e6
+
+% 0 1 0 0dd41eb9643c00d11cbb439382d96a84
+
+% 0 1 0 1c5cf8d26ffd993b0aad6848424ffb33
+
+% 0 1 0 1d71b89d742a990404ce765b8440d51d
+
+% 1 1 0 1e413f44922a500f1e1957b5eb5ea7e5
+
+@ 0 5 0 0e7c8432f11d7b4c11b960c98b00c443
++       コーデックは状態を持つ排他的なケイパビリティである。`Hpack()` は `Hpack^` を返し、`#encode` と `#decode` は更新メソッドである。
++       ローカル変数に保持するか、`Hpack^` と型付けしたパラメーターとして渡すこと。それをキャプチャするクロージャーやローカルの `def` から呼び出してはならない。キャプチャされた参照は読み取り専用であり、その呼び出しは拒否される。
++       コーデックがちょうど一つのリーダーまたはライターのデーモンに属するのも、このためである。
+
+@ 0 2 0 0f97b0ee6251d5c006c7de256c72b020
++       連続するブロックを与えると、デコーダーの動的テーブルは大きくなり、各ブロックは前のブロックが追加したものを参照できる（RFC 7541 Appendix C.3 の例）。
+
+% 2 1 0 05df456e7f2c1fdc0fda390ea174caca
+
+% 3 1 0 1ba8afd3950ad123195d667545936848
+
+@ 0 1 0 171cc0d4b254f7891dd588565f861090
++         label 最初のリクエスト：四つのフィールド。オーソリティはリテラルとして送られる
+
+% 1 1 0 0f6dc1dadc70ba7b101935b46636951a
+
+% 2 1 0 039726231c45f5c206aa7cda1a02a6de
+
+% 3 1 0 0b5c91b75c2a64801beb6b952c9067b8
+
+% 5 1 0 15f02fd45c8ca24103b50ac364756c88
+
+% 7 1 0 0ec75e4934a0754416aaaabec68d9aff
+
+% 8 1 0 06739ae4fe0d44da1eb52ae21a4d7cc4
+
+% 0 1 0 1261996de336cf7812427f028557003f
+
+% 1 1 0 082b020ef14d39ef01394c0578fa177d
+
+@ 0 1 0 0f79cfe83ceb5f2f109c2ac1812ecb0d
++         label 二番目：オーソリティは今やインデックス 62、1 バイトであり、新しいフィールドが追加される
+
+% 1 1 0 13c76bfb98baf3b811f82b5d8b70a828
+
+% 2 1 0 1490e2421ed0f2e80c8faa3878f20970
+
+% 3 1 0 10423bd849d301d5111d2c9506b377c3
+
+% 5 1 0 1148fa0a1c29e2510b30ac68572ca002
+
+% 7 1 0 110609e2df26bcb6146a6f43312a305a
+
+% 8 1 0 19b8c4626af9969c08783751a366efe4
+
+% 9 1 0 0409f67cc8b84aba11be1717fe1cdfda
+
+% 0 1 0 11d456fb5f8d661a121757ab06756d0b
+
+% 1 1 0 178ad23b3f59aec81cd4802c3f3c7cd3
+
+@ 0 1 0 1557af4209cedf7a0592d0cc5f112993
++         label 三番目：独自のフィールド。前の二つの追加はまだインデックスされている
+
+% 1 1 0 140ba494e3d087600bd85819b8aae854
+
+% 2 1 0 112b44459f55061c17069882d0816b84
+
+% 3 1 0 1c5ac203ca4b63a21fd7c7c4fa808b10
+
+% 5 1 0 1f91c779dc2c5b0a16fef5971ca776a5
+
+% 7 1 0 08af778232cf3cd619c9cafcdcc62026
+
+% 8 1 0 14331200b08f4d0604c3ffdc5234adef
+
+% 9 1 0 0d87a117ffebc03e1514ef89b026ca8e
+
+% 0 1 0 02d7493f68b1d2ac100bcb1a2eb4803b
+
+% 0 1 0 0aa9dbe675eef49719ce9b6a3d0763e5
+
+% 1 1 0 15376927454c7f0f191b63f99607e51b
+
+% 2 1 0 0feeaeddabc27e5a16b4b1f98c69637d
+
+@ 0 6 0 06cb1fe75579ae051a0c79ca987c0c23
++       エンコーダーは意図的に単純である。すべてのフィールドは増分インデックス付きのリテラルとして送られ、その名前と値はそれぞれハフマン符号化するか生のままにするかのうち短い方になる。
++       これは正しく、どのデコーダーとも相互運用でき、二つのテーブルの歩調を合わせるが、静的テーブルの名前の一致はまだ使わないので、ブロックは調整されたエンコーダーが作るものより大きくなる。
++       `PseudoHeaders` が並べるように、疑似ヘッダーは呼び出し側が通常のフィールドより前に並べなければならない。
+
+% 1 1 0 05fd61defd2975e21f11c0d6270e7a1c
+
+% 0 1 0 1056b5f52e6def0718792b9ecdebf263
+
+% 0 1 0 05a840856c6a73b5008373548dd9e2db
+
+% 0 1 0 0261683ed6c93ce704b3fd9a91bf8836
+
+@ 0 5 0 03bfc99fcdb986c8147df6094314d19b
++   entry .apply   空の動的テーブルを持つ新しいコーデック。`Hpack()` または `Hpack(maxTableSize)` として
++       テーブルのバイト数の上限は、既定ではプロトコルの初期値 `SETTINGS_HEADER_TABLE_SIZE` である 4096 である。
++       ブロック内での相手による動的テーブルサイズの更新は、その大きさを変える。
++       結果は `Hpack^`、つまり新しい排他的なケイパビリティである。
++   entry .Entry   一つのヘッダーフィールド：名前と値
+
+% 1 1 0 01c21446f4b5d5240a63c7e91cb92997
+
+@ 0 2 0 138e28927c1d5762101e99cc4b4a1283
++         `Hpack.Entry(t":status", t"200")`。
++         名前はワイヤ上では小文字であり、疑似ヘッダーは `:` で始まる。`#size` は動的テーブルでのそのフィールドのコストである。
+
+% 2 1 0 0edef6df0682e4951f91b0e087444b94
+
+% 3 1 0 181583b7a0c2eec41debd3be0718a5db
+
+% 0 1 0 09f9cdd63a162fe0048f743b59a299e7
+
+% 1 1 0 1658ac6d388c81fd0b07ab24c28b5f1c
+
+@ 0 4 0 0b67cde888b8947e19c604490ba0e148
++     entry #name   フィールドの名前。小文字で、例えば `:path` や `content-type`
++     entry #value   フィールドの値
++     entry #size   動的テーブルの計算のためのフィールドのサイズ：名前の長さ + 値の長さ + 32
++   entry .Table   HPACK のアドレス空間：61 エントリーの静的テーブルと、上限付きで新しいものが先頭の動的テーブル
+
+% 1 1 0 061be083dccbd4530f31882b52ba73a7
+
+@ 0 5 0 15d85cde484c90081bbcd681ae7ecf27
++         1 から 61 までのインデックスは、`.static` に保持される RFC 7541 Appendix A の静的テーブルのフィールドを指す。62 以上は、最も新しく挿入されたものを先頭とする動的テーブルを指す。
++         動的テーブルはバイトサイズ（`#capacity`）で上限が決まる FIFO であり、収まるように最も古いエントリーを追い出す。
++         `Table` はその `Hpack` コーデックが所有し、コーデック自体は一つのデーモンに限定される。プログラムがこれを必要とするのは、インデックスを手で解決したり調べたりするときだけである。
+
+% 2 1 0 0e3ddaa915bfc9ad079dbf3c71f76fe2
+
+% 3 1 0 1bafd790815ca3be1a8285a6836aaa6e
+
+% 0 1 0 0ec016d98cb7084e028f1bb48b7d5879
+
+% 0 1 0 0cb5293e9269d9d014e0351dcba887ff
+
+% 0 1 0 0d63eb17609c66670809b476a9dc0f46
+
+% 0 1 0 18f00bceb50c58ec004cd3e02da08776
+
+% 1 1 0 1a488c280ba91f801ebddbd55c7244b0
+
+@ 0 26 0 1264691a604594a908c1a1a900e4146b
++     entry .static   静的テーブルの 61 個のフィールド。インデックス 1 が要素 0
++         `:authority`、`:method` の `GET` と `POST`、`:path` の `/` と `/index.html`、`:scheme` の `http` と `https`、よく使われる七つの `:status` の値、そして値が空の標準のヘッダー名が、RFC の順に並ぶ。
++     entry #size   動的テーブルの現在のバイトサイズ。エントリーのサイズの和
++     entry #capacity   動的テーブルのバイト数の上限
++     entry #resize   バイト数の上限を設定し、収まるように最も古いエントリーを追い出す：動的テーブルサイズの更新
++     entry #add   動的テーブルの先頭にフィールドを挿入し、上限内に収まるよう最も古いものを追い出す
++         RFC が定めるとおり、テーブル全体より大きいフィールドはテーブルを空にし、それ自体は格納されない。
++     entry #lookup   1 から始まるインデックスのフィールド：1 から 61 は静的、それ以降は動的。範囲外なら `Unset`
++   entry #decode   ヘッダーブロックをフィールドにデコードし、ブロックの指示どおりに動的テーブルを更新する
++       完全なブロック（`HEADERS` フレームのペイロード、またはそれとその `CONTINUATION` をつなげたもの）を、順序どおりの `List[Hpack.Entry]` として読む。
++       インデックス付きのフィールドはテーブルを通じて解決され、増分インデックス付きのリテラルはテーブルに追加され、インデックスなしのリテラルとインデックスされないリテラルは追加されず、動的テーブルサイズの更新はテーブルの大きさを変える。
++       `Tactic[Http2.Error]` を必要とする：テーブルにないインデックスには `BadIndex`、28 ビットを超える整数には `BadInteger`、不正なハフマン文字列には `BadHuffman`、途中で切れたブロックには `Truncated`。
++       更新メソッドなので、コーデックは排他的に保持しなければならない。
++   entry #encode   フィールドをヘッダーブロックとしてエンコードする。それぞれ増分インデックス付きのリテラルにする
++       `#decode` の逆である。すべてのフィールドは増分インデックス付きのリテラルとして書かれ、その名前と値はそれぞれ短くなる場合はハフマン符号化され、そうでなければ生のままであり、デコーダーのテーブルと歩調が合うよう動的テーブルに追加される。
++       フィールドは与えられた順に書かれるので、疑似ヘッダーは最初に来なければならない。
++       更新メソッドなので、コーデックは排他的に保持しなければならない。
+
+@ 0 1 0 0b3700f9a0b9ff261ad0dcd36854c46b
++ entry .Huffman   HPACK のハフマン符号：ヘッダーブロックの文字列を圧縮・展開する
+
+% 1 1 0 01546cbe6059d69d0cdca62ecfe01ee4
+
+@ 0 3 0 016db7990a122974136e7603dc2efd29
++       RFC 7541 Appendix B の標準符号であり、256 個のバイト値と文字列終端の記号を対象とする。
++       `Hpack` は、生のバイト列より短くなるすべての名前と値にこれを使う。
++       プログラムがこれを直接必要とするのは、HPACK を手で話すときだけである。
+
+% 2 1 0 05ce86e3c14406600922ad56bec019ec
+
+% 3 1 0 0b72cc2c1dc81d15111ae1bbfe5ddbe9
+
+% 4 1 0 0f4b14d73b47e24a1d36139a685de7bd
+
+% 0 1 0 1848af7e17cf49e31e55c5eddfa4cd68
+
+% 0 1 0 08a0426c3cd861ad1fe491387d17c530
+
+% 0 1 0 18b7482142edd09b0f34ac566bafae54
+
+% 1 1 0 1005835a2a07afa119da4927f6a2625b
+
+% 1 1 0 1e2089ba5bcd3fd01692bcfe9e0a60d7
+
+@ 0 8 0 1fbf1115d1311eee1b3e7575a507e159
++   entry .encode   バイト列をハフマン符号化し、最後のバイトを 1 のビットでパディングする
++       最上位ビットが先であり、RFC が求めるとおり、最後の不完全なバイトは文字列終端の記号の先頭のビットでパディングされる。
++       失敗することはない。
++   entry .decode   ハフマン符号化された文字列をバイト列に戻す
++       ビットを符号表と照らし合わせながらたどり、末尾のパディングを受け入れて捨てる。
++       `Tactic[Http2.Error]` を必要とし、どの記号にもマッチしない 30 ビットを超える連続や、8 ビット以上であるかすべてが 1 ではないパディングに対しては、理由 `BadHuffman` で発生する。
++       デコーダーはビットごとに表を線形に走査するので、正しいが速くはない。
+
+@ 0 1 0 17575b073b63b32801d07d77a84c7fdf
++ entry .FrameReader   任意のチャンクで届くバイトストリームから、完全な HTTP/2 フレームを組み立て直す
+
+% 1 1 0 109651863bd47496110c901134987de8
+
+@ 0 6 0 0e1e2a3f9a85a0960ec6d76e84be5f5c
++       ソケットはネットワークが作るどんなチャンクでもバイト列を届け、一つのフレームがいくつかのチャンクにまたがることも、一つのチャンクを共有することもある。
++       `FrameReader(source)` は `Stream[Data] over Credit`（`Duplex` の `source`）の所有権を受け取り、読んだものをバッファーに入れ、フレームの 9 バイトのヘッダーとその宣言されたペイロードの両方が揃うまで補充する。したがって `#next` は一度に一つのデコード済みの `Frame` を返し、ストリームが正常に終わると `Unset` を返す。
++       これは接続の唯一のリーダーであり、パーサーと同じく、与えられたエンドポイントを消費する、状態を持つ排他的なケイパビリティである。
+
+% 2 1 0 05cc790041ce067a0d309367518b9ee7
+
+% 3 1 0 0cbba1a7e5b072ac1206a2fe5a87059f
+
+% 4 1 0 06d3ab37e3b5454e11c2d49a6e6985a0
+
+% 5 1 0 0ca74decccfe23861842966f02b4e0c7
+
+% 6 1 0 1e3c58a0c81c1b760860f6557c346acc
+
+% 0 1 0 1e7e2265e6a8c7cc10d8a8471834ca1d
+
+% 0 1 0 0aa7fb246c0a61400d7bf09c7b6365f8
+
+% 0 1 0 0f66db0995515a790764e5cf9246854f
+
+% 0 1 0 03e06732f622a1d404fa8c4e7f3e0533
+
+% 0 1 0 176d2a39e0b250b118513c783c1ae850
+
+% 0 1 0 13ffc759c4f27d2f12f8ca1168eb8a51
+
+% 0 1 0 09d036a6f5aea7a709ce49a3b8c7935b
+
+% 0 1 0 0ebdacf2c15da27900fd2efc9e54950c
+
+% 1 1 0 122f533747e988f4073fb33675fc6eb6
+
+@ 0 2 0 0a10e54d0b3f9f89108b205ea0db0859
++       サーバーは、最初の `#next` の前に `#expectPreface` でクライアントの 24 バイトの接続プリフェイスを読む。
++       スコープに `Buffering` がなければならず、それが読み込みの大きさを決める。
+
+% 0 1 0 00a28069eaf0e6d50220f32a4044dcbf
+
+% 1 1 0 08dcee32c0a7d4570fb574fde285cd51
+
+@ 0 14 0 06f9390c9b7be27b186e929137a8d42a
++   entry .apply   プルのエンドポイントの上のリーダー。そのエンドポイントを消費する：`FrameReader(duplex.source)`
++       エンドポイントを `consume` で受け取るので、呼び出し側は自分でそれを使うことを諦める。リーダーがその唯一の読み手になる。
++       スコープに `Buffering` を必要とする。
++       結果は `FrameReader^`、新しい排他的なケイパビリティである。
++   entry #expectPreface   最初のフレームの前に接続プリフェイスを消費して検査する
++       `reader.expectPreface(preface)` は、ちょうど `preface.length` バイトを読んで比較する。一致しないか、その途中でストリームが終わると、`Protocol` の理由 _bad connection preface_ を持つ `Http2.Error` を発生させる。
++       サーバーの役割での新しい接続の最初の読み込みであり、クライアントのプリフェイスは `PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n` である。
++       更新メソッドである。
++   entry #next   次の完全なフレーム。ストリームが正常に終われば `Unset`
++       フレームヘッダーとその宣言されたペイロードがバッファーに揃うまで、エンドポイントを補充しながらブロックし、それから `Http2.Frame.decode` でデコードする。
++       ヘッダーの後、ペイロードが揃う前にストリームが終わると、理由 `Truncated` を持つ `Http2.Error` を発生させる。フレームの間でストリームが終われば `Unset` である。
++       `Tactic[Http2.Error]` を必要とする。
++       更新メソッドである。
+
+@ 0 1 0 050896147a55bf910766a4479332d46a
++ entry .PseudoHeaders   `Http.Request`/`Http.Response` と HTTP/2 のヘッダーブロックの間を双方向に変換する
+
+% 1 1 0 097130b71a8384881866a260832d6679
+
+@ 0 6 0 051858d1c36516990e5b2d685f799014
++       HTTP/2 は、リクエスト行とステータス行を、小文字の通常のフィールドより前の疑似ヘッダーとして運ぶ。リクエストでは `:method`、`:scheme`、`:authority`、`:path`、レスポンスでは `:status` である。
++       `PseudoHeaders` は、それと telekinesis のトランスポートに依存しない `Http.Request` および `Http.Response` との橋渡しである。
++       `.request` と `.response` はクライアントの二つの方向であり、`.requestOf` と `.entries` はサーバーのものであり、それぞれ他方の逆である。
+
+% 2 1 0 18b871f1a6d42dec087c0b14475cfa09
+
+% 3 1 0 02ffac369b847db51237063880571b7f
+
+% 4 1 0 0a0164f5eba2ca680bbe68f583ada97c
+
+% 0 1 0 01ef950e0dcd95611a478de65118acb4
+
+% 0 1 0 036a6ba7e4583c6e0433209985fb5c87
+
+% 0 1 0 1d20373cd5376e5806d68edcee700f7e
+
+% 0 1 0 012749f809c4239a17449b8509102853
+
+% 1 1 0 143bf4975a45bed90adf1e99a09d2a16
+
+% 1 1 0 0049181bb9efd77a0261dfe003485e21
+
+% 1 1 0 0e9fcce47c1366ce065a59e109984c66
+
+% 2 1 0 1bc55ae5ad9c7be804b6ba86c78cde65
+
+@ 0 25 0 1b386ae443ddcee213475e1cab95c96e
++   entry .request   リクエストのヘッダーブロック：四つの疑似ヘッダーの後に、小文字にしたヘッダー
++       `PseudoHeaders.request(request, scheme, authority)`。
++       `Http.Request` はそのスキームも送り先のオーソリティも運ばないので、両方を与える。
++       `:method` はリクエストのメソッドから、`:scheme` は与えたとおり、`:authority` は与えたとおり（ブラウザは既定のポートを省略し、`localhost:443` ではなく `localhost` とする）、`:path` はリクエストのターゲットからとり、その後に名前を小文字にした各ヘッダーが続く。
++       `Http2.Connection#fetch` がこれを呼び出す。
++   entry .response   デコードしたレスポンスのブロックと本文のストリームからの `Http.Response`
++       `PseudoHeaders.response(headerBlock, body)`：`:status` が `Http.Status` を選び、他の疑似ヘッダーは取り除かれ、残りのフィールドがレスポンスのヘッダーになる。本文は、与えたバイトブロックのチェーンの上を流れる `Http.Body` である。
++       ブロックに `:status` がないか、既知のステータスコードでないものがあると、`Protocol` の理由 _missing :status_ を持つ `Http2.Error` を発生させる。
++   entry .requestOf   デコードしたリクエストのブロックと本文のスプリングからの `Http.Request`
++       `PseudoHeaders.requestOf(headerBlock, body)`：`:method` と `:path` はメソッドとターゲットになり、`:authority` はホストになり（HTTP/1.1 の `Host` ヘッダーと同じくポートは取り除かれる）、他の疑似ヘッダーは取り除かれ、残りのフィールドがリクエストのヘッダーになる。バージョンは 2.0 である。
++       本文は、リクエストが所有権を受け取る `Spring[Data]` であり、典型的にはストリームの受信 `DATA` フレームの上のものである。
++       `Tactic[Http2.Error]` を必要とし、`:authority`、`:path`、`:method` を欠くブロックや、`:authority` がホストでないブロックに対して `Protocol` の理由で発生する。
++       サーバーの役割での `.request` の逆である。
++   entry .entries   レスポンスのヘッダーブロック：`:status` が先頭で、その後に小文字にしたヘッダー。接続固有のものは除く
++       `PseudoHeaders.entries(response)`：ステータスコードの数字としての `:status` の後に、小文字にした各ヘッダーが続く。HTTP/2 が禁じているので、`connection`、`keep-alive`、`transfer-encoding`、`upgrade`、`proxy-connection` は取り除かれる。
++       サーバーの役割での `.response` の逆であり、`ServerConnection#sendHeaders` が送るブロックである。
+
+@ 0 1 0 0eb656afaa6563550a3ac566f6e16164
++ entry .FlowWindow   HTTP/2 のフロー制御の一つの送信ウィンドウ：相手が与えるバイトの予算。チャンクごとに取得し、`WINDOW_UPDATE` で補充する
+
+% 1 1 0 0493dfe638378ed20c4feb2e288d313a
+
+@ 0 7 0 07c59d87a9a7d9541de8025f3fa96dcc
++       接続またはストリームの送信側のクレジット（RFC 7540 §6.9）であり、送信するファイバーが引き出し、受信した `WINDOW_UPDATE` が補充するカウンターとして表す。
++       `#acquire` は少なくとも 1 バイトが使えるようになるまでブロックし、求めた量までを取るので、大きな本文はウィンドウが開くにつれて流れ出る。
++       `#release` はクレジットを加え、待っているものをすべて起こす。
++       待機はモニターではなくロックの条件で行うので、ブロックした仮想スレッドはそのキャリアを解放する。
++       `Http2.Connection` と `Http2.ServerConnection` は、接続ごとに一つ、ストリームごとに一つを持つ。プログラムがこのクラスを必要とするのは、自分でフロー制御をモデル化するときだけである。
+
+% 2 1 0 048de544c8c3f5211f5a779dd241f5cf
+
+% 3 1 0 144fb03220632ec60c3e93d10f34cf31
+
+% 4 1 0 095e300d44e027601f491a4481643a95
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 0 1 0 0e73e7682d74a82f06278b1faec7f952
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 1ba2d414a663113b1256ac95b5b9fd45
+
+% 0 1 0 0a515b4b3257a76d0fec86d1fd1f6cd7
+
+% 0 1 0 1a172dd5c639acfd06bafb076722b38a
+
+% 0 1 0 02b78276c4b4e69a09ec8a1c716c9d51
+
+% 0 1 0 0f8b443a0e9dcc820eb6dae162694589
+
+% 0 1 0 18f24e4e5bdefa850b7bde4ab7cdd94b
+
+% 0 1 0 0801dbd79ca3cef11a3f54de63eb53fe
+
+% 1 1 0 163c6600a37f43060e7db6667491f504
+
+@ 0 2 0 070a509aa3c5ebae1553aa4d3202fcca
++       このクラスは `telekinesis` パッケージで宣言されているが、`soundness` アンブレラにはエクスポートされていないので、`telekinesis.FlowWindow` として参照する。
+
+% 1 1 0 1c14b37ad8d26cc40714142406480e76
+
+@ 0 7 0 05032988c6f51acc008e27f4aa32aaed
++   entry #acquire   最大 `n` バイトのクレジットを取り、ウィンドウが空の間はブロックする
++       最大で `n` を、`n` が正なら少なくとも 1 バイトを返す。ウィンドウにあるものを `n` まで返すので、本文を送る呼び出し側はすべてを送り終えるまで繰り返す。
++       ウィンドウがゼロ以下の間は、`#release` が起こすまで、呼び出したファイバーをブロックする。
++   entry #release   ウィンドウにクレジットを加え、それを待っているすべてのファイバーを起こす
++       受信した `WINDOW_UPDATE` の効果である。
++       待っているものはすべて起こされ、それぞれ取れるものを取るので、空のウィンドウでパークしていた二つの送信者は、一度の解放の後でどちらも先に進む。
+
+@ 0 1 0 16e24ffd157fdc38002910d6588c3fb0
++ entry .UrlSessional   HTTP または HTTPS の URL のオリジンへの接続を一つ開き、スコープに貸し出す `Sessional` のインスタンス
+
+% 1 1 0 013b931e37a5052304418da925569036
+
+@ 0 6 0 0b973e3b18adba271e9dd0eff80e3453
++       `httpUrlSessional` の given を支えるクラスであり、その `Result` 型（接続をキャプチャする `Http.Session`）を正確に述べるために、無名ではなく名前が付けられている。
++       `url.session: session ?=> …` は URL のホストとポートに一度だけ接続し、その接続を `Http.Session` としてブロックに貸し出し、ブロックが終わると閉じる。`Http.Session` 上では `session.fetch(request)` がやり取りを行う。
++       スキームがセッションの形を決め、その形は存続期間中は固定される。
+
+@ 0 10 0 073a60e3df1b241719757022d7d17377
++       - `http` は、キープアライブされた一つの接続上の逐次的な HTTP/1.1 のセッションである。一度に一つのやり取りを行い、各レスポンスの本文は、次のレスポンスが始まるところでちょうど終わる。レスポンスを消費せずに残しても脱線しない（次のフェッチが前の本文の残りを排出して境界にたどり着く）が、`101 Switching Protocols` のレスポンスは拒否される。その本文はアップグレードしたプロトコルの終わりのないストリームになるからである。
++       - `https` は、ALPN で `h2`、次に `http/1.1` を提示して TLS で接続する。サーバーが `h2` を選べば、セッションは同じ逐次的な契約の背後で `Http2.Connection` の上に多重化され、各フェッチの本文はフェッチの中で排出されるので、レスポンスは単なる値である。そうでなければ逐次的な形になる。HTTP/2 と非同期の失敗は `Connect.Error` として報告される。
+
+@ 0 6 0 05bf94c7bd4210ea0543551393b67ef2
++       ブロックの結果はその外側で量化されるので、まだ接続を借りている値（接続からストリームするレスポンスの本文）は外に出られないが、メモ化したものは出られる。
++       このインスタンスは、`Online`、`Socket.Backend`、TCP の `Socket.Option`、`Buffering`、`Tls`、`Tactic[Connect.Error]` を必要とする。最後のものは、`http` や `https` 以外のスキームには理由 `Unknown` で、ホストのない URL には `Dns` で、接続できないときはソケットの理由（`Dns`、`Refused`、`Timeout`、`Ssl(Handshake)`）で発生する。
+
+% 0 1 0 00ac747d4d5d2ff60a50aa413c377494
+
+% 1 1 0 1bc29fa85d430fb102e6d71f4dffb165
+
+@ 0 3 0 1e22a42438df21fa18689186acac43dc
++   entry #Self   URL の型。`HttpUrl` の部分型
++   entry #Result   `Http.Session^`：ブロックが受け取るセッション
++   entry #session   URL のオリジンに接続し、セッションをブロックに貸し出し、その後で接続を閉じる
+
+@ 0 6 0 11d10d68ae488bc6079bce017e07af06
++ entry .httpUrlSessional   HTTP または HTTPS の URL 上で `url.session: session ?=> …` を使えるようにする given
++     任意の `url <: HttpUrl` のための `UrlSessional` であり、型がスキームで細分化された部分型である `url"https://…"` リテラルでも解決されるよう、上限で制約されている。
++     トップレベルの given なので、名前で import する（`import soundness.httpUrlSessional`）。スコープに `Online`、`Socket.Backend`（`socketBackends.javaBaseSockets` など）、TCP の `Socket.Option`、`Buffering`、`Tls`、`Tactic[Connect.Error]` を必要とする。
+
+% 2 1 0 1e5c7b745cbed5620aada4332611f8d6
+
+% 3 1 0 05c0963d14a506e2100c9454e2ac9989
+
+% 4 1 0 04044a9c2831c93116aec5e4fe11c369
+
+% 5 1 0 1df49339ebe408be0ee169f64eb6ad72
+
+% 0 1 0 18c899fbefe1b88d0c673febf0e51517
+
+% 0 1 0 14a68bffa6b708411ac2ce37360b6c83
+
+% 1 1 0 1dfe2ed28c40f21602d714af0442cecb
+
+% 1 1 0 035417faa82e78ab19b88c9192c6d9ba
+
+% 1 1 0 05ebbbd4e006f8141b264ef5108a2678
+
+% 0 1 0 03b4f7c37608d6c01029688612adb490
+
+% 0 1 0 1a835caa65b166990a2493b2981e50d0
+
+% 0 1 0 024567e881f4dd0f1313a9ec1163a9df
+
+% 1 1 0 14d5aaf61169d7d81902322fd2ade4b2
+
+% 1 1 0 1ea121fd2ea2a1be1b13ed25c481c50b
+
+% 1 1 0 00313a34bc35abba13ea1fbbf70abcbd
+
+@ 0 3 0 02d93917dc80840d01dd9b314522f634
++     `https` では、サーバーの ALPN が HTTP/2 を選べばセッションはそれを話し、そうでなければ HTTP/1.1 を話す。`http` では常にキープアライブ付きの HTTP/1.1 である。
++     `UrlSessional` が二つの形とエラーを説明している。

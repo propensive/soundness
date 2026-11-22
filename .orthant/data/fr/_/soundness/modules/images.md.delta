@@ -1,0 +1,301 @@
+orthant 2 language
+
+% 0 1 0 044a22d235970b2307ed86aeec6c9e56
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 5 0 077bc5d1fb1e4b840eaa4b595b2c0ca2
++ Les images matricielles, c'est-à-dire PNG, JPEG, WebP, GIF et BMP, se lisent en une valeur
++ `Raster` dont le type porte le format, tout comme l'[audio](audio.md) porte le sien. Un
++ `Raster in Png` et un `Raster in Jpeg` sont des types distincts, et convertir l'un en l'autre
++ tient en une méthode. L'image elle-même est une grille [immuable] de pixels. Chaque pixel se
++ lit comme une [couleur](colors.md) typée, et le recadrage, le retournement et la rotation
++ produisent de nouvelles images.
+
+@ 0 4 0 0d726b9a8336fd0b1da46583037ef630
++ Une image matricielle peut aussi porter dans son type sa *disposition des pixels* : le nombre de
++ bits qu'occupe chaque canal, et dans quel ordre. Un pixel se lit alors par un seul décalage et
++ un seul masque, calculés pendant la compilation du code plutôt que choisis
++ [à l'exécution][exécution]. Chaque codec est implémenté directement, si bien que les images se
++ lisent et s'écrivent sur toutes les plateformes, et pas seulement sur la JVM.
+
+@ 0 1 0 166495a9885742651465f29f60b293a3
++ ### Des images matricielles
+
+@ 0 5 0 1b84a13f0e038412059c6363b5fa32a8
++ L'API d'imagerie de la JVM lit n'importe quel format en une `BufferedImage` mutable et oublie
++ de quel format il s'agissait ; elle laisse les choix d'encodage et les formats de pixels à des
++ appels pilotés par des drapeaux. Pour les tâches courantes, qui sont de lire une image, de
++ demander sa taille, d'examiner ses pixels, de convertir son format et de la réécrire, cette
++ machinerie relève surtout du cérémonial, et la mutabilité rend une image dangereuse à partager.
+
+@ 0 6 0 1170825f975a10f109cee12472ecaf0d
++ Un `Raster` est immuable et connaît son format. La lecture nomme le format attendu : un JPEG
++ qui se fait passer pour un PNG est donc une erreur typée, et non un null. Les pixels sont
++ renvoyés sous forme de couleurs, prêts pour les opérations sur les couleurs. L'écriture est la
++ même lecture polymorphe en octets qu'utilisent tous les autres formats. Une image matricielle
++ dont le format et le modèle de couleur sont dans le type suit le principe de la
++ [sûreté par construction](../../philosophy/safety-by-construction.md) : une conversion
++ impossible ne peut pas être écrite.
+
+@ 0 2 0 01361c3a432fd91f1f19d266550f6358
++ Tout provient du package `soundness`. Les autres imports choisissent une [stratégie] pour les
++ erreurs, et permettent aux exemples d'afficher leurs résultats :
+
+% 2 1 0 0c5552414e12bc00093eee7a70f990a3
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 08c941c3efc87d830104e747fd7bc7b2
++ ### Lecture
+
+@ 0 3 0 10e075df8c545e5b1b62058a6a9f481d
++ Une source d'octets se lit comme une image matricielle d'un format nommé. Ces octets forment un
++ PNG complet, une image de deux pixels sur un dont le pixel de gauche est rouge et celui de
++ droite bleu. Elle est assez petite pour être écrite en entier :
+
+% 2 1 0 1686f059508ba9950ef8a38d228d5bff
+
+% 0 1 0 0fb0f3f021c9ce2e19188b9020933aec
+
+% 0 1 0 172631f017a8c7a21fa43fea4afef6ec
+
+% 0 1 0 020697cb74c26979102e296bb60a522e
+
+% 1 1 0 1e96c1662262f253130d4e1881e4c9e8
+
+% 3 1 0 05ec533984b972561a2bfc5f99f587f1
+
+% 4 1 0 0afe6f0d65e800cd0d88af83ab2c1f76
+
+% 5 1 0 1f2025c43b63eaef0749b101d21f7f6f
+
+% 0 1 0 164f161805f44601008a3b471339ec3c
+
+% 0 1 0 12bdd82adee4200e1ed7a785b46d2814
+
+% 0 1 0 003d0154676ec5051e7c06ccd2abea13
+
+% 1 1 0 06891cc8b0ed88fa132fb9ab93fec9ab
+
+@ 0 2 0 192c7fbac0a66dcc19656b5af84a415e
++ Des octets qui ne sont pas dans le format nommé lèvent une `Raster.Error`, qui nomme le format
++ en échec :
+
+% 2 1 0 1a7a2e7cb29a59050b23b86924578eb4
+
+% 3 1 0 1b5e87a648477b840beb2e4a2efb5a7f
+
+% 1 1 0 175051f738f725751d0e1d27d9b0cfb2
+
+% 2 1 0 139c2fbdca539ada047e80c6f060b41c
+
+% 0 1 0 14960d490a2523fe02534ae2a934bfea
+
+% 1 1 0 137dfe7a2a140d91120b4a4b00751f00
+
+% 0 1 0 02857cb7bda522b908304922c0b2fc05
+
+@ 0 2 0 114cd7d778a1c6f10685d1f155b8cabf
++ Appliquer une image à des coordonnées lit un pixel sous la forme d'un `Chroma`, une couleur à
++ canaux d'un octet, ce qui relie l'image à toute la machinerie des [couleurs](colors.md) :
+
+% 2 1 0 0eb34a20cd6a65a500a9b596f45c30c5
+
+% 3 1 0 0dcfcb7702590bbb048d9855a1ea71c8
+
+% 4 1 0 07b23677773dc08200687ef6711adb0d
+
+% 0 1 0 180fe659d3cc81e511d66419e3c8a9d5
+
+% 0 1 0 1ff99f1297985de812f8a6e43cd55f9b
+
+% 0 1 0 161d064053d789c70ef0cd4b474d059c
+
+% 1 1 0 0b6bc1105d3210801ea7de1f9f24281a
+
+@ 0 2 0 0de5f23faaf45f191c06eb76e54c6136
++ Une image se *construit* aussi à partir d'une fonction de pixels ; c'est ainsi que l'on produit
++ des images de test et des graphismes générés :
+
+% 2 1 0 0259ddbfda6392421bffe6369afbfda0
+
+% 0 1 0 09ef49234e995051169fe7d39ea87c6d
+
+% 1 1 0 1cada717bf25a168147d39f4c67ec5ca
+
+% 3 1 0 174b05db40c844e31316f1acb01e83d5
+
+% 4 1 0 16df5a8b1ba2623c002792ce695c1770
+
+% 5 1 0 0a990654170636190e747c58a734a23a
+
+% 0 1 0 1106a48757809bc71fe660cbc0315b62
+
+% 0 1 0 0a7c4f7a5255b4930425ef645941c70c
+
+% 1 1 0 10757dc2b8fcc33d104276e67c7528fb
+
+@ 0 1 0 0dc71becd23618b9068d43ebcd09bb1e
++ ### Dispositions des pixels
+
+@ 0 4 0 1ac815355262022a03bbafb6ae5101a5
++ Une disposition est un tuple de types de canaux, le plus significatif en premier.
++ `(Red[10], Green[12], Blue[10])` correspond exactement à l'empaquetage d'un pixel RVB de 32 bits,
++ et `Rgba` nomme le pixel familier à huit bits par canal. Une image matricielle construite avec
++ une disposition offre un accès typé, et `pixel` se compile en un seul décalage et un seul masque
++ constants :
+
+% 2 1 0 0ec122e8ba734edf1f835d08e48ad586
+
+% 0 1 0 18574cdd06cb756e1c5820b3d65a3f27
+
+% 0 1 0 0958ec7f36477c7b197e79b3e56f0c07
+
+% 1 1 0 1d28da0a275d50680342080a726786de
+
+% 3 1 0 05ef9d0bc37a990c04eba3631b2508f7
+
+% 4 1 0 1ef2ef665bf6b9fc1890e0b35f6654ec
+
+% 5 1 0 00a4d400ea1d02e902e5ef1e400f4b61
+
+% 0 1 0 06306a1500955a5d09e6d3d6a6a06643
+
+% 0 1 0 0e88a200d38f5df4187ea23054fd15d8
+
+% 1 1 0 0222347c66437ec31565a0a37fac0085
+
+@ 0 4 0 0807a55d82041e94007d42600127a034
++ `repack` convertit d'une disposition à l'autre. Elle ajoute un canal alpha entièrement opaque
++ lorsque la cible en possède un, et met les canaux à l'échelle lorsque leurs profondeurs
++ diffèrent. Réempaqueter vers la disposition qu'une image matricielle a déjà renvoie la même
++ image. Un `descriptor` indique la disposition à l'exécution, pour les opérations qui doivent
++ fonctionner quelle qu'elle soit.
+
+@ 0 1 0 0e06ff7d7903c7d903c43c11b1420ad5
++ ### Canevas
+
+@ 0 4 0 156e0d412ccd0f071029a7fc75d634d8
++ Un `Raster` est immuable, et en générer un pixel par pixel avec `Raster(w, h)(…)` n'est pas
++ toujours la forme que souhaite un algorithme de dessin. Ouvrir une image matricielle comme
++ `Canvas` donne plutôt un accès délimité à son tampon. Tout canevas peut être lu. Seul un canevas
++ ouvert avec l'autorisation `Write` peut être écrit, et l'écriture le modifie en place :
+
+% 2 1 0 0c027b01e8960e2117a474c632a4eacc
+
+% 0 1 0 0d8a65516c9461841cd3697657cd4179
+
+% 0 1 0 0d032ff46f88eece13f7a09d5f8c8359
+
+% 0 1 0 05d47aae01ca3d2d1de169d871c26991
+
+% 1 1 0 04c0a21407294c5f10c70cfab09bfdee
+
+@ 0 1 0 04ae1850305aa1b202ce50fdf46c6691
++ `snapshot` en prend une copie indépendante, de sorte qu'une image dérivée n'est pas affectée par
++ les écritures ultérieures.
+
+@ 0 1 0 184e7137d957cc821fa3901d305490bb
++ ### Transformations
+
+@ 0 1 0 10cad7c73995778c1150cfeecc4e9a74
++ Le recadrage, le retournement et la rotation par quart de tour produisent chacun une nouvelle
++ image :
+
+% 2 1 0 0692389af565cbb61b98878c8b06d09a
+
+% 3 1 0 1426d55d85af3e5a0b36ead601d8598d
+
+% 4 1 0 196cf77f4405010d14127571b9c24266
+
+% 0 1 0 09b02e0f6b6ffc51191046adb2a79de1
+
+% 0 1 0 0fa80148fca649d3197e40d4e62034de
+
+% 0 1 0 120b7980aab8933516ecb838e3f55b9a
+
+% 1 1 0 1466a930e6deaae01a018e23349252c8
+
+@ 0 2 0 01a73849ba13ff8e1c4bcee4240cebfa
++ L'argument de `rotate` n'admet que `90`, `180` ou `270`. Une rotation qui exigerait un
++ rééchantillonnage n'est pas approximée en silence :
+
+% 2 1 0 03c89e0f2d3a28e206446f364b454f1b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 0e92ecaeedeffbe11f2998ef28aa46b9
+
+% 2 1 0 0e12389ea3123ad90f1b569ab59b25ed
+
+% 0 1 0 19ec60d9bf1166a40e8544e9f19d7e02
+
+% 1 1 0 09f24a3aba1d93e606807dfef1623f5e
+
+@ 0 1 0 14edd77c34b8b4230597962106a6c9ed
++ ### Conversion et écriture
+
+@ 0 2 0 085513b1de8bbebc01cb454844073800
++ `to` exprime une image dans un autre format, et la lire comme `Data` produit les octets encodés,
++ de façon symétrique à la lecture :
+
+% 2 1 0 02076b22856fc82e03a1b29d58d1b2c9
+
+% 3 1 0 1a8304f6e4d396511ac918292fcc7f24
+
+% 4 1 0 147cfad26457c85904ea107157c48613
+
+% 0 1 0 1efb0c468ca6fb071f702efb96e7f5cc
+
+% 0 1 0 04a99a3fdc5476111c1f9cba4dbd4460
+
+% 0 1 0 0b9d543983a6651e17e61775e1862b1b
+
+% 1 1 0 1334cd415e7751481c06f6ab2abcdf13
+
+@ 0 1 0 093a82d39a14aeb1075dee9b08a4acd7
++ Les codecs sont écrits directement d'après les formats :
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 9 0 1d30cd30f1b599b60afa701b5fa45199
++ column  Format
++ column  Lecture
++ column  Écriture
++ column  Sur la JVM
++ row  PNG  tous les types de couleur, profondeurs de 1 à 16 bits, les cinq filtres, entrelacement Adam7  couleurs vraies 8 bits, avec alpha lorsque la disposition en a un  `javax.imageio`
++ row  JPEG  baseline et progressif, niveaux de gris, YCbCr et CMYK  baseline  `javax.imageio`
++ row  WebP  VP8 avec perte, VP8L sans perte et VP8X étendu  VP8L sans perte  le codec pur
++ row  GIF  GIF87a et GIF89a, première image seulement  une image GIF89a d'au plus 256 couleurs  `javax.imageio`
++ row  BMP  de 1 à 32 bits, `BI_RGB` ou `BI_BITFIELDS`, sans encodage par plages  `BI_RGB` 24 bits  `javax.imageio`
+
+% 1 1 0 0b4c4237a8fd97a71ab942d6649fc8f1
+
+@ 0 3 0 126c8b1d07f8166a1283a0c1c8b9d3ad
++ Une jonction de backends choisit entre chaque codec et la bibliothèque d'imagerie propre à la
++ plateforme, lorsqu'il en existe une, de sorte que le même code convertit une image sur la JVM,
++ dans un navigateur et à l'intérieur d'un composant WebAssembly.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 7 0 083f122ec8afef5a1f372b5f0b79cd6f
++ - [Couleurs](colors.md) décrit `Chroma`, `Srgb` et les opérations sur la couleur d'un pixel.
++ - [Audio](audio.md) porte son format dans son type de la même manière.
++ - [Données binaires](binary-data.md) décrit `hex"…"` et les `Data` que sont les images encodées.
++ - [SVG](svg.md) décrit les graphismes vectoriels, qui n'ont pas de pixels avant d'être rendus.
++ - [Types de médias](media-types.md) nomme les formats.
++ - [Automatisation web](web-automation.md) capture une copie d'écran sous la forme d'un
++   `Raster in Png`.
++ - [Système de fichiers](filesystem.md) décrit les fichiers depuis lesquels les images sont lues
++   et dans lesquels elles sont écrites.

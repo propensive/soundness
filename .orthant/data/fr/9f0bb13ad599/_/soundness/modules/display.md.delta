@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 8 0 1431c98063de65a00a71fea57e055f77
++ column  Essai
++ column  Rendu
++ row  1  l'instance d'`Inspectable` propre au type
++ row  2  son instance d'`Encodable in Text`, entre `⸤` et `⸥`
++ row  3  son instance de `Showable`, entre `⸢` et `⸣`
++ row  4  pour un `Optional`, la valeur qu'il contient, entre `｢` et `｣`, ou `○` s'il n'est pas défini
++ row  5  un rendu structurel dérivé de sa forme
++ row  6  un rendu de dernier recours, son `toString` entre `“` et `”`
+
+@ 0 2 0 00ab82423b62806a0907786a980e61f6
++ Les crochets signalent un rendu emprunté à une autre classe de types, ou à `toString`, et qui
++ n'est pas celui du type lui-même.

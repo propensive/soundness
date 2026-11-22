@@ -1,0 +1,217 @@
+orthant 2 language
+
+@ 0 1 0 1ebf47f094f5f701087954ccc4643d22
++ # Gestione degli errori
+
+@ 0 8 0 09c47799c4ecc6f8198164f24185720f
++ Soundness gestisce gli errori in modo generico, separando il codice che può fallire dalla
++ decisione su che cosa fare quando fallisce. Un'operazione dichiara nel suo tipo gli errori che può
++ sollevare, e il chiamante sceglie una strategia (lanciare un'eccezione, ripiegare su un valore
++ predefinito, accumulare più fallimenti, o trattare il fallimento come un esito controllato) senza
++ che l'operazione debba sapere quale. Questo rende il fallimento visibile nei tipi, con la
++ disciplina delle eccezioni controllate ma senza nulla della loro rigidità, e permette di usare lo
++ stesso codice fallibile in modo non sicuro durante la prototipazione e di renderlo poi del tutto
++ sicuro, senza riscriverlo. Gli errori stessi sono [valori espressivi e immutabili](expressive-errors.md).
+
+@ 0 1 0 00cb526381e8a5970208492ff7fe95c0
++ ## La separazione
+
+@ 0 2 0 1148fd05eaa8260a1ae1969b39e11fa4
++ Un'operazione dice nel suo tipo di ritorno con che cosa può fallire, e non dice nulla su che cosa
++ debba accadere:
+
+% 2 1 0 12b07fb7d84138a502f616978476d183
+
+% 3 1 0 0242a66c505f41c01c0ae74ebe485269
+
+% 4 1 0 1a23d24b4fa9f07e15e073581e0140be
+
+% 0 1 0 0e3aa5c3f59330cb0eab1ef7d39c1c8a
+
+% 1 1 0 0c488c3dcdb90b9701ca3f5353dab83d
+
+@ 0 2 0 1bbeb3da33e8491101ece20ecbe60e8a
++ Il chiamante fornisce la risposta, come valore contestuale. Lo stesso corpo serve ogni risposta,
++ perché il corpo non ne ha mai menzionata una:
+
+% 2 1 0 0be5cf75ce2f94581603fb39bfb32697
+
+% 3 1 0 175cc363984aa9630857dc2712792028
+
+% 0 1 0 119f8c4a73adaffb16bd4db551586ea2
+
+% 1 1 0 13cbea48abfa93bc126fc63d722bbf97
+
+% 0 1 0 121bae0c52ca87eb19284c14bd006e95
+
+% 0 1 0 0aa3c664bce8306c115d256e17bd8d2e
+
+% 1 1 0 0f5d4cc5cee9e1b619d4c38605ec877b
+
+% 0 1 0 0349945bb2a673f50e71d95f9aee16ac
+
+% 0 1 0 0d3e99fe3af1e452123d36bb87212c0b
+
+% 1 1 0 193cbf8f11327fea018bea41bdb69975
+
+% 0 1 0 04c553896e89e9d31bead2236349d8fd
+
+% 0 1 0 085c67d823f2074b051d5bcd2d4029cd
+
+% 0 1 0 185f50e245cb7f5200e3a271b5a707c6
+
+% 0 1 0 1bb6afcda6024d98027d069a09f7a3ea
+
+% 0 1 0 1c55fbbcf6318633118756417fe99410
+
+% 1 1 0 181226f75334611a06f7fcb33a4368f4
+
+% 0 1 0 1d26d3d14531d80317e7d8bb10909740
+
+% 0 1 0 0b1007d1922153cd1bd3947649ff8b76
+
+% 0 1 0 0a4e58e7078072961e062e5be5cf6531
+
+% 1 1 0 07fb759fa887a1fe0ec1c7c55a3b8f25
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 2 0 0060a84573d4d9740b15c760bfc42979
++ Nulla in `loadConfiguration` cambia da una versione all'altra. È la proprietà per cui esiste
++ l'intero design.
+
+@ 0 1 0 1f98ed72fc4e7f121f456ff2497dfe5d
++ ## Perché non le alternative
+
+@ 0 3 0 0a2a44f5894369dc0a6e43b810a7a4d7
++ Le **eccezioni non controllate** sono invisibili. Una firma non dice nulla su che cosa potrebbe
++ essere lanciato, così un chiamante viene a sapere di un fallimento quando accade, in produzione,
++ senza aver scritto alcun handler perché non c'era nulla a suggerirne uno.
+
+@ 0 4 0 1fc92b33e4b6f78f0bfbbe9861ae7b34
++ Le **eccezioni controllate di Java** sono visibili e rigide. Il tipo di errore è saldato in ogni
++ firma lungo la catena di chiamate, così aggiungere un modo di fallire a una funzione foglia
++ modifica ogni chiamante tra essa e l'handler; e poiché il compilatore esige una risposta a ogni
++ passo, la spinta va verso `catch (Exception e) {}`, che è peggio di entrambe.
+
+@ 0 4 0 09d606af659369a71aa0441cea646173
++ **`Either` e i suoi parenti** sono visibili e onesti, ma cambiano la *forma* del codice: una
++ chiamata fallibile non può stare dentro un elenco di argomenti o una stringa interpolata, e
++ combinare il fallimento con l'asincronia significa impilare trasformatori. Vedi
++ [stile diretto](direct-style.md) per il motivo per cui questo conta più di quanto sembri a prima
++ vista.
+
+@ 0 3 0 0a6f3fe12601c10b085fbfe886ed8107
++ L'impostazione di Soundness prende la visibilità dalla tradizione delle eccezioni controllate, la
++ possibilità di scegliere una risposta da quella funzionale, e la forma del codice ordinario da
++ nessuna delle due.
+
+@ 0 1 0 05e8ca3a7d43a36700a7440504a00302
++ ## Sollevare, interrompere, e la differenza
+
+@ 0 1 0 17327137ae2ea5ac1314cef9190e3686
++ Due verbi, e la distinzione è ciò che rende possibile l'accumulo.
+
+@ 0 3 0 12d572857919aa37155d90f7c97d5bf9
++ `abort` interrompe il calcolo: non c'è alcun valore con cui proseguire. `raise` registra l'errore e
++ prosegue con un ripiego fornito, ed è questo che permette a un passaggio di convalida di
++ verificare ogni campo invece di fermarsi al primo:
+
+% 2 1 0 15aed330842492b405bf458c4aead22f
+
+% 3 1 0 0127a234a743ac720c3274de67916c9d
+
+% 4 1 0 0985b43bcde9b04214e1c01b2aab79d2
+
+% 0 1 0 1e8c6e8b5643336c0ccfda48fd2cda45
+
+% 0 1 0 1eed1b761c43706a1847f0ab62eddbb1
+
+% 0 1 0 0a14e9f16667637a18acdcbc5b82f0fc
+
+% 0 1 0 08d9b682765e4d240672058e7c7714dd
+
+% 1 1 0 144db4955471f0ce1768ab47ff6729d7
+
+@ 0 3 0 1d6c8609ba894e8912ead6c9d8927482
++ Sotto una strategia cumulativa gli errori registrati vengono raccolti; sotto una che lancia
++ eccezioni il primo lancia comunque. L'operazione dichiara quale dei due intende, e la strategia
++ decide che cosa ne sarà.
+
+@ 0 1 0 0b667871655188a006e473e10ead7a8e
++ ## Venture e guardie
+
+@ 0 3 0 08b9cf0aa7c7bfac1d6185f04277b8f5
++ Un valore di ripiego prosegue il suo corso, e il codice a valle non può distinguerlo da uno reale:
++ un controllo di coerenza alimentato con un segnaposto solleva spuri errori a *cascata*. `venture`
++ e `guard` rendono invece esplicita la struttura delle dipendenze:
+
+% 2 1 0 04afedfe3bfee5f00097a93833e1d4a0
+
+% 3 1 0 08915d4a2baa22b20f39585d5d0bc46d
+
+% 4 1 0 19778742ef86d702191210d1b3d25fa5
+
+% 0 1 0 0a5a850ca3e5033916ad5e0a00715c5b
+
+% 0 1 0 1a8c71726a457a6d172ea47400ae705b
+
+% 0 1 0 009d5c500a4803f11ff81b6c0a218822
+
+% 0 1 0 14f0d8cb512285870a4d148cc3142eaa
+
+% 0 1 0 01e3b2391a94e06019150aa5233121b4
+
+% 0 1 0 069e893d58e51796066d294472d24a05
+
+% 1 1 0 18d2c2d9dd64d61f0dac11ed25bfbd15
+
+@ 0 8 0 1f122d58106fe8e90c2694f64d6dafe5
++ Una `venture` viene valutata immediatamente (i suoi errori si accumulano come tutti gli altri), ma
++ ricorda se qualcosa è andato storto. Forzare una venture fallita con `name()` salta la venture o il
++ blocco `guard` che la racchiude invece di produrre un valore, così il controllo di coerenza sopra
++ non viene mai eseguito su dati spazzatura; e poiché `age` è stato valutato in modo anticipato alla
++ sua dichiarazione, i suoi errori sono stati raccolti anche se `name` è fallito per primo. `guard`
++ esegue il suo blocco solo quando finora non è stato registrato alcun errore. Sotto una strategia
++ fail-fast entrambi i costrutti scompaiono: un errore sfugge già alla venture stessa, e `guard` è
++ l'identità; lo stesso corpo serve ogni strategia, ed è proprio questo il punto.
+
+@ 0 1 0 0aeb6504ccf475fa1e2ea62598379d14
++ ## Rendere totale la risposta
+
+@ 0 4 0 1f517356c1ad56ae1b0d3dc2154b0187
++ `safely` e `unsafely` sono le due vie di fuga, e sono volutamente vistose. `unsafely` assolve
++ l'obbligo senza gestirlo: è legittimo al confine di un programma, o in un test che ha già stabilito
++ che il valore va bene, ed è un marcatore ricercabile dei punti in cui la garanzia si ferma.
+
+@ 0 3 0 1a1ba41144fa6ce10575029dcd7b6d58
++ La progressione prevista è che un prototipo usi `throwUnsafely` ovunque, e che i punti che contano
++ vengano convertiti in una gestione vera man mano che il programma si consolida, senza alcuna
++ modifica al codice fallibile stesso, perché non è mai dipeso da quale fosse nell'ambito.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Quanto costa
+
+@ 0 5 0 1161acb6ba22c5f50c4069f97ba4c5a9
++ **Deve esserci una capability nell'ambito.** Un metodo che chiama codice fallibile deve o gestire
++ il fallimento o dichiarare che anch'esso può fallire. Quella propagazione è il meccanismo che
++ funziona correttamente, ma significa che aggiungere un modo di fallire a una funzione molto usata
++ tocca davvero le funzioni che la chiamano: lo stesso costo delle eccezioni controllate, senza la
++ rigidità di non poter scegliere la risposta.
+
+@ 0 4 0 197a43a6da1094ad04fc3e08c97fda91
++ **L'inferenza ha più da fare.** Le clausole `raises` si compongono attraverso meccanismi a livello
++ di tipi, e quando il compilatore non riesce a capire quale tipo di errore si intende, il messaggio
++ riguarda una ricerca di impliciti anziché l'errore. Importare `explainMissingContext` lo trasforma
++ in una diagnosi che nomina gli import di strategia che lo soddisferebbero.
+
+@ 0 4 0 055ebc2b3f7bb9781cb363831a64f859
++ **C'è un vocabolario da imparare.** `raise`, `abort`, `safely`, `unsafely`, `recover`,
++ `mitigate`, `accrue`, `capture`, `attempt`, `venture`, `guard`: undici parole dove
++ `try`/`catch` ne ha due. Ciascuna si guadagna il suo posto, ma la curva di apprendimento è reale e
++ concentrata all'inizio.
+
+@ 0 3 0 1573b921d2e65c811b84e65ac5212c4e
++ Vedi [errori espressivi](expressive-errors.md) per ciò che un valore di errore porta con sé, e
++ [firme oneste](honest-signatures.md) per il principio più ampio secondo cui una firma dichiara i
++ suoi veri requisiti.

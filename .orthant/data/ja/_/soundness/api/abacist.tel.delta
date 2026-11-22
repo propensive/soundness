@@ -1,0 +1,480 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1909987006a8a2591f638ca4e1537639
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09cad6f900faa2e70f5a57cba0852b26
++ info   混合基数の量：時、分、秒のような、単位の連なりのそれぞれの単位の整数個として数える量
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0be74d58ea8e05060e8af37d01b4064b
++     _Abacist_ は、正確だが十進ではない倍数で結ばれた単位の*連なり*で数える値（時・分・秒、ストーン・ポンド・オンス、フィート・インチ）を `Quanta` として表す。
++     `Quanta` はそれぞれの単位の整数個であり、単位の間の繰り上がりは算術が行う。
++     型が連なりを示す。最小の単位を型パラメーターとし、それより大きい単位を `in` の後に置く。単位は quantitative の本物の単位なので、単位の間の比は分かっており、`Quanta` は通常の `Quantity` との間で相互に変換できる。
+
+% 1 1 0 0ba0fee1a16234d00c1a6816a5a94599
+
+% 2 1 0 18dd3941b525cf58188c7256b9e49b4c
+
+% 0 1 0 1059d9a7456919e10ce0f3320013e0d8
+
+% 0 1 0 0a3bc52ac0771df40ed6a91bd6c97a09
+
+% 0 1 0 0d96d4be8e92564b1ea487b4b81979ac
+
+% 0 1 0 0fe43f528118fca403b5a0ca993ea478
+
+% 0 1 0 0df82270baebe27805e37cf8220ce52b
+
+% 0 1 0 01df819941f809d403f00daa8f475f8e
+
+% 1 1 0 1f246bb32a606f2d0a2a0eca97a7159c
+
+@ 0 7 0 1ac03345c2cb1a381b78997f324d9d6b
++     値は話すときと同じく最大の単位から書き、その成分は単位を名指しして読み戻す。
++     実行時には `Quanta` は一つの `Long` であり、値全体を最小の単位で数えたものなので、その算術は整数の算術である。連なりは型の中にしか存在せず、値を読み書きするマクロは、コードのコンパイル時に計算された定数で除算と乗算を行う。
++     連なりは使われるときに検査される。すべての単位は同じ次元でなければならず、リテラルの成分は負でなく、次の単位を作るのに必要なその単位の個数より小さくなければならない。
+
+@ 0 2 0 06d32b37eeec5c651b9f5830036aae1a
++     `TimeSeconds` と `TimeMinutes` は、誰もが必要とする二つの時間の連なりに名前を付ける。
++     `UnitsNames` の given は連なりの表示を変え、身長を `5' 9"` と読めるようにする。
+
+@ 0 5 0 198c0b88876de52606322ab084813f8f
++     ライブラリには、すべてのプラットフォームに共通の一つのソースセット `abacist.core` があり、単位のために quantitative に依存する。
++     すべては `soundness` アンブレラにエクスポートされる。
++     `Quanta` 型は `abacist.protointernal` で宣言され、その拡張メソッドはインポートなしにすべての `Quanta` に適用される。マクロは `abacist.internal` にある。どちらも直接使うためのものではない。
+
+% 0 1 0 0aa62984af7aa65a06581db16bf55d5c
+
+% 0 1 0 0e543c29d030b7821bc25f0a633aa6fe
+
+% 0 1 0 02a4231196def5ab1962803fb6fdf1c5
+
+% 0 1 0 0e5ec0329a63b48c0314a6b56e4072d7
+
+@ 0 1 0 087498908f0a5d2f0ecb32cf3d447d78
++ entry .Quanta   単位の連なりで表した値で、それぞれの単位の整数個からなる：フィートとインチ、時と分
+
+% 1 1 0 0d82ba97939c6aa9037248581f804907
+
+@ 0 5 0 083864935414631e00fbb99d569b9ffd
++       `Quanta[Base] in (Unit1, Unit2, …)` は、一つの次元の単位の連なりで数える値である。`Base` が最小の単位で、続く単位はそれぞれ前のものより大きい。
++       `in` の後の連なりはその `Form` であり、単位のタプルか単一の単位である。`in` のない `Quanta[Base]` は基本単位だけの個数である。
++       すべての単位は、`Inches[1]` や `Hours[1]` のような、1 乗の quantitative の単位である。
+
+% 2 1 0 114a10184386708b0edc79bc6b0af210
+
+% 3 1 0 02901fc5171f9e340105ff49f77a9984
+
+% 5 1 0 1cd644b56823a6d01f3098fc48e5df54
+
+% 0 1 0 1e60b11df2246a1d0677338c90f11dc7
+
+% 0 1 0 0130f961094702eb09d37b0c21a0b51d
+
+% 0 1 0 1c4a121a6eee4ec2046f569b5a006543
+
+% 0 1 0 0a9cfd30c71533f81d351943a3a4da09
+
+% 0 1 0 19d2e4bf5de621df1b429846352a80d2
+
+% 0 1 0 05b427a949acf75a15ef1ba5ed6d355c
+
+% 1 1 0 0f03082bfd9d7a0613f81eef6e0e3944
+
+@ 0 6 0 1632aca0ec2e40191d8a7098d07ce03d
++       `Quanta(…)` は成分を大きいものから順に取り、連なりを期待される型から得るので、値には宣言された型か、`(Quanta(5, 6): Weight)` のような型注釈が必要である。成分が単位より少なければ、大きい方の単位がゼロで埋められる。
++       負のリテラル成分や、一つ上の単位に含まれるその単位の個数以上のリテラル成分（`Height` としての `Quanta(5, 12)`）はコンパイルエラーになる。最大の単位には上限がない。
++       連なりに別の次元の単位があればコンパイルエラーであり、基本単位が単位でない場合も同様である。
+
+@ 0 2 0 0d551c5fcab06c271363ee2a2218f71d
++       実行時には `Quanta` は一つの `Long` であり、値全体を基本単位で表したもので、`long` がそれを明かす。
++       そのため算術は自動的に繰り上がる。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0f3893c0d7b6d3831eadc5b059c6ee36
++         label 12 ポンド 9 オンス
+
+% 1 1 0 0df95470bcd4cf2914d50fe3599a6482
+
+% 2 1 0 1bd32b77f4bf4ed713a0d9ad1fc38866
+
+% 4 1 0 0fd99e3dddc154390e33c8a4bf45ae75
+
+% 0 1 0 1fb2f66c2535336d18e4e2ba5e4901bc
+
+% 0 1 0 012ed6338855b9310b1c16e16281c904
+
+% 1 1 0 0852ee9a6a54b0fb0691e97278830142
+
+@ 0 1 0 1780c7dd58ad499c1e3439bdb626b89f
++         label 7 オンスを足すとポンドに繰り上がる
+
+% 1 1 0 1f7642f1770896f10542e4b4fa5ace25
+
+% 2 1 0 1192790bbd9f811014f7099dc1da77ad
+
+% 4 1 0 102bdd0ef36e7223181df96604683155
+
+% 0 1 0 0dcfcfde8eda7ea30071e5c1b8984a2a
+
+% 0 1 0 1679f8ed9bd6a4f90cc83f26e0535a3a
+
+% 1 1 0 0d211dbea87fe0050638c2237971b410
+
+@ 0 1 0 0c441e3ab8cde2290f7972bc613ff7d9
++         label さらに 2 ポンドを足すとストーンに繰り上がる
+
+% 1 1 0 0f5583a2f1a32dec021119ffef611dc6
+
+% 2 1 0 1f9021d4c5b4288c102505c1502280f3
+
+% 4 1 0 1fa028b11a65eebc1069cdacbe4744bc
+
+% 6 1 0 1cb72c33e41f97400863887642be8053
+
+% 0 1 0 0833e37bbd83d290065236b38eeffce8
+
+% 1 1 0 0b3bc3288458142310ceb4b6fc68f177
+
+@ 0 1 0 1069bfeb2f4e73ab18529e217d55ab02
++         label 併合すると、ストーンがポンドになる
+
+% 1 1 0 146f842fd878235e04c43d66155a71c8
+
+% 2 1 0 0ee7478b8139cd421a340f8b1a582a2e
+
+% 4 1 0 1df155aa87d8dc191ad8ace220e83eab
+
+% 6 1 0 198855a4b7ef69ec043f11d1ecb45746
+
+% 0 1 0 1562e761b3ff6a7505b24d3b55538399
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 6 0 0a074b8bbcc9f4191bcd73aa2d4261e1
++       同じ基本単位の値は、加算と減算（`+`、`-`）、符号反転、`Double` による乗算と除算（最も近い基本単位に丸める）、比較（`<`、`>=` など）ができ、`total` と `mean` で集約できる。比較は、基本単位が同じで連なりが異なる二つの値の間でも、共通の上位型 `Quanta[Base]` を通じて行える。
++       `quantity` で `Quantity` に変換し、`Quantity#quanta` で `Quantity` から変換する。
++       減算の結果は負になることがあり、そのときはすべての成分が負かゼロである。
+
+@ 0 5 0 088dcadf40a4effd17628c187b677d5a
++       コンパニオンの given は暗黙のスコープにある。`show` はゼロでない成分を単位の記号（または `UnitsNames` の given の名前）とともに描画し（`1st 3lb 2oz`）、`inspect` はゼロを含むすべての成分を描画する（`Quanta(0st 3lb 2oz)`）。
++       コンパニオンのメンバーの完全な一覧は `abacist.protointernal.Quanta` にある。不透明型はそこで宣言され、そこからここへエクスポートされる。
+
+% 0 1 0 10033ed11151338c0bfc944bd7e7e43d
+
+% 0 1 0 040a7e810c58c1de13ac4ce62d1c52c0
+
+% 0 1 0 095eed01f5c5e66b1d8f3af9a2070c95
+
+% 0 1 0 108131ca247af01d0ad4893049851711
+
+@ 0 3 0 05076c96e7608fe4027b87ed90d0803b
++ entry .AnyUnit   `Quanta` の基本単位に対する上限：任意の乗数の、一つの quantitative の単位
++     `Units[?, ?]` である。
++     `Quanta[String]` はこの上限によって拒否される。
++     連なりは `Inches[1]` のような 1 乗の単位から作られる。
+
+@ 0 3 0 0825403284f4926b0d215ae310f8aa4b
++ entry .Divisions   `Quanta` の `Form` に対する上限：単位のタプル、または単一の単位
++     `Tuple | AnyUnit` であるので、`Quanta[Inches[1]] in (Feet[1])` と `Quanta[Inches[1]] in Feet[1]` はどちらも正しい形であり、タプルに入れた複数の単位の連なりも同様である。
+
+@ 0 1 0 046b8401f80b044614c6004142014b70
++ entry .TimeMinutes   時と分で表した継続時間：`Quanta[Minutes[1]] in (Hours[1])`
+
+% 1 1 0 1a94d324389077e80e989011aa34e153
+
+% 2 1 0 1ab9af4d9915125212a120fdb4f2581e
+
+% 0 1 0 15c508f02878a88809bdd12c14ff5725
+
+% 0 1 0 0fa68d9b8bbb928d1cfe94a603faa12a
+
+% 0 1 0 0636d85d8e14f6910b8a8260cab088ef
+
+% 1 1 0 08a459c444963120059383e92260a8cf
+
+@ 0 1 0 1d8a4fed417148c00b56d9366df4ddb4
++     時には上限がないので、一日より長い継続時間も時で表される。
+
+@ 0 1 0 1e22c989bf7bb587039f810c71455e12
++ entry .TimeSeconds   時、分、秒で表した継続時間：`Quanta[Seconds[1]] in (Minutes[1], Hours[1])`
+
+% 1 1 0 08574dff0b65589b0025d366eb715cc6
+
+% 2 1 0 1d597b7ca508b7821b2f786770a41cfd
+
+% 0 1 0 08855aadcb13e2e306904a1ee92c3cc1
+
+% 0 1 0 18a0fe0373b9f12619f0e6752d59c65d
+
+% 1 1 0 003231c3ac1e73600dae62ed28ea2371
+
+@ 0 2 0 001534500e1cd9321b74cecced2e3773
++     時には上限がないので、`Quanta(27, 18, 9)` は一日と三時間ではなく、二十七時間である。
+
+@ 0 1 0 07b0f5a417a354f102b9e55728a1153a
++ entry .quanta   `Quantity` を選んだ連なりの `Quanta` に変換し、最小の単位に丸める
+
+% 1 1 0 049e19553b68021310d7c0eefee188d4
+
+@ 0 4 0 07041389961c1f400af9ccd87c440720
++       `Quantity` に対する拡張である。`quantity.quanta[Result]` は量を `Quanta` 型 `Result` の基本単位に変換し、最も近い整数に丸める。
++       量の次元は連なりの次元でなければならない。変換の比はコードのコンパイル時に計算される。
+
+% 2 1 0 02f759c5068a6fd91a9b93fae71a7ba2
+
+% 3 1 0 0e4f5204a511b6930394ce91e4aa069b
+
+% 5 1 0 107a0abf88e34d5c140eeaed3ed1d619
+
+% 1 1 0 0e0f3ecb5fbdc4ba1f2b4816c5604516
+
+% 0 1 0 16435fc2501dda1d15935531e668bac5
+
+% 0 1 0 07b974de3d09dcf41f201fe0b3cb3e40
+
+% 0 1 0 1d0b16cfae8953dc16b341ba7f98c52e
+
+% 0 1 0 11f17f78fa6b15d00bae712e1b0073ce
+
+% 1 1 0 07916814e07a87820939284adb6d30da
+
+@ 0 1 0 12844feb44574b8905e32e3a0dfcfb2d
++       `Quanta#quantity` が逆方向の変換である。
+
+% 1 1 0 0a7fb04a3658b13b1e02461b6294ce56
+
+@ 0 1 0 160a5e94a2cfca650fabc5bc163aa3cf
++ entry .UnitsNames   `Quanta` 型の成分を表示するとき、単位の記号の代わりに付けるラベル
+
+% 1 1 0 06863fadb769bbb0053d030d0dad92ff
+
+@ 0 3 0 1833baecbe030d6f13f11531ae51fc81
++       `Quanta` 型 `Q` に対する `UnitsNames[Q]` の given は、`show` が使う単位の記号を置き換える。
++       これは単一抽象メソッドのトレイトなので、名前を最大の単位から順に返すラムダで足りる。
+
+% 2 1 0 06c853029a7b2f6b0e476e192fdce1c8
+
+% 3 1 0 063da896de0152cc1db95073ca65c3e7
+
+% 5 1 0 1ff2974df63b37ad10248aa710f48eb7
+
+% 0 1 0 0e4aec8990b8730100d4f2111adc0f0b
+
+% 0 1 0 064730a742a743741c54646d236fbc02
+
+% 1 1 0 14b103c3d2f4d99c19d1a9aab99142e9
+
+@ 0 5 0 1b059634380db56c04a91406f24d4d62
++       表示される各成分はその数と名前からなり、成分は `#separator` でつながれる。
++       既定の描画と同じく、ゼロの成分は省かれ、名前は残った成分に最小の単位から順に対応付けられる。
++       そのため、ゼロでない成分の*下に*ゼロの成分がある値は誤ったラベルになる。`Height` としての `Quanta(5, 0)` は `5'` ではなく `5"` と表示される。
+
+% 1 1 0 1b4272a4af41df170c6e8fa534c9489a
+
+@ 0 3 0 1cc2bd8f7b99fbd1056d7bd781abfcd7
++   entry #prefix   描画の前に置くためのテキスト。既定では空で、現在 `show` は使っていない
++   entry #separator   表示される成分の間のテキスト。既定では空白一つ
++   entry #units   連なりの単位の名前。最大のものから順に並ぶ
+
+@ 0 1 0 1fe0ee0047157c510d4ca38b504352ff
++ entry .protointernal   不透明型 `Quanta` と、すべての `Quanta` が持つ拡張メソッドの置き場所
+
+% 1 1 0 18e10dd205c7af2b0b5a512fc08e13f0
+
+% 2 1 0 1ac2e6aa10b122f4009b5a255d34ebfa
+
+@ 0 5 0 106d9783b347d70608beed506521d1e0
++       直接使うためのものではない。このオブジェクトは、`Quanta` を `Long` の不透明な別名にするために存在し、その型の接頭辞なので、その拡張メソッドはインポートなしにすべての `Quanta` に適用される。
++       `Quanta` はここから `abacist` パッケージにエクスポートされ、完全な説明はそこにある。
++   entry .Quanta   一つの `Long` として保持される、単位の連なりで表した値。`abacist.Quanta` を参照
+
+% 1 1 0 19598743794380d103eb2e9dd2aee97e
+
+@ 0 8 0 0462c09a23aaf57f12ee8d476c3f433c
++         不透明型 `Quanta[Base <: AnyUnit] = Long` と、コンストラクターと given からなるそのコンパニオン。
++         完全な説明は `abacist` パッケージのページにある。
++         コンパニオンは `commensurable` の given を `anteprotointernal.Quanta2` から継承する。
++     entry .apply   成分から値を作る。成分は最大の単位から順に、期待される型の連なりに従う
++         `Quanta(…)` はマクロであり、期待される型から基本単位と `Form` を取り、成分を基本単位の個数にエンコードする。
++         負のリテラル成分、その単位に対して大きすぎるリテラル成分、単位より多い成分はコンパイルエラーになる。リテラルでない成分は検査されない。
+
+% 2 1 0 1a26fd45c4839f07019df9b9291c4540
+
+% 3 1 0 166275dceee4c63503bbed5c19901eca
+
+% 0 1 0 11295024e8edd8860281374ad8ebbeac
+
+% 0 1 0 03f18b5f8b2aecc8092624a6fa2a07a1
+
+% 1 1 0 02a8b4402178e424050a71f966c59717
+
+@ 0 15 0 0f1d4fdcbb4123c5147f9fef20571e63
++     entry .fromLong   基本単位の個数を、検査なしに `Quanta` 型として解釈し直す
++         `Quanta.fromLong[Q](long)` は `long` の逆である。`Long` は `Q` の基本単位での値とみなされる。
++         型引数は `Quanta` 型でなければならないが、それを検査するものはない。
++     entry .underlying   `Form` を持つ `Quanta` が実行時には `Long` であることを示す `Underlying` の証人
++     entry .underlyingBare   裸の `Quanta[Base]` が実行時には `Long` であることを示す `Underlying` の証人
++     entry .zeroic   裸の `Quanta[Base]` のゼロ。`total` などの集約のためのもの
++     entry .zeroic2   `Form` を持つ `Quanta` のゼロ。`total` などの集約のためのもの
++         `.zeroic` とは別の given であり、未知の部分型のゼロを探すときに `Nothing` に落ち着かないようにする。
++     entry .typeable   `Quanta` 型を、パターンの中で `Any` に対してマッチさせられるようにする
++         連なりは実行時に存在しないので、どの `Long` もマッチする。パターン `case q: Weight` は `Long` にも、別の連なりの `Quanta` にもマッチする。
++     entry .integral   `Long` の `Integral` インスタンス。任意の `Quanta` 型に対するもの
++         標準の数値演算や、`mean` のような Soundness の集約が、`Quanta` を実行時の姿である整数として扱えるようにする。
+
+% 2 1 0 044d998471cd583c1051c61d2767323f
+
+% 3 1 0 06c19082617bd2070a95518fd410e758
+
+% 4 1 0 1cbf98d17d6f52fb1d463c0e116ecd20
+
+% 0 1 0 1129b879a8802a391ac14e2afba79fe7
+
+% 0 1 0 13093353d874a1b61f5f3c9728470b40
+
+% 1 1 0 17c72206cfddc5e91066b3a2b360c9fe
+
+@ 0 3 0 106f02cf6acbcfb70f52d3431ce9767e
++     entry .addable   一つの `Quanta` 型の二つの値の間の `+`。単位の間で繰り上がる
++     entry .subtractable   一つの `Quanta` 型の二つの値の間の `-`。結果は負になることがある
++     entry .multiplicable   `Double` による `*`。最も近い基本単位に四捨五入する
+
+% 1 1 0 1707f6aa4d5443c80f32035528a8aff9
+
+% 2 1 0 1a680c50599cc60e0d6f2a3467c12b8d
+
+% 4 1 0 0b8de7c27896fefb18406397c8b9dbd2
+
+% 0 1 0 1763786c1b1f314208dcc4a111d5a589
+
+% 0 1 0 039daf2288d5c06701a43c72546368ba
+
+% 1 1 0 1da14da729221e8c1d27ec1dca546465
+
+@ 0 26 0 0201af4e33e9cca60fb024fa4a534c9d
++     entry .divisible   `Double` による `/`。最も近い基本単位に四捨五入する
++     entry .negatable   `Quanta` に対する単項の `-`。すべての成分の符号を反転する
++     entry .showQuanta   `Quanta` 型の `Showable` を作る。`UnitsNames` の given の名前か、単位の記号を使う
++         `.showable` と `.showableBare` の背後にある実装。
++         `UnitsNames` がなければ、ゼロでない各成分はその数と単位の記号からなり、空白でつながれる（`1st 3lb 2oz`）。すべての成分がゼロの値は空のテキストとして表示される。
++     entry .inspectQuanta   `Quanta` 型の `Inspectable` を作る。ゼロを含むすべての成分を示す
++         `.inspectable` と `.inspectableBare` の背後にある実装で、`Quanta(0st 3lb 2oz)` と描画するので、詰め込まれた `Long` が裸の数として検査用に表示されることはない。
++     entry .inspectable   `Form` を持つ `Quanta` を `Quanta(0st 3lb 2oz)` として検査用に表示する
++     entry .inspectableBare   裸の `Quanta[Base]` を `Quanta(9s)` として検査用に表示する
++     entry .showable   `Form` を持つ `Quanta` を、`3lb 2oz` のようにゼロでない成分で表示する
++     entry .showableBare   裸の `Quanta[Base]` を、`9s` のように個数と単位で表示する
++     entry .distributiveQuanta   `Quanta` 型の `Distributive` を、成分によって作る
++         `.distributive2` と `.distributive2Bare` の背後にある実装。値の部分は、最大の単位から順に並べた `Long` としての成分であり、整形された部分は `2 st, 3 lb, 4 oz` のように配置される。
++     entry .distributive2   `Form` を持つ `Quanta` を成分ごとに、`Distributive by Long` として整形する
++     entry .distributive2Bare   裸の `Quanta[Base]` を、その一つの成分として `Distributive by Long` で整形する
++     entry .distributive   部分を取り出す関数と配置する関数から `Distributive by Long` を作る
++   entry .long   一つの `Long` としての値：最小の単位で数えた値全体
++       すべての `Quanta` に対する拡張である。
++       `Quanta(1, 30, 0)` の `TimeSeconds` は `5400` である。
++   entry .apply   `Quanta` の、その単位の一つでの成分。`value[Minutes]` のように書く
++       すべての `Quanta` に対する拡張で、単位の型コンストラクター（`Feet[1]` ではなく `Feet`）を取る。
++       連なりにない単位はコンパイルエラー _the Quanta does not include this unit_（557）になる。
+
+% 2 1 0 0dffc867a6f206d414cf17420e5d8292
+
+% 3 1 0 1808bf43c0bd53d71e9eb0fcc72855e8
+
+% 0 1 0 1a25864463cfa0ba14bf3b29d162b4b1
+
+% 0 1 0 04fde87f8d79804009761b2abb3d635c
+
+% 1 1 0 15e419586a7e2c44048c43eefd9b07f7
+
+@ 0 4 0 1a45d5e98f8056a21e07c94a4f089281
++   entry .quantity   その次元の主たる単位での `Quantity` としての値
++       すべての `Quanta` に対する拡張である。長さは `Quantity[Metres[1]]` に、質量は `Quantity[Kilograms[1]]` に、継続時間は `Quantity[Seconds[1]]` になり、その比はコードのコンパイル時に計算される。
++       その後 `convert` で他の任意の単位が得られる。
+
+% 2 1 0 1626fa81101f8e8c11a5037d7d0a0877
+
+% 3 1 0 1c547515403591ce186deb3e492d2acb
+
+% 5 1 0 1be00b0ff90edeb21f66357a32d7b84c
+
+% 0 1 0 02244f7ab1d7850b14838d9dd530bf52
+
+% 0 1 0 0ca5192fb15f089c1e8fe0e241643cb3
+
+% 0 1 0 1b67d45c1fec68a11d5fc342da5724be
+
+% 1 1 0 0be118a6765feb79065eca1e086eed1a
+
+@ 0 13 0 067c78c2110de78d02059c17b9a4ac11
++   entry .components   各単位の記号からその個数への `Ledger` としての成分。最大のものから順に並ぶ
++       すべての `Quanta` に対する拡張で、ゼロの成分も含む。重さとしての `Quanta(3, 2)` は `st → 0`、`lb → 3`、`oz → 2` である。
++       1 以外の乗数の単位には、その乗数が上付き添字で付く。
++   entry .multiply   `Double` を掛け、最も近い基本単位に四捨五入する
++       すべての `Quanta` に対する拡張で、レシーバの型を保つ。`*` と同じである。
++   entry .divide   `Double` で割り、最も近い基本単位に四捨五入する
++       すべての `Quanta` に対する拡張で、レシーバの型を保つ。`/` と同じである。
++   entry .collapse   連なりの最大の単位を次の単位に併合し、単位の少ない `Quanta` にする
++       すべての `Quanta` に対する拡張である。`value.collapse(n)` は最大の `n` 個の単位を型から取り除くので、その個数は残った最大の単位に繰り込まれる。
++       値は変わらず、変わるのは連なりだけである。
++       `n` は、基本単位より上にある単位の個数以下のリテラルでなければならず、そうでなければコンパイルエラーになる。
+
+% 2 1 0 1a0a9356e7836d961618c7b2e4d4f0e3
+
+% 3 1 0 15b6b812a9aa54c9011c1427ea16f341
+
+% 5 1 0 08bb4d245d5804c31661aa9b1bf56fe8
+
+% 0 1 0 163d71421a0864611bea522d492b420c
+
+% 0 1 0 0550bb623ba191bf0fc5bbfb4065ffa5
+
+% 0 1 0 132689c6d0d885e8187fb22cbea3a372
+
+% 1 1 0 035f7fcd3f695060113a3c0a1d27a6ed
+
+@ 0 1 0 10ac3e0d8e115571051b905ba6ecd4f7
++ entry .anteprotointernal   `Quanta` のコンパニオンに比較の given を与えるトレイト
+
+% 1 1 0 0628ee279ec7ce940266ac75d352b792
+
+% 2 1 0 06fc55f851d2eb5a16c00ffe0beb299f
+
+@ 0 3 0 1aa0f3fd312aeec11872470c45cfa7d0
++       `protointernal` にミックスインされる。直接使うためのものではない。
++       比較の given がコンパニオン自身のものより低い優先度を持つようにするために存在する。
++   entry #Quanta2   `Quanta` のコンパニオンの親で、`commensurable` を保持する
+
+% 1 1 0 100d2f81b35ffe631953fa8cec3de5cf
+
+@ 0 4 0 0b61880cda31ae7d181f9495e23daa0a
++         直接使うためのものではない。
++     entry #commensurable   一つの基本単位の二つの値を、基本単位の個数に対する `<`、`<=`、`>`、`>=` として比較する
++         基本単位が同じで連なりが異なる値は、共通の上位型 `Quanta[Base]` を通じて比較される。
+
+@ 0 1 0 068c27cd59fbb0d21dfe72905759e20e
++ entry .internal   `Quanta` の構築、成分、変換、`collapse` の背後にあるマクロ
+
+% 1 1 0 1fdc2c873429c8a801f9bb9f3cc3ab38
+
+% 2 1 0 07832e13934d3fef1363d11568767609
+
+@ 0 10 0 181bdaf12980173313cbf4049a4f44b4
++       直接使うためのものではない。このオブジェクトはマクロに安定した置き場所を与えるために存在する。
++       そのコンパイルエラーは `Quanta` の利用者が目にするものである：範囲外の成分、次元の混ざった連なり、存在しない単位、深すぎる併合。
++   entry .assembleParts   `Quanta(…)` の背後にあるマクロ：期待される型の連なりに従って成分をエンコードする
++   entry .describeQuanta   `components` の背後にあるマクロ：記号ごとの各単位の個数
++   entry .multiplyQuanta   `multiply` と `divide` の背後にあるマクロ
++   entry .toQuantity   `quantity` の背後にあるマクロ：その次元の主たる単位での値
++   entry .fromQuantity   `Quantity#quanta` の背後にあるマクロ：連なりの基本単位に丸めた量
++   entry .get   `value[Unit]` の背後にあるマクロ：一つの成分。単位が存在しなければエラー `↯/s.54.1`
++   entry .collapse   `collapse` の背後にあるマクロ：単位の少ない連なりでの同じ値

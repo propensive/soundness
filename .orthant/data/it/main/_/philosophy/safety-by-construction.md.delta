@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 2 0 00543af9c2a3807e111626140b6fb5eb
++ Vedi [stati impossibili](impossible-states.md) per la regola che questo serve, e
++ [interpolazione](/doc/soundness/modules/interpolation.md) per come si costruisce un tale letterale.

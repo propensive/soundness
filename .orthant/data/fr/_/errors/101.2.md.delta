@@ -1,0 +1,59 @@
+orthant 2 language
+
+% 0 1 0 07aaa74d0b7e422d097b77f936011b88
+
+@ 0 1 0 1946af5c71717ad912778cd23ce3471f
++ Levée lorsqu'une connexion socket établie échoue en cours d'utilisation.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 3 0 0bb23579748eb69d177a525b80d80f86
++ Elle se distingue d'un échec de connexion, qui est une `ConnectError`. Une `Socket.Error`
++ signifie que la connexion a été établie puis a échoué, lors d'une acceptation, d'une
++ transmission ou d'une fermeture.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0ccc9ecaa01251eb0b51fc817e0e23d8
+
+@ 0 1 0 0588aa06043384f71865662a339ad93f
++ **Exemple.** `[↯/s.101.2.1] a new connection could not be accepted`
+
+% 0 1 0 1a4919119e8cdc5a09dda74f6baafd0d
+
+@ 0 1 0 140b0fe311ce30190ba928fc22be058e
++ **Exemple.** `[↯/s.101.2.2] data could not be transmitted to the connection`
+
+% 0 1 0 15c6ec377693a9910ef6a335ffc8a8da
+
+@ 0 1 0 0e98b60587a40fbf0ca0c3ecb3baa9fc
++ **Exemple.** `[↯/s.101.2.3] the connection could not be closed cleanly`
+
+% 0 1 0 147bb65a954e645b1dd30d0428e1147c
+
+@ 0 1 0 1b663bd7a95a6b7005ca1c51561f8b97
++ **Exemple.** `[↯/s.101.2.4] the TLS handshake with the peer failed`
+
+% 0 1 0 0619385becc7fd4c0d90a72068aa7585
+
+@ 0 2 0 0cb1a3490fd28ef81cd6861b0d88e25d
++ Un échange de datagrammes (`Socket.Backend#exchangeUdp`) ou une réception sur un socket configuré
++ avec `Socket.Option.Timeout` a attendu tout le délai sans qu'aucun datagramme n'arrive.
+
+@ 0 1 0 03a0ed76ce7e28aa1bb43da58d166ccf
++ **Exemple.** `[↯/s.101.2.5] no response arrived before the timeout`
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 3 0 149a5d0be74fa8df1dbec72f9d7b6004
++ La raison indique l'opération qui a échoué. Une connexion qui échoue pendant une transmission
++ s'explique généralement par la fermeture du pair, un délai expiré ou le réseau ; réessayer est
++ raisonnable lorsque le protocole est idempotent.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 0dd05a82ce1fff6d1038aafafa559cfb
++ - Source : `lib/coaxial/src/core/coaxial.Socket.scala`

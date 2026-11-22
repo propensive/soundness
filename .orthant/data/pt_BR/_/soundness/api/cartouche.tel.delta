@@ -1,0 +1,576 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 06b23605c41af6441e37b1b6371b75e9
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1e801473b9d9e33416d5d017c95661fc
++ info   posicionamento de rótulos: encontra uma posição para cada trecho de texto numa imagem, livre do resto
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1f9a0f08a918a10d0b82fedd5f53b0ed
++     _Cartouche_ decide onde vai cada rótulo de uma imagem. O texto é posto ao lado daquilo que
++     nomeia — uma nota junto a um ponto, um nome junto a uma cidade, uma porcentagem numa fatia —
++     e, quando duas coisas estão próximas, seus rótulos colidem. Cartouche toma cada rótulo (uma
++     `Caption`: seu tamanho medido, o ponto que descreve e os lados em que pode ficar), junto com
++     tudo na página que o texto não pode cobrir (cada coisa um `Obstacle`), e encontra uma
++     `Caption.Position` para cada um. Os gráficos o usam para seus rótulos; um mapa o usaria para
++     seus nomes de lugares. O motor vê apenas geometria, num referencial com y para baixo, como o
++     SVG o tem: quem desenha o texto o mede.
+
+@ 0 5 0 0fa1352abb9f107f012317f530969cbe
++     O código que constrói uma imagem sabe o que cada rótulo diz, mas não onde os outros vão parar,
++     por isso `arrange` executa esse código duas vezes. A primeira execução registra cada chamada
++     de `position`, `avoid` e `canvas` e responde a cada `position` de forma provisória; o
++     `Arranger` em escopo então resolve o arranjo inteiro; e a segunda execução responde a cada
++     `position` com o lugar resolvido. O valor de `arrange` é o da segunda execução.
+
+% 2 1 0 02d2230cc0d0412d0c890f1ddc859355
+
+% 3 1 0 190299e209cc4a061b9cbaf577a652e8
+
+% 0 1 0 0f930d453d5b8fc61a2568d8b2394d74
+
+% 0 1 0 14f7862be4a7ce250e219f0b0ec52154
+
+% 0 1 0 1765cc09e6a1193e1031704c60cb278e
+
+% 0 1 0 0ce2f2da9a3490db14c275a3ad7bee9e
+
+% 1 1 0 1b8b83463b55c0f700785170329c0881
+
+@ 0 3 0 115066fca4d3f3c41017e166ba178f8d
++     O corpo precisa, portanto, ser **repetível**: as mesmas chamadas de `position` na mesma ordem
++     a cada vez, sem fazer nada que não deva acontecer duas vezes. Um contador que numera os
++     rótulos pertence ao interior do corpo, onde recomeça com a segunda execução.
+
+@ 0 4 0 1f8ce5ecd81357ff1917d90ab203d6ea
++     O algoritmo que faz o arranjo é o `Arranger` em escopo: o guloso padrão, do objeto
++     companheiro de `Arranger`, ou um importado pelo nome do pacote `arrangers`
++     (`import soundness.*` não importa givens), ou um `Arranger.Greedy` ou `Arranger.Annealing`
++     configurado e vinculado como given local.
+
+@ 0 3 0 12433aabb0e07aff1190255056f25d9a
++     A biblioteca tem um único source set, `cartouche.core`, que compila para todas as plataformas.
++     Tudo é exportado para o guarda-chuva `soundness`, e o pacote de escolhas `arrangers` se funde
++     com o do próprio guarda-chuva.
+
+% 0 1 0 0f49140743c8c46516706c51e3c4ebca
+
+% 0 1 0 011a27b591ad86660c6bd6fa70c7949d
+
+% 0 1 0 0e155f583a8e620408bc2f8c594677bd
+
+% 0 1 0 11c814630297185a10fc20263a04b722
+
+% 0 1 0 1ba23050185bff670a018354e444bdd2
+
+@ 0 1 0 088c9db08975d1e71060a165abb7d414
++ entry .arrange   executa duas vezes um corpo que constrói uma imagem, respondendo às suas chamadas de `position` com um arranjo
+
+% 1 1 0 064289f02572fb3f0e395be9ac9d889a
+
+@ 0 7 0 156389407f21c90100b827399daacc13
++       `arrange(body)` executa `body` uma vez com um `Arranger.Pass` de registro, em que cada
++       `position` responde com `Caption.provisional` — o rótulo onde foi pedido, em seu lado de
++       primeira escolha — e cada `avoid` e `canvas` é anotado; o resultado dessa execução é
++       descartado. O `Arranger` em escopo então posiciona todas as legendas registradas em relação
++       aos obstáculos e ao canvas registrados, e o corpo é executado de novo, com cada chamada de
++       `position` respondida por sua `Caption.Position` resolvida, associada às chamadas da
++       primeira execução pela ordem. O resultado da segunda execução é o de `arrange`.
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 04c916801aa89a3b15ec6c26b8e2c93a
++         label Nada no caminho: o rótulo fica a leste
+
+% 1 1 0 15a92bc3bb87672e103b7f3cea7c086c
+
+% 2 1 0 1c5e477129e24c991631139742747a93
+
+% 4 1 0 0bfdd7cdbc3a50841d23838d72c21a25
+
+% 0 1 0 024ae26309597dc1132fa0e6025ea990
+
+% 1 1 0 19501732bd82408f01afd6a17c6edda0
+
+@ 0 1 0 1e4aeb3c6124c33f1ad8d363f6e9159d
++         label Uma caixa a leste: o rótulo passa para oeste
+
+% 1 1 0 1ae99e4baeea973d0585a67e739dcb58
+
+% 2 1 0 11f2a46fbf625f350be3a827cbfa04b5
+
+% 4 1 0 09c235a31aa8bf0408f2c78a77a9b5c8
+
+% 0 1 0 0a52c19896ca806e1b70520252c07d20
+
+% 0 1 0 17e6db6dec2e9b0c12f3a3c3b135eb37
+
+% 1 1 0 03df8e6176ebd856196354f0944d1ee5
+
+@ 0 1 0 06c991ef2dd2335a0dad8b2ca75d3c57
++         label Só o sul é permitido, e está bloqueado: o rótulo é deslocado, com uma linha de chamada
+
+% 1 1 0 05190a3be9a6716c0d8bfd76705d0e97
+
+% 2 1 0 1953ca498cc6f67e0922f6de3461a5c4
+
+% 4 1 0 037ca9d0a379d737057a30acbae642a2
+
+% 0 1 0 14bc0f114e3faa420883ec1a20784750
+
+% 0 1 0 1a35a1ca383882571429f831f7521c99
+
+% 0 1 0 1a2bcef174fddc5915b2815e805aa5b0
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 00f01867f14a56680b334509962f0ec9
++       O corpo precisa fazer as mesmas chamadas na mesma ordem nas duas execuções e não ter outros
++       efeitos. Uma chamada na segunda execução que a primeira não fez, ou uma com uma legenda
++       diferente, é respondida de forma provisória e registrada como `Arranger.Pass#diverged`.
+
+% 1 1 0 1ad9dc1e6300643205bf0417a6d8a61e
+
+% 1 1 0 01cefda173e9a12a1885a3a58888071b
+
+% 2 1 0 0b8171df598b7133022fff274f08136c
+
+% 0 1 0 025cfa407742f0280e2e3e0ecf4dd8a2
+
+@ 0 7 0 027ace35ce26078405f5247a563d155d
++ entry .position   pede um lugar para um rótulo, dentro de um corpo de `arrange`
++     Precisa do `Arranger.Pass` que `arrange` fornece. Recebe uma `Caption`, ou diretamente as
++     partes da legenda: `width` e `height` (o rótulo medido), `x` e `y` (o ponto-alvo) e,
++     opcionalmente, `attachments` (os lados em que pode ficar, do melhor para o pior; por padrão,
++     `Caption.Attachment.compass`), `standoff`, `reach`, `padding`, `priority` e `fallback`, cada
++     um como `Caption` descreve. Na primeira execução do corpo, a resposta é provisória; na
++     segunda, é a `Caption.Position` resolvida.
+
+% 2 1 0 16868ee13f6968e11cf54c6b08310250
+
+% 3 1 0 0e55ebf15d4060ef06a39ec8e1ded4c7
+
+% 0 1 0 1c2ed1219e8a168714ed9825fcb15453
+
+% 0 1 0 1f17fcdbb3aa2b3618e2a5e774147ce4
+
+% 1 1 0 0831c7ff13fc88b200f0d3573b1b94b4
+
+@ 0 5 0 1c8bc2c01d655466003dad376aced00e
++ entry .avoid   declara obstáculos sobre os quais nenhum rótulo pode ser posto, dentro de um corpo de `arrange`
++     Recebe qualquer número de `Obstacle`s — um `Obstacle.Box` para uma barra ou um quadro de
++     legenda, um `Obstacle.Line` para cada segmento de uma linha traçada, um `Obstacle.Disc` para
++     um marcador — e os acrescenta ao arranjo. Precisa do `Arranger.Pass` que `arrange` fornece; só
++     contam as chamadas da primeira execução.
+
+% 2 1 0 0b130e656e607d3313434de6863a692f
+
+% 3 1 0 0a37784d9a6887e10075b3ba4fc9d8ca
+
+% 5 1 0 0de1e4035e71e3a10acb53e05456d759
+
+% 0 1 0 0be6ce594f44b4811a115ea865eb0770
+
+% 0 1 0 18b009d6512271f9080e9f25ccebe0e1
+
+% 1 1 0 029893d87378fcd10a35def2574c7038
+
+@ 0 3 0 162cc59949a9ecfc06d384032808ab4a
++ entry .canvas   declara a área dentro da qual os rótulos precisam ficar, dentro de um corpo de `arrange`
++     Recebe um `Obstacle.Box`; a área de um rótulo fora dele conta como colisão. Sem um canvas, a
++     página é ilimitada, e, se o corpo declarar mais de um, o último vence.
+
+% 2 1 0 035598e209e56d3e0109c53ef10893cf
+
+% 3 1 0 0caa193bf7aafbc71d8be4a0052be7f3
+
+% 5 1 0 1d6ed4f7ec4362990ba974ef41c71159
+
+% 0 1 0 0f2e27567938ffac008351017fc1b295
+
+% 0 1 0 1c91111d9ec6993911393bdae4cc85ed
+
+% 1 1 0 06ac1c627bbe9cff166053df7e78313d
+
+@ 0 1 0 0c7c9923b6caadf91c20761053360ac0
++ entry .Caption   um pedido para posicionar um rótulo: seu tamanho, o ponto que descreve e como pode ser posto
+
+% 1 1 0 01b5ee5f13e661aa0e3f2fd0f93ca0c0
+
+@ 0 9 0 1b761a4ed72361b60a17a057fce485f9
++       Uma case class com a geometria de um rótulo. `width` e `height` são seu tamanho medido; `x`
++       e `y`, o alvo que descreve. `attachments` lista os lados do alvo em que ele pode ficar, do
++       melhor para o pior (por padrão, `Caption.Attachment.compass`); uma legenda sem nenhum é
++       tratada como uma que pode ficar a leste. `standoff` é o espaço entre o alvo e a borda mais
++       próxima do rótulo, para um rótulo ao lado de um marcador em vez de sobre o seu centro.
++       `reach` é quanto a âncora do rótulo pode ser afastada do alvo quando todos os lados estão
++       bloqueados; o padrão, zero, a fixa. `padding` é a folga exigida em torno do rótulo. As
++       legendas com `priority` mais alta são posicionadas primeiro e, assim, mantêm seus alvos.
++       `fallback` diz o que acontece com um rótulo que colide onde quer que seja posto.
+
+% 2 1 0 0b42f840c2e96de20fac7258fcd5889e
+
+% 3 1 0 04a7881e544ac62e085886e369552e43
+
+% 0 1 0 1cc0d887a5117c5e05ea42fcf912440a
+
+% 0 1 0 0389a70a6e5ad4521b6bac84226b1054
+
+% 1 1 0 01f1689a4f0ca41905d4f4e96a80e7c4
+
+@ 0 3 0 17d93527bb64988711a431f93a7bff76
++       Uma legenda com um único lado e sem alcance é posicionada exatamente onde pede, haja o que
++       houver ali, e tudo o que vem depois a contorna: é assim que os rótulos das marcas de escala
++       e o quadro de legenda de um gráfico ficam parados enquanto os rótulos de seus pontos se
++       movem.
+
+% 0 1 0 157a37a9e0382c7d1d52bc28a16ad187
+
+% 0 1 0 0899ba996f1a94010ce54b2bca43a7dc
+
+% 1 1 0 1491c192403d00b30fbf08d81707d09a
+
+@ 0 20 0 04b69f0ebfc760e21e8a8f310cba94bb
++   entry #width   a largura medida do rótulo
++   entry #height   a altura medida do rótulo
++   entry #x   a coordenada horizontal do alvo que o rótulo descreve
++   entry #y   a coordenada vertical do alvo, crescente para baixo
++   entry #attachments   os lados do alvo em que o rótulo pode ficar, do melhor para o pior
++   entry #standoff   o espaço entre o alvo e a borda mais próxima do rótulo
++   entry #reach   quanto o rótulo pode ser afastado do alvo quando todos os lados estão bloqueados
++   entry #padding   a folga exigida em torno da caixa do rótulo
++   entry #priority   a ordem de posicionamento: uma prioridade mais alta é posicionada antes e mantém seu alvo
++   entry #fallback   se um rótulo que colide em toda parte é desenhado mesmo assim ou ocultado
++   entry #sides   os lados a tentar: `#attachments`, ou apenas `East` se estiver vazio
++   entry #anchor   o ponto de âncora do rótulo num lado do alvo, deslocado por um offset
++       `caption.anchor(attachment, dx, dy)` é o alvo movido por (`dx`, `dy`) e depois por
++       `#standoff` na direção do lado de fixação.
++   entry #footprint   a caixa que o rótulo ocupa quando ancorado num ponto de um lado
++       `Obstacle.Box.around` com o tamanho da legenda.
++   entry .provisional   a resposta antes do arranjo: o rótulo em seu alvo, em seu primeiro lado
++       O que cada chamada de `position` recebe na primeira execução de um corpo de `arrange`, e o
++       que uma chamada que diverge da primeira execução recebe na segunda.
++   entry .Attachment   de que lado do alvo um rótulo fica: os oito pontos da rosa dos ventos ou `Center`
+
+% 1 1 0 058a65202c21bd8d1f2125732a0c9422
+
+@ 0 6 0 05f64defba7d532f1ee37d0e6ba4c40f
++         Um enum, num referencial com y para baixo, de modo que `North` fica acima do alvo. Seus
++         casos são `North`, `Northeast`, `East`, `Southeast`, `South`, `Southwest`, `West`,
++         `Northwest` e `Center`. A âncora de um rótulo é sua borda mais próxima do alvo: para
++         `East`, o meio da borda esquerda; para `North`, o meio da borda inferior; para `Center`,
++         seu centro; assim, um renderizador deriva seu próprio alinhamento a partir do lado de
++         fixação (o `text-anchor` e o `dominant-baseline` de um elemento `text` de SVG).
+
+% 2 1 0 1ca7bfd0f1c81358134daa2546da1e35
+
+% 3 1 0 1aa13a6f2566c2d61caefe3fcc9e844c
+
+% 0 1 0 13913f8510433f170f081eb52aa4a262
+
+% 0 1 0 1f06db615423af62034f35e6d690bb84
+
+% 1 1 0 1105b6cb7ffe45b70ae1a1a7726588e9
+
+@ 0 8 0 0a7bd5cd2e1e46bc0ca318aac1ac811c
++     entry .compass   a preferência cartográfica: leste, oeste, as quatro diagonais, depois norte e sul
++     entry .cardinal   leste, oeste, norte e sul, nessa ordem
++     entry #dx   o deslocamento horizontal unitário do alvo até a borda mais próxima do rótulo: -1, 0 ou 1
++     entry #dy   o deslocamento vertical unitário do alvo até a borda mais próxima do rótulo: -1, 0 ou 1
++   entry .Fallback   o que acontece com um rótulo que se sobrepõe a algo onde quer que seja posto
++       Um enum de dois casos. `Overlap`, o padrão, desenha o rótulo na posição em que ele menos se
++       sobrepõe. `Hide` não o desenha: sua `Caption.Position#visible` é `false`, o corpo não
++       desenha nada para ele, e ele não bloqueia nada para os rótulos posicionados depois.
+
+% 2 1 0 03f85aae2c6fa9611442bfc243757931
+
+% 3 1 0 0b1cbd820d120e7d1c1c092640c857a1
+
+% 0 1 0 128ea21b9794b7e60caaf5345577b222
+
+% 0 1 0 0b23cf323a84886d192342cd62167be5
+
+% 0 1 0 1e30ae471fc597f405a06e2c92952e73
+
+% 0 1 0 0e0cc0589c0cbf6b17bd5eb9c3dbbbdd
+
+% 1 1 0 0770ead20c15800d1dfdaab1267fb5de
+
+@ 0 1 0 1c74bdf436404c930a5420ecb7693688
++   entry .Leader   uma linha da borda de um rótulo deslocado de volta ao alvo que ele descreve
+
+% 1 1 0 035632d8f693394907a7fe3bcc7a6daf
+
+@ 0 9 0 1ea0d0521e995e4b040da8a8cb77b6b9
++         Desenhada para um rótulo afastado de seu alvo além do limiar de linha de chamada do
++         arranjador. Ela vai do ponto mais próximo da caixa do rótulo até o alvo. Os rótulos
++         posteriores evitam uma linha de chamada como evitam o rótulo ao qual ela pertence; uma
++         linha de chamada pode cruzar um obstáculo fixo, já que apontar para o alvo passando por um
++         marcador é a sua função, mas não outro rótulo.
++     entry #x1   a coordenada horizontal da extremidade na borda do rótulo
++     entry #y1   a coordenada vertical da extremidade na borda do rótulo
++     entry #x2   a coordenada horizontal da extremidade no alvo
++     entry #y2   a coordenada vertical da extremidade no alvo
++   entry .Position   o lugar arranjado de um rótulo: ponto de âncora, lado, área ocupada, linha de chamada e visibilidade
+
+% 1 1 0 1343b2d4d47668f70e0c6694864a8f39
+
+@ 0 4 0 076aba6b2dbe64f309c6e54fe751f3e2
++         O que `position` responde. O texto é posto em (`#x`, `#y`) com o alinhamento que seu
++         `#attachment` implica, ocupando `#box`; `#leader` é a linha a desenhar de volta ao alvo,
++         se o rótulo foi deslocado o bastante para precisar de uma; e `#visible` é `false` para um
++         rótulo `Caption.Fallback.Hide` que não pôde ser posicionado livre.
+
+% 2 1 0 0ca1e88253fc6bd41922d08979447fd2
+
+% 3 1 0 0f3826d8103703df1f255e6f7aab7aec
+
+% 0 1 0 0f39e7722fc9b2ab041cd59644012251
+
+% 0 1 0 0ff0de59855274411f5b7436d1f4d934
+
+% 1 1 0 1af780c8ad57dc81151359b5c509f3df
+
+@ 0 6 0 078cd5131a370551095e903c6482ea9d
++     entry #x   a coordenada horizontal do ponto de âncora do rótulo
++     entry #y   a coordenada vertical do ponto de âncora do rótulo
++     entry #attachment   o lado do alvo em que o rótulo fica, do qual decorre seu alinhamento
++     entry #box   a caixa que o rótulo ocupa
++     entry #leader   a linha de chamada a desenhar de volta ao alvo, ou `Unset` se não for necessária
++     entry #visible   se o rótulo deve ser desenhado
+
+@ 0 1 0 18c6fa005845f6260aadefcadb06941c
++ entry .Obstacle   algo sobre o qual nenhum rótulo pode ser posto: uma caixa, uma linha traçada ou um disco
+
+% 1 1 0 02df2b3c0496ecbd0760cde5d0146b96
+
+@ 0 5 0 07d4aa8a832c50511d888dee9a7b6bd7
++       Um trait selado de três formas, cada uma das quais responde a `#overlap` — quanto de uma
++       caixa ela cobre, em unidades de área. A resposta é exatamente zero quando as duas são
++       disjuntas, e sua magnitude só serve para classificar posições candidatas umas em relação às
++       outras, de modo que a de um disco é uma estimativa. Os obstáculos são declarados num corpo
++       de `arrange` com `avoid`, e o canvas com `canvas`; a área ocupada e a linha de chamada de
++       cada rótulo posicionado tornam-se obstáculos para os rótulos seguintes.
+
+% 1 1 0 1f23fc055b6a8c211cdd6e82a64c75c7
+
+% 2 1 0 1a490104b459cbb40a4b00f8eb80f336
+
+@ 0 2 0 0e370975db9e53a1102789034ad5343a
++   entry #overlap   quanto de uma caixa este obstáculo cobre: zero exatamente quando são disjuntos
++   entry .Box   um retângulo alinhado aos eixos num referencial com y para baixo: uma barra, um quadro de legenda, a área ocupada por um rótulo
+
+% 1 1 0 1d639e5f9966cb1d1579a6ab1b52d2a7
+
+@ 0 2 0 149c4750d09c18e0069edd0ff80db524
++         Dado por suas bordas `#left` e `#top` e por sua `#width` e `#height`. Como obstáculo, sua
++         sobreposição com outra caixa é a área que as duas compartilham.
+
+% 2 1 0 13a0ddbc5b4d61570e0f162e858367ca
+
+% 3 1 0 02782a06d6b951231e28b77f30ab2eae
+
+% 0 1 0 136c6df93614da980284b54106ea80f1
+
+% 0 1 0 15ccc1392729e2de0b2b48c6930574e4
+
+% 1 1 0 04eedf50127884ae0d1d84f979e538c3
+
+@ 0 17 0 121b44afa6f5b18d1ae2297eba056a3e
++     entry .around   a área ocupada por um rótulo ancorado num ponto de um lado do alvo
++         `Obstacle.Box.around(x, y, width, height, attachment)`: para `East`, a âncora é o meio da
++         borda esquerda da caixa; para `North`, o centro da borda inferior; para `Center`, seu
++         centro.
++     entry #left   a borda esquerda da caixa
++     entry #top   a borda superior da caixa
++     entry #width   a largura da caixa
++     entry #height   a altura da caixa
++     entry #right   a borda direita da caixa
++     entry #bottom   a borda inferior da caixa
++     entry #area   a área da caixa
++     entry #centerX   a coordenada horizontal do centro da caixa
++     entry #centerY   a coordenada vertical do centro da caixa
++     entry #pad   a caixa aumentada de uma quantidade em cada lado
++     entry #excess   quanto da área desta caixa fica fora de outra caixa, como o canvas
++     entry #contains   se um ponto está na caixa, bordas incluídas
++     entry #nearest   o ponto do perímetro da caixa mais próximo de um dado ponto, onde uma linha de chamada a encontra
++   entry .Line   um segmento traçado: uma aresta de uma polilinha plotada, ou uma linha de chamada
+
+% 1 1 0 1f1d0f11642749c4044bf3111d587221
+
+@ 0 11 0 038115e0f767ab5b0f98b981e4289f12
++         De (`#x1`, `#y1`) a (`#x2`, `#y2`), com uma `#width` de traço que por padrão é 1. Sua
++         sobreposição com uma caixa é o comprimento do segmento dentro da caixa, obtido pelo
++         recorte de Liang–Barsky, vezes sua largura, de modo que um rótulo não pode tocá-lo. Uma
++         polilinha é evitada como o conjunto de seus segmentos.
++     entry #x1   a coordenada horizontal do início do segmento
++     entry #y1   a coordenada vertical do início do segmento
++     entry #x2   a coordenada horizontal do fim do segmento
++     entry #y2   a coordenada vertical do fim do segmento
++     entry #width   a largura do traço, pela qual o comprimento recortado é multiplicado
++     entry #length   o comprimento do segmento
++   entry .Disc   um círculo preenchido, como o marcador de um gráfico de dispersão
+
+% 1 1 0 0d0db0eb1aa12962172c8dc9d423ed54
+
+@ 0 6 0 068f4d383f594da019542adfc65b2a01
++         Centrado em (`#x`, `#y`). Uma caixa está livre dele exatamente quando o ponto mais próximo
++         da caixa está a pelo menos `#radius` do centro; caso contrário, a sobreposição é estimada
++         como a sobreposição da caixa com o quadrado que delimita o disco, escalada por π/4.
++     entry #x   a coordenada horizontal do centro
++     entry #y   a coordenada vertical do centro
++     entry #radius   o raio do disco
+
+@ 0 1 0 13760589db0496f701311aadc5403328
++ entry .Arranger   um algoritmo que encontra uma posição para cada legenda, dado tudo o mais que há na página
+
+% 1 1 0 1dd3063f2d57ec6f13fdfc6cc6734b28
+
+@ 0 4 0 1dc6a90f6d09b2a80397edadd25e4219
++       Um trait de um único método: `#arrange` recebe as legendas, os obstáculos e o canvas
++       opcional, e responde com uma `Caption.Position` para cada legenda, na ordem das legendas.
++       `arrange` usa o que estiver em escopo: `.greedy`, do objeto companheiro, a menos que outro
++       seja importado do pacote `arrangers` ou vinculado como given local.
+
+% 2 1 0 13f2daf1e43e3d2f1605a10c419eb759
+
+% 3 1 0 01b7c58fb39353f11a1e8cd7bfece576
+
+% 0 1 0 17c3c969b6faf1dc039d64e6e6e04cbc
+
+% 2 1 0 16209625213cd0b9144a0297bbb90010
+
+% 3 1 0 1e7ac317d65570ef139b21dcd6eefe9a
+
+% 1 1 0 082b20d2ddb0adc60711243386e1b1e2
+
+@ 0 6 0 1d901379b58d3d581b5efe014deb4509
++       Os dois arranjadores embutidos tentam uma lista finita de candidatos para cada legenda, dos
++       menos deslocados para os mais: cada lado no alvo, depois cada lado em cada uma de oito
++       direções a um `step` de distância, depois a dois passos, e assim por diante até o `reach` da
++       legenda ou até `rings` passos. A colisão de um candidato é a área de sua área ocupada, com a
++       folga, sob cada obstáculo fixo, cada rótulo posicionado e cada linha de chamada
++       posicionada, mais a sua área fora do canvas e o comprimento de sua própria linha de chamada
++       sobre os rótulos posicionados.
+
+% 0 1 0 14fdc156f5593bb30758bdc18ab590f4
+
+% 0 1 0 104aba3926f1e9ae13424a5c7c5ae017
+
+@ 0 5 0 19c51f01dc600ed00506f4d81fad62d0
++   entry #arrange   posições para as legendas, em sua ordem, dados os obstáculos e o canvas
++   entry .greedy   o arranjador padrão: `Arranger.Greedy()` com seus parâmetros padrão
++       No escopo implícito, de modo que `arrange` não precisa de import; um given importado de
++       `arrangers` ou declarado localmente tem precedência.
++   entry .Pass   uma execução de um corpo de `arrange`: registra pedidos na primeira, responde na segunda
+
+% 1 1 0 1e5a47432d3d6c8f0d0eb4345873ad91
+
+@ 0 9 0 09ae2163a3e35560134337a50a0d9a03
++         O valor contextual que `arrange` fornece a seu corpo, e de que `position`, `avoid` e
++         `canvas` precisam. É mutável e criado por `arrange` para uma única execução, nunca é
++         compartilhado e não pode ser construído em outro lugar.
++     entry #solved   se esta é a segunda execução, cujas respostas são as posições resolvidas
++     entry #diverged   se a segunda execução pediu algo que a primeira não pediu
++         Uma chamada além das registradas, ou uma cuja legenda difere da da primeira execução na
++         mesma posição da ordem, é respondida de forma provisória e ativa esta flag: o corpo não
++         era repetível.
++   entry .Greedy   posiciona cada legenda, em ordem de prioridade, em seu melhor lugar, dadas as já posicionadas
+
+% 1 1 0 0c921040432db6da1289f34dd52f0f11
+
+@ 0 6 0 10f69d08da54140e149469ce3f5153ca
++         Cada legenda, as de `priority` mais alta primeiro e, de resto, em ordem, toma o candidato
++         menos deslocado que esteja livre de tudo o que foi posicionado antes dela, ou o que menos
++         colide, se nenhum estiver livre. Determinístico, e limitado pelo número de candidatos: no
++         máximo 1 + 8 × `rings` por lado. Uma legenda posicionada cedo nunca é movida para dar
++         lugar a uma posicionada depois, o que, numa imagem densa, pode deixar colisões que outra
++         ordem teria evitado; `Arranger.Annealing` trata disso.
+
+@ 0 10 0 030792a73a231d881958801b1ed786de
++         Os parâmetros: `step` (padrão 4) é a distância entre anéis de candidatos, `rings` (padrão
++         8), quantos anéis buscar para fora, `leaderThreshold` (padrão 6), o deslocamento além do
++         qual uma linha de chamada é desenhada, e `leaderWidth` (padrão 1), o traço atribuído a uma
++         linha de chamada como obstáculo.
++     entry #step   a distância entre anéis sucessivos de posições candidatas
++     entry #rings   quantos anéis de candidatos buscar, antes do alcance da legenda
++     entry #leaderThreshold   o deslocamento além do qual um rótulo ganha uma linha de chamada
++     entry #leaderWidth   a largura do traço de uma linha de chamada, como obstáculo para outros rótulos
++     entry #arrange   posiciona as legendas de forma gulosa, ocultando as que colidem e pedem para ser ocultadas
++   entry .Annealing   refina o arranjo guloso por recozimento simulado, a partir de uma semente fixa
+
+% 1 1 0 02bd1e25185bfd0e0b053f32088b414b
+
+@ 0 7 0 06417e7a803e1bdd1eed1726d8ccb413
++         Parte do arranjo guloso e então move repetidamente uma legenda aleatória para um de seus
++         candidatos, escolhido ao acaso, aceitando um movimento que reduz a colisão total e o
++         deslocamento ponderado, e um que os aumenta com uma probabilidade que cai à medida que a
++         temperatura esfria. Ao contrário da varredura gulosa, uma legenda posicionada cedo pode ser
++         movida para dar lugar a uma posicionada depois. Os movimentos aleatórios são sorteados a
++         partir de `seed` por meio de capricious, de modo que a mesma entrada é arranjada da mesma
++         forma toda vez, e `iterations` limita o trabalho com exatidão. As legendas que ainda
++         colidem e pedem para ser ocultadas são ocultadas, as menos importantes primeiro.
+
+% 2 1 0 11534037e3ba0333139ad269514189c9
+
+% 3 1 0 1e1c36901849cd9c126ae4f35626f097
+
+% 0 1 0 071561058896c7330f34479307214b6a
+
+% 1 1 0 0d9c89185fc59c3e1be3936932313d20
+
+@ 0 14 0 128a545ce22c2dfc1034505cbc2605a2
++         Parâmetros, com seus padrões: `seed` (`Seed(0L)`), `iterations` (4000), `temperature`
++         (1.0), `cooling` (0.995, o fator aplicado a cada movimento), `displacementWeight` (0.05,
++         quanto o deslocamento conta em relação à colisão), e `step`, `rings`, `leaderThreshold` e
++         `leaderWidth` como em `Arranger.Greedy`.
++     entry #seed   a semente da qual os movimentos aleatórios são sorteados
++     entry #iterations   o número exato de movimentos a tentar
++     entry #temperature   a temperatura inicial, que regula a facilidade com que um movimento pior é aceito
++     entry #cooling   o fator pelo qual a temperatura é multiplicada após cada movimento
++     entry #step   a distância entre anéis sucessivos de posições candidatas
++     entry #rings   quantos anéis de candidatos buscar, antes do alcance da legenda
++     entry #leaderThreshold   o deslocamento além do qual um rótulo ganha uma linha de chamada
++     entry #leaderWidth   a largura do traço de uma linha de chamada, como obstáculo para outros rótulos
++     entry #displacementWeight   quanto a distância de um rótulo até seu alvo pesa contra ele
++     entry #arrange   faz o recozimento do arranjo a partir do início guloso, depois oculta o que precisa ser ocultado
+
+@ 0 1 0 12ca3e491d5610661d943d241a8211d5
++ entry .arrangers   os arranjadores embutidos, cada um um given a importar pelo nome
+
+% 1 1 0 13bab8bc64ba3d201325ab36ca865455
+
+@ 0 4 0 1c7a808d87f374fb15a9c7e30bf0bbfd
++       O `Arranger` em escopo decide como `arrange` posiciona os rótulos. O objeto companheiro de
++       `Arranger` fornece o guloso por padrão; importar um destes pelo nome, ou vincular um
++       `Arranger.Greedy` ou `Arranger.Annealing` configurado como given local, o substitui.
++       `import soundness.*` não importa givens, por isso cada um é importado pelo nome.
+
+% 2 1 0 12c6069bc5ff53cf022ad836493dc4c3
+
+% 3 1 0 1063f763926a5e0308a5631e6772b492
+
+% 0 1 0 075d39f9c7df0f841fd3f22930e552d6
+
+% 2 1 0 09016133b09127f61d92bf50526f314e
+
+% 3 1 0 0ec34f66b294d11a1a1b7a64939169d4
+
+% 0 1 0 09beca149977b55211cd35e8a8791f0f
+
+% 0 1 0 0295d51219211984050cfc53bbc4e962
+
+% 1 1 0 05de78e533337026038fd62566beb1c2
+
+@ 0 2 0 1ae875e88eb4cb3c0b18c7dddee5382f
++   entry .greedyArranger   `Arranger.Greedy()`: determinístico, ordenado por prioridade, nunca revisita um rótulo
++   entry .annealingArranger   `Arranger.Annealing()`: recozimento simulado a partir do início guloso, semente 0

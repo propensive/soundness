@@ -1,0 +1,31 @@
+orthant 2 language
+
+% 0 1 0 0d0c72f6e402301f11c88f2e682182df
+
+@ 0 2 0 06ce82b8b41c65a21fc4d260223726e0
++ テキストを Scala の列挙型の値としてデコードしようとしたが、それがどの値の名前でもないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 0b87946ea6f5cf921c7600b988e1ba48
++ `distillate.Decodable.enumeration` は、`reflect.Enum` を（ラベルを付け直されている場合もある）その名前でデコードする。
++ 描画されるメッセージは `the specified variant ($inputLabel) is not one of the valid variants ($validVariants) of the enumeration $sum` である。
+
+@ 0 2 0 0510886676b4c5d206ee79a7820b7ff9
++ **例。** `[↯/s.25.3] the specified variant (blue) is not one of the valid variants (red, green) of the enumeration Colour`
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解決方法
+
+@ 0 2 0 144ec8bac241d0d00d765e3e2a5764d9
++ 一覧にある名前の一つを使う。ワイヤ形式が Scala の名前と異なる場合は、`@name` または `Identifiable` インスタンスで値のラベルを付け直す。
+
+@ 0 1 0 0adad908e6756fa1054b3eb0b9c760c1
++ このエラーが存在する前は、同じ失敗は `wisteria.Variant.Error` を発生させていた。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 1e54a1f5ad32b4081c004d9c958b8eaf
++ - ソース：`lib/distillate/src/core/distillate.Enumerable.scala`

@@ -1,0 +1,12 @@
+orthant 2 language
+
+% 0 1 0 064ababe6a63dda410fe6ab94b2902cf
+
+@ 0 6 0 0151eecb9f22598d1b6186f02898689d
++ Code, der anderswo läuft, kann scheitern, aber ein im gestagten Block ausgelöster Fehler wird
++ nicht als er selbst über die Grenze zurückgetragen. `dispatch` löst nur einen `Compiler.Error`
++ aus, wenn der gestagte Code nicht kompiliert, oder einen `Rig.Error`, für ein Scheitern des
++ Rigs. Mit dem Rig `Jvm` lässt gestagter Code, der eine Ausnahme wirft, seinen Unterprozess mit
++ einem Fehlschlag enden, der als `Rig.Error` mit dem Grund `Invocation` gemeldet wird: derselbe
++ Fehler wie bei einem Unterprozess, der nicht starten wollte. Gestagter Code, der scheitern kann,
++ sollte sein Scheitern daher als Wert zurückgeben.

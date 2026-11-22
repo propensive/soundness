@@ -1,0 +1,816 @@
+orthant 2 language
+
+@ 0 1 0 075bb461108c95771362bfe99e99218f
++ ## Applicazioni da riga di comando
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Panoramica
+
+@ 0 3 0 117bf8e90b6089601943e86837c91878
++ Un'applicazione da riga di comando ha tre parti: un punto di ingresso, che consegna al programma
++ i suoi argomenti, un'interpretazione di quegli argomenti come sottocomandi, flag e operandi, e i
++ completamenti con il tasto tab per ogni shell.
+
+@ 0 4 0 0de7d33d68f5eb11096aa652a2367d8c
++ La parte insolita è che i completamenti derivano dallo stesso codice che esegue il comando, per
++ cui non possono allontanarsi da ciò che il programma fa davvero. Né può farlo il testo di aiuto,
++ la pagina di manuale o l'elenco degli stati di uscita. Tutti vengono letti dal programma, non
++ scritti accanto a esso.
+
+@ 0 1 0 13b4865027f5a84815aff574312f967b
++ ### Sulla riga di comando
+
+@ 0 5 0 0dd68484fd9940a3142cf7cf76eabcdf
++ Gli argomenti che una shell passa sono un elenco piatto di testo. Ogni programma da riga di
++ comando deve ricostruirne la struttura prima che inizi qualunque lavoro vero: quali parole sono
++ sottocomandi, quali sono flag, e quali valori appartengono a quali. Gli script di completamento
++ implementano poi di nuovo quella stessa interpretazione, a mano, per ogni shell, e si allontanano
++ dal programma che descrivono. La nuova flag esiste, ma i completamenti non ne hanno mai sentito
++ parlare.
+
+@ 0 6 0 0e5cd4f921c400aa118b64316f503dfe
++ Qui l'elenco degli argomenti viene trasformato in valori tipizzati: un sottocomando
++ riconosciuto per nome, una flag letta come `Int`, un operando [decodificato](decoding.md) in un
++ percorso. Di ogni argomento si registra quanto basta per completarlo. Premere `tab` esegue il
++ codice del programma stesso per la gestione degli argomenti, in una modalità che produce
++ suggerimenti anziché effetti. Una flag che il programma controlla diventa quindi una flag che il
++ programma può suggerire, e i completamenti concordano con il programma per costruzione.
+
+@ 0 3 0 0c397cfcf5a417e21c7bddd983517a40
++ Ogni parametro, e il modo in cui viene analizzato, è dichiarato dove il comando è definito, il
++ che corrisponde allo stile del [contesto dichiarativo](../../philosophy/declarative-context.md),
++ applicato alla riga di comando.
+
+@ 0 3 0 0be719ba855bc2d8122aba2ab6ed6431
++ Le sezioni seguenti partono da un punto di ingresso minimo e procedono attraverso sottocomandi e
++ flag fino a completamenti, aiuto e pagine di manuale. Tutto proviene dal package `soundness`,
++ insieme ad alcune scelte di cui il punto di ingresso ha bisogno:
+
+% 2 1 0 02a77dac1f793e61058d47d4a910acb9
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 12776c3c58403dcf0383186c062f4474
+
+% 0 1 0 0e110ee4c374ea9e0a34a6213a7a8ff6
+
+% 0 1 0 17bef8dc1edab8da1623ee0b5deff790
+
+% 0 1 0 049ee78ccae9490c10df891508d8f166
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+% 0 1 0 045ed05bf2334f7915bbdf3e5346fef9
+
+@ 0 6 0 1e22f527b9f9001c002bc59119695fbb
++ column  Decide
++ row  `interpreters.posixInterpreter`  come l'elenco piatto degli argomenti viene letto come flag e operandi
++ row  `executives.directExecutive`  che cosa restituisce il corpo del punto di ingresso; [Completamenti con il tasto tab](#tab-completions) ne usa un altro
++ row  `backstops.genericErrorMessageBackstop`  che cosa viene stampato quando un errore sfugge al programma
++ row  `systems.javaBaseSystem`  da dove provengono le [proprietà di sistema](environment.md#system-properties)
++ row  `strategies.throwUnsafely`  che un errore viene lanciato come eccezione
+
+% 1 1 0 00d220a17931d83c1076bb5625270c62
+
+@ 0 1 0 064417b8467a34330ea4796a3be668c9
++ Gli esempi in questa pagina definiscono programmi interi, per cui vengono compilati ma non
++ eseguiti.
+
+@ 0 1 0 103e9b35ca3475ac1743673039a3eaf2
++ ### Un punto di ingresso
+
+@ 0 2 0 145a01b954c5f1361f82c2de55c2dcce
++ Il metodo `application` avvolge il punto di ingresso di un programma. Dà al suo corpo il contesto
++ del programma e si aspetta in cambio uno stato `Exit`. Riceve gli argomenti come elenco di testo.
+
+@ 0 2 0 0c8615b4417addcd076fe2c7714cd7f7
++ Lo stesso programma può essere ugualmente un oggetto che estende `Application`. Quella classe
++ astratta fornisce il metodo `main`, che converte gli argomenti della JVM, e chiede soltanto un
+
+% 0 1 0 06e9403629bc18ea011c9e4882733fa7
+
+% 2 1 0 019fdcf1e21fb20818818f34006c522c
+
+% 0 1 0 14c414b93399500718323b4c237b11b4
+
+% 1 1 0 123d416a894f8e83115647107ea81709
+
+% 0 1 0 1f6b06b3a0288a0d08299e5af4443e6d
+
+% 0 1 0 1c9ee16211be36a006455bd51638ba39
+
+% 0 1 0 0550eda7b20141fd1917f71781eeafe5
+
+% 0 1 0 0693fc9840ad1394109517444289602b
+
+% 1 1 0 14be5909c3f613fc0dd3a8c6f2fa3b85
+
+% 0 1 0 1bba4eb39d03daf01befac22af62d39e
+
+% 0 1 0 183a8b791ed2da9e146ddf6def4b4ea6
+
+% 0 1 0 0a764f1f217cf51e0790cb37c8a99324
+
+% 0 1 0 135581dff005d63d069f9a04fb8f49c0
+
+% 1 1 0 1a006f538ed3d82702b29cb63774ee52
+
+% 2 1 0 1b36cee6b62a418a0b6155003287b5d1
+
+@ 0 4 0 1524118c733aa9280ce9d29956093e30
++ Confezionato come JAR eseguibile il cui `Main-Class` è `mytool` o `MyTool`, questo programma si
++ esegue da una shell. `Exit.Ok` segnala il successo. `Exit.Fail(1)`, o qualunque codice positivo,
++ segnala il fallimento. Lo stato deve essere restituito, e non è mai lasciato implicito.
++ [Packaging](packaging.md) costruisce il JAR.
+
+@ 0 1 0 0cb7d2c54804a82516abd80db5ddcc8b
++ ### Argomenti
+
+@ 0 2 0 17cb1397f467872302f476840fa3f17b
++ All'interno del corpo, `arguments` è l'elenco degli argomenti che il programma ha ricevuto.
++ Ciascuno è un `Argument`, e applicarlo ne dà il `Text`:
+
+% 2 1 0 1213434f37a47baf1f87b66680952b9d
+
+% 0 1 0 00f33009b4fbfbdd0d6059f89e5bdf42
+
+% 0 1 0 1cce43df410435301584b94528a07855
+
+% 0 1 0 0f475df2eeb176d71f5fdd6e012008c0
+
+% 1 1 0 1b0edf6f01ddbcc104f77c2f35f948b6
+
+% 2 1 0 03be575c139bf7870f6b67cc5f4d7d02
+
+@ 0 4 0 198004afb13e475117e344a2a5199b15
++ Un `Argument` è più del suo testo. Ricorda la propria posizione sulla riga di comando, ed è ciò
++ che in seguito permette a un completamento di sapere quale argomento sta completando. Le
++ posizioni sono numerate a partire da `0`, per il primo argomento dopo il comando, e non da `1`,
++ come nella maggior parte dei linguaggi di scripting.
+
+@ 0 5 0 0678130b06b1a4f80301096cafde9408
++ Due parole sono spesso usate in modo intercambiabile, e conviene distinguerle. Gli *argomenti*
++ sono la sequenza piatta di valori testuali che la shell consegna. I *parametri* sono ciò che
++ significano, una volta interpretati. Gli argomenti di `grep -rA4 pattern` sono `-rA4` e
++ `pattern`. I suoi parametri sono «cerca ricorsivamente», «mostra quattro righe di contesto
++ successivo» e «cerca `pattern`».
+
+@ 0 2 0 12b798dccb86aece0ffad7539eeab94d
++ È l'interprete nell'ambito a trasformare i primi nei secondi, ed è per questo che viene scelto
++ tramite import, e non è fisso. Il package `interpreters` ne ha tre:
+
+% 2 1 0 04c7d4b01cea15ed1b5c35359bd9eb3f
+
+@ 0 5 0 0765497600eb240c077f53227184a0b7
++ column  Interprete
++ column  Legge
++ row  `posixInterpreter`  le flag `--long` e `-s`
++ row  `posixClusteringInterpreter`  le flag `--long` e `-s`, e `-rA4` come `-r -A 4`, con l'ultima lettera di un gruppo che prende il valore
++ row  `simpleInterpreter`  ogni argomento come operando, e nessuna flag
+
+% 1 1 0 0101814926c1a64c13b7edadabd6d2ac
+
+@ 0 1 0 02303c87211351910560854df38228ec
++ ### Sottocomandi
+
+@ 0 3 0 09aa372c589591aa1c3d22cbfaae91f7
++ Un `Subcommand` nomina una modalità in cui il programma può essere eseguito, con una
++ descrizione per l'aiuto e i completamenti. È anche un estrattore, per cui il primo argomento
++ viene confrontato con esso in un normale pattern:
+
+% 2 1 0 1cb41fbb58664ae517c8ef29fb5e40d2
+
+% 0 1 0 062559d6b9930f6110fc041711e0bb59
+
+% 0 1 0 0403899955d6084a07b1305165971478
+
+% 0 1 0 0655eb1d1f787cc903cea2c4b242e3b9
+
+% 1 1 0 08e803f5202b7cab1b4b8f6638091a74
+
+% 0 1 0 1f25e203fd10a66518e840e2e77a2cc6
+
+% 0 1 0 02cb1b3821663e091d23708aeeb26062
+
+% 0 1 0 14ea3bf8ce3c46220187d97c546393e6
+
+% 1 1 0 183f1786a8496a1c03dbb10a7a44358e
+
+@ 0 3 0 0b8f8184022e92db1086f680938b8940
++ La descrizione è scritta con l'interpolatore `e"…"`, che porta la
++ [formattazione](terminal.md#styled-text) per le shell che la mostrano. Funziona anche una
++ descrizione in semplice `Text`.
+
+@ 0 4 0 15c018e58695b5f015fe3c02f8aee09f
++ I sottocomandi si annidano. Riconoscere un sottocomando, e poi fare di nuovo il match sugli
++ argomenti rimanenti, dà un albero di comandi, ciascuno con le proprie flag. Un sottocomando può
++ essere `hidden = true`, il che lo tiene fuori dall'aiuto e dai completamenti. I sottocomandi
++ vengono raccolti sotto intestazioni nell'aiuto con un `CommandGroup`:
+
+% 2 1 0 1498457fc23309db07fdd6939f63af0f
+
+% 0 1 0 13e59cb06f51fede1d019cf15aa394f7
+
+% 0 1 0 1400d22de70e6b0b0a55f25a8a1d70d4
+
+% 1 1 0 0d5ccd52b9852b41070081abdf933a31
+
+@ 0 1 0 15625c54289d995e0fe732fdaee827f1
++ ### Flag
+
+@ 0 4 0 1df3741093005dc50d960f742611ed02
++ Una `Flag` è un argomento che inizia con `-` o `--`. Dichiararne una, e applicarla, ne legge il
++ valore dalla riga di comando. Il risultato è [`Optional`](optional-values.md), perché la flag
++ può essere assente. Il tipo di una flag è quello in cui il suo valore deve essere decodificato,
++ e qualunque tipo che possa essere letto dal testo funziona senza ulteriori cerimonie:
+
+% 2 1 0 0a9d01be5742fbb41fe4a1de4d1294fa
+
+% 0 1 0 1c9713e15f1d0b7e0c44f395fa7e5ace
+
+% 1 1 0 04f9b026bd467f60009924c9e1459b7a
+
+% 0 1 0 19c52d0b9fcac4e00775c142a1915772
+
+% 0 1 0 02501c5eac4b40b8148a279c3218bf15
+
+% 0 1 0 08213eb2e256cc5c09c6d5b3d3d11ef3
+
+% 1 1 0 0bca7c4ed15601b60a5a3c91043901d1
+
+% 0 1 0 0d26ebc378cc279c17830bf92e1a412d
+
+% 0 1 0 12f65cad1eb673450e209c16c98f0c69
+
+% 1 1 0 11535544f248d1180b0af024ff94cf9e
+
+@ 0 1 0 0608bf8a454985990c037e526cf29590
++ Una flag si dichiara con questi parametri:
+
+% 2 1 0 0e154ac4980a8e6613b53c3fbffc51c4
+
+@ 0 8 0 1689b16219b41c000986f71f1d3c5b23
++ column  Parametro
++ column  Predefinito
++ column  Significato
++ row  `name`  obbligatorio  la forma lunga, come `--name`, o un `Char` per una forma corta
++ row  `aliases`  `Nil`  altre forme, come una forma corta `-j`
++ row  `description`  `Unset`  il testo mostrato nell'aiuto e accanto ai completamenti
++ row  `repeatable`  `false`  se la flag può comparire più di una volta
++ row  `secret`  `false`  se escludere la flag dai completamenti e dall'aiuto
+
+% 1 1 0 1afe7c086dd1e0df14ef8d649c01719a
+
+@ 0 1 0 19c70760831c2a7105f401f1d11496d5
++ `aliases` fornisce le forme corte, per cui `--jobs 4`, `-j 4` e `--jobs=4` vengono letti allo
++ stesso modo.
+
+@ 0 5 0 1d88607c14cf1f830b155473189de3ca
++ Le occorrenze di una flag ripetibile vengono lette insieme, tramite un tipo `List`. `--tag a
++ --tag b` viene letto come `List(t"a", t"b")`, con ogni operando interpretato come il tipo degli
++ elementi. Un tipo `Optional` legge come `Unset` un operando che può essere malformato, anziché
++ sollevare un errore. Contare una `List` la percorre, per cui `size` richiede il
++ [riconoscimento `linearSize`](collections.md#positions-and-access):
+
+% 2 1 0 122c69778b5d92ea03ea1aea7b1be6ad
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 12d83ca59ec19a3414bb446742b9d1e3
+
+% 0 1 0 16d90a4354adc6161dc434fea8ce078b
+
+% 0 1 0 193fb3589e79ca8c09af3786b61b29d0
+
+% 0 1 0 038f8d2677e2f6501902762ff46f40c5
+
+% 1 1 0 02f545710855c5ac17d5ab7376e852b7
+
+% 2 1 0 0de04cb5e5253fc90d9fce54ee13f753
+
+@ 0 1 0 10bf83733f3f3cce0d001f83cb77c6d5
++ Una flag che non accetta valore, ed è semplicemente attiva o disattiva, è uno `Switch`:
+
+% 2 1 0 108c172a5eac4c090d2aecec551fd7a8
+
+% 0 1 0 0b57ee3de01a99930d37b5bb38fceb38
+
+% 1 1 0 0ccd9dde2cd0df1a09d5266dca049bfa
+
+@ 0 1 0 0be19ab73c174de518cfc915e1abff1a
++ ### Impostazioni
+
+@ 0 5 0 1a5b3eff3c349f760885fb868b205558
++ Molte opzioni dovrebbero essere impostabili non solo sulla riga di comando, ma anche tramite una
++ [variabile d'ambiente](environment.md), una proprietà di sistema o un file di configurazione,
++ con un ordine di precedenza fisso. Un `Setting` dichiara una tale opzione una sola volta, con un
++ nome canonico in camel case, e ogni sorgente ne ricava il proprio nome per convenzione.
++ Dichiarare l'identità di un'applicazione, come `Configurator.Prefix`, attiva la cascata
++ standard:
+
+% 2 1 0 16b5594af871acbe1ae9e07a764bec99
+
+% 0 1 0 181c1770d819efa91a91871f68b53acd
+
+% 0 1 0 19e7341d8713a3601771bdfa031a7f21
+
+% 0 1 0 0ff2c28d377bf1b706fca78a5f02aaec
+
+% 1 1 0 0f916d93cf69d4760fc8867226b45ec3
+
+@ 0 2 0 0995259171b307e11056bd41640a7e08
++ Leggere `LogLevel()` all'interno del corpo consulta le sue sorgenti in ordine, e vince la prima
++ che ha un valore:
+
+% 2 1 0 0dad7aabc24b82ae04bc9e7803159d61
+
+@ 0 6 0 01c0ba70676a7fe1037510c5e4df0f8a
++ column  Sorgente
++ column  Nome, per `logLevel`
++ row  la flag da riga di comando  `--log-level`
++ row  la variabile d'ambiente data come `variable`, se presente  alla lettera, come `MYAPP_HOME` per `Home`
++ row  la proprietà di sistema  `myapp.log.level`
++ row  la variabile d'ambiente  `MYAPP_LOG_LEVEL`
+
+% 1 1 0 0c15190a83a153400a1731dcc95c0039
+
+@ 0 4 0 170f6136e43fc9081d2b5c3ece347fa1
++ Il risultato è `Optional`, per cui un valore predefinito si dà nel modo consueto, come
++ `LogLevel().or(t"info")`. `variable` serve per un'impostazione la cui variabile d'ambiente non
++ segue la convenzione. Leggere un'impostazione registra la sua flag per il completamento con il
++ tasto tab, esattamente come farebbe leggere direttamente la flag.
+
+@ 0 5 0 0d3634e1a064b39c16ee9dbd1f332063
++ Ogni sorgente è un `Configurator`, che ha un unico metodo astratto, dal nome canonico di
++ un'impostazione a un valore testuale opzionale. La cascata è semplicemente una composizione con
++ `++`, in cui il lato sinistro ha la priorità. Non è prescritto alcun formato di file di
++ configurazione, ma qualunque sorgente può unirsi alla cascata come funzione di una riga.
++ Definire un given `Configurator` sostituisce la cascata standard, anche se la flag da riga di
++ comando ha sempre la priorità:
+
+% 2 1 0 0cbb8df4ece1133703cdfef4d4977069
+
+% 0 1 0 111f6c17f1f38c2d06e62e6735e2c81a
+
+% 0 1 0 0d897706358ecf65189d8c3428ea55f6
+
+% 0 1 0 161802418ccd3e680d4d5d68a9f73cc4
+
+% 1 1 0 16440beee084bee70298ea30be11b04c
+
+@ 0 1 0 0cdde65bf92fb31c1e1944eef24fb35d
++ ### Stato di uscita ed errori
+
+@ 0 4 0 0a051e52da1f8c961d5c388f1765c4b9
++ Il corpo restituisce un `Exit`: `Exit.Ok`, oppure `Exit.Fail(code)` per un fallimento. Un
++ [errore](errors.md) che sfugge al corpo viene catturato dal *backstop* nell'ambito, che lo
++ trasforma in uno stato di uscita anziché in uno stack trace. Un backstop si sceglie importandone
++ uno dal package `backstops`:
+
+% 2 1 0 01cc22f7f4980612091dfc13ab2c715c
+
+% 0 1 0 0f164885cf74aa1217a6e45f2855a677
+
+@ 0 5 0 1047d26b555149d90d432c29e4636f54
++ column  Stampa
++ row  `genericErrorMessageBackstop`  un messaggio breve e fisso: `An unexpected error occurred.`
++ row  `exceptionMessageBackstop`  il messaggio dell'eccezione stessa
++ row  `stackTraceBackstop`  lo stack trace completo
++ row  `silentBackstop`  nulla
+
+% 1 1 0 135dc82f77661d0919a79a4467a762b4
+
+@ 0 1 0 05e8d20353e844101b719bb7430ffe77
++ Ciascuno esce con stato 1 per un'eccezione, e con 2 per qualunque errore più grave.
+
+@ 0 2 0 150d8c2555be4ac703d2b46a92fe9561
++ Un codice di uscita da solo dice poco all'utente. Un fallimento che il programma prevede è
++ meglio dichiararlo come `Status`, un oggetto con sia il codice sia una descrizione:
+
+% 2 1 0 0e7b493480f22ecd1736a3bf87e3f2e2
+
+% 0 1 0 1102ad3f14aac8ac1149e99721d6ed07
+
+% 0 1 0 0e8f006dd1a7d72103f0005f7cebd1fb
+
+% 1 1 0 0a1d43e65bc06f7e0e7d3934ccbe06a6
+
+@ 0 3 0 0650f1f02191553c1df01002cf106562
++ Uno `Status` si restituisce ovunque si restituisca un `Exit`. Con l'executive dei completamenti,
++ descritto più avanti, gli stati che un comando può restituire vengono scoperti dal suo codice, e
++ compaiono nel suo aiuto e nella sua pagina di manuale senza essere elencati altrove.
+
+@ 0 1 0 1d2295c11724223d17489bc1303359ac
++ ### Completamenti con il tasto tab
+
+@ 0 3 0 0aa1ea788791baa11057875ffc7cccf5
++ Il completamento con il tasto tab è una delle cose più utili che un programma da riga di comando
++ offra. Permette all'utente di scoprire le funzionalità, di vedere quali flag e valori sono
++ disponibili e di evitare del tutto gli errori di battitura.
+
+@ 0 6 0 125491d4b4d4d0c80805ae7993515dfe
++ Per convenzione, inoltre, viene mantenuto separatamente dal programma stesso. Esiste uno script
++ diverso per ogni shell, spesso scritto da persone diverse. Ciascuno approssima il comportamento
++ del comando elencandone i sottocomandi e le flag, e talvolta si spinge oltre, per mantenere
++ coerenti tra loro le flag mutuamente esclusive. Le shell non concordano nemmeno su che cosa sia
++ un completamento: Bash offre solo il testo del completamento, mentre Zsh e Fish possono mostrare
++ una descrizione accanto a esso. Il lavoro è ammirevole, ed è impossibile mantenerlo corretto.
+
+@ 0 5 0 02d36ccbf9950cd81a168b8bdadd90c3
++ Qui il programma stesso è l'unica fonte di verità. Lo stesso codice che interpreta gli argomenti
++ produce i completamenti, per cui concordano per costruzione. Gli script per ogni shell si
++ riducono a nulla di rilevante: catturano la riga di comando incompleta, la posizione del cursore
++ e il nome della shell, e li consegnano all'applicazione in modalità completamenti.
+
+@ 0 3 0 058222c1e47a553f17a798089753d85f
++ Attivare i completamenti sostituisce l'executive predefinito con l'executive dei completamenti.
++ Lo si importa dove è definito il punto di ingresso, in modo che sia esso, e non l'executive
++ diretto, quello nell'ambito per quel programma:
+
+% 2 1 0 1d15f2db5436d1501efc91132259bd83
+
+% 0 1 0 197f1109e7f809191be0a5e6413d8524
+
+% 1 1 0 158b6285908e99d0091b8456ce61643e
+
+@ 0 5 0 14889ac18ea8f67210edf406f025143d
++ Con questo executive, il corpo restituisce una `Execution`, e l'unico modo di costruirne una è un
++ blocco `execute`. Il codice *prima* di `execute` è il *preludio*. Viene eseguito sia quando il
++ comando viene invocato sia quando vengono richiesti i completamenti. Il blocco `execute` viene
++ eseguito *solo* in un'invocazione reale. Quindi il preludio gestisce gli argomenti, e gli effetti
++ collaterali stanno dentro `execute`:
+
+% 2 1 0 06bac51ce5830a36066a8d687277eac8
+
+% 1 1 0 0d625f7e41cde2400b295dd6c23b3d7b
+
+@ 0 1 0 08ce615116da37af0a3339cc7deb347a
++   label I sottocomandi, con l'executive diretto
+
+% 1 1 0 1db1758a2c47d7fd1e4143242470f102
+
+% 0 1 0 06ad9756a4ea8ec30c97d603afec1cf1
+
+% 1 1 0 18babe3aa903135912fa7c4ce94b243a
+
+% 2 1 0 12d2f3fd2f3bb055151fb248b81bfa1f
+
+% 3 1 0 11a58e90162eb5031040c81486776098
+
+% 0 1 0 09f97e67067ca680066cc5757413fb87
+
+% 0 1 0 0d9eb79b2ad23e230aa7f51d7b4c2f23
+
+% 0 1 0 005e9ad648615fb30f12414b80890dee
+
+% 1 1 0 0d0ee31695075020158bab8c7c1cbcb3
+
+@ 0 1 0 06b5cf56cc6657f919bd455ebd7c4876
++   label Con una flag letta nel preludio
+
+% 1 1 0 036bf21fd447ccf50c158c7fb3484a3d
+
+% 0 1 0 1a58044c761fd53b1180bb7ec0ad199b
+
+% 1 1 0 0a6d5f5c6ff0f0f5147fb17f9b6387ff
+
+% 2 1 0 0e63c0bfd75851730f2e749d6c3f78e9
+
+% 3 1 0 00daf7029e16e3851dada24e2fba601a
+
+% 3 1 0 1effcbc511147eb3116f03a7af60362b
+
+% 0 1 0 0b34716f8834fc8c1705fe0b47cdb20a
+
+% 0 1 0 0456f19f3e475d9b1884daad74611506
+
+% 0 1 0 08770c8d2d48ab3c1cecaf6dd69ac37e
+
+% 2 1 0 08ecbab33254968200a65cd30babdb20
+
+% 0 1 0 01c854bba92cd15f0096c576018ec171
+
+% 1 1 0 0c9ee0d7cd03aa1d13a347da1637a15f
+
+@ 0 1 0 18c9954ea07ac59d123bf09a7dec12b8
++   label Con l'executive dei completamenti, gli effetti dentro `execute`
+
+% 1 1 0 1203571ff9e6c8260d8d467c228fe833
+
+% 0 1 0 18da09856b99d5d212c18114bb6ac2c3
+
+% 0 1 0 092a354f9704715616ac8382e89c832a
+
+% 1 1 0 1bf907fc46b01ff6035bd15d3a8a8415
+
+% 2 1 0 184d4926762d54ab060ccf146211d68f
+
+% 3 1 0 164e9f283b449e650e6900be46f06ecd
+
+% 0 1 0 19d7b3f16223fc120a52186265eb5796
+
+% 0 1 0 03a1b885eeb30dad19d065411c801740
+
+% 0 1 0 07a313accd7fa6de0a6c0f6b5f635f5a
+
+% 0 1 0 14648cf2c1d7887a04b1732bc65385cc
+
+% 2 1 0 1bae3b6f9e52bd741786512b5a304d8c
+
+% 0 1 0 1b2c6a91f82b5aa408e06f2b9ebb5917
+
+% 1 1 0 1396e2013f78438804dce694572f6705
+
+% 2 1 0 137fb66f55aef72d0b685cd613f77200
+
+@ 0 3 0 00a463325f8a9c8a1e7bd9c7f0831dc7
++ Il riconoscimento di `Build` e la dichiarazione della flag `--jobs` avvengono nel preludio, per
++ cui vengono eseguiti quando l'utente preme `tab`. Dopo `mytool `, la shell offre `build`, e dopo
++ `mytool build `, offre `--jobs`.
+
+@ 0 5 0 1cd4660978516ae6156ce2d08b6efe9f
++ È la struttura a garantirlo. Una `Execution` non può essere prodotta senza un blocco `execute`, e
++ il preludio che registra un completamento è esattamente il preludio che legge il valore, per cui
++ completamento ed esecuzione non possono mai essere in disaccordo. L'executive dei completamenti
++ nega inoltre al preludio lo standard output, poiché durante il completamento non c'è dove
++ inviarlo. `Out.println` è disponibile solo dentro `execute`.
+
+@ 0 1 0 044ecbc2d6baec690a170e9e3244f4e8
++ #### Completamenti condizionali
+
+@ 0 3 0 1c3b83eb41cf9a040defa9b95c4cf690
++ Una flag letta nel preludio dà un handle `Prospective`, non il valore stesso. I suoi `present`
++ e `absent` possono essere consultati subito, per decidere che cos'altro offrire, ma applicarlo
++ per ottenerne il valore è possibile solo dentro `execute`.
+
+@ 0 4 0 0c91f1a6360ba15f042b789073ac57ec
++ Le conseguenze vanno più a fondo di «una flag che viene letta è una flag che viene offerta». La
++ lettura può essere condizionale, e allora lo è anche l'offerta, *esattamente alla stessa
++ condizione*. Si consideri un comando con una flag `-v`, che attiva l'output, e una flag
++ `--verbosity`, che ha senso solo accanto a essa:
+
+% 2 1 0 0662425162ab589e0c0c63b03fe67a13
+
+% 0 1 0 12c970baa9d590bf0485b135395164fa
+
+% 0 1 0 01af92bec8d2b5af19f53e9d32123a46
+
+% 0 1 0 1a8bfcbf6e0a204a09307f7db7a380f0
+
+% 1 1 0 07d87285ff54ec1500f5ef8f175a893a
+
+% 0 1 0 1be8aec77db3133c08e3dcd95b366126
+
+% 1 1 0 100b8c4d5409ebda0643e3eb4acbca05
+
+% 0 1 0 0c374ebc1fd0122912b748e866ece8bd
+
+% 0 1 0 159f1fa2ea7938e80c944d45bc63cc3d
+
+% 2 1 0 0cea2515635d2e5707376edb9f11a720
+
+% 0 1 0 00a78ba0d2b60b121c2fb4b6008c4295
+
+% 1 1 0 1ebcdb49df5451e8022f4054816953fa
+
+% 2 1 0 1ded8e2a305b8f3618f455e4caf02bda
+
+@ 0 2 0 157a1c597062dd0819371dcf8be18253
++ Una flag il cui tipo è un'[enumerazione] legge il proprio valore per nome, nello stile scelto dal
++ given `enumIdentification` importato: qui, `--verbosity loud`.
+
+@ 0 6 0 0849246dfcba4f461b5f2af0855a78f5
++ Premere `tab` dopo un `-` nudo esegue questo preludio. `-v` viene controllata, e diventa quindi
++ un candidato. Se non è ancora sulla riga di comando, viene offerta. Se *è* già presente, viene
++ eseguito anche il ramo che controlla `--verbosity`, per cui anche `--verbosity` diventa un
++ candidato, mentre `-v`, che ha senso una sola volta, no. Nessuna tabella di dipendenze tra flag è
++ stata scritta da nessuna parte. La struttura condizionale del codice è la struttura condizionale
++ dei completamenti, per quanto complessa diventi.
+
+@ 0 5 0 01761808a79aa67809b5695967e1707c
++ Una riserva riguarda il codice `inline`. `Flag#apply()` è un metodo `transparent inline`.
++ All'interno di un altro `inline def`, non viene espanso quando quel corpo viene tipizzato, per
++ cui il suo risultato non viene ristretto a un `Prospective`, e `.present` su di esso
++ risponderebbe `true` per ogni flag. Un metodo inline dovrebbe leggere una flag con
++ `Flag#present`, ovunque, oppure con `Flag#value`, dentro `execute`. Sono entrambi metodi
++ normali, che leggono direttamente la flag.
+
+@ 0 1 0 0c667bee6da064841f1c6ebdcd869f3d
++ ### Flag obbligatorie e validate
+
+@ 0 4 0 1af05eeee36076631b8cdb8394e2926a
++ Una flag che deve essere presente si legge con `require()` anziché con `()`, e una il cui valore
++ deve anche decodificarsi correttamente si legge con `validate()`. Nel preludio, ciascuna dà un
++ handle `Requisite`, il cui valore è disponibile incondizionatamente dentro `execute`, perché un
++ requisito mancante o malformato impedisce del tutto l'esecuzione del blocco.
+
+@ 0 3 0 1850b092467f263015999363e1bababa
++ Ogni flag di questo tipo viene controllata prima che il blocco inizi. L'utente viene quindi a
++ sapere di tutte in una volta, con stato di uscita 2, secondo la convenzione per gli errori di
++ utilizzo, e non di una per ogni esecuzione del programma:
+
+% 2 1 0 1eda6c0b269e3496007d92a66d3b9600
+
+% 0 1 0 0e3669b53f3f66c30e1964f8c8647d9a
+
+% 1 1 0 198b13a7c642c9b0027b24c1c972ecff
+
+% 2 1 0 18ffbf70c2ecb71214e03147370731be
+
+% 0 1 0 055bd4f21953ebd6142c9648a717fa58
+
+% 0 1 0 1ad7f150c79bd2bd1d8eb66eea2401a2
+
+% 2 1 0 0d8b9a95f043da1d1ce64a195b0eda31
+
+% 0 1 0 048300028baab6901e6f664feba2e624
+
+% 1 1 0 07901049c8aa69920440b708a9ca215e
+
+% 2 1 0 0aa85df7f19430051d0b6a880087b518
+
+@ 0 3 0 073b7dc4dddd86f1032393e1e8e7da76
++ Dentro `execute`, le stesse chiamate danno direttamente il valore, e sollevano immediatamente un
++ `Flag.Error` (il cui motivo è `Missing` o `Invalid`), che il backstop segnala. Una flag
++ obbligatoria viene anche marcata come obbligatoria nel testo di aiuto.
+
+@ 0 1 0 0fe0ae69246004e408426083efda5089
++ Ogni modo di leggere una flag dà qualcosa di diverso nel preludio e dentro `execute`:
+
+% 2 1 0 048495d83118d08c1e5f15f50a518d4c
+
+@ 0 8 0 0f1f84c8496aaf641809353d1e92f607
++ column  Lettura
++ column  Nel preludio
++ column  Dentro `execute`
++ row  `flag()`  un `Prospective`, i cui `present` e `absent` rispondono subito  un valore `Optional`
++ row  `flag.require()`  un `Requisite`, controllato prima che `execute` venga eseguito  il valore, oppure un `Flag.Error`
++ row  `flag.validate()`  un `Requisite`, controllato prima che `execute` venga eseguito  il valore, oppure un `Flag.Error`
++ row  `flag.present`  un `Boolean`  un `Boolean`
++ row  `flag.value`  non disponibile  un valore `Optional`
+
+% 1 1 0 0d5c74e738e724321c2df0745ff51563
+
+@ 0 1 0 172d97923af567de1db42030eac6db81
++ ### L'executive e i metodi con effetti
+
+@ 0 2 0 169d217ee1daa46206f70569af95ad19
++ L'*executive* è ciò che determina il tipo di ritorno del corpo di un punto di ingresso, e i
++ [valori contestuali][valore contestuale] disponibili al suo interno:
+
+% 2 1 0 1a21d435332e000b13142a3d3a0887fb
+
+% 0 1 0 092e7f16329050640fdfb28407110096
+
+@ 0 4 0 05e685a437af4bd5107bb1d66b2bcaab
++ column  Il corpo restituisce
++ column  `Stdio` ed `Effectful`
++ row  `directExecutive`  un `Exit`  in tutto il corpo
++ row  `completionsExecutive`  una `Execution`  solo dentro `execute`
+
+% 1 1 0 05d6efd6badf81c1184999ab9e0622f9
+
+@ 0 3 0 1552aca509e249b604878716491aabf8
++ `directExecutive` non esegue mai il corpo in modo speculativo, per cui una flag letta in un punto
++ qualunque del suo corpo è il suo valore. Scegliere un executive tramite import è ciò che permette
++ all'API del punto di ingresso di restare uniforme, pur imponendo requisiti davvero diversi al
++ codice al suo interno.
+
+@ 0 2 0 16ecaa0995f173c00eb4c844586f2af7
++ Un blocco `execute` fornisce anche un `Effectful` cancellato. Nulla lo consuma internamente. Il
++ suo scopo è che un metodo possa *esigerlo*:
+
+% 2 1 0 0687b3c0d328a9db1d7f374705c9d8e4
+
+% 0 1 0 103ce96eea955e3b073f463de7b744d4
+
+% 1 1 0 02ea2b29f4e58c5e1c665255ff72ac7f
+
+@ 0 6 0 0db53d18084beb170df24eb78ae091d8
++ Con l'executive dei completamenti, un `Effectful` si può ottenere solo dentro un blocco
++ `execute`. Un metodo del genere non può quindi essere chiamato dal preludio, il che equivale a
++ dire che non può essere eseguito mentre l'utente si limita a premere `tab`. Marcare in questo
++ modo le operazioni davvero irreversibili rende difficile invocarne una per sbaglio, da codice che
++ i completamenti eseguiranno. L'operazione `install`, che scrive al loro posto gli script di
++ completamento, lo richiede esattamente per questo motivo.
+
+@ 0 1 0 16fc2fc1207397f803d79b3b470aba16
++ ### Completare i valori
+
+@ 0 3 0 0293fc0a052cd260192083277fd553fa
++ Una flag completa i propri valori, quando il suo tipo è in grado di descriverli. A un tipo si
++ indica come suggerire valori con un'istanza `Discoverable`, e come leggere un valore scelto con
++ un'istanza `Interpretable`:
+
+% 2 1 0 1ee92d407db896690a8abd9bf33020e8
+
+% 0 1 0 1ca3dc21408c148103631a833be9fe99
+
+% 0 1 0 0d3086bf5abaef020695a60125d868d1
+
+% 0 1 0 116b33f9189dc941145a9d0e669f65b2
+
+% 0 1 0 002469b4696ae7850268330307a41fe0
+
+% 0 1 0 017a7f5eb8ba1c9c0378aecaa2f66cb7
+
+% 0 1 0 1848374006f66b37038773d25456752a
+
+% 0 1 0 1aaadd1df7abd62307ef2ee0cdc14b01
+
+% 0 1 0 01e0d6ab1074ad3c13024a73d9257a44
+
+% 1 1 0 0b3db4c98d30a74c040059f47b8b50c4
+
+% 2 1 0 14908c336b0958300eeef39beb2ab088
+
+% 0 1 0 1b3d55208702f6931c7355d8b55bdc76
+
+% 0 1 0 17a3147aa1e4e6870a3bce907c68c406
+
+% 1 1 0 0ac89b2f3586491514a4eac517d16630
+
+@ 0 5 0 1011e339cc0ce6cd1eba2b7ed392ee3d
++ Con questi nell'ambito, `mytool build --mode ` offre `debug` e `release`. Un `Suggestion` può
++ avere una descrizione, che viene mostrata dalle shell che la supportano. Può essere marcato
++ `incomplete`, per completare un valore un segmento alla volta, come per un percorso di file. Una
++ flag il cui tipo è `Pathname` completa in questo modo i [percorsi del filesystem](paths.md)
++ senza altro codice, ed espande un `~` iniziale come farebbe la shell.
+
+@ 0 1 0 1cdc8712071013801ac958bbea4377e1
++ ### Aiuto e pagine di manuale
+
+@ 0 7 0 129d95c33cfce7451641b2004f15cd37
++ Il preludio descrive l'intera interfaccia: i sottocomandi, le flag, le loro descrizioni, quali
++ flag sono obbligatorie e quali stati ogni comando può restituire. L'aiuto quindi non ha bisogno
++ di una fonte separata. L'executive dei completamenti ricostruisce l'interfaccia come albero
++ `Help`, eseguendo di nuovo il preludio con prefissi di argomenti sintetizzati, e la dispone,
++ allineata, nello stile di una pagina di manuale. Lo stesso albero viene scritto come
++ [pagina di manuale](https://en.wikipedia.org/wiki/Man_page) in roff, con `roff`, e
++ `Manpages.install` la scrive al suo posto.
+
+@ 0 4 0 010f39f68aa3c8150988862d65de4554
++ Tutto ciò che viene scoperto viene documentato. Uno `Status` restituito da un blocco `execute`
++ compare sotto *Exit status*, e una variabile d'ambiente letta nel preludio compare sotto
++ *Environment*. Le descrizioni che la scoperta non può fornire, come il significato di una
++ variabile d'ambiente o un esempio di invocazione, si aggiungono tramite un `Manual`:
+
+% 2 1 0 1056c66933c574581897d78681852fc9
+
+% 0 1 0 0f1ec052ea13b93e1b5c99af51bd09ea
+
+% 0 1 0 0ec323a7a9a611a1100284514062d04f
+
+% 0 1 0 0e746d24dd517f321783c032175a9759
+
+% 1 1 0 0ac4bc5641250102006d8f3b36451ea2
+
+@ 0 2 0 18293475e83180b9195165a24921ac3f
++ All'interno di un comando, `explain` aggiunge un paragrafo di aiuto locale alla sezione del
++ sottocomando corrente, per cui un sottocomando profondo si documenta dove è definito.
+
+@ 0 1 0 0de1df58586eb526008a0dd7d52aad97
++ ### Installare i completamenti
+
+@ 0 4 0 1c20fc13d9945b2e117b0b39a211fdc5
++ Un'applicazione completa viene distribuita con uno script di completamento generico e identico
++ per ogni shell: Bash, Zsh, Fish e PowerShell. Lo script non fa altro che inoltrare la riga di
++ comando corrente all'applicazione, in modalità completamenti. Il comando di amministrazione
++ integrato scrive questi script al loro posto:
+
+% 0 1 0 15a5f1f7e49cceab1ba03bc009fa86b5
+
+% 0 1 0 0a46bbdcefc1f03b1023426554ae0c6a
+
+% 1 1 0 0e70743821943e3d19e8a20a75de0478
+
+@ 0 2 0 143b9dfbcffc10b910e028f306c316a6
++ Dopo l'installazione, ogni shell completa il comando tramite l'applicazione stessa, per cui
++ nuovi sottocomandi e nuove flag non richiedono modifiche ad alcuno script.
+
+@ 0 1 0 18606afbbea7f6f7173205d18de53495
++ ### Avvio rapido
+
+@ 0 6 0 19dc340b5f3976d016fc1d77e7880eec
++ Un comando invocato per il completamento deve avviarsi rapidamente, altrimenti la shell sembra
++ lenta. Eseguire l'applicazione come [demone](daemons.md) elimina il costo di avvio della JVM da
++ ogni invocazione. Il programma resta residente, e ogni comando, compresa ogni richiesta di
++ completamenti, viene smistato al processo in esecuzione. Lo stesso corpo che `application`
++ esegue viene eseguito da `daemon`, per cui un'applicazione ottiene l'avvio rapido cambiando il
++ modo in cui viene lanciata, non il modo in cui viene scritta.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Correlati
+
+@ 0 7 0 1d28549d9774ca0711d9ed86d53790f1
++ - [Demoni](daemons.md) mantiene un'applicazione residente, per un avvio rapido.
++ - [Ambiente](environment.md) legge le variabili e le proprietà a cui le impostazioni ricorrono
++   in mancanza d'altro.
++ - [Decodifica](decoding.md) legge il valore di una flag come un tipo.
++ - [Terminale](terminal.md) formatta l'output e legge la tastiera in modo interattivo.
++ - [Packaging](packaging.md) costruisce l'eseguibile.
++ - [Indicatori](gauges.md), [LSP](lsp.md), [processi](processes.md), [tempo](time.md) e [UUID](uuid.md) descrivono ciò che un'applicazione da riga di comando mostra, esegue e analizza.

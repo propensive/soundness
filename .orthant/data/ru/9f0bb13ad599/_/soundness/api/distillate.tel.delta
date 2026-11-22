@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 11 0 1b6e63d97d32b2f7020ca28995e895d0
++   entry .int   декодирует `Int` из десятичного текста, различая неразбираемое и выходящее за диапазон
++       Нужна `Tactic[Number.Error]`. Разбирает с помощью `Integer.parseInt`, поэтому текст должен
++       быть десятичным целым числом с необязательным знаком, без окружающих пробелов. Текст,
++       который не является целым числом, порождает `Number.Error` с `Reason.Unparseable`; целое
++       число вне диапазона `Int` порождает её с `Reason.OutOfRange`.
++   entry .byte   декодирует `Byte` из десятичного текста, различая неразбираемое и выходящее за диапазон
++       Нужна `Tactic[Number.Error]`. Текст, который не является целым числом, порождает
++       `Number.Error` с `Reason.Unparseable`; целое число вне диапазона от −128 до 127 порождает
++       её с `Reason.OutOfRange`.
++   entry .short   декодирует `Short` из десятичного текста, различая неразбираемое и выходящее за диапазон
++       Нужна `Tactic[Number.Error]`. Текст, который не является целым числом, порождает
++       `Number.Error` с `Reason.Unparseable`; целое число вне диапазона `Short` порождает её с
+
+@ 0 18 0 1c31e178d1ae60de1158a91a8681842f
++   entry .long   декодирует `Long` из десятичного текста, различая неразбираемое и выходящее за диапазон
++       Нужна `Tactic[Number.Error]`; разбирает с помощью `java.lang.Long.parseLong`. Текст,
++       который не является целым числом, порождает `Number.Error` с `Reason.Unparseable`; целое
++       число вне диапазона `Long` порождает её с `Reason.OutOfRange`.
++   entry .double   декодирует `Double` из текста, порождая `Number.Error`, если его нельзя разобрать
++       Нужна `Tactic[Number.Error]`; разбирает с помощью `java.lang.Double.parseDouble`, поэтому
++       экспоненты, `NaN` и `Infinity` принимаются так, как их принимает Java.
++   entry .float   декодирует `Float` из текста, порождая `Number.Error`, если его нельзя разобрать
++       Нужна `Tactic[Number.Error]`; разбирает с помощью `java.lang.Float.parseFloat`.
++   entry .char   декодирует `Char` как первый символ текста
++       Тактика не нужна. Всё, что идёт после первого символа, игнорируется, а пустой текст не
++       проверяется: лучше использовать `As[Char]`, который сопоставляется только с текстом ровно
++       из одного символа.
++   entry .boolean   декодирует `Boolean` из любого написания `Truth` в области видимости, в любом регистре, порождая `Truth.Error`
++       Нужна `Tactic[Truth.Error]`, и собираются все `Truth` из области видимости
++       (`Every[Truth]`). Текст обрезается и переводится в нижний регистр, затем по очереди
++       предлагается каждому написанию; текст, который не распознаёт ни одно, порождает
++       `Truth.Error`. `Truth.trueFalse` из компаньона `Truth` всегда находится в области
++       видимости, и каждый импортированный given из `truths` добавляет написание рядом с ним, а
++       не заменяет его.
+
+@ 0 18 0 16885b2e9230ab0910a207397079e908
++   entry .stringText   преобразует `String` в `Text`
++   entry .irrefutable   `String` преобразуется с помощью `Irrefutable` для `Text` после преобразования в `Text`
++   entry .textString   преобразует `Text` в `String`
++   entry .ident   преобразует любое значение в само себя
++   entry .byteShort   расширяет `Byte` до `Short`
++   entry .byteInt   расширяет `Byte` до `Int`
++   entry .byteLong   расширяет `Byte` до `Long`
++   entry .byteFloat   расширяет `Byte` до `Float`
++   entry .byteDouble   расширяет `Byte` до `Double`
++   entry .shortInt   расширяет `Short` до `Int`
++   entry .shortLong   расширяет `Short` до `Long`
++   entry .shortFloat   расширяет `Short` до `Float`
++   entry .shortDouble   расширяет `Short` до `Double`
++   entry .intLong   расширяет `Int` до `Long`
++   entry .intDouble   расширяет `Int` до `Double`
++   entry .floatDouble   расширяет `Float` до `Double`
++   entry #unapply   преобразует значение; не может завершиться неудачей
++   entry #contramap   неопровержимое преобразование из нового типа, сначала применяющее чистую функцию

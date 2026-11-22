@@ -1,0 +1,3036 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1b279ef41f180c44137ac9d44d3e5eaf
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 099c07c2a192d64c1cc63c6481c03d76
++ info   不変の型付き値としての XML：パース、リテラル、導出されたコーデック、名前空間、XPath、スキーマ駆動のレコード
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 16618be156eaa42c00f71cb6c0ea287c
++     _Xylophone_ は [XML](https://en.wikipedia.org/wiki/XML) を読み書きする。
++     テキストやバイト列は `Xml` 値にパースされる。これはノードの種類ごとに `Xml` コンパニオン内の別々の型（`Xml.Element`、`Xml.Text`、`Xml.Cdata`、`Xml.Comment`、`Xml.ProcessingInstruction`、`Xml.Doctype`、そして単一の親を持たないノード列を表す `Xml.Fragment`）を持つ木である。
++     ケースクラスや列挙型は、その形から導出された `Encodable in Xml` と `Decodable in Xml` によって XML と相互に変換される。
++     文書の要素は動的メンバーアクセスでたどり、XPath で選択し、レンズで更新できる。
++     `x"…"` 補間子でリテラルとして書いた XML は、コードのコンパイル時にパースされ検査される。
++     実行できない変換は理由を示す型付きの `Xml.Error` を発生させ、不正な形式の文書は `Parse.Error` を発生させる。その位置は単なる行ではなく範囲である。
+
+@ 0 4 0 13bc1a0d5093049d14afcf65a34dbdcf
++     すべては `soundness` アンブレラから得られ、エラー戦略とスキーマがスコープにあればよい。
++     スキーマは名前でインポートする選択である。`xmlSchemas.freeformXmlSchema` はあらゆる要素と属性を受け入れ、文書を XML Schema に照らして検証すべきときは `Xsd` がその代わりになる。
+
+% 2 1 0 127ef9be0638125d14a02518bfa4e5d1
+
+% 3 1 0 10f71b80a846b4730e8f2149028aa4d6
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0a7dbbab05c7c6e110d82930e8e4606b
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 0825d1d3742f3d240942f6c129f1cb1a
+
+% 0 1 0 19b6c273c28ff22c064285e465fc5b5e
+
+% 0 1 0 023462e4648155201fef91c589d0c88e
+
+% 0 1 0 030b8c05db01d5d41419c2ae410a2bb8
+
+% 0 1 0 016244fccbb94f6c1fb75e42b8e13f7d
+
+% 1 1 0 11d86fa85c94dfe006a3e1341ef2a3e7
+
+@ 0 1 0 002d2410d591a14009479c529c61f1df
++     構成要素と、その所在は次のとおりである。
+
+@ 0 20 0 06b262f453f7b7e509ea51ee898d9245
++     - `Xml` はノード型であり、ほぼすべてのものの置き場所である。そのコンパニオンには、ノードのクラス、テキストやバイト列からの `read[Xml]`、`read[T in Xml]`、`load[Xml]` を可能にする `Aggregable`/`Readable`/`Loadable` の given、プリミティブとコレクションのコーデック、積と和のための Wisteria の導出、木を描画する `Showable` と `Formatting`、ストリーミングのシリアライザー `Xml.emit` と `Xml.lend`、名前空間の語彙（`Xml.Scope`、`Xml.Name`、`Xml.Namespacing`、`Xml.Namespaced`、および `@xmlns` と `@unqualified` アノテーション）、`@attribute` アノテーション、XPath の拡張 `select`、`selectText`、`evaluate`、位置の追跡（`Xml.Position`、`Xml.Focus`、`Xml.positionable`、`asTracked`）、直接（木を作らない）コーデックの API（`Xml.Parsable`、`Xml.Printable`、`Xml.Field`、`Xml.Reader`、`Xml.Out`、`Xml.Direct`）、そして XML Schema に基づく polyvinyl の型プロバイダー `Xml.Provider` がある。
++     - `x"…"` と `xp"…"` は XML リテラルと XPath 式の補間子で、どちらもコンパイル時に検査される。`x"…"` はパターンとしても使える。
++     - `XPath` と、パッケージプライベートなそのエンジンとパーサーは、`Xml` の木の上で XPath 1.0 を実装する。`Xsd` はパース済みの XML Schema であり、`XmlSchema` はパースが検証に用いる語彙である。`Namespace` は接頭辞を URI に given として束縛する。`Tag`、`Attributive`、`Renderable` は型付きタグの仕組みで、honeycomb や savagery といったライブラリはその上に語彙を築く。`Inlinable` と `inlining` はコンパイル時に直接パーサーとプリンターを生成する。`internal` にはパーサー、マクロ、そしてそこからエクスポートされる不透明型 `Attributes` と `Scope` がある。
+
+@ 0 2 0 01f9cf4b1b2103b404baee685eb2d939
++     動的なナビゲーション（`xml.child().grandchild()`）は、名前でインポートする `dynamicAccess.dynamicXml` given か、`dynamically[Xml]:` ブロックによって許可される。
+
+@ 0 1 0 1c948d45ba03373419b271c209842386
++     このライブラリには三つのソースセットがある。
+
+@ 0 10 0 1f4a097f789936ba1ae547f066df5a61
++     - `xylophone.core` — 上記のすべて。パーサーは UTF-8 のバイト列を自ら読むので、バイトのソース（ファイル、HTTP 本文、クラスパスのリソース）はスコープに `Charset` がなくても届いたそばからパースされ、テキストのソースはまず UTF-8 にエンコードされる。
++     - `xylophone.http` — `construables`、`postables`、`servables` の選択パッケージ。これにより `Xml` 値は `application/xml` メディアタイプの HTTP リクエストやレスポンスの本文となり、本文は届いた時点で `Xml` にパースし直される。
++     - `xylophone.staged` — `InlinableStager`。マクロ内のステージングコンパイラで、生成された直接パーサーが展開時にユーザーの書いた `Inlinable` インスタンスを評価できるようにする。クラスパスにあれば `Inlinable.Stager` から名前で読み込まれ、直接参照するものはない。
+
+@ 0 15 0 1b4c170716cc1eea0b286bc22d706d2d
++     `import xylophone.*`（および `import soundness.*`）は given をインポートしないので、選択パッケージは名前でインポートする given である。
++     それは `xmlSchemas.freeformXmlSchema`、`formatting.compactXmlFormatting` と `formatting.indentedXmlFormatting`、`namespaceOptions.strictNamespaces` と `namespaceOptions.lenientNamespaces`、`optionalityOptions.strictXmlAbsence`、`lenientXmlAbsence`、`strictXmlFaults`、`lenientXmlFaults`、`optics.xmlLens`、`xmlOrdinalOptical`、`xmlEachOptical`（`lens` はこれらを型を通じて暗黙のスコープに見つけるので、インポートは不要）、`dynamicAccess.dynamicXml`、そして HTTP コンポーネントの `construables.xmlConstruable`、`construables.textXmlConstruable`、`postables.xmlPostable`、`servables.xmlServable` である。
++     各パッケージはアンブレラ自身の同名のパッケージと統合されるので、`import soundness.*` の後で `import formatting.indentedXmlFormatting` が使える。
++     コーデックのモード `codecs.direct`、`codecs.derived`、`codecs.strict` は distillate から来るもので、スコープ内のすべてのレコードについて、`read[T in Xml]` と `in[Text over Xml]` が生成された木を作らないコーデックを使うか、導出された木のコーデックを使うか、あるいは生成されたものを使い、生成できない場合はコンパイルエラーとするかを選ぶ。
+
+@ 0 4 0 11ab5419a964668312e9cd0679b0c751
++     `Attributive`、`Renderable`、`Tag` を除き、すべてが `soundness` アンブレラにエクスポートされる。この三つはアンブレラで honeycomb の名前と衝突するため、`xylophone.Tag` などとして参照する。
++     `attribute` は型エイリアス `soundness.attribute` としてエクスポートされる。galilei と tarantula がすでにその名前の項をエクスポートしているからである。
+
+% 0 1 0 02c3900895f096b70fa3c3398c951537
+
+% 0 1 0 14a562471e83ab790a444ed1a91ee968
+
+% 0 1 0 05bd6ddc13c470ee1dd1afed8889b1b4
+
+% 0 1 0 1836923a8ba38dd815be1f0ee4b1d87f
+
+% 0 1 0 1c400f3bb7c2cba1023d004da137c8cb
+
+% 0 1 0 1cd1f42372a5adef0638d964c5c06065
+
+% 0 1 0 1f3ef534b8cf576c026e24e8545889f5
+
+% 0 1 0 087f0b146be209d3098d4198e491e36b
+
+% 0 1 0 1d53e1d9afcc61c217cc20e67a1018c8
+
+@ 0 1 0 1894ab04832fb9d4061a61f20675a47f
++ entry .Xml   XML のノードまたはノード列、そして XML の語彙全体を収めるコンパニオン
+
+% 1 1 0 0448971b16a7725f011cd7806be6f865
+
+@ 0 6 0 141af4a292a7c258060568f165aa4042
++       `Xml` はあらゆる XML 値のシールされた型である。それは `Node`（`Element`、`Text`、`Cdata`、`Comment`、`ProcessingInstruction`、`Doctype`、`Header` のいずれか）か、単一の親を持たないノード列である `Fragment` であり、後者はパースが返すもの（プロローグとルート）であり、複数の子を選択したときに得られるものである。
++       すべての `Xml` は不変であり、更新は新しい値を返す。
++       ノード一つの `Fragment` はそのノードと等しいので、`t"<a/>".read[Xml] == Xml.Element(t"a", Attributes.empty, Array())` となる。
+
+% 2 1 0 1ca99e6f5d7a18170436a08955e90751
+
+% 3 1 0 1a11afe29545fa411d2a81cc2d1a87e6
+
+% 4 1 0 00ee783457cbec110ba4892a7fb48dcf
+
+% 5 1 0 0760a20db435719f12c75f0861e353f7
+
+% 6 1 0 1fcbec1ffabec5ed1afa0dfc68acfa1f
+
+% 0 1 0 0284f3501a6d92c410b736e4c25c3ea6
+
+% 0 1 0 1e3dea249ff9ab440b427a2b8c952e62
+
+% 0 1 0 14ee353795e98dcd116b4fb2dbf23727
+
+% 0 1 0 1fe0a61fadf7566709c91ef910eeb875
+
+% 0 1 0 184ca37f80a7a63504f1fa8b45679816
+
+% 1 1 0 0b0c7e849fd1986813add355ae9aa15c
+
+@ 0 5 0 0ef2a8075d5df0b71b5ba1a222a0b68c
++       この型は三つの絞り込みを持つ。
++       `Topic` は、わかっている場合にはノードのラベルをリテラル型として表す（`Xml of "book"`、`Text` なら `"#text"`）。`Transport` はその子として許されるラベルの集合である。`Form` はそれがパースされたときの `XmlSchema` である。
++       honeycomb と savagery の型付きタグはこれらの上に築かれている。テキストから読んだ `Xml` では、三つとも絞り込まれていない。
+
+@ 0 8 0 147e99d789754c1b15b82c6de656b316
++       **読み込み。** `text.read[Xml]` と `data.read[Xml]` は内容をパースし、先頭の `<?xml …?>` 宣言を捨てる（`.aggregable2`、`.aggregableText2`）。`source.load[Xml]` はその宣言を `Document[Xml]` のメタデータ `Header` として保持する（`.loadable`、`.loadableData`）。`source.read[T in Xml]` はパースとデコードを一度に行う（`Xml2#aggregableIn`、または `T` が `Xml.Parsable` を持つ場合は木を作らない `Xml1#aggregableParsed`）。
++       いずれも `XmlSchema`、`Xml.Scope`、`Xml.Namespacing`（後の二つはコンパニオンがデフォルトを与える）と `Tactic[Parse.Error]` を必要とする。
++       バイトのソースは、スコープに `Charset` がなくても、届いたそばから UTF-8 としてパースされる。
+
+@ 0 9 0 0b913e1778d370a30fcb7a819356ad2d
++       **デコードとエンコード。** `xml.as[T]` は `T` の `Decodable in Xml` を通じてデコードする。それはプリミティブ（`.int`、`.boolean`、…）、`Decodable in Text` を持つ任意の型（`.decodable`）、コレクション（`.listDecodable` とその仲間）、`Optional`（`.optionalDecodable`）、`Map`（`.mapDecodable`）、そして `.DecodableDerivation` が導出する積と和である。
++       `value.in[Xml]` はミラーの given を通じてエンコードする。`value.in[Text over Xml]` と `value.in[Data over Xml]` はテキストやバイト列へ直接描画する。
++       デコードに失敗すると `Xml.Error` が発生し、蓄積型の戦略（`validate[Xml.Focus]`）のもとでは、不正なフィールドがすべて一度に報告され、それぞれにパスを示す `Xml.Focus` が付く。
+
+@ 0 5 0 0bc7cb13f9b3e4c2085f1206fc8b3e33
++       **書き出し。** `xml.show` はスコープ内の `Xml.Formatting` のもとでノードを描画する（デフォルトはコンパクトで、`formatting.indentedXmlFormatting` は要素のみの内容をインデントする）。
++       `Document[Xml]` 全体は `.emit`（ファイバー上のプル形式、または呼び出し側のスレッドでテキストか UTF-8 バイト列として書き出すプッシュ形式）か `.lend` を通じてストリームとして出力される。`.lend` はシリアライザー自身のバッファーをブロックごとに貸し出す。
+
+@ 0 10 0 029aaf55341031a00ba60a21de51665f
++       **名前空間。** パーサーは読みながら接頭辞を解決する。各 `Element` はそこで有効な束縛を `scope` として持ち、`Element#namespace`、`#localName`、`#qualified` は解決された名前を読む。
++       二つの名前は、どの接頭辞で束縛されていても、URI とローカル部が一致すれば同じである。接頭辞付きの選択（`` doc.`a:x`() ``、`elements(Xml.Name(uri, local))`）は解決された名前で選択する。
++       束縛されていない接頭辞は、`namespaceOptions.lenientNamespaces` がスコープにない限りパースエラーとなる。
++       シリアライザーは、要素のスコープが必要とし、かつ上位で宣言されていない宣言を書き出すので、コードで組み立てた部分木や文書から切り出した部分木は、名前空間の整形式として書き出される。
++       導出されたコーデックは、`@xmlns("uri")` によって、あるいはアノテーションを付けられない型であれば `Xml.Namespaced` given によって、型を名前空間に置く。
+
+@ 0 5 0 14327893639fd1d719cfc144b50a8b88
++       **直接コーデック。** `Xml.Parsable` と `Xml.Printable` は、木を作らずに `Xml.Reader` または `Xml.Out` を通じて値を読み書きする。
++       レコードは `given Play is Xml.Parsable = Xml.Parsable.derived`（または `.staged`、`Inlinable.parsable[Play]`、`Inlinable.printable[Play]`）や `derives Xml.Direct` によって、あるいは `import codecs.direct` によってすべてのレコードについて一度に、これを選択できる。
+
+@ 0 3 0 023d660784ae346c0bba0ad6c5d30196
++       **スキーマ。** `object Orders extends Xml.Provider(cp"/xsd/orders.xsd")` はコンパイル時に XML Schema を読み、`Orders.record(xml)` は、スキーマのルートの子要素と属性ごとに型付きのメンバーを一つずつ持つレコードとなる。
+
+@ 0 4 0 1b716aa40dbcf23d03eec0737627bbaf
++       `object Xml` は、隠れた層 `Xml1`、`Xml2`、`Xml3`、`Xml4` からもメンバーを継承する。これらの層は given を優先順位で並べるもので、直接および木による読み込みの経路、`in[Text over Xml]`、`Xml.Field` のフォールバック、`Xml.Provider` はそこで宣言され、そこに文書化されている。
+
+% 0 1 0 1b1631809ef0120016c7d463031d543d
+
+% 0 1 0 0a61bc20578c5d4e19c93e7870d26ff3
+
+% 0 1 0 0a9f026b3cbb9e72022edd15c53a873b
+
+% 0 1 0 04cf68acb32d9a531b9c78a16ea37920
+
+% 0 1 0 0e5146c39888573609bd6603ce97e132
+
+% 0 1 0 05f117ba0302008b12a69fb050f6f82f
+
+% 0 1 0 0e469b781d25eeb41ed49fb77549f1b1
+
+% 0 1 0 12dfff91b6486a1a14627431e789e18c
+
+% 1 1 0 1ddfa462650d5b7a045ef475c8988950
+
+% 1 1 0 08e43540cbda82c81198b15e50970ff6
+
+@ 0 19 0 0ae2961cb446502e0fd7c8ef4a790918
++   entry #Topic   わかっている場合はノードのラベルのリテラル型、そうでなければ任意の `Label`
++       `Xml of "book"` は `Topic` が `"book"` である `Xml` であり、`Xml.Text` は `Topic = "#text"` を持つ。
++       テキストからパースしたノードは絞り込まれていない。
++       型付きタグ（`Tag`）はこれを絞り込み、タグの子をその `Transport` に照らして検査できるようにする。
++   entry #Transport   このノードの子として許されるラベル。リテラル型のユニオンとして表す
++   entry #Metadata   `Document[Xml]` のメタデータ：その `Xml.Header`
++       `load[Xml]` から得た `Document[Xml]` は、ルートと、バージョン・エンコーディング・standalone の宣言、そして `parsing.trackPositions` をスコープに置いて読み込んだ場合は位置インデックスを保持する `Header` とを組にしたものである。
++   entry #Chunks   文書がストリームとして流れるときのチャンクの型：`Text`
++   entry #Form   この値をパースまたは構築したときの `XmlSchema`
++   entry #as   この値を、その `Decodable in Xml` を通じてある型にデコードする
++       `xml.as[T]` はノード一つの `Fragment` を剥がしてそのノードをデコードする。
++       これには `(T is Decodable in Xml)^` が必要である。それはプリミティブの given、`Decodable in Text` との橋渡し、コレクションや `Optional` の given、あるいはケースクラスや列挙型の導出であり、さらに `Tactic[Xml.Error]` と `Foci[Xml.Focus]`（`validate[Xml.Focus]` の境界の外では何もしない）を必要とする。
++       読めない値は理由とともに `Xml.Error` を発生させる。期待する型でないテキストには `Malformed`、単一のテキストの並びを持たない要素には `Untextual`、要素のないフィールドには `Missing` または `Absent` である。
+
+% 2 1 0 19df4a32c63a77ba1b89550757e9bf74
+
+% 3 1 0 1c8bc7d2b327bd181d4ff57c78a5c7b6
+
+% 4 1 0 061c7aac562966330041cd0a88a040d3
+
+% 5 1 0 1a7a76b44f23bd450aa202c8a0402bd5
+
+% 7 1 0 15ba0eb2413b69ce08a8c35257ff1ae2
+
+% 0 1 0 15b9c694e5475eeb0a6c9da1d5d7e5cb
+
+% 0 1 0 1b478dc62d3fa4070b5f1b26d669356d
+
+% 0 1 0 170f2d40b225122c1cef88b16fcb37e6
+
+% 1 1 0 0f328db67779b9eb13c660b84442e30c
+
+@ 0 23 0 1eac78474f4de4920fc1d24c23c756bd
++       フォーカス上の位置は `Unset` のままである。各フォーカスにソースの行と列を持たせるには、`parsing.trackPositions` をスコープに置いて読み込んだ `Document[Xml]` を `asTracked` を通じてデコードする。
++   entry #elements   解決された名前を持つすべての子要素。`Fragment` として返す
++       `xml.elements(Xml.Name(t"urn:a", t"x"))` は、ここにあるすべての要素ノードの子のうち、文書がどの接頭辞で束縛していても、名前空間 URI とローカル部がその名前のものと一致するものすべてである。`Xml.Name(t"x")` は名前空間に属さない子を選択する。
++       `selectDynamic` と異なり、`Dynamical` も `Scope` も必要としない。
++   entry #element   ある序数の位置にある、解決された名前を持つ子要素。ノード一つの `Fragment` として返す
++       `xml.element(name)` は最初に一致するもの、`xml.element(name, Sec)` は二番目のものである。一致するもののない序数は、エラーではなく空の `Fragment` を返す。
++   entry #selectDynamic   `xml.child`：その名前を持つすべての子要素。`Fragment` として返す
++       動的なナビゲーションであり、消去された `Xml is Dynamical`（`import dynamicAccess.dynamicXml` または `dynamically[Xml]:` ブロック）と、スコープ内の `Xml.Scope` によって許可される。
++       `xml.book` は、フラグメント内のすべての要素ノードの子要素のうち `book` というラベルのものすべてを文書順に選択する。XML のタグは一意ではないので、結果は零個以上の要素からなる `Fragment` である。
++       接頭辞付きの名前（`` xml.`a:x` ``）は、その接頭辞が `Scope` given か親要素自身の束縛によって束縛されていれば、子がどの接頭辞を使っていても解決された名前で選択する。束縛されていない接頭辞は生のラベルと照合される。
++   entry #applyDynamic   `xml.child(ordinal)`：その名前を持つ子要素一つ。デフォルトは最初のもの
++       `xml.book()` は `book` というラベルの最初の子要素、`xml.book(Sec)` は二番目のもので、それぞれノード一つの `Fragment` として返り、そのような子がなければ空の `Fragment` となる。
++       `#selectDynamic` と同様に許可されるので、`data.b().c().as[Int]` のように段階を連ねられる。
+
+% 2 1 0 196f431c2a82a5e805ed1130f6afacd8
+
+% 3 1 0 1d6f9ad2b5627b9d04e7de7140e33db7
+
+% 4 1 0 143bd7c802b7273d09ad9818bad975da
+
+% 5 1 0 17cb19bcbf758be21506ce88d84a7c1b
+
+% 6 1 0 146a1b1ed106ae4219c03e2971133b81
+
+% 0 1 0 0c13caf96b80f62f0c30d4fc7645ab55
+
+% 0 1 0 082caa5382648c0504c4dcced145a62a
+
+% 0 1 0 196a85b441d933e71070ce9e7994bce4
+
+% 1 1 0 004f201c4bced4df0eac8afa35dd70bb
+
+@ 0 7 0 0fe7162db335ad9b180fd17875a81fe8
++   entry .Node   単一ノードの種類のシールされたルート：要素、テキスト、CDATA、コメント、PI、doctype、ヘッダー
++       `Node` は、複数のノードからなる `Fragment` とは対照的に、一つの XML ノードである。
++       種類は `Element`、`Text`、`Cdata`、`Comment`、`ProcessingInstruction`、`Doctype`、`Header` であり、`Xml` に対するマッチは、`Fragment` の場合とそれぞれの場合を一つずつ持てば網羅的である。
++       `Element` の `children` は `Array[Xml.Node]` である。
++       すべてのノードは純粋なので、何もキャプチャすることなくどこにでも保持できる。
++   entry .Element   要素：ラベル、属性、子、そしてそこで有効な名前空間の束縛
+
+% 1 1 0 074eeffdba5e622a18024d758d24b0b8
+
+@ 0 6 0 1054d63f084e5a7207b8fe6d734d9bcc
++         `Xml.Element(label, attributes, children)` は要素であり、その `label` は書かれたとおりの生の名前（`p:a` は接頭辞を保持する）、`attributes` は文書順の `Attributes`、`children` は `Array[Xml.Node]` である。
++         四つ目のパラメーター `scope` は、その要素で有効な名前空間の束縛を表す `Xml.Scope` である。パーサー、`x"…"` リテラル、あるいは導出されたエンコーダーが値を入れ、シリアライザーはこれを参照して、要素が必要とし上位で宣言されていない宣言を書き出す。
+
+@ 0 4 0 0d3e0af1a83f95b41c004657f200d431
++         スコープは由来の情報なので、`Element` はケースクラスではなく普通のクラスである。スコープは `equals`、`hashCode`、抽出子に関与しないため、パースした要素は手で組み立てた同じ要素と等しく、パターン `Xml.Element(label, attributes, children)` は従来どおり三つのフィールドを見る。
+
+% 2 1 0 1786bf0b61e57f011f252bd8cc9ef970
+
+% 3 1 0 1fabcbf5a93d70370c5a6bd22f553879
+
+% 4 1 0 006ec0349bfdae690d97385e5bc6818d
+
+% 5 1 0 079e26dbe43b7caf1b28fb83b6916ef1
+
+% 0 1 0 0eb12f0e8c7a79f41743f3edef2202d1
+
+% 0 1 0 11931a168d81804902efcc4263b1a797
+
+% 0 1 0 0d63b0cd2dcface10201166df30efaa6
+
+% 0 1 0 1f5958c0c598c04816f0f2f3cea0e591
+
+% 0 1 0 00caadd25fe086f2140a44a859e4b33d
+
+% 1 1 0 18fbc42bdb64cafa1688aa051b916442
+
+@ 0 4 0 1bbd3d27d59fec85142f26eea10892e9
++         型付きタグの要素（`Tag.Container#node`）は `Xml.Vacuiscible` をミックスインした `Element` であり、子に適用できる。その属性は `#selectDynamic` と `#updateDynamic` で読み書きし、それぞれタグの `Xml.XmlAttribute` given に照らして検査される。
+
+% 0 1 0 08cc6118c28bbbb4032b7399f700e73a
+
+% 1 1 0 0a2e33b6634396a10fd6bdd2ef538bd5
+
+% 0 1 0 15ebdbe6d3203dea05df7b3dca7d3f6f
+
+@ 0 42 0 0387b55f25650bf118180f4b06c54b10
++     entry .apply   ラベル、属性、子、および省略可能なスコープから要素を作る
++         `Xml.Element(label, attributes, children)` のスコープは空である。書き出すときに接頭辞（またはデフォルト名前空間）を宣言すべき要素には、四つ目の引数として `Xml.Scope` を渡す。
++     entry .unapply   パターン `Xml.Element(label, attributes, children)`：三つのフィールドで、スコープは決して含まない
++     entry #label   書かれたとおりの要素の名前。接頭辞も含む
++     entry #attributes   要素の属性。文書順
++         `Attributes` であり、`xmlns` 宣言も含む。宣言は属性として保持されるので、文書は読んだとおりに書き戻される。
++         `attributes(t"id")` は値（存在しなければ例外を投げる）、`attributes.fetch(t"id")` は `Optional` である。
++     entry #children   子ノード。順序どおり
++     entry #scope   この要素で有効な名前空間の束縛。祖先と自身に由来する
++         パーサー、リテラル、またはエンコーダーが入れた `Xml.Scope` である。スコープを与えずに手で組み立てた要素では空である。
++         等価性には関与しない。
++     entry #bindings   スコープを、この要素自身の属性にある `xmlns` 宣言で拡張したもの
++         属性に宣言を持つがスコープを持たない手組みの要素では、宣言はここで効力を持つ。
++     entry #prefix   ラベルの接頭辞。ラベルにコロンがなければ `Unset`
++     entry #localName   接頭辞を取り除いたラベル
++     entry #resolve   この要素で接頭辞が束縛されている URI。束縛されていなければ `Unset`
++         `element.resolve(Unset)` はデフォルト名前空間である。
++         要素自身の属性で束縛された接頭辞も、祖先で束縛された接頭辞も解決される。
++     entry #namespace   この要素自身の名前の URI。名前空間に属さなければ `Unset`
++     entry #qualified   解決された名前：名前空間 URI とローカル部。`Xml.Name` として返す
++         型付きタグは要素であり、`Format` がすでにそれらに `name` を与えているので、アクセサーは `name` ではなく `qualified` である。
++         `qualified` の名前が等しい二つの要素は、どの接頭辞を使っていても同じ要素名であり、Clark 記法では `{urn:a}x` と表示される。
++     entry #attribute   解決された名前を持つ属性の値。なければ `Unset`
++         `element.attribute(Xml.Name(t"urn:a", t"id"))` は、接頭辞がその URI に解決され、ローカル部が一致する属性を見つける。`Xml.Name(t"id")` は接頭辞のない属性 `id` を見つける。
++         接頭辞のない属性は、デフォルト名前空間が何であれ、名前空間に属さない。
++     entry #selectDynamic   `element.attr`：属性の値。タグの属性の given に照らして検査される
++         型付きタグ用である。`element.href` は `href` 属性を読むが、それには `"href" is Xml.XmlAttribute on element.Topic in element.Form` がスコープになければならないので、綴りの誤った属性や適用できない属性はコンパイルエラーとなる。
++         結果は `Optional[Text]` である。
++     entry #updateDynamic   `element.attr = value`：属性を設定した要素のコピー
++         型付きタグ用である。`Topic`、`Transport`、`Form` が同じ新しい `Element` を、属性を更新して返す。これはタグの `Xml.XmlAttribute` given に照らして検査される。
++   entry .Text   文字データの並び
+
+% 1 1 0 07b939911a604fd9075b33281b938d74
+
+@ 0 6 0 1033d925f80aa6d716c766760d91ea6f
++         `Xml.Text(t"hello")` はテキストノードであり、その `Topic` は `"#text"` である。
++         実体参照は読み込み時に解決され（`text` の中で `&amp;` は文字 `&` になる）、書き出し時に再びエスケープされる。キャリッジリターンは、改行の正規化で書き換えられないよう `&#xD;` として書き出される。
++         型付きタグの子の中では、テキストと `String` の値は暗黙のうちに `Xml.Text` に変換される（`.text`、`.string`）。
++     entry #text   実体参照を解決した文字列
+
+% 0 1 0 11d9fed4914dd9af138a17a2f894671b
+
+@ 0 1 0 03fd87a65736dc62114737bb553f9690
++   entry .Cdata   `<![CDATA[…]]>` セクション。セクションのまま保持される
+
+% 1 1 0 15649050a9b35abe0e1be38e1fcc04f9
+
+@ 0 7 0 1bc60f316fbd5ae21246f90c30ee4e24
++         `<not a tag>` を含むテキストも、別のものにエスケープされることなく往復を生き延びる。
++         デコードにおいて CDATA セクションはテキストではない。唯一の子が `Cdata` である要素は単一のテキストの並びを持たないので、それに対する `as[Int]` は `Untextual` とともに `Xml.Error` を発生させる。スキーマプロバイダーの読み取り器はテキストと CDATA を同じように連結する。
++     entry #text   区切り記号の間の内容。そのまま
++   entry .Comment   `<!-- … -->` コメント。どこに現れても保持される
+
+% 1 1 0 06a4c5b3d94492e20f5e624f099e2096
+
+@ 0 4 0 1f5e17c6c8b6274208209246da2cec53
++         プロローグ内でも要素の間でも同様に保持され、そのまま書き戻される。
++         導出されたデコーダーが期待する子の間にあるコメントは無視される。
++     entry #text   コメントの内容
++   entry .ProcessingInstruction   `<?target data?>` 命令。データが空の `<?target?>` も含む
+
+% 1 1 0 0bdf340fd7577f891555bf7f74228e6f
+
+@ 0 5 0 06ccc382b359f7370fa38033c1fba187
++         プロローグにあるスタイルシートの命令は、読み込みと書き出しを経ても残る。
++         ターゲットは大文字小文字を問わず `xml` であってはならない。これは宣言のために予約されている。
++     entry #target   命令のターゲット
++     entry #data   命令のデータ。`<?target?>` では空のテキスト
++   entry .Doctype   `<!DOCTYPE …>` 宣言。そのままシリアライズして書き戻される
+
+% 1 1 0 1855838b744c8e890f1a59eecd7e35ae
+
+@ 0 4 0 1ad84e2fdcfab9371feb073252b0d1fa
++         パーサーは宣言のテキストを保持する。DTD の内部サブセットには対応していないので、それを含む宣言はパースされない。
++     entry #text   `DOCTYPE` の後に続く宣言の内容
++   entry .Header   `<?xml …?>` 宣言：バージョン、エンコーディング、standalone、そして位置インデックス
+
+% 1 1 0 119a6b1044845524149068370f14921f
+
+@ 0 5 0 03f74bba38021533050934d75282e1e2
++         `Document[Xml]` のメタデータである。`load[Xml]` は宣言からこれを埋め（宣言のなかった文書では `Xml.header` が素の `1.0` ヘッダーとなる）、`show` と `emit` はこれを書き戻す。
++         `positionIndex` は `parsing.trackPositions` をスコープに置いて文書を読み込んだときに存在し、`equals` と `hashCode` からは除外される。そのため、同じソースを追跡ありと追跡なしで読み込んだものは等しいと比較される。
+
+% 2 1 0 0dad5b888785404713877e1ec83cf38d
+
+% 3 1 0 1376d275c57b2c030740a049d0bdb0d1
+
+% 4 1 0 09a368b6c99278a5103ab599084b44ec
+
+% 5 1 0 001457254438d28505c43aa5b4deadff
+
+% 0 1 0 0d3d74ab87d1a37e042de76c51ba63b1
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 0 1 0 175b455d45ad583a17e2ad60863b2352
+
+% 0 1 0 12062a3f5c82b10d149b4ab128b5788f
+
+% 1 1 0 082780a3c0935e831990689a28137c15
+
+@ 0 5 0 01bbf96584d5f3bd06b9cb3414bf51fe
++     entry #version   XML のバージョン。通常は `1.0`
++     entry #encoding   宣言されたエンコーディング。なければ `Unset`
++     entry #standalone   `standalone` 宣言。なければ `Unset`
++     entry #positionIndex   追跡ありの読み込みが記録したソース位置のインデックス。なければ `Unset`
++   entry .Fragment   単一の親を持たないノード列
+
+% 1 1 0 11a9326cf2ee33ce066ba277ff7c0073
+
+@ 0 5 0 06886bda43be286d0eef5a2a30936578
++         パースが返すもの（プロローグのノードとルート）、動的な選択が返すもの（一致する零個以上の子）、そして積のエンコーダーが繰り返される子へと平坦化する前に `Optional` やコレクションのエンコーダーが生み出すものである。
++         ノード一つの `Fragment` はそのノードと等しく、空の `Fragment` はデコーダーが欠けたフィールドに渡す「不在」の番兵である。
+
+% 2 1 0 04908af5d1bd076e10ca466f22a24821
+
+% 3 1 0 08170f0588afb0b10af81ac5d5cab987
+
+% 0 1 0 1c3112bace7025cd1bdd1d8fcee1595f
+
+% 0 1 0 004f5ded9969a2ec0e6d0609f85c387d
+
+% 1 1 0 1dae9ba1e2d00ff407f3ddb6059c2635
+
+@ 0 6 0 00771e719fc092ae1d93f741df89be53
++     entry .apply   ノードのフラグメント。全体のラベルを型引数とする
++         `Xml.Fragment[topic](nodes*)` は `Topic` が `topic` の範囲内にある任意の `Xml` 値を受け取り、入れ子のフラグメントをそのノードへと平坦化し、結果を `Fragment of topic` と型付けする。型付きタグはタグの子にこれを使う。
++     entry #nodes   ノード。順序どおり
++   entry .Vacuiscible   型付きタグの要素を子に適用できるようにする
+
+% 1 1 0 15aac60fdc2f1e2e075fc2077b140c69
+
+@ 0 6 0 1a8e2bd8654cddb60679a3ddc26e3fd8
++         `Tag.Container` が生み出す要素にミックスインされ、`div(id = t"x")(p(t"hi"))` が、属性に、次いで子に適用されたタグとして読めるようにする。
++         各子は `Optional[Xml of (? <: node.Transport)]` なので、`Unset` の子は捨てられ、許されないラベルの子はコンパイルエラーとなる。
++     entry #apply   与えられた子を持つ要素のコピー。`Unset` の子は捨てられる
++   entry .Error   XML を求められた型として読めないときに発生する
+
+% 1 1 0 03562ef2b618ff4a1dd7bef15f5577ed
+
+@ 0 8 0 0236f2abd438706709571e8d28d81930
++         エラー `↯/s.128.1`：_the XML could not be read because `reason`_。理由は `Xml.Error.Reason` のいずれかである。
++         プリミティブのデコーダー、テキストとの橋渡し、導出された積と和のデコーダー、そして直接パーサーが発生させる。
++         これらは発生させて処理を続けるエラーである。デコーダーはエラーを `Tactic[Xml.Error]` を通じて記録し、零または空の番兵を使って処理を続ける。そのため、不正なフィールドを複数持つレコードは、`validate[Xml.Focus]` のもとでは最初のもので止まらずにフィールドごとに一つずつエラーを蓄積し、各エラーの `Xml.Focus` は問題のフィールドの XPath を持つ。
++         `strategies.throwUnsafely` のもとでは最初のものが投げられる。
+
+% 2 1 0 004f0b57500399df0d4f2b7f92411742
+
+% 3 1 0 021083dbd1fb90a50c3d5ba117dbadd6
+
+% 4 1 0 066b684701263d2207bcb7dbddc15bb9
+
+% 5 1 0 0e90495b3a95a5dd0f7d4e22c3149f0d
+
+% 7 1 0 1849bb7056508ace08a062dee7ae53b2
+
+% 0 1 0 1f9be944ad7c6f4f15c6d3d5ec0f257f
+
+% 0 1 0 02ff622eb5ba835b00662c92fd1b9aa0
+
+% 1 1 0 038fee9fc73c16e51ed7508b932fb670
+
+% 0 1 0 002e8ce34779053d066e1f0d9e8e1650
+
+@ 0 2 0 067fd8376e567c0610ec5bec53c8aa42
++     entry .Reason   XML を読めなかった理由。それぞれ番号を持つ
++         各ケースは `Reason(n)` を継承するので、エラーは `↯/s.128.1.n` として読める。
+
+% 1 1 0 1a8b918dc7f9969906d6d506b4bfab31
+
+@ 2 4 0 00919b4e47da24a4040f3ec784677ff4
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  備考
+
+% 0 1 0 0e081226ace94fec11d0357976dfe46e
+
+@ 0 7 0 004cd7188ef6402213e2b09668cd2e5c
++         row  `Untextual(expected)`  2  _the element has no text to read as `expected`_  単一のテキストの並びがない
++         row  `Absent(expected)`  3  _no element or attribute supplied the required `expected`_  必須のプリミティブ
++         row  `AbsentProduct(product)`  4  _no element supplied the required `product`, which has no default_  入れ子のレコード
++         row  `AbsentVariant(sum)`  5  _no element supplied the required `sum`, which has no default_  列挙型
++         row  `UnknownVariant(discriminant, sum)`  6  _`discriminant` does not name a variant of `sum`_  要素のラベル
++         row  `Empty`  7  _the element has no text_  テキストとの橋渡しがテキストを必要とした場合
++         row  `Missing`  8  _the element or attribute was not present_  発生箇所で型を名指せない場合
+
+% 1 1 0 1daedbe201f089dc1139ff303ac3f282
+
+@ 0 3 0 0e82aa6cf2d0adf711abdf02d3044d61
++     entry .communicable   各理由をメッセージとして描画する
++     entry #reason   `Xml.Error.Reason`
++   entry .Issue   パーサーまたは `x"…"` マクロが XML テキストに見つけた問題
+
+% 1 1 0 06891c59ddf711131928f6292b2cbd26
+
+@ 0 16 0 1a906b7e6ac45d2e05040621300b801a
++         XML の `Parse.Error` が持つ問題で、それぞれ `describe` メッセージを持つ。
++         `BadInsertion`（リテラルのこの位置には値を補間できない）、`ExpectedMore`（内容が途中で終わった）、`BadDocument`（ルートタグが一つではない）、`UnquotedAttribute`、`InvalidTag(name)`、`InvalidTagStart(prefix)`、`DuplicateAttribute(name)`、`InadmissibleTag(name, parent)`（スキーマがその親の下にその子を許さない）、`OnlyWhitespace(char)`、`Unexpected(char)`、`UnknownEntity(name)`、`ForbiddenUnquoted(char)`、`MismatchedTag(open, close)`、`UnopenedTag(close)`、`Incomplete(tag)`（タグが開いたまま内容が終わった）、`UnknownAttribute(name)`、`UnknownAttributeStart(name)`、`InvalidAttributeUse(attribute, element)`、`UnboundPrefix(prefix)`（`Xml.Namespacing.Strict` のもとで、名前空間の束縛を持たない接頭辞）、そして `BadEncoding`（入力が正しい UTF-8 ではない）である。
++         `Parse.Error` の位置は範囲であり、問題のあるテキストのオフセットと長さを、バイトのソースならバイト単位で、`Text` 全体なら文字単位で表す。そのため、ツールは一致しない閉じタグをちょうどその範囲だけ下線で示せる。
++     entry #describe   問題をメッセージとして表したもの
++   entry .Position   ソース上の位置：行、列、そしてスパンのバイトオフセットと長さ
+
+% 1 1 0 07321a933ed8b7ff1f0b94f9a9ab4076
+
+@ 0 9 0 01ae2a25a42d40d3188ef94a0c77b80b
++         追跡ありの文書の要素やパースエラーがどこにあるかを表す。
++         `line` と `column` は序数である（`Prim` が最初）。`offset` と `length` はバイトのソースではバイトを数える。これはエディターが UTF-8 ファイル内のスパンに下線を引くのに必要なものであり、ASCII では文字数に等しい。
++         `Document[Xml]#locate(xpath)` は、`parsing.trackPositions` をスコープに置いて読み込んだ文書について、`XPath` をこれに解決する。
++     entry #line   行。序数で表す
++     entry #column   列。序数で表し、コードポイントを数える
++     entry #offset   ソース内のバイトオフセット。なければ `Unset`
++     entry #length   スパンの長さ。なければ `Unset`
+
+% 0 1 0 1921b38f9b9830f504dc819ad918dfff
+
+@ 0 6 0 026593a5b477fbe60b0cc329723ded41
++     entry #span   診断用の `Span` としての位置
++   entry .PositionIndex   追跡ありの文書のすべての要素がどこにあるかを記録したコンパクトな記録
++       追跡ありの読み込みが構築し、文書の `Header` に保持される整数の不透明な配列である。
++       それ自体には公開の操作はなく、`Document[Xml]#locate(xpath)`（`.positionable` を通じて）と `asTracked` がこれを読む。
++   entry .Focus   文書内でデコードエラーが起きた場所：XPath と、追跡していれば位置
+
+% 1 1 0 15ef6a8ae20cfaa51aaf3c5bdd4df339
+
+@ 0 12 0 184e581faf00f88d1c7b430b2a479d3a
++         XML のデコードにおけるフォーカスの型である。`validate[Xml.Focus]` は、文書のデコード中に発生したすべての `Xml.Error` を、問題のフィールドの `XPath` とともに集める。
++         `position` は、文書を `parsing.trackPositions` とともに読み込み、`asTracked` を通じてデコードしない限り `Unset` である。`asTracked` は各パスを位置インデックスで調べる。
++     entry #path   デコード中のノードへの XPath
++     entry #position   ソース上の位置。追跡なしの文書では `Unset`
++     entry #withPosition   `position` を追跡ありの文書に照らして解決したコピー
++   entry .positionable   追跡ありの `Document[Xml]` において `XPath` を `Xml.Position` に解決する
++       `document.locate(path)` の背後にある `Positionable` given である。`parsing.trackPositions` なしで読み込んだ文書や、何にも一致しないパスでは `Unset` となる。
++       パスの最初の段階はルート要素自身を名指す。XML には要素と区別されるキーの位置がないので、`locateKey` は常に `Unset` である。
+
+% 2 1 0 0b9b62714cdb45b215779f1415dbff94
+
+% 3 1 0 02bdd31a1466bb0e12b825e39f76fff2
+
+% 4 1 0 072727f8a951b27f15dc66bfbd66fbfa
+
+% 5 1 0 14e45f78398543391c5f931bffd93ceb
+
+% 0 1 0 1cdc57769a14db061e8c86d90120bb16
+
+% 0 1 0 0814770ec25efb500f469d449ea7eaca
+
+% 0 1 0 16ebda3fcca16f271bbb5dec520cbb75
+
+% 1 1 0 06f51bf8514d9ac61a189db8d4c76e4b
+
+@ 0 17 0 08b05380fc71c41f1cc56e93de30f6bc
++   entry .asTracked   追跡ありの文書をデコードし、蓄積されたすべてのフォーカスにソース上の位置を与える
++       `Document[Xml]` に対する拡張である。
++       `document.asTracked[T]` は `Xml#as` と同様にデコードし、その後、周囲の `validate[Xml.Focus]` の中で蓄積された各 `Xml.Focus` に、その XPath が文書のインデックス内で解決される位置を補う。そのため、検証の報告は行と列を示せる。
++       `validate` ブロックの外ではフォーカスは何もせず、呼び出しのコストはない。追跡なしの文書では位置は `Unset` のままである。
++       `as` は汎用のデコーダー拡張なので、`as` ではなく `asTracked` という名前になっている。
++   entry .aggregable   バイト列からの `source.read[Xml of content]`：型付きのフラグメントをパースし、宣言があれば捨てる
++       `content` ラベルが具象化できる `Xml of content` のための `Aggregable by Data` given である。
++       `XmlSchema`、`Xml.Scope`、`Xml.Namespacing`、`Tactic[Parse.Error]`、`Buffering` を必要とする。
++       ストリームは先に集められるのではなく、届いたそばからパースされる。先頭の `<?xml …?>` 宣言は受け入れて捨てるので、文書全体がフラグメントとして読まれる（宣言を保持するには `load[Xml]` を使う）。
++   entry .aggregable2   バイト列からの `source.read[Xml]`：内容をパースし、宣言があれば捨てる
++       `.aggregable` の素の `Xml` 版であり、コンテキストとして必要なものは同じである。
++       パーサーは UTF-8 のバイト列を直接読むので、ファイル、HTTP 本文、クラスパスのリソースは、スコープに `Charset` がなくてもパースされる。
+
+% 2 1 0 1da38179527f36c4013e7ec52c2c36fc
+
+% 3 1 0 06947f50d8463e7f144bcdc60c7fd124
+
+% 4 1 0 03d1217a619c1cd91d2062b8adf63378
+
+% 5 1 0 0bba677cf4a753f50d656c0a83659995
+
+% 0 1 0 08c7c3d6adf7e7d01181243055bc7825
+
+% 1 1 0 182efe694544d11a0051e170ee9989be
+
+@ 0 12 0 04b0afa04652749e020bca27a350cdb5
++   entry .aggregableText   `text.read[Xml of content]`：テキストを UTF-8 にエンコードし、バイト列としてパースする
++   entry .aggregableText2   `text.read[Xml]`：テキストを UTF-8 にエンコードし、バイト列としてパースする
++       `Text` のソースには UTF-8 への一回のコピーのコストがかかる。`Text` 全体に対する `Parse.Error` のオフセットと長さは文字数に戻して変換されるので、リテラルのエラーのスパンは ASCII 以外の内容でも正しい。
++   entry .loadable   `text.load[Xml]`：`<?xml …?>` ヘッダーをメタデータとして保持した `Document[Xml]`
++       `Loadable by Text` given である。
++       ルートは `.aggregableText2` と同じようにパースされるが、先頭の宣言は捨てられずに文書の `Xml.Header` へと持ち上げられ、宣言のない文書には `Xml.header` が与えられる。
++       パースのコンテキスト（`XmlSchema`、`Xml.Scope`、`Xml.Namespacing`、`Tactic[Parse.Error]`）と `PositionTracking` を必要とする。`parsing.trackPositions` がスコープにあれば、パーサーはヘッダーに `PositionIndex` を記録し、`Document[Xml]#locate` と `asTracked` がそれを読む。
+
+% 2 1 0 15c2a3448dc6dfbb19ccfd4002b345fc
+
+% 3 1 0 173b3e5234c9b0da1a39c3c183a084ec
+
+% 4 1 0 0d4ad450c7d9b38f0c1fcf004058b0dd
+
+% 5 1 0 061de205c141594a1341f0c480e5eca5
+
+% 0 1 0 0ac34298f3d746150409391e415998a7
+
+% 2 1 0 0fb76cfec7ce3e990bf9b1c7c57df0b9
+
+% 0 1 0 08674a15a25237881f32a6413cea375c
+
+% 0 1 0 09820aa3785669301674786343f04606
+
+% 1 1 0 16023838c919eeff16add3f6d8ab86d6
+
+@ 0 22 0 13321d96b2455e5a19256e3774e073ed
++   entry .loadableData   `data.load[Xml]` または `path.load[Xml]`：バイトのソースからの文書。届いたそばからパースされる
++       バイト列から読む `.loadable` である。ファイル、クラスパスのリソース、HTTP 本文は `Charset` なしで読み込まれ、位置はバイトを数える。
++   entry .streamable   `Document[Xml]` は `Text` としてストリームになり、ファイバー上でシリアライズされる
++       `.emit` のプル形式の上に築かれた `Streamable by Text over Credit` given である。`Monitor` と `Probate` を必要とするので、`supervise` のもとで使う。
++       `document.read[Text]` は、スコープ内の `Xml.Formatting` のもとで、ヘッダーも含めて文書全体を描画する。
++   entry .abstractable   HTTP 本文としての `Xml` 値：`Codepage` の文字セットを持つ `application/xml`
++       `Abstractable across HttpStreams` given であり、telekinesis はこれから `Postable` と `Servable` を導出する。本文は値の `show` であり、スコープ内の `Codepage` でエンコードされる。
++       `xylophone.http` の `postables.xmlPostable` と `servables.xmlServable` の given は、その直接の形である。
++   entry .instantiable   HTTP のリクエストまたはレスポンスの本文。`Xml` として読み戻す
++       `Instantiable across HttpRequests from Text` given である。スコープ内のパースのコンテキストで本文のテキストをパースし、不正な形式の XML には `Parse.Error` を発生させる。
++   entry .showable   スコープ内の `Xml.Formatting` のもとで、任意の `Xml` をテキストとして描画する
++       `xml.show` はノード、フラグメント、ヘッダーを一つの `Text` に描画する。デフォルトでは一行にコンパクトに、`formatting.indentedXmlFormatting` をインポートすればインデントして描画する。
++       文字データはエスケープされ（`&`、`<`、`>`、そして `\r` は `&#xD;` として）、属性値ではさらに `"`、タブ、改行もエスケープされる。コメント、CDATA セクション、doctype、処理命令の内容はそのまま書き出される。
++       要素のスコープが、それが使う接頭辞で祖先が宣言していないものを束縛している場合、その要素には `xmlns` 宣言が書き出される。
+
+% 2 1 0 0b89f0517651789c162c5f8419894a04
+
+% 3 1 0 11a46f85cf67a881040b0ec6c1dfa899
+
+% 0 1 0 0bc4cc727c3fa3cb1f4be68561f4e994
+
+% 2 1 0 1c353b9a5fa0557204dd8fe13cd246e4
+
+% 0 1 0 0d7e449dbf37ed2916de4128c07b8c70
+
+% 0 1 0 1fb431cb649ef85b12110b85ec47baeb
+
+% 2 1 0 09acb160ee86dd9e02803746181bd22a
+
+% 3 1 0 1206aca3363a7c6a0dd55e343f1fde8f
+
+% 0 1 0 0e64ba4d3e4f231c07ef772039b95a22
+
+% 1 1 0 0a954bf10f786dcc0b78d7fe168472e8
+
+@ 0 8 0 171f5b907e07bf710bb49ad0ab67274c
++       子の中に文字データを持つ要素は常にインラインで書き出されるので、インデントがその内容を変えることはない。
++   entry .inspectable   `xml"…"` リテラルとしてのデバッグ用の描画。コンパクトで一行
++       デバッガーは `Formatting` を与えられないのでコンパクトな書式に固定し、ノード自身のソースをエスケープしてリテラルとして描画する。`xml"<message>hello</message>"` となり、同じマークアップを持つ `Text` とも、honeycomb の `html"…"` とも区別できる。
++   entry .Formatting   木のシリアライズ方法：インデントの単位（あれば）と、末尾を改行で終えるかどうか
+
+% 1 1 0 053cbff9da171be80965dd8d29c151fe
+
+@ 0 21 0 03201c34be8223250ec1121c63d41015
++         `indent` は要素のみの内容をインデントするときに入れ子の段ごとに出力する空白であり、すべてを一行に保つには `Unset` とする。`trailingNewline` は最後に改行を付け加える。
++         コンパニオンの `default` はコンパクトであり、`formatting` パッケージは名前でインポートする `compactXmlFormatting`（同じもの）と `indentedXmlFormatting`（スペース二つで、末尾に改行あり）をまとめている。
++         すべての描画器、すなわち `show`、`emit`、`lend`、`Streamable`、`in[Text over Xml]` は、スコープ内の `Xml.Formatting` を取る。
++     entry .apply   省略可能なインデントの単位と末尾改行のフラグからの書式
++     entry .default   コンパクト：インデントなし、末尾改行なし
++     entry #indent   インデントの単位。一行の出力では `Unset`
++     entry #trailingNewline   出力の末尾を改行で終えるかどうか
++   entry .emit   `Document[Xml]` をブロック単位でシリアライズする：イテレーターでプルするか、関数にプッシュする
++       二つの形がある。
++       `Xml.emit(document)` はファイバー上でシリアライズし、`Iterator[Text]` を通じてテキストを渡すので、大きな文書は完全に描画される前にソケットやファイルへ書き出される。`Xml.Formatting`、`Monitor`、`Probate` を必要とするので、`supervise` のもとで実行する。
++       `Xml.emit[medium](document, deliver)` はプッシュ形式である。呼び出し側のスレッドでシリアライズし、ブロックが満ちるたびに `deliver` に渡すので、ファイバーもブロックごとのスレッドの受け渡しもない。これはファイル、ソケット、`OutputStream` への書き出しに適した形である。
++       媒体は `Xml.Emitter` を通じて型引数で選ぶ。`emit[Text]` はテキストのブロックを渡し、`emit[Data]` はシリアライザーから直接エスケープしエンコードした UTF-8 のバイト列を、中間の `Text` なしで渡す。
++       どちらも `Xml.Formatting` を取り、プッシュ形式はブロックの大きさのための `Buffering` も取る。
+
+% 2 1 0 11210998e2193d3f0c2bd1b86840d25a
+
+% 3 1 0 11e922baee3b957f08a553a77737f29e
+
+% 4 1 0 00dcbc59b9db41f0151a33d3e1b714f7
+
+% 0 1 0 01147745cd1b3104111fc255becf3569
+
+% 2 1 0 0bda94ca8b4ca6bd1a9d40b6f9127c14
+
+% 0 1 0 1d46f411b2cd1ee516988461fec5d5c3
+
+% 1 1 0 0ee05714fc7f0eda140ca5d22c0a6453
+
+@ 0 6 0 1b726821b3d9a32309128c4d8996aff9
++   entry .lend   文書を UTF-8 にシリアライズし、満ちたブロックを何もコピーせずに一つずつ貸し出す
++       プッシュ形式の `emit` の借用版である。消費側は書き込み器自身のバッファーを `Region[Data]` として見る。それにはすべてのインデックスが範囲内であることを証明するブランド付きの区間が付き、呼び出しの間だけ有効である。これは `Stream.lend` の規律である。
++       バイト列を保持しなければならない消費側は、自らそれを実体化する。よくある場合には、`emit[Data]` がその消費側である。
++       `Xml.Formatting` と `Buffering` を必要とする。
+
+% 2 1 0 000fff59b0b87ef2085365dd2a4aa77d
+
+% 3 1 0 159c6321f233090505b04743a3627c48
+
+% 4 1 0 01c300c127b0982d00854754c9475caa
+
+% 0 1 0 05b25b7db96ae0e50de3bd9a1135a3a1
+
+% 0 1 0 026286b741a4d11708de5b3cbeb1bb22
+
+% 1 1 0 050bbeff7f47a1540f4320316c580b48
+
+@ 0 1 0 18008add0b749b9f1d06902afdfa919e
++   entry .Emitter   プッシュ形式の `emit` が消費側に届く方法：テキストのブロックか UTF-8 のバイト列か
+
+% 1 1 0 0f005db1da21625c0a18ec61c547f211
+
+@ 0 8 0 1c238eaf6337174d052af3267ed331ad
++         媒体に対する型クラスである。`Emitter[Text]` は `Producer[Text]` を通じて書き、`Emitter[Data]` は `lend` の背後にあるバイト単位の UTF-8 書き込み器を通じて、各ブロックを実体化しながら書く。
++         どちらの given もコンパニオンにあるので、`emit[Text]` と `emit[Data]` にインポートは不要である。
++     entry .text   テキストの媒体：`Text` のブロック
++     entry .data   バイトの媒体：シリアライザーから直接エンコードした UTF-8 の `Data` のブロック
++     entry #emit   書式のもとで文書を書き出し、各ブロックを関数に渡す
++   entry .Out   `Xml.Printable` が書き込む出力：マークアップの種類ごとに一つ、五つの葉の操作
+
+% 1 1 0 13ddc79665a5d07d1b84a4bae46f1c14
+
+@ 0 66 0 07c8153d32753c2a1f216b0179cc7373
++         シリアライザーと生成されたプリンターが書き込む、排他的で状態を持つケイパビリティである。そのため、一度の走査でテキストの出力（`show`、プル形式の `emit`）にもバイトの出力（`lend`、`emit[Data]`）にも同じように対応できる。
++         その実装は内部のものである。手書きの `Xml.Printable` はこれらのメソッドか、`writeLeaf` など `Xml.Printable` にある補助を呼ぶ。
++     entry #ascii   ASCII であるとわかっているマークアップ：区切り記号とキーワード
++     entry #name   要素名、属性名、または接頭辞。そのまま書き出す
++         文書は名前を繰り返すので、バイト単位の出力はそのエンコード結果をキャッシュしてよい。
++     entry #raw   何もエスケープせず、そのまま書き出すテキスト：コメント、CDATA、doctype、PI
++     entry #text   文字データ。テキスト内容としてエスケープする
++     entry #attribute   属性値。二重引用符で囲む属性としてエスケープする
++   entry .header   宣言なしで読んだ文書のためのデフォルトのヘッダー `<?xml version="1.0"?>`
++   entry .name   `Format` としての形式名 `XML`
++   entry .Topic   `Tag.Container` としてのコンパニオン自身のトピック `"xml"`
++       `object Xml` はそれ自体が `head` と `body` を受け入れる `xml` というラベルの `Tag.Container` であり、型付きタグの仕組みはこれによってルートに到達する。
++       これは `Xml` 値の `Topic` ではない。そちらはインスタンスメンバーである。
++   entry .Transport   コンテナーとしてのコンパニオン自身が受け入れる子：`"head" | "body"`
++   entry .Integral   使われていないマーカートレイト
++   entry .Decimal   使われていないマーカートレイト
++   entry .Id   使われていないマーカートレイト
++   entry .nodes   `List[Xml]` を一つの `Array[Xml.Node]` に平坦化し、フラグメントを展開する
++       `List[Xml]` に対する拡張である。各 `Fragment` はそのノードを、各ノードはそれ自身を寄与するので、さまざまな値から組み立てた子のリストは `Xml.Element` が受け取る配列になる。
++   entry .text   型付きタグの子のために、`Text` を `Xml.Text` に変換する
++       `"#text"` を受け入れる任意のラベルに対する `Conversion[Text, Xml of label]` であり、型付きタグで `p(t"hello")` が使えるようにする。
++       汎用ではない。`Xml of label` が期待される場所でのみ、コンパニオンを通じて見つかる。
++   entry .string   `.text` と同様に、`String` を `Xml.Text` に変換する
++   entry .conversion3   ラベルが内容の範囲内にあるとき、`Xml of label` を `Xml of content` に拡大する
++   entry .comment   任意の型付きタグの子として `Xml.Comment` を受け入れる
++   entry .xmlConversion   `Xml` が期待される場所で、任意の `Encodable in Xml` の値を `Xml` に変換する
++       `document.lens(_.Person = Person(t"Percy", 30))` の背後にある型強制である。レンズによる代入の右辺、あるいは任意の `Xml` パラメーターは、ケースクラス、`Int`、`Text` を受け取ってエンコードする。
++       他の形式では `conversions.encodableToJson` のようなインポートを求めるが、XML のものはコンパニオンにある。
++   entry .sequences   変換を `Seq` の要素に持ち上げる
++   entry .interpolator   `x"…"` 補間子の実装：リテラルをコンパイル時にパースし検査する
++       `StringContext` に対する `x` 拡張が使う `Interpolable` given である。
++       そのマクロはリテラルの各部分を寛容にパースし、リテラルが使うすべての接頭辞をスコープ内の `Namespace` given に照らして検査し（宣言も束縛もされていない接頭辞はコンパイルエラーとなる）、不正なリテラルを問題のあるちょうどそのスパンで報告し、各穴をその位置に応じて置き換える。内容としては `Text` または任意の `Encodable in Xml`、ノードとしては `Xml`、属性値としては `Text` である。
++       `x` を参照のこと。
++   entry .extrapolator   `x"…"` パターンの実装：リテラルの形に照合し、その穴を束縛する
++       `case x"<a id=$value>$child</a>"` の背後にある `Extrapolable` given である。
++       パターンが取りうる形と、各穴が何を束縛するかについては `x` を参照のこと。
++   entry .Hole   `x"…"` リテラルやパターンが穴を持ちうる位置
++       `Text`（文字データ）、`Tagbody`（開始タグの内部で、属性のため）、`Comment`、`Element(tag)`（要素全体）、`Attribute(tag, attribute)`（属性の値）、`Node(parent)`（子ノード）である。
++       補間子のマクロは各 `$` をそれが置かれた文脈で分類し、CDATA の内部のように意味を持たない位置にあるものを `Xml.Issue.BadInsertion` で拒否する。
++   entry .select   この木に対して XPath を評価し、一致したノードを `Fragment` として返す
++       `Xml` に対する拡張である。
++       `xml.select(xp"//book[@id='1']")` は、一致した木のノードを文書順に並べた `Fragment` である。
++       属性はノードではないので、属性を選択するパス（`//a/@href`）はここでは何も返さない。その値は `selectText` か `evaluate` で読む。
++       値がノード集合でない式は `NotNodeSet` とともに `XPath.Error` を発生させる。エンジンが対応していない式や、与えられていない変数も `XPath.Error` を発生させる。
++       接頭辞付きの名前テストは、パス自身のスコープ（`XPath#in(scope)`、または `xp"…"` リテラルが書かれたときの `Namespace` given）を通じて解決される。
++   entry .selectText   最初に一致したノード、またはスカラー式の文字列値
++       `xml.selectText(xp"//a/@href")` は属性の値であり、何も一致しなければ `Unset` である。数値、真偽値、文字列の式では、その値のテキストである。
+
+% 2 1 0 0e75f00ca2cc7ea21a1ec37e5c05fbe8
+
+% 3 1 0 0cf3d3c0a385c445063805742711250c
+
+% 4 1 0 19e25feed3fe008c15e278b963d0c5bd
+
+% 5 1 0 023911669351045605928555b6e8be2c
+
+% 0 1 0 020168327297f0c608705412cb394340
+
+% 0 1 0 0394bdd2fe12690d1416869c4e1f036b
+
+% 0 1 0 01d9ebadc653db6b1f038869c9eb69e9
+
+% 0 1 0 0c154d364ae737480a0bde6b72985645
+
+% 1 1 0 1dcc2834f70a767a070cd595f6b89d02
+
+@ 0 5 0 0c563184488cea700a306487276759b6
++   entry .evaluate   XPath 1.0 の完全な評価：数値、真偽値、文字列、またはノード集合。`XPath.Value` として返す
++       `xml.evaluate(xpath, variables)` は `$name` の参照を、修飾名をキーとするマップから解決し、未知の変数や対応していない式には `XPath.Error` を発生させる。
++   entry .Scope   ある地点で有効な名前空間の束縛：接頭辞から URI へ。デフォルトは空の接頭辞をキーとする
+
+% 1 1 0 087f2a707eccd06710aa1384d9d66f22
+
+@ 0 8 0 06d9b43124b452631997f8bc780fa33c
++         `Xml.Scope` は不透明型 `xylophone.internal.Scope` であり、アンブレラがすでに独自の `Scope` をエクスポートしているので、ここから参照する（`xylophone.Scope` としてもエクスポートされている）。
++         スコープは、接頭辞（デフォルト名前空間では `Unset` または空のテキスト）から URI への束縛の順序付きリストであり、同じ接頭辞の後の束縛が優先される。
++         すべての `Xml.Element` はスコープを `scope` として一つ持つ。パーサーは各 `xmlns` 宣言を、その要素とその子孫のスコープに積む。そしてスコープ内の `Scope` given は、文書をパースするときに使われ、接頭辞付きの選択を解決するときに照らされるものである。
++         コンパニオンの `default` は予約済みの `xml` 接頭辞だけを束縛する。
+
+@ 0 1 0 0db5eda91b5ba4f5107b2ae06ed55f67
++         given で束縛したスコープを使えば、文書が一度も使っていない接頭辞で選択できる。
+
+% 2 1 0 0e6097a4d0b958270d2a6d40ac87eb75
+
+% 3 1 0 05fea988c6260a7d03c8b708c317d969
+
+% 4 1 0 0808e8b3f560f08c0fd9dd524f910218
+
+% 5 1 0 18dfbf1566d1b1bc08cf2e637c186298
+
+% 0 1 0 1c427f5a1552b9cf128839d97f20dcfd
+
+% 0 1 0 0bab8c68f8d1d35c0063340a1faa3183
+
+% 0 1 0 1bac8baa5acbe6d305ff0039830c895b
+
+% 0 1 0 137e8f7086600c4a069cd49e4f7836e2
+
+% 0 1 0 1b0a59710deee57a10fcb6cfe9e3f427
+
+% 1 1 0 16accff2122493a41b74d1a3dba08809
+
+@ 0 4 0 042b9ad894b1501415b099ec38abda4a
++         スコープの given はパースのためにも接頭辞を束縛するので、その given がスコープにある間は `<q:x/>` は宣言なしでパースされる。また、スコープを付けて組み立てた要素は、書き出すときに必要なものを宣言する。
++         `Xml.Scope[("svg", "xlink")]` は、タプルの各接頭辞をその `Namespace` given を通じて束縛するスコープである。
+
+% 0 1 0 055e5f385244b45f11bd025bb7fa9c48
+
+% 1 1 0 0c9a4d18a49222610c35d33f10a42989
+
+@ 0 1 0 00865b5e61aa5dce0a3dd80e24093537
++   entry .Name   解決された名前：名前空間 URI（あれば）とローカル部
+
+% 1 1 0 1214b8873dd8a6b80a721b747248225f
+
+@ 0 9 0 02d841d3bb12a43d13bac1694859ef76
++         接頭辞が解決された後に、要素と属性を識別する組である。
++         `Xml.Name(t"urn:a", t"x")` は名前空間 `urn:a` の `x` であり、`Xml.Name(t"x")` は修飾されていない `x` である。`Element#qualified`、`Xml#elements`、`Xml#element`、`Element#attribute`、`Xml.Reader#name` はいずれもこれを用いる。
++         名前は Clark 記法 `{urn:a}x` で、あるいはローカル部のみで表示される。
++     entry .apply   `Xml.Name(local)`：名前空間に属さない、修飾されていない名前
++     entry .split   生の `prefix:local` ラベルの接頭辞とローカル部。接頭辞は解決しない
++         コロンのないラベルでは `(Unset, label)` となる。
++     entry .showable   Clark 記法 `{uri}local`、またはローカル部のみ
+
+% 0 1 0 18b3106c02a2bc530ac9c0e6e8b0b645
+
+@ 0 3 0 09ed5c1d98bfcc7505c6a107b93c313e
++     entry #namespace   URI。名前空間に属さない名前では `Unset`
++     entry #local   ローカル部
++   entry .Namespacing   束縛のない接頭辞をパースエラーとするか、名前空間なしに解決するか
+
+% 1 1 0 16ed34225e92c8de0174ab24f91cf176
+
+@ 0 7 0 03c06749606116d40a077ec1f639e897
++         `Strict` と `Lenient` のケースを持つ列挙型である。
++         Namespaces 勧告はすべての接頭辞が束縛されていることを要求するので、デフォルト（コンパニオンの given）は `Strict` である。`p` の宣言なしに `<p:a/>` をパースすると `Xml.Issue.UnboundPrefix` とともに `Parse.Error` が発生し、`Namespace` given のない接頭辞を使う `x"…"` リテラルはコンパイルされない。
++         束縛のない接頭辞を代わりに名前空間なしへ解決させるには、`namespaceOptions.lenientNamespaces` をインポートする。`namespaceOptions.strictNamespaces` はデフォルトを改めて示すものである。
+
+% 0 1 0 0080252912aab7950fa73f11256fa25a
+
+@ 0 1 0 13ad4e8b41563927125740d4055ce0c7
++   entry .Namespaced   アノテーションを付けられない型のための、導出されたコーデックの型の名前空間。given として与える
+
+% 1 1 0 1851526ff82c61cd056d2db5a6236001
+
+@ 0 12 0 0598b12691ff0ea11d342836e54d4bfd
++         `given Rect is Xml.Namespaced = Xml.Namespaced(t"http://www.w3.org/2000/svg")` があると、`Rect` の導出されたエンコーダーは `<Rect xmlns="http://www.w3.org/2000/svg">` を、そのフィールドの要素も同じ名前空間に置いて書き出し、デコーダーはその解決された名前で要素と照合する。
++         これは型に付いた `@xmlns` アノテーションより優先される。
++         `qualified = false` とすると、フィールドの要素は名前空間に属さないままとなる。
++     entry .apply   `Xml.Namespaced[value](uri, qualified = true)`：型のための名前空間の束縛
++     entry .Bound   `Namespaced` given の実体であるクラス：URI と、フィールドがそれを共有するかどうか
++       entry #namespace   URI
++       entry #qualified   フィールドの要素が名前空間を共有するかどうか
++     entry #namespace   型の要素が属する URI
++     entry #qualified   フィールドの要素が同じ名前空間に属するか、名前空間に属さないか
++   entry .xmlns   導出された型の要素を名前空間に置くアノテーション
+
+% 1 1 0 1e10566e8b45e13410cb3bdf72de215c
+
+@ 0 8 0 1fe35e97e6df09bb05d2448cff1a24a0
++         `@xmlns("urn:shop") case class Order(id: Int, item: Item)` は、フィールドの要素も同じ名前空間に置いて `<Order xmlns="urn:shop">` としてエンコードされ、要素がその名前空間に解決される任意の文書から、どの接頭辞を使っていてもデコードされる。
++         クラスに `@xmlns("urn:shop", qualified = false)` を付けると、`elementFormDefault="unqualified"` を持つスキーマと同じように、フィールドの要素は名前空間に属さないままとなる（それらは `xmlns=""` 付きで書き出される）。
++         このアノテーションは URI をキーとし、接頭辞をキーとすることはない。
++         `xylophone.xmlns` と `soundness.xmlns` としてエクスポートされるので、`@xmlns(…)` に修飾は不要である。
+
+% 2 1 0 06b9239bfa675fa4036300f7ada64acc
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 05636cd9e40c631c164ebbdf98477b69
++           label 素のレコードは修飾されていない要素を書き出す
+
+% 1 1 0 1863812faf9b33b71ce92c11e37ad00f
+
+% 2 1 0 130e7e1ce7922a990b8312ec2eb6b33a
+
+% 1 1 0 0bd0a2e596b24f91021f46aa639d6bef
+
+% 3 1 0 1d3c142b16c91f870c650ff8059d9508
+
+% 0 1 0 10afce72bad9102f149e09855b361f9b
+
+% 1 1 0 09669316d00a2e5c074e5a6be6ed1d58
+
+@ 0 1 0 0dfef848f029caac0c6c73942aefa899
++           label アノテーションを付けると、レコードの要素は名前空間に属する
+
+% 1 1 0 0f1375fb07f99608189d02377ec66104
+
+% 2 1 0 050a661f0dda44601b117f15de598630
+
+% 4 1 0 183d298710fddfee19961f3a4d2d46d7
+
+% 5 1 0 161a3761abf4a02b1b7878c12736412a
+
+% 3 1 0 0482f772b00c5858082f99674378aa0f
+
+% 0 1 0 096a45af023a09780b55554866caec4c
+
+% 1 1 0 1fa8252b8315ce040523778ab719e41f
+
+@ 0 1 0 0f5663f4919ff8691e7ee9664e2383cf
++           label 名前空間に属する文書は、接頭辞が何であれ読み戻せる
+
+% 1 1 0 19afbc8faba48ae00fdd47fd44f2d2a8
+
+% 2 1 0 114096afa966125a19727a878bac9c79
+
+% 4 1 0 0a0347e98a0959c200fa79d9450d6574
+
+% 5 1 0 0444fdeb364458851c3ca054d8536a1d
+
+% 0 1 0 05e7d8768aff54ca1f1536149be554f0
+
+% 0 1 0 064a3931067de8c61963af7611828693
+
+% 0 1 0 187830326677dc2515bafacef82ef63d
+
+% 1 1 0 0bc9e5dd2756d7610d78458d4fd1933a
+
+@ 0 1 0 1584bfc0c887f1450f936ea263392039
++           label 一つのフィールドを名前空間の外に置く
+
+% 1 1 0 11506a808da2589f1e9be3b89ba0fdaf
+
+% 2 1 0 0146cfdc84d9a945129981a4430fea88
+
+% 4 1 0 12edaaad8740e0471fb15353ecc188f4
+
+% 0 1 0 1b3fc175bb7f2a87151c88833616581e
+
+% 0 1 0 16e7536a715779e415aad3b301ab334a
+
+% 0 1 0 1c99db68fcd60d991950926a9595ab77
+
+% 1 1 0 1699cc1936d23f5f17b74d2624a13df4
+
+% 2 1 0 1b83a64ee0ff2cdb002c967e27a59c27
+
+@ 0 17 0 0b413c32f0779cfe1b1cf67a7b0734e2
++         独自の名前空間を持たない型は、文書がフィールドの要素をどの名前空間に置いていても、ローカル名だけでそれらと照合する。
++         直接パーサーとステージングされたパーサー（`Xml.Parsable.derived`、`.staged`）は生のラベルで照合し、このアノテーションを参照しない。
++     entry #uri   名前空間 URI
++     entry #qualified   フィールドの要素が名前空間を共有するか（デフォルト）、名前空間に属さないか
++   entry .unqualified   一つのフィールドの要素を、その型の名前空間の外に置くアノテーション
++       `@xmlns` 型のフィールドに付けた `@unqualified reference: Text` は `<reference xmlns="">` を書き出し、名前空間に属さない要素を読む。
++       `xylophone.unqualified` と `soundness.unqualified` としてエクスポートされる。
++   entry .attribute   フィールドを子要素ではなく属性にするアノテーション
++       `case class Play(title: Text, @attribute year: Int)` は `<Play year="1603"><title>Hamlet</title></Play>` としてエンコードされ、属性からデコードし戻される。
++       `Optional` の属性フィールドは、`Unset` のときは単に存在しない。
++       このアノテーションは、アンブレラの型エイリアス `soundness.attribute` を通じて `@attribute` として（`attribute` という名前の項は galilei や tarantula のものと衝突する）、あるいは `@Xml.attribute` や `@xylophone.attribute` として参照する。
++       直接パーサーとステージングされたパーサーもこれに従う。
+
+% 2 1 0 016f1b70c87ee58406b83080b4406df2
+
+% 3 1 0 1272bb495f2552af1d4475ad3411e975
+
+% 0 1 0 08f4cf7806fa414d18d49f4d47c63332
+
+% 0 1 0 11a169471fb62c021d12a606194cb507
+
+% 0 1 0 05276fe9b8769dfc1c78778cb83c9ff7
+
+% 1 1 0 1620feaa9326bc0e04514621006db281
+
+@ 0 1 0 079e6416d4bd22091174ed14c6606a70
++   entry .XmlAttribute   型付きタグの属性：そのラベル、適用される要素、または `global`
+
+% 1 1 0 1aa79aa1cc953a741150a4e992147224
+
+@ 0 41 0 121655ea4a17169705a81acdbb281211
++         型付きタグ（`Tag`）が属性を宣言するための型クラスである。`"href" is Xml.XmlAttribute on "a" in Schema` given は `href` を `<a>` に使えることを表し、`Element#selectDynamic` と `#updateDynamic` がこれを解決する。
++         通常の XML の用途のためのものではない。honeycomb と savagery がこの上に語彙を築いている。
++     entry #label   属性の名前
++     entry #elements   属性が適用される要素のラベル
++     entry #global   すべての要素に適用されるかどうか
++     entry #targets   あるタグがこの属性を持てるかどうか
++     entry #merge   同じ属性の二つの宣言の和
++     entry #Self   リテラル型としての属性のラベル
++     entry #Topic   属性の値の型
++     entry #Plane   属性が宣言されている要素のラベル
++   entry .decodable   `Decodable in Xml` の入口：テキストのデコーダーがあればそれを、なければ導出を使う
++       inline の given であり、任意の型について、その型が `Decodable in Text` を持てばそれとの橋渡しに解決され（そのため `Text`、識別子、テキストからデコードできる任意の型は要素のテキストから読まれる）、そうでなければケースクラスや列挙型のための Wisteria の導出に解決される。
++       テキストの分岐は、存在しないフィールドには `Missing`、テキストのない要素には `Empty` とともに `Xml.Error` を発生させ、空のテキストで処理を続ける。
++       プリミティブには専用の given（`.int`、`.boolean`、…）があってこれに優先するので、不正な数値は処理を中断せずに `Malformed` を発生させ、零で処理を続ける。
++   entry .encodable   `Encodable in Xml` の入口：テキストのエンコーダーがあればそれを、なければ導出を使う
++       `.decodable` と対をなすものである。`Encodable in Text` を持つ型（`Text`、`Int`、`Long`、…）は葉の `Xml.Text` となり、ケースクラスや列挙型は `EncodableDerivation` を通じてエンコードされる。
++   entry .int   要素のテキストから `Int` を読む。失敗すると `Xml.Error` を発生させ、`0` で処理を続ける
++       プリミティブのデコーダー（`.int`、`.long`、`.short`、`.byte`、`.double`、`.float`、`.boolean`）の一つであり、それぞれ自らがエラーを発生させるための `Tactic[Xml.Error]` をキャプチャする。
++       数値でないテキストは `Malformed(text, t"Int")` を発生させる。単一のテキストの並びを持たない要素や存在しないフィールドは `Untextual(t"Int")` を発生させる。いずれも零の番兵で処理を続けるので、不正なフィールドを複数持つレコードは、`validate[Xml.Focus]` のもとでそれらをすべて報告する。
++   entry .long   `.int` が `Int` を読むように、`Long` を読む
++   entry .short   `.int` が `Int` を読むように、`Short` を読む
++   entry .byte   `.int` が `Int` を読むように、`Byte` を読む
++   entry .double   `.int` が `Int` を読むように、`Double` を読む
++   entry .float   `.int` が `Int` を読むように、`Float` を読む
++   entry .boolean   テキスト `true` または `false` から `Boolean` を読む。失敗すると `false` で処理を続ける
++   entry .booleanEncodable   `Boolean` をテキスト `true` または `false` として書き出す
++       `.encodable` の橋渡しが使える `Boolean is Encodable in Text` が存在しないので必要となる。他のプリミティブはそれぞれのテキストのエンコーダーを通じてエンコードされる。
++   entry .Repeatable   ワイヤ形式が最初のものだけでなく同名のすべての子であるコーデックを示す
+
+% 1 1 0 1dd8845d8c2f17a909c3bbef72f13e6e
+
+@ 0 34 0 047d777f73758a5205d90fa976114db7
++         `Decodable in Xml` または `Encodable in Xml` にミックスインするものである。繰り返し可能なフィールド（コレクション、`Map`、あるいはエンコード側の `Optional`）は、フィールドの名前を共有するすべての子要素として項目ごとに一つずつ書き出され、それらすべてから文書順に読まれる（連続している必要はない）。
++         積の導出はこのミックスインを認識し、一致する子からなる合成の `Fragment` をデコーダーに渡す。
++         このミックスインを持たないコーデックは、最初に一致する子だけを読む。
++     entry #repeatable   上書きされない限り `true`
++   entry .collectionDecodable   フィールドの名前を持つすべての要素から、任意の `Iterable` コレクションを読む
++       標準ライブラリの `Factory` を持つコレクション型と、`Decodable in Xml` を持つ要素型のためのものである。一致する子はそれぞれ一つの項目としてデコードされ、子が零個なら空のコレクションとなり（存在しない繰り返しフィールドは空であって、決してエラーではない）、単独の要素は項目一つのコレクションとしてデコードされる。これは文書のルートで `as[List[T]]` が見る形である。
++       繰り返し可能である。
++   entry .listDecodable   `.collectionDecodable` と同様に、`List[T]` を読む
++       Soundness の不透明なコレクションは `Iterable` に適合しないので、`List`、`Set`、`Sequence` はそれぞれ専用の given を持つ。
++   entry .setDecodable   `.collectionDecodable` と同様に、`Set[T]` を読む
++   entry .seriesDecodable   `.collectionDecodable` と同様に、`Sequence[T]` を読む
++   entry .collectionEncodable   `Iterable` を項目ごとに一つのノードからなる `Fragment` として書き出し、積のエンコーダーがラベルを付け直す
++       繰り返し可能である。積のエンコーダーはこのフラグメントを、同名の繰り返される子へと平坦化する。
++       項目ごとの要素の形を持たない入れ子のコレクションは、名前のない要素の下に入れ子になり、それを囲む積がラベルを付け直す。
++   entry .listEncodable   `.collectionEncodable` と同様に、`List[T]` を書き出す
++   entry .setEncodable   `.collectionEncodable` と同様に、`Set[T]` を書き出す
++   entry .seriesEncodable   `.collectionEncodable` と同様に、`Sequence[T]` を書き出す
++   entry .optionalDecodable   `Optional[T]` のフィールドを読む：要素または属性が存在しなければ `Unset`
++       存在しない子要素（`@attribute` フィールドでは存在しない属性）は `Unset` にデコードされるか、`optionalityOptions.strictXmlAbsence` のもとでは `Missing` とともに `Xml.Error` を発生させる。存在する要素は `T` としてデコードされるか、`optionalityOptions.lenientXmlFaults` のもとで内側のデコーダーがそれを拒否すれば `Unset` となる。
++       XML には null がない。空の要素も存在する値なので、null の扱いに関するオプションはない。
++       繰り返し可能ではない（存在するオプショナルの値は最初に一致する子である）ので、`Optional[List[T]]` は対応している形ではない（`List` フィールドは存在しなければすでに空である）。
+
+% 2 1 0 1c37372b35759c401c002aa3a88169b8
+
+% 3 1 0 074f41ce9d5e97ef1d9c7b8ce7efc16c
+
+% 4 1 0 114b79d4b2d35ab611ee277342886fc3
+
+% 5 1 0 027c8114f7555ff700a48a88baf5dc70
+
+% 7 1 0 0f7d7339f15776581f2d3949ce33217d
+
+% 0 1 0 0cac40d11917f1a000fa7bb41f71615d
+
+% 2 1 0 1bdba768b168e7cf1e76243c0d043aeb
+
+% 1 1 0 16686680ff47a5da06b382111d3c7a50
+
+% 0 1 0 04590c6c0449d6b11ed3ba14740a9091
+
+% 1 1 0 192f1d7515b80b861939bc4276c92229
+
+@ 0 7 0 121d1c0a3df902f21af134d60e43ca9b
++   entry .optionalEncodable   `Optional[T]` のフィールドを書き出す：`Unset` のときは要素をまったく書かない
++       `Unset` は空の `Fragment` にエンコードされ、繰り返しを考慮する積のエンコーダーはそれを子要素なし（または属性なし）へと平坦化する。存在する値は、必須のフィールドが生み出すのと同じ、ラベルを付け直した単一の子としてエンコードされる。
++   entry .mapEncodable   `Map[K, V]` をエントリーごとに一つの子として書き出す。それぞれ `<key>` と `<value>` を持つ
++       キーと値は XML にエンコードできる任意の型なので、キーが要素名として有効である必要はない。
++       各エントリーの要素は、積のエンコーダーによってフィールドの名前でラベルを付け直される。
+
+% 2 1 0 018b750f9b5ddf5208c5f0e27ededfa6
+
+% 3 1 0 189171eb5133efa2005b37684e5fd5c0
+
+% 0 1 0 1bef4a26270b3c3e15286baa39c1f1a1
+
+% 0 1 0 09cb68bf03cb5d5b113c6264e50c7d13
+
+% 0 1 0 03d9375360fe26a01e6a5d2b82e25adc
+
+% 1 1 0 19d97d40973b8c7f1d669ab84ff21320
+
+@ 0 11 0 0a44e53606952370012d152cb66abeb6
++   entry .mapDecodable   フィールドの名前を持つすべてのエントリー要素から `Map[K, V]` を読む
++       集めた各要素の `<key>` と `<value>` の子は、キーと値の型としてデコードされる。存在しない子には不在の番兵が渡されるので、プリミティブはフォーカス付きのエラーを記録し、`Optional` の値は `Unset` として読まれる。
++   entry .xmlDiscriminable   デフォルトの和型の判別子：要素のローカル名がバリアントとなる
++       `Book` と `Magazine` のケースを持つシールされたトレイトは、判別用のフィールドなしに、ラベルによって `<book …/>` と `<magazine …/>` からデコードされる。接頭辞は字句上のものなので、`<s:Book>` もやはり `Book` バリアントである。
++       どのバリアントも名指さないラベルは `UnknownVariant` とともに `Xml.Error` を発生させる。
++       バリアントに付けた `@name[Xml](t"red")` はその要素の名前を変える。
++       `Xml.DiscriminantAttribute` given はこれを属性で置き換える。
++   entry .DiscriminantAttribute   バリアントを属性として読み書きする和の判別子
+
+% 1 1 0 1c8eba54f77fb4530ba8d7ff19fcddf5
+
+@ 0 10 0 0c8ecd970d49c76e1f6ca967af389b66
++         `given Shape is Discriminable in Xml = Xml.DiscriminantAttribute[Shape](t"kind")` は、デフォルトのラベルをバリアントとする方式（`.xmlDiscriminable`）の代わりに、導出されたコーデックが要素に `kind="Circle"` 属性を書き出し、そこからバリアントを読むようにする。
++         ステージングされたパーサーも、`xylophone.staged` のステージングコンパイラを通じてこれを認識する。
++     entry #attribute   属性の名前
++     entry #discriminate   要素上の属性の値。なければ `Unset`
++     entry #rewrite   属性をバリアント名に設定した要素のコピー
++     entry #variant   要素そのもの：バリアントの内容は要素である
++   entry .DecodableDerivation   ケースクラスとシールされた型のための、Wisteria による `Decodable in Xml` の導出
+
+% 1 1 0 00a1c419f8f7ccdb129d72b187ec9d02
+
+@ 0 13 0 0bc07e3d2cb68595007e0d4d4c28c843
++         積は、フィールドごとに子要素を一つ持つ要素からデコードされ、子はフィールドのワイヤ上の名前（`@name` を考慮する）で任意の順序で照合される。`@attribute` を付けたフィールドは属性から読まれ、繰り返し可能なフィールドは一致するすべての子を集める。要素が存在しないフィールドには不在の番兵が渡されるので、`Optional` は `Unset` として読まれ、プリミティブはエラーを発生させて処理を続け、`Default` を持つ入れ子のレコードは、サブフィールドのエラーを連鎖させるのではなく、一つの `AbsentProduct` エラーとともにそれで置き換えられる。
++         子の間にあるテキスト、コメント、処理命令は無視される。
++         和は、スコープ内の `Discriminable in Xml` を通じてバリアントを選ぶ。
++         各フィールドは、`validate[Xml.Focus]` のために、そのパスを示すフォーカスのもとでデコードされる。
++         再帰的な型は自らの導出を通じて結ばれる。
++         直接呼び出すものではなく、`.decodable` がこれに到達する。
++     entry .conjunction   積のデコーダーを導出する
++     entry .disjunction   和のデコーダーを導出する
++   entry .EncodableDerivation   Wisteria による `Encodable in Xml` の導出：積はフィールドごとに子を一つ持つ要素となる
+
+% 1 1 0 1c8af10c3107c765153cad3e0668edb1
+
+@ 0 24 0 08fd6e2253f3dd610bf4926aa3149213
++         `.DecodableDerivation` と対をなすものである。
++         積は、型の短い名前をラベルとする要素にエンコードされる。各フィールドはフィールドのワイヤ上の名前をラベルとする子要素となり（そのフィールド自身のエンコーダーが生み出したもののラベルを付け直す）、`@attribute` フィールドは属性となり、繰り返し可能なフィールドは繰り返される子へと平坦化され、`@xmlns` や `Xml.Namespaced` を持つ型の要素は、ルートに宣言を置いてその名前空間に配置される。
++         和はそのバリアントをエンコードし、要素のラベルをバリアントの名前に付け直すので、`.xmlDiscriminable` を通じて往復できる。
++         直接呼び出すものではなく、`.encodable` がこれに到達する。
++     entry .conjunction   積のエンコーダーを導出する
++     entry .disjunction   和のエンコーダーを導出する
++   entry .aggregableDerived   `import codecs.derived` のもとでは、直接パーサーがあっても `read[T in Xml]` は木の経路を使う
++       コーデックのモードの given の一つである。`codecs.derived` は、スコープ内のすべてのレコードについて導出された木のコーデックを選び、直接のインスタンスを上書きする。
++   entry .aggregableDerivedText   `.aggregableDerived` の `Text` 版
++   entry .readableDerived   `.aggregableDerived` の `Data` 全体版
++   entry .readableDerivedText   `.aggregableDerived` の `Text` 全体版
++   entry .encodableOverDerived   `import codecs.derived` のもとでは、`in[Text over Xml]` は木を通じて描画する
++   entry .aggregableStrict   `import codecs.strict` のもとでは、`read[T in Xml]` は直接パースするか、コンパイルに失敗する
++       `Xml1#aggregableStrictFailure` と組になる。直接コーデックを持つ型はそれを通じて読まれ、持たない型は、黙って木にフォールバックするのではなく、その型を名指すコンパイルエラーとなる。
++   entry .aggregableStrictText   `.aggregableStrict` の `Text` 版
++   entry .encodableOverStrict   `import codecs.strict` のもとでは、`in[Text over Xml]` は直接書き出すか、コンパイルに失敗する
++   entry .Parsing   直接パーサーの基盤：木を作らずに `Xml.Reader` から値を読む
+
+% 1 1 0 0640655e9da7d0790715ca57d01aabb7
+
+@ 0 8 0 0ed772c9209a34490fff0e575dcb20ec
++         XML に対する distillate の `Parsable` である。`parse(reader)` は、現在の要素がリーダー上でちょうど開かれた状態（その名前と属性は消費済み）で呼ばれ、要素の内容と閉じタグを、リーダーの内容消費操作のうちちょうど一つ（`Unset` になるまでの `nextChild`、`text`、`skipElement`、`element`）を通じて完全に消費しなければならない。
++         `Xml.Parsable` は名目的で、明示的に選択する側の顔（明示的なインスタンス、`Xml.Parsable.derived`、`derives Xml.Direct`、`codecs.direct`）であり、`Xml.Field` は積の導出がフィールドごとに解決する実務上の顔である。
++         jacinta の `Json.Parsing` と異なり、形はない。XML のコーデックは形態の情報を持たない。
+
+% 0 1 0 10f9aec6965c0570077c8cc4e6ecaaa6
+
+% 0 1 0 19934b41b3112671048f54145b615ff6
+
+@ 0 9 0 19f23cfdfae7981c03507edd19da4463
++     entry #repeatable   コレクションのパーサーでは `true`。出現ごとに集められる
++     entry #absent   この型のフィールドの名前を持つ子要素も属性もないときに、そのフィールドが返すもの
++         上書きされない限り `Xml.Error(Missing)` で中断する。プリミティブはエラーを発生させて零の番兵で処理を続け、橋渡しは不在の番兵に対して自らのデコーダーに委ね、導出された積はサブフィールドごとに展開する。
++         読み取り箇所の `Foci` を取る。
++     entry #attribute   `@attribute` フィールドのために、この型のフィールドが属性値からどう読むか
++         デフォルトは `absent()` である。テキストの葉から読めない形は、木の経路とまったく同じように、属性を形の誤った入力として扱うからである。
++   entry .Parsable   型のための、明示的に選択する直接パーサー：`read[T in Xml]` は入力から `T` を直接読む
+
+% 1 1 0 16ebf025791c95d614b78dd2db4ff9c8
+
+@ 0 6 0 1f8dc00a73a4b381048fe0e5ee8ee741
++         名目的な `Xml.Parsing` である。
++         型がスコープに `Xml.Parsable` を持つと、`source.read[T in Xml]`（`Xml1#aggregableParsed` を通じて）は、`Xml.Reader` を通じて入力の上でそれを駆動し、直接読む値については `Xml` の木を決して実体化しない。`Decodable in Xml` しか持たないフィールドの型は `fromDecodable` を通じて橋渡しされ、それは要素を一つ実体化する。
++         包括的な given はないので、型が選択するまで、どの読み込みの振る舞いも変わらない。
+
+% 2 1 0 11a98734bbf8c94911f35f9b5006f112
+
+% 3 1 0 1ff4a6c14759bf250a3d7a8818a9dfac
+
+% 4 1 0 1db8f7146b9eef6b1d00b5e44fd48115
+
+% 5 1 0 04152563b4d10398199a77762e6964d3
+
+% 7 1 0 1be07d7b8dec70011639ffc58e77d6a8
+
+% 0 1 0 01d263a0e8787b0e024799dc2cb0fa78
+
+% 0 1 0 1fb2a0ed362db94a128ae5993032cfdd
+
+% 0 1 0 032a87b89d6e40f50c4a5aae2be8a8cf
+
+% 0 1 0 1d66872e4f44017309848f22b8ea274c
+
+% 1 1 0 09cecb6a0cbf9e181bdccf2a37b8b06d
+
+@ 0 8 0 1c5fa5d21519fead0390026c237e9702
++         意味論は木の経路と完全に一致する。ワイヤ名、`@attribute` フィールド、重複時の最初の一致の優先、繰り返されるフィールドの収集、デフォルト値、存在しないフィールド、エラーのフォーカスがすべて同じである。
++         `Reflection` と手書きの `Decodable in Xml` の両方を持つケースクラスは、ここで導出されてそのデコーダーと食い違ってしまう。対処は一行で、`given MyType is Xml.Parsable = Xml.Parsable.fromDecodable(summon[MyType is Decodable in Xml])` と書けばよい。
++         `derived` は given ではなくメソッドなので、型が直接パースされるのはそれを選択した場合だけである。`derives Xml.Direct` と `import codecs.direct` が他の経路である。
++         直接パーサーは生のラベルを照合し、`@xmlns` は参照しない。
+
+% 0 1 0 18d7af9e9895f8bc1b0c6d564df8b448
+
+% 0 1 0 13c6b16330912f810dfa2b2ab5819b33
+
+% 0 1 0 0c4daa1510a432ae157fe073ab988907
+
+% 1 1 0 1067dbf874db81280d5f4d3c9746cce4
+
+@ 0 46 0 02ac5f693a14116a03d1eb6fd4a9b808
++     entry .apply   リーダーに対する関数から作るパーサー
++         `Xml.Parsable[T](reader => …)`：関数は要素が開かれた状態で呼ばれ、`Xml.Parsing#parse` と同じく、その要素を消費しなければならない。
++     entry .fromDecodable   木の世界からの橋渡し：要素を一つ実体化してデコードする
++         カスタムのデコーダーを導出された直接パーサーより優先させるときの、一行の抜け道である。
++         繰り返し可能なデコーダー（カスタムのコレクション）は収集の意味論を保つ。各出現は別々に実体化され、合成された `Fragment` としてまとめてデコードされる。
++         存在しない場合と属性の読み取りは、木の導出が渡すのと同じ番兵の入力でデコーダーに委譲される。
++     entry .derived   ケースクラスまたはシールされた型に対する Wisteria で導出された直接パーサーを、名目的なものとして包んだもの
++         `given Play is Xml.Parsable = Xml.Parsable.derived`。
++         各フィールドのパーサーは `Xml.Field` を通じて解決される。明示的な `Parsable`、テキストのコーデック、構造的な導出、または `Decodable in Xml` に対する橋渡しのいずれかであり、入れ子のレコードも直接パースされる。
++     entry .staged   ケースクラスに対するマクロ生成の単相パーサーで、`derived` より速い
++         `derived` のステージング版である。フィールドの値は型付きのローカル変数に置かれ、子要素はパックされた `Long` リテラルの比較で振り分けられ、レコードはコンストラクターの直接呼び出しで構築される。`Array[Any]` のバッファも `Mirror` もフィールドごとのボックス化もない。
++         意味論は `derived` と同じである。
++         パラメーターリストが一つだけの、トップレベルまたはオブジェクト内に入れ子になったケースクラスが必要である。直和型、メソッドローカルなクラス、その他の形には `derived` を使う。
++     entry .fromField   任意の `Xml.Parsing`（`Xml.Field` など）を名目的な `Parsable` として包む
++     entry .iterable   任意の `Iterable` コレクションに対する直接パーサーで、フィールドの各出現を収集する
++         `.fieldCollection` の土台である。要素は与えられた要素パーサーでパースされるので、入れ子の直積型も直接パースされる。
++     entry .declared   `derives Xml.Direct` する型の `Parsable`
++         型のコンパニオンにある `Xml.Direct` インスタンスを通じて解決される given。
++     entry .Direct   生成されたパーサーの基底で、リーダーを中立なキャリアとして受け取る
++       entry #parse   `parseCarrier` を通じて読む
++     entry .parseField   生成されたパーサーのフィールド位置で名目的なパーサーを呼ぶ
++         キャプチャが消去された生成コードのための呼び出し口である。パーサーとリーダーは `AnyRef` として渡され、ケイパビリティはここで再び主張される。
++         手書きのコードで使うものではない。
++     entry .absentField   生成されたパーサーから名目的なパーサーの `absent()` を呼ぶ
++     entry .assemble   生成されたパーサーのために、フィールド値の配列から直積を構築する
++     entry .wireNames   生成されたパーサーのために、フィールド名の配列に `@name` による改名を適用する
++     entry .missing   生成されたパーサーのために、`Xml.Error(Missing)` を発生させ、番兵で処理を続ける
++     entry .focusing   生成されたパーサーのために、フィールドを指すフォーカスの下でブロックを実行する
++     entry .childIndex   レコードの属性以外のフィールドキーの中での子のラベルの添字、または `-1`
++     entry .repeats   パーサーが繰り返される出現を収集するかどうか
++     entry .parseElement   導出された直積エンジンのために、繰り返されるフィールドの一つの出現をパースする
++     entry .gathered   収集した出現から、繰り返されるフィールドの値を構築する
++     entry .product   導出された直積エンジン：フィールド、代替のデフォルト値、コンストラクターから作る `Xml.Field`
++         `ParsableDerivation.conjunction` が構築するものである。まず属性を読み、次に各子をそのワイヤ名で読み、繰り返されるフィールドを収集し、未知の子と重複を読み飛ばし、存在しないフィールドをそのパーサーかレコードのデフォルト値で埋める。
++         直接使うものではない。
++   entry .Field   直接パースのフィールドごとの面で、汎用の代替を持つ
+
+% 1 1 0 00966030f73c0e901c07c884b4e0b000
+
+@ 0 28 0 143d140da1cdfec10806840893138ccf
++         直積の導出が各フィールドに対して解決する型クラスである。
++         その代替の given（`Xml3` から継承される `field`）は `.decodable` の順序をなぞるので、フィールドのワイヤ形式は直接の経路と木の経路で同一になる。明示的な `Xml.Parsable`、`Decodable in Text` のコーデック、構造的な導出、残る任意の `Decodable in Xml` に対する橋渡しの順である。
++         `Xml.Field(parsing)` は任意の `Xml.Parsing` をフィールドパーサーとして使えるように適合させる。
++     entry .apply   `Xml.Parsing` をキャプチャを保ったままフィールドパーサーとして適合させる
++   entry .intParsable   `Int` の直接パーサー：バッファされたバイト列から内容を直接読む
++       直接プリミティブ（`.intParsable`、`.longParsable`、`.shortParsable`、`.byteParsable`、`.doubleParsable`、`.floatParsable`、`.booleanParsable`）の一つで、木のプリミティブと完全に一致する。要素が存在しないか形が誤っている場合や、値がパースできない場合は、（中断ではなく）`Xml.Error` を発生させてゼロの番兵で処理を続けるので、`validate[Xml.Focus]` の下での蓄積はどちらの経路でも同じように振る舞う。
++       `Int`、`Long`、`Double`、`Boolean` は `Text` を実体化せずにバイト列からパースされる。
++   entry .longParsable   `Long` の直接パーサー、`.intParsable` と同様
++   entry .shortParsable   `Short` の直接パーサー、`.intParsable` と同様
++   entry .byteParsable   `Byte` の直接パーサー、`.intParsable` と同様
++   entry .doubleParsable   `Double` の直接パーサー、`.intParsable` と同様
++   entry .floatParsable   `Float` の直接パーサー、`.intParsable` と同様
++   entry .booleanParsable   `Boolean` の直接パーサー、`.intParsable` と同様
++   entry .fieldCollection   任意の `Iterable` コレクションに対する `Xml.Field`：同じ名前の子をすべて収集する
++       代替より上に宣言されているので、コレクションが `Reflection` の場合に達することはない（`List` 自身のミラーはそれを直和型として導出してしまう）。
++       要素はその要素自身のフィールドパーサーでパースされる。
++   entry .fieldList   `List[T]` に対する `Xml.Field`、`.fieldCollection` と同様
++   entry .fieldSet   `Set[T]` に対する `Xml.Field`、`.fieldCollection` と同様
++   entry .fieldSeries   `Sequence[T]` に対する `Xml.Field`、`.fieldCollection` と同様
++   entry .ParsableDerivation   ケースクラスとシールされた型に対する `Xml.Field` の Wisteria による導出
+
+% 1 1 0 005645db72777f9802f494bb0e552043
+
+@ 0 7 0 0b61502a8b639bae1db042b81bc2a336
++         直積は、フィールドのワイヤ名、属性フラグ、フィールドパーサー、デフォルト値から直接エンジン（`Xml.Parsable.product`）を導出する。直和は、バリアントが要素のラベルで選ばれるので、その `Decodable in Xml` に対する木の橋渡しを通じて導出される。
++         `Xml.Parsable.derived` と代替の `field` を通じて到達する。
++     entry .conjunction   直積の直接パーサーを導出する
++     entry .disjunction   直和のパーサーを、そのデコーダーを橋渡しとして導出する
++   entry .Parsable2   `Xml.Parsable` のコンパニオンの低優先度のレイヤーで、`generated` を持つ
+
+% 1 1 0 1c5e6c591a6cf6a00a6f4b1797aa7b5d
+
+% 2 1 0 065db0911cbf7594160df804be4aabea
+
+@ 0 6 0 16394314a1f537881d8dbe3b535293ee
++         直接使うものではない。`codecs.direct` の given をコンパニオン自身の `declared` より下に置くので、`Xml.Direct` を導出する型は一度生成したコーデックを使う。
++     entry #generated   `import codecs.direct` の下で、必要なすべてのレコードに対して生成されるパーサー
++         `Xml.Parsable` 自身の `declared` より下にある。レコードでない型は `Inlinable.Generates` を満たさず、導出の経路をとる。
++   entry .Printable2   `Xml.Printable` のコンパニオンの低優先度のレイヤーで、`generated` を持つ
+
+% 1 1 0 05c77542fed1282d05fb694b648ab7f6
+
+% 2 1 0 1483a53da75c71db101b034d40cad31b
+
+@ 0 3 0 10fa3d9b446242481ff38495adaff3ed
++         直接使うものではない。`Xml.Parsable2` の鏡像である。
++     entry #generated   `import codecs.direct` の下で、必要なすべてのレコードに対して生成されるプリンター
++   entry .Printable   型に対する直接プリンター：木を作らずにコンパクトな XML テキストを書く
+
+% 1 1 0 16ae6fb79b5515e216c8ff9d62e333e8
+
+@ 0 6 0 0f3b90074bb0700a05036d716afda1f8
++         `Encodable in Xml` の直接プリント版である。
++         `write(value, out)` は値をそれ自身の要素として、`write(value, label, out)` はラベル付きのフィールドの要素として、`Xml.Out` に書き込む。
++         書式がコンパクトなところではどこでも、`in[Text over Xml]` と `in[Data over Xml]`（`Xml1#encodableOverPrinted`）を通じて到達する。インデントされた書式は引き続き木を通じて描画される。
++         その表面は、明示的なインスタンス、`Inlinable.printable[T]`、`derives Xml.Direct`、`import codecs.direct` である。
+
+% 2 1 0 1674aa47f86292d70160d003b18509f9
+
+% 0 1 0 05293f740f48417c1fce1551d14bcbae
+
+% 1 1 0 0d0cc3d636a5ca3a00f06655b9f7a18d
+
+% 2 1 0 1d53261fd8deaabd166531af956b480b
+
+% 2 1 0 0ee87ed2b7874e440e4940bf19857d92
+
+% 0 1 0 19498732d81c19f51481545ba35ab4a4
+
+% 0 1 0 17d68a5ace0e5f7101e11809578bf216
+
+% 1 1 0 0fe39f1517c1c6dd0091818a821aa279
+
+% 2 1 0 1d09809bacaf57461bab047e796b9f41
+
+% 3 1 0 0860766a43d3d10a1983dd60ea16967d
+
+% 2 1 0 0403c6b6a9a6a76903aef46f83ecc702
+
+% 0 1 0 099d4af7a064f9eb08d49063cc8443a9
+
+% 0 1 0 0b28ccfd5e97a7530de5c9f59bce76ed
+
+% 1 1 0 14e63fd920bbdc1e05fc2b82b9063a4c
+
+% 2 1 0 18eb16971d3900ea0d296ec39ceb2fc5
+
+% 3 1 0 1f33cfabab96d0f003ab5682ca63390d
+
+% 0 1 0 06a11818d6a458621bb3f83c1f367f82
+
+% 0 1 0 040f61bdfeedec731c0966471145f624
+
+% 1 1 0 0b6c3dd5af7898ea029763919740b477
+
+% 2 1 0 1bcf187383cff421048326457794bce4
+
+@ 0 2 0 1d71d6b5549d6cfe0367b196461207e1
++         プリンターは、`@name` や `@attribute` のアノテーションがなく名前空間もないレコードに対してコンパイル時に生成される。その他のレコードは木を通じてプリントされる。
+
+% 0 1 0 16663ce238ae61471af4c8e1bd663d8f
+
+% 0 1 0 0f78594f2f4aab601bfed225ac3ac1f8
+
+% 1 1 0 15cd44e35211669b02fbea8d9ec73db8
+
+@ 0 23 0 17dd64852065af841021ccd95a9c016f
++     entry .print   値の `Printable` を通じた、値全体のコンパクトな XML テキスト
++     entry .emit   `Buffering` の容量ごとのブロックに分けた値のテキストで、各ブロックは満ちるたびに関数に渡される
++         値全体のテキストは構築されない。
++         値の `Xml.Printable` と `Buffering` が必要である。
++     entry .fromEncodable   木の世界からの橋渡し：値をエンコードし、その場で木を書き込む
++         入れ子になっている場合は、導出がそうするように要素のラベルを付け替える。
++     entry .declared   `derives Xml.Direct` する型の `Printable`
++     entry .Direct   生成されたプリンターの基底で、ライターを中立なキャリアとして受け取る
++       entry #write   `writeCarrier` を通じて、値自身の要素またはラベル付きのフィールドとして書く
++     entry .writeAscii   生成されたプリンターから ASCII のマークアップを書く
++         生成されたプリンターが呼ぶヘルパー（`.writeAscii`、`.writeName`、`.writeLeaf`、`.absent`、`.nodes`、`.some`、`.writeNodes`、`.writeField`）である。ライターは `AnyRef` として渡され、ここで再び主張される。
++         生成されたプリンターはユーザーのモジュールに埋め込まれるので公開されているが、手書きのコードで使うものではない。
++     entry .writeName   生成されたプリンターから名前を書く
++     entry .writeLeaf   葉要素を書く：エスケープされたテキストをラベルで囲む
++     entry .absent   `Optional` の値が存在せず、したがって要素を書かないかどうか
++     entry .nodes   `Encodable` を通じてエンコードされたフィールドが寄与するノードを、ラベルを付け替えて平坦化したもの
++     entry .some   フィールドがノードを一つでも寄与したかどうか
++     entry .writeNodes   フィールドのノードをコンパクトに書く
++     entry .writeField   生成されたプリンターのフィールド位置で名目的な `Printable` を呼ぶ
++     entry #write   値をそれ自身の要素として、またはラベル付きのフィールドの要素として書く
++   entry .Direct   生成されたパーサーとプリンターのための `derives` のキャリア：`case class Play(…) derives Xml.Direct`
+
+% 1 1 0 18b5f3c1a531f85f0103e446b97d9637
+
+@ 0 4 0 01fdfd8a851caff7006a9ca87ff319f8
++         `Self` 型の型クラスは型パラメーターを持たないので、それ自体は `derives` 節に現れることができない。
++         `Xml.Direct[Play]` は `Play` の生成された `Xml.Parsable` と `Xml.Printable` を保持し、それらは `derived` によってコンパニオンに一度だけ生成される。`Xml.Parsable` と `Xml.Printable` の `declared` given は、インポートなしでこれを通じて解決される。
+
+% 2 1 0 026cce0ffd11a359038338ae1208dc28
+
+% 3 1 0 1c6d14e4baaec69e095745c42f947755
+
+% 4 1 0 13e0fc7bd0c9091610834931f09b64ce
+
+% 5 1 0 0f07e265430b4dee130490eca5e0b0be
+
+% 0 1 0 15aed87246a0ed4c180ea42d67afc90e
+
+% 0 1 0 1cad526ab1378d3f07ddc06b2c78b013
+
+% 1 1 0 096d28049341f46a0286c6f732dd7436
+
+@ 0 4 0 1f4ce9279dc3308f0778cf1b6304f0bc
++     entry .derived   `Inlinable.parsable` と `Inlinable.printable` でパーサーとプリンターを生成する
++     entry #parsable   生成された `Xml.Parsable`
++     entry #printable   生成された `Xml.Printable`
++   entry .Reader   `Xml.Parsable` が読むときに通る、パーサーの制限された外縁
+
+% 1 1 0 0aa9fe1f0525e92a1e24afab9f5bf84e
+
+@ 0 9 0 034205b40fd9c9a31e2f8e84639791b4
++         `Xml.Parsing#parse` に、現在の要素が開かれたばかりの状態で（つまり名前と属性が消費された状態で）渡される、排他的で状態を持つケイパビリティである。
++         その後、内容を消費するもの（`Unset` になるまでの `nextChild`、`text`（または `int`、`long`、`double`、`boolean`）、`skipElement`、`element`）のちょうど一つが、要素の内容と閉じタグを完全に消費しなければならない。
++         リーダーは一度に一つの `parse` 呼び出しが所有し、その後はリーダーのいかなる部分も保持してはならない。
++         リーダーは自身の `Tactic[Parse.Error]` を持つので、不正な入力は読み取り呼び出しの戦術を通じて中断する。また読み取り地点の `Tactic[Xml.Error]` と `Foci[Xml.Focus]` も持つので、パーサーが発生させるデコードエラーは、木の経路のものと同じ `validate` の境界に、同じフィールドのフォーカスとともに蓄積される。
+
+% 2 1 0 0e5521eb6fa1794814dd20173ab3af49
+
+% 3 1 0 0cb1932ccb1095010795e1720086dc33
+
+% 0 1 0 0843c77b25fe644403e9a0df7c04b14f
+
+% 0 1 0 04de88eba7053d0b17596886d2a55615
+
+% 0 1 0 1ec8133b1f1646f5110f68ad78b1446c
+
+% 0 1 0 0548ec5534d2783717fd0ed39af4102d
+
+% 0 1 0 03d28f43c60442bf0cf6620bb5c0ef98
+
+% 0 1 0 0903421f8411c90d17950663d3671984
+
+% 0 1 0 12c02833dd7a967d1d7dd4f6ba654265
+
+% 0 1 0 060f3e48f7faaff30553d127984cf78a
+
+% 0 1 0 18eb6fea5680efd806719b7b35a93eaa
+
+% 0 1 0 18c91a23eb75233d0181e768857b8c90
+
+% 0 1 0 1104c5f10a24af1402c5c66e3832ae2b
+
+% 0 1 0 12f477c88eb83d6019722207c6dfcb4f
+
+% 0 1 0 07ae7e1dfce7fbf21492e5bc456f8481
+
+% 0 1 0 0c44a19c3abd1c8b09cba141e17fb783
+
+% 1 1 0 1c00a141c98a5ead060a6901158221ce
+
+@ 0 24 0 0f04720c524d93ab1e7fb6b5c03fac3b
++         リーダーを構築するのは xylophone の読み取り経路だけである。
++     entry .NameEnd   `-1`：閉じタグを表す `childWord` の番兵
++     entry .NameOpaque   `-2`：`Long` にパックできない名前を表す `childWord` の番兵
++     entry #errorTactic   読み取り地点の `Tactic[Xml.Error]`
++     entry #foci   読み取り地点の `Foci[Xml.Focus]`
++     entry #attributes   開かれたばかりの要素の属性で、次の要素が開かれるまで有効
++     entry #name   開かれたばかりの要素の、スコープ内の束縛を通じて解決された `Xml.Name`
++     entry #nextChild   次の子要素を開いてその名前を返す。閉じタグが消費された後は `Unset`
++         子要素の間にある文字データ、コメント、CDATA セクション、処理命令は透過的に消費される。
++     entry #childWord   `Long` にパックされた次の子の名前、または `NameEnd` か `NameOpaque`
++         フィールド名をリテラル定数として比較するステージングされたパーサーのためのものである。上位ワードには `childWordHigh` を、パックできない名前には `childLabel` を併用する。
++     entry #childWordHigh   パックされた子の名前の上位ワード
++     entry #childLabel   `childWord` によって開かれたばかりの子のラベル
++     entry #text   要素のテキスト内容を閉じタグとともに消費したもの。テキストの連なりがちょうど一つでなければ `Unset`
++         木のデコーダーの形の規則に合わせ、ここでは CDATA はテキストではない。
++     entry #int   バイト列から直接 `Int` としてパースした内容を閉じタグとともに消費したもの、または `Unset`
++     entry #long   `Long` としての内容、`#int` と同様
++     entry #double   `Double` としての内容、`#int` と同様
++     entry #boolean   `Boolean` としての内容、`#int` と同様
++     entry #skipElement   要素の部分木全体を読み飛ばす。すべての閉じタグを検証し、何も構築しない
++     entry #element   `Decodable in Xml` しか持たない型のために、要素を `Xml` の木として実体化する
++     entry #fault   読み取り地点の戦術を通じて理由付きの `Xml.Error` を発生させ、処理を続ける
+
+@ 0 1 0 0ce0a95852eb1a811d6b4c02b21a0c13
++ entry .Xml1   直接パースの読み取り経路と厳格モードの失敗を持つ、`Xml` のコンパニオンのレイヤー
+
+% 1 1 0 0b5db0056787b1680b5958b1178461d9
+
+% 2 1 0 161250761f61d7830f060ab6de8a71ef
+
+@ 0 25 0 0f826b840e3b692d199219d5ffcaf44a
++       直接使うものではない。`object Xml` はこれを継承するので、`Xml` はこれらの given を受け継ぎ、それらはその暗黙のスコープを通じて解決される。宣言と文書化はここで行われている。
++       これは `Xml2` より上にあるので、`Xml.Parsable` または `Xml.Printable` を持つ型は、それがあるところではどこでも木を作らない経路をとる。また、コンパニオン自身の `codecs.derived` と `codecs.strict` の項目より下にある。
++   entry #aggregableParsed   バイト列からの `source.read[T in Xml]` で、`T` の `Xml.Parsable` を通じて直接パースする
++       木の経路より上にあるので、`Xml.Parsable` が存在するときは常にこれが優先される。値は `Xml.Reader` を通じて入力から直接読まれ、`Xml` の木は構築されない。
++       パースのコンテキスト、`Tactic[Parse.Error]`、`Tactic[Xml.Error]`、`Foci[Xml.Focus]`（直接のデコードエラーが木の経路のものと同じフィールドのフォーカスとともに蓄積されるように）、そして `Buffering` が必要である。
++   entry #aggregableParsedText   `text.read[T in Xml]` を直接パースする、`#aggregableParsed` と同様
++   entry #readableParsed   手元にある `Data` 値全体に対する `data.read[T in Xml]` で、直接パースする
++       バイト列をストリームに包むのではなく、その場でパースする。
++   entry #readableParsedText   手元にある `Text` 全体に対する `text.read[T in Xml]` で、直接パースする
++   entry #encodableOverPrinted   値の `Xml.Printable` によって直接書かれる `value.in[Text over Xml]`
++       `Xml2#encodableOver` より上にある。値が `Xml.Printable` を持ち、スコープ内の `Xml.Formatting` がコンパクトであれば、テキストは木を作らずに書かれる。生成されたプリンターが書かないインデントされた書式では、従来どおり木を通じて描画される。
++   entry #aggregableStrictFailure   直接パーサーを持たない型に対する `codecs.strict` のコンパイルエラーの側
++       `Codecs.Strict` の下で、導出の経路で解決させる代わりに、使用箇所で _xylophone_ とその型を報告する inline given である。
++   entry #aggregableStrictFailureText   `#aggregableStrictFailure` の `Text` 版
++   entry #encodableOverStrictFailure   直接プリンターを持たない型に対する `codecs.strict` のコンパイルエラーの側
+
+@ 0 1 0 158fed07316a419c0f847bee08269a7d
++ entry .Xml2   木を実体化する読み取り経路と `in[Text over Xml]` を持つ、`Xml` のコンパニオンのレイヤー
+
+% 1 1 0 1b743780030ccd3e0619074e9bc603fb
+
+% 2 1 0 1aafbae48da6354d17416c87e3cfe3ab
+
+@ 0 16 0 1323f2a75e665dbe0b625ffddcd6d9f1
++       直接使うものではない。`object Xml` は `Xml1` を通じてこれを継承するので、`Xml` はこれらの given を受け継ぎ、それらはその暗黙のスコープを通じて解決される。宣言と文書化はここで行われている。
++       `Xml1` より下にあるので、直接のコーデックを持たない型は、直接パースが存在する前とまったく同じようにここで解決される。
++   entry #encodableOver   `value.in[Text over Xml]`：木を通じた値の XML テキスト
++       `Encodable in Xml` を通じてエンコードし、`show` と同じくスコープ内の `Xml.Formatting` の下で描画する。
++       値が `Xml.Printable` を持ち書式がコンパクトであれば、`Xml1#encodableOverPrinted` がこれに優先する。
++   entry #encodableOverData   `value.in[Data over Xml]`：同じテキストを、スコープ内の `Codepage` でバイト列にしたもの
++   entry #aggregableIn   バイト列からの `source.read[T in Xml]`：木をパースしてデコードするまでを一度に行う
++       `Decodable in Xml` を持つ任意の `T` に対する `source.read[Xml].as[T]` の短縮形である。ストリームは届くにつれてパースされ、先頭の宣言は捨てられる。
++       パースのコンテキスト、`Tactic[Parse.Error]`、`Tactic[Xml.Error]`、`Buffering` が必要である。
++       `T` が `Xml.Parsable` を持つ場合は `Xml1#aggregableParsed` が優先され、木は構築されない。
++   entry #aggregableInText   `text.read[T in Xml]`：テキストから読む、`#aggregableIn` と同様
+
+@ 0 1 0 1ad6697880a6c0ee08b12b6422091a40
++ entry .Xml3   汎用の代替 `Xml.Field` を持つ、`Xml` のコンパニオンのレイヤー
+
+% 1 1 0 170b183853cddbbc096ce1a6f22f6bdf
+
+% 2 1 0 0c61bedade4da1ac1fae3ab566cd16d8
+
+@ 0 8 0 1524ee32670285470473d48569bdbcc3
++       直接使うものではない。`Xml` が継承する `field` を最低の優先度で宣言しているので、明示的な `Xml.Parsable`、テキストのコーデック、構造的な導出のいずれも、木の橋渡しに優先する。
++   entry #field   汎用の代替 `Xml.Field`：直接パーサー、テキストのコーデック、導出、または木の橋渡し
++       最低の優先度にあり、Wisteria が導出中の探索でこれを除外するように、コンパニオンの親のメンバーとして宣言されている。
++       `Reflection` とカスタムの `Decodable in Xml` の両方を持つケースクラスはここで導出される。デコーダーを保つには、`Xml.Parsable.fromDecodable` でそれに `Xml.Parsable` を与える。
+
+@ 0 1 0 073b54b38a4557fa1e77f3b2409e3faa
++ entry .Xml4   `Xml.Provider` を持つ、`Xml` のコンパニオンの最下層のレイヤー
+
+% 1 1 0 0ea1f92008a9b9f71275609c9e1fc8a4
+
+@ 0 5 0 045b8cde269c8d4e0f88b4663dbeb400
++       トレイトとして直接使うものではない。`Provider` と `Provider2` を宣言し、`object Xml` はそれらを `Xml1`–`Xml3` を通じて継承する。そのためプロバイダーは `Xml.Provider` と書かれるが、宣言と文書化はここで行われている。
++       `Xml` 自体に対する given は何も提供しない。
++   entry #Provider2   `Provider` のコンパニオンの低優先度のレイヤー：時間型と URI 型に対するテキストの代替
+
+% 1 1 0 1ac19594c078d1bf073be2565bdd3b4f
+
+@ 0 13 0 04aaa2536f25e7c004ec87f4b778dd7c
++         直接使うものではない。`Reader` と、`dateTimeText`、`dateText`、`timeText`、`durationText`、`anyUriText` の given を宣言する。コンパニオンのインターフェース駆動のリーダーがこれらに優先する。
++     entry #Reader   組み込みリーダーの型：`Xml` から結果への `Intensional.Reading` で、`Xml.Provider.Error` で失敗する
++         `Reader[label, result]` は `Intensional.Reading[label, Xml.Provider, Xml, result, Xml.Provider.Error]` である。各組み込み型のリーダーはこの型の given で、プロバイダーのコンパニオンに、あるいは低優先度のテキストの代替であればここに宣言されている。
++     entry #dateTimeText   インスタントのインターフェースがスコープにないとき、`xs:dateTime` を `Text` として読む
++     entry #dateText   日付のインターフェースがスコープにないとき、`xs:date` を `Text` として読む
++     entry #timeText   時刻のインターフェースがスコープにないとき、`xs:time` を `Text` として読む
++     entry #durationText   期間のインターフェースがスコープにないとき、`xs:duration` を `Text` として読む
++     entry #anyUriText   URL のインターフェースがスコープにないとき、`xs:anyURI` を `Text` として読む
++   entry #Provider   XML Schema に対する型プロバイダー：一致する文書から型付きレコードを作り、コンパイル時に検査する
+
+% 1 1 0 14923a22f2fe66181fae6c044b71c74d
+
+@ 0 6 0 1e2d2bd94099b43703d9d73e3366f094
++         `object PurchaseOrder extends Xml.Provider(cp"/xsd/po.xsd")` は、`record` または `tuple` マクロが最初に展開されるときにスキーマを読む。`PurchaseOrder.record(xml)` は、スキーマのルート要素の子要素と属性ごとに型付きのメンバーを一つずつ持つ polyvinyl のレコードである（`order.shipTo.city`、`order.items.item.map(_.quantity)`）。
++         各メンバーはコンパイラによってスキーマと照合され、スキーマが宣言する型で遅延して読まれる。`tuple` はすべてのフィールドを先行して読む。
+
+% 2 1 0 0e2b16f1bbbc732f1459d3955b4f3538
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 1 1 0 1c42636a507cbf0f1903c90f073389c7
+
+% 0 1 0 066c7de4214f31cd1db1c856202b68b2
+
+% 0 1 0 1cb51f8a8fb1a4f80a06f8eaceafe408
+
+% 0 1 0 025bc0d1e3f5f7851d5639094f28b99a
+
+% 0 1 0 05d70820e797e5cc1283627abcdd4f45
+
+% 0 1 0 03d1ae76df25eaf40c0054ae7eff8d1d
+
+% 0 1 0 13098eb75acd30531f1b50cf84b53e35
+
+% 1 1 0 02b7e70c283821e9121d32274c02a2c0
+
+@ 0 5 0 0f2e9c30dca2b51a00fec5094be8a271
++         スキーマのパラメーターは `Xml.Provider.Schema` であり、そのコンパニオンには `Xsd`、`Xml` 文書、スキーマのテキスト、あるいはクラスパスのリソースのようにテキストとして読めるあらゆるものからの変換がある。プロバイダーを宣言する場所に `XmlSchema` がスコープにある必要はない。
++         スキーマが複数のグローバル要素を宣言している場合、ルートは複合内容を持つものになるか、`root = t"Envelope"` で選ぶ。
+
+@ 0 11 0 0be37bf74a28f77b1d9bb6d8b182f759
++         子要素と属性は、ローカル名によってフィールドになる。
++         要素が `minOccurs="0"` を持つか `nillable` であればフィールドは `Optional` になり、`maxOccurs` が二つ以上を許せば `List` になる。`choice` の各選択肢は `Optional` である。
++         子要素と名前が同じ属性には `` `@name` `` で到達し、単純内容と属性を持つ要素のテキストには `text`（属性が `text` という名前なら `` `#text` ``）で到達する。
++         拡張の基底型は、そのフィールドを先に提供する。
++         組み込み型は `Text`、`Boolean`、`Int`、`Short`、`Byte`、`Long`（整数型で、暗黙の範囲が検査される）、`Double`、`Float` として読まれる。時間型と URI 型は、スコープ内の `Instantiable` インターフェースがそれらから作るものとして読まれ、なければ `Text` として読まれる。`xs:list` 型は `List[Text]` として読まれ、`anyType`、`xs:any`、再帰型、未解決の参照は生の `Xml` として読まれる。
+
+@ 0 11 0 1e504c82622571780b222d7a93315b77
++         制約のファセット（`enumeration`、`pattern`、範囲、長さのファセット、桁数のファセット）はフィールドを読むときに検査され、理由とともに `Xml.Provider.Error` を発生させる。必須の要素が存在しない場合や、値をその型で読めない場合も同様である。どのエラーもフィールドを読むコードの `Tactic` を通じて発生するので、フィールドごとに `venture` を置いた `validate` や `collect` は、文書内のすべての問題を集める。
++         要素は解決された名前で照合される。スキーマが子を修飾する場合はスキーマのターゲット名前空間で、そうでなければ名前空間なしで照合され、文書がどの接頭辞を使っていても変わらない。
++         置換グループ、`xsi:type`、同一性制約、混合内容は、それらがないものとしてスキーマの宣言どおりに読まれる。`import` や `include` は `Xsd` に記録されるが、取得はされない。
++         プロバイダーは文書を検証しない。プログラムが読むものを検査する。
+
+% 0 1 0 1f147d03f1cfbf3d1630b4142d910cb2
+
+% 0 1 0 0b49b811539d9dff098a7271a468f001
+
+@ 0 40 0 103dba532176d08b1c38d6b313dfb38f
++     entry .string   `xs:string` と、トークン、名前、識別子、QName、バイナリ、gYear の各型を `Text` として読む
++     entry .boolean   `xs:boolean` を読む
++     entry .int   `xs:int` を `Int` として読む
++     entry .long   `xs:long`、`xs:integer`、および符号なし、正、負の整数型を `Long` として読む
++     entry .short   `xs:short` を読む
++     entry .byte   `xs:byte` を読む
++     entry .double   `xs:double` を読む
++     entry .float   `xs:float` を読む
++     entry .decimal   `xs:decimal` を `Double` として読む
++     entry .xml   `anyType`、`xs:any`、および再帰型や未解決の型を生の `Xml` として読む
++     entry .tokens   `xs:list` 型（`NMTOKENS`、`IDREFS`）を空白区切りの `List[Text]` として読む
++     entry .dateTime   スコープ内の `Instantiable across Instants from Text` を通じて `xs:dateTime` を読む
++         時間型と URI 型の組み込み（`.dateTime`、`.date`、`.time`、`.duration`、`.anyUri`）は、レコードを読む場所で見つかるドメイン型の `Instantiable`（`instantInterfaces.…`、`urlInterfaces.soundnessUrl`）を通じてテキストを読む。そのため、インターフェースが拒否した値は、そこでインターフェースに与えられた `Tactic` を通じて失敗する。スコープにインターフェースがなければ、`…Text` のリーダーがテキストを返す。
++     entry .date   `Instantiable across Dates from Text` を通じて `xs:date` を読む
++     entry .time   `Instantiable across Times from Text` を通じて `xs:time` を読む
++     entry .duration   `Instantiable across Durations from Text` を通じて `xs:duration` を読む
++     entry .anyUri   `Instantiable across Urls from Text` を通じて `xs:anyURI` を読む
++     entry .RestrictedText   制約付きの文字列型のリーダーで、長さ、パターン、列挙のファセットを検査する
++       entry #transform   テキストを読んでファセットを検査し、`Xml.Provider.Error` を発生させる
++     entry .RestrictedInt   制約付きの `xs:int` のリーダーで、範囲、桁数、列挙を検査する
++       entry #transform   値を読んでファセットを検査する
++     entry .RestrictedLong   制約付きの整数型のリーダーで、範囲、桁数、列挙を検査する
++       entry #transform   値を読んでファセットを検査する
++     entry .RestrictedDouble   制約付きの十進数型または浮動小数点型のリーダーで、そのファセットを検査する
++       entry #transform   値を読んでファセットを検査する
++     entry .restrictedText   `RestrictedText` の given
++     entry .restrictedInt   `RestrictedInt` の given
++     entry .restrictedLong   `RestrictedLong` の given
++     entry .restrictedDouble   `RestrictedDouble` の given
++     entry .Layout   スキーマのルートのフィールドと、その子と属性が置かれるべき名前空間
++       entry #fields   ルートのフィールドを、名前ごとの polyvinyl のメンバーとしたもの
++       entry #elements   親と子のローカル名をキーとする、各子要素に期待される名前空間
++       entry #attributes   親と属性のローカル名をキーとする、各属性に期待される名前空間
++     entry .layout   `Xsd` をたどり、そのルート要素の `Layout` を得る
++     entry .fieldsOf   スキーマのルートのフィールド、`layout(xsd, root).fields` と同じ
++     entry .Schema   プロバイダーの構築元となるスキーマ：`Xsd`、`Xml` 文書、テキスト、または任意のテキストのソース
+
+% 1 1 0 130b940f5183b2f811bdf01248a8cfa6
+
+@ 0 11 0 1e3e2317fd7c9a8a11cc58a01e89260f
++           `Xml.Provider` の `into` パラメーターの型である。コンパニオンの変換が呼び出し時に適用されるので、`Xml.Provider(cp"/xsd/po.xsd")`、`Xml.Provider(xsd)`、`Xml.Provider(document)`、`Xml.Provider(text)` のいずれも動作する。
++           ソースは、プロバイダーが最初にスキーマを読むときにテキストとして読まれ、自由形式の語彙でパースされる。パースできないスキーマは `Specification.Error` として報告され、`record` の使用箇所でのコンパイルエラーになる。
++       entry .xsd   パース済みの `Xsd` から作る `Schema`
++       entry .xml   スキーマの `Xml` 文書から作る `Schema`
++       entry .text   スキーマのテキストから作る `Schema`
++       entry #xsd   パース済みのスキーマ。読めなければ `Specification.Error` を発生させる
++     entry .Schema2   `Schema` のコンパニオンの低優先度のレイヤーで、`Readable` からの変換を持つ
+
+% 0 1 0 1dbd995455f497aa1e6b704af81ae91c
+
+% 1 1 0 0cfae82a36adc9830abbf88f939f135b
+
+@ 0 4 0 188f5753f8f7ebae0c4ad7e6a315fea5
++           直接使うものではない。
++       entry #readable   クラスパスのリソースなど、`Readable to Text` であるあらゆるものから作る `Schema`
++           `Schema` のコンパニオンにある三つの直接の変換より低い優先度にある。
++     entry .Error   レコードのフィールドがそのスキーマに適合しないときに発生する
+
+% 1 1 0 1fa567ffd9660cb91729c9020e0ef038
+
+@ 0 6 0 1d1b8fbb2636c99d08e588e4a3c154c2
++           エラー `↯/s.128.4`：_the XML did not conform to its schema because `reason`_。
++           レコードのフィールドを読むコードの `Tactic[Xml.Provider.Error]` を通じて発生し（そのため `attempt[Xml.Provider.Error](record.shipTo.city)` はこれを捕捉し、フィールドごとに `venture` を置いた `collect` はすべての違反を集める）、`Xml.Provider.Error.Reason` の理由を伴う。
++       entry .Reason   フィールドが適合しなかった理由で、それぞれ番号を持つ
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 5 0 1c5470548a2214641ff7f79bfccfe9a4
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  注記
++           row  `OutOfRange(value, minimum, maximum)`  1  _the value `value` is outside the range `minimum` to `maximum`_  範囲のファセット、または整数型の暗黙の範囲
+
+% 0 1 0 0870b043630c52f100e258ba19f2941d
+
+% 0 1 0 0650053447a8d7a40cacd6cc4df23883
+
+@ 0 1 0 0112279cff252bb11f1cf93cc39b8613
++           row  `NotPermitted(value, permitted)`  4  _the value `value` is not one of `permitted`_  列挙のファセット
+
+% 0 1 0 0c46a103e9b018a7067cf871523966eb
+
+@ 0 2 0 1c2d3290be0ea6c205a96e186741df5d
++           row  `Absent(name)`  6  _the element or attribute `name` is required_  必須の要素または属性
++           row  `Malformed(value, expected)`  7  _the text `value` is not a valid `expected`_、または _the value has no text to read as `expected`_  型で読めない値。テキストを持たない要素では `value` は `Unset`
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 4 0 18fff5ef3b0b7d150b159da62a24fe49
++           未設定の範囲は _…_ と描画される。
++       entry .communicable   各理由をメッセージとして描画する
++       entry #reason   `Xml.Provider.Error.Reason`
++     entry #Origin   `Xml`：レコードの読み取り元
+
+% 0 1 0 0145d6a54e16e68c035533466c39a73d
+
+@ 0 11 0 198a82321e9e17441e69c9529e5267d9
++     entry #Failure   `Xml.Provider.Error`：フィールドが発生させるもの
++     entry #xsd   パース済みのスキーマ。読めなければ `Specification.Error` を発生させる
++     entry #fields   `record` マクロのための、ルート要素のフィールドを polyvinyl のメンバーとしたもの
++     entry #access   フィールドが読む `Xml`：解決された名前による子、属性、または自身のテキスト
++         `access(name, xml)` は、スキーマが期待する名前空間で名前が解決される最初の子を選ぶ。`` `@name` ``（またはそのような子のない名前）に対しては属性を、`` `#text` `` と `text` に対しては要素自身のテキストを選ぶ。`nil` の子や存在しない子は、存在しないことを示す番兵を返す。
++     entry #absent   値が存在しないことを示す番兵かどうか
++     entry #required   値そのもの。存在しなければ `Absent(name)` を伴う `Xml.Provider.Error`
++     entry #repeated   `List` のフィールドのための、名前が解決されるすべての nil でない子
+
+@ 0 1 0 13f8be21cb12bec80eb33b6902b4e0c5
++ entry .x   `x"…"` 補間子：コードのコンパイル時にパースされ検査される XML リテラル、およびパターン
+
+% 1 1 0 0e2ef24e599b9c9016a18c668f110937
+
+@ 0 8 0 06ff983ef139a14d02b84afd2b6479c3
++       `x"<user>$name</user>"` はコードのコンパイル時にリテラルをパースするので、不正な形式の断片は誤りのある正確な範囲でのコンパイルエラーになる。各穴は置かれた文脈に応じて置換される。`Text` や任意の `Encodable in Xml` の値は内容として、`Xml` は子ノードとして、`Text` は属性値として入る。
++       置かれた場所に挿入できない値は `Xml.Issue.BadInsertion` で拒否される。
++       結果は `Xml`（リテラルのノードの `Fragment`）である。
++       リテラルが使っているが宣言していない接頭辞は、スコープ内の `Namespace` given から束縛を得る。束縛されていない接頭辞はコンパイルされない。
++       スキーマやスコープがスコープ内にある必要はない。
+
+% 2 1 0 1f3c2a12e142d47e13461386e0eb6578
+
+% 3 1 0 0e590dad8149005f168e81b28f27a4d8
+
+% 0 1 0 1bd973de382b8bbc1430ba0ca7521534
+
+% 0 1 0 06344043d59d54940aee500a910b22b2
+
+% 0 1 0 1b11f71a48711646065d85f6d350182d
+
+% 1 1 0 15b976a4f99293dc0245dee939b422a2
+
+@ 0 7 0 100b0185db4d5daf1d7c273d4cfee33e
++       パターンとしての `x"…"` は、`Xml` の値をリテラルの形と照合し、その穴を束縛する。内容の中の `$text` はノード（`Xml.Text(t"hello")` または子要素）を束縛し、`<$element>` は子要素全体を、`id=$value` は属性の値を `Text` として、`<!--$text-->` と `<![CDATA[$text]]>` はその内容を束縛する。開始タグの中の裸の `$attrs` は、残りの属性を `Map[Text, Text]` として束縛する。
++       穴のないリテラルは `Boolean` として照合される。タグ、子の数、リテラルの属性値が異なれば、次の case に移る。
+
+% 2 1 0 0b69fe216cb6189108d48333b8c880fc
+
+% 3 1 0 0ce86bd4b14d73c81bc250420ca64e04
+
+% 0 1 0 0e4b84b225bd6fca112c1ccdc3dec41c
+
+% 0 1 0 0df5e532b496e8d80f3596ddda17cc6b
+
+% 0 1 0 0ecaddc5fc17744c04277c5a06a1d578
+
+% 0 1 0 011603b093d0afdc195e97569503580b
+
+% 1 1 0 0a21d0369a0889361077b6e1b26f4d65
+
+@ 0 2 0 0f370e4416545b8703d2c23046fe524d
++       CDATA やコメントのテキストの中、処理命令の中の穴や、`DOCTYPE` のパターンは拒否される。
+
+% 0 1 0 0a84cd52285b70aa1b1b7569a77d135a
+
+% 0 1 0 128db8da20fd242807063cac7cf2b1e0
+
+% 1 1 0 1cf2fd2e75048a9a17b54e79c57c225f
+
+@ 0 9 0 02dccf6f358544881504e0ea45fc189b
++ entry .xp   `xp"…"` 補間子：コードのコンパイル時に検査される XPath 式
++     `xp"/root[1]/child[2]"` はコードのコンパイル時にパースされる `XPath` なので、不正な形式の式はコンパイルエラーになる。
++     ステップの序数はデフォルトで最初の一致になり、`@` は属性を指す。XPath 1.0 の文法全体（軸、属性とテキストに対する述語、コア関数ライブラリ）を受け付ける。
++     接頭辞付きの名前テスト（`xp"//svg:rect"`）は、スコープ内の `Namespace` given から束縛を得て、名前空間によって照合する。`XPath#in(scope)` はパスの接頭辞を束縛し直す。
++     結果は `Xml.select`、`Xml.selectText`、`Xml.evaluate` で文書に対して評価され、位置と蓄積されたエラーはこれに対して報告される。
+
+% 2 1 0 05d9fa13781b664f0eb9bb4dc65509bf
+
+% 3 1 0 0ebeb1f52072408016decab721d5eba5
+
+% 0 1 0 1f73c5576df6986b05891beebabf919a
+
+% 0 1 0 1c8c2c9ae83f79c31c1d41b8410ef652
+
+% 1 1 0 168fcfa2aff355c21d84929e7ed5c721
+
+@ 0 3 0 120fd85941708adb09fc41e80a033b09
++ entry .attribute   `xylophone.attribute` としての `@attribute` アノテーション。`Xml.attribute` を参照
++     `Xml` からエクスポートされているので、フィールドに修飾なしで `@attribute` を付けられる。アンブレラはこれを型エイリアス `soundness.attribute` としてエクスポートする。
+
+@ 0 2 0 07c6a47943ff9e1a086caddb32fadc0a
++ entry .xmlns   `xylophone.xmlns` としての `@xmlns` アノテーション。`Xml.xmlns` を参照
++     `Xml` から、またアンブレラから `soundness.xmlns` としてエクスポートされている。
+
+@ 0 2 0 008ce379c1a6b725184e6fb8d52fea93
++ entry .unqualified   `xylophone.unqualified` としての `@unqualified` アノテーション。`Xml.unqualified` を参照
++     `Xml` から、またアンブレラから `soundness.unqualified` としてエクスポートされている。
+
+@ 0 1 0 098292cdc7f7085801e61049d8f7844a
++ entry .construables   XML のメディアタイプを持つ HTTP 本文を `Xml` としてパースする `Construable` given
+
+% 1 1 0 0d5ac7249e9b194f028bed2bef088869
+
+@ 0 5 0 189f5c6aa3cdee8c0f207289d7e4afd0
++       `xylophone.http` にある。
++       メディアタイプが `application/xml` または `text/xml` である telekinesis のレスポンスやリクエストの本文は、パースのコンテキストがスコープにあれば、これらを通じて `Xml` 値として構築される。
++       名前でインポートする：`import construables.xmlConstruable`。
++   entry .xmlConstruable   `application/xml` の本文を `Xml` として構築する
++   entry .textXmlConstruable   `text/xml` の本文を `Xml` として構築する
+
+@ 0 1 0 0c722d04a820f86710ea1da63ea3cf44
++ entry .postables   `Xml` 値を HTTP リクエストの本文として送る `Postable` given
+
+% 1 1 0 1d837beff3abc9920d83955210cb5b2a
+
+@ 0 2 0 0b9025279eedf6c41c6644c6f79a22b5
++       `xylophone.http` にある。名前でインポートする：`import postables.xmlPostable`。
++   entry .xmlPostable   リクエストの本文としての `Xml` 値：`application/xml; charset=UTF-8` で、その `show` をスコープ内の `Codepage` でエンコードする
+
+@ 0 1 0 08aa6956b35a4d5119bad4b1208bce74
++ entry .servables   `Xml` 値を HTTP レスポンスの本文として返す `Servable` given
+
+% 1 1 0 1571c1c1dbb6ce120dd658b564dd424f
+
+@ 0 2 0 1b6c536ffc09c5fb024d80b814b0c431
++       `xylophone.http` にある。名前でインポートする：`import servables.xmlServable`。
++   entry .xmlServable   固定のレスポンス本文としての `Xml` 値：`application/xml; charset=UTF-8` で、スコープ内の `Codepage` でエンコードする
+
+@ 0 1 0 0901cf99b71e7bdf02e3be0eabca367d
++ entry .InlinableStager   展開時に `Inlinable` インスタンスを評価する、マクロ内のステージングコンパイラ
+
+% 1 1 0 0a3945a2fe58b2ef0507c60bcfd150b0
+
+% 2 1 0 03d909d01129df8506fc03e352aa3a49
+
+@ 0 12 0 06cc95384337b622061c473cd456c989
++       `xylophone.staged` にある。直接使うものではない。
++       コンポーネントがマクロのクラスパスにあるとき、`Inlinable.Stager` は `InlinableStager.Implementation` を名前でロードする。これにより、生成された直接パーサー（`Inlinable.parsable`、`Xml.Parsable.staged`、`codecs.direct`）が、展開中にユーザーが書いた `Inlinable` given の `parse` を呼び、直和の `Xml.DiscriminantAttribute` を読めるようになる。
++       召喚のたびに、現在の出力ディレクトリを除外したマクロのクラスローダー上で新しいコンパイラを実行する。そのため、進行中のコンパイルで定義された型は拒否され、生成器は実行時の継ぎ目に格下げされる。
++       召喚が成功すると、その所要時間とともにコンパイラの情報メッセージとして報告される。
++   entry .evaluate   ステージングされたコンパイラでフィールドの型の `Inlinable` を召喚する。なければ `None`
++   entry .discriminantAttribute   `Discriminable in Xml` が `Xml.DiscriminantAttribute` である直和の判別属性
++   entry .Implementation   名前でロードされる `Inlinable.Stager`
+
+% 0 1 0 0f572bb7a736555b161a4d9d2c9a3e1d
+
+% 0 1 0 115cb097e7d7e0b014b11100534305d4
+
+@ 0 1 0 02cf68e59123e34903539574464a5776
++ entry .XPath   値としての XPath 1.0 式：パースされ、型付きのコンストラクターで構築され、`Xml` に対して評価される
+
+% 1 1 0 163be286bd10851707b794f0c44b2c53
+
+@ 0 8 0 0793bc8843cbf4b8133b5e2f2aad9266
++       `XPath` は XPath 1.0 の式言語全体を不変の値として表す。ロケーションパス（`/app/div[1]/@id`）、フィルターパス（`(//a)[1]/b`）、あるいは `count(//li)` や `//li = 'two'` のように、ノード集合、真偽値、数値、文字列の四つの値型に対する任意の式である。
++       これは `Format` なので、テキスト形式は `as[XPath]` でパースされ（誤りの文字オフセットを伴う `Parse.Error` を発生させる）、`encode` で描画される。`xp"…"` 補間子はコードのコンパイル時に式を検査する。
++       `Xml` は、`select`（一致するノードを文書順の `Fragment` として）、`selectText`（最初の一致の文字列値）、`evaluate`（任意の種類の `XPath.Value`）によってパスに答える。
+
+% 2 1 0 14675a6c6511261503e180cd4e15b4f9
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1b7ae66e91f0a5d8191901a48786f15b
++         label 文書内のすべてのリスト項目
+
+% 1 1 0 1ea3089e7c1a68d01862b9aa3af10dff
+
+% 0 1 0 1808f1bc7a8d73be1e8552eecae778a7
+
+% 0 1 0 0798179fd46066390d73f0f2d8a2bf3e
+
+% 0 1 0 14975f221a79dc9f138781fc14d2ab97
+
+% 0 1 0 03fc0f898601e74318f99fb147f96876
+
+% 0 1 0 1b5c260a34f991a9031bb5c2dd248eab
+
+% 0 1 0 05b6e58238d150b717296db8db6a2b5e
+
+% 0 1 0 173e4ed314179bce121b276d6975b99f
+
+% 0 1 0 04a27ebbf8f875ce0422574d35c17bf4
+
+% 1 1 0 0529d8cde9ee34f41d98e79a3b80013b
+
+@ 0 1 0 1929f3dd1859ce451d760679a4968d9d
++         label 属性の述語で絞り込む
+
+% 1 1 0 03f5da42d95a850e00c45b0f9bc1cf53
+
+% 0 1 0 065cded61e8fc87d00fe0b3a4afdbfc8
+
+% 1 1 0 15cd932d19e6a0790633db677422cd25
+
+@ 0 1 0 1f73774ad994d3741731791eb900ffd0
++         label 位置によって、その最後のもの
+
+% 1 1 0 05611548efcca1b505d9f90ace99b6f6
+
+% 0 1 0 184856e90c2c0b541ca58c94986f3231
+
+% 1 1 0 081bde045ad6fe1f09594d79b9b60d0c
+
+@ 0 1 0 1a712feed360b88c183779afa7079b12
++         label 囲んでいる要素の属性まで上る
+
+% 1 1 0 09203d7f25bf68021f8dac21f4142fdc
+
+% 0 1 0 03bd18d68ddb71f00b75ad1bd389a4aa
+
+% 1 1 0 048c2377814ec6681a284219ebdb026a
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 8 0 06186f0056ce248308a38f148976b87d
++       式は `XPath.Expression` のノードの木である。パスは `XPath.Origin` から始まる `XPath.Step` の `Expression.Route` であり、各ステップは `XPath.Axis`、`XPath.NodeTest`、およびその述語からなる。
++       省略形 `//`、`.`、`..`、`@` はパース時に展開され、描画時に復元されるので、`xp"//a/@href".encode` は `//a/@href` になる。
++       パスを書くのではなく組み立てる場合、コンパニオンのコンストラクターは XPath そのものに近い読み味になる。`XPath / t"html" / t"body"` は `/html/body`、`XPath.deep(t"div")` は `//div` であり、`#where` は `XPath.attribute`、`XPath.textual`、`Expression` の演算子から作った述語を加える。
+
+% 2 1 0 0c8b68ee1a158a0d176d6951341f7c6f
+
+% 3 1 0 0f6509f87ab32f120ef2ec4ad25f3564
+
+% 0 1 0 1f6b0f4db995815008e30c1c26320fd1
+
+% 0 1 0 0ecdaf610e9505150f50e524596b9573
+
+% 0 1 0 014429d2dc5ebe9d05fcad33682662fa
+
+% 0 1 0 0e4725935262074105a0893165d129e5
+
+% 1 1 0 088606cba6d606901436cf5465387380
+
+@ 0 7 0 10e93ca3835feb5f17285f3ce9f875b6
++       十三の軸のうち `namespace` 以外のすべてが評価される。コア関数ライブラリ（`count`、`name`、`local-name`、`namespace-uri`、`string`、`concat`、`starts-with`、`contains`、`substring-before`、`substring-after`、`substring`、`string-length`、`normalize-space`、`translate`、`boolean`、`not`、`true`、`false`、`lang`、`number`、`sum`、`floor`、`ceiling`、`round`、`position`、`last`）と変数も評価される。変数は `evaluate` が `XPath.Value` の `Map` として受け取る。
++       `id()` 関数と `namespace` 軸は、束縛のない変数と同じく、未対応として `XPath.Error` を発生させる。
+
+@ 0 5 0 06610a4e887a62d10d2e301c1874ea82
++       パスは `#scope`、つまりその名前テストが使う接頭辞を束縛する `Xml.Scope` を持つ。スコープが束縛する接頭辞を持つ接頭辞付きのテストは、文書がどの接頭辞を使っていても、解決された名前空間とローカル名で照合する。接頭辞が束縛されていないものは生のラベルを照合する。
++       `xp"…"` リテラルは呼び出し箇所の `Namespace` given を通じて接頭辞を束縛し、`#in` はそれらを束縛し直す。
+
+@ 0 2 0 0d55f9b05b8121180036d894697ededb
++       不正な形式の*テキスト*はこのフォーマットに対する `Parse.Error` で、何が誤っていたかを `XPath.Issue` が示す。パースできた式を*評価*できないときは `XPath.Error` である。
+
+% 1 1 0 0f28727669ba1bc8163c009da7822e9a
+
+% 0 1 0 048ec114b9fdbda61ee5f0d9b2394f76
+
+% 0 1 0 14ae5bc66f0841c711a99f65c270ead0
+
+% 1 1 0 12bb41289a3f6b7d1bb37b3f54ccb7dd
+
+% 0 1 0 11260115eef7265f01fe61240c073729
+
+@ 0 5 0 0b5567bca191c56e0ce79ed378b0fc36
++   entry .name   `Parse.Error` のメッセージが用いる、フォーマットの名前 `XPath`
++   entry .focusable   `XPath` を、戦略 `xpath` を持つ `Focusable` なロケーターとして使えるようにする
++       ブラウザ自動化ライブラリが `XPath` をロケーターとして受け取るための given である。その戦略は `xpath` で、フォーカスのテキストは描画された式である。
++   entry .Position   `Parse.Error` が報告する、XPath のテキスト内の一点
+
+% 1 1 0 1cfe27aaa4f2456615bb45e68c40f3c4
+
+@ 0 8 0 0eefda5709dc2fdb0e44720bf319ccc7
++         `Span` がオフセットモードでかつ長さゼロである `Format.Position` である。XPath には行がないので式への文字の添字を用い、パーサーは範囲ではなく一点で誤りを検出するので長さはゼロである。
++         `xp"…"` 補間子は、これをソースファイル内のキャレットに対応づけ直す。
++     entry .at   文字オフセットの位置を、長さゼロのスパンとして表したもの
++     entry #span   オフセットモードで長さゼロのスパン
++     entry #describe   テキストとしての位置：`character 7`、または `an unknown position`
++   entry .Axis   XPath 1.0 の十三の軸で、それぞれキーワードを持つ
+
+% 1 1 0 045781b456ba0908034e45d7bdc4dc8b
+
+@ 0 7 0 0531b4affb10b6d90febdbc91eb9c829
++         `Ancestor`、`AncestorOrSelf`、`Attribute`、`Child`、`Descendant`、`DescendantOrSelf`、`Following`、`FollowingSibling`、`Namespace`、`Parent`、`Preceding`、`PrecedingSibling`、`Self` であり、その `keyword` は省略しない `axis::test` 構文での綴り（`following-sibling`）である。
++         `Namespace` 以外のすべての軸が評価される。`Namespace` 軸のステップは `Reason.Unsupported` を伴う `XPath.Error` を発生させる。
++     entry #keyword   `axis::test` 構文での軸の綴り、`descendant-or-self` など
++   entry .NodeTest   ステップが照合するもの：名前、ワイルドカード、またはノードの種類
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 1 0 1785e2abed513dd50110531f8472f0fd
++       column  ノードテスト
+
+% 0 1 0 03627b3aa1e78bb10b796b6a830f81d6
+
+@ 0 8 0 18a0d7bdcd89128b0a64ea375c08056b
++       column  一致するもの
++       row  `Name(prefix, local)`  `local` または `prefix:local`  名前による要素、または属性軸では属性
++       row  `Wildcard`  `*`  任意の要素、または属性軸では任意の属性
++       row  `PrefixWildcard(prefix)`  `prefix:*`  接頭辞の名前空間にある任意の要素または属性
++       row  `Node`  `node()`  任意のノード
++       row  `Textual`  `text()`  テキストノード。`Text` を隠さないようにこの名前になっている
++       row  `Comment`  `comment()`  コメント
++       row  `Instruction(target)`  `processing-instruction('target')`、またはターゲットが `Unset` のときは `processing-instruction()`  処理命令
+
+% 1 1 0 1744bd83bc2e61c109ff144060cbe9f6
+
+@ 0 3 0 12df3d37a08f783a1121f5b2825461a9
++       名前テストの主ノード型は軸に従う。属性軸では属性、それ以外のすべての軸では要素である。
++   entry .Step   一つのロケーションステップ：軸、ノードテスト、およびその述語
+
+% 1 1 0 19e4e0224f6ffa6b06712e251e0c071d
+
+@ 0 14 0 13392ef8d63b668a162b9fcdd84e424f
++         ステップはルートから順に、ソースの順序で保持され、省略形は展開されている。`//` は `descendant-or-self::node()` のステップ、`.` は `self::node()`、`..` は `parent::node()`、`@name` は `attribute::name` である。
++         裸の `Text` は `XPath.stepConversion` を通じて `child::name` のステップに変換されるので、`XPath / t"html"` では `Step` を書き出す必要がない。
++     entry #axis   ステップの軸
++     entry #test   ステップのノードテスト
++     entry #predicates   ステップの述語で、順に適用される。なければ `Nil`
++   entry .Origin   パスの始点：文書のルート、コンテキストノード、またはフィルター式
++       `Root` は絶対パスの `/` で、文書要素の上にある仮想ノードである。`Here` は相対パスが始まるコンテキストノードである。`Filter(expression, predicates)` は `(//a)[1]/b` のようなフィルターパスの先頭で、その述語はステップより前に式のノード集合に適用される。
++   entry .Expression   XPath 1.0 の式の木で、コードで組み立てるための演算子を持つ
+
+% 1 1 0 142e21e6282cdab91c9a37c687d649ea
+
+@ 0 8 0 03201323a16581430b8b52809e73dd89
++         式の文法のすべての生成規則が case になっている。真偽演算子 `Or` と `And`、比較 `Equal`、`Unequal`、`Less`、`LessOrEqual`、`Greater`、`GreaterOrEqual`、算術 `Add`、`Subtract`、`Multiply`、`Divide`、`Modulo`、`Negate`、`Union`（`|`）、一次式 `Literal(text)`、`Number(value)`、`Variable(prefix, name)`、`Call(prefix, name, arguments)`、任意のロケーションパスまたはフィルターパスである `Route(origin, steps)`、そしてマクロ展開中に `xp"…"` の挿入を示し、デコードや評価された式には決して現れない `Substitution(index)` である。
+
+@ 0 3 0 118c6f53ca11a78301b462a07ab284bf
++         演算子メソッドは、`Expression` に変換できるものなら何でも受け取り、コードから同じ木を構築する。`Text` は文字列リテラルに、`Int` や `Double` は数値に、`XPath` はその式になるので、述語は XPath で書くのとほぼ同じように読める。
+
+% 2 1 0 0e1f17dfecde519619b84c61bcdd2c22
+
+% 3 1 0 17e2b6c2f97efbc20b0be2f90a1e7b56
+
+% 0 1 0 1fae83119431078d096126fd891e831b
+
+% 0 1 0 1576b1730719aceb12f22d4c49803f1f
+
+% 0 1 0 055d8235ddc7518d1a43f024d14aa478
+
+% 1 1 0 04e40559fe50fcfe0208b4ffd3470618
+
+@ 0 3 0 0dba24ae62e337ec0e7adec56c5fbea0
++         これらが拡張ではなくメンバーなのは、`import soundness.*` が同じ名前（`contains`、`===`、`<`）の汎用の拡張を持ち込み、ここでの拡張ではそれらに優先できないからである。
+
+% 0 1 0 103b52b6fb49b4ef17ebe33c6a11b74a
+
+% 0 1 0 17a43f53797d2ef9132b580ff0f90fb8
+
+@ 0 1 0 02a7b363bfdb4f8715f181a4d9c6c0b1
++     entry #===   `left = right`、XPath の等価性で、ノード集合の比較は存在量化される
+
+% 0 1 0 1082bfef76cdd7b607a88bdccb0c0326
+
+@ 0 1 0 0e2bac436f94373a0c5392678f440d86
++     entry #<   `left < right`、数値として比較する
+
+% 0 1 0 1b2beadd115dc5a11993b479e6a5536b
+
+% 0 1 0 16d753561137840114b4b10f819d5636
+
+% 0 1 0 02b16b3b4f1e0648107d30eb2655e524
+
+% 0 1 0 0c83a05f3a9efc2f06fa6d3f868041ef
+
+% 0 1 0 1e717d50ca79256d035ee02cff3ff33a
+
+% 0 1 0 038cb1e672b1e79018c833c8ca206949
+
+@ 0 46 0 172b68a4f0872edc05d32f74e9d07cf3
++     entry #|   `left | right`、二つのノード集合の和
++     entry #contains   呼び出し `contains(left, right)`
++     entry #startsWith   呼び出し `starts-with(left, right)`
++   entry .Location   パスの単純な位置的な見方：順位による名前付きの要素と、一つの属性
++       `Element(name, rank)` と `Attribute(name)`。パスのうち、整数の序数を持つ `child::name` のステップからなり、任意で `@name` で終わる部分集合である。`parsing.trackPositions` が記録した位置はこれに対して解決でき、導出されたデコーダーはエラーの場所をこれとして報告する。
++   entry .stepConversion   `child::name` のステップとしての `Text`
++       `XPath / t"html"` や `path.deep(t"a")` が名前を直接受け取れるようにする `Conversion` である。`t"div"` は `Step(Axis.Child, NodeTest.Name(Unset, t"div"))` になる。
++   entry .literalConversion   式の中の文字列リテラルとしての `Text`
++       これにより `XPath.textual === t"Submit"` は `text()='Submit'` になる。
++       `Text` にどの変換が適用されるかは期待される型で決まる。パスがステップを受け取るところでは `Step`、述語が受け取るところでは `Expression` である。
++   entry .integerConversion   式の中の数値としての `Int`
++   entry .decimalConversion   式の中の数値としての `Double`
++   entry .pathConversion   保持する式としての `XPath`
++       これによりパスを述語の中に置ける。`XPath.deep(t"li").where(XPath.relative(t"b"))` は `//li[b]` になる。
++   entry ./   `XPath / step`：ルートから始まる絶対パス
++       `XPath / t"html" / t"body"` は `/html/body` である。コンパニオンの `/` はパスを `Origin.Root` から始め、結果に対するその後の各 `/` は `child::` のステップを追加する。
++   entry .deep   `XPath.deep(step)`：`//` で始まるパス
++       `XPath.deep(t"div")` は `//div` である。ルートからの `descendant-or-self::node()` のステップに、そのステップが続く。
++   entry .relative   `XPath.relative(step)`：コンテキストノードからのパス
++       `XPath.relative(t"div")` は相対パス `div` で、述語として、あるいは評価される場所からのステップとして使う。
++   entry .here   コンテキストノード `.`
++       パスとして、あるいは `pathConversion` を通じて述語の中で使える。
++   entry .attribute   述語 `@name`：コンテキストノードの属性
++       `XPath.attribute(t"class")` は `@class` で、`XPath.attribute(t"class").contains(t"active")` のような述語に使う。インスタンスメソッド `#attribute` は、代わりにパスのステップ `/@name` である。
++   entry .textual   述語 `text()`：コンテキストノードのテキストの子
++       `XPath.textual === t"Submit"` は `text()='Submit'` である。
++   entry .position   呼び出し `position()`
++   entry .last   呼び出し `last()`
++   entry .function   名前による任意の関数の呼び出し、`XPath.function(t"count")(…)`
++       引数には `Expression` に変換できるものなら何でも渡せる。
++       未知の関数名はパースも描画もされ、評価時に `Reason.UnknownFunction` を伴う `XPath.Error` を発生させる。
++   entry .variable   変数参照 `$name`
++       評価時に `Xml.evaluate` が受け取る `variables` マップによって束縛される。束縛されていない変数は `Reason.UnboundVariable` を伴う `XPath.Error` を発生させる。
+
+% 2 1 0 1db611174ed9385f070305fd85c158ad
+
+% 3 1 0 12740906a11aa6c503ff2bcbbf5ba30a
+
+% 4 1 0 1ed9177381cd2eb8170f65f81d50a3c3
+
+% 5 1 0 16d6bb6c6d9bb5ff0ef0fc756feee108
+
+% 0 1 0 0d230b36089be6aa04709c70f6da863c
+
+% 0 1 0 13d1cae84e2988580657cf77392fcc7d
+
+% 0 1 0 133bfe3523003087182eb50c078d068e
+
+% 1 1 0 1df5bdfa33021df116a7d1365100a61b
+
+@ 0 1 0 1a599d4d228a75ac1c96b11dde6abed4
++   entry .Locus   評価で見つかったノードと、文書内でのその場所
+
+% 1 1 0 029240e1e210d0ad0b61c8f6c2e17470
+
+@ 0 16 0 0e9b09f4c83e973312c5baf7c88482e2
++         ノード集合のメンバーである。評価の対象（`#subject`。文書要素の上の仮想ルートでは `Unset`）、それが見つかった `#document`、そして仮想ルートからノードまでの子の添字のパスである `#path` を持つ。
++         ノードは親へのポインタを持たず、ノードはそれ一つからなる `Fragment` と等しいので、添字のパスはノードの木そのものが与えられないもの、すなわち親子関係、文書順、同一性を補う。
++         属性は擬似ノードで、所有する要素とパスを共有し、その所有者を対象として保持し、`#attributeIndex` を設定する。
++     entry #document   ノードが見つかった文書
++     entry #path   仮想ルートからノードまでの子の添字
++     entry #subject   ノードそのもの、または仮想ルートでは `Unset`
++     entry #attributeIndex   属性のローカスにおける、要素内での属性の添字
++     entry #stringValue   XPath の文字列値：要素の子孫のテキスト、属性の値
++         要素では子孫のすべてのテキストノードと CDATA ノードを連結したもの、テキスト、CDATA、コメント、処理命令のノードではそれ自身の内容、属性ではその値、仮想ルートでは文書全体の文字列値である。
++   entry .Value   式を評価した結果：ノード集合、真偽値、数値、または文字列
+
+% 1 1 0 0990a6140869b83b1e769c4aa3a8109f
+
+@ 0 4 0 006031e36c6394190b6906c9ff1a71e3
++         XPath 1.0 の四つの値型である。常に文書順で重複のない `NodeSet(loci)`、`Truth(value)`、`Double` である `Numeric(value)`、そして `Textual(value)`。
++         仕様の変換はメンバーになっているので、どの種類の値も、`boolean()`、`number()`、`string()` と同じように他のどの種類としても読める。
+
+% 2 1 0 0128f3839a8ed1ec024accdd42501fc0
+
+% 3 1 0 1b510016029c956602de900bff206b88
+
+% 4 1 0 1ceaa83a37f5eaa3018bb5993b55b088
+
+% 5 1 0 12f0c09d0749375612c766bcb5bf01b4
+
+% 0 1 0 1805ff8da4389bdd0656fe05218481cf
+
+% 0 1 0 01e3f163f92fba9304af1fe286d4663a
+
+% 0 1 0 0f366c0b36a697cb0cd562f8000b619e
+
+% 0 1 0 0718251a779c3987144760087976018d
+
+% 1 1 0 1f5c1802b31d0dd50a5cb04cd5b40063
+
+@ 0 4 0 11a5b5d63678e64f0ecd434b0f36b9d9
++     entry #truth   真偽値としての値：空でないノード集合、ゼロでない数値、空でない文字列は真
++     entry #number   数値としての値：`true` は 1、文字列は XPath の `number()` としてパースされ、それ以外は NaN
++     entry #text   文字列としての値：ノード集合の最初の文字列値、`1.0` に対しては `1`、`true`/`false`
++   entry .Error   パースできた式を評価できないときに発生する
+
+% 1 1 0 1f0726e92783040310fbbc8ea02eea3d
+
+@ 0 5 0 00ff6a7f685a2ff31c7d6ac9d91c34e9
++         エラー `↯/s.128.2`：_the XPath could not be evaluated because `reason`_。
++         いずれも `Tactic[XPath.Error]` を受け取る `Xml.select`、`Xml.selectText`、`Xml.evaluate` によって発生する。未知の関数、引数の数の誤り、束縛されていない変数、`select` に渡されたノード集合でないもの、未対応の機能（`id()` 関数、`namespace` 軸）、未解決の置換を含んだままの式に対してである。
+
+% 2 1 0 19eeae57e1a2b9eb063a69419fab1e5c
+
+% 3 1 0 107135f90e6af0860c6d209268692c56
+
+% 1 1 0 01e216ffbf7534fe1439bb82c911f4ee
+
+% 0 1 0 07f3236563e837b617b11a6ec759b6f4
+
+% 0 1 0 0876e4652861fb5a03f8897c4a859123
+
+% 1 1 0 1de96a62c34186d41feadcf8feffdb92
+
+@ 0 1 0 08776d3a16f663ed069668bd4722ee43
++     entry .Reason   評価が失敗した理由で、それを区別する番号を持つ
+
+% 1 1 0 03306b9e79210c9203b9cdca624daa88
+
+@ 2 4 0 1391b811257ec4750fe502f64c50ba6d
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  注記
+
+% 0 1 0 02299b83ef6905360c34baddea11e6d4
+
+% 0 1 0 0d1f1d134b2a348204c99243c194836f
+
+% 0 1 0 0e4778aa178840261c1acf190aa4d24b
+
+@ 0 1 0 1059f5c1ca9e0b930dd9731bcd13ff63
++         row  `NotNodeSet`  4  _a node-set was expected_  式の値がノード集合でないときに `select` が発生させる
+
+% 0 1 0 072c782391d70c9e101f4c504db4b928
+
+% 0 1 0 16aa09e7d74e9649155f3f173a595ca8
+
+% 1 1 0 1956c98a3baba73207a5ae80ad90c766
+
+@ 0 13 0 1186657a19f541ce0a8fea0d1e5cc796
++     entry .communicable   各理由をメッセージとして描画する
++     entry #reason   評価を止めた `XPath.Error.Reason`
++   entry .interpolable   `xp"…"` の背後にある given：コードのコンパイル時にリテラルをパースして検査する
++       展開時に、実行時の `Decodable` が使うのと同じパーサーでリテラルをパースするので、コンパイル時の検査が実行時の振る舞いと食い違うことはない。失敗のオフセットは、ソース内の誤りのある文字に対応づけ直される。
++       置換は、文法が一次式を許すところならどこでも許される。パースされた木は挿入を接ぎ木したうえでコードに持ち上げられるので、実行時に再パースされるものはない。
++       リテラルが使う接頭辞は、スコープ内の `Namespace` given を通じて束縛される。
++   entry .decodable   任意の XPath 1.0 式をテキストからパースする、`as[XPath]` として
++       `Tactic[Parse.Error]` が必要である。不正な形式の式は `XPath` フォーマットに対する `Parse.Error` を発生させ、その `XPath.Issue` が何が誤っていたかを示し、`XPath.Position` が文字オフセットを示す。
+
+% 2 1 0 0b69e1eac8e9d56d0ca69dc12dce6b30
+
+% 3 1 0 052ac92015cbab4b01ed487eb1b669fa
+
+% 4 1 0 0922cd0a4f8828b1104ec2c852bac6da
+
+% 0 1 0 0dc21212ea1e82940d441555eb59b4b5
+
+% 1 1 0 1a13c891edc9d3831c0c6c3c4f3c769c
+
+@ 0 1 0 0844f03fd8523cf60006dff9063ad2a1
++   entry .Issue   `Parse.Error` における、XPath のテキストの何が誤っていたか
+
+% 1 1 0 1ff4dd8aa1266f4a0c1355b7f30ddb5e
+
+@ 0 11 0 14edc72453e408781d1b027ff5380d37
++         `UnexpectedCharacter`、`UnterminatedLiteral`、`UnknownAxis`（十三の軸のどれでもない）、`ExpectedNodeTest`、`ExpectedExpression`、`ExpectedCloseParen`、`ExpectedCloseBracket`、`UnexpectedEnd`、`UnexpectedToken` がある。
++         いずれも `describe` メッセージを持つ `Format.Issue` であり、位置はパーサーがそれを検出した `XPath.Position` である。
++     entry #describe   メッセージとしての問題、_the string literal is not terminated_ など
++   entry #expression   式の木。何も与えられなければ空の絶対パス `/`
++   entry #scope   パスの名前テストが使う接頭辞を束縛する `Xml.Scope`
++       デフォルトは `Xml.Scope.xml` で、予約された `xml` 接頭辞だけを束縛する。
++       接頭辞付きの名前テストは、その接頭辞がここで束縛されていれば解決された名前で、そうでなければ生のラベルで照合する。
++   entry #in   接頭辞を別のスコープに束縛し直した同じパス
+
+% 1 1 0 1e2278e7170ae0840720ab76cfbf5564
+
+% 2 1 0 1c3f8b0f7b7ac83b0958ecd38df17078
+
+% 3 1 0 0507fbda4aea846a030bb9d1126d55e2
+
+% 4 1 0 11595577c464d6311dda4145ffd9ec6d
+
+% 0 1 0 1e85b05652f46ec518b906e13b3f8f99
+
+% 0 1 0 189622034d1f29c8188ff5277e0aa71c
+
+% 1 1 0 00718c8ddee5be7a1e577f4c27ea6e1c
+
+@ 0 22 0 00cd195bdacbbeed1147ffe93f6ab54b
++   entry #/   `path / step`：`child::` のステップを追加する
++       `XPath / t"html" / t"body"` は `/html/body` である。
++       パスでない式に対しては、`(//a)[1]/b` のように、その式がフィルターパスの先頭になる。
++   entry #deep   `path.deep(step)`：`//` とステップを追加する
++       `XPath.deep(t"div").deep(t"a")` は `//div//a` である。
++   entry #on   任意の軸と任意のノードテストでステップを追加する
++       `path.on(XPath.Axis.FollowingSibling, XPath.NodeTest.Name(Unset, t"li"))` は `following-sibling::li` を追加する。省略形では届かない軸のためのものである。
++   entry #where   最後のステップに述語を加える
++       `XPath.deep(t"div").where(XPath.attribute(t"id") === t"main")` は `//div[@id='main']` である。
++       述語は `Expression` に変換できるものなら何でもよい。`Text` は文字列リテラル、`Int` は数値、`XPath` は相対パスになる。
++       ステップのないパスは、代わりにそのフィルター式に述語を受け取る。
++   entry #apply   `path(n)`：位置の述語
++       `(XPath / t"li")(2)` は `/li[2]` である。
++   entry #element   `name[ordinal]` を追加する。序数のデフォルトは 1
++       導出されたデコーダーがエラーの場所を組み立てるステップである。`path.element(t"child")` は `path/child[1]` である。
++   entry #attribute   属性を選択する `@name` を追加する
++       `(XPath / t"root").attribute(t"id")` は `/root/@id` である。
++       属性は `Xml.select` が返す木のノードではないので、属性のステップで終わるパスは `Xml.selectText` または `Xml.evaluate` で読む。
+
+@ 0 1 0 1698846790fc16321c9390dcbfb4733b
++ entry .Xsd   宣言の不変なモデルとしての XML Schema（XSD 1.0）
+
+% 1 1 0 06273734fa4749b914c1f2889eda58c2
+
+@ 0 9 0 11c69693f4a2e78f0c6b24f643ee5a71
++       `Xsd.parse` はスキーマ文書を値として読み込む。
++       その値は、グローバルな `#elements`、`#complexTypes`、`#simpleTypes`、`#attributes`、`#groups`、`#attributeGroups`（それぞれ名前をキーとし宣言順に並んだ `Map`）と、`#targetNamespace`、二つの form の既定値、文書が名指しする `#imports` と `#includes`、そしてトップレベルの `#documentation` を持つ。
++       参照（`type="tns:Order"`、`ref="tns:item"`、`base`）は解決済みの `Xml.Name` として保持され、必要なときに `#resolve` で引かれるので、再帰的なスキーマも表現でき、パースは一回の走査で済む。import と include は記録されるだけで、取得はされない。
++       要素は解決済みの名前で振り分けられるので、`xs:`、`xsd:`、既定の XSD 名前空間はどれも同じように読める。
+
+% 2 1 0 02152599fa621def10e9a3c45680a6be
+
+% 3 1 0 063d16c8d7e1edb10b66961923013b2d
+
+% 0 1 0 1b2fc40646840a3f068e0180d211f5ea
+
+% 1 1 0 0a9774e8cce418fd102b5b80640363a9
+
+% 2 1 0 106f97b3d6c3f0e80e489fc1b4572b44
+
+% 0 1 0 089fbdc90f5218d21cd67aa7096a41bd
+
+% 0 1 0 0d01808272635e6111412502509ccdc0
+
+% 0 1 0 00803384bcf5ed511b38372b44ebaf4b
+
+% 0 1 0 13a3a13808286a181e5abd7d38cb2345
+
+% 1 1 0 03f2f2e312232fcd0b0c2e5b42d3d167
+
+@ 0 3 0 1ad1128046fac4b21ac34fb2739f08c5
++       このモデルは、`Xml.Provider` が型付きレコードのフィールドを読み取る元になるものであり、文書の検証はしない。
++       スキーマではないスキーマ文書や、リーダーが従う文法に反するスキーマ文書は `Xsd.Error` を発生させる。
+
+% 1 1 0 086c00658fab141d1558d357897ffd17
+
+% 1 1 0 111a87ff98cff4390745b4b43227ff67
+
+@ 0 5 0 0408c2eb0bbce1d81c05f4fa7ddd5c8e
++   entry .namespace   XML Schema の名前空間、`http://www.w3.org/2001/XMLSchema`
++   entry .instance   インスタンスの名前空間、`http://www.w3.org/2001/XMLSchema-instance`
++   entry .Form   ローカルな要素または属性が名前空間で修飾されるかどうか：`Qualified` または `Unqualified`
++   entry .Use   属性の現れ方：`Optional`、`Required`、`Prohibited`
++   entry .Occurs   パーティクルが現れてよい回数：`minOccurs` と `maxOccurs`
+
+% 1 1 0 0a4fdb358e0a50300aafbcd42fa1807a
+
+@ 0 6 0 12cd6bb9c8d1d620110e58cb9a7c5b36
++         `unbounded` のとき `max` は `Unset` である。スキーマの属性と同じく、どちらも既定値は 1 である。
++     entry #min   `minOccurs` からの最小値
++     entry #max   `maxOccurs` からの最大値。`unbounded` なら `Unset`
++     entry #optional   最小値が 0 かどうか
++     entry #many   二回以上の出現が許されるかどうか
++   entry .Builtin   XML Schema Part 2 の組み込みデータ型（ローカル名による）
+
+% 1 1 0 11649c924f61426a06bdb7c8b08c72d7
+
+@ 0 25 0 164a18d4a292e15207333c192da1ec8f
++         組み込み型ごとに一つのケースがある。`String`、`Boolean`、`Decimal`、`Float`、`Double` から始まり、日付、時刻、継続時間の型、バイナリと URI の型、トークン、名前、識別子の型、整数の階層（`Integer`、`Long`、`Int`、`Short`、`Byte`、非正、負、非負、正、符号なしの形）を経て、`AnyType` と `AnySimpleType` に至る。
++         `Xsd.Builtin(t"positiveInteger")` はローカル名で、`Xsd#builtin` は XSD 名前空間の解決済みの名前で一つを見つける。
++     entry .apply   ローカル名を持つ組み込み型、または `Unset`
++     entry #local   XSD 名前空間でのその型のローカル名（`nonNegativeInteger` など）
++   entry .TypeRef   宣言が型を名指しする方法：名前による、またはインラインの定義による
++       `Named(name)` は `type="…"` 属性で、`Xml.Name` に解決される。`Inline(definition)` は宣言の中に書かれた `complexType` または `simpleType` である。
++   entry .Type   複合型または単純型：`ComplexType` と `SimpleType` のシールされた親
++   entry .SimpleType   単純型：組み込み型、制限、リスト、またはユニオン
++       `Builtin(builtin)`、`Restriction(base, facets)`、項目型の `xs:list` である `Sequence(item)`、そして `Union(members)`。
++   entry .SimpleDecl   名前付きの `simpleType` 宣言
++     entry #name   型の名前。無名なら `Unset`
++     entry #definition   それが宣言する `SimpleType`
++     entry #documentation   その `annotation/documentation` 子要素のテキスト
++   entry .Facet   制限の制約ファセット
++       `Enumeration(values)`、`Pattern(regex)`、`MinInclusive`、`MaxInclusive`、`MinExclusive`、`MaxExclusive`（それぞれ値をテキストとして持つ）、`MinLength`、`MaxLength`、`Length`、`TotalDigits`、`FractionDigits`、そして `WhiteSpace(mode)`。
++       `Xml.Provider` は、フィールドを読むたびにそれぞれを検査する。
++   entry .Particle   内容モデルの項：コンポジター、要素、グループ参照、またはワイルドカード
+
+% 1 1 0 0fff83c1fb03a6a0107eb62979ddbb90
+
+@ 0 6 0 1cc78a5051498d490c50ed0693bf2235
++         `Sequence(items, occurs)`、`Choice(items, occurs)`、`All(items, occurs)` がコンポジターである。`Element(declaration, occurs)` はローカルな要素または参照される要素、`Group(ref, occurs)` は名前付きグループへの参照、`Any(occurs)` は `xs:any` ワイルドカードである。
++     entry #occurs   パーティクルが現れてよい回数
++   entry .ElementDecl   要素宣言（グローバルまたはローカル）
+
+% 1 1 0 068efa9214fcd63411e4dcac2d54dd00
+
+@ 0 38 0 0978824e7a2767680fef04f3c5df9cd0
++         グローバルな要素は `#name` を持つ。ローカルな要素は代わりにグローバルな要素への `#ref` であってもよい。
++         その型は名前またはインラインによる `#typeRef` であり、`anyType` なら `Unset` である。
++     entry #name   要素の名前。参照なら `Unset`
++     entry #ref   この要素が参照するグローバルな要素、または `Unset`
++     entry #typeRef   要素の型（名前またはインラインによる）、または `Unset`
++     entry #nillable   `xsi:nil` が許されるかどうか
++     entry #default   テキストとしての `default` の値
++     entry #fixed   テキストとしての `fixed` の値
++     entry #form   スキーマの既定値を上書きする要素自身の `form`、または `Unset`
++     entry #substitutionGroup   要素が属する置換グループの先頭
++     entry #abstractDecl   要素が `abstract` と宣言されているかどうか
++     entry #documentation   その `annotation/documentation` 子要素のテキスト
++   entry .AttributeDecl   属性宣言（グローバルまたはローカル）
++     entry #name   属性の名前。参照なら `Unset`
++     entry #ref   この属性が参照するグローバルな属性、または `Unset`
++     entry #typeRef   属性の型（名前またはインラインによる）、または `Unset`
++     entry #use   `Optional`、`Required`、または `Prohibited`
++     entry #default   テキストとしての `default` の値
++     entry #fixed   テキストとしての `fixed` の値
++     entry #form   属性自身の `form`、または `Unset`
++   entry .AttributeUse   複合型の中の属性の使用：宣言、グループ参照、または `anyAttribute`
++       `Attribute(declaration)`、`Group(ref)`、そして `Any`。
++   entry .Content   複合型の内容モデル
++       `Empty`、直接書かれた内容モデルには `Particles(particle)`、`simpleContent` には `SimpleExtension(base, attributes)` と `SimpleRestriction(base, facets, attributes)`、`complexContent` には `ComplexExtension(base, additions, attributes)` と `ComplexRestriction(base, particle, attributes)`。
++   entry .ComplexType   `complexType` 宣言（名前付きまたは無名）
++     entry #name   型の名前。無名なら `Unset`
++     entry #mixed   子要素の間に文字データが現れてよいかどうか
++     entry #content   内容モデル
++     entry #attributes   型に直接宣言された属性の使用
++     entry #anyAttribute   `anyAttribute` ワイルドカードが宣言されているかどうか
++     entry #documentation   その `annotation/documentation` 子要素のテキスト
++   entry .Import   別のスキーマの `import`：その名前空間と場所（それぞれ省略可能）
++     entry #namespace   import される名前空間（与えられていれば）
++     entry #location   `schemaLocation`（与えられていれば）
++   entry .Error   スキーマ文書を読めないときに発生する
+
+% 1 1 0 1c80086ad61fb20703eff24ccbd20f16
+
+@ 0 2 0 17a2cfadc4d639b21cf5b2207d773740
++         エラー `↯/s.128.3`：_the XML Schema could not be read because `reason`_。
++         `Xsd.parse` が `Tactic[Xsd.Error]` を通じて発生させる。
+
+% 2 1 0 0d9b6da440b1f1a204933870bb068ecc
+
+% 3 1 0 0d2935c69dc0cb350cba6ad9a8b8d829
+
+% 4 1 0 05789db434941eed078deb557d5749d4
+
+% 5 1 0 1695e906939a3b9012afc6edc43a6bf6
+
+% 0 1 0 00e6a044ad440ce7025306462f658262
+
+% 0 1 0 00a2c57991f63ec5198b94f4bec57e8e
+
+% 1 1 0 16721c043859279118df108da59501a2
+
+@ 0 1 0 0d87e9f9eabd367908f1fa2bd2992147
++     entry .Reason   スキーマを読めなかった理由
+
+% 1 1 0 128bfaee1cc3e49f07a746a7739e34b9
+
+@ 0 6 0 103ba45f00d3f22715144ed5fd178980
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  注記
++         row  `NotSchema(found)`  1  _the document element is `found`, not an XML Schema_  文書要素が `xs:schema` ではない
++         row  `Unexpected(element, within)`  2  _`element` may not appear in `within`_  文法がそこで許さない要素
+
+% 0 1 0 002d21d6fb8c4fec10c04ce062165f18
+
+@ 0 4 0 0de90311bd470f8e0518d812c64ed77e
++         row  `BadOccurs(value)`  4  _`value` is not a valid number of occurrences_  数値でも `unbounded` でもない `minOccurs` または `maxOccurs`
++         row  `UnknownPrefix(prefix)`  5  _the prefix `prefix` is not bound to a namespace_  QName を値とする属性の中で
++         row  `BadFacet(facet, value)`  6  _`value` is not a valid value for the `facet` facet_  値が数値でないファセット
++         row  `Duplicate(kind, name)`  7  _the `kind` `name` is declared more than once_  二度行われたグローバルな宣言
+
+% 1 1 0 1006d6a5298b986a04b32cdb0a3f9fba
+
+@ 0 27 0 12d2d758e7e60d6e12a2799503eb6908
++     entry .communicable   各理由をメッセージとして描画する
++     entry #reason   `Xsd.Error.Reason`
++   entry .parse   `Xml` 文書またはそのテキストからスキーマを読む
++       `Xsd.parse(xml)` はパース済みの文書を読み、`Tactic[Xsd.Error]` を必要とする。
++       `Xsd.parse(text)` はまずテキスト（XML 宣言で始まってもよい）を、自由形式の語彙と厳格な名前空間でパースする。スキーマ文書は使うすべての接頭辞を束縛するからであり、そのため `Tactic[Parse.Error]` も必要とする。
++   entry #targetNamespace   `targetNamespace`。持たないスキーマなら `Unset`
++   entry #elementFormDefault   ローカルな要素が既定で修飾されるかどうか
++   entry #attributeFormDefault   ローカルな属性が既定で修飾されるかどうか
++   entry #elements   グローバルな要素宣言（名前をキーとし、宣言順）
++   entry #complexTypes   名前付きの複合型（名前をキーとする）
++   entry #simpleTypes   名前付きの単純型（名前をキーとする）
++   entry #attributes   グローバルな属性宣言（名前をキーとする）
++   entry #groups   名前付きのモデルグループ（名前をキーとし、それぞれ単一のコンポジターとして）
++   entry #attributeGroups   名前付きの属性グループ（名前をキーとする）
++   entry #imports   スキーマの `import`（順に）。記録されるだけで、取得はされない
++   entry #includes   その `include` と `redefine` の `schemaLocation`。記録されるだけで、取得はされない
++   entry #documentation   スキーマ自身の `annotation/documentation` 子要素のテキスト
++   entry #local   解決済みの名前がこのスキーマの中を指すかどうか：その名前空間がターゲット名前空間であること
++   entry #element   名前によるグローバルな要素宣言、または `Unset`
++   entry #resolve   参照が名指しする型：ここで宣言されたもの、組み込み型、または `Unset`
++       ターゲット名前空間の名前は、複合型、次に単純型を見つける。XSD 名前空間の名前は `Builtin` を見つけ、`SimpleType.Builtin` に包む。
++       それ以外（取得されない import されたスキーマの型）は `Unset` であり、`Xml.Provider` はそうしたフィールドを生の `Xml` として読む。
++   entry #builtin   XSD 名前空間の名前が表す組み込み型、または `Unset`
+
+@ 0 1 0 15f1fdec3f29cfb50920bd606485bc1d
++ entry .XmlSchema   パースが検証に使う語彙：どの要素、属性、実体が認められるか
+
+% 1 1 0 0c9724121944804108362d6b8ba05828
+
+@ 0 7 0 074956e485f2065c011043c55ed8e095
++       XML のパースには、`Codepage` やエラーの戦略と同じく、スコープ内の `XmlSchema` が必要である。
++       それは、どの要素と属性がどこで認められるか、どの名前付き実体が展開されるかを決める。
++       `xmlSchemas.freeformXmlSchema` として import される `XmlSchema.Freeform` は、あらゆる要素と属性を認め、五つの定義済み実体を展開する。語彙が関わらないときの通常の選択である。
++       すべての `Xml` の値はスキーマを `Form` 型メンバーとして持つので、ある語彙のもとでパースされた文書はその語彙で型付けされる。
+
+% 2 1 0 0a3621e6110aa56800f48cda0d4f3b8c
+
+% 3 1 0 1c83a274e74485a3159f7343d4fa5a5f
+
+% 4 1 0 060127e07b4fc270118f047e085c4318
+
+% 5 1 0 1c2b89a93218588e05f7162e1f90b7fc
+
+% 0 1 0 18fc8946e846cb2517f6fba711e0332b
+
+% 1 1 0 0b21cb66c33077740e7c641220ee8619
+
+@ 0 4 0 09641d00c12f960804ceb4a43164144f
++       独自の語彙は、`Tag` としての `#elements`、`#attributes`、`#entities` を持つ、`XmlSchema` を継承したオブジェクトである。そのもとでのパースは、語彙にない要素（`Xml.Issue.InvalidTag`）や、親の子になれない要素（`Xml.Issue.InadmissibleTag`）を拒否する。
+
+% 0 1 0 0ee1b01f286ea4970ab268d072dce2dd
+
+% 1 1 0 10a7b9d3caa1bb320739d12f1ca0bbdc
+
+@ 0 12 0 04326b4854fbe5711ecec3b3fabb3edc
++   entry .generic   子を認めないルートタグ。要素を持たないスキーマのためのもの
++   entry .defaultEntities   五つの定義済み実体：`amp`、`lt`、`gt`、`apos`、`quot`
++   entry .Freeform   何でも認める語彙
++       独自の要素も属性も持たず、既定の実体を持ち、`freeform` が真なので、パーサーは出会うすべての要素と属性を受け入れる。
++       given `xmlSchemas.freeformXmlSchema` として import される。
++   entry #freeform   あらゆる要素と属性が認められるかどうか。上書きされない限り偽
++   entry #elements   語彙の要素（名前をキーとする `Tag`）
++   entry #attributes   語彙の属性（名前をキーとする `Xml.XmlAttribute`）
++   entry #entities   名前付き実体とその展開
++   entry #infer   親と、その直接の子になれない子との間に挿入するタグ、または `Unset`
++   entry #generic   語彙のすべての要素を子として認めるルートタグ
+
+@ 0 1 0 14d4911b696408cf1a3e5291d3482fc3
++ entry .Namespace   名前空間 URI に束縛された接頭辞（コンテキスト値として）
+
+% 1 1 0 1ce89466ca0db38a17c02de1da491300
+
+@ 0 2 0 043f7f20f99b5c2c1f6470677b4a6f4c
++       `Namespace` は、接頭辞である `Self` を URI である `Topic` に、どちらもシングルトン型として束縛する。そのため次のような given は
+
+% 2 1 0 17fa9409caf0d54910d6015daac25a23
+
+% 3 1 0 02a0a340d2dd87390b19baa3d581e043
+
+% 0 1 0 13b9ea79d6205a4316301ef579e3d481
+
+% 1 1 0 18ecd085da8274951a71dadc03f7dd58
+
+@ 0 8 0 1a693da0cb7697950f178978496881e5
++       それがスコープにある所ではどこでも `svg` を束縛する。
++       `x"…"` 補間子と `xp"…"` 補間子は、リテラルが使うが宣言しない接頭辞について given を参照する。`x"<svg:rect/>"` は上の given があればコンパイルでき、なければできない。また、接頭辞をタプル型として与えた `Xml.Scope[prefixes]` はそれらからスコープを組み立て、パースや接頭辞付きの選択（`` xml.`svg:rect` `` や `xp"//svg:rect"`）はそのスコープを通じて解決済みの名前で照合する。
++       接頭辞は字句上の便宜にすぎない。二つの名前は、どの接頭辞が束縛していても、URI とローカル部分が一致すれば同じ名前なので、コードが使う接頭辞は文書が使ったものと同じでなくてよい。
+
+@ 0 2 0 01768f8503cd071011a50493c79c3b73
++       予約された `xml` 接頭辞は、コンパニオンの `xml` given によって、宣言なしにすべての文書で束縛される。
+
+% 1 1 0 07a46f89bd41d600081f5c18f59c83f1
+
+% 1 1 0 164a34e4bc4575cf16cfdba1658d9594
+
+@ 0 13 0 007720ce3dc63f811d4eb06af211c984
++   entry .Bound   `Namespace()` が作るクラス：リテラルで型付けされた、値としての接頭辞と URI
++     entry #prefix   テキストとしての接頭辞
++     entry #uri   テキストとしての名前空間 URI
++   entry .apply   `Namespace()`：期待される型から接頭辞と URI を読み取る束縛
++       代入先の given のシングルトン型から接頭辞と URI を取るインラインメソッド：`given k: ("k" is Namespace of "urn:a") = Namespace()`。
++   entry .xml   `http://www.w3.org/XML/1998/namespace` に束縛された、予約された `xml` 接頭辞
++       コンパニオンを通じて暗黙のスコープにあるので、すべての文書とリテラルがこれを持つ。
++   entry .inspectable   束縛を `Namespace[t"svg" -> t"http://www.w3.org/2000/svg"]` として描画する
++   entry #Self   リテラル型としての接頭辞
++   entry #Topic   リテラル型としての名前空間 URI
++   entry #prefix   テキストとしての接頭辞
++   entry #uri   テキストとしての名前空間 URI
+
+@ 0 1 0 1fa2c0cbb7efa8030934ffffc01e7fb7
++ entry .Tag   語彙の要素：その名前、あらかじめ設定された属性、そして認める子
+
+% 1 1 0 1a349fb65a40b0261b91820bd91ae79c
+
+@ 0 7 0 1efcea995bb720ff17250d9056bde340
++       `Tag` は子を持たない `Xml.Element` であり、自分の中に何が入ってよいかを知っている。認められる子の名前 `#admissible` と、すべてのインスタンスが最初に持つ `#presets` である。
++       名前付き引数で適用すること（`tag(id = t"main")`）は、語彙の `Xml.XmlAttribute` given に対してマクロで検査される。要素が取らない属性はコンパイルエラーになり（_the attribute `href` cannot be used on the element `<div>`_）、各値は `Attributive` インスタンスを通じて変換される。
++       `object Xml` 自体が `Tag.Container` であり、`XmlSchema` の `elements` はタグである。
+
+@ 0 2 0 163e8e77d81d1ffe168fe9ec5a016734
++       honeycomb の `Tag` がアンブレラでその名前を持っているので、このオブジェクトは `soundness` アンブレラにエクスポートされない。`xylophone.Tag` として参照する。
+
+% 1 1 0 053814d9c909144a01e7e46606d134f7
+
+% 0 1 0 0aa10e934aeecdac09e9cde99d523dcc
+
+@ 0 7 0 196c67b5805d466007d8c9f181e022fc
++   entry .root   与えられた子を認める文書ルートのタグ `#root`
++       語彙の要素の上にあるタグで、`XmlSchema#generic` が組み立てる。
++   entry .freeform   任意の名前のコンテナータグ。特定の子は認めない
++   entry .container   ラベル、認める子、スキーマで型付けされたコンテナータグ
++       `Tag.container[label, children, schema](presets)` は `Container of label over children in schema` を組み立てる。子は名前の型レベルのリストから実体化される。
++   entry .Container   インスタンスが子を持つ要素であるタグ
+
+% 1 1 0 08e11a40d86e38291cdb5c67067a89f5
+
+@ 0 11 0 0c44a99c5c4f4f14095788aec60a1918
++         `Container` を適用すると、`Xml.Vacuiscible` でもある `Xml.Element` ができるので、二度目の適用で子を受け取れる：`div(id = t"x")(child, child)`。
++     entry #node   一組の属性に対する要素。あらかじめ設定された属性はその下に統合される
++   entry #presets   タグのすべてのインスタンスが最初に持つ属性
++   entry #admissible   タグが子として認める要素の名前
++   entry #Result   タグを適用して作られる要素の型
++   entry #applyDynamicNamed   `tag(key = value, …)`：検査された属性を持つ要素
++       マクロである。各キーは語彙がこの要素について宣言した属性（`Xml.XmlAttribute` given）でなければならず、各値はその属性の型に対して `Attributive` でなければならない。そうでなければ呼び出しはコンパイルできない。
++   entry #node   一組の属性に対する要素
+
+@ 0 1 0 09bc82c0c708d33d0a81ff814005ddb1
++ entry .Attributive   タグを適用するときに、値が属性のテキストになる方法
+
+% 1 1 0 00f4de0b741e4af51b563c9f6f5bc94e
+
+@ 0 5 0 1e526ae43e4329d619bdd3b697267fcd
++       `tag(width = 10)` は `10` を `width` 属性のテキストに変える必要があり、それは属性がその型の値を取る場合に限られる。`Attributive` はその変換であり、`Self` の値からテキストの `(key, value)` の対へ、あるいは属性を省くための `Unset` へと変換する。属性の `Result` 型をキーとする。
++       コンパニオンは、テキストの属性のために `Text` と `String` を提供する。語彙は自分の属性の型のためにインスタンスを追加する。
+
+@ 0 2 0 0334a2d2f0cf934b1a5b95edb5cd4dd4
++       honeycomb の `Attributive` がアンブレラでその名前を持っているので、このトレイトは `soundness` アンブレラにエクスポートされない。`xylophone.Attributive` として参照する。
+
+% 1 1 0 0bef44ae9921e11f0c781c9997c1d7a5
+
+@ 0 4 0 0cafc7bdb05887370d256c857eb8c79b
++   entry .Textual   普通のテキスト属性の属性型
++   entry .textTextual   テキスト属性の値としての `Text`
++   entry .stringTextual   テキスト属性の値としての `String`
++   entry #attribute   値に対する `(key, value)` の対、または属性を省くための `Unset`
+
+@ 0 1 0 000b78eb75116cbf01d8ce0a0e437c3b
++ entry .Renderable   与えられた形式の `Xml` として描画される値
+
+% 1 1 0 03ae6b3412121ec00fba024d356887dc
+
+@ 0 6 0 049130e88e5a19cb120dce966088e6db
++       `Renderable` は XML による描画を持つ型の型クラスである。`render` は `Self` の値を `Xml of Form` に変え、`Form` はその描画が属する語彙を名指しする。
++       これは HTML のための honeycomb の `Renderable` に対応する XML 版であり、そちらがその名前を持っているので `soundness` アンブレラにエクスポートされない。`xylophone.Renderable` として参照する。
++   entry #render   `Xml of Form` としての値
+
+@ 0 1 0 0f93acaba6e6da46000aacfcd39c5180
++ entry .Inlinable   XML から型を読むためのコンパイル時のコード生成器。一つの平らなパーサーに合成される
+
+% 1 1 0 069cf6f3930ebfcf055297690e9ab16b
+
+@ 0 7 0 15551000d8096f340d4507cf0031b28f
++       `Inlinable` は `Xml.Parsable` に対応する `Expr` 水準のものである。それは型クラスであり、その `#parse` はマクロ時の生成器で、開かれた要素のすぐ内側に位置する `Xml.Reader` の `Expr` を受け取り、デコードされた値の `Expr` を返す。生成するマクロはそれを、組み立てるパーサーにそのままスプライスする。
++       入れ子のレコード、コレクションの収集、独自の末端のパーサーはすべて、実行時の振り分けも、インスタンスの配列も、合成されたパーサー間のアダプターの経由もない、一つの単相のパーサーにインライン化される。
++       これは JSON のための jacinta の `Inlinable` にそのまま従う。
+
+@ 0 4 0 074619ee759b91dd019eb14e6937a5af
++       入口は、単相の `T is Xml.Parsable` である `Inlinable.parsable[T]` と、その書き込み版の `Inlinable.printable[T]` である。後者は `T is Xml.Printable` であり、木を組み立てずにレコードのコンパクトな XML テキストをライターに直接書き込む。
++       `import codecs.direct` と `derives Xml.Direct` が使うのはこの二つである。
+
+% 2 1 0 19fcede7e34f3db61821b2817ba03bda
+
+% 3 1 0 1e0d01a04e260cf619b72f7d7e3fec20
+
+% 4 1 0 0def8cd4d093724512a7be254791080c
+
+% 5 1 0 098a289257b22aab1d89ea69406a9d0e
+
+% 0 1 0 16e7677aa284c8e107d6438b1b0409df
+
+% 0 1 0 1dda9b4ccf904bec021dc8e26cd8362a
+
+% 0 1 0 08dd668d97f13bb0044b790f9223daa9
+
+% 0 1 0 1c9d2c8a56a7ab611d85e120deb25814
+
+% 0 1 0 073a261df7d976c01a0b5dd43556ea00
+
+% 1 1 0 1c81d610c0bdde4a0b18ee81da6d4ab4
+
+@ 0 8 0 1860ec58ca7be8ff106bf534db2e561b
++       インスタンスは普通の実行時の値なので、`derived` は独自のマクロを必要としない。`parsable[T]` の展開での解決の段階は次のとおりである。まず組み込みの末端（コンパニオンの `int`、`text` などの given。これらはプリミティブの `Xml.Parsable` インスタンスを写したものなので、直接の読み取り、ステージングされた読み取り、インライン化された読み取りは等しい値と等しいエラーを与える）、次にマクロ内のステージングコンパイラの中で実際に評価されるユーザーが書いたインスタンス、次にケースクラス、コレクション、シールされた直和に対する構造的な生成器、そして最後に実行時の継ぎ目、つまりフィールドの `Xml.Parsing` インスタンスを通じたスプライスされた呼び出しである。
++       再帰的な出現（上の `Tree`）は、際限なく展開する代わりに継ぎ目を取る。
+
+@ 0 5 0 1fc3280ccdd28823186fe1a26bc9698b
++       ステージングの段階には、`Inlinable.Stager` を提供する `xylophone.staged` モジュールがマクロのクラスパスにあることが必要である。それがなければ、型にユーザーが書いたインスタンスしかないフィールドは実行時の継ぎ目を取る。
++       インスタンス（とその型）は、展開より前の実行でコンパイルされていなければならない。同じ実行のインスタンスは `Xml.Field` を通じて継ぎ目に格下げされる。
+
+% 1 1 0 04126addd79c43250d84672239cc5b77
+
+% 0 1 0 1ecbb44567aa12c01e459665c591b6ce
+
+@ 0 9 0 0fa9cd0a17b198fa1428345f2e252f8a
++   entry .parsable   `Inlinable.parsable[T]`：コンパイル時に生成される単相の `T is Xml.Parsable`
++       `Xml.Parsable.staged` と同様だが、`Inlinable` インスタンスを通じて合成されるので、入れ子のレコード、コレクション、独自の末端が一つの平らなパーサーにインライン化される。
++       通常は `import codecs.direct` か `case class T(…) derives Xml.Direct` で得る。
++   entry .printable   `Inlinable.printable[T]`：コンパイル時に生成される単相の `T is Xml.Printable`
++       レコードのコンパクトな XML テキストをライターに直接書き込む。書式がコンパクトなときに `in[Text over Xml]` と `in[Data over Xml]` を通じて到達する。インデントされた書式は今も木を通じて描画される。
++   entry .Generates   生成器が型のコーデックをレコードとして構造的に組み立てることの証拠
+
+% 1 1 0 0dceaffab42805571cd2a5fcddd57b3d
+
+@ 0 5 0 13ddd3e77340dea91daf8b78768f094c
++         `import codecs.direct` の生成されたインスタンスにかかる条件である。その `generates` given は、生成器がレコードとして扱う型に対してだけ成功するので、それ以外の型では生成されたインスタンスの探索が失敗し、代わりに導出の経路が解決される。
++     entry .generates   レコード型に対して成功し、それ以外では失敗するマクロである given
++   entry .Stager   ユーザーが書いたインスタンスを展開時に評価する、マクロ内のステージングコンパイラ
+
+% 1 1 0 1e30991c98eb31af02a14f4be16347f0
+
+@ 0 14 0 1df768885fc5f7271500537248a2cedf
++         `Inlinable` given は普通の実行時の値なので、生成器がその `parse` を呼ぶには、マクロの中で given を評価するしかない。それにはステージングコンパイラが必要であり、それとともに `xylophone.core` が依存しないコンパイラの jar も必要になる。
++         `xylophone.staged` モジュールが実装を持ち、それがマクロのクラスパスにあればコンパニオンが名前でそれを読み込む。なければ `summon` は `None` で、そうしたフィールドは実行時の継ぎ目を取る。
++     entry .summon   フィールドの型に対する実際のインスタンス。ステージングコンパイラが使えて、それが見つけた場合
++     entry .discriminantAttribute   シールされた直和の `Discriminable in Xml` が振り分けに使う属性（あれば）
++     entry #summon   フィールドの型に対する実際のインスタンス、または `None`
++     entry #discriminantAttribute   直和の判別属性、または `None`
++   entry .derived   ケースクラスに対する構造的なインスタンス
++       `parse` が呼ばれたときに `Self` をリフレクトするので、マクロは要らない。`Type[Self]` は呼び出しとともに届く。
++   entry .ForXml   `derives` 節のキャリア：`case class Play(…) derives Inlinable.ForXml`
+
+% 1 1 0 14857fcfe25064841ccf42de97bfa628
+
+@ 0 26 0 1df1d1bfbf8a062b196e7e316b6e5dad
++         `Self` で型付けされた型クラスには型パラメーターがないので、`derives` 節に現れることができない。`ForXml[value]` は `value is Inlinable` *である*パラメーター化されたサブトレイトであり、型のコンパニオンに合成され、ステージングの召喚がそこでそれを見つける。
++         解決の段階は委譲先を取り出すので、構造的なインスタンスは生成器としての同一性を保つ。
++     entry .derived   `Inlinable.derived[value]` の上のキャリア
++     entry #parse   包んだインスタンスに委譲する
++     entry #absent   包んだインスタンスに委譲する
++   entry .int   `Int` の生成器：`Xml.intParsable` と同じ読み取りで、存在しないときは `0`
++   entry .long   `Long` の生成器
++   entry .double   `Double` の生成器
++   entry .float   `Float` の生成器
++   entry .boolean   `Boolean` の生成器
++   entry .text   `Text` の生成器：要素のテキスト、または `Xml.Error.Reason.Untextual`
++   entry .string   `String` の生成器
++   entry .iterable   インライン化可能な要素型の任意の `Iterable` の生成器
++       フィールドの位置では、レコードの生成器はこれを呼ばない。同じ名前の子を、それぞれ要素自身の生成器を通じて集める。
++       単独では、実行時の `Xml.Parsable.iterable` と同じく、一つの要素を要素一つのコレクションとして読む。
++   entry #parse   生成器：リーダーの `Expr` から値の `Expr` へ
++       リーダーは、現在の要素が開かれた直後の位置にある。`Quotes` と `Type[Self]` は呼び出しとともに届く。
++   entry #absent   その名前を持つ子がないときに、この型のフィールドが与えるもの
++       実行時のインスタンスを写したものである。上書きされない限り `Xml.Error.Reason.Missing` による中断であり、プリミティブのインスタンスはエラーを発生させて番兵の値で続行し、コレクションは空になり、レコードは一度だけエラーを発生させて `Default` を取るか、フィールドが存在しないものとして組み立てる。
+
+@ 0 1 0 16b41a0ce5ebffcb049f09444ef4cca2
++ entry .inlining   `Inlinable` の背後の仕組み：生成器と入口のマクロ
+
+% 1 1 0 1c8c2bc60ef027da0dc1458afc204bd4
+
+% 2 1 0 12f3dfb58925b4401c7ca9730759d522
+
+@ 0 11 0 075acd47d9d1d6e701a7b7df45b9e32a
++       直接使うためのものではない。展開時のインスタンス解決、直積、コレクション、直和に対する構造的な生成器、そして `Inlinable.parsable`、`Inlinable.printable`、`Inlinable.Generates` が展開されるマクロである。
++   entry .fieldInstance   実行時の継ぎ目：フィールドの型の `Xml.Parsing`。スコープ内の名目的な `Parsable` を先に
++       生成されたレコードの本体がパースごとに一度束縛するインラインメソッドである。`Xml.Field` の代替の連鎖より名目的な `Xml.Parsable`（独自のインスタンス、ステージングされた兄弟）を優先するので、出現の読み取り、繰り返し可能性、存在しないことの扱いが一つのインスタンスを参照する。
++   entry .generates   `Inlinable.Generates.generates` の背後のマクロ
++   entry .inlinablePrintable   `Inlinable.printable[T]` の背後のマクロ
++   entry .inlinableParsable   `Inlinable.parsable[T]` の背後のマクロ
+
+@ 0 1 0 138cc79961b96be21a9c2a3f2c7ea290
++ entry .dynamicAccess   動的構文 `xml.book` のパーミッション。名前で import する given として
+
+% 1 1 0 0a8ada158f1659f01363771dcc3e96a9
+
+@ 0 5 0 10aff1974124122505e46f96a610bc90
++       `Xml` の値のメンバー風のナビゲーション（`xml.book`、`xml.book(Prim)`、`` xml.`svg:rect` ``）は、消去された `Xml is Dynamical` のパーミッションによって解禁されるので、それを求めていないスコープでは、打ち間違えたメンバー名はコンパイルエラーのままである。
++       パーミッションは、given を import することでスコープの残りに与えられ、`dynamically[Xml]:`（あらゆるフォーマットには `dynamically:`）で一つのブロックに与えられる。
+
+% 2 1 0 0ba6830f888558de1cc7a396bde02b70
+
+% 3 1 0 04317bea8981ceb809da5870b46013ff
+
+% 4 1 0 07b8f67aec231c5a02ca58a7167b5299
+
+% 5 1 0 073b7d058cfd2d9408bbb7219ad65d16
+
+% 6 1 0 026bc65bba846421084d44f9a73f7f53
+
+% 0 1 0 1f0184113f2fb805019450d62102d02e
+
+% 0 1 0 140dc019fcd424ae1f372aa995cc4651
+
+% 1 1 0 1f8ebc34bb040b0c09999b037a3387e8
+
+@ 0 1 0 0da367c6d77b6fc500271c0729692e9b
++   entry .dynamicXml   import したスコープに `Xml is Dynamical` を与える
+
+@ 0 1 0 13e347b1ee60c9060daf0ca73781b8e0
++ entry .internal   `x"…"`、`xp"…"`、XML の抽出子、タグの適用、ステージングされたパーサーの背後のマクロ
+
+% 1 1 0 0cb8851dbccdab74171bb3f407db8401
+
+% 2 1 0 0f03dc37673e25be0dc7df020f16856f
+
+@ 0 27 0 1f07b59ad50e9f511fd2a9fe784517cf
++       直接使うためのものではない。xylophone のマクロの実装を収めるオブジェクトである。
++       不透明型 `Attributes` と `Scope` も宣言しており、`xylophone` パッケージがそれらをエクスポートする（`soundness` アンブレラにはすでに別の `Scope` があるので、`object Xml` は `Scope` を `Xml.Scope` として再エクスポートする）。パッケージの下のそれらのページに詳しい説明がある。
++   entry .extractor   `x"…"` パターンの背後のマクロ：`Xml` を穴のあるリテラルと照合する
++       パターンの位置にあるリテラルは、各穴の値を捕らえる。捕らえたノードが一つならそれが結果になり、複数ならタプルになる。テキストの値一つだけを単独で捕らえることはできない（別の値か、それを囲むノードと一緒に捕らえる）。
++   entry .xpath   `xp"…"` の背後のマクロ：式をパースし、検査し、持ち上げる
++       実行時のデコーダーと同じパーサーで展開時にリテラルをパースし、失敗のオフセットをソースの位置に対応させ、挿入をその穴の位置に接ぎ木し、木を丸ごと持ち上げ、式が使う接頭辞を呼び出し箇所の `Namespace` given を通じて束縛する。
++   entry .interpolator   `x"…"` の背後のマクロ：挿入のための穴を持つリテラルをパースし、検査する
++       寛容にパースするので、リテラルは呼び出し箇所の `Namespace` given だけが束縛する接頭辞を使ってよい。その後、自分ですべての接頭辞を given に対して検査する。`namespaceOptions.lenientNamespaces` がスコープにない限り、束縛されていない接頭辞はコンパイルエラーである。
++   entry .attributes   `tag(key = value, …)` の背後のマクロ：各属性を検査し、その値を変換する
++       各キーはタグの要素に対する `Xml.XmlAttribute` given でなければならず、各値はその属性の型に対して `Attributive` でなければならない。そうでなければ呼び出しはコンパイルできない。
++   entry .stagedParsable   `Xml.Parsable.staged` の背後のマクロ：ケースクラスのための単相のパーサー
++       フィールドの値は型付きのローカル変数に置かれ、子要素はパックされた `Long` のリテラル比較で振り分けられ、組み込みのプリミティブは直接の静的呼び出しで読まれ、`@attribute` フィールドは開始タグから埋められ、レコードは直接のコンストラクター呼び出しで組み立てられる。意味論は導出のエンジンと同じである。
++   entry .Attributes   要素の属性（文書順）。`xylophone.Attributes` を参照
+
+% 1 1 0 0548d71a095e39ba1a0ef92ca6b71029
+
+@ 0 38 0 123f7fafa36a11211d5afeb4c296a7f5
++         凍結済みの交互配置の配列の上の不透明型で、`xylophone` パッケージにエクスポートされている。そのページに詳しい説明がある。
++     entry .empty   属性なし
++     entry .traversable   文書順の対。したがって `attributes.to[List]` は変換を必要としない
++     entry .inspectable   属性を `xml{id="x", class="y"}` として描画する
++     entry .indexable   `Applicable` given：`Optional` としての `attributes.at(key)`、および `contains`
++     entry .apply   `Attributes(pairs*)` は対から組み立てる。`attributes(key)` は値であり、存在しなければ例外を投げる
++         コンストラクターは対の順序を保つ。
++         参照は存在しないキーに対して `NoSuchElementException` を投げる。`fetch` や `at` は代わりに `Unset` を与える。
++     entry .from   `Map[Text, Text]` から、そのマップの反復順で組み立てる
++     entry .size   属性の数
++     entry .isEmpty   属性がないかどうか
++     entry .nonEmpty   属性が少なくとも一つあるかどうか
++     entry .nil   属性がないかどうか
++     entry .fetch   キーに対する値、または `Unset`
++         ステージングされたパーサーの `@attribute` の段階が使う参照で、`Applicable` を回り道しない `at` である。
++     entry .declaresNamespace   いずれかの属性が `xmlns` または `xmlns:prefix` の宣言かどうか
++     entry .contains   キーが存在するかどうか
++     entry .keys   キー（文書順）
++     entry .values   値（文書順）
++     entry .iterator   `(key, value)` の対（文書順）
++     entry .toMap   文書順で反復し続ける `Map[Text, Text]` としての属性
++     entry .eachPair   各 `(key, value)` の対に順に動作を適用する
++         `each` ではなく `eachPair` という名前である。そうしないと、汎用の一引数の `each` が解決で勝ち、二引数のラムダを拒否してしまう。
++     entry .foreachPair   普通の、インラインでないメソッドとしての `eachPair`
++     entry .map   各 `(key, value)` の対を順に値に写す
++     entry .removed   キーを除いた属性。キーが存在しなければ同じ値
++     entry .-   `attributes - key`。`removed` と同じ
++     entry .--   複数のキーをそれぞれ除いた属性
++     entry .updated   キーを値に設定した属性。存在すればその場で、なければ末尾に追加される
++     entry .++   別の `Attributes` または `Map` と統合した属性。右側が勝つ
++         左側のキーは位置を保ち、両方にキーがあれば右側の値を取る。右側の新しいキーはその順序で後に続く。
++     entry .equalsAttributes   二つの属性の集合が、順序を問わず同じ対を持つかどうか
++     entry .hashAttributes   `equalsAttributes` と整合する、順序に依存しないハッシュ
++   entry .Scope   要素で有効な名前空間の束縛。`xylophone.Scope` を参照
+
+% 1 1 0 03f26aa05872d6f91d2118cc12ecf226
+
+@ 0 24 0 1b34a34931e3e6e8182adeac6b5d7f9a
++         凍結済みの交互配置の配列の上の不透明型で、`xylophone` パッケージにエクスポートされ、`Xml.Scope` として再エクスポートされている。そのページに詳しい説明がある。
++     entry .xmlNamespace   予約された `xml` 接頭辞の URI、`http://www.w3.org/XML/1998/namespace`
++     entry .xmlnsNamespace   `xmlns` 接頭辞の URI、`http://www.w3.org/2000/xmlns/`
++     entry .empty   束縛がまったくない。`xml` さえない
++     entry .xml   予約された `xml` 接頭辞だけ：他が与えられない限り文書がパースされるスコープ
++     entry .default   コンパニオンを通じて暗黙のスコープにある given のスコープ `xml`
++     entry .inspectable   スコープを `xmlns{"" ="urn:d", p="urn:p"}` として描画する
++     entry .apply   接頭辞と URI の対からの `Scope(pairs*)`。`Namespace` given からの `Scope[prefixes]`
++         `Xml.Scope(t"svg" -> t"http://www.w3.org/2000/svg")` は対を順に束縛し、空のテキストを既定の名前空間の接頭辞とする。
++         型レベルの形は接頭辞のタプル型を取り、予約された `xml` の束縛の上に、それぞれをその `Namespace` given を通じて束縛する。
++     entry .isEmpty   スコープに束縛がないかどうか
++     entry .size   束縛の数
++     entry .resolve   接頭辞に束縛された URI。既定の名前空間なら `Unset`。束縛されていないか宣言が取り消されていれば `Unset`
++     entry .binds   接頭辞に束縛があるかどうか。宣言を取り消す束縛も数える
++     entry .prefixOf   URI に対して最も最近束縛された接頭辞。それを束縛するものがなければ `Unset`
++         結果は二重にオプショナルである。`Optional(Unset)` は URI が既定の名前空間であることを、`Unset` はそれに束縛された接頭辞がないことを意味する。
++         シリアライザーは、名前空間の中の名前を書くためにこれを使う。
++     entry .bind   束縛を一つ末尾に追加したスコープ。その接頭辞の以前の束縛を覆い隠す
++     entry .++   このスコープの末尾に別のスコープの束縛を追加したもの。したがって別のスコープの束縛がこちらを覆い隠す
++     entry .bindings   `(prefix, uri)` の対としての束縛（順に）。既定の名前空間は `Unset`
+
+@ 0 1 0 007264df5380d72819a53066f422f2d2
++ entry .optics   要素の子に対するレンズとオプティクス。`xml.lens(…)` のためのもの
+
+% 1 1 0 115fe3416b5d80670587cad2f011a706
+
+@ 0 7 0 01d97a6d4d0c5b421a18872bcb9a626e
++       `Xml` の値をレンズを通じて更新できるようにする given である。`xml.lens(_.book.title = value)` は名前で子要素にナビゲートしてそれを置き換え、`Each` と序数のオプティクスは、すべての子要素や n 番目の子要素を指す。
++       どの更新も要素を不変なまま組み立て直し、テキストとコメントのノードをその場に保つ。代入する値はあらかじめ XML である必要はなく、`Encodable in Xml` であるものは何でも、代入されるときにエンコードされる。
++       これらの given は選択パッケージにあって名前で import され、レンズの中のメンバー構文のために `dynamicAccess.dynamicXml` を必要とする。
+
+% 2 1 0 085b495ca7b6e63605d31db25885d2e3
+
+% 3 1 0 081a58807fe25986002910d5c804fa7e
+
+% 4 1 0 1daa1bf540974a7718f600867ece0fbb
+
+% 5 1 0 192558f8f4877eb81ac3d3cc7d15a261
+
+% 6 1 0 19ef945127e105eb0eb2d999270d7c58
+
+% 0 1 0 1c448a3e8533e6c90a3bdbec5957fd71
+
+% 0 1 0 104e7264cc82fee80216cddebf124d61
+
+% 0 1 0 13045cf33ece0028158f3d35daccbf0d
+
+% 0 1 0 0c026befb3be4efc1ada09ac22d5879c
+
+% 0 1 0 17f04173a64d5dd21c5316b71123c4d1
+
+% 1 1 0 0e89906801490e9b06afb40cf60cd298
+
+@ 0 8 0 0f3006a733702e4412f0ec2c4d1fe8f7
++   entry .xmlLens   要素から、ある名前を持つ最初の子要素へのレンズ。更新時にそれを置き換える
++       与えられた名前を持つ最初の子要素にナビゲートして、更新時にそれを置き換える。そうした子がなければ新しい値を末尾に追加する。
++       スコープ内の `Xml.Scope`（コンパニオンの既定値は `xml` だけを束縛する）と `Xml is Dynamical` のパーミッションを必要とする。
++   entry .xmlOrdinalOptical   n 番目の子要素へのオプティク：`_(Sec) = …`
++       要素の子だけを数えるので、その間にあるテキストやコメントで序数がずれることはない。
++   entry .xmlEachOptical   すべての子要素へのオプティク：`_(Each) = …`
+
+@ 0 1 0 0c7ba8da92fea3d00534f1229abb6068
++ entry .optionalityOptions   `Optional` のフィールドが、存在しない、または誤りのある要素や属性をどう読むか
+
+% 1 1 0 1c0859fcb1292fcd12c5dcd46e98c228
+
+@ 0 6 0 0ab3a99b74982e2a086589cc0f8a9906
++       導出されたデコーダーの `Optional` のフィールドに対する二つのポリシーで、それぞれ名前で import する given である。
++       *存在しないこと*（フィールドの名前を持つ要素や属性がないこと）は既定で寛容であり、`Unset` を与える。`strictXmlAbsence` はそれを `Reason.Missing` の `Xml.Error` にする。
++       *誤り*（存在するが内側のデコーダーが拒否する要素）は既定で厳格であり、エラーを発生させる。`lenientXmlFaults` はそうしたフィールドを `Unset` として読む。
++       XML には null がない。空の要素は存在する値なので、JSON や YAML にある null 性のポリシーはない。
+
+% 2 1 0 0d3705bb4621a6101f89cbaad3f57fcf
+
+% 3 1 0 1b41078d3f96492319fa1de9787358b7
+
+% 4 1 0 0d782e59630f92eb046394c80932b3e8
+
+% 5 1 0 15ac387e96b788d801696178cb908f68
+
+% 7 1 0 07b31a63248ac212176538e37e1ab817
+
+% 0 1 0 0e7e2f01827718c50dc3ac8ddf16a0e0
+
+% 1 1 0 0cc428f8dd1c8660068bc6eac33299e2
+
+% 0 1 0 0af0dd899cefb04516f86114c6144deb
+
+% 1 1 0 070c34a2ed471cbb15e129ea150c9d6f
+
+@ 0 4 0 02dfc1df49d9c7de14d00b87e2f3cf18
++   entry .strictXmlAbsence   `Optional` のフィールドの要素や属性が存在しなければ `Xml.Error` になる
++   entry .lenientXmlAbsence   `Optional` のフィールドの要素や属性が存在しなければ `Unset` になる。既定
++   entry .strictXmlFaults   存在するが内側のデコーダーが拒否する要素はエラーを発生させる。既定
++   entry .lenientXmlFaults   存在するが内側のデコーダーが拒否する要素は `Unset` として読まれる
+
+@ 0 1 0 1bbb8b2647ab8bec13eab985c5016b3e
++ entry .namespaceOptions   束縛のない接頭辞がエラーになるか、名前空間なしになるか
+
+% 1 1 0 13daf25e6b1233eb0229d8bb82986238
+
+@ 0 5 0 003103d9408b9acf17ec32ddbd582f03
++       Namespaces 勧告は、束縛されていない接頭辞をエラーとしており、それが既定である。`p` の宣言なしに `<p:a/>` をパースすると `Xml.Issue.UnboundPrefix` の `Parse.Error` が発生し、`p` に対する `Namespace` given なしの `x"<p:a/>"` はコンパイルできない。
++       `lenientNamespaces` は代わりに、束縛されていない接頭辞を名前空間なしに解決する。宣言しない接頭辞を使う文書のためのものである。
+
+% 2 1 0 1430435c6ae7b69e14434fb40e22924c
+
+% 3 1 0 1454ef152789881717cbd1c70dbbad12
+
+% 4 1 0 184c902221d5f88909bea882dd3f9ab8
+
+% 5 1 0 13af158ccfaafc4905b10febff1a02b8
+
+% 0 1 0 044e47a69f7ee8b2108c576ba88d208f
+
+% 0 1 0 0793b975eaa8d69c059ec45e480f50b6
+
+% 1 1 0 0f4a8f9810ca0c1e04d656ce9f78d533
+
+@ 0 2 0 07ddf92414918bae037cf212b92c859c
++   entry .strictNamespaces   束縛されていない接頭辞はエラー。既定
++   entry .lenientNamespaces   束縛されていない接頭辞は名前空間なしに解決される
+
+@ 0 1 0 148d79115d2ef1690e28df5f69d51e0d
++ entry .xmlSchemas   パースが検証に使う語彙。名前で import する given として
+
+% 1 1 0 168ea7251cc4804a03b0b3b42cdaa0a3
+
+@ 0 3 0 1e3378b447b4cdf01a8056c13d44f249
++       XML のすべてのパースには、スコープ内の `XmlSchema` が必要である。
++       `freeformXmlSchema` は `XmlSchema.Freeform` であり、あらゆる要素と属性、そして五つの定義済み実体を認める。語彙が関わらないときの通常の選択である。
+
+% 2 1 0 0e84aafe00b2df6e16dbdce300043c15
+
+% 3 1 0 039a7921686ed87e0adbf57ba11b430a
+
+% 4 1 0 19c82ff660c8ecb60dc93dc31cbae736
+
+% 5 1 0 0013bb60bb4c15b9040017280d1c03df
+
+% 0 1 0 1bb7d423360b613f1f6a2c0b32acfe5d
+
+% 1 1 0 081f64b33d0879931d3586ec31d697d4
+
+@ 0 1 0 1e066a2db84832ea14e689a65ce475c2
++   entry .freeformXmlSchema   `XmlSchema.Freeform`：あらゆる要素、あらゆる属性、定義済みの実体
+
+@ 0 1 0 1013bcb23ec52cbf0ac6f6dbba2f5f32
++ entry .formatting   描画するときの XML のレイアウト。名前で import する given として
+
+% 1 1 0 0c08c0a3193b8e5b1d24c54afa2390ca
+
+@ 0 5 0 09b879063f2467160f0b6cce078a14b8
++       `Xml.Formatting` は、`show`、`in[Text over Xml]`、`Xml.emit` が要素の間に空白を書くかどうかを決める。
++       コンパクトな書式は何も書かない。インデントされた書式は各要素を自分の行に分け、階層ごとに空白二つでインデントし、最後に改行を置く。
++       `Xml.Printable` を持つレコードが木を組み立てずに直接書かれるのは、書式がコンパクトな場合だけである。
+
+% 2 1 0 078013d25aaee28604d5ded576746b15
+
+% 3 1 0 1c589b99061bf6ee096ebe7120c5d6ac
+
+% 4 1 0 0e1e2eca43b3baa41bcef754ea29f98d
+
+% 5 1 0 04cbadf9426ad6be1c3cc3b0953fbc48
+
+% 7 1 0 1f31d88443052e79124961e881af8302
+
+% 2 1 0 13c7450c1cfa602f05aa994d9a1e3ed0
+
+% 3 1 0 0beb102e9ae19c301130b4c104ae2a6a
+
+% 0 1 0 118f7aa70bd7e23201ea899455d2e869
+
+% 1 1 0 0bf6c653f4ebdaeb133c917b0017fded
+
+@ 0 2 0 1d0b0cd95a5199511c79fca91858211e
++   entry .compactXmlFormatting   要素の間に空白なし、末尾の改行なし
++   entry .indentedXmlFormatting   各要素を自分の行に置き、階層ごとに空白二つでインデントし、末尾に改行を置く
+
+@ 0 1 0 100ba509b3a5ee0f0c5eba63b99c5d2c
++ entry .Attributes   要素の属性：名前から値への、順序付きの不変なマップ
+
+% 1 1 0 04ea02f50ab3499f1cd34e20d85dca9f
+
+@ 0 5 0 0628b17a286f1f921047fb487839bf75
++       `Xml.Element` の属性を文書順に持つもので、`Map` ではなく、キーと値を交互に並べた凍結済みの配列の上の不透明型である。パースは開始タグをトークン化しながら一つ組み立て、要素の `attributes` は一つのそれであり、どの更新（`updated`、`removed`、`++`）も新しい値を返す。
++       `xylophone.internal` で宣言され、`xylophone` パッケージにエクスポートされている。
+
+% 2 1 0 0cd75929ec8f9a8c097c63692ee8cc8d
+
+% 3 1 0 18438117b1870f200a9104ceea4225b2
+
+% 0 1 0 098b5272ce02698a1f7d75e945172793
+
+% 0 1 0 1a62d5fc79b2067909dcefb8219da9f9
+
+% 0 1 0 1659b36a26346b681ffab7e751977785
+
+% 0 1 0 008653de3b442cfe01e9f9eb23ecca75
+
+% 0 1 0 076c830a1ce55beb1e66316d661dfe87
+
+% 0 1 0 1b80a40ebba43cb6060d0fcc83fb6c74
+
+% 1 1 0 0839159d85078b92160b5b2fa23efa94
+
+@ 0 4 0 0d9d7991fc6f62810ea84314842fdad7
++       二つの `Attributes` の等価性は順序に依存せず（`equalsAttributes`）、`Xml.Element` 自身の等価性がそれを使う。反復（`keys`、`values`、`iterator`、`eachPair`、`to[List]`）は文書順である。
++       開始タグに現れるとおりに、`xml{id="x", class="y"}` として検査用に表示される。
+
+% 1 1 0 099fe91b0d84c34a187dfcc63fcd75d1
+
+% 0 1 0 0941623f445b3f011f90e4a469c8db15
+
+@ 0 1 0 0537862a09e705fb0c334b26624558e0
++ entry .Scope   要素で有効な名前空間の束縛：URI と対になった接頭辞
+
+% 1 1 0 175d47d4d3216d9505e23047a330c33d
+
+@ 0 8 0 1ef52375f59b0e5f016bb0bad4375d90
++       `Scope` は、文書のある位置に適用される `xmlns` と `xmlns:prefix` の宣言のリストであり、接頭辞と URI の対として順に並ぶ。ある接頭辞の後の束縛は前の束縛を覆い隠す。既定の名前空間は空の接頭辞の束縛であり、宣言を取り消す `xmlns=""` はそれを空の URI に束縛する。
++       すべての `Xml.Element` は自分のスコープを持ち、パーサーは親のスコープを各子の宣言で拡張する。またパスの `XPath#scope` は、その名前テストが使う接頭辞を束縛する。
++       `xylophone.internal` で宣言され、`xylophone` パッケージにエクスポートされ、すでに別の `Scope` を持つ `soundness` アンブレラからは `Xml.Scope` として参照される。
+
+@ 0 2 0 09e1359adc167656059969a57fffed2a
++       スコープにある `Scope` の given は、文書自体がどの接頭辞を使っていても、接頭辞付きの選択がどう解決されるかを決める。
+
+% 2 1 0 10ca24cca9625d240800b1b4db837fb1
+
+% 3 1 0 173ab861614397050d7677ed56b539f2
+
+% 4 1 0 06d3f68c6687404b0073e69cd8134ec6
+
+% 5 1 0 00298da494c640a815b417bda0209acc
+
+% 6 1 0 1fbd634a367fdb1514c25b0ab366d834
+
+% 0 1 0 1d7600ac1bd5744c13c475e43dd56aa4
+
+% 2 1 0 09f55ddba8ca06290013c59b71a759e1
+
+% 0 1 0 0dbe7d85a32d5d511ae93c334de60f6a
+
+% 0 1 0 024f01481b31c6490ac90b9a860f8600
+
+% 1 1 0 0c8eca7bde608cc904cf045cca3337e3
+
+@ 0 5 0 182f63cf17bdd88e0ee19a5b65c5c778
++       コンパニオンの `default` given は暗黙のスコープにあり、`xml` である。つまり、すべての文書が宣言なしに持つ予約された `xml` 接頭辞だけである。
++       スコープは要素の等価性に関与しない。パースされた要素は、手で組み立てた同じ要素と等しい。そして木を書き出すときには、使う接頭辞を束縛しているがその上の何もそれを宣言していないスコープを持つ要素について、その宣言が書き出される。
+
+% 1 1 0 040130010875ba630d4279129e0d573d
+
+% 1 1 0 0d6ad48af66c729d16d9dd12af5847c4

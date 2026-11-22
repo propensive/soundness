@@ -1,0 +1,583 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 10e669029b2ac30c082b52eb1c4f5fea
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 03d576093bc755b307da376dc3391b3f
++ info   die semantischen Diagnosen des Compilers als Bäume, mit vergegenständlichten Typen, dargestellt so, wie der Benutzer sie schreiben würde
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 11a3bc7afe22075819494ef871d80188
++     _Delicious_ liest die **semantischen Diagnosen**, die der Compiler proscala unter
++     `-Zsemantic-diagnostics` (`scalacOptions.semanticDiagnostics` von anthology) ausgibt:
++     Compilermeldungen, in denen jeder Typ, jedes Symbol, jeder Name und jedes Codebeispiel mit
++     Markern aus Zeichen des privaten Nutzungsbereichs ausgezeichnet ist und jeder Typ zusätzlich
++     seine gepickelte TASTy-Form trägt. Eine einfache Compilermeldung ist Text, in dem `List[Int]`
++     neun Zeichen sind; eine semantische weiß, dass `List[Int]` ein Typ ist, welcher Typ, und dass
++     `List` `scala.collection.immutable.List` ist.
+
+@ 0 7 0 05b678f89ec603f9034991e78d81944f
++     `Markup.parse` macht aus dem ausgezeichneten Text einen Baum von `Markup`-Knoten — `Textual`,
++     `Typed`, `Symbolic`, `Named`, `Code` und `Spanned` —, und `SemanticMessage` umschließt eine
++     ganze Meldung. Ein `Reifier` entpickelt, mit einem Klassenpfad versehen, die TASTy-Nutzdaten
++     jedes `Typed`-Knotens zurück in eine stenography-`Syntax`, sodass der Typ gegen eine Menge von
++     Importen abgekürzt dargestellt werden kann, genau so, wie der Benutzer ihn schreiben würde;
++     `render` tut das für eine ganze Meldung als Text und `teletype` als gestaltete
++     Terminalausgabe, in der harlequin jedes Codebeispiel und jeden Typ syntaktisch hervorhebt.
+
+% 2 1 0 1ecef6f26d4c3e7e089ec5ccf1c49810
+
+% 1 1 0 0d439f278d701a4f174ee816c0a57fd2
+
+% 2 1 0 0529ee19d740d90219dbbae4fcda7edf
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1c65036f2fdab0ad1f81bd7f049017d3
+
+% 0 1 0 0fa7f5534cbdfbd716ba6a33625e1d39
+
+% 0 1 0 0849888e78e7ca071f5f38cfc87090dc
+
+% 0 1 0 0a73a5e2eccc41891e4b4fc38f3f27ad
+
+% 1 1 0 0f621344fe04df0a1d55fea7d58d0e38
+
+% 2 1 0 083ed2ebb7561b4f08f4cdf69394aac1
+
+% 3 1 0 16f70afb08d15f5a03629ebd1a2ad01c
+
+% 1 1 0 0c5ceab6fcbd3b691fba3cf9ed81c8a0
+
+% 0 1 0 0fd73a1d639ff0ed034a42ef5e5bc682
+
+% 0 1 0 0c832a4892374eca05c67a8e6c216bb0
+
+% 1 1 0 01a46fa427d68ae3155d0ec406295164
+
+% 0 1 0 0af70759b1a1829e00f3cbaf4e7eba7e
+
+% 0 1 0 12c8baac562b76870cf4fe54abb5580e
+
+% 0 1 0 0f9ab65a4332d7900cd759785612d0f6
+
+% 1 1 0 1d9236868ad2408c0664593a322e9aa0
+
+@ 0 5 0 06bd7f6ab5157a400c3696486a5a8777
++     Alles, was der Compiler nicht pickeln konnte — ein lokaler Typ, ein Skolem, eine
++     Typvariable, ein Fehlertyp —, wurde vor dem Pickeln durch einen `Placeholder` ersetzt und wird
++     in der Darstellung über den Namen, den der Compiler dafür ausgegeben hat, wieder eingesetzt,
++     sodass eine Diagnose nie zu einem Absturz wird: Nutzdaten, die sich nicht entpickeln lassen,
++     fallen auf den eigenen Text des Compilers zurück. Die Bibliothek ist in drei Source-Sets
++     aufgeteilt:
+
+@ 0 9 0 10f766f74bab0f3b033005bbc2166607
++     - `delicious.core` — `Markup`, `SemanticMessage`, `Placeholder`, `PlaceholderKind` und
++       `Rendition`: reines Parsen, das von nichts außer Text abhängt und auf jeder Plattform
++       verfügbar ist.
++     - `delicious.scala` — `Reifier` und die Erweiterung `render`, die den Scala-Compiler
++       einbetten, um TASTy zu entpickeln, und daher nur auf der JVM laufen.
++     - `delicious.ansi` — die Erweiterung `teletype`, die eine Meldung mit der
++       Syntaxhervorhebung von harlequin darstellt; nur JVM.
++     - `delicious.compiler` — der `Shim` über den einen compilerinternen Konstruktor, der sich
++       zwischen den Streams Scala 3.9 und 3.10 unterscheidet; nicht zur direkten Verwendung.
+
+@ 0 3 0 1135e0e7bec9fc590ed1efde7aba9504
++     Alles wird in das Umbrella `soundness` exportiert außer `teletype`, das dort mit der
++     `Teletypeable`-Darstellung von escapade kollidiert und daher als
++     `delicious.teletype(message)(reifier)` aufgerufen wird.
+
+% 0 1 0 096b211c26be9d17100ab892a9103365
+
+% 0 1 0 00f550bc174eb1151a9ef8c5a9356e0b
+
+% 0 1 0 1eb56ce52ae13ed11e4f94f1d593996a
+
+% 0 1 0 0c940c957c8175210eb6497ce49aed8f
+
+@ 0 1 0 05cdfd43c86b3ca20001a02163e233f7
++ entry .SemanticMessage   eine in ihren Markup-Baum geparste Compilermeldung
+
+% 1 1 0 18603f8045da362e0b38e1103cbbb3fc
+
+@ 0 6 0 015a6d99e58d1e581c300f75a0176fee
++       Eine `SemanticMessage` sind die `Markup`-Knoten einer ausgezeichneten Compilermeldung,
++       erzeugt von `SemanticMessage.parse` aus dem Text, den ein `Compiler.Notice#markup` von
++       anthology trägt, wenn der Compiler mit `scalacOptions.semanticDiagnostics` lief. Daraus
++       ist `#plain` die Meldung ohne ihre Marker (derselbe Text wie die eigene `message` der
++       Notice), `#types` die `Markup.Typed`-Knoten, die sie erwähnt, und `render` und `teletype`
++       (mit einem `Reifier`) ihre Darstellungen mit jedem vergegenständlichten Typ.
+
+% 2 1 0 188cb46e1d00a6b21acd304bde346cf1
+
+% 1 1 0 02e77927d71f2d6f11c9e39a53fe776f
+
+% 2 1 0 0a010bfe4e9f3a5301637f19e5c27f8c
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 0044fc7e7f6b42ab01676e50edfcde10
+
+% 0 1 0 1de352ceb677a4d815dcbbf392272771
+
+% 0 1 0 00e706a65af7e2760080004bd1653f11
+
+% 1 1 0 0ebbb6c323402d600a77dd7896c5a5db
+
+% 0 1 0 07eda9492b835ea10cd1c858a8ccd70d
+
+% 1 1 0 077077e93dfb9cb411cafc110a74d828
+
+% 1 1 0 03b5b500c9e0a9c913ad0be1a1f299ec
+
+@ 0 12 0 00a44b3079ebbdec196daa84202eed85
++   entry .marked   ob ein Text Marker semantischer Diagnosen enthält
++       Wahr, wenn irgendein Zeichen aus dem privaten Nutzungsbereich, den die Marker verwenden,
++       vorkommt, sodass sich eine Meldung eines Compilers ohne semantische Diagnosen günstig von
++       einer mit ihnen unterscheiden lässt. Derselbe Test wie `Markup.marked`.
++   entry .parse   parst eine ausgezeichnete Meldung in eine `SemanticMessage`
++       `Markup.parse`, angewandt auf den ganzen Text: Eine Meldung ohne Marker wird zu einem
++       einzigen `Markup.Textual`-Knoten geparst, daher lässt es sich gefahrlos auf jeder Meldung
++       aufrufen.
++   entry #markup   die Knoten der Meldung, in Reihenfolge
++   entry #plain   die Meldung ohne jeden Marker, nur mit dem sichtbaren Text
++   entry #types   jeder `Markup.Typed`-Knoten in der Meldung, der äußerste zuerst, verschachtelte eingeschlossen
++       Gefunden über `Named`-, `Symbolic`-, `Code`- und `Spanned`-Knoten gleichermaßen, und die
++       eigenen `Typed`-Kinder eines `Typed`-Knotens folgen ihm.
+
+@ 0 1 0 10392efc6327aea10a17ff757bb6f292
++ entry .Markup   ein Knoten einer semantischen Diagnose: Text, ein Typ, ein Symbol, ein Name, Code oder eine Spanne
+
+% 1 1 0 0bab96ea7ae1c71815e3b2acc1940bd2
+
+@ 0 3 0 16603c32f21febe9040169b5fd75091e
++       Ein Enum der Knotenarten, aus denen eine ausgezeichnete Compilermeldung besteht, mit
++       `Markup.parse`, um einen Baum aus dem Text des Compilers zu lesen, und `Markup.plain`, um
++       ihn zu entfernen. Ein Knoten ist einer von:
+
+% 2 1 0 189953c96a082d95014e8052d0abe099
+
+@ 0 8 0 036b0bf1a1d53ddc0d3731d9c93d9824
++       column  Fall
++       column  Knoten
++       row  `Textual(text)`  einfacher Text zwischen Markern
++       row  `Typed(tasty, placeholders, rendition, children)`  ein Typ: `tasty` ist seine gepickelte TASTy-Form als Base64-Text (`Unset`, wenn der Compiler keine geliefert hat), vergegenständlicht durch `Reifier#syntax`; `placeholders` stehen für die Teile, die nicht gepickelt werden konnten; `children` sind die vom Compiler ausgegebene Darstellung, der Rückfall
++       row  `Symbolic(name, full, rendition, children)`  ein Symbolverweis, über seinen `name` und seinen voll qualifizierten Namen (`full`)
++       row  `Named(isType, rendition, children)`  ein Name, mit der Angabe, ob er ein Typname ist
++       row  `Code(rendition, children)`  ein Codebeispiel, das `teletype` syntaktisch hervorhebt
++       row  `Spanned(kind, rendition, children)`  ein Marker einer `kind`, die diese Bibliothek nicht kennt, mit seinen Kindern bewahrt
+
+% 1 1 0 0fc614ff67c9f0c814daac95ad5f0506
+
+@ 0 2 0 0907561eef7316610e666c7c0d565014
++       Jeder Knoten außer `Textual` hat eine `Rendition`, die Form, in der der Compiler ihn
++       präsentiert hat, und `children`, die Knoten in ihm; `#plain` ist bei jedem Knoten sein
++       sichtbarer Text.
+
+% 2 1 0 1a6d062472b7d03705fe5602b9406e0a
+
+% 3 1 0 04dfec268351b6841812df3b0170c41f
+
+% 0 1 0 182d52ab7845d8ac0888b05262c852c7
+
+% 0 1 0 0bd4b1e20aa9d53e13fd554fe64dc938
+
+% 0 1 0 0668d36d19c770671bb0c91ab1200e53
+
+% 0 1 0 112a44bc3f93a5a905236a4f37d783e1
+
+% 0 1 0 146acacfe9c26fa400ea0a1f7cd4311c
+
+% 1 1 0 16e21531c49f39d4183881ab794162d6
+
+% 1 1 0 1020f9a6ad7df1290df3021be28024fd
+
+% 2 1 0 1061d10216ec014f0935cf14b47ceda5
+
+% 0 1 0 090271f39425e3e2178b3b4106b3f9b4
+
+@ 0 15 0 0dbcc134f3d373a1003f570cc3543d3d
++   entry .marked   ob ein Text einen der Marker enthält, die `parse` liest
++       Ein Zeichen im privaten Nutzungsbereich von `U+E000` bis `U+E003`.
++   entry .parse   parst ausgezeichneten Text in eine Liste von Knoten, wie es der eigene Parser des Compilers täte
++       Folgt genau `DiagnosticMarkup.parse` des Compilers: Ein Marker beginnt mit einem
++       Startzeichen, seiner Art, einem Attributtrenner, `key=value`-Attributen
++       (prozentkodiert, wo ein Wert ein reserviertes Zeichen enthält, und hier dekodiert) und
++       einem Texttrenner und endet mit einem Endzeichen. Alles, was keinen vollständigen Marker
++       bildet, wird verworfen und der umgebende Inhalt als Text behalten — ein verirrtes Start-
++       oder Endzeichen verschwindet, ein abgeschnittener Kopf wird als einfacher Text gelesen —,
++       und die Kinder eines nie geschlossenen Markers werden in seinen Elternknoten
++       eingespleißt, sodass sich auch eine abgeschnittene Meldung parsen lässt. Die Art bestimmt
++       den Knoten: `type`, `sym`, `name` und `code` haben eigene Fälle, und jede andere Art ist
++       `Spanned`.
++   entry .plain   der Text ohne jeden Marker, nur mit dem sichtbaren Inhalt
++       Text ohne Marker wird unverändert zurückgegeben, ohne Parsen.
++   entry #plain   der sichtbare Text dieses Knotens: sein eigener Text oder der seiner Kinder, aneinandergefügt
+
+@ 0 1 0 083d2679dab4cc4d12476d36f144cd9f
++ entry .Placeholder   was für einen Teil eines Typs stand, den der Compiler nicht pickeln konnte
+
+% 1 1 0 199c4e074f36f5241d764565078cca99
+
+@ 0 7 0 040d2bb923ab551517f3bd1ac5c6d928
++       Der Pickler, der einem `Markup.Typed`-Knoten seine TASTy-Nutzdaten gibt, kann nur pickeln,
++       was sich allein gegen den Klassenpfad auflösen lässt; ein lokaler Typ oder Term, ein
++       Skolem, eine Typvariable oder ein Fehlertyp wird als ganzer maximaler Teilbaum durch einen
++       Sentinel-String-Literal-Typ `⟨scala-diag:N⟩` ersetzt und als `Placeholder` mit der Nummer
++       `N` festgehalten, mit seiner Art (`#kind`), seinem Namen (`#name`), seiner Stelligkeit
++       (`#arity`), dem Ort seiner Definition und dem Text, den der Compiler dafür ausgegeben hat
++       (`#printed`). `Reifier.substitute` setzt den ausgegebenen Text wieder dort ein, wo jeder
++       Sentinel steht, sodass `List[Bad.Local]` mit `Bad.Local` dargestellt wird, obwohl `Local`
++       auf keinem Klassenpfad liegt.
+
+% 2 1 0 1c592e04cc0ca21911cb733e123a0117
+
+% 3 1 0 0f65b79e773d586a146c596d685e6233
+
+% 0 1 0 131d0ae923e93e9615dddbcca2d5ad74
+
+% 0 1 0 06c02171d2c33f1a1eb422e2f67b23c3
+
+% 0 1 0 1a03b0be906bf49b1c04edec021be777
+
+% 0 1 0 0ec9f9ae299e503b136e72a162582fe6
+
+% 1 1 0 0562b756f05dbd8e1e8dae86782e00c5
+
+% 0 1 0 05c392df7bfdb1300324997d7f675aa7
+
+% 1 1 0 1342f732be9187f306dd4eb5c20da7a4
+
+@ 0 19 0 04285066a53954e4015a95ce4b14e557
++   entry .Prefix   das reservierte Präfix eines Platzhalter-Sentinels, `⟨scala-diag:`
++       Ein echter String-Literal-Typ, der zufällig damit beginnt, wird vom Compiler mit der Form
++       `esc:` maskiert, die `escaped` zurückliest.
++   entry .text   der Sentinel-Text für eine Platzhalternummer: `⟨scala-diag:N⟩`
++   entry .reference   die Platzhalternummer, wenn ein Text ein Sentinel-Verweis ist
++       `Unset` für jeden anderen Text, auch für ein maskiertes Literal.
++   entry .escaped   das ursprüngliche Literal, wenn ein Text ein maskiertes echtes String-Literal ist
++       `⟨scala-diag:esc:…⟩` liefert das `…` zurück.
++   entry .decode   ein Platzhalter aus seinen sechs durch `|` getrennten Feldern, oder `Unset`
++       Die Felder sind die Nummer, die Art, der Name, die Stelligkeit, der Ort der Definition (der
++       leer sein kann) und der ausgegebene Text, jeweils prozentkodiert, wo sie sonst ein `|`
++       enthielten. Eine nicht numerische Nummer oder zu wenige oder zu viele Felder ergeben
++       `Unset`; eine unbekannte Art wird als `PlaceholderKind.Other` behalten.
++   entry #id   die Nummer des Platzhalters, wie der Sentinel auf ihn verweist
++   entry #kind   was ersetzt wurde: ein lokaler Typ oder Term, ein Fehler, eine Typvariable oder ein Skolem
++   entry #name   der Name dessen, was ersetzt wurde
++   entry #arity   die Anzahl der Typparameter dessen, was ersetzt wurde
++   entry #definedAt   wo es definiert wurde, wie der Compiler es festgehalten hat, oder `Unset`
++   entry #printed   der Text, den der Compiler dafür ausgegeben hat, bei der Darstellung an seiner Stelle verwendet
+
+@ 0 1 0 0e45e5faaf73b15b0c5f8db3a89d90a7
++ entry .PlaceholderKind   die Art dessen, was ein Platzhalter ersetzt hat
+
+% 1 1 0 0a2c9583ecf498401630efa18aae6967
+
+@ 0 1 0 0c6aec073574691a02ec37c219c0a4fc
++       `PlaceholderKind(text)` liest eine Art aus ihrem Übertragungsnamen:
+
+% 2 1 0 0b07d6136ce5552200b7146aabcfee94
+
+@ 0 9 0 1ccdf9c72b5cbc8e1aa3c226febaf73f
++       column  Fall
++       column  Übertragungsname
++       column  Ersetzt
++       row  `LocalType`  `local-type`  eine für die Kompilierung lokale Typdefinition
++       row  `LocalTerm`  `local-term`  eine für die Kompilierung lokale Termdefinition
++       row  `Error`  `error`  ein Fehlertyp
++       row  `Typevar`  `typevar`  eine nicht instanziierte Typvariable
++       row  `Skolem`  `skolem`  ein Skolem
++       row  `Other(kind)`  alles andere  eine Art, die diese Bibliothek nicht kennt, mit dem Text des Compilers bewahrt
+
+% 1 1 0 1c1697438e05b1df132dce798357ffae
+
+@ 0 1 0 156f9152bc9cc2781fae2e28d2073ed7
++   entry .apply   eine Art aus ihrem Übertragungsnamen, wobei ein unbekannter Name als `Other` behalten wird
+
+@ 0 1 0 11f9ac386941d5dd032ce2013fe107ed
++ entry .Rendition   die Form, in der ein Symbolverweis präsentiert wird: Vorgabe, Deklaration, verortet oder voll
+
+% 1 1 0 0eaeb636df82922c0f7d133f96cb75ff
+
+@ 0 2 0 17b9b776e3c1790400806d6e54675a0a
++       Getragen von jedem `Markup`-Knoten außer `Textual`. Sie wird aus dem Attribut `style` des
++       Markers geparst, ist aber keine visuelle Gestaltung; `Rendition(text)` liest sie aus ihrem
++       Übertragungsnamen:
+
+% 2 1 0 153960f7c34ab80213c4359539ae8b7c
+
+@ 0 7 0 0c4d8716df583cf506e34b5ded0edbd4
++       column  Fall
++       column  Übertragungsname
++       column  Das Symbol wird gezeigt
++       row  `Declaration`  `dcl`  als seine Deklaration: `def act: Int`
++       row  `Located`  `located`  als sein verorteter Name
++       row  `Full`  `full`  als sein voller Name
++       row  `Default`  alles andere oder `Unset`  so, wie es normalerweise ausgegeben wird
+
+% 1 1 0 1b787c8d9a237ba513edc990cc2421d9
+
+@ 0 1 0 086366e63624d78702a7dbb6059a8de5
++   entry .apply   eine Rendition aus einem optionalen Übertragungsnamen, `Default`, wenn er fehlt oder unbekannt ist
+
+@ 0 1 0 07e98667f8ac752d14ce28189d8f014f
++ entry .Reifier   entpickelt die TASTy-Typen in semantischen Diagnosen zurück in stenography-`Syntax`
+
+% 1 1 0 0362fbbfe0344a3d16cc57c93ecd808f
+
+@ 0 6 0 1eb90a6f0cb5949c042cb3b79b539a63
++       Ein `Reifier(classpath)` hält einen Compilerkontext über einem `LocalClasspath` von
++       hellenism, lazy bei der ersten Verwendung erzeugt, gegen den die TASTy-Nutzdaten jedes
++       `Markup.Typed`-Knotens in einen Typ entpickelt und als stenography-`Syntax` dargestellt
++       werden. Der Klassenpfad sollte derjenige sein, gegen den der diagnostizierte Code
++       kompiliert wurde — der Pickler garantiert, dass sich Nutzdaten allein gegen den
++       Klassenpfad auflösen lassen, da alles andere durch einen `Placeholder` ersetzt wurde, den
++       `Reifier.substitute` über seinen ausgegebenen Text wieder einsetzt.
+
+% 2 1 0 12d1904dca711d4700390a2a1f0d79b2
+
+% 3 1 0 13dda6292de5c3de1263ee0c7ed948f9
+
+% 1 1 0 137597125b21f63c186261e669985a5b
+
+% 2 1 0 1e96b9abc0fcba340070a39287452576
+
+% 0 1 0 195cd0173d523ce2111e41aa1fca939b
+
+% 0 1 0 1e2355df2af30ca113f56b995457e3a0
+
+% 0 1 0 0f1c50ba9254b1911afb162fdf1ac8f7
+
+% 0 1 0 1545b2f815f548860975fa87e9745a61
+
+% 0 1 0 0ff9de39011e863f1462a00e5bf36349
+
+% 1 1 0 16ecbd5479ba18e50a10ba6b2ee829d0
+
+@ 0 3 0 05a4b6115b48251214f7a529a32c1cf1
++       Ein Reifier ist ein Wert, den man behält, nicht einer, den man pro Meldung erzeugt: Sein
++       Kontext lädt die Symboltabelle des Klassenpfads einmal. `render` und `teletype` nehmen
++       einen, und `#imports` baut die `Imports`, gegen die eine Darstellung abkürzt. In
++       `delicious.scala`.
+
+% 1 1 0 1c0735ad49f621ae0dde793edb408b41
+
+% 1 1 0 0f60779434b6b2910b50bb3b29932007
+
+% 2 1 0 08a9d4330436429c0f109c550354d8ab
+
+@ 0 6 0 0eb55383ef37e104176c8dd71aeae3c0
++   entry .substitute   schreibt die Platzhalter-Sentinels in einer `Syntax` in ihren ausgegebenen Text um
++       Durchläuft eine `Syntax` und ersetzt jedes Primitiv, dessen Text ein quotierter
++       `⟨scala-diag:N⟩`-Sentinel ist, durch `Syntax.Symbolic` des ausgegebenen Texts von
++       Platzhalter `N` und jedes maskierte echte Literal `⟨scala-diag:esc:…⟩` durch das Literal,
++       für das es stand. Das ist korrekt, weil der Pickler ganze maximale Teilbäume ersetzt,
++       sodass ein Sentinel immer nur ein vollständiger Typ ist, nie ein Konstruktor oder ein
++       Präfix. Jedes andere Primitiv bleibt unberührt.
+
+% 2 1 0 0ed588a31e11140b06fcfb7f522b7f3d
+
+% 3 1 0 0a9105b2f3e04f3b00e26e657b2701ad
+
+% 0 1 0 10481c013d965c211e512b4f0987d478
+
+% 0 1 0 12b3513a81ea8f6d1f36f999290ec088
+
+% 0 1 0 19c6a115b3c0368009f7313a8bea8395
+
+% 0 1 0 0989867aa0f4996610d3998ab37a7d66
+
+% 0 1 0 0c569ad83d9a41ea14aa8667a33d4405
+
+% 1 1 0 0800bb2e9b9f94ec1dd3e8b9cae448d9
+
+@ 0 10 0 112ae7e59446139a1f5518baac639ab3
++   entry #imports   ein `Imports` zur Darstellung gegen diesen Klassenpfad, mit aufgelösten `export`s
++       `reifier.imports(designators, direct)` ist `Imports.resolve` unter dem Kontext des
++       Reifiers: ein `Imports`, dessen Wildcard-Geltungsbereiche `designators` sind und dessen
++       direkt importierte Namen `direct` sind, erweitert um die Ziele (Typ und Begleitobjekt)
++       jedes `export`-Alias, der in einem der `designators` deklariert ist. Dadurch wird ein Typ,
++       der über einen per Wildcard importierten Vorspann erreicht wird — `jacinta.Json` unter
++       `import soundness.*` —, mit seinem Blattnamen `Json` dargestellt, so wie der Benutzer ihn
++       schreiben würde, während ein von Hand gebautes `Imports` ihn qualifiziert darstellt. Ein
++       Geltungsbereich, der keine Exporte deklariert oder sich nicht auflösen lässt, fügt nichts
++       hinzu und wirft nicht. Beide Mengen sind `scala.collection.immutable.Set[Designator]`s der
++       Stdlib, so wie `Imports` selbst sie hält.
+
+% 2 1 0 108105e6ffc401a71c4add3135b9ea37
+
+% 3 1 0 19ae83a5658d68b6155d15d7c99551f3
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 0 1 0 10b704fe52bb6dee1f18ea5b12009793
+
+% 0 1 0 0f868c383c2afcbe1d0b597309c15d47
+
+% 0 1 0 1df60d62fdbecea91a7a49c2dcd8a040
+
+% 0 1 0 1fa71ac0b0bb1d170dd8174b1e5a2017
+
+% 1 1 0 13077f144c7aad810cae270f077295d2
+
+@ 0 7 0 08cea3b13a3fca9318808eed926b0ad9
++   entry #syntax   die `Syntax` der Nutzdaten eines `Markup.Typed`-Knotens, oder `Unset`, wenn sie sich nicht entpickeln lassen
++       Dekodiert das Base64-TASTy des Knotens, entpickelt es als Typbaum unter dem Kontext des
++       Reifiers, wandelt den Typ in eine stenography-`Syntax` um und wendet `Reifier.substitute`
++       mit den Platzhaltern des Knotens an. Ein Knoten ohne Nutzdaten oder einer, dessen
++       Nutzdaten sich nicht entpickeln lassen (von einer anderen Compilerversion oder gegen einen
++       anderen Klassenpfad gepickelt), ergibt `Unset` statt eines Fehlers, sodass ein Aufrufer
++       auf die ausgegebenen Kinder des Knotens zurückfällt.
+
+@ 0 8 0 104d454ca16141bd1a54695b5aba3c1a
++ entry .render   eine semantische Meldung als Text, mit jedem Typ über stenography neu dargestellt
++     Eine Erweiterung auf `SemanticMessage`, in `delicious.scala`:
++     `message.render(reifier)(using Imports)` fügt die Knoten der Meldung zusammen und stellt
++     jeden `Markup.Typed`-Knoten als `Syntax#text` von `reifier.syntax(node)` dar — abgekürzt
++     gemäß den `Imports` im Geltungsbereich, sodass `List[Int]` unter einem Import von `scala.*`
++     als `List[Int]` erscheint und unter `Imports.empty` als
++     `scala.collection.immutable.List[scala.Int]` — und jeden anderen Knoten als seinen
++     sichtbaren Text. Ein Typ, der sich nicht vergegenständlichen lässt, fällt auf den vom
++     Compiler ausgegebenen Text zurück, sodass das Ergebnis nie schlechter ist als
++     `SemanticMessage#plain`.
+
+% 2 1 0 1b7485af4daa45d5134d2a485752597b
+
+% 0 1 0 08f225166e68361705acb5dcc1e7e2be
+
+% 1 1 0 0a0ea2de9a05df011d64223ddb917928
+
+% 2 1 0 1754ae32105eed9a12f190ac4cd0232e
+
+% 0 1 0 0f4d5c6b3daf24ef0a83e2fd2e1eda07
+
+% 0 1 0 07af79ab4f9a50800e235710fa93f5f0
+
+% 0 1 0 18f167d6b882391f0514f14b61cf37e6
+
+% 1 1 0 0bf289308be305f003e966b06a846e7a
+
+% 2 1 0 06be9f9b3ae47e9a01deb44e0f56c2cf
+
+% 3 1 0 136879d3ebd4bc2505af849ddcfda1eb
+
+% 4 1 0 0a4bc5437cc8088405cb1f154094c80b
+
+% 0 1 0 0292c53d6b9facfb083437abf8e55e4d
+
+% 1 1 0 08b9d33086c6b7a51fdebb42dda4a2bc
+
+% 0 1 0 1327d12ef7f16c220d8e1add77a2793f
+
+% 0 1 0 009f567177c2f1451c570616f775c979
+
+% 1 1 0 0bd3ad58a779fb3906763955d706bf7a
+
+% 2 1 0 1a2da4d7a0e4dbbc15a9760d4f966e4c
+
+% 3 1 0 1b87fc0d3634d4c80f39cbac8961b2d4
+
+% 4 1 0 0b3955b7512895240c6644555eda4ac4
+
+% 0 1 0 01bfbc019f831d16179a311ca587130a
+
+% 1 1 0 0a3cb561e8020c2212906907c5fb95d1
+
+% 0 1 0 1422cdf8f4c1c07209d70bd006942562
+
+% 1 1 0 0959e5a974f123191283828c2f663165
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 10 0 1bd89306f11969c6124d04ec4aa038df
++ entry .teletype   eine semantische Meldung als gestalteter Terminaltext, mit syntaktisch hervorgehobenem Code und Typen
++     Eine Erweiterung auf `SemanticMessage`, in `delicious.ansi`, aufgerufen als
++     `delicious.teletype(message)(reifier)` — sie wird nicht in das Umbrella exportiert, wo
++     `teletype` die `Teletypeable`-Darstellung von escapade ist. Sie benötigt ein `Imports`, eine
++     `ScalaSyntaxPalette` und ein `Highlight` im Geltungsbereich (`Highlight.default`,
++     tokenisiert, wird ohne Import gefunden). Jeder `Markup.Code`-Knoten wird von harlequin als
++     Scala-Term hervorgehoben, und jeder `Markup.Typed`-Knoten wird über den `Reifier`
++     vergegenständlicht, gegen die `Imports` dargestellt und in Typposition hervorgehoben; ein
++     Typ, der sich nicht vergegenständlichen lässt, wird stattdessen aus dem vom Compiler
++     ausgegebenen Text hervorgehoben. Jede ANSI-Gestaltung, die der Compiler selbst in den Text
++     gesetzt hat, wird zuerst entfernt, sodass die Hervorhebung von Grund auf erfolgt.
+
+% 2 1 0 02a363100a696c5100a56ada7739d6e7
+
+% 3 1 0 02c6f418f1aa06240a45a058ab83c53e
+
+% 1 1 0 0ea062f168fab3031f31d3875dd50b06
+
+% 2 1 0 18dad787821159e5025eb2fa9c86c403
+
+% 0 1 0 077749de4e6b83e1063dc8ed9e357a72
+
+% 0 1 0 045552636ab390d117494ddfc8a2cba6
+
+% 0 1 0 0d545189ad4bcdc80b75e86e9b2c7856
+
+% 0 1 0 16ed73310fd01ea417e78b58a524b3cb
+
+% 0 1 0 14c0ffec95a94f360596baac5450968a
+
+% 0 1 0 14e6d1d56a0552390c9137daf72bee47
+
+% 0 1 0 0c9a0d1bde7ffcc915b9a6695ce25e96
+
+% 0 1 0 00c4e3ca5bc9383204aac10905120d1f
+
+% 0 1 0 118fb17f1caf098918184c1d6c93ae00
+
+% 0 1 0 15dd2babbd84a4c90944ab37c1a8abef
+
+% 0 1 0 05278e039bf9d64f00722c5f62fd5de3
+
+% 0 1 0 0d90b6038e246a4b1921011701c01ff1
+
+% 0 1 0 1042c10eb6cdab760947b72144b2dac4
+
+% 0 1 0 0413921d2621b6490e9735fb408ab1d7
+
+% 0 1 0 162e7b79aecaa52800616c39be3cf672
+
+% 0 1 0 1753044b6845d15418eede5a99d422ca
+
+% 0 1 0 062c59b8d875ec261ce4b99c9cfe00dd
+
+% 0 1 0 1cdd72dd4df554520b96e8d4e6782f5e
+
+% 1 1 0 0da0658abe450d250c0bd0f46a90d6bf
+
+% 0 1 0 09eae7e79421fb3c052f2f5b5e3d6378
+
+% 0 1 0 1ea2a0c5d02d95de122077dbea9f8dd8
+
+% 0 1 0 0ce90d10d03eeb7916a3b4500345d00d
+
+% 1 1 0 1a99c6a08f9cc5b1107d21462d2e25e8
+
+@ 0 2 0 111699e3c2a541580a1c44d66bcfc99d
++     Keine Bibliothek liefert eine `ScalaSyntaxPalette` aus, da eine Palette eine Wahl von
++     Farben ist: Ein Programm definiert eine als Given, wie das Beispiel es tut, mit einer Farbe
++     für jeden Akzent.
+
+@ 0 1 0 009b7ab22dca918404eb284fcbf03aba
++ entry .Shim   die Schreibweise der compilerinternen API, die delicious umschließt, pro Compiler-Stream
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 0c614c333d6a3455102d04de83a2a369
++       Nicht zur direkten Verwendung. `delicious.compiler` enthält einen `Shim` für den Stream
++       Scala 3.9 und einen für 3.10, die denselben Namen gegen die Gestalten des jeweiligen
++       Streams definieren, sodass nichts sonst in delicious weiß, welcher im Spiel ist.
++   entry .compilationUnitInfo   eine `CompilationUnitInfo` über einer virtuellen Datei und ihrer `TastyInfo`
++       3.9 nimmt die `TastyInfo` als Wert und 3.10 als lazy Lader; der Shim liefert sie so, wie
++       jeder Stream es erwartet, und stets vorhanden, da der Tree-Unpickler sie bedingungslos
++       liest.

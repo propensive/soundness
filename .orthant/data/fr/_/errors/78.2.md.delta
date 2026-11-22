@@ -1,0 +1,47 @@
+orthant 2 language
+
+% 0 1 0 1317cc25781f665903300f1b355c6c8d
+
+@ 0 1 0 0ff5a042f01bd6361201158f89b442ac
++ Levée lorsqu'une réécriture ne peut pas être appliquée à une source.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 3 0 04ba3af8da03779512b816339586d0af
++ Une réécriture n'indique que les lignes à supprimer et à ajouter, et trouve où elles se placent.
++ Cette erreur couvre une réécriture dont les suppressions n'apparaissent pas dans la source, et
++ une réécriture dont le placement est ambigu parce qu'elles y apparaissent plus d'une fois.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+% 0 1 0 133607202c453f4d07e389cb8783100f
+
+@ 0 1 0 067cb1f1318b02481e3bbc36bb1f7f3d
++ column  Raison
+
+% 0 1 0 0249aa51fd8056d51a0c1dba7eb0290e
+
+% 0 1 0 199ea8e4663350b61190a560392e7593
+
+% 0 1 0 020067c2ba92a48c16878c36a13adb7b
+
+% 0 1 0 057b27c55790638e02ea49fc96197e38
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 2 0 14a58e79bca916320c66bb2d885d2a3c
++ Une ambiguïté est signalée plutôt que résolue au hasard, si bien qu'une modification n'est
++ jamais appliquée au mauvais endroit. Ajoutez des lignes de contexte environnantes pour rendre le
++ placement unique.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 1 0 1c66aed5755f3cd207cd2c020bdda8c4
++ - Source : `lib/dissonance/src/core/dissonance.Redraft.scala`

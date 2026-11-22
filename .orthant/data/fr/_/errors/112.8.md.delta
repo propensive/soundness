@@ -1,0 +1,37 @@
+orthant 2 language
+
+% 0 1 0 0942075fc1bf46591e1dfb62e67d7605
+
+@ 0 2 0 1afcb839f03442ff03e37412aea25d73
++ Levée lorsqu'un appel RPC échoue pour une raison que le type d'erreur
++ JSON-RPC ne peut pas exprimer.
+
+% 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
+
+@ 0 4 0 1c7cdeddfb635e880e72815f4e359389
++ Les échecs d'Obligatory au niveau du transport (une connexion qui n'a pas pu être établie,
++ une réponse qui n'est jamais arrivée, un message qui n'a pas pu être tramé) n'ont aucun code
++ d'erreur JSON-RPC pour les porter, car l'objet d'erreur JSON-RPC décrit les défauts d'un appel
++ qui s'est bien terminé. Cette erreur couvre le reste.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Exemple de message
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0bfa767c0dad9d901fed392a3c098f58
+
+% 1 1 0 0f3a70848a4ab4760d5f72936e4996a7
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Résolution
+
+@ 0 1 0 14c9c86596f7732f1b08faf65861b08d
++ Examinez la chaîne des causes pour obtenir les détails au niveau du transport ou du protocole.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Voir aussi
+
+@ 0 2 0 158eb4cc4bdc4670121a36b2972970eb
++ - Source : `lib/obligatory/src/core/obligatory.Rpc.scala`
++ - `↯/s.112.7` — échec propre à JSON-RPC

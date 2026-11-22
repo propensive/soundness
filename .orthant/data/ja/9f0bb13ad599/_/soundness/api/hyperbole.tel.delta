@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 7 0 17ba98e4f07396441288739143c29fab
++ entry .tastySymbolTeletypeable   `Tasty.Symbol` を、そのプロパティの二列の表として描画する
++     `TastyPalette` を必要とする、`Tasty.Symbol` のための `Teletypeable` の given である。
++     表には、名前の行（接頭辞は薄く、名前は太字）、設定されたものをパレットの `flagOn` の色の上で強調したフラグの行、設定されたものを `propertyOn` にしたプロパティの行、そして詳細ごとに一行がある。
++     トップレベルの given なので、`hyperbole` の中ではインポートなしで解決され、それ以外では名前で解決される：`import soundness.tastySymbolTeletypeable`。

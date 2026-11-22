@@ -1,0 +1,215 @@
+orthant 2 language
+
+@ 0 1 0 0ff0ceffec2f26ef09470fb57b12e512
++ ## Mise en cache
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Présentation
+
+@ 0 2 0 1e2beedd03a3a9511b452ddfe72d23f3
++ Un [cache](https://en.wikipedia.org/wiki/Cache_(computing)) échange de la mémoire contre du
++ temps, et les deux formes que prend d'ordinaire cet échange sont fournies.
+
+@ 0 4 0 0985b5381b5e93b10dc31778ae9e3ded
++ Un `LruCache` conserve les entrées les plus récemment utilisées d'une recherche par clé, et
++ évince la moins récente lorsqu'il dépasse sa capacité. Un `Cache` mémorise une seule valeur,
++ avec une durée de vie optionnelle, et la recalcule lorsqu'elle expire. C'est la forme d'une
++ configuration rechargée chaque minute, ou d'un jeton rafraîchi selon un calendrier.
+
+@ 0 1 0 1b29fba47c6166840f25fc820e494e36
++ ### La mise en cache
+
+@ 0 4 0 1ed58db568f1cbc00697d907efccf659
++ Tout cache écrit à la main est une map mutable, accompagnée de trois décisions prises
++ implicitement : quand évincer, que faire quand deux threads veulent la même valeur absente, et
++ quand une valeur en cache est trop ancienne pour qu'on s'y fie. La map est facile. Les décisions
++ sont là où se trouvent les bogues :
+
+@ 0 3 0 12362288d8b0c439179e1c29acc38ffc
++ - Sans éviction, le cache grandit sans limite.
++ - Sans coordination, une valeur absente est calculée de nombreuses fois à la fois.
++ - Sans expiration, des données périmées sont servies.
+
+@ 0 4 0 11b69799f00f5b1a02782aaecb9dfe3e
++ Ici, les décisions sont le type. Un `LruCache` est la sorte bornée, qui évince. Un `Cache` est la
++ sorte qui expire et se coordonne, dont le calcul est protégé de sorte que des appelants
++ concurrents partagent un même résultat. La politique est énoncée là où se trouve le cache, et
++ non à chaque lecture : c'est le [contexte déclaratif](../../philosophy/declarative-context.md).
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 8 0 1533aa3378f7e37f101cd5f3f688eb57
++ column  Aspect
++ column  `LruCache`
++ column  `Cache`
++ row  Contient  des entrées indexées par clé, jusqu'à une capacité  une valeur
++ row  Créé avec  `LruCache[Key, Value](capacity)`  `Cache(lifetime)`, ou `Cache[Value]()`
++ row  Lu avec  `cache(key)(computation)`  `cache.establish(computation)`
++ row  Écarte  l'entrée la moins récemment utilisée  la valeur, une fois sa durée de vie écoulée
++ row  Absences concurrentes  chaque appelant calcule  un appelant calcule, les autres partagent son résultat
+
+% 1 1 0 0413a50b352840fc1b9d711fd6bc3158
+
+@ 0 2 0 0912bef352deaa6311e67b789081c2f6
++ Tout provient du package `soundness`. Le deuxième import permet aux exemples d'afficher leurs
++ résultats :
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 1cefe767a73cb12013f08b8715bedb21
++ ### Un cache LRU
+
+@ 0 4 0 006feb1499bc22c61ae4cdae5a565232
++ Un `LruCache` contient des entrées indexées par clé, jusqu'à sa capacité. L'appliquer à une clé
++ et à un calcul donne la valeur en cache, lorsque la clé est présente. Sinon, il exécute le
++ calcul, stocke le résultat, et évince l'entrée la moins récemment utilisée si le cache est
++ désormais trop grand.
+
+@ 0 1 0 0befb68f58bcc42b1bdbbe8941ba0cc7
++ Ici, le calcul est une recherche qui compte combien de fois elle s'exécute :
+
+% 2 1 0 16ae694c033c94d01ca2d1702b6c0e48
+
+% 0 1 0 14b819298a4f1bf901849581869f224c
+
+% 0 1 0 13a8d906435dbb780a5ac292e6c93292
+
+% 0 1 0 06fb5a3bc7335fa0060db1702b207471
+
+% 0 1 0 1da3fdafc64ed1c60efec409a136f104
+
+% 0 1 0 0df562b11bf62caa0282348465248f03
+
+% 1 1 0 1ba8a25e5f0933be036a433d8db15661
+
+@ 0 2 0 1ce43a935078f4d00116a96dc5663dd5
++ La première utilisation d'une clé calcule et stocke sa valeur. La seconde donne la valeur
++ stockée, sans calcul :
+
+% 2 1 0 1225b8b9d7c3b8bb139fa50fe1585647
+
+% 3 1 0 03e9d38dd070ef7c010ef6808e7387eb
+
+% 4 1 0 0318d95bf83b4eb41ae8fad1f3aeec2a
+
+% 1 1 0 0b103d602291c10d1ed05fd0ffe71af5
+
+% 1 1 0 090dee53aa1214a00a07c1f87aa3c121
+
+% 0 1 0 138206ffa4fa4aae15948c72e64c8ea0
+
+% 1 1 0 020df720d80339191985d71ea3d80a9f
+
+@ 0 3 0 0734b4efcbf5b2a311139a1f03521204
++ Le calcul est passé par nom : rien n'est donc évalué lorsque la clé est présente. C'est tout
++ l'intérêt de cette forme : un cache dont la valeur doit être calculée avant de pouvoir être
++ offerte n'économise rien.
+
+@ 0 3 0 10a5c204e485833707c060c2147df382
++ Utiliser une entrée, que ce soit en lecture ou en écriture, la marque comme récente : les
++ entrées qui survivent sont donc celles auxquelles le programme ne cesse de revenir. Après quatre
++ autres clés, la clé `1` a été évincée, et la demander la recalcule :
+
+% 2 1 0 1dd6dd9f347a3c8a1cbe1f0ca3693d7e
+
+% 3 1 0 0f08d18fa09e42150dcb9750eac8e411
+
+% 4 1 0 053ba65a5e550213050f71e644d15e4c
+
+% 0 1 0 0ff796dfe009da691c2fd3e988b23a3e
+
+% 0 1 0 1b2d8ea532e5190706d3f0f113f0feee
+
+% 1 1 0 01dfd842538cbe9c1284faff589c555f
+
+% 2 1 0 0ba9bd78618ae35301fec4b9e028465a
+
+@ 0 3 0 1f16f63cacd50d4c097dc1ead80bc6e3
++ `contains` demande si une clé est présente, sans rien calculer, et sans marquer l'entrée comme
++ récente. `remove` retire une entrée. C'est ce dont a besoin l'invalidation, lorsque les données
++ sous-jacentes ont changé, et que la valeur en cache est connue comme périmée :
+
+% 2 1 0 128a6d97f2b0d19d079812b76fe9232c
+
+% 3 1 0 1d8b6f0d031376be03e2fe9d5a8980fa
+
+% 4 1 0 0c01009f9b6fc6d21267988106ea9480
+
+% 0 1 0 0128f765de8f195707924e07773f4eb6
+
+% 1 1 0 0488271615aaff7d0e920ec664168f25
+
+% 2 1 0 1d915e983d573dde0c1fa1f833bb86ed
+
+@ 0 1 0 1fe11ed25724c04903cf9feacfefcc0d
++ ### Une valeur qui expire
+
+@ 0 4 0 10b2f5afad4ca3531d4a16b8e0b3a2e5
++ Un `Cache` mémorise une valeur, avec une durée de vie après laquelle elle est recalculée. La
++ durée de vie est une [durée](time.md#durations-and-timespans) quelconque, ici une
++ [grandeur](quantities.md) en secondes, avec l'import qui permet à un `Cache` de la lire. Le type
++ de la valeur en cache est indiqué dans le type attendu :
+
+% 2 1 0 15e6ba5677de14881f166c67d238f447
+
+% 0 1 0 02cc50caac06e1f715bf762bfb41f1a9
+
+% 0 1 0 0b916bb6f6e0b8ba09a85ac4f01d9caf
+
+% 0 1 0 0f06081825ca25790571076f925446e6
+
+% 0 1 0 18011f584d0ba6ff0b5d92588f0a0d85
+
+% 0 1 0 055cc23e6b8fd67609b98883ba3bd6f5
+
+% 0 1 0 1689baa9c7f4b5ae04c8a3eac45116ab
+
+% 0 1 0 1cfed517056615321e404fa05f13b943
+
+% 1 1 0 0c5224ff29929c8010610bc8d25e5fe6
+
+@ 0 3 0 04a7b996fb56cd7117c73a86ac08bff0
++ `establish` donne la valeur courante. Il ne calcule la valeur que lorsqu'aucune n'est conservée,
++ ou lorsque celle qui l'est a expiré. Ici, le second appel donne la même valeur, et le fera
++ jusqu'à ce que cinq minutes se soient écoulées :
+
+% 2 1 0 00ded6ce31c3b5dc07a2f35b10f0a194
+
+% 3 1 0 157c0ebff43509810f5f9ccf170317a8
+
+% 4 1 0 193d0dec1b0a63d10348288acfd6262e
+
+% 1 1 0 13d362441aeca65c04ce6410d5f21e4a
+
+% 1 1 0 01ea25849fb162b805f0a81e2ae06356
+
+% 0 1 0 0e290a591189acdd0da9668db0b93be2
+
+% 1 1 0 1fd1d998af92e1b01106a35dbcd66fab
+
+@ 0 4 0 03dd85ec293abfe9166be8f4ea92f7c6
++ Le calcul s'exécute sous un verrou. Lorsque la valeur est absente ou expirée, et que plusieurs
++ threads la demandent à la fois, un seul la calcule, et les autres reçoivent son résultat. Cela
++ évite la [ruée](https://en.wikipedia.org/wiki/Cache_stampede) qu'une simple valeur paresseuse ne
++ peut pas éviter. [Concurrence](concurrency.md) décrit les tâches susceptibles de la demander.
+
+@ 0 2 0 0e003940c9057d051bfd5a7cbeba5b5a
++ Un `Cache` créé sans durée de vie, comme `Cache[Configuration]()`, calcule sa valeur une fois,
++ et la conserve.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Voir aussi
+
+@ 0 5 0 19866789ab7e9be80fe4a5ba96e1a746
++ - Les [filtres de Bloom](bloom-filters.md) ne mémorisent que le fait d'avoir vu quelque chose.
++ - [Système de fichiers](filesystem.md#content-addressed-storage) décrit un cache sur disque,
++   indexé par le condensé de son contenu.
++ - [Temps](time.md) décrit les durées dans lesquelles s'exprime une durée de vie.
++ - [Traces de pile](stack-traces.md) décrit le point de code qui associe une valeur en cache à
++   son site d'appel.

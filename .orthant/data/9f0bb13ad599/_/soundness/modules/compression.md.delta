@@ -1,0 +1,8 @@
+orthant 2 release
+
+@ 0 1 0 192f76a6c5156586131e417dd782493b
++ import pathInterfaces.pathOnLocal
++ import systems.javaBaseSystem
+
+@ 0 1 0 145ca9036ac1a43609990c2bf5c3072f
++ val archive = temporaryDirectory[Path on Local] / "compression" / Uuid().show / "fox.txt.gz"

@@ -1,0 +1,302 @@
+orthant 2 language
+
+@ 0 1 0 14edb6fa5c158d0e1269b6f64a8afe10
++ ## Metaprogramación
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Descripción
+
+@ 0 2 0 0d20a238e38a9a341eb56ff8487dcbee
++ Buena parte de la maquinaria que aquí se ejecuta en [tiempo de compilación] se apoya en un
++ pequeño conjunto de herramientas para escribir y depurar macros. Están disponibles para
++ cualquier proyecto que haga lo mismo:
+
+% 2 1 0 02e952449c2e31201816cc246dffc239
+
+@ 0 7 0 03863bfaa53ef3e51cf09de621708789
++ column  Herramienta
++ column  Hace
++ row  `every`  reúne *todas* las instancias given de un tipo visibles en un punto de llamada
++ row  `reify`  convierte una colección del nivel de tipos en un valor en tiempo de ejecución
++ row  `Syntax.name`  representa un tipo tal como se escribiría con las importaciones de quien llama
++ row  `Introspect`  muestra la expansión de una macro como un árbol inspeccionable
++ row  `Classfile`  vuelve a leer el bytecode compilado, para el raro trabajo que debe ver lo que produjo el compilador
+
+% 1 1 0 1ebec83733b5aaf509b56d06ac169252
+
+@ 0 2 0 024bf518c2e6740b17c33a220877e01e
++ Reunir todos los givens es el mecanismo que hay detrás de la configuración enchufable en todas
++ estas bibliotecas.
+
+@ 0 1 0 0e0d92548ed9e4801307df6243ebf8c5
++ ### Sobre la metaprogramación
+
+@ 0 5 0 168e1760119565be0faad09caa1c6d22
++ Las macros de Scala 3 tienen principios, y andan escasas de herramientas. Quien escribe macros
++ escudriña las expansiones con `println`, representa los tipos con un `show` que ignora las
++ importaciones de quien llama, y no puede hacer una pregunta inocente, «¿qué givens de este tipo
++ hay en el ámbito?», porque la búsqueda implícita responde con un solo given, o con una
++ ambigüedad. Estas carencias son genéricas, y cada proyecto de macros las vuelve a cubrir.
+
+@ 0 2 0 0bde9eedaeee561b16c4bd07a9785620
++ Aquí se cubren una sola vez. Las macros que comprueban el código mientras se compila son el
++ medio con el que se consigue en otras partes buena parte de la
++ [seguridad por construcción](../../philosophy/safety-by-construction.md).
+
+@ 0 2 0 0d4a86d72c7bf8530bee6e539f01ffee
++ Todo viene del paquete `soundness`, y la segunda importación permite a los ejemplos imprimir sus
++ resultados:
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0b3a228170132cb40fd843bcc8eb05a2
++ ### Todos los givens del ámbito
+
+@ 0 3 0 095323ebc31cf17604b80d7b1b89f14a
++ La búsqueda implícita encuentra *el* [given]. `every` los encuentra *todos*. Es una búsqueda en
++ tiempo de compilación que devuelve su lista, e incluye instancias que serían ambiguas entre sí:
+
+% 2 1 0 1ffc41b879b0735911ccbd45cf54b4e4
+
+% 0 1 0 022823c9cdbf251e0950c4acac12f204
+
+% 0 1 0 10911dcabe96953002aa5ec6afcfa058
+
+% 0 1 0 190d7e1d69d8930505afbe082ab0b99b
+
+% 1 1 0 024afd096a53bcb60201a10c12e58f10
+
+% 3 1 0 1b9c1a56853c48741e471e564712e8f0
+
+% 4 1 0 1106419f0977a0b7142b2efb6ced751f
+
+% 5 1 0 0c7ad765f816367705a3f5785d823f6f
+
+% 0 1 0 1a5f61729f2065840045ba3b936e1e1d
+
+% 1 1 0 0502f46ad5082d640177f88cc51d8fb1
+
+@ 0 4 0 142904429dffb5ea06c59cff6bbdabd3
++ Esto invierte el flujo habitual de la configuración. En lugar de un solo valor que nombra todas
++ las opciones, cada opción se declara como given donde se aplica, y el consumidor reúne lo que
++ haya en el ámbito. Así se acumulan las [opciones de socket](sockets.md), así recibe los eventos
++ cada [sumidero de registro](logging.md), y así se activan las
++ [características del terminal](terminal.md).
+
+@ 0 1 0 1443d222710924b405413a576da5fa87
++ ### Valores del nivel de tipos
+
+@ 0 6 0 00211dc3fb0fe7f8194c8cd3e098e104
++ Un parámetro de tipo es a la comprobación de tipos lo que un parámetro corriente es a la
++ ejecución: una forma de pasar información al lugar que la usará. Los tipos son el medio más
++ pobre. Las operaciones del nivel de tipos son mucho menos expresivas que las de los valores, y
++ el código escrito con ellas es más difícil de escribir y de leer. Las macros cierran la brecha.
++ La lógica se escribe como código corriente sobre valores, que resulta que se *ejecuta* en tiempo
++ de compilación. Entonces falta una cosa: una forma de llevar una colección entre los dos mundos.
+
+@ 0 2 0 0d5e6212b60a18ea072ccc958db07150
++ Las colecciones del nivel de tipos hacen eso. Una macro parametrizada por datos estáticos, como
++ una lista de nombres o una correspondencia, lleva los datos en un tipo, y los *reifica* en un
++ valor en tiempo de ejecución:
+
+% 2 1 0 09c039062a241a730d8ade655cbff3a9
+
+% 3 1 0 012f660b6441d48c0d34db0005376f5d
+
+% 4 1 0 166701549f44245215d6e09b30a7fbb1
+
+% 0 1 0 17f78e30a12608461278694a38f95ade
+
+% 0 1 0 10a495a603fc8e7406e67196166db7f8
+
+% 1 1 0 00b5e4929c18ee220c3af3c4f1311398
+
+@ 0 1 0 1e0f031a8cad40481ee288a4069fd5ef
++ Cada valor en tiempo de ejecución tiene una forma en el nivel de tipos:
+
+% 2 1 0 02223ded8a663cac0185038d2a94aed9
+
+@ 0 6 0 0ef8ec8af91db60611b83a09beaf0a3c
++ column  Valor
++ column  Forma en el nivel de tipos
++ row  un `Int`, `String`, `Double` o `Boolean`  su tipo singleton
++ row  un `List`  una `Tuple`, bajo `TypeList`
++ row  un `Set`  una unión, bajo `TypeSet`
++ row  un `Map`  una tupla de pares, bajo `TypeMap`
+
+% 1 1 0 184ea2afc3994ce71c8efbe76dafcbf5
+
+@ 0 3 0 10dd74d460dfc56402742c04a22c12c5
++ `reify` tiene una segunda forma, que recibe un `Type` en lugar de un parámetro de tipo estático,
++ para usarla dentro de la implementación de una macro donde el tipo solo se conoce de forma
++ abstracta. `reifyAs` fija el tipo del resultado donde la inferencia necesita ayuda.
+
+@ 0 2 0 088819382a19e6c61782fc1211d34dfd
++ Los datos permanecen en el sistema de tipos, donde las macros pueden inspeccionarlos, hasta el
++ momento en que se necesita un valor.
+
+@ 0 1 0 02e67584481a47db061530f2d93f4ecf
++ ### Abstraer sobre contenedores
+
+@ 0 4 0 0f08ebc164b5e0e71e9e2e82f707d204
++ Muchos tipos son *contenedores* en el mismo sentido. Un [`Optional`](optional-values.md), un
++ `Attempt`, una [`Task`](concurrency.md) y una [colección](collections.md) permiten todos meter un
++ valor, transformarlo y encadenarlo con flatMap. Escribir una operación una sola vez para todos
++ ellos requiere esas facultades como valores, y no como métodos que resulta que comparten
++ nombre.
+
+@ 0 4 0 03e8e24fb6b05f0918f121454c6a1cee
++ `Functor` proporciona `point`, que eleva un valor al contenedor, y la transformación. `Monad`
++ añade `bind`, que es `flatMap` con un nombre que no choca con el método que ya tiene el
++ contenedor. Se construyen instancias para cualquier tipo que proporcione los métodos necesarios,
++ así que un contenedor escrito sin tener nada de esto en cuenta participa igualmente.
+
+@ 0 2 0 1733d5748fbdf5c20fa38b8fb260686d
++ De ahí se siguen enseguida dos operaciones, que son la razón por la que esto merece la pena.
++ `sequence` vuelve del revés una colección de contenedores:
+
+% 2 1 0 1163e8fb96ea8ecf19aafb0b56b23dee
+
+% 3 1 0 06b8ecd189518f701b5b08cebb3378ec
+
+% 4 1 0 19a074a397f7b9600aa408a7107ccc6d
+
+% 0 1 0 0b28864e51f3bf2f1a5b84d3fb4d5466
+
+% 0 1 0 1d1aa63dd71184c70af282495389967a
+
+% 1 1 0 0e131cf6f89a87410ce9d77c752f55f3
+
+@ 0 3 0 11fd97dce8fc44111f038f6648963c1e
++ `traverse` aplica sobre una colección una función que puede fallar, y reúne los resultados en un
++ solo contenedor, no en una colección de contenedores. Es la forma de «analiza todos estos, y
++ falla si alguno falla»:
+
+% 2 1 0 09c7f284ac513cf818cec90c31946a78
+
+% 0 1 0 12441277e737bca316e21b4e940c2e0a
+
+% 1 1 0 18c1e94cf3a6194d103d07ac2e44bd97
+
+% 3 1 0 0e71113bb94c189803a24cd92afa5842
+
+% 4 1 0 0e3ef1691fb309121d9cf10d2696c5a8
+
+% 5 1 0 19d3b996bab655580228dc7642fdc787
+
+% 0 1 0 017660f8082cede70c641820e52d5e6e
+
+% 0 1 0 04e9483172b5b43e00d5461c9964aced
+
+% 1 1 0 07837bfd2c76f2ce08bc8079b57065fc
+
+@ 0 2 0 0e2bb6c7c7ed69e40b065a569695b31c
++ Ambas funcionan sobre cualquier colección, y el resultado conserva la forma de la colección. Un
++ `List` de `Option`s da un `Option` de un `List`, y un `Set` da un `Option` de un `Set`.
+
+@ 0 1 0 013ebc61db91f7f11e9caa8c563f2bff
++ ### Tipos como texto fuente
+
+@ 0 3 0 17202fb0ef7fdeb801fea8e47f2e904d
++ Un tipo representado en un mensaje de error o en código generado debe leerse como lo escribiría
++ el *usuario*, respetando sus importaciones y con sintaxis infija donde el tipo es infijo.
++ `Syntax.name` hace eso, y cubre la gramática completa de los tipos:
+
+% 2 1 0 054aa511c7047e890075a0d8f25e0ab0
+
+% 3 1 0 1f93e770ce9fd2301448ff2735df3ef7
+
+% 4 1 0 0f6b8ca03c9f361807855d7b31dabc3e
+
+% 0 1 0 17fda5b6846c405d06f426639c88f2d4
+
+% 0 1 0 13241c353240b67617eea41973ae724f
+
+% 0 1 0 1379c8b769fe40f10b5ea78f4456ce2f
+
+% 1 1 0 03dfdbca5a7fbda808b156f0b4680826
+
+@ 0 1 0 1aa18f57ac1caff404ebdfee2fc7bb56
++ Los mensajes de error de una macro construida con él se leen como Scala, no como entrañas del
++ compilador.
+
+@ 0 1 0 1845581bafe3c0eb0ea87e750c9c776e
++ ### Inspeccionar expansiones
+
+@ 0 3 0 17a38054fed2c829174b8cd6f0743898
++ `Introspect.syntax` captura el árbol de una expresión, tal como lo ve el compilador, con sus
++ etiquetas, sus nodos y sus tipos. El resultado es un valor que se representa como un diagrama
++ navegable. `Introspect.semantics` hace lo mismo con los indicadores y los miembros de un
++ símbolo:
+
+% 2 1 0 16dc476bc008da35153c4f5c985c4614
+
+% 0 1 0 1e445ea87371d1170635b1c185e04d48
+
+% 0 1 0 1c500db5a2354c3f0399f246d2f19802
+
+% 0 1 0 0560bdd659866c820f54124d832a0b0f
+
+% 1 1 0 1af4d5734031a3f20013a935bb76343f
+
+@ 0 6 0 0a3b3ec24dec340c00385d947c6fed9e
++ Para quien escribe macros, esto sustituye la arqueología con `println` por una vista
++ estructurada de lo que produjo realmente una expansión. Ambos funcionan también *fuera* de una
++ macro, sobre cualquier expresión de código corriente, lo que los hace útiles para responder
++ preguntas sobre el propio lenguaje. Introspeccionar `1 + x`, como arriba, muestra un `Apply` de
++ un `Select` sobre un `Literal` y un `Ident`. Hacer lo mismo con un `val y: 5 = 5` muestra un
++ único `Literal`, porque el [tipo singleton] permitió al compilador eliminar la suma por plegado.
+
+@ 0 3 0 0cf837cc58204c241c4aa0caeb8546f1
++ Dentro de una macro, donde hay un `Quotes` disponible, los métodos de extensión `syntax` y
++ `semantics` hacen lo mismo con un `Expr` o un `Symbol`. El resultado se colorea mediante una
++ `TastyPalette`, así que se lee bien en un terminal.
+
+@ 0 4 0 1c1528a73e8c892a10a28c924d2bcf76
++ Una macro que debe fallar lo hace con `halt`, que recibe un `Message`. Por tanto, los errores de
++ compilación de una macro se construyen con los mismos mensajes estructurados que los
++ [errores en tiempo de ejecución](errors.md), con sus sustituciones resaltadas donde la salida del
++ compilador lo permite, y se pueden asociar a una posición del código fuente.
+
+@ 0 1 0 05ecba1fa70a0f9a126a88b747a79b89
++ ### Hasta el bytecode
+
+@ 0 3 0 1906c5c8994cc4e10a1eefd51b448e35
++ De vez en cuando la pregunta no es qué *tipó* el compilador, sino qué *emitió*: si un combinador
++ desaparece al hacerse inline, o en qué se compila un camino crítico. Un fichero de clase se
++ analiza en métodos e instrucciones con tipo, y cada instrucción lleva el estado de la pila de
++ operandos, reconstruido:
+
+% 2 1 0 1b2085db1aa9a12114f9b7faaca44635
+
+% 0 1 0 1c6ebcc10acd18391d9e394993a97f61
+
+% 0 1 0 0d6c0fbd76b60e0514395d2690f9b701
+
+% 1 1 0 17533632b2a4194f192edf53d16160ae
+
+@ 0 3 0 14afc885a48e89c001866e0c77e00e2b
++ El `bytecode` de cada método son sus instrucciones de la JVM, con sus estados de pila, listas
++ para representarse. Una expresión citada también se puede compilar y desensamblar en un solo
++ paso. Esta es la base del trabajo de rendimiento que debe verificar lo que hizo el optimizador,
++ y no suponerlo.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Relacionado
+
+@ 0 6 0 13259efe3a5b86bf1049c4375bdecc83
++ - [Ejecución por etapas](staging.md) ejecuta código citado en otro entorno.
++ - [Derivación](derivation.md) genera instancias de clases de tipos a partir de la estructura de
++   un tipo.
++ - [Anotaciones](annotations.md) lee anotaciones sin una macro.
++ - [Compilador](compiler.md) ejecuta el compilador de Scala como biblioteca.
++ - [Classpath](classpath.md) describe los cargadores de clases a través de los que se lee un
++   fichero de clase.
++ - [Interpolación](interpolation.md) y [registros](records.md) se construyen con estas
++   herramientas.

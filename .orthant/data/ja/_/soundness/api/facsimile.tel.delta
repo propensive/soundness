@@ -1,0 +1,1803 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1954ec5cbcb9353201bf8bfae011212c
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 12728080ef384eb31296ccf7ce0d6f79
++ info   型付きの値として読み、その場で編集する PDF 文書。フォーマットに対して直接実装されている
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 15ed656b7d4c16430fbff6ae5e5736ae
++     _Facsimile_ は、外部の PDF ライブラリに委ねずに [PDF](https://en.wikipedia.org/wiki/PDF) 文書を読み書きする。
++     文書のオブジェクト構文（COS）、相互参照表、ストリームのフィルター、暗号化はすべてここで実装されており、プログラムに見えるものは型付きである。ページとその幾何はポイント単位のボックスを持つ `Page` の値として、その上に配置されたテキストは `Text` や位置付きの `TextRun` として、フォントは `Pdf.Font` として、情報辞書は `Pdf.Info` として、ブックマークは `Bookmark` の木として、リンクと注記は `Annotation` として、埋め込みファイルは `Pdf.Attachment` として見える。
+
+@ 0 8 0 19820030076fbf2f145a3eaadf27e50c
++     PDF には二つの層がある。
++     外側の層は COS で、数、名前、文字列、配列、辞書、ストリームからなる小さなオブジェクト言語であり、間接参照で指され、ファイルの末尾にある相互参照表で索引付けされる。これは `Cos` 列挙型である。
++     内側の層はコンテンツストリームで、その演算子がページにグリフとパスを置くスタックマシンである。これは `Pdf.Operator` 列挙型である。
++     どちらも現実のファイルでは容赦がないので、文書が整形式であると仮定することは決してない。偽りのある相互参照表はファイルを走査してオブジェクトを探すことで再構築され、宣言された長さが誤っているストリームはその `endstream` まで測られ、不正な日付は単に存在しないものとなる。
+
+@ 0 7 0 1930a90b4367e5aa1b2a1a0a0492e420
++     文書はスコープの中で**開かれる**。
++     開くことでファイルがマップされ、そのヘッダーと相互参照の連鎖が読まれ（暗号化されたファイルではパスワードが確かめられ）、ブロックはコンテキストの `Pdf` とともに実行される。それにはパッケージレベルの `pdf` アクセサーで到達する。
++     `Pdf` はキャプチャ検査によってブロックに閉じ込められたケイパビリティであり、まだそれを通して解決するもの（`Page`、`Attachment`、ストリームのペイロードの上の `Spring`）も同様である。一方、デコードされたものすべて（`Data`、`Cos` の値、`Text`、`Pdf.Info`、`Pdf.Font`、`Bookmark`）は純粋で、自由にスコープから出られる。
+
+% 2 1 0 1b24394b2179e5820f389bfeb8fe7f3f
+
+% 3 1 0 10b8819165486e0105ab0e2d1dd99e76
+
+% 4 1 0 150fff676a6eba02021517ea22191144
+
+% 5 1 0 116c4e18872547b21d494cb1b4e0115d
+
+% 0 1 0 11940fc83390cb92044b6066111370d3
+
+% 0 1 0 037c3d11b9a634a1015cf79f672406ef
+
+% 2 1 0 0fc8040959fded99158fb97d0d26fe74
+
+% 3 1 0 1dabf5f2aa44c43a0e27f4866f9d7488
+
+% 4 1 0 16b0cb17ea26800b092ad60bd6a3852e
+
+% 0 1 0 08bff537256137901faf6c245233f87a
+
+% 0 1 0 09bdf88126d0507516408a3a6c2d6cb8
+
+% 0 1 0 0442d134d2ad7a4f1f672ffe7ce030e3
+
+% 0 1 0 1d51078e6cc692e21a837cc138c3fdb1
+
+% 0 1 0 0fe1df472822373e048d8be78de898ac
+
+% 0 1 0 1db6f000ad4d3dda0dd3fffee608a1e8
+
+% 0 1 0 0d71a9b9d327edec1d738d6183014931
+
+% 1 1 0 0b9d3fd54ab9a0fb1c3478177f190197
+
+@ 0 8 0 12bab23a84fa56f80c4b530b98b2c663
++     `Read & Write` で開くと、**編集**の拡張（`setContents`、`appendPage`、`removePage`、`setInfo`、`setBookmarks`、`addLink`、`embedFont`、`useFont`、そして低レベルの `set`、`allocate`、`newStream`、`free`）が使えるハンドルが得られ、編集はスコープが閉じるときに*増分更新*としてコミットされる。元のバイトは元の場所に残り、変更されたオブジェクトは新しい相互参照セクションとともに追加されるので、元のファイルしか理解しないリーダーにも有効な文書が見える。
++     `create[Pdf]` は同じ面で新しい文書を作成して丸ごと書き出す。書き出し先は一時的な兄弟ファイルで、それが対象へアトミックに移動される。
+
+@ 0 8 0 14d0c114ca31c5ee0fc086685ccee70f
++     ストリームのペイロードは、ストリームが宣言するフィルターの連鎖（`FlateDecode`、`LZWDecode`、`ASCII85Decode`、`ASCIIHexDecode`、`RunLengthDecode`、そして PNG と TIFF の予測子）を通してデコードされる。`Pdf#payload` では即座に、`Pdf#spring` ではチャンクのストリームとして遅延してデコードされる。
++     画像のコーデック（`DCTDecode`、`JPXDecode`、`CCITTFaxDecode`、`JBIG2Decode`）はデコードされない。連鎖はその最初のもので止まり、ペイロードはまだエンコードされた画像として返される。
++     標準セキュリティハンドラが RC4、AES-128、AES-256 とともにサポートされている。パスワードは `Password` なので、暗号化されたファイルを開くには `Cloak`（`cloaks.heapCloak` など）がスコープになければならない。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     ライブラリには二つのソースセットがある。
+
+@ 0 8 0 0c65e4814392972f19b4115e5ad21213
++     - `facsimile.core`：メモリ上の文書に関するすべて。`Pdf`、`Page`、`Cos`、`Pdf.Operator`、`Pdf.Font`、`Print` と標準 14 フォント、編集の拡張、`winAnsi`。JVM と Scala Native 向けにコンパイルされる（暗号化の層が JCE を使うので、Scala.js 向けではない）。
++     - `facsimile.file`：ファイルシステムとバイトへの橋渡し。文書を開く元となるロケーターである `PdfFile`、そしてパスや `Data` を `Pdf` として開き、パスを `Pdf` として作成できるようにする given の `pdfPathOpenable`、`pdfDataOpenable`、`pdfCreatable`。ディスク上の文書はメモリマップされた `Ram` を通して読まれるので、JVM 専用である。
+
+@ 0 7 0 1a2246614f471e3f017d877335185f0c
++     すべては `soundness` アンブレラにエクスポートされる。
++     `PdfFile(…).open(…)` にはインポートが要らない（その `Openable` は `PdfFile` のコンパニオンにある）が、`path.open[Pdf]()`、`data.open[Pdf]()`、`path.create[Pdf]()` はトップレベルの given を通して解決し、それらは名前でインポートする（`import soundness.pdfCreatable`）。`import soundness.*` は given をインポートしないからである。
++     スコープの中では `pdf` がコンテキストの文書である。`doc ?=>` で開いたブロックでは代わりにそれに名前が付く。編集の拡張は書き込みの権限を与えられたハンドルに対して型付けされているので、それが必要である。
+
+% 0 1 0 12a36b408a35db3f0afb0f5e7390d34b
+
+% 0 1 0 123087e29370a0a318d713fb0dcc0a5c
+
+% 0 1 0 1a2891b22803084304bf5a44b0ad3726
+
+% 0 1 0 1c166263c749f2d21d2a3ac0fbd2f8b8
+
+% 0 1 0 173a953e46e6477b06ad34df44a6840e
+
+@ 0 1 0 1edbf3a378cd38e417258af2faec9cea
++ entry .Pdf   開いた PDF 文書。すべての読み取りと編集がそれを通して解決する、スコープ付きのケイパビリティ
+
+% 1 1 0 1e3be3b505476b4709dc26b396ac849c
+
+@ 0 6 0 1547f024ba27bbcd06f45b73ecde788f
++       `Pdf` は開いた文書である。バイトのソースと解決済みオブジェクトのキャッシュを所有し、ストリームのペイロードはこれを通してしか参照されない。
++       これは `PdfFile#open`、`path.open[Pdf]()`、`data.open[Pdf]()`、`path.create[Pdf]()` が開いたスコープの中にだけ存在し、そこではパッケージレベルの `pdf` アクセサーが返すコンテキスト値である。またこれはケイパビリティなので、コンパイラはこれと、まだこれを通して解決するすべての値を、そのスコープに閉じ込める。
+
+@ 0 7 0 130af20dc089522e0e6d0e448df4a3a5
++       読み取りはどのモードでも使える。
++       ページの木は序数で添字付けされた列（`#page`、`#pageCount`）に平らにされ、継承可能な属性（リソース、メディアボックス、クロップボックス、回転）は各経路に沿って蓄積される。
++       情報辞書は `#info`、名前付きの宛先は `#destinations`、アウトラインは `#bookmarks`、埋め込みファイルは `#attachments`、ページラベルは `#pageLabel`、XMP メタデータは `#xmp` である。
++       型付きの面の下では、`#apply` は番号で任意のオブジェクトを解決し、`#resolved` は参照をたどり、`#payload` と `#spring` はストリームをデコードする。
+
+% 2 1 0 166fdb2d7b68cee00579703a060c92d2
+
+% 3 1 0 0b9b7bbe6e187c100897fd87938d6c1b
+
+% 4 1 0 16fd253a19883f111a505dbced65d886
+
+% 0 1 0 0ccd4ea8e6d3bf0b193712af94be6a92
+
+% 1 1 0 069b5729ff24b94c18f7a59ed6c47570
+
+% 0 1 0 0cf6873fef46145c1eb4c704000a1519
+
+% 1 1 0 12fd95a0cd207dc317b684180c61ea84
+
+@ 0 7 0 1ceb2920c45608d20859000b303531a4
++       編集は `(Pdf & Granting[Grant.Write])^` に対する拡張の面である。これは `Read & Write`（または `create[Pdf]`）で開いたスコープが与えるハンドルで、`set`、`allocate`、`newStream`、`free`、`setContents`、`setRotation`、`setBox`、`setPageEntry`、`setInfo`、`embedFont`、`useFont`、`addResource`、`setAnnotations`、`addLink`、`setBookmarks`、`appendPage`、`removePage` がある。
++       編集は、すべての読み取りが最初に参照するオーバーレイに蓄積されるので、変更はすぐに `#apply` と `#page` に見え、スコープが閉じるときに増分更新として書き出される。
+
+@ 0 9 0 0b8b572cbd0694901331ec688f99678f
++       堅牢さは選んで有効にするものではなく、組み込まれている。
++       `%PDF-` ヘッダーは最初の 1 キビバイトのどこにあっても受け入れられる。
++       相互参照の連鎖（従来の表と相互参照ストリーム。`/Prev` を通り、新しいものから順に）は厳密にたどられ、そのどこかが欠けているか壊れていれば、代わりにファイル全体が `N G obj` の印を求めて走査される。各オブジェクトは最も新しいコピーが勝ち、トレーラーは残っている `trailer` 辞書かカタログから復元される。
++       主張するオブジェクトを持たない個々のオフセットは、走査で得た位置に代替される。
++       このように再構築された文書は他の文書と同じように読めるが、増分更新がつなぐセクションを持たないので、その場で編集することはできない。書き込み可能として開くと、`WriteUnsupported` を伴う `Pdf.Error` を発生させる。
+
+@ 0 1 0 0a58e823b4afe8010ab80b0793cec9ff
++       失敗しうるすべてのメソッドは `Tactic[Pdf.Error]` を取る。
+
+% 1 1 0 0223c289ee57b0b705127b239da0bc63
+
+% 0 1 0 110f7f14cd811ea110ee4a4d4d4db8c0
+
+% 0 1 0 1d180895aa73181b19fc18cb9468ed05
+
+% 1 1 0 03cd3279529852491ccf02abce714db8
+
+@ 0 1 0 1f70886283305f7517e0bfacc5df42a6
++   entry .Version   `%PDF-M.m` ヘッダーのバージョン。`major` と `minor` からなる
+
+% 1 1 0 14d44cb1e3eb07b80582be003fd6a735
+
+@ 0 6 0 1c2d28c56de8cbd31b3fc1cf35aab857
++         二つの `Int` からなるケースクラスである。
++         ヘッダーは他の何よりも先に読まれ、ヘッダーのないファイルは `NotPdf` を伴う `Pdf.Error` を発生させる。
++         `create[Pdf]` で作成した文書のバージョンは 1.7 である。
++     entry #major   メジャーバージョン。ISO 32000-1 が扱うすべての文書で `1` である
++     entry #minor   マイナーバージョン
++   entry .Attachment   文書の `/EmbeddedFiles` 名前木にある埋め込みファイル
+
+% 1 1 0 19451ea486cc094b0cd17f386e9e7896
+
+@ 0 4 0 0314bb097371ee6506741229020ee261
++         添付ファイルのメタデータ（`#name`、`#filename`、`#description`、`#mediaType`）は `Pdf#attachments` が一覧にするときに実体化されるが、その `#data` はまだ文書を通して読まれるので、`Attachment` は一覧にされたスコープに閉じ込められる。スコープの中で `data` を呼び、その結果を保持すること。
+
+% 2 1 0 027af22b730b668e19aa71b1a7b180db
+
+% 3 1 0 0e8540cd83a6bd93003e4970c4bdcc2f
+
+% 4 1 0 0581291516b8eb811a08477dc629b686
+
+% 0 1 0 14face0626ee78880b510d760a5c4b78
+
+% 1 1 0 0492f74e7daae4761fce851969d384e5
+
+% 0 1 0 0788c7cd853132960f9085d939566ee5
+
+% 0 1 0 17afadcfc705818d06bb39a1e1f4027e
+
+% 1 1 0 0404a80f13e974db0acdd6acdbd92cfd
+
+@ 0 9 0 1b9f35961e99663306f7f455255679d3
++     entry #name   名前木の中での添付ファイルのキー
++     entry #filename   ファイル指定の名前。与えられていれば `/UF` または `/F` から得る
++     entry #description   与えられていれば `/Desc` のテキスト
++     entry #mediaType   埋め込まれたストリームの `/Subtype`。ファイルが宣言されたメディアタイプ
++     entry #data   埋め込みファイルのバイト。そのフィルターを通してデコードされる
++         埋め込まれたストリームを文書を通して読むので、添付ファイルが一覧にされたスコープの中でしか動かない。
++         ファイル指定が埋め込みストリームを持たない添付ファイルは、`MissingEntry(EF)` を伴う `Pdf.Error` を発生させる。
++   entry .Error   文書を読めない、デコードできない、復号できない、または書き出せないときに発生する
+
+% 1 1 0 1f152f9cceefc86218b1a6e00b8b57f8
+
+@ 0 5 0 1b7ae8706ffea6b404bb5bc8bf30ce45
++         エラー `↯/s.110.1`：_the PDF could not be read because `reason`_。ここで reason は、自身の番号とメッセージを持つ `Pdf.Error.Reason` である。
++         これはすべての読み取りと編集のメソッドが取る `Tactic[Pdf.Error]` を通して発生し、ライブラリが発生させる唯一のエラーである。文書を開くときやコミットするときのファイルシステムの失敗は、`Io` としてこれに畳み込まれる。
+
+% 2 1 0 1734c18d5451fbf91ad6563e8ff102fb
+
+% 3 1 0 1c7e27f7db0b9d7c1b058e8b46aeb366
+
+% 0 1 0 08806c1373a8241d11fb7150bd003c38
+
+% 0 1 0 09917af1550d944409c46d59c1305a5d
+
+% 0 1 0 04d4ca94581c3d6519560eac64cdcceb
+
+% 0 1 0 160feb77a38752af0ab6b10f9840a815
+
+% 1 1 0 1c9167376f59a0091b9dbb7c20ed72f6
+
+@ 0 1 0 05f86b3c2f1531460298e6be0a74a7aa
++         理由を番号順に示す。
+
+@ 0 43 0 17db2cc2157c360a116b37d649a39831
++         1. `NotPdf`：_the file does not begin with a PDF header_。最初の 1 キビバイトに `%PDF-` がない。
++         2. `Truncated`：_the PDF file ended unexpectedly_。パーサーがオブジェクトの途中でファイルの終わりに達した。
++         3. `MissingStartxref`：_no startxref keyword could be found at the end of the file_。
++         4. `MalformedXref(offset)`：_the cross-reference section at offset `offset` could not be interpreted_。
++         5. `Unparseable(offset, expected)`：_`expected` was expected at offset `offset`_。オブジェクト内の構文エラーで、パーサーが求めたもの（オブジェクト、名前のキー、キーワード `endobj`、ストリーム辞書）を示す。
++         6. `MissingObject(objectNumber, generation)`：_the object `N` `G` was missing or invalid_。相互参照ストリームが圧縮されていると言うオブジェクトが、そのコンテナー内に見つからなかった。
++         7. `CircularReference(objectNumber)`：_resolving the object `N` returned to itself_。
++         8. `MissingEntry(key)`：_the required dictionary entry `key` was absent_。`/Root` がない、`/Pages` がない、`/MediaBox` のないページ、`/EF` のない添付ファイル。
++         9. `TypeMismatch(key, expected)`：_the dictionary entry `key` was not `expected`_。名前でも名前の配列でもない `/Filter`、辞書でない `/DecodeParms`、参照でない `/Pages` エントリー。
++         10. `UnknownFilter(name)`：_the stream filter `name` is not recognized_。
++         11. `CorruptStream(filter)`：_a stream could not be decoded with the `filter` filter_。名前の付いたコーデック（`FlateDecode`、`LZWDecode`、`ASCII85Decode`、`ASCIIHexDecode`）が入力を拒否した。
++         12. `MalformedOperator(operator)`：_the content operator `operator` had malformed operands_。既知の演算子のオペランドの数や種類が誤っている（未知の演算子はエラーではなく `Pdf.Operator.Unrecognized` である）。
++         13. `UnsupportedEncryption(version)`：_the encryption scheme (version `V`) is not supported_。`Standard` 以外のセキュリティハンドラ、または辞書でない `/Encrypt`。
++         14. `BadPassword`：_the password was incorrect_。最初に復号される文字列のときではなく、文書を開くときに発生する。
++         15. `CircularPageTree`：_the page tree contains a cycle_。
++         16. `Io(detail)`：_an I/O operation failed: `detail`_。パスが無効である、ファイルを開けないか書き出せなかった、またはファイルがすでに存在し `CreateFlag.Replace` が与えられなかった。
++         17. `WriteUnsupported`：_this document cannot be written (only an unencrypted, on-disk file with a valid cross-reference table can be edited in place)_。メモリ上の `Data` が `Write` で開かれたとき、または相互参照表を走査で再構築しなければならなかったファイルに対する書き込みスコープが編集とともに閉じるときに発生する。
++         18. `MissingPage(page)`：_the document has no page `N`_。最後のページを越えた `Pdf#page`。番号は 1 から数える。
++     entry .Reason   文書を読めなかった理由。番号付きで伝達可能なケースとして表す
+
+% 1 1 0 13ab584fcfcf95ee05fb4475000b073c
+
+@ 0 6 0 054736455fe669771fc4f96e09e38d2e
++           ケースが `Pdf.Error` のページに列挙されている列挙型で、それぞれ `number` とメッセージを持つ。`communicable` がメッセージを描画する。
++       entry #number   理由の番号。1 から 18 で、エラー `↯/s.110.1` の下位番号である
++     entry .communicable   各理由を、`Pdf.Error` の一覧にあるメッセージとして描画する
++     entry #reason   このエラーが持つ `Pdf.Error.Reason`
++   entry .Font   ページのリソースが宣言するフォント。その幅とコードのデコード方法を持つ
+
+% 1 1 0 0453a396ab871b9819184c9419bb7800
+
+@ 0 7 0 1a590bf7bccb5a0a06269821c5925075
++         `Pdf.Font` は純粋で完全に実体化された値であり、スコープより長く生きる。`Page#fonts` がページの `/Font` リソースから読み、`SetFont` 演算子（`Tf`）が参照するリソース名をキーとする。
++         これは ISO 32000-2 §9 のフォントのサブタイプの列挙型である。`Type1`、`MmType1`、`TrueType`、`Type3`（グリフ空間からテキスト空間への変換である `matrix` も持つ）、`Type0`（コードが 2 バイトである複合フォント）がある。
++         五つすべてが `#baseFont`、`#standard`、`#embedded`、`#descriptor`、`#width`、`#codes`、`#decode` を共有する。
+
+% 2 1 0 1316e451933afc9c005abcb408290c82
+
+% 3 1 0 17242da6b888c6e30ec7f2b01489894f
+
+% 4 1 0 034c4e9e011a331c1b15ff82a02e7dff
+
+% 0 1 0 193a3d883127740d15f9d952f9158ad6
+
+% 1 1 0 10a9957d62a129b90f059acd3ac8f1e1
+
+% 0 1 0 07210d0c18ddc42909850affeec1faaf
+
+% 1 1 0 059f6c2f600b1fa30bc81a59e7041196
+
+@ 0 8 0 18075d3d3a12fc8e0695275000937513
++         テキスト表示のオペランドを Unicode にデコードするには、ファイルが与える最良の情報を使う。まずフォント自身の `/ToUnicode` マップ、次にその `/Differences`、次に宣言された基本エンコーディング（`WinAnsiEncoding`、`MacRomanEncoding`、`StandardEncoding`）、そして最後に、印字可能な ASCII の範囲にある 1 バイトのコードならそのコード自体を使う。
++         どの規則にも当てはまらないコードは U+FFFD にデコードされる。
++         幅は `/Widths` 配列（複合フォントでは `/W`）から得られ、Type 3 フォントでは `/FontMatrix` を通して拡大縮小される。フォントが標準 14 フォントの一つで幅を宣言していなければ、その組み込みのメトリクスに代替される。
+
+% 1 1 0 12b722f25e6b08250cb4fc9b1a99dfd5
+
+% 0 1 0 1123f98a50abb0720a4413bfb36d9beb
+
+@ 0 1 0 1e7427b0f49f2cac18009a71476278c7
++     entry .Standard   すべての PDF リーダーが持つ標準 14 フォント。それぞれに PostScript 名がある
+
+% 1 1 0 1be76c417ff2fa660df9fafe74f4d2ac
+
+@ 0 27 0 1e42a07b12c366531d45c9c955566eb0
++           `Helvetica`、`HelveticaBold`、`HelveticaOblique`、`HelveticaBoldOblique`、`TimesRoman`、`TimesBold`、`TimesItalic`、`TimesBoldItalic`、`Courier`、`CourierBold`、`CourierOblique`、`CourierBoldOblique`、`Symbol`、`ZapfDingbats`（ISO 32000-2 §9.6.2.2）である。
++           `/BaseFont` がこれらの名前の一つ、またはメトリクス互換の別名の一つ（Helvetica に対する `ArialMT`、Times に対する `TimesNewRomanPSMT`、Courier に対する `CourierNewPSMT`、およびそれらの太字と斜体のバリアント）であるフォントは、`ABCDEF+` のようなサブセットタグの有無にかかわらず `#standard` として認識され、辞書が幅を宣言していなければその組み込みの幅が使われる。
++           `Print.standard` は `Font in Print` をその一つに対応付ける。
++       entry #baseFont   `/BaseFont` エントリーがこのフォントに与える PostScript 名。`Helvetica-Bold` など
++     entry #baseFont   フォントの `/BaseFont` 名
++     entry #standard   これが標準 14 フォントのどれか。他のフォントでは `Unset`
++     entry #embedded   埋め込まれたフォントプログラムがあれば、それを `Sfnt` として表したもの
++         フォント記述子の `/FontFile2`（またはサブタイプが `OpenType` の `/FontFile3`）を phoenicia の `Sfnt` としてパースしたもの。二次曲線のアウトラインなら `Truetype`、CFF なら `Opentype` である。
++         複合フォントでは、子孫フォントのプログラムである。
++     entry #descriptor   生の `/FontDescriptor` 辞書。なければ空のマップ
++     entry #width   コードの送り幅。1 em の千分の一単位
++         単純フォントでは `/FirstChar` だけずらして `/Widths` 配列から得る。複合フォントでは `/W`（または `/DW`。デフォルトは 1000）から得る。辞書にそのコードの幅がなければ標準フォントの組み込みのメトリクスから得て、それ以外の場合は `/MissingWidth`、それもなければ 500 となる。
++     entry #codes   テキスト表示のオペランドの文字コード。バイト、または複合フォントではビッグエンディアンの対
++     entry #decode   テキスト表示のオペランドを、フォントが許す限りで Unicode テキストとして表したもの
++         各コードを `/ToUnicode`、`/Differences`、基本エンコーディング、最後に印字可能な ASCII の順で対応付け、どれにも当てはまらないコードには U+FFFD を書く。
++         これは `Page#text` と `Page#runs` が使うデコードである。
+
+% 2 1 0 14d8979453c366f70e671b8f44caf3f7
+
+% 3 1 0 11eec88d81e302340ce45547285a69f5
+
+% 4 1 0 0f4d452e19b9f1580eeae8ae0d8ec192
+
+% 0 1 0 1bdf1d93f7d3a97915cf6ac02c5928e2
+
+% 1 1 0 0f53f0f515b2b32c0acd295b7776bebf
+
+% 0 1 0 0cca5687dcfdab9412e287a7eb69beda
+
+% 1 1 0 12d9ac1a22de824d0acde9389c664197
+
+@ 0 1 0 1a55840a895abdec1412bff2273c05b6
++   entry .Info   完全に実体化された文書情報辞書
+
+% 1 1 0 1d39468bca6a00b110bfb1f0db3fb20d
+
+@ 0 4 0 0d3562bee6e347b01c3b6944b675f1b0
++         `/Info` 辞書の八つの標準エントリー（ISO 32000-2 §14.3.3）で、それぞれ `Optional` である。`#title`、`#author`、`#subject`、`#keywords`、`#creator`、`#producer`、`#created`、`#modified` がある。
++         `Pdf#info` がこれを読み、`setInfo` が存在しないフィールドを省いて書き戻す。
++         `Info` は純粋な値であり、スコープから出られる。
+
+% 2 1 0 11525ad3811257f81ab8cfdbc6c071f5
+
+% 3 1 0 0b86bac968ae1c7111635fce4f6514a3
+
+% 4 1 0 0f5766403e5f3f3711f1e9d9c63a203c
+
+% 0 1 0 1edba912cebe1ffa1b091f917c8b18a1
+
+% 0 1 0 090b8c825ce99ec11e296ea1c1f75201
+
+% 1 1 0 10a575d2f3be464e090b40797f2596c0
+
+% 0 1 0 182285f818fbaa33091e52d3a5001710
+
+% 1 1 0 1459870ee943ae990b8af35e77f25143
+
+@ 0 4 0 10bcfeb756961b2416640f2652121a84
++         日付は PDF の `D:YYYYMMDDHHmmSS±HH'mm'` 形式（年より後はすべて省略可能）から `Info.Timing` に読まれる。不正な日付はエラーにはならず、`Unset` として読まれる。現実のファイルには少しだけ誤った日付があふれているからである。
++     entry .Timing   情報辞書の日付。タイムスタンプと、与えられていれば UTC からのオフセット
+
+% 1 1 0 02ec804d4b4744c518777ab40307496b
+
+@ 0 4 0 117522e6dab032571f3210c74be3470f
++           PDF の日付は省略可能なタイムゾーンを持つので、`Timing` は時点を主張する代わりに、`Timestamp` と UTC からの `Optional[Duration]` のオフセットを組にする。
++           `setInfo` でそれを書き戻すと `D:` 形式が生成され、オフセットがあれば `±HH'mm'` として書かれ、なければ何も書かれない。
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 1 1 0 06b2b3821b59f61500c87df20de0e769
+
+% 0 1 0 0e894c0cf029bc940b3d6f069aaae086
+
+% 0 1 0 180dc6fc817ba0fc1e5ec8e960f8b052
+
+% 0 1 0 084d7c0384eb86f00b5e7e660a57253b
+
+% 0 1 0 1c160f7fe2a53f3a18e64b9cab693f1a
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 11 0 08bf918cc3dee4ea0aadef61b041ec1b
++       entry #timestamp   書かれたとおりの日付と時刻
++       entry #offset   UTC からのオフセット。日付がそれを与えなければ `Unset`
++     entry #title   `/Title`
++     entry #author   `/Author`
++     entry #subject   `/Subject`
++     entry #keywords   `/Keywords`
++     entry #creator   `/Creator`。元の文書を作ったアプリケーション
++     entry #producer   `/Producer`。それを PDF に変換したアプリケーション
++     entry #created   `/CreationDate`。存在して整形式である場合
++     entry #modified   `/ModDate`。存在して整形式である場合
++   entry .Matrix   PDF の変換行列。意味のある六つの成分を mosquito の `Affine[Double]` として表す
+
+% 1 1 0 1bd03b269ae651a2182fc8135d8b7ece
+
+@ 0 6 0 08e483ad3a9a05ba1e2f9c14a4a88aca
++         `Pdf.Matrix` は型エイリアス `Affine[Double]` であり、SVG と共有されている。
++         PDF は転置された行ベクトルのレイアウト（`a b 0 / c d 0 / e f 1`）で説明しており、そこでは `this * that` はまず `this` で変換する。その合成は `Affine` の `andThen` であり、六つの数はどちらの流儀でも同じ順に現れるので、`Concat` や `SetTextMatrix` 演算子から読んだ行列、またはそこへ書く行列は、ワイヤ形式そのままである。
+
+% 2 1 0 13aa13e9482298cf13d8d0d1685d939c
+
+% 3 1 0 10d4cd88c1fdc6f70a2895e641cee06c
+
+% 0 1 0 1676e977f8bc8e2f12deec9256db1546
+
+% 0 1 0 157ebc820db46fac10a6229c84015c1d
+
+% 1 1 0 0e3f4b9147b7995b141db5db4b40fdaa
+
+@ 0 3 0 00ba2a4561b5c88f03d1b2cdf334b74d
++     entry .Identity   単位行列 `1 0 0 1 0 0`
++     entry .apply   コンテンツストリームが書く順の六つの成分 `a b c d e f` から作る行列
++   entry .Operator   型付きのオペランドを持つコンテンツストリームの演算子
+
+% 1 1 0 1c9d74d7a31ddcaf0d24b055896476e1
+
+@ 0 6 0 06a1fb25006a474e0f755a487b086ae7
++         ページのコンテンツストリームは演算子の列（ISO 32000-2 §8–9、§14.6）であり、`Page#operators` がそれを `List[Pdf.Operator]` として読み、`setContents` と `appendPage` がそれから書き戻す。
++         座標は `Double` のままである。それはユーザー空間の値であり、現在の変換行列のもとでのみ意味を持つ。
++         テキスト表示のオペランドはエンコードされた `Data` のままである。それをテキストに対応付けるにはフォントが必要だからである（`winAnsi` は単純な WinAnsi フォント向けにテキストをエンコードする）。
++         この列挙型は十分に対称的なので、正確に直列化して戻せる。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 1d1d6d304a038c94003c7ee98766cefc
++           label テキストオブジェクトを開始し、フォントを選ぶ
+
+% 1 1 0 19ae12f78b0457b619e2b0d5f1799214
+
+% 2 1 0 0faa774fcc36a978088a39cd87b228af
+
+% 4 1 0 1983352d50c95f44078ebf6e3671f22e
+
+% 5 1 0 13e1e8f4dc8449aa094385b5988d991f
+
+% 0 1 0 18db30d2a80825540d5a5f382f7c1572
+
+% 1 1 0 114165cce5d3a8a00ed12d8cac3059b5
+
+@ 0 1 0 15a45eb29b32c92705bc11cf42c169c6
++           label テキストを配置して表示する
+
+% 1 1 0 043d25fc1963cfd80280f83a5b1a7908
+
+% 2 1 0 1aa29b52376194d81045f62dca3e597f
+
+% 4 1 0 0ff2d94cca17754a1d3bdc7d43616765
+
+% 5 1 0 152c91b54350211719bf85c287286f6b
+
+% 1 1 0 08bd97487fbce27005a83033deb351aa
+
+% 2 1 0 144dd63c8eb2a90202c49bd909bb0a5c
+
+% 3 1 0 0747307c8933af4702cac04e8f11cb41
+
+% 4 1 0 1c0a54b032fddbb7115d977baec89380
+
+% 5 1 0 19b04ab2a489a3ac0e41475176e7fc35
+
+@ 0 1 0 09d64e315371e0c301f2815a8d1c468a
++           label 保存したグラフィックス状態の中で、その下に矩形を塗りつぶす
+
+% 1 1 0 0f67a22b818d08f403786131c77120bc
+
+% 2 1 0 15691d4dd089ae921e0909a29d5a0970
+
+% 4 1 0 035920230d7230690c5be285f6f30827
+
+% 5 1 0 14a5074ccbedec6617adb1c7753a877e
+
+% 6 1 0 1a7636ae2cc928b70fbc0e8aa3a418a2
+
+% 7 1 0 000ee4d11ce3135d0d1e2ca5a1eb4bdb
+
+% 8 1 0 1a4985d4f8e420bf072942e375909bf1
+
+% 9 1 0 0efd83a407e898180d5a0929f0f9cbc2
+
+% 10 1 0 0d5ba8f97af13efe1f83d4348aadd15a
+
+% 11 1 0 09047c18a22e2711097b931530844cae
+
+% 12 1 0 1a3d64b05ccfa486199892f25cdf4197
+
+% 13 1 0 1960b07001c05fe90eb64e2927c991fa
+
+% 4 1 0 1d0267814f5e40871e15f51e81e05687
+
+% 5 1 0 128fd87eab77fe7517b5b3bec911678c
+
+@ 0 1 0 17495f0e536ded821d3d29be9250688d
++           label ページのリソースで名付けられた画像 XObject を描く
+
+% 1 1 0 140eb9bf55d374af1c6c31147065dbf5
+
+% 2 1 0 199420fa1d7a7f0501cc6a136535d63c
+
+% 4 1 0 0ed7662a1947fa30098f23bdea8e718e
+
+% 5 1 0 01e54a3f59f9b5ac1c3e913a3ee27abe
+
+% 6 1 0 1393d259a7632e401c582f56119ded59
+
+% 7 1 0 07aa6f1044a8b4490c0bec2a68f94cc5
+
+% 8 1 0 056cebfdf3aa7ab61a214038ae0143a9
+
+% 9 1 0 1aff4779b7d41f840186ba22efe2fffa
+
+% 10 1 0 1762f39f9999e3301373bd5229c9a3d4
+
+% 11 1 0 11a7879709aa174903d254b0d671936b
+
+% 12 1 0 04101287ea576c9d1e9117c0005b4743
+
+% 13 1 0 0830652dcc32a8870e7509b1e1218ec7
+
+% 0 1 0 02047b8178065ecf1eb53c9fc9f651d1
+
+% 0 1 0 0f5abdfd59582bcb1a788e67ffd83c08
+
+% 0 1 0 01cf81297e3a7e080e0bc396e0dc9180
+
+% 0 1 0 175823aad6b192b5171c121a753d2f94
+
+% 0 1 0 16234a95748a0db700de7dbf412ad799
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 1 0 1b3695ff04ad912d06b7eb168a6acc68
++         各ケースを、それが読み書きする演算子ごとに示す。
+
+@ 0 35 0 1fa823a8f152c9ea0535d337b80fecf2
++         - **グラフィックス状態**（§8.4.4）：`Save`（`q`）、`Restore`（`Q`）、`Concat(matrix)`（`cm`）、`SetLineWidth(width)`（`w`）、`SetLineCap(cap)`（`J`）、`SetLineJoin(join)`（`j`）、`SetMiterLimit(limit)`（`M`）、`SetDashPattern(pattern, phase)`（`d`）、`SetIntent(intent)`（`ri`）、`SetFlatness(tolerance)`（`i`）、`SetParameters(name)`（`gs`）。
++         - **パスの構築と塗り**（§8.5）：`Move(x, y)`（`m`）、`Line(x, y)`（`l`）、`Cubic(x1, y1, x2, y2, x3, y3)`（`c`）、`CubicStart(x2, y2, x3, y3)`（`v`）、`CubicEnd(x1, y1, x3, y3)`（`y`）、`Close`（`h`）、`Rectangle(x, y, width, height)`（`re`）、`Stroke`（`S`）、`CloseStroke`（`s`）、`Fill(rule)`（`f`、`F`、`f*`）、`FillStroke(rule)`（`B`、`B*`）、`CloseFillStroke(rule)`（`b`、`b*`）、`EndPath`（`n`）、`Clip(rule)`（`W`、`W*`）。
++         - **テキスト**（§9.4）：`BeginText`（`BT`）、`EndText`（`ET`）、`Offset(dx, dy)`（`Td`）、`OffsetLeading(dx, dy)`（`TD`）、`SetTextMatrix(matrix)`（`Tm`）、`NextLine`（`T*`）、`SetCharSpacing(space)`（`Tc`）、`SetWordSpacing(space)`（`Tw`）、`SetScaling(percent)`（`Tz`）、`SetLeading(leading)`（`TL`）、`SetFont(font, size)`（`Tf`）、`SetRenderMode(mode)`（`Tr`）、`SetRise(rise)`（`Ts`）、`ShowText(string)`（`Tj`）、`ShowTexts(elements)`（`TJ`。その要素は `Data` の文字列と `Double` の調整量である）、`NextLineShow(string)`（`'`）、`NextLineShowSpaced(word, char,
++           string)`（`"`）。
++         - **色**（§8.6.8）：`StrokeSpace(name)`（`CS`）、`FillSpace(name)`（`cs`）、`StrokeColor(components, pattern)`（`SC`、`SCN`）、`FillColor(components, pattern)`（`sc`、`scn`）、`StrokeGray(gray)`（`G`）、`FillGray(gray)`（`g`）、`StrokeRgb(color)`（`RG`。`Srgb`）、`FillRgb(color)`（`rg`）、`StrokeCmyk(color)`（`K`。`Cmyk`）、`FillCmyk(color)`（`k`）。
++         - **XObject、インライン画像、シェーディング**（§8.8–8.10）：`Draw(name)`（`Do`）、`InlineImage(parameters, data)`（`BI`…`ID`…`EI`）、`Shade(name)`（`sh`）。
++         - **マーク付きコンテンツと互換性**（§14.6、§7.8.2）：`MarkPoint(tag,
++           properties)`（`MP`、`DP`）、`BeginMarked(tag, properties)`（`BMC`、`BDC`）、`EndMarked`（`EMC`）、`BeginCompatibility`（`BX`）、`EndCompatibility`（`EX`）。
++         - **Type 3 のグリフのメトリクス**（§9.6.4）：`GlyphWidth(wx, wy)`（`d0`）、`GlyphMetrics(wx,
++           wy, llx, lly, urx, ury)`（`d1`）。
++         - `Unrecognized(operator, operands)`：一覧にない任意の演算子。`BX`/`EX` の互換性セクションが求めるとおり、失敗せずにオペランドとともに保持される。オペランドが不正な*既知の*演算子は、`MalformedOperator` を伴う `Pdf.Error` を発生させる。
+
+% 1 1 0 03314e6fdf1e278208f9166d3c993e37
+
+% 0 1 0 1ea6f2ef7146b3e70bc1367823bb33d2
+
+@ 0 13 0 1abdad718fe8adfa122f7d3663df54b1
++     entry .LineCap   線の端の形：`Butt`、`Round`、`Square`
++         `SetLineCap`（`J`）のオペランドで、序数で表す。フォーマットの番号どおり 0、1、2 である。
++     entry .LineJoin   パスの角の形：`Miter`、`Round`、`Bevel`
++         `SetLineJoin`（`j`）のオペランドで、序数で表す。
++     entry .FillRule   パスが囲む領域：`NonZero` ワインディングまたは `EvenOdd`
++         `Fill`、`FillStroke`、`CloseFillStroke`、`Clip` が持つ。フォーマットではこれらに二つの規則のための二つの演算子（`f` と `f*`、`W` と `W*`）がある。
++     entry .TextRenderMode   グリフの塗り方：塗り、線、両方、不可視。それぞれクリッピングの有無がある
++         `Fill`、`Stroke`、`FillStroke`、`Invisible`、`FillClip`、`StrokeClip`、`FillStrokeClip`、`Clip` で、`SetRenderMode`（`Tr`）のオペランドを序数 0 から 7 で表す。
++         `Invisible` モードのテキスト（スキャンしたページの上に OCR の層を置く普通の方法）も、`Page#text` で抽出される。
++   entry .Rect   既定のユーザー空間の矩形。ポイント単位の四つの型安全な長さで表す
+
+% 1 1 0 0594fc5f49ead97d1856b46bc5dd5393
+
+@ 0 6 0 1125eef7bfc952570f952bdb3f738350
++         PDF のポイントはちょうど 1/72 インチであり、これは quantitative の `Points` 単位なので、ページのボックス、リンクの矩形、宛先のビューは四つの `Quantity[Points[1]]`（`#left`、`#bottom`、`#right`、`#top`）からなる `Pdf.Rect` である。
++         ファイルから読んだ矩形は、ファイルが角をどの順で与えたかにかかわらず左下と右上に正規化され、ページの `/UserUnit` で拡大縮小される。ファイルに書く矩形は `[left bottom right top]` として書かれる。
+
+% 2 1 0 0c4ff3236db2b3b50faa2f5e733029a1
+
+% 3 1 0 18a436fbe1731dfd0569473b1912554a
+
+% 0 1 0 0f3d8023bf34238811b1c5cb55be56ad
+
+% 0 1 0 1faf3c44952edf6a188d24d4fe021692
+
+% 0 1 0 0445b55e5a469f0003102335d0759262
+
+% 0 1 0 0255e38643ccc94b0e78cc2491703b4a
+
+% 0 1 0 184c55335d48c0950bf719ebe30bbf82
+
+% 1 1 0 0b55b2b6ca8bc0b616c317ba727c7765
+
+@ 0 4 0 1ea6ac722314d79810cf01da63154ac2
++     entry #left   左下の角の x 座標
++     entry #bottom   左下の角の y 座標
++     entry #right   右上の角の x 座標
++     entry #top   右上の角の y 座標
+
+% 0 1 0 19d8c41773155dd41f5a21b191201b8c
+
+% 0 1 0 1565566b4e3488fc080f5cee1132eed6
+
+@ 0 20 0 08ef7d3c0dd154d813204c431e5f7318
++   entry #version   `%PDF-` ヘッダーのバージョン
++   entry #trailer   最も新しい相互参照セクションが残したままのトレーラー辞書
++       最も新しいトレーラーのエントリーで、その下に古いセクションのエントリーが重なる。`/Root`、`/Info`、`/ID`、`/Encrypt`、`/Size` がある。
++       表が走査で再構築された文書では、トレーラーは残っている `trailer` 辞書から復元されるか、走査で見つけたカタログから組み立てられる。
++   entry #encrypted   トレーラーに `/Encrypt` エントリーがあるかどうか
++       暗号化された文書は、スコープのブロックが実行される時点ですでに解錠されている（パスワードが与えられなければ空のパスワードが試され、これはパーミッションを制限するためだけに暗号化されたファイルに対応する）ので、これはファイルが何であるかを示すのであって、まだ何かが施錠されているかどうかを示すのではない。
++   entry #catalog   文書カタログ。`/Root` 辞書
++       トレーラーに `/Root` がないか、それが辞書でなければ、`MissingEntry(Root)` を伴う `Pdf.Error` を発生させる。
++   entry #page   平らにしたページの木の、序数の位置にあるページ
++       `pdf.page(Prim)` は最初のページである。
++       ページの木は深さ優先で読む順にたどられ、継承可能な属性（`/Resources`、`/MediaBox`、`/CropBox`、`/Rotate`）が蓄積されるので、`Page` はそれらが葉に設定されていても祖先に設定されていても答えられる。
++       循環する木は `CircularPageTree` を伴う `Pdf.Error` を発生させ、最後のページを越えた序数は、1 から数えた番号を伴う `MissingPage` を発生させる。
+
+@ 0 2 0 16d05081437e5a200beda0723bbdad00
++       `Page` は文書を捕捉するので、スコープから出られない。そのボックス、テキスト、フォント、注釈は出られる。
+
+% 2 1 0 17e3ca5b02ec53930e4686ee4d97a206
+
+% 3 1 0 1d89737030e7b05b05d130dd1ece7b17
+
+% 4 1 0 1c35dd510073214607da8bd79058d182
+
+% 0 1 0 086d3c87ea823cd9127e01e768dd37d5
+
+% 1 1 0 169107fd7fa25f7a0677698089ba4e99
+
+% 2 1 0 1a685ddae0459c4907d33f75cd84607f
+
+% 3 1 0 0917370732a9ec1514a6bbbde76b158d
+
+@ 0 5 0 165437c195bcf8fb075aa8d5bc952fd3
++   entry #pageCount   平らにしたページの木が持つページの数
++   entry #destinations   文書の名前付きの宛先。名前をキーとする
++       カタログの中の現代的な `/Names` → `/Dests` 名前木と、古い `/Dests` 辞書の両方を読み、それぞれを `Destination` に解決する。ページは平らにしたページの列での序数として与えられる。
++       対象を解釈できない名前は省かれる。
+
+% 2 1 0 13d40d31123bd24c1b2a417b6e8deb14
+
+% 3 1 0 1d372155dbba8d3519298def01223661
+
+% 4 1 0 1d8d9eed73d44f8c045c01c956b26fd1
+
+% 0 1 0 0b4295b6a5e06ab605b3a3f4c56e8c24
+
+% 1 1 0 07aed022f332648f1d7cca0f13d37bff
+
+% 0 1 0 1c36a25e4c72881415f024e4764e8953
+
+% 1 1 0 1da871e23e44728e1bd535b2109b927b
+
+@ 0 30 0 0c3cbd0317ae961012ff1007f97180b4
++   entry #bookmarks   文書のアウトラインを `Bookmark` の木として表したもの
++       `/First` と `/Next` を通して `/Outlines` の木をたどり、各項目のタイトル、宛先（`/Dest` から、または `/GoTo` アクションの `/D` から。名前付きの宛先は検索される）、子を実体化する。
++       兄弟や子の連鎖に循環があると、ループせずにたどるのをやめる。
++       結果は純粋で、スコープから出られる。`setBookmarks` は木を書き戻す。
++   entry #attachments   文書に埋め込まれたファイル。`/EmbeddedFiles` 名前木から得る
++       それぞれは `Pdf.Attachment` で、そのメタデータはこの時点で読まれるが、`data` はまだ文書を通して読むので、このリストはスコープに閉じ込められる。
++   entry #pageLabel   ビューアーがページに表示するラベル。`/PageLabels` から得る
++       カタログの `/PageLabels` 数値木（ISO 32000-2 §12.4.2）のもとでのページのラベルである。接頭辞 `/P` の後に、`/S` で書式を決めた番号が続く。`D` は十進数、`R` と `r` は大文字と小文字のローマ数字、`A` と `a` は大文字と小文字のアルファベットで、範囲の始まりで `/St`（デフォルトは 1）から数える。
++       `/PageLabels` の木がない場合や、最初の範囲より前のページでは、1 から数えた普通のページ番号となる。
++   entry #xmp   カタログに XMP メタデータのストリームがあれば、そのバイト
++       カタログの `/Metadata` ストリームのデコードされたペイロードで、XML である。なければ `Unset`。
++   entry #info   `Pdf.Info` としての情報辞書
++       トレーラーの `/Info` を読み、テキストのエントリーはそれぞれ PDFDocEncoding か UTF-16 からデコードし、日付はそれぞれ `D:` 形式からパースする。
++       `/Info` のない文書では、すべてのフィールドが `Unset` の `Info` となる。
++   entry #apply   参照、または番号と世代で指定したオブジェクト
++       `pdf(ref)` と `pdf(number, generation = 0)` は間接オブジェクトを解決する。まず書き込みのオーバーレイから（進行中の編集が見えるように）、次にキャッシュから、次にファイル内の記録されたオフセットから、または圧縮されて入っているオブジェクトストリームから解決する。
++       解放された、欠けた、無効なエントリーや、世代が一致しないものは、ISO 32000-2 §7.3.10 のとおり `Cos.Nil` であり、エラーではない。
++       記録されたオフセットに別のものがあるオブジェクトは、代わりにファイルを走査して見つけられる。
++       読み込み中に自身を参照するオブジェクトは、`CircularReference` を伴う `Pdf.Error` を発生させる。
+
+% 2 1 0 0fcbfcbeb3bf549105c24ee121133046
+
+% 3 1 0 033a7aa2e1cc75421df5610b3c8a5998
+
+% 4 1 0 037f2733e152f83811329d24535c36ff
+
+% 0 1 0 09b1fe55c14509951e336bb2a0f755a6
+
+% 1 1 0 0331c1e07675ff111dfe476276ce662a
+
+% 0 1 0 090091d7846dec640c48ae79201e641c
+
+% 1 1 0 008ac7f2582629da07d1105316a6c411
+
+@ 0 16 0 0c8ed706f8c2af741fe086b2db07a6ad
++       暗号化された文書の文字列はオブジェクトの読み込み時に復号される。ストリームのペイロードは `#payload` か `#spring` が読むときに復号される。
++   entry #resolved   間接参照を一段取り除いた値
++       `Cos.Ref` は `#apply` で検索され、他の `Cos` はそのまま返される。
++       直接か間接かわからない辞書のエントリーを読む普通の方法は、`pdf.resolved(dictionary(t"Pages").or(Cos.Nil))` である。
++   entry #payload   ストリームのデコードされたバイト全体
++       `stream` と `endstream` の間の生のバイトを読み（`/Length` が指すバイトの後に `endstream` が続くならそれを信頼し、そうでなければ印を探す）、文書が暗号化されていればそれを復号し、ストリームのフィルターの連鎖に通す。フィルターは `FlateDecode`、`LZWDecode`、`ASCII85Decode`、`ASCIIHexDecode`、`RunLengthDecode` で、`/DecodeParms` が求めればそれぞれ PNG や TIFF の予測子を伴う。
++       連鎖は最初の画像コーデック（`DCTDecode`、`JPXDecode`、`CCITTFaxDecode`、`JBIG2Decode`）で止まり、その出力はエンコードされた画像である。
++       未知のフィルターは `UnknownFilter` を伴う `Pdf.Error` を発生させ、入力を拒否するコーデックは `CorruptStream` を発生させる。
+
+% 2 1 0 07d1c30439ed8ea505e43ef118e4af54
+
+% 3 1 0 131522e411f508c31dbc033fb6198690
+
+% 4 1 0 0bc074af186400211e68cd2b266b3f61
+
+% 6 1 0 15f9e0ac81e5953c0ec9fd6542ddc98f
+
+% 7 1 0 12f2378b98472bec1baac3df35f160b8
+
+% 8 1 0 0da7e6078cb09784189536e94aa29a43
+
+% 0 1 0 0db6e560c276d7fc0e99d49ba4674b70
+
+% 1 1 0 0861104054aa66991badf38a85bd9021
+
+% 2 1 0 062346fc5b08fe6c0f7700f605a7e38d
+
+@ 0 8 0 1db0896579b26b25114a20b3cc89361a
++   entry #spring   ストリームのデコードされたバイトを、再実体化可能なチャンクの `Spring` として表したもの
++       `#payload` がストリームを丸ごと実体化するのに対し、`spring` は `Spring[Data]` を返す。その `apply()` はそのたびに新しいプル型のエンドポイントを作り、それは生の範囲を 64 KiB のチャンクで読み、同じフィルターの連鎖をストリーミングのパイプライン（pneumatic のインフレーターと LZW 展開器、その後ろに予測子と ASCII デコーダーを集めたもの）としてデコードするので、大きな埋め込みファイルや画像が丸ごと保持されることはない。
++       エンドポイントは文書を通して読むので、スコープより長く生きられない。
++       暗号化されたストリームは、暗号がペイロード全体にわたるので、フィルターの前に丸ごと復号される。
+
+% 2 1 0 175870a3378d414d05af725d347c3670
+
+% 3 1 0 0c43858b8acc251512704c6ed9712310
+
+% 4 1 0 1b7ab454bfc8fc7709abcc45329e85d5
+
+% 6 1 0 0fcaf6b311fdfb2a09a9bc64bb589619
+
+% 7 1 0 1352ba4214f223881b084a91fa779d91
+
+% 8 1 0 17cd06de3592d4f60c0dd679a4436a48
+
+% 0 1 0 1e8b0a990e23162d1bb7100c7188f33e
+
+% 1 1 0 024802c2fbabb7da13193e4a39d1e435
+
+% 2 1 0 088f62245c7e76951b6a2ad29cf041a6
+
+@ 0 1 0 161634d5398b65b00d1eb0dadd953c10
++   entry .Destination   リンクやブックマークの行き先：ページと、ビューアーがそれをどう収めるべきか
+
+% 1 1 0 103ef4ea946ac39f0738891226ed9641
+
+@ 0 4 0 137a6a0a17012abd05e939c86336534f
++         ISO 32000-2 §12.3.2.3 の明示的な宛先の列挙型である。ページは平らにしたページの列での序数として与えられ（`Prim` が最初のページ）、フォーマットが省略を許すビューのパラメーターは、ユーザー空間の単位の `Optional[Double]` として与えられる。
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 1 0 0c1c263a0de533d10a1161cb385ec376
++         column  ケース
+
+% 0 1 0 1146f4c2a8020cb60a9b179beb6c5f64
+
+@ 0 9 0 086fa1324de069870f27feb01cba0a73
++         column  表示するもの
++         row  `Xyz(page, left, top, zoom)`  `/XYZ`  左上の角の位置を、あるズームで
++         row  `Fit(page)`  `/Fit`  ページ全体
++         row  `FitWidth(page, top)`  `/FitH`  ページの幅。`top` をウィンドウの上端に置く
++         row  `FitHeight(page, left)`  `/FitV`  ページの高さ。`left` を左端に置く
++         row  `FitRect(page, rect)`  `/FitR`  `Pdf.Rect` で表したページの矩形
++         row  `FitBox(page)`  `/FitB`  ページの境界ボックス
++         row  `FitBoxWidth(page, top)`  `/FitBH`  境界ボックスの幅
++         row  `FitBoxHeight(page, left)`  `/FitBV`  境界ボックスの高さ
+
+% 1 1 0 0ca462c8466979c902f717c121d52f50
+
+@ 0 4 0 189f3dfe70336ebd0e9686cb0f7ab369
++         宛先は、明示的な配列、`/D` にそれを包む辞書、または文書の名前付きの宛先の中で検索される名前や文字列から読まれる（検索は一度だけなので、自己参照的な名前がループすることはない）。
++         `Pdf#destinations` は名前付きのものを与え、`Annotation.Link` と `Bookmark` はそれぞれ自分の宛先を持ち、`addLink` と `setBookmarks` はそれを書く。
+
+% 0 1 0 0bafc6e12c30055a0a28a12d787a9c1c
+
+% 0 1 0 07c9d8ae29a550400a27e5083886916e
+
+@ 0 2 0 04a70d8509080f621632fd2bb8f4b93b
++     entry .page   ケースがどれであれ、宛先のページを序数で表したもの
++         すべてのケースが独自の `page` フィールドを宣言するので、`Destination` に対する拡張である。
+
+@ 0 1 0 1a88a3031731d15c07277d700a0e444f
++ entry .Page   文書の一ページ。継承された属性が適用されている
+
+% 1 1 0 0b400273be2ccae80ac458bba039e2fd
+
+@ 0 6 0 006278e3f7cd64bd0b31240f2c44c32a
++       `Page` はページの木の葉であり、`Pdf#page` で序数の位置から到達する。フォーマットがページに祖先から継承させる属性（`/Resources`、`/MediaBox`、`/CropBox`、`/Rotate`）はすでに解決されており、子自身のエントリーが祖先のものに優先する。
++       これは文書を通して遅延して解決するので、`Pdf` を捕捉し、スコープより長く生きられない。そこから取り出したもの（ボックス、回転、フォント、テキスト、注釈）はすべて純粋で持ち運べる。
+
+% 2 1 0 005e29228f3cb10f1eb68c053fec1bbf
+
+% 3 1 0 0e07bbc9230f91d014c66132d68b037e
+
+% 4 1 0 1e7650b60f92fb090c703140df0ab532
+
+% 0 1 0 11ea3b10d4d3f93f10e74c41bd44afd7
+
+% 1 1 0 16425d2f72d67c610e189c4c3891127d
+
+% 0 1 0 07e6fb53238b17dd0092a935e64e7f99
+
+% 0 1 0 0cf794271f5811b31b7499705b2590b6
+
+% 1 1 0 0777dde2f40067b2148ed4f571b1e6d3
+
+@ 0 6 0 1c26a154a713a9791912d7761e7a2b73
++       ボックスはフォーマットのデフォルトに従う。`/MediaBox` は（ページか祖先に）必須であり、クロップボックスのデフォルトはメディアボックスであり、継承できないブリードボックス、トリムボックス、アートボックスのデフォルトはクロップボックスである。
++       すべてのボックスはページの `/UserUnit` で拡大縮小されるので、読まれる値はポイント単位である。
++       `#width` と `#height` は表示される大きさで、クロップボックスの大きさだが、ページがどちらかの向きに四分の一回転しているときは軸が入れ替わる。
+
+@ 0 3 0 00b71b848843193306cdcd169a0896b3
++       編集の拡張は、どのページを変更するかを示すために `Page` を取る。`setContents`、`setRotation`、`setBox`、`setPageEntry`、`addResource`、`useFont`、`setAnnotations`、`addLink`、`removePage` がある。
+
+% 1 1 0 00bf255f6c9b027b1dc1dae3abb7b1ff
+
+% 0 1 0 0f0187f2c69474e102843144d828f7b1
+
+% 0 1 0 06819af656ea477a1903a4be75858ce6
+
+@ 0 23 0 130ae701dcd56f6e0a64c0a9e805671c
++   entry .Rotation   表示のためにページをどう回すか：`None`、`Quarter`、`Half`、`ThreeQuarters`
++       ページの `/Rotate` を正規化したものである。フォーマットはこれを時計回りの度数で 90 の倍数として与える。`Quarter` は 90、`Half` は 180、`ThreeQuarters` は 270 であり、これらのどれでもない値（またはエントリーがない場合）は `None` である。
++       `setRotation` はこれを書き戻す。
++   entry #index   平らにしたページの列でのページの序数の位置
++   entry #dictionary   継承されたエントリーを含まない、ページ自身の辞書
++   entry #userUnit   ユーザー空間の単位の大きさを 1/72 インチの倍数で表したもの：`/UserUnit`、デフォルトは 1
++       継承されない。
++       ページ上のすべてのボックスにこれが掛けられるので、300 ポイントのメディアボックスに対して `/UserUnit 2` を宣言したページは、幅 600 ポイントとして読まれる。
++   entry #mediaBox   ポイント単位のメディアボックス。ページ自身のものか継承されたもの
++       ページもどの祖先もそれを宣言していなければ、`MissingEntry(MediaBox)` を伴う `Pdf.Error` を発生させる。
++   entry #cropBox   クロップボックス。デフォルトはメディアボックス
++   entry #bleedBox   ブリードボックス。デフォルトはクロップボックス
++   entry #trimBox   トリムボックス。デフォルトはクロップボックス
++   entry #artBox   アートボックス。デフォルトはクロップボックス
++   entry #rotation   ページの回転。自身のものか継承されたもの
++   entry #width   表示される幅：クロップボックスの幅。ページが四分の一回転していればその高さ
++   entry #height   表示される高さ：クロップボックスの高さ。ページが四分の一回転していればその幅
++   entry #fonts   ページのフォント。`Tf` 演算子が参照するリソース名をキーとする
++       ページのリソース（自身のものか継承されたもの）の `/Font` 辞書を `Pdf.Font` に読む。
++       解釈できないフォント辞書は、失敗せずに除外される。フォントはテキスト抽出の間に機会があれば参照されるものだからである。
+
+% 2 1 0 1f49a0749883a43b1ee7a7fc818e5eb2
+
+% 3 1 0 1fafc5733905e64b0a21dabc6dab735c
+
+% 4 1 0 12bf08691e482fc50094b100113a5b0a
+
+% 0 1 0 06311cc0c7499c010a3a1f4967f12dc7
+
+% 1 1 0 09ba61071ddef3ca12f1da17619af0c2
+
+% 0 1 0 12712960327b8ff8118a125a50df6412
+
+% 1 1 0 05c83ece7dc0787d119b915c387eb883
+
+@ 0 19 0 1f12752695cb36841d0c4c998891e5f2
++   entry #content   デコードされたページのコンテンツストリーム
++       ページの `/Contents`（一つのストリーム、またはフォーマットが一つとして扱うよう求めるストリームの配列）を、各ストリームのフィルターを通してデコードし、間に改行を挟んで連結したバイトである。
++   entry #operators   型付きの `Pdf.Operator` としてのコンテンツストリーム
++       `#content` を字句解析して各命令を解釈し、ライブラリが知らない演算子には `Unrecognized` を与え、知っている演算子でオペランドが誤っているものには `MalformedOperator` を伴う `Pdf.Error` を発生させる。
++   entry #runs   すべてのテキスト表示操作を、デコードし位置付けた `TextRun` として表したもの
++       コンテンツストリームのテキスト状態（フォント、サイズ、行列、間隔、ライズ、行送り）を `#operators` に通して実行し、各 `ShowText`、`ShowTexts`、`NextLineShow`、`NextLineShowSpaced` を、Unicode テキスト、フォント、実効サイズ、ベースラインの原点、送り幅をポイント単位で持つ `TextRun` として与える。
++       段落ではなく座標を必要とするリーダーのためのものである。
++   entry #text   ページのプレーンテキスト。コンテンツの順に並ぶ
++       グリフの位置から読む順を再構成する。隣接する表示はつながり、ベースラインに沿った隙間は空白になり、ベースラインの変化は改行になる。忠実度は `pdftotext -raw` と同程度である。
++       不可視の描画モード（OCR の層）のテキストも含まれる。
+
+% 2 1 0 0dce2bcbcc41d27008e91fe036851a1f
+
+% 3 1 0 178588cb3b3c6ab80b317a7595c0eac7
+
+% 4 1 0 19d8801a5e01ea4f158e24db9fc4704d
+
+% 0 1 0 0c28b1aeb1094c330c88da6a7d1f89f3
+
+% 1 1 0 151bceb46ef8de7813a9e8fb4d847c6c
+
+% 2 1 0 1729b26881495bf3119c8fb1e1034d41
+
+% 3 1 0 131980c65b1a315e1771b052bfe88450
+
+@ 0 5 0 1de853f42e444bcd0b82816e376d0ad4
++   entry #annotations   型付きの `Annotation` としてのページの注釈
++       ページの `/Annots` 配列を読む。宛先（明示的なもの、`/GoTo` アクションを通したもの、名前付きのもの）と URI を持つ `/Link`、内容を持つ `/Text` 注記、フィールド名を持つ `/Widget`、そしてその他のものはサブタイプを持つ `Annotation.Other` となる。
++       それぞれはポイント単位の矩形と生の辞書を持つ。
+
+@ 0 1 0 16e06cc04b8b78a40279ccdd5a283985
++ entry .Cos   COS オブジェクトモデル：PDF ファイルを構成する値
+
+% 1 1 0 0ba8e5bafb13292803db579722216312
+
+@ 0 6 0 01de09fe180c30c70e61a084859ba06e
++       COS（"Carousel Object System"）は PDF の下にあるオブジェクト言語である（ISO 32000-2 §7.3）。`Cos` は、その八つの基本型にストリームと間接参照を加えた列挙型である。
++       ライブラリが読むすべての辞書（ページ、カタログ、トレーラー、フォント）は `Map[Text, Cos]` であり、`Cos` に対する拡張メソッドは値を期待される型として読み、そうでなければ `Unset` を与えるので、予期しない形に対して読み取りが例外を投げることはない。
+
+% 2 1 0 0d346365fd025fe102e2ed11c90b2e36
+
+@ 0 13 0 184fe887e43338fd1e6afee8b8042c1a
++       column  ケース
++       column  PDF オブジェクト
++       column  注記
++       row  `Nil`  `null` オブジェクト  値が `Nil` である辞書のエントリーはキーがないことと等価であり、`apply` はそれに従う
++       row  `Truth(value)`  真偽値
++       row  `Integral(value)`  整数  `Long` として
++       row  `Real(value)`  実数  `Double` として。`double` はどちらの数値型も読み、その区別は書き出しのために保たれる
++       row  `Name(text)`  `/Type` などの名前  スラッシュを除いたもの
++       row  `Chars(bytes)`  文字列  生のバイトとして。その解釈（PDFDocEncoding、UTF-16、日付）は `text` と型付きの層に委ねられる
++       row  `Sequence(elements)`  配列
++       row  `Dictionary(entries)`  辞書
++       row  `Body(entries, start)`  ストリーム  *ロケーター*。その辞書と、生のペイロードのファイル内オフセットであり、ペイロードは `Pdf#payload` か `Pdf#spring` を通してのみ読まれる。`newStream` で作ったストリームの `start` は負で、書き込みのオーバーレイ内のバイトのキーとなる
++       row  `Ref(number, generation)`  間接参照  `Pdf#apply` か `Pdf#resolved` で解決される
+
+% 1 1 0 101fd67c30fe9050188ae723488aa4d2
+
+% 3 1 0 018972576e6d4c000079669df77825bf
+
+% 4 1 0 16c3c8d9cf49051d1f31123164299935
+
+% 5 1 0 125a78711b6478fe103b376941a10dc7
+
+% 0 1 0 013ac2c112313bde10b2ed47e019a07b
+
+% 1 1 0 1065482d4eabb9c710d4eebe154468fd
+
+% 0 1 0 1e48bb152e3eb1b602b4a52786bc585d
+
+% 0 1 0 1b70e84b078d2fa4197240af87e527c7
+
+% 1 1 0 0e8bdd54e9ae80e40e2f011531c4e2b0
+
+@ 0 3 0 021fa2d5f1a8be821f6d7c472d6966cc
++       書き出しにも同じ値を使う。`set`、`allocate`、`newStream` は `Cos` を取り、`appendPage` のリソースと `setAnnotations` の辞書は `Cos` の値として組み立てる。
++       整数である数は `Integral` として書くのがよい。
+
+% 1 1 0 1343163e72027e8e17dc1c162e637ecc
+
+@ 0 20 0 1113f4d687a917a2146cff943ce6941b
++   entry .dictionary   辞書のエントリー、またはストリームの辞書。それ以外では `Unset`
++       `Cos` に対する拡張である。
++       検索においてストリームはその辞書であるので、`Body` はその辞書で答える。
++   entry .apply   キーで指定した辞書のエントリー。値が `Nil` なら存在しないものとして読む
++       `Cos` に対する拡張である。値が辞書やストリームでないとき、そのキーがないとき、またはそのキーの値が `null` オブジェクトであるとき（ISO 32000-2 §7.3.9）、`cos(t"Type")` は `Unset` である。
++       結果は `Ref` であることがあり、`Pdf#resolved` がそれをたどる。
++   entry .long   `Integral` の値。そうでなければ `Unset`
++   entry .double   `Integral` または `Real` の値を `Double` として表したもの。そうでなければ `Unset`
++   entry .name   `Name` のテキスト。そうでなければ `Unset`
++   entry .truth   `Truth` の値。そうでなければ `Unset`
++   entry .chars   `Chars` 文字列の生のバイト。そうでなければ `Unset`
++   entry .text   `Chars` 文字列を、そのバイト順マークか PDFDocEncoding に従ってテキストとして表したもの
++       UTF-16BE のマーク `FE FF` で始まる文字列は UTF-16BE として、UTF-8 のマーク `EF BB BF` で始まるものは UTF-8 として、それ以外は PDFDocEncoding（0x18–0x1F と 0x80–0xA0 に ISO 32000-2 Annex D.7 の印刷用文字を置いた Latin-1）としてデコードされる。
++       不正な列は U+FFFD にデコードされる。
++       `setInfo`、`addLink`、`setBookmarks` が書くテキストは逆の経路をたどる。すべての文字が収まれば Latin-1、そうでなければマーク付きの UTF-16BE である。
++   entry .elements   `Sequence` の要素。そうでなければ `Unset`
+
+@ 0 1 0 14a9e6de25c7529010f03580ef3634d0
++ entry .Annotation   ページの注釈：リンク、注記、フォームのウィジェット、またはその他の任意のサブタイプとその辞書
+
+% 1 1 0 1cdd1339329060b60f7ff01900a00005
+
+@ 0 4 0 09f15738d319d05a010f5a51d5fa86ff
++       ページの `/Annots` 配列が保持するもの（ISO 32000-2 §12.5）の列挙型で、`Page#annotations` が読む。
++       三つのサブタイプは型付けされ、残りの二十あまりは `Other` として保持される。どのケースもポイント単位の矩形と、逃げ道としての生の辞書を持つ。
+
+% 2 1 0 0c81c2ec10ff4cd80f3498b3d4f88d62
+
+@ 0 7 0 193385da52a13d6304b57d19135a5781
++       column  ケース
++       column  サブタイプ
++       column  持つもの
++       row  `Link(rect, destination, uri, dictionary)`  `/Link`  その対象：`Pdf.Destination`（`/Dest`、または `/GoTo` アクションの `/D` から。名前付きの宛先は解決される）、`uri`（`/URI` アクションから）、またはそのどちらでもない
++       row  `Note(rect, contents, open, dictionary)`  `/Text`、付箋の注記  その `/Contents` と、`/Open` で表示されるかどうか
++       row  `Widget(rect, fieldName, dictionary)`  `/Widget`、フォームのフィールドの外観  フィールドの `/T` の名前
++       row  `Other(subtype, rect, dictionary)`  その他の任意の `/Subtype`  名前によるサブタイプ
+
+% 1 1 0 02606b6d2b0333551f90dedc341e05e8
+
+% 3 1 0 136698eb716f63c603b91d117579228b
+
+% 4 1 0 04efec72913c9228018dc045c10b17e4
+
+% 5 1 0 044e9e96fd512df40c90eb89c6ec68d3
+
+% 0 1 0 02db9f61746cfef100477d434a8705eb
+
+% 1 1 0 0b2776da1be2403814bbf7805a06ca87
+
+% 0 1 0 033be616dac5ffab198bf1cb118325cc
+
+% 0 1 0 1a2c212aa14184ab04cd62367221c716
+
+% 0 1 0 097707e2021f903a044c6c40bcb58b04
+
+% 1 1 0 140bba67d074a7d71e71c42b2a304a68
+
+@ 0 2 0 1d5af7bac3534d1b02c1e598ce9b55b3
++       `addLink` はリンクの注釈を書く。`setAnnotations` はページの注釈を生の辞書で置き換える。
+
+% 1 1 0 1332bfbf90300a550bd2096b6e08cc9b
+
+% 1 1 0 021fbdc6c701e46016bf5ea767a18d05
+
+% 0 1 0 11d472c6e272734d130f9ab957c18e8f
+
+@ 0 4 0 0e7585ba58528a190a22d3a69803b3ce
++   entry .rect   注釈の矩形（ポイント単位）。どのケースでも
++       `Annotation` に対する拡張である。どのケースもそれぞれ自分の `rect` フィールドを持つからである。
++   entry .dictionary   注釈の生の辞書。どのケースでも
++       `Annotation` に対する拡張である。
+
+@ 0 1 0 0c205e91165f399c146972a438f40fab
++ entry .Bookmark   文書のアウトラインの一つのエントリー。その宛先と子を持つ
+
+% 1 1 0 17c2ffe96a4db1f01699417e9e9eb8c4
+
+@ 0 4 0 1761695037540f711cd0e3469b637607
++       PDF の「アウトライン」は、どのビューアーもブックマークとして示すものである。
++       `Pdf#bookmarks` は木を完全に実体化された `List[Bookmark]` として読むので、それはスコープから出られる純粋な値である。`setBookmarks` は木を書き戻し、`/First`/`/Last`/`/Next`/`/Prev`/`/Parent`/`/Count` のつながり全体を組み立て直す。
+
+% 2 1 0 0bee110e2ae909e20e83b990693be16e
+
+% 3 1 0 12ced40d6dab14c40afe6006f61bfb11
+
+% 0 1 0 04d9fe57d23ce3b8062c5a1842bb6d6e
+
+% 0 1 0 02a723a58c8373751c0bf4d681732680
+
+% 0 1 0 0747e41bbdd344170a8802faade7b24b
+
+% 0 1 0 19f6a3bb372d54f70e82603b56fbd159
+
+% 0 1 0 1837dee3ac13d0b902a6120dd1a0306c
+
+% 1 1 0 0b021e2df33086970b4076deb83a46f9
+
+% 1 1 0 104056dfe680b64d0f9a8e4fd242f252
+
+% 0 1 0 0fa5f9de33252bbe0d198ef538deb427
+
+@ 0 3 0 0de853b41a5753f20af83bbdcada3f9c
++   entry #title   ブックマークのテキスト
++   entry #destination   それが導く先。子をまとめるだけの見出しでは `Unset`
++   entry #children   その下に入れ子になったブックマーク
+
+@ 0 1 0 01152ff423e9ad9d0e2852d99b3d25fd
++ entry .TextRun   一つのテキスト表示の操作。デコードされ、ポイント単位で位置付けられたもの
+
+% 1 1 0 10d9b7580a5acda81788f4846b8c404e
+
+@ 0 5 0 1ef3152f783394a609402f1feca570dc
++       `Page#runs` は、`ShowText`、`ShowTexts`、`NextLineShow`、`NextLineShowSpaced` の演算子ごとに一つの `TextRun` を与える。その Unicode の `#text`、それが描画されるフォント `#font`、実効的な大きさ `#size`（テキスト行列と変換行列で拡大縮小されたフォントサイズ）、回転していないページ空間でのベースラインの原点 `#x` と `#y`、そして送り幅 `#width` であり、すべて `Quantity[Points[1]]` である。
++       `TextRun` は純粋な値で、スコープから出られる。
+
+% 2 1 0 0a67a170adc9620209bb3135d62e81b5
+
+% 3 1 0 1c5dac68989ba1381b1b678abd1f0833
+
+% 4 1 0 00a5736fe8811d9e1c967bdf9d937a70
+
+% 0 1 0 1d1d2921749ea1de1a6f1fc257500755
+
+% 1 1 0 0ded71ff61783374097562cb213abca8
+
+% 0 1 0 06df3c2d514a0dcf1315756b66003309
+
+% 1 1 0 02332855d77ec0d7000caf1826ea0b6b
+
+% 1 1 0 020cc4274ad6be480ca0f23365df5f0c
+
+@ 0 6 0 0f8714e4dd9db86802577fad20def820
++   entry #text   フォントを通じてデコードされた、ランのテキスト
++   entry #font   ランが組まれている `Pdf.Font`
++   entry #size   実効的なフォントサイズ（ポイント単位）
++   entry #x   ベースラインの原点の x 座標（ポイント単位）
++   entry #y   ベースラインの原点の y 座標（ポイント単位）
++   entry #width   ベースラインに沿ったランの送り幅（ポイント単位）
+
+@ 0 1 0 1043b91eb10a0caa0e99502e4df2f588
++ entry .Print   印刷のメディア：標準の十四書体を含む、PDF リーダーが表示できるフォント
+
+% 1 1 0 1168cdd98fc39cfd0f262eb4504ab6a5
+
+@ 0 7 0 0d11c60265e7a0000b0af726d0214698
++       `Print` は phoenicia の `Medium` で、cataclysm の `Web` に対応するものである。
++       書体が*印刷で組める*のは PDF リーダーがそれを表示できるときであり、それはそのプログラムが文書に埋め込まれているか、どのリーダーも持つ標準の十四フォント（ISO 32000-2 §9.6.2.2）の一つであるときである。
++       コンパニオンは五つの標準の書体を値として、`.Helvetica`、`.Times`、`.Courier`、`.Symbol`、`.ZapfDingbats` を持ち、それぞれに対する `Typesettable in Print` given を `(Typeface of "Helvetica") is Typesettable in Print` の暗黙のスコープに持つので、インポートは必要ない。
+
+@ 0 5 0 0b78ab6b42274616186546a228865d7f
++       `.font` はフェイスから `Font in Print` を作り、（プロビジョンのカバー範囲がわかっているときは）コンパイル時に、書体が印刷のためのプロビジョンを持つこと、そして求めるフェイス（太さ、傾き）がカバーされていることを検査する。
++       そして `useFont` がページの上でそのフォントを名付ける。プロビジョンが埋め込みのものならそのプログラムを埋め込み、標準のものなら名前で宣言するので、文書がリーダーの表示できないフォントを名付けることは決してない。
+
+% 2 1 0 19f537360896659b11f70082910f6fac
+
+% 3 1 0 088b7e31858448d71ea78d49a296db37
+
+% 4 1 0 1e6bd2d6a48611dc0d0f09eec981dc13
+
+% 0 1 0 041cca09b550a0bc004834017943587b
+
+% 0 1 0 1a99465c4db3deb40f09ddbb58b0b29f
+
+% 0 1 0 12c17d9071f8b76f157a9cdd2d0dcf06
+
+% 1 1 0 19c6c3af387f2e2a077a7b2709bced82
+
+@ 0 2 0 06c0ef02360f6a9b09f1011dd6f6d2c4
++       独自の書体は、`Sfnt` から埋め込むプロビジョンを宣言することで、印刷で使えるようになる。
+
+% 2 1 0 0435199927a3db660603c94d2a37c68b
+
+% 3 1 0 11449df8a39ae89216ed5618b8753a9d
+
+% 4 1 0 0106d730af09bd7a09ece23f19386488
+
+% 0 1 0 08ffd9b2436737e41843fd536b942f3a
+
+% 0 1 0 0edec2fd658c2917081bfb746082eaf8
+
+% 0 1 0 04a9a6aff3ded05812c5fbd67410e69f
+
+% 1 1 0 0512f9b555567d6811fa40f45511ca8d
+
+@ 0 3 0 0d0eca8cee86dc5007519638dd118ff3
++       標準の書体に対する `Font in Print` は `.standard` によって `Pdf.Font.Standard` に対応付けられる。太さ 600 から太字になり、傾きがあれば斜体またはイタリックのフェイスになる。埋め込みのプロビジョンからのフォントは、`.embedded` を通じてそのプログラムを差し出す。
+
+% 0 1 0 1e4ee1b4e11c503c02d4042f66627c4b
+
+% 0 1 0 19eefff2449a4f5b1e61f1c1d90e013a
+
+@ 0 1 0 17bba2410eb7f0cc0e07c63d6ddc6d12
++   entry .Provision   標準の書体が共有する `Typesettable` インスタンス
+
+% 1 1 0 0e40ca16b3fec8a408bccf46df01af35
+
+@ 0 48 0 13cbfe16d94f24800fb1b5cd7071bab9
++         名前付きのクラスなので、五つの標準のプロビジョンは安定した型を持つ。それぞれは、持っているフェイスを記述する `coverage` を伴うローカルのソース（リーダー自身のフォント）である。
++         テキストの書体は標準と太字を、それぞれ正体と傾斜体でカバーする。`Symbol` と `ZapfDingbats` は正体の標準のフェイスを一つカバーする。
++         通常ユーザーが構築するものではない。ユーザー自身のプロビジョンは、phoenicia の `Typesettable.embedded`、`Typesettable.local` とその仲間から来る。
++     entry #coverage   書体が印刷で持つフェイス
++     entry #sources   プロビジョンのソース：書体の名前を付けた一つの `Typesettable.Source.Local`
++   entry .Helvetica   `Helvetica` 書体、`Typeface of "Helvetica"`
++       標準と太字、正体と斜体：`Print.Helvetica.bold`、`Print.Helvetica.italic`、`Print.Helvetica.face` は、`Pdf.Font.Standard.Helvetica`、`HelveticaBold`、`HelveticaOblique`、`HelveticaBoldOblique` の中から選ぶ。
++   entry .Times   `Times` 書体、`Typeface of "Times"`
++       標準と太字、正体とイタリック：`TimesRoman`、`TimesBold`、`TimesItalic`、`TimesBoldItalic`。
++   entry .Courier   `Courier` 書体、`Typeface of "Courier"`
++       標準と太字、正体と斜体：`Courier`、`CourierBold`、`CourierOblique`、`CourierBoldOblique`。
++   entry .Symbol   `Symbol` 書体、`Typeface of "Symbol"`
++       独自の組み込みのエンコーディングを持つ一つのフェイス。`useFont` はこれを `WinAnsiEncoding` なしで宣言する。
++   entry .ZapfDingbats   `ZapfDingbats` 書体、`Typeface of "ZapfDingbats"`
++       独自の組み込みのエンコーディングを持つ一つのフェイス。
++   entry .helvetica   `Typeface of "Helvetica" is Typesettable in Print`（暗黙のスコープにある）
++       何も埋め込まずに Helvetica を印刷で使えるようにする given である。
++       これは `Print` のコンパニオンを通じて見つかり、それは細分化された型の暗黙のスコープにあるので、インポートは必要ない。
++   entry .times   `Typeface of "Times" is Typesettable in Print`（暗黙のスコープにある）
++   entry .courier   `Typeface of "Courier" is Typesettable in Print`（暗黙のスコープにある）
++   entry .symbol   `Typeface of "Symbol" is Typesettable in Print`（暗黙のスコープにある）
++   entry .zapfDingbats   `Typeface of "ZapfDingbats" is Typesettable in Print`（暗黙のスコープにある）
++   entry .standard   `Font in Print` が選ぶ標準のフォント。その他の書体では `Unset`
++       太さ 600 から太字になり、傾きがあれば斜体またはイタリックのフェイスになる。太さ 700 で傾きのある `Print.Helvetica` は `Pdf.Font.Standard.HelveticaBoldOblique` である。
++       五つの中にない書体は `Unset` であり、それによって `useFont` は、代わりに書体自身の名前でフォントを宣言することを決める。
++   entry .embedded   フォントのために埋め込む `Sfnt`。そのプロビジョンの埋め込みのソースから
++       カバー範囲がフェイスを許す最初の埋め込みのソース、なければ最初の埋め込みのソース、ファイルを持たないプロビジョン（標準またはローカルのもの）では `Unset` である。
++   entry .font   フェイスからの `Font in Print`。書体の印刷のためのプロビジョンに対して検査される
++       `Print.font(face)` は、フェイスのファミリーに対する `Typeface of family is Typesettable in (? >: Print)`（五つの標準の given の一つか、`Medium` または `Print` に対して宣言されたプロビジョン）と、プロビジョンのカバー範囲がフェイスを許さないときに発生する `Tactic[Font.Error]` を必要とする。
++       これはインラインなので、プロビジョンがコンパイラの読める埋め込みのファイルを名付けているときは、コードのコンパイル中に検査が行われる。実行時の検査は常に行われる。
++       期待される型がまだメディアを名付けていないところで使うこと。`Font.of[Print]` はメディアを書いた同じものである。
+
+% 2 1 0 1d47128c9e9985191af200fb336b0de6
+
+% 3 1 0 0dfde23d0c9389780b3e25d18e4d22b3
+
+% 4 1 0 1cd0507ecd1c6baf02108dc5edf04e9c
+
+% 0 1 0 02e1f8b9268a36071b3a6f90ef4184cc
+
+% 1 1 0 0f4c9fd55fc2d8221b16999d9d1ad04c
+
+@ 0 5 0 18fbc11c690f912a1d5e663b1106464a
++ entry .pdf   開かれたスコープの中のコンテキストの文書：`summon[Pdf]` ではなく `pdf.pageCount`
++     スコープにある `Pdf^` に対する透過的なインラインのアクセサーで、parasite の `monitor` にならったものである。
++     `PdfFile#open`、`path.open[Pdf]()`、`data.open[Pdf]()` で開かれたどのスコープも文書をコンテキストにするので、それに名前を付けないブロックは `pdf.page(Prim)` と書く。名前を付けるブロック（`open(Read & Write): doc ?=>`）はどちらを使ってもよい。
+
+% 2 1 0 1fbb6490d754456200155dbcff07c6fa
+
+% 3 1 0 10ade1bab3d7236d1b5f13c32782ab5f
+
+% 4 1 0 19a554c47355d0c60fc11fbf22ae78c4
+
+% 3 1 0 1bf5df70f7125301122df185d3213f00
+
+% 0 1 0 08f6b8b94087fc4f069e17aecbb08933
+
+% 1 1 0 1c5df1b7e4cd83d90da9e6d2f89769ad
+
+% 2 1 0 1900719ad4448e2d0f19379510c4a807
+
+@ 0 1 0 15cbfaf3f4a8435200d223e8d8c0048b
++     スコープの外ではコンテキストに `Pdf` がなく、このアクセサーはコンパイルできない。
+
+@ 0 7 0 06bf06f19405518c136652683aa4b44c
++ entry .set   参照によってオブジェクトを置き換える、または定義する
++     書き込みを許可されたハンドル `(Pdf & Granting[Grant.Write])^` に対する拡張で、`Read & Write` または `create[Pdf]` で開かれたスコープの中で使える。
++     `doc.set(ref, value)` は、`value` を `ref` が名付けるオブジェクトとして、あらゆる読み込みが最初に参照するオーバーレイに記録するので、変更はただちに `Pdf#apply` から見える。それはスコープが閉じるときに増分更新の一部として書かれる。
++     以前に解放されたオブジェクトは解放が取り消される。
++     （これは `update` ではなく `set` である。`update` の代入の糖衣構文は他の `update` と衝突するからである。）
+
+% 2 1 0 1fd7ef87678aff73023ad44cd43ea559
+
+% 3 1 0 1949594e9c823b47032d131c10c2609d
+
+% 4 1 0 02ab7a4958a2a669189c38843bf74ba9
+
+% 0 1 0 18d79cde07884f651df865de65b04244
+
+% 1 1 0 105dfc8910a80e3a024c4b33088705b8
+
+% 0 1 0 1f51a40cbc874bd4038b86ae98133734
+
+% 1 1 0 1c001897740fd9fa1c1c8fcdc1531e63
+
+@ 0 5 0 1e8653f0cb2008990c379dce7df5d946
++ entry .allocate   新しいオブジェクトを加え、それへの参照を返す
++     書き込みを許可されたハンドルに対する拡張である。
++     オブジェクトは次の空いている番号（元のファイルが使った最大のものの次）を世代 0 で取り、その参照はただちに他のオブジェクトの中で使える。
++     型付きの編集操作がカバーしない辞書やストリーム（`newStream`）を加える低レベルの方法である。
+
+@ 0 6 0 166c9f37094a77490612f6430b178ee0
++ entry .newStream   与えられたバイト列を持つ、圧縮されていない新しいストリームオブジェクト
++     書き込みを許可されたハンドルに対する拡張である。
++     `doc.newStream(data, entries)` は、辞書が `/Length` をデータの長さに設定した `entries` であり、そのバイト列が更新が書かれるまで書き込みのオーバーレイの中にある `Cos.Body` を作る。
++     これは値であり、まだオブジェクトではない。それを `allocate` するか、直接のストリームが求められるところに置くこと。
++     バイト列はフィルターを適用せず、与えられたとおりに書かれる。
+
+% 2 1 0 12a072d8f19ad6dc17e844db8bc5db01
+
+% 3 1 0 1e57c5e456ad89311190308a9e407569
+
+% 4 1 0 05a4b886a9608c0001b26b9694a32143
+
+% 0 1 0 181d54ab6a874eca0c8a1ada7e97a5ea
+
+% 1 1 0 1ace7b5cb461092c067783bd98ec15ea
+
+% 0 1 0 1c027aa4398f5b0209425923f970cef3
+
+% 0 1 0 1b85b707fc8760a31e659ff0831afdae
+
+% 0 1 0 0ecc002f01e397bc0dae5fcc75742c4a
+
+% 0 1 0 0fec442f7c0ec6b20e1fabbb7d83bdf0
+
+% 0 1 0 109e284955aa1248170c059822fc0884
+
+% 1 1 0 1fe5e130582029ec10a31df2bae99b18
+
+@ 0 5 0 0c48da04b93a74e50d34d2950fbfdaf3
++ entry .free   オブジェクトを削除する：その番号は空きの相互参照エントリーになる
++     書き込みを許可されたハンドルに対する拡張である。
++     このスコープで加えられたオブジェクトは単に捨てられる。元のファイルからのものは解放されたものとして記録されるので、増分更新はそれに対して空きのエントリーを書き、`Pdf#apply` はそれ以降それに対して `Cos.Nil` を与える。
++     （`delete` は galilei のものなので、`free` と名付けられている。）
+
+@ 0 5 0 05d3c5b5fa5e56460e5e3e5e5a37344c
++ entry .setContents   ページの内容を与えられた演算子で置き換える
++     書き込みを許可されたハンドルに対する拡張である。
++     演算子は新しい圧縮されていないコンテンツストリームに直列化され、ページの `/Contents` はそれを指すようになる。以前のコンテンツストリームはその場に残されるが、もう参照されない。
++     演算子が名付けるフォントや XObject は、ページのリソースになければならない（`useFont`、`addResource`）。
+
+% 2 1 0 1b440edcada696871d226d78590baac1
+
+% 3 1 0 0929ba4bb0c541b818000a89259dd2f6
+
+% 4 1 0 173904681961cd4819a36e027faa440b
+
+% 0 1 0 1d037a7bafab04950ba25b15a987c5eb
+
+% 1 1 0 09bb761ecb9167c808ee029bcf555de0
+
+% 0 1 0 072128fd5256a7c3022032dc633c7b41
+
+% 1 1 0 1e361e9352eb5c2b0da8ddf76d5d55d3
+
+% 0 1 0 101475b861d5f0a0083a86ff7075bea9
+
+% 2 1 0 08006e81fd03579401e20c8085b386bd
+
+% 3 1 0 00ffd94da2c8919412eee19e96919f17
+
+% 4 1 0 00c0d52067768c971ee9940b49b9d7c6
+
+% 0 1 0 0d993003d6ee727909c6c0529e839e0c
+
+% 0 1 0 0cf42b09bff8a50e0f6eb8a4f401259a
+
+% 1 1 0 1da52ff07be301760f4743cf4023990f
+
+% 2 1 0 1e2768e07954a0b50be4fd75210660f2
+
+@ 0 3 0 17539cea8576c6fc0d9f6600e6bc53ec
++ entry .setRotation   ページの回転を設定する
++     書き込みを許可されたハンドルに対する拡張である。
++     `Page.Rotation.None`、`Quarter`、`Half`、`ThreeQuarters` に対して、ページの `/Rotate` を 0、90、180、270 として書く。
+
+@ 0 5 0 161800dbfec9ae8f0de50a66e618fa64
++ entry .setBox   名前で指定したページボックスを、ポイント単位の矩形に設定する
++     書き込みを許可されたハンドルに対する拡張である。
++     `doc.setBox(page, t"CropBox", rect)` は、名付けたボックス（`MediaBox`、`CropBox`、`BleedBox`、`TrimBox`、`ArtBox`）を、ページ自身の辞書に `[left bottom right top]` として書く。
++     矩形は与えられたとおりにポイント単位で書かれる。`/UserUnit` が 1 以外のページは、それを拡大縮小して読み戻す。
+
+@ 0 4 0 1840b9c284386c4c0a5cd7e6e6a2b48a
++ entry .setPageEntry   ページの辞書の任意のエントリーを設定する
++     書き込みを許可されたハンドルに対する拡張である：`doc.setPageEntry(page, t"UserUnit", Cos.Real(2.0))`。
++     型付きの操作がカバーしないページの属性のための逃げ道である。
+
+@ 0 6 0 09fbdd89827ead6308d67143268cd5ce
++ entry .setInfo   文書情報辞書を置き換える
++     書き込みを許可されたハンドルに対する拡張である。
++     `Pdf.Info` の存在する各フィールドはテキスト文字列として書かれ、各 `Timing` は `D:YYYYMMDDHHmmSS` の形式で、オフセットがあればそれを `±HH'mm'` として書かれる。存在しないフィールドは省かれる。
++     トレーラーに既存の `/Info` オブジェクトがあればそれが置き換えられ、なければ新しいオブジェクトが作られて、増分更新のトレーラーからつながれる。
+
+% 2 1 0 09c2153db5a15b290f269dc4656c9758
+
+% 3 1 0 0920dcf3055a929e0b598c5649ac5328
+
+% 4 1 0 05bc969298da206008978a56c275c05c
+
+% 0 1 0 1ff6ce9139c7cdb5111d930d18cf03f2
+
+% 1 1 0 05584584e12bdcf71efd720eeb4561e7
+
+% 0 1 0 16e5700b163066b40eac8b35549a4aa5
+
+% 1 1 0 149de9ca0e8a3cac17e1475d0d6fe15f
+
+@ 0 10 0 14f1be61ec7a99011b05f35fa1e202cd
++ entry .embedFont   フォントプログラムを単純な WinAnsi の TrueType フォントとして埋め込み、その `/Font` の参照を返す
++     書き込みを許可されたハンドルに対する拡張である。
++     `doc.embedFont(sfnt)` はプログラムを `/FontFile2` ストリームとして書き、そのテーブルから `/FontDescriptor`（アセント、ディセント、キャップハイト、イタリックの角度、バウンディングボックス。テーブルが欠けているか読めないところでは妥当な既定値を使う）と、`WinAnsiEncoding` のもとでのコード 32 から 255 に対する `/Widths` 配列を組み立て、それらを囲む `/Font` 辞書をアロケートする。
++     `name` の既定値はプログラム自身の PostScript 名（または `Embedded`）である。
++     `subset` を与えると、与えられたテキストが必要とするグリフだけが、慣習的な六文字のタグ（`ABCDEF+Name`。名前とテキストから導かれるので、同一のサブセットは同一に埋め込まれる）のもとで埋め込まれる。サブセットにできるのは `Truetype` だけである。CFF の `Opentype` には書き換える `glyf` と `loca` がないので、丸ごと埋め込まれる。
+
+@ 0 2 0 147e4b158622bc881cc2c53c97d7b314
++     参照はフォントの*オブジェクト*である。`addResource` が、コンテンツの `SetFont` 演算子が使うリソース名のもとで、それをページの上で名付ける。
+
+% 2 1 0 1141f60d4b65031b05c7faf766ebfcae
+
+% 3 1 0 1c26ff0f30ec3704159a947298e81d83
+
+% 4 1 0 0103797e7953b8bb0c926985bb0ab630
+
+% 0 1 0 021c0f8bcfb9b7e01912660b321ec15f
+
+% 1 1 0 1bcd778442f08abf0cba9559d7b67fc0
+
+% 0 1 0 13a0c229041a0bab0d6102ce6553c077
+
+% 0 1 0 04bf6ef78ce08ab6108f291d8a7395e7
+
+% 1 1 0 187577684342f6d20605081fcfd8d9e6
+
+@ 0 9 0 0eb2c933ee470d7d0537ab6d075a172d
++ entry .useFont   `Font in Print` を、リソース名のもとでページの内容から使えるようにする
++     書き込みを許可されたハンドルに対する拡張である。
++     `Font in Print` は印刷のためのプロビジョンを持つ書体に対してのみ存在するので、`doc.useFont(page, t"F1", font)` は常にリーダーが表示できるものを持つ。埋め込みのプロビジョンからのフォントは `embedFont` で（`subset` が与えられればそれにサブセット化して）埋め込まれ、標準の書体は、何も埋め込まずに、その `Pdf.Font.Standard` の名前で `Type1` フォントとして宣言される（テキストのフォントには `WinAnsiEncoding`、`Symbol` と `ZapfDingbats` には組み込みのエンコーディングを伴う）。
++     その他の書体のローカルのプロビジョンは、書体の名前で宣言される。
++     そしてフォントは、ページの `/Font` リソースに、`SetFont` が参照する名前である `name` として登録される。
+
+% 2 1 0 127b4db6bb352fd11bcfffd7b0b3dd2f
+
+% 3 1 0 17a5b5fd4b380fdf070a2d56bea04203
+
+% 4 1 0 19b8688345a2b2160255ebdfcb607918
+
+% 0 1 0 1a9238e8ad8b31b30fa83ff7447cde30
+
+% 1 1 0 09e752612e1a085f04e301eed4a58b6f
+
+% 1 1 0 08663655cf9e50ee0e081823ff756827
+
+% 0 1 0 1c064f53fee8d814121949dbd8aa1eea
+
+% 2 1 0 08642e4f6ce197a4146de0117a903186
+
+% 3 1 0 0b69acc50577f91f13942aa571890e1f
+
+% 4 1 0 195045777117f7521d11607f20694162
+
+% 0 1 0 18f25248d66ed3d71fd35eb6fda8d0c1
+
+% 0 1 0 0d68832fda9a32a30449e51137d16830
+
+% 1 1 0 09b396567c4de97c0f98d127eecdfb76
+
+% 2 1 0 0985b20dcda04f77110f34736c3e9fb4
+
+@ 0 6 0 104eb2056bae8b2204e7287c20c86133
++ entry .addResource   カテゴリーと名前のもとで、ページにリソースを登録する
++     書き込みを許可されたハンドルに対する拡張である。
++     `doc.addResource(page, t"Font", t"F1", ref)` は、`ref` をページの `/Resources` の中のカテゴリーの辞書（`Font`、`XObject`、`ExtGState`、…）に `name` として入れる。リソースとカテゴリーの辞書は必要に応じて作られ、他のエントリーは保たれる。
++     名前は、コンテンツの演算子が参照するものである：`SetFont` には `/F1`、`Draw` には `/Im1`。
+
+@ 0 4 0 0107482c513c90630daa0d039943d5f2
++ entry .setAnnotations   ページの注釈を生の注釈の辞書で置き換える
++     書き込みを許可されたハンドルに対する拡張である。
++     各 `Cos` は間接オブジェクトになり、ページの `/Annots` はそれらの参照の配列に設定され、そこにあったものは捨てられる。
++     `addLink` は、残りを乱さずに型付きのリンクを一つ加える。
+
+@ 0 5 0 0aeb0dca3bdb96fb0d8c1363d8356ccb
++ entry .addLink   矩形の上に、URI または文書内の宛先へのリンクの注釈を加える
++     書き込みを許可されたハンドルに対する拡張である。
++     `doc.addLink(page, rect, uri = t"https://…")` は `/URI` アクションを持つ `/Link` の注釈を書き、`doc.addLink(page, rect, destination = Destination.Fit(Sec))` は明示的な `/Dest` 配列を持つものを書く。両方を与えてもよい。
++     注釈はページの既存の `/Annots` に追加される。
+
+% 2 1 0 0bc6f5d75ec075541fef550fa1a76013
+
+% 3 1 0 1339db60978e5af2015c8aca7753bfcb
+
+% 4 1 0 10236587f278e6650b42bf69ab5b09f5
+
+% 0 1 0 0aec58f90534fdcb16ce6ba99cfb415e
+
+% 1 1 0 0f8641ad961aa07208a8f4bde81ebf94
+
+% 0 1 0 04fcaa64a354d9f612eda23977fd1ff7
+
+% 1 1 0 19ff73d70089256615217d993d825499
+
+@ 0 5 0 143956f031049f9e158decc340f6ab74
++ entry .setBookmarks   文書のアウトラインを `Bookmark` の木で置き換える
++     書き込みを許可されたハンドルに対する拡張である。
++     木は、完全な `/First`/`/Last`/`/Next`/`/Prev`/`/Parent`/`/Count` のつながりと、明示的な配列としての各宛先を持つ新しいオブジェクトとして組み立て直され、カタログの `/Outlines` は新しいルートを指すようになる。
++     以前のアウトラインのオブジェクトは参照されないまま残される。
+
+% 2 1 0 1c011cadd78252c11c368aa0ff28c8c5
+
+% 3 1 0 0d84b5c59e6d25e006aba745f994cc42
+
+% 4 1 0 133bdac147b978051fdbeed8914b1370
+
+% 0 1 0 04f1a09a07bb29e9012a083e7b29cb3a
+
+% 1 1 0 10b3b050a6fa96430a2efb63da63bf48
+
+% 0 1 0 164bc24cb1381f0e1d97e20287ca6912
+
+% 1 1 0 10839e0c2ab622e31fd68109762d617d
+
+@ 0 8 0 16127f7ca128db4b0142d99cbd326461
++ entry .appendPage   与えられた大きさのページを、省略可能な内容とリソースとともに追加し、その参照を返す
++     書き込みを許可されたハンドルに対する拡張である。
++     `doc.appendPage(mediaBox, operators, resources)` は、メディアボックス、演算子が与えられればそれから直列化されたコンテンツストリーム、そして `/Resources` としての `resources`（`Cos.Dictionary`、またはそれへの参照）を持つページをアロケートし、それをルートのページツリーの `/Kids` の末尾に加えて `/Count` を増やす。
++     より深い木を持つ文書ではページはルートに加わり、それは有効であって、ページを最後に置く。
++     カタログのページツリーが存在しないかインラインであるときは、`MissingEntry(Pages)` または `TypeMismatch(Pages, a reference)` を伴う `Pdf.Error` を発生させる。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 06244775eb0ce85a1420204a6ca6161f
++       label 空の A4 ページ
+
+% 1 1 0 04826c8730c81568171b058eb353cc6c
+
+% 2 1 0 06c14bde0490e18b00aea8f363404d88
+
+% 3 1 0 081f0c89f90d025e00c57f8d209866bd
+
+% 5 1 0 17729b7b6a4cda270c27f3bd0d167898
+
+% 6 1 0 19e7e3dad15074fd084c35c3d94f7af7
+
+% 7 1 0 14f0e8444c99538c04852c3294bfa4b9
+
+% 2 1 0 1422cc5524a6eacf01d6596468d79d31
+
+% 3 1 0 172e37ed5ccf92580895f67b186e5758
+
+% 0 1 0 19917e832f94f3501227907f2b77887e
+
+% 1 1 0 114cb1ec0f22bd0216cd7d0c55cbd5bb
+
+@ 0 1 0 0ee687db02f5f0821c4d52ae1a2782b1
++       label リソースにフォントを宣言したもの
+
+% 1 1 0 1186e7a4bb6c030c04118fe85b45b640
+
+% 2 1 0 1aad178bf5e2d8e1165642d56b2af4d5
+
+% 3 1 0 1de6b7b9105f92eb06a12946e6566671
+
+% 5 1 0 088bf2d2d8cd8d511821da887eb2712b
+
+% 6 1 0 1f18b1282c0e609b07f4273eead7e1c8
+
+% 7 1 0 0470bfa8611f1f6315cb09fcd0da6304
+
+% 9 1 0 1a89c536d8ed27611d30a20cfc15a6c3
+
+% 10 1 0 0dba7951043d31c81e8619089fd99a50
+
+% 11 1 0 1e641d355d1e7d4c019f040a11647af7
+
+% 12 1 0 1570d40f4530d7520aa758798fcfcebe
+
+% 13 1 0 050aa60dbe9d22c9129b8c6d4c78a92b
+
+% 15 1 0 01d32dfe1e376cff1b0e6636c3acdf09
+
+% 2 1 0 19844fe313a36f0f000eb9c771b1040b
+
+% 3 1 0 126a73d165a9ec6101fde0e81ad46205
+
+% 0 1 0 03e2cf038cd120be1155597665f3b720
+
+% 1 1 0 0c7f3b3900dfeff50c80c4ab0ac1f6c9
+
+@ 0 1 0 001c74fb333862ce0c913de6ecdeccb7
++       label そのフォントを使う内容を持つもの
+
+% 1 1 0 1315a1911e9b192b016347144adf2885
+
+% 2 1 0 024f8d9d898d5f9f1d0601c1aff46673
+
+% 3 1 0 0bcbc8b47fab69c4074a2f6574cd58c4
+
+% 5 1 0 1d7e8297d7fc2f4d14fc37a09b9a1bcd
+
+% 6 1 0 060c2a5f4e5550a40e9201f23b574eab
+
+% 7 1 0 05488166a751fe4b0fda3b4d294d1ba7
+
+% 9 1 0 0b672cd6cad0ed7a0ec225781f201e7d
+
+% 10 1 0 091717c2a0ded27b0ea6df2a4bba2b71
+
+% 11 1 0 08f2811cef8f56161263eeb9db9846b9
+
+% 12 1 0 1457f3cc2f8018b91be4bdb96886c957
+
+% 13 1 0 13149bd23e9aca0e19af3f366aa35dec
+
+% 15 1 0 0d9e5c9e5164de550d6b531c4998fe6d
+
+% 17 1 0 0c574eff06c3ad1b036459b2895f685b
+
+% 18 1 0 0aad405d432422fe00fd6d3c88a8d52c
+
+% 19 1 0 00f0992da4142d7a07c2ff75391b9e87
+
+% 20 1 0 009c379fc08dcd9908fa4050be3c54bb
+
+% 2 1 0 078301bbdbded1a601b7cdf0a8316a83
+
+% 3 1 0 059918497afec12f0712c3e26f190e6f
+
+% 2 1 0 1e52015671c87acd013d9c3aed0ebb6a
+
+% 1 1 0 06881bce2724d7eb011bbcd6a8519b62
+
+@ 0 1 0 07d665a42142b76413b1aa35fbcaf12c
++       label スコープが更新を書いた後に読み戻す
+
+% 1 1 0 0a6484338262c6d80fef4e34b07335ca
+
+% 2 1 0 0d1efebc36bf6f0315768c3ffd00f333
+
+% 3 1 0 04ae1e10971a773200ecbc439fef98af
+
+% 5 1 0 11ab732cb122d3e11bbebb416af92844
+
+% 6 1 0 0aaea1dc598c1fa10015430e2befb5da
+
+% 7 1 0 15a7beb2d5ee9a3114de5fb8c02a2805
+
+% 9 1 0 00b4d2e186034ab90162f9c494d68891
+
+% 10 1 0 108f2db8e0590f64002bdc89e04f4c12
+
+% 11 1 0 1f85b495232ed78e192f2fc98d0315e5
+
+% 12 1 0 004abc847e81a9d109d47745f0534023
+
+% 13 1 0 1d26624aa767ce8308b5dd2dfe3248a5
+
+% 15 1 0 17f325002beacd7d092e47d59c5ca3ae
+
+% 17 1 0 1fc2533136eb9c9b1d6d4a7de841ec37
+
+% 18 1 0 01f55a34bf5ec51a123f683c1c8995bd
+
+% 19 1 0 1d558b5a0ac3151f002029752bf0731d
+
+% 20 1 0 0d49ed7896cbf1bd075eaf3e406b1fe8
+
+% 0 1 0 14bcb4a037c1daa50d0d54485c84bed7
+
+% 1 1 0 0b059585f8d78444114c8b2f97828354
+
+% 2 1 0 0f21e26eccf691070696b56b8893439d
+
+% 0 1 0 12e37d524f4ddd4616f507d7199d4aaa
+
+% 0 1 0 18967c055db9c259130769197be3ab53
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 6 0 1642c3604eb6b29c1e5ab899f7bc1b49
++ entry .removePage   ページを親の `/Kids` から取り除き、そのオブジェクトを解放する
++     書き込みを許可されたハンドルに対する拡張である。
++     ページは親のノードから切り離され、親の `/Count` は残りの子の数に設定され、ページのオブジェクトは解放される。
++     扱われるのは、親が `/Kids` を直接保持するページ、つまりほとんどの文書が持つ一段の木のページだけである。より深く入れ子になったページや、木が参照ではなくインラインで保持するページは、その場に残される。
++     ページのコンテンツストリームとリソースは解放されない。
+
+@ 0 5 0 1fa3740f925ce150180f97f01421a454
++ entry .winAnsi   単純な WinAnsi フォントのために、テキストを `ShowText` のオペランドとしてエンコードする
++     `winAnsi(t"Hello")` は、`WinAnsiEncoding` で宣言されたフォント（`useFont` と `embedFont` が生成するフォント）に対して `Pdf.Operator.ShowText` が取る `Data` である。
++     各文字はその WinAnsi（Windows-1252）のコードになる。エンコーディングの外の文字はコードを持たず、`?` として書かれる。
+
+% 2 1 0 151ecfe0f97f32f512660a660a3592d2
+
+% 3 1 0 07bd965fa1ee1f8904f371a0f1fc0d30
+
+% 0 1 0 12671febe66f291a0be1fecde5c44e37
+
+% 1 1 0 0e83488c1116398610836de8b4e4efec
+
+@ 0 1 0 1e48901167dc56b30a3e3241124232d3
++ entry .PdfFile   開かれていない PDF：パスまたはメモリー上のバイト列のロケーターで、スコープの中で開かれる
+
+% 1 1 0 0ab89488020944cb03b8682b9eaff63e
+
+@ 0 7 0 1fc6fdf5ae6159cf08e9525fe5e74231
++       `PdfFile` は文書を読まずに名付ける。ディスク上のファイルには `PdfFile(path)`、すでにメモリー上にあるバイト列には `PdfFile(data)` である。そして（aperture の、このコンパニオンにある `Openable` given を通じた）`open` が、ちょうどブロックの間だけそれを読む。
++       ヘッダー、相互参照の連鎖、そして暗号化された文書では暗号化の鍵がスコープが開くときに読まれるので、不正なファイルや誤ったパスワードは、最初のアクセス時ではなくそこで失敗する。
++       ブロックはコンテキストの `Pdf` とともに実行され、それには `pdf` として到達するか、`doc ?=>` で束縛する。
+
+% 2 1 0 190cecfd89e60cca0bbd15b4aa690690
+
+% 3 1 0 05e9a254c8d394e60528f8d9eb854fc9
+
+% 4 1 0 08dfd52ca900361612073d007b3e6f88
+
+% 0 1 0 0f1506dcebeefbd11ecb8cd518148c2e
+
+% 0 1 0 03707192063befd509d25a349c661005
+
+% 1 1 0 04b4445bad0d8f661c4007a648b34bfe
+
+% 0 1 0 13beb6873904a54a129ad5e8d4e63773
+
+% 1 1 0 0fd3b4341b2b597114c01f5d8fa253f6
+
+% 0 1 0 12ebd3ae3646f1d50624f08a24660f8e
+
+% 1 1 0 0c5b4ae48165cc75009625de98a1cb86
+
+@ 0 9 0 14e9f8bf1204b74f1ee973366f6d9a83
++       `Read & Write` で開くと、編集の拡張が型付けされている、書き込みを許可されたハンドルが得られる。
++       ファイルは galilei の `Ram` としてマップされ、文書の視野はその大きさに固定される。スコープが編集とともに閉じるとき、オーバーレイは増分更新として直列化され（従来の相互参照表の後には従来の相互参照表、相互参照ストリームの後にはストリームとなるので、`/Prev` の連鎖は辿れるままである）、追加される。
++       編集をしなかったスコープは何も追加しない。
++       メモリー上のデータには書き戻す先がないので、それを `Write` で開くと `WriteUnsupported` を伴う `Pdf.Error` を発生させる。表を走査で再構築しなければならなかったファイルの上の書き込みスコープを閉じるときも同様である。
+
+% 2 1 0 0e1a64803c44141e042a5ba224c2dd85
+
+% 3 1 0 102278ea8a11068313a2c4d10c53d40d
+
+% 4 1 0 09e930c996aa58ae1a80aac2d8a3f23d
+
+% 0 1 0 1384953ac5f24e8a0062ae9196526844
+
+% 0 1 0 1635906d63839b8d11f84b68f438a474
+
+% 0 1 0 1992c6edef296a691e3b049cf7f861d4
+
+% 1 1 0 183f67b64f295e470f9c46924d7e5bc5
+
+@ 0 3 0 1f0b280f08dd6d6219ee6d11dd230ac7
++       暗号化された文書は、その `Password` をフラグとして渡して開く。それには、秘密がどこに保持されるかを示す `Cloak` がスコープに必要である。何も与えられなければ空のパスワードが試され、それによってパーミッションを制限するためだけに暗号化されたファイルが開ける。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 04ea60e84068f7921bdf4ecb54884444
+
+% 0 1 0 15631df66dfa223907ed1b125ded4627
+
+% 0 1 0 1df69b05c3ee6fe51e255776e8a451f4
+
+% 0 1 0 0305e8613fdab04014b059971f070af0
+
+% 0 1 0 1167bc07ba14b97304f19819b9f6fc40
+
+% 1 1 0 0f9227d906e0c26e0b4d5588e162d754
+
+@ 0 3 0 0d6a59f37a0f68920ffcab2e90f67eb0
++       誤ったパスワードは `BadPassword` を伴う `Pdf.Error` を発生させる。標準以外のセキュリティハンドラは `UnsupportedEncryption` を発生させる。
++       存在しない、または読めないパスを開くと `Io` を発生させる。
+
+@ 0 3 0 1768caa1f25efda81eadff557558d5ae
++       同じスコープには、`PdfFile` を名付けずに、トップレベルの given `pdfPathOpenable`（`path.open[Pdf]()`）、`pdfDataOpenable`（`data.open[Pdf]()`）、`pdfCreatable`（`path.create[Pdf]()`）を通じても到達できる。それぞれ名前でインポートする。
+
+% 1 1 0 0606a394e54e00840738927de7f11664
+
+% 1 1 0 1209f5334b3c6b040f1b3d773c09234b
+
+% 0 1 0 02594cf7176201e5107ac90958e0ea59
+
+% 0 1 0 0cde4809d9a3d31d0fdc621459ba9156
+
+@ 0 10 0 10ce980756ee10b314cae133bedeca36
++   entry .apply   パスにある文書、またはメモリー上のバイト列のロケーター
++       `PdfFile(path)` は `Abstractable across Paths to Text` である任意の値（galilei の `Path`、またはテキスト）を取り、開かれるときに作業ディレクトリーに対して解決される。
++       `PdfFile(data)` はバイト列を保持し、それはその場で読まれる。そのような文書は読み込みのためにのみ開ける。
++   entry .openable   `PdfFile#open` が `Pdf` とともにブロックを実行できるようにする `Openable` given
++       `PdfFile` のコンパニオンにあるので暗黙のスコープにあり、`open` はインポートを必要としない。そして `PdfFile` が一つの `Openable` を持つので、`Pdf` の形式は書かれずに推論される。
++       これはスコープに `Tactic[Pdf.Error]` を必要とし、それをキャプチャする。
++   entry .PdfOpenable   `PdfFile#open` の背後にある `Openable` クラス
+
+% 1 1 0 1ad61162f0dbdbde0e3533cebb4c53f3
+
+@ 0 6 0 0abd9eac2b1a0d99046b216ef0e3abbd
++         `Self = PdfFile`、`Form = Pdf`、`Operand = Password`、`Result = Pdf`：`PdfFile` をあるモードで、省略可能な `Password` フラグとともに開き、そのモードが許可するものを許可された `Pdf` とともにブロックを実行する。
++         `.openable` がそのインスタンスである。given を型で名付けられるように、クラスは公開されている。
++     entry #open   ブロックのために、ファイルをそのモードで、パスワードのフラグとともに開く
++   entry .PdfPathOpenable   `path.open[Pdf]()` の背後にある `Openable` クラス
+
+% 1 1 0 1628b6b89ae41ada012c0a142ffdf39a
+
+@ 0 6 0 0af864e38d3af39f15d0dff6bf2d2942
++         `Self` は `Abstractable across Paths to Text` である任意のパスの型、`Form = Pdf`、`Operand = Password`：`path.open[Pdf]()` は `PdfFile(path).open()` である。
++         パスは複数の形式で開けるので、形式は書かなければならない。
++         トップレベルの given `pdfPathOpenable` がそのインスタンスである。
++     entry #open   ブロックのために、パスを PDF としてそのモードで、パスワードのフラグとともに開く
++   entry .PdfDataOpenable   `data.open[Pdf]()` の背後にある `Openable` クラス
+
+% 1 1 0 1ea32da102b3d59216264a67c701dc13
+
+@ 0 5 0 06505404e2407f0a1b4065cc526cf7d1
++         `Self = Data`、`Form = Pdf`、`Operand = Password`：`data.open[Pdf]()` は読み込みのみの `PdfFile(data).open()` である。
++         トップレベルの given `pdfDataOpenable` がそのインスタンスである。
++     entry #open   ブロックのために、バイト列を PDF としてそのモードで、パスワードのフラグとともに開く
++   entry .PdfCreatable   `path.create[Pdf]()` の背後にある `Creatable` クラス
+
+% 1 1 0 0c1954d8a69f6e291572ca2f1f32ff64
+
+@ 0 10 0 188c06147aceb629049c702fcbe7905c
++         `Self` は `Abstractable across Paths to Text` である任意のパスの型、`Form = Pdf`、`Operand = CreateFlag`、`Grants = Grant.Read & Grant.Write`：ブロックは新しい空の文書（カタログと空のページツリー、バージョン 1.7）を、既存のものを編集するのと同じ書き込みの面を通じて編集し、ブロックが戻ると、文書は隠された一時的な兄弟ファイルに丸ごと書かれ、対象へアトミックに移動される。したがって途中で失敗しても何も残らない。
++         `CreateFlag.Replace` は既存の対象を許し（そうでなければ `Io` を伴う `Pdf.Error`、_the file already exists_）、`CreateFlag.Parents` は欠けている親ディレクトリーを作る。
++         トップレベルの given `pdfCreatable` がそのインスタンスである。
++     entry #create   ブロックの中で新しい文書を作成し、それをパスに書く
+
+@ 0 7 0 1ebbcdbac6f2367710bf4992f7130ca4
++ entry .pdfPathOpenable   パスを `Pdf` として開けるようにする：`path.open[Pdf]()`
++     `facsimile.file` にあるトップレベルの given で、名前でインポートする（`import soundness.pdfPathOpenable`）。`import soundness.*` は given をインポートせず、`Openable` には汎用の代替がないので、これを忘れた呼び出し箇所はコンパイルに失敗する。
++     これは `Abstractable across Paths to Text` である任意のパスの型に対する `PdfFile.PdfPathOpenable` のインスタンスで、`Tactic[Pdf.Error]` を必要とする。
++     `PdfFile(path).open()` は、インポートなしの同じスコープである。
+
+% 2 1 0 04d3238b91bd875b06f6ec63fc662c47
+
+% 3 1 0 1fe1207d0be83e001748ebac474bbc70
+
+% 0 1 0 14776516ddba09ab11f7149d0c768fa5
+
+% 1 1 0 1ba07a710056c87018d2304fe87f9276
+
+% 0 1 0 1e1e90f6c681f6f40edfae894b0eec46
+
+% 0 1 0 0f629badb7ab23510f86b17c622f34e0
+
+% 1 1 0 0276b77903df9f5108a1ad7dfee64207
+
+% 2 1 0 1644d04b46aacbe8046a331da2f40155
+
+@ 0 5 0 1d9cd55e7c8be41f07f839aedb038be9
++ entry .pdfDataOpenable   メモリー上のバイト列を `Pdf` として開けるようにする：`data.open[Pdf]()`
++     `facsimile.file` にあるトップレベルの given で、`import soundness.pdfDataOpenable` として名前でインポートする。
++     `Tactic[Pdf.Error]` を必要とする `PdfFile.PdfDataOpenable` のインスタンスである。メモリー上のバイト列には書き戻す先がないので、読み込みのみである。
++     `PdfFile(data).open()` は、インポートなしの同じスコープである。
+
+% 2 1 0 1ea65bc1153706d210df653b46ea7166
+
+% 3 1 0 0901f58c0dcb3873121b08bbaa46b5b3
+
+% 0 1 0 0950eca827f6e24f0c364cb02ee6784e
+
+% 1 1 0 1f46ea88d91c375b1a6f77d90809d800
+
+% 3 1 0 1508ada6c7b921b60a7501c4ffa0ff3e
+
+% 0 1 0 0bac349b55aacae51cb7153d6bbf290e
+
+% 1 1 0 1ac44a5ca729a53a10cf7be4606c34a0
+
+% 2 1 0 1c54752e922e1ae01520f5d88aa12c36
+
+@ 0 7 0 1ccc00d6c78ccaa6087e079a8aeab87b
++ entry .pdfCreatable   パスを `Pdf` として作成できるようにする：`path.create[Pdf](): doc ?=> …`
++     `facsimile.file` にあるトップレベルの given で、`import soundness.pdfCreatable` として名前でインポートする。
++     `Abstractable across Paths to Text` である任意のパスの型に対する `PdfFile.PdfCreatable` のインスタンスで、`Tactic[Pdf.Error]` を必要とする。
++     ブロックは読み書きの権限を持つ新しい文書を受け取り、ブロックが戻ると、結果は丸ごと、アトミックに書かれる。`CreateFlag.Replace` と `CreateFlag.Parents` は、既存の対象とそのディレクトリーを扱う。
+
+% 2 1 0 136b45bccbec4a5310231eecf3242b00
+
+% 3 1 0 0a58527daad45597099a7f9ea5d9cc08
+
+% 4 1 0 0a7f4878b9de26c508e5932d61cbf376
+
+% 5 1 0 1a6a22c95cc631971de735249a75a13e
+
+% 2 1 0 0a54d12639764dd9099914d66e26e10d
+
+% 3 1 0 0ca9078a2fc2ddca0c01ba94f9438b2f
+
+% 4 1 0 1a6bd2d40cc89bcd17c8d645da24a59a
+
+% 0 1 0 1407125b252b997f1532762c38b92374
+
+% 0 1 0 08f1f4b1076d386d0e8c93af27e17f58
+
+% 0 1 0 0afd9b2531946b0f0393eab867e94bb4
+
+% 0 1 0 0735e44ca7889fcb13680c0ecc055ea0
+
+% 1 1 0 074679851e923e9f0054e101af5552e5

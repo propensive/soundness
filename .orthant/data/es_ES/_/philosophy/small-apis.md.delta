@@ -1,0 +1,149 @@
+orthant 2 language
+
+@ 0 1 0 1cc5ff58e471b2fd09d11693e581e23a
++ # API pequeñas
+
+@ 0 6 0 01311b0182939be61727a44823f2b8ab
++ Soundness mantiene sus API pequeñas dando a cada operación un solo nombre. Un único método
++ polimórfico —`read`, `as`, `show`— sirve a todos los tipos que lo admiten, en lugar de una familia
++ de casi duplicados que solo difieren en aquello a lo que se aplican. Hay una manera obvia de hacer
++ cada cosa, así que hay menos que aprender, menos que recordar y menos riesgo de recurrir a la
++ variante equivocada. La amplitud de lo que puede hacer una API procede de la gama de tipos que
++ abarca, no del número de métodos que ofrece.
+
+@ 0 1 0 0d30399c06d6856204c8d7189762eab5
++ ## Un verbo, muchos tipos
+
+@ 0 3 0 107b380f3c36090312f6bc3c016fdbaf
++ `read` analiza una fuente y la convierte en el tipo pedido. No hay `readJson`, ni `parseXml`, ni
++ `fromCsv`: el argumento de tipo dice lo que se quiere, y una instancia para ese tipo hace el
++ trabajo:
+
+% 2 1 0 0ab6c2fb4fe0c0471d6f602823cbbea6
+
+% 3 1 0 03d4ffa3067cef1b13ff4a405580ef37
+
+% 4 1 0 028851f4ec4b00340c1f25950fbba6a7
+
+% 0 1 0 0261343a2962e2231f24d866c7504c5d
+
+% 0 1 0 1808423e236c36a918c2826532301366
+
+% 0 1 0 0de5058c5d45be430527e7563a86f1f8
+
+% 0 1 0 1551c54be0c1836e0d7f5cd5fa90b7a2
+
+% 0 1 0 05ae9cd73b3dbbdd12585f9d98bda8ac
+
+% 1 1 0 118d025405b1b36b02d5e2cd7f05b8bc
+
+@ 0 2 0 053717c18e5707400ddaa47fa8f2d4b9
++ Añadir un formato añade instancias, no métodos. El vocabulario que debe aprender el lector no crece
++ cuando crece la biblioteca.
+
+@ 0 2 0 01a156f68551adf71d7f2e09373c2987
++ Lo mismo vale en todas partes. Cada verbo es un método, cuyo significado para un tipo dado procede
++ de una clase de tipos:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 11 0 02f7e863546f27d612d702d05ec1eb3a
++ column  Verbo
++ column  Hace
++ column  Clase de tipos
++ row  `read`  lee una fuente como un valor  `Readable`
++ row  `as`  decodifica  `Decodable`
++ row  `show`  representa para una persona  `Showable`
++ row  `inspect`  representa para un programador  `Inspectable`
++ row  `in`  codifica en un formato  `Encodable`
++ row  `stream`  expone un valor como un flujo  `Streamable`
++ row  `digest`  calcula un hash  `Digestible`
++ row  `serialize`  representa bytes en una codificación de base  `Serializable`
+
+% 1 1 0 19c07f33761a42a90e29bc43a1483b6a
+
+@ 0 1 0 179d16208dec4c761513e9b993eba171
++ Así, decodificar, codificar, calcular hashes y serializar se leen igual, sea cual sea el tipo:
+
+% 2 1 0 0f3685e6299c7da419b59efb88d49a90
+
+% 3 1 0 05e06199f001764214c239e2036faa8a
+
+% 4 1 0 1b14ee70bae375500aeecd48ea6583ed
+
+% 0 1 0 0e78beea83e2d85a0be34afd232fe0d8
+
+% 0 1 0 00406b51bea419fc10e4e04f56142936
+
+% 0 1 0 0d56ae6a2bd7b292037a7d215f0e220e
+
+% 0 1 0 13f6190cb82cdcde147ba8583d66b2d8
+
+% 0 1 0 1ef0595261088b231389c5da1a9da219
+
+% 1 1 0 1c80026de68621a81c05d0c9b1f274e4
+
+@ 0 1 0 090d9c4d4337b992189b18b3b6697412
++ ## Qué lo hace posible
+
+@ 0 1 0 0268b1a5380386160c326bb81758f73d
++ Tres cosas, y ninguna de ellas es solo disciplina en los nombres.
+
+@ 0 3 0 1adfa566dde23ab20e2af4e53e7454b9
++ **Las clases de tipos aportan el significado.** `read` es un método cuyo comportamiento procede de
++ una instancia de `Readable`; `as`, de una de `Decodable`; `show`, de una de `Showable`. El método es
++ el nombre de una *relación*, no de una implementación.
+
+@ 0 3 0 1c68c9e74e50a81f08631e450caa188b
++ **El argumento de tipo transmite la intención** que, de otro modo, transmitiría un nombre más largo.
++ `read[Json]` dice tanto como `readJson` con el mismo número de caracteres, y se compone:
++ `read[Person in Json]` no tiene ningún nombre razonable en el otro esquema.
+
+@ 0 5 0 14b37f7b9527a9bd0b139eb58d4fd6fd
++ **La unicidad de los nombres hace segura la importación del paraguas.** Como hay un solo `Path` y un
++ solo `Error` en todo `soundness`, un único `import soundness.*` nunca obliga a elegir entre dos cosas
++ con el mismo nombre, y eso es lo que permite que un verbo sea de verdad un solo verbo y no varios
++ que se ocultan entre sí. Véase [nombres](naming.md).
+
+@ 0 1 0 16e9ec46d2f5e3bd1a5e5960b4606347
++ ## La presión contraria
+
+@ 0 3 0 0790b3848c2af75e12be50a58502aa4c
++ Una API pequeña no es una API con pocas capacidades, y el principio no es «no añadir métodos». Es
++ una restricción sobre *cómo* se añade capacidad: ampliando la gama de tipos que cubre una operación
++ existente antes de añadir una operación.
+
+@ 0 1 0 03fea144dd230b3b00665c61eb5ffcfe
++ Dos fuerzas empujan en sentido contrario, y ambas son legítimas en su lugar.
+
+@ 0 4 0 190657699331960a0f3d141a72fe52d8
++ La primera se da cuando una operación es de verdad distinta. `read` y `load` son dos verbos para
++ [XML](../en/modules/xml.md), porque leer produce el contenido y cargar produce el documento con su
++ cabecera: una distinción real, no una variante. Fusionarlos obligaría a usar un argumento indicador,
++ que es una manera peor de decir lo mismo.
+
+@ 0 4 0 086c1ae4cc94573908f0dd34f83edb12
++ La segunda se da cuando un dominio tiene su propio vocabulario, que un verbo general ocultaría. Un
++ `Tarfile` tiene `gzip`, no `in[Gzip]`, porque «un tarball comprimido con gzip» es lo que nombra el
++ dominio. Insistir en el verbo general en todas partes hace una API uniforme e ilegible, lo que
++ cambia un tipo de coste de aprendizaje por otro.
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## Lo que cuesta
+
+@ 0 4 0 07cf3277aa5a5ff211d422017883c037
++ Los métodos polimórficos cargan peso sobre la inferencia y sobre los mensajes de error. Cuando
++ `source.read[Person in Json]` falla porque falta una instancia, la queja por defecto del compilador
++ trata de una búsqueda implícita, no de un códec que falta, lo que está más lejos del problema de lo
++ que habría estado «no existe el método `readPerson`».
+
+@ 0 4 0 1bf192d8902421401593a60f3c451742
++ Ese coste se amortiza en lugar de negarse: importar `explainMissingContext` convierte el error
++ implícito desnudo en un diagnóstico que nombra la importación que lo satisfaría. El intercambio
++ —un modo de fallo algo peor a cambio de un vocabulario mucho menor— solo merece la pena si se
++ repara el modo de fallo, y por eso se repara.
+
+@ 0 2 0 00cdc4d4a773a9ea1f03cd64143c4bff
++ Véase [prosa elegante](elegant-prose.md) para saber por qué el verdadero premio es que el
++ vocabulario pueda aprenderse por analogía, y [componibilidad](composability.md) para lo que compra
++ la uniformidad.

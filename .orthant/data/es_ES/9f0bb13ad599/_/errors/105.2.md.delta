@@ -1,0 +1,28 @@
+orthant 2 language
+
+% 0 1 0 0e43190bab175e980c27f719e12f19cb
+
+@ 0 2 0 11dacab92aad8e891c53c037ffc151c0
++ La etiqueta de un cifrado autenticado no se verificó: el texto cifrado, los datos asociados o el
++ nonce no son los que se sellaron, o la clave no es aquella con la que se sellaron.
+
+@ 0 1 0 19cdb20592782188093ffb6a7d9cb5a7
++ **Ejemplo.** `[↯/s.105.2.6] could not decrypt the data because the authentication tag did not verify`
+
+@ 0 2 0 0675a479b730d28c0058667a1b24cf0f
++ **Solución.** Trata los datos como falsificados o corruptos, y no uses ninguna parte de ellos.
++ Confirma que el nonce y los datos asociados son exactamente los que se dieron a `seal`.
+
+% 0 1 0 153ed8c0c255acbb0cb6a1d1954d7c01
+
+@ 0 2 0 00ea0454ec6b67bd0fdfd23339a52e81
++ El material de clave envuelto no superó la comprobación de integridad que incorpora la
++ envoltura de claves: se envolvió con otra clave, o se ha alterado, o no es un número entero de
++ bloques de 64 bits.
+
+@ 0 1 0 17b17d9d86f73a5a064b0259a988d01f
++ **Ejemplo.** `[↯/s.105.2.7] could not decrypt the data because the wrapped key did not pass its integrity check`
+
+@ 0 2 0 03acd4f006818d770927f160ff7bac33
++ **Solución.** Confirma que la clave de cifrado de claves es aquella con la que se envolvió el
++ material, y que el material envuelto llegó completo.

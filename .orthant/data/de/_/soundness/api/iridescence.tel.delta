@@ -1,0 +1,1705 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 19f4b02f648a74080e26a7e8d6ed6019
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0eabacc7d2d59a4901f8b4901c30748a
++ info   Farben in jedem Modell — sRGB, HSL, HSV, CIELAB, XYZ, CMY, CMYK —, konvertiert, gemischt, angepasst und gepackt
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 16928c904ea36dfc0e68021387b6a436
++     _Iridescence_ stellt eine Farbe in dem Modell dar, das zur Aufgabe passt — `Srgb` für
++     einen Bildschirm, `Cielab` für den wahrgenommenen Abstand, `Hsl` oder `Hsv` für intuitive
++     Anpassungen, `Cmy` und `Cmyk` für den Druck, `Xyz` als geräteunabhängige Drehscheibe — und
++     konvertiert mit einer einzigen Methode, `to[Model]`, zwischen ihnen. Jedes Modell ist ein
++     eigener Typ, sodass der Compiler weiß, in welchem Modell ein Wert vorliegt, und eine
++     Konvertierung, die von den Betrachtungsbedingungen abhängt, lässt sich nicht schreiben,
++     ohne dass eine `Colorimetry` im Geltungsbereich angibt, welche Lichtart gilt.
+
+% 2 1 0 02d61f8ed8651d1203649c17c679fe08
+
+% 3 1 0 0b14f3e536bf294a098cd5c4fd79396f
+
+% 0 1 0 07328927d9e475091e529e10b2460d02
+
+% 0 1 0 0389f6800f929dd709411a3d9b70b9fc
+
+% 0 1 0 0b125fea6daf313106c7d6072b72533e
+
+% 0 1 0 1669b6ca6afaa011040874277d6086f0
+
+% 0 1 0 02b0766f380328231c2234d8164ed432
+
+% 0 1 0 1b0f92cad6d59a3119775e634a019a77
+
+% 1 1 0 0f939b6a2044055e0988b71c15c1392e
+
+@ 0 7 0 1329195cc66c655d0fc9ada13b573b70
++     Darum herum: die 141 benannten `WebColors`; `rgb"#abcdef"`, ein hexadezimales Literal, das
++     beim Kompilieren geprüft wird, das die ganzzahlige `Chroma` liefert, die ein Terminal
++     erwartet, und das sich mit `color` in eine `Color in Srgb` konvertieren lässt; das Mischen,
++     paarweise mit `mix` oder nach Teilen mit `Daub`-Arithmetik (`5*Red + 3*Yellow`) unter einem
++     aus `mixing` importierten Mischmodus; `Theme` und `Palette` für aufeinander abgestimmte
++     Farbsätze, mit eingebautem Solarized, ausgewählt über `luminosity`; und `Pixel[layout]`,
++     eine in eine Ganzzahl gepackte Farbe in beliebiger Kanalanordnung, mit `Rgb12` und `Rgb32`
++     für zwei feste Packungen.
+
+@ 0 8 0 06bcc68cab3ab26e1c4b5ad4b4cda963
++     Die Bibliothek ist ein einziges Source-Set, `iridescence.core`, das von den Typen `Chroma`,
++     `Chromatic` und `Channel` aus anticipation sowie von `Angle` aus hypotenuse und geodesy
++     abhängt und für die JVM, Scala.js und Scala Native kompiliert
++     (`Palette#selectDynamic` verwendet Reflection, die Native fehlt; die benannten Rollen sind
++     gewöhnliche Methoden). Alles wird in den Umbrella `soundness` exportiert, und die
++     Auswahlpakete `colorimetry`, `luminosity`, `mixing` und `themes`
++     verschmelzen mit den gleichnamigen des Umbrellas: Ihre Givens werden namentlich importiert,
++     da `import soundness.*` keine Givens importiert, und jedes wählt eine Richtlinie — eine
++     Lichtart, eine helle oder dunkle Variante, einen Mischmodus, ein Theme —, die niemals
++     implizit sein sollte.
+
+% 0 1 0 08a6ba434b9f11a008872e81b1b1c075
+
+% 0 1 0 0eb6401f048e04b01d56e28ddf273900
+
+% 0 1 0 1e9365ef3fbf8563189feb8f649bbf71
+
+% 0 1 0 1a68859dff45ece108a2ed4bb5204dfd
+
+% 0 1 0 07297ef77b26ffd01653ce4464d81e40
+
+% 0 1 0 0c76c7e5c0b6de0b11c41525e98f8627
+
+% 0 1 0 0f9f1d7e7ff23df51124da6fd32723a6
+
+% 0 1 0 012c99f78622c8d40aa94d63de2f2e95
+
+@ 0 1 0 02717694e2ec8b1118648bf45be92cb5
++ entry .Color   eine Farbe in irgendeinem Modell, mit `to[Model]` in ein anderes konvertiert
+
+% 1 1 0 09d8ad54cc9d5c900601d9f9f4e6ecb9
+
+@ 0 5 0 0b0d9efc83bbb0d20554fbb357f8a088
++       Der Trait, den jedes Farbmodell erweitert. Das Typ-Member `Form` einer `Color` ist ihr
++       eigenes Modell, und `to[Model]` konvertiert sie über die `Perceptual`-Instanz von `Form`
++       nach `Model`, die sich in den Begleitobjekten der beiden Modelle findet. Die
++       präpositionale Schreibweise `Color in Srgb` bezeichnet eine Farbe, deren `Form` `Srgb`
++       ist; diesen Typ haben die Einträge von `WebColors` und die Rollen einer `Palette`; ein
++       konkretes `Srgb` ist eine solche Farbe.
+
+@ 0 6 0 142d8143a9f00d2b097be09d7e4473c5
++       Deklariert sind die Instanzen von `Srgb` nach und von `Xyz`,
++       `Cielab`, `Cmy`, `Cmyk`, `Hsl` und `Hsv`, von `Xyz` nach und von `Cielab` sowie von `Cmy`
++       nach und von `Cmyk`. Jedes Modell erreicht jedes andere über `Srgb`, aber den
++       Zwischenschritt schreibt der Aufrufer: Für `hsl.to[Xyz]` gibt es keine Instanz, für
++       `hsl.to[Srgb].to[Xyz]` schon. Die Schritte zwischen `Srgb` und `Xyz` oder `Cielab`
++       brauchen eine `Colorimetry` im Geltungsbereich, da diese Modelle relativ zu einem
++       Referenzweiß definiert sind.
+
+% 2 1 0 14b1f78ed6af30751e7ba1dccf894659
+
+% 3 1 0 11553ac344a3231713853c172daa137f
+
+@ 0 1 0 008ede7ad352f8b9188b512c1033ca66
++         label Eine Farbe in sRGB
+
+% 1 1 0 13203db6708125351dd2d4022d91d675
+
+% 2 1 0 10f0a40b3506e88b13221c8cd494917e
+
+% 3 1 0 1f48f8ae5d361fc00cef674461b470b6
+
+% 0 1 0 0ba4c045779a52a11d528fb326c4696e
+
+% 1 1 0 0952c5ccc776de4d117366c1ebe16921
+
+@ 0 1 0 199fa57c375eb9de0a9796b910515503
++         label Nach HSL, wo der Farbton ein Winkel ist
+
+% 1 1 0 170248b42096d5a21859024919090bc7
+
+% 2 1 0 1b439dd4fbeeeb3a1753ad935821054c
+
+% 3 1 0 1a8c3a23c841ed660a78cd769b292013
+
+% 0 1 0 000a8fa900a05e8301ad608aef9fc959
+
+% 1 1 0 0f63ccc76527562f102632085e904b35
+
+@ 0 1 0 0ea02d3df01f81e5138088cef5c6c48c
++         label Nach XYZ, relativ zum Referenzweiß des Tageslichts
+
+% 1 1 0 118d48fe1444fa2516e34de8a81984da
+
+% 2 1 0 163f8d85b721a1c20acd1c8250dfb7e0
+
+% 3 1 0 0baf3b60c6970b750a641b1912552621
+
+% 0 1 0 179cfefe5e6c7816025e3450a8b6d85b
+
+% 1 1 0 1f9030ed81feb70101e0ad852ed86c8f
+
+@ 0 1 0 09f7ede698fecf7d1b5536be37901773
++         label Nach CIELAB, wo der Abstand der Wahrnehmung entspricht
+
+% 1 1 0 00e9ef406dd6a47e1aa27028d57e52c3
+
+% 2 1 0 128b2dcddafa2c0c15b35b8b166b88a0
+
+% 3 1 0 0280272093c1ba830725a1441154821e
+
+% 0 1 0 12ec3f99071307ef072cca8789afa6e0
+
+% 0 1 0 0df89171f1b3d7a00392659b781fd4bb
+
+% 1 1 0 1861c120ddf151500df5027aef0ad884
+
+@ 0 1 0 0af52563e06d5100157a85117c5d797b
++         label Und zurück nach sRGB, bis auf Rundung
+
+% 1 1 0 1042db607d60661e1e0f88cf6dfcc68f
+
+% 2 1 0 1d9a221825f5fa820085254128cbfd8e
+
+% 3 1 0 01b60c1dcc345fb009bd1c14db11dcec
+
+% 0 1 0 1532dbd33cffba3911f78a4bd6a4ca7c
+
+% 1 1 0 14f0d7397cfb63111ee968ddc60d8679
+
+% 2 1 0 10090428c41cb26c091f0978c9d6683a
+
+@ 0 3 0 0dd801199761aaa0161b9f3afbc43b01
++       Eine Farbe ist `Pure`: Sie hält keine Capabilities, darf also frei gespeichert und
++       geteilt werden. Jede Farbe ist `Chromatic` (`.chromatic`) und wird daher überall
++       akzeptiert, wo ein Terminal oder ein Bild eine `Chroma` erwartet, und `n*color` hebt sie
++       für das Mischen zu einem `Daub` aus `n` Teilen.
+
+% 0 1 0 0557c1e12d0e66a70ad6428cd2258e01
+
+% 1 1 0 0b4bb97a89c0106f1c72c823fd8e7b78
+
+% 1 1 0 1dc6efcc4574fd47001b828214671927
+
+@ 0 18 0 1aec84ec42a534331c7de7a89ffa5c0f
++   entry .chromatic   jede Farbe mit einer Konvertierung nach `Srgb` ist `Chromatic`: eine 24-Bit-`Chroma` für Terminals und Bilder
++       Konvertiert nach `Srgb` und skaliert jeden Kanal auf `0`–`255`, mit Abschneiden (`0.5`
++       ergibt `127`). Dadurch kann `e"${WebColors.Red}(text)"` Terminaltext färben und
++       `Fg(WebColors.Red)` direkt eine Farbe annehmen. `Pixel#chroma` rundet stattdessen,
++       sodass eine gepackte und wieder entpackte Farbe in einem Kanal um eins hiervon abweichen
++       kann.
++   entry .multiplicable   `parts*color` für einen `Double`: ein `Daub` aus so vielen Teilen der Farbe
++       Die `Multiplicable`-Instanz liegt hier statt im Begleitobjekt von `Daub`, weil `Daub`
++       nur im Ergebnis vorkommt: Der implizite Geltungsbereich von `0.5*WebColors.Red` wird aus
++       `Double` und dem Typ der Farbe gebildet. Eine `Color in Srgb` und ein einfaches `Srgb`
++       werden beide zum selben `Daub[Srgb]` gehoben, sodass sich die beiden addieren lassen.
++   entry .wholeMultiplicable   `parts*color` für einen `Int`: ein `Daub` aus so vielen Teilen der Farbe
++       `5*WebColors.Red` sind fünf Teile Rot. Die Teile zählen nur, wenn Tupfer addiert werden.
++   entry #Form   das eigene Modell der Farbe: `Srgb` für ein `Srgb` und so weiter
++   entry #to   die in ein anderes Modell konvertierte Farbe: `color.to[Cielab]`
++       Braucht eine Instanz `Form is Perceptual in Model`, die die Begleitobjekte für jedes Paar
++       bereitstellen, und, wenn `Srgb`, `Xyz` oder `Cielab` Quelle oder Ziel ist (außer von
++       `Xyz` nach `Srgb`), eine `Colorimetry` im Geltungsbereich. Eine Farbe in ihr eigenes
++       Modell zu konvertieren ist die Identität. Das Ergebnis hat den konkreten Typ des Ziels,
++       sodass sich `to[Hsl].rotate(…)` verketten lässt.
+
+@ 0 1 0 156d6c4747e18bde1291ee4ca705968d
++ entry .Srgb   eine Farbe als Anteile von Rot, Grün und Blau an der vollen Intensität, das Modell des Bildschirms
+
+% 1 1 0 1ae04f00a651c7a0057c639fb22b22fd
+
+@ 0 4 0 11785b85a959a2a51773bab0ad8a07ba
++       `Srgb(red, green, blue)`, jeweils in `0`–`1`. Das Modell, über das alles andere
++       konvertiert wird: Die `Chromatic`-Instanz stellt eine Farbe dar, indem sie hierher
++       konvertiert, `Palette` und `Spectrum` vergleichen Farben hier, und `WebColors` sind hier
++       definiert. Auf dem Weg nach `Xyz` wird die Standard-sRGB-Gammakorrektur angewandt, mit den
++       D65-Primärvalenzen.
+
+% 2 1 0 1fd7c957197abe6e1393f8f511a6cd39
+
+% 3 1 0 1ac395aded9fd57518e263489b48618a
+
+% 0 1 0 0998a3f47fe7414901f0e469dd51c13f
+
+% 0 1 0 041d4ae0bbe9150e0a9a31cdb9c48538
+
+% 0 1 0 1b98e6f0b7bdbc9a11477dc31e74b0c7
+
+% 0 1 0 140712b9082078aa055438cc6cbc8ef6
+
+% 1 1 0 12e6fc527239a929128365106ed13bbf
+
+% 2 1 0 089e1a52558332800719be748761b5ea
+
+% 0 1 0 1073c051d014ff6c1953101e71ecf440
+
+@ 0 14 0 09e49cd12d9a339f1de6e59d2f373af6
++   entry .xyz   `Srgb` nach `Xyz`: linearisiert jeden Kanal und wendet die sRGB-Matrix an; braucht eine `Colorimetry`
++   entry .cielab   `Srgb` nach `Cielab`, über `Xyz`; braucht eine `Colorimetry`
++   entry .cmy   `Srgb` nach `Cmy`: das Komplement jedes Kanals
++   entry .cmyk   `Srgb` nach `Cmyk`, über `Cmy`
++   entry .hsl   `Srgb` nach `Hsl`: Farbton als `Angle` auf dem Farbkreis, Sättigung und Helligkeit
++       Ein Grau (alle Kanäle gleich) hat den Farbton `0` und die Sättigung `0`.
++   entry .hsv   `Srgb` nach `Hsv`: Farbton als `Angle`, Sättigung und Hellwert (der hellste Kanal)
++   entry #red   der Rotkanal, `0`–`1`
++   entry #green   der Grünkanal, `0`–`1`
++   entry #blue   der Blaukanal, `0`–`1`
++   entry #mix   diese Farbe und eine andere, Kanal für Kanal in einem Verhältnis gemischt
++       `mix(that, ratio)` ist in jedem Kanal `(1 - ratio)` von dieser und `ratio` von `that`,
++       sodass `mix(that)` (Verhältnis `0.5`) der Mittelwert ist, `mix(that, 0)` diese Farbe und
++       `mix(that, 1)` die andere. Eine Mischung von Bildschirmwerten; `Cielab#mix` mischt, was
++       das Auge wahrnimmt.
+
+@ 0 1 0 1923ea616843f322174d987d5f31d535
++ entry .Hsl   eine Farbe als Farbton, Sättigung und Helligkeit: das Modell zum Anpassen einer Farbe
+
+% 1 1 0 14381cb7e2131a0011330dc477840111
+
+@ 0 5 0 07732299770019bc03888ca4f275f09d
++       `Hsl(hue, saturation, lightness)`, mit dem Farbton als `Angle` — einem Punkt auf dem
++       Farbkreis, sodass die Einheit geschrieben (`208.8.deg`, `π.rad`) statt angenommen wird —
++       und den anderen beiden in `0`–`1`. Seine Methoden sind die Anpassungen, zu denen man
++       greift: den Farbton drehen (`rotate`), `saturate` oder `desaturate`, `lighten` oder
++       `darken`, das Komplement nehmen (`complement`). Nach `Hsl` konvertieren, anpassen,
++       zurückkonvertieren.
+
+% 2 1 0 13bcf530c255ddcc1abe1dce12a49a35
+
+% 3 1 0 0754bb2744dc182e0500c9a8af8501c7
+
+% 0 1 0 0c41bb1a887435321addae07f7a2d454
+
+% 0 1 0 0f7716bcb924fb3d17e4ef8efafda384
+
+% 0 1 0 0e0dfa6bc72ef2c405a0f86fc63df48e
+
+% 0 1 0 01051f4195324ab312d7585bedac7b7d
+
+% 0 1 0 0b31e712870df4b407b2d8538f4283c4
+
+% 1 1 0 032bfd1f1acce9ee0fad723696b46a8e
+
+@ 0 3 0 1a777f3163c14dfe0d0d27a7fd6e189b
++       `Hsl` hat keine `Blendable`-Instanz, Tupfer davon lassen sich also nicht addieren: Zwei
++       Farbtöne koordinatenweise zu mitteln nimmt den langen Weg um den Kreis, sobald das Paar
++       die Null umschließt, und zwei Rottöne würden sich zu Cyan mischen. Mischen Sie
++       stattdessen in `Srgb` oder `Cielab`.
+
+% 0 1 0 0656060393d4ca2a1067b109a4d91054
+
+% 1 1 0 1462ae0dac158efb18bd92af77403ecc
+
+@ 0 15 0 00f374ba67affee51dfd896865d81ae4
++   entry .perceptual   `Hsl` nach `Srgb`
++   entry #hue   der Farbton, als `Angle` auf dem Farbkreis
++   entry #saturation   die Sättigung, `0` (grau) bis `1` (rein)
++   entry #lightness   die Helligkeit, `0` (schwarz) bis `1` (weiß)
++   entry #saturate   derselbe Farbton und dieselbe Helligkeit bei voller Sättigung
++   entry #desaturate   dieselbe Helligkeit ohne Sättigung: ein Grau
++   entry #rotate   der um einen Winkel gedrehte Farbton, auf seinen Hauptwert zurückgeführt
++       `rotate(360.deg)` lässt den Farbton unverändert, und eine Rückwärtsdrehung über die Null
++       hinaus läuft zum oberen Ende des Kreises um; eine Drehung, die genau auf null landet,
++       ergibt `0`, keine volle Umdrehung.
++   entry #complement   der um einen halben Kreis gedrehte Farbton: `rotate(180.deg)`
++   entry #pure   der Farbton bei voller Sättigung und mittlerer Helligkeit: die reinste Farbe dieses Farbtons
++   entry #lighten   die Helligkeit um einen Bruchteil des Wegs in Richtung `1` verschoben
++       `lighten(0.5)` ergibt bei einer Helligkeit von `0.4` den Wert `0.7`; `lighten(1)` ist Weiß.
++   entry #darken   die Helligkeit um einen Bruchteil des Wegs in Richtung `0` verschoben
++       `darken(0.5)` ergibt bei einer Helligkeit von `0.4` den Wert `0.2`; `darken(1)` ist Schwarz.
+
+@ 0 1 0 0166e1fe4dd517fd12710d9fbf5f22b2
++ entry .Hsv   eine Farbe als Farbton, Sättigung und Hellwert, mit Aufhellungen, Abdunklungen und Abtönungen
+
+% 1 1 0 19487d6b418009db19841d60a5a151ed
+
+@ 0 4 0 0404dc531a94f08707deda7a1f743e41
++       `Hsv(hue, saturation, value)`: der Farbton ein `Angle`, die Sättigung in `0`–`1` und der
++       Hellwert die Intensität des hellsten Kanals in `0`–`1`. Es wird angepasst wie `Hsl` —
++       `rotate`, `saturate`, `desaturate`, `complement`, `pure` — und ergänzt das Vokabular des
++       Malers: `tint` mischt in Richtung Weiß, `shade` in Richtung Schwarz und `tone` in Richtung
++       beider.
+
+% 2 1 0 02f838947e8a4e22122611479ae922dc
+
+% 3 1 0 13ea2cdeff0bf6e018f3a63289f3298e
+
+% 0 1 0 1e7675287584c6250e2706229d6fb5f7
+
+% 0 1 0 0036da7761604efc16f55c2f0fc4c855
+
+% 0 1 0 0967ec1fdaf7c6621c454e806485c08c
+
+% 0 1 0 17c2cdd89072f1590765f25a621b5da2
+
+% 1 1 0 0fa4c9910fb7f70c1949e528dcad0bb1
+
+@ 0 1 0 0fbf3489d5f4e5b5054094b71a69c9df
++       Wie `Hsl` hat `Hsv` keine `Blendable`-Instanz, da der Farbton zyklisch ist.
+
+% 0 1 0 0656060393d4ca201067b109a4d9104a
+
+@ 0 14 0 153a9a8509ca463f010f491e633ebda3
++   entry .perceptual   `Hsv` nach `Srgb`
++   entry #hue   der Farbton, als `Angle`
++   entry #saturation   die Sättigung, `0`–`1`
++   entry #value   der Hellwert: die Intensität des stärksten Kanals, `0`–`1`
++   entry #saturate   derselbe Farbton und derselbe Hellwert bei voller Sättigung
++   entry #desaturate   derselbe Hellwert ohne Sättigung
++   entry #rotate   der um einen Winkel gedrehte Farbton, auf seinen Hauptwert zurückgeführt
++   entry #complement   der um einen halben Kreis gedrehte Farbton
++   entry #pure   der Farbton bei voller Sättigung und vollem Hellwert
++   entry #shade   die abgedunkelte Farbe: der Hellwert mit `1 - black` skaliert
++       `shade(0)` ist die unveränderte Farbe; `shade(1)` hat den Hellwert `0`.
++   entry #tint   die aufgehellte Farbe: die Sättigung mit `1 - white` skaliert
++       `tint(0)` ist die unveränderte Farbe; `tint(1)` hat die Sättigung `0`.
++   entry #tone   `shade(black)`, dann `tint(white)`
+
+@ 0 1 0 187a74e4e2a3196b1999564386dd428c
++ entry .Xyz   CIE 1931 XYZ: das geräteunabhängige Modell, das jede wahrnehmungsbezogene Konvertierung durchläuft
+
+% 1 1 0 1eccbe621fd056251385848892fdd588
+
+@ 0 5 0 037ded110a0f630802be3854dcefde9f
++       `Xyz(x, y, z)`, die Tristimuluswerte auf der Skala, auf der das Referenzweiß `y = 100`
++       hat. Hier wird nichts angepasst; es ist die Drehscheibe zwischen `Srgb` und `Cielab`.
++       Die Konvertierung nach `Cielab` teilt durch das Referenzweiß der `Colorimetry` im
++       Geltungsbereich; die Konvertierung nach `Srgb` wendet die inverse sRGB-Matrix und das
++       Gamma an und braucht keine `Colorimetry`.
+
+% 1 1 0 1046107291cd2f9b0b481ed5fa421167
+
+% 1 1 0 18c5e57987ef3a271ea501d256dcfc9a
+
+@ 0 5 0 173516d9f1a8c0670ff0c8ac0b03755d
++   entry .cielab   `Xyz` nach `Cielab`, relativ zum 2°-Referenzweiß der `Colorimetry`
++   entry .srgb   `Xyz` nach `Srgb`: die inverse sRGB-Matrix, dann das Gamma
++   entry #x   der X-Tristimuluswert
++   entry #y   der Y-Tristimuluswert: die Leuchtdichte, `100` für das Referenzweiß
++   entry #z   der Z-Tristimuluswert
+
+@ 0 1 0 06fe89b317ca53db076ddfa971376758
++ entry .Cielab   CIE L*a*b*: das Modell, in dem der Abstand zwischen Farben dem entspricht, wie verschieden sie aussehen
+
+% 1 1 0 146925c7281453511aca1308e4ccca33
+
+@ 0 7 0 06f873820d263ad103bd948d3cf0ad28
++       `Cielab(lightness, blueYellow, greenRed)`: L* von `0` (Schwarz) bis `100` (Weiß) und die
++       beiden Gegenfarbachsen a* (`greenRed`, negativ in Richtung Grün) und b* (`blueYellow`,
++       negativ in Richtung Blau), jeweils ungefähr `-128`–`127`. Der Raum ist so aufgebaut, dass
++       gleiche Abstände gleichen wahrgenommenen Unterschieden entsprechen, die `#delta` misst:
++       Ein kleines Delta bedeutet, dass zwei Farben schwer zu unterscheiden sind. Es ist das
++       richtige Modell, um einen lesbaren Vordergrund vor einem Hintergrund zu wählen, wo rohe
++       RGB-Abstände in die Irre führen, und `#mix` liefert hier eine natürlichere Mitte als das
++       Mischen von Bildschirmwerten.
+
+% 2 1 0 0d264a31855a0e97154b99c6cd59daf6
+
+% 3 1 0 146ce42ba360cb81031157c46d37f29b
+
+% 4 1 0 083fadce9b725dc9089b179c50f607c4
+
+% 0 1 0 11c4e7f0daef270907be3d531a66a425
+
+% 0 1 0 16b8f65a9ee50221133e04bdd6616ada
+
+% 0 1 0 1ad78a812f0dea780e507b4d12c09981
+
+% 0 1 0 0ec4f2e852a9d3230fd8095fa8f35d38
+
+% 1 1 0 19052f15802389981fee4f43273ca068
+
+@ 0 3 0 109e6c2925f4b0cf026b08130bc28eee
++       Seine Koordinaten sind keine Anteile von `0`–`1`, daher ist es nicht `Tonal`: Tupfer
++       davon lassen sich nur unter `proportionalMixing` addieren, und
++       `import mixing.multiplyMixing` mit CIELAB kompiliert nicht.
+
+% 0 1 0 0b26bd1e3fbfdccc19907e363a5eeb83
+
+% 1 1 0 1dede88ab62f7d28117b7898be5cfab7
+
+@ 0 8 0 1eab3651ac6e718e0e8a426ca4893cf5
++   entry .xyz   `Cielab` nach `Xyz`, relativ zum 2°-Referenzweiß der `Colorimetry`
++   entry .srgb   `Cielab` nach `Srgb`, über `Xyz`; braucht eine `Colorimetry`
++   entry #lightness   L*: `0` Schwarz bis `100` Weiß
++   entry #blueYellow   b*: negativ in Richtung Blau, positiv in Richtung Gelb
++   entry #greenRed   a*: negativ in Richtung Grün, positiv in Richtung Rot
++   entry #delta   der euklidische Abstand zu einer anderen Farbe über alle drei Achsen: ΔE*ab
++   entry #mix   diese Farbe und eine andere, auf allen drei Achsen in einem Verhältnis gemischt
++       `mix(that)` ist die Mitte; `mix(that, ratio)` liegt um `ratio` des Wegs in Richtung `that`.
+
+@ 0 1 0 08b1ebc274a12c5e13d8fb56db1c529c
++ entry .Cmy   eine Farbe als Cyan, Magenta und Gelb: das subtraktive Komplement von sRGB
+
+% 1 1 0 060e283c66c8a6a2134f72a8c6bb73cf
+
+@ 0 3 0 07a6b15f303ab6b21c227f5afd462b1d
++       `Cmy(cyan, magenta, yellow)`, jeweils in `0`–`1` und jeweils das Komplement des
++       entsprechenden sRGB-Kanals: `Srgb(1 - c, 1 - m, 1 - y)`. Es ist der Schritt zwischen
++       `Srgb` und `Cmyk` und ein `Tonal`-Raum, mischt sich also unter jedem Mischmodus.
+
+% 0 1 0 11b0104c3f3d3149169dc64083d2e445
+
+@ 0 7 0 0e7d057d79fb99e716f973d166d2dae8
++   entry .cmyk   `Cmy` nach `Cmyk`: der gemeinsame Anteil der drei Farben wird zum Key (Schwarz)
++       Der Key ist der kleinste der drei Werte (oder `1`, was reines Schwarz ergibt); die Farben
++       sind das, was danach übrig bleibt, neu skaliert.
++   entry .srgb   `Cmy` nach `Srgb`: das Komplement jedes Kanals
++   entry #cyan   die Cyan-Druckfarbe, `0`–`1`
++   entry #magenta   die Magenta-Druckfarbe, `0`–`1`
++   entry #yellow   die gelbe Druckfarbe, `0`–`1`
+
+@ 0 1 0 03ea57cb682398430766ac687b7f9471
++ entry .Cmyk   eine Farbe als Cyan, Magenta, Gelb und Key (Schwarz): das Modell des Druckers
+
+% 1 1 0 1681e0ce0b61e6d7066142a2546e2bbc
+
+@ 0 4 0 1861d3c7b5d587140f57090a713a0fb6
++       `Cmyk(cyan, magenta, yellow, key)`, jeweils in `0`–`1`. Der Key ist die schwarze
++       Druckfarbe, die gleiche Anteile der anderen drei ersetzt; `Cmyk(0, 0, 0, 1)` ist Schwarz.
++       Ein `Tonal`-Raum, mischt sich also unter jedem Mischmodus. `Cmyk8` ist die gepackte
++       32-Bit-Anordnung derselben Kanäle; dieser Typ ist das `Double`-basierte Modell.
+
+% 0 1 0 1b4f355816dacff400c196ede7ef605f
+
+@ 0 6 0 07876d6f531c8108197318737c5a1ade
++   entry .cmy   `Cmyk` nach `Cmy`: der Key wird in jede Druckfarbe zurückaddiert
++   entry .srgb   `Cmyk` nach `Srgb`, über `Cmy`
++   entry #cyan   die Cyan-Druckfarbe, `0`–`1`
++   entry #magenta   die Magenta-Druckfarbe, `0`–`1`
++   entry #yellow   die gelbe Druckfarbe, `0`–`1`
++   entry #key   die schwarze Druckfarbe, `0`–`1`
+
+@ 0 1 0 1af870c1f3ee647f0e274d491dadf064
++ entry .Perceptual   die Typklasse der Konvertierungen zwischen Farbmodellen: `Form is Perceptual in Model`
+
+% 1 1 0 10e24f0b05fabaab12003e714f3aeb5c
+
+@ 0 7 0 0c1503ca467ab7db1c6ff8757b587190
++       `color.to[Model]` ruft eine `color.Form is Perceptual in Model` herbei und ruft deren
++       `#convert` auf. Instanzen werden in den Begleitobjekten der Modelle deklariert, von denen
++       sie konvertieren (`Srgb.hsl`, `Cielab.xyz`, …), und werden daher ohne Import aufgelöst;
++       ein neues Modell kommt zur Bibliothek hinzu, indem es `Color` mit `type Form = NewModel`
++       erweitert und in seinem Begleitobjekt eine `Perceptual`-Instanz nach und von `Srgb`
++       deklariert. Die `identity`-Instanz des Begleitobjekts macht eine Konvertierung in das
++       eigene Modell einer Farbe kostenlos, und `Daub.perceptual` lässt einen Tupfer so
++       konvertieren wie die Farbe, die er enthält.
+
+% 2 1 0 03739d46527d90790519617c54ef812d
+
+% 3 1 0 09c70853e7e2380111a9237f301c2bbe
+
+% 0 1 0 0f436d6e5bad05371120b2e0fc4530e1
+
+% 0 1 0 1b9f8e7ec8c2e8e20c88f4870cefa909
+
+% 0 1 0 15043b46989e1cce19ba9c95442c15b3
+
+% 0 1 0 0066338307a428d31a119a1d7918342f
+
+% 0 1 0 086982b5e8d0ab7b1ceef01f4d92e79c
+
+% 1 1 0 16c3936ebc97084811e0a5f2fe46a646
+
+% 2 1 0 09098996dceee8b71c8077a72a02a42f
+
+@ 0 4 0 093e5c472a81a17205cbb5d4cc0dbd22
++   entry .identity   jede Farbe konvertiert unverändert in ihr eigenes Modell
++   entry #Self   das Modell, von dem konvertiert wird
++   entry #Form   das Modell, in das konvertiert wird
++   entry #convert   die Konvertierung, von einer Farbe in `Self` zu einer in `Form`
+
+@ 0 1 0 01b821acbadde9e714e05ad7ba684e32
++ entry .Blendable   die Typklasse der Modelle, deren Farben sich Koordinate für Koordinate verbinden
+
+% 1 1 0 17a4108da00cbca111af39814a0db5a7
+
+@ 0 7 0 1280338d1fd84bfb180eb27fe3529826
++       Das Mischen arbeitet eine Koordinate nach der anderen ab, also muss ein Modell nur
++       angeben, wie eine punktweise Operation über seinen Koordinaten wieder eine Farbe ergibt:
++       `#zip(left, right, operation)`. Die Addition von `Daub` braucht das, zusammen mit einem
++       `Mixing`-Modus. `Srgb`, `Cmy`, `Cmyk`, `Cielab` und `Xyz` haben Instanzen im
++       Begleitobjekt; `Hsl` und `Hsv` haben bewusst keine, da ihr Farbton ein Winkel auf einem
++       Kreis ist und das koordinatenweise Mitteln zweier Farbtöne den langen Weg um den Kreis
++       nähme, sobald das Paar die Null umschließt — zwei Rottöne ergäben Cyan.
+
+% 1 1 0 11893d95a3854aa3114e1610aada155b
+
+% 2 1 0 0ba817d3678e2fbe12b629b206504c1f
+
+@ 0 7 0 0bd1f3c8c3d2954216504b1dfe607228
++   entry .srgb   `Srgb` mischt auf Rot, Grün und Blau
++   entry .cmy   `Cmy` mischt auf Cyan, Magenta und Gelb
++   entry .cmyk   `Cmyk` mischt auf Cyan, Magenta, Gelb und Key
++   entry .cielab   `Cielab` mischt auf L*, a* und b*
++   entry .xyz   `Xyz` mischt auf X, Y und Z
++   entry #Self   das Modell, dessen Farben sich mischen
++   entry #zip   zwei Farben, verbunden durch eine Funktion, die auf jedes Koordinatenpaar angewandt wird
+
+@ 0 1 0 151eb9ebb7d894770705d95bb5d88a5b
++ entry .Tonal   kennzeichnet ein Modell, dessen Koordinaten alle von `0` bis `1` reichen, sodass jeder Mischmodus darauf anwendbar ist
+
+% 1 1 0 13e3a83317cf521f0a587b3fe7c554b5
+
+@ 0 7 0 0d82e45ac0d12ae5069f9ea128ab889f
++       `Srgb`, `Cmy` und `Cmyk` sind `Tonal`. Jeder `Mixing`-Modus außer `proportionalMixing`
++       liest Koordinaten als Anteile der vollen Intensität — `multiply` ist ein Produkt von
++       Koordinaten, `screen` ein Produkt ihrer Komplemente —, und keines von beiden beschreibt
++       etwas, wo eine Koordinate `100` oder negativ sein kann; die Modi werden daher nur für
++       `Tonal`-Modelle angeboten: `import mixing.multiplyMixing` zusammen mit
++       `1*Cielab(0, 0, 0) + 1*Cielab(40, 20, 10)` ist ein Kompilierfehler statt einer
++       stillschweigenden proportionalen Mischung. `Cielab` und `Xyz` haben keine Instanz.
+
+% 1 1 0 1a68a6a9b518fb37007eb5326e396b31
+
+@ 0 4 0 139e4c2fe82dba051441e69f58579db0
++   entry .srgb   `Srgb` ist `Tonal`
++   entry .cmy   `Cmy` ist `Tonal`
++   entry .cmyk   `Cmyk` ist `Tonal`
++   entry #Self   das Modell, dessen Koordinaten alle Anteile sind
+
+@ 0 1 0 166425f92a37a35f0bc5d3a18845a724
++ entry .Mixing   die Typklasse der Mischmodi: wie sich die Koordinate einer Ebene mit dem Hintergrund darunter verbindet
+
+% 1 1 0 0bd90e848b937f050627ec3f5cc00dbf
+
+@ 0 6 0 12c1741ba3fe2526190e99b5d80a2aa6
++       `#blend(backdrop, layer)` ist einer der separierbaren Mischmodi von Photoshop und GIMP, in
++       der Form, die die W3C-Compositing-Spezifikation ihnen gibt. Werden Tupfer addiert, wird
++       der Modus mit voller Stärke angewandt und das Ergebnis im Anteil des hinzugefügten
++       Tupfers an der Gesamtzahl der Teile zurückgemischt — genau das, was der
++       Deckkraftregler einer Ebene tut —, sodass nur `proportionalMixing` kommutativ ist; unter
++       jedem anderen Modus unterscheidet sich `5*Red + 3*Yellow` von `3*Yellow + 5*Red`, so wie
++       beim Vertauschen zweier Ebenen.
+
+@ 0 4 0 11a9ab42899fc0a01e4423e007cf786a
++       In diesem Begleitobjekt gibt es bewusst keine Standardinstanz: Ein über den impliziten
++       Geltungsbereich erreichbarer Modus würde immer dann gefunden, wenn der importierte nicht
++       greift, sodass das Mischen von CIELAB unter `import mixing.multiplyMixing` still auf eine
++       proportionale Mischung zurückfiele, statt abgelehnt zu werden. Der Modus wird immer durch
++       einen Import aus `mixing` benannt.
+
+% 1 1 0 0034f1a9898c4b2511b655029acc8f2d
+
+% 1 1 0 08da6cf1e60b3d9101d4d8f4bf726bc1
+
+@ 0 2 0 1991aca56772135809547c1ab0e58beb
++   entry #Self   das Modell, auf das dieser Mischmodus anwendbar ist
++   entry #blend   die Koordinate der Ebene über die des Hintergrunds gelegt, unter diesem Modus
+
+@ 0 1 0 07fe578a31436138036c069d55a0a6a1
++ entry .Daub   eine Menge Farbe: eine Farbe mit der Anzahl der Teile, die von ihr in eine Mischung eingehen
+
+% 1 1 0 0fb92786b8bf21080f7ef35e7db61783
+
+@ 0 5 0 070af1ba380aad9e18c681faa15c7a74
++       `5*WebColors.Red` ist ein `Daub[Srgb]` aus fünf Teilen Rot (über
++       `Color.wholeMultiplicable`, oder `Color.multiplicable` für einen `Double`). Ein Tupfer ist
++       selbst eine `Color` — fünf Teile Rot sind immer noch Rot —, sodass ein Ausdruck wie
++       `5*Red + 3*Yellow` sich wie jede Farbe konvertieren, darstellen und messen lässt, und
++       `#parts` zählt nur, wenn ein weiterer Tupfer hinzuaddiert wird. Das Addieren erfordert,
++       dass das Modell `Blendable` ist, und einen aus `mixing` importierten `Mixing`-Modus.
+
+% 2 1 0 1481f64596502a211ef47dc6bf7d7563
+
+% 3 1 0 134bb1beaae5f0610e4c6fa03c262a86
+
+@ 0 1 0 0145c970ead650ed00bfdd17f2d1efa4
++         label Fünf Teile Rot
+
+% 1 1 0 07fd0cd7820405131d14ec5a978feb7c
+
+% 2 1 0 0316c957ff2f06af0ae3b8d386d2aae9
+
+% 3 1 0 0384c06bdfb1db7f1445b7133fd3591a
+
+% 0 1 0 1d578c701f9699ae06a59d3aaf05273b
+
+% 0 1 0 06cf583683f6d11d17a7a527b6f3d32d
+
+% 1 1 0 1e68b5af300c35680cc2f596ff94dd76
+
+@ 0 1 0 0d66ae7eed228dfe06181f0fa9fe9120
++         label Drei Teile Gelb hinzufügen
+
+% 1 1 0 173ce9364e016fab09549281c64dbed7
+
+% 2 1 0 15f20c52a8637fe1007cae956bdc2924
+
+% 3 1 0 0ce3853aafef9b1711e11a9cb6d72440
+
+% 0 1 0 0c280cefd4d85d2218d46667098b523e
+
+% 0 1 0 0e60f0d449fcd3380b6b48830373046c
+
+% 0 1 0 0c5cf473443bc2f8108a4a6d6978b2d5
+
+% 1 1 0 0c5c11962c98b5700742c5064844e63b
+
+@ 0 1 0 1df1e8f7c69baa0209f4b75faa75d31a
++         label Zwei Teile Weiß hinzufügen: gewichtet gegen die bisherigen acht Teile
+
+% 1 1 0 08e1c8c1163391ed1c980c89b588db4e
+
+% 2 1 0 149d11ec2e6ebef7053dfb06621bc162
+
+% 3 1 0 17a2b21916864a9313ca91b3dc6a7e57
+
+% 2 1 0 0f97815da1f7bdd4104fea4f3051dcb5
+
+% 0 1 0 0e18d2e7d1243473162bc67315f49be2
+
+% 1 1 0 18c6d3d21720cb8d04ad06610fb1346f
+
+@ 0 1 0 14f1891020f96d401973fd1f096ad6ac
++         label Dieselben Tupfer unter einem anderen Modus
+
+% 1 1 0 130684b17477aa5704232e650d5e1d95
+
+% 2 1 0 03362d29f6c5c0c30aa28fa39ae05a76
+
+% 0 1 0 125af8b65baa190f0ecf656ba9a0658b
+
+% 2 1 0 06ec18588e5d061415aca343c671a14a
+
+% 0 1 0 087a4d82319a381d1a1fef28afa05d35
+
+% 1 1 0 100e3894cb4da24b046271840ac443fe
+
+% 2 1 0 13f8c31cb2c50bc6013def35d0e411e9
+
+@ 0 6 0 1485a56cd2e39c960318b37ac602efb2
++       Teile sind Proportionen, daher sind `5*Red + 3*Yellow` und `50*Red + 30*Yellow` dieselbe
++       Farbe, und ein dritter Tupfer wird gegen die bisherige Gesamtheit gewichtet statt gegen
++       seinen Nachbarn: `1*Red + 1*Lime + 1*Blue` ist ein gleiches Drittel von jedem. Ein Tupfer
++       aus null Teilen hat überhaupt keinen Anteil — `0*Red + 1*Blue` unter `multiply` ist Blau,
++       nicht durch Rot abgedunkelt. Eine `Color in Srgb` und ein einfaches `Srgb` werden zum
++       selben `Daub[Srgb]` gehoben, sodass sich Einträge von `WebColors` und Literale
++       miteinander mischen lassen.
+
+% 1 1 0 068a27fdc17d34af0f2455a3d172abfa
+
+% 1 1 0 040e4e42303f447f178296d1e7ce2258
+
+% 0 1 0 0c4113ba31d426d309aa43666a4a501b
+
+@ 0 8 0 180fdb029d6f39711c79a003903197bc
++   entry .addable   `left + right`: der rechte Tupfer über den linken gelegt, in seinem Anteil an den Teilen, unter dem `Mixing` im Geltungsbereich
++       Braucht `topic is Blendable` und `topic is Mixing`. Das Ergebnis hat die Summe der Teile
++       und, Koordinate für Koordinate, `backdrop + (mode(backdrop, layer) - backdrop)*share`,
++       wobei `share` der Anteil des rechten Tupfers an der neuen Gesamtheit ist. Ein Tupfer
++       ohne Teile auf einer der beiden Seiten gibt die andere unverändert zurück.
++   entry .perceptual   ein Tupfer konvertiert in jedes Modell, in das seine Farbe konvertiert
++   entry #parts   wie viele Teile der Farbe: das Gewicht, das sie trägt, wenn ein weiterer Tupfer addiert wird
++   entry #color   die Farbe selbst, in ihrem Modell
+
+@ 0 1 0 1666420f1cf4e26305ca4ea31347669d
++ entry .Colorimetry   das Referenzweiß, das eine wahrnehmungsbezogene Konvertierung annimmt: eine Lichtart und ein Beobachter
+
+% 1 1 0 1481a9181dcd61f7094c8df2ff638b00
+
+@ 0 7 0 024d07df8c30096114e5fffd3aebd511
++       `Colorimetry(x2, y2, z2, x10, y10, z10)` enthält die XYZ-Tristimuluswerte des
++       Referenzweiß für den CIE-1931-2°-Beobachter und den CIE-1964-10°-Beobachter.
++       Konvertierungen zwischen `Xyz` und `Cielab` (und damit zwischen `Srgb` und `Cielab`)
++       teilen dadurch, sodass dieselben Koordinaten bei Tageslicht und unter einer Glühlampe
++       eine andere Farbe bedeuten; die Konvertierungen verwenden die 2°-Werte. Eine wird durch
++       den Import eines Givens aus dem Paket `colorimetry` gewählt oder lokal gebunden; es gibt
++       keinen Standard, da das Voraussetzen der Lichtart ein Voraussetzen der
++       Betrachtungsbedingungen wäre.
+
+% 2 1 0 0d86ad70bbc1905809ac376b66b14d42
+
+% 3 1 0 0bac9ad20c58d7b10b03a7f54c054214
+
+% 0 1 0 0dce6f2301670d8d01c779ccd4505e9b
+
+% 0 1 0 1dc5b70b2d336ecd133af530963b5398
+
+% 1 1 0 19074442300339d00f3305e648c944bc
+
+% 0 1 0 0a46d2d9b892707202f92bb35b67c146
+
+% 1 1 0 0a57f38123dec4641f2df992eea3dff6
+
+@ 0 6 0 19b42e1cd2014f97191bb8763d798d53
++   entry #x2   X des Referenzweiß, 2°-Beobachter
++   entry #y2   Y des Referenzweiß, 2°-Beobachter: `100`
++   entry #z2   Z des Referenzweiß, 2°-Beobachter
++   entry #x10   X des Referenzweiß, 10°-Beobachter
++   entry #y10   Y des Referenzweiß, 10°-Beobachter: `100`
++   entry #z10   Z des Referenzweiß, 10°-Beobachter
+
+@ 0 1 0 07b341b0cb34f39312a8be53b840252e
++ entry .colorimetry   die Normlichtarten, jede eine `Colorimetry` als Given zum namentlichen Import
+
+% 1 1 0 0b6cf78e7b42a1170a7fad17f46e9943
+
+@ 0 3 0 11216d19ba256d790829e045b53347ef
++       Die CIE-Normlichtarten und die gängigen Leuchtstofflampen, nach Namen.
++       `daylightColorimetry` ist D65, die Lichtart, die sRGB und die meiste Bildschirmarbeit
++       annehmen, und passt für fast jedes Programm. Mehrere Givens sind Aliasse eines anderen:
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 1 0 1f27d5dd99d1a1730d67410cdb653120
++       column  Lichtart
+
+% 0 1 0 1e4885e8a51732730f898cd0ea0f750c
+
+@ 0 19 0 051f7409c892b24a1324c3bab9ab1734
++       column  Licht
++       column  Aliasse
++       row  A  `incandescentTungstenColorimetry`  Wolfram-Glühlicht
++       row  B  `oldDirectSunlightAtNoonColorimetry`  direktes Sonnenlicht am Mittag, veraltet
++       row  C  `oldDaylightColorimetry`  durchschnittliches Nordhimmel-Tageslicht, veraltet
++       row  D50  `iccProfilePcsColorimetry`  der ICC-Profilverbindungsraum
++       row  D55  `midMorningDaylightColorimetry`  Tageslicht am Vormittag oder Nachmittag
++       row  D65  `daylightColorimetry`  Mittagstageslicht, die übliche Wahl  `srgbColorimetry`, `adobeRgbColorimetry`
++       row  D75  `northSkyDaylightColorimetry`  Nordhimmel-Tageslicht
++       row  E  `equalEnergyColorimetry`  gleiche Energie bei jeder Wellenlänge
++       row  F1  `daylightFluorescentF1Colorimetry`  Tageslicht-Leuchtstofflampe
++       row  F2  `coolFluorescentColorimetry`  kaltweiße Leuchtstofflampe
++       row  F3  `whiteFluorescentColorimetry`  weiße Leuchtstofflampe
++       row  F4  `warmWhiteFluorescentColorimetry`  warmweiße Leuchtstofflampe
++       row  F5  `daylightFluorescentF5Colorimetry`  Tageslicht-Leuchtstofflampe
++       row  F6  `liteWhiteFluorescentColorimetry`  hellweiße Leuchtstofflampe
++       row  F7  `daylightFluorescentF7Colorimetry`  ein D65-Simulator  `d65SimulatorColorimetry`
++       row  F8  `sylvaniaF40Colorimetry`  Sylvania F40, ein D50-Simulator  `d50SimulatorColorimetry`
++       row  F9  `coolWhiteFluorescentColorimetry`  kaltweiße Deluxe-Leuchtstofflampe
+
+% 0 1 0 16f32ff231d488cf116fa8e3dfd1b85f
+
+% 0 1 0 09d6d03ccaa6253b091df4c5be35cf10
+
+% 0 1 0 1cba70876377c1a600cc40a79c99e5c1
+
+% 1 1 0 04e728466a23afa51f77d4902fd84c7b
+
+% 2 1 0 0673280dafa8be1405a02105a60e7489
+
+% 3 1 0 1b4080545ef535db03e59e50845d3623
+
+% 4 1 0 1f69dbfb822f99a110b68bfb2c9440c5
+
+% 0 1 0 0fa487c06d9c5a2e104688af00191bac
+
+% 1 1 0 15f49a91873066611aa3e17bd89fbdc6
+
+@ 0 27 0 0336455dd1e925521f4a5ccd497ab151
++   entry .incandescentTungstenColorimetry   Lichtart A: Wolfram-Glühlicht, 2856 K
++   entry .oldDirectSunlightAtNoonColorimetry   Lichtart B: direktes Sonnenlicht am Mittag, veraltet
++   entry .oldDaylightColorimetry   Lichtart C: durchschnittliches Nordhimmel-Tageslicht, veraltet
++   entry .iccProfilePcsColorimetry   Lichtart D50: Horizontlicht, der ICC-Profilverbindungsraum
++   entry .midMorningDaylightColorimetry   Lichtart D55: Tageslicht am Vormittag oder Nachmittag
++   entry .daylightColorimetry   Lichtart D65: Mittagstageslicht, das sRGB-Referenzweiß; die übliche Wahl
++   entry .srgbColorimetry   das sRGB-Referenzweiß: D65, dasselbe wie `daylightColorimetry`
++   entry .adobeRgbColorimetry   das Adobe-RGB-Referenzweiß: D65, dasselbe wie `daylightColorimetry`
++   entry .northSkyDaylightColorimetry   Lichtart D75: Nordhimmel-Tageslicht
++   entry .equalEnergyColorimetry   Lichtart E: gleiche Energie bei jeder Wellenlänge
++   entry .daylightFluorescentF1Colorimetry   Lichtart F1: Tageslicht-Leuchtstofflampe, 6430 K
++   entry .coolFluorescentColorimetry   Lichtart F2: kaltweiße Leuchtstofflampe, 4230 K
++   entry .whiteFluorescentColorimetry   Lichtart F3: weiße Leuchtstofflampe, 3450 K
++   entry .warmWhiteFluorescentColorimetry   Lichtart F4: warmweiße Leuchtstofflampe, 2940 K
++   entry .daylightFluorescentF5Colorimetry   Lichtart F5: Tageslicht-Leuchtstofflampe, 6350 K
++   entry .liteWhiteFluorescentColorimetry   Lichtart F6: hellweiße Leuchtstofflampe, 4150 K
++   entry .daylightFluorescentF7Colorimetry   Lichtart F7: ein D65-Simulator, 6500 K
++   entry .d65SimulatorColorimetry   der D65-Simulator: dasselbe wie `daylightFluorescentF7Colorimetry`
++   entry .sylvaniaF40Colorimetry   Lichtart F8: Sylvania F40, ein D50-Simulator, 5000 K
++   entry .d50SimulatorColorimetry   der D50-Simulator: dasselbe wie `sylvaniaF40Colorimetry`
++   entry .coolWhiteFluorescentColorimetry   Lichtart F9: kaltweiße Deluxe-Leuchtstofflampe, 4150 K
++   entry .philipsTl85Colorimetry   Lichtart F10: Philips TL85, 5000 K
++   entry .ultralume50Colorimetry   Ultralume 50: dasselbe wie `philipsTl85Colorimetry`
++   entry .philipsTl84Colorimetry   Lichtart F11: Philips TL84, 4000 K
++   entry .ultralume40Colorimetry   Ultralume 40: dasselbe wie `philipsTl84Colorimetry`
++   entry .philipsTl83Colorimetry   Lichtart F12: Philips TL83, 3000 K
++   entry .ultralume30Colorimetry   Ultralume 30: dasselbe wie `philipsTl83Colorimetry`
+
+@ 0 1 0 1829bd51119c80370dab9f4770544b68
++ entry .mixing   die Mischmodi, jeder ein `Mixing` als Given zum namentlichen Import, bevor Tupfer addiert werden
+
+% 1 1 0 11898287d8b293471456464e07a6c1b8
+
+@ 0 6 0 144a6fb4dc1fb44b0185bbda50d719e8
++       `proportionalMixing` mittelt die Farben nach ihren Teilen, was das paarweise `mix` tut,
++       und ist der einzige Modus, der in einem Modell etwas bedeutet, dessen Koordinaten nicht
++       auf `0`–`1` beschränkt sind. Die übrigen sind die Mischmodi von Photoshop und GIMP,
++       definiert, wie die W3C-Compositing-Spezifikation sie definiert, und werden nur für
++       `Tonal`-Modelle (`Srgb`, `Cmy`, `Cmyk`) angeboten: Einen davon in `Cielab` zu verlangen
++       kompiliert nicht. Genau einer wird dort importiert, wo Tupfer addiert werden;
++       standardmäßig ist keiner im Geltungsbereich.
+
+% 2 1 0 0c84afd6ad2b3816064a5a88714cd314
+
+% 3 1 0 13c63a8ce3ecfd2612fa6806f8963e3f
+
+% 0 1 0 12dcc8cf4aa7795a02f82cd438686fd8
+
+% 0 1 0 02c0e09e90c7774a1d0dfb71274e0908
+
+% 1 1 0 1e0ce56a86ed0d1b0a1c56f70d4f57ce
+
+@ 0 3 0 1592cb3ccf61091a1d766679cd8d5643
++       Der Anteil eines Tupfers an der Gesamtzahl der Teile wirkt als seine Deckkraft: Der Modus
++       wird mit voller Stärke angewandt und das Ergebnis in diesem Verhältnis zurückgemischt,
++       sodass `3*White + 1*Black` unter `multiply` `Srgb(0.75, 0.75, 0.75)` ist und
++       `9*White + 1*Black` ein Grau von `0.9`.
+
+% 1 1 0 1f94b949842e5feb00519dc2cc73e3b7
+
+% 2 1 0 1fc7b44b6b5962251f2145e694a1e86b
+
+% 0 1 0 0a297eb642a01c610e8d789370ad53c2
+
+@ 0 14 0 08648e9d47a683961e5f50d4b00d665b
++   entry .proportionalMixing   die Ebene ersetzt den Hintergrund: ein nach Teilen gewichteter Mittelwert; jedes Modell
++   entry .multiplyMixing   `backdrop × layer`: immer dunkler, wie sich Druckfarben oder Filter verbinden
++   entry .screenMixing   `1 - (1 - backdrop)(1 - layer)`: immer heller, wie sich projizierte Lichter verbinden
++   entry .darkenMixing   die kleinere der beiden Koordinaten
++   entry .lightenMixing   die größere der beiden Koordinaten
++   entry .differenceMixing   der Betrag der Differenz der beiden
++   entry .exclusionMixing   `backdrop + layer - 2·backdrop·layer`: wie Differenz, mit weniger Kontrast
++   entry .linearDodgeMixing   die Summe, nach oben auf `1` begrenzt
++   entry .linearBurnMixing   die Summe minus `1`, nach unten auf `0` begrenzt
++   entry .hardLightMixing   Multiplizieren, wo die Ebene dunkel ist, Negativ multiplizieren, wo sie hell ist
++   entry .overlayMixing   Multiplizieren, wo der Hintergrund dunkel ist, Negativ multiplizieren, wo er hell ist: hartes Licht mit vertauschten Operanden
++   entry .softLightMixing   ein sanfteres hartes Licht, nach der W3C-Formel
++   entry .colorDodgeMixing   der Hintergrund, durch die Ebene aufgehellt: `backdrop / (1 - layer)`, nach oben auf `1` begrenzt
++   entry .colorBurnMixing   der Hintergrund, durch die Ebene abgedunkelt: `1 - (1 - backdrop) / layer`, nach unten auf `0` begrenzt
+
+@ 0 4 0 017507a531c523950b59b13fbf122a94
++ entry .Brightness   ob ein Theme dunkel oder hell ist: das Enum aus `Dark` und `Light`
++     Die Variante eines `Theme`, das beide anbietet, und der Wert, den `dark` und `light`
++     prüfen. Eine wird durch den Import von `luminosity.darkBrightness` oder
++     `luminosity.lightBrightness` gewählt, sodass sich über ein Theme gestaltete Terminalausgabe
++     dem Hintergrund des Terminals anpasst.
+
+@ 0 1 0 1e5d869715916f22002f582e8c1eca16
++ entry .luminosity   dunkel oder hell, jedes eine `Brightness` als Given zum namentlichen Import
+
+% 1 1 0 0c18876193e5fe2202a123788b4ac178
+
+% 2 1 0 012f72133c8857051fa31cc892f55119
+
+% 3 1 0 1e6010279d81974e1e7c1bace568bb21
+
+% 4 1 0 0c41a12af5a2227e1b1dd794b8c7cddd
+
+% 5 1 0 0a365b5ccf508bc01862ae26749ca79d
+
+% 0 1 0 1fdf7f839a33650e1dc7b470cd9a9fa0
+
+% 1 1 0 0e03a502e5eea1550ac8d141a40dbff7
+
+@ 0 2 0 18b00da6e341de8e0216948b8ec80b2d
++   entry .darkBrightness   `Brightness.Dark`: die dunkle Variante eines Themes
++   entry .lightBrightness   `Brightness.Light`: die helle Variante eines Themes
+
+@ 0 3 0 1f0ae0b11f5c81f71ba0608a7cbc241c
++ entry .dark   ob die `Brightness` im Geltungsbereich `Dark` ist
++     Ein Inline-Test der kontextuellen `Brightness`, für ein Theme oder eine Palette, die
++     zwischen ihren Varianten wählt: `if dark then base03 else base3`.
+
+@ 0 1 0 18347cd78158b4df11c23e3ddce00d1f
++ entry .light   ob die `Brightness` im Geltungsbereich `Light` ist
+
+@ 0 1 0 1af3b96f352013980bc119e7e7c580bb
++ entry .Theme   ein aufeinander abgestimmter Farbsatz: ein Hintergrund, ein Vordergrund, Akzente und ob er dunkel oder hell ist
+
+% 1 1 0 1bca193d156a9bab0e48a007837324cb
+
+@ 0 6 0 128042de532c2ca6055a0b8a5259cc85
++       Ein `Theme` hat ein Modell (`#Form`, nach `Srgb` konvertierbar), darin einen
++       `#background` und einen `#foreground`, eine Liste von Akzentfarben `#colors` und seine
++       `#luminosity`. Sein `#spectrum` ordnet die Akzente den acht Primärrollen zu — Rot, Gelb,
++       Grün, Blau, Cyan, Magenta, Schwarz, Weiß — nach nächstgelegener Farbe, sodass ein
++       Programm, das „das Rot des Themes“ will, das Spektrum fragt. `Solarized` ist das
++       eingebaute Theme, und `themes.solarizedTheme` das Given, das es in der `Brightness` im
++       Geltungsbereich auswählt.
+
+% 2 1 0 157946992b50ee5412a4cd666cf95b5d
+
+% 3 1 0 168b41e906c798b80f4c38068bee1589
+
+% 0 1 0 09370ffe534413c019d6ad4ff883f21b
+
+% 1 1 0 1a553b8d25f9c044073150eb19e2fe24
+
+% 0 1 0 0e8073935679befd00a9fc7dfaf77b10
+
+% 0 1 0 097e48ed0afb29d416e035d5283bc930
+
+% 0 1 0 1d7e2f060b35f2ce12e25494ad7eaf83
+
+% 0 1 0 10771255de72fdb609ffa30146f42133
+
+% 1 1 0 1f994a219fc77ae71e495ae6d3ced3a3
+
+% 0 1 0 09cdc5592f5959e30b811c3391c188c0
+
+% 0 1 0 1abfc4f7f3e4a4621a8408a624d8ef34
+
+% 0 1 0 132395f37b25cce3171e9b99e53a526b
+
+@ 0 7 0 1ab41ef3316688e004ea37a93b242494
++   entry #Form   das Modell, in dem die Farben des Themes vorliegen
++   entry #luminosity   ob das Theme dunkel oder hell ist
++   entry #background   die Hintergrundfarbe
++   entry #foreground   die Vordergrundfarbe
++   entry #colors   die Akzentfarben des Themes, aus denen das Spektrum zugeordnet wird
++   entry #spectrum   die Akzente, einmalig nach nächstgelegener Farbe den acht Primärrollen zugeordnet
++       Ein `lazy val`, bei der ersten Verwendung aus `#colors` mit `Spectrum.apply` berechnet.
+
+@ 0 1 0 1e02d36f851b331b0f7fb00977efe673
++ entry .Solarized   die sechzehn Farben des Solarized-Themes, als `Theme` in `Srgb`
+
+% 1 1 0 0546ca14bb75e9160e455d93393d20d4
+
+@ 0 5 0 0205d88867bc6d6e01d0502978a7681a
++       Die Palette von Ethan Schoonover: acht Akzente (`red`, `yellow`, `blue`, `green`,
++       `orange`, `cyan`, `magenta`, `violet`) und acht Monotöne von `base03`, dem dunkelsten,
++       bis `base3`, dem hellsten. Der Trait lässt `luminosity`, `background` und `foreground`
++       abstrakt; `themes.solarizedTheme` vervollständigt ihn aus der `Brightness` im
++       Geltungsbereich, mit `base03` auf `base3` für die dunkle Variante und umgekehrt für die
++       helle.
+
+% 0 1 0 1422d0f2f22ec0600478d5ecfdd426de
+
+% 0 1 0 05949b5c177e2abc18fa7f3261fedb12
+
+% 0 1 0 0a835c515377db500bb217b885cb078a
+
+% 0 1 0 09e8f79e6f67e509198b735e761363d2
+
+% 0 1 0 0024da6c9c3b18cd0513e7fcebac0e5f
+
+% 0 1 0 1d6c510b0439b6fc0b26944bbf6ce64f
+
+% 0 1 0 112933520a3e0b9c1d6880bf30cb15b6
+
+% 0 1 0 0f71591b2cfd04e5075b05577db71031
+
+% 0 1 0 0eda7a2bbc31b4a30b57564fb3d5324b
+
+@ 0 1 0 1de36bab8adbbdae07bbc7c2b5fb4e56
++   entry #base03   der dunkelste Monoton, `Srgb(0, 0.169, 0.212)`: der Hintergrund der dunklen Variante
+
+% 0 1 0 041b023792f74b69169b2ccd95911336
+
+% 0 1 0 1ee50d2f269853ca1c7067725e050dae
+
+% 0 1 0 05069f954308278d113d09a156c92eca
+
+% 0 1 0 0fcbe81d06cdef381f58fef21603ddba
+
+% 0 1 0 0bde150c5f0f198e0cc683b0f4b29a9f
+
+% 0 1 0 0c3288ba2ae8008805c6e87ac3edb8eb
+
+@ 0 2 0 06657739b6a65d80088914e341353fcf
++   entry #base3   der hellste Monoton, `Srgb(0.992, 0.965, 0.890)`: der Hintergrund der hellen Variante
++   entry #colors   die acht Akzente, dann `base3` und `base03`
+
+@ 0 1 0 01d8cf1c8af7584c04df34eae3394b60
++ entry .themes   die eingebauten Themes, jedes ein `Theme` als Given zum namentlichen Import
+
+% 1 1 0 1d419537646eec661e0a92e6aa896017
+
+% 2 1 0 1d3fa85489fb8f1a121781b30abc3ccf
+
+% 3 1 0 1bbe5af08b9eab7506bdce1ecbffe7e9
+
+% 4 1 0 036ca2b81b40624d0e317b05b3b8338f
+
+% 5 1 0 0047ee0a5bfe31261f55080c1a472966
+
+% 0 1 0 1c43230723814b371bcc20c7d6406205
+
+% 1 1 0 12a261fbd43875530f3f35141d9796ed
+
+@ 0 3 0 0cb659494583225415c9c5e7c5832d20
++   entry .solarizedTheme   Solarized, in der dunklen oder hellen Variante, die die `Brightness` im Geltungsbereich wählt
++       Braucht ein `Brightness`-Given — `luminosity.darkBrightness` oder
++       `luminosity.lightBrightness` — und ist ein `Solarized`, sodass seine sechzehn Farben
++       namentlich erreichbar sind.
+
+@ 0 1 0 16c601c026fa2984062a95bd9ef8bd13
++ entry .Spectrum   die Akzente eines Themes, den acht primären Farbrollen zugeordnet
+
+% 1 1 0 00061b74bbecffbc16b70b028265d678
+
+@ 0 6 0 090760c979aea0ab17106808c1c0d3ef
++       `Spectrum(colors)` nimmt eine Liste von Farben in einem beliebigen nach `Srgb`
++       konvertierbaren Modell und ordnet jeder der Rollen `black`, `white`, `red`, `green`,
++       `blue`, `yellow`, `cyan` und `magenta`, in dieser Reihenfolge, eine zu, jeweils die Farbe,
++       die unter den noch nicht zugeordneten der reinen Primärfarbe am nächsten liegt (nach
++       sRGB-Abstand); ist die Liste erschöpft, wird sie neu aufgefüllt, sodass eine kurze Liste
++       jede Rolle bedient. `Theme#spectrum` ist ein solches, aus den Akzenten des Themes
++       berechnet.
+
+% 1 1 0 1ef632eb1367922512f91a41326c6702
+
+@ 0 11 0 0490ee9e57108efa11913047a0873310
++   entry .apply   `Spectrum(colors)`: die Rollen nach nächstgelegener Farbe zugeordnet, ohne Wiederholung, bis die Liste erschöpft ist
++       Löst nur dann eine Panik aus, wenn die Liste leer ist.
++   entry #Form   das Modell, in dem die Farben vorliegen
++   entry #red   die Farbe, die reinem Rot am nächsten liegt
++   entry #yellow   die Farbe, die reinem Gelb am nächsten liegt
++   entry #green   die Farbe, die reinem Grün am nächsten liegt
++   entry #blue   die Farbe, die reinem Blau am nächsten liegt
++   entry #cyan   die Farbe, die reinem Cyan am nächsten liegt
++   entry #magenta   die Farbe, die reinem Magenta am nächsten liegt
++   entry #black   die Farbe, die Schwarz am nächsten liegt
++   entry #white   die Farbe, die Weiß am nächsten liegt
+
+@ 0 1 0 00cf4a323f40eed51928c6c0ef7312c5
++ entry .Palette   ein Farbsatz nach Rollen, mit `subdue` und `accent`, um eine Farbe zum Hintergrund hin oder von ihm weg zu schieben
+
+% 1 1 0 18d2fa41f6b3c39415ca1c164fb6f9f7
+
+@ 0 7 0 1a274abaa770becb11fd6d0718a16677
++       Eine `Palette` hat ein Modell (`#Form`), einen `#background` und einen `#foreground` sowie
++       die Rollen, die der sie erweiternde Trait deklariert (`palettes.Reporting` fügt
++       `success`, `error` und `warning` hinzu; der eigene Palette-Trait einer Bibliothek fügt
++       seine eigenen hinzu). `#subdue(color)` mischt eine Farbe auf halbem Weg zum Hintergrund
++       und `#accent(color)` zum Vordergrund, und `#mix` mischt zwei beliebige Rollen, sodass eine
++       Palette aus wenigen Rollen viele ergibt. Der Trait ist `into`, sodass ein Wert dort an ihn
++       angepasst wird, wo eine `Palette` erwartet wird, und `Selectable`, sodass eine Rolle auf
++       der JVM mit `selectDynamic` namentlich gelesen werden kann.
+
+% 2 1 0 03fd6fb73f3142bd03ef57347d2bb149
+
+% 3 1 0 18675b964bff958e087ac337d7539c1e
+
+% 0 1 0 1d0382410672d3e70e425068bb376459
+
+% 0 1 0 0b4daaf07ee83e5d097c1d72c83a34a8
+
+% 0 1 0 15431d6cc837ea37186c4f5b5e720493
+
+% 0 1 0 0b61d80aa86ebc76116ed643b6ac7f43
+
+% 0 1 0 107d6a511fffc2f50d6a946285236fe0
+
+% 0 1 0 057465be7e9047e00035cedc0340caef
+
+% 0 1 0 032e4036ea555b531ea5d6d880c3dba7
+
+% 0 1 0 13649ac92dff447713ebead5bc3aec82
+
+% 0 1 0 05fa541d72b745bb1252111d32447c2f
+
+% 1 1 0 07370104a4bf57d50e42c64ab529a2f7
+
+@ 0 2 0 0e7f2248fb54cd1b18381b2da3c9aaaa
++       Eine aus Hex-Literalen geschriebene Palette gibt jeder Rolle ein `rgb"…".color`, da die
++       Rollen `Color in Srgb` sind.
+
+% 0 1 0 1cc739ab668bada5179f64537bfefd2c
+
+% 1 1 0 06fdf1c93c2c402607690e6a843d8c8b
+
+@ 0 11 0 06726f593781a861024daf8bafc4e89c
++   entry #Form   das Modell, in dem die Rollen vorliegen, nach `Srgb` konvertierbar
++   entry #background   die Hintergrundfarbe
++   entry #foreground   die Vordergrundfarbe
++   entry #black   reines Schwarz, `Srgb(0, 0, 0)`
++   entry #white   reines Weiß, `Srgb(1, 1, 1)`
++   entry #subdue   eine Farbe, zum Hintergrund hin gemischt, standardmäßig auf halbem Weg
++   entry #accent   eine Farbe, zum Vordergrund hin gemischt, standardmäßig auf halbem Weg
++   entry #mix   zwei Farben, Kanal für Kanal in sRGB gemischt, standardmäßig auf halbem Weg
++   entry #selectDynamic   eine Rolle, über Reflection nach ihrem Namen gelesen: `palette.selectDynamic("error")`
++       Nur auf der JVM: Es ruft die Methode dieses Namens per Reflection auf und ist daher auf
++       Scala Native nicht verfügbar, wo die benannten Rollen gewöhnliche Aufrufe bleiben.
+
+@ 0 1 0 1983a2158bca3f54016d6fdc98890eda
++ entry .palettes   Rollensätze, die eine `Palette` deklarieren kann: Ergebnisse von Berichten, die sechzehn Farben des Terminals, Syntax
+
+% 1 1 0 15088dacdf9a49090b1c91e83f4dde3d
+
+@ 0 4 0 0c061147cec0da750526d69ad15365d4
++       Mix-in-Traits, jeder mit einem Self-Type von `Palette`, die die Rollen benennen, die eine
++       Art von Palette liefern muss, sodass Code, der einen Bericht, ein Terminal oder Quellcode
++       gestaltet, nach einer `Palette with palettes.Reporting` fragen und ihre Rollen namentlich
++       ansprechen kann.
++   entry .Reporting   die Rollen einer Palette für Ergebnisse: `success`, `error` und `warning`
+
+% 1 1 0 1fb06fcbcb5680df003abacc10ad27e5
+
+@ 0 5 0 18471504a32f09f415cfedaac81a4b5e
++         Ein Mix-in mit Self-Type für `Palette`.
++     entry #success   die Farbe eines Erfolgs
++     entry #error   die Farbe eines Fehlers
++     entry #warning   die Farbe einer Warnung
++   entry .Terminal   die sechzehn ANSI-Farben als Rollen: `black` bis `white` und `brightBlack` bis `brightWhite`
+
+% 1 1 0 1cedac58d5b926390f4714a76f0c6023
+
+@ 0 19 0 1e08a78123c360a81db2794f4dc297b5
++         Ein Mix-in mit Self-Type für `Palette`, für eine Palette, die die eigene
++         Sechzehn-Farben-Palette des Terminals nachbildet oder ersetzt.
++     entry #black   ANSI-Farbe 0
++     entry #red   ANSI-Farbe 1
++     entry #green   ANSI-Farbe 2
++     entry #yellow   ANSI-Farbe 3
++     entry #blue   ANSI-Farbe 4
++     entry #magenta   ANSI-Farbe 5
++     entry #cyan   ANSI-Farbe 6
++     entry #white   ANSI-Farbe 7
++     entry #brightBlack   ANSI-Farbe 8
++     entry #brightRed   ANSI-Farbe 9
++     entry #brightGreen   ANSI-Farbe 10
++     entry #brightYellow   ANSI-Farbe 11
++     entry #brightBlue   ANSI-Farbe 12
++     entry #brightMagenta   ANSI-Farbe 13
++     entry #brightCyan   ANSI-Farbe 14
++     entry #brightWhite   ANSI-Farbe 15
++   entry .Syntax   die Rollen einer Palette für Syntaxhervorhebung
+
+% 1 1 0 07cccd064c4f6b9d156fbbd3b68b0cec
+
+@ 0 12 0 11161dba3746eec601d9de6bca119136
++         Ein Mix-in mit Self-Type für `Palette`: eine Rolle pro Token-Klasse, die ein
++         Highlighter unterscheidet.
++     entry #error   ein fehlerhaftes Token
++     entry #number   ein numerisches Literal
++     entry #modifier   ein Modifier-Schlüsselwort
++     entry #identifier   ein Bezeichner
++     entry #term   ein Schlüsselwort auf Term-Ebene
++     entry #meta   ein Meta-Token: Annotationen, Direktiven
++     entry #string   ein String-Literal
++     entry #parenthesis   Klammern
++     entry #symbol   ein Operator oder Symbol
++     entry #comment   ein Kommentar
+
+@ 0 1 0 0c3873dda023619f05eb431d5c01fd17
++ entry .WebColors   die 141 benannten Farben von CSS, jede eine `Color in Srgb`
+
+% 1 1 0 0cedf1b507eef10f1a120f950954b4f5
+
+@ 0 4 0 1a34f15375fec9210bbe428ec9e5fb4f
++       Die Farben, die eine Webseite benennen kann, von `AliceBlue` bis `YellowGreen`, als Werte
++       vom Typ `Color in Srgb`, sodass sich jede wie jede andere Farbe konvertieren, mischen und
++       darstellen lässt, und jede ist `Chromatic`, gestaltet also Terminaltext direkt. `.colors`
++       listet sie alle auf, in weitgehend alphabetischer Reihenfolge.
+
+% 2 1 0 16346e26b8b3c4f5032692f72bf74c8f
+
+% 3 1 0 139175fe07ab16b90d9c0b15761fa71e
+
+% 0 1 0 10130f080ab04fb00214ab012e6ec4f7
+
+% 0 1 0 10cb4d83c75b4d6c17c484f10b47e813
+
+% 1 1 0 04e90be71f57674f0dbcbc3c008a0d3f
+
+@ 0 4 0 0773143ff431f6781df525ce067d8817
++       Die Werte sind die CSS-Definitionen, auf drei Dezimalstellen gerundet, sodass
++       `WebColors.Tomato` `Srgb(1, 0.388, 0.278)` ist und seine `Chroma` `Chroma(255, 98, 70)`,
++       in einem Kanal höchstens um eins vom CSS-Wert `rgb(255, 99, 71)` entfernt, da die
++       `Chromatic`-Konvertierung abschneidet. `Gray` und die anderen Graunamen verwenden nur die
++       amerikanische Schreibweise.
+
+% 1 1 0 048a2cdc77b51f481ecbb4f644ad7a84
+
+% 1 1 0 0d48cab004bcc3c51c463ae1669d98b8
+
+@ 0 142 0 08eb69fb21a2ef531303cbf6b3d90d76
++   entry .colors   jede benannte Farbe, als Liste in weitgehend alphabetischer Reihenfolge
++   entry .AliceBlue   die CSS-Farbe `aliceblue`: `Srgb(0.941, 0.973, 1)`
++   entry .AntiqueWhite   die CSS-Farbe `antiquewhite`: `Srgb(0.98, 0.922, 0.843)`
++   entry .Aquamarine   die CSS-Farbe `aquamarine`: `Srgb(0.498, 1, 0.831)`
++   entry .Aqua   die CSS-Farbe `aqua`: `Srgb(0, 1, 1)`
++   entry .Azure   die CSS-Farbe `azure`: `Srgb(0.941, 1, 1)`
++   entry .Beige   die CSS-Farbe `beige`: `Srgb(0.961, 0.961, 0.863)`
++   entry .Bisque   die CSS-Farbe `bisque`: `Srgb(1, 0.894, 0.769)`
++   entry .Black   die CSS-Farbe `black`: `Srgb(0, 0, 0)`
++   entry .BlanchedAlmond   die CSS-Farbe `blanchedalmond`: `Srgb(1, 0.922, 0.804)`
++   entry .Blue   die CSS-Farbe `blue`: `Srgb(0, 0, 1)`
++   entry .BlueViolet   die CSS-Farbe `blueviolet`: `Srgb(0.541, 0.169, 0.886)`
++   entry .Brown   die CSS-Farbe `brown`: `Srgb(0.647, 0.165, 0.165)`
++   entry .BurlyWood   die CSS-Farbe `burlywood`: `Srgb(0.871, 0.722, 0.529)`
++   entry .CadetBlue   die CSS-Farbe `cadetblue`: `Srgb(0.373, 0.62, 0.627)`
++   entry .Chartreuse   die CSS-Farbe `chartreuse`: `Srgb(0.498, 1, 0)`
++   entry .Chocolate   die CSS-Farbe `chocolate`: `Srgb(0.824, 0.412, 0.118)`
++   entry .Coral   die CSS-Farbe `coral`: `Srgb(1, 0.498, 0.314)`
++   entry .CornflowerBlue   die CSS-Farbe `cornflowerblue`: `Srgb(0.392, 0.584, 0.929)`
++   entry .Cornsilk   die CSS-Farbe `cornsilk`: `Srgb(1, 0.973, 0.863)`
++   entry .Crimson   die CSS-Farbe `crimson`: `Srgb(0.863, 0.078, 0.235)`
++   entry .Cyan   die CSS-Farbe `cyan`: `Srgb(0, 1, 1)`
++   entry .DarkBlue   die CSS-Farbe `darkblue`: `Srgb(0, 0, 0.545)`
++   entry .DarkCyan   die CSS-Farbe `darkcyan`: `Srgb(0, 0.545, 0.545)`
++   entry .DarkGoldenrod   die CSS-Farbe `darkgoldenrod`: `Srgb(0.722, 0.525, 0.043)`
++   entry .DarkGray   die CSS-Farbe `darkgray`: `Srgb(0.663, 0.663, 0.663)`
++   entry .DarkGreen   die CSS-Farbe `darkgreen`: `Srgb(0, 0.392, 0)`
++   entry .DarkKhaki   die CSS-Farbe `darkkhaki`: `Srgb(0.741, 0.718, 0.42)`
++   entry .DarkMagenta   die CSS-Farbe `darkmagenta`: `Srgb(0.545, 0, 0.545)`
++   entry .DarkOliveGreen   die CSS-Farbe `darkolivegreen`: `Srgb(0.333, 0.42, 0.184)`
++   entry .DarkOrange   die CSS-Farbe `darkorange`: `Srgb(1, 0.549, 0)`
++   entry .DarkOrchid   die CSS-Farbe `darkorchid`: `Srgb(0.6, 0.196, 0.8)`
++   entry .DarkRed   die CSS-Farbe `darkred`: `Srgb(0.545, 0, 0)`
++   entry .DarkSalmon   die CSS-Farbe `darksalmon`: `Srgb(0.914, 0.588, 0.478)`
++   entry .DarkSeaGreen   die CSS-Farbe `darkseagreen`: `Srgb(0.561, 0.737, 0.545)`
++   entry .DarkSlateBlue   die CSS-Farbe `darkslateblue`: `Srgb(0.282, 0.239, 0.545)`
++   entry .DarkSlateGray   die CSS-Farbe `darkslategray`: `Srgb(0.184, 0.31, 0.31)`
++   entry .DarkTurquoise   die CSS-Farbe `darkturquoise`: `Srgb(0, 0.808, 0.82)`
++   entry .DarkViolet   die CSS-Farbe `darkviolet`: `Srgb(0.58, 0, 0.827)`
++   entry .DeepPink   die CSS-Farbe `deeppink`: `Srgb(1, 0.078, 0.576)`
++   entry .DeepSkyBlue   die CSS-Farbe `deepskyblue`: `Srgb(0, 0.749, 1)`
++   entry .DimGray   die CSS-Farbe `dimgray`: `Srgb(0.412, 0.412, 0.412)`
++   entry .DodgerBlue   die CSS-Farbe `dodgerblue`: `Srgb(0.118, 0.565, 1)`
++   entry .FireBrick   die CSS-Farbe `firebrick`: `Srgb(0.698, 0.133, 0.133)`
++   entry .FloralWhite   die CSS-Farbe `floralwhite`: `Srgb(1, 0.98, 0.941)`
++   entry .ForestGreen   die CSS-Farbe `forestgreen`: `Srgb(0.133, 0.545, 0.133)`
++   entry .Fuchsia   die CSS-Farbe `fuchsia`: `Srgb(1, 0, 1)`
++   entry .Gainsboro   die CSS-Farbe `gainsboro`: `Srgb(0.863, 0.863, 0.863)`
++   entry .GhostWhite   die CSS-Farbe `ghostwhite`: `Srgb(0.973, 0.973, 1)`
++   entry .Goldenrod   die CSS-Farbe `goldenrod`: `Srgb(0.855, 0.647, 0.125)`
++   entry .Gold   die CSS-Farbe `gold`: `Srgb(1, 0.843, 0)`
++   entry .Gray   die CSS-Farbe `gray`: `Srgb(0.502, 0.502, 0.502)`
++   entry .Green   die CSS-Farbe `green`: `Srgb(0, 0.502, 0)`
++   entry .GreenYellow   die CSS-Farbe `greenyellow`: `Srgb(0.678, 1, 0.184)`
++   entry .HoneyDew   die CSS-Farbe `honeydew`: `Srgb(0.941, 1, 0.941)`
++   entry .HotPink   die CSS-Farbe `hotpink`: `Srgb(1, 0.412, 0.706)`
++   entry .IndianRed   die CSS-Farbe `indianred`: `Srgb(0.804, 0.361, 0.361)`
++   entry .Indigo   die CSS-Farbe `indigo`: `Srgb(0.294, 0, 0.51)`
++   entry .Ivory   die CSS-Farbe `ivory`: `Srgb(1, 1, 0.941)`
++   entry .Khaki   die CSS-Farbe `khaki`: `Srgb(0.941, 0.902, 0.549)`
++   entry .LavenderBlush   die CSS-Farbe `lavenderblush`: `Srgb(1, 0.941, 0.961)`
++   entry .Lavender   die CSS-Farbe `lavender`: `Srgb(0.902, 0.902, 0.98)`
++   entry .LawnGreen   die CSS-Farbe `lawngreen`: `Srgb(0.486, 0.988, 0)`
++   entry .LemonChiffon   die CSS-Farbe `lemonchiffon`: `Srgb(1, 0.98, 0.804)`
++   entry .LightBlue   die CSS-Farbe `lightblue`: `Srgb(0.678, 0.847, 0.902)`
++   entry .LightCoral   die CSS-Farbe `lightcoral`: `Srgb(0.941, 0.502, 0.502)`
++   entry .LightCyan   die CSS-Farbe `lightcyan`: `Srgb(0.878, 1, 1)`
++   entry .LightGoldenrodYellow   die CSS-Farbe `lightgoldenrodyellow`: `Srgb(0.98, 0.98, 0.824)`
++   entry .LightGray   die CSS-Farbe `lightgray`: `Srgb(0.827, 0.827, 0.827)`
++   entry .LightGreen   die CSS-Farbe `lightgreen`: `Srgb(0.565, 0.933, 0.565)`
++   entry .LightPink   die CSS-Farbe `lightpink`: `Srgb(1, 0.714, 0.757)`
++   entry .LightSalmon   die CSS-Farbe `lightsalmon`: `Srgb(1, 0.627, 0.478)`
++   entry .LightSeaGreen   die CSS-Farbe `lightseagreen`: `Srgb(0.125, 0.698, 0.667)`
++   entry .LightSkyBlue   die CSS-Farbe `lightskyblue`: `Srgb(0.529, 0.808, 0.98)`
++   entry .LightSlateGray   die CSS-Farbe `lightslategray`: `Srgb(0.467, 0.533, 0.6)`
++   entry .LightSteelBlue   die CSS-Farbe `lightsteelblue`: `Srgb(0.69, 0.769, 0.871)`
++   entry .LightYellow   die CSS-Farbe `lightyellow`: `Srgb(1, 1, 0.878)`
++   entry .LimeGreen   die CSS-Farbe `limegreen`: `Srgb(0.196, 0.804, 0.196)`
++   entry .Lime   die CSS-Farbe `lime`: `Srgb(0, 1, 0)`
++   entry .Linen   die CSS-Farbe `linen`: `Srgb(0.98, 0.941, 0.902)`
++   entry .Magenta   die CSS-Farbe `magenta`: `Srgb(1, 0, 1)`
++   entry .Maroon   die CSS-Farbe `maroon`: `Srgb(0.502, 0, 0)`
++   entry .MediumAquamarine   die CSS-Farbe `mediumaquamarine`: `Srgb(0.4, 0.804, 0.667)`
++   entry .MediumBlue   die CSS-Farbe `mediumblue`: `Srgb(0, 0, 0.804)`
++   entry .MediumOrchid   die CSS-Farbe `mediumorchid`: `Srgb(0.729, 0.333, 0.827)`
++   entry .MediumPurple   die CSS-Farbe `mediumpurple`: `Srgb(0.576, 0.439, 0.859)`
++   entry .MediumSeaGreen   die CSS-Farbe `mediumseagreen`: `Srgb(0.235, 0.702, 0.443)`
++   entry .MediumSlateBlue   die CSS-Farbe `mediumslateblue`: `Srgb(0.482, 0.408, 0.933)`
++   entry .MediumSpringGreen   die CSS-Farbe `mediumspringgreen`: `Srgb(0, 0.98, 0.604)`
++   entry .MediumTurquoise   die CSS-Farbe `mediumturquoise`: `Srgb(0.282, 0.82, 0.8)`
++   entry .MediumVioletRed   die CSS-Farbe `mediumvioletred`: `Srgb(0.78, 0.082, 0.522)`
++   entry .MidnightBlue   die CSS-Farbe `midnightblue`: `Srgb(0.098, 0.098, 0.439)`
++   entry .MintCream   die CSS-Farbe `mintcream`: `Srgb(0.961, 1, 0.98)`
++   entry .MistyRose   die CSS-Farbe `mistyrose`: `Srgb(1, 0.894, 0.882)`
++   entry .Moccasin   die CSS-Farbe `moccasin`: `Srgb(1, 0.894, 0.71)`
++   entry .NavajoWhite   die CSS-Farbe `navajowhite`: `Srgb(1, 0.871, 0.678)`
++   entry .Navy   die CSS-Farbe `navy`: `Srgb(0, 0, 0.502)`
++   entry .OldLace   die CSS-Farbe `oldlace`: `Srgb(0.992, 0.961, 0.902)`
++   entry .OliveDrab   die CSS-Farbe `olivedrab`: `Srgb(0.42, 0.557, 0.137)`
++   entry .Olive   die CSS-Farbe `olive`: `Srgb(0.502, 0.502, 0)`
++   entry .OrangeRed   die CSS-Farbe `orangered`: `Srgb(1, 0.271, 0)`
++   entry .Orange   die CSS-Farbe `orange`: `Srgb(1, 0.647, 0)`
++   entry .Orchid   die CSS-Farbe `orchid`: `Srgb(0.855, 0.439, 0.839)`
++   entry .PaleGoldenrod   die CSS-Farbe `palegoldenrod`: `Srgb(0.933, 0.91, 0.667)`
++   entry .PaleGreen   die CSS-Farbe `palegreen`: `Srgb(0.596, 0.984, 0.596)`
++   entry .PaleTurquoise   die CSS-Farbe `paleturquoise`: `Srgb(0.686, 0.933, 0.933)`
++   entry .PaleVioletRed   die CSS-Farbe `palevioletred`: `Srgb(0.859, 0.439, 0.576)`
++   entry .PapayaWhip   die CSS-Farbe `papayawhip`: `Srgb(1, 0.937, 0.835)`
++   entry .PeachPuff   die CSS-Farbe `peachpuff`: `Srgb(1, 0.855, 0.725)`
++   entry .Peru   die CSS-Farbe `peru`: `Srgb(0.804, 0.522, 0.247)`
++   entry .Pink   die CSS-Farbe `pink`: `Srgb(1, 0.753, 0.796)`
++   entry .Plum   die CSS-Farbe `plum`: `Srgb(0.867, 0.627, 0.867)`
++   entry .PowderBlue   die CSS-Farbe `powderblue`: `Srgb(0.69, 0.878, 0.902)`
++   entry .Purple   die CSS-Farbe `purple`: `Srgb(0.502, 0, 0.502)`
++   entry .RebeccaPurple   die CSS-Farbe `rebeccapurple`: `Srgb(0.4, 0.2, 0.6)`
++   entry .Red   die CSS-Farbe `red`: `Srgb(1, 0, 0)`
++   entry .RosyBrown   die CSS-Farbe `rosybrown`: `Srgb(0.737, 0.561, 0.561)`
++   entry .RoyalBlue   die CSS-Farbe `royalblue`: `Srgb(0.255, 0.412, 0.882)`
++   entry .SaddleBrown   die CSS-Farbe `saddlebrown`: `Srgb(0.545, 0.271, 0.075)`
++   entry .Salmon   die CSS-Farbe `salmon`: `Srgb(0.98, 0.502, 0.447)`
++   entry .SandyBrown   die CSS-Farbe `sandybrown`: `Srgb(0.957, 0.643, 0.376)`
++   entry .SeaGreen   die CSS-Farbe `seagreen`: `Srgb(0.18, 0.545, 0.341)`
++   entry .SeaShell   die CSS-Farbe `seashell`: `Srgb(1, 0.961, 0.933)`
++   entry .Sienna   die CSS-Farbe `sienna`: `Srgb(0.627, 0.322, 0.176)`
++   entry .Silver   die CSS-Farbe `silver`: `Srgb(0.753, 0.753, 0.753)`
++   entry .SkyBlue   die CSS-Farbe `skyblue`: `Srgb(0.529, 0.808, 0.922)`
++   entry .SlateBlue   die CSS-Farbe `slateblue`: `Srgb(0.416, 0.353, 0.804)`
++   entry .SlateGray   die CSS-Farbe `slategray`: `Srgb(0.439, 0.502, 0.565)`
++   entry .Snow   die CSS-Farbe `snow`: `Srgb(1, 0.98, 0.98)`
++   entry .SpringGreen   die CSS-Farbe `springgreen`: `Srgb(0, 1, 0.498)`
++   entry .SteelBlue   die CSS-Farbe `steelblue`: `Srgb(0.275, 0.51, 0.706)`
++   entry .Tan   die CSS-Farbe `tan`: `Srgb(0.824, 0.706, 0.549)`
++   entry .Teal   die CSS-Farbe `teal`: `Srgb(0, 0.502, 0.502)`
++   entry .Thistle   die CSS-Farbe `thistle`: `Srgb(0.847, 0.749, 0.847)`
++   entry .Tomato   die CSS-Farbe `tomato`: `Srgb(1, 0.388, 0.278)`
++   entry .Turquoise   die CSS-Farbe `turquoise`: `Srgb(0.251, 0.878, 0.816)`
++   entry .Violet   die CSS-Farbe `violet`: `Srgb(0.933, 0.51, 0.933)`
++   entry .Wheat   die CSS-Farbe `wheat`: `Srgb(0.961, 0.871, 0.702)`
++   entry .WhiteSmoke   die CSS-Farbe `whitesmoke`: `Srgb(0.961, 0.961, 0.961)`
++   entry .White   die CSS-Farbe `white`: `Srgb(1, 1, 1)`
++   entry .YellowGreen   die CSS-Farbe `yellowgreen`: `Srgb(0.604, 0.804, 0.196)`
++   entry .Yellow   die CSS-Farbe `yellow`: `Srgb(1, 1, 0)`
+
+@ 0 7 0 104c64de5cd4c0781d00e28ad7208f69
++ entry .rgb   der Interpolator `rgb"…"`: eine hexadezimale Farbe als `Chroma`, beim Kompilieren geprüft
++     `rgb"#rrggbb"` oder `rgb"rrggbb"` liest sechs Hexadezimalziffern, in beliebiger
++     Schreibweise, als Rot-, Grün- und Blaukanal eines `Chroma`, der ganzzahligen 24-Bit-Farbe,
++     die Terminals und Bilder entgegennehmen. Das Makro parst das Literal beim Kompilieren und
++     spleißt `Chroma(r, g, b)` ein, sodass ein fehlerhaftes Literal ein Kompilierfehler ist:
++     _the color must be in the form `rgb"#rrggbb"` or `rgb"rrggbb"` where rr, gg and bb are
++     2-digit hex values_. Der Interpolator nimmt keine Einsetzungen an, _an rgb literal cannot
++     have substitutions_.
+
+% 2 1 0 1717c92eb80f235d16077f4ae7db6e9d
+
+% 3 1 0 142ace60a18eb23c18426d0d9fb14ce3
+
+% 0 1 0 12c0c6701a18acc2114a3586bd987450
+
+% 0 1 0 11e9231fd2b3550d043d528016fedbfd
+
+% 0 1 0 0f3f7819598735b40755d087a6c4a51c
+
+% 0 1 0 0018462339da27f507f19db3612e8a69
+
+% 0 1 0 031326e48e1c5eca1856551bf9810195
+
+% 1 1 0 18ea2497b7580d69027231062b3090b4
+
+@ 0 3 0 084646d1ca93b85f04ccc7f45c32d3cc
++     Ein `Chroma` ist `Chromatic`, also gestaltet das Literal Terminaltext so, wie es ist
++     (`e"${rgb"#ff6347"}(tomato)"`); `color` ist der Schritt in die perzeptuellen Modelle, die
++     Rollen von `Palette` und das Mischen mit `Daub`, die alle eine `Color in Srgb` nehmen.
+
+@ 0 5 0 1c896f96522111551e7a7f72998bb2ea
++ entry .color   `chroma.color`: ein `Chroma` als `Color in Srgb`, jeder Kanal durch `255` geteilt
++     Eine Erweiterung auf dem `Chroma` aus Anticipation. Ein `Chroma` ist bereits sRGB, nur mit
++     ganzzahligen Kanälen, also ist die Umwandlung eine Division je Kanal und verliert nichts;
++     sie ist der eine Schritt von einem `rgb"…"`-Literal oder jedem anderen `Chroma` in den Rest
++     der Bibliothek.
+
+% 2 1 0 1947eee2818c20a70d7bd439a330d465
+
+% 3 1 0 12527d231a4935bf16a2adfb11494f98
+
+% 0 1 0 095f81e7bfcc5a6a10a2b0a671252942
+
+% 0 1 0 1b6aeca224ccf54b012165b72f09aea0
+
+% 1 1 0 10f2297efddfec3712f20cb08f1b1d87
+
+@ 0 2 0 1421b6adf107377c083bbca919ca64b5
++     Der Rückweg ist das Given `Color.chromatic`, das jeden Kanal abschneidet, sodass eine Farbe,
++     deren Kanäle keine Vielfachen von `1/255` sind, um eins niedriger zurückkommen kann.
+
+@ 0 5 0 0e3199af93c9df8b0402add4825959af
++ entry .packed   ein `Chroma` als `Pixel[Rgb]` oder ein `Rgb32` als 10/12/10-`Pixel`, ohne Änderung an den Bits
++     Zwei Erweiterungen mit einem Namen. `chroma.packed` ist das `Pixel[Rgb]` — acht Bits je
++     Kanal — eines `Chroma`, und `rgb32.packed` ist das `Pixel[(Red[10], Green[12], Blue[10])]`
++     eines `Rgb32`. Jeder Typ packt seine Kanäle bereits in genau diesem Layout, also gibt die
++     Umwandlung den Bits nur einen neuen Typ. `rgb32` führt vom 10/12/10-Pixel zurück.
+
+% 2 1 0 1fe0aa9b617308c90be587cd933b114c
+
+% 3 1 0 0f81b44e12cda7451bfa9c3fb0d363d3
+
+% 0 1 0 1e4286561dba6f910ccde6980ae4bd38
+
+% 0 1 0 1a11ba9bd39ccb081e489cea3c202c7f
+
+% 0 1 0 04835b9939c2327808385b1801298ba3
+
+% 0 1 0 0d44a11f4b67c94c197b01c07cf4304f
+
+% 1 1 0 177b0cca1ca8e78d18f273f618fb6266
+
+@ 0 2 0 04a39169ef5cc98b0fe48d6b48461e23
++     In früheren Releases hieß es `pixel`; es wurde umbenannt, weil der Umbrella auch ein
++     `pixel` aus einer anderen Bibliothek exportiert.
+
+@ 0 3 0 1314edfa1a9651cb1ee9af8af990cd71
++ entry .rgb32   ein 10/12/10-`Pixel` als das `Rgb32` mit denselben Bits
++     Eine Erweiterung auf `Pixel[(Red[10], Green[12], Blue[10])]`, die Umkehrung von
++     `rgb32.packed`: `Rgb32(600, 3000, 200).packed.rgb32` ist `Rgb32(600, 3000, 200)`.
+
+@ 0 3 0 09ebd94e9790fcae1268bf003bb248ab
++ entry .Rgb   das Pixel-Layout der 24-Bit-Farbe: je acht Bits Rot, Grün und Blau
++     `(Red[8], Green[8], Blue[8])`, das Layout eines `Chroma` und von `chroma.packed`. Sein
++     Speicher, `anticipation.Channel.Storage[Rgb]`, ist `Int`.
+
+% 2 1 0 155193deb1d40ef71b68b20100fa8770
+
+% 3 1 0 151988227fcffe59054eb345c1be071b
+
+% 0 1 0 055bfbd3589109dd1765c740e87430b7
+
+% 1 1 0 1c74ecda782304511db084b5d695c1c3
+
+@ 0 3 0 097bb0a3e4705c891b44d13c40da8723
++ entry .Rgba   das Pixel-Layout der 32-Bit-Farbe mit Alpha: je acht Bits Rot, Grün, Blau und Alpha
++     `(Red[8], Green[8], Blue[8], Alpha[8])`. `Pixel[Rgba](color)` setzt den Alphakanal auf
++     vollständig deckend, da eine `Color` keine Transparenz hat.
+
+@ 0 4 0 097e4dbb6c687b50174690a8e57d71ad
++ entry .Cmyk8   das Pixel-Layout von 32-Bit-CMYK: je acht Bits Cyan, Magenta, Gelb und Schwarz (Key)
++     `(Cyan[8], Magenta[8], Yellow[8], Key[8])`. `Cmyk8` heißt so, weil `Cmyk` das
++     `Double`-basierte Farbmodell ist. `Pixel[Cmyk8](color)` zerlegt die Farbe in Druckfarben,
++     wie es `to[Cmyk]` tut, und die `color` des Pixels ist ein `Cmyk`.
+
+% 2 1 0 07fc644598ac5446005894def549c721
+
+% 3 1 0 1ea3908c52836b54006126b1e71943b3
+
+% 0 1 0 04820a5c1ce93cb71b82ca490bffdd96
+
+% 0 1 0 1be116ae0aab69d11a1f2ede8f5b3e47
+
+% 1 1 0 1602b115c3f5e4da1f865ca65e785175
+
+@ 0 7 0 0d71321260f60fe51aad574a68492c9e
++ entry .Pixel   eine Farbe, in einem Kanal-Layout in eine Ganzzahl gepackt: `Pixel[Rgb]`, `Pixel[Rgba]`, `Pixel[Cmyk8]`, …
++     `Pixel[layout]` ist der opake Typ `iridescence.PixelOpaque.Pixel`, hierher exportiert: ein
++     `Long`, das die Kanäle von `layout` — ein Tupel aus den Kanaltypen von Anticipation, etwa
++     `(Red[5], Green[6], Blue[5])`, der höchstwertige zuerst — in seinen niederwertigen Bits
++     hält. Verschiebung und Maske jedes Kanals ergeben sich beim Kompilieren aus dem Tupel,
++     sodass das Lesen eines Kanals eine einzige Verschiebung mit Maskierung mit konstanten
++     Operanden und ohne Verteilung zur Laufzeit ist, und ein Kanal, den das Layout nicht hat, ist
++     nicht da, um gelesen zu werden: `Pixel[Rgb]` hat kein `alpha`.
+
+% 2 1 0 006a23ec18e3d74e0088b8beb800b943
+
+% 3 1 0 12cd5d707aab5e301632025fe82ada08
+
+% 0 1 0 02928bc0fedffe1d175245fed917b88b
+
+% 0 1 0 1ea16c1b358285910442be63d600188f
+
+% 0 1 0 0243aaca622ba6640fdeb9ac405ea51a
+
+% 0 1 0 1d7824e317f492b10bb725237484e476
+
+% 0 1 0 024c51e51cef2e470c46713b49f5b2ba
+
+% 0 1 0 0ddcb416bc56039e02a0d4c4e0eb2661
+
+% 1 1 0 08cbfad3d9907fd91307f26e1439af53
+
+@ 0 5 0 0f183f1c2009305a1d1cadc79446ac6a
++     `Pixel[layout](color)` packt jede `Color in Srgb` in die Kanäle, die das Layout hat: Rot,
++     Grün und Blau (mit einem etwaigen Alphakanal vollständig deckend), Cyan, Magenta, Gelb und
++     Schwarz oder einen einzelnen Graukanal nach der Luma von Rec. 601. Jeder Anteil wird auf die
++     Tiefe des Kanals skaliert und gerundet. `Pixel.make` umhüllt ein rohes `Long`, das bereits
++     im Layout vorliegt, und `Pixel.value` packt eines aus.
+
+@ 0 6 0 0545a16f8c36bc24067b5df72f435f82
++     Die Kanal-Accessoren — `red`, `green`, `blue`, `alpha`, `cyan`, `magenta`, `yellow`,
++     `key`, `grey` sowie `channel["label"]` und `proportion["label"]` für jede Beschriftung —
++     geben den rohen Kanalwert oder seinen Anteil an der vollen Tiefe zurück. `color` ist das
++     Pixel im natürlichen Modell seines Layouts (ein `Srgb` für RGB- und Grau-Layouts, ein
++     `Cmyk` für CMYK-Layouts), `srgb` ist immer ein `Srgb`, und `chroma` ist das 24-Bit-`Chroma`,
++     gerundet wie das `chroma` eines `Rgb32`. Ein Pixel ist `Chromatic`, gestaltet also
++     Terminaltext direkt.
+
+@ 0 5 0 0fa9d52a6a49518710be4912f5df07e1
++     Die Accessoren sind `inline`, brauchen also ein konkretes Layout: Code, der selbst generisch
++     in `layout` ist, kann sie nicht aufrufen und sollte stattdessen mit den
++     Kanalbeschreibungen zur Laufzeit arbeiten. Dies ist die Darstellung, die die Bilder von
++     Hallucination für typisierten Pixelzugriff verwenden. Der Umbrella exportiert auch einen
++     eigenen `Channel` (den WebSocket-Kanal), daher wird die Layout-Maschinerie als
++     `anticipation.Channel` erreicht.
+
+@ 0 1 0 01a988a3eab17d320a116289bed10956
++ entry .PixelOpaque   die Heimat des opaken Typs `Pixel`, seines Begleitobjekts und seiner Kanal-Accessoren
+
+% 1 1 0 069fc12bb9d5a81f0f1dff330037fce3
+
+@ 0 4 0 0d39126e1f8f043e0ddce29496345da8
++       Ein Objekt, das existiert, damit `Pixel` opak sein kann; der Typ wird als `Pixel` in das
++       Paket `iridescence` exportiert, auf dessen Seite die vollständige Beschreibung steht. Die
++       hier deklarierten Erweiterungsmethoden gelten für jedes `Pixel[layout]` ohne Import, über
++       den impliziten Geltungsbereich des Typs.
+
+% 0 1 0 10a0c3b0631b633e0df6b87a6bbd17f3
+
+@ 0 1 0 01968b8b88f0fefc15da78640797c0ca
++   entry .Pixel   eine Farbe, in einem Kanal-Layout in ein `Long` gepackt; siehe `iridescence.Pixel`
+
+% 1 1 0 1d2e02f6ce2786a11d2d84f87defc53c
+
+@ 0 4 0 047a7cb1b1e65cd5161bc8b65c15a658
++         Der opake Typ `Pixel[layout <: Tuple] = Long` und sein Begleitobjekt.
++     entry .underlying   das `Underlying`-Given, das zeigt, dass ein `Pixel` darunter ein `Long` ist
++     entry .chromatic   ein `Pixel` ist `Chromatic`: über sein `chroma`, gestaltet also Terminaltext direkt
++     entry .make   `Pixel.make[layout](value)`: ein rohes, bereits im Layout gepacktes `Long` als `Pixel`
+
+% 0 1 0 01763e80fef0008a0f5d8c80d0646ab9
+
+@ 0 30 0 14f21da8872662ef133dca168a76e8bd
++         ist `1023`. Keine Bits werden geprüft oder maskiert.
++     entry .value   das rohe `Long` eines `Pixel`
++     entry .apply   `Pixel[layout](color)`: eine `Color in Srgb`, in die Kanäle des Layouts skaliert und gepackt
++         Wandelt die Farbe in `Srgb` um und packt sie in ein RGB-Layout (ein etwaiger
++         Alphakanal auf volle Deckkraft gesetzt), ein CMYK-Layout (Schwarz als Komplement des
++         hellsten Kanals, die Druckfarben als der Rest) oder einen einzelnen Graukanal (Luma
++         nach Rec. 601, `0.299·red +
++         0.587·green + 0.114·blue`), wobei jeder Anteil auf die Tiefe des Kanals skaliert und
++         gerundet wird.
++   entry .channel   `pixel.channel["label"]`: der rohe Wert eines beschrifteten Kanals, für ein konkretes Layout
++       Kompiliert zu einer Verschiebung und einer Maske mit konstanten Operanden. Eine
++       Beschriftung, die das Layout nicht enthält, lässt sich nicht kompilieren, da die
++       Verschiebung nicht berechnet werden kann.
++   entry .red   der rohe Wert des Rotkanals, in einem Layout, das einen hat
++   entry .green   der rohe Wert des Grünkanals, in einem Layout, das einen hat
++   entry .blue   der rohe Wert des Blaukanals, in einem Layout, das einen hat
++   entry .alpha   der rohe Wert des Alphakanals, in einem Layout, das einen hat
++   entry .cyan   der rohe Wert des Cyankanals, in einem Layout, das einen hat
++   entry .magenta   der rohe Wert des Magentakanals, in einem Layout, das einen hat
++   entry .yellow   der rohe Wert des Gelbkanals, in einem Layout, das einen hat
++   entry .key   der rohe Wert des Schwarzkanals (Key), in einem Layout, das einen hat
++   entry .grey   der rohe Wert des Graukanals, in einem Layout, das einen hat
++   entry .proportion   `pixel.proportion["label"]`: ein Kanal als Anteil an seiner vollen Tiefe, `0`–`1`
++       `Pixel.make[(Red[16], Green[16], Blue[16])](65535L << 32).proportion["red"]` ist `1.0`.
++   entry .color   das Pixel im natürlichen Modell seines Layouts: `Srgb` für RGB und Grau, `Cmyk` für CMYK
++       Eine transparente Inline-Methode, also ist der statische Typ des Ergebnisses das Modell
++       selbst. Exakt bei jeder Kanaltiefe.
++   entry .srgb   das Pixel als `Srgb`, unabhängig vom Modell seines Layouts
++       Ein CMYK-Pixel wird über `Cmyk` umgewandelt; ein graues hat gleiche Kanäle.
++   entry .chroma   das Pixel, auf ein 24-Bit-`Chroma` umskaliert, auf die nächste Stufe gerundet
++       Ein RGB-Layout wird Kanal für Kanal umskaliert, gerundet wie das `chroma` eines `Rgb32`;
++       jedes andere Layout geht über `srgb`. Wo die Umwandlung `Color.chromatic` abschneidet,
++       rundet diese, sodass sich beide in einem Kanal um eins unterscheiden können.
+
+@ 0 6 0 1281878496a57cf808c168ad4f42fc2f
++ entry .Rgb12   eine Farbe in zwölf Bits, vier je Kanal: das `#rgb` der CSS-Kurzschreibweise
++     `Rgb12` ist der opake Typ `iridescence.Rgb12Opaque.Rgb12`, hierher exportiert: ein `Int`,
++     das Rot, Grün und Blau mit je vier Bits hält. `Rgb12(red, green, blue)` nimmt jeden Kanal
++     in `0`–`15` und behält nur seine vier niederwertigen Bits, und die Erweiterungen `red`,
++     `green` und `blue` lesen sie zurück. `color` liefert die `Color in Srgb` (jeder Kanal durch
++     `15`) und `chroma` das 24-Bit-`Chroma`, jeder Kanal mal `17`, sodass aus `f` `ff` wird.
+
+% 2 1 0 170db6474b3dba9c1409f72fc7c4ca2f
+
+% 3 1 0 1aae9fc73ef6adc612052323bb600450
+
+% 0 1 0 16fdf80f212fc405179647693d6bb85f
+
+% 0 1 0 1925e6575d21ea0f17c142c46716e18d
+
+% 0 1 0 0077674908025b9d09e6ef2e7f289156
+
+% 0 1 0 0232c64f1862576001f733de037acc48
+
+% 1 1 0 0445ad196ea05b3b02891c124691f6f3
+
+@ 0 2 0 041d9d053881e436118c8e37c42c5093
++     Es ist `Chromatic`, gestaltet also Terminaltext direkt, und `Inspectable` als seine
++     dreistellige Hexadezimaldarstellung.
+
+@ 0 1 0 090d1c2cf82e2d331542f1d562d30655
++ entry .Rgb12Opaque   die Heimat des opaken Typs `Rgb12`, seines Begleitobjekts und seiner Kanal-Accessoren
+
+% 1 1 0 12146047cc482b861c4375d65902bfa2
+
+@ 0 3 0 177d363a8e7a7fa71d2eb037ee8d67e0
++       Ein Objekt, das existiert, damit `Rgb12` opak sein kann; der Typ wird in das Paket
++       `iridescence` exportiert, auf dessen Seite für `Rgb12` die vollständige Beschreibung
++       steht. Die Erweiterungsmethoden hier gelten für jedes `Rgb12` ohne Import.
+
+% 0 1 0 114fcebaef193e8619273489ae21535f
+
+@ 0 1 0 0917b756855f3daa0e7729288a22e7e5
++   entry .Rgb12   eine Zwölf-Bit-Farbe in einem `Int`; siehe `iridescence.Rgb12`
+
+% 1 1 0 166e94cb8e151fe20b98fd43eef7e653
+
+@ 0 10 0 1a4da5f71a6bc5560314528fd8f4b50c
++         Der opake Typ `Rgb12 = Int` und sein Begleitobjekt.
++     entry .underlying   das `Underlying`-Given, das zeigt, dass ein `Rgb12` darunter ein `Int` ist
++     entry .inspectable   ein `Rgb12` wird als seine dreistellige Hexadezimaldarstellung inspiziert, `#f0f`
++     entry .chromatic   ein `Rgb12` ist `Chromatic`, über sein `chroma`
++     entry .apply   `Rgb12(red, green, blue)`: drei Vier-Bit-Kanäle, jeder auf `0`–`15` maskiert
++   entry .red   der Rotkanal, `0`–`15`
++   entry .green   der Grünkanal, `0`–`15`
++   entry .blue   der Blaukanal, `0`–`15`
++   entry .color   die Farbe als `Color in Srgb`, jeder Kanal durch `15` geteilt
++   entry .chroma   die Farbe als 24-Bit-`Chroma`, jeder Kanal mit `17` multipliziert
+
+@ 0 7 0 1098899439cf5a471223a1326fdf2b8f
++ entry .Rgb32   eine Farbe in zweiunddreißig Bits: zehn für Rot, zwölf für Grün, zehn für Blau
++     `Rgb32` ist der opake Typ `iridescence.Rgb32Opaque.Rgb32`, hierher exportiert: ein `Int`,
++     das Rot in `0`–`1023`, Grün in `0`–`4095` und Blau in `0`–`1023` hält; die zusätzlichen
++     Bits für Grün entsprechen der größeren Empfindlichkeit des Auges dafür.
++     `Rgb32(red, green, blue)` maskiert jeden Kanal auf seine Breite, die Erweiterungen `red`,
++     `green` und `blue` lesen sie zurück, `color` liefert die `Color in Srgb` und `chroma` das
++     24-Bit-`Chroma`, auf die nächste Stufe gerundet.
+
+% 2 1 0 1af212bbd93da7310938eecfed397912
+
+% 3 1 0 0e86eae6c4c080ea000993eacb21a09a
+
+% 0 1 0 1df54a5ec199dd400f3d83f9818ef2f2
+
+% 0 1 0 0635e733c4d2db8c1e3426f583104dce
+
+% 0 1 0 1c6790b2ef96cb340a6f480d0531259c
+
+% 0 1 0 13ec38861f393af10bc0ceb18d1930f3
+
+% 1 1 0 1abbe6d0232338b911a5b11750e049b8
+
+@ 0 3 0 15921e7f75106b1700d2d8f0e173d8ff
++     Es ist `Chromatic`, gestaltet also Terminaltext direkt, und `Inspectable` als seine drei
++     Kanäle. `packed` gibt ihm den Typ `Pixel[(Red[10], Green[12], Blue[10])]`, dessen Bits
++     dieselben sind.
+
+@ 0 1 0 16fa02b261f30d661f9c8f68f968dd09
++ entry .Rgb32Opaque   die Heimat des opaken Typs `Rgb32`, seines Begleitobjekts und seiner Kanal-Accessoren
+
+% 1 1 0 1239fdc0c9cea8561a1ded137f985031
+
+@ 0 3 0 06eb803d66f107831d8fbe0f2b3ac2f2
++       Ein Objekt, das existiert, damit `Rgb32` opak sein kann; der Typ wird in das Paket
++       `iridescence` exportiert, auf dessen Seite für `Rgb32` die vollständige Beschreibung
++       steht. Die Erweiterungsmethoden hier gelten für jedes `Rgb32` ohne Import.
+
+% 0 1 0 19cea3cbfa5f502c1f5a48e5b50239e8
+
+@ 0 1 0 16e772b2e17f20b71157727af4eb891e
++   entry .Rgb32   eine 10/12/10-Bit-Farbe in einem `Int`; siehe `iridescence.Rgb32`
+
+% 1 1 0 024bc27020938ddf1ba82c4960513578
+
+@ 0 10 0 1154d81c14a4cd121ba53af6460f09ce
++         Der opake Typ `Rgb32 = Int` und sein Begleitobjekt.
++     entry .underlying   das `Underlying`-Given, das zeigt, dass ein `Rgb32` darunter ein `Int` ist
++     entry .chromatic   ein `Rgb32` ist `Chromatic`, über sein `chroma`
++     entry .inspectable   ein `Rgb32` wird als seine drei Kanäle inspiziert, `rgb32(1023, 4095, 0)`
++     entry .apply   `Rgb32(red, green, blue)`: Kanäle von zehn, zwölf und zehn Bits, jeder auf seine Breite maskiert
++   entry .red   der Rotkanal, `0`–`1023`
++   entry .green   der Grünkanal, `0`–`4095`
++   entry .blue   der Blaukanal, `0`–`1023`
++   entry .color   die Farbe als `Color in Srgb`, jeder Kanal durch sein Maximum geteilt
++   entry .chroma   die Farbe als 24-Bit-`Chroma`, jeder Kanal auf `0`–`255` umskaliert und gerundet
+
+@ 0 1 0 06452bec173ab5cc1faf21546b14c19c
++ entry .internal   das Makro hinter `rgb"…"`
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 17d624f509bedba50e07027adaa03b7d
++       Nicht zur direkten Verwendung: Das Objekt existiert, damit das Makro eine stabile Heimat
++       hat.
++   entry .rgbMacro   parst ein `rgb"…"`-Literal beim Kompilieren und spleißt das `Chroma` ein
++       Akzeptiert sechs Hexadezimalziffern mit oder ohne führendes `#` und bricht die
++       Kompilierung andernfalls mit einer Meldung ab, ebenso, wenn das Literal Einsetzungen hat.

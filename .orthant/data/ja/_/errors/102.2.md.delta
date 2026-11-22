@@ -1,0 +1,45 @@
+orthant 2 language
+
+% 0 1 0 06ba4d3f4903a6e105e907f88cbf94a1
+
+@ 0 1 0 0754fdd637c7a80619dbf1455bfec13a
++ ソケットを使う mDNS レスポンダー（`syndesis`）が起動できないときに発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 0998dc7089e208571740599e65948b97
++ レスポンダーは、起動していてマルチキャストが可能なすべてのインターフェースで、mDNS のマルチキャストグループ（`224.0.0.251:5353`）に参加する。
++ そのようなインターフェースがないか、オペレーティングシステムが参加を拒むと、通信に使えるものが何もない。
++ メッセージは `the mDNS responder could not start because $reason` である。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## バリアント
+
+% 0 1 0 14cab4f5eb3b353c0023fcb9c4d9b374
+
+@ 0 2 0 19075168b3da39c50cf298a633d70642
++ マルチキャストグループに参加できなかった。再利用を指定したポート 5353 へのバインドが失敗したか、すべてのインターフェースで参加が拒まれた。
+
+@ 0 1 0 1ee0e0f8701e12770593b89b2100b8b0
++ **例。** `[↯/s.102.2.1] the mDNS responder could not start because the multicast group 224.0.0.251:5353 could not be joined`
+
+@ 0 2 0 11d2990b9522deb90cfd444489aec9c7
++ **解決方法。** ポート 5353 が別のプログラムによって再利用なしで保持されていないこと、そしてインターフェースが IPv4 のアドレスを持っていることを確認する。
+
+% 0 1 0 022debaddccf1cf0030687c3ef8d75a5
+
+@ 0 1 0 0e6180d6c2bcabaa19e7c45c895cbecb
++ 起動していてマルチキャストが可能なネットワークインターフェースが一つもない（ループバックは数えない）。
+
+@ 0 1 0 0a19999eb228f7471d3cc818882c0d0a
++ **例。** `[↯/s.102.2.2] the mDNS responder could not start because no interface is up and capable of multicast`
+
+@ 0 1 0 17ba773332c34264121e4f5838b681d1
++ **解決方法。** mDNS にはリンクが必要である。リンクのないサンドボックスでは、インメモリの `Mdns.Transport.Bus` を使う。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 1a7ae79c01b71180108dd6cdb0df9761
++ - ソース：`lib/syndesis/src/core/syndesis.Mdns.scala`

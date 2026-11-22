@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 30 0 0642d31c7b12f98a19ed76289a4256e7
++   entry .int   十進のテキストから `Int` をデコードする。パース不能と範囲外を区別する
++       `Tactic[Number.Error]` が必要である。
++       `Integer.parseInt` でパースするので、テキストは前後に空白のない、符号を任意に付けた十進の整数でなければならない。
++       整数でないテキストは `Reason.Unparseable` で `Number.Error` を発生させる。
++       `Int` の範囲外の整数は `Reason.OutOfRange` でそれを発生させる。
++   entry .byte   十進のテキストから `Byte` をデコードする。パース不能と範囲外を区別する
++       `Tactic[Number.Error]` が必要である。
++       整数でないテキストは `Reason.Unparseable` で `Number.Error` を発生させる。
++       −128 から 127 の外の整数は `Reason.OutOfRange` でそれを発生させる。
++   entry .short   十進のテキストから `Short` をデコードする。パース不能と範囲外を区別する
++       `Tactic[Number.Error]` が必要である。
++       整数でないテキストは `Reason.Unparseable` で `Number.Error` を発生させる。
++       `Short` の範囲外の整数は `Reason.OutOfRange` でそれを発生させる。
++   entry .long   十進のテキストから `Long` をデコードする。パース不能と範囲外を区別する
++       `Tactic[Number.Error]` が必要であり、`java.lang.Long.parseLong` でパースする。
++       整数でないテキストは `Reason.Unparseable` で `Number.Error` を発生させる。
++       `Long` の範囲外の整数は `Reason.OutOfRange` でそれを発生させる。
++   entry .double   テキストから `Double` をデコードする。パースできなければ `Number.Error` を発生させる
++       `Tactic[Number.Error]` が必要である。
++       `java.lang.Double.parseDouble` でパースするので、指数、`NaN`、`Infinity` は Java が受け付けるとおりに受け付けられる。
++   entry .float   テキストから `Float` をデコードする。パースできなければ `Number.Error` を発生させる
++       `Tactic[Number.Error]` が必要である。
++       `java.lang.Float.parseFloat` でパースする。
++   entry .char   テキストの最初の文字として `Char` をデコードする
++       戦術は必要ない。
++       最初の文字より後のテキストは無視され、空のテキストは検査されない。
++       ちょうど一文字のテキストにだけマッチする `As[Char]` を使うほうがよい。
++   entry .boolean   スコープ内の任意の `Truth` の綴りから、大文字小文字を問わず `Boolean` をデコードする。`Truth.Error` を発生させる
++       `Tactic[Truth.Error]` が必要で、スコープ内のすべての `Truth` を集める（`Every[Truth]`）。
++       テキストはトリムされて小文字にされ、それから各綴りに順に渡される。
++       どれも認識しないテキストは `Truth.Error` を発生させる。
++       `Truth` のコンパニオンにある `Truth.trueFalse` は常にスコープ内にあり、インポートした `truths` の given はそれぞれ、それを置き換えるのではなく、その横に綴りを加える。
+
+@ 0 18 0 16885b2e9230ab0910a207397079e908
++   entry .stringText   `String` を `Text` に変換する
++   entry .irrefutable   `String` は、`Text` に変換した後、`Text` の `Irrefutable` で変換される
++   entry .textString   `Text` を `String` に変換する
++   entry .ident   任意の値をそれ自身に変換する
++   entry .byteShort   `Byte` を `Short` に拡大する
++   entry .byteInt   `Byte` を `Int` に拡大する
++   entry .byteLong   `Byte` を `Long` に拡大する
++   entry .byteFloat   `Byte` を `Float` に拡大する
++   entry .byteDouble   `Byte` を `Double` に拡大する
++   entry .shortInt   `Short` を `Int` に拡大する
++   entry .shortLong   `Short` を `Long` に拡大する
++   entry .shortFloat   `Short` を `Float` に拡大する
++   entry .shortDouble   `Short` を `Double` に拡大する
++   entry .intLong   `Int` を `Long` に拡大する
++   entry .intDouble   `Int` を `Double` に拡大する
++   entry .floatDouble   `Float` を `Double` に拡大する
++   entry #unapply   値を変換する。失敗しえない
++   entry #contramap   新しい型からの反駁不能な変換。先に純粋な関数を適用する

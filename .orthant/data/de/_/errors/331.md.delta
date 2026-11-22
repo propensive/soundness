@@ -1,0 +1,42 @@
+orthant 2 language
+
+@ 0 1 0 01619663af30c3891828abb02309ac9a
++ # `SN-331` — `OverflowError` (ausgemustert)
+
+@ 0 3 0 005d83da6a49ccc9181c4a5e717cada1
++ **Dieser Code wird nicht mehr ausgelöst.** `OverflowError` und `DivisionError` waren zwei Namen
++ für ein Konzept, eine arithmetische Operation ohne darstellbares Ergebnis, und sind jetzt
++ `Arithmetic.Error`, dessen Grund `Overflow` `↯/s.27.15.2` ist.
+
+@ 0 2 0 1f5124d5c64eb84a1040cbeaa4b19c3e
++ Er wurde ausgelöst, wenn eine numerische Operation den darstellbaren Bereich ihres Ergebnistyps
++ überschreiten würde.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Ursache
+
+@ 0 3 0 1930748b9804a29414fbd0e3313f372e
++ Die geprüfte Arithmetik von Hypotenuse löst diesen Fehler aus, statt stillschweigend
++ überzulaufen, wenn eine Addition, Subtraktion, Multiplikation oder Verschiebung überlaufen würde.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Beispielmeldung
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 080d293f4bb708ee1596d70a6cf4c0d5
+
+% 1 1 0 09621f45b32396c01ef1ec07de5deace
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Behebung
+
+@ 0 2 0 1aecc2860747ddf200d1916e85425b09
++ Verwenden Sie für das Ergebnis einen breiteren numerischen Typ, oder strukturieren Sie die
++ Berechnung so um, dass kein Überlauf in Zwischenergebnissen auftritt.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Siehe auch
+
+@ 0 1 0 076e7b4b15df194d1aee8409cc7d1b44
++ - Ersetzt durch: `↯/s.27.15.2` (`Arithmetic.Error`, `Overflow`)

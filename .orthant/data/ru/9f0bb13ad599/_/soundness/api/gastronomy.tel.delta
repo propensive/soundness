@@ -1,0 +1,14 @@
+orthant 2 language
+
+% 0 2 0 13cb20562ad12b90122b786e4aeea2b0
+
+@ 0 9 0 08fae36999e3381915e6efdc9645d2ff
++   entry .sha2_224   `0x1013`, `sha2-224`: в обёртке — двухбайтовый varint
++   entry .blake3   `0x1e`, `blake3`: черновая запись таблицы, но однозначная и широко реализованная
++   entry .md5   `0xd5`, `md5`: черновая запись таблицы
++   entry .name   зарегистрированное имя известного этой библиотеке кода или `Unset`
++       `Multicodec.name(0x12)` — это `t"sha2-256"`; `0x00` — это `identity`. Код вне
++       перечисленного набора допустим и представим в `Multihash`, но имени здесь не имеет.
++   entry .apply   `Multicodec[algorithm](code, name)`: экземпляр для собственного алгоритма
++   entry #code   код алгоритма в multicodec, как он зарегистрирован в таблице multiformats
++   entry #name   зарегистрированное имя алгоритма в multicodec, например `sha2-256`

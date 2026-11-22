@@ -1,0 +1,351 @@
+orthant 2 language
+
+% 0 1 0 059813cd421ea60903ec060a153cc1f9
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### Überblick
+
+@ 0 3 0 154460b61707ca7812f1a80de945c9b1
++ Das [Agent Client Protocol](https://agentclientprotocol.com/) ist die Art, wie ein Editor oder
++ irgendein Programm einen Coding-Agenten steuert. Claude Code, Gemini CLI und eine wachsende Zahl
++ weiterer sprechen es über die Standardeingabe und Standardausgabe des Agenten.
+
+@ 0 4 0 121281aff808d7150d775d0932fddd23
++ Die Client-Hälfte des Protokolls, Version 1, ist hier für die Verwendung aus einem Programm
++ implementiert. Sie startet einen Agenten, öffnet eine Sitzung, sendet einen Prompt und verfolgt,
++ wie die Arbeit des Agenten als Nachrichten, Gedanken, Tool-Aufrufe und Pläne zurückströmt.
++ Währenddessen beantwortet sie die Anfragen, die der Agent an sie stellt: Genehmigung zum
++ Handeln, Zugriff auf Dateien und Terminals.
+
+@ 0 1 0 11415b39be6819ae1223cecdca3e8213
++ ### Über ACP
+
+@ 0 5 0 14d429ee015de6511cfdc2ff4d6d1523
++ Das Protokoll ist JSON-RPC in beide Richtungen zugleich. Der Client ruft den Agenten auf, mit
++ `initialize`, `session/new` und `session/prompt`. Der Agent ruft mitten in einem Turn zurück,
++ mit einer `session/update`-Benachrichtigung für jeden Fortschrittsschritt und mit Anfragen, die
++ seine Arbeit blockieren, bis der Client antwortet. Ein Prompt ist daher kein Funktionsaufruf,
++ sondern ein *Turn*: eine langlebige Anfrage, deren Antwort erst nach allem eintrifft, was der
++ Agent darin getan hat.
+
+@ 0 6 0 02cf97c9b7fbbf03013cd109abcf2037
++ Der Turn wird direkt modelliert. `prompt` blockiert, bis der Agent meldet, warum der Turn endete,
++ während die Updates nebenläufig an Handler strömen, die vor dem Verbinden registriert wurden. Die
++ Capabilities, die der Client ankündigt, werden aus diesen Registrierungen abgeleitet, sodass die
++ Deklaration der Implementierung nie widersprechen kann. Jede Anfrage und jede Benachrichtigung
++ ist ein typisierter Wert, kein JSON-Dokument, im Sinne
++ [ehrlicher Signaturen](../../philosophy/honest-signatures.md).
+
+@ 0 2 0 1e5e93f50a7cfc560ee7e18a9f5f4d88
++ Eine Verbindung braucht einige [Capabilities][Capability] für sich selbst: eine Möglichkeit, die
++ Leseaufgabe und die Schreibaufgabe auszuführen, eine [Strategie] für Fehler, ein
++ Arbeitsverzeichnis für den Agenten und einen Ort für Ausgaben:
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 033fe44ed6e01bfd0c3efead550afbdf
+
+% 0 1 0 057e78b5bd6b542d17e4fa1cb19ac86f
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 1 1 0 0e23e86ae81b750f047cfaa2192660e5
+
+@ 0 1 0 11c75ad04fddfed01193e61901334e7d
++ Die Beispiele auf dieser Seite steuern einen Agenten in einem anderen Prozess, daher werden sie
++ kompiliert, aber nicht ausgeführt.
+
+@ 0 1 0 0ea395a0630a6eda1f8e8d097da3c28e
++ ### Verbinden
+
+@ 0 4 0 0f5bfeae6d0f06d806c58f5e61e70d90
++ `Acp.connect` startet den Agenten, tauscht `initialize` aus und verleiht eine Verbindung für die
++ Dauer eines Blocks. Der erste Block registriert Handler. Der zweite hält die aktive Verbindung,
++ die über `Acp.connection` erreicht wird. Der Austausch läuft als nebenläufige Aufgaben, daher
++ steht das Ganze in einem `supervise`-Block:
+
+% 2 1 0 0905689ad02b4e9706c73942994509ea
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 05b3a5f10c8575381e5ce60579e3e51f
+
+% 0 1 0 1b3abf5c761cf1761a92dd6f6ecbb7f0
+
+% 0 1 0 044c4344427ca9df0e72190601336221
+
+% 0 1 0 1486fa01e69496d01f7a3e26cb63222c
+
+% 0 1 0 1d89e0bba45db8591be197331765d8f5
+
+% 0 1 0 1d8464dc622084341b7de4a4aa703cc7
+
+% 0 1 0 037378e43f8ac748168b5094db490052
+
+% 0 1 0 0e4c5c97129a328d1d1fb051307207dd
+
+% 0 1 0 184959beb7a59dc9124b6bc6119ad642
+
+% 0 1 0 0e75d483da150893175734bc9c9db664
+
+% 0 1 0 1ee360b9b37074ef16ede97b97bee2a4
+
+% 1 1 0 10dbaa6adee01cce1cd1de93a0d08a3b
+
+@ 0 4 0 15de2b6c90c116df159812024b52e30d
++ Der Wert des zweiten Blocks ist der Wert von `connect`. Hier ist es der Stoppgrund des Turns.
++ Wenn der Block zurückkehrt, wird der Austausch abgebaut und ein Agent im Unterprozess beendet,
++ sodass nichts den Agenten überlebt, mit dem es spricht. Ein Agent, der bereits läuft, hinter
++ einem Socket oder als Fixture in einem Test, verbindet sich statt über einen Befehl über
++ `Acp.Endpoint.streams(input, output)`.
+
+@ 0 4 0 0e2b2ccc192682b511e7ab57ef3b2ef4
++ Eine nicht registrierte Capability wird nie angekündigt. Ein Client, der keinen
++ `readFile`-Handler registriert, meldet keine Dateisystemunterstützung, und ein konformer Agent
++ wird nicht danach fragen. `Acp.capabilities` passt die abgeleitete Deklaration als letztes Mittel
++ an und wird bei der Initialisierung angewendet.
+
+% 0 1 0 01436171463637951572abd6815e7c16
+
+@ 0 2 0 0fde1b6d87c82524015a7bb2901e612e
++ Jeder Handler liest seine Nutzdaten über kontextuelle Accessors, und jedem wird die
++ `Acp.sessionId` verliehen, die er betrifft:
+
+% 2 1 0 1611af32d9e5ba151eab414fa60ba487
+
+% 0 1 0 13b99fac3a00e7b417ac5196ac1b6887
+
+@ 0 7 0 049204541d6296c00ab87c26c76b268c
++ column  Accessors für die Nutzdaten
++ column  Antwort
++ row  `Acp.updated`  `Acp.update`  nichts
++ row  `Acp.permission`  `Acp.toolCall`, `Acp.options`  `Acp.Selected` oder `Acp.Cancelled`
++ row  `Acp.readFile`  `Acp.path`, `Acp.line`, `Acp.limit`  der `Text` der Datei
++ row  `Acp.writeFile`  `Acp.path`, `Acp.content`  nichts
++ row  `Acp.terminals`  die Argumente jeder Operation  ein `Acp.Terminals`-Bündel
+
+% 1 1 0 045ef0e8fd3ec15316c095746546da59
+
+@ 0 1 0 0c69a9f12b1b396d16814f9a722d110f
++ Ein Update ist einer der `SessionUpdate`-Fälle des Protokolls:
+
+% 2 1 0 0a4a4eba9d33a3fb0e16e86eadd15698
+
+% 0 1 0 10a2117ac8a12dbe1d7277674832ea53
+
+% 0 1 0 032d6db32b21ea12125b79f3b3d430eb
+
+% 0 1 0 05d2ca26e2c16fac148783e82f5725d1
+
+% 0 1 0 013b93cfff7f4313019908387ed8fa92
+
+% 0 1 0 1560bba0172dae171db84e55fa7449a1
+
+% 0 1 0 0d788cbcdb2df32902d65b00e315a974
+
+% 0 1 0 0cbb0651c783579812159c20af3957bf
+
+% 0 1 0 05bbf74fc4185d560acfb8a329c6f29f
+
+% 0 1 0 1de020d828f18794068a05dba8ace6d4
+
+% 0 1 0 1e7077c4dcb2ee5510de3e2e05f3f4f6
+
+% 1 1 0 105bbd6f286bbd7b0ab71d7d267b836a
+
+@ 0 1 0 1d5674e65b15265211c8772bbc806516
++ ### Genehmigungen
+
+@ 0 3 0 1259ecf649fd1cc704b7ee467a72fc82
++ Ein Agent, der im Begriff ist zu handeln, bittet um Genehmigung und bietet eine Liste von
++ Optionen an. Der Handler wählt eine mit `Acp.Selected` oder antwortet `Acp.Cancelled`. Jede
++ Option hat eine von vier Arten von `Acp.PermissionOptionKind`:
+
+% 2 1 0 1dc57e887a643fd314d59271db0e5624
+
+@ 0 5 0 00ced07bd217cacf12855cfa16438f1b
++ column  Entscheidung
++ column  Einmal
++ column  Immer
++ row  Erlauben  `AllowOnce`  `AllowAlways`
++ row  Ablehnen  `RejectOnce`  `RejectAlways`
+
+% 1 1 0 16d513125a674392051bf79fe8304694
+
+@ 0 1 0 1f775dc7f6a45a491bec7a3016e47677
++ Eine Richtlinie ist daher ein Filter über ihnen:
+
+% 2 1 0 0af0f9663602734814189720bc5ffb99
+
+% 0 1 0 12e6e63f340cf2f70b5dd82e22e5cd29
+
+% 0 1 0 10ddac9dc3100fd91ce0bfca3c8aff2f
+
+% 0 1 0 020f3adfede71f0e146548adf0e37715
+
+% 1 1 0 12c718c3cf05ff1403b88cc41522a06f
+
+@ 0 1 0 0eaedd603989ec550684394527fb5b18
++ ### Dateisystem und Terminals
+
+@ 0 4 0 0061083f9fdbda2706109ce3eb5562a5
++ Der Agent arbeitet mit *Ihrer* Sicht auf die Welt, wenn Sie ihm eine anbieten. `Acp.readFile`
++ bedient die Anfragen des Agenten, eine Datei zu lesen, was den ungespeicherten Zustand eines
++ Editors einschließen kann. `Acp.writeFile` bedient seine Anfragen, eine zu schreiben. Ein
++ Lese-Handler sieht den `path` und optional eine Startzeile `line` und eine Begrenzung `limit` der
++ Zeilenzahl. Ein Schreib-Handler sieht den `path` und den `content`:
+
+% 2 1 0 186fdeb25586506a0a0813ee62dc25e3
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 1d8ee663c59c4fa2062bbef5eaf41704
+
+% 0 1 0 196c8a597bcc2c1b0933e778d81765e3
+
+% 0 1 0 14531aacb26e7aa30418d568441c63c7
+
+% 0 1 0 1ddae0ce6e19dffa1218090f607894bf
+
+% 0 1 0 0a741453b39d49bf0db49ac1f267b28c
+
+% 0 1 0 18428ad0a06025ac1811ab9f63f5ad38
+
+% 0 1 0 1e9a1c4825a093e0152ea087e215a2fc
+
+% 0 1 0 100aed76d584784b1a97380f6b6a2bc4
+
+% 1 1 0 1a9cd378cc60dfeb0f8c0d4810a10551
+
+@ 0 3 0 0532154ada8137a11d4eb811b476abc4
++ Terminals werden als eine einzige Capability angekündigt. Die fünf Operationen, die ein Terminal
++ erzeugen, seine Ausgabe lesen, auf sein Ende warten, es beenden und es freigeben, werden zusammen
++ als ein `Acp.Terminals`-Bündel an `Acp.terminals` übergeben.
+
+@ 0 1 0 11b47e421d6c37bb1452912897d06265
++ ### Sitzungen
+
+@ 0 1 0 155febbf66d84269134d08b12521778a
++ Eine Verbindung verwaltet Sitzungen mit vier Methoden:
+
+% 2 1 0 072c41390aaad93708f921b3bbd5bd0e
+
+@ 0 7 0 01ba95806a02a66719ec7cf7d0d52043
++ column  Methode
++ column  Nimmt
++ column  Bewirkt
++ row  `newSession`  ein Arbeitsverzeichnis und optional `Acp.McpServer`s  öffnet eine Sitzung
++ row  `loadSession`  eine Sitzungs-ID, ein Arbeitsverzeichnis und optional `Acp.McpServer`s  setzt die Sitzung fort und spielt ihren Verlauf über den Update-Handler erneut ab
++ row  `setMode`  eine Sitzungs-ID und eine Modus-ID  wechselt zwischen den Modi, die in den `modes` der Sitzung gemeldet werden
++ row  `authenticate`  die ID einer bei `initialize` angekündigten Methode  authentifiziert sich beim Agenten
+
+% 1 1 0 0d9c2f37e53d4f660aa3f765513e47ea
+
+@ 0 2 0 0f04dbfc65058a2a1f9c5eb2cbbb87dc
++ Ein Agent, der Authentifizierung verlangt, sagt das mit einem `Acp.Error`, dessen Grund
++ `AuthRequired` ist, und `authenticate` beantwortet ihn.
+
+@ 0 1 0 1116191169f1793a19b6cc66bb8200c9
++ ### Stoppgründe
+
+@ 0 1 0 1db65e0691e5e54a005dcccf61cf3e40
++ `prompt` gibt einen `Acp.StopReason` zurück:
+
+% 2 1 0 007191d021386ae81ebea37903be4409
+
+@ 0 7 0 173de7e57b92fa810cff6806d7fbeb7b
++ column  Stoppgrund
++ column  Bedeutung
++ row  `EndTurn`  der Agent ist fertig
++ row  `MaxTokens`  dem Agenten sind die Tokens ausgegangen
++ row  `MaxTurnRequests`  dem Agenten sind die Anfragen für den Turn ausgegangen
++ row  `Refusal`  der Agent hat abgelehnt
++ row  `Cancelled`  der Client hat den Turn abgebrochen
+
+% 1 1 0 05ca11f203dcec9610f290a4bc43bbad
+
+@ 0 1 0 19167f39cd895172140283cd65116a9e
++ ### Abbruch
+
+@ 0 4 0 1e6fd674996b4b2c1deaf90e8731d002
++ `Acp.connection.cancel(sessionId)` benachrichtigt den Agenten, und der Turn endet mit dem
++ Stoppgrund `Cancelled`. Eine Genehmigungsanfrage, die in diesem Moment aussteht oder vor dem
++ nächsten Turn eintrifft, wird automatisch mit `Cancelled` beantwortet, wie das Protokoll es
++ verlangt. Das Eröffnen eines neuen Turns setzt die Sitzung zurück.
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### Fehler
+
+@ 0 2 0 0b6b7acd23dc0f2d150f9c2c0a98ca57
++ Jeder Fehler, den der Agent meldet, und jeder Fehler im Austausch ist ein `Acp.Error`, dessen
++ Grund einer der folgenden ist:
+
+% 2 1 0 0e0f961499f5fca303f7a6510e88e8c0
+
+@ 0 9 0 06a8ddd1f113048c06439334f2d759d0
++ column  Grund
++ column  Übertragungscode
++ column  Ausgelöst, wenn
++ row  `Parse`  -32700  eine Nachricht nicht als JSON geparst werden konnte
++ row  `InvalidRequest`  -32600  eine Nachricht keine gültige JSON-RPC-Anfrage war
++ row  `MethodNotFound`  -32601  ein Methodenname nicht erkannt wurde
++ row  `InvalidParams`  -32602  die Parameter für die Methode nicht gültig waren
++ row  `Internal`  -32603  ein interner Fehler aufgetreten ist
++ row  `AuthRequired`  -32000  der Agent Authentifizierung verlangt
+
+% 0 1 0 0f2bed8aa7e6961717544fd19f931ad4
+
+% 0 1 0 0fb388a8af0428691bc88c4b1630f557
+
+% 0 1 0 0ed568419db6988e15566084b5954923
+
+@ 0 1 0 0ca66822143ec22214873951c1925a1f
++   cell  der Agent `initialize` mit einer anderen Protokollversion als 1 beantwortet
+
+% 1 1 0 01d95ccf16dd4b610b157efb9967874d
+
+@ 0 4 0 0954af12d1833080034d287b4445d709
++ Ein in einem Handler ausgelöster Fehler wird in eine Fehlerantwort umgewandelt, die den
++ Übertragungscode des Grunds trägt, sodass ein Bug im Client dem Agenten gemeldet wird und den
++ Turn nicht hängen lässt. `connect` nimmt einen optionalen `Acp.Observer`, der jede Nachricht in
++ beiden Richtungen sieht, während sie den Transport passiert, für Logging oder einen
++ Protokoll-Trace.
+
+@ 0 1 0 18dd4b95a36f0c8c08050f00aeb9e187
++ ### Inhalt
+
+@ 0 3 0 1ef7010df76d375d07c1e6d15c099018
++ ACP übernimmt das Inhaltsvokabular von MCP: `TextContent`, `ImageContent`, `AudioContent`,
++ `ResourceLink` und `EmbeddedResource`. Die Typen werden mit [MCP](mcp.md) geteilt, sodass Inhalte
++ ohne Übersetzung zwischen den beiden Protokollen wechseln.
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### Verwandte Themen
+
+@ 0 6 0 188366174a83879f0bc31d0074e872d3
++ - [MCP](mcp.md) ist das Schwesterprotokoll, über das ein Agent Tools erreicht.
++ - [LLM](llm.md) spricht direkt mit Sprachmodellen, ohne Agenten dazwischen.
++ - [Prozesse](processes.md) beschreibt den `sh"…"`-Befehl, der einen Agenten startet.
++ - [Nebenläufigkeit](concurrency.md) beschreibt `supervise`, in dem der Austausch läuft.
++ - [Dateisystem](filesystem.md) beschreibt die Dateioperationen, die die Handler verwenden.
++ - [RPC](rpc.md) beschreibt das JSON-RPC, auf dem das Protokoll aufbaut.

@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 16130c7cf7857a560cae01155a53f8ef
++ # `↯/s.24.11` — エラー型に対して利用できるハンドラがない
+
+@ 0 2 0 19ac25e246ac2f190fb2140418dfd70e
++ 失敗しうるコードが、それが発生させるエラーに対する戦略をスコープに持たずに使われたとき、コンパイル時に発生する。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 2 0 103a25497d72003009e4b12e1c4447cb
++ `raises` 節は、スコープ内の `Tactic` によって解消される。
++ それがなければ、コンパイラは失敗が何をすべきかを決められない。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## メッセージの例
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1f5c7be2c0af42e016f5ee21af04f88d
+
+% 1 1 0 13ff38975f075d1a0604ba1c1ec46ad8
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解決方法
+
+@ 0 3 0 02f9704a51e3a41b0b5ace7c96145b8b
++ 戦略をインポートする（試作中なら `strategies.throwUnsafely`）か、`recover`、`safely`、`accrue` でエラーを処理する。
++ `explainMissingContext` をインポートすると、コンパイラはその探索を満たすインポートを名指す。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 関連項目
+
+@ 0 1 0 0a577f73475efca20b96d2f17614deed
++ - ソース：`lib/contingency/src/core/contingency.internal.scala`

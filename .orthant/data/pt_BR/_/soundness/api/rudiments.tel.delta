@@ -1,0 +1,2427 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1dc5e629935d905319a491e5a1a8a06a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0856b83007c342180225e6890cec472c
++ info   a fundação sobre a qual toda biblioteca Soundness se apoia: combinadores, operações sobre coleções, provas, builders e atômicos
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 1471a1f80e2d67e40e50299c37ce69bd
++     _Rudiments_ é a camada de definições de uso geral que todas as outras bibliotecas
++     Soundness usam e às quais um programa escrito com Soundness recorre o tempo todo, sem
++     pensar nelas como pertencentes a alguma biblioteca. Ela não tem um tipo central; tem um
++     vocabulário. Quem começa no Soundness encontra suas peças mais ou menos nesta ordem:
+
+@ 0 33 0 0bc2c1ff476dd59e0b0432d3b2ceda14
++     - **Combinadores do dia a dia** sobre qualquer valor: `pipe`, `tap`, `also`, `when`,
++       `give`, `twin`, `yet`, `upon` e os acessores contextuais `state`, `next`, `prior` e
++       `ordinal`, que as operações de fold e de iteração entregam aos seus lambdas.
++     - **Operações sobre coleções**, escritas uma única vez sobre as classes de tipos
++       `Traversable`, `Countable`, `Applicable`, `Segmentable` e afins, de modo que `head`,
++       `last`, `tail`, `keep`, `skip`, `snip`, `before`, `after`, `sort`, `order`, `fuse`,
++       `each`, `indexed`, `seek`, `where`, `total`, `mean` e as demais significam a mesma coisa
++       em uma `List`, uma `Sequence`, um `Set`, um `Map`, um `Array` congelado, um `Text` e
++       qualquer outro tipo com uma instância. As próprias classes de tipos ficam em
++       `murmuration` (`Traversable`, `Reshapable`, `Mappable`, `Convertible`, …) e em
++       `denominative` (`Countable`, `Applicable`, `Definable`, …) e são reexportadas aqui, de
++       modo que `import rudiments.*` apresenta uma única superfície.
++     - **Provas em tipos.** Uma operação que só é segura para algumas entradas não é tornada
++       parcial: recebe um tipo que exige a prova. `head`, `last`, `lead`, `tail` e `reduce` são
++       totais sobre um receptor tipado `& Populated` (um literal não vazio, ou o resultado de
++       `occupied`) e `Optional` caso contrário; um ordinal que `confine`, `pick`, `iterate` ou
++       um `Surveyor` verificou contra uma coleção é tipado `Ordinal in xs.type`, e `xs(i)` com
++       um índice assim lê o elemento sem envoltório, enquanto qualquer outro índice lê um
++       `Optional`; um array congelado cujo comprimento é um literal é tipado `& Sized[n]`, e um
++       ordinal literal além de `n` não compila. O custo do `size` ou do acesso posicional de
++       uma lista ligada também é uma prova — um import de `dysasymptotics.linearSize` ou de
++       `linearAccess` —, e não um percurso silencioso.
++     - **Builders e scanners** para os laços críticos de parsers e codecs: `Array.scribe` e
++       `Array.collect` emprestam um `Scribe` (um handle de escrita cujos índices são todos
++       comprovadamente válidos), `survey` empresta um `Surveyor` (um cursor de avanço cujas
++       sequências voltam como intervalos com marca), `lattice` endereça um plano
++       bidimensional, `pairs`/`triples`/`quads` percorrem uma coleção em grupos, e `Scroll` é
++       um array expansível sem boxing.
++     - **Primitivas de concorrência**: células `Atomic` sobre os atômicos do JDK, lidas como
++       `cell()`, escritas como `cell() = v` e transicionadas com `ere` e `since`, que compilam
++       um literal lambda como `_ + 1` para o intrínseco do JDK; `Mutex`; valores `Scoped`
++       ligados a uma thread; e `Loop`, uma iteração interrompível para uma tarefa em segundo
++       plano.
++     - **Valores pequenos**: `Exit` e `Termination` (o que um comando devolve), `Bytes` (uma
++       contagem de bytes com literais `kib`/`mib`/`gib`), `Digit` e os auxiliares de tempo de
++       compilação `typeName`, `reflectClass`, `probe` e `!!`.
+
+% 2 1 0 1952c9361316573007d1e8185c2a09e6
+
+% 3 1 0 0a3ffc15827748f5156a52681336e96d
+
+% 4 1 0 041867c881835ff00f14cd92a27246e2
+
+% 0 1 0 097e48206aa1712e1e35289c7bc93717
+
+% 0 1 0 0088be0e17ed730304eb277b1216f6bc
+
+% 0 1 0 0e80b59ebc1de7b21d228d4a1aedf3bc
+
+% 0 1 0 18d4b92d0c6c15a70e378af499ec65cf
+
+% 0 1 0 1002d24306e491cd0a8c794885d4a108
+
+% 0 1 0 1bb9fd8c801f83311a72e06befce42f8
+
+% 0 1 0 0c60cc9855bf31d1156c8276d7a6d7a0
+
+% 0 1 0 06dee464bb4276a7071f2471e2082026
+
+% 0 1 0 06c1b67e946d9c1e163eaa0cc839c7bf
+
+% 0 1 0 1f0034626edc9b32128dd1a9b5617d12
+
+% 0 1 0 0078701ccdcba2900a7bfcf7da12358a
+
+% 0 1 0 148035c480be40c905e2bb707e1d4853
+
+% 0 1 0 0451c02ce6d6363b0760275320e85442
+
+% 0 1 0 004ffe1ba55ff23c092e2abfd8981efa
+
+% 1 1 0 135f26b3535af277125fbaec396c0be5
+
+@ 0 11 0 0394e6696b54dcb6112a694e8426cfbe
++     O pacote é declarado por duas bibliotecas, e a divisão diz respeito ao grafo de build, e
++     não ao namespace. `rudiments.core` contém os combinadores, as operações sobre coleções,
++     `Atomic`, `Mutex`, `Scoped`, `Loop`, `Exit`, `Bytes` e as operações de ordenação, e
++     depende de `murmuration`, `denominative`, `vacuous`, `symbolism` e `anticipation`. A
++     biblioteca `concordance`, que fica diretamente sobre `denominative` para que as
++     bibliotecas abaixo do rudiments possam indexar com segurança, declara o vocabulário de
++     indexação confinada — `apply`, `at`, `defines`, `confine`, `pick`, `unsafeAttested`,
++     `sized` — e `Populated`, `Segmentable`, `Appendable`, `Prependable`, `Bijection`,
++     `Scribe`, `Scroll`, `Surveyor`, `Lattice` e os combinadores de agrupamento, todos em
++     `package rudiments`; cada uma dessas entradas o indica. Ambas compilam para a JVM, o
++     Scala.js e o Scala Native, com `Atomic` apoiado em `java.util.concurrent.atomic` onde
++     quer que a plataforma o ofereça.
+
+@ 0 8 0 1fa4a32196b1b9c90beaed1db2e4aa08
++     Quase tudo é exportado para o guarda-chuva `soundness`. As exceções, alcançadas com um
++     import pelo nome como `import rudiments.occupied`, são `occupied`, `find`, `Scribe` e
++     `Array.scribe`/`Array.collect` com `appendVarint` e `appendUtf8`, `Surveyor` e `survey`,
++     `Lattice` e `lattice`, `Scroll` e os combinadores de agrupamento `pairs`, `triples`,
++     `quads`, `quints`, `octuples` e `adjacent` — os emprestadores com tipos dependentes ficam
++     de fora porque os encaminhadores de export sintetizados não conseguem carregar seus
++     tipos. O algoritmo de ordenação é um given escolhido pelo nome em `sortingAlgorithms`
++     (`import sortingAlgorithms.timsort`), já que `import soundness.*` não importa givens.
+
+% 0 1 0 0b440c0eefac4b7716b9bc5dc1f4fe1f
+
+% 0 1 0 100265f3014fcb951356d2733b6ae83f
+
+% 0 1 0 11125257a7f305a6126c2afaab885805
+
+% 0 1 0 0d54f2283abdb2871d3e51c55d84141b
+
+% 0 1 0 09cebb02f6da96ec174adeab0a89769f
+
+% 0 1 0 1a285f1b9a4e3b5202fb08c6f0de9c2d
+
+% 0 1 0 1e652ce139c6bbfc0d8a31b5d83b32e9
+
+@ 0 4 0 146d3e876d0c8ed40e9b9383280f6f05
++ entry .pipe   `value.pipe(f)`: aplica uma função a um valor, escrita da esquerda para a direita
++     `value.pipe(lambda)` é `lambda(value)`, de modo que um cálculo se lê na ordem em que
++     acontece, e não de dentro para fora. O receptor é by-name e o método é inline, então nada
++     é alocado e o valor é avaliado exatamente uma vez.
+
+% 2 1 0 1e03be572968264512c465aff38a921c
+
+% 3 1 0 1d9104a50bce7ac214bee7254d686447
+
+% 0 1 0 031dea022f2c94cd0bbbc0cae9b879bc
+
+% 1 1 0 01482a1a2b1fff0919f539d154ecc9a0
+
+@ 0 4 0 1c71aab84ff282681e777ddbe4b2a75c
++ entry .tap   `value.tap(f)`: executa um efeito colateral sobre um valor e devolve o valor
++     `value.tap(block)` avalia o valor uma vez, passa-o a `block` por seu efeito — um log, uma
++     asserção, uma medição — e produz o valor inalterado, de modo que um passo pode ser
++     observado no meio de uma cadeia sem vinculá-lo a um nome.
+
+% 2 1 0 0b564ab039e3a8520743fd8e951c10d9
+
+% 3 1 0 05692b6d0f4189b3130d4a25d35d140b
+
+% 0 1 0 13d71bd59acee33b0df07fa0c51ddd28
+
+% 0 1 0 1be0b75d6b6a998b0068f5ed5648f0bf
+
+% 1 1 0 0841812adc2d89630b47b6257636e6fb
+
+@ 0 3 0 0ca31e3600668c830098bf5abf7ff6b2
++ entry .also   `value.also(block)`: avalia um bloco depois de um valor, e devolve o valor
++     Como `tap`, mas o bloco não recebe o valor: `value.also(cleanup())` avalia o valor,
++     depois o bloco, e produz o valor.
+
+@ 0 5 0 1646cd89ad2f647d02081b0214044eb5
++ entry .when   `value.when(condition)(f)`: aplica uma função apenas se uma condição for verdadeira
++     Duas sobrecargas: `value.when(predicate: Boolean)(lambda)` e
++     `value.when(predicate: value => Boolean)(lambda)`. Ambas produzem `lambda(value)` quando a
++     condição é verdadeira e `value` inalterado caso contrário, o que é o passo condicional de
++     um pipeline sem um `if`/`else` que repita o valor.
+
+% 2 1 0 031dd27802a256a408f3150f303a4829
+
+% 3 1 0 040e9d15a0afcde81c9d73de13a0c3af
+
+% 0 1 0 0307b3e53e4772140bb31158290f72a4
+
+% 1 1 0 15c775de96bdf2ca111c8739b8d8a395
+
+@ 0 4 0 1263515e12167832065aa8f8a538150c
++ entry .give   `value.give(block)`: torna um valor disponível como valor contextual dentro de um bloco
++     `value.give { summon[Type] }` avalia o bloco com `value` como um given de seu tipo:
++     `block: value ?=> result`. É assim que um valor explícito é entregue a um código que
++     espera um valor contextual, sem declarar um `given` no escopo envolvente.
+
+@ 0 3 0 11fba40799afb5d605bf2e014944d2c8
++ entry .unit   descarta um valor, produzindo `()`
++     `expression.unit` avalia a expressão por seu efeito e dá `Unit`, o que é mais limpo que
++     `val _ = expression` ou um `()` no final.
+
+@ 0 3 0 1ad5d412846b09db18893706e2a4385f
++ entry .waive   `value.waive`: a função constante que ignora seu argumento e devolve o valor
++     `value.waive` é `_ => value`, tipado `Any => value`: para uma API que recebe uma função
++     quando quem chama tem apenas um valor, como `optional.lay(fallback.waive)(f)`.
+
+@ 0 2 0 0a3af870957c65ee0ead594ac158e5cf
++ entry .twin   `value.twin`: o par `(value, value)`
++     Emparelha um valor consigo mesmo, para uma API que recebe um par.
+
+@ 0 1 0 145f67964174f338022b4221b0dd9d55
++ entry .triple   `value.triple`: a tripla `(value, value, value)`
+
+@ 0 3 0 13cc66e45e5e216a11f4a5a2bd538f50
++ entry .typed   `value.typed[Subtype]`: se o valor é uma instância de um subtipo de seu tipo estático
++     `value.typed[T]` é `value.isInstanceOf[T]`, com `T` limitado superiormente pelo próprio
++     tipo do valor, de modo que um teste contra um tipo não relacionado é um erro de
++     compilação, e não um `false` constante.
+
+@ 0 8 0 0654ee848f807ebc19ed71a0ad67fcd9
++ entry .unsafeMatchable   converte um valor para `value & Matchable`, sob um token `Unsafe`
++     O casamento de padrões sobre um valor cujo tipo não é `Matchable` — um tipo opaco, ou um
++     parâmetro de tipo abstrato — é proibido sob a matchability estrita.
++     `value.unsafeMatchable` acrescenta `Matchable` ao tipo estático por meio de um cast, e
++     recebe um parâmetro contextual `Unsafe` apagado, de modo que o local precisa estar dentro
++     de `unsafely` (ou deter o token de outra forma): o nome diz que a garantia do compilador
++     foi posta de lado, já que casar sobre a representação de um tipo opaco é justamente o
++     que a opacidade pretendia impedir. É transparente, de modo que o tipo do resultado é
++     exatamente `value & Matchable`.
+
+@ 0 4 0 15e9cd01d02acd601ec98fef880392e1
++ entry .yet   `statement yet block`: avalia uma instrução e depois um bloco, produzindo o resultado do bloco
++     Um operador infixo de sequenciamento sobre uma expressão `Unit`: `log() yet compute()`
++     executa `log()` por seu efeito e produz `compute()`. Lê-se bem no final de um método de
++     uma linha cuja primeira ação é um efeito.
+
+@ 0 3 0 019fe3846d55faf910e80287dea2282d
++ entry .upon   `lambda.upon(value)`: aplica uma função by-name a um argumento by-name
++     Para uma função tipada `(=> input) => result`: `lambda.upon(expression)` passa a
++     expressão sem avaliá-la, de modo que a função decide se e quando avaliá-la.
+
+@ 0 3 0 097c2bdcab77407d062cd110daca4534
++ entry .and   `lambda and input`: aplicação de função infixa
++     `lambda and argument` é `lambda(argument)`, avaliado by-name. Faz de uma função o sujeito
++     de uma frase em uma cadeia de operações: `handler and event`.
+
+@ 0 4 0 1acdb0c9e872d3bd1c92f84d933ca8b8
++ entry .context   `lambda.context`: uma função como função de contexto
++     Converte um `input => result` em `input ?=> result`, de modo que uma função comum possa
++     ser passada onde se espera uma função de contexto — um bloco que lê seu argumento com
++     `summon` ou por meio de um acessor como `state`.
+
+@ 0 4 0 01b06757df82c02d17995f3d791ed8a5
++ entry .that   `that(block)`: uma identidade sobre um bloco by-name, para dar ênfase
++     `that { … }` avalia seu bloco e produz o resultado: existe para que uma construção possa
++     ser nomeada pelo que afirma, `assert(that(x > 0))`, e para dar a um bloco inline uma
++     âncora sintática onde for necessária.
+
+@ 0 5 0 03c3052d266af5e51230b6853ca202e5
++ entry .state   o acumulador dentro de um lambda de `fuse`, como valor contextual
++     Um lambda de `fuse` é uma função de contexto que recebe dois valores etiquetados, o
++     estado corrente e o próximo elemento. `state` lê o primeiro: `xs.fuse(0)(state + next)`.
++     A etiqueta é o tipo `value aka "state"`, que só um `fuse` fornece, de modo que `state`
++     fora de um deles é um erro de compilação dizendo que nenhum given desse tipo foi
++     encontrado.
+
+@ 0 3 0 016140fd99be07d408072f3a35e29b05
++ entry .next   o próximo elemento dentro de um lambda de `fuse`, como valor contextual
++     O segundo valor etiquetado que um lambda de `fuse` recebe:
++     `xs.fuse(t"")(state + next.show)`. Veja `state` quanto à etiquetagem.
+
+@ 0 3 0 08f6551faf7c90e11f1a8c9d26349ad9
++ entry .prior   o valor anterior dentro de um lambda que o recebe, como valor contextual
++     Lê um `value aka "prior"` contextual: o primeiro de dois elementos em operações como as
++     varreduras aos pares de outras bibliotecas que o passam.
+
+@ 0 4 0 07871485936f670e1cbcbc10869b9003
++ entry .ordinal   a posição do elemento corrente dentro de um lambda de `each`, como valor contextual
++     Um lambda de `each` recebe o `Ordinal` do elemento como um `Ordinal aka "ordinal"`
++     contextual, e `ordinal` o lê: `xs.each { x => labels ::= t"$ordinal: $x" }`. As posições
++     começam em `Prim`.
+
+@ 0 3 0 143b9e58015f76120033bed9230c7e1d
++ entry .repeat   `repeat(count)(action)`: executa uma ação um número fixo de vezes
++     `repeat(3) { step() }` avalia o bloco três vezes, como um laço que não precisa de índice.
++     Uma contagem negativa ou zero não o executa nenhuma vez.
+
+@ 0 5 0 1ffce46aba42832402989c937b3471c7
++ entry .fixpoint   `fixpoint(initial)(recur ?=> …)`: um cálculo recursivo a partir de um lambda que amarra o nó
++     `fixpoint(initial)` aplica um `Fixpoint` a um valor inicial: o lambda recebe a própria
++     recursão como uma função contextual `recur: value => value`, e a chama para recursar. O
++     nó é amarrado de forma preguiçosa, de modo que `recur` só reentra no lambda quando é
++     aplicado, e o lambda decide quando a recursão para.
+
+% 2 1 0 1bd2dd2058029f9f03f64d96e033f020
+
+% 3 1 0 191c499d30f0f8f90c2023fdf78156e8
+
+% 0 1 0 17b141d40e0bd94d09ee0404c58f727d
+
+% 0 1 0 151ac6f36045e089008490070e19cbac
+
+% 1 1 0 097e5d910d9fca0d00c510ae3c4b3922
+
+@ 0 1 0 138b17b5a9220a4e1ecbb9629e393d17
++ entry .Fixpoint   o formato de um lambda de `fixpoint`: dada a recursão, uma função sobre o valor
+
+% 1 1 0 1fd9e9f366c3502c09e6517619e6326b
+
+@ 0 5 0 0ad9d1ea19be35d30e46e89442a269df
++       Um trait SAM cujo `apply` recebe a recursão como um `value ->{this} value` contextual e
++       produz o passo `value ->{recur} value`. Um literal de função de contexto `recur ?=> …`
++       se converte nele em uma chamada de `fixpoint`; o trait existe porque uma função de
++       contexto não consegue nomear o valor de função dentro de seu próprio tipo, e a captura
++       retida de `recur` precisa ser declarada para que a recursão passe pela verificação de
++       capturas.
+
+% 0 1 0 1c84e199e517a6080565db4f8ede49ba
+
+@ 0 1 0 09c09e4542a9338403a25f0f1c809f7f
++   entry #apply   o passo, dada a recursão a chamar
+
+@ 0 5 0 1579a59524022c8d103011bb1e7bd34e
++ entry .probe   `probe[T]`: interrompe a compilação, informando o que o tipo `T` é
++     Um auxílio de depuração para código em nível de tipos: `probe[SomeMatchType[X]]` falha ao
++     compilar com _the type is …_, mostrando o tipo como o compilador o vê, sem aliases e
++     alargado, de modo que o leitor pode descobrir a que um tipo complicado se reduz sem
++     adivinhar. Devolve `Nothing` e nunca sobrevive até a execução.
+
+@ 0 4 0 0084682249ed8d370c25f87af0b2aa45
++ entry .typeName   `typeName[T]`: o nome de um tipo, como texto, em tempo de compilação
++     `typeName[List[Int]]` é `t"List[Int]"`, renderizado pelo próprio printer do compilador
++     quando o código compila, sem nenhuma anotação de verificação de capturas. Útil para
++     mensagens e para código genérico que nomeia o tipo com que foi instanciado.
+
+@ 0 4 0 0a4495726683f49c01a7840d21292aac
++ entry .reflectClass   `reflectClass[T]`: a `Class[T]` de um tipo, pelo seu nome completo
++     Procura a classe pelo nome do símbolo do tipo com `Class.forName` quando o código é
++     executado, tipada como `Class[T]`. Para uma classe carregada por um classloader
++     específico, ou uma classe aninhada, `hellenism.ClassRef[T]` resolve o nome binário
++     corretamente e é preferível.
+
+@ 0 6 0 1a68d262497d45b507d8afc397bfe074
++ entry .!!   `!![T]`: um valor apagado de qualquer tipo, para um parâmetro apagado de prova ou de evidência
++     Escrito `!![T]`, é o convocador de valores apagados do compilador: produz um `T` que só
++     existe em tempo de compilação e não tem representação em tempo de execução, de modo que
++     pode ser passado onde se exige um parâmetro `erased` desse tipo —
++     `lambda(using !![data is Dynamical])` é como `dynamically` concede sua permissão — e em
++     nenhum outro lugar. Um uso cujo valor chegue a ser avaliado é um erro de compilação.
+
+@ 0 5 0 050b8a46791e09c10a98d9198930a9ba
++ entry .each   visita cada elemento, dando ao lambda a posição de cada elemento como o `ordinal` contextual
++     Duas sobrecargas, uma para qualquer receptor `Traversable` — as coleções opacas, um
++     `Text`, um array congelado — e outra para um `Iterable` da stdlib. O lambda é uma função
++     de contexto que recebe o `Ordinal` do elemento como `Ordinal aka "ordinal"`, lido com
++     `ordinal`, contado a partir de `Prim`. `each` é a grafia da casa para `foreach`, que
++     permanece apenas para que os laços `for` sejam desaçucarados.
+
+% 2 1 0 02f1ca1a89081b39145e654222ca18dd
+
+% 3 1 0 01e1d89bfc67d345007aa44b0ffa6bb7
+
+% 0 1 0 0bfb2c35de08db64184bb07e4986372e
+
+% 0 1 0 0f40905cb882073b1dc119dc621253f7
+
+% 0 1 0 0fa3bb4e115ff8a20dc4c676d1e8ad4e
+
+% 0 1 0 10ac5a5ee9859a4301ad612d20291283
+
+% 1 1 0 0fd573d5d6c5281201469154b9855daf
+
+@ 0 5 0 08d193c36d47a9841b7ca382f95c843c
++ entry .fuse   faz um fold pela esquerda, com o acumulador e o próximo elemento como `state` e `next`
++     `xs.fuse(base)(lambda)` é um fold à esquerda cujo lambda é uma função de contexto: ele lê
++     o acumulador corrente como `state` e o elemento como `next`, de modo que
++     `xs.fuse(0)(state + next)` soma. Sobrecarregado para qualquer `Traversable` e para um
++     `Iterable` da stdlib; inline, de modo que o laço é escrito no próprio local.
+
+% 2 1 0 05882bfc69cb0bd000fc1e2f907ccc18
+
+% 3 1 0 0d3ef4e339b19fd61125f17febb69b52
+
+% 0 1 0 1227941a64c1b9ee14f247116a5b821b
+
+% 0 1 0 1313c99e15a1b2e818245224ff2b4d01
+
+% 1 1 0 19b1d1218cc8eaa51086969eee464bd6
+
+@ 0 3 0 035bbc4896e17f3e16e72fafedc1ab4a
++ entry .all   se todo elemento satisfaz um predicado
++     `xs.all(_ > 0)` é o `forall` da stdlib; sobrecarregado para um receptor `Traversable` e
++     para um `Iterable`. Verdadeiro para um receptor vazio.
+
+@ 0 4 0 1c7212dd2c9f9a92105a057ef8de3467
++ entry .find   o primeiro elemento que satisfaz um predicado, ou `Unset`
++     `xs.find(predicate)` sobre qualquer `Traversable`, produzindo `Optional[element]` em vez
++     de uma `Option`; a mesma operação que `seek`, com o nome da stdlib. Não é exportado para
++     o guarda-chuva `soundness`: `import rudiments.find`, ou use `seek`.
+
+@ 0 5 0 094005dab921437b0cc60f69af8d781b
++ entry .seek   o primeiro elemento que satisfaz um predicado, ou `Unset`
++     `xs.seek(_.startsWith(t"x"))` sobre qualquer `Traversable` produz o elemento como um
++     `Optional`. Não há sobrecarga que receba um valor (`seek(value)`): com um tipo de
++     elemento dependente de caminho, ela seria ambígua com a forma de predicado para todo
++     lambda, de modo que um elemento específico é procurado com `seek(_ == value)`, e sua
++     posição com `where`.
+
+@ 0 4 0 061675a97387d70c1466c504ac79ed93
++ entry .reap   o primeiro elemento que uma função parcial aceita, transformado por ela, ou `Unset`
++     `xs.reap { case Some(x) => x }` é a contraparte total do `collectFirst` da stdlib, e a
++     irmã de resultado único de `sweep`. Um nome distinto, e não uma sobrecarga de `seek`,
++     porque uma closure com literal de case casa tanto com o formato de predicado quanto com
++     o de função parcial.
+
+% 2 1 0 1377fea5dbf50d0f1f1246715adc548e
+
+% 3 1 0 04c6204ce2b7050b1f7af09515759068
+
+% 0 1 0 1c7c17ee257eeb6d17300112c4640e02
+
+% 1 1 0 1d4e66f5cc8f2b1215f303eec38e04c0
+
+@ 0 3 0 1915d5815e2b073518073bdccbe17710
++ entry .where   a posição do primeiro elemento que satisfaz um predicado, como `Optional[Ordinal]`
++     `xs.where(_ == x)` substitui `indexOf`: o resultado é um `Ordinal`, não um `Int`, e a
++     ausência de correspondência é `Unset`, e não `-1`. O próprio elemento é encontrado com
++     `seek`.
+
+% 2 1 0 126e350bcde1570a038ba739ebe4ee9c
+
+% 3 1 0 018e259aa11d3ed1171b8b2c2a4ae6d2
+
+% 0 1 0 18aaf930dd65d6b1098eaa3dc35e9d83
+
+% 1 1 0 19724826174019000abd325de5a69537
+
+@ 0 5 0 0b81f79a45507ac90f8dba3cf8dc583d
++ entry .indexed   cada elemento emparelhado com seu `Ordinal`, no próprio formato do receptor
++     `xs.indexed` é a contraparte total de `zipWithIndex`: uma `List` dá uma
++     `List[(element, Ordinal)]`, uma `Sequence` dá uma `Sequence` de pares. Precisa de uma
++     instância `Reshapable.Stable`, de modo que um `Set` ou um `Map` não ordenado — cujos
++     elementos não têm posições — não é aceito. O ordinal começa do zero em `Prim`; a
++     aritmética sobre ele passa por `n0` ou pela adição de ordinais.
+
+@ 0 5 0 0a8ddc0a56ddd83b1b81f1c37d2b5819
++ entry .sift   os elementos que são instâncias de um tipo, como uma coleção desse tipo
++     `xs.sift[Subtype]` mantém os elementos que passam em um teste de tipo e estreita o
++     resultado: `List(None, Some(1), None).sift[None.type]` é uma `List[None.type]`, e um tipo
++     singleton ou uma união de tipos singleton também funciona
++     (`List.range(0, 10).sift[5 | 7]` é `List(5, 7)`). Sobrecarregado para um `Traversable`
++     (dando uma `List`) e para um `Iterable`.
+
+@ 0 3 0 1d1cd45881fe61ea0c3a74884c92523a
++ entry .bi   cada elemento emparelhado consigo mesmo, preservando o formato
++     `List(1, 2).bi` é `List((1, 1), (2, 2))`; um `Set` dá um `Set` de pares. Para um
++     `Traversable`, precisa de uma instância `Reshapable`, e a sobrecarga para `Iterable`
++     mapeia diretamente.
+
+@ 0 2 0 1f4f8c62d954257315c227bb8b383312
++ entry .tri   cada elemento triplicado consigo mesmo, preservando o formato
++     `Set(1, 2).tri` é `Set((1, 1, 1), (2, 2, 2))`. Veja `bi`.
+
+@ 0 3 0 1849d881385ab37b1a65777fb289b925
++ entry .weave   intercala dois `Iterable`s elemento a elemento
++     `left.weave(right)` produz `left(0), right(0), left(1), right(1), …`, parando quando
++     qualquer um deles se esgota. Definido apenas sobre o `Iterable` da stdlib.
+
+@ 0 4 0 1bdf0696bfa559eb1d3f344402288c71
++ entry .annex   emparelha cada elemento com um valor calculado, achatando um elemento tupla
++     `xs.annex(f)` mapeia cada elemento `x` para `(x, f(x))`; onde o elemento já é uma tupla,
++     `f(x)` é acrescentado a ela como mais um componente, em vez de aninhado. Sobre um
++     `Iterable` da stdlib, produzindo um `Iterable[Tuple]` cujo tipo preciso é refinado no
++     local da chamada.
+
+@ 0 4 0 0f7be42f08d29fea08d63095f14522d0
++ entry .intercalate   junta `Iterable`s aninhados com um separador entre eles
++     `parts.intercalate(List(0))` concatena as coleções internas com o separador entre cada
++     par; o separador tem como padrão nada, de modo que `intercalate()` é um achatamento.
++     Sobre um `Iterable[Iterable[value]]` da stdlib.
+
+@ 0 7 0 17c826334cb83aa711f9b1d77d445014
++ entry .total   a soma dos elementos, por sua instância `Addable`
++     `xs.total` soma os elementos. Seu tipo de resultado se adapta: onde o tipo de elemento
++     tem uma instância `Zeroic` (todo tipo numérico tem), a soma começa em zero e o resultado
++     é o tipo de elemento sem envoltório; caso contrário, é `Optional`, `Unset` para um
++     receptor vazio. Sobrecarregado para um `Traversable` e para um `Iterable`, e
++     transparente, de modo que em uma posição de argumento com um tipo esperado o
++     estreitamento pode não estar disponível — `xs.total.or(0)` é a grafia robusta nesse
++     caso, já que `Int` é conforme a `Optional[Int]`.
+
+% 2 1 0 0e4ccec85fe0eca11ea9f509158438cc
+
+% 3 1 0 1bcd4c1837a8b387133a6b677abf82eb
+
+% 0 1 0 014c0585dbb75fb31a85a2369acf1df1
+
+% 0 1 0 0772ddcc30bf07de16c9eaab82ad9794
+
+% 1 1 0 1c733524c63c6c011df76364a5af2cb8
+
+@ 0 3 0 167f5446f85a1e90081e167544e4fad4
++ entry .product   o produto dos elementos, por suas instâncias `Multiplicable` e `Unital`
++     `xs.product` multiplica os elementos, começando pelo `one` do tipo. Sobrecarregado para
++     um `Traversable` e para um `Iterable`.
+
+@ 0 2 0 01f1140792d6c9031b2b5856fc4832d7
++ entry .sumBy   a soma de uma projeção numérica de cada elemento
++     `xs.sumBy(_.length)` sobre um `Iterable` da stdlib, por um `Numeric` para o tipo
++     projetado.
+
+@ 0 4 0 0d256334ccffd4b01fb80ff2ddc6cf5d
++ entry .mean   a média aritmética dos elementos, ou `Unset` para um receptor vazio
++     `xs.mean` é `xs.total` dividido pela contagem, para um tipo de elemento que seja
++     `Addable` consigo mesmo e `Divisible` por `Double` resultando em si mesmo — `Double`, ou
++     uma grandeza. Sobrecarregado para um `Traversable` e um `Iterable`.
+
+@ 0 5 0 0c08d14a22473491017c7dda8f71c504
++ entry .mean2   a média calculada em torno de um pivô arbitrário, para melhor estabilidade numérica
++     `xs.mean2` subtrai o primeiro elemento de cada elemento, tira a média das diferenças e
++     soma o pivô de volta, o que perde menos precisão que `mean` quando os valores são
++     grandes e próximos entre si. Sobre um `Iterable` da stdlib, com as instâncias de
++     subtração, adição e divisão de que a aritmética precisa.
+
+@ 0 3 0 0addf39177e67d3d1bb1dda80f630667
++ entry .variance   a variância populacional dos elementos, ou `Unset` para um receptor vazio
++     A média dos quadrados dos desvios em relação a `mean`. Sobrecarregado para um
++     `Traversable` e um `Iterable`; o tipo do resultado é o de um elemento ao quadrado dividido
++     por um `Double`.
+
+@ 0 3 0 1bc8eaefa3381a3003af012c7382717f
++ entry .std   o desvio padrão populacional dos elementos, ou `Unset` para um receptor vazio
++     Calculado em unidades do primeiro elemento, de modo que o desvio padrão de uma grandeza
++     com dimensão volta no próprio tipo da grandeza. Sobrecarregado para um `Traversable` e
++     um `Iterable`.
+
+@ 0 3 0 00bf76bccee6ac4b0c0782addc9bc16b
++ entry .indexBy   um mapa de uma chave calculada para cada elemento
++     `xs.indexBy(_.id)` constrói um `Map[key, element]`; onde dois elementos compartilham uma
++     chave, o posterior prevalece. Sobre um `Iterable` da stdlib.
+
+@ 0 4 0 19f8fd77ad9f07291da4cfdd2101996b
++ entry .longestTrain   o início e o comprimento da mais longa sequência de elementos que satisfazem um predicado
++     `xs.longestTrain(_ == 0)` é o `(start, length)` da mais longa sequência consecutiva para a
++     qual o predicado vale, como `Int`s começando do zero; `(0, 0)` quando nenhuma vale.
++     Sobrecarregado para um `Traversable` e um `Iterable`.
+
+% 2 1 0 1c2a35fd60b799011c043187f15c7561
+
+% 3 1 0 1ad7c380559943261902ca592b7051e2
+
+% 0 1 0 17233a1d697d528907836c195c1ca4de
+
+% 1 1 0 0d8b5e848fa0cd640410ba54e80c7bab
+
+@ 0 4 0 0ea9bf6ba19e3e7d1e0f7e0f1e5b94c1
++ entry .iterator   o percurso de uso único de um `Traversable`, para um consumidor que puxa os elementos
++     `xs.iterator` é um `Iterator` do murmuration sobre os elementos, cujo `next()` produz
++     `Iterator.Exhausted` no final em vez de lançar uma exceção. Para o laço que precisa
++     puxar os elementos um de cada vez, em vez de recebê-los de `each`.
+
+@ 0 8 0 0b6dc291f4a34cea17080a5be739c96f
++ entry .to   converte uma coleção para um formato pedido: `xs.to[List]`, `text.to[Set]`, `pairs.to[Map]`
++     `xs.to[Form]` passa por uma instância `Convertible` do receptor para o formato, que pode
++     ser um tipo propriamente dito ou um construtor não aplicado; qualquer `Traversable` tem
++     instâncias para as coleções, e um `Text` se converte em uma coleção de `Char`. Uma
++     segunda sobrecarga converte uma tupla em uma case class: `(t"Hamlet", 30).to[Person]`,
++     por meio de `Mirror.ProductOf`. É transparente, de modo que o resultado fica totalmente
++     aplicado no local da chamada; onde nenhum tipo esperado o fixa, o construtor sozinho pode
++     ficar não aplicado, e a forma de fábrica entre parênteses `xs.to(List)` é o fallback
++     nesse caso.
+
+% 2 1 0 0145e9dbad8894040e9421801346f5e3
+
+% 3 1 0 0687585246a75b9b06cceb3888284f52
+
+% 0 1 0 1e5e7764220cbd490a2d76cf00b5f449
+
+% 0 1 0 1d7f4095206501b1089cbb72ee674199
+
+% 1 1 0 087e97e7542417aa037af40f42aa3d2c
+
+@ 0 6 0 0c295279913daa3d0021faf785afdb99
++ entry .occupied   verifica uma vez que um valor não está vazio, registrando a prova como `& Populated`
++     `xs.occupied` é `Optional[xs.type & Populated]`: `Unset` para um receptor vazio e, caso
++     contrário, o mesmo valor tipado com a prova de não vacuidade, sobre o qual `head`,
++     `last`, `lead`, `tail` e `reduce` são totais. Uma única verificação, quitada no tipo, em
++     vez de um `Optional` em cada leitura. Não é exportado para o guarda-chuva `soundness`:
++     `import rudiments.occupied`.
+
+% 2 1 0 17d7fd2df403323a1d5732e586db9046
+
+% 3 1 0 19f0ca6b5e6d5833048f06054434053a
+
+% 0 1 0 0969f05a35c8acae1228f5af4b1e84dd
+
+% 0 1 0 1ea7b92cf800b6e9050c075d7a5aa5a4
+
+% 0 1 0 1b57f3a3e9c3c7f21e5ea56a3ce0ad18
+
+% 1 1 0 0d3d2c42c29627d0161b9ba4646e5d4c
+
+@ 0 10 0 09f80845643d38711203600530eba2f0
++ entry .Populated   a prova, em um tipo, de que uma coleção não está vazia
++     `Populated` é `proscenium.Populated` — o refinamento estrutural
++     `Any { type Occupied = true }` — redeclarado aqui sob o nome que o código anterior usava,
++     e distribuído na biblioteca `concordance`. Sabe-se que um valor tipado
++     `List[Int] & Populated` tem um elemento, de modo que `head`, `last`, `lead`, `tail` e
++     `reduce` são totais sobre ele. A prova é cunhada pelos construtores de literais não vazios
++     dos objetos companheiros das coleções (`List(1, 2, 3)` a tem; `List()` e `List(xs*)` não),
++     por `occupied` e por APIs que devolvem algo sabidamente não vazio, como `Text#cut`. Por ser
++     estrutural, ela é apagada sem deixar nada: um `Text & Populated` continua sendo uma
++     `String` em tempo de execução, e `populatedEquality` permite que o valor com marca seja
++     comparado com ele mesmo sem marca.
+
+@ 0 7 0 0cbb07a61ce38ffb057b1f501a4fec9c
++ entry .head   o primeiro elemento: sem envoltório em um receptor `Populated`, `Optional` caso contrário
++     `xs.head` se adapta ao que o tipo do receptor prova. Em uma `List[Int] & Populated` — um
++     literal não vazio, ou um resultado de `occupied` — é um `Int`; em uma `List[Int]` simples
++     é `Optional[Int]`, `Unset` quando vazia, tendo verificado a vacuidade uma única vez. Não
++     existe `head` parcial que possa lançar uma exceção: um programa que quer o elemento sem
++     envoltório em uma coleção de tamanho desconhecido vincula `occupied` antes, ou usa
++     `at(Prim)`. Em uma `List`, `head` é gratuito; `at(Sec)` e além percorrem a lista e
++     precisam de `dysasymptotics.linearAccess`.
+
+% 2 1 0 1cc63d3f1d40a34a1c0c602fb57b99da
+
+% 3 1 0 0bf0536d3a25ef761d52caef9218d1f5
+
+@ 0 1 0 1854497f21db9f7215928b0ce002a9b1
++       label Uma lista sem prova: head é Optional
+
+% 1 1 0 0b0ccc11015bf91807a79bb7ed32f795
+
+% 0 1 0 1399b8218c9871a20a67fa53b000b346
+
+% 0 1 0 04d3ad29e33b3d4d14a2c1806baadbd7
+
+% 1 1 0 15dc2f8bf5dd7f6c1976f5e3d5b94497
+
+@ 0 1 0 0300df5b47ad78cc0968ab49572ebd3e
++       label Um literal prova a si mesmo: head vem sem envoltório
+
+% 1 1 0 0ca3c7233be52ed8009e4a226cd41ef3
+
+% 0 1 0 167d13c003e1a02f1e7a12cd1a1ddfd6
+
+% 1 1 0 1e82086adf23b57e02b4ac913f14d750
+
+@ 0 1 0 04bc2976d905976f1649b57e3a0595d0
++       label Um valor verificado leva a prova para dentro de um bloco
+
+% 1 1 0 13c0499e3873bac70f2c92d69a2c4af2
+
+% 0 1 0 01bf6f107225b2b30d0501b6a6e0a3bf
+
+% 0 1 0 1b604f942fe4295805d9999f7b46ede1
+
+% 1 1 0 17882c064c75821e183f2463d44eec26
+
+% 2 1 0 0d84dc0f1de8b7f90272dfa29912f987
+
+@ 0 2 0 0ba2097a5e4f509a1a76bc695c70a624
++     Uma armadilha: o receptor deve ser um valor nomeado ou um literal; uma expressão como
++     `(if c then xs else ys).head` pode não carregar a prova que o compilador, de outra forma,
++     conseguiria ver.
+
+@ 0 5 0 02ef8f738dae7874138843ca1643bfb9
++ entry .last   o elemento final: sem envoltório em um receptor `Populated`, `Optional` caso contrário
++     `xs.last` passa pela instância `Terminable` do receptor, de modo que cada contêiner
++     responde com seu próprio custo: O(1) para uma `Sequence` ou um array, um percurso para
++     uma `List` (que por isso precisa de `dysasymptotics.linearSize`) e uma avaliação forçada
++     para uma `Chain` (`unboundedSize`). Adapta-se como `head`: um elemento em um receptor
++     `Populated`, `Optional` caso contrário.
+
+@ 0 4 0 0f1aa142cfdc329d0e58b42d133da4f2
++ entry .lead   tudo antes do último elemento: sem envoltório em um receptor `Populated`, `Optional` caso contrário
++     `xs.lead` é o espelho de `tail`, por meio da instância `Truncable` do receptor; `lead` e
++     `last` juntos reconstituem o todo. O resultado é o tipo de coleção simples, nunca com
++     marca: o lead de uma lista de um elemento é vazio.
+
+@ 0 5 0 1d3dd77a468ff431042c6b565874154d
++ entry .tail   tudo depois do primeiro elemento: sem envoltório em um receptor `Populated`, `Optional` caso contrário
++     `xs.tail` é `xs.skip(1)` para qualquer receptor `Segmentable` e `Countable`, o que inclui
++     `Text` (`t"hello".tail` é `t"ello"`). Adapta-se como `head`, de modo que em um receptor
++     sem prova é `Optional`, `Unset` para um vazio; o segmento em si nunca tem marca, já que a
++     cauda de um valor de um elemento é vazia.
+
+@ 0 4 0 19f012ac990b575017b0d28de43d269d
++ entry .reduce   combina os elementos aos pares a partir da esquerda, apenas em um receptor `Populated`
++     `xs.reduce(_ + _)` só é definido para um receptor tipado `& Populated`, o que o torna
++     total: não há caso vazio. Uma coleção de tamanho desconhecido passa antes por
++     `occupied`, ou usa `fuse` com um valor base.
+
+@ 0 3 0 1ae6128771d4b1f71d159e7164aafe78
++ entry .populatedEquality   permite comparar um `value & Populated` com um `value` simples
++     Um given `CanEqual`, no escopo implícito, sem o qual a igualdade estrita rejeitaria
++     `List(1, 2) == xs` quando o tipo do literal carrega a prova e `xs` não.
+
+@ 0 1 0 182ffd10f14cd45402ca35a351a2f569
++ entry .populatedEqualityReversed   o `CanEqual` para `value == (value & Populated)`, no sentido inverso
+
+@ 0 3 0 1d850d109b58786f101732a5b0c17bee
++ entry .sizedEquality   permite comparar um `value & Sized[n]` com um `value` simples
++     Um given `CanEqual`, no escopo implícito, para que um array de comprimento literal seja
++     comparado com um sem marca.
+
+@ 0 1 0 1f8ee637f4139f6c146ac6aaa526d7d2
++ entry .sizedEqualityReversed   o `CanEqual` para `value == (value & Sized[n])`, no sentido inverso
+
+@ 0 6 0 092c276755c753de0c3d78277f7c063f
++ entry .segment   `value.segment(interval)`: a parte de um valor dentro de um intervalo
++     `xs.segment(Sec thru Quat)` é o segmento de qualquer valor `Segmentable` sobre um
++     `Interval` de ordinais, no tipo `Segment` da instância: uma `List` para uma `List`, um
++     `Text` para um `Text`, um array congelado para um array congelado. As operações
++     posicionais `before`, `upto`, `from`, `after`, `keep`, `skip`, `snip` e `tail` são todas
++     escritas em termos dela, e um intervalo além da extensão do valor é limitado a ela.
+
+% 2 1 0 0d30c300738307211c3dd5700096c75a
+
+% 3 1 0 006b4f08964eae33093a62bd7776dfca
+
+% 0 1 0 0d40a1dd3a6d167214b0533784092bf7
+
+% 1 1 0 07895d7f45a9b8b81cd28b45cdc2b39b
+
+@ 0 6 0 1448bfc06c757a840a7da941b25b6e53
++ entry .before   tudo antes de uma posição, ou antes do primeiro elemento que casa com um predicado
++     `xs.before(Ter)` é o segmento dos dois primeiros elementos. A sobrecarga de predicado,
++     `xs.before(_ == ' ')`, é tudo o que vem estritamente antes do primeiro elemento que casa,
++     e tudo antes do último elemento quando nenhum casa. Sobre qualquer valor `Segmentable` e
++     `Countable` (a forma com ordinal) ou, além disso, `Traversable` (a forma com predicado).
+
+@ 0 3 0 028fcb13558a40a60083f201f578058c
++ entry .upto   tudo até uma posição, inclusive, ou até o primeiro elemento que casa com um predicado
++     `xs.upto(Ter)` são os três primeiros elementos; `xs.upto(_ == ':')` inclui o elemento que
++     casa, e vai até o último elemento quando nenhum casa.
+
+@ 0 3 0 05e882fcc6d18e28157ed5938cb1da86
++ entry .from   tudo a partir de uma posição
++     `xs.from(Ter)` é o segmento do terceiro elemento até o fim. O nome não é ambíguo no
++     guarda-chuva `soundness`, já que nenhuma outra biblioteca exporta um `from` sobre um
++     valor.
+
+@ 0 2 0 0c11371dd87b19670aa280fc29aee990
++ entry .after   tudo depois de uma posição
++     `xs.after(Ter)` é o segmento do quarto elemento até o fim.
+
+@ 0 8 0 1b39d4ce164d9e7b13cec9d409d3d7d2
++ entry .keep   os primeiros (ou, com `Rtl`, os últimos) `count` elementos, ou a sequência inicial que casa com um predicado
++     `xs.keep(3)` é o `take` da stdlib, e `xs.keep(3, Rtl)` o seu `takeRight`;
++     `xs.keep(_ < 4)` é `takeWhile` e `xs.keep(predicate, Rtl)` seu gêmeo da direita para a
++     esquerda. Toda forma preserva o formato por meio de `Segmentable` — um `Text` mantém seu
++     tipo, um texto estilizado seu estilo — e limita em vez de falhar quando a contagem
++     excede a extensão. Uma `Chain` não tem instância `Segmentable`, já que segmentá-la a
++     forçaria; seu objeto companheiro contém sobrecargas preguiçosas próprias de `keep` e
++     `skip` (sem `Bidi`), que a resolução de sobrecarga prefere para um receptor `Chain`.
+
+% 2 1 0 17cee86077059f3706e6e8a97eb21b5f
+
+% 3 1 0 17fcfce205e0f42c194f41329ef22a93
+
+% 0 1 0 1b67ae63a79275ef1253558f2c887fc6
+
+% 0 1 0 09e4677c6ad2b13c1ec42e243423942a
+
+% 0 1 0 08e86adf036fb17a1066f3681d71dccb
+
+% 1 1 0 15a159a0676f2174113569ca157e6920
+
+@ 0 3 0 0fa9e78b259caec204a21e518073935e
++ entry .skip   todos menos os primeiros (ou, com `Rtl`, os últimos) `count` elementos, ou tudo depois da sequência inicial que casa
++     `xs.skip(2)` é o `drop` da stdlib, `xs.skip(2, Rtl)` seu `dropRight`, e
++     `xs.skip(_ == ' ')` seu `dropWhile`. Preserva o formato e limita, como `keep`; preguiçoso
++     em uma `Chain`.
+
+@ 0 5 0 0d44e5ae9b0e8e5802a384479068ebf8
++ entry .snip   divide um valor em dois segmentos em uma posição, ou no primeiro elemento que casa com um predicado
++     `t"Hello".snip(2)` é `(t"He", t"llo")`: os primeiros `count` elementos e o resto. A
++     sobrecarga de predicado `xs.snip(predicate, start)` encontra o primeiro elemento em
++     `start` ou depois dele que casa, e produz os dois lados, com o elemento que casa
++     iniciando o da direita, como um `Optional`, `Unset` quando nenhum casa.
+
+@ 0 5 0 19e52517831565461ae8ca9e0528820d
++ entry .define   uma cópia de um contêiner com uma posição ou chave definida: o gêmeo de escrita de `at`
++     `xs.define(Sec, 9)` em uma `Sequence`, `map.define(key, value)` em um `Map`, por meio da
++     instância `Definable` do receptor. Total: um ordinal fora do intervalo devolve o
++     contêiner inalterado, e uma chave ausente define uma nova entrada. Em uma `List`, a
++     definição posicional percorre a lista e precisa de `dysasymptotics.linearAccess`.
+
+@ 0 3 0 12febad58ad231cc1ab75dda132172c8
++ entry .omit   uma cópia de um contêiner sem uma chave, ou sem uma posição
++     `map.omit(key)` remove uma entrada (uma chave ausente deixa o mapa como estava); um array
++     congelado faz `omit` de uma posição. Por meio da instância `Omissible` do receptor.
+
+@ 0 10 0 10dac1cfa8da3f3204bbf152d2989a3a
++ entry .sort   os elementos em sua própria ordem, por um `Comparable` para o tipo de elemento e pelo algoritmo no escopo
++     `xs.sort` ordena um receptor `Reshapable.Stable` — uma `List`, uma `Sequence`, uma
++     `Chain`, um array congelado; um `Map` ordena seus pares em um `Ledger` — pelo
++     `Comparable` do tipo de elemento (os números têm um; um `Text` precisa de uma collation,
++     como `collations.codepointCollation` com `collationComparable`) e pelo `SortAlgorithm`
++     given no escopo, escolhido pelo nome em `sortingAlgorithms`. Um `Set` não tem instância
++     estável, por isso não é ordenado: é uma recusa honesta, e não um descarte silencioso da
++     ordem. A segunda sobrecarga, `array.sort()`, ordena um `Array^` mutável no próprio lugar
++     e não devolve nada. O array temporário é dimensionado a partir da instância `Countable`
++     do receptor quando o arquivo abriu a restrição para isso (`linearSize` para uma `List`),
++     e expandido a partir de um iterador caso contrário.
+
+% 2 1 0 072eb08ac58a71461f23c08156810f1b
+
+% 3 1 0 1bff1f359076e7d40a85775b654b863a
+
+% 4 1 0 130c999c8484a0c60f6a53e8f78bc42c
+
+% 0 1 0 114019d44cbebe68120ef00f2ecc1e7d
+
+% 0 1 0 1601313cbc738e131406efd811c15b47
+
+% 1 1 0 005ea0f9d3ced86e0b95f8b24c0efbd3
+
+@ 0 7 0 06da9ee08f56af9a067350edbcd0c564
++ entry .order   os elementos ordenados por uma chave calculada a partir de cada um: `xs.order(_.age)`
++     `xs.order(lambda)` é o `sortBy` da stdlib, estável, de modo que chaves iguais mantêm sua
++     ordem. A chave é calculada uma vez por elemento antes da ordenação, e não duas vezes por
++     comparação. Precisa de um `Comparable` para a chave, de um `SortAlgorithm` de
++     `sortingAlgorithms` e de um receptor `Reshapable.Stable`, como `sort`. Não há sobrecarga
++     com comparador (`sortWith`): um lambda de dois parâmetros quebraria o desempacotamento de
++     tuplas em receptores com elementos pares, como `map.order { (key, value) => key }`.
+
+% 2 1 0 01d33ff11d31cf64118d939cef48abb7
+
+% 3 1 0 1cf28ef576aa5839137b7de617333144
+
+% 4 1 0 1060110ed4c0a5550cc618dc377b3351
+
+% 0 1 0 1ea6ee3f69ae02c400e7cc8668774b60
+
+% 0 1 0 0ad69b5674847eb50df80876de345b78
+
+% 1 1 0 0eb4a660a264e14d0a94cb8728d033a9
+
+@ 0 5 0 14be4e9bb840593d18a3dcb66dcc9620
++ entry .maximize   o elemento cuja chave é a maior, ou `Unset` em um receptor vazio
++     `xs.maximize(_.score)` encontra em uma passada o elemento que `xs.order(_.score).last`
++     daria: o primeiro de vários elementos com chave igual prevalece. Sobre qualquer chave
++     `Comparable` — um `Text`, um `Ordinal`, uma data —, ao contrário do `maximum` numérico do
++     hypotenuse. Um `def maximize` local no escopo oculta a extensão.
+
+@ 0 2 0 1512b80a2ebbee401744f54dd567c997
++ entry .minimize   o elemento cuja chave é a menor, ou `Unset` em um receptor vazio
++     A contraparte de `maximize`: `xs.minimize(_.length)`.
+
+@ 0 1 0 0156283d47a1076e05a26aca65d5b68c
++ entry .sortingAlgorithms   os algoritmos de ordenação, cada um um given `SortAlgorithm` a importar pelo nome
+
+% 1 1 0 07afd6615a390ccf07613740d093c415
+
+@ 0 5 0 1ce686b2500646de08d7e67f6c0357b3
++       O algoritmo que `sort`, `order` e `array.sort()` usam é o given `SortAlgorithm` no
++       escopo, e nenhum é implícito: `import sortingAlgorithms.timsort` (ou outro) precisa
++       aparecer no arquivo. Este pacote espelha `murmuration.sortingAlgorithms`, de modo que o
++       código que alcança as coleções por meio de `rudiments` possa selecionar um como
++       `rudiments.sortingAlgorithms.x`; o guarda-chuva `soundness` funde os dois.
+
+% 2 1 0 09565f705cc270030c795101941890fc
+
+% 3 1 0 1f9429ba58d270b818c5f9fb5190542e
+
+% 0 1 0 181bdb6108d3a40a1c0ebcab9db44ebd
+
+% 0 1 0 078817f50e87290a07194cade0bfa3fb
+
+% 1 1 0 1d0f1a1da4b7b96402b79112e674b35b
+
+@ 0 8 0 1308bb8d2906933d0f66686699bd68fc
++       Timsort e Powersort são estáveis e rápidos em dados parcialmente ordenados; quicksort e
++       heapsort usam menos memória; bubble sort e insertion sort servem para entradas
++       minúsculas.
++   entry .timsort   Timsort: estável, adaptativo, a própria ordenação de objetos do JDK
++   entry .powersort   Powersort: estável, adaptativo, com uma política de merge comprovadamente melhor que a do Timsort
++   entry .quicksort   quicksort: no próprio lugar, não estável
++   entry .heapsort   heapsort: no próprio lugar, não estável, com um limite garantido
++   entry .bubbleSort   bubble sort: estável, quadrático, para entradas minúsculas
++   entry .insertionSort   insertion sort: estável, quadrático, rápido em entradas minúsculas quase ordenadas
+
+@ 0 1 0 1f81b95581b00e871b49891f55b7bc62
++ entry .sorting   a infraestrutura entre uma coleção e o array que um algoritmo de ordenação ordena
+
+% 1 1 0 1720f3dd8461facb18139d94c8c17e57
+
+% 2 1 0 1b90e2162628cd16148a85b1573ce7cf
+
+@ 0 12 0 038021a3549dd62f13bbea34c9560aaa
++       Não é para uso direto: é público apenas porque `sort` e `order` são inline e não podem
++       alcançar algo privado. `Entry` emparelha uma chave com seu elemento para `order`;
++       `extremum` é a varredura de uma passada por trás de `maximize` e `minimize`;
++       `comparator` transforma um `Comparable` no `java.util.Comparator` que os algoritmos
++       recebem; `sorted` e `ordered` esgotam um iterador em um array temporário, o ordenam e o
++       iteram de volta.
++   entry .Entry   uma chave de ordenação ao lado do elemento de onde veio
++     entry #key   a chave que o lambda de `order` calculou, sem tipo
++     entry #element   o elemento a partir do qual a chave foi calculada, sem tipo
++   entry .extremum   o elemento com a maior ou a menor chave, em uma passada
++   entry .comparator   um `java.util.Comparator` a partir de um `Comparable`
++   entry .sorted   os elementos de um iterador, ordenados por sua própria ordem
++   entry .ordered   os elementos de um iterador, ordenados por uma projeção
+
+@ 0 3 0 0dd005b15e73a14e119afd9d87496d1f
++ entry .upsert   um mapa com uma chave definida a partir de uma função de seu valor atual, presente ou ausente
++     `map.upsert(key, _.or(0) + 1)` passa o valor atual como um `Optional` e armazena o
++     resultado: uma inserção quando a chave estava ausente, uma atualização caso contrário.
+
+@ 0 3 0 1e1038453eb8dd120536cc468d1a2395
++ entry .collate   funde dois mapas, combinando os valores das chaves presentes em ambos
++     `left.collate(right)(merge)` tem todas as chaves de qualquer um dos mapas; onde ambos
++     definem uma chave, o valor é `merge(leftValue, rightValue)`.
+
+% 2 1 0 0dcef7462ff64fd91d9f923154259f8a
+
+% 3 1 0 19397f9056b7bf1b1302cd4768a3caf3
+
+% 0 1 0 046f54319d3654321599558bb1ecd8c7
+
+% 0 1 0 06758eb9a81a02b81309164456355d9d
+
+% 0 1 0 01cf28d65d19a60f0019442323ceb269
+
+% 1 1 0 17dfd3782006dc74127ed06c612f7658
+
+@ 0 3 0 173255c7d741978c1252a78d344538ab
++ entry .establish   o valor em uma chave de um mapa mutável, calculando-o e armazenando-o se ausente
++     `map.establish(key)(compute)` sobre um `scala.collection.mutable.Map` é
++     `getOrElseUpdate`: o idioma de memoização, sob um nome que diz que a entrada é
++     estabelecida uma única vez.
+
+@ 0 3 0 08eb875ecb8e1fe81f88b34fa101aad7
++ entry .plus   acrescenta um elemento à lista em uma chave de um `Map[key, List[value]]`
++     `map.plus(key, value)` insere `value` no início da lista sob `key`, começando uma nova
++     lista quando a chave está ausente: a inserção de um multimapa.
+
+@ 0 3 0 140b887e56cc9ef10b900d4797cdc24e
++ entry .unwind   inverte uma lista sobre outra: `reversed.unwind(tail)`
++     `list.unwind(tail)` é `list.reverse + tail`: o passo que finaliza um acumulador
++     construído por inserções no início, quando há um resto a acrescentar depois dele.
+
+@ 0 3 0 198c1c8a3fb4dd7014b4f44772384582
++ entry .unique   o único elemento de uma lista de um elemento, ou `Unset`
++     `list.unique` é o elemento quando a lista tem exatamente um, e `Unset` para uma lista
++     vazia ou mais longa — a verificação de que uma busca encontrou exatamente uma resposta.
+
+@ 0 4 0 0ad80351736c701e16201258727db26a
++ entry .unused   `unused(base)(taken)`: o primeiro de `base`, `base2`, `base3`, … que `taken` não rejeita
++     Para escolher um nome novo — uma variável em código gerado, um arquivo ao lado de outros
++     — sem um contador próprio. O `base` sem sufixo é o primeiro candidato e os sufixos
++     começam em 2, de modo que `base1` nunca é produzido.
+
+% 2 1 0 0628cefdf216be3e04a51e85f07e0311
+
+% 3 1 0 12c67d13b6e442f107a35cce0002253a
+
+% 0 1 0 1647140c3cf4b568150c67330faf0d4b
+
+% 0 1 0 1e08c1e90a0719d615c9dbeab55931d3
+
+% 1 1 0 17af720a2c5edf1d0c4369df9861d164
+
+@ 0 2 0 0653b737515a90bc03eb8ccd0e11b97f
++ entry .runs   divide uma lista em sequências máximas de elementos adjacentes iguais
++     `List(1, 2, 2, 1, 1, 1).runs` é `List(List(1), List(2, 2), List(1, 1, 1))`.
+
+@ 0 3 0 03b062f9e377dc6209e161e44b573bd8
++ entry .runsBy   divide uma lista em sequências de elementos adjacentes com projeção igual
++     `List(1, 2, 2, 1, 1, 1, 4, 4).runsBy(_%3)` agrupa pela projeção, de modo que
++     `1, 1, 1, 4, 4` forma uma única sequência.
+
+@ 0 3 0 0dd5cb00cdb32a0d12b237a500037f4a
++ entry .snapshot   uma cópia congelada de um `scala.Array` mutável
++     `array.snapshot` copia um array da JVM para um `Array[element]^{}` congelado novo, que
++     escritas posteriores no original não podem afetar. Precisa de uma `ClassTag` para o
++     elemento.
+
+@ 0 4 0 10b244155b463f750b1486f13abfd91b
++ entry .place   copia um array congelado para um `scala.Array` mutável em uma posição
++     `target.place(source, ordinal)` é `System.arraycopy` de um array congelado para um
++     mutável, começando em `ordinal` (`Prim` por padrão). A forma confinada para um `Scribe`
++     é `Scribe#place`.
+
+@ 0 3 0 0088ff1efa63d9c10d27b25cea25b841
++ entry .javaInputStream   um `Data` como um `java.io.InputStream`
++     Para entregar bytes a uma API Java que lê um stream: um `ByteArrayInputStream` sobre o
++     array, sem cópia.
+
+@ 0 8 0 0d4a7cc443cc7a3b165736414ce663b3
++ entry .Bytes   uma contagem de bytes, como uma grandeza: `4.kib`, `data.bytes`
++     `Bytes` é o tipo opaco `rudiments.internal.Bytes`, um `Long` opaco, exportado aqui. A
++     aritmética e a comparação o tratam como uma grandeza: dois `Bytes` se somam e se
++     subtraem, um `Bytes` se multiplica e se divide por um `Int`, e um `Bytes` dividido por
++     outro é uma razão `Double`, tudo por meio de givens em seu objeto companheiro, de modo
++     que nenhum import é necessário. Construído com `Bytes(long)` ou com as extensões
++     literais `b`, `kib`, `mib`, `gib` e `tib` sobre um `Int` ou um `Long` (unidades binárias:
++     `1.kib` são 1024 bytes), e a partir de um `Data` com `bytes`; lido de volta com `long`, e
++     mostrado como `1024 bytes`.
+
+% 2 1 0 00932d85a6921757064e26a6e56a7308
+
+% 3 1 0 10881c050a9a0b0f1ee397b30e4e37e2
+
+% 0 1 0 1b7d436d0877d6251b50d1013e47f363
+
+% 0 1 0 15a2f032bb2d416f1f9e73c7938145ec
+
+% 0 1 0 1ff93883786571760b6eb8b6071fe709
+
+% 1 1 0 17ec48607ef8899c1bf9c9ede6ea7df6
+
+@ 0 6 0 1e368e7a077d158815f8729945dcc69b
++ entry .b   `n.b`: um `Bytes` de `n` bytes, sobre um `Int` ou um `Long`
++ entry .kib   `n.kib`: um `Bytes` de `n` kibibytes (×1024)
++ entry .mib   `n.mib`: um `Bytes` de `n` mebibytes (×1024²)
++ entry .gib   `n.gib`: um `Bytes` de `n` gibibytes (×1024³)
++ entry .tib   `n.tib`: um `Bytes` de `n` tebibytes (×1024⁴)
++ entry .bytes   `data.bytes`: o comprimento de um `Data` como um `Bytes`
+
+@ 0 5 0 1a8da5c6066dea59017d33fe71b7374f
++ entry .Digit   um dígito decimal, de `0` a `9`, como tipo
++     `Digit` é o tipo opaco `rudiments.internal.Digit`, a união `0 | 1 | … | 9`, exportado
++     aqui, de modo que um valor tipado como `Digit` é sabidamente um único dígito decimal.
++     `Digit(char)` e `Digit(int)` criam um como `Optional`, `Unset` para qualquer outra coisa; as
++     extensões `int` e `char` o leem de volta.
+
+% 2 1 0 1e8c88fd32c0312a1c9fcb00d0ff3b14
+
+% 3 1 0 065025eba33198df1e0d175021be2895
+
+% 0 1 0 03f18f19cf7a05ed1157a9bd706c5c11
+
+% 0 1 0 05194f237c40d8c4159f4dd88e1a92ce
+
+% 1 1 0 0c6ae1031bac64f70c6ddaf7180fa10d
+
+@ 0 3 0 1152a441acff1522026ea9825bb991af
++ entry .tuple   uma case class como a tupla dos seus campos
++     `person.tuple` é `Tuple.fromProductTyped(person)`, tipado como os `MirroredElemTypes` do
++     produto; o inverso da conversão `to[Product]` da tupla.
+
+@ 0 3 0 191bb31f27479ea900e6f829ca46d3d9
++ entry .contains   `tuple.contains[T]`: se um tipo tupla tem um componente de um tipo, em tempo de compilação
++     Uma extensão inline e apagada sobre uma `Tuple`: `(erasedValue[(Int, Text)]).contains[Text]`
++     é `true`, calculado a partir dos tipos. Não é exportada para o guarda-chuva `soundness`.
+
+@ 0 2 0 09c7c9943c15d49e050b6b1c134a020c
++ entry .indexOf   `tuple.indexOf[T]`: a posição de um tipo componente num tipo tupla, ou `-1`
++     Calculada em tempo de compilação a partir dos tipos; não é exportada para o guarda-chuva.
+
+@ 0 3 0 0ec357c44eb18e0f00957a40a7a2f848
++ entry .subtypes   `tuple.subtypes[S]`: os componentes de um tipo tupla que são subtipos de um tipo, como um tipo tupla
++     Um filtro em nível de tipos transparent inline, usado por código de derivação; não é
++     exportado para o guarda-chuva.
+
+@ 0 5 0 1e68393baf0d8d6108aa458cdb038cd9
++ entry .literal   lê uma constante literal de um `TypeRepr`, numa macro
++     `repr.literal[Int]` (ou qualquer primitivo, `String`, `Unit` ou `Null`) é a constante que
++     um `ConstantType` contém, como `Optional`, e `Unset` para qualquer outro tipo ou para uma
++     constante de outra espécie. Uma extensão sobre `quotes.reflect.TypeRepr` para autores de
++     macros; não é exportada para o guarda-chuva.
+
+@ 0 1 0 00909455c03bd2e4028480e6a7a59465
++ entry .Atomic   células atômicas sobre as atômicas do JDK: `Atomic.Int`, `Atomic.Long`, `Atomic.Bool`, `Atomic.Ref` e os arrays
+
+% 1 1 0 0479f6561d6be84b1d3e3af39f3b236f
+
+@ 0 7 0 1c18bdafa4926e35144a9d0ba1a6f8c7
++       Uma célula `Atomic` é um valor compartilhado entre threads cujas leituras e escritas são
++       atômicas e cujas transições são lock-free. Cada uma é um embrulho opaco sobre a classe
++       correspondente de `java.util.concurrent.atomic` — `Atomic.Int` sobre `AtomicInteger`,
++       `Atomic.Long` sobre `AtomicLong`, `Atomic.Bool` sobre `AtomicBoolean`,
++       `Atomic.Ref[value]` sobre `AtomicReference`, e `Atomic.Ints`, `Atomic.Longs` e
++       `Atomic.Refs` sobre os arrays atômicos — e toda operação é inline, então o bytecode é a
++       chamada crua do JDK. Os nomes dizem o que uma célula contém, e não para que ela serve.
+
+@ 0 8 0 17173fdccc6fe3af04db860d9557848f
++       `Atomic[value]` é um match type que escreve a célula certa para um tipo: `Atomic[Int]` é
++       `Atomic.Int`, `Atomic[Boolean]` é `Atomic.Bool`, e qualquer outro tipo é `Atomic.Ref`. Ele
++       faz da célula sem boxing a escrita óbvia (`Atomic.Ref[Int]` é legal e faz boxing a cada
++       escrita). `Atomic(initial)` constrói pelo tipo do argumento, então `Atomic(0)` é um
++       `Atomic.Int`; `Atomic[Int](0)` selecionaria o braço genérico `Ref` e não seria conforme,
++       o que é um erro de tipo e não um boxing silencioso. O match type não se reduz para um tipo
++       de coleção opaco nem para um parâmetro de tipo abstrato — `Atomic[List[x]]` — e uma célula
++       assim se escreve `Atomic.Ref[List[x]]`.
+
+% 2 1 0 0726a11f32de371e19197e85ea790045
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0174fb0f730d18bc1dfd74a1bdc140b3
++         label Um contador compartilhado como var é uma condição de corrida
+
+% 1 1 0 0164db097a2aadd11576b4aae39863a4
+
+% 0 1 0 0eafd200297710950885edf6a3ff9c59
+
+% 0 1 0 1143032b3d37d5d4022aff7002270168
+
+% 1 1 0 1b320da8a316663701233a5eacc21830
+
+@ 0 1 0 0aaca3e1c383d7d40ec6271a1236c426
++         label Uma célula atômica é lida como `cell()` e escrita como `cell() = v`
+
+% 1 1 0 120583ca20e79a1405993beb984fb32f
+
+% 2 1 0 0bd93a48f95931ec0a7ada37fe66402a
+
+% 0 1 0 04bf7e296cbcfb21066add83feab85b3
+
+% 1 1 0 0f553a9c13e231bd06529b11abef1b89
+
+@ 0 1 0 0659a6c8879a5de30c4a49abf629e007
++         label Uma transição é um único passo atômico, compilado para a intrínseca do JDK
+
+% 1 1 0 192de7b53ddf715601da84a9a9cf617a
+
+% 2 1 0 18af3c7007bdd28312af8e21b073f7da
+
+% 0 1 0 0e7a64ae5bb486130ce15ac32f8ecd63
+
+% 1 1 0 1ab0c57775861165024d6fc4ca6160dd
+
+% 2 1 0 081b3423bf27c01d0aa724a6a044d7b4
+
+@ 0 6 0 1e6647e57e505709140ffb119d125c0a
++       Toda célula lê com `apply()`, escreve com `update` (então `cell() = v`), publica com um
++       release store, troca com `swap` e faz compare-and-set com `replace`. As células escalares
++       e `Ref` também fazem transições com `ere` e `since`: a mesma transição, retornando o valor
++       deslocado ou o valor instalado. As células de referência nunca precisam de `nn`: uma
++       `Ref[Optional[x]]` que contém `Unset` é lida como `Unset`, enquanto chamar `nn` sobre a
++       `AtomicReference` crua lançaria uma exceção.
+
+% 0 1 0 066d72055af8f10300952218e05bf5aa
+
+@ 0 5 0 15eb73b0270f0f5a15498f2d61ada392
++   entry .apply   `Atomic(initial)`: a célula para o tipo do argumento
++       Sobrecarregado em `Int`, `Long`, `Boolean` e qualquer outro tipo, espelhando os braços do
++       match type: `Atomic(0)` é um `Atomic.Int`, `Atomic(t"x")` um `Atomic.Ref[Text]`. O
++       argumento conduz a escolha; não passe um argumento de tipo.
++   entry .Int   um inteiro atômico de 32 bits, sobre `AtomicInteger`
+
+% 1 1 0 131361ee91ad46bc198bcf03df20cccc
+
+@ 0 6 0 06efd485932db7470ad145dab716d208
++         `Atomic.Int(initial)` (ou `Atomic.Int()`, começando em zero) cria um. As leituras são
++         `count()`, as escritas `count() = n`. As transições `ere` e `since` reconhecem a forma da
++         lambda em tempo de compilação: `_ + 1` vira `getAndIncrement`/`incrementAndGet`, `_ + n`
++         vira `getAndAdd`/`addAndGet`, `_ - 1` e `_ - n` seus gêmeos decrementais, uma constante
++         vira `getAndSet`, e qualquer outra forma um laço de compare-and-set com repetição e o
++         corpo da transição embutido nele. Em nenhum caso nada é alocado.
+
+% 2 1 0 0b22895f2ff0ff970711af4bdf69f8b3
+
+% 3 1 0 1364d684f22b9b0c0974f396dac888a7
+
+% 0 1 0 0bef53516ba92f600337acbc2c0909c8
+
+% 0 1 0 0fe0e501b241e1f61d9ba006f4144f42
+
+% 0 1 0 1b41d073cf0f8e061c5fea1d413556f8
+
+% 0 1 0 011c9491126f4608099c172e161d3c7b
+
+% 0 1 0 1e6f8191e6f9925c1b794ba7aa07e6a8
+
+% 1 1 0 0a513cef12c34bed13cfadaef6aff63c
+
+@ 0 19 0 0bcfd80220f8ed471f79ed94b3cce603
++     entry .apply   `Atomic.Int(initial)` cria uma célula, começando em zero por padrão; `count()` lê uma
++         Duas sobrecargas que compartilham o nome. No objeto companheiro, `Atomic.Int(initial)`
++         (ou `Atomic.Int()`) cria uma célula sobre um `AtomicInteger` novo. Como extensão sobre
++         uma célula, `count()` é uma leitura volátil, `get`.
++     entry .update   `count() = n`: um store volátil
++     entry .publish   `count.publish(n)`: um release store, ordenado antes dos stores seguintes, mas mais barato que `update`
++         Um `lazySet`: um anel com um único produtor pode publicar a escrita de um slot e saber
++         que um leitor que vê o índice publicado depois dela também vê a escrita. Não substitui
++         `update` quando o próprio store é o ponto de publicação.
++     entry .swap   `count.swap(n)`: armazena `n` e retorna o valor deslocado
++     entry .replace   `count.replace(expected, updated)`: compare-and-set, verdadeiro se surtiu efeito
++     entry .ere   `count.ere(transition)` ou `count.ere(n)`: aplica uma transição e retorna o valor que ela deslocou
++         A transição é uma lambda literal, inspecionada em tempo de compilação quanto à forma;
++         `ere(n)` com um valor é `getAndSet`. Não existe `since(n)`: ele retornaria o próprio
++         argumento, e definir sem querer o valor antigo é `count() = n`.
++     entry .since   `count.since(transition)`: aplica uma transição e retorna o valor que ela instalou
++         `_ + 1` compila para `incrementAndGet`, `_ + n` para `addAndGet`, `_ - 1` e `_ - n` para
++         seus gêmeos decrementais, e qualquer outra forma para um laço de compare-and-set.
++   entry .Long   um inteiro atômico de 64 bits, sobre `AtomicLong`
+
+% 1 1 0 0fe143539f3e5e7c002a620471aea7be
+
+@ 0 13 0 05ec850c25ee5a0f05865cff5bc5ba33
++         Como `Atomic.Int`, para um `Long`: `Atomic.Long(initial)` ou `Atomic.Long()`, com as
++         mesmas operações e o mesmo reconhecimento em tempo de compilação das formas de
++         transição (chegando às intrínsecas de `AtomicLong`).
++     entry .apply   `Atomic.Long(initial)` cria uma célula, começando em zero por padrão; `tally()` lê uma
++         Duas sobrecargas que compartilham o nome: o construtor do objeto companheiro sobre um
++         `AtomicLong` novo, e a extensão `tally()`, uma leitura volátil.
++     entry .update   `tally() = n`: um store volátil num `Atomic.Long`
++     entry .publish   `tally.publish(n)`: um release store (`lazySet`) num `Atomic.Long`
++     entry .swap   `tally.swap(n)`: armazena um valor num `Atomic.Long` e retorna o deslocado
++     entry .replace   `tally.replace(expected, updated)`: compare-and-set num `Atomic.Long`, verdadeiro se surtiu efeito
++     entry .ere   aplica uma transição a um `Atomic.Long` (ou armazena um valor) e retorna o valor deslocado
++     entry .since   aplica uma transição a um `Atomic.Long` e retorna o valor instalado
++   entry .Bool   uma flag atômica, sobre `AtomicBoolean`
+
+% 1 1 0 0bdcc34ee306918d01163f3a30141214
+
+@ 0 4 0 16df0113ec22e9b70e05953d33b40090
++         `Atomic.Bool()` começa `false`. O idioma de uso único é `flag.ere(true)`: retorna `false`
++         exatamente uma vez, para quem chamou e levantou a flag, e `true` para todos os que
++         chamarem depois, então “sou a chamada que a fechou” é uma única expressão. Uma transição
++         como `since(!_)` nega por meio de um laço de compare-and-set.
+
+% 2 1 0 0da895482ad0bd9a1b93ed8442633c08
+
+% 3 1 0 1c2c223ed9a0c2f71c19a364ec7ae342
+
+% 0 1 0 1449b0ea9937b38403da538dc7ec23a8
+
+% 0 1 0 1a4098cbdfc392980c0f6370d3184778
+
+% 1 1 0 0bf62a7edaf768a919046265850c5a9c
+
+@ 0 12 0 1f2145f915323e820cb9719c05f46367
++     entry .apply   `Atomic.Bool(initial)` cria uma flag, `false` por padrão; `flag()` lê uma
++         Duas sobrecargas que compartilham o nome: o construtor do objeto companheiro sobre um
++         `AtomicBoolean` novo, e a extensão `flag()`, uma leitura volátil.
++     entry .update   `flag() = state`: um store volátil num `Atomic.Bool`
++     entry .publish   `flag.publish(state)`: um release store (`lazySet`) num `Atomic.Bool`
++     entry .swap   `flag.swap(state)`: armazena um estado num `Atomic.Bool` e retorna o deslocado
++     entry .replace   `flag.replace(expected, updated)`: compare-and-set num `Atomic.Bool`, verdadeiro se surtiu efeito
++     entry .ere   aplica uma transição a um `Atomic.Bool` (ou armazena um estado) e retorna o estado deslocado
++         `flag.ere(true)` é o idioma de uso único: retorna `false` exatamente uma vez, para quem
++         chamou e levantou a flag.
++     entry .since   aplica uma transição a um `Atomic.Bool` e retorna o estado instalado
++   entry .Ref   uma célula de referência atômica, sobre `AtomicReference`
+
+% 1 1 0 09c891f07df23fd31444a7cbc8a18228
+
+@ 0 8 0 14d20cb68a302df515ee98ba06da55e4
++         `Atomic.Ref(initial)` contém qualquer valor; `Atomic.Ref.vacant[value]` é uma
++         `Atomic.Ref[Optional[value]]` que começa `Unset`. As leituras nunca precisam de `nn`, e
++         uma célula vazia é lida como `Unset` em vez de lançar exceção. As transições `ere` e
++         `since` recebem uma lambda literal, que pode chamar um método sobre o valor, construir a
++         partir dele ou casar sobre ele e reconstruí-lo; uma transição que é um *valor* de função,
++         e não um literal, passa por `revise`. Quando `value` é ele próprio um tipo de função, a
++         sobrecarga de valor de `ere` não pode ser selecionada — o compilador se compromete com a
++         sobrecarga de transição —, então armazene uma função com `cell() = f`.
+
+% 2 1 0 0dd94f17147d8a5903a102f2a8f97db2
+
+% 3 1 0 06bda2d6236ee4981a1d92a01d76e23a
+
+% 0 1 0 022035ece1c06dca0edc8fd2b9bbe1d3
+
+% 0 1 0 145b450f0b53bbd71eceae55c8cb5817
+
+% 0 1 0 0c60cf9924ea869b109add0f445d0e85
+
+% 0 1 0 0348b235305e69f508f8bd169233dae0
+
+% 1 1 0 0cc62cab9aa7a1b2029dd26dceb1d58d
+
+@ 0 17 0 17284737de3bbf741af1fc222d4d05eb
++     entry .apply   `Atomic.Ref(initial)` cria uma célula contendo `initial`; `cell()` lê uma
++         Duas sobrecargas que compartilham o nome: o construtor do objeto companheiro sobre uma
++         `AtomicReference` nova, e a extensão `cell()`, uma leitura volátil que não precisa de
++         `nn` e não lança exceção numa célula que contém `Unset`.
++     entry .vacant   `Atomic.Ref.vacant[value]`: uma `Ref[Optional[value]]` inicialmente ausente
++     entry .update   `cell() = value`: um store volátil numa `Atomic.Ref`
++     entry .publish   `cell.publish(value)`: um release store (`lazySet`) numa `Atomic.Ref`
++     entry .swap   `cell.swap(value)`: armazena um valor numa `Atomic.Ref` e retorna o deslocado
++     entry .replace   `cell.replace(expected, updated)`: compare-and-set por igualdade de referência, verdadeiro se surtiu efeito
++     entry .ere   aplica uma transição a uma `Atomic.Ref` (ou armazena um valor) e retorna o valor deslocado
++     entry .since   aplica uma transição a uma `Atomic.Ref` e retorna o valor instalado
++     entry .revise   aplica uma transição que é um valor de função, não um literal, e retorna o valor instalado
++         A válvula de escape para uma transição cuja forma não pode ser inspecionada — uma função
++         passada como parâmetro. Ela executa um laço de compare-and-set, então a transição pode
++         ser reexecutada sob contenção e precisa ser pura; uma transição que retorna a mesma
++         referência se assenta sem escrever.
++   entry .Ints   um array atômico de inteiros de 32 bits, sobre `AtomicIntegerArray`, indexado por `Ordinal`
+
+% 1 1 0 0ca37f84d72ff5520ca6aa627d8d8231
+
+@ 0 13 0 0e05a79dad0fd8e80f23866bbdc83cdf
++         `Atomic.Ints(size)` é todo zeros, e um slot é lido como um `Int` simples — um zero novo é
++         um valor, não uma ausência. Os slots são endereçados por `Ordinal`, como todo índice do
++         Soundness; o ordinal não é confinado, já que um índice de anel mascarado está no
++         intervalo por construção. Não há `ere`/`since` por slot: os arrays publicam e leem.
++     entry .apply   `Atomic.Ints(size)` cria um array zerado; `ints(ordinal)` lê um slot
++         Duas sobrecargas que compartilham o nome: o construtor do objeto companheiro sobre um
++         `AtomicIntegerArray` novo, e a extensão `ints(ordinal)`, uma leitura volátil de um slot.
++     entry .countable   o tamanho de um `Atomic.Ints`, para `size`
++     entry .update   `ints(ordinal) = n`: um store volátil num slot de um `Atomic.Ints`
++     entry .publish   `ints.publish(ordinal, n)`: um release store num slot de um `Atomic.Ints`
++     entry .swap   `ints.swap(ordinal, n)`: armazena num slot de um `Atomic.Ints` e retorna o valor deslocado
++     entry .replace   `ints.replace(ordinal, expected, updated)`: compare-and-set num slot de um `Atomic.Ints`
++   entry .Longs   um array atômico de inteiros de 64 bits, sobre `AtomicLongArray`, indexado por `Ordinal`
+
+% 1 1 0 1c8d716a694f36be158217b508cadc6c
+
+@ 0 10 0 153e8d92ecd046531651a73e684b59e4
++         Como `Atomic.Ints`, para slots `Long`.
++     entry .apply   `Atomic.Longs(size)` cria um array zerado; `longs(ordinal)` lê um slot
++         Duas sobrecargas que compartilham o nome: o construtor do objeto companheiro sobre um
++         `AtomicLongArray` novo, e a extensão `longs(ordinal)`, uma leitura volátil de um slot.
++     entry .countable   o tamanho de um `Atomic.Longs`, para `size`
++     entry .update   `longs(ordinal) = n`: um store volátil num slot de um `Atomic.Longs`
++     entry .publish   `longs.publish(ordinal, n)`: um release store num slot de um `Atomic.Longs`
++     entry .swap   `longs.swap(ordinal, n)`: armazena num slot de um `Atomic.Longs` e retorna o valor deslocado
++     entry .replace   `longs.replace(ordinal, expected, updated)`: compare-and-set num slot de um `Atomic.Longs`
++   entry .Refs   um array atômico de referências, sobre `AtomicReferenceArray`, cujos slots são `Optional`
+
+% 1 1 0 179fd5ba3e878c0b050fe0308b0162f0
+
+@ 0 12 0 178e8fb8bfdf4c8c078bec5728b0e217
++         `Atomic.Refs[value](size)` começa com todos os slots nulos, o que é uma ausência, então
++         um slot é lido como `Optional[value]` — a diferença honesta em relação a `Atomic.Ref`,
++         que é construída com um valor, e a `Atomic.Ints`, cujos slots novos contêm um zero real.
++     entry .apply   `Atomic.Refs[value](size)` cria um array de slots `Unset`; `refs(ordinal)` lê um
++         Duas sobrecargas que compartilham o nome: o construtor do objeto companheiro sobre um
++         `AtomicReferenceArray` novo, e a extensão `refs(ordinal)`, uma leitura volátil de um
++         slot como `Optional`.
++     entry .countable   o tamanho de um `Atomic.Refs`, para `size`
++     entry .update   `refs(ordinal) = value`: um store volátil num slot de um `Atomic.Refs`
++     entry .publish   `refs.publish(ordinal, value)`: um release store num slot de um `Atomic.Refs`
++     entry .swap   `refs.swap(ordinal, value)`: armazena num slot de um `Atomic.Refs` e retorna o valor deslocado
++     entry .replace   `refs.replace(ordinal, expected, updated)`: compare-and-set num slot de um `Atomic.Refs`
+
+@ 0 1 0 04816ad0f54d8e800f8a880c7f47a297
++ entry .atomicMacros   as macros por trás de `ere` e `since` de `Atomic`
+
+% 1 1 0 084d776bf2d1b7bd1fc0dcbf20f20f01
+
+% 2 1 0 00dfd8b54083fa0309b9529b6210510e
+
+@ 0 7 0 19e9353139b0d6d208ca4f6f3dbc60d9
++       Não é para uso direto. Cada uma de `int`, `long`, `bool` e `ref` inspeciona a árvore da
++       lambda de transição e emite a intrínseca do JDK para uma forma reconhecida (`_ + 1`,
++       `_ + n`, `_ - n`, uma constante) ou, caso contrário, um laço de compare-and-set.
++   entry .int   a macro de transição para `Atomic.Int`
++   entry .long   a macro de transição para `Atomic.Long`
++   entry .bool   a macro de transição para `Atomic.Bool`
++   entry .ref   a macro de transição para `Atomic.Ref`
+
+@ 0 1 0 0640e67a1a0a4f3d1de13466b8ccbdbd
++ entry .Mutex   um lock reentrante, aplicado a um bloco: `mutex { … }`
+
+% 1 1 0 16e42be15f35253300d97a6e148fb711
+
+@ 0 4 0 0812debe9f80734a08f86c143f9f4e35
++       `Mutex()` embrulha um `ReentrantLock`, e `mutex(block)` (ou `mutex { … }`) avalia o bloco
++       enquanto o mantém, liberando-o num `finally`. É inline, então o lock e o unlock ficam em
++       volta do bloco no próprio código de quem chama. Para um único valor compartilhado, uma
++       célula `Atomic` costuma ser a ferramenta melhor; um mutex protege uma atualização composta
++       de vários.
+
+% 2 1 0 0f4d4ade3289f6591c18ff5aca4c17bf
+
+% 3 1 0 07617115dcc9822103293bc8fd279189
+
+% 0 1 0 1cf25415ae0c32120f588b88a2f5a623
+
+% 0 1 0 0c9cbf5569f970fd11ccbe39a8d822ad
+
+% 0 1 0 195a7b970357a109140e6b1ac076e00f
+
+% 0 1 0 1e39f3ecdfe692b203942c6fa86ef8df
+
+% 0 1 0 15274bd2d2fb60900e28604476a74d4c
+
+% 1 1 0 138cd4ede8903603036194847041de9d
+
+@ 0 1 0 06504564d8f726cd1d55a9cee9cc0224
++   entry #apply   avalia um bloco enquanto mantém o lock
+
+@ 0 1 0 045859e7a46faa291daba2ab5e17a72d
++ entry .Scoped   um valor vinculado à thread atual durante a extensão de um bloco
+
+% 1 1 0 12a531e7a514acd80a832658adbab568
+
+@ 0 5 0 1cfb5696d96867a30dfe45995e354b85
++       `Scoped[value]()` é um slot thread-local que é lido como `Unset` até que um bloco o
++       vincule: `scoped(v) { … }` avalia o bloco com `scoped()` lendo `v` naquela thread, restaura
++       o vínculo anterior depois (mesmo quando o bloco lança exceção) e remove a entrada por
++       completo quando não havia nenhuma, de modo que uma thread de pool não retém nada. Outra
++       thread vê o próprio vínculo ou `Unset`.
+
+% 2 1 0 09f0cca1c5e7f2c21c9b492666163c84
+
+% 3 1 0 07da46be87f1d6751b21f9a6bea82e86
+
+% 0 1 0 1e58d17b98f6428c06d5097c94b95b2b
+
+% 0 1 0 123b91b84131b0041e051e580f5e8f9a
+
+% 0 1 0 0b5d706242d70f20187b997da26875fa
+
+% 0 1 0 0b914abfa22fdc110ce8045df43b1eeb
+
+% 0 1 0 108ee56ed1634a4d14d452da40a04c76
+
+% 1 1 0 1fc129b90ab4ea641fd9f9fc6bfbb209
+
+@ 0 2 0 137f7505487c237516886b9b5e7a9e26
++   entry .apply   `Scoped[value]()`: um slot novo, não vinculado
++   entry #apply   `scoped()`: o vínculo atual, ou `Unset`; `scoped(v)(block)`: vincula durante um bloco
+
+@ 0 1 0 0372e44ba7bd825e1567730559190f2f
++ entry .Loop   uma iteração interrompível, executada numa tarefa e parada a partir de outra
+
+% 1 1 0 0abaab00ea63c1aa0f61e939ece2e53d
+
+@ 0 6 0 19d26cbf037d756a16febb29f9c40c0c
++       Um `Loop` executa sua iteração repetidamente enquanto seu estado é `Active`, e `stop()`, de
++       qualquer thread, o leva a `Stopping`, de modo que a iteração atual termina e nenhuma outra
++       começa; `run()` então o marca como `Finished`. É construído com `loop { … }` e entregue a
++       uma tarefa: o laço de accept de um servidor de sockets, o laço de consulta de um
++       observador do sistema de arquivos. A iteração só pode capturar capabilities
++       compartilhadas, já que roda numa tarefa e é parada de outro lugar.
+
+% 2 1 0 029cb7de0739365d14844bf9d4a61289
+
+% 3 1 0 1b8dc8fdb216293c119a4dd8122894e7
+
+% 0 1 0 12e7a1af61532d821d99b1d4839e2cd2
+
+% 0 1 0 184a57e8ae288e4c15326d3086c7db3a
+
+% 0 1 0 17793854676f27431624b5d409e82b2c
+
+% 0 1 0 111a1327fe7e0a651c0519a6dd33095d
+
+% 1 1 0 1b4f5f311c6f48150e7429acfbc42c61
+
+% 0 1 0 1adc9ff2c6cffdb30ab39540f9dea883
+
+@ 0 6 0 17e9a1e21339c9a90146d4fc6729269f
++   entry .State   o ciclo de vida de um laço: `Active`, `Stopping` ou `Finished`
++       Um enum dos três estados pelos quais um laço passa, nesta ordem: ele é `Active` até que
++       `stop()` seja chamado, `Stopping` até que a iteração em andamento se complete, e
++       `Finished` quando `run()` retorna.
++   entry #stop   pede ao laço que pare depois da iteração atual
++   entry #run   executa a iteração até que o laço seja parado, e então o marca como terminado
+
+@ 0 4 0 10d463f105a5484c09d8515b004fd044
++ entry .loop   `loop { … }`: um `Loop` cuja iteração é o bloco
++     Constrói um `Loop` a partir de um bloco de efeitos, com a capability nova do próprio laço
++     absorvida na construção, para que um laço sobre estado puro seja um valor puro. O bloco só
++     pode reter capabilities `Durable` (compartilhadas).
+
+@ 0 1 0 0313d76eb178a97e09387fc1cb72e77d
++ entry .Exit   um status de saída de processo: `Exit.Ok` ou `Exit.Fail(status)`
+
+% 1 1 0 06da261918e6d21c03f1dfb13bfc04dd
+
+@ 0 4 0 1b7568c8bb74ff800c128b99099478d3
++       O resultado que um programa de linha de comando retorna: `Exit.Ok` é o status 0 e
++       `Exit.Fail(n)` um status diferente de zero. `Exit(n)` classifica um inteiro, e `exit()` lê
++       o inteiro de volta. Um `Exit` é uma `Termination`, então o corpo de uma aplicação pode
++       retornar um, ou uma união de `Exit` com um objeto `Status` próprio.
+
+% 2 1 0 1c6b53688db445ad15d077d3fa384d85
+
+% 3 1 0 1e87b49d03bee75313021e9d040c89ea
+
+% 0 1 0 01ef92540632a28b06061b7850d6c257
+
+% 0 1 0 17b1dbdf15c105141e933ff2000f370b
+
+% 0 1 0 0ce71e360264ba7406e51e02a77d60cb
+
+% 1 1 0 14807d7a640e3a500a83b6620a9ae9e7
+
+% 0 1 0 1208ee3fec2e3c3b0b4d18276ec4ab13
+
+@ 0 4 0 0aab3656d3b0b3100ed9fbbd80591ced
++   entry .apply   `Exit(status)`: `Ok` para zero, `Fail(status)` caso contrário
++   entry #exit   o próprio exit, como sua `Termination`
++   entry #apply   o status como `Int`: 0 para `Ok`
++   entry #terminate   encerra a JVM com este status, sem nunca retornar
+
+@ 0 1 0 1e115e60be7a06cd14c8fcbdcfc2e67a
++ entry .Termination   qualquer coisa que possa decidir o status de saída de um processo
+
+% 1 1 0 1ddd8f0e3a45a7e81cafb58cf6f6e8f1
+
+@ 0 6 0 12cbb6b14d82859f1ef7cdfd0c991b35
++       O trait que o resultado de uma aplicação implementa: `exit` diz a qual `Exit` ele
++       corresponde. `Exit` é a `Termination` mais simples; um programa com vários resultados
++       nomeados declara objetos `Status` que a estendem e retorna uma união deles, que a
++       maquinaria de CLI registra para que uma árvore de ajuda possa listar os status com que um
++       comando pode terminar. Uma terminação é pura (estende `scala.caps.Pure`), então nunca pode
++       conter uma capability viva.
++   entry #exit   o `Exit` ao qual este resultado corresponde
+
+@ 0 1 0 1cee08f40865eaf90743017af3aa4ffe
++ entry .Dynamical   a permissão apagada para acesso a campos via `scala.Dynamic` num valor de dados não tipado
+
+% 1 1 0 16c538298a15cd98096a84c162267109
+
+@ 0 6 0 19f65bf1dea209de0ef087b6c9c09b02
++       Um formato como `Json`, `Yaml`, `Cbor` ou `Tel` condiciona seu acesso dinâmico a membros
++       (`json. server.port`) a `(? >: Json) is Dynamical`, de modo que a permissão é concedida só
++       para aquele formato (`Json is Dynamical`, que o given `dynamicAccess` do formato fornece),
++       para uma união de formatos ou para todos os formatos (`Any is Dynamical`). Ele é selado e
++       apagado: nenhum valor dele jamais existe, e `dynamically` é a única maneira de cunhar um
++       num bloco. Distribuído em `rudiments.core`.
+
+% 1 1 0 0b6de20d60f9fb960acd6b67489417c5
+
+% 0 1 0 0658c764e3175f4a06f97efe16a29e92
+
+@ 0 1 0 0cc969d430c446c6194a9fafee395cd9
++ entry .Dynamically   a forma em bloco da permissão `Dynamical`: `Dynamically[data](block)`
+
+% 1 1 0 1507d40b315cc10314d09ff9f8f866b8
+
+@ 0 4 0 037ba256dbf25ccd0dd881ac451aa3fb
++       `Dynamically` é o objeto `Dynamically[Any]`, e `Dynamically[-data]` a classe
++       contravariante cujo `apply` avalia um bloco com um `(? >: data) is Dynamical` apagado no
++       escopo. É contravariante para que o objeto seja um `Dynamically[data]` para todo `data`, e
++       para que `dynamically` sem argumento de tipo infira `Any`. Alcançado por meio de
++       `dynamically`.
+
+% 1 1 0 0e6d92f61ad7aa1e13251c25c8c305df
+
+@ 0 1 0 117d35886f44fbcf0010892b420fc7b0
++   entry #apply   avalia um bloco com a permissão no escopo
+
+@ 0 5 0 0cdb9462870f37260365d2b9c72b16b0
++ entry .dynamically   `dynamically[Json] { … }`: concede acesso dinâmico a membros durante um bloco
++     `dynamically[Json]` permite `json.field.subfield` dentro do bloco, apenas para JSON; uma
++     união `dynamically[Json | Yaml]` cobre vários formatos, e `dynamically` sem argumento de
++     tipo, todos os formatos com acesso dinâmico. A permissão é apagada, então o bloco não custa
++     nada.
+
+% 2 1 0 042ecf57b77db2a20ca511bd779ef599
+
+% 3 1 0 1a7d906e53c5afb9149a0a47d4f82030
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1ae140ed179c925e18b873aa83aad471
+
+% 0 1 0 1ed4604c5ef2be1e199ad00fc1ecf803
+
+% 0 1 0 13caeacfdbf3766116109151311a4743
+
+% 1 1 0 0f7b1c99eb2b76e709b79e2d2d3c29fd
+
+@ 0 1 0 1aab3a156b051d250d9469dedcacd0b0
++ entry .Defaulting   evidência de que um parâmetro de tipo assume um tipo padrão quando nada o restringe
+
+% 1 1 0 12cd904e032267ed0908b436abc840c4
+
+@ 0 6 0 17e0a4815f7f511801dbecf1f8ff1ac9
++       `topic is Defaulting to Text` é um given apagado que é resolvido quando `topic` foi
++       inferido — como ele mesmo, pela instância do objeto companheiro — ou deixado sem
++       restrição, caso em que a instância `Defaulting2`, de prioridade mais baixa, o resolve para
++       o padrão. Uma fábrica como `Flag[topic](name)` o usa para que `Flag(t"jobs")` sem
++       argumento de tipo produza uma `Flag of Text`, enquanto `Flag[Int](t"jobs")` produz uma
++       `Flag of Int`. O trait é selado e não tem valores; ambos os givens são apagados.
+
+% 0 1 0 0ba0ec54b13fc04f0328123cc87aa0a1
+
+@ 0 1 0 0f148883810fa9830431a5150da1d6e8
++ entry .Defaulting2   a instância `Defaulting` de fallback, que resolve um parâmetro sem restrição para o padrão
+
+% 1 1 0 18ec57295348eaeb1192d2cf32acd0d8
+
+% 2 1 0 1f98652ff904c5470153143b36cafb47
+
+@ 0 3 0 08cd066e6b42ef3309a05936766f9246
++       Não é para uso direto: o pai de prioridade mais baixa do objeto companheiro de
++       `Defaulting`, que contém o given `[value, anything] => value is Defaulting to anything`
++       no qual um parâmetro sem restrição acaba caindo.
+
+@ 0 1 0 0d55ad1194bea1d414c0f99a9d102337
++ entry .DecimalConverter   renderiza um `Double` como texto: a política por trás da exibição de números
+
+% 1 1 0 0ebc3fcfc513244e14bd85861a6f8641
+
+@ 0 5 0 00cba6dcd494807e1ccd878f0498fcc9
++       Um `DecimalConverter` tem um único método, `decimalize(double): Text`, e é um valor
++       contextual `Findable`, então a renderização de decimais é escolhida pelo conversor que
++       estiver no escopo. O `Decimalizer(significantFigures, decimalPlaces, …)` do Gossamer é a
++       implementação configurável, e as instâncias numéricas de `Showable` convocam um.
++   entry #decimalize   um `Double`, como texto
+
+@ 0 5 0 089a2ada8d04d77213aa85ce49f6f59f
++ entry .&   `case A(x) & B(y)`: casa um valor com dois extratores ao mesmo tempo
++     Um objeto extrator, exportado de `rudiments.internal`, cujo `unapply` produz o valor
++     examinado duas vezes: `value match case AsInt(x) & AsLong(y) => …` vincula `x` a partir do
++     primeiro extrator e `y` a partir do segundo, sobre o mesmo valor, o que de outra forma
++     exigiria um casamento aninhado ou uma guarda.
+
+@ 0 1 0 12fdeff0dd305b5e13d7ea1b051e00a7
++ entry .internal   o lar de `Bytes`, `Digit`, do extrator `&` e das macros por trás de `probe`, `typeName` e `reflectClass`
+
+% 1 1 0 047a97f65e431f090d73fff44cf79a35
+
+% 2 1 0 0ecb8edcede973a11c1f788697dd595f
+
+@ 0 4 0 1738b17d2007985f152fad9e0e258470
++       Não é para uso direto: `Bytes`, `Digit` e `&` são exportados daqui para o pacote
++       `rudiments`, onde estão suas páginas; `probe`, `name` e `reflectClass` são as
++       implementações das macros.
++   entry .Bytes   a contagem de bytes opaca, um `Long` tratado como quantidade; veja `rudiments.Bytes`
+
+% 1 1 0 1a9b1e222bfc3e371042c38a07017433
+
+@ 0 7 0 1d7781037ce087c0189942ec13fe92e6
++         O tipo opaco `Bytes = Long`, com seu construtor, seus givens de aritmética e comparação e
++         seus acessores. Sua página sob o pacote `rudiments` tem o relato completo; todo given
++         daqui está no escopo implícito de um `Bytes`.
++     entry .apply   `Bytes(long)`: uma contagem de bytes a partir de um `Long`
++     entry .comparable   ordena contagens de bytes numericamente
++     entry .zeroic   zero bytes, para que `total` sobre contagens de bytes comece em zero e seja direto
++     entry .communicable   renderiza uma contagem de bytes numa mensagem como `n bytes`
+
+% 0 1 0 07083782653a076f107485ff40107d5f
+
+% 0 1 0 1a270c8aea0f9abb1dd49c93a3e39aa2
+
+% 0 1 0 025466a3b94dbb861d5cc6bafa37a607
+
+% 0 1 0 0e97f2d9ca1546e80070c4b1831cb087
+
+% 0 1 0 033b7aaa1bbd0cf80ca85a3c69ff0d48
+
+@ 0 4 0 14d8a8d333e7b0f207eab40d8341e365
++     entry .divisible2   `Bytes / Bytes`, como uma razão `Double`
++     entry .long   `bytes.long`: a contagem como `Long`
++     entry .text   `bytes.text`: a contagem como texto, `1024 bytes`
++   entry .Digit   o dígito decimal opaco, `0 | 1 | … | 9`; veja `rudiments.Digit`
+
+% 1 1 0 04c58a93a8eec80e1594dd64f375fe7e
+
+@ 0 6 0 1471aae313909061149c930c86c91933
++         O tipo opaco `Digit`, com seus construtores. Os acessores `int` e `char` são extensões
++         declaradas ao lado dele em `internal`.
++     entry .apply   `Digit('7')` ou `Digit(7)`: um dígito a partir de um caractere ou de um inteiro, ou `Unset`
++   entry .int   `digit.int`: um `Digit` como `Int`
++   entry .char   `digit.char`: um `Digit` como `Char`, de `'0'` a `'9'`
++   entry .&   o extrator gêmeo; veja `rudiments.&`
+
+% 1 1 0 1a35a4c181b1f7dd009fda63efe155f2
+
+@ 0 6 0 18ce72b28632ce640fec4fa8c4608179
++         O objeto cujo `unapply` retorna seu valor examinado duas vezes, para que
++         `case A(x) & B(y)` case um valor com dois extratores.
++     entry .unapply   produz o valor examinado emparelhado consigo mesmo, casando sempre
++   entry .probe   a macro por trás de `probe[T]`: interrompe com o nome do tipo
++   entry .name   a macro por trás de `typeName[T]`
++   entry .reflectClass   a macro por trás de `reflectClass[T]`
+
+@ 0 43 0 1de174c2bddd4554146fb9d3f0ab29c1
++ entry .Traversable   reexportado de `murmuration`: a classe de tipos de tudo o que pode ser percorrido elemento a elemento
++     `import rudiments.*` apresenta as classes de tipos de coleções como uma única superfície,
++     então `Traversable`, `Reshapable`, `Mappable`, `Reversible`, `Inclusive`, `Convertible`,
++     `Keyed`, `Intersectable`, `Iterator` e `SortAlgorithm`, com as operações escritas sobre
++     elas, são exportados aqui de `murmuration`. Cada um tem seu relato completo na sua página
++     de `murmuration`; as operações que precisam de `Ordinal` ou `Optional` (`each`, `seek`,
++     `where`, `head`, …) são declaradas no próprio `rudiments`.
++ entry .Reshapable   reexportado de `murmuration`: reconstrói uma coleção na sua própria forma a partir de elementos transformados
++ entry .Mappable   reexportado de `murmuration`: a classe de tipos de mapeamento de valores por trás de `map`
++ entry .Reversible   reexportado de `murmuration`: a classe de tipos por trás de `reverse`
++ entry .Inclusive   reexportado de `murmuration`: a classe de tipos de pertinência por trás de `has`
++ entry .Convertible   reexportado de `murmuration`: conversão para uma forma pedida, por trás de `to[Form]`
++ entry .Keyed   reexportado de `murmuration`: um contêiner com chaves e valores, por trás de `keys` e `values`
++ entry .Intersectable   reexportado de `murmuration`: a classe de tipos de álgebra de conjuntos por trás de `intersect` e `except`
++ entry .SortAlgorithm   reexportado de `murmuration`: um algoritmo de ordenação, escolhido de `sortingAlgorithms`
++ entry .Iterator   reexportado de `murmuration`: o percurso de uso único cujo `next()` produz `Iterator.Exhausted` no fim
++ entry .reverse   reexportado de `murmuration`: os elementos em ordem inversa
++ entry .has   reexportado de `murmuration`: se uma coleção contém um valor (um `Map`, a sua chave)
++ entry .map   reexportado de `murmuration`: transforma cada elemento (os valores de um `Map`), preservando a forma
++ entry .remap   reexportado de `murmuration`: transforma cada elemento (os pares de um `Map`) numa nova forma
++ entry .bind   reexportado de `murmuration`: o bind monádico, cada elemento para uma coleção, achatado
++ entry .flatMap   reexportado de `murmuration`: `bind` sob o nome para o qual as `for`-comprehensions são traduzidas
++ entry .filter   reexportado de `murmuration`: os elementos que satisfazem um predicado; não existe `filterNot`
++ entry .withFilter   reexportado de `murmuration`: a guarda para a qual uma `for`-comprehension é traduzida
++ entry .foreach   reexportado de `murmuration`: visita cada elemento; `each` é a escrita preferida
++ entry .exists   reexportado de `murmuration`: se algum elemento satisfaz um predicado
++ entry .fold   reexportado de `murmuration`: um fold à esquerda com uma lambda de dois parâmetros; `fuse` é a forma contextual
++ entry .flat   reexportado de `murmuration`: achata um nível de aninhamento
++ entry .trace   reexportado de `murmuration`: um fold à esquerda que guarda todos os estados intermediários
++ entry .excerpt   reexportado de `murmuration`: os elementos entre duas posições contadas a partir de zero
++ entry .group   reexportado de `murmuration`: os elementos agrupados por uma chave num `Map`
++ entry .distinct   reexportado de `murmuration`: os elementos sem duplicatas
++ entry .deduplicate   reexportado de `murmuration`: os elementos sem duplicatas segundo uma chave
++ entry .zip   reexportado de `murmuration`: emparelha os elementos de duas coleções
++ entry .batched   reexportado de `murmuration`: os elementos em grupos de um tamanho
++ entry .span   reexportado de `murmuration`: divide no primeiro elemento que falha num predicado
++ entry .partition   reexportado de `murmuration`: divide entre os elementos que satisfazem um predicado e o resto
++ entry .sweep   reexportado de `murmuration`: os elementos que uma função parcial aceita, transformados; o `collect` da stdlib
++ entry .keys   reexportado de `murmuration`: as chaves de um contêiner com chaves
++ entry .values   reexportado de `murmuration`: os valores de um contêiner com chaves
++ entry .count   reexportado de `murmuration`: quantos elementos satisfazem um predicado; `count(_ == x)` conta um valor
++ entry .intersect   reexportado de `murmuration`: os elementos que dois conjuntos compartilham
++ entry .except   reexportado de `murmuration`: os elementos de um conjunto que não estão em outro
+
+@ 0 8 0 1db8da0a6c1550a31c5bd8e012685cd6
++ entry .apply   `xs(index)`: lê um elemento diretamente com um índice confinado, ou como `Optional` com qualquer outro
++     A operação universal de acesso por índice, distribuída na biblioteca `concordance`, para
++     qualquer valor com uma instância de `Applicable` — as coleções por `Ordinal`, um `Map` por
++     chave, um `Text` por `Ordinal`, uma `Bijection` por chave. Ela despacha em tempo de
++     compilação conforme o tipo do índice: um índice tipado como `Operand in xs.type` — um que
++     `confine`, `pick`, `iterate`, `within`, um `Surveyor` ou um `Lattice` já verificou contra
++     *este* valor — chega ao elemento diretamente, e o resultado é o elemento puro; qualquer
++     outro índice tem os limites verificados, e o resultado é `Optional`. Não existe leitura
++     parcial que possa lançar exceção.
+
+% 2 1 0 0bbed1313d3f94f40c3136767c4fff5b
+
+% 3 1 0 1e4907700d1960ea0ea7e1ed29420c89
+
+@ 0 1 0 165cce3032208c14078a36fa388354f2
++       label Um índice não verificado lê um Optional
+
+% 1 1 0 0f5001cc97ce698f0f5ccddd076a8807
+
+% 0 1 0 12cc05c723d951d01bf333e3a35bc131
+
+% 0 1 0 1dfe1171c01f57561f68a3d689e24b64
+
+% 0 1 0 107f7ffecd41739112ffb8ca0aae6cd2
+
+% 1 1 0 0b198210f35e050312f221c95b4a9d15
+
+@ 0 1 0 0edb32f1b5639fa10507fa1aae5b864d
++       label confine verifica uma vez e marca o índice
+
+% 1 1 0 17b341a5824ee32c14c90f455e0e94c9
+
+% 0 1 0 0eab6ee4e9c61fca1db8630807488092
+
+% 1 1 0 1413ed0e7f302f1a1d5b86a7b52eeb2a
+
+@ 0 1 0 1c2e6de8db1110b90dae09ea8cf310f6
++       label pick funde a verificação e o uso
+
+% 1 1 0 1b7229d7c2f4bbf612d45228d9cbeed6
+
+% 0 1 0 1f4d3266e3024f14125cf713378f06ba
+
+% 1 1 0 049c9241d174927904f8629326552a40
+
+@ 0 1 0 1a1f468aa1d2b78010da0381d72418e7
++       label iterate entrega índices já provados
+
+% 1 1 0 18d8cbf3347d0ebb1c223d3a27135c34
+
+% 0 1 0 0a0e62a455a4b496031624e203295df2
+
+% 1 1 0 00b7dc73c21b93ac062c1aec81b301a2
+
+% 2 1 0 07df9bc68aa19fed13d21e93ee733071
+
+@ 0 7 0 054e39aeb023cc7a16a91acd17428b3e
++     Um array congelado tipado como `& Sized[n]` (um `Array.fill` ou `Array.tabulate` de
++     comprimento literal, `Data.fill` ou `sized[n]`) tem mais uma sobrecarga: um ordinal
++     *literal* — `Ter`, `7.z` — é comparado com `n` durante a compilação, então a leitura é
++     direta e um literal fora do intervalo é um erro de compilação, _the ordinal 3 is beyond the
++     array's proven length of 3_; um ordinal variável segue o caminho `Optional`. Numa `List`,
++     qualquer posição além da cabeça percorre a lista e requer `dysasymptotics.linearAccess`.
++     `rudiments.*` importado por curinga sombreia com este o próprio `apply(Int)` de um
++     `Array^` mutável.
+
+@ 0 4 0 141b705ce1e723dc045b0b064f96343f
++ entry .at   `xs.at(index)`: a mesma leitura que `xs(index)`, sob seu nome antigo
++     Idêntico a `apply` — direto com um índice confinado, `Optional` caso contrário — e mantido
++     como ponte para código que escreve o acesso posicional `xs.at(Sec)` e o acesso por chave
++     `map.at(key)`. Distribuído na biblioteca `concordance`.
+
+@ 0 4 0 0803d5decb6f8d2d1aa5bb7bda85b2e4
++ entry .defines   `xs.defines(index)`: se um índice ou uma chave está definido para um valor
++     `map.defines(key)` e `xs.defines(ordinal)` por meio da instância de `Applicable`, e
++     `map.defines(key)` num `scala.collection.Map` da stdlib. Distribuído na biblioteca
++     `concordance`.
+
+@ 0 6 0 0ec98f63a85bc4a1198c56543601359f
++ entry .confine   `xs.confine(index)`: verifica um índice contra um valor e o retorna com a marca desse valor
++     Produz `Optional[Operand in xs.type]`: `Unset` se o índice não está definido, e caso
++     contrário o próprio índice com a prova de que está no intervalo de `xs`, de modo que um
++     `xs(i)` subsequente é direto e não faz uma segunda verificação. Generaliza o `within` do
++     denominative (para ordinais) para qualquer tipo de índice, inclusive chaves de mapa. É
++     correto para receptores imutáveis em caminhos estáveis. Distribuído na biblioteca
++     `concordance`.
+
+% 2 1 0 07d9c7f33edbdbe114fb3daf56ac3d30
+
+% 3 1 0 03792bc28574b97201a38ca982ef66e1
+
+% 0 1 0 15cf56b2bc02120016b6b20e40e2baaf
+
+% 0 1 0 0da9c637cc4e9b64118a0f91df8eab30
+
+% 1 1 0 1c21d1584739288d11a66d75c481722e
+
+@ 0 5 0 06471e8c5ac7790a0c5ea33c7f8094ab
++ entry .pick   `xs.pick(index)(lambda)`: a forma fundida de `confine` e `let`
++     O índice verificado chega à lambda já confinado, então as leituras de `xs` nele feitas pelo
++     corpo são diretas, e nenhum `Optional[Operand]` intermediário é construído; o resultado é
++     `Optional[result]`, `Unset` quando o índice não está definido. Quando o corpo só lê o
++     elemento, `xs(index)` já diz isso. Distribuído na biblioteca `concordance`.
+
+% 2 1 0 1a03d2902deac80906c11fe4cdeaaefd
+
+% 3 1 0 1ec24d7142837f85159868d4d8a287bb
+
+% 0 1 0 0c8ffee8a59f2d47097aa598b759c0af
+
+% 0 1 0 0fde935f94566e1915268c6a871cada3
+
+% 1 1 0 10d16cf69683761f1dd6ca578e403708
+
+@ 0 8 0 1b50183640cfef100ffb23ea3a883160
++ entry .unsafeAttested   marca um índice, ou um intervalo, como válido para um valor sob a palavra de quem chama
++     `xs.unsafeAttested(index)` é `confine` sem a verificação: cunha `Operand in xs.type`
++     diretamente, sob um token `Unsafe` (então o local fica dentro de `unsafely`), para os dois
++     lugares em que uma prova não consegue acompanhar o programa — a fronteira de quote de uma
++     macro e a aritmética de índices. A forma em bloco `xs.unsafeAttested(index) { i => … }`
++     restringe a atestação a uma lambda, e `interval.unsafeAttested(xs)` atesta um `Interval`
++     para operações em massa como `xs.iterate(range)`. Todo local de chamada leva um comentário
++     que nomeia a construção que prova o limite: o comentário é a prova. Distribuído na
++     biblioteca `concordance`.
+
+% 2 1 0 1cd85ead19fdec4703634a9a40e683ad
+
+% 3 1 0 0b0d21502cdd7db105acc32c456e0422
+
+% 0 1 0 11ffb27e0432af721657799d6bedaaa1
+
+% 0 1 0 1ee937620fd36ed00be4b497beef38db
+
+% 0 1 0 04533c7bf32cb0ae13438b2019f825fc
+
+% 0 1 0 1f4851f735ca7cdf1d5f6948c7c02ac4
+
+% 1 1 0 10cd1a69ef614cbe000df8a84294e013
+
+@ 0 7 0 06ee487203d6dc1a042a835f87ce92f3
++ entry .sized   `xs.sized[n]`: verifica o comprimento de um valor uma vez, registrando-o como `& Sized[n]`
++     `Array(1, 2, 3, 4).sized[4]` é `Optional[xs.type & Sized[4]]`: `Unset` quando o comprimento
++     difere, e caso contrário o valor com seu comprimento no tipo, de modo que um ordinal literal
++     abaixo de `n` é lido diretamente e um igual ou além dele não compila. A contrapartida de
++     `occupied` para comprimento, para qualquer valor `Countable`; os construtores literais
++     `Array.fill(n)`, `Array.tabulate (n)` e `Data.fill(n)` marcam seus resultados da mesma
++     forma quando `n` é um literal (um comprimento `val` não). Distribuído na biblioteca
++     `concordance`.
+
+% 2 1 0 1e391b7e6f981cce0093871ceb6ea71a
+
+% 3 1 0 0487f07a08dcdcc41b5524594e013d44
+
+% 0 1 0 0dd65affd32388491946efc95b0b306d
+
+% 0 1 0 0ddc205161ed88c804ef921137450220
+
+% 1 1 0 02b80e8c963a1f210ec0aca89c7b5db2
+
+@ 0 3 0 19985a3640bac60406e8258bab6061c8
++ entry .bijection   `map.bijection`: uma `Bijection` a partir de um mapa da stdlib
++     Uma extensão sobre `scala.collection.Map`, que constrói o mapa inverso ao lado.
++     Distribuído na biblioteca `concordance`.
+
+@ 0 1 0 0172e50f04b03f921722ee88cce2826c
++ entry .Bijection   um mapa um para um, legível nas duas direções
+
+% 1 1 0 164e37163e6dabf21d2add349f16b209
+
+@ 0 5 0 165c070d8d6b2d140c127a940534e803
++       `Bijection(map)` contém um mapa imutável da stdlib e sua transposição, então `flip` troca
++       chaves e valores em tempo constante, `get` busca por chave e `-` remove uma chave junto
++       com sua entrada transposta. Ela é um `Map` e um `Iterable` de pares da stdlib, e
++       `Applicable` por chave, então `bijection(key)`, `at` e `defines` funcionam sobre ela.
++       Distribuído na biblioteca `concordance`.
+
+% 2 1 0 1c986bffa397b5451b139bfb6a8b4054
+
+% 3 1 0 123461f1e4b56f6d03aa9fe372f3eba4
+
+% 0 1 0 0e9fce4d71e1a7220bb3be962a0240d7
+
+% 0 1 0 0b7732fb2a9be54817d641b15a116686
+
+% 0 1 0 0a07342b0ce5e2e4021027f5f57f8a3a
+
+% 0 1 0 0b54f2a250c3c0d4103bfd073ff0ae43
+
+% 1 1 0 0668d4f465c1d7800c185bb98c34c544
+
+@ 0 8 0 00d9ce1d073cfd9f13e65ea208297780
++   entry .apply   `Bijection(map)`: uma bijeção a partir de um mapa, calculando seu inverso
++   entry .indexable   a instância de `Applicable`: uma bijeção é indexada por chave
++   entry #map   o mapa direto
++   entry #transposition   o mapa inverso, de valores para chaves
++   entry #iterator   os pares, na ordem do mapa direto
++   entry #-   remove uma chave e sua entrada transposta; sobrecarregado para várias chaves
++   entry #get   o valor numa chave, como um `Option` da stdlib
++   entry #flip   a bijeção inversa, compartilhando os dois mapas; inverter duas vezes dá a original
+
+@ 0 1 0 06a3f49c55061f620e81c07ce33fc59a
++ entry .Segmentable   a classe de tipos dos valores dos quais uma parte contígua pode ser tomada por `Interval`
+
+% 1 1 0 101c66efb61c2b961782d5232ec0e0e9
+
+@ 0 16 0 1a88a31abcdbbc310e0ef198bc0be915
++       `value is Segmentable` tem um único método, `segment(value, interval)`, e um membro de tipo
++       `Segment` para o resultado: o tipo de coleção simples para as coleções (um segmento de uma
++       lista não vazia pode ser vazio, então nenhuma marca `Populated` sobrevive) e o próprio
++       tipo do valor para os tipos textuais, que `Textual` fixa para que o segmento de um texto
++       com estilo mantenha o estilo. Toda operação posicional — `segment`, `before`, `upto`,
++       `from`, `after`, `keep`, `skip`, `snip`, `tail` — é escrita sobre ela. As instâncias para
++       `List`, `Sequence`, um array congelado, um `IndexedSeq` da stdlib e `Text` estão no objeto
++       companheiro; `Chain` deliberadamente não tem nenhuma, já que segmentar a forçaria, e traz
++       seus próprios `keep` e `skip` preguiçosos. Distribuído na biblioteca `concordance`.
++   entry .indexedSeq   um `IndexedSeq` da stdlib, por `slice`
++   entry .frozenArray   um array congelado, copiado com seu `ClassTag` em vez de por `slice`
++   entry .sequence   uma `Sequence` (qualquer subtipo, então um literal com marca serve), para uma `Sequence` simples
++   entry .list   uma `List` (qualquer subtipo), para uma `List` simples
++   entry .text   um `Text`, por `substring`, limitado ao comprimento do texto
++   entry #Segment   o tipo de um segmento: a coleção simples, ou o próprio tipo textual
++   entry #segment   a parte de um valor dentro de um intervalo
+
+@ 0 1 0 05330b14bd24730715aae296c3cb41d6
++ entry .Appendable   a classe de tipos por trás de `xs :+ element`: crescimento de um elemento
+
+% 1 1 0 0012e75db999894a048d28196c1a61cf
+
+@ 0 8 0 07238222d46e03ba1d315551b108bc6c
++       `self is Appendable by element` acrescenta um elemento: no fim, para as formas ordenadas
++       (`List`, `Sequence`, `Chain`, um array congelado), e como adição de pertinência para um
++       `Set`, que não tem extremidades. A concatenação de coleção com coleção é o `Concatenable`
++       do symbolism, `xs + ys`. Uma instância cujo acréscimo reconstrói a coleção inteira —
++       `List` e o array congelado, ambos O(n) — exige o marcador `Dysasymptotic.LinearSize`,
++       então um arquivo que acrescenta a uma lista importa `dysasymptotics.linearSize` e o
++       declara; uma `Sequence`, uma `Chain` ou um `Set` acrescentam sem restrição. É
++       paramétrica em subtipos no receptor, então um literal não vazio com marca mantém a marca.
++       Distribuído na biblioteca `concordance`.
+
+% 2 1 0 0b28ddeffa04e78e1fa8829856e69b15
+
+% 3 1 0 135bce9d30fb33e51b10c93ff860421d
+
+% 0 1 0 0bf87a32fe9bce971e59d6ea8c2a0221
+
+% 0 1 0 11a54c60b13fec2014ffd68bf0f50705
+
+% 0 1 0 11a8e71c5f4441111fd5352b9eddd523
+
+% 0 1 0 0ef2fe39bcbd927401c72a99bdc404e9
+
+% 1 1 0 067ef1e1653b2d940ba9d749d9d9d2b8
+
+@ 0 6 0 16430718bfb4aa9d19f702d706f52d06
++   entry .list   acrescenta a uma `List` copiando-a: restrito a `linearSize`
++   entry .sequence   acrescenta a uma `Sequence`
++   entry .chain   acrescenta a uma `Chain`, de forma preguiçosa
++   entry .set   adiciona um elemento a um `Set`
++   entry .frozenArray   acrescenta a um array congelado reconstruindo-o: restrito a `linearSize`
++   entry #append   a coleção com um elemento adicionado
+
+@ 0 3 0 0dd36966a267d6ce09d42acbf7a73c49
++ entry .:+   `xs :+ element`: uma coleção com um elemento acrescentado no fim, por meio de `Appendable`
++     Distribuído na biblioteca `concordance`. Numa `List` ou num array congelado, requer
++     `dysasymptotics.linearSize` no escopo, já que o acréscimo é linear.
+
+@ 0 1 0 138732ab51bf5b970e203833abe07b90
++ entry .Prependable   a classe de tipos por trás de `element +: xs`: crescimento de um elemento na frente
+
+% 1 1 0 02ab087e25abe6260bb0a01c908f0590
+
+@ 0 8 0 096690c3b3e401bd1c1f0bc9e67dbd6a
++       A contrapartida de `Appendable` para inserir na frente. Inserir na frente é O(1) para uma
++       `List` e uma `Chain`, então só a reconstrução do array congelado é restrita a
++       `Dysasymptotic.LinearSize`; uma `Sequence` insere na frente sem restrição. Distribuído na
++       biblioteca `concordance`.
++   entry .list   insere na frente de uma `List`, como faz `::`
++   entry .sequence   insere na frente de uma `Sequence`
++   entry .chain   insere na frente de uma `Chain`, de forma preguiçosa
++   entry .frozenArray   insere na frente de um array congelado reconstruindo-o: restrito a `linearSize`
++   entry #prepend   a coleção com um elemento na frente
+
+@ 0 3 0 00e284b17b7f99c812f2817ce340d8ec
++ entry .+:   `element +: xs`: uma coleção com um elemento inserido na frente, por meio de `Prependable`
++     Associativo à direita, então o receptor é o elemento e a coleção é o argumento.
++     Distribuído na biblioteca `concordance`.
+
+@ 0 1 0 0d573a260a28e23611a6a0683f3bef14
++ entry .Scribe   um handle de escrita sobre um array novo, cujos índices são todos provadamente válidos
+
+% 1 1 0 0426eb4f25923b8d0a2c0c02ba6fd498
+
+@ 0 10 0 1165bd5e815f3d8d1c5a6eb23df53069
++       Um `Scribe[element]` é a contrapartida, do lado da escrita, da leitura confinada: um
++       handle opaco sobre um array que `Array.scribe` ou `Array.collect` acabou de alocar, que
++       concede escritas (e releituras) apenas por ordinais com a marca do próprio scribe —
++       `scribe(i) = v` com um `i: Ordinal in scribe.type` — e `append`s sequenciais no seu
++       próprio cursor, que param no fim de um buffer de tamanho exato e fazem crescer um sem
++       tamanho. Nenhuma posição que quem chama possa alcançar está fora do intervalo, e como quem
++       empresta aposenta o único escritor quando sua lambda retorna, congelar o resultado não
++       exige cópia. Um scribe é `Countable`, então toda a família de varreduras confinadas
++       (`iterate`, `spot`, `lead`, `pare`, `retrace`) e `lattice` se aplicam a ele
++       diretamente. Distribuído na biblioteca `concordance`, e não exportado para o
++       guarda-chuva `soundness`: `import rudiments.*` ou `import rudiments.{Scribe, scribe}`.
+
+% 2 1 0 111c6b769e9b32ed0374c96dbc6b579b
+
+% 0 1 0 1b37cbc63d64b0a31268700657abfadb
+
+% 1 1 0 00cc9ac3f75593f208b44d40daab7ed9
+
+% 0 1 0 099a245f4b461b9f16fea7de35561733
+
+% 0 1 0 0619683095c7ac4f19da1cd620f96cdf
+
+% 0 1 0 0a58d2b91b6ab5220cf3a7042469e024
+
+% 0 1 0 04127fc204e7b6b417b7bd950902f559
+
+% 0 1 0 1931c8d8ad311abd000202e4559841fc
+
+% 1 1 0 0aba5ff1cae5244a0c8c93b7ffc5023f
+
+% 0 1 0 036272047b09ae7515113fb5cb5d34fc
+
+% 0 1 0 03452cd9c32155f319c5a49a3fe63f69
+
+% 0 1 0 1aad5137a790d48a00fa8ec28ca06aec
+
+% 0 1 0 009247110c41171a027d2ad242b06d26
+
+% 0 1 0 1fd9766e21a893991b57463fb451f537
+
+% 0 1 0 0b5b8cbb6010e0ee074cb62d1cd8f488
+
+% 1 1 0 12a82291a6605bab02d1b077bf233034
+
+% 0 1 0 0f6de79b4633b4bf16fd96f8e4f8985f
+
+% 0 1 0 0ed0879315885e1516f3aacb226bf176
+
+% 0 1 0 1185ed626bfeebc61c5da7c09b8e0324
+
+% 1 1 0 177a52d428bd207f1fbdee0eaeffd83c
+
+% 2 1 0 0d53e48d12c1f6500baaa334542001b1
+
+@ 0 2 0 10edd69970ec4019018b3fe52f370d75
++       O scribe de bytes tem ainda `appendVarint` e `appendUtf8`, que escrevem um valor inteiro
++       com uma única verificação de capacidade.
+
+% 0 1 0 1aa8d125363a8a491af3e35f32479ae3
+
+% 0 1 0 0744d36044a6ee7f0f4841d1c2027f33
+
+% 0 1 0 09b47ccc21ac248800fedddb8dbc00cc
+
+@ 0 1 0 13179e2e30221efe13ed7c8816f2be2a
++   entry .Core   o portador por trás de um scribe: o buffer e seu cursor
+
+% 1 1 0 16ea6ef1ce25accf01047d5261b75fb5
+
+% 2 1 0 1f98a4512f835cc2115116ae80eaca90
+
+@ 0 27 0 012d8cde5632554d13075f76b8c65c23
++         Não é para uso direto: é público só porque quem empresta e os acessores inline se
++         expandem nos pacotes de quem chama e precisam nomeá-lo. Contém o buffer sem tipo, o
++         cursor de acréscimo `mark` e se o scribe cresce.
++     entry #mark   o cursor de acréscimo
++     entry #buffer   o array de apoio sem tipo
++     entry #growable   se acréscimos além do fim fazem o buffer crescer
++   entry .countable   o tamanho de um scribe é o comprimento do seu buffer, então a família de varreduras confinadas se aplica a ele
++   entry .apply   `Scribe(buffer)` cunha um scribe de tamanho exato; `scribe(i)` relê num ordinal com marca
++       Duas sobrecargas que compartilham o nome. No objeto companheiro, `Scribe(buffer)` embrulha
++       um array mutável da JVM como um scribe de tamanho exato — a cunhagem que `Array.scribe`
++       usa, que para no limite em vez de crescer. Como extensão sobre um scribe, `scribe(i)` relê
++       o elemento num `i: Ordinal in scribe.type`, sem verificação de limites, já que a marca
++       prova o intervalo.
++   entry .varintLength   quantos bytes a codificação LEB128 de um `Long` ocupa, de 1 a 10
++   entry .varintInto   escreve um `Long` como LEB128 num array de bytes da JVM numa posição, retornando a posição seguinte
++   entry .utf8Length   o comprimento da codificação UTF-8 de uma string, sem codificá-la
++       Um par substituto conta como uma sequência de quatro bytes, e um substituto isolado como o
++       único byte do `?` que o codificador do JDK coloca no lugar.
++   entry .utf8Into   codifica uma string como UTF-8 num array de bytes da JVM numa posição, retornando a posição seguinte
++   entry .update   `scribe(i) = value`: escreve num ordinal com a marca do scribe, sem verificação de limites
++   entry .append   escreve no cursor de um scribe e o avança: um elemento, um array congelado inteiro ou uma janela de um
++       `append(value)` escreve um elemento; `append(array)` copia um array congelado;
++       `append(array, from, count)` copia uma janela de um, para formatos de enquadramento que
++       acrescentam uma fatia de um bloco maior. Num scribe de tamanho exato, uma escrita além do
++       fim é descartada; um scribe sem tamanho cresce dobrando.
++   entry .mark   `scribe.mark`: o número de elementos acrescentados a um scribe até agora
++   entry .place   `scribe.place(array, at)`: copia um array congelado numa posição com marca, retornando quantos couberam
++       A cópia é limitada ao fim do scribe e não move o cursor de acréscimo.
+
+@ 0 3 0 08a90da4569ad68e085eeed55d103a1b
++ entry .appendVarint   `scribe.appendVarint(long)`: acrescenta um varint LEB128 a um scribe de bytes
++     De um a dez bytes, escritos com uma única verificação de capacidade; um valor abaixo de 128
++     é acrescentado como o único byte que ele é. Distribuído na biblioteca `concordance`; não é
++     exportado para o guarda-chuva.
+
+@ 0 4 0 0d278120dfdc114c0a18d0795efbf6ed
++ entry .appendUtf8   `scribe.appendUtf8(string)`: acrescenta a codificação UTF-8 de uma string a um scribe de bytes
++     Codificada diretamente no buffer, sem array intermediário, com um caminho rápido para ASCII;
++     um substituto isolado é codificado como `?`. Distribuído na biblioteca `concordance`; não é
++     exportado para o guarda-chuva.
+
+@ 0 7 0 1ccdd0c870fe701a1844d979fd95608c
++ entry .scribe   `Array.scribe[element](size)(scribe => extent => …)`: aloca, empresta um scribe, congela
++     Uma extensão sobre o objeto companheiro de `Array`, distribuída na biblioteca `concordance`.
++     Ela aloca um array de exatamente `size` elementos, empresta um `Scribe` sobre ele junto com a
++     sua abrangência como um `Interval in scribe.type` — de modo que `scribe.iterate(extent)` e
++     `scribe(i) = v` são totais — e retorna o array congelado assim que a lambda, a única que
++     escreve, retornar. Escritas além do fim por meio de `append` são descartadas, nunca
++     expandem o array: o resultado tem sempre exatamente `size` de comprimento. Precisa de um
++     `ClassTag` para o elemento. Não é exportada para o guarda-chuva: `import
+
+% 0 1 0 1a1830ea173aa6eb1eaa0fc2b57f558d
+
+% 2 1 0 0028c7f169f53ae91ecddecf0b1bbb86
+
+% 3 1 0 12e4ad49820580fc1adefc3be8980a05
+
+% 0 1 0 131b7078fa788d5914928ff900d90b64
+
+% 0 1 0 1f9fe3a6ba7de5ec033bddc95187970e
+
+% 0 1 0 04f8b52eb7b936ad1da79b3e504ede7e
+
+% 0 1 0 05c71502cccae5ff0e7c3b9d9e770025
+
+% 1 1 0 0e781b5e07af689d018f101451d04c8b
+
+@ 0 9 0 16c709ef2229ed89049b1e5efa369457
++ entry .collect   `Array.collect[element](hint)(scribe => …)`: um array de exatamente o que um bloco acrescenta
++     Uma extensão sobre o objeto companheiro de `Array`, distribuída na biblioteca `concordance`:
++     o emprestador expansível, para um resultado cujo comprimento não se conhece de antemão —
++     aquilo para que se recorria a `java.io.ByteArrayOutputStream` em toda parte, sem a sua
++     sincronização, a sua `IOException` impossível ou a cópia que `toByteArray` faz a cada
++     chamada. O scribe começa com `hint` elementos (pelo menos 16), dobra conforme `append`
++     exige, e o resultado é congelado sem cópia quando o buffer foi preenchido exatamente. A
++     lambda não recebe nenhuma abrangência com marca, já que não há abrangência fixa a marcar: um
++     scribe sem tamanho é escrito por meio de `append` e `place`. Não é exportada para o
++     guarda-chuva: `import rudiments.collect`.
+
+% 2 1 0 1d7d94b2ff1df95c171b89d64b0efb68
+
+% 3 1 0 0aebc319b3ab30c019350d6b3a3c4633
+
+% 0 1 0 08288b8fd3de9931063f267df82ded5f
+
+% 0 1 0 070f79ed6730c4b40b079fa09f564956
+
+% 0 1 0 144076bb95e49f0d143b1c88125a4853
+
+% 0 1 0 0a71cccc5744238013517f252c16be85
+
+% 1 1 0 0b6381153a2a17ad0748ffd73065a3b6
+
+@ 0 1 0 1e7720f70f91b9f90a025f5b09de267c
++ entry .Scroll   um array expansível de primitivos (ou de qualquer coisa), sem boxing, indexado por `Int`
+
+% 1 1 0 0a13d99c00ba95e615c31f75cb20e894
+
+@ 0 8 0 1b3aed103d963c790e52e2d26f5a90a3
++       `Scroll[Int]()` é o substituto sem boxing de um `ArrayBuffer[Int]` da stdlib, cujo
++       armazenamento subjacente guarda referências em caixa: um scroll de um tipo de elemento
++       concreto lê e escreve diretamente um array primitivo da JVM, de modo que
++       `scroll.append(1)` é um `iastore`. É o irmão de `Scribe` para os builders de descritores e
++       as pilhas de estilos que escrevem em posições calculadas e são reutilizados entre
++       análises: construível publicamente, com `clear`, e indexado por `Int` simples, verificado
++       contra o seu `length` (caso contrário, uma `IndexOutOfBoundsException`). `freeze` produz
++       os elementos até ali como um array congelado de tamanho exato e deixa o scroll utilizável.
++       Distribuído na biblioteca `concordance`; não é exportado para o guarda-chuva, então
+
+% 0 1 0 03c53e76f862cf6003f9742d9da2ad81
+
+% 2 1 0 1c2f11c2405d91bd1ccdba1ed184833b
+
+% 3 1 0 0bfc9d946f24058813fb39a885db1abb
+
+% 0 1 0 0624148bf54848f9022c856de4aadf66
+
+% 0 1 0 1d1d10126e8c749314788e3bd0d3898b
+
+% 0 1 0 0e3360120345563106df8579c9888a3e
+
+% 0 1 0 062aeb2a0bcb6c3a1c98c4bd2669fa51
+
+% 0 1 0 1d9f3e4dedb9d33201f95ff7bb7ce2ac
+
+% 0 1 0 1918dc4f65d189d116a2fd2fa4b433aa
+
+% 0 1 0 0e143a1317a2e898026eac693ea50cb2
+
+% 0 1 0 1057533327ecb6f213944b7eeb34e82c
+
+% 1 1 0 023533307e7139eb1396d34a052a673f
+
+% 0 1 0 16fabe80158479210589a2063b025141
+
+@ 0 1 0 0d95fdc49f7c80bd01bd411f643a3707
++   entry .Core   o portador por trás de um scroll: o buffer não tipado e o seu comprimento
+
+% 1 1 0 1e908079d7899d281702c8b0248ecff6
+
+% 2 1 0 00d21d58328154b8113af06657f90cef
+
+@ 0 16 0 03754967e09f524603e10bfda778b9c3
++         Não se destina a uso direto: é público porque os acessores inline se expandem nos
++         pacotes de quem chama.
++     entry #buffer   o array subjacente não tipado
++     entry #length   o número de elementos guardados
++   entry .apply   `Scroll[element](capacity)` cria um scroll vazio; `scroll(index)` lê um elemento
++       Duas sobrecargas que compartilham o nome. No objeto companheiro, `Scroll[element](capacity)`
++       cria um scroll vazio com pelo menos 16 slots, e precisa de um `ClassTag` para o elemento.
++       Como extensão sobre um scroll, `scroll(index)` é o elemento num `Int` a partir de zero,
++       verificado contra o comprimento, lançando como exceção `IndexOutOfBoundsException` além
++       dele.
++   entry .length   `scroll.length`: quantos elementos um scroll guarda
++   entry .isEmpty   `scroll.isEmpty`: se um scroll não guarda nenhum elemento
++   entry .update   `scroll(index) = value`: substitui o elemento de um scroll num índice abaixo do seu comprimento
++   entry .last   `scroll.last`: o elemento acrescentado mais recentemente a um scroll; lança exceção num scroll vazio
++   entry .append   acrescenta a um scroll um elemento, todos os elementos de outro scroll, ou uma janela de um array da JVM
++   entry .retract   `scroll.retract(count)`: esquece os últimos `count` elementos de um scroll, mantendo a capacidade
++   entry .clear   `scroll.clear()`: esquece todos os elementos de um scroll, mantendo a capacidade
++   entry .freeze   `scroll.freeze`: os elementos até ali, como um array congelado de tamanho exato; o scroll não muda
+
+@ 0 1 0 0b810339d7d741951f314449eb3b5408
++ entry .Surveyor   um cursor que avança sobre uma coleção indexada, cujas sequências e posições voltam com marca
+
+% 1 1 0 00f5e6a047ae40140f5b90690d500bb4
+
+@ 0 10 0 0c25df8e118cf3d6001f6faec803dfb9
++       Um `Surveyor` é o cursor de parser confinado: uma posição mutável sobre uma coleção
++       estável e indexável, emprestada por `value.survey { surveyor => … }`, cujos produtos levam
++       todos a marca da coleção — as sequências como `Interval in value.type`, as posições como
++       `Ordinal in value.type` — de modo que alimentam `apply`, `iterate` e `segment` sem
++       verificação de limites, e os comprimentos das sequências vêm dos tamanhos dos intervalos,
++       e não de aritmética de índices. É a forma para a qual os parsers de varredura convergiram:
++       `pace(_ == ' ')` pula espaços em branco e informa quantos, `pace(_ != ':')` varre até um
++       delimitador, `peek` decide com base no elemento atual, `next` consome um, `matches` testa
++       um marcador, e `glimpse` empresta um lookahead fixo. Nenhuma leitura é oferecida na
++       posição pura, de modo que não existe nada parcial a chamar. Distribuído na biblioteca
++       `concordance`; não é exportado para o guarda-chuva (`import rudiments.{Surveyor, survey}`).
+
+% 2 1 0 05ccf2e65e75d0e60dc007b60dab1d7a
+
+% 3 1 0 1943ac968cf207ae02f00c27792c8495
+
+% 0 1 0 001a59c0422f73f90a787d3de4f2b71a
+
+% 0 1 0 06906807fb58cd08128be32388bf272f
+
+% 0 1 0 0b90ada8824b9cce0f0e37b6aec25796
+
+% 0 1 0 1d25350e9dbbe4db1332cd13924a95fe
+
+% 0 1 0 03a1f923022f5460080f0ece23b7e86f
+
+% 0 1 0 1e0e9b95e8bc065d0d00abccb2962901
+
+% 0 1 0 17f8a9f9b1a84d901e87b4d160e7a9d4
+
+% 0 1 0 0e472172ca4365340200cc2a5c211fb6
+
+% 1 1 0 13bda11534736bfc13113e48c08f6be6
+
+% 0 1 0 03aac2006e934f88094ad5ab8e03d880
+
+@ 0 14 0 1dad381cc79397280ae55bd9aa881f6d
++   entry #passed   a posição, contada a partir do início da coleção
++   entry #more   se resta pelo menos um elemento
++   entry #advance   passa por cima de um elemento; false no esgotamento
++   entry #peek   se o elemento atual satisfaz um predicado, sem avançar; false no esgotamento
++   entry #next   `next(otherwise)(lambda)`: consome o elemento atual na lambda, ou produz `otherwise` no esgotamento
++   entry #take   consome até `count` elementos, retornando a sequência com marca efetivamente percorrida
++   entry #matches   se os elementos aqui casam com um padrão sob uma igualdade, sem avançar
++       `surveyor.matches(t"bcd") { (left, right) => left == right }` compara elemento a elemento
++       contra qualquer padrão `Countable` e `Applicable by Ordinal`; false quando restam menos
++       elementos do que o padrão tem.
++   entry #glimpse   a janela com marca dos próximos `count` elementos, sem avançar, ou `Unset` se restarem menos
++   entry #point   a posição atual com marca, ou `Unset` no esgotamento
++   entry #remainder   tudo o que ainda não foi percorrido, como um intervalo com marca, possivelmente vazio
++   entry #pace   avança sobre a sequência de elementos que satisfazem um predicado, retornando-a como um intervalo com marca
+
+@ 0 8 0 0fce32316058257e1ee2dccb26b07129
++ entry .survey   `value.survey { surveyor => … }`: empresta um `Surveyor` sobre uma coleção, ou sobre um subintervalo com marca
++     Uma extensão sobre qualquer valor que seja `Applicable by Ordinal` e `Countable` — um
++     `Text`, uma `Sequence`, um array congelado, um `Scribe` —, distribuída na biblioteca
++     `concordance`. A forma de um argumento, `value.survey(range)`, confina o surveyor a um
++     `Interval in value.type` (como `value.extent.capped(4)` ou `value.extent.beyond(2)`): ele
++     começa no início do intervalo e se esgota no seu limite, de modo que uma varredura limitada
++     por qualquer coisa que não o próprio comprimento da coleção não pode ultrapassá-lo. Não é
++     exportada para o guarda-chuva: `import rudiments.survey`.
+
+@ 0 1 0 061f8c4654ea9b5d026be70646ae095e
++ entry .Lattice   endereçamento bidimensional de uma coleção linear: linhas e pontos como intervalos e ordinais com marca
+
+% 1 1 0 185a5df4333be6550f5fcca28975f79b
+
+@ 0 9 0 0f14e961aef2c7e11ae8629be445b61c
++       Um `Lattice` não marca nada por si; ele deriva intervalos e ordinais lineares com marca
++       para uma coleção a partir de coordenadas `(x, y)`, de modo que todo acesso passa pelo
++       maquinário confinado. A aritmética que ele substitui é `y*stride + x` com um stride
++       diferente da largura — planos de pixels, linhas entrelaçadas, croma subamostrado. `row(y)`
++       é uma linha como um `Interval in value.type`, `point(x, y)` uma posição como um `Ordinal
++       in value.type`, cada um `Unset` fora do lattice, e `rows` visita cada linha com o seu
++       índice. O emprestador limita a altura ao número de linhas inteiras que cabem, de modo que
++       `row` e `point` são totais por construção, e uma linha final parcial fica fora do
++       lattice. Distribuído na biblioteca `concordance`; não é exportado para o guarda-chuva
++       (`import rudiments.lattice`).
+
+% 2 1 0 0fae1d0c9dd4ae931ad0b2480bbcebc2
+
+% 3 1 0 129a121ece6e4b5709d0e2b98345ab8e
+
+% 0 1 0 0bf68aae6c11b23b0ffdce76ac3c9980
+
+% 0 1 0 1d58359ff74e59e715acc4e49fba74df
+
+% 0 1 0 1be6527587b3db5a148feeaec479f91b
+
+% 0 1 0 139553c7c469e7db158f20b9f0f5374d
+
+% 0 1 0 1bb19472cb5722ab0e707e15e8718ecb
+
+% 0 1 0 13c890324b44d12c0317e4c688c6cd29
+
+% 0 1 0 0f6130ac4cbb0a2c0071228b7c5a74dc
+
+% 1 1 0 0d46ef9d8a8443e2188c933cc9546f9c
+
+% 0 1 0 09ca94c70a1efec307e2a980b31026cd
+
+@ 0 5 0 0bcc97e4dd0927ab1682c074b69edf71
++   entry #width   o número de elementos numa linha
++   entry #height   o número de linhas inteiras que cabem na coleção
++   entry #row   a linha `y` como um intervalo com marca, ou `Unset` fora do lattice
++   entry #point   a posição linear de `(x, y)` como um ordinal com marca, ou `Unset` fora do lattice
++   entry #rows   visita cada linha em ordem, como o seu índice e o seu intervalo com marca
+
+@ 0 6 0 08d36a1b7710c94d11318b738773a0c0
++ entry .lattice   `value.lattice(width, stride, offset) { lattice => … }`: empresta um `Lattice` sobre um valor `Countable`
++     O stride é limitado a no mínimo a largura (linhas sobrepostas se confundiriam), uma
++     geometria degenerada produz um lattice de altura zero, e a altura é o número de linhas
++     inteiras que cabem a partir de `offset`. `value.lattice(width)` é um lattice de linhas
++     consecutivas a partir do início. Como um `Scribe` é `Countable`, um lattice sobre ele
++     endereça um handle de escrita. Distribuído na biblioteca `concordance`; não é exportado para
++     o guarda-chuva.
+
+@ 0 7 0 1a42d6c79f045183002f634414894b86
++ entry .pairs   visita uma coleção em pares inteiros e disjuntos, retornando o resto final como um intervalo com marca
++     `xs.pairs { (a, b) => … }` sobre qualquer valor `Countable` e `Applicable by Ordinal` passa
++     os elementos de cada par em ordem e retorna os 0 ou 1 elementos finais como um `Interval in
++     xs.type`, que `iterate` ou `apply` então tratam como o codec define. Para uma `List`, são
++     necessários tanto `dysasymptotics.linearSize` quanto `linearAccess`; uma `Sequence`, um
++     `Text` ou um array congelado não precisam de nenhum dos dois. Distribuído na biblioteca
++     `concordance`; não é exportado para o guarda-chuva (`import rudiments.pairs`).
+
+% 2 1 0 0d183aefa193cc410e18b4596950f1b8
+
+% 3 1 0 1dd5eb5861431bec0a3e9501bbfe22ab
+
+% 0 1 0 045cb050cab877f90dfa50c0e9869be8
+
+% 0 1 0 034140ba1135937a006c27da995bbeeb
+
+% 0 1 0 0de1be3d49af471a07084bc14ad95f41
+
+% 0 1 0 05afac5ddec816bb0fbbabe8d41a707c
+
+% 1 1 0 04bfe202603d706118f24103358bf974
+
+@ 0 3 0 127675960d86a86e0057a762bd958dda
++ entry .triples   visita uma coleção em trios inteiros e disjuntos; o resto com marca guarda de 0 a 2 elementos
++     Como `pairs`, três de cada vez. Distribuído na biblioteca `concordance`; não é exportado
++     para o guarda-chuva.
+
+@ 0 3 0 1d0882102b8ee38e0485031817d30342
++ entry .quads   visita uma coleção em grupos inteiros e disjuntos de quatro; o resto com marca guarda de 0 a 3 elementos
++     Como `pairs`, quatro de cada vez. Distribuído na biblioteca `concordance`; não é exportado
++     para o guarda-chuva.
+
+@ 0 3 0 1e13582bf7b123c41b4bbafa231a4733
++ entry .quints   visita uma coleção em grupos inteiros e disjuntos de cinco; o resto com marca guarda de 0 a 4 elementos
++     Como `pairs`, cinco de cada vez. Distribuído na biblioteca `concordance`; não é exportado
++     para o guarda-chuva.
+
+@ 0 3 0 03232a0c7b5addf30fe524f2d1eeb4c0
++ entry .octuples   visita uma coleção em grupos inteiros e disjuntos de oito; o resto com marca guarda de 0 a 7 elementos
++     Como `pairs`, oito de cada vez. Distribuído na biblioteca `concordance`; não é exportado
++     para o guarda-chuva.
+
+@ 0 4 0 1386a864c1ded95f0e4731ad6422867d
++ entry .adjacent   visita cada par adjacente sobreposto: a forma de janela de fronteira
++     `xs.adjacent { (left, right) => … }` passa `(xs(0), xs(1))`, `(xs(1), xs(2))`, … em ordem;
++     quatro elementos dão três pares, onde `pairs` dá dois, e menos de dois elementos não
++     produzem nada. Distribuído na biblioteca `concordance`; não é exportado para o guarda-chuva.
+
+% 2 1 0 09c2510bf4eca1bc1de18793d28fdaf2
+
+% 3 1 0 089adbc33e270abd1438d361bfb3dffd
+
+% 0 1 0 180d763d9e7af827102d3d4e56ddd476
+
+% 0 1 0 1d02fa391a513307171c7574dc40437e
+
+% 0 1 0 120513fab8e73ab90207dfb6f795c456
+
+% 0 1 0 023ac62009eb8ea502df1649555c7b63
+
+% 1 1 0 09eff49e6bb96a0b106b314cc83a7c32
+
+@ 0 1 0 0353f6d909b1f66b0db99f89eb733c26
++ entry .sizedMacros   a macro por trás da leitura com ordinal literal num array `Sized`
+
+% 1 1 0 03a3b8c2824c3eea09e06d995fc2404d
+
+% 2 1 0 1b0a79799c184f060bf23e2cc2e960c0
+
+@ 0 7 0 0a0d03d39efa425c13ba0c195a5e33ad
++       Não se destina a uso direto. `read` é expandido pelo `apply` sobre um
++       `Array[element] & Sized[n]`: ele reconhece um ordinal literal — um literal `Int` por meio
++       de `z`, ou um dos ordinais nomeados de `Prim` a `Sept` — na árvore expandida inline,
++       compara-o com `n` e emite uma leitura pura ou o erro de compilação _the ordinal i is beyond
++       the array's proven length of n_; um ordinal variável é emitido como uma leitura
++       `Optional` verificada. Distribuído na biblioteca `concordance`.
++   entry .read   a macro: um ordinal literal verificado contra o comprimento provado enquanto o código compila

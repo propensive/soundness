@@ -1,0 +1,193 @@
+orthant 2 language
+
+@ 0 1 0 051c393d42566eba119e5b64aae230ef
++ # Transizioni totali
+
+@ 0 8 0 0380acc2c1c669c409574d5022c7634e
++ La seconda regola d'oro, compagna del rendere
++ [non rappresentabili gli stati impossibili](impossible-states.md): ogni operazione che porta un
++ valore da uno stato a un altro deve essere totale, cioè definita per ogni input che può
++ ricevere. Quando tutti gli stati di partenza sono validi e ogni transizione tra di essi è
++ totale, un programma che inizia in uno stato corretto non può mai uscirne. La parzialità,
++ cioè un'operazione non definita per alcuni dei suoi input, è la breccia attraverso cui gli stati
++ non validi rientrano, e Soundness la elimina per progetto, di solito dando a un'operazione un
++ tipo di ritorno abbastanza ricco da esprimere i casi che altrimenti non saprebbe gestire.
+
+@ 0 10 0 17b6a214eb78b1121d83281f08d87667
++ Il compilatore sorveglia la totalità ovunque gli sia permesso, e gli deve essere permesso. Un
++ pattern matching che dimentica un caso è parzialità nella sua forma più evidente, e Scala la
++ segnala: perciò gli avvisi che richiedono match esaustivi vanno attivati e trattati come errori,
++ mai soppressi come rumore. In questo regime, aggiungere un caso a un'enumerazione produce un
++ errore di compilazione in ogni match che non lo ha considerato: il compilatore percorre le
++ conseguenze di una modifica attraverso la codebase, che è esattamente l'analisi che un
++ programmatore altrimenti farebbe a memoria. Un match deliberatamente parziale resta esprimibile
++ (`.absolve` marca l'asserzione, in modo visibile e ricercabile), così la disciplina non costa
++ nulla se non la parzialità accidentale, che è quella che diventa un bug.
+
+@ 0 1 0 186faf91eec86756167ff2234ad6a710
++ ## Rendere totale un'operazione
+
+@ 0 2 0 0f7c1a813497e6b91921a8778bd6ae18
++ Un'operazione è parziale quando per alcuni dei suoi input non ha nulla da restituire. Ci sono tre
++ modi onesti per renderla totale, e uno disonesto:
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 11cd34bf00dada860d9ffa3b4ec1da02
++ column  Tecnica
++ column  Un input non definito diventa
++ row  allargare il tipo di ritorno per ammettere l'assenza  un `Optional` che è `Unset`
++ row  allargarlo per ammettere il fallimento  un errore tipizzato, gestito nel punto di chiamata
++ row  restringere il tipo di input  impossibile da passare
++ row  restituire un valore plausibile (disonesto)  una risposta sbagliata che si propaga
+
+% 1 1 0 04ebc07666a7d03b1e4e8030f5006fde
+
+@ 0 2 0 0a7cc2ca1f937e5b1074f693cfade978
++ **Allargare il tipo di ritorno per ammettere l'assenza.** Una ricerca che può non trovare nulla
++ restituisce un `Optional`, così «non trovato» è un valore anziché un'eccezione o un `null`:
+
+% 2 1 0 1e27a3ad23b450a70d81455f0902d3d5
+
+% 3 1 0 136eeee06391e94e12124bd2eb8ef163
+
+% 4 1 0 1eb1be12215045940fcda55cb020b4dc
+
+% 0 1 0 13cadbf6701c1381057c99c4597df9f2
+
+% 0 1 0 1041d81669629afb19bb312d88368372
+
+% 1 1 0 053d737a756613dd089df0355f3b9721
+
+@ 0 2 0 094467dcacc3351001fd37b460f5a1e5
++ **Allargarlo per ammettere il fallimento.** Dove il chiamante deve sapere il *perché*,
++ l'operazione solleva un errore tipizzato e la risposta viene scelta nel punto di chiamata:
+
+% 2 1 0 149addf7893fb50616946595535e0105
+
+% 3 1 0 1a49b0f846ace2590d31f4cbdc308030
+
+% 4 1 0 0e1b30dbf9d8615b1dae164149c5e9b4
+
+% 0 1 0 0ff2b3869304cefd13b88a89eb9fe0b9
+
+% 1 1 0 1f38698bdca933121d90644d046bac97
+
+@ 0 3 0 02fd346296fe672b0d8854089ae69d7a
++ **Restringere il tipo di input.** È la soluzione migliore, dove è possibile: se l'operazione non
++ è definita per alcuni input, si prende un tipo di input che li esclude. `Port` esiste proprio
++ perché `connect` non debba essere parziale.
+
+@ 0 3 0 0c3bf664d8bc3615033821d673880749
++ Il modo disonesto è restituire un valore plausibile per i casi non definiti (zero, vuoto, il
++ primo elemento), il che trasforma un fallimento rilevabile in una risposta sbagliata che si
++ propaga.
+
+@ 0 1 0 0716201a1bf874d10e84359af437c926
++ ## L'esaustività come strumento di propagazione delle modifiche
+
+@ 0 2 0 1645cd0a953290680cc933ec113cded0
++ La conseguenza più preziosa del trattare come errori gli avvisi di esaustività non è che i match
++ di oggi siano completi. È ciò che accade domani, quando si aggiunge un caso:
+
+% 2 1 0 087ced948740690d0f183b286ae69c26
+
+% 3 1 0 1054819e68b5b56e1cfab6f4be9cfd9d
+
+% 1 1 0 11fbab526cc88d1908b66312e2428bc1
+
+@ 0 1 0 144162adf60bb3700126e9667e75e75a
++   label Ieri
+
+% 1 1 0 1db238813c8893741523d4496e78e115
+
+% 2 1 0 004f6f8d30db98ea1247d8117561101f
+
+% 3 1 0 181540b3ff133c87049bb162330d846a
+
+% 4 1 0 058dacf6b053bbac10e3c9f6064029b3
+
+% 5 1 0 1399081ad157e076174a865f1c60abba
+
+% 1 1 0 0f013ec79b1a40eb11d8f298b69ee2e1
+
+@ 0 1 0 08c3e991d4ce67670566e27a10373c7e
++   label Oggi
+
+% 1 1 0 053be94268513bd70c46f588298eb381
+
+% 2 1 0 1ce289895036543c0d4665ba07d3fc38
+
+% 3 1 0 00b4108b1257bd860cfa120697949318
+
+% 4 1 0 025eae1bb700b67c04dc83b5044a9c09
+
+% 5 1 0 0d72eb09c042ef7d0261ee30083b3a9c
+
+% 0 1 0 0a3988a6d690a31d06d4156ed49e0ec5
+
+% 1 1 0 170184d4a6fd7d170d5258ed1c64e5d1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 4 0 036eb75aa121e08d153665434b4a227e
++ Ogni match su `Connection` che non ha considerato `Draining` ora non compila, e il compilatore
++ li elenca. È esattamente l'analisi che un programmatore attento farebbe altrimenti a memoria,
++ attraverso una codebase che magari non ha scritto: fatta in modo esaustivo, in pochi secondi, a
++ ogni build.
+
+@ 0 3 0 13078e2cfa3a6f0211b88f48a041071f
++ Ecco perché l'avviso deve essere un *errore*. Come avviso è solo consultivo, e i diagnostici
++ consultivi si accumulano finché nessuno li legge più; come errore è uno strumento che rende
++ sicura l'aggiunta di un caso.
+
+@ 0 1 0 1cb57f5bd90078ae093730dcd833cd57
++ ## Parzialità deliberata, marcata
+
+@ 0 3 0 0d24177b9eb217831bfa352a93c93db5
++ Alcuni match non possono davvero essere esaustivi, di solito perché il compilatore non vede un
++ invariante che il codice ha già stabilito. Sopprimere l'avviso nasconderebbe i casi accidentali
++ insieme a quello deliberato, quindi si marca invece l'asserzione:
+
+% 2 1 0 17d758177996e19210f1dbf908b4d30d
+
+% 3 1 0 04c84cbef5319ab9055d474e429d73ef
+
+% 0 1 0 03e13cd376d520e502eba14b435cf3f4
+
+% 1 1 0 05fa8d9217c170b60ac90a2b81c4d78c
+
+% 0 1 0 08e467dfc24261961ce28df90932e912
+
+% 0 1 0 0f6feb0aa11db938020f77d8a4c8d410
+
+% 1 1 0 086b0f9fb7d0dbc811f203fd42690c7a
+
+@ 0 4 0 0ef90bbf3427df011fdb039237ae6e8c
++ `absolve` è il `runtimeChecked` di Scala sotto un nome che dice ciò che significa. Marca una sola
++ espressione, così nient'altro viene messo a tacere; si può cercare con grep, così ogni asserzione
++ di questo tipo può essere trovata e rivista; ed è un'affermazione di chi scrive, che è
++ esattamente lo status che un'asserzione del genere deve avere.
+
+@ 0 1 0 0844dd3733d39264191e394839efcefa
++ ## Dove la totalità non è raggiungibile
+
+@ 0 1 0 11d85fc892e5c591034216e058970788
++ Due limiti, che vale la pena dichiarare.
+
+@ 0 4 0 1bf77ec00b45c5171c5bb437cb8f07c1
++ **Il mondo è parziale.** Aprire un file che esiste può comunque fallire: il disco, i permessi,
++ una corsa con un altro processo. Nessun tipo di ritorno lo rende totale; la risposta onesta è un
++ errore tipizzato, che è totalità della *firma* anziché dell'operazione.
+
+@ 0 5 0 13b6475dcaf768c70af1931bf991c978
++ **Alcuni invarianti vanno oltre il sistema di tipi.** Se un hostname si risolve, se due valori
++ validati indipendentemente sono coerenti tra loro, se uno schema e un documento analizzati
++ entrambi con successo concordano davvero: sono cose verificabili, ma non per costruzione. La
++ disciplina consiste nel far produrre al controllo un valore che porta il suo risultato, così che
++ il codice a valle erediti la garanzia anziché ripetere il controllo.
+
+@ 0 3 0 0f9d9d7ac71c5adc12251665926de193
++ Vedi [stati impossibili](impossible-states.md) per la regola compagna: le due sono inutili l'una
++ senza l'altra, perché transizioni totali tra stati privi di significato non preservano nulla che
++ valga la pena preservare.

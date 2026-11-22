@@ -1,0 +1,18 @@
+orthant 2 language
+
+@ 0 6 0 028183159a36bc8510d256d502a7fd76
++ Internamente, una permutazione è memorizzata come la sua
++ [tabella delle inversioni](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)) in
++ forma a base fattoriale, cioè un
++ unico intero che la identifica univocamente. Questo rende le permutazioni compatte da memorizzare
++ e da enumerare: `Permutation.bySize(n)` le dà tutte e `n!`, come
++ [catena](collections.md#lazy-chains) pigra. Una permutazione di *n* elementi occupa uno spazio
++ O(*n* log *n*), che è il minimo possibile, poiché ce ne sono *n*! da distinguere.
+
+% 0 2 0 1509aa9fc2d59aab049a65e78d949d44
+
+@ 0 4 0 0f8b86e915c7fa4d015a05b8e723c808
++ Una permutazione lascia invariata ogni posizione successiva all'ultima che sposta, quindi `shuffle`,
++ il cui sesto indice resta al suo posto, è una permutazione di cinque elementi. Applicarne una a una
++ sequenza più lunga non è quindi un errore: riordina le posizioni iniziali che copre, e lascia le
++ altre dove erano. Un singolo indice viene mappato allo stesso modo, con `shuffle(3)`.

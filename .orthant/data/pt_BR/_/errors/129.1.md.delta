@@ -1,0 +1,43 @@
+orthant 2 language
+
+% 0 1 0 0cfc4a9bc903f11c0101382a26fbb8f5
+
+@ 0 1 0 1fee3343235803d10685d0e77ee4be5f
++ Lançado quando um conteúdo MathML não pode ser lido como os elementos tipados que o Archimedes
++ modela.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 2 0 0633750a761f3241003f20d7d1304da7
++ O Archimedes representa MathML como elementos tipados, então um elemento ou atributo fora do
++ subconjunto que ele modela não pode ser construído nem analisado.
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## Variantes
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  Código
++ column  Motivo
++ column  Mensagem
+
+% 0 1 0 13ac95b1c996ab3c12d3b37909f8699e
+
+% 0 1 0 1a3b6f1cf211d1660dd8db0a377544b2
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Resolução
+
+@ 0 2 0 0f81866afbb2c1c008c7f501250b126a
++ Confira o elemento com a especificação MathML e com o que o Archimedes modela.
++ O MathML de apresentação é coberto de forma mais completa que o MathML de conteúdo.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Veja também
+
+@ 0 1 0 0eb869781ddc9e8311864db28efb685c
++ - Código-fonte: `lib/archimedes/src/core/archimedes.Mathml.scala`
