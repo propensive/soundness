@@ -71,7 +71,8 @@ private[octogenarian] object Store:
 
   // The packs of each object directory, each loaded once, by the path of the directory. They
   // are listed again only when a hash is in none of them, or one of them has gone; a pack whose
-  // index is still there when they are is not loaded again.
+  // index is still there when they are is not loaded again, and one whose index has gone is
+  // retired. They are listed by one thread at a time, so that no pack is loaded twice.
   private val loaded: java.util.concurrent.ConcurrentHashMap[Text, List[Packfile]] =
     java.util.concurrent.ConcurrentHashMap()
 
@@ -82,8 +83,9 @@ private[octogenarian] object Store:
     val key = objects.encode
     val cached = loaded.get(key)
 
-    if cached != null && !relist then cached else
-      val known: List[Packfile] = if cached == null then Nil else cached
+    if cached != null && !relist then cached else loaded.synchronized:
+      val current = loaded.get(key)
+      val known: List[Packfile] = if current == null then Nil else current
       val directory = objects / "pack"
 
       val listed: List[Packfile] =
@@ -104,6 +106,10 @@ private[octogenarian] object Store:
               case _ => acc.reverse
 
           recur(directory.children.to[List], Nil)
+
+      // A pack which is no longer listed is read no more, and gives up its mapping.
+      known.each: pack =>
+        if !listed.exists(_ eq pack) then pack.retire()
 
       loaded.put(key, listed)
       listed
