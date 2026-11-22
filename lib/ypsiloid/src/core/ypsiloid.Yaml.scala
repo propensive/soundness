@@ -125,9 +125,17 @@ trait Yaml2:
     case given Reflection[`value`] =>
       DecodableDerivation.derived
 
+    case _ =>
+      wisteria.internal.underivable[value is Decodable in Yaml]
+        ( "a `Decodable in Text` instance would also serve" )
+
   inline given encodable: [value] => value is Encodable in Yaml = summonFrom:
     case given (`value` is Encodable in Text) => value => Yaml.ast(Yaml.Ast(value.encode.s))
     case given Reflection[`value`]            => EncodableDerivation.derived
+
+    case _ =>
+      wisteria.internal.underivable[value is Encodable in Yaml]
+        ( "an `Encodable in Text` instance would also serve" )
 
   // The write-side mirror of `read[Play in Yaml]`: `play.in[Text over Yaml]` is the value's
   // YAML text, encoded to the tree and rendered in the `Yaml.Formatting` in scope, as `show`.
