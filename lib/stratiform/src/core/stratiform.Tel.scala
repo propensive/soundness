@@ -5775,6 +5775,32 @@ object Tel extends Tel2, TelMutation, TelRevision:
 
     // ── Trailing blanks ──────────────────────────────────────────────────────
 
+    // Rewind to the first of a run of blank lines which has been scanned past: the cursor to
+    // `mark`, and the head to the `snapshot` of that first blank line (its leading spaces,
+    // indent levels, blankness, end-of-input and start line).
+    private update def rewindToBlank
+      ( mark:     Cursor.Mark,
+        snapshot: (Int, Int, Boolean, Boolean, Int),
+        boundary: Boolean,
+        line:     Int )
+    :   Unit =
+
+      syncTo()
+      cursor.cue(mark)
+      syncFrom()
+      head.leadingSpaces = snapshot._1
+      head.indentLevels  = snapshot._2
+      head.blank         = snapshot._3
+      head.eof           = snapshot._4
+      head.startLine     = snapshot._5
+      prevLineWasBoundary = boundary
+      lineNo = line
+      var i = 0
+
+      while i < snapshot._1 && more && peek == SP do
+        advance()
+        i += 1
+
     // Consume blank lines that "belong" to the current block at `indent`. A
     // blank line belongs if the next non-blank line (if any) matches `indent`
     // or EOF.
@@ -5817,23 +5843,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
             else
               count
           else
-            // Rewind to the first blank.
-            syncTo()
-            cursor.cue(mk)
-            syncFrom()
-            head.leadingSpaces = firstBlankSnapshot._1
-            head.indentLevels  = firstBlankSnapshot._2
-            head.blank         = firstBlankSnapshot._3
-            head.eof           = firstBlankSnapshot._4
-            head.startLine     = firstBlankSnapshot._5
-            prevLineWasBoundary = savedBoundary
-            lineNo = savedLineNo
-            var i = 0
-
-            while i < firstBlankSnapshot._1 && more && peek == SP do
-              advance()
-              i += 1
-
+            rewindToBlank(mk, firstBlankSnapshot, savedBoundary, savedLineNo)
             0
 
     // Claim a run of blank lines that precedes further content belonging to the
@@ -6254,22 +6264,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
               // Trailing blanks are not part of the atom (§14). They are left for the
               // enclosing block machinery, which records them as the end of a block, as it
               // does the blank lines after any other line: rewind to the first of them.
-              syncTo()
-              cursor.cue(mk)
-              syncFrom()
-              head.leadingSpaces = firstBlankSnapshot._1
-              head.indentLevels  = firstBlankSnapshot._2
-              head.blank         = firstBlankSnapshot._3
-              head.eof           = firstBlankSnapshot._4
-              head.startLine     = firstBlankSnapshot._5
-              prevLineWasBoundary = savedBoundary
-              lineNo = savedLineNo
-              var i = 0
-
-              while i < firstBlankSnapshot._1 && more && peek == SP do
-                advance()
-                i += 1
-
+              rewindToBlank(mk, firstBlankSnapshot, savedBoundary, savedLineNo)
               true
         else if head.leadingSpaces >= sourceIndent then
           // Read content: skip the first sourceIndent spaces — but wait, the
