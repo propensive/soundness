@@ -49,6 +49,23 @@ leading blank-only `Block` (no comments, no compounds, `trailing_blank_lines`
 `stratiform_test` pin that. The two fixtures are exempted from the tree
 comparison for this reason (`treeDivergences` in `stratiform_test`).
 
+## Presentation model: blank lines after a source atom
+
+§14 discards the blank lines between a source atom's last line and the dedent which ends
+it, and the reference does not treat them as the end of a block, so its output runs the
+next compound straight on from the atom. This implementation leaves those blank lines to
+the block machinery, which records them as the `trailing_blank_lines` of the block the
+atom is in, exactly as it does the blank lines after any other line (issue #2507). Their
+meaning is unchanged: they are still not part of the atom. `pos/schema-with-encoding`,
+whose source atom is followed by a blank line and a sibling, therefore parses to two
+top-level blocks here where the reference dumps one, and is exempted from the tree
+comparison (`treeDivergences` in `stratiform_test`); the round-trip tests pin that such a
+document prints back byte-for-byte.
+
+The final line ending of a document whose last line is in a source atom is likewise
+kept (issue #2506), but outside the block tree: it is the atom's own line separator, so
+no block's `trailing_blank_lines` counts it, and the reference dumps are unaffected.
+
 ## Diagnostics
 
 `e119-non-space-after-marker`: this implementation reports one ↯/t.1.19 per

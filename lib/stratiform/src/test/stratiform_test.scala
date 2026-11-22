@@ -183,7 +183,8 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
     // streaming-parity suites below.
     val treeDivergences: List[Text] = List
       ( t"blank-before-first-child",       // the reference drops the blank line opening the child block
-        t"blank-before-deeper-comment" )   // likewise, before a deeper comment
+        t"blank-before-deeper-comment",    // likewise, before a deeper comment
+        t"schema-with-encoding" )          // a blank line after a source atom ends its block
 
     suite(m"Positive corpus"):
       CorpusLoader.positive.each: testcase =>
@@ -277,6 +278,96 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         TelCheckTree.of(Tel.make(Tel.Parser.parse(Cursor[Data](bytes))))
         == TelCheckTree.of(source.read[Tel])
       . assert(identity)
+
+    suite(m"Line endings and blank lines after a source atom"):
+      test(m"a document ending in a source atom keeps its final line ending"):
+        t"note\n    first\n    second\n".read[Tel].show
+      . assert(_ == t"note\n    first\n    second\n")
+
+      test(m"a document ending in a source atom with no final line ending gains none"):
+        t"note\n    first\n    second".read[Tel].show
+      . assert(_ == t"note\n    first\n    second")
+
+      test(m"a nested source atom at the end keeps the final line ending"):
+        t"play\n  note\n      first\n      second\n".read[Tel].show
+      . assert(_ == t"play\n  note\n      first\n      second\n")
+
+      test(m"a CRLF document ending in a source atom keeps its final line ending"):
+        t"note\r\n    first\r\n    second\r\n".read[Tel].show
+      . assert(_ == t"note\r\n    first\r\n    second\r\n")
+
+      test(m"a blank line after a source atom survives a round trip"):
+        t"detail\n    All about it.\n\nentry Text\n".read[Tel].show
+      . assert(_ == t"detail\n    All about it.\n\nentry Text\n")
+
+      test(m"two blank lines after a source atom survive a round trip"):
+        t"detail\n    All about it.\n\n\nentry Text\n".read[Tel].show
+      . assert(_ == t"detail\n    All about it.\n\n\nentry Text\n")
+
+      test(m"a blank line after a nested source atom survives a round trip"):
+        t"play\n  detail\n      All about it.\n\n  entry Text\n".read[Tel].show
+      . assert(_ == t"play\n  detail\n      All about it.\n\n  entry Text\n")
+
+      test(m"blank lines after a source atom are not part of its text"):
+        t"detail\n    All about it.\n\nentry Text\n".read[Tel].field(t"detail").let(_.primaryAtom)
+      . assert(_ == t"All about it.")
+
+      test(m"a blank line inside a source atom is still part of its text"):
+        t"detail\n    one\n\n    two\nentry Text\n".read[Tel].field(t"detail").let(_.primaryAtom)
+      . assert(_ == t"one\n\ntwo")
+
+      test(m"a blank line after a source atom ends its block"):
+        t"detail\n    All about it.\n\nentry Text\n".read[Tel].blocks.length
+      . assert(_ == 2)
+
+      test(m"a comment after a source atom and a blank line survives a round trip"):
+        t"code\n    src\n\n# note\nnext\n".read[Tel].show
+      . assert(_ == t"code\n    src\n\n# note\nnext\n")
+
+      test(m"blank lines at the end of a document after a source atom survive"):
+        t"note\n    first\n\n".read[Tel].show
+      . assert(_ == t"note\n    first\n\n")
+
+      test(m"a blank line at the end of a document survives a round trip"):
+        t"a\n\n".read[Tel].show
+      . assert(_ == t"a\n\n")
+
+    suite(m"The document tree"):
+      val source = t"tel 1.0\n\n# cast\nrole Viola\n\n# setting\nplace\n  name Illyria\n"
+
+      test(m"a parsed value gives its document"):
+        source.read[Tel].document.let(_.pragma.let(_.version))
+      . assert(_ == (1, 0))
+
+      test(m"a navigated value has no document"):
+        source.read[Tel].field(t"place").let(_.document)
+      . assert(_.absent)
+
+      test(m"blocks keep the comments which childCompounds drops"):
+        source.read[Tel].blocks.to[List].map(_.comments.to[List].map(_.text))
+      . assert(_ == List(List(t"cast"), List(t"setting")))
+
+      test(m"blocks keep the blank lines after each block"):
+        source.read[Tel].blocks.to[List].map(_.trailingBlankLines)
+      . assert(_ == List(1, 0))
+
+      test(m"transform renames every keyword and keeps the layout"):
+        source.read[Tel].transform { compound => compound.copy(keyword = compound.keyword.upper) }.show
+      . assert(_ == t"tel 1.0\n\n# cast\nROLE Viola\n\n# setting\nPLACE\n  NAME Illyria\n")
+
+      test(m"transform gives a compound its transformed children"):
+        var seen: List[Text] = Nil
+
+        source.read[Tel].transform: compound =>
+          seen = compound.keyword :: seen
+          compound
+
+        seen.reverse
+      . assert(_ == List(t"role", t"name", t"place"))
+
+      test(m"transform with the identity changes nothing"):
+        source.read[Tel].transform(identity).show
+      . assert(_ == source)
 
     suite(m"Reading from a stream as it arrives"):
       // The bytes as a stream of `size`-byte chunks, so that every token straddles a chunk
